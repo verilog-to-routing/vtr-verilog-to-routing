@@ -1,0 +1,559 @@
+﻿<!-- 
+    Stratix IV Architecture
+    Instantiates an arbitrary arrangment of Stratix blocks including:
+      stratixiv_lcell_comb
+      dffeas
+      stratixiv_mac_mult
+      stratixiv_mac_out
+      stratixiv_ram_block
+    
+    NOTE: Doesn't support parameters or configuration.
+-->
+<!-- C:->UserProgramFiles->altera->11.0->quartus->eda->fv_lib->verilog -->
+
+<architecture>
+
+  <!-- Stratix Models -->
+  <models>
+
+    <!-- from stratixiv_lcell_comb.v -->
+    <model name="stratixiv_lcell_comb">
+      <input_ports>
+        <port name="dataa"/>
+        <port name="datab"/>
+        <port name="datac"/>
+        <port name="datad"/>
+        <port name="datae"/>
+        <port name="dataf"/>
+        <port name="datag"/>
+        <port name="cin"/>
+        <port name="sharein"/>
+      </input_ports>
+      <output_ports>
+        <port name="combout"/>
+        <port name="sumout"/>
+        <port name="cout"/>
+        <port name="shareout"/>
+      </output_ports>
+    </model>
+
+    <!-- from dffeas.v -->
+    <model name="dffeas">
+      <input_ports>
+        <port name="clk" is_clock="1"/>
+        <port name="ena"/>
+        <port name="prn"/>
+        <port name="clrn"/>
+        <port name="asdata"/>
+        <port name="aload"/>
+        <port name="sload"/>
+        <port name="sclr"/>
+        <port name="d"/>
+        <port name="devclrn"/>
+        <port name="devpor"/>
+      </input_ports>
+      <output_ports>
+        <port name="q"/>
+      </output_ports>
+    </model>
+
+    <!-- from stratixiv_mac_mult.v -->
+    <model name="stratixiv_mac_mult">
+      <input_ports>
+        <port name="dataa"/> <!-- 18 -->
+        <port name="datab"/> <!-- 18 -->
+        <port name="signa"/>
+        <port name="signb"/>
+        <port name="ena"/> <!-- 4 -->
+        <port name="clk"/> <!-- 4 -->
+        <port name="aclr"/> <!-- 4 -->
+        <port name="devclrn"/>
+        <port name="devpor"/>
+      </input_ports>
+      <output_ports>
+        <port name="scanouta"/> <!-- 18 -->
+        <port name="dataout"/>  <!-- 36 -->
+      </output_ports>
+    </model>
+
+    <!-- from stratixiv_mac_out.v -->
+    <model name="stratixiv_mac_out">
+      <input_ports>
+        <port name="dataa"/> <!-- 36 -->
+        <port name="datab"/> <!-- 36 -->
+        <port name="datac"/> <!-- 36 -->
+        <port name="datad"/> <!-- 36 -->
+        <port name="signa"/>
+        <port name="signb"/>
+        <port name="chainin"/> <!-- 44 -->
+        <port name="round"/>
+        <port name="saturate"/>
+        <port name="zeroacc"/>
+        <port name="roundchainout"/>
+        <port name="saturatechainout"/>
+        <port name="zerochainout"/>
+        <port name="zeroloopback"/>
+        <port name="rotate"/>
+        <port name="shiftright"/>
+        <port name="ena"/> <!-- 4 -->
+        <port name="clk"/> <!-- 4 -->
+        <port name="aclr"/> <!-- 4 -->
+        <port name="devclrn"/>
+        <port name="devpor"/>
+      </input_ports>
+      <output_ports>
+        <port name="loopbackout"/> <!-- 18 -->
+        <port name="dataout"/> <!-- 72 -->
+        <port name="overflow"/>
+        <port name="saturatechainoutoverflow"/>
+        <port name="dftout"/>
+      </output_ports>
+    </model>
+
+    <!-- from stratixiv_ram_block.v -->
+    <model name="stratixiv_ram_block">
+      <input_ports>
+        <port name="clr0"/>
+        <port name="clr1"/>
+
+        <port name="clk0"/>
+        <port name="clk1"/>
+
+        <port name="ena0"/>
+        <port name="ena1"/>
+        <port name="ena2"/>
+        <port name="ena3"/>
+
+        <port name="portaaddr"/> <!-- 14 -->
+        <port name="portaaddrstall"/>
+        <port name="portabyteenamasks"/> <!-- 8 -->
+        <port name="portadatain"/>
+        <port name="portare"/>
+        <port name="portawe"/>
+
+        <port name="portbaddr"/> <!-- 14 -->
+        <port name="portbaddrstall"/>
+        <port name="portbbyteenamasks"/> <!-- 8 -->
+        <port name="portbdatain"/>
+        <port name="portbre"/>
+        <port name="portbwe"/>
+        
+        <port name="devclrn"/>
+        <port name="devpor"/>
+      </input_ports>
+      <output_ports>
+        <port name="eccstatus"/> <!-- 3 -->
+        <port name="portadataout"/>
+        <port name="portbdataout"/>
+        <port name="dftout"/> <!-- 9 -->
+      </output_ports>
+    </model>
+
+  </models>
+
+  <!-- Physical descriptions begin -->
+  <layout auto="1.0"/>
+  <device>
+    <sizing R_minW_nmos="4220.930176" R_minW_pmos="11207.599609" ipin_mux_trans_size="1.299940"/>
+    <timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="8.582000e-11"/>
+    <area grid_logic_tile_area="0.0"/>
+    <chan_width_distr>
+      <io width="1.000000"/>
+      <x distr="uniform" peak="1.000000"/>
+      <y distr="uniform" peak="1.000000"/>
+    </chan_width_distr>
+    <switch_block type="wilton" fs="3"/>
+  </device>
+  <switchlist>
+    <switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="8.972000e-11" mux_trans_size="2.183570" buf_size="32.753502"/>
+  </switchlist>
+  <segmentlist>
+    <segment freq="1.000000" length="4" type="unidir" Rmetal="0.000000" Cmetal="0.000000e+00">
+      <mux name="0"/>
+      <sb type="pattern">1 1 1 1 1</sb>
+      <cb type="pattern">1 1 1 1</cb>
+    </segment>
+  </segmentlist>
+  <complexblocklist>
+
+    <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
+    <pb_type name="io" capacity="7">
+      <input name="outpad" num_pins="1" equivalent="false"/>
+      <output name="inpad" num_pins="1"/>
+      <clock name="clock" num_pins="1"/>
+
+      <!-- IOs can operate as either inputs or outputs -->
+      <mode name="inpad">
+        <pb_type name="inpad" blif_model=".input" num_pb="1">
+          <output name="inpad" num_pins="1"/>
+        </pb_type>
+        <interconnect>
+          <direct name="inpad" input="inpad.inpad" output="io.inpad"/>
+        </interconnect>
+
+      </mode>
+      <mode name="outpad">
+        <pb_type name="outpad" blif_model=".output" num_pb="1">
+          <input name="outpad" num_pins="1"/>
+        </pb_type>
+        <interconnect>
+          <direct name="outpad" input="io.outpad" output="outpad.outpad"/>
+        </interconnect>
+      </mode>
+
+      <fc_in type="frac">1.0</fc_in>
+      <fc_out type="frac">1.0</fc_out>
+
+      <!-- IOs go on the periphery of the FPGA, for consistency, 
+          make it physically equivalent on all sides so that only one definition of I/Os is needed.
+          If I do not make a physically equivalent definition, then I need to define 4 different I/Os, one for each side of the FPGA
+        -->
+      <pinlocations pattern="custom">
+        <loc side="left">io.outpad io.inpad io.clock</loc>
+        <loc side="top">io.outpad io.inpad io.clock</loc>
+        <loc side="right">io.outpad io.inpad io.clock</loc>
+        <loc side="bottom">io.outpad io.inpad io.clock</loc>
+      </pinlocations>
+
+      <gridlocations>
+        <loc type="perimeter" priority="10"/>
+      </gridlocations>
+
+    </pb_type>
+
+    <pb_type name="clb">
+
+      <input name="I" num_pins="9" equivalent="true"/>
+      <output name="O" num_pins="4"/>
+      <clock name="clk" num_pins="1"/>
+
+      <mode name="lcell_comb">
+        <pb_type name="lcell_comb" blif_model=".subckt stratixiv_lcell_comb" num_pb="1">
+              <input name="dataa" num_pins="1"/>
+              <input name="datab" num_pins="1"/>
+              <input name="datac" num_pins="1"/>
+              <input name="datad" num_pins="1"/>
+              <input name="datae" num_pins="1"/>
+              <input name="dataf" num_pins="1"/>
+              <input name="datag" num_pins="1"/>
+              <input name="cin" num_pins="1"/>
+              <input name="sharein" num_pins="1"/>
+
+              <output name="combout" num_pins="1"/>
+              <output name="sumout" num_pins="1"/>
+              <output name="cout" num_pins="1"/>
+              <output name="shareout" num_pins="1"/>
+        </pb_type>
+
+        <interconnect>
+          <complete name="complete1" input="clb.I" output="lcell_comb.dataa"/>
+          <complete name="complete2" input="clb.I" output="lcell_comb.datab"/>
+          <complete name="complete3" input="clb.I" output="lcell_comb.datac"/>
+          <complete name="complete4" input="clb.I" output="lcell_comb.datad"/>
+          <complete name="complete5" input="clb.I" output="lcell_comb.datae"/>
+          <complete name="complete6" input="clb.I" output="lcell_comb.dataf"/>
+          <complete name="complete7" input="clb.I" output="lcell_comb.datag"/>
+          <complete name="complete10" input="clb.I" output="lcell_comb.cin"/>
+          <complete name="complete11" input="clb.I" output="lcell_comb.sharein"/>
+
+          <complete name="complete12" input="lcell_comb.combout" output="clb.O"/>
+          <complete name="complete13" input="lcell_comb.sumout" output="clb.O"/>
+          <complete name="complete14" input="lcell_comb.cout" output="clb.O"/>
+          <complete name="complete15" input="lcell_comb.shareout" output="clb.O"/>
+
+        </interconnect>
+      </mode>
+      <mode name="n2_lut5">
+        <pb_type name="lut5" blif_model=".names" num_pb="2" class="lut">
+          <input name="in" num_pins="5" port_class="lut_in"/>
+          <output name="out" num_pins="1" port_class="lut_out"/>
+        </pb_type>
+        <interconnect>
+          <complete name="l_complete1" input="clb.I" output="lut5[0:0].in[4:0]"/>
+          <complete name="l_complete2" input="lut5[0:0].out" output="clb.O"/>
+          <complete name="l_complete3" input="clb.I" output="lut5[1:1].in[4:0]"/>
+          <complete name="l_complete4" input="lut5[1:1].out" output="clb.O"/>
+        </interconnect>
+      </mode>
+
+      <fc_in type="frac">1.0000</fc_in>
+      <fc_out type="frac">1.0000</fc_out>
+      <pinlocations pattern="spread"/>
+      <gridlocations>
+        <loc type="fill" priority="1"/>
+      </gridlocations>
+    </pb_type>
+
+    <pb_type name="ff">
+
+      <input name="I" num_pins="10"/>
+      <output name="O" num_pins="1"/>
+      <clock name="CLK" num_pins="1"/>
+
+      <mode name="dff">
+        <pb_type name="dff" blif_model=".subckt dffeas" num_pb="1">
+            <input name="ena" num_pins="1"/>
+            <input name="prn" num_pins="1"/>
+            <input name="clrn" num_pins="1"/>
+            <input name="asdata" num_pins="1"/>
+            <input name="aload" num_pins="1"/>
+            <input name="sload" num_pins="1"/>
+            <input name="sclr" num_pins="1"/>
+            <input name="d" num_pins="1"/>
+            <input name="devclrn" num_pins="1"/>
+            <input name="devpor" num_pins="1"/>
+          
+            <output name="q" num_pins="1"/>
+          
+            <clock name="clk" num_pins="1"/>
+        </pb_type>
+
+        <interconnect>
+          <complete name="complete1" input="ff.I" output="dff.ena"/>
+          <complete name="complete2" input="ff.I" output="dff.prn"/>
+          <complete name="complete3" input="ff.I" output="dff.clrn"/>
+          <complete name="complete4" input="ff.I" output="dff.asdata"/>
+          <complete name="complete5" input="ff.I" output="dff.aload"/>
+          <complete name="complete6" input="ff.I" output="dff.sload"/>
+          <complete name="complete7" input="ff.I" output="dff.sclr"/>
+          <complete name="complete7" input="ff.I" output="dff.d"/>
+          <complete name="complete10" input="ff.I" output="dff.devclrn"/>
+          <complete name="complete11" input="ff.I" output="dff.devpor"/>
+
+          <direct name="direct1" input="dff.q" output="ff.O"/>
+          <direct name="direct2" input="ff.CLK" output="dff.clk"/>
+
+        </interconnect>
+      </mode>
+
+      <fc_in type="frac">1.00000</fc_in>
+      <fc_out type="frac">1.00000</fc_out>
+      <pinlocations pattern="spread"/>
+      <gridlocations>
+        <loc type="col" start="2" repeat="3" priority="2"/>
+      </gridlocations>
+    </pb_type>
+
+    <pb_type name="mac_multiply">
+      <input name="data" num_pins="36"/>
+      <input name="signal" num_pins="12"/>
+      <input name ="CLK" num_pins="4"/>
+      
+      <output name="out" num_pins="54"/>
+
+      <mode name="mac_mult">
+        <pb_type name="mac_mult" blif_model=".subckt stratixiv_mac_mult" num_pb="1">
+          <input name="dataa" num_pins="18"/>
+          <input name="datab" num_pins="18"/>
+
+          <input name="signa" num_pins="1"/>
+          <input name="signb" num_pins="1"/>
+          
+          <input name="ena" num_pins="4"/>
+          <input name="clk" num_pins="4"/>
+          <input name="aclr" num_pins="4"/>         
+          
+          <input name="devclrn" num_pins="1"/>
+          <input name="devpor" num_pins="1"/>
+
+          <output name="scanouta" num_pins="18"/>
+          <output name="dataout" num_pins="36"/>    
+        </pb_type>
+
+        <interconnect>
+          <complete name="data_c1" input="mac_multiply.data" output="mac_mult.dataa"/>
+          <complete name="data_c2" input="mac_multiply.data" output="mac_mult.datab"/>
+
+          <complete name="signal_c1" input="mac_multiply.signal" output="mac_mult.signa"/>
+          <complete name="signal_c2" input="mac_multiply.signal" output="mac_mult.signb"/>
+          <complete name="signal_c3" input="mac_multiply.signal" output="mac_mult.aclr"/>
+          <complete name="signal_c4" input="mac_multiply.signal" output="mac_mult.ena"/>
+          <complete name="signal_c5" input="mac_multiply.signal" output="mac_mult.devclrn"/>
+          <complete name="signal_c6" input="mac_multiply.signal" output="mac_mult.devpor"/>
+
+          <complete name="out_c1" input="mac_mult.scanouta" output="mac_multiply.out"/>
+          <complete name="out_c2" input="mac_mult.dataout" output="mac_multiply.out"/>
+
+          <complete name="clock_c1" input="mac_multiply.CLK" output="mac_mult.clk"/>
+        </interconnect>
+      </mode>
+
+      <fc_in type="frac">1.0000</fc_in>
+      <fc_out type="frac">1.0000</fc_out>
+      <pinlocations pattern="spread"/>
+
+      <gridlocations>
+        <loc type="col" start="2" repeat="5" priority="3"/>
+      </gridlocations>
+    </pb_type>
+
+    <pb_type name="mac_output">
+      <input name="data" num_pins="144"/>
+      <input name="signal" num_pins="65"/>
+      <output name="out" num_pins="93"/>
+      <clock name ="CLK" num_pins="4"/>
+
+      <mode name="mac_out">
+
+        <pb_type name="mac_out" blif_model=".subckt stratixiv_mac_out" num_pb="1">
+            <input name="dataa" num_pins="36"/>
+            <input name="datab" num_pins="36"/>
+            <input name="datac" num_pins="36"/>
+            <input name="datad" num_pins="36"/>
+
+            <input name="signa" num_pins="1"/>
+            <input name="signb" num_pins="1"/>
+            <input name="chainin" num_pins="44"/>
+            <input name="round" num_pins="1"/>
+            <input name="saturate" num_pins="1"/>
+            <input name="zeroacc" num_pins="1"/>
+            <input name="roundchainout" num_pins="1"/>
+            <input name="saturatechainout" num_pins="1"/>
+            <input name="zerochainout" num_pins="1"/>
+            <input name="zeroloopback" num_pins="1"/>
+            <input name="rotate" num_pins="1"/>
+            <input name="shiftright" num_pins="1"/>
+            <input name="devclrn" num_pins="1"/>
+            <input name="devpor" num_pins="1"/>
+            <input name="aclr" num_pins="4"/>
+            <input name="ena" num_pins="4"/>
+          
+            <input name="clk" num_pins="4"/>
+
+            <output name="loopbackout" num_pins="18"/>
+            <output name="dataout" num_pins="72"/>
+            <output name="overflow" num_pins="1"/>
+            <output name="saturatechainoutoverflow" num_pins="1"/>
+            <output name="dftout" num_pins="1"/>
+        </pb_type>
+
+        <interconnect>
+          <complete name="data_c1" input="mac_output.data" output="mac_out.dataa"/>
+          <complete name="data_c2" input="mac_output.data" output="mac_out.datab"/>
+          <complete name="data_c3" input="mac_output.data" output="mac_out.datac"/>
+          <complete name="data_c4" input="mac_output.data" output="mac_out.datad"/>
+          
+          <complete name="signal_c4" input="mac_output.signal" output="mac_out.signa"/>
+          <complete name="signal_c5" input="mac_output.signal" output="mac_out.signb"/>
+          <complete name="signal_c6" input="mac_output.signal" output="mac_out.chainin"/>
+          <complete name="signal_c7" input="mac_output.signal" output="mac_out.round"/>
+          <complete name="signal_c8" input="mac_output.signal" output="mac_out.saturate"/>
+          <complete name="signal_c9" input="mac_output.signal" output="mac_out.zeroacc"/>
+          <complete name="signal_c1" input="mac_output.signal" output="mac_out.roundchainout"/>
+          <complete name="signal_c2" input="mac_output.signal" output="mac_out.saturatechainout"/>
+          <complete name="signal_c3" input="mac_output.signal" output="mac_out.zerochainout"/>
+          <complete name="signal_c1" input="mac_output.signal" output="mac_out.zeroloopback"/>
+          <complete name="signal_c2" input="mac_output.signal" output="mac_out.rotate"/>
+          <complete name="signal_c3" input="mac_output.signal" output="mac_out.shiftright"/>
+          <complete name="signal_c1" input="mac_output.signal" output="mac_out.devclrn"/>
+          <complete name="signal_c2" input="mac_output.signal" output="mac_out.devpor"/>
+          <complete name="signal_c3" input="mac_output.signal" output="mac_out.aclr"/>
+          <complete name="signal_c3" input="mac_output.signal" output="mac_out.ena"/>
+
+          <complete name="out_c1" input="mac_out.loopbackout" output="mac_output.out"/>
+          <complete name="out_c2" input="mac_out.dataout" output="mac_output.out"/>
+          <complete name="out_c4" input="mac_out.overflow" output="mac_output.out"/>
+          <complete name="out_c3" input="mac_out.saturatechainoutoverflow" output="mac_output.out"/>
+          <complete name="out_c3" input="mac_out.dftout" output="mac_output.out"/>
+
+          <complete name="clock_c1" input="mac_output.CLK" output="mac_out.clk"/>
+        </interconnect>
+      </mode>
+
+      <fc_in type="frac">1.0000</fc_in>
+      <fc_out type="frac">1.0000</fc_out>
+      <pinlocations pattern="spread"/>
+
+      <gridlocations>
+        <loc type="col" start="3" repeat="5" priority="3"/>
+      </gridlocations>
+    </pb_type>
+
+    <pb_type name="memory">
+      <input name="data" num_pins="40"/>
+      <input name="dataa_addr" num_pins="14"/>
+      <input name="datab_addr" num_pins="14"/>
+      <input name="signal" num_pins="30"/>
+      <input name ="CLK" num_pins="40"/>
+      <output name="out" num_pins="280"/>
+
+      <mode name="ram_block">
+
+        <pb_type name="ram_block" blif_model=".subckt stratixiv_ram_block" num_pb="20">
+            <input name="portaaddr" num_pins="14"/>
+            <input name="portbaddr" num_pins="14"/>
+          
+            <input name="portbdatain" num_pins="1"/>
+            <input name="portadatain" num_pins="1"/>
+          
+            <input name="clk0" num_pins="1"/>
+            <input name="clk1" num_pins="1"/>
+          
+            <input name="clr0" num_pins="1"/>
+            <input name="clr1" num_pins="1"/>
+            <input name="ena0" num_pins="1"/>
+            <input name="ena1" num_pins="1"/>
+            <input name="ena2" num_pins="1"/>
+            <input name="ena3" num_pins="1"/>
+            <input name="portaaddrstall" num_pins="1"/>
+            <input name="portabyteenamasks" num_pins="8"/>
+            <input name="portare" num_pins="1"/>
+            <input name="portawe" num_pins="1"/> 
+            <input name="portbaddrstall" num_pins="1"/>
+            <input name="portbbyteenamasks" num_pins="8"/>
+            <input name="portbre" num_pins="1"/>
+            <input name="portbwe" num_pins="1"/>
+            <input name="devclrn" num_pins="1"/>
+            <input name="devpor" num_pins="1"/>
+
+            <output name="eccstatus" num_pins="3"/>
+            <output name="portadataout" num_pins="1"/>
+            <output name="portbdataout" num_pins="1"/>
+            <output name="dftout" num_pins="9"/>
+        </pb_type>
+
+        <interconnect>
+          <complete name="addr_c1" input="memory.dataa_addr" output="ram_block[19:0].portaaddr"/>
+          <complete name="addr_c2" input="memory.datab_addr" output="ram_block[19:0].portbaddr"/>
+
+          <complete name="data_c1" input="memory.data" output="ram_block[19:0].portadatain"/>
+          <complete name="data_c2" input="memory.data" output="ram_block[19:0].portbdatain"/>
+
+          <complete name="signal_c1" input="memory.signal" output="ram_block[19:0].clr0"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block[19:0].clr1"/>
+          <complete name="signal_c3" input="memory.signal" output="ram_block[19:0].ena0"/>
+          <complete name="signal_c4" input="memory.signal" output="ram_block[19:0].ena1"/>
+          <complete name="signal_c5" input="memory.signal" output="ram_block[19:0].ena2"/>
+          <complete name="signal_c6" input="memory.signal" output="ram_block[19:0].ena3"/>
+          <complete name="signal_c7" input="memory.signal" output="ram_block[19:0].portaaddrstall"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block[19:0].portabyteenamasks"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block[19:0].portare"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block[19:0].portawe"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block[19:0].portbaddrstall"/>
+          <complete name="signal_c3" input="memory.signal" output="ram_block[19:0].portbbyteenamasks"/>
+          <complete name="signal_c4" input="memory.signal" output="ram_block[19:0].portbre"/>
+          <complete name="signal_c4" input="memory.signal" output="ram_block[19:0].portbwe"/>
+          <complete name="signal_c8" input="memory.signal" output="ram_block[19:0].devclrn"/>
+          <complete name="signal_c9" input="memory.signal" output="ram_block[19:0].devpor"/>
+
+          <complete name="out_c1" input="ram_block[19:0].eccstatus" output="memory.out"/>
+          <complete name="out_c2" input="ram_block[19:0].portadataout" output="memory.out"/>
+          <complete name="out_c3" input="ram_block[19:0].portbdataout" output="memory.out"/>
+          <complete name="out_c4" input="ram_block[19:0].dftout" output="memory.out"/>
+
+          <complete name="clock_c1" input="memory.CLK" output="ram_block[19:0].clk0"/>
+          <complete name="clock_c2" input="memory.CLK" output="ram_block[19:0].clk1"/>
+        </interconnect>
+      </mode>
+
+      <fc_in type="frac">1.0</fc_in>
+      <fc_out type="frac">1.0</fc_out>
+      <pinlocations pattern="spread"/>
+
+      <gridlocations>
+        <loc type="col" start="4" repeat="5" priority="3"/>
+      </gridlocations>
+    </pb_type>
+
+  </complexblocklist>
+</architecture>
