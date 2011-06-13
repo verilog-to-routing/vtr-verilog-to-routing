@@ -9,6 +9,10 @@
  */
 
 /*
+	Hard-coded tokens for Stratix I and II Devices. The parser has been
+	expanded to accomodate a general device as defined in proper VQM format,
+	but these were preserved for archival purposes. 
+
 stratix_lcell								yylval.value = STRATIX_LCELL; return TOKEN_WYSIWYGID;
 stratix_io									yylval.value = STRATIX_IO_CELL; return TOKEN_WYSIWYGID;
 stratix_ram_block							yylval.value = STRATIX_RAM_BLOCK; return TOKEN_WYSIWYGID;

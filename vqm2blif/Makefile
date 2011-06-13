@@ -33,7 +33,7 @@ blifs: $(EXE)
 
 clean:
 	rm -f $(EXE) read_arch 
-	rm -f ../OUT/*.blif ../OUT/*.echo *.blif *.echo
+	rm -f *.blif *.echo
 
 # Common Typos
 clena: clean

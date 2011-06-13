@@ -6,25 +6,7 @@
 *			VQM to BLIF Convertor V.1.0
 *
 * Author:	S. Whitty
-*		May 20, 2011
-* 
-* 			BACKGROUND
-*
-* VQM is an internal file format used by Altera® inside their development tool,
-* Quartus® II. It uses a subset of the Verilog description language, and the 
-* circuit it describes is technology-mapped to one of their families of devices 
-* (e.g. Stratix® IV or Cyclone® II). These files can be outputted during normal
-* Quartus II operation, as detailed in Altera's QUIP documentation.
-*	-> For more, see: quip_tutorial.pdf
-*	-> Download QUIP at:
-*	   https://www.altera.com/support/software/download/altera_design/quip/quip-download.jsp?swcode=WWW-SWD-QII-90UIP-ALL
-*
-* A .blif netlist is characterized by .models that describe circuit elements.
-* Any model has a list of ports (.inputs, .outputs, .clock) and declares flip-flops,
-* latches and luts. It also may contain subcircuits, which are instantiations of models 
-* declared later in the file. A model being declared as a "blackbox" signifies no 
-* knowledge of its inner logic or intraconnections.
-*	-> For more, see: blif_info.pdf
+*		June 13, 2011
 *
 *********************************************************************************************/
 
