@@ -6,7 +6,25 @@
 *			VQM to BLIF Convertor V.1.0
 *
 * Author:	S. Whitty
-*		June 13, 2011
+*		May 20, 2011
+* 
+* 			BACKGROUND
+*
+* VQM is an internal file format used by Altera® inside their development tool,
+* Quartus® II. It uses a subset of the Verilog description language, and the 
+* circuit it describes is technology-mapped to one of their families of devices 
+* (e.g. Stratix® IV or Cyclone® II). These files can be outputted during normal
+* Quartus II operation, as detailed in Altera's QUIP documentation.
+*	-> For more, see: quip_tutorial.pdf
+*	-> Download QUIP at:
+*	   https://www.altera.com/support/software/download/altera_design/quip/quip-download.jsp?swcode=WWW-SWD-QII-90UIP-ALL
+*
+* A .blif netlist is characterized by .models that describe circuit elements.
+* Any model has a list of ports (.inputs, .outputs, .clock) and declares flip-flops,
+* latches and luts. It also may contain subcircuits, which are instantiations of models 
+* declared later in the file. A model being declared as a "blackbox" signifies no 
+* knowledge of its inner logic or intraconnections.
+*	-> For more, see: blif_info.pdf
 *
 *********************************************************************************************/
 
@@ -28,6 +46,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <string.h>
 
 #include "../libvqm/vqm_dll.h"	//VQM Parser
 
@@ -54,11 +73,21 @@ enum v_OptionBaseToken
 	OT_OUT,
 	OT_DEBUG,
 	OT_VERBOSE,
+	OT_ELAB,
+	OT_LUTS,
 	OT_UNKNOWN
 };
 
-typedef map <string, v_OptionBaseToken> tokmap;
-typedef pair <string, v_OptionBaseToken> tokpair;
+typedef enum v_Elab_Mode { NONE, MODES, ATOMS, UNKNOWN } e_elab;
+typedef enum v_LUT_Mode { VQM, ABC, OTHER } e_lut;
+
+struct cstrcomp{	//operator structure to compare C-strings within a map class
+  bool operator() (const char* lhs,const char* rhs) const
+  {return strcmp(lhs, rhs) < 0;}
+};
+
+typedef map <const char*, v_OptionBaseToken, cstrcomp> tokmap;
+typedef pair <const char*, v_OptionBaseToken> tokpair;
 
 //============================================================================================
 //				DATA STRUCTURES

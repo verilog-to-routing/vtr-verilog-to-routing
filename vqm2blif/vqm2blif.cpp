@@ -32,10 +32,10 @@
 *		A simple C-string containing the top-level module's instance name.
 *	- array_of_pins (number_of_pins = array size)
 *		An array of t_pin_def structures that describe the external pins and wires
-*		on the FPGA as declared at the top of a VQM module. (e.g. "input [31:0] a")
+*		on the FPGA as declared at the top of a VQM module. (e.g. "input [31:0] a" or "wire b")
 *	- array_of_assignments
 *		An array of t_assign structures that describe all direct assign statements in the 
-*		VQM module. (e.g. "assign a[15] = b[15]")
+*		VQM module. (e.g. "assign a[15] = b[15]" or "assign a_bus = b_bus")
 *	- array_of_nodes
 *		An array of t_node structures that describe the circuit elements in the FPGA, their
 *		connectivity to the external pins/wires (array_of_ports; t_node_association structures), 
@@ -55,9 +55,8 @@
 *********************************************************************************************/
 
 #include "vqm2blif.h"
-#include <string.h>
 
-//fstream-specific hacks, found online
+//fstream-specific hacks, util (included by vqm_dll.h) and fstream both define min and max; incompatible!
 #ifdef min 
 #undef min 
 #endif 
@@ -65,12 +64,12 @@
 #ifdef max 
 #undef max 
 #endif
-//can investigate their relevance
 
 #include <fstream>
 #include <sstream>
 
 #include <sys/stat.h>
+#include <assert.h>
 
 //============================================================================================
 //			GLOBAL VARIABLES
@@ -83,11 +82,14 @@ t_node_port_association open_port;	//container for an open-port assignment
 t_boolean* models_used;		//array of flags indicating whether a model read from
 					//the architecture was instantiated in the .vqm file.
 
-t_boolean debug_mode;	//user-set flag that indicates more runtime output
-				//and the creation of intermediate files with debug information.
+t_boolean debug_mode;	//user-set flag causing the creation of intermediate files 
+				//with debug information.
 
-t_boolean verbose_debug;	//user-set flag that indicates more verbose runtime output
-					//if debug_mode is set. Does nothing if debug_mode is off.
+t_boolean verbose_mode;	//user-set flag that indicates more verbose runtime output
+
+e_elab elab_mode;		//user-set flag dictating how to elaborate a VQM Primitive
+
+e_lut lut_mode;		//user-set flag dictating how to treat LUTs (as blackboxes or .names)
 
 //============================================================================================
 //			INTERNAL FUNCTION DECLARATIONS
@@ -103,23 +105,45 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 //Execution Functions
 void init_blif_models(t_blif_model* my_model, t_module* my_module, t_arch* arch);
 	void subckt_housekeeping(t_model* cur_model);
-	void init_subckt_map(portmap* map, t_model_ports* to_be_mapped, t_node* node, boolvec* ports_found);
-		void find_and_map (portmap* map, t_model_ports* to_be_mapped, t_node* node, 
-				t_boolean is_bus, int index, boolvec* ports_found);
+	void init_blif_subckts (t_node **vqm_nodes, int number_of_vqm_nodes, 
+						t_model *arch_models, scktvec* blif_subckts);
+
+	//1-to-1 Subcircuit Function
+	//NOTE: 1-to-1 method loses all parameter information!!
+	void translate_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_subckts);
+
+	//Mode-Hash Subcircuit Function
+	//Uses select parameters to append a hashed mode name to each block.
+	//Particularily relevant to DSP Blocks.
+	void translate_node_hashed (t_node* vqm_node, t_model* arch_models, scktvec* blif_subckts);
+
+	//Atomize Subcircuit Function
+	//Uses select parameters and a dictionary to atomize each block and
+	//name it as the dictionary says.
+	void translate_node_atomize (t_node* vqm_node, t_model* arch_models, scktvec* blif_subckts);
+
+	//General Subcircuit Initialization
+	//No matter the translation, models from the architecture get turned into
+	//subcircuits and they are connected appropriately.
+	void init_subckt_map(portmap* map, t_model_ports* to_be_mapped, 
+				t_node* node, boolvec* vqm_ports_found);
+	void find_and_map (portmap* map, t_model_ports* to_be_mapped, t_node* node, 
+				t_boolean is_bus, int index, boolvec* vqm_ports_found);
+
 void dump_blif (char* blif_file, t_blif_model* main_model, t_arch* arch);
 	void dump_main_model(t_blif_model* model, FILE* fp, t_boolean debug);
 		void dump_portlist (FILE* fp, pinvec ports, t_boolean debug);
 		void dump_assignments(FILE* fp, t_blif_model* model, t_boolean debug);
 		void dump_subckts(FILE* fp, scktvec* subckts, t_boolean debug);
 		void dump_subckt_map (FILE* fp, portmap* map, t_model_ports* temp_port, 
-					const char* inst_name, const char* maptype, t_boolean debug);
+						const char* inst_name, const char* maptype, t_boolean debug);
 		void dump_subckt_portlist(FILE* fp, t_model_ports* port, t_boolean debug);
 	void dump_subckt_models(t_model* temp_model, FILE* fp, t_boolean debug);
 void all_data_cleanup();
 
 //Utility Functions
 string file_replace(string file, string DNA, string VIRUS);
-void construct_dbfile (char* filename, string* path, const char* ext);
+void construct_dbfile (char* filename, const char* path, const char* ext);
 string append_index_to_str (string busname, int index);
 
 //Debug functions
@@ -147,17 +171,18 @@ int main(int argc, char* argv[])
 	t_type_descriptor *types;
 	int numTypes;	//used to hold information about the architecture as read by VPR's parser
 	
-	//***ARGUMENTS***
+	//***COMMAND-LINE ARGUMENTS***
 	string source_file;	//source VQM filename
-	string arch_file;		//used to read in models from the architecture file specified.
+	string arch_file;		//source ARCH filename
 	string out_file;		//output BLIF filename
+	//debug_mode and verbose_mode are global flags
 
 	//***OTHER VARIABLES***
 	string project_path; 
-	//used to derive debug output filenames, found by truncating out_file.
+	//found by truncating out_file, used to derive debug filenames.
 	
 	char temp_name [MAX_LEN]; 
-	//used to construct output filenames from project info, 
+	//used to construct output filenames from project name 
 	//char* filename necessitated by vqm_parse_file()
 
 //*************************************************************************************************
@@ -172,69 +197,66 @@ int main(int argc, char* argv[])
 	
 	size_t cptr = out_file.find_last_of(".");
 	project_path = out_file.substr(0, cptr);	//truncate extension
-	//project_path contains the output path and project_name based on user input.
+	//project_path contains the output path and project name from command line.
 			
-	//Parse .vqm and express it in memory: from vqm_dll.cpp
-      printf("\n>>Parsing VQM file %s\n", source_file.c_str());
+	//Parse the .vqm and express it in memory: from vqm_dll.cpp
+      printf( "\n>>Parsing VQM file %s\n", source_file.c_str() );
 
-	strcpy (temp_name, source_file.c_str());
+	strcpy ( temp_name, source_file.c_str() );
 	my_module = vqm_parse_file(temp_name);	//VQM Parser call
+	assert (my_module != NULL);
 			
 	if (debug_mode){
 		//Print debug info to "<project_path>_module.echo"
-		construct_dbfile (	temp_name, 
-						&project_path, 
-						"_module.echo");
-		printf("\n>>Dumping to output file %s\n", temp_name);
-		echo_module (temp_name, source_file.c_str(), my_module);
+		construct_dbfile ( temp_name, project_path.c_str(), "_module.echo" );
+		printf( "\n>>Dumping to output file %s\n", temp_name) ;
+		echo_module ( temp_name, source_file.c_str(), my_module );
 		//file contains data read from the .vqm structures.
 	}
 		
 	//Parse the architecture file to get full information about the models used.
-	printf("\n>>Parsing architecture file %s\n", arch_file.c_str());
-	XmlReadArch(arch_file.c_str(), FALSE, &arch, &types, &numTypes);	//Architecture (XML) Parser call
+	printf( "\n>>Parsing architecture file %s\n", arch_file.c_str() );
+	XmlReadArch( arch_file.c_str(), FALSE, &arch, &types, &numTypes );	//Architecture (XML) Parser call
+	assert ((types > 0) && (numTypes > 0));
+	assert (arch.models != NULL);
 			
 	if (debug_mode){	
 		//Print debug into to <project_path>_arch.echo"
-		construct_dbfile (	temp_name, 
-						&project_path, 
-						"_arch.echo");
-		printf("\n>>Dumping to output file %s\n", temp_name);
-		EchoArch(temp_name, types, numTypes, &arch);
+		construct_dbfile ( temp_name, project_path.c_str(), "_arch.echo" );
+		printf( "\n>>Dumping to output file %s\n", temp_name );
+		EchoArch( temp_name, types, numTypes, &arch );	//from read_xml_arch_file.h
 		//file contains data read from the architecture file.
 	}
 		
 	//Reorganize netlist data into structures conducive to .blif writing.
-	if (debug_mode){
+	if (verbose_mode){
 		printf("\n>>Initializing BLIF model\n");
 	} else {
 		printf("\n>>Converting to BLIF format\n");
 	}
-	init_blif_models(&my_model, my_module, &arch);
+	init_blif_models( &my_model, my_module, &arch );
 			
 	if(debug_mode){			
 		//Print debug into to "<project_path>_blif.echo"
-		construct_dbfile (	temp_name, 
-						&project_path, 
-						"_blif.echo");
-		printf("\n>>Dumping to output file %s\n", temp_name);
-		echo_blif_model (temp_name, source_file.c_str(), &my_model, arch.models);
+		construct_dbfile ( temp_name, project_path.c_str(), "_blif.echo" );
+		printf( "\n>>Dumping to output file %s\n", temp_name );
+		echo_blif_model ( temp_name, source_file.c_str(), &my_model, arch.models );
 		//file contains data read from BLIF structures (verbose).
 	}
 		
 	//Print the blif netlist to "<out_file>"
-	printf("\n>>Dumping to output file %s (pre-hack)\n", out_file.c_str());
-	strcpy (temp_name, out_file.c_str());
-	dump_blif (temp_name, &my_model, &arch);
+	printf( "\n>>Dumping to output file %s (pre-hack)\n", out_file.c_str() );
+	strcpy ( temp_name, out_file.c_str() );
+	dump_blif ( temp_name, &my_model, &arch );
 	
 #ifdef TARGET_VPR
-	if(debug_mode){
+	if(verbose_mode){
 		printf("\n>>Implementing hack\n");
 	}
 	//replaces "gnd" and "vcc" assignments with "hbpad" in the .blif
 	//VPR cannot handle constant assignments
-	out_file = file_replace (out_file, "gnd", "hbpad");
-	out_file = file_replace (out_file, "vcc", "hbpad");
+	out_file = file_replace ( out_file, "gnd", "hbpad" );
+	out_file = file_replace ( out_file, "vcc", "hbpad" );
 #endif
 		
 	//Free all allocated memory.
@@ -254,60 +276,117 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 
 	tokmap CmdTokens;
 	tokmap::iterator it;
+	size_t cptr;
 
 	setup_tokens (&CmdTokens);
 
 	if (argc < 5)
 	{
-		printf("ERROR: Not enough arguments.\n"); 
+		printf("ERROR: Not enough arguments.\n*****\n"); 
 		print_usage(T_TRUE);
 	}
 
 	//initialize non-mandatory variables to default values
 	debug_mode = T_FALSE;
-	verbose_debug = T_FALSE;
+	verbose_mode = T_FALSE;
+	elab_mode = NONE;
+	lut_mode = VQM;
 
 	//now read the command line to configure input variables.
 	for (int i = 1; i < argc; i++){
 		//check if the argument is in the registered tokens map
-		it = CmdTokens.find((string)argv[i]);
+		it = CmdTokens.find(argv[i]);
 		if (it != CmdTokens.end()){
 			switch(it->second){
 				case OT_VQM:
-					*sourcefile = (string)argv[i+1];
-					verify_format(sourcefile, "vqm");
-					i++; //the next argument has been stored the source file
+					if ( i+1 == argc ){
+						printf ("\nERROR: Missing sourcefile name.\n*****\n");
+						print_usage(T_TRUE);
+					}
+					//store the next argument as the source file
+					*sourcefile = (string)argv[i+1]; 
+					verify_format(sourcefile, "vqm"); //verify proper filename, quits if wrong
+					i++; //increment past the next argument
 					break;
 				case OT_ARCH:
-					*archfile = (string)argv[i+1];
-					verify_format(archfile, "xml");
-					i++; //the next argument has been stored as the architecture file
+					if ( i+1 == argc ){
+						printf ("\nERROR: Missing archfile name.\n*****\n");
+						print_usage(T_TRUE);
+					}
+					//store the next argument as the architecture file
+					*archfile = (string)argv[i+1]; 
+					verify_format(archfile, "xml"); //verify proper filename, quits if wrong
+					i++; //increment past the next argument
 					break;
 				case OT_OUT:
+					if ( i+1 == argc ){
+						printf ("\nERROR: Missing outfile name.\n*****\n");
+						exit(1);
+					}
+					//store the next argument as the output blif file
 					*outfile = (string)argv[i+1];
-					verify_format(outfile, "blif");
-					i++; //the next argument has been stored as the output file
+					verify_format(outfile, "blif"); //verify proper filename, quits if wrong
+					i++; //increment past the next argument
 					break;
 				case OT_DEBUG:
 					debug_mode = T_TRUE;
 					break;
 				case OT_VERBOSE:
-					verbose_debug = T_TRUE;
+					verbose_mode = T_TRUE;
+					break;
+				case OT_ELAB:
+					if ( i+1 == argc ){
+						printf ("\nERROR: Missing elaboration setting.\n*****\n");
+						print_usage(T_TRUE);
+					}
+					//check next argument for valid setting
+					if ((strcmp(argv[i+1], "none")) == 0){
+						elab_mode = NONE;
+					} else if ((strcmp(argv[i+1], "modes")) == 0){
+						elab_mode = MODES;
+					} else if ((strcmp(argv[i+1], "atoms")) == 0){
+						elab_mode = ATOMS;
+					} else {
+						printf ("\nERROR: Invalid elaboration setting %s.\n*****\n", argv[i+1]);
+						print_usage(T_TRUE);
+					}
+					i++;	//increment past the next argument
+					break;
+				case OT_LUTS:
+					if ( i+1 == argc ){
+						printf ("\nERROR: Missing LUT setting.\n*****\n");
+						print_usage(T_TRUE);
+					}
+					//check next argument for valid setting
+					if ((strcmp(argv[i+1], "vqm")) == 0){
+						lut_mode = VQM;
+					} else if ((strcmp(argv[i+1], "abc")) == 0){
+						lut_mode = ABC;
+					} else {
+						printf ("\nERROR: Invalid LUT setting %s.\n*****\n", argv[i+1]);
+						print_usage(T_TRUE);
+					}
+					i++;	//increment past the next argument
 					break;
 				default:
-					;
+					//should never get here
+					printf("\nERROR: Token %s mishandled.\n", argv[i]);
+					exit(1);
 			}
+		} else {
+			printf("\nERROR: Unknown Argument %s [%d]\n*****\n", argv[i], i);
+			print_usage(T_TRUE);
 		}
 	}
 
 	if ((sourcefile->empty()) || (archfile->empty())){
-		printf("ERROR: Missing file argument.\n"); 
+		printf("ERROR: Missing Mandatory File.\n*****\n"); 
 		print_usage (T_TRUE);
 	}
 
 	//default to outputting a file in the home directory of the same root name as the sourcefile.
-	size_t cptr = sourcefile->find_last_of("\\/");
 	if (outfile->empty()){
+		cptr = sourcefile->find_last_of("\\/");	//finds last \ or / in the filename
 		*outfile = sourcefile->substr(cptr+1);	//truncate filepath
 		cptr = outfile->find_last_of(".");
 		outfile->replace(cptr, 4, ".blif");	//replace ".vqm" with ".blif"
@@ -320,12 +399,14 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 
 void setup_tokens (tokmap* tokens){
 //populates the map with the tokens the program accepts and the enumeration associated with each
-//for switch comparison later.
+//for switch-case comparison later.
 	tokens->insert(tokpair("-vqm", OT_VQM));
 	tokens->insert(tokpair("-arch", OT_ARCH));
 	tokens->insert(tokpair("-out", OT_OUT));
 	tokens->insert(tokpair("-debug", OT_DEBUG));
 	tokens->insert(tokpair("-verbose", OT_VERBOSE));
+	tokens->insert(tokpair("-elaborate", OT_ELAB));
+	tokens->insert(tokpair("-luts", OT_LUTS));
 }
 
 //============================================================================================
@@ -333,8 +414,15 @@ void setup_tokens (tokmap* tokens){
 
 void print_usage (t_boolean terminate){
 //prints a standard usage reminder to the user, terminates the program if directed.
-	printf("Usage: vqm2blif -vqm <project_name>.vqm -arch <architecture file>.xml");
-	printf(" -out <output file>.blif (OPTIONAL: -debug)\n");
+	printf("USAGE:\n");
+	printf("\tvqm2blif -vqm <source file>.vqm -arch <architecture file>.xml\n");
+	printf("OPTIONAL FLAGS:\n");
+	printf("\t-out <output file>.blif\n");
+	printf("\t-elaborate {none, modes, atoms}\n");
+	printf("\t-luts {vqm, abc}\n");
+	printf("\t-debug\n");
+	printf("\t-verbose\n");
+	
 	if (terminate)
 		exit(1);
 }
@@ -347,7 +435,7 @@ void verify_format (string* filename, string extension){
 
 	size_t cptr = filename->find_last_of(".");
 	if ( filename->substr(cptr+1) != extension ){
-		printf("ERROR: Improper filename.\n");
+		printf("ERROR: Improper filename %s.\n******\n", filename->c_str());
 		print_usage(T_TRUE);
 	}
 }
@@ -370,8 +458,9 @@ void init_blif_models(t_blif_model* my_model, t_module* my_module, t_arch* arch)
 	
 	//initialize general variables	
 	my_model->name = (string)my_module->name;
+	assert (!my_model->name.empty());
 	
-	if(debug_mode){
+	if(verbose_mode){
 		printf("\t>>Assigned name\n");
 	}
 
@@ -399,120 +488,77 @@ void init_blif_models(t_blif_model* my_model, t_module* my_module, t_arch* arch)
 		}
 	}
 	
-	if(debug_mode){
+	assert((my_model->input_ports.size() > 0) && (my_model->output_ports.size() > 0));
+	if(verbose_mode){
 		printf("\t>>Assigned .inputs and .outputs\n");
 	}
 
 	//Initialize the blif_model's assignment array
 	my_model->num_assignments = my_module->number_of_assignments;
 	my_model->array_of_assignments = my_module->array_of_assignments;
+	assert ((my_model->num_assignments > 0) && (my_model->array_of_assignments != NULL));
 	//data from my_module is already organized nicely, so piggyback onto its allocation
 	
-	if(debug_mode){
+	if(verbose_mode){
 		printf("\t>>Assigned logic\n");
 	}
 	
 	//Initialize Subcircuits
 	
-	//temporary process variables
-	t_blif_subckt temp_subckt;	//from vqm2blif.h
-	t_model* cur_model;		//from physical_types.h
-	t_node* temp_node;			//from vqm_dll.h
-		
-	boolvec ports_found;		//verification flags indicating that all ports found in the VQM were mapped.
-
-	//housekeeping initializations before 
-	//the subcircuits can be assigned.
-	subckt_housekeeping(arch->models);
-	
-	if(debug_mode){
+	if(verbose_mode){
 		printf("\t>>Assigning subcircuits\n");
 	}
 
-	for (int i = 0; i < my_module->number_of_nodes; i++){
-		//each node is a subcircuit instantiation
-		temp_node = my_module->array_of_nodes[i];
-		temp_subckt.inst_name = (string)temp_node->name;
+	init_blif_subckts (	my_module->array_of_nodes, 
+					my_module->number_of_nodes,
+					arch->models,
+					&(my_model->subckts)	);
+	
+	if(verbose_mode){
+		printf(">>BLIF model initialization complete.\n");
+	}
+}
 
-		//reset cur_model to search for this node in the models of the Architecture
-		cur_model = arch->models;
-		
-		if(debug_mode){
+//============================================================================================
+//============================================================================================
+void 	init_blif_subckts (	t_node **vqm_nodes, 
+					int number_of_vqm_nodes,
+					t_model *arch_models,
+					scktvec* blif_subckts	){
+					
+
+	t_node* temp_node;		//from vqm_dll.h
+
+	//housekeeping initializations before 
+	//the subcircuits can be assigned.
+	assert (arch_models != NULL);
+	subckt_housekeeping(arch_models);
+
+	assert ((vqm_nodes != NULL)&&(vqm_nodes[0] != NULL)&&(number_of_vqm_nodes >= 0));
+
+	for (int i = 0; i < number_of_vqm_nodes; i++){
+		//each node is a subcircuit instantiation
+		temp_node = vqm_nodes[i];
+		assert (temp_node != NULL);
+
+		if(verbose_mode){
+			assert(temp_node->name != NULL);
 			printf("\t\tProcessing subcircuit %s", temp_node->name);
 		}
-	
-		ports_found.clear();
-		for (int i = 0; i < temp_node->number_of_ports; i++){
-			//initialize all flags to zero.
-			ports_found.push_back(T_FALSE);
-		}
 
-		//traverse through the models declared in the Architecture file
-		//to find the one corresponding to the node found in the vqm
-		while ((cur_model)&&(strcmp(cur_model->name, temp_node->type) != 0)){
-			cur_model = cur_model->next;
-		}
-		
-		if (!cur_model){	
-			//cur_model == NULL if the end of the list was reached without success
-			printf("\n\nERROR: Model name %s was not found in the architecture.\n", 
-					temp_node->type);
-			exit(1);
+		//based on the specified elaboration mode, translate the current node
+		//into a blif subckt (or group of subckts)
+		if (elab_mode == NONE){
+			translate_node_1_to_1 (temp_node, arch_models, blif_subckts);
+		} else if (elab_mode == MODES){
+			translate_node_hashed (temp_node, arch_models, blif_subckts);
+		} else if (elab_mode == ATOMS){
+			translate_node_atomize (temp_node, arch_models, blif_subckts);
 		} else {
-			temp_subckt.model_type = cur_model;	//initialize model_type
-			models_used[cur_model->index] = T_TRUE;	//indicate this model should appear in the BLIF
-
-			temp_subckt.input_cnxns.clear();	//reset the input and output maps
-			temp_subckt.output_cnxns.clear();
-			
-			//map the input ports of the model read from the architecture
-			//to the corresponding external pin as per the vqm
-			init_subckt_map(	&(temp_subckt.input_cnxns), 
-						temp_subckt.model_type->inputs, 
-						temp_node, &ports_found);
-			
-			//now map the output ports
-			init_subckt_map(	&(temp_subckt.output_cnxns), 
-						temp_subckt.model_type->outputs, 
-						temp_node, &ports_found);
-			
-			if(debug_mode){
-				printf("\n\n");
-			}
-
-			//Verify that all ports of the node were mapped to.
-			if ((debug_mode) && (verbose_debug)){
-				printf ("\tPorts found: ");
-			}
-
-			for (int i = 0; i < temp_node->number_of_ports; i++){
-				/* The mapping process maps all ports of the architecture either to the open port or
-				 * a port in the VQM. If a port appeared in the VQM and not in the 
-				 * architecture, the association's corresponding entry in ports_found would 
-				 * remain T_FALSE through the mapping process.
-				 */
-				if ((debug_mode) && (verbose_debug)){
-					printf (" %d = %d", i, ports_found[i]);
-				}
-
-				if (ports_found[i] == T_FALSE){
-					printf("\n\nERROR: Port %s not found in architecture for %s.\n", 
-							temp_node->array_of_ports[i]->port_name,
-							temp_node->type);
-					exit(1);
-				}
-			}
-
-			if ((debug_mode) && (verbose_debug)){
-				printf("\n\n");
-			}
-			//copy the temp_subckt into the subckt vector
-			my_model->subckts.push_back(temp_subckt);
+			//should never get here; a bad elab_mode should be rejected at parse-time
+			printf("\nERROR: Corrupted Elaboration Mode.\n");
+			exit(1);
 		}
-	}
-	
-	if(debug_mode){
-		printf(">>BLIF model initialization complete.\n");
 	}
 }
 
@@ -559,9 +605,150 @@ void subckt_housekeeping(t_model* cur_model){
 
 //============================================================================================
 //============================================================================================
+void translate_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_subckts){
+/*  Interprets each VQM block 1-to-1 to a BLIF block, without any parameter information included.
+ *  NOTE: This process degrades timing information as configurable blocks, especially DSPs, will
+ *  not be functionally similar with different parameter lists. 
+ *
+ *	ARGUMENTS
+ *	
+ *  vqm_node:
+ *	the particular node in the VQM file to be translated
+ *  arch_models:
+ *	a linked list of all BLIF models made available in the Architecture 
+ *  blif_subckts:
+ *	vector as part of a t_blif_model structure describing the subcircuits in the model.
+ */
 
-void init_subckt_map(portmap* map, t_model_ports* to_be_mapped, t_node* node, boolvec* ports_found){
-/*  initializes the a portmap based on a linked list of ports and node information
+	//temporary process variables
+	t_blif_subckt temp_subckt;	//from vqm2blif.h
+	t_model* cur_model;		//from physical_types.h
+	boolvec vqm_ports_found;		//verification flags indicating that all ports found in the VQM were mapped.
+
+	cur_model = arch_models;	//search for the corresponding model in the list from the architecture
+	assert (cur_model != NULL);
+
+	temp_subckt.inst_name = (string)vqm_node->name;	//copy the name 1-to-1
+	assert ( !temp_subckt.inst_name.empty() );
+	
+	vqm_ports_found.clear();
+	for (int i = 0; i < vqm_node->number_of_ports; i++){
+		//initialize all ports_found flags to zero.
+		vqm_ports_found.push_back(T_FALSE);
+	}
+
+	//traverse through the models declared in the Architecture file
+	//to find the one corresponding directly to the node found in the vqm
+	while ((cur_model)&&(strcmp(cur_model->name, vqm_node->type) != 0)){
+		cur_model = cur_model->next;
+	}	
+	if (!cur_model){	
+		//cur_model == NULL if the end of the list was reached without success
+		printf("\n\nERROR: Model name %s was not found in the architecture.\n", 
+				vqm_node->type);
+		exit(1);
+	} else {
+		temp_subckt.model_type = cur_model;	//initialize model_type
+		models_used[cur_model->index] = T_TRUE;	//indicate this model should appear in the BLIF
+		temp_subckt.input_cnxns.clear();	//reset the input and output maps
+		temp_subckt.output_cnxns.clear();
+		
+		//map the input ports of the model read from the architecture
+		//to the corresponding external pin as per the vqm
+		init_subckt_map(	&(temp_subckt.input_cnxns), 
+					temp_subckt.model_type->inputs, 
+					vqm_node, &vqm_ports_found);
+
+		assert (temp_subckt.input_cnxns.size() > 0);	//all blocks must have an input
+
+		//now map the output ports
+		init_subckt_map(	&(temp_subckt.output_cnxns), 
+					temp_subckt.model_type->outputs, 
+					vqm_node, &vqm_ports_found);
+
+		assert (temp_subckt.output_cnxns.size() > 0);	//all blocks must have an output
+
+		if(verbose_mode){
+			printf("\n\n");
+		}
+
+		//Verify that all ports specified in the VQM node were successfully mapped.
+		if (verbose_mode){
+			printf ("\tVQM Port Verification:\n");
+		}
+
+		for (int i = 0; i < vqm_node->number_of_ports; i++){
+			/* The mapping process maps all ports of the architecture either to the open port or
+			 * a port in the VQM. If a port appeared in the VQM and not in the 
+			 * architecture, the association's corresponding entry in vqm_ports_found would 
+			 * remain T_FALSE through the mapping process.
+			 */
+			if (verbose_mode){
+				printf ("\t\tPort %s", vqm_node->array_of_ports[i]->port_name);
+				if (vqm_node->array_of_ports[i]->port_index >= 0)
+					printf ("[%d]", vqm_node->array_of_ports[i]->port_index);
+				printf("= %s\n", (vqm_ports_found[i])? "mapped":"unmapped");
+			}
+				if (vqm_ports_found[i] == T_FALSE){
+				printf("\n\nERROR: Port %s not found in architecture for %s.\n", 
+						vqm_node->array_of_ports[i]->port_name,
+						vqm_node->type);
+				exit(1);
+			}
+		}
+		if (verbose_mode){
+			printf("\n\n");
+		}
+		//push the temp_subckt into the subckt vector
+		blif_subckts->push_back(temp_subckt);
+	}
+}
+//============================================================================================
+//============================================================================================
+
+void translate_node_hashed (t_node* vqm_node, t_model* arch_models, scktvec* blif_subckts){
+/*  Interprets each VQM block and its parameter set, creates a hash derived from the parameters,
+ *  then appends the hash to the end of the VQM Block's name. This appended name is the name
+ *  of the subckt that appears in the BLIF and must appear in the Architecture. 
+ *
+ *	ARGUMENTS
+ *	
+ *  vqm_node:
+ *	the particular node in the VQM file to be translated
+ *  arch_models:
+ *	a linked list of all BLIF models made available in the Architecture 
+ *  blif_subckts:
+ *	vector as part of a t_blif_model structure describing the subcircuits in the model.
+ */
+	printf("\nERROR: Mode Translation Incomplete.\n");
+	exit(1);
+}
+
+//============================================================================================
+//============================================================================================
+
+void translate_node_atomize (t_node* vqm_node, t_model* arch_models, scktvec* blif_subckts /*, FILE* dict*/){
+/*  Interprets each VQM block and its parameter set, then expands that block into its smaller 
+ *  atomic constituents based on a "Dictionary" document.
+ *
+ *	ARGUMENTS
+ *	
+ *  vqm_node:
+ *	the particular node in the VQM file to be translated
+ *  arch_models:
+ *	a linked list of all BLIF models made available in the Architecture 
+ *  blif_subckts:
+ *	vector as part of a t_blif_model structure describing the subcircuits in the model.
+ */
+	printf("\nERROR: Atom Translation Incomplete.\n");
+	exit(1);
+}
+
+//============================================================================================
+//============================================================================================
+
+void init_subckt_map(portmap* map, t_model_ports* to_be_mapped, t_node* node, boolvec* vqm_ports_found){
+/*  Initializes the portmap based on a linked list of ports and node information
  *	
  *  A portmap associates a t_model_ports structure (from the Architecture Parser)
  *  with a t_node_port_association structure (from the VQM Parser). 
@@ -597,12 +784,12 @@ void init_subckt_map(portmap* map, t_model_ports* to_be_mapped, t_node* node, bo
 				//cycle through the nodes, find the name and index
 				//that correspond to the buswire, and map its
 				//"name[index]" to the association.
-				find_and_map (map, to_be_mapped, node, T_TRUE, i, ports_found);
+				find_and_map (map, to_be_mapped, node, T_TRUE, i, vqm_ports_found);
 			}
 		} else {
 			//otherwise map the "name" to the association 
 			//without an index.
-			find_and_map (map, to_be_mapped, node, T_FALSE, 0, ports_found);
+			find_and_map (map, to_be_mapped, node, T_FALSE, 0, vqm_ports_found);
 		}
 		//move to the next port in the model
 		to_be_mapped = to_be_mapped->next;
@@ -612,7 +799,7 @@ void init_subckt_map(portmap* map, t_model_ports* to_be_mapped, t_node* node, bo
 //============================================================================================
 //============================================================================================
 void find_and_map (portmap* map, t_model_ports* to_be_mapped, t_node* node, 
-				t_boolean is_bus, int index, boolvec* ports_found){
+				t_boolean is_bus, int index, boolvec* vqm_ports_found){
 
 //map a subcircuit port from the architecture to a port association from the vqm.
 //A string is generated from the name and index of the port being mapped, and this string
@@ -621,6 +808,7 @@ void find_and_map (portmap* map, t_model_ports* to_be_mapped, t_node* node,
 
 	string temp_name;
 	temp_name = (string)to_be_mapped->name;	//copy the name of the subcircuit port
+	assert (!temp_name.empty());
 
 	if (is_bus){
 		//append the index to the string if it's a bus; "name[index]"
@@ -636,7 +824,7 @@ void find_and_map (portmap* map, t_model_ports* to_be_mapped, t_node* node,
 			//match the name of the subcircuit port to one mentioned in the association
 			//match the index of the subcircuit port as well, if it's a bus.
 			found_in_ports = T_TRUE;
-			if((debug_mode) && (verbose_debug)){
+			if(verbose_mode){
 				printf("\n\t\t-> Mapping %s to %s", 
 						temp_name.c_str(), 
 						node->array_of_ports[i]->associated_net->name);
@@ -645,14 +833,14 @@ void find_and_map (portmap* map, t_model_ports* to_be_mapped, t_node* node,
 			map->insert(portpair(temp_name, node->array_of_ports[i]));
 
 			//indicate that the port has been successfuly mapped to
-			ports_found->at(i) = T_TRUE;
+			vqm_ports_found->at(i) = T_TRUE;
 			break;
 		}
 	}
 
 	if (found_in_ports == T_FALSE){
 		//if the port wasn't in node->array_of_ports, map it to the open_port
-		if((debug_mode) && (verbose_debug)){	
+		if(verbose_mode){	
 			printf("\n\t\t-> Mapping %s to %s", 
 					temp_name.c_str(), 
 					open_port.associated_net->name);
@@ -1093,7 +1281,7 @@ string file_replace(string file, string DNA, string VIRUS){
 	string sequence;
 	size_t cptr; 
 	
-	if(debug_mode){
+	if(verbose_mode){
 		printf("\t>>Opening file %s\n", file.c_str());
 	}
 	ifstream in_genome (file.c_str());
@@ -1102,8 +1290,8 @@ string file_replace(string file, string DNA, string VIRUS){
 	file.replace(cptr, 1, "_no_" + DNA + ".");  //append "_no_<DNA>" to the filename.
   	ofstream out_genome (file.c_str());
 
-	if((debug_mode)&&(!verbose_debug)){
-			printf("\t\tReplacing instances of %s with %s...\n", DNA.c_str(), VIRUS.c_str());
+	if((debug_mode)||(verbose_mode)){
+			printf("\n\tReplacing instances of %s with %s...\n", DNA.c_str(), VIRUS.c_str());
 	}
 
 	int line_number = 0;
@@ -1115,8 +1303,8 @@ string file_replace(string file, string DNA, string VIRUS){
 		while (cptr != string::npos){
 			//cptr == string::npos if DNA wasn't found in this line
 
-			if((debug_mode)&&(verbose_debug)){
-				printf("\t\t\tReplacing %s with %s on line %d\n", 
+			if(verbose_mode){
+				printf("\t\tReplacing %s with %s on line %d\n", 
 							DNA.c_str(), 
 							VIRUS.c_str(), 
 							line_number);
@@ -1142,11 +1330,11 @@ string file_replace(string file, string DNA, string VIRUS){
 //============================================================================================
 //============================================================================================
 
-void construct_dbfile (char* filename, string* path, const char* ext){
+void construct_dbfile (char* filename, const char* path, const char* ext){
 //constructs a char* filename from a given path and extension.
 
-	strcpy(filename, path->c_str());	//add the path
-	strcat(filename, ext);			//add the desired extension
+	strcpy(filename, path);		//add the path
+	strcat(filename, ext);		//add the desired extension
 	
 	return;
 }
