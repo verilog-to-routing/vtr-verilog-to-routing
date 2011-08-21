@@ -17,7 +17,7 @@ LIB_FLAGS = rcs
 
 FLAGS = $(DEBUG_FLAGS) $(WARN_FLAGS) $(INC_FLAGS)
 
-EXE = vqm2blif
+EXE = vqm2blif.exe
 
 OBJ = $(patsubst $(BASE_DIR)/%.cpp, $(OBJ_DIR)/%.o,$(wildcard $(BASE_DIR)/*.cpp))
 OBJ_DIRS=$(sort $(dir $(OBJ)))
