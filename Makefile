@@ -24,11 +24,11 @@ OBJ_DIRS=$(sort $(dir $(OBJ)))
 
 GEN = *.blif *.echo
 
-H = $(wildcard $(INC_DIR)/*.h)
+HEADERS = $(wildcard $(INC_DIR)/*.h)
 
 all: $(EXE) $(LVQM_DIR)/libvqm.a $(LVPR_DIR)/libvpr_6.a
 
-$(EXE): $(OBJ) Makefile $(H) $(LVPR_DIR)/libvpr_6.a $(LVQM_DIR)/libvqm.a
+$(EXE): $(OBJ) Makefile $(HEADERS) $(LVPR_DIR)/libvpr_6.a $(LVQM_DIR)/libvqm.a
 	$(CC) $(FLAGS) $(OBJ) -o $(EXE) $(LIB_DIR) $(LIB)
 
 $(LVQM_DIR)/libvqm.a:
@@ -45,7 +45,7 @@ $(LVPR_DIR)/libvpr_6.a:
 # timestamp check.  Every write to the directory updates the timestamp thus
 # without this, all but the last file written to a directory would appear
 # to be out of date.
-$(OBJ): OBJ/%.o:$(BASE_DIR)/%.cpp $(H) | $$(dir $$@D)
+$(OBJ): OBJ/%.o:$(BASE_DIR)/%.cpp $(HEADERS) | $$(dir $$@D)
 	$(CC) $(FLAGS) -c $< -o $@
 
 

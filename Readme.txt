@@ -1,10 +1,13 @@
-	VQM to BLIF Convertor
+		-------------------------------------
+			VQM to BLIF Convertor
+		-------------------------------------
 
   Created By:	S. Whitty
 		NSERC USRA with Professor Jonathan Rose and Professor Vaughn Betz
-		at the University of Toronto
+		The Edward S. Rogers Sr. Department of Electrical and Computer Engineering
+		University of Toronto
 
-		June 13, 2011
+		August 22, 2011
 
 --------------------------------------
 	I. 	PURPOSE
@@ -31,7 +34,7 @@ II. BACKGROUND
 subset of the Verilog description language, and the circuit it describes is technology-mapped to one of 
 their families of devices (e.g. Stratix® IV, Cyclone® II, etc.). These files can be generated using 
 quartus_map and quartus_cdb, as detailed below (See: VII. VQM GENERATION), or in Altera's QUIP documentation.
-	-> For more, see: /vqm_to_blif/DOCS/quip_tutorial.pdf
+	-> For more on QUIP, see: /vqm_to_blif/DOCS/quip_tutorial.pdf
 	-> Download QUIP at:
 	   https://www.altera.com/support/software/download/altera_design/quip/quip-download.jsp?swcode=WWW-SWD-QII-90UIP-ALL
 
