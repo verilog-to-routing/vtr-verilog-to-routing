@@ -355,7 +355,7 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 	debug_mode = T_FALSE;
 	verbose_mode = T_FALSE;
 	elab_mode = MODES;
-	lut_mode = VQM;
+	lut_mode = BLIF;
 	clean_mode = CL_ALL;
 	buffd_outs = T_FALSE;
 
