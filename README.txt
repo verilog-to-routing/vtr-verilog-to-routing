@@ -118,7 +118,10 @@ Other useful tests include:
 	vqm2blif.exe -arch ARCH/stratixiv_arch.xml -vqm VQM/Stratix_IV/LU64PEEng_stratixiv.vqm -out BLIF/LU64PEEng_stratixiv.blif
 	-----------------
 
-The reference BLIFs for these tests are available in the BLIF/golden/ directory.
+The reference BLIFs for these tests are available in the BLIF/golden/ directory. 
+
+Additionally, the BLIFs generated from all VQMs in the VQM/Stratix_IV/ directory with the default settings of 
+the translator appear in the BLIF/Stratix_IV_default/ directory.
 
 VI. GENERAL USAGE
 ------------------------
