@@ -1965,12 +1965,12 @@
 
       <mode name="normal">
 
-        <pb_type name="ram_block" blif_model=".subckt stratixiv_ram_block" num_pb="20">
-            <input name="portaaddr" num_pins="14"/>
-            <input name="portbaddr" num_pins="14"/>
+        <pb_type name="ram_block_2x20" blif_model=".subckt stratixiv_ram_block" num_pb="20">
+            <input name="portaaddr" num_pins="14" port_class="address1"/>
+            <input name="portbaddr" num_pins="14" port_class="address2"/>
           
-            <input name="portbdatain" num_pins="16"/>
-            <input name="portadatain" num_pins="16"/>
+            <input name="portbdatain" num_pins="2" port_class="data_in1"/>
+            <input name="portadatain" num_pins="2" port_class="data_in2"/>
           
             <input name="clk0" num_pins="1"/>
             <input name="clk1" num_pins="1"/>
@@ -1984,269 +1984,62 @@
             <input name="portaaddrstall" num_pins="1"/>
             <input name="portabyteenamasks" num_pins="8"/>
             <input name="portare" num_pins="1"/>
-            <input name="portawe" num_pins="1"/> 
+            <input name="portawe" num_pins="1" port_class="write_en1"/> 
             <input name="portbaddrstall" num_pins="1"/>
             <input name="portbbyteenamasks" num_pins="8"/>
             <input name="portbre" num_pins="1"/>
-            <input name="portbwe" num_pins="1"/>
+            <input name="portbwe" num_pins="1" port_class="write_en2"/>
             <input name="devclrn" num_pins="1"/>
             <input name="devpor" num_pins="1"/>
 
             <output name="eccstatus" num_pins="3"/>
-            <output name="portadataout" num_pins="16"/>
-            <output name="portbdataout" num_pins="16"/>
+            <output name="portadataout" num_pins="2" port_class="data_out1"/>
+            <output name="portbdataout" num_pins="2" port_class="data_out2"/>
             <output name="dftout" num_pins="9"/>
         </pb_type>
 
         <interconnect>
-          <complete name="addr_c1" input="memory.dataa_addr" output="ram_block[19:0].portaaddr"/>
-          <complete name="addr_c2" input="memory.datab_addr" output="ram_block[19:0].portbaddr"/>
+          <complete name="addr_c1" input="memory.dataa_addr" output="ram_block_2x20[19:0].portaaddr"/>
+          <complete name="addr_c2" input="memory.datab_addr" output="ram_block_2x20[19:0].portbaddr"/>
 
-          <complete name="data_c1" input="memory.data" output="ram_block[19:0].portadatain"/>
-          <complete name="data_c2" input="memory.data" output="ram_block[19:0].portbdatain"/>
+          <complete name="data_c1" input="memory.data" output="ram_block_2x20[19:0].portadatain"/>
+          <complete name="data_c2" input="memory.data" output="ram_block_2x20[19:0].portbdatain"/>
 
-          <complete name="signal_c1" input="memory.signal" output="ram_block[19:0].clr0"/>
-          <complete name="signal_c2" input="memory.signal" output="ram_block[19:0].clr1"/>
-          <complete name="signal_c3" input="memory.signal" output="ram_block[19:0].ena0"/>
-          <complete name="signal_c4" input="memory.signal" output="ram_block[19:0].ena1"/>
-          <complete name="signal_c5" input="memory.signal" output="ram_block[19:0].ena2"/>
-          <complete name="signal_c6" input="memory.signal" output="ram_block[19:0].ena3"/>
-          <complete name="signal_c7" input="memory.signal" output="ram_block[19:0].portaaddrstall"/>
-          <complete name="signal_c2" input="memory.signal" output="ram_block[19:0].portabyteenamasks"/>
-          <complete name="signal_c2" input="memory.signal" output="ram_block[19:0].portare"/>
-          <complete name="signal_c2" input="memory.signal" output="ram_block[19:0].portawe"/>
-          <complete name="signal_c2" input="memory.signal" output="ram_block[19:0].portbaddrstall"/>
-          <complete name="signal_c3" input="memory.signal" output="ram_block[19:0].portbbyteenamasks"/>
-          <complete name="signal_c4" input="memory.signal" output="ram_block[19:0].portbre"/>
-          <complete name="signal_c4" input="memory.signal" output="ram_block[19:0].portbwe"/>
-          <complete name="signal_c8" input="memory.signal" output="ram_block[19:0].devclrn"/>
-          <complete name="signal_c9" input="memory.signal" output="ram_block[19:0].devpor"/>
+          <complete name="signal_c1" input="memory.signal" output="ram_block_2x20[19:0].clr0"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block_2x20[19:0].clr1"/>
+          <complete name="signal_c3" input="memory.signal" output="ram_block_2x20[19:0].ena0"/>
+          <complete name="signal_c4" input="memory.signal" output="ram_block_2x20[19:0].ena1"/>
+          <complete name="signal_c5" input="memory.signal" output="ram_block_2x20[19:0].ena2"/>
+          <complete name="signal_c6" input="memory.signal" output="ram_block_2x20[19:0].ena3"/>
+          <complete name="signal_c7" input="memory.signal" output="ram_block_2x20[19:0].portaaddrstall"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block_2x20[19:0].portabyteenamasks"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block_2x20[19:0].portare"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block_2x20[19:0].portawe"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block_2x20[19:0].portbaddrstall"/>
+          <complete name="signal_c3" input="memory.signal" output="ram_block_2x20[19:0].portbbyteenamasks"/>
+          <complete name="signal_c4" input="memory.signal" output="ram_block_2x20[19:0].portbre"/>
+          <complete name="signal_c4" input="memory.signal" output="ram_block_2x20[19:0].portbwe"/>
+          <complete name="signal_c8" input="memory.signal" output="ram_block_2x20[19:0].devclrn"/>
+          <complete name="signal_c9" input="memory.signal" output="ram_block_2x20[19:0].devpor"/>
 
-          <complete name="out_c1" input="ram_block[19:0].eccstatus" output="memory.out"/>
-          <complete name="out_c2" input="ram_block[19:0].portadataout" output="memory.out"/>
-          <complete name="out_c3" input="ram_block[19:0].portbdataout" output="memory.out"/>
-          <complete name="out_c4" input="ram_block[19:0].dftout" output="memory.out"/>
+          <complete name="out_c1" input="ram_block_2x20[19:0].eccstatus" output="memory.out"/>
+          <complete name="out_c2" input="ram_block_2x20[19:0].portadataout" output="memory.out"/>
+          <complete name="out_c3" input="ram_block_2x20[19:0].portbdataout" output="memory.out"/>
+          <complete name="out_c4" input="ram_block_2x20[19:0].dftout" output="memory.out"/>
 
-          <complete name="clock_c1" input="memory.CLK" output="ram_block[19:0].clk0"/>
-          <complete name="clock_c2" input="memory.CLK" output="ram_block[19:0].clk1"/>
+          <complete name="clock_c1" input="memory.CLK" output="ram_block_2x20[19:0].clk0"/>
+          <complete name="clock_c2" input="memory.CLK" output="ram_block_2x20[19:0].clk1"/>
         </interconnect>
       </mode>
-        
-      <mode name="single_port">
 
-          <pb_type name="ram_block_single_port" blif_model=".subckt stratixiv_ram_block.opmode{single_port}" num_pb="20">
-            <input name="portaaddr" num_pins="14"/>
-            <input name="portbaddr" num_pins="14"/>
+      <mode name="clumped">
 
-            <input name="portbdatain" num_pins="1"/>
-            <input name="portadatain" num_pins="1"/>
+        <pb_type name="ram_block_16x2" blif_model=".subckt stratixiv_ram_block" num_pb="2">
+          <input name="portaaddr" num_pins="14" port_class="address1"/>
+          <input name="portbaddr" num_pins="14" port_class="address2"/>
 
-            <input name="clk0" num_pins="1"/>
-            <input name="clk1" num_pins="1"/>
-
-            <input name="clr0" num_pins="1"/>
-            <input name="clr1" num_pins="1"/>
-            <input name="ena0" num_pins="1"/>
-            <input name="ena1" num_pins="1"/>
-            <input name="ena2" num_pins="1"/>
-            <input name="ena3" num_pins="1"/>
-            <input name="portaaddrstall" num_pins="1"/>
-            <input name="portabyteenamasks" num_pins="8"/>
-            <input name="portare" num_pins="1"/>
-            <input name="portawe" num_pins="1"/>
-            <input name="portbaddrstall" num_pins="1"/>
-            <input name="portbbyteenamasks" num_pins="8"/>
-            <input name="portbre" num_pins="1"/>
-            <input name="portbwe" num_pins="1"/>
-            <input name="devclrn" num_pins="1"/>
-            <input name="devpor" num_pins="1"/>
-
-            <output name="eccstatus" num_pins="3"/>
-            <output name="portadataout" num_pins="1"/>
-            <output name="portbdataout" num_pins="1"/>
-            <output name="dftout" num_pins="9"/>
-          </pb_type>
-
-          <interconnect>
-            <complete name="addr_c1" input="memory.dataa_addr" output="ram_block_single_port[19:0].portaaddr"/>
-            <complete name="addr_c2" input="memory.datab_addr" output="ram_block_single_port[19:0].portbaddr"/>
-
-            <complete name="data_c1" input="memory.data" output="ram_block_single_port[19:0].portadatain"/>
-            <complete name="data_c2" input="memory.data" output="ram_block_single_port[19:0].portbdatain"/>
-
-            <complete name="signal_c1" input="memory.signal" output="ram_block_single_port[19:0].clr0"/>
-            <complete name="signal_c2" input="memory.signal" output="ram_block_single_port[19:0].clr1"/>
-            <complete name="signal_c3" input="memory.signal" output="ram_block_single_port[19:0].ena0"/>
-            <complete name="signal_c4" input="memory.signal" output="ram_block_single_port[19:0].ena1"/>
-            <complete name="signal_c5" input="memory.signal" output="ram_block_single_port[19:0].ena2"/>
-            <complete name="signal_c6" input="memory.signal" output="ram_block_single_port[19:0].ena3"/>
-            <complete name="signal_c7" input="memory.signal" output="ram_block_single_port[19:0].portaaddrstall"/>
-            <complete name="signal_c2" input="memory.signal" output="ram_block_single_port[19:0].portabyteenamasks"/>
-            <complete name="signal_c2" input="memory.signal" output="ram_block_single_port[19:0].portare"/>
-            <complete name="signal_c2" input="memory.signal" output="ram_block_single_port[19:0].portawe"/>
-            <complete name="signal_c2" input="memory.signal" output="ram_block_single_port[19:0].portbaddrstall"/>
-            <complete name="signal_c3" input="memory.signal" output="ram_block_single_port[19:0].portbbyteenamasks"/>
-            <complete name="signal_c4" input="memory.signal" output="ram_block_single_port[19:0].portbre"/>
-            <complete name="signal_c4" input="memory.signal" output="ram_block_single_port[19:0].portbwe"/>
-            <complete name="signal_c8" input="memory.signal" output="ram_block_single_port[19:0].devclrn"/>
-            <complete name="signal_c9" input="memory.signal" output="ram_block_single_port[19:0].devpor"/>
-
-            <complete name="out_c1" input="ram_block_single_port[19:0].eccstatus" output="memory.out"/>
-            <complete name="out_c2" input="ram_block_single_port[19:0].portadataout" output="memory.out"/>
-            <complete name="out_c3" input="ram_block_single_port[19:0].portbdataout" output="memory.out"/>
-            <complete name="out_c4" input="ram_block_single_port[19:0].dftout" output="memory.out"/>
-
-            <complete name="clock_c1" input="memory.CLK" output="ram_block_single_port[19:0].clk0"/>
-            <complete name="clock_c2" input="memory.CLK" output="ram_block_single_port[19:0].clk1"/>
-          </interconnect>
-        </mode>
-
-      <mode name="dual_port">
-
-         <pb_type name="ram_block_dual_port" blif_model=".subckt stratixiv_ram_block.opmode{dual_port}" num_pb="20">
-              <input name="portaaddr" num_pins="14"/>
-              <input name="portbaddr" num_pins="14"/>
-
-              <input name="portbdatain" num_pins="16"/>
-              <input name="portadatain" num_pins="16"/>
-
-              <input name="clk0" num_pins="1"/>
-              <input name="clk1" num_pins="1"/>
-
-              <input name="clr0" num_pins="1"/>
-              <input name="clr1" num_pins="1"/>
-              <input name="ena0" num_pins="1"/>
-              <input name="ena1" num_pins="1"/>
-              <input name="ena2" num_pins="1"/>
-              <input name="ena3" num_pins="1"/>
-              <input name="portaaddrstall" num_pins="1"/>
-              <input name="portabyteenamasks" num_pins="8"/>
-              <input name="portare" num_pins="1"/>
-              <input name="portawe" num_pins="1"/>
-              <input name="portbaddrstall" num_pins="1"/>
-              <input name="portbbyteenamasks" num_pins="8"/>
-              <input name="portbre" num_pins="1"/>
-              <input name="portbwe" num_pins="1"/>
-              <input name="devclrn" num_pins="1"/>
-              <input name="devpor" num_pins="1"/>
-
-              <output name="eccstatus" num_pins="3"/>
-              <output name="portadataout" num_pins="16"/>
-              <output name="portbdataout" num_pins="16"/>
-              <output name="dftout" num_pins="9"/>
-            </pb_type>
-
-            <interconnect>
-              <complete name="addr_c1" input="memory.dataa_addr" output="ram_block_dual_port[19:0].portaaddr"/>
-              <complete name="addr_c2" input="memory.datab_addr" output="ram_block_dual_port[19:0].portbaddr"/>
-
-              <complete name="data_c1" input="memory.data" output="ram_block_dual_port[19:0].portadatain"/>
-              <complete name="data_c2" input="memory.data" output="ram_block_dual_port[19:0].portbdatain"/>
-
-              <complete name="signal_c1" input="memory.signal" output="ram_block_dual_port[19:0].clr0"/>
-              <complete name="signal_c2" input="memory.signal" output="ram_block_dual_port[19:0].clr1"/>
-              <complete name="signal_c3" input="memory.signal" output="ram_block_dual_port[19:0].ena0"/>
-              <complete name="signal_c4" input="memory.signal" output="ram_block_dual_port[19:0].ena1"/>
-              <complete name="signal_c5" input="memory.signal" output="ram_block_dual_port[19:0].ena2"/>
-              <complete name="signal_c6" input="memory.signal" output="ram_block_dual_port[19:0].ena3"/>
-              <complete name="signal_c7" input="memory.signal" output="ram_block_dual_port[19:0].portaaddrstall"/>
-              <complete name="signal_c2" input="memory.signal" output="ram_block_dual_port[19:0].portabyteenamasks"/>
-              <complete name="signal_c2" input="memory.signal" output="ram_block_dual_port[19:0].portare"/>
-              <complete name="signal_c2" input="memory.signal" output="ram_block_dual_port[19:0].portawe"/>
-              <complete name="signal_c2" input="memory.signal" output="ram_block_dual_port[19:0].portbaddrstall"/>
-              <complete name="signal_c3" input="memory.signal" output="ram_block_dual_port[19:0].portbbyteenamasks"/>
-              <complete name="signal_c4" input="memory.signal" output="ram_block_dual_port[19:0].portbre"/>
-              <complete name="signal_c4" input="memory.signal" output="ram_block_dual_port[19:0].portbwe"/>
-              <complete name="signal_c8" input="memory.signal" output="ram_block_dual_port[19:0].devclrn"/>
-              <complete name="signal_c9" input="memory.signal" output="ram_block_dual_port[19:0].devpor"/>
-
-              <complete name="out_c1" input="ram_block_dual_port[19:0].eccstatus" output="memory.out"/>
-              <complete name="out_c2" input="ram_block_dual_port[19:0].portadataout" output="memory.out"/>
-              <complete name="out_c3" input="ram_block_dual_port[19:0].portbdataout" output="memory.out"/>
-              <complete name="out_c4" input="ram_block_dual_port[19:0].dftout" output="memory.out"/>
-
-              <complete name="clock_c1" input="memory.CLK" output="ram_block_dual_port[19:0].clk0"/>
-              <complete name="clock_c2" input="memory.CLK" output="ram_block_dual_port[19:0].clk1"/>
-            </interconnect>
-          </mode>
-
-      <mode name="bidir_dual_port">
-
-      <pb_type name="ram_block_bidir_dual_port" blif_model=".subckt stratixiv_ram_block.opmode{bidir_dual_port}" num_pb="20">
-        <input name="portaaddr" num_pins="14"/>
-        <input name="portbaddr" num_pins="14"/>
-
-        <input name="portbdatain" num_pins="16"/>
-        <input name="portadatain" num_pins="16"/>
-
-        <input name="clk0" num_pins="1"/>
-        <input name="clk1" num_pins="1"/>
-
-        <input name="clr0" num_pins="1"/>
-        <input name="clr1" num_pins="1"/>
-        <input name="ena0" num_pins="1"/>
-        <input name="ena1" num_pins="1"/>
-        <input name="ena2" num_pins="1"/>
-        <input name="ena3" num_pins="1"/>
-        <input name="portaaddrstall" num_pins="1"/>
-        <input name="portabyteenamasks" num_pins="8"/>
-        <input name="portare" num_pins="1"/>
-        <input name="portawe" num_pins="1"/>
-        <input name="portbaddrstall" num_pins="1"/>
-        <input name="portbbyteenamasks" num_pins="8"/>
-        <input name="portbre" num_pins="1"/>
-        <input name="portbwe" num_pins="1"/>
-        <input name="devclrn" num_pins="1"/>
-        <input name="devpor" num_pins="1"/>
-
-        <output name="eccstatus" num_pins="3"/>
-        <output name="portadataout" num_pins="16"/>
-        <output name="portbdataout" num_pins="16"/>
-        <output name="dftout" num_pins="9"/>
-      </pb_type>
-
-      <interconnect>
-        <complete name="addr_c1" input="memory.dataa_addr" output="ram_block_bidir_dual_port[19:0].portaaddr"/>
-        <complete name="addr_c2" input="memory.datab_addr" output="ram_block_bidir_dual_port[19:0].portbaddr"/>
-
-        <complete name="data_c1" input="memory.data" output="ram_block_bidir_dual_port[19:0].portadatain"/>
-        <complete name="data_c2" input="memory.data" output="ram_block_bidir_dual_port[19:0].portbdatain"/>
-
-        <complete name="signal_c1" input="memory.signal" output="ram_block_bidir_dual_port[19:0].clr0"/>
-        <complete name="signal_c2" input="memory.signal" output="ram_block_bidir_dual_port[19:0].clr1"/>
-        <complete name="signal_c3" input="memory.signal" output="ram_block_bidir_dual_port[19:0].ena0"/>
-        <complete name="signal_c4" input="memory.signal" output="ram_block_bidir_dual_port[19:0].ena1"/>
-        <complete name="signal_c5" input="memory.signal" output="ram_block_bidir_dual_port[19:0].ena2"/>
-        <complete name="signal_c6" input="memory.signal" output="ram_block_bidir_dual_port[19:0].ena3"/>
-        <complete name="signal_c7" input="memory.signal" output="ram_block_bidir_dual_port[19:0].portaaddrstall"/>
-        <complete name="signal_c2" input="memory.signal" output="ram_block_bidir_dual_port[19:0].portabyteenamasks"/>
-        <complete name="signal_c2" input="memory.signal" output="ram_block_bidir_dual_port[19:0].portare"/>
-        <complete name="signal_c2" input="memory.signal" output="ram_block_bidir_dual_port[19:0].portawe"/>
-        <complete name="signal_c2" input="memory.signal" output="ram_block_bidir_dual_port[19:0].portbaddrstall"/>
-        <complete name="signal_c3" input="memory.signal" output="ram_block_bidir_dual_port[19:0].portbbyteenamasks"/>
-        <complete name="signal_c4" input="memory.signal" output="ram_block_bidir_dual_port[19:0].portbre"/>
-        <complete name="signal_c4" input="memory.signal" output="ram_block_bidir_dual_port[19:0].portbwe"/>
-        <complete name="signal_c8" input="memory.signal" output="ram_block_bidir_dual_port[19:0].devclrn"/>
-        <complete name="signal_c9" input="memory.signal" output="ram_block_bidir_dual_port[19:0].devpor"/>
-
-        <complete name="out_c1" input="ram_block_bidir_dual_port[19:0].eccstatus" output="memory.out"/>
-        <complete name="out_c2" input="ram_block_bidir_dual_port[19:0].portadataout" output="memory.out"/>
-        <complete name="out_c3" input="ram_block_bidir_dual_port[19:0].portbdataout" output="memory.out"/>
-        <complete name="out_c4" input="ram_block_bidir_dual_port[19:0].dftout" output="memory.out"/>
-
-        <complete name="clock_c1" input="memory.CLK" output="ram_block_bidir_dual_port[19:0].clk0"/>
-        <complete name="clock_c2" input="memory.CLK" output="ram_block_bidir_dual_port[19:0].clk1"/>
-      </interconnect>
-    </mode>
-
-      <mode name="rom">
-
-        <pb_type name="ram_block_rom" blif_model=".subckt stratixiv_ram_block.opmode{rom}" num_pb="20">
-          <input name="portaaddr" num_pins="14"/>
-          <input name="portbaddr" num_pins="14"/>
-
-          <input name="portbdatain" num_pins="16"/>
-          <input name="portadatain" num_pins="16"/>
+          <input name="portbdatain" num_pins="16" port_class="data_in1"/>
+          <input name="portadatain" num_pins="16" port_class="data_in2"/>
 
           <input name="clk0" num_pins="1"/>
           <input name="clk1" num_pins="1"/>
@@ -2260,51 +2053,326 @@
           <input name="portaaddrstall" num_pins="1"/>
           <input name="portabyteenamasks" num_pins="8"/>
           <input name="portare" num_pins="1"/>
-          <input name="portawe" num_pins="1"/>
+          <input name="portawe" num_pins="1" port_class="write_en1"/>
           <input name="portbaddrstall" num_pins="1"/>
           <input name="portbbyteenamasks" num_pins="8"/>
           <input name="portbre" num_pins="1"/>
-          <input name="portbwe" num_pins="1"/>
+          <input name="portbwe" num_pins="1" port_class="write_en2"/>
           <input name="devclrn" num_pins="1"/>
           <input name="devpor" num_pins="1"/>
 
           <output name="eccstatus" num_pins="3"/>
-          <output name="portadataout" num_pins="16"/>
-          <output name="portbdataout" num_pins="16"/>
+          <output name="portadataout" num_pins="16" port_class="data_out1"/>
+          <output name="portbdataout" num_pins="16" port_class="data_out2"/>
           <output name="dftout" num_pins="9"/>
         </pb_type>
 
         <interconnect>
-          <complete name="addr_c1" input="memory.dataa_addr" output="ram_block_rom[19:0].portaaddr"/>
-          <complete name="addr_c2" input="memory.datab_addr" output="ram_block_rom[19:0].portbaddr"/>
+          <complete name="addr_c1" input="memory.dataa_addr" output="ram_block_16x2[1:0].portaaddr"/>
+          <complete name="addr_c2" input="memory.datab_addr" output="ram_block_16x2[1:0].portbaddr"/>
 
-          <complete name="data_c1" input="memory.data" output="ram_block_rom[19:0].portadatain"/>
-          <complete name="data_c2" input="memory.data" output="ram_block_rom[19:0].portbdatain"/>
+          <complete name="data_c1" input="memory.data" output="ram_block_16x2[1:0].portadatain"/>
+          <complete name="data_c2" input="memory.data" output="ram_block_16x2[1:0].portbdatain"/>
 
-          <complete name="signal_c1" input="memory.signal" output="ram_block_rom[19:0].clr0"/>
-          <complete name="signal_c2" input="memory.signal" output="ram_block_rom[19:0].clr1"/>
-          <complete name="signal_c3" input="memory.signal" output="ram_block_rom[19:0].ena0"/>
-          <complete name="signal_c4" input="memory.signal" output="ram_block_rom[19:0].ena1"/>
-          <complete name="signal_c5" input="memory.signal" output="ram_block_rom[19:0].ena2"/>
-          <complete name="signal_c6" input="memory.signal" output="ram_block_rom[19:0].ena3"/>
-          <complete name="signal_c7" input="memory.signal" output="ram_block_rom[19:0].portaaddrstall"/>
-          <complete name="signal_c2" input="memory.signal" output="ram_block_rom[19:0].portabyteenamasks"/>
-          <complete name="signal_c2" input="memory.signal" output="ram_block_rom[19:0].portare"/>
-          <complete name="signal_c2" input="memory.signal" output="ram_block_rom[19:0].portawe"/>
-          <complete name="signal_c2" input="memory.signal" output="ram_block_rom[19:0].portbaddrstall"/>
-          <complete name="signal_c3" input="memory.signal" output="ram_block_rom[19:0].portbbyteenamasks"/>
-          <complete name="signal_c4" input="memory.signal" output="ram_block_rom[19:0].portbre"/>
-          <complete name="signal_c4" input="memory.signal" output="ram_block_rom[19:0].portbwe"/>
-          <complete name="signal_c8" input="memory.signal" output="ram_block_rom[19:0].devclrn"/>
-          <complete name="signal_c9" input="memory.signal" output="ram_block_rom[19:0].devpor"/>
+          <complete name="signal_c1" input="memory.signal" output="ram_block_16x2[1:0].clr0"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block_16x2[1:0].clr1"/>
+          <complete name="signal_c3" input="memory.signal" output="ram_block_16x2[1:0].ena0"/>
+          <complete name="signal_c4" input="memory.signal" output="ram_block_16x2[1:0].ena1"/>
+          <complete name="signal_c5" input="memory.signal" output="ram_block_16x2[1:0].ena2"/>
+          <complete name="signal_c6" input="memory.signal" output="ram_block_16x2[1:0].ena3"/>
+          <complete name="signal_c7" input="memory.signal" output="ram_block_16x2[1:0].portaaddrstall"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block_16x2[1:0].portabyteenamasks"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block_16x2[1:0].portare"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block_16x2[1:0].portawe"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block_16x2[1:0].portbaddrstall"/>
+          <complete name="signal_c3" input="memory.signal" output="ram_block_16x2[1:0].portbbyteenamasks"/>
+          <complete name="signal_c4" input="memory.signal" output="ram_block_16x2[1:0].portbre"/>
+          <complete name="signal_c4" input="memory.signal" output="ram_block_16x2[1:0].portbwe"/>
+          <complete name="signal_c8" input="memory.signal" output="ram_block_16x2[1:0].devclrn"/>
+          <complete name="signal_c9" input="memory.signal" output="ram_block_16x2[1:0].devpor"/>
 
-          <complete name="out_c1" input="ram_block_rom[19:0].eccstatus" output="memory.out"/>
-          <complete name="out_c2" input="ram_block_rom[19:0].portadataout" output="memory.out"/>
-          <complete name="out_c3" input="ram_block_rom[19:0].portbdataout" output="memory.out"/>
-          <complete name="out_c4" input="ram_block_rom[19:0].dftout" output="memory.out"/>
+          <complete name="out_c1" input="ram_block_16x2[1:0].eccstatus" output="memory.out"/>
+          <complete name="out_c2" input="ram_block_16x2[1:0].portadataout" output="memory.out"/>
+          <complete name="out_c3" input="ram_block_16x2[1:0].portbdataout" output="memory.out"/>
+          <complete name="out_c4" input="ram_block_16x2[1:0].dftout" output="memory.out"/>
 
-          <complete name="clock_c1" input="memory.CLK" output="ram_block_rom[19:0].clk0"/>
-          <complete name="clock_c2" input="memory.CLK" output="ram_block_rom[19:0].clk1"/>
+          <complete name="clock_c1" input="memory.CLK" output="ram_block_16x2[1:0].clk0"/>
+          <complete name="clock_c2" input="memory.CLK" output="ram_block_16x2[1:0].clk1"/>
+        </interconnect>
+      </mode>
+      <mode name="single_port">
+
+          <pb_type name="ram_block_single_port" blif_model=".subckt stratixiv_ram_block.opmode{single_port}" num_pb="5">
+            <input name="portaaddr" num_pins="14" port_class="address1"/>
+            <input name="portbaddr" num_pins="14" port_class="address2"/>
+
+            <input name="portbdatain" num_pins="1" port_class="data_in1"/>
+            <input name="portadatain" num_pins="1" port_class="data_in2"/>
+
+            <input name="clk0" num_pins="1"/>
+            <input name="clk1" num_pins="1"/>
+
+            <input name="clr0" num_pins="1"/>
+            <input name="clr1" num_pins="1"/>
+            <input name="ena0" num_pins="1"/>
+            <input name="ena1" num_pins="1"/>
+            <input name="ena2" num_pins="1"/>
+            <input name="ena3" num_pins="1"/>
+            <input name="portaaddrstall" num_pins="1"/>
+            <input name="portabyteenamasks" num_pins="8"/>
+            <input name="portare" num_pins="1"/>
+            <input name="portawe" num_pins="1" port_class="write_en1"/>
+            <input name="portbaddrstall" num_pins="1"/>
+            <input name="portbbyteenamasks" num_pins="8"/>
+            <input name="portbre" num_pins="1"/>
+            <input name="portbwe" num_pins="1" port_class="write_en2"/>
+            <input name="devclrn" num_pins="1"/>
+            <input name="devpor" num_pins="1"/>
+
+            <output name="eccstatus" num_pins="3"/>
+            <output name="portadataout" num_pins="1" port_class="data_out1"/>
+            <output name="portbdataout" num_pins="1" port_class="data_out2"/>
+            <output name="dftout" num_pins="9"/>
+          </pb_type>
+
+          <interconnect>
+            <complete name="addr_c1" input="memory.dataa_addr" output="ram_block_single_port[4:0].portaaddr"/>
+            <complete name="addr_c2" input="memory.datab_addr" output="ram_block_single_port[4:0].portbaddr"/>
+
+            <complete name="data_c1" input="memory.data" output="ram_block_single_port[4:0].portadatain"/>
+            <complete name="data_c2" input="memory.data" output="ram_block_single_port[4:0].portbdatain"/>
+
+            <complete name="signal_c1" input="memory.signal" output="ram_block_single_port[4:0].clr0"/>
+            <complete name="signal_c2" input="memory.signal" output="ram_block_single_port[4:0].clr1"/>
+            <complete name="signal_c3" input="memory.signal" output="ram_block_single_port[4:0].ena0"/>
+            <complete name="signal_c4" input="memory.signal" output="ram_block_single_port[4:0].ena1"/>
+            <complete name="signal_c5" input="memory.signal" output="ram_block_single_port[4:0].ena2"/>
+            <complete name="signal_c6" input="memory.signal" output="ram_block_single_port[4:0].ena3"/>
+            <complete name="signal_c7" input="memory.signal" output="ram_block_single_port[4:0].portaaddrstall"/>
+            <complete name="signal_c2" input="memory.signal" output="ram_block_single_port[4:0].portabyteenamasks"/>
+            <complete name="signal_c2" input="memory.signal" output="ram_block_single_port[4:0].portare"/>
+            <complete name="signal_c2" input="memory.signal" output="ram_block_single_port[4:0].portawe"/>
+            <complete name="signal_c2" input="memory.signal" output="ram_block_single_port[4:0].portbaddrstall"/>
+            <complete name="signal_c3" input="memory.signal" output="ram_block_single_port[4:0].portbbyteenamasks"/>
+            <complete name="signal_c4" input="memory.signal" output="ram_block_single_port[4:0].portbre"/>
+            <complete name="signal_c4" input="memory.signal" output="ram_block_single_port[4:0].portbwe"/>
+            <complete name="signal_c8" input="memory.signal" output="ram_block_single_port[4:0].devclrn"/>
+            <complete name="signal_c9" input="memory.signal" output="ram_block_single_port[4:0].devpor"/>
+
+            <complete name="out_c1" input="ram_block_single_port[4:0].eccstatus" output="memory.out"/>
+            <complete name="out_c2" input="ram_block_single_port[4:0].portadataout" output="memory.out"/>
+            <complete name="out_c3" input="ram_block_single_port[4:0].portbdataout" output="memory.out"/>
+            <complete name="out_c4" input="ram_block_single_port[4:0].dftout" output="memory.out"/>
+
+            <complete name="clock_c1" input="memory.CLK" output="ram_block_single_port[4:0].clk0"/>
+            <complete name="clock_c2" input="memory.CLK" output="ram_block_single_port[4:0].clk1"/>
+          </interconnect>
+        </mode>
+
+      <mode name="dual_port">
+
+         <pb_type name="ram_block_dual_port" blif_model=".subckt stratixiv_ram_block.opmode{dual_port}" num_pb="5">
+              <input name="portaaddr" num_pins="14" port_class="address1"/>
+              <input name="portbaddr" num_pins="14" port_class="address2"/>
+
+              <input name="portbdatain" num_pins="16" port_class="data_in1"/>
+              <input name="portadatain" num_pins="16" port_class="data_in2"/>
+
+              <input name="clk0" num_pins="1"/>
+              <input name="clk1" num_pins="1"/>
+
+              <input name="clr0" num_pins="1"/>
+              <input name="clr1" num_pins="1"/>
+              <input name="ena0" num_pins="1"/>
+              <input name="ena1" num_pins="1"/>
+              <input name="ena2" num_pins="1"/>
+              <input name="ena3" num_pins="1"/>
+              <input name="portaaddrstall" num_pins="1"/>
+              <input name="portabyteenamasks" num_pins="8"/>
+              <input name="portare" num_pins="1"/>
+              <input name="portawe" num_pins="1" port_class="write_en1"/>
+              <input name="portbaddrstall" num_pins="1"/>
+              <input name="portbbyteenamasks" num_pins="8"/>
+              <input name="portbre" num_pins="1"/>
+              <input name="portbwe" num_pins="1" port_class="write_en2"/>
+              <input name="devclrn" num_pins="1"/>
+              <input name="devpor" num_pins="1"/>
+
+              <output name="eccstatus" num_pins="3"/>
+              <output name="portadataout" num_pins="16" port_class="data_out1"/>
+              <output name="portbdataout" num_pins="16" port_class="data_out2"/>
+              <output name="dftout" num_pins="9"/>
+            </pb_type>
+
+            <interconnect>
+              <complete name="addr_c1" input="memory.dataa_addr" output="ram_block_dual_port[4:0].portaaddr"/>
+              <complete name="addr_c2" input="memory.datab_addr" output="ram_block_dual_port[4:0].portbaddr"/>
+
+              <complete name="data_c1" input="memory.data" output="ram_block_dual_port[4:0].portadatain"/>
+              <complete name="data_c2" input="memory.data" output="ram_block_dual_port[4:0].portbdatain"/>
+
+              <complete name="signal_c1" input="memory.signal" output="ram_block_dual_port[4:0].clr0"/>
+              <complete name="signal_c2" input="memory.signal" output="ram_block_dual_port[4:0].clr1"/>
+              <complete name="signal_c3" input="memory.signal" output="ram_block_dual_port[4:0].ena0"/>
+              <complete name="signal_c4" input="memory.signal" output="ram_block_dual_port[4:0].ena1"/>
+              <complete name="signal_c5" input="memory.signal" output="ram_block_dual_port[4:0].ena2"/>
+              <complete name="signal_c6" input="memory.signal" output="ram_block_dual_port[4:0].ena3"/>
+              <complete name="signal_c7" input="memory.signal" output="ram_block_dual_port[4:0].portaaddrstall"/>
+              <complete name="signal_c2" input="memory.signal" output="ram_block_dual_port[4:0].portabyteenamasks"/>
+              <complete name="signal_c2" input="memory.signal" output="ram_block_dual_port[4:0].portare"/>
+              <complete name="signal_c2" input="memory.signal" output="ram_block_dual_port[4:0].portawe"/>
+              <complete name="signal_c2" input="memory.signal" output="ram_block_dual_port[4:0].portbaddrstall"/>
+              <complete name="signal_c3" input="memory.signal" output="ram_block_dual_port[4:0].portbbyteenamasks"/>
+              <complete name="signal_c4" input="memory.signal" output="ram_block_dual_port[4:0].portbre"/>
+              <complete name="signal_c4" input="memory.signal" output="ram_block_dual_port[4:0].portbwe"/>
+              <complete name="signal_c8" input="memory.signal" output="ram_block_dual_port[4:0].devclrn"/>
+              <complete name="signal_c9" input="memory.signal" output="ram_block_dual_port[4:0].devpor"/>
+
+              <complete name="out_c1" input="ram_block_dual_port[4:0].eccstatus" output="memory.out"/>
+              <complete name="out_c2" input="ram_block_dual_port[4:0].portadataout" output="memory.out"/>
+              <complete name="out_c3" input="ram_block_dual_port[4:0].portbdataout" output="memory.out"/>
+              <complete name="out_c4" input="ram_block_dual_port[4:0].dftout" output="memory.out"/>
+
+              <complete name="clock_c1" input="memory.CLK" output="ram_block_dual_port[4:0].clk0"/>
+              <complete name="clock_c2" input="memory.CLK" output="ram_block_dual_port[4:0].clk1"/>
+            </interconnect>
+          </mode>
+
+      <mode name="bidir_dual_port">
+
+      <pb_type name="ram_block_bidir_dual_port" blif_model=".subckt stratixiv_ram_block.opmode{bidir_dual_port}" num_pb="5">
+        <input name="portaaddr" num_pins="14" port_class="address1"/>
+        <input name="portbaddr" num_pins="14" port_class="address2"/>
+
+        <input name="portbdatain" num_pins="16" port_class="data_in1"/>
+        <input name="portadatain" num_pins="16" port_class="data_in2"/>
+
+        <input name="clk0" num_pins="1"/>
+        <input name="clk1" num_pins="1"/>
+
+        <input name="clr0" num_pins="1"/>
+        <input name="clr1" num_pins="1"/>
+        <input name="ena0" num_pins="1"/>
+        <input name="ena1" num_pins="1"/>
+        <input name="ena2" num_pins="1"/>
+        <input name="ena3" num_pins="1"/>
+        <input name="portaaddrstall" num_pins="1"/>
+        <input name="portabyteenamasks" num_pins="8"/>
+        <input name="portare" num_pins="1"/>
+        <input name="portawe" num_pins="1" port_class="write_en1"/>
+        <input name="portbaddrstall" num_pins="1"/>
+        <input name="portbbyteenamasks" num_pins="8"/>
+        <input name="portbre" num_pins="1"/>
+        <input name="portbwe" num_pins="1" port_class="write_en2"/>
+        <input name="devclrn" num_pins="1"/>
+        <input name="devpor" num_pins="1"/>
+
+        <output name="eccstatus" num_pins="3"/>
+        <output name="portadataout" num_pins="16" port_class="data_out1"/>
+        <output name="portbdataout" num_pins="16" port_class="data_out2"/>
+        <output name="dftout" num_pins="9"/>
+      </pb_type>
+
+      <interconnect>
+        <complete name="addr_c1" input="memory.dataa_addr" output="ram_block_bidir_dual_port[4:0].portaaddr"/>
+        <complete name="addr_c2" input="memory.datab_addr" output="ram_block_bidir_dual_port[4:0].portbaddr"/>
+
+        <complete name="data_c1" input="memory.data" output="ram_block_bidir_dual_port[4:0].portadatain"/>
+        <complete name="data_c2" input="memory.data" output="ram_block_bidir_dual_port[4:0].portbdatain"/>
+
+        <complete name="signal_c1" input="memory.signal" output="ram_block_bidir_dual_port[4:0].clr0"/>
+        <complete name="signal_c2" input="memory.signal" output="ram_block_bidir_dual_port[4:0].clr1"/>
+        <complete name="signal_c3" input="memory.signal" output="ram_block_bidir_dual_port[4:0].ena0"/>
+        <complete name="signal_c4" input="memory.signal" output="ram_block_bidir_dual_port[4:0].ena1"/>
+        <complete name="signal_c5" input="memory.signal" output="ram_block_bidir_dual_port[4:0].ena2"/>
+        <complete name="signal_c6" input="memory.signal" output="ram_block_bidir_dual_port[4:0].ena3"/>
+        <complete name="signal_c7" input="memory.signal" output="ram_block_bidir_dual_port[4:0].portaaddrstall"/>
+        <complete name="signal_c2" input="memory.signal" output="ram_block_bidir_dual_port[4:0].portabyteenamasks"/>
+        <complete name="signal_c2" input="memory.signal" output="ram_block_bidir_dual_port[4:0].portare"/>
+        <complete name="signal_c2" input="memory.signal" output="ram_block_bidir_dual_port[4:0].portawe"/>
+        <complete name="signal_c2" input="memory.signal" output="ram_block_bidir_dual_port[4:0].portbaddrstall"/>
+        <complete name="signal_c3" input="memory.signal" output="ram_block_bidir_dual_port[4:0].portbbyteenamasks"/>
+        <complete name="signal_c4" input="memory.signal" output="ram_block_bidir_dual_port[4:0].portbre"/>
+        <complete name="signal_c4" input="memory.signal" output="ram_block_bidir_dual_port[4:0].portbwe"/>
+        <complete name="signal_c8" input="memory.signal" output="ram_block_bidir_dual_port[4:0].devclrn"/>
+        <complete name="signal_c9" input="memory.signal" output="ram_block_bidir_dual_port[4:0].devpor"/>
+
+        <complete name="out_c1" input="ram_block_bidir_dual_port[4:0].eccstatus" output="memory.out"/>
+        <complete name="out_c2" input="ram_block_bidir_dual_port[4:0].portadataout" output="memory.out"/>
+        <complete name="out_c3" input="ram_block_bidir_dual_port[4:0].portbdataout" output="memory.out"/>
+        <complete name="out_c4" input="ram_block_bidir_dual_port[4:0].dftout" output="memory.out"/>
+
+        <complete name="clock_c1" input="memory.CLK" output="ram_block_bidir_dual_port[4:0].clk0"/>
+        <complete name="clock_c2" input="memory.CLK" output="ram_block_bidir_dual_port[4:0].clk1"/>
+      </interconnect>
+    </mode>
+
+      <mode name="rom">
+
+        <pb_type name="ram_block_rom" blif_model=".subckt stratixiv_ram_block.opmode{rom}" class="memory" num_pb="5">
+          <input name="portaaddr" num_pins="14" port_class="address1"/>
+          <input name="portbaddr" num_pins="14" port_class="address2"/>
+
+          <input name="portbdatain" num_pins="16" port_class="data_in1"/>
+          <input name="portadatain" num_pins="16" port_class="data_in2"/>
+
+          <input name="clk0" num_pins="1"/>
+          <input name="clk1" num_pins="1"/>
+
+          <input name="clr0" num_pins="1"/>
+          <input name="clr1" num_pins="1"/>
+          <input name="ena0" num_pins="1"/>
+          <input name="ena1" num_pins="1"/>
+          <input name="ena2" num_pins="1"/>
+          <input name="ena3" num_pins="1"/>
+          <input name="portaaddrstall" num_pins="1"/>
+          <input name="portabyteenamasks" num_pins="8"/>
+          <input name="portare" num_pins="1"/>
+          <input name="portawe" num_pins="1" port_class="write_en1"/>
+          <input name="portbaddrstall" num_pins="1"/>
+          <input name="portbbyteenamasks" num_pins="8"/>
+          <input name="portbre" num_pins="1"/>
+          <input name="portbwe" num_pins="1" port_class="write_en2"/>
+          <input name="devclrn" num_pins="1"/>
+          <input name="devpor" num_pins="1"/>
+
+          <output name="eccstatus" num_pins="3"/>
+          <output name="portadataout" num_pins="16" port_class="data_out1"/>
+          <output name="portbdataout" num_pins="16" port_class="data_out2"/>
+          <output name="dftout" num_pins="9"/>
+        </pb_type>
+
+        <interconnect>
+          <complete name="addr_c1" input="memory.dataa_addr" output="ram_block_rom[4:0].portaaddr"/>
+          <complete name="addr_c2" input="memory.datab_addr" output="ram_block_rom[4:0].portbaddr"/>
+
+          <complete name="data_c1" input="memory.data" output="ram_block_rom[4:0].portadatain"/>
+          <complete name="data_c2" input="memory.data" output="ram_block_rom[4:0].portbdatain"/>
+
+          <complete name="signal_c1" input="memory.signal" output="ram_block_rom[4:0].clr0"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block_rom[4:0].clr1"/>
+          <complete name="signal_c3" input="memory.signal" output="ram_block_rom[4:0].ena0"/>
+          <complete name="signal_c4" input="memory.signal" output="ram_block_rom[4:0].ena1"/>
+          <complete name="signal_c5" input="memory.signal" output="ram_block_rom[4:0].ena2"/>
+          <complete name="signal_c6" input="memory.signal" output="ram_block_rom[4:0].ena3"/>
+          <complete name="signal_c7" input="memory.signal" output="ram_block_rom[4:0].portaaddrstall"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block_rom[4:0].portabyteenamasks"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block_rom[4:0].portare"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block_rom[4:0].portawe"/>
+          <complete name="signal_c2" input="memory.signal" output="ram_block_rom[4:0].portbaddrstall"/>
+          <complete name="signal_c3" input="memory.signal" output="ram_block_rom[4:0].portbbyteenamasks"/>
+          <complete name="signal_c4" input="memory.signal" output="ram_block_rom[4:0].portbre"/>
+          <complete name="signal_c4" input="memory.signal" output="ram_block_rom[4:0].portbwe"/>
+          <complete name="signal_c8" input="memory.signal" output="ram_block_rom[4:0].devclrn"/>
+          <complete name="signal_c9" input="memory.signal" output="ram_block_rom[4:0].devpor"/>
+
+          <complete name="out_c1" input="ram_block_rom[4:0].eccstatus" output="memory.out"/>
+          <complete name="out_c2" input="ram_block_rom[4:0].portadataout" output="memory.out"/>
+          <complete name="out_c3" input="ram_block_rom[4:0].portbdataout" output="memory.out"/>
+          <complete name="out_c4" input="ram_block_rom[4:0].dftout" output="memory.out"/>
+
+          <complete name="clock_c1" input="memory.CLK" output="ram_block_rom[4:0].clk0"/>
+          <complete name="clock_c2" input="memory.CLK" output="ram_block_rom[4:0].clk1"/>
         </interconnect>
       </mode>
       
