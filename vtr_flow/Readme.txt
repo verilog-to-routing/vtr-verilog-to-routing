@@ -1,0 +1,1 @@
+Please refer to http://code.google.com/p/vtr-verilog-to-routing/wiki/RunningVTR for the latest information on using VTR

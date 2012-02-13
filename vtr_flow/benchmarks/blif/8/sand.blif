@@ -1,0 +1,445 @@
+.model top
+.inputs sand_in_0_ sand_in_1_ sand_in_10_ sand_in_6_ sand_in_7_ sand_in_8_ \
+sand_in_9_ clock sand_in_2_ sand_in_3_ sand_in_4_ sand_in_5_
+.outputs sand_out_5_ sand_out_4_ sand_out_7_ sand_out_6_ sand_out_1_ \
+sand_out_0_ sand_out_3_ sand_out_2_ sand_out_8_
+.latch    n_n54 n_n288 re clock 2
+.latch    n_n55 n_n289 re clock 2
+.latch    n_n56 n_n290 re clock 2
+.latch    n_n57 n_n291 re clock 2
+.latch    n_n58 n_n292 re clock 2
+.names sand_in_10_ sand_in_7_ sand_in_8_ sand_in_9_ [216] [1157] [1163] [1164] \
+sand_out_5_
+----1--- 1
+------1- 1
+-------1 1
+-01--1-- 1
+0--1-1-- 1
+--00-1-- 1
+.names sand_in_1_ n_n288 n_n289 n_n290 n_n291 n_n292 [160] sand_out_4_
+1---11- 1
+0-1--0- 1
+0--1-0- 1
+---00-1 1
+00--10- 1
+.names sand_in_1_ n_n292 [62] [63] [199] [1182] [1184] [1189] sand_out_7_
+--1----- 1
+---1---- 1
+------1- 1
+-------1 1
+10--1--- 1
+10---1-- 1
+.names [99] [100] [247] [1144] [1199] sand_out_6_
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names n_n288 n_n289 n_n290 n_n291 [97] [1200] sand_out_1_
+----1- 1
+0100-1 1
+1000-1 1
+.names sand_in_0_ sand_in_4_ n_n292 [62] [127] [86] sand_out_0_
+-----1 1
+-101-- 1
+11--1- 1
+.names sand_in_0_ sand_in_1_ sand_in_6_ n_n288 n_n289 n_n290 n_n291 n_n292 \
+sand_out_3_
+---00000 1
+1--11101 1
+1--00101 1
+1--10001 1
+1--10010 1
+1-001100 1
+11-10100 1
+11011000 1
+.names sand_in_10_ sand_in_7_ sand_in_8_ sand_in_9_ [158] [59] [1132] [1214] \
+sand_out_2_
+-----1-- 1
+1-011--- 1
+-110--1- 1
+-110---1 1
+.names sand_in_1_ n_n292 [44] [31] [46] [1223] sand_out_8_
+---1-- 1
+----1- 1
+-----1 1
+101--- 1
+.names n_n288 n_n289 n_n290 n_n291 [139] [322] [323] [1084] n_n54
+-----1-- 1
+------1- 1
+-------1 1
+10001--- 1
+.names n_n290 [293] [312] [1101] [1108] n_n55
+-1--- 1
+----1 1
+1-1-- 1
+1--1- 1
+.names sand_in_3_ n_n290 n_n291 [152] [264] [269] [1130] n_n56
+----1-- 1
+------1 1
+0----1- 1
+0101--- 1
+.names sand_in_10_ sand_in_8_ sand_in_9_ [51] [107] [251] [1137] n_n57
+---1--- 1
+-----1- 1
+------1 1
+01--1-- 1
+0-1-1-- 1
+100-1-- 1
+.names n_n290 n_n291 n_n292 [123] [232] [233] [234] [1155] n_n58
+-------1 1
+--1-1--- 1
+--1--1-- 1
+--1---1- 1
+1011---- 1
+.names sand_in_7_ sand_in_8_ sand_in_9_ n_n288 n_n289 n_n290 n_n291 n_n292 \
+[51]
+11010000 1
+.names sand_in_1_ n_n288 n_n289 n_n290 n_n291 n_n292 [107]
+110000 1
+.names sand_in_10_ sand_in_8_ sand_in_9_ n_n288 n_n289 n_n290 n_n291 [62]
+1110100 1
+.names sand_in_1_ sand_in_3_ n_n288 n_n289 n_n290 n_n291 n_n292 [127]
+--00101 1
+--01100 1
+0000-00 1
+1-11000 1
+.names sand_in_10_ sand_in_7_ sand_in_9_ n_n288 n_n289 n_n290 n_n291 n_n292 \
+[63]
+11110000 1
+.names sand_in_0_ sand_in_6_ sand_in_4_ n_n288 n_n289 n_n290 n_n291 [44]
+0--1100 1
+-0-1100 1
+--11100 1
+.names sand_in_1_ sand_in_10_ sand_in_9_ n_n288 n_n289 n_n291 n_n292 [81]
+10-0100 1
+1-00100 1
+.names sand_in_10_ sand_in_7_ sand_in_9_ sand_in_4_ n_n292 [134]
+---01 1
+101-0 1
+.names sand_in_0_ sand_in_1_ sand_in_6_ sand_in_4_ n_n288 n_n289 n_n292 [133]
+01---0- 1
+1---00- 1
+---000- 1
+-1---01 1
+-100-0- 1
+.names sand_in_10_ sand_in_7_ sand_in_8_ sand_in_9_ n_n292 [139]
+----1 1
+01--- 1
+-11-- 1
+-1-0- 1
+10-1- 1
+0-00- 1
+.names sand_in_10_ sand_in_8_ sand_in_9_ [137]
+0-- 1
+-0- 1
+--0 1
+.names sand_in_1_ sand_in_6_ n_n288 n_n289 n_n290 n_n291 n_n292 [158]
+--01000 1
+--10000 1
+1001101 1
+.names sand_in_1_ sand_in_10_ sand_in_7_ sand_in_8_ sand_in_9_ n_n288 n_n289 \
+n_n292 [160]
+1----11- 1
+0----001 1
+1-01-1-0 1
+10--11-0 1
+1--001-0 1
+.names sand_in_10_ sand_in_6_ sand_in_7_ sand_in_8_ sand_in_9_ sand_in_5_ \
+n_n288 n_n289 [123]
+-----11- 1
+-1-----1 1
+1---1--1 1
+--110--1 1
+.names sand_in_0_ sand_in_10_ sand_in_7_ sand_in_8_ sand_in_9_ sand_in_4_ \
+n_n288 [148]
+--1--0- 1
+0-----1 1
+-----01 1
+-0----0 1
+----0-0 1
+--10--0 1
+.names sand_in_0_ sand_in_6_ sand_in_4_ sand_in_5_ n_n288 n_n289 n_n292 [152]
+110-0-- 1
+0-10-10 1
+.names sand_in_10_ sand_in_7_ sand_in_8_ sand_in_9_ n_n288 n_n289 n_n291 \
+n_n292 [28]
+10-10100 1
+1-110100 1
+.names sand_in_1_ sand_in_6_ sand_in_2_ n_n288 n_n289 n_n291 n_n292 [31]
+1100000 1
+.names sand_in_3_ n_n288 n_n289 n_n290 n_n291 n_n292 [46]
+10-100 1
+-01100 1
+1-1000 1
+.names sand_in_1_ sand_in_10_ sand_in_9_ n_n288 n_n289 n_n290 n_n291 n_n292 \
+[59]
+10-01000 1
+1-001000 1
+10-10000 1
+1-010000 1
+.names sand_in_1_ sand_in_5_ n_n288 n_n289 n_n290 n_n291 n_n292 [86]
+1010101 1
+.names sand_in_0_ sand_in_1_ sand_in_4_ n_n288 n_n289 n_n290 n_n291 n_n292 \
+[97]
+01100101 1
+.names sand_in_10_ sand_in_7_ sand_in_9_ n_n288 n_n289 n_n290 n_n291 [99]
+1010100 1
+.names sand_in_0_ n_n288 n_n289 n_n290 n_n291 n_n292 [100]
+111101 1
+.names sand_in_0_ sand_in_3_ sand_in_4_ n_n288 n_n289 n_n290 n_n291 n_n292 \
+[181]
+1--0-100 1
+-1-0-100 1
+--00-100 1
+---01100 1
+-1--1000 1
+.names sand_in_10_ sand_in_9_ n_n288 n_n289 n_n290 n_n291 [195]
+0-0100 1
+-00100 1
+.names sand_in_10_ sand_in_7_ sand_in_8_ sand_in_9_ n_n288 n_n289 n_n290 \
+n_n291 [199]
+-10-1000 1
+0--11000 1
+-0-01000 1
+.names sand_in_1_ sand_in_10_ sand_in_6_ sand_in_9_ n_n288 n_n289 n_n291 [204]
+100-010 1
+1-00010 1
+.names n_n288 n_n289 n_n290 n_n291 n_n292 [205]
+01001 1
+.names sand_in_0_ sand_in_4_ n_n288 n_n289 n_n290 n_n291 n_n292 [206]
+1110001 1
+.names sand_in_10_ sand_in_9_ sand_in_3_ sand_in_5_ n_n288 n_n289 n_n290 \
+n_n292 [216]
+----100- 1
+---1--01 1
+----1-01 1
+-----001 1
+0-0-0100 1
+-00-0100 1
+.names sand_in_0_ sand_in_1_ sand_in_6_ sand_in_4_ n_n288 n_n290 n_n292 [228]
+111-110 1
+11-1110 1
+.names sand_in_1_ n_n288 n_n289 n_n290 n_n291 [229]
+11110 1
+.names sand_in_0_ sand_in_6_ sand_in_4_ sand_in_5_ n_n288 n_n289 n_n290 n_n291 \
+[232]
+---00-00 1
+----0000 1
+11--1-00 1
+1-1-1-00 1
+.names sand_in_0_ sand_in_6_ sand_in_4_ n_n288 n_n289 n_n291 [233]
+---110 1
+0-1000 1
+110000 1
+.names sand_in_1_ sand_in_4_ n_n288 n_n289 n_n290 n_n291 [234]
+0----1 1
+011--- 1
+0-1-1- 1
+0--11- 1
+.names sand_in_10_ sand_in_9_ n_n288 n_n289 n_n290 n_n291 n_n292 [247]
+1110000 1
+.names sand_in_1_ n_n288 n_n289 n_n290 n_n291 n_n292 [251]
+-01-1- 1
+0--11- 1
+--101- 1
+---011 1
+-0--10 1
+-1011- 1
+.names sand_in_0_ sand_in_1_ sand_in_6_ n_n288 n_n289 n_n290 n_n291 n_n292 \
+[262]
+-1-11-11 1
+-1-00-11 1
+1-110-10 1
+-1-01010 1
+.names n_n290 n_n292 [278] [281] [1120] [1124] [264]
+1-1--- 1
+1----1 1
+11-1-- 1
+11--1- 1
+.names sand_in_10_ sand_in_8_ sand_in_9_ n_n288 n_n289 n_n290 n_n291 n_n292 \
+[269]
+10101000 1
+.names sand_in_0_ sand_in_1_ sand_in_3_ sand_in_4_ n_n288 n_n289 n_n291 n_n292 \
+[278]
+-0--1--- 1
+-0----1- 1
+-0---1-1 1
+00-1---1 1
+0001-0-- 1
+.names sand_in_10_ sand_in_6_ sand_in_7_ sand_in_8_ sand_in_9_ n_n289 [281]
+-1---1 1
+1---11 1
+--1101 1
+.names sand_in_0_ sand_in_6_ sand_in_3_ sand_in_4_ n_n288 n_n290 n_n291 n_n292 \
+[289]
+0-000100 1
+-0000100 1
+.names sand_in_1_ sand_in_6_ sand_in_2_ n_n288 n_n289 n_n290 n_n292 [290]
+1100000 1
+.names sand_in_3_ n_n289 n_n290 n_n292 [148] [302] [303] [1091] [293]
+-1---1-- 1
+-1----1- 1
+-10----1 1
+01001--- 1
+.names sand_in_10_ sand_in_6_ sand_in_7_ sand_in_8_ sand_in_9_ n_n290 n_n291 \
+n_n292 [302]
+-1---101 1
+1---1101 1
+--110101 1
+.names sand_in_1_ n_n291 [303]
+01 1
+.names sand_in_0_ sand_in_1_ sand_in_4_ sand_in_5_ n_n288 n_n289 n_n291 n_n292 \
+[312]
+-1---011 1
+-1-110-1 1
+011-00-1 1
+.names sand_in_0_ sand_in_6_ sand_in_4_ n_n288 n_n289 n_n290 n_n291 n_n292 \
+[319]
+0-000101 1
+-0000101 1
+.names sand_in_1_ sand_in_6_ sand_in_2_ n_n288 n_n289 n_n290 n_n291 n_n292 \
+[320]
+11100000 1
+.names sand_in_0_ sand_in_6_ sand_in_3_ sand_in_4_ n_n288 n_n289 n_n291 n_n292 \
+[322]
+----111- 1
+110011-0 1
+.names sand_in_1_ n_n288 n_n289 n_n290 n_n291 n_n292 [323]
+0101-- 1
+10011- 1
+10-110 1
+.names sand_in_1_ sand_in_10_ sand_in_9_ sand_in_3_ n_n288 n_n289 n_n291 \
+n_n292 [338]
+0--011-- 1
+10-00100 1
+1-000100 1
+.names sand_in_1_ sand_in_6_ n_n288 n_n289 n_n290 n_n291 n_n292 [1065]
+1001101 1
+.names sand_in_1_ sand_in_5_ n_n288 n_n289 n_n291 n_n292 [1077]
+0-1--1 1
+--1-10 1
+1--111 1
+-10101 1
+.names sand_in_1_ sand_in_7_ n_n288 n_n289 n_n290 n_n291 n_n292 [1078]
+0010--- 1
+--1-100 1
+.names n_n290 [137] [319] [320] [338] [1065] [1077] [1078] [1084]
+--1----- 1
+---1---- 1
+-------1 1
+0---1--- 1
+-1---1-- 1
+0-----1- 1
+.names sand_in_5_ n_n288 n_n291 n_n292 [1091]
+-01- 1
+00-1 1
+.names sand_in_0_ sand_in_1_ sand_in_3_ sand_in_4_ n_n288 n_n289 n_n291 n_n292 \
+[1101]
+-0--11-- 1
+-0---1-1 1
+-10100-0 1
+0-0-0100 1
+--000100 1
+.names sand_in_1_ sand_in_3_ n_n288 n_n289 n_n290 n_n291 n_n292 [1106]
+0011--- 1
+1-00-1- 1
+0-11--1 1
+--11-10 1
+--11101 1
+.names sand_in_10_ sand_in_7_ sand_in_8_ sand_in_9_ [107] [289] [290] [1106] \
+[1108]
+-----1-- 1
+------1- 1
+-------1 1
+0-111--- 1
+1-001--- 1
+-1001--- 1
+.names sand_in_0_ sand_in_6_ sand_in_4_ n_n288 n_n291 [1120]
+---01 1
+1100- 1
+.names sand_in_0_ sand_in_6_ sand_in_3_ sand_in_4_ n_n288 n_n289 n_n291 n_n292 \
+[1124]
+-----010 1
+11--10-0 1
+1--110-0 1
+1-0000-0 1
+.names sand_in_0_ sand_in_4_ sand_in_5_ n_n288 n_n289 n_n290 n_n291 n_n292 \
+[1128]
+---1110- 1
+--11-101 1
+11-10001 1
+.names sand_in_10_ sand_in_8_ sand_in_9_ [107] [63] [262] [1128] [1130]
+----1-- 1
+-----1- 1
+------1 1
+00-1--- 1
+-111--- 1
+.names n_n288 n_n289 n_n290 n_n291 n_n292 [1132]
+10000 1
+.names sand_in_1_ n_n288 n_n289 n_n290 n_n291 n_n292 [1137]
+1000-1 1
+111100 1
+.names sand_in_0_ sand_in_1_ sand_in_6_ n_n288 n_n289 n_n290 n_n291 n_n292 \
+[1144]
+-1-0--10 1
+-1--1-10 1
+-1---110 1
+1-110010 1
+.names sand_in_10_ sand_in_7_ sand_in_8_ [107] [228] [229] [247] [1144] [1155]
+----1--- 1
+-----1-- 1
+------1- 1
+-------1 1
+1011---- 1
+.names sand_in_1_ sand_in_6_ n_n288 n_n289 n_n290 n_n292 [1157]
+100111 1
+.names sand_in_0_ sand_in_1_ n_n288 n_n289 n_n290 n_n292 [1163]
+--1-10 1
+00-0-1 1
+.names sand_in_1_ sand_in_4_ n_n288 n_n289 n_n291 n_n292 [1164]
+----1- 1
+0-10-- 1
+-000-1 1
+.names sand_in_0_ sand_in_6_ sand_in_4_ n_n288 n_n289 n_n290 n_n291 [1182]
+---0-10 1
+-1-00-0 1
+11--010 1
+1-1-010 1
+.names sand_in_0_ sand_in_1_ sand_in_6_ n_n288 n_n289 n_n290 n_n291 n_n292 \
+[1184]
+-1----11 1
+-1--10-1 1
+1-110010 1
+.names sand_in_1_ [44] [181] [195] [204] [205] [206] [1189]
+--1---- 1
+----1-- 1
+-----1- 1
+------1 1
+11----- 1
+1--1--- 1
+.names sand_in_0_ sand_in_1_ sand_in_6_ sand_in_4_ n_n289 n_n290 n_n292 [1194]
+-1--110 1
+111--10 1
+11-1-10 1
+.names sand_in_1_ sand_in_6_ sand_in_4_ n_n288 n_n289 n_n290 n_n291 n_n292 \
+[1195]
+1--0-001 1
+11-00--0 1
+1-1-0001 1
+.names [204] [205] [206] [1194] [1195] [1199]
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names sand_in_10_ sand_in_7_ sand_in_8_ sand_in_9_ n_n292 [1200]
+11010 1
+.names sand_in_1_ sand_in_6_ n_n288 n_n289 n_n290 n_n291 n_n292 [1214]
+1001101 1
+.names n_n288 n_n289 n_n290 n_n291 [81] [134] [133] [28] [1223]
+----1--- 1
+-------1 1
+--10--1- 1
+1000-1-- 1
+.end

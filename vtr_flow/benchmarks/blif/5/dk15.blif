@@ -1,0 +1,44 @@
+.model top
+.inputs dk15_in_2_ dk15_in_1_ dk15_in_0_ clock
+.outputs dk15_out_0_ dk15_out_4_ dk15_out_3_ dk15_out_2_ dk15_out_1_
+.latch    n_n25 n_n58 re clock 2
+.latch    n_n26 n_n59 re clock 2
+.names dk15_in_2_ dk15_in_1_ dk15_in_0_ n_n58 n_n59 dk15_out_0_
+-11-0 1
+1001- 1
+0000- 1
+-0000 1
+.names dk15_in_2_ dk15_in_1_ dk15_in_0_ n_n58 n_n59 dk15_out_4_
+00-1- 1
+-11-0 1
+0--10 1
+-1011 1
+10001 1
+.names dk15_in_2_ dk15_in_1_ dk15_in_0_ n_n58 n_n59 dk15_out_3_
+101-- 1
+10-1- 1
+1-0-0 1
+1100- 1
+.names dk15_in_2_ dk15_in_1_ dk15_in_0_ n_n58 n_n59 dk15_out_2_
+111-- 1
+-11-1 1
+0011- 1
+0000- 1
+-0001 1
+.names dk15_in_2_ dk15_in_1_ dk15_in_0_ n_n58 n_n59 dk15_out_1_
+0-01- 1
+-100- 1
+-10-0 1
+1011- 1
+0010- 1
+-0100 1
+.names dk15_in_2_ dk15_in_1_ dk15_in_0_ n_n58 n_n59 n_n25
+-01-- 1
+00-1- 1
+0-1-0 1
+11001 1
+.names dk15_in_2_ dk15_in_1_ dk15_in_0_ n_n58 n_n59 n_n26
+-10-- 1
+11--0 1
+1-010 1
+.end

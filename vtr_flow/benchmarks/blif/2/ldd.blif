@@ -1,0 +1,164 @@
+.model top
+.inputs pa pb pc pd pe pf pg ph pi
+.outputs pp pa0 pq pb0 pr ps pt pu pv pw px py pz pj pk pl pm pn po
+.names pa [19] pp
+01 1
+.names nq1 [143] pa0
+1- 1
+-1 1
+.names pc [140] pq
+01 1
+.names pd pq pb0
+11 1
+.names [21] [144] pr
+11 1
+.names [21] [145] ps
+11 1
+.names pi pn pt
+11 1
+.names [19] [139] pu
+11 1
+.names nx nz1 pv
+1- 1
+-1 1
+.names nq1 [148] py
+1- 1
+-1 1
+.names np1 [152] pz
+1- 1
+-1 1
+.names np1 [161] pj
+1- 1
+-1 1
+.names [20] [164] pk
+1- 1
+-1 1
+.names np1 [169] pl
+1- 1
+-1 1
+.names [21] [40] pm
+1- 1
+-1 1
+.names pc [146] pn
+01 1
+.names pc [156] po
+01 1
+.names pb pc [19]
+01 1
+.names [20] [142] nq1
+01 1
+.names ns1 [141] [20]
+1- 1
+01 1
+.names pa pb [21]
+01 1
+.names pz [154] nx
+1- 1
+-1 1
+.names [19] [155] nz1
+11 1
+.names ns1 [141] nr1
+01 1
+.names pe [22] ns1
+11 1
+.names nq1 [150] np1
+01 1
+.names pd pq [22]
+01 1
+.names nx pw
+1 1
+.names nx px
+1 1
+.names pq [165] [23]
+01 1
+.names pa pc [24]
+01 1
+.names pq [162] [29]
+01 1
+.names pi [19] [33]
+11 1
+.names pi pm [34]
+11 1
+.names pa [19] [40]
+11 1
+.names pi pa [139]
+11 1
+.names pb pa [140]
+00 1
+.names [22] pf [141]
+11 1
+.names [22] pg [142]
+11 1
+.names [20] pu [143]
+1- 1
+-1 1
+.names pi pc [144]
+10 1
+.names pi pc [145]
+11 1
+.names pb pa [146]
+01 1
+.names pt pr [147]
+1- 1
+-1 1
+.names ns1 [147] [148]
+1- 1
+-1 1
+.names [22] ph [149]
+11 1
+.names [20] [149] [150]
+01 1
+.names pu pr [151]
+1- 1
+-1 1
+.names ns1 [151] [152]
+1- 1
+-1 1
+.names nr1 ps [153]
+1- 1
+-1 1
+.names py [153] [154]
+1- 1
+-1 1
+.names pi pa [155]
+01 1
+.names pb pa [156]
+11 1
+.names po pn [157]
+1- 1
+-1 1
+.names [33] nz1 [158]
+1- 1
+-1 1
+.names [158] [157] [159]
+1- 1
+-1 1
+.names [34] [159] [160]
+1- 1
+-1 1
+.names nq1 [160] [161]
+1- 1
+-1 1
+.names pi pb [162]
+10 1
+.names po [21] [163]
+1- 1
+-1 1
+.names [163] [29] [164]
+1- 1
+-1 1
+.names pi pc [165]
+10 1
+.names nz1 [24] [166]
+1- 1
+-1 1
+.names [23] pb0 [167]
+1- 1
+-1 1
+.names [167] [166] [168]
+1- 1
+-1 1
+.names nr1 [168] [169]
+1- 1
+-1 1
+.end

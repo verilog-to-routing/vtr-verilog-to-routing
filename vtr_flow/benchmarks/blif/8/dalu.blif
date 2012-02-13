@@ -1,0 +1,1082 @@
+.model top
+.inputs pina0 pinb1 pinc2 pind3 pina1 pinb0 pinc3 pind2 pmusel1 pinc4 pind5 \
+pmusel2 pinc5 pind4 pmusel3 pina4 pinb5 pina5 pinb4 pina2 pinb3 pinc0 pind1 \
+pina3 pinb2 pinc1 pind0 pind15 pinc15 pind14 pinb15 pinc14 pind13 popsel3 \
+popsel1 popsel2 pina11 pinb10 pina10 popsel0 pina15 pinb14 pinc13 pind12 \
+pina14 pinb13 pinc12 pind11 pina13 pinb12 pinc11 pind10 pina12 pinb11 pinc10 \
+pina8 pinb9 pina9 pinb8 pina6 pinb7 pina7 pinb6 psh0 pinc6 pind7 pmusel4 psh1 \
+pinc7 pind6 psh2 pinc8 pind9 pinc9 pind8
+.outputs po12 po11 po14 po13 po15 po9 po8 po7 po6 po5 po4 po3 po2 po1 po0 po10
+.names n_n2466 [18] [33] [98] [104] [2296] [2319] po12
+------1 1
+-1-1--- 1
+1-1-1-- 1
+1-1--0- 1
+0-1-01- 1
+.names popsel3 popsel1 popsel2 popsel0 [51] n_n2055 [2347] [2348] po11
+------1- 1
+-------1 1
+010-11-- 1
+0-0111-- 1
+001011-- 1
+.names n_n2466 [33] n_n2478 [95] [104] [2296] [2371] po14
+------1 1
+011---- 1
+-111--- 1
+-11-1-- 1
+-11--0- 1
+110001- 1
+.names n_n2466 [33] [95] [104] [2296] [2396] [2397] po13
+-----1- 1
+------1 1
+010---- 1
+-101--- 1
+-10-0-- 1
+11101-- 1
+.names n_n2466 [33] n_n2478 [95] [104] [2296] [2416] po15
+------1 1
+111001- 1
+.names [33] n_n2423 n_n2055 [2445] [2446] [2447] po9
+---1-- 1
+----1- 1
+-----1 1
+111--- 1
+.names [33] n_n2417 n_n2055 [2476] [2477] [2478] po8
+---1-- 1
+----1- 1
+-----1 1
+111--- 1
+.names [18] [33] n_n1937 [58] [104] [2507] [2508] po7
+-----1- 1
+------1 1
+1-1---- 1
+-1-11-- 1
+-1-00-- 1
+.names [289] [290] [2540] [2541] [2542] po6
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names [260] [265] [2578] [2579] po5
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [18] n_n1867 n_n2220 [238] [239] [2590] [2610] [2611] po4
+---1---- 1
+----1--- 1
+------1- 1
+-------1 1
+1-1----- 1
+-1---1-- 1
+.names [2643] [2644] [2645] [2646] po3
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [2678] [2679] [2680] [2681] po2
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [2715] [2716] [2717] po1
+1-- 1
+-1- 1
+--1 1
+.names popsel3 popsel1 popsel2 popsel0 [66] [2750] [2751] [2752] po0
+-----1-- 1
+------1- 1
+-------1 1
+10011--- 1
+11001--- 1
+.names popsel3 popsel1 popsel2 popsel0 n_n2055 n_n2429 [2784] [2785] po10
+------1- 1
+-------1 1
+010-11-- 1
+0-0111-- 1
+001011-- 1
+.names pmusel1 pmusel2 pmusel3 pind14 pinb14 pmusel4 n_n2135
+0001-1 1
+1111-0 1
+011-10 1
+101-10 1
+.names pmusel1 pmusel2 pmusel3 pind15 pinb15 pmusel4 n_n2386
+0001-1 1
+1111-0 1
+011-10 1
+101-10 1
+.names pmusel1 pmusel2 pmusel3 pinc15 pina15 pinc12 pina12 pmusel4 n_n2466
+0100-1-1 1
+0101-0-1 1
+100-0-11 1
+100-1-01 1
+.names pmusel1 pmusel2 pmusel3 pind13 pinb13 pmusel4 n_n2108
+0001-1 1
+1111-0 1
+011-10 1
+101-10 1
+.names pmusel1 pmusel2 pmusel3 pind12 pinb12 pmusel4 n_n2083
+0001-1 1
+1111-0 1
+011-10 1
+101-10 1
+.names popsel3 popsel1 popsel2 popsel0 [18]
+1001 1
+1100 1
+.names popsel3 popsel1 popsel2 popsel0 [21]
+011- 1
+0-11 1
+1000 1
+.names psh0 psh1 psh2 [25]
+111 1
+000 1
+.names popsel3 popsel1 popsel2 popsel0 [33]
+010- 1
+0-01 1
+0010 1
+.names pmusel1 pmusel2 pmusel3 pind12 pinc12 pinb12 pina12 pmusel4 [98]
+000-1--1 1
+0011---0 1
+111-1--0 1
+110-1--0 1
+010--1-0 1
+011---10 1
+101---10 1
+100---10 1
+1-0-1-10 1
+.names pmusel1 pmusel2 pmusel3 pind11 pinb11 pmusel4 n_n2066
+0001-1 1
+1111-0 1
+011-10 1
+101-10 1
+.names pmusel1 pmusel2 pmusel3 pina11 pind11 pinc11 pinb11 pmusel4 n_n2046
+000--1-1 1
+0111---0 1
+1011---0 1
+1001---0 1
+001-1--0 1
+111--1-0 1
+110--1-0 1
+1-01-1-0 1
+010---10 1
+.names pmusel1 pmusel2 pmusel3 pinc15 pina11 pina15 pinc11 pmusel4 [51]
+100-01-1 1
+100-10-1 1
+0100--11 1
+0101--01 1
+.names pmusel1 pmusel2 pmusel3 pinc15 pinc14 pina15 pina14 pmusel4 n_n2478
+01001--1 1
+01010--1 1
+100--011 1
+100--101 1
+.names pmusel1 pmusel2 pmusel3 pind13 pinc13 pinb13 pina13 pmusel4 n_n2343
+-------1 1
+1-1----- 1
+-11----- 1
+--10---- 1
+000----- 1
+00-0---- 1
+11--0--- 1
+01---0-- 1
+0-0--0-- 1
+0--0-0-- 1
+-1--00-- 1
+10----0- 1
+-00---0- 1
+-0-0--0- 1
+.names pmusel1 pmusel2 pmusel3 pinc15 pina15 pinc13 pina13 pmusel4 [95]
+--1----- 1
+-------0 1
+11------ 1
+00------ 1
+-1-0-0-- 1
+-0--0-0- 1
+0101-1-1 1
+100-1-11 1
+.names pmusel1 pmusel2 pmusel3 pind15 pinc15 pinb15 pina15 pmusel4 n_n2368
+000-1--1 1
+0011---0 1
+111-1--0 1
+110-1--0 1
+010--1-0 1
+011---10 1
+101---10 1
+100---10 1
+1-0-1-10 1
+.names pmusel1 pmusel2 pmusel3 pinb10 pind10 pmusel4 n_n2029
+000-11 1
+0111-0 1
+1011-0 1
+111-10 1
+.names pmusel1 pmusel2 pmusel3 pinb9 pina9 pmusel4 pind9 pinc9 n_n2179
+-----1-- 1
+1-1----- 1
+-11----- 1
+--1---0- 1
+000----- 1
+01-0---- 1
+0-00---- 1
+10--0--- 1
+-00-0--- 1
+00----0- 1
+0--0--0- 1
+-0--0-0- 1
+11-----0 1
+-1-0---0 1
+.names pmusel1 pmusel2 pmusel3 pinc15 pina15 pina9 pmusel4 pinc9 n_n2423
+100-011- 1
+100-101- 1
+0100--11 1
+0101--10 1
+.names pmusel1 pmusel2 pmusel3 pinb9 pmusel4 pind9 n_n1998
+01110- 1
+10110- 1
+000-11 1
+111-01 1
+.names pmusel1 pmusel2 pmusel3 pina9 pmusel4 pinc9 n_n2173
+01110- 1
+10110- 1
+000-11 1
+111-01 1
+.names pmusel1 pmusel2 pmusel3 pinb8 pmusel4 pind8 n_n1974
+01110- 1
+10110- 1
+000-11 1
+111-01 1
+.names pmusel1 pmusel2 pmusel3 pinc15 pina15 pina8 pmusel4 pinc8 n_n2417
+100-011- 1
+100-101- 1
+0100--11 1
+0101--10 1
+.names [51] n_n2423 n_n2417 n_n2410 n_n2404 n_n2398 [76] n_n2429 n_n2055
+0------- 1
+-0------ 1
+--0----- 1
+---0---- 1
+----0--- 1
+-----0-- 1
+------1- 1
+-------0 1
+.names pmusel1 pmusel2 pmusel3 pina8 pinb8 pmusel4 pinc8 pind8 [99]
+0111-0-- 1
+1011-0-- 1
+1001-0-- 1
+010-10-- 1
+000--11- 1
+111--01- 1
+110--01- 1
+1-01-01- 1
+001--0-1 1
+.names pmusel1 pmusel2 pmusel3 pinb7 pina7 pind7 pmusel4 pinc7 n_n1937
+0101--0- 1
+011-1-0- 1
+101-1-0- 1
+100-1-0- 1
+001--10- 1
+000---11 1
+111---01 1
+110---01 1
+1-0-1-01 1
+.names pmusel1 pmusel2 pmusel3 pinb7 pind7 pmusel4 n_n1952
+000-11 1
+0111-0 1
+1011-0 1
+111-10 1
+.names pmusel1 pmusel2 pmusel3 pinc15 pina15 pina7 pmusel4 pinc7 [58]
+100-011- 1
+100-101- 1
+0100--11 1
+0101--10 1
+.names n_n2454 n_n2442 n_n2448 n_n2410 n_n2404 n_n2398 [76] [104]
+0------ 1
+-0----- 1
+--0---- 1
+---0--- 1
+----0-- 1
+-----0- 1
+------1 1
+.names pmusel1 pmusel2 pmusel3 pinc15 pina15 pina6 pinc6 pmusel4 n_n2454
+100-01-1 1
+100-10-1 1
+0100--11 1
+0101--01 1
+.names pmusel1 pmusel2 pmusel3 pinb6 pmusel4 pind6 n_n1921
+01110- 1
+10110- 1
+000-11 1
+111-01 1
+.names pmusel1 pinc4 pmusel2 pmusel3 pina4 pinc15 pina15 pmusel4 n_n2442
+0010-1-1 1
+0110-0-1 1
+1-000-11 1
+1-001-01 1
+.names pmusel1 pind5 pmusel2 pmusel3 pinb5 pmusel4 n_n1892
+0100-1 1
+1111-0 1
+0-1110 1
+1-0110 1
+.names pmusel1 pmusel2 pinc5 pmusel3 pina5 pinc15 pina15 pmusel4 n_n2448
+0100-1-1 1
+0110-0-1 1
+10-00-11 1
+10-01-01 1
+.names pmusel1 pmusel2 pind4 pmusel3 pinb4 pmusel4 n_n1867
+0010-1 1
+1111-0 1
+01-110 1
+10-110 1
+.names pmusel1 pinc4 pmusel2 pmusel3 pina4 pmusel4 n_n2220
+0100-1 1
+1111-0 1
+0-1110 1
+1-0110 1
+.names pmusel1 pinc4 pmusel2 pind4 pmusel3 pina4 pinb4 pmusel4 n_n2226
+-------1 1
+1---1--- 1
+--1-1--- 1
+---01--- 1
+101----- 1
+0-00---- 1
+0-0-0--- 1
+1-0--0-- 1
+--00-0-- 1
+--0-00-- 1
+0-1---0- 1
+-01---0- 1
+0--0--0- 1
+0---0-0- 1
+.names pind3 pmusel1 pmusel2 pmusel3 pinb3 pmusel4 n_n1848
+1000-1 1
+1111-0 1
+-01110 1
+-10110 1
+.names pinc3 pmusel1 pmusel2 pmusel3 pina3 pinc15 pina15 pmusel4 n_n2410
+0010-1-1 1
+1010-0-1 1
+-1000-11 1
+-1001-01 1
+.names pind2 pmusel1 pmusel2 pmusel3 pinb2 pmusel4 n_n1818
+1000-1 1
+1111-0 1
+-01110 1
+-10110 1
+.names pinc2 pmusel1 pmusel2 pmusel3 pina2 pinc15 pina15 pmusel4 n_n2404
+0010-1-1 1
+1010-0-1 1
+-1000-11 1
+-1001-01 1
+.names pina1 pmusel1 pmusel2 pmusel3 pinc1 pinc15 pina15 pmusel4 n_n2398
+-01001-1 1
+-01010-1 1
+0100--11 1
+1100--01 1
+.names pinc2 pind2 pmusel1 pmusel2 pmusel3 pina2 pinb2 pmusel4 [55]
+1-000--1 1
+1-111--0 1
+-1001--0 1
+1-110--0 1
+--0111-0 1
+--1011-0 1
+1-1-01-0 1
+--1001-0 1
+--010-10 1
+.names pina0 pmusel1 pmusel2 pmusel3 pinc0 pinc15 pina15 pmusel4 [76]
+---1---- 1
+-------0 1
+-11----- 1
+-00----- 1
+--1--0-- 1
+--0---0- 1
+-01011-1 1
+1100--11 1
+.names pinb1 pmusel1 pmusel2 pmusel3 pind1 pmusel4 n_n1791
+-00011 1
+1011-0 1
+1101-0 1
+-11110 1
+.names pmusel1 pmusel2 pmusel3 pinc15 pina15 pmusel4 n_n2479
+--1--- 1
+-----0 1
+11---- 1
+00---- 1
+-1-0-- 1
+-0--0- 1
+.names pina0 pinb0 pmusel1 pmusel2 pmusel3 pinc0 pind0 pmusel4 [66]
+--0001-1 1
+1-011--0 1
+1-101--0 1
+-1010--0 1
+1-100--0 1
+--1111-0 1
+1-1-01-0 1
+--1101-0 1
+--001-10 1
+.names pmusel1 pmusel2 pmusel3 pinc15 pina10 pina15 pinc10 pmusel4 n_n2429
+100-01-1 1
+100-10-1 1
+0100--11 1
+0101--01 1
+.names pmusel1 pmusel2 pmusel3 pinb10 pina10 pind10 pinc10 pmusel4 n_n2007
+000---11 1
+0101---0 1
+011-1--0 1
+101-1--0 1
+100-1--0 1
+001--1-0 1
+111---10 1
+110---10 1
+1-0-1-10 1
+.names pmusel1 pmusel2 pmusel3 pind14 pinc14 pinb14 pina14 pmusel4 n_n2146
+000-1--1 1
+0011---0 1
+111-1--0 1
+110-1--0 1
+010--1-0 1
+011---10 1
+101---10 1
+100---10 1
+1-0-1-10 1
+.names pina0 pmusel1 pmusel2 pmusel3 pinc0 pmusel4 n_n2394
+---1-- 1
+-----0 1
+-11--- 1
+0-0--- 1
+-00--- 1
+--1-0- 1
+.names pmusel1 pmusel2 pmusel3 pinc13 pina13 pmusel4 n_n2349
+0001-1 1
+1111-0 1
+011-10 1
+101-10 1
+.names pinb1 pina1 pmusel1 pmusel2 pmusel3 pind1 pinc1 pmusel4 n_n1829
+--000-11 1
+-1011--0 1
+-1101--0 1
+1-010--0 1
+-1100--0 1
+--0011-0 1
+--111-10 1
+-11-0-10 1
+--110-10 1
+.names pmusel1 pind5 pmusel2 pinc5 pmusel3 pinb5 pina5 pmusel4 n_n1906
+0-010--1 1
+010-1--0 1
+1-111--0 1
+1-110--0 1
+0-1-01-0 1
+0-1-1-10 1
+1-0-1-10 1
+1-0-0-10 1
+1--10-10 1
+.names pmusel1 pmusel2 pmusel3 pina6 pinb6 pinc6 pmusel4 pind6 [26]
+000--11- 1
+0111--0- 1
+1011--0- 1
+1001--0- 1
+010-1-0- 1
+111--10- 1
+110--10- 1
+1-01-10- 1
+001---01 1
+.names pind3 pinc3 pmusel1 pmusel2 pmusel3 pinb3 pina3 pmusel4 [121]
+-1000--1 1
+-1111--0 1
+1-001--0 1
+-1110--0 1
+--0101-0 1
+--011-10 1
+--101-10 1
+-11-0-10 1
+--100-10 1
+.names pind2 pmusel1 pmusel2 pmusel3 pinb2 pmusel4 psh1 psh2 [201]
+0--0--00 1
+-1-0--00 1
+--10--00 1
+0---0-00 1
+0----100 1
+-1---100 1
+--1--100 1
+---1-100 1
+---0-000 1
+011---00 1
+000---00 1
+-001--00 1
+-01-0-00 1
+-10-0-00 1
+-0-10-00 1
+--010-00 1
+-00--000 1
+-0--0000 1
+--0-0000 1
+.names pmusel1 pmusel2 pmusel3 pinb6 pmusel4 psh1 pind6 psh2 [202]
+1-0--0-1 1
+-10--0-1 1
+1---10-1 1
+-1--10-1 1
+--1-10-1 1
+--0-00-1 1
+--0--001 1
+---0-001 1
+----1001 1
+001--0-1 1
+01-0-0-1 1
+10-0-0-1 1
+0-10-0-1 1
+-010-0-1 1
+00--00-1 1
+0--000-1 1
+-0-000-1 1
+11---001 1
+00---001 1
+.names pind3 pmusel1 pmusel2 pmusel3 pinb3 pmusel4 psh1 psh2 [228]
+0--0--00 1
+-1-0--00 1
+--10--00 1
+0---0-00 1
+0----100 1
+-1---100 1
+--1--100 1
+---1-100 1
+---0-000 1
+011---00 1
+000---00 1
+-001--00 1
+-01-0-00 1
+-10-0-00 1
+-0-10-00 1
+--010-00 1
+-00--000 1
+-0--0000 1
+--0-0000 1
+.names pmusel1 pmusel2 pmusel3 pinb7 pind7 pmusel4 psh1 psh2 [229]
+1-0---01 1
+-10---01 1
+--0-0-01 1
+---00-01 1
+1----101 1
+-1---101 1
+--1--101 1
+----0101 1
+--0--001 1
+001---01 1
+01-0--01 1
+10-0--01 1
+0-10--01 1
+-010--01 1
+11--0-01 1
+00--0-01 1
+00---001 1
+0--0-001 1
+-0-0-001 1
+.names [33] n_n2442 n_n2410 n_n2404 n_n2398 [76] [238]
+110--- 1
+11-0-- 1
+11--0- 1
+11---1 1
+.names [33] n_n2442 n_n2410 n_n2404 n_n2398 [76] [239]
+101110 1
+.names [33] n_n2442 n_n2448 n_n2410 n_n2404 n_n2398 [76] [260]
+1101110 1
+.names [33] n_n2442 n_n2448 n_n2410 n_n2404 n_n2398 [76] [265]
+101---- 1
+1-10--- 1
+1-1-0-- 1
+1-1--0- 1
+1-1---1 1
+.names [33] n_n2454 n_n2442 n_n2448 n_n2410 n_n2404 n_n2398 [76] [289]
+10111110 1
+.names [33] n_n2454 n_n2442 n_n2448 n_n2410 n_n2404 n_n2398 [76] [290]
+110----- 1
+11-0---- 1
+11--0--- 1
+11---0-- 1
+11----0- 1
+11-----1 1
+.names pmusel1 pmusel2 pmusel3 pinb6 pmusel4 psh1 pind6 psh2 [305]
+1-0--0-0 1
+-10--0-0 1
+1---10-0 1
+-1--10-0 1
+--1-10-0 1
+--0-00-0 1
+--0--000 1
+---0-000 1
+----1000 1
+001--0-0 1
+01-0-0-0 1
+10-0-0-0 1
+0-10-0-0 1
+-010-0-0 1
+00--00-0 1
+0--000-0 1
+-0-000-0 1
+11---000 1
+00---000 1
+.names pmusel1 pmusel2 pmusel3 pinb10 pind10 pmusel4 psh1 psh2 [306]
+1-0---01 1
+-10---01 1
+--0-0-01 1
+---00-01 1
+1----101 1
+-1---101 1
+--1--101 1
+----0101 1
+--0--001 1
+001---01 1
+01-0--01 1
+10-0--01 1
+0-10--01 1
+-010--01 1
+11--0-01 1
+00--0-01 1
+00---001 1
+0--0-001 1
+-0-0-001 1
+.names pmusel1 pmusel2 pmusel3 pinb9 pmusel4 psh1 psh2 pind9 [374]
+1-0--00- 1
+-10--00- 1
+1---100- 1
+-1--100- 1
+--1-100- 1
+--0-000- 1
+--0--000 1
+---0-000 1
+----1000 1
+001--00- 1
+01-0-00- 1
+10-0-00- 1
+0-10-00- 1
+-010-00- 1
+00--000- 1
+0--0000- 1
+-0-0000- 1
+11---000 1
+00---000 1
+.names pmusel1 pmusel2 pmusel3 pind13 pinb13 pmusel4 psh1 psh2 [375]
+1-0---01 1
+-10---01 1
+--00--01 1
+---00-01 1
+1----101 1
+-1---101 1
+--1--101 1
+---0-101 1
+--0--001 1
+001---01 1
+11-0--01 1
+00-0--01 1
+01--0-01 1
+10--0-01 1
+0-1-0-01 1
+-01-0-01 1
+00---001 1
+0---0001 1
+-0--0001 1
+.names pmusel1 pmusel2 pmusel3 pina11 pinc11 pina7 pmusel4 pinc7 [2294]
+--1----- 1
+------0- 1
+11------ 1
+00------ 1
+-0-0-0-- 1
+-1--0--0 1
+.names n_n2423 n_n2417 n_n2429 [2294] [2296]
+1111 1
+.names psh0 psh1 psh2 n_n2135 n_n2386 n_n2108 n_n2083 [21] [2319]
+0-1-1--1 1
+-01-1--1 1
+0101---1 1
+110-1--1 1
+100--1-1 1
+111---11 1
+000---11 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2325]
+011-0-1 1
+0-110-1 1
+011--01 1
+0-11-01 1
+10000-1 1
+1000-01 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2326]
+011-110 1
+0-11110 1
+1000110 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2327]
+011-010 1
+0-11010 1
+1000010 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2328]
+011-100 1
+0-11100 1
+1000100 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2329]
+011-111 1
+0-11111 1
+011-000 1
+0-11000 1
+1000111 1
+1000000 1
+.names n_n2135 n_n2386 n_n2066 [2325] [2326] [2329] [2347]
+-1-1-- 1
+1---1- 1
+--1--1 1
+.names n_n2108 n_n2083 [18] n_n2046 [2327] [2328] [2348]
+--11-- 1
+1---1- 1
+-1---1 1
+.names popsel3 popsel1 popsel2 popsel0 n_n2135 n_n2386 [25] n_n2146 [2371]
+011-1-1- 1
+0-111-1- 1
+011--10- 1
+0-11-10- 1
+1001---1 1
+1100---1 1
+10001-1- 1
+1000-10- 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2376]
+011-01- 1
+0-1101- 1
+011-0-1 1
+0-110-1 1
+011--01 1
+0-11-01 1
+011--10 1
+0-11-10 1
+100001- 1
+10000-1 1
+1000-01 1
+1000-10 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2378]
+011-100 1
+0-11100 1
+1000100 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2379]
+011-111 1
+0-11111 1
+011-000 1
+0-11000 1
+1000111 1
+1000000 1
+.names popsel3 popsel1 popsel2 popsel0 n_n2108 n_n2349 [2379] [2396]
+----1-1 1
+1001-1- 1
+1100-1- 1
+.names n_n2135 n_n2386 [18] n_n2343 [2376] [2378] [2397]
+--10-- 1
+-1--1- 1
+1----1 1
+.names popsel3 popsel1 popsel2 popsel0 n_n2386 n_n2368 [2416]
+011-1- 1
+0-111- 1
+10001- 1
+1001-1 1
+1100-1 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh2 [2417]
+011-00 1
+0-1100 1
+100000 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh2 [2419]
+011-01 1
+0-1101 1
+100001 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 [2421]
+011-00 1
+0-1100 1
+100000 1
+.names psh0 psh1 psh2 n_n2135 n_n2083 [21] n_n2029 n_n1998 [2445]
+1011-1-- 1
+110-11-- 1
+100--11- 1
+111--1-1 1
+.names n_n2386 n_n2066 [374] [375] [2417] [2419] [2446]
+-1001- 1
+1-00-1 1
+.names [18] n_n2179 n_n2173 [374] [375] [2421] [2447]
+10---- 1
+1-1--- 1
+---001 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh2 [2450]
+011-11 1
+0-1111 1
+100011 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh2 [2452]
+011-10 1
+0-1110 1
+100010 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2454]
+011-000 1
+0-11000 1
+1000000 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 [2455]
+011-10 1
+0-1110 1
+100010 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2456]
+011-001 1
+0-11001 1
+1000001 1
+.names n_n2083 n_n1974 [374] [375] [2450] [2454] [2456] [2476]
+-1---1- 1
+1-----1 1
+-1001-- 1
+.names n_n2066 [374] [375] [2452] [2455] [2477]
+-00-1 1
+1001- 1
+.names psh0 psh1 psh2 n_n2386 [18] [21] n_n2029 [99] [2478]
+----1--1 1
+0111-1-- 1
+010--11- 1
+.names psh0 psh1 psh2 n_n2386 n_n2083 [21] n_n2066 [2507]
+0111-1- 1
+101-11- 1
+001--11 1
+.names psh0 psh1 psh2 [21] n_n2029 n_n1998 n_n1974 n_n1952 [2508]
+11011--- 1
+0101-1-- 1
+1001--1- 1
+1111---1 1
+0001---1 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh2 [2512]
+011-00 1
+0-1100 1
+100000 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh2 [2514]
+011-01 1
+0-1101 1
+100001 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 [2516]
+011-00 1
+0-1100 1
+100000 1
+.names psh0 psh1 psh2 [21] n_n2066 n_n1998 n_n1952 n_n1921 [2540]
+10111--- 1
+1101-1-- 1
+1001--1- 1
+1111---1 1
+.names n_n2135 n_n1974 [305] [306] [2512] [2514] [2541]
+-1001- 1
+1-00-1 1
+.names popsel3 popsel1 popsel2 popsel0 [26] [305] [306] [2516] [2542]
+-----001 1
+10011--- 1
+11001--- 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2550]
+011-111 1
+0-11111 1
+011-000 1
+0-11000 1
+1000111 1
+1000000 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2552]
+011-110 1
+0-11110 1
+1000110 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 [2555]
+011-10 1
+0-1110 1
+100010 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2556]
+011-001 1
+0-11001 1
+1000001 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2557]
+011-011 1
+0-11011 1
+1000011 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2558]
+011-010 1
+0-11010 1
+1000010 1
+.names n_n2108 n_n1998 [305] [306] [2555] [2556] [2557] [2578]
+-1---1- 1
+1-----1 1
+--001-- 1
+.names [18] n_n1974 n_n1952 n_n1892 n_n1906 [2550] [2552] [2558] [2579]
+1---1--- 1
+---1-1-- 1
+-1----1- 1
+--1----1 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2582]
+011-101 1
+0-11101 1
+1000101 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2583]
+011-001 1
+0-11001 1
+1000001 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2590]
+011-111 1
+0-11111 1
+011-000 1
+0-11000 1
+1000111 1
+1000000 1
+.names [18] n_n1998 n_n1974 n_n2226 [2582] [2583] [2610]
+1--0-- 1
+-1--1- 1
+--1--1 1
+.names psh0 psh1 psh2 n_n2083 [21] n_n1952 n_n1921 n_n1892 [2611]
+01111--- 1
+110-11-- 1
+010-1-1- 1
+100-1--1 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh2 [2615]
+011-00 1
+0-1100 1
+100000 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh2 [2617]
+011-01 1
+0-1101 1
+100001 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 [2619]
+011-00 1
+0-1100 1
+100000 1
+.names psh0 psh1 psh2 [21] n_n1974 n_n1921 n_n1867 n_n1848 [2643]
+10111--- 1
+1101-1-- 1
+1001--1- 1
+1111---1 1
+.names n_n2066 n_n1892 [228] [229] [2615] [2617] [2644]
+-1001- 1
+1-00-1 1
+.names [33] n_n2410 n_n2404 n_n2398 [76] [228] [229] [2619] [2645]
+-----001 1
+10110--- 1
+.names [18] [33] n_n2410 n_n2404 n_n2398 [76] [121] [2646]
+1-----1 1
+-110--- 1
+-11-0-- 1
+-11--1- 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh2 [2657]
+011-01 1
+0-1101 1
+100001 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 [2659]
+011-00 1
+0-1100 1
+100000 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 [2660]
+011-10 1
+0-1110 1
+100010 1
+.names psh0 psh1 psh2 [21] n_n1892 n_n1867 n_n1818 [2678]
+11011-- 1
+0101-1- 1
+1111--1 1
+0-01-11 1
+.names [33] n_n2029 n_n2404 n_n2398 [76] [201] [202] [2657] [2679]
+1-010--- 1
+-1---001 1
+.names [201] [202] [228] [229] [2659] [2660] [2680]
+00--1- 1
+--00-1 1
+.names popsel3 popsel1 popsel2 popsel0 n_n2404 n_n2398 [55] [76] [2681]
+010-10-- 1
+0-0110-- 1
+1001--1- 1
+1100--1- 1
+010-1--1 1
+0-011--1 1
+001010-- 1
+00101--1 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2688]
+011-111 1
+0-11111 1
+011-000 1
+0-11000 1
+1000111 1
+1000000 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2690]
+011-110 1
+0-11110 1
+1000110 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 [2691]
+011-10 1
+0-1110 1
+100010 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2694]
+011-001 1
+0-11001 1
+1000001 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2695]
+011-011 1
+0-11011 1
+1000011 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2696]
+011-010 1
+0-11010 1
+1000010 1
+.names [33] n_n1867 n_n2398 [76] n_n1791 [2688] [2690] [2715]
+----11- 1
+-1----1 1
+1-11--- 1
+.names n_n1998 n_n1892 [201] [202] [2691] [2694] [2695] [2716]
+-1---1- 1
+1-----1 1
+--001-- 1
+.names [18] [33] n_n1848 n_n2398 [76] n_n1829 [2696] [2717]
+1----1- 1
+--1---1 1
+-1-00-- 1
+.names pinb0 popsel3 popsel1 popsel2 popsel0 [2719]
+1011- 1
+10-11 1
+11000 1
+.names pmusel1 pmusel2 pmusel3 psh0 pmusel4 psh1 psh2 [2720]
+0111011 1
+1011011 1
+0110000 1
+1010000 1
+.names pind0 popsel3 popsel1 popsel2 popsel0 [2721]
+1011- 1
+10-11 1
+11000 1
+.names pmusel1 pmusel2 pmusel3 psh0 pmusel4 psh1 psh2 [2722]
+0001111 1
+1111011 1
+0000100 1
+1110000 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2725]
+011-101 1
+0-11101 1
+1000101 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2726]
+011-001 1
+0-11001 1
+1000001 1
+.names [33] n_n2479 n_n2394 [2719] [2720] [2721] [2722] [2750]
+---11-- 1
+-----11 1
+110---- 1
+.names [33] n_n1892 n_n1867 n_n2479 n_n2394 [2725] [2726] [2751]
+-1---1- 1
+--1---1 1
+1--00-- 1
+.names psh0 psh1 psh2 [21] n_n1974 n_n1848 n_n1818 n_n1791 [2752]
+01111--- 1
+1101-1-- 1
+0101--1- 1
+1001---1 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2764]
+011-100 1
+0-11100 1
+1000100 1
+.names popsel3 popsel1 popsel2 popsel0 psh0 psh1 psh2 [2765]
+011-111 1
+0-11111 1
+011-000 1
+0-11000 1
+1000111 1
+1000000 1
+.names psh0 psh1 psh2 n_n2135 n_n2386 n_n2108 n_n2083 [21] [2784]
+0011---1 1
+011-1--1 1
+101-1--1 1
+110--1-1 1
+010---11 1
+.names [18] n_n2066 n_n2029 n_n2007 [2764] [2765] [2785]
+1--1-- 1
+-1--1- 1
+--1--1 1
+.end

@@ -1,0 +1,31 @@
+.model top
+.inputs bbtas_in_0_ bbtas_in_1_ clock
+.outputs bbtas_out_1_ bbtas_out_0_
+.latch    n_n16 n_n38 re clock 2
+.latch    n_n17 n_n39 re clock 2
+.latch    n_n18 n_n40 re clock 2
+.names bbtas_in_1_ n_n39 n_n40 bbtas_out_1_
+101 1
+.names bbtas_in_0_ n_n39 n_n40 bbtas_out_0_
+101 1
+.names bbtas_in_0_ bbtas_in_1_ n_n38 n_n39 n_n40 n_n16
+1-11- 1
+-111- 1
+00-01 1
+1-000 1
+-1000 1
+00010 1
+.names bbtas_in_0_ bbtas_in_1_ n_n38 n_n39 n_n40 n_n17
+1-1-- 1
+-11-- 1
+--11- 1
+1--11 1
+-1-11 1
+00-01 1
+.names bbtas_in_0_ bbtas_in_1_ n_n38 n_n39 n_n40 n_n18
+1---1 1
+-1--1 1
+1-01- 1
+-101- 1
+0011- 1
+.end

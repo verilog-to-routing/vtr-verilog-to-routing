@@ -1,0 +1,156 @@
+.model top
+.inputs pp pa0 pq pb0 pr pc0 ps pd0 pe0 pu pf0 pv pg0 pw ph0 px pi0 py pj0 pz \
+pa pb pc pd pe pf pg ph pi pj pk pl pm pn po
+.outputs pk0 pl0 pm0 pn0 po0 pp0 pq0 pr0 ps0 pt0 pu0 pv0 pw0 px0 py0 pz0
+.names pp pq pr ps pu pk0
+---1- 1
+00--- 1
+-11-1 1
+-10-0 1
+.names pq pr ps pu pv po pl0
+--1--- 1
+0----0 1
+11--1- 1
+1--11- 1
+10-00- 1
+.names pq ps pn [112] pm0
+-1-- 1
+---1 1
+0-0- 1
+.names pq ps pm [107] pn0
+-1-- 1
+---1 1
+0-0- 1
+.names pq ps pl [34] po0
+-1-- 1
+0-0- 1
+1--1 1
+.names pq ps pz pk [28] pp0
+-1--- 1
+0--0- 1
+1-1-1 1
+1-0-0 1
+.names pa0 pq ps pz pj [28] pq0
+--1--- 1
+-0--0- 1
+11-1-- 1
+11---1 1
+01-0-0 1
+.names pa0 pq pb0 pz [28] [360] pr0
+-----1 1
+111--- 1
+-111-- 1
+-11-1- 1
+01000- 1
+.names pq ps ph [82] ps0
+-1-- 1
+---1 1
+0-0- 1
+.names pq ps pg [77] pt0
+-1-- 1
+---1 1
+0-0- 1
+.names pq ps pf [42] pu0
+-1-- 1
+0-0- 1
+1--1 1
+.names pq ps pf0 pe [26] pv0
+-1--- 1
+0--0- 1
+1-1-1 1
+1-0-0 1
+.names pq ps pf0 pg0 pd [26] pw0
+-1---- 1
+0---0- 1
+1-11-- 1
+1--1-1 1
+1-00-0 1
+.names pq pf0 pg0 ph0 [26] [368] px0
+-----1 1
+11-1-- 1
+1-11-- 1
+1--11- 1
+10000- 1
+.names pq ph0 pi0 [26] [366] [369] py0
+-----1 1
+111--- 1
+1-11-- 1
+1-1-1- 1
+10000- 1
+.names pq ps pa [20] pz0
+-1-- 1
+---1 1
+0-0- 1
+.names pr pu pv pw px py [34]
+1----1 1
+-1---1 1
+--1--1 1
+---1-1 1
+----11 1
+000000 1
+.names pa0 pd0 pe0 pz [28] [361] [42]
+1-1--- 1
+-11--- 1
+--11-- 1
+--1-1- 1
+--1--1 1
+000000 1
+.names pr pu pv pw px py [28]
+1----- 1
+-1---- 1
+--1--- 1
+---1-- 1
+----1- 1
+-----1 1
+.names pa0 pd0 pe0 pz [28] [361] [26]
+1----- 1
+-1---- 1
+--1--- 1
+---1-- 1
+----1- 1
+-----1 1
+.names pq ph0 pi0 pj0 [26] [366] [20]
+11-1-- 1
+1-11-- 1
+1--11- 1
+1--1-1 1
+100000 1
+.names pa0 pq pd0 pz [28] [361] [77]
+111--- 1
+-111-- 1
+-11-1- 1
+-11--1 1
+010000 1
+.names pa0 pq pb0 pc0 pz [28] [82]
+11-1-- 1
+-111-- 1
+-1-11- 1
+-1-1-1 1
+010000 1
+.names pq pr pu pv pw px [107]
+11---1 1
+1-1--1 1
+1--1-1 1
+1---11 1
+100000 1
+.names pq pr pu pv pw [112]
+11--1 1
+1-1-1 1
+1--11 1
+10000 1
+.names pq ps pi [360]
+-1- 1
+0-0 1
+.names pc0 pb0 [361]
+1- 1
+-1 1
+.names pg0 pf0 [366]
+1- 1
+-1 1
+.names pq ps pc [368]
+-1- 1
+0-0 1
+.names pq ps pb [369]
+-1- 1
+0-0 1
+.end

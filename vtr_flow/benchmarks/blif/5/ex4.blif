@@ -1,0 +1,85 @@
+.model top
+.inputs ex4_in_5_ ex4_in_3_ ex4_in_4_ ex4_in_1_ ex4_in_2_ ex4_in_0_ clock
+.outputs ex4_out_6_ ex4_out_7_ ex4_out_4_ ex4_out_5_ ex4_out_8_ ex4_out_2_ \
+ex4_out_3_ ex4_out_0_ ex4_out_1_
+.latch    n_n39 n_n85 re clock 2
+.latch    n_n40 n_n86 re clock 2
+.latch    n_n41 n_n87 re clock 2
+.latch    n_n42 n_n88 re clock 2
+.names n_n85 n_n86 n_n87 n_n88 ex4_out_6_
+1111 1
+0010 1
+.names n_n85 n_n86 n_n87 n_n88 ex4_out_7_
+11-0 1
+0-00 1
+1011 1
+.names ex4_in_4_ n_n85 n_n86 n_n87 n_n88 ex4_out_4_
+1110- 1
+11-00 1
+.names ex4_in_4_ n_n85 n_n86 n_n87 n_n88 ex4_out_5_
+-01-0 1
+1110- 1
+-0011 1
+11-00 1
+.names ex4_in_4_ n_n85 n_n86 n_n87 n_n88 ex4_out_8_
+--1-0 1
+--011 1
+1110- 1
+11-00 1
+-0000 1
+.names n_n85 n_n87 n_n88 ex4_out_2_
+110 1
+.names ex4_in_3_ n_n85 n_n86 n_n87 n_n88 ex4_out_3_
+11010 1
+.names ex4_in_0_ n_n85 n_n86 n_n88 ex4_out_0_
+1110 1
+.names ex4_in_1_ n_n85 n_n86 n_n87 n_n88 ex4_out_1_
+1-111 1
+-1111 1
+.names ex4_in_4_ n_n85 n_n86 n_n87 n_n88 n_n39
+-01-- 1
+-001- 1
+01-0- 1
+--010 1
+-1001 1
+.names ex4_in_3_ ex4_in_2_ ex4_out_7_ n_n88 [42] n_n40
+----1 1
+1111- 1
+.names [169] [170] n_n41
+1- 1
+-1 1
+.names ex4_in_4_ n_n85 n_n86 n_n87 n_n88 n_n42
+-1-1- 1
+-01-1 1
+-00-0 1
+0110- 1
+11-00 1
+.names ex4_in_0_ n_n85 n_n86 n_n88 [42]
+0-1- 1
+-01- 1
+--11 1
+.names ex4_in_3_ ex4_in_2_ n_n88 [160]
+111 1
+.names n_n88 n_n85 [164]
+10 1
+.names n_n85 n_n86 n_n87 n_n88 [167]
+011- 1
+101- 1
+0-11 1
+-011 1
+1-10 1
+-110 1
+.names ex4_in_4_ n_n85 n_n86 n_n87 n_n88 [168]
+1110- 1
+-1010 1
+11-00 1
+.names ex4_in_0_ ex4_out_7_ [42] [160] [168] [169]
+----1 1
+011-- 1
+01-1- 1
+.names ex4_out_7_ [42] [160] [164] [167] [170]
+-1--1 1
+00-1- 1
+-001- 1
+1-1-1 1
+.end

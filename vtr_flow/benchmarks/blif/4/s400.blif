@@ -1,0 +1,231 @@
+.model top
+.inputs pclr pclk ptest pfm
+.outputs pgrn1 pred1 pred2 pgrn2 pylw1 pylw2
+.latch    nc3_q3vd nc3_q3 re pclk 2
+.latch    ntcomb_ra1 pred1 re pclk 2
+.latch    ntcomb_ga2 pgrn2 re pclk 2
+.latch    ntcomb_ga1 pgrn1 re pclk 2
+.latch    ntcomb_fe nolatch_fel re pclk 2
+.latch    nfmlviinlatchvcdad nfml re pclk 2
+.latch    ntcomb_ya2 pylw2 re pclk 2
+.latch    ny1c nolatchvuc_6 re pclk 2
+.latch    nr2c nolatchvuc_5 re pclk 2
+.latch    ntestlviinlatchvcdad ntestl re pclk 2
+.latch    nc3_q2vd nc3_q2 re pclk 2
+.latch    nc3_q1vd nc3_q1 re pclk 2
+.latch    nuc_11vd nuc_11 re pclk 2
+.latch    nc3_q0vd nc3_q0 re pclk 2
+.latch    nuc_16vd nuc_16 re pclk 2
+.latch    nuc_17vd nuc_17 re pclk 2
+.latch    nuc_18vd nuc_18 re pclk 2
+.latch    nuc_19vd nuc_19 re pclk 2
+.latch    nuc_8vd nuc_8 re pclk 2
+.latch    nuc_9vd nuc_9 re pclk 2
+.latch    nuc_10vd nuc_10 re pclk 2
+.names nolatchvuc_5 pred2
+0 1
+.names nolatchvuc_6 pylw1
+0 1
+.names pclr [79] [98] nc3_q3vd
+011 1
+.names [56] [133] ntcomb_ra1
+1- 1
+-1 1
+.names pclr nc3_q3 nc3_q0 [131] ntcomb_ga2
+1--- 1
+-0-1 1
+--11 1
+.names [84] [128] [386] ntcomb_ga1
+-1- 1
+1-1 1
+.names nc3_q1 nc3_q0 [125] [390] ntcomb_fe
+--1- 1
+00-1 1
+.names pclr pfm nfml nfmlviinlatchvcdad
+001 1
+010 1
+.names nc3_q1 nc3_q0 [391] ntcomb_ya2
+111 1
+.names nuc_17 [77] ntcomb_ya1 [125] ny1c
+--0- 1
+11-- 1
+1--1 1
+.names [77] [125] [395] [396] nr2c
+1-0- 1
+-10- 1
+--01 1
+00-1 1
+.names pclr ptest ntestl ntestlviinlatchvcdad
+001 1
+010 1
+.names pclr [88] [98] nc3_q2vd
+011 1
+.names pclr nc3_q1 [67] [98] nc3_q1vd
+0111 1
+0001 1
+.names pclr nuc_11 nc1_co nuc_11vd
+000 1
+.names pclr [90] [98] nc3_q0vd
+011 1
+.names nuc_16 [75] [93] nuc_16vd
+111 1
+010 1
+.names [75] [94] nuc_17vd
+11 1
+.names [75] [54] [96] nuc_18vd
+111 1
+.names ntestl nuc_19 nc1_co [75] nuc_19vd
+10-1 1
+-011 1
+0101 1
+.names nuc_8 [55] [61] [63] nuc_8vd
+--1- 1
+11-- 1
+1--1 1
+.names nuc_9 [55] [58] nuc_9vd
+--1 1
+11- 1
+.names pclr nuc_11 nuc_10 nc1_co nuc_10vd
+0010 1
+0100 1
+.names nc3_q1 nc3_q0 [390] [77]
+001 1
+.names nc3_q3 [67] [80] [382] [79]
+1-1- 1
+-0-1 1
+.names nuc_11 nuc_8 nuc_9 nuc_10 nc1_co
+11-- 1
+-11- 1
+-1-1 1
+.names ntestl nc1_co [379] nc2_co
+1-1 1
+-11 1
+.names pclr nc3_q3 nolatch_fel nc3_q2 [56]
+1--- 1
+-000 1
+.names pclr nc3_q3 nc3_q0 ntcomb_ga2vad1nf
+010 1
+.names nc3_q3 nfml nc3_q1 nc3_q0 [84]
+-0-- 1
+0-1- 1
+0--1 1
+.names ntcomb_ga2vad1nf [121] [122] [392] ntcomb_ya1
+-1-- 1
+--1- 1
+1--1 1
+.names nc3_q2 nc3_q1 nc3_q0 nc2_co [88]
+10-- 1
+1-0- 1
+1--0 1
+0111 1
+.names ntestl nc3_q0 nc1_co [379] [90]
+-1-0 1
+010- 1
+10-1 1
+-011 1
+.names pclr ntestl nc1_co [379] [75]
+0--0 1
+000- 1
+.names ntestl nuc_17 nc1_co [398] [94]
+-1-1 1
+010- 1
+10-0 1
+-010 1
+.names ntestl nuc_18 nuc_19 nc1_co [54]
+-0-- 1
+--0- 1
+0--0 1
+.names ntestl nuc_18 nuc_19 nc1_co [96]
+-1-- 1
+1-1- 1
+--11 1
+.names pclr nuc_11 nuc_10 nc1_co [55]
+00-0 1
+0-00 1
+.names ntestl nc3_q0 nc1_co [379] [67]
+-0-- 1
+---0 1
+0-0- 1
+.names ntestl nc1_co [379] [380] [98]
+--0- 1
+---1 1
+00-- 1
+.names ntestl nc1_co [379] [383] [80]
+--0- 1
+---1 1
+00-- 1
+.names ntestl nuc_17 nc1_co [398] [93]
+-0-- 1
+---1 1
+0-0- 1
+.names pclr nc1_co [404] [58]
+001 1
+.names pclr nc1_co [402] [61]
+001 1
+.names pclr nuc_9 nc1_co [63]
+000 1
+.names nolatch_fel nc3_q2 nc3_q1 nc3_q0 [112]
+001- 1
+00-1 1
+.names pclr nc3_q3 nc3_q1 nc3_q0 [115]
+0100 1
+.names nc3_q3 nc3_q1 nc3_q0 [390] [121]
+0001 1
+.names pclr nolatch_fel [388] [389] [122]
+011- 1
+01-1 1
+.names pclr nolatch_fel [388] [389] [125]
+011- 1
+01-1 1
+.names pclr nc3_q2 nc3_q1 [389] [128]
+0100 1
+.names nolatch_fel nc3_q2 nc3_q1 nc3_q0 [131]
+000- 1
+00-0 1
+.names nolatch_fel nc3_q2 nc3_q1 nc3_q0 [133]
+0001 1
+.names nuc_16 nuc_17 nuc_18 nuc_19 [379]
+11-- 1
+1-1- 1
+1--1 1
+.names nc3_q3 nc3_q2 nc3_q1 nc3_q0 [380]
+0--- 1
+-000 1
+.names nc3_q3 nc3_q2 nc3_q1 [382]
+011 1
+.names nc3_q2 nc3_q1 nc3_q0 [383]
+0-- 1
+-0- 1
+--0 1
+.names pclr nolatch_fel nc3_q2 [386]
+001 1
+.names nc3_q1 nc3_q2 [388]
+1- 1
+-0 1
+.names nc3_q3 nfml nc3_q0 [389]
+1-- 1
+-1- 1
+--0 1
+.names pclr nfml nc3_q2 [390]
+011 1
+.names pclr nolatch_fel nc3_q2 [391]
+000 1
+.names nc3_q1 nc3_q2 [392]
+00 1
+.names pclr nolatch_fel nc3_q2 [394]
+01- 1
+0-1 1
+.names nuc_17 [115] [394] [395]
+01- 1
+0-1 1
+.names [56] [112] [396]
+1- 1
+-1 1
+.names nuc_19 nuc_18 [398]
+0- 1
+-0 1
+.names nuc_11 nuc_8 nuc_9 nuc_10 [402]
+1011 1
+.names nuc_11 nuc_9 nuc_10 [404]
+101 1
+.end

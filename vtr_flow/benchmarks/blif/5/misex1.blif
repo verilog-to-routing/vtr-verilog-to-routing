@@ -1,0 +1,66 @@
+.model top
+.inputs rmwb yskip page xskip dmpst0 dmpst1 dmpst2 dmpst3
+.outputs adctlp0b adctlp1b adctlp2b dmnst0b dmnst1b dmnst2b dmnst3b
+.names [119] [120] adctlp0b
+1- 1
+-1 1
+.names [27] [28] [124] [127] adctlp1b
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names dmpst0 dmpst1 dmpst2 dmpst3 adctlp2b
+010- 1
+11-0 1
+00-0 1
+-010 1
+1001 1
+.names dmpst1 dmpst2 dmpst3 [13] [131] dmnst0b
+----1 1
+0101- 1
+.names [19] [20] [133] dmnst1b
+1-- 1
+-1- 1
+--1 1
+.names [16] [27] [28] [124] dmnst2b
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names dmpst0 dmpst1 dmpst2 dmpst3 dmnst3b
+0101 1
+1110 1
+.names rmwb xskip dmpst0 [13]
+0-- 1
+-00 1
+.names dmpst0 dmpst1 dmpst2 dmpst3 [16]
+1100 1
+.names yskip dmpst0 dmpst1 dmpst2 dmpst3 [19]
+00100 1
+.names xskip dmpst1 dmpst2 dmpst3 [20]
+1010 1
+.names yskip dmpst1 dmpst2 dmpst3 [27]
+1100 1
+.names page dmpst0 dmpst1 dmpst3 [28]
+1000 1
+.names yskip dmpst0 dmpst1 dmpst2 dmpst3 [119]
+0010- 1
+-0101 1
+.names xskip dmpst0 dmpst1 dmpst2 dmpst3 [120]
+-1-10 1
+-1001 1
+0-010 1
+.names dmpst0 dmpst1 dmpst2 dmpst3 [124]
+-010 1
+1001 1
+.names dmpst0 dmpst1 dmpst2 dmpst3 [127]
+11-0 1
+0101 1
+.names yskip dmpst0 dmpst1 dmpst2 dmpst3 [131]
+0010- 1
+-0101 1
+.names page dmpst0 dmpst1 dmpst2 dmpst3 [133]
+-1-10 1
+-1001 1
+00000 1
+.end

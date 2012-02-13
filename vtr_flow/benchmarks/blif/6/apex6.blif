@@ -1,0 +1,792 @@
+.model top
+.inputs txwrd3 a qpr4 txwrd2 b i1zzz0 txwrd5 c p1zzz0 txwrd4 xzfs i1zzz2 \
+i2zzz1 p1zzz1 p2zzz0 qpr1 i1zzz1 i2zzz0 p1zzz2 p2zzz1 qpr0 i1zzz4 i2zzz3 infin \
+p1zzz3 p2zzz2 qpr3 txwrd1 vybb1 i1zzz3 i2zzz2 p1zzz4 p2zzz3 qpr2 txwrd0 vybb0 \
+comppar psrw xz323 cbt2 mmerr ryz xz324 esrsum v1zzz7 v2zzz6 xz161 pfin stw_n \
+v2zzz7 vzzze xz162 xz320 cbt1 slad0 v1zzz5 v2zzz4 xz163 xz321 cbt0 slad1 \
+v1zzz6 v2zzz5 xz322 pybb5 slad2 txwrd14 v1zzz3 v2zzz2 xz160_n pybb4 slad3 \
+txwrd13 v1zzz4 v2zzz3 iclr pybb3 rptwin txwrd12 v1zzz1 v2zzz0 pybb2 txwrd11 \
+v1zzz2 v2zzz1 axz1 inzzze axz0 pybb8 v1zzz0 inybb8 pybb7 xzfr0 enwin ofs1 \
+pybb6 pzzze txmess_n txwrd15 xzfr1 i1zzz6 i2zzz5 inybb6 ofs2 p1zzz5 p2zzz4 \
+rxz0 i1zzz5 i2zzz4 inybb7 p1zzz6 p2zzz5 rpten rxz1 i2zzz7 inybb4 p1zzz7 p2zzz6 \
+i1zzz7 i2zzz6 inybb5 p2zzz7 inybb2 pybb1 txwrd7 txwrd10 inybb3 pybb0 txwrd6 \
+inybb0 txwrd9 inybb1 psync txwrd8 vfin
+.outputs i1zzz0_p v1zzz0_p i1zzz3_p i2zzz2_p txwrd8_p v1zzz2_p v2zzz1_p \
+i1zzz4_p i2zzz3_p stw_f txwrd9_p v1zzz1_p v2zzz0_p xz163_p c_p enwin_p \
+i1zzz1_p i2zzz0_p txwrd6_p v1zzz4_p v2zzz3_p i1zzz2_p i2zzz1_p txwrd7_p \
+v1zzz3_p v2zzz2_p p1zzz4_p p2zzz3_p xz162_p b_p p1zzz3_p p2zzz2_p p1zzz2_p \
+p2zzz1_p xzfr1_p p1zzz1_p p2zzz0_p txwrd14_p xz161_p a_p p1zzz0_p axz0_p \
+txwrd15_p axz1_p td_p fsesr_p rptwin_p txwrd12_p txwrd11_p xz322_p p2zzz7_p \
+txwrd13_p xz324_p xzfs_p p1zzz7_p p2zzz6_p xzfr0_p p1zzz6_p p2zzz5_p rxz1_p \
+comppar_p ofs2_p p1zzz5_p p2zzz4_p rxz0_p xz323_p i1zzz7_p i2zzz6_p ofs1_p \
+ryz_p sbuff txwrd4_p v1zzz6_p v2zzz5_p xz160_f xz320_p i2zzz7_p txwrd5_p \
+v1zzz5_p v2zzz4_p i1zzz5_p i2zzz4_p qpr4_p txwrd2_p v2zzz7_p i1zzz6_p i2zzz5_p \
+txwrd3_p v1zzz7_p v2zzz6_p qpr2_p txwrd0_p qpr3_p txwrd1_p xz321_p qpr0_p \
+qpr1_p txmess_f txwrd10_p
+.names i1zzz0 ryz inzzze inybb0 inybb1 i1zzz0_p
+101-- 1
+10-0- 1
+-0011 1
+.names vybb0 ryz vzzze v1zzz1 v1zzz0 v1zzz0_p
+00--1 1
+-01-1 1
+1001- 1
+.names i1zzz3 ryz inzzze inybb4 inybb0 i1zzz3_p
+101-- 1
+10--0 1
+-0011 1
+.names i2zzz2 ryz inzzze inybb3 inybb0 i2zzz2_p
+100-- 1
+10--0 1
+-0111 1
+.names txwrd9 nmis15080 [517] [1696] [1700] txwrd8_p
+--1-- 1
+----1 1
+11-1- 1
+.names vybb0 ryz vzzze v1zzz3 v1zzz2 v1zzz2_p
+00--1 1
+-01-1 1
+1001- 1
+.names vybb0 ryz vzzze v2zzz2 v2zzz1 v2zzz1_p
+00--1 1
+-00-1 1
+1011- 1
+.names i1zzz4 ryz inzzze inybb5 inybb0 i1zzz4_p
+101-- 1
+10--0 1
+-0011 1
+.names i2zzz3 ryz inzzze inybb4 inybb0 i2zzz3_p
+100-- 1
+10--0 1
+-0111 1
+.names infin ryz pfin vfin [154] stw_f
+-1--- 1
+0-001 1
+.names txwrd10 nmis15080 [502] [1696] [1706] txwrd9_p
+--1-- 1
+----1 1
+11-1- 1
+.names vybb0 ryz vzzze v1zzz1 v1zzz2 v1zzz1_p
+00-1- 1
+-011- 1
+100-1 1
+.names vybb0 ryz vzzze v2zzz0 v2zzz1 v2zzz0_p
+00-1- 1
+-001- 1
+101-1 1
+.names xz161 xz162 xz163 nmis7564 [487] [1709] xz163_p
+----1- 1
+1100-1 1
+.names c ryz [482] [1714] c_p
+101- 1
+10-1 1
+0000 1
+.names psrw ofs1 ofs2 [157] enwin_p
+10-1 1
+1-01 1
+.names i1zzz1 ryz inzzze inybb2 inybb0 i1zzz1_p
+101-- 1
+10--0 1
+-0011 1
+.names i2zzz0 ryz inzzze inybb0 inybb1 i2zzz0_p
+100-- 1
+10-0- 1
+-0111 1
+.names txwrd7 nmis15080 [471] [1696] [1718] txwrd6_p
+--1-- 1
+----1 1
+11-1- 1
+.names vybb0 ryz vzzze v1zzz5 v1zzz4 v1zzz4_p
+00--1 1
+-01-1 1
+1001- 1
+.names vybb0 ryz vzzze v2zzz4 v2zzz3 v2zzz3_p
+00--1 1
+-00-1 1
+1011- 1
+.names i1zzz2 ryz inzzze inybb3 inybb0 i1zzz2_p
+101-- 1
+10--0 1
+-0011 1
+.names i2zzz1 ryz inzzze inybb2 inybb0 i2zzz1_p
+100-- 1
+10--0 1
+-0111 1
+.names txwrd8 nmis15080 [458] [1696] [1721] txwrd7_p
+--1-- 1
+----1 1
+11-1- 1
+.names vybb0 ryz vzzze v1zzz3 v1zzz4 v1zzz3_p
+00-1- 1
+-011- 1
+100-1 1
+.names vybb0 ryz vzzze v2zzz2 v2zzz3 v2zzz2_p
+00-1- 1
+-001- 1
+101-1 1
+.names p1zzz4 ryz pybb5 pzzze pybb0 p1zzz4_p
+10-1- 1
+10--0 1
+-0101 1
+.names p2zzz3 ryz pybb4 pzzze pybb0 p2zzz3_p
+10-0- 1
+10--0 1
+-0111 1
+.names xz161 xz162 xz320 xz160_n nmis11560 nmis7564 xz162_p
+01--1- 1
+-10-1- 1
+-1-11- 1
+-1--11 1
+101010 1
+.names b ryz [442] [1727] [1728] [1730] b_p
+101--- 1
+-0-11- 1
+10---1 1
+.names p1zzz3 ryz pybb4 pzzze pybb0 p1zzz3_p
+10-1- 1
+10--0 1
+-0101 1
+.names p2zzz2 ryz pybb3 pzzze pybb0 p2zzz2_p
+10-0- 1
+10--0 1
+-0111 1
+.names p1zzz2 ryz pybb3 pzzze pybb0 p1zzz2_p
+10-1- 1
+10--0 1
+-0101 1
+.names p2zzz1 ryz pybb2 pzzze pybb0 p2zzz1_p
+10-0- 1
+10--0 1
+-0111 1
+.names xz320 xzfr0 xzfr1 nmis11560 nmis7564 [1733] xzfr1_p
+0-11-- 1
+-011-- 1
+--111- 1
+--11-1 1
+110100 1
+.names p1zzz1 ryz pybb2 pzzze pybb0 p1zzz1_p
+10-1- 1
+10--0 1
+-0101 1
+.names p2zzz0 ryz pzzze pybb1 pybb0 p2zzz0_p
+100-- 1
+10--0 1
+-0111 1
+.names txwrd15 nmis15080 [419] [1696] [1738] txwrd14_p
+--1-- 1
+----1 1
+11-1- 1
+.names xz161 xz320 xz160_n iclr psync nmis7564 xz161_p
+10-00- 1
+1-100- 1
+1--001 1
+010000 1
+.names a ryz txmess_n [413] [1739] a_p
+10--- 1
+-0000 1
+.names p1zzz0 ryz pzzze pybb1 pybb0 p1zzz0_p
+101-- 1
+10--0 1
+-0011 1
+.names a ryz axz0 txmess_n [413] [1739] axz0_p
+-011-- 1
+1000-- 1
+001-1- 1
+001--1 1
+-00000 1
+.names txwrd15 nmis15080 [201] [401] [1740] txwrd15_p
+---1- 1
+----1 1
+111-- 1
+.names ryz [165] axz1_p
+01 1
+.names ryz rptwin txmess_n [385] [386] [1754] td_p
+0----1 1
+0001-- 1
+000-1- 1
+.names iclr ofs1 xzfr1 ofs2 fsesr_p
+0-1- 1
+01-1 1
+.names ryz [197] [365] [366] [1756] [1757] rptwin_p
+0-1--- 1
+0--1-- 1
+01--11 1
+.names txwrd13 nmis15080 [362] [1696] [1764] txwrd12_p
+--1-- 1
+----1 1
+11-1- 1
+.names txwrd12 nmis15080 [357] [1696] [1767] txwrd11_p
+--1-- 1
+----1 1
+11-1- 1
+.names xz320 xz321 xz322 iclr psync xz322_p
+0-100 1
+-0100 1
+11000 1
+.names ryz pybb8 pzzze p2zzz7 pybb0 p2zzz7_p
+0-01- 1
+0--10 1
+011-1 1
+.names txwrd14 nmis15080 [346] [1696] [1771] txwrd13_p
+--1-- 1
+----1 1
+11-1- 1
+.names xz323 xz324 [152] [174] xz324_p
+-1-1 1
+101- 1
+.names xzfs psrw iclr ofs1 ofs2 psync xzfs_p
+1100-- 1
+110-0- 1
+-100-1 1
+-10-01 1
+.names ryz pybb8 pzzze p1zzz7 pybb0 p1zzz7_p
+0-11- 1
+0--10 1
+010-1 1
+.names ryz pybb7 pzzze p2zzz6 pybb0 p2zzz6_p
+0-01- 1
+0--10 1
+011-1 1
+.names xz320 iclr xzfr0 psync nmis7564 [1733] xzfr0_p
+0010-- 1
+-0101- 1
+-010-1 1
+100000 1
+.names ryz pybb7 pzzze p1zzz6 pybb0 p1zzz6_p
+0-11- 1
+0--10 1
+010-1 1
+.names ryz pybb6 pzzze p2zzz5 pybb0 p2zzz5_p
+0-01- 1
+0--10 1
+011-1 1
+.names iclr rxz0 rxz1 [296] [324] [325] rxz1_p
+--11-- 1
+001--- 1
+-10-1- 1
+-10--1 1
+.names a comppar ryz [180] [179] [279] comppar_p
+--0--1 1
+1-01-- 1
+-10-1- 1
+.names iclr ofs1 ofs2_p
+01 1
+.names ryz pybb6 pzzze p1zzz5 pybb0 p1zzz5_p
+0-11- 1
+0--10 1
+010-1 1
+.names ryz pybb5 pzzze p2zzz4 pybb0 p2zzz4_p
+0-01- 1
+0--10 1
+011-1 1
+.names rxz0 [273] [325] [1777] [1778] rxz0_p
+-1--- 1
+0-1-- 1
+0--11 1
+.names xz323 xz320 xz321 xz322 iclr psync xz323_p
+10--00 1
+1-0-00 1
+1--000 1
+011100 1
+.names ryz inzzze inybb8 i1zzz7 inybb0 i1zzz7_p
+01-1- 1
+0--10 1
+001-1 1
+.names ryz inzzze inybb7 i2zzz6 inybb0 i2zzz6_p
+00-1- 1
+0--10 1
+011-1 1
+.names iclr psync ofs1_p
+01 1
+.names a iclr axz1 axz0 txmess_n ryz_p
+-1--- 1
+1-110 1
+.names rptwin txmess_n sbuff
+1- 1
+-0 1
+.names txwrd5 nmis15080 [264] [1696] [1799] txwrd4_p
+--1-- 1
+----1 1
+11-1- 1
+.names vybb0 ryz v1zzz7 vzzze v1zzz6 v1zzz6_p
+00--1 1
+-0-11 1
+1010- 1
+.names vybb0 ryz v2zzz6 vzzze v2zzz5 v2zzz5_p
+00--1 1
+-0-01 1
+1011- 1
+.names xz320 xz160_n iclr psync nmis7564 xz160_f
+0100- 1
+-1001 1
+10000 1
+.names xz320 iclr psync xz320_p
+000 1
+.names ryz inzzze inybb8 i2zzz7 inybb0 i2zzz7_p
+00-1- 1
+0--10 1
+011-1 1
+.names txwrd6 nmis15080 [251] [1696] [1802] txwrd5_p
+--1-- 1
+----1 1
+11-1- 1
+.names vybb0 ryz vzzze v1zzz5 v1zzz6 v1zzz5_p
+00-1- 1
+-011- 1
+100-1 1
+.names vybb0 ryz vzzze v2zzz4 v2zzz5 v2zzz4_p
+00-1- 1
+-001- 1
+101-1 1
+.names ryz inzzze inybb6 i1zzz5 inybb0 i1zzz5_p
+01-1- 1
+0--10 1
+001-1 1
+.names ryz inzzze i2zzz4 inybb5 inybb0 i2zzz4_p
+001-- 1
+0-1-0 1
+01-11 1
+.names qpr1 qpr0 txmess_f [230] [1805] qpr4_p
+---1- 1
+110-1 1
+.names txwrd3 nmis15080 [226] [1696] [1808] txwrd2_p
+--1-- 1
+----1 1
+11-1- 1
+.names vybb1 vybb0 ryz v2zzz7 vzzze v2zzz7_p
+-001- 1
+--010 1
+110-1 1
+.names ryz inzzze i1zzz6 inybb7 inybb0 i1zzz6_p
+011-- 1
+0-1-0 1
+00-11 1
+.names ryz inzzze i2zzz5 inybb6 inybb0 i2zzz5_p
+001-- 1
+0-1-0 1
+01-11 1
+.names txwrd4 nmis15080 [215] [1696] [1811] txwrd3_p
+--1-- 1
+----1 1
+11-1- 1
+.names vybb1 vybb0 ryz v1zzz7 vzzze v1zzz7_p
+-001- 1
+--011 1
+110-0 1
+.names vybb0 ryz v2zzz6 v2zzz7 vzzze v2zzz6_p
+001-- 1
+-01-0 1
+10-11 1
+.names qpr1 qpr0 qpr2 ryz txmess_f [118] qpr2_p
+--1--1 1
+0-10-- 1
+110-0- 1
+.names txwrd1 nmis15080 [142] [1696] [1814] txwrd0_p
+--1-- 1
+----1 1
+11-1- 1
+.names qpr1 qpr0 qpr3 qpr2 txmess_f [138] qpr3_p
+-----1 1
+11010- 1
+.names txwrd2 nmis15080 [133] [1696] [1818] txwrd1_p
+--1-- 1
+----1 1
+11-1- 1
+.names xz320 xz321 iclr psync xz321_p
+0100 1
+1000 1
+.names qpr0 infin ryz pfin txmess_n vfin qpr0_p
+010--- 1
+0-01-- 1
+0-0-0- 1
+0-0--1 1
+100010 1
+.names qpr1 qpr0 txmess_f [118] qpr1_p
+1--1 1
+010- 1
+.names infin ryz pfin txmess_n vfin txmess_f
+-1--- 1
+0-010 1
+.names txwrd11 nmis15080 [104] [1696] [1823] txwrd10_p
+--1-- 1
+----1 1
+11-1- 1
+.names a stw_n axz1 axz0 txmess_n [154]
+-1--- 1
+1-110 1
+.names xzfs iclr enwin psync [157]
+-01- 1
+10-1 1
+.names a axz1 axz0 txmess_n [413] [1739] [165]
+-10--- 1
+-1-1-- 1
+01--1- 1
+01---1 1
+1010-- 1
+-01000 1
+.names xz320 xz321 xz322 iclr psync [152]
+11100 1
+.names xz323 xz320 xz321 xz322 iclr psync [174]
+0---00 1
+-0--00 1
+--0-00 1
+---000 1
+.names iclr psync nmis11560
+00 1
+.names infin ryz pfin nmis15080
+000 1
+.names qpr0 infin ryz pfin txmess_n vfin [118]
+0-0--- 1
+-00010 1
+.names xz323 xz324 xz321 xz322 nmis7564
+0--- 1
+-0-- 1
+--0- 1
+---0 1
+.names xz162 xz163 slad2 slad3 [124]
+1-0- 1
+-1-0 1
+.names qpr4 qpr3 [149]
+00 1
+.names slad0 xz163 xz160_n slad3 [197]
+0111 1
+1101 1
+0010 1
+1000 1
+.names a axz1 axz0 [99]
+0-- 1
+-00 1
+.names b c txmess_n vfin [201]
+--10 1
+00-0 1
+.names xzfs slad2 slad3 psync [130]
+0--- 1
+-1-- 1
+--1- 1
+---0 1
+.names comppar mmerr esrsum axz1 axz0 txmess_n [180]
+1-01-- 1
+11--1- 1
+---110 1
+0-11-0 1
+00--10 1
+.names txmess_n [99] [293] [392] [393] [1792] [179]
+1----- 1
+-10--0 1
+-1000- 1
+.names infin ryz pfin v2zzz2 vfin [104]
+00011 1
+.names infin ryz pfin v1zzz1 vfin [133]
+00011 1
+.names qpr1 qpr3 qpr2 ryz [118] [138]
+-1--1 1
+01-0- 1
+-100- 1
+.names infin ryz pfin v1zzz0 vfin [142]
+00011 1
+.names infin ryz pfin v1zzz3 vfin [215]
+00011 1
+.names infin ryz pfin v1zzz2 vfin [226]
+00011 1
+.names qpr4 qpr1 qpr3 qpr2 ryz [118] [230]
+1----1 1
+10--0- 1
+1-0-0- 1
+1--00- 1
+.names infin ryz pfin v1zzz5 vfin [251]
+00011 1
+.names infin ryz pfin v1zzz4 vfin [264]
+00011 1
+.names iclr [305] [1788] [1789] [1791] [1796] [273]
+----11 1
+01---1 1
+0-1--1 1
+0--1-1 1
+.names [293] [392] [393] [1792] [1794] [279]
+1---1 1
+-1-11 1
+--111 1
+.names b c txwrd0 [293]
+1-1 1
+-11 1
+.names iclr rptwin [305] [1788] [1789] [1791] [296]
+-0---1 1
+001--- 1
+00-1-- 1
+00--1- 1
+.names xz162 xz163 slad2 slad3 iclr psync [298]
+1-0-00 1
+-1-000 1
+.names xz161 slad0 slad1 xz160_n [124] [1781] [305]
+-1-1-- 1
+-1--1- 1
+-1---1 1
+110--- 1
+.names slad1 iclr psync [1778] [324]
+0011 1
+.names iclr rptwin [197] [1756] [1757] [325]
+01--- 1
+0-111 1
+.names infin ryz pfin v2zzz5 vfin [346]
+00011 1
+.names infin ryz pfin v2zzz3 vfin [357]
+00011 1
+.names infin ryz pfin v2zzz4 vfin [362]
+00011 1
+.names xzfs slad0 slad1 slad2 slad3 psync [365]
+100001 1
+.names rptwin rxz0 rxz1 [366]
+10- 1
+1-0 1
+.names esrsum rptwin rxz0 rpten rxz1 [379]
+11011 1
+01110 1
+.names a b c rptwin axz1 axz0 [381]
+0000-- 1
+-00000 1
+.names a b c txwrd0 axz1 axz0 [385]
+01-1-- 1
+0-11-- 1
+-1-100 1
+--1100 1
+.names a comppar mmerr esrsum axz1 axz0 [386]
+10--11 1
+1-0-01 1
+1--110 1
+.names qpr1 qpr0 qpr2 slad0 slad1 [392]
+0111- 1
+001-1 1
+.names qpr1 qpr0 qpr2 slad2 slad3 [393]
+1101- 1
+100-1 1
+.names infin ryz pfin v2zzz7 vfin [401]
+00011 1
+.names qpr4 qpr3 cbt2 [413]
+001 1
+.names infin ryz v2zzz6 pfin vfin [419]
+00101 1
+.names qpr3 cbt2 cbt1 cbt0 [442]
+00-- 1
+0-00 1
+.names infin ryz v1zzz7 pfin vfin [458]
+00101 1
+.names infin ryz pfin v1zzz6 vfin [471]
+00011 1
+.names qpr4 cbt2 cbt1 cbt0 [482]
+00-- 1
+0-1- 1
+0--1 1
+.names xz163 xz320_p [488] [490] [492] [494] [487]
+11---- 1
+1-1--- 1
+1--1-- 1
+1---1- 1
+1----1 1
+.names xz162 iclr psync [488]
+000 1
+.names xz161 iclr psync [490]
+000 1
+.names xz160_n iclr psync [492]
+100 1
+.names xz323 xz324 xz321 xz322 iclr psync [494]
+0---00 1
+-0--00 1
+--0-00 1
+---000 1
+.names infin ryz pfin v2zzz1 vfin [502]
+00011 1
+.names infin ryz pfin v2zzz0 vfin [517]
+00011 1
+.names b c txmess_n vfin [1696]
+1-00 1
+-100 1
+.names p2zzz0 i2zzz0 infin ryz pfin [1698]
+-110- 1
+1-001 1
+.names infin ryz pfin txwrd8 [201] [1698] [1700]
+-----1 1
+00011- 1
+.names i2zzz1 p2zzz1 infin ryz pfin [1704]
+1-10- 1
+-1001 1
+.names infin ryz pfin txwrd9 [201] [1704] [1706]
+-----1 1
+00011- 1
+.names xz320 xz160_n iclr psync [1709]
+1000 1
+.names qpr1 qpr0 qpr3 qpr2 txmess_n [1714]
+1---- 1
+-0--- 1
+--1-- 1
+---0- 1
+----1 1
+.names infin ryz pfin i1zzz6 p1zzz6 [1716]
+10-1- 1
+001-1 1
+.names infin ryz pfin txwrd6 [201] [1716] [1718]
+-----1 1
+00011- 1
+.names infin ryz pfin p1zzz7 i1zzz7 [1719]
+10--1 1
+0011- 1
+.names infin ryz pfin txwrd7 [201] [1719] [1721]
+-----1 1
+00011- 1
+.names b cbt2 cbt1 cbt0 [1727]
+011- 1
+01-1 1
+.names qpr4 qpr1 qpr0 qpr3 qpr2 txmess_n [1728]
+001010 1
+.names qpr4 qpr1 qpr0 qpr2 txmess_n [1730]
+1---- 1
+-1--- 1
+--0-- 1
+---0- 1
+----1 1
+.names xz161 xz162 xz163 xz160_n [1733]
+1--- 1
+-1-- 1
+--1- 1
+---0 1
+.names infin ryz pfin p2zzz6 i2zzz6 [1736]
+10--1 1
+0011- 1
+.names infin ryz pfin txwrd14 [201] [1736] [1738]
+-----1 1
+00011- 1
+.names qpr4 b qpr1 qpr0 qpr3 qpr2 [1739]
+--1--- 1
+---0-- 1
+-----0 1
+1---1- 1
+-0--1- 1
+.names infin ryz pfin i2zzz7 p2zzz7 [1740]
+10-1- 1
+001-1 1
+.names sbuff [149] [379] [381] [392] [393] [1754]
+--1--- 1
+01--1- 1
+-1-11- 1
+01---1 1
+-1-1-1 1
+.names xz323 xz324 xz320 xz321 xz322 enwin [1756]
+111111 1
+.names xz161 xz162 slad1 slad2 [1757]
+1111 1
+0101 1
+1010 1
+0000 1
+.names infin ryz pfin p2zzz4 i2zzz4 [1762]
+10--1 1
+0011- 1
+.names infin ryz pfin txwrd12 [201] [1762] [1764]
+-----1 1
+00011- 1
+.names i2zzz3 infin p2zzz3 ryz pfin [1765]
+11-0- 1
+-0101 1
+.names infin ryz pfin txwrd11 [201] [1765] [1767]
+-----1 1
+00011- 1
+.names infin ryz pfin i2zzz5 p2zzz5 [1769]
+10-1- 1
+001-1 1
+.names infin ryz pfin txwrd13 [201] [1769] [1771]
+-----1 1
+00011- 1
+.names slad1 iclr psync [1777]
+001 1
+.names xzfs slad0 slad2 slad3 [1778]
+1000 1
+.names xz323 xz324 xz320 xz321 xz322 enwin [1781]
+0----- 1
+-0---- 1
+--0--- 1
+---0-- 1
+----0- 1
+-----0 1
+.names xz161 slad0 xz160_n [1782]
+0-- 1
+-00 1
+.names xz323 xz324 xz161 xz321 slad1 xz322 [1785]
+0----- 1
+-0---- 1
+---0-- 1
+-----0 1
+--1-0- 1
+.names xz162 xz320 xz163 slad2 slad3 [1786]
+-0-1- 1
+-0--1 1
+--0-1 1
+1--01 1
+.names xzfs xz162 xz320 xz163 slad2 slad3 [1787]
+0-0--- 1
+-0--1- 1
+01--0- 1
+0--1-0 1
+---110 1
+.names slad0 xz160_n enwin [130] [1785] [1786] [1788]
+-----1 1
+--01-- 1
+---11- 1
+00-1-- 1
+.names slad1 [124] [1781] [1782] [1787] [1789]
+----1 1
+11--- 1
+1-1-- 1
+1--1- 1
+.names xz320 iclr psync [298] [1791]
+---1 1
+000- 1
+.names qpr4 b c qpr3 [1792]
+0000 1
+.names a comppar axz1 axz0 txmess_n [1794]
+00--0 1
+-0000 1
+.names rxz0 rptwin [1796]
+10 1
+.names i1zzz4 infin p1zzz4 ryz pfin [1797]
+11-0- 1
+-0101 1
+.names txwrd4 infin ryz pfin [201] [1797] [1799]
+-----1 1
+10001- 1
+.names infin ryz pfin p1zzz5 i1zzz5 [1800]
+10--1 1
+0011- 1
+.names txwrd5 infin ryz pfin [201] [1800] [1802]
+-----1 1
+10001- 1
+.names qpr4 qpr3 qpr2 [1805]
+011 1
+.names i1zzz2 p1zzz2 infin ryz pfin [1806]
+1-10- 1
+-1001 1
+.names txwrd2 infin ryz pfin [201] [1806] [1808]
+-----1 1
+10001- 1
+.names infin p1zzz3 i1zzz3 ryz pfin [1809]
+1-10- 1
+01-01 1
+.names txwrd3 infin ryz pfin [201] [1809] [1811]
+-----1 1
+10001- 1
+.names i1zzz0 p1zzz0 infin ryz pfin [1812]
+1-10- 1
+-1001 1
+.names infin txwrd0 ryz pfin [201] [1812] [1814]
+-----1 1
+01001- 1
+.names p1zzz1 i1zzz1 infin ryz pfin [1816]
+-110- 1
+1-001 1
+.names infin txwrd1 ryz pfin [201] [1816] [1818]
+-----1 1
+01001- 1
+.names infin p2zzz2 i2zzz2 ryz pfin [1821]
+1-10- 1
+01-01 1
+.names infin ryz pfin txwrd10 [201] [1821] [1823]
+-----1 1
+00011- 1
+.end

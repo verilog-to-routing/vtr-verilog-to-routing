@@ -1,0 +1,69 @@
+.model top
+.inputs a b c d e f g h i j k l m n o p q r s t u v w x y
+.outputs q1 p1 a1 c1 b1 e1 d1 g1 f1 i1 h1 k1 z j1 m1 l1 o1 n1
+.names a b c q1
+001 1
+.names a b p1
+01 1
+.names j k [22] a1
+111 1
+.names a b c r s t [48] c1
+------1 1
+000010- 1
+.names j k [22] b1
+101 1
+.names a b c j k e1
+11111 1
+.names a b c j k l m d1
+1110100 1
+.names a b c j k l m g1
+101---- 1
+1-10110 1
+.names a b c j k l f1
+111011 1
+.names p q [43] [196] [197] i1
+--1-- 1
+00-11 1
+.names a b c r s [206] h1
+001101 1
+.names p q [41] [196] [197] k1
+--1-- 1
+10-11 1
+.names j k [22] z
+011 1
+.names p q [39] [196] [197] j1
+--1-- 1
+11-11 1
+.names a b c r t m1
+00010 1
+.names j y [29] l1
+101 1
+.names a b c k t o1
+1-0-- 1
+11-0- 1
+-00-1 1
+.names j k [22] n1
+001 1
+.names a b c r s t [22]
+000000 1
+.names a b c k r t x [29]
+110---- 1
+11-0--- 1
+001---1 1
+00---11 1
+000-10- 1
+.names a b s t u v w [39]
+0110011 1
+.names a b s t u v w [41]
+0110010 1
+.names a b s t u v w [43]
+0110000 1
+.names a b c j k l m [48]
+1110111 1
+.names n o u v [196]
+0010 1
+.names a b c l m w [197]
+001010 1
+.names d e f g h i t [206]
+0100001 1
+.end

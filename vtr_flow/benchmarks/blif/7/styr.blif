@@ -1,0 +1,445 @@
+.model top
+.inputs styr_in_6_ styr_in_5_ styr_in_8_ styr_in_7_ styr_in_2_ styr_in_1_ \
+styr_in_4_ styr_in_3_ styr_in_0_ clock
+.outputs styr_out_0_ styr_out_1_ styr_out_2_ styr_out_3_ styr_out_4_ \
+styr_out_5_ styr_out_6_ styr_out_7_ styr_out_8_ styr_out_9_
+.latch    n_n53 n_n260 re clock 2
+.latch    n_n54 n_n261 re clock 2
+.latch    n_n55 n_n262 re clock 2
+.latch    n_n56 n_n263 re clock 2
+.latch    n_n57 n_n264 re clock 2
+.names styr_in_4_ styr_in_3_ n_n260 n_n262 n_n263 n_n264 [1088] styr_out_0_
+------1 1
+110-00- 1
+111111- 1
+.names styr_in_5_ styr_in_4_ styr_in_3_ n_n260 n_n262 n_n263 n_n264 \
+styr_out_1_
+-110-00 1
+0--0000 1
+-111111 1
+.names styr_in_8_ styr_in_4_ n_n260 n_n262 n_n263 [181] [1089] styr_out_2_
+-----1- 1
+------1 1
+1000--- 1
+100-0-- 1
+.names n_n260 n_n261 n_n262 n_n263 n_n264 [176] styr_out_3_
+-----1 1
+0-010- 1
+01-00- 1
+.names styr_in_2_ n_n260 n_n261 n_n262 n_n263 n_n264 styr_out_4_
+-1-0-- 1
+01--0- 1
+-11-0- 1
+-1--01 1
+-1--10 1
+-01111 1
+.names n_n260 n_n261 [164] [166] [1101] [1102] [1104] styr_out_5_
+------1 1
+0-1---- 1
+0--1--- 1
+00--1-- 1
+00---1- 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_3_ n_n260 [1105] styr_out_6_
+001101 1
+.names styr_in_8_ [54] [81] [82] [1118] [1121] styr_out_7_
+-1---- 1
+----1- 1
+-----1 1
+1-1--- 1
+1--1-- 1
+.names [33] [104] [61] [64] [67] [1126] styr_out_8_
+1----- 1
+--1--- 1
+---1-- 1
+----1- 1
+-1---1 1
+.names n_n263 n_n264 [152] [29] [1135] styr_out_9_
+---1- 1
+----1 1
+111-- 1
+.names [54] [284] [286] [287] [1003] [1004] n_n53
+1----- 1
+-1---- 1
+--1--- 1
+---1-- 1
+----1- 1
+-----1 1
+.names n_n261 [130] [1028] [1029] n_n54
+--1- 1
+---1 1
+11-- 1
+.names n_n262 n_n263 [91] [122] [236] [1033] [1050] n_n55
+----1-- 1
+------1 1
+---1-1- 1
+001---- 1
+.names n_n264 [47] [55] [114] [101] [220] [1054] n_n56
+-1----- 1
+--1---- 1
+-----1- 1
+0--1--- 1
+1---1-- 1
+1-----1 1
+.names [199] [200] [1082] [1083] n_n57
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names n_n260 n_n261 n_n262 n_n263 n_n264 [47]
+11--0 1
+1-101 1
+01111 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n261 n_n264 \
+[55]
+0011010 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 n_n261 n_n262 [114]
+-1---10 1
+0110001 1
+.names n_n260 n_n261 n_n262 n_n264 [33]
+1001 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 [91]
+001010 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ n_n260 n_n261 n_n262 [122]
+-1--1- 1
+-100-- 1
+01-0-0 1
+.names n_n262 n_n263 n_n264 [99]
+000 1
+.names n_n261 n_n263 n_n264 [110]
+000 1
+.names n_n260 n_n261 n_n262 n_n263 n_n264 [26]
+01111 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_3_ n_n260 [87]
+00100 1
+.names styr_in_8_ n_n262 [87] [134] [1021] [1022] [1024] [130]
+-----1- 1
+------1 1
+-11---- 1
+1---1-- 1
+10-1--- 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 n_n262 \
+[128]
+0011011 1
+0011000 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_3_ n_n260 [40]
+00110 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 n_n261 n_n262 [31]
+0110001 1
+.names n_n260 n_n261 n_n262 n_n263 n_n264 [34] [30] [54]
+-----1- 1
+-1-0--1 1
+01111-- 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 n_n262 n_n263 [34]
+0101011 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ n_n260 [89]
+0110 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_3_ n_n260 n_n261 [145]
+-01-0- 1
+0010-1 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 n_n262 \
+[152]
+-011-00 1
+1-10-00 1
+-110-00 1
+--10000 1
+0011111 1
+.names styr_in_5_ styr_in_8_ styr_in_3_ n_n261 n_n263 [104]
+01010 1
+.names styr_in_7_ n_n261 n_n262 n_n263 [157]
+--10 1
+100- 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 n_n262 \
+[155]
+001010- 1
+0011011 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 n_n262 \
+[30]
+0011000 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 [80]
+01110 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_2_ styr_in_3_ n_n260 n_n262 \
+[101]
+0011000 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_4_ n_n260 n_n261 n_n264 [117]
+1-100-- 1
+-01-11- 1
+--1011- 1
+--100-0 1
+.names styr_in_5_ styr_in_1_ styr_in_4_ styr_in_3_ n_n260 n_n263 n_n264 [134]
+--1---0 1
+0-1--1- 1
+0--0-1- 1
+0011--- 1
+-00-10- 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 n_n262 n_n263 [141]
+----11- 1
+010100- 1
+01100-1 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 n_n264 \
+[153]
+-011-01 1
+1-10-01 1
+-110-01 1
+--10001 1
+001110- 1
+.names styr_in_4_ n_n261 n_n262 n_n263 [101] [153] [29]
+01-01- 1
+-110-1 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ n_n260 n_n262 n_n263 n_n264 [61]
+01-00-1 1
+-1000-1 1
+01-0-01 1
+-100-01 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ n_n260 n_n261 n_n262 n_n263 [64]
+---1001 1
+01--001 1
+-10-001 1
+.names n_n260 n_n261 n_n262 n_n263 n_n264 [67]
+10100 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 n_n262 \
+[73]
+0010100 1
+.names styr_in_5_ styr_in_4_ n_n261 n_n262 n_n263 n_n264 [81]
+110011 1
+.names styr_in_6_ styr_in_5_ styr_in_4_ styr_in_3_ n_n262 n_n263 n_n264 [82]
+00011-1 1
+0010010 1
+.names styr_in_6_ styr_in_5_ styr_in_4_ styr_in_3_ n_n262 n_n263 n_n264 [164]
+0001011 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ n_n263 [166]
+-0-0 1
+1-10 1
+.names styr_in_5_ styr_in_8_ styr_in_3_ n_n260 n_n261 n_n263 n_n264 [176]
+--00--0 1
+0100-0- 1
+--01111 1
+.names styr_in_2_ styr_in_3_ n_n260 n_n261 n_n263 n_n264 [181]
+-11-11 1
+--1011 1
+1-1-00 1
+--1100 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_4_ n_n260 n_n262 n_n263 [195]
+0110111 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ n_n261 n_n262 n_n263 n_n264 [196]
+01-1011 1
+-101011 1
+.names styr_in_1_ n_n260 n_n262 n_n264 [80] [1067] [1071] [199]
+---11-- 1
+---1--1 1
+0101-1- 1
+.names n_n261 [212] [214] [1074] [1075] [200]
+01--- 1
+0-1-- 1
+0--1- 1
+0---1 1
+.names n_n260 n_n262 n_n263 n_n264 [201]
+1110 1
+.names styr_in_6_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 n_n262 [212]
+010011 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 n_n263 \
+[214]
+0010101 1
+.names n_n262 n_n263 [117] [225] [227] [1057] [220]
+-1-1-- 1
+-1--1- 1
+-1---1 1
+011--- 1
+.names styr_in_8_ styr_in_4_ n_n260 n_n262 n_n264 [225]
+11010 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_3_ n_n261 [227]
+00101 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n261 n_n264 [234]
+010110 1
+.names n_n262 [244] [245] [246] [1042] [1044] [236]
+11---- 1
+1-1--- 1
+1--1-- 1
+1---1- 1
+1----1 1
+.names styr_in_5_ styr_in_4_ styr_in_3_ n_n260 n_n263 n_n264 [239]
+10-111 1
+-01111 1
+.names styr_in_6_ styr_in_5_ styr_in_3_ n_n260 n_n262 n_n263 [240]
+1--111 1
+-00111 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ n_n261 n_n263 n_n264 [244]
+-101-0 1
+11--10 1
+.names styr_in_5_ styr_in_8_ styr_in_3_ n_n260 n_n263 [245]
+01101 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 n_n261 [246]
+110-00 1
+-10000 1
+011100 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ styr_in_0_ n_n260 n_n262 [263]
+01-110 1
+-10110 1
+.names styr_in_8_ n_n260 n_n262 [306] [307] [284]
+1101- 1
+110-1 1
+.names styr_in_6_ [296] [297] [298] [286]
+01-- 1
+0-1- 1
+0--1 1
+.names styr_in_2_ n_n260 n_n261 n_n262 n_n264 [30] [141] [287]
+----01- 1
+--1-0-1 1
+11-10-- 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 n_n262 \
+[294]
+0-10-11 1
+001-111 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ n_n260 n_n261 n_n262 n_n264 [296]
+1100111 1
+.names n_n260 n_n261 n_n262 n_n263 n_n264 [297]
+10101 1
+.names styr_in_5_ styr_in_8_ styr_in_3_ n_n261 n_n263 n_n264 [298]
+011100 1
+.names styr_in_5_ styr_in_4_ styr_in_3_ n_n263 n_n264 [306]
+01-11 1
+0-011 1
+.names styr_in_5_ styr_in_1_ styr_in_4_ styr_in_0_ n_n261 n_n263 n_n264 [307]
+00--10- 1
+-00-10- 1
+00---00 1
+-00--00 1
+0--1-00 1
+--01-00 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_4_ n_n260 [987]
+01100 1
+.names n_n260 n_n261 n_n262 n_n263 n_n264 [31] [294] [1003]
+---1--1 1
+---001- 1
+10011-- 1
+.names styr_in_4_ n_n260 n_n262 n_n263 n_n264 [40] [987] [1004]
+0----1- 1
+-1110-- 1
+--0001- 1
+--000-1 1
+.names styr_in_6_ styr_in_8_ n_n260 n_n261 n_n262 n_n263 [1010]
+011011 1
+.names styr_in_2_ styr_in_4_ n_n262 n_n263 n_n264 [1012]
+10101 1
+.names styr_in_6_ styr_in_5_ styr_in_4_ n_n260 n_n262 n_n263 n_n264 [1021]
+---011- 1
+10-0--1 1
+1-00--1 1
+0-0--00 1
+0-0-111 1
+.names n_n260 n_n262 n_n263 n_n264 [1022]
+10-0 1
+1-00 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 n_n262 n_n264 [1024]
+110-00- 1
+-10000- 1
+01110-1 1
+.names n_n260 n_n261 n_n262 n_n263 n_n264 [1026]
+10-10 1
+01111 1
+.names styr_in_5_ styr_in_4_ styr_in_3_ [87] [1010] [1012] [1026] [1028]
+------1 1
+---1-1- 1
+001-1-- 1
+.names n_n263 n_n264 [128] [31] [34] [263] [1029]
+-0-1-- 1
+-0--1- 1
+-0---1 1
+111--- 1
+.names styr_in_6_ n_n263 n_n264 [1033]
+100 1
+.names styr_in_5_ styr_in_8_ styr_in_3_ n_n260 n_n261 n_n263 n_n264 [1042]
+---1-10 1
+010-10- 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_4_ n_n260 n_n264 [1044]
+1-100- 1
+-01101 1
+.names styr_in_8_ [47] [33] [234] [239] [240] [1050]
+-1---- 1
+--1--- 1
+---1-- 1
+1---1- 1
+1----1 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 n_n262 \
+[1054]
+0-10-11 1
+0011000 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 [1057]
+011-0 1
+110-0 1
+-1000 1
+.names styr_in_6_ styr_in_3_ n_n262 n_n263 [1063]
+0010 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n261 [1067]
+-10-1 1
+01-11 1
+.names styr_in_6_ styr_in_5_ styr_in_8_ styr_in_4_ styr_in_3_ n_n260 n_n262 \
+[1071]
+101--0- 1
+1-10-0- 1
+-01--01 1
+-110-00 1
+--10000 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ styr_in_0_ n_n260 n_n264 [1074]
+110-01 1
+01-110 1
+-10110 1
+.names styr_in_6_ n_n260 n_n262 n_n263 n_n264 [1075]
+-11-0 1
+-1-10 1
+0110- 1
+.names [89] [195] [196] [201] [1063] [1082]
+-1--- 1
+--1-- 1
+---1- 1
+1---1 1
+.names n_n263 n_n264 [33] [26] [31] [34] [145] [1083]
+---1--- 1
+-----1- 1
+0-1---- 1
+0---1-- 1
+11----1 1
+.names styr_in_5_ n_n260 n_n261 n_n262 n_n263 n_n264 [1088]
+-11011 1
+100-00 1
+-00100 1
+.names styr_in_3_ n_n260 n_n261 n_n262 n_n263 n_n264 [1089]
+--011- 1
+10---0 1
+.names styr_in_8_ n_n262 n_n263 n_n264 [1101]
+0--- 1
+-111 1
+.names styr_in_6_ styr_in_5_ styr_in_2_ styr_in_4_ styr_in_3_ n_n262 n_n263 \
+[1102]
+-1-1-0- 1
+0010010 1
+.names styr_in_2_ n_n261 n_n262 n_n263 n_n264 [1104]
+--000 1
+10-00 1
+.names styr_in_4_ n_n261 n_n262 n_n263 n_n264 [1105]
+1-0-1 1
+1001- 1
+.names styr_in_5_ styr_in_8_ styr_in_4_ n_n264 [1107]
+-0-1 1
+1-11 1
+.names styr_in_5_ styr_in_8_ n_n261 n_n264 [1108]
+0110 1
+.names n_n260 n_n261 n_n262 n_n263 n_n264 [1115]
+1--10 1
+100-1 1
+.names styr_in_4_ styr_in_3_ n_n260 n_n262 n_n263 [55] [1108] [1118]
+-----1- 1
+--110-- 1
+01-0--1 1
+10--1-1 1
+.names n_n261 [157] [155] [73] [1107] [1115] [1121]
+---1-- 1
+-----1 1
+1-1--- 1
+-1--1- 1
+.names styr_in_1_ styr_in_4_ n_n262 [1126]
+010 1
+.names styr_in_6_ [91] [99] [110] [89] [987] [1135]
+-1-1-- 1
+--1--1 1
+0-1-1- 1
+.end

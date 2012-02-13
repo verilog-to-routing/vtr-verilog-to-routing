@@ -1,0 +1,188 @@
+.model top
+.inputs bbsse_in_6_ bbsse_in_3_ bbsse_in_2_ bbsse_in_5_ bbsse_in_4_ \
+bbsse_in_1_ bbsse_in_0_ clock
+.outputs bbsse_out_4_ bbsse_out_3_ bbsse_out_2_ bbsse_out_1_ bbsse_out_0_ \
+bbsse_out_6_ bbsse_out_5_
+.latch    n_n39 n_n100 re clock 2
+.latch    n_n40 n_n101 re clock 2
+.latch    n_n41 n_n102 re clock 2
+.latch    n_n42 n_n103 re clock 2
+.names bbsse_in_6_ bbsse_in_0_ [272] bbsse_out_4_
+101 1
+.names [23] [219] [220] [221] bbsse_out_3_
+-11- 1
+1--1 1
+.names n_n101 n_n103 [38] [261] bbsse_out_2_
+--1- 1
+00-1 1
+.names [41] [42] [238] bbsse_out_1_
+1-- 1
+-1- 1
+--1 1
+.names bbsse_in_6_ n_n102 [274] bbsse_out_0_
+001 1
+.names [51] [248] [251] [255] bbsse_out_6_
+---1 1
+1-1- 1
+-11- 1
+.names n_n100 n_n102 [20] [234] bbsse_out_5_
+---1 1
+110- 1
+.names [22] [25] [26] [270] n_n39
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [20] [56] [223] [248] n_n40
+---1 1
+000- 1
+.names [36] [263] [264] n_n41
+1-- 1
+-1- 1
+--1 1
+.names [56] [223] n_n42
+1- 1
+-1 1
+.names bbsse_in_6_ bbsse_in_5_ n_n101 [19]
+101 1
+.names bbsse_in_6_ bbsse_in_5_ n_n101 [20]
+0-- 1
+-1- 1
+--1 1
+.names bbsse_in_1_ n_n100 [18]
+0- 1
+-0 1
+.names bbsse_in_6_ bbsse_in_5_ [17]
+0- 1
+-1 1
+.names n_n101 n_n103 [23]
+00 1
+.names [36] [263] [264] [266] [22]
+0001 1
+.names bbsse_in_1_ n_n100 [56] [223] [25]
+0100 1
+.names [47] [56] [223] [234] [26]
+11-- 1
+1-1- 1
+-1-1 1
+--11 1
+.names bbsse_in_6_ [23] [38] [261] [35]
+1-1- 1
+11-1 1
+.names [47] [56] [223] [234] [36]
+11-- 1
+1-1- 1
+-1-1 1
+--11 1
+.names bbsse_in_5_ n_n102 n_n103 [38]
+110 1
+.names bbsse_in_6_ bbsse_in_5_ n_n101 n_n102 [41]
+0--1 1
+-1-1 1
+--11 1
+.names bbsse_in_6_ bbsse_in_5_ n_n101 [42]
+0-1 1
+-11 1
+.names n_n100 n_n102 [20] [47]
+110 1
+.names bbsse_in_2_ bbsse_in_4_ [20] [241] [48]
+0101 1
+.names [20] [56] [223] [51]
+000 1
+.names bbsse_in_6_ bbsse_in_5_ n_n101 n_n103 [52]
+1010 1
+.names bbsse_in_6_ bbsse_in_5_ n_n100 n_n101 [53]
+1001 1
+.names bbsse_in_6_ bbsse_in_5_ n_n101 n_n103 [56]
+1011 1
+.names n_n102 n_n101 [219]
+11 1
+.names bbsse_in_3_ bbsse_in_2_ bbsse_in_5_ n_n100 [220]
+0101 1
+.names bbsse_in_6_ n_n100 n_n102 [221]
+100 1
+.names n_n101 n_n102 [18] [17] [223]
+0-10 1
+-000 1
+.names n_n100 n_n102 n_n103 [225]
+001 1
+.names bbsse_in_4_ n_n101 [225] [226]
+101 1
+.names bbsse_in_3_ bbsse_in_2_ n_n102 n_n103 [229]
+0011 1
+.names n_n102 n_n100 [231]
+11 1
+.names bbsse_in_6_ bbsse_in_3_ bbsse_in_2_ bbsse_in_5_ [232]
+1000 1
+.names n_n102 n_n100 [233]
+11 1
+.names [20] [229] [231] [232] [234]
+01-- 1
+--11 1
+.names n_n101 n_n102 n_n103 [236]
+011 1
+.names [20] [233] [234] [236] [237]
+1-01 1
+-001 1
+.names bbsse_in_6_ n_n100 n_n102 n_n103 [238]
+10-- 1
+--01 1
+.names n_n100 n_n102 n_n103 [241]
+001 1
+.names bbsse_in_3_ bbsse_in_2_ n_n102 [19] [245]
+1-11 1
+-001 1
+.names [48] [52] [53] [245] [248]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names bbsse_in_3_ bbsse_in_4_ n_n100 [250]
+111 1
+.names [41] [42] [238] [250] [251]
+1--1 1
+-1-1 1
+--11 1
+.names n_n100 n_n101 n_n102 [253]
+110 1
+.names [56] [223] [226] [253] [254]
+1-1- 1
+-11- 1
+1--1 1
+-1-1 1
+.names [56] [223] [237] [254] [255]
+---1 1
+1-1- 1
+-11- 1
+.names bbsse_out_3_ n_n101 [256]
+01 1
+.names n_n101 n_n100 [257]
+01 1
+.names [41] [42] [238] [257] [258]
+1--1 1
+-1-1 1
+--11 1
+.names bbsse_in_1_ n_n100 n_n103 [259]
+110 1
+.names bbsse_in_6_ bbsse_in_5_ n_n101 n_n102 [260]
+1011 1
+.names bbsse_in_5_ bbsse_in_1_ n_n100 [261]
+111 1
+.names bbsse_out_3_ [19] [259] [260] [263]
+-11- 1
+0--1 1
+.names [35] [56] [223] [258] [264]
+1--- 1
+-1-1 1
+--11 1
+.names bbsse_out_1_ [56] [223] [266]
+100 1
+.names n_n40 [251] [255] [256] [270]
+0-1- 1
+0-01 1
+-001 1
+.names n_n100 n_n101 n_n102 n_n103 [272]
+0000 1
+.names bbsse_in_1_ n_n100 n_n101 n_n103 [274]
+1100 1
+.end

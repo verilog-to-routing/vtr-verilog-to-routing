@@ -1,0 +1,249 @@
+.model top
+.inputs ex1_in_8_ ex1_in_7_ ex1_in_4_ ex1_in_3_ ex1_in_6_ ex1_in_5_ ex1_in_0_ \
+ex1_in_2_ ex1_in_1_ clock
+.outputs ex1_out_10_ ex1_out_14_ ex1_out_13_ ex1_out_12_ ex1_out_11_ \
+ex1_out_7_ ex1_out_8_ ex1_out_5_ ex1_out_6_ ex1_out_9_ ex1_out_18_ ex1_out_0_ \
+ex1_out_17_ ex1_out_16_ ex1_out_15_ ex1_out_3_ ex1_out_4_ ex1_out_1_ \
+ex1_out_2_
+.latch    n_n75 n_n219 re clock 2
+.latch    n_n76 n_n220 re clock 2
+.latch    n_n77 n_n221 re clock 2
+.latch    n_n78 n_n222 re clock 2
+.latch    n_n79 n_n223 re clock 2
+.names n_n219 n_n220 n_n223 [43] [147] ex1_out_10_
+---1- 1
+----1 1
+110-- 1
+.names ex1_out_11_ [32] [131] [637] ex1_out_14_
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names ex1_in_7_ ex1_in_6_ ex1_in_5_ n_n219 n_n221 n_n223 ex1_out_13_
+000000 1
+.names ex1_in_6_ ex1_out_13_ [32] [123] [125] [128] [640] ex1_out_12_
+-1----- 1
+--1---- 1
+---1--- 1
+----1-- 1
+0----1- 1
+0-----1 1
+.names ex1_in_7_ ex1_in_4_ n_n219 n_n220 n_n221 n_n222 n_n223 ex1_out_11_
+111-1-- 1
+11-0-1- 1
+11-1-0- 1
+110---1 1
+1-1-0-0 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n219 n_n220 n_n221 n_n222 ex1_out_7_
+0111-10 1
+0110011 1
+0111001 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n219 n_n221 n_n222 ex1_out_8_
+011110 1
+.names n_n219 n_n220 n_n221 n_n222 n_n223 ex1_out_5_
+1101- 1
+10-01 1
+.names [42] [113] [649] [650] ex1_out_6_
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names ex1_in_3_ n_n219 n_n220 n_n221 n_n222 n_n223 ex1_out_9_
+1--1-- 1
+1---1- 1
+11---1 1
+1-1--1 1
+.names ex1_in_7_ n_n219 n_n221 n_n223 ex1_out_18_
+0000 1
+.names ex1_in_7_ ex1_in_4_ n_n220 n_n221 n_n222 n_n223 [105] ex1_out_0_
+------1 1
+010101- 1
+.names ex1_out_11_ [32] [637] ex1_out_17_
+1-- 1
+-1- 1
+--1 1
+.names [32] [64] [637] ex1_out_16_
+1-- 1
+-1- 1
+--1 1
+.names [55] [56] [659] ex1_out_15_
+1-- 1
+-1- 1
+--1 1
+.names ex1_in_1_ n_n219 [79] ex1_out_3_
+101 1
+.names n_n219 n_n220 n_n222 n_n223 ex1_out_4_
+1001 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n219 n_n221 n_n222 [97] ex1_out_1_
+---1--1 1
+011011- 1
+.names ex1_in_0_ n_n219 [97] [41] ex1_out_2_
+1--1 1
+111- 1
+.names n_n219 [601] [602] [607] n_n75
+---1 1
+11-- 1
+1-1- 1
+.names [42] [184] [185] [186] [612] n_n76
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names ex1_in_4_ n_n221 [88] [172] [174] [623] n_n77
+1--1-- 1
+1---1- 1
+1----1 1
+111--- 1
+.names [54] [159] [160] [161] [162] [163] n_n78
+1----- 1
+-1---- 1
+--1--- 1
+---1-- 1
+----1- 1
+-----1 1
+.names [32] [633] [634] n_n79
+1-- 1
+-1- 1
+--1 1
+.names ex1_in_7_ ex1_in_4_ n_n220 n_n221 n_n222 n_n223 [42]
+01111- 1
+011001 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n220 n_n221 n_n222 [43]
+011001 1
+.names ex1_in_7_ ex1_in_4_ n_n220 n_n221 n_n222 n_n223 [79]
+01001- 1
+011001 1
+.names ex1_in_6_ ex1_in_2_ ex1_in_1_ n_n219 n_n220 n_n222 n_n223 [88]
+--01--- 1
+0---1-- 1
+--0--1- 1
+-----01 1
+-0-0-0- 1
+.names ex1_in_4_ ex1_in_2_ n_n219 n_n221 n_n223 [48]
+11010 1
+.names ex1_in_7_ ex1_in_4_ n_n219 n_n220 n_n221 n_n222 n_n223 [95]
+0-0-0-0 1
+010000- 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n220 n_n221 n_n222 n_n223 [97]
+01111-- 1
+011001- 1
+0111-01 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n219 n_n222 [54]
+01001 1
+.names ex1_in_4_ n_n219 n_n220 n_n221 n_n222 n_n223 [32]
+-11--0 1
+000001 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n219 n_n221 n_n222 [41]
+011011 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_2_ ex1_in_1_ n_n219 n_n221 n_n222 [55]
+-10-01- 1
+11---11 1
+-1-0-11 1
+.names ex1_in_4_ n_n219 n_n220 n_n221 n_n222 n_n223 [56]
+1-11-- 1
+10---1 1
+11---0 1
+1-001- 1
+111-0- 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n220 n_n221 n_n222 [64]
+011110 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n219 n_n220 n_n221 n_n222 [105]
+010-110 1
+0110101 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n219 n_n220 n_n221 n_n223 [113]
+0110011 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_6_ ex1_in_1_ n_n220 n_n221 n_n222 [123]
+010-111 1
+01-0111 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n219 n_n220 n_n221 n_n222 [125]
+0100001 1
+.names ex1_in_7_ n_n219 n_n220 n_n221 n_n222 n_n223 [128]
+000001 1
+.names ex1_in_4_ ex1_in_1_ n_n219 n_n220 n_n221 n_n222 n_n223 [131]
+11-11-- 1
+1100-1- 1
+11-001- 1
+111-10- 1
+11-1-01 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n220 n_n221 n_n222 [147]
+011111 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_6_ ex1_in_1_ n_n220 n_n221 n_n222 [159]
+010--11 1
+01-0-11 1
+01--011 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_6_ ex1_in_1_ n_n220 n_n222 [160]
+010-01 1
+01-001 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_6_ ex1_in_1_ n_n219 n_n221 [161]
+010111 1
+.names ex1_in_7_ ex1_in_4_ n_n219 n_n220 n_n221 n_n222 n_n223 [162]
+0100001 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n220 n_n222 n_n223 [163]
+011101 1
+.names ex1_in_6_ ex1_in_1_ n_n219 n_n220 n_n222 n_n223 [172]
+10101- 1
+1-0001 1
+.names ex1_in_7_ n_n219 n_n220 n_n221 n_n222 n_n223 [174]
+11-1-- 1
+1-0-1- 1
+1-1-0- 1
+10---1 1
+.names ex1_in_7_ ex1_in_6_ ex1_in_5_ n_n219 n_n221 n_n223 [184]
+1--000 1
+-00000 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_6_ ex1_in_1_ n_n219 n_n221 [185]
+011111 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n220 n_n222 [186]
+01101 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_6_ ex1_in_1_ n_n220 n_n221 n_n222 [195]
+0111001 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n220 n_n221 [196]
+01111 1
+.names ex1_in_7_ ex1_in_5_ n_n219 n_n221 n_n223 [197]
+01000 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n220 n_n221 n_n222 n_n223 [601]
+010-1-- 1
+01--11- 1
+0--00-0 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_6_ ex1_in_1_ n_n220 n_n222 n_n223 [602]
+010-01- 1
+01-0101 1
+.names ex1_in_6_ [48] [95] [195] [196] [197] [607]
+-1---- 1
+---1-- 1
+----1- 1
+-----1 1
+0-1--- 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n219 n_n220 n_n221 n_n223 [612]
+01001-1 1
+011-011 1
+.names ex1_in_6_ ex1_in_1_ n_n219 n_n220 n_n221 n_n222 n_n223 [623]
+--100-0 1
+-10101- 1
+01-001- 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_2_ ex1_in_1_ n_n219 n_n221 n_n223 [633]
+01-111- 1
+-11-010 1
+.names ex1_in_7_ ex1_in_4_ n_n219 n_n220 n_n221 n_n222 n_n223 [634]
+01-11-- 1
+01-0-1- 1
+010---1 1
+0111-0- 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_5_ n_n219 n_n221 n_n223 [637]
+-0-100 1
+0-1000 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n219 n_n220 n_n221 n_n222 [640]
+01--001 1
+0111-10 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n219 n_n221 n_n222 n_n223 [649]
+01-001- 1
+010-101 1
+.names ex1_in_7_ ex1_in_4_ ex1_in_1_ n_n219 n_n220 n_n221 n_n222 [650]
+011-001 1
+0111-10 1
+.names ex1_in_7_ ex1_in_5_ n_n219 n_n220 n_n221 n_n222 n_n223 [659]
+--1-0-0 1
+01--0-0 1
+--00001 1
+.end

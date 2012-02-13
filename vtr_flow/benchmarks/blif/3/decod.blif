@@ -1,0 +1,44 @@
+.model top
+.inputs pa pb pc pd pe
+.outputs pp pq pr ps pt pu pf pg ph pi pj pk pl pm pn po
+.names pb pc [21] pp
+101 1
+.names pb pc [22] pq
+101 1
+.names pb pc [21] pr
+011 1
+.names pb pc [22] ps
+011 1
+.names pb pc [21] pt
+001 1
+.names pb pc [22] pu
+001 1
+.names pb pc [23] pf
+111 1
+.names pb pc [17] pg
+111 1
+.names pb pc [23] ph
+101 1
+.names pb pc [17] pi
+101 1
+.names pb pc [23] pj
+011 1
+.names pb pc [17] pk
+011 1
+.names pb pc [23] pl
+001 1
+.names pb pc [17] pm
+001 1
+.names pb pc [21] pn
+111 1
+.names pb pc [22] po
+111 1
+.names pa pd pe [21]
+011 1
+.names pa pd pe [22]
+001 1
+.names pa pd pe [23]
+111 1
+.names pa pd pe [17]
+101 1
+.end

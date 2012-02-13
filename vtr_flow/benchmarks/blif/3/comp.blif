@@ -1,0 +1,166 @@
+.model top
+.inputs pp pa0 pq pb0 pr pc0 ps pd0 pt pe0 pu pf0 pv pw px py pz pa pb pc pd \
+pe pf pg ph pi pj pk pl pm pn po
+.outputs pg0 ph0 pi0
+.names ph0 [224] [225] pg0
+000 1
+.names nv0 nx0 [220] ph0
+001 1
+.names [224] [225] pi0
+1- 1
+-1 1
+.names no0 [38] [207] nv0
+1-- 1
+-1- 1
+--1 1
+.names pp pf0 [15] nm0
+--1 1
+01- 1
+.names ns0 [26] [212] nx0
+1-- 1
+-1- 1
+--1 1
+.names nq0 [11] [217] [3]
+000 1
+.names [14] [213] [217] ne1
+--1 1
+01- 1
+.names [17] [203] [207] nd1
+--1 1
+01- 1
+.names [16] [208] [212] nf1
+--1 1
+01- 1
+.names py pi nb2
+10 1
+.names no2 [22] [24] [14]
+1-- 1
+-1- 1
+--1 1
+.names px ph [14] nq0
+--1 1
+10- 1
+.names pc0 pm no1
+10 1
+.names no1 [52] [54] [15]
+1-- 1
+-1- 1
+--1 1
+.names nb2 [44] [46] [17]
+1-- 1
+-1- 1
+--1 1
+.names pb0 pl [17] no0
+--1 1
+10- 1
+.names nb3 [32] [34] [16]
+1-- 1
+-1- 1
+--1 1
+.names pt pd [16] ns0
+--1 1
+10- 1
+.names pu pe no2
+10 1
+.names pq pa nb3
+10 1
+.names nx0 [3] nd1 [5]
+011 1
+.names px ph [14] [11]
+010 1
+.names no2 [24] [214] [13]
+001 1
+.names pw pg [22]
+10 1
+.names pv pf [24]
+10 1
+.names pt pd [16] [26]
+010 1
+.names nb3 [34] [209] [27]
+001 1
+.names ps pc [32]
+10 1
+.names pr pb [34]
+10 1
+.names pb0 pl [17] [38]
+010 1
+.names nb2 [46] [204] [39]
+001 1
+.names pa0 pk [44]
+10 1
+.names pz pj [46]
+10 1
+.names pp pf0 [15] [48]
+100 1
+.names no1 [54] [199] [49]
+001 1
+.names pe0 po [52]
+10 1
+.names pd0 pn [54]
+10 1
+.names po pe0 [199]
+10 1
+.names pn pd0 [200]
+10 1
+.names pc0 pm [200] [201]
+01- 1
+0-1 1
+-11 1
+.names [201] [49] [202]
+1- 1
+-1 1
+.names pl pb0 [203]
+10 1
+.names pk pa0 [204]
+10 1
+.names pj pz [205]
+10 1
+.names py pi [205] [206]
+01- 1
+0-1 1
+-11 1
+.names [206] [39] [207]
+1- 1
+-1 1
+.names pd pt [208]
+10 1
+.names pc ps [209]
+10 1
+.names pb pr [210]
+10 1
+.names pq pa [210] [211]
+01- 1
+0-1 1
+-11 1
+.names [211] [27] [212]
+1- 1
+-1 1
+.names ph px [213]
+10 1
+.names pg pw [214]
+10 1
+.names pf pv [215]
+10 1
+.names pu pe [215] [216]
+01- 1
+0-1 1
+-11 1
+.names [216] [13] [217]
+1- 1
+-1 1
+.names nm0 [48] [202] [218]
+000 1
+.names [218] [3] [220]
+11 1
+.names nv0 [48] [202] [221]
+01- 1
+0-1 1
+.names [3] nx0 [222]
+10 1
+.names ne1 nf1 ns0 [224]
+-1- 1
+100 1
+.names [5] [221] [222] [225]
+1-- 1
+-11 1
+.end

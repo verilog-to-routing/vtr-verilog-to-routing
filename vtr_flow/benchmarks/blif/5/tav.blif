@@ -1,0 +1,28 @@
+.model top
+.inputs tav_in_1_ tav_in_0_ tav_in_3_ tav_in_2_ clock
+.outputs tav_out_2_ tav_out_1_ tav_out_0_ tav_out_3_
+.latch    n_n11 n_n34 re clock 2
+.latch    n_n23 n_n35 re clock 2
+.names tav_in_1_ tav_in_2_ [10] tav_out_2_
+011 1
+.names tav_in_1_ tav_in_2_ [10] tav_out_1_
+101 1
+.names tav_in_0_ [12] tav_out_0_
+11 1
+.names tav_in_3_ [13] tav_out_3_
+11 1
+.names n_n34 n_n11
+0 1
+.names n_n34 n_n35 n_n23
+01 1
+10 1
+.names tav_in_0_ tav_in_3_ n_n34 n_n35 [10]
+00-- 1
+--10 1
+.names tav_in_1_ tav_in_3_ tav_in_2_ n_n34 n_n35 [12]
+---10 1
+000-- 1
+.names tav_in_1_ tav_in_0_ tav_in_2_ n_n34 n_n35 [13]
+---10 1
+000-- 1
+.end

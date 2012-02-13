@@ -1,0 +1,605 @@
+.model top
+.inputs rdy1bmhs1 fullihs1 rdy2bmhs1 ck wantbmhs1 outpuths1 wantrths1 outavhs1 \
+tparrayhs1 fullohs1 prog_0 prog_1 prog_2 rttshs1 indonehs1 rdy1rths1 rdy2rths1
+.outputs sefullihs1 newtrhs1 mode2hs1 mode1hs1 tgwhbufhs1 rerttshs1 mode0hs1 \
+rewhbufhs1 sefullohs1 loadihhs1 actrths1 dumpihs1 lxhinhs1 shftorhs1 \
+seoutavhs1 newlinehs1 gobmhs1 actbmhs1 loadohhs1 txhinhs1 ldproghs1 gorths1 \
+shftirhs1
+.latch    ni8 actrths1 re ck 2
+.latch    ni19 shftirhs1 re ck 2
+.latch    ni30 dumpihs1 re ck 2
+.latch    n_n5 nstate_0 re ck 2
+.latch    n_n15 lxhinhs1 re ck 2
+.latch    ni29 ldproghs1 re ck 2
+.latch    ni6 nstate_1 re ck 2
+.latch    ni21 txhinhs1 re ck 2
+.latch    ni5 nstate_2 re ck 2
+.latch    ni4 nstate_3 re ck 2
+.latch    ni3 nstate_4 re ck 2
+.latch    ni2 nstate_5 re ck 2
+.latch    ni22 loadohhs1 re ck 2
+.latch    ni12 newtrhs1 re ck 2
+.latch    ni13 rerttshs1 re ck 2
+.latch    ni24 seoutavhs1 re ck 2
+.latch    ni14 mode0hs1 re ck 2
+.latch    n_n1 loadihhs1 re ck 2
+.latch    ni15 mode1hs1 re ck 2
+.latch    n_n0 sefullihs1 re ck 2
+.latch    ni11 gobmhs1 re ck 2
+.latch    n_n181 mode2hs1 re ck 2
+.latch    ni25 sefullohs1 re ck 2
+.latch    n_n2 gorths1 re ck 2
+.latch    n_n14 newlinehs1 re ck 2
+.latch    ni28 rewhbufhs1 re ck 2
+.latch    ni9 actbmhs1 re ck 2
+.latch    n_n29 shftorhs1 re ck 2
+.latch    ni27 tgwhbufhs1 re ck 2
+.names nstate_0 nstate_4 n_n88 [319] [919] ni8
+---1- 1
+----1 1
+010-- 1
+.names nstate_2 [122] [120] n_n88 [915] ni19
+---01 1
+010-- 1
+.names rdy2rths1 n_n10 [129] [100] [920] ni30
+-0--- 1
+1-100 1
+.names [299] [300] [938] n_n5
+1-- 1
+-1- 1
+--1 1
+.names [290] [291] [946] n_n15
+1-- 1
+-1- 1
+--1 1
+.names nstate_2 nstate_3 [97] ni29
+011 1
+.names [276] [278] [959] [963] ni6
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [96] [97] n_n56 [265] [965] ni21
+-1--- 1
+--0-- 1
+---1- 1
+0---1 1
+.names [253] [254] [973] [974] [975] ni5
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names nstate_3 [110] [249] [981] ni4
+--1- 1
+---1 1
+11-- 1
+.names [240] [241] [242] [243] ni3
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [152] [230] [989] [996] ni2
+0--- 1
+-1-- 1
+--0- 1
+---1 1
+.names [94] [140] [215] [1015] ni22
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [210] [1016] ni12
+1- 1
+-1 1
+.names rttshs1 nstate_1 nstate_3 n_n189 ni13
+1001 1
+.names fullihs1 outavhs1 fullohs1 ni24
+10- 1
+-01 1
+.names [122] [134] n_n88 [917] [1018] ni14
+----1 1
+11--- 1
+--01- 1
+.names n_n10 n_n161 [1028] n_n1
+0-- 1
+-1- 1
+--1 1
+.names prog_1 nstate_0 nstate_4 n_n88 [1030] ni15
+----1 1
+1010- 1
+.names n_n10 n_n161 [191] [192] n_n0
+0--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [186] [187] [188] [1033] ni11
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names nstate_0 nstate_4 n_n88 n_n181
+010 1
+.names fullohs1 n_n180 [178] [1009] [1039] ni25
+--1-- 1
+----1 1
+01-0- 1
+.names rdy1rths1 rdy2rths1 [162] [116] [1045] n_n2
+---1- 1
+----1 1
+101-- 1
+.names prog_2 n_n189 n_n27 [988] [1047] n_n14
+--1-- 1
+----1 1
+11-1- 1
+.names fullihs1 outavhs1 ni28
+00 1
+.names prog_0 [161] [1050] ni9
+--1 1
+01- 1
+.names n_n173 n_n56 [89] [1053] n_n29
+1--- 1
+-0-- 1
+--1- 1
+---1 1
+.names fullihs1 outavhs1 ni27
+10 1
+.names nstate_0 nstate_1 nstate_3 nstate_5 [122]
+0101 1
+.names prog_0 prog_1 [100] [920] [922] n_n10
+--1-- 1
+---1- 1
+----1 1
+01--- 1
+10--- 1
+.names wantbmhs1 wantrths1 prog_0 [129]
+010 1
+.names nstate_2 nstate_4 [134]
+10 1
+.names nstate_0 nstate_2 nstate_4 nstate_5 n_n189
+0100 1
+.names nstate_0 nstate_2 nstate_3 nstate_5 n_n87
+1--- 1
+-1-- 1
+--1- 1
+---0 1
+.names prog_0 nstate_0 nstate_2 nstate_3 nstate_5 n_n178
+10001 1
+.names nstate_0 nstate_1 nstate_2 nstate_3 nstate_5 n_n62
+--0-- 1
+---1- 1
+----0 1
+11--- 1
+00--- 1
+.names prog_2 nstate_1 nstate_4 n_n62 [1036] n_n173
+--00- 1
+000-1 1
+.names nstate_2 nstate_3 nstate_4 nstate_5 [96]
+1--- 1
+-1-- 1
+--1- 1
+---0 1
+.names n_n64 [227] [228] [1000] [1001] n_n27
+0--0- 1
+01--1 1
+0-1-1 1
+.names tparrayhs1 nstate_1 n_n56 [136] [94]
+-0-1 1
+110- 1
+.names wantrths1 rdy1rths1 rdy2rths1 [100] [1004] [140]
+0--01 1
+-1001 1
+.names wantrths1 [100] [98] [920] [1006] [142]
+--0-1 1
+00-0- 1
+.names prog_2 nstate_4 [120]
+1- 1
+-1 1
+.names nstate_0 nstate_1 nstate_4 nstate_5 [97]
+0000 1
+.names n_n64 [1000] n_n35
+1- 1
+-1 1
+.names nstate_0 nstate_2 nstate_3 nstate_4 nstate_5 n_n56
+0---- 1
+-1--- 1
+--0-- 1
+---1- 1
+----1 1
+.names rdy2bmhs1 wantbmhs1 wantrths1 [100] [920] n_n22
+0---- 1
+-0--- 1
+--1-- 1
+---1- 1
+----1 1
+.names rdy1rths1 rdy2rths1 [85]
+0- 1
+-0 1
+.names nstate_1 nstate_2 nstate_3 nstate_5 n_n88
+1--- 1
+-1-- 1
+--1- 1
+---0 1
+.names fullihs1 fullohs1 prog_2 nstate_4 [92]
+---1 1
+001- 1
+.names fullihs1 nstate_2 nstate_3 nstate_4 nstate_5 n_n64
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----0 1
+.names n_n64 [202] [203] [1023] n_n161
+01-1 1
+0-11 1
+.names nstate_0 nstate_2 nstate_3 nstate_4 nstate_5 [136]
+01100 1
+.names nstate_0 nstate_1 nstate_2 nstate_4 nstate_5 [110]
+01100 1
+.names prog_1 prog_2 n_n189 [988] [152]
+--0- 1
+---0 1
+00-- 1
+.names wantrths1 rdy1rths1 rdy2rths1 [158]
+0-- 1
+-10 1
+.names rdy1bmhs1 rdy2bmhs1 wantbmhs1 prog_0 prog_1 [156]
+--0-- 1
+10--- 1
+-1-01 1
+-1-10 1
+.names prog_2 nstate_1 nstate_2 nstate_3 nstate_5 [100]
+0---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----0 1
+.names prog_0 nstate_1 nstate_2 nstate_3 nstate_5 n_n180
+00001 1
+.names nstate_0 nstate_1 nstate_3 nstate_5 [125]
+1001 1
+.names nstate_2 [122] [120] [131] [1036] [161]
+---11 1
+010-- 1
+.names [92] [98] [139] [932] [1043] [162]
+1--1- 1
+-01-1 1
+.names prog_2 nstate_1 nstate_4 [131]
+000 1
+.names prog_2 nstate_0 nstate_2 nstate_3 nstate_5 [98]
+0---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----0 1
+.names nstate_0 nstate_1 [170]
+01 1
+10 1
+.names fullihs1 fullohs1 nstate_4 [139]
+000 1
+.names wantrths1 rdy1rths1 rdy2rths1 [172]
+0-- 1
+-10 1
+.names rdy2rths1 [100] [98] [920] [955] [145]
+--0-1 1
+10-0- 1
+.names rdy1bmhs1 fullihs1 rdy2bmhs1 fullohs1 [148]
+00-- 1
+--10 1
+.names fullihs1 fullohs1 rdy1rths1 rdy2rths1 [147]
+-00- 1
+0--1 1
+.names nstate_1 nstate_2 nstate_3 nstate_4 nstate_5 [89]
+00100 1
+.names nstate_0 nstate_1 nstate_2 nstate_3 nstate_5 [107]
+10101 1
+.names prog_2 nstate_1 nstate_4 n_n87 [1041] [116]
+00001 1
+.names rdy1rths1 rdy2rths1 n_n87 [131] [933] [178]
+01011 1
+.names outpuths1 nstate_0 nstate_4 n_n88 [182]
+1010 1
+.names wantbmhs1 [100] [172] [1004] [186]
+1011 1
+.names rdy1bmhs1 rdy2bmhs1 [92] [956] [187]
+1011 1
+.names fullihs1 fullohs1 n_n180 [1009] [1011] [188]
+0-10- 1
+-010- 1
+0-1-1 1
+-01-1 1
+.names prog_2 indonehs1 nstate_2 nstate_4 [122] [191]
+01001 1
+.names fullihs1 fullohs1 n_n180 [1009] [192]
+0110 1
+.names fullohs1 prog_0 prog_2 rdy1rths1 [202]
+1100 1
+.names wantbmhs1 wantrths1 fullohs1 prog_0 prog_2 [203]
+01001 1
+.names nstate_0 nstate_1 nstate_3 nstate_4 nstate_5 [210]
+00100 1
+.names rdy1rths1 rdy2rths1 n_n87 [131] [933] [213]
+01011 1
+10011 1
+.names fullohs1 n_n180 [1009] [1011] [215]
+010- 1
+01-1 1
+.names rdy1bmhs1 rdy2bmhs1 nstate_0 nstate_1 [227]
+1010 1
+.names rdy1rths1 rdy2rths1 nstate_0 nstate_1 [228]
+1001 1
+.names rdy1bmhs1 rdy2bmhs1 n_n180 [125] [230]
+0-1- 1
+-01- 1
+0--1 1
+-0-1 1
+.names rdy1rths1 rdy2rths1 [122] n_n178 [231]
+0-1- 1
+-01- 1
+0--1 1
+-0-1 1
+.names rdy1bmhs1 fullihs1 fullohs1 rdy1rths1 nstate_0 [238]
+1---0 1
+---10 1
+100-- 1
+-001- 1
+.names [158] [156] [100] [920] [240]
+1100 1
+.names rdy2rths1 [100] [920] [983] [241]
+1001 1
+.names nstate_4 n_n62 [246] [247] [242]
+10-- 1
+1-1- 1
+1--1 1
+.names indonehs1 nstate_0 nstate_4 n_n88 [243]
+0010 1
+.names rdy2bmhs1 nstate_0 nstate_1 nstate_3 nstate_5 [246]
+01001 1
+.names rdy2rths1 nstate_0 nstate_1 nstate_3 nstate_5 [247]
+00101 1
+.names nstate_0 nstate_1 nstate_3 nstate_4 nstate_5 [249]
+10100 1
+.names rdy1rths1 rdy2rths1 [92] [932] [253]
+1011 1
+.names rdy1bmhs1 rdy2bmhs1 [92] [956] [254]
+1011 1
+.names rttshs1 nstate_0 nstate_2 nstate_4 nstate_5 [257]
+00100 1
+.names prog_0 prog_2 n_n87 [148] [147] [265]
+0001- 1
+100-1 1
+.names prog_2 nstate_4 [122] [85] [283] [275]
+---11 1
+1-11- 1
+-111- 1
+.names rdy2bmhs1 wantbmhs1 [145] [286] [276]
+1--1 1
+111- 1
+.names indonehs1 nstate_3 [110] [277]
+011 1
+.names nstate_2 [122] [307] [278]
+11- 1
+-11 1
+.names nstate_0 nstate_1 nstate_2 nstate_3 nstate_4 [283]
+01100 1
+.names rdy1bmhs1 [92] [956] [286]
+011 1
+.names fullihs1 fullohs1 rdy2rths1 n_n178 [98] [290]
+--0-0 1
+0-01- 1
+-001- 1
+.names fullihs1 rdy2bmhs1 fullohs1 [100] n_n180 [291]
+-0-0- 1
+00--1 1
+-00-1 1
+.names prog_2 nstate_1 nstate_4 n_n87 [929] [298]
+00001 1
+.names rdy2rths1 [100] [920] [931] [299]
+1001 1
+.names nstate_2 [125] [305] [307] [300]
+11-- 1
+-11- 1
+-1-1 1
+.names rdy1rths1 rdy2rths1 [92] [932] [301]
+0111 1
+.names rdy1rths1 rdy2rths1 n_n87 [131] [933] [302]
+10011 1
+.names rdy1bmhs1 rdy2bmhs1 prog_2 nstate_4 [305]
+0-1- 1
+-01- 1
+0--1 1
+-0-1 1
+.names fullihs1 fullohs1 prog_2 indonehs1 nstate_4 [307]
+1-1-0 1
+-11-0 1
+--000 1
+.names rdy1bmhs1 fullihs1 rdy2bmhs1 fullohs1 nstate_0 [313]
+10100 1
+.names nstate_0 nstate_1 nstate_2 nstate_3 nstate_5 [319]
+01101 1
+.names nstate_4 nstate_0 [915]
+10 1
+.names prog_0 prog_2 nstate_0 nstate_4 [917]
+1010 1
+.names prog_0 nstate_0 [122] [120] n_n88 [919]
+1-10- 1
+11-00 1
+.names fullihs1 fullohs1 nstate_0 nstate_4 [920]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names rdy2bmhs1 wantbmhs1 wantrths1 [922]
+0-- 1
+-0- 1
+--1 1
+.names fullihs1 fullohs1 nstate_0 nstate_1 [925]
+1-11 1
+-111 1
+.names nstate_1 nstate_2 nstate_4 nstate_5 [927]
+0000 1
+.names rdy1bmhs1 rdy2bmhs1 fullohs1 prog_0 [929]
+1000 1
+.names rdy1bmhs1 rdy2bmhs1 wantbmhs1 wantrths1 [931]
+1--1 1
+-1-1 1
+--01 1
+.names nstate_0 nstate_1 nstate_2 nstate_3 nstate_5 [932]
+01001 1
+.names prog_0 fullohs1 [933]
+10 1
+.names nstate_3 [96] [313] [925] [927] [934]
+-0-1- 1
+1---1 1
+--1-1 1
+.names [298] [301] [302] [934] [938]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names prog_2 nstate_0 nstate_1 nstate_4 [944]
+1000 1
+.names nstate_2 nstate_3 [97] n_n56 [944] [946]
+--1-- 1
+---0- 1
+00--1 1
+.names fullihs1 fullohs1 rdy1rths1 rdy2rths1 [949]
+0110 1
+.names rdy1bmhs1 fullihs1 rdy2bmhs1 fullohs1 prog_0 [952]
+10010 1
+.names fullihs1 fullohs1 rdy1rths1 nstate_1 nstate_4 [955]
+00100 1
+.names nstate_0 nstate_1 nstate_2 nstate_3 nstate_5 [956]
+10001 1
+.names [96] n_n56 [925] [958]
+-0- 1
+0-1 1
+.names prog_0 n_n87 [131] [949] [952] [959]
+-01-1 1
+1011- 1
+.names n_n22 [275] [277] [958] [963]
+0--- 1
+-1-- 1
+--1- 1
+---1 1
+.names nstate_0 rdy1bmhs1 [965]
+10 1
+.names nstate_3 nstate_2 [969]
+00 1
+.names rdy1bmhs1 fullihs1 rdy2bmhs1 fullohs1 [970]
+1010 1
+.names [110] [136] [973]
+1- 1
+-1 1
+.names nstate_2 nstate_3 [97] [257] [970] [974]
+---1- 1
+001-1 1
+.names indonehs1 nstate_1 n_n62 n_n56 [975]
+0-0- 1
+-1-0 1
+.names tparrayhs1 nstate_3 n_n56 [313] [927] [981]
+0-0-- 1
+-1--1 1
+---11 1
+.names rdy1bmhs1 rdy2bmhs1 wantbmhs1 prog_0 [983]
+--01 1
+10-1 1
+.names rttshs1 nstate_1 nstate_3 [988]
+100 1
+.names nstate_0 nstate_4 [96] n_n88 [238] [989]
+1-1-- 1
+-01-- 1
+--11- 1
+1---1 1
+-0--1 1
+---11 1
+.names prog_2 nstate_3 nstate_4 nstate_5 [990]
+0001 1
+.names fullihs1 fullohs1 prog_2 [991]
+1-1 1
+-11 1
+.names n_n62 [96] [170] [990] [991] [993]
+0---- 1
+--11- 1
+-0--1 1
+.names nstate_0 [100] [231] [993] [996]
+--1- 1
+---1 1
+00-- 1
+.names rdy1bmhs1 fullohs1 rdy1rths1 nstate_0 nstate_1 [1000]
+1---- 1
+-1--- 1
+--1-- 1
+---0- 1
+----0 1
+.names prog_2 fullohs1 [1001]
+10 1
+.names rdy1bmhs1 fullihs1 rdy2bmhs1 fullohs1 nstate_4 [1004]
+10000 1
+.names fullihs1 fullohs1 rdy1rths1 rdy2rths1 nstate_4 [1006]
+00100 1
+.names rdy1bmhs1 rdy2bmhs1 prog_2 nstate_0 nstate_4 [1009]
+1---- 1
+-0--- 1
+--1-- 1
+---1- 1
+----1 1
+.names rdy1bmhs1 rdy2bmhs1 prog_2 nstate_0 nstate_4 [1011]
+10000 1
+.names wantbmhs1 n_n27 [142] [213] [1015]
+-1-- 1
+---1 1
+0-1- 1
+.names nstate_0 nstate_2 nstate_3 nstate_4 nstate_5 [1016]
+01100 1
+10100 1
+.names prog_0 [122] [120] n_n88 [915] [1018]
+010-- 1
+1--01 1
+.names rdy2rths1 nstate_0 nstate_1 [1023]
+100 1
+.names rdy1bmhs1 fullihs1 rdy2bmhs1 fullohs1 prog_0 [1027]
+00110 1
+10010 1
+.names prog_0 n_n87 [131] [949] [1027] [1028]
+-01-1 1
+1011- 1
+.names nstate_0 nstate_1 nstate_4 n_n62 [990] [1030]
+--00- 1
+01--1 1
+10--1 1
+.names [97] n_n64 [969] [970] [1000] [1033]
+-0--0 1
+1-11- 1
+.names nstate_0 nstate_3 nstate_5 [1036]
+101 1
+.names indonehs1 n_n173 [94] n_n35 [182] [1039]
+--1-- 1
+---0- 1
+11--- 1
+1---1 1
+.names fullihs1 fullohs1 prog_0 rdy1rths1 rdy2rths1 [1041]
+0-101 1
+-0101 1
+0-110 1
+-0110 1
+.names rdy1rths1 rdy2rths1 nstate_3 [1042]
+110 1
+.names rdy1bmhs1 rdy2bmhs1 wantbmhs1 wantrths1 [1043]
+--01 1
+10-1 1
+.names n_n64 [110] [1000] [1042] [1045]
+0-0- 1
+-1-1 1
+.names n_n87 [97] [131] [969] [970] [1047]
+0-1-- 1
+-1-11 1
+.names n_n88 [107] [210] [915] [1016] [1050]
+-1--- 1
+--1-- 1
+----1 1
+0--1- 1
+.names nstate_0 nstate_3 nstate_4 n_n88 [110] [1053]
+-1--1 1
+0-10- 1
+.end

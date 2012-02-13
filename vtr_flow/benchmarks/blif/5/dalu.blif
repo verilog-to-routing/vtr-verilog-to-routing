@@ -1,0 +1,1783 @@
+.model top
+.inputs pina0 pinb1 pinc2 pind3 pina1 pinb0 pinc3 pind2 pmusel1 pinc4 pind5 \
+pmusel2 pinc5 pind4 pmusel3 pina4 pinb5 pina5 pinb4 pina2 pinb3 pinc0 pind1 \
+pina3 pinb2 pinc1 pind0 pind15 pinc15 pind14 pinb15 pinc14 pind13 popsel3 \
+popsel1 popsel2 pina11 pinb10 pina10 popsel0 pina15 pinb14 pinc13 pind12 \
+pina14 pinb13 pinc12 pind11 pina13 pinb12 pinc11 pind10 pina12 pinb11 pinc10 \
+pina8 pinb9 pina9 pinb8 pina6 pinb7 pina7 pinb6 psh0 pinc6 pind7 pmusel4 psh1 \
+pinc7 pind6 psh2 pinc8 pind9 pinc9 pind8
+.outputs po12 po11 po14 po13 po15 po9 po8 po7 po6 po5 po4 po3 po2 po1 po0 po10
+.names [104] [114] [2295] [2300] [2321] po12
+----1 1
+1--1- 1
+-1-1- 1
+--01- 1
+.names [451] [454] [455] [457] [2347] po11
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names [425] [426] [427] [428] [429] po14
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names [104] [2296] [2350] [2377] [2399] po13
+----1 1
+1--1- 1
+-0-1- 1
+--11- 1
+.names [104] [2296] [2350] [2400] [2416] po15
+----1 1
+0101- 1
+.names [362] [367] [2444] [2445] [2446] po9
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names [342] [344] [2475] [2476] [2477] po8
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names [309] [310] [318] [2507] [2508] po7
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names [284] [289] [291] [2545] po6
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [260] [265] [266] [2577] [2578] po5
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names [238] [239] [2609] [2610] [2611] po4
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names [213] [214] [2643] [2644] [2645] po3
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names [2678] [2679] [2683] po2
+1-- 1
+-1- 1
+--1 1
+.names [158] [162] [163] [2715] [2716] po1
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names [133] [141] [2746] [2751] [2752] po0
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names [77] [111] [112] [113] [2784] po10
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names popsel3 popsel1 popsel2 popsel0 [18]
+1001 1
+1100 1
+.names popsel3 popsel1 popsel2 popsel0 [21]
+011- 1
+0-11 1
+1000 1
+.names psh0 psh1 psh2 [25]
+111 1
+000 1
+.names popsel3 popsel1 popsel2 popsel0 [33]
+010- 1
+0-01 1
+0010 1
+.names psh0 psh1 psh2 [60]
+100 1
+.names psh0 psh1 psh2 [62]
+010 1
+.names psh0 psh1 psh2 [63]
+110 1
+.names psh0 psh1 psh2 [102]
+0-1 1
+-01 1
+.names psh1 psh2 [68]
+00 1
+.names [370] [372] [373] n_n2173
+1-- 1
+-1- 1
+--1 1
+.names psh0 psh1 psh2 [74]
+101 1
+.names psh0 psh1 psh2 [106]
+111 1
+.names psh0 psh1 psh2 [73]
+001 1
+.names psh0 psh1 [97]
+10 1
+.names psh0 psh1 psh2 [105]
+000 1
+.names n_n2454 n_n1840 n_n2410 [2293] [104]
+0--- 1
+-1-- 1
+--0- 1
+---1 1
+.names pmusel2 pina6 pinc6 [44] [90] n_n2454
+01-01 1
+1-101 1
+00-00 1
+1-000 1
+.names psh0 psh1 psh2 [72]
+011 1
+.names [44] [80] [84] [87] [90] n_n1840
+1---- 1
+----1 1
+00--0 1
+0-0-0 1
+0--00 1
+.names pinc3 pmusel2 pina3 [44] [90] n_n2410
+11-01 1
+-0101 1
+01-00 1
+-0000 1
+.names pmusel1 pmusel2 pmusel3 pmusel4 [22]
+0001 1
+1110 1
+.names pmusel1 pmusel2 pmusel3 pmusel4 [30]
+0110 1
+1010 1
+.names pmusel1 pmusel2 pmusel3 pmusel4 [44]
+--1- 1
+---0 1
+11-- 1
+00-- 1
+.names pmusel2 pina6 pinc6 [79]
+00- 1
+1-0 1
+.names pina1 pmusel2 pinc1 [80]
+00- 1
+-10 1
+.names [164] [166] [167] n_n2291
+1-- 1
+-1- 1
+--1 1
+.names [491] [493] [494] n_n2337
+1-- 1
+-1- 1
+--1 1
+.names pinc3 pmusel2 pina3 [81]
+01- 1
+-00 1
+.names pmusel2 pinc13 pina13 [82]
+10- 1
+0-0 1
+.names [469] [471] [472] n_n2198
+1-- 1
+-1- 1
+--1 1
+.names [439] [441] [442] n_n2362
+1-- 1
+-1- 1
+--1 1
+.names [151] [153] [154] n_n2279
+1-- 1
+-1- 1
+--1 1
+.names [323] [325] [326] n_n2257
+1-- 1
+-1- 1
+--1 1
+.names [115] [117] [119] n_n2186
+1-- 1
+-1- 1
+--1 1
+.names pmusel2 pina11 pinc11 [83]
+00- 1
+1-0 1
+.names [215] [217] [218] n_n2316
+1-- 1
+-1- 1
+--1 1
+.names pinc2 pmusel2 pina2 [84]
+01- 1
+-00 1
+.names pinc4 pmusel2 pina4 [85]
+01- 1
+-00 1
+.names pmusel2 pinc5 pina5 [86]
+10- 1
+0-0 1
+.names pina0 pmusel2 pinc0 [87]
+00- 1
+-10 1
+.names [267] [269] [270] n_n2232
+1-- 1
+-1- 1
+--1 1
+.names pmusel2 pinc14 pina14 [88]
+10- 1
+0-0 1
+.names pmusel2 pina7 pinc7 [89]
+00- 1
+1-0 1
+.names pmusel2 pinc15 pina15 [90]
+10- 1
+0-0 1
+.names [188] [190] [191] n_n2304
+1-- 1
+-1- 1
+--1 1
+.names [301] [303] [304] n_n2245
+1-- 1
+-1- 1
+--1 1
+.names pmusel2 pina10 pinc10 [91]
+00- 1
+1-0 1
+.names [392] [394] [395] n_n2370
+1-- 1
+-1- 1
+--1 1
+.names pmusel2 pina9 pinc9 [92]
+00- 1
+1-0 1
+.names [44] [90] [92] [94] [114]
+1--- 1
+-11- 1
+-1-1 1
+000- 1
+00-0 1
+.names pmusel2 pinc12 pina12 [93]
+10- 1
+0-0 1
+.names pmusel2 pina8 pinc8 [94]
+00- 1
+1-0 1
+.names [345] [347] [348] n_n2158
+1-- 1
+-1- 1
+--1 1
+.names [21] [25] [555] [556] [2758] [16]
+101-1 1
+10-11 1
+.names n_n1840 n_n2410 [114] [2322] [2760] [77]
+1---1 1
+-0--1 1
+--1-1 1
+---11 1
+.names [21] [73] [557] [558] [101]
+111- 1
+11-1 1
+.names [21] [63] [503] [504] [109]
+111- 1
+11-1 1
+.names [21] [62] [501] [502] [110]
+111- 1
+11-1 1
+.names [21] [60] [473] [474] [111]
+111- 1
+11-1 1
+.names [21] [25] [387] [388] [112]
+111- 1
+11-1 1
+.names [18] n_n2186 [2779] [2780] [113]
+11-- 1
+1-00 1
+.names pmusel1 pmusel2 pmusel3 pinc10 pmusel4 [115]
+00011 1
+.names pmusel1 pmusel2 pmusel3 pinc10 pmusel4 [117]
+11110 1
+.names pmusel1 pmusel2 pmusel3 pina10 pmusel4 [119]
+01110 1
+10110 1
+.names pmusel2 pinb10 pina10 pind10 pinc10 [124]
+0000- 1
+10-00 1
+.names pmusel1 pmusel2 pmusel3 [125]
+1-1 1
+-11 1
+000 1
+.names pmusel1 pmusel2 pmusel3 pind10 [126]
+--10 1
+00-0 1
+.names pmusel1 pmusel2 pmusel3 pinb10 [127]
+01-0 1
+1-10 1
+-110 1
+0-00 1
+.names [33] [44] [87] [90] [133]
+1001 1
+.names [33] [44] [87] [90] [134]
+1000 1
+.names [21] [74] [280] [281] [135]
+111- 1
+11-1 1
+.names [21] [73] [256] [257] [136]
+111- 1
+11-1 1
+.names [21] [72] [358] [359] [137]
+111- 1
+11-1 1
+.names [21] [63] [230] [231] [138]
+111- 1
+11-1 1
+.names [21] [62] [203] [204] [139]
+111- 1
+11-1 1
+.names [21] [60] [177] [178] [140]
+111- 1
+11-1 1
+.names [18] n_n2279 [2744] [2745] [141]
+11-- 1
+1-00 1
+.names pina0 pinb0 pmusel2 pinc0 pind0 [145]
+000-0 1
+-0100 1
+.names pmusel1 pmusel2 pmusel3 [146]
+1-1 1
+-11 1
+000 1
+.names pmusel1 pmusel2 pmusel3 pind0 [147]
+--10 1
+00-0 1
+.names pinb0 pmusel1 pmusel2 pmusel3 [148]
+001- 1
+01-1 1
+0-11 1
+00-0 1
+.names pmusel1 pmusel2 pmusel3 pinc0 pmusel4 [151]
+00011 1
+.names pmusel1 pmusel2 pmusel3 pinc0 pmusel4 [153]
+11110 1
+.names pina0 pmusel1 pmusel2 pmusel3 pmusel4 [154]
+10110 1
+11010 1
+.names [21] [177] [178] [2685] [2686] [155]
+11-11 1
+1-111 1
+.names [21] [256] [257] [2689] [156]
+11-1 1
+1-11 1
+.names [33] [44] [80] [87] [90] [158]
+10010 1
+.names [33] [44] [80] [87] [90] [159]
+100-1 1
+10100 1
+.names [21] [73] [280] [281] [160]
+111- 1
+11-1 1
+.names [21] [72] [376] [377] [161]
+111- 1
+11-1 1
+.names [21] [62] [230] [231] [162]
+111- 1
+11-1 1
+.names [18] n_n2291 [2710] [2711] [163]
+11-- 1
+1-00 1
+.names pmusel1 pmusel2 pmusel3 pinc1 pmusel4 [164]
+00011 1
+.names pmusel1 pmusel2 pmusel3 pinc1 pmusel4 [166]
+11110 1
+.names pina1 pmusel1 pmusel2 pmusel3 pmusel4 [167]
+10110 1
+11010 1
+.names pinb1 pina1 pmusel2 pind1 pinc1 [171]
+0000- 1
+0-100 1
+.names pmusel1 pmusel2 pmusel3 [172]
+1-1 1
+-11 1
+000 1
+.names pmusel1 pmusel2 pmusel3 pind1 [173]
+--10 1
+00-0 1
+.names pinb1 pmusel1 pmusel2 pmusel3 [174]
+001- 1
+01-1 1
+0-11 1
+00-0 1
+.names pinb1 pmusel1 pmusel2 pmusel3 pmusel4 [177]
+10110 1
+11010 1
+.names pmusel1 pmusel2 pmusel3 pind1 pmusel4 [178]
+00011 1
+11110 1
+.names [21] [203] [204] [2651] [180]
+11-1 1
+1-11 1
+.names [21] [280] [281] [2653] [181]
+11-1 1
+1-11 1
+.names psh0 psh1 [21] [201] [202] [184]
+00100 1
+.names psh0 psh1 [21] [228] [229] [185]
+10100 1
+.names [18] n_n2304 [2675] [2676] [187]
+11-- 1
+1-00 1
+.names pinc2 pmusel1 pmusel2 pmusel3 pmusel4 [188]
+10001 1
+.names pinc2 pmusel1 pmusel2 pmusel3 pmusel4 [190]
+11110 1
+.names pmusel1 pmusel2 pmusel3 pina2 pmusel4 [191]
+01110 1
+10110 1
+.names pinc2 pind2 pmusel2 pina2 pinb2 [195]
+001-0 1
+-0000 1
+.names pmusel1 pmusel2 pmusel3 [196]
+1-1 1
+-11 1
+000 1
+.names pind2 pmusel1 pmusel2 pmusel3 [197]
+0--1 1
+000- 1
+.names pmusel1 pmusel2 pmusel3 pinb2 [198]
+01-0 1
+1-10 1
+-110 1
+0-00 1
+.names psh1 psh2 [203] [204] [201]
+0000 1
+.names psh1 psh2 [307] [308] [202]
+0100 1
+.names pmusel1 pmusel2 pmusel3 pinb2 pmusel4 [203]
+01110 1
+10110 1
+.names pind2 pmusel1 pmusel2 pmusel3 pmusel4 [204]
+10001 1
+11110 1
+.names [21] [106] [230] [231] [208]
+111- 1
+11-1 1
+.names [21] [74] [358] [359] [209]
+111- 1
+11-1 1
+.names [21] [63] [307] [308] [210]
+111- 1
+11-1 1
+.names [21] [60] [256] [257] [211]
+111- 1
+11-1 1
+.names [33] n_n1840 [44] [81] [90] [213]
+11001 1
+11010 1
+.names [18] n_n2316 [2639] [2640] [214]
+11-- 1
+1-00 1
+.names pinc3 pmusel1 pmusel2 pmusel3 pmusel4 [215]
+10001 1
+.names pinc3 pmusel1 pmusel2 pmusel3 pmusel4 [217]
+11110 1
+.names pmusel1 pmusel2 pmusel3 pina3 pmusel4 [218]
+01110 1
+10110 1
+.names pind3 pinc3 pmusel2 pinb3 pina3 [222]
+0010- 1
+0-000 1
+.names pmusel1 pmusel2 pmusel3 [223]
+1-1 1
+-11 1
+000 1
+.names pind3 pmusel1 pmusel2 pmusel3 [224]
+0--1 1
+000- 1
+.names pmusel1 pmusel2 pmusel3 pinb3 [225]
+01-0 1
+1-10 1
+-110 1
+0-00 1
+.names psh1 psh2 [230] [231] [228]
+0000 1
+.names psh1 psh2 [321] [322] [229]
+0100 1
+.names pmusel1 pmusel2 pmusel3 pinb3 pmusel4 [230]
+01110 1
+10110 1
+.names pind3 pmusel1 pmusel2 pmusel3 pmusel4 [231]
+10001 1
+11110 1
+.names [21] [74] [376] [377] [232]
+111- 1
+11-1 1
+.names [21] [73] [358] [359] [233]
+111- 1
+11-1 1
+.names [21] [72] [501] [502] [234]
+111- 1
+11-1 1
+.names [21] [63] [321] [322] [235]
+111- 1
+11-1 1
+.names [21] [62] [307] [308] [236]
+111- 1
+11-1 1
+.names [21] [60] [280] [281] [237]
+111- 1
+11-1 1
+.names n_n1840 [44] [81] [90] [2588] [238]
+1---1 1
+-1--1 1
+--111 1
+--001 1
+.names n_n1840 [44] [81] [90] [2589] [239]
+00011 1
+00101 1
+.names [21] [25] [256] [257] [240]
+111- 1
+11-1 1
+.names pinc4 pmusel2 pind4 pina4 pinb4 [246]
+010-0 1
+-0000 1
+.names pmusel1 pmusel2 pmusel3 [247]
+1-1 1
+-11 1
+000 1
+.names pmusel1 pmusel2 pind4 pmusel3 [248]
+--01 1
+000- 1
+.names pmusel1 pmusel2 pmusel3 pinb4 [249]
+01-0 1
+1-10 1
+-110 1
+0-00 1
+.names pmusel1 pinc4 pmusel2 pmusel3 pmusel4 [252]
+01001 1
+.names pmusel1 pinc4 pmusel2 pmusel3 pmusel4 [254]
+11110 1
+.names pmusel1 pmusel2 pmusel3 pina4 pmusel4 [255]
+01110 1
+10110 1
+.names pmusel1 pmusel2 pmusel3 pinb4 pmusel4 [256]
+01110 1
+10110 1
+.names pmusel1 pmusel2 pind4 pmusel3 pmusel4 [257]
+00101 1
+11110 1
+.names [21] [280] [281] [2547] [2548] [258]
+11-11 1
+1-111 1
+.names [21] [358] [359] [2551] [259]
+11-1 1
+1-11 1
+.names n_n1840 [44] [81] [90] [2554] [260]
+00011 1
+00101 1
+.names [21] [73] [376] [377] [262]
+111- 1
+11-1 1
+.names [21] [72] [503] [504] [263]
+111- 1
+11-1 1
+.names [21] [62] [321] [322] [264]
+111- 1
+11-1 1
+.names n_n1840 n_n2410 [2293] [2559] [265]
+1--1 1
+-0-1 1
+--11 1
+.names [18] n_n2232 [2573] [2574] [266]
+11-- 1
+1-00 1
+.names pmusel1 pmusel2 pinc5 pmusel3 pmusel4 [267]
+00101 1
+.names pmusel1 pmusel2 pinc5 pmusel3 pmusel4 [269]
+11110 1
+.names pmusel1 pmusel2 pmusel3 pina5 pmusel4 [270]
+01110 1
+10110 1
+.names pind5 pmusel2 pinc5 pinb5 pina5 [274]
+0100- 1
+00-00 1
+.names pmusel1 pmusel2 pmusel3 [275]
+1-1 1
+-11 1
+000 1
+.names pmusel1 pind5 pmusel2 pmusel3 [276]
+-0-1 1
+000- 1
+.names pmusel1 pmusel2 pmusel3 pinb5 [277]
+01-0 1
+1-10 1
+-110 1
+0-00 1
+.names pmusel1 pmusel2 pmusel3 pinb5 pmusel4 [280]
+01110 1
+10110 1
+.names pmusel1 pind5 pmusel2 pmusel3 pmusel4 [281]
+01001 1
+11110 1
+.names psh0 psh1 [21] [305] [306] [284]
+00100 1
+.names [21] [106] [307] [308] [285]
+111- 1
+11-1 1
+.names [21] [74] [473] [474] [286]
+111- 1
+11-1 1
+.names [21] [63] [376] [377] [287]
+111- 1
+11-1 1
+.names [21] [60] [321] [322] [288]
+111- 1
+11-1 1
+.names n_n1840 n_n2410 [2293] [2521] [289]
+0101 1
+.names n_n1840 n_n2410 [2293] [2522] [290]
+1--1 1
+-0-1 1
+--11 1
+.names [18] n_n2245 [2534] [2535] [2536] [291]
+11--- 1
+1-000 1
+.names pmusel2 pina6 pinb6 pinc6 pind6 [295]
+000-0 1
+1-000 1
+.names pmusel1 pmusel2 pmusel3 pind6 [297]
+--10 1
+00-0 1
+.names pmusel1 pmusel2 pmusel3 pinb6 [298]
+01-0 1
+1-10 1
+-110 1
+0-00 1
+.names pmusel1 pmusel2 pmusel3 pinc6 pmusel4 [301]
+00011 1
+.names pmusel1 pmusel2 pmusel3 pinc6 pmusel4 [303]
+11110 1
+.names pmusel1 pmusel2 pmusel3 pina6 pmusel4 [304]
+01110 1
+10110 1
+.names psh1 psh2 [307] [308] [305]
+0000 1
+.names psh1 psh2 [387] [388] [306]
+0100 1
+.names pmusel1 pmusel2 pmusel3 pinb6 pmusel4 [307]
+01110 1
+10110 1
+.names pmusel1 pmusel2 pmusel3 pmusel4 pind6 [308]
+00011 1
+11101 1
+.names n_n2454 n_n1840 n_n2410 [2293] [2481] [309]
+10101 1
+.names n_n2454 n_n1840 n_n2410 [2293] [2482] [310]
+0---1 1
+-1--1 1
+--0-1 1
+---11 1
+.names [21] [74] [501] [502] [311]
+111- 1
+11-1 1
+.names [21] [73] [473] [474] [312]
+111- 1
+11-1 1
+.names [21] [63] [387] [388] [313]
+111- 1
+11-1 1
+.names [21] [62] [376] [377] [314]
+111- 1
+11-1 1
+.names [21] [60] [358] [359] [315]
+111- 1
+11-1 1
+.names [21] [25] [321] [322] [316]
+111- 1
+11-1 1
+.names [21] [72] [555] [556] [317]
+111- 1
+11-1 1
+.names [18] n_n2257 [2502] [2503] [318]
+11-- 1
+1-00 1
+.names pmusel1 pmusel2 pmusel3 pinb7 pmusel4 [321]
+01110 1
+10110 1
+.names pmusel1 pmusel2 pmusel3 pind7 pmusel4 [322]
+00011 1
+11110 1
+.names pmusel1 pmusel2 pmusel3 pmusel4 pinc7 [323]
+00011 1
+.names pmusel1 pmusel2 pmusel3 pmusel4 pinc7 [325]
+11101 1
+.names pmusel1 pmusel2 pmusel3 pina7 pmusel4 [326]
+01110 1
+10110 1
+.names pmusel2 pinb7 pina7 pind7 pinc7 [330]
+0000- 1
+10-00 1
+.names pmusel1 pmusel2 pmusel3 [331]
+1-1 1
+-11 1
+000 1
+.names pmusel1 pmusel2 pmusel3 pind7 [332]
+--10 1
+00-0 1
+.names pmusel1 pmusel2 pmusel3 pinb7 [333]
+01-0 1
+1-10 1
+-110 1
+0-00 1
+.names [21] [105] [358] [359] [338]
+111- 1
+11-1 1
+.names [21] [73] [501] [502] [340]
+111- 1
+11-1 1
+.names [21] [62] [387] [388] [341]
+111- 1
+11-1 1
+.names n_n1840 n_n2410 [114] [2322] [2458] [342]
+1---1 1
+-0--1 1
+--1-1 1
+---11 1
+.names [18] n_n2158 [2472] [2473] [344]
+11-- 1
+1-00 1
+.names pmusel1 pmusel2 pmusel3 pmusel4 pinc8 [345]
+00011 1
+.names pmusel1 pmusel2 pmusel3 pmusel4 pinc8 [347]
+11101 1
+.names pmusel1 pmusel2 pmusel3 pina8 pmusel4 [348]
+01110 1
+10110 1
+.names pmusel2 pina8 pinb8 pinc8 pind8 [352]
+000-0 1
+1-000 1
+.names pmusel1 pmusel2 pmusel3 [353]
+1-1 1
+-11 1
+000 1
+.names pmusel1 pmusel2 pmusel3 pind8 [354]
+--10 1
+00-0 1
+.names pmusel1 pmusel2 pmusel3 pinb8 [355]
+01-0 1
+1-10 1
+-110 1
+0-00 1
+.names pmusel1 pmusel2 pmusel3 pinb8 pmusel4 [358]
+01110 1
+10110 1
+.names pmusel1 pmusel2 pmusel3 pmusel4 pind8 [359]
+00011 1
+11101 1
+.names psh0 psh1 [21] [374] [375] [362]
+00100 1
+.names [21] [106] [376] [377] [363]
+111- 1
+11-1 1
+.names [21] [74] [557] [558] [364]
+111- 1
+11-1 1
+.names [21] [63] [501] [502] [365]
+111- 1
+11-1 1
+.names [21] [60] [387] [388] [366]
+111- 1
+11-1 1
+.names n_n1840 n_n2410 [114] [2322] [2426] [367]
+1---1 1
+-0--1 1
+--1-1 1
+---11 1
+.names pmusel1 pmusel2 pmusel3 pmusel4 pinc9 [370]
+00011 1
+.names pmusel1 pmusel2 pmusel3 pmusel4 pinc9 [372]
+11101 1
+.names pmusel1 pmusel2 pmusel3 pina9 pmusel4 [373]
+01110 1
+10110 1
+.names psh1 psh2 [376] [377] [374]
+0000 1
+.names psh1 psh2 [503] [504] [375]
+0100 1
+.names pmusel1 pmusel2 pmusel3 pinb9 pmusel4 [376]
+01110 1
+10110 1
+.names pmusel1 pmusel2 pmusel3 pmusel4 pind9 [377]
+00011 1
+11101 1
+.names pmusel2 pinb9 pina9 pind9 pinc9 [381]
+0000- 1
+10-00 1
+.names pmusel1 pmusel2 pmusel3 [382]
+1-1 1
+-11 1
+000 1
+.names pmusel1 pmusel2 pmusel3 pind9 [383]
+--10 1
+00-0 1
+.names pmusel1 pmusel2 pmusel3 pinb9 [384]
+01-0 1
+1-10 1
+-110 1
+0-00 1
+.names pmusel1 pmusel2 pmusel3 pinb10 pmusel4 [387]
+01110 1
+10110 1
+.names pmusel1 pmusel2 pmusel3 pind10 pmusel4 [388]
+00011 1
+11110 1
+.names [21] [555] [556] [390]
+11- 1
+1-1 1
+.names pmusel1 pmusel2 pmusel3 pinc15 pmusel4 [392]
+00011 1
+.names pmusel1 pmusel2 pmusel3 pinc15 pmusel4 [394]
+11110 1
+.names pmusel1 pmusel2 pmusel3 pina15 pmusel4 [395]
+01110 1
+10110 1
+.names pmusel2 pind15 pinc15 pinb15 pina15 [399]
+1000- 1
+00-00 1
+.names pmusel1 pmusel2 pmusel3 [400]
+1-1 1
+-11 1
+000 1
+.names pmusel1 pmusel2 pmusel3 pind15 [401]
+--10 1
+00-0 1
+.names pmusel1 pmusel2 pmusel3 pinb15 [402]
+01-0 1
+1-10 1
+-110 1
+0-00 1
+.names [21] [25] [68] [555] [556] [406]
+1001- 1
+100-1 1
+.names [21] [60] [557] [558] [408]
+111- 1
+11-1 1
+.names [21] [25] [503] [504] [409]
+111- 1
+11-1 1
+.names pmusel1 pmusel2 pmusel3 pinc13 pmusel4 [412]
+00011 1
+.names pmusel1 pmusel2 pmusel3 pinc13 pmusel4 [414]
+11110 1
+.names pmusel1 pmusel2 pmusel3 pina13 pmusel4 [415]
+01110 1
+10110 1
+.names pmusel2 pind13 pinc13 pinb13 pina13 [419]
+1000- 1
+00-00 1
+.names pmusel1 pmusel2 pmusel3 [420]
+1-1 1
+-11 1
+000 1
+.names pmusel1 pmusel2 pmusel3 pind13 [421]
+--10 1
+00-0 1
+.names pmusel1 pmusel2 pmusel3 pinb13 [422]
+01-0 1
+1-10 1
+-110 1
+0-00 1
+.names [104] [114] [2295] [2350] [2351] [425]
+00101 1
+.names [104] [114] [2295] [2350] [2352] [426]
+1---1 1
+-1--1 1
+--0-1 1
+---11 1
+.names [21] [25] [555] [556] [427]
+101- 1
+10-1 1
+.names [21] [25] [557] [558] [428]
+111- 1
+11-1 1
+.names [18] n_n2362 [2368] [2369] [429]
+11-- 1
+1-00 1
+.names pmusel2 pind14 pinc14 pinb14 pina14 [433]
+1000- 1
+00-00 1
+.names pmusel1 pmusel2 pmusel3 [434]
+1-1 1
+-11 1
+000 1
+.names pmusel1 pmusel2 pmusel3 pind14 [435]
+--10 1
+00-0 1
+.names pmusel1 pmusel2 pmusel3 pinb14 [436]
+01-0 1
+1-10 1
+-110 1
+0-00 1
+.names pmusel1 pmusel2 pmusel3 pinc14 pmusel4 [439]
+00011 1
+.names pmusel1 pmusel2 pmusel3 pinc14 pmusel4 [441]
+11110 1
+.names pmusel1 pmusel2 pmusel3 pina14 pmusel4 [442]
+01110 1
+10110 1
+.names n_n1840 n_n2410 [114] [2322] [2324] [451]
+1---1 1
+-0--1 1
+--1-1 1
+---11 1
+.names [21] [102] [555] [556] [452]
+111- 1
+11-1 1
+.names [21] [63] [557] [558] [453]
+111- 1
+11-1 1
+.names [21] [62] [503] [504] [454]
+111- 1
+11-1 1
+.names [21] [60] [501] [502] [455]
+111- 1
+11-1 1
+.names [21] [25] [473] [474] [456]
+111- 1
+11-1 1
+.names [18] n_n2198 [2343] [2344] [457]
+11-- 1
+1-00 1
+.names pmusel2 pina11 pind11 pinc11 pinb11 [463]
+000-0 1
+1-000 1
+.names pmusel1 pmusel2 pmusel3 [464]
+1-1 1
+-11 1
+000 1
+.names pmusel1 pmusel2 pmusel3 pind11 [465]
+--10 1
+00-0 1
+.names pmusel1 pmusel2 pmusel3 pinb11 [466]
+01-0 1
+1-10 1
+-110 1
+0-00 1
+.names pmusel1 pmusel2 pmusel3 pinc11 pmusel4 [469]
+00011 1
+.names pmusel1 pmusel2 pmusel3 pinc11 pmusel4 [471]
+11110 1
+.names pmusel1 pmusel2 pmusel3 pina11 pmusel4 [472]
+01110 1
+10110 1
+.names pmusel1 pmusel2 pmusel3 pinb11 pmusel4 [473]
+01110 1
+10110 1
+.names pmusel1 pmusel2 pmusel3 pind11 pmusel4 [474]
+00011 1
+11110 1
+.names [21] [25] [555] [556] [2287] [475]
+101-1 1
+10-11 1
+.names [21] [62] [557] [558] [476]
+111- 1
+11-1 1
+.names [21] [60] [503] [504] [477]
+111- 1
+11-1 1
+.names [21] [25] [501] [502] [480]
+111- 1
+11-1 1
+.names [18] n_n2337 [2315] [2316] [481]
+11-- 1
+1-00 1
+.names pmusel2 pind12 pinc12 pinb12 pina12 [485]
+1000- 1
+00-00 1
+.names pmusel1 pmusel2 pmusel3 [486]
+1-1 1
+-11 1
+000 1
+.names pmusel1 pmusel2 pmusel3 pind12 [487]
+--10 1
+00-0 1
+.names pmusel1 pmusel2 pmusel3 pinb12 [488]
+01-0 1
+1-10 1
+-110 1
+0-00 1
+.names pmusel1 pmusel2 pmusel3 pinc12 pmusel4 [491]
+00011 1
+.names pmusel1 pmusel2 pmusel3 pinc12 pmusel4 [493]
+11110 1
+.names pmusel1 pmusel2 pmusel3 pina12 pmusel4 [494]
+01110 1
+10110 1
+.names pmusel1 pmusel2 pmusel3 pinb12 pmusel4 [501]
+01110 1
+10110 1
+.names pmusel1 pmusel2 pmusel3 pind12 pmusel4 [502]
+00011 1
+11110 1
+.names pmusel1 pmusel2 pmusel3 pinb13 pmusel4 [503]
+01110 1
+10110 1
+.names pmusel1 pmusel2 pmusel3 pind13 pmusel4 [504]
+00011 1
+11110 1
+.names pmusel1 pmusel2 pmusel3 pinb15 pmusel4 [555]
+01110 1
+10110 1
+.names pmusel1 pmusel2 pmusel3 pind15 pmusel4 [556]
+00011 1
+11110 1
+.names pmusel1 pmusel2 pmusel3 pinb14 pmusel4 [557]
+01110 1
+10110 1
+.names pmusel1 pmusel2 pmusel3 pind14 pmusel4 [558]
+00011 1
+11110 1
+.names psh0 psh1 psh2 [2287]
+--1 1
+11- 1
+00- 1
+.names [44] [85] [86] [90] [2293]
+1--- 1
+-1-1 1
+--11 1
+00-0 1
+0-00 1
+.names [44] [83] [89] [90] [91] [2295]
+01101 1
+01110 1
+.names [44] [90] [92] [94] [2295] [2296]
+00111 1
+01001 1
+.names [33] [44] [90] [93] [2299]
+11-- 1
+1-11 1
+1000 1
+.names [33] [44] [90] [93] [2300]
+1001 1
+1010 1
+.names pmusel1 pmusel2 pmusel3 [2302]
+1-- 1
+-11 1
+-00 1
+.names pmusel1 pmusel2 pmusel3 pind12 [2303]
+1--0 1
+-0-0 1
+--10 1
+.names pmusel1 pmusel2 pmusel3 pinb12 [2304]
+1--0 1
+-1-0 1
+--00 1
+.names pmusel1 pmusel3 pind12 pinb12 pmusel4 [2310]
+----1 1
+0-00- 1
+-100- 1
+.names [485] [487] [488] [2310] [2315]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [93] [486] [2302] [2303] [2304] [2316]
+-1--- 1
+1-1-- 1
+1--1- 1
+1---1 1
+.names [475] [476] [477] [480] [2319]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [104] [481] [2296] [2299] [2319] [2321]
+-1--- 1
+----1 1
+0-11- 1
+.names [44] [83] [90] [91] [2322]
+1--- 1
+-11- 1
+--11 1
+000- 1
+0-00 1
+.names [33] [44] [83] [90] [2324]
+1001 1
+1010 1
+.names pmusel1 pmusel2 pmusel3 [2330]
+1-- 1
+-11 1
+-00 1
+.names pmusel1 pmusel2 pmusel3 pind11 [2331]
+1--0 1
+-0-0 1
+--10 1
+.names pmusel1 pmusel2 pmusel3 pinb11 [2332]
+1--0 1
+-1-0 1
+--00 1
+.names pmusel1 pmusel3 pind11 pinb11 pmusel4 [2338]
+----1 1
+0-00- 1
+-100- 1
+.names [463] [465] [466] [2338] [2343]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [83] [464] [2330] [2331] [2332] [2344]
+-1--- 1
+1-1-- 1
+1--1- 1
+1---1 1
+.names [452] [453] [456] [2347]
+1-- 1
+-1- 1
+--1 1
+.names [44] [82] [90] [93] [2350]
+1--- 1
+-11- 1
+--11 1
+000- 1
+0-00 1
+.names [33] [44] [88] [90] [2351]
+11-- 1
+1-11 1
+1000 1
+.names [33] [44] [88] [90] [2352]
+1001 1
+1010 1
+.names pmusel1 pmusel2 pmusel3 [2355]
+1-- 1
+-11 1
+-00 1
+.names pmusel1 pmusel2 pmusel3 pind14 [2356]
+1--0 1
+-0-0 1
+--10 1
+.names pmusel1 pmusel2 pmusel3 pinb14 [2357]
+1--0 1
+-1-0 1
+--00 1
+.names pmusel1 pmusel3 pind14 pinb14 pmusel4 [2363]
+----1 1
+0-00- 1
+-100- 1
+.names [433] [435] [436] [2363] [2368]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [88] [434] [2355] [2356] [2357] [2369]
+-1--- 1
+1-1-- 1
+1--1- 1
+1---1 1
+.names [33] [44] [82] [90] [93] [2374]
+10001 1
+10110 1
+.names [33] [44] [82] [90] [2377]
+1001 1
+1010 1
+.names pmusel1 pmusel2 pmusel3 [2380]
+1-- 1
+-11 1
+-00 1
+.names pmusel1 pmusel2 pmusel3 pind13 [2381]
+1--0 1
+-0-0 1
+--10 1
+.names pmusel1 pmusel2 pmusel3 pinb13 [2382]
+1--0 1
+-1-0 1
+--00 1
+.names pmusel1 pmusel3 pind13 pinb13 pmusel4 [2388]
+----1 1
+0-00- 1
+-100- 1
+.names [419] [421] [422] [2388] [2393]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [82] [420] [2380] [2381] [2382] [2394]
+-1--- 1
+1-1-- 1
+1--1- 1
+1---1 1
+.names [18] [409] [412] [414] [415] [2396]
+-1--- 1
+1-1-- 1
+1--1- 1
+1---1 1
+.names [18] [406] [408] [2393] [2394] [2397]
+-1--- 1
+--1-- 1
+1--00 1
+.names [104] [2296] [2374] [2396] [2397] [2399]
+---1- 1
+----1 1
+011-- 1
+.names [33] [44] [88] [90] [2400]
+1001 1
+1010 1
+.names pmusel1 pmusel2 pmusel3 [2401]
+1-- 1
+-11 1
+-00 1
+.names pmusel1 pmusel2 pmusel3 pind15 [2402]
+1--0 1
+-0-0 1
+--10 1
+.names pmusel1 pmusel2 pmusel3 pinb15 [2403]
+1--0 1
+-1-0 1
+--00 1
+.names pmusel1 pmusel3 pind15 pinb15 pmusel4 [2409]
+----1 1
+0-00- 1
+-100- 1
+.names [399] [401] [402] [2409] [2414]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [90] [400] [2401] [2402] [2403] [2415]
+-1--- 1
+1-1-- 1
+1--1- 1
+1---1 1
+.names [18] n_n2370 [390] [2414] [2415] [2416]
+--1-- 1
+11--- 1
+1--00 1
+.names psh0 psh2 [21] [473] [474] [2418]
+0011- 1
+001-1 1
+.names psh0 psh2 [21] [555] [556] [2420]
+0111- 1
+011-1 1
+.names [33] [44] [90] [92] [2426]
+1001 1
+1010 1
+.names pmusel1 pmusel2 pmusel3 [2427]
+1-- 1
+-11 1
+-00 1
+.names pmusel1 pmusel2 pmusel3 pind9 [2428]
+1--0 1
+-0-0 1
+--10 1
+.names pmusel1 pmusel2 pmusel3 pinb9 [2429]
+1--0 1
+-1-0 1
+--00 1
+.names pmusel1 pmusel3 pinb9 pmusel4 pind9 [2435]
+---1- 1
+0-0-0 1
+-10-0 1
+.names [381] [383] [384] [2435] [2440]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [92] [382] [2427] [2428] [2429] [2441]
+-1--- 1
+1-1-- 1
+1--1- 1
+1---1 1
+.names [18] n_n2173 [2440] [2441] [2444]
+11-- 1
+1-00 1
+.names [363] [364] [365] [366] [2445]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [374] [375] [2418] [2420] [2446]
+001- 1
+00-1 1
+.names psh0 psh2 [21] [358] [359] [2451]
+1111- 1
+111-1 1
+.names psh0 psh2 [21] [473] [474] [2453]
+1011- 1
+101-1 1
+.names [33] [44] [90] [94] [2458]
+1001 1
+1010 1
+.names pmusel1 pmusel2 pmusel3 [2459]
+1-- 1
+-11 1
+-00 1
+.names pmusel1 pmusel2 pmusel3 pind8 [2460]
+1--0 1
+-0-0 1
+--10 1
+.names pmusel1 pmusel2 pmusel3 pinb8 [2461]
+1--0 1
+-1-0 1
+--00 1
+.names pmusel1 pmusel3 pinb8 pmusel4 pind8 [2467]
+---1- 1
+0-0-0 1
+-10-0 1
+.names [352] [354] [355] [2467] [2472]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [94] [353] [2459] [2460] [2461] [2473]
+-1--- 1
+1-1-- 1
+1--1- 1
+1---1 1
+.names [21] [72] [341] [555] [556] [2475]
+--1-- 1
+11-1- 1
+11--1 1
+.names [338] [340] [374] [375] [2451] [2476]
+1---- 1
+-1--- 1
+--001 1
+.names [21] [97] [374] [375] [2453] [2477]
+--001 1
+1100- 1
+.names [33] [44] [89] [90] [2481]
+11-- 1
+1-11 1
+1000 1
+.names [33] [44] [89] [90] [2482]
+1001 1
+1010 1
+.names pmusel1 pmusel2 pmusel3 [2489]
+1-- 1
+-11 1
+-00 1
+.names pmusel1 pmusel2 pmusel3 pind7 [2490]
+1--0 1
+-0-0 1
+--10 1
+.names pmusel1 pmusel2 pmusel3 pinb7 [2491]
+1--0 1
+-1-0 1
+--00 1
+.names pmusel1 pmusel3 pinb7 pind7 pmusel4 [2497]
+----1 1
+0-00- 1
+-100- 1
+.names [330] [332] [333] [2497] [2502]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [89] [331] [2489] [2490] [2491] [2503]
+-1--- 1
+1-1-- 1
+1--1- 1
+1---1 1
+.names [311] [312] [317] [2507]
+1-- 1
+-1- 1
+--1 1
+.names [313] [314] [315] [316] [2508]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names psh0 psh2 [21] [358] [359] [2513]
+0011- 1
+001-1 1
+.names psh0 psh2 [21] [557] [558] [2515]
+0111- 1
+011-1 1
+.names [33] [44] [79] [90] [2521]
+11-- 1
+1-11 1
+1000 1
+.names [33] [44] [79] [90] [2522]
+1001 1
+1010 1
+.names pmusel1 pmusel2 pmusel3 pina6 pinc6 [2523]
+-1--0 1
+10-0- 1
+-000- 1
+.names pmusel2 pina6 pinc6 pind6 [2524]
+00-0 1
+1-00 1
+.names pmusel2 pina6 pinb6 pinc6 [2525]
+000- 1
+1-00 1
+.names pmusel1 pmusel3 pinb6 pmusel4 pind6 [2531]
+---1- 1
+0-0-0 1
+-10-0 1
+.names pmusel1 pmusel2 pmusel3 [2523] [2524] [2534]
+1--1- 1
+-0-1- 1
+--11- 1
+1---1 1
+-0--1 1
+--1-1 1
+.names pmusel1 pmusel2 pmusel3 [2525] [2535]
+1-1- 1
+-11- 1
+1--1 1
+-1-1 1
+--01 1
+000- 1
+.names [295] [297] [298] [2531] [2536]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [285] [286] [287] [288] [2540]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [305] [306] [2513] [2515] [2541]
+001- 1
+00-1 1
+.names [290] [2540] [2541] [2545]
+1-- 1
+-1- 1
+--1 1
+.names psh0 psh1 psh2 [2547]
+1-- 1
+-11 1
+-00 1
+.names psh0 psh1 psh2 [2548]
+00- 1
+0-0 1
+111 1
+.names psh0 psh1 psh2 [2551]
+110 1
+.names [33] [44] [85] [86] [90] [2554]
+10011 1
+10100 1
+.names psh0 psh1 [21] [2555]
+101 1
+.names [33] [44] [86] [90] [2559]
+1001 1
+1010 1
+.names pmusel1 pmusel2 pmusel3 [2560]
+1-- 1
+-11 1
+-00 1
+.names pmusel1 pind5 pmusel2 pmusel3 [2561]
+10-- 1
+-00- 1
+-0-1 1
+.names pmusel1 pmusel2 pmusel3 pinb5 [2562]
+1--0 1
+-1-0 1
+--00 1
+.names pmusel1 pind5 pmusel3 pinb5 pmusel4 [2568]
+----1 1
+00-0- 1
+-010- 1
+.names [274] [276] [277] [2568] [2573]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [86] [275] [2560] [2561] [2562] [2574]
+-1--- 1
+1-1-- 1
+1--1- 1
+1---1 1
+.names [258] [259] [264] [2577]
+1-- 1
+-1- 1
+--1 1
+.names [262] [263] [305] [306] [2555] [2578]
+1---- 1
+-1--- 1
+--001 1
+.names [33] [44] [85] [90] [2588]
+1001 1
+1010 1
+.names [33] [44] [85] [90] [2589]
+11-- 1
+1-11 1
+1000 1
+.names pmusel1 pmusel2 pmusel3 [2591]
+1-- 1
+-11 1
+-00 1
+.names pmusel1 pmusel2 pind4 pmusel3 [2592]
+1-0- 1
+-00- 1
+--01 1
+.names pmusel1 pmusel2 pmusel3 pinb4 [2593]
+1--0 1
+-1-0 1
+--00 1
+.names pmusel1 pind4 pmusel3 pinb4 pmusel4 [2599]
+----1 1
+00-0- 1
+-010- 1
+.names [246] [248] [249] [2599] [2604]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [85] [247] [2591] [2592] [2593] [2605]
+-1--- 1
+1-1-- 1
+1--1- 1
+1---1 1
+.names [18] [240] [252] [254] [255] [2609]
+-1--- 1
+1-1-- 1
+1--1- 1
+1---1 1
+.names [18] [232] [233] [2604] [2605] [2610]
+-1--- 1
+--1-- 1
+1--00 1
+.names [234] [235] [236] [237] [2611]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names psh0 psh2 [21] [280] [281] [2616]
+0011- 1
+001-1 1
+.names psh0 psh2 [21] [473] [474] [2618]
+0111- 1
+011-1 1
+.names psh0 psh1 [21] [2619]
+001 1
+.names [33] [44] [81] [90] [2624]
+11-- 1
+1-11 1
+1000 1
+.names pmusel1 pmusel2 pmusel3 [2626]
+1-- 1
+-11 1
+-00 1
+.names pind3 pmusel1 pmusel2 pmusel3 [2627]
+01-- 1
+0-0- 1
+0--1 1
+.names pmusel1 pmusel2 pmusel3 pinb3 [2628]
+1--0 1
+-1-0 1
+--00 1
+.names pind3 pmusel1 pmusel3 pinb3 pmusel4 [2634]
+----1 1
+00-0- 1
+0-10- 1
+.names [222] [224] [225] [2634] [2639]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [81] [223] [2626] [2627] [2628] [2640]
+-1--- 1
+1-1-- 1
+1--1- 1
+1---1 1
+.names [208] [209] [210] [211] [2643]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [228] [229] [2616] [2618] [2644]
+001- 1
+00-1 1
+.names n_n1840 [228] [229] [2619] [2624] [2645]
+0---1 1
+-001- 1
+.names psh0 psh2 [21] [256] [257] [2650]
+0011- 1
+001-1 1
+.names psh0 psh1 psh2 [2651]
+111 1
+.names psh0 psh1 psh2 [2653]
+110 1
+.names [33] [44] [80] [87] [90] [2656]
+10110 1
+.names psh0 psh2 [21] [387] [388] [2658]
+0111- 1
+011-1 1
+.names [33] [44] [84] [90] [2661]
+1001 1
+1010 1
+.names pmusel1 pmusel2 pmusel3 [2662]
+1-- 1
+-11 1
+-00 1
+.names pind2 pmusel1 pmusel2 pmusel3 [2663]
+01-- 1
+0-0- 1
+0--1 1
+.names pmusel1 pmusel2 pmusel3 pinb2 [2664]
+1--0 1
+-1-0 1
+--00 1
+.names pind2 pmusel1 pmusel3 pinb2 pmusel4 [2670]
+----1 1
+00-0- 1
+0-10- 1
+.names [195] [197] [198] [2670] [2675]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [84] [196] [2662] [2663] [2664] [2676]
+-1--- 1
+1-1-- 1
+1--1- 1
+1---1 1
+.names [180] [181] [201] [202] [2650] [2678]
+1---- 1
+-1--- 1
+--001 1
+.names n_n1840 [201] [202] [2656] [2658] [2679]
+1--1- 1
+-00-1 1
+.names n_n1840 [184] [185] [187] [2661] [2683]
+-1--- 1
+--1-- 1
+---1- 1
+1---1 1
+.names psh0 psh1 psh2 [2685]
+1-- 1
+-11 1
+-00 1
+.names psh0 psh1 psh2 [2686]
+00- 1
+0-0 1
+111 1
+.names psh0 psh1 psh2 [2689]
+110 1
+.names psh0 psh1 [21] [2691]
+101 1
+.names pmusel1 pmusel2 pmusel3 [2697]
+1-- 1
+-11 1
+-00 1
+.names pmusel1 pmusel2 pmusel3 pind1 [2698]
+1--0 1
+-0-0 1
+--10 1
+.names pinb1 pmusel1 pmusel2 pmusel3 [2699]
+01-- 1
+0-1- 1
+0--0 1
+.names pinb1 pmusel1 pmusel3 pind1 pmusel4 [2705]
+----1 1
+00-0- 1
+0-10- 1
+.names [171] [173] [174] [2705] [2710]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [80] [172] [2697] [2698] [2699] [2711]
+-1--- 1
+1-1-- 1
+1--1- 1
+1---1 1
+.names [155] [156] [159] [2715]
+1-- 1
+-1- 1
+--1 1
+.names [160] [161] [201] [202] [2691] [2716]
+1---- 1
+-1--- 1
+--001 1
+.names pinb0 popsel3 popsel1 popsel2 popsel0 [2719]
+1011- 1
+10-11 1
+11000 1
+.names pind0 popsel3 popsel1 popsel2 popsel0 [2721]
+1011- 1
+10-11 1
+11000 1
+.names pmusel1 pmusel2 pmusel3 [2731]
+1-- 1
+-11 1
+-00 1
+.names pmusel1 pmusel2 pmusel3 pind0 [2732]
+1--0 1
+-0-0 1
+--10 1
+.names pinb0 pmusel1 pmusel2 pmusel3 [2733]
+01-- 1
+0-1- 1
+0--0 1
+.names pinb0 pmusel1 pmusel3 pind0 pmusel4 [2739]
+----1 1
+00-0- 1
+0-10- 1
+.names [145] [147] [148] [2739] [2744]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [87] [146] [2731] [2732] [2733] [2745]
+-1--- 1
+1-1-- 1
+1--1- 1
+1---1 1
+.names [25] [22] [30] [2719] [2721] [2746]
+1-11- 1
+11--1 1
+.names [134] [135] [136] [2751]
+1-- 1
+-1- 1
+--1 1
+.names [137] [138] [139] [140] [2752]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names psh0 psh1 psh2 [2758]
+1-1 1
+-11 1
+000 1
+.names [33] [44] [90] [91] [2760]
+1001 1
+1010 1
+.names pmusel1 pmusel2 pmusel3 [2766]
+1-- 1
+-11 1
+-00 1
+.names pmusel1 pmusel2 pmusel3 pind10 [2767]
+1--0 1
+-0-0 1
+--10 1
+.names pmusel1 pmusel2 pmusel3 pinb10 [2768]
+1--0 1
+-1-0 1
+--00 1
+.names pmusel1 pmusel3 pinb10 pind10 pmusel4 [2774]
+----1 1
+0-00- 1
+-100- 1
+.names [124] [126] [127] [2774] [2779]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [91] [125] [2766] [2767] [2768] [2780]
+-1--- 1
+1-1-- 1
+1--1- 1
+1---1 1
+.names [16] [101] [109] [110] [2784]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.end

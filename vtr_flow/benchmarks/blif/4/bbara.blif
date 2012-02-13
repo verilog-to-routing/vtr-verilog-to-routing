@@ -1,0 +1,101 @@
+.model top
+.inputs bbara_in_3_ bbara_in_2_ bbara_in_1_ bbara_in_0_ clock
+.outputs bbara_out_1_ bbara_out_0_
+.latch    n_n23 n_n60 re clock 2
+.latch    n_n24 n_n61 re clock 2
+.latch    n_n25 n_n62 re clock 2
+.latch    n_n26 n_n63 re clock 2
+.names n_n61 n_n63 [27] bbara_out_1_
+011 1
+.names n_n61 n_n63 [36] bbara_out_0_
+111 1
+.names n_n60 [52] [172] [173] n_n23
+---1 1
+11-- 1
+1-1- 1
+.names [31] [43] [174] [177] n_n24
+-1-- 1
+---1 1
+1-1- 1
+.names bbara_in_2_ [37] [38] [39] n_n25
+-1-- 1
+0-1- 1
+0--1 1
+.names [14] [182] n_n26
+1- 1
+-1 1
+.names bbara_in_2_ bbara_in_1_ bbara_in_0_ [27]
+1-- 1
+-0- 1
+--0 1
+.names bbara_in_1_ bbara_in_0_ n_n61 [21]
+110 1
+.names bbara_in_3_ bbara_in_2_ n_n62 n_n63 [29]
+-1-- 1
+0-1- 1
+1-00 1
+.names bbara_in_3_ bbara_in_2_ [22]
+10 1
+.names bbara_in_2_ n_n60 n_n62 [24]
+110 1
+.names bbara_in_1_ bbara_in_0_ n_n60 n_n61 [31]
+--01 1
+11-0 1
+.names bbara_in_2_ bbara_in_1_ bbara_in_0_ n_n61 [35]
+-0-- 1
+--0- 1
+1--0 1
+.names n_n61 n_n63 [25]
+11 1
+.names bbara_in_3_ bbara_in_2_ bbara_in_1_ bbara_in_0_ [36]
+--0- 1
+---0 1
+10-- 1
+.names [21] [22] [25] [181] [14]
+-11- 1
+11-1 1
+.names bbara_in_1_ bbara_in_0_ n_n62 [37]
+0-1 1
+-01 1
+.names bbara_in_3_ n_n62 n_n63 [179] [38]
+1001 1
+.names bbara_in_3_ n_n60 n_n62 [40] [39]
+0--1 1
+001- 1
+.names bbara_in_1_ bbara_in_0_ n_n63 [40]
+111 1
+.names bbara_in_3_ bbara_in_2_ [21] [175] [43]
+101- 1
+10-1 1
+.names bbara_in_3_ bbara_in_2_ n_n61 n_n62 [52]
+0010 1
+.names bbara_in_1_ bbara_in_0_ n_n60 n_n61 [168]
+1101 1
+.names n_n63 bbara_in_2_ [169]
+01 1
+.names bbara_in_2_ bbara_in_1_ bbara_in_0_ n_n62 [172]
+-0-- 1
+--0- 1
+1--1 1
+.names [21] [29] [168] [169] [173]
+-11- 1
+1--1 1
+.names n_n62 bbara_in_2_ [174]
+10 1
+.names n_n60 n_n61 n_n63 [175]
+11- 1
+-11 1
+.names bbara_in_1_ bbara_in_0_ n_n61 [24] [177]
+0-1- 1
+-01- 1
+1101 1
+.names bbara_in_1_ bbara_in_0_ n_n60 n_n61 [179]
+1101 1
+.names bbara_in_1_ bbara_in_0_ n_n61 [180]
+111 1
+.names n_n62 n_n60 [181]
+11 1
+.names n_n63 [24] [35] [180] [182]
+1-1- 1
+-1-1 1
+.end

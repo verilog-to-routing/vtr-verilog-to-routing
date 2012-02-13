@@ -1,0 +1,319 @@
+.model top
+.inputs cse_in_6_ cse_in_5_ cse_in_4_ cse_in_3_ cse_in_2_ cse_in_1_ cse_in_0_ \
+clock
+.outputs cse_out_0_ cse_out_2_ cse_out_1_ cse_out_4_ cse_out_3_ cse_out_6_ \
+cse_out_5_
+.latch    n_n39 n_n123 re clock 2
+.latch    n_n40 n_n124 re clock 2
+.latch    n_n41 n_n125 re clock 2
+.latch    n_n42 n_n126 re clock 2
+.names [26] [54] [486] cse_out_0_
+--1 1
+11- 1
+.names [56] [58] [487] cse_out_2_
+-1- 1
+1-1 1
+.names cse_out_5_ [26] [490] cse_out_1_
+--1 1
+11- 1
+.names [38] [43] cse_out_4_
+1- 1
+-1 1
+.names [40] [37] cse_out_3_
+1- 1
+-1 1
+.names n_n124 [60] [496] cse_out_6_
+--1 1
+11- 1
+.names [17] [49] [52] cse_out_5_
+111 1
+.names [133] [134] [456] n_n39
+1-- 1
+-1- 1
+--1 1
+.names [116] [117] n_n40
+1- 1
+-1 1
+.names [38] [30] [104] n_n41
+1-- 1
+-1- 1
+--1 1
+.names [90] [479] [480] n_n42
+1-- 1
+-1- 1
+--1 1
+.names n_n124 n_n125 [56]
+11 1
+.names n_n123 n_n124 n_n126 [58]
+100 1
+.names cse_in_6_ cse_in_5_ [17]
+10 1
+.names n_n124 n_n126 [26]
+00 1
+.names cse_in_0_ n_n123 n_n124 [59]
+--0 1
+10- 1
+.names n_n123 n_n124 n_n125 [24]
+111 1
+.names [24] [82] [447] [34]
+111 1
+.names cse_out_5_ n_n126 [61] [60]
+1-- 1
+-11 1
+.names cse_in_3_ cse_in_2_ [448] [25]
+101 1
+.names [17] [52] [466] [38]
+111 1
+.names [17] [52] [446] [40]
+111 1
+.names cse_in_3_ n_n124 [53]
+11 1
+.names cse_in_4_ n_n126 [24] [30]
+101 1
+.names cse_in_2_ [17] [52] [54]
+111 1
+.names cse_in_3_ cse_in_2_ [69]
+11 1
+00 1
+.names cse_in_3_ cse_in_2_ [49]
+10 1
+.names cse_in_3_ cse_in_2_ [18]
+0- 1
+-0 1
+.names cse_in_3_ cse_in_2_ [50]
+00 1
+.names [145] [146] [452] [76]
+1-- 1
+-1- 1
+--1 1
+.names cse_in_2_ n_n124 n_n126 [79]
+01- 1
+-01 1
+-10 1
+.names cse_in_4_ n_n123 n_n125 [52]
+000 1
+.names n_n123 n_n124 [57]
+10 1
+.names cse_in_3_ cse_in_2_ [82]
+01 1
+10 1
+.names cse_in_3_ [54] [33] [61]
+--1 1
+01- 1
+.names cse_in_4_ n_n123 [62]
+0- 1
+-0 1
+.names n_n123 n_n124 n_n126 [68]
+--1 1
+01- 1
+10- 1
+.names n_n123 [121] [122] [71]
+0-- 1
+-1- 1
+--1 1
+.names n_n123 [75] [140] [74]
+--1 1
+01- 1
+.names cse_in_4_ cse_in_2_ n_n125 [75]
+--1 1
+01- 1
+.names [49] [62] [448] [33]
+111 1
+.names [24] [41] [42] [37]
+11- 1
+1-1 1
+.names n_n126 [18] [491] [41]
+10- 1
+1-1 1
+.names cse_in_4_ n_n126 [42]
+00 1
+.names [58] [49] [448] [43]
+111 1
+.names [59] [488] [45]
+11 1
+.names [58] [49] [448] [87]
+111 1
+.names [49] [448] [472] [89]
+111 1
+.names [97] [477] [478] [90]
+1-1 1
+-11 1
+.names [17] [53] [52] [91]
+111 1
+.names n_n125 [474] [475] [97]
+11- 1
+1-1 1
+.names cse_in_2_ n_n123 n_n124 [100]
+110 1
+.names cse_in_3_ cse_in_2_ n_n124 [101]
+100 1
+.names cse_in_4_ cse_in_3_ cse_in_2_ [102]
+00- 1
+0-0 1
+.names [17] [107] [108] [104]
+11- 1
+1-1 1
+.names cse_in_4_ [24] [109] [107]
+11- 1
+1-1 1
+.names n_n125 [111] [112] [108]
+11- 1
+1-1 1
+.names [26] [50] [467] [109]
+111 1
+.names n_n124 n_n126 [469] [111]
+001 1
+.names cse_in_3_ cse_in_2_ [68] [112]
+0-1 1
+-01 1
+.names [24] [69] [447] [116]
+111 1
+.names [17] [120] [465] [117]
+11- 1
+1-1 1
+.names n_n126 [53] [461] [119]
+111 1
+.names cse_in_4_ [126] [464] [120]
+01- 1
+0-1 1
+.names cse_in_2_ n_n124 n_n126 [121]
+001 1
+.names cse_in_2_ n_n124 n_n126 [122]
+100 1
+.names cse_in_3_ cse_in_2_ [463] [125]
+001 1
+.names n_n125 [127] [128] [126]
+01- 1
+0-1 1
+.names n_n124 [129] [130] [127]
+11- 1
+1-1 1
+.names cse_in_2_ n_n123 n_n124 [128]
+010 1
+.names cse_in_1_ n_n123 n_n126 [129]
+010 1
+.names cse_in_3_ cse_in_2_ n_n123 [130]
+110 1
+.names [25] [54] [449] [133]
+1-1 1
+-11 1
+.names [17] [137] [138] [134]
+11- 1
+1-1 1
+.names [74] [450] [137]
+11 1
+.names n_n123 [142] [455] [138]
+11- 1
+1-1 1
+.names cse_in_4_ cse_in_2_ [140]
+10 1
+.names n_n125 [76] [142]
+01 1
+.names cse_in_4_ n_n124 n_n125 [143]
+111 1
+.names cse_in_3_ n_n124 n_n126 [145]
+111 1
+.names cse_in_4_ cse_in_2_ n_n124 [146]
+010 1
+.names cse_in_3_ cse_in_2_ n_n124 [446]
+111 1
+.names n_n126 cse_in_4_ [447]
+01 1
+.names cse_in_6_ cse_in_5_ n_n125 [448]
+101 1
+.names n_n126 n_n124 [449]
+11 1
+.names cse_in_3_ n_n124 n_n126 [450]
+000 1
+.names n_n126 n_n125 [451]
+11 1
+.names cse_in_1_ n_n124 n_n126 [452]
+0-0 1
+-00 1
+.names [53] [143] [451] [454]
+-1- 1
+0-1 1
+.names [26] [50] [454] [455]
+--1 1
+11- 1
+.names [24] [40] [447] [456]
+-1- 1
+1-1 1
+.names n_n125 cse_in_3_ [460]
+10 1
+.names n_n125 n_n123 [461]
+01 1
+.names n_n123 cse_in_3_ [462]
+00 1
+.names n_n126 n_n125 [463]
+11 1
+.names [79] [125] [462] [464]
+-1- 1
+1-1 1
+.names [71] [119] [460] [465]
+-1- 1
+1-1 1
+.names cse_in_3_ cse_in_2_ n_n124 [466]
+110 1
+.names n_n125 n_n123 [467]
+00 1
+.names n_n123 cse_in_3_ [469]
+01 1
+.names n_n124 n_n123 [472]
+10 1
+.names cse_in_2_ cse_in_4_ [473]
+10 1
+.names cse_in_3_ n_n123 [100] [474]
+--1 1
+00- 1
+.names [102] [101] [475]
+1- 1
+-1 1
+.names [53] [52] [461] [476]
+-1- 1
+1-1 1
+.names [57] [473] [476] [477]
+--1 1
+11- 1
+.names cse_in_6_ cse_in_5_ n_n126 [478]
+101 1
+.names [34] cse_out_5_ [479]
+1- 1
+-1 1
+.names [91] [89] [480]
+1- 1
+-1 1
+.names n_n123 cse_in_4_ [482]
+11 1
+.names cse_in_1_ n_n126 [17] [484]
+001 1
+.names n_n124 n_n125 [482] [485]
+101 1
+.names [87] [484] [485] [486]
+1-- 1
+-11 1
+.names n_n126 n_n123 [487]
+00 1
+.names cse_in_6_ cse_in_5_ n_n126 [488]
+0-1 1
+-11 1
+.names n_n125 cse_in_2_ [489]
+11 1
+.names [58] [45] [489] [490]
+-1- 1
+1-1 1
+.names cse_in_6_ cse_in_5_ cse_in_4_ [491]
+0-- 1
+-1- 1
+--1 1
+.names cse_in_4_ cse_in_2_ [17] [493]
+011 1
+.names cse_in_3_ n_n126 [24] [494]
+011 1
+.names [34] [493] [494] [495]
+1-- 1
+-11 1
+.names cse_out_5_ n_n126 [495] [496]
+--1 1
+10- 1
+.end

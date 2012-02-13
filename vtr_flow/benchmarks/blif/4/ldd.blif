@@ -1,0 +1,113 @@
+.model top
+.inputs pa pb pc pd pe pf pg ph pi
+.outputs pp pa0 pq pb0 pr ps pt pu pv pw px py pz pj pk pl pm pn po
+.names pa pb pc pp
+001 1
+.names nq1 [143] pa0
+1- 1
+-1 1
+.names pa pb pc pq
+000 1
+.names pa pb pc pd pb0
+0001 1
+.names pa pb pc pi pr
+0101 1
+.names pa pb pc pi ps
+0111 1
+.names pa pb pc pi pt
+1001 1
+.names pa pb pc pi pu
+1011 1
+.names pz nz1 [154] pv
+1-- 1
+-1- 1
+--1 1
+.names pe nq1 [22] [147] py
+-1-- 1
+---1 1
+1-1- 1
+.names nq1 [150] [152] pz
+--1 1
+01- 1
+.names nq1 [150] [160] pj
+1-- 1
+--1 1
+01- 1
+.names pe pf [22] [164] pk
+---1 1
+1-1- 1
+011- 1
+.names nq1 nr1 [150] [168] pl
+-1-- 1
+---1 1
+0-1- 1
+.names pa pb pc pm
+01- 1
+101 1
+.names pa pb pc pn
+100 1
+.names pa pb pc po
+110 1
+.names pe pf pg [22] nq1
+0011 1
+.names nq1 [150] [152] [154] nx
+--1- 1
+---1 1
+01-- 1
+.names pa pb pc pi nz1
+1010 1
+.names pe pf [22] nr1
+011 1
+.names pa pb pc pd [22]
+0000 1
+.names nx pw
+1 1
+.names nx px
+1 1
+.names pa pb pc pi [23]
+1-01 1
+-101 1
+.names pe pf pu [22] [143]
+--1- 1
+1--1 1
+01-1 1
+.names pa pb pc pi [147]
+0101 1
+1001 1
+.names pe [22] [147] [148]
+--1 1
+11- 1
+.names pe pf ph [22] [150]
+0011 1
+.names pa pb pc pi [151]
+1011 1
+0101 1
+.names pe [22] [151] [152]
+--1 1
+11- 1
+.names pe pf ps [22] [153]
+--1- 1
+01-1 1
+.names nq1 [148] [153] [154]
+1-- 1
+-1- 1
+--1 1
+.names pa pb pc pi [160]
+110- 1
+100- 1
+01-1 1
+-011 1
+1010 1
+.names pa pb pc pi [164]
+01-- 1
+110- 1
+10-1 1
+-011 1
+.names pa pb pc pi [166]
+0-1- 1
+1010 1
+.names pb0 [23] [166] [168]
+1-- 1
+-1- 1
+--1 1
+.end

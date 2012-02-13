@@ -1,0 +1,30 @@
+.model top
+.inputs pa pb pc pd pe
+.outputs pf pg ph
+.names pa pb pc pf
+111 1
+001 1
+010 1
+100 1
+.names pa pb pc pd pe pg
+1-111 1
+-1111 1
+-0001 1
+-0010 1
+1-100 1
+-1100 1
+11011 1
+00101 1
+01001 1
+00110 1
+01010 1
+11000 1
+.names pa pb pc pd pe ph
+---11 1
+1-101 1
+-1101 1
+1-110 1
+-1110 1
+11001 1
+11010 1
+.end

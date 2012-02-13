@@ -1,0 +1,225 @@
+.model top
+.inputs pa1 pb2 pa0 pb3 pa3 pb0 pa2 pb1 pclk pstart
+.outputs pcntvcon2 pready pp0 pp1 pp2 pcntvco2 pp3 pp4 pp5 pp6 pp7
+.latch    nmrvg2vd nmrvqn1 re pclk 2
+.latch    nacvg2vd1 nacvqn1 re pclk 2
+.latch    nacvg1vd1 nacvqn0 re pclk 2
+.latch    nmrvg4vd nmrvqn3 re pclk 2
+.latch    nmrvg3vd nmrvqn2 re pclk 2
+.latch    ncntvg2vd nct1 re pclk 2
+.latch    ncntvg1vd nct0 re pclk 2
+.latch    nacvg4vd1 nacvqn3 re pclk 2
+.latch    nacvg3vd1 nacvqn2 re pclk 2
+.latch    ncntvg3vd nct2 re pclk 2
+.latch    nmrvg1vd nmrvqn0 re pclk 2
+.latch    nam3 nax3 re pclk 2
+.latch    nam2 nax2 re pclk 2
+.latch    nam1 nax1 re pclk 2
+.latch    nam0 nax0 re pclk 2
+.names nct1 nct0 nct2 pcntvcon2
+0-- 1
+-0- 1
+--0 1
+.names nct1 nct0 nct2 pready
+011 1
+.names nmrvqn0 pp0
+0 1
+.names nmrvqn1 pp1
+0 1
+.names nmrvqn2 pp2
+0 1
+.names nct1 nct0 nct2 pcntvco2
+111 1
+.names nmrvqn3 pp3
+0 1
+.names nacvqn0 pp4
+0 1
+.names nacvqn1 pp5
+0 1
+.names nacvqn2 pp6
+0 1
+.names nacvqn3 pp7
+0 1
+.names [60] [119] [120] nmrvg2vd
+100 1
+.names pstart nsmvg3vg1vad2nf [62] nacvg2vd1
+1-- 1
+-01 1
+.names pstart nsmvg2vg1vad2nf [63] nacvg1vd1
+1-- 1
+-01 1
+.names nadsh [103] [104] [338] nmrvg4vd
+01-- 1
+0-1- 1
+1--1 1
+-1-1 1
+--11 1
+.names [68] [98] [99] nmrvg3vd
+100 1
+.names pstart nct1 nct0 nct2 ncntvg2vd
+010- 1
+0010 1
+.names pstart nct1 nct0 nct2 ncntvg1vd
+0-0- 1
+0011 1
+.names pstart nadsh naddvg4vcn [89] nacvg4vd1
+1--- 1
+---1 1
+-11- 1
+.names pstart nacvqn2 nadsh [71] nacvg3vd1
+1--- 1
+-10- 1
+-1-0 1
+--10 1
+.names pstart nct1 nct0 nct2 ncntvg3vd
+00-1 1
+0-01 1
+0110 1
+.names [78] [81] [82] nmrvg1vd
+100 1
+.names [79] [80] nam3
+1- 1
+-1 1
+.names [52] [53] nam2
+1- 1
+-1 1
+.names [48] [50] nam1
+1- 1
+-1 1
+.names [46] [47] nam0
+1- 1
+-1 1
+.names nct1 nct0 nct2 nadsh
+1-- 1
+-01 1
+-10 1
+.names nadsh naddvg2vcn [59] [108] nsmvg2vg1vad2nf
+1--1 1
+111- 1
+.names nmrvqn2 nct1 nct0 nct2 [60]
+1--- 1
+-011 1
+-000 1
+.names nacvqn3 nmrvqn0 nax3 [49]
+1-- 1
+-1- 1
+--0 1
+.names [49] [55] [75] [43] naddvg4vcn
+1--0 1
+111- 1
+.names nadsh naddvg2vcn [55] [44] nsmvg3vg1vad2nf
+100- 1
+1111 1
+1010 1
+.names nacvqn1 nct1 nct0 nct2 [62]
+1--- 1
+-1-- 1
+--01 1
+--10 1
+.names nacvqn0 nct1 nct0 nct2 [63]
+1--- 1
+-1-- 1
+--01 1
+--10 1
+.names nacvqn1 nmrvqn0 nax1 [67]
+1-- 1
+-1- 1
+--0 1
+.names nacvqn1 nmrvqn0 nax1 [331] naddvg2vcn
+1-0- 1
+1--0 1
+-1-0 1
+--00 1
+.names nmrvqn3 nct1 nct0 nct2 [68]
+1--- 1
+-011 1
+-000 1
+.names nacvqn1 nax1 [69]
+0- 1
+-1 1
+.names [49] [55] [75] [43] [71]
+00-- 1
+0-0- 1
+10-0 1
+1-00 1
+1111 1
+.names nacvqn2 nmrvqn0 nax2 [55]
+1-- 1
+-1- 1
+--0 1
+.names [67] [69] [44] [331] [75]
+--0- 1
+10-- 1
+1--0 1
+.names nmrvqn1 nct1 nct0 nct2 [78]
+1--- 1
+-011 1
+-000 1
+.names nacvqn3 nmrvqn0 nax3 [43]
+0-- 1
+-01 1
+.names nacvqn2 nmrvqn0 nax2 [44]
+0-- 1
+-01 1
+.names nacvqn0 nmrvqn0 nax0 [336] [59]
+---1 1
+001- 1
+.names nct1 nct0 nct2 nax0 [46]
+1--1 1
+-1-1 1
+--11 1
+.names pa0 nct1 nct0 nct2 [47]
+1000 1
+.names nct1 nct0 nct2 nax1 [48]
+1--1 1
+-1-1 1
+--11 1
+.names pa1 nct1 nct0 nct2 [50]
+1000 1
+.names nct1 nct0 nct2 nax2 [52]
+1--1 1
+-1-1 1
+--11 1
+.names pa2 nct1 nct0 nct2 [53]
+1000 1
+.names nct1 nct0 nct2 nax3 [79]
+1--1 1
+-1-1 1
+--11 1
+.names pa3 nct1 nct0 nct2 [80]
+1000 1
+.names nct1 nct0 nct2 nmrvqn0 [81]
+0110 1
+.names pb0 nct1 nct0 nct2 [82]
+1000 1
+.names nct1 nct0 nacvqn3 nct2 [89]
+0111 1
+0010 1
+.names nmrvqn2 nct1 nct0 nct2 [98]
+0011 1
+.names pb2 nct1 nct0 nct2 [99]
+1000 1
+.names nmrvqn3 nct1 nct0 nct2 [103]
+1011 1
+.names pb3 nct1 nct0 nct2 [104]
+01-- 1
+0-0- 1
+0--0 1
+.names nacvqn1 nacvqn0 [335] [108]
+001 1
+.names nmrvqn1 nct1 nct0 nct2 [119]
+0011 1
+.names pb1 nct1 nct0 nct2 [120]
+1000 1
+.names nacvqn0 nmrvqn0 nax0 [331]
+001 1
+.names nmrvqn0 nax1 nax0 [335]
+011 1
+.names nacvqn1 nmrvqn0 nax1 [336]
+0-- 1
+-01 1
+.names nacvqn0 nmrvqn0 nax0 [338]
+11- 1
+1-0 1
+001 1
+.end

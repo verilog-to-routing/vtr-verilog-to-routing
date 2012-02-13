@@ -1,0 +1,200 @@
+.model depth_split
+.inputs top^we top^addr~0 top^addr~1 top^addr~2 top^addr~3 top^addr~4 \
+ top^addr~5 top^addr~6 top^addr~7 top^addr~8 top^addr~9 top^addr~10 \
+ top^datain~0 top^datain~1 top^clk
+.outputs top^dataout~0 top^dataout~1
+
+.names gnd
+.names hbpad
+.names vcc
+1
+
+.names top^we top.single_port_ram+new_ram__H^LOGICAL_AND~3^BITWISE_OR~41^LOGICAL_OR~43
+1 1
+
+.names top.single_port_ram+new_ram__H^LOGICAL_AND~3^BITWISE_OR~40^LOGICAL_OR~42 top.single_port_ram+new_ram__H^LOGICAL_AND~3^BITWISE_OR~41^LOGICAL_OR~43 top.single_port_ram+new_ram__H^LOGICAL_AND~3^LOGICAL_AND~39
+11 1
+
+.names top.single_port_ram+new_ram__H^LOGICAL_AND~3^LOGICAL_AND~39 top.single_port_ram+new_ram__H__H^LOGICAL_AND~19^BITWISE_OR~31^LOGICAL_OR~33
+1 1
+
+.names top.single_port_ram+new_ram__H__H^LOGICAL_AND~19^BITWISE_OR~30^LOGICAL_OR~32 top.single_port_ram+new_ram__H__H^LOGICAL_AND~19^BITWISE_OR~31^LOGICAL_OR~33 top.single_port_ram+new_ram__H__H^LOGICAL_AND~19^LOGICAL_AND~29
+11 1
+
+
+.subckt single_port_ram clk=top^clk\
+ we=top.single_port_ram+new_ram__H__H^LOGICAL_AND~19^LOGICAL_AND~29\
+ data=top^datain~0 addr~0=top^addr~2 addr~1=top^addr~3 addr~2=top^addr~4\
+ addr~3=top^addr~5 addr~4=top^addr~6 addr~5=top^addr~7 addr~6=top^addr~8\
+ addr~7=top^addr~9 addr~8=top^addr~10\
+ out=top.single_port_ram+new_ram__H__H-0^out
+
+.names top.single_port_ram+new_ram__H__S^FF_NODE~20 top.single_port_ram+new_ram__H__S^LOGICAL_NOT~22 top.single_port_ram+new_ram__H__H-0^out top.single_port_ram+new_ram__H__S-0^out top.single_port_ram+new_ram__H__S^MULTI_PORT_MUX~21^MUX_2~26
+1-1- 1
+-1-1 1
+
+.names top.single_port_ram+new_ram__S^FF_NODE~4 top.single_port_ram+new_ram__S^LOGICAL_NOT~6 top.single_port_ram+new_ram__H__S^MULTI_PORT_MUX~21^MUX_2~26 top.single_port_ram+new_ram__S__S^MULTI_PORT_MUX~13^MUX_2~44 top.single_port_ram+new_ram__S^MULTI_PORT_MUX~5^MUX_2~25
+1-1- 1
+-1-1 1
+
+
+.subckt single_port_ram clk=top^clk\
+ we=top.single_port_ram+new_ram__H__H^LOGICAL_AND~19^LOGICAL_AND~29\
+ data=top^datain~1 addr~0=top^addr~2 addr~1=top^addr~3 addr~2=top^addr~4\
+ addr~3=top^addr~5 addr~4=top^addr~6 addr~5=top^addr~7 addr~6=top^addr~8\
+ addr~7=top^addr~9 addr~8=top^addr~10\
+ out=top.single_port_ram+new_ram__H__H-1^out
+
+.names top.single_port_ram+new_ram__H__S^FF_NODE~20 top.single_port_ram+new_ram__H__S^LOGICAL_NOT~24 top.single_port_ram+new_ram__H__H-1^out top.single_port_ram+new_ram__H__S-1^out top.single_port_ram+new_ram__H__S^MULTI_PORT_MUX~23^MUX_2~28
+1-1- 1
+-1-1 1
+
+.names top.single_port_ram+new_ram__S^FF_NODE~4 top.single_port_ram+new_ram__S^LOGICAL_NOT~8 top.single_port_ram+new_ram__H__S^MULTI_PORT_MUX~23^MUX_2~28 top.single_port_ram+new_ram__S__S^MULTI_PORT_MUX~15^MUX_2~45 top.single_port_ram+new_ram__S^MULTI_PORT_MUX~7^MUX_2~27
+1-1- 1
+-1-1 1
+
+.names top.single_port_ram+new_ram__H^LOGICAL_AND~3^LOGICAL_AND~39 top.single_port_ram+new_ram__H__S^LOGICAL_AND~17^BITWISE_OR~36^LOGICAL_OR~38
+1 1
+
+.names top.single_port_ram+new_ram__H__S^LOGICAL_AND~17^BITWISE_OR~35^LOGICAL_OR~37 top.single_port_ram+new_ram__H__S^LOGICAL_AND~17^BITWISE_OR~36^LOGICAL_OR~38 top.single_port_ram+new_ram__H__S^LOGICAL_AND~17^LOGICAL_AND~34
+11 1
+
+
+.subckt single_port_ram clk=top^clk\
+ we=top.single_port_ram+new_ram__H__S^LOGICAL_AND~17^LOGICAL_AND~34\
+ data=top^datain~0 addr~0=top^addr~2 addr~1=top^addr~3 addr~2=top^addr~4\
+ addr~3=top^addr~5 addr~4=top^addr~6 addr~5=top^addr~7 addr~6=top^addr~8\
+ addr~7=top^addr~9 addr~8=top^addr~10\
+ out=top.single_port_ram+new_ram__H__S-0^out
+
+
+.subckt single_port_ram clk=top^clk\
+ we=top.single_port_ram+new_ram__H__S^LOGICAL_AND~17^LOGICAL_AND~34\
+ data=top^datain~1 addr~0=top^addr~2 addr~1=top^addr~3 addr~2=top^addr~4\
+ addr~3=top^addr~5 addr~4=top^addr~6 addr~5=top^addr~7 addr~6=top^addr~8\
+ addr~7=top^addr~9 addr~8=top^addr~10\
+ out=top.single_port_ram+new_ram__H__S-1^out
+
+.names top^we top.single_port_ram+new_ram__S^LOGICAL_AND~1^BITWISE_OR~58^LOGICAL_OR~60
+1 1
+
+.names top.single_port_ram+new_ram__S^LOGICAL_AND~1^BITWISE_OR~57^LOGICAL_OR~59 top.single_port_ram+new_ram__S^LOGICAL_AND~1^BITWISE_OR~58^LOGICAL_OR~60 top.single_port_ram+new_ram__S^LOGICAL_AND~1^LOGICAL_AND~56
+11 1
+
+.names top.single_port_ram+new_ram__S^LOGICAL_AND~1^LOGICAL_AND~56 top.single_port_ram+new_ram__S__H^LOGICAL_AND~11^BITWISE_OR~48^LOGICAL_OR~50
+1 1
+
+.names top.single_port_ram+new_ram__S__H^LOGICAL_AND~11^BITWISE_OR~47^LOGICAL_OR~49 top.single_port_ram+new_ram__S__H^LOGICAL_AND~11^BITWISE_OR~48^LOGICAL_OR~50 top.single_port_ram+new_ram__S__H^LOGICAL_AND~11^LOGICAL_AND~46
+11 1
+
+
+.subckt single_port_ram clk=top^clk\
+ we=top.single_port_ram+new_ram__S__H^LOGICAL_AND~11^LOGICAL_AND~46\
+ data=top^datain~0 addr~0=top^addr~2 addr~1=top^addr~3 addr~2=top^addr~4\
+ addr~3=top^addr~5 addr~4=top^addr~6 addr~5=top^addr~7 addr~6=top^addr~8\
+ addr~7=top^addr~9 addr~8=top^addr~10\
+ out=top.single_port_ram+new_ram__S__H-0^out
+
+.names top.single_port_ram+new_ram__S__S^FF_NODE~12 top.single_port_ram+new_ram__S__S^LOGICAL_NOT~14 top.single_port_ram+new_ram__S__H-0^out top.single_port_ram+new_ram__S__S-0^out top.single_port_ram+new_ram__S__S^MULTI_PORT_MUX~13^MUX_2~44
+1-1- 1
+-1-1 1
+
+
+.subckt single_port_ram clk=top^clk\
+ we=top.single_port_ram+new_ram__S__H^LOGICAL_AND~11^LOGICAL_AND~46\
+ data=top^datain~1 addr~0=top^addr~2 addr~1=top^addr~3 addr~2=top^addr~4\
+ addr~3=top^addr~5 addr~4=top^addr~6 addr~5=top^addr~7 addr~6=top^addr~8\
+ addr~7=top^addr~9 addr~8=top^addr~10\
+ out=top.single_port_ram+new_ram__S__H-1^out
+
+.names top.single_port_ram+new_ram__S__S^FF_NODE~12 top.single_port_ram+new_ram__S__S^LOGICAL_NOT~16 top.single_port_ram+new_ram__S__H-1^out top.single_port_ram+new_ram__S__S-1^out top.single_port_ram+new_ram__S__S^MULTI_PORT_MUX~15^MUX_2~45
+1-1- 1
+-1-1 1
+
+.names top.single_port_ram+new_ram__S^LOGICAL_AND~1^LOGICAL_AND~56 top.single_port_ram+new_ram__S__S^LOGICAL_AND~9^BITWISE_OR~53^LOGICAL_OR~55
+1 1
+
+.names top.single_port_ram+new_ram__S__S^LOGICAL_AND~9^BITWISE_OR~52^LOGICAL_OR~54 top.single_port_ram+new_ram__S__S^LOGICAL_AND~9^BITWISE_OR~53^LOGICAL_OR~55 top.single_port_ram+new_ram__S__S^LOGICAL_AND~9^LOGICAL_AND~51
+11 1
+
+
+.subckt single_port_ram clk=top^clk\
+ we=top.single_port_ram+new_ram__S__S^LOGICAL_AND~9^LOGICAL_AND~51\
+ data=top^datain~0 addr~0=top^addr~2 addr~1=top^addr~3 addr~2=top^addr~4\
+ addr~3=top^addr~5 addr~4=top^addr~6 addr~5=top^addr~7 addr~6=top^addr~8\
+ addr~7=top^addr~9 addr~8=top^addr~10\
+ out=top.single_port_ram+new_ram__S__S-0^out
+
+
+.subckt single_port_ram clk=top^clk\
+ we=top.single_port_ram+new_ram__S__S^LOGICAL_AND~9^LOGICAL_AND~51\
+ data=top^datain~1 addr~0=top^addr~2 addr~1=top^addr~3 addr~2=top^addr~4\
+ addr~3=top^addr~5 addr~4=top^addr~6 addr~5=top^addr~7 addr~6=top^addr~8\
+ addr~7=top^addr~9 addr~8=top^addr~10\
+ out=top.single_port_ram+new_ram__S__S-1^out
+
+.latch top^addr~0 top.single_port_ram+new_ram__S^FF_NODE~4 re top^clk 0
+
+.names top.single_port_ram+new_ram__S^FF_NODE~4 top.single_port_ram+new_ram__S^LOGICAL_NOT~6
+0 1
+
+.names top.single_port_ram+new_ram__S^FF_NODE~4 top.single_port_ram+new_ram__S^LOGICAL_NOT~8
+0 1
+
+.names top^addr~0 top.single_port_ram+new_ram__S^LOGICAL_AND~1^BITWISE_OR~57^LOGICAL_OR~59
+1 1
+
+.names top^addr~0 top.single_port_ram+new_ram__H^LOGICAL_NOT~2
+0 1
+
+.names top.single_port_ram+new_ram__H^LOGICAL_NOT~2 top.single_port_ram+new_ram__H^LOGICAL_AND~3^BITWISE_OR~40^LOGICAL_OR~42
+1 1
+
+.latch top^addr~1 top.single_port_ram+new_ram__S__S^FF_NODE~12 re top^clk 0
+
+.names top.single_port_ram+new_ram__S__S^FF_NODE~12 top.single_port_ram+new_ram__S__S^LOGICAL_NOT~14
+0 1
+
+.names top.single_port_ram+new_ram__S__S^FF_NODE~12 top.single_port_ram+new_ram__S__S^LOGICAL_NOT~16
+0 1
+
+.latch top^addr~1 top.single_port_ram+new_ram__H__S^FF_NODE~20 re top^clk 0
+
+.names top.single_port_ram+new_ram__H__S^FF_NODE~20 top.single_port_ram+new_ram__H__S^LOGICAL_NOT~22
+0 1
+
+.names top.single_port_ram+new_ram__H__S^FF_NODE~20 top.single_port_ram+new_ram__H__S^LOGICAL_NOT~24
+0 1
+
+.names top^addr~1 top.single_port_ram+new_ram__S__S^LOGICAL_AND~9^BITWISE_OR~52^LOGICAL_OR~54
+1 1
+
+.names top^addr~1 top.single_port_ram+new_ram__S__H^LOGICAL_NOT~10
+0 1
+
+.names top.single_port_ram+new_ram__S__H^LOGICAL_NOT~10 top.single_port_ram+new_ram__S__H^LOGICAL_AND~11^BITWISE_OR~47^LOGICAL_OR~49
+1 1
+
+.names top^addr~1 top.single_port_ram+new_ram__H__S^LOGICAL_AND~17^BITWISE_OR~35^LOGICAL_OR~37
+1 1
+
+.names top^addr~1 top.single_port_ram+new_ram__H__H^LOGICAL_NOT~18
+0 1
+
+.names top.single_port_ram+new_ram__H__H^LOGICAL_NOT~18 top.single_port_ram+new_ram__H__H^LOGICAL_AND~19^BITWISE_OR~30^LOGICAL_OR~32
+1 1
+
+.names top.single_port_ram+new_ram__S^MULTI_PORT_MUX~5^MUX_2~25 top^dataout~0
+1 1
+.names top.single_port_ram+new_ram__S^MULTI_PORT_MUX~7^MUX_2~27 top^dataout~1
+1 1
+.end
+
+
+.model single_port_ram
+.inputs clk data addr~0 addr~1 addr~2 addr~3 addr~4 addr~5 addr~6 addr~7 \
+ addr~8 we
+.outputs out
+.blackbox
+.end
+

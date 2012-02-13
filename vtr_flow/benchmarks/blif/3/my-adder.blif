@@ -1,0 +1,149 @@
+.model top
+.inputs pp pa0 pq pb0 pr pc0 ps pd0 pt pe0 pu pf0 pv pg0 pw px py pz pa pb pc \
+pd pe pf pg ph pi pj pk pl pm pn po
+.outputs ph0 pi0 pj0 pk0 pl0 pm0 pn0 po0 pp0 pq0 pr0 ps0 pt0 pu0 pv0 pw0 px0
+.names pq pa nu2 ph0
+011 1
+101 1
+110 1
+000 1
+.names pr pb nt2 pi0
+011 1
+101 1
+110 1
+000 1
+.names ps pc ns2 pj0
+011 1
+101 1
+110 1
+000 1
+.names pt pd nr2 pk0
+011 1
+101 1
+110 1
+000 1
+.names pu pe nq2 pl0
+011 1
+101 1
+110 1
+000 1
+.names pv pf np2 pm0
+011 1
+101 1
+110 1
+000 1
+.names pw pg no2 pn0
+011 1
+101 1
+110 1
+000 1
+.names px ph nn2 po0
+011 1
+101 1
+110 1
+000 1
+.names py pi nm2 pp0
+011 1
+101 1
+110 1
+000 1
+.names pz pj nl2 pq0
+011 1
+101 1
+110 1
+000 1
+.names pa0 pk nk2 pr0
+011 1
+101 1
+110 1
+000 1
+.names pb0 pl nj2 ps0
+011 1
+101 1
+110 1
+000 1
+.names pc0 pm ni2 pt0
+011 1
+101 1
+110 1
+000 1
+.names pd0 pn nh2 pu0
+011 1
+101 1
+110 1
+000 1
+.names pe0 po ng2 pv0
+011 1
+101 1
+110 1
+000 1
+.names pp pf0 pg0 pw0
+111 1
+001 1
+010 1
+100 1
+.names pq pa nu2 px0
+11- 1
+1-0 1
+-10 1
+.names pr pb nt2 nu2
+00- 1
+0-1 1
+-01 1
+.names pp pf0 pg0 ng2
+00- 1
+0-0 1
+-00 1
+.names ps pc ns2 nt2
+00- 1
+0-1 1
+-01 1
+.names pb0 pl nj2 nk2
+00- 1
+0-1 1
+-01 1
+.names pa0 pk nk2 nl2
+00- 1
+0-1 1
+-01 1
+.names pe0 po ng2 nh2
+00- 1
+0-1 1
+-01 1
+.names pd0 pn nh2 ni2
+00- 1
+0-1 1
+-01 1
+.names pc0 pm ni2 nj2
+00- 1
+0-1 1
+-01 1
+.names pz pj nl2 nm2
+00- 1
+0-1 1
+-01 1
+.names pt pd nr2 ns2
+00- 1
+0-1 1
+-01 1
+.names py pi nm2 nn2
+00- 1
+0-1 1
+-01 1
+.names pu pe nq2 nr2
+00- 1
+0-1 1
+-01 1
+.names pw pg no2 np2
+00- 1
+0-1 1
+-01 1
+.names pv pf np2 nq2
+00- 1
+0-1 1
+-01 1
+.names px ph nn2 no2
+00- 1
+0-1 1
+-01 1
+.end

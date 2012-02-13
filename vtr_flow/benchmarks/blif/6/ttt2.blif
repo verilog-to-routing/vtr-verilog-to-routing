@@ -1,0 +1,195 @@
+.model top
+.inputs pp pq pr ps pt pu pv pw px py pa pb pc pe pf pg ph pi pj pk pl pm pn \
+po
+.outputs pa0 pb0 pc0 pd0 pe0 pf0 pg0 ph0 pi0 pj0 pz pk0 pl0 pm0 pn0 po0 pp0 \
+pq0 pr0 ps0 pt0
+.names pv pw nw1 [453] pa0
+-1-1 1
+--01 1
+100- 1
+.names pt pu pv pw pg [457] pb0
+-----1 1
+1-101- 1
+-1101- 1
+.names pq pv pw [22] [124] [126] pc0
+-1-0-- 1
+---01- 1
+-1---1 1
+----11 1
+011--- 1
+0-1-1- 1
+.names ps pt pu pv pw pi pd0
+-1-101 1
+--1101 1
+11000- 1
+.names ps pt pu pv pw pj pe0
+100-0- 1
+0-000- 1
+-0000- 1
+1--101 1
+-1-101 1
+--1101 1
+010-01 1
+.names pa pk pf0
+00 1
+.names pa pk pl pm pn pg0
+001-- 1
+0101- 1
+010-0 1
+.names pa pk pl pm ph0
+00-1 1
+0-01 1
+0110 1
+.names pa pk pl pm pn pi0
+00--1 1
+0-011 1
+0-101 1
+01110 1
+.names px pa po nh3 [23] pj0
+-001- 1
+0-1-1 1
+.names ps pt pu pv pw pe pz
+--000- 1
+100-0- 1
+-1-101 1
+--1101 1
+.names px nf3 na3 [58] [92] pk0
+-0--1 1
+101-- 1
+10-1- 1
+-001- 1
+.names pp pq pa po nh3 pl0
+010-- 1
+-100- 1
+-10-0 1
+10011 1
+.names pr [83] [85] [86] pm0
+-1-- 1
+1-1- 1
+1--1 1
+.names ps pa nh3 [484] pn0
+100- 1
+10-1 1
+0010 1
+.names ps pt pa nh3 [65] [484] po0
+010--- 1
+-100-- 1
+-10--1 1
+100110 1
+.names ps pt pu pa nh3 [484] pp0
+0-10-- 1
+-010-- 1
+--100- 1
+--10-1 1
+110010 1
+.names pa [68] pq0
+01 1
+.names pa [70] pr0
+01 1
+.names px pa pb ps0
+001 1
+100 1
+.names py pa pc pt0
+001 1
+100 1
+.names ps pt pu pv py pf nw1
+1--0-- 1
+-1-0-- 1
+--00-- 1
+---00- 1
+-1---0 1
+100--- 1
+--11-0 1
+.names ps pt pu pv py [22]
+0---- 1
+-1--- 1
+--0-- 1
+---1- 1
+----1 1
+.names px pk pl pm pn nh3
+1---- 1
+-1001 1
+.names pa pk pl pm pn [23]
+00--- 1
+0-1-- 1
+0--1- 1
+0---0 1
+.names pp pq pr px pa po nf3
+----1- 1
+0----0 1
+1--1-1 1
+-011-1 1
+.names ps pt pu pv nh3 [484] [68]
+0--1-- 1
+---10- 1
+---1-1 1
+-011-- 1
+-101-- 1
+111010 1
+.names ps pt pu pv pw py [70]
+0---1- 1
+-1--1- 1
+--0-1- 1
+---11- 1
+----11 1
+0010-1 1
+.names pk pl pm pn na3
+0--- 1
+-1-- 1
+--1- 1
+---0 1
+.names pp pq pr po [58]
+---0 1
+01-- 1
+0-0- 1
+.names pu pv [65]
+1- 1
+-0 1
+.names pp pq pr pa po nh3 [83]
+1010-- 1
+110011 1
+.names pp pq pa po [85]
+--00 1
+010- 1
+.names px pa pk pl pm pn [86]
+000--- 1
+00-1-- 1
+00--1- 1
+00---0 1
+.names pp pk pl pm pn po [92]
+10---- 1
+1-1--- 1
+1--1-- 1
+1---0- 1
+1----0 1
+.names pq ps pt pu pw py [124]
+0--1-- 1
+-1-1-- 1
+--11-- 1
+0---1- 1
+-1--1- 1
+--1-1- 1
+---1-0 1
+----10 1
+.names ps pt pu pv pw ph [126]
+--100- 1
+-1--01 1
+--1-01 1
+000-0- 1
+.names pq ps pt pu pv py [453]
+00---- 1
+0-1--- 1
+0--0-- 1
+0---1- 1
+0----1 1
+.names ps pt pu pv pw py [457]
+1-100- 1
+-1100- 1
+--1000 1
+1010-0 1
+.names pp pq pr po [484]
+1--- 1
+-1-- 1
+--0- 1
+---0 1
+.end

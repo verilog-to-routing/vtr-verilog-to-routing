@@ -1,0 +1,260 @@
+.model top
+.inputs pma_in_6_ pma_in_7_ pma_in_0_ pma_in_1_ pma_in_2_ pma_in_3_ pma_in_4_ \
+pma_in_5_ clock
+.outputs pma_out_1_ pma_out_0_ pma_out_7_ pma_out_6_ pma_out_5_ pma_out_4_ \
+pma_out_3_ pma_out_2_
+.latch    n_n45 n_n150 re clock 2
+.latch    n_n46 n_n151 re clock 2
+.latch    n_n47 n_n152 re clock 2
+.latch    n_n48 n_n153 re clock 2
+.latch    n_n49 n_n154 re clock 2
+.names n_n150 n_n151 n_n152 n_n153 pma_out_1_
+1101 1
+.names n_n150 n_n151 n_n153 [84] pma_out_0_
+---1 1
+110- 1
+.names [27] [77] [82] [500] pma_out_7_
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names n_n150 n_n152 n_n153 [501] pma_out_6_
+---1 1
+011- 1
+.names n_n150 n_n152 n_n153 [71] pma_out_5_
+---1 1
+1-1- 1
+-11- 1
+.names n_n152 [21] [504] pma_out_4_
+--1 1
+11- 1
+.names n_n152 [23] [21] [40] pma_out_3_
+-1-- 1
+---1 1
+1-1- 1
+.names [33] [35] [507] pma_out_2_
+1-- 1
+-1- 1
+--1 1
+.names n_n150 [56] [462] n_n45
+--1 1
+01- 1
+.names [30] [121] [468] [469] n_n46
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names n_n153 [115] [475] [478] n_n47
+---1 1
+01-- 1
+0-1- 1
+.names [97] [484] [488] n_n48
+1-- 1
+-1- 1
+--1 1
+.names [30] [86] [493] n_n49
+1-- 1
+-1- 1
+--1 1
+.names pma_in_0_ pma_in_1_ pma_in_3_ [20]
+1-- 1
+-1- 1
+--1 1
+.names n_n150 n_n153 n_n154 [23]
+011 1
+.names n_n150 n_n152 [24]
+01 1
+.names pma_in_3_ pma_out_1_ [25] [463] [30]
+11-- 1
+--11 1
+.names pma_in_0_ pma_in_3_ n_n150 n_n151 [51]
+0011 1
+.names pma_in_0_ pma_in_3_ n_n150 [22]
+001 1
+.names n_n152 n_n153 n_n154 [25]
+001 1
+.names pma_in_3_ pma_out_1_ [39] [451] [32]
+01-- 1
+1--1 1
+--11 1
+.names pma_in_4_ [57] [142] [143] [56]
+--1- 1
+---1 1
+01-- 1
+.names pma_in_7_ pma_in_0_ pma_in_1_ pma_in_3_ [55]
+-1-- 1
+--1- 1
+1--1 1
+.names n_n150 n_n151 n_n152 n_n153 [27]
+0001 1
+.names n_n151 n_n152 [34]
+10 1
+.names n_n150 n_n151 n_n152 [38]
+011 1
+.names n_n151 n_n152 n_n153 n_n154 [60]
+1--0 1
+-001 1
+.names pma_in_2_ n_n154 [58]
+0- 1
+-0 1
+.names n_n151 n_n152 n_n153 n_n154 [61]
+10-- 1
+--01 1
+.names pma_in_0_ pma_in_1_ [39]
+1- 1
+-1 1
+.names n_n152 n_n153 n_n154 [66]
+-10 1
+001 1
+.names pma_in_2_ n_n150 n_n152 n_n153 [65]
+--11 1
+101- 1
+.names n_n150 n_n151 n_n153 n_n154 [21]
+---1 1
+01-- 1
+0-0- 1
+101- 1
+.names n_n151 n_n152 n_n153 n_n154 [57]
+--10 1
+0001 1
+.names pma_in_3_ pma_in_4_ n_n151 n_n154 [63]
+-01- 1
+0--0 1
+.names n_n151 n_n152 n_n154 [33]
+010 1
+.names n_n150 n_n152 n_n153 n_n154 [35]
+1001 1
+.names n_n150 n_n151 n_n152 n_n153 [40]
+110- 1
+1-00 1
+.names n_n150 n_n151 n_n152 n_n154 [71]
+1--1 1
+-101 1
+.names n_n150 n_n151 n_n152 n_n154 [77]
+0001 1
+.names n_n150 n_n151 n_n152 n_n154 [81]
+0110 1
+.names n_n150 n_n152 n_n153 n_n154 [82]
+0011 1
+.names n_n151 n_n152 n_n153 n_n154 [84]
+1111 1
+.names pma_in_7_ n_n150 n_n153 [93] [86]
+-0-1 1
+001- 1
+.names pma_in_4_ n_n151 n_n152 n_n154 [93]
+1--1 1
+110- 1
+.names pma_in_4_ n_n150 [60] [95]
+001 1
+.names n_n153 [105] [481] [97]
+01- 1
+0-1 1
+.names pma_in_2_ n_n150 n_n152 [105]
+001 1
+.names pma_in_7_ n_n152 n_n154 [110]
+001 1
+.names n_n154 [38] [149] [112]
+01- 1
+0-1 1
+.names n_n150 n_n152 [63] [115]
+001 1
+.names pma_in_4_ n_n154 [27] [38] [121]
+-0-1 1
+101- 1
+.names n_n154 [38] [149] [135]
+01- 1
+0-1 1
+.names pma_in_3_ n_n153 n_n154 [142]
+100 1
+.names pma_in_7_ n_n152 n_n153 [143]
+001 1
+.names pma_in_4_ n_n150 n_n153 [149]
+010 1
+.names pma_in_1_ n_n150 n_n151 n_n153 [449]
+1101 1
+.names n_n150 n_n152 n_n153 [451]
+010 1
+.names n_n152 n_n154 [51] [449] [458]
+--1- 1
+00-1 1
+.names [23] [22] [25] [55] [459]
+-11- 1
+1--1 1
+.names [32] [135] [458] [459] [462]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names pma_in_0_ pma_in_3_ n_n150 n_n151 [463]
+0010 1
+.names n_n151 n_n152 n_n153 [464]
+011 1
+.names pma_in_0_ pma_in_1_ pma_in_4_ n_n150 [466]
+0000 1
+.names pma_in_0_ pma_in_1_ pma_in_3_ n_n154 [467]
+0001 1
+.names pma_in_7_ n_n152 [22] [464] [468]
+01-- 1
+--11 1
+.names [66] [65] [466] [467] [469]
+1-1- 1
+-1-1 1
+.names pma_in_0_ pma_in_1_ pma_in_3_ n_n151 [472]
+0000 1
+.names n_n150 n_n152 n_n154 [474]
+011 1
+.names [20] [51] [474] [475]
+-1- 1
+0-1 1
+.names [22] [110] [464] [476]
+-1- 1
+1-1 1
+.names [23] [112] [472] [476] [478]
+-1-- 1
+---1 1
+1-1- 1
+.names pma_in_4_ n_n150 n_n152 n_n154 [481]
+--10 1
+11-0 1
+.names n_n152 n_n153 n_n154 [38] [482]
+---1 1
+111- 1
+.names [22] [27] [58] [464] [483]
+-11- 1
+1--1 1
+.names [20] [23] [22] [34] [484]
+11-- 1
+--11 1
+.names [32] [95] [482] [483] [488]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names n_n150 n_n152 n_n154 [449] [489]
+011- 1
+-001 1
+.names n_n151 [20] [23] [24] [490]
+0-1- 1
+-11- 1
+0--1 1
+.names n_n152 [51] [489] [490] [493]
+--1- 1
+---1 1
+11-- 1
+.names n_n151 n_n152 n_n153 n_n154 [497]
+110- 1
+0110 1
+.names n_n150 [61] [81] [497] [500]
+--1- 1
+---1 1
+11-- 1
+.names n_n150 n_n151 n_n153 n_n154 [501]
+-1-- 1
+0-01 1
+.names n_n151 n_n153 n_n154 [504]
+10- 1
+011 1
+.names n_n150 n_n152 n_n153 n_n154 [507]
+01-- 1
+0-11 1
+.end

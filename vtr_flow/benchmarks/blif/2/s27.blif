@@ -1,0 +1,50 @@
+.model top
+.inputs s27_in_2_ s27_in_1_ s27_in_3_ s27_in_0_ clock
+.outputs s27_out
+.latch    n_n17 n_n40 re clock 2
+.latch    n_n18 n_n41 re clock 2
+.latch    n_n19 n_n42 re clock 2
+.names n_n41 n_n19 s27_out
+1- 1
+-0 1
+.names [15] [53] n_n17
+1- 1
+-1 1
+.names s27_in_3_ [13] n_n18
+11 1
+.names [13] [9] n_n19
+0- 1
+-1 1
+.names [10] [50] [13]
+1- 1
+-1 1
+.names [18] [51] [11]
+1- 1
+-1 1
+.names n_n40 n_n41 [10]
+1- 1
+-1 1
+.names s27_in_3_ n_n42 [9]
+01 1
+.names [11] [52] [14]
+11 1
+.names n_n18 [11] [15]
+10 1
+.names s27_in_1_ n_n18 [16]
+11 1
+.names n_n40 n_n41 [17]
+01 1
+.names n_n40 n_n41 [18]
+10 1
+.names s27_in_0_ s27_in_2_ [50]
+0- 1
+-1 1
+.names [17] s27_in_2_ [51]
+1- 1
+-1 1
+.names n_n18 s27_in_1_ [52]
+00 1
+.names [14] [16] [53]
+1- 1
+-1 1
+.end

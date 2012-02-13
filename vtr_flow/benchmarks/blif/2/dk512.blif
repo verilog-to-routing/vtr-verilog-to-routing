@@ -1,0 +1,106 @@
+.model top
+.inputs dk512_in clock
+.outputs dk512_out_2_ dk512_out_0_ dk512_out_1_
+.latch    n_n22 n_n48 re clock 2
+.latch    n_n23 n_n49 re clock 2
+.latch    n_n24 n_n50 re clock 2
+.latch    n_n25 n_n51 re clock 2
+.names [15] [16] dk512_out_2_
+1- 1
+-1 1
+.names [25] [132] dk512_out_0_
+11 1
+.names n_n51 [133] dk512_out_1_
+11 1
+.names [39] [40] n_n22
+1- 1
+-1 1
+.names [32] [129] n_n23
+1- 1
+-1 1
+.names [28] [131] n_n24
+1- 1
+-1 1
+.names n_n51 [23] n_n25
+01 1
+.names n_n51 [127] [18]
+11 1
+.names n_n49 n_n50 [19]
+01 1
+.names n_n49 n_n50 [14]
+10 1
+.names n_n51 [37] [21]
+1- 1
+-1 1
+.names [35] [36] [20]
+1- 1
+-1 1
+.names [13] [126] [22]
+1- 1
+-1 1
+.names [19] [17] [23]
+1- 1
+-1 1
+.names n_n48 n_n51 [13]
+01 1
+10 1
+.names [30] [31] [24]
+1- 1
+-1 1
+.names dk512_in n_n49 [25]
+1- 1
+-0 1
+.names n_n51 [19] [15]
+11 1
+.names n_n50 [18] [16]
+01 1
+.names n_n48 n_n50 [17]
+00 1
+.names [14] [130] [27]
+11 1
+.names dk512_in [24] [28]
+11 1
+.names [19] [13] [29]
+11 1
+.names n_n48 [19] [30]
+11 1
+.names n_n49 n_n51 [31]
+10 1
+.names n_n51 [20] [32]
+01 1
+.names n_n48 [21] [33]
+11 1
+.names n_n51 [14] [34]
+11 1
+.names n_n50 [128] [35]
+11 1
+.names dk512_in n_n48 [36]
+10 1
+.names n_n49 n_n50 [37]
+00 1
+.names dk512_in [22] [39]
+11 1
+.names n_n50 [18] [40]
+11 1
+.names n_n48 n_n50 [41]
+01 1
+.names [41] [14] [126]
+1- 1
+-1 1
+.names n_n48 dk512_in [127]
+10 1
+.names n_n49 dk512_in [128]
+10 1
+.names [33] [34] [129]
+1- 1
+-1 1
+.names n_n51 n_n48 [130]
+01 1
+.names [29] [27] [131]
+1- 1
+-1 1
+.names n_n51 n_n50 [132]
+10 1
+.names n_n50 n_n49 [133]
+11 1
+.end

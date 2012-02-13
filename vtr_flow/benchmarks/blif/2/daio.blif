@@ -1,0 +1,32 @@
+.model top
+.inputs in clk
+.outputs viol sample
+.latch    ny3 ny4 re clk 2
+.latch    ny5 sample re clk 2
+.latch    in nx1 re clk 2
+.latch    nx1 nx2 re clk 2
+.names [14] [15] viol
+1- 1
+-1 1
+.names viol ny4 ny3
+1- 1
+-0 1
+.names [12] [13] ny5
+1- 1
+-1 1
+.names nx1 nx2 ny0
+11 1
+00 1
+.names ny4 ny0 [12]
+00 1
+.names sample ny4 [13]
+11 1
+.names ny0 [40] [14]
+11 1
+.names ny0 [41] [15]
+11 1
+.names nx1 in [40]
+00 1
+.names nx1 in [41]
+11 1
+.end

@@ -1,0 +1,19 @@
+.model top
+.inputs p_1gat_0_ p_6gat_3_ p_7gat_4_ p_2gat_1_ p_3gat_2_
+.outputs p_22gat_10_ p_23gat_9_
+.names p_1gat_0_ p_3gat_2_ [5] p_22gat_10_
+--1 1
+11- 1
+.names [3] [4] p_23gat_9_
+1- 1
+-1 1
+.names p_6gat_3_ p_2gat_1_ p_3gat_2_ [3]
+01- 1
+-10 1
+.names p_6gat_3_ p_7gat_4_ p_3gat_2_ [4]
+01- 1
+-10 1
+.names p_6gat_3_ p_2gat_1_ p_3gat_2_ [5]
+01- 1
+-10 1
+.end

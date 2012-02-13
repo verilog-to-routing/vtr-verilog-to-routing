@@ -1,0 +1,107 @@
+.model top
+.inputs pa pb pc pd pe pf pg ph pi pj
+.outputs pp pq pk pl pm pn po
+.names [98] [99] pp
+1- 1
+-1 1
+.names [104] [105] pq
+1- 1
+-1 1
+.names pj [89] pk
+1- 1
+-1 1
+.names [24] [90] pl
+1- 1
+-1 1
+.names pj [106] pm
+01 1
+.names [108] [109] pn
+1- 1
+-1 1
+.names [13] [100] po
+1- 1
+-1 1
+.names pg [21] [7]
+0- 1
+-1 1
+.names pa pb [9]
+1- 1
+-1 1
+.names po [102] [8]
+11 1
+.names pk [103] [10]
+01 1
+.names pi pj [13]
+11 1
+.names pl [93] [16]
+11 1
+.names pl [95] [17]
+11 1
+.names pk [96] [18]
+01 1
+.names pi pj [19]
+00 1
+.names [87] [88] [21]
+11 1
+.names ph pj [23]
+10 1
+.names ph pj [24]
+01 1
+.names ph pf [87]
+01 1
+.names pj pi [88]
+11 1
+.names pi ph [89]
+0- 1
+-0 1
+.names [23] pi [90]
+1- 1
+-1 1
+.names ph pc [91]
+11 1
+.names [91] [9] [92]
+10 1
+.names [92] pk [93]
+11 1
+.names pi pc [94]
+01 1
+.names [94] [9] [95]
+10 1
+.names pe pd [96]
+01 1
+.names [7] [19] [97]
+1- 1
+-1 1
+.names [16] [18] [98]
+1- 1
+-1 1
+.names [97] [17] [99]
+1- 1
+-1 1
+.names ph pg [100]
+0- 1
+-0 1
+.names ph pc [101]
+10 1
+.names [101] [9] [102]
+10 1
+.names pe pd [103]
+11 1
+.names [7] pl [104]
+1- 1
+-0 1
+.names [10] [8] [105]
+1- 1
+-1 1
+.names pi ph [106]
+00 1
+.names ph pc [107]
+1- 1
+-1 1
+.names [9] pj [108]
+1- 1
+-1 1
+.names pm [107] [109]
+1- 1
+-1 1
+.end
