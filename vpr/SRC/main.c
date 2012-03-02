@@ -360,7 +360,7 @@ PrintTitle()
 	puts("Heterogeneous stucture support by Jason Luu and Ted Campbell.");
 	puts("T-VPack clustering integration by Jason Luu.");
 	puts("Area-driven AAPack added by Jason Luu.");
-    puts("This code is licensed only for non-commercial use.");
+    puts("This is free open source code under MIT license.");
     puts("");
 }
 
