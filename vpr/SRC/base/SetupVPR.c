@@ -150,7 +150,6 @@ SetupVPR(INP t_options Options,
 				}
 			}
 		}
-
 	}
 	assert(EMPTY_TYPE != NULL && FILL_TYPE != NULL && IO_TYPE != NULL);
 
