@@ -16,6 +16,11 @@
 #include "token.h"
 #include "pb_type_graph_annotations.h"
 
+static void load_pack_pattern_annotations(INOUTP t_pb_graph_node *pb_graph_node, 
+										   INP int mode,
+										   INP char *annot_in_pins,
+										   INP char *annot_out_pins,
+										   INP char *value);
 
 
 static void load_critical_path_annotations(INOUTP t_pb_graph_node *pb_graph_node, 
@@ -78,6 +83,9 @@ void load_pb_graph_pin_to_pin_annotations(INOUTP t_pb_graph_node *pb_graph_node)
 									annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_THOLD );
 							}
 						}
+					} else if (annotations[k].type == E_ANNOT_PIN_TO_PIN_PACK_PATTERN) {
+						assert(annotations[k].num_value_prop_pairs == 1);
+						load_pack_pattern_annotations(pb_graph_node, i, annotations[k].input_pins, annotations[k].output_pins, annotations[k].value[0]);
 					} else {
 						/* Todo:
 						load_hold_time_constraints_annotations(pb_graph_node); 
@@ -97,6 +105,79 @@ void load_pb_graph_pin_to_pin_annotations(INOUTP t_pb_graph_node *pb_graph_node)
 		}
 	}
 }
+
+/*
+Add the pattern name to the pack_pattern field for each pb_graph_edge that is used in a pack pattern
+*/
+static void load_pack_pattern_annotations(INOUTP t_pb_graph_node *pb_graph_node, 
+										   INP int mode,
+										   INP char *annot_in_pins,
+										   INP char *annot_out_pins,
+										   INP char *value) {
+    int i, j, k, m, n, p, iedge;
+	t_pb_graph_pin ***in_port, ***out_port;
+	int *num_in_ptrs, *num_out_ptrs, num_in_sets, num_out_sets;
+	t_pb_graph_node **children = NULL;
+
+	children = pb_graph_node->child_pb_graph_nodes[mode];
+	in_port = alloc_and_load_port_pin_ptrs_from_string(pb_graph_node,
+														children,
+														annot_in_pins, 
+														&num_in_ptrs,
+														&num_in_sets,
+														FALSE,
+														FALSE);
+	out_port = alloc_and_load_port_pin_ptrs_from_string(pb_graph_node,
+														children,
+														annot_out_pins, 
+														&num_out_ptrs,
+														&num_out_sets,
+														FALSE,
+														FALSE);
+
+	/* Discover edge then annotate edge with name of pack pattern */
+	k = 0;
+	for(i = 0; i < num_in_sets; i++) {
+		for(j = 0; j < num_in_ptrs[i]; j++) {
+			p = 0;
+			for(m = 0; m < num_out_sets; m++) {
+				for(n = 0; n < num_out_ptrs[m]; n++) {
+					for(iedge = 0; iedge < in_port[i][j]->num_output_edges; iedge++) {
+						if(in_port[i][j]->output_edges[iedge]->output_pins[0] == out_port[m][n]) {
+							assert(in_port[i][j]->output_edges[iedge]->delay_max == 0);
+							break;								
+						}
+					}
+					/* jluu Todo: This is inefficient, I know the interconnect so I know what edges exist
+					        can use this info to only annotate existing edges */
+					if(iedge != in_port[i][j]->num_output_edges) {
+						in_port[i][j]->output_edges[iedge]->num_pack_patterns++;
+						in_port[i][j]->output_edges[iedge]->pack_pattern_names = my_realloc(in_port[i][j]->output_edges[iedge]->pack_pattern_names, sizeof(char*) * in_port[i][j]->output_edges[iedge]->num_pack_patterns);
+						in_port[i][j]->output_edges[iedge]->pack_pattern_names[in_port[i][j]->output_edges[iedge]->num_pack_patterns - 1] = value;
+					}
+					p++;
+				}
+			}
+			k++;
+		}
+	}
+
+	if(in_port != NULL) {
+		for(i = 0; i < num_in_sets; i++) {
+			free(in_port[i]);
+		}
+		free(in_port);
+		free(num_in_ptrs);
+	}
+	if(out_port != NULL) {
+		for(i = 0; i < num_out_sets; i++) {
+			free(out_port[i]);
+		}
+		free(out_port);
+		free(num_out_ptrs);
+	}
+}
+										   
 
 
 static void load_critical_path_annotations(INOUTP t_pb_graph_node *pb_graph_node, 

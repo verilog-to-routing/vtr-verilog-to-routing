@@ -589,6 +589,8 @@ static void alloc_and_load_complete_interc_edges(INP t_interconnect *interconnec
 	int i_edge;
 	struct s_linked_vptr *cur;
 
+	assert(interconnect->infer_annotations == FALSE);
+
 
 	/* Allocate memory for edges, and reallocate more memory for pins connecting to those edges */
 	in_count = out_count = 0;
@@ -711,6 +713,7 @@ static void alloc_and_load_direct_interc_edges(  INP t_interconnect *interconnec
 		edges[i].interconnect = interconnect;
 		edges[i].driver_set = 0;
 		edges[i].driver_pin = i;
+		edges[i].infer_pattern = interconnect->infer_annotations;
 	}
 }
 
@@ -724,6 +727,8 @@ static void alloc_and_load_mux_interc_edges(	INP t_interconnect * interconnect,
 	int i_inset, i_inpin, i_outpin;
 	t_pb_graph_edge *edges;
 	struct s_linked_vptr *cur;
+
+	assert(interconnect->infer_annotations == FALSE);
 
 	/* Allocate memory for edges, and reallocate more memory for pins connecting to those edges */
 	assert(num_output_sets == 1);
