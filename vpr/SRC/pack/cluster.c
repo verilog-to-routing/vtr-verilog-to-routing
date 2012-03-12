@@ -1096,7 +1096,7 @@ static boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type, t
 				for(j = 0; j < port->size; j++) {
 					if(port->dir == IN_PORT && !port->is_clock) {
 						if(memory_class_pb) {
-							if(strstr(cur_pb_type->ports[i].port_class, "data") != cur_pb_type->ports[i].port_class) {
+							if(cur_pb_type->ports[i].port_class == NULL || strstr(cur_pb_type->ports[i].port_class, "data") != cur_pb_type->ports[i].port_class) {
 								if(logical_block[iblk].input_nets[port->index][j] != logical_block[sibling_memory_blk].input_nets[port->index][j]) {
 									return FALSE;
 								}
@@ -1107,7 +1107,7 @@ static boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type, t
 						}
 					} else if(port->dir == OUT_PORT) {
 						if(memory_class_pb) {
-							if(strstr(cur_pb_type->ports[i].port_class, "data") != cur_pb_type->ports[i].port_class) {
+							if(cur_pb_type->ports[i].port_class == NULL || strstr(cur_pb_type->ports[i].port_class, "data") != cur_pb_type->ports[i].port_class) {
 								if(logical_block[iblk].output_nets[port->index][j] != logical_block[sibling_memory_blk].output_nets[port->index][j]) {
 									return FALSE;
 								}
