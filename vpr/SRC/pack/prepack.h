@@ -6,7 +6,9 @@ Primary use 1) "Forced" packs (eg LUT+FF pair)
 
 #ifndef PREPACK_H
 #define PREPACK_H
+#include "arch_types.h"
+#include "util.h"
 
-void alloc_and_load_pack_patterns();
+t_pack_patterns *alloc_and_load_pack_patterns(OUTP int *num_packing_patterns);
 
 #endif

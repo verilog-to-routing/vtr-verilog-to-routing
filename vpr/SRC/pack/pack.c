@@ -1,15 +1,16 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include "read_xml_arch_file.h"
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
+#include "prepack.h"
 #include "pack.h"
 #include "read_blif.h"
 #include "ff_pack.h"
 #include "cluster.h"
 #include "output_clustering.h"
-#include "read_xml_arch_file.h"
 
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
@@ -20,6 +21,8 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch, IN
 	boolean *is_clock;
 	int num_models;
 	t_model *cur_model;
+	t_pack_patterns *list_of_packing_patterns;
+	int num_packing_patterns;
 
 	printf("Begin packing of %s \n", packer_opts->blif_file_name);
 
@@ -68,6 +71,10 @@ eg.
 	printf("\nAfter removing unused inputs:\n");
 	printf("Total Blocks: %d.  Total Nets: %d.  Total inputs %d ouptuts %d\n", num_logical_blocks, num_logical_nets, 
 	   num_p_inputs, num_p_outputs);
+
+	printf("Begin prepacking\n");
+	list_of_packing_patterns = alloc_and_load_pack_patterns(&num_packing_patterns);
+	printf("Finish prepacking\n");
 
 
 	/* Uncomment line below if you want a dump of compressed netlist. */
