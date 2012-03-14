@@ -25,9 +25,9 @@ static int add_pattern_name_to_hash(INOUTP struct s_hash **nhash, INP char *patt
 static void discover_pattern_names_in_pb_graph_node(INOUTP t_pb_graph_node *pb_graph_node, INOUTP struct s_hash **nhash, INOUTP int *ncount);
 static t_pack_patterns *alloc_and_init_pattern_list_from_hash(INP int ncount, INOUTP struct s_hash **nhash);
 static t_pb_graph_edge * find_expansion_edge_of_pattern(INP int pattern_index, INP t_pb_graph_node *pb_graph_node);
-static void forward_expand_pack_pattern_from_edge(INP t_pb_graph_edge *expansion_edge, INOUTP t_pack_patterns *list_of_packing_patterns, INP int curr_pattern_index);
+static void forward_expand_pack_pattern_from_edge(INP t_pb_graph_edge *expansion_edge, INOUTP t_pack_patterns *list_of_packing_patterns, INP int curr_pattern_index, INP int *block_count);
 static void backward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansion_edge, INOUTP t_pack_patterns *list_of_packing_patterns, INP int curr_pattern_index,
-												  INP t_pb_graph_pin *destination_pin, INP t_pack_pattern_block *destination_block);
+												  INP t_pb_graph_pin *destination_pin, INP t_pack_pattern_block *destination_block, INP int *block_count);
 
 /**
  * Find all packing patterns in architecture 
@@ -38,6 +38,7 @@ static void backward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansio
 */
 t_pack_patterns *alloc_and_load_pack_patterns(OUTP int *num_packing_patterns) {
 	int i, j, ncount;
+	int block_count;
 	struct s_hash **nhash;
 	t_pack_patterns *list_of_packing_patterns;
 	t_pb_graph_edge *expansion_edge;
@@ -58,11 +59,23 @@ t_pack_patterns *alloc_and_load_pack_patterns(OUTP int *num_packing_patterns) {
 			if(expansion_edge == NULL) {
 				continue;
 			}
-			backward_expand_pack_pattern_from_edge(expansion_edge, list_of_packing_patterns, i, NULL, NULL);
+			block_count = 0;
+			backward_expand_pack_pattern_from_edge(expansion_edge, list_of_packing_patterns, i, NULL, NULL, &block_count);
+			list_of_packing_patterns[i].block_count = block_count;
 			break;
 		}
 	}	
 	
+#define JEDIT_DEBUG_PACK_PATTERNS
+#ifdef JEDIT_DEBUG_PACK_PATTERNS
+	for(i = 0; i < ncount; i++) {
+		printf("ncount %d\n", ncount);
+		printf("pack pattern index %d block count %d \n", list_of_packing_patterns[i].index, list_of_packing_patterns[i].block_count);
+		printf("pack pattern name %s\n", list_of_packing_patterns[i].name);
+		printf("pack pattern root %s\n", list_of_packing_patterns[i].root_block->pb_type->name);
+	}	
+	
+#endif
 
 	free_hash_table(nhash);
 
@@ -246,12 +259,12 @@ static t_pb_graph_edge * find_expansion_edge_of_pattern(INP int pattern_index,
  * Find if receiver of edge is in the same pattern, if yes, add to pattern
  *  Convention: Connections are made on backward expansion only (to make future multi-fanout support easier) so this function will not update connections
  */
-static void forward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansion_edge, INOUTP t_pack_patterns *list_of_packing_patterns, INP int curr_pattern_index) {
+static void forward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansion_edge, INOUTP t_pack_patterns *list_of_packing_patterns, INP int curr_pattern_index, INP int *block_count) {
   	int i, j, k;
 	int iport, ipin, iedge;
 	boolean found; /* Error checking, ensure only one fan-out for each pattern net */
-	t_pack_pattern_block *destination_block;
-	t_pb_graph_node *destination_pb_graph_node;
+	t_pack_pattern_block *destination_block = NULL;
+	t_pb_graph_node *destination_pb_graph_node = NULL;
 	
 	found = FALSE;
 
@@ -265,6 +278,8 @@ static void forward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansion
 			/* If this pb_graph_node is part not of the current pattern index, put it in and expand all its edges */
 			if(destination_pb_graph_node->temp_scratch_pad == NULL || ((t_pack_pattern_block*)destination_pb_graph_node->temp_scratch_pad)->pattern_index != curr_pattern_index) {
 				destination_block = my_calloc(1, sizeof(t_pack_pattern_block));
+				destination_block->block_id = *block_count;
+				(*block_count)++;
 				destination_pb_graph_node->temp_scratch_pad = (void *)destination_block;
 				destination_block->pattern_index = curr_pattern_index;
 				destination_block->pb_type = destination_pb_graph_node->pb_type;
@@ -275,7 +290,8 @@ static void forward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansion
 																	list_of_packing_patterns,
 																	curr_pattern_index,
 																	&destination_pb_graph_node->input_pins[iport][ipin], 
-																	destination_block);
+																	destination_block,
+																	block_count);
 						}
 					}
 				}
@@ -284,7 +300,8 @@ static void forward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansion
 						for(iedge = 0; iedge < destination_pb_graph_node->output_pins[iport][ipin].num_output_edges; iedge++) {
 							forward_expand_pack_pattern_from_edge(destination_pb_graph_node->output_pins[iport][ipin].output_edges[iedge],
 																	list_of_packing_patterns,
-																	curr_pattern_index);
+																	curr_pattern_index,
+																	block_count);
 						}
 					}
 				}
@@ -295,19 +312,23 @@ static void forward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansion
 																	list_of_packing_patterns,
 																	curr_pattern_index,
 																	&destination_pb_graph_node->clock_pins[iport][ipin], 
-																	destination_block);
+																	destination_block,
+																	block_count);
 						}
 					}
 				}
 			}
 		} else {
 			for(j = 0; j < expansion_edge->output_pins[i]->num_output_edges; j++) {
-				for(k = 0; k < expansion_edge->output_pins[i]->output_edges[j]->num_pack_patterns; k++) {
-					if(expansion_edge->output_pins[i]->output_edges[j]->pack_pattern_indices[k] == curr_pattern_index || 
-					   expansion_edge->output_pins[i]->output_edges[j]->infer_pattern == TRUE) {
-						assert(found == FALSE); /* Check assumption that each forced net has only one fan-out */
-						found = TRUE;
-						forward_expand_pack_pattern_from_edge(expansion_edge->output_pins[i]->output_edges[j], list_of_packing_patterns, curr_pattern_index);
+				if(expansion_edge->output_pins[i]->output_edges[j]->infer_pattern == TRUE) {
+					forward_expand_pack_pattern_from_edge(expansion_edge->output_pins[i]->output_edges[j], list_of_packing_patterns, curr_pattern_index, block_count);
+				} else {
+					for(k = 0; k < expansion_edge->output_pins[i]->output_edges[j]->num_pack_patterns; k++) {
+						if(expansion_edge->output_pins[i]->output_edges[j]->pack_pattern_indices[k] == curr_pattern_index) {
+							assert(found == FALSE); /* Check assumption that each forced net has only one fan-out */
+							found = TRUE;
+							forward_expand_pack_pattern_from_edge(expansion_edge->output_pins[i]->output_edges[j], list_of_packing_patterns, curr_pattern_index, block_count);
+						}
 					}
 				}
 			}
@@ -321,16 +342,15 @@ static void forward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansion
  *  Convention: Connections are made on backward expansion only (to make future multi-fanout support easier) so this function must update both source and destination blocks
  */
 static void backward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansion_edge, INOUTP t_pack_patterns *list_of_packing_patterns, INP int curr_pattern_index,
-												  INP t_pb_graph_pin *destination_pin, INP t_pack_pattern_block *destination_block) {
+												  INP t_pb_graph_pin *destination_pin, INP t_pack_pattern_block *destination_block, INP int *block_count) {
 	int i, j, k;
 	int iport, ipin, iedge;
 	boolean found; /* Error checking, ensure only one fan-out for each pattern net */
-	t_pack_pattern_block *source_block;
-	t_pb_graph_node *source_pb_graph_node;
-	t_pack_pattern_connections *pack_pattern_connection;
+	t_pack_pattern_block *source_block = NULL;
+	t_pb_graph_node *source_pb_graph_node = NULL;
+	t_pack_pattern_connections *pack_pattern_connection = NULL;
 	
 	found = FALSE;
-
 	for(i = 0; i < expansion_edge->num_input_pins; i++) {
 		if(expansion_edge->input_pins[i]->parent_node->pb_type->num_modes == 0) {
 			source_pb_graph_node = expansion_edge->input_pins[i]->parent_node;
@@ -339,11 +359,19 @@ static void backward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansio
 			found = TRUE;
 
 			/* If this pb_graph_node is part not of the current pattern index, put it in and expand all its edges */
-			if(source_pb_graph_node->temp_scratch_pad == NULL || ((t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad)->pattern_index != curr_pattern_index) {
+			source_block = (t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad;
+			if(source_block == NULL || source_block->pattern_index != curr_pattern_index) {
 				source_block = my_calloc(1, sizeof(t_pack_pattern_block));
+				source_block->block_id = *block_count;
+				(*block_count)++;
 				source_pb_graph_node->temp_scratch_pad = (void *)source_block;
 				source_block->pattern_index = curr_pattern_index;
 				source_block->pb_type = source_pb_graph_node->pb_type;
+
+				if(list_of_packing_patterns[curr_pattern_index].root_block == NULL) {
+					list_of_packing_patterns[curr_pattern_index].root_block = source_block;
+				}
+
 				for(iport = 0; iport < source_pb_graph_node->num_input_ports; iport++) {
 					for(ipin = 0; ipin < source_pb_graph_node->num_input_pins[iport]; ipin++) {
 						for(iedge = 0; iedge < source_pb_graph_node->input_pins[iport][ipin].num_input_edges; iedge++) {
@@ -351,7 +379,8 @@ static void backward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansio
 																	list_of_packing_patterns,
 																	curr_pattern_index,
 																	&source_pb_graph_node->input_pins[iport][ipin], 
-																	source_block);
+																	source_block,
+																	block_count);
 						}
 					}
 				}
@@ -360,7 +389,8 @@ static void backward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansio
 						for(iedge = 0; iedge < source_pb_graph_node->output_pins[iport][ipin].num_output_edges; iedge++) {
 							forward_expand_pack_pattern_from_edge(source_pb_graph_node->output_pins[iport][ipin].output_edges[iedge],
 																	list_of_packing_patterns,
-																	curr_pattern_index);
+																	curr_pattern_index,
+																	block_count);
 						}
 					}
 				}
@@ -371,13 +401,14 @@ static void backward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansio
 																	list_of_packing_patterns,
 																	curr_pattern_index,
 																	&source_pb_graph_node->clock_pins[iport][ipin], 
-																	source_block);
+																	source_block,
+																	block_count);
 						}
 					}
 				}
 			}
 			if(destination_pin != NULL) {
-				assert(((t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad)->pattern_index != curr_pattern_index);
+				assert(((t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad)->pattern_index == curr_pattern_index);
 				source_block = (t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad;
 				pack_pattern_connection = my_calloc(1, sizeof(t_pack_pattern_connections));
 				pack_pattern_connection->from_block = source_block;
@@ -395,15 +426,17 @@ static void backward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansio
 				pack_pattern_connection->next = destination_block->connections;
 				destination_block->connections = pack_pattern_connection;
 			}
-
 		} else {
 			for(j = 0; j < expansion_edge->input_pins[i]->num_input_edges; j++) {
-				for(k = 0; k < expansion_edge->input_pins[i]->input_edges[j]->num_pack_patterns; k++) {
-					if(expansion_edge->input_pins[i]->input_edges[j]->pack_pattern_indices[k] == curr_pattern_index || 
-					   expansion_edge->input_pins[i]->input_edges[j]->infer_pattern == TRUE) {
-						assert(found == FALSE); /* Check assumption that each forced net has only one fan-out */
-						found = TRUE;
-						backward_expand_pack_pattern_from_edge(expansion_edge->input_pins[i]->input_edges[j], list_of_packing_patterns, curr_pattern_index, destination_pin, destination_block);
+				if(expansion_edge->input_pins[i]->input_edges[j]->infer_pattern == TRUE) {
+					backward_expand_pack_pattern_from_edge(expansion_edge->input_pins[i]->input_edges[j], list_of_packing_patterns, curr_pattern_index, destination_pin, destination_block, block_count);
+				} else {
+					for(k = 0; k < expansion_edge->input_pins[i]->input_edges[j]->num_pack_patterns; k++) {
+						if(expansion_edge->input_pins[i]->input_edges[j]->pack_pattern_indices[k] == curr_pattern_index) {
+							assert(found == FALSE); /* Check assumption that each forced net has only one fan-out */
+							found = TRUE;
+							backward_expand_pack_pattern_from_edge(expansion_edge->input_pins[i]->input_edges[j], list_of_packing_patterns, curr_pattern_index, destination_pin, destination_block, block_count);
+						}
 					}
 				}
 			}
