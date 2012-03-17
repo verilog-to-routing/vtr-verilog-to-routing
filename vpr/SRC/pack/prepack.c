@@ -31,6 +31,7 @@ static void backward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansio
 static boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type);
 static t_pack_molecule *try_create_molecule(INP t_pack_patterns *list_of_pack_patterns, INP int pack_pattern_index, INP int block_index);
 static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule, INP int logical_block_index, INP t_pack_pattern_block *current_pattern_block);
+static void print_pack_molecules(INP char *fname, INP t_pack_patterns *list_of_pack_patterns, INP int num_pack_patterns, INP t_pack_molecule *list_of_molecules);
 
 /**
  * Find all packing patterns in architecture 
@@ -68,16 +69,7 @@ t_pack_patterns *alloc_and_load_pack_patterns(OUTP int *num_packing_patterns) {
 			list_of_packing_patterns[i].block_count = block_count;
 			break;
 		}
-	}	
-	
-#ifdef JEDIT_DEBUG_PACK_PATTERNS
-	for(i = 0; i < ncount; i++) {
-		printf("# of pack patterns %d\n", ncount);
-		printf("pack pattern index %d block count %d name %s root %s\n", list_of_packing_patterns[i].index, list_of_packing_patterns[i].block_count, 
-			list_of_packing_patterns[i].name, list_of_packing_patterns[i].root_block->pb_type->name);
-	}	
-	
-#endif
+	}
 
 	free_hash_table(nhash);
 
@@ -473,6 +465,10 @@ t_pack_molecule *alloc_and_load_pack_molecules(INP t_pack_patterns *list_of_pack
 		}
 	}
 
+	#ifdef CREATE_ECHO_FILES
+		print_pack_molecules("prepack_molecules_and_patterns.echo", list_of_pack_patterns, num_packing_patterns, list_of_molecules_head);
+	#endif
+
 	return list_of_molecules_head;
 }
 
@@ -488,7 +484,7 @@ static t_pack_molecule *try_create_molecule(INP t_pack_patterns *list_of_pack_pa
 	int i;
 	t_pack_molecule *molecule;
 	struct s_linked_vptr *molecule_linked_list;
-
+	
 	molecule = my_calloc(1, sizeof(t_pack_molecule));
 	molecule->pack_pattern = &list_of_pack_patterns[pack_pattern_index];
 	molecule->logical_block_ptrs = my_calloc(molecule->pack_pattern->block_count, sizeof(t_logical_block *));
@@ -496,7 +492,8 @@ static t_pack_molecule *try_create_molecule(INP t_pack_patterns *list_of_pack_pa
 	if(try_expand_molecule(molecule, block_index, molecule->pack_pattern->root_block) == TRUE) {
 		/* Success! commit module */
 		for(i = 0; i < molecule->pack_pattern->block_count; i++) {
-			molecule_linked_list = my_calloc(1, sizeof(struct s_linked_vptr *));
+			assert(molecule->logical_block_ptrs[i] != NULL);
+			molecule_linked_list = my_calloc(1, sizeof(struct s_linked_vptr));
 			molecule_linked_list->data_vptr = (void *)molecule;
 			molecule_linked_list->next = molecule->logical_block_ptrs[i]->packed_molecules;
 			molecule->logical_block_ptrs[i]->packed_molecules = molecule_linked_list;
@@ -596,11 +593,8 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule, INP int log
 				/* find net corresponding to pattern */
 				iport = cur_pack_pattern_connection->to_pin->port->model_port->index;
 				ipin = cur_pack_pattern_connection->to_pin->pin_number;
-				if(cur_pack_pattern_connection->to_pin->port->model_port->is_clock) {
-					inet = logical_block[logical_block_index].clock_net;
-				} else {
-					inet = logical_block[logical_block_index].input_nets[iport][ipin];
-				}
+				inet = logical_block[logical_block_index].output_nets[iport][ipin];
+				
 				/* Check if net is valid */
 				if(vpack_net[inet].num_sinks != 1) { /* One fanout assumption */
 					success = FALSE;
@@ -612,7 +606,11 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule, INP int log
 				/* find net corresponding to pattern */
 				iport = cur_pack_pattern_connection->from_pin->port->model_port->index;
 				ipin = cur_pack_pattern_connection->from_pin->pin_number;
-				inet = logical_block[logical_block_index].output_nets[iport][ipin];
+				if(cur_pack_pattern_connection->to_pin->port->model_port->is_clock) {
+					inet = logical_block[logical_block_index].clock_net;
+				} else {
+					inet = logical_block[logical_block_index].input_nets[iport][ipin];
+				}
 				/* Check if net is valid */
 				if(vpack_net[inet].num_sinks != 1) { /* One fanout assumption */
 					success = FALSE;
@@ -628,3 +626,30 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule, INP int log
 
 	return success;
 }
+
+static void print_pack_molecules(INP char *fname, INP t_pack_patterns *list_of_pack_patterns, INP int num_pack_patterns, INP t_pack_molecule *list_of_molecules) {
+	int i;
+    FILE *fp;
+	t_pack_molecule *list_of_molecules_current;
+
+    fp = my_fopen(fname, "w", 0);
+
+	for(i = 0; i < num_pack_patterns; i++) {
+		fprintf(fp, "# of pack patterns %d\n", num_pack_patterns);
+		fprintf(fp, "pack pattern index %d block count %d name %s root %s\n", list_of_pack_patterns[i].index, list_of_pack_patterns[i].block_count, 
+			list_of_pack_patterns[i].name, list_of_pack_patterns[i].root_block->pb_type->name);
+	}
+
+	list_of_molecules_current = list_of_molecules;
+	while(list_of_molecules_current != NULL) {
+		fprintf(fp, "\nmolecule type: %s\n", list_of_molecules_current->pack_pattern->name);
+		for(i = 0; i < list_of_molecules_current->pack_pattern->block_count; i++) {
+			fprintf(fp, "\tpattern index %d: logical block [%d] name %s\n", i, 
+				list_of_molecules_current->logical_block_ptrs[i]->index, list_of_molecules_current->logical_block_ptrs[i]->name);
+		}
+		list_of_molecules_current = list_of_molecules_current->next;
+	}
+
+    fclose(fp);
+}
+
