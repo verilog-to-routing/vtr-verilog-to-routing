@@ -28,12 +28,16 @@ static t_pb_graph_edge * find_expansion_edge_of_pattern(INP int pattern_index, I
 static void forward_expand_pack_pattern_from_edge(INP t_pb_graph_edge *expansion_edge, INOUTP t_pack_patterns *list_of_packing_patterns, INP int curr_pattern_index, INP int *block_count);
 static void backward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansion_edge, INOUTP t_pack_patterns *list_of_packing_patterns, INP int curr_pattern_index,
 												  INP t_pb_graph_pin *destination_pin, INP t_pack_pattern_block *destination_block, INP int *block_count);
+static boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type);
+static t_pack_molecule *try_create_molecule(INP t_pack_patterns *list_of_pack_patterns, INP int pack_pattern_index, INP int block_index);
+static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule, INP int logical_block_index, INP t_pack_pattern_block *current_pattern_block);
 
 /**
  * Find all packing patterns in architecture 
  * [0..num_packing_patterns-1]
  *
- * Limitations: Currently assumes that forced pack nets must be single-fanout, more complicated structures should probably be handled either downstream (general packing) or upstream (in tech mapping)
+ * Limitations: Currently assumes that forced pack nets must be single-fanout as this covers all the reasonable architectures we wanted.
+				More complicated structures should probably be handled either downstream (general packing) or upstream (in tech mapping)
  *              If this limitation is too constraining, code is designed so that this limitation can be removed
 */
 t_pack_patterns *alloc_and_load_pack_patterns(OUTP int *num_packing_patterns) {
@@ -66,13 +70,11 @@ t_pack_patterns *alloc_and_load_pack_patterns(OUTP int *num_packing_patterns) {
 		}
 	}	
 	
-#define JEDIT_DEBUG_PACK_PATTERNS
 #ifdef JEDIT_DEBUG_PACK_PATTERNS
 	for(i = 0; i < ncount; i++) {
-		printf("ncount %d\n", ncount);
-		printf("pack pattern index %d block count %d \n", list_of_packing_patterns[i].index, list_of_packing_patterns[i].block_count);
-		printf("pack pattern name %s\n", list_of_packing_patterns[i].name);
-		printf("pack pattern root %s\n", list_of_packing_patterns[i].root_block->pb_type->name);
+		printf("# of pack patterns %d\n", ncount);
+		printf("pack pattern index %d block count %d name %s root %s\n", list_of_packing_patterns[i].index, list_of_packing_patterns[i].block_count, 
+			list_of_packing_patterns[i].name, list_of_packing_patterns[i].root_block->pb_type->name);
 	}	
 	
 #endif
@@ -425,6 +427,10 @@ static void backward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansio
 				pack_pattern_connection->to_pin = destination_pin;
 				pack_pattern_connection->next = destination_block->connections;
 				destination_block->connections = pack_pattern_connection;
+
+				if(source_block == destination_block) {
+					printf(ERRTAG "Invalid packing pattern defined.  Source and destination block are the same (%s)\n", source_block->pb_type->name);
+				}
 			}
 		} else {
 			for(j = 0; j < expansion_edge->input_pins[i]->num_input_edges; j++) {
@@ -445,4 +451,180 @@ static void backward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansio
 }
 
 
+/**
+ * Pre-pack atoms in netlist to molecules where the molecules are defined by pack_patterns
+ * [0..num_packing_patterns-1]
+ *
+ */
+t_pack_molecule *alloc_and_load_pack_molecules(INP t_pack_patterns *list_of_pack_patterns, INP int num_packing_patterns, OUTP int *num_pack_molecule) {
+	int i, j;
+	t_pack_molecule *list_of_molecules_head;
+	t_pack_molecule *list_of_molecules_current;
 
+	list_of_molecules_current = list_of_molecules_head = NULL;
+
+	for(i = 0; i < num_packing_patterns; i++) {
+		for(j = 0; j < num_logical_blocks; j++) {
+			list_of_molecules_current = try_create_molecule(list_of_pack_patterns, i, j);
+			if(list_of_molecules_current != NULL) {
+				list_of_molecules_current->next = list_of_molecules_head;
+				list_of_molecules_head = list_of_molecules_current;
+			}
+		}
+	}
+
+	return list_of_molecules_head;
+}
+
+/**
+ * Given a pattern and a logical block to serve as the root block, determine if the candidate logical block serving as the root node matches the pattern
+ * If yes, return the molecule with this logical block as the root, if not, return NULL
+ * Limitations: Currently assumes that forced pack nets must be single-fanout as this covers all the reasonable architectures we wanted
+				More complicated structures should probably be handled either downstream (general packing) or upstream (in tech mapping)
+ *              If this limitation is too constraining, code is designed so that this limitation can be removed
+ * Side Effect: If successful, link atom to molecule
+ */
+static t_pack_molecule *try_create_molecule(INP t_pack_patterns *list_of_pack_patterns, INP int pack_pattern_index, INP int block_index) {
+	int i;
+	t_pack_molecule *molecule;
+	struct s_linked_vptr *molecule_linked_list;
+
+	molecule = my_calloc(1, sizeof(t_pack_molecule));
+	molecule->pack_pattern = &list_of_pack_patterns[pack_pattern_index];
+	molecule->logical_block_ptrs = my_calloc(molecule->pack_pattern->block_count, sizeof(t_logical_block *));
+
+	if(try_expand_molecule(molecule, block_index, molecule->pack_pattern->root_block) == TRUE) {
+		/* Success! commit module */
+		for(i = 0; i < molecule->pack_pattern->block_count; i++) {
+			molecule_linked_list = my_calloc(1, sizeof(struct s_linked_vptr *));
+			molecule_linked_list->data_vptr = (void *)molecule;
+			molecule_linked_list->next = molecule->logical_block_ptrs[i]->packed_molecules;
+			molecule->logical_block_ptrs[i]->packed_molecules = molecule_linked_list;
+		}
+	} else {
+		/* Does not match pattern, free molecule */
+		free(molecule->logical_block_ptrs);
+		free(molecule);
+		molecule = NULL;
+	}
+	
+	return molecule;
+}
+
+/**
+ * given a primitive type and a logical block, is the mapping legal
+ */
+static boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type) {
+	t_model_ports *port;
+	int i, j;
+	boolean second_pass;
+
+	/* check if ports are big enough */
+	/* for memories, also check that pins are the same with existing siblings */
+	port = logical_block[iblk].model->inputs;
+	second_pass = FALSE;
+	while(port || !second_pass) {
+		/* TODO: This is slow if the number of ports are large, fix if becomes a problem */
+		if(!port) {
+			second_pass = TRUE;
+			port = logical_block[iblk].model->outputs;
+		}
+		for(i = 0; i < cur_pb_type->num_ports; i++) {
+			if(cur_pb_type->ports[i].model_port == port) {
+				/* TODO: This is slow, I can check from port->size onwards */
+				for(j = 0; j < port->size; j++) {
+					if(port->dir == IN_PORT && !port->is_clock) {
+						if(logical_block[iblk].input_nets[port->index][j] != OPEN && j >= cur_pb_type->ports[i].num_pins) {
+							return FALSE;
+						}
+					} else if(port->dir == OUT_PORT) {
+						if(logical_block[iblk].output_nets[port->index][j] != OPEN && j >= cur_pb_type->ports[i].num_pins) {
+							return FALSE;
+						}
+					} else {
+						assert(port->dir == IN_PORT && port->is_clock);
+						assert(j == 0);
+						if(logical_block[iblk].clock_net != OPEN && j >= cur_pb_type->ports[i].num_pins) {
+							return FALSE;
+						}
+					}
+				}
+				break;
+			}
+		}
+		if(i == cur_pb_type->num_ports) {
+			if((logical_block[iblk].model->inputs != NULL && !second_pass) ||
+				logical_block[iblk].model->outputs != NULL && second_pass) {
+				/* physical port not found */
+				return FALSE;
+			}
+		}
+		if(port) {
+			port = port->next;
+		}
+	}
+	return TRUE;
+}
+
+/**
+ * Determine if logical block can match with the pattern to form a molecule
+ * return TRUE if it matches, return FALSE otherwise
+ */
+static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule, INP int logical_block_index, INP t_pack_pattern_block *current_pattern_block) {
+	int iport, ipin, inet;
+	boolean success = FALSE;
+	t_pack_pattern_connections *cur_pack_pattern_connection;
+	
+	/* If the block in the pattern has already been visited, then there is no need to revisit it */
+	if(molecule->logical_block_ptrs[current_pattern_block->block_id] != NULL) {
+		if(molecule->logical_block_ptrs[current_pattern_block->block_id] != &logical_block[logical_block_index]) {
+			/* Mismatch between the visited block and the current block implies that the current netlist structure does not match the expected pattern, return fail */
+			return FALSE;
+		} else {
+			return TRUE;
+		}
+	}
+
+	/* This node has never been visited, expand it and explore neighbouring nodes */
+	molecule->logical_block_ptrs[current_pattern_block->block_id] = &logical_block[logical_block_index]; /* store that this node has been visited */
+	if(primitive_type_feasible(logical_block_index, current_pattern_block->pb_type)) {
+		success = TRUE;
+		/* If the primitive types match, check for connections */
+		cur_pack_pattern_connection = current_pattern_block->connections;
+		while(cur_pack_pattern_connection != NULL && success == TRUE) {
+			if(cur_pack_pattern_connection->from_block == current_pattern_block) {
+				/* find net corresponding to pattern */
+				iport = cur_pack_pattern_connection->to_pin->port->model_port->index;
+				ipin = cur_pack_pattern_connection->to_pin->pin_number;
+				if(cur_pack_pattern_connection->to_pin->port->model_port->is_clock) {
+					inet = logical_block[logical_block_index].clock_net;
+				} else {
+					inet = logical_block[logical_block_index].input_nets[iport][ipin];
+				}
+				/* Check if net is valid */
+				if(vpack_net[inet].num_sinks != 1) { /* One fanout assumption */
+					success = FALSE;
+				} else {
+					success = try_expand_molecule(molecule, vpack_net[inet].node_block[1], cur_pack_pattern_connection->to_block);
+				}
+			} else {
+				assert(cur_pack_pattern_connection->to_block == current_pattern_block);
+				/* find net corresponding to pattern */
+				iport = cur_pack_pattern_connection->from_pin->port->model_port->index;
+				ipin = cur_pack_pattern_connection->from_pin->pin_number;
+				inet = logical_block[logical_block_index].output_nets[iport][ipin];
+				/* Check if net is valid */
+				if(vpack_net[inet].num_sinks != 1) { /* One fanout assumption */
+					success = FALSE;
+				} else {
+					success = try_expand_molecule(molecule, vpack_net[inet].node_block[0], cur_pack_pattern_connection->from_block);
+				}
+			}
+			cur_pack_pattern_connection = cur_pack_pattern_connection->next;
+		}
+	} else {
+		success = FALSE;
+	}
+
+	return success;
+}

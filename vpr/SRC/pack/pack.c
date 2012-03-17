@@ -23,6 +23,9 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch, IN
 	t_model *cur_model;
 	t_pack_patterns *list_of_packing_patterns;
 	int num_packing_patterns;
+	t_pack_molecule *list_of_pack_molecules;
+	int num_pack_molecules;
+
 
 	printf("Begin packing of %s \n", packer_opts->blif_file_name);
 
@@ -74,6 +77,7 @@ eg.
 
 	printf("Begin prepacking\n");
 	list_of_packing_patterns = alloc_and_load_pack_patterns(&num_packing_patterns);
+	list_of_pack_molecules = alloc_and_load_pack_molecules(list_of_packing_patterns, num_packing_patterns, &num_pack_molecules);
 	printf("Finish prepacking\n");
 
 

@@ -10,5 +10,6 @@ Primary use 1) "Forced" packs (eg LUT+FF pair)
 #include "util.h"
 
 t_pack_patterns *alloc_and_load_pack_patterns(OUTP int *num_packing_patterns);
+t_pack_molecule *alloc_and_load_pack_molecules(INP t_pack_patterns *list_of_pack_patterns, INP int num_packing_patterns, OUTP int *num_pack_molecule);
 
 #endif

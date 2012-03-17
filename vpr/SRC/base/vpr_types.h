@@ -204,8 +204,21 @@ struct s_logical_block {
 	struct s_tnode *clock_net_tnode;	 /* correspnding clock net tnode */
 
 	struct s_linked_vptr *truth_table;   /* If this is a LUT (.names), then this is the logic that the LUT implements */
+	struct s_linked_vptr *packed_molecules;   /* List of t_pack_molecules that this logical block is a part of */
 };
 typedef struct s_logical_block t_logical_block;
+
+/**
+ * Represents a grouping of logical_blocks that match a pack_pattern, these groups are intended to be placed as a single unit during packing 
+ * Store in linked list
+*/
+typedef struct s_pack_molecule
+{
+	t_pack_patterns *pack_pattern;			/* pattern this molecule implements */
+	t_logical_block **logical_block_ptrs;	/* [0..num_pack_pattern_blocks-1] ptrs to logical blocks that implements this molecule, index on pack_pattern_block->index of pack pattern */
+	struct s_pack_molecule *next;
+} t_pack_molecule;
+
 
 /* Built-in library models */
 #define MODEL_LOGIC "names"
