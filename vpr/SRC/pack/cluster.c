@@ -210,13 +210,8 @@ void do_clustering (const t_arch *arch, int num_models, boolean global_clocks,
 	   enum e_packer_algorithm packer_algorithm,
 	   boolean hack_no_legal_frac_lut, boolean hack_safe_latch){
 
-/* Does the actual work of clustering multiple VPACK_LUT+FF logic blocks *
+/* Does the actual work of clustering multiple netlist blocks *
  * into clusters.                                                  */
-
-  /*note: I allow timing_driven and connection_driven to be simultaneously true*/
-  /*in this case, connection_driven is responsible for all clustering decisions*/
-  /*but timing analysis is still enabled (useful for viewing the constant delay*/
-  /*results) */
 
   /* Algorithm employed
   1.  Find type that can legally hold block and create cluster with pb info
