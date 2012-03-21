@@ -62,7 +62,7 @@ static void check_net(boolean sweep_hanging_nets_and_inputs);
 static void free_parse(void);
 static void io_line(int in_or_out,
 		    int doall, t_model *io_model);
-static void add_lut(int doall,
+static boolean add_lut(int doall,
 	t_model *logic_model);
 static void add_latch(int doall, INP t_model *latch_model);
 static void add_subckt(int doall, INP t_model *user_models);
@@ -258,8 +258,7 @@ get_tok(char *buffer,
 		*add_truth_table = FALSE;
 	    if(pass == 3)
 		{
-		    add_lut(doall, logic_model);
-			*add_truth_table = doall;
+			*add_truth_table = add_lut(doall, logic_model);			
 		}
 	    else
 		{
@@ -383,7 +382,7 @@ dum_parse(char *buf)
 }
 
 
-static void
+static boolean
 add_lut(int doall,
 	t_model *logic_model)
 {
@@ -412,7 +411,7 @@ add_lut(int doall,
 		/* unconn is a keyword to pad unused pins, ignore this block */
 		free_matrix(saved_names, 0, logic_model->inputs->size, 0, sizeof(char));
 		num_logical_blocks--;
-		return;
+		return FALSE;
 	}
 
     if(!doall)
@@ -421,7 +420,7 @@ add_lut(int doall,
 			/* On this pass it doesn't matter if RECEIVER or DRIVER.  Just checking if in hash.  [0] should be DRIVER */
 			add_vpack_net(saved_names[j], RECEIVER, num_logical_blocks - 1, 0, j, FALSE, doall);
 		free_matrix(saved_names, 0, logic_model->inputs->size, 0, sizeof(char));
-	    return;
+	    return FALSE;
 	}
 
 	logical_block[num_logical_blocks - 1].model = logic_model;
@@ -459,6 +458,7 @@ add_lut(int doall,
     num_luts++;
 
 	free_matrix(saved_names, 0, logic_model->inputs->size, 0, sizeof(char));
+	return doall;
 }
 
 static void
