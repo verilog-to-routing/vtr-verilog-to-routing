@@ -549,7 +549,7 @@ void do_clustering (const t_arch *arch, int num_models, boolean global_clocks,
  output_clustering(	clb, num_clb, global_clocks, is_clock, out_fname, FALSE);
 #ifdef DUMP_BLIF_ECHO
  if(!hack_frac_lut_no_legality) /* must have routing graph before dumping blif */
-	output_blif(	clb, num_clb, global_clocks, is_clock, "post_packing_blif.echo", FALSE);
+	output_blif(	clb, num_clb, global_clocks, is_clock, "post_pack_netlist.blif", FALSE);
 #endif
 
  if(hill_climbing_flag)
