@@ -18,5 +18,11 @@ void sync_grid_to_blocks(INP int num_blocks,
 			 INP int ny,
 			 INOUTP struct s_grid_tile **grid);
 
+
+int get_max_primitives_in_pb_type(t_pb_type *pb_type);
+int get_max_primitive_inputs_in_pb_type(t_pb_type *pb_type);
+int get_max_depth_of_pb_type(t_pb_type *pb_type);
+
+
 #endif
 

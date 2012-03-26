@@ -142,3 +142,61 @@ get_class_range_for_block(INP int iblk,
     *class_high =
 	(block[iblk].z + 1) * (type->num_class / type->capacity) - 1;
 }
+
+
+int get_max_primitives_in_pb_type(t_pb_type *pb_type) {
+	int i, j;
+	int max_size, temp_size;
+	if (pb_type->modes == 0) {
+		max_size = pb_type->num_pb;
+	} else {
+		max_size = 0;
+		for(i = 0; i < pb_type->num_modes; i++) {
+			temp_size = 0;
+			for(j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
+				temp_size += pb_type->modes[i].pb_type_children[j].num_pb * 
+					get_max_primitives_in_pb_type(&pb_type->modes[i].pb_type_children[j]);
+			}
+			if(temp_size > max_size) {
+				max_size = temp_size;
+			}
+		}
+	}
+	return max_size;
+}
+
+
+int get_max_primitive_inputs_in_pb_type(t_pb_type *pb_type) {
+	int i, j;
+	int max_size, temp_size;
+	if (pb_type->blif_model != NULL) {
+		max_size = pb_type->num_input_pins;
+	} else {
+		max_size = 0;
+		for(i = 0; i < pb_type->num_modes; i++) {
+			temp_size = 0;
+			for(j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
+				temp_size = get_max_primitive_inputs_in_pb_type(&pb_type->modes[i].pb_type_children[j]);
+				if(temp_size > max_size) {
+					max_size = temp_size;
+				}
+			}
+		}
+	}
+	return max_size;
+}
+
+int get_max_depth_of_pb_type(t_pb_type *pb_type) {
+	int i, j;
+	int max_depth, temp_depth;
+	max_depth = pb_type->depth;
+	for(i = 0; i < pb_type->num_modes; i++) {
+		for(j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
+			temp_depth = get_max_depth_of_pb_type(&pb_type->modes[i].pb_type_children[j]);
+			if(temp_depth > max_depth) {
+				max_depth = temp_depth;
+			}
+		}
+	}
+	return max_depth;
+}

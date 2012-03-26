@@ -20,6 +20,7 @@
 #include "cluster_legality.h"
 #include "path_delay2.h"
 #include "path_delay.h"
+#include "vpr_utils.h"
 
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
 
@@ -93,10 +94,6 @@ static float **net_pin_forward_criticality = NULL;
 
 static int num_ext_inputs (int iblk);
 static void check_clocks (boolean *is_clock);
-
-static int get_max_cluster_size(t_pb_type *pb_type);
-static int get_max_primitive_inputs(t_pb_type *pb_type);
-static int get_max_pb_depth(t_pb_type *pb_type);
 
 #if 0
 static void check_for_duplicate_inputs ();
@@ -263,9 +260,9 @@ void do_clustering (const t_arch *arch, int num_models, boolean global_clocks,
  for(i = 0; i < num_types; i++) {
 	 if(EMPTY_TYPE == &type_descriptors[i]) 
 		 continue;
-	 cur_cluster_size = get_max_cluster_size(type_descriptors[i].pb_type);
-	 cur_primitive_inputs = get_max_primitive_inputs(type_descriptors[i].pb_type);
-	 cur_pb_depth = get_max_pb_depth(type_descriptors[i].pb_type);
+	 cur_cluster_size = get_max_primitives_in_pb_type(type_descriptors[i].pb_type);
+	 cur_primitive_inputs = get_max_primitive_inputs_in_pb_type(type_descriptors[i].pb_type);
+	 cur_pb_depth = get_max_depth_of_pb_type(type_descriptors[i].pb_type);
 	 if(cur_cluster_size > max_cluster_size) {
 		 max_cluster_size = cur_cluster_size;
 	 }
@@ -658,62 +655,6 @@ static void check_clocks (boolean *is_clock) {
  }
 }
 
-static int get_max_cluster_size(t_pb_type *pb_type) {
-	int i, j;
-	int max_size, temp_size;
-	if (pb_type->modes == 0) {
-		max_size = pb_type->num_pb;
-	} else {
-		max_size = 0;
-		for(i = 0; i < pb_type->num_modes; i++) {
-			temp_size = 0;
-			for(j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-				temp_size += pb_type->modes[i].pb_type_children[j].num_pb * 
-					get_max_cluster_size(&pb_type->modes[i].pb_type_children[j]);
-			}
-			if(temp_size > max_size) {
-				max_size = temp_size;
-			}
-		}
-	}
-	return max_size;
-}
-
-
-static int get_max_primitive_inputs(t_pb_type *pb_type) {
-	int i, j;
-	int max_size, temp_size;
-	if (pb_type->blif_model != NULL) {
-		max_size = pb_type->num_input_pins;
-	} else {
-		max_size = 0;
-		for(i = 0; i < pb_type->num_modes; i++) {
-			temp_size = 0;
-			for(j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-				temp_size = get_max_primitive_inputs(&pb_type->modes[i].pb_type_children[j]);
-				if(temp_size > max_size) {
-					max_size = temp_size;
-				}
-			}
-		}
-	}
-	return max_size;
-}
-
-static int get_max_pb_depth(t_pb_type *pb_type) {
-	int i, j;
-	int max_depth, temp_depth;
-	max_depth = pb_type->depth;
-	for(i = 0; i < pb_type->num_modes; i++) {
-		for(j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-			temp_depth = get_max_pb_depth(&pb_type->modes[i].pb_type_children[j]);
-			if(temp_depth > max_depth) {
-				max_depth = temp_depth;
-			}
-		}
-	}
-	return max_depth;
-}
 
 /* Determine if logical block is in pb */
 static boolean is_logical_blk_in_pb(int iblk, t_pb *pb) {

@@ -219,12 +219,27 @@ typedef struct s_pack_molecule
 	struct s_pack_molecule *next;
 } t_pack_molecule;
 
+/**
+ * Stats keeper for placement information during packing
+ * Contains linked lists to placement locations based on status of primitive
+ */
+typedef struct s_cluster_placement_stats 
+{
+	int num_pb_types;
+	void *curr_logical_block; /* current block or molecule being considered during packing */
+	t_cluster_placement_primitive **valid_primitives; /* [0..max_pbtypes-1] ptrs to valid primitives */
+	t_cluster_placement_primitive *in_flight; /* ptrs to primitives currently being considered */
+	t_cluster_placement_primitive *tried; /* ptrs to primitives that are open but current logic block unable to pack to */
+	t_cluster_placement_primitive *invalid; /* ptrs to primitives that are invalid */
+} t_cluster_placement_stats;
 
 /* Built-in library models */
 #define MODEL_LOGIC "names"
 #define MODEL_LATCH "latch"
 #define MODEL_INPUT "input"
 #define MODEL_OUTPUT "output"
+
+
 
 
 /******************************************************************

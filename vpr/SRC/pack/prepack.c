@@ -20,7 +20,9 @@ March 12, 2012
 #include "hash.h"
 #include "prepack.h"
 
-
+/*****************************************/
+/*Local Function Declaration
+/*****************************************/
 static int add_pattern_name_to_hash(INOUTP struct s_hash **nhash, INP char *pattern_name, INOUTP int *ncount);
 static void discover_pattern_names_in_pb_graph_node(INOUTP t_pb_graph_node *pb_graph_node, INOUTP struct s_hash **nhash, INOUTP int *ncount);
 static t_pack_patterns *alloc_and_init_pattern_list_from_hash(INP int ncount, INOUTP struct s_hash **nhash);
@@ -32,6 +34,10 @@ static boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type);
 static t_pack_molecule *try_create_molecule(INP t_pack_patterns *list_of_pack_patterns, INP int pack_pattern_index, INP int block_index);
 static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule, INP int logical_block_index, INP t_pack_pattern_block *current_pattern_block);
 static void print_pack_molecules(INP char *fname, INP t_pack_patterns *list_of_pack_patterns, INP int num_pack_patterns, INP t_pack_molecule *list_of_molecules);
+
+/*****************************************/
+/*Function Definitions
+/*****************************************/
 
 /**
  * Find all packing patterns in architecture 
