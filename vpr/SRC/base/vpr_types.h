@@ -226,8 +226,8 @@ typedef struct s_pack_molecule
 typedef struct s_cluster_placement_stats 
 {
 	int num_pb_types;
-	void *curr_logical_block; /* current block or molecule being considered during packing */
-	t_cluster_placement_primitive **valid_primitives; /* [0..max_pbtypes-1] ptrs to valid primitives */
+	int *curr_logical_blocks; /* current logical block being considered for packing */
+	t_cluster_placement_primitive **valid_primitives; /* [0..max_pbtypes-1] ptrs to linked list of valid primitives, for convenience, each linked list head is empty */
 	t_cluster_placement_primitive *in_flight; /* ptrs to primitives currently being considered */
 	t_cluster_placement_primitive *tried; /* ptrs to primitives that are open but current logic block unable to pack to */
 	t_cluster_placement_primitive *invalid; /* ptrs to primitives that are invalid */
