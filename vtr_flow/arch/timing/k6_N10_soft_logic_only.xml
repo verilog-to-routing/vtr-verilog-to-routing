@@ -20,7 +20,7 @@
 		<device>
 			<sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000" ipin_mux_trans_size="1.222260"/>
 			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="7.247000e-11"/>
-			<area grid_logic_tile_area="14813.392"/>
+			<area grid_logic_tile_area="18748.199219"/>
 			<chan_width_distr>
 				<io width="1.000000"/>
 				<x distr="uniform" peak="1.000000"/>
