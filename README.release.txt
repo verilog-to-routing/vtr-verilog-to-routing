@@ -121,7 +121,13 @@ Our testers have gotten this to work on various other systems including various 
 
 - Check for library dependencies.  ODIN II requires bison.  VPR requires X11 libraries if you want graphics.  
 
+Other Notes:
 
+Please support us by registering as a user of VTR here: http://www.eecg.utoronto.ca/vtr/register.html
+
+##############################################################################
+# License
+##############################################################################
 
 Copyright (c) 2012 
 Jason Luu, Jeffrey Goeders, Chi Wai Yu, Opal Densmore, Andrew Somerville, 
