@@ -29,8 +29,8 @@ March 12, 2012
 static void load_cluster_placement_stats_for_pb_graph_node(INOUTP t_cluster_placement_stats *cluster_placement_stats, INOUTP t_pb_graph_node *pb_graph_node);
 static float compute_primitive_base_cost(INP t_pb_graph_node *primitive);
 static void requeue_primitive(INOUTP t_cluster_placement_stats *cluster_placement_stats, t_cluster_placement_primitive *cluster_placement_primitive);
-static void commit_primitive(INOUTP t_cluster_placement_stats *cluster_placement_stats, t_cluster_placement_primitive *cur);
 static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node, INP int incremental_cost, INP boolean valid);
+static float try_place_molecule(INP t_pack_molecule *molecule, INP t_pb_graph_node *root, INOUTP t_pb_graph_node **primitives_list);
 
 /*****************************************/
 /*Function Definitions
@@ -46,7 +46,7 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats() {
 	cluster_placement_stats_list = my_calloc(num_types, sizeof(t_cluster_placement_stats));
 	for(i = 0; i < num_types; i++) {
 		cluster_placement_stats_list[i].valid_primitives = my_calloc(get_max_primitives_in_pb_type(type_descriptors[i].pb_type) + 1, sizeof(t_cluster_placement_primitive*)); /* too much memory allocated but shouldn't be a problem */
-		cluster_placement_stats_list[i].curr_logical_blocks = NULL;
+		cluster_placement_stats_list[i].curr_molecule = NULL;
 		load_cluster_placement_stats_for_pb_graph_node(&cluster_placement_stats_list[i], type_descriptors[i].pb_graph_head);
 	}
 	return cluster_placement_stats_list;
@@ -56,14 +56,23 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats() {
  * get next list of primitives for list of logical blocks
  * primitives is the list of ptrs to primitives that matches with the list of logical_blocks (by index), assumes memory is preallocated
  *   - if this is a new block, requeue tried primitives and return a in-flight primitive list to try
- *   - if this is an old block, try another set of primitives
- * jedit corner case that I'm going to need to handle later - for multi-block packing, putting entire list on "tried" may not be a good idea because there might be overlap (eg. map A->B->A->B to physical structure A->B->A->B->A->B, if map to first 4 then fail, will not try last 4 since middle guys put to tried queue)
- *     THIS CORNER CASE IS NOT HANDLED, must consider in future, for the most part, I expect this to show up in poorly designed architectures and probably shouldn't be an issue, but best to handle just to be safe
+ *   - if this is an old block, put root primitive to tried queue, requeue rest of primitives. try another set of primitives
+ * 
+ * cluster_placement_stats - ptr to the current cluster_placement_stats of open complex block
+ * molecule - molecule to pack into open complex block
+ * primitives_list - a list of primitives indexed to match logical_block_ptrs of molecule.  Expects an allocated array of primitives ptrs as inputs.  This function loads the array with the lowest cost primitives that implement molecule
  */
-void get_next_primitive_list(INOUTP t_cluster_placement_stats *cluster_placement_stats, INP int* logical_block_list, INP int logical_block_list_size, INOUTP t_pb_graph_node **primitives_list) {
-	t_cluster_placement_primitive *cur, *next;
+void get_next_primitive_list(INOUTP t_cluster_placement_stats *cluster_placement_stats, INP t_pack_molecule *molecule, INOUTP t_pb_graph_node **primitives_list) {
+	t_cluster_placement_primitive *cur, *next, *best, *before_best, *prev;
 	int i;
-	if(cluster_placement_stats->curr_logical_blocks != logical_block_list) {
+	float cost, lowest_cost;
+	best = NULL;
+	before_best = NULL;
+
+	/* TODO: need to implement carry-chain, for now, exit out */
+	assert(molecule->type != MOLECULE_CHAIN);
+	
+	if(cluster_placement_stats->curr_molecule != molecule) {
 		/* New block, requeue tried primitives and in-flight primitives */
 		cur = cluster_placement_stats->tried;
 		while(cur != NULL) {
@@ -71,31 +80,76 @@ void get_next_primitive_list(INOUTP t_cluster_placement_stats *cluster_placement
 			requeue_primitive(cluster_placement_stats, cur);
 			cur = next;
 		}
+
 		cur = cluster_placement_stats->in_flight;
-		while(cur != NULL) {
+		if(cur != NULL) {
 			next = cur->next_primitive;
 			requeue_primitive(cluster_placement_stats, cur);
-			cur = next;
+			/* should have at most one block in flight at any point in time */
+			assert(next == NULL); 
 		}
-		cluster_placement_stats->curr_logical_blocks = logical_block_list;
+		cluster_placement_stats->in_flight = NULL;
+
+		cluster_placement_stats->curr_molecule = molecule;
 	} else {
-		/* old block, put any primitives currently inflight to tried queue */
+		/* old block, put root primitive currently inflight to tried queue	*/
 		cur = cluster_placement_stats->in_flight;
-		i = 0;
-		while(cur != NULL) {
-			next = cur->next_primitive;
-			cur->next_primitive = cluster_placement_stats->tried;
-			cluster_placement_stats->tried = cur;
-			i++;
-		}
-		assert(i == logical_block_list_size);
+		next = cur->next_primitive;
+		cur->next_primitive = cluster_placement_stats->tried;
+		cluster_placement_stats->tried = cur;
+		/* should have only one block in flight at any point in time */
+		assert(next == NULL); 
+		cluster_placement_stats->in_flight = NULL;
 	}
 
 	/* find next set of blocks 
 	     1. Remove invalid blocks to invalid queue
 		 2. Find lowest cost array of primitives that implements blocks
 		 3. When found, move current blocks to in-flight, return lowest cost array of primitives
+		 4. Return NULL if not found
 	*/
+	lowest_cost = HUGE_FLOAT;
+	for(i = 0; i < cluster_placement_stats->num_pb_types; i++) {
+		if(primitive_type_feasible(molecule->logical_block_ptrs[molecule->root]->index, cluster_placement_stats->valid_primitives[i]->next_primitive->pb_graph_node->pb_type)) {
+			prev = cluster_placement_stats->valid_primitives[i];
+			cur = cluster_placement_stats->valid_primitives[i]->next_primitive;
+			while(cur) {
+				/* remove invalid nodes lazily when encountered */
+				while(cur && cur->valid == FALSE) {
+					prev->next_primitive = cur->next_primitive;
+					cur->next_primitive = cluster_placement_stats->invalid;
+					cluster_placement_stats->invalid = cur;
+					cur = cur->next_primitive;
+				}
+				if(cur == NULL) {
+					break;
+				}
+				/* try place molecule at root location cur */
+				cost = try_place_molecule(molecule, cur->pb_graph_node, primitives_list);
+				if(cost < lowest_cost) {
+					lowest_cost = cost;
+					best = cur;
+					before_best = prev;
+				}
+				prev = cur;
+				cur = cur->next_primitive;
+			}
+		}
+	}
+	if(best == NULL) {
+		/* failed to find a placement */
+		for(i = 0; i < molecule->num_blocks; i++) {
+			primitives_list[i] = NULL;
+		}
+	} else {
+		/* populate primitive list with best */
+		assert(try_place_molecule(molecule, best->pb_graph_node, primitives_list) == lowest_cost);
+
+		/* take out best node and put it in flight */
+		cluster_placement_stats->in_flight = best;
+		before_best->next_primitive = best->next_primitive;
+		best->next_primitive = NULL;
+	}
 }
 
 /**
@@ -133,31 +187,7 @@ void reset_cluster_placement_stats(INOUTP t_cluster_placement_stats *cluster_pla
 			cur = cur->next_primitive;
 		}
 	}
-	cluster_placement_stats->curr_logical_blocks = NULL;
-}
-
-/**
- * Finalize in-flight primitives, either accept or reject
- * If accept, put in-flight primitives to invalid queue, update costs
- * If reject, place in-flight primitives to tried queue
- */
-void finalize_in_flight_primitives(INOUTP t_cluster_placement_stats *cluster_placement_stats, INP boolean accept) {
-	t_cluster_placement_primitive *cur, *next;
-	cur = cluster_placement_stats->in_flight;
-	if(accept) {
-		while(cur != NULL) {
-			next = cur->next_primitive;
-			commit_primitive(cluster_placement_stats, cur);
-			cur = next;
-		}
-	} else {
-		while(cur != NULL) {
-			next = cur->next_primitive;
-			cur->next_primitive = cluster_placement_stats->tried;
-			cluster_placement_stats->tried = cur;
-			cur = next;
-		}
-	}
+	cluster_placement_stats->curr_molecule = NULL;
 }
 
 
@@ -280,12 +310,16 @@ static float compute_primitive_base_cost(INP t_pb_graph_node *primitive) {
  * Commit primitive, invalidate primitives blocked by mode assignment and update costs for primitives in same cluster as current
  * Costing is done to try to pack blocks closer to existing primitives
  *  actual value based on closest common ancestor to committed placement, the farther the ancestor, the less reduction in cost there is
+ * Side effects: All cluster_placement_primitives may be invalidated/costed in this algorithm
  */
-static void commit_primitive(INOUTP t_cluster_placement_stats *cluster_placement_stats, t_cluster_placement_primitive *cur) {
+void commit_primitive(INOUTP t_cluster_placement_stats *cluster_placement_stats, INP t_pb_graph_node *primitive) {
 	t_pb_graph_node *pb_graph_node, *skip;
 	float incr_cost;
 	int i, j, k;
 	int valid_mode;
+	t_cluster_placement_primitive *cur;
+
+	cur = primitive->cluster_placement_primitive;
 	
 	cur->valid = FALSE;
 	cur->next_primitive = cluster_placement_stats->invalid;
@@ -322,8 +356,8 @@ static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node, 
 	t_cluster_placement_primitive *placement_primitive;
 	if(pb_graph_node->pb_type->num_modes == 0) {
 		/* is primitive */
+		placement_primitive = (t_cluster_placement_primitive*) pb_graph_node->cluster_placement_primitive;
 		if(valid) {
-			placement_primitive = (t_cluster_placement_primitive*) pb_graph_node->cluster_placement_primitive;
 			placement_primitive->incremental_cost += incremental_cost;
 		} else {
 			placement_primitive->valid = FALSE;
@@ -339,5 +373,11 @@ static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node, 
 	}
 }
 
-
+/**
+ * Try place molecule at root location, populate primitives list with locations of placement if successful
+ */
+static float try_place_molecule(INP t_pack_molecule *molecule, INP t_pb_graph_node *root, INOUTP t_pb_graph_node **primitives_list) {
+	/* jedit work from home */
+	return HUGE_FLOAT;
+}
 

@@ -22,7 +22,7 @@ void sync_grid_to_blocks(INP int num_blocks,
 int get_max_primitives_in_pb_type(t_pb_type *pb_type);
 int get_max_primitive_inputs_in_pb_type(t_pb_type *pb_type);
 int get_max_depth_of_pb_type(t_pb_type *pb_type);
-
+boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type);
 
 #endif
 

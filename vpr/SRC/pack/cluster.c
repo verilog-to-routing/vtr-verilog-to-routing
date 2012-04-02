@@ -107,7 +107,7 @@ static void free_pb_stats_recursive (t_pb *pb, int max_models);
 static boolean outputs_clocks_and_models_feasible (enum e_packer_algorithm packer_algorithm, int iblk, boolean *is_clock, t_pb *cur_pb);
 static boolean models_feasible(enum e_packer_algorithm packer_algorithm, int iblk, const t_pb_type *cur_pb_type, t_pb *cur_pb, int mode);
 static boolean primitive_feasible(int iblk, t_pb *cur_pb);
-static boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type, t_pb *memory_class_pb, int sibling_memory_blk);
+static boolean primitive_type_and_memory_feasible(int iblk, const t_pb_type *cur_pb_type, t_pb *memory_class_pb, int sibling_memory_blk);
 
 
 static int get_logical_block_by_num_ext_inputs (INP enum e_packer_algorithm packer_algorithm,
@@ -944,7 +944,7 @@ static boolean models_feasible(enum e_packer_algorithm packer_algorithm, int ibl
 			}
 		}
 
-		return primitive_type_feasible(iblk, cur_pb_type, NULL, OPEN);
+		return primitive_type_and_memory_feasible(iblk, cur_pb_type, NULL, OPEN);
 	}
 
 	for(i = 0; i < cur_pb_type->modes[mode].num_pb_type_children; i++) {
@@ -961,7 +961,7 @@ static boolean models_feasible(enum e_packer_algorithm packer_algorithm, int ibl
 			}
 		}
 		if(child_pb_type->num_modes == 0) {
-			feasible = primitive_type_feasible(iblk, &cur_pb_type->modes[mode].pb_type_children[i], NULL, OPEN);
+			feasible = primitive_type_and_memory_feasible(iblk, &cur_pb_type->modes[mode].pb_type_children[i], NULL, OPEN);
 			if(feasible) {
 				return TRUE;
 			}
@@ -1008,10 +1008,10 @@ static boolean primitive_feasible(int iblk, t_pb *cur_pb) {
 		}
 	}
 
-	return primitive_type_feasible(iblk, cur_pb_type, memory_class_pb, sibling_memory_blk);
+	return primitive_type_and_memory_feasible(iblk, cur_pb_type, memory_class_pb, sibling_memory_blk);
 }
 
-static boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type, t_pb *memory_class_pb, int sibling_memory_blk) {
+static boolean primitive_type_and_memory_feasible(int iblk, const t_pb_type *cur_pb_type, t_pb *memory_class_pb, int sibling_memory_blk) {
 	t_model_ports *port;
 	int i, j;
 	boolean second_pass;

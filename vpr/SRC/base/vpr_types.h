@@ -208,14 +208,21 @@ struct s_logical_block {
 };
 typedef struct s_logical_block t_logical_block;
 
+enum e_pack_pattern_molecule_type {MOLECULE_SINGLE_ATOM, MOLECULE_FORCED_PACK, MOLECULE_CHAIN};
+
 /**
  * Represents a grouping of logical_blocks that match a pack_pattern, these groups are intended to be placed as a single unit during packing 
  * Store in linked list
 */
 typedef struct s_pack_molecule
 {
-	t_pack_patterns *pack_pattern;			/* pattern this molecule implements */
-	t_logical_block **logical_block_ptrs;	/* [0..num_pack_pattern_blocks-1] ptrs to logical blocks that implements this molecule, index on pack_pattern_block->index of pack pattern */
+	enum e_pack_pattern_molecule_type type; /* what kind of molecule is this? */
+	t_pack_patterns *pack_pattern;			/* If this is a forced_pack molecule, pattern this molecule matches */
+	t_model_chain_pattern *chain_pattern;	/* If this is a chain molecule, chain that this molecule matches */
+	t_logical_block **logical_block_ptrs;	/* [0..num_blocks-1] ptrs to logical blocks that implements this molecule, index on pack_pattern_block->index of pack pattern */
+	boolean valid;							/* Whether or not this molecule is still valid */
+	int num_blocks;							/* number of logical blocks of molecule */
+	int root;								/* root index of molecule, logical_block_ptrs[root] is ptr to root logical block */
 	struct s_pack_molecule *next;
 } t_pack_molecule;
 
@@ -225,9 +232,9 @@ typedef struct s_pack_molecule
  */
 typedef struct s_cluster_placement_stats 
 {
-	int num_pb_types;
-	int *curr_logical_blocks; /* current logical block being considered for packing */
-	t_cluster_placement_primitive **valid_primitives; /* [0..max_pbtypes-1] ptrs to linked list of valid primitives, for convenience, each linked list head is empty */
+	int num_pb_types;				/* num primitive pb_types inside complex block */
+	t_pack_molecule *curr_molecule; /* current molecule being considered for packing */
+	t_cluster_placement_primitive **valid_primitives; /* [0..num_pb_types-1] ptrs to linked list of valid primitives, for convenience, each linked list head is empty */
 	t_cluster_placement_primitive *in_flight; /* ptrs to primitives currently being considered */
 	t_cluster_placement_primitive *tried; /* ptrs to primitives that are open but current logic block unable to pack to */
 	t_cluster_placement_primitive *invalid; /* ptrs to primitives that are invalid */

@@ -200,3 +200,61 @@ int get_max_depth_of_pb_type(t_pb_type *pb_type) {
 	}
 	return max_depth;
 }
+
+
+/**
+ * given a primitive type and a logical block, is the mapping legal
+ */
+boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type) {
+	t_model_ports *port;
+	int i, j;
+	boolean second_pass;
+
+	if(cur_pb_type == NULL) {
+		return FALSE;
+	}
+
+	/* check if ports are big enough */
+	port = logical_block[iblk].model->inputs;
+	second_pass = FALSE;
+	while(port || !second_pass) {
+		/* TODO: This is slow if the number of ports are large, fix if becomes a problem */
+		if(!port) {
+			second_pass = TRUE;
+			port = logical_block[iblk].model->outputs;
+		}
+		for(i = 0; i < cur_pb_type->num_ports; i++) {
+			if(cur_pb_type->ports[i].model_port == port) {
+				for(j = cur_pb_type->ports[i].num_pins; j < port->size; j++) {
+					if(port->dir == IN_PORT && !port->is_clock) {
+						if(logical_block[iblk].input_nets[port->index][j] != OPEN) {
+							return FALSE;
+						}
+					} else if(port->dir == OUT_PORT) {
+						if(logical_block[iblk].output_nets[port->index][j] != OPEN) {
+							return FALSE;
+						}
+					} else {
+						assert(port->dir == IN_PORT && port->is_clock);
+						assert(j == 0);
+						if(logical_block[iblk].clock_net != OPEN) {
+							return FALSE;
+						}
+					}
+				}
+				break;
+			}
+		}
+		if(i == cur_pb_type->num_ports) {
+			if((logical_block[iblk].model->inputs != NULL && !second_pass) ||
+				logical_block[iblk].model->outputs != NULL && second_pass) {
+				/* physical port not found */
+				return FALSE;
+			}
+		}
+		if(port) {
+			port = port->next;
+		}
+	}
+	return TRUE;
+}
