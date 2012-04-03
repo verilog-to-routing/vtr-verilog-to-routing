@@ -31,6 +31,9 @@ static float compute_primitive_base_cost(INP t_pb_graph_node *primitive);
 static void requeue_primitive(INOUTP t_cluster_placement_stats *cluster_placement_stats, t_cluster_placement_primitive *cluster_placement_primitive);
 static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node, INP int incremental_cost, INP boolean valid);
 static float try_place_molecule(INP t_pack_molecule *molecule, INP t_pb_graph_node *root, INOUTP t_pb_graph_node **primitives_list);
+static boolean expand_forced_pack_molecule_placement(INP t_pack_molecule *molecule, INP t_pack_pattern_block *pack_pattern_block, INOUTP t_pb_graph_node **primitives_list, INOUTP float *cost);
+static t_pb_graph_pin *expand_pack_molecule_pin_edge(INP int pattern_id, INP t_pb_graph_pin *cur_pin, INP boolean forward);
+
 
 /*****************************************/
 /*Function Definitions
@@ -57,12 +60,14 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats() {
  * primitives is the list of ptrs to primitives that matches with the list of logical_blocks (by index), assumes memory is preallocated
  *   - if this is a new block, requeue tried primitives and return a in-flight primitive list to try
  *   - if this is an old block, put root primitive to tried queue, requeue rest of primitives. try another set of primitives
+ *
+ * return TRUE if can find next primitive, FALSE otherwise
  * 
  * cluster_placement_stats - ptr to the current cluster_placement_stats of open complex block
  * molecule - molecule to pack into open complex block
  * primitives_list - a list of primitives indexed to match logical_block_ptrs of molecule.  Expects an allocated array of primitives ptrs as inputs.  This function loads the array with the lowest cost primitives that implement molecule
  */
-void get_next_primitive_list(INOUTP t_cluster_placement_stats *cluster_placement_stats, INP t_pack_molecule *molecule, INOUTP t_pb_graph_node **primitives_list) {
+boolean get_next_primitive_list(INOUTP t_cluster_placement_stats *cluster_placement_stats, INP t_pack_molecule *molecule, INOUTP t_pb_graph_node **primitives_list) {
 	t_cluster_placement_primitive *cur, *next, *best, *before_best, *prev;
 	int i;
 	float cost, lowest_cost;
@@ -150,6 +155,11 @@ void get_next_primitive_list(INOUTP t_cluster_placement_stats *cluster_placement
 		before_best->next_primitive = best->next_primitive;
 		best->next_primitive = NULL;
 	}
+
+	if(best == NULL) {
+		return FALSE;
+	}
+	return TRUE;
 }
 
 /**
@@ -377,7 +387,171 @@ static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node, 
  * Try place molecule at root location, populate primitives list with locations of placement if successful
  */
 static float try_place_molecule(INP t_pack_molecule *molecule, INP t_pb_graph_node *root, INOUTP t_pb_graph_node **primitives_list) {
-	/* jedit work from home */
-	return HUGE_FLOAT;
+	int list_size, i;
+	float cost = HUGE_FLOAT;
+	if(molecule->type == MOLECULE_FORCED_PACK) {
+		list_size = molecule->pack_pattern->num_blocks;
+	} else {
+		list_size = molecule->num_blocks;
+	}
+	if(primitive_type_feasible(molecule->logical_block_ptrs[molecule->root]->index, root->pb_type)) {
+		if(root->cluster_placement_primitive->valid == TRUE) {
+			for(i = 0; i < list_size; i++) {
+				primitives_list[i] = NULL;
+			}
+			cost = root->cluster_placement_primitive->base_cost + root->cluster_placement_primitive->incremental_cost;
+			primitives_list[molecule->root] = root;
+			if(molecule->type == MOLECULE_FORCED_PACK) {
+				if(!expand_forced_pack_molecule_placement(molecule, molecule->pack_pattern->root_block, primitives_list, &cost)) {
+					return HUGE_FLOAT;
+				}				
+			}
+		}
+	}
+	for(i = 0; i < list_size; i++) {
+		assert(	(primitives_list[i] == NULL) == (molecule->logical_block_ptrs[i] == NULL));
+	}
+	return cost;
 }
 
+/**
+ * Expand molecule at pb_graph_node
+ * Assumes molecule and pack pattern connections have fan-out 1
+ */
+static boolean expand_forced_pack_molecule_placement(INP t_pack_molecule *molecule, INP t_pack_pattern_block *pack_pattern_block, INOUTP t_pb_graph_node **primitives_list, INOUTP float *cost) {
+	t_pb_graph_node *pb_graph_node = primitives_list[pack_pattern_block->block_id];
+	t_pb_graph_node *next_primitive;
+	t_pack_pattern_connections *cur;
+	int from_pin, to_pin, from_port, to_port;
+	t_pb_graph_pin *cur_pin, *next_pin;
+	t_pack_pattern_block *next_block;
+	
+	cur = pack_pattern_block->connections;
+	while(cur) {
+		if(cur->from_block == pack_pattern_block) {
+			next_block = cur->to_block;			
+		} else {
+			next_block = cur->from_block;
+		}
+		if(primitives_list[next_block->block_id] == NULL) {
+			/* first time visiting location */
+
+			/* find next primitive based on pattern connections, expand next primitive if not visited */
+			from_pin = cur->from_pin->pin_number;
+			from_port = cur->from_pin->port->port_index_by_type;
+			to_pin = cur->to_pin->pin_number;
+			to_port = cur->to_pin->port->port_index_by_type;
+			if(cur->from_block == pack_pattern_block) {
+				/* forward expand to find next block */
+				cur_pin = &pb_graph_node->output_pins[from_port][from_pin];
+				next_pin = expand_pack_molecule_pin_edge(pack_pattern_block->pattern_index, cur_pin, TRUE);
+			} else {
+				/* backward expand to find next block */
+				assert(cur->to_block == pack_pattern_block);
+				if(cur->from_pin->port->is_clock) {
+					cur_pin = &pb_graph_node->clock_pins[from_port][from_pin];
+				} else {
+					cur_pin = &pb_graph_node->input_pins[from_port][from_pin];
+				}					
+				next_pin = expand_pack_molecule_pin_edge(pack_pattern_block->pattern_index, cur_pin, FALSE);
+			}
+			/* found next primitive */
+			next_primitive = next_pin->parent_node;
+			/* Check for legality of placement, if legal, expand from legal placement, if not, return FALSE */
+			if(molecule->logical_block_ptrs[next_block->block_id] != NULL && primitives_list[next_block->block_id] == NULL) {
+				if(next_primitive->cluster_placement_primitive->valid == TRUE && 
+					primitive_type_feasible(molecule->logical_block_ptrs[next_block->block_id]->index, next_primitive->pb_type)
+				  ) {
+					primitives_list[next_block->block_id] = next_primitive;
+					*cost += next_primitive->cluster_placement_primitive->base_cost + next_primitive->cluster_placement_primitive->incremental_cost;
+					if(!expand_forced_pack_molecule_placement(molecule, next_block, primitives_list, cost)) {
+						return FALSE;
+					}
+				} else {
+					return FALSE;
+				}
+			}
+		}
+		cur = cur->next;
+	}
+	
+	return TRUE;
+}
+
+/**
+ * Find next primitive pb_graph_pin
+ */
+static t_pb_graph_pin *expand_pack_molecule_pin_edge(INP int pattern_id, INP t_pb_graph_pin *cur_pin, INP boolean forward) {
+	int i, j, k;
+	t_pb_graph_pin *temp_pin, *dest_pin;
+	temp_pin = NULL;
+	dest_pin = NULL;
+	if(forward) {
+		for(i = 0; i < cur_pin->num_output_edges; i++) {
+			/* one fanout assumption */
+			if(cur_pin->output_edges[i]->infer_pattern) {
+				for(k = 0; k < cur_pin->output_edges[i]->num_output_pins; k++) {
+					if(cur_pin->output_edges[i]->output_pins[k]->parent_node->pb_type->num_modes == 0) {
+						temp_pin = cur_pin->output_edges[i]->output_pins[k];
+					} else {
+						temp_pin = expand_pack_molecule_pin_edge(pattern_id, cur_pin->output_edges[i]->output_pins[k], forward);
+					}
+				}
+				if(temp_pin != NULL) {
+					assert(dest_pin == NULL || dest_pin == temp_pin);
+					dest_pin = temp_pin;
+				}
+			} else {
+				for(j = 0; j < cur_pin->output_edges[i]->num_pack_patterns; j++) {
+					if(cur_pin->output_edges[i]->pack_pattern_indices[j] == pattern_id) {
+						for(k = 0; k < cur_pin->output_edges[i]->num_output_pins; k++) {
+							if(cur_pin->output_edges[i]->output_pins[k]->parent_node->pb_type->num_modes == 0) {
+								temp_pin = cur_pin->output_edges[i]->output_pins[k];
+							} else {
+								temp_pin = expand_pack_molecule_pin_edge(pattern_id, cur_pin->output_edges[i]->output_pins[k], forward);
+							}
+						}
+						if(temp_pin != NULL) {
+							assert(dest_pin == NULL || dest_pin == temp_pin);
+							dest_pin = temp_pin;
+						}
+					}
+				}
+			}
+		}
+	} else {
+		for(i = 0; i < cur_pin->num_input_edges; i++) {
+			/* one fanout assumption */
+			if(cur_pin->input_edges[i]->infer_pattern) {
+				for(k = 0; k < cur_pin->input_edges[i]->num_input_pins; k++) {
+					if(cur_pin->input_edges[i]->input_pins[k]->parent_node->pb_type->num_modes == 0) {
+						temp_pin =  cur_pin->input_edges[i]->input_pins[k];
+					} else {
+						temp_pin = expand_pack_molecule_pin_edge(pattern_id, cur_pin->input_edges[i]->input_pins[k], forward);
+					}
+				}
+				if(temp_pin != NULL) {
+					assert(dest_pin == NULL || dest_pin == temp_pin);
+					dest_pin = temp_pin;
+				}
+			} else {
+				for(j = 0; j < cur_pin->input_edges[i]->num_pack_patterns; j++) {
+					if(cur_pin->input_edges[i]->pack_pattern_indices[j] == pattern_id) {
+						for(k = 0; k < cur_pin->input_edges[i]->num_input_pins; k++) {
+							if(cur_pin->input_edges[i]->input_pins[k]->parent_node->pb_type->num_modes == 0) {
+								temp_pin = cur_pin->input_edges[i]->input_pins[k];
+							} else {
+								temp_pin = expand_pack_molecule_pin_edge(pattern_id, cur_pin->input_edges[i]->input_pins[k], forward);
+							}
+						}
+						if(temp_pin != NULL) {
+							assert(dest_pin == NULL || dest_pin == temp_pin);
+							dest_pin = temp_pin;
+						}
+					}
+				}
+			}
+		}
+	}
+	return dest_pin;
+}
