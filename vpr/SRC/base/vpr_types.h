@@ -129,6 +129,7 @@ struct s_pb_stats {
 	 * net_in_pb and gain entries altered.                             */
 	int *marked_nets, *marked_blocks;
 	int num_marked_nets, num_marked_blocks;
+	int num_child_blocks_in_pb;
 
 	/* [0..num_logical_nets-1].  How many pins of each vpack_net are contained in the *
 	 * currently open pb?                                          */

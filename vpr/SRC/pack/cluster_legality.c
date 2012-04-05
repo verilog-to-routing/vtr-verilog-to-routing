@@ -20,6 +20,7 @@ static struct s_trace **best_routing;
 /* nets_in_cluster: array of all nets contained in the cluster */
 static int *nets_in_cluster;    /* [0..num_nets_in_cluster-1] */
 static int num_nets_in_cluster;
+static int saved_num_nets_in_cluster;
 static int curr_cluster_index;
 
 static int ext_input_rr_node_index, ext_output_rr_node_index, ext_clock_rr_node_index, max_ext_index;
@@ -32,11 +33,9 @@ static int num_rr_intrinsic_cost = 0;
 /********************* Subroutines local to this module *********************/
 static boolean is_net_in_cluster(INP int inet);
 
-static boolean add_net_rr_terminal_cluster(int iblk_net, t_pb * primitive, int ilogical_block, t_model_ports * model_port, int ipin);
+static void add_net_rr_terminal_cluster(int iblk_net, t_pb * primitive, int ilogical_block, t_model_ports * model_port, int ipin);
 
-static boolean reload_ext_net_rr_terminal_cluster();
-
-static boolean try_breadth_first_route_cluster();
+static void reload_ext_net_rr_terminal_cluster();
 
 static boolean breadth_first_route_net_cluster(int inet);
 
@@ -51,10 +50,6 @@ static void breadth_first_expand_neighbours_cluster(int inode,
 static void breadth_first_add_source_to_heap_cluster(int inet);
 
 static void alloc_net_rr_terminals_cluster();
-
-static void save_and_reset_routing_cluster();
-
-static void restore_routing_cluster();
 
 static int get_num_violated_nets();
 
@@ -79,7 +74,7 @@ static boolean is_net_in_cluster(INP int inet) {
 
 /* load rr_node for source and sinks of net if exists, return FALSE otherwise */
 /* Todo: Note this is an inefficient way to determine port, better to use a lookup, worry about this if runtime becomes an issue */
-static boolean add_net_rr_terminal_cluster(int iblk_net, t_pb * primitive, int ilogical_block, t_model_ports * model_port, int ipin) {
+static void add_net_rr_terminal_cluster(int iblk_net, t_pb * primitive, int ilogical_block, t_model_ports * model_port, int ipin) {
 	/* Ensure at most one external input/clock source and one external output sink for net */
 	int i, net_pin;
 	t_port *prim_port;
@@ -116,56 +111,49 @@ static boolean add_net_rr_terminal_cluster(int iblk_net, t_pb * primitive, int i
 			}
 		}
 	}
-	if(!found) {
-		return FALSE;
-	}
-
-	if(ipin >= prim_port->num_pins) {
-		return FALSE;
-	} else {
-		net_pin = OPEN;
-		if(prim_port->is_clock) {
-			for(i = 1; i <= vpack_net[iblk_net].num_sinks; i++) {
-				if(vpack_net[iblk_net].node_block[i] == ilogical_block &&
-					vpack_net[iblk_net].node_block_port[i] == model_port->index &&
-					vpack_net[iblk_net].node_block_pin[i] == ipin) {
-					net_pin = i;
-					break;
-				}
-			}
-			assert(net_pin != OPEN);
-			net_rr_terminals[iblk_net][net_pin] = 
-				primitive->pb_graph_node->clock_pins[clock_port][ipin].pin_count_in_cluster;
-		} else if(prim_port->type == IN_PORT) {
-			for(i = 1; i <= vpack_net[iblk_net].num_sinks; i++) {
-				if(vpack_net[iblk_net].node_block[i] == ilogical_block &&
-					vpack_net[iblk_net].node_block_port[i] == model_port->index &&
-					vpack_net[iblk_net].node_block_pin[i] == ipin) {
-					net_pin = i;
-					break;
-				}
-			}
-			assert(net_pin != OPEN);
-			net_rr_terminals[iblk_net][net_pin] = 
-				primitive->pb_graph_node->input_pins[input_port][ipin].pin_count_in_cluster;
-		} else if(prim_port->type == OUT_PORT) {
-			i = 0;
+	assert(found);
+	assert(ipin < prim_port->num_pins); 
+	net_pin = OPEN;
+	if(prim_port->is_clock) {
+		for(i = 1; i <= vpack_net[iblk_net].num_sinks; i++) {
 			if(vpack_net[iblk_net].node_block[i] == ilogical_block &&
 				vpack_net[iblk_net].node_block_port[i] == model_port->index &&
 				vpack_net[iblk_net].node_block_pin[i] == ipin) {
 				net_pin = i;
+				break;
 			}
-			assert(net_pin != OPEN);
-			net_rr_terminals[iblk_net][net_pin] = 
-				primitive->pb_graph_node->output_pins[output_port][ipin].pin_count_in_cluster;
-		} else {
-			assert(0);
 		}
-		return TRUE;
-	}	
+		assert(net_pin != OPEN);
+		net_rr_terminals[iblk_net][net_pin] = 
+			primitive->pb_graph_node->clock_pins[clock_port][ipin].pin_count_in_cluster;
+	} else if(prim_port->type == IN_PORT) {
+		for(i = 1; i <= vpack_net[iblk_net].num_sinks; i++) {
+			if(vpack_net[iblk_net].node_block[i] == ilogical_block &&
+				vpack_net[iblk_net].node_block_port[i] == model_port->index &&
+				vpack_net[iblk_net].node_block_pin[i] == ipin) {
+				net_pin = i;
+				break;
+			}
+		}
+		assert(net_pin != OPEN);
+		net_rr_terminals[iblk_net][net_pin] = 
+			primitive->pb_graph_node->input_pins[input_port][ipin].pin_count_in_cluster;
+	} else if(prim_port->type == OUT_PORT) {
+		i = 0;
+		if(vpack_net[iblk_net].node_block[i] == ilogical_block &&
+			vpack_net[iblk_net].node_block_port[i] == model_port->index &&
+			vpack_net[iblk_net].node_block_pin[i] == ipin) {
+			net_pin = i;
+		}
+		assert(net_pin != OPEN);
+		net_rr_terminals[iblk_net][net_pin] = 
+			primitive->pb_graph_node->output_pins[output_port][ipin].pin_count_in_cluster;
+	} else {
+		assert(0);
+	}
 }
 
-static boolean reload_ext_net_rr_terminal_cluster() {
+static void reload_ext_net_rr_terminal_cluster() {
 	int i, j, net_index;
 	boolean has_ext_sink, has_ext_source;
 	int curr_ext_output, curr_ext_input, curr_ext_clock;
@@ -207,11 +195,9 @@ static boolean reload_ext_net_rr_terminal_cluster() {
 			curr_ext_output > ext_clock_rr_node_index ||
 			curr_ext_clock > max_ext_index) {
 			/* failed, not enough pins of proper type, overran index */
-			return FALSE;
+			assert(0);
 		}
 	}
-
-	return TRUE;
 }
 
 void alloc_and_load_cluster_legality_checker() {
@@ -530,7 +516,7 @@ void reset_legalizer_for_cluster(t_block *clb) {
  * 
  * internal_nets: index of nets to route [0..num_internal_nets - 1]
  */
-static boolean try_breadth_first_route_cluster()
+boolean try_breadth_first_route_cluster()
 {
 
 /* Iterated maze router ala Pathfinder Negotiated Congestion algorithm,  *
@@ -555,6 +541,8 @@ static boolean try_breadth_first_route_cluster()
 	router_opts.initial_pres_fac = 10;
 	router_opts.pres_fac_mult = 2;
 	router_opts.acc_fac = 1;
+
+	reset_rr_node_route_structs(); /* Clear all prior rr_graph history */
 
     pres_fac = router_opts.first_iter_pres_fac;
 
@@ -811,6 +799,7 @@ alloc_net_rr_terminals_cluster()
 
     net_rr_terminals = (int **)my_malloc(num_logical_nets * sizeof(int *));
 	saved_net_rr_terminals = (int **)my_malloc(num_logical_nets * sizeof(int *));
+	saved_num_nets_in_cluster = 0;
 
     for(inet = 0; inet < num_logical_nets; inet++)
 	{
@@ -825,7 +814,7 @@ alloc_net_rr_terminals_cluster()
 }
 
 
-enum e_block_pack_status
+void 
 try_add_block_to_current_cluster_and_primitive(INP int iblock, INP t_pb *primitive)
 {
 
@@ -833,11 +822,9 @@ try_add_block_to_current_cluster_and_primitive(INP int iblock, INP t_pb *primiti
      * it stores the rr_node index of the SOURCE of the net and all the SINKs   *
      * of the net.  [0..num_logical_nets-1][0..num_pins-1].   */
     int ipin, iblk_net;
-	int orig_num_nets_in_cluster;
-	boolean success, found;
+	boolean found;
 	t_model_ports *port;
 
-	success = FALSE;
 	found = FALSE;
 
 	assert(primitive->pb_graph_node->pb_type->num_modes == 0); /* check if primitive */
@@ -846,11 +833,8 @@ try_add_block_to_current_cluster_and_primitive(INP int iblock, INP t_pb *primiti
 	/* check if block type matches primitive type */
 	if(logical_block[iblock].model != primitive->pb_graph_node->pb_type->model) {
 		/* End early, model is incompatible */
-		return BLK_FAILED_FEASIBLE;
+		assert(0);
 	}
-
-	orig_num_nets_in_cluster = num_nets_in_cluster;
-	save_and_reset_routing_cluster();
 
 	/* try pack it in */
 	assert(primitive->logical_block == OPEN);
@@ -864,10 +848,9 @@ try_add_block_to_current_cluster_and_primitive(INP int iblock, INP t_pb *primiti
 	/*   also check if pins on primitive can fit logical block */
 	
 	port = logical_block[iblock].model->inputs;
-	success = TRUE;
 	
-	while(port && success) {
-		for(ipin = 0; ipin < port->size && success; ipin++) {
+	while(port) {
+		for(ipin = 0; ipin < port->size; ipin++) {
 			if(port->is_clock) {
 				assert(port->size == 1);
 				iblk_net = logical_block[iblock].clock_net;
@@ -881,14 +864,14 @@ try_add_block_to_current_cluster_and_primitive(INP int iblock, INP t_pb *primiti
 				nets_in_cluster[num_nets_in_cluster] = iblk_net;
 				num_nets_in_cluster++;
 			}
-			success = add_net_rr_terminal_cluster(iblk_net, primitive, iblock, port, ipin);
+			add_net_rr_terminal_cluster(iblk_net, primitive, iblock, port, ipin);
 		}
 		port = port->next;
 	}
 
 	port = logical_block[iblock].model->outputs;
-	while(port && success) {
-		for(ipin = 0; ipin < port->size && success; ipin++) {
+	while(port) {
+		for(ipin = 0; ipin < port->size; ipin++) {
 			iblk_net = logical_block[iblock].output_nets[port->index][ipin];
 			if(iblk_net == OPEN) {
 				continue;
@@ -897,37 +880,17 @@ try_add_block_to_current_cluster_and_primitive(INP int iblock, INP t_pb *primiti
 				nets_in_cluster[num_nets_in_cluster] = iblk_net;
 				num_nets_in_cluster++;
 			}
-			success = add_net_rr_terminal_cluster(iblk_net, primitive, iblock, port, ipin);
+			add_net_rr_terminal_cluster(iblk_net, primitive, iblock, port, ipin);
 		}
 		port = port->next;
 	}
 
-	if(success) {
-		success = reload_ext_net_rr_terminal_cluster();
-	}
-
-	if(success) {
-		/* route it */
-		reset_rr_node_route_structs(); /* Clear all prior rr_graph history */
-		success = try_breadth_first_route_cluster(); /* route from scratch */
-	}
-
-	if(success) {
-		return BLK_PASSED;
-	} else {
-		/* Cannot pack, restore cluster */
-		primitive->logical_block = OPEN;
-		logical_block[iblock].pb = NULL;
-		logical_block[iblock].clb_index = NO_CLUSTER;
-		restore_routing_cluster();
-		num_nets_in_cluster = orig_num_nets_in_cluster;
-		return BLK_FAILED_ROUTE;
-	}
+	reload_ext_net_rr_terminal_cluster();
 }
 
 
 
-static void
+void
 save_and_reset_routing_cluster() {
 
 /* This routing frees any routing currently held in best routing,       *
@@ -940,6 +903,7 @@ save_and_reset_routing_cluster() {
 
     int inet, i, j;
     struct s_trace *tempptr;
+	saved_num_nets_in_cluster = num_nets_in_cluster;
 
     for(i = 0; i < num_nets_in_cluster; i++)
 	{
@@ -966,7 +930,7 @@ save_and_reset_routing_cluster() {
 }
 
 
-static void
+void
 restore_routing_cluster()
 {
 
@@ -978,6 +942,8 @@ restore_routing_cluster()
  * routine.  Also restores the locally used opin data.                    */
 
     int inet, i, j;
+
+	num_nets_in_cluster = saved_num_nets_in_cluster;
 
     for(i = 0; i < num_nets_in_cluster; i++)
 	{

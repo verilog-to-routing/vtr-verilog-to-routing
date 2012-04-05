@@ -48,9 +48,11 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats() {
 	
 	cluster_placement_stats_list = my_calloc(num_types, sizeof(t_cluster_placement_stats));
 	for(i = 0; i < num_types; i++) {
-		cluster_placement_stats_list[i].valid_primitives = my_calloc(get_max_primitives_in_pb_type(type_descriptors[i].pb_type) + 1, sizeof(t_cluster_placement_primitive*)); /* too much memory allocated but shouldn't be a problem */
-		cluster_placement_stats_list[i].curr_molecule = NULL;
-		load_cluster_placement_stats_for_pb_graph_node(&cluster_placement_stats_list[i], type_descriptors[i].pb_graph_head);
+		if(EMPTY_TYPE != &type_descriptors[i]) {
+			cluster_placement_stats_list[i].valid_primitives = my_calloc(get_max_primitives_in_pb_type(type_descriptors[i].pb_type) + 1, sizeof(t_cluster_placement_primitive*)); /* too much memory allocated but shouldn't be a problem */
+			cluster_placement_stats_list[i].curr_molecule = NULL;
+			load_cluster_placement_stats_for_pb_graph_node(&cluster_placement_stats_list[i], type_descriptors[i].pb_graph_head);
+		}
 	}
 	return cluster_placement_stats_list;
 }

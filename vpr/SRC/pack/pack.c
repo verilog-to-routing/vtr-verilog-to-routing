@@ -86,6 +86,7 @@ eg.
 
 	if (packer_opts->skip_clustering == FALSE) {
 		do_clustering (arch,
+					list_of_pack_molecules,
 					num_models,
 					packer_opts->global_clocks, 
 					is_clock, 
