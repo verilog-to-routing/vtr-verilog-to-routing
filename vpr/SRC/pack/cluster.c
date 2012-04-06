@@ -370,6 +370,7 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
  while (istart != NO_CLUSTER) {
 
 	reset_legalizer_for_cluster(&clb[num_clb]);
+	printf("istart %d logical_block %s type %s num_clb %d\n", istart, logical_block[istart].name, logical_block[istart].model->name, num_clb);
 
 	/* jedit HACK: must be smarter than this, select molecule when get next block not just take first molecule */
 	molecule = (t_pack_molecule *)logical_block[istart].packed_molecules->data_vptr;
@@ -1262,6 +1263,15 @@ static enum e_block_pack_status try_pack_molecule(INOUTP t_cluster_placement_sta
 				}
 				restore_routing_cluster();
 				return BLK_FAILED_ROUTE;
+			} else {
+				/* Pack successful, commit 
+				jedit may want to update cluster stats here too instead of doing it outside
+				*/
+				for(i = 0; i < molecule_size && block_pack_status == BLK_PASSED; i++) {
+					if(molecule->logical_block_ptrs[i] != NULL) {
+						commit_primitive(cluster_placement_stats_ptr, primitives_list[i]);
+					}
+				}
 			}
 		}
 	} else {
@@ -1293,12 +1303,14 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 
 	/* Create siblings if siblings are not allocated */
 	if(parent_pb->child_pbs == NULL) {
+		assert(parent_pb->name == NULL);	
+		parent_pb->name = my_strdup(logical_block[ilogical_block].name);
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
 		set_pb_mode(parent_pb, 0, 0); /* jedit TODO: default mode is to use mode 1, document this! */
 		set_pb_mode(parent_pb, parent_pb->mode, 1);
 		parent_pb->child_pbs = my_calloc(parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children, sizeof(t_pb *));
 		for(i = 0; i < parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children; i++) {
-			parent_pb->child_pbs[i] = my_calloc(parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i].num_pb, sizeof(t_pb *));
+			parent_pb->child_pbs[i] = my_calloc(parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i].num_pb, sizeof(t_pb));
 			for(j = 0; j < parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i].num_pb; j++) {
 				alloc_and_load_pb_stats(&parent_pb->child_pbs[i][j], max_models, max_cluster_size, max_primitive_inputs);
 			}
@@ -1314,31 +1326,28 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 	}
 	assert(i < parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children);
 	pb = &parent_pb->child_pbs[i][pb_graph_node->placement_index];
-	*parent = pb; /* child of this pb is parent of function calling this one */
-	assert(pb->name == NULL);	
+	*parent = pb; /* this pb is parent of it's child that called this function */
 	pb->pb_graph_node = pb_graph_node;
-	pb->logical_block = NO_CLUSTER;
-	pb->name = my_strdup(logical_block[ilogical_block].name);
-	block_pack_status = BLK_STATUS_UNDEFINED;
+	pb->logical_block = OPEN;
+	block_pack_status = BLK_PASSED;
 	pb_type = pb_graph_node->pb_type;
 
 	assert(ilogical_block != NO_CLUSTER);
 			
 	is_primitive = (pb_type->num_modes == 0);
 
-	if(is_primitive) { 
+	if(is_primitive) {
 		if(!primitive_feasible(ilogical_block, pb)) {
 			return BLK_FAILED_FEASIBLE; /* can happen for memories in particular */
 		}
 		assert(pb->logical_block == OPEN);
-		assert(pb->name == NULL);
+		
+		/* Add block to routing */
+		setup_intracluster_routing_for_logical_block(ilogical_block, pb);
 
-		pb->logical_block = ilogical_block;
+		pb->logical_block = ilogical_block;		
 		logical_block[ilogical_block].pb = pb;
 		logical_block[ilogical_block].clb_index = clb_index;
-				
-		/* Add block to routing */
-		try_add_block_to_current_cluster_and_primitive(ilogical_block, pb);
 	} else {
 		/* check feasibility of packing into current cluster 
 		* WARNING: need to be smarter about pin checks especially when molecule, when partially packed, is infeasible, but is feasible when fully packed
@@ -1354,36 +1363,21 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 /* Revert trial logical block iblock and free up memory space accordingly 
 */
 static void revert_pack_logical_block(INP int iblock, INP int max_models){
-	int i, j;
-	t_pb *pb;
+	t_pb *pb, *next;
 
 	pb = logical_block[iblock].pb;
-	if(logical_block[iblock].pb != NULL) {
-		logical_block[iblock].pb = NULL;
-		logical_block[iblock].clb_index = NO_CLUSTER;
-		pb->logical_block = NO_CLUSTER;
-	}
 
 	while(pb != NULL) {
 		/* If this is pb is created only for the purposes of holding new molecule, remove it
 		  Must check if cluster is already freed (which can be the case)
 		*/
-		free(pb->name);
-		pb->name = NULL;
+		next = pb->parent_pb;
 		if(pb->child_pbs != NULL && pb->pb_stats.num_child_blocks_in_pb == 0) {
 			set_pb_mode(pb, pb->mode, 0); /* default mode is to use mode 1 */
 			set_pb_mode(pb, 0, 1);
-			for(i = 0; i < pb->pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children; i++) {
-				for(j = 0; j < pb->pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
-					free_pb_stats(pb->child_pbs[i][j].pb_stats, max_models);
-					pb->child_pbs[i][j].parent_pb = NULL;					
-				}
-				free(pb->child_pbs[j]);				
-			}
-			free(pb->child_pbs);
-			pb->child_pbs = NULL;
-			pb = pb->parent_pb;
+			free_pb(pb,max_models);
 		}
+		pb = next;
 	}
 }
 
@@ -1848,9 +1842,10 @@ static void start_new_cluster(INP t_cluster_placement_stats *cluster_placement_s
 			new_cluster->pb->pb_graph_node = new_cluster->type->pb_graph_head;
 			
 			alloc_and_load_legalizer_for_cluster(new_cluster, clb_index, arch);
-			reset_cluster_placement_stats(&cluster_placement_stats[i]);
 			for(j = 0; j < new_cluster->type->pb_graph_head->pb_type->num_modes && !success; j++) {
 				new_cluster->pb->mode = j;
+				reset_cluster_placement_stats(&cluster_placement_stats[i]);
+				set_mode_cluster_placement_stats(new_cluster->pb->pb_graph_node, j);
 				success = (BLK_PASSED == try_pack_molecule(&cluster_placement_stats[i], molecule, primitives_list, new_cluster->pb, num_models, max_cluster_size, max_primitive_inputs, clb_index, is_clock)); 
 			}			 
 			if(success) {				
@@ -2316,6 +2311,9 @@ static void free_pb (t_pb *pb, int max_models) {
 		if(pb->name)
 			free(pb->name);
 		pb->name = NULL;
+		logical_block[pb->logical_block].clb_index = NO_CLUSTER;
+		logical_block[pb->logical_block].pb = NULL;
+		pb->logical_block = OPEN;
 	}
 }
 

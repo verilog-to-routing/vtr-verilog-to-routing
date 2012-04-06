@@ -815,7 +815,7 @@ alloc_net_rr_terminals_cluster()
 
 
 void 
-try_add_block_to_current_cluster_and_primitive(INP int iblock, INP t_pb *primitive)
+setup_intracluster_routing_for_logical_block(INP int iblock, INP t_pb *primitive)
 {
 
     /* Allocates and loads the net_rr_terminals data structure.  For each net   *

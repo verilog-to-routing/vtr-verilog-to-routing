@@ -87,6 +87,7 @@ boolean get_next_primitive_list(INOUTP t_cluster_placement_stats *cluster_placem
 			requeue_primitive(cluster_placement_stats, cur);
 			cur = next;
 		}
+		cluster_placement_stats->tried = NULL;
 
 		cur = cluster_placement_stats->in_flight;
 		if(cur != NULL) {
@@ -117,6 +118,9 @@ boolean get_next_primitive_list(INOUTP t_cluster_placement_stats *cluster_placem
 	*/
 	lowest_cost = HUGE_FLOAT;
 	for(i = 0; i < cluster_placement_stats->num_pb_types; i++) {
+		if(cluster_placement_stats->valid_primitives[i]->next_primitive == NULL) {
+			continue; /* no more primitives of this type available */
+		}
 		if(primitive_type_feasible(molecule->logical_block_ptrs[molecule->root]->index, cluster_placement_stats->valid_primitives[i]->next_primitive->pb_graph_node->pb_type)) {
 			prev = cluster_placement_stats->valid_primitives[i];
 			cur = cluster_placement_stats->valid_primitives[i]->next_primitive;
@@ -126,7 +130,7 @@ boolean get_next_primitive_list(INOUTP t_cluster_placement_stats *cluster_placem
 					prev->next_primitive = cur->next_primitive;
 					cur->next_primitive = cluster_placement_stats->invalid;
 					cluster_placement_stats->invalid = cur;
-					cur = cur->next_primitive;
+					cur = prev->next_primitive;
 				}
 				if(cur == NULL) {
 					break;
@@ -177,18 +181,21 @@ void reset_cluster_placement_stats(INOUTP t_cluster_placement_stats *cluster_pla
 		requeue_primitive(cluster_placement_stats, cur);
 		cur = next;
 	}
+	cluster_placement_stats->tried = NULL;
 	cur = cluster_placement_stats->in_flight;
 	while(cur != NULL) {
 		next = cur->next_primitive;
 		requeue_primitive(cluster_placement_stats, cur);
 		cur = next;
 	}
+	cluster_placement_stats->in_flight = NULL;
 	cur = cluster_placement_stats->invalid;
 	while(cur != NULL) {
 		next = cur->next_primitive;
 		requeue_primitive(cluster_placement_stats, cur);
 		cur = next;
 	}
+	cur = cluster_placement_stats->invalid = NULL;
 	/* reset flags and cost */
 	for(i = 0; i < cluster_placement_stats->num_pb_types; i++) {
 		assert(cluster_placement_stats->valid_primitives[i] != NULL && cluster_placement_stats->valid_primitives[i]->next_primitive != NULL);
@@ -242,6 +249,7 @@ void free_cluster_placement_stats(INOUTP t_cluster_placement_stats *cluster_plac
 
 /**
  * Put primitive back on queue of valid primitives
+ *  Note that valid status is not changed because if the primitive is not valid, it will get properly collected later
  */
 static void requeue_primitive(INOUTP t_cluster_placement_stats *cluster_placement_stats, t_cluster_placement_primitive *cluster_placement_primitive) {
 	int i;
@@ -258,14 +266,13 @@ static void requeue_primitive(INOUTP t_cluster_placement_stats *cluster_placemen
 		if(cluster_placement_primitive->pb_graph_node->pb_type == cluster_placement_stats->valid_primitives[i]->next_primitive->pb_graph_node->pb_type) {
 			success = TRUE;
 			cluster_placement_primitive->next_primitive = cluster_placement_stats->valid_primitives[i]->next_primitive;
-			cluster_placement_stats->valid_primitives[i]->next_primitive = cluster_placement_primitive;
-			cluster_placement_primitive->valid = TRUE;
+			cluster_placement_stats->valid_primitives[i]->next_primitive = cluster_placement_primitive;			
 		}
 	}
 	if(success == FALSE) {
 		assert(null_index != OPEN);
-		cluster_placement_primitive->next_primitive = cluster_placement_stats->valid_primitives[i]->next_primitive;
-		cluster_placement_stats->valid_primitives[i]->next_primitive = cluster_placement_primitive;
+		cluster_placement_primitive->next_primitive = cluster_placement_stats->valid_primitives[null_index]->next_primitive;
+		cluster_placement_stats->valid_primitives[null_index]->next_primitive = cluster_placement_primitive;
 	}
 }
 
@@ -332,11 +339,9 @@ void commit_primitive(INOUTP t_cluster_placement_stats *cluster_placement_stats,
 	t_cluster_placement_primitive *cur;
 
 	cur = primitive->cluster_placement_primitive;
+	assert(cur->valid == TRUE);
 	
 	cur->valid = FALSE;
-	cur->next_primitive = cluster_placement_stats->invalid;
-	cluster_placement_stats->invalid = cur;
-	
 	incr_cost = -0.01; /* cost of using a node drops as its neighbours are used, this drop should be small compared to scarcity values */
 
 	pb_graph_node = cur->pb_graph_node;
@@ -347,7 +352,7 @@ void commit_primitive(INOUTP t_cluster_placement_stats *cluster_placement_stats,
 		pb_graph_node = pb_graph_node->parent_pb_graph_node;
 		for(i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
 			for(j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
-				for(k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[k].num_pb; k++) {
+				for(k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
 					if(&pb_graph_node->child_pb_graph_nodes[i][j][k] != skip) {
 						update_primitive_cost_or_status(&pb_graph_node->child_pb_graph_nodes[i][j][k], incr_cost, (i == valid_mode));
 					}
@@ -357,6 +362,24 @@ void commit_primitive(INOUTP t_cluster_placement_stats *cluster_placement_stats,
 		incr_cost /= 10; /* blocks whose ancestor is further away in tree should be affected less than blocks closer in tree */
 	}
 }
+
+
+/**
+ * Set mode of cluster
+ */
+void set_mode_cluster_placement_stats(INP t_pb_graph_node *pb_graph_node, int mode) {
+	int i, j, k;
+	for(i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
+		if(i != mode) {
+			for(j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
+				for(k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
+					update_primitive_cost_or_status(&pb_graph_node->child_pb_graph_nodes[i][j][k], 0, FALSE);
+				}
+			}
+		}
+	}
+}
+
 
 /**
  * For sibling primitives of pb_graph node, decrease cost

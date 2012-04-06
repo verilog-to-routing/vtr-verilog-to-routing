@@ -16,7 +16,7 @@ void reset_legalizer_for_cluster(t_block *clb);
 
 /* order of use: 1. save cluster 2. Add blocks.  3. route 4. save if successful, undo if not successful */
 void save_and_reset_routing_cluster();
-void try_add_block_to_current_cluster_and_primitive(INP int logical_block, INP t_pb *primitive);
+void setup_intracluster_routing_for_logical_block(INP int logical_block, INP t_pb *primitive);
 boolean try_breadth_first_route_cluster();
 void restore_routing_cluster();
 void save_cluster_solution();

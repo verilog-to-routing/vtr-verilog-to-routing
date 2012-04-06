@@ -458,32 +458,36 @@ static void backward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansio
 t_pack_molecule *alloc_and_load_pack_molecules(INP t_pack_patterns *list_of_pack_patterns, INP int num_packing_patterns, OUTP int *num_pack_molecule) {
 	int i, j;
 	t_pack_molecule *list_of_molecules_head;
-	t_pack_molecule *list_of_molecules_current;
+	t_pack_molecule *cur_molecule;
 
-	list_of_molecules_current = list_of_molecules_head = NULL;
+	cur_molecule = list_of_molecules_head = NULL;
 
 	/* list all logical blocks as a molecule */
 	for(i = 0; i < num_logical_blocks; i++) {
-		list_of_molecules_current = my_calloc(1, sizeof(t_pack_molecule));
-		list_of_molecules_current->valid = TRUE;
-		list_of_molecules_current->type = MOLECULE_SINGLE_ATOM;
-		list_of_molecules_current->num_blocks = 1;
-		list_of_molecules_current->root = 0;
-		list_of_molecules_current->chain_pattern = NULL;
-		list_of_molecules_current->pack_pattern = NULL;
-		list_of_molecules_current->logical_block_ptrs = my_malloc(1 * sizeof(t_logical_block*));
-		list_of_molecules_current->logical_block_ptrs[0] = &logical_block[i];
-		list_of_molecules_current->next = list_of_molecules_head;
-		list_of_molecules_head = list_of_molecules_current;
+		assert(logical_block[i].packed_molecules == NULL);
+		cur_molecule = my_calloc(1, sizeof(t_pack_molecule));
+		cur_molecule->valid = TRUE;
+		cur_molecule->type = MOLECULE_SINGLE_ATOM;
+		cur_molecule->num_blocks = 1;
+		cur_molecule->root = 0;
+		cur_molecule->chain_pattern = NULL;
+		cur_molecule->pack_pattern = NULL;
+		cur_molecule->logical_block_ptrs = my_malloc(1 * sizeof(t_logical_block*));
+		cur_molecule->logical_block_ptrs[0] = &logical_block[i];
+		cur_molecule->next = list_of_molecules_head;
+		list_of_molecules_head = cur_molecule;
+
+		logical_block[i].packed_molecules = my_calloc(1, sizeof(struct s_linked_vptr));
+		logical_block[i].packed_molecules->data_vptr = (void*)cur_molecule;
 	}
 
 	/* Find forced pack patterns */
 	for(i = 0; i < num_packing_patterns; i++) {
 		for(j = 0; j < num_logical_blocks; j++) {
-			list_of_molecules_current = try_create_molecule(list_of_pack_patterns, i, j);
-			if(list_of_molecules_current != NULL) {
-				list_of_molecules_current->next = list_of_molecules_head;
-				list_of_molecules_head = list_of_molecules_current;
+			cur_molecule = try_create_molecule(list_of_pack_patterns, i, j);
+			if(cur_molecule != NULL) {
+				cur_molecule->next = list_of_molecules_head;
+				list_of_molecules_head = cur_molecule;
 			}
 		}
 	}
@@ -618,15 +622,17 @@ static void print_pack_molecules(INP char *fname, INP t_pack_patterns *list_of_p
 	while(list_of_molecules_current != NULL) {
 		if(list_of_molecules_current->type == MOLECULE_SINGLE_ATOM) {
 			fprintf(fp, "\nmolecule type: atom\n");
+			fprintf(fp, "\tpattern index %d: logical block [%d] name %s\n", i, 
+					list_of_molecules_current->logical_block_ptrs[0]->index, list_of_molecules_current->logical_block_ptrs[0]->name);
 		} else if (list_of_molecules_current->type == MOLECULE_FORCED_PACK) {
 			fprintf(fp, "\nmolecule type: %s\n", list_of_molecules_current->pack_pattern->name);
+			for(i = 0; i < list_of_molecules_current->pack_pattern->num_blocks; i++) {
+				fprintf(fp, "\tpattern index %d: logical block [%d] name %s\n", i, 
+					list_of_molecules_current->logical_block_ptrs[i]->index, list_of_molecules_current->logical_block_ptrs[i]->name);
+			}
 		} else {
 			assert(list_of_molecules_current->type == MOLECULE_CHAIN);
 			fprintf(fp, "\nmolecule type: %s\n", list_of_molecules_current->chain_pattern->name);
-		}
-		for(i = 0; i < list_of_molecules_current->pack_pattern->num_blocks; i++) {
-			fprintf(fp, "\tpattern index %d: logical block [%d] name %s\n", i, 
-				list_of_molecules_current->logical_block_ptrs[i]->index, list_of_molecules_current->logical_block_ptrs[i]->name);
 		}
 		list_of_molecules_current = list_of_molecules_current->next;
 	}
