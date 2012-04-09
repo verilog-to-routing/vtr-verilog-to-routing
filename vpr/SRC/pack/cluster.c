@@ -370,7 +370,6 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
  while (istart != NO_CLUSTER) {
 
 	reset_legalizer_for_cluster(&clb[num_clb]);
-	printf("istart %d logical_block %s type %s num_clb %d\n", istart, logical_block[istart].name, logical_block[istart].model->name, num_clb);
 
 	/* jedit HACK: must be smarter than this, select molecule when get next block not just take first molecule */
 	molecule = (t_pack_molecule *)logical_block[istart].packed_molecules->data_vptr;
@@ -1288,10 +1287,12 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 	int i, j;
 	boolean is_primitive;
 	enum e_block_pack_status block_pack_status;
-	
-	t_pb *my_parent = NULL;
+
+	t_pb *my_parent;
 	t_pb *pb, *parent_pb;
 	const t_pb_type *pb_type;
+
+	my_parent = NULL;
 	
 	/* Discover parent */
 	if(pb_graph_node->parent_pb_graph_node != cb->pb_graph_node) {
@@ -1312,6 +1313,7 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 		for(i = 0; i < parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children; i++) {
 			parent_pb->child_pbs[i] = my_calloc(parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i].num_pb, sizeof(t_pb));
 			for(j = 0; j < parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i].num_pb; j++) {
+				parent_pb->child_pbs[i][j].parent_pb = parent_pb;
 				alloc_and_load_pb_stats(&parent_pb->child_pbs[i][j], max_models, max_cluster_size, max_primitive_inputs);
 			}
 		}		
@@ -1683,8 +1685,9 @@ static void update_cluster_stats (	INP t_pack_molecule *molecule,
 		if (cur_pb->pb_stats.clocks_avail == NOT_VALID)
 			cur_pb->pb_stats.clocks_avail = cur_pb->pb_graph_node->pb_type->num_clock_pins;
 
-		cur_pb = cur_pb->parent_pb;
 		cur_pb->pb_stats.num_child_blocks_in_pb++;
+
+		cur_pb = cur_pb->parent_pb;
 	 }  
 
 	 port = logical_block[new_blk].model->outputs;

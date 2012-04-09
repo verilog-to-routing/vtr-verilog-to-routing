@@ -400,7 +400,7 @@ static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node, 
 	} else {
 		for(i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
 			for(j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
-				for(k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[k].num_pb; k++) {
+				for(k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
 					update_primitive_cost_or_status(&pb_graph_node->child_pb_graph_nodes[i][j][k], incremental_cost, valid);
 				}
 			}
