@@ -1314,6 +1314,7 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 			parent_pb->child_pbs[i] = my_calloc(parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i].num_pb, sizeof(t_pb));
 			for(j = 0; j < parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i].num_pb; j++) {
 				parent_pb->child_pbs[i][j].parent_pb = parent_pb;
+				parent_pb->child_pbs[i][j].logical_block = OPEN;
 				alloc_and_load_pb_stats(&parent_pb->child_pbs[i][j], max_models, max_cluster_size, max_primitive_inputs);
 			}
 		}		
@@ -1346,6 +1347,8 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 		
 		/* Add block to routing */
 		setup_intracluster_routing_for_logical_block(ilogical_block, pb);
+
+		pb->name = my_strdup(logical_block[ilogical_block].name);
 
 		pb->logical_block = ilogical_block;		
 		logical_block[ilogical_block].pb = pb;
