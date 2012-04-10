@@ -147,6 +147,7 @@ void compress_netlist () {
           index = block_remap[iblk];
 		  if(index != iblk) {
 			logical_block[index] = logical_block[iblk];
+			logical_block[index].index = index; /* array index moved */
 		  }
 
 		  num_nets = 0;

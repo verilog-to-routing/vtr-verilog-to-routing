@@ -33,6 +33,7 @@ static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node, 
 static float try_place_molecule(INP t_pack_molecule *molecule, INP t_pb_graph_node *root, INOUTP t_pb_graph_node **primitives_list);
 static boolean expand_forced_pack_molecule_placement(INP t_pack_molecule *molecule, INP t_pack_pattern_block *pack_pattern_block, INOUTP t_pb_graph_node **primitives_list, INOUTP float *cost);
 static t_pb_graph_pin *expand_pack_molecule_pin_edge(INP int pattern_id, INP t_pb_graph_pin *cur_pin, INP boolean forward);
+static void flush_intermediate_queues(INOUTP t_cluster_placement_stats *cluster_placement_stats);
 
 
 /*****************************************/
@@ -81,22 +82,7 @@ boolean get_next_primitive_list(INOUTP t_cluster_placement_stats *cluster_placem
 	
 	if(cluster_placement_stats->curr_molecule != molecule) {
 		/* New block, requeue tried primitives and in-flight primitives */
-		cur = cluster_placement_stats->tried;
-		while(cur != NULL) {
-			next = cur->next_primitive;
-			requeue_primitive(cluster_placement_stats, cur);
-			cur = next;
-		}
-		cluster_placement_stats->tried = NULL;
-
-		cur = cluster_placement_stats->in_flight;
-		if(cur != NULL) {
-			next = cur->next_primitive;
-			requeue_primitive(cluster_placement_stats, cur);
-			/* should have at most one block in flight at any point in time */
-			assert(next == NULL); 
-		}
-		cluster_placement_stats->in_flight = NULL;
+		flush_intermediate_queues(cluster_placement_stats);
 
 		cluster_placement_stats->curr_molecule = molecule;
 	} else {
@@ -176,20 +162,7 @@ void reset_cluster_placement_stats(INOUTP t_cluster_placement_stats *cluster_pla
 	int i;
 
 	/* Requeue primitives */
-	cur = cluster_placement_stats->tried;
-	while(cur != NULL) {
-		next = cur->next_primitive;
-		requeue_primitive(cluster_placement_stats, cur);
-		cur = next;
-	}
-	cluster_placement_stats->tried = NULL;
-	cur = cluster_placement_stats->in_flight;
-	while(cur != NULL) {
-		next = cur->next_primitive;
-		requeue_primitive(cluster_placement_stats, cur);
-		cur = next;
-	}
-	cluster_placement_stats->in_flight = NULL;
+	flush_intermediate_queues(cluster_placement_stats);
 	cur = cluster_placement_stats->invalid;
 	while(cur != NULL) {
 		next = cur->next_primitive;
@@ -331,6 +304,7 @@ static float compute_primitive_base_cost(INP t_pb_graph_node *primitive) {
  * Costing is done to try to pack blocks closer to existing primitives
  *  actual value based on closest common ancestor to committed placement, the farther the ancestor, the less reduction in cost there is
  * Side effects: All cluster_placement_primitives may be invalidated/costed in this algorithm
+ *               Al intermediate queues are requeued
  */
 void commit_primitive(INOUTP t_cluster_placement_stats *cluster_placement_stats, INP t_pb_graph_node *primitive) {
 	t_pb_graph_node *pb_graph_node, *skip;
@@ -339,6 +313,10 @@ void commit_primitive(INOUTP t_cluster_placement_stats *cluster_placement_stats,
 	int valid_mode;
 	t_cluster_placement_primitive *cur;
 
+	/* Clear out intermediate queues */
+	flush_intermediate_queues(cluster_placement_stats);
+
+	/* commit primitive as used, invalidate it */
 	cur = primitive->cluster_placement_primitive;
 	assert(cur->valid == TRUE);
 	
@@ -581,3 +559,25 @@ static t_pb_graph_pin *expand_pack_molecule_pin_edge(INP int pattern_id, INP t_p
 	}
 	return dest_pin;
 }
+
+
+static void flush_intermediate_queues(INOUTP t_cluster_placement_stats *cluster_placement_stats) {
+	t_cluster_placement_primitive *cur, *next;
+	cur = cluster_placement_stats->tried;
+	while(cur != NULL) {
+		next = cur->next_primitive;
+		requeue_primitive(cluster_placement_stats, cur);
+		cur = next;
+	}
+	cluster_placement_stats->tried = NULL;
+
+	cur = cluster_placement_stats->in_flight;
+	if(cur != NULL) {
+		next = cur->next_primitive;
+		requeue_primitive(cluster_placement_stats, cur);
+		/* should have at most one block in flight at any point in time */
+		assert(next == NULL); 
+	}
+	cluster_placement_stats->in_flight = NULL;
+}
+
