@@ -393,19 +393,20 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
        *is only one logical_block clustered it would not change anything      */
     }
 	 
-	prev_blk = NO_CLUSTER;
 	next_blk = get_logical_block_for_cluster(packer_algorithm,
 										clb[num_clb - 1].pb, 
 										 is_clock,
 										 allow_unrelated_clustering);
-	while (next_blk != NO_CLUSTER) {
+
+	prev_blk = istart;
+	while (next_blk != NO_CLUSTER && prev_blk != next_blk) {
 		/* jedit HACK: must be smarter than this, select molecule when get next block not just take first molecule */
 		molecule = (t_pack_molecule *)logical_block[next_blk].packed_molecules->data_vptr;
 	
-		/* jedit HACK: work with non forced packs for now, must fix by next week! */
 		block_pack_status = try_pack_molecule(&cluster_placement_stats[clb[num_clb-1].type->index], molecule, primitives_list, clb[num_clb - 1].pb, num_models, max_cluster_size, max_primitive_inputs, num_clb - 1, is_clock); 
+		prev_blk = next_blk;
 		if(block_pack_status != BLK_PASSED) {
-			if(next_blk != NO_CLUSTER && prev_blk != next_blk) {
+			if(next_blk != NO_CLUSTER) {
 				if(block_pack_status == BLK_FAILED_ROUTE) {
 					#ifdef DEBUG_FAILED_PACKING_CANDIDATES
 						printf("NO_ROUTE:%s#%d|%s ", logical_block[next_blk].name, next_blk, logical_block[next_blk].model->name); 
@@ -419,17 +420,18 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
 						printf(".");
 					#endif
 				}
-				prev_blk = next_blk;
-			} else {
-				prev_blk = NO_CLUSTER;
 			}
+			
+			next_blk = get_logical_block_for_cluster(packer_algorithm,
+										clb[num_clb - 1].pb, 
+										 is_clock,
+										 allow_unrelated_clustering);
 			continue;
 		} else {
 			/* Continue packing by filling smallest cluster */
 			if(hack_frac_lut_no_legality) {
 				logical_block[next_blk].clb_index = num_clb - 1;
 			}
-			prev_blk = NO_CLUSTER;
 			#ifdef DEBUG_FAILED_PACKING_CANDIDATES			
 				printf("PASSED:%s#%d ", logical_block[next_blk].name, next_blk); 
 			#else
@@ -439,17 +441,15 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
 		update_cluster_stats (molecule, num_clb - 1, is_clock, global_clocks, 
 						alpha, beta, timing_driven, connection_driven);
 
+		num_logical_blocks_clustered ++;
+
+		if (timing_driven && !early_exit) {
+			blocks_since_last_analysis++; /* historically, timing slacks were recomputed after X number of blocks were packed, but this doesn't significantly alter results so I (jluu) did not port the code */
+		}
 		next_blk = get_logical_block_for_cluster(packer_algorithm,
 										clb[num_clb - 1].pb, 
 										 is_clock,
 										 allow_unrelated_clustering);
-
-		num_logical_blocks_clustered ++;
-
-		if (timing_driven && !early_exit) {
-		blocks_since_last_analysis++; /* historically, timing slacks were recomputed after X number of blocks were packed, but this doesn't significantly alter results so I (jluu) did not port the code */
-	
-      }
     }
 	if(logical_block[istart].type != VPACK_INPAD && logical_block[istart].type != VPACK_OUTPAD) 
 	{
@@ -802,6 +802,9 @@ static boolean outputs_clocks_and_models_feasible (enum e_packer_algorithm packe
 
 	 
 	 outputs_avail = temp_pb->pb_stats.outputs_avail;
+	 if(outputs_avail == NOT_VALID) {
+		 outputs_avail = temp_pb->pb_graph_node->pb_type->num_output_pins;
+	 }
 
 	 port = logical_block[iblk].model->outputs;
 	 while(port) {
@@ -959,8 +962,8 @@ static boolean primitive_feasible(int iblk, t_pb *cur_pb) {
 	sibling_memory_blk = OPEN;
 
 	assert(cur_pb_type->num_modes == 0); /* primitive */
-	if(cur_pb->logical_block != OPEN) {
-		/* This pb already has a logical block */
+	if(cur_pb->logical_block != OPEN && cur_pb->logical_block != iblk) {
+		/* This pb already has a different logical block */
 		return FALSE;
 	}
 
@@ -1240,6 +1243,8 @@ static enum e_block_pack_status try_pack_molecule(INOUTP t_cluster_placement_sta
 	enum e_block_pack_status block_pack_status;
 	t_pb *parent = NULL;
 	block_pack_status = BLK_PASSED;
+
+	save_and_reset_routing_cluster(); /* save current routing information because speculative packing will change routing*/
 	if(molecule->type == MOLECULE_FORCED_PACK) {
 		molecule_size = molecule->pack_pattern->num_blocks;
 	} else {
@@ -1260,8 +1265,7 @@ static enum e_block_pack_status try_pack_molecule(INOUTP t_cluster_placement_sta
 						revert_pack_logical_block(molecule->logical_block_ptrs[i]->index, max_models);
 					}
 				}
-				restore_routing_cluster();
-				return BLK_FAILED_ROUTE;
+				block_pack_status = BLK_FAILED_ROUTE;
 			} else {
 				/* Pack successful, commit 
 				jedit may want to update cluster stats here too instead of doing it outside
@@ -1272,9 +1276,18 @@ static enum e_block_pack_status try_pack_molecule(INOUTP t_cluster_placement_sta
 					}
 				}
 			}
+		} else {
+			for(i = 0; i < molecule_size; i++) {
+				if(molecule->logical_block_ptrs[i] != NULL) {
+					revert_pack_logical_block(molecule->logical_block_ptrs[i]->index, max_models);
+				}
+			}
 		}
 	} else {
-		return BLK_FAILED_FEASIBLE;
+		block_pack_status = BLK_FAILED_FEASIBLE;
+	}
+	if(block_pack_status != BLK_PASSED) {
+		restore_routing_cluster();	
 	}
 	return block_pack_status;
 }
@@ -1293,10 +1306,12 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 	const t_pb_type *pb_type;
 
 	my_parent = NULL;
+
+	block_pack_status = BLK_PASSED;
 	
 	/* Discover parent */
 	if(pb_graph_node->parent_pb_graph_node != cb->pb_graph_node) {
-		try_place_logical_block_rec(pb_graph_node->parent_pb_graph_node, ilogical_block, cb, &my_parent, max_models, max_cluster_size, max_primitive_inputs, clb_index, is_clock);
+		block_pack_status = try_place_logical_block_rec(pb_graph_node->parent_pb_graph_node, ilogical_block, cb, &my_parent, max_models, max_cluster_size, max_primitive_inputs, clb_index, is_clock);
 		parent_pb = my_parent;
 	} else {
 		parent_pb = cb;
@@ -1307,8 +1322,8 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 		assert(parent_pb->name == NULL);	
 		parent_pb->name = my_strdup(logical_block[ilogical_block].name);
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
-		set_pb_mode(parent_pb, 0, 0); /* jedit TODO: default mode is to use mode 1, document this! */
-		set_pb_mode(parent_pb, parent_pb->mode, 1);
+		set_pb_graph_mode(parent_pb->pb_graph_node, 0, 0); /* jedit TODO: default mode is to use mode 1, document this! */
+		set_pb_graph_mode(parent_pb->pb_graph_node, parent_pb->mode, 1);
 		parent_pb->child_pbs = my_calloc(parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children, sizeof(t_pb *));
 		for(i = 0; i < parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children; i++) {
 			parent_pb->child_pbs[i] = my_calloc(parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i].num_pb, sizeof(t_pb));
@@ -1331,8 +1346,6 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 	pb = &parent_pb->child_pbs[i][pb_graph_node->placement_index];
 	*parent = pb; /* this pb is parent of it's child that called this function */
 	pb->pb_graph_node = pb_graph_node;
-	pb->logical_block = OPEN;
-	block_pack_status = BLK_PASSED;
 	pb_type = pb_graph_node->pb_type;
 
 	assert(ilogical_block != NO_CLUSTER);
@@ -1340,25 +1353,26 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 	is_primitive = (pb_type->num_modes == 0);
 
 	if(is_primitive) {
-		if(!primitive_feasible(ilogical_block, pb)) {
-			return BLK_FAILED_FEASIBLE; /* can happen for memories in particular */
-		}
-		assert(pb->logical_block == OPEN);
-		
-		/* Add block to routing */
-		setup_intracluster_routing_for_logical_block(ilogical_block, pb);
-
+		assert(pb->logical_block == OPEN && logical_block[ilogical_block].pb == NULL && logical_block[ilogical_block].clb_index == NO_CLUSTER);
+		/* try pack to location */		
 		pb->name = my_strdup(logical_block[ilogical_block].name);
-
 		pb->logical_block = ilogical_block;		
-		logical_block[ilogical_block].pb = pb;
 		logical_block[ilogical_block].clb_index = clb_index;
+		logical_block[ilogical_block].pb = pb;
+		
+		if(primitive_feasible(ilogical_block, pb)) {
+			/* Passed location feasibility check, add block to routing graph to test routing check */
+			setup_intracluster_routing_for_logical_block(ilogical_block, pb);				
+		} else {
+			/* failed location feasibility check, revert pack */
+			block_pack_status = BLK_FAILED_FEASIBLE;
+		}
 	} else {
 		/* check feasibility of packing into current cluster 
 		* WARNING: need to be smarter about pin checks especially when molecule, when partially packed, is infeasible, but is feasible when fully packed
 		*/
 		if(!inputs_outputs_models_and_clocks_feasible(PACK_BRUTE_FORCE, ilogical_block, is_clock, pb)) {
-			return BLK_FAILED_FEASIBLE;
+			block_pack_status = BLK_FAILED_FEASIBLE;
 		}
 	}
 
@@ -1372,14 +1386,17 @@ static void revert_pack_logical_block(INP int iblock, INP int max_models){
 
 	pb = logical_block[iblock].pb;
 
+	logical_block[iblock].clb_index = NO_CLUSTER;
+	logical_block[iblock].pb = NULL;
+
 	while(pb != NULL) {
 		/* If this is pb is created only for the purposes of holding new molecule, remove it
 		  Must check if cluster is already freed (which can be the case)
 		*/
 		next = pb->parent_pb;
 		if(pb->child_pbs != NULL && pb->pb_stats.num_child_blocks_in_pb == 0) {
-			set_pb_mode(pb, pb->mode, 0); /* default mode is to use mode 1 */
-			set_pb_mode(pb, 0, 1);
+			set_pb_graph_mode(pb->pb_graph_node, pb->mode, 0); /* default mode is to use mode 1 */
+			set_pb_graph_mode(pb->pb_graph_node, 0, 1);
 			free_pb(pb,max_models);
 		}
 		pb = next;
@@ -1866,13 +1883,13 @@ static void start_new_cluster(INP t_cluster_placement_stats *cluster_placement_s
 		}		
 	 }
 	if(count == num_types - 1) {
-		printf(ERRTAG "Can't find any logic block that can hold molecule\n");
+		printf(ERRTAG "Can't find any logic block that can implement molecule\n");
 		if(molecule->type == MOLECULE_FORCED_PACK) {
-			printf("\tMolecule pattern %s %s\n", molecule->pack_pattern->name, molecule->logical_block_ptrs[molecule->root]->name);
+			printf("\tPattern %s %s\n", molecule->pack_pattern->name, molecule->logical_block_ptrs[molecule->root]->name);
 		} else if(molecule->type == MOLECULE_CHAIN) {
-			printf("\tMolecule chain %s %s\n", molecule->chain_pattern->name, molecule->logical_block_ptrs[molecule->root]->name);
+			printf("\tChain %s %s\n", molecule->chain_pattern->name, molecule->logical_block_ptrs[molecule->root]->name);
 		} else {
-			printf("\tMolecule atom %s\n", molecule->logical_block_ptrs[molecule->root]->name);
+			printf("\tAtom %s\n", molecule->logical_block_ptrs[molecule->root]->name);
 		}
 		exit(1);
 	}
@@ -2062,11 +2079,15 @@ static int get_highest_gain_logical_block ( INP enum e_packer_algorithm packer_a
 	for(i = 0; i < cur_pb->pb_stats.num_marked_models; i++) {
 		for(j = 0; j < cur_pb->pb_stats.num_feasible_blocks[i]; j++) {
 			if(cur_pb->pb_stats.num_feasible_blocks[cur_pb->pb_stats.cur_marked_model] != 0) {
-				cur_pb->pb_stats.num_feasible_blocks[cur_pb->pb_stats.cur_marked_model]--;
-				index = cur_pb->pb_stats.num_feasible_blocks[cur_pb->pb_stats.cur_marked_model];
-				iblk = cur_pb->pb_stats.feasible_blocks[cur_pb->pb_stats.cur_marked_model][index];
-				cur_pb->pb_stats.cur_marked_model = (cur_pb->pb_stats.cur_marked_model + 1) % cur_pb->pb_stats.num_marked_models;
-				return iblk;
+				do {
+					cur_pb->pb_stats.num_feasible_blocks[cur_pb->pb_stats.cur_marked_model]--;
+					index = cur_pb->pb_stats.num_feasible_blocks[cur_pb->pb_stats.cur_marked_model];
+					iblk = cur_pb->pb_stats.feasible_blocks[cur_pb->pb_stats.cur_marked_model][index];
+					cur_pb->pb_stats.cur_marked_model = (cur_pb->pb_stats.cur_marked_model + 1) % cur_pb->pb_stats.num_marked_models;
+					if(logical_block[iblk].clb_index == NO_CLUSTER) {
+						return iblk;
+					}
+				} while(index > 0);
 			}
 		}
 	}
@@ -2312,6 +2333,8 @@ static void free_pb (t_pb *pb, int max_models) {
 		if(pb->child_pbs);
 			free(pb->child_pbs);
 		free(pb->name);
+		pb->child_pbs = NULL;
+		pb->name = NULL;
 	} else {
 		/* Primitive */
 		if(pb->name)

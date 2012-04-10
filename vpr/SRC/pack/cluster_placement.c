@@ -174,6 +174,7 @@ boolean get_next_primitive_list(INOUTP t_cluster_placement_stats *cluster_placem
 void reset_cluster_placement_stats(INOUTP t_cluster_placement_stats *cluster_placement_stats) {
 	t_cluster_placement_primitive *cur, *next;
 	int i;
+
 	/* Requeue primitives */
 	cur = cluster_placement_stats->tried;
 	while(cur != NULL) {

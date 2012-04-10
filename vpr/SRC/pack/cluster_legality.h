@@ -24,7 +24,7 @@ void save_cluster_solution();
 
 boolean is_pin_open(int i);
 
-void set_pb_mode(t_pb *pb, int mode, int isOn);
+void set_pb_graph_mode(t_pb_graph_node *pb_graph_node, int mode, int isOn);
 
 void alloc_and_load_rr_graph_for_pb_graph_node(INP t_pb_graph_node *pb_graph_node, INP const t_arch* arch, int mode);
 

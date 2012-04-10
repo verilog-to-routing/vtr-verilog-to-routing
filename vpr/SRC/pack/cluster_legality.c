@@ -509,6 +509,7 @@ void reset_legalizer_for_cluster(t_block *clb) {
 
 	free_rr_node_route_structs();
 	num_nets_in_cluster = 0;
+	saved_num_nets_in_cluster = 0;
 }
 
 
@@ -828,7 +829,7 @@ setup_intracluster_routing_for_logical_block(INP int iblock, INP t_pb *primitive
 	found = FALSE;
 
 	assert(primitive->pb_graph_node->pb_type->num_modes == 0); /* check if primitive */
-	assert(primitive->logical_block == OPEN && logical_block[iblock].clb_index == NO_CLUSTER); /* check if primitive and block is open */
+	assert(primitive->logical_block != OPEN && logical_block[iblock].clb_index != NO_CLUSTER); /* check if primitive and block is open */
 
 	/* check if block type matches primitive type */
 	if(logical_block[iblock].model != primitive->pb_graph_node->pb_type->model) {
@@ -836,14 +837,6 @@ setup_intracluster_routing_for_logical_block(INP int iblock, INP t_pb *primitive
 		assert(0);
 	}
 
-	/* try pack it in */
-	assert(primitive->logical_block == OPEN);
-	assert(logical_block[iblock].clb_index == NO_CLUSTER);
-
-	primitive->logical_block = iblock;
-	logical_block[iblock].pb = primitive;
-	logical_block[iblock].clb_index = curr_cluster_index;
-	
 	/* for each net of logical block, check if it is in cluster, if not add it */
 	/*   also check if pins on primitive can fit logical block */
 	
@@ -1090,33 +1083,31 @@ static float rr_node_intrinsic_cost(int inode) {
 }
 
 /* turns on mode for a pb by setting capacity of its rr_nodes to 1 */
-void set_pb_mode(t_pb *pb, int mode, int isOn) {
+void set_pb_graph_mode(t_pb_graph_node *pb_graph_node, int mode, int isOn) {
 	int i, j, index;
 	int i_pb_type, i_pb_inst;
 	const t_pb_type *pb_type;
-	t_pb_graph_node *pb_graph_node;
 
-	pb_type = pb->pb_graph_node->pb_type;
+	pb_type = pb_graph_node->pb_type;
 	for(i_pb_type = 0; i_pb_type < pb_type->modes[mode].num_pb_type_children; i_pb_type++) {
 		for(i_pb_inst = 0; i_pb_inst < pb_type->modes[mode].pb_type_children[i_pb_type].num_pb; i_pb_inst++) {
-			pb_graph_node = &pb->pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst];
-			for(i = 0; i < pb_graph_node->num_input_ports; i++) {
-				for(j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-					index = pb_graph_node->input_pins[i][j].pin_count_in_cluster;
+			for(i = 0; i < pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_input_ports; i++) {
+				for(j = 0; j < pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_input_pins[i]; j++) {
+					index = pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].input_pins[i][j].pin_count_in_cluster;
 					rr_node[index].capacity = isOn;
 				}
 			}
 
-			for(i = 0; i < pb_graph_node->num_output_ports; i++) {
-				for(j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-					index = pb_graph_node->output_pins[i][j].pin_count_in_cluster;
+			for(i = 0; i < pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_output_ports; i++) {
+				for(j = 0; j < pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_output_pins[i]; j++) {
+					index = pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].output_pins[i][j].pin_count_in_cluster;
 					rr_node[index].capacity = isOn;			
 				}
 			}
 
-			for(i = 0; i < pb_graph_node->num_clock_ports; i++) {
-				for(j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-					index = pb_graph_node->clock_pins[i][j].pin_count_in_cluster;
+			for(i = 0; i < pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_clock_ports; i++) {
+				for(j = 0; j < pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_clock_pins[i]; j++) {
+					index = pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].clock_pins[i][j].pin_count_in_cluster;
 					rr_node[index].capacity = isOn;
 				}
 			}	
