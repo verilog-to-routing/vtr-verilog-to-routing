@@ -29,7 +29,7 @@ March 12, 2012
 static void load_cluster_placement_stats_for_pb_graph_node(INOUTP t_cluster_placement_stats *cluster_placement_stats, INOUTP t_pb_graph_node *pb_graph_node);
 static float compute_primitive_base_cost(INP t_pb_graph_node *primitive);
 static void requeue_primitive(INOUTP t_cluster_placement_stats *cluster_placement_stats, t_cluster_placement_primitive *cluster_placement_primitive);
-static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node, INP int incremental_cost, INP boolean valid);
+static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node, INP float incremental_cost, INP boolean valid);
 static float try_place_molecule(INP t_pack_molecule *molecule, INP t_pb_graph_node *root, INOUTP t_pb_graph_node **primitives_list);
 static boolean expand_forced_pack_molecule_placement(INP t_pack_molecule *molecule, INP t_pack_pattern_block *pack_pattern_block, INOUTP t_pb_graph_node **primitives_list, INOUTP float *cost);
 static t_pb_graph_pin *expand_pack_molecule_pin_edge(INP int pattern_id, INP t_pb_graph_pin *cur_pin, INP boolean forward);
@@ -86,14 +86,19 @@ boolean get_next_primitive_list(INOUTP t_cluster_placement_stats *cluster_placem
 
 		cluster_placement_stats->curr_molecule = molecule;
 	} else {
-		/* old block, put root primitive currently inflight to tried queue	*/
-		cur = cluster_placement_stats->in_flight;
-		next = cur->next_primitive;
-		cur->next_primitive = cluster_placement_stats->tried;
-		cluster_placement_stats->tried = cur;
-		/* should have only one block in flight at any point in time */
-		assert(next == NULL); 
-		cluster_placement_stats->in_flight = NULL;
+		/* jedit Hack! Same failed molecule may re-enter if upper stream functions suck, I'm going to make the molecule selector more intelligent, Remove later */
+		if(cluster_placement_stats->in_flight != NULL) {
+		/* Hack end */
+
+			/* old block, put root primitive currently inflight to tried queue	*/
+			cur = cluster_placement_stats->in_flight;
+			next = cur->next_primitive;
+			cur->next_primitive = cluster_placement_stats->tried;
+			cluster_placement_stats->tried = cur;
+			/* should have only one block in flight at any point in time */
+			assert(next == NULL); 
+			cluster_placement_stats->in_flight = NULL;
+		}
 	}
 
 	/* find next set of blocks 
@@ -365,7 +370,7 @@ void set_mode_cluster_placement_stats(INP t_pb_graph_node *pb_graph_node, int mo
  * For modes invalidated by pb_graph_node, invalidate primitive
  * int distance is the distance of current pb_graph_node from original
  */
-static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node, INP int incremental_cost, INP boolean valid) {
+static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node, INP float incremental_cost, INP boolean valid) {
 	int i, j, k;
 	t_cluster_placement_primitive *placement_primitive;
 	if(pb_graph_node->pb_type->num_modes == 0) {
