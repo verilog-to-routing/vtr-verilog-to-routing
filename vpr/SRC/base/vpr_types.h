@@ -33,7 +33,7 @@ This document is divided into generally 4 major sections:
 /*#define PRINT_NET_DELAYS*//*prints out delays for all connections */
 /*#define PRINT_TIMING_GRAPH*//*prints out the timing graph */
 /*#define PRINT_REL_POS_DISTR *//*prints out the relative distribution graph for placements */
-/*#define DUMP_BLIF_ECHO *//*dump blif of internal representation of user circuit.  Useful for ensuring functional correctness via logical equivalence with input blif*/
+#define DUMP_BLIF_ECHO /*dump blif of internal representation of user circuit.  Useful for ensuring functional correctness via logical equivalence with input blif*/
 
 
 #ifdef SPEC

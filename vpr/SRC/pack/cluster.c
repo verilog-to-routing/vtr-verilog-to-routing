@@ -393,7 +393,7 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
        *is only one logical_block clustered it would not change anything      */
     }
 	 
-	next_blk = get_logical_block_for_cluster(packer_algorithm,
+	next_blk = get_logical_block_for_cluster(PACK_BRUTE_FORCE,
 										clb[num_clb - 1].pb, 
 										 is_clock,
 										 allow_unrelated_clustering);
@@ -421,7 +421,7 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
 				}
 			}
 			
-			next_blk = get_logical_block_for_cluster(packer_algorithm,
+			next_blk = get_logical_block_for_cluster(PACK_BRUTE_FORCE,
 										clb[num_clb - 1].pb, 
 										 is_clock,
 										 allow_unrelated_clustering);
@@ -445,7 +445,7 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
 		if (timing_driven && !early_exit) {
 			blocks_since_last_analysis++; /* historically, timing slacks were recomputed after X number of blocks were packed, but this doesn't significantly alter results so I (jluu) did not port the code */
 		}
-		next_blk = get_logical_block_for_cluster(packer_algorithm,
+		next_blk = get_logical_block_for_cluster(PACK_BRUTE_FORCE,
 										clb[num_clb - 1].pb, 
 										 is_clock,
 										 allow_unrelated_clustering);
@@ -758,6 +758,7 @@ static void free_pb_stats_recursive (t_pb *pb, int max_models) {
 			}
 		}
 		free_pb_stats(pb->pb_stats, max_models);
+		pb->pb_stats.gain = NULL;
 	}
 }
 
@@ -1372,6 +1373,7 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 		* WARNING: need to be smarter about pin checks especially when molecule, when partially packed, is infeasible, but is feasible when fully packed
 		*/
 		if(!inputs_outputs_models_and_clocks_feasible(PACK_BRUTE_FORCE, ilogical_block, is_clock, pb)) {
+			/* jedit delete this function call used for debugging later */
 			inputs_outputs_models_and_clocks_feasible(PACK_BRUTE_FORCE, ilogical_block, is_clock, pb);
 			block_pack_status = BLK_FAILED_FEASIBLE;
 		}
@@ -1881,6 +1883,7 @@ static void start_new_cluster(INP t_cluster_placement_stats *cluster_placement_s
 			} else {
 				free_legalizer_for_cluster(new_cluster);
 				free_pb_stats(new_cluster->pb->pb_stats, num_models);
+				new_cluster->pb->pb_stats.gain = NULL;
 				free(new_cluster->pb);
 			}			
 			count++;
@@ -2327,6 +2330,8 @@ static void free_pb (t_pb *pb, int max_models) {
 		mode = pb->mode;
 		for(i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != NULL; i++) {
 			for(j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != NULL; j++) {
+				free_pb_stats(pb->child_pbs[i][j].pb_stats, max_models);
+				pb->child_pbs[i][j].pb_stats.gain = NULL;
 				if(pb->child_pbs[i][j].name != NULL) {
 					free_pb(&pb->child_pbs[i][j], max_models);
 				}
