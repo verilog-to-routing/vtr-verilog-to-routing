@@ -148,7 +148,7 @@ int get_max_primitives_in_pb_type(t_pb_type *pb_type) {
 	int i, j;
 	int max_size, temp_size;
 	if (pb_type->modes == 0) {
-		max_size = pb_type->num_pb;
+		max_size = 1;
 	} else {
 		max_size = 0;
 		for(i = 0; i < pb_type->num_modes; i++) {
@@ -185,6 +185,32 @@ int get_max_primitive_inputs_in_pb_type(t_pb_type *pb_type) {
 	}
 	return max_size;
 }
+
+/* finds maximum number of nets that can be contained in pb_type, this is bounded by the number of driving pins */
+int get_max_nets_in_pb_type(const t_pb_type *pb_type) {
+	int i, j;
+	int max_nets, temp_nets;
+	if (pb_type->modes == 0) {
+		max_nets = pb_type->num_output_pins;
+	} else {
+		max_nets = 0;
+		for(i = 0; i < pb_type->num_modes; i++) {
+			temp_nets = 0;
+			for(j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
+				temp_nets += pb_type->modes[i].pb_type_children[j].num_pb * pb_type->modes[i].pb_type_children[j].num_output_pins;
+			}
+			if(temp_nets > max_nets) {
+				max_nets = temp_nets;
+			}
+		}
+	}
+	if(pb_type->parent_mode == NULL) {
+		max_nets += pb_type->num_input_pins + pb_type->num_output_pins + pb_type->num_clock_pins;
+	}
+	return max_nets;
+}
+
+
 
 int get_max_depth_of_pb_type(t_pb_type *pb_type) {
 	int i, j;

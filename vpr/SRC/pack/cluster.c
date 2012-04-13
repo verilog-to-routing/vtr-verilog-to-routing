@@ -129,8 +129,8 @@ static int get_free_logical_block_with_most_ext_inputs_for_cluster (INP enum e_p
 
 static int get_seed_logical_block_with_most_ext_inputs (int max_primitive_inputs);
 
-static enum e_block_pack_status try_pack_molecule(INOUTP t_cluster_placement_stats *cluster_placement_stats_ptr, INP t_pack_molecule *molecule, INOUTP t_pb_graph_node **primitives_list, INOUTP t_pb * pb, INP int max_models, INP int max_cluster_size, INP int max_primitive_inputs, INP int clb_index, INP boolean *is_clock);
-static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node *pb_graph_node, INP int ilogical_block, INP t_pb *cb, OUTP t_pb **parent, INP int max_models, INP int max_cluster_size, INP int max_primitive_inputs, INP int clb_index, INP boolean *is_clock);
+static enum e_block_pack_status try_pack_molecule(INOUTP t_cluster_placement_stats *cluster_placement_stats_ptr, INP t_pack_molecule *molecule, INOUTP t_pb_graph_node **primitives_list, INOUTP t_pb * pb, INP int max_models, INP int max_cluster_size, INP int max_primitive_inputs, INP int clb_index, INP int max_nets_in_pb_type, INP boolean *is_clock);
+static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node *pb_graph_node, INP int ilogical_block, INP t_pb *cb, OUTP t_pb **parent, INP int max_models, INP int max_cluster_size, INP int max_primitive_inputs, INP int clb_index, INP int max_nets_in_pb_type, INP boolean *is_clock);
 static void revert_place_logical_block(INP int ilogical_block, INP int max_models);
 
 static enum e_block_pack_status alloc_and_load_pb(INP enum e_packer_algorithm packer_algorithm, INP t_pb_graph_node *pb_graph_node, INP int iblock, INOUTP t_pb * pb, INP int max_models, INP int max_cluster_size, INP int max_primitive_inputs);
@@ -174,6 +174,7 @@ static void start_new_cluster(INP t_cluster_placement_stats *cluster_placement_s
 								INP int num_models,
 								INP int max_cluster_size,
 								INP int max_primitive_inputs,
+								INP int max_nets_in_pb_type,
 								INP boolean *is_clock);
 
 static boolean inputs_outputs_models_and_clocks_feasible (INP enum e_packer_algorithm packer_algorithm, int iblk, boolean *is_clock, t_pb *cur_pb);
@@ -234,6 +235,7 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
  int istart, i, j, iblk;
  int blocks_since_last_analysis;
  int next_blk, prev_blk;
+ int max_nets_in_pb_type, cur_nets_in_pb_type;
 
  int num_blocks_hill_added;
  int num_logical_blocks_clustered;
@@ -271,6 +273,7 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
  max_cluster_size = 0;
  max_primitive_inputs = 0;
  max_pb_depth = 0;
+ max_nets_in_pb_type = 0;
 
  indexofcrit = 0;
 
@@ -280,6 +283,7 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
 	 cur_cluster_size = get_max_primitives_in_pb_type(type_descriptors[i].pb_type);
 	 cur_primitive_inputs = get_max_primitive_inputs_in_pb_type(type_descriptors[i].pb_type);
 	 cur_pb_depth = get_max_depth_of_pb_type(type_descriptors[i].pb_type);
+	 cur_nets_in_pb_type = get_max_nets_in_pb_type(type_descriptors[i].pb_type);
 	 if(cur_cluster_size > max_cluster_size) {
 		 max_cluster_size = cur_cluster_size;
 	 }
@@ -288,6 +292,9 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
 	 }
 	 if(cur_pb_depth > max_pb_depth) {
 		 max_pb_depth = cur_pb_depth;
+	 }
+	 if(cur_nets_in_pb_type > max_nets_in_pb_type) {
+		 max_nets_in_pb_type = cur_nets_in_pb_type;
 	 }
  }
 
@@ -325,6 +332,7 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
 	critindexarray=(int*)my_malloc(num_logical_blocks*sizeof(int));
 
 	for(i = 0; i < num_logical_blocks; i++) {
+		assert(logical_block[i].index == i);
 		critindexarray[i] = i;
 	}
 
@@ -375,7 +383,7 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
 	molecule = (t_pack_molecule *)logical_block[istart].packed_molecules->data_vptr;
 	
 	/* start a new cluster and reset all stats */
-	start_new_cluster(cluster_placement_stats, primitives_list, arch, &clb[num_clb], num_clb, molecule, aspect, num_used_instances_type, num_instances_type, num_models, max_cluster_size, max_primitive_inputs, is_clock);
+	start_new_cluster(cluster_placement_stats, primitives_list, arch, &clb[num_clb], num_clb, molecule, aspect, num_used_instances_type, num_instances_type, num_models, max_cluster_size, max_primitive_inputs, max_nets_in_pb_type, is_clock);
 	if(logical_block[istart].type != VPACK_INPAD && logical_block[istart].type != VPACK_OUTPAD) 
 	{
 		printf("Complex Block %d: %s type %s\n", num_clb, clb[num_clb].name, clb[num_clb].type->name);
@@ -402,7 +410,7 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
 		/* jedit HACK: must be smarter than this, select molecule when get next block not just take first molecule */
 		molecule = (t_pack_molecule *)logical_block[next_blk].packed_molecules->data_vptr;
 	
-		block_pack_status = try_pack_molecule(&cluster_placement_stats[clb[num_clb-1].type->index], molecule, primitives_list, clb[num_clb - 1].pb, num_models, max_cluster_size, max_primitive_inputs, num_clb - 1, is_clock); 
+		block_pack_status = try_pack_molecule(&cluster_placement_stats[clb[num_clb-1].type->index], molecule, primitives_list, clb[num_clb - 1].pb, num_models, max_cluster_size, max_primitive_inputs, num_clb - 1, max_nets_in_pb_type, is_clock); 
 		prev_blk = next_blk;
 		if(block_pack_status != BLK_PASSED) {
 			if(next_blk != NO_CLUSTER) {
@@ -1177,7 +1185,7 @@ static int get_seed_logical_block_with_most_ext_inputs (int max_primitive_inputs
 
 
 /*****************************************/
-static void alloc_and_load_pb_stats (t_pb *pb, int max_models, int max_cluster_size, int max_primitive_inputs) {
+static void alloc_and_load_pb_stats (t_pb *pb, int max_models, int max_nets_in_pb_type, int max_primitive_inputs) {
 
 /* Call this routine when starting to fill up a new cluster.  It resets *
  * the gain vector, etc.                                                */
@@ -1225,7 +1233,7 @@ static void alloc_and_load_pb_stats (t_pb *pb, int max_models, int max_cluster_s
 		pb->pb_stats.net_output_in_pb[j] = FALSE;
 	}
 	 
-	pb->pb_stats.marked_nets = (int *) my_malloc ((max_primitive_inputs + 2) * max_cluster_size * sizeof(int));
+	pb->pb_stats.marked_nets = (int *) my_malloc (max_nets_in_pb_type * sizeof(int));
 	pb->pb_stats.marked_blocks = (int *) my_malloc (num_logical_blocks * sizeof(int));
 
 	pb->pb_stats.num_marked_nets = 0;
@@ -1237,7 +1245,7 @@ static void alloc_and_load_pb_stats (t_pb *pb, int max_models, int max_cluster_s
 /**
  * Try pack molecule into current cluster
  */
-static enum e_block_pack_status try_pack_molecule(INOUTP t_cluster_placement_stats *cluster_placement_stats_ptr, INP t_pack_molecule *molecule, INOUTP t_pb_graph_node **primitives_list, INOUTP t_pb * pb, INP int max_models, INP int max_cluster_size, INP int max_primitive_inputs, INP int clb_index, INP boolean *is_clock) {
+static enum e_block_pack_status try_pack_molecule(INOUTP t_cluster_placement_stats *cluster_placement_stats_ptr, INP t_pack_molecule *molecule, INOUTP t_pb_graph_node **primitives_list, INOUTP t_pb * pb, INP int max_models, INP int max_cluster_size, INP int max_primitive_inputs, INP int clb_index, INP int max_nets_in_pb_type, INP boolean *is_clock) {
 	int molecule_size;
 	int i;
 	enum e_block_pack_status block_pack_status;
@@ -1257,7 +1265,7 @@ static enum e_block_pack_status try_pack_molecule(INOUTP t_cluster_placement_sta
 			for(i = 0; i < molecule_size && block_pack_status == BLK_PASSED; i++) {
 				assert((primitives_list[i] == NULL) == (molecule->logical_block_ptrs[i] == NULL));
 				if(molecule->logical_block_ptrs[i] != NULL) {
-					block_pack_status = try_place_logical_block_rec(primitives_list[i], molecule->logical_block_ptrs[i]->index, pb, &parent, max_models, max_cluster_size, max_primitive_inputs, clb_index, is_clock);
+					block_pack_status = try_place_logical_block_rec(primitives_list[i], molecule->logical_block_ptrs[i]->index, pb, &parent, max_models, max_cluster_size, max_primitive_inputs, clb_index, max_nets_in_pb_type, is_clock);
 				}
 			}
 			if(block_pack_status == BLK_PASSED) {
@@ -1298,7 +1306,7 @@ static enum e_block_pack_status try_pack_molecule(INOUTP t_cluster_placement_sta
  * Try place logical block into current primitive location
  */
 
-static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node *pb_graph_node, INP int ilogical_block, INP t_pb *cb, OUTP t_pb **parent, INP int max_models, INP int max_cluster_size, INP int max_primitive_inputs, INP int clb_index, INP boolean *is_clock) {
+static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node *pb_graph_node, INP int ilogical_block, INP t_pb *cb, OUTP t_pb **parent, INP int max_models, INP int max_cluster_size, INP int max_primitive_inputs, INP int clb_index, INP int max_nets_in_pb_type, INP boolean *is_clock) {
 	int i, j;
 	boolean is_primitive;
 	enum e_block_pack_status block_pack_status;
@@ -1313,7 +1321,7 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 	
 	/* Discover parent */
 	if(pb_graph_node->parent_pb_graph_node != cb->pb_graph_node) {
-		block_pack_status = try_place_logical_block_rec(pb_graph_node->parent_pb_graph_node, ilogical_block, cb, &my_parent, max_models, max_cluster_size, max_primitive_inputs, clb_index, is_clock);
+		block_pack_status = try_place_logical_block_rec(pb_graph_node->parent_pb_graph_node, ilogical_block, cb, &my_parent, max_models, max_cluster_size, max_primitive_inputs, clb_index, max_nets_in_pb_type, is_clock);
 		parent_pb = my_parent;
 	} else {
 		parent_pb = cb;
@@ -1333,7 +1341,7 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 			for(j = 0; j < parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i].num_pb; j++) {
 				parent_pb->child_pbs[i][j].parent_pb = parent_pb;
 				parent_pb->child_pbs[i][j].logical_block = OPEN;
-				alloc_and_load_pb_stats(&parent_pb->child_pbs[i][j], max_models, max_cluster_size, max_primitive_inputs);
+				alloc_and_load_pb_stats(&parent_pb->child_pbs[i][j], max_models, max_nets_in_pb_type, max_primitive_inputs);
 			}
 		}		
 	} else {
@@ -1835,6 +1843,7 @@ static void start_new_cluster(INP t_cluster_placement_stats *cluster_placement_s
 								INP int num_models,
 								INP int max_cluster_size,
 								INP int max_primitive_inputs,
+								INP int max_nets_in_pb_type,
 								INP boolean *is_clock) {
  /* Given a starting seed block, start_new_cluster determines the next cluster type to use 
     It expands the FPGA if it cannot find a legal cluster for the logical block
@@ -1866,7 +1875,7 @@ static void start_new_cluster(INP t_cluster_placement_stats *cluster_placement_s
 				continue;
 			}
 			new_cluster->pb = my_calloc(1, sizeof(t_pb));
-			alloc_and_load_pb_stats(new_cluster->pb, num_models, max_cluster_size, max_primitive_inputs);
+			alloc_and_load_pb_stats(new_cluster->pb, num_models, max_nets_in_pb_type, max_primitive_inputs);
 			new_cluster->pb->parent_pb = NULL;
 			new_cluster->pb->pb_graph_node = new_cluster->type->pb_graph_head;
 			
@@ -1875,7 +1884,7 @@ static void start_new_cluster(INP t_cluster_placement_stats *cluster_placement_s
 				new_cluster->pb->mode = j;
 				reset_cluster_placement_stats(&cluster_placement_stats[i]);
 				set_mode_cluster_placement_stats(new_cluster->pb->pb_graph_node, j);
-				success = (BLK_PASSED == try_pack_molecule(&cluster_placement_stats[i], molecule, primitives_list, new_cluster->pb, num_models, max_cluster_size, max_primitive_inputs, clb_index, is_clock)); 
+				success = (BLK_PASSED == try_pack_molecule(&cluster_placement_stats[i], molecule, primitives_list, new_cluster->pb, num_models, max_cluster_size, max_primitive_inputs, clb_index, max_nets_in_pb_type, is_clock)); 
 			}			 
 			if(success) {				
 				/* TODO: For now, just grab any working cluster, in the future, heuristic needed to grab best complex block based on supply and demand */
