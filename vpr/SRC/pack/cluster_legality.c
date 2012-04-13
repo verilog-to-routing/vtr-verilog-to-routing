@@ -936,8 +936,6 @@ restore_routing_cluster()
 
     int inet, i, j;
 
-	num_nets_in_cluster = saved_num_nets_in_cluster;
-
     for(i = 0; i < num_nets_in_cluster; i++)
 	{
 		inet = nets_in_cluster[i];
@@ -959,6 +957,7 @@ restore_routing_cluster()
 		/* restore old routing */
 		pathfinder_update_one_cost(trace_head[inet], 1, pres_fac);
 	}
+	num_nets_in_cluster = saved_num_nets_in_cluster;
 }
 
 
