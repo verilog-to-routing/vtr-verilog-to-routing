@@ -306,7 +306,7 @@ static void print_primitive(FILE *fpout, int iblk) {
 static void print_pb(FILE *fpout, t_pb * pb, int clb_index) {
 
 	int column;
-	int i, j;
+	int i, j, k;
 	const t_pb_type *pb_type;
 	t_mode *mode;
 	int in_port_index, out_port_index, node_index;
@@ -335,6 +335,17 @@ static void print_pb(FILE *fpout, t_pb * pb, int clb_index) {
 								print_net_name(rr_node[node_index].net_num, &column, fpout);
 							}
 							fprintf(fpout, "\n1 1\n");
+							if(pb->parent_pb == NULL) {
+								for(k = 1; k <= vpack_net[rr_node[node_index].net_num].num_sinks; k++) {
+									/* output pads pre-pended with "out:", must remove */
+									if(logical_block[vpack_net[rr_node[node_index].net_num].node_block[k]].type == VPACK_OUTPAD
+										&& strcmp(logical_block[vpack_net[rr_node[node_index].net_num].node_block[k]].name + 4, vpack_net[rr_node[node_index].net_num].name) != 0) {
+											fprintf(fpout, ".names clb_%d_rr_node_%d %s",	clb_index, find_fanin_rr_node(pb, pb_type->ports[i].type, node_index),
+											logical_block[vpack_net[rr_node[node_index].net_num].node_block[k]].name + 4);
+											fprintf(fpout, "\n1 1\n");							
+									}
+								}
+							}
 						}
 		
 					} else { 
