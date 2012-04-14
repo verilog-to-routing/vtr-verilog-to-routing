@@ -75,9 +75,6 @@ static struct s_ilink *memory_pool; /*Declared here so I can free easily.*/
  * so this should take care of all multiple connections.                */
 static int *net_output_feeds_driving_block_input;
 
-static int hack_frac_lut_no_legality;
-static int hack_force_safe_latch;
-
 static int indexofcrit; /* index of next most timing critical block */
 
 /* Timing information for blocks */
@@ -219,8 +216,7 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
 	   float aspect,
        boolean allow_unrelated_clustering, 
        boolean allow_early_exit, boolean connection_driven, 
-	   enum e_packer_algorithm packer_algorithm,
-	   boolean hack_no_legal_frac_lut, boolean hack_safe_latch){
+	   enum e_packer_algorithm packer_algorithm){
 
 /* Does the actual work of clustering multiple netlist blocks *
  * into clusters.                                                  */
@@ -260,9 +256,6 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
  float num_paths_scaling, distance_scaling;
 
  float crit;
-
- hack_frac_lut_no_legality = hack_no_legal_frac_lut;
- hack_force_safe_latch = hack_safe_latch;
 
  /* TODO: This is memory inefficient, fix if causes problems */
  clb = my_calloc(num_logical_blocks,sizeof(t_block));
@@ -436,9 +429,6 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
 			continue;
 		} else {
 			/* Continue packing by filling smallest cluster */
-			if(hack_frac_lut_no_legality) {
-				logical_block[next_blk].clb_index = num_clb - 1;
-			}
 			#ifdef DEBUG_FAILED_PACKING_CANDIDATES			
 				printf("PASSED:%s#%d ", logical_block[next_blk].name, next_blk); 
 			#else
@@ -495,7 +485,6 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecules_head, int num
 
  output_clustering(	clb, num_clb, global_clocks, is_clock, out_fname, FALSE);
 #ifdef DUMP_BLIF_ECHO
- if(!hack_frac_lut_no_legality) /* must have routing graph before dumping blif */
 	output_blif(	clb, num_clb, global_clocks, is_clock, "post_pack_netlist.blif", FALSE);
 #endif
 
@@ -902,29 +891,6 @@ static boolean models_feasible(enum e_packer_algorithm packer_algorithm, int ibl
 	feasible = FALSE;
 
 	if(cur_pb_type->num_modes == 0) {
-		if(hack_force_safe_latch) {
-			/* TODO: Either remove hack or actually make it a feature properly
-			
-			   hack to make the LUT get packed before the LATCH gets packed for cases that the LATCH can be absorbed
-			   for fracturable LUT architectures
-			*/
-			if(strcmp(logical_block[iblk].model->name, "latch") == 0) {
-				i = logical_block[iblk].input_nets[0][0];
-				j = vpack_net[i].node_block[0];
-				if(logical_block[j].clb_index == NO_CLUSTER && vpack_net[i].num_sinks == 1 && 
-					strcmp(logical_block[j].model->name, "names") == 0) {
-					cur_ptr = logical_block[j].model->inputs[0].size;
-					ptr = unclustered_list_head[cur_ptr].next;
-					while(ptr == NULL && cur_ptr > 0) {
-						cur_ptr--;
-						ptr = unclustered_list_head[cur_ptr].next;
-					}
-					if (cur_ptr > 2)
-						return FALSE;
-				}
-			}
-		}
-
 		return primitive_type_and_memory_feasible(iblk, cur_pb_type, NULL, OPEN);
 	}
 
@@ -1381,8 +1347,6 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 		* WARNING: need to be smarter about pin checks especially when molecule, when partially packed, is infeasible, but is feasible when fully packed
 		*/
 		if(!inputs_outputs_models_and_clocks_feasible(PACK_BRUTE_FORCE, ilogical_block, is_clock, pb)) {
-			/* jedit delete this function call used for debugging later */
-			inputs_outputs_models_and_clocks_feasible(PACK_BRUTE_FORCE, ilogical_block, is_clock, pb);
 			block_pack_status = BLK_FAILED_FEASIBLE;
 		}
 	}
@@ -1747,9 +1711,6 @@ static void update_cluster_stats (	INP t_pack_molecule *molecule,
 					if (cur_pb->pb_stats.num_pins_of_net_in_pb[inet] + 
 						net_output_feeds_driving_block_input[inet] != vpack_net[inet].num_sinks + 1) {
 							cur_pb->pb_stats.outputs_avail--;
-					} else if (hack_frac_lut_no_legality) {
-						if(depth > 1)
-							cur_pb->pb_stats.outputs_avail--; /* frac lut cannot absorb pins after the top two levels  */
 					}
 
 					cur_pb = cur_pb->parent_pb;
@@ -1780,8 +1741,6 @@ static void update_cluster_stats (	INP t_pack_molecule *molecule,
 					if (cur_pb->pb_stats.net_output_in_pb[inet] &&
 						cur_pb->pb_stats.num_pins_of_net_in_pb[inet] == vpack_net[inet].num_sinks + 1) {
 							cur_pb->pb_stats.outputs_avail++;
-							if (hack_frac_lut_no_legality && depth > 1)
-								cur_pb->pb_stats.outputs_avail--; /* frac lut cannot absorb pins after the top two levels */
 					}
 
 					cur_pb = cur_pb->parent_pb;

@@ -468,8 +468,6 @@ struct s_packer_opts
 	boolean allow_early_exit;
 	boolean connection_driven;
 	boolean doPacking;
-	boolean hack_no_legal_frac_lut;
-	boolean hack_safe_latch;
 	enum e_packer_algorithm packer_algorithm;
 	float aspect;
 };

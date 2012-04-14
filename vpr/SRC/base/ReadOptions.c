@@ -181,11 +181,6 @@ ProcessOption(INP const char *const *Args,
 		return Args;
 	case OT_PACKER_ALGORITHM:
 		return ReadPackerAlgorithm(Args, &Options->packer_algorithm);
-	case OT_HACK_NO_LEGAL_FRAC_LUT:
-		return Args;
-	case OT_HACK_SAFE_LATCH:
-		return Args;
-
 
 	/* Placer Options */
 	case OT_PLACE_ALGORITHM:

@@ -66,8 +66,6 @@ enum e_OptionBaseToken
 	OT_INTER_CLUSTER_NET_DELAY,
 	OT_PACK,
 	OT_PACKER_ALGORITHM,
-	OT_HACK_NO_LEGAL_FRAC_LUT,
-	OT_HACK_SAFE_LATCH,
     OT_BASE_UNKNOWN		/* Must be last since used for counting enum items */
 };
 

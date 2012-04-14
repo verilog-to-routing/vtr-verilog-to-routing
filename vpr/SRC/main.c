@@ -309,9 +309,6 @@ PrintUsage()
     puts("\t[-intra_cluster_net_delay <float>] ");
     puts("\t[-inter_cluster_net_delay <float>] "); */
     puts("\t[--connection_driven_clustering on|off] ");
-/*	puts("\t[-packer_algorithm greedy|brute_force]");
-	puts("\t[-hack_no_legal_frac_lut]");
-	puts("\t[-hack_safe_latch]"); */
 	puts("");
     puts("Placer Options:");
     puts("\t[--place_algorithm bounding_box | net_timing_driven | path_timing_driven]");

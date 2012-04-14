@@ -536,18 +536,6 @@ void SetupPackerOpts(INP t_options Options,
 	}
 	PackerOpts->output_file = net_file;
 
-	PackerOpts->hack_no_legal_frac_lut = FALSE; /* DEFAULT */
-	if(Options.Count[OT_HACK_NO_LEGAL_FRAC_LUT])
-	{
-		PackerOpts->hack_no_legal_frac_lut = TRUE;
-	}
-
-	PackerOpts->hack_safe_latch = FALSE; /* DEFAULT */
-	if(Options.Count[OT_HACK_SAFE_LATCH])
-	{
-		PackerOpts->hack_safe_latch = TRUE;
-	}
-
 	PackerOpts->blif_file_name = Options.BlifFile; 
 	
 	PackerOpts->doPacking = FALSE; /* DEFAULT */

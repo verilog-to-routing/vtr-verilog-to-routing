@@ -69,8 +69,6 @@ const struct s_TokenPair OptionBaseTokenList[] = {
 	{"inter_cluster_net_delay", OT_INTER_CLUSTER_NET_DELAY},
 	{"pack", OT_PACK},
 	{"packer_algorithm", OT_PACKER_ALGORITHM},
-    {"hack_no_legal_frac_lut", OT_HACK_NO_LEGAL_FRAC_LUT},
-	{"hack_safe_latch", OT_HACK_SAFE_LATCH},
     {NULL, OT_BASE_UNKNOWN}	/* End of list marker */
 };
 

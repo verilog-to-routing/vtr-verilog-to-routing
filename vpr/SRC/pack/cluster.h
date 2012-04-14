@@ -7,7 +7,5 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecule_head, int num_
 	   float aspect,
        boolean allow_unrelated_clustering,
        boolean allow_early_exit, boolean connection_driven,
-	   enum e_packer_algorithm packer_algorithm,
-	   boolean hack_no_legal_frac_lut,
-	   boolean hack_safe_latch);
+	   enum e_packer_algorithm packer_algorithm);
 int get_cluster_of_block(int blkidx);

@@ -104,9 +104,7 @@ eg.
 					packer_opts->allow_unrelated_clustering, 
 					packer_opts->allow_early_exit, 
 					packer_opts->connection_driven,
-					packer_opts->packer_algorithm,
-					packer_opts->hack_no_legal_frac_lut,
-					packer_opts->hack_safe_latch);
+					packer_opts->packer_algorithm);
 	}
 	else {
 		printf("Skip clustering not supported\n");
