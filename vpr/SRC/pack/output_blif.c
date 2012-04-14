@@ -425,6 +425,7 @@ output_blif(
     FILE *fpout;
     int bnum, column;
 	struct s_linked_vptr *p_io_removed;
+	int i;
 
 	fpout = my_fopen(out_fname, "w", 0);
 
@@ -460,7 +461,24 @@ output_blif(
 
 	fprintf(fpout, "\n\n");
 	
+	/* print logic of clusters */
 	print_clusters(clb, num_clusters, fpout);
+
+	/* handle special case: input goes straight to output without going through any logic */
+	for(bnum = 0; bnum < num_logical_blocks; bnum++)
+	{	
+		if(logical_block[bnum].type == VPACK_INPAD) {
+			for(i = 1; i <= vpack_net[logical_block[bnum].output_nets[0][0]].num_sinks; i++) {
+				if(logical_block[vpack_net[logical_block[bnum].output_nets[0][0]].node_block[i]].type == VPACK_OUTPAD) {
+					fprintf(fpout, ".names ");
+					print_string(logical_block[bnum].name, &column, fpout);
+					print_string(logical_block[vpack_net[logical_block[bnum].output_nets[0][0]].node_block[i]].name + 4, &column, fpout);
+					fprintf(fpout, "\n1 1\n");
+				}
+			}
+		}
+	}
+
 	fprintf(fpout, "\n.end\n");
 
     fclose(fpout);
