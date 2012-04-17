@@ -398,11 +398,8 @@ static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node, 
 static float try_place_molecule(INP t_pack_molecule *molecule, INP t_pb_graph_node *root, INOUTP t_pb_graph_node **primitives_list) {
 	int list_size, i;
 	float cost = HUGE_FLOAT;
-	if(molecule->type == MOLECULE_FORCED_PACK) {
-		list_size = molecule->pack_pattern->num_blocks;
-	} else {
-		list_size = molecule->num_blocks;
-	}
+	list_size = get_array_size_of_molecule(molecule);
+	
 	if(primitive_type_feasible(molecule->logical_block_ptrs[molecule->root]->index, root->pb_type)) {
 		if(root->cluster_placement_primitive->valid == TRUE) {
 			for(i = 0; i < list_size; i++) {
@@ -586,3 +583,11 @@ static void flush_intermediate_queues(INOUTP t_cluster_placement_stats *cluster_
 	cluster_placement_stats->in_flight = NULL;
 }
 
+/* Determine max index + 1 of molecule */
+int get_array_size_of_molecule(t_pack_molecule *molecule) {
+	if(molecule->type == MOLECULE_FORCED_PACK) {
+		return molecule->pack_pattern->num_blocks;
+	} else {
+		return molecule->num_blocks;
+	}
+}
