@@ -176,7 +176,7 @@ read_user_pad_loc(char *pad_loc_file)
     char buf[BUFSIZE], bname[BUFSIZE], *ptr;
 
     printf("\nReading locations of IO pads from %s.\n", pad_loc_file);
-    linenum = 0;
+    file_line_number = 0;
     fp = fopen(pad_loc_file, "r");
 
     hash_table = alloc_hash_table();
@@ -219,7 +219,7 @@ read_user_pad_loc(char *pad_loc_file)
 	    ptr = my_strtok(NULL, TOKENS, fp, buf);
 	    if(ptr == NULL)
 		{
-		    printf("Error:  line %d is incomplete.\n", linenum);
+		    printf("Error:  line %d is incomplete.\n", file_line_number);
 		    exit(1);
 		}
 	    sscanf(ptr, "%d", &xtmp);
@@ -227,7 +227,7 @@ read_user_pad_loc(char *pad_loc_file)
 	    ptr = my_strtok(NULL, TOKENS, fp, buf);
 	    if(ptr == NULL)
 		{
-		    printf("Error:  line %d is incomplete.\n", linenum);
+		    printf("Error:  line %d is incomplete.\n", file_line_number);
 		    exit(1);
 		}
 	    sscanf(ptr, "%d", &ytmp);
@@ -235,7 +235,7 @@ read_user_pad_loc(char *pad_loc_file)
 	    ptr = my_strtok(NULL, TOKENS, fp, buf);
 	    if(ptr == NULL)
 		{
-		    printf("Error:  line %d is incomplete.\n", linenum);
+		    printf("Error:  line %d is incomplete.\n", file_line_number);
 		    exit(1);
 		}
 	    sscanf(ptr, "%d", &k);
@@ -244,7 +244,7 @@ read_user_pad_loc(char *pad_loc_file)
 	    if(ptr != NULL)
 		{
 		    printf("Error:  extra characters at end of line %d.\n",
-			   linenum);
+			   file_line_number);
 		    exit(1);
 		}
 
@@ -252,7 +252,7 @@ read_user_pad_loc(char *pad_loc_file)
 	    if(h_ptr == NULL)
 		{
 		    printf("Error:  block %s on line %d: no such IO pad.\n",
-			   bname, linenum);
+			   bname, file_line_number);
 		    exit(1);
 		}
 	    bnum = h_ptr->index;
@@ -263,7 +263,7 @@ read_user_pad_loc(char *pad_loc_file)
 		{
 		    printf
 			("Error:  line %d.  Block %s listed twice in pad file.\n",
-			 linenum, bname);
+			 file_line_number, bname);
 		    exit(1);
 		}
 
@@ -289,7 +289,7 @@ read_user_pad_loc(char *pad_loc_file)
 		{
 		    printf
 			("Error:  Block %s subblock number (%d) on line %d is out of "
-			 "range.\n", bname, k, linenum);
+			 "range.\n", bname, k, file_line_number);
 		    exit(1);
 		}
 	    grid[i][j].blocks[k] = bnum;

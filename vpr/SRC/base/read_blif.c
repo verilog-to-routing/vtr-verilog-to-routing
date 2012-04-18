@@ -102,7 +102,7 @@ read_blif(char *blif_file,
 
 	    for(pass = 0; pass <= 4; pass++) 
 		{
-		    linenum = 0;	/* Reset line number. */
+		    file_line_number = 0;	/* Reset line number. */
 			done = FALSE;
 			add_truth_table = FALSE;
 			model_lines = 0;
@@ -490,7 +490,7 @@ add_latch(int doall, INP t_model *latch_model)
 
     if(i != 5)
 	{
-	    fprintf(stderr, "Error:  .latch does not have 5 parameters.\n" "check the netlist, line %d.\n", linenum);
+	    fprintf(stderr, "Error:  .latch does not have 5 parameters.\n" "check the netlist, line %d.\n", file_line_number);
 	    exit(1);
 	}
 

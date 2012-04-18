@@ -846,8 +846,7 @@ static boolean outputs_clocks_and_models_feasible (enum e_packer_algorithm packe
 
 static boolean models_feasible(enum e_packer_algorithm packer_algorithm, int iblk, const t_pb_type *cur_pb_type, t_pb *cur_pb, int mode) {
 	struct s_linked_vptr *cur_model;
-	int i, j, k, cur_ptr;
-	struct s_ilink *ptr;
+	int i, j, k;
 	boolean feasible;
 	const t_pb_type *child_pb_type;
 	
