@@ -462,20 +462,24 @@ static boolean expand_forced_pack_molecule_placement(INP t_pack_molecule *molecu
 				next_pin = expand_pack_molecule_pin_edge(pack_pattern_block->pattern_index, cur_pin, FALSE);
 			}
 			/* found next primitive */
-			next_primitive = next_pin->parent_node;
-			/* Check for legality of placement, if legal, expand from legal placement, if not, return FALSE */
-			if(molecule->logical_block_ptrs[next_block->block_id] != NULL && primitives_list[next_block->block_id] == NULL) {
-				if(next_primitive->cluster_placement_primitive->valid == TRUE && 
-					primitive_type_feasible(molecule->logical_block_ptrs[next_block->block_id]->index, next_primitive->pb_type)
-				  ) {
-					primitives_list[next_block->block_id] = next_primitive;
-					*cost += next_primitive->cluster_placement_primitive->base_cost + next_primitive->cluster_placement_primitive->incremental_cost;
-					if(!expand_forced_pack_molecule_placement(molecule, next_block, primitives_list, cost)) {
+			if(next_pin != NULL) {
+				next_primitive = next_pin->parent_node;
+				/* Check for legality of placement, if legal, expand from legal placement, if not, return FALSE */
+				if(molecule->logical_block_ptrs[next_block->block_id] != NULL && primitives_list[next_block->block_id] == NULL) {
+					if(next_primitive->cluster_placement_primitive->valid == TRUE && 
+						primitive_type_feasible(molecule->logical_block_ptrs[next_block->block_id]->index, next_primitive->pb_type)
+					  ) {
+						primitives_list[next_block->block_id] = next_primitive;
+						*cost += next_primitive->cluster_placement_primitive->base_cost + next_primitive->cluster_placement_primitive->incremental_cost;
+						if(!expand_forced_pack_molecule_placement(molecule, next_block, primitives_list, cost)) {
+							return FALSE;
+						}
+					} else {
 						return FALSE;
 					}
-				} else {
-					return FALSE;
 				}
+			} else {
+				return FALSE;
 			}
 		}
 		cur = cur->next;
