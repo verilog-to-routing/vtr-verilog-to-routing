@@ -71,6 +71,7 @@ t_pack_patterns *alloc_and_load_pack_patterns(OUTP int *num_packing_patterns) {
 				continue;
 			}
 			num_blocks = 0;
+			list_of_packing_patterns[i].base_cost = 0;
 			backward_expand_pack_pattern_from_edge(expansion_edge, list_of_packing_patterns, i, NULL, NULL, &num_blocks);
 			list_of_packing_patterns[i].num_blocks = num_blocks;
 			break;
@@ -278,6 +279,7 @@ static void forward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansion
 			/* If this pb_graph_node is part not of the current pattern index, put it in and expand all its edges */
 			if(destination_pb_graph_node->temp_scratch_pad == NULL || ((t_pack_pattern_block*)destination_pb_graph_node->temp_scratch_pad)->pattern_index != curr_pattern_index) {
 				destination_block = my_calloc(1, sizeof(t_pack_pattern_block));
+				list_of_packing_patterns[curr_pattern_index].base_cost += compute_primitive_base_cost(destination_pb_graph_node);
 				destination_block->block_id = *num_blocks;
 				(*num_blocks)++;
 				destination_pb_graph_node->temp_scratch_pad = (void *)destination_block;
@@ -364,6 +366,7 @@ static void backward_expand_pack_pattern_from_edge(INP t_pb_graph_edge* expansio
 				source_block = my_calloc(1, sizeof(t_pack_pattern_block));
 				source_block->block_id = *num_blocks;
 				(*num_blocks)++;
+				list_of_packing_patterns[curr_pattern_index].base_cost += compute_primitive_base_cost(source_pb_graph_node);
 				source_pb_graph_node->temp_scratch_pad = (void *)source_block;
 				source_block->pattern_index = curr_pattern_index;
 				source_block->pb_type = source_pb_graph_node->pb_type;
@@ -470,6 +473,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(INP t_pack_patterns *list_of_pack
 		cur_molecule->type = MOLECULE_SINGLE_ATOM;
 		cur_molecule->num_blocks = 1;
 		cur_molecule->root = 0;
+		cur_molecule->num_ext_inputs = logical_block[i].used_input_pins;
 		cur_molecule->chain_pattern = NULL;
 		cur_molecule->pack_pattern = NULL;
 		cur_molecule->logical_block_ptrs = my_malloc(1 * sizeof(t_logical_block*));
@@ -521,6 +525,7 @@ static t_pack_molecule *try_create_molecule(INP t_pack_patterns *list_of_pack_pa
 	molecule->logical_block_ptrs = my_calloc(molecule->pack_pattern->num_blocks, sizeof(t_logical_block *));
 	molecule->num_blocks = list_of_pack_patterns[pack_pattern_index].num_blocks;
 	molecule->root = list_of_pack_patterns[pack_pattern_index].root_block->block_id;
+	molecule->num_ext_inputs = 0;
 
 	if(try_expand_molecule(molecule, block_index, molecule->pack_pattern->root_block) == TRUE) {
 		/* Success! commit module */
@@ -562,6 +567,7 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule, INP int log
 
 	/* This node has never been visited, expand it and explore neighbouring nodes */
 	molecule->logical_block_ptrs[current_pattern_block->block_id] = &logical_block[logical_block_index]; /* store that this node has been visited */
+	molecule->num_ext_inputs += logical_block[logical_block_index].used_input_pins;
 	if(primitive_type_feasible(logical_block_index, current_pattern_block->pb_type)) {
 		success = TRUE;
 		/* If the primitive types match, check for connections */
@@ -581,6 +587,7 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule, INP int log
 				}
 			} else {
 				assert(cur_pack_pattern_connection->to_block == current_pattern_block);
+				molecule->num_ext_inputs--; /* input to logical block is internal to molecule */
 				/* find net corresponding to pattern */
 				iport = cur_pack_pattern_connection->from_pin->port->model_port->index;
 				ipin = cur_pack_pattern_connection->from_pin->pin_number;

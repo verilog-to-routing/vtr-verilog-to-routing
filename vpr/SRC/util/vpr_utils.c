@@ -166,26 +166,6 @@ int get_max_primitives_in_pb_type(t_pb_type *pb_type) {
 }
 
 
-int get_max_primitive_inputs_in_pb_type(t_pb_type *pb_type) {
-	int i, j;
-	int max_size, temp_size;
-	if (pb_type->blif_model != NULL) {
-		max_size = pb_type->num_input_pins;
-	} else {
-		max_size = 0;
-		for(i = 0; i < pb_type->num_modes; i++) {
-			temp_size = 0;
-			for(j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-				temp_size = get_max_primitive_inputs_in_pb_type(&pb_type->modes[i].pb_type_children[j]);
-				if(temp_size > max_size) {
-					max_size = temp_size;
-				}
-			}
-		}
-	}
-	return max_size;
-}
-
 /* finds maximum number of nets that can be contained in pb_type, this is bounded by the number of driving pins */
 int get_max_nets_in_pb_type(const t_pb_type *pb_type) {
 	int i, j;
@@ -284,3 +264,63 @@ boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type) {
 	}
 	return TRUE;
 }
+
+/**
+ * Determine cost for using primitive within a complex block, should use primitives of low cost before selecting primitives of high cost
+   For now, assume primitives that have a lot of pins are scarcer than those without so use primitives with less pins before those with more
+*/
+float compute_primitive_base_cost(INP t_pb_graph_node *primitive) {
+	return (primitive->pb_type->num_input_pins + primitive->pb_type->num_output_pins + primitive->pb_type->num_clock_pins);
+}
+
+
+int num_ext_inputs_logical_block (int iblk) {
+
+/* Returns the number of input pins on this logical_block that must be hooked * 
+ * up through external interconnect.  That is, the number of input    *
+ * pins used - the number which connect (internally) to the outputs.   */
+
+ int ext_inps, output_net, ipin, opin;
+
+ t_model_ports *port, *out_port;
+ 
+ 
+ 
+ /* TODO: process to get ext_inps is slow, should cache in lookup table */
+ ext_inps = 0;
+ port = logical_block[iblk].model->inputs;
+ while(port) {
+	 if(port->is_clock == FALSE) {
+		 for(ipin = 0; ipin < port->size; ipin++) {
+			 if(logical_block[iblk].input_nets[port->index][ipin] != OPEN) {
+				 ext_inps++;
+			 }
+			 out_port = logical_block[iblk].model->outputs;
+			 while(out_port) {
+				 for(opin = 0; opin < out_port->size; opin++) {
+					 output_net = logical_block[iblk].output_nets[out_port->index][opin];
+					 if(output_net == OPEN)
+						continue;
+					/* TODO: I could speed things up a bit by computing the number of inputs *
+					* and number of external inputs for each logic logical_block at the start of   *
+					* clustering and storing them in arrays.  Look into if speed is a      *
+					* problem.                                                             */
+
+					 if (logical_block[iblk].input_nets[port->index][ipin] == output_net) {
+						ext_inps--;
+						break;
+					}
+				 }
+				 out_port = out_port->next;
+			 }
+		 }
+	 }
+	 port = port->next;
+ }
+
+ assert(ext_inps >= 0);
+ 
+ return (ext_inps);
+}
+
+

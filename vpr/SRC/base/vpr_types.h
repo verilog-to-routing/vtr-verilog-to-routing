@@ -78,6 +78,7 @@ typedef size_t bitfield;
 #endif
 
 
+
 /* netlist blocks are assigned one of these types */
 enum logical_block_types {
 	VPACK_INPAD = -2, 
@@ -102,7 +103,9 @@ struct hash_logical_nets {
 
 enum e_block_pack_status {BLK_PASSED, BLK_FAILED_FEASIBLE, BLK_FAILED_ROUTE, BLK_STATUS_UNDEFINED};
 
+
 struct s_rr_node; /* defined later, but need to declare here because it is used */
+struct s_pack_molecule; /* defined later, but need to declare here because it is used */
 
 /* Stores statistical information for pb such as cost information */
 struct s_pb_stats {
@@ -143,13 +146,11 @@ struct s_pb_stats {
 	int outputs_avail;
 	int clocks_avail;
 
-	/* Array of feasible blocks to select from [0..num_marked_models-1][0..num_blocks-1] 
+	/* Array of feasible blocks to select from [0..max_array_size-1] 
 	   Sorted in ascending gain order so that the last block is the most desirable (this makes it easy to pop blocks off the list
 	*/
-	int **feasible_blocks;
-	int *num_feasible_blocks; /* [0..num_marked_models-1] */
-	int num_marked_models;
-	int cur_marked_model; /* current model to consider, if NOT_VALID, refresh list */
+	struct s_pack_molecule **feasible_blocks; 
+	int num_feasible_blocks; /* [0..num_marked_models-1] */	
 }; 
 typedef struct s_pb_stats t_pb_stats;
 
@@ -222,8 +223,11 @@ typedef struct s_pack_molecule
 	t_model_chain_pattern *chain_pattern;	/* If this is a chain molecule, chain that this molecule matches */
 	t_logical_block **logical_block_ptrs;	/* [0..num_blocks-1] ptrs to logical blocks that implements this molecule, index on pack_pattern_block->index of pack pattern */
 	boolean valid;							/* Whether or not this molecule is still valid */
+
 	int num_blocks;							/* number of logical blocks of molecule */
 	int root;								/* root index of molecule, logical_block_ptrs[root] is ptr to root logical block */
+
+	int num_ext_inputs;						/* number of input pins used by molecule that are not self-contained by pattern molecule matches */
 	struct s_pack_molecule *next;
 } t_pack_molecule;
 

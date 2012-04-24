@@ -20,10 +20,11 @@ void sync_grid_to_blocks(INP int num_blocks,
 
 
 int get_max_primitives_in_pb_type(t_pb_type *pb_type);
-int get_max_primitive_inputs_in_pb_type(t_pb_type *pb_type);
 int get_max_depth_of_pb_type(t_pb_type *pb_type);
 int get_max_nets_in_pb_type(const t_pb_type *pb_type);
 boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type);
+float compute_primitive_base_cost(INP t_pb_graph_node *primitive);
+int num_ext_inputs_logical_block (int iblk);
 
 #endif
 

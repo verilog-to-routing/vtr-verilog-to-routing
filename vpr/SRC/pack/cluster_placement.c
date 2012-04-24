@@ -27,7 +27,6 @@ March 12, 2012
 /*Local Function Declaration
 /*****************************************/
 static void load_cluster_placement_stats_for_pb_graph_node(INOUTP t_cluster_placement_stats *cluster_placement_stats, INOUTP t_pb_graph_node *pb_graph_node);
-static float compute_primitive_base_cost(INP t_pb_graph_node *primitive);
 static void requeue_primitive(INOUTP t_cluster_placement_stats *cluster_placement_stats, t_cluster_placement_primitive *cluster_placement_primitive);
 static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node, INP float incremental_cost, INP boolean valid);
 static float try_place_molecule(INP t_pack_molecule *molecule, INP t_pb_graph_node *root, INOUTP t_pb_graph_node **primitives_list);
@@ -294,14 +293,6 @@ static void load_cluster_placement_stats_for_pb_graph_node(INOUTP t_cluster_plac
 			}
 		}
 	}
-}
-
-/**
- * Determine cost for using primitive, should use primitives of low cost before selecting primitives of high cost
-   For now, assume primitives that have a lot of pins are scarcer than those without so use primitives with less pins before those with more
-*/
-static float compute_primitive_base_cost(INP t_pb_graph_node *primitive) {
-	return (primitive->pb_type->num_input_pins + primitive->pb_type->num_output_pins + primitive->pb_type->num_clock_pins);
 }
 
 /**
