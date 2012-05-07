@@ -1,0 +1,1 @@
+sv_chip3_hierarchy_no_mem clk

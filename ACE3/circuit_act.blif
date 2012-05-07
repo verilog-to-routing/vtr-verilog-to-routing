@@ -1,0 +1,60 @@
+# Benchmark "jeff" written by ABC on Sun Mar 18 23:08:29 2012
+.model jeff
+.inputs top^in_a top^in_b top^in_c top^clk top^in_d top^in_e top^in_f
+.outputs top^out_a top^out_b top^out_c top^out_d top^out_e top^out_f \
+ top^out_g top^out_h top^out_i top^out_j
+
+.latch      n35_1 top^FF_NODE~29  0
+.latch      n40_1 top^FF_NODE~31  0
+.latch      n45_1 top^FF_NODE~28  0
+.latch      n50_1 top^FF_NODE~30  0
+.latch      n55_1 top^FF_NODE~32  0
+.latch      n60_1 top^FF_NODE~33  0
+.latch      n65_1 top^FF_NODE~35  0
+.latch      n70_1 top^FF_NODE~34  0
+
+.names top^in_a top^in_b top^out_b
+11 1
+.names top^in_c top^FF_NODE~28 top^out_c
+01 1
+10 1
+.names top^in_d top^in_e top^out_g
+11 1
+.names top^in_f top^FF_NODE~32 top^out_h
+01 1
+10 1
+.names top^in_c top^in_a top^in_b n35_1
+011 1
+.names top^in_f top^in_d top^in_e n60_1
+011 1
+.names top^FF_NODE~28 top^out_a
+1 1
+.names top^FF_NODE~29 top^out_d
+1 1
+.names top^FF_NODE~31 top^out_e
+1 1
+.names top^FF_NODE~32 top^out_f
+1 1
+.names top^FF_NODE~33 top^out_i
+1 1
+.names top^FF_NODE~35 top^out_j
+1 1
+.names top^FF_NODE~29 top^FF_NODE~31 top^FF_NODE~30 n40_1
+001 1
+010 1
+100 1
+111 1
+.names top^in_a top^in_b n45_1
+00 0
+.names top^in_a top^in_b n50_1
+10 0
+.names top^in_d top^in_e n55_1
+00 0
+.names top^FF_NODE~33 top^FF_NODE~35 top^FF_NODE~34 n65_1
+001 1
+010 1
+100 1
+111 1
+.names top^in_d top^in_e n70_1
+10 0
+.end
