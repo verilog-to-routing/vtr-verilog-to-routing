@@ -1,0 +1,12 @@
+# Benchmark "spram" written by ABC on Mon Mar 28 13:35:50 2011
+.model spram
+.inputs top^clock top^reset_n
+.outputs top^value_out
+
+.latch         n7 top^FF_NODE~3  0
+
+.names top^reset_n top^FF_NODE~3 n7
+01 1
+.names top^FF_NODE~3 top^value_out
+1 1
+.end

@@ -1,0 +1,17 @@
+read JAMIESON_TESTS/mini_example1.blif; 
+resyn2; 
+resyn2rs;
+read_lut JAMIESON_TESTS/lut_lib4.txt;
+fpga;
+cec;
+write_hie JAMIESON_TESTS/mini_example1.blif JAMIESON_TESTS/mini_example1.4.blif
+
+read JAMIESON_TESTS/mini_example2.blif; 
+resyn2; 
+resyn2rs;
+read_lut JAMIESON_TESTS/lut_lib4.txt;
+fpga;
+cec;
+write_hie JAMIESON_TESTS/mini_example2.blif JAMIESON_TESTS/mini_example2.4.blif
+
+time

@@ -1,0 +1,56 @@
+.model test
+.inputs a b c d e f g h i j k l m n o clk 
+.outputs A0 B0 C0 D0 E0
+
+.subckt mult_M1 a0=a a1=b a2=c a3=d b0=e b1=f b2=g b3=h c0=m0 c1=m1 c2=m2 c3=m3 c4=m4 c5=m5 c6=m6 c7=m7
+.subckt mult_M2 a0=a a1=b a2=c a3=d b0=i b1=j b2=k b3=l c0=m20 c1=m21 c2=m22 c3=m23 c4=m24 c5=m25 c6=m26 c7=m27 
+
+.latch m D0 re clk 0
+.latch o4 E0 re clk 0
+
+.names a b o1
+01 1
+.names c d o2
+10 1
+.names e f g h o1 o2 o3
+100011 1
+101-11 1
+011--0 1
+.names o3 o1 m n o o4
+11101 1
+10111 1
+000-1 1
+.names m0 m1 m20 m21 A0
+1111 1
+0011 1
+.names o3 o4 m22 m23 m24 m25 m26 m27 B0
+11010101 1
+01010001 1
+11010001 1
+11010100 1
+11000101 1
+01000101 1
+1---0101 1
+.names o3 o4 m2 m3 m4 m5 m6 m7 C0
+1--10101 1
+01010001 1
+11----01 1
+11010--- 1
+01000101 1
+01000101 1
+1---0101 1
+
+
+.end
+
+.model mult_M1
+.inputs a0 a1 a2 a3 b0 b1 b2 b3 
+.outputs c0 c1 c2 c3 c4 c5 c6 c7
+.blackbox
+.end
+
+.model mult_M2
+.inputs a0 a1 a2 a3 b0 b1 b2 b3 
+.outputs c0 c1 c2 c3 c4 c5 c6 c7
+.blackbox
+.end

@@ -1,0 +1,24 @@
+.model Adder02
+.inputs a00 a01 b00 b01
+.outputs y00 y01 y02
+
+.subckt FA a=a00 b=b00 cin=c s=y00 cout=00
+.subckt FA a=a01 b=b01 cin=00 s=y01 cout=y02
+.names c
+0
+.end
+
+.model FA
+.inputs a b cin
+.outputs s cout
+.names a b k
+10 1
+01 1
+.names k cin s
+10 1
+01 1
+.names a b cin cout
+11- 1
+1-1 1
+-11 1
+.end

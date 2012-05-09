@@ -1,0 +1,26 @@
+Often the code comes directly from a Windows computer.
+The following steps may be needed to compile it on UNIX:
+
+>> dos2unix Makefile Makefile
+>> dos2unix depends.sh depends.sh
+>> chmod 755 depends.sh
+>> make  // on Solaris, try "gmake"
+
+If compiling as a static library, it is necessary to uncomment
+#define _LIB in "src/abc/main/main.c"
+
+Several things to try if it does not compile on your platform:
+- Try running all code (not only Makefile and depends.sh) through dos2unix
+- Try the following actions:
+  (a) Remove flags from the libs line (LIBS :=) in Makefile
+  (b) Remove "src\base\main\libSupport.c" from "src\base\main\module.make"
+  (c) Comment calls to Libs_Init() and Libs_End() in "src\base\main\mainInit.c"
+- Try linking with gcc (rather than g++)
+  For this replace "LD   := g++" with "LD   := gcc -lm" in Makefile
+- If your Linux distributin does not have "readline", you may have problems 
+  compiling ABC with gcc. Please try installing this library from
+  http://tiswww.case.edu/php/chet/readline/rltop.html
+
+
+Finally, run regression test:
+abc>>> so regtest.script

@@ -1,0 +1,51 @@
+# Benchmark "accum" written by ABC on Mon Mar 28 13:56:17 2011
+.model accum
+.inputs top^clock top^reset_n top^D~0 top^D~1 top^D~2 top^D~3
+.outputs top^Q~0 top^Q~1 top^Q~2 top^Q~3
+
+.latch        n21 top^FF_NODE~3  0
+.latch        n26 top^FF_NODE~4  0
+.latch        n31 top^FF_NODE~5  0
+.latch        n36 top^FF_NODE~6  0
+
+.names top^reset_n top^D~0 top^FF_NODE~3 n21
+001 1
+010 1
+.names top^reset_n top^D~0 top^D~1 top^FF_NODE~3 top^FF_NODE~4 n26
+000-1 1
+001-0 1
+01010 1
+01111 1
+0-001 1
+0-100 1
+.names top^reset_n top^D~0 top^D~1 top^D~2 top^FF_NODE~3 top^FF_NODE~4 \
+ top^FF_NODE~5 n31
+0000--1 1
+0001--0 1
+01001-0 1
+01011-1 1
+0-000-1 1
+0-010-0 1
+0-10-01 1
+0-10-10 1
+0-11-00 1
+0-11-11 1
+.names top^reset_n top^D~3 top^FF_NODE~6 n27 n36
+0001 1
+0010 1
+0100 1
+0111 1
+.names top^D~0 top^D~1 top^D~2 top^FF_NODE~3 top^FF_NODE~4 top^FF_NODE~5 \
+ n27
+1001-- 1
+-10-1- 1
+--1--1 1
+.names top^FF_NODE~3 top^Q~0
+1 1
+.names top^FF_NODE~4 top^Q~1
+1 1
+.names top^FF_NODE~5 top^Q~2
+1 1
+.names top^FF_NODE~6 top^Q~3
+1 1
+.end

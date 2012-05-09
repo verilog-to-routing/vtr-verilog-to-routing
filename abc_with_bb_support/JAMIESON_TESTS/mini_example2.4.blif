@@ -1,0 +1,62 @@
+# Benchmark "test" written by ABC on Tue Aug 28 16:53:48 2007
+.model test
+.inputs a b c clk d e f g h i j k l m m0 m1 m2 m20 m21 m22 m23 m24 m25 m26 \
+ m27 m3 m4 m5 m6 m7 n o
+.outputs A0 B0 C0 D0 E0
+
+.latch        n74         D0  0
+.latch        n78         E0  0
+
+.names m0 m1 m20 m21 A0
+0011 1
+1111 1
+.names m24 m26 n46 B0
+000 1
+.names m22 n47 n78 n56 n46
+001- 0
+---1 0
+.names m23 m25 m27 n48 n47
+0111 0
+101- 0
+1100 0
+.names n49 n50 n51 n52 n48
+110- 0
+-0-1 0
+.names a b e f n49
+0110 1
+.names c d n50
+10 1
+.names g h n51
+01 1
+.names e f g n52
+011 1
+.names o n48 n54 n55 n78
+10-1 1
+111- 1
+.names a b m n54
+1-0 1
+-00 1
+.names a b m n n55
+0110 1
+1-11 1
+-011 1
+.names m25 m27 n48 n56
+110 1
+.names m3 n48 n59 n60 n58
+10-1 1
+-01- 1
+.names m6 m7 n59
+01 1
+.names m2 m4 n60
+00 1
+.names m3 m5 n59 n60 n61
+0111 1
+1011 1
+.names m4 m5 n48 n59 n62
+0101 1
+.names n78 n58 n61 n62 C0
+0--0 0
+-000 0
+.names m n74
+1 1
+.end
