@@ -1160,6 +1160,7 @@ static enum e_block_pack_status try_pack_molecule(INOUTP t_cluster_placement_sta
 	block_pack_status = BLK_STATUS_UNDEFINED;
 	
 	molecule_size = get_array_size_of_molecule(molecule);
+	failed_location = molecule_size;
 
 	while(block_pack_status != BLK_PASSED) {
 		save_and_reset_routing_cluster(); /* save current routing information because speculative packing will change routing*/
@@ -1939,7 +1940,7 @@ static t_pack_molecule *get_highest_gain_molecule ( INP enum e_packer_algorithm 
 							for(j = 0; j < get_array_size_of_molecule(molecule); j++) {
 								if(molecule->logical_block_ptrs[j] != NULL) {
 									assert(molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
-									if (!is_feasible (packer_algorithm, iblk, is_clock, cur_pb)) {
+									if (!is_feasible (packer_algorithm, molecule->logical_block_ptrs[j]->index, is_clock, cur_pb)) {
 										success = FALSE;
 										break;
 									}
@@ -1965,7 +1966,7 @@ static t_pack_molecule *get_highest_gain_molecule ( INP enum e_packer_algorithm 
 							for(j = 0; j < get_array_size_of_molecule(molecule); j++) {
 								if(molecule->logical_block_ptrs[j] != NULL) {
 									assert(molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
-									if (!is_feasible (packer_algorithm, iblk, is_clock, cur_pb)) {
+									if (!is_feasible (packer_algorithm, molecule->logical_block_ptrs[j]->index, is_clock, cur_pb)) {
 										success = FALSE;
 										break;
 									}
