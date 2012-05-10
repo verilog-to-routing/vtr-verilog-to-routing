@@ -384,7 +384,6 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecule_head, int num_
       /*it doesn't make sense to do a timing analysis here since there*
        *is only one logical_block clustered it would not change anything      */
     }
-	 
 	next_molecule = get_molecule_for_cluster(PACK_BRUTE_FORCE,
 										clb[num_clb - 1].pb, 
 										 is_clock,
@@ -397,13 +396,15 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecule_head, int num_
 			if(next_molecule != NULL) {
 				if(block_pack_status == BLK_FAILED_ROUTE) {
 					#ifdef DEBUG_FAILED_PACKING_CANDIDATES
-						printf("NO_ROUTE:%s#%d|%s ", logical_block[next_blk].name, next_blk, logical_block[next_blk].model->name); 
+					printf("\tNO_ROUTE:%s type %s/n", next_molecule->logical_block_ptrs[next_molecule->root]->name, next_molecule->logical_block_ptrs[next_molecule->root]->model->name); 
+					fflush(stdout);
 					#else
 						printf(".");
 					#endif
 				} else {
 					#ifdef DEBUG_FAILED_PACKING_CANDIDATES
-						printf("FAILED_CHECK:%s#%d|%s check %d", logical_block[next_blk].name, next_blk, logical_block[next_blk].model->name, block_pack_status); 
+						printf("\tFAILED_CHECK:%s type %s check %d\n", next_molecule->logical_block_ptrs[next_molecule->root]->name, next_molecule->logical_block_ptrs[next_molecule->root]->model->name, block_pack_status); 
+						fflush(stdout);
 					#else
 						printf(".");
 					#endif
@@ -418,7 +419,8 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecule_head, int num_
 		} else {
 			/* Continue packing by filling smallest cluster */
 			#ifdef DEBUG_FAILED_PACKING_CANDIDATES			
-				printf("PASSED:%s#%d ", logical_block[next_blk].name, next_blk); 
+				printf("\tPASSED:%s type %s\n", next_molecule->logical_block_ptrs[next_molecule->root]->name, next_molecule->logical_block_ptrs[next_molecule->root]->model->name); 
+				fflush(stdout);
 			#else
 				printf(".");
 			#endif
@@ -1281,7 +1283,7 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 		logical_block[ilogical_block].clb_index = clb_index;
 		logical_block[ilogical_block].pb = pb;
 		
-		if(primitive_feasible(ilogical_block, pb)) {
+		if(primitive_feasible(ilogical_block, pb) && inputs_outputs_models_and_clocks_feasible(PACK_BRUTE_FORCE, ilogical_block, is_clock, parent_pb)) {
 			/* Passed location feasibility check, add block to routing graph to test routing check */
 			setup_intracluster_routing_for_logical_block(ilogical_block, pb);				
 		} else {
@@ -1292,7 +1294,7 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 		/* check feasibility of packing into current cluster 
 		* WARNING: need to be smarter about pin checks especially when molecule, when partially packed, is infeasible, but is feasible when fully packed
 		*/
-		if(!inputs_outputs_models_and_clocks_feasible(PACK_BRUTE_FORCE, ilogical_block, is_clock, pb)) {
+		if(!inputs_outputs_models_and_clocks_feasible(PACK_BRUTE_FORCE, ilogical_block, is_clock, parent_pb)) {
 			block_pack_status = BLK_FAILED_FEASIBLE;
 		}
 	}
