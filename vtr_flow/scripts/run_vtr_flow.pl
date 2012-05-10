@@ -252,7 +252,7 @@ if($has_memory == 1)
 if (! $error_code)
 {
 	if($lut_size < 0) {
-		if ($arch_contents =~ m/pb_type name="clb".*?pb_type name="ble".*?input name="in" num_pins="(\d+)"/s)
+		if ($arch_contents =~ m/pb_type name="clb".*?pb_type name="ble".*?input.*?num_pins="(\d+)"/s)
 		{
 			$lut_size = $1;
 		}
