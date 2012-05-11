@@ -90,7 +90,11 @@ ReadOptions(INP int argc,
 		}
 	    else if(NULL == Options->CircuitName)
 		{
-			Options->CircuitName = my_strdup(*Args);
+		    Options->CircuitName = my_strdup(*Args);
+		    /*if the user entered the circuit name with the .blif extension, remove it now*/
+		    if (!strcmp(Options->CircuitName + strlen(Options->CircuitName) - strlen(".blif"), ".blif")) {
+			Options->CircuitName[strlen(Options->CircuitName)-5] = '\0';
+		    }
 		    ++Args;
 		}
 	    else
