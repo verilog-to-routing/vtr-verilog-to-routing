@@ -45,7 +45,7 @@
 enum e_gain_update {GAIN, NO_GAIN};
 enum e_feasibility {FEASIBLE, INFEASIBLE};
 enum e_gain_type {HILL_CLIMBING, NOT_HILL_CLIMBING};
-enum e_removal_policy {REMOVE_CLUSTERED, LEAVE_CLUSTERED};
+enum e_removal_policy {REMOVE_CLUSTERED, LEAVE_CLUSTERED}; /* jedit REMOVE_CLUSTERED no longer used, remove */
 enum e_net_relation_to_clustered_block {INPUT, OUTPUT};
 
 /* Linked list structure.  Stores one integer (iblk). */
@@ -1010,7 +1010,7 @@ static t_pack_molecule *get_molecule_by_num_ext_inputs (	    INP enum e_packer_a
 		for(i = 0; i < get_array_size_of_molecule(ptr->moleculeptr); i++) {
 			 if(ptr->moleculeptr->logical_block_ptrs[i] != NULL) {
 				ilogical_blk = ptr->moleculeptr->logical_block_ptrs[i]->index;
-				if (outputs_clocks_and_models_feasible(packer_algorithm, ilogical_blk, NULL, cur_pb)) {
+				if (!outputs_clocks_and_models_feasible(packer_algorithm, ilogical_blk, NULL, cur_pb)) {
 					success = FALSE;
 					break;
 				}
@@ -1061,7 +1061,7 @@ static t_pack_molecule *get_free_molecule_with_most_ext_inputs_for_cluster (INP 
  }
  
  for (ext_inps = inputs_avail; ext_inps >= 0; ext_inps--) {
-    molecule = get_molecule_by_num_ext_inputs (packer_algorithm, cur_pb, ext_inps, REMOVE_CLUSTERED);
+    molecule = get_molecule_by_num_ext_inputs (packer_algorithm, cur_pb, ext_inps, LEAVE_CLUSTERED);
 	if (molecule != NULL) {
        break;
 	}
