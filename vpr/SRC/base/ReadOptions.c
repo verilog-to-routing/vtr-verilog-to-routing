@@ -268,7 +268,6 @@ ProcessOption(INP const char *const *Args,
 	default:
 	    ErrorOption(*PrevArgs);
 	}
-    return NULL;
 }
 
 
