@@ -199,7 +199,6 @@ static t_pack_molecule* get_most_critical_seed_molecule(void);
 static void free_cb (t_pb *pb, int max_models);
 static void free_pb_stats(t_pb_stats pb_stats, int max_models);
 static void free_pb (t_pb *pb, int max_models);
-static float get_base_molecule_gain(t_pack_molecule *molecule);
 static float get_molecule_gain(t_pack_molecule *molecule, float *blk_gain);
 static int compare_molecule_gain(const void *a, const void *b);
 
@@ -2032,9 +2031,11 @@ static t_pack_molecule *get_molecule_for_cluster (	INP enum e_packer_algorithm p
  * will not find anything.  However, another logical_block with no inputs in *
  * common with the cluster may still be inserted into the cluster.   */
 
- if (allow_unrelated_clustering)
-   if (best_molecule == NULL) 
-     best_molecule = get_free_molecule_with_most_ext_inputs_for_cluster (packer_algorithm, cur_pb);
+ if (allow_unrelated_clustering) {
+	 if (best_molecule == NULL) {
+		best_molecule = get_free_molecule_with_most_ext_inputs_for_cluster (packer_algorithm, cur_pb);
+	 }
+ }
 
  return best_molecule;
 }
@@ -2205,7 +2206,7 @@ static t_pack_molecule* get_most_critical_seed_molecule(void) {
 	  while(cur != NULL) {
 		  molecule = (t_pack_molecule *)cur->data_vptr;
 		  if(molecule->valid) {
-			  if(best == NULL || get_base_molecule_gain(best) < get_base_molecule_gain(molecule)) {
+			  if(best == NULL || (best->base_gain) < (molecule->base_gain)) {
 				  best = molecule;
 			  }
 		  }
@@ -2293,34 +2294,25 @@ static void free_pb_stats(t_pb_stats pb_stats, int max_models) {
 	}
 }
 
-/* Score desirability of selecting molecule for packing independant of current packing situation */
-static float get_base_molecule_gain(t_pack_molecule *molecule) {
-	float gain;
-	/* jedit need to sweep the right gain value and perhaps normalize */
-	gain = molecule->num_ext_inputs / 10 + molecule->num_blocks; /* bigger molecules and multiple molecules should take priority in packing */
-	if(molecule->type == MOLECULE_FORCED_PACK) {
-		gain -= (molecule->pack_pattern->base_cost / 100); /* In the event of a tie, use the molecule with less costly physical resources */
-	}
-	return gain;
-}
-
 /* get gain of packing molecule into current cluster */
 static float get_molecule_gain(t_pack_molecule *molecule, float *blk_gain) {
 	float gain;
 	int i;
 
-	gain = get_base_molecule_gain(molecule) / 1000; /* jedit need to sweep this value and perhaps normalize */
+	gain = 0;
 	for(i = 0; i < get_array_size_of_molecule(molecule); i++) {
 		if(molecule->logical_block_ptrs[i] != NULL) {
 			gain += blk_gain[molecule->logical_block_ptrs[i]->index];
 		}
 	}
-
+	gain /= molecule->num_blocks;
+	gain += molecule->base_gain / 1000; /* Use base gain as tie breaker TODO: need to sweep this value and perhaps normalize */
+	
 	return gain;
 }
 
 static int compare_molecule_gain(const void *a, const void *b) {
-	return (int)(get_base_molecule_gain(*(t_pack_molecule **)a) - get_base_molecule_gain(*(t_pack_molecule **)b));
+	return (int)((*(t_pack_molecule **)a)->base_gain - (*(t_pack_molecule **)b)->base_gain);
 }
 
 

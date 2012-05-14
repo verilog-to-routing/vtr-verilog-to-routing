@@ -227,6 +227,8 @@ typedef struct s_pack_molecule
 	int num_blocks;							/* number of logical blocks of molecule */
 	int root;								/* root index of molecule, logical_block_ptrs[root] is ptr to root logical block */
 
+	float base_gain;						/* Intrinsic "goodness" score for molecule independant of rest of netlist */
+
 	int num_ext_inputs;						/* number of input pins used by molecule that are not self-contained by pattern molecule matches */
 	struct s_pack_molecule *next;
 } t_pack_molecule;

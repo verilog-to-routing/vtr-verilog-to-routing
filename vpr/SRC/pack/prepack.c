@@ -463,6 +463,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(INP t_pack_patterns *list_of_pack
 	int i, j;
 	t_pack_molecule *list_of_molecules_head;
 	t_pack_molecule *cur_molecule;
+	int num_blocks;
 
 	cur_molecule = list_of_molecules_head = NULL;
 
@@ -480,6 +481,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(INP t_pack_patterns *list_of_pack
 		cur_molecule->logical_block_ptrs = my_malloc(1 * sizeof(t_logical_block*));
 		cur_molecule->logical_block_ptrs[0] = &logical_block[i];
 		cur_molecule->next = list_of_molecules_head;
+		cur_molecule->base_gain = 1;
 		list_of_molecules_head = cur_molecule;
 
 		logical_block[i].packed_molecules = my_calloc(1, sizeof(struct s_linked_vptr));
@@ -487,17 +489,46 @@ t_pack_molecule *alloc_and_load_pack_molecules(INP t_pack_patterns *list_of_pack
 	}
 
 	/* Find forced pack patterns */
+	/* TODO: Need to properly investigate the right gain value and perhaps normalize */
 	for(i = 0; i < num_packing_patterns; i++) {
 		for(j = 0; j < num_logical_blocks; j++) {
 			cur_molecule = try_create_molecule(list_of_pack_patterns, i, j);
 			if(cur_molecule != NULL) {
 				cur_molecule->next = list_of_molecules_head;
+				/* In the event of multiple molecules with the same logical block pattern, bias to use the molecule with less costly physical resources first */
+				/* TODO: Need to normalize magical number 100 */
+				cur_molecule->base_gain = cur_molecule->num_blocks - (cur_molecule->pack_pattern->base_cost / 100); 
 				list_of_molecules_head = cur_molecule;
 			}
 		}
 	}
 
 	/* jedit TODO: Find chain patterns */
+
+
+	/* Reduce incentive to use logical blocks as standalone blocks when molecules already exist */
+	for(i = 0; i < num_logical_blocks; i++) {
+		cur_molecule = (t_pack_molecule*)logical_block[i].packed_molecules->data_vptr;
+		num_blocks = 1;
+		while(cur_molecule != NULL) {
+			if(cur_molecule->num_blocks > 1) {
+				num_blocks = cur_molecule->num_blocks;
+				break;
+			}
+			cur_molecule = cur_molecule->next;
+		}
+		if(num_blocks > 1) {
+			cur_molecule = (t_pack_molecule*)logical_block[i].packed_molecules->data_vptr;
+			while(cur_molecule != NULL) {
+				if(cur_molecule->num_blocks == 1) {
+					cur_molecule->base_gain /= num_blocks;
+				}
+				cur_molecule = cur_molecule->next;
+			}
+		}
+	}
+
+
 
 	if (GetEchoOption()){
 		print_pack_molecules("prepack_molecules_and_patterns.echo", list_of_pack_patterns, num_packing_patterns, list_of_molecules_head);
