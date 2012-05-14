@@ -1,24 +1,47 @@
-# For graphics, uncomment -lX11 flag and comment out -DNO_GRAPHICS flag
+################################   MAKEFILE OPTIONS     ####################################
+
+# Modify the following parameters to suit the user's needs
+# Only this section needs to be changed
+
+# The graphics are currently only compatible with X11, therefore X11 must be installed.
+# If PVR makes when graphics are enabled without prompting that L/usr/lib/X11 is not found,
+# then the following comment can be ignored
+
+# On Ubuntu, the Terminal command to install X11 is:
+# sudo apt-get install libx11-dev
+# please search online for installing X11 on other platforms
+
+ENABLE_GRAPHICS = false # can be true or false
+BUILD_TYPE = release    # can be debug or release
+
+#############################################################################################
 
 CC = gcc
-LIB_DIR = -L/usr/lib/X11 -L../libvpr
-#LIB = -lm -lX11 -lvpr_6
+LIB_DIR = -L../libvpr
 LIB = -lm -lvpr_6
 SRC_DIR = SRC
 OBJ_DIR = OBJ
 OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/route
 
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -Wstrict-prototypes -O -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wmissing-prototypes -Wshadow -Wcast-align -D_POSIX_SOURCE
-DEBUG_FLAGS = -g 
+DEBUG_FLAGS = -g
 OPT_FLAGS = -O3
 INC_FLAGS = -I../libvpr/include
 
-#FLAGS = $(WARN_FLAGS) -D EZXML_NOMMAP  -D_POSIX_C_SOURCE
-FLAGS = $(OPT_FLAGS) $(INC_FLAGS) -D EZXML_NOMMAP -DNO_GRAPHICS -D_POSIX_C_SOURCE
-#FLAGS = $(OPT_FLAGS) $(INC_FLAGS) -D EZXML_NOMMAP -D_POSIX_C_SOURCE
-#FLAGS = $(DEBUG_FLAGS) $(INC_FLAGS) -pedantic  -D EZXML_NOMMAP  -D_POSIX_C_SOURCE
-#FLAGS = $(DEBUG_FLAGS) -pedantic -D EZXML_NOMMAP -Wall -D_POSIX_C_SOURCE
-#FLAGS = $(DEBUG_FLAGS) $(INC_FLAGS) -pedantic  -D EZXML_NOMMAP -DNO_GRAPHICS -D_POSIX_C_SOURCE
+FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -D EZXML_NOMMAP -D_POSIX_C_SOURCE
+
+ifeq ($(BUILD_TYPE),release)
+  FLAGS := $(FLAGS) $(OPT_FLAGS)
+else                              # DEBUG build
+  FLAGS := $(FLAGS) $(DEBUG_FLAGS)
+endif
+
+ifeq ($(ENABLE_GRAPHICS),true)
+  LIB_DIR := $(LIB_DIR) -L/usr/lib/X11
+  LIB := $(LIB) -lX11
+else
+  FLAGS := $(FLAGS) -DNO_GRAPHICS
+endif
 
 EXE = vpr
 
@@ -38,7 +61,7 @@ $(EXE): $(OBJ) Makefile ../libvpr/libvpr_6.a
 # without this, all but the last file written to a directory would appear
 # to be out of date.
 $(OBJ): OBJ/%.o:$(SRC_DIR)/%.c | $$(dir $$@D)
-	$(CC) $(FLAGS) -MD -MP $(X11_INCLUDE) -I$(OTHER_DIR) -ISRC/util -c $< -o $@
+	$(CC) $(FLAGS) -MD -MP -I$(OTHER_DIR) -ISRC/util -c $< -o $@
 
 
 # Silently create target directories as need
@@ -49,17 +72,17 @@ $(OBJ_DIRS):
 
 clean:
 	rm -f $(EXE) $(OBJ) $(DEP)
-	
+
 clean_coverage: clean
 	rm -rf ./usr
 	find ./OBJ -regex ".*.\(gcda\|gcno\)" -exec rm -f {} \;
 	rm -f *.html
 	find ./SRC -iname "*.html" -exec rm -f {} \;
-	
+
 
 ctags:
 	cd $(SRC_DIR) && ctags *.[ch]
-	
+
 # This is using Target-specific variable values. See: http://www.gnu.org/software/make/manual/make.html#Target_002dspecific
 coverage: FLAGS = $(DEBUG_FLAGS) $(INC_FLAGS) -pedantic  -D EZXML_NOMMAP -fprofile-arcs -ftest-coverage -lgcov
 coverage: $(EXE)
