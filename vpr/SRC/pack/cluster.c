@@ -1164,7 +1164,7 @@ static enum e_block_pack_status try_pack_molecule(INOUTP t_cluster_placement_sta
 	block_pack_status = BLK_STATUS_UNDEFINED;
 	
 	molecule_size = get_array_size_of_molecule(molecule);
-	failed_location = molecule_size;
+	failed_location = 0;
 
 	while(block_pack_status != BLK_PASSED) {
 		save_and_reset_routing_cluster(); /* save current routing information because speculative packing will change routing*/
@@ -1313,21 +1313,27 @@ static void revert_place_logical_block(INP int iblock, INP int max_models){
 	logical_block[iblock].clb_index = NO_CLUSTER;
 	logical_block[iblock].pb = NULL;
 
-	next = pb->parent_pb;
-	free_pb(pb,max_models);
-	pb = next;
-
-	while(pb != NULL) {
-		/* If this is pb is created only for the purposes of holding new molecule, remove it
-		  Must check if cluster is already freed (which can be the case)
+	if(pb != NULL) {
+		/* When freeing molecules, the current block might already have been freed by a prior revert 
+		   When this happens, no need to do anything beyond basic book keeping at the logical block
 		*/
+
 		next = pb->parent_pb;
-		if(pb->child_pbs != NULL && pb->pb_stats.num_child_blocks_in_pb == 0) {
-			set_pb_graph_mode(pb->pb_graph_node, pb->mode, 0); /* default mode is to use mode 1 */
-			set_pb_graph_mode(pb->pb_graph_node, 0, 1);
-			free_pb(pb,max_models);
-		}
+		free_pb(pb,max_models);
 		pb = next;
+
+		while(pb != NULL) {
+			/* If this is pb is created only for the purposes of holding new molecule, remove it
+			  Must check if cluster is already freed (which can be the case)
+			*/
+			next = pb->parent_pb;
+			if(pb->child_pbs != NULL && pb->pb_stats.num_child_blocks_in_pb == 0) {
+				set_pb_graph_mode(pb->pb_graph_node, pb->mode, 0); /* default mode is to use mode 1 */
+				set_pb_graph_mode(pb->pb_graph_node, 0, 1);
+				free_pb(pb,max_models);
+			}
+			pb = next;
+		}
 	}
 }
 
@@ -1557,8 +1563,9 @@ static void update_total_gain(float alpha, float beta, boolean timing_driven, bo
 			   /*cur_pb->pb_stats.gain[iblk] = ((1-beta)*(float)cur_pb->pb_stats.sharinggain[iblk] + beta*(float)cur_pb->pb_stats.connectiongain[iblk])/(num_input_pins + num_output_pins);*/
 			   cur_pb->pb_stats.gain[iblk] = ((1-beta)*(float)cur_pb->pb_stats.sharinggain[iblk] + beta*(float)cur_pb->pb_stats.connectiongain[iblk])/(num_used_input_pins + num_used_output_pins);
 		  } else {
-			  cur_pb->pb_stats.gain[iblk] = ((float)cur_pb->pb_stats.sharinggain[iblk])/(num_used_input_pins + num_used_output_pins);
 			  /*cur_pb->pb_stats.gain[iblk] = ((float)cur_pb->pb_stats.sharinggain[iblk])/(num_input_pins + num_output_pins); */
+			  cur_pb->pb_stats.gain[iblk] = ((float)cur_pb->pb_stats.sharinggain[iblk])/(num_used_input_pins + num_used_output_pins);
+			  
 		  }
 
 		  /* Add in timing driven cost into cost function */
@@ -2290,7 +2297,7 @@ static void free_pb_stats(t_pb_stats pb_stats, int max_models) {
 static float get_base_molecule_gain(t_pack_molecule *molecule) {
 	float gain;
 	/* jedit need to sweep the right gain value and perhaps normalize */
-	gain = molecule->num_ext_inputs + molecule->num_blocks; /* bigger molecules and multiple molecules should take priority in packing */
+	gain = molecule->num_ext_inputs / 10 + molecule->num_blocks; /* bigger molecules and multiple molecules should take priority in packing */
 	if(molecule->type == MOLECULE_FORCED_PACK) {
 		gain -= (molecule->pack_pattern->base_cost / 100); /* In the event of a tie, use the molecule with less costly physical resources */
 	}
@@ -2302,7 +2309,7 @@ static float get_molecule_gain(t_pack_molecule *molecule, float *blk_gain) {
 	float gain;
 	int i;
 
-	gain = get_base_molecule_gain(molecule) / 100; /* jedit need to sweep this value and perhaps normalize */
+	gain = get_base_molecule_gain(molecule) / 1000; /* jedit need to sweep this value and perhaps normalize */
 	for(i = 0; i < get_array_size_of_molecule(molecule); i++) {
 		if(molecule->logical_block_ptrs[i] != NULL) {
 			gain += blk_gain[molecule->logical_block_ptrs[i]->index];
