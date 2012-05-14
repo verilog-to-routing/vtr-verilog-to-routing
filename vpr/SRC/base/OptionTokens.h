@@ -1,3 +1,6 @@
+#ifndef OPTIONTOKENS_H
+#define OPTIONTOKENS_H
+
 /* The order of this does NOT matter, but do not give things specific values
  * or you will screw up the ability to count things properly */
 enum e_OptionBaseToken
@@ -10,6 +13,7 @@ enum e_OptionBaseToken
     OT_FULL_STATS,
     OT_READ_PLACE_ONLY,
     OT_FAST,
+    OT_CREATE_ECHO_FILE,
     OT_TIMING_ANALYSIS,
     OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY,
     OT_INIT_T,
@@ -99,3 +103,5 @@ enum e_OptionArgToken
 
 extern const struct s_TokenPair OptionBaseTokenList[];
 extern const struct s_TokenPair OptionArgTokenList[];
+
+#endif

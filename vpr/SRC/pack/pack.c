@@ -11,6 +11,7 @@
 #include "ff_pack.h"
 #include "cluster.h"
 #include "output_clustering.h"
+#include "ReadOptions.h"
 
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
@@ -59,9 +60,9 @@ eg.
 
 
 */
-#ifdef DUMP_BLIF_INPUT
+if (GetEchoOption()){
 	echo_input (packer_opts->blif_file_name, "blif_input.echo", library_models);
-#endif
+}else;
 
 	absorb_buffer_luts ();
 	compress_netlist (); /* remove unused inputs */
@@ -82,7 +83,9 @@ eg.
 
 
 	/* Uncomment line below if you want a dump of compressed netlist. */
-	/* echo_input (packer_opts->blif_file_name, packer_opts->lut_size, "packed.echo"); */
+	/* if (GetEchoOption()){
+		echo_input (packer_opts->blif_file_name, packer_opts->lut_size, "packed.echo"); 
+	}else; */
 
 	if (packer_opts->skip_clustering == FALSE) {
 		do_clustering (arch,

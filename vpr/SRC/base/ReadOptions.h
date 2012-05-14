@@ -1,6 +1,8 @@
 #ifndef READOPTIONS_H
 #define READOPTIONS_H
 
+#include "OptionTokens.h"
+
 typedef struct s_options t_options;
 struct s_options
 {
@@ -17,6 +19,7 @@ struct s_options
 	int GraphPause;
 	float constant_net_delay;
     boolean TimingAnalysis;
+    boolean CreateEchoFile;
     
 	/* Clustering options */
 	boolean global_clocks;
@@ -85,6 +88,9 @@ struct s_options
 void ReadOptions(INP int argc,
 		 INP char **argv,
 		 OUTP t_options * Options);
+
+boolean EchoEnabled;		 
+boolean GetEchoOption(void);
 
 #endif
 

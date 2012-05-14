@@ -14,6 +14,7 @@
 #include "rr_graph_indexed_data.h"
 #include "vpr_utils.h"
 #include "read_xml_arch_file.h"
+#include "ReadOptions.h"
 
 /* #define ENABLE_DUMP */
 /* #define MUX_SIZE_DIST_DISPLAY */
@@ -357,9 +358,9 @@ build_rr_graph(INP t_graph_type graph_type,
 		{
 		    *Warnings |= RR_GRAPH_WARN_CHAN_WIDTH_CHANGED;
 		}
-#ifdef CREATE_ECHO_FILES
-	    dump_seg_details(seg_details, nodes_per_chan, "seg_details.txt");
-#endif /* CREATE_ECHO_FILES */
+	    if (GetEchoOption()){
+	    	dump_seg_details(seg_details, nodes_per_chan, "seg_details.txt");
+	    }else;
 	}
     /* END SEG_DETAILS */
 
@@ -564,9 +565,9 @@ build_rr_graph(INP t_graph_type graph_type,
 
     rr_graph_externals(timing_inf, segment_inf, num_seg_types,
 		       nodes_per_chan, wire_to_ipin_switch, base_cost_type);
-#ifdef CREATE_ECHO_FILES
+if (GetEchoOption()){
     dump_rr_graph("rr_graph.echo");
-#endif /* CREATE_ECHO_FILES */
+}else;
 
     check_rr_graph(graph_type, num_types, types, nx, ny,
 		   grid, nodes_per_chan, Fs, num_seg_types, num_switches, segment_inf,

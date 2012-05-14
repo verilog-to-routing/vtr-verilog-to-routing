@@ -3,6 +3,7 @@
 #include "vpr_types.h"
 #include "rr_graph_sbox.h"
 #include "rr_graph_util.h"
+#include "ReadOptions.h"
 
 
 /* Switch box:                                                             *
@@ -47,11 +48,6 @@ alloc_and_load_switch_block_conn(INP int nodes_per_chan,
     int from_track;
     struct s_ivec ***switch_block_conn = NULL;
 
-#ifdef CREATE_ECHO_FILES
-    int i, j, k, l;
-    FILE *out;
-#endif /* CREATE_ECHO_FILES */
-
     /* Currently Fs must be 3 since each track maps once to each other side */
     assert(3 == Fs);
 
@@ -93,7 +89,9 @@ alloc_and_load_switch_block_conn(INP int nodes_per_chan,
 		}
 	}
 
-#ifdef CREATE_ECHO_FILES
+if (GetEchoOption()){
+    int i, j, k, l;
+    FILE *out;
     out = my_fopen("switch_block_conn.echo", "w", 0);
     for(l = 0; l < 4; ++l)
 	{
@@ -116,7 +114,7 @@ alloc_and_load_switch_block_conn(INP int nodes_per_chan,
 		}
 	}
     fclose(out);
-#endif /* CREATE_ECHO_FILES */
+}else;
 
     return switch_block_conn;
 }

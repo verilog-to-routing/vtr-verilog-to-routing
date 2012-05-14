@@ -354,7 +354,9 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecule_head, int num_
 
 	heapsort(critindexarray, criticality, num_logical_blocks, 1);
 
-	/*print_critical_path("clustering_critical_path.echo");*/
+	/*if (GetEchoOption()){
+		print_critical_path("clustering_critical_path.echo");
+	}*/
 
 
    if (cluster_seed_type == VPACK_TIMING){
@@ -469,9 +471,9 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecule_head, int num_
 
 
  output_clustering(	clb, num_clb, global_clocks, is_clock, out_fname, FALSE);
-#ifdef DUMP_BLIF_ECHO
+if (GetEchoOption()){
 	output_blif(	clb, num_clb, global_clocks, is_clock, "post_pack_netlist.blif", FALSE);
-#endif
+}else;
 
  if(hill_climbing_flag)
  {

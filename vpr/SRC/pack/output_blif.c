@@ -13,6 +13,7 @@ Print blif representation of circuit
 #include "vpr_types.h"
 #include "globals.h"
 #include "output_blif.h"
+#include "ReadOptions.h"
 
 #define LINELENGTH 1024
 #define TABLENGTH 1
@@ -212,7 +213,7 @@ static int find_fanin_rr_node(t_pb *cur_pb, enum PORTS type, int rr_node_index) 
 	}
 
 	/* TODO: Once I find a way to output routing in empty blocks then code should never reach here, for now, return OPEN */
-	printf("Use hack in blif dumper (do properly later): connecting net %s #%d for pb %s type %s\n", vpack_net[net_num].name, net_num, 
+	printf("Can't find connecting net %s #%d for pb %s type %s\n", vpack_net[net_num].name, net_num, 
 		cur_pb->name, cur_pb->pb_graph_node->pb_type->name);
 		
 	assert(hack_empty_route_through != OPEN);
@@ -400,7 +401,9 @@ print_clusters(
 	{
 		rr_node = clb[icluster].pb->rr_graph;
 #if 0
-		dump_rr_graph("cluster_rr_graph.echo"); 
+		if (GetEchoOption()){
+			dump_rr_graph("cluster_rr_graph.echo"); 
+		}else;
 #endif
 		if(clb[icluster].type != IO_TYPE)
 			print_pb(fpout, clb[icluster].pb, icluster);

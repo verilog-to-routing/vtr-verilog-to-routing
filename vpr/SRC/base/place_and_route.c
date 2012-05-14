@@ -19,6 +19,7 @@
 #include "net_delay.h"
 #include "timing_place.h"
 #include "read_xml_arch_file.h"
+#include "ReadOptions.h"
 
 /******************* Subroutines local to this module ************************/
 
@@ -230,9 +231,9 @@ place_and_route(enum e_operation operation,
 
 		    print_route(route_file);
 
-#ifdef CREATE_ECHO_FILES
-		    /*print_sink_delays("routing_sink_delays.echo"); */
-#endif /* CREATE_ECHO_FILES */
+/*if (GetEchoOption()){
+		    print_sink_delays("routing_sink_delays.echo"); 
+}*/
 
 		    sprintf(msg,
 			    "Routing succeeded with a channel width factor of %d.\n\n",
@@ -246,9 +247,9 @@ place_and_route(enum e_operation operation,
 	    if(timing_inf.timing_analysis_enabled)
 		{
 		    assert(net_slack);
-			#ifdef CREATE_ECHO_FILES
+			if (GetEchoOption()){
 				print_timing_graph_as_blif("post_flow_timing_graph.blif", models);
-			#endif
+			}
 
 		    free_timing_graph(net_slack);
 
@@ -664,9 +665,9 @@ binary_search_place_and_route(struct s_placer_opts placer_opts,
 
     print_route(route_file);
 
-#ifdef CREATE_ECHO_FILES
-    /* print_sink_delays("routing_sink_delays.echo"); */
-#endif /* CREATE_ECHO_FILES */
+/*if (GetEchoOption()){
+     print_sink_delays("routing_sink_delays.echo");
+}*/
 
     init_draw_coords(max_pins_per_clb);
     sprintf(msg, "Routing succeeded with a channel width factor of %d.",
@@ -675,9 +676,9 @@ binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	if(timing_inf.timing_analysis_enabled)
 	{
-		#ifdef CREATE_ECHO_FILES
+		if (GetEchoOption()){
 			print_timing_graph_as_blif("post_flow_timing_graph.blif", models);
-		#endif
+		}
 	    free_timing_graph(net_slack);
 	    free_net_delay(net_delay, &net_delay_chunk_list_head);
 	}

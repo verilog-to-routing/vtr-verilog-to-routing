@@ -42,6 +42,14 @@ static const char *const *ReadRouteType(INP const char *const *Args,
 static const char *const *ReadString(INP const char *const *Args,
 				     OUTP char **Val);
 
+/******** Globally Accessible Function ********/
+boolean 
+GetEchoOption(void)
+{
+	return EchoEnabled;
+}
+
+
 
 /******** Subroutine implementations ********/
 
@@ -90,11 +98,7 @@ ReadOptions(INP int argc,
 		}
 	    else if(NULL == Options->CircuitName)
 		{
-		    Options->CircuitName = my_strdup(*Args);
-		    /*if the user entered the circuit name with the .blif extension, remove it now*/
-		    if (!strcmp(Options->CircuitName + strlen(Options->CircuitName) - strlen(".blif"), ".blif")) {
-			Options->CircuitName[strlen(Options->CircuitName)-5] = '\0';
-		    }
+			Options->CircuitName = my_strdup(*Args);
 		    ++Args;
 		}
 	    else
@@ -151,6 +155,8 @@ ProcessOption(INP const char *const *Args,
 	    return ReadOnOff(Args, &Options->TimingAnalysis);
 	case OT_OUTFILE_PREFIX:
 	    return ReadString(Args, &Options->OutFilePrefix);
+	case OT_CREATE_ECHO_FILE:
+	    return ReadOnOff(Args, &Options->CreateEchoFile);
 
 	/* Clustering Options */
 	case OT_GLOBAL_CLOCKS:

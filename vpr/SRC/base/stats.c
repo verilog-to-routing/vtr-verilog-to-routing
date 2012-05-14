@@ -10,6 +10,7 @@
 #include "net_delay.h"
 #include "path_delay.h"
 #include "read_xml_arch_file.h"
+#include "ReadOptions.h"
 
 /********************** Subroutines local to this module *********************/
 
@@ -88,18 +89,18 @@ routing_stats(boolean full_stats,
 		{
 		    load_net_delay_from_routing(net_delay, clb_net, num_nets);
 
-#ifdef CREATE_ECHO_FILES
+if (GetEchoOption()){
 		    print_net_delay(net_delay, "net_delay.echo", clb_net, num_nets);
-#endif /* CREATE_ECHO_FILES */
+}
 
 		    load_timing_graph_net_delays(net_delay);
 		    T_crit = load_net_slack(net_slack, 0);
 
-#ifdef CREATE_ECHO_FILES
+if (GetEchoOption()){
 		    print_timing_graph("timing_graph.echo");
 		    print_net_slack("net_slack.echo", net_slack);
 		    print_critical_path("critical_path.echo");
-#endif /* CREATE_ECHO_FILES */
+}
 
 		    printf("\n");
 			if(pb_max_internal_delay == UNDEFINED || pb_max_internal_delay < T_crit) {

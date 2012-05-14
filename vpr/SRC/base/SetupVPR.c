@@ -8,6 +8,7 @@
 #include "read_xml_arch_file.h"
 #include "SetupVPR.h"
 #include "pb_type_graph.h"
+#include "ReadOptions.h"
 
 static void SetupOperation(INP t_options Options,
 			   OUTP enum e_operation *Operation);
@@ -180,9 +181,9 @@ SetupVPR(INP t_options Options,
 	
 	printf("Building complex block graph \n");
 	alloc_and_load_all_pb_graphs();
-	#ifdef DUMP_PB_GRAPH
+	if (GetEchoOption()){
 		echo_pb_graph("pb_graph.echo");
-	#endif
+	}
 
 
     *GraphPause = 1;		/* DEFAULT */
@@ -200,9 +201,9 @@ SetupVPR(INP t_options Options,
 	}
 #endif /* NO_GRAPHICS */
 
-#ifdef CREATE_ECHO_FILES
+if (GetEchoOption()){
     EchoArch("arch.echo", type_descriptors, num_types, Arch);
-#endif
+}
 	
 }
 
@@ -804,4 +805,17 @@ IsTimingEnabled(INP t_options Options)
     return TRUE;
 }
 
+/* Determines whether file echo should be on or off. 
+   Unless otherwise specified, always default to on.
+*/
+boolean
+IsEchoEnabled(INP t_options Options)
+{
+    /* First priority to the '--timing_analysis' flag */
+    if(Options.Count[OT_CREATE_ECHO_FILE])
+	{
+	    return Options.CreateEchoFile;
+	}
+    return TRUE;
+}
 

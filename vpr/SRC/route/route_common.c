@@ -16,6 +16,7 @@
 #include "place_and_route.h"
 #include "rr_graph.h"
 #include "read_xml_arch_file.h"
+#include "ReadOptions.h"
 
 /***************** Variables shared only by route modules *******************/
 
@@ -1439,14 +1440,14 @@ print_route(char *route_file)
 
     fclose(fp);
 
-#ifdef CREATE_ECHO_FILES
+if (GetEchoOption()){
     fp = my_fopen("mem.echo", "w", 0);
     fprintf(fp, "\nNum_heap_allocated: %d   Num_trace_allocated: %d\n",
 	    num_heap_allocated, num_trace_allocated);
     fprintf(fp, "Num_linked_f_pointer_allocated: %d\n",
 	    num_linked_f_pointer_allocated);
     fclose(fp);
-#endif /* CREATE_ECHO_FILES */
+}else;
 
 }
 

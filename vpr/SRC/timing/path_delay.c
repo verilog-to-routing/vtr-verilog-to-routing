@@ -10,6 +10,7 @@
 #include "vpr_utils.h"
 #include <assert.h>
 #include "read_xml_arch_file.h"
+#include "ReadOptions.h"
 
 /****************** Timing graph Structure ************************************
  *                                                                            *
@@ -150,9 +151,9 @@ alloc_and_load_timing_graph(t_timing_inf timing_inf)
 
     num_sinks = alloc_and_load_timing_graph_levels();
 
-	#ifdef CREATE_ECHO_FILES
+	if (GetEchoOption()){
 		print_timing_graph("initial_timing_graph.echo");
-	#endif
+	}else;
 
 	check_timing_graph(num_sinks);
 	
@@ -199,10 +200,10 @@ float** alloc_and_load_pre_packing_timing_graph(float block_delay, float inter_c
 
 	net_slack = alloc_net_slack();
 
-	#ifdef CREATE_ECHO_FILES
+	if (GetEchoOption()){
 		print_timing_graph("pre_packing_timing_graph.echo");
 		print_timing_graph_as_blif("pre_packing_timing_graph_as_blif.blif", models);
-	#endif
+	}else;
 
 	check_timing_graph(num_sinks);
 
@@ -1410,12 +1411,12 @@ do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
     printf("\n");
     printf("\nCritical Path: %g (s)\n", T_crit);
 
-#ifdef CREATE_ECHO_FILES
+if (GetEchoOption()){
     print_critical_path("critical_path.echo");
     print_timing_graph("timing_graph.echo");
     print_net_slack("net_slack.echo", net_slack);
     print_net_delay(net_delay, "net_delay.echo", timing_nets, num_timing_nets);
-#endif /* CREATE_ECHO_FILES */
+}else;
 
     free_timing_graph(net_slack);
     free_net_delay(net_delay, &net_delay_chunk_list_head);

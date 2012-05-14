@@ -12,6 +12,7 @@ const struct s_TokenPair OptionBaseTokenList[] = {
     {"fix_pins", OT_FIX_PINS},
     {"full_stats", OT_FULL_STATS},
     {"fast", OT_FAST},
+    {"echo_file", OT_CREATE_ECHO_FILE},
     {"timing_analysis", OT_TIMING_ANALYSIS},
     {"timing_analyze_only_with_net_delay",
      OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY},

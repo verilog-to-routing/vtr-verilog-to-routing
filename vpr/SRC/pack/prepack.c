@@ -20,6 +20,7 @@ March 12, 2012
 #include "hash.h"
 #include "prepack.h"
 #include "vpr_utils.h"
+#include "ReadOptions.h"
 
 /*****************************************/
 /*Local Function Declaration
@@ -498,9 +499,9 @@ t_pack_molecule *alloc_and_load_pack_molecules(INP t_pack_patterns *list_of_pack
 
 	/* jedit TODO: Find chain patterns */
 
-	#ifdef CREATE_ECHO_FILES
+	if (GetEchoOption()){
 		print_pack_molecules("prepack_molecules_and_patterns.echo", list_of_pack_patterns, num_packing_patterns, list_of_molecules_head);
-	#endif
+	}else;
 
 	return list_of_molecules_head;
 }
