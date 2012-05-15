@@ -10,22 +10,22 @@
 /******************* Subroutines local to this module ************************/
 
 static void load_rr_indexed_data_base_costs(int nodes_per_chan,
-					    t_ivec *** rr_node_indices,
+					    t_ivec *** L_rr_node_indices,
 					    enum e_base_cost_type
 					    base_cost_type,
 					    int wire_to_ipin_switch);
 
 static float get_delay_normalization_fac(int nodes_per_chan,
-					 t_ivec *** rr_node_indices);
+					 t_ivec *** L_rr_node_indices);
 
-static float get_average_opin_delay(t_ivec *** rr_node_indices,
+static float get_average_opin_delay(t_ivec *** L_rr_node_indices,
 				    int nodes_per_chan);
 
 static void load_rr_indexed_data_T_values(int index_start,
 					  int num_indices_to_load,
 					  t_rr_type rr_type,
 					  int nodes_per_chan,
-					  t_ivec *** rr_node_indices,
+					  t_ivec *** L_rr_node_indices,
 					  t_segment_inf * segment_inf);
 
 
@@ -48,7 +48,7 @@ static void load_rr_indexed_data_T_values(int index_start,
 void
 alloc_and_load_rr_indexed_data(INP t_segment_inf * segment_inf,
 			       INP int num_segment,
-			       INP t_ivec *** rr_node_indices,
+			       INP t_ivec *** L_rr_node_indices,
 			       INP int nodes_per_chan,
 			       int wire_to_ipin_switch,
 			       enum e_base_cost_type base_cost_type)
@@ -98,7 +98,7 @@ alloc_and_load_rr_indexed_data(INP t_segment_inf * segment_inf,
 	}
 
     load_rr_indexed_data_T_values(CHANX_COST_INDEX_START, num_segment,
-				  CHANX, nodes_per_chan, rr_node_indices,
+				  CHANX, nodes_per_chan, L_rr_node_indices,
 				  segment_inf);
 
     /* Y-directed segments. */
@@ -120,9 +120,9 @@ alloc_and_load_rr_indexed_data(INP t_segment_inf * segment_inf,
 
     load_rr_indexed_data_T_values((CHANX_COST_INDEX_START + num_segment),
 				  num_segment, CHANY, nodes_per_chan,
-				  rr_node_indices, segment_inf);
+				  L_rr_node_indices, segment_inf);
 
-    load_rr_indexed_data_base_costs(nodes_per_chan, rr_node_indices,
+    load_rr_indexed_data_base_costs(nodes_per_chan, L_rr_node_indices,
 				    base_cost_type, wire_to_ipin_switch);
 
 }
@@ -130,7 +130,7 @@ alloc_and_load_rr_indexed_data(INP t_segment_inf * segment_inf,
 
 static void
 load_rr_indexed_data_base_costs(int nodes_per_chan,
-				t_ivec *** rr_node_indices,
+				t_ivec *** L_rr_node_indices,
 				enum e_base_cost_type base_cost_type,
 				int wire_to_ipin_switch)
 {
@@ -144,7 +144,7 @@ load_rr_indexed_data_base_costs(int nodes_per_chan,
     if(base_cost_type == DELAY_NORMALIZED)
 	{
 	    delay_normalization_fac =
-		get_delay_normalization_fac(nodes_per_chan, rr_node_indices);
+		get_delay_normalization_fac(nodes_per_chan, L_rr_node_indices);
 	}
     else
 	{
@@ -173,7 +173,7 @@ load_rr_indexed_data_base_costs(int nodes_per_chan,
 	    rr_indexed_data[SOURCE_COST_INDEX].base_cost = 0.;
 	    rr_indexed_data[SINK_COST_INDEX].base_cost = 0.;
 	    rr_indexed_data[OPIN_COST_INDEX].base_cost =
-		get_average_opin_delay(rr_node_indices, nodes_per_chan);
+		get_average_opin_delay(L_rr_node_indices, nodes_per_chan);
 	    rr_indexed_data[IPIN_COST_INDEX].base_cost =
 		switch_inf[wire_to_ipin_switch].Tdel;
 	}
@@ -211,7 +211,7 @@ load_rr_indexed_data_base_costs(int nodes_per_chan,
 
 static float
 get_delay_normalization_fac(int nodes_per_chan,
-			    t_ivec *** rr_node_indices)
+			    t_ivec *** L_rr_node_indices)
 {
 
 /* Returns the average delay to go 1 CLB distance along a wire.  */
@@ -227,7 +227,7 @@ get_delay_normalization_fac(int nodes_per_chan,
 	{
 	    inode =
 		get_rr_node_index((nx + 1) / 2, (ny + 1) / 2, CHANX, itrack,
-				  rr_node_indices);
+				  L_rr_node_indices);
 	    cost_index = rr_node[inode].cost_index;
 	    frac_num_seg = clb_dist * rr_indexed_data[cost_index].inv_length;
 	    Tdel = frac_num_seg * rr_indexed_data[cost_index].T_linear +
@@ -240,7 +240,7 @@ get_delay_normalization_fac(int nodes_per_chan,
 	{
 	    inode =
 		get_rr_node_index((nx + 1) / 2, (ny + 1) / 2, CHANY, itrack,
-				  rr_node_indices);
+				  L_rr_node_indices);
 	    cost_index = rr_node[inode].cost_index;
 	    frac_num_seg = clb_dist * rr_indexed_data[cost_index].inv_length;
 	    Tdel = frac_num_seg * rr_indexed_data[cost_index].T_linear +
@@ -254,7 +254,7 @@ get_delay_normalization_fac(int nodes_per_chan,
 
 
 static float
-get_average_opin_delay(t_ivec *** rr_node_indices,
+get_average_opin_delay(t_ivec *** L_rr_node_indices,
 		       int nodes_per_chan)
 {
 
@@ -279,7 +279,7 @@ get_average_opin_delay(t_ivec *** rr_node_indices,
 			    inode =
 				get_rr_node_index((nx + 1) / 2, (ny + 1) / 2,
 						  OPIN, ipin,
-						  rr_node_indices);
+						  L_rr_node_indices);
 			    num_edges = rr_node[inode].num_edges;
 
 			    for(iedge = 0; iedge < num_edges; iedge++)
@@ -307,7 +307,7 @@ load_rr_indexed_data_T_values(int index_start,
 			      int num_indices_to_load,
 			      t_rr_type rr_type,
 			      int nodes_per_chan,
-			      t_ivec *** rr_node_indices,
+			      t_ivec *** L_rr_node_indices,
 			      t_segment_inf * segment_inf)
 {
 
@@ -333,7 +333,7 @@ load_rr_indexed_data_T_values(int index_start,
 	{
 	    inode =
 		get_rr_node_index((nx + 1) / 2, (ny + 1) / 2, rr_type, itrack,
-				  rr_node_indices);
+				  L_rr_node_indices);
 	    cost_index = rr_node[inode].cost_index;
 	    num_nodes_of_index[cost_index]++;
 	    C_total[cost_index] += rr_node[inode].C;
