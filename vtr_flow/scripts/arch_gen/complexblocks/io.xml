@@ -1,0 +1,47 @@
+<pb_type name="io" capacity="8">
+	<input name="outpad" num_pins="1"/>
+	<output name="inpad" num_pins="1"/>
+	<clock name="clock" num_pins="1"/>
+
+	<!-- IOs can operate as either inputs or outputs -->
+	<mode name="inpad">		  
+		<pb_type name="inpad" blif_model=".input" num_pb="1">
+			<output name="inpad" num_pins="1"/>
+		</pb_type>
+		<interconnect>
+			<direct name="inpad" input="inpad.inpad" output="io.inpad">
+				<delay_constant max="4.243e-11" in_port="inpad.inpad" out_port="io.inpad"/>
+			</direct>
+		</interconnect>
+
+	</mode>
+	<mode name="outpad">
+		<pb_type name="outpad" blif_model=".output" num_pb="1">
+			<input name="outpad" num_pins="1"/>
+		</pb_type>
+		<interconnect>
+			<direct name="outpad" input="io.outpad" output="outpad.outpad">
+				<delay_constant max="1.394e-11" in_port="io.outpad" out_port="outpad.outpad"/>
+			</direct>
+		</interconnect>
+	</mode>
+
+	<fc_in type="frac">0.15</fc_in>
+	<fc_out type="frac">0.10</fc_out>
+
+	<!-- IOs go on the periphery of the FPGA, for consistency, 
+          make it physically equivalent on all sides so that only one definition of I/Os is needed.
+          If I do not make a physically equivalent definition, then I need to define 4 different I/Os, one for each side of the FPGA
+        -->
+	<pinlocations pattern="custom">
+		<loc side="left">io.outpad io.inpad io.clock</loc>
+		<loc side="top">io.outpad io.inpad io.clock</loc>
+		<loc side="right">io.outpad io.inpad io.clock</loc>
+		<loc side="bottom">io.outpad io.inpad io.clock</loc>
+	</pinlocations>
+
+	<gridlocations>
+		<loc type="perimeter" priority="10"/>
+	</gridlocations>
+
+</pb_type>

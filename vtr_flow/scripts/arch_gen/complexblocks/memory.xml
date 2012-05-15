@@ -1,0 +1,243 @@
+<pb_type name="memory" height="6">
+	<input name="addr1" num_pins="17"/>
+	<input name="addr2" num_pins="17"/>
+	<input name="data" num_pins="72"/>
+	<input name="we1" num_pins="1"/>
+	<input name="we2" num_pins="1"/>
+	<output name="out" num_pins="72"/>
+	<clock name="clk" num_pins="1"/>
+
+	<mode name="mem_2048x72_sp">
+		<pb_type name="mem_2048x72_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
+			<input name="addr" num_pins="11" port_class="address"/>
+			<input name="data" num_pins="72" port_class="data_in"/>
+			<input name="we" num_pins="1" port_class="write_en"/>
+			<output name="out" num_pins="72" port_class="data_out"/>
+			<clock name="clk" num_pins="1" port_class="clock"/>
+			<T_setup value="2.448e-10" port="mem_2048x72_sp.addr" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_2048x72_sp.data" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_2048x72_sp.we" clock="clk"/>
+			<T_clock_to_Q max="1.852e-9" port="mem_2048x72_sp.out" clock="clk"/>
+		</pb_type>
+		<interconnect>
+			<direct name="address1" input="memory.addr1[10:0]" output="mem_2048x72_sp.addr">
+			</direct>
+			<direct name="data1" input="memory.data[71:0]" output="mem_2048x72_sp.data">
+			</direct>
+			<direct name="writeen1" input="memory.we1" output="mem_2048x72_sp.we">
+			</direct>
+			<direct name="dataout1" input="mem_2048x72_sp.out" output="memory.out[71:0]">
+			</direct>
+			<direct name="clk" input="memory.clk" output="mem_2048x72_sp.clk">
+			</direct>
+		</interconnect>
+	</mode>
+	<mode name="mem_4096x36_dp">
+		<pb_type name="mem_4096x36_dp" blif_model=".subckt dual_port_ram" class="memory" num_pb="1">
+			<input name="addr1" num_pins="12" port_class="address1"/>
+			<input name="addr2" num_pins="12" port_class="address2"/>
+			<input name="data1" num_pins="36" port_class="data_in1"/>
+			<input name="data2" num_pins="36" port_class="data_in2"/>
+			<input name="we1" num_pins="1" port_class="write_en1"/>
+			<input name="we2" num_pins="1" port_class="write_en2"/>
+			<output name="out1" num_pins="36" port_class="data_out1"/>
+			<output name="out2" num_pins="36" port_class="data_out2"/>
+			<clock name="clk" num_pins="1" port_class="clock"/>
+			<T_setup value="2.448e-10" port="mem_4096x36_dp.addr1" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_4096x36_dp.data1" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_4096x36_dp.we1" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_4096x36_dp.addr2" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_4096x36_dp.data2" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_4096x36_dp.we2" clock="clk"/>
+			<T_clock_to_Q max="1.852e-9" port="mem_4096x36_dp.out1" clock="clk"/>
+			<T_clock_to_Q max="1.852e-9" port="mem_4096x36_dp.out2" clock="clk"/>
+		</pb_type>
+		<interconnect>
+			<direct name="address1" input="memory.addr1[11:0]" output="mem_4096x36_dp.addr1">
+			</direct>
+			<direct name="address2" input="memory.addr2[11:0]" output="mem_4096x36_dp.addr2">
+			</direct>
+			<direct name="data1" input="memory.data[35:0]" output="mem_4096x36_dp.data1">
+			</direct>
+			<direct name="data2" input="memory.data[71:36]" output="mem_4096x36_dp.data2">
+			</direct>
+			<direct name="writeen1" input="memory.we1" output="mem_4096x36_dp.we1">
+			</direct>
+			<direct name="writeen2" input="memory.we2" output="mem_4096x36_dp.we2">
+			</direct>
+			<direct name="dataout1" input="mem_4096x36_dp.out1" output="memory.out[35:0]">
+			</direct>
+			<direct name="dataout2" input="mem_4096x36_dp.out2" output="memory.out[71:36]">
+			</direct>
+			<direct name="clk" input="memory.clk" output="mem_4096x36_dp.clk">
+			</direct>
+		</interconnect>
+	</mode>
+
+	<mode name="mem_4096x36_sp">
+		<pb_type name="mem_4096x36_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
+			<input name="addr" num_pins="12" port_class="address"/>
+			<input name="data" num_pins="36" port_class="data_in"/>
+			<input name="we" num_pins="1" port_class="write_en"/>
+			<output name="out" num_pins="36" port_class="data_out"/>
+			<clock name="clk" num_pins="1" port_class="clock"/>
+			<T_setup value="2.448e-10" port="mem_4096x36_sp.addr" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_4096x36_sp.data" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_4096x36_sp.we" clock="clk"/>
+			<T_clock_to_Q max="1.852e-9" port="mem_4096x36_sp.out" clock="clk"/>
+		</pb_type>
+		<interconnect>
+			<direct name="address1" input="memory.addr1[11:0]" output="mem_4096x36_sp.addr">
+			</direct>
+			<direct name="data1" input="memory.data[35:0]" output="mem_4096x36_sp.data">
+			</direct>
+			<direct name="writeen1" input="memory.we1" output="mem_4096x36_sp.we">
+			</direct>
+			<direct name="dataout1" input="mem_4096x36_sp.out" output="memory.out[35:0]">
+			</direct>
+			<direct name="clk" input="memory.clk" output="mem_4096x36_sp.clk">
+			</direct>
+		</interconnect>
+	</mode>
+	<mode name="mem_9182x18_dp">
+		<pb_type name="mem_9182x18_dp" blif_model=".subckt dual_port_ram" class="memory" num_pb="1">
+			<input name="addr1" num_pins="13" port_class="address1"/>
+			<input name="addr2" num_pins="13" port_class="address2"/>
+			<input name="data1" num_pins="18" port_class="data_in1"/>
+			<input name="data2" num_pins="18" port_class="data_in2"/>
+			<input name="we1" num_pins="1" port_class="write_en1"/>
+			<input name="we2" num_pins="1" port_class="write_en2"/>
+			<output name="out1" num_pins="18" port_class="data_out1"/>
+			<output name="out2" num_pins="18" port_class="data_out2"/>
+			<clock name="clk" num_pins="1" port_class="clock"/>
+			<T_setup value="2.448e-10" port="mem_9182x18_dp.addr1" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_9182x18_dp.data1" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_9182x18_dp.we1" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_9182x18_dp.addr2" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_9182x18_dp.data2" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_9182x18_dp.we2" clock="clk"/>
+			<T_clock_to_Q max="1.852e-9" port="mem_9182x18_dp.out1" clock="clk"/>
+			<T_clock_to_Q max="1.852e-9" port="mem_9182x18_dp.out2" clock="clk"/>
+		</pb_type>
+		<interconnect>
+			<direct name="address1" input="memory.addr1[12:0]" output="mem_9182x18_dp.addr1">
+			</direct>
+			<direct name="address2" input="memory.addr2[12:0]" output="mem_9182x18_dp.addr2">
+			</direct>
+			<direct name="data1" input="memory.data[17:0]" output="mem_9182x18_dp.data1">
+			</direct>
+			<direct name="data2" input="memory.data[35:18]" output="mem_9182x18_dp.data2">
+			</direct>
+			<direct name="writeen1" input="memory.we1" output="mem_9182x18_dp.we1">
+			</direct>
+			<direct name="writeen2" input="memory.we2" output="mem_9182x18_dp.we2">
+			</direct>
+			<direct name="dataout1" input="mem_9182x18_dp.out1" output="memory.out[17:0]">
+			</direct>
+			<direct name="dataout2" input="mem_9182x18_dp.out2" output="memory.out[35:18]">
+			</direct>
+			<direct name="clk" input="memory.clk" output="mem_9182x18_dp.clk">
+			</direct>
+		</interconnect>
+	</mode>
+
+	<mode name="mem_9182x18_sp">
+		<pb_type name="mem_9182x18_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
+			<input name="addr" num_pins="13" port_class="address"/>
+			<input name="data" num_pins="18" port_class="data_in"/>
+			<input name="we" num_pins="1" port_class="write_en"/>
+			<output name="out" num_pins="18" port_class="data_out"/>
+			<clock name="clk" num_pins="1" port_class="clock"/>
+			<T_setup value="2.448e-10" port="mem_9182x18_sp.addr" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_9182x18_sp.data" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_9182x18_sp.we" clock="clk"/>
+			<T_clock_to_Q max="1.852e-9" port="mem_9182x18_sp.out" clock="clk"/>
+		</pb_type>
+		<interconnect>
+			<direct name="address1" input="memory.addr1[12:0]" output="mem_9182x18_sp.addr">
+			</direct>
+			<direct name="data1" input="memory.data[17:0]" output="mem_9182x18_sp.data">
+			</direct>
+			<direct name="writeen1" input="memory.we1" output="mem_9182x18_sp.we">
+			</direct>
+			<direct name="dataout1" input="mem_9182x18_sp.out" output="memory.out[17:0]">
+			</direct>
+			<direct name="clk" input="memory.clk" output="mem_9182x18_sp.clk">
+			</direct>
+		</interconnect>
+	</mode>
+	<mode name="mem_18194x9_dp">
+		<pb_type name="mem_18194x9_dp" blif_model=".subckt dual_port_ram" class="memory" num_pb="1">
+			<input name="addr1" num_pins="14" port_class="address1"/>
+			<input name="addr2" num_pins="14" port_class="address2"/>
+			<input name="data1" num_pins="9" port_class="data_in1"/>
+			<input name="data2" num_pins="9" port_class="data_in2"/>
+			<input name="we1" num_pins="1" port_class="write_en1"/>
+			<input name="we2" num_pins="1" port_class="write_en2"/>
+			<output name="out1" num_pins="9" port_class="data_out1"/>
+			<output name="out2" num_pins="9" port_class="data_out2"/>
+			<clock name="clk" num_pins="1" port_class="clock"/>
+			<T_setup value="2.448e-10" port="mem_18194x9_dp.addr1" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_18194x9_dp.data1" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_18194x9_dp.we1" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_18194x9_dp.addr2" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_18194x9_dp.data2" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_18194x9_dp.we2" clock="clk"/>
+			<T_clock_to_Q max="1.852e-9" port="mem_18194x9_dp.out1" clock="clk"/>
+			<T_clock_to_Q max="1.852e-9" port="mem_18194x9_dp.out2" clock="clk"/>
+		</pb_type>
+		<interconnect>
+			<direct name="address1" input="memory.addr1[13:0]" output="mem_18194x9_dp.addr1">
+			</direct>
+			<direct name="address2" input="memory.addr2[13:0]" output="mem_18194x9_dp.addr2">
+			</direct>
+			<direct name="data1" input="memory.data[8:0]" output="mem_18194x9_dp.data1">
+			</direct>
+			<direct name="data2" input="memory.data[17:9]" output="mem_18194x9_dp.data2">
+			</direct>
+			<direct name="writeen1" input="memory.we1" output="mem_18194x9_dp.we1">
+			</direct>
+			<direct name="writeen2" input="memory.we2" output="mem_18194x9_dp.we2">
+			</direct>
+			<direct name="dataout1" input="mem_18194x9_dp.out1" output="memory.out[8:0]">
+			</direct>
+			<direct name="dataout2" input="mem_18194x9_dp.out2" output="memory.out[17:9]">
+			</direct>
+			<direct name="clk" input="memory.clk" output="mem_18194x9_dp.clk">
+			</direct>
+		</interconnect>
+	</mode>
+
+	<mode name="mem_18194x9_sp">
+		<pb_type name="mem_18194x9_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
+			<input name="addr" num_pins="14" port_class="address"/>
+			<input name="data" num_pins="9" port_class="data_in"/>
+			<input name="we" num_pins="1" port_class="write_en"/>
+			<output name="out" num_pins="9" port_class="data_out"/>
+			<clock name="clk" num_pins="1" port_class="clock"/>
+			<T_setup value="2.448e-10" port="mem_18194x9_sp.addr" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_18194x9_sp.data" clock="clk"/>
+			<T_setup value="2.448e-10" port="mem_18194x9_sp.we" clock="clk"/>
+			<T_clock_to_Q max="1.852e-9" port="mem_18194x9_sp.out" clock="clk"/>
+		</pb_type>
+		<interconnect>
+			<direct name="address1" input="memory.addr1[13:0]" output="mem_18194x9_sp.addr">
+			</direct>
+			<direct name="data1" input="memory.data[8:0]" output="mem_18194x9_sp.data">
+			</direct>
+			<direct name="writeen1" input="memory.we1" output="mem_18194x9_sp.we">
+			</direct>
+			<direct name="dataout1" input="mem_18194x9_sp.out" output="memory.out[8:0]">
+			</direct>
+			<direct name="clk" input="memory.clk" output="mem_18194x9_sp.clk">
+			</direct>
+		</interconnect>
+	</mode>
+
+	<fc_in type="frac">0.15</fc_in>
+	<fc_out type="frac">0.10</fc_out>
+	<pinlocations pattern="spread"/>
+	<gridlocations>
+		<loc type="col" start="2" repeat="8" priority="2"/>
+	</gridlocations>
+</pb_type>

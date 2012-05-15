@@ -1,0 +1,16 @@
+<model name="single_port_ram">
+	<input_ports>
+		<port name="we"/>
+		<!-- control -->
+		<port name="addr"/>
+		<!-- address lines -->
+		<port name="data"/>
+		<!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+		<port name="clk" is_clock="1"/>
+		<!-- memories are often clocked -->
+	</input_ports>
+	<output_ports>
+		<port name="out"/>
+		<!-- output can be broken down into smaller bit widths minimum size 1 -->
+	</output_ports>
+</model>
