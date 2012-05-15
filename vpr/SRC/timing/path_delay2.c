@@ -202,12 +202,11 @@ check_timing_graph(int num_sinks)
  * constant generators; and (3) the number of sinks (nodes with no fanout)  *
  * equals the number of output pads + the number of flip flops.             */
 
-    int num_tnodes_check, ilevel, error, num_p_inputs, num_p_outputs;
+    int num_tnodes_check, ilevel, error;
 
     error = 0;
     num_tnodes_check = 0;
-    num_p_inputs = 0;
-    num_p_outputs = 0;
+   
 	/* TODO: Rework error checks for I/Os*/
     
     for(ilevel = 0; ilevel < num_tnode_levels; ilevel++)

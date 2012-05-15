@@ -6,13 +6,7 @@
 
 #define ABS_DIFF(X, Y) (((X) > (Y))? ((X) - (Y)):((Y) - (X)))
 
-static int min_dist_from_mst(int node_outside,
-			     int inet,
-			     boolean * in_mst,
-			     int *node_inside);
-
-t_mst_edge *
-get_mst_of_net(int inet)
+t_mst_edge * get_mst_of_net(int inet)
 {
     int i, ipin, node_dist, num_pins_on_net, num_edges, blk1, blk2;
     int nearest_node;

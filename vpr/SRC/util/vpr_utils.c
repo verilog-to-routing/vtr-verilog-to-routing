@@ -24,35 +24,35 @@ print_tabs(FILE * fpout, int num_tab) {
 
 /* Points the grid structure back to the blocks list */
 void
-sync_grid_to_blocks(INP int num_blocks,
+sync_grid_to_blocks(INP int L_num_blocks,
 		    INP const struct s_block block_list[],
-		    INP int nx,
-		    INP int ny,
-		    INOUTP struct s_grid_tile **grid)
+		    INP int L_nx,
+		    INP int L_ny,
+		    INOUTP struct s_grid_tile **L_grid)
 {
     int i, j, k;
 
     /* Reset usage and allocate blocks list if needed */
-    for(j = 0; j <= (ny + 1); ++j)
+    for(j = 0; j <= (L_ny + 1); ++j)
 	{
-	    for(i = 0; i <= (nx + 1); ++i)
+	    for(i = 0; i <= (L_nx + 1); ++i)
 		{
-		    grid[i][j].usage = 0;
-		    if(grid[i][j].type)
+		    L_grid[i][j].usage = 0;
+		    if(L_grid[i][j].type)
 			{
 			    /* If already allocated, leave it since size doesn't change */
-			    if(NULL == grid[i][j].blocks)
+			    if(NULL == L_grid[i][j].blocks)
 				{
-				    grid[i][j].blocks =
+				    L_grid[i][j].blocks =
 					(int *)my_malloc(sizeof(int) *
-							 grid[i][j].type->
+							 L_grid[i][j].type->
 							 capacity);
 
 				    /* Set them as unconnected */
-				    for(k = 0; k < grid[i][j].type->capacity;
+				    for(k = 0; k < L_grid[i][j].type->capacity;
 					++k)
 					{
-					    grid[i][j].blocks[k] = OPEN;
+					    L_grid[i][j].blocks[k] = OPEN;
 					}
 				}
 			}
@@ -60,12 +60,12 @@ sync_grid_to_blocks(INP int num_blocks,
 	}
 
     /* Go through each block */
-    for(i = 0; i < num_blocks; ++i)
+    for(i = 0; i < L_num_blocks; ++i)
 	{
 	    /* Check range of block coords */
-	    if(block[i].x < 0 || block[i].x > (nx + 1) ||
+	    if(block[i].x < 0 || block[i].x > (L_nx + 1) ||
 	       block[i].y < 0
-	       || (block[i].y + block[i].type->height - 1) > (ny + 1)
+	       || (block[i].y + block[i].type->height - 1) > (L_ny + 1)
 	       || block[i].z < 0 || block[i].z > (block[i].type->capacity))
 		{
 		    printf(ERRTAG
@@ -75,7 +75,7 @@ sync_grid_to_blocks(INP int num_blocks,
 		}
 
 	    /* Check types match */
-	    if(block[i].type != grid[block[i].x][block[i].y].type)
+	    if(block[i].type != L_grid[block[i].x][block[i].y].type)
 		{
 		    printf(ERRTAG "A block is in a grid location "
 			   "(%d x %d) with a conflicting type.\n", block[i].x,
@@ -84,7 +84,7 @@ sync_grid_to_blocks(INP int num_blocks,
 		}
 
 	    /* Check already in use */
-	    if(OPEN != grid[block[i].x][block[i].y].blocks[block[i].z])
+	    if(OPEN != L_grid[block[i].x][block[i].y].blocks[block[i].z])
 		{
 		    printf(ERRTAG
 			   "Location (%d, %d, %d) is used more than once\n",
@@ -92,7 +92,7 @@ sync_grid_to_blocks(INP int num_blocks,
 		    exit(1);
 		}
 
-	    if(grid[block[i].x][block[i].y].offset != 0)
+	    if(L_grid[block[i].x][block[i].y].offset != 0)
 		{
 		    printf(ERRTAG
 			   "Large block not aligned in placment for block %d at (%d, %d, %d)",
@@ -103,9 +103,9 @@ sync_grid_to_blocks(INP int num_blocks,
 	    /* Set the block */
 	    for(j = 0; j < block[i].type->height; j++)
 		{
-		    grid[block[i].x][block[i].y + j].blocks[block[i].z] = i;
-		    grid[block[i].x][block[i].y + j].usage++;
-		    assert(grid[block[i].x][block[i].y + j].offset == j);
+		    L_grid[block[i].x][block[i].y + j].blocks[block[i].z] = i;
+		    L_grid[block[i].x][block[i].y + j].usage++;
+		    assert(L_grid[block[i].x][block[i].y + j].offset == j);
 		}
 	}
 }
@@ -253,7 +253,7 @@ boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type) {
 		}
 		if(i == cur_pb_type->num_ports) {
 			if((logical_block[iblk].model->inputs != NULL && !second_pass) ||
-				logical_block[iblk].model->outputs != NULL && second_pass) {
+				(logical_block[iblk].model->outputs != NULL && second_pass)) {
 				/* physical port not found */
 				return FALSE;
 			}

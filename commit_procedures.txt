@@ -8,7 +8,12 @@ The guiding principle in internal development is to submit your work into the re
 
 We have some guidelines in place to help catch most of these problems.  They are as follows:
 
--  Before you commit, your code MUST pass the check-in regression test.  The check-in regression test is a quick way to test if any part of the Verilog-to-routing flow is broken.  To run the check-in regression test: 1) Go to vtr_flow/tasks/  2) Enter the command "../scripts/run_vtr_task.pl -p2 checkin_reg/" 3) Enter the command "../scripts/parse_vtr_task.pl -check_golden checkin_reg" 4) You may commit if the test returns [PASS]
+-  Before you commit, your code MUST pass the check-in regression test.  The check-in regression test is a quick way to test if any part of the Verilog-to-routing flow is broken.  To run the check-in regression test: 
+
+1) Go to vtr_flow/tasks/  
+2) Enter the command "../scripts/run_vtr_task.pl -p2 checkin_reg/" 
+3) Enter the command "../scripts/parse_vtr_task.pl -check_golden checkin_reg" 
+4) You may commit if the test returns [PASS]
 
 -  Once we get an automatic build system setup, that build system will do a much more thorough run through of the regressions and mark down which svn revision is stable.  Once this system is in place, if the build is broken by someone else and you need a stable version to work off of, revert to the the latest stable build and go from there.  
 

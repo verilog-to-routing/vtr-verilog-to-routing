@@ -96,11 +96,9 @@ static int num_timing_nets = 0;
 
 /***************** Subroutines local to this module *************************/
 
-static float **alloc_net_slack();
+static float **alloc_net_slack(void);
 
 static void compute_net_slacks(float **net_slack);
-
-static void build_cb_tnodes(int iblk);
 
 static void alloc_and_load_tnodes(t_timing_inf timing_inf);
 
@@ -212,7 +210,7 @@ float** alloc_and_load_pre_packing_timing_graph(float block_delay, float inter_c
 
 
 static float **
-alloc_net_slack()
+alloc_net_slack(void)
 {
 
 /* Allocates the net_slack structure.  Chunk allocated to save space.      */
@@ -1482,7 +1480,7 @@ print_timing_graph_as_blif(char *fname, t_model *models)
 	for(i = 0; i < num_tnodes; i++) {
 		if(tnode[i].type != PRIMITIVE_IPIN && tnode[i].type != FF_SOURCE && tnode[i].type != INPAD_SOURCE && tnode[i].type != OUTPAD_IPIN) {
 			for(j = 0; j < tnode[i].num_edges; j++) {
-				fprintf(fp, ".names tnode_%d tnode_%d\n", i, tnode[i].out_edges[j]);
+				fprintf(fp, ".names tnode_%d tnode_%d\n", i, tnode[i].out_edges[j].to_node);
 				fprintf(fp, "1 1\n\n");
 			}
 		}
@@ -1722,7 +1720,7 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 						if(port->size > 1) {
 							fprintf(fpout, "\\\n%s[%d]=unconn_%d_%s_%d ", port->name, j, iblk, port->name, j);
 						} else {
-							fprintf(fpout, "\\\n%s=unconn_%d_%s_%d ", port->name, iblk, port->name);
+							fprintf(fpout, "\\\n%s=unconn_%d_%s ", port->name, iblk, port->name);
 						}
 					}
 				}

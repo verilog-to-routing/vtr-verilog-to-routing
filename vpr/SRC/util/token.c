@@ -136,7 +136,6 @@ boolean checkTokenType(INP t_token token, OUTP enum e_token_type token_type) {
 void my_atof_2D(INOUTP float **matrix, INP int max_i, INP int max_j, INP char *instring) {
 	int i, j;
 	char *cur, *cur2, *copy, *final;
-	int string_count;
 
 	copy = my_strdup(instring);
 	final = copy;
@@ -148,7 +147,6 @@ void my_atof_2D(INOUTP float **matrix, INP int max_i, INP int max_j, INP char *i
 	cur = copy;
 	i = j = 0;
 	while(cur != final) {
-		string_count = 0;
 		while(IsWhitespace(*cur) && cur != final) {
 			if(j == max_j) {
 				i++;
