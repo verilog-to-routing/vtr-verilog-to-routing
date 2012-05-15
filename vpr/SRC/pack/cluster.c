@@ -23,6 +23,7 @@
 #include "path_delay.h"
 #include "vpr_utils.h"
 #include "cluster_placement.h"
+#include "ReadOptions.h"
 
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
 
@@ -2294,19 +2295,51 @@ static void free_pb_stats(t_pb_stats pb_stats, int max_models) {
 	}
 }
 
-/* get gain of packing molecule into current cluster */
+/* get gain of packing molecule into current cluster 
+   gain is equal to total_block_gain + molecule_base_gain*some_factor - introduced_input_nets_of_unrelated_blocks_pulled_in_by_molecule*some_other_factor
+
+*/
 static float get_molecule_gain(t_pack_molecule *molecule, float *blk_gain) {
 	float gain;
-	int i;
-
+	int i, ipin, iport, inet, iblk;
+	int num_introduced_inputs_of_indirectly_related_block;
+	t_model_ports *cur;
+	
 	gain = 0;
+	num_introduced_inputs_of_indirectly_related_block = 0;
 	for(i = 0; i < get_array_size_of_molecule(molecule); i++) {
 		if(molecule->logical_block_ptrs[i] != NULL) {
 			gain += blk_gain[molecule->logical_block_ptrs[i]->index];
+
+			if(blk_gain[molecule->logical_block_ptrs[i]->index] == 0) {
+				/* This block has no connection with current cluster, penalize molecule for having this block 
+				*/
+				cur = molecule->logical_block_ptrs[i]->model->inputs;
+				iport = 0;
+				while(cur != NULL) {
+					if(cur->is_clock != TRUE) {
+						for(ipin = 0; ipin < cur->size; ipin++) {
+							inet = molecule->logical_block_ptrs[i]->input_nets[iport][ipin];
+							if(inet != OPEN) {
+								num_introduced_inputs_of_indirectly_related_block++;									
+								for(iblk = 0; iblk < get_array_size_of_molecule(molecule); iblk++) {
+									if(molecule->logical_block_ptrs[iblk] != NULL && vpack_net[inet].node_block[0] == molecule->logical_block_ptrs[iblk]->index) {
+										num_introduced_inputs_of_indirectly_related_block--;
+										break;
+									}
+								}
+							}
+						}
+						iport++;
+					}
+					cur = cur->next;
+				}
+			}
 		}
 	}
-	gain /= molecule->num_blocks;
-	gain += molecule->base_gain / 1000; /* Use base gain as tie breaker TODO: need to sweep this value and perhaps normalize */
+
+	gain += molecule->base_gain * 0.0001; /* Use base gain as tie breaker TODO: need to sweep this value and perhaps normalize */
+	gain -= num_introduced_inputs_of_indirectly_related_block * (0.001);
 	
 	return gain;
 }
