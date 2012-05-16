@@ -6,7 +6,7 @@
 #include "globals.h"
 #include "ff_pack.h"
 
-void absorb_buffer_luts() {
+void absorb_buffer_luts(void) {
 	/* This routine uses a simple pattern matching algorithm to remove buffer LUTs where possible (single-input LUTs that are programmed to be a wire) */
 
 	int bnum, in_blk, out_blk, ipin, out_net, in_net;
@@ -78,7 +78,7 @@ void absorb_buffer_luts() {
 	printf("Removed %d LUT buffers \n", removed);
 }
 
-void compress_netlist () {
+void compress_netlist (void) {
 
 /* This routine removes all the VPACK_EMPTY blocks and OPEN nets that *
  * may have been created by the ff_pack routine.  After this    *
@@ -89,7 +89,7 @@ void compress_netlist () {
 
  int inet, iblk, index, ipin, new_num_nets, new_num_blocks, i;
  int *net_remap, *block_remap;
- int num_nets;
+ int L_num_nets;
  t_model_ports *port;
  struct s_linked_vptr *tvptr, *next;
 
@@ -150,7 +150,7 @@ void compress_netlist () {
 			logical_block[index].index = index; /* array index moved */
 		  }
 
-		  num_nets = 0;
+		  L_num_nets = 0;
 		  port = logical_block[index].model->inputs;
 		  while(port) {
 			  for(ipin = 0; ipin < port->size; ipin++) {
@@ -166,7 +166,7 @@ void compress_netlist () {
 					logical_block[index].input_nets[port->index][ipin] =
 						net_remap[logical_block[index].input_nets[port->index][ipin]];
 				  }
-				num_nets++;
+				L_num_nets++;
     		  }
 			  port = port->next;
 		  }
@@ -178,7 +178,7 @@ void compress_netlist () {
 					  continue;
 				logical_block[index].output_nets[port->index][ipin] =
 					net_remap[logical_block[index].output_nets[port->index][ipin]];
-				num_nets++;
+				L_num_nets++;
     		  }
 			  port = port->next;
 		  }

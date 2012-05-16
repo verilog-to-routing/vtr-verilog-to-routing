@@ -35,7 +35,7 @@ static boolean is_net_in_cluster(INP int inet);
 
 static void add_net_rr_terminal_cluster(int iblk_net, t_pb * primitive, int ilogical_block, t_model_ports * model_port, int ipin);
 
-static void reload_ext_net_rr_terminal_cluster();
+static void reload_ext_net_rr_terminal_cluster(void);
 
 static boolean breadth_first_route_net_cluster(int inet);
 
@@ -49,9 +49,7 @@ static void breadth_first_expand_neighbours_cluster(int inode,
 
 static void breadth_first_add_source_to_heap_cluster(int inet);
 
-static void alloc_net_rr_terminals_cluster();
-
-static int get_num_violated_nets();
+static void alloc_net_rr_terminals_cluster(void);
 
 static void mark_ends_cluster(int inet);
 
@@ -153,7 +151,7 @@ static void add_net_rr_terminal_cluster(int iblk_net, t_pb * primitive, int ilog
 	}
 }
 
-static void reload_ext_net_rr_terminal_cluster() {
+static void reload_ext_net_rr_terminal_cluster(void) {
 	int i, j, net_index;
 	boolean has_ext_sink, has_ext_source;
 	int curr_ext_output, curr_ext_input, curr_ext_clock;
@@ -200,7 +198,7 @@ static void reload_ext_net_rr_terminal_cluster() {
 	}
 }
 
-void alloc_and_load_cluster_legality_checker() {
+void alloc_and_load_cluster_legality_checker(void) {
 	best_routing = (struct s_trace **)my_calloc(num_logical_nets, sizeof(struct s_trace *));
 	nets_in_cluster = my_malloc(num_logical_nets * sizeof(int));
 	num_nets_in_cluster = 0;
@@ -217,7 +215,7 @@ void alloc_and_load_cluster_legality_checker() {
 }
 
 
-void free_cluster_legality_checker() {
+void free_cluster_legality_checker(void) {
 	int inet;
 	free(rr_indexed_data);
 	free_rr_node_route_structs();
@@ -517,7 +515,7 @@ void reset_legalizer_for_cluster(t_block *clb) {
  * 
  * internal_nets: index of nets to route [0..num_internal_nets - 1]
  */
-boolean try_breadth_first_route_cluster()
+boolean try_breadth_first_route_cluster(void)
 {
 
 /* Iterated maze router ala Pathfinder Negotiated Congestion algorithm,  *
@@ -794,7 +792,7 @@ mark_ends_cluster(int inet)
 
 
 static void
-alloc_net_rr_terminals_cluster()
+alloc_net_rr_terminals_cluster(void)
 {
     int inet;
 
@@ -823,10 +821,7 @@ setup_intracluster_routing_for_logical_block(INP int iblock, INP t_pb *primitive
      * it stores the rr_node index of the SOURCE of the net and all the SINKs   *
      * of the net.  [0..num_logical_nets-1][0..num_pins-1].   */
     int ipin, iblk_net;
-	boolean found;
 	t_model_ports *port;
-
-	found = FALSE;
 
 	assert(primitive->pb_graph_node->pb_type->num_modes == 0); /* check if primitive */
 	assert(primitive->logical_block != OPEN && logical_block[iblock].clb_index != NO_CLUSTER); /* check if primitive and block is open */
@@ -884,7 +879,7 @@ setup_intracluster_routing_for_logical_block(INP int iblock, INP t_pb *primitive
 
 
 void
-save_and_reset_routing_cluster() {
+save_and_reset_routing_cluster(void) {
 
 /* This routing frees any routing currently held in best routing,       *
  * then copies over the current routing (held in trace_head), and       *
@@ -924,7 +919,7 @@ save_and_reset_routing_cluster() {
 
 
 void
-restore_routing_cluster()
+restore_routing_cluster(void)
 {
 
 /* Deallocates any current routing in trace_head, and replaces it with    *
@@ -961,7 +956,7 @@ restore_routing_cluster()
 }
 
 
-void save_cluster_solution()
+void save_cluster_solution(void)
 {
 
 /* This routine updates the occupancy and pres_cost of the rr_nodes that are *

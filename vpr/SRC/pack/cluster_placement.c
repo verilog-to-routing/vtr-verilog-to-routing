@@ -23,9 +23,9 @@ March 12, 2012
 #include "hash.h"
 #include "cluster_placement.h"
 
-/*****************************************/
-/*Local Function Declaration
-/*****************************************/
+/****************************************/
+/*Local Function Declaration			*/
+/****************************************/
 static void load_cluster_placement_stats_for_pb_graph_node(INOUTP t_cluster_placement_stats *cluster_placement_stats, INOUTP t_pb_graph_node *pb_graph_node);
 static void requeue_primitive(INOUTP t_cluster_placement_stats *cluster_placement_stats, t_cluster_placement_primitive *cluster_placement_primitive);
 static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node, INP float incremental_cost, INP boolean valid);
@@ -35,14 +35,14 @@ static t_pb_graph_pin *expand_pack_molecule_pin_edge(INP int pattern_id, INP t_p
 static void flush_intermediate_queues(INOUTP t_cluster_placement_stats *cluster_placement_stats);
 
 
-/*****************************************/
-/*Function Definitions
-/*****************************************/
+/****************************************/
+/*Function Definitions					*/
+/****************************************/
 
 /**
  * [0..num_pb_types-1] array of cluster placement stats, one for each type_descriptors 
  */
-t_cluster_placement_stats *alloc_and_load_cluster_placement_stats() {
+t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void) {
 	t_cluster_placement_stats *cluster_placement_stats_list;
 	int i;
 	
@@ -419,7 +419,7 @@ static boolean expand_forced_pack_molecule_placement(INP t_pack_molecule *molecu
 	t_pb_graph_node *pb_graph_node = primitives_list[pack_pattern_block->block_id];
 	t_pb_graph_node *next_primitive;
 	t_pack_pattern_connections *cur;
-	int from_pin, to_pin, from_port, to_port;
+	int from_pin, from_port;
 	t_pb_graph_pin *cur_pin, *next_pin;
 	t_pack_pattern_block *next_block;
 	
@@ -436,8 +436,6 @@ static boolean expand_forced_pack_molecule_placement(INP t_pack_molecule *molecu
 			/* find next primitive based on pattern connections, expand next primitive if not visited */
 			from_pin = cur->from_pin->pin_number;
 			from_port = cur->from_pin->port->port_index_by_type;
-			to_pin = cur->to_pin->pin_number;
-			to_port = cur->to_pin->port->port_index_by_type;
 			if(cur->from_block == pack_pattern_block) {
 				/* forward expand to find next block */
 				cur_pin = &pb_graph_node->output_pins[from_port][from_pin];

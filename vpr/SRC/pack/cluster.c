@@ -132,8 +132,6 @@ static enum e_block_pack_status try_pack_molecule(INOUTP t_cluster_placement_sta
 static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node *pb_graph_node, INP int ilogical_block, INP t_pb *cb, OUTP t_pb **parent, INP int max_models, INP int max_cluster_size, INP int clb_index, INP int max_nets_in_pb_type, INP boolean *is_clock);
 static void revert_place_logical_block(INP int ilogical_block, INP int max_models);
 
-static enum e_block_pack_status alloc_and_load_pb(INP enum e_packer_algorithm packer_algorithm, INP t_pb_graph_node *pb_graph_node, INP int iblock, INOUTP t_pb * pb, INP int max_models, INP int max_cluster_size, INP int max_molecule_inputs);
-
 static void update_connection_gain_values (int inet, int clustered_block, t_pb * cur_pb,
 						enum e_net_relation_to_clustered_block net_relation_to_clustered_block);
 
@@ -241,7 +239,6 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecule_head, int num_
  t_block *clb; 
  int num_clb;
 
- boolean critical_path_minimized;
  boolean early_exit;
  
  enum e_block_pack_status block_pack_status;
@@ -309,7 +306,6 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecule_head, int num_
   alloc_and_init_clustering (global_clocks, alpha, beta, max_cluster_size, max_molecule_inputs, max_pb_depth, num_models, &cluster_placement_stats, &primitives_list, molecule_head, num_molecules);
 
  blocks_since_last_analysis = 0;
- critical_path_minimized = FALSE;
  early_exit = FALSE;
  num_blocks_hill_added = 0;
  num_used_instances_type = (int*)my_calloc (num_types, sizeof (int));
@@ -548,9 +544,7 @@ static boolean is_logical_blk_in_pb(int iblk, t_pb *pb) {
 
 /* Add blk to list of feasible blocks sorted according to gain */
 static void add_molecule_to_pb_stats_candidates(t_pack_molecule *molecule, float *gain, t_pb *pb) {
-	int i, j, iblk;
-
-	iblk = molecule->logical_block_ptrs[molecule->root]->index;
+	int i, j;
 
 	for(i = 0; i < pb->pb_stats.num_feasible_blocks; i++) {
 		if(pb->pb_stats.feasible_blocks[i] == molecule) {
@@ -723,7 +717,7 @@ static boolean outputs_clocks_and_models_feasible (enum e_packer_algorithm packe
  * parameters are unused since this function needs the same inter-  *
  * face as the other feasibility checkers.                          */
 
- int inet, depth, clocks_avail;
+ int inet, clocks_avail;
  t_model_ports *port;
  int ipin, output_net, outputs_avail;
  boolean clocks_feasible, outputs_feasible;
@@ -734,7 +728,6 @@ static boolean outputs_clocks_and_models_feasible (enum e_packer_algorithm packe
  clocks_feasible = outputs_feasible = TRUE;
  temp_pb = cur_pb;
  while(temp_pb && clocks_feasible && outputs_feasible) {
-	depth = temp_pb->pb_graph_node->pb_type->depth;
 
 	clocks_avail = cur_pb->pb_stats.clocks_avail;
 	if(clocks_avail == NOT_VALID) {
@@ -970,8 +963,8 @@ static boolean primitive_type_and_memory_feasible(int iblk, const t_pb_type *cur
 			}
 		}
 		if(i == cur_pb_type->num_ports) {
-			if((logical_block[iblk].model->inputs != NULL && !second_pass) ||
-				logical_block[iblk].model->outputs != NULL && second_pass) {
+			if(((logical_block[iblk].model->inputs != NULL) && !second_pass) ||
+				(logical_block[iblk].model->outputs != NULL && second_pass)) {
 				/* physical port not found */
 				return FALSE;
 			}
@@ -1080,18 +1073,15 @@ static t_pack_molecule* get_seed_logical_molecule_with_most_ext_inputs (int max_
  * found, the routine returns NO_CLUSTER.                                 */
 
  int ext_inps;
- struct s_molecule_link *ptr, *prev_ptr;
+ struct s_molecule_link *ptr;
 
   for (ext_inps=max_molecule_inputs;ext_inps>=0;ext_inps--) {
-	prev_ptr = &unclustered_list_head[ext_inps];
 	ptr = unclustered_list_head[ext_inps].next;
 	
 	while (ptr != NULL) {
 		if (ptr->moleculeptr->valid) {
 			return ptr->moleculeptr;
 		}
-
-		prev_ptr = ptr;
 		ptr = ptr->next;
 	}
  }
@@ -1589,7 +1579,7 @@ static void update_cluster_stats (	INP t_pack_molecule *molecule,
 
 /* Updates cluster stats such as gain, used pins, and clock structures.  */
 
- int ipin, inet, depth;
+ int ipin, inet;
  int new_blk, molecule_size;
  int iblock;
  t_model_ports *port;
@@ -1618,7 +1608,6 @@ static void update_cluster_stats (	INP t_pack_molecule *molecule,
 
 	 cur_pb = logical_block[new_blk].pb->parent_pb;
 	 while(cur_pb) {
- 		depth = cur_pb->pb_graph_node->pb_type->depth;
 		/* reset list of feasible blocks */
 		cur_pb->pb_stats.num_feasible_blocks = NOT_VALID;
 		
@@ -1651,7 +1640,6 @@ static void update_cluster_stats (	INP t_pack_molecule *molecule,
 
 				cur_pb = logical_block[new_blk].pb->parent_pb;
 				while(cur_pb) {
-					depth = cur_pb->pb_graph_node->pb_type->depth;
 					cur_pb->pb_stats.net_output_in_pb[inet] = TRUE;
 
 					if (cur_pb->pb_stats.num_pins_of_net_in_pb[inet] > 1 && !is_clock[inet])
@@ -1681,7 +1669,6 @@ static void update_cluster_stats (	INP t_pack_molecule *molecule,
 			   mark_and_update_partial_gain (inet, GAIN, new_blk, port->index, ipin, timing_driven, connection_driven, INPUT);
 			   cur_pb = logical_block[new_blk].pb->parent_pb;
 			   while(cur_pb) {
-					depth = cur_pb->pb_graph_node->pb_type->depth;
 					
 					if (cur_pb->pb_stats.num_pins_of_net_in_pb[inet] == 1) 
 						cur_pb->pb_stats.inputs_avail--;
@@ -1718,7 +1705,6 @@ static void update_cluster_stats (	INP t_pack_molecule *molecule,
 
 		cur_pb = logical_block[new_blk].pb->parent_pb;
 	   while(cur_pb) {
-			depth = cur_pb->pb_graph_node->pb_type->depth;
 			
 			if (cur_pb->pb_stats.num_pins_of_net_in_pb[inet] == 1) {
 				cur_pb->pb_stats.clocks_avail--;
@@ -1914,12 +1900,9 @@ static t_pack_molecule *get_highest_gain_molecule ( INP enum e_packer_algorithm 
  * blocks it returns NO_CLUSTER.                                */
 
 	int i, j, iblk, index;
-	int best_hillgain;
-	float best_gain;
 	boolean success;
 	struct s_linked_vptr *cur;
 
-	int best_block;
 	t_pack_molecule *molecule;
 	molecule = NULL;
 
@@ -1927,11 +1910,6 @@ static t_pack_molecule *get_highest_gain_molecule ( INP enum e_packer_algorithm 
 		printf(ERRTAG "Hill climbing not supported yet, error out\n");
 		exit(1);
 	}
-
-	best_gain = (float)NOT_VALID + 1.0; 
-	best_hillgain=NOT_VALID+1;
-
-	best_block = NO_CLUSTER;
 
 	if(cur_pb->pb_stats.num_feasible_blocks == NOT_VALID) {
 		/* Divide into two cases for speed only. */

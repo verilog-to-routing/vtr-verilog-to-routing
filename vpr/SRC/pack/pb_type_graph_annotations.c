@@ -31,8 +31,6 @@ static void load_critical_path_annotations(INOUTP t_pb_graph_node *pb_graph_node
 										   INP char *annot_out_pins,
 										   INP char* value);
 
-static t_tedge * find_edge();
-
 void load_pb_graph_pin_to_pin_annotations(INOUTP t_pb_graph_node *pb_graph_node)
 {
 	int i, j, k, m;
@@ -330,7 +328,6 @@ static void load_critical_path_annotations(INOUTP t_pb_graph_node *pb_graph_node
 			k = 0;
 			for(i = 0; i < num_in_sets; i++) {
 				for(j = 0; j < num_in_ptrs[i]; j++) {
-					delay_matrix[k][0];
 					count = p = 0;
 					for(m = 0; m < num_out_sets; m++) {
 						for(n = 0; n < num_out_ptrs[m]; n++) {

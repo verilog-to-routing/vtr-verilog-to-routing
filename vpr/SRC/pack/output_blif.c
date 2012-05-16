@@ -223,7 +223,7 @@ static int find_fanin_rr_node(t_pb *cur_pb, enum PORTS type, int rr_node_index) 
 static void print_primitive(FILE *fpout, int iblk) {
 	t_pb *pb;
 	int clb_index;
-	int i, j, column, node_index;
+	int i, j, node_index;
 	int in_port_index, out_port_index, clock_port_index;
 	struct s_linked_vptr *truth_table;
 	const t_pb_type *pb_type;
@@ -232,8 +232,6 @@ static void print_primitive(FILE *fpout, int iblk) {
 	pb_type = pb->pb_graph_node->pb_type;
 	clb_index = logical_block[iblk].clb_index;
 
-
-	column = 7;
 	if(logical_block[iblk].type == VPACK_INPAD || logical_block[iblk].type == VPACK_OUTPAD) {
 		/* do nothing */
 	} else if(logical_block[iblk].type == VPACK_LATCH) {

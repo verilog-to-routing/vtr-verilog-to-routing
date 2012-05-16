@@ -25,12 +25,12 @@ print_netlist(char *foutput,
 
     int i, j, max_pin;
     int num_global_nets;
-    int num_p_inputs, num_p_outputs;
+    int L_num_p_inputs, L_num_p_outputs;
     FILE *fp;
 
     num_global_nets = 0;
-    num_p_inputs = 0;
-    num_p_outputs = 0;
+    L_num_p_inputs = 0;
+    L_num_p_outputs = 0;
 
     /* Count number of global nets */
     for(i = 0; i < num_nets; i++)
@@ -54,7 +54,7 @@ print_netlist(char *foutput,
 				       class_inf[IO_TYPE->pin_class[j]].
 				       type == DRIVER)
 					{
-					    num_p_inputs++;
+					    L_num_p_inputs++;
 					}
 				    else
 					{
@@ -62,7 +62,7 @@ print_netlist(char *foutput,
 						   class_inf[IO_TYPE->
 							     pin_class[j]].
 						   type == RECEIVER);
-					    num_p_outputs++;
+					    L_num_p_outputs++;
 					}
 				}
 			}
@@ -73,8 +73,8 @@ print_netlist(char *foutput,
     fp = my_fopen(foutput, "w", 0);
 
     fprintf(fp, "Input netlist file: %s\n", net_file);
-    fprintf(fp, "num_p_inputs: %d, num_p_outputs: %d, num_clbs: %d\n",
-	    num_p_inputs, num_p_outputs, num_blocks);
+    fprintf(fp, "L_num_p_inputs: %d, L_num_p_outputs: %d, num_clbs: %d\n",
+	    L_num_p_inputs, L_num_p_outputs, num_blocks);
     fprintf(fp, "num_blocks: %d, num_nets: %d, num_globals: %d\n",
 	    num_blocks, num_nets, num_global_nets);
     fprintf(fp, "\nNet\tName\t\t#Pins\tDriver\t\tRecvs. (block, pin)\n");

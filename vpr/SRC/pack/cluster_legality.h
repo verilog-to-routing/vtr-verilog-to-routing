@@ -3,23 +3,23 @@
 
 /* Legalizes routing for a cluster
  */
-void alloc_and_load_cluster_legality_checker();
+void alloc_and_load_cluster_legality_checker(void);
 
 void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index, INP const t_arch *arch);
 
 void free_legalizer_for_cluster(INP t_block* clb);
 
-void free_cluster_legality_checker();
+void free_cluster_legality_checker(void);
 
 void reset_legalizer_for_cluster(t_block *clb);
 
 
 /* order of use: 1. save cluster 2. Add blocks.  3. route 4. save if successful, undo if not successful */
-void save_and_reset_routing_cluster();
+void save_and_reset_routing_cluster(void);
 void setup_intracluster_routing_for_logical_block(INP int logical_block, INP t_pb *primitive);
-boolean try_breadth_first_route_cluster();
-void restore_routing_cluster();
-void save_cluster_solution();
+boolean try_breadth_first_route_cluster(void);
+void restore_routing_cluster(void);
+void save_cluster_solution(void);
 
 
 boolean is_pin_open(int i);

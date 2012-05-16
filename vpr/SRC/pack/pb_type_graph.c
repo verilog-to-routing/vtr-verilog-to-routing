@@ -27,7 +27,7 @@ static struct s_linked_vptr *num_edges_head;
 
 */
 
-static int check_pb_graph ();
+static int check_pb_graph (void);
 static void alloc_and_load_pb_graph(INOUTP t_pb_graph_node *pb_graph_node, 
 									INP t_pb_graph_node *parent_pb_graph_node,
 									INP const t_pb_type *pb_type, 
@@ -80,7 +80,7 @@ static void free_pb_graph(INOUTP t_pb_graph_node *pb_graph_node);
 /**
  * Allocate memory into types and load the pb graph with interconnect edges 
  */
-void alloc_and_load_all_pb_graphs () {
+void alloc_and_load_all_pb_graphs (void) {
 	int i, errors;
 	edges_head = NULL;
 	num_edges_head = NULL;
@@ -113,7 +113,7 @@ void alloc_and_load_all_pb_graphs () {
 /**
  * Free pb graph 
  */
-void free_all_pb_graph_nodes () {
+void free_all_pb_graph_nodes (void) {
 	int i;
 	for(i = 0; i < num_types; i++) {
 		if(type_descriptors[i].pb_type) {
@@ -151,7 +151,7 @@ void echo_pb_graph (char * filename) {
 /**
  * check pb_type graph and return the number of errors
  */
-static int check_pb_graph () {
+static int check_pb_graph (void) {
 	int num_errors;
 	/* TODO: Error checks to do 
 		1.  All pin and edge connections are bidirectional and match each other

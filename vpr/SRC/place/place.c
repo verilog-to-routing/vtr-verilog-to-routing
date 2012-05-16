@@ -3815,7 +3815,7 @@ check_place(float bb_cost,
 	    printf
 		("\nCompleted placement consistency check successfully.\n\n");
 #ifdef PRINT_REL_POS_DISTR
-	    print_relative_pos_distr();
+	    print_relative_pos_distr(void);
 #endif
 	}
     else
