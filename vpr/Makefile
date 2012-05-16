@@ -4,14 +4,14 @@
 # Only this section needs to be changed
 
 # The graphics are currently only compatible with X11, therefore X11 must be installed.
-# If PVR makes when graphics are enabled without prompting that L/usr/lib/X11 is not found,
+# If VPR makes when graphics are enabled without prompting that L/usr/lib/X11 is not found,
 # then the following comment can be ignored
 
 # On Ubuntu, the Terminal command to install X11 is:
 # sudo apt-get install libx11-dev
 # please search online for installing X11 on other platforms
 
-ENABLE_GRAPHICS = false # can be true or false
+ENABLE_GRAPHICS = true  # can be true or false
 BUILD_TYPE = release    # can be debug or release
 
 #############################################################################################
@@ -23,7 +23,8 @@ SRC_DIR = SRC
 OBJ_DIR = OBJ
 OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/route
 
-WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -Wstrict-prototypes -O -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wmissing-prototypes -Wshadow -Wcast-align -D_POSIX_SOURCE
+
+WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -Wstrict-prototypes -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wmissing-prototypes -Wshadow -Wcast-align -D_POSIX_SOURCE
 DEBUG_FLAGS = -g
 OPT_FLAGS = -O3
 INC_FLAGS = -I../libvpr/include
@@ -39,6 +40,7 @@ endif
 ifeq ($(ENABLE_GRAPHICS),true)
   LIB_DIR := $(LIB_DIR) -L/usr/lib/X11
   LIB := $(LIB) -lX11
+ 
 else
   FLAGS := $(FLAGS) -DNO_GRAPHICS
 endif
@@ -50,7 +52,12 @@ OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
 
 $(EXE): $(OBJ) Makefile ../libvpr/libvpr_6.a
+	# checks if the package libx11-dev is installed, and installs it if not
+######	[ -z `dpkg -l | grep libx11-dev` ] && sudo apt-get install libx11-dev
 	$(CC) $(FLAGS) $(OBJ) -o $(EXE) $(LIB_DIR) $(LIB)
+	
+../libvpr/libvpr_6.a:
+	cd ../libvpr && make
 
 # Enable a second round of expansion so that we may include
 # the target directory as a prerequisite of the object file.
@@ -63,7 +70,6 @@ $(EXE): $(OBJ) Makefile ../libvpr/libvpr_6.a
 $(OBJ): OBJ/%.o:$(SRC_DIR)/%.c | $$(dir $$@D)
 	$(CC) $(FLAGS) -MD -MP -I$(OTHER_DIR) -ISRC/util -c $< -o $@
 
-
 # Silently create target directories as need
 $(OBJ_DIRS):
 	@ mkdir -p $@
@@ -72,6 +78,7 @@ $(OBJ_DIRS):
 
 clean:
 	rm -f $(EXE) $(OBJ) $(DEP)
+	cd ../libvpr && make clean
 
 clean_coverage: clean
 	rm -rf ./usr
