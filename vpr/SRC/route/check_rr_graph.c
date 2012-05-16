@@ -23,11 +23,9 @@ static void check_pass_transistors(int from_node);
 
 void
 check_rr_graph(INP t_graph_type graph_type,
-	       INP int num_types,
 	       INP t_type_ptr types,
-	       INP int nx,
-	       INP int ny,
-	       INP struct s_grid_tile **grid,
+	       INP int L_nx,
+	       INP int L_ny,
 	       INP int nodes_per_chan,
 	       INP int Fs,
 	       INP int num_seg_types,
@@ -39,7 +37,6 @@ check_rr_graph(INP t_graph_type graph_type,
 	       t_seg_details * seg_details,
 	       int *Fc_in,
 	       int *Fc_out,
-	       t_ivec *** rr_node_indices,
 	       int *****opin_to_track_map,
 	       int *****ipin_to_track_map,
 	       t_ivec **** track_to_ipin_lookup,
@@ -184,7 +181,7 @@ check_rr_graph(INP t_graph_type graph_type,
 			     * a SOURCE.  Anything else is an error.                             */
 
 				is_fringe =  ((rr_node[inode].xlow == 1) || (rr_node[inode].ylow == 1) 
-						|| (rr_node[inode].xhigh == nx) || (rr_node[inode].yhigh == ny));
+						|| (rr_node[inode].xhigh == L_nx) || (rr_node[inode].yhigh == L_ny));
 				is_wire = (rr_node[inode].type == CHANX || rr_node[inode].type == CHANY);  
 
 				if (!is_fringe && !is_wire)

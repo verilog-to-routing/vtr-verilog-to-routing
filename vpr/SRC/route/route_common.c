@@ -90,7 +90,7 @@ static void add_to_heap(struct s_heap *hptr);
 static struct s_heap *alloc_heap_data(void);
 static struct s_linked_f_pointer *alloc_linked_f_pointer(void);
 
-static t_ivec **alloc_and_load_clb_opins_used_locally();
+static t_ivec **alloc_and_load_clb_opins_used_locally(void);
 static void adjust_one_rr_occ_and_pcost(int inode,
 					int add_or_sub,
 					float pres_fac);
@@ -716,7 +716,7 @@ free_traceback(int inet)
 
 
 t_ivec **
-alloc_route_structs()
+alloc_route_structs(void)
 {
 
 /* Allocates the data structures needed for routing.    */
@@ -730,7 +730,7 @@ alloc_route_structs()
     return (clb_opins_used_locally);
 }
 
-void alloc_route_static_structs() {
+void alloc_route_static_structs(void) {
     trace_head = (struct s_trace **)my_calloc(num_nets,
 					      sizeof(struct s_trace *));
     trace_tail = (struct s_trace **)my_malloc(num_nets *
@@ -798,7 +798,7 @@ alloc_saved_routing(t_ivec ** clb_opins_used_locally,
 /* TODO: probably now this whole function can be removed, must check correctness of routing so I will leave everything as is
 until I can golden check the routing before I do this massive code rewrite and performance optimizations */
 static t_ivec **
-alloc_and_load_clb_opins_used_locally()
+alloc_and_load_clb_opins_used_locally(void)
 {
 
 /* Allocates and loads the data needed to make the router reserve some CLB  *

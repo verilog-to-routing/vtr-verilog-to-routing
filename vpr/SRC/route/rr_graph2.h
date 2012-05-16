@@ -5,7 +5,8 @@
 
 extern boolean *rr_edge_done;	/* [0..num_rr_nodes-1].  Used to keep track  *
 				 * of whether or not a node has been put in  *
-				 * an edge list yet.                         */
+				 * an edge list yet. TRUE if a node is already listed in the edges array *
+				 * that's being constructed. Ensure that there are no duplicate edges.   */
 
 /******************* Subroutines exported by rr_graph2.c *********************/
 

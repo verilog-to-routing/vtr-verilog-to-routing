@@ -21,13 +21,6 @@
 /* Variables below are the global variables shared only amongst the rr_graph *
  ************************************ routines. ******************************/
 
-/* [0..num_rr_nodes-1].  TRUE if a node is already listed in the edges array *
- * that's being constructed.  This allows me to ensure that there are never  *
- *  duplicate edges (two edges between the same thing).                      */
-
-boolean *rr_edge_done;
-
-
 /* Used to keep my own list of free linked integers, for speed reasons.     */
 
 t_linked_edge *free_edge_list_head = NULL;
@@ -65,7 +58,7 @@ static void load_chan_rr_indices(INP int nodes_per_chan,
 				 INOUTP t_ivec *** indices);
 
 static int get_bidir_track_to_chan_seg(INP struct s_ivec conn_tracks,
-				       INP t_ivec *** rr_node_indices,
+				       INP t_ivec *** L_rr_node_indices,
 				       INP int to_chan,
 				       INP int to_seg,
 				       INP int to_sb,
@@ -73,7 +66,7 @@ static int get_bidir_track_to_chan_seg(INP struct s_ivec conn_tracks,
 				       INP t_seg_details * seg_details,
 				       INP boolean from_is_sbox,
 				       INP int from_switch,
-				       INOUTP boolean * rr_edge_done,
+				       INOUTP boolean * L_rr_edge_done,
 				       INP enum e_directionality
 				       directionality,
 				       INOUTP struct s_linked_edge
@@ -86,16 +79,16 @@ static int get_unidir_track_to_chan_seg(INP boolean is_end_sb,
 					INP int to_sb,
 					INP t_rr_type to_type,
 					INP int nodes_per_chan,
-					INP int nx,
-					INP int ny,
+					INP int L_nx,
+					INP int L_ny,
 					INP enum e_side from_side,
 					INP enum e_side to_side,
 					INP int Fs_per_side,
 					INP int *opin_mux_size,
 					INP short *****sblock_pattern,
-					INP t_ivec *** rr_node_indices,
+					INP t_ivec *** L_rr_node_indices,
 					INP t_seg_details * seg_details,
-					INOUTP boolean * rr_edge_done,
+					INOUTP boolean * L_rr_edge_done,
 					OUTP boolean * Fs_clipped,
 					INOUTP struct s_linked_edge
 					**edge_list);
@@ -128,7 +121,7 @@ static int *label_wire_muxes_for_balance(INP int chan_num,
 					 INP int *num_wire_muxes,
 					 INP t_rr_type chan_type,
 					 INP int *opin_mux_size,
-					 INP t_ivec *** rr_node_indices);
+					 INP t_ivec *** L_rr_node_indices);
 
 static int *label_incoming_wires(INP int chan_num,
 				 INP int seg_num,
@@ -620,8 +613,8 @@ get_bidir_opin_connections(INP int i,
 			   INP struct s_linked_edge **edge_list,
 			   INP int *****opin_to_track_map,
 			   INP int Fc,
-			   INP boolean * rr_edge_done,
-			   INP t_ivec *** rr_node_indices,
+			   INP boolean * L_rr_edge_done,
+			   INP t_ivec *** L_rr_node_indices,
 			   INP t_seg_details * seg_details)
 {
 
@@ -694,12 +687,12 @@ get_bidir_opin_connections(INP int i,
 			    to_switch = seg_details[to_track].wire_switch;
 			    to_node =
 				get_rr_node_index(tr_i, tr_j, to_type,
-						  to_track, rr_node_indices);
+						  to_track, L_rr_node_indices);
 
 			    *edge_list =
 				insert_in_edge_list(*edge_list, to_node,
 						    to_switch);
-			    rr_edge_done[to_node] = TRUE;
+			    L_rr_edge_done[to_node] = TRUE;
 			    ++num_conn;
 			}
 		}
@@ -718,10 +711,10 @@ get_unidir_opin_connections(INP int chan,
 			    INP t_seg_details * seg_details,
 			    INOUTP t_linked_edge ** edge_list_ptr,
 			    INOUTP int **Fc_ofs,
-			    INOUTP boolean * rr_edge_done,
+			    INOUTP boolean * L_rr_edge_done,
 			    INP int max_len,
 			    INP int nodes_per_chan,
-			    INP t_ivec *** rr_node_indices,
+			    INP t_ivec *** L_rr_node_indices,
 			    OUTP boolean * Fc_clipped)
 {
     /* Gets a linked list of Fc nodes to connect to in given
@@ -777,15 +770,15 @@ get_unidir_opin_connections(INP int chan,
 	    /* Figure the inodes of those muxes */
 	    inc_inode =
 		get_rr_node_index(x, y, chan_type, inc_track,
-				  rr_node_indices);
+				  L_rr_node_indices);
 	    dec_inode =
 		get_rr_node_index(x, y, chan_type, dec_track,
-				  rr_node_indices);
+				  L_rr_node_indices);
 
 	    /* Add to the list. */
-	    if(FALSE == rr_edge_done[inc_inode])
+	    if(FALSE == L_rr_edge_done[inc_inode])
 		{
-		    rr_edge_done[inc_inode] = TRUE;
+		    L_rr_edge_done[inc_inode] = TRUE;
 		    *edge_list_ptr = insert_in_edge_list(*edge_list_ptr,
 							 inc_inode,
 							 seg_details
@@ -793,9 +786,9 @@ get_unidir_opin_connections(INP int chan,
 							 opin_switch);
 		    ++num_edges;
 		}
-	    if(FALSE == rr_edge_done[dec_inode])
+	    if(FALSE == L_rr_edge_done[dec_inode])
 		{
-		    rr_edge_done[dec_inode] = TRUE;
+		    L_rr_edge_done[dec_inode] = TRUE;
 		    *edge_list_ptr = insert_in_edge_list(*edge_list_ptr,
 							 dec_inode,
 							 seg_details
@@ -827,15 +820,8 @@ is_cbox(INP int chan,
 	INP enum e_directionality directionality)
 {
 
-    int start, length, ofs, fac, start_seg;
+    int length, ofs, start_seg;
 
-    fac = 1;
-    if(UNI_DIRECTIONAL == directionality)
-	{
-	    fac = 2;
-	}
-
-    start = seg_details[track].start;
     length = seg_details[track].length;
 
     /* Make sure they gave us correct start */
@@ -922,8 +908,8 @@ load_chan_rr_indices(INP int nodes_per_chan,
 
 struct s_ivec ***
 alloc_and_load_rr_node_indices(INP int nodes_per_chan,
-			       INP int nx,
-			       INP int ny,
+			       INP int L_nx,
+			       INP int L_ny,
 			       INOUTP int *index,
 			       INP t_seg_details * seg_details)
 {
@@ -939,15 +925,15 @@ alloc_and_load_rr_node_indices(INP int nodes_per_chan,
 
     /* Alloc the lookup table */
     indices = (t_ivec ***) my_malloc(sizeof(t_ivec **) * NUM_RR_TYPES);
-    indices[IPIN] = (t_ivec **) my_malloc(sizeof(t_ivec *) * (nx + 2));
-    indices[SINK] = (t_ivec **) my_malloc(sizeof(t_ivec *) * (nx + 2));
-    for(i = 0; i <= (nx + 1); ++i)
+    indices[IPIN] = (t_ivec **) my_malloc(sizeof(t_ivec *) * (L_nx + 2));
+    indices[SINK] = (t_ivec **) my_malloc(sizeof(t_ivec *) * (L_nx + 2));
+    for(i = 0; i <= (L_nx + 1); ++i)
 	{
 	    indices[IPIN][i] =
-		(t_ivec *) my_malloc(sizeof(t_ivec) * (ny + 2));
+		(t_ivec *) my_malloc(sizeof(t_ivec) * (L_ny + 2));
 	    indices[SINK][i] =
-		(t_ivec *) my_malloc(sizeof(t_ivec) * (ny + 2));
-	    for(j = 0; j <= (ny + 1); ++j)
+		(t_ivec *) my_malloc(sizeof(t_ivec) * (L_ny + 2));
+	    for(j = 0; j <= (L_ny + 1); ++j)
 		{
 		    indices[IPIN][i][j].nelem = 0;
 		    indices[IPIN][i][j].list = NULL;
@@ -959,9 +945,9 @@ alloc_and_load_rr_node_indices(INP int nodes_per_chan,
 
 
     /* Count indices for block nodes */
-    for(i = 0; i <= (nx + 1); i++)
+    for(i = 0; i <= (L_nx + 1); i++)
 	{
-	    for(j = 0; j <= (ny + 1); j++)
+	    for(j = 0; j <= (L_ny + 1); j++)
 		{
 		    ofs = grid[i][j].offset;
 		    if(0 == ofs)
@@ -1006,9 +992,9 @@ alloc_and_load_rr_node_indices(INP int nodes_per_chan,
 	}
 
     /* Point offset blocks of a large block to base block */
-    for(i = 0; i <= (nx + 1); i++)
+    for(i = 0; i <= (L_nx + 1); i++)
 	{
-	    for(j = 0; j <= (ny + 1); j++)
+	    for(j = 0; j <= (L_ny + 1); j++)
 		{
 		    ofs = grid[i][j].offset;
 		    if(ofs > 0)
@@ -1026,9 +1012,9 @@ alloc_and_load_rr_node_indices(INP int nodes_per_chan,
     indices[OPIN] = indices[IPIN];
 
     /* Load the data for x and y channels */
-    load_chan_rr_indices(nodes_per_chan, nx + 1, ny + 1, CHANX,
+    load_chan_rr_indices(nodes_per_chan, L_nx + 1, L_ny + 1, CHANX,
 			 seg_details, index, indices);
-    load_chan_rr_indices(nodes_per_chan, ny + 1, nx + 1, CHANY,
+    load_chan_rr_indices(nodes_per_chan, L_ny + 1, L_nx + 1, CHANY,
 			 seg_details, index, indices);
 
     return indices;
@@ -1036,7 +1022,7 @@ alloc_and_load_rr_node_indices(INP int nodes_per_chan,
 
 
 void
-free_rr_node_indices(INP t_ivec *** rr_node_indices)
+free_rr_node_indices(INP t_ivec *** L_rr_node_indices)
 {
 	int i, j, ofs;
     /* This function must unallocate the structure allocated in 
@@ -1049,48 +1035,48 @@ free_rr_node_indices(INP t_ivec *** rr_node_indices)
 		    if(ofs > 0)
 			{
 			    /* Vertical large blocks reference is same as offset 0 */
-			    rr_node_indices[SINK][i][j].list = NULL;
-				rr_node_indices[IPIN][i][j].list = NULL;
+			    L_rr_node_indices[SINK][i][j].list = NULL;
+				L_rr_node_indices[IPIN][i][j].list = NULL;
 				continue;
 			}
-			if(rr_node_indices[SINK][i][j].list != NULL) {
-				free(rr_node_indices[SINK][i][j].list);
+			if(L_rr_node_indices[SINK][i][j].list != NULL) {
+				free(L_rr_node_indices[SINK][i][j].list);
 			}
-			if(rr_node_indices[IPIN][i][j].list != NULL) {
-				free(rr_node_indices[IPIN][i][j].list);
+			if(L_rr_node_indices[IPIN][i][j].list != NULL) {
+				free(L_rr_node_indices[IPIN][i][j].list);
 			}
 		}
-		free(rr_node_indices[SINK][i]);
-		free(rr_node_indices[IPIN][i]);
+		free(L_rr_node_indices[SINK][i]);
+		free(L_rr_node_indices[IPIN][i]);
 	}
-	free(rr_node_indices[SINK]);
-	free(rr_node_indices[IPIN]);
+	free(L_rr_node_indices[SINK]);
+	free(L_rr_node_indices[IPIN]);
 
 	for(i = 0; i < (nx + 1); ++i)
 	{
 		for(j = 0; j < (ny + 1); ++j)
 		{
-			if(rr_node_indices[CHANY][i][j].list != NULL) {
-				free(rr_node_indices[CHANY][i][j].list);
+			if(L_rr_node_indices[CHANY][i][j].list != NULL) {
+				free(L_rr_node_indices[CHANY][i][j].list);
 			}
 		}
-		free(rr_node_indices[CHANY][i]);
+		free(L_rr_node_indices[CHANY][i]);
 	}
-	free(rr_node_indices[CHANY]);
+	free(L_rr_node_indices[CHANY]);
 
 	for(i = 0; i < (ny + 1); ++i)
 	{
 		for(j = 0; j < (nx + 1); ++j)
 		{
-			if(rr_node_indices[CHANX][i][j].list != NULL) {
-				free(rr_node_indices[CHANX][i][j].list);
+			if(L_rr_node_indices[CHANX][i][j].list != NULL) {
+				free(L_rr_node_indices[CHANX][i][j].list);
 			}
 		}
-		free(rr_node_indices[CHANX][i]);
+		free(L_rr_node_indices[CHANX][i]);
 	}
-	free(rr_node_indices[CHANX]);
+	free(L_rr_node_indices[CHANX]);
 
-	free(rr_node_indices);
+	free(L_rr_node_indices);
 }
 
 
@@ -1099,7 +1085,7 @@ get_rr_node_index(int x,
 		  int y,
 		  t_rr_type rr_type,
 		  int ptc,
-		  t_ivec *** rr_node_indices)
+		  t_ivec *** L_rr_node_indices)
 {
     /* Returns the index of the specified routing resource node.  (x,y) are     *
      * the location within the FPGA, rr_type specifies the type of resource,    *
@@ -1139,7 +1125,7 @@ get_rr_node_index(int x,
 	}
 
     /* Start of that block.  */
-    lookup = rr_node_indices[rr_type][x][y];
+    lookup = L_rr_node_indices[rr_type][x][y];
 
     /* Check valid ptc num */
     assert(ptc >= 0);
@@ -1191,7 +1177,7 @@ get_track_to_ipins(int seg,
 		   int chan,
 		   int track,
 		   t_linked_edge ** edge_list_ptr,
-		   t_ivec *** rr_node_indices,
+		   t_ivec *** L_rr_node_indices,
 		   struct s_ivec ****track_to_ipin_lookup,
 		   t_seg_details * seg_details,
 		   enum e_rr_type chan_type,
@@ -1267,7 +1253,7 @@ get_track_to_ipins(int seg,
 
 				    to_node =
 					get_rr_node_index(x, y, IPIN, ipin,
-							  rr_node_indices);
+							  L_rr_node_indices);
 				    edge_list_head =
 					insert_in_edge_list(edge_list_head,
 							    to_node,
@@ -1314,8 +1300,8 @@ get_track_to_tracks(INP int from_chan,
 		    INOUTP struct s_linked_edge **edge_list,
 		    INP t_seg_details * seg_details,
 		    INP enum e_directionality directionality,
-		    INP t_ivec *** rr_node_indices,
-		    INOUTP boolean * rr_edge_done,
+		    INP t_ivec *** L_rr_node_indices,
+		    INOUTP boolean * L_rr_edge_done,
 		    INP struct s_ivec ***switch_block_conn)
 {
     int num_conn;
@@ -1429,13 +1415,13 @@ get_track_to_tracks(INP int from_chan,
 				[from_track];
 			    num_conn +=
 				get_bidir_track_to_chan_seg(conn_tracks,
-							    rr_node_indices,
+							    L_rr_node_indices,
 							    to_chan, to_seg,
 							    to_sb, to_type,
 							    seg_details,
 							    from_is_sbox,
 							    from_switch,
-							    rr_edge_done,
+							    L_rr_edge_done,
 							    directionality,
 							    edge_list);
 			}
@@ -1464,9 +1450,9 @@ get_track_to_tracks(INP int from_chan,
 								     Fs_per_side,
 								     opin_mux_size,
 								     sblock_pattern,
-								     rr_node_indices,
+								     L_rr_node_indices,
 								     seg_details,
-								     rr_edge_done,
+								     L_rr_edge_done,
 								     &Fs_clipped,
 								     edge_list);
 				}
@@ -1483,13 +1469,13 @@ get_track_to_tracks(INP int from_chan,
 				[from_track];
 			    num_conn +=
 				get_bidir_track_to_chan_seg(conn_tracks,
-							    rr_node_indices,
+							    L_rr_node_indices,
 							    to_chan, to_seg,
 							    to_sb, to_type,
 							    seg_details,
 							    from_is_sbox,
 							    from_switch,
-							    rr_edge_done,
+							    L_rr_edge_done,
 							    directionality,
 							    edge_list);
 			}
@@ -1518,9 +1504,9 @@ get_track_to_tracks(INP int from_chan,
 								     Fs_per_side,
 								     opin_mux_size,
 								     sblock_pattern,
-								     rr_node_indices,
+								     L_rr_node_indices,
 								     seg_details,
-								     rr_edge_done,
+								     L_rr_edge_done,
 								     &Fs_clipped,
 								     edge_list);
 				}
@@ -1535,7 +1521,7 @@ get_track_to_tracks(INP int from_chan,
 
 static int
 get_bidir_track_to_chan_seg(INP struct s_ivec conn_tracks,
-			    INP t_ivec *** rr_node_indices,
+			    INP t_ivec *** L_rr_node_indices,
 			    INP int to_chan,
 			    INP int to_seg,
 			    INP int to_sb,
@@ -1543,7 +1529,7 @@ get_bidir_track_to_chan_seg(INP struct s_ivec conn_tracks,
 			    INP t_seg_details * seg_details,
 			    INP boolean from_is_sbox,
 			    INP int from_switch,
-			    INOUTP boolean * rr_edge_done,
+			    INOUTP boolean * L_rr_edge_done,
 			    INP enum e_directionality directionality,
 			    INOUTP struct s_linked_edge **edge_list)
 {
@@ -1570,10 +1556,10 @@ get_bidir_track_to_chan_seg(INP struct s_ivec conn_tracks,
 	{
 	    to_track = conn_tracks.list[iconn];
 	    to_node = get_rr_node_index(to_x, to_y, to_type, to_track,
-					rr_node_indices);
+					L_rr_node_indices);
 
 	    /* Skip edge if already done */
-	    if(rr_edge_done[to_node])
+	    if(L_rr_edge_done[to_node])
 		{
 		    continue;
 		}
@@ -1600,7 +1586,7 @@ get_bidir_track_to_chan_seg(INP struct s_ivec conn_tracks,
 						     to_node,
 						     switch_types[i]);
 		    /* Mark the edge as now done */
-		    rr_edge_done[to_node] = TRUE;
+		    L_rr_edge_done[to_node] = TRUE;
 		    ++num_conn;
 		}
 	}
@@ -1616,16 +1602,16 @@ get_unidir_track_to_chan_seg(INP boolean is_end_sb,
 			     INP int to_sb,
 			     INP t_rr_type to_type,
 			     INP int nodes_per_chan,
-			     INP int nx,
-			     INP int ny,
+			     INP int L_nx,
+			     INP int L_ny,
 			     INP enum e_side from_side,
 			     INP enum e_side to_side,
 			     INP int Fs_per_side,
 			     INP int *opin_mux_size,
 			     INP short *****sblock_pattern,
-			     INP t_ivec *** rr_node_indices,
+			     INP t_ivec *** L_rr_node_indices,
 			     INP t_seg_details * seg_details,
-			     INOUTP boolean * rr_edge_done,
+			     INOUTP boolean * L_rr_edge_done,
 			     OUTP boolean * Fs_clipped,
 			     INOUTP struct s_linked_edge **edge_list)
 {
@@ -1642,7 +1628,7 @@ get_unidir_track_to_chan_seg(INP boolean is_end_sb,
 	    to_y = to_chan;
 	    sb_x = to_sb;
 	    sb_y = to_chan;
-	    max_len = nx;
+	    max_len = L_nx;
 	}
     else
 	{
@@ -1651,7 +1637,7 @@ get_unidir_track_to_chan_seg(INP boolean is_end_sb,
 	    to_y = to_seg;
 	    sb_x = to_chan;
 	    sb_y = to_sb;
-	    max_len = ny;
+	    max_len = L_ny;
 	}
 
 
@@ -1664,9 +1650,9 @@ get_unidir_track_to_chan_seg(INP boolean is_end_sb,
     *Fs_clipped = FALSE;
 
     /* SBs go from (0, 0) to (nx, ny) */
-    is_corner = ((sb_x < 1) || (sb_x >= nx)) && ((sb_y < 1) || (sb_y >= ny));
+    is_corner = ((sb_x < 1) || (sb_x >= L_nx)) && ((sb_y < 1) || (sb_y >= L_ny));
     is_fringe = (FALSE == is_corner) && ((sb_x < 1) || (sb_y < 1)
-					 || (sb_x >= nx) || (sb_y >= ny));
+					 || (sb_x >= L_nx) || (sb_y >= L_ny));
     is_core = (FALSE == is_corner) && (FALSE == is_fringe);
     is_straight = (from_side == RIGHT && to_side == LEFT) ||
 	(from_side == LEFT && to_side == RIGHT) ||
@@ -1690,7 +1676,7 @@ get_unidir_track_to_chan_seg(INP boolean is_end_sb,
 						      to_dir, nodes_per_chan,
 						      &num_labels, to_type,
 						      opin_mux_size,
-						      rr_node_indices);
+						      L_rr_node_indices);
 	}
 
     /* Can't connect if no muxes. */
@@ -1722,12 +1708,12 @@ get_unidir_track_to_chan_seg(INP boolean is_end_sb,
 	    to_track = mux_labels[(to_mux + i) % num_labels];
 	    to_node =
 		get_rr_node_index(to_x, to_y, to_type, to_track,
-				  rr_node_indices);
+				  L_rr_node_indices);
 
 	    /* Add edge to list. */
-	    if(FALSE == rr_edge_done[to_node])
+	    if(FALSE == L_rr_edge_done[to_node])
 		{
-		    rr_edge_done[to_node] = TRUE;
+		    L_rr_edge_done[to_node] = TRUE;
 		    *edge_list =
 			insert_in_edge_list(*edge_list, to_node,
 					    seg_details[to_track].
@@ -1754,7 +1740,7 @@ is_sbox(INP int chan,
 	INP enum e_directionality directionality)
 {
 
-    int start, length, ofs, fac;
+    int length, ofs, fac;
 
     fac = 1;
     if(UNI_DIRECTIONAL == directionality)
@@ -1762,7 +1748,6 @@ is_sbox(INP int chan,
 	    fac = 2;
 	}
 
-    start = seg_details[track].start;
     length = seg_details[track].length;
 
     /* Make sure they gave us correct start */
@@ -1886,8 +1871,8 @@ vpr_to_phy_track(INP int itrack,
 
 
 short *****
-alloc_sblock_pattern_lookup(INP int nx,
-			    INP int ny,
+alloc_sblock_pattern_lookup(INP int L_nx,
+			    INP int L_ny,
 			    INP int nodes_per_chan)
 {
     int i, j, from_side, to_side, itrack, items;
@@ -1909,9 +1894,9 @@ alloc_sblock_pattern_lookup(INP int nx,
     /* Alloc each list of pointers in one go. items is a running product that increases
      * with each new dimension of the matrix. */
     items = 1;
-    items *= (nx + 1);
+    items *= (L_nx + 1);
     i_list = (short *****)my_malloc(sizeof(short ****) * items);
-    items *= (ny + 1);
+    items *= (L_ny + 1);
     j_list = (short ****)my_malloc(sizeof(short ***) * items);
     items *= (4);
     from_list = (short ***)my_malloc(sizeof(short **) * items);
@@ -1922,13 +1907,13 @@ alloc_sblock_pattern_lookup(INP int nx,
 
     /* Build the pointer lists to form the multidimensional array */
     result = i_list;
-    i_list += (nx + 1);		/* Skip forward nx+1 items */
-    for(i = 0; i < (nx + 1); ++i)
+    i_list += (L_nx + 1);		/* Skip forward nx+1 items */
+    for(i = 0; i < (L_nx + 1); ++i)
 	{
 
 	    result[i] = j_list;
-	    j_list += (ny + 1);	/* Skip forward ny+1 items */
-	    for(j = 0; j < (ny + 1); ++j)
+	    j_list += (L_ny + 1);	/* Skip forward ny+1 items */
+	    for(j = 0; j < (L_ny + 1); ++j)
 		{
 
 		    result[i][j] = from_list;
@@ -2348,7 +2333,7 @@ label_wire_muxes_for_balance(INP int chan_num,
 			     INP int *num_wire_muxes,
 			     INP t_rr_type chan_type,
 			     INP int *opin_mux_size,
-			     INP t_ivec *** rr_node_indices)
+			     INP t_ivec *** L_rr_node_indices)
 {
 
     /* Labels the muxes on that side (seg_num, chan_num, direction). The returned array
@@ -2403,7 +2388,7 @@ label_wire_muxes_for_balance(INP int chan_num,
     for(i = 0; i < num_labels; ++i)
 	{
 	    inode = get_rr_node_index(x, y, chan_type, pre_labels[i],
-				  rr_node_indices);
+				  L_rr_node_indices);
 	    if(opin_mux_size[inode] < min_opin_mux_size)
 		{
 		    min_opin_mux_size = opin_mux_size[inode];
@@ -2616,12 +2601,10 @@ find_label_of_track(int *wire_mux_on_track,
 		    int num_wire_muxes,
 		    int from_track)
 {
-    int i, max_label, nearest_label, max_entry, nearest_entry;
+    int i;
 
     /* Returns the index/label in array wire_mux_on_track whose entry equals from_track. If none are
      * found, then returns the index of the entry whose value is the largest */
-
-    max_label = nearest_label = max_entry = nearest_entry = -1;
 
     for(i = 0; i < num_wire_muxes; i++)
 	{

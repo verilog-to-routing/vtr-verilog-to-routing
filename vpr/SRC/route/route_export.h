@@ -15,7 +15,7 @@ boolean try_route(int width_fac,
 
 boolean feasible_routing(void);
 
-t_ivec **alloc_route_structs();
+t_ivec **alloc_route_structs(void);
 
 void free_route_structs(t_ivec ** clb_opins_used_locally);
 

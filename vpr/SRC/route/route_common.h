@@ -121,7 +121,7 @@ void alloc_and_load_rr_node_route_structs(void);
 
 void reset_rr_node_route_structs(void);
 
-void alloc_route_static_structs();
+void alloc_route_static_structs(void);
 
 void free_trace_structs(void);
 

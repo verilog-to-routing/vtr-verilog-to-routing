@@ -569,11 +569,11 @@ if (GetEchoOption()){
     dump_rr_graph("rr_graph.echo");
 }else;
 
-    check_rr_graph(graph_type, L_num_types, types, L_nx, L_ny,
-		   L_grid, nodes_per_chan, Fs, num_seg_types, num_switches, segment_inf,
+    check_rr_graph(graph_type, types, L_nx, L_ny,
+		   nodes_per_chan, Fs, num_seg_types, num_switches, segment_inf,
 		   global_route_switch, delayless_switch,
 		   wire_to_ipin_switch, seg_details, Fc_in, Fc_out,
-		   rr_node_indices, opin_to_track_map, ipin_to_track_map,
+		   opin_to_track_map, ipin_to_track_map,
 		   track_to_ipin_lookup, switch_block_conn, perturb_ipins);
 
     /* Free all temp structs */
@@ -1686,11 +1686,6 @@ alloc_and_load_edges_and_switches(INP t_rr_node * L_rr_node,
     assert(list_ptr == NULL);
     assert(i == num_edges);
 }
-
-
-
-
-
 
 
 static int ****
