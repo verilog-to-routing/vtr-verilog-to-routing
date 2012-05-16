@@ -23,7 +23,6 @@ switch_T_del = 6.837e-11
 switch_mux_trans_size = 2.630740
 switch_buf_size = 27.645901
 
-seg_length = 4
 seg_Cmetal_per_m = 2.52e-10
 CLB_interc_Cmetal_per_m = 2.52e-10
 clock_Cmetal_per_m = 2.52e-10 
@@ -367,14 +366,14 @@ def xCLB(k_LUT, N_BLE, I_CLB, fracture_level, num_FF):
     
     xend() #pb_type clb
     
-def gen_arch(dir, k_LUT, N_BLE, I_CLB, fracture_level, num_FF):
+def gen_arch(dir, k_LUT, N_BLE, I_CLB, fracture_level, num_FF, seg_length):
     global f
     global tabs
 
     assert(fracture_level == 0 or fracture_level == 1 or fracture_level == 2)
     
 
-    filename = "k" + str(k_LUT) + "_N" + str(N_BLE) + "_I" + str(I_CLB) + "_frac" + str(fracture_level) + "_ff" + str(num_FF) + ".xml"    
+    filename = "k" + str(k_LUT) + "_N" + str(N_BLE) + "_I" + str(I_CLB) + "_L" + str(seg_length) + "_frac" + str(fracture_level) + "_ff" + str(num_FF) + ".xml"    
      
     tabs = 0
     
@@ -490,13 +489,23 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, fracture_level, num_FF):
     xbegin("sb")
     xprop("type","pattern")
     xclose()
-    xprint("1 1 1 1 1\n", False)
+    s = ""
+    for i in range(seg_length + 1):
+        s = s + "1 "
+    s = s.strip()
+    xprint(s + "\n", False)
     xend() #sb
     
+       
     xbegin("cb")
     xprop("type","pattern")
     xclose()
-    xprint("1 1 1 1\n", False)
+    
+    s = ""
+    for i in range(seg_length):
+        s = s + "1 "
+    s = s.strip()
+    xprint(s + "\n", False)
     xend() #cb
     
     xend() #segment
@@ -544,15 +553,42 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, fracture_level, num_FF):
 
 
 # Architecture Options
-g_opt_k = 6
-g_opt_N = 10
-g_opt_I_CLB = 33
-g_opt_fracture_level = 2
-g_opt_num_FF = 1
+arches = []
+#              k    N       I_CLB   frac    num_FF  seg_length
+arches.append([6,   10,     33,     0,      1,      4])
+arches.append([6,   10,     33,     1,      1,      4])
+arches.append([6,   10,     33,     1,      2,      4])
+arches.append([6,   10,     33,     2,      1,      4])
+arches.append([6,   10,     33,     2,      2,      4])
+arches.append([6,   10,     33,     2,      4,      4])
+arches.append([6,   10,     33,     0,      1,      3])
+arches.append([6,   10,     33,     1,      1,      3])
+arches.append([6,   10,     33,     1,      2,      3])
+arches.append([6,   10,     33,     2,      1,      3])
+arches.append([6,   10,     33,     2,      2,      3])
+arches.append([6,   10,     33,     2,      4,      3])
+arches.append([6,   10,     33,     0,      1,      5])
+arches.append([6,   10,     33,     1,      1,      5])
+arches.append([6,   10,     33,     1,      2,      5])
+arches.append([6,   10,     33,     2,      1,      5])
+arches.append([6,   10,     33,     2,      2,      5])
+arches.append([6,   10,     33,     2,      4,      5])
+arches.append([6,   10,     33,     0,      1,      6])
+arches.append([6,   10,     33,     1,      1,      6])
+arches.append([6,   10,     33,     1,      2,      6])
+arches.append([6,   10,     33,     2,      1,      6])
+arches.append([6,   10,     33,     2,      2,      6])
+arches.append([6,   10,     33,     2,      4,      6])
+
+
+
+
+
 
 dir = "C:\\Users\\Jeff\\Dropbox\\linux_home\\vtr\\vtr_flow\\arch\\timing_gen"
 
-gen_arch(dir, g_opt_k, g_opt_N, g_opt_I_CLB, g_opt_fracture_level, g_opt_num_FF)
+for arch in arches:
+    gen_arch(dir, arch[0], arch[1], arch[2], arch[3], arch[4], arch[5])
 print "Done\n"
 
 
