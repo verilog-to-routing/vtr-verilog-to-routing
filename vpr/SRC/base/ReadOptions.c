@@ -271,6 +271,7 @@ ProcessOption(INP const char *const *Args,
 		return ReadFloat(Args, &Options->criticality_exp);
 	default:
 	    ErrorOption(*PrevArgs);
+		return NULL;
 	}
 }
 
