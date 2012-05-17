@@ -261,12 +261,23 @@ struct s_pb_graph_pin
 	struct s_pb_graph_node *parent_node;
 	int pin_count_in_cluster;
 
+	int scratch_pad; /* temporary data structure useful to store traversal info */
+
 	/* timing information */
 	enum e_pb_graph_pin_type type; /* Is a sequential logic element (TRUE), inpad/outpad (TRUE), or neither (FALSE) */
 	float tsu_tco; /* For sequential logic elements, this is the setup time (if input) or clock-to-q time (if output) */
 	struct s_pb_graph_pin** pin_timing; /* primitive ipin to opin timing */
 	float *pin_timing_del_max; /* primitive ipin to opin timing */
 	int num_pin_timing; /* primitive ipin to opin timing */
+
+	/* Applies to clusters only */
+	int pin_class;
+
+	/* Applies to pins of primitive only */
+	int *parent_pin_class; /* [0..depth-1] the grouping of pins that this particular pin belongs to */
+	/* Applies to output pins of primitives only */
+	struct s_pb_graph_pin ***list_of_connectable_input_pin_ptrs; /* [0..depth-1][0..num_connectable_primtive_input_pins-1] what input pins this output can connect to without exiting cluster at given depth */
+	int *num_connectable_primtive_input_pins; /* [0..depth-1] number of input pins that this output pin can reach without exiting cluster at given depth */
 };
 typedef struct s_pb_graph_pin t_pb_graph_pin;
 
@@ -338,6 +349,9 @@ struct s_pb_graph_node
 	
 	void *temp_scratch_pad; /* temporary data, useful for keeping track of things when traversing data structure */
 	struct s_cluster_placement_primitive *cluster_placement_primitive; /* pointer to indexing structure useful during packing stage */
+
+	int *pin_class_size; /* Stores the number of pins that belong to a particular pin class */
+	int num_pin_classes; /* number of pin classes that this pb_graph_node has */	
 };
 typedef struct s_pb_graph_node t_pb_graph_node;
 
