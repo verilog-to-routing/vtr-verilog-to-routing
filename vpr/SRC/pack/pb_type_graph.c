@@ -17,6 +17,7 @@
 #include "vpr_utils.h"
 #include "pb_type_graph.h"
 #include "pb_type_graph_annotations.h"
+#include "cluster_feasibility_filter.h"
 
 /* variable global to this section that indexes each pb graph pin within a cluster */
 static int pin_count_in_cluster;
@@ -91,6 +92,7 @@ void alloc_and_load_all_pb_graphs (void) {
 			alloc_and_load_pb_graph(type_descriptors[i].pb_graph_head, NULL, type_descriptors[i].pb_type, 0);
 			type_descriptors[i].pb_graph_head->total_pb_pins = pin_count_in_cluster;
 			alloc_and_load_pin_locations_from_pb_graph(&type_descriptors[i]);
+			load_pin_classes_in_pb_graph_head(type_descriptors[i].pb_graph_head);
 		} else {
 			type_descriptors[i].pb_graph_head = NULL;
 			assert(&type_descriptors[i] == EMPTY_TYPE);
@@ -1137,6 +1139,12 @@ static void echo_pb_rec(const INP t_pb_graph_node *pb_graph_node, INP int level,
 	print_tabs(fp, level);
 	fprintf(fp, "Clock Ports: total ports %d\n", pb_graph_node->num_clock_ports);
 	echo_pb_pins(pb_graph_node->clock_pins, pb_graph_node->num_clock_ports, level, fp);
+	print_tabs(fp, level);
+	for(i = 0; i < pb_graph_node->num_pin_classes; i++) {
+		fprintf(fp, "class %d: %d pins, ", i, pb_graph_node->pin_class_size[i]);
+	}
+	fprintf(fp, "\n");
+	
 	if(pb_graph_node->pb_type->num_modes > 0) {
 		print_tabs(fp, level);
 		fprintf(fp, "Children:\n");
@@ -1169,6 +1177,30 @@ static void echo_pb_pins(INP t_pb_graph_pin **pb_graph_pins, INP int num_ports, 
 			fprintf(fp, "Pin %d port name \"%s\" num input edges %d num output edges %d parent type \"%s\" parent index %d\n", 
 				pb_graph_pins[i][j].pin_number, pb_graph_pins[i][j].port->name, pb_graph_pins[i][j].num_input_edges, pb_graph_pins[i][j].num_output_edges,
 				pb_graph_pins[i][j].parent_node->pb_type->name, pb_graph_pins[i][j].parent_node->placement_index);	
+			print_tabs(fp, level + 2);
+			if(pb_graph_pins[i][j].parent_node->pb_type->num_modes == 0) {
+				fprintf(fp, "pin class (depth, pin class): ");
+				for(k = 0; k < pb_graph_pins[i][j].parent_node->pb_type->depth; k++) {
+					fprintf(fp, "(%d %d), ", k, pb_graph_pins[i][j].parent_pin_class[k]);
+				}
+				fprintf(fp, "\n");
+				if(pb_graph_pins[i][j].port->type == OUT_PORT) {
+					for(k = 0; k < pb_graph_pins[i][j].parent_node->pb_type->depth; k++) {
+						print_tabs(fp, level + 2);
+						fprintf(fp, "connectable input pins within depth %d: %d\n", k, pb_graph_pins[i][j].num_connectable_primtive_input_pins[k]);
+						for(m = 0; m < pb_graph_pins[i][j].num_connectable_primtive_input_pins[k]; m++) {
+							print_tabs(fp, level + 3);
+							fprintf(fp, "pb_graph_node %s[%d].%s[%d] \n",
+								pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k][m]->parent_node->pb_type->name,
+								pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k][m]->parent_node->placement_index,
+								pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k][m]->port->name,
+								pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k][m]->pin_number);	
+						}
+					}
+				}
+			} else {
+				fprintf(fp, "pin class %d \n", pb_graph_pins[i][j].pin_class);
+			}
 			for(k = 0; k < pb_graph_pins[i][j].num_input_edges; k++) {
 				print_tabs(fp, level + 2);
 				fprintf(fp, "Input edge %d num inputs %d num outputs %d\n", 

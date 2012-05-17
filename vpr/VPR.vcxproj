@@ -190,6 +190,7 @@
     <ClCompile Include="..\libvpr\read_xml_util.c" />
     <ClCompile Include="..\libvpr\ReadLine.c" />
     <ClCompile Include="..\libvpr\util.c" />
+    <ClCompile Include="SRC\pack\cluster_feasibility_filter.c" />
     <ClCompile Include="SRC\pack\cluster_placement.c" />
     <ClCompile Include="SRC\pack\prepack.c" />
     <ClCompile Include="SRC\util\hash.c" />
@@ -245,6 +246,7 @@
     <ClInclude Include="SRC\base\SetupVPR.h" />
     <ClInclude Include="SRC\base\stats.h" />
     <ClInclude Include="SRC\base\vpr_types.h" />
+    <ClInclude Include="SRC\pack\cluster_feasibility_filter.h" />
     <ClInclude Include="SRC\pack\cluster_placement.h" />
     <ClInclude Include="SRC\pack\prepack.h" />
     <ClInclude Include="SRC\timing\net_delay.h" />

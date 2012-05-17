@@ -14,7 +14,7 @@
 # Please note that a Mac can run the graphics if the X11 library is installed. 
 # Set the following options appropriately to do so.
 
-ENABLE_GRAPHICS = true # can be true or false
+ENABLE_GRAPHICS = false # can be true or false
 BUILD_TYPE = release   # can be debug or release
 MAC_OS = false         # can be true or false
 
@@ -62,7 +62,7 @@ DEP := $(OBJ:.o=.d)
 
 $(EXE): $(OBJ) Makefile ../libvpr/libvpr_6.a
 	# checks if the package libx11-dev is installed, and installs it if not
-	if ! dpkg -l | grep libx11-dev -c >>/dev/null; then sudo apt-get install libx11-dev; fi
+#	if ! dpkg -l | grep libx11-dev -c >>/dev/null; then sudo apt-get install libx11-dev; fi
 	$(CC) $(FLAGS) $(OBJ) -o $(EXE) $(LIB_DIR) $(LIB)
 	
 ../libvpr/libvpr_6.a:
