@@ -2182,7 +2182,7 @@ setcolor(int cindex)
 {
 }
 int
-getcolor(int cindex)
+getcolor(void)
 {
 	return 0;
 }

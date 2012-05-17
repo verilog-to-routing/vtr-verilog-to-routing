@@ -15,8 +15,8 @@ void read_netlist(INP const char *net_file,
 				  OUTP int *num_nets,
 				  OUTP struct s_net *net_list[]);
 
-void free_logical_blocks();
-void free_logical_nets();
+void free_logical_blocks(void);
+void free_logical_nets(void);
 
 #endif
 

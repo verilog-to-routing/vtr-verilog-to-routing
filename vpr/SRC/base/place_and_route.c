@@ -314,7 +314,6 @@ binary_search_place_and_route(struct s_placer_opts placer_opts,
     char msg[BUFSIZE];
     float **net_delay, **net_slack;
     struct s_linked_vptr *net_delay_chunk_list_head;
-    int try_w_limit;
     t_ivec **clb_opins_used_locally, **saved_clb_opins_used_locally;
 
     /* [0..num_blocks-1][0..num_class-1] */
@@ -397,7 +396,6 @@ binary_search_place_and_route(struct s_placer_opts placer_opts,
 
     high = -1;
     final = -1;
-    try_w_limit = 0;
 
     attempt_count = 0;
 
@@ -835,7 +833,7 @@ comp_width(t_chan * chan,
 /* After placement, logical pins for blocks, and nets must be updated to correspond with physical pins of type */
 /* This function should only be called once */
 void
-post_place_sync(INP int num_blocks,
+post_place_sync(INP int L_num_blocks,
 		INOUTP const struct s_block block_list[])
 {
     int iblk, j, k, inet;
@@ -843,7 +841,7 @@ post_place_sync(INP int num_blocks,
     int max_num_block_pins;
 
     /* Go through each block */
-    for(iblk = 0; iblk < num_blocks; ++iblk)
+    for(iblk = 0; iblk < L_num_blocks; ++iblk)
 	{
 	    type = block[iblk].type;
 	    assert(type->num_pins % type->capacity == 0);

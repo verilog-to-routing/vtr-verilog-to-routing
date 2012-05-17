@@ -49,8 +49,6 @@ static void alloc_internal_cb_nets(INOUTP t_pb *top_level, INP t_pb_graph_node *
 
 static void load_internal_cb_rr_graph_net_nums(INP t_rr_node * cur_rr_node, INP t_rr_node * rr_graph, INOUTP struct s_net * nets, INOUTP int * curr_net, INOUTP int * curr_sink);
 
-static void count_internal_cb_rr_graph_net_nums(INP t_rr_node * cur_rr_node, INP t_rr_node * rr_graph);
-
 static void mark_constant_generators(INP int num_blocks,
 									INP struct s_block block_list[],
 									INP int ncount,
@@ -74,9 +72,9 @@ static void restore_logical_block_from_saved_block(INP int iblk, INP t_pb *pb);
 void
 read_netlist(INP const char *net_file,
 			 INP const t_arch *arch,
-			 OUTP int *num_blocks,
+			 OUTP int *L_num_blocks,
 			 OUTP struct s_block *block_list[],
-			 OUTP int *num_nets,
+			 OUTP int *L_num_nets,
 			 OUTP struct s_net *net_list[])
 {
 	ezxml_t Cur, Prev, Top;
@@ -207,9 +205,9 @@ read_netlist(INP const char *net_file,
 	}
 
 	/* Return blocks and nets */
-	*num_blocks = bcount;
+	*L_num_blocks = bcount;
 	*block_list = blist;
-	*num_nets = ext_ncount;
+	*L_num_nets = ext_ncount;
 	*net_list = ext_nlist;
 }
 
@@ -705,7 +703,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb, t_rr_node *rr_g
  * This function updates the nets list and the connections between that list and the complex block
 */
 static void
-load_external_nets_and_cb(INP int num_blocks,
+load_external_nets_and_cb(INP int L_num_blocks,
 		    INP struct s_block block_list[],
 		    INP int ncount,
 			INP struct s_net nlist[],
@@ -727,7 +725,7 @@ load_external_nets_and_cb(INP int num_blocks,
 	/* Assumes that complex block pins are ordered inputs, outputs, globals */
 
 	/* Determine the external nets of complex block */
-	for(i = 0; i < num_blocks; i++) {
+	for(i = 0; i < L_num_blocks; i++) {
 		ipin = 0;
 		if(block_list[i].type->pb_type->num_input_pins + 
 			block_list[i].type->pb_type->num_output_pins + 
@@ -798,7 +796,7 @@ load_external_nets_and_cb(INP int num_blocks,
 	count = my_calloc(*ext_ncount, sizeof(int));
 
     /* complete load of external nets so that each net points back to the blocks */
-	for(i = 0; i < num_blocks; i++) {
+	for(i = 0; i < L_num_blocks; i++) {
 		ipin = 0;
 		rr_graph = block_list[i].pb->rr_graph;
 		for(j = 0; j < block_list[i].type->num_pins; j++) {
@@ -1046,12 +1044,12 @@ static void alloc_internal_cb_nets(INOUTP t_pb *top_level, INP t_pb_graph_node *
 	}
 }
 
-static void mark_constant_generators(INP int num_blocks,
+static void mark_constant_generators(INP int L_num_blocks,
 									INP struct s_block block_list[],
 									INP int ncount,
 									INOUTP struct s_net nlist[]) {								
 	int i;
-	for(i = 0; i < num_blocks; i++) {
+	for(i = 0; i < L_num_blocks; i++) {
 		mark_constant_generators_rec(block_list[i].pb, block_list[i].pb->rr_graph, nlist);
 	}
 }
@@ -1137,7 +1135,7 @@ static void restore_logical_block_from_saved_block(INP int iblk, INP t_pb *pb) {
 
 
 /* Free logical blocks of netlist */
-void free_logical_blocks() {
+void free_logical_blocks(void) {
 	int iblk, i;
 	t_model_ports *port;
 	struct s_linked_vptr *tvptr, *next;
@@ -1189,7 +1187,7 @@ void free_logical_blocks() {
 }
 
 /* Free  logical blocks of netlist */
-void free_logical_nets() {
+void free_logical_nets(void) {
 	int inet;
 	
 	for (inet=0;inet<num_logical_nets;inet++) {

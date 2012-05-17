@@ -33,7 +33,7 @@ ShowSetup(INP t_options Options,
 	  INP t_segment_inf * Segments,
 	  INP t_timing_inf Timing)
 {
-    int i, j, num_p_inputs, num_p_outputs;
+    int i, j, L_num_p_inputs, L_num_p_outputs;
 	int *num_blocks_type; 
 	num_blocks_type = my_calloc(num_types, sizeof(int));
 
@@ -68,8 +68,8 @@ ShowSetup(INP t_options Options,
 		num_blocks_type[i] = 0;
 	}
     /* Count I/O input and output pads */
-    num_p_inputs = 0;
-    num_p_outputs = 0;
+    L_num_p_inputs = 0;
+    L_num_p_outputs = 0;
 
 	for(i = 0; i < num_blocks; i++)
 	{
@@ -84,7 +84,7 @@ ShowSetup(INP t_options Options,
 				       class_inf[IO_TYPE->pin_class[j]].
 				       type == DRIVER)
 					{
-					    num_p_inputs++;
+					    L_num_p_inputs++;
 					}
 				    else
 					{
@@ -92,7 +92,7 @@ ShowSetup(INP t_options Options,
 						   class_inf[IO_TYPE->
 							     pin_class[j]].
 						   type == RECEIVER);
-					    num_p_outputs++;
+					    L_num_p_outputs++;
 					}
 				}
 			}
@@ -107,8 +107,8 @@ ShowSetup(INP t_options Options,
 	}
 
 	/* Print out each block separately instead */
-    printf("Netlist inputs pins:  %d\n", num_p_inputs);
-    printf("Netlist output pins:  %d\n", num_p_outputs);
+    printf("Netlist inputs pins:  %d\n", L_num_p_inputs);
+    printf("Netlist output pins:  %d\n", L_num_p_outputs);
     printf("\n");
 	free(num_blocks_type);
 }

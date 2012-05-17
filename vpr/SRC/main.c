@@ -124,13 +124,13 @@ const t_pb_type *pbtype_max_internal_delay = NULL;  /* physical block type with 
 
 /********************** Subroutines local to this module ********************/
 
-static void PrintUsage();
-static void PrintTitle();
+static void PrintUsage(void);
+static void PrintTitle(void);
 static void freeArch(t_arch* Arch);
 static void freeOptions(t_options *options);
 static void InitArch(INP t_arch Arch);
 static void free_pb_type(t_pb_type *pb_type);
-static void free_complex_block_types();
+static void free_complex_block_types(void);
 
 
 
@@ -288,7 +288,7 @@ main(int argc,
 
 /* Outputs usage message */
 static void
-PrintUsage()
+PrintUsage(void)
 {
     puts("Usage:  vpr fpga_architecture.xml circuit_name [Options ...]");
     puts("");
@@ -344,7 +344,7 @@ PrintUsage()
 
 
 static void
-PrintTitle()
+PrintTitle(void)
 {
     puts("");
     puts("VPR FPGA Placement and Routing.");
@@ -442,7 +442,7 @@ static void freeArch(t_arch* Arch)
 	free(Arch->model_library);
 }
 
-static void free_complex_block_types() {
+static void free_complex_block_types(void) {
 	int i, j, k, m;
 
 	free_all_pb_graph_nodes();

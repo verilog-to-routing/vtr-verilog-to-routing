@@ -25,8 +25,6 @@ static int check_clb_internal_nets(int iblk);
 
 static int check_subblock_internal_nets(int iblk, int isub);
 
-static void check_for_multiple_sink_connections(void);
-
 static int get_num_conn(int bnum);
 
 static int check_subblocks(int iblk);
@@ -44,12 +42,9 @@ check_netlist()
 
 
     int i, error, num_conn;
-	int net_count;
 	struct s_hash **net_hash_table, *h_net_ptr;
     
     net_hash_table = alloc_hash_table();
-
-	net_count = 0;
 
     error = 0;
 

@@ -17,9 +17,9 @@ void
 read_place(INP const char *place_file,
 	   INP const char *arch_file,
 	   INP const char *net_file,
-	   INP int nx,
-	   INP int ny,
-	   INP int num_blocks,
+	   INP int L_nx,
+	   INP int L_ny,
+	   INP int L_num_blocks,
 	   INOUTP struct s_block block_list[])
 {
 
@@ -118,12 +118,12 @@ read_place(INP const char *place_file,
 		   place_file);
 	    exit(1);
 	}
-    if((my_atoi(tokens[2]) != nx) || (my_atoi(tokens[4]) != ny))
+    if((my_atoi(tokens[2]) != L_nx) || (my_atoi(tokens[4]) != L_ny))
 	{
 	    printf(ERRTAG
 		   "'%s' - Current FPGA size (%d x %d) is different from "
 		   "size when placement generated (%d x %d)\n", place_file,
-		   nx, ny, my_atoi(tokens[2]), my_atoi(tokens[4]));
+		   L_nx, L_ny, my_atoi(tokens[2]), my_atoi(tokens[4]));
 	    exit(1);
 	}
 
@@ -132,7 +132,7 @@ read_place(INP const char *place_file,
 	{
 	    /* Linear search to match pad to netlist */
 	    cur_blk = NULL;
-	    for(i = 0; i < num_blocks; ++i)
+	    for(i = 0; i < L_num_blocks; ++i)
 		{
 		    if(0 == strcmp(block_list[i].name, tokens[0]))
 			{

@@ -1663,7 +1663,7 @@ draw_rr_pin(int inode,
      * than one side of a clb.  Also note that this routine can change the     *
      * current color to BLACK.                                                 */
 
-    int ipin, i, j, iside, iclass, ioff;
+    int ipin, i, j, iside, ioff;
     float xcen, ycen;
     char str[BUFSIZE];
     t_type_ptr type;
@@ -1675,7 +1675,6 @@ draw_rr_pin(int inode,
     ioff = grid[i][j].offset;
 
     setcolor(color);
-    iclass = type->pin_class[ipin];
     /* TODO: This is where we can hide fringe physical pins and also identify globals (hide, color, show) */
     for(iside = 0; iside < 4; iside++)
 	{

@@ -562,7 +562,7 @@ add_subckt(int doall, t_model *user_models)
 			break;
 		else if (ptr == NULL && toggle == 1)
 		{
-			printf("subckt %s formed incorrectly with signal=signal at\n", subckt_name, buf);
+			printf("subckt %s formed incorrectly with signal=signal at %s\n", subckt_name, buf);
 			exit(-1);
 		}
 		else if (toggle == 0)
@@ -1171,7 +1171,7 @@ check_net(boolean sweep_hanging_nets_and_inputs)
 
 /* Checks the input netlist for obvious errors. */
 
-    int i, j, k, error, iblk, ipin, iport, inet, check_net;
+    int i, j, k, error, iblk, ipin, iport, inet, L_check_net;
 	boolean found;
 	int count_inputs, count_outputs;
 	int explicit_vpack_models;
@@ -1259,35 +1259,35 @@ check_net(boolean sweep_hanging_nets_and_inputs)
 			ipin = vpack_net[i].node_block_pin[j];
 			if(ipin == OPEN) {
 				/* Clocks are not connected to regular pins on a block hence open */
-				check_net = logical_block[iblk].clock_net;
-				if(check_net != i) {
+				L_check_net = logical_block[iblk].clock_net;
+				if(L_check_net != i) {
 					printf("Internal Error: clock net for block %s #%d is net %s #%d but connecting net is %s #%d\n",
 						logical_block[iblk].name, iblk,
-						vpack_net[check_net].name, check_net,
+						vpack_net[L_check_net].name, L_check_net,
 						vpack_net[i].name, i);
 					error++;
 				}
 
 			} else {
 				if(j == 0) {
-					check_net = logical_block[iblk].output_nets[iport][ipin];
-					if(check_net != i) {
+					L_check_net = logical_block[iblk].output_nets[iport][ipin];
+					if(L_check_net != i) {
 						printf("Internal Error: output net for block %s #%d is net %s #%d but connecting net is %s #%d\n",
 							logical_block[iblk].name, iblk,
-							vpack_net[check_net].name, check_net,
+							vpack_net[L_check_net].name, L_check_net,
 							vpack_net[i].name, i);
 						error++;
 					}
 				} else {
 					if(vpack_net[i].is_global) {
-						check_net = logical_block[iblk].clock_net;
+						L_check_net = logical_block[iblk].clock_net;
 					} else {
-						check_net = logical_block[iblk].input_nets[iport][ipin];
+						L_check_net = logical_block[iblk].input_nets[iport][ipin];
 					}
-					if(check_net != i) {
+					if(L_check_net != i) {
 						printf("Internal Error: input net for block %s #%d is net %s #%d but connecting net is %s #%d\n",
 							logical_block[iblk].name, iblk,
-							vpack_net[check_net].name, check_net,
+							vpack_net[L_check_net].name, L_check_net,
 							vpack_net[i].name, i);
 						error++;
 					}

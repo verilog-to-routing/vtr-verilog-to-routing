@@ -51,7 +51,7 @@ void flushinput(void);		/* Empties event queue */
  * and to a PostScript file if disp_type = POSTSCRIPT      */
 
 void setcolor(int cindex);	/* Use a constant from clist */
-int  getcolor();
+int  getcolor(void);
 void setlinestyle(int linestyle);
 void setlinewidth(int linewidth);
 void setfontsize(int pointsize);
