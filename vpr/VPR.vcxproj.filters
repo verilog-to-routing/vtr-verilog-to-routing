@@ -231,6 +231,12 @@
     <ClCompile Include="SRC\place\timing_place_lookup.c">
       <Filter>Source Files\place</Filter>
     </ClCompile>
+    <ClCompile Include="SRC\pack\prepack.c">
+      <Filter>Source Files\pack</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\pack\cluster_placement.c">
+      <Filter>Source Files\pack</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SRC\base\check_netlist.h">
@@ -415,6 +421,12 @@
     </ClInclude>
     <ClInclude Include="SRC\util\vpr_utils.h">
       <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\pack\cluster_placement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\pack\prepack.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
