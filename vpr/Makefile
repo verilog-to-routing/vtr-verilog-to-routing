@@ -27,7 +27,8 @@ SRC_DIR = SRC
 OBJ_DIR = OBJ
 OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/route
 
-WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -Wstrict-prototypes -O -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wmissing-prototypes -Wshadow -Wcast-align -D_POSIX_SOURCE
+
+WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -Wstrict-prototypes -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wmissing-prototypes -Wshadow -Wcast-align -D_POSIX_SOURCE
 DEBUG_FLAGS = -g
 OPT_FLAGS = -O3
 INC_FLAGS = -I../libvpr/include
@@ -45,7 +46,7 @@ ifeq ($(ENABLE_GRAPHICS),true)
   # is located elsewhere, one can change it here.
   ifeq ($(MAC_OS),true)
     LIB_DIR := $(LIB_DIR) -L/usr/X11
-  else	
+  else  
     LIB_DIR := $(LIB_DIR) -L/usr/lib/X11
   endif
   LIB := $(LIB) -lX11
@@ -60,7 +61,12 @@ OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
 
 $(EXE): $(OBJ) Makefile ../libvpr/libvpr_6.a
+	# checks if the package libx11-dev is installed, and installs it if not
+	if ! dpkg -l | grep libx11-dev -c >>/dev/null; then sudo apt-get install libx11-dev; fi
 	$(CC) $(FLAGS) $(OBJ) -o $(EXE) $(LIB_DIR) $(LIB)
+	
+../libvpr/libvpr_6.a:
+	cd ../libvpr && make
 
 # Enable a second round of expansion so that we may include
 # the target directory as a prerequisite of the object file.
@@ -73,7 +79,6 @@ $(EXE): $(OBJ) Makefile ../libvpr/libvpr_6.a
 $(OBJ): OBJ/%.o:$(SRC_DIR)/%.c | $$(dir $$@D)
 	$(CC) $(FLAGS) -MD -MP -I$(OTHER_DIR) -ISRC/util -c $< -o $@
 
-
 # Silently create target directories as need
 $(OBJ_DIRS):
 	@ mkdir -p $@
@@ -82,6 +87,7 @@ $(OBJ_DIRS):
 
 clean:
 	rm -f $(EXE) $(OBJ) $(DEP)
+	cd ../libvpr && make clean
 
 clean_coverage: clean
 	rm -rf ./usr
