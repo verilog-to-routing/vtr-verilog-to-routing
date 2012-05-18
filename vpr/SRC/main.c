@@ -301,7 +301,8 @@ PrintUsage(void)
     puts("General Options:  [--nodisp] [--auto <int>] [--pack]");
     puts("\t[--place] [--route] [--timing_analyze_only_with_net_delay <float>]");
     puts("\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]");
-	puts("\t[--blif_file <string>][--net_file <string>][--place_file <string>][--route_file <string>]");
+	puts("\t[--blif_file <string>][--net_file <string>][--place_file <string>]");
+	puts("\t[--route_file <string>][--echo_file on | off]");
     puts("");
 	puts("Packer Options:");
 /*    puts("\t[-global_clocks on|off]");
