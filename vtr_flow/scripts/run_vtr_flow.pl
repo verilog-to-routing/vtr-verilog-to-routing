@@ -499,7 +499,7 @@ if ($ending_stage >= $stage_idx_vpr and ! $error_code)
 	}
 			
 	  					
-	if (-e $vpr_route_output_file_path)
+	if (-e $vpr_route_output_file_path and $q eq "success")
 	{
 		if (! $keep_intermediate_files)
 		{
@@ -507,9 +507,7 @@ if ($ending_stage >= $stage_idx_vpr and ! $error_code)
 			system "rm -f ${temp_dir}*.xml";
 			system "rm -f ${temp_dir}*.net";
 			system "rm -f ${temp_dir}*.place";
-			system "rm -f ${temp_dir}*.route";
-			
-			
+			system "rm -f ${temp_dir}*.route";			
 		}
 	}
 	else
