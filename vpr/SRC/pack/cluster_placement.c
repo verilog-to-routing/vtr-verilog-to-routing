@@ -584,3 +584,43 @@ int get_array_size_of_molecule(t_pack_molecule *molecule) {
 		return molecule->num_blocks;
 	}
 }
+
+/* Given logical block, determines if a free primitive exists for it */
+boolean exists_free_primitive_for_logical_block(INOUTP t_cluster_placement_stats *cluster_placement_stats, INP int ilogical_block) {
+	int i;
+	t_cluster_placement_primitive *cur, *prev;
+
+	/* might have a primitive in flight that's still valid */
+	if(cluster_placement_stats->in_flight) {
+		if(primitive_type_feasible(ilogical_block, cluster_placement_stats->in_flight->pb_graph_node->pb_type)) {
+			return TRUE;
+		}
+	}
+
+	/* Look through list of available primitives to see if any valid */
+	for(i = 0; i < cluster_placement_stats->num_pb_types; i++) {
+		if(cluster_placement_stats->valid_primitives[i]->next_primitive == NULL) {
+			continue; /* no more primitives of this type available */
+		}
+		if(primitive_type_feasible(ilogical_block, cluster_placement_stats->valid_primitives[i]->next_primitive->pb_graph_node->pb_type)) {
+			prev = cluster_placement_stats->valid_primitives[i];
+			cur = cluster_placement_stats->valid_primitives[i]->next_primitive;
+			while(cur) {
+				/* remove invalid nodes lazily when encountered */
+				while(cur && cur->valid == FALSE) {
+					prev->next_primitive = cur->next_primitive;
+					cur->next_primitive = cluster_placement_stats->invalid;
+					cluster_placement_stats->invalid = cur;
+					cur = prev->next_primitive;
+				}
+				if(cur == NULL) {
+					break;
+				}
+				return TRUE;
+			}
+		}
+	}
+		
+	return FALSE;
+}
+

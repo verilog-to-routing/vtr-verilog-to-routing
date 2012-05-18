@@ -112,8 +112,7 @@ static void alloc_and_init_clustering (boolean global_clocks,
 									   t_pack_molecule *molecules_head,
 									   int num_molecules);
 static void free_pb_stats_recursive (t_pb *pb, int max_models);
-static boolean outputs_clocks_and_models_feasible (enum e_packer_algorithm packer_algorithm, int iblk, boolean *is_clock, t_pb *cur_pb);
-static boolean models_feasible(enum e_packer_algorithm packer_algorithm, int iblk, const t_pb_type *cur_pb_type, t_pb *cur_pb, int mode);
+static boolean outputs_clocks_and_placement_feasible (enum e_packer_algorithm packer_algorithm, int iblk, boolean *is_clock, t_pb *cur_pb, t_cluster_placement_stats *cluster_placement_stats_ptr);
 static boolean primitive_feasible(int iblk, t_pb *cur_pb);
 static boolean primitive_type_and_memory_feasible(int iblk, const t_pb_type *cur_pb_type, t_pb *memory_class_pb, int sibling_memory_blk);
 
@@ -121,15 +120,15 @@ static boolean primitive_type_and_memory_feasible(int iblk, const t_pb_type *cur
 static t_pack_molecule *get_molecule_by_num_ext_inputs (INP enum e_packer_algorithm packer_algorithm,
 										INOUTP t_pb *cur_pb,
 										INP int ext_inps, 
-										INP enum e_removal_policy remove_flag);
+										INP enum e_removal_policy remove_flag, INP t_cluster_placement_stats *cluster_placement_stats_ptr);
 
 static t_pack_molecule* get_free_molecule_with_most_ext_inputs_for_cluster (INP enum e_packer_algorithm packer_algorithm,
-																	INOUTP t_pb *cur_pb);
+																	INOUTP t_pb *cur_pb, INP t_cluster_placement_stats *cluster_placement_stats_ptr);
 
 static t_pack_molecule* get_seed_logical_molecule_with_most_ext_inputs (int max_molecule_inputs);
 
 static enum e_block_pack_status try_pack_molecule(INOUTP t_cluster_placement_stats *cluster_placement_stats_ptr, INP t_pack_molecule *molecule, INOUTP t_pb_graph_node **primitives_list, INOUTP t_pb * pb, INP int max_models, INP int max_cluster_size, INP int clb_index, INP int max_nets_in_pb_type, INP boolean *is_clock);
-static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node *pb_graph_node, INP int ilogical_block, INP t_pb *cb, OUTP t_pb **parent, INP int max_models, INP int max_cluster_size, INP int clb_index, INP int max_nets_in_pb_type, INP boolean *is_clock);
+static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node *pb_graph_node, INP int ilogical_block, INP t_pb *cb, OUTP t_pb **parent, INP int max_models, INP int max_cluster_size, INP int clb_index, INP int max_nets_in_pb_type, INP boolean *is_clock, INP t_cluster_placement_stats *cluster_placement_stats_ptr);
 static void revert_place_logical_block(INP int ilogical_block, INP int max_models);
 
 static void update_connection_gain_values (int inet, int clustered_block, t_pb * cur_pb,
@@ -173,19 +172,21 @@ static void start_new_cluster(INP t_cluster_placement_stats *cluster_placement_s
 								INP int max_nets_in_pb_type,
 								INP boolean *is_clock);
 
-static boolean inputs_outputs_models_and_clocks_feasible (INP enum e_packer_algorithm packer_algorithm, int iblk, boolean *is_clock, t_pb *cur_pb);
+static boolean inputs_outputs_models_and_clocks_feasible (INP enum e_packer_algorithm packer_algorithm, int iblk, boolean *is_clock, t_pb *cur_pb, t_cluster_placement_stats *cluster_placement_stats_ptr);
 
 static t_pack_molecule* get_highest_gain_molecule (INP enum e_packer_algorithm packer_algorithm,
 										   INOUTP t_pb *cur_pb,
 									INP boolean *is_clock, 
 									INP boolean (*is_feasible) 
-									(enum e_packer_algorithm packer_algorithm, int iblk, boolean *is_clock, t_pb *cur_pb), 
-									INP enum e_gain_type gain_mode);
+									(enum e_packer_algorithm packer_algorithm, int iblk, boolean *is_clock, t_pb *cur_pb, INP t_cluster_placement_stats *cluster_placement_stats_ptr), 
+									INP enum e_gain_type gain_mode, INP t_cluster_placement_stats *cluster_placement_stats_ptr);
 
 static t_pack_molecule* get_molecule_for_cluster (INP enum e_packer_algorithm packer_algorithm,
 										  INP t_pb *cur_pb,
 										 INP boolean *is_clock,
-										 INP boolean allow_unrelated_clustering);
+										 INP boolean allow_unrelated_clustering, 
+										 INOUTP int *num_unrelated_clustering_attempts,
+										 INP t_cluster_placement_stats *cluster_placement_stats_ptr);
 
 static void alloc_and_load_cluster_info (INP int num_clb, INOUTP t_block *clb);
 
@@ -233,7 +234,7 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecule_head, int num_
  int max_cluster_size, cur_cluster_size, max_molecule_inputs, max_pb_depth, cur_pb_depth;
 
  int *hill_climbing_inputs_avail;
- t_cluster_placement_stats *cluster_placement_stats;
+ t_cluster_placement_stats *cluster_placement_stats, *cur_cluster_placement_stats_ptr;
  t_pb_graph_node **primitives_list;
 
  t_block *clb; 
@@ -248,6 +249,7 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecule_head, int num_
  float num_paths_scaling, distance_scaling;
 
  float crit;
+ int num_unrelated_clustering_attempts;
 
  /* TODO: This is memory inefficient, fix if causes problems */
  clb = my_calloc(num_logical_blocks,sizeof(t_block));
@@ -382,13 +384,16 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecule_head, int num_
       /*it doesn't make sense to do a timing analysis here since there*
        *is only one logical_block clustered it would not change anything      */
     }
+	cur_cluster_placement_stats_ptr = &cluster_placement_stats[clb[num_clb-1].type->index];
+	num_unrelated_clustering_attempts = 0;
 	next_molecule = get_molecule_for_cluster(PACK_BRUTE_FORCE,
 										clb[num_clb - 1].pb, 
 										 is_clock,
-										 allow_unrelated_clustering);
+										 allow_unrelated_clustering, &num_unrelated_clustering_attempts,
+										 cur_cluster_placement_stats_ptr);
 	prev_molecule = istart;
 	while (next_molecule != NULL && prev_molecule != next_molecule) {
-		block_pack_status = try_pack_molecule(&cluster_placement_stats[clb[num_clb-1].type->index], next_molecule, primitives_list, clb[num_clb - 1].pb, num_models, max_cluster_size, num_clb - 1, max_nets_in_pb_type, is_clock); 
+		block_pack_status = try_pack_molecule(cur_cluster_placement_stats_ptr, next_molecule, primitives_list, clb[num_clb - 1].pb, num_models, max_cluster_size, num_clb - 1, max_nets_in_pb_type, is_clock); 
 		prev_molecule = next_molecule;
 		if(block_pack_status != BLK_PASSED) {
 			if(next_molecule != NULL) {
@@ -412,7 +417,7 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecule_head, int num_
 			next_molecule = get_molecule_for_cluster(PACK_BRUTE_FORCE,
 										clb[num_clb - 1].pb, 
 										 is_clock,
-										 allow_unrelated_clustering);
+										 allow_unrelated_clustering, &num_unrelated_clustering_attempts, cur_cluster_placement_stats_ptr);
 			continue;
 		} else {
 			/* Continue packing by filling smallest cluster */
@@ -425,6 +430,7 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecule_head, int num_
 		}
 		update_cluster_stats (next_molecule, num_clb - 1, is_clock, global_clocks, 
 						alpha, beta, timing_driven, connection_driven);
+		num_unrelated_clustering_attempts = 0;
 
 		if (timing_driven && !early_exit) {
 			blocks_since_last_analysis++; /* historically, timing slacks were recomputed after X number of blocks were packed, but this doesn't significantly alter results so I (jluu) did not port the code */
@@ -432,7 +438,7 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecule_head, int num_
 		next_molecule = get_molecule_for_cluster(PACK_BRUTE_FORCE,
 										clb[num_clb - 1].pb, 
 										 is_clock,
-										 allow_unrelated_clustering);
+										 allow_unrelated_clustering, &num_unrelated_clustering_attempts, cur_cluster_placement_stats_ptr);
     }
 	printf("\n");
 
@@ -710,7 +716,7 @@ static void free_pb_stats_recursive (t_pb *pb, int max_models) {
 
 
 /*****************************************/
-static boolean outputs_clocks_and_models_feasible (enum e_packer_algorithm packer_algorithm, int iblk, boolean *is_clock, t_pb *cur_pb) {
+static boolean outputs_clocks_and_placement_feasible (enum e_packer_algorithm packer_algorithm, int iblk, boolean *is_clock, t_pb *cur_pb, t_cluster_placement_stats *cluster_placement_stats_ptr) {
 
 /* Checks if logical_block iblk could be adding to the open cluster without *
  * violating clocking constraints.  Returns TRUE if it's OK.  Some  *
@@ -795,7 +801,7 @@ static boolean outputs_clocks_and_models_feasible (enum e_packer_algorithm packe
 	 temp_pb = temp_pb->parent_pb;
  }
 
- if(models_feasible(packer_algorithm, iblk, cur_pb->pb_graph_node->pb_type, cur_pb, cur_pb->mode)) {
+ if(exists_free_primitive_for_logical_block(cluster_placement_stats_ptr, iblk)) {
 	 if (clocks_feasible && outputs_feasible) 
 		return (TRUE);
 	 else
@@ -805,72 +811,6 @@ static boolean outputs_clocks_and_models_feasible (enum e_packer_algorithm packe
  } 
 }
 
-
-static boolean models_feasible(enum e_packer_algorithm packer_algorithm, int iblk, const t_pb_type *cur_pb_type, t_pb *cur_pb, int mode) {
-	struct s_linked_vptr *cur_model;
-	int i, j, k;
-	boolean feasible;
-	const t_pb_type *child_pb_type;
-	
-	cur_model = cur_pb_type->models_contained;
-
-
-	assert(cur_pb == NULL || cur_pb->pb_graph_node->pb_type == cur_pb_type);
-	assert(cur_pb == NULL || cur_pb->mode == mode);
-
-	feasible = FALSE;
-	while(cur_model) {
-		if(cur_model->data_vptr == logical_block[iblk].model) {
-			feasible = TRUE;
-			break;
-		}
-		cur_model = cur_model->next;
-	}
-
-	if(!feasible) {
-		return FALSE;
-	}
-	if(packer_algorithm == PACK_BRUTE_FORCE) {
-		/* let the brute force packer determine if an empty slot exists */
-		return TRUE;
-	}
-
-	feasible = FALSE;
-
-	if(cur_pb_type->num_modes == 0) {
-		return primitive_type_and_memory_feasible(iblk, cur_pb_type, NULL, OPEN);
-	}
-
-	for(i = 0; i < cur_pb_type->modes[mode].num_pb_type_children; i++) {
-		child_pb_type = &cur_pb_type->modes[mode].pb_type_children[i];
-		if(cur_pb) {
-			for(k = 0; k < child_pb_type->num_pb && cur_pb->child_pbs && cur_pb->child_pbs[i]; k++) {
-				if(cur_pb->child_pbs[i][k].name == NULL) {
-					break;
-				}
-			}
-			if(k == child_pb_type->num_pb) { 
-				/* no free child */
-				continue;
-			}
-		}
-		if(child_pb_type->num_modes == 0) {
-			feasible = primitive_type_and_memory_feasible(iblk, &cur_pb_type->modes[mode].pb_type_children[i], NULL, OPEN);
-			if(feasible) {
-				return TRUE;
-			}
-		} else {
-			for(j = 0; j < cur_pb_type->modes[mode].pb_type_children[i].num_modes; j++) {
-				feasible = models_feasible(packer_algorithm, iblk, &cur_pb_type->modes[mode].pb_type_children[i], NULL, j);
-				if(feasible) {
-					return TRUE;
-				}
-			}
-		}
-	}
-
-	return FALSE;
-}
 
 static boolean primitive_feasible(int iblk, t_pb *cur_pb) {
 	const t_pb_type *cur_pb_type;
@@ -980,7 +920,7 @@ static boolean primitive_type_and_memory_feasible(int iblk, const t_pb_type *cur
 static t_pack_molecule *get_molecule_by_num_ext_inputs (	    INP enum e_packer_algorithm packer_algorithm,
 														INOUTP t_pb *cur_pb, 
 														INP int ext_inps, 
-														INP enum e_removal_policy remove_flag) {
+														INP enum e_removal_policy remove_flag, INP t_cluster_placement_stats *cluster_placement_stats_ptr) {
 
 /* This routine returns a logical_block which has not been clustered, has  *
  * no connection to the current cluster, satisfies the cluster     *
@@ -1005,7 +945,7 @@ static t_pack_molecule *get_molecule_by_num_ext_inputs (	    INP enum e_packer_a
 		for(i = 0; i < get_array_size_of_molecule(ptr->moleculeptr); i++) {
 			 if(ptr->moleculeptr->logical_block_ptrs[i] != NULL) {
 				ilogical_blk = ptr->moleculeptr->logical_block_ptrs[i]->index;
-				if (!outputs_clocks_and_models_feasible(packer_algorithm, ilogical_blk, NULL, cur_pb)) {
+				if (!outputs_clocks_and_placement_feasible(packer_algorithm, ilogical_blk, NULL, cur_pb, cluster_placement_stats_ptr)) {
 					success = FALSE;
 					break;
 				}
@@ -1030,7 +970,7 @@ static t_pack_molecule *get_molecule_by_num_ext_inputs (	    INP enum e_packer_a
 
 /*****************************************/
 static t_pack_molecule *get_free_molecule_with_most_ext_inputs_for_cluster (INP enum e_packer_algorithm packer_algorithm,
-																	INOUTP t_pb *cur_pb) {
+																	INOUTP t_pb *cur_pb, INP t_cluster_placement_stats *cluster_placement_stats_ptr) {
 
 /* This routine is used to find new blocks for clustering when there are no feasible       *
  * blocks with any attraction to the current cluster (i.e. it finds       *
@@ -1056,7 +996,7 @@ static t_pack_molecule *get_free_molecule_with_most_ext_inputs_for_cluster (INP 
  }
  
  for (ext_inps = inputs_avail; ext_inps >= 0; ext_inps--) {
-    molecule = get_molecule_by_num_ext_inputs (packer_algorithm, cur_pb, ext_inps, LEAVE_CLUSTERED);
+    molecule = get_molecule_by_num_ext_inputs (packer_algorithm, cur_pb, ext_inps, LEAVE_CLUSTERED, cluster_placement_stats_ptr);
 	if (molecule != NULL) {
        break;
 	}
@@ -1164,7 +1104,7 @@ static enum e_block_pack_status try_pack_molecule(INOUTP t_cluster_placement_sta
 				assert((primitives_list[i] == NULL) == (molecule->logical_block_ptrs[i] == NULL));
 				failed_location = i + 1;
 				if(molecule->logical_block_ptrs[i] != NULL) {
-					block_pack_status = try_place_logical_block_rec(primitives_list[i], molecule->logical_block_ptrs[i]->index, pb, &parent, max_models, max_cluster_size, clb_index, max_nets_in_pb_type, is_clock);
+					block_pack_status = try_place_logical_block_rec(primitives_list[i], molecule->logical_block_ptrs[i]->index, pb, &parent, max_models, max_cluster_size, clb_index, max_nets_in_pb_type, is_clock, cluster_placement_stats_ptr);
 				}
 			}
 			if(block_pack_status == BLK_PASSED) {
@@ -1212,7 +1152,7 @@ static enum e_block_pack_status try_pack_molecule(INOUTP t_cluster_placement_sta
  * Try place logical block into current primitive location
  */
 
-static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node *pb_graph_node, INP int ilogical_block, INP t_pb *cb, OUTP t_pb **parent, INP int max_models, INP int max_cluster_size, INP int clb_index, INP int max_nets_in_pb_type, INP boolean *is_clock) {
+static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node *pb_graph_node, INP int ilogical_block, INP t_pb *cb, OUTP t_pb **parent, INP int max_models, INP int max_cluster_size, INP int clb_index, INP int max_nets_in_pb_type, INP boolean *is_clock, INP t_cluster_placement_stats *cluster_placement_stats_ptr) {
 	int i, j;
 	boolean is_primitive;
 	enum e_block_pack_status block_pack_status;
@@ -1227,7 +1167,7 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 	
 	/* Discover parent */
 	if(pb_graph_node->parent_pb_graph_node != cb->pb_graph_node) {
-		block_pack_status = try_place_logical_block_rec(pb_graph_node->parent_pb_graph_node, ilogical_block, cb, &my_parent, max_models, max_cluster_size, clb_index, max_nets_in_pb_type, is_clock);
+		block_pack_status = try_place_logical_block_rec(pb_graph_node->parent_pb_graph_node, ilogical_block, cb, &my_parent, max_models, max_cluster_size, clb_index, max_nets_in_pb_type, is_clock, cluster_placement_stats_ptr);
 		parent_pb = my_parent;
 	} else {
 		parent_pb = cb;
@@ -1275,7 +1215,7 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 		logical_block[ilogical_block].clb_index = clb_index;
 		logical_block[ilogical_block].pb = pb;
 		
-		if(primitive_feasible(ilogical_block, pb) && inputs_outputs_models_and_clocks_feasible(PACK_BRUTE_FORCE, ilogical_block, is_clock, parent_pb)) {
+		if(primitive_feasible(ilogical_block, pb) && inputs_outputs_models_and_clocks_feasible(PACK_BRUTE_FORCE, ilogical_block, is_clock, parent_pb, cluster_placement_stats_ptr)) {
 			/* Passed location feasibility check, add block to routing graph to test routing check */
 			setup_intracluster_routing_for_logical_block(ilogical_block, pb);				
 		} else {
@@ -1286,7 +1226,7 @@ static enum e_block_pack_status try_place_logical_block_rec(INP t_pb_graph_node 
 		/* check feasibility of packing into current cluster 
 		* WARNING: need to be smarter about pin checks especially when molecule, when partially packed, is infeasible, but is feasible when fully packed
 		*/
-		if(!inputs_outputs_models_and_clocks_feasible(PACK_BRUTE_FORCE, ilogical_block, is_clock, parent_pb)) {
+		if(!inputs_outputs_models_and_clocks_feasible(PACK_BRUTE_FORCE, ilogical_block, is_clock, parent_pb, cluster_placement_stats_ptr)) {
 			block_pack_status = BLK_FAILED_FEASIBLE;
 		}
 	}
@@ -1829,7 +1769,7 @@ static void start_new_cluster(INP t_cluster_placement_stats *cluster_placement_s
 
 
 /*****************************************/
-static boolean inputs_outputs_models_and_clocks_feasible (INP enum e_packer_algorithm packer_algorithm, int iblk, boolean *is_clock, t_pb *cur_pb) {
+static boolean inputs_outputs_models_and_clocks_feasible (INP enum e_packer_algorithm packer_algorithm, int iblk, boolean *is_clock, t_pb *cur_pb, INP t_cluster_placement_stats *cluster_placement_stats_ptr) {
 
 /* Checks if adding iblk to the currently open cluster would violate *
  * the cluster input and clock pin limitations.  Returns TRUE if     *
@@ -1878,7 +1818,7 @@ static boolean inputs_outputs_models_and_clocks_feasible (INP enum e_packer_algo
 	 inputs_feasible = (inputs_avail >= 0);
 	 temp_pb = temp_pb->parent_pb;
  }
- if (outputs_clocks_and_models_feasible (packer_algorithm, iblk, is_clock, cur_pb) == FALSE) 
+ if (outputs_clocks_and_placement_feasible (packer_algorithm, iblk, is_clock, cur_pb, cluster_placement_stats_ptr) == FALSE) 
     return (FALSE); 
 
  if (inputs_feasible) 
@@ -1891,8 +1831,8 @@ static boolean inputs_outputs_models_and_clocks_feasible (INP enum e_packer_algo
 static t_pack_molecule *get_highest_gain_molecule ( INP enum e_packer_algorithm packer_algorithm,
 										   INOUTP t_pb *cur_pb,
 												INP boolean *is_clock, 
-												INP boolean (*is_feasible) (enum e_packer_algorithm packer_algorithm, int iblk, boolean *is_clock, t_pb *cur_pb), 
-												INP enum e_gain_type gain_mode) {
+												INP boolean (*is_feasible) (enum e_packer_algorithm packer_algorithm, int iblk, boolean *is_clock, t_pb *cur_pb, INP t_cluster_placement_stats *cluster_placement_stats_ptr), 
+												INP enum e_gain_type gain_mode, INP t_cluster_placement_stats *cluster_placement_stats_ptr) {
 
 /* This routine populates a list of feasible blocks outside the cluster then returns the best one for the list    *
  * not currently in a cluster and satisfies the feasibility     *
@@ -1929,7 +1869,7 @@ static t_pack_molecule *get_highest_gain_molecule ( INP enum e_packer_algorithm 
 							for(j = 0; j < get_array_size_of_molecule(molecule); j++) {
 								if(molecule->logical_block_ptrs[j] != NULL) {
 									assert(molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
-									if (!is_feasible (packer_algorithm, molecule->logical_block_ptrs[j]->index, is_clock, cur_pb)) {
+									if (!is_feasible (packer_algorithm, molecule->logical_block_ptrs[j]->index, is_clock, cur_pb, cluster_placement_stats_ptr)) {
 										success = FALSE;
 										break;
 									}
@@ -1955,7 +1895,7 @@ static t_pack_molecule *get_highest_gain_molecule ( INP enum e_packer_algorithm 
 							for(j = 0; j < get_array_size_of_molecule(molecule); j++) {
 								if(molecule->logical_block_ptrs[j] != NULL) {
 									assert(molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
-									if (!is_feasible (packer_algorithm, molecule->logical_block_ptrs[j]->index, is_clock, cur_pb)) {
+									if (!is_feasible (packer_algorithm, molecule->logical_block_ptrs[j]->index, is_clock, cur_pb, cluster_placement_stats_ptr)) {
 										success = FALSE;
 										break;
 									}
@@ -1990,7 +1930,8 @@ static t_pack_molecule *get_highest_gain_molecule ( INP enum e_packer_algorithm 
 static t_pack_molecule *get_molecule_for_cluster (	INP enum e_packer_algorithm packer_algorithm,
 											INOUTP t_pb *cur_pb,
 											INP boolean *is_clock,
-											INP boolean allow_unrelated_clustering) {
+											INP boolean allow_unrelated_clustering, INOUTP int *num_unrelated_clustering_attempts,
+											INP t_cluster_placement_stats *cluster_placement_stats_ptr) {
 
 /* Finds the vpack block with the the greatest gain that satisifies the      *
  * input, clock and capacity constraints of a cluster that are       *
@@ -2004,7 +1945,7 @@ static t_pack_molecule *get_molecule_for_cluster (	INP enum e_packer_algorithm p
 
 
  best_molecule = get_highest_gain_molecule (packer_algorithm, cur_pb, is_clock, inputs_outputs_models_and_clocks_feasible,
-						 NOT_HILL_CLIMBING);
+						 NOT_HILL_CLIMBING, cluster_placement_stats_ptr);
 
 /* If no blocks have any gain to the current cluster, the code above *
  * will not find anything.  However, another logical_block with no inputs in *
@@ -2012,7 +1953,12 @@ static t_pack_molecule *get_molecule_for_cluster (	INP enum e_packer_algorithm p
 
  if (allow_unrelated_clustering) {
 	 if (best_molecule == NULL) {
-		best_molecule = get_free_molecule_with_most_ext_inputs_for_cluster (packer_algorithm, cur_pb);
+		 if(*num_unrelated_clustering_attempts == 0) {
+			best_molecule = get_free_molecule_with_most_ext_inputs_for_cluster (packer_algorithm, cur_pb, cluster_placement_stats_ptr);
+			(*num_unrelated_clustering_attempts)++;
+		 }
+	 } else {
+		 *num_unrelated_clustering_attempts = 0;
 	 }
  }
 
@@ -2323,7 +2269,21 @@ static float get_molecule_gain(t_pack_molecule *molecule, float *blk_gain) {
 }
 
 static int compare_molecule_gain(const void *a, const void *b) {
-	return (int)((*(t_pack_molecule **)a)->base_gain - (*(t_pack_molecule **)b)->base_gain);
+	float base_gain_a, base_gain_b, diff;
+	const t_pack_molecule *molecule_a, *molecule_b;
+	molecule_a = (*(const t_pack_molecule **)a);
+	molecule_b = (*(const t_pack_molecule **)b);
+
+	base_gain_a = molecule_a->base_gain;
+	base_gain_b = molecule_b->base_gain;
+	diff = base_gain_a - base_gain_b;
+	if(diff > 0) {
+		return 1;
+	}
+	if(diff < 0) {
+		return -1;
+	}
+	return 0;
 }
 
 

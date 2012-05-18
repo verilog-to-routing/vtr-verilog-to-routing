@@ -485,7 +485,6 @@ static void free_complex_block_types(void) {
 static void free_pb_type(t_pb_type *pb_type) {
 
 	int i, j, k, m;
-	struct s_linked_vptr *vptr, *prev;
 
 	free(pb_type->name);
 	if(pb_type->blif_model)
@@ -543,13 +542,6 @@ static void free_pb_type(t_pb_type *pb_type) {
 	}
 	if(pb_type->num_annotations > 0) {
 		free(pb_type->annotations);
-	}
-
-	vptr = pb_type->models_contained;
-	while(vptr) {
-		prev = vptr;
-		vptr = vptr->next;
-		free(prev);
 	}
 
 	for(i = 0; i < pb_type->num_ports; i++) {

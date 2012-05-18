@@ -16,5 +16,6 @@ void reset_cluster_placement_stats(INOUTP t_cluster_placement_stats *cluster_pla
 void free_cluster_placement_stats(INOUTP t_cluster_placement_stats *cluster_placement_stats);
 
 int get_array_size_of_molecule(t_pack_molecule *molecule);
+boolean exists_free_primitive_for_logical_block(INOUTP t_cluster_placement_stats *cluster_placement_stats, INP int ilogical_block);
 
 #endif
