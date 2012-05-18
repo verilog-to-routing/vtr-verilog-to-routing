@@ -1,18 +1,33 @@
+################################   MAKEFILE OPTIONS     ####################################
+
+# By default, libvpr's build type (debug/release) is inherited from VPR's makefile.  
+# However, by uncommenting out the line BUILD_TYPE = debug, you can override this 
+# and set libvpr's build type independently.
+
+# BUILD_TYPE = debug
+
+# (can be debug or release)
+
+#############################################################################################
+
 CC = gcc
 AR = ar
 
-WARN_FLAGS = -Wall 
-
+WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -Wstrict-prototypes -D__USE_FIXED_PROTOTYPES__ -pedantic -Wmissing-prototypes -Wshadow -Wcast-align 
 DEBUG_FLAGS = -g
-OPT_FLAGS = -O2
+OPT_FLAGS = -O3
 INC_FLAGS = -Iinclude
 LIB_FLAGS = rcs
 
 EXE = read_arch
 
-FLAGS = $(OPT_FLAGS) $(WARN_FLAGS) $(INC_FLAGS)
-#FLAGS = $(DEBUG_FLAGS) $(WARN_FLAGS) $(INC_FLAGS)
-FLAGS += -MD -MP
+FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -MD -MP
+
+ifneq (,$(findstring release, $(BUILD_TYPE)))
+  FLAGS := $(FLAGS) $(OPT_FLAGS)
+else                              # DEBUG build
+  FLAGS := $(FLAGS) $(DEBUG_FLAGS)
+endif
 
 SRC = read_xml_arch_file.c read_xml_util.c ezxml.c ReadLine.c util.c
 OBJS = $(SRC:.c=.o)

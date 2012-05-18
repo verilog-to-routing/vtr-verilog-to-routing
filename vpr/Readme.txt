@@ -11,15 +11,9 @@ Enter "make" in the vpr directory to build VPR by itself.  Alternatively, if you
 are working in the VTR framework, enter make in the parent directory to build 
 all tools used in the framework (including VPR).
 
-# Run VPR
-
-1.  In the vpr directory, enter "./go.sh"
-
 # How to use VPR
 
-Read the go.sh script to see what got run.
-
-Run vpr by itself for a more comprehensive list of options that can be used with VPR.
+Run "./vpr" by itself for a more comprehensive list of options that can be used with VPR.
 
 Read the VPR User Manual for detailed information on how to use VPR and what the 
 different options do.
