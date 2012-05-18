@@ -373,7 +373,7 @@ struct s_pb_type
     char* name;
 	int num_pb;
 	char *blif_model;
-	t_model *model; /* TODO redudant with models_contained, can remove */
+	t_model *model;
 	enum e_pb_type_class class_type;
 
 	t_mode *modes; /* [0..num_modes-1] */
@@ -391,8 +391,6 @@ struct s_pb_type
 	float max_internal_delay;
 	t_pin_to_pin_annotation *annotations;	/* [0..num_annotations-1] */
 	int num_annotations;
-
-	struct s_linked_vptr *models_contained;
 };
 typedef struct s_pb_type t_pb_type;
 

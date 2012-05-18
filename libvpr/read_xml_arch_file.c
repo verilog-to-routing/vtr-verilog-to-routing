@@ -94,7 +94,6 @@ static void ProcessCB_SB(INOUTP ezxml_t Node,
 static void CreateModelLibrary(OUTP struct s_arch *arch);
 static void UpdateAndCheckModels(INOUTP struct s_arch *arch);
 static void SyncModelsPbTypes(INOUTP struct s_arch *arch, INP t_type_descriptor * Types, INP int NumTypes);
-static void AddModelsToPbTypes_rec(INOUTP t_pb_type *pb_type);
 static void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch, INP t_pb_type *pb_type);
 
 static void PrintPb_types_rec(INP FILE * Echo, INP const t_pb_type * pb_type, int level);
@@ -1400,7 +1399,6 @@ static void alloc_and_load_default_child_for_pb_type(INOUTP t_pb_type *pb_type, 
 	copy->class_type = pb_type->class_type;
 	copy->depth = pb_type->depth;
 	copy->model = pb_type->model;
-	copy->models_contained = NULL;
 	copy->modes = NULL;
 	copy->num_modes = 0;
 	copy->num_clock_pins = pb_type->num_clock_pins;
@@ -2349,11 +2347,6 @@ static void SyncModelsPbTypes(INOUTP struct s_arch *arch, INP t_type_descriptor 
 			SyncModelsPbTypes_rec(arch, Types[i].pb_type);
 		}
 	}
-	for(i = 0; i < NumTypes; i++) {
-		if(Types[i].pb_type != NULL) {
-			AddModelsToPbTypes_rec(Types[i].pb_type);
-		}
-	}
 }
 
 
@@ -2461,42 +2454,6 @@ static void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch, INOUTP t_pb_type *
 	}
 }
 
-static void AddModelsToPbTypes_rec(INOUTP t_pb_type *pb_type) {
-	int i, j;
-	struct s_linked_vptr *child, *curr;
-
-	/* Determine all logical models contained by pb_type */
-	if(pb_type->num_modes == 0) {
-		pb_type->models_contained = my_malloc(sizeof(struct s_linked_vptr));
-		pb_type->models_contained->data_vptr = pb_type->model;
-		pb_type->models_contained->next = NULL;
-	} else {
-		pb_type->models_contained = NULL;
-		for(i = 0; i < pb_type->num_modes; i++) {
-			for(j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-				AddModelsToPbTypes_rec(&pb_type->modes[i].pb_type_children[j]);
-				child = pb_type->modes[i].pb_type_children[j].models_contained;
-				/* find model in parent that matches with that in child, if not, add to parent */
-				while(child) {
-					curr = pb_type->models_contained;
-					while(curr) {
-						if(curr->data_vptr == child->data_vptr) {
-							break;
-						}
-						curr = curr->next;
-					}
-					if(curr == NULL) {
-						curr = my_malloc(sizeof(struct s_linked_vptr));
-						curr->next = pb_type->models_contained;
-						curr->data_vptr = child->data_vptr;
-						pb_type->models_contained = curr;
-					}
-					child = child->next;
-				}
-			}
-		}
-	}
-}
 
 static void UpdateAndCheckModels(INOUTP struct s_arch *arch) {
 	t_model * cur_model;
