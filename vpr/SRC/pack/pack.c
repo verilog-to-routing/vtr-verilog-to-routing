@@ -16,8 +16,6 @@
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
 
-static void unclustered_stats (int max_lut_size);
-
 void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch, INP t_model *user_models, INP t_model *library_models) {
 	boolean *is_clock;
 	int num_models;
@@ -60,9 +58,9 @@ eg.
 
 
 */
-	if (GetEchoOption()){
-		echo_input (packer_opts->blif_file_name, "blif_input.echo", library_models);
-	}
+if (GetEchoOption()){
+	echo_input (packer_opts->blif_file_name, "blif_input.echo", library_models);
+}else;
 
 	absorb_buffer_luts ();
 	compress_netlist (); /* remove unused inputs */
@@ -83,10 +81,9 @@ eg.
 
 
 	/* Uncomment line below if you want a dump of compressed netlist. */
-	/* 
-	if (GetEchoOption()){
+	/* if (GetEchoOption()){
 		echo_input (packer_opts->blif_file_name, packer_opts->lut_size, "packed.echo"); 
-	}*/
+	}else; */
 
 	if (packer_opts->skip_clustering == FALSE) {
 		do_clustering (arch,
@@ -126,66 +123,3 @@ eg.
 	
 	printf("\nNetlist conversion complete.\n\n");
 }
-
-
-void unclustered_stats (int max_lut_size) {
-
-/* Dumps out statistics on an unclustered netlist -- i.e. it is just *
- * packed into VPACK_LUT + FF logic blocks, but not local routing from     *
- * output to input etc. is assumed.                                  */
-	assert(0);
-#if 0
- int iblk, num_logic_blocks, num_subckts;
- int min_inputs_used, min_clocks_used;
- int max_inputs_used, max_clocks_used;
- int summ_inputs_used, summ_clocks_used;
- int inputs_used, clocks_used;
-
- printf("\nUnclustered Netlist Statistics:\n\n");
- num_logic_blocks = num_logical_blocks - num_p_inputs - num_p_outputs;
- printf("%d Logic Blocks.\n", num_logic_blocks);
-
- min_inputs_used = max_lut_size+1;
- min_clocks_used = 2;
- max_inputs_used = -1;
- max_clocks_used = -1;
- summ_inputs_used = 0;
- summ_clocks_used = 0;
- num_subckts = 0;
-
- for (iblk=0;iblk<num_logical_blocks;iblk++) {
-	 if (strcmp(logical_block[iblk].model->name, MODEL_LOGIC) == 0 || 
-		 strcmp(logical_block[iblk].model->name, MODEL_LATCH) == 0) {
-	   assert(logical_block[iblk].type == VPACK_COMB || logical_block[iblk].type != VPACK_LATCH);
-       inputs_used = logical_block[iblk].num_input_nets;
-	   if (logical_block[iblk].clock_net != OPEN)
-          clocks_used = 1;
-       else 
-          clocks_used = 0;
-
-       min_inputs_used = min (min_inputs_used, inputs_used);
-       max_inputs_used = max (max_inputs_used, inputs_used);
-       summ_inputs_used += inputs_used;
-
-       min_clocks_used = min (min_clocks_used, clocks_used);
-       max_clocks_used = max (max_clocks_used, clocks_used);
-       summ_clocks_used += clocks_used;
-    }
-	 else if (strcmp(logical_block[iblk].model->name, MODEL_INPUT) != 0 &&
-			  strcmp(logical_block[iblk].model->name, MODEL_OUTPUT) != 0 ) {
-		assert(logical_block[iblk].type == VPACK_COMB);
-		num_subckts++;
-	}
- }
-
- printf("\n\t\t\tAverage\t\tMin\tMax\n");
- printf("Logic Blocks / Cluster\t%f\t%d\t%d\n", 1., 1, 1);
- printf("Used Inputs / Cluster\t%f\t%d\t%d\n", (float) summ_inputs_used /
-        (float) num_logic_blocks, min_inputs_used, max_inputs_used);
- printf("Used Clocks / Cluster\t%f\t%d\t%d\n", (float) summ_clocks_used /
-        (float) num_logic_blocks, min_clocks_used, max_clocks_used);
- printf("Subcircuits in design \t%d\n", num_subckts);
- printf("\n");
-#endif
-}
-

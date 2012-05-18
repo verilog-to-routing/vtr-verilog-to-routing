@@ -274,19 +274,6 @@ static void print_open_pb_graph_node(t_pb_graph_node * pb_graph_node, int pb_ind
 	}
 }
 
-static void
-print_basic_pb(FILE * fpout,
-		     int bnum)
-{
-
-/* Prints out the pb connectivity.  Used only when *
- * the -no_clustering option is selected -- prints out   *
- * basically redundant connection info for a VPACK_LUT + FF    *
- * logic logical_block.                                          */
-	assert(0);
-}
-
-
 
 static void print_pb(FILE *fpout, t_pb * pb, int pb_index, int tab_depth) {
 

@@ -231,9 +231,9 @@ place_and_route(enum e_operation operation,
 
 		    print_route(route_file);
 
-/*if (GetEchoOption()){
-		    print_sink_delays("routing_sink_delays.echo"); 
-}*/
+		if (GetEchoOption()){
+					print_sink_delays("routing_sink_delays.echo"); 
+		}
 
 		    sprintf(msg,
 			    "Routing succeeded with a channel width factor of %d.\n\n",
@@ -664,9 +664,9 @@ binary_search_place_and_route(struct s_placer_opts placer_opts,
 
     print_route(route_file);
 
-/*if (GetEchoOption()){
-     print_sink_delays("routing_sink_delays.echo");
-}*/
+	if (GetEchoOption()){
+		 print_sink_delays("routing_sink_delays.echo");
+	}
 
     init_draw_coords(max_pins_per_clb);
     sprintf(msg, "Routing succeeded with a channel width factor of %d.",

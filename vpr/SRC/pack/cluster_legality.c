@@ -53,8 +53,6 @@ static void alloc_net_rr_terminals_cluster(void);
 
 static void mark_ends_cluster(int inet);
 
-static void print_intra_cluster_route(char *route_file);
-
 static float rr_node_intrinsic_cost(int inode);
 
 
@@ -1015,58 +1013,7 @@ void save_cluster_solution(void)
 }
 
 boolean is_pin_open(int i) {
-	return (rr_node[i].occ == 0);
-}
-
-
-void
-print_intra_cluster_route(char *route_file)
-{
-
-/* Prints out the routing to file route_file.  */
-
-    int inet, inode;
-    t_rr_type rr_type;
-    struct s_trace *tptr;
-    char *name_type[] =
-	{ "SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY", "INTRA_CLUSTER_EDGE" };
-    FILE *fp;
-
-    fp = my_fopen(route_file, "w", 0);
-
-    fprintf(fp, "\nRouting:");
-    for(inet = 0; inet < num_nets; inet++)
-	{
-	    
-		if(vpack_net[inet].num_sinks == FALSE)
-		{
-			fprintf(fp, "\n\nNet %d (%s)\n\n", inet, vpack_net[inet].name);
-			fprintf(fp, "\n\n Used in local cluster only, reserved one CLB pin\n\n");
-		} else if(trace_head[inet]){
-			fprintf(fp, "\n\nNet %d (%s)\n\n", inet, vpack_net[inet].name);
-			tptr = trace_head[inet];
-
-			while(tptr != NULL)
-			{
-				inode = tptr->index;
-				rr_type = rr_node[inode].type;
-
-				fprintf(fp, "%6s %d ", name_type[rr_type], inode);
-
-
-
-/* Uncomment line below if you're debugging and want to see the switch types *
- * used in the routing.                                                      */
-/*          fprintf (fp, "Switch: %d", tptr->iswitch);    */
-
-				fprintf(fp, "\n");
-
-				tptr = tptr->next;
-			}
-		}
-	}
-
-    fclose(fp);
+	return (boolean) (rr_node[i].occ == 0);
 }
 
 static float rr_node_intrinsic_cost(int inode) {
