@@ -6,6 +6,9 @@
 #include "OptionTokens.h"
 #include "ReadOptions.h"
 
+
+static boolean EchoEnabled;
+
 /******** Function prototypes ********/
 
 static const char *const *ReadBaseToken(INP const char *const *Args,
@@ -49,6 +52,11 @@ GetEchoOption(void)
 	return EchoEnabled;
 }
 
+void
+SetEchoOption(boolean echo_enabled)
+{
+	EchoEnabled = echo_enabled;
+}
 
 
 /******** Subroutine implementations ********/

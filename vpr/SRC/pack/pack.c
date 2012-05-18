@@ -60,9 +60,9 @@ eg.
 
 
 */
-if (GetEchoOption()){
-	echo_input (packer_opts->blif_file_name, "blif_input.echo", library_models);
-}else;
+	if (GetEchoOption()){
+		echo_input (packer_opts->blif_file_name, "blif_input.echo", library_models);
+	}
 
 	absorb_buffer_luts ();
 	compress_netlist (); /* remove unused inputs */
@@ -83,9 +83,10 @@ if (GetEchoOption()){
 
 
 	/* Uncomment line below if you want a dump of compressed netlist. */
-	/* if (GetEchoOption()){
+	/* 
+	if (GetEchoOption()){
 		echo_input (packer_opts->blif_file_name, packer_opts->lut_size, "packed.echo"); 
-	}else; */
+	}*/
 
 	if (packer_opts->skip_clustering == FALSE) {
 		do_clustering (arch,

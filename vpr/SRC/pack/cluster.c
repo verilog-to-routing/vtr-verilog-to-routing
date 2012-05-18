@@ -467,9 +467,9 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecule_head, int num_
 
 
  output_clustering(	clb, num_clb, global_clocks, is_clock, out_fname, FALSE);
-if (GetEchoOption()){
+ if (GetEchoOption()){
 	output_blif(	clb, num_clb, global_clocks, is_clock, "post_pack_netlist.blif", FALSE);
-}else;
+ }
 
  if(hill_climbing_flag)
  {

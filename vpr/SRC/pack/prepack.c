@@ -531,7 +531,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(INP t_pack_patterns *list_of_pack
 
 	if (GetEchoOption()){
 		print_pack_molecules("prepack_molecules_and_patterns.echo", list_of_pack_patterns, num_packing_patterns, list_of_molecules_head);
-	}else;
+	}
 
 	return list_of_molecules_head;
 }

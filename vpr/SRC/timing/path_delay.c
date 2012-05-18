@@ -151,7 +151,7 @@ alloc_and_load_timing_graph(t_timing_inf timing_inf)
 
 	if (GetEchoOption()){
 		print_timing_graph("initial_timing_graph.echo");
-	}else;
+	}
 
 	check_timing_graph(num_sinks);
 	
@@ -201,7 +201,7 @@ float** alloc_and_load_pre_packing_timing_graph(float block_delay, float inter_c
 	if (GetEchoOption()){
 		print_timing_graph("pre_packing_timing_graph.echo");
 		print_timing_graph_as_blif("pre_packing_timing_graph_as_blif.blif", models);
-	}else;
+	}
 
 	check_timing_graph(num_sinks);
 
@@ -1409,12 +1409,12 @@ do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
     printf("\n");
     printf("\nCritical Path: %g (s)\n", T_crit);
 
-if (GetEchoOption()){
-    print_critical_path("critical_path.echo");
-    print_timing_graph("timing_graph.echo");
-    print_net_slack("net_slack.echo", net_slack);
-    print_net_delay(net_delay, "net_delay.echo", timing_nets, num_timing_nets);
-}else;
+    if (GetEchoOption()){
+        print_critical_path("critical_path.echo");
+        print_timing_graph("timing_graph.echo");
+        print_net_slack("net_slack.echo", net_slack);
+        print_net_delay(net_delay, "net_delay.echo", timing_nets, num_timing_nets);
+    }
 
     free_timing_graph(net_slack);
     free_net_delay(net_delay, &net_delay_chunk_list_head);
@@ -1785,9 +1785,13 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 						if(pb_graph_node->num_output_pins[i] > 1) {
 							fprintf(fpout, "\\\n%s[%d]=%s ", pb_graph_node->output_pins[i][j].port->name, j, 
 								vpack_net[irr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster].net_num].name);
-						} else {
-							fprintf(fpout, "\\\n%s=%s ", pb_graph_node->output_pins[i][j].port->name, 
-								vpack_net[irr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster].tnode->index].name);
+						} else {						
+							char* port_name = pb_graph_node->output_pins[i][j].port->name;
+							int pin_count = pb_graph_node->output_pins[i][j].pin_count_in_cluster;
+							int node_index= irr_graph[ pin_count ].net_num;
+							char* node_name = vpack_net[node_index].name;							
+							fprintf(fpout, "\\\n%s=%s ", port_name, 
+								node_name);
 						}
 					} else {
 						if(pb_graph_node->num_output_pins[i] > 1) {

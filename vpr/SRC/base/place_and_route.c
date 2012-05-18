@@ -247,6 +247,7 @@ place_and_route(enum e_operation operation,
 	    if(timing_inf.timing_analysis_enabled)
 		{
 		    assert(net_slack);
+
 			if (GetEchoOption()){
 				print_timing_graph_as_blif("post_flow_timing_graph.blif", models);
 			}
@@ -686,8 +687,8 @@ binary_search_place_and_route(struct s_placer_opts placer_opts,
     fflush(stdout);
 
     return (final);
-}
 
+}
 
 void
 init_chan(int cfactor,

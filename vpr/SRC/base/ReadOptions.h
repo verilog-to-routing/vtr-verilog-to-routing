@@ -89,8 +89,8 @@ void ReadOptions(INP int argc,
 		 INP char **argv,
 		 OUTP t_options * Options);
 
-boolean EchoEnabled;		 
 boolean GetEchoOption(void);
+void SetEchoOption(boolean echo_enabled);
 
 #endif
 

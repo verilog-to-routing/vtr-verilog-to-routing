@@ -89,11 +89,12 @@ alloc_and_load_switch_block_conn(INP int nodes_per_chan,
 		}
 	}
 
-if (GetEchoOption()){
-    int i, j, k, l;
-    FILE *out;
-    out = my_fopen("switch_block_conn.echo", "w", 0);
-    for(l = 0; l < 4; ++l)
+    if (GetEchoOption()){
+        int i, j, k, l;
+        FILE *out;
+
+        out = my_fopen("switch_block_conn.echo", "w", 0);
+        for(l = 0; l < 4; ++l)
 	{
 	    for(k = 0; k < 4; ++k)
 		{
@@ -113,9 +114,8 @@ if (GetEchoOption()){
 		    fprintf(out, "\n");
 		}
 	}
-    fclose(out);
-}else;
-
+        fclose(out);
+    }
     return switch_block_conn;
 }
 

@@ -22,6 +22,7 @@
 #include "SetupVPR.h"
 #include "rr_graph.h"
 #include "pb_type_graph.h"
+#include "ReadOptions.h"
 
 /******** Global variables ********/
 int Fs_seed = -1;
@@ -166,6 +167,7 @@ main(int argc,
     t_timing_inf Timing;
     boolean ShowGraphics;
     boolean TimingEnabled;
+    boolean echo_enabled;
     int GraphPause;
 	clock_t begin, end;
 
@@ -184,6 +186,10 @@ main(int argc,
 
     /* Determine whether timing is on or off */
     TimingEnabled = IsTimingEnabled(Options);
+
+    /* Determine whether echo is on or off */
+    echo_enabled = IsEchoEnabled(Options);
+    SetEchoOption(echo_enabled);
 
     /* Use inputs to configure VPR */
 	memset(&Arch, 0, sizeof(t_arch));
@@ -225,7 +231,7 @@ main(int argc,
 	fflush(stdout);
 
 	/* Read in netlist file for placement and routing */
-    if(FileNameOpts.NetFile)
+        if(FileNameOpts.NetFile)
 	{
 	    read_netlist(FileNameOpts.NetFile, &Arch, &num_blocks, &block, &num_nets, &clb_net);
 	    /* This is done so that all blocks have subblocks and can be treated the same */

@@ -361,10 +361,10 @@ try_place(struct s_placer_opts placer_opts,
 	    load_timing_graph_net_delays(net_delay);
 	    d_max = load_net_slack(net_slack, 0);
 
-	    if (GetEchoOption()){
-	    	print_critical_path("Placement_Lower_Bound.echo");
-	    	print_sink_delays("Placement_Lower_Bound_Sink_Delays.echo");
-	    }else;
+	if (GetEchoOption()){
+	    print_critical_path("Placement_Lower_Bound.echo");
+	    print_sink_delays("Placement_Lower_Bound_Sink_Delays.echo");
+	}
 
 	    /*also print sink delays assuming 0 delay between blocks, 
 	     * this tells us how much logic delay is on each path */
@@ -373,9 +373,10 @@ try_place(struct s_placer_opts placer_opts,
 	    load_timing_graph_net_delays(net_delay);
 	    d_max = load_net_slack(net_slack, 0);
 
-	    if (GetEchoOption()){
-	    	print_sink_delays("Placement_Logic_Sink_Delays.echo");
-	    }else;
+	if (GetEchoOption()){
+	    print_sink_delays("Placement_Logic_Sink_Delays.echo");
+	}
+
 #endif
 
 	}
@@ -905,11 +906,13 @@ try_place(struct s_placer_opts placer_opts,
 							 *the same values that the placer is using*/
 	    load_timing_graph_net_delays(net_delay);
 	    est_crit = load_net_slack(net_slack, 0);
+
 	if (GetEchoOption()){
 /*		print_sink_delays("placement_sink_delays.echo"); */
 	    print_net_slack("placement_net_slacks.echo", net_slack);
 	    print_critical_path("placement_crit_path.echo");
-	}else;
+	}
+
 	    printf("Placement Estimated Crit Path Delay: %g\n\n", est_crit);
 	}
 

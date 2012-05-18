@@ -181,6 +181,7 @@ SetupVPR(INP t_options Options,
 	
 	printf("Building complex block graph \n");
 	alloc_and_load_all_pb_graphs();
+
 	if (GetEchoOption()){
 		echo_pb_graph("pb_graph.echo");
 	}
@@ -201,10 +202,10 @@ SetupVPR(INP t_options Options,
 	}
 #endif /* NO_GRAPHICS */
 
-if (GetEchoOption()){
-    EchoArch("arch.echo", type_descriptors, num_types, Arch);
-}
-	
+    if (GetEchoOption()){
+        EchoArch("arch.echo", type_descriptors, num_types, Arch);
+    }
+
 }
 
 static void
@@ -811,11 +812,11 @@ IsTimingEnabled(INP t_options Options)
 boolean
 IsEchoEnabled(INP t_options Options)
 {
-    /* First priority to the '--timing_analysis' flag */
+    /* First priority to the '--echo_file' flag */
     if(Options.Count[OT_CREATE_ECHO_FILE])
 	{
 	    return Options.CreateEchoFile;
 	}
-    return TRUE;
+    return FALSE;
 }
 
