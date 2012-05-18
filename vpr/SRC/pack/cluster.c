@@ -2271,8 +2271,8 @@ static float get_molecule_gain(t_pack_molecule *molecule, float *blk_gain) {
 static int compare_molecule_gain(const void *a, const void *b) {
 	float base_gain_a, base_gain_b, diff;
 	const t_pack_molecule *molecule_a, *molecule_b;
-	molecule_a = (*(const t_pack_molecule **)a);
-	molecule_b = (*(const t_pack_molecule **)b);
+	molecule_a = (*(const t_pack_molecule * const*)a);
+	molecule_b = (*(const t_pack_molecule * const*)b);
 
 	base_gain_a = molecule_a->base_gain;
 	base_gain_b = molecule_b->base_gain;
