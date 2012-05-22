@@ -35,25 +35,25 @@ OBJS = $(SRC:.c=.o)
 DEPS = $(OBJS:.o=.d) main.d
 
 libvpr_6.a: $(OBJS)
-	$(AR) $(LIB_FLAGS) $@ $(OBJS)
-	cp libvpr_6.a libvpr.a
+	@ $(AR) $(LIB_FLAGS) $@ $(OBJS)
+	@ cp libvpr_6.a libvpr.a
 
 # Standalone executable to test architecture reader
 $(EXE): main.o libvpr_6.a
-	$(CC) main.o -o $(EXE) $(INC_FLAGS) -L. -lm -lvpr_6
-	cp libvpr_6.a libvpr.a
+	@ $(CC) main.o -o $(EXE) $(INC_FLAGS) -L. -lm -lvpr_6
+	@ cp libvpr_6.a libvpr.a
  
  
 %.o: %.c
-	$(CC) $(FLAGS) -c $< -o $@ 
+	@ $(CC) $(FLAGS) -c $< -o $@ 
  
 -include $(DEPS)
 
 
 
 clean :
-	rm -f libvpr_6.a
-	rm -f libvpr.a
-	rm -f $(OBJS) $(OBJS:.o=.d)
-	rm -f read_arch
+	@ rm -f libvpr_6.a
+	@ rm -f libvpr.a
+	@ rm -f $(OBJS) $(OBJS:.o=.d)
+	@ rm -f read_arch
 
