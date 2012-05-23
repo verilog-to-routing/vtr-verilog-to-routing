@@ -296,9 +296,10 @@ add_path_to_route_tree(struct s_heap *hptr,
 
 #define NO_ROUTE_THROUGHS 1	/* Can't route through unused CLB outputs */
 
-#ifdef NO_ROUTE_THROUGHS
+if( NO_ROUTE_THROUGHS == 1)
     sink_rt_node->re_expand = FALSE;
-#else
+else
+{
     if(remaining_connections_to_sink == 0)
 	{			/* Usual case */
 	    sink_rt_node->re_expand = TRUE;
@@ -312,7 +313,7 @@ add_path_to_route_tree(struct s_heap *hptr,
 	{
 	    sink_rt_node->re_expand = FALSE;
 	}
-#endif
+}
 
 
 /* Now do it's predecessor. */
@@ -346,13 +347,14 @@ add_path_to_route_tree(struct s_heap *hptr,
 	    rt_node->C_downstream = C_downstream;
 	    rr_node_to_rt_node[inode] = rt_node;
 
-#ifdef NO_ROUTE_THROUGHS
+if(NO_ROUTE_THROUGHS == 1)
 	    if(rr_node[inode].type == IPIN)
 		rt_node->re_expand = FALSE;
 	    else
 		rt_node->re_expand = TRUE;
 
-#else
+else
+{
 	    if(remaining_connections_to_sink == 0)
 		{		/* Normal case */
 		    rt_node->re_expand = TRUE;
@@ -365,7 +367,7 @@ add_path_to_route_tree(struct s_heap *hptr,
 
 		    remaining_connections_to_sink = 0;
 		}
-#endif
+}
 
 	    downstream_rt_node = rt_node;
 	    iedge = rr_node_route_inf[inode].prev_edge;

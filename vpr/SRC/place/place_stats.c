@@ -14,6 +14,7 @@ typedef struct relapos_rec_s
 }
 relapos_rec_t;
 
+#ifdef PRINT_REL_POS_DISTR
 void
 print_relative_pos_distr(void)
 {
@@ -154,3 +155,4 @@ print_relative_pos_distr(void)
     fclose(out_bin_file);
 #endif /* PRINT_REL_POS_DISTR */
 }
+#endif

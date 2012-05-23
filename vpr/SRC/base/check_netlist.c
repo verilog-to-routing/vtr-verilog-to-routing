@@ -37,13 +37,21 @@ static int check_primitives(int iblk, int isub);
 void
 check_netlist()
 {
+	int i, error, num_conn;
+	struct s_hash **net_hash_table, *h_net_ptr;
+
+	/* TODO: Remove the following the function calls after these functions have 
+	been fleshed and are legitimately used in the code!!! They are called here so that 
+	the compiler will not throw an error for an unused function				*/
+
+	int unused_var;
+	unused_var = check_subblock_internal_nets(0,0);
+	unused_var = check_primitives(0,0);
+	if (unused_var)
+		printf("Please go to the check_netlist() function in check_netlist.c and remove the first section as needed.");
 
 /* This routine checks that the netlist makes sense         */
 
-
-    int i, error, num_conn;
-	struct s_hash **net_hash_table, *h_net_ptr;
-    
     net_hash_table = alloc_hash_table();
 
     error = 0;
