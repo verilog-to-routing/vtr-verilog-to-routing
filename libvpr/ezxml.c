@@ -64,6 +64,18 @@
 #define EZXML_WS   "\t\r\n "	/* whitespace */
 char *EZXML_NIL[] = { NULL };	/* empty, null terminated array of strings */
 
+static ezxml_t ezxml_vget(ezxml_t xml, va_list ap);
+static char *ezxml_decode(int *cur_line, char *s, char **ent, char t);
+static void ezxml_open_tag(ezxml_root_t root, int line, char *name, char **attr);
+static void ezxml_char_content(ezxml_root_t root, int *cur_line, char *s, size_t len, char t);
+static ezxml_t ezxml_close_tag(ezxml_root_t root, char *name, char *s);
+static int ezxml_ent_ok(char *name, char *s, char **ent);
+static void ezxml_proc_inst(ezxml_root_t root, char *s, size_t len);
+static short ezxml_internal_dtd(ezxml_root_t root, int *cur_line, char *s, size_t len);
+static char *ezxml_str2utf8(char **s, size_t * len);
+static void ezxml_free_attr(char **attr);
+static char *ezxml_ampencode(const char *s, size_t len, char **dst, size_t * dlen, size_t * max, short a);
+static char *ezxml_toxml_r(ezxml_t xml, char **s, size_t * len, size_t * max, size_t start, char ***attr);
 
 /* returns the first child tag with the given name or NULL if not found */
 ezxml_t
@@ -150,7 +162,7 @@ ezxml_get(ezxml_t xml,
 
 /* returns a null terminated array of processing instructions for the given */
 /* target */
-const char **
+char **
 ezxml_pi(ezxml_t xml,
 	 const char *target)
 {
@@ -158,16 +170,16 @@ ezxml_pi(ezxml_t xml,
     int i = 0;
 
     if(!root)
-	return (const char **)EZXML_NIL;
+	return EZXML_NIL;
     while(root->xml.parent)
 	root = (ezxml_root_t) root->xml.parent;	/* root tag */
     while(root->pi[i] && strcmp(target, root->pi[i][0]))
 	i++;			/* find target */
-    return (const char **)((root->pi[i]) ? root->pi[i] + 1 : EZXML_NIL);
+    return ((root->pi[i]) ? root->pi[i] + 1 : EZXML_NIL);
 }
 
 /* set an error string and return root */
-ezxml_t
+static ezxml_t
 ezxml_err(ezxml_root_t root,
 	  char *s,
 	  const char *err,
@@ -196,7 +208,7 @@ ezxml_err(ezxml_root_t root,
 /* attribute normalization. Returns s, or if the decoded string is longer than */
 /* s, returns a malloced string that must be freed. */
 /* Jason Luu June 22, 2010, Added line number support */
-char *
+static char *
 ezxml_decode(int *cur_line,
 		 char *s,
 	     char **ent,
@@ -299,7 +311,7 @@ ezxml_decode(int *cur_line,
 
 /* called when parser finds start of new tag */
 /* Jason Luu June 22, 2010, Added line number support */
-void
+static void
 ezxml_open_tag(ezxml_root_t root,
 			   int line,
 	       char *name,
@@ -319,7 +331,7 @@ ezxml_open_tag(ezxml_root_t root,
 
 /* called when parser finds character content between open and closing tag */
 /* Jason Luu June 22, 2010, Added line number support */
-void
+static void
 ezxml_char_content(ezxml_root_t root,
 		   int *cur_line,
 		   char *s,
@@ -353,7 +365,7 @@ ezxml_char_content(ezxml_root_t root,
 }
 
 /* called when parser finds closing tag */
-ezxml_t
+static ezxml_t
 ezxml_close_tag(ezxml_root_t root,
 		char *name,
 		char *s)
@@ -367,7 +379,7 @@ ezxml_close_tag(ezxml_root_t root,
 
 /* checks for circular entity references, returns non-zero if no circular */
 /* references are found, zero otherwise */
-int
+static int
 ezxml_ent_ok(char *name,
 	     char *s,
 	     char **ent)
@@ -390,7 +402,7 @@ ezxml_ent_ok(char *name,
 }
 
 /* called when the parser finds a processing instruction */
-void
+static void
 ezxml_proc_inst(ezxml_root_t root,
 		char *s,
 		size_t len)
@@ -441,7 +453,7 @@ ezxml_proc_inst(ezxml_root_t root,
 
 /* called when the parser finds an internal doctype subset */
 /* Jason Luu June 22, 2010, Added line number support */
-short
+static short
 ezxml_internal_dtd(ezxml_root_t root,
 			int *cur_line,
 		   char *s,
@@ -606,7 +618,7 @@ ezxml_internal_dtd(ezxml_root_t root,
 
 /* Converts a UTF-16 string to UTF-8. Returns a new string that must be freed */
 /* or NULL if no conversion was needed. */
-char *
+static char *
 ezxml_str2utf8(char **s,
 	       size_t * len)
 {
@@ -649,7 +661,7 @@ ezxml_str2utf8(char **s,
 }
 
 /* frees a tag attribute list */
-void
+static void
 ezxml_free_attr(char **attr)
 {
     int i = 0;
@@ -678,7 +690,7 @@ ezxml_parse_str(
 		char *s,
 		size_t len)
 {
-    ezxml_root_t root = (ezxml_root_t) ezxml_new(NULL);
+    ezxml_root_t root = (ezxml_root_t) ezxml_new(0);
     char q, e, *d, **attr, **a = NULL;	/* initialize a to avoid compile warning */
     int l, i, j;
 	int line = 1;
@@ -975,7 +987,7 @@ ezxml_parse_file(const char *file)
 
 /* Encodes ampersand sequences appending the results to *dst, reallocating *dst */
 /* if length excedes max. a is non-zero for attribute encoding. Returns *dst */
-char *
+static char *
 ezxml_ampencode(const char *s,
 		size_t len,
 		char **dst,
@@ -1025,7 +1037,7 @@ ezxml_ampencode(const char *s,
 /* Recursively converts each tag to xml appending it to *s. Reallocates *s if */
 /* its length excedes max. start is the location of the previous tag in the */
 /* parent tag's character content. Returns *s. */
-char *
+static char *
 ezxml_toxml_r(ezxml_t xml,
 	      char **s,
 	      size_t * len,
@@ -1224,7 +1236,7 @@ ezxml_error(ezxml_t xml)
 
 /* returns a new empty ezxml structure with the given root tag name */
 ezxml_t
-ezxml_new(const char *name)
+ezxml_new(char *name)
 {
     static char *ent[] = { "lt;", "&#60;", "gt;", "&#62;", "quot;", "&#34;",
 	"apos;", "&#39;", "amp;", "&#38;", NULL
@@ -1233,7 +1245,7 @@ ezxml_new(const char *name)
 	(ezxml_root_t) memset(malloc(sizeof(struct ezxml_root)),
 			      '\0', sizeof(struct ezxml_root));
 
-    root->xml.name = (char *)name;
+	root->xml.name = name;
     root->cur = &root->xml;
     strcpy(root->err, root->xml.txt = "");
     root->ent = memcpy(malloc(sizeof(ent)), ent, sizeof(ent));
@@ -1299,7 +1311,7 @@ ezxml_insert(ezxml_t xml,
 /* of the parent tag's character content. Returns the child tag. */
 ezxml_t
 ezxml_add_child(ezxml_t xml,
-		const char *name,
+		char *name,
 		size_t off)
 {
     ezxml_t child;
@@ -1308,7 +1320,7 @@ ezxml_add_child(ezxml_t xml,
 	return NULL;
     child = (ezxml_t) memset(malloc(sizeof(struct ezxml)), '\0',
 			     sizeof(struct ezxml));
-    child->name = (char *)name;
+	child->name = name;
     child->attr = EZXML_NIL;
     child->txt = "";
 
@@ -1318,14 +1330,15 @@ ezxml_add_child(ezxml_t xml,
 /* sets the character content for the given tag and returns the tag */
 ezxml_t
 ezxml_set_txt(ezxml_t xml,
-	      const char *txt)
+	     char *txt)
 {
     if(!xml)
 	return NULL;
     if(xml->flags & EZXML_TXTM)
 	free(xml->txt);		/* existing txt was malloced */
     xml->flags &= ~EZXML_TXTM;
-    xml->txt = (char *)txt;
+	strcpy(xml->txt,txt);
+    xml->txt = txt;
     return xml;
 }
 
@@ -1355,8 +1368,8 @@ ezxml_set_attr(ezxml_t xml,
 	    else
 		xml->attr = realloc(xml->attr, (l + 4) * sizeof(char *));
 
-	    xml->attr[l] = (char *)name;	/* set attribute name */
-	    xml->attr[l + 2] = NULL;	/* null terminate attribute list */
+	    xml->attr[l] = (char*) name;	 /*set attribute name */
+		xml->attr[l + 2] = NULL;	/* null terminate attribute list */
 	    xml->attr[l + 3] = realloc(xml->attr[l + 1],
 				       (c = strlen(xml->attr[l + 1])) + 2);
 	    strcpy(xml->attr[l + 3] + c, " ");	/* set name/value as not malloced */
@@ -1364,8 +1377,7 @@ ezxml_set_attr(ezxml_t xml,
 		xml->attr[l + 3][c] = (char)(unsigned char)EZXML_NAMEM;
 	}
     else if(xml->flags & EZXML_DUP)
-	free((char *)name);	/* name was strduped */
-
+	free((char*)name);	/* name was strduped */
     for(c = l; xml->attr[c]; c += 2);	/* find end of attribute list */
     if(xml->attr[c + 1][l / 2] & EZXML_TXTM)
 	free(xml->attr[l + 1]);	/*old val */
@@ -1375,7 +1387,7 @@ ezxml_set_attr(ezxml_t xml,
 	xml->attr[c + 1][l / 2] &= ~EZXML_TXTM;
 
     if(value)
-	xml->attr[l + 1] = (char *)value;	/* set attribute value */
+	xml->attr[l + 1] = (char*)value;	/* set attribute value */
     else
 	{			/* remove attribute */
 	    if(xml->attr[c + 1][l / 2] & EZXML_NAMEM)

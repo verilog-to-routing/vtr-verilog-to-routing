@@ -75,7 +75,14 @@ my_fopen(const char *fname, const char *flag, int prompt)
 
 	if (prompt) 
 	{
-		scanf("%s",prompt_filename);
+		int check_num_of_entered_values = scanf("%s",prompt_filename);
+		while (getchar() != '\n' );
+
+		while(check_num_of_entered_values != 1)
+		{
+			printf("Was expecting one file name to be entered, with no spaces. You have entered %d parameters. Please try again: \n",check_num_of_entered_values);
+			check_num_of_entered_values = scanf("%s",prompt_filename);
+		}
 		fname = prompt_filename;
 	}
 

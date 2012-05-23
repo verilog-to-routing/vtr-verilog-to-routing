@@ -33,7 +33,7 @@ static struct s_type_descriptor *type_descriptors;
 static void ParseFc(ezxml_t Node,
 		     enum Fc_type *Fc,
 		     float *Val);
-static void SetupEmptyType();
+static void SetupEmptyType(void);
 static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 			       t_type_descriptor * Type);
 static void SetupGridLocations(ezxml_t Locations,
@@ -153,7 +153,7 @@ ParseFc(ezxml_t Node, enum Fc_type *Fc, float *Val)
 static void
 SetupPinLocationsAndPinClasses(ezxml_t Locations, t_type_descriptor * Type)
 {
-    int i, j, k, PinsPerSubtile, Count, Len;
+    int i, j, k, Count, Len;
 	int capacity, pin_count;
 	int num_class;
 	const char * Prop;
@@ -162,8 +162,6 @@ SetupPinLocationsAndPinClasses(ezxml_t Locations, t_type_descriptor * Type)
     char **Tokens, **CurTokens;
 
 	capacity = Type->capacity;
-
-    PinsPerSubtile = Type->num_pins / Type->capacity;
 
 	Prop = FindProperty(Locations, "pattern", TRUE);
 	if(strcmp(Prop, "spread") == 0) {
@@ -897,7 +895,7 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent,
 static void ProcessInterconnect(INOUTP ezxml_t Parent,
 								t_mode * mode) {
 	int num_interconnect = 0;
-	int i, j, k, index, num_annotations;
+	int i, j, k, L_index, num_annotations;
 	const char *Prop;
 	ezxml_t Cur, Prev;
 	ezxml_t Cur2, Prev2;
@@ -910,10 +908,10 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent,
 	mode->interconnect = my_calloc(num_interconnect, sizeof(t_interconnect));
 
 	i = 0;
-	for(index = 0; index < 3; index++) {
-		if(index == 0) {
+	for(L_index = 0; L_index < 3; L_index++) {
+		if(L_index == 0) {
 			Cur = FindFirstElement(Parent, "complete", FALSE);
-		} else if (index == 1) {
+		} else if (L_index == 1) {
 			Cur = FindFirstElement(Parent, "direct", FALSE);
 		} else { 
 			Cur = FindFirstElement(Parent, "mux", FALSE);
@@ -1099,9 +1097,9 @@ ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch)
 	ezxml_t junkp;
 	t_model *temp;
 	t_model_ports *tp;
-	int index;
+	int L_index;
 
-	index = NUM_MODELS_IN_LIBRARY;
+	L_index = NUM_MODELS_IN_LIBRARY;
 
 	arch->models = NULL;
 	child = ezxml_child(Node, "model");
@@ -1114,8 +1112,8 @@ ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch)
 		temp->name = my_strdup(Prop);
 		ezxml_set_attr(child, "name", NULL);
 		temp->pb_types = NULL;
-		temp->index = index;
-		index++;
+		temp->index = L_index;
+		L_index++;
 
 		/* Process the inputs */
 		p = ezxml_child(child, "input_ports");
@@ -1360,7 +1358,7 @@ ProcessChanWidthDistrDir(INOUTP ezxml_t Node, OUTP t_chan * chan)
 }
 
 static void
-SetupEmptyType()
+SetupEmptyType(void)
 {
     t_type_descriptor * type;
     type = &type_descriptors[EMPTY_TYPE->index];

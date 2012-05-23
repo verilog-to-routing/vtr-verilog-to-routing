@@ -261,7 +261,7 @@ add_path_to_route_tree(struct s_heap *hptr,
  * to the routing tree.  It returns the first (most upstream) new rt_node,  *
  * and (via a pointer) the rt_node of the new SINK.                         */
 
-    int inode, remaining_connections_to_sink;
+    int inode, remaining_connections_to_sink,no_route_throughs;
     short iedge, iswitch;
     float C_downstream;
     t_rt_node *rt_node, *downstream_rt_node, *sink_rt_node;
@@ -295,8 +295,8 @@ add_path_to_route_tree(struct s_heap *hptr,
  * when there aren't route-throughs or ipin doglegs.                        */
 
 #define NO_ROUTE_THROUGHS 1	/* Can't route through unused CLB outputs */
-
-if( NO_ROUTE_THROUGHS == 1)
+	no_route_throughs = 1;
+if( no_route_throughs == 1)
     sink_rt_node->re_expand = FALSE;
 else
 {
@@ -347,7 +347,7 @@ else
 	    rt_node->C_downstream = C_downstream;
 	    rr_node_to_rt_node[inode] = rt_node;
 
-if(NO_ROUTE_THROUGHS == 1)
+if(no_route_throughs == 1)
 	    if(rr_node[inode].type == IPIN)
 		rt_node->re_expand = FALSE;
 	    else

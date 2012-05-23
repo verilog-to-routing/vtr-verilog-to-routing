@@ -76,7 +76,7 @@ ReadOptions(INP int argc,
      * Skips the first arg as it is the program image path */
     --argc;
     ++argv;
-    head = Args = my_malloc(sizeof(char *) * (argc + 1));
+    head = Args = (const char **)my_malloc(sizeof(char *) * (argc + 1));
     memcpy(Args, argv, (sizeof(char *) * argc));
     Args[argc] = NULL;
 

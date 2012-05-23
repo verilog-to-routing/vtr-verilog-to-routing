@@ -136,7 +136,7 @@ extern "C"
 
 /* returns a NULL terminated array of processing instructions for the given */
 /* target */
-    const char **ezxml_pi(ezxml_t xml,
+    char **ezxml_pi(ezxml_t xml,
 			  const char *target);
 
 /* frees the memory allocated for an ezxml structure */
@@ -146,7 +146,7 @@ extern "C"
     const char *ezxml_error(ezxml_t xml);
 
 /* returns a new empty ezxml structure with the given root tag name */
-    ezxml_t ezxml_new(const char *name);
+    ezxml_t ezxml_new(char *name);
 
 /* wrapper for ezxml_new() that strdup()s name */
 #define ezxml_new_d(name) ezxml_set_flag(ezxml_new(strdup(name)), EZXML_NAMEM)
@@ -155,7 +155,7 @@ extern "C"
 /* of the parent tag's character content. Returns the child tag. */
 	ezxml_t ezxml_add_child(
 				ezxml_t xml,
-			    const char *name,
+			    char *name,
 			    size_t off);
 
 /* wrapper for ezxml_add_child() that strdup()s name */
@@ -164,7 +164,7 @@ extern "C"
 
 /* sets the character content for the given tag and returns the tag */
     ezxml_t ezxml_set_txt(ezxml_t xml,
-			  const char *txt);
+			  char *txt);
 
 /* wrapper for ezxml_set_txt() that strdup()s txt */
 #define ezxml_set_txt_d(xml, txt) \
