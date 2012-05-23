@@ -10,6 +10,7 @@
 #include "route_export.h"
 #include "route_common.h"
 #include "cluster_legality.h"
+#include "cluster_placement.h"
 #include "rr_graph.h"
 
 static struct s_linked_vptr *rr_mem_chunk_list_head = NULL;
@@ -33,7 +34,9 @@ static int num_rr_intrinsic_cost = 0;
 /********************* Subroutines local to this module *********************/
 static boolean is_net_in_cluster(INP int inet);
 
-static void add_net_rr_terminal_cluster(int iblk_net, t_pb * primitive, int ilogical_block, t_model_ports * model_port, int ipin);
+static void setup_intracluster_routing_for_logical_block(INP int iblock, INP t_pb_graph_node *primitive);
+
+static void add_net_rr_terminal_cluster(int iblk_net, t_pb_graph_node * primitive, int ilogical_block, t_model_ports * model_port, int ipin);
 
 static void reload_ext_net_rr_terminal_cluster(void);
 
@@ -70,7 +73,7 @@ static boolean is_net_in_cluster(INP int inet) {
 
 /* load rr_node for source and sinks of net if exists, return FALSE otherwise */
 /* Todo: Note this is an inefficient way to determine port, better to use a lookup, worry about this if runtime becomes an issue */
-static void add_net_rr_terminal_cluster(int iblk_net, t_pb * primitive, int ilogical_block, t_model_ports * model_port, int ipin) {
+static void add_net_rr_terminal_cluster(int iblk_net, t_pb_graph_node * primitive, int ilogical_block, t_model_ports * model_port, int ipin) {
 	/* Ensure at most one external input/clock source and one external output sink for net */
 	int i, net_pin;
 	t_port *prim_port;
@@ -83,7 +86,7 @@ static void add_net_rr_terminal_cluster(int iblk_net, t_pb * primitive, int ilog
 
 	input_port = output_port = clock_port = 0;
 
-	pb_type = primitive->pb_graph_node->pb_type;
+	pb_type = primitive->pb_type;
 	prim_port = NULL;
 
 	assert(pb_type->num_modes == 0);
@@ -121,7 +124,7 @@ static void add_net_rr_terminal_cluster(int iblk_net, t_pb * primitive, int ilog
 		}
 		assert(net_pin != OPEN);
 		net_rr_terminals[iblk_net][net_pin] = 
-			primitive->pb_graph_node->clock_pins[clock_port][ipin].pin_count_in_cluster;
+			primitive->clock_pins[clock_port][ipin].pin_count_in_cluster;
 	} else if(prim_port->type == IN_PORT) {
 		for(i = 1; i <= vpack_net[iblk_net].num_sinks; i++) {
 			if(vpack_net[iblk_net].node_block[i] == ilogical_block &&
@@ -133,7 +136,7 @@ static void add_net_rr_terminal_cluster(int iblk_net, t_pb * primitive, int ilog
 		}
 		assert(net_pin != OPEN);
 		net_rr_terminals[iblk_net][net_pin] = 
-			primitive->pb_graph_node->input_pins[input_port][ipin].pin_count_in_cluster;
+			primitive->input_pins[input_port][ipin].pin_count_in_cluster;
 	} else if(prim_port->type == OUT_PORT) {
 		i = 0;
 		if(vpack_net[iblk_net].node_block[i] == ilogical_block &&
@@ -143,7 +146,7 @@ static void add_net_rr_terminal_cluster(int iblk_net, t_pb * primitive, int ilog
 		}
 		assert(net_pin != OPEN);
 		net_rr_terminals[iblk_net][net_pin] = 
-			primitive->pb_graph_node->output_pins[output_port][ipin].pin_count_in_cluster;
+			primitive->output_pins[output_port][ipin].pin_count_in_cluster;
 	} else {
 		assert(0);
 	}
@@ -812,7 +815,28 @@ alloc_net_rr_terminals_cluster(void)
 
 
 void 
-setup_intracluster_routing_for_logical_block(INP int iblock, INP t_pb *primitive)
+setup_intracluster_routing_for_molecule(INP t_pack_molecule *molecule, INP t_pb_graph_node **primitive_list)
+{
+
+    /* Allocates and loads the net_rr_terminals data structure.  For each net   *
+     * it stores the rr_node index of the SOURCE of the net and all the SINKs   *
+     * of the net.  [0..num_logical_nets-1][0..num_pins-1].   */
+    int i;
+
+	for(i = 0; i < get_array_size_of_molecule(molecule); i++) {
+		if(molecule->logical_block_ptrs[i] != NULL) {
+			setup_intracluster_routing_for_logical_block(molecule->logical_block_ptrs[i]->index, primitive_list[i]);
+		}
+	}
+
+	reload_ext_net_rr_terminal_cluster();
+}
+
+
+
+
+static void 
+setup_intracluster_routing_for_logical_block(INP int iblock, INP t_pb_graph_node *primitive)
 {
 
     /* Allocates and loads the net_rr_terminals data structure.  For each net   *
@@ -821,11 +845,11 @@ setup_intracluster_routing_for_logical_block(INP int iblock, INP t_pb *primitive
     int ipin, iblk_net;
 	t_model_ports *port;
 
-	assert(primitive->pb_graph_node->pb_type->num_modes == 0); /* check if primitive */
-	assert(primitive->logical_block != OPEN && logical_block[iblock].clb_index != NO_CLUSTER); /* check if primitive and block is open */
+	assert(primitive->pb_type->num_modes == 0); /* check if primitive */
+	assert(logical_block[iblock].clb_index != NO_CLUSTER); /* check if primitive and block is open */
 
 	/* check if block type matches primitive type */
-	if(logical_block[iblock].model != primitive->pb_graph_node->pb_type->model) {
+	if(logical_block[iblock].model != primitive->pb_type->model) {
 		/* End early, model is incompatible */
 		assert(0);
 	}
@@ -870,8 +894,6 @@ setup_intracluster_routing_for_logical_block(INP int iblock, INP t_pb *primitive
 		}
 		port = port->next;
 	}
-
-	reload_ext_net_rr_terminal_cluster();
 }
 
 

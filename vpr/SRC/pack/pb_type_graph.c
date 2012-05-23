@@ -1140,8 +1140,13 @@ static void echo_pb_rec(const INP t_pb_graph_node *pb_graph_node, INP int level,
 	fprintf(fp, "Clock Ports: total ports %d\n", pb_graph_node->num_clock_ports);
 	echo_pb_pins(pb_graph_node->clock_pins, pb_graph_node->num_clock_ports, level, fp);
 	print_tabs(fp, level);
-	for(i = 0; i < pb_graph_node->num_pin_classes; i++) {
-		fprintf(fp, "class %d: %d pins, ", i, pb_graph_node->pin_class_size[i]);
+	for(i = 0; i < pb_graph_node->num_input_pin_class; i++) {
+		fprintf(fp, "Input class %d: %d pins, ", i, pb_graph_node->input_pin_class_size[i]);
+	}
+	fprintf(fp, "\n");
+	print_tabs(fp, level);
+	for(i = 0; i < pb_graph_node->num_output_pin_class; i++) {
+		fprintf(fp, "Output class %d: %d pins, ", i, pb_graph_node->output_pin_class_size[i]);
 	}
 	fprintf(fp, "\n");
 	

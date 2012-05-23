@@ -108,6 +108,7 @@ struct s_rr_node; /* defined later, but need to declare here because it is used 
 struct s_pack_molecule; /* defined later, but need to declare here because it is used */
 
 /* Stores statistical information for pb such as cost information */
+/* jedit TODO: Move to pb_graph_node to minimize memory allocation/deallocation */
 struct s_pb_stats {
 	/* Packing statistics */
 	float *gain; /* Attraction (inverse of cost) function */
@@ -136,15 +137,14 @@ struct s_pb_stats {
 
 	/* [0..num_logical_nets-1].  How many pins of each vpack_net are contained in the *
 	 * currently open pb?                                          */
-	int *num_pins_of_net_in_pb;
+	int *num_pins_of_net_in_pb; /* jedit TODO: This looks like an optimization error, num_logical_nets is huge so the cost of allocating/deallocating memory itself far outweights just checking all the pins in the cluster */
 
-	/* [0..num_logical_nets-1].  Is the driver for this vpack_net in the open pb? */
-	boolean *net_output_in_pb;
-
-	/* Basic constraint checking */
-	int inputs_avail;
-	int outputs_avail;
-	int clocks_avail;
+	/* Record of pins of class used TODO: Jason Luu: Should really be using hash table for this for speed, too lazy to write one now, performance isn't too bad since I'm at most iterating over the number of pins of a pb which is effectively a constant for reasonable architectures */
+	int **input_pins_used; /* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of input pins of this class that are used */
+	int **output_pins_used; /* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of output pins of this class that are used */
+	
+	int **lookahead_input_pins_used; /* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of input pins of this class that are speculatively used */
+	int **lookahead_output_pins_used; /* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of output pins of this class that are speculatively used */
 
 	/* Array of feasible blocks to select from [0..max_array_size-1] 
 	   Sorted in ascending gain order so that the last block is the most desirable (this makes it easy to pop blocks off the list
