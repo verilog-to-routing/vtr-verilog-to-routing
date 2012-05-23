@@ -8,7 +8,7 @@
 # Please note that a Mac can run the graphics if the X11 library is installed. 
 # Set MAC_OS = true to look for X11 in the default directory for Macs.
 
-ENABLE_GRAPHICS = true
+ENABLE_GRAPHICS = false
 # can be true or false
 
 export BUILD_TYPE = release
