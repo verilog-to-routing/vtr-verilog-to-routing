@@ -350,8 +350,10 @@ struct s_pb_graph_node
 	void *temp_scratch_pad; /* temporary data, useful for keeping track of things when traversing data structure */
 	struct s_cluster_placement_primitive *cluster_placement_primitive; /* pointer to indexing structure useful during packing stage */
 
-	int *pin_class_size; /* Stores the number of pins that belong to a particular pin class */
-	int num_pin_classes; /* number of pin classes that this pb_graph_node has */	
+	int *input_pin_class_size; /* Stores the number of pins that belong to a particular input pin class */
+	int num_input_pin_class; /* number of pin classes that this input pb_graph_node has */	
+	int *output_pin_class_size; /* Stores the number of pins that belong to a particular output pin class */
+	int num_output_pin_class; /* number of output pin classes that this pb_graph_node has */	
 };
 typedef struct s_pb_graph_node t_pb_graph_node;
 
