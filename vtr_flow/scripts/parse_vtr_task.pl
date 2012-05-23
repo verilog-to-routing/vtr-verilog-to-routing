@@ -86,6 +86,7 @@ foreach(@task_files)
 
 foreach my $task (@tasks)
 {
+	chomp($task);
 	parse_single_task($task);
 }
 

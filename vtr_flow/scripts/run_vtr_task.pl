@@ -125,7 +125,8 @@ if ($#tasks == -1)
 
 foreach my $task (@tasks)
 {
-	run_single_task ($task);	
+	chomp($task);
+	run_single_task ($task);
 }
 
 
