@@ -68,17 +68,17 @@ OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
 
 $(EXE): notify $(OBJ) Makefile ../libvpr/libvpr_6.a
-	@ $(CC) $(FLAGS) $(OBJ) -o $(EXE) $(LIB_DIR) $(LIB)
+	$(CC) $(FLAGS) $(OBJ) -o $(EXE) $(LIB_DIR) $(LIB)
 
 ../libvpr/libvpr_6.a:
 	@ cd ../libvpr && make
 
 notify:
-	@ #if graphics enabled but libx11-dev is not installed, notify the user
+#if graphics enabled but libx11-dev is not installed, notify the user
 	@ $(PACKAGENOTIFICATION) 
 
 packages: 
-	@ #if graphics enabled but libx11-dev is not installed, install it
+#if graphics enabled but libx11-dev is not installed, install it
 	@ $(PACKAGEINSTALL)
 
 # Enable a second round of expansion so that we may include
@@ -90,7 +90,7 @@ packages:
 # without this, all but the last file written to a directory would appear
 # to be out of date.
 $(OBJ): OBJ/%.o:$(SRC_DIR)/%.c | $$(dir $$@D)
-	@ $(CC) $(FLAGS) -MD -MP -I$(OTHER_DIR) -ISRC/util -c $< -o $@
+	$(CC) $(FLAGS) -MD -MP -I$(OTHER_DIR) -ISRC/util -c $< -o $@
 
 # Silently create target directories as need
 $(OBJ_DIRS):
@@ -99,20 +99,20 @@ $(OBJ_DIRS):
 -include $(DEP)
 
 clean:
-	@ rm -f $(EXE) $(OBJ) $(DEP)
-	@ cd ../libvpr && make clean
+	rm -f $(EXE) $(OBJ) $(DEP)
+	cd ../libvpr && make clean
 
 clean_coverage: clean
-	@ rm -rf ./usr
-	@ find ./OBJ -regex ".*.\(gcda\|gcno\)" -exec rm -f {} \;
-	@ rm -f *.html
-	@ find ./SRC -iname "*.html" -exec rm -f {} \;
+	rm -rf ./usr
+	find ./OBJ -regex ".*.\(gcda\|gcno\)" -exec rm -f {} \;
+	rm -f *.html
+	find ./SRC -iname "*.html" -exec rm -f {} \;
 
 
 ctags:
-	@ cd $(SRC_DIR) && ctags *.[ch]
+	cd $(SRC_DIR) && ctags *.[ch]
 
 # This is using Target-specific variable values. See: http://www.gnu.org/software/make/manual/make.html#Target_002dspecific
 coverage: FLAGS = $(DEBUG_FLAGS) $(INC_FLAGS) -pedantic  -D EZXML_NOMMAP -fprofile-arcs -ftest-coverage -lgcov
 coverage: $(EXE)
-	@ ./coverage_reset.sh
+	./coverage_reset.sh
