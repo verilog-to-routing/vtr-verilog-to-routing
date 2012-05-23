@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 ###################################################################################
-# This script runs the VTR flow for a single benchmark circuit and architecture 
+# This script runs the VTR flow for a single benchmark circuit and architecture
 # file.
 #
 # Usage:
@@ -9,13 +9,13 @@
 # Parameters:
 # 	circuit_file: Path to the input circuit file (verilog, blif, etc)
 #   architecture_file: Path to the architecture file (.xml)
-# 
+#
 # Options:
-# 	-starting_stage <stage>: Start the VTR flow at the specified stage. 
-#								Acceptable values: odin, abc, script, vpr. 
+# 	-starting_stage <stage>: Start the VTR flow at the specified stage.
+#								Acceptable values: odin, abc, script, vpr.
 #								Default value is odin.
-#   -ending_stage <stage>: End the VTR flow at the specified stage. Acceptable 
-#								values: odin, abc, script, vpr. Default value is 
+#   -ending_stage <stage>: End the VTR flow at the specified stage. Acceptable
+#								values: odin, abc, script, vpr. Default value is
 #								vpr.
 # 	-keep_intermediate_files: Do not delete the intermediate files.
 #
@@ -23,19 +23,23 @@
 ###################################################################################
 
 use strict;
-use Cwd 'abs_path';
+use Cwd;
 use File::Spec;
 use POSIX;
 use File::Copy;
+use FindBin;
+
+use lib "$FindBin::Bin/perl_libs/XML-TreePP-0.41/lib";
+use XML::TreePP;
 
 # check the parametes.  Note PERL does not consider the script itself a parameter.
 my $number_arguments = @ARGV;
-if ($number_arguments < 2)
-{
-	print("usage: run_vtr_flow.pl <circuit_file> <architecture_file> [OPTIONS]\n");
+if ( $number_arguments < 2 ) {
+	print(
+		"usage: run_vtr_flow.pl <circuit_file> <architecture_file> [OPTIONS]\n"
+	);
 	exit(-1);
 }
-
 
 # Get Absoluate Path of 'vtr_flow
 Cwd::abs_path($0) =~ m/(.*\/vtr_flow)\//;
@@ -45,101 +49,106 @@ sub stage_index;
 sub file_ext_for_stage;
 sub expand_user_path;
 sub file_find_and_replace;
+sub xml_find_LUT_Kvalue;
+sub xml_find_mem_size;
 
 my $temp_dir = "./temp";
 
-my $stage_idx_odin = 1;
-my $stage_idx_abc = 2;
-my $stage_idx_script = 3;
-my $stage_idx_vpr = 4;
+my $stage_idx_odin   = 1;
+my $stage_idx_abc    = 2;
+my $stage_idx_ace    = 3;
+my $stage_idx_script = 4;
+my $stage_idx_vpr    = 5;
 
-my $circuit_file_path = expand_user_path(shift(@ARGV));
-my $architecture_file_path = expand_user_path(shift(@ARGV));
+my $circuit_file_path      = expand_user_path( shift(@ARGV) );
+my $architecture_file_path = expand_user_path( shift(@ARGV) );
 
 my $token;
-my $starting_stage = stage_index("odin");
-my $ending_stage = stage_index("vpr");
+my $starting_stage          = stage_index("odin");
+my $ending_stage            = stage_index("vpr");
 my $keep_intermediate_files = 0;
-my $has_memory = 1;
-my $timing_driven = "on";
-my $min_chan_width = -1;
-my $lut_size = -1;
-my $vpr_cluster_seed_type = "";
+my $has_memory              = 1;
+my $timing_driven           = "on";
+my $min_chan_width          = -1;
+my $lut_size                = -1;
+my $vpr_cluster_seed_type   = "";
+my $tech_file               = "";
+my $do_power                = 0;
 
-
-while ($token = shift(@ARGV))
-{
-	if ($token eq "-starting_stage")
-	{
-		$starting_stage = stage_index(shift(@ARGV));
+while ( $token = shift(@ARGV) ) {
+	if ( $token eq "-starting_stage" ) {
+		$starting_stage = stage_index( shift(@ARGV) );
 	}
-	elsif ($token eq "-ending_stage")
-	{
-		$ending_stage = stage_index(shift(@ARGV));
+	elsif ( $token eq "-ending_stage" ) {
+		$ending_stage = stage_index( shift(@ARGV) );
 	}
-	elsif ($token eq "-keep_intermediate_files")
-	{
+	elsif ( $token eq "-keep_intermediate_files" ) {
 		$keep_intermediate_files = 1;
 	}
-	elsif ($token eq "-no_mem")
-	{
+	elsif ( $token eq "-no_mem" ) {
 		$has_memory = 0;
 	}
-	elsif ($token eq "-no_timing")
-	{
+	elsif ( $token eq "-no_timing" ) {
 		$timing_driven = "off";
-	}	
-	elsif ($token eq "-vpr_route_chan_width")
-	{
+	}
+	elsif ( $token eq "-vpr_route_chan_width" ) {
 		$min_chan_width = shift(@ARGV);
 	}
-	elsif ($token eq "-lut_size")
-	{
+	elsif ( $token eq "-lut_size" ) {
 		$lut_size = shift(@ARGV);
 	}
-	elsif ($token eq "-vpr_cluster_seed_type")
-	{
+	elsif ( $token eq "-vpr_cluster_seed_type" ) {
 		$vpr_cluster_seed_type = shift(@ARGV);
 	}
-	elsif ($token eq "-temp_dir")
-	{
+	elsif ( $token eq "-temp_dir" ) {
 		$temp_dir = shift(@ARGV);
 	}
-	else
-	{
+	elsif ( $token eq "-cmos_tech" ) {
+		$tech_file = shift(@ARGV);
+	}
+	elsif ( $token eq "-power" ) {
+		$do_power = 1;
+	}
+	else {
 		die "Error: Invalid argument ($token)\n";
 	}
-	
-	if ($starting_stage == -1 or $ending_stage == -1)
-	{
-		die "Error: Invalid starting/ending stage name (start $starting_stage end $ending_stage).\n";
+
+	if ( $starting_stage == -1 or $ending_stage == -1 ) {
+		die
+		  "Error: Invalid starting/ending stage name (start $starting_stage end $ending_stage).\n";
 	}
 }
 
-if ($ending_stage < $starting_stage)
-{
-	die "Error: Ending stage is before starting stage.\n";
+if ( $ending_stage < $starting_stage ) {
+	die "Error: Ending stage is before starting stage.";
+}
+if ($do_power) {
+	if ( $tech_file eq "" ) {
+		die "A CMOS technology behavior file must be provided.";
+	}
+	elsif ( not -r $tech_file ) {
+		die "The CMOS technology behavior file ($tech_file) cannot be opened.";
+	}
 }
 
-if($vpr_cluster_seed_type eq "") {
-	if($timing_driven eq "off") {
+if ( $vpr_cluster_seed_type eq "" ) {
+	if ( $timing_driven eq "off" ) {
 		$vpr_cluster_seed_type = "max_inputs";
-	} else {
+	}
+	else {
 		$vpr_cluster_seed_type = "timing";
 	}
 }
 
-if (! -d $temp_dir)
-{
+if ( !-d $temp_dir ) {
 	system "mkdir $temp_dir";
 }
 -d $temp_dir or die "Could not make temporary directory ($temp_dir)\n";
-if (! ($temp_dir =~ /.*\/$/))
-{
+if ( !( $temp_dir =~ /.*\/$/ ) ) {
 	$temp_dir = $temp_dir . "/";
 }
 
-my $timeout = 10*24*60*60; # 10 day execution timeout
+my $timeout      = 10 * 24 * 60 * 60;         # 10 day execution timeout
 my $results_path = "${temp_dir}output.txt";
 
 my $error;
@@ -150,37 +159,81 @@ my $cluster_size;
 my $inputs_per_cluster = -1;
 
 # Test for file existance
-(-f $circuit_file_path) or die "Circuit file not found ($circuit_file_path)";
-(-f $architecture_file_path) or die "Architecture file not found ($architecture_file_path)";
+( -f $circuit_file_path )
+  or die "Circuit file not found ($circuit_file_path)";
+( -f $architecture_file_path )
+  or die "Architecture file not found ($architecture_file_path)";
 
-# Select executables
-my $vpr_path = "$vtr_flow_path/../vpr/vpr";
-(-e $vpr_path) or die "Cannot find vpr exectuable ($vpr_path)";
+my $vpr_path;
+if ( $stage_idx_vpr >= $starting_stage and $stage_idx_vpr <= $ending_stage ) {
+	$vpr_path = "$vtr_flow_path/../vpr/vpr";
+	( -r $vpr_path or -r "${vpr_path}.exe" )
+	  or die "Cannot find vpr exectuable ($vpr_path)";
+}
 
-my $odin2_path = "$vtr_flow_path/../ODIN_II/odin_II.exe";
-(-e $odin2_path) or die "Cannot find ODIN_II executable ($odin2_path)";
+my $odin2_path;
+my $odin_config_file_name;
+my $odin_config_file_path;
+if (    $stage_idx_odin >= $starting_stage
+	and $stage_idx_odin <= $ending_stage )
+{
+	$odin2_path = "$vtr_flow_path/../ODIN_II/odin_II.exe";
+	( -e $odin2_path )
+	  or die "Cannot find ODIN_II executable ($odin2_path)";
 
-my $abc_path = "$vtr_flow_path/../abc_with_bb_support/abc";
-(-e $abc_path) or die "Cannot find ABC executable ($abc_path)";
+	$odin_config_file_name = "basic_odin_config_split.xml";
 
-my $hack_fix_lines_n_latches = "$vtr_flow_path/scripts/hack_fix_lines_and_latches.pl";
-(-e $hack_fix_lines_n_latches) or die "Cannot find line/latch fixing script ($hack_fix_lines_n_latches)";
+	$odin_config_file_path = "$vtr_flow_path/misc/$odin_config_file_name";
+	( -e $odin_config_file_path )
+	  or die "Cannot find ODIN config template ($odin_config_file_path)";
 
-# Select files
-my $abc_rc_path = "$vtr_flow_path/../abc_with_bb_support/abc.rc";
-(-e $abc_rc_path) or die "Cannot find ABC RC file ($abc_rc_path)";
+	$odin_config_file_name = "odin_config.xml";
+	my $odin_config_file_path_new = "$temp_dir" . "odin_config.xml";
+	copy( $odin_config_file_path, $odin_config_file_path_new );
+	$odin_config_file_path = $odin_config_file_path_new;
+}
 
-my $clock_path = "$vtr_flow_path/benchmarks/misc/benchmark_clocks.clock";
-(-e $clock_path) or die "Cannot find benchmark clock file ($clock_path)";
+my $abc_path;
+my $abc_rc_path;
+if ( $stage_idx_abc >= $starting_stage and $stage_idx_abc <= $ending_stage ) {
+	$abc_path = "$vtr_flow_path/../abc_with_bb_support/abc";
+	( -e $abc_path or -e "${abc_path}.exe" )
+	  or die "Cannot find ABC executable ($abc_path)";
 
-my $clock_path_user = "$vtr_flow_path/benchmarks/misc/user_clocks.clock";
+	$abc_rc_path = "$vtr_flow_path/../abc_with_bb_support/abc.rc";
+	( -e $abc_rc_path ) or die "Cannot find ABC RC file ($abc_rc_path)";
 
-my $odin_config_file_name = "basic_odin_config_split.xml";
-my $odin_config_file_path = "$vtr_flow_path/misc/$odin_config_file_name";
-(-e $odin_config_file_path) or die "Cannot find ODIN config template ($odin_config_file_path)";
+	copy( $abc_rc_path, $temp_dir );
+}
+
+my $ace_path;
+if ( $stage_idx_ace >= $starting_stage and $stage_idx_ace <= $ending_stage and $do_power) {
+	$ace_path = "$vtr_flow_path/../ACE3/ace";
+	( -e $ace_path or -e "${ace_path}.exe" )
+	  or die "Cannot find ACE executable ($ace_path)";
+}
+
+my $hack_fix_lines_n_latches;
+my $clock_path;
+my $clock_path_user;
+if (    $stage_idx_script >= $starting_stage
+	and $stage_idx_script <= $ending_stage )
+{
+	$hack_fix_lines_n_latches =
+	  "$vtr_flow_path/scripts/hack_fix_lines_and_latches.pl";
+	( -e $hack_fix_lines_n_latches )
+	  or die "Cannot find line/latch fixing script ($hack_fix_lines_n_latches)";
+
+	$clock_path = "$vtr_flow_path/benchmarks/misc/benchmark_clocks.clock";
+	( -e $clock_path )
+	  or die "Cannot find benchmark clock file ($clock_path)";
+
+	$clock_path_user = "$vtr_flow_path/benchmarks/misc/user_clocks.clock";
+}
 
 # Get circuit name (everything up to the first '.' in the circuit file)
-my ($vol, $path, $circuit_file_name) = File::Spec->splitpath( $circuit_file_path);
+my ( $vol, $path, $circuit_file_name ) =
+  File::Spec->splitpath($circuit_file_path);
 $circuit_file_name =~ m/(.*)[.].*?/;
 my $benchmark_name = $1;
 
@@ -198,154 +251,91 @@ my $line;
 my $in_memory_block;
 my $in_mode;
 
-open(ARCH_IN_FILE, 	$architecture_file_path);
-my $arch_contents = do { local $/; <ARCH_IN_FILE> };
-close(ARCH_IN_FILE);
-
-if($has_memory == 1)
-{
-	open(ARCH_IN_FILE, 	$architecture_file_path);
-	while (<ARCH_IN_FILE>)
-	{
-		$line = $_;
-		chomp($line);
-		if ($line =~ m/pb_type name="memory"/)
-		{
-			$in_memory_block = 1;
-		}
-		elsif ($in_memory_block && !$in_mode && $line =~ m/<\/pb_type>/)
-		{
-			$in_memory_block = 0;
-		}
-		
-		if ($in_memory_block && $line =~ m/<mode.*?>/)
-		{
-			$in_mode = 1;
-		}
-		elsif ($in_memory_block && $in_mode && $line =~ m/<\/mode>/)
-		{
-			$in_mode = 0;
-		}
-		
-		if ($in_memory_block && $in_mode)
-		{
-			if ($line =~ m/<input name="addr" num_pins="(\d+)"/)
-			{
-				if (int($1) > $mem_size)
-				{
-					$mem_size = int($1)
-				}
-			}
-		}	
-	}
-	if ($mem_size < 0)
-	{
-		print "failed: cannot determine arch mem size";
-		$error_code = 1;
-	}
-	close(ARCH_IN_FILE);
-} else {
-	$mem_size = 0;
-}
+# Read arch XML
+my $tpp      = XML::TreePP->new();
+my $xml_tree = $tpp->parsefile($architecture_file_path);
 
 # Get lut size
-if (! $error_code)
-{
-	if($lut_size < 0) {
-		if ($arch_contents =~ m/pb_type name="clb".*?pb_type name="ble".*?input.*?num_pins="(\d+)"/s)
-		{
-			$lut_size = $1;
-		}
-		else
-		{
-			print "failed: cannot determine arch LUT k-value";
-			$error_code = 1;
-		}			
-	}
+my $lut_size = xml_find_LUT_Kvalue($xml_tree);
+if ( $lut_size < 1 ) {
+	print "failed: cannot determine arch LUT k-value";
+	$error_code = 1;
 }
 
+# Get memory size
+$mem_size = xml_find_mem_size($xml_tree);
 
-
-my $odin_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_odin);
+my $odin_output_file_name =
+  "$benchmark_name" . file_ext_for_stage($stage_idx_odin);
 my $odin_output_file_path = "$temp_dir$odin_output_file_name";
 
-my $abc_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_abc);
+my $abc_output_file_name =
+  "$benchmark_name" . file_ext_for_stage($stage_idx_abc);
 my $abc_output_file_path = "$temp_dir$abc_output_file_name";
 
-my $scripts_output_file_name;
-if($starting_stage == stage_index("vpr")) 
-{
-	$scripts_output_file_name = "$benchmark_name" . ".blif";
-} else {
-	$scripts_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_script);
-}
+my $ace_output_blif_name =
+  "$benchmark_name" . file_ext_for_stage($stage_idx_ace);
+my $ace_output_blif_path = "$temp_dir$ace_output_blif_name";
+
+my $ace_output_act_name = "$benchmark_name" . ".act";
+my $ace_output_act_path = "$temp_dir$ace_output_act_name";
+
+my $scripts_output_file_name =
+  "$benchmark_name" . file_ext_for_stage($stage_idx_script);
 my $scripts_output_file_path = "$temp_dir$scripts_output_file_name";
 
 my $vpr_route_output_file_name = "$benchmark_name.route";
 my $vpr_route_output_file_path = "$temp_dir$vpr_route_output_file_name";
-
 
 #system "cp $abc_rc_path $temp_dir";
 #system "cp $architecture_path $temp_dir";
 #system "cp $circuit_path $temp_dir/$benchmark_name" . file_ext_for_stage($starting_stage - 1);
 #system "cp $odin2_base_config"
 
-my $odin_config_file_name = "odin_config.xml";
-my $odin_config_file_path_new = "$temp_dir" . "odin_config.xml";
-copy ($odin_config_file_path, $odin_config_file_path_new);
-$odin_config_file_path = $odin_config_file_path_new;
-
 my $architecture_file_path_new = "$temp_dir$architecture_file_name";
-copy ($architecture_file_path, $architecture_file_path_new);
+copy( $architecture_file_path, $architecture_file_path_new );
 $architecture_file_path = $architecture_file_path_new;
 
-my $circuit_file_path_new = "$temp_dir$circuit_file_name";
-copy ($circuit_file_path, $circuit_file_path_new);
-$circuit_file_path = $circuit_file_path_new; 
-
-copy ($abc_rc_path, $temp_dir);
+my $circuit_file_path_new =
+  "$temp_dir$benchmark_name" . file_ext_for_stage( $starting_stage - 1 );
+copy( $circuit_file_path, $circuit_file_path_new );
+$circuit_file_path = $circuit_file_path_new;
 
 # Call executable and time it
 my $StartTime = time;
-my $q = "not_run";
-
+my $q         = "not_run";
 
 #################################################################################
 ################################## ODIN #########################################
 #################################################################################
 
-if ($starting_stage <= $stage_idx_odin and ! $error_code)
-{
+if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
+
 	#system "sed 's/XXX/$benchmark_name.v/g' < $odin2_base_config > temp1.xml";
 	#system "sed 's/YYY/$arch_name/g' < temp1.xml > temp2.xml";
 	#system "sed 's/ZZZ/$odin_output_file_path/g' < temp2.xml > temp3.xml";
 	#system "sed 's/PPP/$mem_size/g' < temp3.xml > circuit_config.xml";
-	
-	file_find_and_replace($odin_config_file_path, "XXX", $circuit_file_name);
-	file_find_and_replace($odin_config_file_path, "YYY", $architecture_file_name);
-	file_find_and_replace($odin_config_file_path, "ZZZ", $odin_output_file_name);
-	file_find_and_replace($odin_config_file_path, "PPP", $mem_size);
 
-	if (! $error_code)
-	{
-		$q = &system_with_timeout("$odin2_path", 
-								   "odin.out",
-								   $timeout,
-								   $temp_dir,
-								   "-c", $odin_config_file_name
-		);
-		
-		if (-e $odin_output_file_path)
-		{
-			if (! $keep_intermediate_files)
-			{
+	file_find_and_replace( $odin_config_file_path, "XXX", $circuit_file_name );
+	file_find_and_replace( $odin_config_file_path, "YYY",
+		$architecture_file_name );
+	file_find_and_replace( $odin_config_file_path, "ZZZ",
+		$odin_output_file_name );
+	file_find_and_replace( $odin_config_file_path, "PPP", $mem_size );
+
+	if ( !$error_code ) {
+		$q =
+		  &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
+			"-c", $odin_config_file_name );
+
+		if ( -e $odin_output_file_path ) {
+			if ( !$keep_intermediate_files ) {
 				system "rm -f ${temp_dir}*.dot";
 				system "rm -f ${temp_dir}*.v";
 				system "rm -f $odin_config_file_path";
 			}
 		}
-		else
-		{
+		else {
 			print "failed: odin";
 			$error_code = 1;
 		}
@@ -355,164 +345,189 @@ if ($starting_stage <= $stage_idx_odin and ! $error_code)
 #################################################################################
 ################################## ABC ##########################################
 #################################################################################
-if ($starting_stage <= $stage_idx_abc and $ending_stage >= $stage_idx_abc and ! $error_code)
+if (    $starting_stage <= $stage_idx_abc
+	and $ending_stage >= $stage_idx_abc
+	and !$error_code )
 {
-	$q = &system_with_timeout($abc_path, 
-                          		"abc.out",
-                          		$timeout,
-                          		$temp_dir,
-								"-c", 
-								"read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size -a; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_output_file_name; print_stats"
+	$q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
+		"read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size -a; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_output_file_name; print_stats"
 	);
-	
-	if (-e $abc_output_file_path)
-	{
+
+	if ( -e $abc_output_file_path ) {
+
 		#system "rm -f abc.out";
-		if (! $keep_intermediate_files)
-		{
+		if ( !$keep_intermediate_files ) {
 			system "rm -f $odin_output_file_path";
 			system "rm -f ${temp_dir}*.rc";
 		}
 	}
-	else
-	{
+	else {
 		print "failed: abc";
 		$error_code = 1;
-	}	
+	}
+}
+
+#################################################################################
+################################## ACE ##########################################
+#################################################################################
+if (    $starting_stage <= $stage_idx_ace
+	and $ending_stage >= $stage_idx_ace
+	and $do_power
+	and !$error_code )
+{
+	$q = &system_with_timeout(
+		$ace_path, "ace.out",             $timeout, $temp_dir,
+		"-b",      $abc_output_file_name, "-n",     $ace_output_blif_name,
+		"-o",      $ace_output_act_name
+	);
+
+	if ( -e $ace_output_blif_path ) {
+		if ( !$keep_intermediate_files ) {
+
+			#system "rm -f $odin_output_file_path";
+			#system "rm -f ${temp_dir}*.rc";
+		}
+	}
+	else {
+		print "failed: ace";
+		$error_code = 1;
+	}
 }
 
 #################################################################################
 ################################## FIX SCRIPTS ##################################
 #################################################################################
-if ($starting_stage <= $stage_idx_script and $ending_stage >= $stage_idx_script and ! $error_code)
+if (    $starting_stage <= $stage_idx_script
+	and $ending_stage >= $stage_idx_script
+	and !$error_code )
 {
-	my $scripts_success = 0;
+	my $scripts_success   = 0;
 	my $stage_output_file = "${temp_dir}fix_scripts.out";
-	system "$hack_fix_lines_n_latches $abc_output_file_path $scripts_output_file_path $clock_path $clock_path_user > $stage_output_file";
+	my $script_input_blif_path;
+	if ($do_power) {
+		$script_input_blif_path = $ace_output_blif_path; 
+	} else {
+		$script_input_blif_path = $abc_output_file_path;
+	}
 	
-	if (-r $scripts_output_file_path)
-	{
-		open(OUTPUT_FILE, $stage_output_file);
+	
+	system
+	  "$hack_fix_lines_n_latches $script_input_blif_path $scripts_output_file_path $clock_path $clock_path_user > $stage_output_file";
+
+	if ( -r $scripts_output_file_path ) {
+		open( OUTPUT_FILE, $stage_output_file );
 		my $file_contents = do { local $/; <OUTPUT_FILE> };
-		close(OUTPUT_FILE); 
-		
-		if ($file_contents =~ /^Success$/m)
-		{
+		close(OUTPUT_FILE);
+
+		if ( $file_contents =~ /^Success$/m ) {
 			$scripts_success = 1;
 		}
 	}
-	
-	if ($scripts_success)	
-	{
-		if (! $keep_intermediate_files)
-		{
-			system "rm -f $abc_output_file_path";
+
+	if ($scripts_success) {
+		if ( !$keep_intermediate_files ) {
+			system "rm -f $script_input_blif_path";
 		}
 	}
-	else
-	{
+	else {
 		print "failed: scripts";
 		$error_code = 1;
-	}	
+	}
 }
-
 
 #################################################################################
 ################################## VPR ##########################################
 #################################################################################
 
-if ($ending_stage >= $stage_idx_vpr and ! $error_code)
-{
-	if($min_chan_width < 0) {
-		$q = &system_with_timeout($vpr_path, 
-									"vpr.out",
-									$timeout,
-									$temp_dir,
-									$architecture_file_name,
-									"$benchmark_name",
-									"--blif_file", "$scripts_output_file_name",									
-									"--timing_analysis", "$timing_driven",
-									"--timing_driven_clustering", "$timing_driven",
-									"--cluster_seed_type", "$vpr_cluster_seed_type",
-									"--nodisp"									
+if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
+	my @vpr_power_args;
+
+	if ($do_power) {
+		push( @vpr_power_args, "--power" );
+		push( @vpr_power_args, "--cmos_tech_behavior_file" );
+		push( @vpr_power_args, "$tech_file" );
+	}
+
+	if ( $min_chan_width < 0 ) {
+		$q = &system_with_timeout(
+			$vpr_path,                    "vpr.out",
+			$timeout,                     $temp_dir,
+			$architecture_file_name,      "$benchmark_name",
+			"--blif_file",                "$scripts_output_file_name",
+			"--timing_analysis",          "$timing_driven",
+			"--timing_driven_clustering", "$timing_driven",
+			"--cluster_seed_type",        "$vpr_cluster_seed_type",
+			"--nodisp"
 		);
-		if($timing_driven eq "on") {
+		if ( $timing_driven eq "on" ) {
+
 			# Critical path delay is nonsensical at minimum channel width because congestion constraints completely dominate the cost function.
 			# Additional channel width needs to be added so that there is a reasonable trade-off between delay and area
 			# Commercial FPGAs are also desiged to have more channels than minimum for this reason
 
 			# Parse out min_chan_width
-			if(open(VPROUT, "<${temp_dir}vpr.out"))
-			{
+			if ( open( VPROUT, "<${temp_dir}vpr.out" ) ) {
 				undef $/;
 				my $content = <VPROUT>;
-				close (VPROUT);
-				$/ = "\n";     # Restore for normal behaviour later in script
-				
-				if ($content =~ m/(.*Error.*)/i) {
+				close(VPROUT);
+				$/ = "\n";    # Restore for normal behaviour later in script
+
+				if ( $content =~ m/(.*Error.*)/i ) {
 					$error = $1;
 				}
-				
-				if ($content =~ /Best routing used a channel width factor of (\d+)/m) {
-					$min_chan_width = $1 ;
-				}		
-			}			
 
-			$min_chan_width = ($min_chan_width * 1.3);
+				if ( $content =~
+					/Best routing used a channel width factor of (\d+)/m )
+				{
+					$min_chan_width = $1;
+				}
+			}
+
+			$min_chan_width = ( $min_chan_width * 1.3 );
 			$min_chan_width = floor($min_chan_width);
-			if($min_chan_width % 2) {
+			if ( $min_chan_width % 2 ) {
 				$min_chan_width = $min_chan_width + 1;
 			}
 
-			if (-e $vpr_route_output_file_path)
-			{
+			if ( -e $vpr_route_output_file_path ) {
 				system "rm -f $vpr_route_output_file_path";
-				
-				$q = &system_with_timeout($vpr_path, 
-										"vpr.crit_path.out",
-										$timeout,
-										$temp_dir,
-										$architecture_file_name,
-										"$benchmark_name",									
-										"--place_file", "$benchmark_name.place",									
-										"--route",
-										"--route_chan_width", "$min_chan_width",
-										"--cluster_seed_type", "$vpr_cluster_seed_type",
-										"--nodisp",
+				$q = &system_with_timeout(
+					$vpr_path,               "vpr.crit_path.out",
+					$timeout,                $temp_dir,
+					$architecture_file_name, "$benchmark_name",
+					"--blif_file",           "$scripts_output_file_name",
+					"--route_chan_width",    "$min_chan_width",
+					"--cluster_seed_type",   "$vpr_cluster_seed_type",
+					"--nodisp",              @vpr_power_args
 				);
 			}
 		}
-	} else {
-		$q = &system_with_timeout($vpr_path, 
-									"vpr.out",
-									$timeout,
-									$temp_dir,
-									$architecture_file_path,
-									"$benchmark_name",
-									"--blif_file", "$scripts_output_file_name",								
-									"--timing_analysis", "$timing_driven",
-									"--timing_driven_clustering", "$timing_driven",
-									"--route_chan_width", "$min_chan_width",
-									"--nodisp",
-									"--cluster_seed_type", "$vpr_cluster_seed_type"						
+	}
+	else {
+		$q = &system_with_timeout(
+			$vpr_path,                    "vpr.out",
+			$timeout,                     $temp_dir,
+			$architecture_file_name,      "$benchmark_name",
+			"--blif_file",                "$scripts_output_file_name",
+			"--timing_analysis",          "$timing_driven",
+			"--timing_driven_clustering", "$timing_driven",
+			"--route_chan_width",         "$min_chan_width",
+			"--nodisp",                   "--cluster_seed_type",
+			"$vpr_cluster_seed_type",     @vpr_power_args
 		);
 	}
-			
-	  					
-	if (-e $vpr_route_output_file_path and $q eq "success")
-	{
-		if (! $keep_intermediate_files)
-		{
+
+	if ( -e $vpr_route_output_file_path and $q eq "success" ) {
+		if ( !$keep_intermediate_files ) {
 			system "rm -f $scripts_output_file_path";
 			system "rm -f ${temp_dir}*.xml";
 			system "rm -f ${temp_dir}*.net";
 			system "rm -f ${temp_dir}*.place";
-			system "rm -f ${temp_dir}*.route";			
+			system "rm -f ${temp_dir}*.route";
 		}
 	}
-	else
-	{
-		print ("failed: vpr");
+	else {
+		print("failed: vpr");
 		$error_code = 1;
 	}
 }
@@ -520,27 +535,26 @@ if ($ending_stage >= $stage_idx_vpr and ! $error_code)
 my $EndTime = time;
 
 # Determine running time
-my $seconds = ($EndTime - $StartTime);
+my $seconds    = ( $EndTime - $StartTime );
 my $runseconds = $seconds % 60;
 
 # Start collecting results to output.txt
-open(RESULTS, "> $results_path");
+open( RESULTS, "> $results_path" );
 
 # Output vpr status and runtime
 print RESULTS "vpr_status=$q\n";
 print RESULTS "vpr_seconds=$seconds\n";
 
 # Parse VPR output
-if(open(VPROUT, "< vpr.out"))
-{
-    undef $/;
-    my $content = <VPROUT>;
-    close (VPROUT);
-    $/ = "\n";     # Restore for normal behaviour later in script
-    
-    if ($content =~ m/(.*Error.*)/i) {
-        $error = $1;
-    }
+if ( open( VPROUT, "< vpr.out" ) ) {
+	undef $/;
+	my $content = <VPROUT>;
+	close(VPROUT);
+	$/ = "\n";    # Restore for normal behaviour later in script
+
+	if ( $content =~ m/(.*Error.*)/i ) {
+		$error = $1;
+	}
 }
 print RESULTS "error=$error\n";
 
@@ -553,8 +567,7 @@ close(RESULTS);
 #system "rm -f core.*";
 #system "rm -f gc.txt";
 
-if (! $error_code)
-{
+if ( !$error_code ) {
 	system "rm -f *.echo";
 	print "OK";
 }
@@ -564,154 +577,275 @@ print "\n";
 # Subroutine to execute a system call with a timeout
 # system_with_timeout(<program>, <stdout file>, <timeout>, <dir>, <arg1>, <arg2>, etc)
 #    make sure args is an array
-# Returns: "timeout", "exited", "success", "crashed" 
+# Returns: "timeout", "exited", "success", "crashed"
 ################################################################################
-sub system_with_timeout
-{
-    # Check args
-    ($#_ > 2) or die "system_with_timeout: not enough args\n";
-    (-f $_[0]) or die "system_with_timeout: can't find executable\n";
-    ($_[2] > 0) or die "system_with_timeout: invalid timeout\n";
+sub system_with_timeout {
 
-    # Save the pid of child process
-    my $pid = fork;
-    
-    if ($pid == 0)
-    {    	 
-        # Redirect STDOUT for vpr
-        chdir $_[3];
-        
-        open(STDOUT, "> $_[1]");
-        open(STDERR, "> $_[1]");
-	
+	# Check args
+	( $#_ > 2 )   or die "system_with_timeout: not enough args\n";
+	( -f $_[0] )  or die "system_with_timeout: can't find executable\n";
+	( $_[2] > 0 ) or die "system_with_timeout: invalid timeout\n";
 
-        # Copy the args and cut out first four
-        my @VPRARGS = @_;
-        shift @VPRARGS;
-        shift @VPRARGS;
-        shift @VPRARGS;
-        shift @VPRARGS;
-		        
-        # Run command
-        # This must be an exec call and there most be no special shell characters
-        # like redirects so that perl will use execvp and $pid will actually be
-        # that of vpr so we can kill it later.
-		print "$_[0] @VPRARGS\n";
-        exec $_[0], @VPRARGS;
-    }
-    else
-    {
-        my $timed_out = "false";
-        
-        # Register signal handler, to kill child process (SIGABRT)
-        $SIG{ALRM} = sub { kill 6, $pid; $timed_out = "true"; };
+	# Save the pid of child process
+	my $pid = fork;
 
-        # Register handlers to take down child if we are killed (SIGHUP)
-        $SIG{INTR} = sub { print "SIGINTR\n"; kill 1, $pid; exit; };
-        $SIG{HUP} = sub { print "SIGHUP\n"; kill 1, $pid; exit; };
-        
-        # Set SIGALRM timeout
-        alarm $_[2];
+	if ( $pid == 0 ) {
 
-        # Wait for child process to end OR timeout to expire
-        wait;
+		# Redirect STDOUT for vpr
+		chdir $_[3];
 
-        # Unset the alarm in case we didn't timeout
-        alarm 0;
-        
-        # Check if timed out or not
-        if ($timed_out eq "true")
-        {
-            return "timeout";
-        }
-        else
-        {
-            my $did_crash = "false";
-            if ($? & 127) { $did_crash = "true"; };
+		open( STDOUT, "> $_[1]" );
+		open( STDERR, "> $_[1]" );
 
-            my $return_code = $? >> 8;
+		# Copy the args and cut out first four
+		my @VPRARGS = @_;
+		shift @VPRARGS;
+		shift @VPRARGS;
+		shift @VPRARGS;
+		shift @VPRARGS;
 
-            if ($did_crash eq "true")
-            {
-                return "crashed";
-            }
-            elsif ($return_code != 0)
-            {
-                return "exited";
-            }
-            else
-            {
-                return "success";
-            }
-        }
-    }
+		# Run command
+		# This must be an exec call and there most be no special shell characters
+		# like redirects so that perl will use execvp and $pid will actually be
+		# that of vpr so we can kill it later.
+		print "\n$_[0] @VPRARGS\n";
+		exec $_[0], @VPRARGS;
+	}
+	else {
+		my $timed_out = "false";
+
+		# Register signal handler, to kill child process (SIGABRT)
+		$SIG{ALRM} = sub { kill 6, $pid; $timed_out = "true"; };
+
+		# Register handlers to take down child if we are killed (SIGHUP)
+		$SIG{INTR} = sub { print "SIGINTR\n"; kill 1, $pid; exit; };
+		$SIG{HUP}  = sub { print "SIGHUP\n";  kill 1, $pid; exit; };
+
+		# Set SIGALRM timeout
+		alarm $_[2];
+
+		# Wait for child process to end OR timeout to expire
+		wait;
+
+		# Unset the alarm in case we didn't timeout
+		alarm 0;
+
+		# Check if timed out or not
+		if ( $timed_out eq "true" ) {
+			return "timeout";
+		}
+		else {
+			my $did_crash = "false";
+			if ( $? & 127 ) { $did_crash = "true"; }
+
+			my $return_code = $? >> 8;
+
+			if ( $did_crash eq "true" ) {
+				return "crashed";
+			}
+			elsif ( $return_code != 0 ) {
+				return "exited";
+			}
+			else {
+				return "success";
+			}
+		}
+	}
 }
 
-sub stage_index
-{
+sub stage_index {
 	my $stage_name = $_[0];
-	
-	if (lc($stage_name) eq "odin")
-	{
+
+	if ( lc($stage_name) eq "odin" ) {
 		return $stage_idx_odin;
 	}
-	if (lc($stage_name) eq "abc")
-	{
+	if ( lc($stage_name) eq "abc" ) {
 		return $stage_idx_abc;
 	}
-	if (lc($stage_name) eq "scripts")
-	{
+	if ( lc($stage_name) eq "ace" ) {
+		return $stage_idx_ace;
+	}
+	if ( lc($stage_name) eq "scripts" ) {
 		return $stage_idx_script;
 	}
-	if (lc($stage_name) eq "vpr")
-	{
+	if ( lc($stage_name) eq "vpr" ) {
 		return $stage_idx_vpr;
 	}
-	return -1;	
+	return -1;
 }
 
-sub file_ext_for_stage
-{
+sub file_ext_for_stage {
 	my $stage_idx = $_[0];
-	
-	if ($stage_idx == 0)
-	{
+
+	if ( $stage_idx == 0 ) {
 		return ".v";
 	}
-	elsif ($stage_idx == $stage_idx_odin)
-	{
+	elsif ( $stage_idx == $stage_idx_odin ) {
 		return ".odin.blif";
 	}
-	elsif ($stage_idx == $stage_idx_abc)
-	{
+	elsif ( $stage_idx == $stage_idx_abc ) {
 		return ".abc.blif";
 	}
-	elsif ($stage_idx == $stage_idx_script)
-	{
+	elsif ( $stage_idx == $stage_idx_ace ) {
+		return ".ace.blif";
+	}
+	elsif ( $stage_idx == $stage_idx_script ) {
 		return ".pre-vpr.blif";
-	}		
+	}
 }
 
-sub expand_user_path
-{
+sub expand_user_path {
 	my $str = shift;
 	$str =~ s/^~\//$ENV{"HOME"}\//;
 	return $str;
 }
 
-sub file_find_and_replace
-{
-	my $file_path = shift();
-	my $search_string = shift();
+sub file_find_and_replace {
+	my $file_path      = shift();
+	my $search_string  = shift();
 	my $replace_string = shift();
-	
-	open (FILE_IN, "$file_path");
-	my $file_contents =  do { local $/; <FILE_IN>};
+
+	open( FILE_IN, "$file_path" );
+	my $file_contents = do { local $/; <FILE_IN> };
 	close(FILE_IN);
-	
+
 	$file_contents =~ s/$search_string/$replace_string/mg;
-	
-	open (FILE_OUT, ">$file_path");
+
+	open( FILE_OUT, ">$file_path" );
 	print FILE_OUT $file_contents;
-	close (FILE_OUT);
+	close(FILE_OUT);
+}
+
+sub xml_find_key {
+	my $tree = shift();
+	my $key  = shift();
+
+	foreach my $subtree ( keys %{$tree} ) {
+		if ( $subtree eq $key ) {
+			return $tree->{$subtree};
+		}
+	}
+	return "";
+}
+
+sub xml_find_child_by_key_value {
+	my $tree = shift();
+	my $key  = shift();
+	my $val  = shift();
+
+	if ( ref($tree) eq "HASH" ) {
+
+		# Only a single item in the child array
+		if ( $tree->{$key} eq $val ) {
+			return $tree;
+		}
+	}
+	elsif ( ref($tree) eq "ARRAY" ) {
+
+		# Child Array
+		foreach my $child (@$tree) {
+			if ( $child->{$key} eq $val ) {
+				return $child;
+			}
+		}
+	}
+
+	return "";
+}
+
+sub xml_find_LUT_Kvalue {
+	my $tree = shift();
+
+	#Check if this is a LUT
+	if ( xml_find_key( $tree, "-blif_model" ) eq ".names" ) {
+		return $tree->{input}->{"-num_pins"};
+	}
+
+	my $max = 0;
+	my $val = 0;
+
+	foreach my $subtree ( keys %{$tree} ) {
+		my $child = $tree->{$subtree};
+
+		if ( ref($child) eq "ARRAY" ) {
+			foreach my $item (@$child) {
+				$val = xml_find_LUT_Kvalue($item);
+				if ( $val > $max ) {
+					$max = $val;
+				}
+			}
+		}
+		elsif ( ref($child) eq "HASH" ) {
+			$val = xml_find_LUT_Kvalue($child);
+			if ( $val > $max ) {
+				$max = $val;
+			}
+		}
+		else {
+
+			# Leaf - do nothing
+		}
+	}
+
+	return $max;
+}
+
+sub xml_find_mem_size_recursive {
+	my $tree = shift();
+
+	#Check if this is a Memory
+	if ( xml_find_key( $tree, "-blif_model" ) =~ "port_ram" ) {
+		my $input_pins = $tree->{input};
+		foreach my $input_pin (@$input_pins) {
+			if ( xml_find_key( $input_pin, "-name" ) =~ "addr" ) {
+				return $input_pin->{"-num_pins"};
+			}
+		}
+		return 0;
+	}
+
+	# Otherwise iterate down
+	my $max = 0;
+	my $val = 0;
+
+	foreach my $subtree ( keys %{$tree} ) {
+		my $child = $tree->{$subtree};
+
+		if ( ref($child) eq "ARRAY" ) {
+			foreach my $item (@$child) {
+				$val = xml_find_mem_size_recursive($item);
+				if ( $val > $max ) {
+					$max = $val;
+				}
+			}
+		}
+		elsif ( ref($child) eq "HASH" ) {
+			$val = xml_find_mem_size_recursive($child);
+			if ( $val > $max ) {
+				$max = $val;
+			}
+		}
+		else {
+
+			# Leaf - do nothing
+		}
+	}
+
+	return $max;
+}
+
+sub xml_find_mem_size {
+	my $tree = shift();
+
+	my $pb_tree = $tree->{architecture}->{complexblocklist}->{pb_type};
+	if ( $pb_tree eq "" ) {
+		return "";
+	}
+
+	my $memory_pb = xml_find_child_by_key_value ($pb_tree, "-name", "memory");
+	if ( $memory_pb eq "" ) {
+		return "";
+	}
+
+	return xml_find_mem_size_recursive($memory_pb);
 }
