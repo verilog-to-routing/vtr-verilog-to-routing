@@ -1,0 +1,2808 @@
+<technology file="45nm.pm" size="45e-9">
+	<operating_point temperature="27" Vdd="1.0"/>
+	<p_to_n ratio="2.85"/>
+	<transistor type="nmos" Vth="3.0924E-01">
+		<long_size W="1" L="2">
+			<current leakage="1.4908E-10"/>
+			<capacitance gate="5.6239E-17" source="4.3271E-16" drain="1.6040E-16"/>
+		</long_size>
+		<size W="1.00" L="1">
+			<current leakage="3.3076E-09"/>
+			<capacitance gate="3.4273E-17" source="4.1564E-16" drain="1.5556E-16"/>
+		</size>
+		<size W="1.02" L="1">
+			<current leakage="3.3928E-09"/>
+			<capacitance gate="3.5142E-17" source="4.1727E-16" drain="1.5647E-16"/>
+		</size>
+		<size W="1.04" L="1">
+			<current leakage="3.4780E-09"/>
+			<capacitance gate="3.6012E-17" source="4.1889E-16" drain="1.5739E-16"/>
+		</size>
+		<size W="1.06" L="1">
+			<current leakage="3.5632E-09"/>
+			<capacitance gate="3.6882E-17" source="4.2052E-16" drain="1.5831E-16"/>
+		</size>
+		<size W="1.08" L="1">
+			<current leakage="3.6483E-09"/>
+			<capacitance gate="3.7752E-17" source="4.2215E-16" drain="1.5922E-16"/>
+		</size>
+		<size W="1.10" L="1">
+			<current leakage="3.7335E-09"/>
+			<capacitance gate="3.8621E-17" source="4.2377E-16" drain="1.6014E-16"/>
+		</size>
+		<size W="1.13" L="1">
+			<current leakage="3.8613E-09"/>
+			<capacitance gate="3.9926E-17" source="4.2621E-16" drain="1.6151E-16"/>
+		</size>
+		<size W="1.15" L="1">
+			<current leakage="3.9464E-09"/>
+			<capacitance gate="4.0796E-17" source="4.2783E-16" drain="1.6242E-16"/>
+		</size>
+		<size W="1.17" L="1">
+			<current leakage="4.0316E-09"/>
+			<capacitance gate="4.1665E-17" source="4.2946E-16" drain="1.6334E-16"/>
+		</size>
+		<size W="1.20" L="1">
+			<current leakage="4.1594E-09"/>
+			<capacitance gate="4.2975E-17" source="4.3190E-16" drain="1.6471E-16"/>
+		</size>
+		<size W="1.22" L="1">
+			<current leakage="4.2446E-09"/>
+			<capacitance gate="4.3845E-17" source="4.3352E-16" drain="1.6563E-16"/>
+		</size>
+		<size W="1.24" L="1">
+			<current leakage="4.3298E-09"/>
+			<capacitance gate="4.4709E-17" source="4.3515E-16" drain="1.6654E-16"/>
+		</size>
+		<size W="1.27" L="1">
+			<current leakage="4.4575E-09"/>
+			<capacitance gate="4.6020E-17" source="4.3759E-16" drain="1.6792E-16"/>
+		</size>
+		<size W="1.29" L="1">
+			<current leakage="4.5427E-09"/>
+			<capacitance gate="4.6892E-17" source="4.3921E-16" drain="1.6883E-16"/>
+		</size>
+		<size W="1.32" L="1">
+			<current leakage="4.6705E-09"/>
+			<capacitance gate="4.8198E-17" source="4.4165E-16" drain="1.7021E-16"/>
+		</size>
+		<size W="1.35" L="1">
+			<current leakage="4.7983E-09"/>
+			<capacitance gate="4.9498E-17" source="4.4409E-16" drain="1.7158E-16"/>
+		</size>
+		<size W="1.37" L="1">
+			<current leakage="4.8835E-09"/>
+			<capacitance gate="5.0366E-17" source="4.4571E-16" drain="1.7249E-16"/>
+		</size>
+		<size W="1.40" L="1">
+			<current leakage="5.0112E-09"/>
+			<capacitance gate="5.1677E-17" source="4.4815E-16" drain="1.7387E-16"/>
+		</size>
+		<size W="1.43" L="1">
+			<current leakage="5.1390E-09"/>
+			<capacitance gate="5.2970E-17" source="4.5058E-16" drain="1.7523E-16"/>
+		</size>
+		<size W="1.46" L="1">
+			<current leakage="5.2668E-09"/>
+			<capacitance gate="5.4275E-17" source="4.5302E-16" drain="1.7661E-16"/>
+		</size>
+		<size W="1.49" L="1">
+			<current leakage="5.3946E-09"/>
+			<capacitance gate="5.5580E-17" source="4.5546E-16" drain="1.7798E-16"/>
+		</size>
+		<size W="1.52" L="1">
+			<current leakage="5.5224E-09"/>
+			<capacitance gate="5.6884E-17" source="4.5790E-16" drain="1.7935E-16"/>
+		</size>
+		<size W="1.55" L="1">
+			<current leakage="5.6502E-09"/>
+			<capacitance gate="5.8204E-17" source="4.6034E-16" drain="1.8073E-16"/>
+		</size>
+		<size W="1.58" L="1">
+			<current leakage="5.7779E-09"/>
+			<capacitance gate="5.9508E-17" source="4.6278E-16" drain="1.8210E-16"/>
+		</size>
+		<size W="1.61" L="1">
+			<current leakage="5.9057E-09"/>
+			<capacitance gate="6.0812E-17" source="4.6522E-16" drain="1.8348E-16"/>
+		</size>
+		<size W="1.64" L="1">
+			<current leakage="6.0335E-09"/>
+			<capacitance gate="6.2117E-17" source="4.6766E-16" drain="1.8485E-16"/>
+		</size>
+		<size W="1.67" L="1">
+			<current leakage="6.1613E-09"/>
+			<capacitance gate="6.3421E-17" source="4.7010E-16" drain="1.8622E-16"/>
+		</size>
+		<size W="1.71" L="1">
+			<current leakage="6.3317E-09"/>
+			<capacitance gate="6.5160E-17" source="4.7335E-16" drain="1.8805E-16"/>
+		</size>
+		<size W="1.74" L="1">
+			<current leakage="6.4595E-09"/>
+			<capacitance gate="6.6464E-17" source="4.7579E-16" drain="1.8943E-16"/>
+		</size>
+		<size W="1.78" L="1">
+			<current leakage="6.6299E-09"/>
+			<capacitance gate="6.8203E-17" source="4.7904E-16" drain="1.9126E-16"/>
+		</size>
+		<size W="1.81" L="1">
+			<current leakage="6.7577E-09"/>
+			<capacitance gate="6.9507E-17" source="4.8148E-16" drain="1.9263E-16"/>
+		</size>
+		<size W="1.85" L="1">
+			<current leakage="6.9280E-09"/>
+			<capacitance gate="7.1246E-17" source="4.8473E-16" drain="1.9446E-16"/>
+		</size>
+		<size W="1.88" L="1">
+			<current leakage="7.0558E-09"/>
+			<capacitance gate="7.2550E-17" source="4.8717E-16" drain="1.9583E-16"/>
+		</size>
+		<size W="1.92" L="1">
+			<current leakage="7.2262E-09"/>
+			<capacitance gate="7.4288E-17" source="4.9042E-16" drain="1.9766E-16"/>
+		</size>
+		<size W="1.96" L="1">
+			<current leakage="7.3966E-09"/>
+			<capacitance gate="7.6020E-17" source="4.9366E-16" drain="1.9949E-16"/>
+		</size>
+		<size W="2.00" L="1">
+			<current leakage="7.5670E-09"/>
+			<capacitance gate="7.7762E-17" source="4.9692E-16" drain="2.0132E-16"/>
+		</size>
+		<size W="2.04" L="1">
+			<current leakage="7.7374E-09"/>
+			<capacitance gate="7.9510E-17" source="5.0017E-16" drain="2.0316E-16"/>
+		</size>
+		<size W="2.08" L="1">
+			<current leakage="7.9078E-09"/>
+			<capacitance gate="8.1254E-17" source="5.0343E-16" drain="2.0499E-16"/>
+		</size>
+		<size W="2.12" L="1">
+			<current leakage="8.0782E-09"/>
+			<capacitance gate="8.2990E-17" source="5.0668E-16" drain="2.0682E-16"/>
+		</size>
+		<size W="2.16" L="1">
+			<current leakage="8.2486E-09"/>
+			<capacitance gate="8.4727E-17" source="5.0993E-16" drain="2.0865E-16"/>
+		</size>
+		<size W="2.21" L="1">
+			<current leakage="8.4616E-09"/>
+			<capacitance gate="8.6898E-17" source="5.1399E-16" drain="2.1094E-16"/>
+		</size>
+		<size W="2.25" L="1">
+			<current leakage="8.6320E-09"/>
+			<capacitance gate="8.8632E-17" source="5.1724E-16" drain="2.1277E-16"/>
+		</size>
+		<size W="2.30" L="1">
+			<current leakage="8.8450E-09"/>
+			<capacitance gate="9.0806E-17" source="5.2131E-16" drain="2.1505E-16"/>
+		</size>
+		<size W="2.34" L="1">
+			<current leakage="9.0154E-09"/>
+			<capacitance gate="9.2546E-17" source="5.2456E-16" drain="2.1688E-16"/>
+		</size>
+		<size W="2.39" L="1">
+			<current leakage="9.2283E-09"/>
+			<capacitance gate="9.4720E-17" source="5.2862E-16" drain="2.1917E-16"/>
+		</size>
+		<size W="2.44" L="1">
+			<current leakage="9.4413E-09"/>
+			<capacitance gate="9.6895E-17" source="5.3269E-16" drain="2.2146E-16"/>
+		</size>
+		<size W="2.49" L="1">
+			<current leakage="9.6543E-09"/>
+			<capacitance gate="9.9069E-17" source="5.3675E-16" drain="2.2375E-16"/>
+		</size>
+		<size W="2.54" L="1">
+			<current leakage="9.8673E-09"/>
+			<capacitance gate="1.0124E-16" source="5.4082E-16" drain="2.2604E-16"/>
+		</size>
+		<size W="2.59" L="1">
+			<current leakage="1.0080E-08"/>
+			<capacitance gate="1.0342E-16" source="5.4488E-16" drain="2.2833E-16"/>
+		</size>
+		<size W="2.64" L="1">
+			<current leakage="1.0293E-08"/>
+			<capacitance gate="1.0559E-16" source="5.4895E-16" drain="2.3062E-16"/>
+		</size>
+		<size W="2.69" L="1">
+			<current leakage="1.0506E-08"/>
+			<capacitance gate="1.0777E-16" source="5.5301E-16" drain="2.3290E-16"/>
+		</size>
+		<size W="2.75" L="1">
+			<current leakage="1.0762E-08"/>
+			<capacitance gate="1.1038E-16" source="5.5789E-16" drain="2.3565E-16"/>
+		</size>
+		<size W="2.80" L="1">
+			<current leakage="1.0975E-08"/>
+			<capacitance gate="1.1255E-16" source="5.6195E-16" drain="2.3794E-16"/>
+		</size>
+		<size W="2.86" L="1">
+			<current leakage="1.1231E-08"/>
+			<capacitance gate="1.1516E-16" source="5.6683E-16" drain="2.4069E-16"/>
+		</size>
+		<size W="2.91" L="1">
+			<current leakage="1.1444E-08"/>
+			<capacitance gate="1.1733E-16" source="5.7089E-16" drain="2.4297E-16"/>
+		</size>
+		<size W="2.97" L="1">
+			<current leakage="1.1699E-08"/>
+			<capacitance gate="1.1994E-16" source="5.7577E-16" drain="2.4572E-16"/>
+		</size>
+		<size W="3.03" L="1">
+			<current leakage="1.1955E-08"/>
+			<capacitance gate="1.2255E-16" source="5.8065E-16" drain="2.4847E-16"/>
+		</size>
+		<size W="3.09" L="1">
+			<current leakage="1.2210E-08"/>
+			<capacitance gate="1.2516E-16" source="5.8553E-16" drain="2.5121E-16"/>
+		</size>
+		<size W="3.15" L="1">
+			<current leakage="1.2466E-08"/>
+			<capacitance gate="1.2777E-16" source="5.9041E-16" drain="2.5396E-16"/>
+		</size>
+		<size W="3.22" L="1">
+			<current leakage="1.2764E-08"/>
+			<capacitance gate="1.3081E-16" source="5.9610E-16" drain="2.5716E-16"/>
+		</size>
+		<size W="3.28" L="1">
+			<current leakage="1.3020E-08"/>
+			<capacitance gate="1.3342E-16" source="6.0097E-16" drain="2.5991E-16"/>
+		</size>
+		<size W="3.35" L="1">
+			<current leakage="1.3318E-08"/>
+			<capacitance gate="1.3647E-16" source="6.0666E-16" drain="2.6311E-16"/>
+		</size>
+		<size W="3.41" L="1">
+			<current leakage="1.3574E-08"/>
+			<capacitance gate="1.3909E-16" source="6.1154E-16" drain="2.6586E-16"/>
+		</size>
+		<size W="3.48" L="1">
+			<current leakage="1.3872E-08"/>
+			<capacitance gate="1.4215E-16" source="6.1724E-16" drain="2.6907E-16"/>
+		</size>
+		<size W="3.55" L="1">
+			<current leakage="1.4170E-08"/>
+			<capacitance gate="1.4516E-16" source="6.2291E-16" drain="2.7226E-16"/>
+		</size>
+		<size W="3.62" L="1">
+			<current leakage="1.4468E-08"/>
+			<capacitance gate="1.4823E-16" source="6.2861E-16" drain="2.7548E-16"/>
+		</size>
+		<size W="3.69" L="1">
+			<current leakage="1.4766E-08"/>
+			<capacitance gate="1.5128E-16" source="6.3430E-16" drain="2.7868E-16"/>
+		</size>
+		<size W="3.77" L="1">
+			<current leakage="1.5107E-08"/>
+			<capacitance gate="1.5476E-16" source="6.4081E-16" drain="2.8235E-16"/>
+		</size>
+		<size W="3.84" L="1">
+			<current leakage="1.5405E-08"/>
+			<capacitance gate="1.5781E-16" source="6.4650E-16" drain="2.8555E-16"/>
+		</size>
+		<size W="3.92" L="1">
+			<current leakage="1.5746E-08"/>
+			<capacitance gate="1.6129E-16" source="6.5301E-16" drain="2.8921E-16"/>
+		</size>
+		<size W="4.00" L="1">
+			<current leakage="1.6087E-08"/>
+			<capacitance gate="1.6475E-16" source="6.5950E-16" drain="2.9287E-16"/>
+		</size>
+		<size W="4.08" L="1">
+			<current leakage="1.6428E-08"/>
+			<capacitance gate="1.6822E-16" source="6.6600E-16" drain="2.9653E-16"/>
+		</size>
+		<size W="4.16" L="1">
+			<current leakage="1.6769E-08"/>
+			<capacitance gate="1.7170E-16" source="6.7250E-16" drain="3.0018E-16"/>
+		</size>
+		<size W="4.24" L="1">
+			<current leakage="1.7109E-08"/>
+			<capacitance gate="1.7517E-16" source="6.7900E-16" drain="3.0384E-16"/>
+		</size>
+		<size W="4.33" L="1">
+			<current leakage="1.7493E-08"/>
+			<capacitance gate="1.7908E-16" source="6.8631E-16" drain="3.0796E-16"/>
+		</size>
+		<size W="4.42" L="1">
+			<current leakage="1.7876E-08"/>
+			<capacitance gate="1.8300E-16" source="6.9363E-16" drain="3.1208E-16"/>
+		</size>
+		<size W="4.50" L="1">
+			<current leakage="1.8217E-08"/>
+			<capacitance gate="1.8647E-16" source="7.0013E-16" drain="3.1574E-16"/>
+		</size>
+		<size W="4.59" L="1">
+			<current leakage="1.8600E-08"/>
+			<capacitance gate="1.9039E-16" source="7.0745E-16" drain="3.1986E-16"/>
+		</size>
+		<size W="4.69" L="1">
+			<current leakage="1.9026E-08"/>
+			<capacitance gate="1.9475E-16" source="7.1558E-16" drain="3.2445E-16"/>
+		</size>
+		<size W="4.78" L="1">
+			<current leakage="1.9410E-08"/>
+			<capacitance gate="1.9867E-16" source="7.2290E-16" drain="3.2857E-16"/>
+		</size>
+		<size W="4.88" L="1">
+			<current leakage="1.9836E-08"/>
+			<capacitance gate="2.0302E-16" source="7.3103E-16" drain="3.3314E-16"/>
+		</size>
+		<size W="4.97" L="1">
+			<current leakage="2.0219E-08"/>
+			<capacitance gate="2.0693E-16" source="7.3835E-16" drain="3.3726E-16"/>
+		</size>
+		<size W="5.07" L="1">
+			<current leakage="2.0645E-08"/>
+			<capacitance gate="2.1130E-16" source="7.4648E-16" drain="3.4185E-16"/>
+		</size>
+		<size W="5.17" L="1">
+			<current leakage="2.1071E-08"/>
+			<capacitance gate="2.1565E-16" source="7.5461E-16" drain="3.4642E-16"/>
+		</size>
+		<size W="5.28" L="1">
+			<current leakage="2.1540E-08"/>
+			<capacitance gate="2.2039E-16" source="7.6353E-16" drain="3.5144E-16"/>
+		</size>
+		<size W="5.38" L="1">
+			<current leakage="2.1966E-08"/>
+			<capacitance gate="2.2474E-16" source="7.7166E-16" drain="3.5602E-16"/>
+		</size>
+		<size W="5.49" L="1">
+			<current leakage="2.2434E-08"/>
+			<capacitance gate="2.2952E-16" source="7.8060E-16" drain="3.6105E-16"/>
+		</size>
+		<size W="5.60" L="1">
+			<current leakage="2.2903E-08"/>
+			<capacitance gate="2.3431E-16" source="7.8955E-16" drain="3.6609E-16"/>
+		</size>
+		<size W="5.71" L="1">
+			<current leakage="2.3372E-08"/>
+			<capacitance gate="2.3909E-16" source="7.9849E-16" drain="3.7112E-16"/>
+		</size>
+		<size W="5.83" L="1">
+			<current leakage="2.3883E-08"/>
+			<capacitance gate="2.4432E-16" source="8.0824E-16" drain="3.7662E-16"/>
+		</size>
+		<size W="5.94" L="1">
+			<current leakage="2.4352E-08"/>
+			<capacitance gate="2.4910E-16" source="8.1719E-16" drain="3.8165E-16"/>
+		</size>
+		<size W="6.06" L="1">
+			<current leakage="2.4863E-08"/>
+			<capacitance gate="2.5432E-16" source="8.2694E-16" drain="3.8714E-16"/>
+		</size>
+		<size W="6.18" L="1">
+			<current leakage="2.5374E-08"/>
+			<capacitance gate="2.5954E-16" source="8.3670E-16" drain="3.9264E-16"/>
+		</size>
+		<size W="6.31" L="1">
+			<current leakage="2.5928E-08"/>
+			<capacitance gate="2.6520E-16" source="8.4727E-16" drain="3.9859E-16"/>
+		</size>
+		<size W="6.43" L="1">
+			<current leakage="2.6439E-08"/>
+			<capacitance gate="2.7041E-16" source="8.5702E-16" drain="4.0408E-16"/>
+		</size>
+		<size W="6.56" L="1">
+			<current leakage="2.6993E-08"/>
+			<capacitance gate="2.7607E-16" source="8.6759E-16" drain="4.1003E-16"/>
+		</size>
+		<size W="6.69" L="1">
+			<current leakage="2.7547E-08"/>
+			<capacitance gate="2.8172E-16" source="8.7815E-16" drain="4.1598E-16"/>
+		</size>
+		<size W="6.83" L="1">
+			<current leakage="2.8143E-08"/>
+			<capacitance gate="2.8781E-16" source="8.8954E-16" drain="4.2239E-16"/>
+		</size>
+		<size W="6.96" L="1">
+			<current leakage="2.8697E-08"/>
+			<capacitance gate="2.9347E-16" source="9.0010E-16" drain="4.2834E-16"/>
+		</size>
+		<size W="7.10" L="1">
+			<current leakage="2.9293E-08"/>
+			<capacitance gate="2.9956E-16" source="9.1148E-16" drain="4.3474E-16"/>
+		</size>
+		<size W="7.24" L="1">
+			<current leakage="2.9890E-08"/>
+			<capacitance gate="3.0564E-16" source="9.2286E-16" drain="4.4115E-16"/>
+		</size>
+		<size W="7.39" L="1">
+			<current leakage="3.0529E-08"/>
+			<capacitance gate="3.1217E-16" source="9.3506E-16" drain="4.4802E-16"/>
+		</size>
+		<size W="7.54" L="1">
+			<current leakage="3.1168E-08"/>
+			<capacitance gate="3.1869E-16" source="9.4725E-16" drain="4.5488E-16"/>
+		</size>
+		<size W="7.69" L="1">
+			<current leakage="3.1807E-08"/>
+			<capacitance gate="3.2522E-16" source="9.5945E-16" drain="4.6175E-16"/>
+		</size>
+		<size W="7.84" L="1">
+			<current leakage="3.2446E-08"/>
+			<capacitance gate="3.3174E-16" source="9.7164E-16" drain="4.6861E-16"/>
+		</size>
+		<size W="8.00" L="1">
+			<current leakage="3.3127E-08"/>
+			<capacitance gate="3.3870E-16" source="9.8465E-16" drain="4.7594E-16"/>
+		</size>
+		<size W="8.16" L="1">
+			<current leakage="3.3809E-08"/>
+			<capacitance gate="3.4569E-16" source="9.9767E-16" drain="4.8327E-16"/>
+		</size>
+		<size W="8.32" L="1">
+			<current leakage="3.4491E-08"/>
+			<capacitance gate="3.5265E-16" source="1.0107E-15" drain="4.9059E-16"/>
+		</size>
+		<size W="8.49" L="1">
+			<current leakage="3.5215E-08"/>
+			<capacitance gate="3.6004E-16" source="1.0245E-15" drain="4.9837E-16"/>
+		</size>
+		<size W="8.66" L="1">
+			<current leakage="3.5939E-08"/>
+			<capacitance gate="3.6744E-16" source="1.0383E-15" drain="5.0615E-16"/>
+		</size>
+		<size W="8.83" L="1">
+			<current leakage="3.6663E-08"/>
+			<capacitance gate="3.7483E-16" source="1.0521E-15" drain="5.1393E-16"/>
+		</size>
+		<size W="9.01" L="1">
+			<current leakage="3.7430E-08"/>
+			<capacitance gate="3.8266E-16" source="1.0668E-15" drain="5.2217E-16"/>
+		</size>
+		<size W="9.19" L="1">
+			<current leakage="3.8197E-08"/>
+			<capacitance gate="3.9048E-16" source="1.0814E-15" drain="5.3041E-16"/>
+		</size>
+		<size W="9.37" L="1">
+			<current leakage="3.8964E-08"/>
+			<capacitance gate="3.9831E-16" source="1.0960E-15" drain="5.3864E-16"/>
+		</size>
+		<size W="9.56" L="1">
+			<current leakage="3.9773E-08"/>
+			<capacitance gate="4.0657E-16" source="1.1115E-15" drain="5.4734E-16"/>
+		</size>
+		<size W="9.75" L="1">
+			<current leakage="4.0583E-08"/>
+			<capacitance gate="4.1483E-16" source="1.1269E-15" drain="5.5603E-16"/>
+		</size>
+		<size W="9.95" L="1">
+			<current leakage="4.1435E-08"/>
+			<capacitance gate="4.2353E-16" source="1.1432E-15" drain="5.6518E-16"/>
+		</size>
+		<size W="10.14" L="1">
+			<current leakage="4.2244E-08"/>
+			<capacitance gate="4.3179E-16" source="1.1586E-15" drain="5.7388E-16"/>
+		</size>
+		<size W="10.35" L="1">
+			<current leakage="4.3139E-08"/>
+			<capacitance gate="4.4092E-16" source="1.1757E-15" drain="5.8349E-16"/>
+		</size>
+		<size W="10.55" L="1">
+			<current leakage="4.3991E-08"/>
+			<capacitance gate="4.4962E-16" source="1.1919E-15" drain="5.9264E-16"/>
+		</size>
+		<size W="10.77" L="1">
+			<current leakage="4.4928E-08"/>
+			<capacitance gate="4.5918E-16" source="1.2098E-15" drain="6.0271E-16"/>
+		</size>
+		<size W="10.98" L="1">
+			<current leakage="4.5823E-08"/>
+			<capacitance gate="4.6831E-16" source="1.2269E-15" drain="6.1231E-16"/>
+		</size>
+		<size W="11.20" L="1">
+			<current leakage="4.6760E-08"/>
+			<capacitance gate="4.7788E-16" source="1.2448E-15" drain="6.2238E-16"/>
+		</size>
+		<size W="11.42" L="1">
+			<current leakage="4.7697E-08"/>
+			<capacitance gate="4.8744E-16" source="1.2626E-15" drain="6.3245E-16"/>
+		</size>
+		<size W="11.65" L="1">
+			<current leakage="4.8677E-08"/>
+			<capacitance gate="4.9744E-16" source="1.2813E-15" drain="6.4297E-16"/>
+		</size>
+		<size W="11.89" L="1">
+			<current leakage="4.9699E-08"/>
+			<capacitance gate="5.0788E-16" source="1.3008E-15" drain="6.5395E-16"/>
+		</size>
+		<size W="12.12" L="1">
+			<current leakage="5.0679E-08"/>
+			<capacitance gate="5.1788E-16" source="1.3195E-15" drain="6.6447E-16"/>
+		</size>
+		<size W="12.37" L="1">
+			<current leakage="5.1744E-08"/>
+			<capacitance gate="5.2875E-16" source="1.3398E-15" drain="6.7591E-16"/>
+		</size>
+		<size W="12.61" L="1">
+			<current leakage="5.2767E-08"/>
+			<capacitance gate="5.3918E-16" source="1.3593E-15" drain="6.8689E-16"/>
+		</size>
+		<size W="12.87" L="1">
+			<current leakage="5.3874E-08"/>
+			<capacitance gate="5.5048E-16" source="1.3805E-15" drain="6.9879E-16"/>
+		</size>
+		<size W="13.12" L="1">
+			<current leakage="5.4939E-08"/>
+			<capacitance gate="5.6135E-16" source="1.4008E-15" drain="7.1023E-16"/>
+		</size>
+		<size W="13.39" L="1">
+			<current leakage="5.6090E-08"/>
+			<capacitance gate="5.7309E-16" source="1.4227E-15" drain="7.2258E-16"/>
+		</size>
+		<size W="13.65" L="1">
+			<current leakage="5.7197E-08"/>
+			<capacitance gate="5.8439E-16" source="1.4439E-15" drain="7.3447E-16"/>
+		</size>
+		<size W="13.93" L="1">
+			<current leakage="5.8390E-08"/>
+			<capacitance gate="5.9656E-16" source="1.4666E-15" drain="7.4728E-16"/>
+		</size>
+		<size W="14.20" L="1">
+			<current leakage="5.9540E-08"/>
+			<capacitance gate="6.0824E-16" source="1.4885E-15" drain="7.5960E-16"/>
+		</size>
+		<size W="14.49" L="1">
+			<current leakage="6.0776E-08"/>
+			<capacitance gate="6.2085E-16" source="1.5121E-15" drain="7.7287E-16"/>
+		</size>
+		<size W="14.78" L="1">
+			<current leakage="6.2011E-08"/>
+			<capacitance gate="6.3346E-16" source="1.5357E-15" drain="7.8614E-16"/>
+		</size>
+		<size W="15.07" L="1">
+			<current leakage="6.3247E-08"/>
+			<capacitance gate="6.4610E-16" source="1.5593E-15" drain="7.9942E-16"/>
+		</size>
+		<size W="15.38" L="1">
+			<current leakage="6.4567E-08"/>
+			<capacitance gate="6.5962E-16" source="1.5845E-15" drain="8.1362E-16"/>
+		</size>
+		<size W="15.68" L="1">
+			<current leakage="6.5845E-08"/>
+			<capacitance gate="6.7274E-16" source="1.6089E-15" drain="8.2738E-16"/>
+		</size>
+		<size W="16.00" L="1">
+			<current leakage="6.7209E-08"/>
+			<capacitance gate="6.8665E-16" source="1.6349E-15" drain="8.4202E-16"/>
+		</size>
+		<size W="16.32" L="1">
+			<current leakage="6.8572E-08"/>
+			<capacitance gate="7.0055E-16" source="1.6609E-15" drain="8.5665E-16"/>
+		</size>
+		<size W="16.64" L="1">
+			<current leakage="6.9935E-08"/>
+			<capacitance gate="7.1445E-16" source="1.6869E-15" drain="8.7129E-16"/>
+		</size>
+		<size W="16.98" L="1">
+			<current leakage="7.1384E-08"/>
+			<capacitance gate="7.2922E-16" source="1.7145E-15" drain="8.8683E-16"/>
+		</size>
+		<size W="17.32" L="1">
+			<current leakage="7.2832E-08"/>
+			<capacitance gate="7.4399E-16" source="1.7421E-15" drain="9.0238E-16"/>
+		</size>
+		<size W="17.66" L="1">
+			<current leakage="7.4281E-08"/>
+			<capacitance gate="7.5876E-16" source="1.7697E-15" drain="9.1793E-16"/>
+		</size>
+		<size W="18.01" L="1">
+			<current leakage="7.5772E-08"/>
+			<capacitance gate="7.7396E-16" source="1.7982E-15" drain="9.3394E-16"/>
+		</size>
+		<size W="18.37" L="1">
+			<current leakage="7.7305E-08"/>
+			<capacitance gate="7.8960E-16" source="1.8274E-15" drain="9.5040E-16"/>
+		</size>
+		<size W="18.74" L="1">
+			<current leakage="7.8881E-08"/>
+			<capacitance gate="8.0568E-16" source="1.8575E-15" drain="9.6732E-16"/>
+		</size>
+		<size W="19.12" L="1">
+			<current leakage="8.0500E-08"/>
+			<capacitance gate="8.2218E-16" source="1.8884E-15" drain="9.8469E-16"/>
+		</size>
+		<size W="19.50" L="1">
+			<current leakage="8.2119E-08"/>
+			<capacitance gate="8.3871E-16" source="1.9193E-15" drain="1.0021E-15"/>
+		</size>
+		<size W="19.89" L="1">
+			<current leakage="8.3781E-08"/>
+			<capacitance gate="8.5567E-16" source="1.9510E-15" drain="1.0199E-15"/>
+		</size>
+		<size W="20.29" L="1">
+			<current leakage="8.5485E-08"/>
+			<capacitance gate="8.7307E-16" source="1.9835E-15" drain="1.0382E-15"/>
+		</size>
+		<size W="20.69" L="1">
+			<current leakage="8.7189E-08"/>
+			<capacitance gate="8.9046E-16" source="2.0160E-15" drain="1.0565E-15"/>
+		</size>
+		<size W="21.11" L="1">
+			<current leakage="8.8978E-08"/>
+			<capacitance gate="9.0873E-16" source="2.0501E-15" drain="1.0757E-15"/>
+		</size>
+		<size W="21.53" L="1">
+			<current leakage="9.0767E-08"/>
+			<capacitance gate="9.2699E-16" source="2.0842E-15" drain="1.0949E-15"/>
+		</size>
+		<size W="21.96" L="1">
+			<current leakage="9.2599E-08"/>
+			<capacitance gate="9.4569E-16" source="2.1192E-15" drain="1.1146E-15"/>
+		</size>
+		<size W="22.40" L="1">
+			<current leakage="9.4474E-08"/>
+			<capacitance gate="9.6484E-16" source="2.1550E-15" drain="1.1347E-15"/>
+		</size>
+		<size W="22.85" L="1">
+			<current leakage="9.6391E-08"/>
+			<capacitance gate="9.8460E-16" source="2.1916E-15" drain="1.1554E-15"/>
+		</size>
+		<size W="23.30" L="1">
+			<current leakage="9.8308E-08"/>
+			<capacitance gate="1.0041E-15" source="2.2282E-15" drain="1.1760E-15"/>
+		</size>
+		<size W="23.77" L="1">
+			<current leakage="1.0031E-07"/>
+			<capacitance gate="1.0245E-15" source="2.2664E-15" drain="1.1975E-15"/>
+		</size>
+		<size W="24.25" L="1">
+			<current leakage="1.0235E-07"/>
+			<capacitance gate="1.0454E-15" source="2.3054E-15" drain="1.2194E-15"/>
+		</size>
+		<size W="24.73" L="1">
+			<current leakage="1.0440E-07"/>
+			<capacitance gate="1.0662E-15" source="2.3444E-15" drain="1.2414E-15"/>
+		</size>
+		<size W="25.22" L="1">
+			<current leakage="1.0649E-07"/>
+			<capacitance gate="1.0875E-15" source="2.3842E-15" drain="1.2638E-15"/>
+		</size>
+		<size W="25.73" L="1">
+			<current leakage="1.0866E-07"/>
+			<capacitance gate="1.1098E-15" source="2.4256E-15" drain="1.2870E-15"/>
+		</size>
+		<size W="26.24" L="1">
+			<current leakage="1.1083E-07"/>
+			<capacitance gate="1.1320E-15" source="2.4671E-15" drain="1.3104E-15"/>
+		</size>
+		<size W="26.77" L="1">
+			<current leakage="1.1309E-07"/>
+			<capacitance gate="1.1551E-15" source="2.5101E-15" drain="1.3346E-15"/>
+		</size>
+		<size W="27.30" L="1">
+			<current leakage="1.1535E-07"/>
+			<capacitance gate="1.1781E-15" source="2.5532E-15" drain="1.3588E-15"/>
+		</size>
+		<size W="27.85" L="1">
+			<current leakage="1.1769E-07"/>
+			<capacitance gate="1.2020E-15" source="2.5979E-15" drain="1.3840E-15"/>
+		</size>
+		<size W="28.41" L="1">
+			<current leakage="1.2008E-07"/>
+			<capacitance gate="1.2264E-15" source="2.6434E-15" drain="1.4096E-15"/>
+		</size>
+		<size W="28.98" L="1">
+			<current leakage="1.2251E-07"/>
+			<capacitance gate="1.2512E-15" source="2.6897E-15" drain="1.4357E-15"/>
+		</size>
+		<size W="29.55" L="1">
+			<current leakage="1.2493E-07"/>
+			<capacitance gate="1.2760E-15" source="2.7360E-15" drain="1.4618E-15"/>
+		</size>
+		<size W="30.15" L="1">
+			<current leakage="1.2749E-07"/>
+			<capacitance gate="1.3021E-15" source="2.7848E-15" drain="1.4892E-15"/>
+		</size>
+		<size W="30.75" L="1">
+			<current leakage="1.3005E-07"/>
+			<capacitance gate="1.3282E-15" source="2.8336E-15" drain="1.5166E-15"/>
+		</size>
+		<size W="31.36" L="1">
+			<current leakage="1.3264E-07"/>
+			<capacitance gate="1.3547E-15" source="2.8831E-15" drain="1.5445E-15"/>
+		</size>
+		<size W="31.99" L="1">
+			<current leakage="1.3533E-07"/>
+			<capacitance gate="1.3821E-15" source="2.9343E-15" drain="1.5733E-15"/>
+		</size>
+		<size W="32.63" L="1">
+			<current leakage="1.3806E-07"/>
+			<capacitance gate="1.4099E-15" source="2.9863E-15" drain="1.6026E-15"/>
+		</size>
+		<size W="33.28" L="1">
+			<current leakage="1.4082E-07"/>
+			<capacitance gate="1.4382E-15" source="3.0391E-15" drain="1.6323E-15"/>
+		</size>
+		<size W="33.95" L="1">
+			<current leakage="1.4368E-07"/>
+			<capacitance gate="1.4673E-15" source="3.0936E-15" drain="1.6630E-15"/>
+		</size>
+		<size W="34.63" L="1">
+			<current leakage="1.4658E-07"/>
+			<capacitance gate="1.4969E-15" source="3.1488E-15" drain="1.6941E-15"/>
+		</size>
+		<size W="35.32" L="1">
+			<current leakage="1.4952E-07"/>
+			<capacitance gate="1.5269E-15" source="3.2049E-15" drain="1.7256E-15"/>
+		</size>
+		<size W="36.03" L="1">
+			<current leakage="1.5254E-07"/>
+			<capacitance gate="1.5578E-15" source="3.2626E-15" drain="1.7581E-15"/>
+		</size>
+		<size W="36.75" L="1">
+			<current leakage="1.5561E-07"/>
+			<capacitance gate="1.5891E-15" source="3.3211E-15" drain="1.7910E-15"/>
+		</size>
+		<size W="37.48" L="1">
+			<current leakage="1.5872E-07"/>
+			<capacitance gate="1.6208E-15" source="3.3804E-15" drain="1.8244E-15"/>
+		</size>
+		<size W="38.23" L="1">
+			<current leakage="1.6191E-07"/>
+			<capacitance gate="1.6535E-15" source="3.4413E-15" drain="1.8587E-15"/>
+		</size>
+		<size W="39.00" L="1">
+			<current leakage="1.6519E-07"/>
+			<capacitance gate="1.6870E-15" source="3.5039E-15" drain="1.8939E-15"/>
+		</size>
+		<size W="39.78" L="1">
+			<current leakage="1.6852E-07"/>
+			<capacitance gate="1.7209E-15" source="3.5673E-15" drain="1.9296E-15"/>
+		</size>
+		<size W="40.57" L="1">
+			<current leakage="1.7188E-07"/>
+			<capacitance gate="1.7552E-15" source="3.6315E-15" drain="1.9657E-15"/>
+		</size>
+		<size W="41.38" L="1">
+			<current leakage="1.7533E-07"/>
+			<capacitance gate="1.7905E-15" source="3.6973E-15" drain="2.0028E-15"/>
+		</size>
+		<size W="42.21" L="1">
+			<current leakage="1.7887E-07"/>
+			<capacitance gate="1.8266E-15" source="3.7647E-15" drain="2.0407E-15"/>
+		</size>
+		<size W="43.06" L="1">
+			<current leakage="1.8249E-07"/>
+			<capacitance gate="1.8632E-15" source="3.8336E-15" drain="2.0794E-15"/>
+		</size>
+		<size W="43.92" L="1">
+			<current leakage="1.8615E-07"/>
+			<capacitance gate="1.9008E-15" source="3.9036E-15" drain="2.1189E-15"/>
+		</size>
+		<size W="44.80" L="1">
+			<current leakage="1.8990E-07"/>
+			<capacitance gate="1.9392E-15" source="3.9752E-15" drain="2.1591E-15"/>
+		</size>
+		<size W="45.69" L="1">
+			<current leakage="1.9369E-07"/>
+			<capacitance gate="1.9776E-15" source="4.0473E-15" drain="2.1997E-15"/>
+		</size>
+		<size W="46.61" L="1">
+			<current leakage="1.9761E-07"/>
+			<capacitance gate="2.0175E-15" source="4.1220E-15" drain="2.2417E-15"/>
+		</size>
+		<size W="47.54" L="1">
+			<current leakage="2.0157E-07"/>
+			<capacitance gate="2.0580E-15" source="4.1976E-15" drain="2.2843E-15"/>
+		</size>
+		<size W="48.49" L="1">
+			<current leakage="2.0562E-07"/>
+			<capacitance gate="2.0993E-15" source="4.2748E-15" drain="2.3277E-15"/>
+		</size>
+		<size W="49.46" L="1">
+			<current leakage="2.0975E-07"/>
+			<capacitance gate="2.1414E-15" source="4.3536E-15" drain="2.3720E-15"/>
+		</size>
+		<size W="50.45" L="1">
+			<current leakage="2.1397E-07"/>
+			<capacitance gate="2.1845E-15" source="4.4340E-15" drain="2.4173E-15"/>
+		</size>
+		<size W="51.46" L="1">
+			<current leakage="2.1827E-07"/>
+			<capacitance gate="2.2284E-15" source="4.5161E-15" drain="2.4635E-15"/>
+		</size>
+		<size W="52.48" L="1">
+			<current leakage="2.2262E-07"/>
+			<capacitance gate="2.2728E-15" source="4.5989E-15" drain="2.5101E-15"/>
+		</size>
+		<size W="53.53" L="1">
+			<current leakage="2.2709E-07"/>
+			<capacitance gate="2.3184E-15" source="4.6842E-15" drain="2.5581E-15"/>
+		</size>
+		<size W="54.61" L="1">
+			<current leakage="2.3169E-07"/>
+			<capacitance gate="2.3654E-15" source="4.7720E-15" drain="2.6075E-15"/>
+		</size>
+		<size W="55.70" L="1">
+			<current leakage="2.3634E-07"/>
+			<capacitance gate="2.4128E-15" source="4.8605E-15" drain="2.6573E-15"/>
+		</size>
+		<size W="56.81" L="1">
+			<current leakage="2.4107E-07"/>
+			<capacitance gate="2.4610E-15" source="4.9507E-15" drain="2.7081E-15"/>
+		</size>
+		<size W="57.95" L="1">
+			<current leakage="2.4592E-07"/>
+			<capacitance gate="2.5106E-15" source="5.0433E-15" drain="2.7602E-15"/>
+		</size>
+		<size W="59.11" L="1">
+			<current leakage="2.5086E-07"/>
+			<capacitance gate="2.5610E-15" source="5.1375E-15" drain="2.8132E-15"/>
+		</size>
+		<size W="60.29" L="1">
+			<current leakage="2.5589E-07"/>
+			<capacitance gate="2.6124E-15" source="5.2334E-15" drain="2.8671E-15"/>
+		</size>
+		<size W="61.49" L="1">
+			<current leakage="2.6100E-07"/>
+			<capacitance gate="2.6645E-15" source="5.3309E-15" drain="2.9220E-15"/>
+		</size>
+		<size W="62.72" L="1">
+			<current leakage="2.6624E-07"/>
+			<capacitance gate="2.7180E-15" source="5.4308E-15" drain="2.9782E-15"/>
+		</size>
+		<size W="63.98" L="1">
+			<current leakage="2.7161E-07"/>
+			<capacitance gate="2.7728E-15" source="5.5331E-15" drain="3.0358E-15"/>
+		</size>
+		<size W="65.26" L="1">
+			<current leakage="2.7707E-07"/>
+			<capacitance gate="2.8284E-15" source="5.6371E-15" drain="3.0943E-15"/>
+		</size>
+		<size W="66.56" L="1">
+			<current leakage="2.8260E-07"/>
+			<capacitance gate="2.8851E-15" source="5.7428E-15" drain="3.1538E-15"/>
+		</size>
+		<size W="67.89" L="1">
+			<current leakage="2.8827E-07"/>
+			<capacitance gate="2.9430E-15" source="5.8509E-15" drain="3.2146E-15"/>
+		</size>
+		<size W="69.25" L="1">
+			<current leakage="2.9406E-07"/>
+			<capacitance gate="3.0022E-15" source="5.9614E-15" drain="3.2768E-15"/>
+		</size>
+		<size W="70.64" L="1">
+			<current leakage="2.9999E-07"/>
+			<capacitance gate="3.0628E-15" source="6.0743E-15" drain="3.3404E-15"/>
+		</size>
+		<size W="72.05" L="1">
+			<current leakage="3.0599E-07"/>
+			<capacitance gate="3.1244E-15" source="6.1890E-15" drain="3.4050E-15"/>
+		</size>
+		<size W="73.49" L="1">
+			<current leakage="3.1213E-07"/>
+			<capacitance gate="3.1869E-15" source="6.3060E-15" drain="3.4708E-15"/>
+		</size>
+		<size W="74.96" L="1">
+			<current leakage="3.1839E-07"/>
+			<capacitance gate="3.2508E-15" source="6.4254E-15" drain="3.5380E-15"/>
+		</size>
+		<size W="76.46" L="1">
+			<current leakage="3.2478E-07"/>
+			<capacitance gate="3.3161E-15" source="6.5472E-15" drain="3.6065E-15"/>
+		</size>
+		<size W="77.99" L="1">
+			<current leakage="3.3130E-07"/>
+			<capacitance gate="3.3826E-15" source="6.6715E-15" drain="3.6765E-15"/>
+		</size>
+		<size W="79.55" L="1">
+			<current leakage="3.3794E-07"/>
+			<capacitance gate="3.4504E-15" source="6.7982E-15" drain="3.7478E-15"/>
+		</size>
+		<size W="81.14" L="1">
+			<current leakage="3.4472E-07"/>
+			<capacitance gate="3.5195E-15" source="6.9273E-15" drain="3.8204E-15"/>
+		</size>
+		<size W="82.76" L="1">
+			<current leakage="3.5162E-07"/>
+			<capacitance gate="3.5899E-15" source="7.0589E-15" drain="3.8945E-15"/>
+		</size>
+		<size W="84.42" L="1">
+			<current leakage="3.5869E-07"/>
+			<capacitance gate="3.6621E-15" source="7.1938E-15" drain="3.9703E-15"/>
+		</size>
+		<size W="86.11" L="1">
+			<current leakage="3.6589E-07"/>
+			<capacitance gate="3.7355E-15" source="7.3310E-15" drain="4.0476E-15"/>
+		</size>
+		<size W="87.83" L="1">
+			<current leakage="3.7322E-07"/>
+			<capacitance gate="3.8103E-15" source="7.4707E-15" drain="4.1262E-15"/>
+		</size>
+		<size W="89.59" L="1">
+			<current leakage="3.8072E-07"/>
+			<capacitance gate="3.8868E-15" source="7.6137E-15" drain="4.2066E-15"/>
+		</size>
+		<size W="91.38" L="1">
+			<current leakage="3.8834E-07"/>
+			<capacitance gate="3.9646E-15" source="7.7590E-15" drain="4.2884E-15"/>
+		</size>
+		<size W="93.21" L="1">
+			<current leakage="3.9614E-07"/>
+			<capacitance gate="4.0442E-15" source="7.9077E-15" drain="4.3721E-15"/>
+		</size>
+		<size W="95.07" L="1">
+			<current leakage="4.0406E-07"/>
+			<capacitance gate="4.1251E-15" source="8.0587E-15" drain="4.4571E-15"/>
+		</size>
+		<size W="96.97" L="1">
+			<current leakage="4.1216E-07"/>
+			<capacitance gate="4.2077E-15" source="8.2131E-15" drain="4.5439E-15"/>
+		</size>
+		<size W="98.91" L="1">
+			<current leakage="4.2042E-07"/>
+			<capacitance gate="4.2920E-15" source="8.3706E-15" drain="4.6325E-15"/>
+		</size>
+		<size W="100.89" L="1">
+			<current leakage="4.2886E-07"/>
+			<capacitance gate="4.3781E-15" source="8.5314E-15" drain="4.7230E-15"/>
+		</size>
+		<size W="102.91" L="1">
+			<current leakage="4.3746E-07"/>
+			<capacitance gate="4.4659E-15" source="8.6955E-15" drain="4.8153E-15"/>
+		</size>
+		<size W="104.96" L="1">
+			<current leakage="4.4620E-07"/>
+			<capacitance gate="4.5550E-15" source="8.8620E-15" drain="4.9090E-15"/>
+		</size>
+		<size W="107.06" L="1">
+			<current leakage="4.5514E-07"/>
+			<capacitance gate="4.6459E-15" source="9.0323E-15" drain="5.0047E-15"/>
+		</size>
+		<size W="109.20" L="1">
+			<current leakage="4.6426E-07"/>
+			<capacitance gate="4.7389E-15" source="9.2061E-15" drain="5.1025E-15"/>
+		</size>
+		<size W="111.39" L="1">
+			<current leakage="4.7359E-07"/>
+			<capacitance gate="4.8341E-15" source="9.3840E-15" drain="5.2026E-15"/>
+		</size>
+		<size W="113.62" L="1">
+			<current leakage="4.8309E-07"/>
+			<capacitance gate="4.9311E-15" source="9.5651E-15" drain="5.3045E-15"/>
+		</size>
+		<size W="115.89" L="1">
+			<current leakage="4.9276E-07"/>
+			<capacitance gate="5.0299E-15" source="9.7495E-15" drain="5.4083E-15"/>
+		</size>
+		<size W="118.21" L="1">
+			<current leakage="5.0265E-07"/>
+			<capacitance gate="5.1308E-15" source="9.9380E-15" drain="5.5143E-15"/>
+		</size>
+		<size W="120.57" L="1">
+			<current leakage="5.1270E-07"/>
+			<capacitance gate="5.2334E-15" source="1.0130E-14" drain="5.6222E-15"/>
+		</size>
+		<size W="122.98" L="1">
+			<current leakage="5.2297E-07"/>
+			<capacitance gate="5.3381E-15" source="1.0325E-14" drain="5.7323E-15"/>
+		</size>
+		<size W="125.44" L="1">
+			<current leakage="5.3345E-07"/>
+			<capacitance gate="5.4451E-15" source="1.0525E-14" drain="5.8447E-15"/>
+		</size>
+		<size W="127.95" L="1">
+			<current leakage="5.4414E-07"/>
+			<capacitance gate="5.5542E-15" source="1.0729E-14" drain="5.9593E-15"/>
+		</size>
+		<size W="130.51" L="1">
+			<current leakage="5.5505E-07"/>
+			<capacitance gate="5.6655E-15" source="1.0937E-14" drain="6.0763E-15"/>
+		</size>
+		<size W="133.12" L="1">
+			<current leakage="5.6617E-07"/>
+			<capacitance gate="5.7790E-15" source="1.1149E-14" drain="6.1956E-15"/>
+		</size>
+		<size W="135.78" L="1">
+			<current leakage="5.7750E-07"/>
+			<capacitance gate="5.8946E-15" source="1.1365E-14" drain="6.3171E-15"/>
+		</size>
+		<size W="138.50" L="1">
+			<current leakage="5.8909E-07"/>
+			<capacitance gate="6.0129E-15" source="1.1586E-14" drain="6.4414E-15"/>
+		</size>
+		<size W="141.27" L="1">
+			<current leakage="6.0089E-07"/>
+			<capacitance gate="6.1333E-15" source="1.1811E-14" drain="6.5680E-15"/>
+		</size>
+		<size W="144.09" L="1">
+			<current leakage="6.1290E-07"/>
+			<capacitance gate="6.2559E-15" source="1.2040E-14" drain="6.6968E-15"/>
+		</size>
+		<size W="146.97" L="1">
+			<current leakage="6.2517E-07"/>
+			<capacitance gate="6.3812E-15" source="1.2274E-14" drain="6.8284E-15"/>
+		</size>
+		<size W="149.91" L="1">
+			<current leakage="6.3770E-07"/>
+			<capacitance gate="6.5090E-15" source="1.2512E-14" drain="6.9627E-15"/>
+		</size>
+		<size W="152.91" L="1">
+			<current leakage="6.5048E-07"/>
+			<capacitance gate="6.6395E-15" source="1.2756E-14" drain="7.0998E-15"/>
+		</size>
+		<size W="155.97" L="1">
+			<current leakage="6.6352E-07"/>
+			<capacitance gate="6.7726E-15" source="1.3005E-14" drain="7.2397E-15"/>
+		</size>
+		<size W="159.09" L="1">
+			<current leakage="6.7681E-07"/>
+			<capacitance gate="6.9083E-15" source="1.3258E-14" drain="7.3822E-15"/>
+		</size>
+		<size W="162.27" L="1">
+			<current leakage="6.9036E-07"/>
+			<capacitance gate="7.0467E-15" source="1.3516E-14" drain="7.5276E-15"/>
+		</size>
+		<size W="165.52" L="1">
+			<current leakage="7.0421E-07"/>
+			<capacitance gate="7.1880E-15" source="1.3780E-14" drain="7.6761E-15"/>
+		</size>
+		<size W="168.83" L="1">
+			<current leakage="7.1831E-07"/>
+			<capacitance gate="7.3320E-15" source="1.4049E-14" drain="7.8273E-15"/>
+		</size>
+		<size W="172.20" L="1">
+			<current leakage="7.3267E-07"/>
+			<capacitance gate="7.4787E-15" source="1.4323E-14" drain="7.9813E-15"/>
+		</size>
+		<size W="175.65" L="1">
+			<current leakage="7.4736E-07"/>
+			<capacitance gate="7.6288E-15" source="1.4603E-14" drain="8.1390E-15"/>
+		</size>
+		<size W="179.16" L="1">
+			<current leakage="7.6232E-07"/>
+			<capacitance gate="7.7815E-15" source="1.4888E-14" drain="8.2994E-15"/>
+		</size>
+		<size W="182.74" L="1">
+			<current leakage="7.7757E-07"/>
+			<capacitance gate="7.9376E-15" source="1.5179E-14" drain="8.4632E-15"/>
+		</size>
+		<size W="186.40" L="1">
+			<current leakage="7.9316E-07"/>
+			<capacitance gate="8.0965E-15" source="1.5476E-14" drain="8.6303E-15"/>
+		</size>
+		<size W="190.13" L="1">
+			<current leakage="8.0906E-07"/>
+			<capacitance gate="8.2575E-15" source="1.5778E-14" drain="8.8001E-15"/>
+		</size>
+		<size W="193.93" L="1">
+			<current leakage="8.2525E-07"/>
+			<capacitance gate="8.4227E-15" source="1.6087E-14" drain="8.9737E-15"/>
+		</size>
+		<size W="197.81" L="1">
+			<current leakage="8.4178E-07"/>
+			<capacitance gate="8.5929E-15" source="1.6403E-14" drain="9.1517E-15"/>
+		</size>
+		<size W="201.77" L="1">
+			<current leakage="8.5865E-07"/>
+			<capacitance gate="8.7645E-15" source="1.6724E-14" drain="9.3323E-15"/>
+		</size>
+		<size W="205.80" L="1">
+			<current leakage="8.7582E-07"/>
+			<capacitance gate="8.9399E-15" source="1.7051E-14" drain="9.5165E-15"/>
+		</size>
+		<size W="209.92" L="1">
+			<current leakage="8.9337E-07"/>
+			<capacitance gate="9.1182E-15" source="1.7385E-14" drain="9.7043E-15"/>
+		</size>
+		<size W="214.11" L="1">
+			<current leakage="9.1123E-07"/>
+			<capacitance gate="9.3004E-15" source="1.7726E-14" drain="9.8956E-15"/>
+		</size>
+		<size W="218.40" L="1">
+			<current leakage="9.2950E-07"/>
+			<capacitance gate="9.4869E-15" source="1.8074E-14" drain="1.0092E-14"/>
+		</size>
+		<size W="222.76" L="1">
+			<current leakage="9.4808E-07"/>
+			<capacitance gate="9.6765E-15" source="1.8428E-14" drain="1.0291E-14"/>
+		</size>
+		<size W="227.22" L="1">
+			<current leakage="9.6708E-07"/>
+			<capacitance gate="9.8704E-15" source="1.8790E-14" drain="1.0494E-14"/>
+		</size>
+		<size W="231.76" L="1">
+			<current leakage="9.8643E-07"/>
+			<capacitance gate="1.0068E-14" source="1.9159E-14" drain="1.0702E-14"/>
+		</size>
+		<size W="236.40" L="1">
+			<current leakage="1.0062E-06"/>
+			<capacitance gate="1.0270E-14" source="1.9536E-14" drain="1.0914E-14"/>
+		</size>
+		<size W="241.13" L="1">
+			<current leakage="1.0264E-06"/>
+			<capacitance gate="1.0475E-14" source="1.9920E-14" drain="1.1130E-14"/>
+		</size>
+		<size W="245.95" L="1">
+			<current leakage="1.0469E-06"/>
+			<capacitance gate="1.0685E-14" source="2.0311E-14" drain="1.1350E-14"/>
+		</size>
+		<size W="250.87" L="1">
+			<current leakage="1.0679E-06"/>
+			<capacitance gate="1.0899E-14" source="2.0710E-14" drain="1.1575E-14"/>
+		</size>
+		<size W="255.89" L="1">
+			<current leakage="1.0892E-06"/>
+			<capacitance gate="1.1117E-14" source="2.1118E-14" drain="1.1804E-14"/>
+		</size>
+		<size W="261.00" L="1">
+			<current leakage="1.1110E-06"/>
+			<capacitance gate="1.1339E-14" source="2.1533E-14" drain="1.2037E-14"/>
+		</size>
+		<size W="266.22" L="1">
+			<current leakage="1.1333E-06"/>
+			<capacitance gate="1.1566E-14" source="2.1957E-14" drain="1.2276E-14"/>
+		</size>
+		<size W="271.55" L="1">
+			<current leakage="1.1560E-06"/>
+			<capacitance gate="1.1798E-14" source="2.2390E-14" drain="1.2519E-14"/>
+		</size>
+		<size W="276.98" L="1">
+			<current leakage="1.1791E-06"/>
+			<capacitance gate="1.2034E-14" source="2.2831E-14" drain="1.2767E-14"/>
+		</size>
+		<size W="282.52" L="1">
+			<current leakage="1.2027E-06"/>
+			<capacitance gate="1.2275E-14" source="2.3281E-14" drain="1.3021E-14"/>
+		</size>
+		<size W="288.17" L="1">
+			<current leakage="1.2268E-06"/>
+			<capacitance gate="1.2521E-14" source="2.3739E-14" drain="1.3279E-14"/>
+		</size>
+		<size W="293.93" L="1">
+			<current leakage="1.2513E-06"/>
+			<capacitance gate="1.2771E-14" source="2.4207E-14" drain="1.3542E-14"/>
+		</size>
+		<size W="299.81" L="1">
+			<current leakage="1.2764E-06"/>
+			<capacitance gate="1.3027E-14" source="2.4684E-14" drain="1.3810E-14"/>
+		</size>
+		<size W="305.81" L="1">
+			<current leakage="1.3020E-06"/>
+			<capacitance gate="1.3288E-14" source="2.5171E-14" drain="1.4084E-14"/>
+		</size>
+		<size W="311.92" L="1">
+			<current leakage="1.3280E-06"/>
+			<capacitance gate="1.3554E-14" source="2.5668E-14" drain="1.4363E-14"/>
+		</size>
+		<size W="318.16" L="1">
+			<current leakage="1.3546E-06"/>
+			<capacitance gate="1.3825E-14" source="2.6175E-14" drain="1.4648E-14"/>
+		</size>
+		<size W="324.53" L="1">
+			<current leakage="1.3817E-06"/>
+			<capacitance gate="1.4102E-14" source="2.6692E-14" drain="1.4940E-14"/>
+		</size>
+		<size W="331.02" L="1">
+			<current leakage="1.4094E-06"/>
+			<capacitance gate="1.4384E-14" source="2.7219E-14" drain="1.5236E-14"/>
+		</size>
+		<size W="337.64" L="1">
+			<current leakage="1.4376E-06"/>
+			<capacitance gate="1.4672E-14" source="2.7756E-14" drain="1.5539E-14"/>
+		</size>
+		<size W="344.39" L="1">
+			<current leakage="1.4664E-06"/>
+			<capacitance gate="1.4965E-14" source="2.8304E-14" drain="1.5847E-14"/>
+		</size>
+		<size W="351.28" L="1">
+			<current leakage="1.4957E-06"/>
+			<capacitance gate="1.5265E-14" source="2.8863E-14" drain="1.6161E-14"/>
+		</size>
+		<size W="358.30" L="1">
+			<current leakage="1.5256E-06"/>
+			<capacitance gate="1.5570E-14" source="2.9433E-14" drain="1.6482E-14"/>
+		</size>
+		<size W="365.47" L="1">
+			<current leakage="1.5562E-06"/>
+			<capacitance gate="1.5882E-14" source="3.0016E-14" drain="1.6809E-14"/>
+		</size>
+		<size W="372.78" L="1">
+			<current leakage="1.5873E-06"/>
+			<capacitance gate="1.6200E-14" source="3.0609E-14" drain="1.7144E-14"/>
+		</size>
+		<size W="380.23" L="1">
+			<current leakage="1.6191E-06"/>
+			<capacitance gate="1.6524E-14" source="3.1214E-14" drain="1.7484E-14"/>
+		</size>
+		<size W="387.84" L="1">
+			<current leakage="1.6515E-06"/>
+			<capacitance gate="1.6855E-14" source="3.1832E-14" drain="1.7831E-14"/>
+		</size>
+		<size W="395.60" L="1">
+			<current leakage="1.6846E-06"/>
+			<capacitance gate="1.7192E-14" source="3.2462E-14" drain="1.8186E-14"/>
+		</size>
+		<size W="403.51" L="1">
+			<current leakage="1.7183E-06"/>
+			<capacitance gate="1.7536E-14" source="3.3104E-14" drain="1.8547E-14"/>
+		</size>
+		<size W="411.58" L="1">
+			<current leakage="1.7527E-06"/>
+			<capacitance gate="1.7887E-14" source="3.3759E-14" drain="1.8915E-14"/>
+		</size>
+		<size W="419.81" L="1">
+			<current leakage="1.7878E-06"/>
+			<capacitance gate="1.8245E-14" source="3.4427E-14" drain="1.9291E-14"/>
+		</size>
+		<size W="428.21" L="1">
+			<current leakage="1.8236E-06"/>
+			<capacitance gate="1.8610E-14" source="3.5109E-14" drain="1.9675E-14"/>
+		</size>
+		<size W="436.77" L="1">
+			<current leakage="1.8601E-06"/>
+			<capacitance gate="1.8982E-14" source="3.5804E-14" drain="2.0066E-14"/>
+		</size>
+		<size W="445.51" L="1">
+			<current leakage="1.8973E-06"/>
+			<capacitance gate="1.9362E-14" source="3.6513E-14" drain="2.0465E-14"/>
+		</size>
+		<size W="454.42" L="1">
+			<current leakage="1.9353E-06"/>
+			<capacitance gate="1.9750E-14" source="3.7237E-14" drain="2.0872E-14"/>
+		</size>
+		<size W="463.50" L="1">
+			<current leakage="1.9740E-06"/>
+			<capacitance gate="2.0145E-14" source="3.7974E-14" drain="2.1286E-14"/>
+		</size>
+		<size W="472.77" L="1">
+			<current leakage="2.0135E-06"/>
+			<capacitance gate="2.0548E-14" source="3.8726E-14" drain="2.1709E-14"/>
+		</size>
+		<size W="482.23" L="1">
+			<current leakage="2.0538E-06"/>
+			<capacitance gate="2.0959E-14" source="3.9494E-14" drain="2.2141E-14"/>
+		</size>
+		<size W="491.87" L="1">
+			<current leakage="2.0949E-06"/>
+			<capacitance gate="2.1378E-14" source="4.0277E-14" drain="2.2582E-14"/>
+		</size>
+		<size W="501.71" L="1">
+			<current leakage="2.1369E-06"/>
+			<capacitance gate="2.1806E-14" source="4.1076E-14" drain="2.3031E-14"/>
+		</size>
+		<size W="511.75" L="1">
+			<current leakage="2.1797E-06"/>
+			<capacitance gate="2.2242E-14" source="4.1891E-14" drain="2.3489E-14"/>
+		</size>
+		<size W="521.98" L="1">
+			<current leakage="2.2233E-06"/>
+			<capacitance gate="2.2687E-14" source="4.2721E-14" drain="2.3956E-14"/>
+		</size>
+		<size W="532.42" L="1">
+			<current leakage="2.2678E-06"/>
+			<capacitance gate="2.3141E-14" source="4.3569E-14" drain="2.4433E-14"/>
+		</size>
+		<size W="543.07" L="1">
+			<current leakage="2.3132E-06"/>
+			<capacitance gate="2.3604E-14" source="4.4433E-14" drain="2.4919E-14"/>
+		</size>
+		<size W="553.93" L="1">
+			<current leakage="2.3595E-06"/>
+			<capacitance gate="2.4076E-14" source="4.5315E-14" drain="2.5415E-14"/>
+		</size>
+		<size W="565.01" L="1">
+			<current leakage="2.4068E-06"/>
+			<capacitance gate="2.4558E-14" source="4.6214E-14" drain="2.5921E-14"/>
+		</size>
+		<size W="576.31" L="1">
+			<current leakage="2.4549E-06"/>
+			<capacitance gate="2.5049E-14" source="4.7131E-14" drain="2.6437E-14"/>
+		</size>
+		<size W="587.83" L="1">
+			<current leakage="2.5041E-06"/>
+			<capacitance gate="2.5551E-14" source="4.8066E-14" drain="2.6963E-14"/>
+		</size>
+		<size W="599.59" L="1">
+			<current leakage="2.5542E-06"/>
+			<capacitance gate="2.6062E-14" source="4.9020E-14" drain="2.7500E-14"/>
+		</size>
+		<size W="611.58" L="1">
+			<current leakage="2.6053E-06"/>
+			<capacitance gate="2.6583E-14" source="4.9994E-14" drain="2.8047E-14"/>
+		</size>
+		<size W="623.82" L="1">
+			<current leakage="2.6575E-06"/>
+			<capacitance gate="2.7116E-14" source="5.0987E-14" drain="2.8606E-14"/>
+		</size>
+		<size W="636.29" L="1">
+			<current leakage="2.7107E-06"/>
+			<capacitance gate="2.7658E-14" source="5.1999E-14" drain="2.9175E-14"/>
+		</size>
+		<size W="649.02" L="1">
+			<current leakage="2.7650E-06"/>
+			<capacitance gate="2.8211E-14" source="5.3033E-14" drain="2.9756E-14"/>
+		</size>
+		<size W="662.00" L="1">
+			<current leakage="2.8204E-06"/>
+			<capacitance gate="2.8776E-14" source="5.4086E-14" drain="3.0349E-14"/>
+		</size>
+		<size W="675.24" L="1">
+			<current leakage="2.8768E-06"/>
+			<capacitance gate="2.9351E-14" source="5.5161E-14" drain="3.0953E-14"/>
+		</size>
+		<size W="688.74" L="1">
+			<current leakage="2.9344E-06"/>
+			<capacitance gate="2.9938E-14" source="5.6256E-14" drain="3.1570E-14"/>
+		</size>
+		<size W="702.52" L="1">
+			<current leakage="2.9932E-06"/>
+			<capacitance gate="3.0537E-14" source="5.7375E-14" drain="3.2199E-14"/>
+		</size>
+		<size W="716.57" L="1">
+			<current leakage="3.0531E-06"/>
+			<capacitance gate="3.1148E-14" source="5.8515E-14" drain="3.2840E-14"/>
+		</size>
+		<size W="730.90" L="1">
+			<current leakage="3.1143E-06"/>
+			<capacitance gate="3.1772E-14" source="5.9678E-14" drain="3.3494E-14"/>
+		</size>
+		<size W="745.52" L="1">
+			<current leakage="3.1766E-06"/>
+			<capacitance gate="3.2407E-14" source="6.0864E-14" drain="3.4161E-14"/>
+		</size>
+		<size W="760.43" L="1">
+			<current leakage="3.2403E-06"/>
+			<capacitance gate="3.3056E-14" source="6.2075E-14" drain="3.4842E-14"/>
+		</size>
+		<size W="775.64" L="1">
+			<current leakage="3.3052E-06"/>
+			<capacitance gate="3.3717E-14" source="6.3309E-14" drain="3.5536E-14"/>
+		</size>
+		<size W="791.15" L="1">
+			<current leakage="3.3713E-06"/>
+			<capacitance gate="3.4391E-14" source="6.4568E-14" drain="3.6244E-14"/>
+		</size>
+		<size W="806.97" L="1">
+			<current leakage="3.4389E-06"/>
+			<capacitance gate="3.5079E-14" source="6.5852E-14" drain="3.6966E-14"/>
+		</size>
+		<size W="823.11" L="1">
+			<current leakage="3.5077E-06"/>
+			<capacitance gate="3.5781E-14" source="6.7162E-14" drain="3.7703E-14"/>
+		</size>
+		<size W="839.57" L="1">
+			<current leakage="3.5780E-06"/>
+			<capacitance gate="3.6497E-14" source="6.8498E-14" drain="3.8454E-14"/>
+		</size>
+		<size W="856.36" L="1">
+			<current leakage="3.6496E-06"/>
+			<capacitance gate="3.7227E-14" source="6.9860E-14" drain="3.9221E-14"/>
+		</size>
+		<size W="873.49" L="1">
+			<current leakage="3.7228E-06"/>
+			<capacitance gate="3.7972E-14" source="7.1251E-14" drain="4.0003E-14"/>
+		</size>
+		<size W="890.96" L="1">
+			<current leakage="3.7973E-06"/>
+			<capacitance gate="3.8731E-14" source="7.2669E-14" drain="4.0800E-14"/>
+		</size>
+		<size W="908.78" L="1">
+			<current leakage="3.8734E-06"/>
+			<capacitance gate="3.9507E-14" source="7.4114E-14" drain="4.1613E-14"/>
+		</size>
+		<size W="926.96" L="1">
+			<current leakage="3.9511E-06"/>
+			<capacitance gate="4.0297E-14" source="7.5590E-14" drain="4.2443E-14"/>
+		</size>
+		<size W="945.50" L="1">
+			<current leakage="4.0302E-06"/>
+			<capacitance gate="4.1103E-14" source="7.7094E-14" drain="4.3289E-14"/>
+		</size>
+		<size W="964.41" L="1">
+			<current leakage="4.1110E-06"/>
+			<capacitance gate="4.1925E-14" source="7.8629E-14" drain="4.4152E-14"/>
+		</size>
+		<size W="983.69" L="1">
+			<current leakage="4.1933E-06"/>
+			<capacitance gate="4.2764E-14" source="8.0194E-14" drain="4.5032E-14"/>
+		</size>
+	</transistor>
+	<transistor type="pmos" Vth="2.2308E-01">
+		<long_size W="1" L="2">
+			<current leakage="6.0473E-12"/>
+			<capacitance gate="5.5485E-17" source="4.3157E-16" drain="1.6005E-16"/>
+		</long_size>
+		<size W="1.00" L="1">
+			<current leakage="1.8020E-09"/>
+			<capacitance gate="3.4011E-17" source="4.1531E-16" drain="1.5545E-16"/>
+		</size>
+		<size W="1.02" L="1">
+			<current leakage="1.8484E-09"/>
+			<capacitance gate="3.4873E-17" source="4.1693E-16" drain="1.5636E-16"/>
+		</size>
+		<size W="1.04" L="1">
+			<current leakage="1.8948E-09"/>
+			<capacitance gate="3.5736E-17" source="4.1854E-16" drain="1.5727E-16"/>
+		</size>
+		<size W="1.06" L="1">
+			<current leakage="1.9412E-09"/>
+			<capacitance gate="3.6599E-17" source="4.2016E-16" drain="1.5818E-16"/>
+		</size>
+		<size W="1.08" L="1">
+			<current leakage="1.9876E-09"/>
+			<capacitance gate="3.7462E-17" source="4.2178E-16" drain="1.5910E-16"/>
+		</size>
+		<size W="1.10" L="1">
+			<current leakage="2.0339E-09"/>
+			<capacitance gate="3.8325E-17" source="4.2339E-16" drain="1.6001E-16"/>
+		</size>
+		<size W="1.13" L="1">
+			<current leakage="2.1035E-09"/>
+			<capacitance gate="3.9619E-17" source="4.2582E-16" drain="1.6138E-16"/>
+		</size>
+		<size W="1.15" L="1">
+			<current leakage="2.1499E-09"/>
+			<capacitance gate="4.0482E-17" source="4.2744E-16" drain="1.6229E-16"/>
+		</size>
+		<size W="1.17" L="1">
+			<current leakage="2.1963E-09"/>
+			<capacitance gate="4.1345E-17" source="4.2905E-16" drain="1.6320E-16"/>
+		</size>
+		<size W="1.20" L="1">
+			<current leakage="2.2659E-09"/>
+			<capacitance gate="4.2639E-17" source="4.3148E-16" drain="1.6457E-16"/>
+		</size>
+		<size W="1.22" L="1">
+			<current leakage="2.3123E-09"/>
+			<capacitance gate="4.3502E-17" source="4.3309E-16" drain="1.6548E-16"/>
+		</size>
+		<size W="1.24" L="1">
+			<current leakage="2.3586E-09"/>
+			<capacitance gate="4.4365E-17" source="4.3471E-16" drain="1.6640E-16"/>
+		</size>
+		<size W="1.27" L="1">
+			<current leakage="2.4282E-09"/>
+			<capacitance gate="4.5659E-17" source="4.3714E-16" drain="1.6776E-16"/>
+		</size>
+		<size W="1.29" L="1">
+			<current leakage="2.4746E-09"/>
+			<capacitance gate="4.6522E-17" source="4.3875E-16" drain="1.6868E-16"/>
+		</size>
+		<size W="1.32" L="1">
+			<current leakage="2.5442E-09"/>
+			<capacitance gate="4.7816E-17" source="4.4118E-16" drain="1.7005E-16"/>
+		</size>
+		<size W="1.35" L="1">
+			<current leakage="2.6138E-09"/>
+			<capacitance gate="4.9110E-17" source="4.4360E-16" drain="1.7141E-16"/>
+		</size>
+		<size W="1.37" L="1">
+			<current leakage="2.6602E-09"/>
+			<capacitance gate="4.9972E-17" source="4.4522E-16" drain="1.7233E-16"/>
+		</size>
+		<size W="1.40" L="1">
+			<current leakage="2.7298E-09"/>
+			<capacitance gate="5.1272E-17" source="4.4765E-16" drain="1.7367E-16"/>
+		</size>
+		<size W="1.43" L="1">
+			<current leakage="2.7993E-09"/>
+			<capacitance gate="5.2567E-17" source="4.5008E-16" drain="1.7504E-16"/>
+		</size>
+		<size W="1.46" L="1">
+			<current leakage="2.8689E-09"/>
+			<capacitance gate="5.3861E-17" source="4.5250E-16" drain="1.7641E-16"/>
+		</size>
+		<size W="1.49" L="1">
+			<current leakage="2.9385E-09"/>
+			<capacitance gate="5.5156E-17" source="4.5493E-16" drain="1.7778E-16"/>
+		</size>
+		<size W="1.52" L="1">
+			<current leakage="3.0081E-09"/>
+			<capacitance gate="5.6450E-17" source="4.5740E-16" drain="1.7909E-16"/>
+		</size>
+		<size W="1.55" L="1">
+			<current leakage="3.0777E-09"/>
+			<capacitance gate="5.7745E-17" source="4.5978E-16" drain="1.8051E-16"/>
+		</size>
+		<size W="1.58" L="1">
+			<current leakage="3.1473E-09"/>
+			<capacitance gate="5.9039E-17" source="4.6220E-16" drain="1.8188E-16"/>
+		</size>
+		<size W="1.61" L="1">
+			<current leakage="3.2169E-09"/>
+			<capacitance gate="6.0334E-17" source="4.6463E-16" drain="1.8325E-16"/>
+		</size>
+		<size W="1.64" L="1">
+			<current leakage="3.2864E-09"/>
+			<capacitance gate="6.1628E-17" source="4.6711E-16" drain="1.8456E-16"/>
+		</size>
+		<size W="1.67" L="1">
+			<current leakage="3.3560E-09"/>
+			<capacitance gate="6.2923E-17" source="4.6948E-16" drain="1.8599E-16"/>
+		</size>
+		<size W="1.71" L="1">
+			<current leakage="3.4488E-09"/>
+			<capacitance gate="6.4649E-17" source="4.7271E-16" drain="1.8781E-16"/>
+		</size>
+		<size W="1.74" L="1">
+			<current leakage="3.5184E-09"/>
+			<capacitance gate="6.5944E-17" source="4.7514E-16" drain="1.8918E-16"/>
+		</size>
+		<size W="1.78" L="1">
+			<current leakage="3.6112E-09"/>
+			<capacitance gate="6.7670E-17" source="4.7837E-16" drain="1.9100E-16"/>
+		</size>
+		<size W="1.81" L="1">
+			<current leakage="3.6808E-09"/>
+			<capacitance gate="6.8964E-17" source="4.8080E-16" drain="1.9237E-16"/>
+		</size>
+		<size W="1.85" L="1">
+			<current leakage="3.7736E-09"/>
+			<capacitance gate="7.0690E-17" source="4.8403E-16" drain="1.9420E-16"/>
+		</size>
+		<size W="1.88" L="1">
+			<current leakage="3.8432E-09"/>
+			<capacitance gate="7.1985E-17" source="4.8646E-16" drain="1.9556E-16"/>
+		</size>
+		<size W="1.92" L="1">
+			<current leakage="3.9359E-09"/>
+			<capacitance gate="7.3711E-17" source="4.8969E-16" drain="1.9739E-16"/>
+		</size>
+		<size W="1.96" L="1">
+			<current leakage="4.0287E-09"/>
+			<capacitance gate="7.5437E-17" source="4.9293E-16" drain="1.9921E-16"/>
+		</size>
+		<size W="2.00" L="1">
+			<current leakage="4.1215E-09"/>
+			<capacitance gate="7.7163E-17" source="4.9616E-16" drain="2.0104E-16"/>
+		</size>
+		<size W="2.04" L="1">
+			<current leakage="4.2143E-09"/>
+			<capacitance gate="7.8889E-17" source="4.9940E-16" drain="2.0286E-16"/>
+		</size>
+		<size W="2.08" L="1">
+			<current leakage="4.3071E-09"/>
+			<capacitance gate="8.0615E-17" source="5.0263E-16" drain="2.0469E-16"/>
+		</size>
+		<size W="2.12" L="1">
+			<current leakage="4.3999E-09"/>
+			<capacitance gate="8.2341E-17" source="5.0587E-16" drain="2.0651E-16"/>
+		</size>
+		<size W="2.16" L="1">
+			<current leakage="4.4927E-09"/>
+			<capacitance gate="8.4067E-17" source="5.0910E-16" drain="2.0833E-16"/>
+		</size>
+		<size W="2.21" L="1">
+			<current leakage="4.6087E-09"/>
+			<capacitance gate="8.6225E-17" source="5.1314E-16" drain="2.1061E-16"/>
+		</size>
+		<size W="2.25" L="1">
+			<current leakage="4.7015E-09"/>
+			<capacitance gate="8.7951E-17" source="5.1638E-16" drain="2.1244E-16"/>
+		</size>
+		<size W="2.30" L="1">
+			<current leakage="4.8174E-09"/>
+			<capacitance gate="9.0108E-17" source="5.2042E-16" drain="2.1472E-16"/>
+		</size>
+		<size W="2.34" L="1">
+			<current leakage="4.9102E-09"/>
+			<capacitance gate="9.1834E-17" source="5.2366E-16" drain="2.1654E-16"/>
+		</size>
+		<size W="2.39" L="1">
+			<current leakage="5.0262E-09"/>
+			<capacitance gate="9.3992E-17" source="5.2770E-16" drain="2.1882E-16"/>
+		</size>
+		<size W="2.44" L="1">
+			<current leakage="5.1422E-09"/>
+			<capacitance gate="9.6149E-17" source="5.3174E-16" drain="2.2110E-16"/>
+		</size>
+		<size W="2.49" L="1">
+			<current leakage="5.2582E-09"/>
+			<capacitance gate="9.8307E-17" source="5.3579E-16" drain="2.2338E-16"/>
+		</size>
+		<size W="2.54" L="1">
+			<current leakage="5.3742E-09"/>
+			<capacitance gate="1.0046E-16" source="5.3992E-16" drain="2.2557E-16"/>
+		</size>
+		<size W="2.59" L="1">
+			<current leakage="5.4902E-09"/>
+			<capacitance gate="1.0262E-16" source="5.4397E-16" drain="2.2785E-16"/>
+		</size>
+		<size W="2.64" L="1">
+			<current leakage="5.6062E-09"/>
+			<capacitance gate="1.0478E-16" source="5.4792E-16" drain="2.3022E-16"/>
+		</size>
+		<size W="2.69" L="1">
+			<current leakage="5.7221E-09"/>
+			<capacitance gate="1.0694E-16" source="5.5206E-16" drain="2.3241E-16"/>
+		</size>
+		<size W="2.75" L="1">
+			<current leakage="5.8613E-09"/>
+			<capacitance gate="1.0953E-16" source="5.5681E-16" drain="2.3524E-16"/>
+		</size>
+		<size W="2.80" L="1">
+			<current leakage="5.9773E-09"/>
+			<capacitance gate="1.1168E-16" source="5.6085E-16" drain="2.3752E-16"/>
+		</size>
+		<size W="2.86" L="1">
+			<current leakage="6.1165E-09"/>
+			<capacitance gate="1.1427E-16" source="5.6581E-16" drain="2.4015E-16"/>
+		</size>
+		<size W="2.91" L="1">
+			<current leakage="6.2325E-09"/>
+			<capacitance gate="1.1643E-16" source="5.6975E-16" drain="2.4254E-16"/>
+		</size>
+		<size W="2.97" L="1">
+			<current leakage="6.3717E-09"/>
+			<capacitance gate="1.1902E-16" source="5.7471E-16" drain="2.4516E-16"/>
+		</size>
+		<size W="3.03" L="1">
+			<current leakage="6.5109E-09"/>
+			<capacitance gate="1.2161E-16" source="5.7945E-16" drain="2.4801E-16"/>
+		</size>
+		<size W="3.09" L="1">
+			<current leakage="6.6501E-09"/>
+			<capacitance gate="1.2420E-16" source="5.8442E-16" drain="2.5063E-16"/>
+		</size>
+		<size W="3.15" L="1">
+			<current leakage="6.7893E-09"/>
+			<capacitance gate="1.2679E-16" source="5.8927E-16" drain="2.5337E-16"/>
+		</size>
+		<size W="3.22" L="1">
+			<current leakage="6.9516E-09"/>
+			<capacitance gate="1.2981E-16" source="5.9482E-16" drain="2.5668E-16"/>
+		</size>
+		<size W="3.28" L="1">
+			<current leakage="7.0908E-09"/>
+			<capacitance gate="1.3239E-16" source="5.9967E-16" drain="2.5941E-16"/>
+		</size>
+		<size W="3.35" L="1">
+			<current leakage="7.2532E-09"/>
+			<capacitance gate="1.3541E-16" source="6.0545E-16" drain="2.6248E-16"/>
+		</size>
+		<size W="3.41" L="1">
+			<current leakage="7.3924E-09"/>
+			<capacitance gate="1.3800E-16" source="6.1018E-16" drain="2.6534E-16"/>
+		</size>
+		<size W="3.48" L="1">
+			<current leakage="7.5548E-09"/>
+			<capacitance gate="1.4102E-16" source="6.1597E-16" drain="2.6841E-16"/>
+		</size>
+		<size W="3.55" L="1">
+			<current leakage="7.7172E-09"/>
+			<capacitance gate="1.4404E-16" source="6.2163E-16" drain="2.7160E-16"/>
+		</size>
+		<size W="3.62" L="1">
+			<current leakage="7.8796E-09"/>
+			<capacitance gate="1.4707E-16" source="6.2717E-16" drain="2.7492E-16"/>
+		</size>
+		<size W="3.69" L="1">
+			<current leakage="8.0420E-09"/>
+			<capacitance gate="1.5009E-16" source="6.3283E-16" drain="2.7811E-16"/>
+		</size>
+		<size W="3.77" L="1">
+			<current leakage="8.2276E-09"/>
+			<capacitance gate="1.5354E-16" source="6.3943E-16" drain="2.8162E-16"/>
+		</size>
+		<size W="3.84" L="1">
+			<current leakage="8.3899E-09"/>
+			<capacitance gate="1.5656E-16" source="6.4496E-16" drain="2.8495E-16"/>
+		</size>
+		<size W="3.92" L="1">
+			<current leakage="8.5755E-09"/>
+			<capacitance gate="1.6001E-16" source="6.5143E-16" drain="2.8860E-16"/>
+		</size>
+		<size W="4.00" L="1">
+			<current leakage="8.7611E-09"/>
+			<capacitance gate="1.6346E-16" source="6.5804E-16" drain="2.9210E-16"/>
+		</size>
+		<size W="4.08" L="1">
+			<current leakage="8.9467E-09"/>
+			<capacitance gate="1.6691E-16" source="6.6437E-16" drain="2.9590E-16"/>
+		</size>
+		<size W="4.16" L="1">
+			<current leakage="9.1323E-09"/>
+			<capacitance gate="1.7037E-16" source="6.7099E-16" drain="2.9939E-16"/>
+		</size>
+		<size W="4.24" L="1">
+			<current leakage="9.3179E-09"/>
+			<capacitance gate="1.7382E-16" source="6.7746E-16" drain="3.0304E-16"/>
+		</size>
+		<size W="4.33" L="1">
+			<current leakage="9.5267E-09"/>
+			<capacitance gate="1.7770E-16" source="6.8458E-16" drain="3.0730E-16"/>
+		</size>
+		<size W="4.42" L="1">
+			<current leakage="9.7355E-09"/>
+			<capacitance gate="1.8158E-16" source="6.9186E-16" drain="3.1140E-16"/>
+		</size>
+		<size W="4.50" L="1">
+			<current leakage="9.9211E-09"/>
+			<capacitance gate="1.8504E-16" source="6.9833E-16" drain="3.1505E-16"/>
+		</size>
+		<size W="4.59" L="1">
+			<current leakage="1.0130E-08"/>
+			<capacitance gate="1.8892E-16" source="7.0561E-16" drain="3.1916E-16"/>
+		</size>
+		<size W="4.69" L="1">
+			<current leakage="1.0362E-08"/>
+			<capacitance gate="1.9323E-16" source="7.1369E-16" drain="3.2372E-16"/>
+		</size>
+		<size W="4.78" L="1">
+			<current leakage="1.0571E-08"/>
+			<capacitance gate="1.9712E-16" source="7.2097E-16" drain="3.2782E-16"/>
+		</size>
+		<size W="4.88" L="1">
+			<current leakage="1.0803E-08"/>
+			<capacitance gate="2.0143E-16" source="7.2924E-16" drain="3.3220E-16"/>
+		</size>
+		<size W="4.97" L="1">
+			<current leakage="1.1011E-08"/>
+			<capacitance gate="2.0532E-16" source="7.3634E-16" drain="3.3649E-16"/>
+		</size>
+		<size W="5.07" L="1">
+			<current leakage="1.1243E-08"/>
+			<capacitance gate="2.0963E-16" source="7.4442E-16" drain="3.4105E-16"/>
+		</size>
+		<size W="5.17" L="1">
+			<current leakage="1.1475E-08"/>
+			<capacitance gate="2.1395E-16" source="7.5270E-16" drain="3.4542E-16"/>
+		</size>
+		<size W="5.28" L="1">
+			<current leakage="1.1731E-08"/>
+			<capacitance gate="2.1869E-16" source="7.6141E-16" drain="3.5062E-16"/>
+		</size>
+		<size W="5.38" L="1">
+			<current leakage="1.1963E-08"/>
+			<capacitance gate="2.2301E-16" source="7.6949E-16" drain="3.5518E-16"/>
+		</size>
+		<size W="5.49" L="1">
+			<current leakage="1.2218E-08"/>
+			<capacitance gate="2.2775E-16" source="7.7839E-16" drain="3.6020E-16"/>
+		</size>
+		<size W="5.60" L="1">
+			<current leakage="1.2473E-08"/>
+			<capacitance gate="2.3250E-16" source="7.8728E-16" drain="3.6522E-16"/>
+		</size>
+		<size W="5.71" L="1">
+			<current leakage="1.2728E-08"/>
+			<capacitance gate="2.3725E-16" source="7.9639E-16" drain="3.7002E-16"/>
+		</size>
+		<size W="5.83" L="1">
+			<current leakage="1.3006E-08"/>
+			<capacitance gate="2.4242E-16" source="8.0610E-16" drain="3.7549E-16"/>
+		</size>
+		<size W="5.94" L="1">
+			<current leakage="1.3262E-08"/>
+			<capacitance gate="2.4717E-16" source="8.1500E-16" drain="3.8050E-16"/>
+		</size>
+		<size W="6.06" L="1">
+			<current leakage="1.3540E-08"/>
+			<capacitance gate="2.5235E-16" source="8.2471E-16" drain="3.8597E-16"/>
+		</size>
+		<size W="6.18" L="1">
+			<current leakage="1.3818E-08"/>
+			<capacitance gate="2.5752E-16" source="8.3419E-16" drain="3.9166E-16"/>
+		</size>
+		<size W="6.31" L="1">
+			<current leakage="1.4120E-08"/>
+			<capacitance gate="2.6313E-16" source="8.4470E-16" drain="3.9759E-16"/>
+		</size>
+		<size W="6.43" L="1">
+			<current leakage="1.4398E-08"/>
+			<capacitance gate="2.6831E-16" source="8.5440E-16" drain="4.0306E-16"/>
+		</size>
+		<size W="6.56" L="1">
+			<current leakage="1.4700E-08"/>
+			<capacitance gate="2.7392E-16" source="8.6516E-16" drain="4.0875E-16"/>
+		</size>
+		<size W="6.69" L="1">
+			<current leakage="1.5002E-08"/>
+			<capacitance gate="2.7953E-16" source="8.7567E-16" drain="4.1468E-16"/>
+		</size>
+		<size W="6.83" L="1">
+			<current leakage="1.5326E-08"/>
+			<capacitance gate="2.8557E-16" source="8.8675E-16" drain="4.2130E-16"/>
+		</size>
+		<size W="6.96" L="1">
+			<current leakage="1.5628E-08"/>
+			<capacitance gate="2.9118E-16" source="8.9727E-16" drain="4.2723E-16"/>
+		</size>
+		<size W="7.10" L="1">
+			<current leakage="1.5953E-08"/>
+			<capacitance gate="2.9722E-16" source="9.0859E-16" drain="4.3361E-16"/>
+		</size>
+		<size W="7.24" L="1">
+			<current leakage="1.6278E-08"/>
+			<capacitance gate="3.0326E-16" source="9.1991E-16" drain="4.3999E-16"/>
+		</size>
+		<size W="7.39" L="1">
+			<current leakage="1.6626E-08"/>
+			<capacitance gate="3.0973E-16" source="9.3204E-16" drain="4.4683E-16"/>
+		</size>
+		<size W="7.54" L="1">
+			<current leakage="1.6974E-08"/>
+			<capacitance gate="3.1620E-16" source="9.4417E-16" drain="4.5367E-16"/>
+		</size>
+		<size W="7.69" L="1">
+			<current leakage="1.7321E-08"/>
+			<capacitance gate="3.2267E-16" source="9.5630E-16" drain="4.6051E-16"/>
+		</size>
+		<size W="7.84" L="1">
+			<current leakage="1.7669E-08"/>
+			<capacitance gate="3.2915E-16" source="9.6843E-16" drain="4.6735E-16"/>
+		</size>
+		<size W="8.00" L="1">
+			<current leakage="1.8041E-08"/>
+			<capacitance gate="3.3617E-16" source="9.8169E-16" drain="4.7448E-16"/>
+		</size>
+		<size W="8.16" L="1">
+			<current leakage="1.8412E-08"/>
+			<capacitance gate="3.4305E-16" source="9.9462E-16" drain="4.8175E-16"/>
+		</size>
+		<size W="8.32" L="1">
+			<current leakage="1.8783E-08"/>
+			<capacitance gate="3.4994E-16" source="1.0074E-15" drain="4.8919E-16"/>
+		</size>
+		<size W="8.49" L="1">
+			<current leakage="1.9177E-08"/>
+			<capacitance gate="3.5724E-16" source="1.0211E-15" drain="4.9696E-16"/>
+		</size>
+		<size W="8.66" L="1">
+			<current leakage="1.9572E-08"/>
+			<capacitance gate="3.6451E-16" source="1.0349E-15" drain="5.0467E-16"/>
+		</size>
+		<size W="8.83" L="1">
+			<current leakage="1.9966E-08"/>
+			<capacitance gate="3.7199E-16" source="1.0486E-15" drain="5.1254E-16"/>
+		</size>
+		<size W="9.01" L="1">
+			<current leakage="2.0384E-08"/>
+			<capacitance gate="3.7974E-16" source="1.0634E-15" drain="5.2049E-16"/>
+		</size>
+		<size W="9.19" L="1">
+			<current leakage="2.0801E-08"/>
+			<capacitance gate="3.8743E-16" source="1.0779E-15" drain="5.2875E-16"/>
+		</size>
+		<size W="9.37" L="1">
+			<current leakage="2.1219E-08"/>
+			<capacitance gate="3.9509E-16" source="1.0921E-15" drain="5.3733E-16"/>
+		</size>
+		<size W="9.56" L="1">
+			<current leakage="2.1660E-08"/>
+			<capacitance gate="4.0330E-16" source="1.1075E-15" drain="5.4598E-16"/>
+		</size>
+		<size W="9.75" L="1">
+			<current leakage="2.2101E-08"/>
+			<capacitance gate="4.1151E-16" source="1.1229E-15" drain="5.5464E-16"/>
+		</size>
+		<size W="9.95" L="1">
+			<current leakage="2.2564E-08"/>
+			<capacitance gate="4.2016E-16" source="1.1390E-15" drain="5.6375E-16"/>
+		</size>
+		<size W="10.14" L="1">
+			<current leakage="2.3005E-08"/>
+			<capacitance gate="4.2837E-16" source="1.1544E-15" drain="5.7240E-16"/>
+		</size>
+		<size W="10.35" L="1">
+			<current leakage="2.3492E-08"/>
+			<capacitance gate="4.3744E-16" source="1.1714E-15" drain="5.8196E-16"/>
+		</size>
+		<size W="10.55" L="1">
+			<current leakage="2.3957E-08"/>
+			<capacitance gate="4.4623E-16" source="1.1877E-15" drain="5.9097E-16"/>
+		</size>
+		<size W="10.77" L="1">
+			<current leakage="2.4467E-08"/>
+			<capacitance gate="4.5553E-16" source="1.2053E-15" drain="6.0116E-16"/>
+		</size>
+		<size W="10.98" L="1">
+			<current leakage="2.4954E-08"/>
+			<capacitance gate="4.6463E-16" source="1.2223E-15" drain="6.1070E-16"/>
+		</size>
+		<size W="11.20" L="1">
+			<current leakage="2.5465E-08"/>
+			<capacitance gate="4.7412E-16" source="1.2401E-15" drain="6.2073E-16"/>
+		</size>
+		<size W="11.42" L="1">
+			<current leakage="2.5975E-08"/>
+			<capacitance gate="4.8361E-16" source="1.2579E-15" drain="6.3077E-16"/>
+		</size>
+		<size W="11.65" L="1">
+			<current leakage="2.6508E-08"/>
+			<capacitance gate="4.9354E-16" source="1.2765E-15" drain="6.4126E-16"/>
+		</size>
+		<size W="11.89" L="1">
+			<current leakage="2.7065E-08"/>
+			<capacitance gate="5.0389E-16" source="1.2959E-15" drain="6.5220E-16"/>
+		</size>
+		<size W="12.12" L="1">
+			<current leakage="2.7599E-08"/>
+			<capacitance gate="5.1381E-16" source="1.3145E-15" drain="6.6269E-16"/>
+		</size>
+		<size W="12.37" L="1">
+			<current leakage="2.8179E-08"/>
+			<capacitance gate="5.2460E-16" source="1.3347E-15" drain="6.7409E-16"/>
+		</size>
+		<size W="12.61" L="1">
+			<current leakage="2.8736E-08"/>
+			<capacitance gate="5.3496E-16" source="1.3541E-15" drain="6.8504E-16"/>
+		</size>
+		<size W="12.87" L="1">
+			<current leakage="2.9339E-08"/>
+			<capacitance gate="5.4618E-16" source="1.3751E-15" drain="6.9690E-16"/>
+		</size>
+		<size W="13.12" L="1">
+			<current leakage="2.9919E-08"/>
+			<capacitance gate="5.5696E-16" source="1.3954E-15" drain="7.0830E-16"/>
+		</size>
+		<size W="13.39" L="1">
+			<current leakage="3.0545E-08"/>
+			<capacitance gate="5.6861E-16" source="1.4172E-15" drain="7.2061E-16"/>
+		</size>
+		<size W="13.65" L="1">
+			<current leakage="3.1148E-08"/>
+			<capacitance gate="5.7977E-16" source="1.4382E-15" drain="7.3252E-16"/>
+		</size>
+		<size W="13.93" L="1">
+			<current leakage="3.1798E-08"/>
+			<capacitance gate="5.9191E-16" source="1.4609E-15" drain="7.4501E-16"/>
+		</size>
+		<size W="14.20" L="1">
+			<current leakage="3.2424E-08"/>
+			<capacitance gate="6.0355E-16" source="1.4827E-15" drain="7.5755E-16"/>
+		</size>
+		<size W="14.49" L="1">
+			<current leakage="3.3097E-08"/>
+			<capacitance gate="6.1604E-16" source="1.5061E-15" drain="7.7080E-16"/>
+		</size>
+		<size W="14.78" L="1">
+			<current leakage="3.3770E-08"/>
+			<capacitance gate="6.2853E-16" source="1.5296E-15" drain="7.8405E-16"/>
+		</size>
+		<size W="15.07" L="1">
+			<current leakage="3.4442E-08"/>
+			<capacitance gate="6.4102E-16" source="1.5530E-15" drain="7.9730E-16"/>
+		</size>
+		<size W="15.38" L="1">
+			<current leakage="3.5162E-08"/>
+			<capacitance gate="6.5436E-16" source="1.5780E-15" drain="8.1146E-16"/>
+		</size>
+		<size W="15.68" L="1">
+			<current leakage="3.5858E-08"/>
+			<capacitance gate="6.6742E-16" source="1.6026E-15" drain="8.2478E-16"/>
+		</size>
+		<size W="16.00" L="1">
+			<current leakage="3.6600E-08"/>
+			<capacitance gate="6.8140E-16" source="1.6289E-15" drain="8.3900E-16"/>
+		</size>
+		<size W="16.32" L="1">
+			<current leakage="3.7342E-08"/>
+			<capacitance gate="6.9495E-16" source="1.6542E-15" drain="8.5402E-16"/>
+		</size>
+		<size W="16.64" L="1">
+			<current leakage="3.8085E-08"/>
+			<capacitance gate="7.0898E-16" source="1.6806E-15" drain="8.6818E-16"/>
+		</size>
+		<size W="16.98" L="1">
+			<current leakage="3.8873E-08"/>
+			<capacitance gate="7.2375E-16" source="1.7077E-15" drain="8.8412E-16"/>
+		</size>
+		<size W="17.32" L="1">
+			<current leakage="3.9662E-08"/>
+			<capacitance gate="7.3817E-16" source="1.7356E-15" drain="8.9892E-16"/>
+		</size>
+		<size W="17.66" L="1">
+			<current leakage="4.0451E-08"/>
+			<capacitance gate="7.5284E-16" source="1.7624E-15" drain="9.1505E-16"/>
+		</size>
+		<size W="18.01" L="1">
+			<current leakage="4.1263E-08"/>
+			<capacitance gate="7.6794E-16" source="1.7914E-15" drain="9.3035E-16"/>
+		</size>
+		<size W="18.37" L="1">
+			<current leakage="4.2098E-08"/>
+			<capacitance gate="7.8348E-16" source="1.8198E-15" drain="9.4743E-16"/>
+		</size>
+		<size W="18.74" L="1">
+			<current leakage="4.2957E-08"/>
+			<capacitance gate="7.9944E-16" source="1.8504E-15" drain="9.6359E-16"/>
+		</size>
+		<size W="19.12" L="1">
+			<current leakage="4.3838E-08"/>
+			<capacitance gate="8.1584E-16" source="1.8812E-15" drain="9.8089E-16"/>
+		</size>
+		<size W="19.50" L="1">
+			<current leakage="4.4720E-08"/>
+			<capacitance gate="8.3223E-16" source="1.9119E-15" drain="9.9820E-16"/>
+		</size>
+		<size W="19.89" L="1">
+			<current leakage="4.5624E-08"/>
+			<capacitance gate="8.4906E-16" source="1.9435E-15" drain="1.0160E-15"/>
+		</size>
+		<size W="20.29" L="1">
+			<current leakage="4.6552E-08"/>
+			<capacitance gate="8.6632E-16" source="1.9758E-15" drain="1.0342E-15"/>
+		</size>
+		<size W="20.69" L="1">
+			<current leakage="4.7480E-08"/>
+			<capacitance gate="8.8358E-16" source="2.0074E-15" drain="1.0532E-15"/>
+		</size>
+		<size W="21.11" L="1">
+			<current leakage="4.8455E-08"/>
+			<capacitance gate="9.0170E-16" source="2.0413E-15" drain="1.0724E-15"/>
+		</size>
+		<size W="21.53" L="1">
+			<current leakage="4.9429E-08"/>
+			<capacitance gate="9.1983E-16" source="2.0753E-15" drain="1.0915E-15"/>
+		</size>
+		<size W="21.96" L="1">
+			<current leakage="5.0427E-08"/>
+			<capacitance gate="9.3838E-16" source="2.1100E-15" drain="1.1111E-15"/>
+		</size>
+		<size W="22.40" L="1">
+			<current leakage="5.1448E-08"/>
+			<capacitance gate="9.5737E-16" source="2.1456E-15" drain="1.1312E-15"/>
+		</size>
+		<size W="22.85" L="1">
+			<current leakage="5.2492E-08"/>
+			<capacitance gate="9.7679E-16" source="2.1820E-15" drain="1.1517E-15"/>
+		</size>
+		<size W="23.30" L="1">
+			<current leakage="5.3535E-08"/>
+			<capacitance gate="9.9620E-16" source="2.2183E-15" drain="1.1722E-15"/>
+		</size>
+		<size W="23.77" L="1">
+			<current leakage="5.4626E-08"/>
+			<capacitance gate="1.0165E-15" source="2.2563E-15" drain="1.1936E-15"/>
+		</size>
+		<size W="24.25" L="1">
+			<current leakage="5.5739E-08"/>
+			<capacitance gate="1.0372E-15" source="2.2951E-15" drain="1.2155E-15"/>
+		</size>
+		<size W="24.73" L="1">
+			<current leakage="5.6853E-08"/>
+			<capacitance gate="1.0579E-15" source="2.3339E-15" drain="1.2374E-15"/>
+		</size>
+		<size W="25.22" L="1">
+			<current leakage="5.7990E-08"/>
+			<capacitance gate="1.0790E-15" source="2.3735E-15" drain="1.2598E-15"/>
+		</size>
+		<size W="25.73" L="1">
+			<current leakage="5.9173E-08"/>
+			<capacitance gate="1.1011E-15" source="2.4148E-15" drain="1.2830E-15"/>
+		</size>
+		<size W="26.24" L="1">
+			<current leakage="6.0356E-08"/>
+			<capacitance gate="1.1231E-15" source="2.4560E-15" drain="1.3063E-15"/>
+		</size>
+		<size W="26.77" L="1">
+			<current leakage="6.1586E-08"/>
+			<capacitance gate="1.1459E-15" source="2.4988E-15" drain="1.3304E-15"/>
+		</size>
+		<size W="27.30" L="1">
+			<current leakage="6.2815E-08"/>
+			<capacitance gate="1.1688E-15" source="2.5417E-15" drain="1.3546E-15"/>
+		</size>
+		<size W="27.85" L="1">
+			<current leakage="6.4091E-08"/>
+			<capacitance gate="1.1925E-15" source="2.5861E-15" drain="1.3797E-15"/>
+		</size>
+		<size W="28.41" L="1">
+			<current leakage="6.5390E-08"/>
+			<capacitance gate="1.2167E-15" source="2.6314E-15" drain="1.4052E-15"/>
+		</size>
+		<size W="28.98" L="1">
+			<current leakage="6.6713E-08"/>
+			<capacitance gate="1.2413E-15" source="2.6775E-15" drain="1.4312E-15"/>
+		</size>
+		<size W="29.55" L="1">
+			<current leakage="6.8035E-08"/>
+			<capacitance gate="1.2659E-15" source="2.7235E-15" drain="1.4571E-15"/>
+		</size>
+		<size W="30.15" L="1">
+			<current leakage="6.9427E-08"/>
+			<capacitance gate="1.2918E-15" source="2.7720E-15" drain="1.4845E-15"/>
+		</size>
+		<size W="30.75" L="1">
+			<current leakage="7.0819E-08"/>
+			<capacitance gate="1.3177E-15" source="2.8205E-15" drain="1.5118E-15"/>
+		</size>
+		<size W="31.36" L="1">
+			<current leakage="7.2234E-08"/>
+			<capacitance gate="1.3440E-15" source="2.8699E-15" drain="1.5397E-15"/>
+		</size>
+		<size W="31.99" L="1">
+			<current leakage="7.3696E-08"/>
+			<capacitance gate="1.3712E-15" source="2.9208E-15" drain="1.5684E-15"/>
+		</size>
+		<size W="32.63" L="1">
+			<current leakage="7.5181E-08"/>
+			<capacitance gate="1.3988E-15" source="2.9725E-15" drain="1.5975E-15"/>
+		</size>
+		<size W="33.28" L="1">
+			<current leakage="7.6688E-08"/>
+			<capacitance gate="1.4268E-15" source="3.0250E-15" drain="1.6272E-15"/>
+		</size>
+		<size W="33.95" L="1">
+			<current leakage="7.8243E-08"/>
+			<capacitance gate="1.4557E-15" source="3.0792E-15" drain="1.6577E-15"/>
+		</size>
+		<size W="34.63" L="1">
+			<current leakage="7.9820E-08"/>
+			<capacitance gate="1.4851E-15" source="3.1342E-15" drain="1.6887E-15"/>
+		</size>
+		<size W="35.32" L="1">
+			<current leakage="8.1421E-08"/>
+			<capacitance gate="1.5148E-15" source="3.1899E-15" drain="1.7201E-15"/>
+		</size>
+		<size W="36.03" L="1">
+			<current leakage="8.3068E-08"/>
+			<capacitance gate="1.5455E-15" source="3.2473E-15" drain="1.7525E-15"/>
+		</size>
+		<size W="36.75" L="1">
+			<current leakage="8.4739E-08"/>
+			<capacitance gate="1.5765E-15" source="3.3055E-15" drain="1.7853E-15"/>
+		</size>
+		<size W="37.48" L="1">
+			<current leakage="8.6432E-08"/>
+			<capacitance gate="1.6080E-15" source="3.3645E-15" drain="1.8186E-15"/>
+		</size>
+		<size W="38.23" L="1">
+			<current leakage="8.8172E-08"/>
+			<capacitance gate="1.6404E-15" source="3.4251E-15" drain="1.8528E-15"/>
+		</size>
+		<size W="39.00" L="1">
+			<current leakage="8.9959E-08"/>
+			<capacitance gate="1.6736E-15" source="3.4874E-15" drain="1.8879E-15"/>
+		</size>
+		<size W="39.78" L="1">
+			<current leakage="9.1768E-08"/>
+			<capacitance gate="1.7073E-15" source="3.5504E-15" drain="1.9234E-15"/>
+		</size>
+		<size W="40.57" L="1">
+			<current leakage="9.3601E-08"/>
+			<capacitance gate="1.7414E-15" source="3.6143E-15" drain="1.9594E-15"/>
+		</size>
+		<size W="41.38" L="1">
+			<current leakage="9.5480E-08"/>
+			<capacitance gate="1.7763E-15" source="3.6797E-15" drain="1.9963E-15"/>
+		</size>
+		<size W="42.21" L="1">
+			<current leakage="9.7406E-08"/>
+			<capacitance gate="1.8121E-15" source="3.7468E-15" drain="2.0342E-15"/>
+		</size>
+		<size W="43.06" L="1">
+			<current leakage="9.9377E-08"/>
+			<capacitance gate="1.8488E-15" source="3.8155E-15" drain="2.0729E-15"/>
+		</size>
+		<size W="43.92" L="1">
+			<current leakage="1.0137E-07"/>
+			<capacitance gate="1.8859E-15" source="3.8850E-15" drain="2.1121E-15"/>
+		</size>
+		<size W="44.80" L="1">
+			<current leakage="1.0341E-07"/>
+			<capacitance gate="1.9239E-15" source="3.9562E-15" drain="2.1522E-15"/>
+		</size>
+		<size W="45.69" L="1">
+			<current leakage="1.0548E-07"/>
+			<capacitance gate="1.9623E-15" source="4.0281E-15" drain="2.1928E-15"/>
+		</size>
+		<size W="46.61" L="1">
+			<current leakage="1.0761E-07"/>
+			<capacitance gate="2.0020E-15" source="4.1024E-15" drain="2.2347E-15"/>
+		</size>
+		<size W="47.54" L="1">
+			<current leakage="1.0977E-07"/>
+			<capacitance gate="2.0421E-15" source="4.1776E-15" drain="2.2771E-15"/>
+		</size>
+		<size W="48.49" L="1">
+			<current leakage="1.1197E-07"/>
+			<capacitance gate="2.0831E-15" source="4.2544E-15" drain="2.3204E-15"/>
+		</size>
+		<size W="49.46" L="1">
+			<current leakage="1.1423E-07"/>
+			<capacitance gate="2.1249E-15" source="4.3328E-15" drain="2.3646E-15"/>
+		</size>
+		<size W="50.45" L="1">
+			<current leakage="1.1652E-07"/>
+			<capacitance gate="2.1676E-15" source="4.4128E-15" drain="2.4097E-15"/>
+		</size>
+		<size W="51.46" L="1">
+			<current leakage="1.1886E-07"/>
+			<capacitance gate="2.2112E-15" source="4.4944E-15" drain="2.4557E-15"/>
+		</size>
+		<size W="52.48" L="1">
+			<current leakage="1.2123E-07"/>
+			<capacitance gate="2.2552E-15" source="4.5768E-15" drain="2.5022E-15"/>
+		</size>
+		<size W="53.53" L="1">
+			<current leakage="1.2367E-07"/>
+			<capacitance gate="2.3005E-15" source="4.6617E-15" drain="2.5500E-15"/>
+		</size>
+		<size W="54.61" L="1">
+			<current leakage="1.2617E-07"/>
+			<capacitance gate="2.3471E-15" source="4.7490E-15" drain="2.5992E-15"/>
+		</size>
+		<size W="55.70" L="1">
+			<current leakage="1.2870E-07"/>
+			<capacitance gate="2.3942E-15" source="4.8371E-15" drain="2.6489E-15"/>
+		</size>
+		<size W="56.81" L="1">
+			<current leakage="1.3128E-07"/>
+			<capacitance gate="2.4421E-15" source="4.9268E-15" drain="2.6995E-15"/>
+		</size>
+		<size W="57.95" L="1">
+			<current leakage="1.3392E-07"/>
+			<capacitance gate="2.4912E-15" source="5.0189E-15" drain="2.7514E-15"/>
+		</size>
+		<size W="59.11" L="1">
+			<current leakage="1.3661E-07"/>
+			<capacitance gate="2.5413E-15" source="5.1127E-15" drain="2.8043E-15"/>
+		</size>
+		<size W="60.29" L="1">
+			<current leakage="1.3935E-07"/>
+			<capacitance gate="2.5922E-15" source="5.2080E-15" drain="2.8580E-15"/>
+		</size>
+		<size W="61.49" L="1">
+			<current leakage="1.4213E-07"/>
+			<capacitance gate="2.6440E-15" source="5.3050E-15" drain="2.9127E-15"/>
+		</size>
+		<size W="62.72" L="1">
+			<current leakage="1.4499E-07"/>
+			<capacitance gate="2.6970E-15" source="5.4044E-15" drain="2.9688E-15"/>
+		</size>
+		<size W="63.98" L="1">
+			<current leakage="1.4791E-07"/>
+			<capacitance gate="2.7514E-15" source="5.5062E-15" drain="3.0262E-15"/>
+		</size>
+		<size W="65.26" L="1">
+			<current leakage="1.5088E-07"/>
+			<capacitance gate="2.8066E-15" source="5.6097E-15" drain="3.0845E-15"/>
+		</size>
+		<size W="66.56" L="1">
+			<current leakage="1.5390E-07"/>
+			<capacitance gate="2.8627E-15" source="5.7147E-15" drain="3.1437E-15"/>
+		</size>
+		<size W="67.89" L="1">
+			<current leakage="1.5698E-07"/>
+			<capacitance gate="2.9201E-15" source="5.8222E-15" drain="3.2043E-15"/>
+		</size>
+		<size W="69.25" L="1">
+			<current leakage="1.6014E-07"/>
+			<capacitance gate="2.9788E-15" source="5.9321E-15" drain="3.2663E-15"/>
+		</size>
+		<size W="70.64" L="1">
+			<current leakage="1.6336E-07"/>
+			<capacitance gate="3.0388E-15" source="6.0444E-15" drain="3.3296E-15"/>
+		</size>
+		<size W="72.05" L="1">
+			<current leakage="1.6663E-07"/>
+			<capacitance gate="3.0996E-15" source="6.1584E-15" drain="3.3938E-15"/>
+		</size>
+		<size W="73.49" L="1">
+			<current leakage="1.6997E-07"/>
+			<capacitance gate="3.1617E-15" source="6.2747E-15" drain="3.4594E-15"/>
+		</size>
+		<size W="74.96" L="1">
+			<current leakage="1.7338E-07"/>
+			<capacitance gate="3.2251E-15" source="6.3935E-15" drain="3.5264E-15"/>
+		</size>
+		<size W="76.46" L="1">
+			<current leakage="1.7686E-07"/>
+			<capacitance gate="3.2899E-15" source="6.5147E-15" drain="3.5947E-15"/>
+		</size>
+		<size W="77.99" L="1">
+			<current leakage="1.8041E-07"/>
+			<capacitance gate="3.3559E-15" source="6.6384E-15" drain="3.6644E-15"/>
+		</size>
+		<size W="79.55" L="1">
+			<current leakage="1.8403E-07"/>
+			<capacitance gate="3.4232E-15" source="6.7644E-15" drain="3.7355E-15"/>
+		</size>
+		<size W="81.14" L="1">
+			<current leakage="1.8772E-07"/>
+			<capacitance gate="3.4918E-15" source="6.8929E-15" drain="3.8079E-15"/>
+		</size>
+		<size W="82.76" L="1">
+			<current leakage="1.9148E-07"/>
+			<capacitance gate="3.5617E-15" source="7.0238E-15" drain="3.8817E-15"/>
+		</size>
+		<size W="84.42" L="1">
+			<current leakage="1.9533E-07"/>
+			<capacitance gate="3.6333E-15" source="7.1579E-15" drain="3.9574E-15"/>
+		</size>
+		<size W="86.11" L="1">
+			<current leakage="1.9925E-07"/>
+			<capacitance gate="3.7062E-15" source="7.2945E-15" drain="4.0343E-15"/>
+		</size>
+		<size W="87.83" L="1">
+			<current leakage="2.0324E-07"/>
+			<capacitance gate="3.7804E-15" source="7.4335E-15" drain="4.1127E-15"/>
+		</size>
+		<size W="89.59" L="1">
+			<current leakage="2.0732E-07"/>
+			<capacitance gate="3.8564E-15" source="7.5757E-15" drain="4.1929E-15"/>
+		</size>
+		<size W="91.38" L="1">
+			<current leakage="2.1148E-07"/>
+			<capacitance gate="3.9336E-15" source="7.7203E-15" drain="4.2744E-15"/>
+		</size>
+		<size W="93.21" L="1">
+			<current leakage="2.1572E-07"/>
+			<capacitance gate="4.0125E-15" source="7.8682E-15" drain="4.3578E-15"/>
+		</size>
+		<size W="95.07" L="1">
+			<current leakage="2.2004E-07"/>
+			<capacitance gate="4.0928E-15" source="8.0185E-15" drain="4.4425E-15"/>
+		</size>
+		<size W="96.97" L="1">
+			<current leakage="2.2445E-07"/>
+			<capacitance gate="4.1748E-15" source="8.1720E-15" drain="4.5290E-15"/>
+		</size>
+		<size W="98.91" L="1">
+			<current leakage="2.2895E-07"/>
+			<capacitance gate="4.2585E-15" source="8.3288E-15" drain="4.6174E-15"/>
+		</size>
+		<size W="100.89" L="1">
+			<current leakage="2.3354E-07"/>
+			<capacitance gate="4.3439E-15" source="8.4887E-15" drain="4.7076E-15"/>
+		</size>
+		<size W="102.91" L="1">
+			<current leakage="2.3823E-07"/>
+			<capacitance gate="4.4310E-15" source="8.6519E-15" drain="4.7996E-15"/>
+		</size>
+		<size W="104.96" L="1">
+			<current leakage="2.4298E-07"/>
+			<capacitance gate="4.5195E-15" source="8.8176E-15" drain="4.8929E-15"/>
+		</size>
+		<size W="107.06" L="1">
+			<current leakage="2.4785E-07"/>
+			<capacitance gate="4.6101E-15" source="8.9873E-15" drain="4.9886E-15"/>
+		</size>
+		<size W="109.20" L="1">
+			<current leakage="2.5282E-07"/>
+			<capacitance gate="4.7024E-15" source="9.1602E-15" drain="5.0861E-15"/>
+		</size>
+		<size W="111.39" L="1">
+			<current leakage="2.5790E-07"/>
+			<capacitance gate="4.7969E-15" source="9.3371E-15" drain="5.1858E-15"/>
+		</size>
+		<size W="113.62" L="1">
+			<current leakage="2.6307E-07"/>
+			<capacitance gate="4.8931E-15" source="9.5173E-15" drain="5.2874E-15"/>
+		</size>
+		<size W="115.89" L="1">
+			<current leakage="2.6834E-07"/>
+			<capacitance gate="4.9910E-15" source="9.7007E-15" drain="5.3908E-15"/>
+		</size>
+		<size W="118.21" L="1">
+			<current leakage="2.7372E-07"/>
+			<capacitance gate="5.0911E-15" source="9.8881E-15" drain="5.4964E-15"/>
+		</size>
+		<size W="120.57" L="1">
+			<current leakage="2.7920E-07"/>
+			<capacitance gate="5.1929E-15" source="1.0079E-14" drain="5.6039E-15"/>
+		</size>
+		<size W="122.98" L="1">
+			<current leakage="2.8479E-07"/>
+			<capacitance gate="5.2969E-15" source="1.0274E-14" drain="5.7136E-15"/>
+		</size>
+		<size W="125.44" L="1">
+			<current leakage="2.9049E-07"/>
+			<capacitance gate="5.4030E-15" source="1.0472E-14" drain="5.8257E-15"/>
+		</size>
+		<size W="127.95" L="1">
+			<current leakage="2.9632E-07"/>
+			<capacitance gate="5.5113E-15" source="1.0675E-14" drain="5.9400E-15"/>
+		</size>
+		<size W="130.51" L="1">
+			<current leakage="3.0226E-07"/>
+			<capacitance gate="5.6218E-15" source="1.0882E-14" drain="6.0566E-15"/>
+		</size>
+		<size W="133.12" L="1">
+			<current leakage="3.0831E-07"/>
+			<capacitance gate="5.7344E-15" source="1.1093E-14" drain="6.1754E-15"/>
+		</size>
+		<size W="135.78" L="1">
+			<current leakage="3.1448E-07"/>
+			<capacitance gate="5.8491E-15" source="1.1308E-14" drain="6.2966E-15"/>
+		</size>
+		<size W="138.50" L="1">
+			<current leakage="3.2079E-07"/>
+			<capacitance gate="5.9665E-15" source="1.1527E-14" drain="6.4204E-15"/>
+		</size>
+		<size W="141.27" L="1">
+			<current leakage="3.2722E-07"/>
+			<capacitance gate="6.0860E-15" source="1.1751E-14" drain="6.5466E-15"/>
+		</size>
+		<size W="144.09" L="1">
+			<current leakage="3.3376E-07"/>
+			<capacitance gate="6.2077E-15" source="1.1979E-14" drain="6.6750E-15"/>
+		</size>
+		<size W="146.97" L="1">
+			<current leakage="3.4044E-07"/>
+			<capacitance gate="6.3319E-15" source="1.2212E-14" drain="6.8061E-15"/>
+		</size>
+		<size W="149.91" L="1">
+			<current leakage="3.4726E-07"/>
+			<capacitance gate="6.4587E-15" source="1.2449E-14" drain="6.9400E-15"/>
+		</size>
+		<size W="152.91" L="1">
+			<current leakage="3.5422E-07"/>
+			<capacitance gate="6.5882E-15" source="1.2692E-14" drain="7.0766E-15"/>
+		</size>
+		<size W="155.97" L="1">
+			<current leakage="3.6132E-07"/>
+			<capacitance gate="6.7202E-15" source="1.2939E-14" drain="7.2160E-15"/>
+		</size>
+		<size W="159.09" L="1">
+			<current leakage="3.6856E-07"/>
+			<capacitance gate="6.8549E-15" source="1.3191E-14" drain="7.3580E-15"/>
+		</size>
+		<size W="162.27" L="1">
+			<current leakage="3.7594E-07"/>
+			<capacitance gate="6.9920E-15" source="1.3448E-14" drain="7.5028E-15"/>
+		</size>
+		<size W="165.52" L="1">
+			<current leakage="3.8348E-07"/>
+			<capacitance gate="7.1323E-15" source="1.3710E-14" drain="7.6508E-15"/>
+		</size>
+		<size W="168.83" L="1">
+			<current leakage="3.9116E-07"/>
+			<capacitance gate="7.2751E-15" source="1.3978E-14" drain="7.8015E-15"/>
+		</size>
+		<size W="172.20" L="1">
+			<current leakage="3.9897E-07"/>
+			<capacitance gate="7.4205E-15" source="1.4250E-14" drain="7.9550E-15"/>
+		</size>
+		<size W="175.65" L="1">
+			<current leakage="4.0698E-07"/>
+			<capacitance gate="7.5693E-15" source="1.4529E-14" drain="8.1120E-15"/>
+		</size>
+		<size W="179.16" L="1">
+			<current leakage="4.1512E-07"/>
+			<capacitance gate="7.7207E-15" source="1.4812E-14" drain="8.2718E-15"/>
+		</size>
+		<size W="182.74" L="1">
+			<current leakage="4.2343E-07"/>
+			<capacitance gate="7.8752E-15" source="1.5101E-14" drain="8.4348E-15"/>
+		</size>
+		<size W="186.40" L="1">
+			<current leakage="4.3192E-07"/>
+			<capacitance gate="8.0331E-15" source="1.5397E-14" drain="8.6015E-15"/>
+		</size>
+		<size W="190.13" L="1">
+			<current leakage="4.4057E-07"/>
+			<capacitance gate="8.1940E-15" source="1.5698E-14" drain="8.7713E-15"/>
+		</size>
+		<size W="193.93" L="1">
+			<current leakage="4.4939E-07"/>
+			<capacitance gate="8.3579E-15" source="1.6005E-14" drain="8.9443E-15"/>
+		</size>
+		<size W="197.81" L="1">
+			<current leakage="4.5839E-07"/>
+			<capacitance gate="8.5253E-15" source="1.6319E-14" drain="9.1209E-15"/>
+		</size>
+		<size W="201.77" L="1">
+			<current leakage="4.6757E-07"/>
+			<capacitance gate="8.6962E-15" source="1.6639E-14" drain="9.3012E-15"/>
+		</size>
+		<size W="205.80" L="1">
+			<current leakage="4.7692E-07"/>
+			<capacitance gate="8.8700E-15" source="1.6964E-14" drain="9.4847E-15"/>
+		</size>
+		<size W="209.92" L="1">
+			<current leakage="4.8648E-07"/>
+			<capacitance gate="9.0478E-15" source="1.7297E-14" drain="9.6723E-15"/>
+		</size>
+		<size W="214.11" L="1">
+			<current leakage="4.9620E-07"/>
+			<capacitance gate="9.2285E-15" source="1.7635E-14" drain="9.8630E-15"/>
+		</size>
+		<size W="218.40" L="1">
+			<current leakage="5.0615E-07"/>
+			<capacitance gate="9.4136E-15" source="1.7982E-14" drain="1.0058E-14"/>
+		</size>
+		<size W="222.76" L="1">
+			<current leakage="5.1627E-07"/>
+			<capacitance gate="9.6017E-15" source="1.8334E-14" drain="1.0257E-14"/>
+		</size>
+		<size W="227.22" L="1">
+			<current leakage="5.2662E-07"/>
+			<capacitance gate="9.7941E-15" source="1.8694E-14" drain="1.0460E-14"/>
+		</size>
+		<size W="231.76" L="1">
+			<current leakage="5.3715E-07"/>
+			<capacitance gate="9.9900E-15" source="1.9061E-14" drain="1.0666E-14"/>
+		</size>
+		<size W="236.40" L="1">
+			<current leakage="5.4791E-07"/>
+			<capacitance gate="1.0190E-14" source="1.9436E-14" drain="1.0878E-14"/>
+		</size>
+		<size W="241.13" L="1">
+			<current leakage="5.5889E-07"/>
+			<capacitance gate="1.0394E-14" source="1.9818E-14" drain="1.1093E-14"/>
+		</size>
+		<size W="245.95" L="1">
+			<current leakage="5.7007E-07"/>
+			<capacitance gate="1.0602E-14" source="2.0207E-14" drain="1.1312E-14"/>
+		</size>
+		<size W="250.87" L="1">
+			<current leakage="5.8148E-07"/>
+			<capacitance gate="1.0814E-14" source="2.0605E-14" drain="1.1536E-14"/>
+		</size>
+		<size W="255.89" L="1">
+			<current leakage="5.9313E-07"/>
+			<capacitance gate="1.1031E-14" source="2.1010E-14" drain="1.1765E-14"/>
+		</size>
+		<size W="261.00" L="1">
+			<current leakage="6.0498E-07"/>
+			<capacitance gate="1.1251E-14" source="2.1423E-14" drain="1.1997E-14"/>
+		</size>
+		<size W="266.22" L="1">
+			<current leakage="6.1709E-07"/>
+			<capacitance gate="1.1477E-14" source="2.1845E-14" drain="1.2235E-14"/>
+		</size>
+		<size W="271.55" L="1">
+			<current leakage="6.2946E-07"/>
+			<capacitance gate="1.1707E-14" source="2.2275E-14" drain="1.2478E-14"/>
+		</size>
+		<size W="276.98" L="1">
+			<current leakage="6.4206E-07"/>
+			<capacitance gate="1.1941E-14" source="2.2714E-14" drain="1.2725E-14"/>
+		</size>
+		<size W="282.52" L="1">
+			<current leakage="6.5491E-07"/>
+			<capacitance gate="1.2180E-14" source="2.3161E-14" drain="1.2977E-14"/>
+		</size>
+		<size W="288.17" L="1">
+			<current leakage="6.6802E-07"/>
+			<capacitance gate="1.2424E-14" source="2.3617E-14" drain="1.3234E-14"/>
+		</size>
+		<size W="293.93" L="1">
+			<current leakage="6.8138E-07"/>
+			<capacitance gate="1.2672E-14" source="2.4083E-14" drain="1.3496E-14"/>
+		</size>
+		<size W="299.81" L="1">
+			<current leakage="6.9502E-07"/>
+			<capacitance gate="1.2926E-14" source="2.4558E-14" drain="1.3764E-14"/>
+		</size>
+		<size W="305.81" L="1">
+			<current leakage="7.0894E-07"/>
+			<capacitance gate="1.3185E-14" source="2.5042E-14" drain="1.4037E-14"/>
+		</size>
+		<size W="311.92" L="1">
+			<current leakage="7.2311E-07"/>
+			<capacitance gate="1.3448E-14" source="2.5536E-14" drain="1.4315E-14"/>
+		</size>
+		<size W="318.16" L="1">
+			<current leakage="7.3759E-07"/>
+			<capacitance gate="1.3717E-14" source="2.6040E-14" drain="1.4599E-14"/>
+		</size>
+		<size W="324.53" L="1">
+			<current leakage="7.5237E-07"/>
+			<capacitance gate="1.3992E-14" source="2.6554E-14" drain="1.4889E-14"/>
+		</size>
+		<size W="331.02" L="1">
+			<current leakage="7.6743E-07"/>
+			<capacitance gate="1.4272E-14" source="2.7078E-14" drain="1.5184E-14"/>
+		</size>
+		<size W="337.64" L="1">
+			<current leakage="7.8278E-07"/>
+			<capacitance gate="1.4558E-14" source="2.7613E-14" drain="1.5486E-14"/>
+		</size>
+		<size W="344.39" L="1">
+			<current leakage="7.9844E-07"/>
+			<capacitance gate="1.4849E-14" source="2.8158E-14" drain="1.5793E-14"/>
+		</size>
+		<size W="351.28" L="1">
+			<current leakage="8.1443E-07"/>
+			<capacitance gate="1.5146E-14" source="2.8715E-14" drain="1.6106E-14"/>
+		</size>
+		<size W="358.30" L="1">
+			<current leakage="8.3071E-07"/>
+			<capacitance gate="1.5449E-14" source="2.9282E-14" drain="1.6426E-14"/>
+		</size>
+		<size W="365.47" L="1">
+			<current leakage="8.4735E-07"/>
+			<capacitance gate="1.5758E-14" source="2.9861E-14" drain="1.6752E-14"/>
+		</size>
+		<size W="372.78" L="1">
+			<current leakage="8.6431E-07"/>
+			<capacitance gate="1.6074E-14" source="3.0451E-14" drain="1.7085E-14"/>
+		</size>
+		<size W="380.23" L="1">
+			<current leakage="8.8159E-07"/>
+			<capacitance gate="1.6395E-14" source="3.1053E-14" drain="1.7424E-14"/>
+		</size>
+		<size W="387.84" L="1">
+			<current leakage="8.9924E-07"/>
+			<capacitance gate="1.6723E-14" source="3.1667E-14" drain="1.7770E-14"/>
+		</size>
+		<size W="395.60" L="1">
+			<current leakage="9.1725E-07"/>
+			<capacitance gate="1.7058E-14" source="3.2294E-14" drain="1.8123E-14"/>
+		</size>
+		<size W="403.51" L="1">
+			<current leakage="9.3560E-07"/>
+			<capacitance gate="1.7399E-14" source="3.2933E-14" drain="1.8483E-14"/>
+		</size>
+		<size W="411.58" L="1">
+			<current leakage="9.5432E-07"/>
+			<capacitance gate="1.7747E-14" source="3.3585E-14" drain="1.8850E-14"/>
+		</size>
+		<size W="419.81" L="1">
+			<current leakage="9.7341E-07"/>
+			<capacitance gate="1.8102E-14" source="3.4249E-14" drain="1.9225E-14"/>
+		</size>
+		<size W="428.21" L="1">
+			<current leakage="9.9290E-07"/>
+			<capacitance gate="1.8465E-14" source="3.4928E-14" drain="1.9607E-14"/>
+		</size>
+		<size W="436.77" L="1">
+			<current leakage="1.0128E-06"/>
+			<capacitance gate="1.8834E-14" source="3.5619E-14" drain="1.9996E-14"/>
+		</size>
+		<size W="445.51" L="1">
+			<current leakage="1.0330E-06"/>
+			<capacitance gate="1.9211E-14" source="3.6325E-14" drain="2.0394E-14"/>
+		</size>
+		<size W="454.42" L="1">
+			<current leakage="1.0537E-06"/>
+			<capacitance gate="1.9595E-14" source="3.7044E-14" drain="2.0799E-14"/>
+		</size>
+		<size W="463.50" L="1">
+			<current leakage="1.0748E-06"/>
+			<capacitance gate="1.9987E-14" source="3.7778E-14" drain="2.1212E-14"/>
+		</size>
+		<size W="472.77" L="1">
+			<current leakage="1.0963E-06"/>
+			<capacitance gate="2.0387E-14" source="3.8526E-14" drain="2.1634E-14"/>
+		</size>
+		<size W="482.23" L="1">
+			<current leakage="1.1182E-06"/>
+			<capacitance gate="2.0795E-14" source="3.9290E-14" drain="2.2065E-14"/>
+		</size>
+		<size W="491.87" L="1">
+			<current leakage="1.1406E-06"/>
+			<capacitance gate="2.1211E-14" source="4.0069E-14" drain="2.2503E-14"/>
+		</size>
+		<size W="501.71" L="1">
+			<current leakage="1.1634E-06"/>
+			<capacitance gate="2.1635E-14" source="4.0863E-14" drain="2.2951E-14"/>
+		</size>
+		<size W="511.75" L="1">
+			<current leakage="1.1867E-06"/>
+			<capacitance gate="2.2069E-14" source="4.1674E-14" drain="2.3407E-14"/>
+		</size>
+		<size W="521.98" L="1">
+			<current leakage="1.2104E-06"/>
+			<capacitance gate="2.2510E-14" source="4.2500E-14" drain="2.3873E-14"/>
+		</size>
+		<size W="532.42" L="1">
+			<current leakage="1.2347E-06"/>
+			<capacitance gate="2.2960E-14" source="4.3343E-14" drain="2.4348E-14"/>
+		</size>
+		<size W="543.07" L="1">
+			<current leakage="1.2594E-06"/>
+			<capacitance gate="2.3420E-14" source="4.4203E-14" drain="2.4832E-14"/>
+		</size>
+		<size W="553.93" L="1">
+			<current leakage="1.2846E-06"/>
+			<capacitance gate="2.3888E-14" source="4.5080E-14" drain="2.5326E-14"/>
+		</size>
+		<size W="565.01" L="1">
+			<current leakage="1.3103E-06"/>
+			<capacitance gate="2.4366E-14" source="4.5975E-14" drain="2.5830E-14"/>
+		</size>
+		<size W="576.31" L="1">
+			<current leakage="1.3365E-06"/>
+			<capacitance gate="2.4854E-14" source="4.6887E-14" drain="2.6344E-14"/>
+		</size>
+		<size W="587.83" L="1">
+			<current leakage="1.3632E-06"/>
+			<capacitance gate="2.5350E-14" source="4.7817E-14" drain="2.6868E-14"/>
+		</size>
+		<size W="599.59" L="1">
+			<current leakage="1.3905E-06"/>
+			<capacitance gate="2.5858E-14" source="4.8767E-14" drain="2.7403E-14"/>
+		</size>
+		<size W="611.58" L="1">
+			<current leakage="1.4183E-06"/>
+			<capacitance gate="2.6375E-14" source="4.9735E-14" drain="2.7948E-14"/>
+		</size>
+		<size W="623.82" L="1">
+			<current leakage="1.4467E-06"/>
+			<capacitance gate="2.6903E-14" source="5.0723E-14" drain="2.8505E-14"/>
+		</size>
+		<size W="636.29" L="1">
+			<current leakage="1.4756E-06"/>
+			<capacitance gate="2.7441E-14" source="5.1730E-14" drain="2.9072E-14"/>
+		</size>
+		<size W="649.02" L="1">
+			<current leakage="1.5052E-06"/>
+			<capacitance gate="2.7990E-14" source="5.2758E-14" drain="2.9651E-14"/>
+		</size>
+		<size W="662.00" L="1">
+			<current leakage="1.5353E-06"/>
+			<capacitance gate="2.8550E-14" source="5.3806E-14" drain="3.0242E-14"/>
+		</size>
+		<size W="675.24" L="1">
+			<current leakage="1.5660E-06"/>
+			<capacitance gate="2.9121E-14" source="5.4875E-14" drain="3.0844E-14"/>
+		</size>
+		<size W="688.74" L="1">
+			<current leakage="1.5973E-06"/>
+			<capacitance gate="2.9703E-14" source="5.5965E-14" drain="3.1458E-14"/>
+		</size>
+		<size W="702.52" L="1">
+			<current leakage="1.6293E-06"/>
+			<capacitance gate="3.0298E-14" source="5.7078E-14" drain="3.2085E-14"/>
+		</size>
+		<size W="716.57" L="1">
+			<current leakage="1.6619E-06"/>
+			<capacitance gate="3.0904E-14" source="5.8212E-14" drain="3.2724E-14"/>
+		</size>
+		<size W="730.90" L="1">
+			<current leakage="1.6951E-06"/>
+			<capacitance gate="3.1522E-14" source="5.9369E-14" drain="3.3375E-14"/>
+		</size>
+		<size W="745.52" L="1">
+			<current leakage="1.7290E-06"/>
+			<capacitance gate="3.2152E-14" source="6.0580E-14" drain="3.4010E-14"/>
+		</size>
+		<size W="760.43" L="1">
+			<current leakage="1.7636E-06"/>
+			<capacitance gate="3.2796E-14" source="6.1754E-14" drain="3.4718E-14"/>
+		</size>
+		<size W="775.64" L="1">
+			<current leakage="1.7989E-06"/>
+			<capacitance gate="3.3452E-14" source="6.3013E-14" drain="3.5379E-14"/>
+		</size>
+		<size W="791.15" L="1">
+			<current leakage="1.8349E-06"/>
+			<capacitance gate="3.4121E-14" source="6.4265E-14" drain="3.6084E-14"/>
+		</size>
+		<size W="806.97" L="1">
+			<current leakage="1.8716E-06"/>
+			<capacitance gate="3.4803E-14" source="6.5543E-14" drain="3.6803E-14"/>
+		</size>
+		<size W="823.11" L="1">
+			<current leakage="1.9090E-06"/>
+			<capacitance gate="3.5499E-14" source="6.6847E-14" drain="3.7536E-14"/>
+		</size>
+		<size W="839.57" L="1">
+			<current leakage="1.9472E-06"/>
+			<capacitance gate="3.6209E-14" source="6.8176E-14" drain="3.8284E-14"/>
+		</size>
+		<size W="856.36" L="1">
+			<current leakage="1.9862E-06"/>
+			<capacitance gate="3.6933E-14" source="6.9499E-14" drain="3.9080E-14"/>
+		</size>
+		<size W="873.49" L="1">
+			<current leakage="2.0259E-06"/>
+			<capacitance gate="3.7672E-14" source="7.0882E-14" drain="3.9859E-14"/>
+		</size>
+		<size W="890.96" L="1">
+			<current leakage="2.0665E-06"/>
+			<capacitance gate="3.8426E-14" source="7.2327E-14" drain="4.0619E-14"/>
+		</size>
+		<size W="908.78" L="1">
+			<current leakage="2.1078E-06"/>
+			<capacitance gate="3.9194E-14" source="7.3766E-14" drain="4.1429E-14"/>
+		</size>
+		<size W="926.96" L="1">
+			<current leakage="2.1500E-06"/>
+			<capacitance gate="3.9979E-14" source="7.5234E-14" drain="4.2255E-14"/>
+		</size>
+		<size W="945.50" L="1">
+			<current leakage="2.1930E-06"/>
+			<capacitance gate="4.0778E-14" source="7.6732E-14" drain="4.3098E-14"/>
+		</size>
+		<size W="964.41" L="1">
+			<current leakage="2.2369E-06"/>
+			<capacitance gate="4.1594E-14" source="7.8259E-14" drain="4.3957E-14"/>
+		</size>
+		<size W="983.69" L="1">
+			<current leakage="2.2816E-06"/>
+			<capacitance gate="4.2426E-14" source="7.9816E-14" drain="4.4833E-14"/>
+		</size>
+	</transistor>
+</technology>
