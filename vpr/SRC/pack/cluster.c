@@ -2163,8 +2163,6 @@ static void free_pb (t_pb *pb, int max_models) {
 		mode = pb->mode;
 		for(i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != NULL; i++) {
 			for(j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != NULL; j++) {
-				free_pb_stats(pb, max_models);
-				pb->child_pbs[i][j].pb_stats.gain = NULL;
 				if(pb->child_pbs[i][j].name != NULL) {
 					free_pb(&pb->child_pbs[i][j], max_models);
 				}
@@ -2188,6 +2186,8 @@ static void free_pb (t_pb *pb, int max_models) {
 		}
 		pb->logical_block = OPEN;
 	}
+	free_pb_stats(pb, max_models);
+	pb->pb_stats.gain = NULL;
 }
 
 static void free_pb_stats(t_pb *pb, int max_models) {
