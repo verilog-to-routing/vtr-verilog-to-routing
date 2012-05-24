@@ -1,6 +1,0 @@
-gcc -c ace.c -g -O0 ace.o -I ~/abc/src/base/abc -I ~/abc/src/misc/vec -I ~/abc/src/misc/util -I ~/abc/src/misc/st -I ~/abc/src/misc/nm -I ~/abc/src/aig/hop -I ~/abc/src/aig/mem -DLIN
-In file included from ace.c:3:
-ace.h:6: error: expected declaration specifiers or ‘...’ before ‘Io_FileType_t’
-ace.c: In function ‘main’:
-ace.c:9: error: too few arguments to function ‘Io_Read’
-make: *** [ace.o] Error 1
