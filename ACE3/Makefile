@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -g -O0 -Wall -Wextra
 LFLAGS = -g -O0
 
-TARGET = ace
+EXE = ace
 
 ABC_DIR = ../abc_with_bb_support
 ABC_LIB = libabc.a
@@ -43,9 +43,11 @@ ABC_HEADERS = -I $(ABC_DIR)/src/base/io \
 LIBS = -lreadline -lm -ldl
 DEFINES = -DLIN
 
-all: $(OBJS)
-	make $(ABC_LIB_PATH)
-	$(CC) $(OBJS) $(CFLAGS) $(ABC_HEADERS) $(ABC_LIB_PATH) $(LIBS) -o $(TARGET) 
+$(EXE): $(OBJS) Makefile $(ABC_LIB_PATH)
+	$(CC) $(OBJS) $(CFLAGS) $(ABC_HEADERS) $(ABC_LIB_PATH) $(LIBS) -o $(EXE) 
+	
+$(ABC_LIB_PATH): 
+	cd $(ABC_DIR); make $(ABC_LIB)
 	
 clean:
 	rm *.o *.exe $(TARGET)
