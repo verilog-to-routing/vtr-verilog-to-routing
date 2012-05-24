@@ -1,7 +1,7 @@
 #include "ace.h"
 #include "sim.h"
 
-#include "src/bdd/cudd/cudd.h"
+#include "cudd.h"
 
 void get_pi_values (Abc_Ntk_t * ntk, Vec_Ptr_t * nodes, int cycle)
 {
@@ -213,7 +213,7 @@ void evaluate_circuit(Abc_Ntk_t * ntk, Vec_Ptr_t * node_vec, int cycle)
 	ace_status_t status;
 	DdNode * dd_node;
 
-	Vec_PtrForEachEntry(Abc_Obj_t *, node_vec, obj, i)
+	Vec_PtrForEachEntry(node_vec, obj, i)
 	{
 		info = Ace_ObjInfo(obj);
 
@@ -269,8 +269,11 @@ void evaluate_circuit(Abc_Ntk_t * ntk, Vec_Ptr_t * node_vec, int cycle)
 				if (info->value != value || info->status == ACE_UNDEF)
 				{
 					info->value = value;
+					if (info->status != ACE_UNDEF) {
+						/* Don't count the first value as a toggle */
+						info->num_toggles++;
+					}
 					info->status = ACE_NEW;
-					info->num_toggles++;
 				}
 				else
 				{
@@ -374,6 +377,9 @@ void ace_sim_activities(Abc_Ntk_t * ntk, Vec_Ptr_t * nodes, int max_cycles, doub
 		assert(info->static_prob >= 0.0 && info->static_prob <= 1.0);
 		info->switch_prob = info->num_toggles / (double) max_cycles;
 		assert(info->switch_prob >= 0.0 && info->switch_prob <= 1.0);
+
+		assert (info->switch_prob - EPSILON <= 2.0 * (1.0 - info->static_prob));
+		assert (info->switch_prob - EPSILON <= 2.0 * (info->static_prob));
 
 		info->status = ACE_SIM;
 	}

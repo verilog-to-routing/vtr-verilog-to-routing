@@ -2,6 +2,7 @@
 #include "bdd.h"
 
 /* set_clear -- make "r" the empty set of "size" elements */
+/*
 pset set_clear(r, size)
 register pset r;
 int size;
@@ -9,7 +10,7 @@ int size;
     register int i = LOOPINIT(size);
     *r = i; do r[i] = 0; while (--i > 0);
     return r;
-}
+}*/
 
 ace_cube_t * ace_cube_dup (ace_cube_t * cube)
 {

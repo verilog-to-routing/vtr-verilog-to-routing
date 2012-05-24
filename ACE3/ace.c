@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #include "ace.h"
-#include "io.h"
+#include "io_ace.h"
 #include "blif.h"
 #include "cycle.h"
 #include "sim.h"
@@ -10,23 +10,21 @@
 #include "cube.h"
 
 // ABC Headers
-#include "src/base/abc/abc.h"
-#include "src/base/main/main.h"
-#include "src/base/io/ioAbc.h"
+#include "abc.h"
+#include "main.h"
+#include "io.h"
 //#include "vecInt.h"
 
 st_table * ace_info_hash_table;
 
-void print_status(Abc_Ntk_t * ntk)
-{
+void print_status(Abc_Ntk_t * ntk) {
 	int i;
 	Abc_Obj_t * obj;
 
 	Abc_NtkForEachNode(ntk, obj, i)
 	{
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
-		switch(info->status)
-		{
+		switch (info->status) {
 		case ACE_UNDEF:
 			printf("%d: UNDEFINED\n", i);
 			break;
@@ -46,14 +44,13 @@ void print_status(Abc_Ntk_t * ntk)
 	}
 }
 
-void alloc_and_init_activity_info (Abc_Ntk_t * ntk)
-{
+void alloc_and_init_activity_info(Abc_Ntk_t * ntk) {
 	Vec_Ptr_t * node_vec;
 	Abc_Obj_t * obj_ptr;
 	int i;
 
 	node_vec = Abc_NtkDfsSeq(ntk);
-	Vec_PtrForEachEntry(Abc_Obj_t *, node_vec, obj_ptr, i)
+	Vec_PtrForEachEntry(node_vec, obj_ptr, i)
 	{
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj_ptr);
 		info->values = NULL;
@@ -64,15 +61,13 @@ void alloc_and_init_activity_info (Abc_Ntk_t * ntk)
 	Vec_PtrFree(node_vec);
 }
 
-void ace_update_latch_static_probs(Abc_Ntk_t * ntk)
-{
+void ace_update_latch_probs(Abc_Ntk_t * ntk) {
 	Abc_Obj_t * obj_ptr;
 	Abc_Obj_t * fanin_ptr;
 	Abc_Obj_t * fanout_ptr;
 	Ace_Obj_Info_t * fanin_info;
 	Ace_Obj_Info_t * fanout_info;
 	int i;
-
 
 	Abc_NtkForEachLatch(ntk, obj_ptr, i)
 	{
@@ -83,35 +78,12 @@ void ace_update_latch_static_probs(Abc_Ntk_t * ntk)
 		fanout_info = Ace_ObjInfo(fanout_ptr);
 
 		fanout_info->static_prob = fanin_info->static_prob;
-		fanout_info->status = fanin_info->status;
-	}
-}
-
-void ace_update_latch_switch_probs(Abc_Ntk_t * ntk)
-{
-	Abc_Obj_t * obj_ptr;
-	Abc_Obj_t * fanin_ptr;
-	Abc_Obj_t * fanout_ptr;
-	Ace_Obj_Info_t * fanin_info;
-	Ace_Obj_Info_t * fanout_info;
-	int i;
-
-
-	Abc_NtkForEachLatch(ntk, obj_ptr, i)
-	{
-		fanin_ptr = Abc_ObjFanin0(obj_ptr);
-		fanout_ptr = Abc_ObjFanout0(obj_ptr);
-
-		fanin_info = Ace_ObjInfo(fanin_ptr);
-		fanout_info = Ace_ObjInfo(fanout_ptr);
-
 		fanout_info->switch_prob = fanin_info->switch_prob;
 		fanout_info->status = fanin_info->status;
 	}
 }
 
-void print_node_bdd(Abc_Ntk_t * ntk)
-{
+void print_node_bdd(Abc_Ntk_t * ntk) {
 	Abc_Obj_t * obj;
 	int i;
 
@@ -119,22 +91,21 @@ void print_node_bdd(Abc_Ntk_t * ntk)
 	{
 		DdNode * node = obj->pData;
 
-		printf("Object: %d\n", obj->Id); fflush(0);
+		printf("Object: %d\n", obj->Id);
+		fflush(0);
 		//printf("Fanin: %d\n", Abc_ObjFaninNum(obj)); fflush(0);
-		while (1)
-		{
-			if (node == Cudd_ReadOne(ntk->pManFunc))
-			{
+		while (1) {
+			if (node == Cudd_ReadOne(ntk->pManFunc)) {
 				//printf("one!\n");
 				break;
-			}
-			else if (node == Cudd_ReadLogicZero(ntk->pManFunc))
-			{
+			} else if (node == Cudd_ReadLogicZero(ntk->pManFunc)) {
 				//printf("zero!\n");
 				break;
 			}
 
-			printf("\tVar: %hd (%08x)\n", Cudd_Regular(node)->index, (unsigned int) node); fflush(0);
+			printf("\tVar: %hd (%08x)\n", Cudd_Regular(node)->index,
+					(unsigned int) node);
+			fflush(0);
 
 			DdNode * first_node;
 			Cudd_FirstNode(ntk->pManFunc, node, &first_node);
@@ -144,21 +115,19 @@ void print_node_bdd(Abc_Ntk_t * ntk)
 	}
 }
 
-void print_nodes(Vec_Ptr_t * nodes)
-{
+void print_nodes(Vec_Ptr_t * nodes) {
 	Abc_Obj_t * obj;
 	int i;
 
 	printf("Printing Nodes\n");
-	Vec_PtrForEachEntry(Abc_Obj_t *, nodes, obj, i)
+	Vec_PtrForEachEntry(nodes, obj, i)
 	{
 		printf("\t%d. %d-%d-%s\n", i, Abc_ObjId(obj), Abc_ObjType(obj), Abc_ObjName(obj));
 	}
 	fflush(0);
 }
 
-int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors)
-{
+int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors) {
 	int error = 0;
 	Vec_Ptr_t * nodes_all;
 	Vec_Ptr_t * nodes_logic;
@@ -167,8 +136,6 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors)
 	Abc_Obj_t * obj;
 	int i, j;
 	Ace_Obj_Info_t * info;
-	st_table * leaves;
-	Vec_Ptr_t * literals;
 
 	//Build BDD
 	Abc_NtkSopToBdd(ntk);
@@ -176,10 +143,9 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors)
 	nodes_all = Abc_NtkDfsSeq(ntk);
 	nodes_logic = Abc_NtkDfs(ntk, TRUE);
 
+	//print_nodes(nodes_logic);
 
-	print_nodes(nodes_logic);
-
-	Vec_PtrForEachEntry(Abc_Obj_t *, nodes_all, obj, i)
+	Vec_PtrForEachEntry(nodes_all, obj, i)
 	{
 		info = Ace_ObjInfo(obj);
 		info->status = ACE_UNDEF;
@@ -197,15 +163,15 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors)
 	}
 
 	latches_in_cycles_vec = latches_in_cycles(ntk);
-	printf("%d/%d latches are part of cycle(s)\n", latches_in_cycles_vec->nSize, Abc_NtkLatchNum(ntk) );
+	printf("%d/%d latches are part of cycle(s)\n", latches_in_cycles_vec->nSize,
+			Abc_NtkLatchNum(ntk));
 	fflush(0);
 
 	//if (latches_in_cycles_vec->nSize)
-	if (TRUE)
-	{
+	if (TRUE) {
 		//print_status(ntk);
 
-		printf ("Stage 1: Simulating Probabilities...\n");
+		printf("Stage 1: Simulating Probabilities...\n");
 		fflush(0);
 
 		next_state_node_vec = Abc_NtkDfsSeq(ntk);
@@ -215,14 +181,14 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors)
 		ace_sim_activities(ntk, next_state_node_vec, num_vectors, 0.05);
 		//ace_sim_activities(ntk, nodes_logic, num_vectors, 0.05);
 
-		ace_update_latch_static_probs(ntk);
-		ace_update_latch_switch_probs(ntk);
+		ace_update_latch_probs(ntk);
 
 		Vec_PtrFree(next_state_node_vec);
 	}
 
 	//print_status(ntk);
-	printf ("Stage 2: Computing Probabilities...\n"); fflush(0);
+	printf("Stage 2: Computing Probabilities...\n");
+	fflush(0);
 	// Currently this stage does nothing
 
 #if 0
@@ -244,7 +210,8 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors)
 #endif
 
 	/*------------- Computing Register Output Activities. ---------------------*/
-	printf ("Stage 3: Computing Register Output Activities...\n"); fflush (0);
+	printf("Stage 3: Computing Register Output Activities...\n");
+	fflush(0);
 	Abc_NtkForEachLatchOutput(ntk, obj, i)
 	{
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
@@ -259,33 +226,33 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors)
 	}
 
 	/*------------- Calculate switching activities. ---------------------*/
-	printf ("Stage 4: Computing Switching Activities...\n"); fflush(0);
+	printf("Stage 4: Computing Switching Activities...\n");
+	fflush(0);
 
 	/* Do latches first, then logic after */
-	Vec_PtrForEachEntry(Abc_Obj_t *, nodes_all, obj, i)
+	Vec_PtrForEachEntry(nodes_all, obj, i)
 	{
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
 
 		switch(Abc_ObjType(obj))
 		{
-		case ABC_OBJ_PI:
-		case ABC_OBJ_BO:
-		case ABC_OBJ_LATCH:
+			case ABC_OBJ_PI:
+			case ABC_OBJ_BO:
+			case ABC_OBJ_LATCH:
 			info->switch_act = info->switch_prob;
 			break;
 
-		default:
+			default:
 			break;
 		}
 	}
 
-	Vec_PtrForEachEntry(Abc_Obj_t *, nodes_logic, obj, i)
+	Vec_PtrForEachEntry(nodes_logic, obj, i)
 	{
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
 		//Ace_Obj_Info_t * fanin_info;
 
 		assert(Abc_ObjType(obj) == ABC_OBJ_NODE);
-
 
 		if (Abc_ObjFaninNum(obj) < 1)
 		{
@@ -298,7 +265,6 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors)
 			Abc_Obj_t * fanin;
 
 			assert(obj->Type == ABC_OBJ_NODE);
-
 
 			Abc_ObjForEachFanin(obj, fanin, j)
 			{
@@ -313,19 +279,26 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors)
 	return error;
 }
 
-inline Ace_Obj_Info_t * Ace_ObjInfo (Abc_Obj_t * obj)
-{
+inline Ace_Obj_Info_t * Ace_ObjInfo(Abc_Obj_t * obj) {
 	Ace_Obj_Info_t * info;
 
-	if (st_lookup(ace_info_hash_table, (char *) obj, (char **) & info))
-	{
+	if (st_lookup(ace_info_hash_table, (char *) obj, (char **) &info)) {
 		return info;
 	}
 	assert(0);
 }
 
-int main (int argc, char * argv [])
-{
+void prob_epsilon_fix(double * d) {
+	if (*d < 0) {
+		assert(*d > 0 - EPSILON);
+		*d = 0;
+	} else if (*d > 1) {
+		assert(*d < 1 + EPSILON);
+		*d = 1.;
+	}
+}
+
+int main(int argc, char * argv[]) {
 	FILE * BLIF = NULL;
 	FILE * IN_ACT = NULL;
 	FILE * OUT_ACT = stdout;
@@ -333,18 +306,21 @@ int main (int argc, char * argv [])
 	double p, d;
 	int i;
 	int depth;
-	char clk_name [ACE_CHAR_BUFFER_SIZE];
+	char clk_name[ACE_CHAR_BUFFER_SIZE];
 	int error = 0;
 	Abc_Frame_t * pAbc;
 	Abc_Ntk_t * ntk;
 	Abc_Obj_t * obj;
 
+	srand(0);
+
 	p = ACE_PI_STATIC_PROB;
 	d = ACE_PI_SWITCH_PROB;
 
-	char blif_file_name [BLIF_FILE_NAME_LEN];
-	char new_blif_file_name [BLIF_FILE_NAME_LEN];
-	ace_io_parse_argv (argc, argv, &BLIF, &IN_ACT, &OUT_ACT, blif_file_name, new_blif_file_name, &pi_format, &p, &d);
+	char blif_file_name[BLIF_FILE_NAME_LEN];
+	char new_blif_file_name[BLIF_FILE_NAME_LEN];
+	ace_io_parse_argv(argc, argv, &BLIF, &IN_ACT, &OUT_ACT, blif_file_name,
+			new_blif_file_name, &pi_format, &p, &d);
 
 	// Check # of clocks
 #if 0
@@ -361,36 +337,21 @@ int main (int argc, char * argv [])
 	}
 #endif
 
-
 	pAbc = Abc_FrameGetGlobalFrame();
 
 	ntk = Io_Read(blif_file_name, IO_FILE_BLIF, 1);
 
-
 	printf("Objects in network: %d\n", Abc_NtkObjNum(ntk));
 	printf("PIs in network: %d\n", Abc_NtkPiNum(ntk));
-
 
 	printf("POs in network: %d\n", Abc_NtkPoNum(ntk));
 
 	printf("Nodes in network: %d\n", Abc_NtkNodeNum(ntk));
 
-
-
 	printf("Latches in network: %d\n", Abc_NtkLatchNum(ntk));
 
-	if (FALSE)
-	{
-		Abc_NtkForEachObj(ntk, obj, i)
-										{
-			printf("\t%d-%d-%s\n", i, Abc_ObjType(obj), Abc_ObjName(obj));
-										}
-	}
-
-
-	if (! Abc_NtkIsAcyclic(ntk))
-	{
-		printf ("Circuit has combinational loops\n");
+	if (!Abc_NtkIsAcyclic(ntk)) {
+		printf("Circuit has combinational loops\n");
 		exit(0);
 	}
 
@@ -401,18 +362,18 @@ int main (int argc, char * argv [])
 	ace_info_hash_table = st_init_table(st_ptrcmp, st_ptrhash);
 	Abc_NtkForEachObj(ntk, obj, i)
 	{
-		st_insert(ace_info_hash_table, (char *) obj, (char *) & info[i]);
+		st_insert(ace_info_hash_table, (char *) obj, (char *) &info[i]);
 		//Ace_InfoPtrSet(obj, & info[i]);
 	}
 
 	/* DFS Allocation
-	Vec_Ptr_t * node_vec = Abc_NtkDfsSeq(ntk);
-	Ace_Obj_Info_t * info = malloc(node_vec->nSize * sizeof(Ace_Obj_Info_t));
-	Vec_PtrForEachEntry(Abc_Obj_t *, node_vec, obj_ptr, i)
-	{
-		Ace_InfoPtrSet(obj_ptr, & info[i]);
-	}
-	Vec_PtrFree(node_vec);
+	 Vec_Ptr_t * node_vec = Abc_NtkDfsSeq(ntk);
+	 Ace_Obj_Info_t * info = malloc(node_vec->nSize * sizeof(Ace_Obj_Info_t));
+	 Vec_PtrForEachEntry(Abc_Obj_t *, node_vec, obj_ptr, i)
+	 {
+	 Ace_InfoPtrSet(obj_ptr, & info[i]);
+	 }
+	 Vec_PtrFree(node_vec);
 	 */
 
 	// Check Depth
@@ -420,51 +381,48 @@ int main (int argc, char * argv [])
 	printf("Max Depth: %d\n", depth);
 	assert(depth > 0);
 
-
 	alloc_and_init_activity_info(ntk);
 
-	switch (pi_format)
-	{
+	switch (pi_format) {
 	case ACE_CODED:
-		printf ("Input activities will be assumed (%f, %f, %f)...\n",
+		printf("Input activities will be assumed (%f, %f, %f)...\n",
 				ACE_PI_STATIC_PROB, ACE_PI_SWITCH_PROB, ACE_PI_SWITCH_ACT);
 		break;
 	case ACE_PD:
-		printf ("Input activities will be (%f, %f, %f)...\n", p, d, d); fflush(0);
+		printf("Input activities will be (%f, %f, %f)...\n", p, d, d);
+		fflush(0);
 		break;
 	case ACE_ACT:
-		printf ("Input activities will be read from an activity file...\n");
+		printf("Input activities will be read from an activity file...\n");
 		break;
 	case ACE_VEC:
-		printf ("Input activities will be read from a vector file...\n");
+		printf("Input activities will be read from a vector file...\n");
 		break;
 	default:
-		printf ("Error reading activities.\n");
+		printf("Error reading activities.\n");
 		error = ACE_ERROR;
 		break;
 	}
 
 	/*
-	Abc_NtkForEachPi(ntk, obj_ptr, i)
-	{
-		char * s;
-		s = Nm_ManFindNameById(ntk->pManName, obj_ptr->Id);
-		if (s != NULL)
-		{
-			//printf("%s\n",s);
-		}
+	 Abc_NtkForEachPi(ntk, obj_ptr, i)
+	 {
+	 char * s;
+	 s = Nm_ManFindNameById(ntk->pManName, obj_ptr->Id);
+	 if (s != NULL)
+	 {
+	 //printf("%s\n",s);
+	 }
 
-	}
+	 }
 	 */
 
 	// Read Activities
-	if (!error)
-	{
-		error = ace_io_read_activity (ntk, IN_ACT, pi_format, p, d, clk_name);
+	if (!error) {
+		error = ace_io_read_activity(ntk, IN_ACT, pi_format, p, d, clk_name);
 	}
 
-	if (!error)
-	{
+	if (!error) {
 		error = ace_calc_activity(ntk, ACE_NUM_VECTORS);
 	}
 
@@ -472,14 +430,13 @@ int main (int argc, char * argv [])
 	Abc_Ntk_t * new_ntk;
 	new_ntk = Abc_NtkToNetlist(ntk);
 
-	if (!error)
-	{
-		ace_io_print_activity (ntk, OUT_ACT);
+	if (!error) {
+		ace_io_print_activity(ntk, OUT_ACT);
 	}
 
 	Io_WriteHie(ntk, blif_file_name, new_blif_file_name);
 
-
-	printf("Done\n"); fflush(0);
+	printf("Done\n");
+	fflush(0);
 	return 0;
 }

@@ -4,15 +4,14 @@ LFLAGS = -g -O0
 
 TARGET = ace
 
-ABC_DIR = ../abc_for_ace
-ABC_LIB = ../abc_for_ace/libabc.a
+ABC_DIR = ../abc_with_bb_support
+ABC_LIB = libabc.a
+ABC_LIB_PATH = $(ABC_DIR)/$(ABC_LIB)
 
-OBJS = ace.o io.o blif.o cycle.o sim.o bdd.o cube.o depth.o
-ACE_HEADERS = ace.h io.h blif.h depth.h cube.h bdd.h
+OBJS = ace.o io_ace.o blif.o cycle.o sim.o bdd.o cube.o depth.o
+ACE_HEADERS = ace.h io_ace.h blif.h depth.h cube.h bdd.h
 
-ABC_HEADERS = -I $(ABC_DIR)
-			
-			#/src/base/io \
+ABC_HEADERS = -I $(ABC_DIR)/src/base/io \
 			 -I $(ABC_DIR)/src/base/abc \
 			-I $(ABC_DIR)/src/base/main \
 			-I $(ABC_DIR)/src/base/cmd \
@@ -45,10 +44,11 @@ LIBS = -lreadline -lm -ldl
 DEFINES = -DLIN
 
 all: $(OBJS)
-	$(CC) $(OBJS) $(CFLAGS) $(ABC_HEADERS) $(ABC_LIB) $(LIBS) -o $(TARGET) 
+	make $(ABC_LIB_PATH)
+	$(CC) $(OBJS) $(CFLAGS) $(ABC_HEADERS) $(ABC_LIB_PATH) $(LIBS) -o $(TARGET) 
 	
 clean:
 	rm *.o *.exe $(TARGET)
 	
-%.o: %.c $(ACE_HEADERS)
+%.o: %.c
 	$(CC) -c $< $(CFLAGS) -o $@ $(ABC_HEADERS) $(DEFINES) $(LIBS)

@@ -1,6 +1,6 @@
 #include "ace.h"
 
-#include "src/base/abc/abc.h"
+#include "abc.h"
 
 int calc_depth (Abc_Obj_t * obj)
 {
@@ -37,7 +37,7 @@ int ace_calc_network_depth (Abc_Ntk_t * ntk)
 	nodes = Abc_NtkDfs(ntk, TRUE);
 
 	depth = 0;
-	Vec_PtrForEachEntry(Abc_Obj_t *, nodes, obj, i)
+	Vec_PtrForEachEntry(nodes, obj, i)
 	{
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
 

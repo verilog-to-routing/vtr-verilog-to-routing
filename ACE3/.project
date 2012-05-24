@@ -3,7 +3,7 @@
 	<name>ACE3</name>
 	<comment></comment>
 	<projects>
-		<project>abc</project>
+		<project>abc_for_ace</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
@@ -52,7 +52,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.fullBuildTarget</key>
-					<value>all</value>
+					<value></value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.stopOnError</key>

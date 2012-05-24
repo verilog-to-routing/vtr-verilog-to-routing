@@ -4,8 +4,8 @@
 #include "ace.h"
 #include "cube.h"
 
-#include "src/bdd/cudd/cudd.h"
-#include "src/misc/st/st.h"
+#include "cudd.h"
+#include "st.h"
 
 
 double calc_cube_switch_prob_recur (
