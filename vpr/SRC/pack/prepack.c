@@ -467,29 +467,8 @@ t_pack_molecule *alloc_and_load_pack_molecules(INP t_pack_patterns *list_of_pack
 
 	cur_molecule = list_of_molecules_head = NULL;
 
-	/* list all logical blocks as a molecule */
-	for(i = 0; i < num_logical_blocks; i++) {
-		assert(logical_block[i].packed_molecules == NULL);
-		cur_molecule = my_calloc(1, sizeof(t_pack_molecule));
-		cur_molecule->valid = TRUE;
-		cur_molecule->type = MOLECULE_SINGLE_ATOM;
-		cur_molecule->num_blocks = 1;
-		cur_molecule->root = 0;
-		cur_molecule->num_ext_inputs = logical_block[i].used_input_pins;
-		cur_molecule->chain_pattern = NULL;
-		cur_molecule->pack_pattern = NULL;
-		cur_molecule->logical_block_ptrs = my_malloc(1 * sizeof(t_logical_block*));
-		cur_molecule->logical_block_ptrs[0] = &logical_block[i];
-		cur_molecule->next = list_of_molecules_head;
-		cur_molecule->base_gain = 1;
-		list_of_molecules_head = cur_molecule;
-
-		logical_block[i].packed_molecules = my_calloc(1, sizeof(struct s_linked_vptr));
-		logical_block[i].packed_molecules->data_vptr = (void*)cur_molecule;
-	}
-
 	/* Find forced pack patterns */
-	/* TODO: Need to properly investigate the right gain value and perhaps normalize */
+	/* TODO: Need to properly empirically investigate the right base cost function values (gain variable) and do some normalization */
 	for(i = 0; i < num_packing_patterns; i++) {
 		for(j = 0; j < num_logical_blocks; j++) {
 			cur_molecule = try_create_molecule(list_of_pack_patterns, i, j);
@@ -505,6 +484,37 @@ t_pack_molecule *alloc_and_load_pack_molecules(INP t_pack_patterns *list_of_pack
 
 	/* jedit TODO: Find chain patterns */
 
+
+		/* List all logical blocks as a molecule for blocks that do not belong to any molecules.
+		   This allows the packer to be consistent as it now packs molecules only instead of atoms and molecules
+
+		   If a block belongs to a molecule, then carrying the single atoms around can make the packing problem
+		   more difficult because now it needs to consider splitting molecules.
+
+		   TODO: Need to handle following corner case, if I have a LUT -> FF -> multiplier, LUT + FF is one molecule and FF + multiplier is another,
+		   need to ensure that this is packable.  Solution is probably to allow for single atom molecules until something a particular packing forces
+		   another molecule to get broken
+		*/
+	for(i = 0; i < num_logical_blocks; i++) {
+		if(logical_block[i].packed_molecules == NULL) {
+			cur_molecule = (t_pack_molecule*)my_calloc(1, sizeof(t_pack_molecule));
+			cur_molecule->valid = TRUE;
+			cur_molecule->type = MOLECULE_SINGLE_ATOM;
+			cur_molecule->num_blocks = 1;
+			cur_molecule->root = 0;
+			cur_molecule->num_ext_inputs = logical_block[i].used_input_pins;
+			cur_molecule->chain_pattern = NULL;
+			cur_molecule->pack_pattern = NULL;
+			cur_molecule->logical_block_ptrs = my_malloc(1 * sizeof(t_logical_block*));
+			cur_molecule->logical_block_ptrs[0] = &logical_block[i];
+			cur_molecule->next = list_of_molecules_head;
+			cur_molecule->base_gain = 1;
+			list_of_molecules_head = cur_molecule;
+
+			logical_block[i].packed_molecules = my_calloc(1, sizeof(struct s_linked_vptr));
+			logical_block[i].packed_molecules->data_vptr = (void*)cur_molecule;
+		}
+	}
 
 	/* Reduce incentive to use logical blocks as standalone blocks when molecules already exist */
 	for(i = 0; i < num_logical_blocks; i++) {
