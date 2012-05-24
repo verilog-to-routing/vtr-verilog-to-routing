@@ -2112,6 +2112,8 @@ ProcessCB_SB(INOUTP ezxml_t Node, INOUTP boolean * list, INP int len)
 		    switch (*tmp)
 			{
 			case ' ':
+			case '\t':
+			case '\n':
 			    break;
 			case 'T':
 			case '1':
