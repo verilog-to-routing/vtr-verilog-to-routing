@@ -2495,8 +2495,6 @@ static void compute_and_mark_lookahead_pins_used_for_pin(t_pb_graph_pin *pb_grap
 					}
 				}
 				if(i == vpack_net[inet].num_sinks + 1) {
-					skip = TRUE;
-				} else {
 					count = 0;
 					/* TODO: jedit I should cache the absorbed outputs, once net is absorbed, net is forever absorbed, no point in rechecking every time */
 					for(i = 0; i < pb_graph_pin->num_connectable_primtive_input_pins[depth]; i++) {
