@@ -393,7 +393,6 @@ void do_clustering (const t_arch *arch, t_pack_molecule *molecule_head, int num_
 										 allow_unrelated_clustering, &num_unrelated_clustering_attempts,
 										 cur_cluster_placement_stats_ptr);
 	prev_molecule = istart;
-
 	while (next_molecule != NULL && prev_molecule != next_molecule) {
 		block_pack_status = try_pack_molecule(cur_cluster_placement_stats_ptr, next_molecule, primitives_list, clb[num_clb - 1].pb, num_models, max_cluster_size, num_clb - 1, max_nets_in_pb_type); 
 		prev_molecule = next_molecule;
@@ -1296,7 +1295,10 @@ static void revert_place_logical_block(INP int iblock, INP int max_models){
 			if(pb->child_pbs != NULL && pb->pb_stats.num_child_blocks_in_pb == 0) {
 				set_pb_graph_mode(pb->pb_graph_node, pb->mode, 0); /* default mode is to use mode 1 */
 				set_pb_graph_mode(pb->pb_graph_node, 0, 1);
-				free_pb(pb,max_models);
+				if(next != NULL) {
+					/* If the code gets here, then that means that placing the initial seed molecule failed, don't free the actual complex block itself as the seed needs to find another placement */
+					free_pb(pb,max_models);
+				}
 			}
 			pb = next;
 		}
