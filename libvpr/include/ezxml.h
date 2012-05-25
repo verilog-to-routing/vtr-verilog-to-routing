@@ -173,8 +173,8 @@ extern "C"
 /* Sets the given tag attribute or adds a new attribute if not found. A value */
 /* of NULL will remove the specified attribute. Returns the tag given. */
     ezxml_t ezxml_set_attr(ezxml_t xml,
-			   const char *name,
-			   const char *value);
+			   char *name,
+			   char *value);
 
 /* Wrapper for ezxml_set_attr() that strdup()s name/value. Value cannot be NULL */
 #define ezxml_set_attr_d(xml, name, value) \

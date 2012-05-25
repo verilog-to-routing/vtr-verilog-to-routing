@@ -525,7 +525,8 @@ ezxml_internal_dtd(ezxml_root_t root,
 		    for(i = 0; root->attr[i] && strcmp(n, root->attr[i][0]);
 			i++);
 
-		    while(*(n = ++s + strspn(s, EZXML_WS)) && *n != '>')
+			++s;
+		    while(*(n = s + strspn(s, EZXML_WS)) && *n != '>')
 			{
 			    if(*(s = n + strcspn(n, EZXML_WS)))
 				*s = '\0';	/* attr name */
@@ -595,6 +596,8 @@ ezxml_internal_dtd(ezxml_root_t root,
 			    root->attr[i][j + 1] =
 				(v) ? ezxml_decode(cur_line, v, root->ent, *c) : NULL;
 			    root->attr[i][j] = n;	/* attribute name  */
+
+				++s;
 			}
 		}
 	    else if(!strncmp(s, "<!--", 4))
@@ -1346,8 +1349,8 @@ ezxml_set_txt(ezxml_t xml,
 /* of NULL will remove the specified attribute. Returns the tag given. */
 ezxml_t
 ezxml_set_attr(ezxml_t xml,
-	       const char *name,
-	       const char *value)
+	       char *name,
+	       char *value)
 {
     int l = 0, c;
 
@@ -1368,7 +1371,7 @@ ezxml_set_attr(ezxml_t xml,
 	    else
 		xml->attr = realloc(xml->attr, (l + 4) * sizeof(char *));
 
-	    xml->attr[l] = (char*) name;	 /*set attribute name */
+	    xml->attr[l] = name;	 /*set attribute name */
 		xml->attr[l + 2] = NULL;	/* null terminate attribute list */
 	    xml->attr[l + 3] = realloc(xml->attr[l + 1],
 				       (c = strlen(xml->attr[l + 1])) + 2);
@@ -1377,7 +1380,7 @@ ezxml_set_attr(ezxml_t xml,
 		xml->attr[l + 3][c] = (char)(unsigned char)EZXML_NAMEM;
 	}
     else if(xml->flags & EZXML_DUP)
-	free((char*)name);	/* name was strduped */
+	free(name);	/* name was strduped */
     for(c = l; xml->attr[c]; c += 2);	/* find end of attribute list */
     if(xml->attr[c + 1][l / 2] & EZXML_TXTM)
 	free(xml->attr[l + 1]);	/*old val */
@@ -1387,7 +1390,7 @@ ezxml_set_attr(ezxml_t xml,
 	xml->attr[c + 1][l / 2] &= ~EZXML_TXTM;
 
     if(value)
-	xml->attr[l + 1] = (char*)value;	/* set attribute value */
+	xml->attr[l + 1] = value;	/* set attribute value */
     else
 	{			/* remove attribute */
 	    if(xml->attr[c + 1][l / 2] & EZXML_NAMEM)

@@ -4,7 +4,7 @@
 
 /* OptionBaseTokenList is for command line arg tokens. We will track how 
  * many times each of these things exist in a file */
-const struct s_TokenPair OptionBaseTokenList[] = {
+struct s_TokenPair OptionBaseTokenList[] = {
     {"nodisp", OT_NODISP},
     {"auto", OT_AUTO},
     {"recompute_crit_iter", OT_RECOMPUTE_CRIT_ITER},
@@ -74,7 +74,7 @@ const struct s_TokenPair OptionBaseTokenList[] = {
 };
 
 
-const struct s_TokenPair OptionArgTokenList[] = {
+struct s_TokenPair OptionArgTokenList[] = {
     {"on", OT_ON},
     {"off", OT_OFF},
     {"random", OT_RANDOM},

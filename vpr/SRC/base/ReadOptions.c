@@ -11,38 +11,38 @@ static boolean EchoEnabled;
 
 /******** Function prototypes ********/
 
-static const char **ReadBaseToken(INP const char **Args,
+static char **ReadBaseToken(INP char **Args,
 					OUTP enum e_OptionBaseToken *Token);
 static void Error(INP const char *Token);
 static void ErrorOption(INP const char *Option);
-static const char **ProcessOption(INP const char **Args,
+static char **ProcessOption(INP char **Args,
 					INOUTP t_options * Options);
-static const char **ReadFloat(INP const char **Args,
+static char **ReadFloat(INP char **Args,
 				    OUTP float *Val);
-static const char **ReadInt(INP const char **Args,
+static char **ReadInt(INP char **Args,
 				  OUTP int *Val);
-static const char **ReadOnOff(INP const char **Args,
+static char **ReadOnOff(INP char **Args,
 				    OUTP boolean * Val);
-static const char **ReadClusterSeed(INP const char **Args,
+static char **ReadClusterSeed(INP char **Args,
 					    OUTP enum e_cluster_seed *Type);
-static const char **ReadFixPins(INP const char **Args,
+static char **ReadFixPins(INP char **Args,
 				      OUTP char **PinFile);
-static const char **ReadPlaceAlgorithm(INP const char **Args,
+static char **ReadPlaceAlgorithm(INP char **Args,
 					     OUTP enum e_place_algorithm
 					     *Algo);
-static const char **ReadPlaceCostType(INP const char **Args,
+static char **ReadPlaceCostType(INP char **Args,
 					    OUTP enum place_c_types *Type);
-static const char **ReadRouterAlgorithm(INP const char **Args,
+static char **ReadRouterAlgorithm(INP char **Args,
 					      OUTP enum e_router_algorithm
 					      *Algo);
-static const char **ReadPackerAlgorithm(INP const char **Args,
+static char **ReadPackerAlgorithm(INP char **Args,
 					      OUTP enum e_packer_algorithm
 					      *Algo);
-static const char **ReadBaseCostType(INP const char **Args,
+static char **ReadBaseCostType(INP char **Args,
 					OUTP enum e_base_cost_type *BaseCostType);
-static const char **ReadRouteType(INP const char **Args,
+static char **ReadRouteType(INP char **Args,
 					OUTP enum e_route_type *Type);
-static const char **ReadString(INP const char **Args,
+static char **ReadString(INP char **Args,
 				     OUTP char **Val);
 
 /******** Globally Accessible Function ********/
@@ -66,7 +66,7 @@ ReadOptions(INP int argc,
 	    INP char **argv,
 	    OUTP t_options * Options)
 {
-    const char **Args, **head;
+    char **Args,**head;
 
     /* Clear values and pointers to zero */
     memset(Options, 0, sizeof(t_options));
@@ -76,7 +76,7 @@ ReadOptions(INP int argc,
      * Skips the first arg as it is the program image path */
     --argc;
     ++argv;
-    head = Args = (const char **)my_malloc(sizeof(char *) * (argc + 1));
+    head = Args = (char **)my_malloc(sizeof(char *) * (argc + 1));
     memcpy(Args, argv, (sizeof(char *) * argc));
     Args[argc] = NULL;
 
@@ -88,13 +88,13 @@ ReadOptions(INP int argc,
 	    if(strncmp("--", *Args, 2) == 0)
 		{
 		    *Args += 2;	/* Skip the prefix */
-		    Args = ProcessOption((const char **)Args,
+		    Args = ProcessOption(Args,
 					       Options);
 		}
 	    else if(strncmp("-", *Args, 1) == 0)
 		{
 		    *Args += 1;	/* Skip the prefix */
-		    Args = ProcessOption((const char **)Args,
+		    Args = ProcessOption(Args,
 					       Options);
 		}
 		else if(NULL == Options->ArchFile)
@@ -121,12 +121,12 @@ ReadOptions(INP int argc,
 }
 
 
-static const char **
-ProcessOption(INP const char **Args,
+static char **
+ProcessOption(INP char **Args,
 	      INOUTP t_options * Options)
 {
     enum e_OptionBaseToken Token;
-    const char **PrevArgs;
+    char **PrevArgs;
 
     PrevArgs = Args;
     Args = ReadBaseToken(Args, &Token);
@@ -282,11 +282,11 @@ ProcessOption(INP const char **Args,
 }
 
 
-static const char **
-ReadBaseToken(INP const char **Args,
+static char **
+ReadBaseToken(INP char **Args,
 	      OUTP enum e_OptionBaseToken *Token)
 {
-    const struct s_TokenPair *Cur;
+    struct s_TokenPair *Cur;
 
     /* Empty string is end of tokens marker */
     if(NULL == *Args)
@@ -309,11 +309,11 @@ ReadBaseToken(INP const char **Args,
 }
 
 
-static const char **
-ReadToken(INP const char **Args,
+static char **
+ReadToken(INP char **Args,
 	  OUTP enum e_OptionArgToken *Token)
 {
-    const struct s_TokenPair *Cur;
+    struct s_TokenPair *Cur;
 
     /* Empty string is end of tokens marker */
     if(NULL == *Args)
@@ -359,12 +359,12 @@ ErrorOption(INP const char *Option)
     exit(1);
 }
 
-static const char **
-ReadClusterSeed(INP const char **Args,
+static char **
+ReadClusterSeed(INP char **Args,
 		  OUTP enum e_cluster_seed *Type)
 {
     enum e_OptionArgToken Token;
-    const char **PrevArgs;
+    char **PrevArgs;
 
     PrevArgs = Args;
     Args = ReadToken(Args, &Token);
@@ -383,12 +383,12 @@ ReadClusterSeed(INP const char **Args,
     return Args;
 }
 
-static const char **
-ReadPackerAlgorithm(INP const char **Args,
+static char **
+ReadPackerAlgorithm(INP char **Args,
 		    OUTP enum e_packer_algorithm *Algo)
 {
     enum e_OptionArgToken Token;
-    const char **PrevArgs;
+    char **PrevArgs;
 
     PrevArgs = Args;
     Args = ReadToken(Args, &Token);
@@ -407,12 +407,12 @@ ReadPackerAlgorithm(INP const char **Args,
     return Args;
 }
 
-static const char **
-ReadRouterAlgorithm(INP const char **Args,
+static char **
+ReadRouterAlgorithm(INP char **Args,
 		    OUTP enum e_router_algorithm *Algo)
 {
     enum e_OptionArgToken Token;
-    const char **PrevArgs;
+    char **PrevArgs;
 
     PrevArgs = Args;
     Args = ReadToken(Args, &Token);
@@ -434,12 +434,12 @@ ReadRouterAlgorithm(INP const char **Args,
     return Args;
 }
 
-static const char **
-ReadBaseCostType(INP const char **Args,
+static char **
+ReadBaseCostType(INP char **Args,
 		    OUTP enum e_base_cost_type *BaseCostType)
 {
     enum e_OptionArgToken Token;
-    const char **PrevArgs;
+    char **PrevArgs;
 
     PrevArgs = Args;
     Args = ReadToken(Args, &Token);
@@ -462,12 +462,12 @@ ReadBaseCostType(INP const char **Args,
 }
 
 
-static const char **
-ReadRouteType(INP const char **Args,
+static char **
+ReadRouteType(INP char **Args,
 	      OUTP enum e_route_type *Type)
 {
     enum e_OptionArgToken Token;
-    const char **PrevArgs;
+    char **PrevArgs;
 
     PrevArgs = Args;
     Args = ReadToken(Args, &Token);
@@ -487,12 +487,12 @@ ReadRouteType(INP const char **Args,
 }
 
 
-static const char **
-ReadPlaceCostType(INP const char **Args,
+static char **
+ReadPlaceCostType(INP char **Args,
 		  OUTP enum place_c_types *Type)
 {
     enum e_OptionArgToken Token;
-    const char **PrevArgs;
+    char **PrevArgs;
 
     PrevArgs = Args;
     Args = ReadToken(Args, &Token);
@@ -512,12 +512,12 @@ ReadPlaceCostType(INP const char **Args,
 }
 
 
-static const char **
-ReadPlaceAlgorithm(INP const char **Args,
+static char **
+ReadPlaceAlgorithm(INP char **Args,
 		   OUTP enum e_place_algorithm *Algo)
 {
     enum e_OptionArgToken Token;
-    const char **PrevArgs;
+    char **PrevArgs;
 
     PrevArgs = Args;
     Args = ReadToken(Args, &Token);
@@ -539,13 +539,13 @@ ReadPlaceAlgorithm(INP const char **Args,
     return Args;
 }
 
-static const char **
-ReadFixPins(INP const char **Args,
+static char **
+ReadFixPins(INP char **Args,
 	    OUTP char **PinFile)
 {
     enum e_OptionArgToken Token;
     int Len;
-	const char **PrevArgs = Args;
+	char **PrevArgs = Args;
 
     Args = ReadToken(Args, &Token);
     if(OT_RANDOM != Token)
@@ -558,12 +558,12 @@ ReadFixPins(INP const char **Args,
 }
 
 
-static const char **
-ReadOnOff(INP const char **Args,
+static char **
+ReadOnOff(INP char **Args,
 	  OUTP boolean * Val)
 {
     enum e_OptionArgToken Token;
-    const char **PrevArgs;
+    char **PrevArgs;
 
     PrevArgs = Args;
     Args = ReadToken(Args, &Token);
@@ -582,8 +582,8 @@ ReadOnOff(INP const char **Args,
 }
 
 
-static const char **
-ReadInt(INP const char **Args,
+static char **
+ReadInt(INP char **Args,
 	OUTP int *Val)
 {
     if(NULL == *Args)
@@ -597,8 +597,8 @@ ReadInt(INP const char **Args,
 }
 
 
-static const char **
-ReadFloat(INP const char ** Args,
+static char **
+ReadFloat(INP char ** Args,
 	  OUTP float *Val)
 {
     if(NULL == *Args)
@@ -618,8 +618,8 @@ ReadFloat(INP const char ** Args,
 }
 
 
-static const char **
-ReadString(INP const char **Args,
+static char **
+ReadString(INP char **Args,
 	   OUTP char **Val)
 {
     if(NULL == *Args)

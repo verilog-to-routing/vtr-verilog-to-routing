@@ -101,7 +101,7 @@ enum e_OptionArgToken
 };
 
 
-extern const struct s_TokenPair OptionBaseTokenList[];
-extern const struct s_TokenPair OptionArgTokenList[];
+extern struct s_TokenPair OptionBaseTokenList[];
+extern struct s_TokenPair OptionArgTokenList[];
 
 #endif
