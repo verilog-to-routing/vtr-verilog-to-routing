@@ -1901,7 +1901,7 @@ static t_pack_molecule *get_highest_gain_molecule ( INP enum e_packer_algorithm 
 			}
 		}
 	}
-
+	molecule = NULL;
 	for(j = 0; j < cur_pb->pb_stats.num_feasible_blocks; j++) {
 		if(cur_pb->pb_stats.num_feasible_blocks != 0) {
 			cur_pb->pb_stats.num_feasible_blocks--;
