@@ -44,16 +44,14 @@ typedef unsigned int *pset;
 /* # of ints needed to allocate a set with "size" elements */
 #define SET_SIZE(size)          ((size) <= BPI ? 2 : (WHICH_WORD((size)-1) + 1))
 
-
-
 typedef struct {
-  pset cube;
-  int num_literals;
-  double static_prob;
+	pset cube;
+	int num_literals;
+	double static_prob;
 } ace_cube_t;
 
 ace_cube_t * ace_cube_new_dc(int num_literals);
-ace_cube_t * ace_cube_dup (ace_cube_t * cube);
-void ace_cube_free (ace_cube_t * cube);
+ace_cube_t * ace_cube_dup(ace_cube_t * cube);
+void ace_cube_free(ace_cube_t * cube);
 
 #endif

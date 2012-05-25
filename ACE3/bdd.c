@@ -204,21 +204,21 @@ double calc_cube_switch_prob_recur(DdManager * mgr, DdNode * bdd,
 			phase);
 	assert(else_prob + EPSILON >= 0 && else_prob - EPSILON <= 1);
 
-	switch(node_get_literal (cube->cube, i)) {
-		case ZERO:
-		*current_prob = fanin_info->prob0to1 * then_prob +
-		(1.0 - fanin_info->prob0to1) * else_prob;
+	switch (node_get_literal (cube->cube, i)) {
+	case ZERO:
+		*current_prob = fanin_info->prob0to1 * then_prob
+				+ (1.0 - fanin_info->prob0to1) * else_prob;
 		break;
-		case ONE:
-		*current_prob = (1.0 - fanin_info->prob1to0) * then_prob +
-		fanin_info->prob1to0 * else_prob;
+	case ONE:
+		*current_prob = (1.0 - fanin_info->prob1to0) * then_prob
+				+ fanin_info->prob1to0 * else_prob;
 		break;
-		case TWO:
-		*current_prob = fanin_info->static_prob * then_prob +
-		(1.0 - fanin_info->static_prob) * else_prob;
+	case TWO:
+		*current_prob = fanin_info->static_prob * then_prob
+				+ (1.0 - fanin_info->static_prob) * else_prob;
 		break;
-		default:
-		fail ("Bad literal.");
+	default:
+		fail("Bad literal.");
 	}
 
 	st_insert(visited, (char *) bdd, (char *) current_prob);
@@ -335,17 +335,24 @@ double ace_bdd_calc_switch_act(DdManager * mgr, Abc_Obj_t * obj,
 	n0 = n1 = 0;
 	ace_bdd_count_paths(mgr, bdd, &n1, &n0);
 
-	Vec_PtrForEachEntry(fanins, fanin, i) {
+	Vec_PtrForEachEntry(fanins, fanin, i)
+	{
 		Ace_Obj_Info_t * fanin_info = Ace_ObjInfo(fanin);
 
-		fanin_info->prob0to1 = ACE_P0TO1 (fanin_info->static_prob, fanin_info->switch_prob / (double) d);
-		fanin_info->prob1to0 = ACE_P1TO0 (fanin_info->static_prob, fanin_info->switch_prob / (double) d);
+		fanin_info->prob0to1 =
+				ACE_P0TO1 (fanin_info->static_prob, fanin_info->switch_prob / (double) d);
+		fanin_info->prob1to0 =
+				ACE_P1TO0 (fanin_info->static_prob, fanin_info->switch_prob / (double) d);
 
 		prob_epsilon_fix(&fanin_info->prob0to1);
 		prob_epsilon_fix(&fanin_info->prob1to0);
 
-		assert (fanin_info->prob0to1 + EPSILON >= 0. && fanin_info->prob0to1 - EPSILON <= 1.0);
-		assert (fanin_info->prob1to0 + EPSILON >= 0. && fanin_info->prob1to0 - EPSILON <= 1.0);
+		assert(
+				fanin_info->prob0to1 + EPSILON >= 0.
+						&& fanin_info->prob0to1 - EPSILON <= 1.0);
+		assert(
+				fanin_info->prob1to0 + EPSILON >= 0.
+						&& fanin_info->prob1to0 - EPSILON <= 1.0);
 	}
 	cube = ace_cube_new_dc(Vec_PtrSize(fanins));
 

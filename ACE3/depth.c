@@ -2,15 +2,13 @@
 
 #include "abc.h"
 
-int calc_depth (Abc_Obj_t * obj)
-{
+int calc_depth(Abc_Obj_t * obj) {
 	int i, depth;
 	Abc_Obj_t * fanin;
 
 	depth = 0;
 
-	switch (Abc_ObjType(obj))
-	{
+	switch (Abc_ObjType(obj)) {
 	case ABC_OBJ_NODE:
 	case ABC_OBJ_PO:
 	case ABC_OBJ_BI:
@@ -27,8 +25,7 @@ int calc_depth (Abc_Obj_t * obj)
 
 }
 
-int ace_calc_network_depth (Abc_Ntk_t * ntk)
-{
+int ace_calc_network_depth(Abc_Ntk_t * ntk) {
 	int i, depth;
 	Abc_Obj_t * obj;
 	Vec_Ptr_t * nodes;

@@ -4,8 +4,7 @@
 #include "ace.h"
 #include "blif.h"
 
-bool blif_clock_from_latch(char * latch_line, char * clk_name)
-{
+bool blif_clock_from_latch(char * latch_line, char * clk_name) {
 	char * pos;
 
 	pos = strtok(latch_line, " ");
@@ -14,14 +13,11 @@ bool blif_clock_from_latch(char * latch_line, char * clk_name)
 	pos = strtok(NULL, " ");
 	pos = strtok(NULL, " ");
 
-	if (pos)
-	{
+	if (pos) {
 		strncpy(clk_name, pos, ACE_CHAR_BUFFER_SIZE);
-		clk_name[ACE_CHAR_BUFFER_SIZE-1] = '\0';
+		clk_name[ACE_CHAR_BUFFER_SIZE - 1] = '\0';
 		return TRUE;
-	}
-	else
-	{
+	} else {
 		return FALSE;
 	}
 }

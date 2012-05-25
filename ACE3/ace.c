@@ -122,7 +122,8 @@ void print_nodes(Vec_Ptr_t * nodes) {
 	printf("Printing Nodes\n");
 	Vec_PtrForEachEntry(nodes, obj, i)
 	{
-		printf("\t%d. %d-%d-%s\n", i, Abc_ObjId(obj), Abc_ObjType(obj), Abc_ObjName(obj));
+		printf("\t%d. %d-%d-%s\n", i, Abc_ObjId(obj), Abc_ObjType(obj),
+				Abc_ObjName(obj));
 	}
 	fflush(0);
 }
@@ -234,15 +235,14 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors) {
 	{
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
 
-		switch(Abc_ObjType(obj))
-		{
-			case ABC_OBJ_PI:
-			case ABC_OBJ_BO:
-			case ABC_OBJ_LATCH:
+		switch (Abc_ObjType(obj)) {
+		case ABC_OBJ_PI:
+		case ABC_OBJ_BO:
+		case ABC_OBJ_LATCH:
 			info->switch_act = info->switch_prob;
 			break;
 
-			default:
+		default:
 			break;
 		}
 	}
@@ -254,13 +254,10 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors) {
 
 		assert(Abc_ObjType(obj) == ABC_OBJ_NODE);
 
-		if (Abc_ObjFaninNum(obj) < 1)
-		{
+		if (Abc_ObjFaninNum(obj) < 1) {
 			info->switch_act = 0.0;
 			continue;
-		}
-		else
-		{
+		} else {
 			Vec_Ptr_t * literals = Vec_PtrAlloc(0);
 			Abc_Obj_t * fanin;
 
@@ -270,7 +267,8 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors) {
 			{
 				Vec_PtrPush(literals, fanin);
 			}
-			info->switch_act = ace_bdd_calc_switch_act(ntk->pManFunc, obj, literals);
+			info->switch_act = ace_bdd_calc_switch_act(ntk->pManFunc, obj,
+					literals);
 			Vec_PtrFree(literals);
 		}
 		assert(info->switch_act >= 0);
