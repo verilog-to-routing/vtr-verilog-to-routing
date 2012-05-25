@@ -1,7 +1,7 @@
 /* 
-Find placement for group of logical blocks in complex block
-Author: Jason Luu
-*/
+ Find placement for group of logical blocks in complex block
+ Author: Jason Luu
+ */
 
 #ifndef CLUSTER_PLACEMENT_H
 #define CLUSTER_PLACEMENT_H

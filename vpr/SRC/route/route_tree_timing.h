@@ -1,10 +1,9 @@
 /************** Types and defines exported by route_tree_timing.c ************/
 
-struct s_linked_rt_edge
-{
-    struct s_rt_node *child;
-    short iswitch;
-    struct s_linked_rt_edge *next;
+struct s_linked_rt_edge {
+	struct s_rt_node *child;
+	short iswitch;
+	struct s_linked_rt_edge *next;
 };
 
 typedef struct s_linked_rt_edge t_linked_rt_edge;
@@ -15,23 +14,18 @@ typedef struct s_linked_rt_edge t_linked_rt_edge;
  * next:   Pointer to the next linked_rt_edge in the linked list (allows     *
  *         you to get the next child of the current rt_node).                */
 
-
-
-struct s_rt_node
-{
-    union
-    {
-	t_linked_rt_edge *child_list;
-	struct s_rt_node *next;
-    }
-    u;
-    struct s_rt_node *parent_node;
-    short parent_switch;
-    short re_expand;
-    int inode;
-    float C_downstream;
-    float R_upstream;
-    float Tdel;
+struct s_rt_node {
+	union {
+		t_linked_rt_edge *child_list;
+		struct s_rt_node *next;
+	} u;
+	struct s_rt_node *parent_node;
+	short parent_switch;
+	short re_expand;
+	int inode;
+	float C_downstream;
+	float R_upstream;
+	float Tdel;
 };
 
 typedef struct s_rt_node t_rt_node;
@@ -58,8 +52,6 @@ typedef struct s_rt_node t_rt_node;
  * Tdel:  Time delay for the signal to get from the net source to this node. *
  *        Includes the time to go through this node.                         */
 
-
-
 /**************** Subroutines exported by route_tree_timing.c ***************/
 
 void alloc_route_tree_timing_structs(void);
@@ -73,5 +65,4 @@ void free_route_tree(t_rt_node * rt_node);
 t_rt_node *update_route_tree(struct s_heap *hptr);
 
 void update_net_delays_from_route_tree(float *net_delay,
-				       t_rt_node ** rt_node_of_sink,
-				       int inet);
+		t_rt_node ** rt_node_of_sink, int inet);

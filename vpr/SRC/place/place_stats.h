@@ -1,4 +1,3 @@
-
 #ifdef PRINT_REL_POS_DISTR
 void print_relative_pos_distr(void);
 

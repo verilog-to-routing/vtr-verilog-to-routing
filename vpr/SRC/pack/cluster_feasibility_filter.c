@@ -1,24 +1,24 @@
 /* 
-Feasibility filter used during packing that determines if various necessary conditions for legality are met
+ Feasibility filter used during packing that determines if various necessary conditions for legality are met
 
-Important for 2 reasons:
+ Important for 2 reasons:
  1) Quickly reject cases that are bad so that we don't waste time exploring useless cases in packing
  2) Robustness issue.  During packing, we have a limited size queue to store candidates to try to pack.  A good filter helps keep that queue filled with candidates likely to pass.
 
-1st major filter: Pin counting based on pin classes
-	Rationale: If the number of a particular gruop of pins supplied by the pb_graph_node in the architecture is insufficient to meet a candidate packing solution's demand for that group of pins, then that
-	candidate solution is for sure invalid without any further legalization checks.  For example, if a candidate solution requires 2 clock pins but the architecture only has one clock, then that solution
-	can't be legal.
+ 1st major filter: Pin counting based on pin classes
+ Rationale: If the number of a particular gruop of pins supplied by the pb_graph_node in the architecture is insufficient to meet a candidate packing solution's demand for that group of pins, then that
+ candidate solution is for sure invalid without any further legalization checks.  For example, if a candidate solution requires 2 clock pins but the architecture only has one clock, then that solution
+ can't be legal.
 
-	Implementation details:
-	a) Definition of a pin class - If there exists a path (ignoring directionality of connections) from pin A to pin B and pin A and pin B are of the same type (input, output, or clock), then pin A and pin B are in the same pin class.  Otherwise, pin A and pin B are in different pin classes.
-	b) Code Identifies pin classes.  Given a candidate solution  
+ Implementation details:
+ a) Definition of a pin class - If there exists a path (ignoring directionality of connections) from pin A to pin B and pin A and pin B are of the same type (input, output, or clock), then pin A and pin B are in the same pin class.  Otherwise, pin A and pin B are in different pin classes.
+ b) Code Identifies pin classes.  Given a candidate solution  
 
-Author: Jason Luu
-Date: May 16, 2012
+ Author: Jason Luu
+ Date: May 16, 2012
 
 
-*/
+ */
 #include <assert.h>
 
 #include "read_xml_arch_file.h"
@@ -277,7 +277,7 @@ static void expand_pb_graph_node_and_load_output_to_input_connections(INOUTP t_p
 		current_pb_graph_pin->scratch_pad = 1;
 		for(i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
 			assert(current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
-			expand_pb_graph_node_and_load_output_to_input_connections(current_pb_graph_pin->output_edges[i]->output_pins[0], reference_pin, depth);
+expand_pb_graph_node_and_load_output_to_input_connections(current_pb_graph_pin->output_edges[i]->output_pins[0], reference_pin, depth);
 		}
 		if(current_pb_graph_pin->parent_node->pb_type->num_modes == 0 && current_pb_graph_pin->port->type == IN_PORT) {
 			reference_pin->num_connectable_primtive_input_pins[depth]++;
@@ -297,7 +297,7 @@ static void unmark_fanout_intermediate_nodes(INOUTP t_pb_graph_pin *current_pb_g
 		current_pb_graph_pin->scratch_pad = OPEN;
 		for(i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
 			assert(current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
-			unmark_fanout_intermediate_nodes(current_pb_graph_pin->output_edges[i]->output_pins[0]);
+unmark_fanout_intermediate_nodes(current_pb_graph_pin->output_edges[i]->output_pins[0]);
 		}
 	}
 }
@@ -320,9 +320,9 @@ static void expand_pb_graph_node_and_load_pin_class_by_depth(INOUTP t_pb_graph_p
 		active_pin_class = *output_count;
 	}
 	assert(reference_pb_graph_pin->parent_node->pb_type->num_modes == 0);
-	assert(current_pb_graph_pin->parent_node->pb_type->depth >= depth);
-	assert(current_pb_graph_pin->port->type != INOUT_PORT);
-	if(current_pb_graph_pin->scratch_pad != marker) {
+assert(current_pb_graph_pin->parent_node->pb_type->depth >= depth);
+assert(current_pb_graph_pin->port->type != INOUT_PORT);
+if(current_pb_graph_pin->scratch_pad != marker) {
 		if(current_pb_graph_pin->parent_node->pb_type->num_modes == 0) {
 			current_pb_graph_pin->scratch_pad = marker;
 			/* This is a primitive, determine what pins cans share the same pin class as the reference pin */
@@ -333,11 +333,11 @@ static void expand_pb_graph_node_and_load_pin_class_by_depth(INOUTP t_pb_graph_p
 			}
 			for(i = 0; i < current_pb_graph_pin->num_input_edges; i++) {
 				assert(current_pb_graph_pin->input_edges[i]->num_input_pins == 1);
-				expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->input_edges[i]->input_pins[0], reference_pb_graph_pin, depth, input_count, output_count);
+expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->input_edges[i]->input_pins[0], reference_pb_graph_pin, depth, input_count, output_count);
 			}
 			for(i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
 				assert(current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
-				expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->output_edges[i]->output_pins[0], reference_pb_graph_pin, depth, input_count, output_count);
+expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->output_edges[i]->output_pins[0], reference_pb_graph_pin, depth, input_count, output_count);
 			}
 		} else if (current_pb_graph_pin->parent_node->pb_type->depth == depth) {
 			current_pb_graph_pin->scratch_pad = marker;
@@ -348,7 +348,7 @@ static void expand_pb_graph_node_and_load_pin_class_by_depth(INOUTP t_pb_graph_p
 				}
 				for(i = 0; i < current_pb_graph_pin->num_input_edges; i++) {
 					assert(current_pb_graph_pin->input_edges[i]->num_input_pins == 1);
-					expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->input_edges[i]->input_pins[0], reference_pb_graph_pin, depth, input_count, output_count);
+expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->input_edges[i]->input_pins[0], reference_pb_graph_pin, depth, input_count, output_count);
 				}
 			}
 			if(current_pb_graph_pin->port->type == IN_PORT) {
@@ -358,7 +358,7 @@ static void expand_pb_graph_node_and_load_pin_class_by_depth(INOUTP t_pb_graph_p
 				}
 				for(i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
 					assert(current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
-					expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->output_edges[i]->output_pins[0], reference_pb_graph_pin, depth, input_count, output_count);
+expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->output_edges[i]->output_pins[0], reference_pb_graph_pin, depth, input_count, output_count);
 				}
 			}
 		} else if(current_pb_graph_pin->parent_node->pb_type->depth > depth) {		
@@ -366,51 +366,50 @@ static void expand_pb_graph_node_and_load_pin_class_by_depth(INOUTP t_pb_graph_p
 			current_pb_graph_pin->scratch_pad = marker;
 			for(i = 0; i < current_pb_graph_pin->num_input_edges; i++) {
 				assert(current_pb_graph_pin->input_edges[i]->num_input_pins == 1);
-				expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->input_edges[i]->input_pins[0], reference_pb_graph_pin, depth, input_count, output_count);
+expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->input_edges[i]->input_pins[0], reference_pb_graph_pin, depth, input_count, output_count);
 			}
 			for(i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
 				assert(current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
-				expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->output_edges[i]->output_pins[0], reference_pb_graph_pin, depth, input_count, output_count);
-			}
-		}
-	}
+expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->output_edges[i]->output_pins[0], reference_pb_graph_pin, depth, input_count, output_count);
+}
+}
+}
 }
 
 /* count up pin classes of the same number for the given cluster */
 static void sum_pin_class(INOUTP t_pb_graph_node *pb_graph_node) {
-	int i, j;
+int i, j;
 
-	/* This is a primitive, for each pin in primitive, sum appropriate pin class */
-	for(i = 0; i < pb_graph_node->num_input_ports; i++) {
-		for(j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-			assert(pb_graph_node->input_pins[i][j].pin_class < pb_graph_node->num_input_pin_class);
-			if(pb_graph_node->input_pins[i][j].pin_class == OPEN) {
-				printf(WARNTAG "%s[%d].%s[%d] unconnected pin in architecture\n", pb_graph_node->pb_type->name, pb_graph_node->placement_index, pb_graph_node->input_pins[i][j].port->name, pb_graph_node->input_pins[i][j].pin_number);
-				continue;
-			}
-			pb_graph_node->input_pin_class_size[pb_graph_node->input_pins[i][j].pin_class]++;
-		}
-	}
-	for(i = 0; i < pb_graph_node->num_output_ports; i++) {
-		for(j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-			assert(pb_graph_node->output_pins[i][j].pin_class < pb_graph_node->num_output_pin_class);
-			if(pb_graph_node->output_pins[i][j].pin_class == OPEN) {
-				printf(WARNTAG "%s[%d].%s[%d] unconnected pin in architecture\n", pb_graph_node->pb_type->name, pb_graph_node->placement_index, pb_graph_node->output_pins[i][j].port->name, pb_graph_node->output_pins[i][j].pin_number);
-				continue;
-			}
-			pb_graph_node->output_pin_class_size[pb_graph_node->output_pins[i][j].pin_class]++;
-		}
-	}
-	for(i = 0; i < pb_graph_node->num_clock_ports; i++) {
-		for(j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-			assert(pb_graph_node->clock_pins[i][j].pin_class < pb_graph_node->num_input_pin_class);
-			if(pb_graph_node->clock_pins[i][j].pin_class == OPEN) {
-				printf(WARNTAG "%s[%d].%s[%d] unconnected pin in architecture\n", pb_graph_node->pb_type->name, pb_graph_node->placement_index, pb_graph_node->clock_pins[i][j].port->name, pb_graph_node->clock_pins[i][j].pin_number);
-				continue;
-			}
-			pb_graph_node->input_pin_class_size[pb_graph_node->clock_pins[i][j].pin_class]++;
-		}
-	}	
+/* This is a primitive, for each pin in primitive, sum appropriate pin class */
+for(i = 0; i < pb_graph_node->num_input_ports; i++) {
+for(j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
+assert(pb_graph_node->input_pins[i][j].pin_class < pb_graph_node->num_input_pin_class);
+if(pb_graph_node->input_pins[i][j].pin_class == OPEN) {
+printf(WARNTAG "%s[%d].%s[%d] unconnected pin in architecture\n", pb_graph_node->pb_type->name, pb_graph_node->placement_index, pb_graph_node->input_pins[i][j].port->name, pb_graph_node->input_pins[i][j].pin_number);
+continue;
 }
-
+pb_graph_node->input_pin_class_size[pb_graph_node->input_pins[i][j].pin_class]++;
+}
+}
+for(i = 0; i < pb_graph_node->num_output_ports; i++) {
+for(j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
+assert(pb_graph_node->output_pins[i][j].pin_class < pb_graph_node->num_output_pin_class);
+if(pb_graph_node->output_pins[i][j].pin_class == OPEN) {
+printf(WARNTAG "%s[%d].%s[%d] unconnected pin in architecture\n", pb_graph_node->pb_type->name, pb_graph_node->placement_index, pb_graph_node->output_pins[i][j].port->name, pb_graph_node->output_pins[i][j].pin_number);
+continue;
+}
+pb_graph_node->output_pin_class_size[pb_graph_node->output_pins[i][j].pin_class]++;
+}
+}
+for(i = 0; i < pb_graph_node->num_clock_ports; i++) {
+for(j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
+assert(pb_graph_node->clock_pins[i][j].pin_class < pb_graph_node->num_input_pin_class);
+if(pb_graph_node->clock_pins[i][j].pin_class == OPEN) {
+printf(WARNTAG "%s[%d].%s[%d] unconnected pin in architecture\n", pb_graph_node->pb_type->name, pb_graph_node->placement_index, pb_graph_node->clock_pins[i][j].port->name, pb_graph_node->clock_pins[i][j].pin_number);
+continue;
+}
+pb_graph_node->input_pin_class_size[pb_graph_node->clock_pins[i][j].pin_class]++;
+}
+}
+}
 

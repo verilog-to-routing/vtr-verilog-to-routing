@@ -1,8 +1,8 @@
 /* 
-Prepacking: Group together technology-mapped netlist blocks before packing.  This gives hints to the packer on what groups of blocks to keep together during packing.
-Primary use 1) "Forced" packs (eg LUT+FF pair)
-            2) Carry-chains
-*/
+ Prepacking: Group together technology-mapped netlist blocks before packing.  This gives hints to the packer on what groups of blocks to keep together during packing.
+ Primary use 1) "Forced" packs (eg LUT+FF pair)
+ 2) Carry-chains
+ */
 
 #ifndef PREPACK_H
 #define PREPACK_H

@@ -156,195 +156,161 @@ read_place(INP const char *place_file,
 
 	    /* Get next line */
 	    assert(*tokens);
-	    free(*tokens);
-	    free(tokens);
-	    tokens = ReadLineTokens(infile, &line);
-	}
-
-    fclose(infile);
+free(*tokens);
+free(tokens);
+tokens = ReadLineTokens(infile, &line);
 }
 
-void
-read_user_pad_loc(char *pad_loc_file)
-{
+fclose(infile);
+}
+
+void read_user_pad_loc(char *pad_loc_file) {
 
 /* Reads in the locations of the IO pads from a file. */
 
-    struct s_hash **hash_table, *h_ptr;
-    int iblk, i, j, xtmp, ytmp, bnum, k;
-    FILE *fp;
-    char buf[BUFSIZE], bname[BUFSIZE], *ptr;
+struct s_hash **hash_table, *h_ptr;
+int iblk, i, j, xtmp, ytmp, bnum, k;
+FILE *fp;
+char buf[BUFSIZE], bname[BUFSIZE], *ptr;
 
-    printf("\nReading locations of IO pads from %s.\n", pad_loc_file);
-    file_line_number = 0;
-    fp = fopen(pad_loc_file, "r");
+printf("\nReading locations of IO pads from %s.\n", pad_loc_file);
+file_line_number = 0;
+fp = fopen(pad_loc_file, "r");
 
-    hash_table = alloc_hash_table();
-    for(iblk = 0; iblk < num_blocks; iblk++)
-	{
-	    if(block[iblk].type == IO_TYPE)
-		{
-		    h_ptr =
-			insert_in_hash_table(hash_table, block[iblk].name,
-					     iblk);
-		    block[iblk].x = OPEN;	/* Mark as not seen yet. */
-		}
-	}
-
-    for(i = 0; i <= nx + 1; i++)
-	{
-	    for(j = 0; j <= ny + 1; j++)
-		{
-		    if(grid[i][j].type == IO_TYPE)
-			{
-			    for(k = 0; k < IO_TYPE->capacity; k++)
-				grid[i][j].blocks[k] = OPEN;	/* Flag for err. check */
-			}
-		}
-	}
-
-    ptr = my_fgets(buf, BUFSIZE, fp);
-
-    while(ptr != NULL)
-	{
-	    ptr = my_strtok(buf, TOKENS, fp, buf);
-	    if(ptr == NULL)
-		{
-		    ptr = my_fgets(buf, BUFSIZE, fp);
-		    continue;	/* Skip blank or comment lines. */
-		}
-
-	    strcpy(bname, ptr);
-
-	    ptr = my_strtok(NULL, TOKENS, fp, buf);
-	    if(ptr == NULL)
-		{
-		    printf("Error:  line %d is incomplete.\n", file_line_number);
-		    exit(1);
-		}
-	    sscanf(ptr, "%d", &xtmp);
-
-	    ptr = my_strtok(NULL, TOKENS, fp, buf);
-	    if(ptr == NULL)
-		{
-		    printf("Error:  line %d is incomplete.\n", file_line_number);
-		    exit(1);
-		}
-	    sscanf(ptr, "%d", &ytmp);
-
-	    ptr = my_strtok(NULL, TOKENS, fp, buf);
-	    if(ptr == NULL)
-		{
-		    printf("Error:  line %d is incomplete.\n", file_line_number);
-		    exit(1);
-		}
-	    sscanf(ptr, "%d", &k);
-
-	    ptr = my_strtok(NULL, TOKENS, fp, buf);
-	    if(ptr != NULL)
-		{
-		    printf("Error:  extra characters at end of line %d.\n",
-			   file_line_number);
-		    exit(1);
-		}
-
-	    h_ptr = get_hash_entry(hash_table, bname);
-	    if(h_ptr == NULL)
-		{
-		    printf("Error:  block %s on line %d: no such IO pad.\n",
-			   bname, file_line_number);
-		    exit(1);
-		}
-	    bnum = h_ptr->index;
-	    i = xtmp;
-	    j = ytmp;
-
-	    if(block[bnum].x != OPEN)
-		{
-		    printf
-			("Error:  line %d.  Block %s listed twice in pad file.\n",
-			 file_line_number, bname);
-		    exit(1);
-		}
-
-	    if(i < 0 || i > nx + 1 || j < 0 || j > ny + 1)
-		{
-		    printf("Error:  block #%d (%s) location\n", bnum, bname);
-		    printf("(%d,%d) is out of range.\n", i, j);
-		    exit(1);
-		}
-
-	    block[bnum].x = i;	/* Will be reloaded by initial_placement anyway. */
-	    block[bnum].y = j;	/* I need to set .x only as a done flag.         */
-
-	    if(grid[i][j].type != IO_TYPE)
-		{
-		    printf("Error:  attempt to place IO block %s in \n",
-			   bname);
-		    printf("an illegal location (%d, %d).\n", i, j);
-		    exit(1);
-		}
-
-	    if(k >= IO_TYPE->capacity || k < 0)
-		{
-		    printf
-			("Error:  Block %s subblock number (%d) on line %d is out of "
-			 "range.\n", bname, k, file_line_number);
-		    exit(1);
-		}
-	    grid[i][j].blocks[k] = bnum;
-	    grid[i][j].usage++;
-
-	    ptr = my_fgets(buf, BUFSIZE, fp);
-	}
-
-    for(iblk = 0; iblk < num_blocks; iblk++)
-	{
-	    if(block[iblk].type == IO_TYPE && block[iblk].x == OPEN)
-		{
-		    printf
-			("Error:  IO block %s location was not specified in "
-			 "the pad file.\n", block[iblk].name);
-		    exit(1);
-		}
-	}
-
-    fclose(fp);
-    free_hash_table(hash_table);
-    printf("Successfully read %s.\n\n", pad_loc_file);
+hash_table = alloc_hash_table();
+for (iblk = 0; iblk < num_blocks; iblk++) {
+if (block[iblk].type == IO_TYPE) {
+	h_ptr = insert_in_hash_table(hash_table, block[iblk].name, iblk);
+	block[iblk].x = OPEN; /* Mark as not seen yet. */
+}
 }
 
+for (i = 0; i <= nx + 1; i++) {
+for (j = 0; j <= ny + 1; j++) {
+	if (grid[i][j].type == IO_TYPE) {
+		for (k = 0; k < IO_TYPE->capacity; k++)
+			grid[i][j].blocks[k] = OPEN; /* Flag for err. check */
+	}
+}
+}
 
-void
-print_place(char *place_file,
-	    char *net_file,
-	    char *arch_file)
-{
+ptr = my_fgets(buf, BUFSIZE, fp);
+
+while (ptr != NULL) {
+ptr = my_strtok(buf, TOKENS, fp, buf);
+if (ptr == NULL) {
+	ptr = my_fgets(buf, BUFSIZE, fp);
+	continue; /* Skip blank or comment lines. */
+}
+
+strcpy(bname, ptr);
+
+ptr = my_strtok(NULL, TOKENS, fp, buf);
+if (ptr == NULL) {
+	printf("Error:  line %d is incomplete.\n", file_line_number);
+	exit(1);
+}
+sscanf(ptr, "%d", &xtmp);
+
+ptr = my_strtok(NULL, TOKENS, fp, buf);
+if (ptr == NULL) {
+	printf("Error:  line %d is incomplete.\n", file_line_number);
+	exit(1);
+}
+sscanf(ptr, "%d", &ytmp);
+
+ptr = my_strtok(NULL, TOKENS, fp, buf);
+if (ptr == NULL) {
+	printf("Error:  line %d is incomplete.\n", file_line_number);
+	exit(1);
+}
+sscanf(ptr, "%d", &k);
+
+ptr = my_strtok(NULL, TOKENS, fp, buf);
+if (ptr != NULL) {
+	printf("Error:  extra characters at end of line %d.\n", file_line_number);
+	exit(1);
+}
+
+h_ptr = get_hash_entry(hash_table, bname);
+if (h_ptr == NULL) {
+	printf("Error:  block %s on line %d: no such IO pad.\n", bname,
+			file_line_number);
+	exit(1);
+}
+bnum = h_ptr->index;
+i = xtmp;
+j = ytmp;
+
+if (block[bnum].x != OPEN) {
+	printf("Error:  line %d.  Block %s listed twice in pad file.\n",
+			file_line_number, bname);
+	exit(1);
+}
+
+if (i < 0 || i > nx + 1 || j < 0 || j > ny + 1) {
+	printf("Error:  block #%d (%s) location\n", bnum, bname);
+	printf("(%d,%d) is out of range.\n", i, j);
+	exit(1);
+}
+
+block[bnum].x = i; /* Will be reloaded by initial_placement anyway. */
+block[bnum].y = j; /* I need to set .x only as a done flag.         */
+
+if (grid[i][j].type != IO_TYPE) {
+	printf("Error:  attempt to place IO block %s in \n", bname);
+	printf("an illegal location (%d, %d).\n", i, j);
+	exit(1);
+}
+
+if (k >= IO_TYPE->capacity || k < 0) {
+	printf("Error:  Block %s subblock number (%d) on line %d is out of "
+			"range.\n", bname, k, file_line_number);
+	exit(1);
+}
+grid[i][j].blocks[k] = bnum;
+grid[i][j].usage++;
+
+ptr = my_fgets(buf, BUFSIZE, fp);
+}
+
+for (iblk = 0; iblk < num_blocks; iblk++) {
+if (block[iblk].type == IO_TYPE && block[iblk].x == OPEN) {
+	printf("Error:  IO block %s location was not specified in "
+			"the pad file.\n", block[iblk].name);
+	exit(1);
+}
+}
+
+fclose(fp);
+free_hash_table(hash_table);
+printf("Successfully read %s.\n\n", pad_loc_file);
+}
+
+void print_place(char *place_file, char *net_file, char *arch_file) {
 
 /* Prints out the placement of the circuit.  The architecture and    *
  * netlist files used to generate this placement are recorded in the *
  * file to avoid loading a placement with the wrong support files    *
  * later.                                                            */
 
-    FILE *fp;
-    int i;
+FILE *fp;
+int i;
 
-    fp = fopen(place_file, "w");
+fp = fopen(place_file, "w");
 
-    fprintf(fp, "Netlist file: %s   Architecture file: %s\n", net_file,
-	    arch_file);
-    fprintf(fp, "Array size: %d x %d logic blocks\n\n", nx, ny);
-    fprintf(fp, "#block name\tx\ty\tsubblk\tblock number\n");
-    fprintf(fp, "#----------\t--\t--\t------\t------------\n");
+fprintf(fp, "Netlist file: %s   Architecture file: %s\n", net_file, arch_file);
+fprintf(fp, "Array size: %d x %d logic blocks\n\n", nx, ny);
+fprintf(fp, "#block name\tx\ty\tsubblk\tblock number\n");
+fprintf(fp, "#----------\t--\t--\t------\t------------\n");
 
-    for(i = 0; i < num_blocks; i++)
-	{
-	    fprintf(fp, "%s\t", block[i].name);
-	    if(strlen(block[i].name) < 8)
-		fprintf(fp, "\t");
+for (i = 0; i < num_blocks; i++) {
+fprintf(fp, "%s\t", block[i].name);
+if (strlen(block[i].name) < 8)
+	fprintf(fp, "\t");
 
-	    fprintf(fp, "%d\t%d\t%d", block[i].x, block[i].y, block[i].z);
-	    fprintf(fp, "\t#%d\n", i);
-	}
-    fclose(fp);
+fprintf(fp, "%d\t%d\t%d", block[i].x, block[i].y, block[i].z);
+fprintf(fp, "\t#%d\n", i);
+}
+fclose(fp);
 }

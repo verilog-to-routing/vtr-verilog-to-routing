@@ -14,461 +14,412 @@
 #include "stats.h"
 #include "draw.h"
 
-
 /********************* Subroutines local to this module *********************/
 
-static boolean directed_search_route_net(int inet,
-					 float pres_fac,
-					 float astar_fac,
-					 float bend_cost,
-					 t_mst_edge ** mst);
+static boolean directed_search_route_net(int inet, float pres_fac,
+		float astar_fac, float bend_cost, t_mst_edge ** mst);
 
 static int directed_search_expand_trace_segment(struct s_trace *start_ptr,
-						 int target_node,
-						 float astar_fac,
-						 int inet,
-						 int remaining_connections_to_sink);
+		int target_node, float astar_fac, int inet,
+		int remaining_connections_to_sink);
 
-static void directed_search_expand_neighbours(struct s_heap *current,
-					      int inet,
-					      float bend_cost,
-					      int target_node,
-						  int highfanout_rlim,
-					      float astar_fac);
+static void directed_search_expand_neighbours(struct s_heap *current, int inet,
+		float bend_cost, int target_node, int highfanout_rlim, float astar_fac);
 
-static void directed_search_add_source_to_heap(int inet,
-					       int target_node,
-					       float astar_fac);
+static void directed_search_add_source_to_heap(int inet, int target_node,
+		float astar_fac);
 
-static float get_directed_search_expected_cost(int inode,
-					       int target_node);
+static float get_directed_search_expected_cost(int inode, int target_node);
 
-static int get_expected_segs_to_target(int inode,
-				       int target_node,
-				       int *num_segs_ortho_dir_ptr);
+static int get_expected_segs_to_target(int inode, int target_node,
+		int *num_segs_ortho_dir_ptr);
 
 /************************ Subroutine definitions ****************************/
 
-boolean
-try_directed_search_route(struct s_router_opts router_opts,
-			  t_ivec ** clb_opins_used_locally,
-			  int width_fac,
-			  t_mst_edge ** mst)
-{
+boolean try_directed_search_route(struct s_router_opts router_opts,
+		t_ivec ** clb_opins_used_locally, int width_fac, t_mst_edge ** mst) {
 
-/* Iterated maze router ala Pathfinder Negotiated Congestion algorithm,  *
- * (FPGA 95 p. 111).  Returns TRUE if it can route this FPGA, FALSE if   *
- * it can't.                                                             */
+	/* Iterated maze router ala Pathfinder Negotiated Congestion algorithm,  *
+	 * (FPGA 95 p. 111).  Returns TRUE if it can route this FPGA, FALSE if   *
+	 * it can't.                                                             */
 
-    float pres_fac;
-    boolean success, is_routable, rip_up_local_opins;
-    int itry, inet, i;
+	float pres_fac;
+	boolean success, is_routable, rip_up_local_opins;
+	int itry, inet, i;
 	clock_t begin, end;
 
-    int bends;
-    int wirelength, total_wirelength, available_wirelength;
-    int segments;
+	int bends;
+	int wirelength, total_wirelength, available_wirelength;
+	int segments;
 
 	float *sinks;
 	int *net_index;
 
 	sinks = my_malloc(sizeof(float) * num_nets);
 	net_index = my_malloc(sizeof(int) * num_nets);
-	for(i = 0; i < num_nets; i++) {
+	for (i = 0; i < num_nets; i++) {
 		sinks[i] = clb_net[i].num_sinks;
 		net_index[i] = i;
 	}
 	heapsort(net_index, sinks, num_nets, 1);
 
-    /* char msg[100]; */
+	/* char msg[100]; */
 
 	begin = clock();
 
-    /* mst not built as good as it should, ideally, just have it after placement once only
+	/* mst not built as good as it should, ideally, just have it after placement once only
 	 however, rr_node numbers changed when the channel width changes so forced to do it here */
-    if(mst)
-	{
-	    for(inet = 0; inet < num_nets; inet++)
-		{
+	if (mst) {
+		for (inet = 0; inet < num_nets; inet++) {
 			free(mst[inet]);
-		    mst[inet] = get_mst_of_net(inet);
+			mst[inet] = get_mst_of_net(inet);
 		}
 	}
 
 	end = clock();
-	#ifdef CLOCKS_PER_SEC
-		printf("mst took %g seconds\n", (float)(end - begin) / CLOCKS_PER_SEC);
-	#else
-		printf("mst took %g seconds\n", (float)(end - begin) / CLK_PER_SEC);
-	#endif
+#ifdef CLOCKS_PER_SEC
+	printf("mst took %g seconds\n", (float) (end - begin) / CLOCKS_PER_SEC);
+#else
+	printf("mst took %g seconds\n", (float)(end - begin) / CLK_PER_SEC);
+#endif
 
+	/* Usually the first iteration uses a very small (or 0) pres_fac to find  *
+	 * the shortest path and get a congestion map.  For fast compiles, I set  *
+	 * pres_fac high even for the first iteration.                            */
 
-/* Usually the first iteration uses a very small (or 0) pres_fac to find  *
- * the shortest path and get a congestion map.  For fast compiles, I set  *
- * pres_fac high even for the first iteration.                            */
+	pres_fac = router_opts.first_iter_pres_fac;
 
-    pres_fac = router_opts.first_iter_pres_fac;
-
-    for(itry = 1; itry <= router_opts.max_router_iterations; itry++)
-	{
-					begin = clock();
+	for (itry = 1; itry <= router_opts.max_router_iterations; itry++) {
+		begin = clock();
 
 		printf("routing iteration %d\n", itry);
-		for(i = 0; i < num_nets; i++)
-		{
+		for (i = 0; i < num_nets; i++) {
 			inet = net_index[i];
-	    	if(clb_net[inet].is_global == FALSE && clb_net[inet].num_sinks != 0)
-			{	/* Skip global nets and empty nets (empty nets are already reserved using reserve_locally_used_opins). */
-			    is_routable =
-				directed_search_route_net(inet, pres_fac,
-							  router_opts.
-							  astar_fac,
-							  router_opts.
-							  bend_cost, mst);
+			if (clb_net[inet].is_global == FALSE
+					&& clb_net[inet].num_sinks != 0) { /* Skip global nets and empty nets (empty nets are already reserved using reserve_locally_used_opins). */
+				is_routable = directed_search_route_net(inet, pres_fac,
+						router_opts.astar_fac, router_opts.bend_cost, mst);
 
-			    /* Impossible to route? (disconnected rr_graph) */
+				/* Impossible to route? (disconnected rr_graph) */
 
-			    if(!is_routable)
-				{
-				    printf("Routing failed.\n");
+				if (!is_routable) {
+					printf("Routing failed.\n");
 					free(net_index);
 					free(sinks);
-				    return (FALSE);
+					return (FALSE);
 				}
 
 			}
 		}
 		end = clock();
-		#ifdef CLOCKS_PER_SEC
-			printf("routing iteration took %g seconds\n", (float)(end - begin) / CLOCKS_PER_SEC);
-		#else
-			printf("routing iteration took %g seconds\n", (float)(end - begin) / CLK_PER_SEC);
-		#endif
+#ifdef CLOCKS_PER_SEC
+		printf("routing iteration took %g seconds\n",
+				(float) (end - begin) / CLOCKS_PER_SEC);
+#else
+		printf("routing iteration took %g seconds\n", (float)(end - begin) / CLK_PER_SEC);
+#endif
 		fflush(stdout);
 
-		if(itry == 1) {
+		if (itry == 1) {
 			/* Early exit code for cases where it is obvious that a successful route will not be found 
-			   Heuristic: If total wirelength used in first routing iteration is X% of total available wirelength, exit
-			*/
+			 Heuristic: If total wirelength used in first routing iteration is X% of total available wirelength, exit
+			 */
 			total_wirelength = 0;
 			available_wirelength = 0;
 
-			for(i = 0; i < num_rr_nodes; i++) {
-				if(rr_node[i].type == CHANX || rr_node[i].type == CHANY)
-				{
-					available_wirelength += 1 + rr_node[i].xhigh - rr_node[i].xlow +
-					rr_node[i].yhigh - rr_node[i].ylow;
+			for (i = 0; i < num_rr_nodes; i++) {
+				if (rr_node[i].type == CHANX || rr_node[i].type == CHANY) {
+					available_wirelength += 1 + rr_node[i].xhigh
+							- rr_node[i].xlow + rr_node[i].yhigh
+							- rr_node[i].ylow;
 				}
 			}
 
-			for(inet = 0; inet < num_nets; inet++)
-			{
-				if(clb_net[inet].is_global == FALSE && clb_net[inet].num_sinks != 0)
-				{		/* Globals don't count. */
+			for (inet = 0; inet < num_nets; inet++) {
+				if (clb_net[inet].is_global == FALSE
+						&& clb_net[inet].num_sinks != 0) { /* Globals don't count. */
 					get_num_bends_and_length(inet, &bends, &wirelength,
-								 &segments);
+							&segments);
 
 					total_wirelength += wirelength;
 				}
 			}
-			printf("wirelength after first iteration %d, total available wirelength %d, ratio %g\n", total_wirelength, available_wirelength, (float)(total_wirelength)/(float)(available_wirelength));
-			if((float)(total_wirelength)/(float)(available_wirelength) > FIRST_ITER_WIRELENTH_LIMIT) {
-				printf("Wirelength usage ratio exceeds limit of %g, fail routing\n", FIRST_ITER_WIRELENTH_LIMIT);
+			printf(
+					"wirelength after first iteration %d, total available wirelength %d, ratio %g\n",
+					total_wirelength, available_wirelength,
+					(float) (total_wirelength)
+							/ (float) (available_wirelength));
+			if ((float) (total_wirelength)
+					/ (float) (available_wirelength)> FIRST_ITER_WIRELENTH_LIMIT) {
+				printf(
+						"Wirelength usage ratio exceeds limit of %g, fail routing\n",
+						FIRST_ITER_WIRELENTH_LIMIT);
 				free(net_index);
 				free(sinks);
 				return FALSE;
 			}
 		}
 
+		/* Make sure any CLB OPINs used up by subblocks being hooked directly     *
+		 * to them are reserved for that purpose.                                 */
 
-	    /* Make sure any CLB OPINs used up by subblocks being hooked directly     *
-	     * to them are reserved for that purpose.                                 */
+		if (itry == 1)
+			rip_up_local_opins = FALSE;
+		else
+			rip_up_local_opins = TRUE;
 
-	    if(itry == 1)
-		rip_up_local_opins = FALSE;
-	    else
-		rip_up_local_opins = TRUE;
+		reserve_locally_used_opins(pres_fac, rip_up_local_opins,
+				clb_opins_used_locally);
 
-	    reserve_locally_used_opins(pres_fac, rip_up_local_opins,
-				       clb_opins_used_locally);
-
-	    success = feasible_routing();
-	    if(success)
-		{
-		    printf
-			("Successfully routed after %d routing iterations by Directed Search.\n",
-			 itry);
+		success = feasible_routing();
+		if (success) {
+			printf(
+					"Successfully routed after %d routing iterations by Directed Search.\n",
+					itry);
 			free(net_index);
 			free(sinks);
-		    return (TRUE);
+			return (TRUE);
 		}
 #if 0
-	    else
+		else
 		{
-		    sprintf(msg,
-			    "After iteration %d routing failed (A*) with a channel width factor of %d and Fc_int of %d, Fs_int of %d.",
-			    itry, width_fac, Fc_int, Fs_int);
-		    init_draw_coords(pins_per_clb);
-		    update_screen(MAJOR, msg, ROUTING, FALSE);
+			sprintf(msg,
+					"After iteration %d routing failed (A*) with a channel width factor of %d and Fc_int of %d, Fs_int of %d.",
+					itry, width_fac, Fc_int, Fs_int);
+			init_draw_coords(pins_per_clb);
+			update_screen(MAJOR, msg, ROUTING, FALSE);
 		}
 #endif
 
-
-	    if(itry == 1)
-		{
-		    pres_fac = router_opts.initial_pres_fac;
-		    pathfinder_update_cost(pres_fac, 0.);	/* Acc_fac=0 for first iter. */
-		}
-	    else
-		{
-		    pres_fac *= router_opts.pres_fac_mult;
-		    pathfinder_update_cost(pres_fac, router_opts.acc_fac);
+		if (itry == 1) {
+			pres_fac = router_opts.initial_pres_fac;
+			pathfinder_update_cost(pres_fac, 0.); /* Acc_fac=0 for first iter. */
+		} else {
+			pres_fac *= router_opts.pres_fac_mult;
+			pathfinder_update_cost(pres_fac, router_opts.acc_fac);
 		}
 
 	}
 
-    printf("Routing failed.\n");
+	printf("Routing failed.\n");
 	free(sinks);
 	free(net_index);
 
-    return (FALSE);
+	return (FALSE);
 }
 
+static boolean directed_search_route_net(int inet, float pres_fac,
+		float astar_fac, float bend_cost, t_mst_edge ** mst) {
 
-static boolean
-directed_search_route_net(int inet,
-			  float pres_fac,
-			  float astar_fac,
-			  float bend_cost,
-			  t_mst_edge ** mst)
-{
+	/* Uses a maze routing (Dijkstra's) algorithm to route a net.  The net       *
+	 * begins at the net output, and expands outward until it hits a target      *
+	 * pin.  The algorithm is then restarted with the entire first wire segment  *
+	 * included as part of the source this time.  For an n-pin net, the maze     *
+	 * router is invoked n-1 times to complete all the connections.  Inet is     *
+	 * the index of the net to be routed.  Bends are penalized by bend_cost      *
+	 * (which is typically zero for detailed routing and nonzero only for global *
+	 * routing), since global routes with lots of bends are tougher to detailed  *
+	 * route (using a detailed router like SEGA).                                *
+	 * If this routine finds that a net *cannot* be connected (due to a complete *
+	 * lack of potential paths, rather than congestion), it returns FALSE, as    *
+	 * routing is impossible on this architecture.  Otherwise it returns TRUE.   */
+	/* WMF: This is the directed search (A-star) version of maze router. */
 
-/* Uses a maze routing (Dijkstra's) algorithm to route a net.  The net       *
- * begins at the net output, and expands outward until it hits a target      *
- * pin.  The algorithm is then restarted with the entire first wire segment  *
- * included as part of the source this time.  For an n-pin net, the maze     *
- * router is invoked n-1 times to complete all the connections.  Inet is     *
- * the index of the net to be routed.  Bends are penalized by bend_cost      *
- * (which is typically zero for detailed routing and nonzero only for global *
- * routing), since global routes with lots of bends are tougher to detailed  *
- * route (using a detailed router like SEGA).                                *
- * If this routine finds that a net *cannot* be connected (due to a complete *
- * lack of potential paths, rather than congestion), it returns FALSE, as    *
- * routing is impossible on this architecture.  Otherwise it returns TRUE.   */
-/* WMF: This is the directed search (A-star) version of maze router. */
-
-    int inode, remaining_connections_to_sink;
-    int itarget, target_pin, target_node;
-    struct s_heap *current;
-    struct s_trace *new_route_start_tptr;
-    float old_tcost, new_tcost, old_back_cost, new_back_cost;
+	int inode, remaining_connections_to_sink;
+	int itarget, target_pin, target_node;
+	struct s_heap *current;
+	struct s_trace *new_route_start_tptr;
+	float old_tcost, new_tcost, old_back_cost, new_back_cost;
 	int highfanout_rlim;
 
 	assert(mst);
 
-/* Rip-up any old routing. */
-    /* WMF: For the 1st router iteration trace_head[inet] is NULL, as it is 
-     * my_calloc'ed in alloc_route_structs() so the following does nothing.
-     * However, for subsequent iterations, trace_head[inet] contains the previous
-     * ieration's routing for this net. */
-    pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
-    free_traceback(inet);	/* kills trace, and set the trace head and tail to NULL */
+	/* Rip-up any old routing. */
+	/* WMF: For the 1st router iteration trace_head[inet] is NULL, as it is 
+	 * my_calloc'ed in alloc_route_structs() so the following does nothing.
+	 * However, for subsequent iterations, trace_head[inet] contains the previous
+	 * ieration's routing for this net. */
+	pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
+	free_traceback(inet); /* kills trace, and set the trace head and tail to NULL */
 
-    /* adding the SOURCE node to the heap with correct total cost */
+	/* adding the SOURCE node to the heap with correct total cost */
 	target_pin = mst[inet][0].to_node;
-    target_node = net_rr_terminals[inet][target_pin];
-    directed_search_add_source_to_heap(inet, target_node, astar_fac);
+	target_node = net_rr_terminals[inet][target_pin];
+	directed_search_add_source_to_heap(inet, target_node, astar_fac);
 
-    mark_ends(inet);
+	mark_ends(inet);
 
-    remaining_connections_to_sink = 0;
+	remaining_connections_to_sink = 0;
 
-    for(itarget = 0; itarget < clb_net[inet].num_sinks; itarget++)
-	{
-	    target_pin = mst[inet][itarget].to_node;
-	    target_node = net_rr_terminals[inet][target_pin];
+	for (itarget = 0; itarget < clb_net[inet].num_sinks; itarget++) {
+		target_pin = mst[inet][itarget].to_node;
+		target_node = net_rr_terminals[inet][target_pin];
 
-	    /*    printf ("Target #%d, pin number %d, target_node: %d.\n",
-	     * itarget, target_pin, target_node);  */
+		/*    printf ("Target #%d, pin number %d, target_node: %d.\n",
+		 * itarget, target_pin, target_node);  */
 
-	    /* WMF: since the heap has been emptied, need to restart the wavefront
-	     * from the current partial routing, starting at the trace_head (SOURCE) 
-	     * Note: in the 1st iteration, there is no trace (no routing at all for this net)
-	     * i.e. trace_head[inet] == NULL (found in free_traceback() in route_common.c, 
-	     * which is called before the routing of any net), 
-	     * so this routine does nothing, but the heap does have the SOURCE node due 
-	     * to directed_search_add_source_to_heap (inet) before the loop */
-	    highfanout_rlim = directed_search_expand_trace_segment(trace_head[inet],
-						 target_node, astar_fac, inet,
-						 remaining_connections_to_sink);
+		/* WMF: since the heap has been emptied, need to restart the wavefront
+		 * from the current partial routing, starting at the trace_head (SOURCE) 
+		 * Note: in the 1st iteration, there is no trace (no routing at all for this net)
+		 * i.e. trace_head[inet] == NULL (found in free_traceback() in route_common.c, 
+		 * which is called before the routing of any net), 
+		 * so this routine does nothing, but the heap does have the SOURCE node due 
+		 * to directed_search_add_source_to_heap (inet) before the loop */
+		highfanout_rlim = directed_search_expand_trace_segment(trace_head[inet],
+				target_node, astar_fac, inet, remaining_connections_to_sink);
 
-	    current = get_heap_head();
+		current = get_heap_head();
 
-	    if(current == NULL)
-		{		/* Infeasible routing.  No possible path for net. */
-		    reset_path_costs();	/* Clean up before leaving. */
-		    return (FALSE);
+		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
+			reset_path_costs(); /* Clean up before leaving. */
+			return (FALSE);
 		}
 
-	    inode = current->index;
+		inode = current->index;
 
-	    while(inode != target_node)
-		{
-		    old_tcost = rr_node_route_inf[inode].path_cost;
-		    new_tcost = current->cost;
+		while (inode != target_node) {
+			old_tcost = rr_node_route_inf[inode].path_cost;
+			new_tcost = current->cost;
 
-		    /* WMF: not needed if Vaughn initialized rr_node_route_inf[inode].backward_path_cost
-		     * to HUGE_FLOAT along with rr_node_route_inf[inode].path_cost */
-		    if(old_tcost > 0.99 * HUGE_FLOAT)	/* First time touched. */
-			old_back_cost = HUGE_FLOAT;
-		    else
-			old_back_cost =
-			    rr_node_route_inf[inode].backward_path_cost;
+			/* WMF: not needed if Vaughn initialized rr_node_route_inf[inode].backward_path_cost
+			 * to HUGE_FLOAT along with rr_node_route_inf[inode].path_cost */
+			if (old_tcost > 0.99 * HUGE_FLOAT) /* First time touched. */
+				old_back_cost = HUGE_FLOAT;
+			else
+				old_back_cost = rr_node_route_inf[inode].backward_path_cost;
 
-		    new_back_cost = current->backward_path_cost;
+			new_back_cost = current->backward_path_cost;
 
-		    /* I only re-expand a node if both the "known" backward cost is lower  *
-		     * in the new expansion (this is necessary to prevent loops from       *
-		     * forming in the routing and causing havoc) *and* the expected total  *
-		     * cost to the sink is lower than the old value.  Different R_upstream *
-		     * values could make a path with lower back_path_cost less desirable   *
-		     * than one with higher cost.  Test whether or not I should disallow   *
-		     * re-expansion based on a higher total cost.                          */
+			/* I only re-expand a node if both the "known" backward cost is lower  *
+			 * in the new expansion (this is necessary to prevent loops from       *
+			 * forming in the routing and causing havoc) *and* the expected total  *
+			 * cost to the sink is lower than the old value.  Different R_upstream *
+			 * values could make a path with lower back_path_cost less desirable   *
+			 * than one with higher cost.  Test whether or not I should disallow   *
+			 * re-expansion based on a higher total cost.                          */
 
-		    /* updating the maze (Dijktra's min dist algorithm) if found "shorter" path */
-		    if(old_tcost > new_tcost && old_back_cost > new_back_cost)
-			{
-/*       if (old_tcost > new_tcost) {     */
-			    rr_node_route_inf[inode].prev_node =
-				current->u.prev_node;
-			    rr_node_route_inf[inode].prev_edge =
-				current->prev_edge;
-			    rr_node_route_inf[inode].path_cost = new_tcost;
-			    rr_node_route_inf[inode].backward_path_cost =
-				new_back_cost;
+			/* updating the maze (Dijktra's min dist algorithm) if found "shorter" path */
+			if (old_tcost > new_tcost && old_back_cost > new_back_cost) {
+				/*       if (old_tcost > new_tcost) {     */
+				rr_node_route_inf[inode].prev_node = current->u.prev_node;
+				rr_node_route_inf[inode].prev_edge = current->prev_edge;
+				rr_node_route_inf[inode].path_cost = new_tcost;
+				rr_node_route_inf[inode].backward_path_cost = new_back_cost;
 
-			    if(old_tcost > 0.99 * HUGE_FLOAT)	/* First time touched. */
-				add_to_mod_list(&rr_node_route_inf[inode].
-						path_cost);
+				if (old_tcost > 0.99 * HUGE_FLOAT) /* First time touched. */
+					add_to_mod_list(&rr_node_route_inf[inode].path_cost);
 
-			    directed_search_expand_neighbours(current, inet,
-							      bend_cost,
-							      target_node,
-								  highfanout_rlim,
-							      astar_fac);
+				directed_search_expand_neighbours(current, inet, bend_cost,
+						target_node, highfanout_rlim, astar_fac);
 			}
 
-		    free_heap_data(current);
-		    current = get_heap_head();
+			free_heap_data(current);
+			current = get_heap_head();
 
-		    if(current == NULL)
-			{	/* Impossible routing.  No path for net. */
-				printf("Failed to route net %s #%d pin %d num_sinks %d highfanout_rlim %d\n", clb_net[inet].name, inet, itarget, clb_net[inet].num_sinks, highfanout_rlim);
-			    reset_path_costs();
-			    return (FALSE);
+			if (current == NULL) { /* Impossible routing.  No path for net. */
+				printf(
+						"Failed to route net %s #%d pin %d num_sinks %d highfanout_rlim %d\n",
+						clb_net[inet].name, inet, itarget,
+						clb_net[inet].num_sinks, highfanout_rlim);
+				reset_path_costs();
+				return (FALSE);
 			}
 
-		    inode = current->index;
+			inode = current->index;
 		}
 
-	    rr_node_route_inf[inode].target_flag--;	/* Connected to this SINK. */
-	    remaining_connections_to_sink =
-		rr_node_route_inf[inode].target_flag;
+		rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
+		remaining_connections_to_sink = rr_node_route_inf[inode].target_flag;
 
-	    /* keep info on the current routing of this net */
-	    new_route_start_tptr = update_traceback(current, inet);
+		/* keep info on the current routing of this net */
+		new_route_start_tptr = update_traceback(current, inet);
 
-	    free_heap_data(current);
-	    /* update the congestion costs of rr_nodes due to the routing to this sink 
-	     * so only those nodes used in the partial routing of this sink and not 
-	     * of the entire net (remember we're in a loop for this net over its sinks) */
-	    pathfinder_update_one_cost(new_route_start_tptr, 1, pres_fac);
+		free_heap_data(current);
+		/* update the congestion costs of rr_nodes due to the routing to this sink 
+		 * so only those nodes used in the partial routing of this sink and not 
+		 * of the entire net (remember we're in a loop for this net over its sinks) */
+		pathfinder_update_one_cost(new_route_start_tptr, 1, pres_fac);
 
-	    /* WMF: MUST empty heap and recalculate all total costs, because
-	     * for the next sink, the target destination is changed, so the expected
-	     * cost calculation is changed also, meaning all the nodes on the heap have
-	     * "stale" total costs (costs based on last sink). */
-	    empty_heap();
-	    reset_path_costs();
+		/* WMF: MUST empty heap and recalculate all total costs, because
+		 * for the next sink, the target destination is changed, so the expected
+		 * cost calculation is changed also, meaning all the nodes on the heap have
+		 * "stale" total costs (costs based on last sink). */
+		empty_heap();
+		reset_path_costs();
 	}
 
-    return (TRUE);
+	return (TRUE);
 }
 
+static int directed_search_expand_trace_segment(struct s_trace *start_ptr,
+		int target_node, float astar_fac, int inet,
+		int remaining_connections_to_sink) {
 
-static int
-directed_search_expand_trace_segment(struct s_trace *start_ptr,
-				     int target_node,
-				     float astar_fac,
-					 int inet,
-				     int remaining_connections_to_sink)
-{
+	/* Adds all the rr_nodes in the entire traceback from SOURCE to all SINKS   *
+	 * routed so far (partial routing). 
+	 * This allows expansion to begin from the existing wiring.  The            *
+	 * remaining_connections_to_sink value is 0 if the route segment ending     *
+	 * at this location is the last one to connect to the SINK ending the route *
+	 * segment.  This is the usual case.  If it is not the last connection this *
+	 * net must make to this SINK, I have a hack to ensure the next connection  *
+	 * to this SINK goes through a different IPIN.  Without this hack, the      *
+	 * router would always put all the connections from this net to this SINK   *
+	 * through the same IPIN.  With LUTs or cluster-based logic blocks, you     *
+	 * should never have a net connecting to two logically-equivalent pins on   *
+	 * the same logic block, so the hack will never execute.  If your logic     *
+	 * block is an and-gate, however, nets might connect to two and-inputs on   *
+	 * the same logic block, and since the and-inputs are logically-equivalent, *
+	 * this means two connections to the same SINK.                             *
+	 *                                                                          *
+	 * For high-fanout nets, return the radius of the expansion bin,            *
+	 * undefined otherwise                                                      */
 
-/* Adds all the rr_nodes in the entire traceback from SOURCE to all SINKS   *
- * routed so far (partial routing). 
- * This allows expansion to begin from the existing wiring.  The            *
- * remaining_connections_to_sink value is 0 if the route segment ending     *
- * at this location is the last one to connect to the SINK ending the route *
- * segment.  This is the usual case.  If it is not the last connection this *
- * net must make to this SINK, I have a hack to ensure the next connection  *
- * to this SINK goes through a different IPIN.  Without this hack, the      *
- * router would always put all the connections from this net to this SINK   *
- * through the same IPIN.  With LUTs or cluster-based logic blocks, you     *
- * should never have a net connecting to two logically-equivalent pins on   *
- * the same logic block, so the hack will never execute.  If your logic     *
- * block is an and-gate, however, nets might connect to two and-inputs on   *
- * the same logic block, and since the and-inputs are logically-equivalent, *
- * this means two connections to the same SINK.                             *
- *                                                                          *
- * For high-fanout nets, return the radius of the expansion bin,            *
- * undefined otherwise                                                      */
-
-    struct s_trace *tptr;
-    int inode, backward_path_cost, tot_cost;
+	struct s_trace *tptr;
+	int inode, backward_path_cost, tot_cost;
 	int target_x, target_y;
 	int rlim, area;
 	boolean success;
 
 	target_x = rr_node[target_node].xhigh;
-    target_y = rr_node[target_node].yhigh;
+	target_y = rr_node[target_node].yhigh;
 
-	area = (route_bb[inet].xmax - route_bb[inet].xmin) * (route_bb[inet].ymax - route_bb[inet].ymin);
-	if(area <= 0) {
+	area = (route_bb[inet].xmax - route_bb[inet].xmin)
+			* (route_bb[inet].ymax - route_bb[inet].ymin);
+	if (area <= 0) {
 		area = 1;
 	}
-	
-	if(clb_net[inet].num_sinks < HIGH_FANOUT_NET_LIM) {
+
+	if (clb_net[inet].num_sinks < HIGH_FANOUT_NET_LIM) {
 		rlim = 1;
 	} else {
-		rlim = ceil(sqrt((float)area / (float)clb_net[inet].num_sinks));
-		if(start_ptr == NULL) {
+		rlim = ceil(sqrt((float) area / (float) clb_net[inet].num_sinks));
+		if (start_ptr == NULL) {
 			/* For first node, route normally since there is nothing in the current traceback path */
 			rlim = max(nx + 2, ny + 2);
 		}
 	}
 	success = FALSE;
 	/* determine quickly a feasible bin radius to route sink for high fanout nets 
-	   this is necessary to prevent super long runtimes for high fanout nets; in best case, a reduction in complexity from O(N^2logN) to O(NlogN) (Swartz fast router)
-	*/
-	while(success == FALSE && start_ptr != NULL) {
+	 this is necessary to prevent super long runtimes for high fanout nets; in best case, a reduction in complexity from O(N^2logN) to O(NlogN) (Swartz fast router)
+	 */
+	while (success == FALSE && start_ptr != NULL) {
 		tptr = start_ptr;
-		while(tptr != NULL && success == FALSE)
-		{
+		while (tptr != NULL && success == FALSE) {
 			inode = tptr->index;
-			if(!(rr_node[inode].type == IPIN || rr_node[inode].type == SINK)) {
-				if( clb_net[inet].num_sinks < HIGH_FANOUT_NET_LIM ||
-					(rr_node[inode].xlow <= target_x + rlim &&
-					rr_node[inode].xhigh >= target_x - rlim &&
-					rr_node[inode].ylow <= target_y + rlim &&
-					rr_node[inode].yhigh >= target_y - rlim)) {
+			if (!(rr_node[inode].type == IPIN || rr_node[inode].type == SINK)) {
+				if (clb_net[inet].num_sinks < HIGH_FANOUT_NET_LIM
+						|| (rr_node[inode].xlow <= target_x + rlim
+								&& rr_node[inode].xhigh >= target_x - rlim
+								&& rr_node[inode].ylow <= target_y + rlim
+								&& rr_node[inode].yhigh >= target_y - rlim)) {
 					success = TRUE;
 				}
 			}
 			tptr = tptr->next;
 		}
-		
-		if(success == FALSE) {
-			if(rlim > max(nx + 2, ny + 2)) { 
+
+		if (success == FALSE) {
+			if (rlim > max(nx + 2, ny + 2)) {
 				printf(ERRTAG "VPR internal error, net %s has paths that are not found in traceback\n", clb_net[inet].name);
 				exit(1);
 			}
@@ -480,11 +431,9 @@ directed_search_expand_trace_segment(struct s_trace *start_ptr,
 		}
 	}
 
-	if(remaining_connections_to_sink == 0)
-	{			/* Usual case. */
+	if (remaining_connections_to_sink == 0) { /* Usual case. */
 		tptr = start_ptr;
-		while(tptr != NULL)
-		{
+		while (tptr != NULL) {
 			/* WMF: partial routing is added to the heap with path cost of 0, because
 			 * new extension to the next sink can start at any point on current partial 
 			 * routing. However, for directed search the total cost must be made to favor
@@ -497,317 +446,258 @@ directed_search_expand_trace_segment(struct s_trace *start_ptr,
 			 * rr_node[inode].num_edges = 1 for INPINs */
 
 			inode = tptr->index;
-			if(!
-			   (rr_node[inode].type == IPIN
-			|| rr_node[inode].type == SINK))
-			{
-				if( clb_net[inet].num_sinks < HIGH_FANOUT_NET_LIM ||
-					(rr_node[inode].xlow <= target_x + rlim &&
-					rr_node[inode].xhigh >= target_x - rlim &&
-					rr_node[inode].ylow <= target_y + rlim &&
-					rr_node[inode].yhigh >= target_y - rlim)) {
+			if (!(rr_node[inode].type == IPIN || rr_node[inode].type == SINK)) {
+				if (clb_net[inet].num_sinks < HIGH_FANOUT_NET_LIM
+						|| (rr_node[inode].xlow <= target_x + rlim
+								&& rr_node[inode].xhigh >= target_x - rlim
+								&& rr_node[inode].ylow <= target_y + rlim
+								&& rr_node[inode].yhigh >= target_y - rlim)) {
 					backward_path_cost = 0;
-					tot_cost =
-					backward_path_cost +
-					astar_fac *
-					get_directed_search_expected_cost(inode,
-									  target_node);
-					node_to_heap(inode, tot_cost, NO_PREVIOUS,
-						 NO_PREVIOUS, backward_path_cost,
-						 OPEN);
+					tot_cost = backward_path_cost
+							+ astar_fac
+									* get_directed_search_expected_cost(inode,
+											target_node);
+					node_to_heap(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
+							backward_path_cost, OPEN);
 				}
 			}
 
 			tptr = tptr->next;
 		}
-	}
-	else
-	{			/* This case never executes for most logic blocks. */
-		printf("Warning: Multiple connections from net to the same sink. "
-		   "This should not happen for LUT/Cluster based logic blocks. Aborting.\n");
+	} else { /* This case never executes for most logic blocks. */
+		printf(
+				"Warning: Multiple connections from net to the same sink. "
+						"This should not happen for LUT/Cluster based logic blocks. Aborting.\n");
 		exit(1);
 	}
 	return rlim;
 }
 
-static void
-directed_search_expand_neighbours(struct s_heap *current,
-				  int inet,
-				  float bend_cost,
-				  int target_node,
-				  int highfanout_rlim,
-				  float astar_fac)
-{
+static void directed_search_expand_neighbours(struct s_heap *current, int inet,
+		float bend_cost, int target_node, int highfanout_rlim, float astar_fac) {
 
-/* Puts all the rr_nodes adjacent to current on the heap.  rr_nodes outside   *
- * the expanded bounding box specified in route_bb are not added to the     *
- * heap.  back_cost is the path_cost to get to inode. total cost i.e.
- * tot_cost is path_cost + (expected_cost to target sink) */
+	/* Puts all the rr_nodes adjacent to current on the heap.  rr_nodes outside   *
+	 * the expanded bounding box specified in route_bb are not added to the     *
+	 * heap.  back_cost is the path_cost to get to inode. total cost i.e.
+	 * tot_cost is path_cost + (expected_cost to target sink) */
 
-    int iconn, to_node, num_edges, inode, target_x, target_y;
-    t_rr_type from_type, to_type;
-    float new_tot_cost, old_back_pcost, new_back_pcost;
+	int iconn, to_node, num_edges, inode, target_x, target_y;
+	t_rr_type from_type, to_type;
+	float new_tot_cost, old_back_pcost, new_back_pcost;
 
-    inode = current->index;
-    old_back_pcost = current->backward_path_cost;
-    num_edges = rr_node[inode].num_edges;
+	inode = current->index;
+	old_back_pcost = current->backward_path_cost;
+	num_edges = rr_node[inode].num_edges;
 
-    target_x = rr_node[target_node].xhigh;
-    target_y = rr_node[target_node].yhigh;
+	target_x = rr_node[target_node].xhigh;
+	target_y = rr_node[target_node].yhigh;
 
-    for(iconn = 0; iconn < num_edges; iconn++)
-	{
-	    to_node = rr_node[inode].edges[iconn];
+	for (iconn = 0; iconn < num_edges; iconn++) {
+		to_node = rr_node[inode].edges[iconn];
 
-	    if(rr_node[to_node].xhigh < route_bb[inet].xmin ||
-	       rr_node[to_node].xlow > route_bb[inet].xmax ||
-	       rr_node[to_node].yhigh < route_bb[inet].ymin ||
-	       rr_node[to_node].ylow > route_bb[inet].ymax)
-		continue;	/* Node is outside (expanded) bounding box. */
+		if (rr_node[to_node].xhigh < route_bb[inet].xmin
+				|| rr_node[to_node].xlow > route_bb[inet].xmax
+				|| rr_node[to_node].yhigh < route_bb[inet].ymin
+				|| rr_node[to_node].ylow > route_bb[inet].ymax)
+			continue; /* Node is outside (expanded) bounding box. */
 
-		if(clb_net[inet].num_sinks >= HIGH_FANOUT_NET_LIM) {
-			if(rr_node[to_node].xhigh < target_x - highfanout_rlim ||
-				rr_node[to_node].xlow > target_x + highfanout_rlim ||
-				rr_node[to_node].yhigh < target_y - highfanout_rlim ||
-				rr_node[to_node].ylow > target_y + highfanout_rlim)
-			continue;	/* Node is outside high fanout bin. */
+		if (clb_net[inet].num_sinks >= HIGH_FANOUT_NET_LIM) {
+			if (rr_node[to_node].xhigh < target_x - highfanout_rlim
+					|| rr_node[to_node].xlow > target_x + highfanout_rlim
+					|| rr_node[to_node].yhigh < target_y - highfanout_rlim
+					|| rr_node[to_node].ylow > target_y + highfanout_rlim)
+				continue; /* Node is outside high fanout bin. */
 		}
 
-/* Prune away IPINs that lead to blocks other than the target one.  Avoids  *
- * the issue of how to cost them properly so they don't get expanded before *
- * more promising routes, but makes route-throughs (via CLBs) impossible.   *
- * Change this if you want to investigate route-throughs.                   */
+		/* Prune away IPINs that lead to blocks other than the target one.  Avoids  *
+		 * the issue of how to cost them properly so they don't get expanded before *
+		 * more promising routes, but makes route-throughs (via CLBs) impossible.   *
+		 * Change this if you want to investigate route-throughs.                   */
 
-	    to_type = rr_node[to_node].type;
-	    if(to_type == IPIN && (rr_node[to_node].xhigh != target_x ||
-				   rr_node[to_node].yhigh != target_y))
-		continue;
+		to_type = rr_node[to_node].type;
+		if (to_type == IPIN
+				&& (rr_node[to_node].xhigh != target_x
+						|| rr_node[to_node].yhigh != target_y))
+			continue;
 
-/* new_back_pcost stores the "known" part of the cost to this node -- the   *
- * congestion cost of all the routing resources back to the existing route  *
- * new_tot_cost 
- * is this "known" backward cost + an expected cost to get to the target.   */
+		/* new_back_pcost stores the "known" part of the cost to this node -- the   *
+		 * congestion cost of all the routing resources back to the existing route  *
+		 * new_tot_cost 
+		 * is this "known" backward cost + an expected cost to get to the target.   */
 
-	    new_back_pcost = old_back_pcost + get_rr_cong_cost(to_node);
+		new_back_pcost = old_back_pcost + get_rr_cong_cost(to_node);
 
-	    if(bend_cost != 0.)
-		{
-		    from_type = rr_node[inode].type;
-		    to_type = rr_node[to_node].type;
-		    if((from_type == CHANX && to_type == CHANY) ||
-		       (from_type == CHANY && to_type == CHANX))
-			new_back_pcost += bend_cost;
+		if (bend_cost != 0.) {
+			from_type = rr_node[inode].type;
+			to_type = rr_node[to_node].type;
+			if ((from_type == CHANX && to_type == CHANY)
+					|| (from_type == CHANY && to_type == CHANX))
+				new_back_pcost += bend_cost;
 		}
 
-	    /* Calculate the new total cost = path cost + astar_fac * remaining distance to target */
-	    new_tot_cost = new_back_pcost + astar_fac *
-		get_directed_search_expected_cost(to_node, target_node);
+		/* Calculate the new total cost = path cost + astar_fac * remaining distance to target */
+		new_tot_cost = new_back_pcost
+				+ astar_fac
+						* get_directed_search_expected_cost(to_node,
+								target_node);
 
-	    node_to_heap(to_node, new_tot_cost, inode, iconn, new_back_pcost,
-			 OPEN);
+		node_to_heap(to_node, new_tot_cost, inode, iconn, new_back_pcost, OPEN);
 	}
 }
 
+static void directed_search_add_source_to_heap(int inet, int target_node,
+		float astar_fac) {
 
-static void
-directed_search_add_source_to_heap(int inet,
-				   int target_node,
-				   float astar_fac)
-{
+	/* Adds the SOURCE of this net to the heap.  Used to start a net's routing. */
 
-/* Adds the SOURCE of this net to the heap.  Used to start a net's routing. */
+	int inode;
+	float back_cost, tot_cost;
 
-    int inode;
-    float back_cost, tot_cost;
+	inode = net_rr_terminals[inet][0]; /* SOURCE */
+	back_cost = 0.0 + get_rr_cong_cost(inode);
 
-    inode = net_rr_terminals[inet][0];	/* SOURCE */
-    back_cost = 0.0 + get_rr_cong_cost(inode);
-
-    /* setting the total cost to 0 because it's the only element on the heap */
-    if(!is_empty_heap())
-	{
-	    printf
-		("Error: Wrong Assumption: in directed_search_add_source_to_heap "
-		 "the heap is not empty. Need to properly calculate source node's cost.\n");
-	    exit(1);
+	/* setting the total cost to 0 because it's the only element on the heap */
+	if (!is_empty_heap()) {
+		printf(
+				"Error: Wrong Assumption: in directed_search_add_source_to_heap "
+						"the heap is not empty. Need to properly calculate source node's cost.\n");
+		exit(1);
 	}
 
-    /* WMF: path cost is 0. could use tot_cost = 0 to save some computation time, but
-     * for consistency, I chose to do the expected cost calculation. */
-    tot_cost =
-	back_cost + astar_fac * get_directed_search_expected_cost(inode,
-								  target_node);
-    node_to_heap(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS, back_cost, OPEN);
+	/* WMF: path cost is 0. could use tot_cost = 0 to save some computation time, but
+	 * for consistency, I chose to do the expected cost calculation. */
+	tot_cost = back_cost
+			+ astar_fac * get_directed_search_expected_cost(inode, target_node);
+	node_to_heap(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS, back_cost, OPEN);
 
 }
 
+static float get_directed_search_expected_cost(int inode, int target_node) {
 
-static float
-get_directed_search_expected_cost(int inode,
-				  int target_node)
-{
+	/* Determines the expected cost (due to resouce cost i.e. distance) to reach  *
+	 * the target node from inode.  It doesn't include the cost of inode --       *
+	 * that's already in the "known" path_cost.                                   */
 
-/* Determines the expected cost (due to resouce cost i.e. distance) to reach  *
- * the target node from inode.  It doesn't include the cost of inode --       *
- * that's already in the "known" path_cost.                                   */
+	t_rr_type rr_type;
+	int cost_index, ortho_cost_index, num_segs_same_dir, num_segs_ortho_dir;
+	float cong_cost;
 
-    t_rr_type rr_type;
-    int cost_index, ortho_cost_index, num_segs_same_dir, num_segs_ortho_dir;
-    float cong_cost;
+	rr_type = rr_node[inode].type;
 
-    rr_type = rr_node[inode].type;
+	if (rr_type == CHANX || rr_type == CHANY) {
+		num_segs_same_dir = get_expected_segs_to_target(inode, target_node,
+				&num_segs_ortho_dir);
+		cost_index = rr_node[inode].cost_index;
+		ortho_cost_index = rr_indexed_data[cost_index].ortho_cost_index;
 
-    if(rr_type == CHANX || rr_type == CHANY)
-	{
-	    num_segs_same_dir =
-		get_expected_segs_to_target(inode, target_node,
-					    &num_segs_ortho_dir);
-	    cost_index = rr_node[inode].cost_index;
-	    ortho_cost_index = rr_indexed_data[cost_index].ortho_cost_index;
+		cong_cost = num_segs_same_dir * rr_indexed_data[cost_index].base_cost
+				+ num_segs_ortho_dir
+						* rr_indexed_data[ortho_cost_index].base_cost;
+		cong_cost += rr_indexed_data[IPIN_COST_INDEX].base_cost
+				+ rr_indexed_data[SINK_COST_INDEX].base_cost;
 
-	    cong_cost =
-		num_segs_same_dir * rr_indexed_data[cost_index].base_cost +
-		num_segs_ortho_dir *
-		rr_indexed_data[ortho_cost_index].base_cost;
-	    cong_cost +=
-		rr_indexed_data[IPIN_COST_INDEX].base_cost +
-		rr_indexed_data[SINK_COST_INDEX].base_cost;
-
-	    return (cong_cost);
+		return (cong_cost);
 	}
 
-    else if(rr_type == IPIN)
-	{			/* Change if you're allowing route-throughs */
-	    return (rr_indexed_data[SINK_COST_INDEX].base_cost);
+	else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
+		return (rr_indexed_data[SINK_COST_INDEX].base_cost);
 	}
 
-    else
-	{			/* Change this if you want to investigate route-throughs */
-	    return (0.);
+	else { /* Change this if you want to investigate route-throughs */
+		return (0.);
 	}
 }
-
 
 /* Macro used below to ensure that fractions are rounded up, but floating   *
  * point values very close to an integer are rounded to that integer.       */
 
 #define ROUND_UP(x) (ceil (x - 0.001))
 
+static int get_expected_segs_to_target(int inode, int target_node,
+		int *num_segs_ortho_dir_ptr) {
 
-static int
-get_expected_segs_to_target(int inode,
-			    int target_node,
-			    int *num_segs_ortho_dir_ptr)
-{
+	/* Returns the number of segments the same type as inode that will be needed *
+	 * to reach target_node (not including inode) in each direction (the same    *
+	 * direction (horizontal or vertical) as inode and the orthogonal direction).*/
 
-/* Returns the number of segments the same type as inode that will be needed *
- * to reach target_node (not including inode) in each direction (the same    *
- * direction (horizontal or vertical) as inode and the orthogonal direction).*/
+	t_rr_type rr_type;
+	int target_x, target_y, num_segs_same_dir, cost_index, ortho_cost_index;
+	int no_need_to_pass_by_clb;
+	float inv_length, ortho_inv_length, ylow, yhigh, xlow, xhigh;
 
-    t_rr_type rr_type;
-    int target_x, target_y, num_segs_same_dir, cost_index, ortho_cost_index;
-    int no_need_to_pass_by_clb;
-    float inv_length, ortho_inv_length, ylow, yhigh, xlow, xhigh;
+	target_x = rr_node[target_node].xlow;
+	target_y = rr_node[target_node].ylow;
+	cost_index = rr_node[inode].cost_index;
+	inv_length = rr_indexed_data[cost_index].inv_length;
+	ortho_cost_index = rr_indexed_data[cost_index].ortho_cost_index;
+	ortho_inv_length = rr_indexed_data[ortho_cost_index].inv_length;
+	rr_type = rr_node[inode].type;
 
-    target_x = rr_node[target_node].xlow;
-    target_y = rr_node[target_node].ylow;
-    cost_index = rr_node[inode].cost_index;
-    inv_length = rr_indexed_data[cost_index].inv_length;
-    ortho_cost_index = rr_indexed_data[cost_index].ortho_cost_index;
-    ortho_inv_length = rr_indexed_data[ortho_cost_index].inv_length;
-    rr_type = rr_node[inode].type;
+	if (rr_type == CHANX) {
+		ylow = rr_node[inode].ylow;
+		xhigh = rr_node[inode].xhigh;
+		xlow = rr_node[inode].xlow;
 
-    if(rr_type == CHANX)
-	{
-	    ylow = rr_node[inode].ylow;
-	    xhigh = rr_node[inode].xhigh;
-	    xlow = rr_node[inode].xlow;
+		/* Count vertical (orthogonal to inode) segs first. */
 
-	    /* Count vertical (orthogonal to inode) segs first. */
-
-	    if(ylow > target_y)
-		{		/* Coming from a row above target? */
-		    *num_segs_ortho_dir_ptr =
-			ROUND_UP((ylow - target_y + 1.) * ortho_inv_length);
-		    no_need_to_pass_by_clb = 1;
-		}
-	    else if(ylow < target_y - 1)
-		{		/* Below the CLB bottom? */
-		    *num_segs_ortho_dir_ptr = ROUND_UP((target_y - ylow) *
-						       ortho_inv_length);
-		    no_need_to_pass_by_clb = 1;
-		}
-	    else
-		{		/* In a row that passes by target CLB */
-		    *num_segs_ortho_dir_ptr = 0;
-		    no_need_to_pass_by_clb = 0;
+		if (ylow > target_y) { /* Coming from a row above target? */
+			*num_segs_ortho_dir_ptr =
+					ROUND_UP((ylow - target_y + 1.) * ortho_inv_length);
+			no_need_to_pass_by_clb = 1;
+		} else if (ylow < target_y - 1) { /* Below the CLB bottom? */
+			*num_segs_ortho_dir_ptr = ROUND_UP((target_y - ylow) *
+					ortho_inv_length);
+			no_need_to_pass_by_clb = 1;
+		} else { /* In a row that passes by target CLB */
+			*num_segs_ortho_dir_ptr = 0;
+			no_need_to_pass_by_clb = 0;
 		}
 
-	    /* Now count horizontal (same dir. as inode) segs. */
+		/* Now count horizontal (same dir. as inode) segs. */
 
-	    if(xlow > target_x + no_need_to_pass_by_clb)
-		{
-		    num_segs_same_dir =
-			ROUND_UP((xlow - no_need_to_pass_by_clb -
-				  target_x) * inv_length);
-		}
-	    else if(xhigh < target_x - no_need_to_pass_by_clb)
-		{
-		    num_segs_same_dir =
-			ROUND_UP((target_x - no_need_to_pass_by_clb -
-				  xhigh) * inv_length);
-		}
-	    else
-		{
-		    num_segs_same_dir = 0;
+		if (xlow > target_x + no_need_to_pass_by_clb) {
+			num_segs_same_dir = ROUND_UP((xlow - no_need_to_pass_by_clb -
+							target_x) * inv_length);
+		} else if (xhigh < target_x - no_need_to_pass_by_clb) {
+			num_segs_same_dir = ROUND_UP((target_x - no_need_to_pass_by_clb -
+							xhigh) * inv_length);
+		} else {
+			num_segs_same_dir = 0;
 		}
 	}
 
-    else
-	{			/* inode is a CHANY */
-	    ylow = rr_node[inode].ylow;
-	    yhigh = rr_node[inode].yhigh;
-	    xlow = rr_node[inode].xlow;
+	else { /* inode is a CHANY */
+		ylow = rr_node[inode].ylow;
+		yhigh = rr_node[inode].yhigh;
+		xlow = rr_node[inode].xlow;
 
-	    /* Count horizontal (orthogonal to inode) segs first. */
+		/* Count horizontal (orthogonal to inode) segs first. */
 
-	    if(xlow > target_x)
-		{		/* Coming from a column right of target? */
-		    *num_segs_ortho_dir_ptr =
-			ROUND_UP((xlow - target_x + 1.) * ortho_inv_length);
-		    no_need_to_pass_by_clb = 1;
-		}
-	    else if(xlow < target_x - 1)
-		{		/* Left of and not adjacent to the CLB? */
-		    *num_segs_ortho_dir_ptr = ROUND_UP((target_x - xlow) *
-						       ortho_inv_length);
-		    no_need_to_pass_by_clb = 1;
-		}
-	    else
-		{		/* In a column that passes by target CLB */
-		    *num_segs_ortho_dir_ptr = 0;
-		    no_need_to_pass_by_clb = 0;
+		if (xlow > target_x) { /* Coming from a column right of target? */
+			*num_segs_ortho_dir_ptr =
+					ROUND_UP((xlow - target_x + 1.) * ortho_inv_length);
+			no_need_to_pass_by_clb = 1;
+		} else if (xlow < target_x - 1) { /* Left of and not adjacent to the CLB? */
+			*num_segs_ortho_dir_ptr = ROUND_UP((target_x - xlow) *
+					ortho_inv_length);
+			no_need_to_pass_by_clb = 1;
+		} else { /* In a column that passes by target CLB */
+			*num_segs_ortho_dir_ptr = 0;
+			no_need_to_pass_by_clb = 0;
 		}
 
-	    /* Now count vertical (same dir. as inode) segs. */
+		/* Now count vertical (same dir. as inode) segs. */
 
-	    if(ylow > target_y + no_need_to_pass_by_clb)
-		{
-		    num_segs_same_dir =
-			ROUND_UP((ylow - no_need_to_pass_by_clb -
-				  target_y) * inv_length);
-		}
-	    else if(yhigh < target_y - no_need_to_pass_by_clb)
-		{
-		    num_segs_same_dir =
-			ROUND_UP((target_y - no_need_to_pass_by_clb -
-				  yhigh) * inv_length);
-		}
-	    else
-		{
-		    num_segs_same_dir = 0;
+		if (ylow > target_y + no_need_to_pass_by_clb) {
+			num_segs_same_dir = ROUND_UP((ylow - no_need_to_pass_by_clb -
+							target_y) * inv_length);
+		} else if (yhigh < target_y - no_need_to_pass_by_clb) {
+			num_segs_same_dir = ROUND_UP((target_y - no_need_to_pass_by_clb -
+							yhigh) * inv_length);
+		} else {
+			num_segs_same_dir = 0;
 		}
 	}
 
-    return (num_segs_same_dir);
+	return (num_segs_same_dir);
 }

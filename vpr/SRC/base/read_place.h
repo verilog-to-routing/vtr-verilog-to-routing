@@ -10,8 +10,8 @@ void read_place(INP const char *place_file,
 		INOUTP struct s_block block_list[]);
 
 void print_place(INP char *place_file,
-		 INP char *net_file,
-		 INP char *arch_file);
+		INP char *net_file,
+		INP char *arch_file);
 
 void read_user_pad_loc(INP char *pad_loc_file);
 

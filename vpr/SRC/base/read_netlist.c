@@ -157,9 +157,9 @@ read_netlist(INP const char *net_file,
 		}
 	}
 	assert(i == bcount);
-	if(saved_logical_blocks != NULL) {
+if(saved_logical_blocks != NULL) {
 		assert(num_primitives == num_saved_logical_blocks);
-	}
+}
 	
 	nlist = alloc_and_init_netlist_from_hash(ncount, nhash);
 	mark_constant_generators(bcount, blist, ncount, nlist);
@@ -195,7 +195,7 @@ read_netlist(INP const char *net_file,
 			}
 		}
 		assert(j != ncount);
-	}
+}
 
 	if(saved_logical_blocks != NULL) {
 		free(saved_logical_blocks);
@@ -252,7 +252,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP i
 		exit(1);
 	}
 	assert(my_atoi(tokens[2].data) == index);
-	found = FALSE;
+found = FALSE;
 	for(i = 0; i < num_types; i++) {
 		if(strcmp(type_descriptors[i].name, tokens[0].data) == 0) {
 			cb[index].type = &type_descriptors[i];
@@ -490,7 +490,7 @@ static struct s_net *alloc_and_init_netlist_from_hash(INP int ncount, INOUTP str
 	curr_net = get_next_hash(nhash, &hash_iter);	
 	while(curr_net != NULL) {
 		assert(nlist[curr_net->index].name == NULL);
-		nlist[curr_net->index].name = my_strdup(curr_net->name);
+nlist[curr_net->index].name = my_strdup(curr_net->name);
 		nlist[curr_net->index].num_sinks = curr_net->count - 1;
 
 		nlist[curr_net->index].node_block = my_malloc(curr_net->count * sizeof(int));
@@ -519,7 +519,7 @@ static int add_net_to_hash(INOUTP struct s_hash **nhash, INP char *net_name, INO
 	hash_value = insert_in_hash_table(nhash, net_name, *ncount);
 	if(hash_value->count == 1) {
 		assert(*ncount == hash_value->index);
-		(*ncount)++;
+(*ncount)++;
 	}
 	return hash_value->index;
 }
@@ -559,7 +559,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb, t_rr_node *rr_g
 					in_port++;
 				} else {
 					assert(pb->pb_graph_node->pb_type->ports[i].type == OUT_PORT);
-					out_port++;
+out_port++;
 				}
 			}	
 			if(!found) {
@@ -612,7 +612,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb, t_rr_node *rr_g
 																			TRUE,
 																			TRUE);
 						assert(num_sets == 1 && num_ptrs[0] == 1);
-						if(0 == strcmp(Parent->name, "inputs"))
+if(0 == strcmp(Parent->name, "inputs"))
 							rr_node_index = pb->pb_graph_node->input_pins[in_port][i].pin_count_in_cluster;
 						else
 							rr_node_index = pb->pb_graph_node->clock_pins[clock_port][i].pin_count_in_cluster;
@@ -661,7 +661,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb, t_rr_node *rr_g
 																			TRUE,
 																			TRUE);
 						assert(num_sets == 1 && num_ptrs[0] == 1);
-						rr_node_index = pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
+rr_node_index = pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
 						rr_graph[rr_node_index].prev_node = pin_node[0][0]->pin_count_in_cluster;
 						found = FALSE;
 						for(j = 0; j < pin_node[0][0]->num_output_edges; j++) {
@@ -732,20 +732,19 @@ load_external_nets_and_cb(INP int L_num_blocks,
 			block_list[i].type->pb_type->num_clock_pins != block_list[i].type->num_pins / block_list[i].type->capacity) {
 
 			assert(0);
-		}
+}
 			
 
 		/* First determine nets external to complex blocks */
-		assert(block_list[i].type->pb_type->num_input_pins + 
-			block_list[i].type->pb_type->num_output_pins + 
-			block_list[i].type->pb_type->num_clock_pins == block_list[i].type->num_pins / block_list[i].type->capacity);
+		assert(
+		block_list[i].type->pb_type->num_input_pins + block_list[i].type->pb_type->num_output_pins + block_list[i].type->pb_type->num_clock_pins == block_list[i].type->num_pins / block_list[i].type->capacity);
 
-		rr_graph = block_list[i].pb->rr_graph;
+rr_graph = block_list[i].pb->rr_graph;
 		for(j = 0; j < block_list[i].pb->pb_graph_node->num_input_ports; j++) {
 			for(k = 0; k < block_list[i].pb->pb_graph_node->num_input_pins[j]; k++) {
 				pb_graph_pin = &block_list[i].pb->pb_graph_node->input_pins[j][k];
 				assert(pb_graph_pin->pin_count_in_cluster == ipin);
-				if(rr_graph[pb_graph_pin->pin_count_in_cluster].net_num != OPEN) {
+if(rr_graph[pb_graph_pin->pin_count_in_cluster].net_num != OPEN) {
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash, nlist[rr_graph[pb_graph_pin->pin_count_in_cluster].net_num].name, ext_ncount);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
@@ -757,7 +756,7 @@ load_external_nets_and_cb(INP int L_num_blocks,
 			for(k = 0; k < block_list[i].pb->pb_graph_node->num_output_pins[j]; k++) {
 				pb_graph_pin = &block_list[i].pb->pb_graph_node->output_pins[j][k];
 				assert(pb_graph_pin->pin_count_in_cluster == ipin);
-				if(rr_graph[pb_graph_pin->pin_count_in_cluster].net_num != OPEN) {
+if(rr_graph[pb_graph_pin->pin_count_in_cluster].net_num != OPEN) {
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash, nlist[rr_graph[pb_graph_pin->pin_count_in_cluster].net_num].name, ext_ncount);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
@@ -769,7 +768,7 @@ load_external_nets_and_cb(INP int L_num_blocks,
 			for(k = 0; k < block_list[i].pb->pb_graph_node->num_clock_pins[j]; k++) {
 				pb_graph_pin = &block_list[i].pb->pb_graph_node->clock_pins[j][k];
 				assert(pb_graph_pin->pin_count_in_cluster == ipin);
-				if(rr_graph[pb_graph_pin->pin_count_in_cluster].net_num != OPEN) {
+if(rr_graph[pb_graph_pin->pin_count_in_cluster].net_num != OPEN) {
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash, nlist[rr_graph[pb_graph_pin->pin_count_in_cluster].net_num].name, ext_ncount);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
@@ -806,7 +805,7 @@ load_external_nets_and_cb(INP int L_num_blocks,
 				{
 					count[netnum]++;
 					assert(count[netnum] <= (*ext_nets)[netnum].num_sinks);
-				    (*ext_nets)[netnum].node_block[count[netnum]] = i;
+(*ext_nets)[netnum].node_block[count[netnum]] = i;
 				    (*ext_nets)[netnum].node_block_pin[count[netnum]] = j;
 
 					if((*ext_nets)[netnum].is_global != block_list[i].type->is_global_pin[j]) {
@@ -822,9 +821,10 @@ load_external_nets_and_cb(INP int L_num_blocks,
 				}
 			    else
 				{
-				    assert(DRIVER == block_list[i].type->class_inf[block_list[i].type->pin_class[j]].type);
-					assert((*ext_nets)[netnum].node_block[0] == OPEN);
-				    (*ext_nets)[netnum].node_block[0] = i;
+				    assert(
+		DRIVER == block_list[i].type->class_inf[block_list[i].type->pin_class[j]].type);
+assert((*ext_nets)[netnum].node_block[0] == OPEN);
+(*ext_nets)[netnum].node_block[0] = i;
 				    (*ext_nets)[netnum].node_block_pin[0] = j;
 				}
 			}			
@@ -841,8 +841,9 @@ static int count_sinks_internal_cb_rr_graph_net_nums(INP t_rr_node * cur_rr_node
 
 	for(i = 0; i < cur_rr_node->num_edges; i++) {
 		if(&rr_graph[rr_graph[cur_rr_node->edges[i]].prev_node] == cur_rr_node) {
-			assert(rr_graph[cur_rr_node->edges[i]].net_num == OPEN || rr_graph[cur_rr_node->edges[i]].net_num == cur_rr_node->net_num);
-			count += count_sinks_internal_cb_rr_graph_net_nums(&rr_graph[cur_rr_node->edges[i]], rr_graph);
+			assert(
+		rr_graph[cur_rr_node->edges[i]].net_num == OPEN || rr_graph[cur_rr_node->edges[i]].net_num == cur_rr_node->net_num);
+count += count_sinks_internal_cb_rr_graph_net_nums(&rr_graph[cur_rr_node->edges[i]], rr_graph);
 		}
 	}
 	if(count == 0) {
@@ -863,8 +864,9 @@ static void load_internal_cb_rr_graph_net_nums(INP t_rr_node * cur_rr_node, INP 
 		if(&rr_graph[rr_graph[cur_rr_node->edges[i]].prev_node] == cur_rr_node) {
 			/* TODO: If multiple edges to same node (should not happen in reasonable design) this always
 			selects the last edge, need to be smart about it in future (ie. select fastest edge */
-			assert(rr_graph[cur_rr_node->edges[i]].net_num == OPEN || rr_graph[cur_rr_node->edges[i]].net_num == cur_rr_node->net_num);
-			rr_graph[cur_rr_node->edges[i]].net_num = cur_rr_node->net_num;
+			assert(
+		rr_graph[cur_rr_node->edges[i]].net_num == OPEN || rr_graph[cur_rr_node->edges[i]].net_num == cur_rr_node->net_num);
+rr_graph[cur_rr_node->edges[i]].net_num = cur_rr_node->net_num;
 			rr_graph[cur_rr_node->edges[i]].prev_edge = i;
 			load_internal_cb_rr_graph_net_nums(&rr_graph[cur_rr_node->edges[i]], rr_graph, nets, curr_net, curr_sink);
 			terminal = FALSE;
@@ -899,7 +901,7 @@ static void load_internal_cb_nets(INOUTP t_pb *top_level, INP t_pb_graph_node *p
 				if(rr_graph[pb_graph_node->input_pins[i][j].pin_count_in_cluster].net_num != OPEN) {
 					load_internal_cb_rr_graph_net_nums(&rr_graph[pb_graph_node->input_pins[i][j].pin_count_in_cluster], rr_graph, nets, curr_net, &temp);
 					assert(temp == nets[*curr_net].num_sinks);
-					temp = 0;
+temp = 0;
 					size = strlen(pb_graph_node->pb_type->name) + 
 						pb_graph_node->placement_index/10 + 
 						i / 10 + j /10 + pb_graph_node->input_pins[i][j].pin_count_in_cluster/10 + 
@@ -916,7 +918,7 @@ static void load_internal_cb_nets(INOUTP t_pb *top_level, INP t_pb_graph_node *p
 				if(rr_graph[pb_graph_node->clock_pins[i][j].pin_count_in_cluster].net_num != OPEN) {
 					load_internal_cb_rr_graph_net_nums(&rr_graph[pb_graph_node->clock_pins[i][j].pin_count_in_cluster], rr_graph, nets, curr_net, &temp);
 					assert(temp == nets[*curr_net].num_sinks);
-					temp = 0;
+temp = 0;
 					nets[*curr_net].is_global = TRUE;
 					size = strlen(pb_graph_node->pb_type->name) + 
 						pb_graph_node->placement_index/10 + 
@@ -938,7 +940,7 @@ static void load_internal_cb_nets(INOUTP t_pb *top_level, INP t_pb_graph_node *p
 				if(rr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster].net_num != OPEN) {
 					load_internal_cb_rr_graph_net_nums(&rr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster], rr_graph, nets, curr_net, &temp);
 					assert(temp == nets[*curr_net].num_sinks);
-					temp = 0;
+temp = 0;
 					size = strlen(pb_graph_node->pb_type->name) + 
 						pb_graph_node->placement_index/10 + 
 						i / 10 + j /10 + pb_graph_node->output_pins[i][j].pin_count_in_cluster/10 + 
@@ -963,7 +965,7 @@ static void load_internal_cb_nets(INOUTP t_pb *top_level, INP t_pb_graph_node *p
 
 	if(pb_graph_node->parent_pb_graph_node == NULL) { /* at top level */
 		assert(*curr_net == top_level->num_local_nets);
-	}
+}
 }
 
 /* allocate space to store nets internal to cb 
@@ -1110,92 +1112,91 @@ static void restore_logical_block_from_saved_block(INP int iblk, INP t_pb *pb) {
 		}
 	}
 	assert(i != num_saved_logical_blocks);
-	logical_block[iblk].name = saved_logical_blocks[i].name;
-	logical_block[iblk].clb_index = UNDEFINED;
-	logical_block[iblk].clock_net = saved_logical_blocks[i].clock_net;
-	logical_block[iblk].clock_net_tnode = NULL;
-	logical_block[iblk].index = iblk;
-	logical_block[iblk].input_net_tnodes = saved_logical_blocks[i].input_net_tnodes;
-	logical_block[iblk].input_nets = saved_logical_blocks[i].input_nets;
-	logical_block[iblk].model = saved_logical_blocks[i].model;
-	logical_block[iblk].output_net_tnodes = saved_logical_blocks[i].output_net_tnodes;
-	logical_block[iblk].output_nets = saved_logical_blocks[i].output_nets;
-	logical_block[iblk].pb = pb;
-	logical_block[iblk].truth_table = saved_logical_blocks[i].truth_table;
-	logical_block[iblk].type = saved_logical_blocks[i].type;
-	logical_block[iblk].used_input_pins = saved_logical_blocks[i].used_input_pins;
+logical_block[iblk].name = saved_logical_blocks[i].name;
+logical_block[iblk].clb_index = UNDEFINED;
+logical_block[iblk].clock_net = saved_logical_blocks[i].clock_net;
+logical_block[iblk].clock_net_tnode = NULL;
+logical_block[iblk].index = iblk;
+logical_block[iblk].input_net_tnodes = saved_logical_blocks[i].input_net_tnodes;
+logical_block[iblk].input_nets = saved_logical_blocks[i].input_nets;
+logical_block[iblk].model = saved_logical_blocks[i].model;
+logical_block[iblk].output_net_tnodes = saved_logical_blocks[i].output_net_tnodes;
+logical_block[iblk].output_nets = saved_logical_blocks[i].output_nets;
+logical_block[iblk].pb = pb;
+logical_block[iblk].truth_table = saved_logical_blocks[i].truth_table;
+logical_block[iblk].type = saved_logical_blocks[i].type;
+logical_block[iblk].used_input_pins = saved_logical_blocks[i].used_input_pins;
 
-	saved_logical_blocks[i].name = NULL;
-	saved_logical_blocks[i].input_net_tnodes = NULL;
-	saved_logical_blocks[i].input_nets = NULL;
-	saved_logical_blocks[i].output_net_tnodes = NULL;
-	saved_logical_blocks[i].output_nets = NULL;
-	saved_logical_blocks[i].truth_table = NULL;
+saved_logical_blocks[i].name = NULL;
+saved_logical_blocks[i].input_net_tnodes = NULL;
+saved_logical_blocks[i].input_nets = NULL;
+saved_logical_blocks[i].output_net_tnodes = NULL;
+saved_logical_blocks[i].output_nets = NULL;
+saved_logical_blocks[i].truth_table = NULL;
 }
-
 
 /* Free logical blocks of netlist */
 void free_logical_blocks(void) {
-	int iblk, i;
-	t_model_ports *port;
-	struct s_linked_vptr *tvptr, *next;
+int iblk, i;
+t_model_ports *port;
+struct s_linked_vptr *tvptr, *next;
 
-	for (iblk=0;iblk<num_logical_blocks;iblk++) {
-		port = logical_block[iblk].model->inputs;
-		i = 0;
-		while(port) {
-			if(!port->is_clock) {
-				free(logical_block[iblk].input_nets[i]);
-				if(logical_block[iblk].input_net_tnodes) {
-					if(logical_block[iblk].input_net_tnodes[i])
-						free(logical_block[iblk].input_net_tnodes[i]);
-				}
-				i++;
-			}
-			port = port->next;
-		}
-		if(logical_block[iblk].input_net_tnodes) {
-			free(logical_block[iblk].input_net_tnodes);
-		}
-		free(logical_block[iblk].input_nets);
-		port = logical_block[iblk].model->outputs;
-		i = 0;
-		while(port) {
-			free(logical_block[iblk].output_nets[i]);
-			if(logical_block[iblk].output_net_tnodes) {
-				if(logical_block[iblk].output_net_tnodes[i])
-					free(logical_block[iblk].output_net_tnodes[i]);
+for (iblk = 0; iblk < num_logical_blocks; iblk++) {
+	port = logical_block[iblk].model->inputs;
+	i = 0;
+	while (port) {
+		if (!port->is_clock) {
+			free(logical_block[iblk].input_nets[i]);
+			if (logical_block[iblk].input_net_tnodes) {
+				if (logical_block[iblk].input_net_tnodes[i])
+					free(logical_block[iblk].input_net_tnodes[i]);
 			}
 			i++;
-			port = port->next;
 		}
-		if(logical_block[iblk].output_net_tnodes) {
-			free(logical_block[iblk].output_net_tnodes);
-		}
-		free(logical_block[iblk].output_nets);
-		free(logical_block[iblk].name);
-		tvptr = logical_block[iblk].truth_table;
-		while(tvptr != NULL) {
-			if(tvptr->data_vptr)
-				free(tvptr->data_vptr);
-			next = tvptr->next;
-			free(tvptr);
-			tvptr = next;
-		}
+		port = port->next;
 	}
-	free(logical_block);
+	if (logical_block[iblk].input_net_tnodes) {
+		free(logical_block[iblk].input_net_tnodes);
+	}
+	free(logical_block[iblk].input_nets);
+	port = logical_block[iblk].model->outputs;
+	i = 0;
+	while (port) {
+		free(logical_block[iblk].output_nets[i]);
+		if (logical_block[iblk].output_net_tnodes) {
+			if (logical_block[iblk].output_net_tnodes[i])
+				free(logical_block[iblk].output_net_tnodes[i]);
+		}
+		i++;
+		port = port->next;
+	}
+	if (logical_block[iblk].output_net_tnodes) {
+		free(logical_block[iblk].output_net_tnodes);
+	}
+	free(logical_block[iblk].output_nets);
+	free(logical_block[iblk].name);
+	tvptr = logical_block[iblk].truth_table;
+	while (tvptr != NULL) {
+		if (tvptr->data_vptr)
+			free(tvptr->data_vptr);
+		next = tvptr->next;
+		free(tvptr);
+		tvptr = next;
+	}
+}
+free(logical_block);
 }
 
 /* Free  logical blocks of netlist */
 void free_logical_nets(void) {
-	int inet;
-	
-	for (inet=0;inet<num_logical_nets;inet++) {
-		free(vpack_net[inet].name);
-		free(vpack_net[inet].node_block);
-		free(vpack_net[inet].node_block_port);
-		free(vpack_net[inet].node_block_pin);
-	}
-	free(vpack_net);
+int inet;
+
+for (inet = 0; inet < num_logical_nets; inet++) {
+	free(vpack_net[inet].name);
+	free(vpack_net[inet].node_block);
+	free(vpack_net[inet].node_block_port);
+	free(vpack_net[inet].node_block_pin);
+}
+free(vpack_net);
 }
 
