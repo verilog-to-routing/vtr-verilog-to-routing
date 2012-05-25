@@ -4,21 +4,14 @@
 #include "util.h"
 #include "arch_types.h"
 
-/* function declarations */ 
+/* function declarations */
 void
-XmlReadArch (
-    INP const char *ArchFile,
-    INP boolean timing_enabled,
-    OUTP struct s_arch *arch,
-    OUTP t_type_descriptor ** Types,
-    OUTP int *NumTypes);
+XmlReadArch( INP const char *ArchFile, INP boolean timing_enabled,
+		OUTP struct s_arch *arch, OUTP t_type_descriptor ** Types,
+		OUTP int *NumTypes);
 void
-EchoArch (
-    INP const char *EchoFile,
-    INP const t_type_descriptor * Types,
-    INP int NumTypes,
-    struct s_arch *arch);
-
+EchoArch( INP const char *EchoFile, INP const t_type_descriptor * Types,
+		INP int NumTypes, struct s_arch *arch);
 
 #endif
 

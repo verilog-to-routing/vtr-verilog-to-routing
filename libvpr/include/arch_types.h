@@ -1,9 +1,9 @@
 /*
-Data types describing the FPGA architecture.
+ Data types describing the FPGA architecture.
 
-Date: February 19, 2009
-Authors: Jason Luu and Kenneth Kent
-*/
+ Date: February 19, 2009
+ Authors: Jason Luu and Kenneth Kent
+ */
 
 #ifndef ARCH_TYPES_H
 #define ARCH_TYPES_H
