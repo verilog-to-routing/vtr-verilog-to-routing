@@ -38,29 +38,23 @@ static void load_rr_indexed_data_T_values(int index_start,
  * etc. more expensive than others.  I give each segment type in an          *
  * x-channel its own cost_index, and each segment type in a y-channel its    *
  * own cost_index.                                                           */
-void
-alloc_and_load_rr_indexed_data(INP t_segment_inf * segment_inf,
-		INP int num_segment,
-		INP t_ivec *** L_rr_node_indices,
-		INP int nodes_per_chan,
-		int wire_to_ipin_switch,
-		enum e_base_cost_type base_cost_type)
-{
+void alloc_and_load_rr_indexed_data(INP t_segment_inf * segment_inf,
+		INP int num_segment, INP t_ivec *** L_rr_node_indices,
+		INP int nodes_per_chan, int wire_to_ipin_switch,
+		enum e_base_cost_type base_cost_type) {
 
 	int iseg, length, i, index;
 
 	num_rr_indexed_data = CHANX_COST_INDEX_START + (2 * num_segment);
-	rr_indexed_data = (t_rr_indexed_data *) my_malloc(num_rr_indexed_data *
-			sizeof
-			(t_rr_indexed_data));
+	rr_indexed_data = (t_rr_indexed_data *) my_malloc(
+			num_rr_indexed_data * sizeof(t_rr_indexed_data));
 
 	/* For rr_types that aren't CHANX or CHANY, base_cost is valid, but most     *
 	 * * other fields are invalid.  For IPINs, the T_linear field is also valid;   *
 	 * * all other fields are invalid.  For SOURCES, SINKs and OPINs, all fields   *
 	 * * other than base_cost are invalid. Mark invalid fields as OPEN for safety. */
 
-	for(i = SOURCE_COST_INDEX; i <= IPIN_COST_INDEX; i++)
-	{
+	for (i = SOURCE_COST_INDEX; i <= IPIN_COST_INDEX; i++) {
 		rr_indexed_data[i].ortho_cost_index = OPEN;
 		rr_indexed_data[i].seg_index = OPEN;
 		rr_indexed_data[i].inv_length = OPEN;
@@ -70,49 +64,45 @@ alloc_and_load_rr_indexed_data(INP t_segment_inf * segment_inf,
 	}
 
 	rr_indexed_data[IPIN_COST_INDEX].T_linear =
-	switch_inf[wire_to_ipin_switch].Tdel;
+			switch_inf[wire_to_ipin_switch].Tdel;
 
 	/* X-directed segments. */
 
-	for(iseg = 0; iseg < num_segment; iseg++)
-	{
+	for (iseg = 0; iseg < num_segment; iseg++) {
 		index = CHANX_COST_INDEX_START + iseg;
 
 		rr_indexed_data[index].ortho_cost_index = index + num_segment;
 
-		if(segment_inf[iseg].longline)
-		length = nx;
+		if (segment_inf[iseg].longline)
+			length = nx;
 		else
-		length = min(segment_inf[iseg].length, nx);
+			length = min(segment_inf[iseg].length, nx);
 
 		rr_indexed_data[index].inv_length = 1. / length;
 		rr_indexed_data[index].seg_index = iseg;
 	}
 
-	load_rr_indexed_data_T_values(CHANX_COST_INDEX_START, num_segment,
-			CHANX, nodes_per_chan, L_rr_node_indices,
-			segment_inf);
+	load_rr_indexed_data_T_values(CHANX_COST_INDEX_START, num_segment, CHANX,
+			nodes_per_chan, L_rr_node_indices, segment_inf);
 
 	/* Y-directed segments. */
 
-	for(iseg = 0; iseg < num_segment; iseg++)
-	{
+	for (iseg = 0; iseg < num_segment; iseg++) {
 		index = CHANX_COST_INDEX_START + num_segment + iseg;
 
 		rr_indexed_data[index].ortho_cost_index = index - num_segment;
 
-		if(segment_inf[iseg].longline)
-		length = ny;
+		if (segment_inf[iseg].longline)
+			length = ny;
 		else
-		length = min(segment_inf[iseg].length, ny);
+			length = min(segment_inf[iseg].length, ny);
 
 		rr_indexed_data[index].inv_length = 1. / length;
 		rr_indexed_data[index].seg_index = iseg;
 	}
 
 	load_rr_indexed_data_T_values((CHANX_COST_INDEX_START + num_segment),
-			num_segment, CHANY, nodes_per_chan,
-			L_rr_node_indices, segment_inf);
+			num_segment, CHANY, nodes_per_chan, L_rr_node_indices, segment_inf);
 
 	load_rr_indexed_data_base_costs(nodes_per_chan, L_rr_node_indices,
 			base_cost_type, wire_to_ipin_switch);

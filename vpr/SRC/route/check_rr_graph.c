@@ -18,28 +18,15 @@ static void check_pass_transistors(int from_node);
 
 /************************ Subroutine definitions ****************************/
 
-void
-check_rr_graph(INP t_graph_type graph_type,
-		INP t_type_ptr types,
-		INP int L_nx,
-		INP int L_ny,
-		INP int nodes_per_chan,
-		INP int Fs,
-		INP int num_seg_types,
-		INP int num_switches,
-		INP t_segment_inf * segment_inf,
-		INP int global_route_switch,
-		INP int delayless_switch,
-		INP int wire_to_ipin_switch,
-		t_seg_details * seg_details,
-		int *Fc_in,
-		int *Fc_out,
-		int *****opin_to_track_map,
-		int *****ipin_to_track_map,
-		t_ivec **** track_to_ipin_lookup,
-		t_ivec *** switch_block_conn,
-		boolean * perturb_ipins)
-{
+void check_rr_graph(INP t_graph_type graph_type, INP t_type_ptr types,
+		INP int L_nx, INP int L_ny, INP int nodes_per_chan, INP int Fs,
+		INP int num_seg_types, INP int num_switches,
+		INP t_segment_inf * segment_inf, INP int global_route_switch,
+		INP int delayless_switch, INP int wire_to_ipin_switch,
+		t_seg_details * seg_details, int *Fc_in, int *Fc_out,
+		int *****opin_to_track_map, int *****ipin_to_track_map,
+		t_ivec **** track_to_ipin_lookup, t_ivec *** switch_block_conn,
+		boolean * perturb_ipins) {
 
 	int *num_edges_from_current_to_node; /* [0..num_rr_nodes-1] */
 	int *total_edges_to_node; /* [0..num_rr_nodes-1] */
@@ -51,19 +38,17 @@ check_rr_graph(INP t_graph_type graph_type,
 	boolean is_fringe_warning_sent;
 
 	route_type = DETAILED;
-	if(graph_type == GRAPH_GLOBAL)
-	{
+	if (graph_type == GRAPH_GLOBAL) {
 		route_type = GLOBAL;
 	}
 
-	total_edges_to_node = (int *)my_calloc(num_rr_nodes, sizeof(int));
-	num_edges_from_current_to_node = (int *)my_calloc(num_rr_nodes,
+	total_edges_to_node = (int *) my_calloc(num_rr_nodes, sizeof(int));
+	num_edges_from_current_to_node = (int *) my_calloc(num_rr_nodes,
 			sizeof(int));
-	switch_types_from_current_to_node = (char *)my_calloc(num_rr_nodes,
+	switch_types_from_current_to_node = (char *) my_calloc(num_rr_nodes,
 			sizeof(char));
 
-	for(inode = 0; inode < num_rr_nodes; inode++)
-	{
+	for (inode = 0; inode < num_rr_nodes; inode++) {
 		rr_type = rr_node[inode].type;
 		num_edges = rr_node[inode].num_edges;
 
@@ -71,14 +56,11 @@ check_rr_graph(INP t_graph_type graph_type,
 
 		/* Check all the connectivity (edges, etc.) information.                    */
 
-		for(iedge = 0; iedge < num_edges; iedge++)
-		{
+		for (iedge = 0; iedge < num_edges; iedge++) {
 			to_node = rr_node[inode].edges[iedge];
 
-			if(to_node < 0 || to_node >= num_rr_nodes)
-			{
-				printf
-				("Error in check_rr_graph:  node %d has an edge %d.\n"
+			if (to_node < 0 || to_node >= num_rr_nodes) {
+				printf("Error in check_rr_graph:  node %d has an edge %d.\n"
 						"Edge is out of range.\n", inode, to_node);
 				exit(1);
 			}
@@ -88,60 +70,49 @@ check_rr_graph(INP t_graph_type graph_type,
 
 			switch_type = rr_node[inode].switches[iedge];
 
-			if(switch_type < 0 || switch_type >= num_switches)
-			{
-				printf
-				("Error in check_rr_graph:  node %d has a switch type %d.\n"
-						"Switch type is out of range.\n", inode,
+			if (switch_type < 0 || switch_type >= num_switches) {
+				printf(
+						"Error in check_rr_graph:  node %d has a switch type %d.\n"
+								"Switch type is out of range.\n", inode,
 						switch_type);
 				exit(1);
 			}
 
-			if(switch_inf[switch_type].buffered)
-			switch_types_from_current_to_node[to_node] |=
-			BUF_FLAG;
+			if (switch_inf[switch_type].buffered)
+				switch_types_from_current_to_node[to_node] |= BUF_FLAG;
 			else
-			switch_types_from_current_to_node[to_node] |=
-			PTRANS_FLAG;
+				switch_types_from_current_to_node[to_node] |= PTRANS_FLAG;
 
 		} /* End for all edges of node. */
 
-		for(iedge = 0; iedge < num_edges; iedge++)
-		{
+		for (iedge = 0; iedge < num_edges; iedge++) {
 			to_node = rr_node[inode].edges[iedge];
 
-			if(num_edges_from_current_to_node[to_node] > 1)
-			{
+			if (num_edges_from_current_to_node[to_node] > 1) {
 				to_rr_type = rr_node[to_node].type;
 
-				if((to_rr_type != CHANX && to_rr_type != CHANY) ||
-						(rr_type != CHANX && rr_type != CHANY))
-				{
-					printf
-					("Error in check_rr_graph:  node %d connects to node %d "
-							"%d times.\n", inode, to_node,
-							num_edges_from_current_to_node
-							[to_node]);
+				if ((to_rr_type != CHANX && to_rr_type != CHANY)
+						|| (rr_type != CHANX && rr_type != CHANY)) {
+					printf(
+							"Error in check_rr_graph:  node %d connects to node %d "
+									"%d times.\n", inode, to_node,
+							num_edges_from_current_to_node[to_node]);
 					exit(1);
 				}
 
 				/* Between two wire segments.  Two connections are legal only if  *
 				 * one connection is a buffer and the other is a pass transistor. */
 
-				else if(num_edges_from_current_to_node[to_node] !=
-						2
-						||
-						switch_types_from_current_to_node[to_node]
-						!= BUF_AND_PTRANS_FLAG)
-				{
-					printf
-					("Error in check_rr_graph:  node %d connects to node %d "
-							"%d times.\n", inode, to_node,
-							num_edges_from_current_to_node
-							[to_node]);
-					exit(1);
-				}
+				else if (num_edges_from_current_to_node[to_node] != 2 ||
+				switch_types_from_current_to_node[to_node]
+				!= BUF_AND_PTRANS_FLAG) {printf
+				("Error in check_rr_graph:  node %d connects to node %d "
+						"%d times.\n", inode, to_node,
+						num_edges_from_current_to_node
+						[to_node]);
+				exit(1);
 			}
+		}
 
 			num_edges_from_current_to_node[to_node] = 0;
 			switch_types_from_current_to_node[to_node] = 0;
@@ -159,46 +130,42 @@ check_rr_graph(INP t_graph_type graph_type,
 	 * now I check that everything is reachable.                                */
 	is_fringe_warning_sent = FALSE;
 
-	for(inode = 0; inode < num_rr_nodes; inode++)
-	{
+	for (inode = 0; inode < num_rr_nodes; inode++) {
 		rr_type = rr_node[inode].type;
 
-		if(rr_type != SOURCE)
-		{
-			if(total_edges_to_node[inode] < 1 &&
-					!rr_node_is_global_clb_ipin(inode))
-			{
+		if (rr_type != SOURCE) {
+			if (total_edges_to_node[inode] < 1
+					&& !rr_node_is_global_clb_ipin(inode)) {
 				boolean is_fringe;
 				boolean is_wire;
 
 				/* A global CLB input pin will not have any edges, and neither will  *
 				 * a SOURCE.  Anything else is an error.                             */
 
-				is_fringe = ((rr_node[inode].xlow == 1) || (rr_node[inode].ylow == 1)
-						|| (rr_node[inode].xhigh == L_nx) || (rr_node[inode].yhigh == L_ny));
-				is_wire = (rr_node[inode].type == CHANX || rr_node[inode].type == CHANY);
+				is_fringe = ((rr_node[inode].xlow == 1)
+						|| (rr_node[inode].ylow == 1)
+						|| (rr_node[inode].xhigh == L_nx)
+						|| (rr_node[inode].yhigh == L_ny));
+				is_wire = (rr_node[inode].type == CHANX
+						|| rr_node[inode].type == CHANY);
 
-				if (!is_fringe && !is_wire)
-				{
-					printf ("Error in check_rr_graph:  node %d has no fanin.\n", inode);
+				if (!is_fringe && !is_wire) {
+					printf("Error in check_rr_graph:  node %d has no fanin.\n",
+							inode);
 					exit(1);
-				}
-				else if (!is_fringe_warning_sent)
-				{
-					printf ("WARNING: in check_rr_graph:  fringe node %d has no fanin.\n"
-							"This is possible on the fringe for low Fc_out, N, and certain Lengths\n"
-							, inode);
+				} else if (!is_fringe_warning_sent) {
+					printf(
+							"WARNING: in check_rr_graph:  fringe node %d has no fanin.\n"
+									"This is possible on the fringe for low Fc_out, N, and certain Lengths\n",
+							inode);
 					is_fringe_warning_sent = TRUE;
 				}
 			}
 		}
 
-		else
-		{ /* SOURCE.  No fanin for now; change if feedthroughs allowed. */
-			if(total_edges_to_node[inode] != 0)
-			{
-				printf
-				("Error in check_rr_graph:  SOURCE node %d has a fanin\n"
+		else { /* SOURCE.  No fanin for now; change if feedthroughs allowed. */
+			if (total_edges_to_node[inode] != 0) {
+				printf("Error in check_rr_graph:  SOURCE node %d has a fanin\n"
 						"\tof %d, expected 0.\n", inode,
 						total_edges_to_node[inode]);
 				exit(1);

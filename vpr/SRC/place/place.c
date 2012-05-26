@@ -92,8 +92,7 @@ static float **chanx_place_cost_fac, **chany_place_cost_fac;
 /* Expected crossing counts for nets with different #'s of pins.  From *
  * ICCAD 94 pp. 690 - 695 (with linear interpolation applied by me).   */
 
-static const float cross_count[50] = { /* [0..49] */
-1.0, 1.0, 1.0, 1.0828, 1.1536, 1.2206, 1.2823, 1.3385, 1.3991, 1.4493, 1.4974,
+static const float cross_count[50] = { /* [0..49] */1.0, 1.0, 1.0, 1.0828, 1.1536, 1.2206, 1.2823, 1.3385, 1.3991, 1.4493, 1.4974,
 		1.5455, 1.5937, 1.6418, 1.6899, 1.7304, 1.7709, 1.8114, 1.8519, 1.8924,
 		1.9288, 1.9652, 2.0015, 2.0379, 2.0743, 2.1061, 2.1379, 2.1698, 2.2016,
 		2.2334, 2.2646, 2.2958, 2.3271, 2.3583, 2.3895, 2.4187, 2.4479, 2.4772,
@@ -2799,7 +2798,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 		int x;
 		int y;
 		int z;
-	} **pos; /* [0..num_types-1][0..type_tsize - 1] */
+	}**pos; /* [0..num_types-1][0..type_tsize - 1] */
 	int i, j, k, iblk, choice, type_index, x, y, z;
 	int *count, *index; /* [0..num_types-1] */
 

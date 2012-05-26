@@ -552,9 +552,7 @@ static void free_pb_type(t_pb_type *pb_type) {
  * Sets globals: nx, ny
  * Allocs globals: chan_width_x, chan_width_y, grid
  * Depends on num_clbs, pins_per_clb */
-static void
-InitArch(INP t_arch Arch)
-{
+static void InitArch(INP t_arch Arch) {
 	int *num_instances_type, *num_blocks_type;
 	int i;
 	int current, high, low;
@@ -567,24 +565,18 @@ InitArch(INP t_arch Arch)
 	num_instances_type = my_calloc(num_types, sizeof(int));
 	num_blocks_type = my_calloc(num_types, sizeof(int));
 
-	for(i = 0; i < num_blocks; i++)
-	{
+	for (i = 0; i < num_blocks; i++) {
 		num_blocks_type[block[i].type->index]++;
 	}
 
-	if(Arch.clb_grid.IsAuto)
-	{
+	if (Arch.clb_grid.IsAuto) {
 		/* Auto-size FPGA, perform a binary search */
-		while(high == -1 || low < high)
-		{
+		while (high == -1 || low < high) {
 			/* Generate grid */
-			if(Arch.clb_grid.Aspect >= 1.0)
-			{
+			if (Arch.clb_grid.Aspect >= 1.0) {
 				ny = current;
 				nx = nint(current * Arch.clb_grid.Aspect);
-			}
-			else
-			{
+			} else {
 				nx = current;
 				ny = nint(current / Arch.clb_grid.Aspect);
 			}
@@ -596,96 +588,80 @@ InitArch(INP t_arch Arch)
 
 			/* Test if netlist fits in grid */
 			fit = TRUE;
-			for(i = 0; i < num_types; i++)
-			{
-				if(num_blocks_type[i] > num_instances_type[i])
-				{
+			for (i = 0; i < num_types; i++) {
+				if (num_blocks_type[i] > num_instances_type[i]) {
 					fit = FALSE;
 					break;
 				}
 			}
 
 			/* get next value */
-			if(!fit)
-			{
+			if (!fit) {
 				/* increase size of max */
-				if(high == -1)
-				{
+				if (high == -1) {
 					current = current * 2;
-					if(current > MAX_SHORT)
-					{
-						printf(ERRTAG
+					if (current > MAX_SHORT) {
+						printf(
+								ERRTAG
 								"FPGA required is too large for current architecture settings\n");
 						exit(1);
 					}
-				}
-				else
-				{
-					if(low == current)
-					current++;
+				} else {
+					if (low == current)
+						current++;
 					low = current;
 					current = low + ((high - low) / 2);
 				}
-			}
-			else
-			{
+			} else {
 				high = current;
 				current = low + ((high - low) / 2);
 			}
 		}
 		/* Generate grid */
-		if(Arch.clb_grid.Aspect >= 1.0)
-		{
+		if (Arch.clb_grid.Aspect >= 1.0) {
 			ny = current;
 			nx = nint(current * Arch.clb_grid.Aspect);
-		}
-		else
-		{
+		} else {
 			nx = current;
 			ny = nint(current / Arch.clb_grid.Aspect);
 		}
 		alloc_and_load_grid(num_instances_type);
 		printf("FPGA auto-sized to, x = %d y = %d\n", nx, ny);
-	}
-	else
-	{
+	} else {
 		nx = Arch.clb_grid.W;
 		ny = Arch.clb_grid.H;
 		alloc_and_load_grid(num_instances_type);
 	}
 
-	printf("The circuit will be mapped into a %d x %d array of clbs.\n",
-			nx, ny);
+	printf("The circuit will be mapped into a %d x %d array of clbs.\n", nx,
+			ny);
 
 	/* Test if netlist fits in grid */
 	fit = TRUE;
-	for(i = 0; i < num_types; i++)
-	{
-		if(num_blocks_type[i] > num_instances_type[i])
-		{
+	for (i = 0; i < num_types; i++) {
+		if (num_blocks_type[i] > num_instances_type[i]) {
 			fit = FALSE;
 			break;
 		}
 	}
-	if(!fit)
-	{
+	if (!fit) {
 		printf(ERRTAG "Not enough physical locations for type %s, "
-				"number of blocks is %d but number of locations is %d\n",
-				type_descriptors[i].name, num_blocks_type[i], num_instances_type[i]);
+		"number of blocks is %d but number of locations is %d\n",
+				type_descriptors[i].name, num_blocks_type[i],
+				num_instances_type[i]);
 		exit(1);
 	}
 
 	printf("\nResource Usage:\n");
-	for(i = 0; i < num_types; i++)
-	{
-		printf("Netlist      %d\tblocks of type %s\n",
-				num_blocks_type[i], type_descriptors[i].name);
-		printf("Architecture %d\tblocks of type %s\n",
-				num_instances_type[i], type_descriptors[i].name);
+	for (i = 0; i < num_types; i++) {
+		printf("Netlist      %d\tblocks of type %s\n", num_blocks_type[i],
+				type_descriptors[i].name);
+		printf("Architecture %d\tblocks of type %s\n", num_instances_type[i],
+				type_descriptors[i].name);
 	}
 	printf("\n");
-	chan_width_x = (int *)my_malloc((ny + 1) * sizeof(int));
-	chan_width_y = (int *)my_malloc((nx + 1) * sizeof(int));
+	chan_width_x = (int *) my_malloc((ny + 1) * sizeof(int));
+	chan_width_y = (int *) my_malloc((nx + 1) * sizeof(int));
 
 	free(num_blocks_type);
 	free(num_instances_type);

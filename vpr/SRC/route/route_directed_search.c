@@ -420,7 +420,9 @@ static int directed_search_expand_trace_segment(struct s_trace *start_ptr,
 
 		if (success == FALSE) {
 			if (rlim > max(nx + 2, ny + 2)) {
-				printf(ERRTAG "VPR internal error, net %s has paths that are not found in traceback\n", clb_net[inet].name);
+				printf(
+						ERRTAG "VPR internal error, net %s has paths that are not found in traceback\n",
+						clb_net[inet].name);
 				exit(1);
 			}
 			/* if sink not in bin, increase bin size until fit */

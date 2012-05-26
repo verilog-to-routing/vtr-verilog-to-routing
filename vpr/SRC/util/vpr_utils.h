@@ -7,14 +7,11 @@ void print_tabs(FILE * fpout, int num_tab);
 
 boolean is_opin(int ipin, t_type_ptr type);
 
-void get_class_range_for_block(INP int iblk,
-		OUTP int *class_low,
+void get_class_range_for_block(INP int iblk, OUTP int *class_low,
 		OUTP int *class_high);
 
 void sync_grid_to_blocks(INP int L_num_blocks,
-		INP const struct s_block block_list[],
-		INP int L_nx,
-		INP int L_ny,
+		INP const struct s_block block_list[], INP int L_nx, INP int L_ny,
 		INOUTP struct s_grid_tile **L_grid);
 
 int get_max_primitives_in_pb_type(t_pb_type *pb_type);

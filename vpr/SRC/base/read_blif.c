@@ -41,16 +41,10 @@ static FILE *blif;
 
 static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 		boolean is_global, int doall);
-static void get_tok(char *buffer,
-		int pass,
-		int doall,
-		boolean *done,
-		boolean *add_truth_table,
-		INP t_model* inpad_model,
-		INP t_model* outpad_model,
-		INP t_model* logic_model,
-		INP t_model* latch_model,
-		INP t_model* user_models);
+static void get_tok(char *buffer, int pass, int doall, boolean *done,
+		boolean *add_truth_table, INP t_model* inpad_model,
+		INP t_model* outpad_model, INP t_model* logic_model,
+		INP t_model* latch_model, INP t_model* user_models);
 static void init_parse(int doall);
 static void check_net(boolean sweep_hanging_nets_and_inputs);
 static void free_parse(void);
@@ -62,7 +56,8 @@ static void dum_parse(char *buf);
 static int hash_value(char *name);
 static void check_and_count_models(int doall, const char* model_name,
 		t_model* user_models);
-static void load_default_models(INP t_model *library_models, OUTP t_model** inpad_model, OUTP t_model** outpad_model,
+static void load_default_models(INP t_model *library_models,
+		OUTP t_model** inpad_model, OUTP t_model** outpad_model,
 		OUTP t_model** logic_model, OUTP t_model** latch_model);
 
 void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
@@ -185,18 +180,10 @@ static void init_parse(int doall) {
 	num_subckts = 0;
 }
 
-static void
-get_tok(char *buffer,
-		int pass,
-		int doall,
-		boolean *done,
-		boolean *add_truth_table,
-		INP t_model* inpad_model,
-		INP t_model* outpad_model,
-		INP t_model* logic_model,
-		INP t_model* latch_model,
-		INP t_model* user_models)
-{
+static void get_tok(char *buffer, int pass, int doall, boolean *done,
+		boolean *add_truth_table, INP t_model* inpad_model,
+		INP t_model* outpad_model, INP t_model* logic_model,
+		INP t_model* latch_model, INP t_model* user_models) {
 
 	/* Figures out which, if any token is at the start of this line and *
 	 * takes the appropriate action.                                    */
@@ -207,18 +194,19 @@ get_tok(char *buffer,
 	struct s_linked_vptr *data;
 
 	ptr = my_strtok(buffer, TOKENS, blif, buffer);
-	if(ptr == NULL)
-	return;
+	if (ptr == NULL)
+		return;
 
-	if(*add_truth_table) {
-		if(ptr[0] == '0' || ptr[0] == '1' || ptr[0] == '-') {
+	if (*add_truth_table) {
+		if (ptr[0] == '0' || ptr[0] == '1' || ptr[0] == '-') {
 			data = my_malloc(sizeof(struct s_linked_vptr));
 			fn = ptr;
 			ptr = my_strtok(NULL, TOKENS, blif, buffer);
-			if(!ptr || strlen(ptr) != 1) {
-				if(strlen(fn) == 1) {
+			if (!ptr || strlen(ptr) != 1) {
+				if (strlen(fn) == 1) {
 					/* constant generator */
-					data->next = logical_block[num_logical_blocks - 1].truth_table;
+					data->next =
+							logical_block[num_logical_blocks - 1].truth_table;
 					data->data_vptr = my_malloc(strlen(fn) + 4);
 					sprintf(data->data_vptr, " %s", fn);
 					logical_block[num_logical_blocks - 1].truth_table = data;
@@ -236,56 +224,43 @@ get_tok(char *buffer,
 		}
 	}
 
-	if(strcmp(ptr, ".names") == 0)
-	{
+	if (strcmp(ptr, ".names") == 0) {
 		*add_truth_table = FALSE;
-		if(pass == 3)
-		{
+		if (pass == 3) {
 			*add_truth_table = add_lut(doall, logic_model);
-		}
-		else
-		{
+		} else {
 			dum_parse(buffer);
 		}
 		return;
 	}
 
-	if(strcmp(ptr, ".latch") == 0)
-	{
+	if (strcmp(ptr, ".latch") == 0) {
 		*add_truth_table = FALSE;
-		if(pass == 3)
-		{
+		if (pass == 3) {
 			add_latch(doall, latch_model);
-		}
-		else
-		{
+		} else {
 			dum_parse(buffer);
 		}
 		return;
 	}
 
-	if(strcmp(ptr, ".model") == 0)
-	{
+	if (strcmp(ptr, ".model") == 0) {
 		*add_truth_table = FALSE;
 		ptr = my_strtok(NULL, TOKENS, blif, buffer);
-		if(doall && pass == 4)
-		{
-			if(ptr != NULL)
-			{
-				model = (char *)my_malloc((strlen(ptr) + 1) * sizeof(char));
+		if (doall && pass == 4) {
+			if (ptr != NULL) {
+				model = (char *) my_malloc((strlen(ptr) + 1) * sizeof(char));
 				strcpy(model, ptr);
-				if(blif_circuit_name == NULL) {
+				if (blif_circuit_name == NULL) {
 					blif_circuit_name = my_strdup(model);
 				}
-			}
-			else
-			{
-				model = (char *)my_malloc(sizeof(char));
+			} else {
+				model = (char *) my_malloc(sizeof(char));
 				model[0] = '\0';
 			}
 		}
 
-		if(pass == 0 && model_lines > 0) {
+		if (pass == 0 && model_lines > 0) {
 			check_and_count_models(doall, ptr, user_models);
 		} else {
 			dum_parse(buffer);
@@ -294,56 +269,44 @@ get_tok(char *buffer,
 		return;
 	}
 
-	if(strcmp(ptr, ".inputs") == 0)
-	{
+	if (strcmp(ptr, ".inputs") == 0) {
 		*add_truth_table = FALSE;
 		/* packing can only one fully defined model */
-		if(pass == 1 && model_lines == 1)
-		{
+		if (pass == 1 && model_lines == 1) {
 			io_line(DRIVER, doall, inpad_model);
 			*done = 1;
-		}
-		else
-		{
+		} else {
 			dum_parse(buffer);
-			if(pass == 4 && doall)
-			ilines++; /* Error checking only */
+			if (pass == 4 && doall)
+				ilines++; /* Error checking only */
 		}
 		return;
 	}
 
-	if(strcmp(ptr, ".outputs") == 0)
-	{
+	if (strcmp(ptr, ".outputs") == 0) {
 		*add_truth_table = FALSE;
 		/* packing can only one fully defined model */
-		if(pass == 2 && model_lines == 1)
-		{
+		if (pass == 2 && model_lines == 1) {
 			io_line(RECEIVER, doall, outpad_model);
 			*done = 1;
-		}
-		else
-		{
+		} else {
 			dum_parse(buffer);
-			if(pass == 4 && doall)
-			olines++; /* Make sure only one .output line */
+			if (pass == 4 && doall)
+				olines++; /* Make sure only one .output line */
 		} /* For error checking only */
 		return;
 	}
-	if(strcmp(ptr, ".end") == 0)
-	{
+	if (strcmp(ptr, ".end") == 0) {
 		*add_truth_table = FALSE;
-		if(pass == 4 && doall)
-		{
+		if (pass == 4 && doall) {
 			endlines++; /* Error checking only */
 		}
 		return;
 	}
 
-	if(strcmp(ptr, ".subckt") == 0)
-	{
+	if (strcmp(ptr, ".subckt") == 0) {
 		*add_truth_table = FALSE;
-		if(pass == 3)
-		{
+		if (pass == 3) {
 			add_subckt(doall, user_models);
 		}
 	}
@@ -402,7 +365,8 @@ static boolean add_lut(int doall, t_model *logic_model) {
 	logical_block[num_logical_blocks - 1].model = logic_model;
 
 	if (output_net_index > logic_model->inputs->size) {
-		printf(ERRTAG "LUT size of %d in .blif file is too big for FPGA which has a maximum LUT size of %d\n",
+		printf(
+				ERRTAG "LUT size of %d in .blif file is too big for FPGA which has a maximum LUT size of %d\n",
 				output_net_index, logic_model->inputs->size);
 		exit(1);
 	}
@@ -442,9 +406,7 @@ static boolean add_lut(int doall, t_model *logic_model) {
 	return doall;
 }
 
-static void
-add_latch(int doall, INP t_model *latch_model)
-{
+static void add_latch(int doall, INP t_model *latch_model) {
 
 	/* Adds the flipflop (.latch) currently being parsed to the logical_block array.  *
 	 * Adds its pins to the nets data structure by calling add_vpack_net.  If doall *
@@ -461,44 +423,51 @@ add_latch(int doall, INP t_model *latch_model)
 	/* Count # parameters, making sure we don't go over 6 (avoids memory corr.) */
 	/* Note that we can't rely on the tokens being around unless we copy them.  */
 
-	for(i = 0; i < 6; i++)
-	{
+	for (i = 0; i < 6; i++) {
 		ptr = my_strtok(NULL, TOKENS, blif, buf);
-		if(ptr == NULL)
-		break;
+		if (ptr == NULL)
+			break;
 		strcpy(saved_names[i], ptr);
 	}
 
-	if(i != 5)
-	{
-		fprintf(stderr, "Error:  .latch does not have 5 parameters.\n" "check the netlist, line %d.\n", file_line_number);
+	if (i != 5) {
+		fprintf(stderr,
+				"Error:  .latch does not have 5 parameters.\n" "check the netlist, line %d.\n",
+				file_line_number);
 		exit(1);
 	}
 
-	if(!doall)
-	{ /* If only a counting pass ... */
-		add_vpack_net(saved_names[0], RECEIVER, num_logical_blocks - 1, 0, 0, FALSE, doall); /* D */
-		add_vpack_net(saved_names[1], DRIVER, num_logical_blocks - 1, 0, 0, FALSE, doall); /* Q */
-		add_vpack_net(saved_names[3], RECEIVER, num_logical_blocks - 1, 0, 0, TRUE, doall); /* Clock */
+	if (!doall) { /* If only a counting pass ... */
+		add_vpack_net(saved_names[0], RECEIVER, num_logical_blocks - 1, 0, 0,
+				FALSE, doall); /* D */
+		add_vpack_net(saved_names[1], DRIVER, num_logical_blocks - 1, 0, 0,
+				FALSE, doall); /* Q */
+		add_vpack_net(saved_names[3], RECEIVER, num_logical_blocks - 1, 0, 0,
+				TRUE, doall); /* Clock */
 		return;
 	}
 
 	logical_block[num_logical_blocks - 1].model = latch_model;
 	logical_block[num_logical_blocks - 1].type = VPACK_LATCH;
 
-	logical_block[num_logical_blocks - 1].input_nets =
-	(int **) my_malloc(sizeof(int*));
-	logical_block[num_logical_blocks - 1].output_nets =
-	(int **) my_malloc(sizeof(int*));
+	logical_block[num_logical_blocks - 1].input_nets = (int **) my_malloc(
+			sizeof(int*));
+	logical_block[num_logical_blocks - 1].output_nets = (int **) my_malloc(
+			sizeof(int*));
 
-	logical_block[num_logical_blocks - 1].input_nets[0] =
-	(int *) my_malloc(sizeof(int));
-	logical_block[num_logical_blocks - 1].output_nets[0] =
-	(int *) my_malloc(sizeof(int));
+	logical_block[num_logical_blocks - 1].input_nets[0] = (int *) my_malloc(
+			sizeof(int));
+	logical_block[num_logical_blocks - 1].output_nets[0] = (int *) my_malloc(
+			sizeof(int));
 
-	logical_block[num_logical_blocks - 1].output_nets[0][0] = add_vpack_net(saved_names[1], DRIVER, num_logical_blocks - 1, 0, 0, FALSE, doall); /* Q */
-	logical_block[num_logical_blocks - 1].input_nets[0][0] = add_vpack_net(saved_names[0], RECEIVER, num_logical_blocks - 1, 0, 0, FALSE, doall); /* D */
-	logical_block[num_logical_blocks - 1].clock_net = add_vpack_net(saved_names[3], RECEIVER, num_logical_blocks - 1, 0, 0, TRUE, doall); /* Clock */
+	logical_block[num_logical_blocks - 1].output_nets[0][0] = add_vpack_net(
+			saved_names[1], DRIVER, num_logical_blocks - 1, 0, 0, FALSE, doall); /* Q */
+	logical_block[num_logical_blocks - 1].input_nets[0][0] = add_vpack_net(
+			saved_names[0], RECEIVER, num_logical_blocks - 1, 0, 0, FALSE,
+			doall); /* D */
+	logical_block[num_logical_blocks - 1].clock_net = add_vpack_net(
+			saved_names[3], RECEIVER, num_logical_blocks - 1, 0, 0, TRUE,
+			doall); /* Clock */
 
 	logical_block[num_logical_blocks - 1].name = my_strdup(saved_names[1]);
 	logical_block[num_logical_blocks - 1].truth_table = NULL;
@@ -683,43 +652,54 @@ static void add_subckt(int doall, t_model *user_models) {
 			while (port) {
 				if (strcmp(port_name, port->name) == 0) {
 					if (found_subckt_signal) {
-printf					(ERRTAG "Two instances of %s subckt signal found in subckt %s\n",
-							subckt_signal_name[i], subckt_name);
+						printf(
+								ERRTAG "Two instances of %s subckt signal found in subckt %s\n",
+								subckt_signal_name[i], subckt_name);
+					}
+					found_subckt_signal = TRUE;
+					if (port->is_clock) {
+						assert(
+								logical_block[num_logical_blocks-1].clock_net == OPEN);
+						assert(my_atoi(pin_number) == 0);
+						logical_block[num_logical_blocks - 1].clock_net =
+								add_vpack_net(circuit_signal_name[i], RECEIVER,
+										num_logical_blocks - 1, port->index,
+										my_atoi(pin_number), TRUE, doall);
+					} else {
+						logical_block[num_logical_blocks - 1].input_nets[port->index][my_atoi(
+								pin_number)] = add_vpack_net(
+								circuit_signal_name[i], RECEIVER,
+								num_logical_blocks - 1, port->index,
+								my_atoi(pin_number), FALSE, doall);
+						input_net_count++;
+					}
 				}
-				found_subckt_signal = TRUE;
-				if(port->is_clock) {
-					assert(logical_block[num_logical_blocks-1].clock_net == OPEN);
-					assert(my_atoi(pin_number) == 0);
-					logical_block[num_logical_blocks-1].clock_net =
-					add_vpack_net(circuit_signal_name[i], RECEIVER, num_logical_blocks - 1, port->index, my_atoi(pin_number), TRUE, doall);
-				} else {
-					logical_block[num_logical_blocks-1].input_nets[port->index][my_atoi(pin_number)] =
-					add_vpack_net(circuit_signal_name[i], RECEIVER, num_logical_blocks - 1, port->index, my_atoi(pin_number), FALSE, doall);
-					input_net_count++;
-				}
+				port = port->next;
 			}
-			port = port->next;
-		}
 
 			port = cur_model->outputs;
 			while (port) {
 				if (strcmp(port_name, port->name) == 0) {
 					if (found_subckt_signal) {
-printf					(ERRTAG "Two instances of %s subckt signal found in subckt %s\n",
-							subckt_signal_name[i], subckt_name);
+						printf(
+								ERRTAG "Two instances of %s subckt signal found in subckt %s\n",
+								subckt_signal_name[i], subckt_name);
+					}
+					found_subckt_signal = TRUE;
+					logical_block[num_logical_blocks - 1].output_nets[port->index][my_atoi(
+							pin_number)] = add_vpack_net(circuit_signal_name[i],
+							DRIVER, num_logical_blocks - 1, port->index,
+							my_atoi(pin_number), FALSE, doall);
+					if (subckt_logical_block_name == NULL
+							&& circuit_signal_name[i] != NULL) {
+						subckt_logical_block_name = circuit_signal_name[i];
+					}
+					output_net_count++;
 				}
-				found_subckt_signal = TRUE;
-				logical_block[num_logical_blocks-1].output_nets[port->index][my_atoi(pin_number)] =
-				add_vpack_net(circuit_signal_name[i], DRIVER, num_logical_blocks - 1, port->index, my_atoi(pin_number), FALSE, doall);
-				if(subckt_logical_block_name == NULL && circuit_signal_name[i] != NULL) {
-					subckt_logical_block_name = circuit_signal_name[i];
-				}
-				output_net_count++;
+				port = port->next;
 			}
-			port = port->next;
-		}
 
-		/* record the name to be first output net parsed */
+			/* record the name to be first output net parsed */
 			logical_block[num_logical_blocks - 1].name = my_strdup(
 					subckt_logical_block_name);
 
@@ -834,7 +814,9 @@ static void check_and_count_models(int doall, const char* model_name,
 			user_model = user_model->next;
 		}
 		if (user_model == NULL) {
-			printf(ERRTAG "No corresponding model %s in architecture description \n", model_name);
+			printf(
+					ERRTAG "No corresponding model %s in architecture description \n",
+					model_name);
 			exit(1);
 		}
 
@@ -891,9 +873,10 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 			} else {
 				vpack_net[nindex].num_sinks++;
 				if ((num_driver[nindex] < 0) || (num_driver[nindex] > 1)) {
-printf				(ERRTAG "number of drivers for net #%d (%s) has %d drivers.\n",
-						nindex, ptr, num_driver[index]);
-			}
+					printf(
+							ERRTAG "number of drivers for net #%d (%s) has %d drivers.\n",
+							nindex, ptr, num_driver[index]);
+				}
 				j = vpack_net[nindex].num_sinks;
 
 				/* num_driver is the number of signal drivers of this vpack_net. *
@@ -1092,337 +1075,373 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 }
 
 /* load default vpack models (inpad, outpad, logic) */
-static void
-load_default_models(INP t_model *library_models, OUTP t_model** inpad_model, OUTP t_model** outpad_model, 
-					OUTP t_model** logic_model, OUTP t_model** latch_model)
-{
+static void load_default_models(INP t_model *library_models,
+		OUTP t_model** inpad_model, OUTP t_model** outpad_model,
+		OUTP t_model** logic_model, OUTP t_model** latch_model) {
 	t_model *cur_model;
 	cur_model = library_models;
 	*inpad_model = *outpad_model = *logic_model = *latch_model = NULL;
-	while(cur_model) {
-		if(strcmp(MODEL_INPUT, cur_model->name) == 0) {
+	while (cur_model) {
+		if (strcmp(MODEL_INPUT, cur_model->name) == 0) {
 			assert(cur_model->inputs == NULL);
-assert(cur_model->outputs->next == NULL);
-assert(cur_model->outputs->size == 1);
-*inpad_model = cur_model;
-		} else if(strcmp(MODEL_OUTPUT, cur_model->name) == 0) {
-			assert(cur_model->outputs == NULL);
-assert(cur_model->inputs->next == NULL);
-assert(cur_model->inputs->size == 1);
-*outpad_model = cur_model;
-		} else if(strcmp(MODEL_LOGIC, cur_model->name) == 0) {
-			assert(cur_model->inputs->next == NULL);
-assert(cur_model->outputs->next == NULL);
-assert(cur_model->outputs->size == 1);
-*logic_model = cur_model;
-		} else if(strcmp(MODEL_LATCH, cur_model->name) == 0) {
 			assert(cur_model->outputs->next == NULL);
-assert(cur_model->outputs->size == 1);
-*latch_model = cur_model;
+			assert(cur_model->outputs->size == 1);
+			*inpad_model = cur_model;
+		} else if (strcmp(MODEL_OUTPUT, cur_model->name) == 0) {
+			assert(cur_model->outputs == NULL);
+			assert(cur_model->inputs->next == NULL);
+			assert(cur_model->inputs->size == 1);
+			*outpad_model = cur_model;
+		} else if (strcmp(MODEL_LOGIC, cur_model->name) == 0) {
+			assert(cur_model->inputs->next == NULL);
+			assert(cur_model->outputs->next == NULL);
+			assert(cur_model->outputs->size == 1);
+			*logic_model = cur_model;
+		} else if (strcmp(MODEL_LATCH, cur_model->name) == 0) {
+			assert(cur_model->outputs->next == NULL);
+			assert(cur_model->outputs->size == 1);
+			*latch_model = cur_model;
 		} else {
 			assert(0);
-}
-cur_model = cur_model->next;
-}
+		}
+		cur_model = cur_model->next;
+	}
 }
 
 static void check_net(boolean sweep_hanging_nets_and_inputs) {
 
-/* Checks the input netlist for obvious errors. */
+	/* Checks the input netlist for obvious errors. */
 
-int i, j, k, error, iblk, ipin, iport, inet, L_check_net;
-boolean found;
-int count_inputs, count_outputs;
-int explicit_vpack_models;
-t_model_ports *port;
-struct s_linked_vptr *p_io_removed;
-int removed_nets;
+	int i, j, k, error, iblk, ipin, iport, inet, L_check_net;
+	boolean found;
+	int count_inputs, count_outputs;
+	int explicit_vpack_models;
+	t_model_ports *port;
+	struct s_linked_vptr *p_io_removed;
+	int removed_nets;
 
-explicit_vpack_models = num_blif_models + 1;
+	explicit_vpack_models = num_blif_models + 1;
 
-error = 0;
-removed_nets = 0;
+	error = 0;
+	removed_nets = 0;
 
-if (ilines != explicit_vpack_models) {
-printf(ERRTAG "Found %d .inputs lines; expected %d.\n", ilines, explicit_vpack_models);
-error++;
-}
-
-if (olines != explicit_vpack_models) {
-printf(ERRTAG "Found %d .outputs lines; expected %d.\n", olines,explicit_vpack_models);
-error++;
-}
-
-if (model_lines != explicit_vpack_models) {
-printf(ERRTAG "Found %d .model lines; expected %d.\n", model_lines, num_blif_models + 1);
-error++;
-}
-
-if (endlines != explicit_vpack_models) {
-printf(ERRTAG "Found %d .end lines; expected %d.\n", endlines, explicit_vpack_models);
-error++;
-}
-for (i = 0; i < num_logical_nets; i++) {
-
-if (num_driver[i] != 1) {
-printf(ERRTAG "vpack_net %s has" " %d signals driving it.\n", vpack_net[i].name, num_driver[i]);
-error++;
-}
-
-if (vpack_net[i].num_sinks == 0) {
-
-/* If this is an input pad, it is unused and I just remove it with  *
- * a warning message.  Lots of the mcnc circuits have this problem. 
-
- Also, subckts from ODIN often have unused driven nets
- */
-
-iblk = vpack_net[i].node_block[0];
-iport = vpack_net[i].node_block_port[0];
-ipin = vpack_net[i].node_block_pin[0];
-
-assert((vpack_net[i].num_sinks - num_driver[i]) == -1);
-
-/* All nets should connect to inputs of block except output pads */
-if (logical_block[iblk].type != VPACK_OUTPAD) {
-	if (sweep_hanging_nets_and_inputs) {
-		removed_nets++;
-		vpack_net[i].node_block[0] = OPEN;
-		vpack_net[i].node_block_port[0] = OPEN;
-		vpack_net[i].node_block_pin[0] = OPEN;
-		logical_block[iblk].output_nets[iport][ipin] = OPEN;
-		logical_block_output_count[iblk]--;
-	} else {
-printf	(WARNTAG "vpack_net %s has no fanout.\n", vpack_net[i].name);
-}
-continue;
-}
-}
-
-if (strcmp(vpack_net[i].name, "open") == 0
-	|| strcmp(vpack_net[i].name, "unconn") == 0) {
-printf(ERRTAG "vpack_net #%d has the reserved name %s.\n", i, vpack_net[i].name);
-error++;
-}
-
-for (j = 0; j <= vpack_net[i].num_sinks; j++) {
-iblk = vpack_net[i].node_block[j];
-iport = vpack_net[i].node_block_port[j];
-ipin = vpack_net[i].node_block_pin[j];
-if (ipin == OPEN) {
-	/* Clocks are not connected to regular pins on a block hence open */
-	L_check_net = logical_block[iblk].clock_net;
-	if (L_check_net != i) {
-		printf(
-				"Internal Error: clock net for block %s #%d is net %s #%d but connecting net is %s #%d\n",
-				logical_block[iblk].name, iblk, vpack_net[L_check_net].name,
-				L_check_net, vpack_net[i].name, i);
+	if (ilines != explicit_vpack_models) {
+		printf(ERRTAG "Found %d .inputs lines; expected %d.\n", ilines,
+				explicit_vpack_models);
 		error++;
 	}
 
-} else {
-	if (j == 0) {
-		L_check_net = logical_block[iblk].output_nets[iport][ipin];
-		if (L_check_net != i) {
-			printf(
-					"Internal Error: output net for block %s #%d is net %s #%d but connecting net is %s #%d\n",
-					logical_block[iblk].name, iblk, vpack_net[L_check_net].name,
-					L_check_net, vpack_net[i].name, i);
-			error++;
-		}
-	} else {
-		if (vpack_net[i].is_global) {
-			L_check_net = logical_block[iblk].clock_net;
-		} else {
-			L_check_net = logical_block[iblk].input_nets[iport][ipin];
-		}
-		if (L_check_net != i) {
-			printf(
-					"Internal Error: input net for block %s #%d is net %s #%d but connecting net is %s #%d\n",
-					logical_block[iblk].name, iblk, vpack_net[L_check_net].name,
-					L_check_net, vpack_net[i].name, i);
-			error++;
-		}
+	if (olines != explicit_vpack_models) {
+		printf(ERRTAG "Found %d .outputs lines; expected %d.\n", olines,
+				explicit_vpack_models);
+		error++;
 	}
-}
-}
-}
-printf("Swept away %d nets with no fanout\n", removed_nets);
-for (i = 0; i < num_logical_blocks; i++) {
-/* This block has no output and is not an output pad so it has no use, hence we remove it */
-if ((logical_block_output_count[i] == 0)
-	&& (logical_block[i].type != VPACK_OUTPAD)) {
-printf(WARNTAG "logical_block %s #%d has no fanout.\n", logical_block[i].name, i);
-if (sweep_hanging_nets_and_inputs && (logical_block[i].type == VPACK_INPAD)) {
-	logical_block[i].type = VPACK_EMPTY;
-	printf("  Removing input\n");
-	p_io_removed = my_malloc(sizeof(struct s_linked_vptr));
-	p_io_removed->data_vptr = my_strdup(logical_block[i].name);
-	p_io_removed->next = circuit_p_io_removed;
-	circuit_p_io_removed = p_io_removed;
-	continue;
-} else {
-	printf("  " ERRTAG " sweep hanging nodes in your logic synthesis tool because VPR can't do this yet\n");
-	error++;
-}
-}
-count_inputs = 0;
-count_outputs = 0;
-port = logical_block[i].model->inputs;
-while (port) {
-if (port->is_clock) {
-	port = port->next;
-	continue;
-}
 
-for (j = 0; j < port->size; j++) {
-	if (logical_block[i].input_nets[port->index][j] == OPEN)
-		continue;
-	count_inputs++;
-	inet = logical_block[i].input_nets[port->index][j];
-	found = FALSE;
-	for (k = 1; k <= vpack_net[inet].num_sinks; k++) {
-		if (vpack_net[inet].node_block[k] == i) {
-			if (vpack_net[inet].node_block_port[k] == port->index) {
-				if (vpack_net[inet].node_block_pin[k] == j) {
-					found = TRUE;
+	if (model_lines != explicit_vpack_models) {
+		printf(ERRTAG "Found %d .model lines; expected %d.\n", model_lines,
+				num_blif_models + 1);
+		error++;
+	}
+
+	if (endlines != explicit_vpack_models) {
+		printf(ERRTAG "Found %d .end lines; expected %d.\n", endlines,
+				explicit_vpack_models);
+		error++;
+	}
+	for (i = 0; i < num_logical_nets; i++) {
+
+		if (num_driver[i] != 1) {
+			printf(ERRTAG "vpack_net %s has" " %d signals driving it.\n",
+					vpack_net[i].name, num_driver[i]);
+			error++;
+		}
+
+		if (vpack_net[i].num_sinks == 0) {
+
+			/* If this is an input pad, it is unused and I just remove it with  *
+			 * a warning message.  Lots of the mcnc circuits have this problem. 
+
+			 Also, subckts from ODIN often have unused driven nets
+			 */
+
+			iblk = vpack_net[i].node_block[0];
+			iport = vpack_net[i].node_block_port[0];
+			ipin = vpack_net[i].node_block_pin[0];
+
+			assert((vpack_net[i].num_sinks - num_driver[i]) == -1);
+
+			/* All nets should connect to inputs of block except output pads */
+			if (logical_block[iblk].type != VPACK_OUTPAD) {
+				if (sweep_hanging_nets_and_inputs) {
+					removed_nets++;
+					vpack_net[i].node_block[0] = OPEN;
+					vpack_net[i].node_block_port[0] = OPEN;
+					vpack_net[i].node_block_pin[0] = OPEN;
+					logical_block[iblk].output_nets[iport][ipin] = OPEN;
+					logical_block_output_count[iblk]--;
+				} else {
+					printf(WARNTAG "vpack_net %s has no fanout.\n",
+							vpack_net[i].name);
+				}
+				continue;
+			}
+		}
+
+		if (strcmp(vpack_net[i].name, "open") == 0
+				|| strcmp(vpack_net[i].name, "unconn") == 0) {
+			printf(ERRTAG "vpack_net #%d has the reserved name %s.\n", i,
+					vpack_net[i].name);
+			error++;
+		}
+
+		for (j = 0; j <= vpack_net[i].num_sinks; j++) {
+			iblk = vpack_net[i].node_block[j];
+			iport = vpack_net[i].node_block_port[j];
+			ipin = vpack_net[i].node_block_pin[j];
+			if (ipin == OPEN) {
+				/* Clocks are not connected to regular pins on a block hence open */
+				L_check_net = logical_block[iblk].clock_net;
+				if (L_check_net != i) {
+					printf(
+							"Internal Error: clock net for block %s #%d is net %s #%d but connecting net is %s #%d\n",
+							logical_block[iblk].name, iblk,
+							vpack_net[L_check_net].name, L_check_net,
+							vpack_net[i].name, i);
+					error++;
+				}
+
+			} else {
+				if (j == 0) {
+					L_check_net = logical_block[iblk].output_nets[iport][ipin];
+					if (L_check_net != i) {
+						printf(
+								"Internal Error: output net for block %s #%d is net %s #%d but connecting net is %s #%d\n",
+								logical_block[iblk].name, iblk,
+								vpack_net[L_check_net].name, L_check_net,
+								vpack_net[i].name, i);
+						error++;
+					}
+				} else {
+					if (vpack_net[i].is_global) {
+						L_check_net = logical_block[iblk].clock_net;
+					} else {
+						L_check_net =
+								logical_block[iblk].input_nets[iport][ipin];
+					}
+					if (L_check_net != i) {
+						printf(
+								"Internal Error: input net for block %s #%d is net %s #%d but connecting net is %s #%d\n",
+								logical_block[iblk].name, iblk,
+								vpack_net[L_check_net].name, L_check_net,
+								vpack_net[i].name, i);
+						error++;
+					}
 				}
 			}
 		}
 	}
-	assert(found == TRUE);
-}
-port = port->next;
-}
-assert(count_inputs == logical_block_input_count[i]);
-logical_block[i].used_input_pins = count_inputs;
-
-port = logical_block[i].model->outputs;
-while (port) {
-for (j = 0; j < port->size; j++) {
-	if (logical_block[i].output_nets[port->index][j] == OPEN)
-		continue;
-	count_outputs++;
-	inet = logical_block[i].output_nets[port->index][j];
-	vpack_net[inet].is_const_gen = FALSE;
-	if (count_inputs == 0 && logical_block[i].type != VPACK_INPAD
-			&& logical_block[i].type != VPACK_OUTPAD
-			&& logical_block[i].clock_net == OPEN) {
-		printf("Net is a constant generator: %s\n", vpack_net[inet].name);
-		vpack_net[inet].is_const_gen = TRUE;
-	}
-	found = FALSE;
-	if (vpack_net[inet].node_block[0] == i) {
-		if (vpack_net[inet].node_block_port[0] == port->index) {
-			if (vpack_net[inet].node_block_pin[0] == j) {
-				found = TRUE;
+	printf("Swept away %d nets with no fanout\n", removed_nets);
+	for (i = 0; i < num_logical_blocks; i++) {
+		/* This block has no output and is not an output pad so it has no use, hence we remove it */
+		if ((logical_block_output_count[i] == 0)
+				&& (logical_block[i].type != VPACK_OUTPAD)) {
+			printf(WARNTAG "logical_block %s #%d has no fanout.\n",
+					logical_block[i].name, i);
+			if (sweep_hanging_nets_and_inputs
+					&& (logical_block[i].type == VPACK_INPAD)) {
+				logical_block[i].type = VPACK_EMPTY;
+				printf("  Removing input\n");
+				p_io_removed = my_malloc(sizeof(struct s_linked_vptr));
+				p_io_removed->data_vptr = my_strdup(logical_block[i].name);
+				p_io_removed->next = circuit_p_io_removed;
+				circuit_p_io_removed = p_io_removed;
+				continue;
+			} else {
+				printf(
+						"  " ERRTAG " sweep hanging nodes in your logic synthesis tool because VPR can't do this yet\n");
+				error++;
 			}
 		}
-	}
-	assert(found == TRUE);
-}
-port = port->next;
-}
-assert(count_outputs == logical_block_output_count[i]);
+		count_inputs = 0;
+		count_outputs = 0;
+		port = logical_block[i].model->inputs;
+		while (port) {
+			if (port->is_clock) {
+				port = port->next;
+				continue;
+			}
 
-if (logical_block[i].type == VPACK_LATCH) {
-if (logical_block_input_count[i] != 1) {
-	printf (ERRTAG "Latch #%d with output %s has %d input pin(s), expected one (D).\n", i, logical_block[i].name, logical_block_input_count[i]);
-	error++;
-}
-if (logical_block_output_count[i] != 1) {
-	printf (ERRTAG "Latch #%d with output %s has %d output pin(s), expected one (Q).\n", i, logical_block[i].name, logical_block_output_count[i]);
-	error++;
-}
-if (logical_block[i].clock_net == OPEN) {
-	printf (ERRTAG "Latch #%d with output %s has no clock.\n", i, logical_block[i].name);
-	error++;
-}
-}
+			for (j = 0; j < port->size; j++) {
+				if (logical_block[i].input_nets[port->index][j] == OPEN)
+					continue;
+				count_inputs++;
+				inet = logical_block[i].input_nets[port->index][j];
+				found = FALSE;
+				for (k = 1; k <= vpack_net[inet].num_sinks; k++) {
+					if (vpack_net[inet].node_block[k] == i) {
+						if (vpack_net[inet].node_block_port[k] == port->index) {
+							if (vpack_net[inet].node_block_pin[k] == j) {
+								found = TRUE;
+							}
+						}
+					}
+				}
+				assert(found == TRUE);
+			}
+			port = port->next;
+		}
+		assert(count_inputs == logical_block_input_count[i]);
+		logical_block[i].used_input_pins = count_inputs;
 
-else if (logical_block[i].type == VPACK_INPAD) {
-if (logical_block_input_count[i] != 0) {
-	printf (ERRTAG "io inpad logical_block #%d name %s of type %d" "has %d input pins.\n",
-			i, logical_block[i].name, logical_block[i].type, logical_block_input_count[i]);
-	error++;
-}
-if (logical_block_output_count[i] != 1) {
-	printf (ERRTAG "io inpad logical_block #%d name %s of type %d" "has %d output pins.\n",
-			i, logical_block[i].name, logical_block[i].type, logical_block_output_count[i]);
-	error++;
-}
-if (logical_block[i].clock_net != OPEN) {
-	printf (ERRTAG "io inpad #%d with output %s has clock.\n", i, logical_block[i].name);
-	error++;
-}
-} else if (logical_block[i].type == VPACK_OUTPAD) {
-if (logical_block_input_count[i] != 1) {
-	printf (ERRTAG "io outpad logical_block #%d name %s of type %d" "has %d input pins.\n",
-			i, logical_block[i].name, logical_block[i].type, logical_block_input_count[i]);
-	error++;
-}
-if (logical_block_output_count[i] != 0) {
-	printf (ERRTAG "io outpad logical_block #%d name %s of type %d" "has %d output pins.\n",
-			i, logical_block[i].name, logical_block[i].type, logical_block_output_count[i]);
-	error++;
-}
-if (logical_block[i].clock_net != OPEN) {
-	printf (ERRTAG "io outpad #%d with name %s has clock.\n", i, logical_block[i].name);
-	error++;
-}
-} else if (logical_block[i].type == VPACK_COMB) {
-if (logical_block_input_count[i] <= 0) {
-	printf("Warning:  logical_block #%d with output %s has only %d pin.\n", i,
-			logical_block[i].name, logical_block_input_count[i]);
+		port = logical_block[i].model->outputs;
+		while (port) {
+			for (j = 0; j < port->size; j++) {
+				if (logical_block[i].output_nets[port->index][j] == OPEN)
+					continue;
+				count_outputs++;
+				inet = logical_block[i].output_nets[port->index][j];
+				vpack_net[inet].is_const_gen = FALSE;
+				if (count_inputs == 0 && logical_block[i].type != VPACK_INPAD
+						&& logical_block[i].type != VPACK_OUTPAD
+						&& logical_block[i].clock_net == OPEN) {
+					printf("Net is a constant generator: %s\n",
+							vpack_net[inet].name);
+					vpack_net[inet].is_const_gen = TRUE;
+				}
+				found = FALSE;
+				if (vpack_net[inet].node_block[0] == i) {
+					if (vpack_net[inet].node_block_port[0] == port->index) {
+						if (vpack_net[inet].node_block_pin[0] == j) {
+							found = TRUE;
+						}
+					}
+				}
+				assert(found == TRUE);
+			}
+			port = port->next;
+		}
+		assert(count_outputs == logical_block_output_count[i]);
 
-	if (logical_block_input_count[i] < 0) {
-		error++;
-	} else {
-		if (logical_block_output_count[i] > 0) {
-			printf("\tBlock contains output -- may be a constant generator.\n");
+		if (logical_block[i].type == VPACK_LATCH) {
+			if (logical_block_input_count[i] != 1) {
+				printf(
+						ERRTAG "Latch #%d with output %s has %d input pin(s), expected one (D).\n",
+						i, logical_block[i].name, logical_block_input_count[i]);
+				error++;
+			}
+			if (logical_block_output_count[i] != 1) {
+				printf(
+						ERRTAG "Latch #%d with output %s has %d output pin(s), expected one (Q).\n",
+						i, logical_block[i].name,
+						logical_block_output_count[i]);
+				error++;
+			}
+			if (logical_block[i].clock_net == OPEN) {
+				printf(ERRTAG "Latch #%d with output %s has no clock.\n", i,
+						logical_block[i].name);
+				error++;
+			}
+		}
+
+		else if (logical_block[i].type == VPACK_INPAD) {
+			if (logical_block_input_count[i] != 0) {
+				printf(
+						ERRTAG "io inpad logical_block #%d name %s of type %d" "has %d input pins.\n",
+						i, logical_block[i].name, logical_block[i].type,
+						logical_block_input_count[i]);
+				error++;
+			}
+			if (logical_block_output_count[i] != 1) {
+				printf(
+						ERRTAG "io inpad logical_block #%d name %s of type %d" "has %d output pins.\n",
+						i, logical_block[i].name, logical_block[i].type,
+						logical_block_output_count[i]);
+				error++;
+			}
+			if (logical_block[i].clock_net != OPEN) {
+				printf(ERRTAG "io inpad #%d with output %s has clock.\n", i,
+						logical_block[i].name);
+				error++;
+			}
+		} else if (logical_block[i].type == VPACK_OUTPAD) {
+			if (logical_block_input_count[i] != 1) {
+				printf(
+						ERRTAG "io outpad logical_block #%d name %s of type %d" "has %d input pins.\n",
+						i, logical_block[i].name, logical_block[i].type,
+						logical_block_input_count[i]);
+				error++;
+			}
+			if (logical_block_output_count[i] != 0) {
+				printf(
+						ERRTAG "io outpad logical_block #%d name %s of type %d" "has %d output pins.\n",
+						i, logical_block[i].name, logical_block[i].type,
+						logical_block_output_count[i]);
+				error++;
+			}
+			if (logical_block[i].clock_net != OPEN) {
+				printf(ERRTAG "io outpad #%d with name %s has clock.\n", i,
+						logical_block[i].name);
+				error++;
+			}
+		} else if (logical_block[i].type == VPACK_COMB) {
+			if (logical_block_input_count[i] <= 0) {
+				printf(
+						"Warning:  logical_block #%d with output %s has only %d pin.\n",
+						i, logical_block[i].name, logical_block_input_count[i]);
+
+				if (logical_block_input_count[i] < 0) {
+					error++;
+				} else {
+					if (logical_block_output_count[i] > 0) {
+						printf(
+								"\tBlock contains output -- may be a constant generator.\n");
+					} else {
+						printf("\t" ERRTAG "Block contains no output.\n");
+						error++;
+					}
+				}
+			}
+
+			if (strcmp(logical_block[i].model->name, MODEL_LOGIC) == 0) {
+				if (logical_block_output_count[i] != 1) {
+					printf(
+							ERRTAG "logical_block #%d name %s of model %s \n has %d output pins instead of 1.\n",
+							i, logical_block[i].name,
+							logical_block[i].model->name,
+							logical_block_output_count[i]);
+					error++;
+				}
+			}
 		} else {
-			printf ("\t" ERRTAG "Block contains no output.\n");
-			error++;
+			printf(ERRTAG "Unknown type for logical_block #%d %s\n", i,
+					logical_block[i].name);
 		}
 	}
-}
 
-if (strcmp(logical_block[i].model->name, MODEL_LOGIC) == 0) {
-	if (logical_block_output_count[i] != 1) {
-		printf (ERRTAG "logical_block #%d name %s of model %s \n has %d output pins instead of 1.\n",
-				i, logical_block[i].name, logical_block[i].model->name, logical_block_output_count[i]);
-		error++;
+	if (error != 0) {
+		printf("Found %d fatal errors in the input netlist.\n", error);
+		exit(1);
 	}
-}
-} else {
-printf(ERRTAG "Unknown type for logical_block #%d %s\n", i, logical_block[i].name);
-}
-}
-
-if (error != 0) {
-printf("Found %d fatal errors in the input netlist.\n", error);
-exit(1);
-}
 }
 
 static void free_parse(void) {
 
-/* Release memory needed only during blif network parsing. */
+	/* Release memory needed only during blif network parsing. */
 
-int i;
-struct hash_logical_nets *h_ptr, *temp_ptr;
+	int i;
+	struct hash_logical_nets *h_ptr, *temp_ptr;
 
-for (i = 0; i < HASHSIZE; i++) {
-h_ptr = hash[i];
-while (h_ptr != NULL) {
-free((void *) h_ptr->name);
-temp_ptr = h_ptr->next;
-free((void *) h_ptr);
-h_ptr = temp_ptr;
-}
-}
-free((void *) num_driver);
-free((void *) hash);
-free((void *) temp_num_pins);
+	for (i = 0; i < HASHSIZE; i++) {
+		h_ptr = hash[i];
+		while (h_ptr != NULL) {
+			free((void *) h_ptr->name);
+			temp_ptr = h_ptr->next;
+			free((void *) h_ptr);
+			h_ptr = temp_ptr;
+		}
+	}
+	free((void *) num_driver);
+	free((void *) hash);
+	free((void *) temp_num_pins);
 }
 

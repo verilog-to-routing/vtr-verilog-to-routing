@@ -126,29 +126,24 @@ static int check_connections_to_global_clb_pins(int inet) {
 			/* Allow a CLB output pin to drive a global net (warning only). */
 
 			if (ipin == 0 && clb_net[inet].is_global) {
-printf			(WARNTAG "in check_connections_to_global_clb_pins:\n"
-					"\tnet #%d (%s) is driven by CLB output pin (#%d)\n"
-					"\ton block #%d (%s).\n", inet,
-					clb_net[inet].name, node_block_pin, iblk,
-					block[iblk].name);
-		}
-		else
-		{ /* Otherwise -> Error */
-			printf
-			(ERRTAG "in check_connections_to_global_clb_pins:\n"
-					"\tpin %d on net #%d (%s) connects to CLB input pin (#%d)\n"
-					"\ton block #%d (%s).\n", ipin, inet,
-					clb_net[inet].name, node_block_pin, iblk,
-					block[iblk].name);
-			error++;
-		}
+				printf(WARNTAG "in check_connections_to_global_clb_pins:\n"
+				"\tnet #%d (%s) is driven by CLB output pin (#%d)\n"
+				"\ton block #%d (%s).\n", inet, clb_net[inet].name,
+						node_block_pin, iblk, block[iblk].name);
+			} else { /* Otherwise -> Error */
+				printf(ERRTAG "in check_connections_to_global_clb_pins:\n"
+				"\tpin %d on net #%d (%s) connects to CLB input pin (#%d)\n"
+				"\ton block #%d (%s).\n", ipin, inet, clb_net[inet].name,
+						node_block_pin, iblk, block[iblk].name);
+				error++;
+			}
 
-		if(clb_net[inet].is_global)
-		printf("\tNet is global, but CLB pin is not.\n\n");
-		else
-		printf("\tCLB pin is global, but net is not.\n\n");
-	}
-} /* End for all pins */
+			if (clb_net[inet].is_global)
+				printf("\tNet is global, but CLB pin is not.\n\n");
+			else
+				printf("\tCLB pin is global, but net is not.\n\n");
+		}
+	} /* End for all pins */
 
 	return (error);
 }
@@ -165,13 +160,13 @@ static int check_clb_conn(int iblk, int num_conn) {
 
 	if (type == IO_TYPE) {
 		if (num_conn != 1) {
-			printf(ERRTAG "io blk #%d (%s) has %d pins.\n",
-					iblk, block[iblk].name, num_conn);
+			printf(ERRTAG "io blk #%d (%s) has %d pins.\n", iblk,
+					block[iblk].name, num_conn);
 			error++;
 		}
 	} else if (num_conn < 2) {
-		printf(WARNTAG "logic block #%d (%s) has only %d pin.\n",
-				iblk, block[iblk].name, num_conn);
+		printf(WARNTAG "logic block #%d (%s) has only %d pin.\n", iblk,
+				block[iblk].name, num_conn);
 
 		/* Allow the case where we have only one OUTPUT pin connected to continue. *
 		 * This is used sometimes as a constant generator for a primary output,    *
@@ -203,8 +198,8 @@ static int check_clb_conn(int iblk, int num_conn) {
 	 * just a redundant double check.                                    */
 
 	if (num_conn > type->num_pins) {
-		printf(ERRTAG "logic block #%d with output %s has %d pins.\n",
-				iblk, block[iblk].name, num_conn);
+		printf(ERRTAG "logic block #%d with output %s has %d pins.\n", iblk,
+				block[iblk].name, num_conn);
 		error++;
 	}
 

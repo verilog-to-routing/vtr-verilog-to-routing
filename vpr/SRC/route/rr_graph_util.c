@@ -4,10 +4,7 @@
 #include "rr_graph_util.h"
 
 t_linked_edge *
-insert_in_edge_list(INP t_linked_edge * head,
-		INP int edge,
-		INP short iswitch)
-{
+insert_in_edge_list(INP t_linked_edge * head, INP int edge, INP short iswitch) {
 
 	/* Inserts a new element at the head of a linked list.  Returns the new head *
 	 * of the list.  One argument is the address of the head of a list of free   *

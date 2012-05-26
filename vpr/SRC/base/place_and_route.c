@@ -683,87 +683,78 @@ static float comp_width(t_chan * chan, float x, float separation) {
 
 /* After placement, logical pins for blocks, and nets must be updated to correspond with physical pins of type */
 /* This function should only be called once */
-void
-post_place_sync(INP int L_num_blocks,
-		INOUTP const struct s_block block_list[])
-{
-    int iblk, j, k, inet;
-    t_type_ptr type;
-    int max_num_block_pins;
+void post_place_sync(INP int L_num_blocks,
+		INOUTP const struct s_block block_list[]) {
+	int iblk, j, k, inet;
+	t_type_ptr type;
+	int max_num_block_pins;
 
-    /* Go through each block */
-    for(iblk = 0; iblk < L_num_blocks; ++iblk)
-	{
-	    type = block[iblk].type;
-	    assert(type->num_pins % type->capacity == 0);
-max_num_block_pins = type->num_pins / type->capacity;
-	    /* Logical location and physical location is offset by z * max_num_block_pins */
-	    /* Sync blocks and nets */
-	    for(j = 0; j < max_num_block_pins; j++)
-		{
-		    inet = block[iblk].nets[j];
-		    if(inet != OPEN && block[iblk].z > 0)
-			{
-			    assert(block[iblk]. nets[j + block[iblk].z * max_num_block_pins] == OPEN);
-block[iblk].nets[j +
-					     block[iblk].z *
-					     max_num_block_pins] =
-				block[iblk].nets[j];
-			    block[iblk].nets[j] = OPEN;
-				for(k = 0; k <= clb_net[inet].num_sinks; k++)
-				{
-				    if(clb_net[inet].node_block[k] == iblk)
-					{
-					    assert(clb_net[inet]. node_block_pin[k] == j);
-clb_net[inet].node_block_pin[k] =
-						j +
-						block[iblk].z *
-						max_num_block_pins;
-					    break;
+	/* Go through each block */
+	for (iblk = 0; iblk < L_num_blocks; ++iblk) {
+		type = block[iblk].type;
+		assert(type->num_pins % type->capacity == 0);
+		max_num_block_pins = type->num_pins / type->capacity;
+		/* Logical location and physical location is offset by z * max_num_block_pins */
+		/* Sync blocks and nets */
+		for (j = 0; j < max_num_block_pins; j++) {
+			inet = block[iblk].nets[j];
+			if (inet != OPEN && block[iblk].z > 0) {
+				assert(
+						block[iblk]. nets[j + block[iblk].z * max_num_block_pins] == OPEN);
+				block[iblk].nets[j + block[iblk].z * max_num_block_pins] =
+						block[iblk].nets[j];
+				block[iblk].nets[j] = OPEN;
+				for (k = 0; k <= clb_net[inet].num_sinks; k++) {
+					if (clb_net[inet].node_block[k] == iblk) {
+						assert(clb_net[inet]. node_block_pin[k] == j);
+						clb_net[inet].node_block_pin[k] = j
+								+ block[iblk].z * max_num_block_pins;
+						break;
 					}
 				}
 				assert(k <= clb_net[inet].num_sinks);
-}
-}
-}
+			}
+		}
+	}
 }
 
 void free_pb_data(t_pb *pb) {
-int i, j;
-const t_pb_type *pb_type;
-t_rr_node *temp;
+	int i, j;
+	const t_pb_type *pb_type;
+	t_rr_node *temp;
 
-if (pb == NULL || pb->name == NULL) {
-return;
-}
+	if (pb == NULL || pb->name == NULL) {
+		return;
+	}
 
-pb_type = pb->pb_graph_node->pb_type;
+	pb_type = pb->pb_graph_node->pb_type;
 
-/* free existing rr graph for pb */
-if (pb->rr_graph) {
-temp = rr_node;
-rr_node = pb->rr_graph;
-num_rr_nodes = pb->pb_graph_node->total_pb_pins;
-free_rr_graph();
-rr_node = temp;
-}
+	/* free existing rr graph for pb */
+	if (pb->rr_graph) {
+		temp = rr_node;
+		rr_node = pb->rr_graph;
+		num_rr_nodes = pb->pb_graph_node->total_pb_pins;
+		free_rr_graph();
+		rr_node = temp;
+	}
 
-if (pb_type->num_modes > 0) {
-/* Free children of pb */
-for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
-for (j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
-if (pb->child_pbs[i]) {
-	free_pb_data(&pb->child_pbs[i][j]);
-}
-}
-}
-}
+	if (pb_type->num_modes > 0) {
+		/* Free children of pb */
+		for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
+			for (j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb;
+					j++) {
+				if (pb->child_pbs[i]) {
+					free_pb_data(&pb->child_pbs[i][j]);
+				}
+			}
+		}
+	}
 
-/* Frees all the pb data structures.                                 */
-if (pb->name) {
-free(pb->name);
-if (pb->child_pbs) {
-free(pb->child_pbs);
-}
-}
+	/* Frees all the pb data structures.                                 */
+	if (pb->name) {
+		free(pb->name);
+		if (pb->child_pbs) {
+			free(pb->child_pbs);
+		}
+	}
 }

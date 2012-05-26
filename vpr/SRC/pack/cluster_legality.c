@@ -34,7 +34,8 @@ static int num_rr_intrinsic_cost = 0;
 /********************* Subroutines local to this module *********************/
 static boolean is_net_in_cluster(INP int inet);
 
-static void setup_intracluster_routing_for_logical_block(INP int iblock, INP t_pb_graph_node *primitive);
+static void setup_intracluster_routing_for_logical_block(INP int iblock,
+		INP t_pb_graph_node *primitive);
 
 static void add_net_rr_terminal_cluster(int iblk_net,
 		t_pb_graph_node * primitive, int ilogical_block,
@@ -62,8 +63,8 @@ static float rr_node_intrinsic_cost(int inode);
 
 static boolean is_net_in_cluster(INP int inet) {
 	int i;
-	for(i = 0; i < num_nets_in_cluster; i++) {
-		if(nets_in_cluster[i] == inet) {
+	for (i = 0; i < num_nets_in_cluster; i++) {
+		if (nets_in_cluster[i] == inet) {
 			return TRUE;
 		}
 	}
@@ -238,277 +239,338 @@ void free_cluster_legality_checker(void) {
 	free(saved_net_rr_terminals);
 }
 
-void alloc_and_load_rr_graph_for_pb_graph_node(INP t_pb_graph_node *pb_graph_node, INP const t_arch* arch, int mode) {
+void alloc_and_load_rr_graph_for_pb_graph_node(
+		INP t_pb_graph_node *pb_graph_node, INP const t_arch* arch, int mode) {
 
 	int i, j, k, index;
 	boolean is_primitive;
 
 	is_primitive = (pb_graph_node->pb_type->num_modes == 0);
 
-	for(i = 0; i < pb_graph_node->num_input_ports; i++) {
-		for(j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
+	for (i = 0; i < pb_graph_node->num_input_ports; i++) {
+		for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
 			index = pb_graph_node->input_pins[i][j].pin_count_in_cluster;
 			rr_node[index].pb_graph_pin = &pb_graph_node->input_pins[i][j];
-			rr_node[index].fan_in = pb_graph_node->input_pins[i][j].num_input_edges;
-			rr_node[index].num_edges = pb_graph_node->input_pins[i][j].num_output_edges;
-			rr_node[index].pack_intrinsic_cost = 1 + (float)rr_node[index].num_edges / 5; /* need to normalize better than 5 */
-			rr_node[index].edges = my_malloc(rr_node[index].num_edges * sizeof(int));
-			rr_node[index].switches = my_calloc(rr_node[index].num_edges, sizeof(int));
+			rr_node[index].fan_in =
+					pb_graph_node->input_pins[i][j].num_input_edges;
+			rr_node[index].num_edges =
+					pb_graph_node->input_pins[i][j].num_output_edges;
+			rr_node[index].pack_intrinsic_cost = 1
+					+ (float) rr_node[index].num_edges / 5; /* need to normalize better than 5 */
+			rr_node[index].edges = my_malloc(
+					rr_node[index].num_edges * sizeof(int));
+			rr_node[index].switches = my_calloc(rr_node[index].num_edges,
+					sizeof(int));
 			rr_node[index].net_num = OPEN;
 			rr_node[index].prev_node = OPEN;
 			rr_node[index].prev_edge = OPEN;
-			if(mode == 0) { /* default mode is the first mode */
+			if (mode == 0) { /* default mode is the first mode */
 				rr_node[index].capacity = 1;
 			} else {
 				rr_node[index].capacity = 0;
 			}
-			for(k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges; k++) {
+			for (k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges;
+					k++) {
 				/* TODO: Intention was to do bus-based implementation here */
-				rr_node[index].edges[k] = pb_graph_node->input_pins[i][j].output_edges[k]->output_pins[0]->pin_count_in_cluster;
+				rr_node[index].edges[k] =
+						pb_graph_node->input_pins[i][j].output_edges[k]->output_pins[0]->pin_count_in_cluster;
 				rr_node[index].switches[k] = arch->num_switches - 1; /* last switch in arch switch properties is a delayless switch */
-				assert(pb_graph_node->input_pins[i][j].output_edges[k]->num_output_pins == 1);
-}
+				assert(
+						pb_graph_node->input_pins[i][j].output_edges[k]->num_output_pins == 1);
+			}
 			rr_node[index].type = INTRA_CLUSTER_EDGE;
-			if(is_primitive) {
+			if (is_primitive) {
 				rr_node[index].type = SINK;
 			}
 		}
 	}
 
-	for(i = 0; i < pb_graph_node->num_output_ports; i++) {
-		for(j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
+	for (i = 0; i < pb_graph_node->num_output_ports; i++) {
+		for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
 			index = pb_graph_node->output_pins[i][j].pin_count_in_cluster;
 			rr_node[index].pb_graph_pin = &pb_graph_node->output_pins[i][j];
-			rr_node[index].fan_in = pb_graph_node->output_pins[i][j].num_input_edges;
-			rr_node[index].num_edges = pb_graph_node->output_pins[i][j].num_output_edges;
-			rr_node[index].pack_intrinsic_cost = 1 + (float)rr_node[index].num_edges / 5; /* need to normalize better than 5 */
-			rr_node[index].edges = my_malloc(rr_node[index].num_edges * sizeof(int));
-			rr_node[index].switches = my_calloc(rr_node[index].num_edges, sizeof(int));
+			rr_node[index].fan_in =
+					pb_graph_node->output_pins[i][j].num_input_edges;
+			rr_node[index].num_edges =
+					pb_graph_node->output_pins[i][j].num_output_edges;
+			rr_node[index].pack_intrinsic_cost = 1
+					+ (float) rr_node[index].num_edges / 5; /* need to normalize better than 5 */
+			rr_node[index].edges = my_malloc(
+					rr_node[index].num_edges * sizeof(int));
+			rr_node[index].switches = my_calloc(rr_node[index].num_edges,
+					sizeof(int));
 			rr_node[index].net_num = OPEN;
 			rr_node[index].prev_node = OPEN;
 			rr_node[index].prev_edge = OPEN;
-			if(mode == 0) { /* Default mode is the first mode */
+			if (mode == 0) { /* Default mode is the first mode */
 				rr_node[index].capacity = 1;
 			} else {
 				rr_node[index].capacity = 0;
 			}
-			for(k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges; k++) {
+			for (k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges;
+					k++) {
 				/* TODO: Intention was to do bus-based implementation here */
-				rr_node[index].edges[k] = pb_graph_node->output_pins[i][j].output_edges[k]->output_pins[0]->pin_count_in_cluster;
+				rr_node[index].edges[k] =
+						pb_graph_node->output_pins[i][j].output_edges[k]->output_pins[0]->pin_count_in_cluster;
 				rr_node[index].switches[k] = arch->num_switches - 1;
-				assert(pb_graph_node->output_pins[i][j].output_edges[k]->num_output_pins == 1);
-}
+				assert(
+						pb_graph_node->output_pins[i][j].output_edges[k]->num_output_pins == 1);
+			}
 			rr_node[index].type = INTRA_CLUSTER_EDGE;
-			if(is_primitive) {
+			if (is_primitive) {
 				rr_node[index].type = SOURCE;
 			}
 		}
 	}
 
-	for(i = 0; i < pb_graph_node->num_clock_ports; i++) {
-		for(j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
+	for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
+		for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
 			index = pb_graph_node->clock_pins[i][j].pin_count_in_cluster;
 			rr_node[index].pb_graph_pin = &pb_graph_node->clock_pins[i][j];
-			rr_node[index].fan_in = pb_graph_node->clock_pins[i][j].num_input_edges;
-			rr_node[index].num_edges = pb_graph_node->clock_pins[i][j].num_output_edges;
-			rr_node[index].pack_intrinsic_cost = 1 + (float)rr_node[index].num_edges / 5; /* need to normalize better than 5 */
-			rr_node[index].edges = my_malloc(rr_node[index].num_edges * sizeof(int));
-			rr_node[index].switches = my_calloc(rr_node[index].num_edges, sizeof(int));
+			rr_node[index].fan_in =
+					pb_graph_node->clock_pins[i][j].num_input_edges;
+			rr_node[index].num_edges =
+					pb_graph_node->clock_pins[i][j].num_output_edges;
+			rr_node[index].pack_intrinsic_cost = 1
+					+ (float) rr_node[index].num_edges / 5; /* need to normalize better than 5 */
+			rr_node[index].edges = my_malloc(
+					rr_node[index].num_edges * sizeof(int));
+			rr_node[index].switches = my_calloc(rr_node[index].num_edges,
+					sizeof(int));
 			rr_node[index].net_num = OPEN;
 			rr_node[index].prev_node = OPEN;
 			rr_node[index].prev_edge = OPEN;
-			if(mode == 0) { /* default mode is the first mode (useful for routing */
+			if (mode == 0) { /* default mode is the first mode (useful for routing */
 				rr_node[index].capacity = 1;
 			} else {
 				rr_node[index].capacity = 0;
 			}
-			for(k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges; k++) {
+			for (k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges;
+					k++) {
 				/* TODO: Intention was to do bus-based implementation here */
-				rr_node[index].edges[k] = pb_graph_node->clock_pins[i][j].output_edges[k]->output_pins[0]->pin_count_in_cluster;
+				rr_node[index].edges[k] =
+						pb_graph_node->clock_pins[i][j].output_edges[k]->output_pins[0]->pin_count_in_cluster;
 				rr_node[index].switches[k] = arch->num_switches - 1;
-				assert(pb_graph_node->clock_pins[i][j].output_edges[k]->num_output_pins == 1);
-}
-rr_node[index].type = INTRA_CLUSTER_EDGE;
-if(is_primitive) {
-rr_node[index].type = SINK;
-}
-}
+				assert(
+						pb_graph_node->clock_pins[i][j].output_edges[k]->num_output_pins == 1);
+			}
+			rr_node[index].type = INTRA_CLUSTER_EDGE;
+			if (is_primitive) {
+				rr_node[index].type = SINK;
+			}
+		}
+	}
+
+	for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
+		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children;
+				j++) {
+			for (k = 0;
+					k
+							< pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb;
+					k++) {
+				alloc_and_load_rr_graph_for_pb_graph_node(
+						&pb_graph_node->child_pb_graph_nodes[i][j][k], arch, i);
+			}
+		}
+	}
+
 }
 
-for(i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-for(j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
-for(k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-alloc_and_load_rr_graph_for_pb_graph_node(&pb_graph_node->child_pb_graph_nodes[i][j][k], arch, i);
-}
-}
-}
+void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
+		INP const t_arch *arch) {
 
-}
+	/**
+	 * Structure: Model external routing and internal routing
+	 * 
+	 * 1.  Model external routing
+	 *   num input pins == num external sources for input pins, fully connect them to input pins (simulates external routing)
+	 *   num output pins == num external sinks for output pins, fully connect them to output pins (simulates external routing)
+	 *   num clock pins == num external sources for clock pins, fully connect them to clock pins (simulates external routing)
+	 * 2.  Model internal routing
+	 * 
+	 */
+	/* make each rr_node one correspond with pin and correspond with pin's index pin_count_in_cluster */
+	int i, j, k, m, index, pb_graph_rr_index;
+	int count_pins;
+	t_pb_type * pb_type;
+	t_pb_graph_node *pb_graph_node;
+	int ipin;
 
-void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index, INP const t_arch *arch) {
+	/* Create rr_graph */
+	pb_type = clb->type->pb_type;
+	pb_graph_node = clb->type->pb_graph_head;
+	num_rr_nodes = pb_graph_node->total_pb_pins + pb_type->num_input_pins
+			+ pb_type->num_output_pins + pb_type->num_clock_pins;
+	if (num_rr_nodes > num_rr_intrinsic_cost) {
+		free(rr_intrinsic_cost);
+		rr_intrinsic_cost = my_calloc(num_rr_nodes, sizeof(float));
+		num_rr_intrinsic_cost = num_rr_nodes;
+	}
+	rr_node = my_calloc(num_rr_nodes, sizeof(t_rr_node));
+	clb->pb->rr_graph = rr_node;
 
-/**
- * Structure: Model external routing and internal routing
- * 
- * 1.  Model external routing
- *   num input pins == num external sources for input pins, fully connect them to input pins (simulates external routing)
- *   num output pins == num external sinks for output pins, fully connect them to output pins (simulates external routing)
- *   num clock pins == num external sources for clock pins, fully connect them to clock pins (simulates external routing)
- * 2.  Model internal routing
- * 
- */
-/* make each rr_node one correspond with pin and correspond with pin's index pin_count_in_cluster */
-int i, j, k, m, index, pb_graph_rr_index;
-int count_pins;
-t_pb_type * pb_type;
-t_pb_graph_node *pb_graph_node;
-int ipin;
+	alloc_and_load_rr_graph_for_pb_graph_node(pb_graph_node, arch, 0);
 
-/* Create rr_graph */
-pb_type = clb->type->pb_type;
-pb_graph_node = clb->type->pb_graph_head;
-num_rr_nodes = pb_graph_node->total_pb_pins + pb_type->num_input_pins +
-pb_type->num_output_pins + pb_type->num_clock_pins;
-if(num_rr_nodes > num_rr_intrinsic_cost) {
-free(rr_intrinsic_cost);
-rr_intrinsic_cost = my_calloc(num_rr_nodes, sizeof(float));
-num_rr_intrinsic_cost = num_rr_nodes;
-}
-rr_node = my_calloc(num_rr_nodes, sizeof(t_rr_node));
-clb->pb->rr_graph = rr_node;
+	curr_cluster_index = clb_index;
 
-alloc_and_load_rr_graph_for_pb_graph_node(pb_graph_node, arch, 0);
+	/*   Alloc and load rr_graph external sources and sinks */
+	ext_input_rr_node_index = pb_graph_node->total_pb_pins;
+	ext_output_rr_node_index = pb_type->num_input_pins
+			+ pb_graph_node->total_pb_pins;
+	ext_clock_rr_node_index = pb_type->num_input_pins + pb_type->num_output_pins
+			+ pb_graph_node->total_pb_pins;
+	max_ext_index = pb_type->num_input_pins + pb_type->num_output_pins
+			+ pb_type->num_clock_pins + pb_graph_node->total_pb_pins;
 
-curr_cluster_index = clb_index;
+	for (i = 0; i < pb_type->num_input_pins; i++) {
+		index = i + pb_graph_node->total_pb_pins;
+		rr_node[index].type = SOURCE;
+		rr_node[index].fan_in = 0;
+		rr_node[index].num_edges = pb_type->num_input_pins;
+		rr_node[index].pack_intrinsic_cost = 1
+				+ (float) rr_node[index].num_edges / 5; /* need to normalize better than 5 */
+		rr_node[index].edges = my_malloc(
+				rr_node[index].num_edges * sizeof(int));
+		rr_node[index].switches = my_calloc(rr_node[index].num_edges,
+				sizeof(int));
+		rr_node[index].capacity = 1;
+		rr_intrinsic_cost[index] = 0;
+	}
 
-/*   Alloc and load rr_graph external sources and sinks */
-ext_input_rr_node_index = pb_graph_node->total_pb_pins;
-ext_output_rr_node_index = pb_type->num_input_pins + pb_graph_node->total_pb_pins;
-ext_clock_rr_node_index = pb_type->num_input_pins + pb_type->num_output_pins + pb_graph_node->total_pb_pins;
-max_ext_index = pb_type->num_input_pins + pb_type->num_output_pins + pb_type->num_clock_pins + pb_graph_node->total_pb_pins;
+	for (i = 0; i < pb_type->num_output_pins; i++) {
+		index = i + pb_type->num_input_pins + pb_graph_node->total_pb_pins;
+		rr_node[index].type = SINK;
+		rr_node[index].fan_in = pb_type->num_output_pins;
+		rr_node[index].num_edges = 0;
+		rr_node[index].pack_intrinsic_cost = 1
+				+ (float) rr_node[index].num_edges / 5; /* need to normalize better than 5 */
+		rr_node[index].capacity = 1;
+		rr_intrinsic_cost[index] = 0;
+	}
 
-for(i = 0; i < pb_type->num_input_pins; i++) {
-index = i + pb_graph_node->total_pb_pins;
-rr_node[index].type = SOURCE;
-rr_node[index].fan_in = 0;
-rr_node[index].num_edges = pb_type->num_input_pins;
-rr_node[index].pack_intrinsic_cost = 1 + (float)rr_node[index].num_edges / 5; /* need to normalize better than 5 */
-rr_node[index].edges = my_malloc(rr_node[index].num_edges * sizeof(int));
-rr_node[index].switches = my_calloc(rr_node[index].num_edges, sizeof(int));
-rr_node[index].capacity = 1;
-rr_intrinsic_cost[index] = 0;
-}
+	for (i = 0; i < pb_type->num_clock_pins; i++) {
+		index = i + pb_type->num_input_pins + pb_type->num_output_pins
+				+ pb_graph_node->total_pb_pins;
+		rr_node[index].type = SOURCE;
+		rr_node[index].fan_in = 0;
+		rr_node[index].num_edges = pb_type->num_clock_pins;
+		rr_node[index].pack_intrinsic_cost = 1
+				+ (float) rr_node[index].num_edges / 5; /* need to normalize better than 5 */
+		rr_node[index].edges = my_malloc(
+				rr_node[index].num_edges * sizeof(int));
+		rr_node[index].switches = my_calloc(rr_node[index].num_edges,
+				sizeof(int));
+		rr_node[index].capacity = 1;
+		rr_intrinsic_cost[index] = 0;
+	}
 
-for(i = 0; i < pb_type->num_output_pins; i++) {
-index = i + pb_type->num_input_pins + pb_graph_node->total_pb_pins;
-rr_node[index].type = SINK;
-rr_node[index].fan_in = pb_type->num_output_pins;
-rr_node[index].num_edges = 0;
-rr_node[index].pack_intrinsic_cost = 1 + (float)rr_node[index].num_edges / 5; /* need to normalize better than 5 */
-rr_node[index].capacity = 1;
-rr_intrinsic_cost[index] = 0;
-}
+	ipin = 0;
+	for (i = 0; i < pb_graph_node->num_input_ports; i++) {
+		for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
+			pb_graph_rr_index =
+					pb_graph_node->input_pins[i][j].pin_count_in_cluster;
+			for (k = 0; k < pb_type->num_input_pins; k++) {
+				index = k + pb_graph_node->total_pb_pins;
+				rr_node[index].edges[ipin] = pb_graph_rr_index;
+				rr_node[index].switches[ipin] = arch->num_switches - 1;
+			}
+			rr_node[pb_graph_rr_index].pack_intrinsic_cost = MAX_SHORT; /* using an input pin should be made costly */
+			ipin++;
+		}
+	}
 
-for(i = 0; i < pb_type->num_clock_pins; i++) {
-index = i + pb_type->num_input_pins + pb_type->num_output_pins + pb_graph_node->total_pb_pins;
-rr_node[index].type = SOURCE;
-rr_node[index].fan_in = 0;
-rr_node[index].num_edges = pb_type->num_clock_pins;
-rr_node[index].pack_intrinsic_cost = 1 + (float)rr_node[index].num_edges / 5; /* need to normalize better than 5 */
-rr_node[index].edges = my_malloc(rr_node[index].num_edges * sizeof(int));
-rr_node[index].switches = my_calloc(rr_node[index].num_edges, sizeof(int));
-rr_node[index].capacity = 1;
-rr_intrinsic_cost[index] = 0;
-}
+	/* Must attach output pins to input pins because if a connection cannot fit using intra-cluster routing, it can also use external routing */
+	for (i = 0; i < pb_graph_node->num_output_ports; i++) {
+		for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
+			count_pins = pb_graph_node->output_pins[i][j].num_output_edges
+					+ pb_type->num_output_pins + pb_type->num_input_pins;
+			pb_graph_rr_index =
+					pb_graph_node->output_pins[i][j].pin_count_in_cluster;
+			rr_node[pb_graph_rr_index].edges = my_realloc(
+					rr_node[pb_graph_rr_index].edges,
+					(count_pins) * sizeof(int));
+			rr_node[pb_graph_rr_index].switches = my_realloc(
+					rr_node[pb_graph_rr_index].switches,
+					(count_pins) * sizeof(int));
 
-ipin = 0;
-for(i = 0; i < pb_graph_node->num_input_ports; i++) {
-for(j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-pb_graph_rr_index = pb_graph_node->input_pins[i][j].pin_count_in_cluster;
-for(k = 0; k < pb_type->num_input_pins; k++) {
-index = k + pb_graph_node->total_pb_pins;
-rr_node[index].edges[ipin] = pb_graph_rr_index;
-rr_node[index].switches[ipin] = arch->num_switches - 1;
-}
-rr_node[pb_graph_rr_index].pack_intrinsic_cost = MAX_SHORT; /* using an input pin should be made costly */
-ipin++;
-}
-}
+			ipin = 0;
+			for (k = 0; k < pb_graph_node->num_input_ports; k++) {
+				for (m = 0; m < pb_graph_node->num_input_pins[k]; m++) {
+					index =
+							pb_graph_node->input_pins[k][m].pin_count_in_cluster;
+					rr_node[pb_graph_rr_index].edges[ipin
+							+ pb_graph_node->output_pins[i][j].num_output_edges] =
+							index;
+					rr_node[pb_graph_rr_index].switches[ipin
+							+ pb_graph_node->output_pins[i][j].num_output_edges] =
+							arch->num_switches - 1;
+					ipin++;
+				}
+			}
+			for (k = 0; k < pb_type->num_output_pins; k++) {
+				index = k + pb_type->num_input_pins
+						+ pb_graph_node->total_pb_pins;
+				rr_node[pb_graph_rr_index].edges[k + pb_type->num_input_pins
+						+ pb_graph_node->output_pins[i][j].num_output_edges] =
+						index;
+				rr_node[pb_graph_rr_index].switches[k + pb_type->num_input_pins
+						+ pb_graph_node->output_pins[i][j].num_output_edges] =
+						arch->num_switches - 1;
+			}
+			rr_node[pb_graph_rr_index].num_edges += pb_type->num_output_pins
+					+ pb_type->num_input_pins;
+			rr_node[pb_graph_rr_index].pack_intrinsic_cost = 1
+					+ (float) rr_node[pb_graph_rr_index].num_edges / 5; /* need to normalize better than 5 */
+		}
+	}
 
-/* Must attach output pins to input pins because if a connection cannot fit using intra-cluster routing, it can also use external routing */
-for(i = 0; i < pb_graph_node->num_output_ports; i++) {
-for(j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-count_pins = pb_graph_node->output_pins[i][j].num_output_edges + pb_type->num_output_pins + pb_type->num_input_pins;
-pb_graph_rr_index = pb_graph_node->output_pins[i][j].pin_count_in_cluster;
-rr_node[pb_graph_rr_index].edges = my_realloc(rr_node[pb_graph_rr_index].edges,
-	(count_pins) * sizeof(int));
-rr_node[pb_graph_rr_index].switches = my_realloc(rr_node[pb_graph_rr_index].switches,
-	(count_pins) * sizeof(int));
+	ipin = 0;
+	for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
+		for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
+			for (k = 0; k < pb_type->num_clock_pins; k++) {
+				index = k + pb_type->num_input_pins + pb_type->num_output_pins
+						+ pb_graph_node->total_pb_pins;
+				pb_graph_rr_index =
+						pb_graph_node->clock_pins[i][j].pin_count_in_cluster;
+				rr_node[index].edges[ipin] = pb_graph_rr_index;
+				rr_node[index].switches[ipin] = arch->num_switches - 1;
+			}
+			ipin++;
+		}
+	}
 
-ipin = 0;
-for(k = 0; k < pb_graph_node->num_input_ports; k++) {
-for(m = 0; m < pb_graph_node->num_input_pins[k]; m++) {
-	index = pb_graph_node->input_pins[k][m].pin_count_in_cluster;
-	rr_node[pb_graph_rr_index].edges[ipin + pb_graph_node->output_pins[i][j].num_output_edges] = index;
-	rr_node[pb_graph_rr_index].switches[ipin + pb_graph_node->output_pins[i][j].num_output_edges] = arch->num_switches - 1;
-	ipin++;
-}
-}
-for(k = 0; k < pb_type->num_output_pins; k++) {
-index = k + pb_type->num_input_pins + pb_graph_node->total_pb_pins;
-rr_node[pb_graph_rr_index].edges[k + pb_type->num_input_pins + pb_graph_node->output_pins[i][j].num_output_edges] = index;
-rr_node[pb_graph_rr_index].switches[k + pb_type->num_input_pins + pb_graph_node->output_pins[i][j].num_output_edges] = arch->num_switches - 1;
-}
-rr_node[pb_graph_rr_index].num_edges += pb_type->num_output_pins + pb_type->num_input_pins;
-rr_node[pb_graph_rr_index].pack_intrinsic_cost = 1 + (float)rr_node[pb_graph_rr_index].num_edges / 5; /* need to normalize better than 5 */
-}
-}
-
-ipin = 0;
-for(i = 0; i < pb_graph_node->num_clock_ports; i++) {
-for(j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-for(k = 0; k < pb_type->num_clock_pins; k++) {
-index = k + pb_type->num_input_pins + pb_type->num_output_pins + pb_graph_node->total_pb_pins;
-pb_graph_rr_index = pb_graph_node->clock_pins[i][j].pin_count_in_cluster;
-rr_node[index].edges[ipin] = pb_graph_rr_index;
-rr_node[index].switches[ipin] = arch->num_switches - 1;
-}
-ipin++;
-}
-}
-
-alloc_and_load_rr_node_route_structs();
-num_nets_in_cluster = 0;
+	alloc_and_load_rr_node_route_structs();
+	num_nets_in_cluster = 0;
 
 }
 
 void free_legalizer_for_cluster(INP t_block* clb) {
-int i;
+	int i;
 
-free_rr_node_route_structs();
-for(i = 0; i < num_rr_nodes; i++) {
-if(clb->pb->rr_graph[i].edges != NULL) {
-free(clb->pb->rr_graph[i].edges);
-}
-if(clb->pb->rr_graph[i].switches != NULL) {
-free(clb->pb->rr_graph[i].switches);
-}
-}
-free(clb->pb->rr_graph);
+	free_rr_node_route_structs();
+	for (i = 0; i < num_rr_nodes; i++) {
+		if (clb->pb->rr_graph[i].edges != NULL) {
+			free(clb->pb->rr_graph[i].edges);
+		}
+		if (clb->pb->rr_graph[i].switches != NULL) {
+			free(clb->pb->rr_graph[i].switches);
+		}
+	}
+	free(clb->pb->rr_graph);
 }
 
 void reset_legalizer_for_cluster(t_block *clb) {
-int i;
-for (i = 0; i < num_nets_in_cluster; i++) {
-free_traceback(nets_in_cluster[i]);
-trace_head[nets_in_cluster[i]] = best_routing[nets_in_cluster[i]];
-free_traceback(nets_in_cluster[i]);
-best_routing[nets_in_cluster[i]] = NULL;
-}
+	int i;
+	for (i = 0; i < num_nets_in_cluster; i++) {
+		free_traceback(nets_in_cluster[i]);
+		trace_head[nets_in_cluster[i]] = best_routing[nets_in_cluster[i]];
+		free_traceback(nets_in_cluster[i]);
+		best_routing[nets_in_cluster[i]] = NULL;
+	}
 
-free_rr_node_route_structs();
-num_nets_in_cluster = 0;
-saved_num_nets_in_cluster = 0;
+	free_rr_node_route_structs();
+	num_nets_in_cluster = 0;
+	saved_num_nets_in_cluster = 0;
 }
 
 /** 
@@ -517,530 +579,534 @@ saved_num_nets_in_cluster = 0;
  */
 boolean try_breadth_first_route_cluster(void) {
 
-/* Iterated maze router ala Pathfinder Negotiated Congestion algorithm,  *
- * (FPGA 95 p. 111).  Returns TRUE if it can route this FPGA, FALSE if   *
- * it can't.                                                             */
+	/* Iterated maze router ala Pathfinder Negotiated Congestion algorithm,  *
+	 * (FPGA 95 p. 111).  Returns TRUE if it can route this FPGA, FALSE if   *
+	 * it can't.                                                             */
 
-/* For different modes, when a mode is turned on, I set the max occupancy of all rr_nodes in the mode to 1 and all others to 0 */
-/* TODO: There is a bug for route-throughs where edges in route-throughs do not get turned off because the rr_edge is in a particular mode but the two rr_nodes are outside */
+	/* For different modes, when a mode is turned on, I set the max occupancy of all rr_nodes in the mode to 1 and all others to 0 */
+	/* TODO: There is a bug for route-throughs where edges in route-throughs do not get turned off because the rr_edge is in a particular mode but the two rr_nodes are outside */
 
-boolean success, is_routable;
-int itry, inet, net_index;
-struct s_router_opts router_opts;
+	boolean success, is_routable;
+	int itry, inet, net_index;
+	struct s_router_opts router_opts;
 
-/* Usually the first iteration uses a very small (or 0) pres_fac to find  *
- * the shortest path and get a congestion map.  For fast compiles, I set  *
- * pres_fac high even for the first iteration.                            */
+	/* Usually the first iteration uses a very small (or 0) pres_fac to find  *
+	 * the shortest path and get a congestion map.  For fast compiles, I set  *
+	 * pres_fac high even for the first iteration.                            */
 
-/* sets up a fast breadth-first router */
-router_opts.first_iter_pres_fac = 10;
-router_opts.max_router_iterations = 20;
-router_opts.initial_pres_fac = 10;
-router_opts.pres_fac_mult = 2;
-router_opts.acc_fac = 1;
+	/* sets up a fast breadth-first router */
+	router_opts.first_iter_pres_fac = 10;
+	router_opts.max_router_iterations = 20;
+	router_opts.initial_pres_fac = 10;
+	router_opts.pres_fac_mult = 2;
+	router_opts.acc_fac = 1;
 
-reset_rr_node_route_structs(); /* Clear all prior rr_graph history */
+	reset_rr_node_route_structs(); /* Clear all prior rr_graph history */
 
-pres_fac = router_opts.first_iter_pres_fac;
+	pres_fac = router_opts.first_iter_pres_fac;
 
-for (itry = 1; itry <= router_opts.max_router_iterations; itry++) {
-for (inet = 0; inet < num_nets_in_cluster; inet++) {
-net_index = nets_in_cluster[inet];
+	for (itry = 1; itry <= router_opts.max_router_iterations; itry++) {
+		for (inet = 0; inet < num_nets_in_cluster; inet++) {
+			net_index = nets_in_cluster[inet];
 
-pathfinder_update_one_cost(trace_head[net_index], -1, pres_fac);
+			pathfinder_update_one_cost(trace_head[net_index], -1, pres_fac);
 
-is_routable = breadth_first_route_net_cluster(net_index);
+			is_routable = breadth_first_route_net_cluster(net_index);
 
-/* Impossible to route? (disconnected rr_graph) */
+			/* Impossible to route? (disconnected rr_graph) */
 
-if (!is_routable) {
-/* TODO: Inelegant, can be more intelligent */
-printf("Failed routing net %s\n", vpack_net[net_index].name);
-printf("Routing failed. Disconnected rr_graph\n");
-return FALSE;
-}
+			if (!is_routable) {
+				/* TODO: Inelegant, can be more intelligent */
+				printf("Failed routing net %s\n", vpack_net[net_index].name);
+				printf("Routing failed. Disconnected rr_graph\n");
+				return FALSE;
+			}
 
-pathfinder_update_one_cost(trace_head[net_index], 1, pres_fac);
+			pathfinder_update_one_cost(trace_head[net_index], 1, pres_fac);
 
-}
+		}
 
-success = feasible_routing();
-if (success) {
-return (TRUE);
-}
+		success = feasible_routing();
+		if (success) {
+			return (TRUE);
+		}
 
-if (itry == 1)
-pres_fac = router_opts.initial_pres_fac;
-else
-pres_fac *= router_opts.pres_fac_mult;
+		if (itry == 1)
+			pres_fac = router_opts.initial_pres_fac;
+		else
+			pres_fac *= router_opts.pres_fac_mult;
 
-pres_fac = min(pres_fac, HUGE_FLOAT / 1e5);
+		pres_fac = min(pres_fac, HUGE_FLOAT / 1e5);
 
-pathfinder_update_cost(pres_fac, router_opts.acc_fac);
-}
+		pathfinder_update_cost(pres_fac, router_opts.acc_fac);
+	}
 
-return (FALSE);
+	return (FALSE);
 }
 
 static boolean breadth_first_route_net_cluster(int inet) {
 
-/* Uses a maze routing (Dijkstra's) algorithm to route a net.  The net       *
- * begins at the net output, and expands outward until it hits a target      *
- * pin.  The algorithm is then restarted with the entire first wire segment  *
- * included as part of the source this time.  For an n-pin net, the maze     *
- * router is invoked n-1 times to complete all the connections.  Inet is     *
- * the index of the net to be routed.                                *
- * If this routine finds that a net *cannot* be connected (due to a complete *
- * lack of potential paths, rather than congestion), it returns FALSE, as    *
- * routing is impossible on this architecture.  Otherwise it returns TRUE.   */
+	/* Uses a maze routing (Dijkstra's) algorithm to route a net.  The net       *
+	 * begins at the net output, and expands outward until it hits a target      *
+	 * pin.  The algorithm is then restarted with the entire first wire segment  *
+	 * included as part of the source this time.  For an n-pin net, the maze     *
+	 * router is invoked n-1 times to complete all the connections.  Inet is     *
+	 * the index of the net to be routed.                                *
+	 * If this routine finds that a net *cannot* be connected (due to a complete *
+	 * lack of potential paths, rather than congestion), it returns FALSE, as    *
+	 * routing is impossible on this architecture.  Otherwise it returns TRUE.   */
 
-int i, inode, prev_node, remaining_connections_to_sink;
-float pcost, new_pcost;
-struct s_heap *current;
-struct s_trace *tptr;
-boolean first_time;
+	int i, inode, prev_node, remaining_connections_to_sink;
+	float pcost, new_pcost;
+	struct s_heap *current;
+	struct s_trace *tptr;
+	boolean first_time;
 
-free_traceback(inet);
-breadth_first_add_source_to_heap_cluster(inet);
-mark_ends_cluster(inet);
+	free_traceback(inet);
+	breadth_first_add_source_to_heap_cluster(inet);
+	mark_ends_cluster(inet);
 
-tptr = NULL;
-remaining_connections_to_sink = 0;
+	tptr = NULL;
+	remaining_connections_to_sink = 0;
 
-for (i = 1; i <= vpack_net[inet].num_sinks; i++) { /* Need n-1 wires to connect n pins */
+	for (i = 1; i <= vpack_net[inet].num_sinks; i++) { /* Need n-1 wires to connect n pins */
 
-/* Do not connect open terminals */
-if (net_rr_terminals[inet][i] == OPEN)
-continue;
-/* Expand and begin routing */
-breadth_first_expand_trace_segment_cluster(tptr, remaining_connections_to_sink);
-current = get_heap_head();
+		/* Do not connect open terminals */
+		if (net_rr_terminals[inet][i] == OPEN)
+			continue;
+		/* Expand and begin routing */
+		breadth_first_expand_trace_segment_cluster(tptr,
+				remaining_connections_to_sink);
+		current = get_heap_head();
 
-if (current == NULL) { /* Infeasible routing.  No possible path for net. */
-reset_path_costs(); /* Clean up before leaving. */
-return (FALSE);
-}
+		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
+			reset_path_costs(); /* Clean up before leaving. */
+			return (FALSE);
+		}
 
-inode = current->index;
+		inode = current->index;
 
-while (rr_node_route_inf[inode].target_flag == 0) {
-pcost = rr_node_route_inf[inode].path_cost;
-new_pcost = current->cost;
-if (pcost > new_pcost) { /* New path is lowest cost. */
-rr_node_route_inf[inode].path_cost = new_pcost;
-prev_node = current->u.prev_node;
-rr_node_route_inf[inode].prev_node = prev_node;
-rr_node_route_inf[inode].prev_edge = current->prev_edge;
-first_time = FALSE;
+		while (rr_node_route_inf[inode].target_flag == 0) {
+			pcost = rr_node_route_inf[inode].path_cost;
+			new_pcost = current->cost;
+			if (pcost > new_pcost) { /* New path is lowest cost. */
+				rr_node_route_inf[inode].path_cost = new_pcost;
+				prev_node = current->u.prev_node;
+				rr_node_route_inf[inode].prev_node = prev_node;
+				rr_node_route_inf[inode].prev_edge = current->prev_edge;
+				first_time = FALSE;
 
-if (pcost > 0.99 * HUGE_FLOAT) /* First time touched. */{
-	add_to_mod_list(&rr_node_route_inf[inode].path_cost);
-	first_time = TRUE;
-}
+				if (pcost > 0.99 * HUGE_FLOAT) /* First time touched. */{
+					add_to_mod_list(&rr_node_route_inf[inode].path_cost);
+					first_time = TRUE;
+				}
 
-breadth_first_expand_neighbours_cluster(inode, new_pcost, inet, first_time);
-}
+				breadth_first_expand_neighbours_cluster(inode, new_pcost, inet,
+						first_time);
+			}
 
-free_heap_data(current);
-current = get_heap_head();
+			free_heap_data(current);
+			current = get_heap_head();
 
-if (current == NULL) { /* Impossible routing. No path for net. */
-reset_path_costs();
-return (FALSE);
-}
+			if (current == NULL) { /* Impossible routing. No path for net. */
+				reset_path_costs();
+				return (FALSE);
+			}
 
-inode = current->index;
-}
+			inode = current->index;
+		}
 
-rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
-remaining_connections_to_sink = rr_node_route_inf[inode].target_flag;
-tptr = update_traceback(current, inet);
-free_heap_data(current);
-}
+		rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
+		remaining_connections_to_sink = rr_node_route_inf[inode].target_flag;
+		tptr = update_traceback(current, inet);
+		free_heap_data(current);
+	}
 
-empty_heap();
-reset_path_costs();
-return (TRUE);
+	empty_heap();
+	reset_path_costs();
+	return (TRUE);
 }
 
 static void breadth_first_expand_trace_segment_cluster(
-struct s_trace *start_ptr, int remaining_connections_to_sink) {
+		struct s_trace *start_ptr, int remaining_connections_to_sink) {
 
-/* Adds all the rr_nodes in the traceback segment starting at tptr (and     *
- * continuing to the end of the traceback) to the heap with a cost of zero. *
- * This allows expansion to begin from the existing wiring.  The            *
- * remaining_connections_to_sink value is 0 if the route segment ending     *
- * at this location is the last one to connect to the SINK ending the route *
- * segment.  This is the usual case.  If it is not the last connection this *
- * net must make to this SINK, I have a hack to ensure the next connection  *
- * to this SINK goes through a different IPIN.  Without this hack, the      *
- * router would always put all the connections from this net to this SINK   *
- * through the same IPIN.  With LUTs or cluster-based logic blocks, you     *
- * should never have a net connecting to two logically-equivalent pins on   *
- * the same logic block, so the hack will never execute.  If your logic     *
- * block is an and-gate, however, nets might connect to two and-inputs on   *
- * the same logic block, and since the and-inputs are logically-equivalent, *
- * this means two connections to the same SINK.                             */
+	/* Adds all the rr_nodes in the traceback segment starting at tptr (and     *
+	 * continuing to the end of the traceback) to the heap with a cost of zero. *
+	 * This allows expansion to begin from the existing wiring.  The            *
+	 * remaining_connections_to_sink value is 0 if the route segment ending     *
+	 * at this location is the last one to connect to the SINK ending the route *
+	 * segment.  This is the usual case.  If it is not the last connection this *
+	 * net must make to this SINK, I have a hack to ensure the next connection  *
+	 * to this SINK goes through a different IPIN.  Without this hack, the      *
+	 * router would always put all the connections from this net to this SINK   *
+	 * through the same IPIN.  With LUTs or cluster-based logic blocks, you     *
+	 * should never have a net connecting to two logically-equivalent pins on   *
+	 * the same logic block, so the hack will never execute.  If your logic     *
+	 * block is an and-gate, however, nets might connect to two and-inputs on   *
+	 * the same logic block, and since the and-inputs are logically-equivalent, *
+	 * this means two connections to the same SINK.                             */
 
-struct s_trace *tptr;
+	struct s_trace *tptr;
 
-tptr = start_ptr;
+	tptr = start_ptr;
 
-/* For intra-cluster routing, logical equivalence does not occur, so it is impossible to get a value bigger than 0 */
-assert(remaining_connections_to_sink == 0);
+	/* For intra-cluster routing, logical equivalence does not occur, so it is impossible to get a value bigger than 0 */
+	assert(remaining_connections_to_sink == 0);
 
-while (tptr != NULL) {
-node_to_heap(tptr->index, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
-tptr = tptr->next;
-}
+	while (tptr != NULL) {
+		node_to_heap(tptr->index, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
+		tptr = tptr->next;
+	}
 }
 
 static void breadth_first_expand_neighbours_cluster(int inode, float pcost,
-int inet, boolean first_time) {
+		int inet, boolean first_time) {
 
-/* Puts all the rr_nodes adjacent to inode on the heap.  rr_nodes outside   *
- * the expanded bounding box specified in route_bb are not added to the     *
- * heap.  pcost is the path_cost to get to inode.                           */
+	/* Puts all the rr_nodes adjacent to inode on the heap.  rr_nodes outside   *
+	 * the expanded bounding box specified in route_bb are not added to the     *
+	 * heap.  pcost is the path_cost to get to inode.                           */
 
-int iconn, to_node, num_edges;
-float tot_cost;
+	int iconn, to_node, num_edges;
+	float tot_cost;
 
-num_edges = rr_node[inode].num_edges;
-for (iconn = 0; iconn < num_edges; iconn++) {
-to_node = rr_node[inode].edges[iconn];
-/*if(first_time) { */
-tot_cost = pcost + get_rr_cong_cost(to_node) * rr_node_intrinsic_cost(to_node);
-/*
- } else {
- tot_cost = pcost + get_rr_cong_cost(to_node);
- }*/
-node_to_heap(to_node, tot_cost, inode, iconn, OPEN, OPEN);
-}
+	num_edges = rr_node[inode].num_edges;
+	for (iconn = 0; iconn < num_edges; iconn++) {
+		to_node = rr_node[inode].edges[iconn];
+		/*if(first_time) { */
+		tot_cost = pcost
+				+ get_rr_cong_cost(to_node) * rr_node_intrinsic_cost(to_node);
+		/*
+		 } else {
+		 tot_cost = pcost + get_rr_cong_cost(to_node);
+		 }*/
+		node_to_heap(to_node, tot_cost, inode, iconn, OPEN, OPEN);
+	}
 }
 
 static void breadth_first_add_source_to_heap_cluster(int inet) {
 
-/* Adds the SOURCE of this net to the heap.  Used to start a net's routing. */
+	/* Adds the SOURCE of this net to the heap.  Used to start a net's routing. */
 
-int inode;
-float cost;
+	int inode;
+	float cost;
 
-inode = net_rr_terminals[inet][0]; /* SOURCE */
-cost = get_rr_cong_cost(inode);
+	inode = net_rr_terminals[inet][0]; /* SOURCE */
+	cost = get_rr_cong_cost(inode);
 
-node_to_heap(inode, cost, NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
+	node_to_heap(inode, cost, NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
 }
 
 static void mark_ends_cluster(int inet) {
 
-/* Mark all the SINKs of this net as targets by setting their target flags  *
- * to the number of times the net must connect to each SINK.  Note that     *
- * this number can occassionally be greater than 1 -- think of connecting   *
- * the same net to two inputs of an and-gate (and-gate inputs are logically *
- * equivalent, so both will connect to the same SINK).                      */
+	/* Mark all the SINKs of this net as targets by setting their target flags  *
+	 * to the number of times the net must connect to each SINK.  Note that     *
+	 * this number can occassionally be greater than 1 -- think of connecting   *
+	 * the same net to two inputs of an and-gate (and-gate inputs are logically *
+	 * equivalent, so both will connect to the same SINK).                      */
 
-int ipin, inode;
+	int ipin, inode;
 
-for (ipin = 1; ipin <= vpack_net[inet].num_sinks; ipin++) {
-inode = net_rr_terminals[inet][ipin];
-if (inode == OPEN)
-continue;
-rr_node_route_inf[inode].target_flag++;
-assert(rr_node_route_inf[inode].target_flag == 1);
-}
+	for (ipin = 1; ipin <= vpack_net[inet].num_sinks; ipin++) {
+		inode = net_rr_terminals[inet][ipin];
+		if (inode == OPEN)
+			continue;
+		rr_node_route_inf[inode].target_flag++;
+		assert(rr_node_route_inf[inode].target_flag == 1);
+	}
 }
 
 static void alloc_net_rr_terminals_cluster(void) {
-int inet;
+	int inet;
 
-net_rr_terminals = (int **) my_malloc(num_logical_nets * sizeof(int *));
-saved_net_rr_terminals = (int **) my_malloc(num_logical_nets * sizeof(int *));
-saved_num_nets_in_cluster = 0;
+	net_rr_terminals = (int **) my_malloc(num_logical_nets * sizeof(int *));
+	saved_net_rr_terminals = (int **) my_malloc(
+			num_logical_nets * sizeof(int *));
+	saved_num_nets_in_cluster = 0;
 
-for (inet = 0; inet < num_logical_nets; inet++) {
-net_rr_terminals[inet] = (int *) my_chunk_malloc(
-(vpack_net[inet].num_sinks + 1) * sizeof(int), &rr_mem_chunk_list_head,
-&chunk_bytes_avail, &chunk_next_avail_mem);
+	for (inet = 0; inet < num_logical_nets; inet++) {
+		net_rr_terminals[inet] = (int *) my_chunk_malloc(
+				(vpack_net[inet].num_sinks + 1) * sizeof(int),
+				&rr_mem_chunk_list_head, &chunk_bytes_avail,
+				&chunk_next_avail_mem);
 
-saved_net_rr_terminals[inet] = (int *) my_malloc(
-(vpack_net[inet].num_sinks + 1) * sizeof(int));
+		saved_net_rr_terminals[inet] = (int *) my_malloc(
+				(vpack_net[inet].num_sinks + 1) * sizeof(int));
+	}
 }
-}
 
-void 
-setup_intracluster_routing_for_molecule(INP t_pack_molecule *molecule, INP t_pb_graph_node **primitive_list)
-{
+void setup_intracluster_routing_for_molecule(INP t_pack_molecule *molecule,
+		INP t_pb_graph_node **primitive_list) {
 
-    /* Allocates and loads the net_rr_terminals data structure.  For each net   *
-     * it stores the rr_node index of the SOURCE of the net and all the SINKs   *
-     * of the net.  [0..num_logical_nets-1][0..num_pins-1].   */
-    int i;
+	/* Allocates and loads the net_rr_terminals data structure.  For each net   *
+	 * it stores the rr_node index of the SOURCE of the net and all the SINKs   *
+	 * of the net.  [0..num_logical_nets-1][0..num_pins-1].   */
+	int i;
 
-	for(i = 0; i < get_array_size_of_molecule(molecule); i++) {
-		if(molecule->logical_block_ptrs[i] != NULL) {
-			setup_intracluster_routing_for_logical_block(molecule->logical_block_ptrs[i]->index, primitive_list[i]);
+	for (i = 0; i < get_array_size_of_molecule(molecule); i++) {
+		if (molecule->logical_block_ptrs[i] != NULL) {
+			setup_intracluster_routing_for_logical_block(
+					molecule->logical_block_ptrs[i]->index, primitive_list[i]);
 		}
 	}
 
 	reload_ext_net_rr_terminal_cluster();
 }
 
+static void setup_intracluster_routing_for_logical_block(INP int iblock,
+		INP t_pb_graph_node *primitive) {
 
-
-
-static void 
-setup_intracluster_routing_for_logical_block(INP int iblock, INP t_pb_graph_node *primitive)
-{
-
-    /* Allocates and loads the net_rr_terminals data structure.  For each net   *
-     * it stores the rr_node index of the SOURCE of the net and all the SINKs   *
-     * of the net.  [0..num_logical_nets-1][0..num_pins-1].   */
-    int ipin, iblk_net;
+	/* Allocates and loads the net_rr_terminals data structure.  For each net   *
+	 * it stores the rr_node index of the SOURCE of the net and all the SINKs   *
+	 * of the net.  [0..num_logical_nets-1][0..num_pins-1].   */
+	int ipin, iblk_net;
 	t_model_ports *port;
 
 	assert(primitive->pb_type->num_modes == 0);
-/* check if primitive */
-assert(logical_block[iblock].clb_index != NO_CLUSTER);
-/* check if primitive and block is open */
+	/* check if primitive */
+	assert(logical_block[iblock].clb_index != NO_CLUSTER);
+	/* check if primitive and block is open */
 
-/* check if block type matches primitive type */
-if(logical_block[iblock].model != primitive->pb_type->model) {
+	/* check if block type matches primitive type */
+	if (logical_block[iblock].model != primitive->pb_type->model) {
 		/* End early, model is incompatible */
 		assert(0);
-}
+	}
 
 	/* for each net of logical block, check if it is in cluster, if not add it */
 	/*   also check if pins on primitive can fit logical block */
-	
-	port = logical_block[iblock].model->inputs;
-	
-	while(port) {
-		for(ipin = 0; ipin < port->size; ipin++) {
-			if(port->is_clock) {
-				assert(port->size == 1);
-iblk_net = logical_block[iblock].clock_net;
-} else {
-iblk_net = logical_block[iblock].input_nets[port->index][ipin];
-}
-if(iblk_net == OPEN) {
-continue;
-}
-if(!is_net_in_cluster(iblk_net)) {
-nets_in_cluster[num_nets_in_cluster] = iblk_net;
-num_nets_in_cluster++;
-}
-add_net_rr_terminal_cluster(iblk_net, primitive, iblock, port, ipin);
-}
-port = port->next;
-}
 
-port = logical_block[iblock].model->outputs;
-while(port) {
-for(ipin = 0; ipin < port->size; ipin++) {
-iblk_net = logical_block[iblock].output_nets[port->index][ipin];
-if(iblk_net == OPEN) {
-continue;
-}
-if(!is_net_in_cluster(iblk_net)) {
-nets_in_cluster[num_nets_in_cluster] = iblk_net;
-num_nets_in_cluster++;
-}
-add_net_rr_terminal_cluster(iblk_net, primitive, iblock, port, ipin);
-}
-port = port->next;
-}
+	port = logical_block[iblock].model->inputs;
+
+	while (port) {
+		for (ipin = 0; ipin < port->size; ipin++) {
+			if (port->is_clock) {
+				assert(port->size == 1);
+				iblk_net = logical_block[iblock].clock_net;
+			} else {
+				iblk_net = logical_block[iblock].input_nets[port->index][ipin];
+			}
+			if (iblk_net == OPEN) {
+				continue;
+			}
+			if (!is_net_in_cluster(iblk_net)) {
+				nets_in_cluster[num_nets_in_cluster] = iblk_net;
+				num_nets_in_cluster++;
+			}
+			add_net_rr_terminal_cluster(iblk_net, primitive, iblock, port,
+					ipin);
+		}
+		port = port->next;
+	}
+
+	port = logical_block[iblock].model->outputs;
+	while (port) {
+		for (ipin = 0; ipin < port->size; ipin++) {
+			iblk_net = logical_block[iblock].output_nets[port->index][ipin];
+			if (iblk_net == OPEN) {
+				continue;
+			}
+			if (!is_net_in_cluster(iblk_net)) {
+				nets_in_cluster[num_nets_in_cluster] = iblk_net;
+				num_nets_in_cluster++;
+			}
+			add_net_rr_terminal_cluster(iblk_net, primitive, iblock, port,
+					ipin);
+		}
+		port = port->next;
+	}
 }
 
 void save_and_reset_routing_cluster(void) {
 
-/* This routing frees any routing currently held in best routing,       *
- * then copies over the current routing (held in trace_head), and       *
- * finally sets trace_head and trace_tail to all NULLs so that the      *
- * connection to the saved routing is broken.  This is necessary so     *
- * that the next iteration of the router does not free the saved        *
- * routing elements.  Also, the routing path costs and net_rr_terminals is stripped from the
- * existing rr_graph so that the saved routing does not affect the graph */
+	/* This routing frees any routing currently held in best routing,       *
+	 * then copies over the current routing (held in trace_head), and       *
+	 * finally sets trace_head and trace_tail to all NULLs so that the      *
+	 * connection to the saved routing is broken.  This is necessary so     *
+	 * that the next iteration of the router does not free the saved        *
+	 * routing elements.  Also, the routing path costs and net_rr_terminals is stripped from the
+	 * existing rr_graph so that the saved routing does not affect the graph */
 
-int inet, i, j;
-struct s_trace *tempptr;
-saved_num_nets_in_cluster = num_nets_in_cluster;
+	int inet, i, j;
+	struct s_trace *tempptr;
+	saved_num_nets_in_cluster = num_nets_in_cluster;
 
-for (i = 0; i < num_nets_in_cluster; i++) {
-inet = nets_in_cluster[i];
-for (j = 0; j <= vpack_net[inet].num_sinks; j++) {
-saved_net_rr_terminals[inet][j] = net_rr_terminals[inet][j];
-}
+	for (i = 0; i < num_nets_in_cluster; i++) {
+		inet = nets_in_cluster[i];
+		for (j = 0; j <= vpack_net[inet].num_sinks; j++) {
+			saved_net_rr_terminals[inet][j] = net_rr_terminals[inet][j];
+		}
 
-/* Free any previously saved routing.  It is no longer best. */
-/* Also Save a pointer to the current routing in best_routing. */
+		/* Free any previously saved routing.  It is no longer best. */
+		/* Also Save a pointer to the current routing in best_routing. */
 
-pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
-tempptr = trace_head[inet];
-trace_head[inet] = best_routing[inet];
-free_traceback(inet);
-best_routing[inet] = tempptr;
+		pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
+		tempptr = trace_head[inet];
+		trace_head[inet] = best_routing[inet];
+		free_traceback(inet);
+		best_routing[inet] = tempptr;
 
-/* Set the current (working) routing to NULL so the current trace       *
- * elements won't be reused by the memory allocator.                    */
+		/* Set the current (working) routing to NULL so the current trace       *
+		 * elements won't be reused by the memory allocator.                    */
 
-trace_head[inet] = NULL;
-trace_tail[inet] = NULL;
-}
+		trace_head[inet] = NULL;
+		trace_tail[inet] = NULL;
+	}
 }
 
 void restore_routing_cluster(void) {
 
-/* Deallocates any current routing in trace_head, and replaces it with    *
- * the routing in best_routing.  Best_routing is set to NULL to show that *
- * it no longer points to a valid routing.  NOTE:  trace_tail is not      *
- * restored -- it is set to all NULLs since it is only used in            *
- * update_traceback.  If you need trace_tail restored, modify this        *
- * routine.  Also restores the locally used opin data.                    */
+	/* Deallocates any current routing in trace_head, and replaces it with    *
+	 * the routing in best_routing.  Best_routing is set to NULL to show that *
+	 * it no longer points to a valid routing.  NOTE:  trace_tail is not      *
+	 * restored -- it is set to all NULLs since it is only used in            *
+	 * update_traceback.  If you need trace_tail restored, modify this        *
+	 * routine.  Also restores the locally used opin data.                    */
 
-int inet, i, j;
+	int inet, i, j;
 
-for (i = 0; i < num_nets_in_cluster; i++) {
-inet = nets_in_cluster[i];
+	for (i = 0; i < num_nets_in_cluster; i++) {
+		inet = nets_in_cluster[i];
 
-pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
+		pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
 
-/* Free any current routing. */
-free_traceback(inet);
+		/* Free any current routing. */
+		free_traceback(inet);
 
-/* Set the current routing to the saved one. */
-trace_head[inet] = best_routing[inet];
-best_routing[inet] = NULL; /* No stored routing. */
+		/* Set the current routing to the saved one. */
+		trace_head[inet] = best_routing[inet];
+		best_routing[inet] = NULL; /* No stored routing. */
 
-/* restore net terminals */
-for (j = 0; j <= vpack_net[inet].num_sinks; j++) {
-net_rr_terminals[inet][j] = saved_net_rr_terminals[inet][j];
-}
+		/* restore net terminals */
+		for (j = 0; j <= vpack_net[inet].num_sinks; j++) {
+			net_rr_terminals[inet][j] = saved_net_rr_terminals[inet][j];
+		}
 
-/* restore old routing */
-pathfinder_update_one_cost(trace_head[inet], 1, pres_fac);
-}
-num_nets_in_cluster = saved_num_nets_in_cluster;
+		/* restore old routing */
+		pathfinder_update_one_cost(trace_head[inet], 1, pres_fac);
+	}
+	num_nets_in_cluster = saved_num_nets_in_cluster;
 }
 
 void save_cluster_solution(void) {
 
-/* This routine updates the occupancy and pres_cost of the rr_nodes that are *
- * affected by the portion of the routing of one net that starts at          *
- * route_segment_start.  If route_segment_start is trace_head[inet], the     *
- * cost of all the nodes in the routing of net inet are updated.  If         *
- * add_or_sub is -1 the net (or net portion) is ripped up, if it is 1 the    *
- * net is added to the routing.  The size of pres_fac determines how severly *
- * oversubscribed rr_nodes are penalized.                                    */
+	/* This routine updates the occupancy and pres_cost of the rr_nodes that are *
+	 * affected by the portion of the routing of one net that starts at          *
+	 * route_segment_start.  If route_segment_start is trace_head[inet], the     *
+	 * cost of all the nodes in the routing of net inet are updated.  If         *
+	 * add_or_sub is -1 the net (or net portion) is ripped up, if it is 1 the    *
+	 * net is added to the routing.  The size of pres_fac determines how severly *
+	 * oversubscribed rr_nodes are penalized.                                    */
 
-int i, j, net_index;
-struct s_trace *tptr, *prev;
-int inode;
-for (i = 0; i < max_ext_index; i++) {
-rr_node[i].net_num = OPEN;
-rr_node[i].prev_edge = OPEN;
-rr_node[i].prev_node = OPEN;
-}
-for (i = 0; i < num_nets_in_cluster; i++) {
-prev = NULL;
-net_index = nets_in_cluster[i];
-tptr = trace_head[net_index];
-if (tptr == NULL) /* No routing yet. */
-return;
+	int i, j, net_index;
+	struct s_trace *tptr, *prev;
+	int inode;
+	for (i = 0; i < max_ext_index; i++) {
+		rr_node[i].net_num = OPEN;
+		rr_node[i].prev_edge = OPEN;
+		rr_node[i].prev_node = OPEN;
+	}
+	for (i = 0; i < num_nets_in_cluster; i++) {
+		prev = NULL;
+		net_index = nets_in_cluster[i];
+		tptr = trace_head[net_index];
+		if (tptr == NULL) /* No routing yet. */
+			return;
 
-for (;;) {
-inode = tptr->index;
-rr_node[inode].net_num = net_index;
-if (prev != NULL) {
-rr_node[inode].prev_node = prev->index;
-for (j = 0; j < rr_node[prev->index].num_edges; j++) {
-if (rr_node[prev->index].edges[j] == inode) {
-rr_node[inode].prev_edge = j;
-break;
-}
-}
-assert(j != rr_node[prev->index].num_edges);
-} else {
-rr_node[inode].prev_node = OPEN;
-rr_node[inode].prev_edge = OPEN;
-}
+		for (;;) {
+			inode = tptr->index;
+			rr_node[inode].net_num = net_index;
+			if (prev != NULL) {
+				rr_node[inode].prev_node = prev->index;
+				for (j = 0; j < rr_node[prev->index].num_edges; j++) {
+					if (rr_node[prev->index].edges[j] == inode) {
+						rr_node[inode].prev_edge = j;
+						break;
+					}
+				}
+				assert(j != rr_node[prev->index].num_edges);
+			} else {
+				rr_node[inode].prev_node = OPEN;
+				rr_node[inode].prev_edge = OPEN;
+			}
 
-if (rr_node[inode].type == SINK) {
-tptr = tptr->next; /* Skip next segment. */
-if (tptr == NULL)
-break;
-}
+			if (rr_node[inode].type == SINK) {
+				tptr = tptr->next; /* Skip next segment. */
+				if (tptr == NULL)
+					break;
+			}
 
-prev = tptr;
-tptr = tptr->next;
+			prev = tptr;
+			tptr = tptr->next;
 
-} /* End while loop -- did an entire traceback. */
-}
+		} /* End while loop -- did an entire traceback. */
+	}
 }
 
 boolean is_pin_open(int i) {
-return (boolean)(rr_node[i].occ == 0);
+	return (boolean) (rr_node[i].occ == 0);
 }
 
 static float rr_node_intrinsic_cost(int inode) {
-/* This is a tie breaker to avoid using nodes with more edges whenever possible */
-float value;
-value = rr_node[inode].pack_intrinsic_cost;
-return value;
+	/* This is a tie breaker to avoid using nodes with more edges whenever possible */
+	float value;
+	value = rr_node[inode].pack_intrinsic_cost;
+	return value;
 }
 
 /* turns on mode for a pb by setting capacity of its rr_nodes to 1 */
 void set_pb_graph_mode(t_pb_graph_node *pb_graph_node, int mode, int isOn) {
-int i, j, index;
-int i_pb_type, i_pb_inst;
-const t_pb_type *pb_type;
+	int i, j, index;
+	int i_pb_type, i_pb_inst;
+	const t_pb_type *pb_type;
 
-pb_type = pb_graph_node->pb_type;
-for (i_pb_type = 0; i_pb_type < pb_type->modes[mode].num_pb_type_children;
-i_pb_type++) {
-for (i_pb_inst = 0;
-i_pb_inst < pb_type->modes[mode].pb_type_children[i_pb_type].num_pb;
-i_pb_inst++) {
-for (i = 0;
-i
-< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_input_ports;
-i++) {
-for (j = 0;
-j
-< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_input_pins[i];
-j++) {
-index =
-pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].input_pins[i][j].pin_count_in_cluster;
-rr_node[index].capacity = isOn;
-}
-}
+	pb_type = pb_graph_node->pb_type;
+	for (i_pb_type = 0; i_pb_type < pb_type->modes[mode].num_pb_type_children;
+			i_pb_type++) {
+		for (i_pb_inst = 0;
+				i_pb_inst
+						< pb_type->modes[mode].pb_type_children[i_pb_type].num_pb;
+				i_pb_inst++) {
+			for (i = 0;
+					i
+							< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_input_ports;
+					i++) {
+				for (j = 0;
+						j
+								< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_input_pins[i];
+						j++) {
+					index =
+							pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].input_pins[i][j].pin_count_in_cluster;
+					rr_node[index].capacity = isOn;
+				}
+			}
 
-for (i = 0;
-i
-< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_output_ports;
-i++) {
-for (j = 0;
-j
-< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_output_pins[i];
-j++) {
-index =
-pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].output_pins[i][j].pin_count_in_cluster;
-rr_node[index].capacity = isOn;
-}
-}
+			for (i = 0;
+					i
+							< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_output_ports;
+					i++) {
+				for (j = 0;
+						j
+								< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_output_pins[i];
+						j++) {
+					index =
+							pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].output_pins[i][j].pin_count_in_cluster;
+					rr_node[index].capacity = isOn;
+				}
+			}
 
-for (i = 0;
-i
-< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_clock_ports;
-i++) {
-for (j = 0;
-j
-< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_clock_pins[i];
-j++) {
-index =
-pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].clock_pins[i][j].pin_count_in_cluster;
-rr_node[index].capacity = isOn;
-}
-}
-}
-}
+			for (i = 0;
+					i
+							< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_clock_ports;
+					i++) {
+				for (j = 0;
+						j
+								< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_clock_pins[i];
+						j++) {
+					index =
+							pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].clock_pins[i][j].pin_count_in_cluster;
+					rr_node[index].capacity = isOn;
+				}
+			}
+		}
+	}
 }
