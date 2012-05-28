@@ -1132,9 +1132,7 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 		if (clb_net[inet].num_sinks < SMALL_NET) {
 			get_non_updateable_bb(inet, &bb_coord_new[bb_index]);
 		} else {
-			/* TODO: Problem with making net update incremental, turn off for now */
-			get_non_updateable_bb(inet, &bb_coord_new[bb_index]);
-#if 0
+
 			/* TODO: Problem with making net update incremental, turn off for now */
 			if(net_block_moved[k] == FROM)
 			update_bb(inet, &bb_coord_new[bb_index],
@@ -1144,7 +1142,7 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 			update_bb(inet, &bb_coord_new[bb_index],
 					&bb_edge_new[bb_index], x_to, y_to, x_from,
 					y_from);
-#endif
+
 		}
 
 		if (place_cost_type != NONLINEAR_CONG) {
@@ -1933,11 +1931,10 @@ static float comp_bb_cost(int method, int place_cost_type, int num_regions) {
 			 * so they can use a fast bounding box calculator.                    */
 
 			if (clb_net[k].num_sinks >= SMALL_NET && method == NORMAL) {
-				get_non_updateable_bb(k, &bb_coords[k]);
-#if 0
+
 				get_bb_from_scratch(k, &bb_coords[k],
 						&bb_num_on_edges[k]);
-#endif
+
 			} else {
 				get_non_updateable_bb(k, &bb_coords[k]);
 			}
@@ -2403,11 +2400,12 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 	int n_pins;
 
 	n_pins = clb_net[inet].num_sinks + 1;
+	
+	bnum = clb_net[inet].node_block[0];
+	ipin = clb_net[inet].node_block_pin[0];
 
-	x = block[clb_net[inet].node_block[0]].x;
-	y =
-			block[clb_net[inet].node_block[0]].y
-					+ block[clb_net[inet].node_block[0]].type->pin_height[clb_net[inet].node_block_pin[0]];
+	x = block[bnum].x;
+	y = block[bnum].y + block[bnum].type->pin_height[ipin];
 
 	x = max(min(x, nx), 1);
 	y = max(min(y, ny), 1);
@@ -2616,7 +2614,14 @@ static void update_bb(int inet, struct s_bb *bb_coord_new,
 	 * the pins always lie on the outside of the bounding box.            */
 
 	/* IO blocks are considered to be one cell in for simplicity. */
+	
+	/* Updates ynew and yold with pin_height */	
+	int bnum = clb_net[inet].node_block[0];
+	int ipin = clb_net[inet].node_block_pin[0];
 
+	ynew += block[bnum].type->pin_height[ipin];
+	yold += block[bnum].type->pin_height[ipin];
+	
 	xnew = max(min(xnew, nx), 1);
 	ynew = max(min(ynew, ny), 1);
 	xold = max(min(xold, nx), 1);
