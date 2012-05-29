@@ -1133,7 +1133,6 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 			get_non_updateable_bb(inet, &bb_coord_new[bb_index]);
 		} else {
 
-			/* TODO: Problem with making net update incremental, turn off for now */
 			if(net_block_moved[k] == FROM)
 			update_bb(inet, &bb_coord_new[bb_index],
 					&bb_edge_new[bb_index], x_from, y_from,
