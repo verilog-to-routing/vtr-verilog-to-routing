@@ -67,15 +67,13 @@ OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c $(SRC_
 OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
 
-$(EXE): notify $(OBJ) Makefile ../libvpr/libvpr_6.a
+$(EXE): $(OBJ) Makefile ../libvpr/libvpr_6.a
 	$(CC) $(FLAGS) $(OBJ) -o $(EXE) $(LIB_DIR) $(LIB)
+#if graphics enabled but libx11-dev is not installed, notify the user
+	@ $(PACKAGENOTIFICATION) 
 
 ../libvpr/libvpr_6.a:
 	@ cd ../libvpr && make
-
-notify:
-#if graphics enabled but libx11-dev is not installed, notify the user
-	@ $(PACKAGENOTIFICATION) 
 
 packages: 
 #if graphics enabled but libx11-dev is not installed, install it
