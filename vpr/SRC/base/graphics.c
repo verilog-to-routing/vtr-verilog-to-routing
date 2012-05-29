@@ -217,9 +217,9 @@ static void load_font(int pointsize) {
 	 * MUST be between 1 and MAX_FONT_SIZE -- no check is performed here. */
 	/* Use proper point-size medium-weight upright helvetica font */
 
-	char fontname[44];
+	char fontname[BUFSIZE];
 
-	sprintf(fontname, "-*-helvetica-medium-r-*--*-%d0-*-*-*-*-*-*", pointsize);
+	sprintf(fontname, "-schumacher-clean-medium-r-*--*-%d0-*-*-*-*-*-*", pointsize);
 
 #ifdef VERBOSE
 	printf("Loading font: point size: %d, fontname: %s\n", pointsize,

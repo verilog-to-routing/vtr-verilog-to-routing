@@ -1090,8 +1090,8 @@ float load_net_slack(float **net_slack, float target_cycle_time) {
 
 		for (i = 0; i < num_at_level; i++) {
 			inode = tnodes_at_level[ilevel].list[i];
-			if (i == 0) {
-				tnode[i].num_critical_input_paths = 1;
+			if (ilevel == 0) {
+				tnode[inode].num_critical_input_paths = 1;
 			}
 			T_arr = tnode[inode].T_arr;
 			num_edges = tnode[inode].num_edges;
