@@ -1126,10 +1126,9 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 		/* If we swapped two blocks connected to the same net, its bounding box *
 		 * doesn't change.                                                      */
 		
-		/* Swapping 2 tall blocks in the same net will still change the 		*
-		 * bounding box.														*
-		 * if (net_block_moved[k] == FROM_AND_TO)								*
-		 * 	continue;															*/
+		
+		if (net_block_moved[k] == FROM_AND_TO)								
+		 	continue;															
 		
 		if (clb_net[inet].num_sinks < SMALL_NET) {
 			get_non_updateable_bb(inet, &bb_coord_new[bb_index]);
