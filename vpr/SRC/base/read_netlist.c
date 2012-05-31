@@ -1318,6 +1318,7 @@ static void restore_logical_block_from_saved_block(INP int iblk, INP t_pb *pb) {
 	logical_block[iblk].used_input_pins =
 			saved_logical_blocks[i].used_input_pins;
 	logical_block[iblk].packed_molecules = saved_logical_blocks[i].packed_molecules;
+	logical_block[iblk].packed_molecules->data_vptr = saved_logical_blocks[i].packed_molecules->data_vptr;
 
 	saved_logical_blocks[i].name = NULL;
 	saved_logical_blocks[i].input_net_tnodes = NULL;
@@ -1351,6 +1352,8 @@ void free_logical_blocks(void) {
 		if (logical_block[iblk].input_net_tnodes) 
 			free(logical_block[iblk].input_net_tnodes);
 		
+		if (logical_block[iblk].packed_molecules->data_vptr)
+			free(logical_block[iblk].packed_molecules->data_vptr);
 		if (logical_block[iblk].packed_molecules)
 			free(logical_block[iblk].packed_molecules);
 
