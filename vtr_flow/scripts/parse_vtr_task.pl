@@ -69,10 +69,6 @@ while ( $token = shift(@ARGV) ) {
 	}
 }
 
-if ( @tasks == 0 ) {
-	die "One or more task names must be provided.";
-}
-
 # Read Task Files
 foreach (@task_files) {
 	open( FH, $_ ) or die "$! ($_)\n";
