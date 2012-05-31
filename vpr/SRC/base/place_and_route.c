@@ -219,6 +219,14 @@ void place_and_route(enum e_operation operation,
 #endif
 
 	/*WMF: cleaning up memory usage */
+
+	/*	if(g_heap_free_head)
+		free(g_heap_free_head);
+	if(g_trace_free_head)
+		free(g_trace_free_head);
+	if(g_linked_f_pointer_free_head)
+		free(g_linked_f_pointer_free_head);*/
+
 	if (mst) {
 		for (inet = 0; inet < num_nets; inet++) {
 			if (!mst[inet]) {

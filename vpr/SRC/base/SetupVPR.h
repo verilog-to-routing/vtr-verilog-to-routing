@@ -4,7 +4,7 @@
 boolean IsTimingEnabled(INP t_options Options);
 boolean IsEchoEnabled(INP t_options Options);
 
-void SetupVPR(INP t_options Options,
+void SetupVPR(INP t_options *Options,
 		INP boolean TimingEnabled,
 		OUTP struct s_file_name_opts *FileNameOpts,
 		OUTP t_arch * Arch,

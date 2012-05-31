@@ -133,11 +133,11 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 
 	/* Parse all CLB blocks and all nets*/
 	bcount = CountChildren(Top, "block", 1);
-	blist = my_calloc(bcount, sizeof(t_block));
+	blist = (struct s_block *) my_calloc(bcount, sizeof(t_block));
 	nhash = alloc_hash_table();
 	ncount = 0;
 
-	logical_block = my_calloc(num_saved_logical_blocks,
+	logical_block = (struct s_logical_block*) my_calloc(num_saved_logical_blocks,
 			sizeof(t_logical_block));
 	num_logical_blocks = num_saved_logical_blocks;
 
@@ -181,8 +181,8 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	/* jluu TODO: Should use local variables here then assign to globals later, clean up later */
 	vpack_net = nlist;
 	num_logical_nets = ncount;
-	clb_to_vpack_net_mapping = my_malloc(ext_ncount * sizeof(int));
-	vpack_to_clb_net_mapping = my_malloc(ncount * sizeof(int));
+	clb_to_vpack_net_mapping = (int *) my_malloc(ext_ncount * sizeof(int));
+	vpack_to_clb_net_mapping = (int *) my_malloc(ncount * sizeof(int));
 	for (i = 0; i < ncount; i++) {
 		vpack_to_clb_net_mapping[i] = OPEN;
 	}
@@ -201,6 +201,13 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	if (saved_logical_blocks != NULL) {
 		free(saved_logical_blocks);
 		saved_logical_blocks = NULL;
+
+		for (i = 0; i < num_logical_nets; i++) {
+			free(saved_logical_nets[i].name);
+			free(saved_logical_nets[i].node_block);
+			free(saved_logical_nets[i].node_block_port);
+			free(saved_logical_nets[i].node_block_pin);
+		}
 		free(saved_logical_nets);
 		saved_logical_nets = NULL;
 	}
@@ -1310,6 +1317,7 @@ static void restore_logical_block_from_saved_block(INP int iblk, INP t_pb *pb) {
 	logical_block[iblk].type = saved_logical_blocks[i].type;
 	logical_block[iblk].used_input_pins =
 			saved_logical_blocks[i].used_input_pins;
+	logical_block[iblk].packed_molecules = saved_logical_blocks[i].packed_molecules;
 
 	saved_logical_blocks[i].name = NULL;
 	saved_logical_blocks[i].input_net_tnodes = NULL;
@@ -1317,6 +1325,7 @@ static void restore_logical_block_from_saved_block(INP int iblk, INP t_pb *pb) {
 	saved_logical_blocks[i].output_net_tnodes = NULL;
 	saved_logical_blocks[i].output_nets = NULL;
 	saved_logical_blocks[i].truth_table = NULL;
+	saved_logical_blocks[i].packed_molecules = NULL;
 }
 
 /* Free logical blocks of netlist */
@@ -1339,9 +1348,12 @@ void free_logical_blocks(void) {
 			}
 			port = port->next;
 		}
-		if (logical_block[iblk].input_net_tnodes) {
+		if (logical_block[iblk].input_net_tnodes) 
 			free(logical_block[iblk].input_net_tnodes);
-		}
+		
+		if (logical_block[iblk].packed_molecules)
+			free(logical_block[iblk].packed_molecules);
+
 		free(logical_block[iblk].input_nets);
 		port = logical_block[iblk].model->outputs;
 		i = 0;

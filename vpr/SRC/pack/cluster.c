@@ -570,6 +570,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	free(memory_pool);
 	free(net_output_feeds_driving_block_input);
 
+ free (primitives_list);
+
 }
 
 /*****************************************/
@@ -692,7 +694,7 @@ static void alloc_and_init_clustering(boolean global_clocks, float alpha,
 	int max_molecule_size;
 
 	alloc_and_load_cluster_legality_checker();
-	*cluster_placement_stats = alloc_and_load_cluster_placement_stats();
+	/**cluster_placement_stats = alloc_and_load_cluster_placement_stats();*/
 
 	for (i = 0; i < num_logical_blocks; i++) {
 		logical_block[i].clb_index = NO_CLUSTER;
@@ -767,7 +769,7 @@ static void alloc_and_init_clustering(boolean global_clocks, float alpha,
 		}
 		cur_molecule = cur_molecule->next;
 	}
-	*primitives_list = my_calloc(max_molecule_size, sizeof(t_pb_graph_node *));
+	*primitives_list = (t_pb_graph_node **)my_calloc(max_molecule_size, sizeof(t_pb_graph_node *));
 }
 
 /*****************************************/

@@ -123,8 +123,8 @@ static void init_parse(int doall) {
 		num_driver = (int *) my_malloc(num_logical_nets * sizeof(int));
 		temp_num_pins = (int *) my_malloc(num_logical_nets * sizeof(int));
 
-		logical_block_input_count = my_calloc(num_logical_blocks, sizeof(int));
-		logical_block_output_count = my_calloc(num_logical_blocks, sizeof(int));
+		logical_block_input_count = (int *) my_calloc(num_logical_blocks, sizeof(int));
+		logical_block_output_count = (int *) my_calloc(num_logical_blocks, sizeof(int));
 
 		for (i = 0; i < num_logical_nets; i++) {
 			num_driver[i] = 0;

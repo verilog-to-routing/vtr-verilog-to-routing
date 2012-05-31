@@ -33,7 +33,7 @@ static void SetupSwitches(INP t_arch Arch,
 
 /* Sets VPR parameters and defaults. Does not do any error checking
  * as this should have been done by the various input checkers */
-void SetupVPR(INP t_options Options, INP boolean TimingEnabled,
+void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 		OUTP struct s_file_name_opts *FileNameOpts, OUTP t_arch * Arch,
 		OUTP enum e_operation *Operation, OUTP t_model ** user_models,
 		OUTP t_model ** library_models, OUTP struct s_packer_opts *PackerOpts,
@@ -46,76 +46,76 @@ void SetupVPR(INP t_options Options, INP boolean TimingEnabled,
 	int i, j, len;
 
 	/* init default filenames */
-	if (Options.BlifFile == NULL) {
-		len = strlen(Options.CircuitName) + 6; /* circuit_name.blif/0*/
-		if (Options.OutFilePrefix != NULL) {
-			len += strlen(Options.OutFilePrefix);
+	if (Options->BlifFile == NULL) {
+		len = strlen(Options->CircuitName) + 6; /* circuit_name.blif/0*/
+		if (Options->OutFilePrefix != NULL) {
+			len += strlen(Options->OutFilePrefix);
 		}
-		Options.BlifFile = my_calloc(len, sizeof(char));
-		if (Options.OutFilePrefix == NULL) {
-			sprintf(Options.BlifFile, "%s.blif", Options.CircuitName);
+		Options->BlifFile = (char*) my_calloc(len, sizeof(char));
+		if (Options->OutFilePrefix == NULL) {
+			sprintf(Options->BlifFile, "%s.blif", Options->CircuitName);
 		} else {
-			sprintf(Options.BlifFile, "%s%s.blif", Options.OutFilePrefix,
-					Options.CircuitName);
+			sprintf(Options->BlifFile, "%s%s.blif", Options->OutFilePrefix,
+					Options->CircuitName);
 		}
 	}
 
-	if (Options.NetFile == NULL) {
-		len = strlen(Options.CircuitName) + 5; /* circuit_name.net/0*/
-		if (Options.OutFilePrefix != NULL) {
-			len += strlen(Options.OutFilePrefix);
+	if (Options->NetFile == NULL) {
+		len = strlen(Options->CircuitName) + 5; /* circuit_name.net/0*/
+		if (Options->OutFilePrefix != NULL) {
+			len += strlen(Options->OutFilePrefix);
 		}
-		Options.NetFile = my_calloc(len, sizeof(char));
-		if (Options.OutFilePrefix == NULL) {
-			sprintf(Options.NetFile, "%s.net", Options.CircuitName);
+		Options->NetFile = (char*) my_calloc(len, sizeof(char));
+		if (Options->OutFilePrefix == NULL) {
+			sprintf(Options->NetFile, "%s.net", Options->CircuitName);
 		} else {
-			sprintf(Options.NetFile, "%s%s.net", Options.OutFilePrefix,
-					Options.CircuitName);
+			sprintf(Options->NetFile, "%s%s.net", Options->OutFilePrefix,
+					Options->CircuitName);
 		}
 	}
 
-	if (Options.PlaceFile == NULL) {
-		len = strlen(Options.CircuitName) + 7; /* circuit_name.place/0*/
-		if (Options.OutFilePrefix != NULL) {
-			len += strlen(Options.OutFilePrefix);
+	if (Options->PlaceFile == NULL) {
+		len = strlen(Options->CircuitName) + 7; /* circuit_name.place/0*/
+		if (Options->OutFilePrefix != NULL) {
+			len += strlen(Options->OutFilePrefix);
 		}
-		Options.PlaceFile = my_calloc(len, sizeof(char));
-		if (Options.OutFilePrefix == NULL) {
-			sprintf(Options.PlaceFile, "%s.place", Options.CircuitName);
+		Options->PlaceFile = (char*) my_calloc(len, sizeof(char));
+		if (Options->OutFilePrefix == NULL) {
+			sprintf(Options->PlaceFile, "%s.place", Options->CircuitName);
 		} else {
-			sprintf(Options.PlaceFile, "%s%s.place", Options.OutFilePrefix,
-					Options.CircuitName);
+			sprintf(Options->PlaceFile, "%s%s.place", Options->OutFilePrefix,
+					Options->CircuitName);
 		}
 	}
 
-	if (Options.RouteFile == NULL) {
-		len = strlen(Options.CircuitName) + 7; /* circuit_name.route/0*/
-		if (Options.OutFilePrefix != NULL) {
-			len += strlen(Options.OutFilePrefix);
+	if (Options->RouteFile == NULL) {
+		len = strlen(Options->CircuitName) + 7; /* circuit_name.route/0*/
+		if (Options->OutFilePrefix != NULL) {
+			len += strlen(Options->OutFilePrefix);
 		}
-		Options.RouteFile = my_calloc(len, sizeof(char));
-		if (Options.OutFilePrefix == NULL) {
-			sprintf(Options.RouteFile, "%s.route", Options.CircuitName);
+		Options->RouteFile = (char*) my_calloc(len, sizeof(char));
+		if (Options->OutFilePrefix == NULL) {
+			sprintf(Options->RouteFile, "%s.route", Options->CircuitName);
 		} else {
-			sprintf(Options.RouteFile, "%s%s.route", Options.OutFilePrefix,
-					Options.CircuitName);
+			sprintf(Options->RouteFile, "%s%s.route", Options->OutFilePrefix,
+					Options->CircuitName);
 		}
 	}
 
-	FileNameOpts->CircuitName = Options.CircuitName;
-	FileNameOpts->ArchFile = Options.ArchFile;
-	FileNameOpts->BlifFile = Options.BlifFile;
-	FileNameOpts->NetFile = Options.NetFile;
-	FileNameOpts->PlaceFile = Options.PlaceFile;
-	FileNameOpts->RouteFile = Options.RouteFile;
-	FileNameOpts->OutFilePrefix = Options.OutFilePrefix;
+	FileNameOpts->CircuitName = Options->CircuitName;
+	FileNameOpts->ArchFile = Options->ArchFile;
+	FileNameOpts->BlifFile = Options->BlifFile;
+	FileNameOpts->NetFile = Options->NetFile;
+	FileNameOpts->PlaceFile = Options->PlaceFile;
+	FileNameOpts->RouteFile = Options->RouteFile;
+	FileNameOpts->OutFilePrefix = Options->OutFilePrefix;
 
-	SetupOperation(Options, Operation);
-	SetupPlacerOpts(Options, TimingEnabled, PlacerOpts);
-	SetupAnnealSched(Options, AnnealSched);
-	SetupRouterOpts(Options, TimingEnabled, RouterOpts);
+	SetupOperation(*Options, Operation);
+	SetupPlacerOpts(*Options, TimingEnabled, PlacerOpts);
+	SetupAnnealSched(*Options, AnnealSched);
+	SetupRouterOpts(*Options, TimingEnabled, RouterOpts);
 
-	XmlReadArch(Options.ArchFile, TimingEnabled, Arch, &type_descriptors,
+	XmlReadArch(Options->ArchFile, TimingEnabled, Arch, &type_descriptors,
 			&num_types);
 
 	*user_models = Arch->models;
@@ -146,19 +146,19 @@ void SetupVPR(INP t_options Options, INP boolean TimingEnabled,
 
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
 	SetupRoutingArch(*Arch, RoutingArch);
-	SetupTiming(Options, *Arch, TimingEnabled, *Operation, *PlacerOpts,
+	SetupTiming(*Options, *Arch, TimingEnabled, *Operation, *PlacerOpts,
 			*RouterOpts, Timing);
-	SetupPackerOpts(Options, TimingEnabled, *Arch, Options.NetFile, PackerOpts);
+	SetupPackerOpts(*Options, TimingEnabled, *Arch, Options->NetFile, PackerOpts);
 
 	/* init global variables */
-	OutFilePrefix = Options.OutFilePrefix;
+	OutFilePrefix = Options->OutFilePrefix;
 	grid_logic_tile_area = Arch->grid_logic_tile_area;
 	ipin_mux_trans_size = Arch->ipin_mux_trans_size;
 
 	/* Set seed for pseudo-random placement, default seed to 1 */
 	PlacerOpts->seed = 1;
-	if (Options.Count[OT_SEED]) {
-		PlacerOpts->seed = Options.Seed;
+	if (Options->Count[OT_SEED]) {
+		PlacerOpts->seed = Options->Seed;
 	}
 	my_srandom(PlacerOpts->seed);
 
@@ -170,14 +170,14 @@ void SetupVPR(INP t_options Options, INP boolean TimingEnabled,
 	}
 
 	*GraphPause = 1; /* DEFAULT */
-	if (Options.Count[OT_AUTO]) {
-		*GraphPause = Options.GraphPause;
+	if (Options->Count[OT_AUTO]) {
+		*GraphPause = Options->GraphPause;
 	}
 #ifdef NO_GRAPHICS
 	*ShowGraphics = FALSE; /* DEFAULT */
 #else /* NO_GRAPHICS */
 	*ShowGraphics = TRUE; /* DEFAULT */
-	if (Options.Count[OT_NODISP]) {
+	if (Options->Count[OT_NODISP]) {
 		*ShowGraphics = FALSE;
 	}
 #endif /* NO_GRAPHICS */

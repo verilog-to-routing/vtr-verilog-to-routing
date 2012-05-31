@@ -688,14 +688,14 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule->num_ext_inputs = logical_block[i].used_input_pins;
 			cur_molecule->chain_pattern = NULL;
 			cur_molecule->pack_pattern = NULL;
-			cur_molecule->logical_block_ptrs = my_malloc(
+			cur_molecule->logical_block_ptrs = (t_logical_block**) my_malloc(
 					1 * sizeof(t_logical_block*));
 			cur_molecule->logical_block_ptrs[0] = &logical_block[i];
 			cur_molecule->next = list_of_molecules_head;
 			cur_molecule->base_gain = 1;
 			list_of_molecules_head = cur_molecule;
 
-			logical_block[i].packed_molecules = my_calloc(1,
+			logical_block[i].packed_molecules = (struct s_linked_vptr*) my_calloc(1,
 					sizeof(struct s_linked_vptr));
 			logical_block[i].packed_molecules->data_vptr = (void*) cur_molecule;
 		}

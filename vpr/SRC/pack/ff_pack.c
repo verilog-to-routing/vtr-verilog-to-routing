@@ -107,8 +107,8 @@ void compress_netlist(void) {
 
 	new_num_nets = 0;
 	new_num_blocks = 0;
-	net_remap = my_malloc(num_logical_nets * sizeof(int));
-	block_remap = my_malloc(num_logical_blocks * sizeof(int));
+	net_remap = (int *) my_malloc(num_logical_nets * sizeof(int));
+	block_remap = (int *) my_malloc(num_logical_blocks * sizeof(int));
 
 	for (inet = 0; inet < num_logical_nets; inet++) {
 		if (vpack_net[inet].node_block[0] != OPEN) {

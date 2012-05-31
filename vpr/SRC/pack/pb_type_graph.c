@@ -86,7 +86,7 @@ void alloc_and_load_all_pb_graphs(void) {
 	for (i = 0; i < num_types; i++) {
 		if (type_descriptors[i].pb_type) {
 			pin_count_in_cluster = 0;
-			type_descriptors[i].pb_graph_head = my_calloc(1,
+			type_descriptors[i].pb_graph_head = (t_pb_graph_node*) my_calloc(1,
 					sizeof(t_pb_graph_node));
 			alloc_and_load_pb_graph(type_descriptors[i].pb_graph_head, NULL,
 					type_descriptors[i].pb_type, 0);
@@ -355,9 +355,10 @@ static void free_pb_graph(INOUTP t_pb_graph_node *pb_graph_node) {
 				free(pb_graph_node->input_pins[i][j].pin_timing_del_max);
 			if (pb_graph_node->input_pins[i][j].input_edges)
 				free(pb_graph_node->input_pins[i][j].input_edges);
-
 			if (pb_graph_node->input_pins[i][j].output_edges)
 				free(pb_graph_node->input_pins[i][j].output_edges);
+			if(pb_graph_node->input_pins[i][j].parent_pin_class)
+				free(pb_graph_node->input_pins[i][j].parent_pin_class);
 		}
 		free(pb_graph_node->input_pins[i]);
 	}
@@ -371,6 +372,12 @@ static void free_pb_graph(INOUTP t_pb_graph_node *pb_graph_node) {
 				free(pb_graph_node->output_pins[i][j].input_edges);
 			if (pb_graph_node->output_pins[i][j].output_edges)
 				free(pb_graph_node->output_pins[i][j].output_edges);
+			if(pb_graph_node->output_pins[i][j].parent_pin_class)
+				free(pb_graph_node->output_pins[i][j].parent_pin_class);
+			if(pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs)
+				free(pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs);
+			if(pb_graph_node->output_pins[i][j].num_connectable_primtive_input_pins)
+				free(pb_graph_node->output_pins[i][j].num_connectable_primtive_input_pins);
 		}
 		free(pb_graph_node->output_pins[i]);
 	}
@@ -384,6 +391,8 @@ static void free_pb_graph(INOUTP t_pb_graph_node *pb_graph_node) {
 				free(pb_graph_node->clock_pins[i][j].input_edges);
 			if (pb_graph_node->clock_pins[i][j].output_edges)
 				free(pb_graph_node->clock_pins[i][j].output_edges);
+			if(pb_graph_node->clock_pins[i][j].parent_pin_class)
+				free(pb_graph_node->clock_pins[i][j].parent_pin_class);
 		}
 		free(pb_graph_node->clock_pins[i]);
 	}
@@ -395,6 +404,9 @@ static void free_pb_graph(INOUTP t_pb_graph_node *pb_graph_node) {
 	free(pb_graph_node->num_output_pins);
 	free(pb_graph_node->num_clock_pins);
 
+	free(pb_graph_node->input_pin_class_size); 
+	free(pb_graph_node->output_pin_class_size); 
+	
 	for (i = 0; i < pb_type->num_modes; i++) {
 		for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
 			for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb; k++) {

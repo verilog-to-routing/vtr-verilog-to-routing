@@ -56,11 +56,11 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void) {
 	t_cluster_placement_stats *cluster_placement_stats_list;
 	int i;
 
-	cluster_placement_stats_list = my_calloc(num_types,
+	cluster_placement_stats_list = (t_cluster_placement_stats *) my_calloc(num_types,
 			sizeof(t_cluster_placement_stats));
 	for (i = 0; i < num_types; i++) {
 		if (EMPTY_TYPE != &type_descriptors[i]) {
-			cluster_placement_stats_list[i].valid_primitives = my_calloc(
+			cluster_placement_stats_list[i].valid_primitives = (t_cluster_placement_primitive **) my_calloc(
 					get_max_primitives_in_pb_type(type_descriptors[i].pb_type)
 							+ 1, sizeof(t_cluster_placement_primitive*)); /* too much memory allocated but shouldn't be a problem */
 			cluster_placement_stats_list[i].curr_molecule = NULL;

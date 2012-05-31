@@ -47,34 +47,34 @@ static int num_linked_f_pointer_allocated = 0;
 static struct s_linked_f_pointer *rr_modified_head = NULL;
 static struct s_linked_f_pointer *linked_f_pointer_free_head = NULL;
 
-/*  The numbering relation between the channels and clbs is:               *
- *                                                                         *
- *  |   IO    | chan_   |   CLB      | chan_   |   CLB     |               *
- *  |grid[0][2]| y[0][2] | grid[1][2]  | y[1][2] |  grid[2][2]|               *
- *  +-------- +         +------------+         +-----------+               *
- *                                                           } capacity in *
- *   No channel          chan_x[1][1]          chan_x[2][1]  } chan_width  *
- *                                                           } _x[1]       *
- *  +---------+         +------------+         +-----------+               *
- *  |         | chan_   |            | chan_   |           |               *
- *  |  IO     | y[0][1] |    CLB     | y[1][1] |   CLB     |               *
- *  |grid[0][1]|         |  grid[1][1] |         | grid[2][1] |               *
- *  |         |         |            |         |           |               *
- *  +---------+         +------------+         +-----------+               *
- *                                                           } capacity in *
- *                      chan_x[1][0]           chan_x[2][0]  } chan_width  * 
- *                                                           } _x[0]       *
- *                      +------------+         +-----------+               *
- *              No      |            | No      |           |               *
- *            Channel   |    IO      | Channel |   IO      |               *
- *                      |  grid[1][0] |         | grid[2][0] |               *
- *                      |            |         |           |               *
- *                      +------------+         +-----------+               *
- *                                                                         *
- *             {=======}              {=======}                            *
- *            Capacity in            Capacity in                           *
- *          chan_width_y[0]        chan_width_y[1]                         *
- *                                                                         */
+/*  The numbering relation between the channels and clbs is:				*
+ *																	        *
+ *  |    IO     | chan_   |   CLB     | chan_   |   CLB     |               *
+ *  |grid[0][2] | y[0][2] |grid[1][2] | y[1][2] | grid[2][2]|               *
+ *  +-----------+         +-----------+         +-----------+               *
+ *                                                            } capacity in *
+ *   No channel           chan_x[1][1]          chan_x[2][1]  } chan_width  *
+ *                                                            } _x[1]       *
+ *  +-----------+         +-----------+         +-----------+               *
+ *  |           |  chan_  |           |  chan_  |           |               *
+ *  |    IO     | y[0][1] |   CLB     | y[1][1] |   CLB     |               *
+ *  |grid[0][1] |         |grid[1][1] |         |grid[2][1] |               *
+ *  |           |         |           |         |           |               *
+ *  +-----------+         +-----------+         +-----------+               *
+ *                                                            } capacity in *
+ *                        chan_x[1][0]          chan_x[2][0]  } chan_width  * 
+ *                                                            } _x[0]       *
+ *                        +-----------+         +-----------+               *
+ *                 No     |           |	   No   |           |               *
+ *               Channel  |    IO     | Channel |    IO     |               *
+ *                        |grid[1][0] |         |grid[2][0] |               *
+ *                        |           |         |           |               *
+ *                        +-----------+         +-----------+               *
+ *                                                                          *
+ *               {=======}              {=======}                           *
+ *              Capacity in            Capacity in                          *
+ *            chan_width_y[0]        chan_width_y[1]                        *
+ *                                                                          */
 
 /******************** Subroutines local to route_common.c *******************/
 

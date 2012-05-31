@@ -10,6 +10,20 @@
 #define GLOBALS_H
 
 /********************************************************************
+Checking OS System
+********************************************************************/
+/*#if defined(__WIN32__) || defined(__WIN32) || defined(_WIN32) || defined(WIN32) || defined(__TOS_WIN__) || defined(__WINDOWS__)
+  #ifndef __WIN32__
+    #define __WIN32__
+  #endif
+#else
+    #ifndef __UNIX__
+      #define __UNIX__
+    #endif
+	#include <sys/time.h>
+#endif*/
+
+/********************************************************************
  User Netlist Globals
  ********************************************************************/
 
@@ -96,6 +110,11 @@ extern t_ivec ***rr_node_indices;
 extern int **net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
 extern struct s_switch_inf *switch_inf; /* [0..det_routing_arch.num_switch-1] */
 extern int **rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
+
+/* the head pointers of structures that are "freed" and used constantly */
+/*struct s_heap *g_heap_free_head;
+struct s_trace *g_trace_free_head;
+struct s_linked_f_pointer *g_linked_f_pointer_free_head;*/
 
 /*******************************************************************
  Timing related globals

@@ -160,7 +160,18 @@ int main(int argc, char **argv) {
 	boolean TimingEnabled;
 	boolean echo_enabled;
 	int GraphPause;
+	clock_t entire_flow_begin,entire_flow_end;
 	clock_t begin, end;
+
+	/*#ifdef __WIN32__
+	time_t begin, end;
+	#endif
+
+	#ifdef __UNIX__
+		struct timeval begin, end;
+	#endif*/
+	
+	entire_flow_begin = clock();
 
 	/* Print title message */
 	PrintTitle();
@@ -183,7 +194,7 @@ int main(int argc, char **argv) {
 
 	/* Use inputs to configure VPR */
 	memset(&Arch, 0, sizeof(t_arch));
-	SetupVPR(Options, TimingEnabled, &FileNameOpts, &Arch, &Operation,
+	SetupVPR(&Options, TimingEnabled, &FileNameOpts, &Arch, &Operation,
 			&user_models, &library_models, &PackerOpts, &PlacerOpts,
 			&AnnealSched, &RouterOpts, &RoutingArch, &Segments, &Timing,
 			&ShowGraphics, &GraphPause);
@@ -200,7 +211,17 @@ int main(int argc, char **argv) {
 	/* Packing stage */
 	if (PackerOpts.doPacking) {
 		begin = clock();
+
+		/*#ifdef __WIN32__
+			begin = time (NULL);
+		#endif
+
+		#ifdef __UNIX__
+			gettimeofday(&begin, NULL);
+		#endif*/
+
 		try_pack(&PackerOpts, &Arch, user_models, library_models);
+
 		end = clock();
 #ifdef CLOCKS_PER_SEC
 		printf("Packing took %g seconds\n",
@@ -208,6 +229,17 @@ int main(int argc, char **argv) {
 #else
 		printf("Packing took %g seconds\n", (float)(end - begin) / CLK_PER_SEC);
 #endif
+
+		/*#ifdef __WIN32__
+			end = time (NULL);
+			printf("Packing took %g seconds\n", (float)(end - begin));
+		#endif
+
+		#ifdef __UNIX__
+			gettimeofday(&end, NULL);
+			printf("Packing took %g seconds\n", ((float)(end.tv_sec - begin.tv_sec) + (float)(end.tv_usec -begin.tv_usec)/1000000));
+		#endif*/
+
 
 		/* Free logical blocks and nets */
 		if (logical_block != NULL) {
@@ -273,6 +305,14 @@ int main(int argc, char **argv) {
 	freeArch(&Arch);
 	free_complex_block_types();
 
+	entire_flow_end = clock();
+	
+	#ifdef CLOCKS_PER_SEC
+		printf("The entire flow of VPR took %g seconds.\n", (float)(entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
+	#else
+		printf("The entire flow of VPR took %g seconds.\n", (float)(entire_flow_end - entire_flow_begin) / CLK_PER_SEC);
+	#endif
+	
 	/* Return 0 to single success to scripts */
 	return 0;
 }
@@ -562,8 +602,8 @@ static void InitArch(INP t_arch Arch) {
 	low = 1;
 	high = -1;
 
-	num_instances_type = my_calloc(num_types, sizeof(int));
-	num_blocks_type = my_calloc(num_types, sizeof(int));
+	num_instances_type = (int*) my_calloc(num_types, sizeof(int));
+	num_blocks_type = (int*) my_calloc(num_types, sizeof(int));
 
 	for (i = 0; i < num_blocks; i++) {
 		num_blocks_type[block[i].type->index]++;
