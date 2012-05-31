@@ -819,8 +819,8 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 					== current_pattern_block) {
 				/* find net corresponding to pattern */
 				iport =
-						cur_pack_pattern_connection->to_pin->port->model_port->index;
-				ipin = cur_pack_pattern_connection->to_pin->pin_number;
+						cur_pack_pattern_connection->from_pin->port->model_port->index;
+				ipin = cur_pack_pattern_connection->from_pin->pin_number;
 				inet =
 						logical_block[logical_block_index].output_nets[iport][ipin];
 
@@ -838,8 +838,8 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 				molecule->num_ext_inputs--; /* input to logical block is internal to molecule */
 				/* find net corresponding to pattern */
 				iport =
-						cur_pack_pattern_connection->from_pin->port->model_port->index;
-				ipin = cur_pack_pattern_connection->from_pin->pin_number;
+						cur_pack_pattern_connection->to_pin->port->model_port->index;
+				ipin = cur_pack_pattern_connection->to_pin->pin_number;
 				if (cur_pack_pattern_connection->to_pin->port->model_port->is_clock) {
 					inet = logical_block[logical_block_index].clock_net;
 				} else {

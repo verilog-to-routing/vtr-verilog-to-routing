@@ -815,14 +815,14 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 				} else {
 					tnode[i].out_edges[j - 1].Tdel = inter_cluster_net_delay;
 				}
-				assert(
-						logical_block[vpack_net[inet].node_block[j]].input_net_tnodes[vpack_net[inet].node_block_port[j]][vpack_net[inet].node_block_pin[j]] != NULL);
 				if (vpack_net[inet].is_global) {
 					assert(
 							logical_block[vpack_net[inet].node_block[j]].clock_net == inet);
 					tnode[i].out_edges[j - 1].to_node =
 							logical_block[vpack_net[inet].node_block[j]].clock_net_tnode->index;
 				} else {
+					assert(
+						logical_block[vpack_net[inet].node_block[j]].input_net_tnodes[vpack_net[inet].node_block_port[j]][vpack_net[inet].node_block_pin[j]] != NULL);
 					tnode[i].out_edges[j - 1].to_node =
 							logical_block[vpack_net[inet].node_block[j]].input_net_tnodes[vpack_net[inet].node_block_port[j]][vpack_net[inet].node_block_pin[j]]->index;
 				}

@@ -14,6 +14,8 @@
  a) Definition of a pin class - If there exists a path (ignoring directionality of connections) from pin A to pin B and pin A and pin B are of the same type (input, output, or clock), then pin A and pin B are in the same pin class.  Otherwise, pin A and pin B are in different pin classes.
  b) Code Identifies pin classes.  Given a candidate solution  
 
+ TODO: May 30, 2012 Jason Luu - Must take into consideration modes when doing pin counting.  For fracturable LUTs FI = 5, the soft logic block sees 6 pins instead of 5 pins for the dual LUT mode messing up the pin counter.  The packer still produces correct results but runs slower than its best (experiment on a modified architecture file that forces correct pin counting shows 40x speedup vs VPR 6.0 as opposed to 3x speedup at the time)
+
  Author: Jason Luu
  Date: May 16, 2012
 

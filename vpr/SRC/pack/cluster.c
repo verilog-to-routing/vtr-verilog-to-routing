@@ -524,6 +524,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				free_pb_stats_recursive(clb[num_clb - 1].pb, num_models);
 			} else {
 				/* Free up data structures and requeue used molecules */
+				num_used_instances_type[clb[num_clb - 1].type->index]--;
 				free_cb(clb[num_clb - 1].pb, num_models);
 				free(clb[num_clb - 1].pb);
 				free(clb[num_clb - 1].name);
@@ -1069,6 +1070,7 @@ static t_pack_molecule *get_molecule_by_num_ext_inputs(
 		}
 
 		else if (remove_flag == REMOVE_CLUSTERED) {
+			assert(0); /* this doesn't work right now with 2 the pass packing for each complex block */
 			prev_ptr->next = ptr->next;
 		}
 
