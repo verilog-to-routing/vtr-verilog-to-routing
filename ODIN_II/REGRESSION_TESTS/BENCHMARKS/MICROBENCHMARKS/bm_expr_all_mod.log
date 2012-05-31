@@ -1,0 +1,323 @@
+Welcome to ODIN II version 0.1 - the better High level synthesis tool targetting FPGAs (mainly VPR)
+Email: jamieson.peter@gmail.com for support issues
+Parser starting - we'll create an abstract syntax tree.  Note this tree can be viewed using GraphViz (see dosumentation)
+Optimizing module by AST based optimizations
+Converting AST into a Netlist - Note this netlist can be viewed using GraphViz (see dosumentation)
+-------------------------
+Odin has decided you may fail ... WARNINGS:
+
+WARNING (1): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (2): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (3): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (4): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (5): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (6): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (7): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (8): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (9): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (10): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (11): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (12): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (13): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (14): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (15): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (16): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (17): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (18): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (19): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (20): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (21): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (22): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (23): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (24): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (25): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (26): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (27): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (28): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (29): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (30): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (31): (Line number: -1) padding an input port with 0 for node top^LOGICAL_AND-0
+
+WARNING (32): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (33): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (34): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (35): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (36): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (37): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (38): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (39): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (40): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (41): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (42): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (43): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (44): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (45): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (46): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (47): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (48): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (49): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (50): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (51): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (52): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (53): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (54): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (55): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (56): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (57): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (58): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (59): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (60): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (61): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (62): (Line number: -1) padding an input port with 0 for node top^LOGICAL_OR-1
+
+WARNING (63): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-14
+
+WARNING (64): (Line number: -1) padding an input port with 0 for node top^BITWISE_OR-15
+
+WARNING (65): (Line number: -1) padding an input port with 0 for node top^BITWISE_XOR-16
+
+WARNING (66): (Line number: -1) padding an input port with 0 for node top^BITWISE_XNOR-17
+
+WARNING (67): (Line number: -1) padding an input port with 0 for node top^MINUS-26
+
+WARNING (68): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-27
+
+WARNING (69): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (70): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (71): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (72): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (73): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (74): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (75): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (76): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (77): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (78): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (79): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (80): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (81): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (82): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (83): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (84): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (85): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (86): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (87): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (88): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (89): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (90): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (91): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (92): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (93): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (94): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (95): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (96): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-393
+
+WARNING (97): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-2
+
+WARNING (98): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-3
+
+WARNING (99): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-4
+
+WARNING (100): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-5
+
+WARNING (101): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-6
+
+WARNING (102): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-7
+
+WARNING (103): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-8
+
+WARNING (104): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-9
+
+WARNING (105): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-10
+
+WARNING (106): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-11
+
+WARNING (107): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-12
+
+WARNING (108): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-13
+
+WARNING (109): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-14
+
+WARNING (110): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-15
+
+WARNING (111): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-16
+
+WARNING (112): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-17
+
+WARNING (113): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-18
+
+WARNING (114): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-19
+
+WARNING (115): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-20
+
+WARNING (116): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-21
+
+WARNING (117): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-22
+
+WARNING (118): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-23
+
+WARNING (119): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-24
+
+WARNING (120): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-25
+
+WARNING (121): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-26
+
+WARNING (122): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-27
+
+WARNING (123): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-28
+
+WARNING (124): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-29
+
+WARNING (125): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-30
+
+WARNING (126): (File: bm_expr_all_mod.v) (Line number: 170) More nets to drive then drivers, padding with ZEROs for driver top^range_select_out-31
+
+WARNING (127): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (128): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (129): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (130): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (131): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (132): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (133): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (134): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (135): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (136): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (137): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (138): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (139): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (140): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (141): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (142): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (143): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (144): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (145): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (146): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (147): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (148): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (149): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (150): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (151): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (152): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (153): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (154): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-460
+
+WARNING (155): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-461
+
+WARNING (156): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-461
+
+WARNING (157): (Line number: -1) padding an input port with 0 for node top^BITWISE_AND-461
+
+WARNING (158): (Line number: -1) padding an input port w
