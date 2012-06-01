@@ -13,7 +13,7 @@
 CC = gcc
 AR = ar
 
-WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -Wstrict-prototypes -D__USE_FIXED_PROTOTYPES__ -pedantic -Wmissing-prototypes -Wshadow -Wcast-align -Wno-overlength-strings
+WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -Wstrict-prototypes -D__USE_FIXED_PROTOTYPES__ -pedantic -Wmissing-prototypes -Wshadow -Wcast-align
 DEBUG_FLAGS = -g
 OPT_FLAGS = -O3
 INC_FLAGS = -Iinclude

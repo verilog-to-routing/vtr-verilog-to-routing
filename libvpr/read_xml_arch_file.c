@@ -304,7 +304,7 @@ static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 				}
 				Type->pin_class[pin_count] = num_class;
 				Type->is_global_pin[pin_count] =
-						Type->pb_type->ports[j].is_clock;
+					Type->pb_type->ports[j].is_clock || Type->pb_type->ports[j].is_non_clock_global;
 				pin_count++;
 
 				if (!Type->pb_type->ports[j].equivalent) {
@@ -833,7 +833,8 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port) {
 
 	port->equivalent = GetBooleanProperty(Parent, "equivalent", FALSE, FALSE);
 	port->num_pins = GetIntProperty(Parent, "num_pins", TRUE, 0);
-
+	port->is_non_clock_global = GetBooleanProperty(Parent, "is_non_clock_global", FALSE, FALSE);
+	
 	if (0 == strcmp(Parent->name, "input")) {
 		port->type = IN_PORT;
 		port->is_clock = FALSE;
@@ -843,6 +844,10 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port) {
 	} else if (0 == strcmp(Parent->name, "clock")) {
 		port->type = IN_PORT;
 		port->is_clock = TRUE;
+		if(port->is_non_clock_global == TRUE) {
+			printf(ERRTAG "[LINE %d] Port %s cannot be both a clock and a non-clock simultaneously\n", Parent->line,
+				Parent->name);
+		}
 	} else {
 		printf(ERRTAG "[LINE %d] Unknown port type %s", Parent->line,
 				Parent->name);
@@ -1082,12 +1087,16 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 				tp->min_size = -1; /* determined later by pb_types */
 				tp->next = temp->inputs;
 				tp->dir = IN_PORT;
+				tp->is_non_clock_global = GetBooleanProperty(p, "is_non_clock_global", FALSE, FALSE);
 				tp->is_clock = FALSE;
 				Prop = FindProperty(p, "is_clock", FALSE);
 				if (Prop && my_atoi(Prop) != 0) {
 					tp->is_clock = TRUE;
 				}
 				ezxml_set_attr(p, "is_clock", NULL);
+				if(tp->is_clock == TRUE && tp->is_non_clock_global == TRUE) {
+					printf(ERRTAG "[LINE %d] Signal cannot be both a clock and a non-clock signal simultaneously\n", p->line);
+				}
 				temp->inputs = tp;
 				junk = p;
 				p = ezxml_next(p);

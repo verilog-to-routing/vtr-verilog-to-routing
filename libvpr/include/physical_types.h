@@ -138,6 +138,7 @@ struct s_pb_type;
  * name: name of the port
  * model_port: associated model port
  * is_clock: whether or not this port is a clock
+ * is_non_clock_global: Applies to top level pb_type, this pin is not a clock but is a global signal (useful for stuff like global reset signals, perhaps useful for VCC and GND)
  * num_pins: the number of pins this port has
  * parent_pb_type: pointer to the parent pb_type
  * port_class: port belongs to recognized set of ports in class library
@@ -150,6 +151,7 @@ struct s_port {
 	t_model_ports *model_port;
 	enum PORTS type;
 	boolean is_clock;
+	boolean is_non_clock_global;
 	int num_pins;
 	boolean equivalent;
 	struct s_pb_type *parent_pb_type;
