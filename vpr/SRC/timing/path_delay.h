@@ -7,7 +7,7 @@ t_linked_int *allocate_and_load_critical_path(void);
 
 void load_timing_graph_net_delays(float **net_delay);
 
-float load_net_slack(float **net_slack, float target_cycle_time);
+float load_net_slack(float **net_slack);
 
 void free_timing_graph(float **net_slack);
 

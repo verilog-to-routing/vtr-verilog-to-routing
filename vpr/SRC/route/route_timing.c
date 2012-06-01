@@ -197,7 +197,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		 * Timing_driven_route_net updated the net delay values.                 */
 
 		load_timing_graph_net_delays(net_delay);
-		T_crit = load_net_slack(net_slack, 0);
+		T_crit = load_net_slack(net_slack);
 		printf("T_crit: %g.\n", T_crit);
 		fflush(stdout);
 	}

@@ -1047,12 +1047,10 @@ char *tnode_type_names[] = {  "INPAD_SOURCE", "INPAD_OPIN", "OUTPAD_IPIN",
 	fclose(fp);
 }
 
-float load_net_slack(float **net_slack, float target_cycle_time) {
+float load_net_slack(float **net_slack) {
 
 	/* Determines the slack of every source-sink pair of block pins in the      *
-	 * circuit.  The timing graph must have already been built.  target_cycle_  *
-	 * time is the target delay for the circuit -- if 0, the target_cycle_time  *
-	 * is set to the critical path found in the timing graph.  This routine     *
+	 * circuit.  The timing graph must have already been built.  This routine   *
 	 * loads net_slack, and returns the current critical path delay.            */
 
 	float T_crit, T_arr, Tdel, T_cycle, T_req;
@@ -1124,12 +1122,6 @@ float load_net_slack(float **net_slack, float target_cycle_time) {
 	}
 	assert(total == num_tnodes);
 
-	if (target_cycle_time > 0.) /* User specified target cycle time */
-		T_cycle = target_cycle_time;
-	else
-		/* Otherwise, target = critical path */
-		T_cycle = T_crit;
-
 	/* Compute the required arrival times with a backward breadth-first analysis *
 	 * from sinks (output pads, etc.) to primary inputs.                         */
 
@@ -1151,7 +1143,7 @@ float load_net_slack(float **net_slack, float target_cycle_time) {
 			if (num_edges == 0) { /* sink */
 				assert(
 						tnode[inode].type == OUTPAD_SINK || tnode[inode].type == FF_SINK);
-				tnode[inode].T_req = T_cycle;
+				tnode[inode].T_req = T_crit;
 				tnode[inode].num_critical_output_paths = 1;
 			} else {
 				assert(
