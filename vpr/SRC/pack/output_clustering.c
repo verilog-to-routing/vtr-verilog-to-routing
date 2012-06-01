@@ -232,7 +232,7 @@ static void print_open_pb_graph_node(t_pb_graph_node * pb_graph_node,
 
 		column = tab_depth * TAB_LENGTH + 8; /* Next column I will write to. */
 		print_tabs(fpout, tab_depth);
-		fprintf(fpout, "\t<globals>\n");
+		fprintf(fpout, "\t<clocks>\n");
 		port_index = 0;
 		for (i = 0; i < pb_type->num_ports; i++) {
 			if (pb_type->ports[i].is_clock
@@ -251,7 +251,7 @@ static void print_open_pb_graph_node(t_pb_graph_node * pb_graph_node,
 			}
 		}
 		print_tabs(fpout, tab_depth);
-		fprintf(fpout, "\t</globals>\n");
+		fprintf(fpout, "\t</clocks>\n");
 
 		if (pb_type->num_modes > 0) {
 			for (i = 0; i < mode->num_pb_type_children; i++) {
@@ -361,7 +361,7 @@ static void print_pb(FILE *fpout, t_pb * pb, int pb_index, int tab_depth) {
 
 	column = tab_depth * TAB_LENGTH + 8; /* Next column I will write to. */
 	print_tabs(fpout, tab_depth);
-	fprintf(fpout, "\t<globals>\n");
+	fprintf(fpout, "\t<clocks>\n");
 	port_index = 0;
 	for (i = 0; i < pb_type->num_ports; i++) {
 		if (pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT) {
@@ -384,7 +384,7 @@ static void print_pb(FILE *fpout, t_pb * pb, int pb_index, int tab_depth) {
 		}
 	}
 	print_tabs(fpout, tab_depth);
-	fprintf(fpout, "\t</globals>\n");
+	fprintf(fpout, "\t</clocks>\n");
 
 	if (pb_type->num_modes > 0) {
 		for (i = 0; i < mode->num_pb_type_children; i++) {
@@ -595,14 +595,14 @@ void output_clustering(t_block *clb, int num_clusters, boolean global_clocks,
 
 	column = 2 * TAB_LENGTH;
 	if (global_clocks) {
-		fprintf(fpout, "\n\t<globals>\n\t\t");
+		fprintf(fpout, "\n\t<clocks>\n\t\t");
 
 		for (netnum = 0; netnum < num_logical_nets; netnum++) {
 			if (is_clock[netnum]) {
 				print_string(vpack_net[netnum].name, &column, 2, fpout);
 			}
 		}
-		fprintf(fpout, "\n\t</globals>\n\n");
+		fprintf(fpout, "\n\t</clocks>\n\n");
 	}
 
 	/* Print out all input and output pads. */

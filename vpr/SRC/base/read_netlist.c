@@ -41,7 +41,7 @@ static int add_net_to_hash(INOUTP struct s_hash **nhash, INP char *net_name,
 static void load_external_nets_and_cb(INP int num_blocks,
 		INP struct s_block block_list[], INP int ncount,
 		INP struct s_net nlist[], OUTP int *ext_ncount,
-		OUTP struct s_net **ext_nets, INP char **circuit_globals);
+		OUTP struct s_net **ext_nets, INP char **circuit_clocks);
 
 static void load_internal_cb_nets(INOUTP t_pb *top_level,
 		INP t_pb_graph_node *pb_graph_node, INOUTP t_rr_node *rr_graph,
@@ -83,7 +83,7 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	int ncount, ext_ncount;
 	struct s_net *nlist, *ext_nlist;
 	struct s_hash **nhash;
-	char **circuit_inputs, **circuit_outputs, **circuit_globals;
+	char **circuit_inputs, **circuit_outputs, **circuit_clocks;
 	int Count, Len;
 
 	int num_primitives = 0;
@@ -122,12 +122,12 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	circuit_outputs = GetNodeTokens(Cur);
 	FreeNode(Cur);
 
-	Cur = FindElement(Top, "globals", TRUE);
+	Cur = FindElement(Top, "clocks", TRUE);
 	CountTokensInString(Cur->txt, &Count, &Len);
 	if (Count > 0) {
-		circuit_globals = GetNodeTokens(Cur);
+		circuit_clocks = GetNodeTokens(Cur);
 	} else {
-		circuit_globals = NULL;
+		circuit_clocks = NULL;
 	}
 	FreeNode(Cur);
 
@@ -164,17 +164,17 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	nlist = alloc_and_init_netlist_from_hash(ncount, nhash);
 	mark_constant_generators(bcount, blist, ncount, nlist);
 	load_external_nets_and_cb(bcount, blist, ncount, nlist, &ext_ncount,
-			&ext_nlist, circuit_globals);
+			&ext_nlist, circuit_clocks);
 
 	/* TODO: create this function later
-	 check_top_IO_matches_IO_blocks(circuit_inputs, circuit_outputs, circuit_globals, blist, bcount);
+	 check_top_IO_matches_IO_blocks(circuit_inputs, circuit_outputs, circuit_clocks, blist, bcount);
 	 */
 
 	free_hash_table(nhash);
 	FreeTokens(&circuit_inputs);
 	FreeTokens(&circuit_outputs);
-	if (circuit_globals)
-		FreeTokens(&circuit_globals);
+	if (circuit_clocks)
+		FreeTokens(&circuit_clocks);
 	FreeNode(Top);
 
 	/* load mapping between external nets and all nets */
@@ -352,7 +352,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 	Cur = FindElement(Parent, "outputs", TRUE);
 	processPorts(Cur, pb, rr_graph, ncount, nhash);
 	FreeNode(Cur);
-	Cur = FindElement(Parent, "globals", TRUE);
+	Cur = FindElement(Parent, "clocks", TRUE);
 	processPorts(Cur, pb, rr_graph, ncount, nhash);
 	FreeNode(Cur);
 
@@ -658,7 +658,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 				}
 			}
 			if (0 == strcmp(Parent->name, "inputs")
-					|| 0 == strcmp(Parent->name, "globals")) {
+					|| 0 == strcmp(Parent->name, "clocks")) {
 				if (pb->parent_pb == NULL) {
 					/* top-level, connections are nets to route */
 					for (i = 0; i < num_tokens; i++) {
@@ -794,7 +794,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 static void load_external_nets_and_cb(INP int L_num_blocks,
 		INP struct s_block block_list[], INP int ncount,
 		INP struct s_net nlist[], OUTP int *ext_ncount,
-		OUTP struct s_net **ext_nets, INP char **circuit_globals) {
+		OUTP struct s_net **ext_nets, INP char **circuit_clocks) {
 	int i, j, k, ipin;
 	struct s_hash **ext_nhash;
 	t_rr_node *rr_graph;
@@ -887,14 +887,8 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 	/* alloc and partially load the list of external nets */
 	(*ext_nets) = alloc_and_init_netlist_from_hash(*ext_ncount, ext_nhash);
 	/* Load global nets */
-	num_tokens = CountTokens(circuit_globals);
-	for (i = 0; i < *ext_ncount; i++) {
-		for (j = 0; j < num_tokens; j++) {
-			if (strcmp(circuit_globals[j], (*ext_nets)[i].name) == 0) {
-				(*ext_nets)[i].is_global = TRUE;
-			}
-		}
-	}
+	num_tokens = CountTokens(circuit_clocks);
+
 	count = my_calloc(*ext_ncount, sizeof(int));
 
 	/* complete load of external nets so that each net points back to the blocks */
@@ -911,21 +905,7 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 					(*ext_nets)[netnum].node_block[count[netnum]] = i;
 					(*ext_nets)[netnum].node_block_pin[count[netnum]] = j;
 
-					if ((*ext_nets)[netnum].is_global
-							!= block_list[i].type->is_global_pin[j]) {
-						if ((*ext_nets)[netnum].is_global) {
-							printf(
-									ERRTAG "Netlist attempts to connect global net %s to non global pin %d of block %s #%d\n",
-									(*ext_nets)[netnum].name, j,
-									block_list[i].name, j);
-						} else {
-							printf(
-									ERRTAG "Netlist attempts to connect non-global net %s to global pin %d of block %s #%d\n",
-									(*ext_nets)[netnum].name, j,
-									block_list[i].name, j);
-						}
-						exit(1);
-					}
+					(*ext_nets)[netnum].is_global = block_list[i].type->is_global_pin[j]; /* Error check performed later to ensure no mixing of global and non-global signals */
 				} else {
 					assert(
 							DRIVER == block_list[i].type->class_inf[block_list[i].type->pin_class[j]].type);
@@ -933,6 +913,21 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 					(*ext_nets)[netnum].node_block[0] = i;
 					(*ext_nets)[netnum].node_block_pin[0] = j;
 				}
+			}
+		}
+	}
+	/* Error check global and non global signals */
+	for (i = 0; i < *ext_ncount; i++) {
+		for (j = 1; j <= (*ext_nets)[i].num_sinks; j++) {
+			if(block_list[(*ext_nets)[i].node_block[j]].type->is_global_pin[(*ext_nets)[i].node_block_pin[j]] != (*ext_nets)[i].is_global) {
+				printf(
+					ERRTAG "Netlist attempts to connect net %s to both global and non-global pins\n", (*ext_nets)[i].name);
+				exit(1);
+			}
+		}
+		for (j = 0; j < num_tokens; j++) {
+			if (strcmp(circuit_clocks[j], (*ext_nets)[i].name) == 0) {
+				assert((*ext_nets)[i].is_global == TRUE); /* above code should have caught this case, if not, then bug in code */
 			}
 		}
 	}

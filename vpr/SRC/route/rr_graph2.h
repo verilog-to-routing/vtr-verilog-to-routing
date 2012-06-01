@@ -10,17 +10,16 @@ extern boolean *rr_edge_done; /* [0..num_rr_nodes-1].  Used to keep track  *
 
 /******************* Subroutines exported by rr_graph2.c *********************/
 
-struct s_ivec ***alloc_and_load_rr_node_indices(INP int nodes_per_chan,
-		INP int nx,
-		INP int ny,
-		INOUTP int *index,
-		INP t_seg_details *
-		seg_details);
+struct s_ivec ***alloc_and_load_rr_node_indices(INP int nodes_per_chan, 
+		INP int L_nx,
+		INP int L_ny, 
+		INOUTP int *index, 
+		INP t_seg_details * seg_details) ;
 
-void free_rr_node_indices(INP t_ivec *** rr_node_indices);
+void free_rr_node_indices(INP t_ivec *** L_rr_node_indices);
 
 int get_rr_node_index(int x, int y, t_rr_type rr_type, int ptc,
-		t_ivec *** rr_node_indices);
+		t_ivec *** L_rr_node_indices);
 
 void free_seg_details(t_seg_details * seg_details, int nodes_per_chan);
 
@@ -66,8 +65,8 @@ int get_bidir_opin_connections(INP int i,
 		INP struct s_linked_edge **edge_list,
 		INP int *****opin_to_track_map,
 		INP int Fc,
-		INP boolean * rr_edge_done,
-		INP t_ivec *** rr_node_indices,
+		INP boolean * L_rr_edge_done,
+		INP t_ivec *** L_rr_node_indices,
 		INP t_seg_details * seg_details);
 
 int get_unidir_opin_connections(INP int chan,
@@ -77,14 +76,14 @@ int get_unidir_opin_connections(INP int chan,
 		INP t_seg_details * seg_details,
 		INOUTP t_linked_edge ** edge_list_ptr,
 		INOUTP int **Fc_ofs,
-		INOUTP boolean * rr_edge_done,
+		INOUTP boolean * L_rr_edge_done,
 		INP int max_len,
 		INP int nodes_per_chan,
-		INP t_ivec *** rr_node_indices,
+		INP t_ivec *** L_rr_node_indices,
 		OUTP boolean * Fc_clipped);
 
 int get_track_to_ipins(int seg, int chan, int track,
-		t_linked_edge ** edge_list_ptr, t_ivec *** rr_node_indices,
+		t_linked_edge ** edge_list_ptr, t_ivec *** L_rr_node_indices,
 		struct s_ivec ****track_to_ipin_lookup, t_seg_details * seg_details,
 		enum e_rr_type chan_type, int chan_length, int wire_to_ipin_switch,
 		enum e_directionality directionality);
@@ -103,12 +102,12 @@ int get_track_to_tracks(INP int from_chan,
 		INOUTP struct s_linked_edge **edge_list,
 		INP t_seg_details * seg_details,
 		INP enum e_directionality directionality,
-		INP t_ivec *** rr_node_indices,
-		INOUTP boolean * rr_edge_done,
+		INP t_ivec *** L_rr_node_indices,
+		INOUTP boolean * L_rr_edge_done,
 		INP struct s_ivec ***switch_block_conn);
 
-short *****alloc_sblock_pattern_lookup(INP int nx,
-		INP int ny,
+short *****alloc_sblock_pattern_lookup(INP int L_nx,
+		INP int L_ny,
 		INP int nodes_per_chan);
 void free_sblock_pattern_lookup(INOUTP short *****sblock_pattern);
 void load_sblock_pattern_lookup(INP int i,

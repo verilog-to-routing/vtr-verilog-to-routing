@@ -18,33 +18,33 @@ enum {
 	RR_GRAPH_WARN_CHAN_WIDTH_CHANGED = 0x02
 };
 
-void build_rr_graph(INP t_graph_type graph_type,
-		INP int num_types,
-		INP t_type_ptr types,
-		INP int nx,
-		INP int ny,
-		INP struct s_grid_tile **grid,
+void build_rr_graph(INP t_graph_type graph_type, 
+		INP int L_num_types,
+		INP t_type_ptr types, 
+		INP int L_nx, 
+		INP int L_ny,
+		INP struct s_grid_tile **L_grid, 
 		INP int chan_width,
 		INP struct s_chan_width_dist *chan_capacity_inf,
-		INP enum e_switch_block_type sb_type,
-		INP int Fs,
+		INP enum e_switch_block_type sb_type, 
+		INP int Fs, 
 		INP int num_seg_types,
-		INP int num_switches,
+		INP int num_switches, 
 		INP t_segment_inf * segment_inf,
-		INP int global_route_switch,
+		INP int global_route_switch, 
 		INP int delayless_switch,
-		INP t_timing_inf timing_inf,
+		INP t_timing_inf timing_inf, 
 		INP int wire_to_ipin_switch,
-		INP enum e_base_cost_type base_cost_type,
+		INP enum e_base_cost_type base_cost_type, 
 		OUTP int *Warnings);
 
 void free_rr_graph(void);
 
 void dump_rr_graph(INP const char *file_name);
 void print_rr_indexed_data(FILE * fp, int index); /* For debugging only */
-void load_net_rr_terminals(t_ivec *** rr_node_indices);
+void load_net_rr_terminals(t_ivec *** L_rr_node_indices);
 
-void print_rr_node(FILE *fp, t_rr_node *rr_node, int inode);
+void print_rr_node(FILE *fp, t_rr_node *L_rr_node, int inode);
 
 #endif
 

@@ -2221,7 +2221,7 @@ static void alloc_and_load_cluster_info(INP int num_clb, INOUTP t_block *clb) {
 				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
 					iclass = clb[i_clb].type->pin_class[ipin];
 					assert(clb[i_clb].type->class_inf[iclass].type == RECEIVER);
-					assert(!clb[i_clb].type->is_global_pin[ipin]);
+					assert(clb[i_clb].type->is_global_pin[ipin] == pb->pb_graph_node->input_pins[inport][j].port->is_non_clock_global);
 					node_index =
 							pb->pb_graph_node->input_pins[inport][j].pin_count_in_cluster;
 					clb[i_clb].nets[ipin] = rr_node[node_index].net_num;

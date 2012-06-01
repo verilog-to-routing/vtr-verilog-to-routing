@@ -128,3 +128,6 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 
 	printf("\nNetlist conversion complete.\n\n");
 }
+
+
+
