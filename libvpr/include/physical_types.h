@@ -1,11 +1,23 @@
 /*
  Data types describing the physical components on the FPGA architecture.
 
+ We assume an island style FPGA where complex logic blocks are arranged in a grid and each side of the logic block has access to the inter-block interconnect.  To keep the logic blocks general,
+ we allow arbitrary hierarchy, modes, primitives, and interconnect within each complex logic block.  The data structures here describe the properties of the island-style FPGA as well as the details on
+ hierarchy, modes, primitives, and intconnect within each logic block.
+
+ Data structures that flesh out 
+
+ The data structures that store the 
+
  Key data types:
  t_type_descriptor: describes a placeable complex logic block, 
  pb_type: describes the types of physical blocks within the t_type_descriptor in a hierarchy where the top block is the complex block and the leaf blocks implement one logical block
  pb_graph_node: is a flattened version of pb_type so a pb_type with 10 instances will have 10 pb_graph_nodes representing each instance
- pb: A specific physical block.  Shares a many-to-one relationship with a pb_graph_node.  For example, a circuit with 10 CLBs will have 10 CLB pbs and 1 CLB pb_graph_node, each CLB pb points to that single one pb_graph_node CLB.
+ 
+ Additional notes:
+
+ The interconnect specified in the architecture file gets flattened out in the pb_graph_node netlist.  Each pb_graph_node contains pb_graph_pins which allow it to connect to other pb_graph_nodes.  
+ These pins are in connected to other pins through pb_graph_edges. The pin connections are based on what is specified in the <interconnect> tags of the architecture file.  
 
  Date: February 19, 2009
  Authors: Jason Luu and Kenneth Kent
