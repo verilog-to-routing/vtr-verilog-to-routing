@@ -1053,7 +1053,7 @@ float load_net_slack(float **net_slack) {
 	 * circuit.  The timing graph must have already been built.  This routine   *
 	 * loads net_slack, and returns the current critical path delay.            */
 
-	float T_crit, T_arr, Tdel, T_cycle, T_req;
+	float T_crit, T_arr, Tdel, T_req;
 	int inode, ilevel, num_at_level, i, num_edges, iedge, to_node;
 	int total;
 	t_tedge *tedge;
@@ -1376,7 +1376,7 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 	load_constant_net_delay(net_delay, constant_net_delay_value, timing_nets,
 			num_timing_nets);
 	load_timing_graph_net_delays(net_delay);
-	T_crit = load_net_slack(net_slack, 0);
+	T_crit = load_net_slack(net_slack);
 
 	printf("\n");
 	printf("\nCritical Path: %g (s)\n", T_crit);
