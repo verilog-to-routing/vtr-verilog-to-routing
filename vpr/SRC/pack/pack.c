@@ -108,6 +108,7 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 	free(is_clock);
 	
 	/*free list_of_pack_molecules*/
+	free_list_of_pack_patterns(list_of_packing_patterns, num_packing_patterns);
 
 	cur_pack_molecule = list_of_pack_molecules;
 	while (cur_pack_molecule != NULL){

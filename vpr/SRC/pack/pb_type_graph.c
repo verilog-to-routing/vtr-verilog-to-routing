@@ -436,6 +436,12 @@ static void free_pb_graph(INOUTP t_pb_graph_node *pb_graph_node) {
 		for (i = 0; i < (long) cur_num->data_vptr; i++) {
 			free(edges[i].input_pins);
 			free(edges[i].output_pins);
+			if(edges[i].pack_pattern_indices) {
+				free(edges[i].pack_pattern_indices);
+			}
+			if(edges[i].pack_pattern_names) {
+				free(edges[i].pack_pattern_names);
+			}
 		}
 		edges_head = edges_head->next;
 		num_edges_head = num_edges_head->next;

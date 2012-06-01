@@ -43,6 +43,7 @@ static void backward_expand_pack_pattern_from_edge(
 		INOUTP t_pack_patterns *list_of_packing_patterns,
 		INP int curr_pattern_index, INP t_pb_graph_pin *destination_pin,
 		INP t_pack_pattern_block *destination_block, INP int *L_num_blocks);
+static void free_pack_pattern(INOUTP t_pack_pattern_block *pattern_block, INOUTP t_pack_pattern_block **pattern_block_list);
 static t_pack_molecule *try_create_molecule(
 		INP t_pack_patterns *list_of_pack_patterns, INP int pack_pattern_index,
 		INP int block_index);
@@ -255,6 +256,24 @@ static t_pack_patterns *alloc_and_init_pattern_list_from_hash(INP int ncount,
 		curr_pattern = get_next_hash(nhash, &hash_iter);
 	}
 	return nlist;
+}
+
+void free_list_of_pack_patterns(INP t_pack_patterns *list_of_pack_patterns, INP int num_packing_patterns) {
+	int i, j, num_pack_pattern_blocks;
+	t_pack_pattern_block **pattern_block_list;
+	if(list_of_pack_patterns != NULL) {
+		for(i = 0; i < num_packing_patterns; i++) {
+			num_pack_pattern_blocks = list_of_pack_patterns[i].num_blocks;
+			pattern_block_list = (t_pack_pattern_block **)my_calloc(num_pack_pattern_blocks, sizeof(t_pack_pattern_block *));
+			free(list_of_pack_patterns[i].name);
+			free_pack_pattern(list_of_pack_patterns[i].root_block, pattern_block_list);
+			for(j = 0; j < num_pack_pattern_blocks; j++) {
+				free(pattern_block_list[j]);
+			}
+			free(pattern_block_list);
+		}
+		free(list_of_pack_patterns);
+	}
 }
 
 /**
@@ -732,6 +751,25 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 	}
 
 	return list_of_molecules_head;
+}
+
+
+static void free_pack_pattern(INOUTP t_pack_pattern_block *pattern_block, INOUTP t_pack_pattern_block **pattern_block_list) {
+	t_pack_pattern_connections *connection, *next;
+	if(pattern_block->block_id == OPEN) {
+		/* already traversed, return */
+		return; 
+	}
+	pattern_block_list[pattern_block->block_id] = pattern_block;
+	pattern_block->block_id = OPEN;
+	connection = pattern_block->connections;
+	while(connection) {
+		free_pack_pattern(connection->from_block, pattern_block_list);
+		free_pack_pattern(connection->to_block, pattern_block_list);
+		next = connection->next;
+		free(connection);
+		connection = next;
+	}
 }
 
 /**
