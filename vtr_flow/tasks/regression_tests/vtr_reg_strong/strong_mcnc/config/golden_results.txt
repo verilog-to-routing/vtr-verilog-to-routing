@@ -1,0 +1,2 @@
+arch	circuit	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	unabsorb_ff	num_memories	num_mult	error	
+k6_N10_soft_logic_only.xml	diffeq.pre-vpr.blif	success	40	4.57521e-09	0.63	4.26	1.84	0.21	1371	1410	601	96	64	39	1				
