@@ -346,6 +346,9 @@ static void free_pb_graph(INOUTP t_pb_graph_node *pb_graph_node) {
 
 	pb_type = pb_graph_node->pb_type;
 
+	/*free all lists of connectable input pin pointer of pb_graph_node and it's children*/
+	/*free_list_of_connectable_input_pin_ptrs (pb_graph_node);*/
+
 	/* Free ports for pb graph node */
 	for (i = 0; i < pb_graph_node->num_input_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
@@ -374,8 +377,16 @@ static void free_pb_graph(INOUTP t_pb_graph_node *pb_graph_node) {
 				free(pb_graph_node->output_pins[i][j].output_edges);
 			if(pb_graph_node->output_pins[i][j].parent_pin_class)
 				free(pb_graph_node->output_pins[i][j].parent_pin_class);
-			if(pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs)
+			
+			if(pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs) {
+				for (k = 0; k < pb_graph_node->pb_type->depth; k++) {
+					if(pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs[k]) {
+						free(pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs[k]);
+					}
+				}
 				free(pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs);
+			}
+			
 			if(pb_graph_node->output_pins[i][j].num_connectable_primtive_input_pins)
 				free(pb_graph_node->output_pins[i][j].num_connectable_primtive_input_pins);
 		}

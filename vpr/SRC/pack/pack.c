@@ -23,7 +23,7 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 	t_model *cur_model;
 	t_pack_patterns *list_of_packing_patterns;
 	int num_packing_patterns;
-	t_pack_molecule *list_of_pack_molecules;
+	t_pack_molecule *list_of_pack_molecules, * cur_pack_molecule;
 	int num_pack_molecules;
 
 	printf("Begin packing of %s \n", packer_opts->blif_file_name);
@@ -106,6 +106,18 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 	}
 
 	free(is_clock);
+	
+	/*free list_of_pack_molecules*/
+
+	cur_pack_molecule = list_of_pack_molecules;
+	while (cur_pack_molecule != NULL){
+		if (cur_pack_molecule->logical_block_ptrs != NULL)
+			free(cur_pack_molecule->logical_block_ptrs);
+		cur_pack_molecule = list_of_pack_molecules->next;
+		free(list_of_pack_molecules);
+		list_of_pack_molecules = cur_pack_molecule;
+	}
+
 
 	saved_logical_blocks = logical_block;
 	logical_block = NULL;

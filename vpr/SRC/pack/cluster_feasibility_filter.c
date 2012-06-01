@@ -326,9 +326,7 @@ static void load_list_of_connectable_input_pin_ptrs(
 	for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
 		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children;
 				j++) {
-			for (k = 0;
-					k
-							< pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb;
+			for (k = 0;k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb;
 					k++) {
 				load_list_of_connectable_input_pin_ptrs(
 						&pb_graph_node->child_pb_graph_nodes[i][j][k]);

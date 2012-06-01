@@ -1352,8 +1352,6 @@ void free_logical_blocks(void) {
 		if (logical_block[iblk].input_net_tnodes) 
 			free(logical_block[iblk].input_net_tnodes);
 		
-		if (logical_block[iblk].packed_molecules->data_vptr)
-			free(logical_block[iblk].packed_molecules->data_vptr);
 		if (logical_block[iblk].packed_molecules)
 			free(logical_block[iblk].packed_molecules);
 

@@ -244,7 +244,9 @@ void free_cluster_placement_stats(
 				free(cur);
 				cur = next;
 			}
+			free(cluster_placement_stats_list[i].valid_primitives[j]);
 		}
+		free(cluster_placement_stats_list[i].valid_primitives);
 	}
 	free(cluster_placement_stats_list);
 }
@@ -297,7 +299,7 @@ static void load_cluster_placement_stats_for_pb_graph_node(
 	const t_pb_type *pb_type = pb_graph_node->pb_type;
 	boolean success;
 	if (pb_type->modes == 0) {
-		placement_primitive = my_calloc(1,
+		placement_primitive = (t_cluster_placement_primitive *) my_calloc(1,
 				sizeof(t_cluster_placement_primitive));
 		placement_primitive->pb_graph_node = pb_graph_node;
 		placement_primitive->valid = TRUE;
@@ -311,7 +313,7 @@ static void load_cluster_placement_stats_for_pb_graph_node(
 					|| cluster_placement_stats->valid_primitives[i]->next_primitive->pb_graph_node->pb_type
 							== pb_graph_node->pb_type) {
 				if (cluster_placement_stats->valid_primitives[i] == NULL) {
-					cluster_placement_stats->valid_primitives[i] = my_calloc(1,
+					cluster_placement_stats->valid_primitives[i] = (t_cluster_placement_primitive *) my_calloc(1,
 							sizeof(t_cluster_placement_primitive)); /* head of linked list is empty, makes it easier to remove nodes later */
 					cluster_placement_stats->num_pb_types++;
 				}
