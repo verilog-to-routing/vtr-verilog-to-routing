@@ -1,0 +1,3 @@
+arch	circuit	vpr_status	min_chan_width	pack_time	place_time	min_chan_width_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	unabsorb_ff	num_memories	num_mult	error	
+k4_N10_memSize16384_memData64.xml	ch_intrinsics.v	success	36	0.909964	2.71951	2.18831	1015	1145	409	69	99	130	1	1	0		
+k4_N10_memSize16384_memData64.xml	diffeq1.v	success	54	0.848933	2.69685	4.59714	1141	1078	652	63	162	96	0	0	5		

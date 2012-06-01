@@ -1,0 +1,2 @@
+regression_tests/vtr_reg_basic/basic_no_timing
+regression_tests/vtr_reg_basic/basic_timing
