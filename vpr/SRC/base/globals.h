@@ -1,9 +1,12 @@
 /* 
  Global variables 
 
- Key global variables that are used everywhere are: 
+ Key global variables that are used everywhere in VPR: 
  clb_net, vpack_net, block, and logical_block
- These variables represent the user netlist in various stages of the CAD flow
+
+ These variables represent the user netlist in various stages of the CAD flow:
+  vpack_net and logical_block for the unclustered netlist pre packing
+  clb_net and block for the clustered netlist post packing
  */
 
 #ifndef GLOBALS_H

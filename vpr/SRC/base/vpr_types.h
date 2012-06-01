@@ -1,11 +1,32 @@
-/* This file contains the major data types used by VPR
+/* This is a core file that defines the major data types used by VPR
 
- This document is divided into generally 4 major sections:
+ This file is divided into generally 4 major sections:
 
  1.  Global data types and constants
  2.  Packing specific data types
  3.  Placement specific data types
  4.  Routing specific data types
+
+ Key background file:
+
+ An understanding of libvpr/physical_types.h is crucial to understanding this file.  physical_types.h contains information about the architecture described in the architecture description language
+
+ Key data structures:
+
+ logical_block - One node in the input technology-mapped netlist
+ net - Connectivity data structure for the user netlist
+ block - An already clustered logic block
+ rr_node - The basic building block of the interconnect in the FPGA architecture
+  
+ Cluster-specific main data structure:
+
+ t_pb: Stores the mapping between the user netlist and the logic blocks on the FPGA achitecture.  For example, if a user design has 10 clusters of 5 LUTs each, you will have 10 t_pb instances of type cluster and within each of those clusters another 5 t_pb instances of type LUT.
+ The t_pb hierarchy follows what is described by t_pb_graph_node
+
+ Each top-level pb stores the entire routing resource graph (rr_graph).  The traceback information is included in this rr_graph so if you needed to determine connectivity down to the wire level, this is the data structure that you would traverse.
+ The rr_graph is generated based on the pb_graph_node netlist of that pb.  Each pb_graph_node has a member variable called pin_count that serves as the index for the rr_node (in retrospect, I should have used rr_node_index instead of pin_count for the member variable to be more descriptive).  
+ This makes it easy to identify which rr_node corresponds to which pb_graph_pin.  Additional sources and sinks are generated at the inputs and outputs of the complex logic block to match with what has already been packed into the cluster.
+ 
 
  */
 

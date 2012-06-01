@@ -38,7 +38,7 @@ static struct s_net *alloc_and_init_netlist_from_hash(INP int ncount,
 static int add_net_to_hash(INOUTP struct s_hash **nhash, INP char *net_name,
 		INOUTP int *ncount);
 
-static void load_external_nets_and_cb(INP int num_blocks,
+static void load_external_nets_and_cb(INP int L_num_blocks,
 		INP struct s_block block_list[], INP int ncount,
 		INP struct s_net nlist[], OUTP int *ext_ncount,
 		OUTP struct s_net **ext_nets, INP char **circuit_clocks);
@@ -55,7 +55,7 @@ static void load_internal_cb_rr_graph_net_nums(INP t_rr_node * cur_rr_node,
 		INP t_rr_node * rr_graph, INOUTP struct s_net * nets,
 		INOUTP int * curr_net, INOUTP int * curr_sink);
 
-static void mark_constant_generators(INP int num_blocks,
+static void mark_constant_generators(INP int L_num_blocks,
 		INP struct s_block block_list[], INP int ncount,
 		INOUTP struct s_net nlist[]);
 

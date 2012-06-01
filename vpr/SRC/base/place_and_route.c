@@ -34,7 +34,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 static float comp_width(t_chan * chan, float x, float separation);
 
-void post_place_sync(INP int num_blocks,
+void post_place_sync(INP int L_num_blocks,
 		INOUTP const struct s_block block_list[]);
 
 void free_pb_data(t_pb *pb);
