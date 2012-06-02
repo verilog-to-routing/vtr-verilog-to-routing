@@ -126,6 +126,7 @@ extern t_tnode *tnode; /* [0..num_tnodes - 1] */
 extern int num_tnodes; /* Number of nodes (pins) in the timing graph */
 extern float pb_max_internal_delay; /* biggest internal delay of block */
 extern const t_pb_type *pbtype_max_internal_delay; /* block type with highest internal delay */
+extern t_clock * clock_list; /* [0..num_clocks - 1] */
 
 #endif
 
