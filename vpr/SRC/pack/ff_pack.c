@@ -310,44 +310,35 @@ boolean *alloc_and_load_is_clock(boolean global_clocks) {
 	return (is_clock);
 }
 
-t_clock * index_clocks(void) {
+void alloc_and_load_netlist_clock_list(void) {
 
 	/* Creates an array of clock names and nets. The index of each
 	   clock in this array will be used extensively in timing analysis. */
+
+	int bnum, clock_net, iclock;
+	boolean found;
 	
-	t_clock * clock_list = NULL;
-	int num_clocks, bnum, clock_net, iclock;
-	
-	num_clocks = 0;
+	assert(clock_list == NULL); /* Ensure that global variable has not yet been allocated */
+	num_netlist_clocks = 0;
 
 	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
-		if (logical_block[bnum].type == VPACK_LATCH) {
-			clock_net = logical_block[bnum].clock_net;
+		clock_net = logical_block[bnum].clock_net;
+		found = FALSE;
+		if(logical_block[bnum].type == VPACK_LATCH)
 			assert(clock_net != OPEN);
-			/* Now we've found a clock - let's see if we've counted it already */
-			for (iclock = 0; iclock < num_clocks; iclock++)
-				if (clock_list[iclock].net_number == clock_net) goto here;
-			/* If we get here, the clock is new and so we add it to the clock_list */
-			num_clocks++;
-			/*dynamically grow the array to fit one new element */
-			clock_list = (t_clock *) my_realloc (clock_list, (num_clocks + 1) * sizeof(t_clock *));
-			clock_list[num_clocks - 1].net_number = clock_net;
-			clock_list[num_clocks - 1].name = vpack_net[clock_net].name;
-		} else {
-			if (logical_block[bnum].clock_net != OPEN) {
-				clock_net = logical_block[bnum].clock_net;
-			/* Now we've found a clock - let's see if we've counted it already */
-				for (iclock = 0; iclock < num_clocks; iclock++)
-					if (clock_list[iclock].net_number == clock_net) goto here;
-				/* If we get here, the clock is new and so we add it to the clock_list */
-				num_clocks++;
-				/*dynamically grow the array to fit one new element */
-				clock_list = (t_clock *) my_realloc (clock_list, (num_clocks + 1) * sizeof(t_clock *));
-				clock_list[num_clocks - 1].net_number = clock_net;
-				clock_list[num_clocks - 1].name = vpack_net[clock_net].name;
+		/* Now we've found a clock - let's see if we've counted it already */
+		for (iclock = 0; !found && iclock < num_netlist_clocks; iclock++) {
+			if (clock_list[iclock].net_number == clock_net) {
+				found = TRUE;
 			}
 		}
+		if(found) {
+			/* If we get here, the clock is new and so we add it to the clock_list */
+			num_netlist_clocks++;
+			/*dynamically grow the array to fit one new element */
+			clock_list = (t_clock *) my_realloc (clock_list, (num_netlist_clocks + 1) * sizeof(t_clock *));
+			clock_list[num_netlist_clocks - 1].net_number = clock_net;
+			clock_list[num_netlist_clocks - 1].name = vpack_net[clock_net].name;		
+		}
 	}
-	here:;
-	return (clock_list);
 }

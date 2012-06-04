@@ -19,8 +19,7 @@
 void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 		INP t_model *user_models, INP t_model *library_models) {
 	boolean *is_clock;
-	t_clock* clock_list;
-
+	
 	int num_models;
 	t_model *cur_model;
 	t_pack_patterns *list_of_packing_patterns;
@@ -72,7 +71,7 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 	 * unused inputs .                                      */
 
 	is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
-	clock_list = index_clocks();
+	alloc_and_load_netlist_clock_list();
 
 	printf("\nAfter removing unused inputs:\n");
 	printf("Total Blocks: %d.  Total Nets: %d.  Total inputs %d ouptuts %d\n",

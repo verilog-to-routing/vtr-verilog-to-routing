@@ -131,6 +131,8 @@ t_tnode *tnode = NULL; /* [0..num_tnodes - 1] */
 int num_tnodes = 0; /* Number of nodes (pins) in the timing graph */
 float pb_max_internal_delay = UNDEFINED; /* biggest internal delay of physical block */
 const t_pb_type *pbtype_max_internal_delay = NULL; /* physical block type with highest internal delay */
+t_clock * clock_list = NULL; /* [0..num_netlist_clocks - 1] array of clocks in netlist */
+int num_netlist_clocks = 0; /* [0..num_netlist_clocks - 1] number of clocks in netlist */
 
 /********************** Subroutines local to this module ********************/
 
