@@ -682,6 +682,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 						port_name = pins[i];
 						pin_node =
 								alloc_and_load_port_pin_ptrs_from_string(
+										pb->pb_graph_node->pb_type->parent_mode->interconnect[0].line_num,
 										pb->pb_graph_node->parent_pb_graph_node,
 										pb->pb_graph_node->parent_pb_graph_node->child_pb_graph_nodes[pb->parent_pb->mode],
 										port_name, &num_ptrs, &num_sets, TRUE,
@@ -739,6 +740,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 						port_name = pins[i];
 						pin_node =
 								alloc_and_load_port_pin_ptrs_from_string(
+										pb->pb_graph_node->pb_type->modes[pb->mode].interconnect->line_num,
 										pb->pb_graph_node,
 										pb->pb_graph_node->child_pb_graph_nodes[pb->mode],
 										port_name, &num_ptrs, &num_sets, TRUE,

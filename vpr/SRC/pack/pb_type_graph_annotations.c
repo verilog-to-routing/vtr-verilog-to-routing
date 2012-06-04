@@ -16,11 +16,11 @@
 #include "token.h"
 #include "pb_type_graph_annotations.h"
 
-static void load_pack_pattern_annotations(INOUTP t_pb_graph_node *pb_graph_node,
+static void load_pack_pattern_annotations(INP int line_num, INOUTP t_pb_graph_node *pb_graph_node,
 		INP int mode, INP char *annot_in_pins, INP char *annot_out_pins,
 		INP char *value);
 
-static void load_critical_path_annotations(
+static void load_critical_path_annotations(INP int line_num, 
 		INOUTP t_pb_graph_node *pb_graph_node, INP int mode,
 		INP enum e_pin_to_pin_annotation_format input_format,
 		INP enum e_pin_to_pin_delay_annotations delay_type,
@@ -44,7 +44,7 @@ void load_pb_graph_pin_to_pin_annotations(INOUTP t_pb_graph_node *pb_graph_node)
 									== E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
 							|| annotations[i].prop[j]
 									== E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) {
-						load_critical_path_annotations(pb_graph_node, OPEN,
+										load_critical_path_annotations(annotations[i].line_num, pb_graph_node, OPEN,
 								annotations[i].format, annotations[i].prop[j],
 								annotations[i].input_pins,
 								annotations[i].output_pins,
@@ -78,7 +78,7 @@ void load_pb_graph_pin_to_pin_annotations(INOUTP t_pb_graph_node *pb_graph_node)
 											== E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
 									|| annotations[k].prop[m]
 											== E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) {
-								load_critical_path_annotations(pb_graph_node, i,
+									load_critical_path_annotations(annotations[k].line_num, pb_graph_node, i,
 										annotations[k].format,
 										annotations[k].prop[m],
 										annotations[k].input_pins,
@@ -92,7 +92,7 @@ void load_pb_graph_pin_to_pin_annotations(INOUTP t_pb_graph_node *pb_graph_node)
 					} else if (annotations[k].type
 							== E_ANNOT_PIN_TO_PIN_PACK_PATTERN) {
 						assert(annotations[k].num_value_prop_pairs == 1);
-						load_pack_pattern_annotations(pb_graph_node, i,
+						load_pack_pattern_annotations(annotations[k].line_num, pb_graph_node, i,
 								annotations[k].input_pins,
 								annotations[k].output_pins,
 								annotations[k].value[0]);
@@ -120,7 +120,7 @@ void load_pb_graph_pin_to_pin_annotations(INOUTP t_pb_graph_node *pb_graph_node)
 /*
  Add the pattern name to the pack_pattern field for each pb_graph_edge that is used in a pack pattern
  */
-static void load_pack_pattern_annotations(INOUTP t_pb_graph_node *pb_graph_node,
+static void load_pack_pattern_annotations(INP int line_num, INOUTP t_pb_graph_node *pb_graph_node,
 		INP int mode, INP char *annot_in_pins, INP char *annot_out_pins,
 		INP char *value) {
 	int i, j, k, m, n, p, iedge;
@@ -129,9 +129,9 @@ static void load_pack_pattern_annotations(INOUTP t_pb_graph_node *pb_graph_node,
 	t_pb_graph_node **children = NULL;
 
 	children = pb_graph_node->child_pb_graph_nodes[mode];
-	in_port = alloc_and_load_port_pin_ptrs_from_string(pb_graph_node, children,
+	in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children,
 			annot_in_pins, &num_in_ptrs, &num_in_sets, FALSE, FALSE);
-	out_port = alloc_and_load_port_pin_ptrs_from_string(pb_graph_node, children,
+	out_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children,
 			annot_out_pins, &num_out_ptrs, &num_out_sets, FALSE, FALSE);
 
 	/* Discover edge then annotate edge with name of pack pattern */
@@ -185,7 +185,7 @@ static void load_pack_pattern_annotations(INOUTP t_pb_graph_node *pb_graph_node,
 	}
 }
 
-static void load_critical_path_annotations(
+static void load_critical_path_annotations(INP int line_num, 
 		INOUTP t_pb_graph_node *pb_graph_node, INP int mode,
 		INP enum e_pin_to_pin_annotation_format input_format,
 		INP enum e_pin_to_pin_delay_annotations delay_type,
@@ -228,20 +228,20 @@ static void load_critical_path_annotations(
 	}
 	if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) {
 		assert(pb_graph_node->pb_type->blif_model != NULL);
-		in_port = alloc_and_load_port_pin_ptrs_from_string(pb_graph_node,
+		in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node,
 				children, annot_in_pins, &num_in_ptrs, &num_in_sets, FALSE,
 				FALSE);
 	} else if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) {
 		assert(pb_graph_node->pb_type->blif_model != NULL);
-		in_port = alloc_and_load_port_pin_ptrs_from_string(pb_graph_node,
+		in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node,
 				children, annot_in_pins, &num_in_ptrs, &num_in_sets, FALSE,
 				FALSE);
 	} else {
 		assert(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX);
-		in_port = alloc_and_load_port_pin_ptrs_from_string(pb_graph_node,
+		in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node,
 				children, annot_in_pins, &num_in_ptrs, &num_in_sets, FALSE,
 				FALSE);
-		out_port = alloc_and_load_port_pin_ptrs_from_string(pb_graph_node,
+		out_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node,
 				children, annot_out_pins, &num_out_ptrs, &num_out_sets, FALSE,
 				FALSE);
 	}

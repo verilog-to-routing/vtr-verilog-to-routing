@@ -38,7 +38,7 @@ static void alloc_and_load_mode_interconnect(
 		INOUTP t_pb_graph_node **pb_graph_children_nodes,
 		INP const t_mode * mode);
 
-static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(
+static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 		INP const t_pb_graph_node *pb_graph_parent_node,
 		INP t_pb_graph_node **pb_graph_children_nodes,
 		INP boolean interconnect_error_check, INP boolean is_input_to_interc,
@@ -467,13 +467,13 @@ static void alloc_and_load_mode_interconnect(
 	t_pb_graph_pin *** input_pb_graph_node_pins, ***output_pb_graph_node_pins;
 	for (i = 0; i < mode->num_interconnect; i++) {
 		/* determine the interconnect input and output pins */
-		input_pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(
+		input_pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(mode->interconnect[i].line_num,
 				pb_graph_parent_node, pb_graph_children_nodes,
 				mode->interconnect[i].input_string,
 				&num_input_pb_graph_node_pins, &num_input_pb_graph_node_sets,
 				TRUE, TRUE);
 
-		output_pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(
+		output_pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(mode->interconnect[i].line_num,
 				pb_graph_parent_node, pb_graph_children_nodes,
 				mode->interconnect[i].output_string,
 				&num_output_pb_graph_node_pins, &num_output_pb_graph_node_sets,
@@ -509,7 +509,7 @@ static void alloc_and_load_mode_interconnect(
 			break;
 
 		default:
-			printf(ERRTAG "Unknown interconnect %d for mode %s in pb_type %s\n",
+			printf(ERRTAG "[LINE %d] Unknown interconnect %d for mode %s in pb_type %s\n", mode->interconnect[i].line_num,
 					mode->interconnect[i].type, mode->name,
 					pb_graph_parent_node->pb_type->name);
 			printf("\tinput %s output %s\n", mode->interconnect[i].input_string,
@@ -533,7 +533,7 @@ static void alloc_and_load_mode_interconnect(
  * creates an array of pointers to the pb graph node pins in order from the port string
  * returns t_pb_graph_pin ptr indexed by [0..num_sets_in_port - 1][0..num_ptrs - 1]
  */
-t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(
+t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(INP int line_num, 
 		INP const t_pb_graph_node *pb_graph_parent_node,
 		INP t_pb_graph_node **pb_graph_children_nodes,
 		INP const char * port_string, OUTP int ** num_ptrs, OUTP int * num_sets,
@@ -555,14 +555,14 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(
 		assert(tokens[i].type != TOKEN_NULL);
 		if (tokens[i].type == TOKEN_OPEN_SQUIG_BRACKET) {
 			if (in_squig_bracket) {
-				printf(ERRTAG "{ inside { in port %s\n", port_string);
+				printf(ERRTAG "[LINE %d] { inside { in port %s\n", line_num, port_string);
 				exit(1);
 			}
 			in_squig_bracket = TRUE;
 		} else if (tokens[i].type == TOKEN_CLOSE_SQUIG_BRACKET) {
 			if (!in_squig_bracket) {
 				(*num_sets)++;
-				printf(ERRTAG "No matching '{' for '}' in port %s\n",
+				printf(ERRTAG "[LINE %d] No matching '{' for '}' in port %s\n", line_num,
 						port_string);
 				exit(1);
 			}
@@ -576,7 +576,7 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(
 
 	if (in_squig_bracket) {
 		(*num_sets)++;
-		printf(ERRTAG "No matching '{' for '}' in port %s\n", port_string);
+		printf(ERRTAG "[LINE %d] No matching '{' for '}' in port %s\n", line_num, port_string);
 		exit(1);
 	}
 
@@ -588,32 +588,32 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(
 		assert(tokens[i].type != TOKEN_NULL);
 		if (tokens[i].type == TOKEN_OPEN_SQUIG_BRACKET) {
 			if (in_squig_bracket) {
-				printf(ERRTAG "{ inside { in port %s\n", port_string);
+				printf(ERRTAG "[LINE %d] { inside { in port %s\n", line_num, port_string);
 				exit(1);
 			}
 			in_squig_bracket = TRUE;
 		} else if (tokens[i].type == TOKEN_CLOSE_SQUIG_BRACKET) {
 			if ((*num_ptrs)[curr_set] == 0) {
-				printf(ERRTAG "No data contained in {} in port %s\n",
+				printf(ERRTAG "[LINE %d] No data contained in {} in port %s\n", line_num, 
 						port_string);
 				exit(1);
 			}
 			if (!in_squig_bracket) {
 				curr_set++;
-				printf(ERRTAG "No matching '{' for '}' in port %s\n",
+				printf(ERRTAG "[LINE %d] No matching '{' for '}' in port %s\n", line_num,
 						port_string);
 				exit(1);
 			}
 			in_squig_bracket = FALSE;
 		} else if (tokens[i].type == TOKEN_STRING) {
 
-			success = realloc_and_load_pb_graph_pin_ptrs_at_var(
+			success = realloc_and_load_pb_graph_pin_ptrs_at_var(line_num,
 					pb_graph_parent_node, pb_graph_children_nodes,
 					interconnect_error_check, is_input_to_interc, tokens, &i,
 					&((*num_ptrs)[curr_set]), &pb_graph_pins[curr_set]);
 
 			if (!success) {
-				printf(ERRTAG "syntax error processing port string %s\n",
+				printf(ERRTAG "[LINE %d] syntax error processing port string %s\n", line_num,
 						port_string);
 				exit(1);
 			}
@@ -868,7 +868,7 @@ static void alloc_and_load_mux_interc_edges( INP t_interconnect * interconnect,
  * tokens: array of tokens to scan
  * num_pins: current number of pins in pb_graph_pin array 
  */
-static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(
+static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 		INP const t_pb_graph_node *pb_graph_parent_node,
 		INP t_pb_graph_node **pb_graph_children_nodes,
 		INP boolean interconnect_error_check, INP boolean is_input_to_interc,
@@ -934,7 +934,7 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(
 			if ((pb_lsb != pb_msb)
 					&& (pb_lsb != pb_graph_parent_node->placement_index)) {
 				printf(
-						ERRTAG "Incorrect placement index for %s, expected index %d\n",
+						ERRTAG "[LINE %d] Incorrect placement index for %s, expected index %d\n", line_num,
 						tokens[0].data, pb_graph_parent_node->placement_index);
 				return FALSE;
 			}
@@ -942,7 +942,7 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(
 		}
 	} else {
 		if (mode == NULL) {
-			printf(ERRTAG "pb_graph_parent_node %s failed\n",
+			printf(ERRTAG "[LINE %d] pb_graph_parent_node %s failed\n", line_num,
 					pb_graph_parent_node->pb_type->name);
 		}
 		assert(mode);
@@ -994,7 +994,7 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(
 
 	if (!found) {
 		printf(
-				ERRTAG "Unknown pb_type name %s, not defined in namespace of mode %s\n",
+				ERRTAG "[LINE %d] Unknown pb_type name %s, not defined in namespace of mode %s\n", line_num,
 				tokens[*token_index].data, mode->name);
 		return FALSE;
 	}
@@ -1043,7 +1043,7 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(
 	} else {
 		if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb],
 				0) == NULL) {
-			printf("failed to find port name %s\n", port_name);
+			printf(ERRTAG "[LINE %d] failed to find port name %s\n", line_num, port_name);
 			exit(1);
 		}
 		iport =
@@ -1089,13 +1089,13 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(
 					if (is_input_to_interc) {
 						if (iport->type != IN_PORT) {
 							printf(
-									ERRTAG "input to interconnect from parent is not an input or clock pin\n");
+									ERRTAG "[LINE %d] input to interconnect from parent is not an input or clock pin\n", line_num);
 							return FALSE;
 						}
 					} else {
 						if (iport->type != OUT_PORT) {
 							printf(
-									ERRTAG "output from interconnect from parent is not an input or clock pin\n");
+									ERRTAG "[LINE %d] output from interconnect from parent is not an input or clock pin\n", line_num);
 							return FALSE;
 						}
 					}
@@ -1103,13 +1103,13 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(
 					if (is_input_to_interc) {
 						if (iport->type != OUT_PORT) {
 							printf(
-									ERRTAG "output from interconnect from parent is not an input or clock pin\n");
+									ERRTAG "[LINE %d] output from interconnect from parent is not an input or clock pin\n", line_num);
 							return FALSE;
 						}
 					} else {
 						if (iport->type != IN_PORT) {
 							printf(
-									ERRTAG "input to interconnect from parent is not an input or clock pin\n");
+									ERRTAG "[LINE %d] input to interconnect from parent is not an input or clock pin\n", line_num);
 							return FALSE;
 						}
 					}
@@ -1216,6 +1216,7 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
 				for (k = 0; k < type->num_pin_loc_assignments[i][j]; k++) {
 					pb_graph_node_pins =
 							alloc_and_load_port_pin_ptrs_from_string(
+									type->pb_type->modes[0].interconnect[0].line_num,
 									type->pb_graph_head,
 									type->pb_graph_head->child_pb_graph_nodes[0],
 									type->pin_loc_assignments[i][j][k],
