@@ -65,14 +65,14 @@
 char *EZXML_NIL[] = { NULL }; /* empty, null terminated array of strings */
 
 static ezxml_t ezxml_vget(ezxml_t xml, va_list ap);
-static char *ezxml_decode(int *cur_line, char *s, char **ent, char t);
+static char *ezxml_decode(char *s, char **ent, char t);
 static void ezxml_open_tag(ezxml_root_t root, int line, char *name, char **attr);
-static void ezxml_char_content(ezxml_root_t root, int *cur_line, char *s,
+static void ezxml_char_content(ezxml_root_t root, char *s,
 		size_t len, char t);
 static ezxml_t ezxml_close_tag(ezxml_root_t root, char *name, char *s);
 static int ezxml_ent_ok(char *name, char *s, char **ent);
 static void ezxml_proc_inst(ezxml_root_t root, char *s, size_t len);
-static short ezxml_internal_dtd(ezxml_root_t root, int *cur_line, char *s,
+static short ezxml_internal_dtd(ezxml_root_t root, char *s,
 		size_t len);
 static char *ezxml_str2utf8(char **s, size_t * len);
 static void ezxml_free_attr(char **attr);
@@ -192,7 +192,7 @@ static ezxml_t ezxml_err(ezxml_root_t root, char *s, const char *err, ...) {
 /* s, returns a malloced string that must be freed. */
 /* Jason Luu June 22, 2010, Added line number support */
 static char *
-ezxml_decode(int *cur_line, char *s, char **ent, char t) {
+ezxml_decode(char *s, char **ent, char t) {
 	char *e, *r = s, *m = s;
 	long b, c, d, l;
 
@@ -201,7 +201,6 @@ ezxml_decode(int *cur_line, char *s, char **ent, char t) {
 			*(s++) = '\n';
 			if (*s == '\n') {
 				memmove(s, (s + 1), strlen(s));
-				(*cur_line)++;
 			}
 		}
 	}
@@ -209,8 +208,6 @@ ezxml_decode(int *cur_line, char *s, char **ent, char t) {
 	for (s = r;;) {
 		while (*s && *s != '&' && (*s != '%' || t != '%') && !isspace(*s))
 			s++;
-		if (*s == '\n')
-			(*cur_line)++;
 		if (!*s)
 			break;
 		else if (t != 'c' && !strncmp(s, "&#", 2)) { /* character reference */
@@ -290,7 +287,7 @@ static void ezxml_open_tag(ezxml_root_t root, int line, char *name, char **attr)
 
 /* called when parser finds character content between open and closing tag */
 /* Jason Luu June 22, 2010, Added line number support */
-static void ezxml_char_content(ezxml_root_t root, int *cur_line, char *s,
+static void ezxml_char_content(ezxml_root_t root, char *s,
 		size_t len, char t) {
 	ezxml_t xml = root->cur;
 	char *m = s;
@@ -300,7 +297,7 @@ static void ezxml_char_content(ezxml_root_t root, int *cur_line, char *s,
 		return; /* sanity check */
 
 	s[len] = '\0'; /* null terminate text (calling functions anticipate this) */
-	len = strlen(s = ezxml_decode(cur_line, s, root->ent, t)) + 1;
+	len = strlen(s = ezxml_decode(s, root->ent, t)) + 1;
 
 	if (!*(xml->txt))
 		xml->txt = s; /* initial character content */
@@ -389,7 +386,7 @@ static void ezxml_proc_inst(ezxml_root_t root, char *s, size_t len) {
 
 /* called when the parser finds an internal doctype subset */
 /* Jason Luu June 22, 2010, Added line number support */
-static short ezxml_internal_dtd(ezxml_root_t root, int *cur_line, char *s,
+static short ezxml_internal_dtd(ezxml_root_t root, char *s,
 		size_t len) {
 	char q, *c, *t, *n = NULL, *v, **ent, **pe;
 	int i, j;
@@ -426,7 +423,7 @@ static short ezxml_internal_dtd(ezxml_root_t root, int *cur_line, char *s,
 			s = strchr(v, q);
 			if (s)
 				*(s++) = '\0'; /* null terminate value */
-			ent[i + 1] = ezxml_decode(cur_line, v, pe, '%'); /* set value */
+			ent[i + 1] = ezxml_decode(v, pe, '%'); /* set value */
 			ent[i + 2] = NULL; /* null terminate entity list */
 			if (!ezxml_ent_ok(n, ent[i + 1], ent)) { /* circular reference */
 				if (ent[i + 1] != v)
@@ -505,13 +502,14 @@ static short ezxml_internal_dtd(ezxml_root_t root, int *cur_line, char *s,
 				root->attr[i][j + 3] = NULL; /* null terminate list */
 				root->attr[i][j + 2] = c; /* is it cdata? */
 				root->attr[i][j + 1] =
-						(v) ? ezxml_decode(cur_line, v, root->ent, *c) : NULL;
+						(v) ? ezxml_decode(v, root->ent, *c) : NULL;
 				root->attr[i][j] = n; /* attribute name  */
 
 				++s;
 			}
-		} else if (!strncmp(s, "<!--", 4))
+		} else if (!strncmp(s, "<!--", 4)) {
 			s = strstr(s + 4, "-->"); /* comments */
+		}
 		else if (!strncmp(s, "<?", 2)) { /* processing instructions */
 			/* Jason Luu, Aug 29, 2007. Removed assignment in conditional statement */
 			s = strstr(c = s + 2, "?>");
@@ -591,7 +589,7 @@ static void ezxml_free_attr(char **attr) {
 /* Jason Luu June 22, 2010, Added line number support */
 ezxml_t ezxml_parse_str(char *s, size_t len) {
 	ezxml_root_t root = (ezxml_root_t) ezxml_new(0);
-	char q, e, *d, **attr, **a = NULL; /* initialize a to avoid compile warning */
+	char q, e, *d, *temp, **attr, **a = NULL; /* initialize a to avoid compile warning */
 	int l, i, j;
 	int line = 1;
 
@@ -662,7 +660,7 @@ ezxml_t ezxml_parse_str(char *s, size_t len) {
 
 						for (j = 1; a && a[j] && strcmp(a[j], attr[l]); j += 3)
 							;
-						attr[l + 1] = ezxml_decode(&line, attr[l + 1],
+						attr[l + 1] = ezxml_decode(attr[l + 1],
 								root->ent, (a && a[j]) ? *a[j + 2] : ' ');
 						if (attr[l + 1] < d || attr[l + 1] > s)
 							attr[l + 3][l / 2] = EZXML_TXTM; /* value malloced */
@@ -708,14 +706,21 @@ ezxml_t ezxml_parse_str(char *s, size_t len) {
 				s += strspn(s, EZXML_WS);
 			}
 		} else if (!strncmp(s, "!--", 3)) { /* xml comment */
+			temp = s;
 			s = strstr(s + 3, "--");
 			if (!s || (*(s += 2) != '>' && *s) || (!*s && e != '>'))
 				return ezxml_err(root, d, "unclosed <!--");
+			while(temp != s && *temp != '\0') {
+				if(*temp == '\n') {
+					line++;
+				}
+				temp++;
+			}
 		} else if (!strncmp(s, "![CDATA[", 8)) { /* cdata */
 			/* Jason Luu, Aug 29, 2007. Removed assignment in conditional statement */
 			s = strstr(s, "]]>");
 			if (s)
-				ezxml_char_content(root, &line, d + 8, (s += 2) - d - 10, 'c');
+				ezxml_char_content(root, d + 8, (s += 2) - d - 10, 'c');
 			else
 				return ezxml_err(root, d, "unclosed <![CDATA[");
 		} else if (!strncmp(s, "!DOCTYPE", 8)) { /* dtd */
@@ -733,7 +738,7 @@ ezxml_t ezxml_parse_str(char *s, size_t len) {
 			if (!*s && e != '>')
 				return ezxml_err(root, d, "unclosed <!DOCTYPE");
 			d = (l) ? strchr(d, '[') + 1 : d;
-			if (l && !ezxml_internal_dtd(root, &line, d, s++ - d))
+			if (l && !ezxml_internal_dtd(root, d, s++ - d))
 				return &root->xml;
 		} else if (*s == '?') { /* <?...?> processing instructions */
 			do {
@@ -751,10 +756,14 @@ ezxml_t ezxml_parse_str(char *s, size_t len) {
 		*s = '\0';
 		d = ++s;
 		if (*s && *s != '<') { /* tag character content */
-			while (*s && *s != '<')
+			while (*s && *s != '<') {
+				if(*s == '\n') {
+					line++;
+				}
 				s++;
+			}
 			if (*s)
-				ezxml_char_content(root, &line, d, s - d, '&');
+				ezxml_char_content(root, d, s - d, '&');
 			else
 				break;
 		} else if (!*s)

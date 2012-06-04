@@ -477,6 +477,7 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 			ezxml_set_attr(Parent, "min", NULL);
 			i++;
 		}
+		annotation->line_num = Parent->line;
 		Prop = FindProperty(Parent, "in_port", TRUE);
 		annotation->input_pins = my_strdup(Prop);
 		ezxml_set_attr(Parent, "in_port", NULL);
@@ -887,6 +888,8 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 				assert(0 == strcmp(Cur->name, "mux"));
 				mode->interconnect[i].type = MUX_INTERC;
 			}
+
+			mode->interconnect[i].line_num = Cur->line;
 
 			mode->interconnect[i].parent_mode_index = mode->index;
 			Prop = FindProperty(Cur, "input", TRUE);
@@ -1364,6 +1367,7 @@ static void alloc_and_load_default_child_for_pb_type(INOUTP t_pb_type *pb_type,
 		} else {
 			copy->annotations[i].output_pins = NULL;
 		}
+		copy->annotations[i].line_num = pb_type->annotations[i].line_num;
 		copy->annotations[i].format = pb_type->annotations[i].format;
 		copy->annotations[i].type = pb_type->annotations[i].type;
 		copy->annotations[i].num_value_prop_pairs =

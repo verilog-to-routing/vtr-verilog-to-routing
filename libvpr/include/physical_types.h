@@ -196,6 +196,8 @@ struct s_pin_to_pin_annotation {
 	char * input_pins;
 	char * output_pins;
 	char * clock;
+
+	int line_num; /* used to report what line number this annotation is found in architecture file */
 };
 typedef struct s_pin_to_pin_annotation t_pin_to_pin_annotation;
 
@@ -222,6 +224,8 @@ struct s_interconnect {
 	t_pin_to_pin_annotation *annotations; /* [0..num_annotations-1] */
 	int num_annotations;
 	boolean infer_annotations;
+
+	int line_num; /* Interconnect is processed later, need to know what line number it messed up on to give proper error message */
 
 	int parent_mode_index;
 };
