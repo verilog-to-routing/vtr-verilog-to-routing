@@ -878,6 +878,7 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 	int i, j, ipin, ipb;
 	int pb_msb, pb_lsb;
 	int pin_msb, pin_lsb;
+	int max_pb_node_array;
 	const t_pb_graph_node *pb_node_array;
 	char *port_name;
 	t_port *iport;
@@ -887,6 +888,7 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 
 	assert(tokens[*token_index].type == TOKEN_STRING);
 	pb_node_array = NULL;
+	max_pb_node_array = 0;
 
 	if (pb_graph_children_nodes)
 		mode = pb_graph_children_nodes[0][0].pb_type->parent_mode;
@@ -900,6 +902,7 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 			== strcmp(pb_graph_parent_node->pb_type->name,
 					tokens[*token_index].data)) {
 		pb_node_array = pb_graph_parent_node;
+		max_pb_node_array = 1;
 		pb_msb = pb_lsb = 0;
 		found = TRUE;
 		(*token_index)++;
@@ -953,6 +956,7 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 					== strcmp(mode->pb_type_children[i].name,
 							tokens[*token_index].data)) {
 				pb_node_array = pb_graph_children_nodes[i];
+				max_pb_node_array = mode->pb_type_children[i].num_pb;
 				found = TRUE;
 				(*token_index)++;
 
@@ -1041,6 +1045,10 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 			(*token_index)++;
 		}
 	} else {
+		if(pb_lsb < 0 || pb_lsb >= max_pb_node_array) {
+			printf(ERRTAG "[LINE %d] pb %d out of range [%d,%d]\n", line_num, pb_lsb, max_pb_node_array - 1, 0);
+			exit(1);
+		}
 		if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb],
 				0) == NULL) {
 			printf(ERRTAG "[LINE %d] failed to find port name %s\n", line_num, port_name);
@@ -1074,9 +1082,17 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 		ipin = pin_lsb;
 		j = 0;
 		while (ipin != pin_msb + add_or_subtract_pin) {
+			if(ipb < 0 || ipb >= max_pb_node_array) {
+				printf(ERRTAG "[LINE %d] pb %d out of range [%d,%d]\n", line_num, ipb, max_pb_node_array - 1, 0);
+				exit(1);
+			}
 			(*pb_graph_pins)[i * (abs(pin_msb - pin_lsb) + 1) + j] =
 					get_pb_graph_pin_from_name(port_name, &pb_node_array[ipb],
 							ipin);
+			if((*pb_graph_pins)[i * (abs(pin_msb - pin_lsb) + 1) + j] == NULL) {
+				printf(ERRTAG "[LINE %d] Pin %s.%s[%d] cannot be found\n", line_num, pb_node_array[ipb].pb_type->name, port_name, ipin);
+				exit(1);
+			}
 			iport =
 					(*pb_graph_pins)[i * (abs(pin_msb - pin_lsb) + 1) + j]->port;
 			if (!iport) {
