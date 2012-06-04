@@ -655,19 +655,19 @@ static void alloc_and_load_complete_interc_edges(
 		out_count += num_output_ptrs[i_outset];
 	}
 
-	edges = my_calloc(in_count * out_count, sizeof(t_pb_graph_edge));
-	cur = my_malloc(sizeof(struct s_linked_vptr));
+	edges = (t_pb_graph_edge*)my_calloc(in_count * out_count, sizeof(t_pb_graph_edge));
+	cur = (struct s_linked_vptr*)my_malloc(sizeof(struct s_linked_vptr));
 	cur->next = edges_head;
 	edges_head = cur;
 	cur->data_vptr = (void *) edges;
-	cur = my_malloc(sizeof(struct s_linked_vptr));
+	cur = (struct s_linked_vptr*)my_malloc(sizeof(struct s_linked_vptr));
 	cur->next = num_edges_head;
 	num_edges_head = cur;
 	cur->data_vptr = (void *) ((long) in_count * out_count);
 
 	for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
 		for (i_inpin = 0; i_inpin < num_input_ptrs[i_inset]; i_inpin++) {
-			input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->output_edges =
+			input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->output_edges =(t_pb_graph_edge **)
 					my_realloc(
 							input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->output_edges,
 							(input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->num_output_edges
@@ -677,7 +677,7 @@ static void alloc_and_load_complete_interc_edges(
 
 	for (i_outset = 0; i_outset < num_output_sets; i_outset++) {
 		for (i_outpin = 0; i_outpin < num_output_ptrs[i_outset]; i_outpin++) {
-			output_pb_graph_node_pin_ptrs[i_outset][i_outpin]->input_edges =
+			output_pb_graph_node_pin_ptrs[i_outset][i_outpin]->input_edges =(t_pb_graph_edge **)
 					my_realloc(
 							output_pb_graph_node_pin_ptrs[i_outset][i_outpin]->input_edges,
 							(output_pb_graph_node_pin_ptrs[i_outset][i_outpin]->num_input_edges
@@ -702,12 +702,12 @@ static void alloc_and_load_complete_interc_edges(
 					output_pb_graph_node_pin_ptrs[i_outset][i_outpin]->num_input_edges++;
 
 					edges[i_edge].num_input_pins = 1;
-					edges[i_edge].input_pins = my_malloc(
+					edges[i_edge].input_pins = (t_pb_graph_pin **)my_malloc(
 							sizeof(t_pb_graph_pin *));
 					edges[i_edge].input_pins[0] =
 							input_pb_graph_node_pin_ptrs[i_inset][i_inpin];
 					edges[i_edge].num_output_pins = 1;
-					edges[i_edge].output_pins = my_malloc(
+					edges[i_edge].output_pins = (t_pb_graph_pin **)my_malloc(
 							sizeof(t_pb_graph_pin *));
 					edges[i_edge].output_pins[0] =
 							output_pb_graph_node_pin_ptrs[i_outset][i_outpin];
@@ -736,31 +736,28 @@ static void alloc_and_load_direct_interc_edges(
 	struct s_linked_vptr *cur;
 
 	/* Allocate memory for edges */
-	assert(num_input_sets == 1 && num_output_sets == 1);
-	if (num_input_ptrs[0] != num_output_ptrs[0]) {
-		printf(
-				"input ptrs %d output ptrs %d input pin %s output pin %s input_pb_type %s output_pb_type %s\n",
-				num_input_ptrs[0], num_output_ptrs[0],
-				input_pb_graph_node_pin_ptrs[0][0]->port->name,
-				output_pb_graph_node_pin_ptrs[0][0]->port->name,
-				input_pb_graph_node_pin_ptrs[0][0]->parent_node->pb_type->name,
-				output_pb_graph_node_pin_ptrs[0][0]->parent_node->pb_type->name);
+	if(!(num_input_sets == 1 && num_output_sets == 1)) {
+		printf(ERRTAG "[LINE %d] Direct interconnect allows connections from one set of pins to one other set\n", interconnect->line_num);
+		exit(1);
 	}
-	assert(num_input_ptrs[0] == num_output_ptrs[0]);
+	if(!(num_input_ptrs[0] == num_output_ptrs[0])) {
+		printf(ERRTAG "[LINE %d] Direct interconnect must use an equal number of pins\n", interconnect->line_num);
+		exit(1);
+	}
 
-	edges = my_calloc(num_input_ptrs[0], sizeof(t_pb_graph_edge));
-	cur = my_malloc(sizeof(struct s_linked_vptr));
+	edges = (t_pb_graph_edge*)my_calloc(num_input_ptrs[0], sizeof(t_pb_graph_edge));
+	cur = (struct s_linked_vptr*)my_malloc(sizeof(struct s_linked_vptr));
 	cur->next = edges_head;
 	edges_head = cur;
 	cur->data_vptr = (void *) edges;
-	cur = my_malloc(sizeof(struct s_linked_vptr));
+	cur = (struct s_linked_vptr*)my_malloc(sizeof(struct s_linked_vptr));
 	cur->next = num_edges_head;
 	num_edges_head = cur;
 	cur->data_vptr = (void *) ((long) num_input_ptrs[0]);
 
 	/* Reallocate memory for pins and load connections between pins and record these updates in the edges */
 	for (i = 0; i < num_input_ptrs[0]; i++) {
-		input_pb_graph_node_pin_ptrs[0][i]->output_edges = my_realloc(
+		input_pb_graph_node_pin_ptrs[0][i]->output_edges = (t_pb_graph_edge **)my_realloc(
 				input_pb_graph_node_pin_ptrs[0][i]->output_edges,
 				(input_pb_graph_node_pin_ptrs[0][i]->num_output_edges + 1)
 						* sizeof(t_pb_graph_edge *));
@@ -768,7 +765,7 @@ static void alloc_and_load_direct_interc_edges(
 				&edges[i];
 		input_pb_graph_node_pin_ptrs[0][i]->num_output_edges++;
 
-		output_pb_graph_node_pin_ptrs[0][i]->input_edges = my_realloc(
+		output_pb_graph_node_pin_ptrs[0][i]->input_edges = (t_pb_graph_edge **)my_realloc(
 				output_pb_graph_node_pin_ptrs[0][i]->input_edges,
 				(output_pb_graph_node_pin_ptrs[0][i]->num_input_edges + 1)
 						* sizeof(t_pb_graph_edge *));
@@ -777,10 +774,10 @@ static void alloc_and_load_direct_interc_edges(
 		output_pb_graph_node_pin_ptrs[0][i]->num_input_edges++;
 
 		edges[i].num_input_pins = 1;
-		edges[i].input_pins = my_malloc(sizeof(t_pb_graph_pin *));
+		edges[i].input_pins = (t_pb_graph_pin **)my_malloc(sizeof(t_pb_graph_pin *));
 		edges[i].input_pins[0] = input_pb_graph_node_pin_ptrs[0][i];
 		edges[i].num_output_pins = 1;
-		edges[i].output_pins = my_malloc(sizeof(t_pb_graph_pin *));
+		edges[i].output_pins = (t_pb_graph_pin **)my_malloc(sizeof(t_pb_graph_pin *));
 		edges[i].output_pins[0] = output_pb_graph_node_pin_ptrs[0][i];
 
 		edges[i].interconnect = interconnect;
@@ -802,7 +799,10 @@ static void alloc_and_load_mux_interc_edges( INP t_interconnect * interconnect,
 	assert(interconnect->infer_annotations == FALSE);
 
 	/* Allocate memory for edges, and reallocate more memory for pins connecting to those edges */
-	assert(num_output_sets == 1);
+	if(num_output_sets != 1) {
+		printf(ERRTAG "[LINE %d] Mux must have one output\n", interconnect->line_num);
+		exit(1);
+	}
 
 	edges = my_calloc(num_input_sets, sizeof(t_pb_graph_edge));
 	cur = my_malloc(sizeof(struct s_linked_vptr));
@@ -833,7 +833,10 @@ static void alloc_and_load_mux_interc_edges( INP t_interconnect * interconnect,
 
 	/* Load connections between pins and record these updates in the edges */
 	for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
-		assert(num_output_ptrs[0] == num_input_ptrs[i_inset]);
+		if(num_output_ptrs[0] != num_input_ptrs[i_inset]) {
+			printf(ERRTAG "[LINE %d] # of pins for a particular data line of a mux must equal number of pins at output of mux\n", interconnect->line_num);
+			exit(1);
+		}
 		edges[i_inset].input_pins = my_calloc(num_output_ptrs[0],
 				sizeof(t_pb_graph_pin *));
 		edges[i_inset].output_pins = my_calloc(num_output_ptrs[0],
@@ -853,8 +856,10 @@ static void alloc_and_load_mux_interc_edges( INP t_interconnect * interconnect,
 			edges[i_inset].output_pins[i_inpin] =
 					output_pb_graph_node_pin_ptrs[0][i_inpin];
 
-			assert(i_inpin == 0);
-			/* current does not support bus-based routing, TODO: Support bus based routing */
+			if(i_inpin != 0) {
+				printf(ERRTAG "[LINE %d] Bus-based mux not yet supported, will consider for future work\n", interconnect->line_num);
+				exit(1);
+			}
 			edges[i_inset].interconnect = interconnect;
 			edges[i_inset].driver_set = i_inset;
 			edges[i_inset].driver_pin = i_inpin;
