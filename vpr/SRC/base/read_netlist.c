@@ -473,7 +473,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 					pb->child_pbs[i][pb_index].logical_block = OPEN;
 					lookahead = FindElement(Cur, "outputs", FALSE);
 					if (lookahead != NULL) {
-						lookahead = FindElement(lookahead, "port", TRUE);
+						lookahead = FindFirstElement(lookahead, "port", TRUE);
 						Prop = FindProperty(Cur, "mode", FALSE);
 						if (Prop) {
 							ezxml_set_attr(Cur, "mode", NULL);
