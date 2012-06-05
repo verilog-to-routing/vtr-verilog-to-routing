@@ -12,6 +12,13 @@
 
 static FILE *sdc;
 
+/***************** Subroutines local to this module *************************/
+
+void get_sdc_tok(char * buffer, int num_lines);
+boolean check_if_number(char * ptr);
+
+/********************* Subroutine definitions *******************************/
+
 void read_sdc(char * sdc_file, int num_clocks) {
 /*This function reads the constraints from the SDC file *
 * specified on the command line into float ** timing_   *
@@ -21,24 +28,22 @@ void read_sdc(char * sdc_file, int num_clocks) {
 	char buf[BUFSIZE];
 	int num_lines = 0;
 	
-	if (sdc == NULL) {
+	if ((sdc = fopen(sdc_file, "r")) == NULL) {
 		printf("SDC file %s not found.\n", sdc_file);
 		printf("All clocks will be analysed together during timing analysis.\n\n");
 		return;
 	}
 	
-	/* Now we know there's an SDC file, so open and parse it */
-	sdc = fopen(sdc_file, "r");
-	timing_constraints = (float **) my_malloc(num_clocks * num_clocks * sizeof(float));
-	/*[0..num_clocks-1][0..num_clocks.1]*/
-
-	while (my_fgets(buf, BUFSIZE, sdc) != NULL) {
+	/* Allocate matrix of timing constraints [0..num_clocks-1][0..num_clocks-1] */
+	timing_constraints = (float **) my_calloc(num_clocks * num_clocks, sizeof(float));
+	
+	/* Parse the file line-by-line */
+	while (my_fgets(buf, BUFSIZE, sdc) != NULL) { 
 		get_sdc_tok(buf, num_lines);
 		num_lines++;
 	}
 
 	fclose(sdc);
-
 }
 
 void get_sdc_tok(char * buf, int num_lines) {
@@ -49,6 +54,7 @@ void get_sdc_tok(char * buf, int num_lines) {
 	/*We're using so little of the SDC syntax that we can ignore braces*/
 
 	char * ptr;
+	float clock_period_temp;
 	/*char clockname[BUFSIZE];*/
 
 	ptr = my_strtok(buf, TOKENS, sdc, buf);
@@ -56,16 +62,45 @@ void get_sdc_tok(char * buf, int num_lines) {
 		return;
 
 	if (strcmp(ptr, "create_clock") == 0) {
-		/*make sure clock has a period specified*/
+		/* recall: we need the syntax to be create_clock -period <float> <name or *> */
+
+		/* make sure clock has -period specified */
 		ptr = my_strtok(NULL, TOKENS, sdc, buf);
-		if(strcmp(buf, "-period")!=0) {
-			fprintf(stderr, "Clock requires a '-period' on line %d of SDC file", num_lines);
+		if(strcmp(ptr, "-period") != 0) {
+			fprintf(stderr, "create_clock requires a '-period' on line %d of SDC file", num_lines);
+			exit(1);
+		}
+		ptr = my_strtok(NULL, TOKENS, sdc, buf);
+
+		/* check if the token following -period is actually a number*/
+		if(!check_if_number(ptr)) {
+			fprintf(stderr, "'-period' on line %d of SDC file is not followed by a number", num_lines);
 			exit(1);
 		}
 		
+		/* for now, store the clock period in a temp variable */
+		clock_period_temp = (float) strtod(ptr, NULL);
+				
 	}
 	else {
 		fprintf(stderr, "Incorrect or unsupported syntax in line %d of SDC file", num_lines);
 		exit(1);
 	}
+}
+
+boolean check_if_number(char * ptr) {
+/* Checks if the character array ptr represents a number.  *
+ * To return TRUE, all characters must be digits, although *
+ * there can also be no more than one decimal point.       */
+	int i, num_decimal_points = 0, len=strlen(ptr);
+		for (i=0;i<len;i++) {
+		if((ptr[i]<'0'||ptr[i]>'9')) {
+			if(ptr[i] != '.') 
+				return FALSE;
+			num_decimal_points++;
+			if(num_decimal_points > 1) 
+					return FALSE;
+			}
+	}
+	return TRUE;
 }
