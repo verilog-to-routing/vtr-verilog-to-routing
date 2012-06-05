@@ -120,8 +120,8 @@ int get_max_primitives_in_pb_type(t_pb_type *pb_type) {
 		max_size = 1;
 	} else {
 		max_size = 0;
+		temp_size = 0;
 		for (i = 0; i < pb_type->num_modes; i++) {
-			temp_size = 0;
 			for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
 				temp_size += pb_type->modes[i].pb_type_children[j].num_pb
 						* get_max_primitives_in_pb_type(
