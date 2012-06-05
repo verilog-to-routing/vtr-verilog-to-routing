@@ -62,7 +62,7 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void) {
 		if (EMPTY_TYPE != &type_descriptors[i]) {
 			cluster_placement_stats_list[i].valid_primitives = (t_cluster_placement_primitive **) my_calloc(
 					get_max_primitives_in_pb_type(type_descriptors[i].pb_type)
-							+ 1, sizeof(t_cluster_placement_primitive*)); /* too much memory allocated but shouldn't be a problem */
+ 							+ 1, sizeof(t_cluster_placement_primitive*)); /* too much memory allocated but shouldn't be a problem */
 			cluster_placement_stats_list[i].curr_molecule = NULL;
 			load_cluster_placement_stats_for_pb_graph_node(
 					&cluster_placement_stats_list[i],
