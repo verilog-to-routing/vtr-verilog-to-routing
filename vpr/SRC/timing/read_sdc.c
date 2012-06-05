@@ -6,29 +6,29 @@
 #include "globals.h"
 #include "read_sdc.h"
 #include "read_blif.h"
+#include "path_delay.h"
 
 /* read_sdc.c is work in progress */
 
 static FILE *sdc;
 
-
-float ** read_sdc(char * sdc_file, int num_clocks) {
+void read_sdc(char * sdc_file, int num_clocks) {
 /*This function reads the constraints from the SDC file *
 * specified on the command line into float ** timing_   *
 * constraints.  If no file is specified, it leaves      *
 * timing_constraints pointing to NULL.                  */
 
-	float ** timing_constraints;
 	char buf[BUFSIZE];
 	int num_lines = 0;
 	
-	sdc = fopen(sdc_file, "r");
 	if (sdc == NULL) {
-		printf("SDC file not specified or not found.\n");
-		printf("All clocks will be analysed together during timing analysis.");
-		return NULL;
+		printf("SDC file %s not found.\n", sdc_file);
+		printf("All clocks will be analysed together during timing analysis.\n\n");
+		return;
 	}
-
+	
+	/* Now we know there's an SDC file, so open and parse it */
+	sdc = fopen(sdc_file, "r");
 	timing_constraints = (float **) my_malloc(num_clocks * num_clocks * sizeof(float));
 	/*[0..num_clocks-1][0..num_clocks.1]*/
 
@@ -39,7 +39,6 @@ float ** read_sdc(char * sdc_file, int num_clocks) {
 
 	fclose(sdc);
 
-	return timing_constraints;
 }
 
 void get_sdc_tok(char * buf, int num_lines) {
@@ -50,7 +49,7 @@ void get_sdc_tok(char * buf, int num_lines) {
 	/*We're using so little of the SDC syntax that we can ignore braces*/
 
 	char * ptr;
-	char clockname[BUFSIZE];
+	/*char clockname[BUFSIZE];*/
 
 	ptr = my_strtok(buf, TOKENS, sdc, buf);
 	if (ptr == NULL)

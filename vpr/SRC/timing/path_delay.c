@@ -84,6 +84,12 @@ enum e_subblock_pin_type {
 	SUB_INPUT = 0, SUB_OUTPUT, SUB_CLOCK, NUM_SUB_PIN_TYPES
 };
 
+/***************** Variables relating to timing constraints ***************************/
+
+int num_netlist_clocks = 0; /* number of clocks in netlist */
+t_clock * clock_list = NULL; /* [0..num_netlist_clocks - 1] array of clocks in netlist */
+float ** timing_constraints = NULL; /* [0..num_netlist_clocks - 1 (source)][0..num_netlist_clocks - 1 (destination)] */
+
 /***************** Variables local to this module ***************************/
 
 /* Variables for "chunking" the tedge memory.  If the head pointer is NULL, *
@@ -155,7 +161,7 @@ alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	if(timing_constraints == NULL) {
 		/* the SDC timing constraints only need to be read in once; *
 		 * if they haven't been already, do it now				    */
-		timing_constraints = read_sdc(timing_inf.SDCFile, num_netlist_clocks);
+		read_sdc(timing_inf.SDCFile, num_netlist_clocks);
 	}
 
 	alloc_and_load_tnodes(timing_inf);

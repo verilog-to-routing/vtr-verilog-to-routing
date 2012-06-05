@@ -203,7 +203,15 @@ static void SetupTiming(INP t_options Options, INP t_arch Arch,
 	Timing->C_ipin_cblock = Arch.C_ipin_cblock;
 	Timing->T_ipin_cblock = Arch.T_ipin_cblock;
 	Timing->timing_analysis_enabled = TimingEnabled;
-	Timing->SDCFile = Options.SDCFile;
+
+	/* If the user specified an SDC filename on the command line, look for specified_name.sdc, otherwise look for circuit_name.sdc*/
+	if (Options.SDCFile == NULL) {
+		Timing->SDCFile = (char*) my_calloc(strlen(Options.CircuitName)+5, sizeof(char)); /* circuit_name.sdc/0*/
+		sprintf(Timing->SDCFile, "%s.sdc", Options.CircuitName);
+	} else {
+		Timing->SDCFile = (char*) my_calloc(strlen(Options.SDCFile), sizeof(char)); 
+		sprintf(Timing->SDCFile, "%s", Options.SDCFile);
+	}
 }
 
 /* This loads up VPR's switch_inf data by combining the switches from 
