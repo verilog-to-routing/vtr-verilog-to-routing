@@ -1437,6 +1437,29 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 	sprintf(lut_pb_type->modes[0].interconnect[0].output_string, "%s.%s",
 			lut_pb_type->name, out_port->name);
 
+	lut_pb_type->modes[0].interconnect[0].annotations = my_calloc(lut_pb_type->num_annotations,
+			sizeof(t_pin_to_pin_annotation));
+	lut_pb_type->modes[0].interconnect[0].num_annotations = lut_pb_type->num_annotations;
+	for (i = 0; i < lut_pb_type->modes[0].interconnect[0].num_annotations; i++) {
+		lut_pb_type->modes[0].interconnect[0].annotations[i].clock = my_strdup(lut_pb_type->annotations[i].clock);
+		lut_pb_type->modes[0].interconnect[0].annotations[i].input_pins = my_strdup(lut_pb_type->annotations[i].input_pins);
+		lut_pb_type->modes[0].interconnect[0].annotations[i].output_pins = my_strdup(lut_pb_type->annotations[i].output_pins);
+		lut_pb_type->modes[0].interconnect[0].annotations[i].line_num = lut_pb_type->annotations[i].line_num;
+		lut_pb_type->modes[0].interconnect[0].annotations[i].format = lut_pb_type->annotations[i].format;
+		lut_pb_type->modes[0].interconnect[0].annotations[i].type = lut_pb_type->annotations[i].type;
+		lut_pb_type->modes[0].interconnect[0].annotations[i].num_value_prop_pairs =
+				lut_pb_type->annotations[i].num_value_prop_pairs;
+		lut_pb_type->modes[0].interconnect[0].annotations[i].prop = my_malloc(
+				sizeof(int) * lut_pb_type->annotations[i].num_value_prop_pairs);
+		lut_pb_type->modes[0].interconnect[0].annotations[i].value = my_malloc(
+				sizeof(char *) * lut_pb_type->annotations[i].num_value_prop_pairs);
+		for (j = 0; j < lut_pb_type->annotations[i].num_value_prop_pairs; j++) {
+			lut_pb_type->modes[0].interconnect[0].annotations[i].prop[j] = lut_pb_type->annotations[i].prop[j];
+			lut_pb_type->modes[0].interconnect[0].annotations[i].value[j] = my_strdup(
+					lut_pb_type->annotations[i].value[j]);
+		}
+	}
+
 	/* Second mode, LUT */
 
 	lut_pb_type->modes[1].name = my_strdup(lut_pb_type->name);
