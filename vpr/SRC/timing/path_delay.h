@@ -23,4 +23,3 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 		float constant_net_delay_value);
 
 void print_timing_graph_as_blif(char *fname, t_model *models);
-

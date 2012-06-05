@@ -71,8 +71,7 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 	 * unused inputs .                                      */
 
 	is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
-	alloc_and_load_netlist_clock_list();
-
+	
 	printf("\nAfter removing unused inputs:\n");
 	printf("Total Blocks: %d.  Total Nets: %d.  Total inputs %d ouptuts %d\n",
 			num_logical_blocks, num_logical_nets, num_p_inputs, num_p_outputs);

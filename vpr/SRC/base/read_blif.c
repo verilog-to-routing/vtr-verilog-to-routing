@@ -1,6 +1,6 @@
 #include <string.h>
 #include <stdio.h>
-#include <assert.h>
+#include "assert.h"
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -41,7 +41,7 @@ static FILE *blif;
 
 static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 		boolean is_global, int doall);
-static void get_tok(char *buffer, int pass, int doall, boolean *done,
+static void get_blif_tok(char *buffer, int pass, int doall, boolean *done,
 		boolean *add_truth_table, INP t_model* inpad_model,
 		INP t_model* outpad_model, INP t_model* logic_model,
 		INP t_model* latch_model, INP t_model* user_models);
@@ -52,7 +52,6 @@ static void io_line(int in_or_out, int doall, t_model *io_model);
 static boolean add_lut(int doall, t_model *logic_model);
 static void add_latch(int doall, INP t_model *latch_model);
 static void add_subckt(int doall, INP t_model *user_models);
-static void dum_parse(char *buf);
 static int hash_value(char *name);
 static void check_and_count_models(int doall, const char* model_name,
 		t_model* user_models);
@@ -89,7 +88,7 @@ void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 			add_truth_table = FALSE;
 			model_lines = 0;
 			while (my_fgets(buffer, BUFSIZE, blif) != NULL) {
-				get_tok(buffer, pass, doall, &done, &add_truth_table,
+				get_blif_tok(buffer, pass, doall, &done, &add_truth_table,
 						inpad_model, outpad_model, logic_model, latch_model,
 						user_models);
 			}
@@ -180,7 +179,7 @@ static void init_parse(int doall) {
 	num_subckts = 0;
 }
 
-static void get_tok(char *buffer, int pass, int doall, boolean *done,
+static void get_blif_tok(char *buffer, int pass, int doall, boolean *done,
 		boolean *add_truth_table, INP t_model* inpad_model,
 		INP t_model* outpad_model, INP t_model* logic_model,
 		INP t_model* latch_model, INP t_model* user_models) {
@@ -188,7 +187,7 @@ static void get_tok(char *buffer, int pass, int doall, boolean *done,
 	/* Figures out which, if any token is at the start of this line and *
 	 * takes the appropriate action.                                    */
 
-#define TOKENS " \t\n"
+#define BLIF_TOKENS " \t\n"
 	char *ptr;
 	char *fn;
 	struct s_linked_vptr *data;
@@ -201,7 +200,7 @@ static void get_tok(char *buffer, int pass, int doall, boolean *done,
 		if (ptr[0] == '0' || ptr[0] == '1' || ptr[0] == '-') {
 			data = my_malloc(sizeof(struct s_linked_vptr));
 			fn = ptr;
-			ptr = my_strtok(NULL, TOKENS, blif, buffer);
+			ptr = my_strtok(NULL, BLIF_TOKENS, blif, buffer);
 			if (!ptr || strlen(ptr) != 1) {
 				if (strlen(fn) == 1) {
 					/* constant generator */
@@ -316,7 +315,7 @@ static void get_tok(char *buffer, int pass, int doall, boolean *done,
 
 }
 
-static void dum_parse(char *buf) {
+void dum_parse(char *buf) {
 
 	/* Continue parsing to the end of this (possibly continued) line. */
 

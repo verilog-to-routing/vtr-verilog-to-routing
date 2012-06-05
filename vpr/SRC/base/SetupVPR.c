@@ -109,7 +109,7 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	FileNameOpts->PlaceFile = Options->PlaceFile;
 	FileNameOpts->RouteFile = Options->RouteFile;
 	FileNameOpts->OutFilePrefix = Options->OutFilePrefix;
-
+	
 	SetupOperation(*Options, Operation);
 	SetupPlacerOpts(*Options, TimingEnabled, PlacerOpts);
 	SetupAnnealSched(*Options, AnnealSched);
@@ -203,6 +203,7 @@ static void SetupTiming(INP t_options Options, INP t_arch Arch,
 	Timing->C_ipin_cblock = Arch.C_ipin_cblock;
 	Timing->T_ipin_cblock = Arch.T_ipin_cblock;
 	Timing->timing_analysis_enabled = TimingEnabled;
+	Timing->SDCFile = Options.SDCFile;
 }
 
 /* This loads up VPR's switch_inf data by combining the switches from 
@@ -458,7 +459,7 @@ void SetupPackerOpts(INP t_options Options, INP boolean TimingEnabled,
 	PackerOpts->output_file = net_file;
 
 	PackerOpts->blif_file_name = Options.BlifFile;
-
+	
 	PackerOpts->doPacking = FALSE; /* DEFAULT */
 	if (Options.Count[OT_PACK]) {
 		PackerOpts->doPacking = TRUE;

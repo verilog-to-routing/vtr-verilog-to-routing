@@ -13,6 +13,7 @@ struct s_options {
 	char *RouteFile;
 	char *BlifFile;
 	char *OutFilePrefix;
+	char *SDCFile;
 
 	/* General options */
 	int GraphPause;

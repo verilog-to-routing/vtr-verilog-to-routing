@@ -240,6 +240,9 @@
     <ClCompile Include="SRC\pack\cluster_feasibility_filter.c">
       <Filter>Source Files\pack</Filter>
     </ClCompile>
+    <ClCompile Include="SRC\timing\read_sdc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SRC\base\check_netlist.h">
@@ -433,6 +436,9 @@
     </ClInclude>
     <ClInclude Include="SRC\pack\prepack.h">
       <Filter>Header Files\pack</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\timing\read_sdc.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

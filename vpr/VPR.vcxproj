@@ -193,6 +193,7 @@
     <ClCompile Include="SRC\pack\cluster_feasibility_filter.c" />
     <ClCompile Include="SRC\pack\cluster_placement.c" />
     <ClCompile Include="SRC\pack\prepack.c" />
+    <ClCompile Include="SRC\timing\read_sdc.c" />
     <ClCompile Include="SRC\util\hash.c" />
     <ClCompile Include="SRC\util\heapsort.c" />
     <ClCompile Include="SRC\util\mst.c" />
@@ -290,6 +291,7 @@
     <ClInclude Include="..\libvpr\include\read_xml_util.h" />
     <ClInclude Include="..\libvpr\include\ReadLine.h" />
     <ClInclude Include="..\libvpr\include\util.h" />
+    <ClInclude Include="SRC\timing\read_sdc.h" />
     <ClInclude Include="SRC\util\hash.h" />
     <ClInclude Include="SRC\util\heapsort.h" />
     <ClInclude Include="SRC\util\mst.h" />

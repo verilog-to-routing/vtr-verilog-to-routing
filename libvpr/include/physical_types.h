@@ -141,6 +141,7 @@ typedef struct s_timing_inf {
 	boolean timing_analysis_enabled;
 	float C_ipin_cblock;
 	float T_ipin_cblock;
+	char * SDCFile; /* only here for convenience of passing to path_delay.c */
 } t_timing_inf;
 
 struct s_pb_type;

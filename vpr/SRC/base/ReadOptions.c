@@ -79,6 +79,9 @@ void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
 				Options->CircuitName[strlen(Options->CircuitName) - 5] = '\0';
 			}
 			++Args;
+		} else if (NULL == Options->SDCFile) {
+			Options->SDCFile = my_strdup(*Args);
+			++Args;
 		} else {
 			/* Not an option and arch and net already specified so fail */
 			Error(*Args);

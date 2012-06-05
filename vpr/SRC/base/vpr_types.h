@@ -319,6 +319,8 @@ struct s_tnode {
 	float T_arr;
 	float T_req;
 	int block;
+	int clock; /*For flipflops and IOs only; 
+			   this is the clock index in clock_list, not the clock net number itself*/
 
 	/* post-packing timing graph */
 	t_tnode_type type;
@@ -342,6 +344,13 @@ typedef struct s_clock {
 /* Stores the net number and name of each clock. The net number
 is used to associate flip-flops and IOs with their clock.  
 The clock name is used to cross-reference with the SDC timing constraints.*/
+
+typedef struct s_sdc_clock {
+	float frequency;
+	float offset;
+} t_sdc_clock;
+/* Stores the frequency and offset constraints for each SDC file.  Only used
+   when parsing the SDC file. */
 
 /***************************************************************************
  * Placement and routing data types
@@ -475,6 +484,7 @@ enum e_packer_algorithm {
 
 struct s_packer_opts {
 	char *blif_file_name;
+	char *sdc_file_name;
 	char *output_file;
 	boolean global_clocks;
 	int clocks_per_cluster;

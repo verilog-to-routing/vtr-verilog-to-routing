@@ -11,6 +11,7 @@
 #include <assert.h>
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
+#include "read_sdc.h"
 
 /****************** Timing graph Structure ************************************
  *                                                                            *
@@ -114,6 +115,8 @@ static void normalize_costs(float t_crit, long max_critical_input_paths,
 
 static void print_primitive_as_blif(FILE *fpout, int iblk);
 
+void alloc_and_load_netlist_clock_list(void);
+
 /********************* Subroutine definitions *******************************/
 
 float **
@@ -143,6 +146,17 @@ alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	}
 	num_timing_nets = num_nets;
 	timing_nets = clb_net;
+
+	if(clock_list == NULL) {
+		/* the clock list only needs to be built once; if it hasn't been already, do it now */
+		alloc_and_load_netlist_clock_list();
+	}
+
+	if(timing_constraints == NULL) {
+		/* the SDC timing constraints only need to be read in once; *
+		 * if they haven't been already, do it now				    */
+		timing_constraints = read_sdc(timing_inf.SDCFile, num_netlist_clocks);
+	}
 
 	alloc_and_load_tnodes(timing_inf);
 
@@ -1873,3 +1887,38 @@ static void print_primitive_as_blif(FILE *fpout, int iblk) {
 		}
 	}
 }
+
+void alloc_and_load_netlist_clock_list(void) {
+
+	/* Creates an array of clock names and nets. The index of each
+	clock in this array will be used extensively in timing analysis. */
+
+	int bnum, clock_net, iclock;
+	boolean found;
+
+	assert(clock_list == NULL); /* Ensure that global variable has not yet been allocated */
+	num_netlist_clocks = 0;
+
+	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
+		if(logical_block[bnum].type == VPACK_LATCH) {
+			clock_net = logical_block[bnum].clock_net;
+			assert(clock_net != OPEN);
+			/* Now that we've found a clock, let's see if we've counted it already */
+			found = FALSE;
+			for (iclock = 0; !found && iclock < num_netlist_clocks; iclock++) {
+				if (clock_list[iclock].net_number == clock_net) {
+					found = TRUE;
+				}
+			}
+			if(!found) {
+			/* If we get here, the clock is new and so we add it to the clock_list */
+			num_netlist_clocks++;
+			/*dynamically grow the array to fit one new element */
+			clock_list = (t_clock *) my_realloc (clock_list, (num_netlist_clocks) * sizeof(t_clock));
+			clock_list[num_netlist_clocks - 1].net_number = clock_net;
+			clock_list[num_netlist_clocks - 1].name = my_strdup(vpack_net[clock_net].name);
+			}
+		}
+	}
+}
+
