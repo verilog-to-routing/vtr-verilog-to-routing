@@ -10,6 +10,8 @@
 
 /* read_sdc.c is work in progress */
 
+#define DO_NOT_ANALYSE -1
+
 static FILE *sdc;
 
 /***************** Subroutines local to this module *************************/
@@ -27,7 +29,7 @@ void read_sdc(char * sdc_file, int num_clocks) {
 
 	char buf[BUFSIZE];
 	int num_lines = 0;
-	
+		
 	if ((sdc = fopen(sdc_file, "r")) == NULL) {
 		printf("SDC file %s not found.\n", sdc_file);
 		printf("All clocks will be analysed together during timing analysis.\n\n");
@@ -35,7 +37,7 @@ void read_sdc(char * sdc_file, int num_clocks) {
 	}
 	
 	/* Allocate matrix of timing constraints [0..num_clocks-1][0..num_clocks-1] */
-	timing_constraints = (float **) my_calloc(num_clocks * num_clocks, sizeof(float));
+	timing_constraints = (float **) alloc_matrix(0, num_clocks-1, 0, num_clocks-1, sizeof(float));
 	
 	/* Parse the file line-by-line */
 	while (my_fgets(buf, BUFSIZE, sdc) != NULL) { 
@@ -55,6 +57,7 @@ void get_sdc_tok(char * buf, int num_lines) {
 
 	char * ptr;
 	float clock_period_temp;
+	int i,j;
 	/*char clockname[BUFSIZE];*/
 
 	ptr = my_strtok(buf, TOKENS, sdc, buf);
@@ -80,7 +83,24 @@ void get_sdc_tok(char * buf, int num_lines) {
 		
 		/* for now, store the clock period in a temp variable */
 		clock_period_temp = (float) strtod(ptr, NULL);
-				
+
+		ptr = my_strtok(NULL, TOKENS, sdc, buf);
+		if(!ptr) {
+			fprintf(stderr, "missing clock nets at end of line %d", num_lines);
+			exit(1);
+		}
+		
+		/* If the next token is a wildcard, we're done!  Set up the timing constraint matrix so that every diagonal entry *
+		 *  has T_crit equal to the temporary clock period, and every off-diagonal entry is not analysed, then return     */
+		if(strcmp(ptr, "*") == 0) {
+			for(i=0;i<num_netlist_clocks;i++) {
+				for(j=0;j<num_netlist_clocks;j++) {
+					if(i==j) timing_constraints[i][j] = clock_period_temp;
+					else timing_constraints[i][j] = DO_NOT_ANALYSE;
+				}
+			}
+			return;
+		}		
 	}
 	else {
 		fprintf(stderr, "Incorrect or unsupported syntax in line %d of SDC file", num_lines);

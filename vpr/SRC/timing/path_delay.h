@@ -1,7 +1,7 @@
 float **alloc_and_load_timing_graph(t_timing_inf timing_inf);
 
 float **alloc_and_load_pre_packing_timing_graph(float block_delay,
-		float inter_cluster_net_delay, t_model *models);
+		float inter_cluster_net_delay, t_model *models, t_timing_inf timing_inf);
 
 t_linked_int *allocate_and_load_critical_path(void);
 

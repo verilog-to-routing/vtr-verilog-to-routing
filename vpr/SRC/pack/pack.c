@@ -17,7 +17,7 @@
 /* #define DUMP_BLIF_INPUT 1 */
 
 void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
-		INP t_model *user_models, INP t_model *library_models) {
+		INP t_model *user_models, INP t_model *library_models, t_timing_inf timing_inf) {
 	boolean *is_clock;
 	
 	int num_models;
@@ -100,7 +100,7 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 				packer_opts->inter_cluster_net_delay, packer_opts->aspect,
 				packer_opts->allow_unrelated_clustering,
 				packer_opts->allow_early_exit, packer_opts->connection_driven,
-				packer_opts->packer_algorithm);
+				packer_opts->packer_algorithm, timing_inf);
 	} else {
 		printf("Skip clustering not supported\n");
 		exit(1);

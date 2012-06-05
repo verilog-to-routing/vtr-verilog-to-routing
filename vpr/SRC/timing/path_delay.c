@@ -84,7 +84,7 @@ enum e_subblock_pin_type {
 	SUB_INPUT = 0, SUB_OUTPUT, SUB_CLOCK, NUM_SUB_PIN_TYPES
 };
 
-/***************** Variables relating to timing constraints ***************************/
+/*************** Variables relating to timing constraints *******************/
 
 int num_netlist_clocks = 0; /* number of clocks in netlist */
 t_clock * clock_list = NULL; /* [0..num_netlist_clocks - 1] array of clocks in netlist */
@@ -180,7 +180,7 @@ alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 }
 
 float** alloc_and_load_pre_packing_timing_graph(float block_delay,
-		float inter_cluster_net_delay, t_model *models) {
+		float inter_cluster_net_delay, t_model *models, t_timing_inf timing_inf) {
 
 	/* This routine builds the graph used for timing analysis.  Every technology mapped netlist pin is a 
 	 * timing node (tnode).  The connectivity between pins is *
@@ -208,6 +208,17 @@ float** alloc_and_load_pre_packing_timing_graph(float block_delay,
 
 	num_timing_nets = num_logical_nets;
 	timing_nets = vpack_net;
+
+	if(clock_list == NULL) {
+		/* the clock list only needs to be built once; if it hasn't been already, do it now */
+		alloc_and_load_netlist_clock_list();
+	}
+
+	if(timing_constraints == NULL) {
+		/* the SDC timing constraints only need to be read in once; *
+		 * if they haven't been already, do it now				    */
+		read_sdc(timing_inf.SDCFile, num_netlist_clocks);
+	}
 
 	alloc_and_load_tnodes_from_prepacked_netlist(block_delay,
 			inter_cluster_net_delay);

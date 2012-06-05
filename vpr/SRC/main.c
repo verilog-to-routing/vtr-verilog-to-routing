@@ -233,7 +233,7 @@ int main(int argc, char **argv) {
 			gettimeofday(&begin, NULL);
 		#endif*/
 
-		try_pack(&PackerOpts, &Arch, user_models, library_models);
+		try_pack(&PackerOpts, &Arch, user_models, library_models, Timing);
 
 		end = clock();
 #ifdef CLOCKS_PER_SEC

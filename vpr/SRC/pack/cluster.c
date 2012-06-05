@@ -228,13 +228,13 @@ static int get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 /*globally accessable function*/
 void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		int num_models, boolean global_clocks, boolean *is_clock,
-		boolean hill_climbing_flag, char *out_fname, boolean timing_driven,
+		boolean hill_climbing_flag, char *out_fname, boolean timing_driven, 
 		enum e_cluster_seed cluster_seed_type, float alpha, float beta,
 		int recompute_timing_after, float block_delay,
 		float intra_cluster_net_delay, float inter_cluster_net_delay,
 		float aspect, boolean allow_unrelated_clustering,
 		boolean allow_early_exit, boolean connection_driven,
-		enum e_packer_algorithm packer_algorithm) {
+		enum e_packer_algorithm packer_algorithm, t_timing_inf timing_inf) {
 
 	/* Does the actual work of clustering multiple netlist blocks *
 	 * into clusters.                                                  */
@@ -349,7 +349,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	if (timing_driven) {
 		net_slack = alloc_and_load_pre_packing_timing_graph(block_delay,
-				inter_cluster_net_delay, arch->models);
+				inter_cluster_net_delay, arch->models, timing_inf);
 		load_net_slack(net_slack);
 
 		criticality = (float*) my_calloc(num_logical_blocks, sizeof(float));
