@@ -1,0 +1,12 @@
+arch	circuit	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	unabsorb_ff	num_memories	num_mult	error	
+k6_N10_memDepth16384_memData64_40nm_timing.xml	blob_merge.v	success	88	1.55695e-08	341.5	74.47	462.55	6.14	6787	6887	3473	552	36	100	0	0	0		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	boundtop.v	success	52	7.48902e-09	241.43	34.87	23.71	1.6	4895	5087	2345	255	275	192	16	1	0		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	ch_intrinsics.v	success	50	3.44001e-09	21.62	3.65	1.9	0.14	753	883	472	41	99	130	1	1	0		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	diffeq1.v	success	60	1.90736e-08	17.17	4.71	18.49	1.14	952	889	732	39	162	96	0	0	5		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	diffeq2.v	success	56	1.61047e-08	93.55	2.59	16.65	1.16	603	539	450	21	66	96	0	0	5		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	mkDelayWorker32B.v	success	84	7.49811e-09	495.81	120.87	2468.19	27.72	9917	10470	5628	496	511	553	7	41	0		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	mkPktMerge.v	success	48	3.41162e-09	6.29	7.64	58.83	4.4	1032	1188	986	17	311	156	0	15	0		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	mkSMAdapter4B.v	success	70	7.73484e-09	176.41	23.13	86.56	1.64	3289	3494	1823	182	195	205	5	5	0		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	or1200.v	success	80	2.49549e-08	232.17	45.85	421.19	4.23	4167	4498	2717	264	385	394	0	2	1		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	raygentop.v	success	72	6.24154e-09	328.37	28.95	21.17	1.82	4023	4139	2172	185	239	305	282	1	7		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	sha.v	success	56	1.62649e-08	333.99	16.24	40.9	1.19	3161	3197	1409	209	38	36	3	0	0		
