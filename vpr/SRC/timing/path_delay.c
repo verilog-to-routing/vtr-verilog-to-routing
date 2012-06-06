@@ -92,12 +92,10 @@ float ** timing_constraints = NULL; /* [0..num_netlist_clocks - 1 (source)][0..n
 
 /***************** Variables local to this module ***************************/
 
-/* Variables for "chunking" the tedge memory.  If the head pointer is NULL, *
+/* Variables for "chunking" the tedge memory.  If the head pointer in tedge_ch is NULL, *
  * no timing graph exists now.                                              */
 
-static struct s_linked_vptr *tedge_ch_list_head = NULL;
-static int tedge_ch_bytes_avail = 0;
-static char *tedge_ch_next_avail = NULL;
+static t_chunk tedge_ch = {NULL, 0, NULL};
 
 static struct s_net *timing_nets = NULL;
 static int num_timing_nets = 0;
@@ -133,7 +131,7 @@ alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	 * represented by timing edges (tedges).  All delay is marked on edges, not *
 	 * on nodes.  This routine returns an array that will store slack values:   *
 	 * net_slack[0..num_nets-1][1..num_pins-1].                                 */
-	/* The are below are valid only for CBs, not pads.                  */
+	/* The are below are valid only for CBs, not pads.						   */
 
 	/* Array for mapping from a pin on a block to a tnode index. For pads, only *
 	 * the first two pin locations are used (input to pad is first, output of   *
@@ -145,7 +143,7 @@ alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 
 	/************* End of variable declarations ********************************/
 
-	if (tedge_ch_list_head != NULL) {
+	if (tedge_ch.chunk_ptr_head != NULL) {
 		printf("Error in alloc_and_load_timing_graph:\n"
 				"\tAn old timing graph still exists.\n");
 		exit(1);
@@ -200,7 +198,7 @@ float** alloc_and_load_pre_packing_timing_graph(float block_delay,
 
 	/************* End of variable declarations ********************************/
 
-	if (tedge_ch_list_head != NULL) {
+	if (tedge_ch.chunk_ptr_head != NULL) {
 		printf("Error in alloc_and_load_timing_graph:\n"
 				"\tAn old timing graph still exists.\n");
 		exit(1);
@@ -251,8 +249,7 @@ alloc_net_slack(void) {
 	for (inet = 0; inet < num_timing_nets; inet++) {
 		net_slack[inet] = (float *) my_chunk_malloc(
 				(timing_nets[inet].num_sinks + 1) * sizeof(float),
-				&tedge_ch_list_head, &tedge_ch_bytes_avail,
-				&tedge_ch_next_avail);
+				&tedge_ch);
 		for (j = 0; j <= timing_nets[inet].num_sinks; j++) {
 			net_slack[inet][j] = UNDEFINED;
 		}
@@ -285,22 +282,17 @@ void load_timing_graph_net_delays(float **net_delay) {
 
 void free_timing_graph(float **net_slack) {
 
-	/* Frees the timing graph data. */
 
-	if (tedge_ch_list_head == NULL) {
+	if (tedge_ch.chunk_ptr_head == NULL) {
 		printf("Error in free_timing_graph: No timing graph to free.\n");
 		exit(1);
 	}
 
-	free_chunk_memory(tedge_ch_list_head);
+	free_chunk_memory(&tedge_ch);
 	free(tnode);
 	free(net_to_driver_tnode);
 	free_ivec_vector(tnodes_at_level, 0, num_tnode_levels - 1);
 	free(net_slack);
-
-	tedge_ch_list_head = NULL;
-	tedge_ch_bytes_avail = 0;
-	tedge_ch_next_avail = NULL;
 
 	tnode = NULL;
 	num_tnodes = 0;
@@ -429,8 +421,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 			assert(count > 0);
 			tnode[i].num_edges = count;
 			tnode[i].out_edges = (t_tedge *) my_chunk_malloc(
-					count * sizeof(t_tedge), &tedge_ch_list_head,
-					&tedge_ch_bytes_avail, &tedge_ch_next_avail);
+					count * sizeof(t_tedge), &tedge_ch);
 
 			/* Load edges */
 			count = 0;
@@ -467,8 +458,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 			tnode[i].num_edges = ipb_graph_pin->num_pin_timing;
 			tnode[i].out_edges = (t_tedge *) my_chunk_malloc(
 					ipb_graph_pin->num_pin_timing * sizeof(t_tedge),
-					&tedge_ch_list_head, &tedge_ch_bytes_avail,
-					&tedge_ch_next_avail);
+					&tedge_ch);
 			k = 0;
 
 			for (j = 0; j < tnode[i].num_edges; j++) {
@@ -504,8 +494,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 			tnode[i].num_edges = clb_net[inet].num_sinks;
 			tnode[i].out_edges = (t_tedge *) my_chunk_malloc(
 					clb_net[inet].num_sinks * sizeof(t_tedge),
-					&tedge_ch_list_head, &tedge_ch_bytes_avail,
-					&tedge_ch_next_avail);
+					&tedge_ch);
 			for (j = 1; j <= clb_net[inet].num_sinks; j++) {
 				dblock = clb_net[inet].node_block[j];
 				normalization = block[dblock].type->num_pins
@@ -675,12 +664,10 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 					vpack_net[logical_block[i].output_nets[0][0]].num_sinks;
 			tnode[inode].out_edges = (t_tedge *) my_chunk_malloc(
 					tnode[inode].num_edges * sizeof(t_tedge),
-					&tedge_ch_list_head, &tedge_ch_bytes_avail,
-					&tedge_ch_next_avail);
+					&tedge_ch);
 			tnode[inode + 1].num_edges = 1;
 			tnode[inode + 1].out_edges = (t_tedge *) my_chunk_malloc(
-					1 * sizeof(t_tedge), &tedge_ch_list_head,
-					&tedge_ch_bytes_avail, &tedge_ch_next_avail);
+					1 * sizeof(t_tedge), &tedge_ch);
 			tnode[inode + 1].out_edges->Tdel = 0;
 			tnode[inode + 1].out_edges->to_node = inode;
 			tnode[inode + 1].T_req = 0;
@@ -698,8 +685,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 			tnode[inode].type = OUTPAD_IPIN;
 			tnode[inode].num_edges = 1;
 			tnode[inode].out_edges = (t_tedge *) my_chunk_malloc(
-					1 * sizeof(t_tedge), &tedge_ch_list_head,
-					&tedge_ch_bytes_avail, &tedge_ch_next_avail);
+					1 * sizeof(t_tedge), &tedge_ch);
 			tnode[inode].out_edges->Tdel = 0;
 			tnode[inode].out_edges->to_node = inode + 1;
 			tnode[inode + 1].T_req = 0;
@@ -732,8 +718,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 								vpack_net[logical_block[i].output_nets[j][k]].num_sinks;
 						tnode[inode].out_edges = (t_tedge *) my_chunk_malloc(
 								tnode[inode].num_edges * sizeof(t_tedge),
-								&tedge_ch_list_head, &tedge_ch_bytes_avail,
-								&tedge_ch_next_avail);
+								&tedge_ch);
 
 						if (logical_block[i].clock_net == OPEN) {
 							tnode[inode].type = PRIMITIVE_OPIN;
@@ -744,9 +729,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 							tnode[inode + 1].out_edges =
 									(t_tedge *) my_chunk_malloc(
 											1 * sizeof(t_tedge),
-											&tedge_ch_list_head,
-											&tedge_ch_bytes_avail,
-											&tedge_ch_next_avail);
+											&tedge_ch);
 							tnode[inode + 1].out_edges->to_node = inode;
 							tnode[inode + 1].out_edges->Tdel = 0;
 							tnode[inode + 1].type = FF_SOURCE;
@@ -778,9 +761,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 								tnode[inode].out_edges =
 										(t_tedge *) my_chunk_malloc(
 												count * sizeof(t_tedge),
-												&tedge_ch_list_head,
-												&tedge_ch_bytes_avail,
-												&tedge_ch_next_avail);
+												&tedge_ch);
 								tnode[inode].num_edges = count;
 								inode++;
 							} else {
@@ -789,9 +770,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 								tnode[inode].out_edges =
 										(t_tedge *) my_chunk_malloc(
 												1 * sizeof(t_tedge),
-												&tedge_ch_list_head,
-												&tedge_ch_bytes_avail,
-												&tedge_ch_next_avail);
+												&tedge_ch);
 								tnode[inode].out_edges->to_node = inode + 1;
 								tnode[inode].out_edges->Tdel = 0;
 								tnode[inode + 1].type = FF_SINK;
@@ -928,8 +907,7 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 			tnode[i].type = INPAD_OPIN;
 			tnode[i + 1].num_edges = 1;
 			tnode[i + 1].out_edges = (t_tedge *) my_chunk_malloc(
-					1 * sizeof(t_tedge), &tedge_ch_list_head,
-					&tedge_ch_bytes_avail, &tedge_ch_next_avail);
+					1 * sizeof(t_tedge), &tedge_ch);
 			tnode[i + 1].out_edges->Tdel = 0;
 			tnode[i + 1].out_edges->to_node = i;
 			tnode[i + 1].pb_graph_pin = NULL;
@@ -944,8 +922,7 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 			tnode[i].type = OUTPAD_IPIN;
 			tnode[i].num_edges = 1;
 			tnode[i].out_edges = (t_tedge *) my_chunk_malloc(
-					1 * sizeof(t_tedge), &tedge_ch_list_head,
-					&tedge_ch_bytes_avail, &tedge_ch_next_avail);
+					1 * sizeof(t_tedge), &tedge_ch);
 			tnode[i].out_edges->Tdel = 0;
 			tnode[i].out_edges->to_node = i + 1;
 			tnode[i + 1].pb_graph_pin = NULL;
@@ -962,8 +939,7 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 				tnode[i].type = FF_IPIN;
 				tnode[i].num_edges = 1;
 				tnode[i].out_edges = (t_tedge *) my_chunk_malloc(
-						1 * sizeof(t_tedge), &tedge_ch_list_head,
-						&tedge_ch_bytes_avail, &tedge_ch_next_avail);
+						1 * sizeof(t_tedge), &tedge_ch);
 				tnode[i].out_edges->Tdel = pb_graph_pin->tsu_tco;
 				tnode[i].out_edges->to_node = i + 1;
 				tnode[i + 1].pb_graph_pin = NULL;
@@ -979,8 +955,7 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 				tnode[i].type = FF_OPIN;
 				tnode[i + 1].num_edges = 1;
 				tnode[i + 1].out_edges = (t_tedge *) my_chunk_malloc(
-						1 * sizeof(t_tedge), &tedge_ch_list_head,
-						&tedge_ch_bytes_avail, &tedge_ch_next_avail);
+						1 * sizeof(t_tedge), &tedge_ch);
 				tnode[i + 1].out_edges->Tdel = pb_graph_pin->tsu_tco;
 				tnode[i + 1].out_edges->to_node = i;
 				tnode[i + 1].pb_graph_pin = NULL;
@@ -1395,13 +1370,16 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 	/* Does a timing analysis (simple) where it assumes that each net has a      *
 	 * constant delay value.  Used only when operation == TIMING_ANALYSIS_ONLY.  */
 
-	struct s_linked_vptr *net_delay_chunk_list_head;
+	/*struct s_linked_vptr *net_delay_chunk_list_head;*/
+
+	t_chunk net_delay_ch = {NULL, 0, NULL};
+
 	float **net_delay, **net_slack;
 
 	float T_crit;
 
 	net_slack = alloc_and_load_timing_graph(timing_inf);
-	net_delay = alloc_net_delay(&net_delay_chunk_list_head, timing_nets,
+	net_delay = alloc_net_delay(&net_delay_ch, timing_nets,
 			num_timing_nets);
 
 	load_constant_net_delay(net_delay, constant_net_delay_value, timing_nets,
@@ -1421,7 +1399,7 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 	}
 
 	free_timing_graph(net_slack);
-	free_net_delay(net_delay, &net_delay_chunk_list_head);
+	free_net_delay(net_delay, &net_delay_ch);
 }
 
 static void normalize_costs(float t_crit, long max_critical_input_paths,

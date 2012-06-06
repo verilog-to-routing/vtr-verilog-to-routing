@@ -13,9 +13,11 @@
 #include "cluster_placement.h"
 #include "rr_graph.h"
 
-static struct s_linked_vptr *rr_mem_chunk_list_head = NULL;
+static t_chunk rr_mem_ch = {NULL, 0, NULL};
+
+/*static struct s_linked_vptr *rr_mem_chunk_list_head = NULL;
 static int chunk_bytes_avail = 0;
-static char *chunk_next_avail_mem = NULL;
+static char *chunk_next_avail_mem = NULL;*/
 static struct s_trace **best_routing;
 
 /* nets_in_cluster: array of all nets contained in the cluster */
@@ -168,7 +170,7 @@ static void reload_ext_net_rr_terminal_cluster(void) {
 	for (i = 0; i < num_nets_in_cluster; i++) {
 		net_index = nets_in_cluster[i];
 		has_ext_sink = FALSE;
-		has_ext_source =
+		has_ext_source = (boolean)
 				(logical_block[vpack_net[net_index].node_block[0]].clb_index
 						!= curr_cluster_index);
 		if (has_ext_source) {
@@ -208,13 +210,13 @@ static void reload_ext_net_rr_terminal_cluster(void) {
 void alloc_and_load_cluster_legality_checker(void) {
 	best_routing = (struct s_trace **) my_calloc(num_logical_nets,
 			sizeof(struct s_trace *));
-	nets_in_cluster = my_malloc(num_logical_nets * sizeof(int));
+	nets_in_cluster = (int *) my_malloc(num_logical_nets * sizeof(int));
 	num_nets_in_cluster = 0;
 	num_nets = num_logical_nets;
 
 	/* inside a cluster, I do not consider rr_indexed_data cost, set to 1 since other costs are multiplied by it */
 	num_rr_indexed_data = 1;
-	rr_indexed_data = my_calloc(1, sizeof(t_rr_indexed_data));
+	rr_indexed_data = (t_rr_indexed_data *) my_calloc(1, sizeof(t_rr_indexed_data));
 	rr_indexed_data[0].base_cost = 1;
 
 	/* alloc routing structures */
@@ -229,8 +231,7 @@ void free_cluster_legality_checker(void) {
 	free_route_structs(NULL);
 	free_trace_structs();
 
-	free_chunk_memory(rr_mem_chunk_list_head);
-	rr_mem_chunk_list_head = NULL;
+	free_chunk_memory(&rr_mem_ch);
 
 	for (inet = 0; inet < num_logical_nets; inet++) {
 		free(saved_net_rr_terminals[inet]);
@@ -245,7 +246,7 @@ void alloc_and_load_rr_graph_for_pb_graph_node(
 	int i, j, k, index;
 	boolean is_primitive;
 
-	is_primitive = (pb_graph_node->pb_type->num_modes == 0);
+	is_primitive = (boolean) (pb_graph_node->pb_type->num_modes == 0);
 
 	for (i = 0; i < pb_graph_node->num_input_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
@@ -257,9 +258,9 @@ void alloc_and_load_rr_graph_for_pb_graph_node(
 					pb_graph_node->input_pins[i][j].num_output_edges;
 			rr_node[index].pack_intrinsic_cost = 1
 					+ (float) rr_node[index].num_edges / 5; /* need to normalize better than 5 */
-			rr_node[index].edges = my_malloc(
+			rr_node[index].edges = (int *) my_malloc(
 					rr_node[index].num_edges * sizeof(int));
-			rr_node[index].switches = my_calloc(rr_node[index].num_edges,
+			rr_node[index].switches = (short *) my_calloc(rr_node[index].num_edges,
 					sizeof(int));
 			rr_node[index].net_num = OPEN;
 			rr_node[index].prev_node = OPEN;
@@ -295,9 +296,9 @@ void alloc_and_load_rr_graph_for_pb_graph_node(
 					pb_graph_node->output_pins[i][j].num_output_edges;
 			rr_node[index].pack_intrinsic_cost = 1
 					+ (float) rr_node[index].num_edges / 5; /* need to normalize better than 5 */
-			rr_node[index].edges = my_malloc(
+			rr_node[index].edges = (int *) my_malloc(
 					rr_node[index].num_edges * sizeof(int));
-			rr_node[index].switches = my_calloc(rr_node[index].num_edges,
+			rr_node[index].switches = (short *) my_calloc(rr_node[index].num_edges,
 					sizeof(int));
 			rr_node[index].net_num = OPEN;
 			rr_node[index].prev_node = OPEN;
@@ -333,9 +334,9 @@ void alloc_and_load_rr_graph_for_pb_graph_node(
 					pb_graph_node->clock_pins[i][j].num_output_edges;
 			rr_node[index].pack_intrinsic_cost = 1
 					+ (float) rr_node[index].num_edges / 5; /* need to normalize better than 5 */
-			rr_node[index].edges = my_malloc(
+			rr_node[index].edges = (int *) my_malloc(
 					rr_node[index].num_edges * sizeof(int));
-			rr_node[index].switches = my_calloc(rr_node[index].num_edges,
+			rr_node[index].switches = (short *) my_calloc(rr_node[index].num_edges,
 					sizeof(int));
 			rr_node[index].net_num = OPEN;
 			rr_node[index].prev_node = OPEN;
@@ -403,10 +404,10 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 			+ pb_type->num_output_pins + pb_type->num_clock_pins;
 	if (num_rr_nodes > num_rr_intrinsic_cost) {
 		free(rr_intrinsic_cost);
-		rr_intrinsic_cost = my_calloc(num_rr_nodes, sizeof(float));
+		rr_intrinsic_cost = (float *) my_calloc(num_rr_nodes, sizeof(float));
 		num_rr_intrinsic_cost = num_rr_nodes;
 	}
-	rr_node = my_calloc(num_rr_nodes, sizeof(t_rr_node));
+	rr_node = (t_rr_node *) my_calloc(num_rr_nodes, sizeof(t_rr_node));
 	clb->pb->rr_graph = rr_node;
 
 	alloc_and_load_rr_graph_for_pb_graph_node(pb_graph_node, arch, 0);
@@ -429,9 +430,9 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 		rr_node[index].num_edges = pb_type->num_input_pins;
 		rr_node[index].pack_intrinsic_cost = 1
 				+ (float) rr_node[index].num_edges / 5; /* need to normalize better than 5 */
-		rr_node[index].edges = my_malloc(
+		rr_node[index].edges = (int *) my_malloc(
 				rr_node[index].num_edges * sizeof(int));
-		rr_node[index].switches = my_calloc(rr_node[index].num_edges,
+		rr_node[index].switches = (short *) my_calloc(rr_node[index].num_edges,
 				sizeof(int));
 		rr_node[index].capacity = 1;
 		rr_intrinsic_cost[index] = 0;
@@ -456,9 +457,9 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 		rr_node[index].num_edges = pb_type->num_clock_pins;
 		rr_node[index].pack_intrinsic_cost = 1
 				+ (float) rr_node[index].num_edges / 5; /* need to normalize better than 5 */
-		rr_node[index].edges = my_malloc(
+		rr_node[index].edges = (int *) my_malloc(
 				rr_node[index].num_edges * sizeof(int));
-		rr_node[index].switches = my_calloc(rr_node[index].num_edges,
+		rr_node[index].switches = (short *) my_calloc(rr_node[index].num_edges,
 				sizeof(int));
 		rr_node[index].capacity = 1;
 		rr_intrinsic_cost[index] = 0;
@@ -486,10 +487,10 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 					+ pb_type->num_output_pins + pb_type->num_input_pins;
 			pb_graph_rr_index =
 					pb_graph_node->output_pins[i][j].pin_count_in_cluster;
-			rr_node[pb_graph_rr_index].edges = my_realloc(
+			rr_node[pb_graph_rr_index].edges = (int *) my_realloc(
 					rr_node[pb_graph_rr_index].edges,
 					(count_pins) * sizeof(int));
-			rr_node[pb_graph_rr_index].switches = my_realloc(
+			rr_node[pb_graph_rr_index].switches = (short *) my_realloc(
 					rr_node[pb_graph_rr_index].switches,
 					(count_pins) * sizeof(int));
 
@@ -826,8 +827,7 @@ static void alloc_net_rr_terminals_cluster(void) {
 	for (inet = 0; inet < num_logical_nets; inet++) {
 		net_rr_terminals[inet] = (int *) my_chunk_malloc(
 				(vpack_net[inet].num_sinks + 1) * sizeof(int),
-				&rr_mem_chunk_list_head, &chunk_bytes_avail,
-				&chunk_next_avail_mem);
+				&rr_mem_ch);
 
 		saved_net_rr_terminals[inet] = (int *) my_malloc(
 				(vpack_net[inet].num_sinks + 1) * sizeof(int));

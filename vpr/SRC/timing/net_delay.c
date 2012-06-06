@@ -100,8 +100,8 @@ static void free_rc_edge_free_list(t_linked_rc_edge * rc_edge_free_list);
 /*************************** Subroutine definitions **************************/
 
 float **
-alloc_net_delay(struct s_linked_vptr **chunk_list_head_ptr, struct s_net *nets,
-		int n_nets) {
+alloc_net_delay(t_chunk *chunk_list_ptr, struct s_net *nets,
+		int n_nets){
 
 	/* Allocates space for the net_delay data structure                          *
 	 * [0..num_nets-1][1..num_pins-1].  I chunk the data to save space on large  *
@@ -110,19 +110,13 @@ alloc_net_delay(struct s_linked_vptr **chunk_list_head_ptr, struct s_net *nets,
 	float **net_delay; /* [0..num_nets-1][1..num_pins-1] */
 	float *tmp_ptr;
 	int inet;
-	int chunk_bytes_avail;
-	char *chunk_next_avail_mem;
-
-	*chunk_list_head_ptr = NULL;
-	chunk_bytes_avail = 0;
-	chunk_next_avail_mem = NULL;
 
 	net_delay = (float **) my_malloc(n_nets * sizeof(float *));
 
 	for (inet = 0; inet < n_nets; inet++) {
 		tmp_ptr = (float *) my_chunk_malloc(
 				((nets[inet].num_sinks + 1) - 1) * sizeof(float),
-				chunk_list_head_ptr, &chunk_bytes_avail, &chunk_next_avail_mem);
+				chunk_list_ptr);
 
 		net_delay[inet] = tmp_ptr - 1; /* [1..num_pins-1] */
 	}
@@ -131,13 +125,12 @@ alloc_net_delay(struct s_linked_vptr **chunk_list_head_ptr, struct s_net *nets,
 }
 
 void free_net_delay(float **net_delay,
-		struct s_linked_vptr **chunk_list_head_ptr) {
+		t_chunk *chunk_list_ptr){
 
 	/* Frees the net_delay structure.  Assumes it was chunk allocated.          */
 
 	free(net_delay);
-	free_chunk_memory(*chunk_list_head_ptr);
-	*chunk_list_head_ptr = NULL;
+	free_chunk_memory(chunk_list_ptr);
 }
 
 void load_net_delay_from_routing(float **net_delay, struct s_net *nets,

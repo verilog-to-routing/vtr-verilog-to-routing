@@ -793,9 +793,12 @@ static void timing_driven_check_net_delays(float **net_delay) {
 
 	int inet, ipin;
 	float **net_delay_check;
-	struct s_linked_vptr *ch_list_head_net_delay_check;
 
-	net_delay_check = alloc_net_delay(&ch_list_head_net_delay_check, clb_net,
+	t_chunk list_head_net_delay_check_ch = {NULL, 0, NULL};
+
+	/*struct s_linked_vptr *ch_list_head_net_delay_check;*/
+
+	net_delay_check = alloc_net_delay(&list_head_net_delay_check_ch, clb_net,
 			num_nets);
 	load_net_delay_from_routing(net_delay_check, clb_net, num_nets);
 
@@ -826,6 +829,6 @@ static void timing_driven_check_net_delays(float **net_delay) {
 		}
 	}
 
-	free_net_delay(net_delay_check, &ch_list_head_net_delay_check);
+	free_net_delay(net_delay_check, &list_head_net_delay_check_ch);
 	printf("Completed net delay value cross check successfully.\n");
 }

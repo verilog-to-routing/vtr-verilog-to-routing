@@ -170,24 +170,24 @@ my_realloc(void *ptr, size_t size) {
 	return (ret);
 }
 
+
+
 void *
-my_chunk_malloc(size_t size, struct s_linked_vptr **chunk_ptr_head,
-		int *mem_avail_ptr, char **next_mem_loc_ptr) {
+my_chunk_malloc(size_t size, t_chunk *chunk_info) {
 
 	/* This routine should be used for allocating fairly small data             *
 	 * structures where memory-efficiency is crucial.  This routine allocates   *
 	 * large "chunks" of data, and parcels them out as requested.  Whenever     *
 	 * it mallocs a new chunk it adds it to the linked list pointed to by       *
-	 * chunk_ptr_head.  This list can be used to free the chunked memory.       *
-	 * If chunk_ptr_head is NULL, no list of chunked memory blocks will be kept *
-	 * -- this is useful for data structures that you never intend to free as   *
-	 * it means you don't have to keep track of the linked lists.               *
+	 * chunk_info->chunk_ptr_head.  This list can be used to free the		*
+	 * chunked memory.															*
 	 * Information about the currently open "chunk" must be stored by the       *
-	 * user program.  mem_avail_ptr points to an int storing how many bytes are *
-	 * left in the current chunk, while next_mem_loc_ptr is the address of a    *
-	 * pointer to the next free bytes in the chunk.  To start a new chunk,      *
-	 * simply set *mem_avail_ptr = 0.  Each independent set of data structures  *
-	 * should use a new chunk.                                                  */
+	 * user program.  chunk_info->mem_avail_ptr points to an int storing	*
+	 * how many bytes are left in the current chunk, while						*
+	 * chunk_info->next_mem_loc_ptr is the address of a pointer to the	*
+	 * next free bytes in the chunk.  To start a new chunk, simply set			*
+	 * chunk_info->mem_avail_ptr = 0.  Each independent set of data		*
+	 * structures should use a new chunk.                                       */
 
 	/* To make sure the memory passed back is properly aligned, I must *
 	 * only send back chunks in multiples of the worst-case alignment  *
@@ -203,31 +203,31 @@ my_chunk_malloc(size_t size, struct s_linked_vptr **chunk_ptr_head,
 	char *tmp_ptr;
 	int aligned_size;
 
-	assert(*mem_avail_ptr >= 0);
+	assert(chunk_info->mem_avail >= 0);
 
-	if ((size_t) (*mem_avail_ptr) < size) { /* Need to malloc more memory. */
+	if ((size_t) (chunk_info->mem_avail) < size) { /* Need to malloc more memory. */
 		if (size > CHUNK_SIZE) { /* Too big, use standard routine. */
-			tmp_ptr = my_malloc(size);
+			tmp_ptr = (char *) my_malloc(size);
 
 			/* When debugging, uncomment the code below to see if memory allocation size */
 			/* makes sense */
 			/*#ifdef DEBUG
-			 printf("NB:  my_chunk_malloc got a request for %d bytes.\n",
-			 size);
-			 printf("You should consider using my_malloc for such big requests.\n");
-			 #endif */
+			printf("NB:  my_chunk_malloc got a request for %d bytes.\n",
+			size);
+			printf("You should consider using my_malloc for such big requests.\n");
+			#endif */
 
-			if (chunk_ptr_head != NULL)
-				*chunk_ptr_head = insert_in_vptr_list(*chunk_ptr_head, tmp_ptr);
+			assert (chunk_info != NULL);
+			chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head, tmp_ptr);
 			return (tmp_ptr);
 		}
 
-		if (*mem_avail_ptr < FRAGMENT_THRESHOLD) { /* Only a small scrap left. */
-			*next_mem_loc_ptr = my_malloc(CHUNK_SIZE);
-			*mem_avail_ptr = CHUNK_SIZE;
-			if (chunk_ptr_head != NULL)
-				*chunk_ptr_head = insert_in_vptr_list(*chunk_ptr_head,
-						*next_mem_loc_ptr);
+		if (chunk_info->mem_avail < FRAGMENT_THRESHOLD) { /* Only a small scrap left. */
+			chunk_info->next_mem_loc_ptr = (char *) my_malloc(CHUNK_SIZE);
+			chunk_info->mem_avail = CHUNK_SIZE;
+			assert (chunk_info != NULL);
+			chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head,
+				chunk_info->next_mem_loc_ptr);
 		}
 
 		/* Execute else clause only when the chunk we want is pretty big,  *
@@ -235,9 +235,9 @@ my_chunk_malloc(size_t size, struct s_linked_vptr **chunk_ptr_head,
 		 * to allocate normally.                                           */
 
 		else {
-			tmp_ptr = my_malloc(size);
-			if (chunk_ptr_head != NULL)
-				*chunk_ptr_head = insert_in_vptr_list(*chunk_ptr_head, tmp_ptr);
+			tmp_ptr = (char *) my_malloc(size);
+			assert (chunk_info != NULL);
+			chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head, tmp_ptr);
 			return (tmp_ptr);
 		}
 	}
@@ -251,19 +251,19 @@ my_chunk_malloc(size_t size, struct s_linked_vptr **chunk_ptr_head,
 		aligned_size = size + sizeof(Align) - size % sizeof(Align);
 	}
 
-	tmp_ptr = *next_mem_loc_ptr;
-	*next_mem_loc_ptr += aligned_size;
-	*mem_avail_ptr -= aligned_size;
+	tmp_ptr = chunk_info->next_mem_loc_ptr;
+	chunk_info->next_mem_loc_ptr += aligned_size;
+	chunk_info->mem_avail -= aligned_size;
 	return (tmp_ptr);
 }
 
-void free_chunk_memory(struct s_linked_vptr *chunk_ptr_head) {
+void free_chunk_memory(t_chunk *chunk_info) {
 
 	/* Frees the memory allocated by a sequence of calls to my_chunk_malloc. */
 
 	struct s_linked_vptr *curr_ptr, *prev_ptr;
 
-	curr_ptr = chunk_ptr_head;
+	curr_ptr = chunk_info->chunk_ptr_head;
 
 	while (curr_ptr != NULL) {
 		free(curr_ptr->data_vptr); /* Free memory "chunk". */
@@ -271,6 +271,9 @@ void free_chunk_memory(struct s_linked_vptr *chunk_ptr_head) {
 		curr_ptr = curr_ptr->next;
 		free(prev_ptr); /* Free memory used to track "chunk". */
 	}
+	chunk_info->chunk_ptr_head = NULL;
+	chunk_info->mem_avail = 0;
+	chunk_info->next_mem_loc_ptr = NULL;
 }
 
 struct s_linked_vptr *

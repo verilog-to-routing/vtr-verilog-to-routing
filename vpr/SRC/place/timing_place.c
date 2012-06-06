@@ -11,18 +11,24 @@
 
 float **timing_place_crit; /*available externally */
 
-static struct s_linked_vptr *timing_place_crit_chunk_list_head;
-static struct s_linked_vptr *net_delay_chunk_list_head;
+static t_chunk timing_place_crit_ch = {NULL, 0, NULL};
+static t_chunk net_delay_ch = {NULL, 0, NULL};
+
+/*static struct s_linked_vptr *timing_place_crit_chunk_list_head;
+static struct s_linked_vptr *net_delay_chunk_list_head;*/
 
 /******** prototypes ******************/
-static float **alloc_crit(struct s_linked_vptr **chunk_list_head_ptr);
+/*static float **alloc_crit(struct s_linked_vptr **chunk_list_head_ptr);
 
-static void free_crit(struct s_linked_vptr **chunk_list_head_ptr);
+static void free_crit(struct s_linked_vptr **chunk_list_head_ptr);*/
+
+static float **alloc_crit(t_chunk *chunk_list_ptr);
+
+static void free_crit(t_chunk *chunk_list_ptr);
 
 /**************************************/
 
-static float **
-alloc_crit(struct s_linked_vptr **chunk_list_head_ptr) {
+static float ** alloc_crit(t_chunk *chunk_list_ptr) {
 
 	/* Allocates space for the timing_place_crit data structure *
 	 * [0..num_nets-1][1..num_pins-1].  I chunk the data to save space on large    *
@@ -31,19 +37,12 @@ alloc_crit(struct s_linked_vptr **chunk_list_head_ptr) {
 	float **local_crit; /* [0..num_nets-1][1..num_pins-1] */
 	float *tmp_ptr;
 	int inet;
-	int chunk_bytes_avail;
-	char *chunk_next_avail_mem;
-
-	*chunk_list_head_ptr = NULL;
-	chunk_bytes_avail = 0;
-	chunk_next_avail_mem = NULL;
 
 	local_crit = (float **) my_malloc(num_nets * sizeof(float *));
 
 	for (inet = 0; inet < num_nets; inet++) {
 		tmp_ptr = (float *) my_chunk_malloc(
-				(clb_net[inet].num_sinks) * sizeof(float), chunk_list_head_ptr,
-				&chunk_bytes_avail, &chunk_next_avail_mem);
+				(clb_net[inet].num_sinks) * sizeof(float), chunk_list_ptr);
 		local_crit[inet] = tmp_ptr - 1; /* [1..num_sinks] */
 	}
 
@@ -51,10 +50,8 @@ alloc_crit(struct s_linked_vptr **chunk_list_head_ptr) {
 }
 
 /**************************************/
-static void free_crit(struct s_linked_vptr **chunk_list_head_ptr) {
-
-	free_chunk_memory(*chunk_list_head_ptr);
-	*chunk_list_head_ptr = NULL;
+static void free_crit(t_chunk *chunk_list_ptr){
+	free_chunk_memory(chunk_list_ptr);
 }
 
 /**************************************/
@@ -117,13 +114,13 @@ void alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 
 	(*net_slack) = alloc_and_load_timing_graph(timing_inf);
 
-	(*net_delay) = alloc_net_delay(&net_delay_chunk_list_head, clb_net,
+	(*net_delay) = alloc_net_delay(&net_delay_ch, clb_net,
 			num_nets);
 
 	compute_delay_lookup_tables(router_opts, det_routing_arch, segment_inf,
 			timing_inf, chan_width_dist);
 
-	timing_place_crit = alloc_crit(&timing_place_crit_chunk_list_head);
+	timing_place_crit = alloc_crit(&timing_place_crit_ch);
 
 }
 
@@ -131,10 +128,10 @@ void alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 void free_lookups_and_criticalities(float ***net_delay, float ***net_slack) {
 
 	free(timing_place_crit);
-	free_crit(&timing_place_crit_chunk_list_head);
+	free_crit(&timing_place_crit_ch);
 
 	free_timing_graph(*net_slack);
-	free_net_delay(*net_delay, &net_delay_chunk_list_head);
+	free_net_delay(*net_delay, &net_delay_ch);
 
 }
 

@@ -55,7 +55,10 @@ void place_and_route(enum e_operation operation,
 	int width_fac, inet, i;
 	boolean success, Fc_clipped;
 	float **net_delay, **net_slack;
-	struct s_linked_vptr *net_delay_chunk_list_head;
+
+	t_chunk net_delay_ch = {NULL, 0, NULL};
+
+	/*struct s_linked_vptr *net_delay_chunk_list_head;*/
 	t_ivec **clb_opins_used_locally; /* [0..num_blocks-1][0..num_class-1] */
 	t_mst_edge **mst = NULL; /* Make sure mst is never undefined */
 	int max_pins_per_clb;
@@ -139,7 +142,7 @@ void place_and_route(enum e_operation operation,
 
 		if (timing_inf.timing_analysis_enabled) {
 			net_slack = alloc_and_load_timing_graph(timing_inf);
-			net_delay = alloc_net_delay(&net_delay_chunk_list_head, clb_net,
+			net_delay = alloc_net_delay(&net_delay_ch, clb_net,
 					num_nets);
 		} else {
 			net_delay = NULL; /* Defensive coding. */
@@ -205,7 +208,7 @@ void place_and_route(enum e_operation operation,
 			free_timing_graph(net_slack);
 
 			assert(net_delay);
-			free_net_delay(net_delay, &net_delay_chunk_list_head);
+			free_net_delay(net_delay, &net_delay_ch);
 		}
 
 		free_route_structs(clb_opins_used_locally);
@@ -259,7 +262,10 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	boolean success, prev_success, prev2_success, Fc_clipped = FALSE;
 	char msg[BUFSIZE];
 	float **net_delay, **net_slack;
-	struct s_linked_vptr *net_delay_chunk_list_head;
+
+	t_chunk net_delay_ch = {NULL, 0, NULL};
+
+	/*struct s_linked_vptr *net_delay_chunk_list_head;*/
 	t_ivec **clb_opins_used_locally, **saved_clb_opins_used_locally;
 
 	/* [0..num_blocks-1][0..num_class-1] */
@@ -290,7 +296,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	if (timing_inf.timing_analysis_enabled) {
 		net_slack = alloc_and_load_timing_graph(timing_inf);
-		net_delay = alloc_net_delay(&net_delay_chunk_list_head, clb_net,
+		net_delay = alloc_net_delay(&net_delay_ch, clb_net,
 				num_nets);
 	} else {
 		net_delay = NULL; /* Defensive coding. */
@@ -560,7 +566,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			print_timing_graph_as_blif("post_flow_timing_graph.blif", models);
 		}
 		free_timing_graph(net_slack);
-		free_net_delay(net_delay, &net_delay_chunk_list_head);
+		free_net_delay(net_delay, &net_delay_ch);
 	}
 
 	free_route_structs(clb_opins_used_locally);

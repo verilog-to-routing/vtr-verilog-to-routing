@@ -37,12 +37,8 @@ typedef struct s_mux_size_distribution {
 
 /******************* Variables local to this module. ***********************/
 
-static struct s_linked_vptr *rr_mem_chunk_list_head = NULL;
-
 /* Used to free "chunked" memory.  If NULL, no rr_graph exists right now.  */
-
-static int chunk_bytes_avail = 0;
-static char *chunk_next_avail_mem = NULL;
+static t_chunk rr_mem_ch = {NULL, 0, NULL};
 
 /* Status of current chunk being dished out by calls to my_chunk_malloc.   */
 
@@ -762,13 +758,10 @@ void free_rr_graph(void) {
 	 * a routing graph exists and can be freed.  Hence, you can call this   *
 	 * routine even if you're not sure of whether a rr_graph exists or not. */
 
-	if (rr_mem_chunk_list_head == NULL) /* Nothing to free. */
+	if (rr_mem_ch.chunk_ptr_head == NULL) /* Nothing to free. */
 		return;
 
-	free_chunk_memory(rr_mem_chunk_list_head); /* Frees ALL "chunked" data */
-	rr_mem_chunk_list_head = NULL; /* No chunks allocated now. */
-	chunk_bytes_avail = 0; /* 0 bytes left in current "chunk". */
-	chunk_next_avail_mem = NULL; /* No current chunk.                */
+	free_chunk_memory(&rr_mem_ch); /* Frees ALL "chunked" data */
 
 	/* Before adding any more free calls here, be sure the data is NOT chunk *
 	 * allocated, as ALL the chunk allocated data is already free!           */
@@ -807,8 +800,7 @@ static void alloc_net_rr_terminals(void) {
 	for (inet = 0; inet < num_nets; inet++) {
 		net_rr_terminals[inet] = (int *) my_chunk_malloc(
 				(clb_net[inet].num_sinks + 1) * sizeof(int),
-				&rr_mem_chunk_list_head, &chunk_bytes_avail,
-				&chunk_next_avail_mem);
+				&rr_mem_ch);
 	}
 }
 

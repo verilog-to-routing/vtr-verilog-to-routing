@@ -52,14 +52,19 @@ typedef struct s_ivec {
 	int *list;
 } t_ivec;
 
+typedef struct s_chunk {
+	struct s_linked_vptr *chunk_ptr_head;
+	int mem_avail;
+	char *next_mem_loc_ptr;
+} t_chunk;
+
 /************************ Memory allocation routines *************************/
 
 extern void* my_malloc(size_t size);
 extern void* my_calloc(size_t nelem, size_t size);
 extern void *my_realloc(void *ptr, size_t size);
-extern void *my_chunk_malloc(size_t size, struct s_linked_vptr **chunk_ptr_head,
-		int *mem_avail_ptr, char **next_mem_loc_ptr);
-extern void free_chunk_memory(struct s_linked_vptr *chunk_ptr_head);
+extern void *my_chunk_malloc(size_t size, t_chunk *chunk_info);
+extern void free_chunk_memory(t_chunk *chunk_info);
 
 /******************* Linked list, matrix and vector utilities ****************/
 

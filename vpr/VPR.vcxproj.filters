@@ -241,7 +241,7 @@
       <Filter>Source Files\pack</Filter>
     </ClCompile>
     <ClCompile Include="SRC\timing\read_sdc.c">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\timing</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -438,7 +438,7 @@
       <Filter>Header Files\pack</Filter>
     </ClInclude>
     <ClInclude Include="SRC\timing\read_sdc.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\timing</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
