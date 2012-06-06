@@ -1929,11 +1929,11 @@ void alloc_and_load_netlist_clock_list(void) {
 			}
 			if(!found) {
 			/* If we get here, the clock is new and so we add it to the clock_list */
-			num_netlist_clocks++;
-			/*dynamically grow the array to fit one new element */
-			clock_list = (t_clock *) my_realloc (clock_list, (num_netlist_clocks) * sizeof(t_clock));
-			clock_list[num_netlist_clocks - 1].net_number = clock_net;
-			clock_list[num_netlist_clocks - 1].name = my_strdup(vpack_net[clock_net].name);
+				num_netlist_clocks++;
+				/*dynamically grow the array to fit one new element */
+				clock_list = (t_clock *) my_realloc (clock_list, (num_netlist_clocks) * sizeof(t_clock));
+				clock_list[num_netlist_clocks - 1].net_number = clock_net;
+				clock_list[num_netlist_clocks - 1].name = my_strdup(vpack_net[clock_net].name);
 			}
 		}
 	}

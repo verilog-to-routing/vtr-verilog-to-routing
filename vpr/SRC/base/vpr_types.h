@@ -346,10 +346,10 @@ is used to associate flip-flops and IOs with their clock.
 The clock name is used to cross-reference with the SDC timing constraints.*/
 
 typedef struct s_sdc_clock {
-	float frequency;
+	float period;
 	float offset;
 } t_sdc_clock;
-/* Stores the frequency and offset constraints for each SDC file.  Only used
+/* Stores the period and offset constraints for each SDC file.  Only used
    when parsing the SDC file. */
 
 /***************************************************************************
