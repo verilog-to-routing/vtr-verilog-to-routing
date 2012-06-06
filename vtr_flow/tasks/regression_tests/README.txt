@@ -72,8 +72,6 @@ Check results with:
  * To be run by automated build system every night.
 
 Architecture/Benchmark:
-	- vtr_reg_basic
-	- vtr_reg_strong
 	- vtr_reg_qor_small
 
 Estimated Runtime: -
@@ -96,7 +94,6 @@ Check results with:
  * To be run by automated build system every weekend.
 
 Architecture/Benchmark:
-	- vtr_reg_nightly
 	- vtr_reg_fpu_hard_block_arch
 	- vtr_reg_qor
 
