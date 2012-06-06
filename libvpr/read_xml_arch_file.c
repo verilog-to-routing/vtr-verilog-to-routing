@@ -968,22 +968,26 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode) {
 		ezxml_set_attr(Parent, "name", NULL);
 	}
 
-	mode->num_pb_type_children = CountChildren(Parent, "pb_type", 1);
-	mode->pb_type_children = my_calloc(mode->num_pb_type_children,
-			sizeof(t_pb_type));
+	mode->num_pb_type_children = CountChildren(Parent, "pb_type", 0);
+	if(mode->num_pb_type_children > 0) {
+		mode->pb_type_children = my_calloc(mode->num_pb_type_children,
+				sizeof(t_pb_type));
 
-	i = 0;
-	Cur = FindFirstElement(Parent, "pb_type", TRUE);
-	while (Cur != NULL) {
-		if (0 == strcmp(Cur->name, "pb_type")) {
-			ProcessPb_Type(Cur, &mode->pb_type_children[i], mode);
+		i = 0;
+		Cur = FindFirstElement(Parent, "pb_type", TRUE);
+		while (Cur != NULL) {
+			if (0 == strcmp(Cur->name, "pb_type")) {
+				ProcessPb_Type(Cur, &mode->pb_type_children[i], mode);
 
-			/* get next iteration */
-			Prev = Cur;
-			Cur = Cur->next;
-			i++;
-			FreeNode(Prev);
+				/* get next iteration */
+				Prev = Cur;
+				Cur = Cur->next;
+				i++;
+				FreeNode(Prev);
+			}
 		}
+	} else {
+		mode->pb_type_children = NULL;
 	}
 
 	Cur = FindElement(Parent, "interconnect", TRUE);
