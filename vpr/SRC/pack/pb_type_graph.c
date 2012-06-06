@@ -952,8 +952,8 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 		if (mode == NULL) {
 			printf(ERRTAG "[LINE %d] pb_graph_parent_node %s failed\n", line_num,
 					pb_graph_parent_node->pb_type->name);
+			exit(1);
 		}
-		assert(mode);
 		for (i = 0; i < mode->num_pb_type_children; i++) {
 			assert(
 					&mode->pb_type_children[i] == pb_graph_children_nodes[i][0].pb_type);

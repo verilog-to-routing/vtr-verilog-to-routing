@@ -374,8 +374,17 @@ static void forward_expand_pack_pattern_from_edge(
 	t_pack_pattern_block *destination_block = NULL;
 	t_pb_graph_node *destination_pb_graph_node = NULL;
 
-	found = FALSE;
+	found = expansion_edge->infer_pattern;
+	for (i = 0;	!found && i < expansion_edge->num_pack_patterns; i++) {
+		if(expansion_edge->pack_pattern_indices[i] == curr_pattern_index) {
+			found = TRUE;
+		}
+	}
+	if(!found) {
+		return;
+	}
 
+	found = FALSE;
 	for (i = 0; i < expansion_edge->num_output_pins; i++) {
 		if (expansion_edge->output_pins[i]->parent_node->pb_type->num_modes
 				== 0) {
@@ -505,6 +514,16 @@ static void backward_expand_pack_pattern_from_edge(
 	t_pack_pattern_block *source_block = NULL;
 	t_pb_graph_node *source_pb_graph_node = NULL;
 	t_pack_pattern_connections *pack_pattern_connection = NULL;
+
+	found = expansion_edge->infer_pattern;
+	for (i = 0;	!found && i < expansion_edge->num_pack_patterns; i++) {
+		if(expansion_edge->pack_pattern_indices[i] == curr_pattern_index) {
+			found = TRUE;
+		}
+	}
+	if(!found) {
+		return;
+	}
 
 	found = FALSE;
 	for (i = 0; i < expansion_edge->num_input_pins; i++) {
@@ -743,7 +762,6 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			}
 		}
 	}
-
 	if (GetEchoOption()) {
 		print_pack_molecules("prepack_molecules_and_patterns.echo",
 				list_of_pack_patterns, num_packing_patterns,
@@ -863,7 +881,7 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 						logical_block[logical_block_index].output_nets[iport][ipin];
 
 				/* Check if net is valid */
-				if (vpack_net[inet].num_sinks != 1) { /* One fanout assumption */
+				if (inet == OPEN || vpack_net[inet].num_sinks != 1) { /* One fanout assumption */
 					success = FALSE;
 				} else {
 					success = try_expand_molecule(molecule,
@@ -885,7 +903,7 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 							logical_block[logical_block_index].input_nets[iport][ipin];
 				}
 				/* Check if net is valid */
-				if (vpack_net[inet].num_sinks != 1) { /* One fanout assumption */
+				if (inet == OPEN || vpack_net[inet].num_sinks != 1) { /* One fanout assumption */
 					success = FALSE;
 				} else {
 					success = try_expand_molecule(molecule,

@@ -145,8 +145,6 @@ static void load_pack_pattern_annotations(INP int line_num, INOUTP t_pb_graph_no
 							iedge++) {
 						if (in_port[i][j]->output_edges[iedge]->output_pins[0]
 								== out_port[m][n]) {
-							assert(
-									in_port[i][j]->output_edges[iedge]->delay_max == 0);
 							break;
 						}
 					}
