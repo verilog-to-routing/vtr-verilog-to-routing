@@ -1,7 +1,7 @@
 #!/bin/bash 
 
 TEST_DIR="FULL_REGRESSION_TESTS"
-ARCH="../libvpr_6/arch/sample_arch.xml"
+ARCH="../libvpr/arch/sample_arch.xml"
 
 for benchmark in $TEST_DIR/*.v
 do 
