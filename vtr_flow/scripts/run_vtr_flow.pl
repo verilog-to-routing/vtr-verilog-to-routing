@@ -74,6 +74,7 @@ my $lut_size                = -1;
 my $vpr_cluster_seed_type   = "";
 my $tech_file               = "";
 my $do_power                = 0;
+my $check_equivalent = "off";
 
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-starting_stage" ) {
@@ -108,6 +109,9 @@ while ( $token = shift(@ARGV) ) {
 	}
 	elsif ( $token eq "-power" ) {
 		$do_power = 1;
+	}
+	elsif ( $token eq "-check_equivalent" ) {
+		$check_equivalent = "on";
 	}
 	else {
 		die "Error: Invalid argument ($token)\n";
@@ -447,7 +451,6 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		push( @vpr_power_args, "--cmos_tech_behavior_file" );
 		push( @vpr_power_args, "$tech_file" );
 	}
-
 	if ( $min_chan_width < 0 ) {
 		$q = &system_with_timeout(
 			$vpr_path,                    "vpr.out",
@@ -460,7 +463,6 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"--nodisp"
 		);
 		if ( $timing_driven eq "on" ) {
-
 			# Critical path delay is nonsensical at minimum channel width because congestion constraints completely dominate the cost function.
 			# Additional channel width needs to be added so that there is a reasonable trade-off between delay and area
 			# Commercial FPGAs are also desiged to have more channels than minimum for this reason
@@ -495,6 +497,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 					$vpr_path,               "vpr.crit_path.out",
 					$timeout,                $temp_dir,
 					$architecture_file_name, "$benchmark_name",
+					"--route",
 					"--blif_file",           "$scripts_output_file_name",
 					"--route_chan_width",    "$min_chan_width",
 					"--cluster_seed_type",   "$vpr_cluster_seed_type",
@@ -516,9 +519,23 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"$vpr_cluster_seed_type",     @vpr_power_args
 		);
 	}
-
-	if ( -e $vpr_route_output_file_path and $q eq "success" ) {
-		if ( !$keep_intermediate_files ) {
+	  					
+	if (-e $vpr_route_output_file_path and $q eq "success")
+	{
+		if($check_equivalent eq "on") {
+			if($abc_path eq "") {
+				$abc_path = "$vtr_flow_path/../abc_with_bb_support/abc";
+			}
+			$q = &system_with_timeout($abc_path, 
+							"equiv.out",
+							$timeout,
+							$temp_dir,
+							"-c", 
+							"cec $scripts_output_file_name post_pack_netlist.blif;sec $scripts_output_file_name post_pack_netlist.blif"
+			);
+		}
+		if (! $keep_intermediate_files)
+		{
 			system "rm -f $scripts_output_file_path";
 			system "rm -f ${temp_dir}*.xml";
 			system "rm -f ${temp_dir}*.net";
@@ -583,7 +600,7 @@ sub system_with_timeout {
 
 	# Check args
 	( $#_ > 2 )   or die "system_with_timeout: not enough args\n";
-	( -f $_[0] )  or die "system_with_timeout: can't find executable\n";
+	( -f $_[0] )  or die "system_with_timeout: can't find executable $_[0]\n";
 	( $_[2] > 0 ) or die "system_with_timeout: invalid timeout\n";
 
 	# Save the pid of child process
