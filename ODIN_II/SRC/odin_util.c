@@ -27,6 +27,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <ctype.h>
 #include <limits.h>
+#include <errno.h>
 #include "types.h"
 #include "globals.h"
 #include "errors.h"
@@ -189,15 +190,10 @@ long long convert_dec_string_of_size_to_long_long(char *orig_string, int size)
 	if (!is_decimal_string(orig_string))
 		error_message(PARSE_ERROR, -1, -1, "Invalid decimal number: %s.\n", orig_string);
 
-	#ifdef LLONG_MAX
+	errno = 0;
 	long long number = strtoll(orig_string, NULL, 10);
-	if (number == LLONG_MAX || number == LLONG_MIN)
+	if (errno == ERANGE)
 		error_message(PARSE_ERROR, -1, -1, "This suspected decimal number (%s) is too long for Odin\n", orig_string);
-	#else
-	long long number = strtol(orig_string, NULL, 10);
-	if (number == LONG_MAX || number == LONG_MIN)
-		error_message(PARSE_ERROR, -1, -1, "This suspected decimal number (%s) is too long for Odin\n", orig_string);
-	#endif
 
 	return number;
 }
