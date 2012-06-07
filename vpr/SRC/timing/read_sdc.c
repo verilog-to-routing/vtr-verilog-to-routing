@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdio.h>
+#include <limits.h>
 #include "assert.h"
 #include "util.h"
 #include "vpr_types.h"
@@ -311,7 +312,14 @@ float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_domain) {
 		* source_edges, * sink_edges, i, j, time, constraint_as_int;
 	float constraint;
 
-	/* First, multiply periods and offsets by 1000 and round down to the nearest integer, *
+	/* If the source and sink domains are the same, the constraint is just the clock period. */
+	if((source_domain.period == sink_domain.period) && (source_domain.offset == sink_domain.offset)) {
+		constraint = source_domain.period; /* or, equivalently, sink_domain.period */
+		return constraint;
+	}
+	
+	/* If we get here, the two constraints are not the same, and so we have to use edge counting. *
+	 * First, multiply periods and offsets by 1000 and round down to the nearest integer,		  *
 	 * to avoid messy decimals. */
 
 	source_period = (int) source_domain.period * 1000;
