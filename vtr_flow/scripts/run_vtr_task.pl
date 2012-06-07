@@ -22,10 +22,14 @@
 ###################################################################################
 
 use strict;
+
+# This loads the thread libraries, but within an eval so that if they are not available
+# the script will not fail.  If successful, $threaded = 1
+my $threaded = eval 'use threads; use Thread::Queue; 1';
+
 use Cwd;
 use File::Spec;
-use threads;
-use Thread::Queue;
+use IPC::Open2;
 use POSIX qw(strftime);
 
 # Function Prototypes
@@ -44,6 +48,7 @@ my $token;
 my $processors             = 1;
 my $run_prefix             = "run";
 my $show_runtime_estimates = 1;
+my $system_type            = "local";
 
 # Parse Input Arguments
 while ( $token = shift(@ARGV) ) {
@@ -56,6 +61,10 @@ while ( $token = shift(@ARGV) ) {
 	# Check for -p N
 	elsif ( $token eq "-p" ) {
 		$processors = int( shift(@ARGV) );
+	}
+
+	elsif ( $token eq "-system" ) {
+		$system_type = shift(@ARGV);
 	}
 
 	# Check for a task list file
@@ -76,11 +85,18 @@ while ( $token = shift(@ARGV) ) {
 
 	# must be a task name
 	else {
-		if ($token =~ /(.*)\//) {
+		if ( $token =~ /(.*)\// ) {
 			$token = $1;
 		}
 		push( @tasks, $token );
 	}
+}
+
+# Check threaded
+if ( $processors > 1 and not $threaded ) {
+	print
+	  "Multithreaded option specified, but is not supported by this version of perl.  Execution will be single threaded.\n";
+	$processors = 1;
 }
 
 # Read Task Files
@@ -296,57 +312,121 @@ sub run_single_task {
 	##############################################################
 	# Run experiment
 	##############################################################
-	if ( $processors == 1 ) {
+	if ( $system_type eq "local" ) {
+		if ( $processors == 1 ) {
+			foreach my $circuit (@circuits) {
+				foreach my $arch (@archs) {
+					if ($show_runtime_estimates) {
+						my $runtime =
+						  ret_expected_runtime( $circuit, $arch,
+							$golden_results_file );
+						print strftime "Current time: %b-%d %I:%M %p.  ",
+						  localtime;
+						print "Expected runtime of next benchmark: " . $runtime
+						  . "\n";
+					}
+
+					chdir(
+						"$task_dir/$run_prefix${experiment_number}/${arch}/${circuit}"
+					  )
+					  ; # or die "Cannot change to directory $StartDir/$run_prefix${experiment_number}/${arch}/${circuit}: $!";
+					system(
+						"$script_path $circuits_dir/$circuit $archs_dir/$arch $script_params\n"
+					);
+				}
+			}
+		}
+		else {
+			my $thread_work   = Thread::Queue->new();
+			my $thread_result = Thread::Queue->new();
+			my $threads       = $processors;
+
+			#print "# of Threads: $threads\n";
+
+			foreach my $circuit (@circuits) {
+				foreach my $arch (@archs) {
+					my $dir =
+					  "$task_dir/$run_prefix${experiment_number}/${arch}/${circuit}";
+					my $command =
+					  "$script_path $circuits_dir/$circuit $archs_dir/$arch $script_params";
+					$thread_work->enqueue("$dir||||$command");
+				}
+			}
+
+			my @pool =
+			  map { threads->create( \&do_work, $thread_work, $thread_result ) }
+			  1 .. $threads;
+
+			for ( 1 .. $threads ) {
+				while ( my $result = $thread_result->dequeue ) {
+					chomp($result);
+					print $result . "\n";
+				}
+			}
+
+			$_->join for @pool;
+		}
+	}
+	elsif ( $system_type eq "PBS_UBC" ) {
+
+		# PBS system
+		my @job_ids;
 		foreach my $circuit (@circuits) {
 			foreach my $arch (@archs) {
-				if ($show_runtime_estimates) {
-					my $runtime =
-					  ret_expected_runtime( $circuit, $arch,
-						$golden_results_file );
-					print strftime "Current time: %b-%d %I:%M %p.  ", localtime;
-					print "Expected runtime of next benchmark: " . $runtime
-					  . "\n";
-				}
+				open( PBS_FILE, ">pbs_job.txt" );
+				print PBS_FILE "#!/bin/bash\n";
+				print PBS_FILE "#PBS -S /bin/bash\n";
+				print PBS_FILE "#PBS -N $task-$arch-$circuit\n";
+				print PBS_FILE "#PBS -l nodes=1\n";
+				print PBS_FILE "#PBS -l walltime=96:00:00\n";
+				print PBS_FILE "#PBS -l mem=1024mb\n";
+				print PBS_FILE
+				  "#PBS -o $task_dir/$run_prefix${experiment_number}/${arch}/${circuit}/pbs_out.txt\n";
+				print PBS_FILE
+				  "#PBS -e $task_dir/$run_prefix${experiment_number}/${arch}/${circuit}/pbs_error.txt\n";
+				print PBS_FILE "#PBS -q g8\n";
+				print PBS_FILE
+				  "cd $task_dir/$run_prefix${experiment_number}/${arch}/${circuit}\n";
+				print PBS_FILE
+				  "$script_path $circuits_dir/$circuit $archs_dir/$arch $script_params\n";
+				close(PBS_FILE);
 
-				chdir(
-					"$task_dir/$run_prefix${experiment_number}/${arch}/${circuit}"
-				  )
-				  ; # or die "Cannot change to directory $StartDir/$run_prefix${experiment_number}/${arch}/${circuit}: $!";
-				system(
-					"$script_path $circuits_dir/$circuit $archs_dir/$arch $script_params\n"
+				my $line = `qsub pbs_job.txt`;
+				$line =~ /(\d+)\D/;
+				push(
+					@job_ids,
+					[
+						$1,
+						"$task_dir/$run_prefix${experiment_number}/${arch}/${circuit}/pbs_out.txt",
+						"$task_dir/$run_prefix${experiment_number}/${arch}/${circuit}/pbs_error.txt"
+					]
 				);
 			}
 		}
-	}
-	else {
-		my $thread_work   = Thread::Queue->new();
-		my $thread_result = Thread::Queue->new();
-		my $threads       = $processors;
 
-		#print "# of Threads: $threads\n";
+		# It seems that showq takes a bit of time before the new jobs show up
+		sleep(30);
 
-		foreach my $circuit (@circuits) {
-			foreach my $arch (@archs) {
-				my $dir =
-				  "$task_dir/$run_prefix${experiment_number}/${arch}/${circuit}";
-				my $command =
-				  "$script_path $circuits_dir/$circuit $archs_dir/$arch $script_params";
-				$thread_work->enqueue("$dir||||$command");
+		# Wait for all of the jobs to finish
+		while ( ( $#job_ids + 1 ) != 0 ) {
+			# Check job status at intervals
+			sleep(5);
+
+			# Get showq output
+			my $showq_out = `showq`;
+
+			my $idx;
+			while ( $idx < ( $#job_ids + 1 ) ) {
+				if ( $showq_out =~ /^($job_ids[$idx][0])\s/m ) {
+					$idx++;
+				}
+				else {
+					print `cat $job_ids[$idx][1]`;
+					print `cat $job_ids[$idx][2]`;
+					splice @job_ids, $idx, 1;
+				}
 			}
 		}
-
-		my @pool =
-		  map { threads->create( \&do_work, $thread_work, $thread_result ) }
-		  1 .. $threads;
-
-		for ( 1 .. $threads ) {
-			while ( my $result = $thread_result->dequeue ) {
-				chomp($result);
-				print $result . "\n";
-			}
-		}
-
-		$_->join for @pool;
 	}
 }
 
