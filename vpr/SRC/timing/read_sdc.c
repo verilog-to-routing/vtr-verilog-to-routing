@@ -29,7 +29,7 @@ float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_domain);
 
 /********************* Subroutine definitions *******************************/
 
-void read_sdc(char * sdc_file, int num_clocks) {
+void read_sdc(char * sdc_file) {
 /*This function reads the constraints from the SDC file *
 * specified on the command line into float ** timing_   *
 * constraints.  If no file is specified, it leaves      *
@@ -39,8 +39,13 @@ void read_sdc(char * sdc_file, int num_clocks) {
 	int num_lines = 1; /* Line counter for SDC file, used to report errors */
 	int i, j;
 		
-	/* Allocate matrix of timing constraints [0..num_clocks-1][0..num_clocks-1] */
-	timing_constraints = (float **) alloc_matrix(0, num_clocks-1, 0, num_clocks-1, sizeof(float));
+	/* Allocate matrix of timing constraints [0..num_netlist_-1][0..num_netlist_-1] and initialize to 0 */
+	timing_constraints = (float **) alloc_matrix(0, num_netlist_clocks-1, 0, num_netlist_clocks-1, sizeof(float));
+	for(i=0;i<num_netlist_clocks;i++) {
+		for(j=0;j<num_netlist_clocks;j++) {
+				timing_constraints[i][j] = 0.;
+		}
+	}
 
 	/* If no SDC file is included or specified, use default behaviour of cutting paths between domains and optimizing each clock separately */
 	if ((sdc = fopen(sdc_file, "r")) == NULL) {
@@ -143,6 +148,11 @@ boolean get_sdc_tok(char * buf, int num_lines) {
 				exit(1);
 			}
 			temp_falling_edge = (float) strtod(ptr, NULL);
+			/* Check that the falling edge is one half period away from the rising edge, excluding rounding error */
+			if(abs(temp_rising_edge - temp_falling_edge) - temp_clock_period/2.0 > EQUAL_DEF) {
+				fprintf(stderr, "clock does not have 50%% duty cycle on line %d of SDC file", num_lines);
+				exit(1);
+			}
 			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf); /* We need this extra one to advance the ptr to the right spot */
 		} else {
 			/* The clock's rising edge is by default at 0, and the falling edge is at the half-period */
@@ -167,7 +177,6 @@ boolean get_sdc_tok(char * buf, int num_lines) {
 			 * which these periods and offsets imply, and put them in the matrix timing_constraints. */
 
 			for(;;) {
-				ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 				if(ptr == NULL) { /* end of line */
 					return FALSE; 
 				}
@@ -181,7 +190,10 @@ boolean get_sdc_tok(char * buf, int num_lines) {
 				
 				/* The value of i is currently the index of the clock in clock_list */ 
 				sdc_clocks[i].period = temp_clock_period;
-				sdc_clocks[i].offset = temp_rising_edge; /* Note: temp_falling_edge is irrelevant unless you care about duty cycles - could be added in later */
+				sdc_clocks[i].offset = temp_rising_edge; 
+				
+				/* Advance to the next token (or the end of the line) */
+				ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 			}	
 		}
 	} else if (strcmp(ptr, "set_clock_groups") == 0) {
@@ -229,7 +241,7 @@ boolean get_sdc_tok(char * buf, int num_lines) {
 		free(exclusive_clock_groups);
 		return FALSE;
 
-	} else if (strcmp(ptr, "set_false_paths") == 0) {
+	} else if (strcmp(ptr, "set_false_path") == 0) {
 
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 		if(strcmp(ptr, "-from") != 0) {
@@ -292,7 +304,67 @@ int find_clock(char * ptr, int num_lines) {
 }
 
 float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_domain) {
-	/* blank for now */
-	return 0.;
-}
+	/* Given information from the SDC file about the period and offset of two clocks, *
+	* determine the implied setup-time constraint between them via edge counting.     */
 
+	int source_period, sink_period, source_offset, sink_offset, lcm_period, num_source_edges, num_sink_edges, 
+		* source_edges, * sink_edges, i, j, time, constraint_as_int;
+	float constraint;
+
+	/* First, multiply periods and offsets by 1000 and round down to the nearest integer, *
+	 * to avoid messy decimals. */
+
+	source_period = (int) source_domain.period * 1000;
+	sink_period = (int) sink_domain.period * 1000;
+	source_offset = (int) source_domain.offset * 1000;	
+	sink_offset = (int) sink_domain.offset * 1000;
+
+	/* Second, find the LCM of the two periods.  *
+	* This determines how long it takes before the pattern of the two clocks starts repeating. */
+	for(lcm_period = 1; ; lcm_period++) {
+		if(lcm_period % source_period == 0 && lcm_period % sink_period == 0) {
+			break;
+		}
+	}
+
+	/* Third, create an array of positive edges for each clock over one LCM clock period. */
+
+	num_source_edges = lcm_period/source_period + 1; 
+	num_sink_edges = lcm_period/sink_period + 1;
+
+	source_edges = (int *) my_malloc((num_source_edges + 1) * sizeof(int));
+	sink_edges = (int *) my_malloc((num_sink_edges + 1) * sizeof(int));
+	
+	for(i=0, time=source_offset; i<num_source_edges; i++) {
+		source_edges[i] = time;
+		time += source_period;
+	}
+
+	for(i=0, time=sink_offset; i<num_sink_edges; i++) {
+		sink_edges[i] = time;
+		time += sink_period;
+	}
+
+	/* Fourth, compare every edge in source_edges with every edge in sink_edges      *
+	 * The lowest strictly positive difference between a sink edge and a source edge *
+	 * gives us the set-up time constraint.											 */
+
+	constraint_as_int = INT_MAX; /* constraint starts off at +ve infinity so that everything will be less than it */
+
+	for(i=0; i<num_source_edges+1; i++) {
+		for(j=0; j<num_sink_edges+1; j++) {
+			if(sink_edges[j]>source_edges[i]) {
+				constraint_as_int = min(constraint_as_int, sink_edges[j]-source_edges[i]);
+			}
+		}
+	}
+
+	/* Fifth, divide by 1000 again and turn the constraint back into a float, and clean up memory. */
+
+	constraint = (float) constraint_as_int/1000;
+
+	free(source_edges);
+	free(sink_edges);
+
+	return constraint;
+}

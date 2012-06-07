@@ -159,7 +159,7 @@ alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	if(timing_constraints == NULL) {
 		/* the SDC timing constraints only need to be read in once; *
 		 * if they haven't been already, do it now				    */
-		read_sdc(timing_inf.SDCFile, num_netlist_clocks);
+		read_sdc(timing_inf.SDCFile);
 	}
 
 	alloc_and_load_tnodes(timing_inf);
@@ -215,7 +215,7 @@ float** alloc_and_load_pre_packing_timing_graph(float block_delay,
 	if(timing_constraints == NULL) {
 		/* the SDC timing constraints only need to be read in once; *
 		 * if they haven't been already, do it now				    */
-		read_sdc(timing_inf.SDCFile, num_netlist_clocks);
+		read_sdc(timing_inf.SDCFile);
 	}
 
 	alloc_and_load_tnodes_from_prepacked_netlist(block_delay,
