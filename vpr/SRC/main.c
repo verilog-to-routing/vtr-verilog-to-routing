@@ -190,7 +190,7 @@ int main(int argc, char **argv) {
 	PrintTitle();
 
 	/* Print usage message if no args */
-	if (argc < 2) {
+	if (argc < 3) {
 		PrintUsage();
 		exit(1);
 	}
