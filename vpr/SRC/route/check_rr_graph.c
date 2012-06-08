@@ -197,8 +197,9 @@ static boolean rr_node_is_global_clb_ipin(int inode) {
 
 void check_node(int inode, enum e_route_type route_type) {
 
-	/* This routine checks that the rr_node is inside the grid and has a valid  *
-	 * pin number, etc.                                                         */
+	/* This routine checks that the rr_node is inside the grid and has a valid  
+	 * pin number, etc.  
+	 */
 
 	int xlow, ylow, xhigh, yhigh, ptc_num, capacity;
 	t_rr_type rr_type;
@@ -414,8 +415,10 @@ void check_node(int inode, enum e_route_type route_type) {
 
 	if (rr_type != SINK) {
 		if (num_edges <= 0) {
-			printf("Error: in check_node: node %d has no edges.\n", inode);
-			exit(1);
+			/* Just a warning, since a very poorly routable rr-graph could have nodes with no edges.  *
+			 * If such a node was ever used in a final routing (not just in an rr_graph), other       *
+			 * error checks in check_routing will catch it.                                           */ 
+			printf("Warning: in check_node: node %d has no edges.\n", inode);
 		}
 	}
 

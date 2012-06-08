@@ -322,6 +322,8 @@ boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
 		current = get_heap_head();
 
 		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
+			printf ("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
+				   inet, clb_net[inet].name, itarget);
 			reset_path_costs();
 			free_route_tree(rt_root);
 			return (FALSE);
@@ -366,6 +368,8 @@ boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
 			current = get_heap_head();
 
 			if (current == NULL) { /* Impossible routing.  No path for net. */
+				printf ("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
+					 inet, clb_net[inet].name, itarget);
 				reset_path_costs();
 				free_route_tree(rt_root);
 				return (FALSE);
