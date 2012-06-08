@@ -119,7 +119,7 @@ static void normalize_costs(float t_crit, long max_critical_input_paths,
 
 static void print_primitive_as_blif(FILE *fpout, int iblk);
 
-static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel);
+static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel, boolean do_lut_input_balancing);
 
 static void alloc_and_load_netlist_clock_list(void);
 
@@ -340,7 +340,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 	for (i = 0; i < num_timing_nets; i++) {
 		net_to_driver_tnode[i] = OPEN;
 	}
-
+	
 	/* allocate space for tnodes */
 	num_tnodes = 0;
 	for (i = 0; i < num_blocks; i++) {
@@ -1061,7 +1061,7 @@ char *tnode_type_names[] = {  "INPAD_SOURCE", "INPAD_OPIN", "OUTPAD_IPIN",
 		- LUT rebalancing takes advantage of the fact that different LUT inputs often have different delays.  Since which LUT inputs to take can be permuted for free by just changing the logic in the LUT,
 		these LUT permutations can be performed late into the routing stage of the flow.
 */
-float load_net_slack(float **net_slack) {
+float load_net_slack(float **net_slack, boolean do_lut_input_balancing) {
 
 	/* Determines the slack of every source-sink pair of block pins in the      *
 	 * circuit.  The timing graph must have already been built.  This routine   *
@@ -1071,10 +1071,8 @@ float load_net_slack(float **net_slack) {
 	int inode, ilevel, num_at_level, i, num_edges, iedge, to_node;
 	int total;
 	t_tedge *tedge;
-	#ifdef LUT_INPUT_PIN_DELAY_REBALANCING
-		t_pb *pb;
-	#endif
-
+	t_pb *pb;
+	
 	/* Reset all arrival times to -ve infinity.  Can't just set to zero or the   *
 	 * constant propagation (constant generators work at -ve infinity) won't     *
 	 * work.                                                                     */
@@ -1085,7 +1083,6 @@ float load_net_slack(float **net_slack) {
 	for (inode = 0; inode < num_tnodes; inode++) {
 		tnode[inode].T_arr = T_CONSTANT_GENERATOR;
 
-		#ifdef LUT_INPUT_PIN_DELAY_REBALANCING
 		/* Reset LUT input rebalancing */
 		if(tnode[inode].type == PRIMITIVE_OPIN && tnode[inode].pb_graph_pin != NULL) {
 			pb = block[tnode[inode].block].pb->rr_node_to_pb_mapping[tnode[inode].pb_graph_pin->pin_count_in_cluster];
@@ -1099,7 +1096,6 @@ float load_net_slack(float **net_slack) {
 				}
 			}
 		}
-		#endif
 	}
 
 	/* Compute all arrival times with a breadth-first analysis from inputs to   *
@@ -1150,7 +1146,7 @@ float load_net_slack(float **net_slack) {
 							tnode[to_node].num_critical_input_paths;
 
 
-				set_and_balance_arrival_time(to_node, inode, Tdel);
+				set_and_balance_arrival_time(to_node, inode, Tdel, do_lut_input_balancing);
 			}
 		}
 
@@ -1442,7 +1438,7 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 	load_constant_net_delay(net_delay, constant_net_delay_value, timing_nets,
 			num_timing_nets);
 	load_timing_graph_net_delays(net_delay);
-	T_crit = load_net_slack(net_slack);
+	T_crit = load_net_slack(net_slack, FALSE);
 
 	printf("\n");
 	printf("\nCritical Path: %g (s)\n", T_crit);
@@ -1943,8 +1939,7 @@ static void print_primitive_as_blif(FILE *fpout, int iblk) {
 /* Set new arrival time
 	Special code for LUTs to enable LUT input delay balancing
 */
-static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel) {
-	#ifdef LUT_INPUT_PIN_DELAY_REBALANCING
+static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel, boolean do_lut_input_balancing) {
 	int i, j;
 	t_pb *pb;
 	boolean rebalance;
@@ -1953,14 +1948,12 @@ static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel)
 	boolean *assigned = NULL;
 	int fastest_unassigned_pin, most_crit_tnode, most_crit_pin;
 	float min_delay, highest_T_arr, balanced_T_arr;
-	#endif
 
 	/* Normal case for determining arrival time */
 	tnode[to_node].T_arr = max(tnode[to_node].T_arr, tnode[from_node].T_arr + Tdel);
 
-	#ifdef LUT_INPUT_PIN_DELAY_REBALANCING
 	/* Do LUT input rebalancing for LUTs */
-	if(tnode[to_node].type == PRIMITIVE_OPIN && tnode[to_node].pb_graph_pin != NULL) {
+	if(do_lut_input_balancing && tnode[to_node].type == PRIMITIVE_OPIN && tnode[to_node].pb_graph_pin != NULL) {
 		pb = block[tnode[to_node].block].pb->rr_node_to_pb_mapping[tnode[to_node].pb_graph_pin->pin_count_in_cluster];
 		if(pb != NULL && pb->lut_pin_remap != NULL) {
 			/* this is a LUT primitive, do pin swapping */
@@ -2044,7 +2037,6 @@ static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel)
 			}
 		}
 	}
-	#endif
 }
 
 

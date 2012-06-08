@@ -361,14 +361,10 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 	if (pb_type->num_modes == 0) {
 		/* LUT specific optimizations */
 		if(strcmp(pb_type->blif_model, ".names") == 0) {
-			#ifdef LUT_INPUT_PIN_DELAY_REBALANCING
 			pb->lut_pin_remap = (int*)my_malloc(pb_type->num_input_pins * sizeof(int));
 			for(i = 0; i < pb_type->num_input_pins; i++) {
 				pb->lut_pin_remap[i] = OPEN;
 			}
-			#else
-			pb->lut_pin_remap = NULL;
-			#endif
 		} else {
 			pb->lut_pin_remap = NULL;
 		}
