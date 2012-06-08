@@ -29,7 +29,7 @@ default: $(PROG)
 #OPTFLAGS  := -DNDEBUG -O3
 OPTFLAGS  := -g -O
 
-CFLAGS   += -Wall -Wno-unused-function $(OPTFLAGS) $(patsubst %, -I%, $(MODULES)) 
+CFLAGS   += -Wno-int-to-pointer-cast -Wno-pointer-to-int-cast -Wno-pointer-sign -Wno-overlength-strings -Wno-unused-function $(OPTFLAGS) $(patsubst %, -I%, $(MODULES)) 
 CFLAGS   += -MD -MP
 CXXFLAGS += $(CFLAGS) 
 
