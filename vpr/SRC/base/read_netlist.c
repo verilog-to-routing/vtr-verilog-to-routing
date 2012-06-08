@@ -23,11 +23,11 @@
 #include "rr_graph.h"
 
 static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
-		INOUTP t_rr_node *rr_graph, INOUTP int *ncount,
+		INOUTP t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping, INOUTP int *ncount,
 		INOUTP struct s_hash **nhash);
 
 static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
-		INOUTP t_rr_node *rr_graph, INOUTP int *ncount,
+		INOUTP t_rr_node *rr_graph, INOUTP t_pb **rr_node_to_pb_mapping, INOUTP int *ncount,
 		INOUTP struct s_hash **nhash, INOUTP int *num_primitives);
 static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 		INP int index, INOUTP int *ncount, INOUTP struct s_hash **nhash,
@@ -281,6 +281,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 			sizeof(t_rr_node));
 	alloc_and_load_rr_graph_for_pb_graph_node(cb[index].pb->pb_graph_node, arch,
 			0);
+	cb[index].pb->rr_node_to_pb_mapping = (t_pb **)my_calloc(cb[index].type->pb_graph_head->total_pb_pins, sizeof(t_pb *));
 	cb[index].pb->rr_graph = rr_node;
 	num_rr_nodes = cb[index].pb->pb_graph_node->total_pb_pins;
 
@@ -300,7 +301,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 		exit(1);
 	}
 
-	processPb(Parent, cb[index].pb, cb[index].pb->rr_graph, ncount, nhash,
+	processPb(Parent, cb[index].pb, cb[index].pb->rr_graph, cb[index].pb->rr_node_to_pb_mapping, ncount, nhash,
 			num_primitives);
 
 	cb[index].nets = my_malloc(cb[index].type->num_pins * sizeof(int));
@@ -316,7 +317,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 			cb[index].pb->rr_graph, &i);
 	freeTokens(tokens, num_tokens);
 #if 0
-	/* TODO: may not need local nets anymore, reminder to remove if not used, keeping this around just in case we need to use it in the future */
+	/* print local nets */
 	for(i = 0; i < cb[index].pb->num_local_nets; i++) {
 		printf("local net %s: ", cb[index].pb->name);
 		for(j = 0; j <= cb[index].pb->local_nets[i].num_sinks; j++) {
@@ -335,7 +336,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
  * nhash - hashtable of all internal subblock nets recorded thus far in this CLBs
  */
 static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
-		INOUTP t_rr_node *rr_graph, INOUTP int *ncount,
+		INOUTP t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping, INOUTP int *ncount,
 		INOUTP struct s_hash **nhash, INOUTP int *num_primitives) {
 	ezxml_t Cur, Prev, lookahead;
 	const char *Prop;
@@ -347,17 +348,30 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 	int num_tokens;
 
 	Cur = FindElement(Parent, "inputs", TRUE);
-	processPorts(Cur, pb, rr_graph, ncount, nhash);
+	processPorts(Cur, pb, rr_graph, rr_node_to_pb_mapping, ncount, nhash);
 	FreeNode(Cur);
 	Cur = FindElement(Parent, "outputs", TRUE);
-	processPorts(Cur, pb, rr_graph, ncount, nhash);
+	processPorts(Cur, pb, rr_graph, rr_node_to_pb_mapping, ncount, nhash);
 	FreeNode(Cur);
 	Cur = FindElement(Parent, "clocks", TRUE);
-	processPorts(Cur, pb, rr_graph, ncount, nhash);
+	processPorts(Cur, pb, rr_graph, rr_node_to_pb_mapping, ncount, nhash);
 	FreeNode(Cur);
 
 	pb_type = pb->pb_graph_node->pb_type;
 	if (pb_type->num_modes == 0) {
+		/* LUT specific optimizations */
+		if(strcmp(pb_type->blif_model, ".names") == 0) {
+			#ifdef LUT_INPUT_PIN_DELAY_REBALANCING
+			pb->lut_pin_remap = (int*)my_malloc(pb_type->num_input_pins * sizeof(int));
+			for(i = 0; i < pb_type->num_input_pins; i++) {
+				pb->lut_pin_remap[i] = OPEN;
+			}
+			#else
+			pb->lut_pin_remap = NULL;
+			#endif
+		} else {
+			pb->lut_pin_remap = NULL;
+		}
 		pb->logical_block = *num_primitives;
 		/* TODO: This info is not yet used.  Intention was to use later for error checking */
 		if (saved_logical_blocks != NULL) {
@@ -465,7 +479,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 					pb->child_pbs[i][pb_index].parent_pb = pb;
 					pb->child_pbs[i][pb_index].rr_graph = pb->rr_graph;
 
-					processPb(Cur, &pb->child_pbs[i][pb_index], rr_graph,
+					processPb(Cur, &pb->child_pbs[i][pb_index], rr_graph, rr_node_to_pb_mapping,
 							ncount, nhash, num_primitives);
 				} else {
 					/* physical block has no used primitives but it may have used routing */
@@ -502,7 +516,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 						}
 						pb->child_pbs[i][pb_index].parent_pb = pb;
 						pb->child_pbs[i][pb_index].rr_graph = pb->rr_graph;
-						processPb(Cur, &pb->child_pbs[i][pb_index], rr_graph,
+						processPb(Cur, &pb->child_pbs[i][pb_index], rr_graph, rr_node_to_pb_mapping,
 								ncount, nhash, num_primitives);
 					}
 				}
@@ -575,7 +589,7 @@ static int add_net_to_hash(INOUTP struct s_hash **nhash, INP char *net_name,
 }
 
 static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
-		t_rr_node *rr_graph, INOUTP int *ncount, INOUTP struct s_hash **nhash) {
+		t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping, INOUTP int *ncount, INOUTP struct s_hash **nhash) {
 
 	int i, j, in_port, out_port, clock_port, num_tokens;
 	ezxml_t Cur, Prev;
@@ -670,6 +684,8 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 									pb->pb_graph_node->clock_pins[clock_port][i].pin_count_in_cluster;
 						rr_graph[rr_node_index].net_num = add_net_to_hash(nhash,
 								pins[i], ncount);
+						rr_node_to_pb_mapping[rr_node_index] = pb;
+
 					}
 				} else {
 					for (i = 0; i < num_tokens; i++) {
@@ -696,6 +712,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 									pb->pb_graph_node->clock_pins[clock_port][i].pin_count_in_cluster;
 						rr_graph[rr_node_index].prev_node =
 								pin_node[0][0]->pin_count_in_cluster;
+						rr_node_to_pb_mapping[rr_node_index] = pb;
 						found = FALSE;
 						for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {
 							if (0
@@ -728,6 +745,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 								pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
 						rr_graph[rr_node_index].net_num = add_net_to_hash(nhash,
 								pins[i], ncount);
+						rr_node_to_pb_mapping[rr_node_index] = pb;
 					}
 				} else {
 					for (i = 0; i < num_tokens; i++) {
@@ -750,6 +768,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 								pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
 						rr_graph[rr_node_index].prev_node =
 								pin_node[0][0]->pin_count_in_cluster;
+						rr_node_to_pb_mapping[rr_node_index] = pb;
 						found = FALSE;
 						for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {
 							if (0

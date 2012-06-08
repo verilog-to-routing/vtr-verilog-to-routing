@@ -119,7 +119,9 @@ static void normalize_costs(float t_crit, long max_critical_input_paths,
 
 static void print_primitive_as_blif(FILE *fpout, int iblk);
 
-void alloc_and_load_netlist_clock_list(void);
+static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel);
+
+static void alloc_and_load_netlist_clock_list(void);
 
 /********************* Subroutine definitions *******************************/
 
@@ -553,6 +555,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 					tnode[i].out_edges[j - 1].to_node =
 							d_rr_graph[block[dblock].pb->pb_graph_node->input_pins[dport][dpin].pin_count_in_cluster].tnode->index;
 				}
+				tnode[i].out_edges[j - 1].Tdel = 0;
 				assert(inet != OPEN);
 			}
 			break;
@@ -1053,6 +1056,11 @@ char *tnode_type_names[] = {  "INPAD_SOURCE", "INPAD_OPIN", "OUTPAD_IPIN",
 	fclose(fp);
 }
 
+/* Perform timing analysis on circuit.  Return critical path delay and slack of nets in circuit. 
+	Optionally rebalance LUT inputs if requested
+		- LUT rebalancing takes advantage of the fact that different LUT inputs often have different delays.  Since which LUT inputs to take can be permuted for free by just changing the logic in the LUT,
+		these LUT permutations can be performed late into the routing stage of the flow.
+*/
 float load_net_slack(float **net_slack) {
 
 	/* Determines the slack of every source-sink pair of block pins in the      *
@@ -1063,6 +1071,9 @@ float load_net_slack(float **net_slack) {
 	int inode, ilevel, num_at_level, i, num_edges, iedge, to_node;
 	int total;
 	t_tedge *tedge;
+	#ifdef LUT_INPUT_PIN_DELAY_REBALANCING
+		t_pb *pb;
+	#endif
 
 	/* Reset all arrival times to -ve infinity.  Can't just set to zero or the   *
 	 * constant propagation (constant generators work at -ve infinity) won't     *
@@ -1071,8 +1082,25 @@ float load_net_slack(float **net_slack) {
 	long max_critical_input_paths = 0;
 	long max_critical_output_paths = 0;
 
-	for (inode = 0; inode < num_tnodes; inode++)
+	for (inode = 0; inode < num_tnodes; inode++) {
 		tnode[inode].T_arr = T_CONSTANT_GENERATOR;
+
+		#ifdef LUT_INPUT_PIN_DELAY_REBALANCING
+		/* Reset LUT input rebalancing */
+		if(tnode[inode].type == PRIMITIVE_OPIN && tnode[inode].pb_graph_pin != NULL) {
+			pb = block[tnode[inode].block].pb->rr_node_to_pb_mapping[tnode[inode].pb_graph_pin->pin_count_in_cluster];
+			if(pb != NULL && pb->lut_pin_remap != NULL) {
+				/* this is a LUT primitive, do pin swapping */
+				assert(pb->pb_graph_node->pb_type->num_output_pins == 1 && pb->pb_graph_node->pb_type->num_clock_pins == 0); /* ensure LUT properties are valid */
+				assert(pb->pb_graph_node->num_input_ports == 1);
+				/* If all input pins are known, perform LUT input delay rebalancing, do nothing otherwise */
+				for(i = 0; i < pb->pb_graph_node->num_input_pins[0]; i++) {
+					pb->lut_pin_remap[i] = OPEN;
+				}
+			}
+		}
+		#endif
+	}
 
 	/* Compute all arrival times with a breadth-first analysis from inputs to   *
 	 * outputs.  Also compute critical path (T_crit).                           */
@@ -1121,7 +1149,8 @@ float load_net_slack(float **net_slack) {
 					max_critical_input_paths =
 							tnode[to_node].num_critical_input_paths;
 
-				tnode[to_node].T_arr = max(tnode[to_node].T_arr, T_arr + Tdel);
+
+				set_and_balance_arrival_time(to_node, inode, Tdel);
 			}
 		}
 
@@ -1222,6 +1251,34 @@ static void compute_net_slacks(float **net_slack) {
 			net_slack[inet][iedge + 1] = T_req - T_arr - Tdel;
 		}
 	}
+}
+
+void print_lut_remapping(char *fname) {
+	FILE *fp;
+	int inode, i;
+	t_pb *pb;
+	
+
+	fp = my_fopen(fname, "w", 0);
+	fprintf(fp, "# LUT_Name\tinput_pin_mapping\n");
+
+	for (inode = 0; inode < num_tnodes; inode++) {		
+		/* Print LUT input rebalancing */
+		if(tnode[inode].type == PRIMITIVE_OPIN && tnode[inode].pb_graph_pin != NULL) {
+			pb = block[tnode[inode].block].pb->rr_node_to_pb_mapping[tnode[inode].pb_graph_pin->pin_count_in_cluster];
+			if(pb != NULL && pb->lut_pin_remap != NULL) {
+				assert(pb->pb_graph_node->pb_type->num_output_pins == 1 && pb->pb_graph_node->pb_type->num_clock_pins == 0); /* ensure LUT properties are valid */
+				assert(pb->pb_graph_node->num_input_ports == 1);
+				fprintf(fp, "%s", pb->name);
+				for(i = 0; i < pb->pb_graph_node->num_input_pins[0]; i++) {
+					fprintf(fp, "\t%d", pb->lut_pin_remap[i]);
+				}
+				fprintf(fp, "\n");
+			}
+		}
+	}
+
+	fclose(fp);
 }
 
 void print_critical_path(char *fname) {
@@ -1883,7 +1940,115 @@ static void print_primitive_as_blif(FILE *fpout, int iblk) {
 	}
 }
 
-void alloc_and_load_netlist_clock_list(void) {
+/* Set new arrival time
+	Special code for LUTs to enable LUT input delay balancing
+*/
+static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel) {
+	#ifdef LUT_INPUT_PIN_DELAY_REBALANCING
+	int i, j;
+	t_pb *pb;
+	boolean rebalance;
+	t_tnode *input_tnode;
+
+	boolean *assigned = NULL;
+	int fastest_unassigned_pin, most_crit_tnode, most_crit_pin;
+	float min_delay, highest_T_arr, balanced_T_arr;
+	#endif
+
+	/* Normal case for determining arrival time */
+	tnode[to_node].T_arr = max(tnode[to_node].T_arr, tnode[from_node].T_arr + Tdel);
+
+	#ifdef LUT_INPUT_PIN_DELAY_REBALANCING
+	/* Do LUT input rebalancing for LUTs */
+	if(tnode[to_node].type == PRIMITIVE_OPIN && tnode[to_node].pb_graph_pin != NULL) {
+		pb = block[tnode[to_node].block].pb->rr_node_to_pb_mapping[tnode[to_node].pb_graph_pin->pin_count_in_cluster];
+		if(pb != NULL && pb->lut_pin_remap != NULL) {
+			/* this is a LUT primitive, do pin swapping */
+			assert(pb->pb_graph_node->pb_type->num_output_pins == 1 && pb->pb_graph_node->pb_type->num_clock_pins == 0); /* ensure LUT properties are valid */
+			assert(pb->pb_graph_node->num_input_ports == 1);
+			assert(tnode[from_node].block == tnode[to_node].block);
+			
+			/* assign from_node to default location */
+			assert(pb->lut_pin_remap[tnode[from_node].pb_graph_pin->pin_number] == OPEN);
+			pb->lut_pin_remap[tnode[from_node].pb_graph_pin->pin_number] = tnode[from_node].pb_graph_pin->pin_number;
+			
+			/* If all input pins are known, perform LUT input delay rebalancing, do nothing otherwise */
+			rebalance = TRUE;
+			for(i = 0; i < pb->pb_graph_node->num_input_pins[0]; i++) {
+				input_tnode = block[tnode[to_node].block].pb->rr_graph[pb->pb_graph_node->input_pins[0][i].pin_count_in_cluster].tnode;
+				if(input_tnode != NULL && pb->lut_pin_remap[i] == OPEN) {
+					rebalance = FALSE;
+				}
+			}
+			if(rebalance == TRUE) {
+				/* Rebalance LUT inputs so that the most critical paths get the fastest inputs */
+				balanced_T_arr = OPEN;
+				assigned = (boolean*)my_calloc(pb->pb_graph_node->num_input_pins[0], sizeof(boolean));
+				/* Clear pin remapping */
+				for(i = 0; i < pb->pb_graph_node->num_input_pins[0]; i++) {
+					pb->lut_pin_remap[i] = OPEN;
+				}
+				/* load new T_arr and pin mapping */
+				for(i = 0; i < pb->pb_graph_node->num_input_pins[0]; i++) {
+					/* Find fastest physical input pin of LUT */
+					fastest_unassigned_pin = OPEN;
+					min_delay = OPEN;
+					for(j = 0; j < pb->pb_graph_node->num_input_pins[0]; j++) {
+						if(pb->lut_pin_remap[j] == OPEN) {
+							if(fastest_unassigned_pin == OPEN) {
+								fastest_unassigned_pin = j;
+								min_delay = pb->pb_graph_node->input_pins[0][j].pin_timing_del_max[0];
+							} else if (min_delay > pb->pb_graph_node->input_pins[0][j].pin_timing_del_max[0]) {
+								fastest_unassigned_pin = j;
+								min_delay = pb->pb_graph_node->input_pins[0][j].pin_timing_del_max[0];
+							}
+						}
+					}
+					assert(fastest_unassigned_pin != OPEN);
+
+					/* Find most critical LUT input pin in user circuit */
+					most_crit_tnode = OPEN;
+					highest_T_arr = OPEN;
+					most_crit_pin = OPEN;
+					for(j = 0; j < pb->pb_graph_node->num_input_pins[0]; j++) {
+						input_tnode = block[tnode[to_node].block].pb->rr_graph[pb->pb_graph_node->input_pins[0][j].pin_count_in_cluster].tnode;
+						if(input_tnode != NULL && assigned[j] == FALSE) {
+							if(most_crit_tnode == OPEN) {
+								most_crit_tnode = input_tnode->index;
+								highest_T_arr = input_tnode->T_arr;
+								most_crit_pin = j;
+							} else if (highest_T_arr < input_tnode->T_arr) {
+								most_crit_tnode = input_tnode->index;
+								highest_T_arr = input_tnode->T_arr;
+								most_crit_pin = j;
+							}
+						}
+					}
+
+					if(most_crit_tnode == OPEN) {
+						break;
+					} else {
+						assert(tnode[most_crit_tnode].num_edges == 1);
+						tnode[most_crit_tnode].out_edges[0].Tdel = min_delay;
+						pb->lut_pin_remap[fastest_unassigned_pin] = most_crit_pin;
+						assigned[most_crit_pin] = TRUE;
+						if(balanced_T_arr < min_delay + highest_T_arr) {
+							balanced_T_arr = min_delay + highest_T_arr;
+						}
+					}
+				}
+				free(assigned);
+				if(balanced_T_arr != OPEN) {
+					tnode[to_node].T_arr = balanced_T_arr;
+				}
+			}
+		}
+	}
+	#endif
+}
+
+
+static void alloc_and_load_netlist_clock_list(void) {
 
 	/* Creates an array of clock names and nets. The index of each
 	clock in this array will be used extensively in timing analysis. */
@@ -1916,4 +2081,7 @@ void alloc_and_load_netlist_clock_list(void) {
 		}
 	}
 }
+
+
+
 

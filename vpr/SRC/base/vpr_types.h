@@ -52,7 +52,8 @@
 /*#define PRINT_NET_DELAYS*//*prints out delays for all connections */
 /*#define PRINT_TIMING_GRAPH*//*prints out the timing graph */
 /*#define PRINT_REL_POS_DISTR *//*prints out the relative distribution graph for placements */
-#define DUMP_BLIF_ECHO /*dump blif of internal representation of user circuit.  Useful for ensuring functional correctness via logical equivalence with input blif*/
+/*#define DUMP_BLIF_ECHO*/ /*dump blif of internal representation of user circuit.  Useful for ensuring functional correctness via logical equivalence with input blif*/
+/*#define LUT_INPUT_PIN_DELAY_REBALANCING*//* Enable LUT input pin rebalancing */
 
 #ifdef SPEC
 #define NO_GRAPHICS		/* Rips out graphics (for non-X11 systems)      */
@@ -187,10 +188,16 @@ struct s_pb {
 	struct s_pb *parent_pb; /* pointer to parent node */
 
 	struct s_rr_node *rr_graph; /* pointer to rr_graph connecting pbs of cluster */
+	struct s_pb **rr_node_to_pb_mapping; /* [0..num_local_rr_nodes-1] pointer look-up of which pb this rr_node belongs based on index, NULL if pb does not exist  */
 	struct s_pb_stats pb_stats; /* statistics for current pb */
 
 	struct s_net *local_nets; /* Records post-packing connections, valid only for top-level */
 	int num_local_nets; /* Records post-packing connections, valid only for top-level */
+
+	int *lut_pin_remap; /* [0..num_lut_inputs-1] applies only to LUT primitives, stores how LUT inputs were swapped during CAD flow, 
+						   LUT inputs can be swapped by changing the logic in the LUT, this is useful because the fastest LUT input compared to the slowest is often significant (2-5x),
+						   so this optimization is crucial for handling LUT based FPGAs.
+						   */
 };
 typedef struct s_pb t_pb;
 
