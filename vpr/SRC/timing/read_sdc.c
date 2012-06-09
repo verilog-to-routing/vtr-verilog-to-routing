@@ -23,10 +23,10 @@ int * exclusive_clock_groups = NULL; /* Temporary structure used to interpret   
 
 /***************** Subroutines local to this module *************************/
 
-boolean get_sdc_tok(char * buf, int num_lines);
-boolean check_if_number(char * ptr);
-int find_clock(char * ptr, int num_lines);
-float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_domain);
+static boolean get_sdc_tok(char * buf, int num_lines);
+static boolean check_if_number(char * ptr);
+static int find_clock(char * ptr, int num_lines);
+static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_domain);
 
 /********************* Subroutine definitions *******************************/
 
@@ -40,7 +40,7 @@ void read_sdc(char * sdc_file) {
 	int num_lines = 1; /* Line counter for SDC file, used to report errors */
 	int i, j;
 		
-	/* Allocate matrix of timing constraints [0..num_netlist_-1][0..num_netlist_-1] and initialize to 0 */
+	/* Allocate matrix of timing constraints [0..num_netlist_clocks-1][0..num_netlist_clocks-1] and initialize to 0 */
 	timing_constraints = (float **) alloc_matrix(0, num_netlist_clocks-1, 0, num_netlist_clocks-1, sizeof(float));
 	for(i=0;i<num_netlist_clocks;i++) {
 		for(j=0;j<num_netlist_clocks;j++) {
@@ -83,7 +83,7 @@ void read_sdc(char * sdc_file) {
 	return;
 }
 
-boolean get_sdc_tok(char * buf, int num_lines) {
+static boolean get_sdc_tok(char * buf, int num_lines) {
 	/* Figures out which, if any, token is at the start of this line and *
 	 * takes the appropriate action.  Returns FALSE unless a special wildcard case is found, 
 	 * in which case the calling function immediately returns. */
@@ -272,7 +272,7 @@ boolean get_sdc_tok(char * buf, int num_lines) {
 	}
 }
 
-boolean check_if_number(char * ptr) {
+static boolean check_if_number(char * ptr) {
 /* Checks if the character array ptr represents a valid floating-point number.  *
  * To return TRUE, all characters must be digits, although *
  * there can also be no more than one decimal point.       */
@@ -291,9 +291,9 @@ boolean check_if_number(char * ptr) {
 	return TRUE;
 }
 
-int find_clock(char * ptr, int num_lines) {
-/* Given a token ptr, find whether it's the name of a clock.  If it's not, print an error and exit; *
- * if it is, return the clock's index in the array clock_list. */
+static int find_clock(char * ptr, int num_lines) {
+/* Given a token ptr, find whether it's the name of a clock in the array clock_list.  If it's not, print an error and exit; *
+ * if it is, return the clock's index in clock_list. */
 	int index;
 	for(index=0;index<num_netlist_clocks;index++) {
 		if(strcmp(ptr, clock_list[index].name) == 0) {
@@ -304,7 +304,7 @@ int find_clock(char * ptr, int num_lines) {
 	exit(1);
 }
 
-float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_domain) {
+static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_domain) {
 	/* Given information from the SDC file about the period and offset of two clocks, *
 	* determine the implied setup-time constraint between them via edge counting.     */
 

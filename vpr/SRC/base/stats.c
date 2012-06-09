@@ -83,13 +83,12 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 			}
 
 			load_timing_graph_net_delays(net_delay);
-			T_crit = load_net_slack(net_slack, TRUE);
+			T_crit = load_net_slack(net_slack);
 
 			if (GetEchoOption()) {
 				print_timing_graph("timing_graph.echo");
 				print_net_slack("net_slack.echo", net_slack);
 				print_critical_path("critical_path.echo");
-				print_lut_remapping("lut_remapping.echo");
 			}
 
 			printf("\n");

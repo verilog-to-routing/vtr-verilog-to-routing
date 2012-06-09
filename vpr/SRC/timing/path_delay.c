@@ -119,9 +119,11 @@ static void normalize_costs(float t_crit, long max_critical_input_paths,
 
 static void print_primitive_as_blif(FILE *fpout, int iblk);
 
-static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel, boolean do_lut_input_balancing);
-
 static void alloc_and_load_netlist_clock_list(void);
+
+static void load_clock_skew(void);
+
+static int find_clock(char * clock_name);
 
 /********************* Subroutine definitions *******************************/
 
@@ -174,6 +176,8 @@ alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 
 	check_timing_graph(num_sinks);
 
+	load_clock_skew();
+
 	net_slack = alloc_net_slack();
 
 	return (net_slack);
@@ -224,6 +228,8 @@ float** alloc_and_load_pre_packing_timing_graph(float block_delay,
 			inter_cluster_net_delay);
 
 	num_sinks = alloc_and_load_timing_graph_levels();
+
+	load_clock_skew();
 
 	net_slack = alloc_net_slack();
 
@@ -340,7 +346,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 	for (i = 0; i < num_timing_nets; i++) {
 		net_to_driver_tnode[i] = OPEN;
 	}
-	
+
 	/* allocate space for tnodes */
 	num_tnodes = 0;
 	for (i = 0; i < num_blocks; i++) {
@@ -555,7 +561,6 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 					tnode[i].out_edges[j - 1].to_node =
 							d_rr_graph[block[dblock].pb->pb_graph_node->input_pins[dport][dpin].pin_count_in_cluster].tnode->index;
 				}
-				tnode[i].out_edges[j - 1].Tdel = 0;
 				assert(inet != OPEN);
 			}
 			break;
@@ -565,6 +570,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 		case FF_SINK:
 		case FF_SOURCE:
 		case FF_IPIN:
+		case FF_CLOCK:
 			break;
 		default:
 			printf(ERRTAG "Consistency check failed: Unknown tnode type %d\n",
@@ -793,7 +799,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 						tnode[inode].model_port = 0;
 						tnode[inode].num_edges = 0;
 						tnode[inode].out_edges = NULL;
-						tnode[inode].type = FF_SINK;
+						tnode[inode].type = FF_CLOCK;
 						inode++;
 					}
 				}
@@ -869,6 +875,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 		case FF_SINK:
 		case FF_SOURCE:
 		case FF_IPIN:
+		case FF_CLOCK:
 			break;
 		default:
 			printf(ERRTAG "Consistency check failed: Unknown tnode type %d\n",
@@ -970,7 +977,7 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 			}
 			(*inode)++;
 		} else if (tnode[i].pb_graph_pin->type == PB_PIN_CLOCK) {
-			tnode[i].type = FF_SINK;
+			tnode[i].type = FF_CLOCK;
 			tnode[i].num_edges = 0;
 			tnode[i].out_edges = NULL;
 		} else {
@@ -999,12 +1006,12 @@ char *tnode_type_names[] = {  "INPAD_SOURCE", "INPAD_OPIN", "OUTPAD_IPIN",
 
 			"OUTPAD_SINK", "CB_IPIN", "CB_OPIN", "INTERMEDIATE_NODE",
 			"PRIMITIVE_IPIN", "PRIMITIVE_OPIN", "FF_IPIN", "FF_OPIN", "FF_SINK",
-			"FF_SOURCE", "CONSTANT_GEN_SOURCE" };
+			"FF_SOURCE", "FF_CLOCK", "CONSTANT_GEN_SOURCE" };
 
 	fp = my_fopen(fname, "w", 0);
 
 	fprintf(fp, "num_tnodes: %d\n", num_tnodes);
-	fprintf(fp, "Node #\tType\t\tipin\tiblk\t# edges\t"
+	fprintf(fp, "Node #\tType\t\tipin\tiblk\tClock Skew\t# edges\t"
 			"Edges (to_node, Tdel)\n\n");
 
 	for (inode = 0; inode < num_tnodes; inode++) {
@@ -1018,16 +1025,25 @@ char *tnode_type_names[] = {  "INPAD_SOURCE", "INPAD_OPIN", "OUTPAD_IPIN",
 					tnode[inode].pb_graph_pin->pin_count_in_cluster,
 					tnode[inode].block);
 		} else {
-			fprintf(fp, "%d\t", tnode[inode].block);
+			fprintf(fp, "\t%d\t", tnode[inode].block);
 		}
 
-		fprintf(fp, "%d\t", tnode[inode].num_edges);
+		if(itype == FF_CLOCK || itype == FF_SOURCE || itype == FF_SINK) {
+			fprintf(fp, "%f\t", tnode[inode].clock_skew);
+		}
+
+		else {
+			fprintf(fp, "\t\t");
+		}
+
+		fprintf(fp, "%d", tnode[inode].num_edges);
 
 		tedge = tnode[inode].out_edges;
 		for (iedge = 0; iedge < tnode[inode].num_edges; iedge++) {
 			fprintf(fp, "\t(%4d,%7.3g)", tedge[iedge].to_node,
 					tedge[iedge].Tdel);
 		}
+
 		fprintf(fp, "\n");
 	}
 
@@ -1056,12 +1072,7 @@ char *tnode_type_names[] = {  "INPAD_SOURCE", "INPAD_OPIN", "OUTPAD_IPIN",
 	fclose(fp);
 }
 
-/* Perform timing analysis on circuit.  Return critical path delay and slack of nets in circuit. 
-	Optionally rebalance LUT inputs if requested
-		- LUT rebalancing takes advantage of the fact that different LUT inputs often have different delays.  Since which LUT inputs to take can be permuted for free by just changing the logic in the LUT,
-		these LUT permutations can be performed late into the routing stage of the flow.
-*/
-float load_net_slack(float **net_slack, boolean do_lut_input_balancing) {
+float load_net_slack(float **net_slack) {
 
 	/* Determines the slack of every source-sink pair of block pins in the      *
 	 * circuit.  The timing graph must have already been built.  This routine   *
@@ -1071,8 +1082,7 @@ float load_net_slack(float **net_slack, boolean do_lut_input_balancing) {
 	int inode, ilevel, num_at_level, i, num_edges, iedge, to_node;
 	int total;
 	t_tedge *tedge;
-	t_pb *pb;
-	
+
 	/* Reset all arrival times to -ve infinity.  Can't just set to zero or the   *
 	 * constant propagation (constant generators work at -ve infinity) won't     *
 	 * work.                                                                     */
@@ -1080,23 +1090,8 @@ float load_net_slack(float **net_slack, boolean do_lut_input_balancing) {
 	long max_critical_input_paths = 0;
 	long max_critical_output_paths = 0;
 
-	for (inode = 0; inode < num_tnodes; inode++) {
+	for (inode = 0; inode < num_tnodes; inode++)
 		tnode[inode].T_arr = T_CONSTANT_GENERATOR;
-
-		/* Reset LUT input rebalancing */
-		if(tnode[inode].type == PRIMITIVE_OPIN && tnode[inode].pb_graph_pin != NULL) {
-			pb = block[tnode[inode].block].pb->rr_node_to_pb_mapping[tnode[inode].pb_graph_pin->pin_count_in_cluster];
-			if(pb != NULL && pb->lut_pin_remap != NULL) {
-				/* this is a LUT primitive, do pin swapping */
-				assert(pb->pb_graph_node->pb_type->num_output_pins == 1 && pb->pb_graph_node->pb_type->num_clock_pins == 0); /* ensure LUT properties are valid */
-				assert(pb->pb_graph_node->num_input_ports == 1);
-				/* If all input pins are known, perform LUT input delay rebalancing, do nothing otherwise */
-				for(i = 0; i < pb->pb_graph_node->num_input_pins[0]; i++) {
-					pb->lut_pin_remap[i] = OPEN;
-				}
-			}
-		}
-	}
 
 	/* Compute all arrival times with a breadth-first analysis from inputs to   *
 	 * outputs.  Also compute critical path (T_crit).                           */
@@ -1105,30 +1100,30 @@ float load_net_slack(float **net_slack, boolean do_lut_input_balancing) {
 
 	/* Primary inputs arrive at T = 0. */
 
-	num_at_level = tnodes_at_level[0].nelem;
+	num_at_level = tnodes_at_level[0].nelem;	/* There are num_at_level top-level tnodes. */
 	for (i = 0; i < num_at_level; i++) {
-		inode = tnodes_at_level[0].list[i];
-		tnode[inode].T_arr = 0.;
+		inode = tnodes_at_level[0].list[i];		/* Go through the list of each tnode at level 0... */
+		tnode[inode].T_arr = 0.;				/* ...and set the arrival time of that tnode to 0. */
 	}
 
-	total = 0;
-	for (ilevel = 0; ilevel < num_tnode_levels; ilevel++) {
-		num_at_level = tnodes_at_level[ilevel].nelem;
+	total = 0;													/* We count up all tnodes to error-check at the end. */
+	for (ilevel = 0; ilevel < num_tnode_levels; ilevel++) {		/* For each level of our levelized timing graph... */
+		num_at_level = tnodes_at_level[ilevel].nelem;			/* ...there are num_at_level tnodes at that level. */
 		total += num_at_level;
 
-		for (i = 0; i < num_at_level; i++) {
+		for (i = 0; i < num_at_level; i++) {					/* Go through each of the tnodes at the level we're on. */
 			inode = tnodes_at_level[ilevel].list[i];
 			if (ilevel == 0) {
-				tnode[inode].num_critical_input_paths = 1;
+				tnode[inode].num_critical_input_paths = 1;		/* Top-level tnodes have only one critical input path */
 			}
-			T_arr = tnode[inode].T_arr;
-			num_edges = tnode[inode].num_edges;
-			tedge = tnode[inode].out_edges;
-			T_crit = max(T_crit, T_arr);
+			T_arr = tnode[inode].T_arr;							/* Get the arrival time from the node we're visiting */
+			num_edges = tnode[inode].num_edges;					/* Get the number of edges fanning out from the node we're visiting */
+			tedge = tnode[inode].out_edges;						/* Get the list of edges from the node we're visiting */
+			T_crit = max(T_crit, T_arr);						/* The critical path delay is set to the maximum of all the arrival times of the nodes we've visited so far. */
 
-			for (iedge = 0; iedge < num_edges; iedge++) {
-				to_node = tedge[iedge].to_node;
-				Tdel = tedge[iedge].Tdel;
+			for (iedge = 0; iedge < num_edges; iedge++) {		/* Now go through each edge coming out from this tnode */
+				to_node = tedge[iedge].to_node;					/* Get the index of the destination tnode of this edge... */
+				Tdel = tedge[iedge].Tdel;						/* ...and get the delay to that tnode, along this edge. */
 
 				/* Update number of near critical paths entering tnode */
 				/*check for approximate equality*/
@@ -1144,9 +1139,11 @@ float load_net_slack(float **net_slack, boolean do_lut_input_balancing) {
 						> max_critical_input_paths)
 					max_critical_input_paths =
 							tnode[to_node].num_critical_input_paths;
-
-
-				set_and_balance_arrival_time(to_node, inode, Tdel, do_lut_input_balancing);
+				
+				/* Critical step: the arrival time T_arr at the destination node is set to the maximum of all the possible arrival times from all edges fanning in to the node. *
+				 * The arrival time represents the latest time that all inputs must arrive at a node. */
+				tnode[to_node].T_arr = max(tnode[to_node].T_arr, T_arr + Tdel); 
+				
 			}
 		}
 
@@ -1172,13 +1169,15 @@ float load_net_slack(float **net_slack, boolean do_lut_input_balancing) {
 			}
 
 			if (num_edges == 0) { /* sink */
-				assert(
-						tnode[inode].type == OUTPAD_SINK || tnode[inode].type == FF_SINK);
-				tnode[inode].T_req = T_crit;
-				tnode[inode].num_critical_output_paths = 1;
+				assert(tnode[inode].type == OUTPAD_SINK || tnode[inode].type == FF_SINK || tnode[inode].type == FF_CLOCK); 
+				/* Assign each sink (leaf) node to have the required time T_req = T_crit.											     *
+				 * T_req is the time we need all inputs to a tnode to arrive by, before it begins to affect the speed of the circuit.    *
+				 * Roughly speaking, the slack along a path is the difference between the required time and the arrival time - the       *
+				 * amount of time a signal could be delayed on that connection before it would begin to affect the speed of the circuit. */
+				tnode[inode].T_req = T_crit; 
+				tnode[inode].num_critical_output_paths = 1; /* Bottom-level tnodes have only one critical output path */
 			} else {
-				assert(
-						!(tnode[inode].type == OUTPAD_SINK || tnode[inode].type == FF_SINK));
+				assert(!(tnode[inode].type == OUTPAD_SINK || tnode[inode].type == FF_SINK || tnode[inode].type == FF_CLOCK));
 				tedge = tnode[inode].out_edges;
 				to_node = tedge[0].to_node;
 				Tdel = tedge[0].Tdel;
@@ -1210,6 +1209,7 @@ float load_net_slack(float **net_slack, boolean do_lut_input_balancing) {
 						max_critical_output_paths =
 								tnode[to_node].num_critical_output_paths;
 
+					/* Opposite to T_arr, set T_req to the MINIMUM of the required times of all edges fanning OUT from this node. */
 					T_req = min(T_req, tnode[to_node].T_req - Tdel);
 				}
 
@@ -1247,34 +1247,6 @@ static void compute_net_slacks(float **net_slack) {
 			net_slack[inet][iedge + 1] = T_req - T_arr - Tdel;
 		}
 	}
-}
-
-void print_lut_remapping(char *fname) {
-	FILE *fp;
-	int inode, i;
-	t_pb *pb;
-	
-
-	fp = my_fopen(fname, "w", 0);
-	fprintf(fp, "# LUT_Name\tinput_pin_mapping\n");
-
-	for (inode = 0; inode < num_tnodes; inode++) {		
-		/* Print LUT input rebalancing */
-		if(tnode[inode].type == PRIMITIVE_OPIN && tnode[inode].pb_graph_pin != NULL) {
-			pb = block[tnode[inode].block].pb->rr_node_to_pb_mapping[tnode[inode].pb_graph_pin->pin_count_in_cluster];
-			if(pb != NULL && pb->lut_pin_remap != NULL) {
-				assert(pb->pb_graph_node->pb_type->num_output_pins == 1 && pb->pb_graph_node->pb_type->num_clock_pins == 0); /* ensure LUT properties are valid */
-				assert(pb->pb_graph_node->num_input_ports == 1);
-				fprintf(fp, "%s", pb->name);
-				for(i = 0; i < pb->pb_graph_node->num_input_pins[0]; i++) {
-					fprintf(fp, "\t%d", pb->lut_pin_remap[i]);
-				}
-				fprintf(fp, "\n");
-			}
-		}
-	}
-
-	fclose(fp);
 }
 
 void print_critical_path(char *fname) {
@@ -1438,7 +1410,7 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 	load_constant_net_delay(net_delay, constant_net_delay_value, timing_nets,
 			num_timing_nets);
 	load_timing_graph_net_delays(net_delay);
-	T_crit = load_net_slack(net_slack, FALSE);
+	T_crit = load_net_slack(net_slack);
 
 	printf("\n");
 	printf("\nCritical Path: %g (s)\n", T_crit);
@@ -1936,110 +1908,6 @@ static void print_primitive_as_blif(FILE *fpout, int iblk) {
 	}
 }
 
-/* Set new arrival time
-	Special code for LUTs to enable LUT input delay balancing
-*/
-static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel, boolean do_lut_input_balancing) {
-	int i, j;
-	t_pb *pb;
-	boolean rebalance;
-	t_tnode *input_tnode;
-
-	boolean *assigned = NULL;
-	int fastest_unassigned_pin, most_crit_tnode, most_crit_pin;
-	float min_delay, highest_T_arr, balanced_T_arr;
-
-	/* Normal case for determining arrival time */
-	tnode[to_node].T_arr = max(tnode[to_node].T_arr, tnode[from_node].T_arr + Tdel);
-
-	/* Do LUT input rebalancing for LUTs */
-	if(do_lut_input_balancing && tnode[to_node].type == PRIMITIVE_OPIN && tnode[to_node].pb_graph_pin != NULL) {
-		pb = block[tnode[to_node].block].pb->rr_node_to_pb_mapping[tnode[to_node].pb_graph_pin->pin_count_in_cluster];
-		if(pb != NULL && pb->lut_pin_remap != NULL) {
-			/* this is a LUT primitive, do pin swapping */
-			assert(pb->pb_graph_node->pb_type->num_output_pins == 1 && pb->pb_graph_node->pb_type->num_clock_pins == 0); /* ensure LUT properties are valid */
-			assert(pb->pb_graph_node->num_input_ports == 1);
-			assert(tnode[from_node].block == tnode[to_node].block);
-			
-			/* assign from_node to default location */
-			assert(pb->lut_pin_remap[tnode[from_node].pb_graph_pin->pin_number] == OPEN);
-			pb->lut_pin_remap[tnode[from_node].pb_graph_pin->pin_number] = tnode[from_node].pb_graph_pin->pin_number;
-			
-			/* If all input pins are known, perform LUT input delay rebalancing, do nothing otherwise */
-			rebalance = TRUE;
-			for(i = 0; i < pb->pb_graph_node->num_input_pins[0]; i++) {
-				input_tnode = block[tnode[to_node].block].pb->rr_graph[pb->pb_graph_node->input_pins[0][i].pin_count_in_cluster].tnode;
-				if(input_tnode != NULL && pb->lut_pin_remap[i] == OPEN) {
-					rebalance = FALSE;
-				}
-			}
-			if(rebalance == TRUE) {
-				/* Rebalance LUT inputs so that the most critical paths get the fastest inputs */
-				balanced_T_arr = OPEN;
-				assigned = (boolean*)my_calloc(pb->pb_graph_node->num_input_pins[0], sizeof(boolean));
-				/* Clear pin remapping */
-				for(i = 0; i < pb->pb_graph_node->num_input_pins[0]; i++) {
-					pb->lut_pin_remap[i] = OPEN;
-				}
-				/* load new T_arr and pin mapping */
-				for(i = 0; i < pb->pb_graph_node->num_input_pins[0]; i++) {
-					/* Find fastest physical input pin of LUT */
-					fastest_unassigned_pin = OPEN;
-					min_delay = OPEN;
-					for(j = 0; j < pb->pb_graph_node->num_input_pins[0]; j++) {
-						if(pb->lut_pin_remap[j] == OPEN) {
-							if(fastest_unassigned_pin == OPEN) {
-								fastest_unassigned_pin = j;
-								min_delay = pb->pb_graph_node->input_pins[0][j].pin_timing_del_max[0];
-							} else if (min_delay > pb->pb_graph_node->input_pins[0][j].pin_timing_del_max[0]) {
-								fastest_unassigned_pin = j;
-								min_delay = pb->pb_graph_node->input_pins[0][j].pin_timing_del_max[0];
-							}
-						}
-					}
-					assert(fastest_unassigned_pin != OPEN);
-
-					/* Find most critical LUT input pin in user circuit */
-					most_crit_tnode = OPEN;
-					highest_T_arr = OPEN;
-					most_crit_pin = OPEN;
-					for(j = 0; j < pb->pb_graph_node->num_input_pins[0]; j++) {
-						input_tnode = block[tnode[to_node].block].pb->rr_graph[pb->pb_graph_node->input_pins[0][j].pin_count_in_cluster].tnode;
-						if(input_tnode != NULL && assigned[j] == FALSE) {
-							if(most_crit_tnode == OPEN) {
-								most_crit_tnode = input_tnode->index;
-								highest_T_arr = input_tnode->T_arr;
-								most_crit_pin = j;
-							} else if (highest_T_arr < input_tnode->T_arr) {
-								most_crit_tnode = input_tnode->index;
-								highest_T_arr = input_tnode->T_arr;
-								most_crit_pin = j;
-							}
-						}
-					}
-
-					if(most_crit_tnode == OPEN) {
-						break;
-					} else {
-						assert(tnode[most_crit_tnode].num_edges == 1);
-						tnode[most_crit_tnode].out_edges[0].Tdel = min_delay;
-						pb->lut_pin_remap[fastest_unassigned_pin] = most_crit_pin;
-						assigned[most_crit_pin] = TRUE;
-						if(balanced_T_arr < min_delay + highest_T_arr) {
-							balanced_T_arr = min_delay + highest_T_arr;
-						}
-					}
-				}
-				free(assigned);
-				if(balanced_T_arr != OPEN) {
-					tnode[to_node].T_arr = balanced_T_arr;
-				}
-			}
-		}
-	}
-}
-
-
 static void alloc_and_load_netlist_clock_list(void) {
 
 	/* Creates an array of clock names and nets. The index of each
@@ -2048,7 +1916,7 @@ static void alloc_and_load_netlist_clock_list(void) {
 	int bnum, clock_net, iclock;
 	boolean found;
 
-	assert(clock_list == NULL); /* Ensure that global variable has not yet been allocated */
+	assert(clock_list == NULL); /* Ensure that clock_list has not yet been allocated */
 	num_netlist_clocks = 0;
 
 	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
@@ -2074,6 +1942,68 @@ static void alloc_and_load_netlist_clock_list(void) {
 	}
 }
 
+static void load_clock_skew(void) {
+/* Makes a single traversal through the timing graph similar to load_net_slack, but only starting from clock drivers.					    *
+ * The delay from the clock input is stored in tnode[inode].clock_skew (TO DO!!!) and the clock's index in clock_list is stored in tnode[inode].clock. *
+ * Both clock and clock_skew are propagated through to FF_CLOCK sink nodes. Note that we don't care about the clock domain or skew except for 
+ * these flip-flop tnodes. */
 
+	int i, inode, num_at_level, ilevel, to_node, num_edges, iedge, Tdel;
+	float clock_skew;
+	t_tedge * tedge;
 
+	/* Not necessary to use a constant generator, since we assume clocks have only one driver, so no need to take maxima. */
 
+	/* The clock arrives at the top-level nodes at T=0 */
+
+	num_at_level = tnodes_at_level[0].nelem;	/* There are num_at_level top-level tnodes. */
+	for (i = 0; i < num_at_level; i++) {		
+		
+		inode = tnodes_at_level[0].list[i];		/* Go through the list of each tnode at level 0 which		[1]	{to_node=23 Tdel=0.00000000 }	t_tedge
+ is a clock... */
+		tnode[inode].clock_skew = 0.;			/* ...and set the clock skew of that tnode to 0. */
+	}
+
+	for (ilevel = 0; ilevel < num_tnode_levels; ilevel++) {		/* For each level of our levelized timing graph... */
+		num_at_level = tnodes_at_level[ilevel].nelem;			/* ...there are num_at_level tnodes at that level. */
+
+		for (i = 0; i < num_at_level; i++) {					/* Go through each of the tnodes at the level we're on. */
+			inode = tnodes_at_level[ilevel].list[i];
+
+			clock_skew = tnode[inode].clock_skew;				/* Get the skew from the node we're visiting */
+			num_edges = tnode[inode].num_edges;					/* Get the number of edges fanning out from the node we're visiting */
+			tedge = tnode[inode].out_edges;						/* Get the list of edges from the node we're visiting */
+
+			for (iedge = 0; iedge < num_edges; iedge++) {		/* Now go through each edge coming out from this tnode */
+				to_node = tedge[iedge].to_node;					/* Get the index of the destination tnode of this edge... */
+				Tdel = tedge[iedge].Tdel;						/* ...and get the delay to that tnode, along this edge. */
+
+				tnode[to_node].clock_skew = tnode[inode].clock_skew + Tdel; /* Propagate clock skew forward along this clock net, adding the delay of the wires (edges) of the clock network. */ 
+
+				if(tnode[to_node].type == FF_CLOCK) {
+				/* Exploit the fact that flip-flop tnodes always have the following order in the array tnode: 
+				 * { FF_OPIN, FF_SOURCE, FF_IPIN, FF_SINK, FF_CLOCK } (pre-packing) or
+				 * { FF_IPIN, FF_SINK, FF_OPIN, FF_SOURCE, FF_CLOCK } (post-packing)
+				 * to assign the same clock domain and skew to the FF_SINK and FF_SOURCE tnodes in this flip-flop. */
+					clock_skew = tnode[to_node].clock_skew;
+					assert(tnode[to_node-3].type == FF_SINK || tnode[to_node-3].type == FF_SOURCE);
+					assert(tnode[to_node-1].type == FF_SINK || tnode[to_node-1].type == FF_SOURCE);
+					tnode[to_node-3].clock_skew = clock_skew; /* FF_SINK */
+					tnode[to_node-1].clock_skew = clock_skew; /* FF_SOURCE */
+				}
+			}
+		}
+	}
+}
+
+static int find_clock(char * clock_name) {
+/* Given a string clock_name, find whether it's the name of a clock in the array clock_list.  *
+ * if it is, return the clock's index in clock_list; if it's not, return -1 */
+	int index;
+	for(index=0;index<num_netlist_clocks;index++) {
+		if(strcmp(clock_name, clock_list[index].name) == 0) {
+			return index;
+		}
+	}
+	return -1;
+}

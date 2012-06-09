@@ -52,7 +52,7 @@
 /*#define PRINT_NET_DELAYS*//*prints out delays for all connections */
 /*#define PRINT_TIMING_GRAPH*//*prints out the timing graph */
 /*#define PRINT_REL_POS_DISTR *//*prints out the relative distribution graph for placements */
-/*#define DUMP_BLIF_ECHO*/ /*dump blif of internal representation of user circuit.  Useful for ensuring functional correctness via logical equivalence with input blif*/
+#define DUMP_BLIF_ECHO /*dump blif of internal representation of user circuit.  Useful for ensuring functional correctness via logical equivalence with input blif*/
 
 #ifdef SPEC
 #define NO_GRAPHICS		/* Rips out graphics (for non-X11 systems)      */
@@ -124,7 +124,7 @@ struct s_pack_molecule;
 
 /* Stores statistical information for pb such as cost information */
 /* jedit TODO: Move to pb_graph_node to minimize memory allocation/deallocation */
-struct s_pb_stats {
+typedef struct s_pb_stats {
 	/* Packing statistics */
 	float *gain; /* Attraction (inverse of cost) function */
 
@@ -166,8 +166,7 @@ struct s_pb_stats {
 	 */
 	struct s_pack_molecule **feasible_blocks;
 	int num_feasible_blocks; /* [0..num_marked_models-1] */
-};
-typedef struct s_pb_stats t_pb_stats;
+} t_pb_stats;
 
 /* An FPGA complex block is represented by a hierarchy of physical blocks.  
  These include leaf physical blocks that a netlist block can map to (such as LUTs, flip-flops, memory slices, etc),
@@ -176,7 +175,7 @@ typedef struct s_pb_stats t_pb_stats;
 
  All physical blocks are represented by this s_pb data structure.
  */
-struct s_pb {
+typedef struct s_pb {
 	char *name; /* Name of this physical block */
 	t_pb_graph_node *pb_graph_node; /* pointer to pb_graph_node this pb corresponds to */
 	int logical_block; /* If this is a terminating pb, gives the logical (netlist) block that it contains */
@@ -187,23 +186,16 @@ struct s_pb {
 	struct s_pb *parent_pb; /* pointer to parent node */
 
 	struct s_rr_node *rr_graph; /* pointer to rr_graph connecting pbs of cluster */
-	struct s_pb **rr_node_to_pb_mapping; /* [0..num_local_rr_nodes-1] pointer look-up of which pb this rr_node belongs based on index, NULL if pb does not exist  */
 	struct s_pb_stats pb_stats; /* statistics for current pb */
 
 	struct s_net *local_nets; /* Records post-packing connections, valid only for top-level */
 	int num_local_nets; /* Records post-packing connections, valid only for top-level */
-
-	int *lut_pin_remap; /* [0..num_lut_inputs-1] applies only to LUT primitives, stores how LUT inputs were swapped during CAD flow, 
-						   LUT inputs can be swapped by changing the logic in the LUT, this is useful because the fastest LUT input compared to the slowest is often significant (2-5x),
-						   so this optimization is crucial for handling LUT based FPGAs.
-						   */
-};
-typedef struct s_pb t_pb;
-
-struct s_tnode;
+	
+	int clock_net; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
+} t_pb;
 
 /* Technology-mapped user netlist block */
-struct s_logical_block {
+typedef struct s_logical_block {
 	char *name; /* Taken from the first vpack_net which it drives. */
 	enum logical_block_types type; /* I/O, combinational logic, or latch */
 	t_model* model; /* Technology-mapped type (eg. LUT, Flip-flop, memory slice, inpad, etc) */
@@ -226,8 +218,7 @@ struct s_logical_block {
 
 	struct s_linked_vptr *truth_table; /* If this is a LUT (.names), then this is the logic that the LUT implements */
 	struct s_linked_vptr *packed_molecules; /* List of t_pack_molecules that this logical block is a part of */
-};
-typedef struct s_logical_block t_logical_block;
+} t_logical_block;
 
 enum e_pack_pattern_molecule_type {
 	MOLECULE_SINGLE_ATOM, MOLECULE_FORCED_PACK, MOLECULE_CHAIN
@@ -299,6 +290,7 @@ typedef enum {
 	FF_OPIN,
 	FF_SINK,
 	FF_SOURCE,
+	FF_CLOCK,
 	CONSTANT_GEN_SOURCE
 } t_tnode_type;
 /* type:  What is this tnode? (Pad pin, clb pin, subblock pin, etc.)         *
@@ -319,14 +311,16 @@ typedef enum {
  * index: index of array this tnode belongs to
  * num_critical_input_paths, num_critical_output_paths: Count total number of near critical paths that go through this node *
  */
-struct s_tnode {
+typedef struct s_tnode {
 	t_tedge *out_edges;
 	int num_edges;
 	float T_arr;
 	float T_req;
 	int block;
-	int clock; /*For flipflops and IOs only; 
-			   this is the clock index in clock_list, not the clock net number itself*/
+
+	/* For flipflops only. Clock contains the index of the clock in clock_list; clock_skew is the time taken for a clock signal to get to the flip-flop. */
+	int clock; 
+	float clock_skew;
 
 	/* post-packing timing graph */
 	t_tnode_type type;
@@ -340,8 +334,7 @@ struct s_tnode {
 	float normalized_T_arr; /* arrival time (normalized with respect to max time) */
 
 	int index;
-};
-typedef struct s_tnode t_tnode;
+} t_tnode;
 
 typedef struct s_clock {
 	int net_number;
