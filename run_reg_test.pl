@@ -53,7 +53,7 @@ while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-create_golden" ) {
 		$create_golden = 1;
 	}
-	if ($token eq "-quick_test") {
+	elsif ($token eq "-quick_test") {
 		$quick_test = 1;
 	}
 	else {	
