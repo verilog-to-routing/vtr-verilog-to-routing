@@ -224,8 +224,8 @@ float print_critical_path_node(FILE * fp, t_linked_int * critical_path_node) {
 	}
 
 	if (pb_graph_pin != NULL) {
-		//fprintf(fp, "Pin: %s.%s[%d] pb (%s)", pb_graph_pin->parent_node->pb_type->name,
-		//	pb_graph_pin->port->name, pb_graph_pin->pin_number, block[iblk].pb->rr_node_to_pb_mapping[pb_graph_pin->pin_count_in_cluster]->name);
+		fprintf(fp, "Pin: %s.%s[%d] pb (%s)", pb_graph_pin->parent_node->pb_type->name,
+			pb_graph_pin->port->name, pb_graph_pin->pin_number, block[iblk].pb->rr_node_to_pb_mapping[pb_graph_pin->pin_count_in_cluster]->name);
 	}
 	if (type != INPAD_SOURCE && type != OUTPAD_SINK) {
 		fprintf(fp, "\n");
