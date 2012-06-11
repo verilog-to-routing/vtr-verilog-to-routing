@@ -344,12 +344,10 @@ typedef struct s_tnode {
 } t_tnode;
 
 typedef struct s_clock {
-	int net_number;
 	char * name;
+	int fanout;
 } t_clock;
-/* Stores the net number and name of each clock. The net number
-is used to associate flip-flops and IOs with their clock.  
-The clock name is used to cross-reference with the SDC timing constraints.*/
+/* Stores the name and fanout (number of flip-flops in clock domain) of each clock.  Used extensively in SDC parsing and timing analysis. */
 
 typedef struct s_sdc_clock {
 	float period;

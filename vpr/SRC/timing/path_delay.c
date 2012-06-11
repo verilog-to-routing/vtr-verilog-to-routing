@@ -314,7 +314,7 @@ void free_timing_graph(float **net_slack) {
 
 void print_net_slack(char *fname, float **net_slack) {
 
-	/* Prints the net slacks into a file.                                     */
+	/* Prints the net slacks into a file. */
 
 	int inet, ipin;
 	FILE *fp;
@@ -1000,7 +1000,7 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 
 void print_timing_graph(char *fname) {
 
-	/* Prints the timing graph into a file.           */
+	/* Prints the timing graph into a file. */
 
 	FILE *fp;
 	int inode, iedge, ilevel, i;
@@ -1121,12 +1121,12 @@ float load_net_slack(float **net_slack, boolean do_lut_input_balancing) {
 
 	T_crit = 0.;
 
-	/* Primary inputs arrive at T = 0. */
+	/* Primary inputs arrive at T = clock_skew. */
 
 	num_at_level = tnodes_at_level[0].nelem;	/* There are num_at_level top-level tnodes. */
 	for (i = 0; i < num_at_level; i++) {
 		inode = tnodes_at_level[0].list[i];		/* Go through the list of each tnode at level 0... */
-		tnode[inode].T_arr = 0.;				/* ...and set the arrival time of that tnode to 0. */
+		tnode[inode].T_arr = tnode[inode].clock_skew;	/* ...and set the arrival time of that tnode to its clock skew. */
 	}
 
 	total = 0;													/* We count up all tnodes to error-check at the end. */
@@ -1192,11 +1192,11 @@ float load_net_slack(float **net_slack, boolean do_lut_input_balancing) {
 
 			if (num_edges == 0) { /* sink */
 				assert(tnode[inode].type == OUTPAD_SINK || tnode[inode].type == FF_SINK || tnode[inode].type == FF_CLOCK); 
-				/* Assign each sink (leaf) node to have the required time T_req = T_crit.											     *
+				/* Assign each sink (leaf) node to have the required time T_req = T_crit + clock_skew.								     *
 				 * T_req is the time we need all inputs to a tnode to arrive by, before it begins to affect the speed of the circuit.    *
 				 * Roughly speaking, the slack along a path is the difference between the required time and the arrival time - the       *
 				 * amount of time a signal could be delayed on that connection before it would begin to affect the speed of the circuit. */
-				tnode[inode].T_req = T_crit; 
+				tnode[inode].T_req = T_crit + tnode[inode].clock_skew; 
 				tnode[inode].num_critical_output_paths = 1; /* Bottom-level tnodes have only one critical output path */
 			} else {
 				assert(!(tnode[inode].type == OUTPAD_SINK || tnode[inode].type == FF_SINK || tnode[inode].type == FF_CLOCK));
@@ -2067,7 +2067,8 @@ static void alloc_and_load_netlist_clock_list(void) {
 	/* Creates an array of clock names and nets. The index of each
 	clock in this array will be used extensively in timing analysis. */
 
-	int bnum, clock_net, iclock;
+	int bnum, iclock;
+	char * clock_name;
 	boolean found;
 
 	assert(clock_list == NULL); /* Ensure that clock_list has not yet been allocated */
@@ -2075,12 +2076,11 @@ static void alloc_and_load_netlist_clock_list(void) {
 
 	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
 		if(logical_block[bnum].type == VPACK_LATCH) {
-			clock_net = logical_block[bnum].clock_net;
-			assert(clock_net != OPEN);
+			clock_name = logical_block[bnum].name;
 			/* Now that we've found a clock, let's see if we've counted it already */
 			found = FALSE;
 			for (iclock = 0; !found && iclock < num_netlist_clocks; iclock++) {
-				if (clock_list[iclock].net_number == clock_net) {
+				if (strcmp(clock_list[iclock].name, clock_name) == 0) {
 					found = TRUE;
 				}
 			}
@@ -2089,8 +2089,7 @@ static void alloc_and_load_netlist_clock_list(void) {
 				num_netlist_clocks++;
 				/*dynamically grow the array to fit one new element */
 				clock_list = (t_clock *) my_realloc (clock_list, (num_netlist_clocks) * sizeof(t_clock));
-				clock_list[num_netlist_clocks - 1].net_number = clock_net;
-				clock_list[num_netlist_clocks - 1].name = my_strdup(vpack_net[clock_net].name);
+				clock_list[num_netlist_clocks - 1].name = clock_name;
 			}
 		}
 	}
@@ -2101,7 +2100,12 @@ static void load_clock_domain_and_skew(void) {
  * The delay from the clock input is stored in tnode[inode].clock_skew and the clock's index in clock_list is stored in tnode[inode].clock. *
  * Both clock and clock_skew are propagated through to FF_CLOCK sink nodes, and then across to the associated FF_SOURCE and FF_SINK tnodes. */
 
-	int i, inode, iblock, num_at_level, clock_index;
+	int i, iclock, inode, iblock, num_at_level, clock_index;
+
+	/* Wipe fanout of each clock domain in clock_list, in case the indexing of our clocks changes. */
+	for(iclock=0; iclock < num_netlist_clocks; iclock++) {
+		clock_list[iclock].fanout = 0;
+	}
 
 	num_at_level = tnodes_at_level[0].nelem;	/* There are num_at_level top-level tnodes. */
 	for (i = 0; i < num_at_level; i++) {		
@@ -2156,6 +2160,8 @@ static void propagate_clock_domain_and_skew(int inode) {
 		tnode[inode-1].clock_domain = tnode[inode].clock_domain;
 		tnode[inode-3].clock_skew = tnode[inode].clock_skew;
 		tnode[inode-1].clock_skew = tnode[inode].clock_skew;
+		/* Also, increment the fanout of the clock domain we're in. */
+		clock_list[tnode[inode].clock_domain].fanout++;
 		return;
 	}
 
