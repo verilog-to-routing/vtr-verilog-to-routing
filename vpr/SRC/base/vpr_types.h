@@ -325,8 +325,8 @@ typedef struct s_tnode {
 	float T_req;
 	int block;
 
-	/* For flipflops only. Clock contains the index of the clock in clock_list; clock_skew is the time taken for a clock signal to get to the flip-flop. */
-	int clock; 
+	/* For flipflops only. Clock_domain contains the index of the clock in clock_list; clock_skew is the time taken for a clock signal to get to the flip-flop. */
+	int clock_domain; 
 	float clock_skew;
 
 	/* post-packing timing graph */

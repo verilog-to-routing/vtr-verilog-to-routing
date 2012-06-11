@@ -122,9 +122,11 @@ static void print_primitive_as_blif(FILE *fpout, int iblk);
 static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel, boolean do_lut_input_balancing);
 static void alloc_and_load_netlist_clock_list(void);
 
-static void load_clock_skew(void);
+static void load_clock_domain_and_skew(void);
 
 static int find_clock(char * clock_name);
+
+static void propagate_clock_domain_and_skew(int inode);
 
 /********************* Subroutine definitions *******************************/
 
@@ -176,9 +178,9 @@ alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	}
 
 	check_timing_graph(num_sinks);
-
-	load_clock_skew();
-
+#if 0
+	load_clock_domain_and_skew(); /* Doesn't work yet post-packing. */
+#endif
 	net_slack = alloc_net_slack();
 
 	return (net_slack);
@@ -230,7 +232,7 @@ float** alloc_and_load_pre_packing_timing_graph(float block_delay,
 
 	num_sinks = alloc_and_load_timing_graph_levels();
 
-	load_clock_skew();
+	load_clock_domain_and_skew();
 
 	net_slack = alloc_net_slack();
 
@@ -2094,55 +2096,23 @@ static void alloc_and_load_netlist_clock_list(void) {
 	}
 }
 
-static void load_clock_skew(void) {
+static void load_clock_domain_and_skew(void) {
 /* Makes a single traversal through the timing graph similar to load_net_slack, but only starting from clock drivers.					    *
- * The delay from the clock input is stored in tnode[inode].clock_skew (TO DO!!!) and the clock's index in clock_list is stored in tnode[inode].clock. *
- * Both clock and clock_skew are propagated through to FF_CLOCK sink nodes. Note that we don't care about the clock domain or skew except for 
- * these flip-flop tnodes. */
+ * The delay from the clock input is stored in tnode[inode].clock_skew and the clock's index in clock_list is stored in tnode[inode].clock. *
+ * Both clock and clock_skew are propagated through to FF_CLOCK sink nodes, and then across to the associated FF_SOURCE and FF_SINK tnodes. */
 
-	int i, inode, num_at_level, ilevel, to_node, num_edges, iedge, Tdel;
-	float clock_skew;
-	t_tedge * tedge;
-
-	/* Not necessary to use a constant generator, since we assume clocks have only one driver, so no need to take maxima. */
-
-	/* The clock arrives at the top-level nodes at T=0 */
+	int i, inode, iblock, num_at_level, clock_index;
 
 	num_at_level = tnodes_at_level[0].nelem;	/* There are num_at_level top-level tnodes. */
 	for (i = 0; i < num_at_level; i++) {		
-		
-		inode = tnodes_at_level[0].list[i];		/* Go through the list of each tnode at level 0 which		[1]	{to_node=23 Tdel=0.00000000 }	t_tedge
- is a clock... */
-		tnode[inode].clock_skew = 0.;			/* ...and set the clock skew of that tnode to 0. */
-	}
-
-	for (ilevel = 0; ilevel < num_tnode_levels; ilevel++) {		/* For each level of our levelized timing graph... */
-		num_at_level = tnodes_at_level[ilevel].nelem;			/* ...there are num_at_level tnodes at that level. */
-
-		for (i = 0; i < num_at_level; i++) {					/* Go through each of the tnodes at the level we're on. */
-			inode = tnodes_at_level[ilevel].list[i];
-
-			clock_skew = tnode[inode].clock_skew;				/* Get the skew from the node we're visiting */
-			num_edges = tnode[inode].num_edges;					/* Get the number of edges fanning out from the node we're visiting */
-			tedge = tnode[inode].out_edges;						/* Get the list of edges from the node we're visiting */
-
-			for (iedge = 0; iedge < num_edges; iedge++) {		/* Now go through each edge coming out from this tnode */
-				to_node = tedge[iedge].to_node;					/* Get the index of the destination tnode of this edge... */
-				Tdel = tedge[iedge].Tdel;						/* ...and get the delay to that tnode, along this edge. */
-
-				tnode[to_node].clock_skew = tnode[inode].clock_skew + Tdel; /* Propagate clock skew forward along this clock net, adding the delay of the wires (edges) of the clock network. */ 
-
-				if(tnode[to_node].type == FF_CLOCK) {
-				/* Exploit the fact that flip-flop tnodes always have the following order in the array tnode: 
-				 * { FF_OPIN, FF_SOURCE, FF_IPIN, FF_SINK, FF_CLOCK } (pre-packing) or
-				 * { FF_IPIN, FF_SINK, FF_OPIN, FF_SOURCE, FF_CLOCK } (post-packing)
-				 * to assign the same clock domain and skew to the FF_SINK and FF_SOURCE tnodes in this flip-flop. */
-					clock_skew = tnode[to_node].clock_skew;
-					assert(tnode[to_node-3].type == FF_SINK || tnode[to_node-3].type == FF_SOURCE);
-					assert(tnode[to_node-1].type == FF_SINK || tnode[to_node-1].type == FF_SOURCE);
-					tnode[to_node-3].clock_skew = clock_skew; /* FF_SINK */
-					tnode[to_node-1].clock_skew = clock_skew; /* FF_SOURCE */
-				}
+		inode = tnodes_at_level[0].list[i];		/* Iterate through each tnode. inode is the index of the tnode in the array tnode. */
+		if(tnode[inode].type == INPAD_SOURCE) {	/* See if this node is the start of an I/O pad (as oppposed to a flip-flop source). */			
+			iblock = tnode[inode].block; /* Look up the logical block number associated with this tnode (which should have the same index). */
+			clock_index = find_clock(logical_block[iblock].name); /* See if the net name associated with this logical block is actually a clock. */
+			if(clock_index != -1) {	/* If it IS a clock, set the clock domain and skew of the tnode... */
+				tnode[inode].clock_domain = clock_index; 
+				tnode[inode].clock_skew = 0.;
+				propagate_clock_domain_and_skew(inode); /* ...and propagate this information forward to connected nodes. */
 			}
 		}
 	}
@@ -2150,7 +2120,7 @@ static void load_clock_skew(void) {
 
 static int find_clock(char * clock_name) {
 /* Given a string clock_name, find whether it's the name of a clock in the array clock_list.  *
- * if it is, return the clock's index in clock_list; if it's not, return -1 */
+ * if it is, return the clock's index in clock_list; if it's not, return -1. */
 	int index;
 	for(index=0;index<num_netlist_clocks;index++) {
 		if(strcmp(clock_name, clock_list[index].name) == 0) {
@@ -2158,4 +2128,47 @@ static int find_clock(char * clock_name) {
 		}
 	}
 	return -1;
+}
+
+static void propagate_clock_domain_and_skew(int inode) {
+/* Given a tnode indexed by inode (which is part of a clock net), 
+ * propagate forward the clock domain (unchanged) and skew (adding the delay of edges) to all nodes in its fanout. 
+ * We then call recursively on all children in a depth-first search.  If num_edges is 0, we should be at an FF_CLOCK tnode; we then set the 
+ * FF_SOURCE and FF_SINK nodes to have the same clock domain and skew as the FF_CLOCK node.  We implicitly rely on a tnode not being 
+ * part of two separate clock nets, since undefined behaviour would result if one DFS overwrote the results of another.  This may
+ * be problematic in cases of multiplexed or locally-generated clocks. */
+
+	int num_edges, iedge, to_node;
+	float Tdel;
+	t_tedge * tedge;
+
+	tedge = tnode[inode].out_edges;	/* Get the list of edges from the node we're visiting. */
+
+	if(!tedge) { /* Leaf/sink node; base case of the recursion. */
+		assert(tnode[inode].type == FF_CLOCK);
+		/* Exploit the fact that flip-flop tnodes always have the following order in the array tnode: 
+		 * { FF_OPIN, FF_SOURCE, FF_IPIN, FF_SINK, FF_CLOCK } (pre-packing) or
+		 * { FF_IPIN, FF_SINK, FF_OPIN, FF_SOURCE, FF_CLOCK } (post-packing)
+		 * to assign the same clock domain and skew to the FF_SINK and FF_SOURCE tnodes in this flip-flop. */
+		assert(tnode[inode-3].type == FF_SINK || tnode[inode-3].type == FF_SOURCE);
+		assert(tnode[inode-1].type == FF_SINK || tnode[inode-1].type == FF_SOURCE);
+		tnode[inode-3].clock_domain = tnode[inode].clock_domain;
+		tnode[inode-1].clock_domain = tnode[inode].clock_domain;
+		tnode[inode-3].clock_skew = tnode[inode].clock_skew;
+		tnode[inode-1].clock_skew = tnode[inode].clock_skew;
+		return;
+	}
+
+	num_edges = tnode[inode].num_edges;	/* Get the number of edges fanning out from the node we're visiting. */
+
+	for (iedge = 0; iedge < num_edges; iedge++) {		/* Go through each edge coming out from this tnode */
+		to_node = tedge[iedge].to_node;					/* Get the index of the destination tnode of this edge... */
+		Tdel = tedge[iedge].Tdel;						/* ...and get the delay to that tnode, along this edge. */
+
+		tnode[to_node].clock_domain = tnode[inode].clock_domain;					/* Propagate clock domain forward unchanged. */
+		tnode[to_node].clock_skew = tnode[inode].clock_skew + Tdel; /* Propagate clock skew forward along this clock net, adding the delay of the wires (edges) of the clock network. */ 
+		
+		/* Finally, call recursively on the destination tnode. */
+		propagate_clock_domain_and_skew(to_node);
+	}
 }
