@@ -1,0 +1,9 @@
+arch	circuit	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	unabsorb_ff	num_memories	num_mult	error	
+k6_N10_memDepth16384_memData64_40nm_timing.xml	bgm.v	success	110	2.79636e-08	1571.5	1853.32	2116.7	59.69	36236	35751	21312	2879	257	32	4096	0	11		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	blob_merge.v	success	88	1.59069e-08	347.71	75.79	520.86	6.7	6787	6887	3473	552	36	100	0	0	0		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	diffeq1.v	success	60	1.90949e-08	17.56	4.84	18.62	1.04	952	889	732	39	162	96	0	0	5		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	diffeq2.v	success	54	1.61731e-08	96.02	2.6	17.11	1.15	603	539	450	21	66	96	0	0	5		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	sha.v	success	58	1.65339e-08	337.85	16.8	46.34	1.47	3161	3197	1409	209	38	36	3	0	0		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	stereovision0.v	success	62	4.47522e-09	2328.77	257.29	276.16	6.08	25024	25221	8905	1128	157	197	3319	0	0		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	stereovision1.v	success	94	6.01887e-09	1548.72	290.1	217.28	14.27	24719	22584	11167	1004	133	145	3281	0	38		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	stereovision2.v	k6_N10_memDepth16384_memData64_40nm_timing.xml	stereovision3.v	
