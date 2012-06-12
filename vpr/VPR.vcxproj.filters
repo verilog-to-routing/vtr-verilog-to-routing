@@ -144,9 +144,6 @@
     <ClCompile Include="SRC\pack\cluster_legality.c">
       <Filter>Source Files\pack</Filter>
     </ClCompile>
-    <ClCompile Include="SRC\pack\ff_pack.c">
-      <Filter>Source Files\pack</Filter>
-    </ClCompile>
     <ClCompile Include="SRC\pack\output_blif.c">
       <Filter>Source Files\pack</Filter>
     </ClCompile>
@@ -354,9 +351,6 @@
       <Filter>Header Files\pack</Filter>
     </ClInclude>
     <ClInclude Include="SRC\pack\cluster_legality.h">
-      <Filter>Header Files\pack</Filter>
-    </ClInclude>
-    <ClInclude Include="SRC\pack\ff_pack.h">
       <Filter>Header Files\pack</Filter>
     </ClInclude>
     <ClInclude Include="SRC\pack\output_blif.h">
