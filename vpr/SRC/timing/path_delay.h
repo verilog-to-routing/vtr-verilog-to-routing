@@ -1,3 +1,6 @@
+#ifndef PATH_DELAY
+#define PATH_DELAY
+
 float **alloc_and_load_timing_graph(t_timing_inf timing_inf);
 
 float **alloc_and_load_pre_packing_timing_graph(float block_delay,
@@ -28,3 +31,5 @@ void print_timing_graph_as_blif(char *fname, t_model *models);
 extern int num_netlist_clocks; /* [0..num_netlist_clocks - 1] number of clocks in netlist */
 extern t_clock * clock_list; /* [0..num_netlist_clocks - 1] array of clocks in netlist */
 extern float ** timing_constraints; /* [0..num_netlist_clocks - 1 (source)][0..num_netlist_clocks - 1 (destination)] */
+
+#endif

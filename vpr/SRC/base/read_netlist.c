@@ -23,15 +23,14 @@
 #include "rr_graph.h"
 
 static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
-		INOUTP t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping, INOUTP int *ncount,
-		INOUTP struct s_hash **nhash);
+		INOUTP t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping, INP struct s_hash **vpack_net_hash);
 
 static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
-		INOUTP t_rr_node *rr_graph, INOUTP t_pb **rr_node_to_pb_mapping, INOUTP int *ncount,
-		INOUTP struct s_hash **nhash, INOUTP int *num_primitives);
+		INOUTP t_rr_node *rr_graph, INOUTP t_pb **rr_node_to_pb_mapping, INOUTP int *num_primitives, 
+		INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash);
+
 static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
-		INP int index, INOUTP int *ncount, INOUTP struct s_hash **nhash,
-		INOUTP int *num_primitives, INP const t_arch *arch);
+		INP int index, INOUTP int *num_primitives, INP const t_arch *arch, INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash);
 static struct s_net *alloc_and_init_netlist_from_hash(INP int ncount,
 		INOUTP struct s_hash **nhash);
 
@@ -62,8 +61,6 @@ static void mark_constant_generators(INP int L_num_blocks,
 static void mark_constant_generators_rec(INP t_pb *pb, INP t_rr_node *rr_graph,
 		INOUTP struct s_net nlist[]);
 
-static void restore_logical_block_from_saved_block(INP int iblk, INP t_pb *pb);
-
 /**
  * Initializes the block_list with info from a netlist 
  * net_file - Name of the netlist file to read
@@ -76,13 +73,13 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 		OUTP int *L_num_blocks, OUTP struct s_block *block_list[],
 		OUTP int *L_num_nets, OUTP struct s_net *net_list[]) {
 	ezxml_t Cur, Prev, Top;
-	int i, j;
+	int i;
 	const char *Prop;
 	int bcount;
 	struct s_block *blist;
-	int ncount, ext_ncount;
-	struct s_net *nlist, *ext_nlist;
-	struct s_hash **nhash;
+	int ext_ncount;
+	struct s_net *ext_nlist;
+	struct s_hash **vpack_net_hash, **logical_block_hash, *temp_hash;
 	char **circuit_inputs, **circuit_outputs, **circuit_clocks;
 	int Count, Len;
 
@@ -134,20 +131,30 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	/* Parse all CLB blocks and all nets*/
 	bcount = CountChildren(Top, "block", 1);
 	blist = (struct s_block *) my_calloc(bcount, sizeof(t_block));
-	nhash = alloc_hash_table();
-	ncount = 0;
 
-	logical_block = (struct s_logical_block*) my_calloc(num_saved_logical_blocks,
-			sizeof(t_logical_block));
-	num_logical_blocks = num_saved_logical_blocks;
+	/* create quick hash look up for vpack_net and logical_block 
+		Also reset logical block data structure for pb
+	*/
+	vpack_net_hash = alloc_hash_table();
+	logical_block_hash = alloc_hash_table();
+	for(i = 0; i < num_logical_nets; i++) {
+		temp_hash = insert_in_hash_table(vpack_net_hash, vpack_net[i].name, i);
+		assert(temp_hash->count == 1);
+	}
+	for(i = 0; i < num_logical_blocks; i++) {
+		temp_hash = insert_in_hash_table(logical_block_hash, logical_block[i].name, i);
+		logical_block[i].pb = NULL;
+		assert(temp_hash->count == 1);
+	}
+	
+	/* Prcoess netlist */
 
 	Cur = Top->child;
 	i = 0;
 	while (Cur) {
 		if (0 == strcmp(Cur->name, "block")) {
 			CheckElement(Cur, "block");
-			processComplexBlock(Cur, blist, i, &ncount, nhash, &num_primitives,
-					arch);
+			processComplexBlock(Cur, blist, i, &num_primitives,	arch, vpack_net_hash, logical_block_hash);
 			Prev = Cur;
 			Cur = Cur->next;
 			FreeNode(Prev);
@@ -157,20 +164,26 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 		}
 	}
 	assert(i == bcount);
-	if (saved_logical_blocks != NULL) {
-		assert(num_primitives == num_saved_logical_blocks);
-	}
+	assert(num_primitives == num_logical_blocks);
 
-	nlist = alloc_and_init_netlist_from_hash(ncount, nhash);
-	mark_constant_generators(bcount, blist, ncount, nlist);
-	load_external_nets_and_cb(bcount, blist, ncount, nlist, &ext_ncount,
+	/* Error check */
+	for(i = 0; i < num_logical_blocks; i++) {
+		if(logical_block[i].pb == NULL) {
+			printf(ERRTAG ".blif file and .net file do not match, .net file missing atom %s\n", logical_block[i].name);
+			exit(1);
+		}
+	}
+	/* TODO: Add additional check to make sure net connections match */
+
+	
+	mark_constant_generators(bcount, blist, num_logical_nets, vpack_net);
+	load_external_nets_and_cb(bcount, blist, num_logical_nets, vpack_net, &ext_ncount,
 			&ext_nlist, circuit_clocks);
 
 	/* TODO: create this function later
 	 check_top_IO_matches_IO_blocks(circuit_inputs, circuit_outputs, circuit_clocks, blist, bcount);
 	 */
 
-	free_hash_table(nhash);
 	FreeTokens(&circuit_inputs);
 	FreeTokens(&circuit_outputs);
 	if (circuit_clocks)
@@ -179,37 +192,17 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 
 	/* load mapping between external nets and all nets */
 	/* jluu TODO: Should use local variables here then assign to globals later, clean up later */
-	vpack_net = nlist;
-	num_logical_nets = ncount;
 	clb_to_vpack_net_mapping = (int *) my_malloc(ext_ncount * sizeof(int));
-	vpack_to_clb_net_mapping = (int *) my_malloc(ncount * sizeof(int));
-	for (i = 0; i < ncount; i++) {
+	vpack_to_clb_net_mapping = (int *) my_malloc(num_logical_nets * sizeof(int));
+	for (i = 0; i < num_logical_nets; i++) {
 		vpack_to_clb_net_mapping[i] = OPEN;
 	}
 
 	for (i = 0; i < ext_ncount; i++) {
-		for (j = 0; j < ncount; j++) {
-			if (strcmp(ext_nlist[i].name, nlist[j].name) == 0) {
-				clb_to_vpack_net_mapping[i] = j;
-				vpack_to_clb_net_mapping[j] = i;
-				break;
-			}
-		}
-		assert(j != ncount);
-	}
-
-	if (saved_logical_blocks != NULL) {
-		free(saved_logical_blocks);
-		saved_logical_blocks = NULL;
-
-		for (i = 0; i < num_logical_nets; i++) {
-			free(saved_logical_nets[i].name);
-			free(saved_logical_nets[i].node_block);
-			free(saved_logical_nets[i].node_block_port);
-			free(saved_logical_nets[i].node_block_pin);
-		}
-		free(saved_logical_nets);
-		saved_logical_nets = NULL;
+		temp_hash = get_hash_entry(vpack_net_hash, ext_nlist[i].name);
+		assert(temp_hash != NULL);
+		clb_to_vpack_net_mapping[i] = temp_hash->index;
+		vpack_to_clb_net_mapping[temp_hash->index] = i;
 	}
 
 	/* Return blocks and nets */
@@ -217,6 +210,9 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	*block_list = blist;
 	*L_num_nets = ext_ncount;
 	*net_list = ext_nlist;
+
+	free_hash_table(logical_block_hash);
+	free_hash_table(vpack_net_hash);
 }
 
 /**
@@ -224,12 +220,12 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
  * Parent - XML tag for this CLB
  * clb - Array of CLBs in the netlist
  * index - index of the CLB to allocate and load information into
- * ncount - number of nets recorded thus far in all CLBs
- * nhash - hashtable of all nets recorded thus far in all CLBs
+ * vpack_net_hash - hashtable of all nets in blif netlist
+ * logical_block_hash - hashtable of all atoms in blif netlist
  */
 static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
-		INP int index, INOUTP int *ncount, INOUTP struct s_hash **nhash,
-		INOUTP int *num_primitives, INP const t_arch *arch) {
+		INP int index, INOUTP int *num_primitives, INP const t_arch *arch, INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash)
+ {
 
 	const char *Prop;
 	boolean found;
@@ -239,7 +235,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 	const t_pb_type * pb_type = NULL;
 
 	/* parse cb attributes */
-	cb[index].pb = my_calloc(1, sizeof(t_pb));
+	cb[index].pb = (t_pb*)my_calloc(1, sizeof(t_pb));
 
 	Prop = FindProperty(Parent, "name", TRUE);
 	cb[index].name = my_strdup(Prop);
@@ -277,7 +273,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 	/* Parse all pbs and CB internal nets*/
 	cb[index].pb->logical_block = OPEN;
 	cb[index].pb->pb_graph_node = cb[index].type->pb_graph_head;
-	rr_node = my_calloc(cb[index].type->pb_graph_head->total_pb_pins,
+	rr_node = (t_rr_node*)my_calloc(cb[index].type->pb_graph_head->total_pb_pins,
 			sizeof(t_rr_node));
 	alloc_and_load_rr_graph_for_pb_graph_node(cb[index].pb->pb_graph_node, arch,
 			0);
@@ -301,8 +297,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 		exit(1);
 	}
 
-	processPb(Parent, cb[index].pb, cb[index].pb->rr_graph, cb[index].pb->rr_node_to_pb_mapping, ncount, nhash,
-			num_primitives);
+	processPb(Parent, cb[index].pb, cb[index].pb->rr_graph, cb[index].pb->rr_node_to_pb_mapping, num_primitives, vpack_net_hash, logical_block_hash);
 
 	cb[index].nets = my_malloc(cb[index].type->num_pins * sizeof(int));
 	for (i = 0; i < cb[index].type->num_pins; i++) {
@@ -332,12 +327,12 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
  * XML parser to populate pb info and to update internal nets of the parent CLB
  * Parent - XML tag for this pb_type
  * pb - physical block to use
- * ncount - number of all internal subblock nets recorded thus far in this CLB
- * nhash - hashtable of all internal subblock nets recorded thus far in this CLBs
+ * vpack_net_hash - hashtable of original blif net names and indices
+ * logical_block_hash - hashtable of original blif atom names and indices
  */
 static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
-		INOUTP t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping, INOUTP int *ncount,
-		INOUTP struct s_hash **nhash, INOUTP int *num_primitives) {
+		INOUTP t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping, INOUTP int *num_primitives, 
+		INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash) {
 	ezxml_t Cur, Prev, lookahead;
 	const char *Prop;
 	const char *instance_type;
@@ -346,15 +341,16 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 	const t_pb_type *pb_type;
 	t_token *tokens;
 	int num_tokens;
+	struct s_hash *temp_hash;
 
 	Cur = FindElement(Parent, "inputs", TRUE);
-	processPorts(Cur, pb, rr_graph, rr_node_to_pb_mapping, ncount, nhash);
+	processPorts(Cur, pb, rr_graph, rr_node_to_pb_mapping, vpack_net_hash);
 	FreeNode(Cur);
 	Cur = FindElement(Parent, "outputs", TRUE);
-	processPorts(Cur, pb, rr_graph, rr_node_to_pb_mapping, ncount, nhash);
+	processPorts(Cur, pb, rr_graph, rr_node_to_pb_mapping, vpack_net_hash);
 	FreeNode(Cur);
 	Cur = FindElement(Parent, "clocks", TRUE);
-	processPorts(Cur, pb, rr_graph, rr_node_to_pb_mapping, ncount, nhash);
+	processPorts(Cur, pb, rr_graph, rr_node_to_pb_mapping, vpack_net_hash);
 	FreeNode(Cur);
 
 	pb_type = pb->pb_graph_node->pb_type;
@@ -368,11 +364,14 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 		} else {
 			pb->lut_pin_remap = NULL;
 		}
-		pb->logical_block = *num_primitives;
-		/* TODO: This info is not yet used.  Intention was to use later for error checking */
-		if (saved_logical_blocks != NULL) {
-			restore_logical_block_from_saved_block(*num_primitives, pb);
+		temp_hash = get_hash_entry(logical_block_hash, pb->name);
+		if(temp_hash == NULL) {
+			printf(ERRTAG ".net file and .blif file do not match, encountered unknown primitive %s in .net file\n", pb->name);
+			exit(1);
 		}
+		pb->logical_block = temp_hash->index;
+		assert(logical_block[temp_hash->index].pb == NULL);
+		logical_block[temp_hash->index].pb = pb;
 		(*num_primitives)++;
 	} else {
 		/* process children of child if exists */
@@ -475,8 +474,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 					pb->child_pbs[i][pb_index].parent_pb = pb;
 					pb->child_pbs[i][pb_index].rr_graph = pb->rr_graph;
 
-					processPb(Cur, &pb->child_pbs[i][pb_index], rr_graph, rr_node_to_pb_mapping,
-							ncount, nhash, num_primitives);
+					processPb(Cur, &pb->child_pbs[i][pb_index], rr_graph, rr_node_to_pb_mapping, num_primitives, vpack_net_hash, logical_block_hash);
 				} else {
 					/* physical block has no used primitives but it may have used routing */
 					pb->child_pbs[i][pb_index].name = NULL;
@@ -512,8 +510,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 						}
 						pb->child_pbs[i][pb_index].parent_pb = pb;
 						pb->child_pbs[i][pb_index].rr_graph = pb->rr_graph;
-						processPb(Cur, &pb->child_pbs[i][pb_index], rr_graph, rr_node_to_pb_mapping,
-								ncount, nhash, num_primitives);
+						processPb(Cur, &pb->child_pbs[i][pb_index], rr_graph, rr_node_to_pb_mapping, num_primitives, vpack_net_hash, logical_block_hash);
 					}
 				}
 				Prev = Cur;
@@ -585,7 +582,7 @@ static int add_net_to_hash(INOUTP struct s_hash **nhash, INP char *net_name,
 }
 
 static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
-		t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping, INOUTP int *ncount, INOUTP struct s_hash **nhash) {
+		t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping, INP struct s_hash **vpack_net_hash) {
 
 	int i, j, in_port, out_port, clock_port, num_tokens;
 	ezxml_t Cur, Prev;
@@ -595,6 +592,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 	int rr_node_index;
 	t_pb_graph_pin *** pin_node;
 	int *num_ptrs, num_sets;
+	struct s_hash *temp_hash;
 	boolean found;
 
 	Cur = Parent->child;
@@ -678,8 +676,13 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 						else
 							rr_node_index =
 									pb->pb_graph_node->clock_pins[clock_port][i].pin_count_in_cluster;
-						rr_graph[rr_node_index].net_num = add_net_to_hash(nhash,
-								pins[i], ncount);
+						if(strcmp(pins[i], "open") != 0) {
+							temp_hash = get_hash_entry(vpack_net_hash, pins[i]);
+							if(temp_hash == NULL) {
+								printf(ERRTAG ".blif and .net do not match, unknown net %s found in .net file\n", pins[i]);
+							}
+							rr_graph[rr_node_index].net_num = temp_hash->index;							
+						}						
 						rr_node_to_pb_mapping[rr_node_index] = pb;
 					}
 				} else {
@@ -738,8 +741,13 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 					for (i = 0; i < num_tokens; i++) {
 						rr_node_index =
 								pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
-						rr_graph[rr_node_index].net_num = add_net_to_hash(nhash,
-								pins[i], ncount);
+						if(strcmp(pins[i], "open") != 0) {
+							temp_hash = get_hash_entry(vpack_net_hash, pins[i]);
+							if(temp_hash == NULL) {
+								printf(ERRTAG ".blif and .net do not match, unknown net %s found in .net file\n", pins[i]);
+							}
+							rr_graph[rr_node_index].net_num = temp_hash->index;							
+						}
 						rr_node_to_pb_mapping[rr_node_index] = pb;
 					}
 				} else {
@@ -1298,47 +1306,6 @@ static void mark_constant_generators_rec(INP t_pb *pb, INP t_rr_node *rr_graph,
 	}
 }
 
-/* create logical block properties from saved block */
-static void restore_logical_block_from_saved_block(INP int iblk, INP t_pb *pb) {
-	int i;
-	for (i = 0; i < num_saved_logical_blocks; i++) {
-		if (pb->pb_graph_node->pb_type->model
-				== saved_logical_blocks[i].model) {
-			if (saved_logical_blocks[i].name != NULL
-					&& strcmp(pb->name, saved_logical_blocks[i].name) == 0) {
-				break;
-			}
-		}
-	}
-	assert(i != num_saved_logical_blocks);
-	logical_block[iblk].name = saved_logical_blocks[i].name;
-	logical_block[iblk].clb_index = UNDEFINED;
-	logical_block[iblk].clock_net = saved_logical_blocks[i].clock_net;
-	logical_block[iblk].clock_net_tnode = NULL;
-	logical_block[iblk].index = iblk;
-	logical_block[iblk].input_net_tnodes =
-			saved_logical_blocks[i].input_net_tnodes;
-	logical_block[iblk].input_nets = saved_logical_blocks[i].input_nets;
-	logical_block[iblk].model = saved_logical_blocks[i].model;
-	logical_block[iblk].output_net_tnodes =
-			saved_logical_blocks[i].output_net_tnodes;
-	logical_block[iblk].output_nets = saved_logical_blocks[i].output_nets;
-	logical_block[iblk].pb = pb;
-	logical_block[iblk].truth_table = saved_logical_blocks[i].truth_table;
-	logical_block[iblk].type = saved_logical_blocks[i].type;
-	logical_block[iblk].used_input_pins =
-			saved_logical_blocks[i].used_input_pins;
-	logical_block[iblk].packed_molecules = saved_logical_blocks[i].packed_molecules;
-	logical_block[iblk].packed_molecules->data_vptr = saved_logical_blocks[i].packed_molecules->data_vptr;
-
-	saved_logical_blocks[i].name = NULL;
-	saved_logical_blocks[i].input_net_tnodes = NULL;
-	saved_logical_blocks[i].input_nets = NULL;
-	saved_logical_blocks[i].output_net_tnodes = NULL;
-	saved_logical_blocks[i].output_nets = NULL;
-	saved_logical_blocks[i].truth_table = NULL;
-	saved_logical_blocks[i].packed_molecules = NULL;
-}
 
 /* Free logical blocks of netlist */
 void free_logical_blocks(void) {
@@ -1407,4 +1374,5 @@ void free_logical_nets(void) {
 	}
 	free(vpack_net);
 }
+
 

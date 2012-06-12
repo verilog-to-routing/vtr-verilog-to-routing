@@ -8,7 +8,6 @@
 #include "prepack.h"
 #include "pack.h"
 #include "read_blif.h"
-#include "ff_pack.h"
 #include "cluster.h"
 #include "output_clustering.h"
 #include "ReadOptions.h"
@@ -16,10 +15,11 @@
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
 
+static boolean *alloc_and_load_is_clock(boolean global_clocks);
+
 void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 		INP t_model *user_models, INP t_model *library_models, t_timing_inf timing_inf) {
 	boolean *is_clock;
-	
 	int num_models;
 	t_model *cur_model;
 	t_pack_patterns *list_of_packing_patterns;
@@ -42,33 +42,6 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 		cur_model = cur_model->next;
 	}
 
-	/* begin parsing blif input file */
-	read_blif(packer_opts->blif_file_name,
-			packer_opts->sweep_hanging_nets_and_inputs, user_models,
-			library_models);
-	/* TODO: Do check blif here 
-	 eg. 
-	 for(i = 0; i < num_logical_blocks; i++) {
-	 if(logical_block[i].model->num_inputs > max_subblock_inputs) {
-	 printf(ERRTAG "logical_block %s of model %s has %d inputs but architecture only supports subblocks up to %d inputs\n",
-	 logical_block[i].name, logical_block[i].model->name, logical_block[i].model->num_inputs, max_subblock_inputs);
-	 exit(1);
-	 }
-	 }
-
-
-	 */
-	if (GetEchoOption()) {
-		echo_input(packer_opts->blif_file_name, "blif_input.echo",
-				library_models);
-	} else
-		;
-
-	absorb_buffer_luts();
-	compress_netlist(); /* remove unused inputs */
-	/* NB:  It's important to mark clocks and such *after* compressing the   *
-	 * netlist because the vpack_net numbers, etc. may be changed by removing      *
-	 * unused inputs .                                      */
 
 	is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
 	
@@ -120,16 +93,56 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 		list_of_pack_molecules = cur_pack_molecule;
 	}
 
-
-	saved_logical_blocks = logical_block;
-	logical_block = NULL;
-	num_saved_logical_blocks = num_logical_blocks;
-	saved_logical_nets = vpack_net;
-	vpack_net = NULL;
-	num_saved_logical_nets = num_logical_nets; /* Todo: Use this for error checking */
-
 	printf("\nNetlist conversion complete.\n\n");
 }
 
+
+
+
+boolean *alloc_and_load_is_clock(boolean global_clocks) {
+
+	/* Looks through all the logical_block to find and mark all the clocks, by setting *
+	 * the corresponding entry in is_clock to true.  global_clocks is used     *
+	 * only for an error check.                                                */
+
+	int num_clocks, bnum, clock_net;
+	boolean * is_clock;
+
+	num_clocks = 0;
+
+	is_clock = (boolean *) my_calloc(num_logical_nets, sizeof(boolean));
+
+	/* Want to identify all the clock nets.  */
+
+	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
+		if (logical_block[bnum].type == VPACK_LATCH) {
+			clock_net = logical_block[bnum].clock_net;
+			assert(clock_net != OPEN);
+			if (is_clock[clock_net] == FALSE) {
+				is_clock[clock_net] = TRUE;
+				num_clocks++;
+			}
+		} else {
+			if (logical_block[bnum].clock_net != OPEN) {
+				clock_net = logical_block[bnum].clock_net;
+				if (is_clock[clock_net] == FALSE) {
+					is_clock[clock_net] = TRUE;
+					num_clocks++;
+				}
+			}
+		}
+	}
+
+	/* If we have multiple clocks and we're supposed to declare them global, *
+	 * print a warning message, since it looks like this circuit may have    *
+	 * locally generated clocks.                                             */
+
+	if (num_clocks > 1 && global_clocks) {
+		printf("Warning:  circuit contains %d clocks.\n", num_clocks);
+		printf("          All will be marked global.\n");
+	}
+
+	return (is_clock);
+}
 
 

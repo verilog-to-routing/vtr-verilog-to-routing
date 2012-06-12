@@ -23,6 +23,7 @@
 #include "read_netlist.h"
 #include "check_netlist.h"
 #include "print_netlist.h"
+#include "read_blif.h"
 #include "draw.h"
 #include "place_and_route.h"
 #include "pack.h"
@@ -221,6 +222,9 @@ int main(int argc, char **argv) {
 			Segments, Timing, Arch.Chans);
 	fflush(stdout);
 
+	/* Read blif file and sweep unused components */
+	read_and_process_blif(PackerOpts.blif_file_name, PackerOpts.sweep_hanging_nets_and_inputs, user_models,	library_models);
+
 	/* Packing stage */
 	if (PackerOpts.doPacking) {
 		begin = clock();
@@ -254,12 +258,12 @@ int main(int argc, char **argv) {
 		#endif*/
 
 
-		/* Free logical blocks and nets */
-		if (logical_block != NULL) {
-			free_logical_blocks();
-			free_logical_nets();
-		}
 		if (!PlacerOpts.doPlacement && !RouterOpts.doRouting) {
+			/* Free logical blocks and nets */
+			if (logical_block != NULL) {
+				free_logical_blocks();
+				free_logical_nets();
+			}
 			return 0;
 		}
 	}
