@@ -53,6 +53,7 @@
 /*#define PRINT_TIMING_GRAPH*//*prints out the timing graph */
 /*#define PRINT_REL_POS_DISTR *//*prints out the relative distribution graph for placements */
 /*#define DUMP_BLIF_ECHO*/ /*dump blif of internal representation of user circuit.  Useful for ensuring functional correctness via logical equivalence with input blif*/
+/*#define HACK_LUT_PIN_SWAPPING*/ /* Hack to enable LUT input pin swapping for delay purposes */
 
 #ifdef SPEC
 #define NO_GRAPHICS		/* Rips out graphics (for non-X11 systems)      */
