@@ -45,6 +45,7 @@ SRC = $(addprefix $(SRC_DIR)/,$(strip \
       simulate_blif.c \
       print_netlist.c \
       implicit_memory.c \
+      adders.c \
 ))
 
 SRCO = $(addprefix $(SRC_DIR)/,$(strip \

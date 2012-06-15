@@ -32,6 +32,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "netlist_optimizations.h"
 #include "multipliers.h"
 #include "memories.h"
+#include "adders.h"
 
 /*------------------------------------------------------------------------
  * (function: netlist_optimizations_top)
@@ -46,6 +47,10 @@ void netlist_optimizations_top(netlist_t *netlist)
 	/* Perform a splitting of any hard block memories */
 	iterate_memories(netlist);
 	free_memory_lists();
+
+	/* Perform a splitting of the adders for hard block add */
+	iterate_adders(netlist);
+	clean_adders();
 	#endif
 }
 

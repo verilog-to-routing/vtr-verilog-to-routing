@@ -729,6 +729,10 @@ void compute_and_store_value(nnode_t *node, int cycle)
 		case GENERIC :
 			compute_generic_node(node,cycle);
 			break;
+		//case FULLADDER:
+		case ADD:
+			compute_add_node(node, cycle);
+			break;
 		/* These should have already been converted to softer versions. */
 		case BITWISE_AND:
 		case BITWISE_NAND:
@@ -746,7 +750,7 @@ void compute_and_store_value(nnode_t *node, int cycle)
 		case MODULO:
 		case GTE:
 		case LTE:
-		case ADD:
+		//case ADD:
 		case MINUS:
 		default:
 			error_message(SIMULATION_ERROR, 0, -1, "Node should have been converted to softer version: %s", node->name);
@@ -1440,6 +1444,115 @@ int *multiply_arrays(int *a, int a_length, int *b, int b_length)
 		{
 			result[i] -= 2;
 			result[i+1]++;
+		}
+	}
+	return result;
+}
+
+/*
+ * Computes the given add node for the given cycle.
+ * add by Sen
+ */
+void compute_add_node(nnode_t *node, int cycle)
+{
+	oassert(node->num_input_port_sizes == 3);
+	oassert(node->num_output_port_sizes == 2);
+
+	int i;
+	int flag = 0;
+	char unknown = FALSE;
+	for (i = 0; i < (node->input_port_sizes[0] + node->input_port_sizes[1] + node->input_port_sizes[2]); i++)
+	{
+		signed char pin = get_pin_value(node->input_pins[i],cycle);
+		if (pin < 0)
+		{
+			unknown = TRUE;
+			break;
+		}
+	}
+
+	if (unknown)
+	{
+		for (i = 0; i < (node->output_port_sizes[0] + node->output_port_sizes[1]); i++)
+			update_pin_value(node->output_pins[i], -1, cycle);
+	}
+	else
+	{
+		int *a = malloc(sizeof(int)*node->input_port_sizes[0]);
+		int *b = malloc(sizeof(int)*node->input_port_sizes[1]);
+		int *c = malloc(sizeof(int)*node->input_port_sizes[2]);
+
+		for (i = 0; i < node->input_port_sizes[0]; i++)
+			a[i] = get_pin_value(node->input_pins[i],cycle);
+
+		for (i = 0; i < node->input_port_sizes[1]; i++)
+			b[i] = get_pin_value(node->input_pins[node->input_port_sizes[0] + i],cycle);
+
+		for (i = 0; i < node->input_port_sizes[2]; i++)
+			c[i] = get_pin_value(node->input_pins[node->input_port_sizes[0]+ node->input_port_sizes[1] + i],cycle);
+
+		int *result = add_arrays(a, node->input_port_sizes[0], b, node->input_port_sizes[1], c, node->input_port_sizes[2],flag);
+
+		for (i = 0; i < node->num_output_pins; i++)
+			update_pin_value(node->output_pins[i], result[i], cycle);
+
+		free(result);
+		free(a);
+		free(b);
+		free(c);
+	}
+
+}
+
+/*
+ * Takes two arrays of integers (1's and 0's) and returns an array
+ * of integers (1's and 0's) that represent their sum. The
+ * length of the returned array is the maximum of the two parameters plus one.
+ * add by Sen
+ * This array will need to be freed later!
+ */
+int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int c_length, int flag)
+{
+	int result_size = max(a_length , b_length) + 1;
+	int *result = calloc(sizeof(int), result_size);
+
+	int i;
+	int temp_carry_in;
+
+	//least significant bit would use the input carryIn, the other bits would use the compute value
+	result[0] = a[0] ^ b[0] ^ c[0];
+	if(flag == 0){
+		result[1] = (a[0] & b[0]) | (c[0] & b[0]) | (a[0] & c[0]);
+	}/*
+	else
+	{
+		result[1] = (a[0] & b[0]) | (a[0] & 1) | (1 & b[0]);
+	}*/
+	temp_carry_in = result[1];
+	if(result_size > 2){
+		for(i = 1; i < min(a_length,b_length); i++)
+		{
+			result[i] = a[i] ^ b[i] ^ temp_carry_in;
+			result[i+1] = (a[i] & b[i]) | (a[i] & temp_carry_in) | (temp_carry_in & b[i]);
+			temp_carry_in = result[i+1];
+		}
+		if(a_length >= b_length)
+		{
+			for(i = b_length; i < a_length; i++)
+			{
+				result[i] = a[i] ^ temp_carry_in;
+				result[i+1] = a[i] & temp_carry_in;
+				temp_carry_in = result[i+1];
+			}
+		}
+		else
+		{
+			for(i = a_length; i < b_length; i++)
+			{
+				result[i] = a[i] ^ temp_carry_in;
+				result[i+1] = a[i] & temp_carry_in;
+				temp_carry_in = result[i+1];
+			}
 		}
 	}
 	return result;

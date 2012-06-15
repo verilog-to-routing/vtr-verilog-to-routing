@@ -109,6 +109,15 @@ struct config_t_t
 	// Set to a positive integer to split memory depth to that address width. 0 to split to arch width.
 	int split_memory_depth;
 
+	//add by Sen
+	//threshold from hard to soft logic
+	int min_hard_adder;
+	int add_padding; // setting how multipliers are padded to fit fixed size
+	// Flag for fixed or variable hard mult (1 or 0)
+	int fixed_hard_adder;
+	// Flag for splitting hard multipliers If fixed_hard_multiplier is set, this must be 1.
+	int split_hard_adder;
+
 	// If the memory is smaller than both of these, it will be converted to soft logic.
 	int soft_logic_memory_depth_threshold;
 	int soft_logic_memory_width_threshold;
@@ -223,7 +232,8 @@ typedef enum
 	MEMORY,
 	PAD_NODE,
 	HARD_IP, 
-	GENERIC /*added for the unknown node type */
+	GENERIC, /*added for the unknown node type */
+	FULLADDER
 } operation_list;
 	
 typedef enum 

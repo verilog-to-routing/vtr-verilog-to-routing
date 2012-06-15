@@ -34,6 +34,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "util.h"
 #include "multipliers.h"
 #include "hard_blocks.h"
+#include "adders.h"
 
 void depth_first_traversal_to_output(short marker_value, FILE *fp, netlist_t *netlist);
 void depth_traverse_output_blif(nnode_t *node, int traverse_mark_number, FILE *fp);
@@ -212,6 +213,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 	/* Print out any hard block modules */
 #ifdef VPR6
 	add_the_blackbox_for_mults(out);
+	add_the_blackbox_for_adds(out);
 	output_hard_blocks(out);
 #endif
 
@@ -344,6 +346,15 @@ void output_node(nnode_t *node, short traverse_number, FILE *fp)
 			#endif
 			break;
 
+		//case FULLADDER:
+		case ADD:
+			if (hard_adders == NULL)
+				oassert(FALSE); /* should be soft logic! */
+			#ifdef VPR6
+			define_add_function(node, node->type, fp);
+			#endif
+			break;
+
 		case MEMORY:
 		case HARD_IP:
 			#ifdef VPR6
@@ -375,7 +386,7 @@ void output_node(nnode_t *node, short traverse_number, FILE *fp)
 		case MODULO:
 		case GTE:
 		case LTE:
-		case ADD:
+		//case ADD:
 		case MINUS:
 		default:
 			/* these nodes should have been converted to softer versions */
@@ -597,7 +608,10 @@ void define_set_input_logical_function(nnode_t *node, char *bit_output, FILE *ou
 			/* Just print the driver_pin->name NOT driver_pin->node->name -- KEN */
 			if ((node->input_pins[i]->net->driver_pin->node->type == MULTIPLY) ||
 			    (node->input_pins[i]->net->driver_pin->node->type == HARD_IP) ||
-			    (node->input_pins[i]->net->driver_pin->node->type == MEMORY))
+			    (node->input_pins[i]->net->driver_pin->node->type == MEMORY) ||
+			    (node->input_pins[i]->net->driver_pin->node->type == ADD))
+			    //||
+			    //(node->input_pins[i]->net->driver_pin->node->type == FULLADDER))
 			{
 				fprintf(out, " %s", node->input_pins[i]->net->driver_pin->name); 
 			}
@@ -704,7 +718,9 @@ void define_decoded_mux(nnode_t *node, FILE *out)
 			{
 				if ((net->driver_pin->node->type == MULTIPLY) ||
 				    (net->driver_pin->node->type == HARD_IP) ||
-				    (net->driver_pin->node->type == MEMORY))
+				    (net->driver_pin->node->type == MEMORY) ||
+				    (net->driver_pin->node->type == ADD) ||
+				    (net->driver_pin->node->type == FULLADDER))
 				{
 					fprintf(out, " %s", net->driver_pin->name);
 				}
