@@ -180,8 +180,7 @@ void try_place(struct s_placer_opts placer_opts,
 	/* Does almost all the work of placing a circuit.  Width_fac gives the   *
 	 * width of the widest channel.  Place_cost_exp says what exponent the   *
 	 * width should be taken to when calculating costs.  This allows a       *
-	 * greater bias for anisotropic architectures.  Place_cost_type          *
-	 * determines which cost function is used.                               */
+	 * greater bias for anisotropic architectures.                           */
 
 	int tot_iter, inner_iter, success_sum;
 	int move_lim, moves_since_cost_recompute, width_fac;
