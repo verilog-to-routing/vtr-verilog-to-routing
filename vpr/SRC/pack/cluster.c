@@ -149,9 +149,6 @@ static t_pack_molecule* get_free_molecule_with_most_ext_inputs_for_cluster(
 		INP enum e_packer_algorithm packer_algorithm, INOUTP t_pb *cur_pb,
 		INP t_cluster_placement_stats *cluster_placement_stats_ptr);
 
-static t_pack_molecule* get_seed_logical_molecule_with_most_ext_inputs(
-		int max_molecule_inputs);
-
 static enum e_block_pack_status try_pack_molecule(
 		INOUTP t_cluster_placement_stats *cluster_placement_stats_ptr,
 		INP t_pack_molecule *molecule, INOUTP t_pb_graph_node **primitives_list,
@@ -347,67 +344,58 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	assert(max_cluster_size < MAX_SHORT);
 	/* Limit maximum number of elements for each cluster */
 
-	if (timing_driven) {
-		net_slack = alloc_and_load_pre_packing_timing_graph(block_delay,
-				inter_cluster_net_delay, arch->models, timing_inf);
-		load_net_slack(net_slack, FALSE);
+	net_slack = alloc_and_load_pre_packing_timing_graph(block_delay,
+			inter_cluster_net_delay, arch->models, timing_inf);
+	load_net_slack(net_slack, FALSE);
 
-		criticality = (float*) my_calloc(num_logical_blocks, sizeof(float));
+	criticality = (float*) my_calloc(num_logical_blocks, sizeof(float));
 
-		critindexarray = (int*) my_malloc(num_logical_blocks * sizeof(int));
+	critindexarray = (int*) my_malloc(num_logical_blocks * sizeof(int));
 
-		for (i = 0; i < num_logical_blocks; i++) {
-			assert(logical_block[i].index == i);
-			critindexarray[i] = i;
-		}
-
-		/* Calculate criticality based on slacks and tie breakers (# paths, distance from source) */
-		for (i = 0; i < num_tnodes; i++) {
-			iblk = tnode[i].block;
-			num_paths_scaling = SCALE_NUM_PATHS
-					* (float) tnode[i].normalized_total_critical_paths;
-			distance_scaling = SCALE_DISTANCE_VAL
-					* (float) tnode[i].normalized_T_arr;
-			crit = (1 - tnode[i].normalized_slack) + num_paths_scaling
-					+ distance_scaling;
-			if (criticality[iblk] < crit) {
-				criticality[iblk] = crit;
-			}
-		}
-
-		net_pin_backward_criticality = (float**) my_calloc(num_logical_nets,
-				sizeof(float*));
-		net_pin_forward_criticality = (float**) my_calloc(num_logical_nets,
-				sizeof(float*));
-		for (i = 0; i < num_logical_nets; i++) {
-			net_pin_backward_criticality[i] = (float *) my_calloc(
-					vpack_net[i].num_sinks + 1, sizeof(float));
-			net_pin_forward_criticality[i] = (float *) my_calloc(
-					vpack_net[i].num_sinks + 1, sizeof(float));
-			for (j = 0; j <= vpack_net[i].num_sinks; j++) {
-				net_pin_backward_criticality[i][j] =
-						criticality[vpack_net[i].node_block[j]];
-				net_pin_forward_criticality[i][j] =
-						criticality[vpack_net[i].node_block[0]];
-			}
-		}
-
-		heapsort(critindexarray, criticality, num_logical_blocks, 1);
-
-		/*if (GetEchoOption()){
-		 print_critical_path("clustering_critical_path.echo");
-		 }*/
-
-		if (cluster_seed_type == VPACK_TIMING) {
-			istart = get_most_critical_seed_molecule();
-		} else {/*max input seed*/
-			istart = get_seed_logical_molecule_with_most_ext_inputs(
-					max_molecule_inputs);
-		}
-	} else /*cluster seed is max input (since there is no timing information)*/{
-		istart = get_seed_logical_molecule_with_most_ext_inputs(
-				max_molecule_inputs);
+	for (i = 0; i < num_logical_blocks; i++) {
+		assert(logical_block[i].index == i);
+		critindexarray[i] = i;
 	}
+
+	/* Calculate criticality based on slacks and tie breakers (# paths, distance from source) */
+	for (i = 0; i < num_tnodes; i++) {
+		iblk = tnode[i].block;
+		num_paths_scaling = SCALE_NUM_PATHS
+				* (float) tnode[i].normalized_total_critical_paths;
+		distance_scaling = SCALE_DISTANCE_VAL
+				* (float) tnode[i].normalized_T_arr;
+		crit = (1 - tnode[i].normalized_slack) + num_paths_scaling
+				+ distance_scaling;
+		if (criticality[iblk] < crit) {
+			criticality[iblk] = crit;
+		}
+	}
+
+	net_pin_backward_criticality = (float**) my_calloc(num_logical_nets,
+			sizeof(float*));
+	net_pin_forward_criticality = (float**) my_calloc(num_logical_nets,
+			sizeof(float*));
+	for (i = 0; i < num_logical_nets; i++) {
+		net_pin_backward_criticality[i] = (float *) my_calloc(
+				vpack_net[i].num_sinks + 1, sizeof(float));
+		net_pin_forward_criticality[i] = (float *) my_calloc(
+				vpack_net[i].num_sinks + 1, sizeof(float));
+		for (j = 0; j <= vpack_net[i].num_sinks; j++) {
+			net_pin_backward_criticality[i][j] =
+					criticality[vpack_net[i].node_block[j]];
+			net_pin_forward_criticality[i][j] =
+					criticality[vpack_net[i].node_block[0]];
+		}
+	}
+
+	heapsort(critindexarray, criticality, num_logical_blocks, 1);
+
+	/*if (GetEchoOption()){
+		print_critical_path("clustering_critical_path.echo");
+		}*/
+
+	/*cluster_seed_type == VPACK_TIMING*/
+	istart = get_most_critical_seed_molecule();
 
 	while (istart != NULL) {
 		is_cluster_legal = FALSE;
@@ -505,22 +493,13 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			}
 			if(is_cluster_legal == TRUE) {
 				save_cluster_solution();
-				if (timing_driven) {
-					if (num_blocks_hill_added > 0 && !early_exit) {
-						blocks_since_last_analysis += num_blocks_hill_added;
-					}
+				if (num_blocks_hill_added > 0 && !early_exit) {
+					blocks_since_last_analysis += num_blocks_hill_added;
+				}
 
-					if (cluster_seed_type == VPACK_TIMING) {
-						istart = get_most_critical_seed_molecule();
-					} else { /*max input seed*/
-						istart = get_seed_logical_molecule_with_most_ext_inputs(
-								max_molecule_inputs);
-					}
-				} else
-					/*cluster seed is max input (since there is no timing information)*/
-					istart = get_seed_logical_molecule_with_most_ext_inputs(
-							max_molecule_inputs);
-
+				/*cluster_seed_type == VPACK_TIMING*/
+				istart = get_most_critical_seed_molecule();
+				
 				free_pb_stats_recursive(clb[num_clb - 1].pb, num_models);
 			} else {
 				/* Free up data structures and requeue used molecules */
@@ -1121,31 +1100,6 @@ static t_pack_molecule *get_free_molecule_with_most_ext_inputs_for_cluster(
 		}
 	}
 	return molecule;
-}
-
-/*****************************************/
-static t_pack_molecule* get_seed_logical_molecule_with_most_ext_inputs(
-		int max_molecule_inputs) {
-
-	/* This routine is used to find the first seed logical_block for the clustering.  It returns    *
-	 * the logical_block with the largest number of used inputs that satisfies the    *
-	 * clocking and number of inputs constraints.  If no suitable logical_block is    *
-	 * found, the routine returns NO_CLUSTER.                                 */
-
-	int ext_inps;
-	struct s_molecule_link *ptr;
-
-	for (ext_inps = max_molecule_inputs; ext_inps >= 0; ext_inps--) {
-		ptr = unclustered_list_head[ext_inps].next;
-
-		while (ptr != NULL) {
-			if (ptr->moleculeptr->valid) {
-				return ptr->moleculeptr;
-			}
-			ptr = ptr->next;
-		}
-	}
-	return NULL;
 }
 
 /*****************************************/
