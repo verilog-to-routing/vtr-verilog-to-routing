@@ -543,15 +543,15 @@ struct s_placer_opts {
 /* Various options for the placer.                                           *
  * place_algorithm:  BOUNDING_BOX_PLACE or NET_TIMING_DRIVEN_PLACE, or       *
  *                   PATH_TIMING_DRIVEN_PLACE                                *
- * timing_tradeoff:  When TIMING_DRIVEN_PLACE mode, what is the tradeoff *
+ * timing_tradeoff:  When TIMING_DRIVEN_PLACE mode, what is the tradeoff     *
  *                   timing driven and BOUNDING_BOX_PLACE.                   *
  * block_dist:  Initial guess of how far apart blocks on the critical path   *
  *              This is used to compute the initial slacks and criticalities *
-  * place_cost_exp:  Power to which denominator is raised for linear_cong.    *
+ * place_cost_exp:  Power to which denominator is raised for linear_cong.    *
  * place_chan_width:  The channel width assumed if only one placement is     *
  *                    performed.                                             *
- * pad_loc_type:  Are pins FREE, fixed randomly, or fixed from a file.  *
- * pad_loc_file:  File to read pin locations form if pad_loc_type  *
+ * pad_loc_type:  Are pins FREE, fixed randomly, or fixed from a file.       *
+ * pad_loc_file:  File to read pin locations form if pad_loc_type            *
  *                     is USER.                                              *
  * place_freq:  Should the placement be skipped, done once, or done for each *
  *              channel width in the binary search.                          *

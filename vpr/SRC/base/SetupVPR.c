@@ -583,7 +583,6 @@ static void SetupPlacerOpts(INP t_options Options, INP boolean TimingEnabled,
 		PlacerOpts->td_place_exp_last = Options.place_exp_last;
 	}
 
-	/* Depends on PlacerOpts->place_cost_type */
 	PlacerOpts->place_algorithm = BOUNDING_BOX_PLACE; /* DEFAULT */
 	if (TimingEnabled) {
 		PlacerOpts->place_algorithm = PATH_TIMING_DRIVEN_PLACE; /* DEFAULT */
@@ -604,7 +603,6 @@ static void SetupPlacerOpts(INP t_options Options, INP boolean TimingEnabled,
 		PlacerOpts->pad_loc_type = (Options.PinFile ? USER : RANDOM);
 	}
 
-	/* Depends on PlacerOpts->place_cost_type */
 	PlacerOpts->place_chan_width = 100; /* DEFAULT */
 	if (Options.Count[OT_PLACE_CHAN_WIDTH]) {
 		PlacerOpts->place_chan_width = Options.PlaceChanWidth;
@@ -630,7 +628,6 @@ static void SetupPlacerOpts(INP t_options Options, INP boolean TimingEnabled,
 		PlacerOpts->enable_timing_computations = Options.ShowPlaceTiming;
 	}
 
-	/* Depends on PlacerOpts->place_cost_type */
 	PlacerOpts->place_freq = PLACE_ONCE; /* DEFAULT */
 	if ((Options.Count[OT_ROUTE_CHAN_WIDTH])
 			|| (Options.Count[OT_PLACE_CHAN_WIDTH])) {
