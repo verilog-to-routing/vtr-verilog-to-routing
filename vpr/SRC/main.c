@@ -353,7 +353,7 @@ static void PrintUsage(void) {
 	 puts("\t[-sweep_hanging_nets_and_inputs on|off]"); */
 	puts("\t[--timing_driven_clustering on|off]");
 	puts(
-			"\t[--cluster_seed_type timing|max_inputs] [--alpha_clustering <float>] [--beta_clustering <float>]");
+			"\t[--cluster_seed_type timing] [--alpha_clustering <float>] [--beta_clustering <float>]");
 	/*    puts("\t[-recompute_timing_after <int>] [-cluster_block_delay <float>]"); */
 	puts("\t[--allow_unrelated_clustering on|off]");
 	/*    puts("\t[-allow_early_exit on|off]"); 
