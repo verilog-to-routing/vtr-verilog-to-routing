@@ -515,8 +515,7 @@ void SetupPackerOpts(INP t_options Options, INP boolean TimingEnabled,
 	if (Options.Count[OT_TIMING_DRIVEN_CLUSTERING]) {
 		PackerOpts->timing_driven = Options.timing_driven;
 	}
-	PackerOpts->cluster_seed_type = (
-			TimingEnabled ? VPACK_TIMING : VPACK_MAX_INPUTS); /* DEFAULT */
+	PackerOpts->cluster_seed_type = VPACK_TIMING; /* ONLY OPTION */
 	if (Options.Count[OT_CLUSTER_SEED]) {
 		PackerOpts->cluster_seed_type = Options.cluster_seed_type;
 	}
