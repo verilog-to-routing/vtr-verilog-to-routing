@@ -68,17 +68,6 @@ static int **net_pin_index = NULL;
 
 static struct s_bb *bb_coords = NULL, *bb_num_on_edges = NULL;
 
-/* Stores the maximum and expected occupancies, plus the cost, of each   *
- * region in the placement.  Used only by the NONLINEAR_CONG cost        *
- * function.  [0..num_region-1][0..num_region-1].  Place_region_x and    *
- * y give the situation for the x and y directed channels, respectively. */
-
-static struct s_place_region **place_region_x, **place_region_y;
-
-/* Used only with nonlinear congestion.  [0..num_regions].            */
-
-static float *place_region_bounds_x, *place_region_bounds_y;
-
 /* The arrays below are used to precompute the inverse of the average   *
  * number of tracks per channel between [subhigh] and [sublow].  Access *
  * them as chan?_place_cost_fac[subhigh][sublow].  They are used to     *
@@ -101,17 +90,11 @@ static const float cross_count[50] = { /* [0..49] */1.0, 1.0, 1.0, 1.0828, 1.153
 
 /********************* Static subroutines local to place.c *******************/
 
-static void alloc_place_regions(int num_regions);
-
-static void load_place_regions(int num_regions);
-
-static void free_place_regions(int num_regions);
-
-static void alloc_and_load_placement_structs(int place_cost_type,
-		int num_regions, float place_cost_exp, float ***old_region_occ_x,
+static void alloc_and_load_placement_structs(
+		float place_cost_exp, float ***old_region_occ_x,
 		float ***old_region_occ_y, struct s_placer_opts placer_opts);
 
-static void free_placement_structs(int place_cost_type, int num_regions,
+static void free_placement_structs(
 		float **old_region_occ_x, float **old_region_occ_y,
 		struct s_placer_opts placer_opts);
 
@@ -120,22 +103,22 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp);
 static void initial_placement(enum e_pad_loc_type pad_loc_type,
 		char *pad_loc_file);
 
-static float comp_bb_cost(int method, int place_cost_type, int num_regions);
+static float comp_bb_cost(int method);
 
 static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
-		float rlim, int place_cost_type, float **old_region_occ_x,
-		float **old_region_occ_y, int num_regions, boolean fixed_pins,
+		float rlim, float **old_region_occ_x,
+		float **old_region_occ_y, boolean fixed_pins,
 		enum e_place_algorithm place_algorithm, float timing_tradeoff,
 		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
 		float *delay_cost, int *x_lookup);
 
-static void check_place(float bb_cost, float timing_cost, int place_cost_type,
-		int num_regions, enum e_place_algorithm place_algorithm,
+static void check_place(float bb_cost, float timing_cost,
+		enum e_place_algorithm place_algorithm,
 		float delay_cost);
 
 static float starting_t(float *cost_ptr, float *bb_cost_ptr,
-		float *timing_cost_ptr, int place_cost_type, float **old_region_occ_x,
-		float **old_region_occ_y, int num_regions, boolean fixed_pins,
+		float *timing_cost_ptr, float **old_region_occ_x,
+		float **old_region_occ_y, boolean fixed_pins,
 		struct s_annealing_sched annealing_sched, int max_moves, float rlim,
 		enum e_place_algorithm place_algorithm, float timing_tradeoff,
 		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
@@ -155,9 +138,7 @@ static void compute_net_pin_index_values(void);
 
 static double get_std_dev(int n, double sum_x_squared, double av_x);
 
-static void free_fast_cost_update_structs(void);
-
-static float recompute_bb_cost(int place_cost_type, int num_regions);
+static float recompute_bb_cost(void);
 
 static float comp_td_point_to_point_delay(int inet, int ipin);
 
@@ -183,17 +164,6 @@ static int find_affected_nets(int *nets_to_update, int *net_block_moved,
 
 static float get_net_cost(int inet, struct s_bb *bb_ptr);
 
-static float nonlinear_cong_cost(int num_regions);
-
-static void update_region_occ(int inet, struct s_bb *coords, int add_or_sub,
-		int num_regions);
-
-static void save_region_occ(float **old_region_occ_x, float **old_region_occ_y,
-		int num_regions);
-
-static void restore_region_occ(float **old_region_occ_x,
-		float **old_region_occ_y, int num_regions);
-
 static void get_bb_from_scratch(int inet, struct s_bb *coords,
 		struct s_bb *num_on_edges);
 
@@ -211,8 +181,7 @@ void try_place(struct s_placer_opts placer_opts,
 	 * width of the widest channel.  Place_cost_exp says what exponent the   *
 	 * width should be taken to when calculating costs.  This allows a       *
 	 * greater bias for anisotropic architectures.  Place_cost_type          *
-	 * determines which cost function is used.  num_regions is used only     *
-	 * the place_cost_type is NONLINEAR_CONG.                                */
+	 * determines which cost function is used.                               */
 
 	int tot_iter, inner_iter, success_sum;
 	int move_lim, moves_since_cost_recompute, width_fac;
@@ -297,8 +266,8 @@ void try_place(struct s_placer_opts placer_opts,
 
 	init_chan(width_fac, chan_width_dist);
 
-	alloc_and_load_placement_structs(placer_opts.place_cost_type,
-			placer_opts.num_regions, placer_opts.place_cost_exp,
+	alloc_and_load_placement_structs(
+			placer_opts.place_cost_exp,
 			&old_region_occ_x, &old_region_occ_y, placer_opts);
 
 	initial_placement(placer_opts.pad_loc_type, placer_opts.pad_loc_file);
@@ -311,8 +280,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 	if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
 			|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-		bb_cost = comp_bb_cost(NORMAL, placer_opts.place_cost_type,
-				placer_opts.num_regions);
+		bb_cost = comp_bb_cost(NORMAL);
 
 		crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
 
@@ -359,8 +327,7 @@ void try_place(struct s_placer_opts placer_opts,
 		/*bb_cost and timing_cost, the value of cost will be reset  */
 		/*to 1 at each temperature when *_TIMING_DRIVEN_PLACE is true */
 	} else { /*BOUNDING_BOX_PLACE */
-		cost = bb_cost = comp_bb_cost(NORMAL, placer_opts.place_cost_type,
-				placer_opts.num_regions);
+		cost = bb_cost = comp_bb_cost(NORMAL);
 		timing_cost = 0;
 		delay_cost = 0;
 		place_delay_value = 0;
@@ -397,8 +364,8 @@ void try_place(struct s_placer_opts placer_opts,
 	final_rlim = 1;
 	inverse_delta_rlim = 1 / (first_rlim - final_rlim);
 
-	t = starting_t(&cost, &bb_cost, &timing_cost, placer_opts.place_cost_type,
-			old_region_occ_x, old_region_occ_y, placer_opts.num_regions,
+	t = starting_t(&cost, &bb_cost, &timing_cost,
+			old_region_occ_x, old_region_occ_y,
 			fixed_pins, annealing_sched, move_lim, rlim,
 			placer_opts.place_algorithm, placer_opts.timing_tradeoff,
 			inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost);
@@ -477,8 +444,8 @@ void try_place(struct s_placer_opts placer_opts,
 
 		for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
 			if (try_swap(t, &cost, &bb_cost, &timing_cost, rlim,
-					placer_opts.place_cost_type, old_region_occ_x,
-					old_region_occ_y, placer_opts.num_regions, fixed_pins,
+					old_region_occ_x,
+					old_region_occ_y, fixed_pins,
 					placer_opts.place_algorithm, placer_opts.timing_tradeoff,
 					inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost,
 					x_lookup) == 1) {
@@ -523,8 +490,7 @@ void try_place(struct s_placer_opts placer_opts,
 					t, cost, bb_cost, timing_cost, inner_iter, d_max);
 			if(fabs
 					(bb_cost -
-							comp_bb_cost(CHECK, placer_opts.place_cost_type,
-									placer_opts.num_regions)) >
+							comp_bb_cost(CHECK)) >
 					bb_cost * ERROR_TOL)
 			exit(1);
 #endif
@@ -537,8 +503,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 		moves_since_cost_recompute += move_lim;
 		if (moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
-			new_bb_cost = recompute_bb_cost(placer_opts.place_cost_type,
-					placer_opts.num_regions);
+			new_bb_cost = recompute_bb_cost();
 			if (fabs(new_bb_cost - bb_cost) > bb_cost * ERROR_TOL) {
 				printf(
 						"Error in try_place:  new_bb_cost = %g, old bb_cost = %g.\n",
@@ -663,8 +628,8 @@ void try_place(struct s_placer_opts placer_opts,
 
 	for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
 		if (try_swap(t, &cost, &bb_cost, &timing_cost, rlim,
-				placer_opts.place_cost_type, old_region_occ_x, old_region_occ_y,
-				placer_opts.num_regions, fixed_pins,
+				old_region_occ_x, old_region_occ_y,
+				fixed_pins,
 				placer_opts.place_algorithm, placer_opts.timing_tradeoff,
 				inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost,
 				x_lookup) == 1) {
@@ -736,8 +701,8 @@ void try_place(struct s_placer_opts placer_opts,
 	dump_clbs();
 #endif
 
-	check_place(bb_cost, timing_cost, placer_opts.place_cost_type,
-			placer_opts.num_regions, placer_opts.place_algorithm, delay_cost);
+	check_place(bb_cost, timing_cost,
+			placer_opts.place_algorithm, delay_cost);
 
 	if (placer_opts.enable_timing_computations
 			&& placer_opts.place_algorithm == BOUNDING_BOX_PLACE) {
@@ -783,8 +748,8 @@ void try_place(struct s_placer_opts placer_opts,
 
 		net_delay = remember_net_delay_original_ptr;
 
-		free_placement_structs(placer_opts.place_cost_type,
-				placer_opts.num_regions, old_region_occ_x, old_region_occ_y,
+		free_placement_structs(
+				old_region_occ_x, old_region_occ_y,
 				placer_opts);
 		free_lookups_and_criticalities(&net_delay, &net_slack);
 	}
@@ -949,8 +914,8 @@ static int exit_crit(float t, float cost,
 }
 
 static float starting_t(float *cost_ptr, float *bb_cost_ptr,
-		float *timing_cost_ptr, int place_cost_type, float **old_region_occ_x,
-		float **old_region_occ_y, int num_regions, boolean fixed_pins,
+		float *timing_cost_ptr, float **old_region_occ_x,
+		float **old_region_occ_y, boolean fixed_pins,
 		struct s_annealing_sched annealing_sched, int max_moves, float rlim,
 		enum e_place_algorithm place_algorithm, float timing_tradeoff,
 		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
@@ -977,8 +942,8 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 
 	for (i = 0; i < move_lim; i++) {
 		if (try_swap(1.e30, cost_ptr, bb_cost_ptr, timing_cost_ptr, rlim,
-				place_cost_type, old_region_occ_x, old_region_occ_y,
-				num_regions, fixed_pins, place_algorithm, timing_tradeoff,
+				old_region_occ_x, old_region_occ_y,
+				fixed_pins, place_algorithm, timing_tradeoff,
 				inverse_prev_bb_cost, inverse_prev_timing_cost, delay_cost_ptr,
 				x_lookup) == 1) {
 			num_accepted++;
@@ -1014,8 +979,8 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 }
 
 static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
-		float rlim, int place_cost_type, float **old_region_occ_x,
-		float **old_region_occ_y, int num_regions, boolean fixed_pins,
+		float rlim, float **old_region_occ_x,
+		float **old_region_occ_y, boolean fixed_pins,
 		enum e_place_algorithm place_algorithm, float timing_tradeoff,
 		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
 		float *delay_cost, int *x_lookup) {
@@ -1029,7 +994,7 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 	int b_from, x_to, y_to, z_to, x_from, y_from, z_from, b_to;
 	int i, k, inet, keep_switch, num_of_pins, max_pins_per_clb;
 	int num_nets_affected, bb_index;
-	float delta_c, bb_delta_c, timing_delta_c, delay_delta_c, newcost;
+	float delta_c, bb_delta_c, timing_delta_c, delay_delta_c;
 	static struct s_bb *bb_coord_new = NULL;
 	static struct s_bb *bb_edge_new = NULL;
 	static int *nets_to_update = NULL, *net_block_moved = NULL;
@@ -1114,10 +1079,6 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 	num_nets_affected = find_affected_nets(nets_to_update, net_block_moved,
 			b_from, b_to, num_of_pins);
 
-	if (place_cost_type == NONLINEAR_CONG) {
-		save_region_occ(old_region_occ_x, old_region_occ_y, num_regions);
-	}
-
 	bb_index = 0; /* Index of new bounding box. */
 
 	for (k = 0; k < num_nets_affected; k++) {
@@ -1145,21 +1106,10 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 
 		}
 
-		if (place_cost_type != NONLINEAR_CONG) {
-			temp_net_cost[inet] = get_net_cost(inet, &bb_coord_new[bb_index]);
-			bb_delta_c += temp_net_cost[inet] - net_cost[inet];
-		} else {
-			/* Rip up, then replace with new bb. */
-			update_region_occ(inet, &bb_coords[inet], -1, num_regions);
-			update_region_occ(inet, &bb_coord_new[bb_index], 1, num_regions);
-		}
+		temp_net_cost[inet] = get_net_cost(inet, &bb_coord_new[bb_index]);
+		bb_delta_c += temp_net_cost[inet] - net_cost[inet];
 
 		bb_index++;
-	}
-
-	if (place_cost_type == NONLINEAR_CONG) {
-		newcost = nonlinear_cong_cost(num_regions);
-		bb_delta_c = newcost - *bb_cost;
 	}
 
 	if (place_algorithm == NET_TIMING_DRIVEN_PLACE
@@ -1248,46 +1198,9 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 			block[b_to].y = y_to;
 			block[b_to].z = z_to;
 		}
-
-		/* Restore the region occupancies to their state before the move. */
-		if (place_cost_type == NONLINEAR_CONG) {
-			restore_region_occ(old_region_occ_x, old_region_occ_y, num_regions);
-		}
 	}
 
 	return (keep_switch);
-}
-
-static void save_region_occ(float **old_region_occ_x, float **old_region_occ_y,
-		int num_regions) {
-
-	/* Saves the old occupancies of the placement subregions in case the  *
-	 * current move is not accepted.  Used only for NONLINEAR_CONG.       */
-
-	int i, j;
-
-	for (i = 0; i < num_regions; i++) {
-		for (j = 0; j < num_regions; j++) {
-			old_region_occ_x[i][j] = place_region_x[i][j].occupancy;
-			old_region_occ_y[i][j] = place_region_y[i][j].occupancy;
-		}
-	}
-}
-
-static void restore_region_occ(float **old_region_occ_x,
-		float **old_region_occ_y, int num_regions) {
-
-	/* Restores the old occupancies of the placement subregions when the  *
-	 * current move is not accepted.  Used only for NONLINEAR_CONG.       */
-
-	int i, j;
-
-	for (i = 0; i < num_regions; i++) {
-		for (j = 0; j < num_regions; j++) {
-			place_region_x[i][j].occupancy = old_region_occ_x[i][j];
-			place_region_y[i][j].occupancy = old_region_occ_y[i][j];
-		}
-	}
 }
 
 static int find_affected_nets(int *nets_to_update, int *net_block_moved,
@@ -1547,44 +1460,23 @@ static int assess_swap(float delta_c, float t) {
 	return (accept);
 }
 
-static float recompute_bb_cost(int place_cost_type, int num_regions) {
+static float recompute_bb_cost(void) {
 
 	/* Recomputes the cost to eliminate roundoff that may have accrued.  *
 	 * This routine does as little work as possible to compute this new  *
 	 * cost.                                                             */
 
-	int i, j, inet;
+	int inet;
 	float cost;
 
 	cost = 0;
 
-	/* Initialize occupancies to zero if regions are being used. */
-
-	if (place_cost_type == NONLINEAR_CONG) {
-		for (i = 0; i < num_regions; i++) {
-			for (j = 0; j < num_regions; j++) {
-				place_region_x[i][j].occupancy = 0.;
-				place_region_y[i][j].occupancy = 0.;
-			}
-		}
-	}
-
 	for (inet = 0; inet < num_nets; inet++) { /* for each net ... */
-
 		if (clb_net[inet].is_global == FALSE) { /* Do only if not global. */
 
 			/* Bounding boxes don't have to be recomputed; they're correct. */
-
-			if (place_cost_type != NONLINEAR_CONG) {
-				cost += net_cost[inet];
-			} else { /* Must be nonlinear_cong case. */
-				update_region_occ(inet, &bb_coords[inet], 1, num_regions);
-			}
+			cost += net_cost[inet];
 		}
-	}
-
-	if (place_cost_type == NONLINEAR_CONG) {
-		cost = nonlinear_cong_cost(num_regions);
 	}
 
 	return (cost);
@@ -1894,7 +1786,7 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 	*connection_delay_sum = loc_connection_delay_sum;
 }
 
-static float comp_bb_cost(int method, int place_cost_type, int num_regions) {
+static float comp_bb_cost(int method) {
 
 	/* Finds the cost from scratch.  Done only when the placement   *
 	 * has been radically changed (i.e. after initial placement).   *
@@ -1905,23 +1797,12 @@ static float comp_bb_cost(int method, int place_cost_type, int num_regions) {
 	 * cost which can be used to check the correctness of the       *
 	 * other routine.                                               */
 
-	int i, j, k;
+	int k;
 	float cost;
 	double expected_wirelength;
 
 	cost = 0;
 	expected_wirelength = 0.0;
-
-	/* Initialize occupancies to zero if regions are being used. */
-
-	if (place_cost_type == NONLINEAR_CONG) {
-		for (i = 0; i < num_regions; i++) {
-			for (j = 0; j < num_regions; j++) {
-				place_region_x[i][j].occupancy = 0.;
-				place_region_y[i][j].occupancy = 0.;
-			}
-		}
-	}
 
 	for (k = 0; k < num_nets; k++) { /* for each net ... */
 
@@ -1939,20 +1820,12 @@ static float comp_bb_cost(int method, int place_cost_type, int num_regions) {
 				get_non_updateable_bb(k, &bb_coords[k]);
 			}
 
-			if (place_cost_type != NONLINEAR_CONG) {
-				net_cost[k] = get_net_cost(k, &bb_coords[k]);
-				cost += net_cost[k];
-				if (method == CHECK)
-					expected_wirelength += get_net_wirelength_estimate(k,
-							&bb_coords[k]);
-			} else { /* Must be nonlinear_cong case. */
-				update_region_occ(k, &bb_coords[k], 1, num_regions);
-			}
+			net_cost[k] = get_net_cost(k, &bb_coords[k]);
+			cost += net_cost[k];
+			if (method == CHECK)
+				expected_wirelength += get_net_wirelength_estimate(k,
+						&bb_coords[k]);
 		}
-	}
-
-	if (place_cost_type == NONLINEAR_CONG) {
-		cost = nonlinear_cong_cost(num_regions);
 	}
 
 	if (method == CHECK)
@@ -1962,158 +1835,7 @@ static float comp_bb_cost(int method, int place_cost_type, int num_regions) {
 	return (cost);
 }
 
-static float nonlinear_cong_cost(int num_regions) {
-
-	/* This routine computes the cost of a placement when the NONLINEAR_CONG *
-	 * option is selected.  It assumes that the occupancies of all the       *
-	 * placement subregions have been properly updated, and simply           *
-	 * computes the cost due to these occupancies by summing over all        *
-	 * subregions.  This will be inefficient for moves that don't affect     *
-	 * many subregions (i.e. small moves late in placement), esp. when there *
-	 * are a lot of subregions.  May recode later to update only affected    *
-	 * subregions.                                                           */
-
-	float cost, tmp;
-	int i, j;
-
-	cost = 0.;
-
-	for (i = 0; i < num_regions; i++) {
-		for (j = 0; j < num_regions; j++) {
-
-			/* Many different cost metrics possible.  1st try:  */
-
-			if (place_region_x[i][j].occupancy
-					< place_region_x[i][j].capacity) {
-				cost += place_region_x[i][j].occupancy
-						* place_region_x[i][j].inv_capacity;
-			} else { /* Overused region -- penalize. */
-
-				tmp = place_region_x[i][j].occupancy
-						* place_region_x[i][j].inv_capacity;
-				cost += tmp * tmp;
-			}
-
-			if (place_region_y[i][j].occupancy
-					< place_region_y[i][j].capacity) {
-				cost += place_region_y[i][j].occupancy
-						* place_region_y[i][j].inv_capacity;
-			} else { /* Overused region -- penalize. */
-
-				tmp = place_region_y[i][j].occupancy
-						* place_region_y[i][j].inv_capacity;
-				cost += tmp * tmp;
-			}
-
-		}
-	}
-
-	return (cost);
-}
-
-static void update_region_occ(int inet, struct s_bb *coords, int add_or_sub,
-		int num_regions) {
-
-	/* Called only when the place_cost_type is NONLINEAR_CONG.  If add_or_sub *
-	 * is 1, this uses the new net bounding box to increase the occupancy     *
-	 * of some regions.  If add_or_sub = - 1, it decreases the occupancy      *
-	 * by that due to this bounding box.                                      */
-
-	float net_xmin, net_xmax, net_ymin, net_ymax, crossing;
-	float inv_region_len, inv_region_height;
-	float inv_bb_len, inv_bb_height;
-	float overlap_xlow, overlap_xhigh, overlap_ylow, overlap_yhigh;
-	float y_overlap, x_overlap, x_occupancy, y_occupancy;
-	int imin, imax, jmin, jmax, i, j;
-
-	if (clb_net[inet].num_sinks >= 50) {
-		crossing = 2.7933 + 0.02616 * ((clb_net[inet].num_sinks + 1) - 50);
-	} else {
-		crossing = cross_count[clb_net[inet].num_sinks];
-	}
-
-	net_xmin = coords->xmin - 0.5;
-	net_xmax = coords->xmax + 0.5;
-	net_ymin = coords->ymin - 0.5;
-	net_ymax = coords->ymax + 0.5;
-
-	/* I could precompute the two values below.  Should consider this. */
-
-	inv_region_len = (float) num_regions / (float) nx;
-	inv_region_height = (float) num_regions / (float) ny;
-
-	/* Get integer coordinates defining the rectangular area in which the *
-	 * subregions have to be updated.  Formula is as follows:  subtract   *
-	 * 0.5 from net_xmin, etc. to get numbers from 0 to nx or ny;         *
-	 * divide by nx or ny to scale between 0 and 1; multiply by           *
-	 * num_regions to scale between 0 and num_regions; and truncate to    *
-	 * get the final answer.                                              */
-
-	imin = (int) (net_xmin - 0.5) * inv_region_len;
-	imax = (int) (net_xmax - 0.5) * inv_region_len;
-	imax = min(imax, num_regions - 1); /* Watch for weird roundoff */
-
-	jmin = (int) (net_ymin - 0.5) * inv_region_height;
-	jmax = (int) (net_ymax - 0.5) * inv_region_height;
-	jmax = min(jmax, num_regions - 1); /* Watch for weird roundoff */
-
-	inv_bb_len = 1. / (net_xmax - net_xmin);
-	inv_bb_height = 1. / (net_ymax - net_ymin);
-
-	/* See RISA paper (ICCAD '94, pp. 690 - 695) for a description of why *
-	 * I use exactly this cost function.                                  */
-
-	for (i = imin; i <= imax; i++) {
-		for (j = jmin; j <= jmax; j++) {
-			overlap_xlow = max(place_region_bounds_x[i], net_xmin);
-			overlap_xhigh = min(place_region_bounds_x[i + 1], net_xmax);
-			overlap_ylow = max(place_region_bounds_y[j], net_ymin);
-			overlap_yhigh = min(place_region_bounds_y[j + 1], net_ymax);
-
-			x_overlap = overlap_xhigh - overlap_xlow;
-			y_overlap = overlap_yhigh - overlap_ylow;
-
-#ifdef DEBUG
-
-			if (x_overlap < -0.001) {
-				printf("Error in update_region_occ:  x_overlap < 0"
-						"\n inet = %d, overlap = %g\n", inet, x_overlap);
-			}
-
-			if (y_overlap < -0.001) {
-				printf("Error in update_region_occ:  y_overlap < 0"
-						"\n inet = %d, overlap = %g\n", inet, y_overlap);
-			}
-#endif
-
-			x_occupancy = crossing * y_overlap * x_overlap * inv_bb_height
-					* inv_region_len;
-			y_occupancy = crossing * x_overlap * y_overlap * inv_bb_len
-					* inv_region_height;
-
-			place_region_x[i][j].occupancy += add_or_sub * x_occupancy;
-			place_region_y[i][j].occupancy += add_or_sub * y_occupancy;
-		}
-	}
-
-}
-
-static void free_place_regions(int num_regions) {
-
-	/* Frees the place_regions data structures needed by the NONLINEAR_CONG *
-	 * cost function.                                                       */
-
-	free_matrix(place_region_x, 0, num_regions - 1, 0,
-			sizeof(struct s_place_region));
-
-	free_matrix(place_region_y, 0, num_regions - 1, 0,
-			sizeof(struct s_place_region));
-
-	free(place_region_bounds_x);
-	free(place_region_bounds_y);
-}
-
-static void free_placement_structs(int place_cost_type, int num_regions,
+static void free_placement_structs(
 		float **old_region_occ_x, float **old_region_occ_y,
 		struct s_placer_opts placer_opts) {
 
@@ -2158,20 +1880,10 @@ static void free_placement_structs(int place_cost_type, int num_regions,
 	temp_net_cost = NULL;
 	bb_num_on_edges = NULL;
 	bb_coords = NULL;
-
-	if (place_cost_type == NONLINEAR_CONG) {
-		free_place_regions(num_regions);
-		free_matrix(old_region_occ_x, 0, num_regions - 1, 0, sizeof(float));
-		free_matrix(old_region_occ_y, 0, num_regions - 1, 0, sizeof(float));
-	}
-
-	else if (place_cost_type == LINEAR_CONG) {
-		free_fast_cost_update_structs();
-	}
 }
 
-static void alloc_and_load_placement_structs(int place_cost_type,
-		int num_regions, float place_cost_exp, float ***old_region_occ_x,
+static void alloc_and_load_placement_structs(
+		float place_cost_exp, float ***old_region_occ_x,
 		float ***old_region_occ_y, struct s_placer_opts placer_opts) {
 
 	/* Allocates the major structures needed only by the placer, primarily for *
@@ -2243,148 +1955,11 @@ static void alloc_and_load_placement_structs(int place_cost_type,
 	bb_coords = (struct s_bb *) my_malloc(num_nets * sizeof(struct s_bb));
 	bb_num_on_edges = (struct s_bb *) my_malloc(num_nets * sizeof(struct s_bb));
 
-	/* Allocate storage for subregion data, if needed. */
-
-	if (place_cost_type == NONLINEAR_CONG) {
-		alloc_place_regions(num_regions);
-		load_place_regions(num_regions);
-		*old_region_occ_x = (float **) alloc_matrix(0, num_regions - 1, 0,
-				num_regions - 1, sizeof(float));
-		*old_region_occ_y = (float **) alloc_matrix(0, num_regions - 1, 0,
-				num_regions - 1, sizeof(float));
-	} else { /* Shouldn't use them; crash hard if I do!   */
-		*old_region_occ_x = NULL;
-		*old_region_occ_y = NULL;
-	}
-
-	if (place_cost_type == LINEAR_CONG) {
-		alloc_and_load_for_fast_cost_update(place_cost_exp);
-	}
-}
-
-static void alloc_place_regions(int num_regions) {
-
-	/* Allocates memory for the regional occupancy, cost, etc. counts *
-	 * kept when we're using the NONLINEAR_CONG placement cost        *
-	 * function.                                                      */
-
-	place_region_x = (struct s_place_region **) alloc_matrix(0, num_regions - 1,
-			0, num_regions - 1, sizeof(struct s_place_region));
-
-	place_region_y = (struct s_place_region **) alloc_matrix(0, num_regions - 1,
-			0, num_regions - 1, sizeof(struct s_place_region));
-
-	place_region_bounds_x = (float *) my_malloc(
-			(num_regions + 1) * sizeof(float));
-
-	place_region_bounds_y = (float *) my_malloc(
-			(num_regions + 1) * sizeof(float));
-}
-
-static void load_place_regions(int num_regions) {
-
-	/* Loads the capacity values in each direction for each of the placement *
-	 * regions.  The chip is divided into a num_regions x num_regions array. */
-
-	int i, j, low_block, high_block, rnum;
-	float low_lim, high_lim, capacity, fac, block_capacity;
-	float len_fac, height_fac;
-
-	/* First load up horizontal channel capacities.  */
-
-	for (j = 0; j < num_regions; j++) {
-		capacity = 0.;
-		low_lim = (float) j / (float) num_regions * ny + 1.;
-		high_lim = (float) (j + 1) / (float) num_regions * ny;
-
-		low_block = floor(low_lim);
-		low_block = max(1, low_block); /* Watch for weird roundoff effects. */
-		high_block = ceil(high_lim);
-		high_block = min(high_block, ny);
-
-		block_capacity = (chan_width_x[low_block - 1] + chan_width_x[low_block])
-				/ 2.;
-		if (low_block == 1)
-			block_capacity += chan_width_x[0] / 2.;
-
-		fac = 1. - (low_lim - low_block);
-		capacity += fac * block_capacity;
-
-		for (rnum = low_block + 1; rnum < high_block; rnum++) {
-			block_capacity = (chan_width_x[rnum - 1] + chan_width_x[rnum]) / 2.;
-			capacity += block_capacity;
-		}
-
-		block_capacity = (chan_width_x[high_block - 1]
-				+ chan_width_x[high_block]) / 2.;
-		if (high_block == ny)
-			block_capacity += chan_width_x[ny] / 2.;
-
-		fac = 1. - (high_block - high_lim);
-		capacity += fac * block_capacity;
-
-		for (i = 0; i < num_regions; i++) {
-			place_region_x[i][j].capacity = capacity;
-			place_region_x[i][j].inv_capacity = 1. / capacity;
-			place_region_x[i][j].occupancy = 0.;
-			place_region_x[i][j].cost = 0.;
-		}
-	}
-
-	/* Now load vertical channel capacities.  */
-
-	for (i = 0; i < num_regions; i++) {
-		capacity = 0.;
-		low_lim = (float) i / (float) num_regions * nx + 1.;
-		high_lim = (float) (i + 1) / (float) num_regions * nx;
-
-		low_block = floor(low_lim);
-		low_block = max(1, low_block); /* Watch for weird roundoff effects. */
-		high_block = ceil(high_lim);
-		high_block = min(high_block, nx);
-
-		block_capacity = (chan_width_y[low_block - 1] + chan_width_y[low_block])
-				/ 2.;
-		if (low_block == 1)
-			block_capacity += chan_width_y[0] / 2.;
-
-		fac = 1. - (low_lim - low_block);
-		capacity += fac * block_capacity;
-
-		for (rnum = low_block + 1; rnum < high_block; rnum++) {
-			block_capacity = (chan_width_y[rnum - 1] + chan_width_y[rnum]) / 2.;
-			capacity += block_capacity;
-		}
-
-		block_capacity = (chan_width_y[high_block - 1]
-				+ chan_width_y[high_block]) / 2.;
-		if (high_block == nx)
-			block_capacity += chan_width_y[nx] / 2.;
-
-		fac = 1. - (high_block - high_lim);
-		capacity += fac * block_capacity;
-
-		for (j = 0; j < num_regions; j++) {
-			place_region_y[i][j].capacity = capacity;
-			place_region_y[i][j].inv_capacity = 1. / capacity;
-			place_region_y[i][j].occupancy = 0.;
-			place_region_y[i][j].cost = 0.;
-		}
-	}
-
-	/* Finally set up the arrays indicating the limits of each of the *
-	 * placement subregions.                                          */
-
-	len_fac = (float) nx / (float) num_regions;
-	height_fac = (float) ny / (float) num_regions;
-
-	place_region_bounds_x[0] = 0.5;
-	place_region_bounds_y[0] = 0.5;
-
-	for (i = 1; i <= num_regions; i++) {
-		place_region_bounds_x[i] = place_region_bounds_x[i - 1] + len_fac;
-		place_region_bounds_y[i] = place_region_bounds_y[i - 1] + height_fac;
-	}
+	/* Shouldn't use them; crash hard if I do!   */
+	*old_region_occ_x = NULL;
+	*old_region_occ_y = NULL;
+	
+	alloc_and_load_for_fast_cost_update(place_cost_exp);
 }
 
 static void get_bb_from_scratch(int inet, struct s_bb *coords,
@@ -2895,24 +2470,6 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	free(count);
 }
 
-static void free_fast_cost_update_structs(void) {
-
-	/* Frees the structures used to speed up evaluation of the nonlinear   *
-	 * congestion cost function.                                           */
-
-	int i;
-
-	for (i = 0; i <= ny; i++)
-		free(chanx_place_cost_fac[i]);
-
-	free(chanx_place_cost_fac);
-
-	for (i = 0; i <= nx; i++)
-		free(chany_place_cost_fac[i]);
-
-	free(chany_place_cost_fac);
-}
-
 static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 
 	/* Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac *
@@ -2997,8 +2554,8 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 		}
 }
 
-static void check_place(float bb_cost, float timing_cost, int place_cost_type,
-		int num_regions, enum e_place_algorithm place_algorithm,
+static void check_place(float bb_cost, float timing_cost, 
+		enum e_place_algorithm place_algorithm,
 		float delay_cost) {
 
 	/* Checks that the placement has not confused our data structures. *
@@ -3013,7 +2570,7 @@ static void check_place(float bb_cost, float timing_cost, int place_cost_type,
 	int usage_check;
 	float timing_cost_check, delay_cost_check;
 
-	bb_cost_check = comp_bb_cost(CHECK, place_cost_type, num_regions);
+	bb_cost_check = comp_bb_cost(CHECK);
 	printf("bb_cost recomputed from scratch is %g.\n", bb_cost_check);
 	if (fabs(bb_cost_check - bb_cost) > bb_cost * ERROR_TOL) {
 		printf(

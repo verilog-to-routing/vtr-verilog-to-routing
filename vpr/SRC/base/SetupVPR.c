@@ -583,26 +583,13 @@ static void SetupPlacerOpts(INP t_options Options, INP boolean TimingEnabled,
 		PlacerOpts->td_place_exp_last = Options.place_exp_last;
 	}
 
-	PlacerOpts->place_cost_type = LINEAR_CONG; /* DEFAULT */
-	if (Options.Count[OT_PLACE_COST_TYPE]) {
-		PlacerOpts->place_cost_type = Options.PlaceCostType;
-	}
-
 	/* Depends on PlacerOpts->place_cost_type */
 	PlacerOpts->place_algorithm = BOUNDING_BOX_PLACE; /* DEFAULT */
 	if (TimingEnabled) {
 		PlacerOpts->place_algorithm = PATH_TIMING_DRIVEN_PLACE; /* DEFAULT */
 	}
-	if (NONLINEAR_CONG == PlacerOpts->place_cost_type) {
-		PlacerOpts->place_algorithm = BOUNDING_BOX_PLACE; /* DEFAULT */
-	}
 	if (Options.Count[OT_PLACE_ALGORITHM]) {
 		PlacerOpts->place_algorithm = Options.PlaceAlgorithm;
-	}
-
-	PlacerOpts->num_regions = 4; /* DEFAULT */
-	if (Options.Count[OT_NUM_REGIONS]) {
-		PlacerOpts->num_regions = Options.PlaceNonlinearRegions;
 	}
 
 	PlacerOpts->pad_loc_file = NULL; /* DEFAULT */
@@ -619,10 +606,6 @@ static void SetupPlacerOpts(INP t_options Options, INP boolean TimingEnabled,
 
 	/* Depends on PlacerOpts->place_cost_type */
 	PlacerOpts->place_chan_width = 100; /* DEFAULT */
-	if ((NONLINEAR_CONG == PlacerOpts->place_cost_type)
-			&& (Options.Count[OT_ROUTE_CHAN_WIDTH])) {
-		PlacerOpts->place_chan_width = Options.RouteChanWidth;
-	}
 	if (Options.Count[OT_PLACE_CHAN_WIDTH]) {
 		PlacerOpts->place_chan_width = Options.PlaceChanWidth;
 	}
@@ -649,9 +632,6 @@ static void SetupPlacerOpts(INP t_options Options, INP boolean TimingEnabled,
 
 	/* Depends on PlacerOpts->place_cost_type */
 	PlacerOpts->place_freq = PLACE_ONCE; /* DEFAULT */
-	if (NONLINEAR_CONG == PlacerOpts->place_cost_type) {
-		PlacerOpts->place_freq = PLACE_ALWAYS; /* DEFAULT */
-	}
 	if ((Options.Count[OT_ROUTE_CHAN_WIDTH])
 			|| (Options.Count[OT_PLACE_CHAN_WIDTH])) {
 		PlacerOpts->place_freq = PLACE_ONCE;

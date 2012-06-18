@@ -540,7 +540,7 @@ static void backward_expand_pack_pattern_from_edge(
 					(t_pack_pattern_block*) source_pb_graph_node->temp_scratch_pad;
 			if (source_block == NULL
 					|| source_block->pattern_index != curr_pattern_index) {
-				source_block = my_calloc(1, sizeof(t_pack_pattern_block));
+				source_block = (t_pack_pattern_block *)my_calloc(1, sizeof(t_pack_pattern_block));
 				source_block->block_id = *L_num_blocks;
 				(*L_num_blocks)++;
 				list_of_packing_patterns[curr_pattern_index].base_cost +=
@@ -613,7 +613,7 @@ static void backward_expand_pack_pattern_from_edge(
 						((t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad)->pattern_index == curr_pattern_index);
 				source_block =
 						(t_pack_pattern_block*) source_pb_graph_node->temp_scratch_pad;
-				pack_pattern_connection = my_calloc(1,
+				pack_pattern_connection = (t_pack_pattern_connections *)my_calloc(1,
 						sizeof(t_pack_pattern_connections));
 				pack_pattern_connection->from_block = source_block;
 				pack_pattern_connection->from_pin =
@@ -623,7 +623,7 @@ static void backward_expand_pack_pattern_from_edge(
 				pack_pattern_connection->next = source_block->connections;
 				source_block->connections = pack_pattern_connection;
 
-				pack_pattern_connection = my_calloc(1,
+				pack_pattern_connection = (t_pack_pattern_connections *)my_calloc(1,
 						sizeof(t_pack_pattern_connections));
 				pack_pattern_connection->from_block = source_block;
 				pack_pattern_connection->from_pin =

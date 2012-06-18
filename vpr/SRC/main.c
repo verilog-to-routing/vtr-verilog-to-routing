@@ -366,7 +366,7 @@ static void PrintUsage(void) {
 			"\t[--place_algorithm bounding_box | net_timing_driven | path_timing_driven]");
 	puts("\t[--init_t <float>] [--exit_t <float>]");
 	puts("\t[--alpha_t <float>] [--inner_num <float>] [--seed <int>]");
-	puts("\t[--place_cost_exp <float>] [--place_cost_type linear | nonlinear]");
+	puts("\t[--place_cost_exp <float>]");
 	puts("\t[--place_chan_width <int>] [--num_regions <int>] ");
 	puts("\t[--fix_pins random | <file.pads>]");
 	puts("\t[--enable_timing_computations on | off]");

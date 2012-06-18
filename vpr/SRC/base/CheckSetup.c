@@ -15,25 +15,6 @@ void CheckSetup(INP enum e_operation Operation,
 	int i;
 	int Tmp;
 
-	if ((NONLINEAR_CONG == PlacerOpts.place_cost_type)
-			&& (!PlacerOpts.doPlacement || !RouterOpts.doRouting)
-			&& (PLACE_ALWAYS == PlacerOpts.place_freq)) {
-		printf(ERRTAG "Replacing using the nonlinear congestion option "
-		"for each channel width makes sense only for full "
-		"place and route.\n");
-		exit(1);
-	}
-
-	if ((NONLINEAR_CONG == PlacerOpts.place_cost_type)
-			&& (BOUNDING_BOX_PLACE != PlacerOpts.place_algorithm)) {
-
-		/* Note that this may work together, but I have not tested it */
-		printf(ERRTAG
-		"Cannot use non-linear placement only supported with "
-		"bounding box placement\n");
-		exit(1);
-	}
-
 	if ((GLOBAL == RouterOpts.route_type)
 			&& (TIMING_DRIVEN == RouterOpts.router_algorithm)) {
 
@@ -91,13 +72,6 @@ void CheckSetup(INP enum e_operation Operation,
 		printf(ERRTAG
 		"-timing_analyze_only_with_net_delay option requires "
 		"that timing analysis not be disabled.\n");
-		exit(1);
-	}
-
-	if ((NONLINEAR_CONG == PlacerOpts.place_cost_type)
-			&& ((PlacerOpts.num_regions > nx) || (PlacerOpts.num_regions > ny))) {
-		printf(ERRTAG "Cannot use more regions than clbs in "
-		"placement cost function.\n");
 		exit(1);
 	}
 

@@ -372,12 +372,6 @@ enum pic_type {
 };
 /* What's on screen? */
 
-/* For the placer.  Different types of cost functions that can be used. */
-enum place_c_types {
-	LINEAR_CONG, NONLINEAR_CONG
-};
-/* Nonlinear placement is deprecated */
-
 /* Map netlist to FPGA or timing analyze only */
 enum e_operation {
 	RUN_FLOW, TIMING_ANALYSIS_ONLY
@@ -532,13 +526,11 @@ struct s_placer_opts {
 	enum e_place_algorithm place_algorithm;
 	float timing_tradeoff;
 	int block_dist;
-	enum place_c_types place_cost_type;
 	float place_cost_exp;
 	int place_chan_width;
 	enum e_pad_loc_type pad_loc_type;
 	char *pad_loc_file;
 	enum pfreq place_freq;
-	int num_regions;
 	int recompute_crit_iter;
 	boolean enable_timing_computations;
 	int inner_loop_recompute_divider;
@@ -555,8 +547,7 @@ struct s_placer_opts {
  *                   timing driven and BOUNDING_BOX_PLACE.                   *
  * block_dist:  Initial guess of how far apart blocks on the critical path   *
  *              This is used to compute the initial slacks and criticalities *
- * place_cost_type:  LINEAR_CONG or NONLINEAR_CONG.                          *
- * place_cost_exp:  Power to which denominator is raised for linear_cong.    *
+  * place_cost_exp:  Power to which denominator is raised for linear_cong.    *
  * place_chan_width:  The channel width assumed if only one placement is     *
  *                    performed.                                             *
  * pad_loc_type:  Are pins FREE, fixed randomly, or fixed from a file.  *
@@ -564,8 +555,6 @@ struct s_placer_opts {
  *                     is USER.                                              *
  * place_freq:  Should the placement be skipped, done once, or done for each *
  *              channel width in the binary search.                          *
- * num_regions:  Used only with NONLINEAR_CONG; in that case, congestion is  *
- *               computed on an array of num_regions x num_regions basis.    *
  * recompute_crit_iter: how many temperature stages pass before we recompute *
  *               criticalities based on average point to point delay         *
  * enable_timing_computations: in bounding_box mode, normally, timing        *

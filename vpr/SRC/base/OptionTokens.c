@@ -18,8 +18,7 @@ struct s_TokenPair OptionBaseTokenList[] = { { "nodisp", OT_NODISP }, { "auto",
 		OT_PLACE_ALGORITHM }, { "timing_tradeoff", OT_TIMING_TRADEOFF }, {
 		"enable_timing_computations", OT_ENABLE_TIMING_COMPUTATIONS }, {
 		"block_dist", OT_BLOCK_DIST },
-		{ "place_cost_type", OT_PLACE_COST_TYPE }, { "num_regions",
-				OT_NUM_REGIONS }, { "place_chan_width", OT_PLACE_CHAN_WIDTH }, {
+		{ "place_chan_width", OT_PLACE_CHAN_WIDTH }, {
 				"max_router_iterations", OT_MAX_ROUTER_ITERATIONS }, {
 				"bb_factor", OT_BB_FACTOR }, { "router_algorithm",
 				OT_ROUTER_ALGORITHM }, { "first_iter_pres_fac",
@@ -56,8 +55,7 @@ struct s_TokenPair OptionBaseTokenList[] = { { "nodisp", OT_NODISP }, { "auto",
 struct s_TokenPair OptionArgTokenList[] = { { "on", OT_ON }, { "off", OT_OFF },
 		{ "random", OT_RANDOM }, { "bounding_box", OT_BOUNDING_BOX }, {
 				"net_timing_driven", OT_NET_TIMING_DRIVEN }, {
-				"path_timing_driven", OT_PATH_TIMING_DRIVEN }, { "linear",
-				OT_LINEAR }, { "nonlinear", OT_NONLINEAR }, { "breadth_first",
+				"path_timing_driven", OT_PATH_TIMING_DRIVEN }, { "breadth_first",
 				OT_BREADTH_FIRST }, { "timing_driven", OT_TIMING_DRIVEN }, {
 				"directed_search", OT_DIRECTED_SEARCH }, { "intrinsic_delay",
 				OT_INTRINSIC_DELAY },

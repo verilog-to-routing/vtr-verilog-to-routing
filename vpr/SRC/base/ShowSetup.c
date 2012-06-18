@@ -348,19 +348,6 @@ static void ShowPlacerOpts(INP t_options Options,
 			exit(1);
 		}
 
-		printf("PlacerOpts.place_cost_type:  ");
-		switch (PlacerOpts.place_cost_type) {
-		case LINEAR_CONG:
-			printf("LINEAR_CONG\n");
-			break;
-		case NONLINEAR_CONG:
-			printf("NONLINEAR_CONG\n");
-			break;
-		default:
-			printf("<Unknown>\n");
-			exit(1);
-		}
-
 		printf("PlacerOpts.pad_loc_type:  ");
 		switch (PlacerOpts.pad_loc_type) {
 		case FREE:
@@ -379,14 +366,9 @@ static void ShowPlacerOpts(INP t_options Options,
 
 		printf("PlacerOpts.place_cost_exp:  %f\n", PlacerOpts.place_cost_exp);
 
-		if ((LINEAR_CONG == PlacerOpts.place_cost_type)
-				|| (Options.Count[OT_PLACE_CHAN_WIDTH])) {
+		if (Options.Count[OT_PLACE_CHAN_WIDTH]) {
 			printf("PlacerOpts.place_chan_width:  %d\n",
 					PlacerOpts.place_chan_width);
-		}
-
-		if (NONLINEAR_CONG == PlacerOpts.place_cost_type) {
-			printf("PlacerOpts.num_regions:  %d\n", PlacerOpts.num_regions);
 		}
 
 		if ((NET_TIMING_DRIVEN_PLACE == PlacerOpts.place_algorithm)

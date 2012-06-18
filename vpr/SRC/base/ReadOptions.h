@@ -50,9 +50,7 @@ struct s_options {
 	float PlaceInnerNum;
 	int Seed;
 	float place_cost_exp;
-	enum place_c_types PlaceCostType;
 	int PlaceChanWidth;
-	int PlaceNonlinearRegions;
 	char *PinFile;
 	boolean ShowPlaceTiming;
 	int block_dist;

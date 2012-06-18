@@ -21,7 +21,6 @@ static char **ReadClusterSeed(INP char **Args, OUTP enum e_cluster_seed *Type);
 static char **ReadFixPins(INP char **Args, OUTP char **PinFile);
 static char **ReadPlaceAlgorithm(INP char **Args,
 		OUTP enum e_place_algorithm *Algo);
-static char **ReadPlaceCostType(INP char **Args, OUTP enum place_c_types *Type);
 static char **ReadRouterAlgorithm(INP char **Args,
 		OUTP enum e_router_algorithm *Algo);
 static char **ReadPackerAlgorithm(INP char **Args,
@@ -182,12 +181,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadInt(Args, &Options->Seed);
 	case OT_PLACE_COST_EXP:
 		return ReadFloat(Args, &Options->place_cost_exp);
-	case OT_PLACE_COST_TYPE:
-		return ReadPlaceCostType(Args, &Options->PlaceCostType);
 	case OT_PLACE_CHAN_WIDTH:
 		return ReadInt(Args, &Options->PlaceChanWidth);
-	case OT_NUM_REGIONS:
-		return ReadInt(Args, &Options->PlaceNonlinearRegions);
 	case OT_FIX_PINS:
 		return ReadFixPins(Args, &Options->PinFile);
 	case OT_ENABLE_TIMING_COMPUTATIONS:
@@ -316,9 +311,6 @@ ReadClusterSeed(INP char **Args, OUTP enum e_cluster_seed *Type) {
 	case OT_TIMING:
 		*Type = VPACK_TIMING;
 		break;
-	case OT_MAX_INPUTS:
-		*Type = NONLINEAR_CONG;
-		break;
 	default:
 		Error(*PrevArgs);
 	}
@@ -408,27 +400,6 @@ ReadRouteType(INP char **Args, OUTP enum e_route_type *Type) {
 		break;
 	case OT_DETAILED:
 		*Type = DETAILED;
-		break;
-	default:
-		Error(*PrevArgs);
-	}
-
-	return Args;
-}
-
-static char **
-ReadPlaceCostType(INP char **Args, OUTP enum place_c_types *Type) {
-	enum e_OptionArgToken Token;
-	char **PrevArgs;
-
-	PrevArgs = Args;
-	Args = ReadToken(Args, &Token);
-	switch (Token) {
-	case OT_LINEAR:
-		*Type = LINEAR_CONG;
-		break;
-	case OT_NONLINEAR:
-		*Type = NONLINEAR_CONG;
 		break;
 	default:
 		Error(*PrevArgs);

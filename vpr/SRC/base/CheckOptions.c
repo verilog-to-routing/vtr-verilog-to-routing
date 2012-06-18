@@ -94,17 +94,11 @@ void CheckOptions(INP t_options Options, INP boolean TimingEnabled) {
 	if (Options.Count[OT_PLACE_ALGORITHM] > 0) {
 		Yes = OT_PLACE_ALGORITHM;
 	}
-	if (Options.Count[OT_PLACE_COST_TYPE] > 0) {
-		Yes = OT_PLACE_COST_TYPE;
-	}
 	if (Options.Count[OT_PLACE_COST_EXP] > 0) {
 		Yes = OT_PLACE_COST_EXP;
 	}
 	if (Options.Count[OT_PLACE_CHAN_WIDTH] > 0) {
 		Yes = OT_PLACE_CHAN_WIDTH;
-	}
-	if (Options.Count[OT_NUM_REGIONS] > 0) {
-		Yes = OT_NUM_REGIONS;
 	}
 	if (Options.Count[OT_ENABLE_TIMING_COMPUTATIONS] > 0) {
 		Yes = OT_ENABLE_TIMING_COMPUTATIONS;
