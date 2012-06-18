@@ -193,8 +193,7 @@ sub run_single_task {
 		elsif ( $key eq "cmos_tech_behavior" ) {
 			$cmos_tech_path = $value;
 		}
-		elsif ( $key eq "parse_file" or $key eq "pass_requirements_file" ) {
-
+		elsif ( $key eq "parse_file" or $key eq "qor_parse_file" or $key eq "pass_requirements_file" ) {
 			#Used by parser
 		}
 		else {

@@ -10,9 +10,11 @@
 # 	-l <task_list_file>: Used to provide a test file containing a list of tasks
 #   -create_golden:  Will create/overwrite the golden results with those of the
 #						most recent execution
-#   -verify_golden:  Will verify the results of the most recent execution against
+#   -check_golden:  Will verify the results of the most recent execution against
 #						the golden results for each task and report either a
 #						[Pass] or [Fail]
+#   -check_qor:  	Used for the purposes of checking how quality of results of the
+#					most recent execution vary from a previous run
 ###################################################################################
 
 use strict;
@@ -38,6 +40,9 @@ my @task_files;
 my $token;
 my $create_golden = 0;
 my $check_golden  = 0;
+my $create_qor = 1; # QoR file is parsed by default; turned off if user
+					# does not specify QoR parse file in config.txt
+my $check_qor = 0;
 
 while ( $token = shift(@ARGV) ) {
 
@@ -54,6 +59,9 @@ while ( $token = shift(@ARGV) ) {
 		}
 		elsif ( $token eq "-check_golden" ) {
 			$check_golden = 1;
+		}
+		elsif ( $token eq "-check_qor" ) {
+			$check_qor = 1;
 		}
 		else {
 			die "Invalid option: $token\n";
@@ -94,6 +102,7 @@ sub parse_single_task {
 
 	my @circuits;
 	my $parse_file;
+	my $qor_parse_file;
 	my @archs;
 	foreach my $line (@config_data) {
 
@@ -113,8 +122,12 @@ sub parse_single_task {
 		elsif ( $key eq "parse_file" ) {
 			$parse_file = expand_user_path($value);
 		}
+		elsif ( $key eq "qor_parse_file" ) {
+			$qor_parse_file = expand_user_path($value);
+		}
 	}
 
+	# PARSE CONFIG FILE
 	if ( $parse_file eq "" ) {
 		die "Task $task_name has no parse file specified.\n";
 	}
@@ -126,6 +139,21 @@ sub parse_single_task {
 	}
 	else {
 		die "Parse file does not exist ($parse_file)";
+	}
+
+	# QOR PARSE CONFIG FILE
+	if ( $qor_parse_file eq "" ) {
+		print "Task $task_name has no QoR parse file specified. Skipping QoR.\n";
+		$create_qor = 0;
+	}
+
+	if ( -e $qor_parse_file ) {
+	}
+	elsif ( -e "$vtr_flow_path/parse/qor_config/$qor_parse_file" ) {
+		$qor_parse_file = "$vtr_flow_path/parse/qor_config/$qor_parse_file";
+	}
+	else {
+		die "QoR parse file does not exist ($qor_parse_file)";
 	}
 
 	my $exp_num = 1;
@@ -155,12 +183,37 @@ sub parse_single_task {
 	}
 	close(OUTPUT_FILE);
 
+	if ($create_qor) {
+		my $first = 1;
+		open( OUTPUT_FILE, ">$run_path/qor_results.txt" );
+		foreach my $arch (@archs) {
+			foreach my $circuit (@circuits) {
+				system(
+					"$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $qor_parse_file > $run_path/$arch/$circuit/qor_results.txt"
+				);
+				open( RESULTS_FILE, "$run_path/$arch/$circuit/qor_results.txt" );
+				my $output = <RESULTS_FILE>;
+				if ($first) {
+					print OUTPUT_FILE "arch\tcircuit\t$output";
+					$first = 0;
+				}
+				my $output = <RESULTS_FILE>;
+				close(RESULTS_FILE);
+				print OUTPUT_FILE $arch . "\t" . $circuit . "\t" . $output;
+			}
+		}
+		close(OUTPUT_FILE);
+	}
+
 	if ($create_golden) {
 		copy( "$run_path/parse_results.txt",
 			"$run_path/../config/golden_results.txt" );
 	}
 	if ($check_golden) {
 		check_golden( $task_name, $task_path, $run_path );
+	}
+	if ($check_qor) {
+		check_qor( $task_name, $task_path, $run_path );
 	}
 }
 
@@ -360,6 +413,14 @@ sub check_golden {
 	if ($pass) {
 		print "[Pass]\n";
 	}
+}
+
+sub check_qor {
+	my $task_name = shift;
+	my $task_path = shift;
+	my $run_path  = shift;
+
+	print "$task_name...";
 }
 
 sub trim($) {

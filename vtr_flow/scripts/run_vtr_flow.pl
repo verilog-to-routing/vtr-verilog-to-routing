@@ -136,12 +136,7 @@ if ($do_power) {
 }
 
 if ( $vpr_cluster_seed_type eq "" ) {
-	if ( $timing_driven eq "off" ) {
-		$vpr_cluster_seed_type = "max_inputs";
-	}
-	else {
-		$vpr_cluster_seed_type = "timing";
-	}
+	$vpr_cluster_seed_type = "timing";
 }
 
 if ( !-d $temp_dir ) {

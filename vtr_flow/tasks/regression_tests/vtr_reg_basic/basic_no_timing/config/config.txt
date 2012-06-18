@@ -18,6 +18,9 @@ arch_list_add=k4_N10_memSize16384_memData64.xml
 # Parse info and how to parse
 parse_file=vpr_no_timing.txt
 
+# How to parse QoR info
+qor_parse_file=qor_no_timing.txt
+
 # Pass requirements
 pass_requirements_file=pass_requirements_no_timing.txt
 
