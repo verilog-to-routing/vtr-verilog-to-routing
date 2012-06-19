@@ -5,6 +5,7 @@
 #include "vpr_types.h"
 #include "OptionTokens.h"
 #include "ReadOptions.h"
+#include "read_settings.h"
 
 static boolean EchoEnabled;
 
@@ -14,6 +15,7 @@ static char **ReadBaseToken(INP char **Args, OUTP enum e_OptionBaseToken *Token)
 static void Error(INP const char *Token);
 static void ErrorOption(INP const char *Option);
 static char **ProcessOption(INP char **Args, INOUTP t_options * Options);
+static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id);
 static char **ReadFloat(INP char **Args, OUTP float *Val);
 static char **ReadInt(INP char **Args, OUTP int *Val);
 static char **ReadOnOff(INP char **Args, OUTP boolean * Val);
@@ -85,6 +87,24 @@ void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
 			/* Not an option and arch and net already specified so fail */
 			Error(*Args);
 		}
+
+		if (Options->Count[OT_SETTINGS_FILE] != Options->read_settings)
+		{
+			int tmp_argc = 0;
+			char **tmp_argv = NULL;
+			t_options SettingsFileOptions;
+
+			tmp_argc = read_settings_file(Options->SettingsFile, &tmp_argv);
+
+			ReadOptions(tmp_argc, tmp_argv, &SettingsFileOptions);
+
+			MergeOptions(Options, &SettingsFileOptions, Options->Count[OT_SETTINGS_FILE]);
+
+			Options->read_settings = Options->Count[OT_SETTINGS_FILE];
+
+			/* clean up local data structures */
+			free(tmp_argv);
+		}
 	}
 	free(head);
 }
@@ -98,11 +118,20 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 	Args = ReadBaseToken(Args, &Token);
 
 	if (Token < OT_BASE_UNKNOWN) {
-		++Options->Count[Token];
+		/* If this was previously set by a lower priority source
+		 * (ie. a settings file), reset the provenance and the
+		 * count */
+		if (Options->Provenance[Token])
+		{
+			Options->Provenance[Token] = 0;
+			Options->Count[Token] = 1;
+		}
+		else
+			++Options->Count[Token];
 	}
 
 	switch (Token) {
-	/* File naming options */
+		/* File naming options */
 	case OT_BLIF_FILE:
 		return ReadString(Args, &Options->BlifFile);
 	case OT_NET_FILE:
@@ -111,6 +140,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadString(Args, &Options->PlaceFile);
 	case OT_ROUTE_FILE:
 		return ReadString(Args, &Options->RouteFile);
+	case OT_SETTINGS_FILE:
+		return ReadString(Args, &Options->SettingsFile);
 		/* General Options */
 	case OT_NODISP:
 		return Args;
@@ -238,6 +269,224 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 	default:
 		ErrorOption(*PrevArgs);
 		return NULL;
+	}
+}
+
+/*
+ * Map options set in the source t_options to a target t_options
+ * structure.  Existing values in the destination have priority
+ * and will not be overwritten
+ */
+static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id)
+{
+	int Token;
+
+	for (Token = 0; Token < OT_BASE_UNKNOWN; Token++)
+	{
+		/* Don't override values already set in the
+		 * target destination.  Also do not process
+		 * Tokens that are not present in the source.
+		 */
+		if ((dest->Count[Token] || (!src->Count[Token])))
+			continue;
+
+		dest->Count[Token] = src->Count[Token];
+		dest->Provenance[Token] = id;
+
+		switch (Token) {
+			/* File naming options */
+		case OT_BLIF_FILE:
+			dest->BlifFile = src->BlifFile;
+			break;
+		case OT_NET_FILE:
+			dest->NetFile = src->NetFile;
+			break;
+		case OT_PLACE_FILE:
+			dest->PlaceFile = src->PlaceFile;
+			break;
+		case OT_ROUTE_FILE:
+			dest->RouteFile = src->RouteFile;
+			break;
+		case OT_SETTINGS_FILE:
+			dest->SettingsFile = src->SettingsFile;
+			break;
+			/* General Options */
+		case OT_NODISP:
+			break;
+		case OT_AUTO:
+			dest->GraphPause = src->GraphPause;
+			break;
+		case OT_PACK:
+		case OT_ROUTE:
+		case OT_PLACE:
+			break;
+		case OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY:
+			dest->constant_net_delay = src->constant_net_delay;
+			break;
+		case OT_FAST:
+		case OT_FULL_STATS:
+			break;
+		case OT_TIMING_ANALYSIS:
+			dest->TimingAnalysis = src->TimingAnalysis;
+			break;
+		case OT_OUTFILE_PREFIX:
+			dest->OutFilePrefix = src->OutFilePrefix;
+			break;
+		case OT_CREATE_ECHO_FILE:
+			dest->CreateEchoFile = src->CreateEchoFile;
+			break;
+
+			/* Clustering Options */
+		case OT_GLOBAL_CLOCKS:
+			dest->global_clocks = src->global_clocks;
+			break;
+		case OT_HILL_CLIMBING_FLAG:
+			dest->hill_climbing_flag = src->hill_climbing_flag;
+			break;
+		case OT_SWEEP_HANGING_NETS_AND_INPUTS:
+			dest->sweep_hanging_nets_and_inputs = src->sweep_hanging_nets_and_inputs;
+			break;
+		case OT_TIMING_DRIVEN_CLUSTERING:
+			dest->timing_driven = src->timing_driven;
+			break;
+		case OT_CLUSTER_SEED:
+			dest->cluster_seed_type = src->cluster_seed_type;
+			break;
+		case OT_ALPHA_CLUSTERING:
+			dest->alpha = src->alpha;
+			break;
+		case OT_BETA_CLUSTERING:
+			dest->beta = src->beta;
+			break;
+		case OT_RECOMPUTE_TIMING_AFTER:
+			dest->recompute_timing_after = src->recompute_timing_after;
+			break;
+		case OT_CLUSTER_BLOCK_DELAY:
+			dest->block_delay = src->block_delay;
+			break;
+		case OT_ALLOW_UNRELATED_CLUSTERING:
+			dest->allow_unrelated_clustering = src->allow_unrelated_clustering;
+			break;
+		case OT_ALLOW_EARLY_EXIT:
+			dest->allow_early_exit = src->allow_early_exit;
+			break;
+		case OT_INTRA_CLUSTER_NET_DELAY:
+			dest->intra_cluster_net_delay = src->intra_cluster_net_delay;
+			break;
+		case OT_INTER_CLUSTER_NET_DELAY:
+			dest->inter_cluster_net_delay = src->inter_cluster_net_delay;
+			break;
+		case OT_CONNECTION_DRIVEN_CLUSTERING:
+			dest->connection_driven = src->connection_driven;
+			break;
+		case OT_SKIP_CLUSTERING:
+			break;
+		case OT_PACKER_ALGORITHM:
+			dest->packer_algorithm = src->packer_algorithm;
+			break;
+
+			/* Placer Options */
+		case OT_PLACE_ALGORITHM:
+			dest->PlaceAlgorithm = src->PlaceAlgorithm;
+			break;
+		case OT_INIT_T:
+			dest->PlaceInitT = src->PlaceInitT;
+			break;
+		case OT_EXIT_T:
+			dest->PlaceExitT = src->PlaceExitT;
+			break;
+		case OT_ALPHA_T:
+			dest->PlaceAlphaT = src->PlaceAlphaT;
+			break;
+		case OT_INNER_NUM:
+			dest->PlaceInnerNum = src->PlaceInnerNum;
+			break;
+		case OT_SEED:
+			dest->Seed = src->Seed;
+			break;
+		case OT_PLACE_COST_EXP:
+			dest->place_cost_exp = src->place_cost_exp;
+			break;
+		case OT_PLACE_CHAN_WIDTH:
+			dest->PlaceChanWidth = src->PlaceChanWidth;
+			break;
+		case OT_FIX_PINS:
+			dest->PinFile = src->PinFile;
+			break;
+		case OT_ENABLE_TIMING_COMPUTATIONS:
+			dest->ShowPlaceTiming = src->ShowPlaceTiming;
+			break;
+		case OT_BLOCK_DIST:
+			dest->block_dist = src->block_dist;
+			break;
+
+			/* Placement Options Valid Only for Timing-Driven Placement */
+		case OT_TIMING_TRADEOFF:
+			dest->PlaceTimingTradeoff = src->PlaceTimingTradeoff;
+			break;
+		case OT_RECOMPUTE_CRIT_ITER:
+			dest->RecomputeCritIter = src->RecomputeCritIter;
+			break;
+		case OT_INNER_LOOP_RECOMPUTE_DIVIDER:
+			dest->inner_loop_recompute_divider = src->inner_loop_recompute_divider;
+			break;
+		case OT_TD_PLACE_EXP_FIRST:
+			dest->place_exp_first = src->place_exp_first;
+			break;
+		case OT_TD_PLACE_EXP_LAST:
+			dest->place_exp_last = src->place_exp_last;
+			break;
+
+			/* Router Options */
+		case OT_MAX_ROUTER_ITERATIONS:
+			dest->max_router_iterations = src->max_router_iterations;
+			break;
+		case OT_BB_FACTOR:
+			dest->bb_factor = src->bb_factor;
+			break;
+		case OT_INITIAL_PRES_FAC:
+			dest->initial_pres_fac = src->initial_pres_fac;
+			break;
+		case OT_PRES_FAC_MULT:
+			dest->pres_fac_mult = src->pres_fac_mult;
+			break;
+		case OT_ACC_FAC:
+			dest->acc_fac = src->acc_fac;
+			break;
+		case OT_FIRST_ITER_PRES_FAC:
+			dest->first_iter_pres_fac = src->first_iter_pres_fac;
+			break;
+		case OT_BEND_COST:
+			dest->bend_cost = src->bend_cost;
+			break;
+		case OT_ROUTE_TYPE:
+			dest->RouteType = src->RouteType;
+			break;
+		case OT_VERIFY_BINARY_SEARCH:
+			break;
+		case OT_ROUTE_CHAN_WIDTH:
+			dest->RouteChanWidth = src->RouteChanWidth;
+			break;
+		case OT_ROUTER_ALGORITHM:
+			dest->RouterAlgorithm = src->RouterAlgorithm;
+			break;
+		case OT_BASE_COST_TYPE:
+			dest->base_cost_type = src->base_cost_type;
+			break;
+
+			/* Routing options valid only for timing-driven routing */
+		case OT_ASTAR_FAC:
+			dest->astar_fac = src->astar_fac;
+			break;
+		case OT_MAX_CRITICALITY:
+			dest->max_criticality = src->max_criticality;
+			break;
+		case OT_CRITICALITY_EXP:
+			dest->criticality_exp = src->criticality_exp;
+			break;
+		default:
+			break;
+		}
 	}
 }
 

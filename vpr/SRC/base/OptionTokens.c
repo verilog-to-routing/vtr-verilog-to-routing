@@ -4,7 +4,9 @@
 
 /* OptionBaseTokenList is for command line arg tokens. We will track how 
  * many times each of these things exist in a file */
-struct s_TokenPair OptionBaseTokenList[] = { { "nodisp", OT_NODISP }, { "auto",
+struct s_TokenPair OptionBaseTokenList[] = { 
+	{"settings_file", OT_SETTINGS_FILE },
+	{ "nodisp", OT_NODISP }, { "auto",
 		OT_AUTO }, { "recompute_crit_iter", OT_RECOMPUTE_CRIT_ITER }, {
 		"inner_loop_recompute_divider", OT_INNER_LOOP_RECOMPUTE_DIVIDER }, {
 		"fix_pins", OT_FIX_PINS }, { "full_stats", OT_FULL_STATS }, { "fast",
