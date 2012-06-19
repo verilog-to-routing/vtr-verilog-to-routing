@@ -201,7 +201,6 @@
     <ClCompile Include="SRC\util\vpr_utils.c" />
     <ClCompile Include="SRC\pack\cluster.c" />
     <ClCompile Include="SRC\pack\cluster_legality.c" />
-    <ClCompile Include="SRC\pack\ff_pack.c" />
     <ClCompile Include="SRC\pack\output_blif.c" />
     <ClCompile Include="SRC\pack\output_clustering.c" />
     <ClCompile Include="SRC\pack\pack.c" />
@@ -272,7 +271,6 @@
     <ClInclude Include="SRC\route\segment_stats.h" />
     <ClInclude Include="SRC\pack\cluster.h" />
     <ClInclude Include="SRC\pack\cluster_legality.h" />
-    <ClInclude Include="SRC\pack\ff_pack.h" />
     <ClInclude Include="SRC\pack\output_blif.h" />
     <ClInclude Include="SRC\pack\output_clustering.h" />
     <ClInclude Include="SRC\pack\pack.h" />
