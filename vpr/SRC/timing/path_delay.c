@@ -316,19 +316,23 @@ void print_net_slack(char *fname, float **net_slack) {
 
 	/* Prints the net slacks into a file. */
 
-	int inet, ipin;
+	int inet, iedge, driver_tnode, num_edges;
+	t_tedge * tedge;
 	FILE *fp;
 
 	fp = my_fopen(fname, "w", 0);
 
-	fprintf(fp, "Net #\tSlacks\n\n");
+	/* Finally, print all the slacks, organized by net. */
+	fprintf(fp, "\n\nNet #\tDriver_tnode\tto_node\tSlack\n\n");
 
 	for (inet = 0; inet < num_timing_nets; inet++) {
-		fprintf(fp, "%5d", inet);
-		for (ipin = 1; ipin < (timing_nets[inet].num_sinks + 1); ipin++) {
-			fprintf(fp, "\t%g", net_slack[inet][ipin]);
+		driver_tnode = net_to_driver_tnode[inet];
+		num_edges = tnode[driver_tnode].num_edges;
+		tedge = tnode[driver_tnode].out_edges;
+		fprintf(fp, "%5d\t%5d\t\t%5d\t%g\n", inet, driver_tnode, tedge[0].to_node, net_slack[inet][1]);
+		for (iedge = 1; iedge < num_edges; iedge++) { /* newline and indent subsequent edges after the first */
+			fprintf(fp, "\t\t\t%5d\t%g\n", tedge[iedge].to_node, net_slack[inet][iedge+1]);
 		}
-		fprintf(fp, "\n");
 	}
 }
 

@@ -1,8 +1,7 @@
-#include <string.h>
+#include "string.h"
 #include <assert.h>
 #include "read_xml_util.h"
 #include "read_settings.h"
-
 
 static int process_settings(ezxml_t Cur, char ** outv)
 {
@@ -59,7 +58,7 @@ int read_settings_file(char * file_name, char *** outv)
 	Cur = ezxml_parse_file(file_name);
 	assert(*outv == NULL);
 	assert(! strcmp("settings",Cur->name));
-	Cur = FindElement(Cur, "arguments", 0);
+	Cur = FindElement(Cur, "arguments", FALSE);
 
 	count = process_settings(Cur, *outv);
 
