@@ -166,6 +166,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="SRC\base\read_settings.c" />
     <ClCompile Include="SRC\main.c" />
     <ClCompile Include="SRC\base\check_netlist.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">SRC\util;SRC\timing;SRC\route;SRC\place;SRC\pack;SRC\base;..\libvpr\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -242,6 +243,7 @@
     <ClInclude Include="SRC\base\read_netlist.h" />
     <ClInclude Include="SRC\base\read_place.h" />
     <ClInclude Include="SRC\base\ReadOptions.h" />
+    <ClInclude Include="SRC\base\read_settings.h" />
     <ClInclude Include="SRC\base\SetupGrid.h" />
     <ClInclude Include="SRC\base\SetupVPR.h" />
     <ClInclude Include="SRC\base\stats.h" />

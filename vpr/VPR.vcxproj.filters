@@ -240,6 +240,9 @@
     <ClCompile Include="SRC\timing\read_sdc.c">
       <Filter>Source Files\timing</Filter>
     </ClCompile>
+    <ClCompile Include="SRC\base\read_settings.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SRC\base\check_netlist.h">
@@ -433,6 +436,9 @@
     </ClInclude>
     <ClInclude Include="SRC\timing\read_sdc.h">
       <Filter>Header Files\timing</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\read_settings.h">
+      <Filter>Header Files\base</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

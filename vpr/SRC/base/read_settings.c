@@ -1,6 +1,7 @@
 #include <string.h>
 #include <assert.h>
 #include "read_xml_util.h"
+#include "read_settings.h"
 
 
 static int process_settings(ezxml_t Cur, char ** outv)
@@ -53,11 +54,11 @@ static int process_settings(ezxml_t Cur, char ** outv)
 int read_settings_file(char * file_name, char *** outv)
 {
 	ezxml_t Cur;
-	Cur = ezxml_parse_file(file_name);
 	int count;
 
+	Cur = ezxml_parse_file(file_name);
 	assert(*outv == NULL);
-	assert(! strcasecmp("settings",Cur->name));
+	assert(! strcmp("settings",Cur->name));
 	Cur = FindElement(Cur, "arguments", 0);
 
 	count = process_settings(Cur, *outv);
@@ -67,7 +68,7 @@ int read_settings_file(char * file_name, char *** outv)
 
 	*outv = (char **)my_malloc(count * sizeof(char *));
 
-	(*outv)[0] = strdup(file_name);
+	(*outv)[0] = my_strdup(file_name);
 
 	if(count)
 	{
