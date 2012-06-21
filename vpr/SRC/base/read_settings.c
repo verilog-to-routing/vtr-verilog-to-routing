@@ -1,4 +1,4 @@
-#include "string.h"
+#include <string.h>
 #include <assert.h>
 #include "read_xml_util.h"
 #include "read_settings.h"
