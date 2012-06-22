@@ -1,8 +1,8 @@
 ################################   MAKEFILE OPTIONS     ####################################
 
-# By default, libvpr's build type (debug/release) is inherited from VPR's makefile.  
+# By default, libarchfpga's build type (debug/release) is inherited from VPR's makefile.  
 # However, by uncommenting out the line BUILD_TYPE = debug, you can override this 
-# and set libvpr's build type independently.
+# and set libarchfpga's build type independently.
 
 # BUILD_TYPE = debug
 
@@ -34,26 +34,24 @@ OBJS = $(SRC:.c=.o)
 
 DEPS = $(OBJS:.o=.d) main.d
 
-libvpr_6.a: $(OBJS)
-	@ $(AR) $(LIB_FLAGS) $@ $(OBJS)
-	@ cp libvpr_6.a libvpr.a
+libarchfpga.a: $(OBJS)
+	$(AR) $(LIB_FLAGS) $@ $(OBJS)
 
 # Standalone executable to test architecture reader
-$(EXE): main.o libvpr_6.a
-	@ $(CC) main.o -o $(EXE) $(INC_FLAGS) -L. -lm -lvpr_6
-	@ cp libvpr_6.a libvpr.a
+$(EXE): main.o libarchfpga.a
+	$(CC) main.o -o $(EXE) $(INC_FLAGS) -L. -lm -larchfpga
  
  
 %.o: %.c
-	@ $(CC) $(FLAGS) -c $< -o $@ 
+	$(CC) $(FLAGS) -c $< -o $@ 
  
 -include $(DEPS)
 
 
 
 clean :
-	@ rm -f libvpr_6.a
-	@ rm -f libvpr.a
+	@ rm -f libarchfpga.a
 	@ rm -f $(OBJS) $(OBJS:.o=.d)
 	@ rm -f read_arch
+	@ rm -f main.o main.d
 

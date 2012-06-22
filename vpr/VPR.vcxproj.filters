@@ -108,19 +108,19 @@
     <ClCompile Include="SRC\base\stats.c">
       <Filter>Source Files\base</Filter>
     </ClCompile>
-    <ClCompile Include="..\libvpr\ezxml.c">
+    <ClCompile Include="..\libarchfpga\ezxml.c">
       <Filter>Source Files\libarch</Filter>
     </ClCompile>
-    <ClCompile Include="..\libvpr\read_xml_arch_file.c">
+    <ClCompile Include="..\libarchfpga\read_xml_arch_file.c">
       <Filter>Source Files\libarch</Filter>
     </ClCompile>
-    <ClCompile Include="..\libvpr\read_xml_util.c">
+    <ClCompile Include="..\libarchfpga\read_xml_util.c">
       <Filter>Source Files\libarch</Filter>
     </ClCompile>
-    <ClCompile Include="..\libvpr\ReadLine.c">
+    <ClCompile Include="..\libarchfpga\ReadLine.c">
       <Filter>Source Files\libarch</Filter>
     </ClCompile>
-    <ClCompile Include="..\libvpr\util.c">
+    <ClCompile Include="..\libarchfpga\util.c">
       <Filter>Source Files\libarch</Filter>
     </ClCompile>
     <ClCompile Include="SRC\util\hash.c">
@@ -241,6 +241,12 @@
       <Filter>Source Files\timing</Filter>
     </ClCompile>
     <ClCompile Include="SRC\base\read_settings.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\globals.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\base\vpr_api.c">
       <Filter>Source Files\base</Filter>
     </ClCompile>
   </ItemGroup>
@@ -386,28 +392,28 @@
     <ClInclude Include="SRC\place\timing_place_lookup.h">
       <Filter>Header Files\place</Filter>
     </ClInclude>
-    <ClInclude Include="..\libvpr\include\arch_types.h">
+    <ClInclude Include="..\libarchfpga\include\arch_types.h">
       <Filter>Header Files\libarch</Filter>
     </ClInclude>
-    <ClInclude Include="..\libvpr\include\ezxml.h">
+    <ClInclude Include="..\libarchfpga\include\ezxml.h">
       <Filter>Header Files\libarch</Filter>
     </ClInclude>
-    <ClInclude Include="..\libvpr\include\logic_types.h">
+    <ClInclude Include="..\libarchfpga\include\logic_types.h">
       <Filter>Header Files\libarch</Filter>
     </ClInclude>
-    <ClInclude Include="..\libvpr\include\physical_types.h">
+    <ClInclude Include="..\libarchfpga\include\physical_types.h">
       <Filter>Header Files\libarch</Filter>
     </ClInclude>
-    <ClInclude Include="..\libvpr\include\read_xml_arch_file.h">
+    <ClInclude Include="..\libarchfpga\include\read_xml_arch_file.h">
       <Filter>Header Files\libarch</Filter>
     </ClInclude>
-    <ClInclude Include="..\libvpr\include\read_xml_util.h">
+    <ClInclude Include="..\libarchfpga\include\read_xml_util.h">
       <Filter>Header Files\libarch</Filter>
     </ClInclude>
-    <ClInclude Include="..\libvpr\include\ReadLine.h">
+    <ClInclude Include="..\libarchfpga\include\ReadLine.h">
       <Filter>Header Files\libarch</Filter>
     </ClInclude>
-    <ClInclude Include="..\libvpr\include\util.h">
+    <ClInclude Include="..\libarchfpga\include\util.h">
       <Filter>Header Files\libarch</Filter>
     </ClInclude>
     <ClInclude Include="SRC\util\hash.h">
@@ -438,6 +444,9 @@
       <Filter>Header Files\timing</Filter>
     </ClInclude>
     <ClInclude Include="SRC\base\read_settings.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\vpr_api.h">
       <Filter>Header Files\base</Filter>
     </ClInclude>
   </ItemGroup>

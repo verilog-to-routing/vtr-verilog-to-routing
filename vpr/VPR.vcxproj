@@ -87,7 +87,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>SRC\util;SRC\timing;SRC\route;SRC\place;SRC\pack;SRC\base;..\libvpr\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>SRC\util;SRC\timing;SRC\route;SRC\place;SRC\pack;SRC\base;..\libarchfpga\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;NO_GRAPHICS;_DEBUG;_CONSOLE;CREATE_ECHO_FILES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <SmallerTypeCheck>true</SmallerTypeCheck>
@@ -114,7 +114,7 @@
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <DisableSpecificWarnings>4100; 4244; 4305;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>SRC\util;SRC\timing;SRC\route;SRC\place;SRC\pack;SRC\base;..\libvpr\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>SRC\util;SRC\timing;SRC\route;SRC\place;SRC\pack;SRC\base;..\libarchfpga\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -166,10 +166,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="SRC\base\globals.c" />
     <ClCompile Include="SRC\base\read_settings.c" />
+    <ClCompile Include="SRC\base\vpr_api.c" />
     <ClCompile Include="SRC\main.c" />
     <ClCompile Include="SRC\base\check_netlist.c">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">SRC\util;SRC\timing;SRC\route;SRC\place;SRC\pack;SRC\base;..\libvpr\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">SRC\util;SRC\timing;SRC\route;SRC\place;SRC\pack;SRC\base;..\libarchfpga\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="SRC\base\CheckArch.c" />
     <ClCompile Include="SRC\base\CheckOptions.c" />
@@ -186,11 +188,11 @@
     <ClCompile Include="SRC\base\SetupVPR.c" />
     <ClCompile Include="SRC\base\ShowSetup.c" />
     <ClCompile Include="SRC\base\stats.c" />
-    <ClCompile Include="..\libvpr\ezxml.c" />
-    <ClCompile Include="..\libvpr\read_xml_arch_file.c" />
-    <ClCompile Include="..\libvpr\read_xml_util.c" />
-    <ClCompile Include="..\libvpr\ReadLine.c" />
-    <ClCompile Include="..\libvpr\util.c" />
+    <ClCompile Include="..\libarchfpga\ezxml.c" />
+    <ClCompile Include="..\libarchfpga\read_xml_arch_file.c" />
+    <ClCompile Include="..\libarchfpga\read_xml_util.c" />
+    <ClCompile Include="..\libarchfpga\ReadLine.c" />
+    <ClCompile Include="..\libarchfpga\util.c" />
     <ClCompile Include="SRC\pack\cluster_feasibility_filter.c" />
     <ClCompile Include="SRC\pack\cluster_placement.c" />
     <ClCompile Include="SRC\pack\prepack.c" />
@@ -247,6 +249,7 @@
     <ClInclude Include="SRC\base\SetupGrid.h" />
     <ClInclude Include="SRC\base\SetupVPR.h" />
     <ClInclude Include="SRC\base\stats.h" />
+    <ClInclude Include="SRC\base\vpr_api.h" />
     <ClInclude Include="SRC\base\vpr_types.h" />
     <ClInclude Include="SRC\pack\cluster_feasibility_filter.h" />
     <ClInclude Include="SRC\pack\cluster_placement.h" />
@@ -283,14 +286,14 @@
     <ClInclude Include="SRC\place\place_stats.h" />
     <ClInclude Include="SRC\place\timing_place.h" />
     <ClInclude Include="SRC\place\timing_place_lookup.h" />
-    <ClInclude Include="..\libvpr\include\arch_types.h" />
-    <ClInclude Include="..\libvpr\include\ezxml.h" />
-    <ClInclude Include="..\libvpr\include\logic_types.h" />
-    <ClInclude Include="..\libvpr\include\physical_types.h" />
-    <ClInclude Include="..\libvpr\include\read_xml_arch_file.h" />
-    <ClInclude Include="..\libvpr\include\read_xml_util.h" />
-    <ClInclude Include="..\libvpr\include\ReadLine.h" />
-    <ClInclude Include="..\libvpr\include\util.h" />
+    <ClInclude Include="..\libarchfpga\include\arch_types.h" />
+    <ClInclude Include="..\libarchfpga\include\ezxml.h" />
+    <ClInclude Include="..\libarchfpga\include\logic_types.h" />
+    <ClInclude Include="..\libarchfpga\include\physical_types.h" />
+    <ClInclude Include="..\libarchfpga\include\read_xml_arch_file.h" />
+    <ClInclude Include="..\libarchfpga\include\read_xml_util.h" />
+    <ClInclude Include="..\libarchfpga\include\ReadLine.h" />
+    <ClInclude Include="..\libarchfpga\include\util.h" />
     <ClInclude Include="SRC\timing\read_sdc.h" />
     <ClInclude Include="SRC\util\hash.h" />
     <ClInclude Include="SRC\util\heapsort.h" />

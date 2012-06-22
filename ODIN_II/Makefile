@@ -16,8 +16,8 @@ OPT_FLAGS = -O2
 # Use this value of OPT_FLAGS to simulate in parallel (requires GCC >= 4.2)
 #OPT_FLAGS = -O2 -fopenmp 
 
-INC_FLAGS =  -I../libvpr/include 
-LIB = -L../libvpr -lvpr -lm -ldl
+INC_FLAGS =  -I../libarchfpga/include 
+LIB = -L../libarchfpga -larchfpga -lm -ldl
 C_DIRECTIVE = -DVPR6 -DUSING_BISON
 
 FLAGS = $(DEBUG_FLAGS) $(WARN_FLAGS) $(OPT_FLAGS) $(INC_FLAGS)

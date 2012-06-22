@@ -12,8 +12,8 @@ ENABLE_GRAPHICS = false
 # can be true or false
 
 export BUILD_TYPE = release
-# can be debug or release - this option gets inherited by the library libvpr 
-# by default, though libvpr's build type can be set independently in libvpr's Makefile.
+# can be debug or release - this option gets inherited by the library libarchfpga 
+# by default, though libarchfpga's build type can be set independently in libarchfpga's Makefile.
 
 MAC_OS = false
 # can be true or false
@@ -26,17 +26,18 @@ OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O3
 #############################################################################################
 
 CC = $(COMPILER)
-LIB_DIR = -L../libvpr
-LIB = -lm -lvpr_6
+LIB_DIR = -L../libarchfpga
+LIB = -lm -larchfpga
 SRC_DIR = SRC
 OBJ_DIR = OBJ
 OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/route
 
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -Wstrict-prototypes -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wmissing-prototypes -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-overlength-strings
+#WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -Wstrict-prototypes -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wmissing-prototypes -Wshadow -Wcast-align -D_POSIX_SOURCE
 
 DEBUG_FLAGS = -g
 OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
-INC_FLAGS = -I../libvpr/include
+INC_FLAGS = -I../libarchfpga/include
 
 FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -D EZXML_NOMMAP -D_POSIX_C_SOURCE
 
@@ -67,13 +68,19 @@ OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c $(SRC_
 OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
 
-$(EXE): $(OBJ) Makefile ../libvpr/libvpr_6.a
+$(EXE): $(OBJ) Makefile ../libarchfpga/libarchfpga.a
 	$(CC) $(FLAGS) $(OBJ) -o $(EXE) $(LIB_DIR) $(LIB)
 #if graphics enabled but libx11-dev is not installed, notify the user
 	@ $(PACKAGENOTIFICATION) 
 
-../libvpr/libvpr_6.a:
-	@ cd ../libvpr && make
+../libarchfpga/libarchfpga.a:
+	@ cd ../libarchfpga && make
+
+
+libvpr.a: $(OBJ) Makefile ../libarchfpga/libarchfpga.a
+	@ ar rcs $@ $(OBJ)
+	@ ar d $@ main.o
+
 
 packages: 
 #if graphics enabled but libx11-dev is not installed, install it
@@ -98,7 +105,7 @@ $(OBJ_DIRS):
 
 clean:
 	rm -f $(EXE) $(OBJ) $(DEP)
-	cd ../libvpr && make clean
+	cd ../libarchfpga && make clean
 
 clean_coverage: clean
 	rm -rf ./usr

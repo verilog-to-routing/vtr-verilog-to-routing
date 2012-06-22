@@ -485,7 +485,7 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		annotation->output_pins = my_strdup(Prop);
 		ezxml_set_attr(Parent, "out_port", NULL);
 	} else if (0 == strcmp(Parent->name, "delay_matrix")) {
-		annotation->type = (int) E_ANNOT_PIN_TO_PIN_DELAY;
+		annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
 		annotation->format = E_ANNOT_PIN_TO_PIN_MATRIX;
 		Prop = FindProperty(Parent, "type", TRUE);
 		annotation->value[i] = my_strdup(Parent->txt);
