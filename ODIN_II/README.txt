@@ -3,14 +3,14 @@ Odin II - Version 1.0 - User's Manual
 INSTALL
 ------------
 
-1. LIBVPR
+1. libarchfpga
 
 This library needs to be built for your platform.  The Makefile for
-Odin will link the LIBVPR library located in:
-../libvpr_5 or ../libvpr_6
+Odin will link the libarchfpga library located in:
+../libarchfpga_5 or ../libarchfpga_6
 
-By default Odin II uses libvpr_6. To compile it, change directory to 
-../libvpr_6 and type "make". 
+By default Odin II uses libarchfpga_6. To compile it, change directory to 
+../libarchfpga_6 and type "make". 
 
 Note: 
 - for WIN32 compilation you'll have to edit the ezxml.c files
@@ -107,7 +107,7 @@ write a C method with signature defined in SRC/sim_block.h and compile it with
 an output filename of "block+instance.so" in the directory you plan to invoke 
 Odin-II from. When compiling the file, you'll need to specify the following 
 arguments to the compiler (assuming that you're in the SANBOX directory):
-"`cc -I../../libvpr_6/include/ -L../../libvpr_6 -lvpr_6 -lm --shared -o 
+"`cc -I../../libarchfpga_6/include/ -L../../libarchfpga_6 -lvpr_6 -lm --shared -o 
 block+instance.so block.c". When compiling against VPR5, adjust the arguments
 accordingly. 
 

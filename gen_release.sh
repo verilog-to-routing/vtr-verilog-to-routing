@@ -11,7 +11,7 @@ mkdir vtr_release
 mkdir vtr_release/ODIN_II
 mkdir vtr_release/ODIN_II/OBJ
 mkdir vtr_release/abc_with_bb_support
-mkdir vtr_release/libvpr
+mkdir vtr_release/libarchfpga
 mkdir vtr_release/quick_test
 mkdir vtr_release/vpr
 
@@ -28,12 +28,12 @@ cp -r ODIN_II/USEFUL_TOOLS vtr_release/ODIN_II
 echo "Build ABC"
 cp -r abc_with_bb_support/* vtr_release/abc_with_bb_support
 
-echo "Build libvpr"
-cp -r libvpr/arch vtr_release/libvpr
-cp -r libvpr/include vtr_release/libvpr
-cp libvpr/*.xml vtr_release/libvpr
-cp libvpr/Makefile vtr_release/libvpr
-cp libvpr/*.c vtr_release/libvpr
+echo "Build libarchfpga"
+cp -r libarchfpga/arch vtr_release/libarchfpga
+cp -r libarchfpga/include vtr_release/libarchfpga
+cp libarchfpga/*.xml vtr_release/libarchfpga
+cp libarchfpga/Makefile vtr_release/libarchfpga
+cp libarchfpga/*.c vtr_release/libarchfpga
 
 echo "Build regtest"
 cp -pr vtr_flow vtr_release/vtr_flow

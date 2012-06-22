@@ -1,5 +1,5 @@
 This directory contains sample architecture files that are used in testing
-libvpr. In addition, the architecture files in this directory are used by
+libarchfpga. In addition, the architecture files in this directory are used by
 the regression testing facilities of Odin II.
 
 Please be sure to retain sample_arch.xml and update it with any changes that

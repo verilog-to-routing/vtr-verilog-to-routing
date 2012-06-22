@@ -1,5 +1,5 @@
 /* 
- Test libvpr, try reading an architecture and print the results to a file
+ Test libarchfpga, try reading an architecture and print the results to a file
 
  Date: February 19, 2009
  Author: Jason Luu

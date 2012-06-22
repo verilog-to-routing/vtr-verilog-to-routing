@@ -84,7 +84,7 @@ Tools:
 
 Libraries:
 
-	libvpr: Library used by ODIN II and VPR.  This library reads an FPGA 
+	libarchfpga: Library used by ODIN II and VPR.  This library reads an FPGA 
 	architecture description file
 
 Other:
@@ -117,7 +117,7 @@ Build Help:
 - This release has been regularly tested on a 64-bit Linux (Debian) machine.  
 Our testers have gotten this to work on various other systems including various versions of Windows and Unix.
 
-- If you are compiling in cygwin, you may need to add "#define WIN32" to libvpr/include/ezxml.h
+- If you are compiling in cygwin, you may need to add "#define WIN32" to libarchfpga/include/ezxml.h
 
 - Check for library dependencies.  ODIN II requires bison.  VPR requires X11 libraries if you want graphics.  
 

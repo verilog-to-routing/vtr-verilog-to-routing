@@ -1,7 +1,7 @@
 #!/bin/bash 
 
 TEST_DIR="REGRESSION_TESTS/BENCHMARKS/MICROBENCHMARKS"
-ARCH="../libvpr/arch/sample_arch.xml"
+ARCH="../libarchfpga/arch/sample_arch.xml"
 
 for benchmark in $TEST_DIR/*.v
 do 
