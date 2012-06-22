@@ -1,0 +1,21 @@
+arch	circuit	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	unabsorb_ff	num_memories	num_mult	error	
+k6_N10_molecule.xml	alu4.pre-vpr.blif	success	46	3.60648e-09	2.32	3.94	6	0.6	926	934	461	92	14	8	0				
+k6_N10_molecule.xml	apex2.pre-vpr.blif	success	64	4.30187e-09	3.04	8.19	10.3	0.85	1113	1116	651	108	38	3	0				
+k6_N10_molecule.xml	apex4.pre-vpr.blif	success	68	3.67485e-09	2.16	5.27	5.8	0.56	897	916	592	90	9	19	0				
+k6_N10_molecule.xml	bigkey.pre-vpr.blif	success	38	2.5902e-09	2.18	9.47	10.69	0.53	1364	1561	544	92	229	197	0				
+k6_N10_molecule.xml	clma.pre-vpr.blif	success	84	5.97747e-09	10.66	55.21	77.56	3.41	3672	3754	2347	358	62	82	2				
+k6_N10_molecule.xml	des.pre-vpr.blif	success	40	3.25294e-09	1.41	8.82	12.7	0.41	954	1199	645	70	256	245	0				
+k6_N10_molecule.xml	diffeq.pre-vpr.blif	success	40	4.65458e-09	2.6	5.49	2.39	0.24	1371	1410	607	94	64	39	1				
+k6_N10_molecule.xml	dsip.pre-vpr.blif	success	38	2.51083e-09	2.56	9.97	10.94	0.49	1362	1559	531	91	229	197	0				
+k6_N10_molecule.xml	elliptic.pre-vpr.blif	success	52	5.89762e-09	8.46	23.1	25.1	1.52	3421	3535	1266	218	131	114	1				
+k6_N10_molecule.xml	ex1010.pre-vpr.blif	success	90	4.42761e-09	8.35	31.96	60.72	4.01	2659	2669	1337	268	10	10	0				
+k6_N10_molecule.xml	ex5p.pre-vpr.blif	success	60	3.25294e-09	1.78	4.26	5.53	0.35	761	824	481	76	8	63	0				
+k6_N10_molecule.xml	frisc.pre-vpr.blif	success	62	7.49489e-09	7.71	24.65	21.12	1.25	3175	3291	1288	228	20	116	9				
+k6_N10_molecule.xml	misex3.pre-vpr.blif	success	50	3.81159e-09	2.02	4.29	7.52	0.4	828	842	495	82	14	14	0				
+k6_N10_molecule.xml	pdc.pre-vpr.blif	success	86	4.64372e-09	8.54	37.07	63.03	3.24	2839	2879	1500	284	16	40	0				
+k6_N10_molecule.xml	s298.pre-vpr.blif	success	48	5.05449e-09	1.8	2.92	3.87	0.29	726	732	382	72	4	6	0				
+k6_N10_molecule.xml	s38417.pre-vpr.blif	success	46	4.43778e-09	16.73	42.27	14.57	1.2	4782	4888	2203	357	29	106	278				
+k6_N10_molecule.xml	s38584.1.pre-vpr.blif	success	48	3.97067e-09	12.93	34.1	18.92	1.46	4422	4726	2068	329	38	304	158				
+k6_N10_molecule.xml	seq.pre-vpr.blif	success	64	4.0277e-09	2.41	7.11	7.63	0.56	1006	1041	598	97	41	35	0				
+k6_N10_molecule.xml	spla.pre-vpr.blif	success	72	4.71209e-09	6.4	27.87	30.13	2.19	2232	2278	1147	222	16	46	0				
+k6_N10_molecule.xml	tseng.pre-vpr.blif	success	34	4.3701e-09	2.38	5.13	2.91	0.26	1461	1583	543	103	52	122	0				
