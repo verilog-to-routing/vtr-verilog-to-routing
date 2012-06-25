@@ -208,15 +208,14 @@ int main(int argc, char **argv) {
 	/* free data structures */
 	vpr_free_options(&Options);
 
-	/* Free logical blocks and nets */
-	if (logical_block != NULL) {
-		free_logical_blocks();
-		free_logical_nets();
+	if(Timing.SDCFile != NULL) {
+		free(Timing.SDCFile);
+		Timing.SDCFile = NULL;
 	}
 
+	vpr_free_circuit();
 	vpr_free_arch(&Arch);
-	vpr_free_complex_block_types();
-
+	
 	entire_flow_end = clock();
 	
 	#ifdef CLOCKS_PER_SEC

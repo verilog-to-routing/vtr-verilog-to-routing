@@ -13,7 +13,7 @@ struct s_options {
 	char *PlaceFile;
 	char *RouteFile;
 	char *BlifFile;
-	char *OutFilePrefix;
+	char *out_file_prefix;
 	char *SDCFile;
 
 	/* General options */

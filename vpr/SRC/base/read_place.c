@@ -65,6 +65,8 @@ void read_place(INP const char *place_file, INP const char *arch_file,
 				net_file);
 		exit(1);
 	}
+	free(*tokens);
+	free(tokens);
 
 	/* Check array size in second line matches */
 	tokens = ReadLineTokens(infile, &line);
@@ -101,6 +103,8 @@ void read_place(INP const char *place_file, INP const char *arch_file,
 				my_atoi(tokens[2]), my_atoi(tokens[4]));
 		exit(1);
 	}
+	free(*tokens);
+	free(tokens);
 
 	tokens = ReadLineTokens(infile, &line);
 	while (tokens) {

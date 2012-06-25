@@ -159,7 +159,7 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 	case OT_TIMING_ANALYSIS:
 		return ReadOnOff(Args, &Options->TimingAnalysis);
 	case OT_OUTFILE_PREFIX:
-		return ReadString(Args, &Options->OutFilePrefix);
+		return ReadString(Args, &Options->out_file_prefix);
 	case OT_CREATE_ECHO_FILE:
 		return ReadOnOff(Args, &Options->CreateEchoFile);
 
@@ -330,7 +330,7 @@ static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id)
 			dest->TimingAnalysis = src->TimingAnalysis;
 			break;
 		case OT_OUTFILE_PREFIX:
-			dest->OutFilePrefix = src->OutFilePrefix;
+			dest->out_file_prefix = src->out_file_prefix;
 			break;
 		case OT_CREATE_ECHO_FILE:
 			dest->CreateEchoFile = src->CreateEchoFile;

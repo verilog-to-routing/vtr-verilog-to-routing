@@ -27,7 +27,7 @@ static t_type_ptr EMPTY_TYPE = NULL;
 static t_type_ptr FILL_TYPE = NULL;
 
 /* Describes the different types of CLBs available */
-static struct s_type_descriptor *type_descriptors;
+static struct s_type_descriptor *cb_type_descriptors;
 
 /* Function prototypes */
 /*   Populate data */
@@ -1295,7 +1295,7 @@ static void ProcessChanWidthDistrDir(INOUTP ezxml_t Node, OUTP t_chan * chan) {
 
 static void SetupEmptyType(void) {
 	t_type_descriptor * type;
-	type = &type_descriptors[EMPTY_TYPE->index];
+	type = &cb_type_descriptors[EMPTY_TYPE->index];
 	type->name = "<EMPTY>";
 	type->num_pins = 0;
 	type->height = 1;
@@ -1736,12 +1736,12 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 	*Types = (t_type_descriptor *) my_malloc(
 			sizeof(t_type_descriptor) * (*NumTypes));
 
-	type_descriptors = *Types;
+	cb_type_descriptors = *Types;
 
-	EMPTY_TYPE = &type_descriptors[EMPTY_TYPE_INDEX];
-	IO_TYPE = &type_descriptors[IO_TYPE_INDEX];
-	type_descriptors[EMPTY_TYPE_INDEX].index = EMPTY_TYPE_INDEX;
-	type_descriptors[IO_TYPE_INDEX].index = IO_TYPE_INDEX;
+	EMPTY_TYPE = &cb_type_descriptors[EMPTY_TYPE_INDEX];
+	IO_TYPE = &cb_type_descriptors[IO_TYPE_INDEX];
+	cb_type_descriptors[EMPTY_TYPE_INDEX].index = EMPTY_TYPE_INDEX;
+	cb_type_descriptors[IO_TYPE_INDEX].index = IO_TYPE_INDEX;
 	SetupEmptyType();
 
 	/* Process the types */

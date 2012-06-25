@@ -124,6 +124,7 @@ void free_all_pb_graph_nodes(void) {
 			pin_count_in_cluster = 0;
 			if (type_descriptors[i].pb_graph_head) {
 				free_pb_graph(type_descriptors[i].pb_graph_head);
+				free(type_descriptors[i].pb_graph_head);
 			}
 		}
 	}

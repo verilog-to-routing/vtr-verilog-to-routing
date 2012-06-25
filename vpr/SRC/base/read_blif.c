@@ -34,6 +34,7 @@
 static int *num_driver, *temp_num_pins;
 static int *logical_block_input_count, *logical_block_output_count;
 static int num_blif_models;
+static int num_luts = 0, num_latches = 0, num_subckts = 0;
 
 /* # of .input, .output, .model and .end lines */
 static int ilines, olines, model_lines, endlines;

@@ -1195,7 +1195,11 @@ float load_net_slack(float **net_slack, boolean do_lut_input_balancing) {
 			}
 
 			if (num_edges == 0) { /* sink */
-				assert(tnode[inode].type == OUTPAD_SINK || tnode[inode].type == FF_SINK || tnode[inode].type == FF_CLOCK); 
+				if(!(tnode[inode].type == OUTPAD_SINK || tnode[inode].type == FF_SINK || tnode[inode].type == FF_CLOCK)) {
+					printf(ERRTAG "Timing graph terminated on node %s.%s[%d].  Likely cause: Timing edges not specified for block\n", 
+						tnode[inode].pb_graph_pin->parent_node->pb_type->name, tnode[inode].pb_graph_pin->port->name, tnode[inode].pb_graph_pin->pin_number);
+					exit(1);
+				}
 				/* Assign each sink (leaf) node to have the required time T_req = T_crit + clock_skew.								     *
 				 * T_req is the time we need all inputs to a tnode to arrive by, before it begins to affect the speed of the circuit.    *
 				 * Roughly speaking, the slack along a path is the difference between the required time and the arrival time - the       *

@@ -12,27 +12,23 @@ int binary_search = -1;
 
 float grid_logic_tile_area = 0;
 float ipin_mux_trans_size = 0;
+char *out_file_prefix;
 
-/* t-vpack globals begin  */
-int num_logical_nets = 0, num_logical_blocks = 0, num_saved_logical_blocks = 0,
-		num_saved_logical_nets = 0, num_subckts = 0;
-int num_p_inputs = 0, num_p_outputs = 0, num_luts = 0, num_latches = 0;
-struct s_net *vpack_net = NULL, *saved_logical_nets = NULL;
-struct s_logical_block *logical_block = NULL, *saved_logical_blocks = NULL;
-struct s_subckt *subckt = NULL;
+/* User netlist information begin  */
+int num_logical_nets = 0, num_logical_blocks = 0;
+int num_p_inputs = 0, num_p_outputs = 0;
+struct s_net *vpack_net = NULL;
+struct s_logical_block *logical_block = NULL;
 char *blif_circuit_name = NULL;
-/* t-vpack globals end  */
+/* User netlist information end  */
 
-/******** Netlist to be mapped stuff ********/
+/******** Clustered netlist to be mapped stuff ********/
 
 int num_nets = 0;
 struct s_net *clb_net = NULL;
 
 int num_blocks = 0;
 struct s_block *block = NULL;
-
-int num_ff = 0;
-int num_const_gen = 0;
 
 int *clb_to_vpack_net_mapping = NULL; /* [0..num_clb_nets - 1] */
 int *vpack_to_clb_net_mapping = NULL; /* [0..num_vpack_nets - 1] */

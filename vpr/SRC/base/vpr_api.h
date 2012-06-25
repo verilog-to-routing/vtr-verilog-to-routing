@@ -28,7 +28,7 @@ void vpr_init_place_and_route_arch(INP t_arch Arch);
 /* Free internal data structures */
 void vpr_free_arch(t_arch* Arch);
 void vpr_free_options(t_options *options);
-void vpr_free_complex_block_types(void);
+void vpr_free_circuit(void);
 
 #endif
 

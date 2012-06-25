@@ -59,7 +59,7 @@ extern int num_types;
 extern struct s_type_descriptor *type_descriptors;
 
 /* Default prefix string for output files */
-extern char *OutFilePrefix;
+extern char *out_file_prefix;
 
 /* name of the blif circuit */
 extern char *blif_circuit_name;
@@ -90,8 +90,6 @@ extern struct s_linked_vptr *circuit_p_io_removed;
 extern int *clb_to_vpack_net_mapping; /* [0..num_clb_nets - 1] */
 extern int *vpack_to_clb_net_mapping; /* [0..num_vpack_nets - 1] */
 
-/* Number in original netlist, before FF packing. */
-extern int num_luts, num_latches, num_subckts;
 
 /*******************************************************************
  Routing related globals

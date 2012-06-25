@@ -472,7 +472,7 @@ struct s_file_name_opts {
 	char *NetFile;
 	char *PlaceFile;
 	char *RouteFile;
-	char *OutFilePrefix;
+	char *out_file_prefix;
 };
 
 /* Options for packing

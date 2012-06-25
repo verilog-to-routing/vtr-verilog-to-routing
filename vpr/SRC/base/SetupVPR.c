@@ -48,56 +48,56 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	/* init default filenames */
 	if (Options->BlifFile == NULL) {
 		len = strlen(Options->CircuitName) + 6; /* circuit_name.blif/0*/
-		if (Options->OutFilePrefix != NULL) {
-			len += strlen(Options->OutFilePrefix);
+		if (Options->out_file_prefix != NULL) {
+			len += strlen(Options->out_file_prefix);
 		}
 		Options->BlifFile = (char*) my_calloc(len, sizeof(char));
-		if (Options->OutFilePrefix == NULL) {
+		if (Options->out_file_prefix == NULL) {
 			sprintf(Options->BlifFile, "%s.blif", Options->CircuitName);
 		} else {
-			sprintf(Options->BlifFile, "%s%s.blif", Options->OutFilePrefix,
+			sprintf(Options->BlifFile, "%s%s.blif", Options->out_file_prefix,
 					Options->CircuitName);
 		}
 	}
 
 	if (Options->NetFile == NULL) {
 		len = strlen(Options->CircuitName) + 5; /* circuit_name.net/0*/
-		if (Options->OutFilePrefix != NULL) {
-			len += strlen(Options->OutFilePrefix);
+		if (Options->out_file_prefix != NULL) {
+			len += strlen(Options->out_file_prefix);
 		}
 		Options->NetFile = (char*) my_calloc(len, sizeof(char));
-		if (Options->OutFilePrefix == NULL) {
+		if (Options->out_file_prefix == NULL) {
 			sprintf(Options->NetFile, "%s.net", Options->CircuitName);
 		} else {
-			sprintf(Options->NetFile, "%s%s.net", Options->OutFilePrefix,
+			sprintf(Options->NetFile, "%s%s.net", Options->out_file_prefix,
 					Options->CircuitName);
 		}
 	}
 
 	if (Options->PlaceFile == NULL) {
 		len = strlen(Options->CircuitName) + 7; /* circuit_name.place/0*/
-		if (Options->OutFilePrefix != NULL) {
-			len += strlen(Options->OutFilePrefix);
+		if (Options->out_file_prefix != NULL) {
+			len += strlen(Options->out_file_prefix);
 		}
 		Options->PlaceFile = (char*) my_calloc(len, sizeof(char));
-		if (Options->OutFilePrefix == NULL) {
+		if (Options->out_file_prefix == NULL) {
 			sprintf(Options->PlaceFile, "%s.place", Options->CircuitName);
 		} else {
-			sprintf(Options->PlaceFile, "%s%s.place", Options->OutFilePrefix,
+			sprintf(Options->PlaceFile, "%s%s.place", Options->out_file_prefix,
 					Options->CircuitName);
 		}
 	}
 
 	if (Options->RouteFile == NULL) {
 		len = strlen(Options->CircuitName) + 7; /* circuit_name.route/0*/
-		if (Options->OutFilePrefix != NULL) {
-			len += strlen(Options->OutFilePrefix);
+		if (Options->out_file_prefix != NULL) {
+			len += strlen(Options->out_file_prefix);
 		}
 		Options->RouteFile = (char*) my_calloc(len, sizeof(char));
-		if (Options->OutFilePrefix == NULL) {
+		if (Options->out_file_prefix == NULL) {
 			sprintf(Options->RouteFile, "%s.route", Options->CircuitName);
 		} else {
-			sprintf(Options->RouteFile, "%s%s.route", Options->OutFilePrefix,
+			sprintf(Options->RouteFile, "%s%s.route", Options->out_file_prefix,
 					Options->CircuitName);
 		}
 	}
@@ -108,7 +108,7 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	FileNameOpts->NetFile = Options->NetFile;
 	FileNameOpts->PlaceFile = Options->PlaceFile;
 	FileNameOpts->RouteFile = Options->RouteFile;
-	FileNameOpts->OutFilePrefix = Options->OutFilePrefix;
+	FileNameOpts->out_file_prefix = Options->out_file_prefix;
 	
 	SetupOperation(*Options, Operation);
 	SetupPlacerOpts(*Options, TimingEnabled, PlacerOpts);
@@ -151,7 +151,7 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	SetupPackerOpts(*Options, TimingEnabled, *Arch, Options->NetFile, PackerOpts);
 
 	/* init global variables */
-	OutFilePrefix = Options->OutFilePrefix;
+	out_file_prefix = Options->out_file_prefix;
 	grid_logic_tile_area = Arch->grid_logic_tile_area;
 	ipin_mux_trans_size = Arch->ipin_mux_trans_size;
 

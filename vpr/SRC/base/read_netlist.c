@@ -273,7 +273,8 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 	/* Parse all pbs and CB internal nets*/
 	cb[index].pb->logical_block = OPEN;
 	cb[index].pb->pb_graph_node = cb[index].type->pb_graph_head;
-	rr_node = (t_rr_node*)my_calloc(cb[index].type->pb_graph_head->total_pb_pins,
+	rr_node = (t_rr_node*)my_calloc(cb[index].type->pb_graph_head->total_pb_pins + cb[index].type->pb_type->num_input_pins
+			+ cb[index].type->pb_type->num_output_pins + cb[index].type->pb_type->num_clock_pins,
 			sizeof(t_rr_node));
 	alloc_and_load_rr_graph_for_pb_graph_node(cb[index].pb->pb_graph_node, arch,
 			0);
@@ -382,6 +383,9 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 			pb->child_pbs[i] = my_calloc(
 					pb_type->modes[pb->mode].pb_type_children[i].num_pb,
 					sizeof(t_pb));
+			for (j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
+				pb->child_pbs[i][j].logical_block = OPEN;
+			}
 		}
 
 		/* Populate info for each physical block  */
@@ -1360,6 +1364,7 @@ void free_logical_blocks(void) {
 		}
 	}
 	free(logical_block);
+	logical_block = NULL;
 }
 
 /* Free  logical blocks of netlist */
@@ -1373,6 +1378,7 @@ void free_logical_nets(void) {
 		free(vpack_net[inet].node_block_pin);
 	}
 	free(vpack_net);
+	vpack_net = NULL;
 }
 
 

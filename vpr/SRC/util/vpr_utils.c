@@ -4,6 +4,7 @@
 #include "vpr_types.h"
 #include "globals.h"
 #include "vpr_utils.h"
+#include "cluster_placement.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
  * of VPR.  They are VPR-specific utility routines.                          */
@@ -296,4 +297,124 @@ int num_ext_inputs_logical_block(int iblk) {
 
 	return (ext_inps);
 }
+
+
+void free_cb(t_pb *pb) {
+	const t_pb_type * pb_type;
+	int i, total_nodes;
+
+	pb_type = pb->pb_graph_node->pb_type;
+
+	total_nodes = pb->pb_graph_node->total_pb_pins + pb_type->num_input_pins
+			+ pb_type->num_output_pins + pb_type->num_clock_pins;
+
+	for (i = 0; i < total_nodes; i++) {
+		if (pb->rr_graph[i].edges != NULL) {
+			free(pb->rr_graph[i].edges);
+		}
+		if (pb->rr_graph[i].switches != NULL) {
+			free(pb->rr_graph[i].switches);
+		}
+	}
+	free(pb->rr_graph);
+	free_pb(pb);
+}
+
+void free_pb(t_pb *pb) {
+	const t_pb_type * pb_type;
+	int i, j, mode;
+	struct s_linked_vptr *revalid_molecule;
+	t_pack_molecule *cur_molecule;
+
+	pb_type = pb->pb_graph_node->pb_type;
+
+	if (pb_type->blif_model == NULL) {
+		mode = pb->mode;
+		for (i = 0;
+				i < pb_type->modes[mode].num_pb_type_children
+						&& pb->child_pbs != NULL; i++) {
+			for (j = 0;
+					j < pb_type->modes[mode].pb_type_children[i].num_pb
+							&& pb->child_pbs[i] != NULL; j++) {
+				if (pb->child_pbs[i][j].name != NULL) {
+					free_pb(&pb->child_pbs[i][j]);
+				}
+			}
+			if (pb->child_pbs[i])
+				free(pb->child_pbs[i]);
+		}
+		if (pb->child_pbs)
+			free(pb->child_pbs);
+		free(pb->name);
+		pb->child_pbs = NULL;
+		pb->name = NULL;
+	} else {
+		/* Primitive */
+		if (pb->name)
+			free(pb->name);
+		pb->name = NULL;
+		if (pb->lut_pin_remap) {
+			free(pb->lut_pin_remap);
+		}
+		pb->lut_pin_remap = NULL;
+		if (pb->logical_block != OPEN && logical_block != NULL) {
+			logical_block[pb->logical_block].clb_index = NO_CLUSTER;
+			logical_block[pb->logical_block].pb = NULL;
+			/* If any molecules were marked invalid because of this logic block getting packed, mark them valid */
+			revalid_molecule = logical_block[pb->logical_block].packed_molecules;
+			while(revalid_molecule != NULL) {
+				cur_molecule = (t_pack_molecule*)revalid_molecule->data_vptr;
+				if(cur_molecule->valid == FALSE) {
+					for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {
+						if (cur_molecule->logical_block_ptrs[i] != NULL) {
+							if(cur_molecule->logical_block_ptrs[i]->clb_index != OPEN) {
+								break;
+							}
+						}
+					}
+					/* All logical blocks are open for this molecule, place back in queue */
+					if(i == get_array_size_of_molecule(cur_molecule)) {
+						cur_molecule->valid = TRUE;	
+					}
+				}
+				revalid_molecule = revalid_molecule->next;
+			}
+		}
+		pb->logical_block = OPEN;
+	}
+	free_pb_stats(pb);
+	pb->pb_stats.gain = NULL;
+}
+
+void free_pb_stats(t_pb *pb) {
+	int i;
+	t_pb_graph_node *pb_graph_node = pb->pb_graph_node;
+
+	if (pb->pb_stats.gain != NULL) {
+		free(pb->pb_stats.gain);
+		free(pb->pb_stats.lengthgain);
+		free(pb->pb_stats.sharinggain);
+		free(pb->pb_stats.hillgain);
+		free(pb->pb_stats.connectiongain);
+		for (i = 0; i < pb_graph_node->num_input_pin_class; i++) {
+			free(pb->pb_stats.input_pins_used[i]);
+			free(pb->pb_stats.lookahead_input_pins_used[i]);
+		}
+		free(pb->pb_stats.input_pins_used);
+		free(pb->pb_stats.lookahead_input_pins_used);
+		for (i = 0; i < pb_graph_node->num_output_pin_class; i++) {
+			free(pb->pb_stats.output_pins_used[i]);
+			free(pb->pb_stats.lookahead_output_pins_used[i]);
+		}
+		free(pb->pb_stats.output_pins_used);
+		free(pb->pb_stats.lookahead_output_pins_used);
+		free(pb->pb_stats.feasible_blocks);
+		free(pb->pb_stats.num_pins_of_net_in_pb);
+		free(pb->pb_stats.marked_nets);
+		free(pb->pb_stats.marked_blocks);
+		pb->pb_stats.gain = NULL;
+	}
+}
+
+
 

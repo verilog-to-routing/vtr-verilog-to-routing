@@ -11,7 +11,7 @@
  * the program if they find an error condition.        */
 
 int file_line_number; /* file in line number being parsed */
-char *OutFilePrefix = NULL;
+char *out_file_prefix = NULL;
 static int cont; /* line continued? */
 
 /* Returns the min of cur and max. If cur > max, a warning
@@ -45,7 +45,7 @@ my_strncpy(char *dest, const char *src, size_t size) {
 	return dest;
 }
 
-/* Uses global var 'OutFilePrefix' */
+/* Uses global var 'out_file_prefix' */
 FILE *
 my_fopen(const char *fname, const char *flag, int prompt) {
 	FILE *fp;
@@ -54,13 +54,13 @@ my_fopen(const char *fname, const char *flag, int prompt) {
 	char prompt_filename[256];
 
 	/* Appends a prefix string for output files */
-	if (OutFilePrefix) {
+	if (out_file_prefix) {
 		if (strchr(flag, 'w')) {
 			Len = 1; /* NULL char */
-			Len += strlen(OutFilePrefix);
+			Len += strlen(out_file_prefix);
 			Len += strlen(fname);
 			new_fname = (char *) my_malloc(Len * sizeof(char));
-			strcpy(new_fname, OutFilePrefix);
+			strcpy(new_fname, out_file_prefix);
 			strcat(new_fname, fname);
 			fname = new_fname;
 		}
