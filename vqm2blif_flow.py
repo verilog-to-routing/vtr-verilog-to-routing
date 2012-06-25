@@ -1,5 +1,8 @@
 #!/usr/bin/python
-__version__ = "$Id$"
+__version__ = """$Revsion$
+                 Last Change: $Author$ $Date$
+                 Orig Author: kmurray
+                 ID: $Id: vqm2blif_flow.py 2664 2012-06-21 22:20:09Z kmurray $"""
 
 #try:
 #    import pudb
@@ -38,6 +41,9 @@ def parse_args():
                         default='stratixiv',
                         help='The device family to target (default: %(default)s)')
 
+    quartus_options.add_argument('--no_resynth', dest='do_resynthesis', action='store_false',
+                        default=True,
+                        help='If the vqm output file already exists, do not re-run Quartus 2 to re-synthesize it')
 
     #Options effecting vqm2blif operation
     vqm2blif_options = parser.add_argument_group('vqm2blif options')
@@ -137,32 +143,38 @@ def gen_vqm(args):
     #Absolute path to vqm file, so it ends up in the script run directory
     args.vqm_file = path.join(os.getcwd(), args.vqm_file)
 
-    if quartus_project_dir != '':
-        #Project directory is not the current directory, so move
-        print "INFO: moving to quartus project directory '%s'" % (quartus_project_dir)
-        os.chdir(quartus_project_dir)
+    #Re-synthesize if told so, or if the file doesn't exist
+    if args.do_resynthesis or not path.isfile(args.vqm_file):
 
-    #Quartus Verilog to VQM conversion script
-    q2_write_vqm_tcl = path.join(args.vqm2blif_dir, 'SCRIPTS/q2_write_vqm.tcl')
+        if quartus_project_dir != '':
+            #Project directory is not the current directory, so move
+            print "INFO: moving to quartus project directory '%s'" % (quartus_project_dir)
+            os.chdir(quartus_project_dir)
 
-    q2_shell = path.join(args.quartus_dir, 'quartus_sh')
+        #Quartus Verilog to VQM conversion script
+        q2_write_vqm_tcl = path.join(args.vqm2blif_dir, 'SCRIPTS/q2_write_vqm.tcl')
 
-    #Verilog to vqm conversion
-    try:
-        print "\nINFO: Calling Quartus"
-        subprocess.check_call([q2_shell,
-                        '-t',               q2_write_vqm_tcl,
-                        '-project',         quartus_project_file,
-                        '-family',          args.device_family,
-                        '-vqm_out_file',    args.vqm_file])
-    except subprocess.CalledProcessError as error:
-        print "ERROR: VQM generation failed (retcode: %s)" % error.returncode
-        sys.exit(1)
+        q2_shell = path.join(args.quartus_dir, 'quartus_sh')
 
-    #Move back to script run dir
-    print "INFO: moving back to script run directory '%s'" % (script_run_dir)
-    os.chdir(script_run_dir)
+        #Verilog to vqm conversion
+        try:
+            print "\nINFO: Calling Quartus"
+            subprocess.check_call([q2_shell,
+                            '-t',               q2_write_vqm_tcl,
+                            '-project',         quartus_project_file,
+                            '-family',          args.device_family,
+                            '-vqm_out_file',    args.vqm_file])
+        except subprocess.CalledProcessError as error:
+            print "ERROR: VQM generation failed (retcode: %s)" % error.returncode
+            sys.exit(1)
 
+        #Move back to script run dir
+        print "INFO: moving back to script run directory '%s'" % (script_run_dir)
+        os.chdir(script_run_dir)
+
+    else:
+        print "INFO: found existing VQM file, not re-synthesizing"
+    
 
 def gen_blif(args):
     """
