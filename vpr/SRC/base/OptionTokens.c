@@ -63,7 +63,6 @@ struct s_TokenPair OptionArgTokenList[] = { { "on", OT_ON }, { "off", OT_OFF },
 				OT_INTRINSIC_DELAY },
 		{ "delay_normalized", OT_DELAY_NORMALIZED }, { "demand_only",
 				OT_DEMAND_ONLY }, { "global", OT_GLOBAL }, { "detailed",
-				OT_DETAILED }, { "timing", OT_TIMING }, { "max_inputs",
-				OT_MAX_INPUTS }, { "greedy", OT_GREEDY }, { "lp", OT_LP }, {
-				"brute_force", OT_BRUTE_FORCE }, { NULL, OT_BASE_UNKNOWN } /* End of list marker */
+				OT_DETAILED }, { "timing", OT_TIMING }, { "max_inputs", OT_MAX_INPUTS }, { "greedy", OT_GREEDY }, { "lp", OT_LP }, 
+					{"brute_force", OT_BRUTE_FORCE }, { NULL, OT_BASE_UNKNOWN } /* End of list marker */
 };

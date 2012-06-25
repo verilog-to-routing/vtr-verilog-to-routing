@@ -226,6 +226,7 @@ void alloc_and_load_cluster_legality_checker(void) {
 
 void free_cluster_legality_checker(void) {
 	int inet;
+	free(best_routing);
 	free(rr_indexed_data);
 	free_rr_node_route_structs();
 	free_route_structs(NULL);
@@ -237,7 +238,12 @@ void free_cluster_legality_checker(void) {
 		free(saved_net_rr_terminals[inet]);
 	}
 	free(net_rr_terminals);
+	free(nets_in_cluster);
 	free(saved_net_rr_terminals);
+
+	free(rr_intrinsic_cost);
+	rr_intrinsic_cost = NULL;
+	num_rr_intrinsic_cost = 0;
 }
 
 void alloc_and_load_rr_graph_for_pb_graph_node(

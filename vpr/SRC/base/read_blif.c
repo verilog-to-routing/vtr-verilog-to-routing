@@ -1746,6 +1746,13 @@ void read_and_process_blif(char *blif_file, boolean sweep_hanging_nets_and_input
 	/* NB:  It's important to mark clocks and such *after* compressing the   *
 	 * netlist because the vpack_net numbers, etc. may be changed by removing      *
 	 * unused inputs .  */
+
+	free(logical_block_input_count);
+	free(logical_block_output_count);
+	free(model);
+	logical_block_input_count = NULL;
+	logical_block_output_count = NULL;
+	model = NULL;
 }
 
 

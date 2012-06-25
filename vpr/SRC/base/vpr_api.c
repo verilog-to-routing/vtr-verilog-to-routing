@@ -481,16 +481,24 @@ void vpr_free_circuit() {
 			free(clb_net[i].node_block_port);
 		}
 	}
+	free(clb_net);
+	clb_net = NULL;
 
 	if(block != NULL) {
 		for(i = 0; i < num_blocks; i++) {
 			if(block[i].pb != NULL) {
 				free_cb(block[i].pb);
+				free(block[i].pb);
 			}
 			free(block[i].nets);
 			free(block[i].name);
 		}
 	}
+	free(block);
+	block = NULL;
+
+	free(blif_circuit_name);
+	blif_circuit_name = NULL;
 }
 
 

@@ -20,6 +20,7 @@
 #include "timing_place.h"
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
+#include "route_common.h"
 
 /******************* Subroutines local to this module ************************/
 
@@ -212,6 +213,7 @@ void place_and_route(enum e_operation operation,
 		}
 
 		free_route_structs(clb_opins_used_locally);
+		free_trace_structs();
 		fflush(stdout);
 	}
 	end = clock();
@@ -569,8 +571,10 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		free_net_delay(net_delay, &net_delay_ch);
 	}
 
+	free_rr_graph();
 	free_route_structs(clb_opins_used_locally);
 	free_saved_routing(best_routing, saved_clb_opins_used_locally);
+	free_trace_structs();
 	fflush(stdout);
 
 	return (final);

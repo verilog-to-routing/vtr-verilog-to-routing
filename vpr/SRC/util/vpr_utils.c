@@ -345,8 +345,27 @@ void free_pb(t_pb *pb) {
 		}
 		if (pb->child_pbs)
 			free(pb->child_pbs);
-		free(pb->name);
 		pb->child_pbs = NULL;
+
+		if(pb->local_nets != NULL) {
+			for(i = 0; i < pb->num_local_nets; i++) {
+				free(pb->local_nets[i].node_block);
+				free(pb->local_nets[i].node_block_port);
+				free(pb->local_nets[i].node_block_pin);
+				if(pb->local_nets[i].name != NULL) {
+					free(pb->local_nets[i].name);
+				}
+			}
+			free(pb->local_nets);
+			pb->local_nets = NULL;
+		}
+
+		if(pb->rr_node_to_pb_mapping != NULL) {
+			free(pb->rr_node_to_pb_mapping);
+			pb->rr_node_to_pb_mapping = NULL;
+		}
+		
+		free(pb->name);
 		pb->name = NULL;
 	} else {
 		/* Primitive */

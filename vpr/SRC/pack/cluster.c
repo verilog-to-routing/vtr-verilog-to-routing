@@ -348,16 +348,16 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		net_slack = alloc_and_load_pre_packing_timing_graph(block_delay,
 				inter_cluster_net_delay, arch->models, timing_inf);
 		load_net_slack(net_slack, FALSE);
-	
+
 		criticality = (float*) my_calloc(num_logical_blocks, sizeof(float));
-	
+
 		critindexarray = (int*) my_malloc(num_logical_blocks * sizeof(int));
-		
+
 		for (i = 0; i < num_logical_blocks; i++) {
 			assert(logical_block[i].index == i);
 			critindexarray[i] = i;
 		}
-	
+
 		/* Calculate criticality based on slacks and tie breakers (# paths, distance from source) */
 		for (i = 0; i < num_tnodes; i++) {
 			iblk = tnode[i].block;
@@ -371,7 +371,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				criticality[iblk] = crit;
 			}
 		}
-	
+
 		net_pin_backward_criticality = (float**) my_calloc(num_logical_nets,
 				sizeof(float*));
 		net_pin_forward_criticality = (float**) my_calloc(num_logical_nets,
@@ -388,23 +388,23 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						criticality[vpack_net[i].node_block[0]];
 			}
 		}
-	
 		heapsort(critindexarray, criticality, num_logical_blocks, 1);
-	
+
 		/*if (GetEchoOption()){
 			print_critical_path("clustering_critical_path.echo");
 		}*/
-	
+
 		if (cluster_seed_type == VPACK_TIMING) {
 			istart = get_most_critical_seed_molecule();
 		} else {/*max input seed*/
 			istart = get_seed_logical_molecule_with_most_ext_inputs(
-						max_molecule_inputs);
+					max_molecule_inputs);
 		}
-	} else{ /*cluster seed is max input (since there is no timing information)*/
+	} else /*cluster seed is max input (since there is no timing information)*/ {
 		istart = get_seed_logical_molecule_with_most_ext_inputs(
-			max_molecule_inputs);
+				max_molecule_inputs);
 	}
+
 
 	while (istart != NULL) {
 		is_cluster_legal = FALSE;
@@ -502,7 +502,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			}
 			if(is_cluster_legal == TRUE) {
 				save_cluster_solution();
-				
 				if (timing_driven) {
 					if (num_blocks_hill_added > 0 && !early_exit) {
 						blocks_since_last_analysis += num_blocks_hill_added;
@@ -511,12 +510,13 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						istart = get_most_critical_seed_molecule();
 					} else { /*max input seed*/
 						istart = get_seed_logical_molecule_with_most_ext_inputs(
-									max_molecule_inputs);
-					}
-				} else /*cluster seed is max input (since there is no timing information)*/
-					istart = get_seed_logical_molecule_with_most_ext_inputs(
 								max_molecule_inputs);
-
+					}
+				} else
+					/*cluster seed is max input (since there is no timing information)*/
+					istart = get_seed_logical_molecule_with_most_ext_inputs(
+							max_molecule_inputs);
+				
 				free_pb_stats_recursive(clb[num_clb - 1].pb);
 			} else {
 				/* Free up data structures and requeue used molecules */
@@ -1137,10 +1137,11 @@ static t_pack_molecule *get_free_molecule_with_most_ext_inputs_for_cluster(
 /*****************************************/
 static t_pack_molecule* get_seed_logical_molecule_with_most_ext_inputs(
 		int max_molecule_inputs) {
+
 	/* This routine is used to find the first seed logical_block for the clustering.  It returns    *
-	* the logical_block with the largest number of used inputs that satisfies the    *
-	* clocking and number of inputs constraints.  If no suitable logical_block is    *
-	* found, the routine returns NO_CLUSTER.                                 */
+	 * the logical_block with the largest number of used inputs that satisfies the    *
+	 * clocking and number of inputs constraints.  If no suitable logical_block is    *
+	 * found, the routine returns NO_CLUSTER.                                 */
 
 	int ext_inps;
 	struct s_molecule_link *ptr;
@@ -1157,6 +1158,8 @@ static t_pack_molecule* get_seed_logical_molecule_with_most_ext_inputs(
 	}
 	return NULL;
 }
+
+/*****************************************/
 
 /*****************************************/
 static void alloc_and_load_pb_stats(t_pb *pb, int max_models,
