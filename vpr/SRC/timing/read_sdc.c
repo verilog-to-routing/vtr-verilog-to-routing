@@ -49,7 +49,7 @@ void read_sdc(char * sdc_file) {
 	}
 
 	/* If no SDC file is included or specified, use default behaviour of cutting paths between domains and optimizing each clock separately */
-	if ((sdc = fopen(sdc_file, "r")) == NULL) {
+	if (!sdc_file || (sdc = fopen(sdc_file, "r")) == NULL) {
 		printf("\nSDC file %s not found.\n", sdc_file);
 		printf("All clocks will be optimized to run as fast as possible.\n");
 		printf("Paths between clock domains will be cut.\n\n");

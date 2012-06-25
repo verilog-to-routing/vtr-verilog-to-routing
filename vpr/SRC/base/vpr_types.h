@@ -103,7 +103,7 @@ enum logical_block_types {
 
 /* Selection algorithm for selecting next seed  */
 enum e_cluster_seed {
-	VPACK_TIMING
+	VPACK_TIMING, VPACK_MAX_INPUTS
 };
 
 /* Data structure to track nets during blif parsing */

@@ -560,6 +560,21 @@ ReadClusterSeed(INP char **Args, OUTP enum e_cluster_seed *Type) {
 	case OT_TIMING:
 		*Type = VPACK_TIMING;
 		break;
+
+	/* Removed the NON_LINEAR_CONG option in place_cost_type completely,  *
+	 * so, if still want to use this MAX_INPUTS options, need to assign   *
+	 * another value/token to *Type                                       *
+	 * Disable this option for now instead of completely removing this    *
+	 * functionality. VPR WILL BREAK if it is run with max_inputs option  *
+	 * for cluster_seed_type currently.                                   *
+	 *     Removed by Yu Guang Thien @r403 June 18, 2012                  *
+	 *     Restored by Yu Guang Thien @r451 Jne 25, 2012                  *
+
+	case OT_MAX_INPUTS:
+		*Type = NONLINEAR_CONG;
+		break;
+	 */
+
 	default:
 		Error(*PrevArgs);
 	}
