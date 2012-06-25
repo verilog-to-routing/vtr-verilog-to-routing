@@ -32,4 +32,4 @@ pass_requirements_file=pass_requirements_fixed_chan_width.txt
 qor_parse_file=qor_fixed_chan_width.txt
 
 # Parameters for vtr flow
-script_params=-no_mem -vpr_route_chan_width 72 -vpr_cluster_seed_type max_inputs
+script_params=-no_mem -vpr_route_chan_width 72
