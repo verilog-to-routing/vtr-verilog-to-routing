@@ -35,6 +35,7 @@ June 21, 2012
 #include "rr_graph.h"
 #include "pb_type_graph.h"
 #include "ReadOptions.h"
+#include "route_common.h"
 #include "vpr_api.h"
 
 /* Local subroutines */
@@ -247,6 +248,13 @@ void vpr_free_arch(t_arch* Arch) {
 	t_model *model, *prev;
 	t_model_ports *port, *prev_port;
 	struct s_linked_vptr *vptr, *vptr_prev;
+
+	freeGrid();
+	free(chan_width_x);
+	chan_width_x = NULL;
+	free(chan_width_y);
+	chan_width_y = NULL;
+
 	for (i = 0; i < Arch->num_switches; i++) {
 		if (Arch->Switches->name != NULL) {
 			free(Arch->Switches[i].name);
@@ -323,6 +331,7 @@ void vpr_free_arch(t_arch* Arch) {
 	free(Arch->model_library);
 
 	free_complex_block_types();
+	free_chunk_memory_trace();
 }
 
 void vpr_free_options(t_options *options) {
@@ -467,6 +476,13 @@ static void free_pb_type(t_pb_type *pb_type) {
 void vpr_free_circuit() {
 	int i;
 
+	/* Free netlist reference tables for nets */
+	free(clb_to_vpack_net_mapping);
+	free(vpack_to_clb_net_mapping);
+	clb_to_vpack_net_mapping = NULL;
+	vpack_to_clb_net_mapping = NULL;
+
+
 	/* Free logical blocks and nets */
 	if (logical_block != NULL) {
 		free_logical_blocks();
@@ -499,6 +515,7 @@ void vpr_free_circuit() {
 
 	free(blif_circuit_name);
 	blif_circuit_name = NULL;
+
 }
 
 

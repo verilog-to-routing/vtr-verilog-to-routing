@@ -1334,8 +1334,12 @@ void free_logical_blocks(void) {
 		if (logical_block[iblk].input_net_tnodes) 
 			free(logical_block[iblk].input_net_tnodes);
 		
-		if (logical_block[iblk].packed_molecules)
-			free(logical_block[iblk].packed_molecules);
+		tvptr = logical_block[iblk].packed_molecules;
+		while (tvptr != NULL) {
+			next = tvptr->next;
+			free(tvptr);
+			tvptr = next;
+		}
 
 		free(logical_block[iblk].input_nets);
 		port = logical_block[iblk].model->outputs;

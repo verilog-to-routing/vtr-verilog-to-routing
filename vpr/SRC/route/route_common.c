@@ -1289,3 +1289,12 @@ static void adjust_one_rr_occ_and_pcost(int inode, int add_or_sub,
 				+ (occ + 1 - capacity) * pres_fac;
 	}
 }
+
+
+void free_chunk_memory_trace(void) {
+	if(trace_ch.chunk_ptr_head != NULL) {
+		free_chunk_memory(&trace_ch);
+	}
+}
+
+

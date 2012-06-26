@@ -133,6 +133,7 @@ void free_lookups_and_criticalities(float ***net_delay, float ***net_slack) {
 	free_timing_graph(*net_slack);
 	free_net_delay(*net_delay, &net_delay_ch);
 
+	free_place_lookup_structs();
 }
 
 /**************************************/

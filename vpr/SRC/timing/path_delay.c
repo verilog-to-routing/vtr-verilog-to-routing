@@ -305,6 +305,17 @@ void free_timing_graph(float **net_slack) {
 	free_ivec_vector(tnodes_at_level, 0, num_tnode_levels - 1);
 	free(net_slack);
 
+	
+	if(timing_constraints) {
+		free_matrix(timing_constraints, 0, num_netlist_clocks - 1, 0, sizeof(float));
+		timing_constraints = NULL;
+	}
+
+	if(clock_list) {
+		free(clock_list);
+		clock_list = NULL;
+	}
+
 	tnode = NULL;
 	num_tnodes = 0;
 	net_to_driver_tnode = NULL;

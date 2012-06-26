@@ -336,7 +336,7 @@ void free_pb(t_pb *pb) {
 			for (j = 0;
 					j < pb_type->modes[mode].pb_type_children[i].num_pb
 							&& pb->child_pbs[i] != NULL; j++) {
-				if (pb->child_pbs[i][j].name != NULL) {
+				if (pb->child_pbs[i][j].name != NULL || pb->child_pbs[i][j].child_pbs != NULL) {
 					free_pb(&pb->child_pbs[i][j]);
 				}
 			}
@@ -365,7 +365,8 @@ void free_pb(t_pb *pb) {
 			pb->rr_node_to_pb_mapping = NULL;
 		}
 		
-		free(pb->name);
+		if(pb->name)
+			free(pb->name);
 		pb->name = NULL;
 	} else {
 		/* Primitive */

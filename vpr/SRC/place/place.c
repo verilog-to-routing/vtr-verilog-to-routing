@@ -78,6 +78,12 @@ static struct s_bb *bb_coords = NULL, *bb_num_on_edges = NULL;
 
 static float **chanx_place_cost_fac, **chany_place_cost_fac;
 
+/* The following arrays are used by the try_swap function for speed reasons */
+static struct s_bb *ts_bb_coord_new = NULL;
+static struct s_bb *ts_bb_edge_new = NULL;
+static int *ts_nets_to_update = NULL, *ts_net_block_moved = NULL;
+
+
 /* Expected crossing counts for nets with different #'s of pins.  From *
  * ICCAD 94 pp. 690 - 695 (with linear interpolation applied by me).   */
 
@@ -99,6 +105,8 @@ static void free_placement_structs(
 		struct s_placer_opts placer_opts);
 
 static void alloc_and_load_for_fast_cost_update(float place_cost_exp);
+
+static void free_fast_cost_update(void);
 
 static void initial_placement(enum e_pad_loc_type pad_loc_type,
 		char *pad_loc_file);
@@ -168,6 +176,8 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 		struct s_bb *num_on_edges);
 
 static double get_net_wirelength_estimate(int inet, struct s_bb *bbptr);
+
+static void free_try_swap_arrays(void);
 
 /*****************************************************************************/
 /* RESEARCH TODO: Bounding Box and rlim need to be redone for heterogeneous to prevent a QoR penalty */
@@ -741,15 +751,14 @@ void try_place(struct s_placer_opts placer_opts,
 	printf("Total moves attempted: %d.0\n", tot_iter);
 #endif
 
+	free_placement_structs(
+				old_region_occ_x, old_region_occ_y,
+				placer_opts);
 	if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
 			|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
 
 		net_delay = remember_net_delay_original_ptr;
-
-		free_placement_structs(
-				old_region_occ_x, old_region_occ_y,
-				placer_opts);
 		free_lookups_and_criticalities(&net_delay, &net_slack);
 	}
 
@@ -768,6 +777,7 @@ void try_place(struct s_placer_opts placer_opts,
 		(*mst)[inet] = get_mst_of_net(inet);
 	}
 	free(x_lookup);
+	free_try_swap_arrays();
 }
 
 static int count_connections() {
@@ -994,9 +1004,6 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 	int i, k, inet, keep_switch, num_of_pins, max_pins_per_clb;
 	int num_nets_affected, bb_index;
 	float delta_c, bb_delta_c, timing_delta_c, delay_delta_c;
-	static struct s_bb *bb_coord_new = NULL;
-	static struct s_bb *bb_edge_new = NULL;
-	static int *nets_to_update = NULL, *net_block_moved = NULL;
 
 	max_pins_per_clb = 0;
 	for (i = 0; i < num_types; i++) {
@@ -1004,14 +1011,13 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 	}
 
 	/* Allocate the local bb_coordinate storage, etc. only once. */
-
-	if (bb_coord_new == NULL) {
-		bb_coord_new = (struct s_bb *) my_malloc(
+	if (ts_bb_coord_new == NULL) {
+		ts_bb_coord_new = (struct s_bb *) my_malloc(
 				2 * max_pins_per_clb * sizeof(struct s_bb));
-		bb_edge_new = (struct s_bb *) my_malloc(
+		ts_bb_edge_new = (struct s_bb *) my_malloc(
 				2 * max_pins_per_clb * sizeof(struct s_bb));
-		nets_to_update = (int *) my_malloc(2 * max_pins_per_clb * sizeof(int));
-		net_block_moved = (int *) my_malloc(2 * max_pins_per_clb * sizeof(int));
+		ts_nets_to_update = (int *) my_malloc(2 * max_pins_per_clb * sizeof(int));
+		ts_net_block_moved = (int *) my_malloc(2 * max_pins_per_clb * sizeof(int));
 	}
 
 	delay_delta_c = 0.0;
@@ -1075,37 +1081,37 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 
 	num_of_pins = block[b_from].type->num_pins;
 
-	num_nets_affected = find_affected_nets(nets_to_update, net_block_moved,
+	num_nets_affected = find_affected_nets(ts_nets_to_update, ts_net_block_moved,
 			b_from, b_to, num_of_pins);
 
 	bb_index = 0; /* Index of new bounding box. */
 
 	for (k = 0; k < num_nets_affected; k++) {
-		inet = nets_to_update[k];
+		inet = ts_nets_to_update[k];
 
 		/* If we swapped two blocks connected to the same net, its bounding box *
 		 * doesn't change.                                                      */
 		
 		
-		if (net_block_moved[k] == FROM_AND_TO)								
+		if (ts_net_block_moved[k] == FROM_AND_TO)								
 		 	continue;															
 		
 		if (clb_net[inet].num_sinks < SMALL_NET) {
-			get_non_updateable_bb(inet, &bb_coord_new[bb_index]);
+			get_non_updateable_bb(inet, &ts_bb_coord_new[bb_index]);
 		} else {
 
-			if(net_block_moved[k] == FROM)
-			update_bb(inet, &bb_coord_new[bb_index],
-					&bb_edge_new[bb_index], x_from, y_from,
+			if(ts_net_block_moved[k] == FROM)
+			update_bb(inet, &ts_bb_coord_new[bb_index],
+					&ts_bb_edge_new[bb_index], x_from, y_from,
 					x_to, y_to);
 			else
-			update_bb(inet, &bb_coord_new[bb_index],
-					&bb_edge_new[bb_index], x_to, y_to, x_from,
+			update_bb(inet, &ts_bb_coord_new[bb_index],
+					&ts_bb_edge_new[bb_index], x_to, y_to, x_from,
 					y_from);
 
 		}
 
-		temp_net_cost[inet] = get_net_cost(inet, &bb_coord_new[bb_index]);
+		temp_net_cost[inet] = get_net_cost(inet, &ts_bb_coord_new[bb_index]);
 		bb_delta_c += temp_net_cost[inet] - net_cost[inet];
 
 		bb_index++;
@@ -1149,19 +1155,19 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 		bb_index = 0;
 
 		for (k = 0; k < num_nets_affected; k++) {
-			inet = nets_to_update[k];
+			inet = ts_nets_to_update[k];
 
 			/* If we swapped two blocks connected to the same net, its bounding box *
 			 * doesn't change.                                                      */
 
-			if (net_block_moved[k] == FROM_AND_TO) {
+			if (ts_net_block_moved[k] == FROM_AND_TO) {
 				temp_net_cost[inet] = -1;
 				continue;
 			}
 
-			bb_coords[inet] = bb_coord_new[bb_index];
+			bb_coords[inet] = ts_bb_coord_new[bb_index];
 			if (clb_net[inet].num_sinks >= SMALL_NET)
-				bb_num_on_edges[inet] = bb_edge_new[bb_index];
+				bb_num_on_edges[inet] = ts_bb_edge_new[bb_index];
 
 			bb_index++;
 
@@ -1184,7 +1190,7 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 
 		/* Reset the net cost function flags first. */
 		for (k = 0; k < num_nets_affected; k++) {
-			inet = nets_to_update[k];
+			inet = ts_nets_to_update[k];
 			temp_net_cost[inet] = -1;
 		}
 
@@ -1843,6 +1849,8 @@ static void free_placement_structs(
 
 	int inet;
 
+	free_fast_cost_update();
+
 	if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
 			|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
@@ -2469,6 +2477,20 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	free(count);
 }
 
+static void free_fast_cost_update(void) {
+	int i;
+
+	for (i = 0; i <= ny; i++)
+		free(chanx_place_cost_fac[i]);
+	free(chanx_place_cost_fac);
+	chanx_place_cost_fac = NULL;
+
+	for (i = 0; i <= nx; i++)
+		free(chany_place_cost_fac[i]);
+	free(chany_place_cost_fac);
+	chany_place_cost_fac = NULL;
+}
+
 static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 
 	/* Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac *
@@ -2660,3 +2682,17 @@ static void check_place(float bb_cost, float timing_cost,
 		exit(1);
 	}
 }
+
+static void free_try_swap_arrays(void) {
+	if(ts_bb_coord_new != NULL) {
+		free(ts_bb_coord_new);
+		free(ts_bb_edge_new);
+		free(ts_nets_to_update);
+		free(ts_net_block_moved);
+		ts_bb_coord_new = NULL;
+		ts_bb_edge_new = NULL;
+		ts_nets_to_update = NULL;
+		ts_net_block_moved = NULL;
+	}
+}
+
