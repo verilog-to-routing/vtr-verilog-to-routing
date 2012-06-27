@@ -19,38 +19,36 @@ static void ShowRoutingArch(INP struct s_det_routing_arch RoutingArch);
 
 /******** Function Implementations ********/
 
-void ShowSetup(INP t_options Options, INP t_arch Arch,
-		INP boolean TimingEnabled, INP enum e_operation Operation,
-		INP struct s_file_name_opts FileNameOpts,
-		INP struct s_placer_opts PlacerOpts,
-		INP struct s_annealing_sched AnnealSched,
-		INP struct s_router_opts RouterOpts,
-		INP struct s_det_routing_arch RoutingArch, INP t_segment_inf * Segments,
-		INP t_timing_inf Timing) {
-	int i, j, L_num_p_inputs, L_num_p_outputs;
-	int *num_blocks_type;
-	num_blocks_type = my_calloc(num_types, sizeof(int));
-
-	printf("Timing analysis: %s\n", (TimingEnabled ? "ON" : "OFF"));
+void ShowSetup(INP t_options options, INP t_vpr_setup vpr_setup) {
+	printf("Timing analysis: %s\n", (vpr_setup.TimingEnabled? "ON" : "OFF"));
 	printf("\n");
 
-	printf("Circuit netlist file: %s\n", FileNameOpts.NetFile);
-	printf("Circuit placement file: %s\n", FileNameOpts.PlaceFile);
-	printf("Circuit routing file: %s\n", FileNameOpts.RouteFile);
+	printf("Circuit netlist file: %s\n", vpr_setup.FileNameOpts.NetFile);
+	printf("Circuit placement file: %s\n", vpr_setup.FileNameOpts.PlaceFile);
+	printf("Circuit routing file: %s\n", vpr_setup.FileNameOpts.RouteFile);
 
-	ShowOperation(Operation);
-	printf("Placer: %s\n", (PlacerOpts.doPlacement ? "ENABLED" : "DISABLED"));
-	printf("Router: %s\n", (RouterOpts.doRouting ? "ENABLED" : "DISABLED"));
+	ShowOperation(vpr_setup.Operation);
+	printf("Packer: %s\n", (vpr_setup.PackerOpts.doPacking ? "ENABLED" : "DISABLED"));
+	printf("Placer: %s\n", (vpr_setup.PlacerOpts.doPlacement ? "ENABLED" : "DISABLED"));
+	printf("Router: %s\n", (vpr_setup.RouterOpts.doRouting ? "ENABLED" : "DISABLED"));
 
-	if (PlacerOpts.doPlacement) {
-		ShowPlacerOpts(Options, PlacerOpts, AnnealSched);
+	/* jedit TODO do packer opts */
+	if (vpr_setup.PlacerOpts.doPlacement) {
+		ShowPlacerOpts(options, vpr_setup.PlacerOpts, vpr_setup.AnnealSched);
 	}
-	if (RouterOpts.doRouting) {
-		ShowRouterOpts(RouterOpts);
+	if (vpr_setup.RouterOpts.doRouting) {
+		ShowRouterOpts(vpr_setup.RouterOpts);
 	}
 
-	if (DETAILED == RouterOpts.route_type)
-		ShowRoutingArch(RoutingArch);
+	if (DETAILED == vpr_setup.RouterOpts.route_type)
+		ShowRoutingArch(vpr_setup.RoutingArch);
+
+}
+
+void printClusteredNetlistStats() {
+	int i, j, L_num_p_inputs, L_num_p_outputs;
+	int *num_blocks_type;
+	num_blocks_type = (int*) my_calloc(num_types, sizeof(int));
 
 	printf("\n");
 	printf("Netlist num_nets:  %d\n", num_nets);

@@ -898,22 +898,23 @@ struct s_TokenPair {
 };
 
 /* Store settings for VPR */
-typedef struct s_vpr_settings {
+typedef struct s_vpr_setup {
 	boolean TimingEnabled;					/* Is VPR timing enabled */
-	struct s_file_name_opts *FileNameOpts;	/* File names */
-	enum e_operation *Operation;			/* run VPR or do analysis only */
-	t_model ** user_models;					/* blif models defined by the user TODO jedit move to arch? */
-	t_model ** library_models;				/* blif models in VPR TODO jedit move to arch? */
-	struct s_packer_opts *PackerOpts;		/* Options for packer */
-	struct s_placer_opts *PlacerOpts;		/* Options for placer */
-	struct s_annealing_sched *AnnealSched;	/* Placement option annealing schedule TODO jedit move to PlacerOpts */
-	struct s_router_opts *RouterOpts;		/* router options */
-	struct s_det_routing_arch *RoutingArch; /* routing architecture TODO jedit move to arch? */
-	t_segment_inf ** Segments;				/* wires in routing architecture TODO jedit move to arch? */
-	t_timing_inf * Timing;					/* timing information */
-	boolean * ShowGraphics;					/* option to show graphics */
-	int *GraphPause;						/* user interactiveness graphics option */
-} t_vpr_settings; 
+	struct s_file_name_opts FileNameOpts;	/* File names */
+	enum e_operation Operation;			/* run VPR or do analysis only */
+	t_model * user_models;					/* blif models defined by the user */
+	t_model * library_models;				/* blif models in VPR */
+	struct s_packer_opts PackerOpts;		/* Options for packer */
+	struct s_placer_opts PlacerOpts;		/* Options for placer */
+	struct s_annealing_sched AnnealSched;	/* Placement option annealing schedule */
+	struct s_router_opts RouterOpts;		/* router options */
+	struct s_det_routing_arch RoutingArch; /* routing architecture */
+	t_segment_inf * Segments;				/* wires in routing architecture */
+	t_timing_inf Timing;					/* timing information */
+	float constant_net_delay;				/* timing information when place and route not run */
+	boolean ShowGraphics;					/* option to show graphics */
+	int GraphPause;						/* user interactiveness graphics option */
+} t_vpr_setup; 
 
 #endif
 

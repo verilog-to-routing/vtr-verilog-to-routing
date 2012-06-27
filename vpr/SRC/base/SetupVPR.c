@@ -659,10 +659,10 @@ static void SetupOperation(INP t_options Options,
 /* Determines whether timing analysis should be on or off. 
  Unless otherwise specified, always default to timing.
  */
-boolean IsTimingEnabled(INP t_options Options) {
+boolean IsTimingEnabled(INP t_options *Options) {
 	/* First priority to the '--timing_analysis' flag */
-	if (Options.Count[OT_TIMING_ANALYSIS]) {
-		return Options.TimingAnalysis;
+	if (Options->Count[OT_TIMING_ANALYSIS]) {
+		return Options->TimingAnalysis;
 	}
 	return TRUE;
 }
@@ -670,10 +670,10 @@ boolean IsTimingEnabled(INP t_options Options) {
 /* Determines whether file echo should be on or off. 
  Unless otherwise specified, always default to on.
  */
-boolean IsEchoEnabled(INP t_options Options) {
+boolean IsEchoEnabled(INP t_options *Options) {
 	/* First priority to the '--echo_file' flag */
-	if (Options.Count[OT_CREATE_ECHO_FILE]) {
-		return Options.CreateEchoFile;
+	if (Options->Count[OT_CREATE_ECHO_FILE]) {
+		return Options->CreateEchoFile;
 	}
 	return FALSE;
 }

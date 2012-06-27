@@ -132,6 +132,9 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 
 void freeGrid() {
 	int i, j;
+	if(grid == NULL) {
+		return;
+	}
 
 	for (i = 0; i <= (nx + 1); ++i) {
 		for (j = 0; j <= (ny + 1); ++j) {
@@ -139,6 +142,7 @@ void freeGrid() {
 		}
 	}
 	free_matrix(grid, 0, nx + 1, 0, sizeof(struct s_grid_tile));
+	grid = NULL;
 }
 
 static void CheckGrid() {

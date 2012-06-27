@@ -41,6 +41,10 @@ June 21, 2012
 /* Local subroutines */
 static void free_pb_type(t_pb_type *pb_type);
 static void free_complex_block_types(void);
+
+static void free_arch(t_arch* Arch);
+static void free_options(t_options *options);
+static void free_circuit(void);
 	
 /* Local subroutines end */
 
@@ -123,30 +127,140 @@ void vpr_print_usage(void) {
 	puts("");
 }
 
+/* Initialize VPR 
+	1. Read Options
+	2. Read Arch
+	3. Read Circuit
+	4. Sanity check all three
+*/
+void vpr_init(INP int argc, INP char **argv, OUTP t_options *options, OUTP t_vpr_setup *vpr_setup, OUTP t_arch *arch) {
+	/* Print usage message if no args */
+	if (argc < 3) {
+		vpr_print_usage();
+		exit(1);
+	}
+
+	memset(options, 0, sizeof(t_options));
+	memset(vpr_setup, 0, sizeof(t_vpr_setup));
+	memset(arch, 0, sizeof(t_arch));
+
+	/* Read in user options */
+	ReadOptions(argc, argv, options);
+	/* Timing option priorities */
+	vpr_setup->TimingEnabled = IsTimingEnabled(options);
+	/* Determine whether echo is on or off */
+	SetEchoOption(IsEchoEnabled(options));
+	vpr_setup->constant_net_delay = options->constant_net_delay;
+
+	/* Read in arch and circuit */
+	SetupVPR(options, vpr_setup->TimingEnabled, &vpr_setup->FileNameOpts, arch, &vpr_setup->Operation,
+			&vpr_setup->user_models, &vpr_setup->library_models, &vpr_setup->PackerOpts, &vpr_setup->PlacerOpts,
+			&vpr_setup->AnnealSched, &vpr_setup->RouterOpts, &vpr_setup->RoutingArch, &vpr_setup->Segments, &vpr_setup->Timing,
+			&vpr_setup->ShowGraphics, &vpr_setup->GraphPause);
+
+
+	/* Check inputs are reasonable */
+	CheckOptions(*options, vpr_setup->TimingEnabled);
+	CheckArch(*arch, vpr_setup->TimingEnabled);
+
+	/* Verify settings don't conflict or otherwise not make sense */
+	CheckSetup(vpr_setup->Operation, vpr_setup->PlacerOpts, vpr_setup->AnnealSched, vpr_setup->RouterOpts, vpr_setup->RoutingArch,
+			vpr_setup->Segments, vpr_setup->Timing, arch->Chans);
+
+	/* flush any messages to user still in stdout that hasn't gotten displayed */
+	fflush(stdout);
+
+	/* Read blif file and sweep unused components */
+	read_and_process_blif(vpr_setup->PackerOpts.blif_file_name, vpr_setup->PackerOpts.sweep_hanging_nets_and_inputs, vpr_setup->user_models, vpr_setup->library_models);
+	fflush(stdout);
+
+	ShowSetup(*options, *vpr_setup);
+}
+
+
 /* 
  * Sets globals: nx, ny
  * Allocs globals: chan_width_x, chan_width_y, grid
  * Depends on num_clbs, pins_per_clb */
-void vpr_init_place_and_route_arch(INP t_arch Arch) {
+void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 	int *num_instances_type, *num_blocks_type;
 	int i;
 	int current, high, low;
 	boolean fit;
 
-	current = nint(sqrt(num_blocks)); /* current is the value of the smaller side of the FPGA */
-	low = 1;
-	high = -1;
-
-	num_instances_type = (int*) my_calloc(num_types, sizeof(int));
-	num_blocks_type = (int*) my_calloc(num_types, sizeof(int));
-
-	for (i = 0; i < num_blocks; i++) {
-		num_blocks_type[block[i].type->index]++;
+	/* Read in netlist file for placement and routing */
+	if (vpr_setup.FileNameOpts.NetFile) {
+		read_netlist(vpr_setup.FileNameOpts.NetFile, &Arch, &num_blocks, &block,
+				&num_nets, &clb_net);
+		/* This is done so that all blocks have subblocks and can be treated the same */
+		check_netlist();
 	}
 
-	if (Arch.clb_grid.IsAuto) {
-		/* Auto-size FPGA, perform a binary search */
-		while (high == -1 || low < high) {
+	/* Output the current settings to console. */
+	printClusteredNetlistStats();
+
+	if (vpr_setup.Operation == TIMING_ANALYSIS_ONLY) {
+		do_constant_net_delay_timing_analysis(vpr_setup.Timing, vpr_setup.constant_net_delay);
+	} else {
+		current = nint(sqrt(num_blocks)); /* current is the value of the smaller side of the FPGA */
+		low = 1;
+		high = -1;
+
+		num_instances_type = (int*) my_calloc(num_types, sizeof(int));
+		num_blocks_type = (int*) my_calloc(num_types, sizeof(int));
+
+		for (i = 0; i < num_blocks; i++) {
+			num_blocks_type[block[i].type->index]++;
+		}
+
+		if (Arch.clb_grid.IsAuto) {
+			/* Auto-size FPGA, perform a binary search */
+			while (high == -1 || low < high) {
+				/* Generate grid */
+				if (Arch.clb_grid.Aspect >= 1.0) {
+					ny = current;
+					nx = nint(current * Arch.clb_grid.Aspect);
+				} else {
+					nx = current;
+					ny = nint(current / Arch.clb_grid.Aspect);
+				}
+	#if DEBUG
+				printf("Auto-sizing FPGA, try x = %d y = %d\n", nx, ny);
+	#endif
+				alloc_and_load_grid(num_instances_type);
+				freeGrid();
+
+				/* Test if netlist fits in grid */
+				fit = TRUE;
+				for (i = 0; i < num_types; i++) {
+					if (num_blocks_type[i] > num_instances_type[i]) {
+						fit = FALSE;
+						break;
+					}
+				}
+
+				/* get next value */
+				if (!fit) {
+					/* increase size of max */
+					if (high == -1) {
+						current = current * 2;
+						if (current > MAX_SHORT) {
+							printf(
+									ERRTAG
+									"FPGA required is too large for current architecture settings\n");
+							exit(1);
+						}
+					} else {
+						if (low == current)
+							current++;
+						low = current;
+						current = low + ((high - low) / 2);
+					}
+				} else {
+					high = current;
+					current = low + ((high - low) / 2);
+				}
+			}
 			/* Generate grid */
 			if (Arch.clb_grid.Aspect >= 1.0) {
 				ny = current;
@@ -155,95 +269,90 @@ void vpr_init_place_and_route_arch(INP t_arch Arch) {
 				nx = current;
 				ny = nint(current / Arch.clb_grid.Aspect);
 			}
-#if DEBUG
-			printf("Auto-sizing FPGA, try x = %d y = %d\n", nx, ny);
-#endif
 			alloc_and_load_grid(num_instances_type);
-			freeGrid();
-
-			/* Test if netlist fits in grid */
-			fit = TRUE;
-			for (i = 0; i < num_types; i++) {
-				if (num_blocks_type[i] > num_instances_type[i]) {
-					fit = FALSE;
-					break;
-				}
-			}
-
-			/* get next value */
-			if (!fit) {
-				/* increase size of max */
-				if (high == -1) {
-					current = current * 2;
-					if (current > MAX_SHORT) {
-						printf(
-								ERRTAG
-								"FPGA required is too large for current architecture settings\n");
-						exit(1);
-					}
-				} else {
-					if (low == current)
-						current++;
-					low = current;
-					current = low + ((high - low) / 2);
-				}
-			} else {
-				high = current;
-				current = low + ((high - low) / 2);
-			}
-		}
-		/* Generate grid */
-		if (Arch.clb_grid.Aspect >= 1.0) {
-			ny = current;
-			nx = nint(current * Arch.clb_grid.Aspect);
+			printf("FPGA auto-sized to, x = %d y = %d\n", nx, ny);
 		} else {
-			nx = current;
-			ny = nint(current / Arch.clb_grid.Aspect);
+			nx = Arch.clb_grid.W;
+			ny = Arch.clb_grid.H;
+			alloc_and_load_grid(num_instances_type);
 		}
-		alloc_and_load_grid(num_instances_type);
-		printf("FPGA auto-sized to, x = %d y = %d\n", nx, ny);
-	} else {
-		nx = Arch.clb_grid.W;
-		ny = Arch.clb_grid.H;
-		alloc_and_load_grid(num_instances_type);
-	}
 
-	printf("The circuit will be mapped into a %d x %d array of clbs.\n", nx,
-			ny);
+		printf("The circuit will be mapped into a %d x %d array of clbs.\n", nx,
+				ny);
 
-	/* Test if netlist fits in grid */
-	fit = TRUE;
-	for (i = 0; i < num_types; i++) {
-		if (num_blocks_type[i] > num_instances_type[i]) {
-			fit = FALSE;
-			break;
+		/* Test if netlist fits in grid */
+		fit = TRUE;
+		for (i = 0; i < num_types; i++) {
+			if (num_blocks_type[i] > num_instances_type[i]) {
+				fit = FALSE;
+				break;
+			}
 		}
+		if (!fit) {
+			printf(ERRTAG "Not enough physical locations for type %s, "
+			"number of blocks is %d but number of locations is %d\n",
+					type_descriptors[i].name, num_blocks_type[i],
+					num_instances_type[i]);
+			exit(1);
+		}
+
+		printf("\nResource Usage:\n");
+		for (i = 0; i < num_types; i++) {
+			printf("Netlist      %d\tblocks of type %s\n", num_blocks_type[i],
+					type_descriptors[i].name);
+			printf("Architecture %d\tblocks of type %s\n", num_instances_type[i],
+					type_descriptors[i].name);
+		}
+		printf("\n");
+		chan_width_x = (int *) my_malloc((ny + 1) * sizeof(int));
+		chan_width_y = (int *) my_malloc((nx + 1) * sizeof(int));
+
+		free(num_blocks_type);
+		free(num_instances_type);
 	}
-	if (!fit) {
-		printf(ERRTAG "Not enough physical locations for type %s, "
-		"number of blocks is %d but number of locations is %d\n",
-				type_descriptors[i].name, num_blocks_type[i],
-				num_instances_type[i]);
-		exit(1);
+}
+
+
+void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
+	clock_t begin, end;
+
+	begin = clock();
+	printf("Initialize packing\n");
+	try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models, vpr_setup.library_models, vpr_setup.Timing);
+	end = clock();
+	#ifdef CLOCKS_PER_SEC
+		printf("Packing took %g seconds\n",
+					(float) (end - begin) / CLOCKS_PER_SEC);
+		printf("Packing completed\n");
+	#else
+			printf("Packing took %g seconds\n", (float)(end - begin) / CLK_PER_SEC);
+	#endif
+	fflush(stdout);
+}
+
+void vpr_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch arch) {
+	/* Startup X graphics */
+	set_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause, vpr_setup.RouterOpts.route_type);
+	if (vpr_setup.ShowGraphics) {
+		init_graphics("VPR:  Versatile Place and Route for FPGAs");
+		alloc_draw_structs();
 	}
 
-	printf("\nResource Usage:\n");
-	for (i = 0; i < num_types; i++) {
-		printf("Netlist      %d\tblocks of type %s\n", num_blocks_type[i],
-				type_descriptors[i].name);
-		printf("Architecture %d\tblocks of type %s\n", num_instances_type[i],
-				type_descriptors[i].name);
-	}
-	printf("\n");
-	chan_width_x = (int *) my_malloc((ny + 1) * sizeof(int));
-	chan_width_y = (int *) my_malloc((nx + 1) * sizeof(int));
+	/* Do placement and routing */
+	place_and_route(vpr_setup.Operation, vpr_setup.PlacerOpts, vpr_setup.FileNameOpts.PlaceFile,
+			vpr_setup.FileNameOpts.NetFile, vpr_setup.FileNameOpts.ArchFile, vpr_setup.FileNameOpts.RouteFile,
+			vpr_setup.AnnealSched, vpr_setup.RouterOpts, vpr_setup.RoutingArch, vpr_setup.Segments, vpr_setup.Timing, arch.Chans,
+			arch.models);
 
-	free(num_blocks_type);
-	free(num_instances_type);
+	fflush(stdout);
+
+	/* Close down X Display */
+	if (vpr_setup.ShowGraphics)
+		close_graphics();
 }
 
 /* Free architecture data structures */
-void vpr_free_arch(t_arch* Arch) {
+void free_arch(t_arch* Arch) {
 	int i;
 	t_model *model, *prev;
 	t_model_ports *port, *prev_port;
@@ -334,7 +443,7 @@ void vpr_free_arch(t_arch* Arch) {
 	free_chunk_memory_trace();
 }
 
-void vpr_free_options(t_options *options) {
+void free_options(t_options *options) {
 	free(options->ArchFile);
 	free(options->CircuitName);
 	if (options->BlifFile)
@@ -473,7 +582,7 @@ static void free_pb_type(t_pb_type *pb_type) {
 }
 
 
-void vpr_free_circuit() {
+void free_circuit() {
 	int i;
 
 	/* Free netlist reference tables for nets */
@@ -518,7 +627,17 @@ void vpr_free_circuit() {
 
 }
 
+void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options, INOUTP t_vpr_setup vpr_setup) {
+	
+	if(vpr_setup.Timing.SDCFile != NULL) {
+		free(vpr_setup.Timing.SDCFile);
+		vpr_setup.Timing.SDCFile = NULL;
+	}
 
+	free_options(&options);
+	free_circuit();
+	free_arch(&Arch);
+}
 
 
 

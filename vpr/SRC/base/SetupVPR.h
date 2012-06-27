@@ -1,8 +1,8 @@
 #ifndef SETUPVPR_H
 #define SETUPVPR_H
 
-boolean IsTimingEnabled(INP t_options Options);
-boolean IsEchoEnabled(INP t_options Options);
+boolean IsTimingEnabled(INP t_options *Options);
+boolean IsEchoEnabled(INP t_options *Options);
 
 void SetupVPR(INP t_options *Options,
 		INP boolean TimingEnabled,
@@ -36,17 +36,8 @@ void CheckArch(INP t_arch Arch,
 void CheckOptions(INP t_options Options,
 		INP boolean TimingEnabled);
 
-void ShowSetup(INP t_options Options,
-		INP t_arch Arch,
-		INP boolean TimingEnabled,
-		INP enum e_operation Operation,
-		INP struct s_file_name_opts FileNameOpts,
-		INP struct s_placer_opts PlacerOpts,
-		INP struct s_annealing_sched AnnealSched,
-		INP struct s_router_opts RouterOpts,
-		INP struct s_det_routing_arch RoutingArch,
-		INP t_segment_inf * Segments,
-		INP t_timing_inf Timing);
+void ShowSetup(INP t_options options, INP t_vpr_setup vpr_setup);
+void printClusteredNetlistStats();
 
 #endif
 
