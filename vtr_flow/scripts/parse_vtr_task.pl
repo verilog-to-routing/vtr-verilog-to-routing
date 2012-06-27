@@ -128,11 +128,11 @@ sub parse_single_task {
 	}
 
 	# PARSE CONFIG FILE
-	if ( $parse_file eq "" ) {
-		die "Task $task_name has no parse file specified.\n";
+	if ( -e "$task_path/config/$parse_file" ) {
+		$parse_file = "$task_path/config/$parse_file";
 	}
-
-	if ( -e $parse_file ) {
+	elsif ( $parse_file eq "" ) {
+		die "Task $task_name has no parse file specified.\n";
 	}
 	elsif ( -e "$vtr_flow_path/parse/parse_config/$parse_file" ) {
 		$parse_file = "$vtr_flow_path/parse/parse_config/$parse_file";
@@ -142,12 +142,12 @@ sub parse_single_task {
 	}
 
 	# QOR PARSE CONFIG FILE
-	if ( $qor_parse_file eq "" ) {
+	if ( -e "$task_path/config/$qor_parse_file" ) {
+		$qor_parse_file = "$task_path/config/$qor_parse_file";
+	}
+	elsif ( $qor_parse_file eq "" ) {
 		print "Task $task_name has no QoR parse file specified. Skipping QoR.\n";
 		$create_qor = 0;
-	}
-
-	if ( -e $qor_parse_file ) {
 	}
 	elsif ( -e "$vtr_flow_path/parse/qor_config/$qor_parse_file" ) {
 		$qor_parse_file = "$vtr_flow_path/parse/qor_config/$qor_parse_file";

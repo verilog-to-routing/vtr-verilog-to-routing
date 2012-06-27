@@ -2,28 +2,28 @@
 #------------------------------------------------------------------------#
 #  Run a regression test on the batch system                             #
 #   - runs the regression tests given as input parameters                #
-# 	- parses and checks results upon completion							 #
+# 	- parses and checks results upon completion			 #
 #   - tests can be found in <vtr_flow_path>/tasks/regression_tests/      #
 #                                                                        #
 #  Usage:                                                                #
-#  <While in the top-level directory>               					 #
+#  <While in the top-level directory>               			 #
 #  run_reg_test.pl <TEST1> <TEST2> ...                                   #
-#  																		 #
-#  Options:																 #	
-#	-create_golden:  Will create/overwrite the golden results with  	 #
-#	those of the most recent execution									 #
-#	-quick_test: Will run quick test in top-level directory before 		 #
-# 	running specified regression tests.									 #
-#																		 #
+#  									 #
+#  Options:								 #	
+#	-create_golden:  Will create/overwrite the golden results with   #
+#	those of the most recent execution				 #
+#	-quick_test: Will run quick test in top-level directory before 	 #
+# 	running specified regression tests.				 #
+#									 #
 #  Notes: <TEST> argument is of the format: <project>_reg_<suite>   	 #
-#  See <vtr_flow_path>/tasks/regression_tests for more information.		 #	
-#																		 #	
-#  Currently available:													 #
-#		- vtr_reg_basic													 #	
-#		- vtr_reg_strong											  	 #
-#		- vtr_reg_nightly												 #	
-#		- vtr_reg_weekly											 	 #
-#																		 #	
+#  See <vtr_flow_path>/tasks/regression_tests for more information.	 #	
+#									 #	
+#  Currently available:							 #
+#		- vtr_reg_basic						 #	
+#		- vtr_reg_strong					 #
+#		- vtr_reg_nightly					 #	
+#		- vtr_reg_weekly					 #
+#									 #
 #------------------------------------------------------------------------#
 
 use strict;
@@ -118,20 +118,31 @@ sub run_single_test {
 
 	my $test     = shift(@_);
 	my $test_dir = "$reg_test_path/$test";
+	my $script_params;
+
+	# Task list exists. Execute script with list instead.
+	if ( -e "$test_dir/task_list.txt" ) {
+		$script_params = "-l $test_dir/task_list.txt";
+	}
+	else {
+		$script_params = "$test_dir";
+	}
 
 	print "Running regression test... \n";
-	system("$vtr_flow_path/scripts/run_vtr_task.pl -l $test_dir/task_list.txt \n");
+	system("$vtr_flow_path/scripts/run_vtr_task.pl $script_params \n");
 
 	print "Parsing test results... \n";
-	system("$vtr_flow_path/scripts/parse_vtr_task.pl -l $test_dir/task_list.txt \n");
+	system("$vtr_flow_path/scripts/parse_vtr_task.pl $script_params \n");
 
 	if ($create_golden) {
 		print "Creating golden results... \n";
-		system(	"$vtr_flow_path/scripts/parse_vtr_task.pl -create_golden -l $test_dir/task_list.txt \n");
+		$script_params = $script_params . " -create_golden";
 	}
-
-	print "Checking test results... \n";
-	system(	"$vtr_flow_path/scripts/parse_vtr_task.pl -check_golden -l $test_dir/task_list.txt \n");
+	else {
+		print "Checking test results... \n";
+		$script_params = $script_params . " -check_golden";
+	}
+	system(	"$vtr_flow_path/scripts/parse_vtr_task.pl $script_params \n");
 }
 
 sub run_quick_test {

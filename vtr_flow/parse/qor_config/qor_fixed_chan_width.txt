@@ -1,4 +1,5 @@
 vpr_status;output.txt;vpr_status=(.*)
+total_routed_wirelength;vpr.out;Total wirelength:\s*(\d+)
 critical_path_delay;vpr.out;Critical Path: (.*) [(]s[)]
 pack_time;vpr.out;Packing took (.*) seconds
 place_time;vpr.out;Placement took (.*) seconds
