@@ -37,7 +37,7 @@ void CheckOptions(INP t_options Options,
 		INP boolean TimingEnabled);
 
 void ShowSetup(INP t_options options, INP t_vpr_setup vpr_setup);
-void printClusteredNetlistStats();
+void printClusteredNetlistStats(void);
 
 #endif
 

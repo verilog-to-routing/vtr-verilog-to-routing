@@ -16,29 +16,7 @@
 #include <assert.h>
 #include <time.h>
 
-#include "util.h"
-#include "vpr_types.h"
-#include "globals.h"
-#include "graphics.h"
-#include "read_netlist.h"
-#include "check_netlist.h"
-#include "print_netlist.h"
-#include "read_blif.h"
-#include "draw.h"
-#include "place_and_route.h"
-#include "pack.h"
-#include "SetupGrid.h"
-#include "stats.h"
-#include "path_delay.h"
-#include "OptionTokens.h"
-#include "ReadOptions.h"
-#include "read_xml_arch_file.h"
-#include "SetupVPR.h"
-#include "rr_graph.h"
-#include "pb_type_graph.h"
-#include "ReadOptions.h"
 #include "vpr_api.h"
-
 
 /**
  * VPR program
@@ -50,6 +28,7 @@
  * 1.  Initialization
  * 2.  Pack
  * 3.  Place-and-route and timing analysis
+ * 4.  Clean up
  */
 int main(int argc, char **argv) {
 	t_options Options;

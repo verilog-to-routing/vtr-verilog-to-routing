@@ -486,7 +486,6 @@ struct s_packer_opts {
 	char *sdc_file_name;
 	char *output_file;
 	boolean global_clocks;
-	int clocks_per_cluster;
 	boolean hill_climbing_flag;
 	boolean sweep_hanging_nets_and_inputs;
 	boolean timing_driven;

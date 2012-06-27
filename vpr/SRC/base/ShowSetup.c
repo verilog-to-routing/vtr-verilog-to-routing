@@ -8,7 +8,7 @@
 #include "SetupVPR.h"
 
 /******** Function Prototypes ********/
-
+static void ShowPackerOpts(INP struct s_packer_opts PackerOpts);
 static void ShowPlacerOpts(INP t_options Options,
 		INP struct s_placer_opts PlacerOpts,
 		INP struct s_annealing_sched AnnealSched);
@@ -32,7 +32,9 @@ void ShowSetup(INP t_options options, INP t_vpr_setup vpr_setup) {
 	printf("Placer: %s\n", (vpr_setup.PlacerOpts.doPlacement ? "ENABLED" : "DISABLED"));
 	printf("Router: %s\n", (vpr_setup.RouterOpts.doRouting ? "ENABLED" : "DISABLED"));
 
-	/* jedit TODO do packer opts */
+	if (vpr_setup.PackerOpts.doPacking) {
+		ShowPackerOpts(vpr_setup.PackerOpts);
+	}
 	if (vpr_setup.PlacerOpts.doPlacement) {
 		ShowPlacerOpts(options, vpr_setup.PlacerOpts, vpr_setup.AnnealSched);
 	}
@@ -390,3 +392,43 @@ static void ShowPlacerOpts(INP t_options Options,
 	printf("\n");
 
 }
+
+
+static void ShowPackerOpts(INP struct s_packer_opts PackerOpts) {
+
+	printf("PackerOpts.allow_early_exit:  %s", (PackerOpts.allow_early_exit ? "TRUE\n" : "FALSE\n"));
+	printf("PackerOpts.allow_unrelated_clustering:  %s", (PackerOpts.allow_unrelated_clustering ? "TRUE\n" : "FALSE\n"));
+	printf("PackerOpts.alpha_clustering:  %f\n", PackerOpts.alpha);
+	printf("PackerOpts.aspect:  %f\n", PackerOpts.aspect);
+	printf("PackerOpts.beta_clustering:  %f\n", PackerOpts.beta);
+	printf("PackerOpts.block_delay:  %f\n", PackerOpts.block_delay);
+	printf("PackerOpts.cluster_seed_type:  ");
+	switch (PackerOpts.cluster_seed_type) {
+	case VPACK_TIMING:
+		printf("TIMING\n");
+		break;
+	case VPACK_MAX_INPUTS:
+		printf("MAX_INPUTS\n");
+		break;
+	default:
+		printf("<Unknown>\n");
+		exit(1);
+	}
+	printf("PackerOpts.connection_driven:  %s", (PackerOpts.connection_driven ? "TRUE\n" : "FALSE\n"));
+	printf("PackerOpts.global_clocks:  %s", (PackerOpts.global_clocks ? "TRUE\n" : "FALSE\n"));
+	printf("PackerOpts.hill_climbing_flag:  %s", (PackerOpts.hill_climbing_flag ? "TRUE\n" : "FALSE\n"));
+	printf("PackerOpts.inter_cluster_net_delay:  %f\n", PackerOpts.inter_cluster_net_delay);
+	printf("PackerOpts.intra_cluster_net_delay:  %f\n", PackerOpts.intra_cluster_net_delay);
+	printf("PackerOpts.recompute_timing_after:  %d\n", PackerOpts.recompute_timing_after);
+	printf("PackerOpts.sweep_hanging_nets_and_inputs:  %s", (PackerOpts.sweep_hanging_nets_and_inputs ? "TRUE\n" : "FALSE\n"));
+	printf("PackerOpts.timing_driven:  %s", (PackerOpts.timing_driven ? "TRUE\n" : "FALSE\n"));
+	
+
+		
+
+
+
+
+	printf("\n");
+}
+
