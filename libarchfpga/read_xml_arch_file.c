@@ -1,3 +1,29 @@
+/* The XML parser processes an XML file into a tree data structure composed of      *
+ * ezxml_t nodes.  Each ezxml_t node represents an XML element.  For example        *
+ * <a> <b/> </a> will generate two ezxml_t nodes.  One called "a" and its           *
+ * child "b".  Each ezxml_t node can contain various XML data such as attribute     *
+ * information and text content.  The XML parser provides several functions to      *
+ * help the developer build, traverse, and free this ezxml_t tree.                  *
+ *                                                                                  *
+ * The function ezxml_parse_file reads in an architecture file.                     *
+ *                                                                                  *
+ * The function FindElement returns a child ezxml_t node for a given ezxml_t        *
+ * node that matches a name provided by the developer.                              *
+ *                                                                                  *
+ * The function FreeNode frees a child ezxml_t node.  All children nodes must       *
+ * be freed before the parent can be freed.                                         *
+ *                                                                                  *
+ * The function FindProperty is used to extract attributes from an ezxml_t node.    *
+ * The corresponding ezxml_set_attr is used to then free an attribute after it      *
+ * is read.  We have several helper functions that perform this common              *
+ * read/store/free operation in one step such as GetIntProperty and                 *
+ * GetFloatProperty.                                                                *
+ *                                                                                  *
+ * Because of how the XML tree traversal works, we free everything when we're       *
+ * done reading an architecture file to make sure that there isn't some part        *
+ * of the architecture file that got missed.                                        *
+ */
+
 #include <string.h>
 #include <assert.h>
 #include "util.h"
@@ -66,6 +92,9 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 		INP boolean timing_enabled);
 static void ProcessSwitches(INOUTP ezxml_t Node,
 		OUTP struct s_switch_inf **Switches, OUTP int *NumSwitches,
+		INP boolean timing_enabled);
+static void ProcessDirects(INOUTP ezxml_t Parent,
+		OUTP t_direct_inf **Directs, OUTP int *NumDirects,
 		INP boolean timing_enabled);
 static void ProcessSegments(INOUTP ezxml_t Parent,
 		OUTP struct s_segment_inf **Segs, OUTP int *NumSegs,
@@ -1877,6 +1906,14 @@ void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 			arch->Switches, arch->num_switches, timing_enabled);
 	FreeNode(Next);
 
+	/* Process directs */
+	Next = FindElement(Cur, "directlist", FALSE);
+	if (Next){
+		ProcessDirects(Next, &(arch->Directs), &(arch->num_directs),
+				timing_enabled);
+		FreeNode(Next);
+	}
+
 	SyncModelsPbTypes(arch, *Types, *NumTypes);
 	UpdateAndCheckModels(arch);
 
@@ -2186,6 +2223,78 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 				FALSE, 1);
 
 		/* Remove the switch element from parse tree */
+		FreeNode(Node);
+	}
+}
+
+static void ProcessDirects(INOUTP ezxml_t Parent,
+		OUTP t_direct_inf **Directs, OUTP int *NumDirects,
+		INP boolean timing_enabled) {
+	int i, j;
+	const char *direct_name;
+	const char *from_pin_name;
+	const char *to_pin_name;
+	
+	ezxml_t Node;
+
+	/* Count the children and check they are direct connections */
+	*NumDirects = CountChildren(Parent, "direct", 1);
+
+	/* Alloc direct list */
+	*Directs = NULL;
+	if (*NumDirects > 0) {
+		*Directs = (t_direct_inf *) my_malloc(
+				*NumDirects * sizeof(t_direct_inf));
+		memset(*Directs, 0, (*NumDirects * sizeof(t_direct_inf)));
+	}
+
+	/* Load the directs. */
+	for (i = 0; i < *NumDirects; ++i) {
+		Node = ezxml_child(Parent, "direct");
+		
+		direct_name = FindProperty(Node, "name", TRUE);
+		/* Check for direct name collisions */
+		for (j = 0; j < i; ++j) {
+			if (0 == strcmp((*Directs)[j].name, direct_name)) {
+				printf(ERRTAG
+				"[LINE %d] Two directs with the same name '%s' were "
+				"found.\n", Node->line, direct_name);
+				exit(1);
+			}
+		}
+		(*Directs)[i].name = my_strdup(direct_name);
+		ezxml_set_attr(Node, "name", NULL);
+
+		/* Figure out the source pin and sink pin name */
+		from_pin_name = FindProperty(Node, "from_pin", TRUE);
+		to_pin_name = FindProperty(Node, "to_pin", TRUE);
+		/* Check that to_pin and the from_pin are not the same */
+		if (0 == strcmp(to_pin_name, from_pin_name)) {
+			printf(ERRTAG
+			"[LINE %d] The source pin and sink pin are the same: %s.\n",
+				Node->line, to_pin_name);
+			exit(1);
+		}
+		(*Directs)[i].from_pin = my_strdup(from_pin_name);
+		(*Directs)[i].to_pin = my_strdup(to_pin_name);
+		ezxml_set_attr(Node, "from_pin", NULL);
+		ezxml_set_attr(Node, "to_pin", NULL);
+		
+		(*Directs)[i].x_offset = GetIntProperty(Node, "x_offset", TRUE, 0);
+		(*Directs)[i].y_offset = GetIntProperty(Node, "y_offset", TRUE, 0);
+		ezxml_set_attr(Node, "x_offset", NULL);
+		ezxml_set_attr(Node, "y_offset", NULL);
+		/* Check that the direct chain connection is not zero in both direction */
+		if ( (*Directs)[i].x_offset==0 && (*Directs)[i].y_offset==0 ) {
+			printf(ERRTAG
+			"[LINE %d] The x_offset and y_offset are both zero, "
+			"this is a length 0 direct chain connection.\n",
+				Node->line);
+			exit(1);
+		}
+		/* Should I check that the direct chain offset is not greater than the chip? How? */
+
+		/* Remove the direct element from parse tree */
 		FreeNode(Node);
 	}
 }

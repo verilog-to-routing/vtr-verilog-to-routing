@@ -553,7 +553,7 @@ typedef struct s_segment_inf {
 } t_segment_inf;
 
 /* Lists all the important information about a switch type.                  *
- * [0 .. det_routing_arch.num_switch]                                        *
+ * [0 .. Arch.num_switch]                                        *
  * buffered:  Does this switch include a buffer?                             *
  * R:  Equivalent resistance of the buffer/switch.                           *
  * Cin:  Input capacitance.                                                  *
@@ -574,6 +574,24 @@ struct s_switch_inf {
 	float buf_size;
 	char *name;
 };
+
+/* Lists all the important information about a direct chain connection.     *
+ * [0 .. det_routing_arch.num_direct]                                       *
+ * name:  Name of this direct chain connection                              *
+ * from_pin:  The type of the pin that drives this chain connection         *
+              In the format of <block_name>.<pin_name>                      *
+ * to_pin:  The type of pin that is driven by this chain connection         *
+            In the format of <block_name>.<pin_name>                        *
+ * x_offset:  The x offset from the source to the sink of this connection   *
+ * y_offset:  The y offset from the source to the sink of this connection   *
+ */
+typedef struct s_direct_inf {
+	char *name;
+	char *from_pin;
+	char *to_pin;
+	int x_offset;
+	int y_offset;
+}t_direct_inf;
 
 struct transistor_record {
 	float min_length;
@@ -626,6 +644,8 @@ struct s_arch {
 	int num_segments;
 	struct s_switch_inf *Switches;
 	int num_switches;
+	t_direct_inf *Directs;
+	int num_directs;
 	t_model *models;
 	t_model *model_library;
 };
