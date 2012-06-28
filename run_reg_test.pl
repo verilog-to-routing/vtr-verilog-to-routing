@@ -14,6 +14,8 @@
 #	those of the most recent execution				 #
 #	-quick_test: Will run quick test in top-level directory before 	 #
 # 	running specified regression tests.				 #
+#	-display_qor: Will display quality of results of most recent build \n"
+#	of specified regression test.\n
 #									 #
 #  Notes: <TEST> argument is of the format: <project>_reg_<suite>   	 #
 #  See <vtr_flow_path>/tasks/regression_tests for more information.	 #	
@@ -83,6 +85,8 @@ if ( $#tests == -1 and !$quick_test ) {
 	  . "	those of the most recent execution\n"
 	  . "	-quick_test: Will run quick test in top-level directory before\n"
 	  . "	running specified regression tests.\n"
+	  . "	-display_qor: Will display quality of results of most recent build \n"
+	  . "	of specified regression test.\n"
 	  . "\n"
 	  . "Notes: <TEST> argument is of the format: <project>_reg_<suite>\n"
 	  . "See <vtr_flow_path>/tasks/regression_tests for more information.\n"
@@ -92,6 +96,8 @@ if ( $#tests == -1 and !$quick_test ) {
 	  . "	- vtr_reg_strong\n"
 	  . "	- vtr_reg_nightly\n"
 	  . "	- vtr_reg_weekly\n"
+	  . "\n"
+	  . "If you wish to add your own test, place it in <vtr_flow_path>/tasks/regression_tests\n"
 	  . "\n";
 }
 
@@ -131,15 +137,15 @@ sub run_single_test {
 	print "Running regression test... \n";
 	system("$vtr_flow_path/scripts/run_vtr_task.pl $script_params \n");
 
-	print "Parsing test results... \n";
+	print "\nParsing test results... \n";
 	system("$vtr_flow_path/scripts/parse_vtr_task.pl $script_params \n");
 
 	if ($create_golden) {
-		print "Creating golden results... \n";
+		print "\nCreating golden results... \n";
 		$script_params = $script_params . " -create_golden";
 	}
 	else {
-		print "Checking test results... \n";
+		print "\nChecking test results... \n";
 		$script_params = $script_params . " -check_golden";
 	}
 	system(	"$vtr_flow_path/scripts/parse_vtr_task.pl $script_params \n");
