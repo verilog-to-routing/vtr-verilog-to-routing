@@ -212,6 +212,7 @@ void place_and_route(enum e_operation operation,
 			free_net_delay(net_delay, &net_delay_ch);
 		}
 
+		free_rr_graph();
 		free_route_structs(clb_opins_used_locally);
 		free_trace_structs();
 		fflush(stdout);

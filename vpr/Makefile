@@ -26,8 +26,8 @@ OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O3
 #############################################################################################
 
 CC = $(COMPILER)
-LIB_DIR = -L../libarchfpga
-LIB = -lm -larchfpga
+LIB_DIR = -L.
+LIB = -lvpr -lm
 SRC_DIR = SRC
 OBJ_DIR = OBJ
 OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/route
@@ -68,8 +68,8 @@ OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c $(SRC_
 OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
 
-$(EXE): $(OBJ) Makefile ../libarchfpga/libarchfpga.a
-	$(CC) $(FLAGS) $(OBJ) -o $(EXE) $(LIB_DIR) $(LIB)
+$(EXE): $(OBJ) Makefile libvpr.a
+	$(CC) $(FLAGS) OBJ/main.o -o $(EXE) $(LIB_DIR) $(LIB)
 #if graphics enabled but libx11-dev is not installed, notify the user
 	@ $(PACKAGENOTIFICATION) 
 
@@ -78,6 +78,7 @@ $(EXE): $(OBJ) Makefile ../libarchfpga/libarchfpga.a
 
 
 libvpr.a: $(OBJ) Makefile ../libarchfpga/libarchfpga.a
+	@ cp ../libarchfpga/libarchfpga.a $@
 	@ ar rcs $@ $(OBJ)
 	@ ar d $@ main.o
 
