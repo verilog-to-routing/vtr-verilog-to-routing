@@ -657,11 +657,6 @@ struct s_det_routing_arch {
  * if the route_type is DETAILED.                                           *
  * (UDSD by AY) directionality: Should the tracks be uni-directional or     *
  *                            bi-directional?                               *
- * Fc_type:   Are the Fc values below absolute numbers, or fractions of W?  *
- * Fc_output:  Number of tracks to which each clb output pin connect in     *
- *             each channel to which it is adjacent.                        *
- * Fc_input:  Number of tracks to which each clb input pin connects.        *
- * Fc_pad:    Number of tracks to which each I/O pad connects.              *
  * switch_block_type:  Pattern of switches at each switch block.  I         *
  *           assume Fs is always 3.  If the type is SUBSET, I use a         *
  *           Xilinx-like switch block where track i in one channel always   *
