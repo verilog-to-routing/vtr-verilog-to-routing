@@ -82,8 +82,6 @@ int **net_rr_terminals = NULL; /* [0..num_nets-1][0..num_pins-1] */
 
 struct s_switch_inf *switch_inf = NULL; /* [0..(det_routing_arch.num_switch-1)] */
 
-t_direct_inf *direct_inf = NULL; /* [0..(det_routing_arch.num_direct-1)] */
-
 /* Stores the SOURCE and SINK nodes of all CLBs (not valid for pads).     */
 
 int **rr_blk_source = NULL; /* [0..(num_blocks-1)][0..(num_class-1)] */

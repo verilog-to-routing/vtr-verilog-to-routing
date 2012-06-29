@@ -109,7 +109,6 @@ extern t_rr_indexed_data *rr_indexed_data; /* [0 .. num_rr_indexed_data-1] */
 extern t_ivec ***rr_node_indices;
 extern int **net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
 extern struct s_switch_inf *switch_inf; /* [0..det_routing_arch.num_switch-1] */
-extern t_direct_inf *direct_inf; /* [0..det_routing_arch.num_direct-1] */
 extern int **rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
 
 /* the head pointers of structures that are "freed" and used constantly */
