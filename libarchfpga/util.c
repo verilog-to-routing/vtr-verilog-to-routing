@@ -401,7 +401,11 @@ char *
 my_fgets(char *buf, int max_size, FILE * fp) {
 	/* Get an input line, update the line number and cut off *
 	 * any comment part.  A \ at the end of a line with no   *
-	 * comment part (#) means continue.                      */
+	 * comment part (#) means continue. my_fgets should give * 
+	 * identical results for Windows (\r\n) and Linux (\n)   *
+	 * newlines, since it replaces each carriage return \r   *
+	 * by a newline character \n.  It also deals with the    *
+	 * special case where there's no newline before EOF.	 */
 
 	char *val;
 	int i;
@@ -409,22 +413,33 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 	cont = 0;
 	val = fgets(buf, max_size, fp);
 	file_line_number++;
-	if (val == NULL)
-		return (val);
+	if (val == NULL) /* end of line */
+		return NULL;
 
 	/* Check that line completely fit into buffer.  (Flags long line   *
 	 * truncation).                                                    */
 
 	for (i = 0; i < max_size; i++) {
+		if (buf[i] == '\r') { 
+			buf[i] = '\n';
+			break;
+		}
 		if (buf[i] == '\n')
 			break;
 		if (buf[i] == '\0') {
-			printf("Error on line %d -- line is too long for input buffer.\n",
-					file_line_number);
-			printf("All lines must be at most %d characters long.\n",
-					BUFSIZE - 2);
-			printf("The problem could also be caused by a missing newline.\n");
-			exit(1);
+
+			if (feof(fp)) { 
+			/* Special case where there's no newline before end of file.
+			Since we passed the end of the file, it's okay to have a \0. */ 
+				return val;
+			} else {
+			/* The line did not completely fit into the buffer. */
+				printf("Error on line %d -- line is too long for input buffer.\n",
+						file_line_number);
+				printf("All lines must be at most %d characters long.\n",
+						BUFSIZE - 2);
+				exit(1);
+			}
 		}
 	}
 
