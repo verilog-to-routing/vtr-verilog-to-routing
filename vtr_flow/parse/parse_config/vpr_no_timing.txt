@@ -2,7 +2,6 @@ vpr_status;output.txt;vpr_status=(.*)
 min_chan_width;vpr.out;Best routing used a channel width factor of (\d+)
 pack_time;vpr.out;Packing took (.*) seconds
 place_time;vpr.out;Placement took (.*) seconds
-total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
 min_chan_width_route_time;vpr.out;Routing took (.*) seconds
 num_pre_packed_nets;vpr.out;Total Nets: (\d+)
 num_pre_packed_blocks;vpr.out;Total Blocks: (\d+)
