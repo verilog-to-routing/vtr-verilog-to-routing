@@ -35,6 +35,7 @@ use File::Spec;
 # Function Prototypes
 sub run_single_test;
 sub run_quick_test;
+sub run_odin_test;
 
 # Get absolute path of 'vtr_flow'
 # Cwd::abs_path($0) =~ m/(.*\/vtr_flow)\//;
@@ -47,7 +48,7 @@ my $reg_test_path = "./vtr_flow/tasks/regression_tests";
 my @tests;
 my $token;
 my $create_golden = 0;
-my $quick_test = 0;
+my $test = 0;
 
 # Parse Input Arguments
 while ( $token = shift(@ARGV) ) {
@@ -56,7 +57,16 @@ while ( $token = shift(@ARGV) ) {
 		$create_golden = 1;
 	}
 	elsif ($token eq "-quick_test") {
-		$quick_test = 1;
+		run_quick_test();
+		$test = 1;
+	}
+	elsif ($token eq "odin_reg_micro") {
+		run_odin_test( "micro" );
+		$test = 1;
+	}
+	elsif ($token eq "odin_reg_full") {
+		run_odin_test( "full" );
+		$test = 1;
 	}
 	else {	
 		if ($token =~ /(.*)\//) {
@@ -70,10 +80,7 @@ while ( $token = shift(@ARGV) ) {
 my %hash = map { $_, 1 } @tests;
 @tests = keys %hash;
 
-if ( $quick_test ) {
-	run_quick_test();
-}
-if ( $#tests == -1 and !$quick_test ) {
+if ( $#tests == -1 and !$test ) {
 	die "\n"
 	  . "Incorrect usage.  You must specify at least one test to execute.\n"
 	  . "\n"
@@ -191,3 +198,17 @@ sub run_quick_test {
 	chdir ("..");	
 }
 
+sub run_odin_test {
+	$token = shift();
+
+	chdir ("ODIN_II") or die "Failed to change to directory ./ODIN_II: $!";
+
+	if ( $token eq "micro" ) {
+		system("./verify_microbenchmarks.sh");
+	}
+	elsif ( $token eq "full" ) {
+		system("./verify_regression_tests.sh")
+	}
+
+	chdir ("..");	
+}
