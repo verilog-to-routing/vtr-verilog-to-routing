@@ -12,7 +12,7 @@
 #  Options:								 #	
 #	-create_golden:  Will create/overwrite the golden results with   #
 #	those of the most recent execution				 #
-#	-quick_test: Will run quick test in top-level directory before 	 #
+#	quick_test: Will run quick test in top-level directory before 	 #
 # 	running specified regression tests.				 #
 #	-display_qor: Will display quality of results of most recent build \n"
 #	of specified regression test.\n
@@ -70,7 +70,7 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-check_golden" ) {
 		$check_golden = 1;
 	}
-	elsif ($token eq "-quick_test") {
+	elsif ($token eq "quick_test") {
 		run_quick_test();
 		$can_quit = 1;
 	}
@@ -256,7 +256,7 @@ sub run_odin_test {
 		system("./verify_microbenchmarks.sh");
 	}
 	elsif ( $token eq "full" ) {
-		system("./verify_regression_tests.sh")
+		system("./verify_regression_tests.sh");
 	}
 
 	chdir ("..");	
