@@ -292,14 +292,14 @@ static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 			num_class += capacity * Type->pb_type->ports[i].num_pins;
 		}
 	}
-	Type->class_inf = my_calloc(num_class, sizeof(struct s_class));
+	Type->class_inf = (struct s_class*)my_calloc(num_class, sizeof(struct s_class));
 	Type->num_class = num_class;
-	Type->pin_class = my_malloc(Type->num_pins * sizeof(int) * capacity);
-	Type->is_global_pin = my_malloc(
+	Type->pin_class = (int*)my_malloc(Type->num_pins * sizeof(int) * capacity);
+	Type->is_global_pin = (boolean*)my_malloc(
 			Type->num_pins * sizeof(boolean) * capacity);
 	for (i = 0; i < Type->num_pins * capacity; i++) {
 		Type->pin_class[i] = OPEN;
-		Type->is_global_pin[i] = OPEN;
+		Type->is_global_pin[i] = (boolean)OPEN;
 	}
 
 	pin_count = 0;
@@ -332,8 +332,8 @@ static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 					Type->class_inf[num_class].type = DRIVER;
 				}
 				Type->pin_class[pin_count] = num_class;
-				Type->is_global_pin[pin_count] =
-					Type->pb_type->ports[j].is_clock || Type->pb_type->ports[j].is_non_clock_global;
+				Type->is_global_pin[pin_count] = (boolean)
+					(Type->pb_type->ports[j].is_clock || Type->pb_type->ports[j].is_non_clock_global);
 				pin_count++;
 
 				if (!Type->pb_type->ports[j].equivalent) {
@@ -484,13 +484,13 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 	}
 
 	annotation->num_value_prop_pairs = i;
-	annotation->prop = my_calloc(i, sizeof(int));
-	annotation->value = my_calloc(i, sizeof(char *));
+	annotation->prop = (int*)my_calloc(i, sizeof(int));
+	annotation->value = (char**)my_calloc(i, sizeof(char *));
 
 	/* Todo: This is slow, I should use a case lookup */
 	i = 0;
 	if (0 == strcmp(Parent->name, "delay_constant")) {
-		annotation->type = (int) E_ANNOT_PIN_TO_PIN_DELAY;
+		annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
 		Prop = FindProperty(Parent, "max", FALSE);
 		if (Prop) {
@@ -534,7 +534,7 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		annotation->output_pins = my_strdup(Prop);
 		ezxml_set_attr(Parent, "out_port", NULL);
 	} else if (0 == strcmp(Parent->name, "C_constant")) {
-		annotation->type = (int) E_ANNOT_PIN_TO_PIN_CAPACITANCE;
+		annotation->type = E_ANNOT_PIN_TO_PIN_CAPACITANCE;
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
 		Prop = FindProperty(Parent, "C", TRUE);
 		annotation->value[i] = my_strdup(Prop);
@@ -551,7 +551,7 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		assert(
 				annotation->output_pins != NULL || annotation->input_pins != NULL);
 	} else if (0 == strcmp(Parent->name, "C_matrix")) {
-		annotation->type = (int) E_ANNOT_PIN_TO_PIN_CAPACITANCE;
+		annotation->type = E_ANNOT_PIN_TO_PIN_CAPACITANCE;
 		annotation->format = E_ANNOT_PIN_TO_PIN_MATRIX;
 		annotation->value[i] = my_strdup(Parent->txt);
 		ezxml_set_txt(Parent, "");
@@ -566,7 +566,7 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		assert(
 				annotation->output_pins != NULL || annotation->input_pins != NULL);
 	} else if (0 == strcmp(Parent->name, "T_setup")) {
-		annotation->type = (int) E_ANNOT_PIN_TO_PIN_DELAY;
+		annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
 		Prop = FindProperty(Parent, "value", TRUE);
 		annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_TSETUP;
@@ -580,7 +580,7 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		annotation->clock = my_strdup(Prop);
 		ezxml_set_attr(Parent, "clock", NULL);
 	} else if (0 == strcmp(Parent->name, "T_clock_to_Q")) {
-		annotation->type = (int) E_ANNOT_PIN_TO_PIN_DELAY;
+		annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
 		Prop = FindProperty(Parent, "max", FALSE);
 		if (Prop) {
@@ -604,7 +604,7 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		annotation->clock = my_strdup(Prop);
 		ezxml_set_attr(Parent, "clock", NULL);
 	} else if (0 == strcmp(Parent->name, "T_hold")) {
-		annotation->type = (int) E_ANNOT_PIN_TO_PIN_DELAY;
+		annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
 		Prop = FindProperty(Parent, "value", TRUE);
 		annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_THOLD;
@@ -619,7 +619,7 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		annotation->clock = my_strdup(Prop);
 		ezxml_set_attr(Parent, "clock", NULL);
 	} else if (0 == strcmp(Parent->name, "pack_pattern")) {
-		annotation->type = (int) E_ANNOT_PIN_TO_PIN_PACK_PATTERN;
+		annotation->type = E_ANNOT_PIN_TO_PIN_PACK_PATTERN;
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
 		Prop = FindProperty(Parent, "name", TRUE);
 		annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME;
@@ -696,7 +696,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 	num_ports += CountChildren(Parent, "input", 0);
 	num_ports += CountChildren(Parent, "output", 0);
 	num_ports += CountChildren(Parent, "clock", 0);
-	pb_type->ports = my_calloc(num_ports, sizeof(t_port));
+	pb_type->ports = (t_port*)my_calloc(num_ports, sizeof(t_port));
 	pb_type->num_ports = num_ports;
 
 	/* process ports */
@@ -768,7 +768,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 		num_annotations += CountChildren(Parent, "T_clock_to_Q", 0);
 		num_annotations += CountChildren(Parent, "T_hold", 0);
 
-		pb_type->annotations = my_calloc(num_annotations,
+		pb_type->annotations = (t_pin_to_pin_annotation*)my_calloc(num_annotations,
 				sizeof(t_pin_to_pin_annotation));
 		pb_type->num_annotations = num_annotations;
 
@@ -820,13 +820,13 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 		if (pb_type->num_modes == 0) {
 			/* The pb_type operates in an implied one mode */
 			pb_type->num_modes = 1;
-			pb_type->modes = my_calloc(pb_type->num_modes, sizeof(t_mode));
+			pb_type->modes = (t_mode*)my_calloc(pb_type->num_modes, sizeof(t_mode));
 			pb_type->modes[i].parent_pb_type = pb_type;
 			pb_type->modes[i].index = i;
 			ProcessMode(Parent, &pb_type->modes[i]);
 			i++;
 		} else {
-			pb_type->modes = my_calloc(pb_type->num_modes, sizeof(t_mode));
+			pb_type->modes = (t_mode*)my_calloc(pb_type->num_modes, sizeof(t_mode));
 
 			Cur = FindFirstElement(Parent, "mode", TRUE);
 			while (Cur != NULL) {
@@ -897,7 +897,7 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 	num_interconnect += CountChildren(Parent, "mux", 0);
 
 	mode->num_interconnect = num_interconnect;
-	mode->interconnect = my_calloc(num_interconnect, sizeof(t_interconnect));
+	mode->interconnect = (t_interconnect*)my_calloc(num_interconnect, sizeof(t_interconnect));
 
 	i = 0;
 	for (L_index = 0; L_index < 3; L_index++) {
@@ -941,7 +941,7 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 			num_annotations += CountChildren(Cur, "C_matrix", 0);
 			num_annotations += CountChildren(Cur, "pack_pattern", 0);
 
-			mode->interconnect[i].annotations = my_calloc(num_annotations,
+			mode->interconnect[i].annotations = (t_pin_to_pin_annotation*)my_calloc(num_annotations,
 					sizeof(t_pin_to_pin_annotation));
 			mode->interconnect[i].num_annotations = num_annotations;
 
@@ -999,7 +999,7 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode) {
 
 	mode->num_pb_type_children = CountChildren(Parent, "pb_type", 0);
 	if(mode->num_pb_type_children > 0) {
-		mode->pb_type_children = my_calloc(mode->num_pb_type_children,
+		mode->pb_type_children = (t_pb_type*) my_calloc(mode->num_pb_type_children,
 				sizeof(t_pb_type));
 
 		i = 0;
@@ -1097,7 +1097,8 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 	while (child != NULL) {
 		temp = (t_model*) my_calloc(1, sizeof(t_model));
 		temp->used = 0;
-		temp->inputs = temp->outputs = temp->instances = NULL;
+		temp->inputs = temp->outputs = NULL;
+		temp->instances = NULL;
 		Prop = FindProperty(child, "name", TRUE);
 		temp->name = my_strdup(Prop);
 		ezxml_set_attr(child, "name", NULL);
@@ -1367,7 +1368,7 @@ static void alloc_and_load_default_child_for_pb_type(INOUTP t_pb_type *pb_type,
 	copy->num_output_pins = pb_type->num_output_pins;
 	copy->num_pb = 1;
 	copy->num_ports = pb_type->num_ports;
-	copy->ports = my_calloc(pb_type->num_ports, sizeof(t_port));
+	copy->ports = (t_port*)my_calloc(pb_type->num_ports, sizeof(t_port));
 	for (i = 0; i < pb_type->num_ports; i++) {
 		copy->ports[i].is_clock = pb_type->ports[i].is_clock;
 		copy->ports[i].model_port = pb_type->ports[i].model_port;
@@ -1379,20 +1380,20 @@ static void alloc_and_load_default_child_for_pb_type(INOUTP t_pb_type *pb_type,
 	}
 
 	copy->max_internal_delay = pb_type->max_internal_delay;
-	copy->annotations = my_calloc(pb_type->num_annotations,
+	copy->annotations = (t_pin_to_pin_annotation*)my_calloc(pb_type->num_annotations,
 			sizeof(t_pin_to_pin_annotation));
 	copy->num_annotations = pb_type->num_annotations;
 	for (i = 0; i < copy->num_annotations; i++) {
 		copy->annotations[i].clock = my_strdup(pb_type->annotations[i].clock);
 		dot = strstr(pb_type->annotations[i].input_pins, ".");
-		copy->annotations[i].input_pins = my_malloc(
+		copy->annotations[i].input_pins = (char*)my_malloc(
 				sizeof(char) * (strlen(new_name) + strlen(dot) + 1));
 		copy->annotations[i].input_pins[0] = '\0';
 		strcat(copy->annotations[i].input_pins, new_name);
 		strcat(copy->annotations[i].input_pins, dot);
 		if (pb_type->annotations[i].output_pins != NULL) {
 			dot = strstr(pb_type->annotations[i].output_pins, ".");
-			copy->annotations[i].output_pins = my_malloc(
+			copy->annotations[i].output_pins = (char*)my_malloc(
 					sizeof(char) * (strlen(new_name) + strlen(dot) + 1));
 			copy->annotations[i].output_pins[0] = '\0';
 			strcat(copy->annotations[i].output_pins, new_name);
@@ -1405,9 +1406,9 @@ static void alloc_and_load_default_child_for_pb_type(INOUTP t_pb_type *pb_type,
 		copy->annotations[i].type = pb_type->annotations[i].type;
 		copy->annotations[i].num_value_prop_pairs =
 				pb_type->annotations[i].num_value_prop_pairs;
-		copy->annotations[i].prop = my_malloc(
+		copy->annotations[i].prop = (int*)my_malloc(
 				sizeof(int) * pb_type->annotations[i].num_value_prop_pairs);
-		copy->annotations[i].value = my_malloc(
+		copy->annotations[i].value = (char**)my_malloc(
 				sizeof(char *) * pb_type->annotations[i].num_value_prop_pairs);
 		for (j = 0; j < pb_type->annotations[i].num_value_prop_pairs; j++) {
 			copy->annotations[i].prop[j] = pb_type->annotations[i].prop[j];
@@ -1431,7 +1432,7 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 	}
 
 	lut_pb_type->num_modes = 2;
-	lut_pb_type->modes = my_calloc(lut_pb_type->num_modes, sizeof(t_mode));
+	lut_pb_type->modes = (t_mode*)my_calloc(lut_pb_type->num_modes, sizeof(t_mode));
 
 	/* First mode, route_through */
 	lut_pb_type->modes[0].name = my_strdup(lut_pb_type->name);
@@ -1453,24 +1454,24 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 		in_port = &lut_pb_type->ports[1];
 	}
 	lut_pb_type->modes[0].num_interconnect = 1;
-	lut_pb_type->modes[0].interconnect = my_calloc(1, sizeof(t_interconnect));
-	lut_pb_type->modes[0].interconnect[0].name = my_calloc(
+	lut_pb_type->modes[0].interconnect = (t_interconnect*)my_calloc(1, sizeof(t_interconnect));
+	lut_pb_type->modes[0].interconnect[0].name = (char*)my_calloc(
 			strlen(lut_pb_type->name) + 10, sizeof(char));
 	sprintf(lut_pb_type->modes[0].interconnect[0].name, "complete:%s",
 			lut_pb_type->name);
 	lut_pb_type->modes[0].interconnect[0].type = COMPLETE_INTERC;
-	lut_pb_type->modes[0].interconnect[0].input_string = my_calloc(
+	lut_pb_type->modes[0].interconnect[0].input_string = (char*)my_calloc(
 			strlen(lut_pb_type->name) + strlen(in_port->name) + 2,
 			sizeof(char));
 	sprintf(lut_pb_type->modes[0].interconnect[0].input_string, "%s.%s",
 			lut_pb_type->name, in_port->name);
-	lut_pb_type->modes[0].interconnect[0].output_string = my_calloc(
+	lut_pb_type->modes[0].interconnect[0].output_string = (char*)my_calloc(
 			strlen(lut_pb_type->name) + strlen(out_port->name) + 2,
 			sizeof(char));
 	sprintf(lut_pb_type->modes[0].interconnect[0].output_string, "%s.%s",
 			lut_pb_type->name, out_port->name);
 
-	lut_pb_type->modes[0].interconnect[0].annotations = my_calloc(lut_pb_type->num_annotations,
+	lut_pb_type->modes[0].interconnect[0].annotations = (t_pin_to_pin_annotation*)my_calloc(lut_pb_type->num_annotations,
 			sizeof(t_pin_to_pin_annotation));
 	lut_pb_type->modes[0].interconnect[0].num_annotations = lut_pb_type->num_annotations;
 	for (i = 0; i < lut_pb_type->modes[0].interconnect[0].num_annotations; i++) {
@@ -1482,9 +1483,9 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 		lut_pb_type->modes[0].interconnect[0].annotations[i].type = lut_pb_type->annotations[i].type;
 		lut_pb_type->modes[0].interconnect[0].annotations[i].num_value_prop_pairs =
 				lut_pb_type->annotations[i].num_value_prop_pairs;
-		lut_pb_type->modes[0].interconnect[0].annotations[i].prop = my_malloc(
+		lut_pb_type->modes[0].interconnect[0].annotations[i].prop = (int*)my_malloc(
 				sizeof(int) * lut_pb_type->annotations[i].num_value_prop_pairs);
-		lut_pb_type->modes[0].interconnect[0].annotations[i].value = my_malloc(
+		lut_pb_type->modes[0].interconnect[0].annotations[i].value = (char**)my_malloc(
 				sizeof(char *) * lut_pb_type->annotations[i].num_value_prop_pairs);
 		for (j = 0; j < lut_pb_type->annotations[i].num_value_prop_pairs; j++) {
 			lut_pb_type->modes[0].interconnect[0].annotations[i].prop[j] = lut_pb_type->annotations[i].prop[j];
@@ -1499,7 +1500,7 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 	lut_pb_type->modes[1].parent_pb_type = lut_pb_type;
 	lut_pb_type->modes[1].index = 1;
 	lut_pb_type->modes[1].num_pb_type_children = 1;
-	lut_pb_type->modes[1].pb_type_children = my_calloc(1, sizeof(t_pb_type));
+	lut_pb_type->modes[1].pb_type_children = (t_pb_type*) my_calloc(1, sizeof(t_pb_type));
 	alloc_and_load_default_child_for_pb_type(lut_pb_type, default_name,
 			lut_pb_type->modes[1].pb_type_children);
 	/* moved annotations to child so delete old annotations */
@@ -1528,33 +1529,33 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 
 	/* Process interconnect */
 	lut_pb_type->modes[1].num_interconnect = 2;
-	lut_pb_type->modes[1].interconnect = my_calloc(2, sizeof(t_interconnect));
-	lut_pb_type->modes[1].interconnect[0].name = my_calloc(
+	lut_pb_type->modes[1].interconnect = (t_interconnect*)my_calloc(2, sizeof(t_interconnect));
+	lut_pb_type->modes[1].interconnect[0].name = (char*)my_calloc(
 			strlen(lut_pb_type->name) + 10, sizeof(char));
 	sprintf(lut_pb_type->modes[1].interconnect[0].name, "complete:%s",
 			lut_pb_type->name);
 	lut_pb_type->modes[1].interconnect[0].type = COMPLETE_INTERC;
-	lut_pb_type->modes[1].interconnect[0].input_string = my_calloc(
+	lut_pb_type->modes[1].interconnect[0].input_string = (char*)my_calloc(
 			strlen(lut_pb_type->name) + strlen(in_port->name) + 2,
 			sizeof(char));
 	sprintf(lut_pb_type->modes[1].interconnect[0].input_string, "%s.%s",
 			lut_pb_type->name, in_port->name);
-	lut_pb_type->modes[1].interconnect[0].output_string = my_calloc(
+	lut_pb_type->modes[1].interconnect[0].output_string = (char*)my_calloc(
 			strlen(default_name) + strlen(in_port->name) + 2, sizeof(char));
 	sprintf(lut_pb_type->modes[1].interconnect[0].output_string, "%s.%s",
 			default_name, in_port->name);
 
-	lut_pb_type->modes[1].interconnect[1].name = my_calloc(
+	lut_pb_type->modes[1].interconnect[1].name = (char*)my_calloc(
 			strlen(lut_pb_type->name) + 11, sizeof(char));
 	sprintf(lut_pb_type->modes[1].interconnect[1].name, "direct:%s",
 			lut_pb_type->name);
 
 	lut_pb_type->modes[1].interconnect[1].type = DIRECT_INTERC;
-	lut_pb_type->modes[1].interconnect[1].input_string = my_calloc(
+	lut_pb_type->modes[1].interconnect[1].input_string = (char*)my_calloc(
 			strlen(default_name) + strlen(out_port->name) + 4, sizeof(char));
 	sprintf(lut_pb_type->modes[1].interconnect[1].input_string, "%s.%s",
 			default_name, out_port->name);
-	lut_pb_type->modes[1].interconnect[1].output_string = my_calloc(
+	lut_pb_type->modes[1].interconnect[1].output_string = (char*)my_calloc(
 			strlen(lut_pb_type->name) + strlen(out_port->name)
 					+ strlen(in_port->name) + 2, sizeof(char));
 	sprintf(lut_pb_type->modes[1].interconnect[1].output_string, "%s.%s",
@@ -1580,7 +1581,7 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 		default_name = my_strdup("memory_slice_1bit");
 	}
 
-	mem_pb_type->modes = my_calloc(1, sizeof(t_mode));
+	mem_pb_type->modes = (t_mode*)my_calloc(1, sizeof(t_mode));
 	mem_pb_type->modes[0].name = my_strdup(default_name);
 	mem_pb_type->modes[0].parent_pb_type = mem_pb_type;
 	mem_pb_type->modes[0].index = 0;
@@ -1603,7 +1604,7 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 	}
 
 	mem_pb_type->modes[0].num_pb_type_children = 1;
-	mem_pb_type->modes[0].pb_type_children = my_calloc(1, sizeof(t_pb_type));
+	mem_pb_type->modes[0].pb_type_children = (t_pb_type*)my_calloc(1, sizeof(t_pb_type));
 	alloc_and_load_default_child_for_pb_type(mem_pb_type, default_name,
 			&mem_pb_type->modes[0].pb_type_children[0]);
 	mem_pb_type->modes[0].pb_type_children[0].depth = mem_pb_type->depth + 1;
@@ -1618,7 +1619,7 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 	mem_pb_type->model = NULL;
 
 	mem_pb_type->modes[0].num_interconnect = mem_pb_type->num_ports * num_pb;
-	mem_pb_type->modes[0].interconnect = my_calloc(
+	mem_pb_type->modes[0].interconnect = (t_interconnect*)my_calloc(
 			mem_pb_type->modes[0].num_interconnect, sizeof(t_interconnect));
 
 	/* Process interconnect */
@@ -1640,7 +1641,7 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 				&& strstr(mem_pb_type->ports[i].port_class, "data")
 						== mem_pb_type->ports[i].port_class) {
 
-			mem_pb_type->modes[0].interconnect[i_inter].name = my_calloc(
+			mem_pb_type->modes[0].interconnect[i_inter].name = (char*) my_calloc(
 					i_inter / 10 + 8, sizeof(char));
 			sprintf(mem_pb_type->modes[0].interconnect[i_inter].name,
 					"direct%d", i_inter);
@@ -1651,14 +1652,14 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 				mem_pb_type->modes[0].pb_type_children[0].num_input_pins -=
 						(mem_pb_type->ports[i].num_pins - 1);
 
-				mem_pb_type->modes[0].interconnect[i_inter].input_string =
+				mem_pb_type->modes[0].interconnect[i_inter].input_string = (char*)
 						my_calloc(
 								strlen(input_name) + strlen(input_port_name)
 										+ 2, sizeof(char));
 				sprintf(
 						mem_pb_type->modes[0].interconnect[i_inter].input_string,
 						"%s.%s", input_name, input_port_name);
-				mem_pb_type->modes[0].interconnect[i_inter].output_string =
+				mem_pb_type->modes[0].interconnect[i_inter].output_string = (char*)
 						my_calloc(
 								strlen(output_name) + strlen(output_port_name)
 										+ 2 * (6 + num_pb / 10), sizeof(char));
@@ -1672,14 +1673,14 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 				mem_pb_type->modes[0].pb_type_children[0].num_output_pins -=
 						(mem_pb_type->ports[i].num_pins - 1);
 
-				mem_pb_type->modes[0].interconnect[i_inter].input_string =
+				mem_pb_type->modes[0].interconnect[i_inter].input_string = (char*)
 						my_calloc(
 								strlen(input_name) + strlen(input_port_name)
 										+ 2 * (6 + num_pb / 10), sizeof(char));
 				sprintf(
 						mem_pb_type->modes[0].interconnect[i_inter].input_string,
 						"%s[%d:0].%s", input_name, num_pb - 1, input_port_name);
-				mem_pb_type->modes[0].interconnect[i_inter].output_string =
+				mem_pb_type->modes[0].interconnect[i_inter].output_string = (char*)
 						my_calloc(
 								strlen(output_name) + strlen(output_port_name)
 										+ 2, sizeof(char));
@@ -1692,7 +1693,7 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 		} else {
 			for (j = 0; j < num_pb; j++) {
 				/* Anything that is not data must be an input */
-				mem_pb_type->modes[0].interconnect[i_inter].name = my_calloc(
+				mem_pb_type->modes[0].interconnect[i_inter].name = (char*)  my_calloc(
 						i_inter / 10 + j / 10 + 10, sizeof(char));
 				sprintf(mem_pb_type->modes[0].interconnect[i_inter].name,
 						"direct%d_%d", i_inter, j);
@@ -1700,14 +1701,14 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 				if (mem_pb_type->ports[i].type == IN_PORT) {
 					mem_pb_type->modes[0].interconnect[i_inter].type =
 							DIRECT_INTERC;
-					mem_pb_type->modes[0].interconnect[i_inter].input_string =
+					mem_pb_type->modes[0].interconnect[i_inter].input_string = (char*)
 							my_calloc(
 									strlen(input_name) + strlen(input_port_name)
 											+ 2, sizeof(char));
 					sprintf(
 							mem_pb_type->modes[0].interconnect[i_inter].input_string,
 							"%s.%s", input_name, input_port_name);
-					mem_pb_type->modes[0].interconnect[i_inter].output_string =
+					mem_pb_type->modes[0].interconnect[i_inter].output_string = (char*)
 							my_calloc(
 									strlen(output_name)
 											+ strlen(output_port_name)
@@ -1720,7 +1721,7 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 				} else {
 					mem_pb_type->modes[0].interconnect[i_inter].type =
 							DIRECT_INTERC;
-					mem_pb_type->modes[0].interconnect[i_inter].input_string =
+					mem_pb_type->modes[0].interconnect[i_inter].input_string = (char*)
 							my_calloc(
 									strlen(input_name) + strlen(input_port_name)
 											+ 2 * (6 + num_pb / 10),
@@ -1728,7 +1729,7 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 					sprintf(
 							mem_pb_type->modes[0].interconnect[i_inter].input_string,
 							"%s[%d:%d].%s", input_name, j, j, input_port_name);
-					mem_pb_type->modes[0].interconnect[i_inter].output_string =
+					mem_pb_type->modes[0].interconnect[i_inter].output_string = (char*)
 							my_calloc(
 									strlen(output_name)
 											+ strlen(output_port_name) + 2,
@@ -1789,7 +1790,7 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 		ProcessComplexBlockProps(CurType, Type);
 
 		/* Load pb_type info */
-		Type->pb_type = my_malloc(sizeof(t_pb_type));
+		Type->pb_type = (t_pb_type*)my_malloc(sizeof(t_pb_type));
 		Type->pb_type->name = my_strdup(Type->name);
 		if (i == IO_TYPE_INDEX) {
 			if (strcmp(Type->name, "io") != 0) {
@@ -2302,13 +2303,13 @@ static void ProcessDirects(INOUTP ezxml_t Parent,
 static void CreateModelLibrary(OUTP struct s_arch *arch) {
 	t_model* model_library;
 
-	model_library = my_calloc(4, sizeof(t_model));
+	model_library = (t_model*)my_calloc(4, sizeof(t_model));
 	model_library[0].name = my_strdup("input");
 	model_library[0].index = 0;
 	model_library[0].inputs = NULL;
 	model_library[0].instances = NULL;
 	model_library[0].next = &model_library[1];
-	model_library[0].outputs = my_calloc(1, sizeof(t_model_ports));
+	model_library[0].outputs = (t_model_ports*)my_calloc(1, sizeof(t_model_ports));
 	model_library[0].outputs->dir = OUT_PORT;
 	model_library[0].outputs->name = my_strdup("inpad");
 	model_library[0].outputs->next = NULL;
@@ -2319,7 +2320,7 @@ static void CreateModelLibrary(OUTP struct s_arch *arch) {
 
 	model_library[1].name = my_strdup("output");
 	model_library[1].index = 1;
-	model_library[1].inputs = my_calloc(1, sizeof(t_model_ports));
+	model_library[1].inputs = (t_model_ports*)my_calloc(1, sizeof(t_model_ports));
 	model_library[1].inputs->dir = IN_PORT;
 	model_library[1].inputs->name = my_strdup("outpad");
 	model_library[1].inputs->next = NULL;
@@ -2333,7 +2334,7 @@ static void CreateModelLibrary(OUTP struct s_arch *arch) {
 
 	model_library[2].name = my_strdup("latch");
 	model_library[2].index = 2;
-	model_library[2].inputs = my_calloc(2, sizeof(t_model_ports));
+	model_library[2].inputs = (t_model_ports*)my_calloc(2, sizeof(t_model_ports));
 	model_library[2].inputs[0].dir = IN_PORT;
 	model_library[2].inputs[0].name = my_strdup("D");
 	model_library[2].inputs[0].next = &model_library[2].inputs[1];
@@ -2350,7 +2351,7 @@ static void CreateModelLibrary(OUTP struct s_arch *arch) {
 	model_library[2].inputs[1].is_clock = TRUE;
 	model_library[2].instances = NULL;
 	model_library[2].next = &model_library[3];
-	model_library[2].outputs = my_calloc(1, sizeof(t_model_ports));
+	model_library[2].outputs = (t_model_ports*)my_calloc(1, sizeof(t_model_ports));
 	model_library[2].outputs->dir = OUT_PORT;
 	model_library[2].outputs->name = my_strdup("Q");
 	model_library[2].outputs->next = NULL;
@@ -2361,7 +2362,7 @@ static void CreateModelLibrary(OUTP struct s_arch *arch) {
 
 	model_library[3].name = my_strdup("names");
 	model_library[3].index = 3;
-	model_library[3].inputs = my_calloc(1, sizeof(t_model_ports));
+	model_library[3].inputs = (t_model_ports*)my_calloc(1, sizeof(t_model_ports));
 	model_library[3].inputs->dir = IN_PORT;
 	model_library[3].inputs->name = my_strdup("in");
 	model_library[3].inputs->next = NULL;
@@ -2371,7 +2372,7 @@ static void CreateModelLibrary(OUTP struct s_arch *arch) {
 	model_library[3].inputs->is_clock = FALSE;
 	model_library[3].instances = NULL;
 	model_library[3].next = NULL;
-	model_library[3].outputs = my_calloc(1, sizeof(t_model_ports));
+	model_library[3].outputs = (t_model_ports*)my_calloc(1, sizeof(t_model_ports));
 	model_library[3].outputs->dir = OUT_PORT;
 	model_library[3].outputs->name = my_strdup("out");
 	model_library[3].outputs->next = NULL;
@@ -2617,7 +2618,7 @@ static void PrintPb_types_rec(INP FILE * Echo, INP const t_pb_type * pb_type,
 	int i, j, k;
 	char *tabs;
 
-	tabs = my_malloc((level + 1) * sizeof(char));
+	tabs = (char*)my_malloc((level + 1) * sizeof(char));
 	for (i = 0; i < level; i++) {
 		tabs[i] = '\t';
 	}
