@@ -641,5 +641,63 @@ void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options, INOUTP t_vpr_set
 
 
 
+/****************************************************************************************************
+ * Advanced functions
+ *  Used when you need fine-grained control over VPR that the main VPR operations do not enable
+ ****************************************************************************************************/
+	/* Read in user options */
+	void vpr_read_options(INP int argc,	INP char **argv, OUTP t_options * options) {
+		ReadOptions(argc, argv, options);
+	}
+
+	/* Read in arch and circuit */
+	void vpr_setup_vpr(INP t_options *Options,
+		INP boolean TimingEnabled,
+		OUTP struct s_file_name_opts *FileNameOpts,
+		OUTP t_arch * Arch,
+		OUTP enum e_operation *Operation,
+		OUTP t_model ** user_models,
+		OUTP t_model ** library_models,
+		OUTP struct s_packer_opts *PackerOpts,
+		OUTP struct s_placer_opts *PlacerOpts,
+		OUTP struct s_annealing_sched *AnnealSched,
+		OUTP struct s_router_opts *RouterOpts,
+		OUTP struct s_det_routing_arch *RoutingArch,
+		OUTP t_segment_inf ** Segments,
+		OUTP t_timing_inf * Timing,
+		OUTP boolean * ShowGraphics,
+		OUTP int *GraphPause) {
+		SetupVPR(Options, TimingEnabled, FileNameOpts, Arch, Operation, user_models, library_models, PackerOpts, PlacerOpts, AnnealSched, RouterOpts,
+				RoutingArch, Segments, Timing, ShowGraphics, GraphPause);
+	}
+	/* Check inputs are reasonable */
+	void vpr_check_options(INP t_options Options, INP boolean TimingEnabled) {
+		CheckOptions(Options, TimingEnabled);
+	}
+	void vpr_check_arch(INP t_arch Arch, INP boolean TimingEnabled) {
+		CheckArch(Arch, TimingEnabled);
+	}
+	/* Verify settings don't conflict or otherwise not make sense */
+	void vpr_check_setup(INP enum e_operation Operation,
+		INP struct s_placer_opts PlacerOpts,
+		INP struct s_annealing_sched AnnealSched,
+		INP struct s_router_opts RouterOpts,
+		INP struct s_det_routing_arch RoutingArch, INP t_segment_inf * Segments,
+		INP t_timing_inf Timing, INP t_chan_width_dist Chans) {
+		CheckSetup(Operation, PlacerOpts, AnnealSched, RouterOpts, RoutingArch, Segments, Timing,  Chans);
+	}
+	/* Read blif file and sweep unused components */
+	void vpr_read_and_process_blif(INP char *blif_file, INP boolean sweep_hanging_nets_and_inputs,
+		INP t_model *user_models, INP t_model *library_models) {
+		read_and_process_blif(blif_file, sweep_hanging_nets_and_inputs, user_models, library_models);
+	}
+	/* Show current setup */
+	void vpr_show_setup(INP t_options options, INP t_vpr_setup vpr_setup) {
+		ShowSetup(options, vpr_setup);
+	}
+
+
+
+
 
 
