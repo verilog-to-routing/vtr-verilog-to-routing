@@ -33,7 +33,10 @@ use Cwd;
 use File::Spec;
 
 # Function Prototypes
+sub setup_single_test;
+sub check_override;
 sub run_single_test;
+sub parse_single_test;
 sub run_quick_test;
 sub run_odin_test;
 
@@ -47,26 +50,37 @@ my $reg_test_path = "./vtr_flow/tasks/regression_tests";
 
 my @tests;
 my $token;
+my $test_dir;
+my $script_params = "";
+# Override variables
+my $parse_only = 0;
 my $create_golden = 0;
-my $test = 0;
+my $check_golden = 0;
+my $can_quit = 0;
 
 # Parse Input Arguments
 while ( $token = shift(@ARGV) ) {
 
-	if ( $token eq "-create_golden" ) {
+	if ( $token eq "-parse") {
+		$parse_only = 1;
+	}
+	elsif ( $token eq "-create_golden" ) {
 		$create_golden = 1;
+	}
+	elsif ( $token eq "-check_golden" ) {
+		$check_golden = 1;
 	}
 	elsif ($token eq "-quick_test") {
 		run_quick_test();
-		$test = 1;
+		$can_quit = 1;
 	}
 	elsif ($token eq "odin_reg_micro") {
 		run_odin_test( "micro" );
-		$test = 1;
+		$can_quit = 1;
 	}
 	elsif ($token eq "odin_reg_full") {
 		run_odin_test( "full" );
-		$test = 1;
+		$can_quit = 1;
 	}
 	else {	
 		if ($token =~ /(.*)\//) {
@@ -80,7 +94,7 @@ while ( $token = shift(@ARGV) ) {
 my %hash = map { $_, 1 } @tests;
 @tests = keys %hash;
 
-if ( $#tests == -1 and !$test ) {
+if ( $#tests == -1 and !$can_quit ) {
 	die "\n"
 	  . "Incorrect usage.  You must specify at least one test to execute.\n"
 	  . "\n"
@@ -112,26 +126,36 @@ if ( $#tests == -1 and !$test ) {
 ##############################################################
 # Run regression tests
 ##############################################################
+
 if ( $#tests > -1 ) {
 	print "=============================================\n";
 	print "    Verilog-to-Routing Regression Testing    \n";
-	print "=============================================\n\n";
+	print "=============================================\n";
 
 	foreach my $test (@tests) {
 		chomp($test);
-		run_single_test($test);
+		# Set up test
+		setup_single_test($test);
+		# Check for user overrides
+		check_override;
+		# Run regression test
+		run_single_test;
+		# Parse regression test
+		parse_single_test;
+		# Check golden results
+		parse_single_test("check");
 	}
-	print "Test complete\n";
+	print "\nTest complete\n\n";
 }
+
 
 ##############################################################
 # Subroutines
 ##############################################################
-sub run_single_test {
 
-	my $test     = shift(@_);
-	my $test_dir = "$reg_test_path/$test";
-	my $script_params;
+sub setup_single_test {
+	my $test_name = shift;
+	$test_dir = "$reg_test_path/$test_name";
 
 	# Task list exists. Execute script with list instead.
 	if ( -e "$test_dir/task_list.txt" ) {
@@ -140,22 +164,47 @@ sub run_single_test {
 	else {
 		$script_params = "$test_dir";
 	}
+}
 
-	print "Running regression test... \n";
-	system("$vtr_flow_path/scripts/run_vtr_task.pl $script_params \n");
+sub check_override {
 
-	print "\nParsing test results... \n";
-	system("$vtr_flow_path/scripts/parse_vtr_task.pl $script_params \n");
+	if ($parse_only) {
+		parse_single_test;
+		die;
+	}
 
 	if ($create_golden) {
+		parse_single_test("create");
+		die;
+	}
+
+	if ($check_golden) {
+		parse_single_test("check");
+		die;
+	}
+}
+
+sub run_single_test {
+	print "\nRunning regression test... \n";
+	system("$vtr_flow_path/scripts/run_vtr_task.pl $script_params \n");
+}
+
+sub parse_single_test {
+	my $golden = shift;
+
+	if ( $golden eq "create" ) {
 		print "\nCreating golden results... \n";
 		$script_params = $script_params . " -create_golden";
 	}
-	else {
+	elsif ( $golden eq "check" ) {
 		print "\nChecking test results... \n";
 		$script_params = $script_params . " -check_golden";
 	}
-	system(	"$vtr_flow_path/scripts/parse_vtr_task.pl $script_params \n");
+	else {
+		print "\nParsing test results... \n";
+	}
+
+	system("$vtr_flow_path/scripts/parse_vtr_task.pl $script_params \n");
 }
 
 sub run_quick_test {
@@ -199,7 +248,7 @@ sub run_quick_test {
 }
 
 sub run_odin_test {
-	$token = shift();
+	$token = shift;
 
 	chdir ("ODIN_II") or die "Failed to change to directory ./ODIN_II: $!";
 
