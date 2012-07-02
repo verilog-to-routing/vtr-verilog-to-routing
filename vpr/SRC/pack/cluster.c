@@ -1381,7 +1381,6 @@ static enum e_block_pack_status try_place_logical_block_rec(
 	block_pack_status = BLK_PASSED;
 
 	/* Discover parent */
-	printf("%s\n", pb_graph_node->pb_type->name);
 	if (pb_graph_node->parent_pb_graph_node != cb->pb_graph_node) {
 		block_pack_status = try_place_logical_block_rec(
 				pb_graph_node->parent_pb_graph_node, ilogical_block, cb,
