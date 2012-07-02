@@ -164,8 +164,8 @@ boolean get_next_primitive_list(
 		}
 	} else {
 		/* populate primitive list with best */
-		assert(
-				try_place_molecule(molecule, best->pb_graph_node, primitives_list) == lowest_cost);
+		cost = try_place_molecule(molecule, best->pb_graph_node, primitives_list);
+		assert(cost == lowest_cost);
 
 		/* take out best node and put it in flight */
 		cluster_placement_stats->in_flight = best;

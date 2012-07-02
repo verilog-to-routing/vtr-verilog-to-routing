@@ -502,7 +502,7 @@ ReadBaseToken(INP char **Args, OUTP enum e_OptionBaseToken *Token) {
 	Cur = OptionBaseTokenList;
 	while (Cur->Str) {
 		if (strcmp(*Args, Cur->Str) == 0) {
-			*Token = Cur->Enum;
+			*Token = (enum e_OptionBaseToken) Cur->Enum;
 			return ++Args;
 		}
 		++Cur;
@@ -524,7 +524,7 @@ ReadToken(INP char **Args, OUTP enum e_OptionArgToken *Token) {
 	Cur = OptionArgTokenList;
 	while (Cur->Str) {
 		if (strcmp(*Args, Cur->Str) == 0) {
-			*Token = Cur->Enum;
+			*Token = (enum e_OptionArgToken)Cur->Enum;
 			return ++Args;
 		}
 		++Cur;

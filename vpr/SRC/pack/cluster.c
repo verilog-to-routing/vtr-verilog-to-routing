@@ -1275,8 +1275,10 @@ static enum e_block_pack_status try_pack_molecule(
 	int i;
 	enum e_block_pack_status block_pack_status;
 	struct s_linked_vptr *cur_molecule;
-	t_pb *parent = NULL;
-
+	t_pb *parent;
+	
+	parent = NULL;
+	
 	block_pack_status = BLK_STATUS_UNDEFINED;
 
 	molecule_size = get_array_size_of_molecule(molecule);
@@ -1289,10 +1291,12 @@ static enum e_block_pack_status try_pack_molecule(
 			block_pack_status = BLK_PASSED;
 			for (i = 0; i < molecule_size && block_pack_status == BLK_PASSED;
 					i++) {
+					printf("i %d\n", i);
 				assert(
 						(primitives_list[i] == NULL) == (molecule->logical_block_ptrs[i] == NULL));
 				failed_location = i + 1;
 				if (molecule->logical_block_ptrs[i] != NULL) {
+					printf("%s\n", primitives_list[i]->pb_type->name);
 					block_pack_status = try_place_logical_block_rec(
 							primitives_list[i],
 							molecule->logical_block_ptrs[i]->index, pb, &parent,
@@ -1379,6 +1383,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 	block_pack_status = BLK_PASSED;
 
 	/* Discover parent */
+	printf("%s\n", pb_graph_node->pb_type->name);
 	if (pb_graph_node->parent_pb_graph_node != cb->pb_graph_node) {
 		block_pack_status = try_place_logical_block_rec(
 				pb_graph_node->parent_pb_graph_node, ilogical_block, cb,
