@@ -1291,12 +1291,10 @@ static enum e_block_pack_status try_pack_molecule(
 			block_pack_status = BLK_PASSED;
 			for (i = 0; i < molecule_size && block_pack_status == BLK_PASSED;
 					i++) {
-					printf("i %d\n", i);
 				assert(
 						(primitives_list[i] == NULL) == (molecule->logical_block_ptrs[i] == NULL));
 				failed_location = i + 1;
 				if (molecule->logical_block_ptrs[i] != NULL) {
-					printf("%s\n", primitives_list[i]->pb_type->name);
 					block_pack_status = try_place_logical_block_rec(
 							primitives_list[i],
 							molecule->logical_block_ptrs[i]->index, pb, &parent,
