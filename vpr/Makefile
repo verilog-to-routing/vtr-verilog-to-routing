@@ -18,7 +18,7 @@ export BUILD_TYPE = release
 MAC_OS = false
 # can be true or false
 
-COMPILER = g++
+COMPILER = gcc
 
 OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O3
 # can be -O0 (no optimization) to -O3 (full optimization), or -Os (optimize space)
@@ -32,7 +32,8 @@ SRC_DIR = SRC
 OBJ_DIR = OBJ
 OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/route
 
-WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE
+#WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE
+WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -Wstrict-prototypes -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wmissing-prototypes -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-overlength_strings
 
 DEBUG_FLAGS = -g
 OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)

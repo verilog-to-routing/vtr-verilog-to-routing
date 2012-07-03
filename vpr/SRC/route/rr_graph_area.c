@@ -548,7 +548,7 @@ static float trans_per_buf(float Rbuf, float R_minW_nmos, float R_minW_pmos) {
 
 		num_stage = nint(log10(R_minW_nmos / Rbuf) / log10(4.));
 		num_stage = max(num_stage, 1);
-		stage_ratio = pow((float)(R_minW_nmos / Rbuf), float( 1. / (float) num_stage));
+		stage_ratio = pow((float)(R_minW_nmos / Rbuf), (float)( 1. / (float) num_stage));
 
 		Rstage = R_minW_nmos;
 		trans_count = 0.;
