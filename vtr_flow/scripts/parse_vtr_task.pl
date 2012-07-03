@@ -209,7 +209,7 @@ sub calc_geomean {
 	}
 	else {
 	}
-	print OUTPUT_FILE "\n${exp_num}";
+	print OUTPUT_FILE "\t\n${exp_num}";
 
 	##############################################################
 	# Compute & write geomean to output file
