@@ -22,7 +22,7 @@ void read_place(INP const char *place_file, INP const char *arch_file,
 	int error;
 	struct s_block *cur_blk;
 
-	infile = fopen(place_file, "rb");
+	infile = fopen(place_file, "r");
 
 	/* Check filenames in first line match */
 	tokens = ReadLineTokens(infile, &line);
@@ -150,7 +150,7 @@ void read_user_pad_loc(char *pad_loc_file) {
 
 	printf("\nReading locations of IO pads from %s.\n", pad_loc_file);
 	file_line_number = 0;
-	fp = fopen(pad_loc_file, "rb");
+	fp = fopen(pad_loc_file, "r");
 
 	hash_table = alloc_hash_table();
 	for (iblk = 0; iblk < num_blocks; iblk++) {

@@ -405,10 +405,7 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 	 * identical results for Windows (\r\n) and Linux (\n)   *
 	 * newlines, since it replaces each carriage return \r   *
 	 * by a newline character \n.  It also deals with the    *
-	 * special case where there's no newline before EOF.	 *
-	 * TO GIVE PROPER RESULTS WITH WINDOWS NEWLINES, ALL	 *
-	 * FILES MUST BE OPENED IN BINARY MODE, E.G.:			 *
-	 * blif = fopen(blif_file, "rb");						 */
+	 * special case where there's no newline before EOF.	 */
 
 	char *val;
 	int i;
@@ -427,6 +424,7 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 		 * This must also be done for Windows, surprisingly.			  */
 		if (buf[i] == '\r') { 
 			buf[i] = '\n';
+			buf[i+1] = '\0';
 			break;
 		}
 
