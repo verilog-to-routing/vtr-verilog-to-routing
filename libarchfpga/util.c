@@ -404,8 +404,9 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 	 * comment part (#) means continue. my_fgets should give * 
 	 * identical results for Windows (\r\n) and Linux (\n)   *
 	 * newlines, since it replaces each carriage return \r   *
-	 * by a newline character \n.  It also deals with the    *
-	 * special case where there's no newline before EOF.	 */
+	 * by a newline character \n on non-Windows platforms.	 *
+	 * It also deals with the special case where there's no  *
+	 * newline before EOF. */
 
 	char *val;
 	int i;
@@ -420,10 +421,13 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 	 * truncation).                                                    */
 
 	for (i = 0; i < max_size; i++) {
+#if !defined WIN32 && !defined WIN64
+		/* For non-Windows, eliminate Windows \r\n newlines by replacing each \r by an \n. */
 		if (buf[i] == '\r') { 
 			buf[i] = '\n';
 			break;
 		}
+#endif
 		if (buf[i] == '\n')
 			break;
 		if (buf[i] == '\0') {
