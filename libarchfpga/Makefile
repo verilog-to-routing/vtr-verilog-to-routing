@@ -10,7 +10,7 @@
 
 #############################################################################################
 
-CC = g++
+CC = gcc
 AR = ar
 
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -pedantic -Wshadow -Wcast-align
