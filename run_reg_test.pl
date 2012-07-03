@@ -53,6 +53,7 @@ my $token;
 my $test_dir;
 my $script_params = "";
 # Override variables
+my $first = 1;
 my $parse_only = 0;
 my $create_golden = 0;
 my $check_golden = 0;
@@ -145,6 +146,7 @@ if ( $#tests > -1 ) {
 		check_override;
 		# Run regression test
 		run_single_test;
+		$first = 0;
 		# Parse regression test
 		parse_single_test("");
 		# Check golden results
@@ -175,22 +177,22 @@ sub check_override {
 
 	if ($parse_only) {
 		parse_single_test;
-		die "Parsed results";
+		exit "Parsed results";
 	}
 
 	if ($create_golden) {
 		parse_single_test("create");
-		die "Created golden results";
+		exit "Created golden results";
 	}
 
 	if ($check_golden) {
 		parse_single_test("check");
-		die "Checked results.";
+		exit "Checked results.";
 	}
 	
 	if ($calc_qor) {
 		parse_single_test("calculate");
-		die "Calculated results.";
+		exit "Calculated results.";
 	}
 
 	if ($display_qor) {
@@ -202,7 +204,7 @@ sub check_override {
 		}
 		else {
 			print "============================================================================================================================\n";
-			print "        				   Verilog-to-Routing QoR Results       					\n";
+			print "        				       Verilog-to-Routing QoR Results       					\n";
 			print "============================================================================================================================\n";
 
 			open( QOR_FILE, "$test_dir/qor_geomean.txt" );
@@ -217,12 +219,10 @@ sub check_override {
 			}
 			my @last_line = split( /\t/, trim($last_line) );
 			print "@last_line[1]" . "\t\t" . "@last_line[2]" . "\t" . "@last_line[3]" . "\t" . "@last_line[4]" . "\t" . "@last_line[5] \n\n";
-			die "QoR results displayed";
+			exit "QoR results displayed";
 		}
 	}
 }
-
-my $first = 1; 
 
 sub run_single_test {
 	if ($first) { 
@@ -239,19 +239,19 @@ sub run_single_test {
 sub parse_single_test {
 	while ( my $golden = shift(@_) ) {
 		if ( $golden eq "create" ) {
-			print "\nCreating golden results... \n\n";
+			print "\nCreating golden results... \n";
 			$script_params = $script_params . " -create_golden";
 		}
 		elsif ( $golden eq "check" ) {
-			print "\nChecking test results... \n\n";
+			print "\nChecking test results... \n";
 			$script_params = $script_params . " -check_golden";
 		}
 		elsif ( $golden eq "calculate" ) {
-			print "\nCalculating QoR results... \n\n";
+			print "\nCalculating QoR results... \n";
 			$script_params = $script_params . " -calc_qor";
 		}
 		else {
-			print "\nParsing test results... \n\n";
+			print "\nParsing test results... \n";
 		}
 	}
 	system("$vtr_flow_path/scripts/parse_vtr_task.pl $script_params \n");
