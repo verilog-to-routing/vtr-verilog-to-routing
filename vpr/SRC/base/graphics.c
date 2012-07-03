@@ -1275,11 +1275,11 @@ void drawtext(float xc, float yc, const char *text, float boundx) {
 	if (width > fabs(boundx * xmult))
 		return; /* Don't draw if it won't fit */
 
-	xw_off = width / (2. * xmult); /* NB:  sign doesn't matter. */
+	xw_off = (int)(width / (2. * xmult)); /* NB:  sign doesn't matter. */
 
 	/* NB:  2 * descent makes this slightly conservative but simplifies code. */
-	yw_off = (font_info[currentfontsize]->ascent
-			+ 2 * font_info[currentfontsize]->descent) / (2. * ymult);
+	yw_off = (int)((font_info[currentfontsize]->ascent
+			+ 2 * font_info[currentfontsize]->descent) / (2. * ymult));
 
 	/* Note:  text can be clipped when a little bit of it would be visible *
 	 * right now.  Perhaps X doesn't return extremely accurate width and   *
@@ -1475,10 +1475,10 @@ static void translate_right(void (*drawscreen)(void)) {
 static void update_win(int x[2], int y[2], void (*drawscreen)(void)) {
 	float x1, x2, y1, y2;
 
-	x[0] = min(x[0], top_width - MWIDTH); /* Can't go under menu */
-	x[1] = min(x[1], top_width - MWIDTH);
-	y[0] = min(y[0], top_height - T_AREA_HEIGHT); /* Can't go under text area */
-	y[1] = min(y[1], top_height - T_AREA_HEIGHT);
+	x[0] = (int)min(x[0], (int)top_width - (int)MWIDTH); /* Can't go under menu */
+	x[1] = (int)min(x[1], (int)top_width - (int)MWIDTH);
+	y[0] = (int)min(y[0], (int)top_height - (int)T_AREA_HEIGHT); /* Can't go under text area */
+	y[1] = (int)min(y[1], (int)top_height - (int)T_AREA_HEIGHT);
 
 	if ((x[0] == x[1]) || (y[0] == y[1])) {
 		printf("Illegal (zero area) window.  Window unchanged.\n");
@@ -1568,7 +1568,7 @@ static void adjustwin(void (*drawscreen)(void)) {
 						abs(y[0] - yold));
 			}
 			/* Don't allow user to window under menu region */
-			xold = min(report.xmotion.x, top_width - 1 - MWIDTH);
+			xold = min(report.xmotion.x, (int)top_width - 1 - (int)MWIDTH);
 			yold = report.xmotion.y;
 			XDrawRectangle(display, toplevel, gcxor, min(x[0], xold),
 					min(y[0], yold), abs(x[0] - xold), abs(y[0] - yold));
