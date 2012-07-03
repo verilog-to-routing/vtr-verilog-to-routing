@@ -78,7 +78,7 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 	boolean add_truth_table;
 	t_model *inpad_model, *outpad_model, *logic_model, *latch_model;
 
-	blif = fopen(blif_file, "r");
+	blif = fopen(blif_file, "rb");
 	if (blif == NULL) {
 		printf("Failed to open blif file %s\n", blif_file);
 		exit(1);
