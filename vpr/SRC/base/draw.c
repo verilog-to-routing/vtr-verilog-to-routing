@@ -250,7 +250,7 @@ static void toggle_nets(void (*drawscreen_ptr)(void)) {
 	 * Also disables drawing of routing resources.  See graphics.c for details *
 	 * of how buttons work.                                                    */
 
-	show_nets = (show_nets == FALSE) ? FALSE : TRUE;
+	show_nets = (show_nets == FALSE) ? TRUE : FALSE;
 	draw_rr_toggle = DRAW_NO_RR;
 	show_congestion = FALSE;
 
@@ -276,7 +276,7 @@ static void toggle_rr(void (*drawscreen_ptr)(void)) {
 }
 
 static void toggle_defects(void (*drawscreen_ptr)(void)) {
-	show_defects = (show_defects == FALSE) ? FALSE : TRUE;
+	show_defects = (show_defects == FALSE) ? TRUE : FALSE;
 	update_message(default_message);
 	drawscreen_ptr();
 }
@@ -289,7 +289,7 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 
 	show_nets = FALSE;
 	draw_rr_toggle = DRAW_NO_RR;
-	show_congestion = (show_congestion == FALSE) ? FALSE : TRUE;
+	show_congestion = (show_congestion == FALSE) ? TRUE : FALSE;
 
 	if (!show_congestion) {
 		update_message(default_message);
