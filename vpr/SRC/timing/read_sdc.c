@@ -150,7 +150,7 @@ static boolean get_sdc_tok(char * buf, int num_lines) {
 			}
 			temp_falling_edge = (float) strtod(ptr, NULL);
 			/* Check that the falling edge is one half period away from the rising edge, excluding rounding error */
-			if(abs(temp_rising_edge - temp_falling_edge) - temp_clock_period/2.0 > EQUAL_DEF) {
+			if(fabs(temp_rising_edge - temp_falling_edge) - temp_clock_period/2.0 > EQUAL_DEF) {
 				fprintf(stderr, "clock does not have 50%% duty cycle on line %d of SDC file", num_lines);
 				exit(1);
 			}
@@ -376,3 +376,4 @@ static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_do
 
 	return constraint;
 }
+

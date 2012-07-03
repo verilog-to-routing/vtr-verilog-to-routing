@@ -359,7 +359,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 	t_pb_graph_pin *ipb_graph_pin;
 	t_rr_node *local_rr_graph, *d_rr_graph;
 
-	net_to_driver_tnode = my_malloc(num_timing_nets * sizeof(int));
+	net_to_driver_tnode = (int*)my_malloc(num_timing_nets * sizeof(int));
 
 	for (i = 0; i < num_timing_nets; i++) {
 		net_to_driver_tnode[i] = OPEN;
@@ -384,7 +384,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 		}
 		num_tnodes += num_nodes_in_block;
 	}
-	tnode = my_calloc(num_tnodes, sizeof(t_tnode));
+	tnode = (t_tnode*)my_calloc(num_tnodes, sizeof(t_tnode));
 
 	/* load tnodes with all info except edge info */
 	/* populate tnode lookups for edge info */
@@ -613,7 +613,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 	int incr;
 	int count;
 
-	net_to_driver_tnode = my_malloc(num_logical_nets * sizeof(int));
+	net_to_driver_tnode = (int*)my_malloc(num_logical_nets * sizeof(int));
 
 	for (i = 0; i < num_logical_nets; i++) {
 		net_to_driver_tnode[i] = OPEN;
@@ -625,11 +625,11 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 		model = logical_block[i].model;
 		logical_block[i].clock_net_tnode = NULL;
 		if (logical_block[i].type == VPACK_INPAD) {
-			logical_block[i].output_net_tnodes = my_calloc(1,
+			logical_block[i].output_net_tnodes = (t_tnode***)my_calloc(1,
 					sizeof(t_tnode**));
 			num_tnodes += 2;
 		} else if (logical_block[i].type == VPACK_OUTPAD) {
-			logical_block[i].input_net_tnodes = my_calloc(1, sizeof(t_tnode**));
+			logical_block[i].input_net_tnodes = (t_tnode***)my_calloc(1, sizeof(t_tnode**));
 			num_tnodes += 2;
 		} else {
 			if (logical_block[i].clock_net == OPEN) {
@@ -652,7 +652,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 				}
 				model_port = model_port->next;
 			}
-			logical_block[i].input_net_tnodes = my_calloc(j, sizeof(t_tnode**));
+			logical_block[i].input_net_tnodes = (t_tnode ***)my_calloc(j, sizeof(t_tnode**));
 
 			j = 0;
 			model_port = model->outputs;
@@ -665,11 +665,11 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 				j++;
 				model_port = model_port->next;
 			}
-			logical_block[i].output_net_tnodes = my_calloc(j,
+			logical_block[i].output_net_tnodes = (t_tnode ***)my_calloc(j,
 					sizeof(t_tnode**));
 		}
 	}
-	tnode = my_calloc(num_tnodes, sizeof(t_tnode));
+	tnode = (t_tnode *)my_calloc(num_tnodes, sizeof(t_tnode));
 	for (i = 0; i < num_tnodes; i++) {
 		tnode[i].index = i;
 	}
@@ -679,7 +679,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 	for (i = 0; i < num_logical_blocks; i++) {
 		model = logical_block[i].model;
 		if (logical_block[i].type == VPACK_INPAD) {
-			logical_block[i].output_net_tnodes[0] = my_calloc(1,
+			logical_block[i].output_net_tnodes[0] = (t_tnode **)my_calloc(1,
 					sizeof(t_tnode*));
 			logical_block[i].output_net_tnodes[0][0] = &tnode[inode];
 			net_to_driver_tnode[logical_block[i].output_nets[0][0]] = inode;
@@ -704,7 +704,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 			tnode[inode + 1].block = i;
 			inode += 2;
 		} else if (logical_block[i].type == VPACK_OUTPAD) {
-			logical_block[i].input_net_tnodes[0] = my_calloc(1,
+			logical_block[i].input_net_tnodes[0] = (t_tnode **)my_calloc(1,
 					sizeof(t_tnode*));
 			logical_block[i].input_net_tnodes[0][0] = &tnode[inode];
 			tnode[inode].model_pin = 0;
@@ -729,7 +729,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 			model_port = model->outputs;
 			count = 0;
 			while (model_port) {
-				logical_block[i].output_net_tnodes[j] = my_calloc(
+				logical_block[i].output_net_tnodes[j] = (t_tnode **)my_calloc(
 						model_port->size, sizeof(t_tnode*));
 				for (k = 0; k < model_port->size; k++) {
 					if (logical_block[i].output_nets[j][k] != OPEN) {
@@ -774,7 +774,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 			model_port = model->inputs;
 			while (model_port) {
 				if (model_port->is_clock == FALSE) {
-					logical_block[i].input_net_tnodes[j] = my_calloc(
+					logical_block[i].input_net_tnodes[j] = (t_tnode **)my_calloc(
 							model_port->size, sizeof(t_tnode*));
 					for (k = 0; k < model_port->size; k++) {
 						if (logical_block[i].input_nets[j][k] != OPEN) {

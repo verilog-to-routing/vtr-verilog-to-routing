@@ -250,7 +250,7 @@ static void toggle_nets(void (*drawscreen_ptr)(void)) {
 	 * Also disables drawing of routing resources.  See graphics.c for details *
 	 * of how buttons work.                                                    */
 
-	show_nets = !show_nets;
+	show_nets = (show_nets == FALSE) ? FALSE : TRUE;
 	draw_rr_toggle = DRAW_NO_RR;
 	show_congestion = FALSE;
 
@@ -267,7 +267,7 @@ static void toggle_rr(void (*drawscreen_ptr)(void)) {
 	 * through the options:  DRAW_NO_RR, DRAW_ALL_RR, DRAW_ALL_BUT_BUFFERS_RR,  *
 	 * DRAW_NODES_AND_SBOX_RR, and DRAW_NODES_RR.                               */
 
-	draw_rr_toggle = (draw_rr_toggle + 1) % (DRAW_RR_TOGGLE_MAX);
+	draw_rr_toggle = (enum e_draw_rr_toggle) (((int)draw_rr_toggle + 1) % ((int)DRAW_RR_TOGGLE_MAX));
 	show_nets = FALSE;
 	show_congestion = FALSE;
 
@@ -276,7 +276,7 @@ static void toggle_rr(void (*drawscreen_ptr)(void)) {
 }
 
 static void toggle_defects(void (*drawscreen_ptr)(void)) {
-	show_defects = !show_defects;
+	show_defects = (show_defects == FALSE) ? FALSE : TRUE;
 	update_message(default_message);
 	drawscreen_ptr();
 }
@@ -289,7 +289,7 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 
 	show_nets = FALSE;
 	draw_rr_toggle = DRAW_NO_RR;
-	show_congestion = !show_congestion;
+	show_congestion = (show_congestion == FALSE) ? FALSE : TRUE;
 
 	if (!show_congestion) {
 		update_message(default_message);
@@ -928,7 +928,7 @@ static void draw_rr_edges(int inode) {
 		to_ptc_num = rr_node[to_node].ptc_num;
 
 		if (show_defects)
-			defective = (switch_inf[rr_node[inode].switches[iedge]].R < 0);
+			defective = (boolean)(switch_inf[rr_node[inode].switches[iedge]].R < 0);
 		switch (from_type) {
 
 		case OPIN:
@@ -1817,10 +1817,10 @@ static void deselect_all(void) {
 		if (block[i].type->index < 3) {
 			block_color[i] = LIGHTGREY;
 		} else if (block[i].type->index < 3 + MAX_BLOCK_COLOURS) {
-			block_color[i] = BISQUE + MAX_BLOCK_COLOURS + block[i].type->index
-					- 3;
+			block_color[i] = (enum color_types) (BISQUE + MAX_BLOCK_COLOURS + block[i].type->index
+					- 3);
 		} else {
-			block_color[i] = BISQUE + 2 * MAX_BLOCK_COLOURS - 1;
+			block_color[i] = (enum color_types) (BISQUE + 2 * MAX_BLOCK_COLOURS - 1);
 		}
 	}
 

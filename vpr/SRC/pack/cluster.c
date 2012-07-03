@@ -1900,8 +1900,8 @@ static void start_new_cluster(
 	/* Check if this cluster is really empty */
 
 	/* Allocate a dummy initial cluster and load a logical block as a seed and check if it is legal */
-	new_cluster->name = my_malloc(
-			strlen(molecule->logical_block_ptrs[molecule->root]->name) + 4);
+	new_cluster->name = (char*) my_malloc(
+			(strlen(molecule->logical_block_ptrs[molecule->root]->name) + 4) * sizeof(char));
 	sprintf(new_cluster->name, "cb.%s",
 			molecule->logical_block_ptrs[molecule->root]->name);
 	new_cluster->nets = NULL;
@@ -1921,7 +1921,7 @@ static void start_new_cluster(
 				if (new_cluster->type == EMPTY_TYPE) {
 					continue;
 				}
-				new_cluster->pb = my_calloc(1, sizeof(t_pb));
+				new_cluster->pb = (t_pb*)my_calloc(1, sizeof(t_pb));
 				new_cluster->pb->pb_graph_node =
 						new_cluster->type->pb_graph_head;
 				alloc_and_load_pb_stats(new_cluster->pb, num_models,
@@ -1937,7 +1937,7 @@ static void start_new_cluster(
 					reset_cluster_placement_stats(&cluster_placement_stats[i]);
 					set_mode_cluster_placement_stats(
 							new_cluster->pb->pb_graph_node, j);
-					success = (BLK_PASSED
+					success = (boolean) (BLK_PASSED
 							== try_pack_molecule(&cluster_placement_stats[i],
 									molecule, primitives_list, new_cluster->pb,
 									num_models, max_cluster_size, clb_index,
@@ -2222,7 +2222,7 @@ static void alloc_and_load_cluster_info(INP int num_clb, INOUTP t_block *clb) {
 		pb_type = clb[i_clb].pb->pb_graph_node->pb_type;
 		pb = clb[i_clb].pb;
 
-		clb[i_clb].nets = my_malloc(clb[i_clb].type->num_pins * sizeof(int));
+		clb[i_clb].nets = (int*)my_malloc(clb[i_clb].type->num_pins * sizeof(int));
 		for (i = 0; i < clb[i_clb].type->num_pins; i++) {
 			clb[i_clb].nets[i] = OPEN;
 		}
@@ -2278,7 +2278,7 @@ static void check_clustering(int num_clb, t_block *clb, boolean *is_clock) {
 	t_pb * cur_pb;
 	boolean * blocks_checked;
 
-	blocks_checked = my_calloc(num_logical_blocks, sizeof(boolean));
+	blocks_checked = (boolean*)my_calloc(num_logical_blocks, sizeof(boolean));
 
 	/* 
 	 * Check that each logical block connects to one primitive and that the primitive links up to the parent clb

@@ -112,7 +112,7 @@ static void print_interconnect(int inode, int *column, int num_tabs,
 										rr_node[prev_node].pb_graph_pin->port->name)
 								+ rr_node[prev_node].pb_graph_pin->pin_number
 										/ 10 + strlen(name) + 11;
-				str_ptr = my_malloc(len * sizeof(char));
+				str_ptr = (char*)my_malloc(len * sizeof(char));
 				sprintf(str_ptr, "%s[%d].%s[%d]->%s ",
 						rr_node[prev_node].pb_graph_pin->parent_node->pb_type->name,
 						rr_node[prev_node].pb_graph_pin->parent_node->placement_index,
@@ -126,7 +126,7 @@ static void print_interconnect(int inode, int *column, int num_tabs,
 										rr_node[prev_node].pb_graph_pin->port->name)
 								+ rr_node[prev_node].pb_graph_pin->pin_number
 										/ 10 + strlen(name) + 8;
-				str_ptr = my_malloc(len * sizeof(char));
+				str_ptr = (char*)my_malloc(len * sizeof(char));
 				sprintf(str_ptr, "%s.%s[%d]->%s ",
 						rr_node[prev_node].pb_graph_pin->parent_node->pb_type->name,
 						rr_node[prev_node].pb_graph_pin->port->name,

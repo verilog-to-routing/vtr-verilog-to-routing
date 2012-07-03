@@ -60,8 +60,8 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	int wirelength, total_wirelength, available_wirelength;
 	int segments;
 
-	sinks = my_malloc(sizeof(float) * num_nets);
-	net_index = my_malloc(sizeof(int) * num_nets);
+	sinks = (float*)my_malloc(sizeof(float) * num_nets);
+	net_index = (int*)my_malloc(sizeof(int) * num_nets);
 	for (i = 0; i < num_nets; i++) {
 		sinks[i] = clb_net[i].num_sinks;
 		net_index[i] = i;
@@ -620,11 +620,11 @@ static int get_expected_segs_to_target(int inode, int target_node,
 
 		if (ylow > target_y) { /* Coming from a row above target? */
 			*num_segs_ortho_dir_ptr =
-					ROUND_UP((ylow - target_y + 1.) * ortho_inv_length);
+					(int)(ROUND_UP((ylow - target_y + 1.) * ortho_inv_length));
 			no_need_to_pass_by_clb = 1;
 		} else if (ylow < target_y - 1) { /* Below the CLB bottom? */
-			*num_segs_ortho_dir_ptr = ROUND_UP((target_y - ylow) *
-					ortho_inv_length);
+			*num_segs_ortho_dir_ptr = (int)(ROUND_UP((target_y - ylow) *
+					ortho_inv_length));
 			no_need_to_pass_by_clb = 1;
 		} else { /* In a row that passes by target CLB */
 			*num_segs_ortho_dir_ptr = 0;
@@ -634,11 +634,11 @@ static int get_expected_segs_to_target(int inode, int target_node,
 		/* Now count horizontal (same dir. as inode) segs. */
 
 		if (xlow > target_x + no_need_to_pass_by_clb) {
-			num_segs_same_dir = ROUND_UP((xlow - no_need_to_pass_by_clb -
-							target_x) * inv_length);
+			num_segs_same_dir = (int)(ROUND_UP((xlow - no_need_to_pass_by_clb -
+							target_x) * inv_length));
 		} else if (xhigh < target_x - no_need_to_pass_by_clb) {
-			num_segs_same_dir = ROUND_UP((target_x - no_need_to_pass_by_clb -
-							xhigh) * inv_length);
+			num_segs_same_dir = (int)(ROUND_UP((target_x - no_need_to_pass_by_clb -
+							xhigh) * inv_length));
 		} else {
 			num_segs_same_dir = 0;
 		}
@@ -652,12 +652,12 @@ static int get_expected_segs_to_target(int inode, int target_node,
 		/* Count horizontal (orthogonal to inode) segs first. */
 
 		if (xlow > target_x) { /* Coming from a column right of target? */
-			*num_segs_ortho_dir_ptr =
-					ROUND_UP((xlow - target_x + 1.) * ortho_inv_length);
+			*num_segs_ortho_dir_ptr = (int)(
+					ROUND_UP((xlow - target_x + 1.) * ortho_inv_length));
 			no_need_to_pass_by_clb = 1;
 		} else if (xlow < target_x - 1) { /* Left of and not adjacent to the CLB? */
-			*num_segs_ortho_dir_ptr = ROUND_UP((target_x - xlow) *
-					ortho_inv_length);
+			*num_segs_ortho_dir_ptr = (int)(ROUND_UP((target_x - xlow) *
+					ortho_inv_length));
 			no_need_to_pass_by_clb = 1;
 		} else { /* In a column that passes by target CLB */
 			*num_segs_ortho_dir_ptr = 0;
@@ -667,11 +667,11 @@ static int get_expected_segs_to_target(int inode, int target_node,
 		/* Now count vertical (same dir. as inode) segs. */
 
 		if (ylow > target_y + no_need_to_pass_by_clb) {
-			num_segs_same_dir = ROUND_UP((ylow - no_need_to_pass_by_clb -
-							target_y) * inv_length);
+			num_segs_same_dir = (int)(ROUND_UP((ylow - no_need_to_pass_by_clb -
+							target_y) * inv_length));
 		} else if (yhigh < target_y - no_need_to_pass_by_clb) {
-			num_segs_same_dir = ROUND_UP((target_y - no_need_to_pass_by_clb -
-							yhigh) * inv_length);
+			num_segs_same_dir = (int)(ROUND_UP((target_y - no_need_to_pass_by_clb -
+							yhigh) * inv_length));
 		} else {
 			num_segs_same_dir = 0;
 		}
@@ -729,7 +729,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		area = 1;
 	}
 
-	rlim = ceil(sqrt((float) area / (float) clb_net[inet].num_sinks));
+	rlim = (int)(ceil(sqrt((float) area / (float) clb_net[inet].num_sinks)));
 	if (rt_node == NULL || rt_node->u.child_list == NULL) {
 		/* If unknown traceback, set radius of bin to be size of chip */
 		rlim = max(nx + 2, ny + 2);

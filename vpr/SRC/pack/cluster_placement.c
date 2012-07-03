@@ -381,7 +381,7 @@ void commit_primitive(INOUTP t_cluster_placement_stats *cluster_placement_stats,
 					if (&pb_graph_node->child_pb_graph_nodes[i][j][k] != skip) {
 						update_primitive_cost_or_status(
 								&pb_graph_node->child_pb_graph_nodes[i][j][k],
-								incr_cost, (i == valid_mode));
+								incr_cost, (boolean)(i == valid_mode));
 					}
 				}
 			}

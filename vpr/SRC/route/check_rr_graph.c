@@ -142,11 +142,11 @@ void check_rr_graph(INP t_graph_type graph_type, INP t_type_ptr types,
 				/* A global CLB input pin will not have any edges, and neither will  *
 				 * a SOURCE.  Anything else is an error.                             */
 
-				is_fringe = ((rr_node[inode].xlow == 1)
+				is_fringe = (boolean)((rr_node[inode].xlow == 1)
 						|| (rr_node[inode].ylow == 1)
 						|| (rr_node[inode].xhigh == L_nx)
 						|| (rr_node[inode].yhigh == L_ny));
-				is_wire = (rr_node[inode].type == CHANX
+				is_wire = (boolean)(rr_node[inode].type == CHANX
 						|| rr_node[inode].type == CHANY);
 
 				if (!is_fringe && !is_wire) {

@@ -587,7 +587,7 @@ static float trans_per_mux(int num_inputs, float trans_sram_bit,
 		/* This is a large multiplexer so design it using a two-level multiplexer   *
 		 * + 0.00001 is to make sure exact square roots two don't get rounded down  *
 		 * to one lower level.                                                      */
-		num_second_stage_trans = floor(sqrt(num_inputs) + 0.00001);
+		num_second_stage_trans = (int)floor(sqrt(num_inputs) + 0.00001);
 		pass_trans = (num_inputs + num_second_stage_trans) * pass_trans_area;
 		sram_trans = (ceil(
 				(float) num_inputs / num_second_stage_trans - 0.00001)

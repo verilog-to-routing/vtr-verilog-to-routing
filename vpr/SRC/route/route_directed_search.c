@@ -55,8 +55,8 @@ boolean try_directed_search_route(struct s_router_opts router_opts,
 	float *sinks;
 	int *net_index;
 
-	sinks = my_malloc(sizeof(float) * num_nets);
-	net_index = my_malloc(sizeof(int) * num_nets);
+	sinks = (float*)my_malloc(sizeof(float) * num_nets);
+	net_index = (int*)my_malloc(sizeof(int) * num_nets);
 	for (i = 0; i < num_nets; i++) {
 		sinks[i] = clb_net[i].num_sinks;
 		net_index[i] = i;
@@ -392,7 +392,7 @@ static int directed_search_expand_trace_segment(struct s_trace *start_ptr,
 	if (clb_net[inet].num_sinks < HIGH_FANOUT_NET_LIM) {
 		rlim = 1;
 	} else {
-		rlim = ceil(sqrt((float) area / (float) clb_net[inet].num_sinks));
+		rlim = (int)ceil(sqrt((float) area / (float) clb_net[inet].num_sinks));
 		if (start_ptr == NULL) {
 			/* For first node, route normally since there is nothing in the current traceback path */
 			rlim = max(nx + 2, ny + 2);
@@ -456,9 +456,9 @@ static int directed_search_expand_trace_segment(struct s_trace *start_ptr,
 								&& rr_node[inode].yhigh >= target_y - rlim)) {
 					backward_path_cost = 0;
 					tot_cost = backward_path_cost
-							+ astar_fac
+							+ (int)(astar_fac
 									* get_directed_search_expected_cost(inode,
-											target_node);
+											target_node));
 					node_to_heap(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
 							backward_path_cost, OPEN);
 				}
@@ -643,12 +643,12 @@ static int get_expected_segs_to_target(int inode, int target_node,
 		/* Count vertical (orthogonal to inode) segs first. */
 
 		if (ylow > target_y) { /* Coming from a row above target? */
-			*num_segs_ortho_dir_ptr =
-					ROUND_UP((ylow - target_y + 1.) * ortho_inv_length);
+			*num_segs_ortho_dir_ptr = (int)(
+					ROUND_UP((ylow - target_y + 1.) * ortho_inv_length));
 			no_need_to_pass_by_clb = 1;
 		} else if (ylow < target_y - 1) { /* Below the CLB bottom? */
-			*num_segs_ortho_dir_ptr = ROUND_UP((target_y - ylow) *
-					ortho_inv_length);
+			*num_segs_ortho_dir_ptr = (int)(ROUND_UP(((float)target_y - ylow) *
+					ortho_inv_length));
 			no_need_to_pass_by_clb = 1;
 		} else { /* In a row that passes by target CLB */
 			*num_segs_ortho_dir_ptr = 0;
@@ -658,11 +658,11 @@ static int get_expected_segs_to_target(int inode, int target_node,
 		/* Now count horizontal (same dir. as inode) segs. */
 
 		if (xlow > target_x + no_need_to_pass_by_clb) {
-			num_segs_same_dir = ROUND_UP((xlow - no_need_to_pass_by_clb -
-							target_x) * inv_length);
+			num_segs_same_dir = (int)(ROUND_UP((xlow - no_need_to_pass_by_clb -
+							target_x) * inv_length));
 		} else if (xhigh < target_x - no_need_to_pass_by_clb) {
-			num_segs_same_dir = ROUND_UP((target_x - no_need_to_pass_by_clb -
-							xhigh) * inv_length);
+			num_segs_same_dir = (int)(ROUND_UP((target_x - no_need_to_pass_by_clb -
+							xhigh) * inv_length));
 		} else {
 			num_segs_same_dir = 0;
 		}
@@ -676,12 +676,12 @@ static int get_expected_segs_to_target(int inode, int target_node,
 		/* Count horizontal (orthogonal to inode) segs first. */
 
 		if (xlow > target_x) { /* Coming from a column right of target? */
-			*num_segs_ortho_dir_ptr =
-					ROUND_UP((xlow - target_x + 1.) * ortho_inv_length);
+			*num_segs_ortho_dir_ptr = (int)(
+					ROUND_UP((xlow - target_x + 1.) * ortho_inv_length));
 			no_need_to_pass_by_clb = 1;
 		} else if (xlow < target_x - 1) { /* Left of and not adjacent to the CLB? */
-			*num_segs_ortho_dir_ptr = ROUND_UP((target_x - xlow) *
-					ortho_inv_length);
+			*num_segs_ortho_dir_ptr = (int)(ROUND_UP((target_x - xlow) *
+					ortho_inv_length));
 			no_need_to_pass_by_clb = 1;
 		} else { /* In a column that passes by target CLB */
 			*num_segs_ortho_dir_ptr = 0;
@@ -691,11 +691,11 @@ static int get_expected_segs_to_target(int inode, int target_node,
 		/* Now count vertical (same dir. as inode) segs. */
 
 		if (ylow > target_y + no_need_to_pass_by_clb) {
-			num_segs_same_dir = ROUND_UP((ylow - no_need_to_pass_by_clb -
-							target_y) * inv_length);
+			num_segs_same_dir = (int)(ROUND_UP((ylow - no_need_to_pass_by_clb -
+							target_y) * inv_length));
 		} else if (yhigh < target_y - no_need_to_pass_by_clb) {
-			num_segs_same_dir = ROUND_UP((target_y - no_need_to_pass_by_clb -
-							yhigh) * inv_length);
+			num_segs_same_dir = (int)(ROUND_UP((target_y - no_need_to_pass_by_clb -
+							yhigh) * inv_length));
 		} else {
 			num_segs_same_dir = 0;
 		}

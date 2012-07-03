@@ -45,7 +45,7 @@ t_token *GetTokensFromString(INP const char* inString, OUTP int * num_tokens) {
 	*num_tokens = i;
 
 	if (*num_tokens > 0) {
-		tokens = my_calloc(*num_tokens + 1, sizeof(t_token));
+		tokens = (t_token*)my_calloc(*num_tokens + 1, sizeof(t_token));
 	} else {
 		return NULL;
 	}

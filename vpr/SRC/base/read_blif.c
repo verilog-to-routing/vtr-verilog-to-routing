@@ -209,7 +209,7 @@ static void get_blif_tok(char *buffer, int pass, int doall, boolean *done,
 
 	if (*add_truth_table) {
 		if (ptr[0] == '0' || ptr[0] == '1' || ptr[0] == '-') {
-			data = my_malloc(sizeof(struct s_linked_vptr));
+			data = (struct s_linked_vptr*)my_malloc(sizeof(struct s_linked_vptr));
 			fn = ptr;
 			ptr = my_strtok(NULL, BLIF_TOKENS, blif, buffer);
 			if (!ptr || strlen(ptr) != 1) {
@@ -218,7 +218,7 @@ static void get_blif_tok(char *buffer, int pass, int doall, boolean *done,
 					data->next =
 							logical_block[num_logical_blocks - 1].truth_table;
 					data->data_vptr = my_malloc(strlen(fn) + 4);
-					sprintf(data->data_vptr, " %s", fn);
+					sprintf((char*)(data->data_vptr), " %s", fn);
 					logical_block[num_logical_blocks - 1].truth_table = data;
 					ptr = fn;
 				} else {
@@ -228,7 +228,7 @@ static void get_blif_tok(char *buffer, int pass, int doall, boolean *done,
 			} else {
 				data->next = logical_block[num_logical_blocks - 1].truth_table;
 				data->data_vptr = my_malloc(strlen(fn) + 3);
-				sprintf(data->data_vptr, "%s %s", fn, ptr);
+				sprintf((char*)data->data_vptr, "%s %s", fn, ptr);
 				logical_block[num_logical_blocks - 1].truth_table = data;
 			}
 		}
@@ -284,7 +284,7 @@ static void get_blif_tok(char *buffer, int pass, int doall, boolean *done,
 		/* packing can only one fully defined model */
 		if (pass == 1 && model_lines == 1) {
 			io_line(DRIVER, doall, inpad_model);
-			*done = 1;
+			*done = (boolean)1;
 		} else {
 			dum_parse(buffer);
 			if (pass == 4 && doall)
@@ -298,7 +298,7 @@ static void get_blif_tok(char *buffer, int pass, int doall, boolean *done,
 		/* packing can only one fully defined model */
 		if (pass == 2 && model_lines == 1) {
 			io_line(RECEIVER, doall, outpad_model);
-			*done = 1;
+			*done = (boolean)1;
 		} else {
 			dum_parse(buffer);
 			if (pass == 4 && doall)
@@ -417,7 +417,7 @@ static boolean add_lut(int doall, t_model *logic_model) {
 	num_luts++;
 
 	free_matrix(saved_names, 0, logic_model->inputs->size, 0, sizeof(char));
-	return doall;
+	return (boolean)doall;
 }
 
 static void add_latch(int doall, INP t_model *latch_model) {
@@ -592,7 +592,7 @@ static void add_subckt(int doall, t_model *user_models) {
 			}
 			port = port->next;
 		}
-		logical_block[num_logical_blocks - 1].input_nets = my_malloc(
+		logical_block[num_logical_blocks - 1].input_nets = (int**)my_malloc(
 				input_port_count * sizeof(int *));
 
 		port = cur_model->inputs;
@@ -603,7 +603,7 @@ static void add_subckt(int doall, t_model *user_models) {
 				continue;
 			}
 			assert(port->size >= 0);
-			logical_block[num_logical_blocks - 1].input_nets[port->index] =
+			logical_block[num_logical_blocks - 1].input_nets[port->index] = (int*)
 					my_malloc(port->size * sizeof(int));
 			for (j = 0; j < port->size; j++) {
 				logical_block[num_logical_blocks - 1].input_nets[port->index][j] =
@@ -620,13 +620,13 @@ static void add_subckt(int doall, t_model *user_models) {
 			port = port->next;
 			output_port_count++;
 		}
-		logical_block[num_logical_blocks - 1].output_nets = my_malloc(
+		logical_block[num_logical_blocks - 1].output_nets = (int**)my_malloc(
 				output_port_count * sizeof(int *));
 
 		port = cur_model->outputs;
 		while (port) {
 			assert(port->size >= 0);
-			logical_block[num_logical_blocks - 1].output_nets[port->index] =
+			logical_block[num_logical_blocks - 1].output_nets[port->index] = (int*)
 					my_malloc(port->size * sizeof(int));
 			for (j = 0; j < port->size; j++) {
 				logical_block[num_logical_blocks - 1].output_nets[port->index][j] =
@@ -985,7 +985,7 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 		cur = cur->next;
 	}
 
-	lut_distribution = my_calloc(logic_model->inputs[0].size + 1, sizeof(int));
+	lut_distribution = (int*)my_calloc(logic_model->inputs[0].size + 1, sizeof(int));
 	num_absorbable_latch = 0;
 	for (i = 0; i < num_logical_blocks; i++) {
 		if (logical_block[i].model == logic_model) {
@@ -1265,7 +1265,7 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 					&& (logical_block[i].type == VPACK_INPAD)) {
 				logical_block[i].type = VPACK_EMPTY;
 				printf("  Removing input\n");
-				p_io_removed = my_malloc(sizeof(struct s_linked_vptr));
+				p_io_removed = (struct s_linked_vptr*)my_malloc(sizeof(struct s_linked_vptr));
 				p_io_removed->data_vptr = my_strdup(logical_block[i].name);
 				p_io_removed->next = circuit_p_io_removed;
 				circuit_p_io_removed = p_io_removed;

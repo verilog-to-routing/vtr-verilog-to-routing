@@ -573,7 +573,7 @@ alloc_and_load_actual_fc(INP int L_num_types, INP t_type_ptr types,
 		if (type_descriptors[i].is_Fc_frac) {
 			Result[i] = fac * nint(num_sets * Fc);
 		} else {
-			Result[i] = Fc;
+			Result[i] = (int)Fc;
 		}
 
 		if (is_Fc_out && type_descriptors[i].is_Fc_out_full_flex) {
@@ -950,8 +950,8 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 		L_rr_node[inode].R = 0;
 		L_rr_node[inode].C = 0;
 		L_rr_node[inode].ptc_num = iclass;
-		L_rr_node[inode].direction = OPEN;
-		L_rr_node[inode].drivers = OPEN;
+		L_rr_node[inode].direction = (enum e_direction)OPEN;
+		L_rr_node[inode].drivers = (enum e_drivers)OPEN;
 	}
 
 	/* Connect IPINS to SINKS and dummy for OPINS */
@@ -997,8 +997,8 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 		L_rr_node[inode].C = 0;
 		L_rr_node[inode].R = 0;
 		L_rr_node[inode].ptc_num = ipin;
-		L_rr_node[inode].direction = OPEN;
-		L_rr_node[inode].drivers = OPEN;
+		L_rr_node[inode].direction = (enum e_direction)OPEN;
+		L_rr_node[inode].drivers = (enum e_drivers)OPEN;
 	}
 }
 
@@ -1710,11 +1710,11 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 	rr_type = L_rr_node[inode].type;
 
 	/* Make sure we don't overrun const arrays */
-	assert(rr_type < (sizeof(name_type) / sizeof(char *)));
+	assert((int)rr_type < (int)(sizeof(name_type) / sizeof(char *)));
 	assert(
-			(L_rr_node[inode].direction + 1) < (sizeof(direction_name) / sizeof(char *)));
+			(L_rr_node[inode].direction + 1) < (int)(sizeof(direction_name) / sizeof(char *)));
 	assert(
-			(L_rr_node[inode].drivers + 1) < (sizeof(drivers_name) / sizeof(char *)));
+			(L_rr_node[inode].drivers + 1) < (int)(sizeof(drivers_name) / sizeof(char *)));
 
 	fprintf(fp, "Node: %d %s ", inode, name_type[rr_type]);
 	if ((L_rr_node[inode].xlow == L_rr_node[inode].xhigh)
@@ -1810,7 +1810,7 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 		num_edges = 0;
 		edge_list = NULL;
 		for (ofs = 0; ofs < type->height; ++ofs) {
-			for (side = 0; side < 4; ++side) {
+			for (side = (enum e_side)0; side < 4; side = (enum e_side)(side + 1)) {
 				/* Can't do anything if pin isn't at this location */
 				if (0 == type->pinloc[ofs][side][ipin]) {
 					continue;
@@ -1818,8 +1818,8 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 
 				/* Figure out the chan seg at that side. 
 				 * side is the side of the logic or io block. */
-				vert = ((side == TOP) || (side == BOTTOM));
-				pos_dir = ((side == TOP) || (side == RIGHT));
+				vert = (boolean) ((side == TOP) || (side == BOTTOM));
+				pos_dir = (boolean) ((side == TOP) || (side == RIGHT));
 				chan_type = (vert ? CHANX : CHANY);
 				chan = (vert ? (j + ofs) : i);
 				seg = (vert ? i : (j + ofs));

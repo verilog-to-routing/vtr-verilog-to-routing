@@ -945,7 +945,7 @@ static void add_to_heap(struct s_heap *hptr) {
 
 /*WMF: peeking accessor :) */
 boolean is_empty_heap(void) {
-	return (heap_tail == 1);
+	return (boolean)(heap_tail == 1);
 }
 
 struct s_heap *

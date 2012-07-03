@@ -215,7 +215,7 @@ void try_place(struct s_placer_opts placer_opts,
 	int *x_lookup; /* Used to quickly determine valid swap columns */
 
 	/* Allocated here because it goes into timing critical code where each memory allocation is expensive */
-	x_lookup = my_malloc(nx * sizeof(int));
+	x_lookup = (int*)my_malloc(nx * sizeof(int));
 	net_delay = net_slack = NULL;
 
 	remember_net_delay_original_ptr = NULL; /*prevents compiler warning */
@@ -1292,8 +1292,8 @@ static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim,
 	int x_rel, y_rel, iside, iplace, rlx, rly, min_x, max_x, min_y, max_y;
 	int num_col_same_type, i, j;
 
-	rlx = min(nx, rlim); /* Only needed when nx < ny. */
-	rly = min(ny, rlim); /* Added rly for aspect_ratio != 1 case. */
+	rlx = (int)min((float)nx, rlim); /* Only needed when nx < ny. */
+	rly = (int)min((float)ny, rlim); /* Added rly for aspect_ratio != 1 case. */
 
 	min_x = max(1, x_from - rlx);
 	max_x = min(nx, x_from + rlx);
