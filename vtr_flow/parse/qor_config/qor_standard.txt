@@ -1,6 +1,6 @@
 vpr_status;output.txt;vpr_status=(.*)
-total_routed_wirelength;vpr.out;Total wirelength:\s*(\d+)
+total_wirelength;vpr.out;Total wirelength:\s*(\d+)
 total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
 num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
 min_chan_width;vpr.out;Best routing used a channel width factor of (\d+)
-critical_path_delay;vpr.crit_path.out;Critical Path: (.*) [(]s[)]
+crit_path_delay;vpr.crit_path.out;Critical Path: (.*) [(]s[)]

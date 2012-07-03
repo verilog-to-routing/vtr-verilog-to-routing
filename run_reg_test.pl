@@ -149,11 +149,17 @@ if ( $#tests > -1 ) {
 		$first = 0;
 		# Parse regression test
 		parse_single_test("");
-		# Check golden results
-		parse_single_test("check", "calculate");
+		# Create/Check golden results
+		if ($create_golden) {
+			parse_single_test("create", "calculate");
+		}
+		else {
+			parse_single_test("check", "calculate");
+		}
 	}
 	print "\nTest complete\n\n";
 }
+
 
 
 ##############################################################
@@ -180,11 +186,6 @@ sub check_override {
 		exit "Parsed results";
 	}
 
-	if ($create_golden) {
-		parse_single_test("create");
-		exit "Created golden results";
-	}
-
 	if ($check_golden) {
 		parse_single_test("check");
 		exit "Checked results.";
@@ -203,26 +204,43 @@ sub check_override {
 			die "[ERROR] Failed to open $test_dir/qor_geomean.txt: $!";
 		}
 		else {
-			print "============================================================================================================================\n";
-			print "        				       Verilog-to-Routing QoR Results       					\n";
-			print "============================================================================================================================\n";
+			print "=" x 116 . "\n";
+			print "\t" x 5 . "Verilog-to-Routing QoR Results \n";
+			print "=" x 116 . "\n";
 
 			open( QOR_FILE, "$test_dir/qor_geomean.txt" );
 			my $output = <QOR_FILE>;
 
 			my @first_line = split( /\t/, trim($output) );
-			print "@first_line[1]" . "\t\t " . "@first_line[2]" . "\t\t    " . "@first_line[3]" . "\t\t " . "@first_line[4]" . "\t\t" . "@first_line[5] \n";
-			print "-----------------------" . "\t\t" . "----------------" . "\t" . "----------------" . "\t" . "----------------" . "\t" . "--------------------" . "\n";
+			my $label = shift @first_line;
+
 			my $last_line;
 			while(<QOR_FILE>) {
 				   $last_line = $_ if eof;
 			}
 			my @last_line = split( /\t/, trim($last_line) );
-			print "@last_line[1]" . "\t\t" . "@last_line[2]" . "\t" . "@last_line[3]" . "\t" . "@last_line[4]" . "\t" . "@last_line[5] \n\n";
+			my $label = shift @last_line;
+			@last_line[0] = sprintf("%.0f", $last_line[0]) . " units ";
+			@last_line[1] = sprintf("%.3f", $last_line[1]) . " s ";
+			@last_line[2] = sprintf("%.2f", $last_line[2]) . " blocks ";
+			@last_line[3] = sprintf("%.2f", $last_line[3]) . " tracks ";
+			@last_line[4] = sprintf("%.3e", $last_line[4]) . " ns ";
+
+
+format STDOUT =
+| @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| |
+@first_line;
+--------------------------------------------------------------------------------------------------------------------
+| @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| |
+@last_line;
+. 
+write;
 			exit "QoR results displayed";
 		}
 	}
 }
+
+
 
 sub run_single_test {
 	if ($first) { 

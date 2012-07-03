@@ -119,10 +119,16 @@ sub summarize_qor {
 	my $output_path = $task_path;
 	my $exp_num = last_exp($task_path);
 
-	if ( ( $#tasks + 1 ) > 1 ) {
-		$output_path = "$task_path/../"
+	if ( ( ( $#tasks + 1 ) > 1 ) | ( -e "$task_path/task_list.txt" ) ) {
+		$output_path = "$task_path/../";
 	}
-	open( OUTPUT_FILE, ">$output_path/${run_prefix}${exp_num}_summary.txt" );
+	if ( !-e "$output_path/task_summary" ) {
+		mkdir "$output_path/task_summary";
+	}
+	if ( -e "$output_path/task_summary/${run_prefix}${exp_num}_summary.txt" ) {
+		return;
+	}
+	open( OUTPUT_FILE, ">$output_path/task_summary/${run_prefix}${exp_num}_summary.txt" );
 	
 	##############################################################
 	# Append contents of QoR files to output file
@@ -164,22 +170,22 @@ sub calc_geomean {
 	my $output_path = $task_path;
 	my $exp_num = last_exp($task_path);
 
-	if ( ( $#tasks + 1 ) > 1 ) {
-		$output_path = "$task_path/../"
+	if ( ( ( $#tasks + 1 ) > 1 ) | ( -e "$task_path/task_list.txt" ) ) {
+		$output_path = "$task_path/../"; 
 	}
 	if ( !-e "$output_path/qor_geomean.txt" ) {
-		open( OUTPUT_FILE, ">$output_path/qor_geomean.txt");
+		open( OUTPUT_FILE, ">$output_path/qor_geomean.txt" );
 		$first = 1;
 	}
 	else {
-		open( OUTPUT_FILE, ">>$output_path/qor_geomean.txt");
+		open( OUTPUT_FILE, ">>$output_path/qor_geomean.txt" );
 	}
 	
 	##############################################################
 	# Read summary file
 	##############################################################
 
-	my $summary_file = "$output_path/${run_prefix}${exp_num}_summary.txt";
+	my $summary_file = "$output_path/task_summary/${run_prefix}${exp_num}_summary.txt";
 
 	if ( !-r $summary_file ) {
 		print "[ERROR] Failed to open $summary_file: $!";

@@ -12,8 +12,8 @@ archs_dir=arch/timing
 # Add circuits to list to sweep
 circuit_list_add=bgm.v
 circuit_list_add=blob_merge.v
-#circuit_list_add=boundtop.v
-#circuit_list_add=ch_intrinsics.v
+circuit_list_add=boundtop.v
+circuit_list_add=ch_intrinsics.v
 circuit_list_add=diffeq1.v
 circuit_list_add=diffeq2.v
 #circuit_list_add=LU8PEEng.v
