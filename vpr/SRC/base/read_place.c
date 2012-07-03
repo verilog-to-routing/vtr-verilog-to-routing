@@ -7,6 +7,7 @@
 #include "hash.h"
 #include "read_place.h"
 #include "read_xml_arch_file.h"
+#include "ReadLine.h"
 
 /* extern, should be a header */
 char **ReadLineTokens(INOUTP FILE * InFile, INOUTP int *LineNum);

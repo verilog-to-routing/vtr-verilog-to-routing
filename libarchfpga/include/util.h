@@ -30,7 +30,7 @@ extern int file_line_number; /* line in file being parsed */
 #endif
 #define nint(a) ((int) floor (a + 0.5))
 
-extern int limit_value(int cur, int max, const char *name);
+int limit_value(int cur, int max, const char *name);
 
 /* Linked lists of void pointers and integers, respectively. */
 
@@ -58,63 +58,71 @@ typedef struct s_chunk {
 	char *next_mem_loc_ptr;
 } t_chunk;
 
+#ifdef __cplusplus 
+extern "C" {
+#endif
+
 /************************ Memory allocation routines *************************/
 
-extern void* my_malloc(size_t size);
-extern void* my_calloc(size_t nelem, size_t size);
-extern void *my_realloc(void *ptr, size_t size);
-extern void *my_chunk_malloc(size_t size, t_chunk *chunk_info);
-extern void free_chunk_memory(t_chunk *chunk_info);
+void* my_malloc(size_t size);
+void* my_calloc(size_t nelem, size_t size);
+void *my_realloc(void *ptr, size_t size);
+void *my_chunk_malloc(size_t size, t_chunk *chunk_info);
+void free_chunk_memory(t_chunk *chunk_info);
 
 /******************* Linked list, matrix and vector utilities ****************/
 
-extern void free_ivec_vector(struct s_ivec *ivec_vector, int nrmin, int nrmax);
-extern void free_ivec_matrix(struct s_ivec **ivec_matrix, int nrmin, int nrmax,
+void free_ivec_vector(struct s_ivec *ivec_vector, int nrmin, int nrmax);
+void free_ivec_matrix(struct s_ivec **ivec_matrix, int nrmin, int nrmax,
 		int ncmin, int ncmax);
-extern void free_ivec_matrix3(struct s_ivec ***ivec_matrix3, int nrmin,
+void free_ivec_matrix3(struct s_ivec ***ivec_matrix3, int nrmin,
 		int nrmax, int ncmin, int ncmax, int ndmin, int ndmax);
 
-extern void** alloc_matrix(int nrmin, int nrmax, int ncmin, int ncmax,
+void** alloc_matrix(int nrmin, int nrmax, int ncmin, int ncmax,
 		size_t elsize);
-extern void ***alloc_matrix3(int nrmin, int nrmax, int ncmin, int ncmax,
+void ***alloc_matrix3(int nrmin, int nrmax, int ncmin, int ncmax,
 		int ndmin, int ndmax, size_t elsize);
-extern void ****alloc_matrix4(int nrmin, int nrmax, int ncmin, int ncmax,
+void ****alloc_matrix4(int nrmin, int nrmax, int ncmin, int ncmax,
 		int ndmin, int ndmax, int nemin, int nemax, size_t elsize);
 
-extern void free_matrix(void *vptr, int nrmin, int nrmax, int ncmin,
+void free_matrix(void *vptr, int nrmin, int nrmax, int ncmin,
 		size_t elsize);
-extern void free_matrix3(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
+void free_matrix3(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
 		int ndmin, size_t elsize);
-extern void free_matrix4(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
+void free_matrix4(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
 		int ndmin, int ndmax, int nemin, size_t elsize);
 
-extern void print_int_matrix3(int ***vptr, int nrmin, int nrmax, int ncmin,
+void print_int_matrix3(int ***vptr, int nrmin, int nrmax, int ncmin,
 		int ncmax, int ndmin, int ndmax, char *file);
 
-extern struct s_linked_vptr *insert_in_vptr_list(struct s_linked_vptr *head,
+struct s_linked_vptr *insert_in_vptr_list(struct s_linked_vptr *head,
 		void *vptr_to_add);
-extern struct s_linked_vptr *delete_in_vptr_list(struct s_linked_vptr *head);
-extern t_linked_int *insert_in_int_list(t_linked_int * head, int data,
+struct s_linked_vptr *delete_in_vptr_list(struct s_linked_vptr *head);
+t_linked_int *insert_in_int_list(t_linked_int * head, int data,
 		t_linked_int ** free_list_head_ptr);
-extern void free_int_list(t_linked_int ** int_list_head_ptr);
-extern void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
+void free_int_list(t_linked_int ** int_list_head_ptr);
+void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 		int num_items, struct s_ivec *ivec, t_linked_int ** free_list_head_ptr);
 
 /****************** File and parsing utilities *******************************/
 
-extern int my_atoi(const char *str);
+int my_atoi(const char *str);
 
-extern char* my_strdup(const char *str);
-extern char *my_strncpy(char *dest, const char *src, size_t size);
-extern char *my_strtok(char *ptr, char *tokens, FILE * fp, char *buf);
+char* my_strdup(const char *str);
+char *my_strncpy(char *dest, const char *src, size_t size);
+char *my_strtok(char *ptr, char *tokens, FILE * fp, char *buf);
 
-extern FILE* my_fopen(const char *fname, const char *flag, int prompt);
-extern char *my_fgets(char *buf, int max_size, FILE * fp);
+FILE* my_fopen(const char *fname, const char *flag, int prompt);
+char *my_fgets(char *buf, int max_size, FILE * fp);
 
 /*********************** Portable random number generators *******************/
-extern void my_srandom(int seed);
-extern int my_irand(int imax);
-extern float my_frand(void);
+void my_srandom(int seed);
+int my_irand(int imax);
+float my_frand(void);
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif
 

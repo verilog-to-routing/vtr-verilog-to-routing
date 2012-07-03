@@ -4,6 +4,10 @@
 #include "util.h"
 #include "arch_types.h"
 
+#ifdef __cplusplus 
+extern "C" {
+#endif
+
 /* function declarations */
 void
 XmlReadArch( INP const char *ArchFile, INP boolean timing_enabled,
@@ -12,6 +16,11 @@ XmlReadArch( INP const char *ArchFile, INP boolean timing_enabled,
 void
 EchoArch( INP const char *EchoFile, INP const t_type_descriptor * Types,
 		INP int NumTypes, struct s_arch *arch);
+
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif
 
