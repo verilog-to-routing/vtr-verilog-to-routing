@@ -5,6 +5,4 @@ k6_N10_memDepth16384_memData64_40nm_timing.xml	diffeq1.v	success	60	1.90949e-08	
 k6_N10_memDepth16384_memData64_40nm_timing.xml	diffeq2.v	success	54	1.61731e-08	96.08	2.52	16.93	1.07	603	539	450	21	66	96	0	0	5		
 k6_N10_memDepth16384_memData64_40nm_timing.xml	sha.v	success	58	1.65339e-08	341.11	15.39	45.06	1.32	3161	3197	1409	209	38	36	3	0	0		
 k6_N10_memDepth16384_memData64_40nm_timing.xml	stereovision0.v	success	62	4.47522e-09	2349.72	170.19	272.62	7	25024	25221	8905	1128	157	197	3319	0	0		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	stereovision1.v	success	94	6.01887e-09	1549.34	196.2	212.23	14.89	24719	22584	11167	1004	133	145	3281	0	38		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	stereovision2.v	success	156	1.76299e-08	6454.21	1065.17	91914.6	244.98	58571	49159	33056	2355	149	182	6493	0	213		
-k6_N10_memDepth16384_memData64_40nm_timing.xml	stereovision3.v	success	30	3.79014e-09	4.69	0.56	0.43	0.03	286	316	137	15	10	30	6	0	0		
+k6_N10_memDepth16384_memData64_40nm_timing.xml	stereovision1.v	success	94	6.01887e-09	1549.34	196.2	212.23	14.89	24719	22584	11167	1004	133	145	3281	0	38			
