@@ -10,10 +10,10 @@
 
 #############################################################################################
 
-CC = gcc
+CC = g++
 AR = ar
 
-WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -Wstrict-prototypes -D__USE_FIXED_PROTOTYPES__ -pedantic -Wmissing-prototypes -Wshadow -Wcast-align
+WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -pedantic -Wshadow -Wcast-align
 DEBUG_FLAGS = -g
 OPT_FLAGS = -O3
 INC_FLAGS = -Iinclude

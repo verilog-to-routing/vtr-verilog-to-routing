@@ -202,7 +202,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 	if (vpr_setup.Operation == TIMING_ANALYSIS_ONLY) {
 		do_constant_net_delay_timing_analysis(vpr_setup.Timing, vpr_setup.constant_net_delay);
 	} else {
-		current = nint(sqrt(num_blocks)); /* current is the value of the smaller side of the FPGA */
+		current = nint((float)sqrt((float)num_blocks)); /* current is the value of the smaller side of the FPGA */
 		low = 1;
 		high = -1;
 

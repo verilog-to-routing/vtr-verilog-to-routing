@@ -12,7 +12,6 @@ int binary_search = -1;
 
 float grid_logic_tile_area = 0;
 float ipin_mux_trans_size = 0;
-char *out_file_prefix;
 
 /* User netlist information begin  */
 int num_logical_nets = 0, num_logical_blocks = 0;
