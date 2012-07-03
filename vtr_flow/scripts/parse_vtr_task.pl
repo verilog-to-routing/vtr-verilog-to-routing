@@ -48,7 +48,7 @@ my $create_golden = 0;
 my $check_golden  = 0;
 my $parse_qor = 1;  # QoR file is parsed by default; turned off if 
 					# user does not specify QoR parse file in config.txt
-my $calc_qor = 1;   # QoR geomeans are computed by default, turned off as above.
+my $calc_qor = 0;   # QoR geomeans are not computed by default;
 
 while ( $token = shift(@ARGV) ) {
 
@@ -209,7 +209,7 @@ sub calc_geomean {
 	}
 	else {
 	}
-	print OUTPUT_FILE "${exp_num}";
+	print OUTPUT_FILE "\n${exp_num}";
 
 	##############################################################
 	# Compute & write geomean to output file
@@ -231,7 +231,6 @@ sub calc_geomean {
 		print OUTPUT_FILE "\t" . "${geomean}" ;
 		$index++;
 	}
-	print OUTPUT_FILE "\n";
 	close(OUTPUT_FILE);
 }
 
