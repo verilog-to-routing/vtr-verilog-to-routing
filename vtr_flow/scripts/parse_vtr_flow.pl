@@ -66,21 +66,25 @@ for my $parse_entry (@parse_data) {
 		}
 	}
 	if ( not -r "$file_to_parse_path" ) {
-		die "Cannot open file to parse ($file_to_parse_path)";
-	}
-	undef $/;
-	open( DATA_FILE, "<$file_to_parse_path" );
-	my $parse_file_lines = <DATA_FILE>;
-	close(DATA_FILE);
-	$/ = "\n";
-	
-	my $regexp = @$parse_entry[2];
-	if ( $parse_file_lines =~ m/$regexp/g ) {
-		print $1;
+		print "-1";
+		print "\t";
 	}
 	else {
+		undef $/;
+		open( DATA_FILE, "<$file_to_parse_path" );
+		my $parse_file_lines = <DATA_FILE>;
+		close(DATA_FILE);
+		$/ = "\n";
+		
+		my $regexp = @$parse_entry[2];
+		if ( $parse_file_lines =~ m/$regexp/g ) {
+			print $1;
+		}
+		else {
+			print "-1";
+		}
+		print "\t";
 	}
-	print "\t";
 }
 print "\n";
 
