@@ -15,7 +15,7 @@
 #						[Pass] or [Fail]
 #   -parse_qor:  	Used for the purposes of parsing quality of results of the
 #					most recent execution.
-#   -calc_qor:  	Used for the purposes of computing quality of results geomeans 
+#   -calc_geomean:  Used for the purposes of computing quality of results geomeans 
 # 					of the most recent execution.
 ###################################################################################
 
@@ -46,9 +46,9 @@ my @task_files;
 my $token;
 my $create_golden = 0;
 my $check_golden  = 0;
-my $parse_qor = 1;  # QoR file is parsed by default; turned off if 
-					# user does not specify QoR parse file in config.txt
-my $calc_qor = 0;   # QoR geomeans are not computed by default;
+my $parse_qor 	  = 1;  # QoR file is parsed by default; turned off if 
+						# user does not specify QoR parse file in config.txt
+my $calc_geomean  = 0;  # QoR geomeans are not computed by default;
 
 while ( $token = shift(@ARGV) ) {
 
@@ -69,8 +69,8 @@ while ( $token = shift(@ARGV) ) {
 		elsif ( $token eq "-parse_qor" ) {
 			$parse_qor = 1;
 		}
-		elsif ( $token eq "-calc_qor" ) {
-			$calc_qor = 1;
+		elsif ( $token eq "-calc_geomean" ) {
+			$calc_geomean = 1;
 		}
 		else {
 			die "Invalid option: $token\n";
@@ -100,7 +100,7 @@ foreach my $task (@tasks) {
 	parse_single_task($task);
 }
 
-if ($calc_qor) {
+if ($calc_geomean) {
 	summarize_qor;
 	calc_geomean;
 }
@@ -119,7 +119,7 @@ sub summarize_qor {
 	my $output_path = $task_path;
 	my $exp_num = last_exp($task_path);
 
-	if ( ( ( $#tasks + 1 ) > 1 ) | ( -e "$task_path/task_list.txt" ) ) {
+	if ( ( ( $#tasks + 1 ) > 1 ) | ( -e "$task_path/../task_list.txt" ) ) {
 		$output_path = "$task_path/../";
 	}
 	if ( !-e "$output_path/task_summary" ) {
@@ -307,7 +307,7 @@ sub parse_single_task {
 	elsif ( $qor_parse_file eq "" ) {
 		print "Task $task_name has no QoR parse file specified. Skipping QoR.\n";
 		$parse_qor = 0;
-		$calc_qor = 0;
+		$calc_geomean = 0;
 	}
 	elsif ( -e "$vtr_flow_path/parse/qor_config/$qor_parse_file" ) {
 		$qor_parse_file = "$vtr_flow_path/parse/qor_config/$qor_parse_file";

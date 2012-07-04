@@ -57,7 +57,7 @@ my $first = 1;
 my $parse_only = 0;
 my $create_golden = 0;
 my $check_golden = 0;
-my $calc_qor = 0;
+my $calc_geomean = 0;
 my $display_qor = 0;
 my $can_quit = 0;
 
@@ -73,8 +73,8 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-check_golden" ) {
 		$check_golden = 1;
 	}
-	elsif ( $token eq "-calc_qor" ) {
-		$calc_qor = 1;
+	elsif ( $token eq "-calc_geomean" ) {
+		$calc_geomean = 1;
 	}
 	elsif ( $token eq "-display_qor" ) {
 		$display_qor = 1;
@@ -191,7 +191,7 @@ sub check_override {
 		exit "Checked results.";
 	}
 	
-	if ($calc_qor) {
+	if ($calc_geomean) {
 		parse_single_test("calculate");
 		exit "Calculated results.";
 	}
@@ -240,8 +240,6 @@ write;
 	}
 }
 
-
-
 sub run_single_test {
 	if ($first) { 
 		print "=============================================\n";
@@ -266,7 +264,7 @@ sub parse_single_test {
 		}
 		elsif ( $golden eq "calculate" ) {
 			print "\nCalculating QoR results... \n";
-			$script_params = $script_params . " -calc_qor";
+			$script_params = $script_params . " -calc_geomean";
 		}
 		else {
 			print "\nParsing test results... \n";
