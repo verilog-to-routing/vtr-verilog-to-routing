@@ -887,7 +887,7 @@ enum e_cost_indices {
 
 /* Type to store our list of token to enum pairings */
 struct s_TokenPair {
-	char *Str;
+	const char *Str;
 	int Enum;
 };
 

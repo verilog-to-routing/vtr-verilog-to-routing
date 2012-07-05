@@ -493,7 +493,7 @@ static void unmap_button(int bnum) {
 	XUnmapWindow(display, button[bnum].win);
 }
 
-void create_button(char *prev_button_text, char *button_text,
+void create_button(const char *prev_button_text, const char *button_text,
 		void (*button_func)(void (*drawscreen)(void))) {
 
 	/* Creates a new button below the button containing prev_button_text.       *
@@ -588,7 +588,7 @@ void destroy_button(char *button_text) {
 	button = (t_button *) my_realloc(button, num_buttons * sizeof(t_button));
 }
 
-void init_graphics(char *window_name) {
+void init_graphics(const char *window_name) {
 
 	/* Open the toplevel window, get the colors, 2 graphics         *
 	 * contexts, load a font, and set up the toplevel window        *
@@ -1791,7 +1791,7 @@ event_loop(void (*act_on_button) (float x,
 }
 
 void
-init_graphics(char *window_name)
+init_graphics(const char *window_name)
 {
 }
 void
@@ -1895,8 +1895,8 @@ clearscreen(void)
 }
 
 void
-create_button(char *prev_button_text,
-		char *button_text,
+create_button(const char *prev_button_text,
+		const char *button_text,
 		void (*button_func) (void (*drawscreen) (void)))
 {
 }

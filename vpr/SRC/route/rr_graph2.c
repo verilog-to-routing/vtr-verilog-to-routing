@@ -370,7 +370,7 @@ void free_seg_details(t_seg_details * seg_details, int nodes_per_chan) {
 /* Dumps out an array of seg_details structures to file fname.  Used only   *
  * for debugging.                                                           */
 void dump_seg_details(t_seg_details * seg_details, int nodes_per_chan,
-		char *fname) {
+		const char *fname) {
 
 	FILE *fp;
 	int i, j;

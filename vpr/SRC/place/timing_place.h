@@ -8,5 +8,5 @@ void load_criticalities(struct s_placer_opts placer_opts, float **net_slack,
 
 void free_lookups_and_criticalities(float ***net_delay, float ***net_slack);
 
-void print_sink_delays(char *fname);
+void print_sink_delays(const char *fname);
 extern float **timing_place_crit;

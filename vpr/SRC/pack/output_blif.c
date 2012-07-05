@@ -22,7 +22,7 @@
 
 /**************** Subroutine definitions ************************************/
 
-static void print_string(char *str_ptr, int *column, FILE * fpout) {
+static void print_string(const char *str_ptr, int *column, FILE * fpout) {
 
 	/* Prints string without making any lines longer than LINELENGTH.  Column  *
 	 * points to the column in which the next character will go (both used and *
@@ -55,7 +55,7 @@ static void print_net_name(int inet, int *column, FILE * fpout) {
 	 * used and updated by this routine).  fpout is the output file     *
 	 * pointer.                                                         */
 
-	char *str_ptr;
+	const char *str_ptr;
 
 	if (inet == OPEN)
 		str_ptr = "open";
@@ -478,7 +478,7 @@ static void print_clusters(t_block *clb, int num_clusters, FILE * fpout) {
 }
 
 void output_blif(t_block *clb, int num_clusters, boolean global_clocks,
-		boolean * is_clock, char *out_fname, boolean skip_clustering) {
+		boolean * is_clock, const char *out_fname, boolean skip_clustering) {
 
 	/* 
 	 * This routine dumps out the output netlist in a format suitable for  *

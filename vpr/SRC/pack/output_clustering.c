@@ -27,7 +27,7 @@ static void print_tabs(FILE *fpout, int num_tabs) {
 	}
 }
 
-static void print_string(char *str_ptr, int *column, int num_tabs, FILE * fpout) {
+static void print_string(const char *str_ptr, int *column, int num_tabs, FILE * fpout) {
 
 	/* Prints string without making any lines longer than LINELENGTH.  Column  *
 	 * points to the column in which the next character will go (both used and *
@@ -61,7 +61,7 @@ static void print_net_name(int inet, int *column, int num_tabs, FILE * fpout) {
 	 * used and updated by this routine).  fpout is the output file     *
 	 * pointer.                                                         */
 
-	char *str_ptr;
+	const char *str_ptr;
 
 	if (inet == OPEN)
 		str_ptr = "open";

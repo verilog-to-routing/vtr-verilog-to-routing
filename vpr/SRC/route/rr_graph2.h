@@ -33,7 +33,7 @@ t_seg_details *alloc_and_load_seg_details(INOUTP int *nodes_per_chan,
 		directionality);
 
 void dump_seg_details(t_seg_details * seg_details, int nodes_per_chan,
-		char *fname);
+		const char *fname);
 
 int get_seg_start(INP t_seg_details * seg_details,
 		INP int itrack,

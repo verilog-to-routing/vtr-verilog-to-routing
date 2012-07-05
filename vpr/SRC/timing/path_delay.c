@@ -323,7 +323,7 @@ void free_timing_graph(float **net_slack) {
 	num_tnode_levels = 0;
 }
 
-void print_net_slack(char *fname, float **net_slack) {
+void print_net_slack(const char *fname, float **net_slack) {
 
 	/* Prints the net slacks into a file. */
 
@@ -1013,7 +1013,7 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 	(*inode)++;
 }
 
-void print_timing_graph(char *fname) {
+void print_timing_graph(const char *fname) {
 
 	/* Prints the timing graph into a file. */
 
@@ -1021,7 +1021,7 @@ void print_timing_graph(char *fname) {
 	int inode, iedge, ilevel, i;
 	t_tedge *tedge;
 	t_tnode_type itype;
-char *tnode_type_names[] = {  "INPAD_SOURCE", "INPAD_OPIN", "OUTPAD_IPIN",
+	const char *tnode_type_names[] = {  "INPAD_SOURCE", "INPAD_OPIN", "OUTPAD_IPIN",
 
 			"OUTPAD_SINK", "CB_IPIN", "CB_OPIN", "INTERMEDIATE_NODE",
 			"PRIMITIVE_IPIN", "PRIMITIVE_OPIN", "FF_IPIN", "FF_OPIN", "FF_SINK",
@@ -1296,7 +1296,7 @@ static void compute_net_slacks(float **net_slack) {
 	}
 }
 
-void print_lut_remapping(char *fname) {
+void print_lut_remapping(const char *fname) {
 	FILE *fp;
 	int inode, i;
 	t_pb *pb;
@@ -1324,7 +1324,7 @@ void print_lut_remapping(char *fname) {
 	fclose(fp);
 }
 
-void print_critical_path(char *fname) {
+void print_critical_path(const char *fname) {
 
 	/* Prints out the critical path to a file.  */
 
@@ -1517,7 +1517,7 @@ static void normalize_costs(float t_crit, long max_critical_input_paths,
 	}
 }
 
-void print_timing_graph_as_blif(char *fname, t_model *models) {
+void print_timing_graph_as_blif(const char *fname, t_model *models) {
 	struct s_model_ports *port;
 	struct s_linked_vptr *p_io_removed;
 	/* Prints out the critical path to a file.  */

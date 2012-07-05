@@ -55,7 +55,7 @@ static void free_crit(t_chunk *chunk_list_ptr){
 }
 
 /**************************************/
-void print_sink_delays(char *fname) {
+void print_sink_delays(const char *fname) {
 
 	int num_at_level, num_edges, inode, ilevel, i;
 	FILE *fp;

@@ -573,7 +573,7 @@ static void free_rc_edge_free_list(t_linked_rc_edge * rc_edge_free_list) {
 	}
 }
 
-void print_net_delay(float **net_delay, char *fname, struct s_net *nets,
+void print_net_delay(float **net_delay, const char *fname, struct s_net *nets,
 		int n_nets) {
 
 	/* Dumps the net delays into file fname.   */

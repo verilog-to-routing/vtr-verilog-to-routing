@@ -82,7 +82,7 @@ static enum color_types *net_color, *block_color;
  * [0..num_nets-1] and [0..num_blocks-1], respectively.    */
 
 static float line_fuz = 0.3;
-static char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY",
+static const char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY",
 		"INTRA_CLUSTER_EDGE" };
 
 static float *x_rr_node_left = NULL;

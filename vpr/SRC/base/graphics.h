@@ -43,7 +43,7 @@ typedef struct {
 void event_loop(void (*act_on_button)(float x, float y),
 		void (*drawscreen)(void));
 
-void init_graphics(char *window_name); /* Initializes X display */
+void init_graphics(const char *window_name); /* Initializes X display */
 void close_graphics(void); /* Closes X display      */
 
 /* Changes message in text area. */
@@ -90,7 +90,7 @@ void clearscreen(void); /* Erases the screen */
 
 /* Functions for creating and destroying extra menu buttons. */
 
-void create_button(char *prev_button_text, char *button_text,
+void create_button(const char *prev_button_text, const char *button_text,
 		void (*button_func)(void (*drawscreen)(void)));
 void destroy_button(char *button_text);
 

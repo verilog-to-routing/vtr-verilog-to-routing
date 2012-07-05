@@ -1103,7 +1103,7 @@ void print_route(char *route_file) {
 	int inet, inode, ipin, bnum, ilow, jlow, node_block_pin, iclass;
 	t_rr_type rr_type;
 	struct s_trace *tptr;
-	char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY",
+	const char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY",
 			"INTRA_CLUSTER_EDGE" };
 	FILE *fp;
 

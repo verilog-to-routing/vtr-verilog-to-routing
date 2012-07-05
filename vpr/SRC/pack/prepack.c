@@ -50,7 +50,7 @@ static t_pack_molecule *try_create_molecule(
 static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 		INP int logical_block_index,
 		INP t_pack_pattern_block *current_pattern_block);
-static void print_pack_molecules(INP char *fname,
+static void print_pack_molecules(INP const char *fname,
 		INP t_pack_patterns *list_of_pack_patterns, INP int num_pack_patterns,
 		INP t_pack_molecule *list_of_molecules);
 
@@ -920,7 +920,7 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 	return success;
 }
 
-static void print_pack_molecules(INP char *fname,
+static void print_pack_molecules(INP const char *fname,
 		INP t_pack_patterns *list_of_pack_patterns, INP int num_pack_patterns,
 		INP t_pack_molecule *list_of_molecules) {
 	int i;
