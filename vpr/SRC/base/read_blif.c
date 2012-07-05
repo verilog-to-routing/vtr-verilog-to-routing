@@ -11,6 +11,8 @@
 
 /* PRINT_PIN_NETS */
 
+struct s_model_stats {t_model * model; int count;};
+
 /* TODO: use hash table instead of this to keep data structures consistent */
 #define HASHSIZE 4093
 
@@ -67,6 +69,7 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 
 static void absorb_buffer_luts(void);
 static void compress_netlist(void);
+static void show_blif_stats(t_model *user_models, t_model *library_models);
 
 
 
@@ -1747,6 +1750,7 @@ void read_and_process_blif(char *blif_file, boolean sweep_hanging_nets_and_input
 	 * netlist because the vpack_net numbers, etc. may be changed by removing      *
 	 * unused inputs .  */
 
+	show_blif_stats(user_models, library_models);
 	free(logical_block_input_count);
 	free(logical_block_output_count);
 	free(model);
@@ -1754,5 +1758,102 @@ void read_and_process_blif(char *blif_file, boolean sweep_hanging_nets_and_input
 	logical_block_output_count = NULL;
 	model = NULL;
 }
+
+/* Output blif statistics */
+static void show_blif_stats(t_model *user_models, t_model *library_models) {
+	struct s_model_stats *model_stats;
+	struct s_model_stats *lut_model;
+	int num_model_stats;
+	t_model *cur;
+	int MAX_LUT_INPUTS;
+	int i, j, iblk, ipin, num_pins;
+	int *num_lut_of_size;
+
+
+	/* Store data structure for all models in FPGA */
+	num_model_stats = 0;
+
+	cur = library_models;
+	while(cur) {
+		num_model_stats++;
+		cur = cur->next;
+	}
+
+	cur = user_models;
+	while(cur) {
+		num_model_stats++;
+		cur = cur->next;
+	}
+
+	model_stats = (struct s_model_stats*)my_calloc(num_model_stats, sizeof(struct s_model_stats));
+
+	num_model_stats = 0;
+
+	lut_model = NULL;
+	cur = library_models;
+	while(cur) {
+		model_stats[num_model_stats].model = cur;
+		if(strcmp(cur->name, "names") == 0) {
+			lut_model = &model_stats[num_model_stats];
+		}
+		num_model_stats++;
+		cur = cur->next;
+	}
+
+	cur = user_models;
+	while(cur) {
+		model_stats[num_model_stats].model = cur;
+		num_model_stats++;
+		cur = cur->next;
+	}
+
+	/* Gather statistics from circuit */
+	MAX_LUT_INPUTS = 0;
+	for (iblk = 0; iblk < num_logical_blocks; iblk++) {
+		if (strcmp(logical_block[iblk].model->name, "names") == 0) {
+			MAX_LUT_INPUTS = logical_block[iblk].model->inputs->size;
+			break;
+		}
+	}
+	num_lut_of_size = (int*) my_calloc(MAX_LUT_INPUTS + 1, sizeof(int));
+
+
+	for(i = 0; i < num_logical_blocks; i++) {
+		for(j = 0; j < num_model_stats; j++) {
+			if(logical_block[i].model == model_stats[j].model) {
+				break;
+			}
+		}
+		assert(j < num_model_stats);
+		model_stats[j].count++;
+		if(&model_stats[j] == lut_model) {
+			num_pins = 0;
+			for (ipin = 0; ipin < logical_block[i].model->inputs->size;
+					ipin++) {
+				if (logical_block[i].input_nets[0][ipin] != OPEN) {
+					num_pins++;
+				}
+			}
+			num_lut_of_size[num_pins]++;
+		}
+	}
+
+	/* Print blif circuit stats */
+
+	printf("Blif circuit stats: \n\n");
+
+	for (i = 0; i <= MAX_LUT_INPUTS; i++) {
+		printf("%d LUTs of size %d\n", num_lut_of_size[i], i);
+	}
+	printf("\n");
+
+	for(i = 0; i < num_model_stats; i++) {
+		printf("%d of type %s\n", model_stats[i].count, model_stats[i].model->name);
+	}
+
+	free(model_stats);
+	free(num_lut_of_size);
+}
+
 
 
