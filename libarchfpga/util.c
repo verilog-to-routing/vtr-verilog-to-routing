@@ -466,7 +466,7 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 }
 
 char *
-my_strtok(char *ptr, char *tokens, FILE * fp, char *buf) {
+my_strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {
 
 	/* Get next token, and wrap to next line if \ at end of line.    *
 	 * There is a bit of a "gotcha" in strtok.  It does not make a   *

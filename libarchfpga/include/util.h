@@ -110,7 +110,7 @@ int my_atoi(const char *str);
 
 char* my_strdup(const char *str);
 char *my_strncpy(char *dest, const char *src, size_t size);
-char *my_strtok(char *ptr, char *tokens, FILE * fp, char *buf);
+char *my_strtok(char *ptr, const char *tokens, FILE * fp, char *buf);
 
 FILE* my_fopen(const char *fname, const char *flag, int prompt);
 char *my_fgets(char *buf, int max_size, FILE * fp);
