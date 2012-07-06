@@ -30,6 +30,8 @@ static int add_pattern_name_to_hash(INOUTP struct s_hash **nhash,
 static void discover_pattern_names_in_pb_graph_node(
 		INOUTP t_pb_graph_node *pb_graph_node, INOUTP struct s_hash **nhash,
 		INOUTP int *ncount);
+static void forward_infer_pattern(INOUTP t_pb_graph_pin *pb_graph_pin);
+static void backward_infer_pattern(INOUTP t_pb_graph_pin *pb_graph_pin);
 static t_pack_patterns *alloc_and_init_pattern_list_from_hash(INP int ncount,
 		INOUTP struct s_hash **nhash);
 static t_pb_graph_edge * find_expansion_edge_of_pattern(INP int pattern_index,
@@ -125,12 +127,14 @@ static int add_pattern_name_to_hash(INOUTP struct s_hash **nhash,
 /**
  * Locate all pattern names 
  * Side-effect: set all pb_graph_node temp_scratch_pad field to NULL
+ *				For cases where a pattern inference is "obvious", mark it as obvious.
  */
 static void discover_pattern_names_in_pb_graph_node(
 		INOUTP t_pb_graph_node *pb_graph_node, INOUTP struct s_hash **nhash,
 		INOUTP int *ncount) {
 	int i, j, k, m;
 	int index;
+	boolean hasPattern;
 	/* Iterate over all edges to discover if an edge in current physical block belongs to a pattern 
 	 If edge does, then record the name of the pattern in a hash table
 	 */
@@ -143,12 +147,14 @@ static void discover_pattern_names_in_pb_graph_node(
 
 	for (i = 0; i < pb_graph_node->num_input_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
+			hasPattern = FALSE;
 			for (k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges;
 					k++) {
 				for (m = 0;
 						m
 								< pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns;
 						m++) {
+					hasPattern = TRUE;
 					index =
 							add_pattern_name_to_hash(nhash,
 									pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_names[m],
@@ -162,19 +168,25 @@ static void discover_pattern_names_in_pb_graph_node(
 					}
 					pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices[m] =
 							index;
-				}
+				}								
+			}
+			if(hasPattern == TRUE) {
+				forward_infer_pattern(&pb_graph_node->input_pins[i][j]);
+				backward_infer_pattern(&pb_graph_node->input_pins[i][j]);
 			}
 		}
 	}
 
 	for (i = 0; i < pb_graph_node->num_output_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
+			hasPattern = FALSE;
 			for (k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges;
 					k++) {
 				for (m = 0;
 						m
 								< pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns;
 						m++) {
+					hasPattern = TRUE;
 					index =
 							add_pattern_name_to_hash(nhash,
 									pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_names[m],
@@ -190,17 +202,23 @@ static void discover_pattern_names_in_pb_graph_node(
 							index;
 				}
 			}
+			if(hasPattern == TRUE) {
+				forward_infer_pattern(&pb_graph_node->output_pins[i][j]);
+				backward_infer_pattern(&pb_graph_node->output_pins[i][j]);
+			}
 		}
 	}
 
 	for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
+			hasPattern = FALSE;
 			for (k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges;
 					k++) {
 				for (m = 0;
 						m
 								< pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns;
 						m++) {
+					hasPattern = TRUE;
 					index =
 							add_pattern_name_to_hash(nhash,
 									pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_names[m],
@@ -216,6 +234,10 @@ static void discover_pattern_names_in_pb_graph_node(
 							index;
 				}
 			}
+			if(hasPattern == TRUE) {
+				forward_infer_pattern(&pb_graph_node->clock_pins[i][j]);
+				backward_infer_pattern(&pb_graph_node->clock_pins[i][j]);
+			}
 		}
 	}
 
@@ -230,6 +252,26 @@ static void discover_pattern_names_in_pb_graph_node(
 						&pb_graph_node->child_pb_graph_nodes[i][j][k], nhash,
 						ncount);
 			}
+		}
+	}
+}
+
+/**
+ * In obvious cases where a pattern edge has only one path to go, set that path to be inferred 
+ */
+static void forward_infer_pattern(INOUTP t_pb_graph_pin *pb_graph_pin) {
+	if(pb_graph_pin->num_output_edges == 1 && pb_graph_pin->output_edges[0]->num_pack_patterns == 0 && pb_graph_pin->output_edges[0]->infer_pattern == FALSE) {
+		pb_graph_pin->output_edges[0]->infer_pattern = TRUE;
+		if(pb_graph_pin->output_edges[0]->num_output_pins == 1) {
+			forward_infer_pattern(pb_graph_pin->output_edges[0]->output_pins[0]);
+		}
+	}
+}
+static void backward_infer_pattern(INOUTP t_pb_graph_pin *pb_graph_pin) {
+	if(pb_graph_pin->num_input_edges == 1 && pb_graph_pin->input_edges[0]->num_pack_patterns == 0 && pb_graph_pin->input_edges[0]->infer_pattern == FALSE) {
+		pb_graph_pin->input_edges[0]->infer_pattern = TRUE;
+		if(pb_graph_pin->input_edges[0]->num_input_pins == 1) {
+			backward_infer_pattern(pb_graph_pin->input_edges[0]->input_pins[0]);
 		}
 	}
 }
