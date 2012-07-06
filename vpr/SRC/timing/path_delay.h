@@ -19,7 +19,10 @@ void print_timing_graph(const char *fname);
 void print_net_slack(const char *fname, float **net_slack);
 
 void print_lut_remapping(const char *fname);
+
 void print_critical_path(const char *fname);
+
+void print_clustering_timing_info(char *fname);
 
 void get_tnode_block_and_output_net(int inode, int *iblk_ptr, int *inet_ptr);
 

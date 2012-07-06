@@ -237,9 +237,7 @@ float** alloc_and_load_pre_packing_timing_graph(float block_delay,
 	net_slack = alloc_net_slack();
 
 	if (GetEchoOption()) {
-		print_timing_graph("pre_packing_timing_graph.echo");
-		print_timing_graph_as_blif("pre_packing_timing_graph_as_blif.blif",
-				models);
+		print_timing_graph_as_blif("pre_packing_timing_graph_as_blif.blif", models);
 	}
 
 	check_timing_graph(num_sinks);
@@ -327,11 +325,72 @@ void print_net_slack(const char *fname, float **net_slack) {
 
 	/* Prints the net slacks into a file. */
 
-	int inet, iedge, driver_tnode, num_edges;
+	int inet, iedge, ibucket, driver_tnode, num_edges, num_unused_slacks = 0;
 	t_tedge * tedge;
 	FILE *fp;
+	float max_slack = -1 * HUGE_FLOAT, min_slack = HUGE_FLOAT, 
+		total_slack = 0, total_negative_slack = 0, bucket_size, slack;
+	int slacks_in_bucket[5]; 
 
 	fp = my_fopen(fname, "w", 0);
+
+	/* Go through net_slack once to get the largest and smallest slack, both for reporting and 
+	   so that we can delimit the buckets. Also calculate the total negative slack in the design. */
+	for (inet = 0; inet < num_timing_nets; inet++) {
+		driver_tnode = net_to_driver_tnode[inet];
+		num_edges = tnode[driver_tnode].num_edges;
+		for (iedge = 0; iedge < num_edges; iedge++) { 
+			slack = net_slack[inet][iedge + 1];
+			max_slack = max(max_slack, slack);
+			min_slack = min(min_slack, slack);
+			total_slack += slack;
+			if (slack < -1e-15) { /* if slack is negative */
+				total_negative_slack -= slack; /* By convention, we'll have total_negative_slack be a positive number. */
+			}
+		}
+	}
+
+	fprintf(fp, "Largest slack in design: %g\n", max_slack);
+	fprintf(fp, "Smallest slack in design: %g\n", min_slack);
+	fprintf(fp, "Total slack in design: %g\n", total_slack);
+	fprintf(fp, "Total negative slack: %g\n", total_negative_slack);
+
+	if (max_slack - min_slack > 1e-15) { /* Only sort the slacks into buckets if not all slacks are the same (if they are identical, no need to sort). */
+		/* Initialize slacks_in_bucket, an array counting how many slacks are within certain linearly-spaced ranges (buckets). */
+		for (ibucket = 0; ibucket < 5; ibucket++) {
+			slacks_in_bucket[ibucket] = 0;
+		}
+
+		/* The size of each bucket is the range of slacks, divided by the number of buckets. */
+		bucket_size = (max_slack - min_slack)/5;
+
+		/* Now, pass through again, incrementing the number of slacks in the nth bucket 
+			for each slack between (min_slack + n*bucket_size) and (min_slack + (n+1)*bucket_size). */
+
+		for (inet = 0; inet < num_timing_nets; inet++) {
+			driver_tnode = net_to_driver_tnode[inet];
+			num_edges = tnode[driver_tnode].num_edges;
+			for (iedge = 0; iedge < num_edges; iedge++) { 
+				slack = net_slack[inet][iedge + 1];
+				ibucket = min(4, (int) ((slack - min_slack)/bucket_size));
+				slacks_in_bucket[ibucket]++;
+			}
+		}
+
+		/* Now print how many slacks are in each bucket. */
+		fprintf(fp, "\n\nRange\t\t");
+		for (ibucket = 0; ibucket < 5; ibucket++) {
+			fprintf(fp, "%.1e to ", min_slack);
+			min_slack += bucket_size;
+			fprintf(fp, "%.1e\t", min_slack);
+		}
+		fprintf(fp, "Not analysed");
+		fprintf(fp, "\nSlacks in range\t\t");
+		for (ibucket = 0; ibucket < 5; ibucket++) {
+			fprintf(fp, "%d\t\t\t", slacks_in_bucket[ibucket]);
+		}
+		fprintf(fp, "%d", num_unused_slacks);
+	}
 
 	/* Finally, print all the slacks, organized by net. */
 	fprintf(fp, "\n\nNet #\tDriver_tnode\tto_node\tSlack\n\n");
@@ -340,11 +399,16 @@ void print_net_slack(const char *fname, float **net_slack) {
 		driver_tnode = net_to_driver_tnode[inet];
 		num_edges = tnode[driver_tnode].num_edges;
 		tedge = tnode[driver_tnode].out_edges;
-		fprintf(fp, "%5d\t%5d\t\t%5d\t%g\n", inet, driver_tnode, tedge[0].to_node, net_slack[inet][1]);
+		slack = net_slack[inet][1];
+		fprintf(fp, "%5d\t%5d\t\t%5d\t%g\n", inet, driver_tnode, tedge[0].to_node, slack);
+
 		for (iedge = 1; iedge < num_edges; iedge++) { /* newline and indent subsequent edges after the first */
-			fprintf(fp, "\t\t\t%5d\t%g\n", tedge[iedge].to_node, net_slack[inet][iedge+1]);
+			slack = net_slack[inet][iedge+1];
+			fprintf(fp, "\t\t\t%5d\t%g\n", tedge[iedge].to_node, slack);
 		}
 	}
+
+	fclose(fp);
 }
 
 /* Count # of tnodes, allocates space, and loads the tnodes and its associated edges */
@@ -2196,7 +2260,7 @@ static void propagate_clock_domain_and_skew(int inode) {
 		to_node = tedge[iedge].to_node;					/* Get the index of the destination tnode of this edge... */
 		Tdel = tedge[iedge].Tdel;						/* ...and get the delay to that tnode, along this edge. */
 
-		tnode[to_node].clock_domain = tnode[inode].clock_domain;					/* Propagate clock domain forward unchanged. */
+		tnode[to_node].clock_domain = tnode[inode].clock_domain;	/* Propagate clock domain forward unchanged. */
 		tnode[to_node].clock_skew = tnode[inode].clock_skew + Tdel; /* Propagate clock skew forward along this clock net, adding the delay of the wires (edges) of the clock network. */ 
 		
 		/* Finally, call recursively on the destination tnode. */
@@ -2204,3 +2268,18 @@ static void propagate_clock_domain_and_skew(int inode) {
 	}
 }
 
+void print_clustering_timing_info(char *fname) {
+	/* Print information from tnodes which is used by the clusterer. */
+	int inode;
+	FILE *fp;
+
+	fp = my_fopen(fname, "w", 0);
+
+	fprintf(fp, "inode  Critical input paths  Critical output paths  Normalized slack  Normalized Tarr  Normalized total crit paths\n");
+	for (inode = 0; inode < num_tnodes; inode++) {
+		fprintf(fp, "%d\t%ld\t\t\t%ld\t\t\t", inode, tnode[inode].num_critical_input_paths, tnode[inode].num_critical_output_paths); 
+		fprintf(fp, "%f\t%f\t%f\n", tnode[inode].normalized_slack, tnode[inode].normalized_T_arr, tnode[inode].normalized_total_critical_paths);
+	}
+
+	fclose(fp);
+}
