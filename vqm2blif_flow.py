@@ -1,8 +1,8 @@
 #!/usr/bin/python
-__version__ = """$Revsion$
+__version__ = """$Revison$
                  Last Change: $Author$ $Date$
                  Orig Author: kmurray
-                 ID: $Id: vqm2blif_flow.py 2664 2012-06-21 22:20:09Z kmurray $"""
+                 $Id: vqm2blif_flow.py 2664 2012-06-21 22:20:09Z kmurray $"""
 
 #try:
 #    import pudb
@@ -45,6 +45,7 @@ def parse_args():
                         default=True,
                         help='If the vqm output file already exists, do not re-run Quartus 2 to re-synthesize it')
 
+
     #Options effecting vqm2blif operation
     vqm2blif_options = parser.add_argument_group('vqm2blif options')
 
@@ -58,7 +59,8 @@ def parse_args():
                         help='The architecture file to use (default: $V2B_REGRESSION_BASE_DIR/BENCHMARKS/ARCH/<project>_arch.xml)')
 
     vqm2blif_options.add_argument('--vqm2blif_opts', dest='vqm2blif_extra_opts', action='store',
-                        help='Provide additional options to vqm2blif as a string (eg: %(prog)s --vqm2blif_opts "--clean all --buffouts")')
+                        default='-luts vqm', #Outputs blackbox primitives only (no blif .names)
+                        help='Provide additional options to vqm2blif as a string (default: "%(default)s")')
 
 
     #Options effecting vpr operation
@@ -155,15 +157,17 @@ def gen_vqm(args):
         q2_write_vqm_tcl = path.join(args.vqm2blif_dir, 'SCRIPTS/q2_write_vqm.tcl')
 
         q2_shell = path.join(args.quartus_dir, 'quartus_sh')
+        q2_cmd = [q2_shell,
+                    '-t',               q2_write_vqm_tcl,
+                    '-project',         quartus_project_file,
+                    '-family',          args.device_family,
+                    '-vqm_out_file',    args.vqm_file]
 
         #Verilog to vqm conversion
         try:
             print "\nINFO: Calling Quartus"
-            subprocess.check_call([q2_shell,
-                            '-t',               q2_write_vqm_tcl,
-                            '-project',         quartus_project_file,
-                            '-family',          args.device_family,
-                            '-vqm_out_file',    args.vqm_file])
+            print_cmd(q2_cmd)
+            subprocess.check_call(q2_cmd)
         except subprocess.CalledProcessError as error:
             print "ERROR: VQM generation failed (retcode: %s)" % error.returncode
             sys.exit(1)
@@ -195,18 +199,18 @@ def gen_blif(args):
     
     try:
         print "\nINFO: Calling vqm2blif"
+        print_cmd(vqm2blif_cmd)
         subprocess.check_call(vqm2blif_cmd)
     except subprocess.CalledProcessError as error:
         print "ERROR: VQM2BLIF conversion failed (retcode: %s)" % error.returncode
         sys.exit(1)
 
-def vqm2blif_flow(args):
-    gen_vqm(args)
-
-    gen_blif(args)
 
 
 def run_vpr(args):
+    """
+    Runs vpr on the generated blif file
+    """
     vpr_exec = path.join(args.vpr_dir, 'vpr')
 
     vpr_cmd = [vpr_exec,
@@ -218,11 +222,20 @@ def run_vpr(args):
 
     try:
         print "\nINFO: Calling VPR"
+        print_cmd(vpr_cmd)
         subprocess.check_call(vpr_cmd)
     except subprocess.CalledProcessError as error:
         print "ERROR: VPR run failed (retcode: %s)" % error.returncode
         sys.exit(1)
     print "\nINFO: VPR ran successfully"
+
+def print_cmd(cmd_array):
+    print ' '.join(cmd_array)
+
+def vqm2blif_flow(args):
+    gen_vqm(args)
+
+    gen_blif(args)
 
 if __name__ == '__main__':
     args = parse_args()
