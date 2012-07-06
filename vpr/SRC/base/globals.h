@@ -58,9 +58,6 @@ extern t_type_ptr FILL_TYPE;
 extern int num_types;
 extern struct s_type_descriptor *type_descriptors;
 
-/* Default prefix string for output files */
-extern char *out_file_prefix;
-
 /* name of the blif circuit */
 extern char *blif_circuit_name;
 
