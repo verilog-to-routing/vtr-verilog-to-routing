@@ -142,7 +142,7 @@ static void ParseFc(ezxml_t Node, enum Fc_type *Fc, float *Val) {
 		break;
 	case FC_ABS:
 	case FC_FRAC:
-		*Val = atof(Node->txt);
+		*Val = (float)atof(Node->txt);
 		ezxml_set_attr(Node, "type", NULL);
 		ezxml_set_txt(Node, "");
 		break;
@@ -440,7 +440,7 @@ static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {
 						Cur->line);
 				exit(1);
 			}
-			Type->grid_loc_def[i].col_rel = atof(Prop);
+			Type->grid_loc_def[i].col_rel = (float)atof(Prop);
 			ezxml_set_attr(Cur, "pos", NULL);
 		} else if (Prop != NULL) {
 			printf(
@@ -1212,7 +1212,7 @@ static void ProcessLayout(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 			printf(ERRTAG
 			"Auto-sizing, width and height cannot be specified\n");
 		}
-		arch->clb_grid.Aspect = atof(Prop);
+		arch->clb_grid.Aspect = (float)atof(Prop);
 		ezxml_set_attr(Node, "auto", NULL);
 		if (arch->clb_grid.Aspect <= 0) {
 			printf(ERRTAG

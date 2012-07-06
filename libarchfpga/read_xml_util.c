@@ -303,7 +303,7 @@ extern float GetFloatProperty(INP ezxml_t Parent, INP char *Name,
 	property_value = default_value;
 	Prop = FindProperty(Parent, Name, Required);
 	if (Prop) {
-		property_value = atof(Prop);
+		property_value = (float)atof(Prop);
 		ezxml_set_attr(Parent, Name, NULL);
 	}
 	return property_value;
