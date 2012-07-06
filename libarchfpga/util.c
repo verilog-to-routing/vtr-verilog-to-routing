@@ -10,8 +10,11 @@
  * arguments as the standard library ones, but exit    *
  * the program if they find an error condition.        */
 
+
 int file_line_number; /* file in line number being parsed */
 char *out_file_prefix = NULL;
+
+
 static int cont; /* line continued? */
 
 /* Returns the min of cur and max. If cur > max, a warning

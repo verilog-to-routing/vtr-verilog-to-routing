@@ -21,8 +21,6 @@ typedef int boolean;
 #define ERRTAG "ERROR:\t"
 #define WARNTAG "WARN:\t"
 
-extern int file_line_number; /* line in file being parsed */
-
 #define BUFSIZE 4096 /* Maximum line length for various parsing proc. */
 #ifndef max
 #define max(a,b) (((a) > (b))? (a) : (b))
@@ -61,6 +59,9 @@ typedef struct s_chunk {
 #ifdef __cplusplus 
 extern "C" {
 #endif
+
+extern int file_line_number; /* line in file being parsed */
+extern char *out_file_prefix; /* Default prefix string for output files */
 
 /************************ Memory allocation routines *************************/
 
