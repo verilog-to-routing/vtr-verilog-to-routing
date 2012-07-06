@@ -62,8 +62,10 @@ my $stage_idx_vpr    = 5;
 
 my $circuit_file_path      = expand_user_path( shift(@ARGV) );
 my $architecture_file_path = expand_user_path( shift(@ARGV) );
+my $sdc_file_path;
 
 my $token;
+my $ext;
 my $starting_stage          = stage_index("odin");
 my $ending_stage            = stage_index("vpr");
 my $keep_intermediate_files = 0;
@@ -77,7 +79,11 @@ my $do_power                = 0;
 my $check_equivalent = "off";
 
 while ( $token = shift(@ARGV) ) {
-	if ( $token eq "-starting_stage" ) {
+	$ext = ( $token =~ m/([^.]+)$/ )[0];
+	if ( $ext eq "sdc" ) {
+		$sdc_file_path = expand_user_path( $token );
+	}
+	elsif ( $token eq "-starting_stage" ) {
 		$starting_stage = stage_index( shift(@ARGV) );
 	}
 	elsif ( $token eq "-ending_stage" ) {
@@ -167,6 +173,12 @@ my $inputs_per_cluster = -1;
   or die "Circuit file not found ($circuit_file_path)";
 ( -f $architecture_file_path )
   or die "Architecture file not found ($architecture_file_path)";
+
+if ( !-e $sdc_file_path ) {
+	# open( OUTPUT_FILE, ">$sdc_file_path" ); 
+	# close ( OUTPUT_FILE );
+	$sdc_file_path = " ";
+}
 
 my $vpr_path;
 if ( $stage_idx_vpr >= $starting_stage and $stage_idx_vpr <= $ending_stage ) {
@@ -456,10 +468,11 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			$vpr_path,                    "vpr.out",
 			$timeout,                     $temp_dir,
 			$architecture_file_name,      "$benchmark_name",
-			"--blif_file",                "$scripts_output_file_name",
+			"--blif_file",				  "$scripts_output_file_name",
 			"--timing_analysis",          "$timing_driven",
 			"--timing_driven_clustering", "$timing_driven",
 			"--cluster_seed_type",        "$vpr_cluster_seed_type",
+			$sdc_file_path, 			  # Optional SDC file
 			"--nodisp"
 		);
 		if ( $timing_driven eq "on" ) {
@@ -501,6 +514,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 					"--blif_file",           "$scripts_output_file_name",
 					"--route_chan_width",    "$min_chan_width",
 					"--cluster_seed_type",   "$vpr_cluster_seed_type",
+					$sdc_file_path, 		 # Optional SDC file
 					"--nodisp",              @vpr_power_args
 				);
 			}
@@ -516,6 +530,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"--timing_driven_clustering", "$timing_driven",
 			"--route_chan_width",         "$min_chan_width",
 			"--nodisp",                   "--cluster_seed_type",
+			$sdc_file_path, 			  # Optional SDC file
 			"$vpr_cluster_seed_type",     @vpr_power_args
 		);
 	}
