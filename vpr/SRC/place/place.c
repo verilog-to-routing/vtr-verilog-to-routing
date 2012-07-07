@@ -735,6 +735,7 @@ void try_place(struct s_placer_opts placer_opts,
 			print_sink_delays("placement_sink_delays.echo");
 			print_net_slack("placement_net_slacks.echo", net_slack);
 			print_critical_path("placement_crit_path.echo");
+			print_timing_graph("placement_timing_graph.echo");
 		}
 
 		printf("Placement Estimated Crit Path Delay: %g\n\n", est_crit);

@@ -173,10 +173,6 @@ alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 
 	num_sinks = alloc_and_load_timing_graph_levels();
 
-	if (GetEchoOption()) {
-		print_timing_graph("initial_timing_graph.echo");
-	}
-
 	check_timing_graph(num_sinks);
 #if 0
 	load_clock_domain_and_skew(); /* Doesn't work yet post-packing. */
@@ -1094,8 +1090,8 @@ void print_timing_graph(const char *fname) {
 	fp = my_fopen(fname, "w", 0);
 
 	fprintf(fp, "num_tnodes: %d\n", num_tnodes);
-	fprintf(fp, "Node #\tType\t\tipin\tiblk\tClock Skew\t# edges\t"
-			"Edges (to_node, Tdel)\n\n");
+	fprintf(fp, "Node #\tType\t\tipin\tiblk\tDomain\tSkew\t\t# edges\t"
+			"to_node     Tdel\n\n");
 
 	for (inode = 0; inode < num_tnodes; inode++) {
 		fprintf(fp, "%d\t", inode);
@@ -1112,21 +1108,23 @@ void print_timing_graph(const char *fname) {
 		}
 
 		if(itype == FF_CLOCK || itype == FF_SOURCE || itype == FF_SINK) {
-			fprintf(fp, "%f\t", tnode[inode].clock_skew);
+			fprintf(fp, "%d\t%e\t", tnode[inode].clock_domain, tnode[inode].clock_skew);
 		}
 
 		else {
-			fprintf(fp, "\t\t");
+			fprintf(fp, "\t\t\t");
 		}
 
 		fprintf(fp, "%d", tnode[inode].num_edges);
 
+		/* Print all edges after edge 0 on separate lines */
 		tedge = tnode[inode].out_edges;
-		for (iedge = 0; iedge < tnode[inode].num_edges; iedge++) {
-			fprintf(fp, "\t(%4d,%7.3g)", tedge[iedge].to_node,
-					tedge[iedge].Tdel);
+		if(tedge) {
+			fprintf(fp, "\t%4d\t%7.3g", tedge[0].to_node, tedge[0].Tdel);
+			for (iedge = 1; iedge < tnode[inode].num_edges; iedge++) {
+				fprintf(fp, "\n\t\t\t\t\t\t\t\t\t%4d\t%7.3g", tedge[iedge].to_node, tedge[iedge].Tdel);
+			}
 		}
-
 		fprintf(fp, "\n");
 	}
 
@@ -1205,7 +1203,11 @@ float load_net_slack(float **net_slack, boolean do_lut_input_balancing) {
 	num_at_level = tnodes_at_level[0].nelem;	/* There are num_at_level top-level tnodes. */
 	for (i = 0; i < num_at_level; i++) {
 		inode = tnodes_at_level[0].list[i];		/* Go through the list of each tnode at level 0... */
+#if 0
 		tnode[inode].T_arr = tnode[inode].clock_skew;	/* ...and set the arrival time of that tnode to its clock skew. */
+#else 
+		tnode[inode].T_arr = 0.; /* For now, set arrival time to 0 instead. */
+#endif
 	}
 
 	total = 0;													/* We count up all tnodes to error-check at the end. */
@@ -2283,4 +2285,3 @@ void print_clustering_timing_info(char *fname) {
 
 	fclose(fp);
 }
-
