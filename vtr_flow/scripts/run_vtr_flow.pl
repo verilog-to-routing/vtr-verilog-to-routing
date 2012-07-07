@@ -177,7 +177,7 @@ my $inputs_per_cluster = -1;
 if ( !-e $sdc_file_path ) {
 	# open( OUTPUT_FILE, ">$sdc_file_path" ); 
 	# close ( OUTPUT_FILE );
-	$sdc_file_path = " ";
+	my $sdc_file_path;
 }
 
 my $vpr_path;
@@ -514,8 +514,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 					"--blif_file",           "$scripts_output_file_name",
 					"--route_chan_width",    "$min_chan_width",
 					"--cluster_seed_type",   "$vpr_cluster_seed_type",
-					$sdc_file_path, 		 # Optional SDC file
-					"--nodisp",              @vpr_power_args
+					"--nodisp",              @vpr_power_args,
+					"$sdc_file_path" 		 # Optional SDC file
 				);
 			}
 		}
@@ -530,8 +530,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"--timing_driven_clustering", "$timing_driven",
 			"--route_chan_width",         "$min_chan_width",
 			"--nodisp",                   "--cluster_seed_type",
-			$sdc_file_path, 			  # Optional SDC file
-			"$vpr_cluster_seed_type",     @vpr_power_args
+			"$vpr_cluster_seed_type",     @vpr_power_args,
+			"$sdc_file_path" 			  # Optional SDC file
 		);
 	}
 	  					

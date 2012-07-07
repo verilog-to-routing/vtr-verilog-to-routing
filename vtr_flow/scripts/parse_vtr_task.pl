@@ -170,7 +170,7 @@ sub calc_geomean {
 	my $output_path = $task_path;
 	my $exp_num = last_exp($task_path);
 
-	if ( ( ( $#tasks + 1 ) > 1 ) | ( -e "$task_path/task_list.txt" ) ) {
+	if ( ( ( $#tasks + 1 ) > 1 ) | ( -e "$task_path/../task_list.txt" ) ) {
 		$output_path = "$task_path/../"; 
 	}
 	if ( !-e "$output_path/qor_geomean.txt" ) {
