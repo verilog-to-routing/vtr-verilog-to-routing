@@ -14,10 +14,10 @@ OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O3
 
 CC = $(COMPILER)
 LIB_DIR = -L.
-LIB = -lm
+LIB = -lm -lpcre
 SRC_DIR = SRC
 OBJ_DIR = OBJ
-OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/route
+OTHER_DIR = -ISRC/
 
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 
@@ -33,19 +33,19 @@ else                              # DEBUG build
   FLAGS := $(FLAGS) $(DEBUG_FLAGS)
 endif
 
-EXE = pcre
+EXE = pcredemo
 
 OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c))
 OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
 
-#$(EXE): $(OBJ) Makefile libpcre.a
-#	$(CC) $(FLAGS) OBJ/main.o -o $(EXE) $(LIB_DIR) $(LIB)
+$(EXE): $(OBJ) Makefile libpcre.a
+	$(CC) $(FLAGS) OBJ/main.o -o $(EXE) $(LIB_DIR) $(LIB)
 
 
 libpcre.a: $(OBJ) Makefile
 	ar rcs $@ $(OBJ)
-#	ar d $@ main.o
+	ar d $@ main.o
 
 
 # Enable a second round of expansion so that we may include
@@ -57,7 +57,7 @@ libpcre.a: $(OBJ) Makefile
 # without this, all but the last file written to a directory would appear
 # to be out of date.
 $(OBJ): OBJ/%.o:$(SRC_DIR)/%.c | $$(dir $$@D)
-	$(CC) $(FLAGS) -MD -MP -I$(OTHER_DIR) -ISRC/util -c $< -o $@
+	$(CC) $(FLAGS) -MD -MP -I$(OTHER_DIR) -ISRC -c $< -o $@
 
 # Silently create target directories as need
 $(OBJ_DIRS):
