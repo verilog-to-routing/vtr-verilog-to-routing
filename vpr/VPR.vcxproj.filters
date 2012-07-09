@@ -8,9 +8,6 @@
     <Filter Include="Source Files\base">
       <UniqueIdentifier>{542b879d-52d7-4dea-a50c-c81349836b4e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\libarch">
-      <UniqueIdentifier>{e5112e6d-c332-42e3-9f09-743577216e64}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\util">
       <UniqueIdentifier>{20e9bc80-b164-4aea-82d9-d8dac29bfe97}</UniqueIdentifier>
     </Filter>
@@ -44,9 +41,6 @@
     </Filter>
     <Filter Include="Header Files\place">
       <UniqueIdentifier>{cc57675e-23df-4baf-8e9e-48f499953880}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\libarch">
-      <UniqueIdentifier>{99f21d61-56b7-46ac-b813-d817d906315a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\util">
       <UniqueIdentifier>{de24ab86-f26b-4b30-8521-a54f20c32f3c}</UniqueIdentifier>
@@ -107,21 +101,6 @@
     </ClCompile>
     <ClCompile Include="SRC\base\stats.c">
       <Filter>Source Files\base</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libarchfpga\ezxml.c">
-      <Filter>Source Files\libarch</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libarchfpga\read_xml_arch_file.c">
-      <Filter>Source Files\libarch</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libarchfpga\read_xml_util.c">
-      <Filter>Source Files\libarch</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libarchfpga\ReadLine.c">
-      <Filter>Source Files\libarch</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libarchfpga\util.c">
-      <Filter>Source Files\libarch</Filter>
     </ClCompile>
     <ClCompile Include="SRC\util\hash.c">
       <Filter>Source Files\util</Filter>
@@ -391,30 +370,6 @@
     </ClInclude>
     <ClInclude Include="SRC\place\timing_place_lookup.h">
       <Filter>Header Files\place</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libarchfpga\include\arch_types.h">
-      <Filter>Header Files\libarch</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libarchfpga\include\ezxml.h">
-      <Filter>Header Files\libarch</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libarchfpga\include\logic_types.h">
-      <Filter>Header Files\libarch</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libarchfpga\include\physical_types.h">
-      <Filter>Header Files\libarch</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libarchfpga\include\read_xml_arch_file.h">
-      <Filter>Header Files\libarch</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libarchfpga\include\read_xml_util.h">
-      <Filter>Header Files\libarch</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libarchfpga\include\ReadLine.h">
-      <Filter>Header Files\libarch</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libarchfpga\include\util.h">
-      <Filter>Header Files\libarch</Filter>
     </ClInclude>
     <ClInclude Include="SRC\util\hash.h">
       <Filter>Header Files\util</Filter>

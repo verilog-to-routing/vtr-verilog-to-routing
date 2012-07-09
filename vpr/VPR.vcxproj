@@ -87,7 +87,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>SRC\util;SRC\timing;SRC\route;SRC\place;SRC\pack;SRC\base;..\libarchfpga\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libarchfpga\include;SRC\pcre;SRC\util;SRC\timing;SRC\route;SRC\place;SRC\pack;SRC\base;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;NO_GRAPHICS;_DEBUG;_CONSOLE;CREATE_ECHO_FILES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <SmallerTypeCheck>true</SmallerTypeCheck>
@@ -99,7 +99,7 @@
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <DisableSpecificWarnings>4100; 4244; 4305;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <CompileAs>Default</CompileAs>
+      <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -190,11 +190,6 @@
     <ClCompile Include="SRC\base\SetupVPR.c" />
     <ClCompile Include="SRC\base\ShowSetup.c" />
     <ClCompile Include="SRC\base\stats.c" />
-    <ClCompile Include="..\libarchfpga\ezxml.c" />
-    <ClCompile Include="..\libarchfpga\read_xml_arch_file.c" />
-    <ClCompile Include="..\libarchfpga\read_xml_util.c" />
-    <ClCompile Include="..\libarchfpga\ReadLine.c" />
-    <ClCompile Include="..\libarchfpga\util.c" />
     <ClCompile Include="SRC\pack\cluster_feasibility_filter.c" />
     <ClCompile Include="SRC\pack\cluster_placement.c" />
     <ClCompile Include="SRC\pack\prepack.c" />
@@ -288,20 +283,17 @@
     <ClInclude Include="SRC\place\place_stats.h" />
     <ClInclude Include="SRC\place\timing_place.h" />
     <ClInclude Include="SRC\place\timing_place_lookup.h" />
-    <ClInclude Include="..\libarchfpga\include\arch_types.h" />
-    <ClInclude Include="..\libarchfpga\include\ezxml.h" />
-    <ClInclude Include="..\libarchfpga\include\logic_types.h" />
-    <ClInclude Include="..\libarchfpga\include\physical_types.h" />
-    <ClInclude Include="..\libarchfpga\include\read_xml_arch_file.h" />
-    <ClInclude Include="..\libarchfpga\include\read_xml_util.h" />
-    <ClInclude Include="..\libarchfpga\include\ReadLine.h" />
-    <ClInclude Include="..\libarchfpga\include\util.h" />
     <ClInclude Include="SRC\timing\read_sdc.h" />
     <ClInclude Include="SRC\util\hash.h" />
     <ClInclude Include="SRC\util\heapsort.h" />
     <ClInclude Include="SRC\util\mst.h" />
     <ClInclude Include="SRC\util\token.h" />
     <ClInclude Include="SRC\util\vpr_utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\libarchfpga\libarchfpga.vcxproj">
+      <Project>{cbba36e0-cd88-4586-afb6-a0e603d16796}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
