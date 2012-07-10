@@ -250,7 +250,6 @@ sub summarize_qor {
 		mkdir "$output_path/task_summary";
 	}
 	if ( -e "$output_path/task_summary/${run_prefix}${exp_num}_summary.txt" ) {
-		return;
 	}
 	open( OUTPUT_FILE, ">$output_path/task_summary/${run_prefix}${exp_num}_summary.txt" );
 	
@@ -372,7 +371,7 @@ sub last_exp {
 	}
 	--$num;
 	return $num;
-}
+} 
 
 sub check_golden {
 	my $task_name = shift;
