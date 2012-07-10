@@ -31,6 +31,7 @@
 use strict;
 use Cwd;
 use File::Spec;
+use List::Util;
 
 # Function Prototypes
 sub setup_single_test;
@@ -208,31 +209,52 @@ sub check_override {
 			print "\t" x 5 . "Verilog-to-Routing QoR Results \n";
 			print "=" x 116 . "\n";
 
+			my @data = (
+						"total_runtime"		,
+						"total_wirelength"	,
+						"num_clb"			,
+						"min_chan_width"	,
+						"crit_path_delay"
+						);
+			
+			my %units = (
+						"total_runtime" 	, " s ",
+						"total_wirelength" 	, " units ",
+						"num_clb" 			, " blocks ",
+						"min_chan_width" 	, " tracks ",
+						"crit_path_delay" 	, " ns "
+						);
+
+			my %precision = (
+							"total_runtime"		, "%.3f",
+							"total_wirelength" 	, "%.0f",
+							"num_clb" 			, "%.2f",
+							"min_chan_width" 	, "%.2f",
+							"crit_path_delay" 	, "%.3e"
+							);
+
 			open( QOR_FILE, "$test_dir/qor_geomean.txt" );
 			my $output = <QOR_FILE>;
 
-			my @first_line = split( /\t/, trim($output) );
-			my $label = shift @first_line;
-
+			my @first_line = split( /\t/, trim($output) );			
 			my $last_line;
 			while(<QOR_FILE>) {
 				   $last_line = $_ if eof;
 			}
-			my @last_line = split( /\t/, trim($last_line) );
-			my $label = shift @last_line;
-			@last_line[0] = sprintf("%.0f", $last_line[0]) . " units ";
-			@last_line[1] = sprintf("%.3f", $last_line[1]) . " s ";
-			@last_line[2] = sprintf("%.2f", $last_line[2]) . " blocks ";
-			@last_line[3] = sprintf("%.2f", $last_line[3]) . " tracks ";
-			@last_line[4] = sprintf("%.3e", $last_line[4]) . " ns ";
+			my @last_line = split( /\t/, trim($last_line) );			
+			my @new_last_line;
 
+			foreach my $param (@data) {
+				my $index = List::Util::first { @first_line[$_] eq $param } 0 .. $#first_line;
+			  	push( @new_last_line, sprintf( $precision{$param}, @last_line[$index] ) . $units{$param} );
+			}
 
 format STDOUT =
 | @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| |
-@first_line;
+@data;
 --------------------------------------------------------------------------------------------------------------------
 | @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| |
-@last_line;
+@new_last_line;
 . 
 write;
 			exit "QoR results displayed";

@@ -105,6 +105,130 @@ if ($calc_geomean) {
 	calc_geomean;
 }
 
+sub parse_single_task {
+	my $task_name = shift;
+	my $task_path = "$vtr_flow_path/tasks/$task_name";
+
+	open( CONFIG, "<$task_path/config/config.txt" )
+	  or die "Failed to open $task_path/config/config.txt: $!";
+	my @config_data = <CONFIG>;
+	close(CONFIG);
+
+	my @circuits;
+	my $parse_file;
+	my $qor_parse_file;
+	my @archs;
+	foreach my $line (@config_data) {
+
+		# Ignore comments
+		if ( $line =~ /^\s*#.*$/ or $line =~ /^\s*$/ ) { next; }
+
+		my @data  = split( /=/, $line );
+		my $key   = trim( $data[0] );
+		my $value = trim( $data[1] );
+
+		if ( $key eq "circuit_list_add" ) {
+			push( @circuits, $value );
+		}
+		elsif ( $key eq "arch_list_add" ) {
+			push( @archs, $value );
+		}
+		elsif ( $key eq "parse_file" ) {
+			$parse_file = expand_user_path($value);
+		}
+		elsif ( $key eq "qor_parse_file" ) {
+			$qor_parse_file = expand_user_path($value);
+		}
+	}
+
+	# PARSE CONFIG FILE
+	if ( -e "$task_path/config/$parse_file" ) {
+		$parse_file = "$task_path/config/$parse_file";
+	}
+	elsif ( $parse_file eq "" ) {
+		die "Task $task_name has no parse file specified.\n";
+	}
+	elsif ( -e "$vtr_flow_path/parse/parse_config/$parse_file" ) {
+		$parse_file = "$vtr_flow_path/parse/parse_config/$parse_file";
+	}
+	else {
+		die "Parse file does not exist ($parse_file)";
+	}
+
+	# QOR PARSE CONFIG FILE
+	if ( -e "$task_path/config/$qor_parse_file" ) {
+		$qor_parse_file = "$task_path/config/$qor_parse_file";
+	}
+	elsif ( $qor_parse_file eq "" ) {
+		print "Task $task_name has no QoR parse file specified. Skipping QoR.\n";
+		$parse_qor = 0;
+		$calc_geomean = 0;
+	}
+	elsif ( -e "$vtr_flow_path/parse/qor_config/$qor_parse_file" ) {
+		$qor_parse_file = "$vtr_flow_path/parse/qor_config/$qor_parse_file";
+	}
+	else {
+		die "QoR parse file does not exist ($qor_parse_file)";
+	}
+
+	my $exp_num = 1;
+	while ( -e "$task_path/${run_prefix}${exp_num}" ) {
+		++$exp_num;
+	}
+	--$exp_num;
+	my $run_path = "$task_path/${run_prefix}${exp_num}";
+
+	my $first = 1;
+	open( OUTPUT_FILE, ">$run_path/parse_results.txt" );
+	foreach my $arch (@archs) {
+		foreach my $circuit (@circuits) {
+			system(
+				"$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $parse_file > $run_path/$arch/$circuit/parse_results.txt"
+			);
+			open( RESULTS_FILE, "$run_path/$arch/$circuit/parse_results.txt" );
+			my $output = <RESULTS_FILE>;
+			if ($first) {
+				print OUTPUT_FILE "arch\tcircuit\t$output";
+				$first = 0;
+			}
+			my $output = <RESULTS_FILE>;
+			close(RESULTS_FILE);
+			print OUTPUT_FILE $arch . "\t" . $circuit . "\t" . $output;
+		}
+	}
+	close(OUTPUT_FILE);
+
+	if ($parse_qor) {
+		my $first = 1;
+		open( OUTPUT_FILE, ">$run_path/qor_results.txt" );
+		foreach my $arch (@archs) {
+			foreach my $circuit (@circuits) {
+				system(
+					"$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $qor_parse_file > $run_path/$arch/$circuit/qor_results.txt"
+				);
+				open( RESULTS_FILE, "$run_path/$arch/$circuit/qor_results.txt" );
+				my $output = <RESULTS_FILE>;
+				if ($first) {
+					print OUTPUT_FILE "arch\tcircuit\t$output";
+					$first = 0;
+				}
+				my $output = <RESULTS_FILE>;
+				close(RESULTS_FILE);
+				print OUTPUT_FILE $arch . "\t" . $circuit . "\t" . $output;
+			}
+		}
+		close(OUTPUT_FILE);
+	}
+
+	if ($create_golden) {
+		copy( "$run_path/parse_results.txt",
+			"$run_path/../config/golden_results.txt" );
+	}
+	if ($check_golden) {
+		check_golden( $task_name, $task_path, $run_path );
+	}
+}
+
 sub summarize_qor {
 
 	##############################################################
@@ -248,130 +372,6 @@ sub last_exp {
 	}
 	--$num;
 	return $num;
-}
-
-sub parse_single_task {
-	my $task_name = shift;
-	my $task_path = "$vtr_flow_path/tasks/$task_name";
-
-	open( CONFIG, "<$task_path/config/config.txt" )
-	  or die "Failed to open $task_path/config/config.txt: $!";
-	my @config_data = <CONFIG>;
-	close(CONFIG);
-
-	my @circuits;
-	my $parse_file;
-	my $qor_parse_file;
-	my @archs;
-	foreach my $line (@config_data) {
-
-		# Ignore comments
-		if ( $line =~ /^\s*#.*$/ or $line =~ /^\s*$/ ) { next; }
-
-		my @data  = split( /=/, $line );
-		my $key   = trim( $data[0] );
-		my $value = trim( $data[1] );
-
-		if ( $key eq "circuit_list_add" ) {
-			push( @circuits, $value );
-		}
-		elsif ( $key eq "arch_list_add" ) {
-			push( @archs, $value );
-		}
-		elsif ( $key eq "parse_file" ) {
-			$parse_file = expand_user_path($value);
-		}
-		elsif ( $key eq "qor_parse_file" ) {
-			$qor_parse_file = expand_user_path($value);
-		}
-	}
-
-	# PARSE CONFIG FILE
-	if ( -e "$task_path/config/$parse_file" ) {
-		$parse_file = "$task_path/config/$parse_file";
-	}
-	elsif ( $parse_file eq "" ) {
-		die "Task $task_name has no parse file specified.\n";
-	}
-	elsif ( -e "$vtr_flow_path/parse/parse_config/$parse_file" ) {
-		$parse_file = "$vtr_flow_path/parse/parse_config/$parse_file";
-	}
-	else {
-		die "Parse file does not exist ($parse_file)";
-	}
-
-	# QOR PARSE CONFIG FILE
-	if ( -e "$task_path/config/$qor_parse_file" ) {
-		$qor_parse_file = "$task_path/config/$qor_parse_file";
-	}
-	elsif ( $qor_parse_file eq "" ) {
-		print "Task $task_name has no QoR parse file specified. Skipping QoR.\n";
-		$parse_qor = 0;
-		$calc_geomean = 0;
-	}
-	elsif ( -e "$vtr_flow_path/parse/qor_config/$qor_parse_file" ) {
-		$qor_parse_file = "$vtr_flow_path/parse/qor_config/$qor_parse_file";
-	}
-	else {
-		die "QoR parse file does not exist ($qor_parse_file)";
-	}
-
-	my $exp_num = 1;
-	while ( -e "$task_path/${run_prefix}${exp_num}" ) {
-		++$exp_num;
-	}
-	--$exp_num;
-	my $run_path = "$task_path/${run_prefix}${exp_num}";
-
-	my $first = 1;
-	open( OUTPUT_FILE, ">$run_path/parse_results.txt" );
-	foreach my $arch (@archs) {
-		foreach my $circuit (@circuits) {
-			system(
-				"$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $parse_file > $run_path/$arch/$circuit/parse_results.txt"
-			);
-			open( RESULTS_FILE, "$run_path/$arch/$circuit/parse_results.txt" );
-			my $output = <RESULTS_FILE>;
-			if ($first) {
-				print OUTPUT_FILE "arch\tcircuit\t$output";
-				$first = 0;
-			}
-			my $output = <RESULTS_FILE>;
-			close(RESULTS_FILE);
-			print OUTPUT_FILE $arch . "\t" . $circuit . "\t" . $output;
-		}
-	}
-	close(OUTPUT_FILE);
-
-	if ($parse_qor) {
-		my $first = 1;
-		open( OUTPUT_FILE, ">$run_path/qor_results.txt" );
-		foreach my $arch (@archs) {
-			foreach my $circuit (@circuits) {
-				system(
-					"$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $qor_parse_file > $run_path/$arch/$circuit/qor_results.txt"
-				);
-				open( RESULTS_FILE, "$run_path/$arch/$circuit/qor_results.txt" );
-				my $output = <RESULTS_FILE>;
-				if ($first) {
-					print OUTPUT_FILE "arch\tcircuit\t$output";
-					$first = 0;
-				}
-				my $output = <RESULTS_FILE>;
-				close(RESULTS_FILE);
-				print OUTPUT_FILE $arch . "\t" . $circuit . "\t" . $output;
-			}
-		}
-		close(OUTPUT_FILE);
-	}
-
-	if ($create_golden) {
-		copy( "$run_path/parse_results.txt",
-			"$run_path/../config/golden_results.txt" );
-	}
-	if ($check_golden) {
-		check_golden( $task_name, $task_path, $run_path );
-	}
 }
 
 sub check_golden {
