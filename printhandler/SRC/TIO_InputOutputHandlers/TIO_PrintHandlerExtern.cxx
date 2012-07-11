@@ -16,6 +16,8 @@
 #include "TIO_PrintHandler.h"
 #include "TIO_PrintHandlerExtern.h"
 
+
+
 /*===========================================================================*/
 /* Function       : PrintHandlerNew
  * Purpose        : Provides an external C interface to the TIO_PrintHandler.
@@ -24,7 +26,7 @@
  * Version history
  * 07/02/12 jeffr : Original
  *===========================================================================*/
-extern "C" void PrintHandlerNew( 
+void PrintHandlerNew( 
       char* pszLogFileName )
 {
    /* Allocate a skin handler 'singleton' for program messasge handling */
@@ -57,7 +59,7 @@ extern "C" void PrintHandlerNew(
  * Version history
  * 07/02/12 jeffr : Original
  *===========================================================================*/
-extern "C" void PrintHandlerDelete( void )
+void PrintHandlerDelete( void )
 {
    TIO_PrintHandler_c::GetInstance( );
    TIO_PrintHandler_c::DeleteInstance( );
@@ -74,7 +76,7 @@ extern "C" void PrintHandlerDelete( void )
  * Version history
  * 07/02/12 jeffr : Original
  *===========================================================================*/
-extern "C" void PrintHandlerInit( 
+void PrintHandlerInit( 
       unsigned char enableTimeStamps,
       unsigned long maxWarningCount,
       unsigned long maxErrorCount )
@@ -82,7 +84,7 @@ extern "C" void PrintHandlerInit(
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
    /* Enable optional print handler message time stamps */
-   printHandler.SetTimeStampsEnabled( static_cast< bool >( enableTimeStamps ));
+   printHandler.SetTimeStampsEnabled( static_cast< bool >( enableTimeStamps == (unsigned char) 0 ));
 
    /* Define optional print handler max warning/error counts */
    printHandler.SetMaxWarningCount( maxWarningCount );
@@ -97,7 +99,7 @@ extern "C" void PrintHandlerInit(
  * Version history
  * 07/02/12 jeffr : Original
  *===========================================================================*/
-extern "C" void PrintHandlerFilter( 
+void PrintHandlerFilter( 
       TIO_MessageMode_t messageMode,
       TIO_FilterMode_t  filterMode,
       char*             pszFilter )
@@ -166,7 +168,7 @@ extern "C" void PrintHandlerFilter(
  * Version history
  * 07/02/12 jeffr : Original
  *===========================================================================*/
-extern "C" unsigned char PrintHandlerMessage( 
+unsigned char PrintHandlerMessage( 
       TIO_MessageMode_t messageMode,
       char*             pszMessage,
       ... )

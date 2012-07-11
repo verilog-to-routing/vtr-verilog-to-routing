@@ -50,6 +50,7 @@ unsigned char PrintHandlerMessage( TIO_MessageMode_t messageMode,
                                    char* pszMessage,
                                    ... );
 
+
 #ifdef __cplusplus
 }
 #endif

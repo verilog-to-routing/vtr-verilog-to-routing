@@ -65,6 +65,11 @@
     <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_StringText.h" />
     <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_Typedefs.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\pcre\pcre.vcxproj">
+      <Project>{f15a8901-660a-4ffe-890e-74ccc94e862a}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A5092A9C-6DFD-4DEC-9951-51606F5EAF3B}</ProjectGuid>
     <RootNamespace>printhandler</RootNamespace>
