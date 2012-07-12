@@ -468,7 +468,7 @@ sub check_golden {
 	  split( /\t/, trim($test_params) );      # get parameters of test results
 
 	if ( $golden_params ne $test_params ) {
-		print "[ERROR] Different parameters in golden and result file.\n";
+		print "[ERROR] Different parameters in golden and result file. $golden_params different from $test_params\n";
 		return;
 	}
 

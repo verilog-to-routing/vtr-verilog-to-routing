@@ -50,16 +50,27 @@ foreach my $line (@parse_lines) {
 	push(@parse_data, [@name_file_regexp]);	
 }
 
+my $count = 0;
 for my $parse_entry (@parse_data) {
-	print @$parse_entry[0] . "\t";
+	$count++;
+	if($count < scalar(@parse_data))
+	{
+		print @$parse_entry[0] . "\t";
+	}
+	else
+	{
+			print @$parse_entry[0];
+	}
 }
 print "\n";
 
+$count = 0;
 for my $parse_entry (@parse_data) {
 	my $file_to_parse = "@$parse_entry[1]";
 	my $file_to_parse_path =
 	  File::Spec->catdir( ${parse_path}, ${file_to_parse} );
 
+	$count++;	
 	if ( $file_to_parse =~ /\*/ ) {
 		my @files = glob($file_to_parse_path);
 		if ( @files == 1 ) {
@@ -88,7 +99,9 @@ for my $parse_entry (@parse_data) {
 		else {
 			print "-1";
 		}
-		print "\t";
+		if($count < scalar(@parse_data)) {
+			print "\t";
+		}
 	}
 }
 print "\n";
