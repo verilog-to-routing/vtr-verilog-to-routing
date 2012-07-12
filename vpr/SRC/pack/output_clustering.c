@@ -444,8 +444,8 @@ static void print_stats(t_block *clb, int num_clusters) {
 	/* Prints out one cluster (clb).  Both the external pins and the *
 	 * internal connections are printed out.                         */
 
-	int ipin, icluster, itype, inet, iblk;
-	int unabsorbable_ffs;
+	int ipin, icluster, itype, inet;/*, iblk;*/
+	/*int unabsorbable_ffs;*/
 	int total_nets_absorbed;
 	boolean * nets_absorbed;
 
@@ -464,6 +464,10 @@ static void print_stats(t_block *clb, int num_clusters) {
 		nets_absorbed[inet] = TRUE;
 	}
 
+#if 0
+
+/*counting number of flipflops which cannot be absorbed to check the optimality of the packer wrt CLB density*/
+
 	unabsorbable_ffs = 0;
 	for (iblk = 0; iblk < num_logical_blocks; iblk++) {
 		if (strcmp(logical_block[iblk].model->name, "latch") == 0) {
@@ -477,6 +481,7 @@ static void print_stats(t_block *clb, int num_clusters) {
 	}
 	printf("\n");
 	printf("%d FFs in input netlist not absorbable (ie. impossible to form BLE) \n", unabsorbable_ffs);
+#endif
 
 	/* Counters used only for statistics purposes. */
 
