@@ -1127,7 +1127,7 @@ void print_route(char *route_file) {
 					ilow = rr_node[inode].xlow;
 					jlow = rr_node[inode].ylow;
 
-					fprintf(fp, "%6s (%d,%d) ", name_type[rr_type], ilow, jlow);
+					fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode, name_type[rr_type], ilow, jlow);
 
 					if ((ilow != rr_node[inode].xhigh)
 							|| (jlow != rr_node[inode].yhigh))
