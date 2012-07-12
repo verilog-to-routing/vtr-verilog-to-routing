@@ -33,12 +33,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SRC\acl\Rand.cxx">
-      <Filter>Source Files\acl</Filter>
-    </ClCompile>
-    <ClCompile Include="SRC\acl\StringC.cxx">
-      <Filter>Source Files\acl</Filter>
-    </ClCompile>
     <ClCompile Include="SRC\acl\RegExp.cxx">
       <Filter>Source Files\acl</Filter>
     </ClCompile>
@@ -86,12 +80,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="SRC\acl\Rand.h">
-      <Filter>Header Files\acl</Filter>
-    </ClInclude>
-    <ClInclude Include="SRC\acl\StringC.h">
-      <Filter>Header Files\acl</Filter>
-    </ClInclude>
     <ClInclude Include="SRC\acl\RegExp.h">
       <Filter>Header Files\acl</Filter>
     </ClInclude>

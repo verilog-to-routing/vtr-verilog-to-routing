@@ -229,6 +229,7 @@ template<class T> void TCT_Dims_c< T >::ExtractString(
       string*       psrData,
       size_t        precision ) const
 {
+	int i;
    if( psrData )
    {
       if( precision == SIZE_MAX )
@@ -240,7 +241,9 @@ template<class T> void TCT_Dims_c< T >::ExtractString(
       TCT_Dims_c< T >* pdims = const_cast< TCT_Dims_c< T >* >( this );
 
       char szData[ TIO_FORMAT_STRING_LEN_DATA ];
-      memset( szData, 0, sizeof( szData ));
+      for (i = 0; i < TIO_FORMAT_STRING_LEN_DATA; i++) {
+		  szData[i] = (char)0;
+	  }
 
       switch( mode )
       {

@@ -47,6 +47,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 
 #if defined( SUN8 ) || defined( SUN10 )
    #include <time.h>
