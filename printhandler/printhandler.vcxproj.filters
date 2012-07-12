@@ -13,12 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\acl">
-      <UniqueIdentifier>{9234093d-1c00-43d5-a559-dfe8e00e0857}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\acl">
-      <UniqueIdentifier>{187df5ba-badb-49f1-b4ce-10e0236d4efb}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\TC_Common">
       <UniqueIdentifier>{31e24288-2bcb-4f14-9dfd-f58ec458449e}</UniqueIdentifier>
     </Filter>
@@ -33,9 +27,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SRC\acl\RegExp.cxx">
-      <Filter>Source Files\acl</Filter>
-    </ClCompile>
     <ClCompile Include="SRC\TC_Common\TC_Bit.cxx">
       <Filter>Source Files\TC_Common</Filter>
     </ClCompile>
@@ -78,11 +69,11 @@
     <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_PrintHandlerExtern.cxx">
       <Filter>Source Files\TIO_InputOutputHandlers</Filter>
     </ClCompile>
+    <ClCompile Include="SRC\TC_Common\RegExp.cxx">
+      <Filter>Source Files\TC_Common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="SRC\acl\RegExp.h">
-      <Filter>Header Files\acl</Filter>
-    </ClInclude>
     <ClInclude Include="SRC\TC_Common\TC_Bit.h">
       <Filter>Header Files\TC_Common</Filter>
     </ClInclude>
@@ -175,6 +166,9 @@
     </ClInclude>
     <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_StringText.h">
       <Filter>Header Files\TIO_InputOutputHandlers</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\RegExp.h">
+      <Filter>Header Files\TC_Common</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

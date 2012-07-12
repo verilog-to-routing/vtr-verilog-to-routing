@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SRC\acl\RegExp.cxx" />
+    <ClCompile Include="SRC\TC_Common\RegExp.cxx" />
     <ClCompile Include="SRC\TC_Common\TC_Bit.cxx" />
     <ClCompile Include="SRC\TC_Common\TC_MinGrid.cxx" />
     <ClCompile Include="SRC\TC_Common\TC_Name.cxx" />
@@ -28,7 +28,7 @@
     <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_SkinHandler.cxx" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="SRC\acl\RegExp.h" />
+    <ClInclude Include="SRC\TC_Common\RegExp.h" />
     <ClInclude Include="SRC\TC_Common\TCT_BSearch.h" />
     <ClInclude Include="SRC\TC_Common\TCT_Dims.h" />
     <ClInclude Include="SRC\TC_Common\TCT_DynamicVector.h" />
