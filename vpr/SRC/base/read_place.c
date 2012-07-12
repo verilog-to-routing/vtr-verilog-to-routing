@@ -47,20 +47,20 @@ void read_place(INP const char *place_file, INP const char *arch_file,
 		};
 	}
 	if (error) {
-		printf(ERRTAG
+		vpr_printf(TIO_MESSAGE_ERROR,
 		"'%s' - Bad filename specification line in placement file\n",
 				place_file);
 		exit(1);
 	}
 	if (0 != strcmp(tokens[2], arch_file)) {
-		printf(ERRTAG
+		vpr_printf(TIO_MESSAGE_ERROR,
 		"'%s' - Architecture file that generated placement (%s) does "
 		"not match current architecture file (%s)\n", place_file, tokens[2],
 				arch_file);
 		exit(1);
 	}
 	if (0 != strcmp(tokens[5], net_file)) {
-		printf(ERRTAG
+		vpr_printf(TIO_MESSAGE_ERROR,
 		"'%s' - Netlist file that generated placement (%s) does "
 		"not match current netlist file (%s)\n", place_file, tokens[5],
 				net_file);
@@ -92,13 +92,13 @@ void read_place(INP const char *place_file, INP const char *arch_file,
 		};
 	}
 	if (error) {
-		printf(ERRTAG
+		vpr_printf(TIO_MESSAGE_ERROR,
 		"'%s' - Bad fpga size specification line in placement file\n",
 				place_file);
 		exit(1);
 	}
 	if ((my_atoi(tokens[2]) != L_nx) || (my_atoi(tokens[4]) != L_ny)) {
-		printf(ERRTAG
+		vpr_printf(TIO_MESSAGE_ERROR,
 		"'%s' - Current FPGA size (%d x %d) is different from "
 		"size when placement generated (%d x %d)\n", place_file, L_nx, L_ny,
 				my_atoi(tokens[2]), my_atoi(tokens[4]));
@@ -120,7 +120,7 @@ void read_place(INP const char *place_file, INP const char *arch_file,
 
 		/* Error if invalid block */
 		if (NULL == cur_blk) {
-			printf(ERRTAG "'%s':%d - Block in placement file does "
+			vpr_printf(TIO_MESSAGE_ERROR, "'%s':%d - Block in placement file does "
 			"not exist in netlist\n", place_file, line);
 			exit(1);
 		}
@@ -149,7 +149,7 @@ void read_user_pad_loc(char *pad_loc_file) {
 	FILE *fp;
 	char buf[BUFSIZE], bname[BUFSIZE], *ptr;
 
-	printf("\nReading locations of IO pads from %s.\n", pad_loc_file);
+	vpr_printf(TIO_MESSAGE_INFO, "\nReading locations of IO pads from %s.\n", pad_loc_file);
 	file_line_number = 0;
 	fp = fopen(pad_loc_file, "r");
 
@@ -183,35 +183,35 @@ void read_user_pad_loc(char *pad_loc_file) {
 
 		ptr = my_strtok(NULL, TOKENS, fp, buf);
 		if (ptr == NULL) {
-			printf("Error:  line %d is incomplete.\n", file_line_number);
+			vpr_printf(TIO_MESSAGE_ERROR, "line %d is incomplete.\n", file_line_number);
 			exit(1);
 		}
 		sscanf(ptr, "%d", &xtmp);
 
 		ptr = my_strtok(NULL, TOKENS, fp, buf);
 		if (ptr == NULL) {
-			printf("Error:  line %d is incomplete.\n", file_line_number);
+			vpr_printf(TIO_MESSAGE_ERROR, "line %d is incomplete.\n", file_line_number);
 			exit(1);
 		}
 		sscanf(ptr, "%d", &ytmp);
 
 		ptr = my_strtok(NULL, TOKENS, fp, buf);
 		if (ptr == NULL) {
-			printf("Error:  line %d is incomplete.\n", file_line_number);
+			vpr_printf(TIO_MESSAGE_ERROR, "line %d is incomplete.\n", file_line_number);
 			exit(1);
 		}
 		sscanf(ptr, "%d", &k);
 
 		ptr = my_strtok(NULL, TOKENS, fp, buf);
 		if (ptr != NULL) {
-			printf("Error:  extra characters at end of line %d.\n",
+			vpr_printf(TIO_MESSAGE_ERROR, "extra characters at end of line %d.\n",
 					file_line_number);
 			exit(1);
 		}
 
 		h_ptr = get_hash_entry(hash_table, bname);
 		if (h_ptr == NULL) {
-			printf("Error:  block %s on line %d: no such IO pad.\n", bname,
+			vpr_printf(TIO_MESSAGE_ERROR, "block %s on line %d: no such IO pad.\n", bname,
 					file_line_number);
 			exit(1);
 		}
@@ -220,14 +220,14 @@ void read_user_pad_loc(char *pad_loc_file) {
 		j = ytmp;
 
 		if (block[bnum].x != OPEN) {
-			printf("Error:  line %d.  Block %s listed twice in pad file.\n",
+			vpr_printf(TIO_MESSAGE_ERROR, "line %d.  Block %s listed twice in pad file.\n",
 					file_line_number, bname);
 			exit(1);
 		}
 
 		if (i < 0 || i > nx + 1 || j < 0 || j > ny + 1) {
-			printf("Error:  block #%d (%s) location\n", bnum, bname);
-			printf("(%d,%d) is out of range.\n", i, j);
+			vpr_printf(TIO_MESSAGE_ERROR, "block #%d (%s) location\n"
+				                                   "(%d,%d) is out of range.\n", bnum, bname, i, j);
 			exit(1);
 		}
 
@@ -235,13 +235,13 @@ void read_user_pad_loc(char *pad_loc_file) {
 		block[bnum].y = j; /* I need to set .x only as a done flag.         */
 
 		if (grid[i][j].type != IO_TYPE) {
-			printf("Error:  attempt to place IO block %s in \n", bname);
-			printf("an illegal location (%d, %d).\n", i, j);
+			vpr_printf(TIO_MESSAGE_ERROR, "attempt to place IO block %s in \n"
+												   "an illegal location (%d, %d).\n", bname, i, j);
 			exit(1);
 		}
 
 		if (k >= IO_TYPE->capacity || k < 0) {
-			printf("Error:  Block %s subblock number (%d) on line %d is out of "
+			vpr_printf(TIO_MESSAGE_ERROR, "Block %s subblock number (%d) on line %d is out of "
 					"range.\n", bname, k, file_line_number);
 			exit(1);
 		}
@@ -253,7 +253,7 @@ void read_user_pad_loc(char *pad_loc_file) {
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 		if (block[iblk].type == IO_TYPE && block[iblk].x == OPEN) {
-			printf("Error:  IO block %s location was not specified in "
+			vpr_printf(TIO_MESSAGE_ERROR, "IO block %s location was not specified in "
 					"the pad file.\n", block[iblk].name);
 			exit(1);
 		}
@@ -261,7 +261,7 @@ void read_user_pad_loc(char *pad_loc_file) {
 
 	fclose(fp);
 	free_hash_table(hash_table);
-	printf("Successfully read %s.\n\n", pad_loc_file);
+	vpr_printf(TIO_MESSAGE_INFO, "Successfully read %s.\n\n", pad_loc_file);
 }
 
 void print_place(char *place_file, char *net_file, char *arch_file) {

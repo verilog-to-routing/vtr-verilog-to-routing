@@ -2,6 +2,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
+
 #include "util.h"
 
 /* This file contains utility functions widely used in *
@@ -13,6 +15,7 @@
 
 int file_line_number; /* file in line number being parsed */
 char *out_file_prefix = NULL;
+messagelogger vpr_printf = PrintHandlerMessage;
 
 
 static int cont; /* line continued? */
@@ -21,7 +24,7 @@ static int cont; /* line continued? */
  * is emitted. */
 int limit_value(int cur, int max, const char *name) {
 	if (cur > max) {
-		printf(WARNTAG "%s is being limited from [%d] to [%d]\n", name, cur,
+		vpr_printf(TIO_MESSAGE_WARNING, "%s is being limited from [%d] to [%d]\n", name, cur,
 				max);
 		return max;
 	}
@@ -75,7 +78,7 @@ my_fopen(const char *fname, const char *flag, int prompt) {
 			;
 
 		while (check_num_of_entered_values != 1) {
-			printf(
+			vpr_printf(TIO_MESSAGE_ERROR, 
 					"Was expecting one file name to be entered, with no spaces. You have entered %d parameters. Please try again: \n",
 					check_num_of_entered_values);
 			check_num_of_entered_values = scanf("%s", prompt_filename);
@@ -84,7 +87,7 @@ my_fopen(const char *fname, const char *flag, int prompt) {
 	}
 
 	if (NULL == (fp = fopen(fname, flag))) {
-		printf("Error opening file %s for %s access.\n", fname, flag);
+		vpr_printf(TIO_MESSAGE_ERROR, "Error opening file %s for %s access.\n", fname, flag);
 		exit(1);
 	}
 
@@ -117,7 +120,7 @@ int my_atoi(const char *str) {
 
 	if (str[0] < '0' || str[0] > '9') {
 		if (!(str[0] == '-' && str[1] >= '0' && str[1] <= '9')) {
-			printf(ERRTAG "expected number instead of '%s'.\n", str);
+			vpr_printf(TIO_MESSAGE_ERROR, "expected number instead of '%s'.\n", str);
 			exit(1);
 		}
 	}
@@ -158,15 +161,15 @@ my_realloc(void *ptr, size_t size) {
 	void *ret;
 
 	if (size <= 0) {
-		printf("reallocating of size <= 0.\n");
+		vpr_printf(TIO_MESSAGE_WARNING, "reallocating of size <= 0.\n");
 	}
 
 	ret = realloc(ptr, size);
 	if (NULL == ret) {
-		printf(ERRTAG "Unable to realloc memory. Aborting. "
+		vpr_printf(TIO_MESSAGE_ERROR, "Unable to realloc memory. Aborting. "
 		"ptr=%p, Size=%d.\n", ptr, (int) size);
 		if (ptr == NULL) {
-			printf(ERRTAG "my_realloc: ptr == NULL. Aborting.\n");
+			vpr_printf(TIO_MESSAGE_ERROR, "my_realloc: ptr == NULL. Aborting.\n");
 		}
 		exit(1);
 	}
@@ -215,9 +218,9 @@ my_chunk_malloc(size_t size, t_chunk *chunk_info) {
 			/* When debugging, uncomment the code below to see if memory allocation size */
 			/* makes sense */
 			/*#ifdef DEBUG
-			printf("NB:  my_chunk_malloc got a request for %d bytes.\n",
+			vpr_printf("NB:  my_chunk_malloc got a request for %d bytes.\n",
 			size);
-			printf("You should consider using my_malloc for such big requests.\n");
+			vpr_printf("You should consider using my_malloc for such big requests.\n");
 			#endif */
 
 			assert (chunk_info != NULL);
@@ -367,7 +370,7 @@ void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 		ivec->list = NULL;
 
 		if (list_head != NULL) {
-			printf(ERRTAG
+			vpr_printf(TIO_MESSAGE_ERROR,
 			"alloc_ivector_and_copy_int_list: Copied %d elements, "
 			"but list at %p contains more.\n", num_items, (void *) list_head);
 			exit(1);
@@ -388,7 +391,7 @@ void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 	list[num_items - 1] = linked_int->data;
 
 	if (linked_int->next != NULL) {
-		printf(
+		vpr_printf(TIO_MESSAGE_ERROR, 
 				"Error in alloc_ivector_and_copy_int_list:\n Copied %d elements, "
 						"but list at %p contains more.\n", num_items,
 				(void *) list_head);
@@ -442,9 +445,9 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 				return val;
 			} else {
 			/* The line did not completely fit into the buffer. */
-				printf("Error on line %d -- line is too long for input buffer.\n",
+				vpr_printf(TIO_MESSAGE_ERROR, "Error on line %d -- line is too long for input buffer.\n",
 						file_line_number);
-				printf("All lines must be at most %d characters long.\n",
+				vpr_printf(TIO_MESSAGE_ERROR, "All lines must be at most %d characters long.\n",
 						BUFSIZE - 2);
 				exit(1);
 			}
@@ -724,7 +727,7 @@ int my_irand(int imax) {
 			/* Due to random floating point rounding, sometimes above calculation gives number greater than ival by 1 */
 			ival = imax;
 		} else {
-			printf("Bad value in my_irand, imax = %d  ival = %d\n", imax, ival);
+			vpr_printf(TIO_MESSAGE_ERROR, "Bad value in my_irand, imax = %d  ival = %d\n", imax, ival);
 			exit(1);
 		}
 	}
@@ -746,11 +749,12 @@ float my_frand(void) {
 
 #ifdef CHECK_RAND
 	if ((fval < 0) || (fval > 1.)) {
-		printf("Bad value in my_frand, fval = %g\n", fval);
+		vpr_printf(TIO_MESSAGE_ERROR, "Bad value in my_frand, fval = %g\n", fval);
 		exit(1);
 	}
 #endif
 
 	return (fval);
 }
+
 

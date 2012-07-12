@@ -216,7 +216,7 @@ void get_serial_num(void) {
 			tptr = tptr->next;
 		}
 	}
-	printf("Serial number (magic cookie) for the routing is: %d\n", serial_num);
+	vpr_printf(TIO_MESSAGE_INFO, "Serial number (magic cookie) for the routing is: %d\n", serial_num);
 }
 
 boolean try_route(int width_fac, struct s_router_opts router_opts,
@@ -268,10 +268,10 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 
 	end = clock();
 #ifdef CLOCKS_PER_SEC
-	printf("build rr_graph took %g seconds\n",
+	vpr_printf(TIO_MESSAGE_INFO, "build rr_graph took %g seconds\n",
 			(float) (end - begin) / CLOCKS_PER_SEC);
 #else
-	printf("build rr_graph took %g seconds\n", (float)(end - begin) / CLK_PER_SEC);
+	vpr_printf(TIO_MESSAGE_INFO, "build rr_graph took %g seconds\n", (float)(end - begin) / CLK_PER_SEC);
 #endif
 
 	/* Allocate and load some additional rr_graph information needed only by *
@@ -282,16 +282,16 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 	init_route_structs(router_opts.bb_factor);
 
 	if (router_opts.router_algorithm == BREADTH_FIRST) {
-		printf("Confirming Router Algorithm: BREADTH_FIRST.\n");
+		vpr_printf(TIO_MESSAGE_INFO, "Confirming Router Algorithm: BREADTH_FIRST.\n");
 		success = try_breadth_first_route(router_opts, clb_opins_used_locally,
 				width_fac);
 	} else if (router_opts.router_algorithm == TIMING_DRIVEN) { /* TIMING_DRIVEN route */
-		printf("Confirming Router Algorithm: TIMING_DRIVEN.\n");
+		vpr_printf(TIO_MESSAGE_INFO, "Confirming Router Algorithm: TIMING_DRIVEN.\n");
 		assert(router_opts.route_type != GLOBAL);
 		success = try_timing_driven_route(router_opts, net_slack, net_delay,
 				clb_opins_used_locally);
 	} else { /* Directed Search Routability Driven */
-		printf("Confirming Router Algorithm: DIRECTED_SEARCH.\n");
+		vpr_printf(TIO_MESSAGE_INFO, "Confirming Router Algorithm: DIRECTED_SEARCH.\n");
 		success = try_directed_search_route(router_opts, clb_opins_used_locally,
 				width_fac, mst);
 	}
@@ -413,13 +413,13 @@ void init_route_structs(int bb_factor) {
 	 * really were.                                                           */
 
 	if (rr_modified_head != NULL) {
-		printf("Error in init_route_structs.  List of modified rr nodes is \n"
+		vpr_printf(TIO_MESSAGE_ERROR, "In init_route_structs.  List of modified rr nodes is \n"
 				"not empty.\n");
 		exit(1);
 	}
 
 	if (heap_tail != 1) {
-		printf("Error in init_route_structs.  Heap is not empty.\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "In init_route_structs.  Heap is not empty.\n");
 		exit(1);
 	}
 }
@@ -453,9 +453,9 @@ update_traceback(struct s_heap *hptr, int inet) {
 #ifdef DEBUG
 	rr_type = rr_node[inode].type;
 	if (rr_type != SINK) {
-		printf("Error in update_traceback.  Expected type = SINK (%d).\n",
+		vpr_printf(TIO_MESSAGE_ERROR, "In update_traceback.  Expected type = SINK (%d).\n",
 				SINK);
-		printf("Got type = %d while tracing back net %d.\n", rr_type, inet);
+		vpr_printf(TIO_MESSAGE_ERROR, "Got type = %d while tracing back net %d.\n", rr_type, inet);
 		exit(1);
 	}
 #endif
@@ -792,7 +792,7 @@ void alloc_and_load_rr_node_route_structs(void) {
 	int inode;
 
 	if (rr_node_route_inf != NULL) {
-		printf("Error in alloc_and_load_rr_node_route_structs:  \n"
+		vpr_printf(TIO_MESSAGE_ERROR, "In alloc_and_load_rr_node_route_structs:  \n"
 				"old rr_node_route_inf array exists.\n");
 		exit(1);
 	}
@@ -960,8 +960,8 @@ get_heap_head(void) {
 
 	do {
 		if (heap_tail == 1) { /* Empty heap. */
-			printf("Empty heap occurred in get_heap_head.\n");
-			printf(
+			vpr_printf(TIO_MESSAGE_WARNING, "Empty heap occurred in get_heap_head.\n");
+			vpr_printf(TIO_MESSAGE_WARNING, 
 					"Some blocks are impossible to connect in this architecture.\n");
 			return (NULL);
 		}
@@ -1160,8 +1160,8 @@ void print_route(char *route_file) {
 						break;
 
 					default:
-						printf(
-								"Error in print_route:  Unexpected traceback element "
+						vpr_printf(TIO_MESSAGE_ERROR, 
+								"in print_route:  Unexpected traceback element "
 										"type: %d (%s).\n", rr_type,
 								name_type[rr_type]);
 						exit(1);

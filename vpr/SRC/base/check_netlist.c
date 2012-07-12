@@ -44,7 +44,7 @@ void check_netlist() {
 	unused_var = check_subblock_internal_nets(0, 0);
 	unused_var = check_primitives(0, 0);
 	if (unused_var)
-		printf(
+		vpr_printf(TIO_MESSAGE_INFO, 
 				"Please go to the check_netlist() function in check_netlist.c and remove the first section as needed.");
 
 	/* This routine checks that the netlist makes sense         */
@@ -57,13 +57,12 @@ void check_netlist() {
 	for (i = 0; i < num_nets; i++) {
 		h_net_ptr = insert_in_hash_table(net_hash_table, clb_net[i].name, i);
 		if (h_net_ptr->count != 1) {
-			printf(ERRTAG "net %s has multiple drivers.\n", clb_net[i].name);
+			vpr_printf(TIO_MESSAGE_ERROR, "net %s has multiple drivers.\n", clb_net[i].name);
 			error++;
 		}
 		error += check_connections_to_global_clb_pins(i);
 		if (error >= ERROR_THRESHOLD) {
-			printf("Too many errors in netlist, exiting\n");
-			exit(1);
+			vpr_printf(TIO_MESSAGE_ERROR, "Too many errors in netlist, exiting\n");
 		}
 	}
 	free_hash_table(net_hash_table);
@@ -75,7 +74,7 @@ void check_netlist() {
 		error += check_clb_internal_nets(i);
 		error += check_subblocks(i);
 		if (error >= ERROR_THRESHOLD) {
-			printf("Too many errors in netlist, exiting\n");
+			vpr_printf(TIO_MESSAGE_ERROR, "Too many errors in netlist, exiting\n");
 			exit(1);
 		}
 	}
@@ -83,7 +82,7 @@ void check_netlist() {
 	error += check_for_duplicated_names();
 
 	if (error != 0) {
-		printf("Found %d fatal Errors in the input netlist.\n", error);
+		vpr_printf(TIO_MESSAGE_ERROR, "Found %d fatal Errors in the input netlist.\n", error);
 		exit(1);
 	}
 
@@ -126,12 +125,12 @@ static int check_connections_to_global_clb_pins(int inet) {
 			/* Allow a CLB output pin to drive a global net (warning only). */
 
 			if (ipin == 0 && clb_net[inet].is_global) {
-				printf(WARNTAG "in check_connections_to_global_clb_pins:\n"
+				vpr_printf(TIO_MESSAGE_WARNING, "in check_connections_to_global_clb_pins:\n"
 				"\tnet #%d (%s) is driven by CLB output pin (#%d)\n"
 				"\ton block #%d (%s).\n", inet, clb_net[inet].name,
 						node_block_pin, iblk, block[iblk].name);
 			} else { /* Otherwise -> Error */
-				printf(ERRTAG "in check_connections_to_global_clb_pins:\n"
+				vpr_printf(TIO_MESSAGE_ERROR, "in check_connections_to_global_clb_pins:\n"
 				"\tpin %d on net #%d (%s) connects to CLB input pin (#%d)\n"
 				"\ton block #%d (%s).\n", ipin, inet, clb_net[inet].name,
 						node_block_pin, iblk, block[iblk].name);
@@ -139,9 +138,9 @@ static int check_connections_to_global_clb_pins(int inet) {
 			}
 
 			if (clb_net[inet].is_global)
-				printf("\tNet is global, but CLB pin is not.\n\n");
+				vpr_printf(TIO_MESSAGE_INFO, "\tNet is global, but CLB pin is not.\n\n");
 			else
-				printf("\tCLB pin is global, but net is not.\n\n");
+				vpr_printf(TIO_MESSAGE_INFO, "\tCLB pin is global, but net is not.\n\n");
 		}
 	} /* End for all pins */
 
@@ -160,12 +159,12 @@ static int check_clb_conn(int iblk, int num_conn) {
 
 	if (type == IO_TYPE) {
 		if (num_conn != 1) {
-			printf(ERRTAG "io blk #%d (%s) has %d pins.\n", iblk,
+			vpr_printf(TIO_MESSAGE_ERROR, "io blk #%d (%s) has %d pins.\n", iblk,
 					block[iblk].name, num_conn);
 			error++;
 		}
 	} else if (num_conn < 2) {
-		printf(WARNTAG "logic block #%d (%s) has only %d pin.\n", iblk,
+		vpr_printf(TIO_MESSAGE_WARNING, "logic block #%d (%s) has only %d pin.\n", iblk,
 				block[iblk].name, num_conn);
 
 		/* Allow the case where we have only one OUTPUT pin connected to continue. *
@@ -181,7 +180,7 @@ static int check_clb_conn(int iblk, int num_conn) {
 					if (type->class_inf[iclass].type != DRIVER) {
 						error++;
 					} else {
-						printf(
+						vpr_printf(TIO_MESSAGE_INFO, 
 								"\tPin is an output -- may be a constant generator.\n"
 										"\tNon-fatal, but check this.\n");
 					}
@@ -198,7 +197,7 @@ static int check_clb_conn(int iblk, int num_conn) {
 	 * just a redundant double check.                                    */
 
 	if (num_conn > type->num_pins) {
-		printf(ERRTAG "logic block #%d with output %s has %d pins.\n", iblk,
+		vpr_printf(TIO_MESSAGE_ERROR, "logic block #%d with output %s has %d pins.\n", iblk,
 				block[iblk].name, num_conn);
 		error++;
 	}
@@ -265,7 +264,7 @@ static int check_for_duplicated_names(void) {
 	{
 		clb_h_ptr = insert_in_hash_table(clb_hash_table, block[iblk].name, clb_count);
 		if(clb_h_ptr->count > 1) {
-			printf(ERRTAG "block %s has duplicated name\n", block[iblk].name);
+			vpr_printf(TIO_MESSAGE_ERROR, "block %s has duplicated name\n", block[iblk].name);
 			error++;
 		} else {
 			clb_count++;
@@ -274,7 +273,7 @@ static int check_for_duplicated_names(void) {
 		{
 			sub_h_ptr = insert_in_hash_table(sub_hash_table, block[iblk].subblocks[isub].name, sub_count);
 			if(sub_h_ptr->count > 1) {
-				printf(ERRTAG "subblock %s has duplicated name\n", block[iblk].subblocks[isub].name);
+				vpr_printf(TIO_MESSAGE_ERROR, "subblock %s has duplicated name\n", block[iblk].subblocks[isub].name);
 				error++;
 			} else {
 				sub_count++;
@@ -283,7 +282,7 @@ static int check_for_duplicated_names(void) {
 			{
 				prim_h_ptr = insert_in_hash_table(prim_hash_table, block[iblk].subblocks[isub].primitives[iprim].name, prim_count);
 				if(prim_h_ptr->count > 1) {
-					printf(ERRTAG "primitive %s has duplicated name\n", block[iblk].subblocks[isub].primitives[iprim].name);
+					vpr_printf(TIO_MESSAGE_ERROR, "primitive %s has duplicated name\n", block[iblk].subblocks[isub].primitives[iprim].name);
 					error++;
 				} else {
 					prim_count++;

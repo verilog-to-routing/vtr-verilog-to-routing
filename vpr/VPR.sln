@@ -3,10 +3,23 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual C++ Express 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VPR", "VPR.vcxproj", "{F9E45E14-1249-4E95-86DD-5676DB5C87FD}"
 	ProjectSection(ProjectDependencies) = postProject
+		{F15A8901-660A-4FFE-890E-74CCC94E862A} = {F15A8901-660A-4FFE-890E-74CCC94E862A}
+		{A5092A9C-6DFD-4DEC-9951-51606F5EAF3B} = {A5092A9C-6DFD-4DEC-9951-51606F5EAF3B}
 		{CBBA36E0-CD88-4586-AFB6-A0E603D16796} = {CBBA36E0-CD88-4586-AFB6-A0E603D16796}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libarchfpga", "..\libarchfpga\libarchfpga.vcxproj", "{CBBA36E0-CD88-4586-AFB6-A0E603D16796}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F15A8901-660A-4FFE-890E-74CCC94E862A} = {F15A8901-660A-4FFE-890E-74CCC94E862A}
+		{A5092A9C-6DFD-4DEC-9951-51606F5EAF3B} = {A5092A9C-6DFD-4DEC-9951-51606F5EAF3B}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pcre", "..\pcre\pcre.vcxproj", "{F15A8901-660A-4FFE-890E-74CCC94E862A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "printhandler", "..\printhandler\printhandler.vcxproj", "{A5092A9C-6DFD-4DEC-9951-51606F5EAF3B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F15A8901-660A-4FFE-890E-74CCC94E862A} = {F15A8901-660A-4FFE-890E-74CCC94E862A}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,6 +35,14 @@ Global
 		{CBBA36E0-CD88-4586-AFB6-A0E603D16796}.Debug|Win32.Build.0 = Debug|Win32
 		{CBBA36E0-CD88-4586-AFB6-A0E603D16796}.Release|Win32.ActiveCfg = Release|Win32
 		{CBBA36E0-CD88-4586-AFB6-A0E603D16796}.Release|Win32.Build.0 = Release|Win32
+		{F15A8901-660A-4FFE-890E-74CCC94E862A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F15A8901-660A-4FFE-890E-74CCC94E862A}.Debug|Win32.Build.0 = Debug|Win32
+		{F15A8901-660A-4FFE-890E-74CCC94E862A}.Release|Win32.ActiveCfg = Release|Win32
+		{F15A8901-660A-4FFE-890E-74CCC94E862A}.Release|Win32.Build.0 = Release|Win32
+		{A5092A9C-6DFD-4DEC-9951-51606F5EAF3B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A5092A9C-6DFD-4DEC-9951-51606F5EAF3B}.Debug|Win32.Build.0 = Debug|Win32
+		{A5092A9C-6DFD-4DEC-9951-51606F5EAF3B}.Release|Win32.ActiveCfg = Release|Win32
+		{A5092A9C-6DFD-4DEC-9951-51606F5EAF3B}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

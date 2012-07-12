@@ -23,7 +23,7 @@ void CheckOptions(INP t_options Options, INP boolean TimingEnabled) {
 
 	/* Check that all filenames were given */
 	if ((NULL == Options.CircuitName) || (NULL == Options.ArchFile)) {
-		printf(ERRTAG "Not enough args. Need at least 'vpr "
+		vpr_printf(TIO_MESSAGE_ERROR, "Not enough args. Need at least 'vpr "
 		"<archfile> <circuit_name>'\n");
 		exit(1);
 	}
@@ -32,7 +32,7 @@ void CheckOptions(INP t_options Options, INP boolean TimingEnabled) {
 	Cur = OptionBaseTokenList;
 	while (Cur->Str) {
 		if (Options.Count[Cur->Enum] > 1) {
-			printf(ERRTAG "Parameter '%s' was specified more than "
+			vpr_printf(TIO_MESSAGE_ERROR, "Parameter '%s' was specified more than "
 			"once on command line.\n", Cur->Str);
 			exit(1);
 		}
@@ -47,7 +47,7 @@ void CheckOptions(INP t_options Options, INP boolean TimingEnabled) {
 	if (Options.Count[OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY]
 			&& (Options.Count[OT_PACK] || Options.Count[OT_PLACE]
 					|| Options.Count[OT_ROUTE])) {
-		printf(ERRTAG "'cluster'/'route'/'place', and "
+		vpr_printf(TIO_MESSAGE_ERROR, "'cluster'/'route'/'place', and "
 		"'timing_analysis_only_with_net_delay' are mutually "
 		"exclusive flags\n");
 		exit(1);
@@ -112,7 +112,7 @@ void CheckOptions(INP t_options Options, INP boolean TimingEnabled) {
 		Cur = OptionBaseTokenList;
 		while (Cur->Str) {
 			if (Yes == Cur->Enum) {
-				printf(ERRTAG
+				vpr_printf(TIO_MESSAGE_ERROR,
 				"Option '%s' is not allowed when placement is "
 				"not run.\n", Cur->Str);
 				exit(1);
@@ -142,7 +142,7 @@ void CheckOptions(INP t_options Options, INP boolean TimingEnabled) {
 		Cur = OptionBaseTokenList;
 		while (Cur->Str) {
 			if (Yes == Cur->Enum) {
-				printf(ERRTAG
+				vpr_printf(TIO_MESSAGE_ERROR,
 				"Option '%s' is not allowed when timing placement is "
 				"not used.\n", Cur->Str);
 				exit(1);
@@ -203,7 +203,7 @@ void CheckOptions(INP t_options Options, INP boolean TimingEnabled) {
 		Cur = OptionBaseTokenList;
 		while (Cur->Str) {
 			if (Yes == Cur->Enum) {
-				printf(ERRTAG
+				vpr_printf(TIO_MESSAGE_ERROR,
 				"Option '%s' is not allowed when timing router is "
 				"not used.\n", Cur->Str);
 				exit(1);

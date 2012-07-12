@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "TIO_PrintHandlerExtern.h"
+
 #ifndef TRUE                    /* Some compilers predefine TRUE, FALSE */
 typedef enum {
 	FALSE, TRUE
@@ -18,15 +20,16 @@ typedef int boolean;
 #define OUTP
 #define INOUTP
 
-#define ERRTAG "ERROR:\t"
-#define WARNTAG "WARN:\t"
-
 #define BUFSIZE 4096 /* Maximum line length for various parsing proc. */
 #ifndef max
 #define max(a,b) (((a) > (b))? (a) : (b))
 #define min(a,b) ((a) > (b)? (b) : (a))
 #endif
 #define nint(a) ((int) floor (a + 0.5))
+
+#define ERRTAG "ERROR:\t"
+#define WARNTAG "WARNING:\t"
+
 
 int limit_value(int cur, int max, const char *name);
 
@@ -120,6 +123,11 @@ char *my_fgets(char *buf, int max_size, FILE * fp);
 void my_srandom(int seed);
 int my_irand(int imax);
 float my_frand(void);
+
+typedef unsigned char (*messagelogger)( TIO_MessageMode_t messageMode,
+                                   char* pszMessage,
+                                   ... );
+extern messagelogger vpr_printf;
 
 #ifdef __cplusplus 
 }

@@ -102,7 +102,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 				/* Impossible to route? (disconnected rr_graph) */
 
 				if (!is_routable) {
-					printf("Routing failed.\n");
+					vpr_printf(TIO_MESSAGE_INFO, "Routing failed.\n");
 					free_timing_driven_route_structs(pin_criticality,
 							sink_order, rt_node_of_sink);
 					free(net_index);
@@ -136,14 +136,14 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 					total_wirelength += wirelength;
 				}
 			}
-			printf(
+			vpr_printf(TIO_MESSAGE_INFO, 
 					"wirelength after first iteration %d, total available wirelength %d, ratio %g\n",
 					total_wirelength, available_wirelength,
 					(float) (total_wirelength)
 							/ (float) (available_wirelength));
 			if ((float) (total_wirelength)
 					/ (float) (available_wirelength)> FIRST_ITER_WIRELENTH_LIMIT) {
-				printf(
+				vpr_printf(TIO_MESSAGE_INFO, 
 						"Wirelength usage ratio exceeds limit of %g, fail routing\n",
 						FIRST_ITER_WIRELENTH_LIMIT);
 				free_timing_driven_route_structs(pin_criticality, sink_order,
@@ -170,7 +170,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 
 		success = feasible_routing();
 		if (success) {
-			printf("Successfully routed after %d routing iterations.\n", itry);
+			vpr_printf(TIO_MESSAGE_INFO, "Successfully routed after %d routing iterations.\n", itry);
 			free_timing_driven_route_structs(pin_criticality, sink_order,
 					rt_node_of_sink);
 #ifdef DEBUG
@@ -202,11 +202,11 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 #else
 		T_crit = load_net_slack(net_slack, FALSE);
 #endif
-		printf("T_crit: %g.\n", T_crit);
+		vpr_printf(TIO_MESSAGE_INFO, "T_crit: %g.\n", T_crit);
 		fflush(stdout);
 	}
 
-	printf("Routing failed.\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Routing failed.\n");
 	free_timing_driven_route_structs(pin_criticality, sink_order,
 			rt_node_of_sink);
 	free(net_index);
@@ -326,7 +326,7 @@ boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
 		current = get_heap_head();
 
 		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
-			printf ("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
+			vpr_printf (TIO_MESSAGE_INFO, "Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
 				   inet, clb_net[inet].name, itarget);
 			reset_path_costs();
 			free_route_tree(rt_root);
@@ -372,7 +372,7 @@ boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
 			current = get_heap_head();
 
 			if (current == NULL) { /* Impossible routing.  No path for net. */
-				printf ("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
+				vpr_printf (TIO_MESSAGE_INFO, "Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
 					 inet, clb_net[inet].name, itarget);
 				reset_path_costs();
 				free_route_tree(rt_root);
@@ -758,8 +758,8 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 
 		if (success == FALSE) {
 			if (rlim > max(nx + 2, ny + 2)) {
-				printf(
-						ERRTAG "VPR internal error, net %s has paths that are not found in traceback\n",
+				vpr_printf(
+						TIO_MESSAGE_ERROR, "VPR internal error, net %s has paths that are not found in traceback\n",
 						clb_net[inet].name);
 				exit(1);
 			}
@@ -814,8 +814,8 @@ static void timing_driven_check_net_delays(float **net_delay) {
 		for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
 			if (net_delay_check[inet][ipin] == 0.) { /* Should be only GLOBAL nets */
 				if (net_delay[inet][ipin] != 0.) {
-					printf(
-							"Error in timing_driven_check_net_delays: net %d pin %d."
+					vpr_printf(TIO_MESSAGE_ERROR, 
+							"in timing_driven_check_net_delays: net %d pin %d."
 									"\tIncremental calc. net_delay is %g, but from scratch "
 									"net delay is %g.\n", inet, ipin,
 							net_delay[inet][ipin], net_delay_check[inet][ipin]);
@@ -826,7 +826,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
 						1.
 								- net_delay[inet][ipin]
 										/ net_delay_check[inet][ipin]) > ERROR_TOL) {
-					printf(
+					vpr_printf(TIO_MESSAGE_ERROR,
 							"Error in timing_driven_check_net_delays: net %d pin %d."
 									"\tIncremental calc. net_delay is %g, but from scratch "
 									"net delay is %g.\n", inet, ipin,
@@ -838,5 +838,5 @@ static void timing_driven_check_net_delays(float **net_delay) {
 	}
 
 	free_net_delay(net_delay_check, &list_head_net_delay_check_ch);
-	printf("Completed net delay value cross check successfully.\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Completed net delay value cross check successfully.\n");
 }

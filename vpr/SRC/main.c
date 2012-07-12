@@ -38,9 +38,6 @@ int main(int argc, char **argv) {
 
 	entire_flow_begin = clock();
 
-	/* Print title message */
-	vpr_print_title();
-
 	/* Read options, architecture, and circuit netlist */
 	vpr_init(argc, argv, &Options, &vpr_setup, &Arch);
 
@@ -59,9 +56,9 @@ int main(int argc, char **argv) {
 	entire_flow_end = clock();
 	
 	#ifdef CLOCKS_PER_SEC
-		printf("The entire flow of VPR took %g seconds.\n", (float)(entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
+		vpr_printf(TIO_MESSAGE_INFO, "The entire flow of VPR took %g seconds.\n", (float)(entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 	#else
-		printf("The entire flow of VPR took %g seconds.\n", (float)(entire_flow_end - entire_flow_begin) / CLK_PER_SEC);
+		vpr_printf(TIO_MESSAGE_INFO, "The entire flow of VPR took %g seconds.\n", (float)(entire_flow_end - entire_flow_begin) / CLK_PER_SEC);
 	#endif
 	
 	/* Return 0 to single success to scripts */

@@ -56,34 +56,34 @@ void get_segment_usage_stats(int num_segment, t_segment_inf * segment_inf) {
 		}
 	}
 
-	printf("\nSegment usage by type (index):\n");
-	printf("Segment type       Fractional utilization\n");
-	printf("------------       ----------------------\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\nSegment usage by type (index):\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Segment type       Fractional utilization\n");
+	vpr_printf(TIO_MESSAGE_INFO, "------------       ----------------------\n");
 
 	for (seg_type = 0; seg_type < num_segment; seg_type++) {
 		if (seg_cap_by_type[seg_type] != 0) {
 			utilization = (float) seg_occ_by_type[seg_type]
 					/ (float) seg_cap_by_type[seg_type];
-			printf("%8d                  %5.3g\n", seg_type, utilization);
+			vpr_printf(TIO_MESSAGE_INFO, "%8d                  %5.3g\n", seg_type, utilization);
 		}
 	}
 
-	printf("\nSegment usage by length:\n");
-	printf("Segment length       Fractional utilization\n");
-	printf("--------------       ----------------------\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\nSegment usage by length:\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Segment length       Fractional utilization\n");
+	vpr_printf(TIO_MESSAGE_INFO, "--------------       ----------------------\n");
 
 	for (length = 1; length <= max_segment_length; length++) {
 		if (seg_cap_by_length[length] != 0) {
 			utilization = (float) seg_occ_by_length[length]
 					/ (float) seg_cap_by_length[length];
-			printf("%9d                   %5.3g\n", length, utilization);
+			vpr_printf(TIO_MESSAGE_INFO, "%9d                   %5.3g\n", length, utilization);
 		}
 	}
 
 	if (seg_cap_by_length[LONGLINE] != 0) {
 		utilization = (float) seg_occ_by_length[LONGLINE]
 				/ (float) seg_cap_by_length[LONGLINE];
-		printf("   longline                 %5.3g\n", utilization);
+		vpr_printf(TIO_MESSAGE_INFO, "   longline                 %5.3g\n", utilization);
 	}
 
 	free(seg_occ_by_length);

@@ -18,7 +18,7 @@ t_mst_edge * get_mst_of_net(int inet) {
 	num_pins_on_net = (clb_net[inet].num_sinks + 1);
 
 	if (num_pins_on_net > USHRT_MAX) {
-		printf("Error: num_pins_on_net (%d) > USHRT_MAX(%u)\n", num_pins_on_net,
+		vpr_printf(TIO_MESSAGE_ERROR, "num_pins_on_net (%d) > USHRT_MAX(%u)\n", num_pins_on_net,
 				USHRT_MAX);
 		exit(1);
 	}

@@ -537,15 +537,15 @@ ReadToken(INP char **Args, OUTP enum e_OptionArgToken *Token) {
 /* Called for parse errors. Spits out a message and then exits program. */
 static void Error(INP const char *Token) {
 	if (Token) {
-		printf(ERRTAG "Unexpected token '%s' on command line\n", Token);
+		vpr_printf(TIO_MESSAGE_ERROR, "Unexpected token '%s' on command line\n", Token);
 	} else {
-		printf(ERRTAG "Missing token at end of command line\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "Missing token at end of command line\n");
 	}
 	exit(1);
 }
 
 static void ErrorOption(INP const char *Option) {
-	printf(ERRTAG "Unexpected option '%s' on command line\n", Option);
+	vpr_printf(TIO_MESSAGE_ERROR, "Unexpected option '%s' on command line\n", Option);
 	exit(1);
 }
 

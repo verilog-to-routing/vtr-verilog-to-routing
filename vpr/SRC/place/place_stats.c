@@ -64,7 +64,7 @@ print_relative_pos_distr(void)
 
 				if(!(min_del <= (len / 2)))
 				{
-					printf
+					vpr_printf
 					("Error in calculating relative location min_del = %d, len = %d\n",
 							min_del, len);
 					exit(1);

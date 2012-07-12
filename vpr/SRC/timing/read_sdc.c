@@ -50,9 +50,9 @@ void read_sdc(char * sdc_file) {
 
 	/* If no SDC file is included or specified, use default behaviour of cutting paths between domains and optimizing each clock separately */
 	if (!sdc_file || (sdc = fopen(sdc_file, "r")) == NULL) {
-		printf("\nSDC file %s not found.\n", sdc_file);
-		printf("All clocks will be optimized to run as fast as possible.\n");
-		printf("Paths between clock domains will be cut.\n\n");
+		vpr_printf(TIO_MESSAGE_INFO, "\nSDC file %s not found.\n", sdc_file);
+		vpr_printf(TIO_MESSAGE_INFO, "All clocks will be optimized to run as fast as possible.\n");
+		vpr_printf(TIO_MESSAGE_INFO, "Paths between clock domains will be cut.\n\n");
 		for(i=0;i<num_netlist_clocks;i++) {
 			for(j=0;j<num_netlist_clocks;j++) {
 				if(i==j) timing_constraints[i][j] = 0.;

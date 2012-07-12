@@ -52,7 +52,7 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 		if (block[i].x < 0 || block[i].x > (L_nx + 1) || block[i].y < 0
 				|| (block[i].y + block[i].type->height - 1) > (L_ny + 1)
 				|| block[i].z < 0 || block[i].z > (block[i].type->capacity)) {
-			printf(ERRTAG
+			vpr_printf(TIO_MESSAGE_ERROR,
 			"Block %d is at invalid location (%d, %d, %d)\n", i, block[i].x,
 					block[i].y, block[i].z);
 			exit(1);
@@ -60,21 +60,21 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 
 		/* Check types match */
 		if (block[i].type != L_grid[block[i].x][block[i].y].type) {
-			printf(ERRTAG "A block is in a grid location "
+			vpr_printf(TIO_MESSAGE_ERROR, "A block is in a grid location "
 			"(%d x %d) with a conflicting type.\n", block[i].x, block[i].y);
 			exit(1);
 		}
 
 		/* Check already in use */
 		if (OPEN != L_grid[block[i].x][block[i].y].blocks[block[i].z]) {
-			printf(ERRTAG
+			vpr_printf(TIO_MESSAGE_ERROR,
 			"Location (%d, %d, %d) is used more than once\n", block[i].x,
 					block[i].y, block[i].z);
 			exit(1);
 		}
 
 		if (L_grid[block[i].x][block[i].y].offset != 0) {
-			printf(ERRTAG
+			vpr_printf(TIO_MESSAGE_ERROR,
 			"Large block not aligned in placment for block %d at (%d, %d, %d)",
 					i, block[i].x, block[i].y, block[i].z);
 			exit(1);

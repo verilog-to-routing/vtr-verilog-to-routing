@@ -280,13 +280,13 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 		{ /* Skip "<EMPTY>" */
 			if(type_descriptors[i].is_Fc_out_full_flex)
 			{
-				printf
+				vpr_printf
 				("Fc Actual Values: Type = %s, Fc_out = full, Fc_in = %d.\n",
 						type_descriptors[i].name, Fc_input[i]);
 			}
 			else
 			{
-				printf
+				vpr_printf
 				("Fc Actual Values: Type = %s, Fc_out = %d, Fc_in = %d.\n",
 						type_descriptors[i].name, Fc_output[i],
 						Fc_input[i]);
@@ -1195,9 +1195,9 @@ void watch_edges(int inode, t_linked_edge * edge_list_head) {
 	list_ptr = edge_list_head;
 	i = 0;
 
-	printf("!!! Watching Node %d !!!!\n", inode);
+	vpr_printf(TIO_MESSAGE_TRACE, "!!! Watching Node %d !!!!\n", inode);
 	print_rr_node(stdout, rr_node, inode);
-	printf("Currently connects to: \n");
+	vpr_printf(TIO_MESSAGE_TRACE, "Currently connects to: \n");
 	while (list_ptr != NULL) {
 		to_node = list_ptr->edge;
 		print_rr_node(stdout, rr_node, to_node);
@@ -1563,14 +1563,14 @@ static void check_all_tracks_reach_pins(t_type_ptr type,
 
 	for (itrack = 0; itrack < nodes_per_chan; itrack++) {
 		if (num_conns_to_track[itrack] <= 0) {
-			printf(
-					"Warning (check_all_tracks_reach_pins):  track %d does not \n"
+			vpr_printf(TIO_MESSAGE_WARNING,
+					"(check_all_tracks_reach_pins):  track %d does not \n"
 							"\tconnect to any CLB ", itrack);
 
 			if (ipin_or_opin == DRIVER)
-				printf("OPINs.\n");
+				vpr_printf(TIO_MESSAGE_INFO, "OPINs.\n");
 			else
-				printf("IPINs.\n");
+				vpr_printf(TIO_MESSAGE_INFO, "IPINs.\n");
 		}
 	}
 
@@ -1999,7 +1999,7 @@ load_uniform_opin_switch_pattern_paired(INP int *Fc_out,
 
 		if(num_edges < 1)
 		{
-			printf
+			vpr_printf
 			("Error:  opin %d at (%d,%d) does not connect to any "
 					"tracks.\n", L_rr_node[from_node].ptc_num,
 					L_rr_node[from_node].xlow, L_rr_node[from_node].ylow);
@@ -2366,20 +2366,20 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 	std_dev_percent_range =
 	sqrt(percent_range_sum / ((float)array_count - 1.0));
 	std_dev_range = sqrt(range_sum / ((float)array_count - 1.0));
-	printf("==== MUX size statistics ====\n");
-	printf("max range of mux size within a sblock is; %d\n",
+	vpr_printf(TIO_MESSAGE_INFO, "==== MUX size statistics ====\n");
+	vpr_printf(TIO_MESSAGE_INFO, "max range of mux size within a sblock is; %d\n",
 			global_max_range);
-	printf("average range of mux size within a sblock is; %.2f\n", avg_range);
-	printf("std dev of range of mux size within a sblock is; %.2f\n",
+	vpr_printf(TIO_MESSAGE_INFO, "average range of mux size within a sblock is; %.2f\n", avg_range);
+	vpr_printf(TIO_MESSAGE_INFO, "std dev of range of mux size within a sblock is; %.2f\n",
 			std_dev_range);
-	printf
+	vpr_printf
 	("average percent range of mux size within a sblock is; %.2f%%\n",
 			avg_percent_range * 100.0);
-	printf
+	vpr_printf
 	("std dev of percent range of mux size within a sblock is; %.2f%%\n",
 			std_dev_percent_range * 100.0);
 
-	printf(" -- Detailed MUX size distribution by sblock type -- \n");
+	vpr_printf(TIO_MESSAGE_INFO, " -- Detailed MUX size distribution by sblock type -- \n");
 	distr_current = distr_list;
 	while(distr_current != NULL)
 	{

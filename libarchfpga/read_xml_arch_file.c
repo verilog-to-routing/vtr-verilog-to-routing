@@ -132,7 +132,7 @@ static void ParseFc(ezxml_t Node, enum Fc_type *Fc, float *Val) {
 	}
 
 	else {
-		printf(ERRTAG "[LINE %d] Invalid type '%s' for Fc. Only abs, frac "
+		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Invalid type '%s' for Fc. Only abs, frac "
 		"and full are allowed.\n", Node->line, Prop);
 		exit(1);
 	}
@@ -175,7 +175,7 @@ static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 	} else if (strcmp(Prop, "custom") == 0) {
 		Type->pin_location_distribution = E_CUSTOM_PIN_DISTR;
 	} else {
-		printf(ERRTAG "[LINE %d] %s is an invalid pin location pattern.\n",
+		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] %s is an invalid pin location pattern.\n",
 				Locations->line, Prop);
 		exit(1);
 	}
@@ -213,7 +213,7 @@ static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 			/* Get offset */
 			i = GetIntProperty(Cur, "offset", FALSE, 0);
 			if ((i < 0) || (i >= Type->height)) {
-				printf(ERRTAG
+				vpr_printf(TIO_MESSAGE_ERROR,
 				"[LINE %d] %d is an invalid offset for type '%s'.\n", Cur->line,
 						i, Type->name);
 				exit(1);
@@ -238,7 +238,7 @@ static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 			}
 
 			else {
-				printf(ERRTAG "[LINE %d] '%s' is not a valid side.\n",
+				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] '%s' is not a valid side.\n",
 						Cur->line, Prop);
 				exit(1);
 			}
@@ -246,14 +246,14 @@ static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 
 			/* Check location is on perimeter */
 			if ((TOP == j) && (i != (Type->height - 1))) {
-				printf(ERRTAG
+				vpr_printf(TIO_MESSAGE_ERROR,
 				"[LINE %d] Locations are only allowed on large block "
 				"perimeter. 'top' side should be at offset %d only.\n",
 						Cur->line, (Type->height - 1));
 				exit(1);
 			}
 			if ((BOTTOM == j) && (i != 0)) {
-				printf(ERRTAG
+				vpr_printf(TIO_MESSAGE_ERROR,
 				"[LINE %d] Locations are only allowed on large block "
 				"perimeter. 'bottom' side should be at offset 0 only.\n",
 						Cur->line);
@@ -372,7 +372,7 @@ static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {
 		if (Prop) {
 			if (strcmp(Prop, "perimeter") == 0) {
 				if (Type->num_grid_loc_def != 1) {
-					printf(ERRTAG
+					vpr_printf(TIO_MESSAGE_ERROR,
 					"[LINE %d] Another loc specified for perimeter.\n",
 							Cur->line);
 					exit(1);
@@ -382,7 +382,7 @@ static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {
 				/* IO goes to boundary */
 			} else if (strcmp(Prop, "fill") == 0) {
 				if (Type->num_grid_loc_def != 1 || FILL_TYPE != NULL) {
-					printf(ERRTAG
+					vpr_printf(TIO_MESSAGE_ERROR,
 					"[LINE %d] Another loc specified for fill.\n", Cur->line);
 					exit(1);
 				}
@@ -393,7 +393,7 @@ static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {
 			} else if (strcmp(Prop, "rel") == 0) {
 				Type->grid_loc_def[i].grid_loc_type = COL_REL;
 			} else {
-				printf(ERRTAG
+				vpr_printf(TIO_MESSAGE_ERROR,
 				"[LINE %d] Unknown grid location type '%s' for type '%s'.\n",
 						Cur->line, Prop, Type->name);
 				exit(1);
@@ -403,8 +403,8 @@ static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {
 		Prop = FindProperty(Cur, "start", FALSE);
 		if (Type->grid_loc_def[i].grid_loc_type == COL_REPEAT) {
 			if (Prop == NULL) {
-				printf(
-						ERRTAG
+				vpr_printf(
+						TIO_MESSAGE_ERROR,
 						"[LINE %d] grid location property 'start' must be specified for grid location type 'col'.\n",
 						Cur->line);
 				exit(1);
@@ -412,8 +412,8 @@ static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {
 			Type->grid_loc_def[i].start_col = my_atoi(Prop);
 			ezxml_set_attr(Cur, "start", NULL);
 		} else if (Prop != NULL) {
-			printf(
-					ERRTAG
+			vpr_printf(
+					TIO_MESSAGE_ERROR,
 					"[LINE %d] grid location property 'start' valid for grid location type 'col' only.\n",
 					Cur->line);
 			exit(1);
@@ -425,8 +425,8 @@ static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {
 				ezxml_set_attr(Cur, "repeat", NULL);
 			}
 		} else if (Prop != NULL) {
-			printf(
-					ERRTAG
+			vpr_printf(
+					TIO_MESSAGE_ERROR,
 					"[LINE %d] grid location property 'repeat' valid for grid location type 'col' only.\n",
 					Cur->line);
 			exit(1);
@@ -434,8 +434,8 @@ static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {
 		Prop = FindProperty(Cur, "pos", FALSE);
 		if (Type->grid_loc_def[i].grid_loc_type == COL_REL) {
 			if (Prop == NULL) {
-				printf(
-						ERRTAG
+				vpr_printf(
+						TIO_MESSAGE_ERROR,
 						"[LINE %d] grid location property 'pos' must be specified for grid location type 'rel'.\n",
 						Cur->line);
 				exit(1);
@@ -443,8 +443,8 @@ static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {
 			Type->grid_loc_def[i].col_rel = (float)atof(Prop);
 			ezxml_set_attr(Cur, "pos", NULL);
 		} else if (Prop != NULL) {
-			printf(
-					ERRTAG
+			vpr_printf(
+					TIO_MESSAGE_ERROR,
 					"[LINE %d] grid location property 'pos' valid for grid location type 'rel' only.\n",
 					Cur->line);
 			exit(1);
@@ -634,7 +634,7 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		annotation->output_pins = my_strdup(Prop);
 		ezxml_set_attr(Parent, "out_port", NULL);
 	} else {
-		printf(ERRTAG "[LINE %d] Unknown port type %s in %s in %s",
+		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Unknown port type %s in %s in %s",
 				Parent->line, Parent->name, Parent->parent->name,
 				Parent->parent->parent->name);
 		exit(1);
@@ -678,7 +678,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 		} else if (0 == strcmp(class_name, "memory")) {
 			pb_type->class_type = MEMORY_CLASS;
 		} else {
-			printf("[LINE %d] Unknown class %s in pb_type %s\n", Parent->line,
+			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Unknown class %s in pb_type %s\n", Parent->line,
 					class_name, pb_type->name);
 			exit(1);
 		}
@@ -875,11 +875,11 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port) {
 		port->type = IN_PORT;
 		port->is_clock = TRUE;
 		if(port->is_non_clock_global == TRUE) {
-			printf(ERRTAG "[LINE %d] Port %s cannot be both a clock and a non-clock simultaneously\n", Parent->line,
+			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Port %s cannot be both a clock and a non-clock simultaneously\n", Parent->line,
 				Parent->name);
 		}
 	} else {
-		printf(ERRTAG "[LINE %d] Unknown port type %s", Parent->line,
+		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Unknown port type %s", Parent->line,
 				Parent->name);
 		exit(1);
 	}
@@ -1034,7 +1034,7 @@ static void Process_Fc(ezxml_t Fc_in_node, ezxml_t Fc_out_node,
 	ParseFc(Fc_in_node, &Type_in, &Type->Fc_in);
 	ParseFc(Fc_out_node, &Type_out, &Type->Fc_out);
 	if (FC_FULL == Type_in) {
-		printf(ERRTAG "[LINE %d] 'full' Fc type isn't allowed for Fc_in.\n",
+		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] 'full' Fc type isn't allowed for Fc_in.\n",
 				Fc_in_node->line);
 		exit(1);
 	}
@@ -1045,8 +1045,8 @@ static void Process_Fc(ezxml_t Fc_in_node, ezxml_t Fc_out_node,
 	}
 
 	else if (Type_in != Type_out) {
-		printf(
-				ERRTAG
+		vpr_printf(
+				TIO_MESSAGE_ERROR,
 				"[LINE %d] Fc_in and Fc_out must have same type unless Fc_out has type 'full'.\n",
 				Fc_in_node->line);
 		exit(1);
@@ -1071,7 +1071,7 @@ static void ProcessComplexBlockProps(ezxml_t Node, t_type_descriptor * Type) {
 	Type->area = GetFloatProperty(Node, "area", FALSE, UNDEFINED);
 
 	if (atof(Prop) < 0) {
-		printf("[LINE %d] Area for type %s must be non-negative\n", Node->line,
+		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Area for type %s must be non-negative\n", Node->line,
 				Type->name);
 		exit(1);
 	}
@@ -1110,7 +1110,7 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 		p = ezxml_child(child, "input_ports");
 		junkp = p;
 		if (p == NULL)
-			printf(ERRTAG "Required input ports not found for element '%s'.\n",
+			vpr_printf(TIO_MESSAGE_ERROR, "Required input ports not found for element '%s'.\n",
 					temp->name);
 
 		p = ezxml_child(p, "port");
@@ -1132,7 +1132,7 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 				}
 				ezxml_set_attr(p, "is_clock", NULL);
 				if(tp->is_clock == TRUE && tp->is_non_clock_global == TRUE) {
-					printf(ERRTAG "[LINE %d] Signal cannot be both a clock and a non-clock signal simultaneously\n", p->line);
+					vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Signal cannot be both a clock and a non-clock signal simultaneously\n", p->line);
 				}
 				temp->inputs = tp;
 				junk = p;
@@ -1141,7 +1141,7 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 			}
 		} else /* No input ports? */
 		{
-			printf(ERRTAG "Required input ports not found for element '%s'.\n",
+			vpr_printf(TIO_MESSAGE_ERROR, "Required input ports not found for element '%s'.\n",
 					temp->name);
 		}
 		FreeNode(junkp);
@@ -1150,7 +1150,7 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 		p = ezxml_child(child, "output_ports");
 		junkp = p;
 		if (p == NULL)
-			printf(ERRTAG "Required output ports not found for element '%s'.\n",
+			vpr_printf(TIO_MESSAGE_ERROR, "Required output ports not found for element '%s'.\n",
 					temp->name);
 
 		p = ezxml_child(p, "port");
@@ -1171,7 +1171,7 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 			}
 		} else /* No output ports? */
 		{
-			printf(ERRTAG "Required output ports not found for element '%s'.\n",
+			vpr_printf(TIO_MESSAGE_ERROR, "Required output ports not found for element '%s'.\n",
 					temp->name);
 		}
 		FreeNode(junkp);
@@ -1209,13 +1209,13 @@ static void ProcessLayout(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 	Prop = FindProperty(Node, "auto", arch->clb_grid.IsAuto);
 	if (Prop != NULL) {
 		if (arch->clb_grid.IsAuto == FALSE) {
-			printf(ERRTAG
+			vpr_printf(TIO_MESSAGE_ERROR,
 			"Auto-sizing, width and height cannot be specified\n");
 		}
 		arch->clb_grid.Aspect = (float)atof(Prop);
 		ezxml_set_attr(Node, "auto", NULL);
 		if (arch->clb_grid.Aspect <= 0) {
-			printf(ERRTAG
+			vpr_printf(TIO_MESSAGE_ERROR,
 			"Grid aspect ratio is less than or equal to zero %g\n",
 					arch->clb_grid.Aspect);
 		}
@@ -1264,7 +1264,7 @@ static void ProcessDevice(INOUTP ezxml_t Node, OUTP struct s_arch *arch,
 	} else if (strcmp(Prop, "subset") == 0) {
 		arch->SBType = SUBSET;
 	} else {
-		printf(ERRTAG "[LINE %d] Unknown property %s for switch block type x\n",
+		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Unknown property %s for switch block type x\n",
 				Cur->line, Prop);
 		exit(1);
 	}
@@ -1312,7 +1312,7 @@ static void ProcessChanWidthDistrDir(INOUTP ezxml_t Node, OUTP t_chan * chan) {
 		hasXpeak = hasDc = TRUE;
 		chan->type = DELTA;
 	} else {
-		printf(ERRTAG "[LINE %d] Unknown property %s for chan_width_distr x\n",
+		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Unknown property %s for chan_width_distr x\n",
 				Node->line, Prop);
 		exit(1);
 	}
@@ -1594,8 +1594,8 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 			if (num_pb == OPEN) {
 				num_pb = mem_pb_type->ports[i].num_pins;
 			} else if (num_pb != mem_pb_type->ports[i].num_pins) {
-				printf(
-						ERRTAG "memory %s has inconsistent number of data bits %d and %d\n",
+				vpr_printf(
+						TIO_MESSAGE_ERROR, "memory %s has inconsistent number of data bits %d and %d\n",
 						mem_pb_type->name, num_pb,
 						mem_pb_type->ports[i].num_pins);
 				exit(1);
@@ -1794,7 +1794,7 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 		Type->pb_type->name = my_strdup(Type->name);
 		if (i == IO_TYPE_INDEX) {
 			if (strcmp(Type->name, "io") != 0) {
-				printf(
+				vpr_printf(TIO_MESSAGE_ERROR, 
 						"First complex block must be named \"io\" and define the inputs and outputs for the FPGA");
 				exit(1);
 			}
@@ -1841,7 +1841,7 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 
 	}
 	if (FILL_TYPE == NULL) {
-		printf(ERRTAG "grid location type 'fill' must be specified.\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "grid location type 'fill' must be specified.\n");
 		exit(1);
 	}
 }
@@ -1857,7 +1857,7 @@ void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 	/* Parse the file */
 	Cur = ezxml_parse_file(ArchFile);
 	if (NULL == Cur) {
-		printf(ERRTAG "Unable to load architecture file '%s'.\n", ArchFile);
+		vpr_printf(TIO_MESSAGE_ERROR, "Unable to load architecture file '%s'.\n", ArchFile);
 		exit(1);
 	}
 
@@ -1867,8 +1867,8 @@ void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 	Prop = FindProperty(Cur, "version", FALSE);
 	if (Prop != NULL) {
 		if (atof(Prop) > atof(VPR_VERSION)) {
-			printf(
-					WARNTAG "This architecture version is for VPR %f while your current VPR version is " VPR_VERSION ", compatability issues may arise\n",
+			vpr_printf(
+					TIO_MESSAGE_WARNING, "This architecture version is for VPR %f while your current VPR version is " VPR_VERSION ", compatability issues may arise\n",
 					atof(Prop));
 		}
 		ezxml_set_attr(Cur, "version", NULL);
@@ -1984,7 +1984,7 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 		}
 
 		else {
-			printf(ERRTAG "[LINE %d] Invalid switch type '%s'.\n", Node->line,
+			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Invalid switch type '%s'.\n", Node->line,
 					tmp);
 			exit(1);
 		}
@@ -2002,7 +2002,7 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 				}
 			}
 			if (j >= NumSwitches) {
-				printf(ERRTAG "[LINE %d] '%s' is not a valid mux name.\n",
+				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] '%s' is not a valid mux name.\n",
 						SubElem->line, tmp);
 				exit(1);
 			}
@@ -2028,7 +2028,7 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 				}
 			}
 			if (j >= NumSwitches) {
-				printf(ERRTAG
+				vpr_printf(TIO_MESSAGE_ERROR,
 				"[LINE %d] '%s' is not a valid wire_switch name.\n",
 						SubElem->line, tmp);
 				exit(1);
@@ -2046,7 +2046,7 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 				}
 			}
 			if (j >= NumSwitches) {
-				printf(ERRTAG
+				vpr_printf(TIO_MESSAGE_ERROR,
 				"[LINE %d] '%s' is not a valid opin_switch name.\n",
 						SubElem->line, tmp);
 				exit(1);
@@ -2105,7 +2105,7 @@ static void ProcessCB_SB(INOUTP ezxml_t Node, INOUTP boolean * list,
 			case 'T':
 			case '1':
 				if (i >= len) {
-					printf(ERRTAG
+					vpr_printf(TIO_MESSAGE_ERROR,
 					"[LINE %d] CB or SB depopulation is too long. It "
 
 					"should be (length) symbols for CBs and (length+1) "
@@ -2118,7 +2118,7 @@ static void ProcessCB_SB(INOUTP ezxml_t Node, INOUTP boolean * list,
 			case 'F':
 			case '0':
 				if (i >= len) {
-					printf(ERRTAG
+					vpr_printf(TIO_MESSAGE_ERROR,
 					"[LINE %d] CB or SB depopulation is too long. It "
 
 					"should be (length) symbols for CBs and (length+1) "
@@ -2129,14 +2129,14 @@ static void ProcessCB_SB(INOUTP ezxml_t Node, INOUTP boolean * list,
 				++i;
 				break;
 			default:
-				printf(ERRTAG "[LINE %d] Invalid character %c in CB or "
+				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Invalid character %c in CB or "
 				"SB depopulation list.\n", Node->line, *tmp);
 				exit(1);
 			}
 			++tmp;
 		}
 		if (i < len) {
-			printf(ERRTAG "[LINE %d] CB or SB depopulation is too short. It "
+			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] CB or SB depopulation is too short. It "
 			"should be (length) symbols for CBs and (length+1) "
 			"symbols for SBs.\n", Node->line);
 			exit(1);
@@ -2147,7 +2147,7 @@ static void ProcessCB_SB(INOUTP ezxml_t Node, INOUTP boolean * list,
 	}
 
 	else {
-		printf(ERRTAG "[LINE %d] '%s' is not a valid type for specifying "
+		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] '%s' is not a valid type for specifying "
 		"cb and sb depopulation.\n", Node->line, tmp);
 		exit(1);
 	}
@@ -2185,7 +2185,7 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 		/* Check for switch name collisions */
 		for (j = 0; j < i; ++j) {
 			if (0 == strcmp((*Switches)[j].name, switch_name)) {
-				printf(ERRTAG
+				vpr_printf(TIO_MESSAGE_ERROR,
 				"[LINE %d] Two switches with the same name '%s' were "
 				"found.\n", Node->line, switch_name);
 				exit(1);
@@ -2209,7 +2209,7 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 		}
 
 		else {
-			printf(ERRTAG "[LINE %d] Invalid switch type '%s'.\n", Node->line,
+			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Invalid switch type '%s'.\n", Node->line,
 					type_name);
 			exit(1);
 		}
@@ -2257,7 +2257,7 @@ static void ProcessDirects(INOUTP ezxml_t Parent,
 		/* Check for direct name collisions */
 		for (j = 0; j < i; ++j) {
 			if (0 == strcmp((*Directs)[j].name, direct_name)) {
-				printf(ERRTAG
+				vpr_printf(TIO_MESSAGE_ERROR,
 				"[LINE %d] Two directs with the same name '%s' were "
 				"found.\n", Node->line, direct_name);
 				exit(1);
@@ -2271,7 +2271,7 @@ static void ProcessDirects(INOUTP ezxml_t Parent,
 		to_pin_name = FindProperty(Node, "to_pin", TRUE);
 		/* Check that to_pin and the from_pin are not the same */
 		if (0 == strcmp(to_pin_name, from_pin_name)) {
-			printf(ERRTAG
+			vpr_printf(TIO_MESSAGE_ERROR,
 			"[LINE %d] The source pin and sink pin are the same: %s.\n",
 				Node->line, to_pin_name);
 			exit(1);
@@ -2287,7 +2287,7 @@ static void ProcessDirects(INOUTP ezxml_t Parent,
 		ezxml_set_attr(Node, "y_offset", NULL);
 		/* Check that the direct chain connection is not zero in both direction */
 		if ( (*Directs)[i].x_offset==0 && (*Directs)[i].y_offset==0 ) {
-			printf(ERRTAG
+			vpr_printf(TIO_MESSAGE_ERROR,
 			"[LINE %d] The x_offset and y_offset are both zero, "
 			"this is a length 0 direct chain connection.\n",
 				Node->line);
@@ -2415,7 +2415,7 @@ static void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 		if (blif_model_name) {
 			blif_model_name++; /* get character after the '.' or ' ' */
 		} else {
-			printf("Unknown blif model %s in pb_type %s\n", pb_type->blif_model,
+			vpr_printf(TIO_MESSAGE_ERROR, "Unknown blif model %s in pb_type %s\n", pb_type->blif_model,
 					pb_type->name);
 		}
 
@@ -2441,7 +2441,7 @@ static void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 			cur_model = cur_model->next;
 		}
 		if (found != TRUE) {
-			printf(ERRTAG "No matching model for pb_type %s\n",
+			vpr_printf(TIO_MESSAGE_ERROR, "No matching model for pb_type %s\n",
 					pb_type->blif_model);
 			exit(1);
 		}
@@ -2490,8 +2490,8 @@ static void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 				model_port = model_port->next;
 			}
 			if (found != TRUE) {
-				printf(
-						ERRTAG "No matching model port for port %s in pb_type %s\n",
+				vpr_printf(
+						TIO_MESSAGE_ERROR, "No matching model port for port %s in pb_type %s\n",
 						pb_type->ports[p].name, pb_type->name);
 				exit(1);
 			}
@@ -2513,7 +2513,7 @@ static void UpdateAndCheckModels(INOUTP struct s_arch *arch) {
 	cur_model = arch->models;
 	while (cur_model) {
 		if (cur_model->pb_types == NULL) {
-			printf("No pb_type found for model %s\n", cur_model->name);
+			vpr_printf(TIO_MESSAGE_ERROR, "No pb_type found for model %s\n", cur_model->name);
 			exit(1);
 		}
 		port = cur_model->inputs;

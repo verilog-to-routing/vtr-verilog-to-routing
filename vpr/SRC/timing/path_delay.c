@@ -151,7 +151,7 @@ alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	/************* End of variable declarations ********************************/
 
 	if (tedge_ch.chunk_ptr_head != NULL) {
-		printf("Error in alloc_and_load_timing_graph:\n"
+		vpr_printf(TIO_MESSAGE_ERROR, "In alloc_and_load_timing_graph:\n"
 				"\tAn old timing graph still exists.\n");
 		exit(1);
 	}
@@ -204,7 +204,7 @@ float** alloc_and_load_pre_packing_timing_graph(float block_delay,
 	/************* End of variable declarations ********************************/
 
 	if (tedge_ch.chunk_ptr_head != NULL) {
-		printf("Error in alloc_and_load_timing_graph:\n"
+		vpr_printf(TIO_MESSAGE_ERROR, "iI alloc_and_load_timing_graph:\n"
 				"\tAn old timing graph still exists.\n");
 		exit(1);
 	}
@@ -289,7 +289,7 @@ void free_timing_graph(float **net_slack) {
 
 
 	if (tedge_ch.chunk_ptr_head == NULL) {
-		printf("Error in free_timing_graph: No timing graph to free.\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "In free_timing_graph: No timing graph to free.\n");
 		exit(1);
 	}
 
@@ -561,7 +561,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 			}
 			tnode[i].num_edges -= (j - k); /* remove unused edges */
 			if (tnode[i].num_edges == 0) {
-				printf(ERRTAG "No timing information for pin %s.%s[%d]\n",
+				vpr_printf(TIO_MESSAGE_ERROR, "No timing information for pin %s.%s[%d]\n",
 						tnode[i].pb_graph_pin->parent_node->pb_type->name,
 						tnode[i].pb_graph_pin->port->name,
 						tnode[i].pb_graph_pin->pin_number);
@@ -652,7 +652,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 		case FF_CLOCK:
 			break;
 		default:
-			printf(ERRTAG "Consistency check failed: Unknown tnode type %d\n",
+			vpr_printf(TIO_MESSAGE_ERROR, "Consistency check failed: Unknown tnode type %d\n",
 					tnode[i].type);
 			assert(0);
 			break;
@@ -957,7 +957,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 		case FF_CLOCK:
 			break;
 		default:
-			printf(ERRTAG "Consistency check failed: Unknown tnode type %d\n",
+			vpr_printf(TIO_MESSAGE_ERROR, "Consistency check failed: Unknown tnode type %d\n",
 					tnode[i].type);
 			assert(0);
 			break;
@@ -1265,13 +1265,13 @@ float load_net_slack(float **net_slack, boolean do_lut_input_balancing) {
 
 			if (ilevel == 0) {
 				if(!(tnode[inode].type == INPAD_SOURCE || tnode[inode].type == FF_SOURCE || tnode[inode].type == CONSTANT_GEN_SOURCE)) {
-					printf(ERRTAG "Timing graph started on unexpected node %s.%s[%d].  This is a VPR internal error, contact VPR development team\n", 
+					vpr_printf(TIO_MESSAGE_ERROR, "Timing graph started on unexpected node %s.%s[%d].  This is a VPR internal error, contact VPR development team\n", 
 						tnode[inode].pb_graph_pin->parent_node->pb_type->name, tnode[inode].pb_graph_pin->port->name, tnode[inode].pb_graph_pin->pin_number);
 					exit(1);
 				}
 			} else {
 				if((tnode[inode].type == INPAD_SOURCE || tnode[inode].type == FF_SOURCE || tnode[inode].type == CONSTANT_GEN_SOURCE)) {
-					printf(ERRTAG "Timing graph discovered unexpected edge to node %s.%s[%d].  This is a VPR internal error, contact VPR development team\n", 
+					vpr_printf(TIO_MESSAGE_ERROR, "Timing graph discovered unexpected edge to node %s.%s[%d].  This is a VPR internal error, contact VPR development team\n", 
 						tnode[inode].pb_graph_pin->parent_node->pb_type->name, tnode[inode].pb_graph_pin->port->name, tnode[inode].pb_graph_pin->pin_number);
 					exit(1);
 				}
@@ -1279,7 +1279,7 @@ float load_net_slack(float **net_slack, boolean do_lut_input_balancing) {
 
 			if (num_edges == 0) { /* sink */
 				if(!(tnode[inode].type == OUTPAD_SINK || tnode[inode].type == FF_SINK || tnode[inode].type == FF_CLOCK)) {
-					printf(ERRTAG "Timing graph terminated on node %s.%s[%d].  Likely cause: Timing edges not specified for block\n", 
+					vpr_printf(TIO_MESSAGE_ERROR, "Timing graph terminated on node %s.%s[%d].  Likely cause: Timing edges not specified for block\n", 
 						tnode[inode].pb_graph_pin->parent_node->pb_type->name, tnode[inode].pb_graph_pin->port->name, tnode[inode].pb_graph_pin->pin_number);
 					exit(1);
 				}
@@ -1440,10 +1440,10 @@ void print_critical_path(const char *fname) {
 	fprintf(fp, "Total logic delay: %g (s)  Total net delay: %g (s)\n",
 			total_logic_delay, total_net_delay);
 
-	printf("Nets on crit. path: %d normal, %d global.\n",
+	vpr_printf(TIO_MESSAGE_INFO, "Nets on crit. path: %d normal, %d global.\n",
 			non_global_nets_on_crit_path, global_nets_on_crit_path);
 
-	printf("Total logic delay: %g (s)  Total net delay: %g (s)\n",
+	vpr_printf(TIO_MESSAGE_INFO, "Total logic delay: %g (s)  Total net delay: %g (s)\n",
 			total_logic_delay, total_net_delay);
 
 	fclose(fp);
@@ -1453,7 +1453,7 @@ void print_critical_path(const char *fname) {
 t_linked_int *
 allocate_and_load_critical_path(void) {
 
-	/* Finds the critical path and puts a list of the tnodes on the critical    *
+	/* Finds the critical path and vpr_printf a list of the tnodes on the critical    *
 	 * path in a linked list, from the path SOURCE to the path SINK.            */
 
 	t_linked_int *critical_path_head, *curr_crit_node, *prev_crit_node;
@@ -1553,8 +1553,8 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 	load_timing_graph_net_delays(net_delay);
 	T_crit = load_net_slack(net_slack, FALSE);
 
-	printf("\n");
-	printf("\nCritical Path: %g (s)\n", T_crit);
+	vpr_printf(TIO_MESSAGE_INFO, "\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\nCritical Path: %g (s)\n", T_crit);
 
 	if (GetEchoOption()) {
 		print_critical_path("critical_path.echo");

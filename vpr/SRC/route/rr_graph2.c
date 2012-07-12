@@ -916,7 +916,7 @@ int get_rr_node_index(int x, int y, t_rr_type rr_type, int ptc,
 		break;
 
 	default:
-		printf("Error:  Bad rr_node passed to get_rr_node_index.\n"
+		vpr_printf(TIO_MESSAGE_ERROR, "Bad rr_node passed to get_rr_node_index.\n"
 				"Request for type=%d ptc=%d at (%d, %d).\n", rr_type, ptc, x,
 				y);
 		exit(1);
@@ -1857,7 +1857,7 @@ label_wire_muxes_for_balance(INP int chan_num, INP int seg_num,
 		x = chan_num;
 		y = seg_num;
 	} else {
-		printf("Error: Bad channel type (%d).\n", chan_type);
+		vpr_printf(TIO_MESSAGE_ERROR, "Bad channel type (%d).\n", chan_type);
 		exit(1);
 	}
 
@@ -1879,8 +1879,7 @@ label_wire_muxes_for_balance(INP int chan_num, INP int seg_num,
 		}
 	}
 	if (max_opin_mux_size > (min_opin_mux_size + 1)) {
-		printf(ERRTAG "opin muxes are not balanced!\n");
-		printf(
+		vpr_printf(TIO_MESSAGE_ERROR, "opin muxes are not balanced!\n"
 				"max_opin_mux_size %d min_opin_mux_size %d chan_type %d x %d y %d\n",
 				max_opin_mux_size, min_opin_mux_size, chan_type, x, y);
 		exit(1);
@@ -2046,6 +2045,6 @@ static int find_label_of_track(int *wire_mux_on_track, int num_wire_muxes,
 		}
 	}
 
-	printf("Error: Expected mux not found.\n");
+	vpr_printf(TIO_MESSAGE_ERROR, "Expected mux not found.\n");
 	exit(1);
 }

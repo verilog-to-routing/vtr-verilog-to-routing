@@ -27,7 +27,7 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 	t_pack_molecule *list_of_pack_molecules, * cur_pack_molecule;
 	int num_pack_molecules;
 
-	printf("Begin packing of %s \n", packer_opts->blif_file_name);
+	vpr_printf(TIO_MESSAGE_INFO, "Begin packing of %s \n", packer_opts->blif_file_name);
 
 	/* determine number of models in the architecture */
 	num_models = 0;
@@ -45,17 +45,17 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 
 	is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
 	
-	printf("\nAfter removing unused inputs:\n");
-	printf("Total Blocks: %d.  Total Nets: %d.  Total inputs %d outputs %d\n",
+	vpr_printf(TIO_MESSAGE_INFO, "\nAfter removing unused inputs:\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Total Blocks: %d.  Total Nets: %d.  Total inputs %d outputs %d\n",
 			num_logical_blocks, num_logical_nets, num_p_inputs, num_p_outputs);
 
-	printf("Begin prepacking\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Begin prepacking\n");
 	list_of_packing_patterns = alloc_and_load_pack_patterns(
 			&num_packing_patterns);
 	list_of_pack_molecules = alloc_and_load_pack_molecules(
 			list_of_packing_patterns, num_packing_patterns,
 			&num_pack_molecules);
-	printf("Finish prepacking\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Finish prepacking\n");
 
 	/* Uncomment line below if you want a dump of compressed netlist. */
 	/* if (GetEchoOption()){
@@ -75,7 +75,7 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 				packer_opts->allow_early_exit, packer_opts->connection_driven,
 				packer_opts->packer_algorithm, timing_inf);
 	} else {
-		printf("Skip clustering not supported\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "Skip clustering no longer supported\n");
 		exit(1);
 	}
 
@@ -93,7 +93,7 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 		list_of_pack_molecules = cur_pack_molecule;
 	}
 
-	printf("\nNetlist conversion complete.\n\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\nNetlist conversion complete.\n\n");
 }
 
 
@@ -138,8 +138,8 @@ boolean *alloc_and_load_is_clock(boolean global_clocks) {
 	 * locally generated clocks.                                             */
 
 	if (num_clocks > 1 && global_clocks) {
-		printf("Warning:  circuit contains %d clocks.\n", num_clocks);
-		printf("          All will be marked global.\n");
+		vpr_printf(TIO_MESSAGE_WARNING, "Warning:  circuit contains %d clocks.\n", num_clocks);
+		vpr_printf(TIO_MESSAGE_INFO, "          All clocks will be marked global.\n");
 	}
 
 	return (is_clock);

@@ -87,7 +87,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\libarchfpga\include;SRC\pcre;SRC\util;SRC\timing;SRC\route;SRC\place;SRC\pack;SRC\base;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libarchfpga\include;SRC\pcre;SRC\util;SRC\timing;SRC\route;SRC\place;SRC\pack;SRC\base;../printhandler/SRC/TIO_InputOutputHandlers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;NO_GRAPHICS;_DEBUG;_CONSOLE;CREATE_ECHO_FILES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <SmallerTypeCheck>true</SmallerTypeCheck>
@@ -293,6 +293,12 @@
   <ItemGroup>
     <ProjectReference Include="..\libarchfpga\libarchfpga.vcxproj">
       <Project>{cbba36e0-cd88-4586-afb6-a0e603d16796}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\pcre\pcre.vcxproj">
+      <Project>{f15a8901-660a-4ffe-890e-74ccc94e862a}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\printhandler\printhandler.vcxproj">
+      <Project>{a5092a9c-6dfd-4dec-9951-51606f5eaf3b}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

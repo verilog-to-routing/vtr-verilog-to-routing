@@ -423,7 +423,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					&clb[num_clb], num_clb, istart, aspect, num_used_instances_type,
 					num_instances_type, num_models, max_cluster_size,
 					max_nets_in_pb_type, detailed_routing_stage);
-			printf("Complex Block %d: %s type %s\n", num_clb, clb[num_clb].name,
+			vpr_printf(TIO_MESSAGE_INFO, "Complex Block %d: %s type %s\n", num_clb, clb[num_clb].name,
 					clb[num_clb].type->name);
 			fflush(stdout);
 			update_cluster_stats(istart, num_clb, is_clock, global_clocks, alpha,
@@ -453,17 +453,17 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					if (next_molecule != NULL) {
 						if (block_pack_status == BLK_FAILED_ROUTE) {
 #ifdef DEBUG_FAILED_PACKING_CANDIDATES
-							printf("\tNO_ROUTE:%s type %s/n", next_molecule->logical_block_ptrs[next_molecule->root]->name, next_molecule->logical_block_ptrs[next_molecule->root]->model->name);
+							vpr_printf(TIO_MESSAGE_TRACE, "\tNO_ROUTE:%s type %s/n", next_molecule->logical_block_ptrs[next_molecule->root]->name, next_molecule->logical_block_ptrs[next_molecule->root]->model->name);
 							fflush(stdout);
 	#else
-							printf(".");
+							vpr_printf(TIO_MESSAGE_INFO, ".");
 	#endif
 						} else {
 	#ifdef DEBUG_FAILED_PACKING_CANDIDATES
-							printf("\tFAILED_CHECK:%s type %s check %d\n", next_molecule->logical_block_ptrs[next_molecule->root]->name, next_molecule->logical_block_ptrs[next_molecule->root]->model->name, block_pack_status);
+							vpr_printf(TIO_MESSAGE_TRACE, "\tFAILED_CHECK:%s type %s check %d\n", next_molecule->logical_block_ptrs[next_molecule->root]->name, next_molecule->logical_block_ptrs[next_molecule->root]->model->name, block_pack_status);
 							fflush(stdout);
 	#else
-							printf(".");
+							vpr_printf(TIO_MESSAGE_INFO, ".");
 	#endif
 						}
 					}
@@ -476,10 +476,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				} else {
 					/* Continue packing by filling smallest cluster */
 	#ifdef DEBUG_FAILED_PACKING_CANDIDATES			
-					printf("\tPASSED:%s type %s\n", next_molecule->logical_block_ptrs[next_molecule->root]->name, next_molecule->logical_block_ptrs[next_molecule->root]->model->name);
+					vpr_printf(TIO_MESSAGE_TRACE, "\tPASSED:%s type %s\n", next_molecule->logical_block_ptrs[next_molecule->root]->name, next_molecule->logical_block_ptrs[next_molecule->root]->model->name);
 					fflush(stdout);
 	#else
-					printf(".");
+					vpr_printf(TIO_MESSAGE_INFO, ".");
 	#endif
 				}
 				update_cluster_stats(next_molecule, num_clb - 1, is_clock,
@@ -495,13 +495,13 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						&num_unrelated_clustering_attempts,
 						cur_cluster_placement_stats_ptr);
 			}
-			printf("\n");
+			vpr_printf(TIO_MESSAGE_INFO, "\n");
 			if(detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
 				is_cluster_legal = try_breadth_first_route_cluster();
 				if(is_cluster_legal == TRUE) {
-					printf("Passed route at end\n");
+					vpr_printf(TIO_MESSAGE_INFO, "Passed route at end\n");
 				} else {
-					printf("Failed route at end, repack cluster trying detailed routing at each stage \n");
+					vpr_printf(TIO_MESSAGE_INFO, "Failed route at end, repack cluster trying detailed routing at each stage \n");
 				}
 			} else {
 				is_cluster_legal = TRUE;
@@ -611,16 +611,15 @@ static void check_clocks(boolean *is_clock) {
 					inet = logical_block[iblk].input_nets[port->index][ipin];
 					if (inet != OPEN) {
 						if (is_clock[inet]) {
-							printf(
+							vpr_printf(TIO_MESSAGE_ERROR, 
 									"Error in check_clocks.  Net %d (%s) is a clock, but "
 											"also\n"
-											"\tconnects to a logic block input on logical_block %d (%s).\n",
+											"\tconnects to a logic block input on logical_block %d (%s).\n"
+											"This would break the current clustering "
+											"implementation and is electrically\n"
+											"\tquestionable, so clustering has been aborted.\n",
 									inet, vpack_net[inet].name, iblk,
 									logical_block[iblk].name);
-							printf(
-									"This would break the current clustering "
-											"implementation and is electrically\n"
-											"\tquestionable, so clustering has been aborted.\n");
 							exit(1);
 						}
 					}
@@ -870,7 +869,7 @@ static boolean outputs_clocks_and_placement_feasible (enum e_packer_algorithm pa
 				if (output_net != OPEN) {
 					if(temp_pb->pb_stats.num_pins_of_net_in_pb[output_net] >= vpack_net[output_net].num_sinks - net_output_feeds_driving_block_input[output_net]) {
 						if((temp_pb->pb_stats.num_pins_of_net_in_pb[output_net] != vpack_net[output_net].num_sinks - net_output_feeds_driving_block_input[output_net])) {
-							printf("[INTERNAL ERROR] net %d %s %d != %d\n", output_net, vpack_net[output_net].name,
+							vpr_printf(TIO_MESSAGE_ERROR, "net %d %s %d != %d\n", output_net, vpack_net[output_net].name,
 									temp_pb->pb_stats.num_pins_of_net_in_pb[output_net], vpack_net[output_net].num_sinks - net_output_feeds_driving_block_input[output_net]);
 						}
 						assert(temp_pb->pb_stats.num_pins_of_net_in_pb[output_net] == vpack_net[output_net].num_sinks - net_output_feeds_driving_block_input[output_net]);
@@ -1962,16 +1961,16 @@ static void start_new_cluster(
 			}
 		}
 		if (count == num_types - 1) {
-			printf(
-					ERRTAG "Can't find any logic block that can implement molecule\n");
+			vpr_printf(
+					TIO_MESSAGE_ERROR, "Can't find any logic block that can implement molecule\n");
 			if (molecule->type == MOLECULE_FORCED_PACK) {
-				printf("\tPattern %s %s\n", molecule->pack_pattern->name,
+				vpr_printf(TIO_MESSAGE_ERROR, "\tPattern %s %s\n", molecule->pack_pattern->name,
 						molecule->logical_block_ptrs[molecule->root]->name);
 			} else if (molecule->type == MOLECULE_CHAIN) {
-				printf("\tChain %s %s\n", molecule->chain_pattern->name,
+				vpr_printf(TIO_MESSAGE_ERROR, "\tChain %s %s\n", molecule->chain_pattern->name,
 						molecule->logical_block_ptrs[molecule->root]->name);
 			} else {
-				printf("\tAtom %s\n",
+				vpr_printf(TIO_MESSAGE_ERROR, "\tAtom %s\n",
 						molecule->logical_block_ptrs[molecule->root]->name);
 			}
 			exit(1);
@@ -1986,10 +1985,10 @@ static void start_new_cluster(
 				nx++;
 				ny = nint(nx / aspect);
 			}
-			printf("Not enough resources expand FPGA size to x = %d y = %d\n",
+			vpr_printf(TIO_MESSAGE_INFO, "Not enough resources expand FPGA size to x = %d y = %d\n",
 					nx, ny);
 			if ((nx > MAX_SHORT) || (ny > MAX_SHORT)) {
-				printf(
+				vpr_printf(TIO_MESSAGE_ERROR, 
 						"Circuit cannot pack into architecture, architecture size (nx = %d, ny = %d) exceeds packer range.\n",
 						nx, ny);
 				exit(1);
@@ -2083,7 +2082,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 	molecule = NULL;
 
 	if (gain_mode == HILL_CLIMBING) {
-		printf(ERRTAG "Hill climbing not supported yet, error out\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "Hill climbing not supported yet, error out\n");
 		exit(1);
 	}
 
@@ -2291,8 +2290,8 @@ static void check_clustering(int num_clb, t_block *clb, boolean *is_clock) {
 	 */
 	for (i = 0; i < num_blocks; i++) {
 		if (logical_block[i].pb->logical_block != i) {
-			printf(
-					ERRTAG "pb %s does not contain logical block %s but logical block %s #%d links to pb\n",
+			vpr_printf(
+					TIO_MESSAGE_ERROR, "pb %s does not contain logical block %s but logical block %s #%d links to pb\n",
 					logical_block[i].pb->name, logical_block[i].name,
 					logical_block[i].name, i);
 			exit(1);
@@ -2304,7 +2303,7 @@ static void check_clustering(int num_clb, t_block *clb, boolean *is_clock) {
 			assert(cur_pb->name);
 		}
 		if (cur_pb != clb[num_clb].pb) {
-			printf(ERRTAG "CLB %s does not match CLB contained by pb %s\n",
+			vpr_printf(TIO_MESSAGE_ERROR, "CLB %s does not match CLB contained by pb %s\n",
 					cur_pb->name, logical_block[i].pb->name);
 			exit(1);
 		}
@@ -2317,7 +2316,7 @@ static void check_clustering(int num_clb, t_block *clb, boolean *is_clock) {
 
 	for (i = 0; i < num_logical_blocks; i++) {
 		if (blocks_checked[i] == FALSE) {
-			printf(ERRTAG "Logical block %s #%d not found in any cluster\n",
+			vpr_printf(TIO_MESSAGE_ERROR, "Logical block %s #%d not found in any cluster\n",
 					logical_block[i].name, i);
 			exit(1);
 		}
@@ -2338,16 +2337,16 @@ static void check_cluster_logical_blocks(t_pb *pb, boolean *blocks_checked) {
 		/* primitive */
 		if (pb->logical_block != OPEN) {
 			if (blocks_checked[pb->logical_block] != FALSE) {
-				printf(
-						ERRTAG "pb %s contains logical block %s #%d but logical block is already contained in another pb\n",
+				vpr_printf(
+						TIO_MESSAGE_ERROR, "pb %s contains logical block %s #%d but logical block is already contained in another pb\n",
 						pb->name, logical_block[pb->logical_block].name,
 						pb->logical_block);
 				exit(1);
 			}
 			blocks_checked[pb->logical_block] = TRUE;
 			if (pb != logical_block[pb->logical_block].pb) {
-				printf(
-						ERRTAG "pb %s contains logical block %s #%d but logical block does not link to pb\n",
+				vpr_printf(
+						TIO_MESSAGE_ERROR, "pb %s contains logical block %s #%d but logical block does not link to pb\n",
 						pb->name, logical_block[pb->logical_block].name,
 						pb->logical_block);
 				exit(1);

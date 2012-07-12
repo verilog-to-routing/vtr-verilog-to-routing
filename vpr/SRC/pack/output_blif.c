@@ -32,7 +32,7 @@ static void print_string(const char *str_ptr, int *column, FILE * fpout) {
 
 	len = strlen(str_ptr);
 	if (len + 3 > LINELENGTH) {
-		printf("Error in print_string: String %s is too long for desired\n"
+		vpr_printf(TIO_MESSAGE_ERROR, "in print_string: String %s is too long for desired\n"
 				"maximum line length.\n", str_ptr);
 		exit(1);
 	}
@@ -243,7 +243,7 @@ static int find_fanin_rr_node(t_pb *cur_pb, enum PORTS type, int rr_node_index) 
 	}
 
 	/* TODO: Once I find a way to output routing in empty blocks then code should never reach here, for now, return OPEN */
-	printf(
+	vpr_printf(TIO_MESSAGE_INFO, 
 			"Use hack in blif dumper (do properly later): connecting net %s #%d for pb %s type %s\n",
 			vpack_net[net_num].name, net_num, cur_pb->name,
 			cur_pb->pb_graph_node->pb_type->name);

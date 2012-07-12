@@ -726,7 +726,7 @@ void draw_rr(void) {
 			break;
 
 		default:
-			printf("Error in draw_rr:  Unexpected rr_node type: %d.\n",
+			vpr_printf(TIO_MESSAGE_ERROR, "In draw_rr:  Unexpected rr_node type: %d.\n",
 					rr_node[inode].type);
 			exit(1);
 		}
@@ -946,8 +946,8 @@ static void draw_rr_edges(int inode) {
 				break;
 
 			default:
-				printf(
-						"Error in draw_rr_edges:  node %d (type: %d) connects to \n"
+				vpr_printf(TIO_MESSAGE_ERROR, 
+						"in draw_rr_edges:  node %d (type: %d) connects to \n"
 								"node %d (type: %d).\n", inode, from_type,
 						to_node, to_type);
 				exit(1);
@@ -999,8 +999,8 @@ static void draw_rr_edges(int inode) {
 				break;
 
 			default:
-				printf(
-						"Error in draw_rr_edges:  node %d (type: %d) connects to \n"
+				vpr_printf(TIO_MESSAGE_ERROR, 
+						"in draw_rr_edges:  node %d (type: %d) connects to \n"
 								"node %d (type: %d).\n", inode, from_type,
 						to_node, to_type);
 				exit(1);
@@ -1052,8 +1052,8 @@ static void draw_rr_edges(int inode) {
 				break;
 
 			default:
-				printf(
-						"Error in draw_rr_edges:  node %d (type: %d) connects to \n"
+				vpr_printf(TIO_MESSAGE_ERROR, 
+						"In draw_rr_edges:  node %d (type: %d) connects to \n"
 								"node %d (type: %d).\n", inode, from_type,
 						to_node, to_type);
 				exit(1);
@@ -1062,7 +1062,7 @@ static void draw_rr_edges(int inode) {
 			break;
 
 		default: /* from_type */
-			printf("Error:  draw_rr_edges called with node %d of type %d.\n",
+			vpr_printf(TIO_MESSAGE_ERROR, "draw_rr_edges called with node %d of type %d.\n",
 					inode, from_type);
 			exit(1);
 			break;
@@ -1264,13 +1264,13 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 				y1 = tile_y[to_ylow - 1] + tile_width;
 			} else { /* DEC wire starts at top edge */
 				if (!(from_yhigh > to_yhigh)) {
-					printf("from_yhigh (%d) !> to_yhigh (%d).\n", from_yhigh,
+					vpr_printf(TIO_MESSAGE_INFO, "from_yhigh (%d) !> to_yhigh (%d).\n", from_yhigh,
 							to_yhigh);
-					printf("from is (%d, %d) to (%d, %d) track %d.\n",
+					vpr_printf(TIO_MESSAGE_INFO, "from is (%d, %d) to (%d, %d) track %d.\n",
 							rr_node[from_node].xhigh, rr_node[from_node].yhigh,
 							rr_node[from_node].xlow, rr_node[from_node].ylow,
 							rr_node[from_node].ptc_num);
-					printf("to is (%d, %d) to (%d, %d) track %d.\n",
+					vpr_printf(TIO_MESSAGE_INFO, "to is (%d, %d) to (%d, %d) track %d.\n",
 							rr_node[to_node].xhigh, rr_node[to_node].yhigh,
 							rr_node[to_node].xlow, rr_node[to_node].ylow,
 							rr_node[to_node].ptc_num);
@@ -1425,7 +1425,7 @@ static void get_rr_pin_draw_coords(int inode, int iside, int ioff, float *xcen,
 		break;
 
 	default:
-		printf("Error in get_rr_pin_draw_coords:  Unexpected iside %d.\n",
+		vpr_printf(TIO_MESSAGE_ERROR, "In get_rr_pin_draw_coords:  Unexpected iside %d.\n",
 				iside);
 		exit(1);
 		break;
@@ -1537,8 +1537,8 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 					break;
 
 				default:
-					printf(
-							"Error in drawroute:  Unexpected connection from an \n"
+					vpr_printf(TIO_MESSAGE_ERROR, 
+							"in drawroute:  Unexpected connection from an \n"
 									"rr_node of type %d to one of type %d.\n",
 							prev_type, rr_type);
 					exit(1);
@@ -1575,8 +1575,8 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 					break;
 
 				default:
-					printf(
-							"Error in drawroute:  Unexpected connection from an \n"
+					vpr_printf(TIO_MESSAGE_ERROR, 
+							"in drawroute:  Unexpected connection from an \n"
 									"rr_node of type %d to one of type %d.\n",
 							prev_type, rr_type);
 					exit(1);
@@ -1625,7 +1625,7 @@ static int get_track_num(int inode, int **chanx_track, int **chany_track) {
 		return (chany_track[i][j]);
 
 	default:
-		printf("Error in get_track_num:  unexpected node type %d for node %d."
+		vpr_printf(TIO_MESSAGE_ERROR, "In get_track_num:  unexpected node type %d for node %d."
 				"\n", rr_type, inode);
 		exit(1);
 	}
@@ -1995,7 +1995,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 		break;
 
 	default:
-		printf("Error in draw_pin_to_chan_edge:  invalid channel node %d.\n",
+		vpr_printf(TIO_MESSAGE_ERROR, "In draw_pin_to_chan_edge:  invalid channel node %d.\n",
 				chan_node);
 		exit(1);
 	}

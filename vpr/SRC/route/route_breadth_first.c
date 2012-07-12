@@ -51,7 +51,7 @@ boolean try_breadth_first_route(struct s_router_opts router_opts,
 				/* Impossible to route? (disconnected rr_graph) */
 
 				if (!is_routable) {
-					printf("Routing failed.\n");
+					vpr_printf(TIO_MESSAGE_INFO, "Routing failed.\n");
 					return (FALSE);
 				}
 
@@ -73,7 +73,7 @@ boolean try_breadth_first_route(struct s_router_opts router_opts,
 
 		success = feasible_routing();
 		if (success) {
-			printf("Successfully routed after %d routing iterations.\n", itry);
+			vpr_printf(TIO_MESSAGE_INFO, "Successfully routed after %d routing iterations.\n", itry);
 			return (TRUE);
 		}
 
@@ -87,7 +87,7 @@ boolean try_breadth_first_route(struct s_router_opts router_opts,
 		pathfinder_update_cost(pres_fac, router_opts.acc_fac);
 	}
 
-	printf("Routing failed.\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Routing failed.\n");
 	return (FALSE);
 }
 
@@ -123,7 +123,7 @@ static boolean breadth_first_route_net(int inet, float bend_cost) {
 		current = get_heap_head();
 
 		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
-			printf ("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
+			vpr_printf (TIO_MESSAGE_INFO, "Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
 				   inet, clb_net[inet].name, i);
 			reset_path_costs(); /* Clean up before leaving. */
 			return (FALSE);
@@ -151,7 +151,7 @@ static boolean breadth_first_route_net(int inet, float bend_cost) {
 			current = get_heap_head();
 
 			if (current == NULL) { /* Impossible routing. No path for net. */
-				printf ("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
+				vpr_printf (TIO_MESSAGE_INFO, "Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
 				   inet, clb_net[inet].name, i);
 				reset_path_costs();
 				return (FALSE);

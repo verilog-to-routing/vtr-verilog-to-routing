@@ -948,19 +948,19 @@ static void compute_delta_arrays(struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, int longest_length) {
 
-	printf(
+	vpr_printf(TIO_MESSAGE_INFO, 
 			"Computing delta_io_to_io lookup matrix, may take a few seconds, please wait...\n");
 	compute_delta_io_to_io(router_opts, det_routing_arch, segment_inf,
 			timing_inf);
-	printf(
+	vpr_printf(TIO_MESSAGE_INFO, 
 			"Computing delta_io_to_clb lookup matrix, may take a few seconds, please wait...\n");
 	compute_delta_io_to_clb(router_opts, det_routing_arch, segment_inf,
 			timing_inf);
-	printf(
+	vpr_printf(TIO_MESSAGE_INFO, 
 			"Computing delta_clb_to_io lookup matrix, may take a few seconds, please wait...\n");
 	compute_delta_clb_to_io(router_opts, det_routing_arch, segment_inf,
 			timing_inf);
-	printf(
+	vpr_printf(TIO_MESSAGE_INFO, 
 			"Computing delta_clb_to_clb lookup matrix, may take a few seconds, please wait...\n");
 	compute_delta_clb_to_clb(router_opts, det_routing_arch, segment_inf,
 			timing_inf, longest_length);

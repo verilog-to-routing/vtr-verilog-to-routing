@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
 	printf("Reading in architecture\n");
 
 	/* function declarations */
-	XmlReadArch(argv[1], atoi(argv[2]), &arch, &types, &numTypes);
+	XmlReadArch(argv[1], (boolean) atoi(argv[2]), &arch, &types, &numTypes);
 
 	printf("Printing Results\n");
 

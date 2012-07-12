@@ -192,8 +192,8 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 					break;
 
 				default:
-					printf(
-							"Error in count_routing_transistors:  Unexpected \n"
+					vpr_printf(TIO_MESSAGE_ERROR, 
+							"in count_routing_transistors:  Unexpected \n"
 									"connection from node %d (type %d) to node %d (type %d).\n",
 							from_node, from_rr_type, to_node, to_rr_type);
 					exit(1);
@@ -268,12 +268,12 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 	ntrans_sharing += input_cblock_trans;
 	ntrans_no_sharing += input_cblock_trans;
 
-	printf("\nRouting area (in minimum width transistor areas):\n");
-	printf(
+	vpr_printf(TIO_MESSAGE_INFO, "\nRouting area (in minimum width transistor areas):\n");
+	vpr_printf(TIO_MESSAGE_INFO, 
 			"Assuming no buffer sharing (pessimistic). Total: %#g  Per logic tile: "
 					"%#g\n", ntrans_no_sharing,
 			ntrans_no_sharing / (float) (nx * ny));
-	printf(
+	vpr_printf(TIO_MESSAGE_INFO, 
 			"Assuming buffer sharing (slightly optimistic). Total: %#g  Per logic tile: "
 					"%#g\n\n", ntrans_sharing,
 			ntrans_sharing / (float) (nx * ny));
@@ -386,8 +386,8 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 					break;
 
 				default:
-					printf(
-							"Error in count_routing_transistors:  Unexpected \n"
+					vpr_printf(TIO_MESSAGE_ERROR, 
+							"in count_routing_transistors:  Unexpected \n"
 									"connection from node %d (type %d) to node %d (type %d).\n",
 							from_node, from_rr_type, to_node, to_rr_type);
 					exit(1);
@@ -429,8 +429,8 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 
 	ntrans += input_cblock_trans;
 
-	printf("\nRouting area (in minimum width transistor areas):\n");
-	printf("Total Routing Area: %#g  Per logic tile: %#g\n", ntrans,
+	vpr_printf(TIO_MESSAGE_INFO, "\nRouting area (in minimum width transistor areas):\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Total Routing Area: %#g  Per logic tile: %#g\n", ntrans,
 			ntrans / (float) (nx * ny));
 }
 

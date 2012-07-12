@@ -624,8 +624,8 @@ boolean try_breadth_first_route_cluster(void) {
 
 			if (!is_routable) {
 				/* TODO: Inelegant, can be more intelligent */
-				printf("Failed routing net %s\n", vpack_net[net_index].name);
-				printf("Routing failed. Disconnected rr_graph\n");
+				vpr_printf(TIO_MESSAGE_INFO, "Failed routing net %s\n", vpack_net[net_index].name);
+				vpr_printf(TIO_MESSAGE_INFO, "Routing failed. Disconnected rr_graph\n");
 				return FALSE;
 			}
 

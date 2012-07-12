@@ -78,9 +78,9 @@ boolean try_directed_search_route(struct s_router_opts router_opts,
 
 	end = clock();
 #ifdef CLOCKS_PER_SEC
-	printf("mst took %g seconds\n", (float) (end - begin) / CLOCKS_PER_SEC);
+	vpr_printf(TIO_MESSAGE_INFO, "mst took %g seconds\n", (float) (end - begin) / CLOCKS_PER_SEC);
 #else
-	printf("mst took %g seconds\n", (float)(end - begin) / CLK_PER_SEC);
+	vpr_printf(TIO_MESSAGE_INFO, "mst took %g seconds\n", (float)(end - begin) / CLK_PER_SEC);
 #endif
 
 	/* Usually the first iteration uses a very small (or 0) pres_fac to find  *
@@ -92,7 +92,7 @@ boolean try_directed_search_route(struct s_router_opts router_opts,
 	for (itry = 1; itry <= router_opts.max_router_iterations; itry++) {
 		begin = clock();
 
-		printf("routing iteration %d\n", itry);
+		vpr_printf(TIO_MESSAGE_INFO, "routing iteration %d\n", itry);
 		for (i = 0; i < num_nets; i++) {
 			inet = net_index[i];
 			if (clb_net[inet].is_global == FALSE
@@ -103,7 +103,7 @@ boolean try_directed_search_route(struct s_router_opts router_opts,
 				/* Impossible to route? (disconnected rr_graph) */
 
 				if (!is_routable) {
-					printf("Routing failed.\n");
+					vpr_printf(TIO_MESSAGE_INFO, "Routing failed.\n");
 					free(net_index);
 					free(sinks);
 					return (FALSE);
@@ -113,10 +113,10 @@ boolean try_directed_search_route(struct s_router_opts router_opts,
 		}
 		end = clock();
 #ifdef CLOCKS_PER_SEC
-		printf("routing iteration took %g seconds\n",
+		vpr_printf(TIO_MESSAGE_INFO, "routing iteration took %g seconds\n",
 				(float) (end - begin) / CLOCKS_PER_SEC);
 #else
-		printf("routing iteration took %g seconds\n", (float)(end - begin) / CLK_PER_SEC);
+		vpr_printf(TIO_MESSAGE_INFO, "routing iteration took %g seconds\n", (float)(end - begin) / CLK_PER_SEC);
 #endif
 		fflush(stdout);
 
@@ -144,14 +144,14 @@ boolean try_directed_search_route(struct s_router_opts router_opts,
 					total_wirelength += wirelength;
 				}
 			}
-			printf(
+			vpr_printf(TIO_MESSAGE_INFO, 
 					"wirelength after first iteration %d, total available wirelength %d, ratio %g\n",
 					total_wirelength, available_wirelength,
 					(float) (total_wirelength)
 							/ (float) (available_wirelength));
 			if ((float) (total_wirelength)
 					/ (float) (available_wirelength)> FIRST_ITER_WIRELENTH_LIMIT) {
-				printf(
+				vpr_printf(TIO_MESSAGE_INFO, 
 						"Wirelength usage ratio exceeds limit of %g, fail routing\n",
 						FIRST_ITER_WIRELENTH_LIMIT);
 				free(net_index);
@@ -173,7 +173,7 @@ boolean try_directed_search_route(struct s_router_opts router_opts,
 
 		success = feasible_routing();
 		if (success) {
-			printf(
+			vpr_printf(TIO_MESSAGE_INFO, 
 					"Successfully routed after %d routing iterations by Directed Search.\n",
 					itry);
 			free(net_index);
@@ -201,7 +201,7 @@ boolean try_directed_search_route(struct s_router_opts router_opts,
 
 	}
 
-	printf("Routing failed.\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Routing failed.\n");
 	free(sinks);
 	free(net_index);
 
@@ -255,7 +255,7 @@ static boolean directed_search_route_net(int inet, float pres_fac,
 		target_pin = mst[inet][itarget].to_node;
 		target_node = net_rr_terminals[inet][target_pin];
 
-		/*    printf ("Target #%d, pin number %d, target_node: %d.\n",
+		/*    vpr_printf ("Target #%d, pin number %d, target_node: %d.\n",
 		 * itarget, target_pin, target_node);  */
 
 		/* WMF: since the heap has been emptied, need to restart the wavefront
@@ -317,7 +317,7 @@ static boolean directed_search_route_net(int inet, float pres_fac,
 			current = get_heap_head();
 
 			if (current == NULL) { /* Impossible routing.  No path for net. */
-				printf(
+				vpr_printf(TIO_MESSAGE_INFO, 
 						"Failed to route net %s #%d pin %d num_sinks %d highfanout_rlim %d\n",
 						clb_net[inet].name, inet, itarget,
 						clb_net[inet].num_sinks, highfanout_rlim);
@@ -420,8 +420,8 @@ static int directed_search_expand_trace_segment(struct s_trace *start_ptr,
 
 		if (success == FALSE) {
 			if (rlim > max(nx + 2, ny + 2)) {
-				printf(
-						ERRTAG "VPR internal error, net %s has paths that are not found in traceback\n",
+				vpr_printf(
+						TIO_MESSAGE_ERROR, "VPR internal error, net %s has paths that are not found in traceback\n",
 						clb_net[inet].name);
 				exit(1);
 			}
@@ -467,8 +467,8 @@ static int directed_search_expand_trace_segment(struct s_trace *start_ptr,
 			tptr = tptr->next;
 		}
 	} else { /* This case never executes for most logic blocks. */
-		printf(
-				"Warning: Multiple connections from net to the same sink. "
+		vpr_printf(TIO_MESSAGE_WARNING, 
+				"Multiple connections from net to the same sink. "
 						"This should not happen for LUT/Cluster based logic blocks. Aborting.\n");
 		exit(1);
 	}
@@ -560,8 +560,8 @@ static void directed_search_add_source_to_heap(int inet, int target_node,
 
 	/* setting the total cost to 0 because it's the only element on the heap */
 	if (!is_empty_heap()) {
-		printf(
-				"Error: Wrong Assumption: in directed_search_add_source_to_heap "
+		vpr_printf(TIO_MESSAGE_ERROR, 
+				"Wrong Assumption: in directed_search_add_source_to_heap "
 						"the heap is not empty. Need to properly calculate source node's cost.\n");
 		exit(1);
 	}

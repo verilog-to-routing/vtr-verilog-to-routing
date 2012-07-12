@@ -676,8 +676,8 @@ static void backward_expand_pack_pattern_from_edge(
 				destination_block->connections = pack_pattern_connection;
 
 				if (source_block == destination_block) {
-					printf(
-							ERRTAG "Invalid packing pattern defined.  Source and destination block are the same (%s)\n",
+					vpr_printf(
+							TIO_MESSAGE_ERROR, "Invalid packing pattern defined.  Source and destination block are the same (%s)\n",
 							source_block->pb_type->name);
 				}
 			}
