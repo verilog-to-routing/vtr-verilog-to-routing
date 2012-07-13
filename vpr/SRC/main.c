@@ -50,9 +50,7 @@ int main(int argc, char **argv) {
 		vpr_init_pre_place_and_route(vpr_setup, Arch);
 		vpr_place_and_route(vpr_setup, Arch);
 	}
-	/* free data structures */
-	vpr_free_all(Arch, Options, vpr_setup);
-
+	
 	entire_flow_end = clock();
 	
 	#ifdef CLOCKS_PER_SEC
@@ -61,6 +59,9 @@ int main(int argc, char **argv) {
 		vpr_printf(TIO_MESSAGE_INFO, "The entire flow of VPR took %g seconds.\n", (float)(entire_flow_end - entire_flow_begin) / CLK_PER_SEC);
 	#endif
 	
+	/* free data structures */
+	vpr_free_all(Arch, Options, vpr_setup);
+
 	/* Return 0 to single success to scripts */
 	return 0;
 }
