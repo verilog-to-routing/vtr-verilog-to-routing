@@ -30,6 +30,7 @@ June 21, 2012
 #include "vpr_types.h"
 #include "ReadOptions.h"
 #include "OptionTokens.h"
+#include "util.h"
 
 /* Main VPR Operations */
 void vpr_init(INP int argc, INP char **argv, OUTP t_options *options, OUTP t_vpr_setup *vpr_setup, OUTP t_arch *arch);
