@@ -290,11 +290,11 @@ static void load_pin_class_by_depth(INOUTP t_pb_graph_node *pb_graph_node,
 	if (pb_graph_node->pb_type->depth == depth
 			&& pb_graph_node->pb_type->num_modes != 0) {
 		/* Record pin class information for cluster */
-		pb_graph_node->num_input_pin_class = *input_count;
-		pb_graph_node->input_pin_class_size = (int*) my_calloc(*input_count,
+		pb_graph_node->num_input_pin_class = *input_count + 1; /* number of input pin classes discovered + 1 for primitive inputs not reachable from cluster input pins */
+		pb_graph_node->input_pin_class_size = (int*) my_calloc(*input_count + 1,
 				sizeof(int));
-		pb_graph_node->num_output_pin_class = *output_count;
-		pb_graph_node->output_pin_class_size = (int*) my_calloc(*output_count,
+		pb_graph_node->num_output_pin_class = *output_count + 1; /* number of output pin classes discovered + 1 for primitive inputs not reachable from cluster input pins */
+		pb_graph_node->output_pin_class_size = (int*) my_calloc(*output_count + 1,
 				sizeof(int));
 		sum_pin_class(pb_graph_node);
 	}
