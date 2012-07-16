@@ -158,9 +158,11 @@ def gen_vqm(args):
 
         q2_shell = path.join(args.quartus_dir, 'quartus_sh')
         q2_cmd = [q2_shell,
+                    '--64bit',
                     '-t',               q2_write_vqm_tcl,
                     '-project',         quartus_project_file,
                     '-family',          args.device_family,
+                    '-cdb_merge',       
                     '-vqm_out_file',    args.vqm_file]
 
         #Verilog to vqm conversion
