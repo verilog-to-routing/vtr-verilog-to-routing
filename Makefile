@@ -39,5 +39,7 @@ clean:
 	@ cd abc_with_bb_support && make clean
 	@ cd vpr && make clean
 	@ cd libarchfpga && make clean
+	@ cd printhandler && make clean
+	@ cd pcre && make clean
 
 .PHONY: packages subdirs $(SUBDIRS)
