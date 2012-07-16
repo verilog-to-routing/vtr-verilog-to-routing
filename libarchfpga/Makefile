@@ -4,7 +4,7 @@
 # However, by uncommenting out the line BUILD_TYPE = debug, you can override this 
 # and set libarchfpga's build type independently.
 
-# BUILD_TYPE = debug
+# BUILD_TYPE = release
 
 # (can be debug or release)
 
@@ -42,7 +42,6 @@ $(EXE): main.o libarchfpga.a
 libarchfpga.a: $(OBJS) ../printhandler/libprinthandler.a
 	 cp ../printhandler/libprinthandler.a $@
 	 ar rcs $@ $(OBJS)
-	 ar d $@ main.o
 
 ../printhandler/libprinthandler.a:
 	@ cd ../printhandler && make
