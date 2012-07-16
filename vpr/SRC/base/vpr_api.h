@@ -52,9 +52,10 @@ void vpr_print_usage(void);
 	void vpr_read_options(INP int argc,	INP char **argv, OUTP t_options * options);
 	/* Read in arch and circuit */
 	void vpr_setup_vpr(INP t_options *Options,
-		INP boolean TimingEnabled,
+		INP boolean TimingEnabled,		
+		INP boolean readArchFile,
 		OUTP struct s_file_name_opts *FileNameOpts,
-		OUTP t_arch * Arch,
+		INOUTP t_arch * Arch,
 		OUTP enum e_operation *Operation,
 		OUTP t_model ** user_models,
 		OUTP t_model ** library_models,

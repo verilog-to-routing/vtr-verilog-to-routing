@@ -6,8 +6,9 @@ boolean IsEchoEnabled(INP t_options *Options);
 
 void SetupVPR(INP t_options *Options,
 		INP boolean TimingEnabled,
+		INP boolean readArchFile,
 		OUTP struct s_file_name_opts *FileNameOpts,
-		OUTP t_arch * Arch,
+		INOUTP t_arch * Arch,
 		OUTP enum e_operation *Operation,
 		OUTP t_model ** user_models,
 		OUTP t_model ** library_models,

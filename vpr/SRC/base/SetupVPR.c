@@ -33,8 +33,10 @@ static void SetupSwitches(INP t_arch Arch,
 
 /* Sets VPR parameters and defaults. Does not do any error checking
  * as this should have been done by the various input checkers */
-void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
-		OUTP struct s_file_name_opts *FileNameOpts, OUTP t_arch * Arch,
+void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,		
+		INP boolean readArchFile,
+		OUTP struct s_file_name_opts *FileNameOpts,
+		INOUTP t_arch * Arch,
 		OUTP enum e_operation *Operation, OUTP t_model ** user_models,
 		OUTP t_model ** library_models, OUTP struct s_packer_opts *PackerOpts,
 		OUTP struct s_placer_opts *PlacerOpts,
@@ -115,8 +117,10 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	SetupAnnealSched(*Options, AnnealSched);
 	SetupRouterOpts(*Options, TimingEnabled, RouterOpts);
 
-	XmlReadArch(Options->ArchFile, TimingEnabled, Arch, &type_descriptors,
-			&num_types);
+	if(readArchFile == TRUE)	{
+		XmlReadArch(Options->ArchFile, TimingEnabled, Arch, &type_descriptors,
+				&num_types);
+	}
 
 	*user_models = Arch->models;
 	*library_models = Arch->model_library;

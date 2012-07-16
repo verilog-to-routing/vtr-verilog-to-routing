@@ -166,7 +166,7 @@ void vpr_init(INP int argc, INP char **argv, OUTP t_options *options, OUTP t_vpr
 	vpr_setup->constant_net_delay = options->constant_net_delay;
 
 	/* Read in arch and circuit */
-	SetupVPR(options, vpr_setup->TimingEnabled, &vpr_setup->FileNameOpts, arch, &vpr_setup->Operation,
+	SetupVPR(options, vpr_setup->TimingEnabled, TRUE, &vpr_setup->FileNameOpts, arch, &vpr_setup->Operation,
 			&vpr_setup->user_models, &vpr_setup->library_models, &vpr_setup->PackerOpts, &vpr_setup->PlacerOpts,
 			&vpr_setup->AnnealSched, &vpr_setup->RouterOpts, &vpr_setup->RoutingArch, &vpr_setup->Segments, &vpr_setup->Timing,
 			&vpr_setup->ShowGraphics, &vpr_setup->GraphPause);
@@ -667,8 +667,9 @@ void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options, INOUTP t_vpr_set
 	/* Read in arch and circuit */
 	void vpr_setup_vpr(INP t_options *Options,
 		INP boolean TimingEnabled,
+		INP boolean readArchFile,
 		OUTP struct s_file_name_opts *FileNameOpts,
-		OUTP t_arch * Arch,
+		INOUTP t_arch * Arch,
 		OUTP enum e_operation *Operation,
 		OUTP t_model ** user_models,
 		OUTP t_model ** library_models,
@@ -681,7 +682,7 @@ void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options, INOUTP t_vpr_set
 		OUTP t_timing_inf * Timing,
 		OUTP boolean * ShowGraphics,
 		OUTP int *GraphPause) {
-		SetupVPR(Options, TimingEnabled, FileNameOpts, Arch, Operation, user_models, library_models, PackerOpts, PlacerOpts, AnnealSched, RouterOpts,
+		SetupVPR(Options, TimingEnabled, readArchFile, FileNameOpts, Arch, Operation, user_models, library_models, PackerOpts, PlacerOpts, AnnealSched, RouterOpts,
 				RoutingArch, Segments, Timing, ShowGraphics, GraphPause);
 	}
 	/* Check inputs are reasonable */
