@@ -782,9 +782,6 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 									== strcmp(interconnect_name,
 											pin_node[0][0]->output_edges[j]->interconnect->name)) {
 								found = TRUE;
-								rr_graph[rr_node_index].fan_in++;
-								rr_graph[pin_node[0][0]->pin_count_in_cluster].edges[j] =
-										rr_node_index;
 								break;
 							}
 						}
@@ -929,7 +926,13 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 				if (RECEIVER
 						== block_list[i].type->class_inf[block_list[i].type->pin_class[j]].type) {
 					count[netnum]++;
-					assert(count[netnum] <= (*ext_nets)[netnum].num_sinks);
+					if(count[netnum] > (*ext_nets)[netnum].num_sinks) {
+						vpr_printf(
+							TIO_MESSAGE_ERROR, "net %s #%d inconsistency, expected %d terminals but encountered %d terminals, it is likely net terminal is disconnected in netlist file\n", 
+							(*ext_nets)[netnum].name, netnum, count[netnum], (*ext_nets)[netnum].num_sinks);
+						exit(1);
+					}
+					
 					(*ext_nets)[netnum].node_block[count[netnum]] = i;
 					(*ext_nets)[netnum].node_block_pin[count[netnum]] = j;
 
