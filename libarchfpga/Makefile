@@ -39,9 +39,12 @@ $(EXE): main.o libarchfpga.a
 	$(CC) main.o -o $(EXE) $(INC_FLAGS) -L. -lm -larchfpga
  
 
-libarchfpga.a: $(OBJS) ../printhandler/libprinthandler.a
+libarchfpga.a: $(OBJS) ../pcre/libpcre.a ../printhandler/libprinthandler.a
 	 cp ../printhandler/libprinthandler.a $@
 	 ar rcs $@ $(OBJS)
+
+../pcre/libpcre.a:
+	@ cd ../pcre && make
 
 ../printhandler/libprinthandler.a:
 	@ cd ../printhandler && make
