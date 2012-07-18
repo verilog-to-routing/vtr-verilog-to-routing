@@ -38,7 +38,8 @@ void PrintHandlerNew(
    printHandler.SetStdioOutput( stdout );
 
    /* Display optional print handler program banner */
-   printHandler.WriteBanner( );
+   /* jluu removed optional program banner */
+   /* printHandler.WriteBanner( ); */
 
    /* Apply optional print handler file logging and include program banner */
    if( pszLogFileName )
