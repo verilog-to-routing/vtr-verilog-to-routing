@@ -598,6 +598,7 @@ void init_graphics(const char *window_name) {
 	int x, y; /* window position */
 	unsigned int border_width = 2; /* ignored by OpenWindows */
 	XTextProperty windowName;
+	char * temp;
 
 	/* X Windows' names for my colours. */
 	char *cnames[NUM_COLOR] = { "white", "black", "grey55", "grey75", "blue",
@@ -703,7 +704,9 @@ void init_graphics(const char *window_name) {
 	force_setlinestyle(currentlinestyle);
 	force_setlinewidth(currentlinewidth);
 
-	XStringListToTextProperty(&window_name, 1, &windowName);
+	temp = my_strdup(window_name);
+	XStringListToTextProperty(&temp, 1, &windowName);
+	free(temp);
 	XSetWMName(display, toplevel, &windowName);
 	/* Uncomment to set icon name */
 	/* XSetWMIconName (display, toplevel, &windowName); */
