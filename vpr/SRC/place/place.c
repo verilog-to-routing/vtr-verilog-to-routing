@@ -95,6 +95,9 @@ static const float cross_count[50] = { /* [0..49] */1.0, 1.0, 1.0, 1.0828, 1.153
 		2.7410, 2.7671, 2.7933 };
 
 /********************* Static subroutines local to place.c *******************/
+#ifdef VERBOSE
+	static void print_clb_placement(const char *fname);
+#endif
 
 static void alloc_and_load_placement_structs(
 		float place_cost_exp, float ***old_region_occ_x,
@@ -476,7 +479,7 @@ void try_place(struct s_placer_opts placer_opts,
 					inner_crit_iter_count = 0;
 #ifdef VERBOSE
 					vpr_printf
-					("Inner Loop Recompute Criticalities\n");
+					(TIO_MESSAGE_TRACE, "Inner Loop Recompute Criticalities\n");
 #endif
 					if (placer_opts.place_algorithm
 							== NET_TIMING_DRIVEN_PLACE) {
@@ -495,7 +498,7 @@ void try_place(struct s_placer_opts placer_opts,
 			}
 #ifdef VERBOSE
 			vpr_printf
-			("t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d dmax = %g\n",
+			(TIO_MESSAGE_TRACE, "t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d dmax = %g\n",
 					t, cost, bb_cost, timing_cost, inner_iter, d_max);
 			if(fabs
 					(bb_cost -
@@ -592,7 +595,9 @@ void try_place(struct s_placer_opts placer_opts,
 					+ placer_opts.td_place_exp_first;
 		}
 #ifdef VERBOSE
-		dump_clbs();
+		if (GetEchoOption()) {
+			print_clb_placement("first_iteration_clb_placement.echo");
+		}
 #endif
 	}
 
@@ -659,7 +664,7 @@ void try_place(struct s_placer_opts placer_opts,
 					inner_crit_iter_count = 0;
 #ifdef VERBOSE
 					vpr_printf
-					("Inner Loop Recompute Criticalities\n");
+					(TIO_MESSAGE_TRACE, "Inner Loop Recompute Criticalities\n");
 #endif
 					if (placer_opts.place_algorithm
 							== NET_TIMING_DRIVEN_PLACE) {
@@ -707,7 +712,9 @@ void try_place(struct s_placer_opts placer_opts,
 #endif
 
 #ifdef VERBOSE
-	dump_clbs();
+	if (GetEchoOption()) {
+		print_clb_placement("end_clb_placement.echo");
+	}
 #endif
 
 	check_place(bb_cost, timing_cost,
@@ -2468,7 +2475,9 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 
 #ifdef VERBOSE
 	vpr_printf(TIO_MESSAGE_INFO, "At end of initial_placement.\n");
-	dump_clbs();
+	if (GetEchoOption()) {
+		print_clb_placement("initial_clb_placement.echo");
+	}
 #endif
 	for (i = 0; i < num_types; i++) {
 		free(pos[i]);
@@ -2684,6 +2693,26 @@ static void check_place(float bb_cost, float timing_cost,
 		exit(1);
 	}
 }
+
+#ifdef VERBOSE
+static void print_clb_placement(const char *fname) {
+
+	/* Prints out the clb placements to a file.  */
+
+	FILE *fp;
+	int i;
+	
+	fp = my_fopen(fname, "w", 0);
+	fprintf(fp, "Complex Block Placements:\n\n");
+
+	fprintf(fp, "Block #\tName\t(X, Y, Z).\n", i, block[i].name, block[i].x, block[i].y, block[i].z);
+	for(i = 0; i < num_blocks; i++) {
+		fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, block[i].name, block[i].x, block[i].y, block[i].z);
+	}
+	
+	fclose(fp);	
+}
+#endif
 
 static void free_try_swap_arrays(void) {
 	if(ts_bb_coord_new != NULL) {
