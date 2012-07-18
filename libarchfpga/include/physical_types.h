@@ -98,13 +98,13 @@ enum e_pin_to_pin_pack_pattern_annotations {
 enum e_grid_loc_type {
 	BOUNDARY = 0, FILL, COL_REPEAT, COL_REL
 };
-struct s_grid_loc_def {
+typedef struct s_grid_loc_def {
 	enum e_grid_loc_type grid_loc_type;
 	int start_col;
 	int repeat;
 	float col_rel;
 	int priority;
-};
+} t_grid_loc_def;
 
 /* Data type definitions */
 /*   Grid info */
@@ -564,7 +564,7 @@ typedef struct s_segment_inf {
  *                  measured in minimum width transistor units               *
  * buf_size:  The area of the buffer. If set to zero, area should be         *
  *            calculated from R                                              */
-struct s_switch_inf {
+typedef struct s_switch_inf {
 	boolean buffered;
 	float R;
 	float Cin;
@@ -573,7 +573,7 @@ struct s_switch_inf {
 	float mux_trans_size;
 	float buf_size;
 	char *name;
-};
+} t_switch_inf;
 
 /* Lists all the important information about a direct chain connection.     *
  * [0 .. det_routing_arch.num_direct]                                       *

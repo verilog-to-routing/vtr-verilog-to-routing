@@ -8,6 +8,13 @@
 extern "C" {
 #endif
 
+/* special type indexes, necessary for initialization, everything afterwards
+ should use the pointers to these type indices*/
+
+#define NUM_MODELS_IN_LIBRARY 4
+#define EMPTY_TYPE_INDEX 0
+#define IO_TYPE_INDEX 1
+
 /* function declarations */
 void
 XmlReadArch( INP const char *ArchFile, INP boolean timing_enabled,

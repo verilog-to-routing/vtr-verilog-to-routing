@@ -35,10 +35,10 @@ int limit_value(int cur, int max, const char *name);
 
 /* Linked lists of void pointers and integers, respectively. */
 
-struct s_linked_vptr {
+typedef struct s_linked_vptr {
 	void *data_vptr;
 	struct s_linked_vptr *next;
-};
+} t_linked_vptr;
 
 typedef struct s_linked_int {
 	int data;
