@@ -1,7 +1,7 @@
 ################################   MAKEFILE OPTIONS     ####################################
 # Build the printhandler library
 
-export BUILD_TYPE = release
+export BUILD_TYPE = debug
 # can be debug or release - this option gets inherited by the library libarchfpga 
 # by default, though libarchfpga's build type can be set independently in libarchfpga's Makefile.
 
@@ -43,11 +43,13 @@ $(EXE): $(OBJ) Makefile libprinthandler.a
 	$(CC) $(FLAGS) OBJ/main.o -o $(EXE) $(LIB_DIR) $(LIB)
 
 
-libprinthandler.a: $(OBJ) Makefile
+libprinthandler.a: $(OBJ) Makefile ../pcre/libpcre.a
 	@ cp ../pcre/libpcre.a $@
 	@ ar rcs $@ $(OBJ)
 	@ ar d $@ main.o
 
+../pcre/libpcre.a:
+	cd ../pcre && make
 
 # Enable a second round of expansion so that we may include
 # the target directory as a prerequisite of the object file.
