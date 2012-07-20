@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
 #include "assert.h"
 #include "util.h"
 #include "vpr_types.h"
@@ -80,6 +81,7 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 	boolean done;
 	boolean add_truth_table;
 	t_model *inpad_model, *outpad_model, *logic_model, *latch_model;
+	clock_t begin_outter,begin_inner,end_outter, end_inner;
 
 	blif = fopen(blif_file, "r");
 	if (blif == NULL) {
@@ -91,12 +93,14 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 
 	/* doall = 0 means do a counting pass, doall = 1 means allocate and load data structures */
 	for (doall = 0; doall <= 1; doall++) {
+		begin_outter = clock();		
 		init_parse(doall);
 
 		/* Three passes to ensure inputs are first blocks, outputs second and    *
 		 * LUTs and latches third, subckts last.  Just makes the output netlist more readable. */
 
 		for (pass = 0; pass <= 4; pass++) {
+			begin_inner = clock();
 			file_line_number = 0; /* Reset line number. */
 			done = FALSE;
 			add_truth_table = FALSE;
@@ -107,7 +111,20 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 						user_models);
 			}
 			rewind(blif); /* Start at beginning of file again */
+			end_inner = clock();
+			#ifdef CLOCKS_PER_SEC
+				vpr_printf(TIO_MESSAGE_INFO, "Loop for doall = %d, pass = %d took %g seconds.\n", doall, pass, (float)(end_inner - begin_inner) / CLOCKS_PER_SEC);
+			#else
+				vpr_printf(TIO_MESSAGE_INFO, "Loop for doall = %d, pass = %d took %g seconds.\n", doall, pass, (float)(end_inner - begin_inner) / CLK_PER_SEC);
+			#endif
 		}
+		end_outter = clock();
+		#ifdef CLOCKS_PER_SEC
+			vpr_printf(TIO_MESSAGE_INFO, "Loop for doall = %d took %g seconds.\n", doall, (float)(end_outter - begin_outter) / CLOCKS_PER_SEC);
+		#else
+			vpr_printf(TIO_MESSAGE_INFO, "Loop for doall = %d took %g seconds.\n", doall, (float)(end_outter - begin_outter) / CLK_PER_SEC);
+		#endif
+
 	}
 	fclose(blif);
 	check_net(sweep_hanging_nets_and_inputs);
