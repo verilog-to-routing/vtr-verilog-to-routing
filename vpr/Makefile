@@ -6,7 +6,6 @@
 # Please look online for information on how to install X11 on other Linux distributions.
 
 # Please note that a Mac can run the graphics if the X11 library is installed. 
-# Set MAC_OS = true to look for X11 in the default directory for Macs.
 
 ENABLE_GRAPHICS = false
 # can be true or false
@@ -14,9 +13,6 @@ ENABLE_GRAPHICS = false
 export BUILD_TYPE = release
 # can be debug or release - this option gets inherited by the library libarchfpga 
 # by default, though libarchfpga's build type can be set independently in libarchfpga's Makefile.
-
-MAC_OS = false
-# can be true or false
 
 COMPILER = g++
 
@@ -39,6 +35,14 @@ OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
 INC_FLAGS = -I../libarchfpga/include
 
 FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -D EZXML_NOMMAP -D_POSIX_C_SOURCE
+
+UNAME := $(shell uname)
+# determine build env
+ifeq ($(UNAME), Darwin)
+	MAC_OS = true
+else
+	MAC_OS = false
+endif
 
 ifneq (,$(findstring release, $(BUILD_TYPE)))
   FLAGS := $(FLAGS) $(OPT_FLAGS)
