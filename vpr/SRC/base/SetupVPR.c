@@ -213,8 +213,7 @@ static void SetupTiming(INP t_options Options, INP t_arch Arch,
 		Timing->SDCFile = (char*) my_calloc(strlen(Options.CircuitName)+5, sizeof(char)); /* circuit_name.sdc/0*/
 		sprintf(Timing->SDCFile, "%s.sdc", Options.CircuitName);
 	} else {
-		Timing->SDCFile = (char*) my_calloc(strlen(Options.SDCFile), sizeof(char)); 
-		sprintf(Timing->SDCFile, "%s", Options.SDCFile);
+		Timing->SDCFile = (char*) my_strdup(Options.SDCFile);
 	}
 }
 
