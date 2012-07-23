@@ -32,9 +32,9 @@ enum cost_methods {
 	NORMAL, CHECK
 };
 
-#define FROM 0			/* What block connected to a net has moved? */
-#define TO 1
-#define FROM_AND_TO 2
+#define NOT_UPDATED_YET 'N'			/* What block connected to a net has moved? */
+#define UPDATED_ONCE 'U'
+#define GOT_FROM_SCRATCH 'S'
 
 #define ERROR_TOL .01
 #define MAX_MOVES_BEFORE_RECOMPUTE 50000
@@ -42,8 +42,21 @@ enum cost_methods {
 /********************** Variables local to place.c ***************************/
 
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
-
 static float *net_cost = NULL, *temp_net_cost = NULL; /* [0..num_nets-1] */
+
+/* [0...num_nets-1]                                                              *
+ * A flag array to indicate whether the specific bounding box has been updated   *
+ * in this particular swap or not. If it has been updated before, the code       *
+ * must use the updated data, instead of the out-of-date data passed into the    *
+ * subroutine, particularly used in try_swap(). The value NOT_UPDATED_YET        *
+ * indicates that the net has not been updated before, UPDATED_ONCE indicated    *
+ * that the net has been updated once, if it is going to be updated again, the   *
+ * values from the previous update must be used. GOT_FROM_SCRATCH is only        *
+ * applicable for nets larger than SMALL_NETS and it indicates that the          *
+ * particular bounding box cannot be updated incrementally before, hence the     *
+ * bounding box is got from scratch, so the bounding box would definitely be     *
+ * right, DO NOT update again.                                                   */
+static char * bb_updated_before = NULL;
 
 /* [0..num_nets-1][1..num_pins-1]. What is the value of the timing   */
 /* driven portion of the cost function. These arrays will be set to  */
@@ -68,6 +81,12 @@ static int **net_pin_index = NULL;
 
 static struct s_bb *bb_coords = NULL, *bb_num_on_edges = NULL;
 
+/* Store the information on the blocks to be moved in a swap during     *
+ * placement, in the form of array of structs instead of struct with    *
+ * arrays for cache effifiency                                          *
+ */
+static t_pl_blocks_to_be_moved blocks_affected;
+
 /* The arrays below are used to precompute the inverse of the average   *
  * number of tracks per channel between [subhigh] and [sublow].  Access *
  * them as chan?_place_cost_fac[subhigh][sublow].  They are used to     *
@@ -81,8 +100,7 @@ static float **chanx_place_cost_fac, **chany_place_cost_fac;
 /* The following arrays are used by the try_swap function for speed reasons */
 static struct s_bb *ts_bb_coord_new = NULL;
 static struct s_bb *ts_bb_edge_new = NULL;
-static int *ts_nets_to_update = NULL, *ts_net_block_moved = NULL;
-
+static int *ts_nets_to_update = NULL, *ts_pins_to_nets = NULL;
 
 /* Expected crossing counts for nets with different #'s of pins.  From *
  * ICCAD 94 pp. 690 - 695 (with linear interpolation applied by me).   */
@@ -153,10 +171,9 @@ static float recompute_bb_cost(void);
 
 static float comp_td_point_to_point_delay(int inet, int ipin);
 
-static void update_td_cost(int b_from, int b_to, int num_of_pins);
+static void update_td_cost(void);
 
-static void comp_delta_td_cost(int b_from, int b_to, int num_of_pins,
-		float *delta_timing, float *delta_delay);
+static void comp_delta_td_cost(float *delta_timing, float *delta_delay);
 
 static void comp_td_costs(float *timing_cost, float *connection_delay_sum);
 
@@ -169,9 +186,8 @@ static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new);
 
 static void update_bb(int inet, struct s_bb *bb_coord_new,
 		struct s_bb *bb_edge_new, int xold, int yold, int xnew, int ynew);
-
-static int find_affected_nets(int *nets_to_update, int *net_block_moved,
-		int b_from, int b_to, int num_of_pins);
+		
+static int find_affected_nets(int *nets_to_update, int *pins_to_nets);
 
 static float get_net_cost(int inet, struct s_bb *bb_ptr);
 
@@ -1009,26 +1025,42 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 	 * rlim is the range limiter.                                                                            */
 
 	int b_from, x_to, y_to, z_to, x_from, y_from, z_from, b_to;
-	int i, k, inet, keep_switch, num_of_pins, max_pins_per_clb;
-	int num_nets_affected, bb_index;
+	int i, inet, keep_switch;
+	int num_nets_affected;
 	float delta_c, bb_delta_c, timing_delta_c, delay_delta_c;
-
-	max_pins_per_clb = 0;
-	for (i = 0; i < num_types; i++) {
-		max_pins_per_clb = max(max_pins_per_clb, type_descriptors[i].num_pins);
-	}
-
+	int iblk, bnum, iblk_pin, ipin_affected, inet_affected;
+	
 	/* Allocate the local bb_coordinate storage, etc. only once. */
 	if (ts_bb_coord_new == NULL) {
-		ts_bb_coord_new = (struct s_bb *) my_malloc(
-				2 * max_pins_per_clb * sizeof(struct s_bb));
-		ts_bb_edge_new = (struct s_bb *) my_malloc(
-				2 * max_pins_per_clb * sizeof(struct s_bb));
-		ts_nets_to_update = (int *) my_malloc(2 * max_pins_per_clb * sizeof(int));
-		ts_net_block_moved = (int *) my_malloc(2 * max_pins_per_clb * sizeof(int));
+		/* Find the max pins per clb to allocate maximum space for ts_pins_to_nets. */
+		int max_pins_per_clb = 0;
+		for (i = 0; i < num_types; i++)
+			max_pins_per_clb = max(max_pins_per_clb, type_descriptors[i].num_pins);
+		
+		/* Allocate with size num_nets for any number of nets affected. */
+		ts_bb_coord_new = (struct s_bb *) my_calloc(
+				num_nets, sizeof(struct s_bb));
+		ts_bb_edge_new = (struct s_bb *) my_calloc(
+				num_nets, sizeof(struct s_bb));
+		ts_nets_to_update = (int *) my_calloc(num_nets, sizeof(int));
+		ts_pins_to_nets = (int *) my_calloc(
+				num_blocks * max_pins_per_clb, sizeof(int));
+		
+		/* Allocate with size num_blocks for any number of moved block. */
+		blocks_affected.moved_blocks = (t_pl_moved_block*)my_calloc(
+				num_blocks, sizeof(t_pl_moved_block) );
+		blocks_affected.num_moved_blocks = 0;
 	}
 
+	/* I'm using negative values of temp_net_cost as a flag, so DO NOT   *
+	 * use cost functions that can go negative.                          */
+
+	delta_c = 0; /* Change in cost due to this swap. */
+	bb_delta_c = 0;
+	timing_delta_c = 0;
 	delay_delta_c = 0.0;
+	
+	/* Pick a random block to be swapped with another random block    */
 	b_from = my_irand(num_blocks - 1);
 
 	/* If the pins are fixed we never move them from their initial    *
@@ -1056,7 +1088,12 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 	 * box simpler.  If the cost increase is too high, switch them *
 	 * back.  (block data structures switched, clbs not switched   *
 	 * until success of move is determined.)                       */
-
+	/* Also check that whether those are the only 2 blocks         *
+	 * to be moved - check for carry chains and other placement    *
+	 * macros.                                                     *
+	 * Only 2 blocks to be moved for now.                          *
+	 */
+		
 	z_to = 0;
 	if (grid[x_to][y_to].type->capacity > 1) {
 		z_to = my_irand(grid[x_to][y_to].type->capacity - 1);
@@ -1066,6 +1103,13 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 		block[b_from].x = x_to;
 		block[b_from].y = y_to;
 		block[b_from].z = z_to;
+		
+		blocks_affected.num_moved_blocks = 1;
+		blocks_affected.moved_blocks[0].block_num = b_from;
+		blocks_affected.moved_blocks[0].xold = x_from;
+		blocks_affected.moved_blocks[0].xnew = x_to;
+		blocks_affected.moved_blocks[0].yold = y_from;
+		blocks_affected.moved_blocks[0].ynew = y_to;
 	} else { /* Swapping two blocks */
 		b_to = grid[x_to][y_to].blocks[z_to];
 		block[b_to].x = x_from;
@@ -1075,54 +1119,63 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 		block[b_from].x = x_to;
 		block[b_from].y = y_to;
 		block[b_from].z = z_to;
+		
+		blocks_affected.num_moved_blocks = 2;
+		blocks_affected.moved_blocks[0].block_num = b_from;
+		blocks_affected.moved_blocks[0].xold = x_from;
+		blocks_affected.moved_blocks[0].xnew = x_to;
+		blocks_affected.moved_blocks[0].yold = y_from;
+		blocks_affected.moved_blocks[0].ynew = y_to;
+
+		blocks_affected.moved_blocks[1].block_num = b_to;
+		blocks_affected.moved_blocks[1].xold = x_to;
+		blocks_affected.moved_blocks[1].xnew = x_from;
+		blocks_affected.moved_blocks[1].yold = y_to;
+		blocks_affected.moved_blocks[1].ynew = y_from;
 	}
 
-	/* Now update the cost function.  May have to do major optimizations *
-	 * here later.                                                       */
+	num_nets_affected = find_affected_nets(ts_nets_to_update, ts_pins_to_nets);
 
-	/* I'm using negative values of temp_net_cost as a flag, so DO NOT   *
-	 * use cost functions that can go negative.                          */
+	/* Go through all the pins in all the blocks moved and update the bounding boxes.  *
+	 * Do not update the net cost here since it should only be updated once per net,   *
+	 * not once per pin                                                                */
+	ipin_affected = 0;
+	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++)
+	{
+		bnum = blocks_affected.moved_blocks[iblk].block_num;
 
-	delta_c = 0; /* Change in cost due to this swap. */
-	bb_delta_c = 0;
-	timing_delta_c = 0;
-
-	num_of_pins = block[b_from].type->num_pins;
-
-	num_nets_affected = find_affected_nets(ts_nets_to_update, ts_net_block_moved,
-			b_from, b_to, num_of_pins);
-
-	bb_index = 0; /* Index of new bounding box. */
-
-	for (k = 0; k < num_nets_affected; k++) {
-		inet = ts_nets_to_update[k];
-
-		/* If we swapped two blocks connected to the same net, its bounding box *
-		 * doesn't change.                                                      */
-		
-		
-		if (ts_net_block_moved[k] == FROM_AND_TO)								
-		 	continue;															
-		
-		if (clb_net[inet].num_sinks < SMALL_NET) {
-			get_non_updateable_bb(inet, &ts_bb_coord_new[bb_index]);
-		} else {
-
-			if(ts_net_block_moved[k] == FROM)
-			update_bb(inet, &ts_bb_coord_new[bb_index],
-					&ts_bb_edge_new[bb_index], x_from, y_from,
-					x_to, y_to);
-			else
-			update_bb(inet, &ts_bb_coord_new[bb_index],
-					&ts_bb_edge_new[bb_index], x_to, y_to, x_from,
-					y_from);
-
+		/* Go through all the pins in the moved block */
+		for (iblk_pin = 0; iblk_pin < block[bnum].type->num_pins; iblk_pin++)
+		{
+			inet = ts_pins_to_nets[ipin_affected];
+			if (inet == -1) {
+				ipin_affected++;
+				continue;
+			}
+			
+			if (clb_net[inet].num_sinks < SMALL_NET) {
+				if(bb_updated_before[inet] == NOT_UPDATED_YET)
+					get_non_updateable_bb(inet, &ts_bb_coord_new[inet]);
+			} else {
+				update_bb(inet, &ts_bb_coord_new[inet],
+						&ts_bb_edge_new[inet], 
+						blocks_affected.moved_blocks[iblk].xold, 
+						blocks_affected.moved_blocks[iblk].yold + block[bnum].type->pin_height[iblk_pin],
+						blocks_affected.moved_blocks[iblk].xnew, 
+						blocks_affected.moved_blocks[iblk].ynew + block[bnum].type->pin_height[iblk_pin]);
+			}
+			
+			ipin_affected++;
 		}
+	}
+			
+	/* Now update the cost function. The cost is only updated once for every net  *
+	 * May have to do major optimizations here later.                             */
+	for (inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
+		inet = ts_nets_to_update[inet_affected];
 
-		temp_net_cost[inet] = get_net_cost(inet, &ts_bb_coord_new[bb_index]);
+		temp_net_cost[inet] = get_net_cost(inet, &ts_bb_coord_new[inet]);
 		bb_delta_c += temp_net_cost[inet] - net_cost[inet];
-
-		bb_index++;
 	}
 
 	if (place_algorithm == NET_TIMING_DRIVEN_PLACE
@@ -1131,8 +1184,7 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 		 *additionally, we normalize all values, therefore delta_c is in       *
 		 *relation to 1*/
 
-		comp_delta_td_cost(b_from, b_to, num_of_pins, &timing_delta_c,
-				&delay_delta_c);
+		comp_delta_td_cost(&timing_delta_c, &delay_delta_c);
 
 		delta_c = (1 - timing_tradeoff) * bb_delta_c * inverse_prev_bb_cost
 				+ timing_tradeoff * timing_delta_c * inverse_prev_timing_cost;
@@ -1147,7 +1199,7 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 	if (keep_switch) {
 		*cost = *cost + delta_c;
 		*bb_cost = *bb_cost + bb_delta_c;
-
+	
 		if (place_algorithm == NET_TIMING_DRIVEN_PLACE
 				|| place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 			/*update the point_to_point_timing_cost and point_to_point_delay_cost 
@@ -1155,32 +1207,20 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 			*timing_cost = *timing_cost + timing_delta_c;
 			*delay_cost = *delay_cost + delay_delta_c;
 
-			update_td_cost(b_from, b_to, num_of_pins);
+			update_td_cost();
 		}
 
 		/* update net cost functions and reset flags. */
+		for (inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
+			inet = ts_nets_to_update[inet_affected];
 
-		bb_index = 0;
-
-		for (k = 0; k < num_nets_affected; k++) {
-			inet = ts_nets_to_update[k];
-
-			/* If we swapped two blocks connected to the same net, its bounding box *
-			 * doesn't change.                                                      */
-
-			if (ts_net_block_moved[k] == FROM_AND_TO) {
-				temp_net_cost[inet] = -1;
-				continue;
-			}
-
-			bb_coords[inet] = ts_bb_coord_new[bb_index];
+			bb_coords[inet] = ts_bb_coord_new[inet];
 			if (clb_net[inet].num_sinks >= SMALL_NET)
-				bb_num_on_edges[inet] = ts_bb_edge_new[bb_index];
-
-			bb_index++;
-
+				bb_num_on_edges[inet] = ts_bb_edge_new[inet];
+			
 			net_cost[inet] = temp_net_cost[inet];
 			temp_net_cost[inet] = -1;
+			bb_updated_before[inet] = NOT_UPDATED_YET;
 		}
 
 		/* Update clb data structures since we kept the move. */
@@ -1197,9 +1237,10 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 	else { /* Move was rejected.  */
 
 		/* Reset the net cost function flags first. */
-		for (k = 0; k < num_nets_affected; k++) {
-			inet = ts_nets_to_update[k];
+		for (inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
+			inet = ts_nets_to_update[inet_affected];
 			temp_net_cost[inet] = -1;
+			bb_updated_before[inet] = NOT_UPDATED_YET;
 		}
 
 		/* Restore the block data structures to their state before the move. */
@@ -1213,80 +1254,53 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 		}
 	}
 
+	/* Resets the num_moved_blocks, but do not free blocks_moved array. Defensive Coding */
+	blocks_affected.num_moved_blocks = 0;
+
 	return (keep_switch);
 }
 
-static int find_affected_nets(int *nets_to_update, int *net_block_moved,
-		int b_from, int b_to, int num_of_pins) {
+static int find_affected_nets(int *nets_to_update, int *pins_to_nets) {
 
-	/* Puts a list of all the nets connected to b_from and b_to into          *
-	 * nets_to_update.  Returns the number of affected nets.  Net_block_moved *
-	 * is either FROM, TO or FROM_AND_TO -- the block connected to this net   *
-	 * that has moved.                                                        */
+	/* Puts a list of all the nets that are changed by the swap into          *
+	 * nets_to_update.  Returns the number of affected nets.  pins_to_nets    *
+	 * stores the net number corresponding to the pins in the moved blocks.   */
 
-	int k, inet, affected_index, count;
+	int iblk, iblk_pin, inet, bnum, num_affected_pins, num_affected_nets;
 
-	affected_index = 0;
+	num_affected_pins = 0;
+	num_affected_nets = 0;
+	/* Go through all the blocks moved */
+	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++)
+	{
+		bnum = blocks_affected.moved_blocks[iblk].block_num;
 
-	for (k = 0; k < num_of_pins; k++) {
-		inet = block[b_from].nets[k];
+		/* Go through all the pins in the moved block */
+		for (iblk_pin = 0; iblk_pin < block[bnum].type->num_pins; iblk_pin++)
+		{
+			/* Updates the pins_to_nets array, set to -1 if   *
+			 * that pin is not connected to any net or it is a  *
+			 * global pin that does not need to be updated      */
+			inet = block[bnum].nets[iblk_pin];
+			if (inet == OPEN){
+				pins_to_nets[num_affected_pins] = -1;
+			} else if (clb_net[inet].is_global) {
+				pins_to_nets[num_affected_pins] = -1;
+			} else {
+				pins_to_nets[num_affected_pins] = inet;
+				if (temp_net_cost[inet] < 0.) { 
+					/* Net not marked yet. */
+					nets_to_update[num_affected_nets] = inet;
+					num_affected_nets++;
 
-		if (inet == OPEN)
-			continue;
-
-		if (clb_net[inet].is_global)
-			continue;
-
-		/* This is here in case the same block connects to a net twice. */
-
-		if (temp_net_cost[inet] > 0.)
-			continue;
-
-		nets_to_update[affected_index] = inet;
-		net_block_moved[affected_index] = FROM;
-		affected_index++;
-		temp_net_cost[inet] = 1.; /* Flag to say we've marked this net. */
-	}
-
-	if (b_to != EMPTY) {
-		for (k = 0; k < num_of_pins; k++) {
-			inet = block[b_to].nets[k];
-
-			if (inet == OPEN)
-				continue;
-
-			if (clb_net[inet].is_global)
-				continue;
-
-			if (temp_net_cost[inet] > 0.) { /* Net already marked. */
-				for (count = 0; count < affected_index; count++) {
-					if (nets_to_update[count] == inet) {
-						if (net_block_moved[count] == FROM)
-							net_block_moved[count] = FROM_AND_TO;
-						break;
-					}
+					/* Flag to say we've marked this net. */
+					temp_net_cost[inet] = 1.;
 				}
-
-#ifdef DEBUG
-				if (count > affected_index) {
-					vpr_printf(TIO_MESSAGE_ERROR, "In find_affected_nets -- count = %d,"
-							" affected index = %d.\n", count, affected_index);
-					exit(1);
-				}
-#endif
 			}
-
-			else { /* Net not marked yet. */
-
-				nets_to_update[affected_index] = inet;
-				net_block_moved[affected_index] = TO;
-				affected_index++;
-				temp_net_cost[inet] = 1.; /* Flag means we've  marked net. */
-			}
+			num_affected_pins++;
 		}
 	}
-
-	return (affected_index);
+	return num_affected_nets;
 }
 
 static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim,
@@ -1548,57 +1562,20 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 	return (delay_source_to_sink);
 }
 
-static void update_td_cost(int b_from, int b_to, int num_of_pins) {
-	/*update the point_to_point_timing_cost values from the temporary */
-	/*values for all connections that have changed */
+static void update_td_cost(void) {
+	/* Update the point_to_point_timing_cost values from the temporary *
+	 * values for all connections that have changed.                   */
 
-	int blkpin, net_pin, inet, ipin;
+	int iblk_pin, net_pin, inet, ipin;
+	int iblk, iblk2, bnum, driven_by_moved_block;
+	
+	/* Go through all the blocks moved. */
+	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++)
+	{
+		bnum = blocks_affected.moved_blocks[iblk].block_num;
+		for (iblk_pin = 0; iblk_pin < block[bnum].type->num_pins; iblk_pin++) {
 
-	for (blkpin = 0; blkpin < num_of_pins; blkpin++) {
-
-		inet = block[b_from].nets[blkpin];
-
-		if (inet == OPEN)
-			continue;
-
-		if (clb_net[inet].is_global)
-			continue;
-
-		net_pin = net_pin_index[b_from][blkpin];
-
-		if (net_pin != 0) {
-
-			/*the following "if" prevents the value from being updated twice */
-			if (clb_net[inet].node_block[0] != b_to
-					&& clb_net[inet].node_block[0] != b_from) {
-
-				point_to_point_delay_cost[inet][net_pin] =
-						temp_point_to_point_delay_cost[inet][net_pin];
-				temp_point_to_point_delay_cost[inet][net_pin] = -1;
-
-				point_to_point_timing_cost[inet][net_pin] =
-						temp_point_to_point_timing_cost[inet][net_pin];
-				temp_point_to_point_timing_cost[inet][net_pin] = -1;
-			}
-		} else { /*this net is being driven by a moved block, recompute */
-			/*all point to point connections on this net. */
-			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
-
-				point_to_point_delay_cost[inet][ipin] =
-						temp_point_to_point_delay_cost[inet][ipin];
-				temp_point_to_point_delay_cost[inet][ipin] = -1;
-
-				point_to_point_timing_cost[inet][ipin] =
-						temp_point_to_point_timing_cost[inet][ipin];
-				temp_point_to_point_timing_cost[inet][ipin] = -1;
-			}
-		}
-	}
-
-	if (b_to != EMPTY) {
-		for (blkpin = 0; blkpin < num_of_pins; blkpin++) {
-
-			inet = block[b_to].nets[blkpin];
+			inet = block[bnum].nets[iblk_pin];
 
 			if (inet == OPEN)
 				continue;
@@ -1606,108 +1583,61 @@ static void update_td_cost(int b_from, int b_to, int num_of_pins) {
 			if (clb_net[inet].is_global)
 				continue;
 
-			net_pin = net_pin_index[b_to][blkpin];
+			net_pin = net_pin_index[bnum][iblk_pin];
 
 			if (net_pin != 0) {
 
-				/*the following "if" prevents the value from being updated 2x */
-				if (clb_net[inet].node_block[0] != b_to
-						&& clb_net[inet].node_block[0] != b_from) {
-
+				driven_by_moved_block = FALSE;
+				for (iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++)
+				{	if (clb_net[inet].node_block[0] == blocks_affected.moved_blocks[iblk2].block_num)
+						driven_by_moved_block = TRUE;
+				}
+				
+				/* The following "if" prevents the value from being updated twice. */
+				if (driven_by_moved_block == FALSE) {
 					point_to_point_delay_cost[inet][net_pin] =
 							temp_point_to_point_delay_cost[inet][net_pin];
 					temp_point_to_point_delay_cost[inet][net_pin] = -1;
-
 					point_to_point_timing_cost[inet][net_pin] =
 							temp_point_to_point_timing_cost[inet][net_pin];
 					temp_point_to_point_timing_cost[inet][net_pin] = -1;
 				}
-			} else { /*this net is being driven by a moved block, recompute */
-				/*all point to point connections on this net. */
+			} else { /* This net is being driven by a moved block, recompute */
+				/* All point to point connections on this net. */
 				for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
-
 					point_to_point_delay_cost[inet][ipin] =
 							temp_point_to_point_delay_cost[inet][ipin];
 					temp_point_to_point_delay_cost[inet][ipin] = -1;
-
 					point_to_point_timing_cost[inet][ipin] =
 							temp_point_to_point_timing_cost[inet][ipin];
 					temp_point_to_point_timing_cost[inet][ipin] = -1;
-				}
+				} /* Finished updating the pin */
 			}
-		}
-	}
+		} /* Finished going through all the pins in the moved block */
+	} /* Finished going through all the blocks moved */
 }
 
-static void comp_delta_td_cost(int b_from, int b_to, int num_of_pins,
-		float *delta_timing, float *delta_delay) {
+static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 
 	/*a net that is being driven by a moved block must have all of its  */
 	/*sink timing costs recomputed. A net that is driving a moved block */
 	/*must only have the timing cost on the connection driving the input */
 	/*pin computed */
 
-	int inet, k, net_pin, ipin;
+	int inet, net_pin, ipin;
 	float delta_timing_cost, delta_delay_cost, temp_delay;
+	int iblk, iblk2, bnum, iblk_pin, driven_by_moved_block;
 
 	delta_timing_cost = 0.;
 	delta_delay_cost = 0.;
 
-	for (k = 0; k < num_of_pins; k++) {
-		inet = block[b_from].nets[k];
-
-		if (inet == OPEN)
-			continue;
-
-		if (clb_net[inet].is_global)
-			continue;
-
-		net_pin = net_pin_index[b_from][k];
-
-		if (net_pin != 0) { /*this net is driving a moved block               */
-
-			/*if this net is being driven by a block that has moved, we do not  */
-			/*need to compute the change in the timing cost (here) since it will */
-			/*be computed in the fanout of the net on  the driving block, also  */
-			/*computing it here would double count the change, and mess up the  */
-			/*delta_timing_cost value */
-			if (clb_net[inet].node_block[0] != b_to
-					&& clb_net[inet].node_block[0] != b_from) {
-				temp_delay = comp_td_point_to_point_delay(inet, net_pin);
-
-				temp_point_to_point_delay_cost[inet][net_pin] = temp_delay;
-				temp_point_to_point_timing_cost[inet][net_pin] =
-						timing_place_crit[inet][net_pin] * temp_delay;
-
-				delta_delay_cost +=
-						temp_point_to_point_delay_cost[inet][net_pin]
-								- point_to_point_delay_cost[inet][net_pin];
-
-				delta_timing_cost +=
-						temp_point_to_point_timing_cost[inet][net_pin]
-								- point_to_point_timing_cost[inet][net_pin];
-			}
-		} else { /*this net is being driven by a moved block, recompute */
-			/*all point to point connections on this net. */
-			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
-				temp_delay = comp_td_point_to_point_delay(inet, ipin);
-
-				temp_point_to_point_delay_cost[inet][ipin] = temp_delay;
-				temp_point_to_point_timing_cost[inet][ipin] =
-						timing_place_crit[inet][ipin] * temp_delay;
-
-				delta_delay_cost += temp_point_to_point_delay_cost[inet][ipin]
-						- point_to_point_delay_cost[inet][ipin];
-
-				delta_timing_cost += temp_point_to_point_timing_cost[inet][ipin]
-						- point_to_point_timing_cost[inet][ipin];
-			}
-		}
-	}
-
-	if (b_to != EMPTY) {
-		for (k = 0; k < num_of_pins; k++) {
-			inet = block[b_to].nets[k];
+	/* Go through all the blocks moved */
+	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++)
+	{
+		bnum = blocks_affected.moved_blocks[iblk].block_num;
+		/* Go through all the pins in the moved block */
+		for (iblk_pin = 0; iblk_pin < block[bnum].type->num_pins; iblk_pin++) {
+			inet = block[bnum].nets[iblk_pin];
 
 			if (inet == OPEN)
 				continue;
@@ -1715,59 +1645,56 @@ static void comp_delta_td_cost(int b_from, int b_to, int num_of_pins,
 			if (clb_net[inet].is_global)
 				continue;
 
-			net_pin = net_pin_index[b_to][k];
+			net_pin = net_pin_index[bnum][iblk_pin];
 
-			if (net_pin != 0) { /*this net is driving a moved block */
-
-				/*if this net is being driven by a block that has moved, we do not */
-				/*need to compute the change in the timing cost (here) since it was */
-				/*computed in the fanout of the net on  the driving block, also    */
-				/*computing it here would double count the change, and mess up the */
-				/*delta_timing_cost value */
-				if (clb_net[inet].node_block[0] != b_to
-						&& clb_net[inet].node_block[0] != b_from) {
+			if (net_pin != 0) { 
+				/* If this net is being driven by a block that has moved, we do not    *
+				 * need to compute the change in the timing cost (here) since it will  *
+				 * be computed in the fanout of the net on  the driving block, also    *
+				 * computing it here would double count the change, and mess up the    *
+				 * delta_timing_cost value.                                            */
+				driven_by_moved_block = FALSE;
+				for (iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++)
+				{	if (clb_net[inet].node_block[0] == blocks_affected.moved_blocks[iblk2].block_num)
+						driven_by_moved_block = TRUE;
+				}
+				
+				if (driven_by_moved_block == FALSE) {
 					temp_delay = comp_td_point_to_point_delay(inet, net_pin);
-
 					temp_point_to_point_delay_cost[inet][net_pin] = temp_delay;
 					temp_point_to_point_timing_cost[inet][net_pin] =
 							timing_place_crit[inet][net_pin] * temp_delay;
-
 					delta_delay_cost +=
 							temp_point_to_point_delay_cost[inet][net_pin]
-									- point_to_point_delay_cost[inet][net_pin];
+							- point_to_point_delay_cost[inet][net_pin];
 					delta_timing_cost +=
 							temp_point_to_point_timing_cost[inet][net_pin]
-									- point_to_point_timing_cost[inet][net_pin];
+							- point_to_point_timing_cost[inet][net_pin];
 				}
-			} else { /*this net is being driven by a moved block, recompute */
-				/*all point to point connections on this net. */
+			} else { /* This net is being driven by a moved block, recompute */
+				/* All point to point connections on this net. */
 				for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
-
 					temp_delay = comp_td_point_to_point_delay(inet, ipin);
-
 					temp_point_to_point_delay_cost[inet][ipin] = temp_delay;
 					temp_point_to_point_timing_cost[inet][ipin] =
 							timing_place_crit[inet][ipin] * temp_delay;
-
-					delta_delay_cost +=
-							temp_point_to_point_delay_cost[inet][ipin]
-									- point_to_point_delay_cost[inet][ipin];
-					delta_timing_cost +=
-							temp_point_to_point_timing_cost[inet][ipin]
-									- point_to_point_timing_cost[inet][ipin];
-				}
+					delta_delay_cost += temp_point_to_point_delay_cost[inet][ipin]
+							- point_to_point_delay_cost[inet][ipin];
+					delta_timing_cost += temp_point_to_point_timing_cost[inet][ipin]
+							- point_to_point_timing_cost[inet][ipin];
+				} /* Finished updating the pin */
 			}
-		}
-	}
-
+		} /* Finished going through all the pins in the moved block */
+	} /* Finished going through all the blocks moved */
+	
 	*delta_timing = delta_timing_cost;
 	*delta_delay = delta_delay_cost;
 }
 
 static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
-	/*computes the cost (from scratch) due to the delays and criticalities*
-	 *on all point to point connections, we define the timing cost of     *
-	 *each connection as criticality*delay */
+	/* Computes the cost (from scratch) due to the delays and criticalities  *
+	 * on all point to point connections, we define the timing cost of       *
+	 * each connection as criticality*delay.                                 */
 
 	int inet, ipin;
 	float loc_timing_cost, loc_connection_delay_sum, temp_delay_cost,
@@ -1776,7 +1703,7 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 	loc_timing_cost = 0.;
 	loc_connection_delay_sum = 0.;
 
-	for (inet = 0; inet < num_nets; inet++) { /* for each net ... */
+	for (inet = 0; inet < num_nets; inet++) { /* For each net ... */
 		if (clb_net[inet].is_global == FALSE) { /* Do only if not global. */
 
 			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
@@ -1787,10 +1714,10 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 
 				loc_connection_delay_sum += temp_delay_cost;
 				point_to_point_delay_cost[inet][ipin] = temp_delay_cost;
-				temp_point_to_point_delay_cost[inet][ipin] = -1; /*undefined */
+				temp_point_to_point_delay_cost[inet][ipin] = -1; /* Undefined */
 
 				point_to_point_timing_cost[inet][ipin] = temp_timing_cost;
-				temp_point_to_point_timing_cost[inet][ipin] = -1; /*undefined */
+				temp_point_to_point_timing_cost[inet][ipin] = -1; /* Undefined */
 				loc_timing_cost += temp_timing_cost;
 			}
 		}
@@ -1810,34 +1737,32 @@ static float comp_bb_cost(int method) {
 	 * cost which can be used to check the correctness of the       *
 	 * other routine.                                               */
 
-	int k;
+	int inet;
 	float cost;
 	double expected_wirelength;
 
 	cost = 0;
 	expected_wirelength = 0.0;
 
-	for (k = 0; k < num_nets; k++) { /* for each net ... */
+	for (inet = 0; inet < num_nets; inet++) { /* for each net ... */
 
-		if (clb_net[k].is_global == FALSE) { /* Do only if not global. */
+		if (clb_net[inet].is_global == FALSE) { /* Do only if not global. */
 
 			/* Small nets don't use incremental updating on their bounding boxes, *
 			 * so they can use a fast bounding box calculator.                    */
 
-			if (clb_net[k].num_sinks >= SMALL_NET && method == NORMAL) {
-
-				get_bb_from_scratch(k, &bb_coords[k],
-						&bb_num_on_edges[k]);
-
+			if (clb_net[inet].num_sinks >= SMALL_NET && method == NORMAL) {
+				get_bb_from_scratch(inet, &bb_coords[inet],
+						&bb_num_on_edges[inet]);
 			} else {
-				get_non_updateable_bb(k, &bb_coords[k]);
+				get_non_updateable_bb(inet, &bb_coords[inet]);
 			}
 
-			net_cost[k] = get_net_cost(k, &bb_coords[k]);
-			cost += net_cost[k];
+			net_cost[inet] = get_net_cost(inet, &bb_coords[inet]);
+			cost += net_cost[inet];
 			if (method == CHECK)
-				expected_wirelength += get_net_wirelength_estimate(k,
-						&bb_coords[k]);
+				expected_wirelength += get_net_wirelength_estimate(inet,
+						&bb_coords[inet]);
 		}
 	}
 
@@ -1914,7 +1839,7 @@ static void alloc_and_load_placement_structs(
 	if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
 			|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
-		/*allocate structures associated with timing driven placement */
+		/* Allocate structures associated with timing driven placement */
 		/* [0..num_nets-1][1..num_pins-1]  */
 		point_to_point_delay_cost = (float **) my_malloc(
 				num_nets * sizeof(float *));
@@ -1931,7 +1856,7 @@ static void alloc_and_load_placement_structs(
 
 		for (inet = 0; inet < num_nets; inet++) {
 
-			/* in the following, subract one so index starts at *
+			/* In the following, subract one so index starts at *
 			 * 1 instead of 0 */
 			point_to_point_delay_cost[inet] = (float *) my_malloc(
 					clb_net[inet].num_sinks * sizeof(float));
@@ -1959,14 +1884,17 @@ static void alloc_and_load_placement_structs(
 
 	net_cost = (float *) my_malloc(num_nets * sizeof(float));
 	temp_net_cost = (float *) my_malloc(num_nets * sizeof(float));
-
+	bb_updated_before = (char*)my_calloc(num_nets, sizeof(char));
+	
 	/* Used to store costs for moves not yet made and to indicate when a net's   *
 	 * cost has been recomputed. temp_net_cost[inet] < 0 means net's cost hasn't *
 	 * been recomputed.                                                          */
 
-	for (inet = 0; inet < num_nets; inet++)
+	for (inet = 0; inet < num_nets; inet++){
+		bb_updated_before[inet] = NOT_UPDATED_YET;
 		temp_net_cost[inet] = -1.;
-
+	}
+	
 	bb_coords = (struct s_bb *) my_malloc(num_nets * sizeof(struct s_bb));
 	bb_num_on_edges = (struct s_bb *) my_malloc(num_nets * sizeof(struct s_bb));
 
@@ -1982,20 +1910,20 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 
 	/* This routine finds the bounding box of each net from scratch (i.e.    *
 	 * from only the block location information).  It updates both the       *
-	 * coordinate and number of blocks on each edge information.  It         *
+	 * coordinate and number of pins on each edge information.  It         *
 	 * should only be called when the bounding box information is not valid. */
 
-	int ipin, bnum, x, y, xmin, xmax, ymin, ymax;
+	int ipin, bnum, pnum, x, y, xmin, xmax, ymin, ymax;
 	int xmin_edge, xmax_edge, ymin_edge, ymax_edge;
 	int n_pins;
 
 	n_pins = clb_net[inet].num_sinks + 1;
 	
 	bnum = clb_net[inet].node_block[0];
-	ipin = clb_net[inet].node_block_pin[0];
+	pnum = clb_net[inet].node_block_pin[0];
 
 	x = block[bnum].x;
-	y = block[bnum].y + block[bnum].type->pin_height[ipin];
+	y = block[bnum].y + block[bnum].type->pin_height[pnum];
 
 	x = max(min(x, nx), 1);
 	y = max(min(y, ny), 1);
@@ -2011,10 +1939,9 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 
 	for (ipin = 1; ipin < n_pins; ipin++) {
 		bnum = clb_net[inet].node_block[ipin];
+		pnum = clb_net[inet].node_block_pin[ipin];
 		x = block[bnum].x;
-		y =
-				block[bnum].y
-						+ block[clb_net[inet].node_block[ipin]].type->pin_height[clb_net[inet].node_block_pin[ipin]];
+		y = block[bnum].y + block[bnum].type->pin_height[pnum];
 
 		/* Code below counts IO blocks as being within the 1..nx, 1..ny clb array. *
 		 * This is because channels do not go out of the 0..nx, 0..ny range, and   *
@@ -2055,7 +1982,6 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 
 	/* Copy the coordinates and number on edges information into the proper   *
 	 * structures.                                                            */
-
 	coords->xmin = xmin;
 	coords->xmax = xmax;
 	coords->ymin = ymin;
@@ -2146,22 +2072,23 @@ static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new) {
 	 * the pins always lie on the outside of the bounding box.            */
 
 	int k, xmax, ymax, xmin, ymin, x, y;
+	int bnum, pnum;
 
-	x = block[clb_net[inet].node_block[0]].x;
-	y =
-			block[clb_net[inet].node_block[0]].y
-					+ block[clb_net[inet].node_block[0]].type->pin_height[clb_net[inet].node_block_pin[0]];
-
+	bnum = clb_net[inet].node_block[0];
+	pnum = clb_net[inet].node_block_pin[0];
+	x = block[bnum].x;
+	y =	block[bnum].y + block[bnum].type->pin_height[pnum];
+	
 	xmin = x;
 	ymin = y;
 	xmax = x;
 	ymax = y;
 
 	for (k = 1; k < (clb_net[inet].num_sinks + 1); k++) {
-		x = block[clb_net[inet].node_block[k]].x;
-		y =
-				block[clb_net[inet].node_block[k]].y
-						+ block[clb_net[inet].node_block[k]].type->pin_height[clb_net[inet].node_block_pin[k]];
+		bnum = clb_net[inet].node_block[k];
+		pnum = clb_net[inet].node_block_pin[k];
+		x = block[bnum].x;
+		y =	block[bnum].y + block[bnum].type->pin_height[pnum];
 
 		if (x < xmin) {
 			xmin = x;
@@ -2201,21 +2128,33 @@ static void update_bb(int inet, struct s_bb *bb_coord_new,
 	 * this routine is called.                                            *
 	 * Currently assumes channels on both sides of the CLBs forming the   *
 	 * edges of the bounding box can be used.  Essentially, I am assuming *
-	 * the pins always lie on the outside of the bounding box.            */
-
-	/* IO blocks are considered to be one cell in for simplicity. */
+	 * the pins always lie on the outside of the bounding box.            *
+	 * The x and y coordinates are the pin's x and y coordinates.         */
+	/* IO blocks are considered to be one cell in for simplicity.         */
 	
-	/* Updates ynew and yold with pin_height */	
-	int bnum = clb_net[inet].node_block[0];
-	int ipin = clb_net[inet].node_block_pin[0];
-
-	ynew += block[bnum].type->pin_height[ipin];
-	yold += block[bnum].type->pin_height[ipin];
-	
+	struct s_bb *curr_bb_edge, *curr_bb_coord;
+		
 	xnew = max(min(xnew, nx), 1);
 	ynew = max(min(ynew, ny), 1);
 	xold = max(min(xold, nx), 1);
 	yold = max(min(yold, ny), 1);
+
+	/* Check if the net had been updated before. */
+	if (bb_updated_before[inet] == GOT_FROM_SCRATCH)
+	{	/* The net had been updated from scratch, DO NOT update again! */
+		return;
+	}
+	else if (bb_updated_before[inet] == NOT_UPDATED_YET)
+	{	/* The net had NOT been updated before, could use the old values */
+		curr_bb_coord = &bb_coords[inet];
+		curr_bb_edge = &bb_num_on_edges[inet];
+		bb_updated_before[inet] = UPDATED_ONCE;
+	}
+	else
+	{	/* The net had been updated before, must use the new values */
+		curr_bb_coord = bb_coord_new;
+		curr_bb_edge = bb_edge_new;
+	}
 
 	/* Check if I can update the bounding box incrementally. */
 
@@ -2223,36 +2162,37 @@ static void update_bb(int inet, struct s_bb *bb_coord_new,
 
 		/* Update the xmax fields for coordinates and number of edges first. */
 
-		if (xold == bb_coords[inet].xmax) { /* Old position at xmax. */
-			if (bb_num_on_edges[inet].xmax == 1) {
+		if (xold == curr_bb_coord->xmax) { /* Old position at xmax. */
+			if (curr_bb_edge->xmax == 1) {
 				get_bb_from_scratch(inet, bb_coord_new, bb_edge_new);
+				bb_updated_before[inet] = GOT_FROM_SCRATCH;
 				return;
 			} else {
-				bb_edge_new->xmax = bb_num_on_edges[inet].xmax - 1;
-				bb_coord_new->xmax = bb_coords[inet].xmax;
+				bb_edge_new->xmax = curr_bb_edge->xmax - 1;
+				bb_coord_new->xmax = curr_bb_coord->xmax;
 			}
 		}
 
 		else { /* Move to left, old postion was not at xmax. */
-			bb_coord_new->xmax = bb_coords[inet].xmax;
-			bb_edge_new->xmax = bb_num_on_edges[inet].xmax;
+			bb_coord_new->xmax = curr_bb_coord->xmax;
+			bb_edge_new->xmax = curr_bb_edge->xmax;
 		}
 
 		/* Now do the xmin fields for coordinates and number of edges. */
 
-		if (xnew < bb_coords[inet].xmin) { /* Moved past xmin */
+		if (xnew < curr_bb_coord->xmin) { /* Moved past xmin */
 			bb_coord_new->xmin = xnew;
 			bb_edge_new->xmin = 1;
 		}
 
-		else if (xnew == bb_coords[inet].xmin) { /* Moved to xmin */
+		else if (xnew == curr_bb_coord->xmin) { /* Moved to xmin */
 			bb_coord_new->xmin = xnew;
-			bb_edge_new->xmin = bb_num_on_edges[inet].xmin + 1;
+			bb_edge_new->xmin = curr_bb_edge->xmin + 1;
 		}
 
 		else { /* Xmin unchanged. */
-			bb_coord_new->xmin = bb_coords[inet].xmin;
-			bb_edge_new->xmin = bb_num_on_edges[inet].xmin;
+			bb_coord_new->xmin = curr_bb_coord->xmin;
+			bb_edge_new->xmin = curr_bb_edge->xmin;
 		}
 	}
 
@@ -2261,44 +2201,45 @@ static void update_bb(int inet, struct s_bb *bb_coord_new,
 
 		/* Update the xmin fields for coordinates and number of edges first. */
 
-		if (xold == bb_coords[inet].xmin) { /* Old position at xmin. */
-			if (bb_num_on_edges[inet].xmin == 1) {
+		if (xold == curr_bb_coord->xmin) { /* Old position at xmin. */
+			if (curr_bb_edge->xmin == 1) {
 				get_bb_from_scratch(inet, bb_coord_new, bb_edge_new);
+				bb_updated_before[inet] = GOT_FROM_SCRATCH;
 				return;
 			} else {
-				bb_edge_new->xmin = bb_num_on_edges[inet].xmin - 1;
-				bb_coord_new->xmin = bb_coords[inet].xmin;
+				bb_edge_new->xmin = curr_bb_edge->xmin - 1;
+				bb_coord_new->xmin = curr_bb_coord->xmin;
 			}
 		}
 
 		else { /* Move to right, old position was not at xmin. */
-			bb_coord_new->xmin = bb_coords[inet].xmin;
-			bb_edge_new->xmin = bb_num_on_edges[inet].xmin;
+			bb_coord_new->xmin = curr_bb_coord->xmin;
+			bb_edge_new->xmin = curr_bb_edge->xmin;
 		}
 
 		/* Now do the xmax fields for coordinates and number of edges. */
 
-		if (xnew > bb_coords[inet].xmax) { /* Moved past xmax. */
+		if (xnew > curr_bb_coord->xmax) { /* Moved past xmax. */
 			bb_coord_new->xmax = xnew;
 			bb_edge_new->xmax = 1;
 		}
 
-		else if (xnew == bb_coords[inet].xmax) { /* Moved to xmax */
+		else if (xnew == curr_bb_coord->xmax) { /* Moved to xmax */
 			bb_coord_new->xmax = xnew;
-			bb_edge_new->xmax = bb_num_on_edges[inet].xmax + 1;
+			bb_edge_new->xmax = curr_bb_edge->xmax + 1;
 		}
 
 		else { /* Xmax unchanged. */
-			bb_coord_new->xmax = bb_coords[inet].xmax;
-			bb_edge_new->xmax = bb_num_on_edges[inet].xmax;
+			bb_coord_new->xmax = curr_bb_coord->xmax;
+			bb_edge_new->xmax = curr_bb_edge->xmax;
 		}
 	}
 	/* End of move to right case. */
 	else { /* xnew == xold -- no x motion. */
-		bb_coord_new->xmin = bb_coords[inet].xmin;
-		bb_coord_new->xmax = bb_coords[inet].xmax;
-		bb_edge_new->xmin = bb_num_on_edges[inet].xmin;
-		bb_edge_new->xmax = bb_num_on_edges[inet].xmax;
+		bb_coord_new->xmin = curr_bb_coord->xmin;
+		bb_coord_new->xmax = curr_bb_coord->xmax;
+		bb_edge_new->xmin = curr_bb_edge->xmin;
+		bb_edge_new->xmax = curr_bb_edge->xmax;
 	}
 
 	/* Now account for the y-direction motion. */
@@ -2307,36 +2248,37 @@ static void update_bb(int inet, struct s_bb *bb_coord_new,
 
 		/* Update the ymax fields for coordinates and number of edges first. */
 
-		if (yold == bb_coords[inet].ymax) { /* Old position at ymax. */
-			if (bb_num_on_edges[inet].ymax == 1) {
+		if (yold == curr_bb_coord->ymax) { /* Old position at ymax. */
+			if (curr_bb_edge->ymax == 1) {
 				get_bb_from_scratch(inet, bb_coord_new, bb_edge_new);
+				bb_updated_before[inet] = GOT_FROM_SCRATCH;
 				return;
 			} else {
-				bb_edge_new->ymax = bb_num_on_edges[inet].ymax - 1;
-				bb_coord_new->ymax = bb_coords[inet].ymax;
+				bb_edge_new->ymax = curr_bb_edge->ymax - 1;
+				bb_coord_new->ymax = curr_bb_coord->ymax;
 			}
 		}
 
 		else { /* Move down, old postion was not at ymax. */
-			bb_coord_new->ymax = bb_coords[inet].ymax;
-			bb_edge_new->ymax = bb_num_on_edges[inet].ymax;
+			bb_coord_new->ymax = curr_bb_coord->ymax;
+			bb_edge_new->ymax = curr_bb_edge->ymax;
 		}
 
 		/* Now do the ymin fields for coordinates and number of edges. */
 
-		if (ynew < bb_coords[inet].ymin) { /* Moved past ymin */
+		if (ynew < curr_bb_coord->ymin) { /* Moved past ymin */
 			bb_coord_new->ymin = ynew;
 			bb_edge_new->ymin = 1;
 		}
 
-		else if (ynew == bb_coords[inet].ymin) { /* Moved to ymin */
+		else if (ynew == curr_bb_coord->ymin) { /* Moved to ymin */
 			bb_coord_new->ymin = ynew;
-			bb_edge_new->ymin = bb_num_on_edges[inet].ymin + 1;
+			bb_edge_new->ymin = curr_bb_edge->ymin + 1;
 		}
 
 		else { /* ymin unchanged. */
-			bb_coord_new->ymin = bb_coords[inet].ymin;
-			bb_edge_new->ymin = bb_num_on_edges[inet].ymin;
+			bb_coord_new->ymin = curr_bb_coord->ymin;
+			bb_edge_new->ymin = curr_bb_edge->ymin;
 		}
 	}
 	/* End of move down case. */
@@ -2344,45 +2286,49 @@ static void update_bb(int inet, struct s_bb *bb_coord_new,
 
 		/* Update the ymin fields for coordinates and number of edges first. */
 
-		if (yold == bb_coords[inet].ymin) { /* Old position at ymin. */
-			if (bb_num_on_edges[inet].ymin == 1) {
+		if (yold == curr_bb_coord->ymin) { /* Old position at ymin. */
+			if (curr_bb_edge->ymin == 1) {
 				get_bb_from_scratch(inet, bb_coord_new, bb_edge_new);
+				bb_updated_before[inet] = GOT_FROM_SCRATCH;
 				return;
 			} else {
-				bb_edge_new->ymin = bb_num_on_edges[inet].ymin - 1;
-				bb_coord_new->ymin = bb_coords[inet].ymin;
+				bb_edge_new->ymin = curr_bb_edge->ymin - 1;
+				bb_coord_new->ymin = curr_bb_coord->ymin;
 			}
 		}
 
 		else { /* Moved up, old position was not at ymin. */
-			bb_coord_new->ymin = bb_coords[inet].ymin;
-			bb_edge_new->ymin = bb_num_on_edges[inet].ymin;
+			bb_coord_new->ymin = curr_bb_coord->ymin;
+			bb_edge_new->ymin = curr_bb_edge->ymin;
 		}
 
 		/* Now do the ymax fields for coordinates and number of edges. */
 
-		if (ynew > bb_coords[inet].ymax) { /* Moved past ymax. */
+		if (ynew > curr_bb_coord->ymax) { /* Moved past ymax. */
 			bb_coord_new->ymax = ynew;
 			bb_edge_new->ymax = 1;
 		}
 
-		else if (ynew == bb_coords[inet].ymax) { /* Moved to ymax */
+		else if (ynew == curr_bb_coord->ymax) { /* Moved to ymax */
 			bb_coord_new->ymax = ynew;
-			bb_edge_new->ymax = bb_num_on_edges[inet].ymax + 1;
+			bb_edge_new->ymax = curr_bb_edge->ymax + 1;
 		}
 
 		else { /* ymax unchanged. */
-			bb_coord_new->ymax = bb_coords[inet].ymax;
-			bb_edge_new->ymax = bb_num_on_edges[inet].ymax;
+			bb_coord_new->ymax = curr_bb_coord->ymax;
+			bb_edge_new->ymax = curr_bb_edge->ymax;
 		}
 	}
 	/* End of move up case. */
 	else { /* ynew == yold -- no y motion. */
-		bb_coord_new->ymin = bb_coords[inet].ymin;
-		bb_coord_new->ymax = bb_coords[inet].ymax;
-		bb_edge_new->ymin = bb_num_on_edges[inet].ymin;
-		bb_edge_new->ymax = bb_num_on_edges[inet].ymax;
+		bb_coord_new->ymin = curr_bb_coord->ymin;
+		bb_coord_new->ymax = curr_bb_coord->ymax;
+		bb_edge_new->ymin = curr_bb_edge->ymin;
+		bb_edge_new->ymax = curr_bb_edge->ymax;
 	}
+
+	if (bb_updated_before[inet] == NOT_UPDATED_YET)
+		bb_updated_before[inet] = UPDATED_ONCE;
 }
 
 static void initial_placement(enum e_pad_loc_type pad_loc_type,
@@ -2719,11 +2665,16 @@ static void free_try_swap_arrays(void) {
 		free(ts_bb_coord_new);
 		free(ts_bb_edge_new);
 		free(ts_nets_to_update);
-		free(ts_net_block_moved);
+		free(ts_pins_to_nets);
+		free(blocks_affected.moved_blocks);
+		free(bb_updated_before);
+		
 		ts_bb_coord_new = NULL;
 		ts_bb_edge_new = NULL;
 		ts_nets_to_update = NULL;
-		ts_net_block_moved = NULL;
+		ts_pins_to_nets = NULL;
+		blocks_affected.moved_blocks = NULL;
+		blocks_affected.num_moved_blocks = 0;
+		bb_updated_before = NULL;
 	}
 }
-

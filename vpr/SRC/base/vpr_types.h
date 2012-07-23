@@ -431,6 +431,35 @@ struct s_bb {
 	int ymax;
 };
 
+/* Stores the information of the move for a block that is       *
+ * moved during placement                                       *
+ * block_num: the index of the moved block                      *
+ * xold: the x_coord that the block is moved from               *
+ * xnew: the x_coord that the block is moved to                 *
+ * yold: the y_coord that the block is moved from               *
+ * xnew: the x_coord that the block is moved to                 *
+ */
+typedef struct s_pl_moved_block {
+	int block_num;
+	int xold;
+	int xnew;
+	int yold;
+	int ynew;
+}t_pl_moved_block;
+
+/* Stores the list of blocks to be moved in a swap during       *
+ * placement.                                                   *
+ * num_moved_blocks: total number of blocks moved when          *
+ *                   swapping two blocks.                       *
+ * moved blocks: a list of moved blocks data structure with     *
+ *               information on the move.                       *
+ *               [0...num_moved_blocks]                         *
+ */
+typedef struct s_pl_blocks_to_be_moved {
+	int num_moved_blocks;
+	t_pl_moved_block * moved_blocks;
+}t_pl_blocks_to_be_moved;
+
 /* capacity:   Capacity of this region, in tracks.               *
  * occupancy:  Expected number of tracks that will be occupied.  *
  * cost:       Current cost of this usage.                       */
