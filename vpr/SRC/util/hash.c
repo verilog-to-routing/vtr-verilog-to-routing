@@ -156,3 +156,40 @@ int hash_value(char *name) {
 	val = abs(val);
 	return (val);
 }
+
+void get_hash_stats(struct s_hash **hash_table, char *hash_table_name){
+
+	/* Checks to see how well elements are distributed within the hash table.     *
+	 * Will traverse through the hash_table and count the length of the linked    *
+	 * list. Will output the hash number, the number of array elements that are   *
+	 * NULL, the average number of linked lists and the maximum length of linked  * 
+	 * lists.								      */
+
+	int num_NULL = 0, total_elements = 0,  max_num = 0, curr_num;
+	double avg_num = 0;
+	int i;
+	struct s_hash *h_ptr;
+
+	for (i = 0; i<HASHSIZE; i++){
+	h_ptr = hash_table[i];
+	curr_num = 0;
+	
+	if (h_ptr == NULL)
+		num_NULL++;		
+	else{
+		while (h_ptr != NULL){
+			curr_num ++;		
+			h_ptr = h_ptr->next;
+		}
+	}
+
+	if (curr_num > max_num)
+		max_num = curr_num;
+	
+	total_elements = total_elements + curr_num;
+	}
+
+	avg_num = total_elements / (HASHSIZE - num_NULL);
+	
+	vpr_printf(TIO_MESSAGE_INFO, "\nThe hash table '%s' is of size %d. It has:\n\t%d keys that are never used;\n\ta total of %d elements;\n\tan average linked-list length of %f;\n\tand a maximum linked-list length of %d. \n\n", hash_table_name, HASHSIZE, num_NULL, total_elements, avg_num, max_num); 
+}

@@ -122,6 +122,11 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 		#endif
 
 	}
+
+	
+	/*checks how well the hash function is performing*/
+	get_hash_stats(blif_hash, "blif_hash");
+
 	fclose(blif);
 	check_net(sweep_hanging_nets_and_inputs);
 	free_parse();
@@ -1761,7 +1766,6 @@ static void show_blif_stats(t_model *user_models, t_model *library_models) {
 	int MAX_LUT_INPUTS;
 	int i, j, iblk, ipin, num_pins;
 	int *num_lut_of_size;
-
 
 	/* Store data structure for all models in FPGA */
 	num_model_stats = 0;

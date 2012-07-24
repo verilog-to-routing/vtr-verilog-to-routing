@@ -35,3 +35,4 @@ struct s_hash *insert_in_hash_table(struct s_hash **hash_table, char *name,
 		int next_free_index);
 struct s_hash *get_hash_entry(struct s_hash **hash_table, char *name);
 int hash_value(char *name);
+void get_hash_stats(struct s_hash **hash_table, char *hash_table_name);
