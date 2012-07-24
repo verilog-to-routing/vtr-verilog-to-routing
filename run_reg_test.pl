@@ -235,30 +235,41 @@ sub check_override {
 
 			open( QOR_FILE, "$test_dir/qor_geomean.txt" );
 			my $output = <QOR_FILE>;
-
 			my @first_line = split( /\t/, trim($output) );			
-			my $last_line;
-			while(<QOR_FILE>) {
-				   $last_line = $_ if eof;
-			}
-			my @last_line = split( /\t/, trim($last_line) );			
-			my @new_last_line;
 
-			foreach my $param (@data) {
-				my $index = List::Util::first { @first_line[$_] eq $param } 0 .. $#first_line;
-			  	push( @new_last_line, sprintf( $precision{$param}, @last_line[$index] ) . $units{$param} );
-			}
-
-format STDOUT =
+format STDOUT_TOP =
 | @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| |
 @data;
 --------------------------------------------------------------------------------------------------------------------
+.
+write;
+
+			while(<QOR_FILE>) {
+				my @last_line = split( /\t/, trim($_) );
+				my @new_last_line;
+
+				foreach my $param (@data) {
+					my $index = List::Util::first { @first_line[$_] eq $param } 0 .. $#first_line;
+				  	push( @new_last_line, sprintf( $precision{$param}, @last_line[$index] ) . $units{$param} );
+				}
+ 
+format STDOUT =
 | @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| | @||||||||||||||||||| |
 @new_last_line;
-. 
+.
 write;
+			}
 			exit "QoR results displayed";
 		}
+
+		# my @last_line = split( /\t/, trim($last_line) );			
+		# my @new_last_line;
+
+		# foreach my $param (@data) {
+		# 	my $index = List::Util::first { @first_line[$_] eq $param } 0 .. $#first_line;
+		#   	push( @new_last_line, sprintf( $precision{$param}, @last_line[$index] ) . $units{$param} );
+		# }
+
 	}
 }
 
