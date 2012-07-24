@@ -205,13 +205,12 @@ sub check_override {
 			die "[ERROR] Failed to open $test_dir/qor_geomean.txt: $!";
 		}
 		else {
-			print "=" x 118 . "\n";
-			print "\t" x 5 . "  Verilog-to-Routing QoR Results \n";
-			print "=" x 118 . "\n";
+			print "=" x 116 . "\n";
+			print "\t" x 5 . "Verilog-to-Routing QoR Results \n";
+			print "=" x 116 . "\n";
 
 			my @data = (
 						"run"				,
-						"date"				,
 						"total_runtime"		,
 						"total_wirelength"	,
 						"num_clb"			,
@@ -221,17 +220,15 @@ sub check_override {
 			
 			my %units = (
 						"run"				, ""		,
-						"date"				, ""		,
-						"total_runtime" 	, " s"		,
-						"total_wirelength" 	, " units"	,
-						"num_clb" 			, " blocks",
-						"min_chan_width" 	, " tracks",
-						"crit_path_delay" 	, " ns"
+						"total_runtime" 	, " s "		,
+						"total_wirelength" 	, " units "	,
+						"num_clb" 			, " blocks ",
+						"min_chan_width" 	, " tracks ",
+						"crit_path_delay" 	, " ns "
 						);
 
 			my %precision = (
 							"run" 				, "%.0f",
-							"date" 				, "%s"	,
 							"total_runtime"		, "%.3f",
 							"total_wirelength" 	, "%.0f",
 							"num_clb" 			, "%.2f",
@@ -244,9 +241,9 @@ sub check_override {
 			my @first_line = split( /\t/, trim($output) );			
 
 format STDOUT_TOP =
-| @|||| | @||||||||| | @|||||||||||||| | @||||||||||||||||||| | @|||||||||||| | @||||||||||||||| | @|||||||||||||||| |
+| @||||||||||||||| | @||||||||||||||| | @||||||||||||||| | @||||||||||||||| | @||||||||||||||| | @||||||||||||||| |
 @data;
-----------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------
 .
 write;
 
@@ -260,7 +257,7 @@ write;
 				}
  
 format STDOUT =
-| @|||| | @||||||||| | @|||||||||||||| | @||||||||||||||||||| | @|||||||||||| | @||||||||||||||| | @|||||||||||||||| |
+| @||||||||||||||| | @||||||||||||||| | @||||||||||||||| | @||||||||||||||| | @||||||||||||||| | @||||||||||||||| |
 @new_last_line;
 .
 write;
