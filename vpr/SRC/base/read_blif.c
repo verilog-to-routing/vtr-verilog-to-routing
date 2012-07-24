@@ -8,14 +8,11 @@
 #include "read_blif.h"
 #include "arch_types.h"
 #include "ReadOptions.h"
-
+#include "hash.h"
 
 /* PRINT_PIN_NETS */
 
 struct s_model_stats {t_model * model; int count;};
-
-/* TODO: use hash table instead of this to keep data structures consistent */
-#define HASHSIZE 4093
 
 #define MAX_ATOM_PARSE 200000000
 
@@ -41,7 +38,7 @@ static int num_luts = 0, num_latches = 0, num_subckts = 0;
 
 /* # of .input, .output, .model and .end lines */
 static int ilines, olines, model_lines, endlines;
-static struct hash_logical_nets **hash;
+static struct s_hash **blif_hash;
 static char *model;
 static FILE *blif;
 
@@ -58,7 +55,6 @@ static void io_line(int in_or_out, int doall, t_model *io_model);
 static boolean add_lut(int doall, t_model *logic_model);
 static void add_latch(int doall, INP t_model *latch_model);
 static void add_subckt(int doall, INP t_model *user_models);
-static int hash_value(char *name);
 static void check_and_count_models(int doall, const char* model_name,
 		t_model* user_models);
 static void load_default_models(INP t_model *library_models,
@@ -136,13 +132,12 @@ static void init_parse(int doall) {
 	/* Allocates and initializes the data structures needed for the parse. */
 
 	int i;
-	struct hash_logical_nets *h_ptr;
+	struct s_hash *h_ptr;
 
 	if (!doall) { /* Initialization before first (counting) pass */
 		num_logical_nets = 0;
-		/* TODO: use hash table instead of this  */
-		hash = (struct hash_logical_nets **) my_calloc(
-				sizeof(struct hash_logical_nets *), HASHSIZE);
+		blif_hash = (struct s_hash **) my_calloc(
+				sizeof(struct s_hash *), HASHSIZE);
 	}
 	/* Allocate memory for second (load) pass */
 	else {
@@ -171,7 +166,7 @@ static void init_parse(int doall) {
 		}
 
 		for (i = 0; i < HASHSIZE; i++) {
-			h_ptr = hash[i];
+			h_ptr = blif_hash[i];
 			while (h_ptr != NULL) {
 				vpack_net[h_ptr->index].node_block = (int *) my_malloc(
 						h_ptr->count * sizeof(int));
@@ -868,7 +863,7 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 	 * returns the vpack_net number so the calling routine can update the logical_block  *
 	 * data structure.                                                     */
 
-	struct hash_logical_nets *h_ptr, *prev_ptr;
+	struct s_hash *h_ptr, *prev_ptr;
 	int index, j, nindex;
 
 	if (strcmp(ptr, "open") == 0) {
@@ -889,7 +884,7 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 		}
 	}
 
-	h_ptr = hash[index];
+	h_ptr = blif_hash[index];
 	prev_ptr = h_ptr;
 
 	while (h_ptr != NULL) {
@@ -907,8 +902,7 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 			} else {
 				vpack_net[nindex].num_sinks++;
 				if ((num_driver[nindex] < 0) || (num_driver[nindex] > 1)) {
-					vpr_printf(
-							TIO_MESSAGE_ERROR, "number of drivers for net #%d (%s) has %d drivers.\n",
+					vpr_printf(TIO_MESSAGE_ERROR, "number of drivers for net #%d (%s) has %d drivers.\n",
 							nindex, ptr, num_driver[index]);
 				}
 				j = vpack_net[nindex].num_sinks;
@@ -917,8 +911,7 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 				 * should always be zero or 1 unless the netlist is bad.   */
 				if ((vpack_net[nindex].num_sinks - num_driver[nindex])
 						>= temp_num_pins[nindex]) {
-					vpr_printf(TIO_MESSAGE_ERROR, 
-							"Net #%d (%s) has no driver and will cause\n",
+					vpr_printf(TIO_MESSAGE_ERROR,"Net #%d (%s) has no driver and will cause\n",
 							nindex, ptr);
 					vpr_printf(TIO_MESSAGE_INFO, "memory corruption.\n");
 					exit(1);
@@ -945,10 +938,10 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 	/* Add the vpack_net (only counting pass will add nets to symbol table). */
 
 	num_logical_nets++;
-	h_ptr = (struct hash_logical_nets *) my_malloc(
-			sizeof(struct hash_logical_nets));
+	h_ptr = (struct s_hash *) my_malloc(
+			sizeof(struct s_hash));
 	if (prev_ptr == NULL) {
-		hash[index] = h_ptr;
+		blif_hash[index] = h_ptr;
 	} else {
 		prev_ptr->next = h_ptr;
 	}
@@ -957,23 +950,6 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 	h_ptr->count = 1;
 	h_ptr->name = my_strdup(ptr);
 	return (h_ptr->index);
-}
-
-static int hash_value(char *name) {
-
-	int i, k;
-	int val = 0, mult = 1;
-
-	i = strlen(name);
-	k = max(i - 7, 0);
-	for (i = strlen(name) - 1; i >= k; i--) {
-		val += mult * ((int) name[i]);
-		mult *= 10;
-	}
-	val += (int) name[0];
-	val %= HASHSIZE;
-
-	return (val);
 }
 
 void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
@@ -1463,10 +1439,10 @@ static void free_parse(void) {
 	/* Release memory needed only during blif network parsing. */
 
 	int i;
-	struct hash_logical_nets *h_ptr, *temp_ptr;
+	struct s_hash *h_ptr, *temp_ptr;
 
 	for (i = 0; i < HASHSIZE; i++) {
-		h_ptr = hash[i];
+		h_ptr = blif_hash[i];
 		while (h_ptr != NULL) {
 			free((void *) h_ptr->name);
 			temp_ptr = h_ptr->next;
@@ -1475,7 +1451,7 @@ static void free_parse(void) {
 		}
 	}
 	free((void *) num_driver);
-	free((void *) hash);
+	free((void *) blif_hash);
 	free((void *) temp_num_pins);
 }
 

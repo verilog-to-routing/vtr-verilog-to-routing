@@ -3,10 +3,6 @@
 #include "hash.h"
 #include "util.h"
 
-#define HASHSIZE 4093
-
-static int hash_value(char *name);
-
 struct s_hash **
 alloc_hash_table(void) {
 
@@ -141,20 +137,22 @@ get_hash_entry(struct s_hash **hash_table, char *name) {
 	return (NULL);
 }
 
-static int hash_value(char *name) {
-	/* Creates a hash key from a character string.  Only the first character and *
-	 * the last 8 characters of the string are used -- that may be dumb.         */
+int hash_value(char *name) {
+	/* Creates a hash key from a character string.  The absolute value is taken  *
+	 * for the final val to compensate for long strlen that cause val to 	     *
+	 * overflow.								     */
 
-	int i, k;
+	int i;
 	int val = 0, mult = 1;
 
 	i = strlen(name);
-	k = max(i - 8, 0);
-	for (i = strlen(name) - 1; i >= k; i--) {
+	for (i = strlen(name) - 1; i >= 0; i--) {
 		val += mult * ((int) name[i]);
 		mult *= 7;
 	}
 	val += (int) name[0];
 	val %= HASHSIZE;
+	
+	val = abs(val);
 	return (val);
 }

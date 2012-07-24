@@ -1,3 +1,5 @@
+#define HASHSIZE 5000001
+
 struct s_hash {
 	char *name;
 	int index;
@@ -8,7 +10,9 @@ struct s_hash {
 /* name:  The string referred to by this hash entry.                        *
  * index: The integer identifier for this entry.                            *
  * count: Number of times an element with this name has been inserted into  *
- *        the table.                                                        *
+ *        the table. EXCEPTION: For the structure for blif parsing/reading, *
+ * 	  blif_hash, value of count is the number of pins on this vpack_net *
+ * 	  so far.	                                                    *
  * next:  A pointer to the next (string,index) entry that mapped to the     *
  *        same hash value, or NULL if there are no more entries.            */
 
@@ -30,3 +34,4 @@ struct s_hash *get_next_hash(struct s_hash **hash_table,
 struct s_hash *insert_in_hash_table(struct s_hash **hash_table, char *name,
 		int next_free_index);
 struct s_hash *get_hash_entry(struct s_hash **hash_table, char *name);
+int hash_value(char *name);

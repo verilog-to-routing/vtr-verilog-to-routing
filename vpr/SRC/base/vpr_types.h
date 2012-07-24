@@ -106,14 +106,6 @@ enum e_cluster_seed {
 	VPACK_TIMING, VPACK_MAX_INPUTS
 };
 
-/* Data structure to track nets during blif parsing */
-struct hash_logical_nets {
-	char *name; /* net name */
-	int index; /* Array index for net */
-	int count; /* count is the number of pins on this vpack_net so far. */
-	struct hash_logical_nets *next; /* Linked list pointer for net */
-};
-
 enum e_block_pack_status {
 	BLK_PASSED, BLK_FAILED_FEASIBLE, BLK_FAILED_ROUTE, BLK_STATUS_UNDEFINED
 };
