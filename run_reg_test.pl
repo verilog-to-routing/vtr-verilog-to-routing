@@ -32,6 +32,7 @@ use strict;
 use Cwd;
 use File::Spec;
 use List::Util;
+use Scalar::Util;
 
 # Function Prototypes
 sub setup_single_test;
@@ -235,10 +236,11 @@ sub check_override {
 							"min_chan_width" 	, "%.2f",
 							"crit_path_delay" 	, "%.3e"
 							);
-
+		
 			open( QOR_FILE, "$test_dir/qor_geomean.txt" );
 			my $output = <QOR_FILE>;
 			my @first_line = split( /\t/, trim($output) );			
+			my @backwards = reverse <QOR_FILE>;
 
 format STDOUT_TOP =
 | @||||||||||||||| | @||||||||||||||| | @||||||||||||||| | @||||||||||||||| | @||||||||||||||| | @||||||||||||||| |
@@ -247,13 +249,17 @@ format STDOUT_TOP =
 .
 write;
 
-			while(<QOR_FILE>) {
-				my @last_line = split( /\t/, trim($_) );
+			while( @backwards ) {		
+				my @last_line = split( /\t/, trim( shift(@backwards) ) );
 				my @new_last_line;
 
 				foreach my $param (@data) {
+					# Get column (index) of each qor metric
 					my $index = List::Util::first { @first_line[$_] eq $param } 0 .. $#first_line;
-				  	push( @new_last_line, sprintf( $precision{$param}, @last_line[$index] ) . $units{$param} );
+					# If valid number, add it onto line to be printed with appropriate sig figs. and units
+					if ( Scalar::Util::looks_like_number(@last_line[$index]) ) {
+						push( @new_last_line, sprintf( $precision{$param}, @last_line[$index] ) . $units{$param} );
+					}
 				}
  
 format STDOUT =
@@ -262,17 +268,10 @@ format STDOUT =
 .
 write;
 			}
+
+			close( QOR_FILE );
 			exit "QoR results displayed";
 		}
-
-		# my @last_line = split( /\t/, trim($last_line) );			
-		# my @new_last_line;
-
-		# foreach my $param (@data) {
-		# 	my $index = List::Util::first { @first_line[$_] eq $param } 0 .. $#first_line;
-		#   	push( @new_last_line, sprintf( $precision{$param}, @last_line[$index] ) . $units{$param} );
-		# }
-
 	}
 }
 
