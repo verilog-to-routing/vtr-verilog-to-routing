@@ -436,5 +436,40 @@ void free_pb_stats(t_pb *pb) {
 	}
 }
 
+int ** alloc_and_load_net_pin_index() {
+	/*computes net_pin_index array, this array allows us to quickly */
+	/*find what pin on the net a block pin corresponds to */
+
+	int inet, netpin, blk, iblk, ipin, itype;
+	t_type_ptr type;
+	
+	int max_pins_per_clb = 0;
+	for (itype = 0; itype < num_types; itype++)
+		max_pins_per_clb = max(max_pins_per_clb, type_descriptors[itype].num_pins);
+	
+	int **temp_net_pin_index = (int **) alloc_matrix(0, num_blocks - 1, 0,
+				max_pins_per_clb - 1, sizeof(int));
+
+	/*initialize values to OPEN */
+	for (iblk = 0; iblk < num_blocks; iblk++) {
+		type = block[iblk].type;
+		for (ipin = 0; ipin < type->num_pins; ipin++) {
+			temp_net_pin_index[iblk][ipin] = OPEN;
+		}
+	}
+
+	for (inet = 0; inet < num_nets; inet++) {
+
+		if (clb_net[inet].is_global)
+			continue;
+
+		for (netpin = 0; netpin <= clb_net[inet].num_sinks; netpin++) {
+			blk = clb_net[inet].node_block[netpin];
+			temp_net_pin_index[blk][clb_net[inet].node_block_pin[netpin]] = netpin;
+		}
+	}
+
+	return temp_net_pin_index;
+}
 
 

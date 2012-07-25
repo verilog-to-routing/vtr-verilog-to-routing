@@ -21,6 +21,8 @@ boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type);
 float compute_primitive_base_cost(INP t_pb_graph_node *primitive);
 int num_ext_inputs_logical_block(int iblk);
 
+int ** alloc_and_load_net_pin_index();
+
 void free_cb(t_pb *pb);
 void free_pb_stats(t_pb *pb);
 void free_pb(t_pb *pb);

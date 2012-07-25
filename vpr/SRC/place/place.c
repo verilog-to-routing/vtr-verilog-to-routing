@@ -17,6 +17,7 @@
 #include "place_stats.h"
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
+#include "vpr_utils.h"
 
 /************** Types and defines local to place.c ***************************/
 
@@ -32,20 +33,52 @@ enum cost_methods {
 	NORMAL, CHECK
 };
 
-#define NOT_UPDATED_YET 'N'			/* What block connected to a net has moved? */
+/* Flags for the states of the bounding box. */
+/* Stores as char for memory efficiency. */
+#define NOT_UPDATED_YET 'N'
 #define UPDATED_ONCE 'U'
 #define GOT_FROM_SCRATCH 'S'
 
 #define ERROR_TOL .01
 #define MAX_MOVES_BEFORE_RECOMPUTE 50000
 
+/********************** Data Sturcture Definition ***************************/
+/* Stores the information of the move for a block that is       *
+ * moved during placement                                       *
+ * block_num: the index of the moved block                      *
+ * xold: the x_coord that the block is moved from               *
+ * xnew: the x_coord that the block is moved to                 *
+ * yold: the y_coord that the block is moved from               *
+ * xnew: the x_coord that the block is moved to                 *
+ */
+typedef struct s_pl_moved_block {
+	int block_num;
+	int xold;
+	int xnew;
+	int yold;
+	int ynew;
+}t_pl_moved_block;
+
+/* Stores the list of blocks to be moved in a swap during       *
+ * placement.                                                   *
+ * num_moved_blocks: total number of blocks moved when          *
+ *                   swapping two blocks.                       *
+ * moved blocks: a list of moved blocks data structure with     *
+ *               information on the move.                       *
+ *               [0...num_moved_blocks-1]                         *
+ */
+typedef struct s_pl_blocks_to_be_moved {
+	int num_moved_blocks;
+	t_pl_moved_block * moved_blocks;
+}t_pl_blocks_to_be_moved;
+
+
 /********************** Variables local to place.c ***************************/
 
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
 static float *net_cost = NULL, *temp_net_cost = NULL; /* [0..num_nets-1] */
 
-/* [0...num_nets-1]                                                              *
- * A flag array to indicate whether the specific bounding box has been updated   *
+/* A flag array to indicate whether the specific bounding box has been updated   *
  * in this particular swap or not. If it has been updated before, the code       *
  * must use the updated data, instead of the out-of-date data passed into the    *
  * subroutine, particularly used in try_swap(). The value NOT_UPDATED_YET        *
@@ -55,7 +88,8 @@ static float *net_cost = NULL, *temp_net_cost = NULL; /* [0..num_nets-1] */
  * applicable for nets larger than SMALL_NETS and it indicates that the          *
  * particular bounding box cannot be updated incrementally before, hence the     *
  * bounding box is got from scratch, so the bounding box would definitely be     *
- * right, DO NOT update again.                                                   */
+ * right, DO NOT update again.                                                   *
+ * [0...num_nets-1]                                                              */
 static char * bb_updated_before = NULL;
 
 /* [0..num_nets-1][1..num_pins-1]. What is the value of the timing   */
@@ -93,18 +127,21 @@ static t_pl_blocks_to_be_moved blocks_affected;
  * speed up the computation of the cost function that takes the length  *
  * of the net bounding box in each dimension, divided by the average    *
  * number of tracks in that direction; for other cost functions they    *
- * will never be used.                                                  */
-
+ * will never be used.                                                  *
+ *                [0...ny]                [0...nx]                      */
 static float **chanx_place_cost_fac, **chany_place_cost_fac;
 
 /* The following arrays are used by the try_swap function for speed reasons */
+/* [0...num_nets-1] */
 static struct s_bb *ts_bb_coord_new = NULL;
 static struct s_bb *ts_bb_edge_new = NULL;
-static int *ts_nets_to_update = NULL, *ts_pins_to_nets = NULL;
+static int *ts_nets_to_update = NULL;
 
 /* Expected crossing counts for nets with different #'s of pins.  From *
- * ICCAD 94 pp. 690 - 695 (with linear interpolation applied by me).   */
-
+ * ICCAD 94 pp. 690 - 695 (with linear interpolation applied by me).   *
+ * Multiplied to bounding box of a net to better estimate wire length  *
+ * for higher fanout nets. Each entry is the correction factor for the *
+ * fanout index-1                                                      */
 static const float cross_count[50] = { /* [0..49] */1.0, 1.0, 1.0, 1.0828, 1.1536, 1.2206, 1.2823, 1.3385, 1.3991, 1.4493, 1.4974,
 		1.5455, 1.5937, 1.6418, 1.6899, 1.7304, 1.7709, 1.8114, 1.8519, 1.8924,
 		1.9288, 1.9652, 2.0015, 2.0379, 2.0743, 2.1061, 2.1379, 2.1698, 2.2016,
@@ -121,6 +158,8 @@ static void alloc_and_load_placement_structs(
 		float place_cost_exp, float ***old_region_occ_x,
 		float ***old_region_occ_y, struct s_placer_opts placer_opts);
 
+static void alloc_and_load_try_swap_structs();
+
 static void free_placement_structs(
 		float **old_region_occ_x, float **old_region_occ_y,
 		struct s_placer_opts placer_opts);
@@ -132,7 +171,7 @@ static void free_fast_cost_update(void);
 static void initial_placement(enum e_pad_loc_type pad_loc_type,
 		char *pad_loc_file);
 
-static float comp_bb_cost(int method);
+static float comp_bb_cost(enum cost_methods method);
 
 static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 		float rlim, float **old_region_occ_x,
@@ -163,8 +202,6 @@ static int exit_crit(float t, float cost,
 
 static int count_connections(void);
 
-static void compute_net_pin_index_values(void);
-
 static double get_std_dev(int n, double sum_x_squared, double av_x);
 
 static float recompute_bb_cost(void);
@@ -187,7 +224,7 @@ static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new);
 static void update_bb(int inet, struct s_bb *bb_coord_new,
 		struct s_bb *bb_edge_new, int xold, int yold, int xnew, int ynew);
 		
-static int find_affected_nets(int *nets_to_update, int *pins_to_nets);
+static int find_affected_nets(int *nets_to_update);
 
 static float get_net_cost(int inet, struct s_bb *bb_ptr);
 
@@ -316,8 +353,6 @@ void try_place(struct s_placer_opts placer_opts,
 		bb_cost = comp_bb_cost(NORMAL);
 
 		crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
-
-		compute_net_pin_index_values();
 
 		num_connections = count_connections();
 		vpr_printf(TIO_MESSAGE_INFO, "\nThere are %d point to point connections in this circuit\n\n",
@@ -851,33 +886,6 @@ static int count_connections() {
 	return (count);
 }
 
-static void compute_net_pin_index_values() {
-	/*computes net_pin_index array, this array allows us to quickly */
-	/*find what pin on the net a block pin corresponds to */
-
-	int inet, netpin, blk, iblk, ipin;
-	t_type_ptr type;
-
-	/*initialize values to OPEN */
-	for (iblk = 0; iblk < num_blocks; iblk++) {
-		type = block[iblk].type;
-		for (ipin = 0; ipin < type->num_pins; ipin++) {
-			net_pin_index[iblk][ipin] = OPEN;
-		}
-	}
-
-	for (inet = 0; inet < num_nets; inet++) {
-
-		if (clb_net[inet].is_global)
-			continue;
-
-		for (netpin = 0; netpin <= clb_net[inet].num_sinks; netpin++) {
-			blk = clb_net[inet].node_block[netpin];
-			net_pin_index[blk][clb_net[inet].node_block_pin[netpin]] = netpin;
-		}
-	}
-}
-
 static double get_std_dev(int n, double sum_x_squared, double av_x) {
 
 	/* Returns the standard deviation of data set x.  There are n sample points, *
@@ -1055,33 +1063,11 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 	 * rlim is the range limiter.                                                                            */
 
 	int b_from, x_to, y_to, z_to, x_from, y_from, z_from, b_to;
-	int i, inet, keep_switch;
+	int inet, keep_switch;
 	int num_nets_affected;
 	float delta_c, bb_delta_c, timing_delta_c, delay_delta_c;
-	int iblk, bnum, iblk_pin, ipin_affected, inet_affected;
+	int iblk, bnum, iblk_pin, inet_affected;
 	
-	/* Allocate the local bb_coordinate storage, etc. only once. */
-	if (ts_bb_coord_new == NULL) {
-		/* Find the max pins per clb to allocate maximum space for ts_pins_to_nets. */
-		int max_pins_per_clb = 0;
-		for (i = 0; i < num_types; i++)
-			max_pins_per_clb = max(max_pins_per_clb, type_descriptors[i].num_pins);
-		
-		/* Allocate with size num_nets for any number of nets affected. */
-		ts_bb_coord_new = (struct s_bb *) my_calloc(
-				num_nets, sizeof(struct s_bb));
-		ts_bb_edge_new = (struct s_bb *) my_calloc(
-				num_nets, sizeof(struct s_bb));
-		ts_nets_to_update = (int *) my_calloc(num_nets, sizeof(int));
-		ts_pins_to_nets = (int *) my_calloc(
-				num_blocks * max_pins_per_clb, sizeof(int));
-		
-		/* Allocate with size num_blocks for any number of moved block. */
-		blocks_affected.moved_blocks = (t_pl_moved_block*)my_calloc(
-				num_blocks, sizeof(t_pl_moved_block) );
-		blocks_affected.num_moved_blocks = 0;
-	}
-
 	/* I'm using negative values of temp_net_cost as a flag, so DO NOT   *
 	 * use cost functions that can go negative.                          */
 
@@ -1164,12 +1150,11 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 		blocks_affected.moved_blocks[1].ynew = y_from;
 	}
 
-	num_nets_affected = find_affected_nets(ts_nets_to_update, ts_pins_to_nets);
+	num_nets_affected = find_affected_nets(ts_nets_to_update);
 
 	/* Go through all the pins in all the blocks moved and update the bounding boxes.  *
 	 * Do not update the net cost here since it should only be updated once per net,   *
 	 * not once per pin                                                                */
-	ipin_affected = 0;
 	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++)
 	{
 		bnum = blocks_affected.moved_blocks[iblk].block_num;
@@ -1177,14 +1162,15 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 		/* Go through all the pins in the moved block */
 		for (iblk_pin = 0; iblk_pin < block[bnum].type->num_pins; iblk_pin++)
 		{
-			inet = ts_pins_to_nets[ipin_affected];
-			if (inet == -1) {
-				ipin_affected++;
+			inet = block[bnum].nets[iblk_pin];
+			if (inet == OPEN)
 				continue;
-			}
+			if (clb_net[inet].is_global)
+				continue;
 			
 			if (clb_net[inet].num_sinks < SMALL_NET) {
 				if(bb_updated_before[inet] == NOT_UPDATED_YET)
+					/* Brute force bounding box recomputation, once only for speed. */
 					get_non_updateable_bb(inet, &ts_bb_coord_new[inet]);
 			} else {
 				update_bb(inet, &ts_bb_coord_new[inet],
@@ -1194,8 +1180,6 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 						blocks_affected.moved_blocks[iblk].xnew, 
 						blocks_affected.moved_blocks[iblk].ynew + block[bnum].type->pin_height[iblk_pin]);
 			}
-			
-			ipin_affected++;
 		}
 	}
 			
@@ -1249,6 +1233,8 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 				bb_num_on_edges[inet] = ts_bb_edge_new[inet];
 			
 			net_cost[inet] = temp_net_cost[inet];
+
+			/* negative temp_net_cost value is acting as a flag. */
 			temp_net_cost[inet] = -1;
 			bb_updated_before[inet] = NOT_UPDATED_YET;
 		}
@@ -1290,15 +1276,13 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 	return (keep_switch);
 }
 
-static int find_affected_nets(int *nets_to_update, int *pins_to_nets) {
+static int find_affected_nets(int *nets_to_update) {
 
 	/* Puts a list of all the nets that are changed by the swap into          *
-	 * nets_to_update.  Returns the number of affected nets.  pins_to_nets    *
-	 * stores the net number corresponding to the pins in the moved blocks.   */
+	 * nets_to_update.  Returns the number of affected nets.                  */
 
-	int iblk, iblk_pin, inet, bnum, num_affected_pins, num_affected_nets;
+	int iblk, iblk_pin, inet, bnum, num_affected_nets;
 
-	num_affected_pins = 0;
 	num_affected_nets = 0;
 	/* Go through all the blocks moved */
 	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++)
@@ -1312,22 +1296,19 @@ static int find_affected_nets(int *nets_to_update, int *pins_to_nets) {
 			 * that pin is not connected to any net or it is a  *
 			 * global pin that does not need to be updated      */
 			inet = block[bnum].nets[iblk_pin];
-			if (inet == OPEN){
-				pins_to_nets[num_affected_pins] = -1;
-			} else if (clb_net[inet].is_global) {
-				pins_to_nets[num_affected_pins] = -1;
-			} else {
-				pins_to_nets[num_affected_pins] = inet;
-				if (temp_net_cost[inet] < 0.) { 
-					/* Net not marked yet. */
-					nets_to_update[num_affected_nets] = inet;
-					num_affected_nets++;
+			if (inet == OPEN)
+				continue;
+			if (clb_net[inet].is_global)
+				continue;
+			
+			if (temp_net_cost[inet] < 0.) { 
+				/* Net not marked yet. */
+				nets_to_update[num_affected_nets] = inet;
+				num_affected_nets++;
 
-					/* Flag to say we've marked this net. */
-					temp_net_cost[inet] = 1.;
-				}
+				/* Flag to say we've marked this net. */
+				temp_net_cost[inet] = 1.;
 			}
-			num_affected_pins++;
 		}
 	}
 	return num_affected_nets;
@@ -1344,8 +1325,8 @@ static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim,
 	int x_rel, y_rel, iside, iplace, rlx, rly, min_x, max_x, min_y, max_y;
 	int num_col_same_type, i, j;
 
-	rlx = min(nx, rlim); /* Only needed when nx < ny. */
-	rly = min(ny, rlim); /* Added rly for aspect_ratio != 1 case. */
+	rlx = (int)min((float)nx, rlim); /* Only needed when nx < ny. */
+	rly = (int)min((float)ny, rlim); /* Added rly for aspect_ratio != 1 case. */
 
 	min_x = max(1, x_from - rlx);
 	max_x = min(nx, x_from + rlx);
@@ -1769,7 +1750,7 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 	*connection_delay_sum = loc_connection_delay_sum;
 }
 
-static float comp_bb_cost(int method) {
+static float comp_bb_cost(enum cost_methods method) {
 
 	/* Finds the cost from scratch.  Done only when the placement   *
 	 * has been radically changed (i.e. after initial placement).   *
@@ -1894,9 +1875,6 @@ static void alloc_and_load_placement_structs(
 		temp_point_to_point_timing_cost = (float **) my_malloc(
 				num_nets * sizeof(float *));
 
-		net_pin_index = (int **) alloc_matrix(0, num_blocks - 1, 0,
-				max_pins_per_clb - 1, sizeof(int));
-
 		for (inet = 0; inet < num_nets; inet++) {
 
 			/* In the following, subract one so index starts at *
@@ -1946,6 +1924,26 @@ static void alloc_and_load_placement_structs(
 	*old_region_occ_y = NULL;
 	
 	alloc_and_load_for_fast_cost_update(place_cost_exp);
+		
+	net_pin_index = alloc_and_load_net_pin_index();
+
+	alloc_and_load_try_swap_structs();
+}
+
+static void alloc_and_load_try_swap_structs() {
+	/* Allocate the local bb_coordinate storage, etc. only once. */
+	/* Allocate with size num_nets for any number of nets affected. */
+	ts_bb_coord_new = (struct s_bb *) my_calloc(
+			num_nets, sizeof(struct s_bb));
+	ts_bb_edge_new = (struct s_bb *) my_calloc(
+			num_nets, sizeof(struct s_bb));
+	ts_nets_to_update = (int *) my_calloc(num_nets, sizeof(int));
+		
+	/* Allocate with size num_blocks for any number of moved block. */
+	blocks_affected.moved_blocks = (t_pl_moved_block*)my_calloc(
+			num_blocks, sizeof(t_pl_moved_block) );
+	blocks_affected.num_moved_blocks = 0;
+	
 }
 
 static void get_bb_from_scratch(int inet, struct s_bb *coords,
@@ -2704,18 +2702,16 @@ static void print_clb_placement(const char *fname) {
 #endif
 
 static void free_try_swap_arrays(void) {
-	if (ts_bb_coord_new != NULL) {
+	if(ts_bb_coord_new != NULL) {
 		free(ts_bb_coord_new);
 		free(ts_bb_edge_new);
 		free(ts_nets_to_update);
-		free(ts_pins_to_nets);
 		free(blocks_affected.moved_blocks);
 		free(bb_updated_before);
 		
 		ts_bb_coord_new = NULL;
 		ts_bb_edge_new = NULL;
 		ts_nets_to_update = NULL;
-		ts_pins_to_nets = NULL;
 		blocks_affected.moved_blocks = NULL;
 		blocks_affected.num_moved_blocks = 0;
 		bb_updated_before = NULL;
