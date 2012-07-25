@@ -206,12 +206,13 @@ sub check_override {
 			die "[ERROR] Failed to open $test_dir/qor_geomean.txt: $!";
 		}
 		else {
-			print "=" x 116 . "\n";
-			print "\t" x 5 . "Verilog-to-Routing QoR Results \n";
-			print "=" x 116 . "\n";
+			print "=" x 118 . "\n";
+			print "\t" x 5 . "  Verilog-to-Routing QoR Results \n";
+			print "=" x 118 . "\n";
 
 			my @data = (
 						"run"				,
+						"date"				,
 						"total_runtime"		,
 						"total_wirelength"	,
 						"num_clb"			,
@@ -221,31 +222,33 @@ sub check_override {
 			
 			my %units = (
 						"run"				, ""		,
-						"total_runtime" 	, " s "		,
-						"total_wirelength" 	, " units "	,
-						"num_clb" 			, " blocks ",
-						"min_chan_width" 	, " tracks ",
-						"crit_path_delay" 	, " ns "
+						"date"				, ""		,
+						"total_runtime" 	, " s"		,
+						"total_wirelength" 	, " units"	,
+						"num_clb" 			, " blocks",
+						"min_chan_width" 	, " tracks",
+						"crit_path_delay" 	, " ns"
 						);
 
 			my %precision = (
 							"run" 				, "%.0f",
+							"date" 				, "%s"	,
 							"total_runtime"		, "%.3f",
 							"total_wirelength" 	, "%.0f",
 							"num_clb" 			, "%.2f",
 							"min_chan_width" 	, "%.2f",
 							"crit_path_delay" 	, "%.3e"
 							);
-		
+
 			open( QOR_FILE, "$test_dir/qor_geomean.txt" );
 			my $output = <QOR_FILE>;
 			my @first_line = split( /\t/, trim($output) );			
 			my @backwards = reverse <QOR_FILE>;
 
 format STDOUT_TOP =
-| @||||||||||||||| | @||||||||||||||| | @||||||||||||||| | @||||||||||||||| | @||||||||||||||| | @||||||||||||||| |
+| @|||| | @||||||||| | @|||||||||||||| | @||||||||||||||||||| | @|||||||||||| | @||||||||||||||| | @|||||||||||||||| |
 @data;
--------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------
 .
 write;
 
@@ -256,14 +259,18 @@ write;
 				foreach my $param (@data) {
 					# Get column (index) of each qor metric
 					my $index = List::Util::first { @first_line[$_] eq $param } 0 .. $#first_line;
+					# If index is out-of-bounds or metric cannot be found
+					if ( $index > @last_line or $index eq "" ) {
+						push( @new_last_line, sprintf( $precision{$param}, "-" ) . $units{$param} );
+					}
 					# If valid number, add it onto line to be printed with appropriate sig figs. and units
-					if ( Scalar::Util::looks_like_number(@last_line[$index]) ) {
+					elsif ( Scalar::Util::looks_like_number(@last_line[$index]) ) {
 						push( @new_last_line, sprintf( $precision{$param}, @last_line[$index] ) . $units{$param} );
 					}
 				}
  
 format STDOUT =
-| @||||||||||||||| | @||||||||||||||| | @||||||||||||||| | @||||||||||||||| | @||||||||||||||| | @||||||||||||||| |
+| @|||| | @||||||||| | @|||||||||||||| | @||||||||||||||||||| | @|||||||||||| | @||||||||||||||| | @|||||||||||||||| |
 @new_last_line;
 .
 write;

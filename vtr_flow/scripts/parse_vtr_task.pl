@@ -25,6 +25,7 @@ use File::Spec;
 use File::Copy;
 use List::Util;
 use Math::BigInt;
+use POSIX qw/strftime/;
 
 # Function Prototypes
 sub trim;
@@ -334,10 +335,12 @@ sub calc_geomean {
 			my $label = shift @temp;
 			print OUTPUT_FILE "\t" . "$label";
 		}
+		print OUTPUT_FILE "\t" . "date";
 		$first = 0;
 	}
 	else {
 	}
+
 	print OUTPUT_FILE "\n${exp_num}";
 
 	##############################################################
@@ -360,6 +363,8 @@ sub calc_geomean {
 		print OUTPUT_FILE "\t" . "${geomean}" ;
 		$index++;
 	}
+	my $date = strftime( '%D', localtime );
+	print OUTPUT_FILE "\t" . "$date";
 	close(OUTPUT_FILE);
 }
 
