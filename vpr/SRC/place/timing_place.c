@@ -78,59 +78,55 @@ void print_sink_delays(const char *fname) {
 }
 
 /**************************************/
-void load_criticalities(struct s_placer_opts placer_opts, float **net_slack,
-		float d_max, float crit_exponent) {
-
-	/*set criticality values, returns the maximum criticality found */
-	/*assumes that net_slack contains correct values, ie. assumes  *
-	 *that load_net_slack has been called*/
+void load_criticalities(float ** net_slack_ratio, float crit_exponent) {
+	/* Performs a 1-to-1 mapping from net_slack_ratio to timing_place_crit.  
+	  For every pin on every net (or, equivalently, for every tedge ending 
+	  in that pin), criticality = (1-slack ratio)^(criticality exponent) */
 
 	int inet, ipin;
-	float pin_crit;
 
 	for (inet = 0; inet < num_nets; inet++) {
-
 		if (inet == OPEN)
 			continue;
 		if (clb_net[inet].is_global)
 			continue;
-
-		for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
-			/*clip the criticality to never go negative (could happen */
-			/*for a constant generator since it's slack is huge) */
-			pin_crit = max(1 - net_slack[inet][ipin] / d_max, 0.);
-			timing_place_crit[inet][ipin] = pow(pin_crit, crit_exponent);
-
+        for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
+			if (net_slack_ratio[inet][ipin] > HUGE_POSITIVE_FLOAT - 1) {
+				/* We didn't analyze this connection, so give it a dummy, very negative criticality. */
+				timing_place_crit[inet][ipin] = HUGE_NEGATIVE_FLOAT;
+			} else {
+				timing_place_crit[inet][ipin] = pow(1 - net_slack_ratio[inet][ipin], crit_exponent);
+			}
 		}
 	}
 }
 
 /**************************************/
-
-void alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
+t_slack * alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, float ***net_delay, float ***net_slack) {
+		t_timing_inf timing_inf, float ***net_delay) {
 
-	(*net_slack) = alloc_and_load_timing_graph(timing_inf);
+	t_slack * slacks = alloc_and_load_timing_graph(timing_inf);
 
 	(*net_delay) = alloc_net_delay(&net_delay_ch, clb_net,
 			num_nets);
 
 	compute_delay_lookup_tables(router_opts, det_routing_arch, segment_inf,
 			timing_inf, chan_width_dist);
-
+	
 	timing_place_crit = alloc_crit(&timing_place_crit_ch);
 
+	return slacks;
 }
 
 /**************************************/
-void free_lookups_and_criticalities(float ***net_delay, float ***net_slack) {
+void free_lookups_and_criticalities(float ***net_delay, t_slack * slacks) {
 
 	free(timing_place_crit);
 	free_crit(&timing_place_crit_ch);
 
-	free_timing_graph(*net_slack);
+	free_timing_graph(slacks);
 	free_net_delay(*net_delay, &net_delay_ch);
 
 	free_place_lookup_structs();

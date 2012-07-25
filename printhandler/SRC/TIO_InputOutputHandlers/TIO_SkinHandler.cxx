@@ -92,7 +92,7 @@ void TIO_SkinHandler_c::DeleteInstance(
 TIO_SkinHandler_c& TIO_SkinHandler_c::GetInstance(
       void )
 {
-   if( !pinstance_ )
+   if ( !pinstance_ )
    {
       NewInstance( );
    }

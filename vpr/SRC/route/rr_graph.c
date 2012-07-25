@@ -276,9 +276,9 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 		}
 
 #ifdef VERBOSE
-		for(i = 1; i < L_num_types; ++i)
+		for (i = 1; i < L_num_types; ++i)
 		{ /* Skip "<EMPTY>" */
-			if(type_descriptors[i].is_Fc_out_full_flex)
+			if (type_descriptors[i].is_Fc_out_full_flex)
 			{
 				vpr_printf
 				("Fc Actual Values: Type = %s, Fc_out = full, Fc_in = %d.\n",
@@ -384,7 +384,7 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 			delayless_switch, directionality, wire_to_ipin_switch, &Fc_clipped);
 
 #ifdef MUX_SIZE_DIST_DISPLAY
-	if(UNI_DIRECTIONAL == directionality)
+	if (UNI_DIRECTIONAL == directionality)
 	{
 		view_mux_size_distribution(rr_node_indices, nodes_per_chan,
 				seg_details, seg_details);
@@ -1685,7 +1685,7 @@ void dump_rr_graph(INP const char *file_name) {
 #if 0
 	fprintf(fp, "\n\n%d rr_indexed_data entries.\n\n", num_rr_indexed_data);
 
-	for(index = 0; index < num_rr_indexed_data; index++)
+	for (index = 0; index < num_rr_indexed_data; index++)
 	{
 		print_rr_indexed_data(fp, index);
 		fprintf(fp, "\n");
@@ -1923,7 +1923,7 @@ load_uniform_opin_switch_pattern_paired(INP int *Fc_out,
 
 	count_inc = count_dec = 0;
 
-	for(ipin = 0; ipin < num_pins; ipin++)
+	for (ipin = 0; ipin < num_pins; ipin++)
 	{
 		from_node = pins_in_chan_seg[ipin];
 		xlow = L_rr_node[from_node].xlow;
@@ -1933,9 +1933,9 @@ load_uniform_opin_switch_pattern_paired(INP int *Fc_out,
 		num_edges = 0;
 
 		/* Assigning the INC muxes first, then DEC muxes */
-		for(k = 0; k < 2; ++k)
+		for (k = 0; k < 2; ++k)
 		{
-			if(k == 0)
+			if (k == 0)
 			{
 				num_wire_muxes = num_wire_inc_muxes;
 				wire_muxes = wire_inc_muxes;
@@ -1953,13 +1953,13 @@ load_uniform_opin_switch_pattern_paired(INP int *Fc_out,
 			/* Clip the demand. Make sure to use a new variable so
 			 * on the second pass it is not clipped. */
 			CurFc = Fc_output_per_side;
-			if(Fc_output_per_side > num_wire_muxes)
+			if (Fc_output_per_side > num_wire_muxes)
 			{
 				*Fc_clipped = TRUE;
 				CurFc = num_wire_muxes;
 			}
 
-			if(k == 0)
+			if (k == 0)
 			{
 				init_mux = (count_inc) % num_wire_muxes;
 				count_inc += CurFc;
@@ -1970,7 +1970,7 @@ load_uniform_opin_switch_pattern_paired(INP int *Fc_out,
 				count_dec += CurFc;
 			}
 
-			for(iconn = 0; iconn < CurFc; iconn++)
+			for (iconn = 0; iconn < CurFc; iconn++)
 			{
 				/* FINALLY, make the outpin to mux connection */
 				/* Latest update: I'm not using Uniform Pattern, but a similarly staggered pattern */
@@ -1981,7 +1981,7 @@ load_uniform_opin_switch_pattern_paired(INP int *Fc_out,
 				L_rr_node[to_node].num_opin_drivers++; /* keep track of mux size */
 				to_track = L_rr_node[to_node].ptc_num;
 
-				if(FALSE == L_rr_edge_done[to_node])
+				if (FALSE == L_rr_edge_done[to_node])
 				{
 					/* Use of alloc_and_load_edges_and_switches 
 					 * must be accompanied by rr_edge_done check. */
@@ -1997,7 +1997,7 @@ load_uniform_opin_switch_pattern_paired(INP int *Fc_out,
 			}
 		}
 
-		if(num_edges < 1)
+		if (num_edges < 1)
 		{
 			vpr_printf
 			("Error:  opin %d at (%d,%d) does not connect to any "
@@ -2070,12 +2070,12 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 	distr_list = NULL;
 
 	/* With the specified range, I'm only looking at core sblocks */
-	for(j = (ny - 1); j > 0; j--)
+	for (j = (ny - 1); j > 0; j--)
 	{
-		for(i = 1; i < nx; i++)
+		for (i = 1; i < nx; i++)
 		{
 			num_muxes = 0;
-			for(side = 0; side < 4; side++)
+			for (side = 0; side < 4; side++)
 			{
 				switch (side)
 				{
@@ -2116,7 +2116,7 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 				}
 
 				assert(nodes_per_chan > 0);
-				for(itrack = 0; itrack < nodes_per_chan; itrack++)
+				for (itrack = 0; itrack < nodes_per_chan; itrack++)
 				{
 					start =
 					get_seg_start(seg_details, itrack,
@@ -2125,7 +2125,7 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 					get_seg_end(seg_details, itrack,
 							start, chan_num, max_len);
 
-					if((seg_details[itrack].direction ==
+					if ((seg_details[itrack].direction ==
 									direction) && (((start == seg_num)
 											&& (direction ==
 													INC_DIRECTION))
@@ -2134,7 +2134,7 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 													DEC_DIRECTION))))
 					{ /* mux found */
 						num_muxes++;
-						if(side == LEFT || side == RIGHT)
+						if (side == LEFT || side == RIGHT)
 						{ /* CHANX */
 							inode =
 							get_rr_node_index
@@ -2162,13 +2162,13 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 						new_mux->next = NULL;
 
 						/* insert in linked list, descending */
-						if(sblock_mux_list_head == NULL)
+						if (sblock_mux_list_head == NULL)
 						{
 							/* first entry */
 							sblock_mux_list_head =
 							new_mux;
 						}
-						else if(sblock_mux_list_head->
+						else if (sblock_mux_list_head->
 								size < new_mux->size)
 						{
 							/* insert before head */
@@ -2184,7 +2184,7 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 							sblock_mux_list_head;
 							next = current->next;
 
-							while((next != NULL)
+							while ((next != NULL)
 									&& (next->size >
 											new_mux->size))
 							{
@@ -2193,7 +2193,7 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 								current->next;
 							}
 
-							if(next == NULL)
+							if (next == NULL)
 							{
 								current->next =
 								new_mux;
@@ -2219,15 +2219,15 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 					"sblock at (%d, %d) has mux sizes: {", i, j);
 #endif /* ENABLE_DUMP */
 
-			if(current != NULL)
+			if (current != NULL)
 			{
 				max_value = min_value = current->size;
 			}
-			while(current != NULL)
+			while (current != NULL)
 			{
-				if(max_value < current->size)
+				if (max_value < current->size)
 				max_value = current->size;
-				if(min_value > current->size)
+				if (min_value > current->size)
 				min_value = current->size;
 
 #ifdef ENABLE_DUMP
@@ -2247,7 +2247,7 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 			range = max_value - min_value;
 			percent_range = ((float)range) / ((float)min_value);
 
-			if(global_max_range < range)
+			if (global_max_range < range)
 			global_max_range = range;
 
 #ifdef ENABLE_DUMP
@@ -2269,13 +2269,13 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 			 * when quantization of W to 2L multiples is not observed. */
 
 			distr_current = distr_list;
-			while(distr_current != NULL
+			while (distr_current != NULL
 					&& distr_current->mux_count != num_muxes)
 			{
 				distr_current = distr_current->next;
 			}
 
-			if(distr_current == NULL)
+			if (distr_current == NULL)
 			{
 				/* Create a distribution for the new sblock type, 
 				 * and put it as head of linked list by convention */
@@ -2289,7 +2289,7 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 
 				/* filling in the distribution */
 				current = sblock_mux_list_head;
-				while(current != NULL)
+				while (current != NULL)
 				{
 					assert(current->size <=
 							new_distribution->max_index);
@@ -2306,9 +2306,9 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 				/* distr_current->mux_count == num_muxes so add this sblock's mux sizes in this distribution */
 				current = sblock_mux_list_head;
 
-				while(current != NULL)
+				while (current != NULL)
 				{
-					if(current->size >
+					if (current->size >
 							distr_current->max_index)
 					{
 						/* needs to realloc to expand the distribution array to hold the new large-valued data */
@@ -2319,7 +2319,7 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 										1) * sizeof(int));
 
 						/* initializing the newly allocated elements */
-						for(k =
+						for (k =
 								(distr_current->max_index +
 										1); k <= current->size; k++)
 						distr_current->distr[k] = 0;
@@ -2340,7 +2340,7 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 
 			/* done - now free memory */
 			current = sblock_mux_list_head;
-			while(current != NULL)
+			while (current != NULL)
 			{
 				next = current->next;
 				free(current);
@@ -2355,7 +2355,7 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 
 	percent_range_sum = 0.0;
 	range_sum = 0.0;
-	for(k = 0; k < array_count; k++)
+	for (k = 0; k < array_count; k++)
 	{
 		deviation_f = (percent_range_array[k] - avg_percent_range);
 		percent_range_sum += deviation_f * deviation_f;
@@ -2381,7 +2381,7 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 
 	vpr_printf(TIO_MESSAGE_INFO, " -- Detailed MUX size distribution by sblock type -- \n");
 	distr_current = distr_list;
-	while(distr_current != NULL)
+	while (distr_current != NULL)
 	{
 		print_distribution(stdout, distr_current);
 
@@ -2418,13 +2418,13 @@ print_distribution(FILE * fptr,
 	fprintf(fptr, "\t\t\tSize\t\t\tFrequency (percent)\n");
 
 	sum = 0.0;
-	for(k = 0; k <= distr_struct->max_index; k++)
+	for (k = 0; k <= distr_struct->max_index; k++)
 	sum += distr[k];
 
 	zeros = TRUE;
-	for(k = 0; k <= distr_struct->max_index; k++)
+	for (k = 0; k <= distr_struct->max_index; k++)
 	{
-		if(zeros && (distr[k] == 0))
+		if (zeros && (distr[k] == 0))
 		{
 			/* do nothing for leading string of zeros */
 		}

@@ -75,6 +75,10 @@
       <AdditionalIncludeDirectories>include;../printhandler/SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
       <CompileAsManaged>false</CompileAsManaged>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalIncludeDirectories>include;../printhandler/SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
+      <Optimization>Full</Optimization>
+      <CallingConvention>Cdecl</CallingConvention>
+      <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

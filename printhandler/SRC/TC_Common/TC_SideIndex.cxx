@@ -72,7 +72,7 @@ TC_SideIndex_c::~TC_SideIndex_c(
 TC_SideIndex_c& TC_SideIndex_c::operator=( 
       const TC_SideIndex_c& sideIndex )
 {
-   if( &sideIndex != this )
+   if ( &sideIndex != this )
    {
       this->side_ = sideIndex.side_;
       this->index_ = sideIndex.index_;
@@ -136,19 +136,19 @@ void TC_SideIndex_c::Print(
 void TC_SideIndex_c::ExtractString( 
       string* psrSideIndex ) const
 {
-   if( psrSideIndex )
+   if ( psrSideIndex )
    {
-      if( this->IsValid( ))
+      if ( this->IsValid( ))
       {
 	 string srSide;
          TC_ExtractStringSideMode( this->side_, &srSide );
 
          *psrSideIndex = srSide;
 
-	 if( this->index_ != SIZE_MAX )
+	 if ( this->index_ != SIZE_MAX )
 	 {
    	    char szIndex[ TIO_FORMAT_STRING_LEN_VALUE ];
-            sprintf( szIndex, "%lu", this->index_ );
+            sprintf( szIndex, "%u", this->index_ );
 
             *psrSideIndex += " ";
             *psrSideIndex += szIndex;

@@ -20,20 +20,22 @@ static void get_length_and_bends_stats(void);
 
 static void get_channel_occupancy_stats(void);
 
+static void get_timing_stats(t_timing_stats * timing_stats);
+
 /************************* Subroutine definitions ****************************/
 
 void routing_stats(boolean full_stats, enum e_route_type route_type,
 		int num_switch, t_segment_inf * segment_inf, int num_segment,
 		float R_minW_nmos, float R_minW_pmos,
 		enum e_directionality directionality, boolean timing_analysis_enabled,
-		float **net_slack, float **net_delay) {
+		float **net_delay, t_slack * slacks) {
 
 	/* Prints out various statistics about the current routing.  Both a routing *
 	 * and an rr_graph must exist when you call this routine.                   */
 
-	float T_crit;
 	float area, used_area;
 	int i, j;
+	t_timing_stats * timing_stats;
 
 	get_length_and_bends_stats();
 	get_channel_occupancy_stats();
@@ -79,32 +81,30 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 			load_net_delay_from_routing(net_delay, clb_net, num_nets);
 
 			if (GetEchoOption()) {
-				print_net_delay(net_delay, "net_delay.echo", clb_net, num_nets);
+				print_net_delay(net_delay, "net_delay.echo");
 			}
 
 			load_timing_graph_net_delays(net_delay);
-			#ifdef HACK_LUT_PIN_SWAPPING
-					T_crit = load_net_slack(net_slack, TRUE);
-			#else
-					T_crit = load_net_slack(net_slack, FALSE);
-			#endif
+
+#ifdef HACK_LUT_PIN_SWAPPING			
+			timing_stats = do_timing_analysis(slacks, FALSE, TRUE, TRUE);
+#else
+			timing_stats = do_timing_analysis(slacks, FALSE, FALSE, TRUE);
+#endif
 
 			if (GetEchoOption()) {
 				print_timing_graph("timing_graph.echo");
-				print_net_slack("net_slack.echo", net_slack);
-				print_critical_path("critical_path.echo");
+				print_net_slack(slacks->net_slack, "net_slack.echo");
+				print_net_slack_ratio(slacks->net_slack_ratio, "net_slack_ratio.echo");
+				if (num_constrained_clocks == 1) {
+					print_critical_path("critical_path.echo");
+				}
 				print_lut_remapping("lut_remapping.echo");
 			}
 
-			vpr_printf(TIO_MESSAGE_INFO, "\n");
-			if (pb_max_internal_delay == UNDEFINED
-					|| pb_max_internal_delay < T_crit) {
-				vpr_printf(TIO_MESSAGE_INFO, "Critical Path: %g (s)\n", T_crit);
-			} else {
-				vpr_printf(TIO_MESSAGE_INFO, 
-						"Critical Path: %g (s) - capped by fmax of block type %s\n",
-						pb_max_internal_delay, pbtype_max_internal_delay->name);
-			}
+			get_timing_stats(timing_stats);
+
+			free_timing_stats(timing_stats);
 		}
 	}
 
@@ -457,3 +457,101 @@ void print_lambda(void) {
 	lambda = (float) num_inputs_used / (float) num_blocks;
 	vpr_printf(TIO_MESSAGE_INFO, "Average lambda (input pins used per clb) is: %g\n", lambda);
 }
+
+static void get_timing_stats(t_timing_stats * timing_stats) {
+
+	/* Prints critical path delay per constraint, frequency of each clock 
+	(based only on paths within that clock's domain), geometric average
+	clock frequency, fanout-weighted geometric average clock frequency,
+	and the single worst slack per domain (with the tnodes on either side
+	of the edge with this worst slack).*/
+
+	if (num_constrained_clocks == 1) {
+			if (pb_max_internal_delay == UNDEFINED || pb_max_internal_delay < timing_stats->critical_path_delay[0][0]) {
+				vpr_printf(TIO_MESSAGE_INFO, "Critical path: %g ns\n", timing_stats->critical_path_delay[0][0] * 1e9);
+			} else {
+				vpr_printf(TIO_MESSAGE_INFO, 
+					"Critical path: %g ns - capped by fmax of block type %s\n", 
+					pb_max_internal_delay * 1e9, pbtype_max_internal_delay->name);
+			}
+		vpr_printf(TIO_MESSAGE_INFO, "\nf_max: %g MHz", 1e-6 / timing_stats->critical_path_delay[0][0]);
+		if (timing_stats->least_slack_in_domain[0] < HUGE_POSITIVE_FLOAT - 1) {
+			vpr_printf(TIO_MESSAGE_INFO, "\nLeast slack in design: %g ns\n\n", timing_stats->least_slack_in_domain[0] * 1e9);
+		} else {
+			vpr_printf(TIO_MESSAGE_INFO, "\nLeast slack in design: --\n\n");
+		}
+	} else if (num_constrained_clocks > 1) {
+		int source_clock_domain, sink_clock_domain, clock_domain, fanout, total_fanout = 0, num_netlist_clocks_with_intra_domain_paths = 0;
+		float geomean_f_max = 1, fanout_weighted_geomean_f_max = 1;
+
+		vpr_printf(TIO_MESSAGE_INFO, "\nMinimum possible clock period to meet each constraint (including skew effects):\n");
+		for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
+			
+			/* First, print the clock name and intra-domain constraint. */
+			vpr_printf(TIO_MESSAGE_INFO, "%s:\t", constrained_clocks[source_clock_domain].name);
+
+			if (timing_constraint[source_clock_domain][source_clock_domain] > -0.01 
+				&& timing_stats->critical_path_delay[source_clock_domain][source_clock_domain] > HUGE_NEGATIVE_FLOAT + 1) { 
+			/* if timing constraint is not DO_NOT_ANALYSE and if there was at least one path analyzed */
+				/* convert to nanoseconds / megahertz */
+				vpr_printf(TIO_MESSAGE_INFO, "to %s: %g ns (%g MHz)", constrained_clocks[source_clock_domain].name, 
+					1e9 * timing_stats->critical_path_delay[source_clock_domain][source_clock_domain],
+					1e-6 / timing_stats->critical_path_delay[source_clock_domain][source_clock_domain]);
+			}
+
+			vpr_printf(TIO_MESSAGE_INFO, "\n");
+
+			/* Then, print all other constraints on separate lines. */
+			for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
+				if (timing_constraint[source_clock_domain][sink_clock_domain] > -0.01 
+					&& timing_stats->critical_path_delay[source_clock_domain][sink_clock_domain] > HUGE_NEGATIVE_FLOAT + 1
+					&& source_clock_domain != sink_clock_domain) { 
+					/* if timing constraint is not DO_NOT_ANALYSE and if there was at least one path analyzed 
+					and the two clock domains are not the same. */
+					/* Convert to nanoseconds and megahertz */
+					vpr_printf(TIO_MESSAGE_INFO, "\tto %s: %g ns (%g MHz)\n", constrained_clocks[sink_clock_domain].name, 
+					1e9 * timing_stats->critical_path_delay[source_clock_domain][sink_clock_domain],
+					1e-6 / timing_stats->critical_path_delay[source_clock_domain][sink_clock_domain]);
+				}
+			}
+		}
+	
+		/* Calculate geometric mean f_max (fanout-weighted and unweighted) from the diagonal (intra-domain) 
+		entries of critical_path_delay, excluding all clocks without intra-domain paths	
+		(where critical_path_delay = HUGE_NEGATIVE_FLOAT) and all virtual clocks. */
+		for (clock_domain = 0; clock_domain < num_constrained_clocks; clock_domain++) {
+			if (timing_stats->critical_path_delay[clock_domain][clock_domain] > HUGE_NEGATIVE_FLOAT + 1 
+				&& constrained_clocks[clock_domain].is_netlist_clock) {
+				geomean_f_max /= timing_stats->critical_path_delay[clock_domain][clock_domain]; /* Dividing by period = multiplying by frequency */
+				fanout = constrained_clocks[clock_domain].fanout;
+				fanout_weighted_geomean_f_max /= pow(timing_stats->critical_path_delay[clock_domain][clock_domain], fanout);
+				total_fanout += fanout;
+				num_netlist_clocks_with_intra_domain_paths++;
+			}
+		}
+		geomean_f_max = pow(geomean_f_max, (float) 1/num_netlist_clocks_with_intra_domain_paths);
+		fanout_weighted_geomean_f_max = pow(fanout_weighted_geomean_f_max, (float) 1/total_fanout);
+		if (geomean_f_max < 1 - 1e-15 || geomean_f_max > 1 + 1e-15) { 
+			/* If geometric mean is 1, it probably means we never found any actual f_max. */
+			/* Convert to MHz */
+			vpr_printf(TIO_MESSAGE_INFO, "\nGeometric mean intra-domain f_max: %g MHz\n", geomean_f_max * 1e-6);
+		}
+		if (fanout_weighted_geomean_f_max < 1 - 1e-15 || fanout_weighted_geomean_f_max > 1 + 1e-15) { 
+			/* Convert to MHz */
+			vpr_printf(TIO_MESSAGE_INFO, "Fanout-weighted geomean intra-domain f_max: %g MHz\n", fanout_weighted_geomean_f_max * 1e-6);
+		}
+
+		vpr_printf(TIO_MESSAGE_INFO, "\nLeast slack in each domain:\n");
+		for (clock_domain = 0; clock_domain < num_constrained_clocks; clock_domain++) {
+			if (timing_stats->least_slack_in_domain[clock_domain] < HUGE_POSITIVE_FLOAT - 1) {
+				/* Convert to nanoseconds */
+				vpr_printf(TIO_MESSAGE_INFO, "%s: %g ns\n", constrained_clocks[clock_domain].name, timing_stats->least_slack_in_domain[clock_domain]*1e9);
+			} else { /* No valid path was analyzed. */
+				vpr_printf(TIO_MESSAGE_INFO, "%s: --\n", constrained_clocks[clock_domain].name);
+			}
+		}
+		vpr_printf(TIO_MESSAGE_INFO, "\n");
+	}
+}
+
+

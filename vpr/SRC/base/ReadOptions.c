@@ -80,9 +80,6 @@ void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
 				Options->CircuitName[strlen(Options->CircuitName) - 5] = '\0';
 			}
 			++Args;
-		} else if (NULL == Options->SDCFile) {
-			Options->SDCFile = my_strdup(*Args);
-			++Args;
 		} else {
 			/* Not an option and arch and net already specified so fail */
 			Error(*Args);
@@ -140,6 +137,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadString(Args, &Options->PlaceFile);
 	case OT_ROUTE_FILE:
 		return ReadString(Args, &Options->RouteFile);
+	case OT_SDC_FILE:
+		return ReadString(Args, &Options->SDCFile);
 	case OT_SETTINGS_FILE:
 		return ReadString(Args, &Options->SettingsFile);
 		/* General Options */
@@ -309,6 +308,9 @@ static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id)
 			break;
 		case OT_SETTINGS_FILE:
 			dest->SettingsFile = src->SettingsFile;
+			break;
+		case OT_SDC_FILE:
+			dest->SDCFile = src->SDCFile;
 			break;
 			/* General Options */
 		case OT_NODISP:

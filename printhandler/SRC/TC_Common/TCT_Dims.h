@@ -180,7 +180,7 @@ template< class T > inline bool TCT_Dims_c< T >::IsValid(
 template< class T > TCT_Dims_c< T >& TCT_Dims_c< T >::operator=( 
       const TCT_Dims_c< T >& dims )
 {
-   if( &dims != this )
+   if ( &dims != this )
    {
       this->width = dims.width;
       this->height = dims.height;
@@ -230,9 +230,9 @@ template<class T> void TCT_Dims_c< T >::ExtractString(
       size_t        precision ) const
 {
 	int i;
-   if( psrData )
+   if ( psrData )
    {
-      if( precision == SIZE_MAX )
+      if ( precision == SIZE_MAX )
       {
          TC_MinGrid_c& minGrid = TC_MinGrid_c::GetInstance( );
          precision = minGrid.GetPrecision( );

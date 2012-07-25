@@ -61,7 +61,7 @@ static void load_default_models(INP t_model *library_models,
 		OUTP t_model** inpad_model, OUTP t_model** outpad_model,
 		OUTP t_model** logic_model, OUTP t_model** latch_model);
 
-static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
+static void read_blif (char *blif_file, boolean sweep_hanging_nets_and_inputs,
 		t_model *user_models, t_model *library_models);
 
 static void absorb_buffer_luts(void);
@@ -70,7 +70,7 @@ static void show_blif_stats(t_model *user_models, t_model *library_models);
 
 
 
-static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
+static void read_blif (char *blif_file, boolean sweep_hanging_nets_and_inputs,
 		t_model *user_models, t_model *library_models) {
 	char buffer[BUFSIZE];
 	int pass, doall;
@@ -188,7 +188,7 @@ static void init_parse(int doall) {
 		}
 #ifdef PRINT_PIN_NETS
 		vpr_printf(TIO_MESSAGE_INFO, "i\ttemp_num_pins\n\n");
-		for (i=0;i<num_logical_nets;i++) {
+		for (i = 0;i < num_logical_nets;i++) {
 			vpr_printf(TIO_MESSAGE_INFO, "%d\t%d\n",i,temp_num_pins[i]);
 		}
 		vpr_printf(TIO_MESSAGE_INFO, "num_logical_nets %d\n", num_logical_nets);
@@ -372,7 +372,7 @@ static boolean add_lut(int doall, t_model *logic_model) {
 	/* Count # nets connecting */
 	i = 0;
 	while ((ptr = my_strtok(NULL, TOKENS, blif, buf)) != NULL) {
-		if(i > logic_model->inputs->size) {
+		if (i > logic_model->inputs->size) {
 			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] .names %s ... %s has a LUT size that exceeds the maximum LUT size (%d) of the architecture\n", file_line_number, saved_names[0], ptr, logic_model->inputs->size);
 			exit(1);
 		}
@@ -465,7 +465,7 @@ static void add_latch(int doall, INP t_model *latch_model) {
 	}
 
 	if (i != 5) {
-		fprintf(stderr,
+		vpr_printf(TIO_MESSAGE_ERROR,
 				"Error:  .latch does not have 5 parameters.\n" "check the netlist, line %d.\n",
 				file_line_number);
 		exit(1);
@@ -513,7 +513,7 @@ static void add_subckt(int doall, t_model *user_models) {
 	char *close_bracket;
 	char subckt_name[BUFSIZE];
 	char buf[BUFSIZE];
-	fpos_t current_subckt_pos;
+	//fpos_t current_subckt_pos;
 	int i, j, iparse;
 	int subckt_index_signals = 0;
 	char **subckt_signal_name = NULL;
@@ -536,7 +536,7 @@ static void add_subckt(int doall, t_model *user_models) {
 	iparse = 0;
 	while (iparse < MAX_ATOM_PARSE) {
 		iparse++;
-		/* Assumpiton is that it will be "signal1, =, signal1b, spacing, and repeat" */
+		/* Assumption is that it will be "signal1, =, signal1b, spacing, and repeat" */
 		ptr = my_strtok(NULL, " \t\n=", blif, buf);
 
 		if (ptr == NULL && toggle == 0)
@@ -572,10 +572,10 @@ static void add_subckt(int doall, t_model *user_models) {
 	}
 	assert(iparse < MAX_ATOM_PARSE);
 	/* record the position of the parse so far so when we resume we will move to the next item */
-	if (fgetpos(blif, &current_subckt_pos) != 0) {
-		vpr_printf(TIO_MESSAGE_ERROR, "In file pointer read - read_blif.c\n");
-		exit(-1);
-	}
+	//if (fgetpos(blif, &current_subckt_pos) != 0) {
+	//	vpr_printf(TIO_MESSAGE_ERROR, "In file pointer read - read_blif.c\n");
+	//	exit(-1);
+	//}
 
 	input_net_count = 0;
 	output_net_count = 0;
@@ -752,10 +752,10 @@ static void add_subckt(int doall, t_model *user_models) {
 	free(circuit_signal_name);
 
 	/* now that you've done the analysis, move the file pointer back */
-	if (fsetpos(blif, &current_subckt_pos) != 0) {
-		vpr_printf(TIO_MESSAGE_ERROR, "In moving back file pointer - read_blif.c\n");
-		exit(-1);
-	}
+	//if (fsetpos(blif, &current_subckt_pos) != 0) {
+	//	vpr_printf(TIO_MESSAGE_ERROR, "In moving back file pointer - read_blif.c\n");
+	//	exit(-1);
+	//}
 }
 
 static void io_line(int in_or_out, int doall, t_model *io_model) {
@@ -916,9 +916,9 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 				 * should always be zero or 1 unless the netlist is bad.   */
 				if ((vpack_net[nindex].num_sinks - num_driver[nindex])
 						>= temp_num_pins[nindex]) {
-					vpr_printf(TIO_MESSAGE_ERROR,"Net #%d (%s) has no driver and will cause\n",
+					vpr_printf(TIO_MESSAGE_ERROR, 
+							"Net #%d (%s) has no driver and will cause memory corruption.\n",
 							nindex, ptr);
-					vpr_printf(TIO_MESSAGE_INFO, "memory corruption.\n");
 					exit(1);
 				}
 			}
@@ -1720,16 +1720,16 @@ static void compress_netlist(void) {
 }
 
 /* Read blif file and perform basic sweep/accounting on it */
-void read_and_process_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
+void read_and_process_blif (char *blif_file, boolean sweep_hanging_nets_and_inputs,
 		t_model *user_models, t_model *library_models) {
 
 	/* begin parsing blif input file */
-	read_blif(blif_file, sweep_hanging_nets_and_inputs, user_models,	library_models);
+	read_blif (blif_file, sweep_hanging_nets_and_inputs, user_models,	library_models);
 	
 	/* TODO: Do check blif here 
 	 eg. 
-	 for(i = 0; i < num_logical_blocks; i++) {
-	 if(logical_block[i].model->num_inputs > max_subblock_inputs) {
+	 for (i = 0; i < num_logical_blocks; i++) {
+	 if (logical_block[i].model->num_inputs > max_subblock_inputs) {
 	 vpr_printf(TIO_MESSAGE_ERROR, "logical_block %s of model %s has %d inputs but architecture only supports subblocks up to %d inputs\n",
 	 logical_block[i].name, logical_block[i].model->name, logical_block[i].model->num_inputs, max_subblock_inputs);
 	 exit(1);
@@ -1771,13 +1771,13 @@ static void show_blif_stats(t_model *user_models, t_model *library_models) {
 	num_model_stats = 0;
 
 	cur = library_models;
-	while(cur) {
+	while (cur) {
 		num_model_stats++;
 		cur = cur->next;
 	}
 
 	cur = user_models;
-	while(cur) {
+	while (cur) {
 		num_model_stats++;
 		cur = cur->next;
 	}
@@ -1788,9 +1788,9 @@ static void show_blif_stats(t_model *user_models, t_model *library_models) {
 
 	lut_model = NULL;
 	cur = library_models;
-	while(cur) {
+	while (cur) {
 		model_stats[num_model_stats].model = cur;
-		if(strcmp(cur->name, "names") == 0) {
+		if (strcmp(cur->name, "names") == 0) {
 			lut_model = &model_stats[num_model_stats];
 		}
 		num_model_stats++;
@@ -1798,7 +1798,7 @@ static void show_blif_stats(t_model *user_models, t_model *library_models) {
 	}
 
 	cur = user_models;
-	while(cur) {
+	while (cur) {
 		model_stats[num_model_stats].model = cur;
 		num_model_stats++;
 		cur = cur->next;
@@ -1815,15 +1815,15 @@ static void show_blif_stats(t_model *user_models, t_model *library_models) {
 	num_lut_of_size = (int*) my_calloc(MAX_LUT_INPUTS + 1, sizeof(int));
 
 
-	for(i = 0; i < num_logical_blocks; i++) {
-		for(j = 0; j < num_model_stats; j++) {
-			if(logical_block[i].model == model_stats[j].model) {
+	for (i = 0; i < num_logical_blocks; i++) {
+		for (j = 0; j < num_model_stats; j++) {
+			if (logical_block[i].model == model_stats[j].model) {
 				break;
 			}
 		}
 		assert(j < num_model_stats);
 		model_stats[j].count++;
-		if(&model_stats[j] == lut_model) {
+		if (&model_stats[j] == lut_model) {
 			num_pins = 0;
 			for (ipin = 0; ipin < logical_block[i].model->inputs->size;
 					ipin++) {
@@ -1844,7 +1844,7 @@ static void show_blif_stats(t_model *user_models, t_model *library_models) {
 	}
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 
-	for(i = 0; i < num_model_stats; i++) {
+	for (i = 0; i < num_model_stats; i++) {
 		vpr_printf(TIO_MESSAGE_INFO, "%d of type %s\n", model_stats[i].count, model_stats[i].model->name);
 	}
 

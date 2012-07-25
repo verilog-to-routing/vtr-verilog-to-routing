@@ -347,12 +347,12 @@ void free_pb(t_pb *pb) {
 			free(pb->child_pbs);
 		pb->child_pbs = NULL;
 
-		if(pb->local_nets != NULL) {
-			for(i = 0; i < pb->num_local_nets; i++) {
+		if (pb->local_nets != NULL) {
+			for (i = 0; i < pb->num_local_nets; i++) {
 				free(pb->local_nets[i].node_block);
 				free(pb->local_nets[i].node_block_port);
 				free(pb->local_nets[i].node_block_pin);
-				if(pb->local_nets[i].name != NULL) {
+				if (pb->local_nets[i].name != NULL) {
 					free(pb->local_nets[i].name);
 				}
 			}
@@ -360,12 +360,12 @@ void free_pb(t_pb *pb) {
 			pb->local_nets = NULL;
 		}
 
-		if(pb->rr_node_to_pb_mapping != NULL) {
+		if (pb->rr_node_to_pb_mapping != NULL) {
 			free(pb->rr_node_to_pb_mapping);
 			pb->rr_node_to_pb_mapping = NULL;
 		}
 		
-		if(pb->name)
+		if (pb->name)
 			free(pb->name);
 		pb->name = NULL;
 	} else {
@@ -382,18 +382,18 @@ void free_pb(t_pb *pb) {
 			logical_block[pb->logical_block].pb = NULL;
 			/* If any molecules were marked invalid because of this logic block getting packed, mark them valid */
 			revalid_molecule = logical_block[pb->logical_block].packed_molecules;
-			while(revalid_molecule != NULL) {
+			while (revalid_molecule != NULL) {
 				cur_molecule = (t_pack_molecule*)revalid_molecule->data_vptr;
-				if(cur_molecule->valid == FALSE) {
+				if (cur_molecule->valid == FALSE) {
 					for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {
 						if (cur_molecule->logical_block_ptrs[i] != NULL) {
-							if(cur_molecule->logical_block_ptrs[i]->clb_index != OPEN) {
+							if (cur_molecule->logical_block_ptrs[i]->clb_index != OPEN) {
 								break;
 							}
 						}
 					}
 					/* All logical blocks are open for this molecule, place back in queue */
-					if(i == get_array_size_of_molecule(cur_molecule)) {
+					if (i == get_array_size_of_molecule(cur_molecule)) {
 						cur_molecule->valid = TRUE;	
 					}
 				}

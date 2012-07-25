@@ -361,7 +361,7 @@ static void free_pb_graph(INOUTP t_pb_graph_node *pb_graph_node) {
 				free(pb_graph_node->input_pins[i][j].input_edges);
 			if (pb_graph_node->input_pins[i][j].output_edges)
 				free(pb_graph_node->input_pins[i][j].output_edges);
-			if(pb_graph_node->input_pins[i][j].parent_pin_class)
+			if (pb_graph_node->input_pins[i][j].parent_pin_class)
 				free(pb_graph_node->input_pins[i][j].parent_pin_class);
 		}
 		free(pb_graph_node->input_pins[i]);
@@ -376,19 +376,19 @@ static void free_pb_graph(INOUTP t_pb_graph_node *pb_graph_node) {
 				free(pb_graph_node->output_pins[i][j].input_edges);
 			if (pb_graph_node->output_pins[i][j].output_edges)
 				free(pb_graph_node->output_pins[i][j].output_edges);
-			if(pb_graph_node->output_pins[i][j].parent_pin_class)
+			if (pb_graph_node->output_pins[i][j].parent_pin_class)
 				free(pb_graph_node->output_pins[i][j].parent_pin_class);
 			
-			if(pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs) {
+			if (pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs) {
 				for (k = 0; k < pb_graph_node->pb_type->depth; k++) {
-					if(pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs[k]) {
+					if (pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs[k]) {
 						free(pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs[k]);
 					}
 				}
 				free(pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs);
 			}
 			
-			if(pb_graph_node->output_pins[i][j].num_connectable_primtive_input_pins)
+			if (pb_graph_node->output_pins[i][j].num_connectable_primtive_input_pins)
 				free(pb_graph_node->output_pins[i][j].num_connectable_primtive_input_pins);
 		}
 		free(pb_graph_node->output_pins[i]);
@@ -403,7 +403,7 @@ static void free_pb_graph(INOUTP t_pb_graph_node *pb_graph_node) {
 				free(pb_graph_node->clock_pins[i][j].input_edges);
 			if (pb_graph_node->clock_pins[i][j].output_edges)
 				free(pb_graph_node->clock_pins[i][j].output_edges);
-			if(pb_graph_node->clock_pins[i][j].parent_pin_class)
+			if (pb_graph_node->clock_pins[i][j].parent_pin_class)
 				free(pb_graph_node->clock_pins[i][j].parent_pin_class);
 		}
 		free(pb_graph_node->clock_pins[i]);
@@ -437,10 +437,10 @@ static void free_pb_graph(INOUTP t_pb_graph_node *pb_graph_node) {
 		for (i = 0; i < (long) cur_num->data_vptr; i++) {
 			free(edges[i].input_pins);
 			free(edges[i].output_pins);
-			if(edges[i].pack_pattern_indices) {
+			if (edges[i].pack_pattern_indices) {
 				free(edges[i].pack_pattern_indices);
 			}
-			if(edges[i].pack_pattern_names) {
+			if (edges[i].pack_pattern_names) {
 				free(edges[i].pack_pattern_names);
 			}
 		}
@@ -738,11 +738,11 @@ static void alloc_and_load_direct_interc_edges(
 	struct s_linked_vptr *cur;
 
 	/* Allocate memory for edges */
-	if(!(num_input_sets == 1 && num_output_sets == 1)) {
+	if (!(num_input_sets == 1 && num_output_sets == 1)) {
 		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Direct interconnect allows connections from one set of pins to one other set\n", interconnect->line_num);
 		exit(1);
 	}
-	if(!(num_input_ptrs[0] == num_output_ptrs[0])) {
+	if (!(num_input_ptrs[0] == num_output_ptrs[0])) {
 		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Direct interconnect must use an equal number of pins\n", interconnect->line_num);
 		exit(1);
 	}
@@ -801,7 +801,7 @@ static void alloc_and_load_mux_interc_edges( INP t_interconnect * interconnect,
 	assert(interconnect->infer_annotations == FALSE);
 
 	/* Allocate memory for edges, and reallocate more memory for pins connecting to those edges */
-	if(num_output_sets != 1) {
+	if (num_output_sets != 1) {
 		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Mux must have one output\n", interconnect->line_num);
 		exit(1);
 	}
@@ -835,7 +835,7 @@ static void alloc_and_load_mux_interc_edges( INP t_interconnect * interconnect,
 
 	/* Load connections between pins and record these updates in the edges */
 	for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
-		if(num_output_ptrs[0] != num_input_ptrs[i_inset]) {
+		if (num_output_ptrs[0] != num_input_ptrs[i_inset]) {
 			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] # of pins for a particular data line of a mux must equal number of pins at output of mux\n", interconnect->line_num);
 			exit(1);
 		}
@@ -858,7 +858,7 @@ static void alloc_and_load_mux_interc_edges( INP t_interconnect * interconnect,
 			edges[i_inset].output_pins[i_inpin] =
 					output_pb_graph_node_pin_ptrs[0][i_inpin];
 
-			if(i_inpin != 0) {
+			if (i_inpin != 0) {
 				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Bus-based mux not yet supported, will consider for future work\n", interconnect->line_num);
 				exit(1);
 			}
@@ -1052,7 +1052,7 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 			(*token_index)++;
 		}
 	} else {
-		if(pb_lsb < 0 || pb_lsb >= max_pb_node_array) {
+		if (pb_lsb < 0 || pb_lsb >= max_pb_node_array) {
 			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] pb %d out of range [%d,%d]\n", line_num, pb_lsb, max_pb_node_array - 1, 0);
 			exit(1);
 		}
@@ -1089,14 +1089,14 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 		ipin = pin_lsb;
 		j = 0;
 		while (ipin != pin_msb + add_or_subtract_pin) {
-			if(ipb < 0 || ipb >= max_pb_node_array) {
+			if (ipb < 0 || ipb >= max_pb_node_array) {
 				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] pb %d out of range [%d,%d]\n", line_num, ipb, max_pb_node_array - 1, 0);
 				exit(1);
 			}
 			(*pb_graph_pins)[i * (abs(pin_msb - pin_lsb) + 1) + j] =
 					get_pb_graph_pin_from_name(port_name, &pb_node_array[ipb],
 							ipin);
-			if((*pb_graph_pins)[i * (abs(pin_msb - pin_lsb) + 1) + j] == NULL) {
+			if ((*pb_graph_pins)[i * (abs(pin_msb - pin_lsb) + 1) + j] == NULL) {
 				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Pin %s.%s[%d] cannot be found\n", line_num, pb_node_array[ipb].pb_type->name, port_name, ipin);
 				exit(1);
 			}

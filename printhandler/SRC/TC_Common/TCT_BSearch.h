@@ -85,21 +85,21 @@ template< class T > T* TCT_BSearchIterate(
    T* pdata = 0;
 
    // Iterate to perform simple binary-search until match found or exhausted
-   while( i <= j )
+   while ( i <= j )
    {
       long mid = (( j - i ) / 2 ) + i;
 
       int c = TCT_BSearchCompare( &data, padata + mid, pfxCompare );
-      if( c == 0 )
+      if ( c == 0 )
       {
          pdata = const_cast< T* >( padata + mid );
          break;
       }
-      else if( c < 0 )
+      else if ( c < 0 )
       {
          j = mid - 1;
       }
-      else if( c > 0 )
+      else if ( c > 0 )
       {
          i = mid + 1;
       }

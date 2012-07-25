@@ -184,7 +184,7 @@ void check_timing_graph(int num_sinks) {
 						"structure.  Expected %d.\n", num_tnodes_check,
 				num_tnodes);
 		vpr_printf(TIO_MESSAGE_INFO, "Check the netlist for combinational cycles.\n");
-		if(num_tnodes > num_tnodes_check) {
+		if (num_tnodes > num_tnodes_check) {
 			show_combinational_cycle_candidates();
 		}
 		error++;
@@ -272,18 +272,18 @@ static void show_combinational_cycle_candidates() {
 
 	found_tnode = (boolean*) my_calloc(num_tnodes, sizeof(boolean));
 
-	for(ilevel = 0; ilevel < num_tnode_levels; ilevel++) {
-		for(i = 0; i < tnodes_at_level[ilevel].nelem; i++) {
+	for (ilevel = 0; ilevel < num_tnode_levels; ilevel++) {
+		for (i = 0; i < tnodes_at_level[ilevel].nelem; i++) {
 			inode = tnodes_at_level[ilevel].list[i];
 			found_tnode[inode] = TRUE;
 		}
 	}
 
 	vpr_printf(TIO_MESSAGE_INFO, "\tProblematic nodes:\n");
-	for(i = 0; i < num_tnodes; i++) {
-		if(found_tnode[i] == FALSE) {
+	for (i = 0; i < num_tnodes; i++) {
+		if (found_tnode[i] == FALSE) {
 			vpr_printf(TIO_MESSAGE_INFO, "\t\ttnode %d ", i);
-			if(tnode[i].pb_graph_pin == NULL) {
+			if (tnode[i].pb_graph_pin == NULL) {
 				vpr_printf(TIO_MESSAGE_INFO, "block %s port %d pin %d\n", logical_block[tnode[i].block].name, tnode[i].model_port, tnode[i].model_pin);
 			} else {
 				vpr_printf(TIO_MESSAGE_INFO, "\n");

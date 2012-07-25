@@ -69,7 +69,8 @@ typedef size_t bitfield;
 #define MINOR 0			/* For update_screen.  Denotes importance of update. */
 #define MAJOR 1
 
-#define HUGE_FLOAT 1.e30
+#define HUGE_POSITIVE_FLOAT 1.e30
+#define HUGE_NEGATIVE_FLOAT -1.e30
 
 #define MAX_SHORT 32767
 
@@ -194,6 +195,7 @@ typedef struct s_pb {
 } t_pb;
 
 struct s_tnode;
+
 /* Technology-mapped user netlist block */
 typedef struct s_logical_block {
 	char *name; /* Taken from the first vpack_net which it drives. */
@@ -202,7 +204,7 @@ typedef struct s_logical_block {
 
 	int **input_nets; /* [0..num_input_ports-1][0..num_port_pins-1] List of input nets connected to this logical_block. */
 	int **output_nets; /* [0..num_output_ports-1][0..num_port_pins-1] List of output nets connected to this logical_block. */
-	int clock_net; /* List of clock net connected to this logical_block.  		*/
+	int clock_net; /* Clock net connected to this logical_block. */
 
 	int used_input_pins; /* Number of used input pins */
 
@@ -264,17 +266,14 @@ typedef struct s_cluster_placement_stats {
 #define MODEL_OUTPUT "output"
 
 /******************************************************************
- * Timing data structures begin 
+ * Timing data types
  *******************************************************************/
 
 /* Timing graph information */
 typedef struct {
-	int to_node;
-	float Tdel;
+	int to_node; /* index of node at the sink end of this edge */
+	float Tdel; /* delay to go to to_node along this edge */
 } t_tedge;
-
-/* to_node: index of node at the sink end of this edge.                      *
- * Tdel: delay to go to to_node along this edge.                             */
 
 typedef enum {
 	INPAD_SOURCE,
@@ -311,14 +310,20 @@ typedef enum {
  * index: index of array this tnode belongs to
  * num_critical_input_paths, num_critical_output_paths: Count total number of near critical paths that go through this node *
  */
+
+#define FANCY_CRITICALITY
+/* If defined, uses different, normalized and directional criticalities in the clusterer.  
+	If not defined, uses the same slack ratio fpr the clusterer as for the placer/router. */
+
 typedef struct s_tnode {
 	t_tedge *out_edges;
 	int num_edges;
 	float T_arr;
 	float T_req;
 	int block;
+	boolean used_on_this_traversal; /* Has this tnode been touched on this timing graph traversal? */
 
-	/* For flipflops only. Clock_domain contains the index of the clock in clock_list; clock_skew is the time taken for a clock signal to get to the flip-flop. */
+	/* For flipflops and I/Os only. Clock_domain contains the index of the clock in netlist_clocks; clock_skew is the time taken for a clock signal to get to the flip-flop. */
 	int clock_domain; 
 	float clock_skew;
 
@@ -328,26 +333,77 @@ typedef struct s_tnode {
 
 	/* pre-packing timing graph */
 	int model_port, model_pin; /* technology mapped model port/pin */
+#ifdef FANCY_CRITICALITY
 	long num_critical_input_paths, num_critical_output_paths; /* count of critical paths passing through this tnode */
 	float normalized_slack; /* slack (normalized with respect to max slack) */
 	float normalized_total_critical_paths; /* critical path count (normalized with respect to max count) */
 	float normalized_T_arr; /* arrival time (normalized with respect to max time) */
-
+#endif
 	int index;
 } t_tnode;
 
 typedef struct s_clock {
 	char * name;
+	boolean is_netlist_clock;
 	int fanout;
 } t_clock;
-/* Stores the name and fanout (number of flip-flops in clock domain) of each clock.  Used extensively in SDC parsing and timing analysis. */
+/* Stores the name and fanout (number of flip-flops in clock domain) of each clock,
+	and whether it is a netlist or virtual clock.
+	Used extensively in SDC parsing and timing analysis. */
 
-typedef struct s_sdc_clock {
-	float period;
-	float offset;
-} t_sdc_clock;
-/* Stores the period and offset constraints for each SDC file.  Only used
-   when parsing the SDC file. */
+typedef struct s_io {
+	char * name;
+	char * virtual_clock_name;
+	float delay;
+} t_io;
+/* Associates each I/O port name with its corresponding virtual (external) clock, 
+	 and the delay through the I/O. Used extensively in SDC parsing and timing analysis. */
+
+typedef struct s_timing_stats {
+	float ** critical_path_delay; /* [0..num_netlist_clocks - 1 (source)][0..num_netlist_clocks - 1 (destination)] */
+	float * least_slack_in_domain; /* [0..num_netlist_clocks - 1] */
+} t_timing_stats;
+/* Timing statistics for final reporting. */
+
+typedef struct s_slack {
+	float ** net_slack;
+	float ** net_slack_ratio;
+} t_slack;
+/* Matrices storing slacks and slack ratios of each sink pin on each net 
+[0..num_nets-1][1..num_pins-1] */
+
+typedef struct s_cf_constraint {
+	char * source_clock_domain;
+	char ** sink_ffs; /* Array of net names of flip-flops */
+	int num_sink_ffs;
+	float constraint;
+	int num_multicycles;
+} t_cf_constraint;
+/* A special-case clock-to-flipflop constraint to override the default, calculated, timing constraint.
+Holds data from set_clock_groups, set_false_path, set_max_delay, and set_multicycle_path commands. */
+
+typedef struct s_fc_constraint {
+	char ** source_ffs; 
+	char * sink_clock_domain;
+	int num_source_ffs;
+	float constraint;
+	int num_multicycles;
+} t_fc_constraint;
+/* A special-case flipflop-to-clock constraint (as above). */
+
+typedef struct s_ff_constraint {
+	char ** source_ffs;
+	char ** sink_ffs; 
+	int num_source_ffs;
+	int num_sink_ffs;
+	float constraint;
+	int num_multicycles;
+} t_ff_constraint;
+/* A special-case flipflop-to-flipflop constraint (as above). */
+
+/* Note: there's also a cc_constraint type, but it's local to read_sdc.c 
+since it doesn't have to go onto the timing graph; it can instead
+replace an entry in the matrix of timing_constraints. */
 
 /***************************************************************************
  * Placement and routing data types

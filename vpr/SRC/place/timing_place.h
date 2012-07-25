@@ -1,12 +1,17 @@
-void alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
+#ifndef TIMING_PLACE
+#define TIMING_PLACE
+
+t_slack * alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, float ***net_delay, float ***net_slack);
+		t_timing_inf timing_inf, float ***net_delay);
 
-void load_criticalities(struct s_placer_opts placer_opts, float **net_slack,
-		float d_max, float crit_exponent);
-
-void free_lookups_and_criticalities(float ***net_delay, float ***net_slack);
+void free_lookups_and_criticalities(float ***net_delay, t_slack * slacks);
 
 void print_sink_delays(const char *fname);
+
+void load_criticalities(float ** net_slack_ratio, float crit_exponent);
+
 extern float **timing_place_crit;
+
+#endif

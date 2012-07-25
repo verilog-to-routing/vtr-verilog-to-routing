@@ -229,7 +229,7 @@ static void load_font(int pointsize) {
 	/* Load font and get font information structure. */
 
 	if ((font_info[pointsize] = XLoadQueryFont(display, fontname)) == NULL) {
-		fprintf(stderr, "Cannot open desired font\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "Cannot open desired font\n");
 		exit(-1);
 	}
 }
@@ -620,7 +620,7 @@ void init_graphics(const char *window_name) {
 
 	/* connect to X server */
 	if ((display = XOpenDisplay(display_name)) == NULL) {
-		fprintf(stderr, "Cannot connect to X server %s\n",
+		vpr_printf(TIO_MESSAGE_ERROR, "Cannot connect to X server %s\n",
 				XDisplayName(display_name));
 		exit(-1);
 	}
@@ -640,15 +640,15 @@ void init_graphics(const char *window_name) {
 
 	for (i = 0; i < NUM_COLOR; i++) {
 		if (!XParseColor(display, cmap, cnames[i], &exact_def)) {
-			fprintf(stderr, "Color name %s not in database", cnames[i]);
+			vpr_printf(TIO_MESSAGE_ERROR, "Color name %s not in database", cnames[i]);
 			exit(-1);
 		}
 		if (!XAllocColor(display, cmap, &exact_def)) {
-			fprintf(stderr, "Couldn't allocate color %s.\n", cnames[i]);
+			vpr_printf(TIO_MESSAGE_ERROR, "Couldn't allocate color %s.\n", cnames[i]);
 
 			if (private_cmap == None) {
-				fprintf(stderr, "Will try to allocate a private colourmap.\n");
-				fprintf(stderr, "Colours will only display correctly when your "
+				vpr_printf(TIO_MESSAGE_ERROR, "Will try to allocate a private colourmap.\n");
+				vpr_printf(TIO_MESSAGE_ERROR, "Colours will only display correctly when your "
 						"cursor is in the graphics window.\n"
 						"Exit other colour applications and rerun this "
 						"program if you don't like that.\n\n");
@@ -656,14 +656,14 @@ void init_graphics(const char *window_name) {
 				private_cmap = XCopyColormapAndFree(display, cmap);
 				cmap = private_cmap;
 				if (!XAllocColor(display, cmap, &exact_def)) {
-					fprintf(stderr, "Couldn't allocate color %s as private.\n",
+					vpr_printf(TIO_MESSAGE_ERROR, "Couldn't allocate color %s as private.\n",
 							cnames[i]);
 					exit(1);
 				}
 			}
 
 			else {
-				fprintf(stderr, "Couldn't allocate color %s as private.\n",
+				vpr_printf(TIO_MESSAGE_ERROR, "Couldn't allocate color %s as private.\n",
 						cnames[i]);
 				exit(1);
 			}

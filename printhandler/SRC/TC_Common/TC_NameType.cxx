@@ -81,7 +81,7 @@ TC_NameType_c::~TC_NameType_c(
 TC_NameType_c& TC_NameType_c::operator=( 
       const TC_NameType_c& nameType )
 {
-   if( &nameType != this )
+   if ( &nameType != this )
    {
       this->srName_ = nameType.srName_;
       this->type_ = nameType.type_;
@@ -159,13 +159,13 @@ void TC_NameType_c::Print(
 void TC_NameType_c::ExtractString( 
       string* psrNameType ) const
 {
-   if( psrNameType )
+   if ( psrNameType )
    {
-      if( this->IsValid( ))
+      if ( this->IsValid( ))
       {
          *psrNameType = this->srName_;
 
-	 if( this->type_ != TC_TYPE_UNDEFINED )
+	 if ( this->type_ != TC_TYPE_UNDEFINED )
 	 {
    	    string srType;
             TC_ExtractStringTypeMode( this->type_, &srType );

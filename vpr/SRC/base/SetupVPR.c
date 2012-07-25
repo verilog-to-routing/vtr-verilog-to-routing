@@ -117,7 +117,7 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	SetupAnnealSched(*Options, AnnealSched);
 	SetupRouterOpts(*Options, TimingEnabled, RouterOpts);
 
-	if(readArchFile == TRUE)	{
+	if (readArchFile == TRUE)	{
 		XmlReadArch(Options->ArchFile, TimingEnabled, Arch, &type_descriptors,
 				&num_types);
 	}

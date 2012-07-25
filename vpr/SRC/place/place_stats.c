@@ -34,22 +34,22 @@ print_relative_pos_distr(void)
 	total_conn = (int *)my_malloc((nx + ny + 1) * sizeof(int));
 	relapos = (int **)my_malloc((nx + ny + 1) * sizeof(int *));
 	relapos_distr = (double **)my_malloc((nx + ny + 1) * sizeof(double *));
-	for(len = 0; len <= nx + ny; len++)
+	for (len = 0; len <= nx + ny; len++)
 	{
 		relapos[len] = (int *)my_calloc(len / 2 + 1, sizeof(int));
 		relapos_distr[len] =
 		(double *)my_calloc((len / 2 + 1), sizeof(double));
 	}
 
-	for(inet = 0; inet < num_nets; inet++)
+	for (inet = 0; inet < num_nets; inet++)
 	{
-		if(clb_net[inet].is_global == FALSE)
+		if (clb_net[inet].is_global == FALSE)
 		{
 
 			src_x = block[clb_net[inet].node_block[0]].x;
 			src_y = block[clb_net[inet].node_block[0]].y;
 
-			for(sink_pin = 1; sink_pin <= clb_net[inet].num_sinks;
+			for (sink_pin = 1; sink_pin <= clb_net[inet].num_sinks;
 					sink_pin++)
 			{
 				dst_x = block[clb_net[inet].node_block[sink_pin]].x;
@@ -62,7 +62,7 @@ print_relative_pos_distr(void)
 
 				min_del = (del_x < del_y) ? del_x : del_y;
 
-				if(!(min_del <= (len / 2)))
+				if (!(min_del <= (len / 2)))
 				{
 					vpr_printf
 					("Error in calculating relative location min_del = %d, len = %d\n",
@@ -82,14 +82,14 @@ print_relative_pos_distr(void)
 	fopen("/jayar/b/b5/fang/vpr_test/wirelength/relapos2.bin", "rb+");
 #endif /* PRINT_REL_POS_DISTR */
 
-	for(len = 0; len <= nx + ny; len++)
+	for (len = 0; len <= nx + ny; len++)
 	{
 		sum = 0;
-		for(rp = 0; rp <= len / 2; rp++)
+		for (rp = 0; rp <= len / 2; rp++)
 		{
 			sum += relapos[len][rp];
 		}
-		if(sum != 0)
+		if (sum != 0)
 		{
 #ifdef PRINT_REL_POS_DISTR
 			fseek(out_bin_file, sizeof(relapos_rec_t) * len,
@@ -97,7 +97,7 @@ print_relative_pos_distr(void)
 			fread(&rp_rec, sizeof(relapos_rec_t), 1, out_bin_file);
 #endif /* PRINT_REL_POS_DISTR */
 
-			for(rp = 0; rp <= len / 2; rp++)
+			for (rp = 0; rp <= len / 2; rp++)
 			{
 
 				relapos_distr[len][rp] =
@@ -105,10 +105,10 @@ print_relative_pos_distr(void)
 
 				/* updating the binary record at "len" */
 #ifdef PRINT_REL_POS_DISTR
-				fprintf(stderr, "old %d increase by %d\n",
+				vpr_printf(TIO_MESSAGE_ERROR, "old %d increase by %d\n",
 						rp_rec.num_rp[rp], relapos[len][rp]);
 				rp_rec.num_rp[rp] += relapos[len][rp];
-				fprintf(stderr, "becomes %d\n",
+				vpr_printf(TIO_MESSAGE_ERROR, "becomes %d\n",
 						rp_rec.num_rp[rp]);
 #endif /* PRINT_REL_POS_DISTR */
 			}
@@ -124,13 +124,13 @@ print_relative_pos_distr(void)
 	}
 
 	fprintf(stdout, "Source to sink relative positions:\n");
-	for(len = 1; len <= nx + ny; len++)
+	for (len = 1; len <= nx + ny; len++)
 	{
-		if(total_conn[len] != 0)
+		if (total_conn[len] != 0)
 		{
 			fprintf(stdout, "Of 2-pin distance %d exists %d\n\n", len,
 					total_conn[len]);
-			for(rp = 0; rp <= len / 2; rp++)
+			for (rp = 0; rp <= len / 2; rp++)
 			{
 				fprintf(stdout, "\trp%d\t%d\t\t(%.5f)\n", rp,
 						relapos[len][rp], relapos_distr[len][rp]);
@@ -140,7 +140,7 @@ print_relative_pos_distr(void)
 	}
 
 	free((void *)total_conn);
-	for(len = 0; len <= nx + ny; len++)
+	for (len = 0; len <= nx + ny; len++)
 	{
 		free((void *)relapos[len]);
 		free((void *)relapos_distr[len]);

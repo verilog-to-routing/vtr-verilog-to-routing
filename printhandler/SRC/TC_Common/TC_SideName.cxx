@@ -81,7 +81,7 @@ TC_SideName_c::~TC_SideName_c(
 TC_SideName_c& TC_SideName_c::operator=( 
       const TC_SideName_c& sideName )
 {
-   if( &sideName != this )
+   if ( &sideName != this )
    {
       this->side_ = sideName.side_;
       this->srName_ = sideName.srName_;
@@ -145,16 +145,16 @@ void TC_SideName_c::Print(
 void TC_SideName_c::ExtractString( 
       string* psrSideName ) const
 {
-   if( psrSideName )
+   if ( psrSideName )
    {
-      if( this->IsValid( ))
+      if ( this->IsValid( ))
       {
 	 string srSide;
          TC_ExtractStringSideMode( this->side_, &srSide );
 
          *psrSideName = srSide;
 
-	 if( this->srName_.length( ))
+	 if ( this->srName_.length( ))
 	 {
             *psrSideName += " ";
             *psrSideName += this->srName_;

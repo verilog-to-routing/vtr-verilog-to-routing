@@ -270,13 +270,13 @@ template< class T > bool TCT_NameList_c< T >::operator==(
 {
    bool isEqual = this->GetLength( ) == nameList.GetLength( ) ? 
                   true : false;
-   if( isEqual )
+   if ( isEqual )
    {
-      for( size_t i = 0; i < this->GetLength( ); ++i )
+      for ( size_t i = 0; i < this->GetLength( ); ++i )
       {
          isEqual = *this->operator[]( i ) == *nameList.operator[]( i ) ?
                    true : false;
-         if( !isEqual )
+         if ( !isEqual )
             break;
       }
    }
@@ -307,7 +307,7 @@ template< class T > T* TCT_NameList_c< T >::operator[](
       size_t index )
 {
    T* pdata = 0;
-   if( index < this->GetLength( ))
+   if ( index < this->GetLength( ))
    {
       pdata = &this->vector_.operator[]( index );
    }
@@ -334,10 +334,10 @@ template< class T > void TCT_NameList_c< T >::Print(
       FILE*  pfile,
       size_t spaceLen ) const
 {
-   for( size_t i = 0; i < this->GetLength( ); ++i )
+   for ( size_t i = 0; i < this->GetLength( ); ++i )
    {
       const T& data = *this->operator[]( i );
-      if( data.IsValid( ))  
+      if ( data.IsValid( ))  
       {
          data.Print( pfile, spaceLen );
       }
@@ -356,27 +356,27 @@ template<class T> void TCT_NameList_c< T >::ExtractString(
       size_t  maxLen,
       bool    quotedString ) const
 {
-   if( psrData )
+   if ( psrData )
    {
       *psrData = "";
 
-      for( size_t i = 0; i < this->GetLength( ); ++i )
+      for ( size_t i = 0; i < this->GetLength( ); ++i )
       {
          const T& data = *this->operator[]( i );
          const string& srDataString = data.GetName( );
 
-	 if( quotedString )
+	 if ( quotedString )
 	 {
             *psrData += "\"";
 	 }
          *psrData += srDataString;
-	 if( quotedString )
+	 if ( quotedString )
 	 {
             *psrData += "\"";
 	 }
          *psrData += ( i < this->GetLength( ) - 1 ? " " : "" );
 
-         if( psrData->length( ) >= maxLen )
+         if ( psrData->length( ) >= maxLen )
 	 {
 	    *psrData += "...";
 	    break;
@@ -418,10 +418,10 @@ template< class T > void TCT_NameList_c< T >::Add(
 template< class T > void TCT_NameList_c< T >::Add( 
       const TCT_NameList_c& nameList )
 {
-   for( size_t i = 0; i < nameList.GetLength( ); ++i )
+   for ( size_t i = 0; i < nameList.GetLength( ); ++i )
    {
       const T& data = *nameList.operator[]( i );
-      if( data.IsValid( ))  
+      if ( data.IsValid( ))  
       {
 	 this->Add( data );
       }
@@ -441,7 +441,7 @@ template< class T > void TCT_NameList_c< T >::Delete(
    typename std::vector< T >::iterator begin = this->vector_.begin( );
    typename std::vector< T >::iterator end = this->vector_.end( );
    typename std::vector< T >::iterator iter = std::find( begin, end, data );
-   if( iter != end )
+   if ( iter != end )
    {
       this->vector_.erase( iter );
    }
@@ -506,7 +506,7 @@ template< class T > size_t TCT_NameList_c< T >::FindIndex(
    typename std::vector< T >::const_iterator begin = this->vector_.begin( );
    typename std::vector< T >::const_iterator end = this->vector_.end( );
    typename std::vector< T >::const_iterator iter = std::find( begin, end, data );
-   if( iter != end )
+   if ( iter != end )
    {
       index = 0;
       #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 )
@@ -573,23 +573,23 @@ template< class T > bool TCT_NameList_c< T >::ApplyRegExp(
    this->Clear( );
 
    // Iterate for each name element in list, apply regular expression matching
-   for( size_t i = 0; i < thisList.GetLength( ); ++i )
+   for ( size_t i = 0; i < thisList.GetLength( ); ++i )
    {
       const string& srRegExpName = thisList.FindName( i );
 
       TCT_RegExpIter_c< TCT_NameList_c< T > > regExpNameIter;
       ok = regExpNameIter.Init( srRegExpName, nameList );
-      if( !ok )
+      if ( !ok )
          break;
 
-      if( regExpNameIter.HasRegExp( ))
+      if ( regExpNameIter.HasRegExp( ))
       {
          // Iterate over given list and add matching name elements
          size_t matchCount = 0;  
-         while( matchCount < SIZE_MAX )
+         while ( matchCount < SIZE_MAX )
 	 {
             size_t matchIndex = regExpNameIter.Next( );
-            if( matchIndex == SIZE_MAX )
+            if ( matchIndex == SIZE_MAX )
                break;
             
             // Found next matching name element in the test list
@@ -600,19 +600,19 @@ template< class T > bool TCT_NameList_c< T >::ApplyRegExp(
             this->Add( matchData );
          }
 
-         if( matchCount == 0 )
+         if ( matchCount == 0 )
 	 {
             ok = this->ShowMessageInvalidRegExpName_( srRegExpName, 
                                                       isShowWarningEnabled,
                                                       isShowErrorEnabled,
                                                       pszShowRegExpType );
-            if( !ok )
+            if ( !ok )
               break;
          }
       }
       else 
       {
-         if( nameList.IsMember( srRegExpName ))
+         if ( nameList.IsMember( srRegExpName ))
 	 {
             this->Add( srRegExpName );
 	 }
@@ -622,7 +622,7 @@ template< class T > bool TCT_NameList_c< T >::ApplyRegExp(
                                                       isShowWarningEnabled,
                                                       isShowErrorEnabled,
                                                       pszShowRegExpType );
-            if( !ok )
+            if ( !ok )
               break;
          }
       }
@@ -650,24 +650,24 @@ template< class T > bool TCT_NameList_c< T >::ApplyRegExp(
 
    // Iterate for each name element in list, apply regular expression matching
    size_t i = 0;
-   while( i < pnameList->GetLength( ))
+   while ( i < pnameList->GetLength( ))
    {
       const string& srRegExpName = pnameList->FindName( i );
 
       TCT_RegExpIter_c< TCT_NameList_c< T > > regExpThisIter;
       ok = regExpThisIter.Init( srRegExpName, *this );
-      if( !ok )
+      if ( !ok )
          break;
 
-      if( this->IsValid( ) && 
+      if ( this->IsValid( ) && 
           regExpThisIter.HasRegExp( ))
       {
          // Iterate over given list and add matching name elements
          size_t matchCount = 0;  
-         while( matchCount < SIZE_MAX )
+         while ( matchCount < SIZE_MAX )
 	 {
             size_t matchIndex = regExpThisIter.Next( );
-            if( matchIndex == SIZE_MAX )
+            if ( matchIndex == SIZE_MAX )
                break;
             
             // Found next matching name element in the test list
@@ -678,13 +678,13 @@ template< class T > bool TCT_NameList_c< T >::ApplyRegExp(
             pnameList->Add( matchData );
          }
 
-         if( matchCount == 0 )
+         if ( matchCount == 0 )
 	 {
             ok = this->ShowMessageInvalidRegExpName_( srRegExpName, 
                                                       isShowWarningEnabled,
                                                       isShowErrorEnabled,
                                                       pszShowRegExpType );
-            if( !ok )
+            if ( !ok )
               break;
          }
 
@@ -693,7 +693,7 @@ template< class T > bool TCT_NameList_c< T >::ApplyRegExp(
       }
       else 
       {
-         if( this->IsMember( srRegExpName ))
+         if ( this->IsMember( srRegExpName ))
 	 {
             ++i;
 	 }
@@ -705,7 +705,7 @@ template< class T > bool TCT_NameList_c< T >::ApplyRegExp(
                                                       isShowWarningEnabled,
                                                       isShowErrorEnabled,
                                                       pszShowRegExpType );
-            if( !ok )
+            if ( !ok )
               break;
          }
       }
@@ -729,27 +729,27 @@ template< class T > bool TCT_NameList_c< T >::MatchRegExp(
    bool ok = false;
 
    // Iterate for each name element in list, apply regular expression matching
-   for( size_t i = 0; i < this->GetLength( ); ++i )
+   for ( size_t i = 0; i < this->GetLength( ); ++i )
    {
       const string& srRegExpName = this->FindName( i );
 
       TCT_RegExpIter_c< TCT_NameList_c< T > > regExpNameIter;
-      if( !regExpNameIter.Init( srRegExpName, nameList ))
+      if ( !regExpNameIter.Init( srRegExpName, nameList ))
          break;
 
-      if( regExpNameIter.HasRegExp( ))
+      if ( regExpNameIter.HasRegExp( ))
       {
          size_t matchCount = 0;  
-         while( matchCount < SIZE_MAX )
+         while ( matchCount < SIZE_MAX )
 	 {
             size_t matchIndex = regExpNameIter.Next( );
-            if( matchIndex == SIZE_MAX )
+            if ( matchIndex == SIZE_MAX )
                break;
             
             ++matchCount;
          }
 
-         if( matchCount > 0 )
+         if ( matchCount > 0 )
 	 {
             ok = true;
 	    break;
@@ -757,7 +757,7 @@ template< class T > bool TCT_NameList_c< T >::MatchRegExp(
       }
       else 
       {
-         if( nameList.IsMember( srRegExpName ))
+         if ( nameList.IsMember( srRegExpName ))
 	 {
             ok = true;
 	    break;
@@ -803,10 +803,10 @@ template< class T > bool TCT_NameList_c< T >::Search_(
    typename std::vector< T >::const_iterator begin = this->vector_.begin( );
    typename std::vector< T >::const_iterator end = this->vector_.end( );
    typename std::vector< T >::const_iterator iter = std::find( begin, end, data );
-   if( iter != end )
+   if ( iter != end )
    {
       found = true;
-      if( pdata )
+      if ( pdata )
       {
          *pdata = *iter;
       }
@@ -829,13 +829,13 @@ template< class T > bool TCT_NameList_c< T >::ShowMessageInvalidRegExpName_(
 {
    TIO_PrintHandler_c& messageHandler = TIO_PrintHandler_c::GetInstance( );
 
-   if( isShowWarningEnabled )
+   if ( isShowWarningEnabled )
    {
       messageHandler.Warning( "Invalid name '%s', no pattern match found in %s list.\n",
                               TIO_SR_STR( srRegExpName ),
                               TIO_PSZ_STR( pszShowRegExpType ));
    }
-   else if( isShowErrorEnabled )
+   else if ( isShowErrorEnabled )
    {
       messageHandler.Error( "Invalid name '%s', no pattern match found in %s list.\n",
                             TIO_SR_STR( srRegExpName ),
@@ -859,13 +859,13 @@ template< class T > bool TCT_NameList_c< T >::ShowMessageMissingRegExpName_(
 {
    TIO_PrintHandler_c& messageHandler = TIO_PrintHandler_c::GetInstance( );
 
-   if( isShowWarningEnabled )
+   if ( isShowWarningEnabled )
    {
       messageHandler.Warning( "Missing name '%s', no match found in %s list.\n",
                               TIO_SR_STR( srRegExpName ),
                               TIO_PSZ_STR( pszShowRegExpType ));
    }
-   else if( isShowErrorEnabled )
+   else if ( isShowErrorEnabled )
    {
       messageHandler.Error( "Missing name '%s', no match found in %s list.\n",
                             TIO_SR_STR( srRegExpName ),

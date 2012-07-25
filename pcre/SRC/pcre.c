@@ -287,7 +287,7 @@ if there are extra bytes. This is called when we know we are in UTF-8 mode. */
 /* If the pointer is not at the start of a character, move it back until
 it is. Called only in UTF-8 mode. */
 
-#define BACKCHAR(eptr) while((*eptr & 0xc0) == 0x80) eptr--;
+#define BACKCHAR(eptr) while ((*eptr & 0xc0) == 0x80) eptr--;
 
 #endif
 
@@ -712,7 +712,7 @@ else
 
     case '0':
     c -= '0';
-    while(i++ < 2 && (cd->ctypes[ptr[1]] & ctype_digit) != 0 &&
+    while (i++ < 2 && (cd->ctypes[ptr[1]] & ctype_digit) != 0 &&
       ptr[1] != '8' && ptr[1] != '9')
         c = c * 8 + *(++ptr) - '0';
     c &= 255;     /* Take least significant 8 bits */
@@ -863,7 +863,7 @@ if (*p == '}') max = min; else
   if (*(++p) != '}')
     {
     max = 0;
-    while((cd->ctypes[*p] & ctype_digit) != 0) max = max * 10 + *p++ - '0';
+    while ((cd->ctypes[*p] & ctype_digit) != 0) max = max * 10 + *p++ - '0';
     if (max < min)
       {
       *errorptr = ERR4;
@@ -1053,7 +1053,7 @@ for (;;)
 #ifdef SUPPORT_UTF8
     if ((options & PCRE_UTF8) != 0)
       {
-      while((*cc & 0x80) == 0x80) cc++;
+      while ((*cc & 0x80) == 0x80) cc++;
       }
 #endif
     break;
@@ -2134,7 +2134,7 @@ for (;; ptr++)
       if (utf8 && (code[-1] & 0x80) != 0)
         {
         uschar *lastchar = code - 1;
-        while((*lastchar & 0xc0) == 0x80) lastchar--;
+        while ((*lastchar & 0xc0) == 0x80) lastchar--;
         c = code - lastchar;            /* Length of UTF-8 character */
         memcpy(utf8_char, lastchar, c); /* Save the char */
         if (lastchar == previous + 2)   /* There was only one character */
@@ -4589,7 +4589,7 @@ while ((c = *(++ptr)) != 0)
       const uschar *lastptr = ptr - 1;
       if ((*lastptr & 0x80) != 0)
         {
-        while((*lastptr & 0xc0) == 0x80) lastptr--;
+        while ((*lastptr & 0xc0) == 0x80) lastptr--;
         lastcharlength = ptr - lastptr;
         }
       }
@@ -5610,7 +5610,7 @@ for (;;)
         if (eptr == md->start_subject) prev_is_word = FALSE; else
           {
           const uschar *lastptr = eptr - 1;
-          while((*lastptr & 0xc0) == 0x80) lastptr--;
+          while ((*lastptr & 0xc0) == 0x80) lastptr--;
           GETCHAR(c, lastptr);
           prev_is_word = c < 256 && (md->ctypes[c] & ctype_word) != 0;
           }
@@ -7470,7 +7470,7 @@ do
     start_match++;
 #ifdef SUPPORT_UTF8
     if (match_block.utf8)
-      while((*start_match & 0xc0) == 0x80) start_match++;
+      while ((*start_match & 0xc0) == 0x80) start_match++;
 #endif
     continue;
     }

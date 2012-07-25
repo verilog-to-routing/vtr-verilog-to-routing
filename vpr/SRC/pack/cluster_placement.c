@@ -123,7 +123,7 @@ boolean get_next_primitive_list(
 	 3. When found, move current blocks to in-flight, return lowest cost array of primitives
 	 4. Return NULL if not found
 	 */
-	lowest_cost = HUGE_FLOAT;
+	lowest_cost = HUGE_POSITIVE_FLOAT;
 	for (i = 0; i < cluster_placement_stats->num_pb_types; i++) {
 		if (cluster_placement_stats->valid_primitives[i]->next_primitive == NULL) {
 			continue; /* no more primitives of this type available */
@@ -456,7 +456,7 @@ static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node,
 static float try_place_molecule(INP t_pack_molecule *molecule,
 		INP t_pb_graph_node *root, INOUTP t_pb_graph_node **primitives_list) {
 	int list_size, i;
-	float cost = HUGE_FLOAT;
+	float cost = HUGE_POSITIVE_FLOAT;
 	list_size = get_array_size_of_molecule(molecule);
 
 	if (primitive_type_feasible(
@@ -473,7 +473,7 @@ static float try_place_molecule(INP t_pack_molecule *molecule,
 				if (!expand_forced_pack_molecule_placement(molecule,
 						molecule->pack_pattern->root_block, primitives_list,
 						&cost)) {
-					return HUGE_FLOAT;
+					return HUGE_POSITIVE_FLOAT;
 				}
 			}
 		}

@@ -194,7 +194,7 @@ template< class T > TCT_OrderedVector2D_c< T >& TCT_OrderedVector2D_c< T >::oper
    this->width_ = orderedVector2D.width_;
    this->height_ = orderedVector2D.height_;
 
-   for( size_t i = 0; i < this->width_; ++i )
+   for ( size_t i = 0; i < this->width_; ++i )
    {
       this->vector2D_[i].operator=( orderedVector2D.vector2D_[i] );
    }
@@ -216,18 +216,18 @@ template< class T > bool TCT_OrderedVector2D_c< T >::operator==(
    bool isEqual = ( this->width_ == orderedVector2D.width_ ) &&
                   ( this->height_ == orderedVector2D.height_ ) ?
                   true : false;
-   if( isEqual )
+   if ( isEqual )
    {
-      for( size_t j = 0; j < this->height_; ++j )
+      for ( size_t j = 0; j < this->height_; ++j )
       {
-         for( size_t i = 0; i < this->width_; ++i )
+         for ( size_t i = 0; i < this->width_; ++i )
          {
 	    isEqual = ( this->vector2D_[i][j] == orderedVector2D[i][j] ) ?
                       true : false;
-            if( !isEqual )
+            if ( !isEqual )
                break;
          }
-         if( !isEqual )
+         if ( !isEqual )
             break;
       }
    }
@@ -259,7 +259,7 @@ template< class T > T* TCT_OrderedVector2D_c< T >::operator[](
 {
    T* pdata = 0;
 
-   if( index < TCT_Max( this->width_, this->height_ ))
+   if ( index < TCT_Max( this->width_, this->height_ ))
    {
       pdata = &this->vector2D_.operator[]( index ).operator[]( 0 );
    }
@@ -308,12 +308,12 @@ template< class T > void TCT_OrderedVector2D_c< T >::Print(
       FILE*  pfile,
       size_t spaceLen ) const
 {
-   for( size_t j = 0; j < this->height_; ++j )
+   for ( size_t j = 0; j < this->height_; ++j )
    {
-      for( size_t i = 0; i < this->width_; ++i )
+      for ( size_t i = 0; i < this->width_; ++i )
       {
          const T& data = *this->At( i, j );
-         if( data.IsValid( ))  
+         if ( data.IsValid( ))  
          {
             data.Print( pfile, spaceLen );
          }
@@ -336,37 +336,37 @@ template< class T > void TCT_OrderedVector2D_c< T >::ExtractString(
       size_t        spaceLen,
       size_t        firstLen ) const
 {
-   if( psrData )
+   if ( psrData )
    {
       *psrData = "";
 
-      if( precision == SIZE_MAX )
+      if ( precision == SIZE_MAX )
       {
          TC_MinGrid_c& minGrid = TC_MinGrid_c::GetInstance( );
          precision = minGrid.GetPrecision( );
       }
 
-      if( firstLen == SIZE_MAX )
+      if ( firstLen == SIZE_MAX )
       {
 	 firstLen = spaceLen;
       }
 
-      for( size_t j = 0; j < this->height_; ++j )
+      for ( size_t j = 0; j < this->height_; ++j )
       {
-	 if(( j == 0 ) && ( firstLen > 0 ))
+	 if (( j == 0 ) && ( firstLen > 0 ))
 	 {
             char szFirstText[ TIO_FORMAT_STRING_LEN_MAX ];
             sprintf( szFirstText, "%*s", firstLen, firstLen ? " " : "" );
             *psrData += szFirstText;
          }
-	 else if(( j > 0 ) && ( spaceLen > 0 ))
+	 else if (( j > 0 ) && ( spaceLen > 0 ))
          {
             char szSpaceText[ TIO_FORMAT_STRING_LEN_MAX ];
             sprintf( szSpaceText, "%*s", spaceLen, spaceLen ? " " : "" );
             *psrData += szSpaceText;
          }
 
-         for( size_t i = 0; i < this->width_; ++i )
+         for ( size_t i = 0; i < this->width_; ++i )
          {
             int iDataValue;
             unsigned int uiDataValue;
@@ -428,7 +428,7 @@ template< class T > void TCT_OrderedVector2D_c< T >::ExtractString(
    	    }
 
    	    size_t lenDataString = TCT_Max( strlen( szDataString ), strlen( "..." ));
-            if( psrData->length( ) + lenDataString >= maxLen )
+            if ( psrData->length( ) + lenDataString >= maxLen )
    	    {
    	       *psrData += "...";
    	       break;
@@ -458,14 +458,14 @@ template< class T > void TCT_OrderedVector2D_c< T >::SetCapacity(
    this->height_ = height;
 
    T data;
-   if( pdata )
+   if ( pdata )
       data = *pdata;
 
    this->vector2D_.resize( this->width_ );
-   for( size_t i = 0; i < this->width_; ++i )
+   for ( size_t i = 0; i < this->width_; ++i )
    {
       this->vector2D_[i].resize( this->height_ );
-      for( size_t j = 0; j < this->height_; ++j )
+      for ( size_t j = 0; j < this->height_; ++j )
       {
          this->vector2D_[i][j] = data;
       }
@@ -494,7 +494,7 @@ template< class T > T* TCT_OrderedVector2D_c< T >::At(
 {
    T* pdata = 0;
 
-   if(( i < this->width_ ) && ( j < this->height_ ))
+   if (( i < this->width_ ) && ( j < this->height_ ))
    {
       std::vector< T >& vector1D_ = this->vector2D_[i];
       pdata = &vector1D_[j];
@@ -522,7 +522,7 @@ template< class T > T* TCT_OrderedVector2D_c< T >::At(
 template< class T > void TCT_OrderedVector2D_c< T >::Clear( 
       void )
 {
-   for( size_t i = 0; i < this->width_; ++i )
+   for ( size_t i = 0; i < this->width_; ++i )
    {
       this->vector2D_[i].clear( );
    }

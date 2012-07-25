@@ -67,7 +67,7 @@ TC_Bit_c::~TC_Bit_c(
 TC_Bit_c& TC_Bit_c::operator=( 
       const TC_Bit_c& bit )
 {
-   if( &bit != this )
+   if ( &bit != this )
    {
       this->value_ = bit.value_;
    }
@@ -129,7 +129,7 @@ void TC_Bit_c::Print(
 void TC_Bit_c::ExtractString( 
       string* psrValue ) const
 {
-   if( psrValue )
+   if ( psrValue )
    {
       *psrValue = "";
 

@@ -228,6 +228,9 @@
     <ClCompile Include="SRC\base\vpr_api.c">
       <Filter>Source Files\base</Filter>
     </ClCompile>
+    <ClCompile Include="SRC\timing\slre.c">
+      <Filter>Source Files\timing</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SRC\base\check_netlist.h">
@@ -403,6 +406,9 @@
     </ClInclude>
     <ClInclude Include="SRC\base\vpr_api.h">
       <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\timing\slre.h">
+      <Filter>Header Files\timing</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

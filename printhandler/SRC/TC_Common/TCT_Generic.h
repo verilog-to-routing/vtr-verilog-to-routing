@@ -164,7 +164,7 @@ template< class T > inline bool TCTF_IsNZE( T n )
 template< class T > T TCT_Rand( T i, T j, T units )
 {
    // Check units to prevent divide by zero error
-   if( TCTF_IsZE( static_cast< double >( units )))
+   if ( TCTF_IsZE( static_cast< double >( units )))
    {
       units = static_cast< T >( 1 );
    }
@@ -231,7 +231,7 @@ template< class T > T TCT_FloatToUnit(
    double units = static_cast< double >( dbUnits > 1 ? dbUnits : 1 );
    double epsilon = ( val >= -1.0E-4 ? 1.0E-4 : -1.0E-4 );
    T unit = static_cast< T >(( val + epsilon ) * units );
-   if( punit )
+   if ( punit )
    {
       *punit = unit;
    }
@@ -252,7 +252,7 @@ template< class T > double TCT_UnitToFloat(
 {
    double units = static_cast< double >( dbUnits > 1 ? dbUnits : 1 );
    double val = static_cast< double >( unit ) / units;
-   if( pval )
+   if ( pval )
    {
       *pval = val;
    }

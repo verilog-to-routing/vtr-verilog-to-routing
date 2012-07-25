@@ -174,7 +174,7 @@ void TIO_PrintHandler_c::DeleteInstance(
 TIO_PrintHandler_c& TIO_PrintHandler_c::GetInstance(
       void )
 {
-   if( !pinstance_ )
+   if ( !pinstance_ )
    {
       NewInstance( );
 
@@ -212,7 +212,7 @@ void TIO_PrintHandler_c::Info(
             va_list vaArgs )
 {
    string srText( pszText ? pszText : "" );
-   if(( srText.length( ) > 1 ) && ( srText[ srText.length( ) - 1 ] == '\n' ))
+   if (( srText.length( ) > 1 ) && ( srText[ srText.length( ) - 1 ] == '\n' ))
    {
       srText = srText.substr( 0, srText.length( ) - 1 );
    }
@@ -221,22 +221,22 @@ void TIO_PrintHandler_c::Info(
    TCT_NameList_c< TC_Name_c >* pinfoRejectList = static_cast< TCT_NameList_c< TC_Name_c >* >( this->display_.pinfoRejectList );
 
    TIO_PrintMode_t mode = ( !pinfoAcceptList ? TIO_PRINT_INFO : TIO_PRINT_UNDEFINED );
-   if( pinfoAcceptList && ( mode == TIO_PRINT_UNDEFINED ))
+   if ( pinfoAcceptList && ( mode == TIO_PRINT_UNDEFINED ))
    {
-      if( pinfoAcceptList->MatchRegExp( srText ))
+      if ( pinfoAcceptList->MatchRegExp( srText ))
       {
          mode = TIO_PRINT_INFO;
       }
    }
-   if( pinfoRejectList && ( mode == TIO_PRINT_INFO ))
+   if ( pinfoRejectList && ( mode == TIO_PRINT_INFO ))
    {
-      if( pinfoRejectList->MatchRegExp( srText ))
+      if ( pinfoRejectList->MatchRegExp( srText ))
       {
          mode = TIO_PRINT_UNDEFINED;
       }
    }
 
-   if( mode != TIO_PRINT_UNDEFINED )
+   if ( mode != TIO_PRINT_UNDEFINED )
    {
       this->WriteMessage_( mode, pszText, vaArgs );
    }
@@ -274,7 +274,7 @@ bool TIO_PrintHandler_c::Warning(
    bool isValid = true;
 
    string srText( pszText ? pszText : "" );
-   if(( srText.length( ) > 1 ) && ( srText[ srText.length( ) - 1 ] == '\n' ))
+   if (( srText.length( ) > 1 ) && ( srText[ srText.length( ) - 1 ] == '\n' ))
    {
       srText = srText.substr( 0, srText.length( ) - 1 );
    }
@@ -285,45 +285,45 @@ bool TIO_PrintHandler_c::Warning(
    TCT_NameList_c< TC_Name_c >* perrorRejectList = static_cast< TCT_NameList_c< TC_Name_c >* >( this->display_.perrorRejectList );
 
    TIO_PrintMode_t mode = ( !pwarningAcceptList && !perrorAcceptList ? TIO_PRINT_WARNING : TIO_PRINT_UNDEFINED );
-   if( pwarningAcceptList && ( mode == TIO_PRINT_UNDEFINED ))
+   if ( pwarningAcceptList && ( mode == TIO_PRINT_UNDEFINED ))
    {
-      if( pwarningAcceptList->MatchRegExp( srText ))
+      if ( pwarningAcceptList->MatchRegExp( srText ))
       {
          mode = TIO_PRINT_WARNING;
       }
    }
-   if( pwarningRejectList && ( mode == TIO_PRINT_WARNING ))
+   if ( pwarningRejectList && ( mode == TIO_PRINT_WARNING ))
    {
-      if( pwarningRejectList->MatchRegExp( srText ))
+      if ( pwarningRejectList->MatchRegExp( srText ))
       {
          mode = TIO_PRINT_UNDEFINED;
       }
    }
-   if( perrorAcceptList && ( mode == TIO_PRINT_UNDEFINED ))
+   if ( perrorAcceptList && ( mode == TIO_PRINT_UNDEFINED ))
    {
-      if( perrorAcceptList->MatchRegExp( srText ))
+      if ( perrorAcceptList->MatchRegExp( srText ))
       {
          mode = TIO_PRINT_ERROR;
       }
    }
-   if( perrorRejectList && ( mode == TIO_PRINT_ERROR ))
+   if ( perrorRejectList && ( mode == TIO_PRINT_ERROR ))
    {
-      if( perrorRejectList->MatchRegExp( srText ))
+      if ( perrorRejectList->MatchRegExp( srText ))
       {
          mode = TIO_PRINT_UNDEFINED;
       }
    }
 
-   if( mode != TIO_PRINT_UNDEFINED )
+   if ( mode != TIO_PRINT_UNDEFINED )
    {
       this->WriteMessage_( mode, pszText, vaArgs );
 
-      if( mode == TIO_PRINT_ERROR )
+      if ( mode == TIO_PRINT_ERROR )
       {
          // Update current error count and test against the max error count
          isValid = this->IsValidMaxErrorCount( );
       }
-      if( mode == TIO_PRINT_WARNING )
+      if ( mode == TIO_PRINT_WARNING )
       {
          // Update current warning count and test against the max warning count
          isValid = this->IsValidMaxWarningCount( );
@@ -364,7 +364,7 @@ bool TIO_PrintHandler_c::Error(
    bool isValid = true;
 
    string srText( pszText ? pszText : "" );
-   if(( srText.length( ) > 1 ) && ( srText[ srText.length( ) - 1 ] == '\n' ))
+   if (( srText.length( ) > 1 ) && ( srText[ srText.length( ) - 1 ] == '\n' ))
    {
       srText = srText.substr( 0, srText.length( ) - 1 );
    }
@@ -375,45 +375,45 @@ bool TIO_PrintHandler_c::Error(
    TCT_NameList_c< TC_Name_c >* pwarningRejectList = static_cast< TCT_NameList_c< TC_Name_c >* >( this->display_.pwarningRejectList );
 
    TIO_PrintMode_t mode = ( !perrorAcceptList && !pwarningAcceptList ? TIO_PRINT_ERROR : TIO_PRINT_UNDEFINED );
-   if( perrorAcceptList && ( mode == TIO_PRINT_UNDEFINED ))
+   if ( perrorAcceptList && ( mode == TIO_PRINT_UNDEFINED ))
    {
-      if( perrorAcceptList->MatchRegExp( srText ))
+      if ( perrorAcceptList->MatchRegExp( srText ))
       {
          mode = TIO_PRINT_ERROR;
       }
    }
-   if( perrorRejectList && ( mode == TIO_PRINT_ERROR ))
+   if ( perrorRejectList && ( mode == TIO_PRINT_ERROR ))
    {
-      if( perrorRejectList->MatchRegExp( srText ))
+      if ( perrorRejectList->MatchRegExp( srText ))
       {
          mode = TIO_PRINT_UNDEFINED;
       }
    }
-   if( pwarningAcceptList && ( mode == TIO_PRINT_UNDEFINED ))
+   if ( pwarningAcceptList && ( mode == TIO_PRINT_UNDEFINED ))
    {
-      if( pwarningAcceptList->MatchRegExp( srText ))
+      if ( pwarningAcceptList->MatchRegExp( srText ))
       {
          mode = TIO_PRINT_WARNING;
       }
    }
-   if( pwarningRejectList && ( mode == TIO_PRINT_WARNING ))
+   if ( pwarningRejectList && ( mode == TIO_PRINT_WARNING ))
    {
-      if( pwarningRejectList->MatchRegExp( srText ))
+      if ( pwarningRejectList->MatchRegExp( srText ))
       {
          mode = TIO_PRINT_UNDEFINED;
       }
    }
 
-   if( mode != TIO_PRINT_UNDEFINED )
+   if ( mode != TIO_PRINT_UNDEFINED )
    {
       this->WriteMessage_( mode, pszText, vaArgs );
 
-      if( mode == TIO_PRINT_ERROR )
+      if ( mode == TIO_PRINT_ERROR )
       {
          // Update current error count and test against the max error count
          isValid = this->IsValidMaxErrorCount( );
       }
-      if( mode == TIO_PRINT_WARNING )
+      if ( mode == TIO_PRINT_WARNING )
       {
          // Update current warning count and test against the max warning count
          isValid = this->IsValidMaxWarningCount( );
@@ -476,7 +476,7 @@ void TIO_PrintHandler_c::Trace(
             va_list vaArgs )
 {
    string srText( pszText ? pszText : "" );
-   if(( srText.length( ) > 1 ) && ( srText[ srText.length( ) - 1 ] == '\n' ))
+   if (( srText.length( ) > 1 ) && ( srText[ srText.length( ) - 1 ] == '\n' ))
    {
       srText = srText.substr( 0, srText.length( ) - 1 );
    }
@@ -485,22 +485,22 @@ void TIO_PrintHandler_c::Trace(
    TCT_NameList_c< TC_Name_c >* ptraceRejectList = static_cast< TCT_NameList_c< TC_Name_c >* >( this->display_.ptraceRejectList );
 
    TIO_PrintMode_t mode = ( ptraceRejectList ? TIO_PRINT_TRACE : TIO_PRINT_UNDEFINED );
-   if( ptraceAcceptList && ( mode == TIO_PRINT_UNDEFINED ))
+   if ( ptraceAcceptList && ( mode == TIO_PRINT_UNDEFINED ))
    {
-      if( ptraceAcceptList->MatchRegExp( srText ))
+      if ( ptraceAcceptList->MatchRegExp( srText ))
       {
          mode = TIO_PRINT_TRACE;
       }
    }
-   if( ptraceRejectList && ( mode == TIO_PRINT_TRACE ))
+   if ( ptraceRejectList && ( mode == TIO_PRINT_TRACE ))
    {
-      if( ptraceRejectList->MatchRegExp( srText ))
+      if ( ptraceRejectList->MatchRegExp( srText ))
       {
          mode = TIO_PRINT_UNDEFINED;
       }
    }
 
-   if( mode != TIO_PRINT_UNDEFINED )
+   if ( mode != TIO_PRINT_UNDEFINED )
    {
       this->WriteMessage_( mode, pszText, vaArgs );
    }
@@ -514,13 +514,13 @@ void TIO_PrintHandler_c::Trace(
       ... )
 {
    FILE* pstream = this->outputs_.stdioOutput.GetStream( );
-   if( pfile )
+   if ( pfile )
    {
       this->outputs_.stdioOutput.SetStream( pfile );
    }
 
    static char szText[ TIO_FORMAT_STRING_LEN_MAX ];
-   if( lenSpace > 0 )
+   if ( lenSpace > 0 )
    {
       sprintf( szText, "%*s%s", (int)lenSpace, lenSpace ? " " : "", pszText );
       pszText = szText;
@@ -533,7 +533,7 @@ void TIO_PrintHandler_c::Trace(
 
    va_end( vaArgs );                 // Reset variable argument list
 
-   if( pfile )
+   if ( pfile )
    {
       this->outputs_.stdioOutput.SetStream( pstream );
    }
@@ -591,7 +591,7 @@ void TIO_PrintHandler_c::Write(
       ... )
 {
    static char szText[ TIO_FORMAT_STRING_LEN_MAX ];
-   if( lenSpace > 0 )
+   if ( lenSpace > 0 )
    {
       sprintf( szText, "%*s%s", 
                (int)lenSpace, lenSpace ? " " : "", pszText );
@@ -614,13 +614,13 @@ void TIO_PrintHandler_c::Write(
       ... )
 {
    FILE* pstream = this->outputs_.stdioOutput.GetStream( );
-   if( pfile )
+   if ( pfile )
    {
       this->outputs_.stdioOutput.SetStream( pfile );
    }
 
    static char szText[ TIO_FORMAT_STRING_LEN_MAX ];
-   if( lenSpace > 0 )
+   if ( lenSpace > 0 )
    {
       sprintf( szText, "%*s%s", 
                (int)lenSpace, lenSpace ? " " : "", pszText );
@@ -634,7 +634,7 @@ void TIO_PrintHandler_c::Write(
 
    va_end( vaArgs );                 // Reset variable argument list
 
-   if( pfile )
+   if ( pfile )
    {
       this->outputs_.stdioOutput.SetStream( pstream );
    }
@@ -697,13 +697,13 @@ void TIO_PrintHandler_c::WriteCenter(
       const char*  pszPostfix )
 {
    FILE* pstream = this->outputs_.stdioOutput.GetStream( );
-   if( pfile )
+   if ( pfile )
    {
       this->outputs_.stdioOutput.SetStream( pfile );
    }
 
    static char szText[ TIO_FORMAT_STRING_LEN_MAX ];
-   if( lenSpace > 0 )
+   if ( lenSpace > 0 )
    {
       sprintf( szText, "%*s%s", 
                (int)lenSpace, lenSpace ? " " : "", pszText );
@@ -713,11 +713,11 @@ void TIO_PrintHandler_c::WriteCenter(
    static char szCenteredText[ TIO_FORMAT_STRING_LEN_MAX ];
    TC_FormatStringCentered( pszText, lenText,
                             szCenteredText, TIO_FORMAT_STRING_LEN_MAX );
-   if( pszPrefix )
+   if ( pszPrefix )
    {
       TC_AddStringPrefix( szCenteredText, pszPrefix );
    }
-   if( pszPostfix )
+   if ( pszPostfix )
    {
       TC_AddStringPostfix( szCenteredText, pszPostfix );
    }
@@ -733,7 +733,7 @@ void TIO_PrintHandler_c::WriteCenter(
 
    va_end( vaArgs );                 // Reset variable argument list
 
-   if( pfile )
+   if ( pfile )
    {
       this->outputs_.stdioOutput.SetStream( pstream );
    }
@@ -818,7 +818,7 @@ bool TIO_PrintHandler_c::SetLogFileOutput(
       const char*              pszLogFileName,
             TIO_FileOpenMode_t fileOpenMode )
 {
-   if( pszLogFileName )
+   if ( pszLogFileName )
    {
       this->outputs_.logFileOutput.Open( pszLogFileName, fileOpenMode );
    }
@@ -844,7 +844,7 @@ bool TIO_PrintHandler_c::SetUserFileOutput(
       const char*              pszUserFileName,
             TIO_FileOpenMode_t fileOpenMode )
 {
-   if( pszUserFileName )
+   if ( pszUserFileName )
    {
       this->outputs_.userFileOutput.Open( pszUserFileName, fileOpenMode );
    }
@@ -869,7 +869,7 @@ bool TIO_PrintHandler_c::SetUserFileOutput(
 void TIO_PrintHandler_c::AddInfoAcceptRegExp( 
       const char* pszRegExp )
 {
-   if( !this->display_.pinfoAcceptList )
+   if ( !this->display_.pinfoAcceptList )
    {
       this->display_.pinfoAcceptList = new TC_NOTHROW TCT_NameList_c< TC_Name_c >( TIO_DISPLAY_INFO_LIST_DEF_CAPACITY );
    }
@@ -887,7 +887,7 @@ void TIO_PrintHandler_c::AddInfoAcceptRegExp(
 void TIO_PrintHandler_c::AddInfoRejectRegExp( 
       const char* pszRegExp )
 {
-   if( !this->display_.pinfoRejectList )
+   if ( !this->display_.pinfoRejectList )
    {
       this->display_.pinfoRejectList = new TC_NOTHROW TCT_NameList_c< TC_Name_c >( TIO_DISPLAY_INFO_LIST_DEF_CAPACITY );
    }
@@ -905,7 +905,7 @@ void TIO_PrintHandler_c::AddInfoRejectRegExp(
 void TIO_PrintHandler_c::AddWarningAcceptRegExp( 
       const char* pszRegExp )
 {
-   if( !this->display_.pwarningAcceptList )
+   if ( !this->display_.pwarningAcceptList )
    {
       this->display_.pwarningAcceptList = new TC_NOTHROW TCT_NameList_c< TC_Name_c >( TIO_DISPLAY_WARNING_LIST_DEF_CAPACITY );
    }
@@ -923,7 +923,7 @@ void TIO_PrintHandler_c::AddWarningAcceptRegExp(
 void TIO_PrintHandler_c::AddWarningRejectRegExp( 
       const char* pszRegExp )
 {
-   if( !this->display_.pwarningRejectList )
+   if ( !this->display_.pwarningRejectList )
    {
       this->display_.pwarningRejectList = new TC_NOTHROW TCT_NameList_c< TC_Name_c >( TIO_DISPLAY_WARNING_LIST_DEF_CAPACITY );
    }
@@ -941,7 +941,7 @@ void TIO_PrintHandler_c::AddWarningRejectRegExp(
 void TIO_PrintHandler_c::AddErrorAcceptRegExp( 
       const char* pszRegExp )
 {
-   if( !this->display_.perrorAcceptList )
+   if ( !this->display_.perrorAcceptList )
    {
       this->display_.perrorAcceptList = new TC_NOTHROW TCT_NameList_c< TC_Name_c >( TIO_DISPLAY_ERROR_LIST_DEF_CAPACITY );
    }
@@ -959,7 +959,7 @@ void TIO_PrintHandler_c::AddErrorAcceptRegExp(
 void TIO_PrintHandler_c::AddErrorRejectRegExp( 
       const char* pszRegExp )
 {
-   if( !this->display_.perrorRejectList )
+   if ( !this->display_.perrorRejectList )
    {
       this->display_.perrorRejectList = new TC_NOTHROW TCT_NameList_c< TC_Name_c >( TIO_DISPLAY_ERROR_LIST_DEF_CAPACITY );
    }
@@ -977,7 +977,7 @@ void TIO_PrintHandler_c::AddErrorRejectRegExp(
 void TIO_PrintHandler_c::AddTraceAcceptRegExp( 
       const char* pszRegExp )
 {
-   if( !this->display_.ptraceAcceptList )
+   if ( !this->display_.ptraceAcceptList )
    {
       this->display_.ptraceAcceptList = new TC_NOTHROW TCT_NameList_c< TC_Name_c >( TIO_DISPLAY_TRACE_LIST_DEF_CAPACITY );
    }
@@ -995,7 +995,7 @@ void TIO_PrintHandler_c::AddTraceAcceptRegExp(
 void TIO_PrintHandler_c::AddTraceRejectRegExp( 
       const char* pszRegExp )
 {
-   if( !this->display_.ptraceRejectList )
+   if ( !this->display_.ptraceRejectList )
    {
       this->display_.ptraceRejectList = new TC_NOTHROW TCT_NameList_c< TC_Name_c >( TIO_DISPLAY_TRACE_LIST_DEF_CAPACITY );
    }
@@ -1070,19 +1070,19 @@ void TIO_PrintHandler_c::FindWorkingDir(
 void TIO_PrintHandler_c::EnableOutput( 
       int outputMask )
 {
-   if( outputMask & TIO_PRINT_OUTPUT_STDIO )
+   if ( outputMask & TIO_PRINT_OUTPUT_STDIO )
    {
       this->EnableStdioOutput( );
    }
-   if( outputMask & TIO_PRINT_OUTPUT_CUSTOM )
+   if ( outputMask & TIO_PRINT_OUTPUT_CUSTOM )
    {
       this->EnableCustomOutput( );
    }
-   if( outputMask & TIO_PRINT_OUTPUT_LOG_FILE )
+   if ( outputMask & TIO_PRINT_OUTPUT_LOG_FILE )
    {
       this->EnableLogFileOutput( );
    }
-   if( outputMask & TIO_PRINT_OUTPUT_USER_FILE )
+   if ( outputMask & TIO_PRINT_OUTPUT_USER_FILE )
    {
       this->EnableUserFileOutput( );
    }
@@ -1098,19 +1098,19 @@ void TIO_PrintHandler_c::EnableOutput(
 void TIO_PrintHandler_c::DisableOutput( 
       int outputMask )
 {
-   if( outputMask & TIO_PRINT_OUTPUT_STDIO )
+   if ( outputMask & TIO_PRINT_OUTPUT_STDIO )
    {
       this->DisableStdioOutput( );
    }
-   if( outputMask & TIO_PRINT_OUTPUT_CUSTOM )
+   if ( outputMask & TIO_PRINT_OUTPUT_CUSTOM )
    {
       this->DisableCustomOutput( );
    }
-   if( outputMask & TIO_PRINT_OUTPUT_LOG_FILE )
+   if ( outputMask & TIO_PRINT_OUTPUT_LOG_FILE )
    {
       this->DisableLogFileOutput( );
    }
-   if( outputMask & TIO_PRINT_OUTPUT_USER_FILE )
+   if ( outputMask & TIO_PRINT_OUTPUT_USER_FILE )
    {
       this->DisableUserFileOutput( );
    }
@@ -1128,22 +1128,22 @@ bool TIO_PrintHandler_c::IsOutputEnabled(
 {
    bool isOutputEnabled = false;
 
-   if( outputMask & TIO_PRINT_OUTPUT_STDIO )
+   if ( outputMask & TIO_PRINT_OUTPUT_STDIO )
    {
       isOutputEnabled = ( isOutputEnabled ? 
                           true : this->IsStdioOutputEnabled( ));
    }
-   if( outputMask & TIO_PRINT_OUTPUT_CUSTOM )
+   if ( outputMask & TIO_PRINT_OUTPUT_CUSTOM )
    {
       isOutputEnabled = ( isOutputEnabled ? 
                           true : this->IsCustomOutputEnabled( ));
    }
-   if( outputMask & TIO_PRINT_OUTPUT_LOG_FILE )
+   if ( outputMask & TIO_PRINT_OUTPUT_LOG_FILE )
    {
       isOutputEnabled = ( isOutputEnabled ? 
                           true : this->IsLogFileOutputEnabled( ));
    }
-   if( outputMask & TIO_PRINT_OUTPUT_USER_FILE )
+   if ( outputMask & TIO_PRINT_OUTPUT_USER_FILE )
    {
       isOutputEnabled = ( isOutputEnabled ? 
                           true : this->IsUserFileOutputEnabled( ));
@@ -1163,7 +1163,7 @@ bool TIO_PrintHandler_c::IsWithinMaxWarningCount(
 {
    bool isWithin = true;
 
-   if( this->counts_.isMaxWarningEnabled &&
+   if ( this->counts_.isMaxWarningEnabled &&
        this->counts_.maxWarningCount <= this->counts_.warningCount )
    {
       isWithin = false;
@@ -1183,7 +1183,7 @@ bool TIO_PrintHandler_c::IsWithinMaxErrorCount(
 {
    bool isWithin = true;
 
-   if( this->counts_.isMaxErrorEnabled &&
+   if ( this->counts_.isMaxErrorEnabled &&
        this->counts_.maxErrorCount <= this->counts_.errorCount )
    {
       isWithin = false;
@@ -1203,7 +1203,7 @@ bool TIO_PrintHandler_c::IsWithinMaxCount(
 {
    bool isWithin = true;
 
-   if( !this->IsWithinMaxErrorCount( ) ||
+   if ( !this->IsWithinMaxErrorCount( ) ||
        !this->IsWithinMaxWarningCount( ))
    {
       isWithin = false;
@@ -1224,7 +1224,7 @@ bool TIO_PrintHandler_c::IsValidMaxWarningCount(
    bool isValid = true;
 
    ++this->counts_.warningCount;
-   if( !this->IsWithinMaxWarningCount( ))
+   if ( !this->IsWithinMaxWarningCount( ))
    {
       this->counts_.isMaxErrorEnabled = false;
       this->Fatal( "Exceeded maximum warning count (%u).\n", 
@@ -1249,7 +1249,7 @@ bool TIO_PrintHandler_c::IsValidMaxErrorCount(
    bool isValid = true;
 
    ++this->counts_.errorCount;
-   if( !this->IsWithinMaxErrorCount( ))
+   if ( !this->IsWithinMaxErrorCount( ))
    {
       this->counts_.isMaxErrorEnabled = false;
       this->Fatal( "Exceeded maximum error count (%u).\n", 
@@ -1273,7 +1273,7 @@ bool TIO_PrintHandler_c::IsValidNew(
             size_t allocLen,
       const char*  pszSource )
 {
-   if( !pvoid && pszSource )
+   if ( !pvoid && pszSource )
    {
       this->Internal( pszSource, 
                       "Failed to allocate %u bytes memory!\n",
@@ -1301,7 +1301,7 @@ bool TIO_PrintHandler_c::WriteMessage_(
    bool isValid = this->FormatMessage_( pszText, vaArgs, szMessage );
 
    // Write message to zero or more enabled output streams
-   if( isValid )
+   if ( isValid )
    {
       this->OutputMessage_( mode, szMessage, pszSource );
    }
@@ -1322,7 +1322,7 @@ bool TIO_PrintHandler_c::FormatMessage_(
             va_list vaArgs,      // Define optional variable arguments
             char*   pszMessage ) // Ptr to returned message string
 {
-   if( pszMessage )
+   if ( pszMessage )
    {
       // Extract and format based on variable argument list
       vsprintf( pszMessage, pszText, vaArgs );
@@ -1345,7 +1345,7 @@ bool TIO_PrintHandler_c::PrefixMessage_(
       const char*           pszSource,   // Ptr to optional source string
             char*           pszMessage ) // Ptr to returned message string
 {
-   if( pszMessage )
+   if ( pszMessage )
    {
       pszText = ( pszText && *pszText ) ? pszText : "";
       pszSource = ( pszSource && *pszSource ) ? pszSource : "";
@@ -1358,7 +1358,7 @@ bool TIO_PrintHandler_c::PrefixMessage_(
       {
       case TIO_PRINT_INFO:
 
-         if( this->formats_.timeStampsEnabled )
+         if ( this->formats_.timeStampsEnabled )
          {
             static char szTimeStamp[ TIO_FORMAT_STRING_LEN_DATE_TIME ];
             size_t lenTimeStamp = sizeof( szTimeStamp );
@@ -1389,7 +1389,7 @@ bool TIO_PrintHandler_c::PrefixMessage_(
 
       case TIO_PRINT_TRACE:
 
-         if( this->formats_.timeStampsEnabled )
+         if ( this->formats_.timeStampsEnabled )
          {
             static char szTimeStamp[ TIO_FORMAT_STRING_LEN_DATE_TIME ];
             size_t lenTimeStamp = sizeof( szTimeStamp );
@@ -1441,26 +1441,26 @@ void TIO_PrintHandler_c::OutputMessage_(
    static char szMessage[ TIO_FORMAT_STRING_LEN_MAX ];
    
    // Format and print message based on enabled output options
-   if( this->outputs_.stdioOutput.IsEnabled( ))
+   if ( this->outputs_.stdioOutput.IsEnabled( ))
    {
       this->PrefixMessage_( mode, pszText, pszSource, szMessage );
       this->outputs_.stdioOutput.Write( szMessage );
       this->outputs_.stdioOutput.Flush( );
    }
 
-   if( this->outputs_.customOutput.IsEnabled( ))
+   if ( this->outputs_.customOutput.IsEnabled( ))
    {
       this->outputs_.customOutput.Write( mode, pszText, pszSource );
    }
 
-   if( this->outputs_.logFileOutput.IsEnabled( ))
+   if ( this->outputs_.logFileOutput.IsEnabled( ))
    {
       this->PrefixMessage_( mode, pszText, pszSource, szMessage );
       this->outputs_.logFileOutput.Write( szMessage );
       this->outputs_.logFileOutput.Flush( );
    }
 
-   if( this->outputs_.userFileOutput.IsEnabled( ))
+   if ( this->outputs_.userFileOutput.IsEnabled( ))
    {
       this->PrefixMessage_( mode, pszText, pszSource, szMessage );
       this->outputs_.userFileOutput.Write( szMessage );
@@ -1479,7 +1479,7 @@ void TIO_PrintHandler_c::ApplySystemCommand_(
             size_t  lenCommandStdout,
             string* psrCommandStdout ) const
 {
-   if( psrCommandStdout )
+   if ( psrCommandStdout )
    {
       *psrCommandStdout = "";
 
@@ -1499,10 +1499,10 @@ void TIO_PrintHandler_c::ApplySystemCommand_(
          srCommand += " > ";
          srCommand += srCommandStdout;
 
-         if( system( srCommand.data( )) >= 0 )
+         if ( system( srCommand.data( )) >= 0 )
          {
             TIO_FileHandler_c fileIO( srCommandStdout, TIO_FILE_OPEN_READ );
-            if( fileIO.IsValid( ))
+            if ( fileIO.IsValid( ))
             {
                char* pszCommandStdout = new TC_NOTHROW char[ lenCommandStdout ];
                fileIO.Read( pszCommandStdout, lenCommandStdout-1 );

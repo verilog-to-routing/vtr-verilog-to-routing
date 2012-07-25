@@ -101,12 +101,12 @@ static int indexofcrit; /* index of next most timing critical block */
 static int savedindexofcrit; /* index of next most timing critical block */
 
 /* Timing information for blocks */
+#ifdef FANCY_CRITICALITY
 static float *criticality = NULL;
 static int *critindexarray = NULL;
-
 static float **net_pin_backward_criticality = NULL;
 static float **net_pin_forward_criticality = NULL;
-
+#endif
 /*****************************************/
 /*local functions*/
 /*****************************************/
@@ -173,13 +173,15 @@ static void update_connection_gain_values(int inet, int clustered_block,
 
 static void update_length_gain_values(int inet, int clustered_block,
 		t_pb* cur_pb,
-		enum e_net_relation_to_clustered_block net_relation_to_clustered_block);
+		enum e_net_relation_to_clustered_block net_relation_to_clustered_block,
+		t_slack * slacks);
 
 static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 		int clustered_block, int port_on_clustered_block,
 		int pin_on_clustered_block, boolean timing_driven,
 		boolean connection_driven,
-		enum e_net_relation_to_clustered_block net_relation_to_clustered_block);
+		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
+		t_slack * slacks);
 
 static void update_total_gain(float alpha, float beta, boolean timing_driven,
 		boolean connection_driven, boolean global_clocks, t_pb *pb);
@@ -187,7 +189,7 @@ static void update_total_gain(float alpha, float beta, boolean timing_driven,
 static void update_cluster_stats( INP t_pack_molecule *molecule,
 		INP int clb_index, INP boolean *is_clock, INP boolean global_clocks,
 		INP float alpha, INP float beta, INP boolean timing_driven,
-		INP boolean connection_driven);
+		INP boolean connection_driven, INP t_slack * slacks);
 
 static void start_new_cluster(
 		INP t_cluster_placement_stats *cluster_placement_stats,
@@ -244,8 +246,12 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	 
 	 */
 
+	t_slack * slacks = NULL;
 	t_pack_molecule *istart, *next_molecule, *prev_molecule, *cur_molecule;
-	int i, j, iblk, num_molecules;
+	int i, num_molecules;
+#ifdef FANCY_CRITICALITY
+	int j, iblk;
+#endif
 	int blocks_since_last_analysis;
 	int max_nets_in_pb_type, cur_nets_in_pb_type;
 
@@ -268,11 +274,14 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	enum e_block_pack_status block_pack_status;
 
 	int *num_used_instances_type, *num_instances_type; /* [0..num_types] Holds array for total number of each cluster_type available */
-	float **net_slack = NULL;
+#ifdef FANCY_CRITICALITY
 	float num_paths_scaling, distance_scaling;
 
 	float crit;
+#endif
 	int num_unrelated_clustering_attempts;
+
+	t_timing_stats * timing_stats;
 
 	/* TODO: This is memory inefficient, fix if causes problems */
 	clb = (t_block*)my_calloc(num_logical_blocks, sizeof(t_block));
@@ -346,16 +355,26 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	/* Limit maximum number of elements for each cluster */
 
 	if (timing_driven) {
-		net_slack = alloc_and_load_pre_packing_timing_graph(block_delay,
+		slacks = alloc_and_load_pre_packing_timing_graph(block_delay,
 				inter_cluster_net_delay, arch->models, timing_inf);
-		load_net_slack(net_slack, FALSE);
+#ifdef FANCY_CRITICALITY
+		timing_stats = do_timing_analysis(slacks, TRUE, FALSE, FALSE);
+#else
+		/* Simple criticality uses the same info as the post-packed netlist,
+		so do the same steps as for a post-packed timing analysis. */
+		timing_stats = do_timing_analysis(slacks, FALSE, FALSE, FALSE);
+#endif
+		free_timing_stats(timing_stats);
 
 		if (GetEchoOption()) {
+			print_net_slack(slacks->net_slack, "pre_packing_net_slack.echo");
+			print_net_slack_ratio(slacks->net_slack_ratio, "pre_packing_net_slack_ratio.echo");
 			print_timing_graph("pre_packing_timing_graph.echo");
-			print_net_slack("pre_packing_net_slack.echo", net_slack);
+#ifdef FANCY_CRITICALITY
 			print_clustering_timing_info("clustering_timing_info.echo");
+#endif
 		}
-
+#ifdef FANCY_CRITICALITY
 		criticality = (float*) my_calloc(num_logical_blocks, sizeof(float));
 
 		critindexarray = (int*) my_malloc(num_logical_blocks * sizeof(int));
@@ -367,15 +386,20 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 		/* Calculate criticality based on slacks and tie breakers (# paths, distance from source) */
 		for (i = 0; i < num_tnodes; i++) {
-			iblk = tnode[i].block;
-			num_paths_scaling = SCALE_NUM_PATHS
-					* (float) tnode[i].normalized_total_critical_paths;
-			distance_scaling = SCALE_DISTANCE_VAL
-					* (float) tnode[i].normalized_T_arr;
-			crit = (1 - tnode[i].normalized_slack) + num_paths_scaling
-					+ distance_scaling;
-			if (criticality[iblk] < crit) {
-				criticality[iblk] = crit;
+			/* Only calculate for tnodes which have valid arrival and required times.  
+			Tnodes that do not have both times valid were not part of the analysis. 
+			Because we calloc-ed the array criticality, such nodes will have criticality 0, the lowest possible value. */
+			if (tnode[i].T_arr > HUGE_NEGATIVE_FLOAT + 1 && tnode[i].T_req < HUGE_POSITIVE_FLOAT - 1) {
+				iblk = tnode[i].block;
+				num_paths_scaling = SCALE_NUM_PATHS
+						* (float) tnode[i].normalized_total_critical_paths;
+				distance_scaling = SCALE_DISTANCE_VAL
+						* (float) tnode[i].normalized_T_arr;
+				crit = (1 - tnode[i].normalized_slack) + num_paths_scaling
+						+ distance_scaling;
+				if (criticality[iblk] < crit) {
+					criticality[iblk] = crit;
+				}
 			}
 		}
 
@@ -396,10 +420,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			}
 		}
 		heapsort(critindexarray, criticality, num_logical_blocks, 1);
-
-		/*if (GetEchoOption()){
-			print_critical_path("clustering_critical_path.echo");
-		}*/
+#endif
 
 		if (cluster_seed_type == VPACK_TIMING) {
 			istart = get_most_critical_seed_molecule();
@@ -407,6 +428,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			istart = get_seed_logical_molecule_with_most_ext_inputs(
 					max_molecule_inputs);
 		}
+#ifdef FANCY_CRITICALITY
+		free_timing_graph(slacks);
+#endif
+
 	} else /*cluster seed is max input (since there is no timing information)*/ {
 		istart = get_seed_logical_molecule_with_most_ext_inputs(
 				max_molecule_inputs);
@@ -416,7 +441,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	while (istart != NULL) {
 		is_cluster_legal = FALSE;
 		savedindexofcrit = indexofcrit;
-		for(detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_END; detailed_routing_stage++) {
+		for (detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_END; detailed_routing_stage++) {
 			reset_legalizer_for_cluster(&clb[num_clb]);
 
 			/* start a new cluster and reset all stats */
@@ -428,7 +453,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					clb[num_clb].type->name);
 			fflush(stdout);
 			update_cluster_stats(istart, num_clb, is_clock, global_clocks, alpha,
-					beta, timing_driven, connection_driven);
+					beta, timing_driven, connection_driven, slacks);
 			num_clb++;
 
 			if (timing_driven && !early_exit) {
@@ -485,7 +510,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				}
 				update_cluster_stats(next_molecule, num_clb - 1, is_clock,
 						global_clocks, alpha, beta, timing_driven,
-						connection_driven);
+						connection_driven, slacks);
 				num_unrelated_clustering_attempts = 0;
 
 				if (timing_driven && !early_exit) {
@@ -497,9 +522,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						cur_cluster_placement_stats_ptr);
 			}
 			vpr_printf(TIO_MESSAGE_INFO, "\n");
-			if(detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
+			if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
 				is_cluster_legal = try_breadth_first_route_cluster();
-				if(is_cluster_legal == TRUE) {
+				if (is_cluster_legal == TRUE) {
 					vpr_printf(TIO_MESSAGE_INFO, "Passed route at end\n");
 				} else {
 					vpr_printf(TIO_MESSAGE_INFO, "Failed route at end, repack cluster trying detailed routing at each stage \n");
@@ -507,7 +532,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			} else {
 				is_cluster_legal = TRUE;
 			}
-			if(is_cluster_legal == TRUE) {
+			if (is_cluster_legal == TRUE) {
 				save_cluster_solution();
 				if (timing_driven) {
 					if (num_blocks_hill_added > 0 && !early_exit) {
@@ -539,10 +564,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		}
 	}
 
-	if (timing_driven) {
-		free_timing_graph(net_slack);
-	}
-
 	free_cluster_legality_checker();
 
 	alloc_and_load_cluster_info(num_clb, clb);
@@ -551,7 +572,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	output_clustering(clb, num_clb, global_clocks, is_clock, out_fname, FALSE);
 	if (GetEchoOption()) {
-		output_blif(clb, num_clb, global_clocks, is_clock,
+		output_blif (clb, num_clb, global_clocks, is_clock,
 				"post_pack_netlist.blif", FALSE);
 	}
 
@@ -573,7 +594,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	free(unclustered_list_head);
 	free(memory_pool);
 	free(net_output_feeds_driving_block_input);
-	if(criticality != NULL) {
+
+#ifdef FANCY_CRITICALITY
+	if (criticality != NULL) {
 		free(criticality);
 		free(critindexarray);
 		for (i = 0; i < num_logical_nets; i++) {
@@ -583,12 +606,17 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		free(net_pin_backward_criticality);
 		free(net_pin_forward_criticality);
 
+
 		criticality = NULL;
 		critindexarray = NULL;
 		net_pin_backward_criticality = NULL;
 		net_pin_forward_criticality = NULL;
 	}
-
+#else
+	if (timing_driven) {
+		free_timing_graph(slacks);
+	}
+#endif
 
  free (primitives_list);
 
@@ -839,10 +867,10 @@ static boolean outputs_clocks_and_placement_feasible (enum e_packer_algorithm pa
 	/*              2. Logic block output can't internally connect to clocks. */
 	clocks_feasible = outputs_feasible = TRUE;
 	temp_pb = cur_pb;
-	while(temp_pb && clocks_feasible && outputs_feasible) {
+	while (temp_pb && clocks_feasible && outputs_feasible) {
 
 		clocks_avail = cur_pb->pb_stats.clocks_avail;
-		if(clocks_avail == NOT_VALID) {
+		if (clocks_avail == NOT_VALID) {
 			clocks_avail = temp_pb->pb_graph_node->pb_type->num_clock_pins;
 		}
 
@@ -858,18 +886,18 @@ static boolean outputs_clocks_and_placement_feasible (enum e_packer_algorithm pa
 		}
 
 		outputs_avail = temp_pb->pb_stats.outputs_avail;
-		if(outputs_avail == NOT_VALID) {
+		if (outputs_avail == NOT_VALID) {
 			outputs_avail = temp_pb->pb_graph_node->pb_type->num_output_pins;
 		}
 
 		port = logical_block[iblk].model->outputs;
-		while(port) {
+		while (port) {
 			/* Outputs that connect to internal blocks free up an input pin. */
-			for(ipin = 0; ipin < port->size; ipin++) {
+			for (ipin = 0; ipin < port->size; ipin++) {
 				output_net = logical_block[iblk].output_nets[port->index][ipin];
 				if (output_net != OPEN) {
-					if(temp_pb->pb_stats.num_pins_of_net_in_pb[output_net] >= vpack_net[output_net].num_sinks - net_output_feeds_driving_block_input[output_net]) {
-						if((temp_pb->pb_stats.num_pins_of_net_in_pb[output_net] != vpack_net[output_net].num_sinks - net_output_feeds_driving_block_input[output_net])) {
+					if (temp_pb->pb_stats.num_pins_of_net_in_pb[output_net] >= vpack_net[output_net].num_sinks - net_output_feeds_driving_block_input[output_net]) {
+						if ((temp_pb->pb_stats.num_pins_of_net_in_pb[output_net] != vpack_net[output_net].num_sinks - net_output_feeds_driving_block_input[output_net])) {
 							vpr_printf(TIO_MESSAGE_ERROR, "net %d %s %d != %d\n", output_net, vpack_net[output_net].name,
 									temp_pb->pb_stats.num_pins_of_net_in_pb[output_net], vpack_net[output_net].num_sinks - net_output_feeds_driving_block_input[output_net]);
 						}
@@ -883,15 +911,15 @@ static boolean outputs_clocks_and_placement_feasible (enum e_packer_algorithm pa
 		}
 
 		port = logical_block[iblk].model->inputs;
-		while(port) {
-			if(port->is_clock == TRUE) {
+		while (port) {
+			if (port->is_clock == TRUE) {
 				port = port->next;
 				continue;
 			}
 			for (ipin = 0; ipin < port->size; ipin++) {
 				inet = logical_block[iblk].input_nets[port->index][ipin];
-				if(inet != OPEN) {
-					if(temp_pb->pb_stats.net_output_in_pb[inet] &&
+				if (inet != OPEN) {
+					if (temp_pb->pb_stats.net_output_in_pb[inet] &&
 							temp_pb->pb_stats.num_pins_of_net_in_pb[inet] + net_output_feeds_driving_block_input[inet] == vpack_net[inet].num_sinks) {
 						outputs_avail++;
 					}
@@ -906,7 +934,7 @@ static boolean outputs_clocks_and_placement_feasible (enum e_packer_algorithm pa
 		temp_pb = temp_pb->parent_pb;
 	}
 
-	if(exists_free_primitive_for_logical_block(cluster_placement_stats_ptr, iblk)) {
+	if (exists_free_primitive_for_logical_block(cluster_placement_stats_ptr, iblk)) {
 		if (clocks_feasible && outputs_feasible)
 		return (TRUE);
 		else
@@ -1581,7 +1609,7 @@ static void update_connection_gain_values(int inet, int clustered_block,
 /*****************************************/
 static void update_length_gain_values(int inet, int clustered_block,
 		t_pb *cur_pb,
-		enum e_net_relation_to_clustered_block net_relation_to_clustered_block) {
+		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, t_slack * slacks) {
 
 	/*This function is called when the length_gain values on the vpack_net*
 	 *inet requires updating.   */
@@ -1601,7 +1629,11 @@ static void update_length_gain_values(int inet, int clustered_block,
 		for (ipin = ifirst; ipin <= vpack_net[inet].num_sinks; ipin++) {
 			iblk = vpack_net[inet].node_block[ipin];
 			if (logical_block[iblk].clb_index == NO_CLUSTER) {
+#ifdef FANCY_CRITICALITY
 				lengain = net_pin_backward_criticality[inet][ipin];
+#else
+				lengain = 1 - slacks->net_slack_ratio[inet][ipin];
+#endif
 				if (lengain > cur_pb->pb_stats.lengthgain[iblk])
 					cur_pb->pb_stats.lengthgain[iblk] = lengain;
 			}
@@ -1615,7 +1647,11 @@ static void update_length_gain_values(int inet, int clustered_block,
 		newblk = vpack_net[inet].node_block[0];
 		if (logical_block[newblk].clb_index == NO_CLUSTER) {
 			for (ipin = 1; ipin <= vpack_net[inet].num_sinks; ipin++) {
+#ifdef FANCY_CRITICALITY
 				lengain = net_pin_forward_criticality[inet][ipin];
+#else
+				lengain = 1 - slacks->net_slack_ratio[inet][ipin];
+#endif
 				if (lengain > cur_pb->pb_stats.lengthgain[newblk])
 					cur_pb->pb_stats.lengthgain[newblk] = lengain;
 
@@ -1628,7 +1664,8 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 		int clustered_block, int port_on_clustered_block,
 		int pin_on_clustered_block, boolean timing_driven,
 		boolean connection_driven,
-		enum e_net_relation_to_clustered_block net_relation_to_clustered_block) {
+		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
+		t_slack * slacks) {
 
 	/* Updates the marked data structures, and if gain_flag is GAIN,  *
 	 * the gain when a logic logical_block is added to a cluster.  The        *
@@ -1691,7 +1728,7 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 
 			if (timing_driven) {
 				update_length_gain_values(inet, clustered_block, cur_pb,
-						net_relation_to_clustered_block);
+						net_relation_to_clustered_block, slacks);
 			}
 		}
 
@@ -1787,7 +1824,7 @@ static void update_total_gain(float alpha, float beta, boolean timing_driven,
 static void update_cluster_stats( INP t_pack_molecule *molecule,
 		INP int clb_index, INP boolean *is_clock, INP boolean global_clocks,
 		INP float alpha, INP float beta, INP boolean timing_driven,
-		INP boolean connection_driven) {
+		INP boolean connection_driven, INP t_slack * slacks) {
 
 	/* Updates cluster stats such as gain, used pins, and clock structures.  */
 
@@ -1838,11 +1875,11 @@ static void update_cluster_stats( INP t_pack_molecule *molecule,
 					if (!is_clock[inet] || !global_clocks)
 						mark_and_update_partial_gain(inet, GAIN, new_blk,
 								port->index, ipin, timing_driven,
-								connection_driven, OUTPUT);
+								connection_driven, OUTPUT, slacks);
 					else
 						mark_and_update_partial_gain(inet, NO_GAIN, new_blk,
 								port->index, ipin, timing_driven,
-								connection_driven, OUTPUT);
+								connection_driven, OUTPUT, slacks);
 				}
 			}
 			port = port->next;
@@ -1859,7 +1896,7 @@ static void update_cluster_stats( INP t_pack_molecule *molecule,
 				if (inet != OPEN) {
 					mark_and_update_partial_gain(inet, GAIN, new_blk,
 							port->index, ipin, timing_driven, connection_driven,
-							INPUT);
+							INPUT, slacks);
 				}
 			}
 			port = port->next;
@@ -1873,10 +1910,10 @@ static void update_cluster_stats( INP t_pack_molecule *molecule,
 		if (inet != OPEN) {
 			if (global_clocks)
 				mark_and_update_partial_gain(inet, NO_GAIN, new_blk, 0, 0,
-						timing_driven, connection_driven, INPUT);
+						timing_driven, connection_driven, INPUT, slacks);
 			else
 				mark_and_update_partial_gain(inet, GAIN, new_blk, 0, 0,
-						timing_driven, connection_driven, INPUT);
+						timing_driven, connection_driven, INPUT, slacks);
 
 		}
 
@@ -2019,16 +2056,16 @@ static boolean inputs_outputs_models_and_clocks_feasible (INP enum e_packer_algo
 	int inputs_avail;
 
 	temp_pb = cur_pb;
-	while(temp_pb && inputs_feasible) {
+	while (temp_pb && inputs_feasible) {
 		inputs_avail = temp_pb->pb_stats.inputs_avail;
-		if(inputs_avail == NOT_VALID) {
+		if (inputs_avail == NOT_VALID) {
 			inputs_avail = temp_pb->pb_graph_node->pb_type->num_input_pins;
 		}
 
 		port = logical_block[iblk].model->outputs;
-		while(port) {
+		while (port) {
 			/* Outputs that connect to internal blocks free up an input pin. */
-			for(ipin = 0; ipin < port->size; ipin++) {
+			for (ipin = 0; ipin < port->size; ipin++) {
 				output_net = logical_block[iblk].output_nets[port->index][ipin];
 				if (output_net != OPEN && temp_pb->pb_stats.num_pins_of_net_in_pb[output_net] != 0 && !is_clock[output_net])
 				inputs_avail++;
@@ -2037,13 +2074,13 @@ static boolean inputs_outputs_models_and_clocks_feasible (INP enum e_packer_algo
 		}
 
 		port = logical_block[iblk].model->inputs;
-		while(port) {
-			if(!port->is_clock) {
+		while (port) {
+			if (!port->is_clock) {
 				/* Inputs that do not connect to an output pin of an internal block (including this one) require an input pin. */
 				for (ipin = 0; ipin < port->size; ipin++) {
 					inet = logical_block[iblk].input_nets[port->index][ipin];
 					if (inet != OPEN && temp_pb->pb_stats.num_pins_of_net_in_pb[inet] == 0) {
-						if(net_output_feeds_driving_block_input[inet] == 0) {
+						if (net_output_feeds_driving_block_input[inet] == 0) {
 							inputs_avail--;
 						}
 					}
@@ -2386,7 +2423,11 @@ static t_pack_molecule* get_most_critical_seed_molecule(void) {
 	struct s_linked_vptr *cur;
 
 	for (critidx = indexofcrit; critidx < num_logical_blocks; critidx++) {
+#ifdef FANCY_CRITICALITY
 		blkidx = critindexarray[critidx];
+#else
+		blkidx = critidx;
+#endif
 		if (logical_block[blkidx].clb_index == NO_CLUSTER) {
 			indexofcrit = critidx + 1;
 			cur = logical_block[blkidx].packed_molecules;

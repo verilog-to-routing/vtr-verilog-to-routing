@@ -81,7 +81,7 @@ TC_NameLength_c::~TC_NameLength_c(
 TC_NameLength_c& TC_NameLength_c::operator=( 
       const TC_NameLength_c& nameLength )
 {
-   if( &nameLength != this )
+   if ( &nameLength != this )
    {
       this->srName_ = nameLength.srName_;
       this->length_ = nameLength.length_;
@@ -159,13 +159,13 @@ void TC_NameLength_c::Print(
 void TC_NameLength_c::ExtractString( 
       string* psrNameLength ) const
 {
-   if( psrNameLength )
+   if ( psrNameLength )
    {
-      if( this->IsValid( ))
+      if ( this->IsValid( ))
       {
          *psrNameLength = this->srName_;
 
-	 if( this->length_ != UINT_MAX )
+	 if ( this->length_ != UINT_MAX )
 	 {
    	    char szLength[ TIO_FORMAT_STRING_LEN_VALUE ];
             sprintf( szLength, "%d", this->length_ );

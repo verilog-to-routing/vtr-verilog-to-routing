@@ -208,7 +208,6 @@ sub run_single_task {
 
 	# Using default script
 	if ( $script eq $script_default ) {
-
 		# This is hack to automatically add the option '-temp_dir .' if using the run_vtr_flow.pl script
 		# This ensures that a 'temp' folder is not created in each circuit directory
 		if ( !( $script_params =~ /-temp_dir/ ) ) {
@@ -348,7 +347,7 @@ sub run_single_task {
 					# SDC file defaults to circuit_name.sdc					
 					my $sdc = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";
 					system(
-						"$script_path $circuits_dir/$circuit $archs_dir/$arch $sdc_dir/$sdc $script_params\n"
+						"$script_path $circuits_dir/$circuit $archs_dir/$arch -sdc_file $sdc_dir/$sdc $script_params\n"
 					);
 				}
 			}
@@ -358,7 +357,7 @@ sub run_single_task {
 			my $thread_result = Thread::Queue->new();
 			my $threads       = $processors;
 
-			#print "# of Threads: $threads\n";
+			# print "# of Threads: $threads\n";
 
 			foreach my $circuit (@circuits) {
 				foreach my $arch (@archs) {
@@ -369,7 +368,7 @@ sub run_single_task {
 					my $sdc = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";
 
 					my $command =
-					  "$script_path $circuits_dir/$circuit $archs_dir/$arch $sdc_dir/$sdc $script_params";
+					  "$script_path $circuits_dir/$circuit $archs_dir/$arch -sdc_file $sdc_dir/$sdc $script_params";
 					$thread_work->enqueue("$dir||||$command");
 				}
 			}

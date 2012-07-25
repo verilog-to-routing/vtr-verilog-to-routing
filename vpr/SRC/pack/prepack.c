@@ -170,7 +170,7 @@ static void discover_pattern_names_in_pb_graph_node(
 							index;
 				}								
 			}
-			if(hasPattern == TRUE) {
+			if (hasPattern == TRUE) {
 				forward_infer_pattern(&pb_graph_node->input_pins[i][j]);
 				backward_infer_pattern(&pb_graph_node->input_pins[i][j]);
 			}
@@ -202,7 +202,7 @@ static void discover_pattern_names_in_pb_graph_node(
 							index;
 				}
 			}
-			if(hasPattern == TRUE) {
+			if (hasPattern == TRUE) {
 				forward_infer_pattern(&pb_graph_node->output_pins[i][j]);
 				backward_infer_pattern(&pb_graph_node->output_pins[i][j]);
 			}
@@ -234,7 +234,7 @@ static void discover_pattern_names_in_pb_graph_node(
 							index;
 				}
 			}
-			if(hasPattern == TRUE) {
+			if (hasPattern == TRUE) {
 				forward_infer_pattern(&pb_graph_node->clock_pins[i][j]);
 				backward_infer_pattern(&pb_graph_node->clock_pins[i][j]);
 			}
@@ -260,17 +260,17 @@ static void discover_pattern_names_in_pb_graph_node(
  * In obvious cases where a pattern edge has only one path to go, set that path to be inferred 
  */
 static void forward_infer_pattern(INOUTP t_pb_graph_pin *pb_graph_pin) {
-	if(pb_graph_pin->num_output_edges == 1 && pb_graph_pin->output_edges[0]->num_pack_patterns == 0 && pb_graph_pin->output_edges[0]->infer_pattern == FALSE) {
+	if (pb_graph_pin->num_output_edges == 1 && pb_graph_pin->output_edges[0]->num_pack_patterns == 0 && pb_graph_pin->output_edges[0]->infer_pattern == FALSE) {
 		pb_graph_pin->output_edges[0]->infer_pattern = TRUE;
-		if(pb_graph_pin->output_edges[0]->num_output_pins == 1) {
+		if (pb_graph_pin->output_edges[0]->num_output_pins == 1) {
 			forward_infer_pattern(pb_graph_pin->output_edges[0]->output_pins[0]);
 		}
 	}
 }
 static void backward_infer_pattern(INOUTP t_pb_graph_pin *pb_graph_pin) {
-	if(pb_graph_pin->num_input_edges == 1 && pb_graph_pin->input_edges[0]->num_pack_patterns == 0 && pb_graph_pin->input_edges[0]->infer_pattern == FALSE) {
+	if (pb_graph_pin->num_input_edges == 1 && pb_graph_pin->input_edges[0]->num_pack_patterns == 0 && pb_graph_pin->input_edges[0]->infer_pattern == FALSE) {
 		pb_graph_pin->input_edges[0]->infer_pattern = TRUE;
-		if(pb_graph_pin->input_edges[0]->num_input_pins == 1) {
+		if (pb_graph_pin->input_edges[0]->num_input_pins == 1) {
 			backward_infer_pattern(pb_graph_pin->input_edges[0]->input_pins[0]);
 		}
 	}
@@ -303,13 +303,13 @@ static t_pack_patterns *alloc_and_init_pattern_list_from_hash(INP int ncount,
 void free_list_of_pack_patterns(INP t_pack_patterns *list_of_pack_patterns, INP int num_packing_patterns) {
 	int i, j, num_pack_pattern_blocks;
 	t_pack_pattern_block **pattern_block_list;
-	if(list_of_pack_patterns != NULL) {
-		for(i = 0; i < num_packing_patterns; i++) {
+	if (list_of_pack_patterns != NULL) {
+		for (i = 0; i < num_packing_patterns; i++) {
 			num_pack_pattern_blocks = list_of_pack_patterns[i].num_blocks;
 			pattern_block_list = (t_pack_pattern_block **)my_calloc(num_pack_pattern_blocks, sizeof(t_pack_pattern_block *));
 			free(list_of_pack_patterns[i].name);
 			free_pack_pattern(list_of_pack_patterns[i].root_block, pattern_block_list);
-			for(j = 0; j < num_pack_pattern_blocks; j++) {
+			for (j = 0; j < num_pack_pattern_blocks; j++) {
 				free(pattern_block_list[j]);
 			}
 			free(pattern_block_list);
@@ -418,11 +418,11 @@ static void forward_expand_pack_pattern_from_edge(
 
 	found = expansion_edge->infer_pattern;
 	for (i = 0;	!found && i < expansion_edge->num_pack_patterns; i++) {
-		if(expansion_edge->pack_pattern_indices[i] == curr_pattern_index) {
+		if (expansion_edge->pack_pattern_indices[i] == curr_pattern_index) {
 			found = TRUE;
 		}
 	}
-	if(!found) {
+	if (!found) {
 		return;
 	}
 
@@ -559,11 +559,11 @@ static void backward_expand_pack_pattern_from_edge(
 
 	found = expansion_edge->infer_pattern;
 	for (i = 0;	!found && i < expansion_edge->num_pack_patterns; i++) {
-		if(expansion_edge->pack_pattern_indices[i] == curr_pattern_index) {
+		if (expansion_edge->pack_pattern_indices[i] == curr_pattern_index) {
 			found = TRUE;
 		}
 	}
-	if(!found) {
+	if (!found) {
 		return;
 	}
 
@@ -805,7 +805,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 		}
 	}
 	if (GetEchoOption()) {
-		print_pack_molecules("prepack_molecules_and_patterns.echo",
+		print_pack_molecules("pre_packing_molecules_and_patterns.echo",
 				list_of_pack_patterns, num_packing_patterns,
 				list_of_molecules_head);
 	}
@@ -816,14 +816,14 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 
 static void free_pack_pattern(INOUTP t_pack_pattern_block *pattern_block, INOUTP t_pack_pattern_block **pattern_block_list) {
 	t_pack_pattern_connections *connection, *next;
-	if(pattern_block->block_id == OPEN) {
+	if (pattern_block->block_id == OPEN) {
 		/* already traversed, return */
 		return; 
 	}
 	pattern_block_list[pattern_block->block_id] = pattern_block;
 	pattern_block->block_id = OPEN;
 	connection = pattern_block->connections;
-	while(connection) {
+	while (connection) {
 		free_pack_pattern(connection->from_block, pattern_block_list);
 		free_pack_pattern(connection->to_block, pattern_block_list);
 		next = connection->next;

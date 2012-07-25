@@ -868,7 +868,7 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port) {
 	} else if (0 == strcmp(Parent->name, "clock")) {
 		port->type = IN_PORT;
 		port->is_clock = TRUE;
-		if(port->is_non_clock_global == TRUE) {
+		if (port->is_non_clock_global == TRUE) {
 			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Port %s cannot be both a clock and a non-clock simultaneously\n", Parent->line,
 				Parent->name);
 		}
@@ -992,7 +992,7 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode) {
 	}
 
 	mode->num_pb_type_children = CountChildren(Parent, "pb_type", 0);
-	if(mode->num_pb_type_children > 0) {
+	if (mode->num_pb_type_children > 0) {
 		mode->pb_type_children = (t_pb_type*) my_calloc(mode->num_pb_type_children,
 				sizeof(t_pb_type));
 
@@ -1125,7 +1125,7 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 					tp->is_clock = TRUE;
 				}
 				ezxml_set_attr(p, "is_clock", NULL);
-				if(tp->is_clock == TRUE && tp->is_non_clock_global == TRUE) {
+				if (tp->is_clock == TRUE && tp->is_non_clock_global == TRUE) {
 					vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Signal cannot be both a clock and a non-clock signal simultaneously\n", p->line);
 				}
 				temp->inputs = tp;
@@ -1817,7 +1817,7 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 		FreeNode(Cur);
 #if 0
 		Cur = FindElement(CurType, "timing", timing_enabled);
-		if(Cur)
+		if (Cur)
 		{
 			SetupTypeTiming(Cur, Type);
 			FreeNode(Cur);

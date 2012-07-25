@@ -8,6 +8,9 @@ circuits_dir=benchmarks/verilog
 # Path to directory of architectures to use
 archs_dir=arch/no_timing/memory_sweep
 
+# Path to directory of SDC files to use
+sdc_dir=tasks/regression_tests/sdc
+
 # Add circuits to list to sweep
 circuit_list_add=ch_intrinsics.v
 circuit_list_add=diffeq1.v

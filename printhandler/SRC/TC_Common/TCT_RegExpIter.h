@@ -186,10 +186,10 @@ template< class T > bool TCT_RegExpIter_c< T >::Init(
    // Make regular expression object or simple string, whichever is needed   
    string srRegExp_( srRegExp );
    const char* pszSpecialChars = "^.?[]+*$";
-   if( srRegExp_.find_first_of( pszSpecialChars ) != string::npos )
+   if ( srRegExp_.find_first_of( pszSpecialChars ) != string::npos )
    {
       size_t escape = srRegExp_.find( '\\' );
-      while(( escape != string::npos ) &&
+      while (( escape != string::npos ) &&
             ( escape < srRegExp_.length( ) - 1 ))
       {
          srRegExp_.replace( escape, 2, "" );   
@@ -197,7 +197,7 @@ template< class T > bool TCT_RegExpIter_c< T >::Init(
       }
    }
 
-   if( srRegExp_.find_first_of( pszSpecialChars ) != string::npos )
+   if ( srRegExp_.find_first_of( pszSpecialChars ) != string::npos )
    {
       // Regular expression string may require 'pattern-matching'
       this->pregExp_ = new TC_NOTHROW RegExp( srRegExp.data( ));
@@ -206,9 +206,9 @@ template< class T > bool TCT_RegExpIter_c< T >::Init(
       ok = printHandler.IsValidNew( this->pregExp_,
                                     sizeof( RegExp ),
                                    "TCT_RegExpIter_c< T >::Init" );
-      if( ok )
+      if ( ok )
       {
-         if( !this->pregExp_->IsValidRE( ) )
+         if ( !this->pregExp_->IsValidRE( ) )
          {
             printHandler.Error( "Invalid regular expression '%s', pattern is illegal!\n",
                                 TIO_SR_STR( srRegExp ));
@@ -247,11 +247,11 @@ template< class T > bool TCT_RegExpIter_c< T >::Init(
 template< class T > size_t TCT_RegExpIter_c< T >::Next( 
       void )
 {
-   if( this->pregExp_ )
+   if ( this->pregExp_ )
    {
       // Using 'complex' pattern matching (ie. with special characters)
       this->matchIndex_ = TCT_REGEXP_INDEX_INVALID;
-      while(( this->matchIndex_ == TCT_REGEXP_INDEX_INVALID ) &&
+      while (( this->matchIndex_ == TCT_REGEXP_INDEX_INVALID ) &&
             ( this->nextIndex_ <= this->pmatchList_->GetLength( ) - 1 ))
       {
          // Get next string, then apply the current regular expression 
@@ -266,20 +266,20 @@ template< class T > size_t TCT_RegExpIter_c< T >::Next(
                                              &matchStart,
                                              &matchLength );
 
-         if( match && ( srNextString.length( ) == matchLength ))
+         if ( match && ( srNextString.length( ) == matchLength ))
          {
             this->matchIndex_ = this->nextIndex_;
          }
          ++this->nextIndex_;
       }
 
-      if( this->matchIndex_ == TCT_REGEXP_INDEX_INVALID )
+      if ( this->matchIndex_ == TCT_REGEXP_INDEX_INVALID )
       {
          delete this->psrRegExp_;
          this->psrRegExp_ = 0;
       }
    }
-   else if( this->psrRegExp_ )
+   else if ( this->psrRegExp_ )
    {
       // Using 'simple' pattern matching (ie. no special characters)
       const string& srRegExp = *this->psrRegExp_;

@@ -282,9 +282,9 @@ static boolean directed_search_route_net(int inet, float pres_fac,
 			new_tcost = current->cost;
 
 			/* WMF: not needed if Vaughn initialized rr_node_route_inf[inode].backward_path_cost
-			 * to HUGE_FLOAT along with rr_node_route_inf[inode].path_cost */
-			if (old_tcost > 0.99 * HUGE_FLOAT) /* First time touched. */
-				old_back_cost = HUGE_FLOAT;
+			 * to HUGE_POSITIVE_FLOAT along with rr_node_route_inf[inode].path_cost */
+			if (old_tcost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
+				old_back_cost = HUGE_POSITIVE_FLOAT;
 			else
 				old_back_cost = rr_node_route_inf[inode].backward_path_cost;
 
@@ -306,7 +306,7 @@ static boolean directed_search_route_net(int inet, float pres_fac,
 				rr_node_route_inf[inode].path_cost = new_tcost;
 				rr_node_route_inf[inode].backward_path_cost = new_back_cost;
 
-				if (old_tcost > 0.99 * HUGE_FLOAT) /* First time touched. */
+				if (old_tcost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
 					add_to_mod_list(&rr_node_route_inf[inode].path_cost);
 
 				directed_search_expand_neighbours(current, inet, bend_cost,

@@ -221,7 +221,7 @@ void get_serial_num(void) {
 
 boolean try_route(int width_fac, struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, float **net_slack, float **net_delay,
+		t_timing_inf timing_inf, float **net_delay, t_slack * slacks,
 		t_chan_width_dist chan_width_dist, t_ivec ** clb_opins_used_locally,
 		t_mst_edge ** mst, boolean * Fc_clipped) {
 
@@ -288,7 +288,7 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 	} else if (router_opts.router_algorithm == TIMING_DRIVEN) { /* TIMING_DRIVEN route */
 		vpr_printf(TIO_MESSAGE_INFO, "Confirming Router Algorithm: TIMING_DRIVEN.\n");
 		assert(router_opts.route_type != GLOBAL);
-		success = try_timing_driven_route(router_opts, net_slack, net_delay,
+		success = try_timing_driven_route(router_opts, net_delay, slacks,
 				clb_opins_used_locally);
 	} else { /* Directed Search Routability Driven */
 		vpr_printf(TIO_MESSAGE_INFO, "Confirming Router Algorithm: DIRECTED_SEARCH.\n");
@@ -497,7 +497,7 @@ update_traceback(struct s_heap *hptr, int inet) {
 
 void reset_path_costs(void) {
 
-	/* The routine sets the path_cost to HUGE_FLOAT for all channel segments   *
+	/* The routine sets the path_cost to HUGE_POSITIVE_FLOAT for all channel segments   *
 	 * touched by previous routing phases.                                     */
 
 	struct s_linked_f_pointer *mod_ptr;
@@ -516,13 +516,13 @@ void reset_path_costs(void) {
 #endif
 
 		while (mod_ptr->next != NULL) {
-			*(mod_ptr->fptr) = HUGE_FLOAT;
+			*(mod_ptr->fptr) = HUGE_POSITIVE_FLOAT;
 			mod_ptr = mod_ptr->next;
 #ifdef DEBUG
 			num_mod_ptrs++;
 #endif
 		}
-		*(mod_ptr->fptr) = HUGE_FLOAT; /* Do last one. */
+		*(mod_ptr->fptr) = HUGE_POSITIVE_FLOAT; /* Do last one. */
 
 		/* Reset the modified list and put all the elements back in the free   *
 		 * list.                                                               */
@@ -804,7 +804,7 @@ void alloc_and_load_rr_node_route_structs(void) {
 		rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
 		rr_node_route_inf[inode].pres_cost = 1.;
 		rr_node_route_inf[inode].acc_cost = 1.;
-		rr_node_route_inf[inode].path_cost = HUGE_FLOAT;
+		rr_node_route_inf[inode].path_cost = HUGE_POSITIVE_FLOAT;
 		rr_node_route_inf[inode].target_flag = 0;
 	}
 }
@@ -823,7 +823,7 @@ void reset_rr_node_route_structs(void) {
 		rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
 		rr_node_route_inf[inode].pres_cost = 1.;
 		rr_node_route_inf[inode].acc_cost = 1.;
-		rr_node_route_inf[inode].path_cost = HUGE_FLOAT;
+		rr_node_route_inf[inode].path_cost = HUGE_POSITIVE_FLOAT;
 		rr_node_route_inf[inode].target_flag = 0;
 	}
 }
@@ -1292,7 +1292,7 @@ static void adjust_one_rr_occ_and_pcost(int inode, int add_or_sub,
 
 
 void free_chunk_memory_trace(void) {
-	if(trace_ch.chunk_ptr_head != NULL) {
+	if (trace_ch.chunk_ptr_head != NULL) {
 		free_chunk_memory(&trace_ch);
 	}
 }

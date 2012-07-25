@@ -643,7 +643,7 @@ boolean try_breadth_first_route_cluster(void) {
 		else
 			pres_fac *= router_opts.pres_fac_mult;
 
-		pres_fac = min(pres_fac, HUGE_FLOAT / 1e5);
+		pres_fac = min(pres_fac, HUGE_POSITIVE_FLOAT / 1e5);
 
 		pathfinder_update_cost(pres_fac, router_opts.acc_fac);
 	}
@@ -703,7 +703,7 @@ static boolean breadth_first_route_net_cluster(int inet) {
 				rr_node_route_inf[inode].prev_edge = current->prev_edge;
 				first_time = FALSE;
 
-				if (pcost > 0.99 * HUGE_FLOAT) /* First time touched. */{
+				if (pcost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */{
 					add_to_mod_list(&rr_node_route_inf[inode].path_cost);
 					first_time = TRUE;
 				}
@@ -779,7 +779,7 @@ static void breadth_first_expand_neighbours_cluster(int inode, float pcost,
 	num_edges = rr_node[inode].num_edges;
 	for (iconn = 0; iconn < num_edges; iconn++) {
 		to_node = rr_node[inode].edges[iconn];
-		/*if(first_time) { */
+		/*if (first_time) { */
 		tot_cost = pcost
 				+ get_rr_cong_cost(to_node) * rr_node_intrinsic_cost(to_node);
 		/*

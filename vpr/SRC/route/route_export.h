@@ -3,7 +3,7 @@
 
 boolean try_route(int width_fac, struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, float **net_slack, float **net_delay,
+		t_timing_inf timing_inf, float **net_delay, t_slack * slacks,
 		t_chan_width_dist chan_width_dist, t_ivec ** clb_opins_used_locally,
 		t_mst_edge ** mst, boolean * Fc_clipped);
 

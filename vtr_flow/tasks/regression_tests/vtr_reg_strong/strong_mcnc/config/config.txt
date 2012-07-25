@@ -8,6 +8,9 @@ circuits_dir=benchmarks/blif/wiremap6
 # Path to directory of architectures to use
 archs_dir=arch/timing
 
+# Path to directory of SDC files to use
+sdc_dir = tasks/regression_tests/sdc
+
 # Add circuits to list to sweep
 circuit_list_add=diffeq.pre-vpr.blif
 

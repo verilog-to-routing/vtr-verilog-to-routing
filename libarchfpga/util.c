@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-
+#include <errno.h>
 #include "util.h"
 
 /* This file contains utility functions widely used in *
@@ -87,7 +87,7 @@ my_fopen(const char *fname, const char *flag, int prompt) {
 	}
 
 	if (NULL == (fp = fopen(fname, flag))) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Error opening file %s for %s access.\n", fname, flag);
+		vpr_printf(TIO_MESSAGE_ERROR, "Error opening file %s for %s access: %s.\n", fname, flag, strerror(errno));
 		exit(1);
 	}
 
@@ -135,7 +135,7 @@ my_calloc(size_t nelem, size_t size) {
 	}
 
 	if ((ret = calloc(nelem, size)) == NULL) {
-		fprintf(stderr, "Error:  Unable to calloc memory.  Aborting.\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "Error:  Unable to calloc memory.  Aborting.\n");
 		exit(1);
 	}
 	return (ret);
@@ -149,7 +149,7 @@ my_malloc(size_t size) {
 	}
 
 	if ((ret = malloc(size)) == NULL) {
-		fprintf(stderr, "Error:  Unable to malloc memory.  Aborting.\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "Error:  Unable to malloc memory.  Aborting.\n");
 		abort();
 		exit(1);
 	}
@@ -410,65 +410,68 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 	 * comment part (#) means continue. my_fgets should give * 
 	 * identical results for Windows (\r\n) and Linux (\n)   *
 	 * newlines, since it replaces each carriage return \r   *
-	 * by a newline character \n.  It also deals with the    *
-	 * special case where there's no newline before EOF.	 */
+	 * by a newline character \n.  Returns NULL after EOF.	 */
 
-	char *val;
+	char ch;
 	int i;
+	FILE * fp2 = my_fopen("my_fgets.txt", "a", 0);
 
-	cont = 0;
-	val = fgets(buf, max_size, fp);
-	file_line_number++;
-	if (val == NULL) /* end of line */
-		return NULL;
+	cont = 0; /* line continued? */
+	file_line_number++; /* global variable */
 
-	/* Check that line completely fit into buffer.  (Flags long line   *
-	 * truncation).                                                    */
-
-	for (i = 0; i < max_size; i++) {
-		/* Eliminate Windows \r\n newlines by replacing each \r by an \n. *
-		 * This must also be done for Windows, surprisingly.			  */
-		if (buf[i] == '\r') { 
-			buf[i] = '\n';
-			buf[i+1] = '\0';
-			break;
-		}
-
-		if (buf[i] == '\n') 
-			break; /* end of line */
+	for (i = 0; i < max_size - 1; i++) { /* Keep going until the line finishes or the buffer is full */
 		
-		if (buf[i] == '\0') {
+		ch = fgetc(fp);
 
-			if (feof(fp)) { 
-			/* Special case where there's no newline before end of file.
-			Since we passed the end of the file, it's okay to have a \0. */ 
-				return val;
-			} else {
-			/* The line did not completely fit into the buffer. */
-				vpr_printf(TIO_MESSAGE_ERROR, "Error on line %d -- line is too long for input buffer.\n",
-						file_line_number);
-				vpr_printf(TIO_MESSAGE_ERROR, "All lines must be at most %d characters long.\n",
-						BUFSIZE - 2);
-				exit(1);
+		if (feof(fp)) { /* end of file */
+			if (i == 0) {
+				return NULL; /* required so we can write while (my_fgets(...) != NULL) */
+			} else { /* no newline before end of file - last line must be returned */
+				buf[i] = '\0';
+				fprintf(fp2, "%s\n", buf);
+				fclose(fp2);
+				return buf;
 			}
 		}
-	}
 
-	for (i = 0; i < max_size && buf[i] != '\0'; i++) {
-		if (buf[i] == '#') {
+		if (ch == '#') { /* comment */
 			buf[i] = '\0';
-			break;
+			while ((ch = fgetc(fp)) != '\n') { /* skip the rest of the line */
+				i++;
+				if (feof(fp)) {
+					buf[i] = '\0';
+					return buf;
+				}
+			}
+			fprintf(fp2, "%s\n", buf);
+			fclose(fp2);
+			return buf;
 		}
+
+		if (ch == '\r' || ch == '\n') { /* newline (cross-platform) */
+			if (i != 0 && buf[i-1] == '\\') { /* if \ at end of line, line continued */
+				cont = 1; 
+				buf[i-1] = '\n'; /* May need this for tokens */
+				buf[i] = '\0';
+			} else {
+				buf[i] = '\n';
+				buf[i+1] = '\0';
+			}
+			fprintf(fp2, "%s\n", buf);
+			fclose(fp2);
+			return buf;
+		}
+
+		buf[i] = ch; /* copy character into the buffer */
+
 	}
 
-	if (i < 2)
-		return (val);
-	if (buf[i - 1] == '\n' && buf[i - 2] == '\\') {
-		cont = 1; /* line continued */
-		buf[i - 2] = '\n'; /* May need this for tokens */
-		buf[i - 1] = '\0';
-	}
-	return (val);
+	/* Buffer is full but line has not terminated, so error */
+	vpr_printf(TIO_MESSAGE_ERROR, "Error on line %d -- line is too long for input buffer.\n",
+			file_line_number);
+	vpr_printf(TIO_MESSAGE_ERROR, "All lines must be at most %d characters long.\n",
+			BUFSIZE - 2);
+	exit(1);
 }
 
 char *

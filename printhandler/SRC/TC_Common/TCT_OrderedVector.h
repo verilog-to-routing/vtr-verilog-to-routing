@@ -223,13 +223,13 @@ template< class T > bool TCT_OrderedVector_c< T >::operator==(
 {
    bool isEqual = this->GetLength( ) == orderedVector.GetLength( ) ? 
                   true : false;
-   if( isEqual )
+   if ( isEqual )
    {
-      for( size_t i = 0; i < this->GetLength( ); ++i )
+      for ( size_t i = 0; i < this->GetLength( ); ++i )
       {
          isEqual = *this->operator[]( i ) == *orderedVector.operator[]( i ) ?
                    true : false;
-         if( !isEqual )
+         if ( !isEqual )
             break;
       }
    }
@@ -261,7 +261,7 @@ template< class T > T* TCT_OrderedVector_c< T >::operator[](
 {
    T* pdata = 0;
 
-   if( index < this->GetLength( ))
+   if ( index < this->GetLength( ))
    {
       pdata = &this->vector_.operator[]( index );
    }
@@ -304,10 +304,10 @@ template< class T > void TCT_OrderedVector_c< T >::Print(
       FILE*  pfile,
       size_t spaceLen ) const
 {
-   for( size_t i = 0; i < this->GetLength( ); ++i )
+   for ( size_t i = 0; i < this->GetLength( ); ++i )
    {
       const T& data = *this->operator[]( i );
-      if( data.IsValid( ))  
+      if ( data.IsValid( ))  
       {
          data.Print( pfile, spaceLen );
       }
@@ -327,17 +327,17 @@ template< class T > void TCT_OrderedVector_c< T >::ExtractString(
       size_t        precision,
       size_t        maxLen ) const
 {
-   if( psrData )
+   if ( psrData )
    {
       *psrData = "";
 
-      if( precision == SIZE_MAX )
+      if ( precision == SIZE_MAX )
       {
          TC_MinGrid_c& minGrid = TC_MinGrid_c::GetInstance( );
          precision = minGrid.GetPrecision( );
       }
 
-      for( size_t i = 0; i < this->GetLength( ); ++i )
+      for ( size_t i = 0; i < this->GetLength( ); ++i )
       {
          int iDataValue;
          unsigned int uiDataValue;
@@ -399,7 +399,7 @@ template< class T > void TCT_OrderedVector_c< T >::ExtractString(
 	 }
 
 	 size_t lenDataString = TCT_Max( strlen( szDataString ), strlen( "..." ));
-         if( psrData->length( ) + lenDataString >= maxLen )
+         if ( psrData->length( ) + lenDataString >= maxLen )
 	 {
 	    *psrData += "...";
 	    break;
@@ -428,7 +428,7 @@ template< class T > void TCT_OrderedVector_c< T >::Add(
 template< class T > void TCT_OrderedVector_c< T >::Add( 
       const TCT_OrderedVector_c< T >& orderedVector )
 {
-   for( size_t i = 0; i < orderedVector.GetLength( ); ++i )
+   for ( size_t i = 0; i < orderedVector.GetLength( ); ++i )
    {
       const T& data = *orderedVector.operator[]( i );
       this->Add( data );
@@ -446,7 +446,7 @@ template< class T > void TCT_OrderedVector_c< T >::Insert(
 	    size_t index,
       const T&     data )
 {
-   for( size_t i = this->GetLength( ); i < index; ++i )
+   for ( size_t i = this->GetLength( ); i < index; ++i )
    {
       T data_;
       this->Add( data_ );
@@ -465,7 +465,7 @@ template< class T > void TCT_OrderedVector_c< T >::Replace(
       const T& data )
 {
    size_t index = this->FindIndex( data );
-   if( index != string::npos )
+   if ( index != string::npos )
    {
       this->Replace( index, data );
    }
@@ -477,12 +477,12 @@ template< class T > void TCT_OrderedVector_c< T >::Replace(
       const T&     data )
 {
    const T* pdata = this->operator[]( index );
-   if( pdata )
+   if ( pdata )
    {
       typename std::vector< T >::iterator begin = this->vector_.begin( );
       typename std::vector< T >::iterator end = this->vector_.end( );
       typename std::vector< T >::iterator iter = std::find( begin, end, *pdata );
-      if( iter != end )
+      if ( iter != end )
       {
          this->vector_.erase( iter );
          this->vector_.insert( iter, data );
@@ -503,7 +503,7 @@ template< class T > void TCT_OrderedVector_c< T >::Delete(
    typename std::vector< T >::iterator begin = this->vector_.begin( );
    typename std::vector< T >::iterator end = this->vector_.end( );
    typename std::vector< T >::iterator iter = std::find( begin, end, data );
-   if( iter != end )
+   if ( iter != end )
    {
       this->vector_.erase( iter );
    }
@@ -514,12 +514,12 @@ template< class T > void TCT_OrderedVector_c< T >::Delete(
       size_t index )
 {
    const T* pdata = this->operator[]( index );
-   if( pdata )
+   if ( pdata )
    {
       typename std::vector< T >::iterator begin = this->vector_.begin( );
       typename std::vector< T >::iterator end = this->vector_.end( );
       typename std::vector< T >::iterator iter = std::find( begin, end, *pdata );
-      if( iter != end )
+      if ( iter != end )
       {
          this->vector_.erase( iter );
       }
@@ -539,7 +539,7 @@ template< class T > void TCT_OrderedVector_c< T >::Remove(
    typename std::vector< T >::iterator begin = this->vector_.begin( );
    typename std::vector< T >::iterator end = this->vector_.end( );
    typename std::vector< T >::iterator iter = std::find( begin, end, data );
-   if( iter != end )
+   if ( iter != end )
    {
       this->vector_.erase( iter );
    }
@@ -557,7 +557,7 @@ template< class T > T* TCT_OrderedVector_c< T >::At(
 {
    T* pdata = 0;
 
-   if( index < this->GetLength( ))
+   if ( index < this->GetLength( ))
    {
       pdata = &this->vector_.operator[]( index );
    }
@@ -634,7 +634,7 @@ template< class T > size_t TCT_OrderedVector_c< T >::FindIndex(
    typename std::vector< T >::const_iterator begin = this->vector_.begin( );
    typename std::vector< T >::const_iterator end = this->vector_.end( );
    typename std::vector< T >::const_iterator iter = std::find( begin, end, data );
-   if( iter != end )
+   if ( iter != end )
    {
       index = 0;
       #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 )
@@ -677,11 +677,11 @@ template< class T > bool TCT_OrderedVector_c< T >::Search_(
    typename std::vector< T >::const_iterator begin = this->vector_.begin( );
    typename std::vector< T >::const_iterator end = this->vector_.end( );
    typename std::vector< T >::const_iterator iter = std::find( begin, end, data );
-   if( iter != end )
+   if ( iter != end )
    {
       found = true;
 
-      if( pdata )
+      if ( pdata )
       {
          *pdata = *iter;
       }

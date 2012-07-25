@@ -572,26 +572,3 @@ static void free_rc_edge_free_list(t_linked_rc_edge * rc_edge_free_list) {
 		rc_edge = next_edge;
 	}
 }
-
-void print_net_delay(float **net_delay, const char *fname, struct s_net *nets,
-		int n_nets) {
-
-	/* Dumps the net delays into file fname.   */
-
-	FILE *fp;
-	int inet, ipin;
-
-	fp = my_fopen(fname, "w", 0);
-
-	for (inet = 0; inet < n_nets; inet++) {
-		fprintf(fp, "Net: %d.\n", inet);
-		fprintf(fp, "Delays:");
-
-		for (ipin = 1; ipin < (nets[inet].num_sinks + 1); ipin++)
-			fprintf(fp, " %g", net_delay[inet][ipin]);
-
-		fprintf(fp, "\n\n");
-	}
-
-	fclose(fp);
-}

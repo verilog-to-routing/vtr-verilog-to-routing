@@ -456,7 +456,7 @@ static short ezxml_internal_dtd(ezxml_root_t root, char *s,
 				}
 
 				s += strspn(s + 1, EZXML_WS) + 1; /* find next token */
-				if( (strncmp(s, "CDATA", 5)) ) { 
+				if ((strncmp(s, "CDATA", 5))) { 
 					temp[0] = '*';
 				} else {
 					temp[0]=' ';
@@ -716,8 +716,8 @@ ezxml_t ezxml_parse_str(char *s, size_t len) {
 			s = strstr(s + 3, "--");
 			if (!s || (*(s += 2) != '>' && *s) || (!*s && e != '>'))
 				return ezxml_err(root, d, "unclosed <!--");
-			while(temp != s && *temp != '\0') {
-				if(*temp == '\n') {
+			while (temp != s && *temp != '\0') {
+				if (*temp == '\n') {
 					line++;
 				}
 				temp++;
@@ -763,7 +763,7 @@ ezxml_t ezxml_parse_str(char *s, size_t len) {
 		d = ++s;
 		if (*s && *s != '<') { /* tag character content */
 			while (*s && *s != '<') {
-				if(*s == '\n') {
+				if (*s == '\n') {
 					line++;
 				}
 				s++;
@@ -1271,13 +1271,13 @@ main(int argc,
 	char *s;
 	int i;
 
-	if(argc != 2)
-	return fprintf(stderr, "usage: %s xmlfile\n", argv[0]);
+	if (argc != 2)
+	return vpr_printf(TIO_MESSAGE_ERROR, "usage: %s xmlfile\n", argv[0]);
 
 	xml = ezxml_parse_file(argv[1]);
 	vpr_printf("%s\n", (s = ezxml_toxml(xml)));
 	free(s);
-	i = fprintf(stderr, "%s", ezxml_error(xml));
+	i = vpr_printf(TIO_MESSAGE_ERROR, "%s", ezxml_error(xml));
 	ezxml_free(xml);
 	return (i) ? 1 : 0;
 }

@@ -137,11 +137,11 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	*/
 	vpack_net_hash = alloc_hash_table();
 	logical_block_hash = alloc_hash_table();
-	for(i = 0; i < num_logical_nets; i++) {
+	for (i = 0; i < num_logical_nets; i++) {
 		temp_hash = insert_in_hash_table(vpack_net_hash, vpack_net[i].name, i);
 		assert(temp_hash->count == 1);
 	}
-	for(i = 0; i < num_logical_blocks; i++) {
+	for (i = 0; i < num_logical_blocks; i++) {
 		temp_hash = insert_in_hash_table(logical_block_hash, logical_block[i].name, i);
 		logical_block[i].pb = NULL;
 		assert(temp_hash->count == 1);
@@ -167,8 +167,8 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	assert(num_primitives == num_logical_blocks);
 
 	/* Error check */
-	for(i = 0; i < num_logical_blocks; i++) {
-		if(logical_block[i].pb == NULL) {
+	for (i = 0; i < num_logical_blocks; i++) {
+		if (logical_block[i].pb == NULL) {
 			vpr_printf(TIO_MESSAGE_ERROR, ".blif file and .net file do not match, .net file missing atom %s\n", logical_block[i].name);
 			exit(1);
 		}
@@ -314,9 +314,9 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 	freeTokens(tokens, num_tokens);
 #if 0
 	/* print local nets */
-	for(i = 0; i < cb[index].pb->num_local_nets; i++) {
+	for (i = 0; i < cb[index].pb->num_local_nets; i++) {
 		vpr_printf(TIO_MESSAGE_INFO, "local net %s: ", cb[index].pb->name);
-		for(j = 0; j <= cb[index].pb->local_nets[i].num_sinks; j++) {
+		for (j = 0; j <= cb[index].pb->local_nets[i].num_sinks; j++) {
 			vpr_printf(TIO_MESSAGE_INFO, "%d ", cb[index].pb->local_nets[i].node_block[j]);
 		}
 		vpr_printf(TIO_MESSAGE_INFO, "\n");
@@ -357,16 +357,16 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 	pb_type = pb->pb_graph_node->pb_type;
 	if (pb_type->num_modes == 0) {
 		/* LUT specific optimizations */
-		if(strcmp(pb_type->blif_model, ".names") == 0) {
+		if (strcmp(pb_type->blif_model, ".names") == 0) {
 			pb->lut_pin_remap = (int*)my_malloc(pb_type->num_input_pins * sizeof(int));
-			for(i = 0; i < pb_type->num_input_pins; i++) {
+			for (i = 0; i < pb_type->num_input_pins; i++) {
 				pb->lut_pin_remap[i] = OPEN;
 			}
 		} else {
 			pb->lut_pin_remap = NULL;
 		}
 		temp_hash = get_hash_entry(logical_block_hash, pb->name);
-		if(temp_hash == NULL) {
+		if (temp_hash == NULL) {
 			vpr_printf(TIO_MESSAGE_ERROR, ".net file and .blif file do not match, encountered unknown primitive %s in .net file\n", pb->name);
 			exit(1);
 		}
@@ -680,9 +680,9 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 						else
 							rr_node_index =
 									pb->pb_graph_node->clock_pins[clock_port][i].pin_count_in_cluster;
-						if(strcmp(pins[i], "open") != 0) {
+						if (strcmp(pins[i], "open") != 0) {
 							temp_hash = get_hash_entry(vpack_net_hash, pins[i]);
-							if(temp_hash == NULL) {
+							if (temp_hash == NULL) {
 								vpr_printf(TIO_MESSAGE_ERROR, ".blif and .net do not match, unknown net %s found in .net file\n", pins[i]);
 							}
 							rr_graph[rr_node_index].net_num = temp_hash->index;							
@@ -745,9 +745,9 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 					for (i = 0; i < num_tokens; i++) {
 						rr_node_index =
 								pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
-						if(strcmp(pins[i], "open") != 0) {
+						if (strcmp(pins[i], "open") != 0) {
 							temp_hash = get_hash_entry(vpack_net_hash, pins[i]);
-							if(temp_hash == NULL) {
+							if (temp_hash == NULL) {
 								vpr_printf(TIO_MESSAGE_ERROR, ".blif and .net do not match, unknown net %s found in .net file\n", pins[i]);
 							}
 							rr_graph[rr_node_index].net_num = temp_hash->index;							
@@ -950,7 +950,7 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 	/* Error check global and non global signals */
 	for (i = 0; i < *ext_ncount; i++) {
 		for (j = 1; j <= (*ext_nets)[i].num_sinks; j++) {
-			if(block_list[(*ext_nets)[i].node_block[j]].type->is_global_pin[(*ext_nets)[i].node_block_pin[j]] != (*ext_nets)[i].is_global) {
+			if (block_list[(*ext_nets)[i].node_block[j]].type->is_global_pin[(*ext_nets)[i].node_block_pin[j]] != (*ext_nets)[i].is_global) {
 				vpr_printf(
 					TIO_MESSAGE_ERROR, "Netlist attempts to connect net %s to both global and non-global pins\n", (*ext_nets)[i].name);
 				exit(1);

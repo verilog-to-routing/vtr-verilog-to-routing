@@ -84,13 +84,13 @@ template< class T > void TCT_QSortRecurse(
    long pivot = TCT_QSortPartition( padata, i, j, pfxCompare );
 
    // Test if sub-array must be partitioned again, if so, apply recursion
-   if( i < pivot )
+   if ( i < pivot )
    {
       TCT_QSortRecurse( padata, i, pivot - 1, pfxCompare );
    }
 
    // Test if sub-array must be partitioned again, if so, apply recursion
-   if( j > pivot )
+   if ( j > pivot )
    {
       TCT_QSortRecurse( padata, pivot + 1, j, pfxCompare );
    }
@@ -116,7 +116,7 @@ template< class T > long TCT_QSortPartition(
    T data = *( padata + i );
 
    // Randomize to improve quick-sort algorithm's worst-case runtime
-   if( j - i > 2 )
+   if ( j - i > 2 )
    {
       long r = TCT_Rand( i, j );
 
@@ -125,16 +125,16 @@ template< class T > long TCT_QSortPartition(
       data = *( padata + i );
    }
 
-   while( i < j )
+   while ( i < j )
    {
       // Scan from right to left, skip elements greater than pivot element
-      while(( i < j ) && 
+      while (( i < j ) && 
             ( TCT_QSortCompare( padata + j, &data, pfxCompare ) > 0 ))
       {
          --j;
       }
 
-      if( i != j )
+      if ( i != j )
       {
          // Swap values and adjust index, if needed
          *( padata + i ) = *( padata + j );
@@ -142,13 +142,13 @@ template< class T > long TCT_QSortPartition(
       }
 
       // Scan from left to right, skip elements less than pivot element
-      while(( i < j ) && 
+      while (( i < j ) && 
             ( TCT_QSortCompare( padata + i, &data, pfxCompare ) < 0 ))
       {
          ++i;
       }
 
-      if( i != j )
+      if ( i != j )
       {
          // Swap values and adjust index, if needed
          *( padata + j ) = *( padata + i );

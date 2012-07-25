@@ -88,7 +88,7 @@ private:
 inline void TIO_FileHandler_c::Flush( 
       void )
 {
-   if( this->pfileStream_ )
+   if ( this->pfileStream_ )
    {
       fflush( this->pfileStream_ );
    }
@@ -98,7 +98,7 @@ inline void TIO_FileHandler_c::Flush(
 inline void TIO_FileHandler_c::Reset( 
       void ) const
 {
-   if( this->pfileStream_ )
+   if ( this->pfileStream_ )
    {
       fseek( this->pfileStream_, 0, SEEK_SET );
    }

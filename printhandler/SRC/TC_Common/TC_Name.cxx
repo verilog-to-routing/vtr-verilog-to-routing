@@ -24,7 +24,7 @@
 TC_Name_c& TC_Name_c::operator=( 
       const TC_Name_c& name )
 {
-   if( &name != this )
+   if ( &name != this )
    {
       this->srName_ = name.srName_;
       this->value_ = name.value_;
@@ -104,9 +104,9 @@ void TC_Name_c::Print(
 void TC_Name_c::ExtractString( 
       string* psrName ) const
 {
-   if( psrName )
+   if ( psrName )
    {
-      if( this->IsValid( ))
+      if ( this->IsValid( ))
       {
          *psrName = this->srName_;
       }

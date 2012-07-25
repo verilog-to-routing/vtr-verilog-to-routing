@@ -260,28 +260,28 @@ static int check_for_duplicated_names(void) {
 
 	error = clb_count = sub_count = prim_count = 0;
 
-	for(iblk = 0; iblk < num_blocks; iblk++)
+	for (iblk = 0; iblk < num_blocks; iblk++)
 	{
 		clb_h_ptr = insert_in_hash_table(clb_hash_table, block[iblk].name, clb_count);
-		if(clb_h_ptr->count > 1) {
+		if (clb_h_ptr->count > 1) {
 			vpr_printf(TIO_MESSAGE_ERROR, "block %s has duplicated name\n", block[iblk].name);
 			error++;
 		} else {
 			clb_count++;
 		}
-		for(isub = 0; isub < block[iblk].num_subblocks; isub++)
+		for (isub = 0; isub < block[iblk].num_subblocks; isub++)
 		{
 			sub_h_ptr = insert_in_hash_table(sub_hash_table, block[iblk].subblocks[isub].name, sub_count);
-			if(sub_h_ptr->count > 1) {
+			if (sub_h_ptr->count > 1) {
 				vpr_printf(TIO_MESSAGE_ERROR, "subblock %s has duplicated name\n", block[iblk].subblocks[isub].name);
 				error++;
 			} else {
 				sub_count++;
 			}
-			for(iprim = 0; iprim < block[iblk].subblocks[isub].num_primitives; iprim++)
+			for (iprim = 0; iprim < block[iblk].subblocks[isub].num_primitives; iprim++)
 			{
 				prim_h_ptr = insert_in_hash_table(prim_hash_table, block[iblk].subblocks[isub].primitives[iprim].name, prim_count);
-				if(prim_h_ptr->count > 1) {
+				if (prim_h_ptr->count > 1) {
 					vpr_printf(TIO_MESSAGE_ERROR, "primitive %s has duplicated name\n", block[iblk].subblocks[isub].primitives[iprim].name);
 					error++;
 				} else {

@@ -81,7 +81,7 @@ void vpr_print_usage(void);
 		INP struct s_det_routing_arch RoutingArch, INP t_segment_inf * Segments,
 		INP t_timing_inf Timing, INP t_chan_width_dist Chans);
 	/* Read blif file and sweep unused components */
-	void vpr_read_and_process_blif(INP char *blif_file, INP boolean sweep_hanging_nets_and_inputs,
+	void vpr_read_and_process_blif (INP char *blif_file, INP boolean sweep_hanging_nets_and_inputs,
 		INP t_model *user_models, INP t_model *library_models);
 	/* Show current setup */
 	void vpr_show_setup(INP t_options options, INP t_vpr_setup vpr_setup);

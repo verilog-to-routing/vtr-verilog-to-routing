@@ -46,7 +46,7 @@ TIO_FileHandler_c::TIO_FileHandler_c(
       :
       pfileStream_( 0 )
 {
-   if( pszFileName )
+   if ( pszFileName )
    {
       this->Open( pszFileName, fileOpen, pszFileType, printMode );
    }
@@ -90,7 +90,7 @@ bool TIO_FileHandler_c::Open(
       const char*              pszFileType,
             TIO_PrintMode_t    printMode )
 {
-   if( this->pfileStream_ )
+   if ( this->pfileStream_ )
    {
       this->Close( );
    }
@@ -108,18 +108,18 @@ bool TIO_FileHandler_c::Open(
    }
 
    this->pfileStream_ = stdout;
-   if( srFileName != "stdout" )
+   if ( srFileName != "stdout" )
    {
       this->pfileStream_ = fopen( srFileName.data( ), pszFileOpen );
    }
 
-   if( this->pfileStream_ )
+   if ( this->pfileStream_ )
    {
       this->srFileName_ = srFileName;
    }
    else
    {
-      if( pszFileType )
+      if ( pszFileType )
       {
          TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
@@ -165,9 +165,9 @@ bool TIO_FileHandler_c::Open(
 void TIO_FileHandler_c::Close( 
       void )
 {
-   if( this->pfileStream_ )
+   if ( this->pfileStream_ )
    {
-      if( this->pfileStream_ != stdout )
+      if ( this->pfileStream_ != stdout )
       {
          fclose( this->pfileStream_ );
       }
@@ -188,7 +188,7 @@ bool TIO_FileHandler_c::Read(
 {
    bool ok = false;
 
-   if( this->pfileStream_ && pszString && lenString )
+   if ( this->pfileStream_ && pszString && lenString )
    {
       int lenString_ = static_cast< int >( lenString );
       ok = ( fgets( pszString, lenString_, this->pfileStream_ ) ? true : false );
@@ -209,7 +209,7 @@ bool TIO_FileHandler_c::Write(
 {
    bool ok = false;
 
-   if( this->pfileStream_ && pszString )
+   if ( this->pfileStream_ && pszString )
    {
       va_list vaArgs;                      // Make a variable argument list
       va_start( vaArgs, pszString );       // Initialize variable argument list
@@ -245,13 +245,13 @@ bool TIO_FileHandler_c::ApplyPreProcessor(
    #elif defined( WIN32 )
       isValidCommand = true;
    #endif
-   if( isValidCommand )
+   if ( isValidCommand )
    {
       const string& srFileName = this->GetFileName( );
       string srLeafName( srFileName );
 
       size_t slashPos = srFileName.rfind( TIO_FILE_DIR_DELIMITER );
-      if( slashPos != string::npos )
+      if ( slashPos != string::npos )
       {
          srLeafName = srFileName.substr( slashPos + 1 );
       }
@@ -272,19 +272,19 @@ bool TIO_FileHandler_c::ApplyPreProcessor(
       srCommand += srPreProcessedFileName;
 
       int rc = system( srCommand.data( ));
-      if( rc == 0 )
+      if ( rc == 0 )
       {
          ok = this->Open( srPreProcessedFileName,
                           TIO_FILE_OPEN_READ,
                           "preprocessed file" );
       }
-      else if( rc > 0 )
+      else if ( rc > 0 )
       {
          printHandler.Error( "Failed to complete %s preprocessor command.\n", 
 		             TIO_PSZ_STR( TIO_FILE_CPP_COMMAND ));
          ok = false;
       }
-      else if( rc < 0 )
+      else if ( rc < 0 )
       {
          printHandler.Error( "Failed to execute %s preprocessor command.\n", 
 		             TIO_PSZ_STR( TIO_FILE_CPP_COMMAND ));

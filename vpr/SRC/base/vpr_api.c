@@ -498,7 +498,7 @@ static void free_complex_block_types(void) {
 			free(type_descriptors[i].pin_loc_assignments[j]);
 			free(type_descriptors[i].num_pin_loc_assignments[j]);
 		}
-		for(j = 0; j < type_descriptors[i].num_class; j++) {
+		for (j = 0; j < type_descriptors[i].num_class; j++) {
 			free(type_descriptors[i].class_inf[j].pinlist);
 		}
 		free(type_descriptors[i].pinloc);
@@ -611,8 +611,8 @@ void free_circuit() {
 		free_logical_nets();
 	}
 
-	if(clb_net != NULL) {
-		for(i = 0; i <  num_nets; i++) {
+	if (clb_net != NULL) {
+		for (i = 0; i <  num_nets; i++) {
 			free(clb_net[i].name);
 			free(clb_net[i].node_block);
 			free(clb_net[i].node_block_pin);
@@ -622,9 +622,9 @@ void free_circuit() {
 	free(clb_net);
 	clb_net = NULL;
 
-	if(block != NULL) {
-		for(i = 0; i < num_blocks; i++) {
-			if(block[i].pb != NULL) {
+	if (block != NULL) {
+		for (i = 0; i < num_blocks; i++) {
+			if (block[i].pb != NULL) {
 				free_cb(block[i].pb);
 				free(block[i].pb);
 			}
@@ -642,7 +642,7 @@ void free_circuit() {
 
 void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options, INOUTP t_vpr_setup vpr_setup) {
 	
-	if(vpr_setup.Timing.SDCFile != NULL) {
+	if (vpr_setup.Timing.SDCFile != NULL) {
 		free(vpr_setup.Timing.SDCFile);
 		vpr_setup.Timing.SDCFile = NULL;
 	}

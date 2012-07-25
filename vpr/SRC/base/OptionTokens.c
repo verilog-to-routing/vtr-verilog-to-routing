@@ -35,7 +35,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
 				OT_VERIFY_BINARY_SEARCH },
 		{ "outfile_prefix", OT_OUTFILE_PREFIX }, { "blif_file", OT_BLIF_FILE },
 		{ "net_file", OT_NET_FILE }, { "place_file", OT_PLACE_FILE }, {
-				"route_file", OT_ROUTE_FILE }, { "global_clocks",
+			"route_file", OT_ROUTE_FILE }, {"sdc_file", OT_SDC_FILE}, { "global_clocks",
 				OT_GLOBAL_CLOCKS }, { "hill_climbing", OT_HILL_CLIMBING_FLAG },
 		{ "sweep_hanging_nets_and_inputs", OT_SWEEP_HANGING_NETS_AND_INPUTS }, {
 				"no_clustering", OT_SKIP_CLUSTERING }, {

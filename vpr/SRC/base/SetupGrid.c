@@ -118,9 +118,9 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 #ifdef SHOW_ARCH
 	/* DEBUG code */
 	dump = my_fopen("grid_type_dump.txt", "w", 0);
-	for(j = (ny + 1); j >= 0; --j)
+	for (j = (ny + 1); j >= 0; --j)
 	{
-		for(i = 0; i <= (nx + 1); ++i)
+		for (i = 0; i <= (nx + 1); ++i)
 		{
 			fprintf(dump, "%c", grid[i][j].type->name[1]);
 		}
@@ -132,7 +132,7 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 
 void freeGrid() {
 	int i, j;
-	if(grid == NULL) {
+	if (grid == NULL) {
 		return;
 	}
 

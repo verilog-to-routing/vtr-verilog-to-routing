@@ -7,14 +7,14 @@ static int process_settings(ezxml_t Cur, char ** outv)
 {
 	int count = 0;
 
-	if(!Cur)
+	if (!Cur)
 		return(0);
 
-	while(Cur->attr[count])
+	while (Cur->attr[count])
 	{
-		if(outv)
+		if (outv)
 		{
-			if(! (count % 2))
+			if (! (count % 2))
 			{
 				outv[count] = (char *)my_malloc(strlen(Cur->attr[count]) + 3);
 				strcpy(&outv[count][2], Cur->attr[count]);
@@ -28,9 +28,9 @@ static int process_settings(ezxml_t Cur, char ** outv)
 
 	Cur = Cur->child;
 
-	while(Cur)
+	while (Cur)
 	{
-		if(outv)
+		if (outv)
 		{
 			outv[count] = (char *)my_malloc(strlen(Cur->name) + 3);
 			strcpy(&outv[count][2], Cur->name);
@@ -38,9 +38,9 @@ static int process_settings(ezxml_t Cur, char ** outv)
 		}
 		count++;
 
-		if(strlen(Cur->txt))
+		if (strlen(Cur->txt))
 		{
-			if(outv) outv[count] = Cur->txt;
+			if (outv) outv[count] = Cur->txt;
 			count++;
 		}
 
@@ -69,7 +69,7 @@ int read_settings_file(char * file_name, char *** outv)
 
 	(*outv)[0] = my_strdup(file_name);
 
-	if(count)
+	if (count)
 	{
 		process_settings(Cur, &((*outv)[1]));
 	}
