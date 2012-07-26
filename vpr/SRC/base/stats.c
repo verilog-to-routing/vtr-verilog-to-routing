@@ -471,7 +471,7 @@ static void get_timing_stats(t_timing_stats * timing_stats) {
 				vpr_printf(TIO_MESSAGE_INFO, "Critical path: %g ns\n", timing_stats->critical_path_delay[0][0] * 1e9);
 			} else {
 				vpr_printf(TIO_MESSAGE_INFO, 
-					"Critical path: %g ns - capped by fmax of block type %s\n", 
+					"Critical path: %g ns\n(capped by fmax of block type %s)\n", 
 					pb_max_internal_delay * 1e9, pbtype_max_internal_delay->name);
 			}
 		vpr_printf(TIO_MESSAGE_INFO, "\nf_max: %g MHz", 1e-6 / timing_stats->critical_path_delay[0][0]);
