@@ -97,13 +97,11 @@ static struct s_molecule_link *memory_pool; /*Declared here so I can free easily
  * so this should take care of all multiple connections.                */
 static int *net_output_feeds_driving_block_input;
 
-static int indexofcrit; /* index of next most timing critical block */
-static int savedindexofcrit; /* index of next most timing critical block */
-
 /* Timing information for blocks */
-#ifdef FANCY_CRITICALITY
+
 static float *criticality = NULL;
 static int *critindexarray = NULL;
+#ifdef FANCY_CRITICALITY
 static float **net_pin_backward_criticality = NULL;
 static float **net_pin_forward_criticality = NULL;
 #endif
@@ -217,12 +215,14 @@ static void check_clustering(int num_clb, t_block *clb, boolean *is_clock);
 
 static void check_cluster_logical_blocks(t_pb *pb, boolean *blocks_checked);
 
-static t_pack_molecule* get_most_critical_seed_molecule(void);
+static t_pack_molecule* get_most_critical_seed_molecule(int * indexofcrit);
 
 static float get_molecule_gain(t_pack_molecule *molecule, float *blk_gain);
 static int compare_molecule_gain(const void *a, const void *b);
 static int get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 		t_pb_graph_pin *pb_graph_pin);
+
+static void print_block_criticalities(const char * fname);
 
 /*****************************************/
 /*globally accessable function*/
@@ -248,13 +248,11 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	t_slack * slacks = NULL;
 	t_pack_molecule *istart, *next_molecule, *prev_molecule, *cur_molecule;
-	int i, num_molecules;
-#ifdef FANCY_CRITICALITY
-	int j, iblk;
-#endif
+	int i, j, iblk, num_molecules;
+
 	int blocks_since_last_analysis;
 	int max_nets_in_pb_type, cur_nets_in_pb_type;
-
+	int indexofcrit, savedindexofcrit; /* index of next most timing critical block */
 	int num_blocks_hill_added;
 	int max_cluster_size, cur_cluster_size, max_molecule_inputs, max_pb_depth,
 			cur_pb_depth;
@@ -367,14 +365,15 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		free_timing_stats(timing_stats);
 
 		if (GetEchoOption()) {
-			print_net_slack(slacks->net_slack, "pre_packing_net_slack.echo");
-			print_net_slack_ratio(slacks->net_slack_ratio, "pre_packing_net_slack_ratio.echo");
 			print_timing_graph("pre_packing_timing_graph.echo");
 #ifdef FANCY_CRITICALITY
 			print_clustering_timing_info("clustering_timing_info.echo");
+#else
+			print_net_slack(slacks->net_slack, "pre_packing_net_slack.echo");
+			print_net_slack_ratio(slacks->net_slack_ratio, "pre_packing_net_slack_ratio.echo");
 #endif
 		}
-#ifdef FANCY_CRITICALITY
+
 		criticality = (float*) my_calloc(num_logical_blocks, sizeof(float));
 
 		critindexarray = (int*) my_malloc(num_logical_blocks * sizeof(int));
@@ -384,6 +383,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			critindexarray[i] = i;
 		}
 
+#ifdef FANCY_CRITICALITY
 		/* Calculate criticality based on slacks and tie breakers (# paths, distance from source) */
 		for (i = 0; i < num_tnodes; i++) {
 			/* Only calculate for tnodes which have valid arrival and required times.  
@@ -419,11 +419,28 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						criticality[vpack_net[i].node_block[0]];
 			}
 		}
-		heapsort(critindexarray, criticality, num_logical_blocks, 1);
+#else
+		/* Calculate criticality directly from net_slack_ratio */
+		for (i = 0; i < num_logical_nets; i++) { 
+			for (j = 0; j <= vpack_net[i].num_sinks; j++) { 
+				/* For each pin on each net, find the logical block iblk which it sinks on. */
+				iblk = vpack_net[i].node_block[j];
+				/* The criticality of each block is the maximum of the criticalities of all its pins. */
+				if (criticality[iblk] < 1 - slacks->net_slack_ratio[i][j]) {
+					criticality[iblk] = 1 - slacks->net_slack_ratio[i][j];
+				}
+			}
+		}
 #endif
+		heapsort(critindexarray, criticality, num_logical_blocks, 1);
+		
+		if (GetEchoOption()) {
+			print_block_criticalities("clustering_block_criticalities.echo");
+		}
+
 
 		if (cluster_seed_type == VPACK_TIMING) {
-			istart = get_most_critical_seed_molecule();
+			istart = get_most_critical_seed_molecule(&indexofcrit);
 		} else {/*max input seed*/
 			istart = get_seed_logical_molecule_with_most_ext_inputs(
 					max_molecule_inputs);
@@ -539,7 +556,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						blocks_since_last_analysis += num_blocks_hill_added;
 					}
 					if (cluster_seed_type == VPACK_TIMING) {
-						istart = get_most_critical_seed_molecule();
+						istart = get_most_critical_seed_molecule(&indexofcrit);
 					} else { /*max input seed*/
 						istart = get_seed_logical_molecule_with_most_ext_inputs(
 								max_molecule_inputs);
@@ -2409,27 +2426,22 @@ static void check_cluster_logical_blocks(t_pb *pb, boolean *blocks_checked) {
 	}
 }
 
-static t_pack_molecule* get_most_critical_seed_molecule(void) {
-	/*calculate_timing_information must be called before this, or this function*
-	 *will return garbage 
-	 * returns molecule with most critical block, if block belongs to multiple molecules, return the biggest molecule
-	 */
+static t_pack_molecule* get_most_critical_seed_molecule(int * indexofcrit) {
+	/* Do_timing_analysis must be called before this, or this function 
+	 * will return garbage. Returns molecule with most critical block;
+	 * if block belongs to multiple molecules, return the biggest molecule. */
 
-	/*indexofcrit is a global variable that is reset to 0 each time a          *
-	 *timing analysis is done (reset in  sort_blocks_by_criticality)           */
-
-	int critidx, blkidx;
+	int blkidx;
 	t_pack_molecule *molecule, *best;
 	struct s_linked_vptr *cur;
 
-	for (critidx = indexofcrit; critidx < num_logical_blocks; critidx++) {
+	while (*indexofcrit < num_logical_blocks) {
 #ifdef FANCY_CRITICALITY
-		blkidx = critindexarray[critidx];
+		blkidx = critindexarray[(*indexofcrit)++];
 #else
-		blkidx = critidx;
+		blkidx = (*indexofcrit)++;
 #endif
 		if (logical_block[blkidx].clb_index == NO_CLUSTER) {
-			indexofcrit = critidx + 1;
 			cur = logical_block[blkidx].packed_molecules;
 			best = NULL;
 			while (cur != NULL) {
@@ -2997,3 +3009,25 @@ static int get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 	}
 }
 
+static void print_block_criticalities(const char * fname) {
+	/* Prints criticality and critindexarray for each logical block to a file. */
+	
+	int iblock, len;
+	FILE * fp;
+	char * name;
+
+	fp = my_fopen(fname, "w", 0);
+	fprintf(fp, "Index \tLogical block name \tCriticality \tCritindexarray\n\n");
+	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
+		name = logical_block[iblock].name;
+		len = strlen(name);
+		fprintf(fp, "%d\t%s\t", logical_block[iblock].index, name);
+		if (len < 8) {
+			fprintf(fp, "\t\t");
+		} else if (len < 16) {
+			fprintf(fp, "\t");
+		}
+		fprintf(fp, "%f\t%d\n", criticality[iblock], critindexarray[iblock]);
+	}
+	fclose(fp);
+}

@@ -39,6 +39,10 @@
  * Global data types and constants
  ******************************************************************************/
 
+#define FANCY_CRITICALITY
+/* If defined, uses different, normalized and directional criticalities in the clusterer.  
+	If not defined, uses the same slack ratio fpr the clusterer as for the placer/router. */
+
 #ifndef SPEC
 #define DEBUG 1			/* Echoes input & checks error conditions */
 /* Only causes about a 1% speed degradation in V 3.10 */
@@ -310,10 +314,6 @@ typedef enum {
  * index: index of array this tnode belongs to
  * num_critical_input_paths, num_critical_output_paths: Count total number of near critical paths that go through this node *
  */
-
-#define FANCY_CRITICALITY
-/* If defined, uses different, normalized and directional criticalities in the clusterer.  
-	If not defined, uses the same slack ratio fpr the clusterer as for the placer/router. */
 
 typedef struct s_tnode {
 	t_tedge *out_edges;
