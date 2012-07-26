@@ -257,15 +257,24 @@ write;
 				my @new_last_line;
 
 				foreach my $param (@data) {
+					
 					# Get column (index) of each qor metric
 					my $index = List::Util::first { @first_line[$_] eq $param } 0 .. $#first_line;
+					
 					# If index is out-of-bounds or metric cannot be found
 					if ( $index > @last_line or $index eq "" ) {
 						push( @new_last_line, sprintf( $precision{$param}, "-" ) . $units{$param} );
-					}
+					}	
 					# If valid number, add it onto line to be printed with appropriate sig figs. and units
 					elsif ( Scalar::Util::looks_like_number(@last_line[$index]) ) {
 						push( @new_last_line, sprintf( $precision{$param}, @last_line[$index] ) . $units{$param} );
+					}
+					# For dates of format dd/mm/yy
+					elsif ( @last_line[$index] =~ m/^\d{2}\/\d{2}\/\d{2}$/ ) { 
+						push( @new_last_line, sprintf( $precision{$param}, @last_line[$index] ) . $units{$param} );
+					}
+					else {
+						push( @new_last_line, sprintf( $precision{$param}, "-" ) . $units{$param} );
 					}
 				}
  
