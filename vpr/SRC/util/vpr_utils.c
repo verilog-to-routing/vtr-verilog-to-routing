@@ -440,14 +440,13 @@ int ** alloc_and_load_net_pin_index() {
 	/*computes net_pin_index array, this array allows us to quickly */
 	/*find what pin on the net a block pin corresponds to */
 
-	int inet, netpin, blk, iblk, ipin, itype;
+	int inet, netpin, blk, iblk, ipin, itype, **temp_net_pin_index, max_pins_per_clb = 0;
 	t_type_ptr type;
-	
-	int max_pins_per_clb = 0;
+
 	for (itype = 0; itype < num_types; itype++)
 		max_pins_per_clb = max(max_pins_per_clb, type_descriptors[itype].num_pins);
 	
-	int **temp_net_pin_index = (int **) alloc_matrix(0, num_blocks - 1, 0,
+	temp_net_pin_index = (int **) alloc_matrix(0, num_blocks - 1, 0,
 				max_pins_per_clb - 1, sizeof(int));
 
 	/*initialize values to OPEN */
