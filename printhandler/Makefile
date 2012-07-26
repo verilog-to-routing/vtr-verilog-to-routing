@@ -1,7 +1,7 @@
 ################################   MAKEFILE OPTIONS     ####################################
 # Build the printhandler library
 
-export BUILD_TYPE = debug
+export BUILD_TYPE = release
 # can be debug or release - this option gets inherited by the library libarchfpga 
 # by default, though libarchfpga's build type can be set independently in libarchfpga's Makefile.
 

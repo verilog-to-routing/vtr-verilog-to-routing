@@ -22,7 +22,7 @@
    #define TIO_SZ_PROGRAM_OPSYS " (Linux 2.4)"
 #elif defined( LINUX24_64 )
    #define TIO_SZ_PROGRAM_OPSYS " (Linux 2.4/64)"
-#elif defined( WIN32 )
+#elif defined( _WIN32 )
    #define TIO_SZ_PROGRAM_OPSYS " (Windows/32)"
 #else
    #define TIO_SZ_PROGRAM_OPSYS ""

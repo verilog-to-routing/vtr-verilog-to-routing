@@ -148,7 +148,7 @@ void TC_SideIndex_c::ExtractString(
 	 if ( this->index_ != SIZE_MAX )
 	 {
    	    char szIndex[ TIO_FORMAT_STRING_LEN_VALUE ];
-            sprintf( szIndex, "%u", this->index_ );
+            sprintf( szIndex, "%lu", this->index_ );
 
             *psrSideIndex += " ";
             *psrSideIndex += szIndex;

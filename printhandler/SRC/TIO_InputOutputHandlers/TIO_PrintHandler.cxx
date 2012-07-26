@@ -725,7 +725,7 @@ void TIO_PrintHandler_c::WriteCenter(
 
    va_list vaArgs;                   // Make a variable argument list
 
-   #if defined( SUN8 ) || defined( SUN10 ) || defined( WIN32 )
+   #if defined( SUN8 ) || defined( SUN10 ) || defined( _WIN32 )
       vaArgs = 0;
    #endif
 
@@ -1016,7 +1016,7 @@ void TIO_PrintHandler_c::FindUserName(
    const char* pszUserNameCmd = "";
    #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 ) || defined( LINUX24_64 )
       pszUserNameCmd = "whoami"; 
-   #elif defined( WIN32 )
+   #elif defined( _WIN32 )
       pszUserNameCmd = "echo %USERNAME%";
    #endif
    this->ApplySystemCommand_( pszUserNameCmd,
@@ -1037,7 +1037,7 @@ void TIO_PrintHandler_c::FindHostName(
    const char* pszHostNameCmd = "";
    #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 ) || defined( LINUX24_64 )
       pszHostNameCmd = "hostname", 
-   #elif defined( WIN32 )
+   #elif defined( _WIN32 )
       pszHostNameCmd = "hostname", 
    #endif
    this->ApplySystemCommand_( pszHostNameCmd,
@@ -1483,7 +1483,7 @@ void TIO_PrintHandler_c::ApplySystemCommand_(
    {
       *psrCommandStdout = "";
 
-      #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 ) || defined( LINUX24_64 ) || defined( WIN32 )
+      #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 ) || defined( LINUX24_64 ) || defined( _WIN32 )
 
          TIO_SkinHandler_c& skinHandler = TIO_SkinHandler_c::GetInstance( );
          const char* pszBinaryName = skinHandler.GetBinaryName( );

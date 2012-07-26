@@ -242,7 +242,7 @@ bool TIO_FileHandler_c::ApplyPreProcessor(
    #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 ) || defined( LINUX24_64 )
       TIO_FileHandler_c fileHandler;
       isValidCommand = fileHandler.IsValid( TIO_FILE_CPP_COMMAND, TIO_FILE_OPEN_READ );
-   #elif defined( WIN32 )
+   #elif defined( _WIN32 )
       isValidCommand = true;
    #endif
    if ( isValidCommand )

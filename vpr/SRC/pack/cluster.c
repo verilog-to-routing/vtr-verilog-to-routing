@@ -2436,11 +2436,9 @@ static t_pack_molecule* get_most_critical_seed_molecule(int * indexofcrit) {
 	struct s_linked_vptr *cur;
 
 	while (*indexofcrit < num_logical_blocks) {
-#ifdef FANCY_CRITICALITY
+
 		blkidx = critindexarray[(*indexofcrit)++];
-#else
-		blkidx = (*indexofcrit)++;
-#endif
+
 		if (logical_block[blkidx].clb_index == NO_CLUSTER) {
 			cur = logical_block[blkidx].packed_molecules;
 			best = NULL;

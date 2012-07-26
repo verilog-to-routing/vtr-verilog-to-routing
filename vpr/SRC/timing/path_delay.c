@@ -2455,6 +2455,9 @@ static t_tnode * find_ff_clock_tnode(int inode, boolean is_prepacked) {
 		rr_graph = block[current_block].pb->rr_graph;
 		ff_source_or_sink_pb_graph_pin = tnode[inode].pb_graph_pin;
 		parent_pb_graph_node = ff_source_or_sink_pb_graph_pin->parent_node;
+		/* Make sure there's only one clock port and only one clock pin in that port */
+		assert(parent_pb_graph_node->num_clock_ports == 1);
+		assert(parent_pb_graph_node->num_clock_pins[0] == 1);
 		clock_pb_graph_pin = &parent_pb_graph_node->clock_pins[0][0];
 		ff_clock_tnode = rr_graph[clock_pb_graph_pin->pin_count_in_cluster].tnode;
 	}
