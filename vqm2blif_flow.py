@@ -4,10 +4,12 @@ __version__ = """$Revison$
                  Orig Author: kmurray
                  $Id: vqm2blif_flow.py 2664 2012-06-21 22:20:09Z kmurray $"""
 
-#try:
-#    import pudb
-#except ImportError:
-#    pass
+###########################################################
+# This script is tightly coupled with the q2_write_vqm.tcl
+# script (which actually runs Quartus and generates the 
+# VQM file).  The q2_write_vqm.tcl script is called from
+# this script with the appropriate options
+###########################################################
 
 import sys
 import argparse
@@ -45,6 +47,10 @@ def parse_args():
                         default=True,
                         help='If the vqm output file already exists, do not re-run Quartus 2 to re-synthesize it')
 
+    quartus_options.add_argument('--cdb_merge', dest='do_cdb_merge', action='store_true',
+                        default=False,
+                        help='Cause quartus to merge the desing using quartus_cdb, before writting out the VQM file')
+
 
     #Options effecting vqm2blif operation
     vqm2blif_options = parser.add_argument_group('vqm2blif options')
@@ -79,13 +85,13 @@ def parse_args():
     exec_options = parser.add_argument_group('external tool override options')
     
     exec_options.add_argument('--vqm2blif_dir', dest='vqm2blif_dir', action='store',
-                              help='Override the default vqm2blif directory (default: V2B_REGRESSION_BASE_DIR environment variable)')
+                              help="Override the default vqm2blif directory, used to find the 'vqm2blif.exe' executable (default: V2B_REGRESSION_BASE_DIR environment variable)")
 
     exec_options.add_argument('--quartus_dir', dest='quartus_dir', action='store',
-                              help='Override the default quartus binary directory (default: QII_BASE_DIR environment variable)')
+                              help="Override the default quartus binary directory, used to find the 'quartus_sh' executable (default: QII_BASE_DIR environment variable)")
 
     exec_options.add_argument('--vpr_dir', dest='vpr_dir', action='store',
-                              help='Override the default vpr directory (default: VPR_BASE_DIR environment variable)')
+                              help="Override the default vpr directory, used to find the 'vpr' executable (default: VPR_BASE_DIR environment variable)")
 
 
     args = parser.parse_args()
@@ -162,8 +168,11 @@ def gen_vqm(args):
                     '-t',               q2_write_vqm_tcl,
                     '-project',         quartus_project_file,
                     '-family',          args.device_family,
-                    '-cdb_merge',       
                     '-vqm_out_file',    args.vqm_file]
+
+        #Runs quartus_cdb --merge, before the quartus_cdb --vqm call
+        if args.do_cdb_merge:
+            q2_cmd.append('--cdb_merge')
 
         #Verilog to vqm conversion
         try:
@@ -239,6 +248,8 @@ def vqm2blif_flow(args):
 
     gen_blif(args)
 
+
+#Execution starts here
 if __name__ == '__main__':
     args = parse_args()
     
@@ -249,4 +260,4 @@ if __name__ == '__main__':
     if args.run_vpr:
         run_vpr(args)
 
-    print "\nINFO: script complete"
+    print "\nINFO: vqm2blif_flow script complete"
