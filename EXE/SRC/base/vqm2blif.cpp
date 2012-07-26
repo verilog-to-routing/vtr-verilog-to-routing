@@ -444,6 +444,8 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 						elab_mode = NONE;
 					} else if ((strcmp(argv[i+1], "modes")) == 0){
 						elab_mode = MODES;
+					} else if ((strcmp(argv[i+1], "modes_detailed")) == 0){
+						elab_mode = MODES_DETAILED;
 					} else if ((strcmp(argv[i+1], "atoms")) == 0){
 						elab_mode = ATOMS;	//NOTE: ATOMIZING ALGORITHM INCOMPLETE.
 					} else {
@@ -661,7 +663,7 @@ void 	init_blif_subckts (	t_node **vqm_nodes,
 		//into a blif subckt or LUT(or group of subckts)
 		if ((lut_mode == BLIF)&&(is_lut(temp_node))){
 			push_lut ( temp_node, &(my_model->luts) );
-		} else if ((elab_mode == NONE)||(elab_mode == MODES)){
+		} else if ((elab_mode == NONE)||(elab_mode == MODES)||(elab_mode == MODES_DETAILED)){
 			push_node_1_to_1 (temp_node, arch_models, &(my_model->subckts));
 		} else if (elab_mode == ATOMS){
 			push_node_atomize (temp_node, arch_models, &(my_model->subckts));
@@ -759,7 +761,11 @@ void push_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_sub
 
 	} else if (elab_mode == MODES){
 		//search for an Architecture model based on the block name and the parameters
-		search = generate_opname(vqm_node);  //generate the mode-hashed name based on parameters.
+		search = generate_opname(vqm_node, T_FALSE);  //generate the simple mode-hashed name based on parameters.
+
+	} else if (elab_mode == MODES_DETAILED){
+		//search for an Architecture model based on the block name and the parameters
+		search = generate_opname(vqm_node, T_TRUE);  //generate the detailed mode-hashed name based on parameters.
 
 	} else {
 		//should never get here, based on condition in init_blif_subckts()

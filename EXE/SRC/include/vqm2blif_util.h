@@ -98,7 +98,7 @@ void construct_filename (char* filename, const char* path, const char* ext);	//c
 
 //Naming Conventions
 
-string generate_opname (t_node* vqm_node);	//generates a mode-hashed name for a subcircuit instance
+string generate_opname (t_node* vqm_node, t_boolean detailed_elaboration);	//generates a mode-hashed name for a subcircuit instance
 
 string get_wire_name(t_pin_def* net, int index);	//returns a string with the appropriate wire name
 
@@ -121,7 +121,7 @@ extern t_boolean debug_mode;	//user-set flag causing the creation of intermediat
 
 extern t_boolean verbose_mode;	//user-set flag that indicates more verbose runtime output
 
-typedef enum v_Elab_Mode { NONE, MODES, ATOMS, UNKNOWN } e_elab;
+typedef enum v_Elab_Mode { NONE, MODES, MODES_DETAILED, ATOMS, UNKNOWN } e_elab;
 extern e_elab elab_mode;		//user-set flag dictating how to elaborate a VQM Primitive
 
 typedef enum v_LUT_Mode { VQM, BLIF, OTHER } e_lut;

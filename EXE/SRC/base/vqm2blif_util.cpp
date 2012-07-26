@@ -94,7 +94,7 @@ string get_wire_name(t_pin_def* net, int index){
 //============================================================================================
 //============================================================================================
 
-string generate_opname (t_node* vqm_node){
+string generate_opname (t_node* vqm_node, t_boolean detailed_elaboration){
 /*  Generates a mode-hash string based on a node's name and parameter set
  *
  *	ARGUMENTS
@@ -106,6 +106,8 @@ string generate_opname (t_node* vqm_node){
 	mode_hash = (string)vqm_node->type;	//begin by copying the entire block name
 
 	t_node_parameter* temp_param;	//temporary container for the node's parameters
+    
+    char int_string_buffer[128]; //For integer to string conversion, use with snprintf which checks for overflow
 
 	for (int i = 0; i < vqm_node->number_of_params; i++){
 		//Each parameter specifies a configuration of the node in the circuit.
@@ -114,8 +116,39 @@ string generate_opname (t_node* vqm_node){
 		if (strcmp (temp_param->name, "operation_mode") == 0){
 			assert( temp_param->type == NODE_PARAMETER_STRING );
 			mode_hash.append(".opmode{" + (string)temp_param->value.string_value + "}");
-			break;
+            continue;
 		} 
+
+        if (detailed_elaboration) {
+            //Detailed memory modes
+            if (strcmp (temp_param->name, "port_a_data_width") == 0){
+                assert( temp_param->type == NODE_PARAMETER_INTEGER );
+                snprintf(int_string_buffer, sizeof(int_string_buffer), "%d", temp_param->value.integer_value);
+                mode_hash.append(".port_a_data_width{" + (string)int_string_buffer + "}");
+                continue;
+            } 
+
+            if (strcmp (temp_param->name, "port_a_address_width") == 0){
+                assert( temp_param->type == NODE_PARAMETER_INTEGER );
+                snprintf(int_string_buffer, sizeof(int_string_buffer), "%d", temp_param->value.integer_value);
+                mode_hash.append(".port_a_address_width{" + (string)int_string_buffer + "}");
+                continue;
+            } 
+
+            if (strcmp (temp_param->name, "port_b_data_width") == 0){
+                assert( temp_param->type == NODE_PARAMETER_INTEGER );
+                snprintf(int_string_buffer, sizeof(int_string_buffer), "%d", temp_param->value.integer_value);
+                mode_hash.append(".port_b_data_width{" + (string)int_string_buffer + "}");
+                continue;
+            } 
+
+            if (strcmp (temp_param->name, "port_b_address_width") == 0){
+                assert( temp_param->type == NODE_PARAMETER_INTEGER );
+                snprintf(int_string_buffer, sizeof(int_string_buffer), "%d", temp_param->value.integer_value);
+                mode_hash.append(".port_b_address_width{" + (string)int_string_buffer + "}");
+                continue;
+            } 
+        }
 	}
 
 	return mode_hash;

@@ -146,7 +146,7 @@ Architecture file containing the constinuent primitives of the circuit [e.g. ../
 		Specifies a target BLIF file for output  [e.g. ../my_test.blif].
 		-> Defaults to a filename derived from the input .vqm, located in the working directory.
 
-	-elab [ none | modes ]
+	-elab [ none | modes | modes_detailed ]
 		Instructs the tool on how to interpret VQM modules as BLIF primitives.
 		-> No Elaboration: 
 			Parameter information of VQM modules is completely ignored. Primitives in the BLIF
@@ -163,6 +163,16 @@ Architecture file containing the constinuent primitives of the circuit [e.g. ../
 
 		   If a block does not have a parameter called "operation_mode", the mode-appended name is
 		   simply the Block Name, as in No Elaboration.
+
+		-> Detailed Mode Elaboration: 
+            Derives a more detailed mode for each primitive and appends it to each name.  This is
+            used by blocks that have additional parameters (beyond operation_mode) that may require
+            additional specification in the architecture file.  
+            
+            Currently this only elaborates the address and data widths of memory blocks, for example:
+  			 "<Block Name>.opmode{<operation_mode Value>}"
+			 -> e.g. "stratixiv_ram_block", operation_mode="dual_port", port_a_data_width=1, port_a_address_width=8, port_b_data_width=1, port_b_address_width=8    
+                        ==> "stratixiv_ram_block.opmode{dual_port}.port_a_data_width{1}.port_a_address_width{8}.port_b_data_width{1}.port_b_address_width{8}"
 
 		Note:	The architecture file must contain primitives corresponding to each primitive 
 			possible in the BLIF. If using Mode-Elaboration, each possible string value of
