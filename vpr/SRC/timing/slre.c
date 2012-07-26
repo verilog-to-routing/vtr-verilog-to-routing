@@ -473,7 +473,7 @@ static const char *match(const struct slre *r, int pc, const char *s, int len,
 
       case SPACE:
         error_string = error_no_match;
-        if (*ofs < len && isspace(((unsigned char *)s)[*ofs])) {
+        if (*ofs < len && isspace(((const unsigned char *)s)[*ofs])) {
           (*ofs)++;
           error_string = NULL;
         }
@@ -482,7 +482,7 @@ static const char *match(const struct slre *r, int pc, const char *s, int len,
 
       case NONSPACE:
         error_string = error_no_match;
-        if (*ofs <len && !isspace(((unsigned char *)s)[*ofs])) {
+        if (*ofs <len && !isspace(((const unsigned char *)s)[*ofs])) {
           (*ofs)++;
           error_string = NULL;
         }
@@ -491,7 +491,7 @@ static const char *match(const struct slre *r, int pc, const char *s, int len,
 
       case DIGIT:
         error_string = error_no_match;
-        if (*ofs < len && isdigit(((unsigned char *)s)[*ofs])) {
+        if (*ofs < len && isdigit(((const unsigned char *)s)[*ofs])) {
           (*ofs)++;
           error_string = NULL;
         }

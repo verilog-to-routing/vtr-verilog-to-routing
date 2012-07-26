@@ -64,7 +64,7 @@ static int find_cc_constraint(int source_clock_domain, int sink_clock_domain);
 static void print_timing_constraint_info(const char *fname);
 static void print_spaces(FILE * fp, int num_spaces);
 static boolean regex_match (char *string, char *pattern);
-static void count_netlist_ios_as_constrained_ios(char * clock_name, int io_delay);
+static void count_netlist_ios_as_constrained_ios(char * clock_name, float io_delay);
 
 /********************* Subroutine definitions *******************************/
 
@@ -296,7 +296,7 @@ static void count_netlist_clocks_as_constrained_clocks(void) {
 	}
 }
 
-static void count_netlist_ios_as_constrained_ios(char * clock_name, int io_delay) {
+static void count_netlist_ios_as_constrained_ios(char * clock_name, float io_delay) {
 	/* Count how many I/Os are in the netlist, and adds them to the array 
 	constrained_ios with an I/O delay of 0 and constrains them to clock clock_name. */
 
@@ -522,7 +522,7 @@ static void get_sdc_tok(char * buf) {
 					clock_to_clock_constraints[num_cc_constraints - 1].source_clock_domain = my_strdup(exclusive_groups[source_clock_domain].name);
 					clock_to_clock_constraints[num_cc_constraints - 1].sink_clock_domain = my_strdup(exclusive_groups[sink_clock_domain].name);
 					clock_to_clock_constraints[num_cc_constraints - 1].constraint = DO_NOT_ANALYSE;
-					clock_to_clock_constraints[num_cc_constraints - 1].num_multicycles = 0.; /* no multicycling */
+					clock_to_clock_constraints[num_cc_constraints - 1].num_multicycles = 0; /* no multicycling */
 				}
 			}
 		}
