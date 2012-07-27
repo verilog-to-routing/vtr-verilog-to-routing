@@ -498,6 +498,7 @@ struct s_place_region {
  y: y-coordinate
  z: occupancy coordinate
  pb: Physical block representing the clustering of this CLB
+ isFixed: TRUE if this block's position is fixed by the user and shouldn't be moved during annealing
  */
 struct s_block {
 	char *name;
@@ -508,6 +509,8 @@ struct s_block {
 	int z;
 
 	t_pb *pb;
+
+	boolean isFixed;
 
 };
 typedef struct s_block t_block;

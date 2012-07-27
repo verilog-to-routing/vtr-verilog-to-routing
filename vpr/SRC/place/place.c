@@ -22,6 +22,9 @@
 /************** Types and defines local to place.c ***************************/
 
 #define SMALL_NET 4		/* Cut off for incremental bounding box updates. */
+#define SMALL_R_RATIO 4	/* When the swap radius is considered small compared to the length of the chip */
+#define SMALL_R_RATIO_IO 8	/* When the swap radius for I/Os is considered small compared to the length of the chip */
+
 /* 4 is fastest -- I checked.                    */
 
 /* For comp_cost.  NORMAL means use the method that generates updateable  *
@@ -78,7 +81,16 @@ typedef struct s_pl_blocks_to_be_moved {
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
 static float *net_cost = NULL, *temp_net_cost = NULL; /* [0..num_nets-1] */
 
-/* A flag array to indicate whether the specific bounding box has been updated   *
+/* legal positions for type */
+static struct s_legal_pos {
+		int x;
+		int y;
+		int z;
+	}**legal_pos = NULL; /* [0..num_types-1][0..type_tsize - 1] */
+static int *num_legal_pos = NULL; /* [0..num_legal_pos-1] */
+
+/* [0...num_nets-1]                                                              *
+ * A flag array to indicate whether the specific bounding box has been updated   *
  * in this particular swap or not. If it has been updated before, the code       *
  * must use the updated data, instead of the out-of-date data passed into the    *
  * subroutine, particularly used in try_swap(). The value NOT_UPDATED_YET        *
@@ -168,6 +180,10 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp);
 
 static void free_fast_cost_update(void);
 
+static void alloc_and_load_legal_placements();
+
+static void free_legal_placements();
+
 static void initial_placement(enum e_pad_loc_type pad_loc_type,
 		char *pad_loc_file);
 
@@ -175,10 +191,10 @@ static float comp_bb_cost(enum cost_methods method);
 
 static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 		float rlim, float **old_region_occ_x,
-		float **old_region_occ_y, boolean fixed_pins,
+		float **old_region_occ_y,
 		enum e_place_algorithm place_algorithm, float timing_tradeoff,
 		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
-		float *delay_cost, int *x_lookup);
+		float *delay_cost);
 
 static void check_place(float bb_cost, float timing_cost,
 		enum e_place_algorithm place_algorithm,
@@ -186,7 +202,7 @@ static void check_place(float bb_cost, float timing_cost,
 
 static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 		float *timing_cost_ptr, float **old_region_occ_x,
-		float **old_region_occ_y, boolean fixed_pins,
+		float **old_region_occ_y,
 		struct s_annealing_sched annealing_sched, int max_moves, float rlim,
 		enum e_place_algorithm place_algorithm, float timing_tradeoff,
 		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
@@ -216,8 +232,7 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum);
 
 static int assess_swap(float delta_c, float t);
 
-static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim,
-		int *x_lookup, int *x_to, int *y_to);
+static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int *x_to, int *y_to);
 
 static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new);
 
@@ -259,7 +274,6 @@ void try_place(struct s_placer_opts placer_opts,
 			std_dev;
 	float **old_region_occ_x, **old_region_occ_y;
 	char msg[BUFSIZE];
-	boolean fixed_pins; /* Can pads move or not? */
 	int num_connections;
 	int inet, ipin, outer_crit_iter_count, inner_crit_iter_count,
 			inner_recompute_limit;
@@ -268,14 +282,11 @@ void try_place(struct s_placer_opts placer_opts,
 	float first_rlim, final_rlim, inverse_delta_rlim;
 	float **remember_net_delay_original_ptr; /*used to free net_delay if it is re-assigned */
 
-	int *x_lookup; /* Used to quickly determine valid swap columns */
-	
 	int i, j;
 	t_timing_stats * timing_stats;
 	t_slack * slacks = NULL;
 
 	/* Allocated here because it goes into timing critical code where each memory allocation is expensive */
-	x_lookup = (int*)my_malloc(nx * sizeof(int));
 
 	remember_net_delay_original_ptr = NULL; /*prevents compiler warning */
 
@@ -329,10 +340,6 @@ void try_place(struct s_placer_opts placer_opts,
 	}
 
 	width_fac = placer_opts.place_chan_width;
-	if (placer_opts.pad_loc_type == FREE)
-		fixed_pins = FALSE;
-	else
-		fixed_pins = TRUE;
 
 	init_chan(width_fac, chan_width_dist);
 
@@ -432,7 +439,7 @@ void try_place(struct s_placer_opts placer_opts,
 	if (move_lim <= 0)
 		move_lim = 1;
 
-	rlim = (float) max(nx, ny);
+	rlim = (float) max(nx + 1, ny + 1);
 
 	first_rlim = rlim; /*used in timing-driven placement for exponent computation */
 	final_rlim = 1;
@@ -440,7 +447,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 	t = starting_t(&cost, &bb_cost, &timing_cost,
 			old_region_occ_x, old_region_occ_y,
-			fixed_pins, annealing_sched, move_lim, rlim,
+			annealing_sched, move_lim, rlim,
 			placer_opts.place_algorithm, placer_opts.timing_tradeoff,
 			inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost);
 	tot_iter = 0;
@@ -519,10 +526,9 @@ void try_place(struct s_placer_opts placer_opts,
 		for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
 			if (try_swap(t, &cost, &bb_cost, &timing_cost, rlim,
 					old_region_occ_x,
-					old_region_occ_y, fixed_pins,
+					old_region_occ_y, 
 					placer_opts.place_algorithm, placer_opts.timing_tradeoff,
-					inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost,
-					x_lookup) == 1) {
+					inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost) == 1) {
 				success_sum++;
 				av_cost += cost;
 				av_bb_cost += bb_cost;
@@ -706,10 +712,8 @@ void try_place(struct s_placer_opts placer_opts,
 	for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
 		if (try_swap(t, &cost, &bb_cost, &timing_cost, rlim,
 				old_region_occ_x, old_region_occ_y,
-				fixed_pins,
 				placer_opts.place_algorithm, placer_opts.timing_tradeoff,
-				inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost,
-				x_lookup) == 1) {
+				inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost) == 1) {
 			success_sum++;
 			av_cost += cost;
 			av_bb_cost += bb_cost;
@@ -865,7 +869,6 @@ void try_place(struct s_placer_opts placer_opts,
 	for (inet = 0; inet < num_nets; inet++) {
 		(*mst)[inet] = get_mst_of_net(inet);
 	}
-	free(x_lookup);
 	free_try_swap_arrays();
 }
 
@@ -915,8 +918,8 @@ static void update_rlim(float *rlim, float success_rat) {
 
 	float upper_lim;
 
-	*rlim = (*rlim) * (1. - 0.44 + success_rat);
-	upper_lim = max(nx, ny);
+	*rlim = (*rlim) * (1. - 0.3 + success_rat);
+	upper_lim = max(nx + 1, ny + 1);
 	*rlim = min(*rlim, upper_lim);
 	*rlim = max(*rlim, 1.);
 }
@@ -986,7 +989,7 @@ static int exit_crit(float t, float cost,
 
 static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 		float *timing_cost_ptr, float **old_region_occ_x,
-		float **old_region_occ_y, boolean fixed_pins,
+		float **old_region_occ_y, 
 		struct s_annealing_sched annealing_sched, int max_moves, float rlim,
 		enum e_place_algorithm place_algorithm, float timing_tradeoff,
 		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
@@ -996,9 +999,6 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 
 	int i, num_accepted, move_lim;
 	double std_dev, av, sum_of_squares; /* Double important to avoid round off */
-	int *x_lookup;
-
-	x_lookup = (int *) my_malloc(nx * sizeof(int));
 
 	if (annealing_sched.type == USER_SCHED)
 		return (annealing_sched.init_t);
@@ -1014,9 +1014,8 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 	for (i = 0; i < move_lim; i++) {
 		if (try_swap(HUGE_POSITIVE_FLOAT, cost_ptr, bb_cost_ptr, timing_cost_ptr, rlim,
 				old_region_occ_x, old_region_occ_y,
-				fixed_pins, place_algorithm, timing_tradeoff,
-				inverse_prev_bb_cost, inverse_prev_timing_cost, delay_cost_ptr,
-				x_lookup) == 1) {
+				place_algorithm, timing_tradeoff,
+				inverse_prev_bb_cost, inverse_prev_timing_cost, delay_cost_ptr) == 1) {
 			num_accepted++;
 			av += *cost_ptr;
 			sum_of_squares += *cost_ptr * (*cost_ptr);
@@ -1042,8 +1041,6 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 			std_dev, av, 20. * std_dev);
 #endif
 
-	free(x_lookup);
-
 	/* Set the initial temperature to 20 times the standard of deviation */
 	/* so that the initial temperature adjusts according to the circuit */
 	return (20. * std_dev);
@@ -1051,10 +1048,10 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 
 static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 		float rlim, float **old_region_occ_x,
-		float **old_region_occ_y, boolean fixed_pins,
+		float **old_region_occ_y, 
 		enum e_place_algorithm place_algorithm, float timing_tradeoff,
 		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
-		float *delay_cost, int *x_lookup) {
+		float *delay_cost) {
 
 	/* Picks some block and moves it to another spot.  If this spot is   *
 	 * occupied, switch the blocks.  Assess the change in cost function  *
@@ -1085,18 +1082,15 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 	 * but this shouldn't cause any significant slowdown and won't be *
 	 * broken if I ever change the parser so that the pins aren't     *
 	 * necessarily at the start of the block list.                    */
-
-	if (fixed_pins == TRUE) {
-		while (block[b_from].type == IO_TYPE) {
-			b_from = my_irand(num_blocks - 1);
-		}
+	while (block[b_from].isFixed == TRUE) {
+		b_from = my_irand(num_blocks - 1);
 	}
-
+	
 	x_from = block[b_from].x;
 	y_from = block[b_from].y;
 	z_from = block[b_from].z;
 
-	if (!find_to(x_from, y_from, block[b_from].type, rlim, x_lookup, &x_to,
+	if (!find_to(x_from, y_from, block[b_from].type, rlim, &x_to,
 			&y_to))
 		return FALSE;
 
@@ -1314,148 +1308,84 @@ static int find_affected_nets(int *nets_to_update) {
 	return num_affected_nets;
 }
 
-static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim,
-		int *x_lookup, int *x_to, int *y_to) {
+static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int *x_to, int *y_to) {
 
 	/* Returns the point to which I want to swap, properly range limited. 
 	 * rlim must always be between 1 and nx (inclusive) for this routine  
 	 * to work.  Assumes that a column only contains blocks of the same type.
 	 */
 
-	int x_rel, y_rel, iside, iplace, rlx, rly, min_x, max_x, min_y, max_y;
-	int num_col_same_type, i, j;
+	int x_rel, y_rel, rlx, rly, min_x, max_x, min_y, max_y;
+	int num_tries;
+	int small_ratio;
+	int active_area;
+	boolean is_legal;
+	int block_index, ipos;
 
-	rlx = (int)min((float)nx, rlim); /* Only needed when nx < ny. */
-	rly = (int)min((float)ny, rlim); /* Added rly for aspect_ratio != 1 case. */
+	assert(type == grid[x_from][y_from].type);
 
-	min_x = max(1, x_from - rlx);
-	max_x = min(nx, x_from + rlx);
-	min_y = max(1, y_from - rly);
-	max_y = min(ny, y_from + rly);
+	rlx = (int)min((float)nx + 1, rlim); 
+	rly = (int)min((float)ny + 1, rlim); /* Added rly for aspect_ratio != 1 case. */
+	active_area = 4 * rlx * rly;
 
-	num_col_same_type = 0;
-	j = 0;
-	if (type != IO_TYPE) {
-		for (i = min_x; i <= max_x; i++) {
-			if (grid[i][1].type == type) {
-				num_col_same_type++;
-				x_lookup[j] = i;
-				j++;
-			}
-		}
-		assert(num_col_same_type != 0);
-		if (num_col_same_type == 1
-				&& ((((max_y - min_y) / type->height) - 1) <= 0
-						|| type->height > (ny / 2)))
-			return FALSE;
-	}
+	min_x = max(0, x_from - rlx);
+	max_x = min(nx + 1, x_from + rlx);
+	min_y = max(0, y_from - rly);
+	max_y = min(ny + 1, y_from + rly);
 
 #ifdef DEBUG
-	if (rlx < 1 || rlx > nx) {
+	if (rlx < 1 || rlx > nx + 1) {
 		vpr_printf(TIO_MESSAGE_ERROR, "in find_to: rlx = %d\n", rlx);
 		exit(1);
 	}
 #endif
 
-	do { /* Until (x_to, y_to) different from (x_from, y_from) */
-		if (type == IO_TYPE) { /* io_block to be moved. */
-			if (rlx >= nx) {
-				iside = my_irand(3);
-				/*                              *
-				 *       +-----1----+           *
-				 *       |          |           *
-				 *       |          |           *
-				 *       0          2           *
-				 *       |          |           *
-				 *       |          |           *
-				 *       +-----3----+           *
-				 *                              */
-				switch (iside) {
-				case 0:
-					iplace = my_irand(ny - 1) + 1;
-					*x_to = 0;
-					*y_to = iplace;
-					break;
-				case 1:
-					iplace = my_irand(nx - 1) + 1;
-					*x_to = iplace;
-					*y_to = ny + 1;
-					break;
-				case 2:
-					iplace = my_irand(ny - 1) + 1;
-					*x_to = nx + 1;
-					*y_to = iplace;
-					break;
-				case 3:
-					iplace = my_irand(nx - 1) + 1;
-					*x_to = iplace;
-					*y_to = 0;
-					break;
-				default:
-					vpr_printf(TIO_MESSAGE_ERROR, "in find_to.  Unexpected io swap location.\n");
-					exit(1);
-				}
-			} else { /* rlx is less than whole chip */
-				if (x_from == 0) {
-					iplace = my_irand(2 * rly);
-					*y_to = y_from - rly + iplace;
-					*x_to = x_from;
-					if (*y_to > ny) {
-						*y_to = ny + 1;
-						*x_to = my_irand(rlx - 1) + 1;
-					} else if (*y_to < 1) {
-						*y_to = 0;
-						*x_to = my_irand(rlx - 1) + 1;
-					}
-				} else if (x_from == nx + 1) {
-					iplace = my_irand(2 * rly);
-					*y_to = y_from - rly + iplace;
-					*x_to = x_from;
-					if (*y_to > ny) {
-						*y_to = ny + 1;
-						*x_to = nx - my_irand(rlx - 1);
-					} else if (*y_to < 1) {
-						*y_to = 0;
-						*x_to = nx - my_irand(rlx - 1);
-					}
-				} else if (y_from == 0) {
-					iplace = my_irand(2 * rlx);
-					*x_to = x_from - rlx + iplace;
-					*y_to = y_from;
-					if (*x_to > nx) {
-						*x_to = nx + 1;
-						*y_to = my_irand(rly - 1) + 1;
-					} else if (*x_to < 1) {
-						*x_to = 0;
-						*y_to = my_irand(rly - 1) + 1;
-					}
-				} else { /* *y_from == ny + 1 */
-					iplace = my_irand(2 * rlx);
-					*x_to = x_from - rlx + iplace;
-					*y_to = y_from;
-					if (*x_to > nx) {
-						*x_to = nx + 1;
-						*y_to = ny - my_irand(rly - 1);
-					} else if (*x_to < 1) {
-						*x_to = 0;
-						*y_to = ny - my_irand(rly - 1);
-					}
-				}
-			} /* End rlx if */
-		} /* end type if */
-		else {
-			if (nx == 1 && ny == 1) {
-				return FALSE;
-			}
-			x_rel = my_irand(num_col_same_type - 1);
-			y_rel = my_irand(max(0, ((max_y - min_y) / type->height) - 1));
-			*x_to = x_lookup[x_rel];
-			*y_to = min_y + y_rel * type->height;
-			*y_to = (*y_to) - grid[*x_to][*y_to].offset; /* align it */
-			assert(*x_to >= 1 && *x_to <= nx);
-			assert(*y_to >= 1 && *y_to <= ny);
+	num_tries = 0;
+	block_index = type->index;
+	do { /* Until legal */
+		is_legal = TRUE;
+
+		small_ratio = SMALL_R_RATIO;
+		if( type == IO_TYPE) {
+			small_ratio = SMALL_R_RATIO_IO;
 		}
-	} while ((x_from == *x_to) && (y_from == *y_to));
+
+		if(nx / small_ratio < rlx || 
+			ny / small_ratio < rly ||
+			num_legal_pos[block_index] < active_area) {
+			ipos = my_irand(num_legal_pos[block_index] - 1);
+			*x_to = legal_pos[block_index][ipos].x;
+			*y_to = legal_pos[block_index][ipos].y;
+		} else {
+			x_rel = my_irand(max(0, max_x - min_x));
+			*x_to = min_x + x_rel;
+			y_rel = my_irand(max(0, max_y - min_y));
+			*y_to = min_y + y_rel;
+			*y_to = (*y_to) - grid[*x_to][*y_to].offset; /* align it */
+		}
+		
+		if((x_from == *x_to) && (y_from == *y_to)) {
+			is_legal = FALSE;
+		}
+
+		if(*x_to > max_x || *x_to < min_x || *y_to > max_y || *y_to < min_y) {
+			is_legal = FALSE;
+		}
+
+		if(grid[*x_to][*y_to].type != grid[x_from][y_from].type) {
+			is_legal = FALSE;
+		}
+		if(num_tries >= min(active_area, num_legal_pos[block_index]) + 10) {
+			// printf("jedit NOOOOO %s (%d %d) (%d %d) %d %d\n", type->name, x_from, y_from, *x_to, *y_to, rlx, (int)is_legal);
+			/* Tried randomly searching for a suitable position */
+			return FALSE;
+		} else {
+			num_tries++;
+		}
+
+		assert(*x_to >= 0 && *x_to <= nx + 1);
+		assert(*y_to >= 0 && *y_to <= ny + 1);
+	} while (is_legal == FALSE);
 
 #ifdef DEBUG
 	if (*x_to < 0 || *x_to > nx + 1 || *y_to < 0 || *y_to > ny + 1) {
@@ -1806,6 +1736,7 @@ static void free_placement_structs(
 
 	int inet;
 
+	free_legal_placements();
 	free_fast_cost_update();
 
 	if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
@@ -1854,6 +1785,8 @@ static void alloc_and_load_placement_structs(
 	 * computing costs quickly and such.                                       */
 
 	int inet, ipin, max_pins_per_clb, i;
+
+	alloc_and_load_legal_placements();
 
 	max_pins_per_clb = 0;
 	for (i = 0; i < num_types; i++) {
@@ -2372,20 +2305,12 @@ static void update_bb(int inet, struct s_bb *bb_coord_new,
 		bb_updated_before[inet] = UPDATED_ONCE;
 }
 
-static void initial_placement(enum e_pad_loc_type pad_loc_type,
-		char *pad_loc_file) {
+static void alloc_and_load_legal_placements() {
+	int i, j, k, type_index;
+	int *index;
 
-	/* Randomly places the blocks to create an initial placement.     */
-	struct s_pos {
-		int x;
-		int y;
-		int z;
-	}**pos; /* [0..num_types-1][0..type_tsize - 1] */
-	int i, j, k, iblk, choice, type_index, x, y, z;
-	int *count, *index; /* [0..num_types-1] */
-
-	pos = (struct s_pos **) my_malloc(num_types * sizeof(struct s_pos *));
-	count = (int *) my_calloc(num_types, sizeof(int));
+	legal_pos = (struct s_legal_pos **) my_malloc(num_types * sizeof(struct s_legal_pos *));
+	num_legal_pos = (int *) my_calloc(num_types, sizeof(int));
 	index = (int *) my_calloc(num_types, sizeof(int));
 
 	/* Initialize all occupancy to zero. */
@@ -2396,14 +2321,14 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
 				grid[i][j].blocks[k] = EMPTY;
 				if (grid[i][j].offset == 0) {
-					count[grid[i][j].type->index]++;
+					num_legal_pos[grid[i][j].type->index]++;
 				}
 			}
 		}
 	}
 
 	for (i = 0; i < num_types; i++) {
-		pos[i] = (struct s_pos *) my_malloc(count[i] * sizeof(struct s_pos));
+		legal_pos[i] = (struct s_legal_pos *) my_malloc(num_legal_pos[i] * sizeof(struct s_legal_pos));
 	}
 
 	for (i = 0; i <= nx + 1; i++) {
@@ -2411,29 +2336,52 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
 				if (grid[i][j].offset == 0) {
 					type_index = grid[i][j].type->index;
-					pos[type_index][index[type_index]].x = i;
-					pos[type_index][index[type_index]].y = j;
-					pos[type_index][index[type_index]].z = k;
+					legal_pos[type_index][index[type_index]].x = i;
+					legal_pos[type_index][index[type_index]].y = j;
+					legal_pos[type_index][index[type_index]].z = k;
 					index[type_index]++;
 				}
 			}
 		}
 	}
+	free(index);
+}
 
+static void free_legal_placements() {
+	int i;
+	for (i = 0; i < num_types; i++) {
+		free(legal_pos[i]);
+	}
+	free(legal_pos); /* Free the mapping list */
+	free(num_legal_pos);
+}
+
+static void initial_placement(enum e_pad_loc_type pad_loc_type,
+		char *pad_loc_file) {
+
+	/* Randomly places the blocks to create an initial placement.     */
+	int i, j, k, iblk, choice, type_index, x, y, z;
+	int *count; /* [0..num_types-1] */
+
+	count = (int *) my_malloc(num_types * sizeof(int));
+	for(i = 0; i < num_types; i++) {
+		count[i] = num_legal_pos[i];
+	}
+	
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 		/* Don't do IOs if the user specifies IOs */
 		if (!(block[iblk].type == IO_TYPE && pad_loc_type == USER)) {
 			type_index = block[iblk].type->index;
 			assert(count[type_index] > 0);
 			choice = my_irand(count[type_index] - 1);
-			x = pos[type_index][choice].x;
-			y = pos[type_index][choice].y;
-			z = pos[type_index][choice].z;
+			x = legal_pos[type_index][choice].x;
+			y = legal_pos[type_index][choice].y;
+			z = legal_pos[type_index][choice].z;
 			grid[x][y].blocks[z] = iblk;
 			grid[x][y].usage++;
 
 			/* Ensure randomizer doesn't pick this block again */
-			pos[type_index][choice] = pos[type_index][count[type_index] - 1]; /* overwrite used block position */
+			legal_pos[type_index][choice] = legal_pos[type_index][count[type_index] - 1]; /* overwrite used block position */
 			count[type_index]--;
 		}
 	}
@@ -2466,11 +2414,6 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 		print_clb_placement("initial_clb_placement.echo");
 	}
 #endif
-	for (i = 0; i < num_types; i++) {
-		free(pos[i]);
-	}
-	free(pos); /* Free the mapping list */
-	free(index);
 	free(count);
 }
 
@@ -2717,3 +2660,4 @@ static void free_try_swap_arrays(void) {
 		bb_updated_before = NULL;
 	}
 }
+

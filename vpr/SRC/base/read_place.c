@@ -233,6 +233,7 @@ void read_user_pad_loc(char *pad_loc_file) {
 
 		block[bnum].x = i; /* Will be reloaded by initial_placement anyway. */
 		block[bnum].y = j; /* I need to set .x only as a done flag.         */
+		block[bnum].isFixed = TRUE;
 
 		if (grid[i][j].type != IO_TYPE) {
 			vpr_printf(TIO_MESSAGE_ERROR, "attempt to place IO block %s in \n"
