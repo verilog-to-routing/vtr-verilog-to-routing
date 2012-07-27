@@ -2,12 +2,14 @@
 #include <string.h>
 #include <assert.h>
 #include "util.h"
+#include "hash.h"
 #include "vpr_types.h"
 #include "OptionTokens.h"
 #include "ReadOptions.h"
 #include "read_settings.h"
 
 static boolean EchoEnabled;
+static struct s_hash **echo_option_hash = NULL;
 
 /******** Function prototypes ********/
 
@@ -38,7 +40,72 @@ boolean GetEchoOption(void) {
 }
 
 void SetEchoOption(boolean echo_enabled) {
+	/* enable echo outputs */
 	EchoEnabled = echo_enabled;
+	if(echo_option_hash == NULL) {
+		/* initialize default echo options */
+		setEchoOption("initial_clb_placement.echo", TRUE);
+		setEchoOption("initial_placement_timing_graph.echo", TRUE);
+		setEchoOption("initial_placement_net_slack.echo", TRUE);
+		setEchoOption("initial_placement_net_slack_ratio.echo", TRUE);
+		setEchoOption("initial_placement_criticality.echo", TRUE);
+		setEchoOption("end_clb_placement.echo", TRUE);
+		setEchoOption("placement_sink_delays.echo", TRUE);
+		setEchoOption("final_placement_net_slack.echo", TRUE);
+		setEchoOption("final_placement_net_slack_ratio.echo", TRUE);
+		setEchoOption("final_placement_timing_graph.echo", TRUE);
+		setEchoOption("placement_crit_path.echo", TRUE);
+		setEchoOption("pb_graph.echo", TRUE);
+		setEchoOption("arch.echo", TRUE);
+		setEchoOption("placement_critical_path.echo", TRUE);
+		setEchoOption("placement_lower_bound_sink_delays.echo", TRUE);
+		setEchoOption("placement_logic_sink_delays.echo", TRUE);
+		setEchoOption("routing_sink_delays.echo", TRUE);
+		setEchoOption("post_flow_timing_graph.blif", TRUE);
+		setEchoOption("blif_input.echo", TRUE);
+		setEchoOption("net_delay.echo", TRUE);
+		setEchoOption("timing_graph.echo", TRUE);
+		setEchoOption("lut_remapping.echo", TRUE);
+		setEchoOption("pre_packing_timing_graph.echo", TRUE);
+		setEchoOption("clustering_timing_info.echo", TRUE);
+		setEchoOption("pre_packing_net_slack.echo", TRUE);
+		setEchoOption("pre_packing_net_slack_ratio.echo", TRUE);
+		setEchoOption("clustering_block_criticalities.echo", TRUE);
+		setEchoOption("pre_packing_molecules_and_patterns.echo", TRUE);
+		setEchoOption("mem.echo", TRUE);
+		setEchoOption("rr_graph.echo", TRUE);
+		setEchoOption("timing_constraints.echo", TRUE);			
+	}
+}
+
+void free_echo_hash_table() {
+	if(echo_option_hash != NULL)
+		free_hash_table(echo_option_hash);
+	echo_option_hash = NULL;
+}
+
+boolean isEchoOptionEnable(char *echo_option) {
+	struct s_hash *hash_value;
+	
+	hash_value = get_hash_entry(echo_option_hash, echo_option);
+	if(hash_value == NULL) {
+		return FALSE;
+	}
+	if(hash_value->count == FALSE) {
+		return FALSE;
+	}
+	return TRUE;
+}
+
+void setEchoOption(char *echo_option, boolean value) {
+	struct s_hash *hash_value = NULL;
+	
+	if(echo_option_hash == NULL) {
+		/* select which entries to display, be default, everything gets outputted */
+		echo_option_hash = alloc_hash_table();
+	}
+	hash_value = insert_in_hash_table(echo_option_hash, echo_option, 0);
+	hash_value->count = (int)value;
 }
 
 /******** Subroutine implementations ********/

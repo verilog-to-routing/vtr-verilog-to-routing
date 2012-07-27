@@ -804,7 +804,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			}
 		}
 	}
-	if (GetEchoOption()) {
+	if (GetEchoOption() && isEchoOptionEnable("pre_packing_molecules_and_patterns.echo")) {
 		print_pack_molecules("pre_packing_molecules_and_patterns.echo",
 				list_of_pack_patterns, num_packing_patterns,
 				list_of_molecules_head);

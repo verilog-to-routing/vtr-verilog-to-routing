@@ -2166,12 +2166,17 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 
 	if (GetEchoOption()) {
 		if (num_constrained_clocks == 1) {
-			print_critical_path("critical_path.echo");
+			if(isEchoOptionEnable("critical_path.echo"))
+				print_critical_path("critical_path.echo");
 		}
-		print_timing_graph("timing_graph.echo");
-		print_net_slack(slacks->net_slack, "net_slack.echo");
-		print_net_slack_ratio(slacks->net_slack_ratio, "net_slack_ratio.echo");
-		print_net_delay(net_delay, "net_delay.echo");
+		if(isEchoOptionEnable("timing_graph.echo"))
+			print_timing_graph("timing_graph.echo");
+		if(isEchoOptionEnable("net_slack.echo"))
+			print_net_slack(slacks->net_slack, "net_slack.echo");
+		if(isEchoOptionEnable("net_slack_ratio.echo"))
+			print_net_slack_ratio(slacks->net_slack_ratio, "net_slack_ratio.echo");
+		if(isEchoOptionEnable("net_delay.echo"))
+			print_net_delay(net_delay, "net_delay.echo");
 	}
 
 	free_timing_graph(slacks);

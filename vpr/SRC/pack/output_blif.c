@@ -467,11 +467,6 @@ static void print_clusters(t_block *clb, int num_clusters, FILE * fpout) {
 
 	for (icluster = 0; icluster < num_clusters; icluster++) {
 		rr_node = clb[icluster].pb->rr_graph;
-#if 0
-		if (GetEchoOption()) {
-			dump_rr_graph("cluster_rr_graph.echo");
-		}
-#endif
 		if (clb[icluster].type != IO_TYPE)
 			print_pb(fpout, clb[icluster].pb, icluster);
 	}

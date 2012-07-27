@@ -365,12 +365,16 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		free_timing_stats(timing_stats);
 
 		if (GetEchoOption()) {
-			print_timing_graph("pre_packing_timing_graph.echo");
+			if(isEchoOptionEnable("pre_packing_timing_graph.echo"))
+				print_timing_graph("pre_packing_timing_graph.echo");
 #ifdef FANCY_CRITICALITY
-			print_clustering_timing_info("clustering_timing_info.echo");
+			if(isEchoOptionEnable("clustering_timing_info.echo"))
+				print_clustering_timing_info("clustering_timing_info.echo");
 #else
-			print_net_slack(slacks->net_slack, "pre_packing_net_slack.echo");
-			print_net_slack_ratio(slacks->net_slack_ratio, "pre_packing_net_slack_ratio.echo");
+			if(isEchoOptionEnable("pre_packing_net_slack.echo"))
+				print_net_slack(slacks->net_slack, "pre_packing_net_slack.echo");
+			if(isEchoOptionEnable("pre_packing_net_slack_ratio.echo"))
+				print_net_slack_ratio(slacks->net_slack_ratio, "pre_packing_net_slack_ratio.echo");
 #endif
 		}
 
@@ -434,7 +438,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 #endif
 		heapsort(critindexarray, criticality, num_logical_blocks, 1);
 		
-		if (GetEchoOption()) {
+		if (GetEchoOption() && isEchoOptionEnable("clustering_block_criticalities.echo")) {
 			print_block_criticalities("clustering_block_criticalities.echo");
 		}
 

@@ -1722,7 +1722,7 @@ void read_and_process_blif (char *blif_file, boolean sweep_hanging_nets_and_inpu
 	 }
 	 */
 
-	if (GetEchoOption()) {
+	if (GetEchoOption() && isEchoOptionEnable("blif_input.echo")) {
 		echo_input(blif_file, "blif_input.echo", library_models);
 	} else
 		;

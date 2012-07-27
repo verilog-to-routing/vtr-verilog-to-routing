@@ -95,6 +95,9 @@ void ReadOptions(INP int argc,
 
 boolean GetEchoOption(void);
 void SetEchoOption(boolean echo_enabled);
+boolean isEchoOptionEnable(char *echo_option);
+void setEchoOption(char *echo_option, boolean value);
+void free_echo_hash_table();
 
 #endif
 

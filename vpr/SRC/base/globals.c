@@ -19,6 +19,7 @@ int num_p_inputs = 0, num_p_outputs = 0;
 struct s_net *vpack_net = NULL;
 struct s_logical_block *logical_block = NULL;
 char *blif_circuit_name = NULL;
+char *default_output_name = NULL;
 /* User netlist information end  */
 
 /******** Clustered netlist to be mapped stuff ********/

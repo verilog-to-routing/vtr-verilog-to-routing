@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -36,6 +37,7 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 	float area, used_area;
 	int i, j;
 	t_timing_stats * timing_stats;
+	char * name;
 
 	get_length_and_bends_stats();
 	get_channel_occupancy_stats();
@@ -80,7 +82,7 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 		if (timing_analysis_enabled) {
 			load_net_delay_from_routing(net_delay, clb_net, num_nets);
 
-			if (GetEchoOption()) {
+			if (GetEchoOption() && isEchoOptionEnable("net_delay.echo")) {
 				print_net_delay(net_delay, "net_delay.echo");
 			}
 
@@ -93,14 +95,22 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 #endif
 
 			if (GetEchoOption()) {
-				print_timing_graph("timing_graph.echo");
-				print_net_slack(slacks->net_slack, "net_slack.echo");
-				print_net_slack_ratio(slacks->net_slack_ratio, "net_slack_ratio.echo");
-				if (num_constrained_clocks == 1) {
-					print_critical_path("critical_path.echo");
-				}
-				print_lut_remapping("lut_remapping.echo");
+				if(isEchoOptionEnable("timing_graph.echo"))
+					print_timing_graph("timing_graph.echo");
+				if(isEchoOptionEnable("lut_remapping.echo"))
+					print_lut_remapping("lut_remapping.echo");
 			}
+
+			name = (char*)my_calloc(50 + strlen(default_output_name), sizeof(char));
+			sprintf(name, "%s.net_slack.out", default_output_name);
+			print_net_slack(slacks->net_slack, name);
+			sprintf(name, "%s.net_slack_ratio.out", default_output_name);
+			print_net_slack_ratio(slacks->net_slack_ratio, name);
+			if (num_constrained_clocks == 1) {
+				sprintf(name, "%s.critical_path.out", default_output_name);
+				print_critical_path(name);
+			}
+			free(name);
 
 			get_timing_stats(timing_stats);
 
