@@ -476,7 +476,7 @@ static void get_timing_stats(t_timing_stats * timing_stats) {
 			}
 		vpr_printf(TIO_MESSAGE_INFO, "\nf_max: %g MHz", 1e-6 / timing_stats->critical_path_delay[0][0]);
 		if (timing_stats->least_slack_in_domain[0] < HUGE_POSITIVE_FLOAT - 1) {
-			vpr_printf(TIO_MESSAGE_INFO, "\nLeast slack in design: %g ns\n\n", timing_stats->least_slack_in_domain[0] * 1e9);
+			vpr_printf(TIO_MESSAGE_INFO, "\nLeast slack in design: %g ns\n\n", timing_stats->least_slack_in_domain[0]);
 		} else {
 			vpr_printf(TIO_MESSAGE_INFO, "\nLeast slack in design: --\n\n");
 		}
@@ -544,8 +544,7 @@ static void get_timing_stats(t_timing_stats * timing_stats) {
 		vpr_printf(TIO_MESSAGE_INFO, "\nLeast slack in each domain:\n");
 		for (clock_domain = 0; clock_domain < num_constrained_clocks; clock_domain++) {
 			if (timing_stats->least_slack_in_domain[clock_domain] < HUGE_POSITIVE_FLOAT - 1) {
-				/* Convert to nanoseconds */
-				vpr_printf(TIO_MESSAGE_INFO, "%s: %g ns\n", constrained_clocks[clock_domain].name, timing_stats->least_slack_in_domain[clock_domain]*1e9);
+				vpr_printf(TIO_MESSAGE_INFO, "%s: %g ns\n", constrained_clocks[clock_domain].name, timing_stats->least_slack_in_domain[clock_domain]);
 			} else { /* No valid path was analyzed. */
 				vpr_printf(TIO_MESSAGE_INFO, "%s: --\n", constrained_clocks[clock_domain].name);
 			}

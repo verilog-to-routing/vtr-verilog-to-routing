@@ -75,6 +75,7 @@ void read_sdc(char * sdc_file) {
 
 	char buf[BUFSIZE];
 	int source_clock_domain, sink_clock_domain, iio, icc;
+	float constraint;
 	
 	/* Make sure we haven't called this subroutine before. */
 	assert(!timing_constraint);
@@ -188,6 +189,20 @@ void read_sdc(char * sdc_file) {
 
 	if (GetEchoOption()) {
 		print_timing_constraint_info("timing_constraints.echo");
+	}
+
+	/* Now normalize timing_constraint and constrained_ios to be in seconds, not nanoseconds. */
+	for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
+		for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
+			constraint = timing_constraint[source_clock_domain][sink_clock_domain];
+			if (constraint > -0.01) { /* if constraint does not equal DO_NOT_ANALYSE */
+				timing_constraint[source_clock_domain][sink_clock_domain] = constraint/1e9;
+			}
+		}
+	}
+
+	for (iio = 0; iio < num_constrained_ios; iio++) {
+		constrained_ios[iio].delay /= 1e9;
 	}
 
 	vpr_printf(TIO_MESSAGE_INFO, "\nSDC file %s parsed successfully.\n%d clocks (including virtual clocks) "
