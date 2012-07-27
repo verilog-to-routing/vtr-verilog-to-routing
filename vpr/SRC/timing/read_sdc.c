@@ -123,7 +123,7 @@ void read_sdc(char * sdc_file) {
 			vpr_printf(TIO_MESSAGE_INFO, "Cut paths between clock domains.\n\n");
 		}
 
-		if (GetEchoOption() && isEchoOptionEnable("timing_constraints.echo")) {
+		if (GetEchoEnabled() && isEchoOptionEnable("timing_constraints.echo")) {
 			print_timing_constraint_info("timing_constraints.echo");
 		}
 		return;
@@ -187,7 +187,7 @@ void read_sdc(char * sdc_file) {
 			}
 		}
 
-	if (GetEchoOption() && isEchoOptionEnable("timing_constraints.echo")) {
+	if (GetEchoEnabled() && isEchoOptionEnable("timing_constraints.echo")) {
 		print_timing_constraint_info("timing_constraints.echo");
 	}
 

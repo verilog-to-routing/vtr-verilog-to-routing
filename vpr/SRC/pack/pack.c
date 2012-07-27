@@ -58,7 +58,7 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 	vpr_printf(TIO_MESSAGE_INFO, "Finish prepacking\n");
 
 	/* Uncomment line below if you want a dump of compressed netlist. */
-	/* if (GetEchoOption()){
+	/* if (GetEchoEnabled()){
 	 echo_input (packer_opts->blif_file_name, packer_opts->lut_size, "packed.echo"); 
 	 }else; */
 

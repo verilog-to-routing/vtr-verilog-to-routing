@@ -245,7 +245,7 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 		if ((is_global_graph ? 1 : chan_width) != nodes_per_chan) {
 			*Warnings |= RR_GRAPH_WARN_CHAN_WIDTH_CHANGED;
 		}
-		if (GetEchoOption()) {
+		if (GetEchoEnabled()) {
 			dump_seg_details(seg_details, nodes_per_chan, "seg_details.txt");
 		} else
 			;
@@ -402,7 +402,7 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 
 	rr_graph_externals(timing_inf, segment_inf, num_seg_types, nodes_per_chan,
 			wire_to_ipin_switch, base_cost_type);
-	if (GetEchoOption() && isEchoOptionEnable("rr_graph.echo")) {
+	if (GetEchoEnabled() && isEchoOptionEnable("rr_graph.echo")) {
 		dump_rr_graph("rr_graph.echo");
 	} else
 		;

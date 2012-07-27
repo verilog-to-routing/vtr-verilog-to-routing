@@ -66,7 +66,7 @@ alloc_and_load_switch_block_conn(INP int nodes_per_chan,
 		}
 	}
 
-	if (GetEchoOption()) {
+	if (GetEchoEnabled()) {
 		int i, j, k, l;
 		FILE *out;
 

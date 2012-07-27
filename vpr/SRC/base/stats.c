@@ -82,7 +82,7 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 		if (timing_analysis_enabled) {
 			load_net_delay_from_routing(net_delay, clb_net, num_nets);
 
-			if (GetEchoOption() && isEchoOptionEnable("net_delay.echo")) {
+			if (GetEchoEnabled() && isEchoOptionEnable("net_delay.echo")) {
 				print_net_delay(net_delay, "net_delay.echo");
 			}
 
@@ -94,7 +94,7 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 			timing_stats = do_timing_analysis(slacks, FALSE, FALSE, TRUE);
 #endif
 
-			if (GetEchoOption()) {
+			if (GetEchoEnabled()) {
 				if(isEchoOptionEnable("timing_graph.echo"))
 					print_timing_graph("timing_graph.echo");
 				if(isEchoOptionEnable("lut_remapping.echo"))

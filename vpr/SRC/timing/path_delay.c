@@ -234,7 +234,7 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 
 	check_timing_graph(num_sinks);
 
-	if (GetEchoOption()) {
+	if (GetEchoEnabled()) {
 		print_timing_graph_as_blif ("pre_packing_timing_graph_as_blif.blif", models);
 	}
 	
@@ -2164,7 +2164,7 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 			vpr_printf(TIO_MESSAGE_INFO, "\n");
 		}
 
-	if (GetEchoOption()) {
+	if (GetEchoEnabled()) {
 		if (num_constrained_clocks == 1) {
 			if(isEchoOptionEnable("critical_path.echo"))
 				print_critical_path("critical_path.echo");

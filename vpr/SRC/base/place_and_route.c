@@ -183,7 +183,7 @@ void place_and_route(enum e_operation operation,
 
 			print_route(route_file);
 
-			if (GetEchoOption() && isEchoOptionEnable("routing_sink_delays.echo")) {
+			if (GetEchoEnabled() && isEchoOptionEnable("routing_sink_delays.echo")) {
 				print_sink_delays("routing_sink_delays.echo");
 			}
 
@@ -198,7 +198,7 @@ void place_and_route(enum e_operation operation,
 		if (timing_inf.timing_analysis_enabled) {
 			assert(slacks->net_slack);
 
-			if (GetEchoOption() && isEchoOptionEnable("post_flow_timing_graph.blif")) {
+			if (GetEchoEnabled() && isEchoOptionEnable("post_flow_timing_graph.blif")) {
 				print_timing_graph_as_blif ("post_flow_timing_graph.blif",
 						models);
 			}
@@ -550,7 +550,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	print_route(route_file);
 
-	if (GetEchoOption() && isEchoOptionEnable("routing_sink_delays.echo")) {
+	if (GetEchoEnabled() && isEchoOptionEnable("routing_sink_delays.echo")) {
 		print_sink_delays("routing_sink_delays.echo");
 	}
 
@@ -559,7 +559,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled);
 
 	if (timing_inf.timing_analysis_enabled) {
-		if (GetEchoOption() && isEchoOptionEnable("post_flow_timing_graph.blif")) {
+		if (GetEchoEnabled() && isEchoOptionEnable("post_flow_timing_graph.blif")) {
 			print_timing_graph_as_blif ("post_flow_timing_graph.blif", models);
 		}
 		free_timing_graph(slacks);

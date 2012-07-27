@@ -364,7 +364,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 #endif
 		free_timing_stats(timing_stats);
 
-		if (GetEchoOption()) {
+		if (GetEchoEnabled()) {
 			if(isEchoOptionEnable("pre_packing_timing_graph.echo"))
 				print_timing_graph("pre_packing_timing_graph.echo");
 #ifdef FANCY_CRITICALITY
@@ -438,7 +438,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 #endif
 		heapsort(critindexarray, criticality, num_logical_blocks, 1);
 		
-		if (GetEchoOption() && isEchoOptionEnable("clustering_block_criticalities.echo")) {
+		if (GetEchoEnabled() && isEchoOptionEnable("clustering_block_criticalities.echo")) {
 			print_block_criticalities("clustering_block_criticalities.echo");
 		}
 
@@ -592,7 +592,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	check_clustering(num_clb, clb, is_clock);
 
 	output_clustering(clb, num_clb, global_clocks, is_clock, out_fname, FALSE);
-	if (GetEchoOption()) {
+	if (GetEchoEnabled()) {
 		output_blif (clb, num_clb, global_clocks, is_clock,
 				"post_pack_netlist.blif", FALSE);
 	}

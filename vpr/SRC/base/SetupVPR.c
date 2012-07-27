@@ -182,7 +182,7 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	vpr_printf(TIO_MESSAGE_INFO, "Building complex block graph \n");
 	alloc_and_load_all_pb_graphs();
 
-	if (GetEchoOption() && isEchoOptionEnable("pb_graph.echo")) {
+	if (GetEchoEnabled() && isEchoOptionEnable("pb_graph.echo")) {
 		echo_pb_graph("pb_graph.echo");
 	}
 
@@ -199,7 +199,7 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	}
 #endif /* NO_GRAPHICS */
 
-	if (GetEchoOption() && isEchoOptionEnable("arch.echo")) {
+	if (GetEchoEnabled() && isEchoOptionEnable("arch.echo")) {
 		EchoArch("arch.echo", type_descriptors, num_types, Arch);
 	}
 

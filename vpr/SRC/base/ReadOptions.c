@@ -35,11 +35,11 @@ static char **ReadRouteType(INP char **Args, OUTP enum e_route_type *Type);
 static char **ReadString(INP char **Args, OUTP char **Val);
 
 /******** Globally Accessible Function ********/
-boolean GetEchoOption(void) {
+boolean GetEchoEnabled(void) {
 	return EchoEnabled;
 }
 
-void SetEchoOption(boolean echo_enabled) {
+void SetEchoEnabled(boolean echo_enabled) {
 	/* enable echo outputs */
 	EchoEnabled = echo_enabled;
 	if(echo_option_hash == NULL) {

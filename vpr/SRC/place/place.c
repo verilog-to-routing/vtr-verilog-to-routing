@@ -319,7 +319,7 @@ void try_place(struct s_placer_opts placer_opts,
 		load_timing_graph_net_delays(net_delay);
 		timing_stats = do_timing_analysis(slacks, FALSE, FALSE, TRUE);
 
-		if (GetEchoOption()) {
+		if (GetEchoEnabled()) {
 			if (num_constrained_clocks == 1) {
 				if(isEchoOptionEnable("placement_critical_path.echo"))
 					print_critical_path("placement_critical_path.echo");
@@ -395,7 +395,7 @@ void try_place(struct s_placer_opts placer_opts,
 		timing_stats = do_timing_analysis(slacks, FALSE, FALSE, FALSE);
 		free_timing_stats(timing_stats);
 		load_criticalities(slacks->net_slack_ratio, crit_exponent);
-		if (GetEchoOption()) {
+		if (GetEchoEnabled()) {
 			if(isEchoOptionEnable("initial_placement_timing_graph.echo"))
 				print_timing_graph("initial_placement_timing_graph.echo");
 			if(isEchoOptionEnable("initial_placement_net_slack.echo"))
@@ -670,7 +670,7 @@ void try_place(struct s_placer_opts placer_opts,
 					+ placer_opts.td_place_exp_first;
 		}
 #ifdef VERBOSE
-		if (GetEchoOption()) {
+		if (GetEchoEnabled()) {
 			print_clb_placement("first_iteration_clb_placement.echo");
 		}
 #endif
@@ -786,7 +786,7 @@ void try_place(struct s_placer_opts placer_opts,
 #endif
 
 #ifdef VERBOSE
-	if (GetEchoOption() && isEchoOptionEnable("end_clb_placement.echo")) {
+	if (GetEchoEnabled() && isEchoOptionEnable("end_clb_placement.echo")) {
 		print_clb_placement("end_clb_placement.echo");
 	}
 #endif
@@ -812,7 +812,7 @@ void try_place(struct s_placer_opts placer_opts,
 		load_timing_graph_net_delays(net_delay);
 		timing_stats = do_timing_analysis(slacks, FALSE, FALSE, TRUE);
 
-		if (GetEchoOption()) {
+		if (GetEchoEnabled()) {
 			if(isEchoOptionEnable("placement_sink_delays.echo"))
 				print_sink_delays("placement_sink_delays.echo");
 			if(isEchoOptionEnable("final_placement_net_slack.echo"))
@@ -2422,7 +2422,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 
 #ifdef VERBOSE
 	vpr_printf(TIO_MESSAGE_INFO, "At end of initial_placement.\n");
-	if (GetEchoOption() && isEchoOptionEnable("initial_clb_placement.echo")) {
+	if (GetEchoEnabled() && isEchoOptionEnable("initial_clb_placement.echo")) {
 		print_clb_placement("initial_clb_placement.echo");
 	}
 #endif
