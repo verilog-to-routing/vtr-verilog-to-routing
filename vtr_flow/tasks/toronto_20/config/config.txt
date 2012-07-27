@@ -25,16 +25,16 @@ circuit_list_add=s38584.1.blif
 circuit_list_add=tseng.blif
 
 # Combinational
-circuit_list_add=alu4.blif
-circuit_list_add=apex2.blif
-circuit_list_add=apex4.blif
-circuit_list_add=des.blif
-circuit_list_add=ex1010.blif
-circuit_list_add=ex5p.blif
-circuit_list_add=misex3.blif
-circuit_list_add=pdc.blif
-circuit_list_add=seq.blif
-circuit_list_add=spla.blif
+#circuit_list_add=alu4.blif
+#circuit_list_add=apex2.blif
+#circuit_list_add=apex4.blif
+#circuit_list_add=des.blif
+#circuit_list_add=ex1010.blif
+#circuit_list_add=ex5p.blif
+#circuit_list_add=misex3.blif
+#circuit_list_add=pdc.blif
+#circuit_list_add=seq.blif
+#circuit_list_add=spla.blif
 
 # Add architectures to list to sweep
 arch_list_add=k6_N10_memDepth16384_memData64_40nm_timing.xml
