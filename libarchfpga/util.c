@@ -414,8 +414,7 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 
 	char ch;
 	int i;
-	FILE * fp2 = my_fopen("my_fgets.txt", "a", 0);
-
+	
 	cont = 0; /* line continued? */
 	file_line_number++; /* global variable */
 
@@ -428,23 +427,14 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 				return NULL; /* required so we can write while (my_fgets(...) != NULL) */
 			} else { /* no newline before end of file - last line must be returned */
 				buf[i] = '\0';
-				fprintf(fp2, "%s\n", buf);
-				fclose(fp2);
 				return buf;
 			}
 		}
 
 		if (ch == '#') { /* comment */
 			buf[i] = '\0';
-			while ((ch = fgetc(fp)) != '\n') { /* skip the rest of the line */
-				i++;
-				if (feof(fp)) {
-					buf[i] = '\0';
-					return buf;
-				}
-			}
-			fprintf(fp2, "%s\n", buf);
-			fclose(fp2);
+			while ((ch = fgetc(fp)) != '\n' && !feof(fp)) 
+				; /* skip the rest of the line */
 			return buf;
 		}
 
@@ -457,8 +447,6 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 				buf[i] = '\n';
 				buf[i+1] = '\0';
 			}
-			fprintf(fp2, "%s\n", buf);
-			fclose(fp2);
 			return buf;
 		}
 

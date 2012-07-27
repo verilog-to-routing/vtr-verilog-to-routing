@@ -1409,7 +1409,7 @@ void print_timing_graph(const char *fname) {
 		}
 
 		if (itype == FF_CLOCK || itype == FF_SOURCE || itype == FF_SINK) {
-			fprintf(fp, "%d\t%e\t", tnode[inode].clock_domain, tnode[inode].clock_skew);
+			fprintf(fp, "%d\t%.3e\t", tnode[inode].clock_domain, tnode[inode].clock_skew);
 		}
 
 		else {
