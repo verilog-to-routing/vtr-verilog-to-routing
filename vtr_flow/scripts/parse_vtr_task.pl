@@ -50,6 +50,7 @@ my $check_golden  = 0;
 my $parse_qor 	  = 1;  # QoR file is parsed by default; turned off if 
 						# user does not specify QoR parse file in config.txt
 my $calc_geomean  = 0;  # QoR geomeans are not computed by default;
+my $revision;
 
 while ( $token = shift(@ARGV) ) {
 
@@ -72,6 +73,9 @@ while ( $token = shift(@ARGV) ) {
 		}
 		elsif ( $token eq "-calc_geomean" ) {
 			$calc_geomean = 1;
+		}
+		elsif ( $token eq "-revision" ) {
+			$revision = shift(@ARGV);
 		}
 		else {
 			die "Invalid option: $token\n";
@@ -335,7 +339,7 @@ sub calc_geomean {
 			my $label = shift @temp;
 			print OUTPUT_FILE "\t" . "$label";
 		}
-		print OUTPUT_FILE "\t" . "date";
+		print OUTPUT_FILE "\t" . "date" . "\t" . "revision";
 		$first = 0;
 	}
 	else {
@@ -364,7 +368,7 @@ sub calc_geomean {
 		$index++;
 	}
 	my $date = strftime( '%D', localtime );
-	print OUTPUT_FILE "\t" . "$date";
+	print OUTPUT_FILE "\t" . "$date" . "\t" . "$revision";
 	close(OUTPUT_FILE);
 }
 

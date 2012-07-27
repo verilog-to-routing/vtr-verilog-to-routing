@@ -157,7 +157,7 @@ sub run_single_task {
 	chdir($task_dir) or die "Task directory does not exist ($task_dir): $!";
 
 	print "\n$task\n";
-	print "--------------------\n";
+	print "-----------------------------------------\n";
 
 	# Get Task Config Info
 

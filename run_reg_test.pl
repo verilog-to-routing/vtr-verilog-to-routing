@@ -53,7 +53,10 @@ my $reg_test_path = "./vtr_flow/tasks/regression_tests";
 my @tests;
 my $token;
 my $test_dir;
-my $script_params = "";
+my $test_name;
+my $run_params = "";
+my $parse_params = "";
+my $revision = "";
 # Override variables
 my $first = 1;
 my $parse_only = 0;
@@ -66,7 +69,11 @@ my $can_quit = 0;
 # Parse Input Arguments
 while ( $token = shift(@ARGV) ) {
 
-	if ( $token eq "-parse") {
+	if ( $token eq "-revision" ) {
+		$revision = shift(@ARGV);
+		$parse_params = "-revision $revision";
+	}
+	elsif ( $token eq "-parse") {
 		$parse_only = 1;
 	}
 	elsif ( $token eq "-create_golden" ) {
@@ -150,7 +157,7 @@ if ( $#tests > -1 ) {
 		run_single_test;
 		$first = 0;
 		# Parse regression test
-		parse_single_test("");
+		parse_single_test(" ");
 		# Create/Check golden results
 		if ($create_golden) {
 			parse_single_test("create", "calculate");
@@ -169,15 +176,17 @@ if ( $#tests > -1 ) {
 ##############################################################
 
 sub setup_single_test {
-	my $test_name = shift;
+	$test_name = shift;
 	$test_dir = "$reg_test_path/$test_name";
 
 	# Task list exists. Execute script with list instead.
 	if ( -e "$test_dir/task_list.txt" ) {
-		$script_params = "-l $test_dir/task_list.txt";
+		$run_params = "-l $test_dir/task_list.txt";
+		$parse_params = $parse_params . " -l $test_dir/task_list.txt";
 	}
 	else {
-		$script_params = "$test_dir";
+		$run_params = "$test_dir";
+		$parse_params = $parse_params . " $test_dir";
 	}
 }
 
@@ -206,12 +215,12 @@ sub check_override {
 			die "[ERROR] Failed to open $test_dir/qor_geomean.txt: $!";
 		}
 		else {
-			print "=" x 118 . "\n";
-			print "\t" x 5 . "  Verilog-to-Routing QoR Results \n";
-			print "=" x 118 . "\n";
+			print "=" x 121 . "\n";
+			print "\t" x 6 . "$test_name QoR Results \n";
+			print "=" x 121 . "\n";
 
 			my @data = (
-						"run"				,
+						"revision"			,
 						"date"				,
 						"total_runtime"		,
 						"total_wirelength"	,
@@ -221,7 +230,7 @@ sub check_override {
 						);
 			
 			my %units = (
-						"run"				, ""		,
+						"revision"			, ""		,
 						"date"				, ""		,
 						"total_runtime" 	, " s"		,
 						"total_wirelength" 	, " units"	,
@@ -231,7 +240,7 @@ sub check_override {
 						);
 
 			my %precision = (
-							"run" 				, "%.0f",
+							"revision"			, "%s"	,
 							"date" 				, "%s"	,
 							"total_runtime"		, "%.3f",
 							"total_wirelength" 	, "%.0f",
@@ -246,9 +255,9 @@ sub check_override {
 			my @backwards = reverse <QOR_FILE>;
 
 format STDOUT_TOP =
-| @|||| | @||||||||| | @|||||||||||||| | @||||||||||||||||||| | @|||||||||||| | @||||||||||||||| | @|||||||||||||||| |
+| @||||||| | @||||||||| | @|||||||||||||| | @||||||||||||||||||| | @|||||||||||| | @||||||||||||||| | @|||||||||||||||| |
 @data;
-----------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------
 .
 write;
 
@@ -260,7 +269,7 @@ write;
 					
 					# Get column (index) of each qor metric
 					my $index = List::Util::first { @first_line[$_] eq $param } 0 .. $#first_line;
-					
+
 					# If index is out-of-bounds or metric cannot be found
 					if ( $index > @last_line or $index eq "" ) {
 						push( @new_last_line, sprintf( $precision{$param}, "-" ) . $units{$param} );
@@ -270,7 +279,7 @@ write;
 						push( @new_last_line, sprintf( $precision{$param}, @last_line[$index] ) . $units{$param} );
 					}
 					# For dates of format dd/mm/yy
-					elsif ( @last_line[$index] =~ m/^\d{2}\/\d{2}\/\d{2}$/ ) { 
+					elsif ( @last_line[$index] =~ m/^\d{2}\/\d{2}\/\d{2}$/ or @last_line[$index] ne "" ) { 
 						push( @new_last_line, sprintf( $precision{$param}, @last_line[$index] ) . $units{$param} );
 					}
 					else {
@@ -279,7 +288,7 @@ write;
 				}
  
 format STDOUT =
-| @|||| | @||||||||| | @|||||||||||||| | @||||||||||||||||||| | @|||||||||||| | @||||||||||||||| | @|||||||||||||||| |
+| @||||||| | @||||||||| | @|||||||||||||| | @||||||||||||||||||| | @|||||||||||| | @||||||||||||||| | @|||||||||||||||| |
 @new_last_line;
 .
 write;
@@ -300,28 +309,28 @@ sub run_single_test {
 	}
 
 	print "\nRunning regression test... \n";
-	system("$vtr_flow_path/scripts/run_vtr_task.pl $script_params \n");
+	system("$vtr_flow_path/scripts/run_vtr_task.pl $run_params \n");
 }
 
 sub parse_single_test {
 	while ( my $golden = shift(@_) ) {
 		if ( $golden eq "create" ) {
 			print "\nCreating golden results... \n";
-			$script_params = $script_params . " -create_golden";
+			$parse_params = $parse_params . " -create_golden";
 		}
 		elsif ( $golden eq "check" ) {
 			print "\nChecking test results... \n";
-			$script_params = $script_params . " -check_golden";
+			$parse_params = $parse_params . " -check_golden";
 		}
 		elsif ( $golden eq "calculate" ) {
 			print "\nCalculating QoR results... \n";
-			$script_params = $script_params . " -calc_geomean";
+			$parse_params = $parse_params . " -calc_geomean";
 		}
 		else {
 			print "\nParsing test results... \n";
 		}
 	}
-	system("$vtr_flow_path/scripts/parse_vtr_task.pl $script_params \n");
+	system("$vtr_flow_path/scripts/parse_vtr_task.pl $parse_params \n");
 }
 
 sub run_quick_test {
