@@ -44,7 +44,7 @@ static FILE *blif;
 
 static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 		boolean is_global, int doall);
-static void get_blif_tok(char *buffer, int pass, int doall, boolean *done,
+static void get_blif_tok(char *buffer, int doall, boolean *done,
 		boolean *add_truth_table, INP t_model* inpad_model,
 		INP t_model* outpad_model, INP t_model* logic_model,
 		INP t_model* latch_model, INP t_model* user_models);
@@ -73,11 +73,11 @@ static void show_blif_stats(t_model *user_models, t_model *library_models);
 static void read_blif (char *blif_file, boolean sweep_hanging_nets_and_inputs,
 		t_model *user_models, t_model *library_models) {
 	char buffer[BUFSIZE];
-	int pass, doall;
+	int doall;
 	boolean done;
 	boolean add_truth_table;
 	t_model *inpad_model, *outpad_model, *logic_model, *latch_model;
-	clock_t begin_outter,begin_inner,end_outter, end_inner;
+	clock_t begin,end;
 
 	blif = fopen(blif_file, "r");
 	if (blif == NULL) {
@@ -89,36 +89,34 @@ static void read_blif (char *blif_file, boolean sweep_hanging_nets_and_inputs,
 
 	/* doall = 0 means do a counting pass, doall = 1 means allocate and load data structures */
 	for (doall = 0; doall <= 1; doall++) {
-		begin_outter = clock();		
+		begin = clock();
+
 		init_parse(doall);
-
-		/* Three passes to ensure inputs are first blocks, outputs second and    *
-		 * LUTs and latches third, subckts last.  Just makes the output netlist more readable. */
-
-		for (pass = 0; pass <= 4; pass++) {
-			begin_inner = clock();
-			file_line_number = 0; /* Reset line number. */
-			done = FALSE;
-			add_truth_table = FALSE;
-			model_lines = 0;
-			while (my_fgets(buffer, BUFSIZE, blif) != NULL) {
-				get_blif_tok(buffer, pass, doall, &done, &add_truth_table,
-						inpad_model, outpad_model, logic_model, latch_model,
-						user_models);
-			}
-			rewind(blif); /* Start at beginning of file again */
-			end_inner = clock();
-			#ifdef CLOCKS_PER_SEC
-				vpr_printf(TIO_MESSAGE_INFO, "Loop for doall = %d, pass = %d took %g seconds.\n", doall, pass, (float)(end_inner - begin_inner) / CLOCKS_PER_SEC);
-			#else
-				vpr_printf(TIO_MESSAGE_INFO, "Loop for doall = %d, pass = %d took %g seconds.\n", doall, pass, (float)(end_inner - begin_inner) / CLK_PER_SEC);
-			#endif
-		}
-		end_outter = clock();
+		
+		end = clock();
 		#ifdef CLOCKS_PER_SEC
-			vpr_printf(TIO_MESSAGE_INFO, "Loop for doall = %d took %g seconds.\n", doall, (float)(end_outter - begin_outter) / CLOCKS_PER_SEC);
+			vpr_printf(TIO_MESSAGE_INFO, "Loop for doall = %d, init_parse took %g seconds.\n", doall, (float)(end - begin) / CLOCKS_PER_SEC);
 		#else
-			vpr_printf(TIO_MESSAGE_INFO, "Loop for doall = %d took %g seconds.\n", doall, (float)(end_outter - begin_outter) / CLK_PER_SEC);
+			vpr_printf(TIO_MESSAGE_INFO, "Loop for doall = %d, init_parse took %g seconds.\n", doall, (float)(end - begin) / CLK_PER_SEC);
+		#endif
+		
+		begin = clock();
+		file_line_number = 0; /* Reset line number. */
+		done = FALSE;
+		add_truth_table = FALSE;
+		model_lines = 0;
+		while (my_fgets(buffer, BUFSIZE, blif) != NULL) {
+			get_blif_tok(buffer, doall, &done, &add_truth_table,
+					inpad_model, outpad_model, logic_model, latch_model,
+					user_models);
+		}
+		rewind(blif); /* Start at beginning of file again */
+
+		end = clock();
+		#ifdef CLOCKS_PER_SEC
+			vpr_printf(TIO_MESSAGE_INFO, "Loop for doall = %d took %g seconds.\n", doall, (float)(end - begin) / CLOCKS_PER_SEC);
+		#else
+			vpr_printf(TIO_MESSAGE_INFO, "Loop for doall = %d took %g seconds.\n", doall, (float)(end - begin) / CLK_PER_SEC);
 		#endif
 
 	}
@@ -210,7 +208,7 @@ static void init_parse(int doall) {
 	num_subckts = 0;
 }
 
-static void get_blif_tok(char *buffer, int pass, int doall, boolean *done,
+static void get_blif_tok(char *buffer, int doall, boolean *done,
 		boolean *add_truth_table, INP t_model* inpad_model,
 		INP t_model* outpad_model, INP t_model* logic_model,
 		INP t_model* latch_model, INP t_model* user_models) {
@@ -256,28 +254,20 @@ static void get_blif_tok(char *buffer, int pass, int doall, boolean *done,
 
 	if (strcmp(ptr, ".names") == 0) {
 		*add_truth_table = FALSE;
-		if (pass == 3) {
-			*add_truth_table = add_lut(doall, logic_model);
-		} else {
-			dum_parse(buffer);
-		}
+		*add_truth_table = add_lut(doall, logic_model);
 		return;
 	}
 
 	if (strcmp(ptr, ".latch") == 0) {
 		*add_truth_table = FALSE;
-		if (pass == 3) {
-			add_latch(doall, latch_model);
-		} else {
-			dum_parse(buffer);
-		}
+		add_latch(doall, latch_model);
 		return;
 	}
 
 	if (strcmp(ptr, ".model") == 0) {
 		*add_truth_table = FALSE;
 		ptr = my_strtok(NULL, TOKENS, blif, buffer);
-		if (doall && pass == 4) {
+		if (doall) {
 			if (ptr != NULL) {
 				model = (char *) my_malloc((strlen(ptr) + 1) * sizeof(char));
 				strcpy(model, ptr);
@@ -290,7 +280,7 @@ static void get_blif_tok(char *buffer, int pass, int doall, boolean *done,
 			}
 		}
 
-		if (pass == 0 && model_lines > 0) {
+		if (model_lines > 0) {
 			check_and_count_models(doall, ptr, user_models);
 		} else {
 			dum_parse(buffer);
@@ -302,33 +292,30 @@ static void get_blif_tok(char *buffer, int pass, int doall, boolean *done,
 	if (strcmp(ptr, ".inputs") == 0) {
 		*add_truth_table = FALSE;
 		/* packing can only one fully defined model */
-		if (pass == 1 && model_lines == 1) {
+		if (model_lines == 1) {
 			io_line(DRIVER, doall, inpad_model);
 			*done = (boolean)1;
-		} else {
-			dum_parse(buffer);
-			if (pass == 4 && doall)
-				ilines++; /* Error checking only */
-		}
+		} 
+		if (doall)
+			ilines++; /* Error checking only */
 		return;
 	}
 
 	if (strcmp(ptr, ".outputs") == 0) {
 		*add_truth_table = FALSE;
 		/* packing can only one fully defined model */
-		if (pass == 2 && model_lines == 1) {
+		if (model_lines == 1) {
 			io_line(RECEIVER, doall, outpad_model);
 			*done = (boolean)1;
-		} else {
-			dum_parse(buffer);
-			if (pass == 4 && doall)
-				olines++; /* Make sure only one .output line */
-		} /* For error checking only */
+		} 
+		if (doall)
+			olines++; /* Make sure only one .output line */
+		 /* For error checking only */
 		return;
 	}
 	if (strcmp(ptr, ".end") == 0) {
 		*add_truth_table = FALSE;
-		if (pass == 4 && doall) {
+		if (doall) {
 			endlines++; /* Error checking only */
 		}
 		return;
@@ -336,9 +323,7 @@ static void get_blif_tok(char *buffer, int pass, int doall, boolean *done,
 
 	if (strcmp(ptr, ".subckt") == 0) {
 		*add_truth_table = FALSE;
-		if (pass == 3) {
-			add_subckt(doall, user_models);
-		}
+		add_subckt(doall, user_models);
 	}
 
 	/* Could have numbers following a .names command, so not matching any *
