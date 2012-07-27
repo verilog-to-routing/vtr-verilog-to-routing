@@ -1741,7 +1741,7 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 					(that's what human designers care about), not the normalized ones. */	
 
 					if (!is_final_analysis) {
-						tnode[inode].T_req = max(constraint + tnode[inode].clock_skew, T_arr_max_this_domain);
+						tnode[inode].T_req = max(constraint + tnode[inode].clock_skew, slack_ratio_denom);
 					} else {
 						tnode[inode].T_req = constraint + tnode[inode].clock_skew;
 					}
