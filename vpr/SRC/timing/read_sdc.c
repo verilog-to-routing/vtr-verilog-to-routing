@@ -986,14 +986,18 @@ static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_do
 		* source_edges, * sink_edges, i, j, time, constraint_as_int;
 	float constraint;
 
-	/* If the source and sink domains are the same, the constraint is just the clock period. */
-	if ((source_domain.period == sink_domain.period) && (source_domain.offset == sink_domain.offset)) {
-		constraint = source_domain.period; /* or, equivalently, sink_domain.period */
-		return constraint;
+	/* If the source and sink domains have the same period and offset, the constraint is just the common clock period. */
+	if ((source_domain.period - sink_domain.period < 1e-15) && (source_domain.offset - sink_domain.offset < 1e-15)) {
+		return source_domain.period; /* or, equivalently, sink_domain.period */
+	}
+
+	/* If either period is 0, the constraint is 0. */
+	if (source_domain.period < 1e-15 || sink_domain.period < 1e-15) {
+		return 0.;
 	}
 	
-	/* If we get here, the two constraints are not the same, and so we have to use edge counting. *
-	 * Multiply periods and offsets by 1000 and round down to the nearest integer,				  *
+	/* If we get here, we have to use edge counting. 
+	 * Multiply periods and offsets by 1000 and round down to the nearest integer,				  
 	 * to avoid messy decimals. */
 
 	source_period = (int) source_domain.period * 1000;
