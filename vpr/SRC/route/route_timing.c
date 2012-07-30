@@ -205,7 +205,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		timing_stats = do_timing_analysis(slacks, FALSE, FALSE, FALSE);
 #endif
 		if (num_constrained_clocks == 1) {
-			vpr_printf(TIO_MESSAGE_INFO, "Critical path: %g\n", timing_stats->critical_path_delay[0][0]);
+			vpr_printf(TIO_MESSAGE_INFO, "Critical path: %g ns\n", timing_stats->critical_path_delay[0][0] * 1e9);
 		} else if (num_constrained_clocks > 1) {
 			vpr_printf(TIO_MESSAGE_INFO, "\nMinimum possible clock period to meet each constraint (including skew effects):\n");
 			for (i = 0; i < num_constrained_clocks; i++) {

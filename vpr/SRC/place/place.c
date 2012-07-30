@@ -827,7 +827,7 @@ void try_place(struct s_placer_opts placer_opts,
 			}
 		}
 		if (num_constrained_clocks == 1) {
-			vpr_printf(TIO_MESSAGE_INFO, "Placement estimated critical path delay: %g\n\n", timing_stats->critical_path_delay[0][0]);
+			vpr_printf(TIO_MESSAGE_INFO, "Placement estimated critical path delay: %g ns\n\n", timing_stats->critical_path_delay[0][0] * 1e9);
 		} else if (num_constrained_clocks > 1) {
 			vpr_printf(TIO_MESSAGE_INFO, "Placement estimated minimum possible clock period to meet each constraint (including skew effects):\n");
 			for (i = 0; i < num_constrained_clocks; i++) {
