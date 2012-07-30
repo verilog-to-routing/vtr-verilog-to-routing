@@ -930,7 +930,7 @@ static void update_rlim(float *rlim, float success_rat) {
 
 	float upper_lim;
 
-	*rlim = (*rlim) * (1. - 0.3 + success_rat);
+	*rlim = (*rlim) * (1. - 0.44 + success_rat);
 	upper_lim = max(nx + 1, ny + 1);
 	*rlim = min(*rlim, upper_lim);
 	*rlim = max(*rlim, 1.);
@@ -1354,12 +1354,21 @@ static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int 
 
 	num_tries = 0;
 	block_index = type->index;
+
+	small_ratio = SMALL_R_RATIO;
+	if( type == IO_TYPE) {
+		small_ratio = SMALL_R_RATIO_IO;
+	}
+
 	do { /* Until legal */
 		is_legal = TRUE;
 
-		small_ratio = SMALL_R_RATIO;
-		if( type == IO_TYPE) {
-			small_ratio = SMALL_R_RATIO_IO;
+		/* Limit the number of tries when searching for an alternative position */
+		if(num_tries >= 2 * min(active_area / type->height, num_legal_pos[block_index]) + 10) {
+			/* Tried randomly searching for a suitable position */
+			return FALSE;
+		} else {
+			num_tries++;
 		}
 
 		if(nx / small_ratio < rlx || 
@@ -1378,21 +1387,10 @@ static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int 
 		
 		if((x_from == *x_to) && (y_from == *y_to)) {
 			is_legal = FALSE;
-		}
-
-		if(*x_to > max_x || *x_to < min_x || *y_to > max_y || *y_to < min_y) {
+		} else if(*x_to > max_x || *x_to < min_x || *y_to > max_y || *y_to < min_y) {
 			is_legal = FALSE;
-		}
-
-		if(grid[*x_to][*y_to].type != grid[x_from][y_from].type) {
+		} else if(grid[*x_to][*y_to].type != grid[x_from][y_from].type) {
 			is_legal = FALSE;
-		}
-		if(num_tries >= min(active_area, num_legal_pos[block_index]) + 10) {
-			// printf("jedit NOOOOO %s (%d %d) (%d %d) %d %d\n", type->name, x_from, y_from, *x_to, *y_to, rlx, (int)is_legal);
-			/* Tried randomly searching for a suitable position */
-			return FALSE;
-		} else {
-			num_tries++;
 		}
 
 		assert(*x_to >= 0 && *x_to <= nx + 1);
