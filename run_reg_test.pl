@@ -240,7 +240,7 @@ sub check_override {
 						);
 
 			my %precision = (
-							"revision"		, "%s"	,
+							"revision"		, "%d"	,
 							"date" 			, "%s"	,
 							"total_runtime"		, "%.3f",
 							"total_wirelength" 	, "%.0f",
