@@ -14,8 +14,8 @@
 #	those of the most recent execution				 #
 #	quick_test: Will run quick test in top-level directory before 	 #
 # 	running specified regression tests.				 #
-#	-display_qor: Will display quality of results of most recent build \n"
-#	of specified regression test.\n
+#	-display_qor: Will display quality of results of most recent     #
+# 	build of specified regression test.				 #
 #									 #
 #  Notes: <TEST> argument is of the format: <project>_reg_<suite>   	 #
 #  See <vtr_flow_path>/tasks/regression_tests for more information.	 #	
@@ -220,33 +220,33 @@ sub check_override {
 			print "=" x 121 . "\n";
 
 			my @data = (
-						"revision"			,
-						"date"				,
+						"revision"		,
+						"date"			,
 						"total_runtime"		,
 						"total_wirelength"	,
-						"num_clb"			,
+						"num_clb"		,
 						"min_chan_width"	,
 						"crit_path_delay"
 						);
 			
 			my %units = (
-						"revision"			, ""		,
-						"date"				, ""		,
+						"revision"		, ""		,
+						"date"			, ""		,
 						"total_runtime" 	, " s"		,
 						"total_wirelength" 	, " units"	,
-						"num_clb" 			, " blocks",
-						"min_chan_width" 	, " tracks",
+						"num_clb" 		, " blocks"	,
+						"min_chan_width" 	, " tracks"	,
 						"crit_path_delay" 	, " ns"
 						);
 
 			my %precision = (
-							"revision"			, "%s"	,
-							"date" 				, "%s"	,
+							"revision"		, "%s"	,
+							"date" 			, "%s"	,
 							"total_runtime"		, "%.3f",
 							"total_wirelength" 	, "%.0f",
-							"num_clb" 			, "%.2f",
+							"num_clb" 		, "%.2f",
 							"min_chan_width" 	, "%.2f",
-							"crit_path_delay" 	, "%.3e"
+							"crit_path_delay" 	, "%.3f"
 							);
 
 			open( QOR_FILE, "$test_dir/qor_geomean.txt" );
