@@ -426,10 +426,12 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 #else
 		/* Calculate criticality directly from net_slack_ratio */
 		for (i = 0; i < num_logical_nets; i++) { 
-			for (j = 0; j <= vpack_net[i].num_sinks; j++) { 
+			for (j = 1; j <= vpack_net[i].num_sinks; j++) { 
 				/* For each pin on each net, find the logical block iblk which it sinks on. */
 				iblk = vpack_net[i].node_block[j];
-				/* The criticality of each block is the maximum of the criticalities of all its pins. */
+				/* The criticality of each block is the maximum of the criticalities of all its pins.
+				(If the slack ratio for a pin is HUGE_POSITIVE_FLOAT, criticality for that pin will 
+				be very negative and will not affect the maximum value). */
 				if (criticality[iblk] < 1 - slacks->net_slack_ratio[i][j]) {
 					criticality[iblk] = 1 - slacks->net_slack_ratio[i][j];
 				}
