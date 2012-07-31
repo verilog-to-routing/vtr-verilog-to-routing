@@ -559,8 +559,10 @@ void SetupPackerOpts(INP t_options Options, INP boolean TimingEnabled,
 		PackerOpts->intra_cluster_net_delay = Options.intra_cluster_net_delay;
 	}
 	PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */
+	PackerOpts->auto_compute_inter_cluster_net_delay = TRUE;
 	if (Options.Count[OT_INTER_CLUSTER_NET_DELAY]) {
 		PackerOpts->inter_cluster_net_delay = Options.inter_cluster_net_delay;
+		PackerOpts->auto_compute_inter_cluster_net_delay = FALSE;
 	}
 
 	PackerOpts->packer_algorithm = PACK_GREEDY; /* DEFAULT */

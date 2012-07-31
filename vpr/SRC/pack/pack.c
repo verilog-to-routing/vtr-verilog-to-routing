@@ -18,7 +18,7 @@
 static boolean *alloc_and_load_is_clock(boolean global_clocks);
 
 void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
-		INP t_model *user_models, INP t_model *library_models, t_timing_inf timing_inf) {
+		INP t_model *user_models, INP t_model *library_models, t_timing_inf timing_inf, float interc_delay) {
 	boolean *is_clock;
 	int num_models;
 	t_model *cur_model;
@@ -56,6 +56,11 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 			list_of_packing_patterns, num_packing_patterns,
 			&num_pack_molecules);
 	vpr_printf(TIO_MESSAGE_INFO, "Finish prepacking\n");
+
+	if(packer_opts->auto_compute_inter_cluster_net_delay) {
+		packer_opts->inter_cluster_net_delay = interc_delay;
+		vpr_printf(TIO_MESSAGE_INFO, "Using inter-cluster delay of %g\n", packer_opts->inter_cluster_net_delay);
+	}
 
 	/* Uncomment line below if you want a dump of compressed netlist. */
 	/* if (GetEchoEnabled()){

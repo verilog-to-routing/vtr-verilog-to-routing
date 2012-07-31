@@ -36,6 +36,7 @@ June 21, 2012
 #include "pb_type_graph.h"
 #include "ReadOptions.h"
 #include "route_common.h"
+#include "timing_place_lookup.h"
 #include "vpr_api.h"
 
 /* Local subroutines */
@@ -328,10 +329,42 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 
 void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 	clock_t begin, end;
+	float est_interc_delay;
+	int i, j;
+	int *num_instances_type;
 
 	begin = clock();
 	vpr_printf(TIO_MESSAGE_INFO, "Initialize packing\n");
-	try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models, vpr_setup.library_models, vpr_setup.Timing);
+	est_interc_delay = UNDEFINED;
+
+	
+	if(vpr_setup.PackerOpts.timing_driven && vpr_setup.PackerOpts.auto_compute_inter_cluster_net_delay) {
+		/* If timing driven, determine default inter-cluster delay */
+		vpr_printf(TIO_MESSAGE_INFO, "Populate inter-clb interconnect delay estimation lookup\n");
+		nx = ny = 4;
+		chan_width_x = (int *) my_malloc((ny + 1) * sizeof(int));
+		chan_width_y = (int *) my_malloc((nx + 1) * sizeof(int));
+		num_instances_type = (int *)my_calloc(num_types, sizeof(int));
+		alloc_and_load_grid(num_instances_type);
+		compute_delay_lookup_tables(vpr_setup.RouterOpts, vpr_setup.RoutingArch, vpr_setup.Segments, vpr_setup.Timing, arch.Chans);
+		for(i = 0; i < nx; i++) {
+			for(j = 0; j < ny; j++) {
+				if(i != j) {
+					if(est_interc_delay == UNDEFINED || est_interc_delay > delta_clb_to_clb[i][j]) {
+						est_interc_delay = delta_clb_to_clb[i][j];
+					}
+				}
+			}
+		}
+		free_place_lookup_structs();
+		free(chan_width_x);
+		free(chan_width_y);
+		chan_width_x = chan_width_y = NULL;
+		free(num_instances_type);
+		nx = ny = 1;
+	}
+
+	try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models, vpr_setup.library_models, vpr_setup.Timing, est_interc_delay);
 	end = clock();
 	#ifdef CLOCKS_PER_SEC
 		vpr_printf(TIO_MESSAGE_INFO, "Packing took %g seconds\n",
