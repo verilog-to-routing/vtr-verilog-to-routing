@@ -22,8 +22,6 @@
 /************** Types and defines local to place.c ***************************/
 
 #define SMALL_NET 4		/* Cut off for incremental bounding box updates. */
-#define SMALL_R_RATIO 4	/* When the swap radius is considered small compared to the length of the chip */
-#define SMALL_R_RATIO_IO 8	/* When the swap radius for I/Os is considered small compared to the length of the chip */
 
 /* 4 is fastest -- I checked.                    */
 
@@ -180,7 +178,8 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp);
 
 static void free_fast_cost_update(void);
 
-static void alloc_and_load_legal_placements();
+static void alloc_legal_placements();
+static void load_legal_placements();
 
 static void free_legal_placements();
 
@@ -1329,7 +1328,6 @@ static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int 
 
 	int x_rel, y_rel, rlx, rly, min_x, max_x, min_y, max_y;
 	int num_tries;
-	int small_ratio;
 	int active_area;
 	boolean is_legal;
 	int block_index, ipos;
@@ -1355,11 +1353,6 @@ static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int 
 	num_tries = 0;
 	block_index = type->index;
 
-	small_ratio = SMALL_R_RATIO;
-	if( type == IO_TYPE) {
-		small_ratio = SMALL_R_RATIO_IO;
-	}
-
 	do { /* Until legal */
 		is_legal = TRUE;
 
@@ -1370,9 +1363,8 @@ static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int 
 		} else {
 			num_tries++;
 		}
-
-		if(nx / small_ratio < rlx || 
-			ny / small_ratio < rly ||
+		if(nx / 4 < rlx || 
+			ny / 4 < rly ||
 			num_legal_pos[block_index] < active_area) {
 			ipos = my_irand(num_legal_pos[block_index] - 1);
 			*x_to = legal_pos[block_index][ipos].x;
@@ -1796,7 +1788,8 @@ static void alloc_and_load_placement_structs(
 
 	int inet, ipin, max_pins_per_clb, i;
 
-	alloc_and_load_legal_placements();
+	alloc_legal_placements();
+	load_legal_placements();
 
 	max_pins_per_clb = 0;
 	for (i = 0; i < num_types; i++) {
@@ -2315,14 +2308,12 @@ static void update_bb(int inet, struct s_bb *bb_coord_new,
 		bb_updated_before[inet] = UPDATED_ONCE;
 }
 
-static void alloc_and_load_legal_placements() {
-	int i, j, k, type_index;
-	int *index;
+static void alloc_legal_placements() {
+	int i, j, k;
 
 	legal_pos = (struct s_legal_pos **) my_malloc(num_types * sizeof(struct s_legal_pos *));
 	num_legal_pos = (int *) my_calloc(num_types, sizeof(int));
-	index = (int *) my_calloc(num_types, sizeof(int));
-
+	
 	/* Initialize all occupancy to zero. */
 
 	for (i = 0; i <= nx + 1; i++) {
@@ -2340,6 +2331,13 @@ static void alloc_and_load_legal_placements() {
 	for (i = 0; i < num_types; i++) {
 		legal_pos[i] = (struct s_legal_pos *) my_malloc(num_legal_pos[i] * sizeof(struct s_legal_pos));
 	}
+}
+
+static void load_legal_placements() {
+	int i, j, k, type_index;
+	int *index;
+
+	index = (int *) my_calloc(num_types, sizeof(int));
 
 	for (i = 0; i <= nx + 1; i++) {
 		for (j = 0; j <= ny + 1; j++) {
@@ -2417,6 +2415,9 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 			}
 		}
 	}
+
+	/* Restore legal_pos */
+	load_legal_placements();
 
 #ifdef VERBOSE
 	vpr_printf(TIO_MESSAGE_INFO, "At end of initial_placement.\n");
