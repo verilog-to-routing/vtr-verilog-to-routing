@@ -1510,7 +1510,7 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 
 	/* Allocate timing_stats data structure and initialize critical_path_delay. */
 	timing_stats = (t_timing_stats *) my_malloc(sizeof(t_timing_stats));
-	timing_stats->critical_path_delay = (float **) my_malloc(num_constrained_clocks * sizeof(float));
+	timing_stats->critical_path_delay = (float **) my_malloc(num_constrained_clocks * sizeof(float *));
 	for (i = 0; i < num_constrained_clocks; i++) {
 		timing_stats->critical_path_delay[i] = (float *) my_malloc(num_constrained_clocks * sizeof(float));
 	}
