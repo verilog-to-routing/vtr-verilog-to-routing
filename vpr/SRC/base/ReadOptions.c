@@ -61,7 +61,11 @@ void setEchoFileName(enum e_echo_files echo_option, const char *name) {
 }
 
 boolean isEchoFileEnabled(enum e_echo_files echo_option) {
-	return echoFileEnabled[(int)echo_option];
+	if(echoFileEnabled == NULL) {
+		return FALSE;
+	} else {
+		return echoFileEnabled[(int)echo_option];
+	}
 }
 char *getEchoFileName(enum e_echo_files echo_option) {
 	return echoFileName[(int)echo_option];
