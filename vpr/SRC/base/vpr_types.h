@@ -39,7 +39,7 @@
  * Global data types and constants
  ******************************************************************************/
 
-#define CLUSTERER_CRITICALITY 'H'
+#define CLUSTERER_CRITICALITY 'F'
 /* What should the clusterer use to calculate criticality?  Possible values:
 	'F' - Fancy: Uses normalized slack, T_arr and critical input/output paths.
 	'S' - Simple: Uses net_slack_ratio, like the placer and router.
