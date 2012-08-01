@@ -476,7 +476,7 @@ static void get_timing_stats(t_timing_stats * timing_stats) {
 	and the single worst slack per domain (with the tnodes on either side
 	of the edge with this worst slack).*/
 
-	int iclock, num_netlist_clocks = 0, netlist_clock_index, source_clock_domain, sink_clock_domain, 
+	int iclock, num_netlist_clocks = 0, netlist_clock_index = 0, source_clock_domain, sink_clock_domain, 
 		clock_domain, fanout, total_fanout = 0, num_netlist_clocks_with_intra_domain_paths = 0;
 	float geomean_period = 1, fanout_weighted_geomean_period = 1;
 

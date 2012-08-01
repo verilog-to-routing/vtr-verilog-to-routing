@@ -15,7 +15,6 @@ static struct s_hash **echo_option_hash = NULL;
 
 static char **ReadBaseToken(INP char **Args, OUTP enum e_OptionBaseToken *Token);
 static void Error(INP const char *Token);
-static void ErrorOption(INP const char *Option);
 static char **ProcessOption(INP char **Args, INOUTP t_options * Options);
 static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id);
 static char **ReadFloat(INP char **Args, OUTP float *Val);
@@ -333,8 +332,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 	case OT_CRITICALITY_EXP:
 		return ReadFloat(Args, &Options->criticality_exp);
 	default:
-		ErrorOption(*PrevArgs);
-		return NULL;
+		vpr_printf(TIO_MESSAGE_ERROR, "Unexpected option '%s' on command line\n", *PrevArgs);
+		exit(1);
 	}
 }
 
@@ -610,11 +609,6 @@ static void Error(INP const char *Token) {
 	} else {
 		vpr_printf(TIO_MESSAGE_ERROR, "Missing token at end of command line\n");
 	}
-	exit(1);
-}
-
-static void ErrorOption(INP const char *Option) {
-	vpr_printf(TIO_MESSAGE_ERROR, "Unexpected option '%s' on command line\n", Option);
 	exit(1);
 }
 

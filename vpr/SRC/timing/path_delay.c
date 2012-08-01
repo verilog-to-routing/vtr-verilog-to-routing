@@ -127,7 +127,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 
 static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 		INOUTP int *inode, INP t_timing_inf timing_inf);
-#ifdef FANCY_CRITICALITY
+#if CLUSTERER_CRITICALITY != 'S'
 static void normalize_costs(float T_arr_max_this_domain, long max_critical_input_paths,
 		long max_critical_output_paths);
 #endif
@@ -683,7 +683,7 @@ void print_timing_place_crit(float ** timing_place_crit, const char *fname) {
 	fclose(fp);
 }
 
-#ifdef FANCY_CRITICALITY
+#if CLUSTERER_CRITICALITY != 'S'
 void print_clustering_timing_info(const char *fname) {
 	/* Print information from tnodes which is used by the clusterer. */
 	int inode;
@@ -1488,7 +1488,7 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 	boolean found;
 	t_timing_stats * timing_stats;
 
-#ifdef FANCY_CRITICALITY
+#if CLUSTERER_CRITICALITY != 'S'
 	long max_critical_output_paths = 0, max_critical_input_paths = 0;
 #endif
 
@@ -1497,7 +1497,7 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 	/* Denominator of slack ratio (if SLACK_RATIO_DEFINITION == 2) - max of all arrival times and all constraints. */
 #endif
 
-#if defined FANCY_CRITICALITY || SLACK_RATIO_DEFINITION == 1 || SLACK_DEFINITION == 4 || SLACK_DEFINITION == 5
+#if CLUSTERER_CRITICALITY != 'S' || SLACK_RATIO_DEFINITION == 1 || SLACK_DEFINITION == 4 || SLACK_DEFINITION == 5
 	float slack_ratio_denom;
 	/* Max of all arrival times and constraints in each clock domain - 	used to normalize required times 
 	(if SLACK_DEFINITION == 4 or 5), slack ratios (if SLACK_RATIO_DEFINITION == 1), 
@@ -1548,7 +1548,7 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 
 	/* For each source clock domain, we do one forward and one backward breadth-first traversal.  */
 	for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
-#if defined FANCY_CRITICALITY || SLACK_RATIO_DEFINITION == 1 || SLACK_DEFINITION == 4 || SLACK_DEFINITION == 5
+#if CLUSTERER_CRITICALITY != 'S' || SLACK_RATIO_DEFINITION == 1 || SLACK_DEFINITION == 4 || SLACK_DEFINITION == 5
 		slack_ratio_denom = HUGE_NEGATIVE_FLOAT; /* Reset before each pair of traversals. */
 #endif
 
@@ -1560,7 +1560,7 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 			tnode[inode].T_req = HUGE_POSITIVE_FLOAT;
 		}
 
-#ifdef FANCY_CRITICALITY
+#if CLUSTERER_CRITICALITY != 'S'
 		if (is_prepacked) {
 			for (inode = 0; inode < num_tnodes; inode++) {
 				/* Reset all normalized values to a very large positive number. */
@@ -1602,7 +1602,7 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 								this node is not part of the clock domain we're analyzing. 
 								(If it were, it would have received an arrival time already.) */
 				}
-#ifdef FANCY_CRITICALITY
+#if CLUSTERER_CRITICALITY != 'S'
 				if (ilevel == 0) {
 					tnode[inode].num_critical_input_paths = 1;		/* Top-level tnodes have only one critical input path */
 				}
@@ -1610,7 +1610,7 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 				num_edges = tnode[inode].num_edges;					/* Get the number of edges fanning out from the node we're visiting */
 				tedge = tnode[inode].out_edges;						/* Get the list of edges from the node we're visiting */
 				
-#ifdef FANCY_CRITICALITY	
+#if CLUSTERER_CRITICALITY != 'S'	
 				if (is_prepacked) {
 					for (iedge = 0; iedge < num_edges; iedge++) {		
 						to_node = tedge[iedge].to_node;
@@ -1641,7 +1641,7 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 					slack_ratio_denom_global = max(slack_ratio_denom_global, tnode[to_node].T_arr);
 #endif		
 
-#if defined FANCY_CRITICALITY || SLACK_RATIO_DEFINITION == 1 || SLACK_DEFINITION == 4 || SLACK_DEFINITION == 5
+#if CLUSTERER_CRITICALITY != 'S' || SLACK_RATIO_DEFINITION == 1 || SLACK_DEFINITION == 4 || SLACK_DEFINITION == 5
 					slack_ratio_denom = max(slack_ratio_denom, tnode[to_node].T_arr);
 #endif
 				}
@@ -1765,7 +1765,7 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 					/* We want to find the greatest T_req (either in the design or for this traversal), 
 					so update T_req_max_this_domain and/or T_req_max_global if this tnode's required time is greater than them. */
 
-#ifdef FANCY_CRITICALITY
+#if CLUSTERER_CRITICALITY != 'S'
 
 					tnode[inode].num_critical_output_paths = 1; /* Bottom-level tnodes have only one critical output path */
 #endif			
@@ -1807,7 +1807,7 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 						tnode[inode].T_req = min(tnode[inode].T_req, tnode[to_node].T_req - tedge[iedge].Tdel);
 					}
 
-#ifdef FANCY_CRITICALITY
+#if CLUSTERER_CRITICALITY != 'S'
 					if (is_prepacked) {
 						for (iedge = 0; iedge < num_edges; iedge++) { 
 							to_node = tedge[iedge].to_node;
@@ -1828,22 +1828,22 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 		}
 
 
-#if defined FANCY_CRITICALITY || SLACK_RATIO_DEFINITION == 1 || SLACK_DEFINITION == 4 || SLACK_DEFINITION == 5
+#if CLUSTERER_CRITICALITY != 'S' || SLACK_RATIO_DEFINITION == 1 || SLACK_DEFINITION == 4 || SLACK_DEFINITION == 5
 		for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
 			slack_ratio_denom = max(slack_ratio_denom, timing_constraint[source_clock_domain][sink_clock_domain]);
 		}
 #endif
 
 		/* After each iteration of the iclock loop, update the slack if it has a newer, lower value.  Also update the normalized costs for clusterer (ifdef FANCY_CRITICALITY). */
-		if (!is_prepacked) {
+	//	if (!is_prepacked) {
 #if SLACK_RATIO_DEFINITION == 1
 			timing_stats->least_slack_in_domain[source_clock_domain] = update_slacks(slacks, slack_ratio_denom, is_final_analysis);
 #else		/* T_req_max_this_domain is not used in update_slacks so doesn't matter what we pass in. */
 			timing_stats->least_slack_in_domain[source_clock_domain] = update_slacks(slacks, 0, is_final_analysis);
 #endif
-		}
+	//	}
 
-#ifdef FANCY_CRITICALITY
+#if CLUSTERER_CRITICALITY != 'S'
 		if (is_prepacked) {
 			normalize_costs(slack_ratio_denom, max_critical_input_paths, max_critical_output_paths);
 		}
@@ -2183,7 +2183,7 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 	free_net_delay(net_delay, &net_delay_ch);
 	free_timing_stats(timing_stats);
 }
-#ifdef FANCY_CRITICALITY
+#if CLUSTERER_CRITICALITY != 'S'
 static void normalize_costs(float T_arr_max_this_domain, long max_critical_input_paths,
 		long max_critical_output_paths) {
 	int inode;

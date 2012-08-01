@@ -101,7 +101,7 @@ static int *net_output_feeds_driving_block_input;
 
 static float *criticality = NULL;
 static int *critindexarray = NULL;
-#ifdef FANCY_CRITICALITY
+#if CLUSTERER_CRITICALITY == 'F'
 static float **net_pin_backward_criticality = NULL;
 static float **net_pin_forward_criticality = NULL;
 #endif
@@ -248,8 +248,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	t_slack * slacks = NULL;
 	t_pack_molecule *istart, *next_molecule, *prev_molecule, *cur_molecule;
-	int i, j, iblk, num_molecules;
-
+	int i, iblk, num_molecules;
+#if CLUSTERER_CRITICALITY != 'H'
+	int j;
+#endif
 	int blocks_since_last_analysis;
 	int max_nets_in_pb_type, cur_nets_in_pb_type;
 	int indexofcrit, savedindexofcrit; /* index of next most timing critical block */
@@ -272,7 +274,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	enum e_block_pack_status block_pack_status;
 
 	int *num_used_instances_type, *num_instances_type; /* [0..num_types] Holds array for total number of each cluster_type available */
-#ifdef FANCY_CRITICALITY
+#if CLUSTERER_CRITICALITY != 'S'
 	float num_paths_scaling, distance_scaling;
 
 	float crit;
@@ -355,7 +357,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	if (timing_driven) {
 		slacks = alloc_and_load_pre_packing_timing_graph(block_delay,
 				inter_cluster_net_delay, arch->models, timing_inf);
-#ifdef FANCY_CRITICALITY
+#if CLUSTERER_CRITICALITY != 'S'
 		timing_stats = do_timing_analysis(slacks, TRUE, FALSE, FALSE);
 #else
 		/* Simple criticality uses the same info as the post-packed netlist,
@@ -367,10 +369,11 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		if (GetEchoEnabled()) {
 			if(isEchoOptionEnable("pre_packing_timing_graph.echo"))
 				print_timing_graph("pre_packing_timing_graph.echo");
-#ifdef FANCY_CRITICALITY
+#if CLUSTERER_CRITICALITY != 'S'
 			if(isEchoOptionEnable("clustering_timing_info.echo"))
 				print_clustering_timing_info("clustering_timing_info.echo");
-#else
+#endif
+#if CLUSTERER_CRITICALITY != 'F'
 			if(isEchoOptionEnable("pre_packing_net_slack.echo"))
 				print_net_slack(slacks->net_slack, "pre_packing_net_slack.echo");
 			if(isEchoOptionEnable("pre_packing_net_slack_ratio.echo"))
@@ -387,7 +390,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			critindexarray[i] = i;
 		}
 
-#ifdef FANCY_CRITICALITY
+#if CLUSTERER_CRITICALITY != 'S'
 		/* Calculate criticality based on slacks and tie breakers (# paths, distance from source) */
 		for (i = 0; i < num_tnodes; i++) {
 			/* Only calculate for tnodes which have valid arrival and required times.  
@@ -406,7 +409,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				}
 			}
 		}
-
+  #if CLUSTERER_CRITICALITY == 'F'
 		net_pin_backward_criticality = (float**) my_calloc(num_logical_nets,
 				sizeof(float*));
 		net_pin_forward_criticality = (float**) my_calloc(num_logical_nets,
@@ -423,6 +426,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						criticality[vpack_net[i].node_block[0]];
 			}
 		}
+  #endif
 #else
 		/* Calculate criticality directly from net_slack_ratio */
 		for (i = 0; i < num_logical_nets; i++) { 
@@ -451,9 +455,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			istart = get_seed_logical_molecule_with_most_ext_inputs(
 					max_molecule_inputs);
 		}
-#ifdef FANCY_CRITICALITY
-		free_timing_graph(slacks);
-#endif
 
 	} else /*cluster seed is max input (since there is no timing information)*/ {
 		istart = get_seed_logical_molecule_with_most_ext_inputs(
@@ -618,10 +619,15 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	free(memory_pool);
 	free(net_output_feeds_driving_block_input);
 
-#ifdef FANCY_CRITICALITY
-	if (criticality != NULL) {
+	assert(criticality);
+	//if (criticality != NULL) {
 		free(criticality);
 		free(critindexarray);
+
+		criticality = NULL;
+		critindexarray = NULL;
+
+#if CLUSTERER_CRITICALITY == 'F'
 		for (i = 0; i < num_logical_nets; i++) {
 			free(net_pin_backward_criticality[i]);
 			free(net_pin_forward_criticality[i]);
@@ -629,17 +635,16 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		free(net_pin_backward_criticality);
 		free(net_pin_forward_criticality);
 
-
-		criticality = NULL;
-		critindexarray = NULL;
 		net_pin_backward_criticality = NULL;
 		net_pin_forward_criticality = NULL;
-	}
-#else
+#endif
+
+
+	//}
+
 	if (timing_driven) {
 		free_timing_graph(slacks);
 	}
-#endif
 
  free (primitives_list);
 
@@ -1652,7 +1657,7 @@ static void update_length_gain_values(int inet, int clustered_block,
 		for (ipin = ifirst; ipin <= vpack_net[inet].num_sinks; ipin++) {
 			iblk = vpack_net[inet].node_block[ipin];
 			if (logical_block[iblk].clb_index == NO_CLUSTER) {
-#ifdef FANCY_CRITICALITY
+#if CLUSTERER_CRITICALITY == 'F'
 				lengain = net_pin_backward_criticality[inet][ipin];
 #else
 				lengain = 1 - slacks->net_slack_ratio[inet][ipin];
@@ -1670,7 +1675,7 @@ static void update_length_gain_values(int inet, int clustered_block,
 		newblk = vpack_net[inet].node_block[0];
 		if (logical_block[newblk].clb_index == NO_CLUSTER) {
 			for (ipin = 1; ipin <= vpack_net[inet].num_sinks; ipin++) {
-#ifdef FANCY_CRITICALITY
+#if CLUSTERER_CRITICALITY == 'F'
 				lengain = net_pin_forward_criticality[inet][ipin];
 #else
 				lengain = 1 - slacks->net_slack_ratio[inet][ipin];

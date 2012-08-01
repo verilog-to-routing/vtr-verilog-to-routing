@@ -54,7 +54,7 @@ void print_net_delay(float **net_delay, const char *fname);
 
 void print_timing_place_crit(float ** timing_place_crit, const char *fname);
 
-#ifdef FANCY_CRITICALITY
+#if CLUSTERER_CRITICALITY != 'S'
 void print_clustering_timing_info(const char *fname);
 #endif
 
