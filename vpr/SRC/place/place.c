@@ -320,13 +320,13 @@ void try_place(struct s_placer_opts placer_opts,
 
 		if (GetEchoEnabled()) {
 			if (num_constrained_clocks == 1) {
-				if(isEchoOptionEnable("placement_critical_path.echo"))
-					print_critical_path("placement_critical_path.echo");
+				if(isEchoFileEnabled(E_ECHO_PLACEMENT_CRITICAL_PATH))
+					print_critical_path(getEchoFileName(E_ECHO_PLACEMENT_CRITICAL_PATH));
 			}
-			if(isEchoOptionEnable("placement_lower_bound_sink_delays.echo"))
-				print_sink_delays("placement_lower_bound_sink_delays.out");
-			if(isEchoOptionEnable("placement_logic_sink_delays.echo"))
-				print_sink_delays("placement_logic_sink_delays.out");
+			if(isEchoFileEnabled(E_ECHO_PLACEMENT_LOWER_BOUND_SINK_DELAYS))
+				print_sink_delays(getEchoFileName(E_ECHO_PLACEMENT_LOWER_BOUND_SINK_DELAYS));
+			if(isEchoFileEnabled(E_ECHO_PLACEMENT_LOGIC_SINK_DELAYS))
+				print_sink_delays(getEchoFileName(E_ECHO_PLACEMENT_LOGIC_SINK_DELAYS));
 		}
 
 		/*also print sink delays assuming 0 delay between blocks, 
@@ -395,14 +395,14 @@ void try_place(struct s_placer_opts placer_opts,
 		free_timing_stats(timing_stats);
 		load_criticalities(slacks->net_slack_ratio, crit_exponent);
 		if (GetEchoEnabled()) {
-			if(isEchoOptionEnable("initial_placement_timing_graph.echo"))
-				print_timing_graph("initial_placement_timing_graph.echo");
-			if(isEchoOptionEnable("initial_placement_net_slack.echo"))
-				print_net_slack(slacks->net_slack, "initial_placement_net_slack.echo");
-			if(isEchoOptionEnable("initial_placement_net_slack_ratio.echo"))
-				print_net_slack_ratio(slacks->net_slack_ratio, "initial_placement_net_slack_ratio.echo");
-			if(isEchoOptionEnable("initial_placement_criticality.echo"))
-				print_timing_place_crit(timing_place_crit, "initial_placement_criticality.echo");
+			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH))
+				print_timing_graph(getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH));
+			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_NET_SLACK))
+				print_net_slack(slacks->net_slack, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_NET_SLACK));
+			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_NET_SLACK_RATIO))
+				print_net_slack_ratio(slacks->net_slack_ratio, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_NET_SLACK_RATIO));
+			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_CRITICALITY))
+				print_timing_place_crit(timing_place_crit, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY));
 		}
 		outer_crit_iter_count = 1;
 
@@ -785,8 +785,8 @@ void try_place(struct s_placer_opts placer_opts,
 #endif
 
 #ifdef VERBOSE
-	if (GetEchoEnabled() && isEchoOptionEnable("end_clb_placement.echo")) {
-		print_clb_placement("end_clb_placement.echo");
+	if (GetEchoEnabled() && isEchoFileEnabled(E_ECHO_END_CLB_PLACEMENT)) {
+		print_clb_placement(getEchoFileName(E_ECHO_END_CLB_PLACEMENT));
 	}
 #endif
 
@@ -812,17 +812,17 @@ void try_place(struct s_placer_opts placer_opts,
 		timing_stats = do_timing_analysis(slacks, FALSE, FALSE, TRUE);
 
 		if (GetEchoEnabled()) {
-			if(isEchoOptionEnable("placement_sink_delays.echo"))
-				print_sink_delays("placement_sink_delays.echo");
-			if(isEchoOptionEnable("final_placement_net_slack.echo"))
-				print_net_slack(slacks->net_slack, "final_placement_net_slack.echo");
-			if(isEchoOptionEnable("final_placement_net_slack_ratio.echo"))
-				print_net_slack_ratio(slacks->net_slack_ratio, "final_placement_net_slack_ratio.echo");
-			if(isEchoOptionEnable("final_placement_timing_graph.echo"))
-				print_timing_graph("final_placement_timing_graph.echo");
+			if(isEchoFileEnabled(E_ECHO_PLACEMENT_SINK_DELAYS))
+				print_sink_delays(getEchoFileName(E_ECHO_PLACEMENT_SINK_DELAYS));
+			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_NET_SLACK))
+				print_net_slack(slacks->net_slack, getEchoFileName(E_ECHO_FINAL_PLACEMENT_NET_SLACK));
+			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_NET_SLACK_RATIO))
+				print_net_slack_ratio(slacks->net_slack_ratio, getEchoFileName(E_ECHO_FINAL_PLACEMENT_NET_SLACK_RATIO));
+			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH))
+				print_timing_graph(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH));
 			if (num_constrained_clocks == 1) {
-				if(isEchoOptionEnable("placement_crit_path.echo"))
-					print_critical_path("placement_crit_path.echo");
+				if(isEchoFileEnabled(E_ECHO_PLACEMENT_CRIT_PATH))
+					print_critical_path(getEchoFileName(E_ECHO_PLACEMENT_CRIT_PATH));
 			}
 		}
 		if (num_constrained_clocks == 1) {
@@ -2421,8 +2421,8 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 
 #ifdef VERBOSE
 	vpr_printf(TIO_MESSAGE_INFO, "At end of initial_placement.\n");
-	if (GetEchoEnabled() && isEchoOptionEnable("initial_clb_placement.echo")) {
-		print_clb_placement("initial_clb_placement.echo");
+	if (GetEchoEnabled() && isEchoFileEnabled(E_ECHO_INITIAL_CLB_PLACEMENT)) {
+		print_clb_placement(getEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT));
 	}
 #endif
 	free(count);

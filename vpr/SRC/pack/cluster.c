@@ -367,17 +367,17 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		free_timing_stats(timing_stats);
 
 		if (GetEchoEnabled()) {
-			if(isEchoOptionEnable("pre_packing_timing_graph.echo"))
-				print_timing_graph("pre_packing_timing_graph.echo");
+			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH))
+				print_timing_graph(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH));
 #if CLUSTERER_CRITICALITY != 'S'
-			if(isEchoOptionEnable("clustering_timing_info.echo"))
-				print_clustering_timing_info("clustering_timing_info.echo");
+			if(isEchoFileEnabled(E_ECHO_CLUSTERING_TIMING_INFO))
+				print_clustering_timing_info(getEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO));
 #endif
 #if CLUSTERER_CRITICALITY != 'F'
-			if(isEchoOptionEnable("pre_packing_net_slack.echo"))
-				print_net_slack(slacks->net_slack, "pre_packing_net_slack.echo");
-			if(isEchoOptionEnable("pre_packing_net_slack_ratio.echo"))
-				print_net_slack_ratio(slacks->net_slack_ratio, "pre_packing_net_slack_ratio.echo");
+			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_NET_SLACK)))
+				print_net_slack(slacks->net_slack, getEchoFileName(E_ECHO_PRE_PACKING_NET_SLACK));
+			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_NET_SLACK_RATIO))
+				print_net_slack_ratio(slacks->net_slack_ratio, getEchoFileName(E_ECHO_PRE_PACKING_NET_SLACK_RATIO));
 #endif
 		}
 
@@ -444,8 +444,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 #endif
 		heapsort(critindexarray, criticality, num_logical_blocks, 1);
 		
-		if (GetEchoEnabled() && isEchoOptionEnable("clustering_block_criticalities.echo")) {
-			print_block_criticalities("clustering_block_criticalities.echo");
+		if (GetEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES)) {
+			print_block_criticalities(getEchoFileName(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES));
 		}
 
 

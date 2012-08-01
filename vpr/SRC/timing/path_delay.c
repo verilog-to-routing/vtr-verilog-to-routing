@@ -2166,17 +2166,17 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 
 	if (GetEchoEnabled()) {
 		if (num_constrained_clocks == 1) {
-			if(isEchoOptionEnable("critical_path.echo"))
+			if(isEchoFileEnabled(E_ECHO_CRITICAL_PATH))
 				print_critical_path("critical_path.echo");
 		}
-		if(isEchoOptionEnable("timing_graph.echo"))
-			print_timing_graph("timing_graph.echo");
-		if(isEchoOptionEnable("net_slack.echo"))
-			print_net_slack(slacks->net_slack, "net_slack.echo");
-		if(isEchoOptionEnable("net_slack_ratio.echo"))
-			print_net_slack_ratio(slacks->net_slack_ratio, "net_slack_ratio.echo");
-		if(isEchoOptionEnable("net_delay.echo"))
-			print_net_delay(net_delay, "net_delay.echo");
+		if(isEchoFileEnabled(E_ECHO_TIMING_GRAPH))
+			print_timing_graph(getEchoFileName(E_ECHO_TIMING_GRAPH));
+		if(isEchoFileEnabled(E_ECHO_NET_SLACK))
+			print_net_slack(slacks->net_slack, getEchoFileName(E_ECHO_NET_SLACK));
+		if(isEchoFileEnabled(E_ECHO_NET_SLACK_RATIO))
+			print_net_slack_ratio(slacks->net_slack_ratio, getEchoFileName(E_ECHO_NET_SLACK_RATIO));
+		if(isEchoFileEnabled(E_ECHO_NET_DELAY))
+			print_net_delay(net_delay, getEchoFileName(E_ECHO_NET_DELAY));
 	}
 
 	free_timing_graph(slacks);

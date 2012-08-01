@@ -123,8 +123,8 @@ void read_sdc(char * sdc_file) {
 			vpr_printf(TIO_MESSAGE_INFO, "Cut paths between clock domains.\n\n");
 		}
 
-		if (GetEchoEnabled() && isEchoOptionEnable("timing_constraints.echo")) {
-			print_timing_constraint_info("timing_constraints.echo");
+		if (GetEchoEnabled() && isEchoFileEnabled(E_ECHO_TIMING_CONSTRAINTS)) {
+			print_timing_constraint_info(getEchoFileName(E_ECHO_TIMING_CONSTRAINTS));
 		}
 		return;
 	}
@@ -187,8 +187,8 @@ void read_sdc(char * sdc_file) {
 			}
 		}
 
-	if (GetEchoEnabled() && isEchoOptionEnable("timing_constraints.echo")) {
-		print_timing_constraint_info("timing_constraints.echo");
+	if (GetEchoEnabled() && isEchoFileEnabled(E_ECHO_TIMING_CONSTRAINTS)) {
+		print_timing_constraint_info(getEchoFileName(E_ECHO_TIMING_CONSTRAINTS));
 	}
 
 	/* Now normalize timing_constraint and constrained_ios to be in seconds, not nanoseconds. */

@@ -82,8 +82,8 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 		if (timing_analysis_enabled) {
 			load_net_delay_from_routing(net_delay, clb_net, num_nets);
 
-			if (GetEchoEnabled() && isEchoOptionEnable("net_delay.echo")) {
-				print_net_delay(net_delay, "net_delay.echo");
+			if (GetEchoEnabled() && isEchoFileEnabled(E_ECHO_NET_DELAY)) {
+				print_net_delay(net_delay, getEchoFileName(E_ECHO_NET_DELAY));
 			}
 
 			load_timing_graph_net_delays(net_delay);
@@ -95,10 +95,10 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 #endif
 
 			if (GetEchoEnabled()) {
-				if(isEchoOptionEnable("timing_graph.echo"))
-					print_timing_graph("timing_graph.echo");
-				if(isEchoOptionEnable("lut_remapping.echo"))
-					print_lut_remapping("lut_remapping.echo");
+				if(isEchoFileEnabled(E_ECHO_TIMING_GRAPH))
+					print_timing_graph(getEchoFileName(E_ECHO_TIMING_GRAPH));
+				if(isEchoFileEnabled(E_ECHO_LUT_REMAPPING))
+					print_lut_remapping(getEchoFileName(E_ECHO_LUT_REMAPPING));
 			}
 
 			name = (char*)my_calloc(50 + strlen(default_output_name), sizeof(char));

@@ -89,15 +89,60 @@ struct s_options {
 	int read_settings;
 };
 
+enum e_echo_files {
+	E_ECHO_INITIAL_CLB_PLACEMENT = 0,
+	E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH,
+	E_ECHO_INITIAL_PLACEMENT_NET_SLACK,
+	E_ECHO_INITIAL_PLACEMENT_NET_SLACK_RATIO,
+	E_ECHO_INITIAL_PLACEMENT_CRITICALITY,
+	E_ECHO_END_CLB_PLACEMENT,
+	E_ECHO_PLACEMENT_SINK_DELAYS,
+	E_ECHO_FINAL_PLACEMENT_NET_SLACK,
+	E_ECHO_FINAL_PLACEMENT_NET_SLACK_RATIO,
+	E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH,
+	E_ECHO_PLACEMENT_CRIT_PATH,
+	E_ECHO_PB_GRAPH,
+	E_ECHO_ARCH,
+	E_ECHO_PLACEMENT_CRITICAL_PATH,
+	E_ECHO_PLACEMENT_LOWER_BOUND_SINK_DELAYS,
+	E_ECHO_PLACEMENT_LOGIC_SINK_DELAYS,
+	E_ECHO_ROUTING_SINK_DELAYS,
+	E_ECHO_POST_FLOW_TIMING_GRAPH,
+	E_ECHO_BLIF_INPUT,
+	E_ECHO_NET_DELAY,
+	E_ECHO_TIMING_GRAPH,
+	E_ECHO_LUT_REMAPPING,
+	E_ECHO_PRE_PACKING_TIMING_GRAPH,
+	E_ECHO_CLUSTERING_TIMING_INFO,
+	E_ECHO_PRE_PACKING_NET_SLACK,
+	E_ECHO_PRE_PACKING_NET_SLACK_RATIO,
+	E_ECHO_CLUSTERING_BLOCK_CRITICALITIES,
+	E_ECHO_PRE_PACKING_MOLECULES_AND_PATTERNS,
+	E_ECHO_MEM,
+	E_ECHO_RR_GRAPH,
+	E_ECHO_TIMING_CONSTRAINTS,
+	E_ECHO_CRITICAL_PATH,
+	E_ECHO_NET_SLACK,
+	E_ECHO_NET_SLACK_RATIO,
+	E_ECHO_END_TOKEN
+};
+
 void ReadOptions(INP int argc,
 		INP char **argv,
 		OUTP t_options * Options);
 
 boolean GetEchoEnabled(void);
 void SetEchoEnabled(boolean echo_enabled);
-boolean isEchoOptionEnable(char *echo_option);
-void setEchoOption(char *echo_option, boolean value);
-void free_echo_hash_table();
+
+void setEchoFileEnabled(enum e_echo_files echo_option, boolean value);
+void setEchoFileName(enum e_echo_files echo_option, const char *name);
+
+boolean isEchoFileEnabled(enum e_echo_files echo_option);
+char *getEchoFileName(enum e_echo_files echo_option);
+
+void alloc_and_load_echo_file_info();
+void free_echo_file_info();
+
 
 #endif
 

@@ -9,7 +9,9 @@
 #include "read_settings.h"
 
 static boolean EchoEnabled;
-static struct s_hash **echo_option_hash = NULL;
+
+static boolean *echoFileEnabled = NULL;
+static char **echoFileName = NULL;
 
 /******** Function prototypes ********/
 
@@ -41,70 +43,87 @@ boolean GetEchoEnabled(void) {
 void SetEchoEnabled(boolean echo_enabled) {
 	/* enable echo outputs */
 	EchoEnabled = echo_enabled;
-	if(echo_option_hash == NULL) {
+	if(echoFileEnabled == NULL) {
 		/* initialize default echo options */
-		setEchoOption("initial_clb_placement.echo", TRUE);
-		setEchoOption("initial_placement_timing_graph.echo", TRUE);
-		setEchoOption("initial_placement_net_slack.echo", TRUE);
-		setEchoOption("initial_placement_net_slack_ratio.echo", TRUE);
-		setEchoOption("initial_placement_criticality.echo", TRUE);
-		setEchoOption("end_clb_placement.echo", TRUE);
-		setEchoOption("placement_sink_delays.echo", TRUE);
-		setEchoOption("final_placement_net_slack.echo", TRUE);
-		setEchoOption("final_placement_net_slack_ratio.echo", TRUE);
-		setEchoOption("final_placement_timing_graph.echo", TRUE);
-		setEchoOption("placement_crit_path.echo", TRUE);
-		setEchoOption("pb_graph.echo", TRUE);
-		setEchoOption("arch.echo", TRUE);
-		setEchoOption("placement_critical_path.echo", TRUE);
-		setEchoOption("placement_lower_bound_sink_delays.echo", TRUE);
-		setEchoOption("placement_logic_sink_delays.echo", TRUE);
-		setEchoOption("routing_sink_delays.echo", TRUE);
-		setEchoOption("post_flow_timing_graph.blif", TRUE);
-		setEchoOption("blif_input.echo", TRUE);
-		setEchoOption("net_delay.echo", TRUE);
-		setEchoOption("timing_graph.echo", TRUE);
-		setEchoOption("lut_remapping.echo", TRUE);
-		setEchoOption("pre_packing_timing_graph.echo", TRUE);
-		setEchoOption("clustering_timing_info.echo", TRUE);
-		setEchoOption("pre_packing_net_slack.echo", TRUE);
-		setEchoOption("pre_packing_net_slack_ratio.echo", TRUE);
-		setEchoOption("clustering_block_criticalities.echo", TRUE);
-		setEchoOption("pre_packing_molecules_and_patterns.echo", TRUE);
-		setEchoOption("mem.echo", TRUE);
-		setEchoOption("rr_graph.echo", TRUE);
-		setEchoOption("timing_constraints.echo", TRUE);			
+		alloc_and_load_echo_file_info();
 	}
 }
 
-void free_echo_hash_table() {
-	if(echo_option_hash != NULL)
-		free_hash_table(echo_option_hash);
-	echo_option_hash = NULL;
+void setEchoFileEnabled(enum e_echo_files echo_option, boolean value) {
+	echoFileEnabled[(int)echo_option] = value;
 }
 
-boolean isEchoOptionEnable(char *echo_option) {
-	struct s_hash *hash_value;
-	
-	hash_value = get_hash_entry(echo_option_hash, echo_option);
-	if(hash_value == NULL) {
-		return FALSE;
+void setEchoFileName(enum e_echo_files echo_option, const char *name) {
+	if(echoFileName[(int)echo_option] != NULL) {
+		free(echoFileName[(int)echo_option]);
 	}
-	if(hash_value->count == FALSE) {
-		return FALSE;
-	}
-	return TRUE;
+	echoFileName[(int)echo_option] = my_strdup(name);
 }
 
-void setEchoOption(char *echo_option, boolean value) {
-	struct s_hash *hash_value = NULL;
-	
-	if(echo_option_hash == NULL) {
-		/* select which entries to display, be default, everything gets outputted */
-		echo_option_hash = alloc_hash_table();
+boolean isEchoFileEnabled(enum e_echo_files echo_option) {
+	return echoFileEnabled[(int)echo_option];
+}
+char *getEchoFileName(enum e_echo_files echo_option) {
+	return echoFileName[(int)echo_option];
+}
+
+void alloc_and_load_echo_file_info() {
+	int i;
+	echoFileEnabled = (boolean*)my_calloc((int) E_ECHO_END_TOKEN, sizeof(boolean));
+	echoFileName = (char**)my_calloc((int) E_ECHO_END_TOKEN, sizeof(char*));
+
+	for(i = 0; i < (int) E_ECHO_END_TOKEN - 1; i++) {
+		echoFileEnabled[i] = TRUE;
 	}
-	hash_value = insert_in_hash_table(echo_option_hash, echo_option, 0);
-	hash_value->count = (int)value;
+	setEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT, "initial_clb_placement.echo");
+	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH, "initial_placement_timing_graph.echo");
+	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_NET_SLACK, "initial_placement_net_slack.echo");
+	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_NET_SLACK_RATIO, "initial_placement_net_slack_ratio.echo");
+	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY, "initial_placement_criticality.echo");
+	setEchoFileName(E_ECHO_END_CLB_PLACEMENT, "end_clb_placement.echo");
+	setEchoFileName(E_ECHO_PLACEMENT_SINK_DELAYS, "placement_sink_delays.echo");
+	setEchoFileName(E_ECHO_FINAL_PLACEMENT_NET_SLACK, "final_placement_net_slack.echo");
+	setEchoFileName(E_ECHO_FINAL_PLACEMENT_NET_SLACK_RATIO, "final_placement_net_slack_ratio.echo");
+	setEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH, "final_placement_timing_graph.echo");
+	setEchoFileName(E_ECHO_PLACEMENT_CRIT_PATH, "placement_crit_path.echo");
+	setEchoFileName(E_ECHO_PB_GRAPH, "pb_graph.echo");
+	setEchoFileName(E_ECHO_ARCH, "arch.echo");
+	setEchoFileName(E_ECHO_PLACEMENT_CRITICAL_PATH, "placement_critical_path.echo");
+	setEchoFileName(E_ECHO_PLACEMENT_LOWER_BOUND_SINK_DELAYS, "placement_lower_bound_sink_delays.echo");
+	setEchoFileName(E_ECHO_PLACEMENT_LOGIC_SINK_DELAYS, "placement_logic_sink_delays.echo");
+	setEchoFileName(E_ECHO_ROUTING_SINK_DELAYS, "routing_sink_delays.echo");
+	setEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH, "post_flow_timing_graph.blif");
+	setEchoFileName(E_ECHO_BLIF_INPUT, "blif_input.echo");
+	setEchoFileName(E_ECHO_NET_DELAY, "net_delay.echo");
+	setEchoFileName(E_ECHO_TIMING_GRAPH, "timing_graph.echo");
+	setEchoFileName(E_ECHO_LUT_REMAPPING, "lut_remapping.echo");
+	setEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH, "pre_packing_timing_graph.echo");
+	setEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO, "clustering_timing_info.echo");
+	setEchoFileName(E_ECHO_PRE_PACKING_NET_SLACK, "pre_packing_net_slack.echo");
+	setEchoFileName(E_ECHO_PRE_PACKING_NET_SLACK_RATIO, "pre_packing_net_slack_ratio.echo");
+	setEchoFileName(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES, "clustering_block_criticalities.echo");
+	setEchoFileName(E_ECHO_PRE_PACKING_MOLECULES_AND_PATTERNS, "pre_packing_molecules_and_patterns.echo");
+	setEchoFileName(E_ECHO_MEM, "mem.echo");
+	setEchoFileName(E_ECHO_RR_GRAPH, "rr_graph.echo");
+	setEchoFileName(E_ECHO_TIMING_CONSTRAINTS, "timing_constraints.echo");	
+	setEchoFileName(E_ECHO_CRITICAL_PATH, "critical_path.echo");	
+	setEchoFileName(E_ECHO_NET_SLACK, "net_slack.echo");	
+	setEchoFileName(E_ECHO_NET_SLACK_RATIO, "net_slack_ratio.echo");
+}
+
+void free_echo_file_info() {
+	int i;
+	if(echoFileEnabled != NULL) {
+		for(i = 0; i < (int) E_ECHO_END_TOKEN; i++) {
+			if(echoFileName[i] != NULL) {
+				free(echoFileName[i]);
+			}
+		}
+		free(echoFileName);
+		free(echoFileEnabled);
+		echoFileName = NULL;
+		echoFileEnabled = NULL;
+	}
 }
 
 /******** Subroutine implementations ********/

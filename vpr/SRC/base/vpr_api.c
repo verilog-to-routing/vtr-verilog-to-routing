@@ -684,7 +684,7 @@ void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options, INOUTP t_vpr_set
 	free_options(&options);
 	free_circuit();
 	free_arch(&Arch);	
-	free_echo_hash_table();
+	free_echo_file_info();
 	PrintHandlerDelete( );
 }
 

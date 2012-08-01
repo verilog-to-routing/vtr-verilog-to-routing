@@ -402,8 +402,8 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 
 	rr_graph_externals(timing_inf, segment_inf, num_seg_types, nodes_per_chan,
 			wire_to_ipin_switch, base_cost_type);
-	if (GetEchoEnabled() && isEchoOptionEnable("rr_graph.echo")) {
-		dump_rr_graph("rr_graph.echo");
+	if (GetEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH)) {
+		dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
 	} else
 		;
 
