@@ -620,7 +620,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	free(net_output_feeds_driving_block_input);
 
 	assert(criticality);
-	//if (criticality != NULL) {
+	if (timing_driven) {
 		free(criticality);
 		free(critindexarray);
 
@@ -640,7 +640,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 #endif
 
 
-	//}
+	}
 
 	if (timing_driven) {
 		free_timing_graph(slacks);
