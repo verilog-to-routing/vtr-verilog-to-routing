@@ -318,7 +318,7 @@ void try_place(struct s_placer_opts placer_opts,
 		load_timing_graph_net_delays(net_delay);
 		timing_stats = do_timing_analysis(slacks, FALSE, FALSE, TRUE);
 
-		if (GetEchoEnabled()) {
+		if (getEchoEnabled()) {
 			if (num_constrained_clocks == 1) {
 				if(isEchoFileEnabled(E_ECHO_PLACEMENT_CRITICAL_PATH))
 					print_critical_path(getEchoFileName(E_ECHO_PLACEMENT_CRITICAL_PATH));
@@ -394,7 +394,7 @@ void try_place(struct s_placer_opts placer_opts,
 		timing_stats = do_timing_analysis(slacks, FALSE, FALSE, FALSE);
 		free_timing_stats(timing_stats);
 		load_criticalities(slacks->net_slack_ratio, crit_exponent);
-		if (GetEchoEnabled()) {
+		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH))
 				print_timing_graph(getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH));
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_NET_SLACK))
@@ -669,7 +669,7 @@ void try_place(struct s_placer_opts placer_opts,
 					+ placer_opts.td_place_exp_first;
 		}
 #ifdef VERBOSE
-		if (GetEchoEnabled()) {
+		if (getEchoEnabled()) {
 			print_clb_placement("first_iteration_clb_placement.echo");
 		}
 #endif
@@ -785,7 +785,7 @@ void try_place(struct s_placer_opts placer_opts,
 #endif
 
 #ifdef VERBOSE
-	if (GetEchoEnabled() && isEchoFileEnabled(E_ECHO_END_CLB_PLACEMENT)) {
+	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_END_CLB_PLACEMENT)) {
 		print_clb_placement(getEchoFileName(E_ECHO_END_CLB_PLACEMENT));
 	}
 #endif
@@ -811,7 +811,7 @@ void try_place(struct s_placer_opts placer_opts,
 		load_timing_graph_net_delays(net_delay);
 		timing_stats = do_timing_analysis(slacks, FALSE, FALSE, TRUE);
 
-		if (GetEchoEnabled()) {
+		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PLACEMENT_SINK_DELAYS))
 				print_sink_delays(getEchoFileName(E_ECHO_PLACEMENT_SINK_DELAYS));
 			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_NET_SLACK))
@@ -2421,7 +2421,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 
 #ifdef VERBOSE
 	vpr_printf(TIO_MESSAGE_INFO, "At end of initial_placement.\n");
-	if (GetEchoEnabled() && isEchoFileEnabled(E_ECHO_INITIAL_CLB_PLACEMENT)) {
+	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_INITIAL_CLB_PLACEMENT)) {
 		print_clb_placement(getEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT));
 	}
 #endif

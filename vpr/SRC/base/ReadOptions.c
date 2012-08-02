@@ -36,16 +36,23 @@ static char **ReadRouteType(INP char **Args, OUTP enum e_route_type *Type);
 static char **ReadString(INP char **Args, OUTP char **Val);
 
 /******** Globally Accessible Function ********/
-boolean GetEchoEnabled(void) {
+boolean getEchoEnabled(void) {
 	return EchoEnabled;
 }
 
-void SetEchoEnabled(boolean echo_enabled) {
+void setEchoEnabled(boolean echo_enabled) {
 	/* enable echo outputs */
 	EchoEnabled = echo_enabled;
 	if(echoFileEnabled == NULL) {
 		/* initialize default echo options */
 		alloc_and_load_echo_file_info();
+	}
+}
+
+void setAllEchoFileEnabled(boolean value) {
+	int i;
+	for(i = 0; i < (int) E_ECHO_END_TOKEN - 1; i++) {
+		echoFileEnabled[i] = value;
 	}
 }
 
@@ -72,13 +79,11 @@ char *getEchoFileName(enum e_echo_files echo_option) {
 }
 
 void alloc_and_load_echo_file_info() {
-	int i;
 	echoFileEnabled = (boolean*)my_calloc((int) E_ECHO_END_TOKEN, sizeof(boolean));
 	echoFileName = (char**)my_calloc((int) E_ECHO_END_TOKEN, sizeof(char*));
 
-	for(i = 0; i < (int) E_ECHO_END_TOKEN - 1; i++) {
-		echoFileEnabled[i] = TRUE;
-	}
+	setAllEchoFileEnabled(TRUE);
+
 	setEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT, "initial_clb_placement.echo");
 	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH, "initial_placement_timing_graph.echo");
 	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_NET_SLACK, "initial_placement_net_slack.echo");

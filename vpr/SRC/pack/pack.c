@@ -63,7 +63,7 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 	}
 
 	/* Uncomment line below if you want a dump of compressed netlist. */
-	/* if (GetEchoEnabled()){
+	/* if (getEchoEnabled()){
 	 echo_input (packer_opts->blif_file_name, packer_opts->lut_size, "packed.echo"); 
 	 }else; */
 

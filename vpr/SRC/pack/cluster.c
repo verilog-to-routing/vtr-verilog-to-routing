@@ -366,7 +366,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 #endif
 		free_timing_stats(timing_stats);
 
-		if (GetEchoEnabled()) {
+		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH))
 				print_timing_graph(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH));
 #if CLUSTERER_CRITICALITY != 'S'
@@ -444,7 +444,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 #endif
 		heapsort(critindexarray, criticality, num_logical_blocks, 1);
 		
-		if (GetEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES)) {
+		if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES)) {
 			print_block_criticalities(getEchoFileName(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES));
 		}
 
@@ -595,7 +595,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	check_clustering(num_clb, clb, is_clock);
 
 	output_clustering(clb, num_clb, global_clocks, is_clock, out_fname, FALSE);
-	if (GetEchoEnabled()) {
+	if (getEchoEnabled()) {
 		output_blif (clb, num_clb, global_clocks, is_clock,
 				"post_pack_netlist.blif", FALSE);
 	}
@@ -619,8 +619,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	free(memory_pool);
 	free(net_output_feeds_driving_block_input);
 
-	assert(criticality);
 	if (timing_driven) {
+		assert(criticality);
 		free(criticality);
 		free(critindexarray);
 

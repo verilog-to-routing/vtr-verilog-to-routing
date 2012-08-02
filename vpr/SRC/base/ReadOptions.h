@@ -131,9 +131,10 @@ void ReadOptions(INP int argc,
 		INP char **argv,
 		OUTP t_options * Options);
 
-boolean GetEchoEnabled(void);
-void SetEchoEnabled(boolean echo_enabled);
+boolean getEchoEnabled(void);
+void setEchoEnabled(boolean echo_enabled);
 
+void setAllEchoFileEnabled(boolean value);
 void setEchoFileEnabled(enum e_echo_files echo_option, boolean value);
 void setEchoFileName(enum e_echo_files echo_option, const char *name);
 

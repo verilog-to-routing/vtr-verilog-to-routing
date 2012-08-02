@@ -1200,7 +1200,7 @@ void print_route(char *route_file) {
 
 	fclose(fp);
 
-	if (GetEchoEnabled() && isEchoFileEnabled(E_ECHO_MEM)) {
+	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_MEM)) {
 		fp = my_fopen(getEchoFileName(E_ECHO_MEM), "w", 0);
 		fprintf(fp, "\nNum_heap_allocated: %d   Num_trace_allocated: %d\n",
 				num_heap_allocated, num_trace_allocated);
