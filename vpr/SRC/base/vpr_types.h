@@ -430,7 +430,7 @@ enum e_pad_loc_type {
  *          which each net terminal connects. 
  * is_global: not routed
  * is_const_gen: constant generator (does not affect timing) */
-struct s_net {
+typedef struct s_net {
 	char *name;
 	int num_sinks;
 	int *node_block;
@@ -438,7 +438,7 @@ struct s_net {
 	int *node_block_pin;
 	boolean is_global;
 	boolean is_const_gen;
-};
+} t_net;
 
 /* s_grid_tile is the minimum tile of the fpga                         
  * type:  Pointer to type descriptor, NULL for illegal, IO_TYPE for io 
@@ -446,12 +446,12 @@ struct s_net {
  * usage: Number of blocks used in this grid tile
  * blocks[]: Array of logical blocks placed in a physical position, EMPTY means
  no block at that index */
-struct s_grid_tile {
+typedef struct s_grid_tile {
 	t_type_ptr type;
 	int offset;
 	int usage;
 	int *blocks;
-};
+} t_grid_tile;
 
 /* Stores the bounding box of a net in terms of the minimum and  *
  * maximum coordinates of the blocks forming the net, clipped to *

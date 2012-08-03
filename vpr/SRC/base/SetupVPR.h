@@ -1,9 +1,6 @@
 #ifndef SETUPVPR_H
 #define SETUPVPR_H
 
-boolean IsTimingEnabled(INP t_options *Options);
-boolean IsEchoEnabled(INP t_options *Options);
-
 void SetupVPR(INP t_options *Options,
 		INP boolean TimingEnabled,
 		INP boolean readArchFile,

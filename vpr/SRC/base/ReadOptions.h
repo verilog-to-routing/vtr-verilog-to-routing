@@ -144,6 +144,11 @@ char *getEchoFileName(enum e_echo_files echo_option);
 void alloc_and_load_echo_file_info();
 void free_echo_file_info();
 
+boolean IsTimingEnabled(INP t_options *Options);
+boolean IsEchoEnabled(INP t_options *Options);
+
 
 #endif
+
+
 
