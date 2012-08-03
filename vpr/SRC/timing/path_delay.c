@@ -93,13 +93,13 @@ t_io * constrained_ios = NULL; /* [0..num_constrained_ios - 1] array of I/Os wit
 float ** timing_constraint = NULL; /* [0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (destination)] */
 
 int num_cf_constraints = 0; /* number of special-case clock-to-flipflop constraints overriding default, calculated, timing constraints */
-t_cf_constraint * clock_to_ff_constraints; /*  [0..num_cf_constraints - 1] array of such constraints */
+t_override_constraint * cf_constraints; /*  [0..num_cf_constraints - 1] array of such constraints */
 
 int num_fc_constraints = 0; /* number of special-case flipflop-to-clock constraints */
-t_fc_constraint * ff_to_clock_constraints; /*  [0..num_fc_constraints - 1] */
+t_override_constraint * fc_constraints; /*  [0..num_fc_constraints - 1] */
 
 int num_ff_constraints = 0; /* number of special-case flipflop-to-flipflop constraints */
-t_ff_constraint * ff_to_ff_constraints; /*  [0..num_ff_constraints - 1] array of such constraints */
+t_override_constraint * ff_constraints; /*  [0..num_ff_constraints - 1] array of such constraints */
 
 /******************** Variables local to this module ************************/
 
@@ -144,6 +144,8 @@ static t_tnode * find_ff_clock_tnode(int inode, boolean is_prepacked);
 static int find_clock(char * net_name);
 
 static int find_io(char * net_name);
+
+static int find_cf_constraint(char * source_clock_name, char * sink_ff_name);
 
 static void propagate_clock_domain_and_skew(int inode);
 
@@ -1482,7 +1484,7 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 	Please see vpr_types.h for definition of FANCY_CRITICALITY. */
 
 	float constraint, ** net_slack = slacks->net_slack, ** net_slack_ratio = slacks->net_slack_ratio;
-	int i, j, source_clock_domain, sink_clock_domain, inode, ilevel, num_at_level, num_edges, inet, iedge, to_node, total, icf, iff;
+	int i, j, source_clock_domain, sink_clock_domain, inode, ilevel, num_at_level, num_edges, inet, iedge, to_node, total, icf;
 	t_tedge *tedge;
 	t_pb *pb;
 	boolean found;
@@ -1708,16 +1710,11 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 						continue;
 					}
 
-					found = FALSE;
-					for (icf = 0; icf < num_cf_constraints && !found; icf++) {
-						for (iff = 0; iff < clock_to_ff_constraints[icf].num_sink_ffs && !found; iff++) {
-							if (strcmp(clock_to_ff_constraints[icf].sink_ffs[iff], find_tnode_net_name(inode, is_prepacked)) == 0) {
-								found = TRUE;
-							}
-						}
+					if ((icf = find_cf_constraint(constrained_clocks[source_clock_domain].name, find_tnode_net_name(inode, is_prepacked))) != -1) {
+						constraint = cf_constraints[icf].constraint;
+					} else { 
+						constraint = timing_constraint[source_clock_domain][sink_clock_domain];
 					}
-
-					constraint = found ? clock_to_ff_constraints[icf].constraint : timing_constraint[source_clock_domain][sink_clock_domain];
 
 					if (constraint < -1e-15) { 
 						/* Constraint is DO_NOT_ANALYSE (-1). */
@@ -2490,6 +2487,25 @@ static int find_io(char * net_name) {
 	for (index = 0; index < num_constrained_ios; index++) {
 		if (strcmp(net_name, constrained_ios[index].name) == 0) {
 			return index;
+		}
+	}
+	return -1;
+}
+
+static int find_cf_constraint(char * source_clock_name, char * sink_ff_name) {
+	/* Given a source clock domain and a sink flip-flop, find out if there's an override constraint between them.
+	If there is, return the index in cf_constraints; if there is not, return -1. */
+	int icf, isource, isink;
+
+	for (icf = 0; icf < num_cf_constraints; icf++) {
+		for (isource = 0; isource < cf_constraints[icf].num_source; isource++) {
+			if (strcmp(cf_constraints[icf].source_list[isource], source_clock_name) == 0) {
+				for (isink = 0; isink < cf_constraints[icf].num_sink; isink++) {
+					if (strcmp(cf_constraints[icf].sink_list[isink], sink_ff_name) == 0) {
+						return icf;
+					}
+				}
+			}
 		}
 	}
 	return -1;

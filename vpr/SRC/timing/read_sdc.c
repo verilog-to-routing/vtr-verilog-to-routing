@@ -20,15 +20,6 @@ typedef struct s_sdc_clock {
 } t_sdc_clock;
 /* Stores the name, period and offset of each constrained clock. */
 
-typedef struct s_cc_constraint {
-	char * source_clock_domain;
-	char * sink_clock_domain;
-	float constraint;
-	int num_multicycles;
-} t_cc_constraint;
-/* A special-case clock-to-clock constraint to override the default, calculated, timing constraint.
-Holds data from set_clock_groups, set_false_path, set_max_delay, and set_multicycle_path commands. */
-
 typedef struct s_sdc_exclusive_group {
 	char * name;
 	int group;
@@ -49,7 +40,7 @@ int num_netlist_ios = 0; /* number of clocks in netlist */
 char ** netlist_ios; /* [0..num_netlist_clocks - 1] array of names of clocks in netlist */
 
 int num_cc_constraints = 0; /* number of special-case clock-to-clock constraints overriding default, calculated, timing constraints */
-t_cc_constraint * clock_to_clock_constraints; /*  [0..num_cc_constraints - 1] array of such constraints */
+t_override_constraint * cc_constraints; /*  [0..num_cc_constraints - 1] array of such constraints */
 
 /***************** Subroutines local to this module *************************/
 
@@ -60,7 +51,7 @@ static boolean is_number(char * ptr);
 static int find_constrained_clock(char * ptr);
 static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_domain);
 static void add_override_constraint(char ** from_list, int num_from, char ** to_list, int num_to, float constraint, int num_multicycles, boolean domain_level_from, boolean domain_level_to);
-static int find_cc_constraint(int source_clock_domain, int sink_clock_domain);
+static int find_cc_constraint(char * source_clock_domain, char * sink_clock_domain);
 static void print_timing_constraint_info(const char *fname);
 static void print_spaces(FILE * fp, int num_spaces);
 static boolean regex_match (char *string, char *pattern);
@@ -74,7 +65,7 @@ void read_sdc(char * sdc_file) {
  * specified, it leaves timing_constraint pointing to NULL.            */
 
 	char buf[BUFSIZE];
-	int source_clock_domain, sink_clock_domain, iio, icc;
+	int source_clock_domain, sink_clock_domain, iio, icc, isource, isink;
 	float constraint;
 	
 	/* Make sure we haven't called this subroutine before. */
@@ -109,8 +100,8 @@ void read_sdc(char * sdc_file) {
 		} else { /* At least one clock in the circuit. */
 			/* Allocate matrix of timing constraints [0..num_constrained_clocks-1][0..num_constrained_clocks-1] */
 			timing_constraint = (float **) alloc_matrix(0, num_constrained_clocks-1, 0, num_constrained_clocks-1, sizeof(float));
-			for (source_clock_domain=0; source_clock_domain<num_constrained_clocks; source_clock_domain++) {
-				for (sink_clock_domain=0; sink_clock_domain<num_constrained_clocks; sink_clock_domain++) {
+			for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
+				for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
 					if (source_clock_domain == sink_clock_domain) {
 						timing_constraint[source_clock_domain][sink_clock_domain] = 0.;
 					} else {
@@ -152,14 +143,19 @@ void read_sdc(char * sdc_file) {
 		}
 	}
 
-	/* Make sure that all clocks referenced in clock_to_clock_constraints have been constrained. */
+	/* Make sure that all clocks referenced in cc_constraints have been constrained. */
 	for (icc = 0; icc < num_cc_constraints; icc++) {
-		if ((find_constrained_clock(clock_to_clock_constraints[icc].source_clock_domain)) == -1) {
-			vpr_printf(TIO_MESSAGE_ERROR, "Token %s is not a clock constrained in the SDC file.\n", clock_to_clock_constraints[icc].source_clock_domain);
-			exit(1);
-		} else if (find_constrained_clock(clock_to_clock_constraints[icc].sink_clock_domain) == -1) {
-			vpr_printf(TIO_MESSAGE_ERROR, "Token %s is not a clock constrained in the SDC file.\n", clock_to_clock_constraints[icc].sink_clock_domain);
-			exit(1);
+		for (isource = 0; isource < cc_constraints[icc].num_source; isource++) {
+			if ((find_constrained_clock(cc_constraints[icc].source_list[isource])) == -1) {
+				vpr_printf(TIO_MESSAGE_ERROR, "Token %s is not a clock constrained in the SDC file.\n", cc_constraints[icc].source_list[isource]);
+				exit(1);
+			}
+		}
+		for (isink = 0; isink < cc_constraints[icc].num_sink; isink++) {
+			if ((find_constrained_clock(cc_constraints[icc].sink_list[isink])) == -1) {
+				vpr_printf(TIO_MESSAGE_ERROR, "Token %s is not a clock constrained in the SDC file.\n", cc_constraints[icc].sink_list[isink]);
+				exit(1);
+			}
 		}
 	}
 
@@ -167,17 +163,17 @@ void read_sdc(char * sdc_file) {
 	timing_constraint = (float **) alloc_matrix(0, num_constrained_clocks-1, 0, num_constrained_clocks-1, sizeof(float));
 	
 	/* Based on the information from sdc_clocks, calculate constraints for all paths except ones with an override constraint. */
-		for (source_clock_domain=0; source_clock_domain<num_constrained_clocks; source_clock_domain++) {
-			for (sink_clock_domain=0; sink_clock_domain<num_constrained_clocks; sink_clock_domain++) {
-				if ((icc = find_cc_constraint(source_clock_domain, sink_clock_domain)) != -1) {
-					if (clock_to_clock_constraints[icc].num_multicycles == 0) {
+		for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
+			for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
+				if ((icc = find_cc_constraint(constrained_clocks[source_clock_domain].name, constrained_clocks[sink_clock_domain].name)) != -1) {
+					if (cc_constraints[icc].num_multicycles == 0) {
 						/* There's a special constraint from set_false_path, set_clock_groups -exclusive or set_max_delay which overrides the default constraint. */
-						timing_constraint[source_clock_domain][sink_clock_domain] = clock_to_clock_constraints[icc].constraint;
+						timing_constraint[source_clock_domain][sink_clock_domain] = cc_constraints[icc].constraint;
 					} else {
 						/* There's a special constraint from set_multicycle_path which overrides the default constraint. 
 						This constraint = default constraint (obtained via edge counting) + (num_multicycles - 1) * period of sink clock domain. */
 						timing_constraint[source_clock_domain][sink_clock_domain] = 
-							calculate_constraint(sdc_clocks[source_clock_domain], sdc_clocks[sink_clock_domain]) + (clock_to_clock_constraints[icc].num_multicycles - 1) * sdc_clocks[sink_clock_domain].period;
+							calculate_constraint(sdc_clocks[source_clock_domain], sdc_clocks[sink_clock_domain]) + (cc_constraints[icc].num_multicycles - 1) * sdc_clocks[sink_clock_domain].period;
 					}
 				} else {
 					/* There's no special override constraint. */
@@ -413,10 +409,9 @@ static void get_sdc_tok(char * buf) {
 			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 
 			/* We've found a new clock! */
-			num_constrained_clocks++;
 
 			/* Store the clock's name, period and offset in the local array sdc_clocks. */
-			sdc_clocks = (t_sdc_clock *) my_realloc(sdc_clocks, num_constrained_clocks * sizeof(t_sdc_clock));
+			sdc_clocks = (t_sdc_clock *) my_realloc(sdc_clocks, ++num_constrained_clocks * sizeof(t_sdc_clock));
 			sdc_clocks[num_constrained_clocks - 1].name = ptr;
 			sdc_clocks[num_constrained_clocks - 1].period = clock_period;
 			sdc_clocks[num_constrained_clocks - 1].offset = rising_edge; 
@@ -453,12 +448,12 @@ static void get_sdc_tok(char * buf) {
 					/* See if the regular expression stored in ptr is legal and matches at least one clock net. 
 					If it is not legal, it will fail during regex_match.  We check for a match using boolean found. */
 					if (regex_match(netlist_clocks[iclock], ptr)) {
-						/* We've found a new clock! */
-						num_constrained_clocks++;
+						/* We've found a new clock!  (Note that we can't store ptr as the clock's 
+						name since it could be a regex, unlike the virtual clock case).*/
 						found = TRUE;
 
 						/* Store the clock's name, period and offset in the local array sdc_clocks. */
-						sdc_clocks = (t_sdc_clock *) my_realloc(sdc_clocks, num_constrained_clocks * sizeof(t_sdc_clock));
+						sdc_clocks = (t_sdc_clock *) my_realloc(sdc_clocks, ++num_constrained_clocks * sizeof(t_sdc_clock));
 						sdc_clocks[num_constrained_clocks - 1].name = netlist_clocks[iclock];
 						sdc_clocks[num_constrained_clocks - 1].period = clock_period;
 						sdc_clocks[num_constrained_clocks - 1].offset = rising_edge; 
@@ -492,13 +487,13 @@ static void get_sdc_tok(char * buf) {
 		
 		/* Parse through to the end of the line.  All that should be left on this line are a bunch of 
 		 * -group commands, followed by lists of clocks in that group.  An array exclusive_clock_groups will
-		 * store the temporary "group number" of each clock along with its name.  We then add an entry to clock_to_clock_constraints for 
+		 * store the temporary "group number" of each clock along with its name.  We then add an entry to cc_constraints for 
 		 * each pair of clocks with different group numbers, so we do not analyse between clock domains in different groups. */
 
 		for (;;) {
 			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 			if (!ptr) { /* end of line */
-				break; /* exit the infinite for loop - but don't return yet - we still have to populate clock_to_clock_constraints!  */
+				break; /* exit the infinite for loop - but don't return yet - we still have to populate cc_constraints!  */
 			}
 			if (strcmp(ptr, "-group") == 0) {
 			/* add 1 to the group number we're assigning clocks to every time the token -group is hit */
@@ -512,17 +507,14 @@ static void get_sdc_tok(char * buf) {
 			}
 		}
 
-		/* Finally, create a constraint for each pair of source and sink clock domains in exclusive_groups which have different group numbers,
-		so that we DO_NOT_ANALYSE them */
-		for (source_clock_domain=0; source_clock_domain<num_exclusive_clocks; source_clock_domain++) {
-			for (sink_clock_domain=0; sink_clock_domain<num_exclusive_clocks; sink_clock_domain++) {
+		/* Finally, create an override constraint for each pair of source and sink clock domains
+		in exclusive_groups which have different group numbers, so that we DO_NOT_ANALYSE them */
+		for (source_clock_domain = 0; source_clock_domain < num_exclusive_clocks; source_clock_domain++) {
+			for (sink_clock_domain = 0; sink_clock_domain < num_exclusive_clocks; sink_clock_domain++) {
 				if (exclusive_groups[source_clock_domain].group != exclusive_groups[sink_clock_domain].group) {
-					num_cc_constraints++;
-					clock_to_clock_constraints = (t_cc_constraint *) my_realloc(clock_to_clock_constraints, num_cc_constraints * sizeof(t_cc_constraint));
-					clock_to_clock_constraints[num_cc_constraints - 1].source_clock_domain = my_strdup(exclusive_groups[source_clock_domain].name);
-					clock_to_clock_constraints[num_cc_constraints - 1].sink_clock_domain = my_strdup(exclusive_groups[sink_clock_domain].name);
-					clock_to_clock_constraints[num_cc_constraints - 1].constraint = DO_NOT_ANALYSE;
-					clock_to_clock_constraints[num_cc_constraints - 1].num_multicycles = 0; /* no multicycling */
+					from_list[0] = my_strdup(exclusive_groups[source_clock_domain].name);
+					to_list[0]= my_strdup(exclusive_groups[sink_clock_domain].name);
+					add_override_constraint(from_list, 1, to_list, 1, DO_NOT_ANALYSE, 0, TRUE, TRUE);
 				}
 			}
 		}
@@ -552,8 +544,7 @@ static void get_sdc_tok(char * buf) {
 				vpr_printf(TIO_MESSAGE_ERROR, "Set_false_path requires -to <clock/flip-flop_list> after -from <clock/flip-flop_list> on line %d of SDC file.\n", file_line_number);
 				exit(1);
 			}
-			num_from++;
-			from_list = (char **) my_realloc(from_list, num_from * sizeof(char *));
+			from_list = (char **) my_realloc(from_list, ++num_from * sizeof(char *));
 			from_list[num_from - 1] = ptr;
 		} while (strcmp(ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf), "-to") != 0);
 
@@ -565,8 +556,7 @@ static void get_sdc_tok(char * buf) {
 
 		do {
 			/* Keep adding clock names to to_list until we hit the end of the line. */
-			num_to++;
-			to_list = (char **) my_realloc(to_list, num_to * sizeof(char *));
+			to_list = (char **) my_realloc(to_list, ++num_to * sizeof(char *));
 			to_list[num_to - 1] = ptr;
 		} while ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) != NULL);
 
@@ -609,8 +599,7 @@ static void get_sdc_tok(char * buf) {
 				vpr_printf(TIO_MESSAGE_ERROR, "Set_max_delay requires -to <clock/flip-flop_list> after -from <clock/flip-flop_list> on line %d of SDC file.\n", file_line_number);
 				exit(1);
 			}
-			num_from++;
-			from_list = (char **) my_realloc(from_list, num_from * sizeof(char *));
+			from_list = (char **) my_realloc(from_list, ++num_from * sizeof(char *));
 			from_list[num_from - 1] = ptr;
 		} while (strcmp(ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf), "-to") != 0);
 
@@ -622,8 +611,7 @@ static void get_sdc_tok(char * buf) {
 
 		do {
 			/* Keep adding clock names to to_list until we hit the end of the line. */
-			num_to++;
-			to_list = (char **) my_realloc(to_list, num_to * sizeof(char *));
+			to_list = (char **) my_realloc(to_list, ++num_to * sizeof(char *));
 			to_list[num_to - 1] = ptr;
 		} while ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) != NULL);
 
@@ -666,8 +654,7 @@ static void get_sdc_tok(char * buf) {
 				vpr_printf(TIO_MESSAGE_ERROR, "Set_multicycle_path requires -to <clock/flip-flop_list> after -from <clock/flip-flop_list> on line %d of SDC file.\n", file_line_number);
 				exit(1);
 			}
-			num_from++;
-			from_list = (char **) my_realloc(from_list, num_from * sizeof(char *));
+			from_list = (char **) my_realloc(from_list, ++num_from * sizeof(char *));
 			from_list[num_from - 1] = ptr;
 		} while (strcmp(ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf), "-to") != 0);
 
@@ -679,8 +666,7 @@ static void get_sdc_tok(char * buf) {
 
 		do {
 			/* Keep adding clock names to to_list until we hit a number (i.e. num_multicycles). */
-			num_to++;
-			to_list = (char **) my_realloc(to_list, num_to * sizeof(char *));
+			to_list = (char **) my_realloc(to_list, ++num_to * sizeof(char *));
 			to_list[num_to - 1] = ptr;
 		} while (!is_number(ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)));
 
@@ -888,19 +874,20 @@ static int find_constrained_clock(char * ptr) {
 	return -1;
 }
 
-static int find_cc_constraint(int source_clock_domain, int sink_clock_domain) {
+static int find_cc_constraint(char * source_clock_name, char * sink_clock_name) {
 	/* Given a pair of source and sink clock domains, find out if there's an override constraint between them.
-	If there is, return the index in clock_to_clock_constraints; if there is not, return -1. */
-	int index;
-	char * source_clock_name, * sink_clock_name;
+	If there is, return the index in cc_constraints; if there is not, return -1. */
+	int icc, isource, isink;
 
-	source_clock_name = constrained_clocks[source_clock_domain].name;
-	sink_clock_name = constrained_clocks[sink_clock_domain].name;
-
-	for (index=0; index<num_cc_constraints; index++) {
-		if (strcmp(source_clock_name, clock_to_clock_constraints[index].source_clock_domain) == 0 
-			&& strcmp(sink_clock_name, clock_to_clock_constraints[index].sink_clock_domain) == 0) {
-			return index;
+	for (icc = 0; icc < num_cc_constraints; icc++) {
+		for (isource = 0; isource < cc_constraints[icc].num_source; isource++) {
+			if (strcmp(cc_constraints[icc].source_list[isource], source_clock_name) == 0) {
+				for (isink = 0; isink < cc_constraints[icc].num_sink; isink++) {
+					if (strcmp(cc_constraints[icc].sink_list[isink], sink_clock_name) == 0) {
+						return icc;
+					}
+				}
+			}
 		}
 	}
 	return -1;
@@ -910,70 +897,41 @@ static void add_override_constraint(char ** from_list, int num_from, char ** to_
 	/* Add a special-case constraint to override the default, calculated timing constraint, 
 	to one of four arrays depending on whether it's coming from/to a flip-flop or an entire clock domain. */
 	
-	int ifrom, ito;
-	
 	if (domain_level_from) {
 		if (domain_level_to) { /* Clock-to-clock constraint */
-			/* Expand ff_to_clock_constraints by the number of "from" clock domains times the number of "to" clock domains */
-			clock_to_clock_constraints = (t_cc_constraint *) my_realloc(clock_to_clock_constraints, (num_cc_constraints + num_from * num_to) * sizeof(t_cc_constraint));
-			for (ifrom = 0; ifrom < num_from; ifrom++) {
-				for (ito = 0; ito < num_to; ito++) {
-					num_cc_constraints++;
-					clock_to_clock_constraints[num_cc_constraints - 1].source_clock_domain = my_strdup(from_list[ifrom]);
-					clock_to_clock_constraints[num_cc_constraints - 1].sink_clock_domain = my_strdup(to_list[ito]);
-					clock_to_clock_constraints[num_cc_constraints - 1].constraint = constraint;
-					clock_to_clock_constraints[num_cc_constraints - 1].num_multicycles = num_multicycles;
-				}
-			}
+			cc_constraints = (t_override_constraint *) my_realloc(cc_constraints, ++num_cc_constraints * sizeof(t_override_constraint));
+			cc_constraints[num_cc_constraints - 1].source_list = from_list;
+			cc_constraints[num_cc_constraints - 1].num_source = num_from;
+			cc_constraints[num_cc_constraints - 1].sink_list = to_list;
+			cc_constraints[num_cc_constraints - 1].num_sink = num_to;
+			cc_constraints[num_cc_constraints - 1].constraint = constraint;
+			cc_constraints[num_cc_constraints - 1].num_multicycles = num_multicycles;
 		} else { /* Clock-to-flipflop constraint */
-			/* Expand clock_to_ff_constraints by the number of clock domains referenced in this constraint (num_from) */
-			clock_to_ff_constraints = (t_cf_constraint *) my_realloc(clock_to_ff_constraints, (num_cf_constraints + num_from) * sizeof(t_cf_constraint));
-			for (ifrom = 0; ifrom < num_from; ifrom++) { /* For each clock domain */
-				num_cf_constraints++;
-				clock_to_ff_constraints[num_cf_constraints - 1].source_clock_domain = my_strdup(from_list[ifrom]);
-				clock_to_ff_constraints[num_cf_constraints - 1].sink_ffs = (char **) my_malloc(num_to * sizeof(char *));
-				clock_to_ff_constraints[num_cf_constraints - 1].num_sink_ffs = num_to;
-				clock_to_ff_constraints[num_cf_constraints - 1].constraint = constraint;
-				clock_to_ff_constraints[num_cf_constraints - 1].num_multicycles = num_multicycles;
-
-				for (ito = 0; ito < num_to; ito++) { /* For each ff */
-					clock_to_ff_constraints[num_cf_constraints - 1].sink_ffs[ito] = my_strdup(to_list[ito]);
-				}
-			}
+			cf_constraints = (t_override_constraint *) my_realloc(cf_constraints, ++num_cf_constraints * sizeof(t_override_constraint));
+			cf_constraints[num_cf_constraints - 1].source_list = from_list;
+			cf_constraints[num_cf_constraints - 1].num_source = num_from;
+			cf_constraints[num_cf_constraints - 1].sink_list = to_list;
+			cf_constraints[num_cf_constraints - 1].num_sink = num_to;
+			cf_constraints[num_cf_constraints - 1].constraint = constraint;
+			cf_constraints[num_cf_constraints - 1].num_multicycles = num_multicycles;
 		}
 	} else {
-		if (domain_level_to) { /* Flipflop-to-clock constraint - exact reverse of the previous case */
-			/* Expand ff_to_clock_constraints by the number of clock domains referenced in this constraint (num_to) */
-			ff_to_clock_constraints = (t_fc_constraint *) my_realloc(ff_to_clock_constraints, (num_fc_constraints + num_to) * sizeof(t_fc_constraint));
-			for (ito = 0; ito < num_to; ito++) { /* For each ff (note that ito is in the outer loop this time) */
-				num_fc_constraints++;
-				ff_to_clock_constraints[num_fc_constraints - 1].sink_clock_domain = my_strdup(to_list[ito]);
-				ff_to_clock_constraints[num_fc_constraints - 1].source_ffs = (char **) my_malloc(num_from * sizeof(char *));
-				ff_to_clock_constraints[num_fc_constraints - 1].num_source_ffs = num_from;
-				ff_to_clock_constraints[num_fc_constraints - 1].constraint = constraint;
-				ff_to_clock_constraints[num_fc_constraints - 1].num_multicycles = num_multicycles;
-				
-				for (ifrom = 0; ifrom < num_from; ifrom++) { /* For each clock domain */
-					ff_to_clock_constraints[num_fc_constraints - 1].source_ffs[ifrom] = my_strdup(from_list[ifrom]);
-				}
-			}
+		if (domain_level_to) { /* Flipflop-to-clock constraint */
+			fc_constraints = (t_override_constraint *) my_realloc(fc_constraints, ++num_fc_constraints * sizeof(t_override_constraint));
+			fc_constraints[num_fc_constraints - 1].source_list = from_list;
+			fc_constraints[num_fc_constraints - 1].num_source = num_from;
+			fc_constraints[num_fc_constraints - 1].sink_list = to_list;
+			fc_constraints[num_fc_constraints - 1].num_sink = num_to;
+			fc_constraints[num_fc_constraints - 1].constraint = constraint;
+			fc_constraints[num_fc_constraints - 1].num_multicycles = num_multicycles;
 		} else { /* Flipflop-to-flipflop constraint */
-			/* Expand ff_to_ff_constraints by one entry, since all the flip-flop net names will be stored in string arrays inside this entry */
-			num_ff_constraints++;
-			ff_to_ff_constraints = (t_ff_constraint *) my_realloc(ff_to_ff_constraints, num_ff_constraints * sizeof(t_ff_constraint));
-			ff_to_ff_constraints[num_ff_constraints - 1].source_ffs = (char **) my_malloc(num_from * sizeof(char *));
-			ff_to_ff_constraints[num_ff_constraints - 1].num_source_ffs = num_from;
-			ff_to_ff_constraints[num_ff_constraints - 1].sink_ffs = (char **) my_malloc(num_to * sizeof(char *));
-			ff_to_ff_constraints[num_ff_constraints - 1].num_sink_ffs = num_to;
-			ff_to_ff_constraints[num_ff_constraints - 1].constraint = constraint;
-			ff_to_ff_constraints[num_ff_constraints - 1].num_multicycles = num_multicycles;
-			
-			for (ifrom = 0; ifrom < num_from; ifrom++) {
-				ff_to_ff_constraints[num_ff_constraints - 1].source_ffs[ifrom] = my_strdup(from_list[ifrom]);
-			}
-			for (ito = 0; ito < num_to; ito++) {
-				ff_to_ff_constraints[num_ff_constraints - 1].sink_ffs[ito] = my_strdup(to_list[ito]);
-			}
+			ff_constraints = (t_override_constraint *) my_realloc(ff_constraints, ++num_ff_constraints * sizeof(t_override_constraint));
+			ff_constraints[num_ff_constraints - 1].source_list = from_list;
+			ff_constraints[num_ff_constraints - 1].num_source = num_from;
+			ff_constraints[num_ff_constraints - 1].sink_list = to_list;
+			ff_constraints[num_ff_constraints - 1].num_sink = num_to;
+			ff_constraints[num_ff_constraints - 1].constraint = constraint;
+			ff_constraints[num_ff_constraints - 1].num_multicycles = num_multicycles;
 		}
 	}
 }
@@ -1053,7 +1011,7 @@ static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_do
 }
 
 static void print_timing_constraint_info(const char *fname) {
-	/* Prints the contents of timing_constraint, constrained_clocks, constrained_ios and clock_to_clock_constraints to a file. */
+	/* Prints the contents of timing_constraint, constrained_clocks, constrained_ios and cc_constraints to a file. */
 	
 	FILE * fp;
 	int source_clock_domain, sink_clock_domain, i, j;
@@ -1111,68 +1069,66 @@ static void print_timing_constraint_info(const char *fname) {
 	fprintf(fp, "\nList of override constraints (non-default constraints created by set_false_path, set_clock_groups, \nset_max_delay, and set_multicycle_path):\n");
 	
 	for (i = 0; i < num_cc_constraints; i++) {
-		if (clock_to_clock_constraints[i].num_multicycles == 0) { /* not a multicycle constraint */
-			fprintf(fp, "Clock domain %s to clock domain %s: %.2f ns\n", 
-				clock_to_clock_constraints[i].source_clock_domain, clock_to_clock_constraints[i].sink_clock_domain, clock_to_clock_constraints[i].constraint);
+		fprintf(fp, "Clock domain");
+		for (j = 0; j < cc_constraints[i].num_source; j++) {
+			fprintf(fp, " %s,", cc_constraints[i].source_list[j]); 
+		}
+		fprintf(fp, " to clock domain");
+		for (j = 0; j < cc_constraints[i].num_sink - 1; j++) {
+			fprintf(fp, " %s,", cc_constraints[i].sink_list[j]); 
+		} /* We have to print the last one separately because we don't want a comma after it. */
+		if (cc_constraints[i].num_multicycles == 0) { /* not a multicycle constraint */
+			fprintf(fp, " %s: %.2f ns\n", cc_constraints[i].sink_list[j], cc_constraints[i].constraint);
 		} else { /* multicycle constraint */
-			fprintf (fp, "Clock domain %s to clock domain %s: %d multicycles\n", 
-				clock_to_clock_constraints[i].source_clock_domain, clock_to_clock_constraints[i].sink_clock_domain, clock_to_clock_constraints[i].num_multicycles);
+			fprintf(fp, " %s: %d multicycles\n", cc_constraints[i].sink_list[j], cc_constraints[i].num_multicycles);
 		}
 	}
 
 	for (i = 0; i < num_cf_constraints; i++) {
-		if (clock_to_ff_constraints[i].num_multicycles == 0) { /* not a multicycle constraint */
-			fprintf(fp, "Clock domain %s to flip-flop", clock_to_ff_constraints[i].source_clock_domain);
-			for (j = 0; j < clock_to_ff_constraints[i].num_sink_ffs; j++) {
-				fprintf(fp, " %s,", clock_to_ff_constraints[i].sink_ffs[j]); 
-			}
-			fprintf(fp, ", %.2f ns\n", clock_to_ff_constraints[i].constraint);
+		fprintf(fp, "Clock domain");
+		for (j = 0; j < cf_constraints[i].num_source; j++) {
+			fprintf(fp, " %s,", cf_constraints[i].source_list[j]); 
+		}
+		fprintf(fp, " to flip-flop");
+		for (j = 0; j < cf_constraints[i].num_sink - 1; j++) {
+			fprintf(fp, " %s,", cf_constraints[i].sink_list[j]); 
+		} /* We have to print the last one separately because we don't want a comma after it. */
+		if (cf_constraints[i].num_multicycles == 0) { /* not a multicycle constraint */
+			fprintf(fp, " %s: %.2f ns\n", cf_constraints[i].sink_list[j], cf_constraints[i].constraint);
 		} else { /* multicycle constraint */
-			fprintf(fp, "Clock domain %s to flip-flop", clock_to_ff_constraints[i].source_clock_domain);
-			for (j = 0; j < clock_to_ff_constraints[i].num_sink_ffs; j++) {
-				fprintf(fp, " %s,", clock_to_ff_constraints[i].sink_ffs[j]); 
-			}
-			fprintf (fp, ", %d multicycles\n", clock_to_ff_constraints[i].num_multicycles);
+			fprintf(fp, " %s: %d multicycles\n", cf_constraints[i].sink_list[j], cf_constraints[i].num_multicycles);
 		}
 	}
 
 	for (i = 0; i < num_fc_constraints; i++) {
-		if (ff_to_clock_constraints[i].num_multicycles == 0) { /* not a multicycle constraint */
-			fprintf(fp, "Flip-flop");
-			for (j = 0; j < ff_to_clock_constraints[i].num_source_ffs; j++) {
-				fprintf(fp, " %s,", ff_to_clock_constraints[i].source_ffs[j]); 
-			}
-			fprintf(fp, " to clock domain %s: %.2f ns\n", ff_to_clock_constraints[i].sink_clock_domain, ff_to_clock_constraints[i].constraint);
+		fprintf(fp, "Flip-flop");
+		for (j = 0; j < fc_constraints[i].num_source; j++) {
+			fprintf(fp, " %s,", fc_constraints[i].source_list[j]); 
+		}
+		fprintf(fp, " to clock domain");
+		for (j = 0; j < fc_constraints[i].num_sink - 1; j++) {
+			fprintf(fp, " %s,", fc_constraints[i].sink_list[j]); 
+		} /* We have to print the last one separately because we don't want a comma after it. */
+		if (fc_constraints[i].num_multicycles == 0) { /* not a multicycle constraint */
+			fprintf(fp, " %s: %.2f ns\n", fc_constraints[i].sink_list[j], fc_constraints[i].constraint);
 		} else { /* multicycle constraint */
-			fprintf(fp, "Flip-flop(s)");
-			for (j = 0; j < ff_to_clock_constraints[i].num_source_ffs; j++) {
-				fprintf(fp, " %s,", ff_to_clock_constraints[i].source_ffs[j]); 
-			}			
-			fprintf (fp, " to clock domain %s: %d multicycles\n", ff_to_clock_constraints[i].sink_clock_domain, ff_to_clock_constraints[i].num_multicycles);
+			fprintf(fp, " %s: %d multicycles\n", fc_constraints[i].sink_list[j], fc_constraints[i].num_multicycles);
 		}
 	}
 
 	for (i = 0; i < num_ff_constraints; i++) {
-		if (ff_to_ff_constraints[i].num_multicycles == 0) { /* not a multicycle constraint */
-			fprintf(fp, "Flip-flop");
-			for (j = 0; j < ff_to_ff_constraints[i].num_source_ffs; j++) {
-				fprintf(fp, " %s,", ff_to_ff_constraints[i].source_ffs[j]); 
-			}
-			fprintf(fp, " to flip-flop");
-			for (j = 0; j < ff_to_ff_constraints[i].num_sink_ffs - 1; j++) {
-				fprintf(fp, " %s,", ff_to_ff_constraints[i].sink_ffs[j]); 
-			} /* We have to print the last one separately because we don't want a comma after it. */
-			fprintf(fp, " %s: %.2f ns\n", ff_to_ff_constraints[i].sink_ffs[j], ff_to_ff_constraints[i].constraint);
+		fprintf(fp, "Flip-flop");
+		for (j = 0; j < ff_constraints[i].num_source; j++) {
+			fprintf(fp, " %s,", ff_constraints[i].source_list[j]); 
+		}
+		fprintf(fp, " to flip-flop");
+		for (j = 0; j < ff_constraints[i].num_sink - 1; j++) {
+			fprintf(fp, " %s,", ff_constraints[i].sink_list[j]); 
+		} /* We have to print the last one separately because we don't want a comma after it. */
+		if (ff_constraints[i].num_multicycles == 0) { /* not a multicycle constraint */
+			fprintf(fp, " %s: %.2f ns\n", ff_constraints[i].sink_list[j], ff_constraints[i].constraint);
 		} else { /* multicycle constraint */
-			fprintf(fp, "Flip-flop");
-			for (j = 0; j < ff_to_ff_constraints[i].num_source_ffs; j++) {
-				fprintf(fp, " %s,", ff_to_ff_constraints[i].source_ffs[j]); 
-			}
-			fprintf(fp, " to flip-flop");
-			for (j = 0; j < ff_to_ff_constraints[i].num_sink_ffs - 1; j++) {
-				fprintf(fp, " %s,", ff_to_ff_constraints[i].sink_ffs[j]); 
-			} /* We have to print the last one separately because we don't want a comma after it. */
-			fprintf(fp, " %s: %d multicycles\n", ff_to_ff_constraints[i].sink_ffs[j], ff_to_ff_constraints[i].num_multicycles);
+			fprintf(fp, " %s: %d multicycles\n", ff_constraints[i].sink_list[j], ff_constraints[i].num_multicycles);
 		}
 	}
 

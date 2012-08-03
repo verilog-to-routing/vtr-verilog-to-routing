@@ -620,7 +620,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	free(net_output_feeds_driving_block_input);
 
 	if (timing_driven) {
-		assert(criticality);
 		free(criticality);
 		free(critindexarray);
 

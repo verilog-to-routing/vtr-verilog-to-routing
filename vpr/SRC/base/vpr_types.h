@@ -374,38 +374,18 @@ typedef struct s_slack {
 /* Matrices storing slacks and slack ratios of each sink pin on each net 
 [0..num_nets-1][1..num_pins-1] */
 
-typedef struct s_cf_constraint {
-	char * source_clock_domain;
-	char ** sink_ffs; /* Array of net names of flip-flops */
-	int num_sink_ffs;
+typedef struct s_override_constraint {
+	char ** source_list; /* Array of net names of flip-flops or clocks */
+	char ** sink_list; 
+	int num_source;
+	int num_sink;
 	float constraint;
 	int num_multicycles;
-} t_cf_constraint;
-/* A special-case clock-to-flipflop constraint to override the default, calculated, timing constraint.
-Holds data from set_clock_groups, set_false_path, set_max_delay, and set_multicycle_path commands. */
-
-typedef struct s_fc_constraint {
-	char ** source_ffs; 
-	char * sink_clock_domain;
-	int num_source_ffs;
-	float constraint;
-	int num_multicycles;
-} t_fc_constraint;
-/* A special-case flipflop-to-clock constraint (as above). */
-
-typedef struct s_ff_constraint {
-	char ** source_ffs;
-	char ** sink_ffs; 
-	int num_source_ffs;
-	int num_sink_ffs;
-	float constraint;
-	int num_multicycles;
-} t_ff_constraint;
-/* A special-case flipflop-to-flipflop constraint (as above). */
-
-/* Note: there's also a cc_constraint type, but it's local to read_sdc.c 
-since it doesn't have to go onto the timing graph; it can instead
-replace an entry in the matrix of timing_constraints. */
+} t_override_constraint;
+/* A special-case constraint to override the default, calculated, timing constraint.  Holds data from 
+set_clock_groups, set_false_path, set_max_delay, and set_multicycle_path commands. Can hold data for 
+clock-to-clock, clock-to-flip-flop, flip-flop-to-clock or flip-flop-to-flip-flop constraints, each of 
+which has its own array (cc_constraints, cf_constraints, fc_constraints, and ff_constraints). */
 
 /***************************************************************************
  * Placement and routing data types

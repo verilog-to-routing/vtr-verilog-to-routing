@@ -78,12 +78,12 @@ extern t_io * constrained_ios; /* [0..num_constrained_ios - 1] array of I/Os wit
 extern float ** timing_constraint; /* [0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (destination)] */
 
 extern int num_cf_constraints; /* number of special-case clock-to-flipflop constraints overriding default, calculated, timing constraints */
-extern t_cf_constraint * clock_to_ff_constraints; /*  [0..num_cf_constraints - 1] array of such constraints */
+extern t_override_constraint * cf_constraints; /*  [0..num_cf_constraints - 1] array of such constraints */
 
 extern int num_fc_constraints; /* number of special-case flipflop-to-clock constraints */
-extern t_fc_constraint * ff_to_clock_constraints; /*  [0..num_fc_constraints - 1] */
+extern t_override_constraint * fc_constraints; /*  [0..num_fc_constraints - 1] */
 
 extern int num_ff_constraints; /* number of special-case flipflop-to-flipflop constraints */
-extern t_ff_constraint * ff_to_ff_constraints; /*  [0..num_ff_constraints - 1] array of such constraints */
+extern t_override_constraint * ff_constraints; /*  [0..num_ff_constraints - 1] array of such constraints */
 
 #endif
