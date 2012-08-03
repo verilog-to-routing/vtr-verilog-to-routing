@@ -71,7 +71,7 @@ while ( $token = shift(@ARGV) ) {
 
 	if ( $token eq "-revision" ) {
 		$revision = shift(@ARGV);
-		$parse_params = "-revision $revision";
+		$parse_params = "-revision $revision ";
 	}
 	elsif ( $token eq "-parse") {
 		$parse_only = 1;
@@ -182,11 +182,11 @@ sub setup_single_test {
 	# Task list exists. Execute script with list instead.
 	if ( -e "$test_dir/task_list.txt" ) {
 		$run_params = "-l $test_dir/task_list.txt";
-		$parse_params = $parse_params . " -l $test_dir/task_list.txt";
+		$parse_params = $parse_params . "-l $test_dir/task_list.txt ";
 	}
 	else {
 		$run_params = "$test_dir";
-		$parse_params = $parse_params . " $test_dir";
+		$parse_params = $parse_params . "$test_dir ";
 	}
 }
 
@@ -316,15 +316,15 @@ sub parse_single_test {
 	while ( my $golden = shift(@_) ) {
 		if ( $golden eq "create" ) {
 			print "\nCreating golden results... \n";
-			$parse_params = $parse_params . " -create_golden";
+			$parse_params = $parse_params . "-create_golden ";
 		}
 		elsif ( $golden eq "check" ) {
 			print "\nChecking test results... \n";
-			$parse_params = $parse_params . " -check_golden";
+			$parse_params = $parse_params . "-check_golden ";
 		}
 		elsif ( $golden eq "calculate" ) {
 			print "\nCalculating QoR results... \n";
-			$parse_params = $parse_params . " -calc_geomean";
+			$parse_params = $parse_params . "-calc_geomean ";
 		}
 		else {
 			print "\nParsing test results... \n";
