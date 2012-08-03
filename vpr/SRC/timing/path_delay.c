@@ -2366,7 +2366,7 @@ Marks unconstrained I/Os with a dummy clock domain (-1). */
 			from the pb_graph_pin of the corresponding OUTPAD_IPIN node. 
 			Exploit the fact that the OUTPAD_IPIN node will always be one prior in the tnode array. */
 			assert(tnode[inode - 1].type == OUTPAD_IPIN);
-			net_name = find_tnode_net_name(inode - 1, is_prepacked);
+			net_name = find_tnode_net_name(inode, is_prepacked);
 			io_index = find_io(net_name + 4); /* the + 4 removes the prefix "out:" automatically prepended to outputs */
 			if (io_index != -1) {
 				/* tnode belongs to a constrained output, now find its associated virtual clock */
@@ -2437,7 +2437,7 @@ static char * find_tnode_net_name(int inode, boolean is_prepacked) {
 	if (is_prepacked) {
 		return logical_block[tnode[inode].block].name;
 	} else {
-		return block[tnode[inode].block].pb->rr_node_to_pb_mapping[tnode[inode].pb_graph_pin->pin_count_in_cluster]->name;
+		return block[tnode[inode].block].pb->rr_node_to_pb_mapping[tnode[tnode[inode].type == OUTPAD_SINK ? inode - 1 : inode].pb_graph_pin->pin_count_in_cluster]->name;
 	}
 }
 
