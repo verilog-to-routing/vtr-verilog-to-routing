@@ -226,6 +226,8 @@ typedef struct s_logical_block {
 
 	struct s_linked_vptr *truth_table; /* If this is a LUT (.names), then this is the logic that the LUT implements */
 	struct s_linked_vptr *packed_molecules; /* List of t_pack_molecules that this logical block is a part of */
+
+	t_pb_graph_node *expected_lowest_cost_primitive; /* predicted ideal primitive to use for this logical block */
 } t_logical_block;
 
 enum e_pack_pattern_molecule_type {

@@ -55,6 +55,8 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 static void print_pack_molecules(INP const char *fname,
 		INP t_pack_patterns *list_of_pack_patterns, INP int num_pack_patterns,
 		INP t_pack_molecule *list_of_molecules);
+static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block(INP int ilogical_block);
+static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block_in_pb_graph_node(INP int ilogical_block, INP t_pb_graph_node *curr_pb_graph_node, OUTP float *cost);
 
 /*****************************************/
 /*Function Definitions					 */
@@ -758,6 +760,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 	 another molecule to get broken
 	 */
 	for (i = 0; i < num_logical_blocks; i++) {
+		logical_block[i].expected_lowest_cost_primitive = get_expected_lowest_cost_primitive_for_logical_block(i);
 		if (logical_block[i].packed_molecules == NULL) {
 			cur_molecule = (t_pack_molecule*) my_calloc(1,
 					sizeof(t_pack_molecule));
@@ -1007,4 +1010,65 @@ static void print_pack_molecules(INP const char *fname,
 
 	fclose(fp);
 }
+
+/* Search through all primitives and return the lowest cost primitive that fits this logical block */
+static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block(INP int ilogical_block) {
+	int i;
+	float cost, best_cost;
+	t_pb_graph_node *current, *best;
+
+	best_cost = UNDEFINED;
+	best = NULL;
+	current = NULL;
+	for(i = 0; i < num_types; i++) {
+		cost = UNDEFINED;
+		current = get_expected_lowest_cost_primitive_for_logical_block_in_pb_graph_node(ilogical_block, type_descriptors[i].pb_graph_head, &cost);
+		if(cost != UNDEFINED) {
+			if(best_cost == UNDEFINED || best_cost > cost) {
+				best_cost = cost;
+				best = current;
+			}
+		}
+	}
+	return best;
+}
+
+static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block_in_pb_graph_node(INP int ilogical_block, INP t_pb_graph_node *curr_pb_graph_node, OUTP float *cost) {
+	t_pb_graph_node *best, *cur;
+	float cur_cost, best_cost;
+	int i, j;
+
+	best = NULL;
+	best_cost = UNDEFINED;
+	if(curr_pb_graph_node == NULL) {
+		return NULL;
+	}
+	
+	if(curr_pb_graph_node->pb_type->blif_model != NULL) {
+		if(primitive_type_feasible(ilogical_block, curr_pb_graph_node->pb_type)) {
+			cur_cost = compute_primitive_base_cost(curr_pb_graph_node);
+			if(best_cost == UNDEFINED || best_cost > cur_cost) {
+				best_cost = cur_cost;
+				best = curr_pb_graph_node;
+			}
+		}
+	} else {
+		for(i = 0; i < curr_pb_graph_node->pb_type->num_modes; i++) {
+			for(j = 0; j < curr_pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
+				*cost = UNDEFINED;
+				cur = get_expected_lowest_cost_primitive_for_logical_block_in_pb_graph_node(ilogical_block, &curr_pb_graph_node->child_pb_graph_nodes[i][j][0], cost);
+				if(cur != NULL) {
+					if(best == NULL || best_cost > *cost) {
+						best = cur;
+						best_cost = *cost;
+					}
+				}
+			}
+		}
+	}
+
+	*cost = best_cost;
+	return best;
+}
+
 

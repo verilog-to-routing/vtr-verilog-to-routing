@@ -239,6 +239,51 @@ boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type) {
 	return TRUE;
 }
 
+
+/**
+ * Return pb_graph_node pin from model port and pin
+ *  NULL if not found
+ */
+t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(t_model_ports *model_port, int model_pin, t_pb_graph_node *pb_graph_node) {
+	int i;
+
+	if(model_port->dir == IN_PORT) {
+		if(model_port->is_clock == FALSE) {
+			for (i = 0; i < pb_graph_node->num_input_ports; i++) {
+				if (pb_graph_node->input_pins[i][0].port->model_port == model_port) {
+					if(pb_graph_node->num_input_pins[i] > model_pin) {
+						return &pb_graph_node->input_pins[i][model_pin];
+					} else {
+						return NULL;
+					}
+				}
+			}
+		} else {
+			for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
+				if (pb_graph_node->clock_pins[i][0].port->model_port == model_port) {
+					if(pb_graph_node->num_clock_pins[i] > model_pin) {
+						return &pb_graph_node->clock_pins[i][model_pin];
+					} else {
+						return NULL;
+					}
+				}
+			}
+		}
+	} else {
+		assert(model_port->dir == OUT_PORT);
+		for (i = 0; i < pb_graph_node->num_output_ports; i++) {
+			if (pb_graph_node->output_pins[i][0].port->model_port == model_port) {
+				if(pb_graph_node->num_output_pins[i] > model_pin) {
+					return &pb_graph_node->output_pins[i][model_pin];
+				} else {
+					return NULL;
+				}
+			}
+		}
+	}
+	return NULL;
+}
+
 /**
  * Determine cost for using primitive within a complex block, should use primitives of low cost before selecting primitives of high cost
  For now, assume primitives that have a lot of pins are scarcer than those without so use primitives with less pins before those with more

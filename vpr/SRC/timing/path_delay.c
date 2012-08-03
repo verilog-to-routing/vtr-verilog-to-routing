@@ -971,6 +971,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 	int i, j, k;
 	t_model *model;
 	t_model_ports *model_port;
+	t_pb_graph_pin *from_pb_graph_pin, *to_pb_graph_pin;
 	int inode, inet, iblock;
 	int incr;
 	int count;
@@ -1089,13 +1090,11 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 		} else {
 			j = 0;
 			model_port = model->outputs;
-			count = 0;
 			while (model_port) {
 				logical_block[i].output_net_tnodes[j] = (t_tnode **)my_calloc(
 						model_port->size, sizeof(t_tnode*));
 				for (k = 0; k < model_port->size; k++) {
 					if (logical_block[i].output_nets[j][k] != OPEN) {
-						count++;
 						tnode[inode].model_pin = k;
 						tnode[inode].model_port = j;
 						tnode[inode].block = i;
@@ -1114,6 +1113,8 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 							tnode[inode].type = PRIMITIVE_OPIN;
 							inode++;
 						} else {
+							/* load delays from predicted clock-to-Q time */
+							from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, logical_block[i].expected_lowest_cost_primitive);
 							tnode[inode].type = FF_OPIN;
 							tnode[inode + 1].num_edges = 1;
 							tnode[inode + 1].out_edges =
@@ -1121,7 +1122,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 											1 * sizeof(t_tedge),
 											&tedge_ch);
 							tnode[inode + 1].out_edges->to_node = inode;
-							tnode[inode + 1].out_edges->Tdel = 0;
+							tnode[inode + 1].out_edges->Tdel = from_pb_graph_pin->tsu_tco;
 							tnode[inode + 1].type = FF_SOURCE;
 							tnode[inode + 1].block = i;
 							inode += 2;
@@ -1145,16 +1146,28 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 							tnode[inode].block = i;
 							logical_block[i].input_net_tnodes[j][k] =
 									&tnode[inode];
-
+							from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, logical_block[i].expected_lowest_cost_primitive);
 							if (logical_block[i].clock_net == OPEN) {
+								/* load predicted combinational delays to predicted edges */
 								tnode[inode].type = PRIMITIVE_IPIN;
 								tnode[inode].out_edges =
 										(t_tedge *) my_chunk_malloc(
-												count * sizeof(t_tedge),
+										from_pb_graph_pin->num_pin_timing * sizeof(t_tedge),
 												&tedge_ch);
+								count = 0;
+								for(int m = 0; m < from_pb_graph_pin->num_pin_timing; m++) {
+									to_pb_graph_pin = from_pb_graph_pin->pin_timing[m];
+									if(logical_block[i].output_nets[to_pb_graph_pin->port->model_port->index][to_pb_graph_pin->pin_number] == OPEN) {
+										continue;
+									}
+									tnode[inode].out_edges[count].Tdel = from_pb_graph_pin->pin_timing_del_max[m];
+									tnode[inode].out_edges[count].to_node = logical_block[i].output_net_tnodes[to_pb_graph_pin->port->model_port->index][to_pb_graph_pin->pin_number]->index;
+									count++;
+								}
 								tnode[inode].num_edges = count;
 								inode++;
 							} else {
+								/* load predicted setup time */
 								tnode[inode].type = FF_IPIN;
 								tnode[inode].num_edges = 1;
 								tnode[inode].out_edges =
@@ -1162,7 +1175,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 												1 * sizeof(t_tedge),
 												&tedge_ch);
 								tnode[inode].out_edges->to_node = inode + 1;
-								tnode[inode].out_edges->Tdel = 0;
+								tnode[inode].out_edges->Tdel = from_pb_graph_pin->tsu_tco;
 								tnode[inode + 1].type = FF_SINK;
 								tnode[inode + 1].num_edges = 0;
 								tnode[inode + 1].out_edges = NULL;
@@ -1231,26 +1244,6 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 			assert(tnode[i].num_edges == vpack_net[inet].num_sinks);
 			break;
 		case PRIMITIVE_IPIN:
-			model_port = logical_block[iblock].model->outputs;
-			count = 0;
-			j = 0;
-			while (model_port) {
-				for (k = 0; k < model_port->size; k++) {
-					if (logical_block[iblock].output_nets[j][k] != OPEN) {
-						tnode[i].out_edges[count].Tdel = block_delay;
-						tnode[i].out_edges[count].to_node =
-								logical_block[iblock].output_net_tnodes[j][k]->index;
-						count++;
-					} else {
-						assert(
-								logical_block[iblock].output_net_tnodes[j][k] == NULL);
-					}
-				}
-				j++;
-				model_port = model_port->next;
-			}
-			assert(count == tnode[i].num_edges);
-			break;
 		case OUTPAD_IPIN:
 		case INPAD_SOURCE:
 		case OUTPAD_SINK:
