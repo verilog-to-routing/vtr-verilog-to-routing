@@ -1659,7 +1659,7 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 				if (num_edges == 0) { /* sink */
 
 					/* Test this tnode against several conditions to make sure we should analyse it. */
-#if 0
+
 					if (tnode[inode].type == FF_CLOCK) {
 						continue; /* Skip nodes on the clock net itself. */
 					}
@@ -1669,13 +1669,7 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 							tnode[inode].pb_graph_pin->parent_node->pb_type->name, tnode[inode].pb_graph_pin->port->name, tnode[inode].pb_graph_pin->pin_number);
 						exit(1);
 					}
-#else
-					if (!(tnode[inode].type == OUTPAD_SINK || tnode[inode].type == FF_SINK || tnode[inode].type == FF_CLOCK)) {
-						vpr_printf(TIO_MESSAGE_ERROR, "Timing graph terminated on node %s.%s[%d].  Likely cause: Timing edges not specified for block\n", 
-							tnode[inode].pb_graph_pin->parent_node->pb_type->name, tnode[inode].pb_graph_pin->port->name, tnode[inode].pb_graph_pin->pin_number);
-						exit(1);
-					}
-#endif
+
 					/* Assign the required time T_req for each FF_SINK leaf node, taking into account clock skew (OUTPAD_SINK nodes have no clock skew). *
 					 * T_req is the time we need all inputs to a tnode to arrive by, before it begins to affect the speed of the circuit.    *
 					 * Roughly speaking, the slack along a path is the difference between the required time and the arrival time - the       *
@@ -2315,15 +2309,12 @@ Marks unconstrained I/Os with a dummy clock domain (-1). */
 				tnode[inode].clock_skew = 0.;
 				tnode[inode].clock_domain = clock_index;
 				propagate_clock_domain_and_skew(inode);
-#if 0
+
 				/* Set the clock domain of this clock inpad to -1, so that we do not analyse it.  
 				If we did not do this, the clock net would be analysed on the same iteration of 
 				the timing analyzer as the flip-flops it drives! */
 				tnode[inode].clock_domain = -1;
-#else
-				/* Timing analyse this clock net with the clock domain it drives. */
-				tnode[inode].clock_domain = clock_index; 
-#endif
+
 			} else if ((io_index = find_io(net_name)) != -1) {
 				/* We have a constrained non-clock inpad - find its associated virtual clock. */
 				clock_index = find_clock(constrained_ios[io_index].virtual_clock_name);
@@ -2401,11 +2392,7 @@ static void propagate_clock_domain_and_skew(int inode) {
 	for (iedge = 0; iedge < tnode[inode].num_edges; iedge++) {	/* Go through each edge coming out from this tnode */
 		to_node = tedge[iedge].to_node;
 		/* Propagate clock skew forward along this clock net, adding the delay of the wires (edges) of the clock network. */ 
-		tnode[to_node].clock_skew = tnode[inode].clock_skew 
-#if 0
-			+ tedge[iedge].Tdel
-#endif
-			; 
+		tnode[to_node].clock_skew = tnode[inode].clock_skew + tedge[iedge].Tdel; 
 		/* Propagate clock domain forward unchanged */
 		tnode[to_node].clock_domain = tnode[inode].clock_domain;
 		/* Finally, call recursively on the destination tnode. */
