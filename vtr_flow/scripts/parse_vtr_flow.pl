@@ -37,11 +37,6 @@ my @parse_data;
 my $file_to_parse;
 foreach my $line (@parse_lines) {
 	chomp($line);
-	
-	# for ("\r", "\n", "\r\n", "\n\r", "\r\r", "\n\n") {
- 	#    	$line =~ s/$1/\n/g if m/(\r\n?|\n\r?)/;
- 	#    	$line = "$line\n";
-	# }
 
 	# Ignore comments
 	if ( $line =~ /^\s*#.*$/ or $line =~ /^\s*$/ ) { next; }
@@ -59,7 +54,7 @@ for my $parse_entry (@parse_data) {
 	}
 	else
 	{
-			print @$parse_entry[0];
+		print @$parse_entry[0];
 	}
 }
 print "\n";

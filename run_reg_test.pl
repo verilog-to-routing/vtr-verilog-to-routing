@@ -43,11 +43,13 @@ sub run_quick_test;
 sub run_odin_test;
 
 # Get absolute path of 'vtr_flow'
-# Cwd::abs_path($0) =~ m/(.*\/vtr_flow)\//;
+# Cwd::abs_path($0) =~ m/(.*vtr_flow)/;
+# my $vtr_flow_path = $1;
 my $vtr_flow_path = "./vtr_flow";
 
 # Get absolute path of 'regression_tests'
 # Cwd::abs_path($0) =~ m/(.*regression_tests)/;
+# my $reg_test_path = $1;
 my $reg_test_path = "./vtr_flow/tasks/regression_tests";
 
 my @tests;

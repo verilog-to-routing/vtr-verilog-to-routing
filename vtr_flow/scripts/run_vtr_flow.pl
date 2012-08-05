@@ -44,6 +44,7 @@ if ( $number_arguments < 2 ) {
 # Get Absoluate Path of 'vtr_flow
 Cwd::abs_path($0) =~ m/(.*\/vtr_flow)\//;
 my $vtr_flow_path = $1;
+# my $vtr_flow_path = "./vtr_flow";
 
 sub stage_index;
 sub file_ext_for_stage;
@@ -80,8 +81,6 @@ my $check_equivalent = "off";
 my $seed					= 1;
 
 while ( $token = shift(@ARGV) ) {
-	# $ext = ( $token =~ m/([^.]+)$/ )[0];
-	# if ( $ext eq "sdc" ) {
 	if ( $token eq "-sdc_file" ) {
 		$sdc_file_path = expand_user_path( shift(@ARGV) );
 	}

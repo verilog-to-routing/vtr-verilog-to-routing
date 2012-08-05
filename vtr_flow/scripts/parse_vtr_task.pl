@@ -36,8 +36,9 @@ sub check_golden;
 sub expand_user_path;
 
 # Get Absoluate Path of 'vtr_flow
-Cwd::abs_path($0) =~ m/(.*\/vtr_flow)\//;
+Cwd::abs_path($0) =~ m/(.*vtr_flow)/;
 my $vtr_flow_path = $1;
+# my $vtr_flow_path = "./vtr_flow";
 
 my $run_prefix = "run";
 
@@ -55,33 +56,30 @@ my $revision;
 while ( $token = shift(@ARGV) ) {
 
 	# Check for a task list file
-	if ( $token =~ /^-/ ) {
-		if ( $token =~ /^-l(.+)$/ ) {
-			push( @task_files, expand_user_path($1) );
-		}
-		elsif ( $token eq "-l" ) {
-			push( @task_files, expand_user_path( shift(@ARGV) ) );
-		}
-		elsif ( $token eq "-create_golden" ) {
-			$create_golden = 1;
-		}
-		elsif ( $token eq "-check_golden" ) {
-			$check_golden = 1;
-		}
-		elsif ( $token eq "-parse_qor" ) {
-			$parse_qor = 1;
-		}
-		elsif ( $token eq "-calc_geomean" ) {
-			$calc_geomean = 1;
-		}
-		elsif ( $token eq "-revision" ) {
-			$revision = shift(@ARGV);
-		}
-		else {
-			die "Invalid option: $token\n";
-		}
+	if ( $token =~ /^-l(.+)$/ ) {
+		push( @task_files, expand_user_path($1) );
 	}
-
+	elsif ( $token eq "-l" ) {
+		push( @task_files, expand_user_path( shift(@ARGV) ) );
+	}
+	elsif ( $token eq "-create_golden" ) {
+		$create_golden = 1;
+	}
+	elsif ( $token eq "-check_golden" ) {
+		$check_golden = 1;
+	}
+	elsif ( $token eq "-parse_qor" ) {
+		$parse_qor = 1;
+	}
+	elsif ( $token eq "-calc_geomean" ) {
+		$calc_geomean = 1;
+	}
+	elsif ( $token eq "-revision" ) {
+		$revision = shift(@ARGV);
+	}
+	elsif ( $token =~ /^-/ ) {
+		die "Invalid option: $token\n";
+	}
 	# must be a task name
 	else {
 		if ( $token =~ /(.*)\// ) {
