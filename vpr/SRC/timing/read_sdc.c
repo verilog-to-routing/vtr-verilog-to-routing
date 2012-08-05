@@ -16,7 +16,8 @@
 typedef struct s_sdc_clock {
 	char * name;
 	float period;
-	float offset;
+	float rising_edge;
+	float falling_edge;
 } t_sdc_clock;
 /* Stores the name, period and offset of each constrained clock. */
 
@@ -216,14 +217,14 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
 	/* Count how many clocks and I/Os are in the netlist. 
 	Store the names of each clock and each I/O in netlist_clocks and netlist_ios. */
 
-	int iblock, i, net;
+	int iblock, i, clock_net;
 	char * name;
 	boolean found;
 
 	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
 		if (logical_block[iblock].type == VPACK_LATCH) {
-			net = logical_block[iblock].clock_net;
-			name = logical_block[net].name;
+			clock_net = logical_block[iblock].clock_net;
+			name = logical_block[clock_net].name;
 			/* Now that we've found a clock, let's see if we've counted it already */
 			found = FALSE;
 			for (i = 0; !found && i < num_netlist_clocks; i++) {
@@ -232,10 +233,8 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
 				}
 			}
 			if (!found) {
-			/* If we get here, the clock is new and so we add it to the array netlist_clocks */
-				num_netlist_clocks++;
-				/* dynamically grow the array to fit one new element */
-				netlist_clocks = (char **) my_realloc (netlist_clocks, num_netlist_clocks * sizeof(char *));
+				/* If we get here, the clock is new and so we dynamically grow the array netlist_clocks by one. */
+				netlist_clocks = (char **) my_realloc (netlist_clocks, ++num_netlist_clocks * sizeof(char *));
 				netlist_clocks[num_netlist_clocks - 1] = name;
 			}
 		} else if (logical_block[iblock].type == VPACK_INPAD || logical_block[iblock].type == VPACK_OUTPAD) {
@@ -248,10 +247,8 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
 				}
 			}
 			if (!found) {
-			/* If we get here, the I/O is new and so we add it to the array netlist_ios */
-				num_netlist_ios++;
-				/* dynamically grow the array to fit one new element */
-				netlist_ios = (char **) my_realloc (netlist_ios, num_netlist_ios * sizeof(char *));
+				/* If we get here, the I/O is new and so we dynamically grow the array netlist_ios by one. */
+				netlist_ios = (char **) my_realloc (netlist_ios, ++num_netlist_ios * sizeof(char *));
 				netlist_ios[num_netlist_ios - 1] = logical_block[iblock].type == VPACK_OUTPAD ? name + 4 : name; 
 				/* the + 4 removes the prefix "out:" automatically prepended to outputs */
 			}
@@ -262,7 +259,7 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
 static void count_netlist_clocks_as_constrained_clocks(void) {
 	/* Counts how many clocks are in the netlist, and adds them to the array constrained_clocks. */
 
-	int iblock, i, net;
+	int iblock, i, clock_net;
 	char * name;
 	boolean found;
 
@@ -270,8 +267,8 @@ static void count_netlist_clocks_as_constrained_clocks(void) {
 	
 	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
 		if (logical_block[iblock].type == VPACK_LATCH) {
-			net = logical_block[iblock].clock_net;
-			name = logical_block[net].name;
+			clock_net = logical_block[iblock].clock_net;
+			name = logical_block[clock_net].name;
 			/* Now that we've found a clock, let's see if we've counted it already */
 			found = FALSE;
 			for (i = 0; !found && i < num_constrained_clocks; i++) {
@@ -280,10 +277,8 @@ static void count_netlist_clocks_as_constrained_clocks(void) {
 				}
 			}
 			if (!found) {
-			/* If we get here, the clock is new and so we add it to the array constrained_clocks */
-				num_constrained_clocks++;
-				/* dynamically grow the array to fit one new element */
-				constrained_clocks = (t_clock *) my_realloc (constrained_clocks, num_constrained_clocks * sizeof(t_clock));
+				/* If we get here, the clock is new and so we dynamically grow the array constrained_clocks by one. */
+				constrained_clocks = (t_clock *) my_realloc (constrained_clocks, ++num_constrained_clocks * sizeof(t_clock));
 				constrained_clocks[num_constrained_clocks - 1].name = my_strdup(name);
 				constrained_clocks[num_constrained_clocks - 1].is_netlist_clock = TRUE;
 				/* Fanout will be filled out once the timing graph has been constructed. */
@@ -313,10 +308,8 @@ static void count_netlist_ios_as_constrained_ios(char * clock_name, float io_del
 				}
 			}
 			if (!found) {
-				/* If we get here, the I/O is new and so we add it to the array netlist_ios */
-				num_constrained_ios++;
-				/* dynamically grow the array to fit one new element */
-				constrained_ios = (t_io *) my_realloc (constrained_ios, num_constrained_ios * sizeof(t_io));
+				/* If we get here, the I/O is new and so we dynamically grow the array constrained_ios by one. */
+				constrained_ios = (t_io *) my_realloc (constrained_ios, ++num_constrained_ios * sizeof(t_io));
 				constrained_ios[num_constrained_ios - 1].name = my_strdup(logical_block[iblock].type == VPACK_OUTPAD ? name + 4 : name); 
 				/* the + 4 removes the prefix "out:" automatically prepended to outputs */
 				constrained_ios[num_constrained_ios - 1].virtual_clock_name = my_strdup(clock_name);
@@ -329,9 +322,8 @@ static void count_netlist_ios_as_constrained_ios(char * clock_name, float io_del
 static void get_sdc_tok(char * buf) {
 /* Figures out which tokens are on this line and takes the appropriate actions. */
 
-#define SDC_TOKENS " \t\n{}[]" 
-	/* We're using so little of the SDC syntax that we can ignore braces */
-
+#define SDC_TOKENS " \t\n{}[]" /* We can ignore braces. */
+	
 	char * ptr, ** from_list = NULL, ** to_list = NULL, * clock_name;
 	float clock_period, rising_edge, falling_edge, max_delay;
 	int source_clock_domain, sink_clock_domain, iclock, iio, current_group_number = 0, num_exclusive_clocks = 0, num_from = 0, num_to = 0, num_multicycles;
@@ -352,7 +344,6 @@ static void get_sdc_tok(char * buf) {
 				or create_clock -period <float> [-waveform {rising_edge falling_edge}] -name <virtual clock name>*/
 
 		/* make sure clock has -period specified */
-		
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 		if (strcmp(ptr, "-period") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Create_clock must be followed by '-period' on line %d of SDC file.\n", file_line_number);
@@ -365,7 +356,6 @@ static void get_sdc_tok(char * buf) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Token following '-period' is not a number on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
-		
 		clock_period = (float) strtod(ptr, NULL);
 
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
@@ -373,8 +363,8 @@ static void get_sdc_tok(char * buf) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Clock net(s) not specified at end of line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
-		
 		if (strcmp(ptr, "-waveform") == 0) {
+			
 			/* Get the first float, which is the rising edge, and the second, which is the falling edge. */
 			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 			if (!is_number(ptr)) {
@@ -382,18 +372,16 @@ static void get_sdc_tok(char * buf) {
 				exit(1);
 			}
 			rising_edge = (float) strtod(ptr, NULL);
+
 			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 			if (!is_number(ptr)) {
 				vpr_printf(TIO_MESSAGE_ERROR, "Second token following '-waveform' is not a number on line %d of SDC file.\n", file_line_number);
 				exit(1);
 			}
 			falling_edge = (float) strtod(ptr, NULL);
-			/* Check that the falling edge is one half period away from the rising edge, excluding rounding error. */
-			if (fabs(rising_edge - falling_edge) - clock_period/2.0 > EQUAL_DEF) {
-				vpr_printf(TIO_MESSAGE_ERROR, "Clock does not have 50%% duty cycle on line %d of SDC file.\n", file_line_number);
-				exit(1);
-			}
+
 			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf); /* We need this extra one to advance the ptr to the right spot. */
+
 		} else {
 			/* The clock's rising edge is by default at 0, and the falling edge is at the half-period. */
 			rising_edge = 0.;
@@ -410,12 +398,13 @@ static void get_sdc_tok(char * buf) {
 
 			/* We've found a new clock! */
 
-			/* Store the clock's name, period and offset in the local array sdc_clocks. */
+			/* Store the clock's name, period and edges in the local array sdc_clocks. */
 			sdc_clocks = (t_sdc_clock *) my_realloc(sdc_clocks, ++num_constrained_clocks * sizeof(t_sdc_clock));
 			sdc_clocks[num_constrained_clocks - 1].name = ptr;
 			sdc_clocks[num_constrained_clocks - 1].period = clock_period;
-			sdc_clocks[num_constrained_clocks - 1].offset = rising_edge; 
-			
+			sdc_clocks[num_constrained_clocks - 1].rising_edge = rising_edge; 
+			sdc_clocks[num_constrained_clocks - 1].falling_edge = falling_edge; 
+
 			/* Also store the clock's name, and the fact that it is not a netlist clock, in constrained_clocks. */
 			constrained_clocks = (t_clock *) my_realloc (constrained_clocks, num_constrained_clocks * sizeof(t_clock));
 			constrained_clocks[num_constrained_clocks - 1].name = my_strdup(ptr);
@@ -423,12 +412,10 @@ static void get_sdc_tok(char * buf) {
 			/* Fanout will be filled out once the timing graph has been constructed. */
 
 			/* The next token should be NULL.  If so, return; if not, print an error message and exit. */
-			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-			if (!ptr) {
-				return;
+			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) != NULL) {
+				vpr_printf(TIO_MESSAGE_ERROR, "More than one virtual clock name is specified after -name on line %d of SDC file.\n", file_line_number);
+				exit(1);
 			}
-			vpr_printf(TIO_MESSAGE_ERROR, "More than one virtual clock name is specified after -name on line %d of SDC file.\n", file_line_number);
-			exit(1);
 
 		} else {
 			/* Parse through to the end of the line.  All that should be left on this line are one or more
@@ -439,7 +426,7 @@ static void get_sdc_tok(char * buf) {
 
 			for (;;) {
 				if (!ptr) { /* end of line */
-					return; 
+					break; 
 				}
 
 				found = FALSE;
@@ -452,11 +439,12 @@ static void get_sdc_tok(char * buf) {
 						name since it could be a regex, unlike the virtual clock case).*/
 						found = TRUE;
 
-						/* Store the clock's name, period and offset in the local array sdc_clocks. */
+						/* Store the clock's name, period and edges in the local array sdc_clocks. */
 						sdc_clocks = (t_sdc_clock *) my_realloc(sdc_clocks, ++num_constrained_clocks * sizeof(t_sdc_clock));
 						sdc_clocks[num_constrained_clocks - 1].name = netlist_clocks[iclock];
 						sdc_clocks[num_constrained_clocks - 1].period = clock_period;
-						sdc_clocks[num_constrained_clocks - 1].offset = rising_edge; 
+						sdc_clocks[num_constrained_clocks - 1].rising_edge = rising_edge; 
+						sdc_clocks[num_constrained_clocks - 1].falling_edge = falling_edge;
 
 						/* Also store the clock's name, and the fact that it is a netlist clock, in constrained_clocks. */
 						constrained_clocks = (t_clock *) my_realloc (constrained_clocks, num_constrained_clocks * sizeof(t_clock));
@@ -476,6 +464,14 @@ static void get_sdc_tok(char * buf) {
 				ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 			}	
 		}
+	
+		/* Give a message if the clock has non-50% duty cycle. */
+		if (fabs(rising_edge - falling_edge) - clock_period/2.0 > 1e-15) {
+			vpr_printf(TIO_MESSAGE_INFO, "Clock %s does not have 50%% duty cycle.\n", sdc_clocks[num_constrained_clocks - 1].name);
+		}
+
+		return;
+
 	} else if (strcmp(ptr, "set_clock_groups") == 0) {
 		/* Syntax: set_clock_groups -exclusive -group {<clock list or regexes>} -group {<clock list or regexes>} [-group {<clock list or regexes>} ...] */
 
@@ -520,6 +516,7 @@ static void get_sdc_tok(char * buf) {
 		}
 
 		free(exclusive_groups);
+		
 		return;
 
 	} else if (strcmp(ptr, "set_false_path") == 0) {
@@ -562,9 +559,7 @@ static void get_sdc_tok(char * buf) {
 
 		/* Create a constraint between each element in from_list and each element in to_list with value DO_NOT_ANALYSE. */
 		add_override_constraint(from_list, num_from, to_list, num_to, DO_NOT_ANALYSE, 0, domain_level_from, domain_level_to);
-
-		free(from_list);
-		free(to_list);
+		
 		return;
 
 	} else if (strcmp(ptr, "set_max_delay") == 0) {
@@ -617,9 +612,7 @@ static void get_sdc_tok(char * buf) {
 
 		/* Create a constraint between each element in from_list and each element in to_list with value max_delay. */
 		add_override_constraint(from_list, num_from, to_list, num_to, max_delay, 0, domain_level_from, domain_level_to);
-
-		free(from_list);
-		free(to_list);
+		
 		return;
 
 	} else if (strcmp(ptr, "set_multicycle_path") == 0) {
@@ -681,9 +674,6 @@ static void get_sdc_tok(char * buf) {
 		/* Create an override constraint between from and to. Unlike the previous two commands, set_multicycle_path requires 
 		information about the periods and offsets of the clock domains which from and to, which we have to fill in at the end. */
 		add_override_constraint(from_list, num_from, to_list, num_to, HUGE_NEGATIVE_FLOAT /* irrelevant - never used */, num_multicycles, domain_level_from, domain_level_to);
-
-		free(from_list);
-		free(to_list);
 		return;
 
 	} if (strcmp(ptr, "set_input_delay") == 0) {
@@ -940,12 +930,14 @@ static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_do
 	/* Given information from the SDC file about the period and offset of two clocks, *
 	 * determine the implied setup-time constraint between them via edge counting.    */
 
-	int source_period, sink_period, source_offset, sink_offset, lcm_period, num_source_edges, num_sink_edges, 
+	int source_period, sink_period, source_rising_edge, sink_rising_edge, lcm_period, num_source_edges, num_sink_edges, 
 		* source_edges, * sink_edges, i, j, time, constraint_as_int;
 	float constraint;
 
-	/* If the source and sink domains have the same period and offset, the constraint is just the common clock period. */
-	if ((source_domain.period - sink_domain.period < 1e-15) && (source_domain.offset - sink_domain.offset < 1e-15)) {
+	/* If the source and sink domains have the same period and edges, the constraint is just the common clock period. */
+	if ((source_domain.period - sink_domain.period < 1e-15) && 
+		(source_domain.rising_edge - sink_domain.rising_edge < 1e-15) &&
+		(source_domain.falling_edge - sink_domain.falling_edge < 1e-15)) {
 		return source_domain.period; /* or, equivalently, sink_domain.period */
 	}
 
@@ -954,16 +946,15 @@ static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_do
 		return 0.;
 	}
 	
-	/* If we get here, we have to use edge counting. 
-	 * Multiply periods and offsets by 1000 and round down to the nearest integer,				  
-	 * to avoid messy decimals. */
+	 /* Multiply periods and edges by 1000 and round down  *				  
+	  * to the nearest integer, to avoid messy decimals.   */
 
 	source_period = (int) source_domain.period * 1000;
 	sink_period = (int) sink_domain.period * 1000;
-	source_offset = (int) source_domain.offset * 1000;	
-	sink_offset = (int) sink_domain.offset * 1000;
+	source_rising_edge = (int) source_domain.rising_edge * 1000;
+	sink_rising_edge = (int) source_domain.rising_edge * 1000;	
 
-	/* Find the LCM of the two periods.  *
+	/* If we get here, we have to use edge counting.  Find the LCM of the two periods.		   *
 	* This determines how long it takes before the pattern of the two clocks starts repeating. */
 	for (lcm_period = 1; lcm_period % source_period != 0 || lcm_period % sink_period != 0; lcm_period++)
 		;
@@ -976,12 +967,12 @@ static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_do
 	source_edges = (int *) my_malloc((num_source_edges + 1) * sizeof(int));
 	sink_edges = (int *) my_malloc((num_sink_edges + 1) * sizeof(int));
 	
-	for (i = 0, time = source_offset; i < num_source_edges + 1; i++) {
+	for (i = 0, time = source_rising_edge; i < num_source_edges + 1; i++) {
 		source_edges[i] = time;
 		time += source_period;
 	}
 
-	for (i = 0, time = sink_offset; i < num_sink_edges + 1; i++) {
+	for (i = 0, time = sink_rising_edge; i < num_sink_edges + 1; i++) {
 		sink_edges[i] = time;
 		time += sink_period;
 	}
@@ -1165,8 +1156,8 @@ static boolean regex_match (char * string, char * regular_expression) {
 	else if (strcmp(error, "No match") == 0) 
 		return FALSE;
 	else {
-		vpr_printf(TIO_MESSAGE_ERROR, "Error matching regular expression %s: %s", 
-			regular_expression, error);
+		vpr_printf(TIO_MESSAGE_ERROR, "Error matching regular expression %s on line %d of SDC file: %s", 
+			regular_expression, file_line_number, error);
 		exit(1);
 	}
 }

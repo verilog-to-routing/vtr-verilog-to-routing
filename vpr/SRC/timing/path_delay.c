@@ -972,7 +972,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 	t_model *model;
 	t_model_ports *model_port;
 	t_pb_graph_pin *from_pb_graph_pin, *to_pb_graph_pin;
-	int inode, inet, iblock;
+	int inode, inet;
 	int incr;
 	int count;
 
@@ -1061,8 +1061,6 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 					1 * sizeof(t_tedge), &tedge_ch);
 			tnode[inode + 1].out_edges->Tdel = 0;
 			tnode[inode + 1].out_edges->to_node = inode;
-			tnode[inode + 1].T_req = 0;
-			tnode[inode + 1].T_arr = 0;
 			tnode[inode + 1].type = INPAD_SOURCE;
 			tnode[inode + 1].block = i;
 			inode += 2;
@@ -1079,8 +1077,6 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 					1 * sizeof(t_tedge), &tedge_ch);
 			tnode[inode].out_edges->Tdel = 0;
 			tnode[inode].out_edges->to_node = inode + 1;
-			tnode[inode + 1].T_req = 0;
-			tnode[inode + 1].T_arr = 0;
 			tnode[inode + 1].type = OUTPAD_SINK;
 			tnode[inode + 1].block = i;
 			tnode[inode + 1].num_edges = 0;
@@ -1211,7 +1207,6 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 		 2.  
 		 */
 		count = 0;
-		iblock = tnode[i].block;
 		switch (tnode[i].type) {
 		case INPAD_OPIN:
 		case PRIMITIVE_OPIN:
@@ -1295,9 +1290,7 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 					1 * sizeof(t_tedge), &tedge_ch);
 			tnode[i + 1].out_edges->Tdel = 0;
 			tnode[i + 1].out_edges->to_node = i;
-			tnode[i + 1].pb_graph_pin = tnode[i].pb_graph_pin; /* Necessary to properly propagate clock domain and skew. */
-			tnode[i + 1].T_req = 0;
-			tnode[i + 1].T_arr = 0;
+			tnode[i + 1].pb_graph_pin = pb_graph_pin; /* Necessary for propagate_clock_domain_and_skew(). */
 			tnode[i + 1].type = INPAD_SOURCE;
 			tnode[i + 1].block = iblock;
 			tnode[i + 1].index = i + 1;
@@ -1310,9 +1303,7 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 					1 * sizeof(t_tedge), &tedge_ch);
 			tnode[i].out_edges->Tdel = 0;
 			tnode[i].out_edges->to_node = i + 1;
-			tnode[i + 1].pb_graph_pin = NULL;
-			tnode[i + 1].T_req = 0;
-			tnode[i + 1].T_arr = 0;
+			tnode[i + 1].pb_graph_pin = pb_graph_pin; /* Necessary for find_tnode_net_name(). */
 			tnode[i + 1].type = OUTPAD_SINK;
 			tnode[i + 1].block = iblock;
 			tnode[i + 1].num_edges = 0;
@@ -1328,8 +1319,6 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 				tnode[i].out_edges->Tdel = pb_graph_pin->tsu_tco;
 				tnode[i].out_edges->to_node = i + 1;
 				tnode[i + 1].pb_graph_pin = pb_graph_pin;
-				tnode[i + 1].T_req = 0;
-				tnode[i + 1].T_arr = 0;
 				tnode[i + 1].type = FF_SINK;
 				tnode[i + 1].block = iblock;
 				tnode[i + 1].num_edges = 0;
@@ -1344,8 +1333,6 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 				tnode[i + 1].out_edges->Tdel = pb_graph_pin->tsu_tco;
 				tnode[i + 1].out_edges->to_node = i;
 				tnode[i + 1].pb_graph_pin = pb_graph_pin;
-				tnode[i + 1].T_req = 0;
-				tnode[i + 1].T_arr = 0;
 				tnode[i + 1].type = FF_SOURCE;
 				tnode[i + 1].block = iblock;
 				tnode[i + 1].index = i + 1;
@@ -1703,7 +1690,9 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 						continue;
 					}
 
-					if ((icf = find_cf_constraint(constrained_clocks[source_clock_domain].name, find_tnode_net_name(inode, is_prepacked))) != -1) {
+					/* See if there's an override constraint between the source clock domain (name is constrained_clocks[source_clock_domain].name) 
+					and the (sink) flip-flop or outpad we're at now (name is find_tnode_net_name(inode, is_prepacked)). */
+					if (num_cf_constraints > 0 && (icf = find_cf_constraint(constrained_clocks[source_clock_domain].name, find_tnode_net_name(inode, is_prepacked))) != -1) {
 						constraint = cf_constraints[icf].constraint;
 					} else { 
 						constraint = timing_constraint[source_clock_domain][sink_clock_domain];
@@ -2427,27 +2416,36 @@ static void propagate_clock_domain_and_skew(int inode) {
 static char * find_tnode_net_name(int inode, boolean is_prepacked) {
 	/* Finds the name of the net which a tnode (inode) is on (different for pre-/post-packed netlists). */
 	
+	int logic_block; /* Name chosen not to conflict with the array logical_block */
+	char * net_name;
+	t_pb * physical_block;
+	t_pb_graph_pin * pb_graph_pin;
+
+	logic_block = tnode[inode].block;
 	if (is_prepacked) {
-		return logical_block[tnode[inode].block].name;
+		net_name = logical_block[logic_block].name;
 	} else {
-		return block[tnode[inode].block].pb->rr_node_to_pb_mapping[tnode[tnode[inode].type == OUTPAD_SINK ? inode - 1 : inode].pb_graph_pin->pin_count_in_cluster]->name;
+		physical_block = block[logic_block].pb;
+		pb_graph_pin = tnode[inode].pb_graph_pin;
+		net_name = physical_block->rr_node_to_pb_mapping[pb_graph_pin->pin_count_in_cluster]->name;
 	}
+	return net_name;
 }
 
 static t_tnode * find_ff_clock_tnode(int inode, boolean is_prepacked) {
 	/* Finds the FF_CLOCK tnode on the same flipflop as an FF_SOURCE or FF_SINK tnode. */
 	
-	int current_block;
+	int logic_block; /* Name chosen not to conflict with the array logical_block */
 	t_tnode * ff_clock_tnode;
 	t_rr_node * rr_graph;
 	t_pb_graph_node * parent_pb_graph_node;
 	t_pb_graph_pin * ff_source_or_sink_pb_graph_pin, * clock_pb_graph_pin;
 
-	current_block = tnode[inode].block;
+	logic_block = tnode[inode].block;
 	if (is_prepacked) {
-		ff_clock_tnode = logical_block[current_block].clock_net_tnode;
+		ff_clock_tnode = logical_block[logic_block].clock_net_tnode;
 	} else {
-		rr_graph = block[current_block].pb->rr_graph;
+		rr_graph = block[logic_block].pb->rr_graph;
 		ff_source_or_sink_pb_graph_pin = tnode[inode].pb_graph_pin;
 		parent_pb_graph_node = ff_source_or_sink_pb_graph_pin->parent_node;
 		/* Make sure there's only one clock port and only one clock pin in that port */
