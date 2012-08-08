@@ -21,7 +21,6 @@ static void ShowRoutingArch(INP struct s_det_routing_arch RoutingArch);
 
 void ShowSetup(INP t_options options, INP t_vpr_setup vpr_setup) {
 	vpr_printf(TIO_MESSAGE_INFO, "Timing analysis: %s\n", (vpr_setup.TimingEnabled? "ON" : "OFF"));
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
 
 	vpr_printf(TIO_MESSAGE_INFO, "Circuit netlist file: %s\n", vpr_setup.FileNameOpts.NetFile);
 	vpr_printf(TIO_MESSAGE_INFO, "Circuit placement file: %s\n", vpr_setup.FileNameOpts.PlaceFile);

@@ -76,16 +76,10 @@
  *                                                                            *
  ******************************************************************************/
 
-/***************** Types local to this module ***************************/
-
-enum e_subblock_pin_type {
-	SUB_INPUT = 0, SUB_OUTPUT, SUB_CLOCK, NUM_SUB_PIN_TYPES
-};
-
 /******************* Externally-accessible variables ************************/
 
-int num_constrained_clocks = 0; /* number of clocks in netlist */
-t_clock * constrained_clocks = NULL; /* [0..num_constrained_clocks - 1] array of clocks in netlist */
+int num_constrained_clocks = 0; /* number of clocks with timing constraints */
+t_clock * constrained_clocks = NULL; /* [0..num_constrained_clocks - 1] array of clocks with timing constraints */
 
 int num_constrained_ios = 0; /* number of I/Os with timing constraints */
 t_io * constrained_ios = NULL; /* [0..num_constrained_ios - 1] array of I/Os with timing constraints */
@@ -1871,6 +1865,43 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 	}		
 #endif
 
+	/* Make sure something has been actually analyzed during this timing analysis. */
+	found = FALSE;
+	for (inet = 0; inet < num_timing_nets && !found; inet++) {
+		inode = net_to_driver_tnode[inet];
+		num_edges = tnode[inode].num_edges;
+		for (iedge = 0; iedge < num_edges && !found; iedge++) {
+			if (net_slack[inet][iedge + 1] < HUGE_POSITIVE_FLOAT - 1) {
+				found = TRUE;
+			}
+		}
+	}
+	if(!found) {
+		if (num_constrained_clocks == 1) {
+			/* We have a sequential circuit with no internal flip-flop-to-flip-flop paths. 
+			However, there's only one constrained netlist clock, so we can constrain all I/Os on 
+			it and then timing analyse paths between I/Os and flip-flops or I/Os and I/Os 
+			(a sensible	default). */
+			vpr_printf(TIO_MESSAGE_WARNING, "No paths were analysed during timing analysis.\n"
+										    "Constraining all I/Os on the netlist clock.\n\n");
+			free_timing_stats(timing_stats); 
+			for (inode = 0; inode < num_tnodes; inode++) {
+				if (tnode[inode].type == INPAD_SOURCE || tnode[inode].type == OUTPAD_SINK) {
+					tnode[inode].clock_domain = 0; /* i.e. the domain of the single constrained clock */
+				}
+			}
+			/* Redo timing analysis with the newly-constrained I/Os */
+			timing_stats = do_timing_analysis(slacks, is_prepacked, do_lut_input_balancing, is_final_analysis);
+		} else {
+			/* Multiple constrained clocks, so we don't know which clock to constrain I/Os on. 
+			The user has to decide. This situation should only come up if the user used an 
+			SDC file in the first place. */
+			vpr_printf(TIO_MESSAGE_ERROR, "No paths were analysed during timing analysis.\n"
+										  "You may wish to constrain some or all I/Os.\n");
+			exit(1);
+		}
+	}
+
 	return timing_stats;
 }
 
@@ -1960,7 +1991,8 @@ void print_lut_remapping(const char *fname) {
 
 void print_critical_path(const char *fname) {
 
-	/* Prints out the critical path to a file.  */
+	/* Prints out the critical path to a file.  *
+	 * For single-clock circuits only.			*/
 
 	t_linked_int *critical_path_head, *critical_path_node;
 	FILE *fp;
@@ -2020,30 +2052,36 @@ void print_critical_path(const char *fname) {
 
 t_linked_int * allocate_and_load_critical_path(void) {
 
-	/* Finds the critical path and vpr_printf a list of the tnodes on the critical    *
-	 * path in a linked list, from the path SOURCE to the path SINK.            */
+	/* Finds the critical path and returns a list of the tnodes on the critical *
+	 * path in a linked list, from the path SOURCE to the path SINK.			*
+	 * For single-clock circuits only.											*/
 
 	t_linked_int *critical_path_head, *curr_crit_node, *prev_crit_node;
-	int inode, iedge, to_node, num_at_level, i, crit_node, num_edges;
-	float min_slack, slack;
+	int inode, iedge, to_node, num_at_level_zero, i, crit_node, num_edges;
+	float min_slack, slack, T_arr, T_req;
 	t_tedge *tedge;
 
-	num_at_level = tnodes_at_level[0].nelem;
+	num_at_level_zero = tnodes_at_level[0].nelem;
 	min_slack = HUGE_POSITIVE_FLOAT;
 	crit_node = OPEN; /* Stops compiler warnings. */
 
-	for (i = 0; i < num_at_level; i++) { /* Path must start at SOURCE (no inputs) */
+	for (i = 0; i < num_at_level_zero; i++) { /* Path must start at SOURCE (no inputs) */
 		inode = tnodes_at_level[0].list[i];
-		slack = tnode[inode].T_req - tnode[inode].T_arr;
-
-		if (slack < min_slack) {
-			crit_node = inode;
-			min_slack = slack;
+		T_arr = tnode[inode].T_arr;
+		T_req = tnode[inode].T_req;
+		/* Only consider tnodes which have valid arrival and required times. */
+		if (T_arr > HUGE_NEGATIVE_FLOAT + 1 && T_req < HUGE_POSITIVE_FLOAT - 1) {
+			slack = T_req - T_arr;
+			if (slack < min_slack) {
+				crit_node = inode;
+				min_slack = slack;
+			}
 		}
 	}
 
 	critical_path_head = (t_linked_int *) my_malloc(sizeof(t_linked_int));
 	critical_path_head->data = crit_node;
+	assert(crit_node != OPEN);
 	prev_crit_node = critical_path_head;
 	num_edges = tnode[crit_node].num_edges;
 

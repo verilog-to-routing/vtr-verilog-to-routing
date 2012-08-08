@@ -193,7 +193,7 @@ void place_and_route(enum e_operation operation,
 		}
 
 		init_draw_coords(max_pins_per_clb);
-		update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled);
+		update_screen(MAJOR, msg, ROUTING, (boolean) (num_constrained_clocks == 1));
 
 		if (timing_inf.timing_analysis_enabled) {
 			assert(slacks->net_slack);
@@ -556,7 +556,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	init_draw_coords(max_pins_per_clb);
 	sprintf(msg, "Routing succeeded with a channel width factor of %d.", final);
-	update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled);
+	update_screen(MAJOR, msg, ROUTING, (boolean) (num_constrained_clocks == 1));
 
 	if (timing_inf.timing_analysis_enabled) {
 		if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_FLOW_TIMING_GRAPH)) {

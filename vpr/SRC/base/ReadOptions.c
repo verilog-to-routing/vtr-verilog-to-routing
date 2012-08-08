@@ -162,6 +162,7 @@ void free_echo_file_info() {
 
 void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
 	char **Args, **head;
+	int offset;
 
 	/* Clear values and pointers to zero */
 	memset(Options, 0, sizeof(t_options));
@@ -187,15 +188,16 @@ void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
 			Args = ProcessOption(Args, Options);
 		} else if (NULL == Options->ArchFile) {
 			Options->ArchFile = my_strdup(*Args);
+			vpr_printf(TIO_MESSAGE_INFO, "Architecture file: %s\n", Options->ArchFile);
 			++Args;
 		} else if (NULL == Options->CircuitName) {
 			Options->CircuitName = my_strdup(*Args);
 			/*if the user entered the circuit name with the .blif extension, remove it now*/
-			if (!strcmp(
-					Options->CircuitName + strlen(Options->CircuitName)
-							- strlen(".blif"), ".blif")) {
-				Options->CircuitName[strlen(Options->CircuitName) - 5] = '\0';
+			offset = strlen(Options->CircuitName) - 5;
+			if (offset > 0 && !strcmp(Options->CircuitName + offset, ".blif")) {
+				Options->CircuitName[offset] = '\0';
 			}
+			vpr_printf(TIO_MESSAGE_INFO, "Circuit name: %s.blif\n\n", Options->CircuitName);
 			++Args;
 		} else {
 			/* Not an option and arch and net already specified so fail */

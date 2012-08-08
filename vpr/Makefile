@@ -71,10 +71,17 @@ OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c $(SRC_
 OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
 
-$(EXE): $(OBJ) Makefile libvpr.a
+$(EXE): | notify $(OBJ) Makefile libvpr.a 
+# notify is an order-only prerequisite - note the "|"
 	$(CC) $(FLAGS) OBJ/main.o -o $(EXE) $(LIB_DIR) $(LIB)
-#if graphics enabled but libx11-dev is not installed, notify the user
-	@ $(PACKAGENOTIFICATION) 
+
+notify:
+# if graphics enabled but libx11-dev is not installed, notify the user
+	$(PACKAGENOTIFICATION) 
+
+packages: 
+#if graphics enabled but libx11-dev is not installed, install it
+	@ $(PACKAGEINSTALL)
 
 ../libarchfpga/libarchfpga.a:
 	@ cd ../libarchfpga && make
@@ -84,11 +91,6 @@ libvpr.a: $(OBJ) Makefile ../libarchfpga/libarchfpga.a
 	@ cp ../libarchfpga/libarchfpga.a $@
 	@ ar rcs $@ $(OBJ)
 	@ ar d $@ main.o
-
-
-packages: 
-#if graphics enabled but libx11-dev is not installed, install it
-	@ $(PACKAGEINSTALL)
 
 # Enable a second round of expansion so that we may include
 # the target directory as a prerequisite of the object file.
