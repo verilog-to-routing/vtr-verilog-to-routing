@@ -49,7 +49,7 @@ option, as it ./odin_II.exe -c config.xml. A config file looks
 like the following:
 <config>
 	<verilog_files>
-		<!-- Way of specifying multiple files in a project -->
+		<!-- Way of specifying multiple files in a project! -->
 		<verilog_file>verilog_file.v</verilog_file>
 	</verilog_files>
 	<output>
