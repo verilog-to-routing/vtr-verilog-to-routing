@@ -2,7 +2,7 @@
 // Purpose : Method definitions for the TIO_SkinHandler class.
 //
 //           Public methods include:
-//           - NewInstance, DeleteInstance, GetInstance
+//           - NewInstance, DeleteInstance, GetInstance, HasInstance
 //           - Set
 //
 //           Protected methods include:
@@ -37,7 +37,7 @@ TIO_SkinHandler_c::TIO_SkinHandler_c(
       :
       skinMode_( TIO_SkinHandler_c::TIO_SKIN_UNDEFINED )
 {
-   pinstance_ = NULL;
+   pinstance_ = 0;
 }
 
 //===========================================================================//
@@ -75,10 +75,10 @@ void TIO_SkinHandler_c::NewInstance(
 void TIO_SkinHandler_c::DeleteInstance( 
       void )
 {
-   if ( pinstance_ != NULL )
+   if( pinstance_ )
    {
       delete pinstance_;
-      pinstance_ = NULL;
+      pinstance_ = 0;
    }
 }
 
@@ -92,11 +92,24 @@ void TIO_SkinHandler_c::DeleteInstance(
 TIO_SkinHandler_c& TIO_SkinHandler_c::GetInstance(
       void )
 {
-   if ( !pinstance_ )
+   if( !pinstance_ )
    {
       NewInstance( );
    }
    return( *pinstance_ );
+}
+
+//===========================================================================//
+// Method         : HasInstance
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/01/12 jeffr : Original
+//===========================================================================//
+bool TIO_SkinHandler_c::HasInstance(
+      void )
+{
+   return( pinstance_ ? true : false );
 }
 
 //===========================================================================//
