@@ -60,7 +60,7 @@ void TIO_FileOutput_c::Close(
 bool TIO_FileOutput_c::Write( 
       const char* pszString )
 {
-   if ( this->fileHandler_.Write( pszString ))
+   if( this->fileHandler_.Write( pszString ))
    {
       ++this->lineNum_;
    }
