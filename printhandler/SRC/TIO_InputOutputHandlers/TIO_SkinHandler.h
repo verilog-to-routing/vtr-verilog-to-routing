@@ -33,6 +33,7 @@ public:
    static void NewInstance( void );
    static void DeleteInstance( void );
    static TIO_SkinHandler_c& GetInstance( void );
+   static bool HasInstance( void );
 
    void Set( int skinMode );
 
