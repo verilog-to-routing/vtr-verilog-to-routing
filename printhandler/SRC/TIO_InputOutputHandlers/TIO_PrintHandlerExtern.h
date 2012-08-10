@@ -1,5 +1,5 @@
-/*===========================================================================*/
-/* Purpose : Typedefs and function prototypes for the TIO_PrintHandler class
+/*===========================================================================*
+ * Purpose : Typedefs and function prototypes for the TIO_PrintHandler class
  *           external 'C' interface.
  *
  *===========================================================================*/
@@ -7,8 +7,8 @@
 #ifndef TIO_PRINT_HANDLER_EXTERN_H
 #define TIO_PRINT_HANDLER_EXTERN_H
 
-/*---------------------------------------------------------------------------*/
-/* Define typedefs
+/*---------------------------------------------------------------------------*
+ * Define typedefs
  *---------------------------------------------------------------------------*/
 
 enum TIO_MessageMode_e 
@@ -29,8 +29,8 @@ enum TIO_FilterMode_e
 };
 typedef enum TIO_FilterMode_e TIO_FilterMode_t;
 
-/*---------------------------------------------------------------------------*/
-/* Define function prototypes
+/*---------------------------------------------------------------------------*
+ * Define function prototypes
  *---------------------------------------------------------------------------*/
 
 #ifdef __cplusplus
@@ -49,7 +49,6 @@ void PrintHandlerFilter( TIO_MessageMode_t messageMode,
 unsigned char PrintHandlerMessage( TIO_MessageMode_t messageMode,
                                    char* pszMessage,
                                    ... );
-
 
 #ifdef __cplusplus
 }
