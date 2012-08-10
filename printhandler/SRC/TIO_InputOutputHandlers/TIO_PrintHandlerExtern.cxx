@@ -1,5 +1,5 @@
-/*===========================================================================*/
-/* Purpose : Function definitions for the TIO_PrintHandler class external 
+/*===========================================================================*
+ * Purpose : Function definitions for the TIO_PrintHandler class external 
  *           'C' interface.
  *
  *           - PrintHandlerNew
@@ -16,17 +16,15 @@
 #include "TIO_PrintHandler.h"
 #include "TIO_PrintHandlerExtern.h"
 
-
-
-/*===========================================================================*/
-/* Function       : PrintHandlerNew
+/*===========================================================================*
+ * Function       : PrintHandlerNew
  * Purpose        : Provides an external C interface to the TIO_PrintHandler.
  * Author         : Jeff Rudolph
- *---------------------------------------------------------------------------
+ *---------------------------------------------------------------------------*
  * Version history
  * 07/02/12 jeffr : Original
  *===========================================================================*/
-void PrintHandlerNew( 
+extern "C" void PrintHandlerNew( 
       char* pszLogFileName )
 {
    /* Allocate a skin handler 'singleton' for program messasge handling */
@@ -38,11 +36,12 @@ void PrintHandlerNew(
    printHandler.SetStdioOutput( stdout );
 
    /* Display optional print handler program banner */
+
    /* jluu removed optional program banner */
    /* printHandler.WriteBanner( ); */
 
    /* Apply optional print handler file logging and include program banner */
-   if ( pszLogFileName )
+   if( pszLogFileName )
    {
       printHandler.SetLogFileOutput( pszLogFileName );
 
@@ -52,32 +51,32 @@ void PrintHandlerNew(
    }
 }
 
-/*===========================================================================*/
-/* Function       : PrintHandlerDelete
+/*===========================================================================*
+ * Function       : PrintHandlerDelete
  * Purpose        : Provides an external C interface to the TIO_PrintHandler.
  * Author         : Jeff Rudolph
- *---------------------------------------------------------------------------
+ *---------------------------------------------------------------------------*
  * Version history
  * 07/02/12 jeffr : Original
  *===========================================================================*/
-void PrintHandlerDelete( void )
+extern "C" void PrintHandlerDelete( void )
 {
-   TIO_PrintHandler_c::GetInstance( );
-   TIO_PrintHandler_c::DeleteInstance( );
+   TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
+   printHandler.DeleteInstance( );
 
-   TIO_SkinHandler_c::GetInstance( );
-   TIO_SkinHandler_c::DeleteInstance( );
+   TIO_SkinHandler_c& skinHandler = TIO_SkinHandler_c::GetInstance( );
+   skinHandler.DeleteInstance( );
 }
  
-/*===========================================================================*/
-/* Function       : PrintHandlerInit
+/*===========================================================================*
+ * Function       : PrintHandlerInit
  * Purpose        : Provides an external C interface to the TIO_PrintHandler.
  * Author         : Jeff Rudolph
- *---------------------------------------------------------------------------
+ *---------------------------------------------------------------------------*
  * Version history
  * 07/02/12 jeffr : Original
  *===========================================================================*/
-void PrintHandlerInit( 
+extern "C" void PrintHandlerInit( 
       unsigned char enableTimeStamps,
       unsigned long maxWarningCount,
       unsigned long maxErrorCount )
@@ -92,15 +91,15 @@ void PrintHandlerInit(
    printHandler.SetMaxErrorCount( maxErrorCount );
 }
 
-/*===========================================================================*/
-/* Function       : PrintHandlerFilter
+/*===========================================================================*
+ * Function       : PrintHandlerFilter
  * Purpose        : Provides an external C interface to the TIO_PrintHandler.
  * Author         : Jeff Rudolph
- *---------------------------------------------------------------------------
+ *---------------------------------------------------------------------------*
  * Version history
  * 07/02/12 jeffr : Original
  *===========================================================================*/
-void PrintHandlerFilter( 
+extern "C" void PrintHandlerFilter( 
       TIO_MessageMode_t messageMode,
       TIO_FilterMode_t  filterMode,
       char*             pszFilter )
@@ -118,7 +117,8 @@ void PrintHandlerFilter(
       case TIO_FILTER_REJECT:
          printHandler.AddInfoRejectRegExp( pszFilter );
          break;
-	  default: /* do nothing */;
+      case TIO_FILTER_UNDEFINED:
+         break;
       }
       break;
    case TIO_MESSAGE_WARNING:
@@ -130,7 +130,8 @@ void PrintHandlerFilter(
       case TIO_FILTER_REJECT:
          printHandler.AddWarningRejectRegExp( pszFilter );
          break;
-	  default: /* do nothing */;
+      case TIO_FILTER_UNDEFINED:
+         break;
       }
       break;
    case TIO_MESSAGE_ERROR:
@@ -142,7 +143,8 @@ void PrintHandlerFilter(
       case TIO_FILTER_REJECT:
          printHandler.AddErrorRejectRegExp( pszFilter );
          break;
-	  default: /* do nothing */;
+      case TIO_FILTER_UNDEFINED:
+         break;
       }
       break;
    case TIO_MESSAGE_TRACE:
@@ -154,22 +156,24 @@ void PrintHandlerFilter(
       case TIO_FILTER_REJECT:
          printHandler.AddTraceRejectRegExp( pszFilter );
          break;
-	  default: /* do nothing */;
+      case TIO_FILTER_UNDEFINED:
+         break;
       }
       break;
-	default: /* do nothing */;
+   case TIO_MESSAGE_UNDEFINED:
+      break;
    }
 }
 
-/*===========================================================================*/
-/* Function       : PrintHandlerMessage
+/*===========================================================================*
+ * Function       : PrintHandlerMessage
  * Purpose        : Provides an external C interface to the TIO_PrintHandler.
  * Author         : Jeff Rudolph
- *---------------------------------------------------------------------------
+ *---------------------------------------------------------------------------*
  * Version history
  * 07/02/12 jeffr : Original
  *===========================================================================*/
-unsigned char PrintHandlerMessage( 
+extern "C" unsigned char PrintHandlerMessage( 
       TIO_MessageMode_t messageMode,
       char*             pszMessage,
       ... )
@@ -194,7 +198,8 @@ unsigned char PrintHandlerMessage(
    case TIO_MESSAGE_TRACE:
       printHandler.Trace( pszMessage, vaArgs );
       break;
-   default: /* do nothing */;
+   case TIO_MESSAGE_UNDEFINED:
+      break;
    }
    va_end( vaArgs );                    /* Reset variable argument list */
 
