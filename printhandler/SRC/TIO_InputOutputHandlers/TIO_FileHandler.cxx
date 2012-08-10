@@ -46,7 +46,7 @@ TIO_FileHandler_c::TIO_FileHandler_c(
       :
       pfileStream_( 0 )
 {
-   if ( pszFileName )
+   if( pszFileName )
    {
       this->Open( pszFileName, fileOpen, pszFileType, printMode );
    }
@@ -83,6 +83,7 @@ TIO_FileHandler_c::~TIO_FileHandler_c(
 //---------------------------------------------------------------------------//
 // Version history
 // 05/01/12 jeffr : Original
+// 08/10/12 jeffr : Cleaned up recently added Fatal message handling code
 //===========================================================================//
 bool TIO_FileHandler_c::Open(
       const string&            srFileName,
@@ -90,7 +91,11 @@ bool TIO_FileHandler_c::Open(
       const char*              pszFileType,
             TIO_PrintMode_t    printMode )
 {
-   if ( this->pfileStream_ )
+   bool ok = true;
+
+   TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
+
+   if( this->pfileStream_ )
    {
       this->Close( );
    }
@@ -104,44 +109,53 @@ bool TIO_FileHandler_c::Open(
    case TIO_FILE_OPEN_BINARY_READ:   pszFileOpen = "rb"; break;
    case TIO_FILE_OPEN_BINARY_WRITE:  pszFileOpen = "wb"; break;
    case TIO_FILE_OPEN_BINARY_APPEND: pszFileOpen = "ab"; break;
-   default: TIO_PrintHandler_c::GetInstance( ).Fatal("Unknown TIO_FileOpenMode");
+   default: 
+      ok = printHandler.Fatal( "TIO_FileHandler_c::Open - Unknown TIO_FileOpenMode_t\n" );
+      break;
    }
 
-   this->pfileStream_ = stdout;
-   if ( srFileName != "stdout" )
+   if( ok )
    {
-      this->pfileStream_ = fopen( srFileName.data( ), pszFileOpen );
-   }
-
-   if ( this->pfileStream_ )
-   {
-      this->srFileName_ = srFileName;
-   }
-   else
-   {
-      if ( pszFileType )
+      this->pfileStream_ = stdout;
+      if( srFileName != "stdout" )
       {
-         TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
+         this->pfileStream_ = fopen( srFileName.data( ), pszFileOpen );
+      }
 
-         switch( printMode )
+      if( this->pfileStream_ )
+      {
+         this->srFileName_ = srFileName;
+      }
+      else
+      {
+         if( pszFileType )
          {
-         case TIO_PRINT_WARNING:
-            printHandler.Warning( "Failed to open %s file '%s' in \"%s\" mode!\n",
-                                  pszFileType, 
-                                  TIO_SR_STR( srFileName ),
-                                  pszFileOpen );
-	    break;
-         case TIO_PRINT_ERROR:
-            printHandler.Error( "Failed to open %s file '%s' in \"%s\" mode!\n",
-                                pszFileType, 
-                                TIO_SR_STR( srFileName ),
-                                pszFileOpen );
-	    break;
-		 default: TIO_PrintHandler_c::GetInstance( ).Fatal("Unknown TIO_FileOpenMode");
-	 }
+            switch( printMode )
+            {
+            case TIO_PRINT_WARNING:
+               printHandler.Warning( "Failed to open %s file '%s' in \"%s\" mode!\n",
+                                     pszFileType, 
+                                     TIO_SR_STR( srFileName ),
+                                     pszFileOpen );
+   	       break;
+            case TIO_PRINT_ERROR:
+               printHandler.Error( "Failed to open %s file '%s' in \"%s\" mode!\n",
+                                   pszFileType, 
+                                   TIO_SR_STR( srFileName ),
+                                   pszFileOpen );
+   	       break;
+	    default: 
+               ok = printHandler.Fatal( "TIO_FileHandler_c::Open - Unknown TIO_PrintMode_t\n" );
+   	       break;
+	    }
+         }
       }
    }
-   return( this->pfileStream_ ? true : false );
+   if( ok )
+   {
+      ok = ( this->pfileStream_ ? true : false );
+   }
+   return( ok );
 }
 
 //===========================================================================//
@@ -165,9 +179,9 @@ bool TIO_FileHandler_c::Open(
 void TIO_FileHandler_c::Close( 
       void )
 {
-   if ( this->pfileStream_ )
+   if( this->pfileStream_ )
    {
-      if ( this->pfileStream_ != stdout )
+      if( this->pfileStream_ != stdout )
       {
          fclose( this->pfileStream_ );
       }
@@ -188,7 +202,7 @@ bool TIO_FileHandler_c::Read(
 {
    bool ok = false;
 
-   if ( this->pfileStream_ && pszString && lenString )
+   if( this->pfileStream_ && pszString && lenString )
    {
       int lenString_ = static_cast< int >( lenString );
       ok = ( fgets( pszString, lenString_, this->pfileStream_ ) ? true : false );
@@ -209,12 +223,12 @@ bool TIO_FileHandler_c::Write(
 {
    bool ok = false;
 
-   if ( this->pfileStream_ && pszString )
+   if( this->pfileStream_ && pszString )
    {
       va_list vaArgs;                      // Make a variable argument list
       va_start( vaArgs, pszString );       // Initialize variable argument list
 
-      static char szString[ TIO_FORMAT_STRING_LEN_MAX ];
+      static char szString[TIO_FORMAT_STRING_LEN_MAX];
       vsprintf( szString, pszString, vaArgs );
 
       ok = ( fputs( szString, this->pfileStream_ ) >= 0 ? true : false );
@@ -242,16 +256,16 @@ bool TIO_FileHandler_c::ApplyPreProcessor(
    #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 ) || defined( LINUX24_64 )
       TIO_FileHandler_c fileHandler;
       isValidCommand = fileHandler.IsValid( TIO_FILE_CPP_COMMAND, TIO_FILE_OPEN_READ );
-   #elif defined( _WIN32 )
+   #elif defined( WIN32 ) || defined( _WIN32 )
       isValidCommand = true;
    #endif
-   if ( isValidCommand )
+   if( isValidCommand )
    {
       const string& srFileName = this->GetFileName( );
       string srLeafName( srFileName );
 
       size_t slashPos = srFileName.rfind( TIO_FILE_DIR_DELIMITER );
-      if ( slashPos != string::npos )
+      if( slashPos != string::npos )
       {
          srLeafName = srFileName.substr( slashPos + 1 );
       }
@@ -272,19 +286,19 @@ bool TIO_FileHandler_c::ApplyPreProcessor(
       srCommand += srPreProcessedFileName;
 
       int rc = system( srCommand.data( ));
-      if ( rc == 0 )
+      if( rc == 0 )
       {
          ok = this->Open( srPreProcessedFileName,
                           TIO_FILE_OPEN_READ,
                           "preprocessed file" );
       }
-      else if ( rc > 0 )
+      else if( rc > 0 )
       {
          printHandler.Error( "Failed to complete %s preprocessor command.\n", 
 		             TIO_PSZ_STR( TIO_FILE_CPP_COMMAND ));
          ok = false;
       }
-      else if ( rc < 0 )
+      else if( rc < 0 )
       {
          printHandler.Error( "Failed to execute %s preprocessor command.\n", 
 		             TIO_PSZ_STR( TIO_FILE_CPP_COMMAND ));
