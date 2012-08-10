@@ -23,7 +23,7 @@ bool TIO_CustomOutput_c::Write(
       const char*           pszPrintSrc ) const
 {
    // Apply the currently installed print handler message function (if any)
-   if ( this->pfxCustomHandler_ )
+   if( this->pfxCustomHandler_ )
    {
       ( this->pfxCustomHandler_ )( printMode, pszPrintText, pszPrintSrc );
    }
