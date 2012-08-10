@@ -56,6 +56,7 @@ public:
    static void NewInstance( void );
    static void DeleteInstance( void );
    static TIO_PrintHandler_c& GetInstance( void );
+   static bool HasInstance( void );
 
    void Info( const char* pszText, ... );
    void Info( const char* pszText, va_list vaArgs );
@@ -66,8 +67,8 @@ public:
    bool Error( const char* pszText, ... );
    bool Error( const char* pszText, va_list vaArgs );
 
-   void Fatal( const char* pszText, ... );
-   void Fatal( const char* pszText, va_list vaArgs );
+   bool Fatal( const char* pszText, ... );
+   bool Fatal( const char* pszText, va_list vaArgs );
 
    void Trace( const char* pszText, ... );
    void Trace( const char* pszText, va_list vaArgs );
