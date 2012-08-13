@@ -16,6 +16,20 @@
 #include "TIO_PrintHandler.h"
 #include "TIO_PrintHandlerExtern.h"
 
+
+/*===========================================================================*
+ * Function       : PrintHandlerExists
+ * Purpose        : Returns 1 if TIO_PrintHandler exist, 0 otherwise.
+ * Author         : Jason Luu
+ *---------------------------------------------------------------------------*/
+extern "C" int PrintHandlerExists(void) {
+	if(TIO_PrintHandler_c::HasInstance()) 
+	{
+		return 1;
+	}
+	return 0;
+}
+
 /*===========================================================================*
  * Function       : PrintHandlerNew
  * Purpose        : Provides an external C interface to the TIO_PrintHandler.

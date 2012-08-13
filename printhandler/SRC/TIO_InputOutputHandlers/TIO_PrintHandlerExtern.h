@@ -38,6 +38,7 @@ extern "C"
 {
 #endif
 
+int PrintHandlerExists(void);
 void PrintHandlerNew( char* pszLogFileName );
 void PrintHandlerDelete( void );
 void PrintHandlerInit( unsigned char enableTimeStamps,
