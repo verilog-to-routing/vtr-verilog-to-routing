@@ -162,6 +162,9 @@ void free_echo_file_info() {
 }
 
 void setOutputFileName(enum e_output_files ename, const char *name) {
+	if(outputFileNames == NULL) {
+		alloc_and_load_output_file_names();
+	}
 	if(outputFileNames[(int)ename] != NULL) {
 		free(outputFileNames[(int)ename]);
 	}

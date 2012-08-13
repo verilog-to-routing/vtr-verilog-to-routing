@@ -39,6 +39,7 @@ void vpr_init(INP int argc, INP char **argv, OUTP t_options *options, OUTP t_vpr
 void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch);
 void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch);
 void vpr_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch arch);
+void vpr_free_vpr_data_structures(INOUTP t_arch Arch, INOUTP t_options options, INOUTP t_vpr_setup vpr_setup);
 void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options, INOUTP t_vpr_setup vpr_setup);
 
 /* Display general info to user */

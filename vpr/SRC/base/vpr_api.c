@@ -683,7 +683,7 @@ void free_circuit() {
 
 }
 
-void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options, INOUTP t_vpr_setup vpr_setup) {
+void vpr_free_vpr_data_structures(INOUTP t_arch Arch, INOUTP t_options options, INOUTP t_vpr_setup vpr_setup) {
 	
 	if (vpr_setup.Timing.SDCFile != NULL) {
 		free(vpr_setup.Timing.SDCFile);
@@ -695,6 +695,12 @@ void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options, INOUTP t_vpr_set
 	free_arch(&Arch);	
 	free_echo_file_info();
 	free_output_file_names();
+}
+
+
+void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options, INOUTP t_vpr_setup vpr_setup) {
+	
+	vpr_free_vpr_data_structures(Arch, options, vpr_setup);
 	if(has_printhandler_pre_vpr == FALSE) {
 		PrintHandlerDelete( );
 	}
