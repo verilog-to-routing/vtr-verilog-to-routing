@@ -116,7 +116,7 @@ void compute_memory_node(nnode_t *node, int cycle);
 void compute_hard_ip_node(nnode_t *node, int cycle);
 void compute_multiply_node(nnode_t *node, int cycle);
 void compute_generic_node(nnode_t *node, int cycle);
-void compute_add_node(nnode_t *node, int cycle);
+void compute_add_node(nnode_t *node, int cycle, int type);
 
 
 void update_pin_value(npin_t *pin, signed char value, int cycle);

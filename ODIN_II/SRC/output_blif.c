@@ -35,6 +35,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "multipliers.h"
 #include "hard_blocks.h"
 #include "adders.h"
+#include "subtractions.h"
 
 void depth_first_traversal_to_output(short marker_value, FILE *fp, netlist_t *netlist);
 void depth_traverse_output_blif(nnode_t *node, int traverse_mark_number, FILE *fp);
@@ -214,6 +215,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 #ifdef VPR6
 	add_the_blackbox_for_mults(out);
 	add_the_blackbox_for_adds(out);
+	add_the_blackbox_for_subs(out);
 	output_hard_blocks(out);
 #endif
 
@@ -355,6 +357,14 @@ void output_node(nnode_t *node, short traverse_number, FILE *fp)
 			#endif
 			break;
 
+		case MINUS:
+			if (hard_adders == NULL)
+				oassert(FALSE); /* should be soft logic! */
+			#ifdef VPR6
+			define_sub_function(node, node->type, fp);
+			#endif
+			break;
+
 		case MEMORY:
 		case HARD_IP:
 			#ifdef VPR6
@@ -387,7 +397,7 @@ void output_node(nnode_t *node, short traverse_number, FILE *fp)
 		case GTE:
 		case LTE:
 		//case ADD:
-		case MINUS:
+		//case MINUS:
 		default:
 			/* these nodes should have been converted to softer versions */
 			error_message(NETLIST_ERROR, 0,-1,"Output blif: node should have been converted to softer version.");

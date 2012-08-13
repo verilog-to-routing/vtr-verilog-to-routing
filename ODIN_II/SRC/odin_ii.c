@@ -48,6 +48,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "errors.h"
 #include "netlist_visualizer.h"
 #include "adders.h"
+#include "subtractions.h"
 
 int current_parse_file;
 t_arch Arch;
@@ -121,6 +122,7 @@ int main(int argc, char **argv)
 	#ifdef VPR6
 	report_mult_distribution();
 	report_add_distribution();
+	report_sub_distribution();
 	deregister_hard_blocks();
 	#endif
 
@@ -352,6 +354,7 @@ void do_high_level_synthesis()
 	#ifdef VPR6
 	find_hard_multipliers();
 	find_hard_adders();
+	find_hard_adders_for_sub();
 	register_hard_blocks();
 	#endif
 	global_param_table_sc = sc_new_string_cache();

@@ -38,6 +38,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "math.h"
 #include "memories.h"
 #include "adders.h"
+#include "subtractions.h"
 
 void depth_first_traversal_to_partial_map(short marker_value, netlist_t *netlist);
 void depth_first_traverse_parital_map(nnode_t *node, int traverse_mark_number, netlist_t *netlist);
@@ -201,16 +202,29 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 			//instantiate_add_w_carry instantiate_simple_soft_adder
 			break;
 		case MINUS:
-			if (node->num_input_port_sizes == 2)
+
+			#ifdef VPR6
+			if (hard_subs != NULL)
 			{
-				instantiate_sub_w_carry(node, traverse_number, netlist);
-			}
-			else if (node->num_input_port_sizes == 1)
-			{
-				instantiate_unary_sub(node, traverse_number, netlist);
+				if ((node->input_port_sizes[0] + node->input_port_sizes[1]) > min_add)
+					instantiate_hard_adder_subtraction(node, traverse_number, netlist);
 			}
 			else
-				oassert(FALSE);
+			#endif
+			{
+				if (node->num_input_port_sizes == 2)
+				{
+					instantiate_sub_w_carry(node, traverse_number, netlist);
+				}
+				else if (node->num_input_port_sizes == 1)
+				{
+					instantiate_unary_sub(node, traverse_number, netlist);
+				}
+				else
+					oassert(FALSE);
+			}
+			//else
+			//	oassert(FALSE);
 			break;
 		case LOGICAL_EQUAL:
 		case NOT_EQUAL:

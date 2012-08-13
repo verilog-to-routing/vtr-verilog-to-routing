@@ -40,6 +40,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "memories.h"
 #include "implicit_memory.h"
 #include "adders.h"
+#include "subtractions.h"
 
 /* NAMING CONVENTIONS
  {previous_string}.module_name+instance_name
@@ -2614,6 +2615,9 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 			/* subtract the largest bit width + the other input padded with 0's ... concern for 2's comp */
 			output_port_width = max_input_port_width;
 			input_port_width = output_port_width;
+			if(list_size == 2)
+				sub_list = insert_in_vptr_list(sub_list, operation_node);
+
 			break;
 		case MULTIPLY: // *
 			/* pad the smaller one with 0's */

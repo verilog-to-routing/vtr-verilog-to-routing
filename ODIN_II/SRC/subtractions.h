@@ -19,43 +19,28 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include "types.h"
-#include "globals.h"
-#include "errors.h"
-#include "netlist_utils.h"
-#include "odin_util.h"
-#include "netlist_optimizations.h"
-#include "multipliers.h"
-#include "memories.h"
+*/
+#ifndef SUBS_H
+#define SUBS_H
+
+#include "read_xml_arch_file.h"
+#include "util.h"
 #include "adders.h"
-#include "subtractions.h"
 
-/*------------------------------------------------------------------------
- * (function: netlist_optimizations_top)
- *----------------------------------------------------------------------*/
-void netlist_optimizations_top(netlist_t *netlist)
-{
-	#ifdef VPR6
-	/* Perform a splitting of the multipliers for hard block mults */
-	iterate_multipliers(netlist);
-	clean_multipliers();
+extern t_model *hard_subs;
+extern struct s_linked_vptr *subs_list;
+extern struct s_linked_vptr *sub_list;
 
-	/* Perform a splitting of any hard block memories */
-	iterate_memories(netlist);
-	free_memory_lists();
+extern void init_sub_distribution();
+extern void report_sub_distribution();
+extern void declare_hard_adder_for_sub(nnode_t *node);
+extern void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t *netlist);
+extern void find_hard_adders_for_sub();
+extern void add_the_blackbox_for_subs(FILE *out);
+extern void define_sub_function(nnode_t *node, short type, FILE *out);
+extern void split_adder_for_sub(nnode_t *node, int a, int b, int sizea, int sizeb, int cin, int cout, int count, netlist_t *netlist);
+extern void iterate_adders_for_sub(netlist_t *netlist);
+extern void clean_adders_for_sub();
 
-	/* Perform a splitting of the adders for hard block add */
-	iterate_adders(netlist);
-	clean_adders();
-
-	/* Perform a splitting of the adders for hard block sub */
-	iterate_adders_for_sub(netlist);
-	clean_adders_for_sub();
-	#endif
-}
+#endif // SUBS_H
 

@@ -19,7 +19,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -27,6 +27,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "types.h"
 #include "node_creation_library.h"
 #include "adders.h"
+#include "subtractions.h"
 #include "netlist_utils.h"
 #include "partial_map.h"
 #include "util.h"
@@ -34,100 +35,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "globals.h"
 #include "errors.h"
 
-t_model *hard_adders = NULL;
-struct s_linked_vptr *adder_list = NULL;
-struct s_linked_vptr *add_list = NULL;
-int min_add = 0;
-int *adder = NULL;
-
-
-void instantiate_simple_soft_adder(nnode_t *node, short mark, netlist_t *netlist)
-{
-	int width_a;
-	int width_b;
-	int width_cout;
-	int width_sumout;
-	int i;
-
-	/* need for an carry-ripple-adder for each of the bits of port B. */
-	/* good question of which is better to put on the bottom of adder.  Larger means more smaller adds, or small is
-	 * less large adds */
-	oassert(node->num_output_pins > 0);
-	oassert(node->num_input_pins > 0);
-	oassert(node->num_input_port_sizes == 2);
-
-	width_a = node->input_port_sizes[0];
-	width_b = node->input_port_sizes[1];
-	width_sumout = node->output_port_sizes[0];
-	width_cout = 1;
-
-	nnode_t **new_add_cells;
-	nnode_t **new_carry_cells;
-
-	new_add_cells  = (nnode_t**)malloc(sizeof(nnode_t*)*(width_sumout + width_cout));
-	new_carry_cells = (nnode_t**)malloc(sizeof(nnode_t*)*(width_sumout + width_cout));
-
-		/* create the adder units and the zero unit */
-		for (i = 0; i < width_sumout + width_cout; i++)
-		{
-			new_add_cells[i] = make_3port_gate(ADDER_FUNC, 1, 1, 1, 1, node, mark);
-			// The last carry cell will be connected to an output pin, if one is available
-			new_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
-		}
-
-	    	/* ground first carry in */
-		add_input_pin_to_node(new_add_cells[0], get_zero_pin(netlist), 0);
-		if (i > 1)
-		{
-			add_input_pin_to_node(new_carry_cells[0], get_zero_pin(netlist), 0);
-		}
-
-		/* connect inputs */
-		for(i = 0; i < width_sumout + width_cout; i++)
-		{
-			if (i < width_a)
-			{
-				/* join the A port up to adder */
-				remap_pin_to_new_node(node->input_pins[i], new_add_cells[i], 1);
-				if (i < width_sumout - 1)
-					add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
-			}
-			else
-			{
-				add_input_pin_to_node(new_add_cells[i], get_zero_pin(netlist), 1);
-				if (i < width_sumout - 1)
-					add_input_pin_to_node(new_carry_cells[i], get_zero_pin(netlist), 1);
-			}
-
-			if (i < width_b)
-			{
-				/* join the B port up to adder */
-				remap_pin_to_new_node(node->input_pins[i+width_a], new_add_cells[i], 2);
-				if (i < width_sumout - 1)
-					add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[2]), 2);
-			}
-			else
-			{
-				add_input_pin_to_node(new_add_cells[i], get_zero_pin(netlist), 2);
-				if (i < width_sumout - 1)
-					add_input_pin_to_node(new_carry_cells[i], get_zero_pin(netlist), 2);
-			}
-
-			/* join that gate to the output */
-			remap_pin_to_new_node(node->output_pins[i], new_add_cells[i], 0);
-		}
-
-		/* connect carry outs with carry ins */
-		for(i = 1; i < width_sumout+width_cout; i++)
-		{
-			connect_nodes(new_carry_cells[i-1], 0, new_add_cells[i], 0);
-			if (i < width_sumout)
-				connect_nodes(new_carry_cells[i-1], 0, new_carry_cells[i], 0);
-		}
-
-		free(new_add_cells);
-		free(new_carry_cells);
-}
+t_model *hard_subs = NULL;
+struct s_linked_vptr *subs_list = NULL;
+struct s_linked_vptr *sub_list = NULL;
+//int min_add = 0;
+int *sub = NULL;
 
 #ifdef VPR6
 
@@ -135,24 +47,24 @@ void instantiate_simple_soft_adder(nnode_t *node, short mark, netlist_t *netlist
  * (function: init_add_distribution)
  *  For adder, the output will only be the maxim input size + 1
  *-------------------------------------------------------------------------*/
-void init_add_distribution()
+void init_sub_distribution()
 {
 	int i;
-	oassert(hard_adders != NULL);
-	adder = (int *)malloc(sizeof(int) * (hard_adders->inputs->size + 1));
-	for (i = 0; i <= (hard_adders->inputs->size + hard_adders->inputs->next->size); i++)
-		adder[i] = 0;
+	oassert(hard_subs != NULL);
+	sub = (int *)malloc(sizeof(int) * (hard_subs->inputs->size + 1));
+	for (i = 0; i <= (hard_subs->inputs->size + hard_subs->inputs->next->size); i++)
+		sub[i] = 0;
 	return;
 }
 
 /*---------------------------------------------------------------------------
  * (function: record_add_distribution)
  *-------------------------------------------------------------------------*/
-void record_add_distribution(nnode_t *node)
+void record_sub_distribution(nnode_t *node)
 {
-	oassert(hard_adders != NULL);
+	oassert(hard_subs != NULL);
 	oassert(node != NULL);
-	adder[hard_adders->inputs->size] += 1;
+	sub[hard_subs->inputs->size] += 1;
 	return;
 }
 
@@ -160,50 +72,53 @@ void record_add_distribution(nnode_t *node)
  * (function: report_add_distribution)
  *-------------------------------------------------------------------------*/
 
-void report_add_distribution()
+void report_sub_distribution()
 {
 	int i, j;
 	int total = 0;
 
-	if(hard_adders == NULL)
+	if(hard_subs == NULL)
 		return;
 
-	printf("\nHard adder Distribution\n");
+	printf("\nHard MINUS Distribution\n");
 	printf("============================\n");
-	for (i = 0; i <= hard_adders->inputs->size; i++)
+	for (i = 0; i <= hard_subs->inputs->size; i++)
 	{
-		for (j = 1; j <= hard_adders->inputs->next->size; j++)
+		for (j = 1; j <= hard_subs->inputs->next->size; j++)
 		{
-			if (adder[i * hard_adders->inputs->size + j] != 0)
+			if (sub[i * hard_subs->inputs->size + j] != 0)
 			{
-				total += adder[i * hard_adders->inputs->size + j];
-				printf("%d X %d => %d\n", i, j, adder[i * hard_adders->inputs->size + j]);
+				total += sub[i * hard_subs->inputs->size + j];
+				printf("%d X %d => %d\n", i, j, sub[i * hard_subs->inputs->size + j]);
 			}
 		}
 	}
 	printf("\n");
-	printf("\nTotal # of adders = %d\n", total);
+	printf("\nTotal # of MINUS = %d\n", total);
 	return;
 }
 
 /*---------------------------------------------------------------------------
- * (function: find_hard_adders)
+ * (function: find_hard_adders_for_sub)
  *-------------------------------------------------------------------------*/
-void find_hard_adders()
+void find_hard_adders_for_sub()
 {
-	hard_adders = Arch.models;
-	min_add = configuration.min_hard_adder;
-
-	while (hard_adders != NULL)
+	if(sub_list != NULL)
 	{
-		if (strcmp(hard_adders->name, "adder") == 0)
+		hard_subs = Arch.models;
+		min_add = configuration.min_hard_adder;
+	}
+
+	while (hard_subs != NULL)
+	{
+		if (strcmp(hard_subs->name, "sub") == 0)
 		{
-			init_add_distribution();
+			init_sub_distribution();
 			return;
 		}
 		else
 		{
-			hard_adders = hard_adders->next;
+			hard_subs = hard_subs->next;
 		}
 	}
 
@@ -211,19 +126,19 @@ void find_hard_adders()
 }
 
 /*---------------------------------------------------------------------------
- * (function: declare_hard_adder)
+ * (function: declare_hard_adder_for_sub)
  *-------------------------------------------------------------------------*/
-void declare_hard_adder(nnode_t *node)
+void declare_hard_adder_for_sub(nnode_t *node)
 {
 	t_adder *tmp;
 	int width_a, width_b, width_sumout;
 
-	/* See if this size instance of adder exists? */
-	if (hard_adders == NULL)
+	/* See if this size instance of adder exists?*/
+	if (hard_subs == NULL)
 	{
-		printf(ERRTAG "Instantiating adder where adders do not exist\n");
+		printf(ERRTAG "Instantiating subtraction where subs do not exist\n");
 	}
-	tmp = (t_adder *)hard_adders->instances;
+	tmp = (t_adder *)hard_subs->instances;
 	width_a = node->input_port_sizes[0];
 	width_b = node->input_port_sizes[1];
 	width_sumout = node->output_port_sizes[1];
@@ -236,10 +151,10 @@ void declare_hard_adder(nnode_t *node)
 			tmp = tmp->next;
 	}
 
-	/* Does not exist - must create an instance */
+	/* Does not exist - must create an instance*/
 	tmp = (t_adder *)malloc(sizeof(t_adder));
-	tmp->next = (t_adder *)hard_adders->instances;
-	hard_adders->instances = tmp;
+	tmp->next = (t_adder *)hard_subs->instances;
+	hard_subs->instances = tmp;
 	tmp->size_a = width_a;
 	tmp->size_b = width_b;
 	tmp->size_cin = 1;
@@ -249,14 +164,14 @@ void declare_hard_adder(nnode_t *node)
 }
 
 /*---------------------------------------------------------------------------
- * (function: instantiate_hard_addier )
+ * (function: instantiate_hard_adder_subtraction )
  *-------------------------------------------------------------------------*/
-void instantiate_hard_adder(nnode_t *node, short mark, netlist_t *netlist)
+void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t *netlist)
 {
 	char *new_name;
 	int len, sanity, i;
 
-	declare_hard_adder(node);
+	declare_hard_adder_for_sub(node);
 
 	/* Need to give node proper name */
 	len = strlen(node->name);
@@ -292,65 +207,65 @@ void instantiate_hard_adder(nnode_t *node, short mark, netlist_t *netlist)
 }
 
 /*----------------------------------------------------------------------------
- * function: add_the_blackbox_for_adds()
+ * function: add_the_blackbox_for_subs()
  *--------------------------------------------------------------------------*/
-void add_the_blackbox_for_adds(FILE *out)
+void add_the_blackbox_for_subs(FILE *out)
 {
 	int i;
 	int count;
 	int hard_add_inputs, hard_add_outputs;
-	t_adder *adds;
+	t_adder *subs;
 	t_model_ports *ports;
 	char buffer[MAX_BUF];
 	char *pa, *pb, *psumout, *pcin, *pcout;
 
 	/* Check to make sure this target architecture has hard adders */
-	if (hard_adders == NULL)
+	if (hard_subs == NULL)
 		return;
 
 	/* Get the names of the ports for the adder */
-	ports = hard_adders->inputs;
+	ports = hard_subs->inputs;
 	pcin = ports->name;
 	ports = ports->next;
 	pb = ports->name;
 	ports = ports->next;
 	pa = ports->name;
 
-	ports = hard_adders->outputs;
+	ports = hard_subs->outputs;
 	psumout = ports->name;
 	ports = ports->next;
 	pcout = ports->name;
 
 	/* find the adder devices in the tech library */
-	adds = (t_adder *)(hard_adders->instances);
-	if (adds == NULL) /* No adders instantiated */
+	subs = (t_adder *)(hard_subs->instances);
+	if (subs == NULL) /* No adders instantiated */
 		return;
 
 	/* simplified way of getting the multsize, but fine for quick example */
-	while (adds != NULL)
+	while (subs != NULL)
 	{
 		/* write out this adder model */
 		if (configuration.fixed_hard_adder != 0)
-			count = fprintf(out, ".model adder\n");
+			count = fprintf(out, ".model sub\n");
 		else
-			count = fprintf(out, ".model adder\n");
+			count = fprintf(out, ".model sub\n");
 
 		/* add the inputs */
 		count = count + fprintf(out, ".inputs");
-		hard_add_inputs = adds->size_a + adds->size_b + adds->size_cin;
+		hard_add_inputs = subs->size_a + subs->size_b + subs->size_cin;
 		for (i = 0; i < hard_add_inputs; i++)
 		{
-			if (i < adds->size_a)
+			if (i < subs->size_a)
 			{
 				count = count + sprintf(buffer, " %s[%d]", pa, i);
 			}
-			else if(i < hard_add_inputs - adds->size_cin && i >= adds->size_a)
+			else if(i < hard_add_inputs - subs->size_cin && i >= subs->size_a)
 			{
-				count = count + sprintf(buffer, " %s[%d]", pb, i - adds->size_a);
+				count = count + sprintf(buffer, " %s[%d]", pb, i - subs->size_a);
 			}
 			else
 			{
-				count = count + sprintf(buffer, " %s[%d]", pcin, i - adds->size_a - adds->size_b);
+				count = count + sprintf(buffer, " %s[%d]", pcin, i - subs->size_a - subs->size_b);
 			}
 			if (count > 78)
 				count = fprintf(out, " \\\n %s", buffer) - 3;
@@ -361,16 +276,16 @@ void add_the_blackbox_for_adds(FILE *out)
 
 		/* add the outputs */
 		count = fprintf(out, ".outputs");
-		hard_add_outputs = adds->size_cout + adds->size_sumout;
+		hard_add_outputs = subs->size_cout + subs->size_sumout;
 		for (i = 0; i < hard_add_outputs; i++)
 		{
-			if (i < adds->size_sumout)
+			if (i < subs->size_sumout)
 			{
 				count = count + sprintf(buffer, " %s[%d]", psumout, i);
 			}
 			else
 			{
-				count = count + sprintf(buffer, " %s[%d]", pcout, i - adds->size_sumout);
+				count = count + sprintf(buffer, " %s[%d]", pcout, i - subs->size_sumout);
 			}
 
 			if (count > 78)
@@ -386,14 +301,14 @@ void add_the_blackbox_for_adds(FILE *out)
 		fprintf(out, ".end\n");
 		fprintf(out, "\n");
 
-		adds = adds->next;
+		subs = subs->next;
 	}
 }
 
 /*-------------------------------------------------------------------------
- * (function: define_add_function)
+ * (function: define_sub_function)
  *-----------------------------------------------------------------------*/
-void define_add_function(nnode_t *node, short type, FILE *out)
+void define_sub_function(nnode_t *node, short type, FILE *out)
 {
 	int i, j;
 	int count;
@@ -410,11 +325,11 @@ void define_add_function(nnode_t *node, short type, FILE *out)
 	/* Write out the model adder  */
 	if (configuration.fixed_hard_adder != 0)
 	{
-		count += fprintf(out, " adder");
+		count += fprintf(out, "sub");
 	}
 	else
 	{
-		count += fprintf(out, " adder");
+		count += fprintf(out, "sub");
 	}
 
 	/* Write the input pins*/
@@ -425,23 +340,23 @@ void define_add_function(nnode_t *node, short type, FILE *out)
 		if (i < node->input_port_sizes[0])
 		{
 			if (!driver_pin->name)
-				j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->next->name, i, driver_pin->node->name);
+				j = sprintf(buffer, " %s[%d]=%s", hard_subs->inputs->next->next->name, i, driver_pin->node->name);
 			else
-				j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->next->name, i, driver_pin->name);
+				j = sprintf(buffer, " %s[%d]=%s", hard_subs->inputs->next->next->name, i, driver_pin->name);
 		}
 		else if(i >= node->input_port_sizes[0] && i < node->input_port_sizes[1] + node->input_port_sizes[0])
 		{
 			if (!driver_pin->name)
-				j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->node->name);
+				j = sprintf(buffer, " %s[%d]=%s", hard_subs->inputs->next->name, i - node->input_port_sizes[0], driver_pin->node->name);
 			else
-				j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->name);
+				j = sprintf(buffer, " %s[%d]=%s", hard_subs->inputs->next->name, i - node->input_port_sizes[0], driver_pin->name);
 		}
 		else
 		{
 			if (!driver_pin->name)
-				j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->node->name);
+				j = sprintf(buffer, " %s[%d]=%s", hard_subs->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->node->name);
 			else
-				j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->name);
+				j = sprintf(buffer, " %s[%d]=%s", hard_subs->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->name);
 		}
 
 		if (count + j > 79)
@@ -456,9 +371,9 @@ void define_add_function(nnode_t *node, short type, FILE *out)
 	for (i = node->num_output_pins - 1; i >= 0; i--)
 	{
 		if(i > node->output_port_sizes[0] - 1)
-			j = sprintf(buffer, " %s[%d]=%s", hard_adders->outputs->name, node->output_port_sizes[1] - i , node->output_pins[(node->output_port_sizes[1] - i)]->name);
+			j = sprintf(buffer, " %s[%d]=%s", hard_subs->outputs->name, node->output_port_sizes[1] - i , node->output_pins[(node->output_port_sizes[1] - i)]->name);
 		else
-			j = sprintf(buffer, " %s[%d]=%s", hard_adders->outputs->next->name, i, node->output_pins[(i + node->output_port_sizes[1])]->name);
+			j = sprintf(buffer, " %s[%d]=%s", hard_subs->outputs->next->name, i, node->output_pins[(i + node->output_port_sizes[1])]->name);
 		if (count + j > 79)
 		{
 			fprintf(out, "\\\n");
@@ -476,12 +391,12 @@ void define_add_function(nnode_t *node, short type, FILE *out)
  *	Create a carry chain adder when spliting. Inputs are connected
  *	to original pins, output pins are set to NULL for later connecting
  *---------------------------------------------------------------------*/
-void init_split_adder(nnode_t *node, nnode_t *ptr, int a, int sizea, int b, int sizeb, int cin, int cout, int index)
+void init_split_adder_for_sub(nnode_t *node, nnode_t *ptr, int a, int sizea, int b, int sizeb, int cin, int cout, int index)
 {
 	int i;
 	int flaga = 0, flagb = 0;
 	int current_sizea, current_sizeb;
-	int aa = 0, bb = 0;
+	int aa, bb;
 
 	/* Copy properties from original node */
 	ptr->type = node->type;
@@ -624,7 +539,7 @@ void init_split_adder(nnode_t *node, nnode_t *ptr, int a, int sizea, int b, int 
  * extending NOT contracting.
  *-----------------------------------------------------------------------*/
 
-void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, int cout, int count, netlist_t *netlist)
+void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, int cout, int count, netlist_t *netlist)
 {
 	nnode_t **node;
 	int i,j;
@@ -641,12 +556,13 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 		node[i] = allocate_nnode();
 		node[i]->name = (char *)malloc(strlen(nodeo->name) + 4);
 		sprintf(node[i]->name, "%s-%d", nodeo->name, i);
-		init_split_adder(nodeo, node[i], a, sizea, b, sizeb, cin, cout, i);
-		add_list = insert_in_vptr_list(add_list, node[i]);
+		init_split_adder_for_sub(nodeo, node[i], a, sizea, b, sizeb, cin, cout, i);
+		sub_list = insert_in_vptr_list(sub_list, node[i]);
 	}
 
 	//connect the first cin pin to ground
-	connect_nodes(netlist->gnd_node, 0, node[0], (sizea + sizeb));
+	connect_nodes(netlist->vcc_node, 0, node[0], (sizea + sizeb));
+	//add_input_pin_to_node(node[0], get_one_pin(netlist), (sizea + sizeb));
 
 	//if any input pins beside first cin pins are NULL, connect those pins to ground
 	for(i = 0; i < count; i++)
@@ -671,9 +587,6 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 			connect_nodes(node[i-1], sizeb, node[i], (node[i]->num_input_pins - 1));
 	}
 
-
-
-
 	if(count * sizea == a)
 	{
 		//remap the output pins of each adder to nodeo
@@ -683,7 +596,9 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 				remap_pin_to_new_node(nodeo->output_pins[i * sizea + j], node[i], j);
 		}
 		// the last node's cout should be remapped to the most significant bits of nodeo
-		remap_pin_to_new_node(nodeo->output_pins[(nodeo->num_output_pins - 1)], node[(count - 1)], (node[(count - 1)]->num_output_pins - 1));
+		node[count - 1]->output_pins[node[(count - 1)]->num_output_pins - 1] = allocate_npin();
+		node[count - 1]->output_pins[(node[(count - 1)]->num_output_pins - 1)]->name = append_string("", "%s~dummy_output~%d~%d", node[(count - 1)]->name, (count - 1), (node[(count - 1)]->num_output_pins - 1));
+		//remap_pin_to_new_node(nodeo->output_pins[(nodeo->num_output_pins - 1)], node[(count - 1)], (node[(count - 1)]->num_output_pins - 1));
 	}
 	else
 	{
@@ -724,24 +639,24 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
  * (function: pad_adder)
  *
  * Fill out a adder to a fixed size. Size is retrieved from global
- *	hard_adders data.
+ *	hard_subs data.
  * node, a, b, sizea, sizeb, 1, 1, count, netlist
  * NOTE: The inputs are extended based on adder padding setting.
  *-----------------------------------------------------------------------*/
-void pad_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, int cout, int count, netlist_t *netlist)
+void pad_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, int cout, int count, netlist_t *netlist)
 {
 		nnode_t **node;
 		int i,j;
-		int num, max;
+		int num, max, mark;
 		nnode_t **new_add_cells;
 		nnode_t **new_carry_cells;
 		int aleft, bleft;
 
-		/* Check for a legitimate split */
+		/* Check for a legitimate split*/
 		oassert(nodeo->input_port_sizes[0] == a);
 		oassert(nodeo->input_port_sizes[1] == b);
 
-		//mark = 10;
+		mark = 10;
 		aleft = a - sizea * count;
 		bleft = b - sizea * count;
 		if(aleft > bleft)
@@ -761,15 +676,15 @@ void pad_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, int 
 				node[i] = allocate_nnode();
 				node[i]->name = (char *)malloc(strlen(nodeo->name) + 4);
 				sprintf(node[i]->name, "%s-%d", nodeo->name, i);
-				init_split_adder(nodeo, node[i], a, sizea, b, sizeb, cin, cout, i);
-				add_list = insert_in_vptr_list(add_list, node[i]);
+				init_split_adder_for_sub(nodeo, node[i], a, sizea, b, sizeb, cin, cout, i);
+				sub_list = insert_in_vptr_list(sub_list, node[i]);
 			}
 
-			/* create the adder units and the zero unit */
+			/* create the adder units and the zero unit*/
 			for (i = 0; i < max; i++)
 			{
-				//new_add_cells[i] = make_3port_gate(ADDER_FUNC, 1, 1, 1, 1, nodeo, mark);
-				//new_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, nodeo, mark);
+				new_add_cells[i] = make_3port_gate(ADDER_FUNC, 1, 1, 1, 1, nodeo, mark);
+				new_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, nodeo, mark);
 			}
 
 			connect_nodes(netlist->gnd_node, 0, node[0], (sizea + sizeb));
@@ -831,7 +746,7 @@ void pad_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, int 
 						add_input_pin_to_node(new_carry_cells[i], get_zero_pin(netlist), 2);
 				}
 
-				/* join that gate to the output */
+				/* join that gate to the output*/
 				remap_pin_to_new_node(nodeo->output_pins[i + sizea * count], new_add_cells[i], 0);
 			}
 
@@ -843,7 +758,7 @@ void pad_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, int 
 					remap_pin_to_new_node(nodeo->output_pins[i * sizea + j], node[i], j);
 			}
 
-			/* connect carry outs with carry ins */
+			/* connect carry outs with carry ins*/
 			for(i = 1; i < max; i++)
 			{
 				connect_nodes(new_carry_cells[i-1], 0, new_add_cells[i], 0);
@@ -853,7 +768,7 @@ void pad_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, int 
 		}
 		else
 		{
-			/* create the adder units and the zero unit */
+			/* create the adder units and the zero unit*/
 			for (i = 0; i < max; i++)
 			{
 				//new_add_cells[i] = make_3port_gate(ADDER_FUNC, 1, 1, 1, 1, node, mark);
@@ -861,19 +776,19 @@ void pad_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, int 
 				//new_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
 			}
 
-			/* ground first carry in */
+			/* ground first carry in*/
 			add_input_pin_to_node(new_add_cells[0], get_zero_pin(netlist), 0);
 			if (i > 1)
 			{
 				add_input_pin_to_node(new_carry_cells[0], get_zero_pin(netlist), 0);
 			}
 
-			/* connect inputs */
+			/* connect inputs*/
 			for(i = 0; i < max; i++)
 			{
 				if (i < aleft)
 				{
-					/* join the A port up to adder */
+					/* join the A port up to adder*/
 					remap_pin_to_new_node(nodeo->input_pins[i], new_add_cells[i], 1);
 					if (i < max - 1)
 						add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
@@ -887,7 +802,7 @@ void pad_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, int 
 
 				if (i < bleft)
 				{
-					/* join the B port up to adder */
+					/* join the B port up to adder*/
 					remap_pin_to_new_node(nodeo->input_pins[i+a], new_add_cells[i], 2);
 					if (i < max - 1)
 						add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[2]), 2);
@@ -899,11 +814,11 @@ void pad_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, int 
 						add_input_pin_to_node(new_carry_cells[i], get_zero_pin(netlist), 2);
 				}
 
-				/* join that gate to the output */
+				/* join that gate to the output*/
 				remap_pin_to_new_node(nodeo->output_pins[i], new_add_cells[i], 0);
 			}
 
-			/* connect carry outs with carry ins */
+			/* connect carry outs with carry ins*/
 			for(i = 1; i < max; i++)
 			{
 				connect_nodes(new_carry_cells[i-1], 0, new_add_cells[i], 0);
@@ -912,12 +827,12 @@ void pad_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, int 
 			}
 		}
 
-		/* Probably more to do here in freeing the old node! */
+		/* Probably more to do here in freeing the old node!*/
 		free(nodeo->name);
 		free(nodeo->input_port_sizes);
 		free(nodeo->output_port_sizes);
 
-		/* Free arrays NOT the pins since relocated! */
+		/* Free arrays NOT the pins since relocated!*/
 		free(new_add_cells);
 		free(new_carry_cells);
 		free(nodeo->input_pins);
@@ -926,6 +841,7 @@ void pad_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, int 
 		return;
 
 }
+
 
 /*-------------------------------------------------------------------------
  * (function: iterate_adders)
@@ -936,7 +852,7 @@ void pad_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, int 
  *	If the proper option is set, then it will be expanded as well
  *	to just use a fixed size hard adder.
  *-----------------------------------------------------------------------*/
-void iterate_adders(netlist_t *netlist)
+void iterate_adders_for_sub(netlist_t *netlist)
 {
 	int sizea, sizeb, sizecin;//the size of
 	int a, b;
@@ -944,29 +860,29 @@ void iterate_adders(netlist_t *netlist)
 	nnode_t *node;
 
 	/* Can only perform the optimisation if hard adders exist! */
-	if (hard_adders == NULL)
+	if (hard_subs == NULL)
 		return;
 	//In hard block adder, the summand and addend are same size.
-	sizecin = hard_adders->inputs->size;
-	sizeb = hard_adders->inputs->next->size;
-	sizea = hard_adders->inputs->next->size;
+	sizecin = hard_subs->inputs->size;
+	sizeb = hard_subs->inputs->next->size;
+	sizea = hard_subs->inputs->next->size;
 
 	oassert(sizecin == 1);
 
-	while(add_list != NULL)
+	while(sub_list != NULL)
 	{
-		node = (nnode_t *)add_list->data_vptr;
-		add_list = delete_in_vptr_list(add_list);
-		adder_list = insert_in_vptr_list(adder_list, node);
+		node = (nnode_t *)sub_list->data_vptr;
+		sub_list = delete_in_vptr_list(sub_list);
+		subs_list = insert_in_vptr_list(subs_list, node);
 	}
 
-	while (adder_list != NULL)
+	while (subs_list != NULL)
 	{
-		node = (nnode_t *)adder_list->data_vptr;
-		adder_list = delete_in_vptr_list(adder_list);
+		node = (nnode_t *)subs_list->data_vptr;
+		subs_list = delete_in_vptr_list(subs_list);
 
 		oassert(node != NULL);
-		oassert(node->type == ADD);
+		oassert(node->type == MINUS);
 
 		a = node->input_port_sizes[0];
 		b = node->input_port_sizes[1];
@@ -989,7 +905,7 @@ void iterate_adders(netlist_t *netlist)
 			else
 				count = countb;
 
-			split_adder(node, a, b, sizea, sizeb, 1, 1, count, netlist);
+			split_adder_for_sub(node, a, b, sizea, sizeb, 1, 1, count, netlist);
 		}
 		else
 		{
@@ -1000,7 +916,7 @@ void iterate_adders(netlist_t *netlist)
 			else
 				count = counta;
 
-			//pad_adder(node, a, b, sizea, sizeb, 1, 1, count, netlist);
+			//pad_adder_for_sub(node, a, b, sizea, sizeb, 1, 1, count, netlist);
 		}
 	}
 	return;
@@ -1012,10 +928,10 @@ void iterate_adders(netlist_t *netlist)
  * Clean up the memory by deleting the list structure of adders
  *	during optimization
  *-----------------------------------------------------------------------*/
-void clean_adders()
+void clean_adders_for_sub()
 {
-	while (add_list != NULL)
-		add_list = delete_in_vptr_list(add_list);
+	while (sub_list != NULL)
+		sub_list = delete_in_vptr_list(sub_list);
 	return;
 }
 

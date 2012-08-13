@@ -731,7 +731,10 @@ void compute_and_store_value(nnode_t *node, int cycle)
 			break;
 		//case FULLADDER:
 		case ADD:
-			compute_add_node(node, cycle);
+			compute_add_node(node, cycle, 0);
+			break;
+		case MINUS:
+			compute_add_node(node, cycle, 1);
 			break;
 		/* These should have already been converted to softer versions. */
 		case BITWISE_AND:
@@ -751,7 +754,7 @@ void compute_and_store_value(nnode_t *node, int cycle)
 		case GTE:
 		case LTE:
 		//case ADD:
-		case MINUS:
+		//case MINUS:
 		default:
 			error_message(SIMULATION_ERROR, 0, -1, "Node should have been converted to softer version: %s", node->name);
 			break;
@@ -1453,13 +1456,13 @@ int *multiply_arrays(int *a, int a_length, int *b, int b_length)
  * Computes the given add node for the given cycle.
  * add by Sen
  */
-void compute_add_node(nnode_t *node, int cycle)
+void compute_add_node(nnode_t *node, int cycle, int type)
 {
 	oassert(node->num_input_port_sizes == 3);
 	oassert(node->num_output_port_sizes == 2);
 
 	int i;
-	int flag = 0;
+	//int flag = 0;
 	char unknown = FALSE;
 	for (i = 0; i < (node->input_port_sizes[0] + node->input_port_sizes[1] + node->input_port_sizes[2]); i++)
 	{
@@ -1491,7 +1494,8 @@ void compute_add_node(nnode_t *node, int cycle)
 		for (i = 0; i < node->input_port_sizes[2]; i++)
 			c[i] = get_pin_value(node->input_pins[node->input_port_sizes[0]+ node->input_port_sizes[1] + i],cycle);
 
-		int *result = add_arrays(a, node->input_port_sizes[0], b, node->input_port_sizes[1], c, node->input_port_sizes[2],flag);
+		int *result = add_arrays(a, node->input_port_sizes[0], b, node->input_port_sizes[1], c, node->input_port_sizes[2],type);
+
 
 		for (i = 0; i < node->num_output_pins; i++)
 			update_pin_value(node->output_pins[i], result[i], cycle);
@@ -1519,39 +1523,70 @@ int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int c_length
 	int i;
 	int temp_carry_in;
 
-	//least significant bit would use the input carryIn, the other bits would use the compute value
-	result[0] = a[0] ^ b[0] ^ c[0];
-	if(flag == 0){
-		result[1] = (a[0] & b[0]) | (c[0] & b[0]) | (a[0] & c[0]);
-	}/*
-	else
+	if(flag == 0)
 	{
-		result[1] = (a[0] & b[0]) | (a[0] & 1) | (1 & b[0]);
-	}*/
-	temp_carry_in = result[1];
-	if(result_size > 2){
-		for(i = 1; i < min(a_length,b_length); i++)
-		{
-			result[i] = a[i] ^ b[i] ^ temp_carry_in;
-			result[i+1] = (a[i] & b[i]) | (a[i] & temp_carry_in) | (temp_carry_in & b[i]);
-			temp_carry_in = result[i+1];
-		}
-		if(a_length >= b_length)
-		{
-			for(i = b_length; i < a_length; i++)
+		//least significant bit would use the input carryIn, the other bits would use the compute value
+		result[0] = a[0] ^ b[0] ^ c[0];
+		result[1] = (a[0] & b[0]) | (c[0] & b[0]) | (a[0] & c[0]);
+
+		temp_carry_in = result[1];
+		if(result_size > 2){
+			for(i = 1; i < min(a_length,b_length); i++)
 			{
-				result[i] = a[i] ^ temp_carry_in;
-				result[i+1] = a[i] & temp_carry_in;
+				result[i] = a[i] ^ b[i] ^ temp_carry_in;
+				result[i+1] = (a[i] & b[i]) | (a[i] & temp_carry_in) | (temp_carry_in & b[i]);
 				temp_carry_in = result[i+1];
 			}
-		}
-		else
-		{
-			for(i = a_length; i < b_length; i++)
+			if(a_length >= b_length)
 			{
-				result[i] = a[i] ^ temp_carry_in;
-				result[i+1] = a[i] & temp_carry_in;
+				for(i = b_length; i < a_length; i++)
+				{
+					result[i] = a[i] ^ temp_carry_in;
+					result[i+1] = a[i] & temp_carry_in;
+					temp_carry_in = result[i+1];
+				}
+			}
+			else
+			{
+				for(i = a_length; i < b_length; i++)
+				{
+					result[i] = b[i] ^ temp_carry_in;
+					result[i+1] = b[i] & temp_carry_in;
+					temp_carry_in = result[i+1];
+				}
+			}
+		}
+	}
+	else
+	{
+		result[0] = a[0] ^ (!b[0]) ^ c[0];
+		result[1] = (a[0] & !b[0]) | (c[0] & !b[0]) | (a[0] & c[0]);
+
+		temp_carry_in = result[1];
+		if(result_size > 2){
+			for(i = 1; i < min(a_length,b_length); i++)
+			{
+				result[i] = a[i] ^ !b[i] ^ temp_carry_in;
+				result[i+1] = (a[i] & !b[i]) | (a[i] & temp_carry_in) | (temp_carry_in & !b[i]);
 				temp_carry_in = result[i+1];
+			}
+			if(a_length >= b_length)
+			{
+				for(i = b_length; i < a_length; i++)
+				{
+					result[i] = a[i] ^ temp_carry_in ^ 1;
+					result[i+1] = (a[i] & 1) | (a[i] & temp_carry_in) | (temp_carry_in & 1);
+					temp_carry_in = result[i+1];
+				}
+			}
+			else
+			{
+				for(i = a_length; i < b_length; i++)
+				{
+					result[i] = !b[i] ^ temp_carry_in ^ 0;
+					result[i+1] = (0 & !b[i]) | (0 & temp_carry_in) | (temp_carry_in & !b[i]);
+					temp_carry_in = result[i+1];
+				}
 			}
 		}
 	}
