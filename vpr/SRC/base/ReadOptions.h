@@ -127,6 +127,15 @@ enum e_echo_files {
 	E_ECHO_END_TOKEN
 };
 
+
+enum e_output_files {
+	E_CRIT_PATH_FILE,
+	E_NET_SLACK_FILE,
+	E_NET_SLACK_RATIO_FILE,
+	E_FILE_END_TOKEN
+};
+
+
 void ReadOptions(INP int argc,
 		INP char **argv,
 		OUTP t_options * Options);
@@ -143,6 +152,11 @@ char *getEchoFileName(enum e_echo_files echo_option);
 
 void alloc_and_load_echo_file_info();
 void free_echo_file_info();
+
+void setOutputFileName(enum e_output_files ename, const char *name);
+char *getOutputFileName(enum e_output_files ename);
+void alloc_and_load_output_file_names();
+void free_output_file_names();
 
 boolean IsTimingEnabled(INP t_options *Options);
 boolean IsEchoEnabled(INP t_options *Options);

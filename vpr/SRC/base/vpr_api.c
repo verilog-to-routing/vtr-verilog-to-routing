@@ -47,6 +47,8 @@ static void free_arch(t_arch* Arch);
 static void free_options(t_options *options);
 static void free_circuit(void);
 	
+static boolean has_printhandler_pre_vpr = FALSE;
+
 /* Local subroutines end */
 
 /* Display general VPR information */
@@ -140,8 +142,15 @@ void vpr_init(INP int argc, INP char **argv, OUTP t_options *options, OUTP t_vpr
 	unsigned long maxWarningCount = 1000;
 	unsigned long maxErrorCount = 1;
 
-	PrintHandlerNew( pszLogFileName );
-	PrintHandlerInit(enableTimeStamps, maxWarningCount, maxErrorCount );
+	if(PrintHandlerExists() == 1) {
+		has_printhandler_pre_vpr = TRUE;
+	} else {
+		has_printhandler_pre_vpr = FALSE;
+	}
+	if(has_printhandler_pre_vpr == FALSE) {
+		PrintHandlerNew( pszLogFileName );
+		PrintHandlerInit(enableTimeStamps, maxWarningCount, maxErrorCount );
+	}
 
 
 	/* Print title message */
@@ -685,7 +694,10 @@ void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options, INOUTP t_vpr_set
 	free_circuit();
 	free_arch(&Arch);	
 	free_echo_file_info();
-	PrintHandlerDelete( );
+	free_output_file_names();
+	if(has_printhandler_pre_vpr == FALSE) {
+		PrintHandlerDelete( );
+	}
 }
 
 

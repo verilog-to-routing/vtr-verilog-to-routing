@@ -37,7 +37,6 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 	float area, used_area;
 	int i, j;
 	t_timing_stats * timing_stats;
-	char * name;
 
 	get_length_and_bends_stats();
 	get_channel_occupancy_stats();
@@ -101,16 +100,11 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 					print_lut_remapping(getEchoFileName(E_ECHO_LUT_REMAPPING));
 			}
 
-			name = (char*)my_calloc(50 + strlen(default_output_name), sizeof(char));
-			sprintf(name, "%s.net_slack.out", default_output_name);
-			print_net_slack(slacks->net_slack, name);
-			sprintf(name, "%s.net_slack_ratio.out", default_output_name);
-			print_net_slack_ratio(slacks->net_slack_ratio, name);
+			print_net_slack(slacks->net_slack, getOutputFileName(E_NET_SLACK_FILE));
+			print_net_slack_ratio(slacks->net_slack_ratio, getOutputFileName(E_NET_SLACK_RATIO_FILE));
 			if (num_constrained_clocks == 1) {
-				sprintf(name, "%s.critical_path.out", default_output_name);
-				print_critical_path(name);
+				print_critical_path(getOutputFileName(E_CRIT_PATH_FILE));
 			}
-			free(name);
 
 			get_timing_stats(timing_stats);
 

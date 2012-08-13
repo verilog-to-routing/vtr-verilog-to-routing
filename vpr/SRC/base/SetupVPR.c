@@ -117,6 +117,8 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 		}
 	}
 
+	alloc_and_load_output_file_names();
+
 	FileNameOpts->CircuitName = Options->CircuitName;
 	FileNameOpts->ArchFile = Options->ArchFile;
 	FileNameOpts->BlifFile = Options->BlifFile;

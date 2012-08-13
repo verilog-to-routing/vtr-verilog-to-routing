@@ -7,11 +7,14 @@
 #include "OptionTokens.h"
 #include "ReadOptions.h"
 #include "read_settings.h"
+#include "globals.h"
 
 static boolean EchoEnabled;
 
 static boolean *echoFileEnabled = NULL;
-static char **echoFileName = NULL;
+static char **echoFileNames = NULL;
+
+static char **outputFileNames = NULL;
 
 /******** Function prototypes ********/
 
@@ -84,10 +87,10 @@ void setEchoFileEnabled(enum e_echo_files echo_option, boolean value) {
 }
 
 void setEchoFileName(enum e_echo_files echo_option, const char *name) {
-	if(echoFileName[(int)echo_option] != NULL) {
-		free(echoFileName[(int)echo_option]);
+	if(echoFileNames[(int)echo_option] != NULL) {
+		free(echoFileNames[(int)echo_option]);
 	}
-	echoFileName[(int)echo_option] = my_strdup(name);
+	echoFileNames[(int)echo_option] = my_strdup(name);
 }
 
 boolean isEchoFileEnabled(enum e_echo_files echo_option) {
@@ -98,12 +101,12 @@ boolean isEchoFileEnabled(enum e_echo_files echo_option) {
 	}
 }
 char *getEchoFileName(enum e_echo_files echo_option) {
-	return echoFileName[(int)echo_option];
+	return echoFileNames[(int)echo_option];
 }
 
 void alloc_and_load_echo_file_info() {
 	echoFileEnabled = (boolean*)my_calloc((int) E_ECHO_END_TOKEN, sizeof(boolean));
-	echoFileName = (char**)my_calloc((int) E_ECHO_END_TOKEN, sizeof(char*));
+	echoFileNames = (char**)my_calloc((int) E_ECHO_END_TOKEN, sizeof(char*));
 
 	setAllEchoFileEnabled(TRUE);
 
@@ -147,16 +150,58 @@ void free_echo_file_info() {
 	int i;
 	if(echoFileEnabled != NULL) {
 		for(i = 0; i < (int) E_ECHO_END_TOKEN; i++) {
-			if(echoFileName[i] != NULL) {
-				free(echoFileName[i]);
+			if(echoFileNames[i] != NULL) {
+				free(echoFileNames[i]);
 			}
 		}
-		free(echoFileName);
+		free(echoFileNames);
 		free(echoFileEnabled);
-		echoFileName = NULL;
+		echoFileNames = NULL;
 		echoFileEnabled = NULL;
 	}
 }
+
+void setOutputFileName(enum e_output_files ename, const char *name) {
+	if(outputFileNames[(int)ename] != NULL) {
+		free(outputFileNames[(int)ename]);
+	}
+	outputFileNames[(int)ename] = my_strdup(name);
+}
+
+char *getOutputFileName(enum e_output_files ename) {
+	return outputFileNames[(int)ename];
+}
+
+void alloc_and_load_output_file_names() {
+	char *name;
+
+	outputFileNames = (char**)my_calloc((int)E_FILE_END_TOKEN, sizeof(char*));
+
+	name = (char*)my_malloc((strlen(default_output_name) + 40) * sizeof(char));
+	sprintf(name, "%s.critical_path.out", default_output_name);
+	setOutputFileName(E_CRIT_PATH_FILE, name);
+	
+	sprintf(name, "%s.net_slack.out", default_output_name);
+	setOutputFileName(E_NET_SLACK_FILE, name);
+	
+	sprintf(name, "%s.net_slack_ratio.out", default_output_name);
+	setOutputFileName(E_NET_SLACK_RATIO_FILE, name);
+
+	free(name);
+}
+
+void free_output_file_names() {
+	int i;
+	for(i = 0; i < (int)E_FILE_END_TOKEN; i++) {
+		if(outputFileNames[i] != NULL) {
+			free(outputFileNames[i]);
+			outputFileNames[i] = NULL;
+		}
+	}
+	free(outputFileNames);
+}
+
+
 
 /******** Subroutine implementations ********/
 
