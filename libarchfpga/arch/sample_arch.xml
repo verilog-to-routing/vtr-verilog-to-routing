@@ -75,6 +75,31 @@ Architecture based off Stratix IV
     </model>
 
 
+<model name="adder">
+      <input_ports>
+      <port name="a"/>
+      <port name="b"/>
+      <port name="cin"/>
+      </input_ports>
+      <output_ports>
+      <port name="cout"/>
+      <port name="sumout"/>
+      </output_ports>
+    </model>
+
+    <model name="sub">
+      <input_ports>
+      <port name="a"/>
+      <port name="b"/>
+      <port name="cin"/>
+      </input_ports>
+      <output_ports>
+      <port name="cout"/>
+      <port name="sumout"/>
+      </output_ports>
+    </model>
+
+
   </models>
   <!-- ODIN II specific config ends -->
 
@@ -696,6 +721,101 @@ Architecture based off Stratix IV
           <loc type="col" start="7" repeat="50" priority="7"/>
         </gridlocations>
       </pb_type>
+
+ <!-- This is a basic ripple-carry adder primitive 
+           We will take care of the carry chain for it later, for now, get something that goes through the flow so that Odin II can be tested
+      -->
+      <pb_type name="adder" height="1">
+        <input name="a" num_pins="3"/>
+        <input name="b" num_pins="3"/>
+        <input name="cin" num_pins="1"/>
+        <output name="cout" num_pins="1"/>
+        <output name="sumout" num_pins="3"/>
+
+	<mode name="sample_adder">
+        <pb_type name="sample_adder" blif_model=".subckt adder" num_pb="1">
+            <input name="a" num_pins="3"/>
+            <input name="b" num_pins="3"/>
+            <input name="cin" num_pins="1"/>
+            <output name="cout" num_pins="1"/>
+            <output name="sumout" num_pins="3"/>
+            <delay_constant max="1.667e-9" in_port="sample_adder.a" out_port="sample_adder.cout"/>
+            <delay_constant max="1.667e-9" in_port="sample_adder.b" out_port="sample_adder.cout"/>
+            <delay_constant max="1.667e-9" in_port="sample_adder.cin" out_port="sample_adder.cout"/>
+            <delay_constant max="1.667e-9" in_port="sample_adder.a" out_port="sample_adder.sumout"/>
+            <delay_constant max="1.667e-9" in_port="sample_adder.b" out_port="sample_adder.sumout"/>
+            <delay_constant max="1.667e-9" in_port="sample_adder.cin" out_port="sample_adder.sumout"/>
+         </pb_type>
+
+        <interconnect>
+          <direct name="a2a" input="adder.a" output="sample_adder.a">
+          </direct>
+          <direct name="b2b" input="adder.b" output="sample_adder.b">
+          </direct>
+          <direct name="c2c" input="adder.cin" output="sample_adder.cin">
+          </direct>
+          <direct name="cout" input="sample_adder.cout" output="adder.cout">
+          </direct>
+          <direct name="sumout" input="sample_adder.sumout" output="adder.sumout">
+          </direct>
+        </interconnect>
+	</mode>
+
+        <fc_in type="frac">0.15</fc_in>
+        <fc_out type="frac">0.10</fc_out>
+        <pinlocations pattern="spread"/>
+
+        <gridlocations>
+          <loc type="col" start="2" repeat="13" priority="10"/>
+        </gridlocations>
+      </pb_type>
+
+	<!---->
+	 <pb_type name="sub" height="1">
+        <input name="a" num_pins="3"/>
+        <input name="b" num_pins="3"/>
+        <input name="cin" num_pins="1"/>
+        <output name="cout" num_pins="1"/>
+        <output name="sumout" num_pins="3"/>
+
+	<mode name="sample_sub">
+        <pb_type name="sample_sub" blif_model=".subckt sub" num_pb="1">
+            <input name="a" num_pins="3"/>
+            <input name="b" num_pins="3"/>
+            <input name="cin" num_pins="1"/>
+            <output name="cout" num_pins="1"/>
+            <output name="sumout" num_pins="3"/>
+            <delay_constant max="1.667e-9" in_port="sample_sub.a" out_port="sample_sub.cout"/>
+            <delay_constant max="1.667e-9" in_port="sample_sub.b" out_port="sample_sub.cout"/>
+            <delay_constant max="1.667e-9" in_port="sample_sub.cin" out_port="sample_sub.cout"/>
+            <delay_constant max="1.667e-9" in_port="sample_sub.a" out_port="sample_sub.sumout"/>
+            <delay_constant max="1.667e-9" in_port="sample_sub.b" out_port="sample_sub.sumout"/>
+            <delay_constant max="1.667e-9" in_port="sample_sub.cin" out_port="sample_sub.sumout"/>
+         </pb_type>
+
+        <interconnect>
+          <direct name="a2a" input="sub.a" output="sample_sub.a">
+          </direct>
+          <direct name="b2b" input="sub.b" output="sample_sub.b">
+          </direct>
+          <direct name="c2c" input="sub.cin" output="sample_sub.cin">
+          </direct>
+          <direct name="cout" input="sample_sub.cout" output="sub.cout">
+          </direct>
+          <direct name="sumout" input="sample_sub.sumout" output="sub.sumout">
+          </direct>
+        </interconnect>
+	</mode>
+
+        <fc_in type="frac">0.15</fc_in>
+        <fc_out type="frac">0.10</fc_out>
+        <pinlocations pattern="spread"/>
+
+        <gridlocations>
+          <loc type="col" start="2" repeat="13" priority="10"/>
+        </gridlocations>
+      </pb_type>
+
 
     </complexblocklist>
 
