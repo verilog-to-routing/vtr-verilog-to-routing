@@ -275,14 +275,13 @@ void instantiate_hard_adder(nnode_t *node, short mark, netlist_t *netlist)
 	/* Give names to the output pins */
 	for (i = 0; i < node->num_output_pins;  i++)
 	{
-		if (node->output_pins[i]->name)
+		if (node->output_pins[i]->name == NULL)
 		{
-			free(node->output_pins[i]->name);
+			len = strlen(node->name) + 6; /* 6 chars for pin idx */
+			new_name = (char*)malloc(len);
+			sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
+			node->output_pins[i]->name = new_name;
 		}
-		len = strlen(node->name) + 6; /* 6 chars for pin idx */
-		new_name = (char*)malloc(len);
-		sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
-		node->output_pins[i]->name = new_name;
 	}
 
 	free(node->name);
@@ -695,9 +694,11 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 				if((i * sizea + j) < nodeo->num_output_pins)
 					remap_pin_to_new_node(nodeo->output_pins[i * sizea + j], node[i], j);
 				else
+				{
 					node[i]->output_pins[j] = allocate_npin();
 					// Pad outputs with a unique and descriptive name to avoid collisions.
 				    node[i]->output_pins[j]->name = append_string("", "%s~dummy_output~%d~%d", node[i]->name, i, j);
+				}
 			}
 		}
 		node[count - 1]->output_pins[node[(count - 1)]->num_output_pins - 1] = allocate_npin();
