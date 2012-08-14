@@ -345,14 +345,14 @@ static void get_sdc_tok(char * buf) {
 
 		/* make sure clock has -period specified */
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (strcmp(ptr, "-period") != 0) {
+		if (!ptr || strcmp(ptr, "-period") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Create_clock must be followed by '-period' on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 		/* Check if the token following -period is actually a number. */
-		if (!is_number(ptr)) {
+		if (!ptr || !is_number(ptr)) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Token following '-period' is not a number on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
@@ -367,14 +367,14 @@ static void get_sdc_tok(char * buf) {
 			
 			/* Get the first float, which is the rising edge, and the second, which is the falling edge. */
 			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-			if (!is_number(ptr)) {
+			if (!ptr || !is_number(ptr)) {
 				vpr_printf(TIO_MESSAGE_ERROR, "First token following '-waveform' is not a number on line %d of SDC file.\n", file_line_number);
 				exit(1);
 			}
 			rising_edge = (float) strtod(ptr, NULL);
 
 			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-			if (!is_number(ptr)) {
+			if (!ptr || !is_number(ptr)) {
 				vpr_printf(TIO_MESSAGE_ERROR, "Second token following '-waveform' is not a number on line %d of SDC file.\n", file_line_number);
 				exit(1);
 			}
@@ -476,7 +476,7 @@ static void get_sdc_tok(char * buf) {
 		/* Syntax: set_clock_groups -exclusive -group {<clock list or regexes>} -group {<clock list or regexes>} [-group {<clock list or regexes>} ...] */
 
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (strcmp(ptr, "-exclusive") != 0) {
+		if (!ptr || strcmp(ptr, "-exclusive") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_clock_groups must be followed by '-exclusive' on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
@@ -523,7 +523,7 @@ static void get_sdc_tok(char * buf) {
 		/* Syntax: set_false_path -from <clock list or regexes> -to <clock list or regexes> */
 
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (strcmp(ptr, "-from") != 0) {
+		if (!ptr || strcmp(ptr, "-from") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_false_path must be followed by -from <clock/flip-flop_list> on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
@@ -569,14 +569,14 @@ static void get_sdc_tok(char * buf) {
 
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 		/* check if the token following set_max_delay is actually a number*/
-		if (!is_number(ptr)) {
+		if (!ptr || !is_number(ptr)) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Token following 'set_max_delay' is not a number on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 		max_delay = (float) strtod(ptr, NULL);
 
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (strcmp(ptr, "-from") != 0) {
+		if (!ptr || strcmp(ptr, "-from") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_max_delay requires -from <clock/flip-flop_list> after max_delay on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
@@ -623,13 +623,13 @@ static void get_sdc_tok(char * buf) {
 
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 		/* check if the token following set_max_delay is actually a number*/
-		if (strcmp(ptr, "-setup") != 0) {
+		if (!ptr || strcmp(ptr, "-setup") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_multicycle_path must be followed by -setup on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (strcmp(ptr, "-from") != 0) {
+		if (!ptr || strcmp(ptr, "-from") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_multicycle_path must be followed by -from <clock/flip-flop_list> after -setup on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
@@ -661,7 +661,7 @@ static void get_sdc_tok(char * buf) {
 			/* Keep adding clock names to to_list until we hit a number (i.e. num_multicycles). */
 			to_list = (char **) my_realloc(to_list, ++num_to * sizeof(char *));
 			to_list[num_to - 1] = ptr;
-		} while (!is_number(ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)));
+		} while (ptr && !is_number(ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)));
 
 		if (!ptr) {
 			/* We hit the end of the line before finding a number. */
@@ -682,7 +682,7 @@ static void get_sdc_tok(char * buf) {
 		/* We want to assign virtual_clock to all input ports in port_list, and set the input delay (from the external device to the FPGA) to max_delay. */
 
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (strcmp(ptr, "-clock") != 0) {
+		if (!ptr || strcmp(ptr, "-clock") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_input_delay must be followed by '-clock <virtual or netlist clock name>' on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
@@ -697,21 +697,21 @@ static void get_sdc_tok(char * buf) {
 		}
 	
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (strcmp(ptr, "-max") != 0) {
+		if (!ptr || strcmp(ptr, "-max") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_input_delay -clock <virtual or netlist clock name> must be followed by '-max <maximum_input_delay>' on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 		/* check if the token following -max is actually a number*/
-		if (!is_number(ptr)) {
+		if (!ptr || !is_number(ptr)) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Token following '-max' is not a number on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 		max_delay = (float) strtod(ptr, NULL);
 
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (strcmp(ptr, "get_ports") != 0) {
+		if (!ptr || strcmp(ptr, "get_ports") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_input_delay requires a [get_ports {...}] command following '-max <max_input_delay>' on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
@@ -757,7 +757,7 @@ static void get_sdc_tok(char * buf) {
 		/* We want to assign virtual_clock to all output ports in port_list, and set the output delay (from the external device to the FPGA) to max_delay. */
 
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (strcmp(ptr, "-clock") != 0) {
+		if (!ptr || strcmp(ptr, "-clock") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_output_delay must be followed by '-clock <virtual_clock_name>' on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
@@ -772,21 +772,21 @@ static void get_sdc_tok(char * buf) {
 		}
 
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (strcmp(ptr, "-max") != 0) {
+		if (!ptr || strcmp(ptr, "-max") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_output_delay -clock <virtual or netlist clock name> must be followed by '-max <maximum_output_delay>' on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 		/* check if the token following -max is actually a number*/
-		if (!is_number(ptr)) {
+		if (!ptr || !is_number(ptr)) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Token following '-max' is not a number on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 		max_delay = (float) strtod(ptr, NULL);
 
 		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (strcmp(ptr, "get_ports") != 0) {
+		if (!ptr || strcmp(ptr, "get_ports") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_output_delay requires a [get_ports {...}] command following '-max <max_output_delay>' on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
