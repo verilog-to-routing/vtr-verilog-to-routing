@@ -211,9 +211,10 @@ void read_user_pad_loc(char *pad_loc_file) {
 
 		h_ptr = get_hash_entry(hash_table, bname);
 		if (h_ptr == NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR, "block %s on line %d: no such IO pad.\n", bname,
+			vpr_printf(TIO_MESSAGE_WARNING, "block %s on line %d: no such IO pad.\n", bname,
 					file_line_number);
-			exit(1);
+			ptr = my_fgets(buf, BUFSIZE, fp);
+			continue;
 		}
 		bnum = h_ptr->index;
 		i = xtmp;
