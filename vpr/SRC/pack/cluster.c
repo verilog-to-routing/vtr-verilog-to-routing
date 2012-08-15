@@ -396,7 +396,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			/* Only calculate for tnodes which have valid arrival and required times.  
 			Tnodes that do not have both times valid were not part of the analysis. 
 			Because we calloc-ed the array criticality, such nodes will have criticality 0, the lowest possible value. */
-			if (tnode[i].T_arr > HUGE_NEGATIVE_FLOAT + 1 && tnode[i].T_req < HUGE_POSITIVE_FLOAT - 1) {
+			if (tnode[i].has_valid_slack) {
 				iblk = tnode[i].block;
 				num_paths_scaling = SCALE_NUM_PATHS
 						* (float) tnode[i].normalized_total_critical_paths;

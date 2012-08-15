@@ -326,6 +326,7 @@ typedef struct s_tnode {
 	float T_req;
 	int block;
 	boolean used_on_this_traversal; /* Has this tnode been touched on this timing graph traversal? */
+	boolean has_valid_slack; /* Has this tnode been touched on the most recent call of do_timing_analysis? */
 
 	/* For flipflops and I/Os only. Clock_domain contains the index of the clock in netlist_clocks; clock_skew is the time taken for a clock signal to get to the flip-flop. */
 	int clock_domain; 
@@ -348,7 +349,7 @@ typedef struct s_tnode {
 
 typedef struct s_clock {
 	char * name;
-	boolean is_netlist_clock;
+	boolean is_netlist_clock; /* currently used only in timing stats */
 	int fanout;
 } t_clock;
 /* Stores the name and fanout (number of flip-flops in clock domain) of each clock,

@@ -692,7 +692,7 @@ void print_clustering_timing_info(const char *fname) {
 		fprintf(fp, "%d\t%ld\t\t\t%ld\t\t\t", inode, tnode[inode].num_critical_input_paths, tnode[inode].num_critical_output_paths); 
 		
 		/* Only print normalized values for tnodes which have valid arrival and required times. */
-		if (tnode[inode].T_arr > HUGE_NEGATIVE_FLOAT + 1 && tnode[inode].T_req < HUGE_POSITIVE_FLOAT - 1) {
+		if (tnode[inode].has_valid_slack) {
 			fprintf(fp, "%f\t%f\t%f\n", tnode[inode].normalized_slack, tnode[inode].normalized_T_arr, tnode[inode].normalized_total_critical_paths);
 		} else {
 			fprintf(fp, "--\t\t--\t\t--\n");
@@ -1426,7 +1426,7 @@ void print_timing_graph(const char *fname) {
 		fprintf(fp, "\n\nNode #\t\tT_arr\t\tT_req\n\n");
 
 		for (inode = 0; inode < num_tnodes; inode++) {
-			if (tnode[inode].T_arr > HUGE_NEGATIVE_FLOAT + 1) {
+			if (tnode[inode].has_valid_slack) {
 				fprintf(fp, "%d\t%12g", inode, tnode[inode].T_arr);
 			} else {
 				fprintf(fp, "%d\t\t   -", inode);
@@ -1522,6 +1522,22 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 		}
 	}
 
+	/* Reset all normalized values. */
+#if CLUSTERER_CRITICALITY != 'S'
+	if (is_prepacked) { 
+		for (inode = 0; inode < num_tnodes; inode++) {			
+			tnode[inode].normalized_slack = HUGE_POSITIVE_FLOAT;
+			tnode[inode].normalized_T_arr = HUGE_POSITIVE_FLOAT;
+			tnode[inode].normalized_total_critical_paths = HUGE_NEGATIVE_FLOAT;
+		}
+	}
+#endif
+
+	/* Reset all has_valid_slack flags to FALSE. */
+	for (inode = 0; inode < num_tnodes; inode++) {
+		tnode[inode].has_valid_slack = FALSE;
+	}
+
 	/* For each source clock domain, we do one forward and one backward breadth-first traversal.  */
 	for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
 #if CLUSTERER_CRITICALITY != 'S' || SLACK_RATIO_DEFINITION == 1 || SLACK_DEFINITION == 4 || SLACK_DEFINITION == 5
@@ -1535,17 +1551,6 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 			tnode[inode].T_arr = HUGE_NEGATIVE_FLOAT; 
 			tnode[inode].T_req = HUGE_POSITIVE_FLOAT;
 		}
-
-#if CLUSTERER_CRITICALITY != 'S'
-		if (is_prepacked) {
-			for (inode = 0; inode < num_tnodes; inode++) {
-				/* Reset all normalized values to a very large positive number. */
-				tnode[inode].normalized_slack = HUGE_POSITIVE_FLOAT;
-				tnode[inode].normalized_T_arr = HUGE_POSITIVE_FLOAT;
-				tnode[inode].normalized_total_critical_paths = HUGE_POSITIVE_FLOAT;
-			}
-		}
-#endif
 
 		num_at_level = tnodes_at_level[0].nelem;	/* There are num_at_level top-level tnodes. */
 				
@@ -1636,26 +1641,26 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 				inode = tnodes_at_level[ilevel].list[i];
 				num_edges = tnode[inode].num_edges;
 
-			if (ilevel == 0) {
-				if (!(tnode[inode].type == INPAD_SOURCE || tnode[inode].type == FF_SOURCE || tnode[inode].type == CONSTANT_GEN_SOURCE)) {
-					vpr_printf(TIO_MESSAGE_ERROR, "Timing graph started on unexpected node %s.%s[%d].  This is a VPR internal error, contact VPR development team\n", 
-						tnode[inode].pb_graph_pin->parent_node->pb_type->name, tnode[inode].pb_graph_pin->port->name, tnode[inode].pb_graph_pin->pin_number);
-					exit(1);
+				if (ilevel == 0) {
+					if (!(tnode[inode].type == INPAD_SOURCE || tnode[inode].type == FF_SOURCE || tnode[inode].type == CONSTANT_GEN_SOURCE)) {
+						vpr_printf(TIO_MESSAGE_ERROR, "Timing graph started on unexpected node %s.%s[%d].  This is a VPR internal error, contact VPR development team\n", 
+							tnode[inode].pb_graph_pin->parent_node->pb_type->name, tnode[inode].pb_graph_pin->port->name, tnode[inode].pb_graph_pin->pin_number);
+						exit(1);
+					}
+				} else {
+					if ((tnode[inode].type == INPAD_SOURCE || tnode[inode].type == FF_SOURCE || tnode[inode].type == CONSTANT_GEN_SOURCE)) {
+						vpr_printf(TIO_MESSAGE_ERROR, "Timing graph discovered unexpected edge to node %s.%s[%d].  This is a VPR internal error, contact VPR development team\n", 
+							tnode[inode].pb_graph_pin->parent_node->pb_type->name, tnode[inode].pb_graph_pin->port->name, tnode[inode].pb_graph_pin->pin_number);
+						exit(1);
+					}
 				}
-			} else {
-				if ((tnode[inode].type == INPAD_SOURCE || tnode[inode].type == FF_SOURCE || tnode[inode].type == CONSTANT_GEN_SOURCE)) {
-					vpr_printf(TIO_MESSAGE_ERROR, "Timing graph discovered unexpected edge to node %s.%s[%d].  This is a VPR internal error, contact VPR development team\n", 
-						tnode[inode].pb_graph_pin->parent_node->pb_type->name, tnode[inode].pb_graph_pin->port->name, tnode[inode].pb_graph_pin->pin_number);
-					exit(1);
-				}
-			}
 
 				if (num_edges == 0) { /* sink */
 
 					/* Test this tnode against several conditions to make sure we should analyse it. */
 
-					if (tnode[inode].type == FF_CLOCK) {
-						continue; /* Skip nodes on the clock net itself. */
+					if (tnode[inode].type == FF_CLOCK || tnode[inode].T_arr < HUGE_NEGATIVE_FLOAT + 1) {
+						continue; /* Skip nodes on the clock net itself, and nodes with unset arrival times. */
 					}
 
 					if (!(tnode[inode].type == OUTPAD_SINK || tnode[inode].type == FF_SINK)) {
@@ -1691,11 +1696,13 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 						continue;
 					}
 		
-					/* Now we know we should analyse this tnode. Flip-flop sinks on this clock domain which come from 
-					unconstrained I/Os will be erroneously analyzed here, but this will not affect slack calculations. 
-					I'm not sure what effect this will have on runtime, however. */
-
-					tnode[inode].used_on_this_traversal = TRUE;	/* Mark that we've changed this node on this traversal (signalling we should update its slack later). */
+					/* Now we know we should analyse this tnode. */
+					
+					/* Mark that we've changed this node on this traversal (signalling we should update its slack later). */
+					tnode[inode].used_on_this_traversal = TRUE;	
+										
+					/* Mark that we've changed this node on this call of do_timing_analysis (signalling to later functions that the slack is valid) */
+					tnode[inode].has_valid_slack = TRUE; 
 
 #if SLACK_DEFINITION == 4
 					/* Normalize the required time at the sink node to be >=0 by taking the max of the "real" 
@@ -1748,8 +1755,8 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 					We cannot treat case 2 as simply since the required time for this node has not yet been assigned, so we have to look at the required time for every node in its fanout instead. */
 
 					/* Cases 1 and 3 */
-					if (tnode[inode].T_arr < HUGE_NEGATIVE_FLOAT + 1) { /* If T_arr = HUGE_NEGATIVE_FLOAT... */
-						continue;	
+					if (tnode[inode].T_arr < HUGE_NEGATIVE_FLOAT + 1) { 
+						continue; /* Skip nodes with unset arrival times. */
 					}
 					
 					/* Case 2 */
@@ -1766,8 +1773,12 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 					}
 					/* Now we know this node is on a happy path, and needs to be analyzed. */
 
-					tnode[inode].used_on_this_traversal = TRUE;	/* Mark that we've changed this node on this traversal (signalling we should update its slack later). */
-					
+					/* Mark that we've changed this node on this traversal (signalling we should update its slack later). */
+					tnode[inode].used_on_this_traversal = TRUE;						
+
+					/* Mark that we've changed this node on this call of do_timing_analysis (signalling to later functions that the slack is valid) */
+					tnode[inode].has_valid_slack = TRUE; 
+
 					for (iedge = 0; iedge < num_edges; iedge++) {
 						/* Opposite to T_arr, set T_req to the minimum of the required times of all edges fanning out from this node. */
 						to_node = tedge[iedge].to_node;
@@ -1865,40 +1876,42 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 	}		
 #endif
 
-	/* Make sure something has been actually analyzed during this timing analysis. */
-	found = FALSE;
-	for (inet = 0; inet < num_timing_nets && !found; inet++) {
-		inode = net_to_driver_tnode[inet];
-		num_edges = tnode[inode].num_edges;
-		for (iedge = 0; iedge < num_edges && !found; iedge++) {
-			if (net_slack[inet][iedge + 1] < HUGE_POSITIVE_FLOAT - 1) {
-				found = TRUE;
-			}
-		}
-	}
-	if(!found) {
-		if (num_constrained_clocks == 1) {
-			/* We have a sequential circuit with no internal flip-flop-to-flip-flop paths. 
-			However, there's only one constrained netlist clock, so we can constrain all I/Os on 
-			it and then timing analyse paths between I/Os and flip-flops or I/Os and I/Os 
-			(a sensible	default). */
-			vpr_printf(TIO_MESSAGE_WARNING, "No paths were analysed during timing analysis.\n"
-										    "Constraining all I/Os on the netlist clock.\n\n");
-			free_timing_stats(timing_stats); 
-			for (inode = 0; inode < num_tnodes; inode++) {
-				if (tnode[inode].type == INPAD_SOURCE || tnode[inode].type == OUTPAD_SINK) {
-					tnode[inode].clock_domain = 0; /* i.e. the domain of the single constrained clock */
+	if (!is_prepacked) { // i.e this is not fancy or hybrid criticality AND pre-packed, where we don't even use net slack
+		/* Make sure something has been actually analyzed during this timing analysis. */
+		found = FALSE;
+		for (inet = 0; inet < num_timing_nets && !found; inet++) {
+			inode = net_to_driver_tnode[inet];
+			num_edges = tnode[inode].num_edges;
+			for (iedge = 0; iedge < num_edges && !found; iedge++) {
+				if (net_slack[inet][iedge + 1] < HUGE_POSITIVE_FLOAT - 1) {
+					found = TRUE;
 				}
 			}
-			/* Redo timing analysis with the newly-constrained I/Os */
-			timing_stats = do_timing_analysis(slacks, is_prepacked, do_lut_input_balancing, is_final_analysis);
-		} else {
-			/* Multiple constrained clocks, so we don't know which clock to constrain I/Os on. 
-			The user has to decide. This situation should only come up if the user used an 
-			SDC file in the first place. */
-			vpr_printf(TIO_MESSAGE_ERROR, "No paths were analysed during timing analysis.\n"
-										  "You may wish to constrain some or all I/Os.\n");
-			exit(1);
+		}
+		if(!found) {
+			if (num_constrained_clocks == 1) {
+				/* We have a sequential circuit with no internal flip-flop-to-flip-flop paths. 
+				However, there's only one constrained netlist clock, so we can constrain all I/Os on 
+				it and then timing analyse paths between I/Os and flip-flops or I/Os and I/Os 
+				(a sensible	default). */
+				vpr_printf(TIO_MESSAGE_WARNING, "No paths were analysed during timing analysis.\n"
+											    "Constraining all I/Os on the netlist clock.\n\n");
+				free_timing_stats(timing_stats); 
+				for (inode = 0; inode < num_tnodes; inode++) {
+					if (tnode[inode].type == INPAD_SOURCE || tnode[inode].type == OUTPAD_SINK) {
+						tnode[inode].clock_domain = 0; /* i.e. the domain of the single constrained clock */
+					}
+				}
+				/* Redo timing analysis with the newly-constrained I/Os */
+				timing_stats = do_timing_analysis(slacks, is_prepacked, do_lut_input_balancing, is_final_analysis);
+			} else {
+				/* Multiple constrained clocks, so we don't know which clock to constrain I/Os on. 
+				The user has to decide. This situation should only come up if the user used an 
+				SDC file in the first place. */
+				vpr_printf(TIO_MESSAGE_ERROR, "No paths were analysed during timing analysis.\n"
+											  "You may wish to constrain some or all I/Os.\n");
+				exit(1);
+			}
 		}
 	}
 
@@ -2058,7 +2071,7 @@ t_linked_int * allocate_and_load_critical_path(void) {
 
 	t_linked_int *critical_path_head, *curr_crit_node, *prev_crit_node;
 	int inode, iedge, to_node, num_at_level_zero, i, crit_node, num_edges;
-	float min_slack, slack, T_arr, T_req;
+	float min_slack, slack;
 	t_tedge *tedge;
 
 	num_at_level_zero = tnodes_at_level[0].nelem;
@@ -2067,11 +2080,10 @@ t_linked_int * allocate_and_load_critical_path(void) {
 
 	for (i = 0; i < num_at_level_zero; i++) { /* Path must start at SOURCE (no inputs) */
 		inode = tnodes_at_level[0].list[i];
-		T_arr = tnode[inode].T_arr;
-		T_req = tnode[inode].T_req;
+
 		/* Only consider tnodes which have valid arrival and required times. */
-		if (T_arr > HUGE_NEGATIVE_FLOAT + 1 && T_req < HUGE_POSITIVE_FLOAT - 1) {
-			slack = T_req - T_arr;
+		if (tnode[inode].has_valid_slack) {
+			slack = tnode[inode].T_req - tnode[inode].T_arr;
 			if (slack < min_slack) {
 				crit_node = inode;
 				min_slack = slack;
@@ -2200,12 +2212,12 @@ static void normalize_costs(float T_arr_max_this_domain, long max_critical_input
 	int inode;
 	for (inode = 0; inode < num_tnodes; inode++) {
 		/* Only calculate for tnodes which have valid arrival and required times. */
-		if (tnode[inode].T_arr > HUGE_NEGATIVE_FLOAT + 1 && tnode[inode].T_req < HUGE_POSITIVE_FLOAT - 1) {
+		if (tnode[inode].has_valid_slack) {
 			tnode[inode].normalized_slack = min(tnode[inode].normalized_slack, 
 				(tnode[inode].T_req - tnode[inode].T_arr)/T_arr_max_this_domain);
 			tnode[inode].normalized_T_arr = min(tnode[inode].normalized_T_arr, 
 				tnode[inode].T_arr/T_arr_max_this_domain);
-			tnode[inode].normalized_total_critical_paths = min(tnode[inode].normalized_total_critical_paths, 
+			tnode[inode].normalized_total_critical_paths = max(tnode[inode].normalized_total_critical_paths, 
 					((float) tnode[inode].num_critical_input_paths + tnode[inode].num_critical_output_paths) /
 							 ((float) max_critical_input_paths + max_critical_output_paths));
 		}

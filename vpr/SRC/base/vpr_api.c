@@ -55,7 +55,7 @@ static boolean has_printhandler_pre_vpr = FALSE;
 void vpr_print_title(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 	vpr_printf(TIO_MESSAGE_INFO, "VPR FPGA Placement and Routing.\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Version: Version " VPR_VERSION);
+	vpr_printf(TIO_MESSAGE_INFO, "Version: Version " VPR_VERSION "\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Compiled: " __DATE__ ".\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Original VPR by V. Betz.\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Timing-driven placement enhancements by A. Marquardt.\n");
