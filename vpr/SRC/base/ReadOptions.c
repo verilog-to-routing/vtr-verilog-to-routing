@@ -195,13 +195,16 @@ void alloc_and_load_output_file_names() {
 
 void free_output_file_names() {
 	int i;
-	for(i = 0; i < (int)E_FILE_END_TOKEN; i++) {
-		if(outputFileNames[i] != NULL) {
-			free(outputFileNames[i]);
-			outputFileNames[i] = NULL;
+	if(outputFileNames != NULL) {
+		for(i = 0; i < (int)E_FILE_END_TOKEN; i++) {
+			if(outputFileNames[i] != NULL) {
+				free(outputFileNames[i]);
+				outputFileNames[i] = NULL;
+			}
 		}
+		free(outputFileNames);
+		outputFileNames = NULL;
 	}
-	free(outputFileNames);
 }
 
 

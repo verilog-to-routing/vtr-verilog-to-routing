@@ -764,7 +764,16 @@ void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options, INOUTP t_vpr_set
 		ShowSetup(options, vpr_setup);
 	}
 
-
+	/* Output file names management */
+	void vpr_alloc_and_load_output_file_names() {
+		alloc_and_load_output_file_names();
+	}
+	void vpr_set_output_file_name(enum e_output_files ename, const char *name) {
+		setOutputFileName(ename, name);
+	}
+	char *vpr_get_output_file_name(enum e_output_files ename) {
+		return getOutputFileName(ename);
+	}
 
 
 
