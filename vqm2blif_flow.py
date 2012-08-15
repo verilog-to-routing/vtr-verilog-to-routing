@@ -172,7 +172,7 @@ def gen_vqm(args):
 
         #Runs quartus_cdb --merge, before the quartus_cdb --vqm call
         if args.do_cdb_merge:
-            q2_cmd.append('--cdb_merge')
+            q2_cmd.append('-cdb_merge')
 
         #Verilog to vqm conversion
         try:
@@ -261,3 +261,4 @@ if __name__ == '__main__':
         run_vpr(args)
 
     print "\nINFO: vqm2blif_flow script complete"
+    sys.exit(0)
