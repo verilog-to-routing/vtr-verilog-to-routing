@@ -10,7 +10,7 @@ void print_usage (t_boolean terminate){
 	cout << "\tvqm2blif -vqm <VQM file>.vqm -arch <ARCH file>.xml\n" ;
 	cout << "OPTIONAL FLAGS:\n" ;
 	cout << "\t-out <OUT file>.blif\n" ;
-	cout << "\t-elab [none | modes]\n" ;
+	cout << "\t-elab [none | modes | modes_detailed]\n" ;
 	cout << "\t-clean [none | buffers | all]\n" ;
 	cout << "\t-buffouts\n" ;
 	cout << "\t-luts [vqm | blif]\n" ;
