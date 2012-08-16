@@ -30,6 +30,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 extern t_model *hard_subs;
 extern struct s_linked_vptr *subs_list;
 extern struct s_linked_vptr *sub_list;
+extern struct s_linked_vptr *sub_one_node_list;
 
 extern void init_sub_distribution();
 extern void report_sub_distribution();
