@@ -38,6 +38,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 t_model *hard_subs = NULL;
 struct s_linked_vptr *subs_list = NULL;
 struct s_linked_vptr *sub_list = NULL;
+struct s_linked_vptr *sub_one_node_list = NULL;
 //int min_add = 0;
 int *sub = NULL;
 
@@ -103,11 +104,9 @@ void report_sub_distribution()
  *-------------------------------------------------------------------------*/
 void find_hard_adders_for_sub()
 {
-	if(sub_list != NULL)
-	{
-		hard_subs = Arch.models;
-		min_add = configuration.min_hard_adder;
-	}
+
+	hard_subs = Arch.models;
+	min_add = configuration.min_hard_adder;
 
 	while (hard_subs != NULL)
 	{
@@ -190,14 +189,14 @@ void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t *ne
 	/* Give names to the output pins */
 	for (i = 0; i < node->num_output_pins;  i++)
 	{
-		if (node->output_pins[i]->name)
+		if (node->output_pins[i]->name ==NULL)
 		{
-			free(node->output_pins[i]->name);
+			//free(node->output_pins[i]->name);
+			len = strlen(node->name) + 6; /* 6 chars for pin idx */
+			new_name = (char*)malloc(len);
+			sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
+			node->output_pins[i]->name = new_name;
 		}
-		len = strlen(node->name) + 6; /* 6 chars for pin idx */
-		new_name = (char*)malloc(len);
-		sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
-		node->output_pins[i]->name = new_name;
 	}
 
 	free(node->name);
@@ -396,7 +395,7 @@ void init_split_adder_for_sub(nnode_t *node, nnode_t *ptr, int a, int sizea, int
 	int i;
 	int flaga = 0, flagb = 0;
 	int current_sizea, current_sizeb;
-	int aa, bb;
+	int aa = 0, bb = 0;
 
 	/* Copy properties from original node */
 	ptr->type = node->type;
