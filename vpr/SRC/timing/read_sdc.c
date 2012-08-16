@@ -520,17 +520,18 @@ static boolean get_sdc_tok(char * buf) {
 		for (source_clock_domain = 0; source_clock_domain < num_exclusive_clocks; source_clock_domain++) {
 			for (sink_clock_domain = 0; sink_clock_domain < num_exclusive_clocks; sink_clock_domain++) {
 				if (exclusive_groups[source_clock_domain].group != exclusive_groups[sink_clock_domain].group) {
+					from_list = (char **) my_malloc(sizeof(char *));
+					to_list = (char **) my_malloc(sizeof(char *));
 					from_list[0] = my_strdup(exclusive_groups[source_clock_domain].name);
 					to_list[0]= my_strdup(exclusive_groups[sink_clock_domain].name);
 					add_override_constraint(from_list, 1, to_list, 1, DO_NOT_ANALYSE, 0, TRUE, TRUE);
+					/* Finally, set from_list and to_list to NULL since there are now pointers to the same text as them. */
+					from_list = NULL, to_list = NULL;
 				}
 			}
 		}
 
 		free(exclusive_groups);
-			
-		/* Finally, set from_list and to_list to NULL since cc_constraints now has pointers to the same text as them. */
-		from_list = NULL, to_list = NULL;
 
 		return TRUE;
 
@@ -575,7 +576,7 @@ static boolean get_sdc_tok(char * buf) {
 		/* Create a constraint between each element in from_list and each element in to_list with value DO_NOT_ANALYSE. */
 		add_override_constraint(from_list, num_from, to_list, num_to, DO_NOT_ANALYSE, 0, domain_level_from, domain_level_to);
 		
-		/* Finally, set from_list and to_list to NULL since cc_constraints now has pointers to the same text as them. */
+		/* Finally, set from_list and to_list to NULL since there are now pointers to the same text as them. */
 		from_list = NULL, to_list = NULL;
 
 		return TRUE;
@@ -631,7 +632,7 @@ static boolean get_sdc_tok(char * buf) {
 		/* Create a constraint between each element in from_list and each element in to_list with value max_delay. */
 		add_override_constraint(from_list, num_from, to_list, num_to, max_delay, 0, domain_level_from, domain_level_to);
 		
-		/* Finally, set from_list and to_list to NULL since cc_constraints now has pointers to the same text as them. */
+		/* Finally, set from_list and to_list to NULL since there are now pointers to the same text as them. */
 		from_list = NULL, to_list = NULL;
 
 		return TRUE;
@@ -696,7 +697,7 @@ static boolean get_sdc_tok(char * buf) {
 		information about the periods and offsets of the clock domains which from and to, which we have to fill in at the end. */
 		add_override_constraint(from_list, num_from, to_list, num_to, HUGE_NEGATIVE_FLOAT /* irrelevant - never used */, num_multicycles, domain_level_from, domain_level_to);
 		
-		/* Finally, set from_list and to_list to NULL since cc_constraints now has pointers to the same text as them. */
+		/* Finally, set from_list and to_list to NULL since there are now pointers to the same text as them. */
 		from_list = NULL, to_list = NULL;
 
 		return TRUE;
