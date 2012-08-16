@@ -1400,6 +1400,7 @@ void print_timing_graph(const char *fname) {
 		} else if (itype == INPAD_SOURCE) {
 			fprintf(fp, "%d\t\t%.3e\t", tnode[inode].clock_domain, tnode[inode].out_edges[0].Tdel);
 		} else if (itype == OUTPAD_SINK) {
+			assert(tnode[inode-1].type == OUTPAD_IPIN); /* Outpad ipins should be one prior in the tnode array */
 			fprintf(fp, "%d\t\t%.3e\t", tnode[inode].clock_domain, tnode[inode-1].out_edges[0].Tdel);
 		} else {
 			fprintf(fp, "\t\t\t\t");
@@ -1461,10 +1462,15 @@ static void print_remove_and_normalize_constraints(void) {
 	mark off that we've used that sink clock domain.  After	each traversal, set all unused
 	constraints to DO_NOT_ANALYSE. 
 	
-	Also, print timing_constraints, constrained_ios and override constraints, 
-	and normalize constraints to be in seconds rather than nanoseconds. */
+	Also, print timing_constraints, constrained I/Os and override constraints, 
+	and normalize timing_constraints and flip-flop-level override constraints
+	to be in seconds rather than nanoseconds. We don't need to normalize cc_constraints
+	because they're already on the timing_constraints matrix, and we don't need
+	to normalize constrained_ios because we already did the normalization when
+	we put the delays onto the timing graph in load_clock_domain_and_skew_and_io_delay. */
 
-	int source_clock_domain, sink_clock_domain, inode, ilevel, num_at_level, i, num_edges, iedge, to_node, iio;
+	int source_clock_domain, sink_clock_domain, inode, ilevel, num_at_level, i, 
+		num_edges, iedge, to_node, icf, ifc, iff;
 	t_tedge * tedge;
 	float constraint;
 	boolean * constraint_used = (boolean *) my_malloc(num_constrained_clocks * sizeof(boolean));
@@ -1532,7 +1538,7 @@ static void print_remove_and_normalize_constraints(void) {
 		print_timing_constraint_info(getEchoFileName(E_ECHO_TIMING_CONSTRAINTS));
 	}
 
-	/* Normalize timing_constraint and constrained_ios to be in seconds, not nanoseconds. */
+	/* Normalize timing_constraint and ff-level override constraints to be in seconds, not nanoseconds. */
 	for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
 		for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
 			constraint = timing_constraint[source_clock_domain][sink_clock_domain];
@@ -1541,9 +1547,14 @@ static void print_remove_and_normalize_constraints(void) {
 			}
 		}
 	}
-
-	for (iio = 0; iio < num_constrained_ios; iio++) {
-		constrained_ios[iio].delay /= 1e9;
+	for (icf = 0; icf < num_cf_constraints; icf++) {
+		cf_constraints[icf].constraint /= 1e9;
+	}
+	for (ifc = 0; ifc < num_fc_constraints; ifc++) {
+		fc_constraints[ifc].constraint /= 1e9;
+	}
+	for (iff = 0; iff < num_ff_constraints; iff++) {
+		ff_constraints[iff].constraint /= 1e9;
 	}
 
 	/* Finally, free cc_constraints since all of its info is contained in timing_constraint. */
@@ -2430,7 +2441,7 @@ Marks unconstrained I/Os with a dummy clock domain (-1). */
 				/* Increment the fanout of this virtual clock domain. */
 				constrained_clocks[clock_index].fanout++;
 				/* Mark input delay specified in SDC file on the timing graph edge leading out from the INPAD_SOURCE node. */
-				tnode[inode].out_edges[0].Tdel = constrained_ios[io_index].delay;
+				tnode[inode].out_edges[0].Tdel = constrained_ios[io_index].delay / 1e9; /* normalize to be in seconds not ns */
 			} else { /* We have an unconstrained input - mark with dummy clock domain and do not analyze. */
 				tnode[inode].clock_domain = -1;
 			}
@@ -2458,7 +2469,7 @@ Marks unconstrained I/Os with a dummy clock domain (-1). */
 				/* Mark output delay specified in SDC file on the timing graph edge leading into the OUTPAD_SINK node. 
 				However, this edge is part of the corresponding OUTPAD_IPIN node. 
 				Exploit the fact that the OUTPAD_IPIN node will always be one prior in the tnode array. */
-				tnode[inode - 1].out_edges[0].Tdel = constrained_ios[io_index].delay;
+				tnode[inode - 1].out_edges[0].Tdel = constrained_ios[io_index].delay / 1e9; /* normalize to be in seconds not ns */
 
 			} else { /* We have an unconstrained input - mark with dummy clock domain and do not analyze. */
 				tnode[inode].clock_domain = -1;

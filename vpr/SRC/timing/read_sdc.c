@@ -39,7 +39,7 @@ int num_netlist_clocks = 0; /* number of clocks in netlist */
 char ** netlist_clocks; /* [0..num_netlist_clocks - 1] array of names of clocks in netlist */
 
 int num_netlist_ios = 0; /* number of clocks in netlist */
-char ** netlist_ios; /* [0..num_netlist_clocks - 1] array of names of clocks in netlist */
+char ** netlist_ios; /* [0..num_netlist_clocks - 1] array of names of ios in netlist */
 
 /***************** Subroutines local to this module *************************/
 
