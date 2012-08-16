@@ -39,12 +39,6 @@
  * Global data types and constants
  ******************************************************************************/
 
-#define CLUSTERER_CRITICALITY 'F'
-/* What should the clusterer use to calculate criticality?  Possible values:
-	'F' - Fancy: Uses normalized slack, T_arr and critical input/output paths.
-	'S' - Simple: Uses net_slack_ratio, like the placer and router.
-	'H' - Hybrid: Uses normalized values for block criticalities but net_slack_ratio for lengthgain. */
-
 #ifndef SPEC
 #define DEBUG 1			/* Echoes input & checks error conditions */
 /* Only causes about a 1% speed degradation in V 3.10 */
@@ -338,12 +332,12 @@ typedef struct s_tnode {
 
 	/* pre-packing timing graph */
 	int model_port, model_pin; /* technology mapped model port/pin */
-#if CLUSTERER_CRITICALITY != 'S'
+
 	long num_critical_input_paths, num_critical_output_paths; /* count of critical paths passing through this tnode */
 	float normalized_slack; /* slack (normalized with respect to max slack) */
 	float normalized_total_critical_paths; /* critical path count (normalized with respect to max count) */
 	float normalized_T_arr; /* arrival time (normalized with respect to max time) */
-#endif
+
 	int index;
 } t_tnode;
 
@@ -366,7 +360,7 @@ typedef struct s_io {
 
 typedef struct s_timing_stats {
 	float ** critical_path_delay; /* [0..num_netlist_clocks - 1 (source)][0..num_netlist_clocks - 1 (destination)] */
-	float * least_slack_in_domain; /* [0..num_netlist_clocks - 1] */
+	float ** least_slack_per_constraint; /* As above */
 } t_timing_stats;
 /* Timing statistics for final reporting. */
 

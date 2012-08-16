@@ -12,6 +12,7 @@
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
 #include "read_sdc.h"
+#include "stats.h"
 
 /****************** Timing graph Structure ************************************
  *                                                                            *
@@ -86,7 +87,10 @@ t_io * constrained_ios = NULL; /* [0..num_constrained_ios - 1] array of I/Os wit
 
 float ** timing_constraint = NULL; /* [0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (destination)] */
 
-int num_cf_constraints = 0; /* number of special-case clock-to-flipflop constraints overriding default, calculated, timing constraints */
+int num_cc_constraints = 0; /* number of special-case clock-to-clock constraints overriding default, calculated, timing constraints */
+t_override_constraint * cc_constraints; /*  [0..num_cc_constraints - 1] array of such constraints */
+
+int num_cf_constraints = 0; /* number of special-case clock-to-flipflop constraints */
 t_override_constraint * cf_constraints; /*  [0..num_cf_constraints - 1] array of such constraints */
 
 int num_fc_constraints = 0; /* number of special-case flipflop-to-clock constraints */
@@ -112,7 +116,7 @@ static int num_timing_nets = 0;
 
 static t_slack * alloc_net_slack_and_slack_ratio(void);
 
-static float update_slacks(t_slack * slacks, float T_req_max_this_domain, boolean is_final_analysis);
+static void update_slacks(t_slack * slacks, float T_req_max_this_domain, boolean is_final_analysis);
 
 static void alloc_and_load_tnodes(t_timing_inf timing_inf);
 
@@ -121,10 +125,10 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 
 static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 		INOUTP int *inode, INP t_timing_inf timing_inf);
-#if CLUSTERER_CRITICALITY != 'S'
+
 static void normalize_costs(float T_arr_max_this_domain, long max_critical_input_paths,
 		long max_critical_output_paths);
-#endif
+
 static void print_primitive_as_blif (FILE *fpout, int iblk);
 
 static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel, boolean do_lut_input_balancing); 
@@ -142,6 +146,12 @@ static int find_io(char * net_name);
 static int find_cf_constraint(char * source_clock_name, char * sink_ff_name);
 
 static void propagate_clock_domain_and_skew(int inode);
+
+static void print_remove_and_normalize_constraints(void);
+
+static void print_timing_constraint_info(const char *fname);
+
+static void print_spaces(FILE * fp, int num_spaces);
 
 /********************* Subroutine definitions *******************************/
 
@@ -168,24 +178,25 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	num_timing_nets = num_nets;
 	timing_nets = clb_net;
 
-	if (timing_constraint == NULL) {
-		/* the SDC timing constraints only need to be read in once; *
-		 * if they haven't been already, do it now				    */
-		read_sdc(timing_inf.SDCFile);
-	}
-
 	alloc_and_load_tnodes(timing_inf);
 
 	num_sinks = alloc_and_load_timing_graph_levels();
-
-	load_clock_domain_and_skew_and_io_delay(FALSE); 
 
 	check_timing_graph(num_sinks);
 
 	slacks = alloc_net_slack_and_slack_ratio();
 
-	return slacks;
+	if (timing_constraint == NULL) {
+		/* the SDC timing constraints only need to be read in once; *
+		 * if they haven't been already, do it now				    */
+		read_sdc(timing_inf.SDCFile);
+		load_clock_domain_and_skew_and_io_delay(FALSE); 
+		print_remove_and_normalize_constraints();
+	} else {
+		load_clock_domain_and_skew_and_io_delay(FALSE); 
+	}
 
+	return slacks;
 }
 
 t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
@@ -213,18 +224,10 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 	num_timing_nets = num_logical_nets;
 	timing_nets = vpack_net;
 
-	if (timing_constraint == NULL) {
-		/* the SDC timing constraints only need to be read in once; *
-		 * if they haven't been already, do it now				    */
-		read_sdc(timing_inf.SDCFile);
-	}
-
 	alloc_and_load_tnodes_from_prepacked_netlist(block_delay,
 			inter_cluster_net_delay);
 
 	num_sinks = alloc_and_load_timing_graph_levels();
-
-	load_clock_domain_and_skew_and_io_delay(TRUE);
 
 	slacks = alloc_net_slack_and_slack_ratio();
 
@@ -234,8 +237,17 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 		print_timing_graph_as_blif ("pre_packing_timing_graph_as_blif.blif", models);
 	}
 	
-	return slacks;
+	if (timing_constraint == NULL) {
+		/* the SDC timing constraints only need to be read in once; *
+		 * if they haven't been already, do it now				    */
+		read_sdc(timing_inf.SDCFile);
+		load_clock_domain_and_skew_and_io_delay(TRUE); 
+		print_remove_and_normalize_constraints();
+	} else {
+		load_clock_domain_and_skew_and_io_delay(TRUE); 
+	}
 
+	return slacks;
 }
 
 static t_slack * alloc_net_slack_and_slack_ratio(void) {
@@ -307,9 +319,10 @@ void free_timing_stats(t_timing_stats * timing_stats) {
 
 	for (i = 0; i < num_constrained_clocks; i++) {
 		free(timing_stats->critical_path_delay[i]);
+		free(timing_stats->least_slack_per_constraint[i]);
 	}
 	free(timing_stats->critical_path_delay);
-	free(timing_stats->least_slack_in_domain);
+	free(timing_stats->least_slack_per_constraint);
 	free(timing_stats);
 	timing_stats = NULL;
 }
@@ -679,7 +692,6 @@ void print_timing_place_crit(float ** timing_place_crit, const char *fname) {
 	fclose(fp);
 }
 
-#if CLUSTERER_CRITICALITY != 'S'
 void print_clustering_timing_info(const char *fname) {
 	/* Print information from tnodes which is used by the clusterer. */
 	int inode;
@@ -701,7 +713,6 @@ void print_clustering_timing_info(const char *fname) {
 
 	fclose(fp);
 }
-#endif
 
 /* Count # of tnodes, allocates space, and loads the tnodes and its associated edges */
 static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
@@ -1367,7 +1378,7 @@ void print_timing_graph(const char *fname) {
 	fp = my_fopen(fname, "w", 0);
 
 	fprintf(fp, "num_tnodes: %d\n", num_tnodes);
-	fprintf(fp, "Node #\tType\t\tipin\tiblk\tDomain\tSkew\t\t# edges\t"
+	fprintf(fp, "Node #\tType\t\tipin\tiblk\tDomain\tSkew\tI/O Delay\t\t# edges\t"
 			"to_node     Tdel\n\n");
 
 	for (inode = 0; inode < num_tnodes; inode++) {
@@ -1385,11 +1396,13 @@ void print_timing_graph(const char *fname) {
 		}
 
 		if (itype == FF_CLOCK || itype == FF_SOURCE || itype == FF_SINK) {
-			fprintf(fp, "%d\t%.3e\t", tnode[inode].clock_domain, tnode[inode].clock_skew);
-		}
-
-		else {
-			fprintf(fp, "\t\t\t");
+			fprintf(fp, "%d\t%.3e\t\t", tnode[inode].clock_domain, tnode[inode].clock_skew);
+		} else if (itype == INPAD_SOURCE) {
+			fprintf(fp, "%d\t\t%.3e\t", tnode[inode].clock_domain, tnode[inode].out_edges[0].Tdel);
+		} else if (itype == OUTPAD_SINK) {
+			fprintf(fp, "%d\t\t%.3e\t", tnode[inode].clock_domain, tnode[inode-1].out_edges[0].Tdel);
+		} else {
+			fprintf(fp, "\t\t\t\t");
 		}
 
 		fprintf(fp, "%d", tnode[inode].num_edges);
@@ -1441,6 +1454,101 @@ void print_timing_graph(const char *fname) {
 
 	fclose(fp);
 }
+static void print_remove_and_normalize_constraints(void) {
+	/* Removes all constraints between domains which never intersect. We need to do this 
+	so that slack_ratio_denom in do_timing_analysis is not affected	by unused constraints. 
+	BFS through the levelized graph once for each source domain. Whenever we get to a sink, 
+	mark off that we've used that sink clock domain.  After	each traversal, set all unused
+	constraints to DO_NOT_ANALYSE. 
+	
+	Also, print timing_constraints, constrained_ios and override constraints, 
+	and normalize constraints to be in seconds rather than nanoseconds. */
+
+	int source_clock_domain, sink_clock_domain, inode, ilevel, num_at_level, i, num_edges, iedge, to_node, iio;
+	t_tedge * tedge;
+	float constraint;
+	boolean * constraint_used = (boolean *) my_malloc(num_constrained_clocks * sizeof(boolean));
+
+	for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
+		/* Reset all used_on_this_traversal flags. */
+		for (inode = 0; inode < num_tnodes; inode++) {
+			tnode[inode].used_on_this_traversal = FALSE;
+		}
+
+		/* Reset all constraint_used entries. */
+		for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
+			constraint_used[sink_clock_domain] = FALSE;
+		}
+
+		/* Set used_on_this_traversal for each top-level tnode on this clock domain. */
+		num_at_level = tnodes_at_level[0].nelem;	
+		for (i = 0; i < num_at_level; i++) {
+			inode = tnodes_at_level[0].list[i];
+			if (tnode[inode].clock_domain == source_clock_domain) {
+				tnode[inode].used_on_this_traversal = TRUE;
+			}
+		}
+
+		for (ilevel = 0; ilevel < num_tnode_levels; ilevel++) {	/* Go down one level at a time. */
+			num_at_level = tnodes_at_level[ilevel].nelem;			
+						
+			for (i = 0; i < num_at_level; i++) {					
+				inode = tnodes_at_level[ilevel].list[i];	/* Go through each of the tnodes at the level we're on. */
+				if (tnode[inode].used_on_this_traversal) {	/* If this tnode has been used */
+					num_edges = tnode[inode].num_edges;
+					if (num_edges == 0) { /* sink */
+						/* We've reached the sink domain of this tnode, so set constraint_used  
+						to true for this tnode's clock domain (if it has a valid one). */
+						sink_clock_domain = tnode[inode].clock_domain;
+						if (sink_clock_domain != -1) {
+							constraint_used[sink_clock_domain] = TRUE;
+						}
+					} else {
+						/* Set used_on_this_traversal to true for each tnode in this tnode's fanout. */
+						tedge = tnode[inode].out_edges;	
+						for (iedge = 0; iedge < num_edges; iedge++) {
+							to_node = tedge[iedge].to_node;
+							tnode[to_node].used_on_this_traversal = TRUE;
+						}
+					}
+				}
+			}
+		}
+
+		/* At the end of the source domain traversal, see which sink domains haven't been hit, 
+		and set the constraint for the pair of source and sink domains to DO_NOT_ANALYSE */
+
+		for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
+			if (!constraint_used[sink_clock_domain]) {
+				timing_constraint[source_clock_domain][sink_clock_domain] = DO_NOT_ANALYSE;
+			}
+		}
+	}
+
+	free(constraint_used);
+
+	/* Print constraints */	
+	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_TIMING_CONSTRAINTS)) {
+		print_timing_constraint_info(getEchoFileName(E_ECHO_TIMING_CONSTRAINTS));
+	}
+
+	/* Normalize timing_constraint and constrained_ios to be in seconds, not nanoseconds. */
+	for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
+		for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
+			constraint = timing_constraint[source_clock_domain][sink_clock_domain];
+			if (constraint > -1e-15) { /* if constraint does not equal DO_NOT_ANALYSE */
+				timing_constraint[source_clock_domain][sink_clock_domain] = constraint/1e9;
+			}
+		}
+	}
+
+	for (iio = 0; iio < num_constrained_ios; iio++) {
+		constrained_ios[iio].delay /= 1e9;
+	}
+
+	/* Finally, free cc_constraints since all of its info is contained in timing_constraint. */
+	free(cc_constraints);
+}
 
 t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_input_balancing, boolean is_final_analysis) {
 /*  Perform timing analysis on circuit.  Populates slack and slack ratio (related to criticality)
@@ -1458,43 +1566,40 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 	Please see vpr_types.h for definition of FANCY_CRITICALITY. */
 
 	float constraint, ** net_slack = slacks->net_slack, ** net_slack_ratio = slacks->net_slack_ratio;
+	float slack_ratio_denom;
+	/* Max of all arrival times and constraints in each clock domain - 	used to normalize required times 
+	(if SLACK_DEFINITION == 4 or 5), slack ratios (if SLACK_RATIO_DEFINITION == 1), 
+	and normalized slacks for clusterer. */
 	int i, j, source_clock_domain, sink_clock_domain, inode, ilevel, num_at_level, num_edges, inet, iedge, to_node, total, icf;
 	t_tedge *tedge;
 	t_pb *pb;
 	boolean found;
 	t_timing_stats * timing_stats;
-
-#if CLUSTERER_CRITICALITY != 'S'
 	long max_critical_output_paths = 0, max_critical_input_paths = 0;
-#endif
 
 #if SLACK_RATIO_DEFINITION == 2
 	float slack_ratio_denom_global = HUGE_NEGATIVE_FLOAT;
 	/* Denominator of slack ratio (if SLACK_RATIO_DEFINITION == 2) - max of all arrival times and all constraints. */
 #endif
 
-#if CLUSTERER_CRITICALITY != 'S' || SLACK_RATIO_DEFINITION == 1 || SLACK_DEFINITION == 4 || SLACK_DEFINITION == 5
-	float slack_ratio_denom;
-	/* Max of all arrival times and constraints in each clock domain - 	used to normalize required times 
-	(if SLACK_DEFINITION == 4 or 5), slack ratios (if SLACK_RATIO_DEFINITION == 1), 
-	and FANCY_CRITICALITY normalized slack for clusterer. */
-#endif
-
 #if SLACK_DEFINITION == 3
 	float smallest_slack_in_design = HUGE_POSITIVE_FLOAT;
 #endif
 
-	/* Allocate timing_stats data structure and initialize critical_path_delay. */
+	/* Allocate and initialize timing_stats data structure. */
+
 	timing_stats = (t_timing_stats *) my_malloc(sizeof(t_timing_stats));
 	timing_stats->critical_path_delay = (float **) my_malloc(num_constrained_clocks * sizeof(float *));
+	timing_stats->least_slack_per_constraint = (float **) my_malloc(num_constrained_clocks * sizeof(float *));
 	for (i = 0; i < num_constrained_clocks; i++) {
 		timing_stats->critical_path_delay[i] = (float *) my_malloc(num_constrained_clocks * sizeof(float));
+		timing_stats->least_slack_per_constraint[i] = (float *) my_malloc(num_constrained_clocks * sizeof(float));
 	}
-	timing_stats->least_slack_in_domain = (float *) my_malloc(num_constrained_clocks * sizeof(float));
-
+	
 	for (i = 0; i < num_constrained_clocks; i++) {
 		for (j = 0; j < num_constrained_clocks; j++) {
 			timing_stats->critical_path_delay[i][j] = HUGE_NEGATIVE_FLOAT;
+			timing_stats->least_slack_per_constraint[i][j] = HUGE_POSITIVE_FLOAT;
 		}
 	}
 
@@ -1523,7 +1628,6 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 	}
 
 	/* Reset all normalized values. */
-#if CLUSTERER_CRITICALITY != 'S'
 	if (is_prepacked) { 
 		for (inode = 0; inode < num_tnodes; inode++) {			
 			tnode[inode].normalized_slack = HUGE_POSITIVE_FLOAT;
@@ -1531,7 +1635,6 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 			tnode[inode].normalized_total_critical_paths = HUGE_NEGATIVE_FLOAT;
 		}
 	}
-#endif
 
 	/* Reset all has_valid_slack flags to FALSE. */
 	for (inode = 0; inode < num_tnodes; inode++) {
@@ -1540,9 +1643,8 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 
 	/* For each source clock domain, we do one forward and one backward breadth-first traversal.  */
 	for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
-#if CLUSTERER_CRITICALITY != 'S' || SLACK_RATIO_DEFINITION == 1 || SLACK_DEFINITION == 4 || SLACK_DEFINITION == 5
+
 		slack_ratio_denom = HUGE_NEGATIVE_FLOAT; /* Reset before each pair of traversals. */
-#endif
 
 		/* Reset all used_on_this_traversal flags to FALSE.  Also, reset all arrival times to a
 		very large negative number, and all required times to a very large positive number. */
@@ -1552,10 +1654,10 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 			tnode[inode].T_req = HUGE_POSITIVE_FLOAT;
 		}
 
-		num_at_level = tnodes_at_level[0].nelem;	/* There are num_at_level top-level tnodes. */
-				
+		/* Set arrival times for each top-level tnode. */
+		num_at_level = tnodes_at_level[0].nelem;	
 		for (i = 0; i < num_at_level; i++) {
-			inode = tnodes_at_level[0].list[i];		/* Go through the list of each tnode at level 0. */
+			inode = tnodes_at_level[0].list[i];	
 
 			if (tnode[inode].clock_domain == source_clock_domain) {
 				if (tnode[inode].type == FF_SOURCE) { 
@@ -1583,15 +1685,14 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 								this node is not part of the clock domain we're analyzing. 
 								(If it were, it would have received an arrival time already.) */
 				}
-#if CLUSTERER_CRITICALITY != 'S'
+
 				if (ilevel == 0) {
 					tnode[inode].num_critical_input_paths = 1;		/* Top-level tnodes have only one critical input path */
 				}
-#endif
+
 				num_edges = tnode[inode].num_edges;					/* Get the number of edges fanning out from the node we're visiting */
 				tedge = tnode[inode].out_edges;						/* Get the list of edges from the node we're visiting */
 				
-#if CLUSTERER_CRITICALITY != 'S'	
 				if (is_prepacked) {
 					for (iedge = 0; iedge < num_edges; iedge++) {		
 						to_node = tedge[iedge].to_node;
@@ -1607,7 +1708,6 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 						}
 					}
 				}
-#endif
 				
 				for (iedge = 0; iedge < num_edges; iedge++) {		/* Now go through each edge coming out from this tnode */
 					to_node = tedge[iedge].to_node;					/* Get the index of the destination tnode of this edge. */
@@ -1621,10 +1721,7 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 #if SLACK_RATIO_DEFINITION == 2  
 					slack_ratio_denom_global = max(slack_ratio_denom_global, tnode[to_node].T_arr);
 #endif		
-
-#if CLUSTERER_CRITICALITY != 'S' || SLACK_RATIO_DEFINITION == 1 || SLACK_DEFINITION == 4 || SLACK_DEFINITION == 5
 					slack_ratio_denom = max(slack_ratio_denom, tnode[to_node].T_arr);
-#endif
 				}
 			}
 		}
@@ -1739,10 +1836,8 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 					/* We want to find the greatest T_req (either in the design or for this traversal), 
 					so update T_req_max_this_domain and/or T_req_max_global if this tnode's required time is greater than them. */
 
-#if CLUSTERER_CRITICALITY != 'S'
-
 					tnode[inode].num_critical_output_paths = 1; /* Bottom-level tnodes have only one critical output path */
-#endif			
+	
 				} else { /* not a sink */
 					assert(!(tnode[inode].type == OUTPAD_SINK || tnode[inode].type == FF_SINK || tnode[inode].type == FF_CLOCK));
 
@@ -1783,9 +1878,16 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 						/* Opposite to T_arr, set T_req to the minimum of the required times of all edges fanning out from this node. */
 						to_node = tedge[iedge].to_node;
 						tnode[inode].T_req = min(tnode[inode].T_req, tnode[to_node].T_req - tedge[iedge].Tdel);
+
+						/* If to_node is a sink, update least_slack_per_constraint for this source domain and to_node's sink domain */
+						if (tnode[to_node].num_edges == 0) {
+							sink_clock_domain = tnode[to_node].clock_domain;
+							timing_stats->least_slack_per_constraint[source_clock_domain][sink_clock_domain] = 
+								min(timing_stats->least_slack_per_constraint[source_clock_domain][sink_clock_domain],
+								tnode[to_node].T_req - tnode[inode].T_arr - tedge[iedge].Tdel);
+						}
 					}
 
-#if CLUSTERER_CRITICALITY != 'S'
 					if (is_prepacked) {
 						for (iedge = 0; iedge < num_edges; iedge++) { 
 							to_node = tedge[iedge].to_node;
@@ -1800,32 +1902,26 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 							}
 						}
 					}
-#endif
 				}
 			}
 		}
 
-
-#if CLUSTERER_CRITICALITY != 'S' || SLACK_RATIO_DEFINITION == 1 || SLACK_DEFINITION == 4 || SLACK_DEFINITION == 5
 		for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
 			slack_ratio_denom = max(slack_ratio_denom, timing_constraint[source_clock_domain][sink_clock_domain]);
+			/* If timing constraint is DO_NOT_ANALYSE (-1), it will not be included in the maximum. */
 		}
-#endif
 
-		/* After each iteration of the iclock loop, update the slack if it has a newer, lower value.  Also update the normalized costs for clusterer (ifdef FANCY_CRITICALITY). */
-	//	if (!is_prepacked) {
+		/* After each iteration of the iclock loop, update the slack for each edge if it has a newer, lower value.  
+		Also update the normalized costs used by the clusterer. */
 #if SLACK_RATIO_DEFINITION == 1
-			timing_stats->least_slack_in_domain[source_clock_domain] = update_slacks(slacks, slack_ratio_denom, is_final_analysis);
-#else		/* T_req_max_this_domain is not used in update_slacks so doesn't matter what we pass in. */
-			timing_stats->least_slack_in_domain[source_clock_domain] = update_slacks(slacks, 0, is_final_analysis);
+		update_slacks(slacks, slack_ratio_denom, is_final_analysis);
+#else	/* slack_ratio_denom is not used in update_slacks so doesn't matter what we pass in. */
+		update_slacks(slacks, 0, is_final_analysis);
 #endif
-	//	}
 
-#if CLUSTERER_CRITICALITY != 'S'
 		if (is_prepacked) {
 			normalize_costs(slack_ratio_denom, max_critical_input_paths, max_critical_output_paths);
 		}
-#endif
 	} /* end of source_clock_domain loop */
 
 #if SLACK_RATIO_DEFINITION == 2
@@ -1841,7 +1937,9 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 
 		/* Find the smallest slack in the design. */
 		for (i = 0; i < num_constrained_clocks; i++) {
-			smallest_slack_in_design = min(smallest_slack_in_design, timing_stats->least_slack_in_domain[i]);
+			for (j = 0; j < num_constrained_clocks; j++) {
+				smallest_slack_in_design = min(smallest_slack_in_design, timing_stats->least_slack_per_constraint[i][j]);
+			}
 		}
 
 		/* Increase all slacks by the value of the smallest slack in the design, if it's negative. */
@@ -1889,44 +1987,22 @@ t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, bool
 			}
 		}
 		if(!found) {
-			if (num_constrained_clocks == 1) {
-				/* We have a sequential circuit with no internal flip-flop-to-flip-flop paths. 
-				However, there's only one constrained netlist clock, so we can constrain all I/Os on 
-				it and then timing analyse paths between I/Os and flip-flops or I/Os and I/Os 
-				(a sensible	default). */
-				vpr_printf(TIO_MESSAGE_WARNING, "No paths were analysed during timing analysis.\n"
-											    "Constraining all I/Os on the netlist clock.\n\n");
-				free_timing_stats(timing_stats); 
-				for (inode = 0; inode < num_tnodes; inode++) {
-					if (tnode[inode].type == INPAD_SOURCE || tnode[inode].type == OUTPAD_SINK) {
-						tnode[inode].clock_domain = 0; /* i.e. the domain of the single constrained clock */
-					}
-				}
-				/* Redo timing analysis with the newly-constrained I/Os */
-				timing_stats = do_timing_analysis(slacks, is_prepacked, do_lut_input_balancing, is_final_analysis);
-			} else {
-				/* Multiple constrained clocks, so we don't know which clock to constrain I/Os on. 
-				The user has to decide. This situation should only come up if the user used an 
-				SDC file in the first place. */
-				vpr_printf(TIO_MESSAGE_ERROR, "No paths were analysed during timing analysis.\n"
-											  "You may wish to constrain some or all I/Os.\n");
-				exit(1);
-			}
+			vpr_printf(TIO_MESSAGE_WARNING, "No paths were analysed during timing analysis.\n"
+											"You may wish to constrain some or all I/Os.\n");
 		}
 	}
 
 	return timing_stats;
 }
 
-static float update_slacks(t_slack * slacks, float T_req_max_this_domain, boolean is_final_analysis) {
+static void update_slacks(t_slack * slacks, float slack_ratio_denom, boolean is_final_analysis) {
 	/* Updates the slack of each source-sink pair of block pins in net_slack. 
 	 * For n clock domains, this function will be called n^2 times for each iteration of the timing analyser.
-	 * At each iteration, slacks and slack ratios of each edge will be updated if they are less than the previous lowest values. 
-	 * Returns the minimum slack from this traversal. */
+	 * At each iteration, slacks and slack ratios of each edge will be updated if they are less than the previous lowest values. */
 
 	int inet, iedge, inode, to_node, num_edges;
 	t_tedge *tedge;
-	float T_arr, Tdel, T_req, min_slack = HUGE_POSITIVE_FLOAT;
+	float T_arr, Tdel, T_req;
 
 	for (inet = 0; inet < num_timing_nets; inet++) {
 		inode = net_to_driver_tnode[inet];
@@ -1962,16 +2038,14 @@ static float update_slacks(t_slack * slacks, float T_req_max_this_domain, boolea
 #endif
 			}
 
-			min_slack = min(min_slack, T_req - T_arr - Tdel); /* Minimum slack for this traversal */
-
 #if SLACK_RATIO_DEFINITION == 1
-			/* Since slack ratios are not equivalent to slacks, we have to check separately that the slack ratio is lower. */
+			/* Since slack_ratio_denom is not the same on each traversal, we have to check separately that the slack ratio is lower. */
 			/* Update the slack ratio for this edge if the slack ratio from this traversal is less than its current value. */
-			slacks->net_slack_ratio[inet][iedge + 1] = min(slacks->net_slack_ratio[inet][iedge + 1], (T_req - T_arr - Tdel)/T_req_max_this_domain); 
+			slacks->net_slack_ratio[inet][iedge + 1] = min(slacks->net_slack_ratio[inet][iedge + 1], (T_req - T_arr - Tdel)/slack_ratio_denom); 
+			/* (We use T_req - T_arr - Tdel in the formula without setting an intermediate variable to reduce floating-point roundoff) */
 #endif
 		}
 	}
-	return min_slack;
 }
 
 void print_lut_remapping(const char *fname) {
@@ -2159,8 +2233,7 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 	t_timing_stats * timing_stats;
 	t_slack * slacks = NULL;
 	float **net_delay = NULL;
-	int i, j;
-
+	
 	slacks = alloc_and_load_timing_graph(timing_inf);
 	net_delay = alloc_net_delay(&net_delay_ch, timing_nets,
 			num_timing_nets);
@@ -2169,23 +2242,7 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 			num_timing_nets);
 	load_timing_graph_net_delays(net_delay);
 	timing_stats = do_timing_analysis(slacks, FALSE, FALSE, TRUE);
-
-		if (num_constrained_clocks == 1) {
-			vpr_printf(TIO_MESSAGE_INFO, "Critical path: %g ns\n", timing_stats->critical_path_delay[0][0] * 1e9);
-		} else if (num_constrained_clocks > 1) {
-			vpr_printf(TIO_MESSAGE_INFO, "\nMinimum possible clock period to meet each constraint (including skew effects):\n");
-			for (i = 0; i < num_constrained_clocks; i++) {
-				for (j = 0; j < num_constrained_clocks; j++) {
-					if (timing_constraint[i][j] > -0.01 && timing_stats->critical_path_delay[i][j] > HUGE_NEGATIVE_FLOAT + 1) { 
-					/* if timing constraint is not DO_NOT_ANALYSE and if there was at least one path analyzed */
-						/* convert to nanoseconds */
-						vpr_printf(TIO_MESSAGE_INFO, "%s to %s: %g ns\n", constrained_clocks[i].name, 
-							constrained_clocks[j].name, timing_stats->critical_path_delay[i][j] * 1e9);
-					}
-				}
-			}
-			vpr_printf(TIO_MESSAGE_INFO, "\n");
-		}
+	get_timing_stats(timing_stats);
 
 	if (getEchoEnabled()) {
 		if (num_constrained_clocks == 1) {
@@ -2206,13 +2263,13 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 	free_net_delay(net_delay, &net_delay_ch);
 	free_timing_stats(timing_stats);
 }
-#if CLUSTERER_CRITICALITY != 'S'
+
 static void normalize_costs(float T_arr_max_this_domain, long max_critical_input_paths,
 		long max_critical_output_paths) {
 	int inode;
 	for (inode = 0; inode < num_tnodes; inode++) {
 		/* Only calculate for tnodes which have valid arrival and required times. */
-		if (tnode[inode].has_valid_slack) {
+		if (tnode[inode].used_on_this_traversal) {
 			tnode[inode].normalized_slack = min(tnode[inode].normalized_slack, 
 				(tnode[inode].T_req - tnode[inode].T_arr)/T_arr_max_this_domain);
 			tnode[inode].normalized_T_arr = min(tnode[inode].normalized_T_arr, 
@@ -2223,7 +2280,6 @@ static void normalize_costs(float T_arr_max_this_domain, long max_critical_input
 		}
 	}
 }
-#endif
 
 /* Set new arrival time
 	Special code for LUTs to enable LUT input delay balancing
@@ -2537,6 +2593,138 @@ static int find_cf_constraint(char * source_clock_name, char * sink_ff_name) {
 		}
 	}
 	return -1;
+}
+
+static void print_timing_constraint_info(const char *fname) {
+	/* Prints the contents of timing_constraint, constrained_clocks, constrained_ios and cc_constraints to a file. */
+	
+	FILE * fp;
+	int source_clock_domain, sink_clock_domain, i, j;
+	int * clock_name_length = (int *) my_malloc(num_constrained_clocks * sizeof(int)); /* Array of clock name lengths */
+	int max_clock_name_length = INT_MIN;
+	char * clock_name;
+
+	fp = my_fopen(fname, "w", 0);
+
+	/* Get lengths of each clock name and max length so we can space the columns properly. */
+	for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
+		clock_name = constrained_clocks[sink_clock_domain].name;
+		clock_name_length[sink_clock_domain] = strlen(clock_name);
+		if (clock_name_length[sink_clock_domain] > max_clock_name_length) {
+			max_clock_name_length = clock_name_length[sink_clock_domain];	
+		}
+	}
+
+	/* First, combine info from timing_constraint and constrained_clocks into a matrix 
+	(they're indexed the same as each other). */
+
+	fprintf(fp, "Timing constraints in ns (source clock domains down left side, sink along top).\n"
+				"A value of -1.00 means the pair of source and sink domains will not be analysed.\n\n");
+
+	print_spaces(fp, max_clock_name_length + 4); 
+
+	for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
+		fprintf(fp, "%s", constrained_clocks[sink_clock_domain].name);
+		/* Minimum column width of 8 */
+		print_spaces(fp, max(8 - clock_name_length[sink_clock_domain], 4));
+	}
+	fprintf(fp, "\n");
+
+	for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
+		fprintf(fp, "%s", constrained_clocks[source_clock_domain].name);
+		print_spaces(fp, max_clock_name_length + 4 - clock_name_length[source_clock_domain]);
+		for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
+			fprintf(fp, "%5.2f", timing_constraint[source_clock_domain][sink_clock_domain]);
+			/* Minimum column width of 8 */
+			print_spaces(fp, max(clock_name_length[sink_clock_domain] - 1, 3));
+		}
+		fprintf(fp, "\n");
+	}
+
+	free(clock_name_length);
+
+	/* Second, print I/O constraints. */
+	fprintf(fp, "\nList of constrained I/Os (note: constraining a clock net I/O has no effect):\n");
+	for (i = 0; i < num_constrained_ios; i++) {
+		fprintf(fp, "I/O name %s on clock %s with input/output delay %.2f ns\n", 
+			constrained_ios[i].name, constrained_ios[i].virtual_clock_name, constrained_ios[i].delay);
+	}
+
+	/* Third, print override constraints. */
+	fprintf(fp, "\nList of override constraints (non-default constraints created by set_false_path, set_clock_groups, \nset_max_delay, and set_multicycle_path):\n");
+	
+	for (i = 0; i < num_cc_constraints; i++) {
+		fprintf(fp, "Clock domain");
+		for (j = 0; j < cc_constraints[i].num_source; j++) {
+			fprintf(fp, " %s,", cc_constraints[i].source_list[j]); 
+		}
+		fprintf(fp, " to clock domain");
+		for (j = 0; j < cc_constraints[i].num_sink - 1; j++) {
+			fprintf(fp, " %s,", cc_constraints[i].sink_list[j]); 
+		} /* We have to print the last one separately because we don't want a comma after it. */
+		if (cc_constraints[i].num_multicycles == 0) { /* not a multicycle constraint */
+			fprintf(fp, " %s: %.2f ns\n", cc_constraints[i].sink_list[j], cc_constraints[i].constraint);
+		} else { /* multicycle constraint */
+			fprintf(fp, " %s: %d multicycles\n", cc_constraints[i].sink_list[j], cc_constraints[i].num_multicycles);
+		}
+	}
+
+	for (i = 0; i < num_cf_constraints; i++) {
+		fprintf(fp, "Clock domain");
+		for (j = 0; j < cf_constraints[i].num_source; j++) {
+			fprintf(fp, " %s,", cf_constraints[i].source_list[j]); 
+		}
+		fprintf(fp, " to flip-flop");
+		for (j = 0; j < cf_constraints[i].num_sink - 1; j++) {
+			fprintf(fp, " %s,", cf_constraints[i].sink_list[j]); 
+		} /* We have to print the last one separately because we don't want a comma after it. */
+		if (cf_constraints[i].num_multicycles == 0) { /* not a multicycle constraint */
+			fprintf(fp, " %s: %.2f ns\n", cf_constraints[i].sink_list[j], cf_constraints[i].constraint);
+		} else { /* multicycle constraint */
+			fprintf(fp, " %s: %d multicycles\n", cf_constraints[i].sink_list[j], cf_constraints[i].num_multicycles);
+		}
+	}
+
+	for (i = 0; i < num_fc_constraints; i++) {
+		fprintf(fp, "Flip-flop");
+		for (j = 0; j < fc_constraints[i].num_source; j++) {
+			fprintf(fp, " %s,", fc_constraints[i].source_list[j]); 
+		}
+		fprintf(fp, " to clock domain");
+		for (j = 0; j < fc_constraints[i].num_sink - 1; j++) {
+			fprintf(fp, " %s,", fc_constraints[i].sink_list[j]); 
+		} /* We have to print the last one separately because we don't want a comma after it. */
+		if (fc_constraints[i].num_multicycles == 0) { /* not a multicycle constraint */
+			fprintf(fp, " %s: %.2f ns\n", fc_constraints[i].sink_list[j], fc_constraints[i].constraint);
+		} else { /* multicycle constraint */
+			fprintf(fp, " %s: %d multicycles\n", fc_constraints[i].sink_list[j], fc_constraints[i].num_multicycles);
+		}
+	}
+
+	for (i = 0; i < num_ff_constraints; i++) {
+		fprintf(fp, "Flip-flop");
+		for (j = 0; j < ff_constraints[i].num_source; j++) {
+			fprintf(fp, " %s,", ff_constraints[i].source_list[j]); 
+		}
+		fprintf(fp, " to flip-flop");
+		for (j = 0; j < ff_constraints[i].num_sink - 1; j++) {
+			fprintf(fp, " %s,", ff_constraints[i].sink_list[j]); 
+		} /* We have to print the last one separately because we don't want a comma after it. */
+		if (ff_constraints[i].num_multicycles == 0) { /* not a multicycle constraint */
+			fprintf(fp, " %s: %.2f ns\n", ff_constraints[i].sink_list[j], ff_constraints[i].constraint);
+		} else { /* multicycle constraint */
+			fprintf(fp, " %s: %d multicycles\n", ff_constraints[i].sink_list[j], ff_constraints[i].num_multicycles);
+		}
+	}
+
+	fclose(fp);
+}
+
+static void print_spaces(FILE * fp, int num_spaces) {
+	/* Prints num_spaces spaces to file pointed to by fp. */
+	for ( ; num_spaces > 0; num_spaces--) {
+		fprintf(fp, " ");
+	}
 }
 
 void print_timing_graph_as_blif (const char *fname, t_model *models) {

@@ -21,8 +21,6 @@ static void get_length_and_bends_stats(void);
 
 static void get_channel_occupancy_stats(void);
 
-static void get_timing_stats(t_timing_stats * timing_stats);
-
 /************************* Subroutine definitions ****************************/
 
 void routing_stats(boolean full_stats, enum e_route_type route_type,
@@ -462,112 +460,117 @@ void print_lambda(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "Average lambda (input pins used per clb) is: %g\n", lambda);
 }
 
-static void get_timing_stats(t_timing_stats * timing_stats) {
+void get_timing_stats(t_timing_stats * timing_stats) {
 
-	/* Prints critical path delay per constraint, frequency of each clock 
-	(based only on paths within that clock's domain), geometric average
-	clock frequency, fanout-weighted geometric average clock frequency,
-	and the single worst slack per domain (with the tnodes on either side
-	of the edge with this worst slack).*/
+	/* Prints critical path delay/fmax, least slack in design, and, for multiple-clock 
+	designs,minimum required clock period to meet each constraint, least slack per constraint,
+	geometric average clock frequency, and fanout-weighted geometric average clock frequency. */
 
-	int iclock, num_netlist_clocks = 0, netlist_clock_index = 0, source_clock_domain, sink_clock_domain, 
+	int netlist_clock_index = 0, source_clock_domain, sink_clock_domain, 
 		clock_domain, fanout, total_fanout = 0, num_netlist_clocks_with_intra_domain_paths = 0;
-	float geomean_period = 1, fanout_weighted_geomean_period = 1;
+	float geomean_period = 1, fanout_weighted_geomean_period = 1, critical_path_delay = HUGE_POSITIVE_FLOAT, least_slack_in_design = HUGE_POSITIVE_FLOAT;
+	boolean found;
 
-	/* Print critical path delay whenever there is exactly 1 netlist clock.  To find out 
-	whether there is exactly 1 netlist clock, iterate through constrained_clocks and check
-	the is_netlist_clock element. */
+	/* Find the "Critical path", which is the minimum clock period required to meet the constraint
+	 corresponding to the pair of source and sink clock domains with the least slack in the design.  
+	 If the pb_max_internal_delay is greater than this, it becomes the limiting factor on cpd, so
+	 print that instead, with a special message. */
 
-	for (iclock = 0; iclock < num_constrained_clocks && num_netlist_clocks < 2; iclock++) {
-		if (constrained_clocks[iclock].is_netlist_clock) {
-			num_netlist_clocks++;
-			netlist_clock_index = iclock;
+	for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
+		for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
+			if (least_slack_in_design > timing_stats->least_slack_per_constraint[source_clock_domain][sink_clock_domain]) {
+				least_slack_in_design = timing_stats->least_slack_per_constraint[source_clock_domain][sink_clock_domain];
+				critical_path_delay = timing_stats->critical_path_delay[source_clock_domain][sink_clock_domain];
+			}
 		}
 	}
-
-	if (num_netlist_clocks == 1) {
-			if (pb_max_internal_delay == UNDEFINED || pb_max_internal_delay < timing_stats->critical_path_delay[netlist_clock_index][netlist_clock_index]) {
-				vpr_printf(TIO_MESSAGE_INFO, "\nCritical path: %g ns\n", timing_stats->critical_path_delay[netlist_clock_index][netlist_clock_index] * 1e9);
-			} else {
-				vpr_printf(TIO_MESSAGE_INFO, 
-					"\nCritical path: %g ns\n(capped by fmax of block type %s)\n", 
-					pb_max_internal_delay * 1e9, pbtype_max_internal_delay->name);
-			}
-		vpr_printf(TIO_MESSAGE_INFO, "\nf_max: %g MHz", 1e-6 / timing_stats->critical_path_delay[netlist_clock_index][netlist_clock_index]);
-		if (timing_stats->least_slack_in_domain[0] < HUGE_POSITIVE_FLOAT - 1) {
-			vpr_printf(TIO_MESSAGE_INFO, "\nLeast slack in design: %g ns\n\n", timing_stats->least_slack_in_domain[netlist_clock_index]);
-		} else {
-			vpr_printf(TIO_MESSAGE_INFO, "\nLeast slack in design: --\n\n");
-		}
-	} 
 	
-	if (num_constrained_clocks > 1) { /* Multiple-clock design (possibly 1 netlist clock and some virtual clocks) */
+	if (pb_max_internal_delay != UNDEFINED && pb_max_internal_delay > critical_path_delay) {
+		critical_path_delay = pb_max_internal_delay;
+		vpr_printf(TIO_MESSAGE_INFO, "\nCritical path: %g ns\n\t(capped by fmax of block type %s)\n", 
+		critical_path_delay * 1e9, pbtype_max_internal_delay->name);
+		
+	} else {
+		vpr_printf(TIO_MESSAGE_INFO, "\nCritical path: %g ns\n", critical_path_delay * 1e9);
+	}
+
+	if (num_constrained_clocks <= 1) {
+		/* Although critical path delay is always well-defined, it doesn't make sense to talk about fmax for multi-clock circuits */
+		vpr_printf(TIO_MESSAGE_INFO, "f_max: %g MHz\n\n", 1e-6 / timing_stats->critical_path_delay[netlist_clock_index][netlist_clock_index]);
+	}
+	
+	/* Also print the least slack in the design */
+	vpr_printf(TIO_MESSAGE_INFO, "Least slack in design: %g ns\n\n", least_slack_in_design * 1e9);
+
+	if (num_constrained_clocks > 1) { /* Multiple-clock design */
+
+		/* Print minimum possible clock period to meet each constraint */
+
 		vpr_printf(TIO_MESSAGE_INFO, "\nMinimum possible clock period to meet each constraint (including skew effects):\n");
 		for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
-			
-			/* First, print the clock name and intra-domain constraint. */
+			/* Print the clock name and intra-domain constraint. */
 			vpr_printf(TIO_MESSAGE_INFO, "%s:\t", constrained_clocks[source_clock_domain].name);
-
-			if (timing_constraint[source_clock_domain][source_clock_domain] > -0.01 
-				&& timing_stats->critical_path_delay[source_clock_domain][source_clock_domain] > HUGE_NEGATIVE_FLOAT + 1) { 
-			/* if timing constraint is not DO_NOT_ANALYSE and if there was at least one path analyzed */
-				/* convert to nanoseconds / megahertz */
+			if (timing_constraint[source_clock_domain][source_clock_domain] > -1e-15) { /* If this domain pair was analysed */
 				vpr_printf(TIO_MESSAGE_INFO, "to %s: %g ns (%g MHz)", constrained_clocks[source_clock_domain].name, 
 					1e9 * timing_stats->critical_path_delay[source_clock_domain][source_clock_domain],
 					1e-6 / timing_stats->critical_path_delay[source_clock_domain][source_clock_domain]);
 			}
-
 			vpr_printf(TIO_MESSAGE_INFO, "\n");
-
 			/* Then, print all other constraints on separate lines. */
 			for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
-				if (timing_constraint[source_clock_domain][sink_clock_domain] > -0.01 
-					&& timing_stats->critical_path_delay[source_clock_domain][sink_clock_domain] > HUGE_NEGATIVE_FLOAT + 1
-					&& source_clock_domain != sink_clock_domain) { 
-					/* if timing constraint is not DO_NOT_ANALYSE and if there was at least one path analyzed 
-					and the two clock domains are not the same. */
-					/* Convert to nanoseconds and megahertz */
+				if (source_clock_domain == sink_clock_domain) continue; /* already done that */
+				if (timing_constraint[source_clock_domain][sink_clock_domain] > -1e-15) { /* If this domain pair was analysed */
 					vpr_printf(TIO_MESSAGE_INFO, "\tto %s: %g ns (%g MHz)\n", constrained_clocks[sink_clock_domain].name, 
 					1e9 * timing_stats->critical_path_delay[source_clock_domain][sink_clock_domain],
 					1e-6 / timing_stats->critical_path_delay[source_clock_domain][sink_clock_domain]);
 				}
 			}
 		}
+
+		/* Print least slack per constraint */
+
+		vpr_printf(TIO_MESSAGE_INFO, "\nLeast slack per constraint (including skew effects):\n");
+		for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
+			/* Print the clock name and intra-domain least slack. */
+			vpr_printf(TIO_MESSAGE_INFO, "%s:\t", constrained_clocks[source_clock_domain].name);
+			if (timing_constraint[source_clock_domain][source_clock_domain] > -1e-15) { /* If this domain pair was analysed */
+				vpr_printf(TIO_MESSAGE_INFO, "to %s: %g ns", constrained_clocks[source_clock_domain].name, 
+					1e9 * timing_stats->least_slack_per_constraint[source_clock_domain][source_clock_domain]);
+			}
+			vpr_printf(TIO_MESSAGE_INFO, "\n");
+			/* Then, print all other slacks on separate lines. */
+			for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
+				if (source_clock_domain == sink_clock_domain) continue; /* already done that */
+				if (timing_constraint[source_clock_domain][sink_clock_domain] > -1e-15) { /* If this domain pair was analysed */
+					vpr_printf(TIO_MESSAGE_INFO, "\tto %s: %g ns\n", constrained_clocks[sink_clock_domain].name, 
+					1e9 * timing_stats->least_slack_per_constraint[source_clock_domain][sink_clock_domain]);
+				}
+			}
+		}
 	
-		/* Calculate geometric mean f_max (fanout-weighted and unweighted) from the diagonal (intra-domain) 
-		entries of critical_path_delay, excluding all clocks without intra-domain paths	
-		(where critical_path_delay would be HUGE_NEGATIVE_FLOAT). */
+		/* Calculate geometric mean f_max (fanout-weighted and unweighted) from the diagonal (intra-domain) entries of critical_path_delay, 
+		excluding domains without intra-domain paths (for which the timing constraint is DO_NOT_ANALYSE). */
+		found = FALSE;
 		for (clock_domain = 0; clock_domain < num_constrained_clocks; clock_domain++) {
-			if (timing_stats->critical_path_delay[clock_domain][clock_domain] > HUGE_NEGATIVE_FLOAT + 1) {
+			if (timing_constraint[clock_domain][clock_domain] > -1e-15) {
 				geomean_period *= timing_stats->critical_path_delay[clock_domain][clock_domain];
 				fanout = constrained_clocks[clock_domain].fanout;
 				fanout_weighted_geomean_period *= pow(timing_stats->critical_path_delay[clock_domain][clock_domain], fanout);
 				total_fanout += fanout;
 				num_netlist_clocks_with_intra_domain_paths++;
+				found = TRUE;
 			}
 		}
-		geomean_period = pow(geomean_period, (float) 1/num_netlist_clocks_with_intra_domain_paths);
-		fanout_weighted_geomean_period = pow(fanout_weighted_geomean_period, (float) 1/total_fanout);
-		if (geomean_period < 1 - 1e-15 || geomean_period > 1 + 1e-15) { 
-			/* If geometric mean is 1, it probably means we never found any actual f_max. */
+		if (found) { /* Only print these if we found at least one clock domain with intra-domain paths. */
+			geomean_period = pow(geomean_period, (float) 1/num_netlist_clocks_with_intra_domain_paths);
+			fanout_weighted_geomean_period = pow(fanout_weighted_geomean_period, (float) 1/total_fanout);
 			/* Convert to MHz */
 			vpr_printf(TIO_MESSAGE_INFO, "\nGeometric mean intra-domain period: %g ns (%g MHz)\n", 
 				1e9 * geomean_period, 1e-6 / geomean_period);
-		}
-		if (fanout_weighted_geomean_period < 1 - 1e-15 || fanout_weighted_geomean_period > 1 + 1e-15) { 
-			/* Convert to MHz */
 			vpr_printf(TIO_MESSAGE_INFO, "Fanout-weighted geomean intra-domain period: %g ns (%g MHz)\n", 
 				1e9 * fanout_weighted_geomean_period, 1e-6 / fanout_weighted_geomean_period);
 		}
 
-		vpr_printf(TIO_MESSAGE_INFO, "\nLeast slack in each domain:\n");
-		for (clock_domain = 0; clock_domain < num_constrained_clocks; clock_domain++) {
-			if (timing_stats->least_slack_in_domain[clock_domain] < HUGE_POSITIVE_FLOAT - 1) {
-				vpr_printf(TIO_MESSAGE_INFO, "%s: %g ns\n", constrained_clocks[clock_domain].name, timing_stats->least_slack_in_domain[clock_domain]);
-			} else { /* No valid path was analyzed. */
-				vpr_printf(TIO_MESSAGE_INFO, "%s: --\n", constrained_clocks[clock_domain].name);
-			}
-		}
 		vpr_printf(TIO_MESSAGE_INFO, "\n");
 	}
 }

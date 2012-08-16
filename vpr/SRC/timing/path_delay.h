@@ -54,9 +54,7 @@ void print_net_delay(float **net_delay, const char *fname);
 
 void print_timing_place_crit(float ** timing_place_crit, const char *fname);
 
-#if CLUSTERER_CRITICALITY != 'S'
 void print_clustering_timing_info(const char *fname);
-#endif
 
 void print_critical_path(const char *fname);
 
@@ -77,7 +75,10 @@ extern t_io * constrained_ios; /* [0..num_constrained_ios - 1] array of I/Os wit
 
 extern float ** timing_constraint; /* [0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (destination)] */
 
-extern int num_cf_constraints; /* number of special-case clock-to-flipflop constraints overriding default, calculated, timing constraints */
+extern int num_cc_constraints; /* number of special-case clock-to-clock constraints overriding default, calculated, timing constraints */
+extern t_override_constraint * cc_constraints; /*  [0..num_cc_constraints - 1] array of such constraints */
+
+extern int num_cf_constraints; /* number of special-case clock-to-flipflop constraints */
 extern t_override_constraint * cf_constraints; /*  [0..num_cf_constraints - 1] array of such constraints */
 
 extern int num_fc_constraints; /* number of special-case flipflop-to-clock constraints */
