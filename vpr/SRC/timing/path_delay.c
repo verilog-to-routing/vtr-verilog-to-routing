@@ -131,8 +131,10 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 static void alloc_timing_stats(void);
 
 static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain, 
-	boolean is_prepacked, boolean do_lut_input_balancing, long * max_critical_input_paths, 
+	boolean is_prepacked, long * max_critical_input_paths, 
 	long * max_critical_output_paths);
+
+static void do_lut_rebalancing();
 
 static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 		INOUTP int *inode, INP t_timing_inf timing_inf);
@@ -341,14 +343,15 @@ void free_timing_graph(t_slack * slack) {
 
 void free_timing_stats(void) {
 	int i;
-
-	for (i = 0; i < num_constrained_clocks; i++) {
-		free(timing_stats->critical_path_delay[i]);
-		free(timing_stats->least_slack_per_constraint[i]);
+	if(timing_stats != NULL) {
+		for (i = 0; i < num_constrained_clocks; i++) {
+			free(timing_stats->critical_path_delay[i]);
+			free(timing_stats->least_slack_per_constraint[i]);
+		}
+		free(timing_stats->critical_path_delay);
+		free(timing_stats->least_slack_per_constraint);
+		free(timing_stats);
 	}
-	free(timing_stats->critical_path_delay);
-	free(timing_stats->least_slack_per_constraint);
-	free(timing_stats);
 	timing_stats = NULL;
 }
 
@@ -1684,6 +1687,9 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 		tnode[inode].has_valid_slack = FALSE;
 	}
 
+	if(do_lut_input_balancing) {
+		do_lut_rebalancing();
+	}
 	/* For each valid constraint (pair of source and sink clock domains), 
 	we do one forward and one backward breadth-first traversal. */
 	for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
@@ -1694,7 +1700,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 
 				/* Perform the forward and backward traversal. */
 				slack_ratio_denom = do_timing_analysis_for_constraint(source_clock_domain, sink_clock_domain, 
-					is_prepacked, do_lut_input_balancing, &max_critical_input_paths, &max_critical_output_paths);
+					is_prepacked, &max_critical_input_paths, &max_critical_output_paths);
 
 				/* Update the slack for each edge if it has a newer, lower value.  
 				Also update the normalized costs used by the clusterer. */
@@ -1780,8 +1786,73 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 	}
 }
 
+
+static void do_lut_rebalancing() {
+	
+	int inode, num_at_level, i, total, ilevel, num_edges, iedge, to_node;
+	t_tedge * tedge;
+
+	float slack_ratio_denom = HUGE_NEGATIVE_FLOAT; /* Reset before each pair of traversals. */
+
+	/* Reset all used_on_this_traversal flags to FALSE.  Also, reset all arrival times to a
+	very large negative number, and all required times to a very large positive number. */
+	for (inode = 0; inode < num_tnodes; inode++) {
+		tnode[inode].used_on_this_traversal = FALSE;
+		tnode[inode].T_arr = HUGE_NEGATIVE_FLOAT; 
+		tnode[inode].T_req = HUGE_POSITIVE_FLOAT;
+	}
+
+	/* Set arrival times for each top-level tnode. */
+	num_at_level = tnodes_at_level[0].nelem;	
+	for (i = 0; i < num_at_level; i++) {
+		inode = tnodes_at_level[0].list[i];	
+		if (tnode[inode].type == FF_SOURCE) { 
+			/* Set the arrival time of this flip-flop tnode to its clock skew. */
+			tnode[inode].T_arr = tnode[inode].clock_skew;
+		} else if (tnode[inode].type == INPAD_SOURCE) { 
+			/* There's no such thing as clock skew for external clocks. The closest equivalent, 
+			input delay, is already marked on the edge coming out from this node. 
+			As a result, the signal can be said to arrive at t = 0. */
+			tnode[inode].T_arr = 0.;
+		}
+	}
+
+	/* Now we actually start the forward breadth-first traversal, to compute arrival times. */
+	total = 0;													/* We count up all tnodes to error-check at the end. */
+	for (ilevel = 0; ilevel < num_tnode_levels; ilevel++) {		/* For each level of our levelized timing graph... */
+		num_at_level = tnodes_at_level[ilevel].nelem;			/* ...there are num_at_level tnodes at that level. */
+		total += num_at_level;
+		
+		for (i = 0; i < num_at_level; i++) {					
+			inode = tnodes_at_level[ilevel].list[i];			/* Go through each of the tnodes at the level we're on. */
+			if (tnode[inode].T_arr < 0) { /* If the arrival time for this tnode is less than 0 (it must be HUGE_NEGATIVE_FLOAT)... */
+				continue;	/* End this iteration of the num_at_level for loop since 
+							this node is not part of the clock domain we're analyzing. 
+							(If it were, it would have received an arrival time already.) */
+			}
+
+			if (ilevel == 0) {
+				tnode[inode].num_critical_input_paths = 1;		/* Top-level tnodes have only one critical input path */
+			}
+
+			num_edges = tnode[inode].num_edges;					/* Get the number of edges fanning out from the node we're visiting */
+			tedge = tnode[inode].out_edges;						/* Get the list of edges from the node we're visiting */
+
+			for (iedge = 0; iedge < num_edges; iedge++) {		/* Now go through each edge coming out from this tnode */
+				to_node = tedge[iedge].to_node;					/* Get the index of the destination tnode of this edge. */
+				
+				/* The arrival time T_arr at the destination node is set to the maximum of all the possible arrival times from all edges fanning in to the node. *
+				 * The arrival time represents the latest time that all inputs must arrive at a node. LUT input rebalancing also occurs at this step. */
+				set_and_balance_arrival_time(to_node, inode, tedge[iedge].Tdel, TRUE);	
+				slack_ratio_denom = max(slack_ratio_denom, tnode[to_node].T_arr);
+			}
+		}
+	}
+}
+
+
 static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain, 
-	boolean is_prepacked, boolean do_lut_input_balancing, long * max_critical_input_paths, 
+	boolean is_prepacked, long * max_critical_input_paths, 
 	long * max_critical_output_paths) {
 	
 	int inode, num_at_level, i, total, ilevel, num_edges, iedge, to_node, icf;
@@ -1859,7 +1930,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				
 				/* The arrival time T_arr at the destination node is set to the maximum of all the possible arrival times from all edges fanning in to the node. *
 				 * The arrival time represents the latest time that all inputs must arrive at a node. LUT input rebalancing also occurs at this step. */
-				set_and_balance_arrival_time(to_node, inode, tedge[iedge].Tdel, do_lut_input_balancing);	
+				set_and_balance_arrival_time(to_node, inode, tedge[iedge].Tdel, FALSE);	
 		
 				/* Since we updated the destination node (to_node), change the slack ratio denominator(s) if 
 				the destination node's arrival time is greater than the existing maximum. */
@@ -2199,8 +2270,8 @@ t_linked_int * allocate_and_load_critical_path(void) {
 
 	t_linked_int *critical_path_head, *curr_crit_node, *prev_crit_node;
 	int inode, iedge, to_node, num_at_level_zero, i, j, crit_node = OPEN, num_edges;
-	float min_slack = HUGE_POSITIVE_FLOAT, slack, source_clock_domain = UNDEFINED, 
-		sink_clock_domain = UNDEFINED;
+	int source_clock_domain = UNDEFINED, sink_clock_domain = UNDEFINED;
+	float min_slack = HUGE_POSITIVE_FLOAT, slack;
 	t_tedge *tedge;
 
 	/* If there's only one clock, we can use the arrival and required times 
@@ -2233,7 +2304,7 @@ t_linked_int * allocate_and_load_critical_path(void) {
 		/* Do a timing analysis for this clock domain pair only. 
 		Set is_prepacked to FALSE since we don't care about the clusterer's normalized values. 
 		Set max critical input/output paths to NULL since they aren't used unless is_prepacked is TRUE. */
-		do_timing_analysis_for_constraint(source_clock_domain, sink_clock_domain, FALSE, FALSE, NULL, NULL);
+		do_timing_analysis_for_constraint(source_clock_domain, sink_clock_domain, FALSE, (long*)NULL, (long*)NULL);
 	}
 
 	/* Start at the source (level-0) tnode with the least slack (T_req-T_arr). 
