@@ -366,7 +366,7 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 #define WIRE_SEGMENT_LENGTH 4
 		first_wire_seg_delay = opin_switch_del + (R_opin_switch + Rmetal * WIRE_SEGMENT_LENGTH/2) * (Cout_opin_switch + Cmetal * WIRE_SEGMENT_LENGTH);
 		second_wire_seg_delay = wire_switch_del + (R_wire_switch + Rmetal * WIRE_SEGMENT_LENGTH/2) * (Cout_wire_switch + Cmetal * WIRE_SEGMENT_LENGTH);
-		inter_cluster_delay = first_wire_seg_delay + second_wire_seg_delay + wtoi_switch_del;
+		inter_cluster_delay = 4 * (first_wire_seg_delay + second_wire_seg_delay + wtoi_switch_del); /* multiply by 4 to get a more conservative estimate */
 	}
 
 	try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models, vpr_setup.library_models, vpr_setup.Timing, inter_cluster_delay);

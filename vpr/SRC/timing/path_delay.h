@@ -53,9 +53,9 @@ void print_net_slack_ratio(float ** net_slack, const char *fname);
 void print_net_delay(float **net_delay, const char *fname);
 
 void print_timing_place_crit(float ** timing_place_crit, const char *fname);
-
+#ifndef NET_WEIGHTING
 void print_clustering_timing_info(const char *fname);
-
+#endif
 void print_timing_stats(void);
 
 float get_critical_path_delay(void);

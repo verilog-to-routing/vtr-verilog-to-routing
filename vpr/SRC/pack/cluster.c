@@ -268,11 +268,11 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	enum e_block_pack_status block_pack_status;
 
 	int *num_used_instances_type, *num_instances_type; /* [0..num_types] Holds array for total number of each cluster_type available */
-
-	float num_paths_scaling, distance_scaling;
-
-	float crit;
-
+#ifdef NET_WEIGHTING
+	int j;
+#else
+	float num_paths_scaling, distance_scaling, crit;
+#endif
 	int num_unrelated_clustering_attempts;
 
 	/* TODO: This is memory inefficient, fix if causes problems */
@@ -354,8 +354,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH))
 				print_timing_graph(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH));
+#ifndef NET_WEIGHTING
 			if(isEchoFileEnabled(E_ECHO_CLUSTERING_TIMING_INFO))
 				print_clustering_timing_info(getEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO));
+#endif
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_NET_SLACK))
 				print_net_slack(slacks->net_slack, getEchoFileName(E_ECHO_PRE_PACKING_NET_SLACK));
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_NET_SLACK_RATIO))
@@ -370,7 +372,22 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			assert(logical_block[i].index == i);
 			critindexarray[i] = i;
 		}
+#ifdef NET_WEIGHTING
+		/* Calculate criticality directly from net_slack_ratio (which includes net weighting). */
+		for (i = 0; i < num_logical_nets; i++) { 
+			for (j = 1; j <= vpack_net[i].num_sinks; j++) { 
+				/* For each pin on each net, find the logical block iblk which it sinks on. */
+				iblk = vpack_net[i].node_block[j];
+				/* The criticality of each block is the maximum of the criticalities of all its pins.
+				(If the slack ratio for a pin is HUGE_POSITIVE_FLOAT, criticality for that pin will 
+				be very negative and will not affect the maximum value). */
+				if (criticality[iblk] < 1 - slacks->net_slack_ratio[i][j]) {
+					criticality[iblk] = 1 - slacks->net_slack_ratio[i][j];
+				}
+			}
+		}
 
+#else
 		/* Calculate criticality based on slacks and tie breakers (# paths, distance from source) */
 		for (i = 0; i < num_tnodes; i++) {
 			/* Only calculate for tnodes which have valid arrival and required times.  
@@ -389,7 +406,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				}
 			}
 		}
- 
+#endif
 		heapsort(critindexarray, criticality, num_logical_blocks, 1);
 		
 		if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES)) {

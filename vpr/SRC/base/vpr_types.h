@@ -39,6 +39,8 @@
  * Global data types and constants
  ******************************************************************************/
 
+// #define NET_WEIGHTING
+
 #ifndef SPEC
 #define DEBUG 1			/* Echoes input & checks error conditions */
 /* Only causes about a 1% speed degradation in V 3.10 */
@@ -332,12 +334,14 @@ typedef struct s_tnode {
 
 	/* pre-packing timing graph */
 	int model_port, model_pin; /* technology mapped model port/pin */
-
+#ifdef NET_WEIGHTING
+	float forward_weight, backward_weight;
+#else
 	long num_critical_input_paths, num_critical_output_paths; /* count of critical paths passing through this tnode */
 	float normalized_slack; /* slack (normalized with respect to max slack) */
 	float normalized_total_critical_paths; /* critical path count (normalized with respect to max count) */
 	float normalized_T_arr; /* arrival time (normalized with respect to max time) */
-
+#endif
 	int index;
 } t_tnode;
 

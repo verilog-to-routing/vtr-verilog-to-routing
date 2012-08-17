@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
+#include <math.h>
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -104,6 +105,8 @@ t_override_constraint * ff_constraints; /*  [0..num_ff_constraints - 1] array of
 
 /******************** Variables local to this module ************************/
 
+#define DISCOUNT_FUNCTION_BASE 3
+
 #define NUM_BUCKETS 5 /* Used when printing net_slack and net_slack_ratio. */
 
 /* Variables for "chunking" the tedge memory.  If the head pointer in tedge_ch is NULL, *
@@ -133,15 +136,16 @@ static void alloc_timing_stats(void);
 static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain, 
 	boolean is_prepacked, long * max_critical_input_paths, 
 	long * max_critical_output_paths);
-
+#ifdef NET_WEIGHTING
+static void do_net_weighting(float slack_ratio_denom);
+#endif
 static void do_lut_rebalancing();
-
 static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 		INOUTP int *inode, INP t_timing_inf timing_inf);
-
+#ifndef NET_WEIGHTING
 static void normalize_costs(float T_arr_max_this_domain, long max_critical_input_paths,
 		long max_critical_output_paths);
-
+#endif
 static void print_primitive_as_blif (FILE *fpout, int iblk);
 
 static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel, boolean do_lut_input_balancing); 
@@ -719,7 +723,7 @@ void print_timing_place_crit(float ** timing_place_crit, const char *fname) {
 
 	fclose(fp);
 }
-
+#ifndef NET_WEIGHTING
 void print_clustering_timing_info(const char *fname) {
 	/* Print information from tnodes which is used by the clusterer. */
 	int inode;
@@ -741,7 +745,7 @@ void print_clustering_timing_info(const char *fname) {
 
 	fclose(fp);
 }
-
+#endif
 /* Count # of tnodes, allocates space, and loads the tnodes and its associated edges */
 static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 	int i, j, k;
@@ -1672,7 +1676,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 			timing_stats->least_slack_per_constraint[i][j] = HUGE_POSITIVE_FLOAT;
 		}
 	}
-
+#ifndef NET_WEIGHTING
 	/* Reset all normalized values. */
 	if (is_prepacked) { 
 		for (inode = 0; inode < num_tnodes; inode++) {			
@@ -1681,7 +1685,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 			tnode[inode].normalized_total_critical_paths = HUGE_NEGATIVE_FLOAT;
 		}
 	}
-
+#endif
 	/* Reset all has_valid_slack flags to FALSE. */
 	for (inode = 0; inode < num_tnodes; inode++) {
 		tnode[inode].has_valid_slack = FALSE;
@@ -1701,7 +1705,10 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 				/* Perform the forward and backward traversal. */
 				slack_ratio_denom = do_timing_analysis_for_constraint(source_clock_domain, sink_clock_domain, 
 					is_prepacked, &max_critical_input_paths, &max_critical_output_paths);
-
+#ifdef NET_WEIGHTING
+				/* Weight the importance of each net, used in slack calculation. */
+				do_net_weighting(slack_ratio_denom);
+#endif
 				/* Update the slack for each edge if it has a newer, lower value.  
 				Also update the normalized costs used by the clusterer. */
 #if SLACK_RATIO_DEFINITION == 1
@@ -1710,9 +1717,11 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 				update_slacks(slacks, 0, is_final_analysis);
 #endif
 
+#ifndef NET_WEIGHTING
 				if (is_prepacked) {
 					normalize_costs(slack_ratio_denom, max_critical_input_paths, max_critical_output_paths);
 				}
+#endif
 			}
 		}
 	} /* end of source_clock_domain loop */
@@ -1789,13 +1798,10 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 
 static void do_lut_rebalancing() {
 	
-	int inode, num_at_level, i, total, ilevel, num_edges, iedge, to_node;
+	int inode, num_at_level, i, ilevel, num_edges, iedge, to_node;
 	t_tedge * tedge;
 
-	float slack_ratio_denom = HUGE_NEGATIVE_FLOAT; /* Reset before each pair of traversals. */
-
-	/* Reset all used_on_this_traversal flags to FALSE.  Also, reset all arrival times to a
-	very large negative number, and all required times to a very large positive number. */
+	/* Reset all arrival times to a very large negative number. */
 	for (inode = 0; inode < num_tnodes; inode++) {
 		tnode[inode].used_on_this_traversal = FALSE;
 		tnode[inode].T_arr = HUGE_NEGATIVE_FLOAT; 
@@ -1818,23 +1824,12 @@ static void do_lut_rebalancing() {
 	}
 
 	/* Now we actually start the forward breadth-first traversal, to compute arrival times. */
-	total = 0;													/* We count up all tnodes to error-check at the end. */
 	for (ilevel = 0; ilevel < num_tnode_levels; ilevel++) {		/* For each level of our levelized timing graph... */
 		num_at_level = tnodes_at_level[ilevel].nelem;			/* ...there are num_at_level tnodes at that level. */
-		total += num_at_level;
-		
+			
 		for (i = 0; i < num_at_level; i++) {					
 			inode = tnodes_at_level[ilevel].list[i];			/* Go through each of the tnodes at the level we're on. */
-			if (tnode[inode].T_arr < 0) { /* If the arrival time for this tnode is less than 0 (it must be HUGE_NEGATIVE_FLOAT)... */
-				continue;	/* End this iteration of the num_at_level for loop since 
-							this node is not part of the clock domain we're analyzing. 
-							(If it were, it would have received an arrival time already.) */
-			}
-
-			if (ilevel == 0) {
-				tnode[inode].num_critical_input_paths = 1;		/* Top-level tnodes have only one critical input path */
-			}
-
+	
 			num_edges = tnode[inode].num_edges;					/* Get the number of edges fanning out from the node we're visiting */
 			tedge = tnode[inode].out_edges;						/* Get the list of edges from the node we're visiting */
 
@@ -1844,7 +1839,6 @@ static void do_lut_rebalancing() {
 				/* The arrival time T_arr at the destination node is set to the maximum of all the possible arrival times from all edges fanning in to the node. *
 				 * The arrival time represents the latest time that all inputs must arrive at a node. LUT input rebalancing also occurs at this step. */
 				set_and_balance_arrival_time(to_node, inode, tedge[iedge].Tdel, TRUE);	
-				slack_ratio_denom = max(slack_ratio_denom, tnode[to_node].T_arr);
 			}
 		}
 	}
@@ -1902,13 +1896,13 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 							(If it were, it would have received an arrival time already.) */
 			}
 
+			num_edges = tnode[inode].num_edges;					/* Get the number of edges fanning out from the node we're visiting */
+			tedge = tnode[inode].out_edges;						/* Get the list of edges from the node we're visiting */
+#ifndef NET_WEIGHTING		
 			if (ilevel == 0) {
 				tnode[inode].num_critical_input_paths = 1;		/* Top-level tnodes have only one critical input path */
 			}
 
-			num_edges = tnode[inode].num_edges;					/* Get the number of edges fanning out from the node we're visiting */
-			tedge = tnode[inode].out_edges;						/* Get the list of edges from the node we're visiting */
-			
 			if (is_prepacked) {
 				for (iedge = 0; iedge < num_edges; iedge++) {		
 					to_node = tedge[iedge].to_node;
@@ -1924,7 +1918,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 					}
 				}
 			}
-			
+#endif			
 			for (iedge = 0; iedge < num_edges; iedge++) {		/* Now go through each edge coming out from this tnode */
 				to_node = tedge[iedge].to_node;					/* Get the index of the destination tnode of this edge. */
 				
@@ -1935,7 +1929,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				/* Since we updated the destination node (to_node), change the slack ratio denominator(s) if 
 				the destination node's arrival time is greater than the existing maximum. */
 #if SLACK_RATIO_DEFINITION == 2  
-						slack_ratio_denom_global = max(slack_ratio_denom_global, tnode[to_node].T_arr);
+				slack_ratio_denom_global = max(slack_ratio_denom_global, tnode[to_node].T_arr);
 #endif		
 				slack_ratio_denom = max(slack_ratio_denom, tnode[to_node].T_arr);
 			}
@@ -2015,8 +2009,8 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	
 #if SLACK_DEFINITION == 4
 				/* Normalize the required time at the sink node to be >=0 by taking the max of the "real" 
-				required time (constraint + tnode[inode].clock_skew) and the max arrival time in this domain, 
-				except for the final analysis pass.  
+				required time (constraint + tnode[inode].clock_skew) and the max arrival time in this domain
+				(slack_ratio_denom), except for the final analysis pass.  
 				E.g. if we have a 10 ns constraint and it takes 14 ns to get here, 
 				we'll have a slack of at most -4 ns for any edge along the path that got us here.  If we 
 				say the required time is 14 ns (no less than the arrival time), we don't have a negative 
@@ -2047,9 +2041,9 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 
 				/* We want to find the greatest T_req (either in the design or for this traversal), 
 				so update T_req_max_this_domain and/or T_req_max_global if this tnode's required time is greater than them. */
-
+#ifndef NET_WEIGHTING
 				tnode[inode].num_critical_output_paths = 1; /* Bottom-level tnodes have only one critical output path */
-
+#endif
 			} else { /* not a sink */
 				assert(!(tnode[inode].type == OUTPAD_SINK || tnode[inode].type == FF_SINK || tnode[inode].type == FF_CLOCK));
 
@@ -2100,7 +2094,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 							tnode[to_node].T_req - tnode[inode].T_arr - tedge[iedge].Tdel);
 					}
 				}
-
+#ifndef NET_WEIGHTING
 				if (is_prepacked) {
 					for (iedge = 0; iedge < num_edges; iedge++) { 
 						to_node = tedge[iedge].to_node;
@@ -2115,13 +2109,79 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 						}
 					}
 				}
+#endif
 			}
 		}
 		slack_ratio_denom = max(slack_ratio_denom, timing_constraint[source_clock_domain][sink_clock_domain]);
 	}
 	return slack_ratio_denom;
 }
+#ifdef NET_WEIGHTING
+static void do_net_weighting(float slack_ratio_denom) {
+	/* Weight the importance of each net used in this constraint by giving it a forward and backward weight.  
+	See "A Novel Net Weighting Algorithm for Timing-Driven Placement" (Kong, 2002). */
+	
+	int inode, num_at_level, i, ilevel, num_edges, iedge, to_node;
+	t_tedge * tedge;
+	float forward_local_slack, backward_local_slack, discount;
 
+	/* Reset forward and backward weights for all tnodes. */
+	for (inode = 0; inode < num_tnodes; inode++) {
+		tnode[inode].forward_weight = 0;
+		tnode[inode].backward_weight = 0;
+	}
+
+	/* Set foward weights for each top-level tnode. */
+	num_at_level = tnodes_at_level[0].nelem;	
+	for (i = 0; i < num_at_level; i++) {
+		inode = tnodes_at_level[0].list[i];	
+		tnode[inode].forward_weight = 1.;
+	}
+
+	/* Do a forward breadth-first traversal to populate forward weights. */
+	for (ilevel = 0; ilevel < num_tnode_levels; ilevel++) {	
+		num_at_level = tnodes_at_level[ilevel].nelem;			
+		
+		for (i = 0; i < num_at_level; i++) {					
+			inode = tnodes_at_level[ilevel].list[i];			
+			if (!tnode[inode].used_on_this_traversal) {
+				continue;	
+			}
+
+			tedge = tnode[inode].out_edges;
+			num_edges = tnode[inode].num_edges;
+			for (iedge = 0; iedge < num_edges; iedge++) {
+				to_node = tedge[iedge].to_node;
+				forward_local_slack = tnode[to_node].T_arr - tnode[inode].T_arr - tedge[iedge].Tdel;
+				discount = pow(DISCOUNT_FUNCTION_BASE, -1 * forward_local_slack / slack_ratio_denom);
+				tnode[to_node].forward_weight += discount * tnode[inode].forward_weight;
+			}
+		}
+	}
+
+	/* Do a backward breadth-first traversal to populate backward weights. */
+	for (ilevel = num_tnode_levels - 1; ilevel >= 0; ilevel--) {
+		num_at_level = tnodes_at_level[ilevel].nelem;
+	
+		for (i = 0; i < num_at_level; i++) {
+			inode = tnodes_at_level[ilevel].list[i];
+			num_edges = tnode[inode].num_edges;
+	
+			if (num_edges == 0) { /* sink */
+				tnode[inode].backward_weight = 1.;
+			} else {
+				tedge = tnode[inode].out_edges;
+				for (iedge = 0; iedge < num_edges; iedge++) {
+					to_node = tedge[iedge].to_node;
+					backward_local_slack = tnode[to_node].T_req - tnode[inode].T_req - tedge[iedge].Tdel;
+					discount = pow(DISCOUNT_FUNCTION_BASE, -1 * backward_local_slack / slack_ratio_denom);
+					tnode[to_node].backward_weight += discount * tnode[inode].backward_weight;
+				}
+			}
+		}
+	}
+}
+#endif
 static void update_slacks(t_slack * slacks, float slack_ratio_denom, boolean is_final_analysis) {
 	/* Updates the slack of each source-sink pair of block pins in net_slack. 
 	 * For n clock domains, this function will be called n^2 times for each iteration of the timing analyser.
@@ -2166,10 +2226,15 @@ static void update_slacks(t_slack * slacks, float slack_ratio_denom, boolean is_
 			}
 
 #if SLACK_RATIO_DEFINITION == 1
+	#ifdef NET_WEIGHTING
+			slacks->net_slack_ratio[inet][iedge + 1] = tnode[inode].forward_weight * tnode[to_node].backward_weight * 
+				pow(DISCOUNT_FUNCTION_BASE, -1 * T_req - T_arr - Tdel / slack_ratio_denom);
+	#else
 			/* Since slack_ratio_denom is not the same on each traversal, we have to check separately that the slack ratio is lower. */
 			/* Update the slack ratio for this edge if the slack ratio from this traversal is less than its current value. */
 			slacks->net_slack_ratio[inet][iedge + 1] = min(slacks->net_slack_ratio[inet][iedge + 1], (T_req - T_arr - Tdel)/slack_ratio_denom); 
 			/* (We use T_req - T_arr - Tdel in the formula without setting an intermediate variable to reduce floating-point roundoff) */
+	#endif
 #endif
 		}
 	}
@@ -2421,7 +2486,7 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 	free_timing_graph(slacks);
 	free_net_delay(net_delay, &net_delay_ch);
 }
-
+#ifndef NET_WEIGHTING
 static void normalize_costs(float T_arr_max_this_domain, long max_critical_input_paths,
 		long max_critical_output_paths) {
 	int inode;
@@ -2438,7 +2503,7 @@ static void normalize_costs(float T_arr_max_this_domain, long max_critical_input
 		}
 	}
 }
-
+#endif
 /* Set new arrival time
 	Special code for LUTs to enable LUT input delay balancing
 */
