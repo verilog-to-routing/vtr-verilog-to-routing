@@ -36,11 +36,11 @@ t_linked_int *allocate_and_load_critical_path(void);
 
 void load_timing_graph_net_delays(float **net_delay);
 
-t_timing_stats * do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_input_balancing, boolean is_final_analysis);
+void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_input_balancing, boolean is_final_analysis);
 
 void free_timing_graph(t_slack * slack);
 
-void free_timing_stats(t_timing_stats * timing_stats);
+void free_timing_stats(void);
 
 void print_timing_graph(const char *fname);
 
@@ -70,10 +70,15 @@ void print_timing_graph_as_blif (const char *fname, t_model *models);
 extern int num_constrained_clocks; /* number of clocks with timing constraints */
 extern t_clock * constrained_clocks; /* [0..num_constrained_clocks - 1] array of clocks with timing constraints */
 
-extern int num_constrained_ios; /* number of I/Os with timing constraints */
-extern t_io * constrained_ios; /* [0..num_constrained_ios - 1] array of I/Os with timing constraints */
+extern int num_constrained_inputs; /* number of inputs with timing constraints */
+extern t_io * constrained_inputs; /* [0..num_constrained_inputs - 1] array of inputs with timing constraints */
+
+extern int num_constrained_outputs; /* number of outputs with timing constraints */
+extern t_io * constrained_outputs; /* [0..num_constrained_outputs - 1] array of outputs with timing constraints */
 
 extern float ** timing_constraint; /* [0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (destination)] */
+
+extern t_timing_stats * timing_stats; /* Critical path delay and worst-case slack per constraint. */
 
 extern int num_cc_constraints; /* number of special-case clock-to-clock constraints overriding default, calculated, timing constraints */
 extern t_override_constraint * cc_constraints; /*  [0..num_cc_constraints - 1] array of such constraints */

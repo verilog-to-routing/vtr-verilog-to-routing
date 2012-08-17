@@ -275,8 +275,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	int num_unrelated_clustering_attempts;
 
-	t_timing_stats * timing_stats;
-
 	/* TODO: This is memory inefficient, fix if causes problems */
 	clb = (t_block*)my_calloc(num_logical_blocks, sizeof(t_block));
 	num_clb = 0;
@@ -351,8 +349,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	if (timing_driven) {
 		slacks = alloc_and_load_pre_packing_timing_graph(block_delay,
 				inter_cluster_net_delay, arch->models, timing_inf);
-		timing_stats = do_timing_analysis(slacks, TRUE, FALSE, FALSE);
-		free_timing_stats(timing_stats);
+		do_timing_analysis(slacks, TRUE, FALSE, FALSE);
 
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH))

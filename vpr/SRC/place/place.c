@@ -262,27 +262,17 @@ void try_place(struct s_placer_opts placer_opts,
 	 * width should be taken to when calculating costs.  This allows a       *
 	 * greater bias for anisotropic architectures.                           */
 
-	int tot_iter, inner_iter, success_sum;
-	int move_lim, moves_since_cost_recompute, width_fac;
-	float t, success_rat, rlim;
-	float cost, timing_cost, bb_cost, new_bb_cost, new_timing_cost;
-	float delay_cost, new_delay_cost, place_delay_value;
-	float inverse_prev_bb_cost, inverse_prev_timing_cost;
-	float oldt;
-	double av_cost, av_bb_cost, av_timing_cost, av_delay_cost, sum_of_squares,
-			std_dev;
-	float **old_region_occ_x, **old_region_occ_y;
+	int tot_iter, inner_iter, success_sum, move_lim, moves_since_cost_recompute, width_fac, 
+		num_connections, inet, ipin, outer_crit_iter_count, inner_crit_iter_count, 
+		inner_recompute_limit, source_clock_domain, sink_clock_domain;
+	float t, success_rat, rlim, cost, timing_cost, bb_cost, new_bb_cost, new_timing_cost,
+		delay_cost, new_delay_cost, place_delay_value, inverse_prev_bb_cost, inverse_prev_timing_cost,
+		oldt, **old_region_occ_x, **old_region_occ_y, **net_delay = NULL, crit_exponent, 
+		first_rlim, final_rlim, inverse_delta_rlim, critical_path_delay = UNDEFINED, 
+		least_slack_in_design = HUGE_POSITIVE_FLOAT,
+		**remember_net_delay_original_ptr; /*used to free net_delay if it is re-assigned */
+	double av_cost, av_bb_cost, av_timing_cost, av_delay_cost, sum_of_squares, std_dev;
 	char msg[BUFSIZE];
-	int num_connections;
-	int inet, ipin, outer_crit_iter_count, inner_crit_iter_count,
-			inner_recompute_limit;
-	float **net_delay = NULL;
-	float crit_exponent;
-	float first_rlim, final_rlim, inverse_delta_rlim;
-	float **remember_net_delay_original_ptr; /*used to free net_delay if it is re-assigned */
-
-	int i, j;
-	t_timing_stats * timing_stats;
 	t_slack * slacks = NULL;
 
 	/* Allocated here because it goes into timing critical code where each memory allocation is expensive */
@@ -316,13 +306,11 @@ void try_place(struct s_placer_opts placer_opts,
 
 		load_constant_net_delay(net_delay, place_delay_value);
 		load_timing_graph_net_delays(net_delay);
-		timing_stats = do_timing_analysis(slacks, FALSE, FALSE, TRUE);
+		do_timing_analysis(slacks, FALSE, FALSE, TRUE);
 
 		if (getEchoEnabled()) {
-			if (num_constrained_clocks == 1) {
-				if(isEchoFileEnabled(E_ECHO_PLACEMENT_CRITICAL_PATH))
-					print_critical_path(getEchoFileName(E_ECHO_PLACEMENT_CRITICAL_PATH));
-			}
+			if(isEchoFileEnabled(E_ECHO_PLACEMENT_CRITICAL_PATH))
+				print_critical_path(getEchoFileName(E_ECHO_PLACEMENT_CRITICAL_PATH));
 			if(isEchoFileEnabled(E_ECHO_PLACEMENT_LOWER_BOUND_SINK_DELAYS))
 				print_sink_delays(getEchoFileName(E_ECHO_PLACEMENT_LOWER_BOUND_SINK_DELAYS));
 			if(isEchoFileEnabled(E_ECHO_PLACEMENT_LOGIC_SINK_DELAYS))
@@ -334,8 +322,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 		load_constant_net_delay(net_delay, 0);
 		load_timing_graph_net_delays(net_delay);
-		timing_stats = do_timing_analysis(slacks, FALSE, FALSE, TRUE);
-		free_timing_stats(timing_stats);
+		do_timing_analysis(slacks, FALSE, FALSE, TRUE);
 
 #endif
 
@@ -391,8 +378,7 @@ void try_place(struct s_placer_opts placer_opts,
 		}
 
 		load_timing_graph_net_delays(net_delay);
-		timing_stats = do_timing_analysis(slacks, FALSE, FALSE, FALSE);
-		free_timing_stats(timing_stats);
+		do_timing_analysis(slacks, FALSE, FALSE, FALSE);
 		load_criticalities(slacks->net_slack_ratio, crit_exponent);
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH))
@@ -512,8 +498,7 @@ void try_place(struct s_placer_opts placer_opts,
 				 *because it accesses point_to_point_delay array */
 
 				load_timing_graph_net_delays(net_delay);
-				timing_stats = do_timing_analysis(slacks, FALSE, FALSE, FALSE);
-				free_timing_stats(timing_stats);
+				do_timing_analysis(slacks, FALSE, FALSE, FALSE);
 				load_criticalities(slacks->net_slack_ratio, crit_exponent);
 				/*recompute costs from scratch, based on new criticalities */
 				comp_td_costs(&timing_cost, &delay_cost);
@@ -563,8 +548,7 @@ void try_place(struct s_placer_opts placer_opts,
 					}
 
 					load_timing_graph_net_delays(net_delay);
-					timing_stats = do_timing_analysis(slacks, FALSE, FALSE, FALSE);
-					free_timing_stats(timing_stats);
+					do_timing_analysis(slacks, FALSE, FALSE, FALSE);
 					load_criticalities(slacks->net_slack_ratio, crit_exponent);
 					comp_td_costs(&timing_cost, &delay_cost);
 				}
@@ -700,8 +684,7 @@ void try_place(struct s_placer_opts placer_opts,
 						num_nets);
 
 			load_timing_graph_net_delays(net_delay);
-			timing_stats = do_timing_analysis(slacks, FALSE, FALSE, FALSE);
-			free_timing_stats(timing_stats);
+			do_timing_analysis(slacks, FALSE, FALSE, FALSE);
 			load_criticalities(slacks->net_slack_ratio, crit_exponent);
 			/*recompute criticaliies */
 			comp_td_costs(&timing_cost, &delay_cost);
@@ -747,8 +730,7 @@ void try_place(struct s_placer_opts placer_opts,
 					}
 
 					load_timing_graph_net_delays(net_delay);
-					timing_stats = do_timing_analysis(slacks, FALSE, FALSE, FALSE);
-					free_timing_stats(timing_stats);
+					do_timing_analysis(slacks, FALSE, FALSE, FALSE);
 					load_criticalities(slacks->net_slack_ratio, crit_exponent);
 					comp_td_costs(&timing_cost, &delay_cost);
 				}
@@ -809,7 +791,8 @@ void try_place(struct s_placer_opts placer_opts,
 		net_delay = point_to_point_delay_cost; /*this makes net_delay up to date with    *
 		 *the same values that the placer is using*/
 		load_timing_graph_net_delays(net_delay);
-		timing_stats = do_timing_analysis(slacks, FALSE, FALSE, TRUE);
+
+		do_timing_analysis(slacks, FALSE, FALSE, TRUE);
 
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PLACEMENT_SINK_DELAYS))
@@ -820,28 +803,20 @@ void try_place(struct s_placer_opts placer_opts,
 				print_net_slack_ratio(slacks->net_slack_ratio, getEchoFileName(E_ECHO_FINAL_PLACEMENT_NET_SLACK_RATIO));
 			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH))
 				print_timing_graph(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH));
-			if (num_constrained_clocks == 1) {
-				if(isEchoFileEnabled(E_ECHO_PLACEMENT_CRIT_PATH))
-					print_critical_path(getEchoFileName(E_ECHO_PLACEMENT_CRIT_PATH));
-			}
+			if(isEchoFileEnabled(E_ECHO_PLACEMENT_CRIT_PATH))
+				print_critical_path(getEchoFileName(E_ECHO_PLACEMENT_CRIT_PATH));
 		}
-		if (num_constrained_clocks == 1) {
-			vpr_printf(TIO_MESSAGE_INFO, "Placement estimated critical path delay: %g ns\n\n", timing_stats->critical_path_delay[0][0] * 1e9);
-		} else if (num_constrained_clocks > 1) {
-			vpr_printf(TIO_MESSAGE_INFO, "Placement estimated minimum possible clock period to meet each constraint (including skew effects):\n");
-			for (i = 0; i < num_constrained_clocks; i++) {
-				for (j = 0; j < num_constrained_clocks; j++) {
-					if (timing_constraint[i][j] > -0.01 && timing_stats->critical_path_delay[i][j] > HUGE_NEGATIVE_FLOAT + 1) { 
-					/* if timing constraint is not DO_NOT_ANALYSE and if there was at least one path analyzed */
-						/* convert to nanoseconds */
-						vpr_printf(TIO_MESSAGE_INFO, "%s to %s: %g ns\n", constrained_clocks[i].name, 
-							constrained_clocks[j].name, timing_stats->critical_path_delay[i][j] * 1e9);
-					}
+
+		/* Print critical path delay */
+		for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
+			for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
+				if (least_slack_in_design > timing_stats->least_slack_per_constraint[source_clock_domain][sink_clock_domain]) {
+					least_slack_in_design = timing_stats->least_slack_per_constraint[source_clock_domain][sink_clock_domain];
+					critical_path_delay = timing_stats->critical_path_delay[source_clock_domain][sink_clock_domain];
 				}
 			}
-			vpr_printf(TIO_MESSAGE_INFO, "\n");
 		}
-		free_timing_stats(timing_stats);
+		vpr_printf(TIO_MESSAGE_INFO, "\nPlacement estimated critical path delay: %g ns\n", critical_path_delay * 1e9);
 	}
 
 	sprintf(msg,

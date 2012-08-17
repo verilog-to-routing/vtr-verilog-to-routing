@@ -695,6 +695,7 @@ void vpr_free_vpr_data_structures(INOUTP t_arch Arch, INOUTP t_options options, 
 	free_arch(&Arch);	
 	free_echo_file_info();
 	free_output_file_names();
+	free_timing_stats();
 }
 
 

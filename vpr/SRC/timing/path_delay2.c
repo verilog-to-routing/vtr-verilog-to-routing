@@ -200,8 +200,7 @@ void check_timing_graph(int num_sinks) {
 
 float print_critical_path_node(FILE * fp, t_linked_int * critical_path_node) {
 
-	/* Prints one tnode on the critical path out to fp. Returns the delay to    *
-	 * the next node.  For single-clock circuits only.                          */
+	/* Prints one tnode on the critical path out to fp. Returns the delay to the next node. */
 
 	int inode, iblk, inet, downstream_node;
 	t_pb_graph_pin * pb_graph_pin;

@@ -47,23 +47,17 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	 * must have already been allocated, and net_delay must have been allocated. *
 	 * Returns TRUE if the routing succeeds, FALSE otherwise.                    */
 
-	int itry, inet, ipin, i, j;
+	int itry, inet, ipin, i, source_clock_domain, sink_clock_domain, 
+		bends, wirelength, total_wirelength, available_wirelength, segments,
+		*net_index, *sink_order /* [1..max_pins_per_net-1]. */;
 	boolean success, is_routable, rip_up_local_opins;
-	float *pin_criticality; /* [1..max_pins_per_net-1]. */
-	int *sink_order; /* [1..max_pins_per_net-1]. */
+	float *pin_criticality /* [1..max_pins_per_net-1]. */, pres_fac, *sinks,
+		critical_path_delay = UNDEFINED, least_slack_in_design = HUGE_POSITIVE_FLOAT;
 	t_rt_node **rt_node_of_sink; /* [1..max_pins_per_net-1]. */
-	float pres_fac;
 
-	float *sinks;
-	int *net_index;
-
-	int bends;
-	int wirelength, total_wirelength, available_wirelength;
-	int segments;
-
-	t_timing_stats * timing_stats;
 	sinks = (float*)my_malloc(sizeof(float) * num_nets);
 	net_index = (int*)my_malloc(sizeof(int) * num_nets);
+
 	for (i = 0; i < num_nets; i++) {
 		sinks[i] = clb_net[i].num_sinks;
 		net_index[i] = i;
@@ -198,29 +192,25 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		 * Timing_driven_route_net updated the net delay values.                 */
 
 		load_timing_graph_net_delays(net_delay);
-		
+
 #ifdef HACK_LUT_PIN_SWAPPING
-		timing_stats = do_timing_analysis(slacks, FALSE, TRUE, FALSE);
+		do_timing_analysis(slacks, FALSE, TRUE, FALSE);
 #else
-		timing_stats = do_timing_analysis(slacks, FALSE, FALSE, FALSE);
+		do_timing_analysis(slacks, FALSE, FALSE, FALSE);
 #endif
-		if (num_constrained_clocks == 1) {
-			vpr_printf(TIO_MESSAGE_INFO, "Crit. path: %g ns\n", timing_stats->critical_path_delay[0][0] * 1e9);
-		} else if (num_constrained_clocks > 1) {
-			vpr_printf(TIO_MESSAGE_INFO, "\nMinimum possible clock period to meet each constraint (including skew effects):\n");
-			for (i = 0; i < num_constrained_clocks; i++) {
-				for (j = 0; j < num_constrained_clocks; j++) {
-					if (timing_constraint[i][j] > -0.01 && timing_stats->critical_path_delay[i][j] > HUGE_NEGATIVE_FLOAT + 1) { 
-					/* if timing constraint is not DO_NOT_ANALYSE and if there was at least one path analyzed */
-						/* convert to nanoseconds */
-						vpr_printf(TIO_MESSAGE_INFO, "%s to %s: %g ns\n", constrained_clocks[i].name, 
-							constrained_clocks[j].name, timing_stats->critical_path_delay[i][j] * 1e9);
-					}
+
+		/* Print critical path delay */
+		for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
+			for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
+				if (least_slack_in_design > timing_stats->least_slack_per_constraint[source_clock_domain][sink_clock_domain]) {
+					least_slack_in_design = timing_stats->least_slack_per_constraint[source_clock_domain][sink_clock_domain];
+					critical_path_delay = timing_stats->critical_path_delay[source_clock_domain][sink_clock_domain];
 				}
 			}
-			vpr_printf(TIO_MESSAGE_INFO, "\n");
 		}
-		free_timing_stats(timing_stats);
+		vpr_printf(TIO_MESSAGE_INFO, "\nCrit. path: %g ns\n", critical_path_delay * 1e9);
+		/* Deliberately abbreviated so parsing for "Critical path" will not pick this up. */
+
 		fflush(stdout);
 	}
 

@@ -10,4 +10,4 @@ void print_lambda(void);
 
 void get_num_bends_and_length(int inet, int *bends, int *length, int *segments);
 
-void get_timing_stats(t_timing_stats * timing_stats);
+void print_timing_stats(void);
