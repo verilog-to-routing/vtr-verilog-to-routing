@@ -338,49 +338,45 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 
 void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 	clock_t begin, end;
-	float est_interc_delay;
-	int i, j;
-	int *num_instances_type;
-
+	float inter_cluster_delay = UNDEFINED, Tdel_opin_switch, Tdel_wire_switch, 
+		Tdel_wtoi_switch, R_opin_switch, R_wire_switch, R_wtoi_switch,
+		Cout_opin_switch, Cout_wire_switch, Cout_wtoi_switch, opin_switch_del, 
+		wire_switch_del, wtoi_switch_del, Rmetal, Cmetal, first_wire_seg_delay,
+		second_wire_seg_delay;
 	begin = clock();
-	vpr_printf(TIO_MESSAGE_INFO, "Initialize packing\n");
-	est_interc_delay = UNDEFINED;
+	vpr_printf(TIO_MESSAGE_INFO, "Initialize packing\n"); 
+		
+	/* If needed, estimate inter-cluster delay. Assume the average routing hop goes out of 
+	a block through an opin switch to a length-4 wire, then through a wire switch to another
+	length-4 wire, then through a wire-to-ipin-switch into another block. */
 
-	
-	if(vpr_setup.PackerOpts.timing_driven && vpr_setup.PackerOpts.auto_compute_inter_cluster_net_delay) {
-		/* If timing driven, determine default inter-cluster delay */
-		vpr_printf(TIO_MESSAGE_INFO, "Populate inter-clb interconnect delay estimation lookup\n");
-		nx = ny = 4;
-		chan_width_x = (int *) my_malloc((ny + 1) * sizeof(int));
-		chan_width_y = (int *) my_malloc((nx + 1) * sizeof(int));
-		num_instances_type = (int *)my_calloc(num_types, sizeof(int));
-		alloc_and_load_grid(num_instances_type);
-		compute_delay_lookup_tables(vpr_setup.RouterOpts, vpr_setup.RoutingArch, vpr_setup.Segments, vpr_setup.Timing, arch.Chans);
-		for(i = 0; i < nx; i++) {
-			for(j = 0; j < ny; j++) {
-				if(i != j) {
-					if(est_interc_delay == UNDEFINED || est_interc_delay > delta_clb_to_clb[i][j]) {
-						est_interc_delay = delta_clb_to_clb[i][j];
-					}
-				}
-			}
-		}
-		free_place_lookup_structs();
-		free(chan_width_x);
-		free(chan_width_y);
-		chan_width_x = chan_width_y = NULL;
-		free(num_instances_type);
-		nx = ny = 1;
+	if (vpr_setup.PackerOpts.timing_driven && vpr_setup.PackerOpts.auto_compute_inter_cluster_net_delay) {
+		opin_switch_del = get_switch_info(arch.Segments[0].opin_switch, 
+			Tdel_opin_switch, R_opin_switch, Cout_opin_switch);
+		wire_switch_del = get_switch_info(arch.Segments[0].wire_switch, 
+			Tdel_wire_switch, R_wire_switch, Cout_wire_switch);
+		wtoi_switch_del = get_switch_info(vpr_setup.RoutingArch.wire_to_ipin_switch,
+			Tdel_wtoi_switch, R_wtoi_switch, Cout_wtoi_switch); /* wire-to-ipin switch */
+		Rmetal = arch.Segments[0].Rmetal;
+		Cmetal = arch.Segments[0].Cmetal;
+		
+		/* The delay of a wire with its driving switch is the switch delay plus the 
+		product of the equivalent resistance and capacitance experienced by the wire. */
+
+#define WIRE_SEGMENT_LENGTH 4
+		first_wire_seg_delay = opin_switch_del + (R_opin_switch + Rmetal * WIRE_SEGMENT_LENGTH/2) * (Cout_opin_switch + Cmetal * WIRE_SEGMENT_LENGTH);
+		second_wire_seg_delay = wire_switch_del + (R_wire_switch + Rmetal * WIRE_SEGMENT_LENGTH/2) * (Cout_wire_switch + Cmetal * WIRE_SEGMENT_LENGTH);
+		inter_cluster_delay = first_wire_seg_delay + second_wire_seg_delay + wtoi_switch_del;
 	}
 
-	try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models, vpr_setup.library_models, vpr_setup.Timing, est_interc_delay);
+	try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models, vpr_setup.library_models, vpr_setup.Timing, inter_cluster_delay);
 	end = clock();
 	#ifdef CLOCKS_PER_SEC
 		vpr_printf(TIO_MESSAGE_INFO, "Packing took %g seconds\n",
 					(float) (end - begin) / CLOCKS_PER_SEC);
 		vpr_printf(TIO_MESSAGE_INFO, "Packing completed\n");
 	#else
-			vpr_printf(TIO_MESSAGE_INFO, "Packing took %g seconds\n", (float)(end - begin) / CLK_PER_SEC);
+		vpr_printf(TIO_MESSAGE_INFO, "Packing took %g seconds\n", (float)(end - begin) / CLK_PER_SEC);
 	#endif
 	fflush(stdout);
 }

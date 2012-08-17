@@ -56,6 +56,10 @@ void print_timing_place_crit(float ** timing_place_crit, const char *fname);
 
 void print_clustering_timing_info(const char *fname);
 
+void print_timing_stats(void);
+
+float get_critical_path_delay(void);
+
 void print_critical_path(const char *fname);
 
 void get_tnode_block_and_output_net(int inode, int *iblk_ptr, int *inet_ptr);
@@ -77,8 +81,6 @@ extern int num_constrained_outputs; /* number of outputs with timing constraints
 extern t_io * constrained_outputs; /* [0..num_constrained_outputs - 1] array of outputs with timing constraints */
 
 extern float ** timing_constraint; /* [0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (destination)] */
-
-extern t_timing_stats * timing_stats; /* Critical path delay and worst-case slack per constraint. */
 
 extern int num_cc_constraints; /* number of special-case clock-to-clock constraints overriding default, calculated, timing constraints */
 extern t_override_constraint * cc_constraints; /*  [0..num_cc_constraints - 1] array of such constraints */

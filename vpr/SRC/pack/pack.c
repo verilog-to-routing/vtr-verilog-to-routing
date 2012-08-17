@@ -101,8 +101,18 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 	vpr_printf(TIO_MESSAGE_INFO, "\nNetlist conversion complete.\n\n");
 }
 
+float get_switch_info(short switch_index, float &Tdel_switch, float &R_switch, float &Cout_switch) {
+	/* Fetches delay, resistance and output capacitance of the switch at switch_index. 
+	Returns the total delay through the switch. Used to calculate inter-cluster net delay. */
 
+	Tdel_switch = switch_inf[switch_index].Tdel; /* Delay when unloaded */
+	R_switch = switch_inf[switch_index].R;
+	Cout_switch = switch_inf[switch_index].Cout;
 
+	/* The delay through a loaded switch is its intrinsic (unloaded) 
+	delay plus the product of its resistance and output capacitance. */
+	return Tdel_switch + R_switch * Cout_switch;
+}
 
 boolean *alloc_and_load_is_clock(boolean global_clocks) {
 

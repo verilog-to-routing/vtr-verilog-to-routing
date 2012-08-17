@@ -264,12 +264,11 @@ void try_place(struct s_placer_opts placer_opts,
 
 	int tot_iter, inner_iter, success_sum, move_lim, moves_since_cost_recompute, width_fac, 
 		num_connections, inet, ipin, outer_crit_iter_count, inner_crit_iter_count, 
-		inner_recompute_limit, source_clock_domain, sink_clock_domain;
+		inner_recompute_limit;
 	float t, success_rat, rlim, cost, timing_cost, bb_cost, new_bb_cost, new_timing_cost,
 		delay_cost, new_delay_cost, place_delay_value, inverse_prev_bb_cost, inverse_prev_timing_cost,
 		oldt, **old_region_occ_x, **old_region_occ_y, **net_delay = NULL, crit_exponent, 
-		first_rlim, final_rlim, inverse_delta_rlim, critical_path_delay = UNDEFINED, 
-		least_slack_in_design = HUGE_POSITIVE_FLOAT,
+		first_rlim, final_rlim, inverse_delta_rlim, critical_path_delay, 
 		**remember_net_delay_original_ptr; /*used to free net_delay if it is re-assigned */
 	double av_cost, av_bb_cost, av_timing_cost, av_delay_cost, sum_of_squares, std_dev;
 	char msg[BUFSIZE];
@@ -808,14 +807,7 @@ void try_place(struct s_placer_opts placer_opts,
 		}
 
 		/* Print critical path delay */
-		for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
-			for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
-				if (least_slack_in_design > timing_stats->least_slack_per_constraint[source_clock_domain][sink_clock_domain]) {
-					least_slack_in_design = timing_stats->least_slack_per_constraint[source_clock_domain][sink_clock_domain];
-					critical_path_delay = timing_stats->critical_path_delay[source_clock_domain][sink_clock_domain];
-				}
-			}
-		}
+		critical_path_delay = get_critical_path_delay();
 		vpr_printf(TIO_MESSAGE_INFO, "\nPlacement estimated critical path delay: %g ns\n", critical_path_delay * 1e9);
 	}
 

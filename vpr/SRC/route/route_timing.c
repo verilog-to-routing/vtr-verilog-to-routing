@@ -47,13 +47,12 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	 * must have already been allocated, and net_delay must have been allocated. *
 	 * Returns TRUE if the routing succeeds, FALSE otherwise.                    */
 
-	int itry, inet, ipin, i, source_clock_domain, sink_clock_domain, 
-		bends, wirelength, total_wirelength, available_wirelength, segments,
-		*net_index, *sink_order /* [1..max_pins_per_net-1]. */;
+	int itry, inet, ipin, i, bends, wirelength, total_wirelength, available_wirelength, 
+		segments, *net_index, *sink_order /* [1..max_pins_per_net-1] */;
 	boolean success, is_routable, rip_up_local_opins;
-	float *pin_criticality /* [1..max_pins_per_net-1]. */, pres_fac, *sinks,
-		critical_path_delay = UNDEFINED, least_slack_in_design = HUGE_POSITIVE_FLOAT;
-	t_rt_node **rt_node_of_sink; /* [1..max_pins_per_net-1]. */
+	float *pin_criticality /* [1..max_pins_per_net-1] */, pres_fac, *sinks, 
+		critical_path_delay;
+	t_rt_node **rt_node_of_sink; /* [1..max_pins_per_net-1] */
 
 	sinks = (float*)my_malloc(sizeof(float) * num_nets);
 	net_index = (int*)my_malloc(sizeof(int) * num_nets);
@@ -200,14 +199,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 #endif
 
 		/* Print critical path delay */
-		for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
-			for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
-				if (least_slack_in_design > timing_stats->least_slack_per_constraint[source_clock_domain][sink_clock_domain]) {
-					least_slack_in_design = timing_stats->least_slack_per_constraint[source_clock_domain][sink_clock_domain];
-					critical_path_delay = timing_stats->critical_path_delay[source_clock_domain][sink_clock_domain];
-				}
-			}
-		}
+		critical_path_delay = get_critical_path_delay();
 		vpr_printf(TIO_MESSAGE_INFO, "\nCrit. path: %g ns\n", critical_path_delay * 1e9);
 		/* Deliberately abbreviated so parsing for "Critical path" will not pick this up. */
 
