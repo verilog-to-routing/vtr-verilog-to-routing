@@ -1469,7 +1469,11 @@ void print_timing_graph(const char *fname) {
 	if (num_constrained_clocks == 1) {
 		/* Arrival and required times, and forward and backward weights, will be meaningless for multiclock
 		designs, since the values currently on the graph will only correspond to the most recent traversal. */
-		fprintf(fp, "\n\nNode #\t\tT_arr\t\tT_req\tForward weight\tBackward weight\n\n");
+		fprintf(fp, "\n\nNode #\t\tT_arr\t\tT_req"
+#ifdef NET_WEIGHTING
+			"\tForward weight\tBackward weight"
+#endif
+			"\n\n");
 
 		for (inode = 0; inode < num_tnodes; inode++) {
 			if (tnode[inode].T_arr > HUGE_NEGATIVE_FLOAT + 1) {
@@ -1482,11 +1486,13 @@ void print_timing_graph(const char *fname) {
 			} else {
 				fprintf(fp, "\t\t   -");
 			}
+#ifdef NET_WEIGHTING
 			if (tnode[inode].has_valid_slack) {
 				fprintf(fp, "\t%12g\t%12g\n", tnode[inode].forward_weight, tnode[inode].backward_weight);
 			} else {
 				fprintf(fp, "\t\t   -\t\t   -\n");
 			}
+#endif
 		}
 	}
 
