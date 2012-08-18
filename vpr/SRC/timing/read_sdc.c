@@ -99,6 +99,8 @@ void read_sdc(char * sdc_file) {
 	if (!found) { /* blank file or only comments found */
 		vpr_printf(TIO_MESSAGE_INFO, "\nSDC file %s blank or not found.\n", sdc_file);
 		use_default_timing_constraints();
+		free(netlist_clocks);
+		free(netlist_ios);
 		return;
 	}
 	
@@ -322,37 +324,46 @@ static void count_netlist_clocks_as_constrained_clocks(void) {
 }
 
 static void count_netlist_ios_as_constrained_ios(char * clock_name, float io_delay) {
-	/* Count how many I/Os are in the netlist, and adds them to the arrays
-	constrained_inputs/outputs with an I/O delay of 0 and constrains them to clock clock_name. */
+	/* Count how many I/Os are in the netlist, adds them to the arrays constrained_inputs/
+	constrained_outputs with an I/O delay of 0 and constrains them to clock clock_name. */
 
-	int iblock, iio; 
+	int iblock, iinput, ioutput; 
 	char * name;
 	boolean found;
 
 	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
-		if (logical_block[iblock].type == VPACK_INPAD || logical_block[iblock].type == VPACK_OUTPAD) {
+		if (logical_block[iblock].type == VPACK_INPAD) {
 			name = logical_block[iblock].name;
 			/* Now that we've found an I/O, let's see if we've counted it already */
 			found = FALSE;
-			for (iio = 0; !found && iio < num_netlist_ios; iio++) {
-				if (strcmp(netlist_ios[iio], name) == 0) {
+			for (iinput = 0; !found && iinput < num_constrained_inputs; iinput++) {
+				if (strcmp(constrained_inputs[iinput].name, name) == 0) {
 					found = TRUE;
 				}
 			}
 			if (!found) {
-				/* If we get here, the I/O is new and so we add it to one of the two arrays. */
-				if (logical_block[iblock].type == VPACK_INPAD) {
-					constrained_inputs = (t_io *) my_realloc (constrained_inputs, ++num_constrained_inputs * sizeof(t_io));
-					constrained_inputs[num_constrained_inputs - 1].name = my_strdup(name); 
-					constrained_inputs[num_constrained_inputs - 1].virtual_clock_name = my_strdup(clock_name);
-					constrained_inputs[num_constrained_inputs - 1].delay = 0.;
-				} else { /* output */
-					constrained_outputs = (t_io *) my_realloc (constrained_outputs, ++num_constrained_outputs * sizeof(t_io));
-					constrained_outputs[num_constrained_outputs - 1].name = my_strdup(name + 4); 
-					/* the + 4 removes the prefix "out:" automatically prepended to outputs */
-					constrained_outputs[num_constrained_outputs - 1].virtual_clock_name = my_strdup(clock_name);
-					constrained_outputs[num_constrained_outputs - 1].delay = 0.;
+				/* If we get here, the input is new and so we add it to constrained_inputs. */
+				constrained_inputs = (t_io *) my_realloc (constrained_inputs, ++num_constrained_inputs * sizeof(t_io));
+				constrained_inputs[num_constrained_inputs - 1].name = my_strdup(name); 
+				constrained_inputs[num_constrained_inputs - 1].virtual_clock_name = my_strdup(clock_name);
+				constrained_inputs[num_constrained_inputs - 1].delay = 0.;
+			}
+		} else if (logical_block[iblock].type == VPACK_OUTPAD) {
+			name = logical_block[iblock].name;
+			/* Now that we've found an I/O, let's see if we've counted it already */
+			found = FALSE;
+			for (ioutput = 0; !found && ioutput < num_constrained_outputs; ioutput++) {
+				if (strcmp(constrained_outputs[ioutput].name, name) == 0) {
+					found = TRUE;
 				}
+			}
+			if (!found) {
+				/* If we get here, the output is new and so we add it to constrained_outputs. */
+				constrained_outputs = (t_io *) my_realloc (constrained_outputs, ++num_constrained_outputs * sizeof(t_io));
+				constrained_outputs[num_constrained_outputs - 1].name = my_strdup(name + 4); 
+				/* the + 4 removes the prefix "out:" automatically prepended to outputs */
+				constrained_outputs[num_constrained_outputs - 1].virtual_clock_name = my_strdup(clock_name);
+				constrained_outputs[num_constrained_outputs - 1].delay = 0.;
 			}
 		}
 	}
