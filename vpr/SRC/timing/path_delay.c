@@ -731,10 +731,18 @@ void print_clustering_timing_info(const char *fname) {
 
 	fp = my_fopen(fname, "w", 0);
 
-	fprintf(fp, "inode  Critical input paths  Critical output paths  Normalized slack  Normalized Tarr  Normalized total crit paths\n");
+	fprintf(fp, "inode  ");
+	if (num_constrained_clocks <= 1) {
+		/* These values are from the last constraint analysed, 
+		so they're not meaningful unless there was only one constraint. */
+		fprintf(fp, "Critical input paths  Critical output paths  ");
+	}
+	fprintf(fp, "Normalized slack  Normalized Tarr  Normalized total crit paths\n");
 	for (inode = 0; inode < num_tnodes; inode++) {
-		fprintf(fp, "%d\t%ld\t\t\t%ld\t\t\t", inode, tnode[inode].num_critical_input_paths, tnode[inode].num_critical_output_paths); 
-		
+		fprintf(fp, "%d\t", inode);
+		if (num_constrained_clocks <= 1) {
+			fprintf(fp, "%ld\t\t\t%ld\t\t\t", tnode[inode].num_critical_input_paths, tnode[inode].num_critical_output_paths); 
+		}
 		/* Only print normalized values for tnodes which have valid arrival and required times. */
 		if (tnode[inode].has_valid_slack) {
 			fprintf(fp, "%f\t%f\t%f\n", tnode[inode].normalized_slack, tnode[inode].normalized_T_arr, tnode[inode].normalized_total_critical_paths);
@@ -1852,8 +1860,7 @@ static void do_lut_rebalancing() {
 
 
 static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain, 
-	boolean is_prepacked, long * max_critical_input_paths, 
-	long * max_critical_output_paths) {
+	boolean is_prepacked, long * max_critical_input_paths, long * max_critical_output_paths) {
 	
 	int inode, num_at_level, i, total, ilevel, num_edges, iedge, to_node, icf;
 	float constraint, max_Tarr = HUGE_NEGATIVE_FLOAT; /* Max of all arrival times for this constraint - 
