@@ -105,7 +105,7 @@ t_override_constraint * ff_constraints; /*  [0..num_ff_constraints - 1] array of
 
 /******************** Variables local to this module ************************/
 
-#define DISCOUNT_FUNCTION_BASE 100000
+#define DISCOUNT_FUNCTION_BASE 2
 
 #define NUM_BUCKETS 5 /* Used when printing net_slack and net_slack_ratio. */
 
@@ -124,7 +124,7 @@ static t_timing_stats * timing_stats = NULL; /* Critical path delay and worst-ca
 
 static t_slack * alloc_net_slack_and_slack_ratio(void);
 
-static void update_slacks(t_slack * slacks, float T_req_max_this_domain, boolean is_final_analysis);
+static void update_slacks(t_slack * slacks, float slack_ratio_denom, boolean is_final_analysis, float max_forward_weight, float max_backward_weight);
 
 static void alloc_and_load_tnodes(t_timing_inf timing_inf);
 
@@ -137,7 +137,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	boolean is_prepacked, long * max_critical_input_paths, 
 	long * max_critical_output_paths);
 #ifdef NET_WEIGHTING
-static void do_net_weighting(float slack_ratio_denom);
+static void do_net_weighting(float slack_ratio_denom, float * max_forward_weight, float * max_backward_weight);
 #endif
 static void do_lut_rebalancing();
 static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
@@ -1645,6 +1645,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 	t_pb *pb;
 	boolean found;
 	long max_critical_output_paths, max_critical_input_paths;
+	float max_forward_weight, max_backward_weight;
 
 #if SLACK_RATIO_DEFINITION == 2
 	float slack_ratio_denom_global = HUGE_NEGATIVE_FLOAT;
@@ -1709,23 +1710,20 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 	for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
 		for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
 			if (timing_constraint[source_clock_domain][sink_clock_domain] > -1e-15) { /* i.e. != DO_NOT_ANALYSE */
-				/* Reset max critical paths. */
+				/* Reset max critical paths (and max weights). */
 				max_critical_input_paths = 0, max_critical_output_paths = 0;
+				max_forward_weight = 0, max_backward_weight = 0;
 
 				/* Perform the forward and backward traversal. */
 				slack_ratio_denom = do_timing_analysis_for_constraint(source_clock_domain, sink_clock_domain, 
 					is_prepacked, &max_critical_input_paths, &max_critical_output_paths);
 #ifdef NET_WEIGHTING
 				/* Weight the importance of each net, used in slack calculation. */
-				do_net_weighting(slack_ratio_denom);
+				do_net_weighting(slack_ratio_denom, &max_forward_weight, &max_backward_weight);
 #endif
 				/* Update the slack for each edge if it has a newer, lower value.  
 				Also update the normalized costs used by the clusterer. */
-#if SLACK_RATIO_DEFINITION == 1
-				update_slacks(slacks, slack_ratio_denom, is_final_analysis);
-#else			/* slack_ratio_denom is not used in update_slacks so doesn't matter what we pass in. */
-				update_slacks(slacks, 0, is_final_analysis);
-#endif
+				update_slacks(slacks, slack_ratio_denom, is_final_analysis, max_forward_weight, max_backward_weight);
 
 #ifndef NET_WEIGHTING
 				if (is_prepacked) {
@@ -2124,7 +2122,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	return max(max_Tarr, timing_constraint[source_clock_domain][sink_clock_domain]);
 }
 #ifdef NET_WEIGHTING
-static void do_net_weighting(float slack_ratio_denom) {
+static void do_net_weighting(float slack_ratio_denom, float * max_forward_weight, float * max_backward_weight) {
 	/* Weight the importance of each net used in this constraint by giving it a forward and backward weight.  
 	See "A Novel Net Weighting Algorithm for Timing-Driven Placement" (Kong, 2002). */
 	
@@ -2194,9 +2192,15 @@ static void do_net_weighting(float slack_ratio_denom) {
 			}
 		}
 	}
+
+	/* Find max weights. */
+	for (inode = 0; inode < num_tnodes; inode++) {
+		*max_forward_weight = max(*max_forward_weight, tnode[inode].forward_weight);
+		*max_backward_weight = max(*max_backward_weight, tnode[inode].backward_weight);
+	}
 }
 #endif
-static void update_slacks(t_slack * slacks, float slack_ratio_denom, boolean is_final_analysis) {
+static void update_slacks(t_slack * slacks, float slack_ratio_denom, boolean is_final_analysis, float max_forward_weight, float max_backward_weight) {
 	/* Updates the slack of each source-sink pair of block pins in net_slack. 
 	 * For n clock domains, this function will be called n^2 times for each iteration of the timing analyser.
 	 * At each iteration, slacks and slack ratios of each edge will be updated if they are less than the previous lowest values. */
@@ -2241,8 +2245,9 @@ static void update_slacks(t_slack * slacks, float slack_ratio_denom, boolean is_
 
 #if SLACK_RATIO_DEFINITION == 1
 	#ifdef NET_WEIGHTING
-			slacks->net_slack_ratio[inet][iedge + 1] = min(slacks->net_slack_ratio[inet][iedge + 1], tnode[inode].forward_weight * tnode[to_node].backward_weight * 
-				pow(DISCOUNT_FUNCTION_BASE, -1 * (T_req - T_arr - Tdel) / slack_ratio_denom));
+			slacks->net_slack_ratio[inet][iedge + 1] = min(slacks->net_slack_ratio[inet][iedge + 1], 
+				(tnode[inode].forward_weight / max_forward_weight) * (tnode[to_node].backward_weight / max_backward_weight) * 
+				/*pow(DISCOUNT_FUNCTION_BASE, -1 **/ (T_req - T_arr - Tdel) / slack_ratio_denom / 10)/*)*/;
 	#else
 			/* Since slack_ratio_denom is not the same on each traversal, we have to check separately that the slack ratio is lower. */
 			/* Update the slack ratio for this edge if the slack ratio from this traversal is less than its current value. */

@@ -166,7 +166,7 @@ static void update_connection_gain_values(int inet, int clustered_block,
 		t_pb * cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block);
 
-static void update_length_gain_values(int inet, int clustered_block,
+static void update_timing_gain_values(int inet, int clustered_block,
 		t_pb* cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block,
 		t_slack * slacks);
@@ -1189,7 +1189,7 @@ static void alloc_and_load_pb_stats(t_pb *pb, int max_models,
 	 * in order (less addressing and better cache locality).                 */
 
 	pb->pb_stats.gain = (float *) my_malloc(num_logical_blocks * sizeof(float));
-	pb->pb_stats.lengthgain = (float*) my_malloc(
+	pb->pb_stats.timinggain = (float*) my_malloc(
 			num_logical_blocks * sizeof(float));
 	pb->pb_stats.sharinggain = (float*) my_malloc(
 			num_logical_blocks * sizeof(float));
@@ -1252,7 +1252,7 @@ static void alloc_and_load_pb_stats(t_pb *pb, int max_models,
 
 	for (i = 0; i < num_logical_blocks; i++) {
 		pb->pb_stats.gain[i] = 0.0;
-		pb->pb_stats.lengthgain[i] = 0.0;
+		pb->pb_stats.timinggain[i] = 0.0;
 		pb->pb_stats.connectiongain[i] = 0;
 		pb->pb_stats.sharinggain[i] = NOT_VALID;
 		pb->pb_stats.hillgain[i] = NOT_VALID;
@@ -1585,13 +1585,13 @@ static void update_connection_gain_values(int inet, int clustered_block,
 	}
 }
 /*****************************************/
-static void update_length_gain_values(int inet, int clustered_block,
+static void update_timing_gain_values(int inet, int clustered_block,
 		t_pb *cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, t_slack * slacks) {
 
-	/*This function is called when the length_gain values on the vpack_net*
+	/*This function is called when the timing_gain values on the vpack_net*
 	 *inet requires updating.   */
-	float lengain;
+	float timinggain;
 	int newblk, ifirst;
 	int iblk, ipin;
 
@@ -1607,23 +1607,23 @@ static void update_length_gain_values(int inet, int clustered_block,
 		for (ipin = ifirst; ipin <= vpack_net[inet].num_sinks; ipin++) {
 			iblk = vpack_net[inet].node_block[ipin];
 			if (logical_block[iblk].clb_index == NO_CLUSTER) {
-				lengain = 1 - slacks->net_slack_ratio[inet][ipin];
-				if (lengain > cur_pb->pb_stats.lengthgain[iblk])
-					cur_pb->pb_stats.lengthgain[iblk] = lengain;
+				timinggain = 1 - slacks->net_slack_ratio[inet][ipin];
+				if (timinggain > cur_pb->pb_stats.timinggain[iblk])
+					cur_pb->pb_stats.timinggain[iblk] = timinggain;
 			}
 		}
 	}
 
 	if (net_relation_to_clustered_block == INPUT
 			&& !vpack_net[inet].is_global) {
-		/*Calculate the length gain for the logical_block which is driving *
+		/*Calculate the timing gain for the logical_block which is driving *
 		 *the vpack_net that is an input to a logical_block in the cluster */
 		newblk = vpack_net[inet].node_block[0];
 		if (logical_block[newblk].clb_index == NO_CLUSTER) {
 			for (ipin = 1; ipin <= vpack_net[inet].num_sinks; ipin++) {
-				lengain = 1 - slacks->net_slack_ratio[inet][ipin];
-				if (lengain > cur_pb->pb_stats.lengthgain[newblk])
-					cur_pb->pb_stats.lengthgain[newblk] = lengain;
+				timinggain = 1 - slacks->net_slack_ratio[inet][ipin];
+				if (timinggain > cur_pb->pb_stats.timinggain[newblk])
+					cur_pb->pb_stats.timinggain[newblk] = timinggain;
 
 			}
 		}
@@ -1642,7 +1642,7 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 	 * sharinggain is the number of inputs that a logical_block shares with   *
 	 * blocks that are already in the cluster. Hillgain is the        *
 	 * reduction in number of pins-required by adding a logical_block to the  *
-	 * cluster. The lengthgain is the criticality of the most critical*
+	 * cluster. The timinggain is the criticality of the most critical*
 	 * vpack_net between this logical_block and a logical_block in the cluster.             */
 
 	int iblk, ipin, ifirst;
@@ -1697,7 +1697,7 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 			}
 
 			if (timing_driven) {
-				update_length_gain_values(inet, clustered_block, cur_pb,
+				update_timing_gain_values(inet, clustered_block, cur_pb,
 						net_relation_to_clustered_block, slacks);
 			}
 		}
@@ -1712,7 +1712,7 @@ static void update_total_gain(float alpha, float beta, boolean timing_driven,
 		boolean connection_driven, boolean global_clocks, t_pb *pb) {
 
 	/*Updates the total  gain array to reflect the desired tradeoff between*
-	 *input sharing (sharinggain) and path_length minimization (lengthgain)*/
+	 *input sharing (sharinggain) and path_length minimization (timinggain)*/
 
 	int i, iblk, j, k;
 	t_pb * cur_pb;
@@ -1782,7 +1782,7 @@ static void update_total_gain(float alpha, float beta, boolean timing_driven,
 			/* Add in timing driven cost into cost function */
 			if (timing_driven) {
 				cur_pb->pb_stats.gain[iblk] = alpha
-						* cur_pb->pb_stats.lengthgain[iblk]
+						* cur_pb->pb_stats.timinggain[iblk]
 						+ (1.0 - alpha) * (float) cur_pb->pb_stats.gain[iblk];
 			}
 		}

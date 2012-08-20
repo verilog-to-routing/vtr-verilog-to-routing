@@ -124,9 +124,8 @@ typedef struct s_pb_stats {
 	/* Packing statistics */
 	float *gain; /* Attraction (inverse of cost) function */
 
-	/* [0..num_logical_blocks-1]. The timing criticality score of this logical_block. Determined by the most 
-	 critical vpack_net between this logical_block and any logical_block in the current pb */
-	float *lengthgain;
+	float *timinggain; /* [0..num_logical_blocks-1]. The timing criticality score of this logical_block. 
+						Determined by the most critical vpack_net between this logical_block and any logical_block in the current pb */
 	float *connectiongain; /* [0..num_logical_blocks-1] Weighted sum of connections to attraction function */
 	float *prevconnectiongainincr; /* [0..num_logical_blocks-1] Prev sum to weighted sum of connections to attraction function */
 	float *sharinggain; /* [0..num_logical_blocks-1]. How many nets on this logical_block are already in the pb under consideration */

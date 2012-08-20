@@ -457,7 +457,7 @@ void free_pb_stats(t_pb *pb) {
 
 	if (pb->pb_stats.gain != NULL) {
 		free(pb->pb_stats.gain);
-		free(pb->pb_stats.lengthgain);
+		free(pb->pb_stats.timinggain);
 		free(pb->pb_stats.sharinggain);
 		free(pb->pb_stats.hillgain);
 		free(pb->pb_stats.connectiongain);
