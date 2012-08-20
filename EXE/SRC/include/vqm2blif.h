@@ -60,6 +60,7 @@
 #include "lutmask.h"
 #include "cleanup.h"
 #include "lut_recog.h"
+#include "preprocess.h"
 
 //============================================================================================
 //				DATA STRUCTURES

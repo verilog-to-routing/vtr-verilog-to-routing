@@ -33,6 +33,9 @@ void netlist_cleanup (t_module* module){
 
 	cout << "\t>> Building netlist...\n" ;
 
+    //Creates:
+    // 1) Fills in the busvec 'buses'
+    // 2) Fills in  hash table mapping I/O pins and wires to buses index number
 	build_netlist (module, &buses, hash_table);
 
 	cout << "\t>> VQM Netlist contains " << buffer_count << " buffers.\n" ;
@@ -515,6 +518,8 @@ void verify_netlist ( t_node** nodes, int num_nodes, busvec* buses, struct s_has
 			} else if (temp_net->driver != BLACKBOX){
 				//being driven by a BUFFER or INVERT. (Both t_net* structs.)
 				net_source = (t_net*)temp_net->source;
+
+                //PIN_INOUT should have been removed earlier
 				assert ((net_source->pin->type == PIN_INPUT)||(net_source->pin->type == PIN_WIRE));
 
 				assert ((unsigned int)net_source->bus_index < child_count.size());
@@ -596,13 +601,13 @@ void print_all_nets ( busvec* buses, const char* filename ){
 			
 		for (unsigned int j = 0; j < temp_bus->size(); j++){
 			temp_net = &(temp_bus->at(j));
-			outfile << "\tNet " << j << ": " << temp_net->pin->name << " Wire Index: " << temp_net->wire_index << endl;
+			outfile << "\tNet " << j << ": " << temp_net->pin->name << "\n\t\tWire Index: " << temp_net->wire_index << endl;
 			outfile << "\t\tNumber of children: " << temp_net->num_children << endl;
 			outfile << "\t\tSource: ";
 			if (temp_net->driver == CONST){
 				outfile << "Constant " << ((temp_net->pin->type == PIN_INPUT)? "(inpad), ":", ") << ((temp_net->source == NULL)?"NULL\n":"Assigned\n");
 			} else if (temp_net->source == NULL){
-				outfile << "NULL " << "Driver Type: " << temp_net->driver << endl ;
+				outfile << "NULL " << "\n\t\tDriver Type: " << temp_net->driver << endl ;
 			} else if ((temp_net->driver == BUFFER)||(temp_net->driver == INVERT)){
 				net_source = (t_net*)temp_net->source;
 				outfile << "Net (" << temp_net->driver << "): " << net_source->pin->name << "[" << net_source->wire_index << "]\n" ;

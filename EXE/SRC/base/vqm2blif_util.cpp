@@ -107,7 +107,7 @@ string generate_opname (t_node* vqm_node, t_boolean detailed_elaboration){
 
 	t_node_parameter* temp_param;	//temporary container for the node's parameters
     
-    char int_string_buffer[128]; //For integer to string conversion, use with snprintf which checks for overflow
+    char buffer[128]; //For integer to string conversion, use with snprintf which checks for overflow
 
 	for (int i = 0; i < vqm_node->number_of_params; i++){
 		//Each parameter specifies a configuration of the node in the circuit.
@@ -115,7 +115,17 @@ string generate_opname (t_node* vqm_node, t_boolean detailed_elaboration){
 
 		if (strcmp (temp_param->name, "operation_mode") == 0){
 			assert( temp_param->type == NODE_PARAMETER_STRING );
-			mode_hash.append(".opmode{" + (string)temp_param->value.string_value + "}");
+
+            //Copy the string
+            char* temp_string_value = my_strdup(temp_param->value.string_value);
+
+            //Remove characters that are invalid in blif
+            clean_name(temp_string_value);
+
+            //Add the opmode
+			mode_hash.append(".opmode{" + (string)temp_string_value + "}");
+
+            free(temp_string_value);
             continue;
 		} 
 
@@ -123,35 +133,52 @@ string generate_opname (t_node* vqm_node, t_boolean detailed_elaboration){
             //Detailed memory modes
             if (strcmp (temp_param->name, "port_a_data_width") == 0){
                 assert( temp_param->type == NODE_PARAMETER_INTEGER );
-                snprintf(int_string_buffer, sizeof(int_string_buffer), "%d", temp_param->value.integer_value);
-                mode_hash.append(".port_a_data_width{" + (string)int_string_buffer + "}");
+                snprintf(buffer, sizeof(buffer), "%d", temp_param->value.integer_value);
+                mode_hash.append(".port_a_data_width{" + (string)buffer + "}");
                 continue;
             } 
 
             if (strcmp (temp_param->name, "port_a_address_width") == 0){
                 assert( temp_param->type == NODE_PARAMETER_INTEGER );
-                snprintf(int_string_buffer, sizeof(int_string_buffer), "%d", temp_param->value.integer_value);
-                mode_hash.append(".port_a_address_width{" + (string)int_string_buffer + "}");
+                snprintf(buffer, sizeof(buffer), "%d", temp_param->value.integer_value);
+                mode_hash.append(".port_a_address_width{" + (string)buffer + "}");
                 continue;
             } 
 
             if (strcmp (temp_param->name, "port_b_data_width") == 0){
                 assert( temp_param->type == NODE_PARAMETER_INTEGER );
-                snprintf(int_string_buffer, sizeof(int_string_buffer), "%d", temp_param->value.integer_value);
-                mode_hash.append(".port_b_data_width{" + (string)int_string_buffer + "}");
+                snprintf(buffer, sizeof(buffer), "%d", temp_param->value.integer_value);
+                mode_hash.append(".port_b_data_width{" + (string)buffer + "}");
                 continue;
             } 
 
             if (strcmp (temp_param->name, "port_b_address_width") == 0){
                 assert( temp_param->type == NODE_PARAMETER_INTEGER );
-                snprintf(int_string_buffer, sizeof(int_string_buffer), "%d", temp_param->value.integer_value);
-                mode_hash.append(".port_b_address_width{" + (string)int_string_buffer + "}");
+                snprintf(buffer, sizeof(buffer), "%d", temp_param->value.integer_value);
+                mode_hash.append(".port_b_address_width{" + (string)buffer + "}");
                 continue;
             } 
         }
 	}
-
 	return mode_hash;
+}
+
+void clean_name(char* name) {
+    /*
+     * Remove invalid characters from blif identifiers
+     */
+    size_t p;
+    char character;
+    for (p = 0; p < strlen(name); p++) {
+        character = name[p];
+        switch(character) {
+            case ' ':
+                    name[p] = '_';
+                    break;
+            default:
+                    break;
+        }
+    }
 }
 
 //============================================================================================

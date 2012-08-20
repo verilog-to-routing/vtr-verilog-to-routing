@@ -244,18 +244,21 @@ int main(int argc, char* argv[])
 	//project_path is derived from the out_file from command line, used to derive other output filenames.
 			
 	//Parse the .vqm and express it in memory: from vqm_dll.cpp
-      cout << "\n>> Parsing VQM file " << source_file << endl ;
+    cout << "\n>> Parsing VQM file " << source_file << endl ;
 
 	int flowStart = clock();
 	int processStart = clock();
 
 	assert (source_file.length() < MAX_LEN );
 	strcpy ( temp_name, source_file.c_str() );
+
 	my_module = vqm_parse_file(temp_name);	//VQM Parser call, requires char*
-	verify_module (my_module);
-		
+
 	int processEnd = clock();
 	cout << "\n>> VQM Parsing took " << (float)(processEnd - processStart)/CLOCKS_PER_SEC << " seconds.\n" ;
+
+    cout << "\n>> Verifying module";
+	verify_module (my_module);
 
 	if (debug_mode){
 		//Print debug info to "<project_path>_module.echo"
@@ -265,6 +268,34 @@ int main(int argc, char* argv[])
 		//file contains data read from the .vqm structures.
 	}
 
+	//Parse the architecture file to get full information about the models used.
+    //  Note: the architecture file needs to be loaded first, so that it can be used
+    //        to derive the port directionality of black box primitives.  This is 
+    //        required when decomposing INOUT pins into input and output pins
+	cout << "\n>> Parsing architecture file " << arch_file << endl ;
+	XmlReadArch( arch_file.c_str(), FALSE, &arch, &types, &numTypes );	//Architecture (XML) Parser call
+	assert ((types > 0) && (numTypes > 0));
+	assert (arch.models != NULL);
+			
+	if (debug_mode){	
+		//Print debug info to <project_path>_arch.echo"
+		construct_filename ( temp_name, project_path.c_str(), "_arch.echo" );
+		cout << "\n>> Dumping to output file " << temp_name << endl ;
+		EchoArch( temp_name, types, numTypes, &arch );	//from read_xml_arch_file.h
+		//file contains data read from the architecture file.
+	}
+
+    //Pre-process the netlist
+    //  Currently this just 'cleans up' bi-directional inout pins
+    cout << "\n>> Preprocessing Netlist...\n";
+    processStart = clock();
+
+    preprocess_netlist(my_module, &arch);
+
+    processEnd = clock();
+	cout << "\n>> Preprocessing Netlist took " << (float)(processEnd - processStart)/CLOCKS_PER_SEC << " seconds.\n" ;
+
+    //Clean the netlist
 	if (clean_mode != CL_NONE){
 		cout << "\n>> Cleaning up netlist...\n" ;
 		processStart = clock();
@@ -282,19 +313,6 @@ int main(int argc, char* argv[])
 		}
 	}
 		
-	//Parse the architecture file to get full information about the models used.
-	cout << "\n>> Parsing architecture file " << arch_file << endl ;
-	XmlReadArch( arch_file.c_str(), FALSE, &arch, &types, &numTypes );	//Architecture (XML) Parser call
-	assert ((types > 0) && (numTypes > 0));
-	assert (arch.models != NULL);
-			
-	if (debug_mode){	
-		//Print debug info to <project_path>_arch.echo"
-		construct_filename ( temp_name, project_path.c_str(), "_arch.echo" );
-		cout << "\n>> Dumping to output file " << temp_name << endl ;
-		EchoArch( temp_name, types, numTypes, &arch );	//from read_xml_arch_file.h
-		//file contains data read from the architecture file.
-	}
 		
 	//Reorganize netlist data into structures conducive to .blif writing.
 	if (verbose_mode){
@@ -578,6 +596,7 @@ void init_blif_models(t_blif_model* my_model, t_module* my_module, t_arch* arch)
 				my_model->output_ports.push_back(temp_pin);
 				break;
 			case PIN_INOUT:
+                //INOUT pins are not supported by BLIF format
 				cout << "\n\nERROR: PIN_INOUT detected. Pin: " << temp_pin->name << endl ;
 				exit(1);
 				break;
