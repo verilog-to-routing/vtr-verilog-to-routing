@@ -23,8 +23,8 @@ typedef struct s_sdc_clock {
 /* Stores the name, period and offset of each constrained clock. */
 
 typedef struct s_sdc_exclusive_group {
-	char * name;
-	int group;
+	char ** clock_names;
+	int num_clock_names;
 } t_sdc_exclusive_group;
 /* Used to temporarily separate clock names into exclusive groups when parsing the 
 command set_clock_groups -exclusive. */
@@ -377,17 +377,19 @@ static boolean get_sdc_tok(char * buf) {
 	
 	char * ptr, ** from_list = NULL, ** to_list = NULL, * clock_name;
 	float clock_period, rising_edge, falling_edge, max_delay;
-	int source_clock_domain, sink_clock_domain, iclock, iio, current_group_number = 0, 
-		num_exclusive_clocks = 0, num_from = 0, num_to = 0, num_multicycles;
+	int iclock, iio, num_exclusive_groups = 0,  
+		num_from = 0, num_to = 0, num_multicycles, i, j;
 	t_sdc_exclusive_group * exclusive_groups = NULL;
 	boolean found, domain_level_from = FALSE, domain_level_to = FALSE;
 
-	/* my_strtok splits the string into tokens - little character arrays separated by the SDC_TOKENS defined above.					   *
-	 * Throughout this code, ptr refers to the tokens we fetch, one at a time.  The token changes at each call of my_strtok.		   *
-	 * We call my_strtok with NULL as the first argument every time AFTER the first, since this picks up tokenizing where we left off. */
-	ptr = my_strtok(buf, SDC_TOKENS, sdc, buf);
-	
-	if (!ptr) { /* blank line */
+	/* my_strtok splits the string into tokens - little character arrays separated by the SDC_TOKENS 
+	defined above. Throughout this code, ptr refers to the tokens we fetch, one at a time. The token 
+	changes at each call of my_strtok. We call my_strtok with NULL as the first argument every time 
+	AFTER the first, since this picks up tokenizing where we left off. We always wrap each call to 
+	my_strtok with a check that ptr is non-null to avoid an exception from passing NULL into strcmp. */
+
+
+	if ((ptr = my_strtok(buf, SDC_TOKENS, sdc, buf)) == NULL) {/* blank line */
 		return FALSE;
 	}
 
@@ -396,44 +398,43 @@ static boolean get_sdc_tok(char * buf) {
 				or create_clock -period <float> [-waveform {rising_edge falling_edge}] -name <virtual clock name>*/
 
 		/* make sure clock has -period specified */
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (!ptr || strcmp(ptr, "-period") != 0) {
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-period") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Create_clock must be directly followed by '-period' on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
-
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
+				
 		/* Check if the token following -period is actually a number. */
-		if (!ptr || !is_number(ptr)) {
-			vpr_printf(TIO_MESSAGE_ERROR, "Token following '-period' is not a number on line %d of SDC file.\n", file_line_number);
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
+			vpr_printf(TIO_MESSAGE_ERROR, "A number must follow -period on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 		clock_period = (float) strtod(ptr, NULL);
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (!ptr) {
-			vpr_printf(TIO_MESSAGE_ERROR, "Clock net(s) not specified at end of line %d of SDC file.\n", file_line_number);
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
+			vpr_printf(TIO_MESSAGE_ERROR, "Clock(s) not specified at end of line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 		if (strcmp(ptr, "-waveform") == 0) {
 			
 			/* Get the first float, which is the rising edge, and the second, which is the falling edge. */
-			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-			if (!ptr || !is_number(ptr)) {
-				vpr_printf(TIO_MESSAGE_ERROR, "First token following '-waveform' " 
-					"is not a number on line %d of SDC file.\n", file_line_number);
+			
+			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
+				vpr_printf(TIO_MESSAGE_ERROR, "First token following '-waveform' should be rising edge, but " 
+					"is not a number, on line %d of SDC file.\n", file_line_number);
 			}
 			rising_edge = (float) strtod(ptr, NULL);
 
-			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-			if (!ptr || !is_number(ptr)) {
-				vpr_printf(TIO_MESSAGE_ERROR, "Second token following '-waveform' " 
-					"is not a number on line %d of SDC file.\n", file_line_number);
+			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
+				vpr_printf(TIO_MESSAGE_ERROR, "Second token following '-waveform' should be falling edge, but " 
+					"is not a number, on line %d of SDC file.\n", file_line_number);
 				exit(1);
 			}
 			falling_edge = (float) strtod(ptr, NULL);
 
-			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf); /* We need this extra one to advance the ptr to the right spot. */
+			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
+				vpr_printf(TIO_MESSAGE_ERROR, "Clock(s) not specified at end of line %d of SDC file.\n", file_line_number);
+				exit(1);
+			} /* We need this extra call to my_strtok to advance the ptr to the right spot. */
 
 		} else {
 			/* The clock's rising edge is by default at 0, and the falling edge is at the half-period. */
@@ -447,7 +448,10 @@ static boolean get_sdc_tok(char * buf) {
 			so make sure there's only one token left on this line. */
 
 			/* Get the virtual clock name */
-			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
+			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
+				vpr_printf(TIO_MESSAGE_ERROR, "Virtual clock name not specified at end of line %d of SDC file.\n", file_line_number);
+				exit(1);
+			} /* We need this extra call to my_strtok to advance the ptr to the right spot. */
 
 			/* We've found a new clock! */
 
@@ -477,16 +481,11 @@ static boolean get_sdc_tok(char * buf) {
 			 * after everything has been parsed, we take the information from this array to calculate the actual timing constraints
 			 * which these periods and offsets imply, and put them in the matrix timing_constraint. */
 
-			for (;;) {
-				if (!ptr) { /* end of line */
-					break; 
-				}
-
+			do {
+				/* See if the regular expression stored in ptr is legal and matches at least one clock net. 
+				If it is not legal, it will fail during regex_match.  We check for a match using boolean found. */
 				found = FALSE;
-
 				for (iclock = 0; iclock < num_netlist_clocks; iclock++) {
-					/* See if the regular expression stored in ptr is legal and matches at least one clock net. 
-					If it is not legal, it will fail during regex_match.  We check for a match using boolean found. */
 					if (regex_match(netlist_clocks[iclock], ptr)) {
 						/* We've found a new clock!  (Note that we can't store ptr as the clock's 
 						name since it could be a regex, unlike the virtual clock case).*/
@@ -512,10 +511,7 @@ static boolean get_sdc_tok(char * buf) {
 						"If you'd like to create a virtual clock, use the -name keyword.\n", ptr, file_line_number);
 					exit(1);
 				}
-
-				/* Advance to the next token (or the end of the line). */
-				ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-			}	
+			} while ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) != NULL); /* Advance to the next token (or the end of the line). */
 		}
 	
 		/* Give a message if the clock has non-50% duty cycle. */
@@ -528,86 +524,114 @@ static boolean get_sdc_tok(char * buf) {
 	} else if (strcmp(ptr, "set_clock_groups") == 0) {
 		/* Syntax: set_clock_groups -exclusive -group {<clock list or regexes>} -group {<clock list or regexes>} [-group {<clock list or regexes>} ...] */
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (!ptr || strcmp(ptr, "-exclusive") != 0) {
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-exclusive") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_clock_groups must be directly followed by '-exclusive' on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 		
-		/* Parse through to the end of the line.  All that should be left on this line are a bunch of 
-		 * -group commands, followed by lists of clocks in that group.  An array exclusive_clock_groups will
-		 * store the temporary "group number" of each clock along with its name.  We then add an entry to cc_constraints for 
-		 * each pair of clocks with different group numbers, so we do not analyse between clock domains in different groups. */
-
-		for (;;) {
-			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-			if (!ptr) { /* end of line */
-				break; /* exit the infinite for loop - but don't return TRUE; yet - we still have to populate cc_constraints!  */
-			}
-			if (strcmp(ptr, "-group") == 0) {
-			/* add 1 to the group number we're assigning clocks to every time the token -group is hit */
-				current_group_number++;
-			} else { 
-				/* We have a clock name */
-				num_exclusive_clocks++;
-				exclusive_groups = (t_sdc_exclusive_group *) my_realloc(exclusive_groups, num_exclusive_clocks * sizeof(t_sdc_exclusive_group));
-				exclusive_groups[num_exclusive_clocks - 1].name = ptr;
-				exclusive_groups[num_exclusive_clocks - 1].group = current_group_number;
-			}
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-group") != 0) {
+			vpr_printf(TIO_MESSAGE_ERROR, "Set_clock_groups -exclusive must be followed by lists of clock names or regular"
+										  "expressions each starting with the -group command, on line %d of SDC file.\n", file_line_number);
+			exit(1);
 		}
 
-		/* Finally, create an override constraint for each pair of source and sink clock domains
-		in exclusive_groups which have different group numbers, so that we DO_NOT_ANALYSE them */
-		for (source_clock_domain = 0; source_clock_domain < num_exclusive_clocks; source_clock_domain++) {
-			for (sink_clock_domain = 0; sink_clock_domain < num_exclusive_clocks; sink_clock_domain++) {
-				if (exclusive_groups[source_clock_domain].group != exclusive_groups[sink_clock_domain].group) {
-					from_list = (char **) my_malloc(sizeof(char *));
-					to_list = (char **) my_malloc(sizeof(char *));
-					from_list[0] = my_strdup(exclusive_groups[source_clock_domain].name);
-					to_list[0]= my_strdup(exclusive_groups[sink_clock_domain].name);
-					add_override_constraint(from_list, 1, to_list, 1, DO_NOT_ANALYSE, 0, TRUE, TRUE);
-					/* Finally, set from_list and to_list to NULL since there are now pointers to the same text as them. */
-					from_list = NULL, to_list = NULL;
+		/* Parse through to the end of the line. All that should be left on this line are a bunch of 
+		 -group commands, followed by groups of regexes. We need to ensure that paths are cut between 
+		 every clock matching a regex in one group and every clock matching a regex in any other group. */
+
+		do {
+			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
+			
+			/* Create a new entry in exclusive groups */
+			exclusive_groups = (t_sdc_exclusive_group *) my_realloc(
+				exclusive_groups, ++num_exclusive_groups * sizeof(t_sdc_exclusive_group));
+			exclusive_groups[num_exclusive_groups - 1].clock_names = NULL;
+			exclusive_groups[num_exclusive_groups - 1].num_clock_names = 0;
+			do {
+				/* Check the regex ptr against each netlist clock and add it to the clock_names list if it matches. */
+				for (iclock = 0; iclock < num_netlist_clocks; iclock++) {
+					if (regex_match(netlist_clocks[iclock], ptr)) {
+						exclusive_groups[num_exclusive_groups - 1].clock_names = (char **) my_realloc(
+							exclusive_groups[num_exclusive_groups - 1].clock_names, ++exclusive_groups[num_exclusive_groups - 1].num_clock_names * sizeof(char *));
+						exclusive_groups[num_exclusive_groups - 1].clock_names
+							[exclusive_groups[num_exclusive_groups - 1].num_clock_names - 1] = 
+							my_strdup(netlist_clocks[iclock]);
+					}
+				}
+				if (exclusive_groups[num_exclusive_groups - 1].num_clock_names == 0) {
+					/* If no clocks matched, assume ptr is the name of a virtual clock and add it to the list.
+					(If it's not a virtual clock, we'll catch it later when we check all override constraints.) */
+					exclusive_groups[num_exclusive_groups - 1].clock_names = (char **) my_malloc(sizeof(char*));
+					exclusive_groups[num_exclusive_groups - 1].clock_names[0] = my_strdup(ptr);
+					exclusive_groups[num_exclusive_groups - 1].num_clock_names = 1;
+				}
+			} while ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) != NULL && strcmp(ptr, "-group") != 0);
+		} while (ptr);
+
+	if (num_exclusive_groups < 2) {
+		vpr_printf(TIO_MESSAGE_ERROR, "At least two -group commands required on line %d of SDC file", file_line_number); 
+		exit(1);
+	}
+
+	/* Finally, create two DO_NOT_ANALYSE override constraints for each pair of entries
+	to cut paths bidirectionally between pairs of clock lists in different groups. */
+
+		for (i = 0; i < num_exclusive_groups; i++) {
+			for (j = 0; j < num_exclusive_groups; j++) {
+				if (i != j) {
+					add_override_constraint(exclusive_groups[i].clock_names, exclusive_groups[i].num_clock_names, 
+						exclusive_groups[j].clock_names, exclusive_groups[j].num_clock_names, DO_NOT_ANALYSE, 0, TRUE, TRUE);
 				}
 			}
 		}
 
-		free(exclusive_groups);
+		free(exclusive_groups); /* Can't free clock_names arrays since they're being pointed to by cc_constraints. */
 
 		return TRUE;
 
 	} else if (strcmp(ptr, "set_false_path") == 0) {
 		/* Syntax: set_false_path -from <clock list or regexes> -to <clock list or regexes> */
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (!ptr || strcmp(ptr, "-from") != 0) {
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-from") != 0 || (ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_false_path must be directly followed by "
 				"-from <clock/flip-flop_list> on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_from = TRUE;
-			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
+			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
+				vpr_printf(TIO_MESSAGE_ERROR, "Set_false_path must be directly followed by "
+					"-from <clock/flip-flop_list> on line %d of SDC file.\n", file_line_number);
+				exit(1);
+			}
 		}
 
 		do {
 			/* Keep adding clock names to from_list until we hit the -to command. */
-			if (!ptr) { 
+			from_list = (char **) my_realloc(from_list, ++num_from * sizeof(char *));
+			from_list[num_from - 1] = my_strdup(ptr);
+
+			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) { 
 				/* We hit the end of the line before finding a -to. */
 				vpr_printf(TIO_MESSAGE_ERROR, "Set_false_path requires -to <clock/flip-flop_list> after "
 					"-from <clock/flip-flop_list> on line %d of SDC file.\n", file_line_number);
 				exit(1);
 			}
-			from_list = (char **) my_realloc(from_list, ++num_from * sizeof(char *));
-			from_list[num_from - 1] = my_strdup(ptr);
-		} while (strcmp(ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf), "-to") != 0);
+		} while (strcmp(ptr, "-to") != 0);
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
+			vpr_printf(TIO_MESSAGE_ERROR, "Set_false_path requires -to <clock/flip-flop_list> "
+				"after -from <clock/flip-flop_list> on line %d of SDC file.\n", file_line_number);
+		}
+
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_to = TRUE;
-			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
+			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
+				vpr_printf(TIO_MESSAGE_ERROR, "Set_false_path must be directly followed by "
+					"-from <clock/flip-flop_list> on line %d of SDC file.\n", file_line_number);
+				exit(1);
+			}
 		}
 
 		do {
@@ -619,7 +643,7 @@ static boolean get_sdc_tok(char * buf) {
 		/* Create a constraint between each element in from_list and each element in to_list with value DO_NOT_ANALYSE. */
 		add_override_constraint(from_list, num_from, to_list, num_to, DO_NOT_ANALYSE, 0, domain_level_from, domain_level_to);
 		
-		/* Finally, set from_list and to_list to NULL since there are now pointers to the same text as them. */
+		/* Finally, set from_list and to_list to NULL since there are other pointers to them. */
 		from_list = NULL, to_list = NULL;
 
 		return TRUE;
@@ -629,43 +653,53 @@ static boolean get_sdc_tok(char * buf) {
 
 		/* Basically the same as set_false_path above, except we get a specific delay value for the constraint. */
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 		/* check if the token following set_max_delay is actually a number*/
-		if (!ptr || !is_number(ptr)) {
-			vpr_printf(TIO_MESSAGE_ERROR, "Token following 'set_max_delay' is not a number on line %d of SDC file.\n", file_line_number);
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
+			vpr_printf(TIO_MESSAGE_ERROR, "Token following 'set_max_delay' should be a delay value, but is not a number, on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 		max_delay = (float) strtod(ptr, NULL);
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (!ptr || strcmp(ptr, "-from") != 0) {
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-from") != 0 || (ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_max_delay requires -from <clock/flip-flop_list> "
 				"after max_delay on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_from = TRUE;
-			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		}
-
-		do { 
-			/* Keep adding clock names to from_list until we hit the -to command. */
-			if (!ptr) { 
-				/* We hit the end of the line before finding a -to. */
-				vpr_printf(TIO_MESSAGE_ERROR, "Set_max_delay requires -to <clock/flip-flop_list> after "
-					"-from <clock/flip-flop_list> on line %d of SDC file.\n", file_line_number);
+			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
+				vpr_printf(TIO_MESSAGE_ERROR, "Set_max_delay requires -from <clock/flip-flop_list> "
+					"after max_delay on line %d of SDC file.\n", file_line_number);
 				exit(1);
 			}
+		}
+
+		do {
+			/* Keep adding clock names to from_list until we hit the -to command. */
 			from_list = (char **) my_realloc(from_list, ++num_from * sizeof(char *));
 			from_list[num_from - 1] = my_strdup(ptr);
-		} while (strcmp(ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf), "-to") != 0);
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
+			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) { 
+				/* We hit the end of the line before finding a -to. */
+				vpr_printf(TIO_MESSAGE_ERROR, "Set_max_delay requires -to <clock/flip-flop_list> "
+					"after -from <clock/flip-flop_list> on line %d of SDC file.\n", file_line_number);
+				exit(1);
+			}
+		} while (strcmp(ptr, "-to") != 0);
+
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
+			vpr_printf(TIO_MESSAGE_ERROR, "Set_max_delay requires -to <clock/flip-flop_list> "
+				"after -from <clock/flip-flop_list> on line %d of SDC file.\n", file_line_number);
+		}
+
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_to = TRUE;
-			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
+			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
+				vpr_printf(TIO_MESSAGE_ERROR, "Set_max_delay requires -to <clock/flip-flop_list> "
+					"after -from <clock/flip-flop_list> on line %d of SDC file.\n", file_line_number);
+				exit(1);
+			}
 		}
 
 		do {
@@ -677,7 +711,7 @@ static boolean get_sdc_tok(char * buf) {
 		/* Create a constraint between each element in from_list and each element in to_list with value max_delay. */
 		add_override_constraint(from_list, num_from, to_list, num_to, max_delay, 0, domain_level_from, domain_level_to);
 		
-		/* Finally, set from_list and to_list to NULL since there are now pointers to the same text as them. */
+		/* Finally, set from_list and to_list to NULL since there are other pointers to them. */
 		from_list = NULL, to_list = NULL;
 
 		return TRUE;
@@ -689,49 +723,59 @@ static boolean get_sdc_tok(char * buf) {
 		the default value of the constraint (obtained via edge counting) first, and then set a  
 		constraint equal to default constraint + (num_multicycles - 1) * period of sink clock domain. */
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 		/* check if the token following set_max_delay is actually a number*/
-		if (!ptr || strcmp(ptr, "-setup") != 0) {
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-setup") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_multicycle_path must be directly followed by -setup on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (!ptr || strcmp(ptr, "-from") != 0) {
-			vpr_printf(TIO_MESSAGE_ERROR, "Set_multicycle_path -setup must be directly followed by "
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-from") != 0 || (ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
+			vpr_printf(TIO_MESSAGE_ERROR, "Set_multicycle_path requires "
 				"-from <clock/flip-flop_list> after -setup on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_from = TRUE;
-			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
+			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
+				vpr_printf(TIO_MESSAGE_ERROR, "Set_multicycle_path -setup must be followed by "
+					"-from <clock/flip-flop_list> on line %d of SDC file.\n", file_line_number);
+				exit(1);
+			}
 		}
 
 		do {
 			/* Keep adding clock names to from_list until we hit the -to command. */
-			if (!ptr) { 
+			from_list = (char **) my_realloc(from_list, ++num_from * sizeof(char *));
+			from_list[num_from - 1] = my_strdup(ptr);
+
+			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) { 
 				/* We hit the end of the line before finding a -to. */
 				vpr_printf(TIO_MESSAGE_ERROR, "Set_multicycle_path requires -to <clock/flip-flop_list> "
 					"after -from <clock/flip-flop_list> on line %d of SDC file.\n", file_line_number);
 				exit(1);
 			}
-			from_list = (char **) my_realloc(from_list, ++num_from * sizeof(char *));
-			from_list[num_from - 1] = my_strdup(ptr);
-		} while (strcmp(ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf), "-to") != 0);
+		} while (strcmp(ptr, "-to") != 0);
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
+			vpr_printf(TIO_MESSAGE_ERROR, "Set_multicycle_path requires -to <clock/flip-flop_list> "
+				"after -from <clock/flip-flop_list> on line %d of SDC file.\n", file_line_number);
+		}
+
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_to = TRUE;
-			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
+			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
+				vpr_printf(TIO_MESSAGE_ERROR, "Set_multicycle_path requires -to <clock/flip-flop_list> "
+					"after -from <clock/flip-flop_list> on line %d of SDC file.\n", file_line_number);
+				exit(1);
+			}
 		}
 
 		do {
 			/* Keep adding clock names to to_list until we hit a number (i.e. num_multicycles). */
 			to_list = (char **) my_realloc(to_list, ++num_to * sizeof(char *));
 			to_list[num_to - 1] = my_strdup(ptr);
-		} while (ptr && !is_number(ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)));
+		} while (((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) != NULL) && !is_number(ptr));
 
 		if (!ptr) {
 			/* We hit the end of the line before finding a number. */
@@ -758,14 +802,12 @@ static boolean get_sdc_tok(char * buf) {
 		/* We want to assign virtual_clock to all input ports in port_list, and 
 		set the input delay (from the external device to the FPGA) to max_delay. */
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (!ptr || strcmp(ptr, "-clock") != 0) {
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-clock") != 0 || (ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_input_delay must be directly followed by '-clock "
 				"<virtual or netlist clock name>' on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 		if (num_netlist_clocks == 1 && strcmp(ptr, "*") == 0) {
 			/* Allow the user to wildcard the clock name if there's only one clock (not standard SDC but very convenient). */
 			clock_name = netlist_clocks[0];
@@ -774,23 +816,20 @@ static boolean get_sdc_tok(char * buf) {
 			clock_name = ptr;
 		}
 	
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (!ptr || strcmp(ptr, "-max") != 0) {
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-max") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_input_delay -clock <virtual or netlist clock name> must be "
 				"directly followed by '-max <maximum_input_delay>' on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 		/* check if the token following -max is actually a number*/
-		if (!ptr || !is_number(ptr)) {
-			vpr_printf(TIO_MESSAGE_ERROR, "Token following '-max' is not a number on line %d of SDC file.\n", file_line_number);
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
+			vpr_printf(TIO_MESSAGE_ERROR, "Token following '-max' should be a delay value, but is not a number, on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 		max_delay = (float) strtod(ptr, NULL);
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (!ptr || strcmp(ptr, "get_ports") != 0) {
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "get_ports") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_input_delay requires a [get_ports {...}] command "
 				"following '-max <max_input_delay>' on line %d of SDC file.\n", file_line_number);
 			exit(1);
@@ -801,8 +840,7 @@ static boolean get_sdc_tok(char * buf) {
 			We have no way of error-checking whether these tokens correspond to actual input ports until later. */
 		
 		for (;;) {
-			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-			if (!ptr) { /* end of line */
+			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) { /* end of line */
 				return TRUE; 
 			}
 
@@ -837,14 +875,12 @@ static boolean get_sdc_tok(char * buf) {
 		/* We want to assign virtual_clock to all output ports in port_list, and 
 		set the output delay (from the external device to the FPGA) to max_delay. */
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (!ptr || strcmp(ptr, "-clock") != 0) {
-			vpr_printf(TIO_MESSAGE_ERROR, "Set_output_delay must be directly followed by "
-				"'-clock <virtual_clock_name>' on line %d of SDC file.\n", file_line_number);
+			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-clock") != 0 || (ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
+			vpr_printf(TIO_MESSAGE_ERROR, "Set_output_delay must be directly followed by '-clock "
+				"<virtual or netlist clock name>' on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 		if (num_netlist_clocks == 1 && strcmp(ptr, "*") == 0) {
 			/* Allow the user to wildcard the clock name if there's only one clock (not standard SDC but very convenient). */
 			clock_name = netlist_clocks[0];
@@ -852,24 +888,21 @@ static boolean get_sdc_tok(char * buf) {
 			/* We have no way of error-checking whether this is an actual virtual clock until we finish parsing. */
 			clock_name = ptr;
 		}
-
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (!ptr || strcmp(ptr, "-max") != 0) {
+	
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-max") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_output_delay -clock <virtual or netlist clock name> must be "
 				"directly followed by '-max <maximum_output_delay>' on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
 		/* check if the token following -max is actually a number*/
-		if (!ptr || !is_number(ptr)) {
-			vpr_printf(TIO_MESSAGE_ERROR, "Token following '-max' is not a number on line %d of SDC file.\n", file_line_number);
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
+			vpr_printf(TIO_MESSAGE_ERROR, "Token following '-max' should be a delay value, but is not a number, on line %d of SDC file.\n", file_line_number);
 			exit(1);
 		}
 		max_delay = (float) strtod(ptr, NULL);
 
-		ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-		if (!ptr || strcmp(ptr, "get_ports") != 0) {
+		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "get_ports") != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Set_output_delay requires a [get_ports {...}] command "
 				"following '-max <max_output_delay>' on line %d of SDC file.\n", file_line_number);
 			exit(1);
@@ -880,8 +913,7 @@ static boolean get_sdc_tok(char * buf) {
 			We have no way of error-checking whether these tokens correspond to actual output ports until later. */
 		
 		for (;;) {
-			ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf);
-			if (!ptr) { /* end of line */
+			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) { /* end of line */
 				return TRUE; 
 			}
 
@@ -1092,6 +1124,8 @@ static boolean regex_match (char * string, char * regular_expression) {
 
 	const char * error;
 	
+	assert(string && regular_expression);
+
 	/* The regex library reports a match if regular_expression is a substring of string
 	AND not equal to string. This is not appropriate for our purposes. For example, 
 	we'd get both "clock" and "clock2" matching the regular expression "clock".  

@@ -166,7 +166,7 @@ static int find_cf_constraint(char * source_clock_name, char * sink_ff_name);
 
 static void propagate_clock_domain_and_skew(int inode);
 
-static void print_remove_and_normalize_constraints(void);
+static void process_constraints(void);
 
 static void print_timing_constraint_info(const char *fname);
 
@@ -188,7 +188,7 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 
 	int num_sinks;
 	t_slack * slacks = NULL;
-	boolean process_constraints = FALSE;
+	boolean do_process_constraints = FALSE;
 
 	if (tedge_ch.chunk_ptr_head != NULL) {
 		vpr_printf(TIO_MESSAGE_ERROR, "In alloc_and_load_timing_graph:\n"
@@ -210,13 +210,13 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 		/* the SDC timing constraints only need to be read in once; *
 		 * if they haven't been already, do it now				    */
 		read_sdc(timing_inf.SDCFile);
-		process_constraints = TRUE;
+		do_process_constraints = TRUE;
 	}
 	
 	load_clock_domain_and_skew_and_io_delay(FALSE); 
 
-	if (process_constraints) 
-		print_remove_and_normalize_constraints();
+	if (do_process_constraints) 
+		process_constraints();
 	
 	if (timing_stats == NULL)
 		alloc_timing_stats();
@@ -239,7 +239,7 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 
 	int num_sinks;
 	t_slack * slacks = NULL;
-	boolean process_constraints = FALSE;
+	boolean do_process_constraints = FALSE;
 
 	if (tedge_ch.chunk_ptr_head != NULL) {
 		vpr_printf(TIO_MESSAGE_ERROR, "iI alloc_and_load_timing_graph:\n"
@@ -267,13 +267,13 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 		/* the SDC timing constraints only need to be read in once; *
 		 * if they haven't been already, do it now				    */
 		read_sdc(timing_inf.SDCFile);
-		process_constraints = TRUE;
+		do_process_constraints = TRUE;
 	}
 	
 	load_clock_domain_and_skew_and_io_delay(TRUE); 
 
-	if (process_constraints) 
-		print_remove_and_normalize_constraints();
+	if (do_process_constraints) 
+		process_constraints();
 	
 	if (timing_stats == NULL)
 		alloc_timing_stats();
@@ -1498,7 +1498,7 @@ void print_timing_graph(const char *fname) {
 
 	fclose(fp);
 }
-static void print_remove_and_normalize_constraints(void) {
+static void process_constraints(void) {
 	/* Removes all constraints between domains which never intersect. We need to do this 
 	so that slack_ratio_denom in do_timing_analysis is not affected	by unused constraints. 
 	BFS through the levelized graph once for each source domain. Whenever we get to a sink, 
