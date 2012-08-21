@@ -106,10 +106,16 @@ string generate_opname (t_node* vqm_node, t_boolean detailed_elaboration){
 	mode_hash = (string)vqm_node->type;	//begin by copying the entire block name
 
 	t_node_parameter* temp_param;	//temporary container for the node's parameters
-    
+   
+    //We need to save the ram data and address widths, we can only make decisiosn based on all the parameters
+    t_node_parameter* port_a_data_width = NULL;
+    t_node_parameter* port_a_addr_width = NULL;
+    t_node_parameter* port_b_data_width = NULL;
+    t_node_parameter* port_b_addr_width = NULL;
+
     char buffer[128]; //For integer to string conversion, use with snprintf which checks for overflow
 
-	for (int i = 0; i < vqm_node->number_of_params; i++){
+	for (size_t i = 0; i < vqm_node->number_of_params; i++){
 		//Each parameter specifies a configuration of the node in the circuit.
 		temp_param = vqm_node->array_of_params[i];
 
@@ -129,37 +135,71 @@ string generate_opname (t_node* vqm_node, t_boolean detailed_elaboration){
             continue;
 		} 
 
-        if (detailed_elaboration) {
-            //Detailed memory modes
-            if (strcmp (temp_param->name, "port_a_data_width") == 0){
-                assert( temp_param->type == NODE_PARAMETER_INTEGER );
-                snprintf(buffer, sizeof(buffer), "%d", temp_param->value.integer_value);
-                mode_hash.append(".port_a_data_width{" + (string)buffer + "}");
-                continue;
-            } 
-
-            if (strcmp (temp_param->name, "port_a_address_width") == 0){
-                assert( temp_param->type == NODE_PARAMETER_INTEGER );
-                snprintf(buffer, sizeof(buffer), "%d", temp_param->value.integer_value);
-                mode_hash.append(".port_a_address_width{" + (string)buffer + "}");
-                continue;
-            } 
-
-            if (strcmp (temp_param->name, "port_b_data_width") == 0){
-                assert( temp_param->type == NODE_PARAMETER_INTEGER );
-                snprintf(buffer, sizeof(buffer), "%d", temp_param->value.integer_value);
-                mode_hash.append(".port_b_data_width{" + (string)buffer + "}");
-                continue;
-            } 
-
-            if (strcmp (temp_param->name, "port_b_address_width") == 0){
-                assert( temp_param->type == NODE_PARAMETER_INTEGER );
-                snprintf(buffer, sizeof(buffer), "%d", temp_param->value.integer_value);
-                mode_hash.append(".port_b_address_width{" + (string)buffer + "}");
-                continue;
-            } 
+        //Save the ram width/depth related parameters
+        if (strcmp (temp_param->name, "port_a_data_width") == 0){
+            assert( temp_param->type == NODE_PARAMETER_INTEGER );
+            port_a_data_width = temp_param;
+            continue;
         }
-	}
+        if (strcmp (temp_param->name, "port_a_address_width") == 0){
+            assert( temp_param->type == NODE_PARAMETER_INTEGER );
+            port_a_addr_width = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "port_b_data_width") == 0){
+            assert( temp_param->type == NODE_PARAMETER_INTEGER );
+            port_b_data_width = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "port_b_address_width") == 0){
+            assert( temp_param->type == NODE_PARAMETER_INTEGER );
+            port_b_addr_width = temp_param;
+            continue;
+        }
+    }
+
+    //Detailed memory modes
+    if (detailed_elaboration && (port_a_data_width != NULL) && (port_a_addr_width != NULL)
+                             && (port_b_data_width == NULL) && (port_b_addr_width == NULL)) {
+            //A single port memory, only port A params are found
+
+            //Only print the address width, the data widths are handled by the VPR memory class
+            snprintf(buffer, sizeof(buffer), "%d", port_a_addr_width->value.integer_value);
+            mode_hash.append(".port_a_address_width{" + (string)buffer + "}");
+
+    } else if (detailed_elaboration && (port_a_data_width != NULL) && (port_a_addr_width != NULL) 
+                                    && (port_b_data_width != NULL) && (port_b_addr_width != NULL)) {
+        //A dual port memory, both port A and B params have been found
+      
+        if (   (port_a_data_width->value.integer_value == port_b_data_width->value.integer_value)
+            && (port_a_addr_width->value.integer_value == port_b_addr_width->value.integer_value)) {
+            //Both ports are the same size, so only append the address widths, the data widths are handled by the VPR memory class
+
+            snprintf(buffer, sizeof(buffer), "%d", port_a_addr_width->value.integer_value);
+            mode_hash.append(".port_a_address_width{" + (string)buffer + "}");
+
+            snprintf(buffer, sizeof(buffer), "%d", port_b_addr_width->value.integer_value);
+            mode_hash.append(".port_b_address_width{" + (string)buffer + "}");
+
+        } else {
+            //Each port has a different size, so print both the address and data widths. Mixed widths are not handled by the VPR memory class
+            snprintf(buffer, sizeof(buffer), "%d", port_a_data_width->value.integer_value);
+            mode_hash.append(".port_a_data_width{" + (string)buffer + "}");
+
+            snprintf(buffer, sizeof(buffer), "%d", port_a_addr_width->value.integer_value);
+            mode_hash.append(".port_a_address_width{" + (string)buffer + "}");
+
+            snprintf(buffer, sizeof(buffer), "%d", port_b_data_width->value.integer_value);
+            mode_hash.append(".port_b_data_width{" + (string)buffer + "}");
+
+            snprintf(buffer, sizeof(buffer), "%d", port_b_addr_width->value.integer_value);
+            mode_hash.append(".port_b_address_width{" + (string)buffer + "}");
+
+        }
+	} else {
+        ; //Not a memory, do nothing
+    }
+
 	return mode_hash;
 }
 
@@ -168,11 +208,9 @@ void clean_name(char* name) {
      * Remove invalid characters from blif identifiers
      */
     size_t p;
-    char character;
     for (p = 0; p < strlen(name); p++) {
-        character = name[p];
-        switch(character) {
-            case ' ':
+        switch(name[p]) {
+            case ' ': //Currently only spaces have been causing issues
                     name[p] = '_';
                     break;
             default:
