@@ -2910,11 +2910,11 @@ void print_timing_stats(void) {
 
 	if (num_constrained_clocks <= 1) {
 		/* Although critical path delay is always well-defined, it doesn't make sense to talk about fmax for multi-clock circuits */
-		vpr_printf(TIO_MESSAGE_INFO, "f_max: %g MHz\n\n", 1e-6 / timing_stats->critical_path_delay[netlist_clock_index][netlist_clock_index]);
+		vpr_printf(TIO_MESSAGE_INFO, "f_max: %g MHz\n", 1e-6 / timing_stats->critical_path_delay[netlist_clock_index][netlist_clock_index]);
 	}
 	
 	/* Also print the least slack in the design */
-	vpr_printf(TIO_MESSAGE_INFO, "Least slack in design: %g ns\n\n", least_slack_in_design * 1e9);
+	vpr_printf(TIO_MESSAGE_INFO, "\nLeast slack in design: %g ns\n", least_slack_in_design * 1e9);
 
 	if (num_constrained_clocks > 1) { /* Multiple-clock design */
 
@@ -2923,28 +2923,21 @@ void print_timing_stats(void) {
 		vpr_printf(TIO_MESSAGE_INFO, "\nMinimum possible clock period to meet each constraint (including skew effects):\n");
 		for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
 			/* Print the clock name and intra-domain constraint. */
-			vpr_printf(TIO_MESSAGE_INFO, "%s:\t", constrained_clocks[source_clock_domain].name);
-			if (timing_constraint[source_clock_domain][source_clock_domain] > -1e-15) { /* If this domain pair was analysed */
-				if (timing_stats->critical_path_delay[source_clock_domain][source_clock_domain] < HUGE_POSITIVE_FLOAT - 1) {
-					vpr_printf(TIO_MESSAGE_INFO, "to %s: %g ns (%g MHz)", constrained_clocks[source_clock_domain].name, 
-						1e9 * timing_stats->critical_path_delay[source_clock_domain][source_clock_domain],
-						1e-6 / timing_stats->critical_path_delay[source_clock_domain][source_clock_domain]);
-				} else {
-					vpr_printf(TIO_MESSAGE_INFO, "to %s: --", constrained_clocks[source_clock_domain].name);
-				}
+			vpr_printf(TIO_MESSAGE_INFO, "%s:", constrained_clocks[source_clock_domain].name);
+			if (timing_constraint[source_clock_domain][source_clock_domain] > -1e-15) { /* If this domain pair was analysed */					
+				vpr_printf(TIO_MESSAGE_INFO, "\tto %s: %g ns (%g MHz)\n", constrained_clocks[source_clock_domain].name, 
+					1e9 * timing_stats->critical_path_delay[source_clock_domain][source_clock_domain],
+					1e-6 / timing_stats->critical_path_delay[source_clock_domain][source_clock_domain]);
+			} else {
+				vpr_printf(TIO_MESSAGE_INFO, "\n");
 			}
-			vpr_printf(TIO_MESSAGE_INFO, "\n");
 			/* Then, print all other constraints on separate lines. */
 			for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
 				if (source_clock_domain == sink_clock_domain) continue; /* already done that */
 				if (timing_constraint[source_clock_domain][sink_clock_domain] > -1e-15) { /* If this domain pair was analysed */
-					if (timing_stats->critical_path_delay[source_clock_domain][source_clock_domain] < HUGE_POSITIVE_FLOAT - 1) {
-						vpr_printf(TIO_MESSAGE_INFO, "\tto %s: %g ns (%g MHz)\n", constrained_clocks[sink_clock_domain].name, 
-							1e9 * timing_stats->critical_path_delay[source_clock_domain][sink_clock_domain],
-							1e-6 / timing_stats->critical_path_delay[source_clock_domain][sink_clock_domain]);
-					} else {
-						vpr_printf(TIO_MESSAGE_INFO, "to %s: --", constrained_clocks[sink_clock_domain].name);
-					}
+					vpr_printf(TIO_MESSAGE_INFO, "\tto %s: %g ns (%g MHz)\n", constrained_clocks[sink_clock_domain].name, 
+						1e9 * timing_stats->critical_path_delay[source_clock_domain][sink_clock_domain],
+						1e-6 / timing_stats->critical_path_delay[source_clock_domain][sink_clock_domain]);
 				}
 			}
 		}
@@ -2954,16 +2947,13 @@ void print_timing_stats(void) {
 		vpr_printf(TIO_MESSAGE_INFO, "\nLeast slack per constraint (including skew effects):\n");
 		for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
 			/* Print the clock name and intra-domain least slack. */
-			vpr_printf(TIO_MESSAGE_INFO, "%s:\t", constrained_clocks[source_clock_domain].name);
+			vpr_printf(TIO_MESSAGE_INFO, "%s:", constrained_clocks[source_clock_domain].name);
 			if (timing_constraint[source_clock_domain][source_clock_domain] > -1e-15) { /* If this domain pair was analysed */
-				if (timing_stats->least_slack_per_constraint[source_clock_domain][source_clock_domain] < HUGE_POSITIVE_FLOAT - 1) {
-					vpr_printf(TIO_MESSAGE_INFO, "\tto %s: %g ns\n", constrained_clocks[source_clock_domain].name, 
-						1e9 * timing_stats->least_slack_per_constraint[source_clock_domain][source_clock_domain]);
-				} else {
-					vpr_printf(TIO_MESSAGE_INFO, "to %s: --", constrained_clocks[source_clock_domain].name);
-				}
+				vpr_printf(TIO_MESSAGE_INFO, "\tto %s: %g ns\n", constrained_clocks[source_clock_domain].name, 
+					1e9 * timing_stats->least_slack_per_constraint[source_clock_domain][source_clock_domain]);
+			} else {
+				vpr_printf(TIO_MESSAGE_INFO, "\n");
 			}
-			vpr_printf(TIO_MESSAGE_INFO, "\n");
 			/* Then, print all other slacks on separate lines. */
 			for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
 				if (source_clock_domain == sink_clock_domain) continue; /* already done that */
@@ -2971,8 +2961,6 @@ void print_timing_stats(void) {
 					if (timing_stats->least_slack_per_constraint[source_clock_domain][source_clock_domain] < HUGE_POSITIVE_FLOAT - 1) {
 						vpr_printf(TIO_MESSAGE_INFO, "\tto %s: %g ns\n", constrained_clocks[sink_clock_domain].name, 
 							1e9 * timing_stats->least_slack_per_constraint[source_clock_domain][sink_clock_domain]);
-					} else {
-						vpr_printf(TIO_MESSAGE_INFO, "to %s: --", constrained_clocks[sink_clock_domain].name);
 					}
 				}
 			}
