@@ -8,11 +8,16 @@
 //			INTERNAL FUNCTION DECLARATIONS
 //============================================================================================
 void decompose_inout_pins(t_module* module, t_arch* arch);
+
 t_model* find_model_in_architecture(t_model* arch_models, t_node* node);
-t_model_ports* find_model_port_in_architecture(t_model* arch_model, t_node_port_association* node_port);
-t_new_pins create_decomposed_pins(t_module* module, t_pin_def* pin);
-int fix_netlist_connectivity_for_inout_pins(t_pin_def* new_input_pin,
-                                            t_pin_def* new_output_pin,
+
+t_model_ports* find_port_in_architecture_model(t_model* arch_model, t_node_port_association* node_port);
+
+char* prefix_string(const char* prefix, const char* base);
+
+t_split_inout_pin create_decomposed_pins(t_module* module, t_pin_def* pin);
+
+int fix_netlist_connectivity_for_inout_pins(t_split_inout_pin* new_input_pin,
                                             t_assign_vec* pin_assignment_sources,
                                             t_assign_vec* pin_assignment_sinks, 
                                             t_port_vec* pin_node_sources,
@@ -74,7 +79,13 @@ void decompose_inout_pins(t_module* module, t_arch* arch){
      *       |               ------------      |
      *       |                                 |
      *       -----------------------------------
-     * 
+     *
+     * After processing, 'inout_pin' has been split into two
+     * different pins 'new_input_pin' and 'new_output_pin'. 
+     * As thier names imply, 'new_input_pin' and 'new_output_pin' 
+     * respectively handle the input and output duties of the 
+     * original inout pin
+     *
      */
 
     //Counters
@@ -100,8 +111,8 @@ void decompose_inout_pins(t_module* module, t_arch* arch){
          */
         t_assign_vec pin_assignment_sources;
         t_assign_vec pin_assignment_sinks;
-        t_port_vec pin_node_sources;
-        t_port_vec pin_node_sinks;
+        t_port_vec   pin_node_sources;
+        t_port_vec   pin_node_sinks;
 
         //Find inout pins
         if (pin->type == PIN_INOUT) {
@@ -133,7 +144,7 @@ void decompose_inout_pins(t_module* module, t_arch* arch){
                     pin_assignment_sources.push_back(assign_stmt);
 
                 } else if (pin == assign_stmt->source) {
-                    //If pin is the source it is driving target (target a sink)
+                    //If pin is the source it is driving target (target is a sink)
                     if (verbose_mode) {
                         cout << "\t    sink     : " << assign_stmt->target->name << "\n";
                     }
@@ -154,7 +165,7 @@ void decompose_inout_pins(t_module* module, t_arch* arch){
                     //Is the pin attached to this black box node?
                     if (pin == node_port->associated_net) {
                         /*
-                         *  Since these blif nodes are blackboxes
+                         *  Since these VQM nodes are blackboxes
                          *  we do not know whether the node_port
                          *  is an input or an output.
                          *
@@ -164,7 +175,7 @@ void decompose_inout_pins(t_module* module, t_arch* arch){
                          *  input and output pins.
                          *
                          *  This can be determined by querying the
-                         *  architecture file 
+                         *  architecture file.
                          */
 
                         //Architecture pointers
@@ -174,24 +185,8 @@ void decompose_inout_pins(t_module* module, t_arch* arch){
                         //Find the model
                         arch_model = find_model_in_architecture(arch->models, node);
 
-/*
- *                        //Find the correct model, by name matching
- *                        arch_model = arch->models;
- *                        while((arch_model) && (strcmp(node->type, arch_model->name) != 0)) {
- *                            //Move to the next model
- *                            arch_model = arch_model->next;
- *                        }
- *
- *                        //The model must be in the arch file
- *                        if (arch_model == NULL) {
- *                            cout << "Error: could not find model in architecture file for '" << node->type << "'\n";
- *                            exit(1);
- *                        }
- *                        assert(arch_model != NULL);
- */
-
-                        //Find the architecure port
-                        arch_model_port = find_model_port_in_architecture(arch_model, node_port);
+                        //Find the architecure model port
+                        arch_model_port = find_port_in_architecture_model(arch_model, node_port);
 
                         if (arch_model_port->dir == IN_PORT) {
                             //It is an input, meaning a sink for node_port
@@ -212,57 +207,6 @@ void decompose_inout_pins(t_module* module, t_arch* arch){
                             exit(1);
                         }
 
-/*
- *                        //Check inputs
- *                        //Find the correct port, by name matching
- *                        arch_model_port = arch_model->inputs;
- *                        //Until NULL or a matching port name
- *                        while ((arch_model_port) && (strcmp(arch_model_port->name, node_port->port_name) != 0)) {
- *                            //Must be an input if in the inputs linked list
- *                            assert(arch_model_port->dir == IN_PORT); 
- *
- *                            //Move to the next arch_model_port
- *                            arch_model_port = arch_model_port->next;
- *                        }
- *
- *                        //arch_model_port is either null or an input
- *                        if (arch_model_port != NULL) {
- *                            //It is an input, meaning a sink for pin
- *                            if (verbose_mode) {
- *                                cout << "\t    sink: " << node->name << "." << node_port->port_name << " (" << node->type << " inport)\n";
- *                            }
- *                            pin_node_sinks.push_back(node_port);
- *
- *                        } else { 
- *                            //Check outputs
- *                            //Not an input should be an output
- *                            arch_model_port = arch_model->outputs;
- *
- *                            //Until NULL or a matching port name
- *                            while ((arch_model_port) && (strcmp(arch_model_port->name, node_port->port_name) != 0)) {
- *                                //Must be an output if in the output linked list
- *                                assert(arch_model_port->dir == OUT_PORT); 
- *
- *                                //Move to the next arch_model_port
- *                                arch_model_port = arch_model_port->next;
- *                            }
- *
- *                            //arch_model_port must be either an input or an output, 
- *                            // hence it should never be NULL at this point
- *                            if (arch_model_port == NULL) {
- *                                cout << "Error: could not find port '" << node_port->port_name << "' on model '" << node->type << "' in architecture file\n";
- *                                exit(1);
- *                            }
- *                            assert(arch_model_port != NULL);
- *
- *                            //It is an output, meaning a source for pin
- *                            if (verbose_mode) {
- *                                cout << "\t    source   : " << node->name << "." << node_port->port_name << " (" << node->type << " outport)\n";
- *                            }
- *                            pin_node_sources.push_back(node_port);
- */
-
-
                     } //pin matches associated net (BB prim port)
                 } //Node port
             } //Node
@@ -273,20 +217,19 @@ void decompose_inout_pins(t_module* module, t_arch* arch){
              * Create the new input and output pins that replace the inout
              * pin
              */
-            t_new_pins new_pins = create_decomposed_pins(module, pin);
+            t_split_inout_pin split_pin = create_decomposed_pins(module, pin);
 
             /*
              * Fix the connectivity of modules and assign statements to reflect
              * the new input and output pins
              */
-            number_of_nets_moved += fix_netlist_connectivity_for_inout_pins(new_pins.in,
-                                                                            new_pins.out,
+            number_of_nets_moved += fix_netlist_connectivity_for_inout_pins(&split_pin,
                                                                             &pin_assignment_sources,
                                                                             &pin_assignment_sinks, 
                                                                             &pin_node_sources,
                                                                             &pin_node_sinks           );
 
-        } //PIN_INOUT
+        } //is PIN_INOUT
 
     } //module pins
 
@@ -299,7 +242,7 @@ t_model* find_model_in_architecture(t_model* arch_models, t_node* node) {
      * Finds the archtecture module corresponding to the node type
      *
      *  arch_models: the head of the linked list of architecture models
-     *  node       : the node to match
+     *  node       : the VQM node to match
      *
      * Returns: A pointer to the corresponding model
      */
@@ -321,13 +264,25 @@ t_model* find_model_in_architecture(t_model* arch_models, t_node* node) {
     return arch_model;
 }
 
-t_model_ports* find_model_port_in_architecture(t_model* arch_model, t_node_port_association* node_port) {
+char* prefix_string(const char* prefix, const char* base) {
+
+    //Number of characters (including terminator)
+    size_t new_string_size = (strlen(prefix) + strlen(base) + 1)*sizeof(char);
+
+    char* new_string = (char*) my_malloc(new_string_size);
+
+    //Checks for overflow
+    snprintf(new_string, new_string_size, "%s%s", prefix, base);
+
+    return new_string;
+}
+
+t_model_ports* find_port_in_architecture_model(t_model* arch_model, t_node_port_association* node_port) {
     /*
      * Finds the module port corresponding to the port name 
      *
      *  arch_model: the architecture model matching node
-     *  node      : the matching node
-     *  node_port : the node_port to match
+     *  node_port : the port to match
      *
      * Returns: A pointer to the corresponding port
      */
@@ -381,12 +336,13 @@ t_model_ports* find_model_port_in_architecture(t_model* arch_model, t_node_port_
     return arch_model_port;
 }
 
-t_new_pins create_decomposed_pins(t_module* module, t_pin_def* pin) {
+
+t_split_inout_pin create_decomposed_pins(t_module* module, t_pin_def* inout_pin) {
         /*
          *  Declare new pins to replace the inout pin
          *    We will replace the inout pin with it's decomposed 'input'
          *    and create the decomposed 'output' pin at the end of the
-         *    array_of_pins
+         *    module->array_of_pins
          */
 
         //Only need one additional pin, since we re-use the already
@@ -408,21 +364,18 @@ t_new_pins create_decomposed_pins(t_module* module, t_pin_def* pin) {
         t_pin_def* new_output_pin = module->array_of_pins[module->number_of_pins-1];
 
         //Save the pointer to the original pin name
-        char* pin_name_ptr = pin->name;
+        char* pin_name_ptr = inout_pin->name;
 
         //Create the pin name
-        const char* output_prefix = INOUT_OUTPUT_PREFIX;
-        int new_string_size = (strlen(pin_name_ptr) + strlen(output_prefix) + 1)*sizeof(char);
-        new_output_pin->name = (char*) my_malloc(new_string_size);
-        snprintf(new_output_pin->name, new_string_size, "%s%s", output_prefix, pin->name);
+        new_output_pin->name = prefix_string(INOUT_OUTPUT_PREFIX, inout_pin->name);
 
         //Set the pin type
         new_output_pin->type = PIN_OUTPUT;
 
         //Copy other values
-        new_output_pin->left = pin->left;
-        new_output_pin->right = pin->right;
-        new_output_pin->indexed = pin->indexed;
+        new_output_pin->left = inout_pin->left;
+        new_output_pin->right = inout_pin->right;
+        new_output_pin->indexed = inout_pin->indexed;
 
         /*
          *  INPUT PIN
@@ -430,13 +383,10 @@ t_new_pins create_decomposed_pins(t_module* module, t_pin_def* pin) {
 
         //The new input pin is the old inout pin
         // The old values of the pin are overwritten
-        t_pin_def* new_input_pin = pin;
+        t_pin_def* new_input_pin = inout_pin;
 
         //Update the pin name
-        const char* input_prefix = INOUT_INPUT_PREFIX;
-        new_string_size = (strlen(pin_name_ptr) + strlen(input_prefix) + 1)*sizeof(char);
-        new_input_pin->name = (char*) my_malloc(new_string_size);
-        snprintf(new_input_pin->name, new_string_size, "%s%s", input_prefix, pin_name_ptr);
+        new_input_pin->name = prefix_string(INOUT_INPUT_PREFIX, pin_name_ptr);
 
         //Update the pin type
         // All other attributes of the t_pin_def can remain the same as the
@@ -444,18 +394,17 @@ t_new_pins create_decomposed_pins(t_module* module, t_pin_def* pin) {
         new_input_pin->type = PIN_INPUT;
 
         //Use a struct to return the two new pin pointers
-        t_new_pins new_pins;
-        new_pins.in = new_input_pin;
-        new_pins.out = new_output_pin;
+        t_split_inout_pin split_inout_pin;
+        split_inout_pin.in = new_input_pin;
+        split_inout_pin.out = new_output_pin;
 
         //Remove the old name, it is no longer needed
         free(pin_name_ptr);
 
-        return new_pins;
+        return split_inout_pin;
 }
 
-int fix_netlist_connectivity_for_inout_pins(t_pin_def* new_input_pin,
-                                            t_pin_def* new_output_pin,
+int fix_netlist_connectivity_for_inout_pins(t_split_inout_pin* split_inout_pin,
                                             t_assign_vec* pin_assignment_sources,
                                             t_assign_vec* pin_assignment_sinks, 
                                             t_port_vec* pin_node_sources,
@@ -481,7 +430,7 @@ int fix_netlist_connectivity_for_inout_pins(t_pin_def* new_input_pin,
              *       assign target_new_out = source;
              */
             
-            assign_stmt->target = new_output_pin;
+            assign_stmt->target = split_inout_pin->out;
             number_of_nets_moved++;
         }
 
@@ -500,7 +449,7 @@ int fix_netlist_connectivity_for_inout_pins(t_pin_def* new_input_pin,
              *       assign target = source_new_in;
              */
             
-            assign_stmt->source = new_input_pin;
+            assign_stmt->source = split_inout_pin->in;
             number_of_nets_moved++;
         }
 
@@ -532,7 +481,7 @@ int fix_netlist_connectivity_for_inout_pins(t_pin_def* new_input_pin,
              *       )
              */
             
-            node_port->associated_net = new_output_pin;
+            node_port->associated_net = split_inout_pin->out;
             number_of_nets_moved++;
         }
 
@@ -561,7 +510,7 @@ int fix_netlist_connectivity_for_inout_pins(t_pin_def* new_input_pin,
              *       )
              */
             
-            node_port->associated_net = new_input_pin;
+            node_port->associated_net = split_inout_pin->in;
             number_of_nets_moved++;
         }
 

@@ -18,10 +18,10 @@ void preprocess_netlist(t_module* module, t_arch* arch);
 typedef vector<t_assign*> t_assign_vec;
 typedef vector<t_node_port_association*> t_port_vec;
 
-typedef struct s_new_pins {
+typedef struct s_split_inout_pin {
     t_pin_def* in;
     t_pin_def* out;
-} t_new_pins;
+} t_split_inout_pin;
 
 //============================================================================================
 //				PREPROCESS DEFINES
