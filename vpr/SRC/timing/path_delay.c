@@ -2387,9 +2387,9 @@ t_linked_int * allocate_and_load_critical_path(void) {
 			}
 		}
 
-		/* Reset all used_on_this_traversal flags. */
+		/* Reset all has_valid_slack flags. */
 		for (inode = 0; inode < num_tnodes; inode++) {
-			tnode[inode].used_on_this_traversal = FALSE;
+			tnode[inode].has_valid_slack = FALSE;
 		}
 
 		/* Do a timing analysis for this clock domain pair only. 

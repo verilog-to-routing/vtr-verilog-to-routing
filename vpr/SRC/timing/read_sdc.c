@@ -549,8 +549,10 @@ static boolean get_sdc_tok(char * buf) {
 			exclusive_groups[num_exclusive_groups - 1].num_clock_names = 0;
 			do {
 				/* Check the regex ptr against each netlist clock and add it to the clock_names list if it matches. */
+				found = FALSE;
 				for (iclock = 0; iclock < num_netlist_clocks; iclock++) {
 					if (regex_match(netlist_clocks[iclock], ptr)) {
+						found = TRUE;
 						exclusive_groups[num_exclusive_groups - 1].clock_names = (char **) my_realloc(
 							exclusive_groups[num_exclusive_groups - 1].clock_names, ++exclusive_groups[num_exclusive_groups - 1].num_clock_names * sizeof(char *));
 						exclusive_groups[num_exclusive_groups - 1].clock_names
@@ -558,12 +560,14 @@ static boolean get_sdc_tok(char * buf) {
 							my_strdup(netlist_clocks[iclock]);
 					}
 				}
-				if (exclusive_groups[num_exclusive_groups - 1].num_clock_names == 0) {
+				if (!found) {
 					/* If no clocks matched, assume ptr is the name of a virtual clock and add it to the list.
 					(If it's not a virtual clock, we'll catch it later when we check all override constraints.) */
-					exclusive_groups[num_exclusive_groups - 1].clock_names = (char **) my_malloc(sizeof(char*));
-					exclusive_groups[num_exclusive_groups - 1].clock_names[0] = my_strdup(ptr);
-					exclusive_groups[num_exclusive_groups - 1].num_clock_names = 1;
+					exclusive_groups[num_exclusive_groups - 1].clock_names = (char **) my_realloc(
+						exclusive_groups[num_exclusive_groups - 1].clock_names, ++exclusive_groups[num_exclusive_groups - 1].num_clock_names * sizeof(char *));
+					exclusive_groups[num_exclusive_groups - 1].clock_names
+						[exclusive_groups[num_exclusive_groups - 1].num_clock_names - 1] = 
+						my_strdup(ptr);
 				}
 			} while ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) != NULL && strcmp(ptr, "-group") != 0);
 		} while (ptr);
