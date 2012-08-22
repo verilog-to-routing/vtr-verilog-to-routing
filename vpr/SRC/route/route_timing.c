@@ -295,7 +295,10 @@ boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
 		/* For all sinks, set pin_criticality to (max_criticality - slack_ratio)^criticality_exp, 
 		but cut off at max_criticality. */
 		if (net_slack_ratio[ipin] < HUGE_POSITIVE_FLOAT - 1) {
-			pin_criticality[ipin] = min(pow(max_criticality - net_slack_ratio[ipin], criticality_exp), max_criticality);
+			pin_criticality[ipin] = pow(max_criticality - net_slack_ratio[ipin], criticality_exp);
+			if (pin_criticality[ipin] > max_criticality) {
+				pin_criticality[ipin] = max_criticality;
+			}
 		} else {
 			/* Pin has dummy slack ratio */
 			pin_criticality[ipin] = 0;

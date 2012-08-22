@@ -77,7 +77,7 @@ $(EXE): | notify $(OBJ) Makefile libvpr.a
 
 notify:
 # if graphics enabled but libx11-dev is not installed, notify the user
-	$(PACKAGENOTIFICATION) 
+	@ $(PACKAGENOTIFICATION) 
 
 packages: 
 #if graphics enabled but libx11-dev is not installed, install it

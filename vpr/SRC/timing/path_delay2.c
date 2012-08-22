@@ -204,7 +204,7 @@ float print_critical_path_node(FILE * fp, t_linked_int * critical_path_node) {
 
 	int inode, iblk, inet, downstream_node;
 	t_pb_graph_pin * pb_graph_pin;
-	t_tnode_type type;
+	e_tnode_type type;
 	static const char *tnode_type_names[] = { "INPAD_SOURCE", "INPAD_OPIN",
 			"OUTPAD_IPIN", "OUTPAD_SINK", "CB_IPIN", "CB_OPIN",
 			"INTERMEDIATE_NODE", "PRIMITIVE_IPIN", "PRIMITIVE_OPIN", "FF_IPIN",

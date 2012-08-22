@@ -273,75 +273,60 @@ typedef struct s_cluster_placement_stats {
  *******************************************************************/
 
 /* Timing graph information */
+
 typedef struct {
 	int to_node; /* index of node at the sink end of this edge */
 	float Tdel; /* delay to go to to_node along this edge */
 } t_tedge;
 
 typedef enum {
-	INPAD_SOURCE,
-	INPAD_OPIN,
-	OUTPAD_IPIN,
-	OUTPAD_SINK,
-	CB_IPIN,
-	CB_OPIN,
-	INTERMEDIATE_NODE,
-	PRIMITIVE_IPIN,
-	PRIMITIVE_OPIN,
-	FF_IPIN,
-	FF_OPIN,
-	FF_SINK,
-	FF_SOURCE,
-	FF_CLOCK,
-	CONSTANT_GEN_SOURCE
-} t_tnode_type;
-/* type:  What is this tnode? (Pad pin, clb pin, subblock pin, etc.)         *
- * ipin:  Number of the CLB or subblock pin this tnode represents, if        *
- *        applicable.                                                        *
- * isubblk: Number of the subblock this tnode is part of, if applicable.     *
- * iblk:  Number of the block (CLB or PAD) this tnode is part of.            */
+	INPAD_SOURCE, /* input to an input I/O pad */
+	INPAD_OPIN, /* output from an input I/O pad */
+	OUTPAD_IPIN, /* input to an output I/O pad */
+	OUTPAD_SINK, /* output from an output I/O pad */
+	CB_IPIN, /* input pin to complex block */
+	CB_OPIN, /* output pin from complex block */
+	INTERMEDIATE_NODE, /* used in post-packed timing graph only, 
+					   represents junction between two wire segments */
+	PRIMITIVE_IPIN, /* input pin to a primitive (e.g. a LUT) */
+	PRIMITIVE_OPIN, /* output pin from a primitive (e.g. a LUT) */
+	FF_IPIN, /* input pin to a flip-flop - goes to FF_SINK */
+	FF_OPIN, /* output pin from a flip-flop - comes from FF_SOURCE */
+	FF_SINK, /* sink (D) pin of flip-flop */
+	FF_SOURCE, /* source (Q) pin of flip-flop */
+	FF_CLOCK, /* clock pin of flip-flop */
+	CONSTANT_GEN_SOURCE /* source of a constant logic 1 or 0 */
+} e_tnode_type;
 
-/* tnode data structure for a node in a timing graph
- * out_edges: [0..num_edges - 1].  Array of the edges leaving this tnode.    *
- * num_edges: Number of edges leaving this node.                             *
- * T_arr:  Arrival time of the last input signal to this node.               *
- * T_req:  Required arrival time of the last input signal to this node if    *
- *         the critical path is not to be lengthened.                        *
- * type:  What is this tnode? (Pad pin, clb pin, subblock pin, etc.)         *
- * pb_graph_pin:  pb pin that this block is connected to                     *
- * block: Which block this pin is connected to
- * index: index of array this tnode belongs to
- * num_critical_input_paths, num_critical_output_paths: Count total number of near critical paths that go through this node *
- */
-
-typedef struct s_tnode {
-	t_tedge *out_edges;
+typedef struct s_tnode { /* node in the timing graph */
+	e_tnode_type type; /* see the above enum */
+	t_tedge *out_edges; /* [0..num_edges - 1] array of edges fanning out from this tnode */
 	int num_edges;
-	float T_arr;
-	float T_req;
-	int block;
+	float T_arr; /* Arrival time of the last input signal to this node. */
+	float T_req; /* Required arrival time of the last input signal to this node 
+					if the critical path is not to be lengthened. */
+	int block; /* logical block which this tnode is part of */
 	boolean used_on_this_traversal; /* Has this tnode been touched on this timing graph traversal? */
 	boolean has_valid_slack; /* Has this tnode been touched on the most recent call of do_timing_analysis? */
-
-	/* For flipflops and I/Os only. Clock_domain contains the index of the clock in netlist_clocks; clock_skew is the time taken for a clock signal to get to the flip-flop. */
-	int clock_domain; 
-	float clock_skew;
+	
+	/* For FF_SINK, FF_SOURCE, FF_CLOCK, and/or I/Os only. */ 
+	int clock_domain; /* index of the clock in constrained_clocks array */
+	float clock_skew; /* the time taken for a clock signal to get to the flip-flop or I/O (0 for I/Os). */
 
 	/* post-packing timing graph */
-	t_tnode_type type;
-	t_pb_graph_pin *pb_graph_pin;
+	t_pb_graph_pin *pb_graph_pin; /* pb_graph_pin that this block is connected to */
 
 	/* pre-packing timing graph */
 	int model_port, model_pin; /* technology mapped model port/pin */
 #ifdef NET_WEIGHTING
 	float forward_weight, backward_weight;
 #else
-	long num_critical_input_paths, num_critical_output_paths; /* count of critical paths passing through this tnode */
+	long num_critical_input_paths, num_critical_output_paths; /* count of critical paths fanning into/out of this tnode */
 	float normalized_slack; /* slack (normalized with respect to max slack) */
 	float normalized_total_critical_paths; /* critical path count (normalized with respect to max count) */
 	float normalized_T_arr; /* arrival time (normalized with respect to max time) */
 #endif
-	int index;
+	int index; /* index in the array tnode [0..num_tnodes - 1] */
 } t_tnode;
 
 typedef struct s_clock {
