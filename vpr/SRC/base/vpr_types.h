@@ -71,13 +71,14 @@ typedef size_t bitfield;
 #define MINOR 0			/* For update_screen.  Denotes importance of update. */
 #define MAJOR 1
 
+#define MAX_SHORT 32767
+
 #define HUGE_POSITIVE_FLOAT 1.e30
 #define HUGE_NEGATIVE_FLOAT -1.e30
 
-#define MAX_SHORT 32767
-
-#define EQUAL_DEF 1e-6            /*used in some if == equations to allow very       *
-				   *close values to be considered equal              */
+/* Used to avoid floating-point errors when comparing values close to 0 */
+#define EPSILON 1.e-15
+#define NEGATIVE_EPSILON -1.e-15
 
 #define HIGH_FANOUT_NET_LIM 64 /* All nets with this number of sinks or more are considered high fanout nets */
 

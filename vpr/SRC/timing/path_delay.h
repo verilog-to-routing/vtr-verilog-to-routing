@@ -34,9 +34,9 @@ void print_timing_graph(const char *fname);
 
 void print_lut_remapping(const char *fname);
 
-void print_net_slack(float ** net_slack, const char *fname);
+void print_net_slack(float ** net_slack, boolean slack_is_normalized, const char *fname);
 
-void print_net_slack_ratio(float ** net_slack, const char *fname);
+void print_net_slack_ratio(float ** net_slack_ratio, boolean slack_ratio_is_normalized, const char *fname);
 
 void print_net_delay(float **net_delay, const char *fname);
 

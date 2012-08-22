@@ -25,6 +25,7 @@ void ShowSetup(INP t_options options, INP t_vpr_setup vpr_setup) {
 	vpr_printf(TIO_MESSAGE_INFO, "Circuit netlist file: %s\n", vpr_setup.FileNameOpts.NetFile);
 	vpr_printf(TIO_MESSAGE_INFO, "Circuit placement file: %s\n", vpr_setup.FileNameOpts.PlaceFile);
 	vpr_printf(TIO_MESSAGE_INFO, "Circuit routing file: %s\n", vpr_setup.FileNameOpts.RouteFile);
+	vpr_printf(TIO_MESSAGE_INFO, "Circuit SDC file: %s\n", vpr_setup.Timing.SDCFile);
 
 	ShowOperation(vpr_setup.Operation);
 	vpr_printf(TIO_MESSAGE_INFO, "Packer: %s\n", (vpr_setup.PackerOpts.doPacking ? "ENABLED" : "DISABLED"));

@@ -515,7 +515,7 @@ static boolean get_sdc_tok(char * buf) {
 		}
 	
 		/* Give a message if the clock has non-50% duty cycle. */
-		if (fabs(rising_edge - falling_edge) - clock_period/2.0 > 1e-15) {
+		if (fabs(rising_edge - falling_edge) - clock_period/2.0 > EPSILON) {
 			vpr_printf(TIO_MESSAGE_INFO, "Clock %s does not have 50%% duty cycle.\n", sdc_clocks[num_constrained_clocks - 1].name);
 		}
 
@@ -1056,14 +1056,14 @@ static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_do
 	float constraint;
 
 	/* If the source and sink domains have the same period and edges, the constraint is just the common clock period. */
-	if ((source_domain.period - sink_domain.period < 1e-15) && 
-		(source_domain.rising_edge - sink_domain.rising_edge < 1e-15) &&
-		(source_domain.falling_edge - sink_domain.falling_edge < 1e-15)) {
+	if ((source_domain.period - sink_domain.period < EPSILON) && 
+		(source_domain.rising_edge - sink_domain.rising_edge < EPSILON) &&
+		(source_domain.falling_edge - sink_domain.falling_edge < EPSILON)) {
 		return source_domain.period; /* or, equivalently, sink_domain.period */
 	}
 
 	/* If either period is 0, the constraint is 0. */
-	if (source_domain.period < 1e-15 || sink_domain.period < 1e-15) {
+	if (source_domain.period < EPSILON || sink_domain.period < EPSILON) {
 		return 0.;
 	}
 	

@@ -359,9 +359,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				print_clustering_timing_info(getEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO));
 #endif
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_NET_SLACK))
-				print_net_slack(slacks->net_slack, getEchoFileName(E_ECHO_PRE_PACKING_NET_SLACK));
+				print_net_slack(slacks->net_slack, FALSE, getEchoFileName(E_ECHO_PRE_PACKING_NET_SLACK));
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_NET_SLACK_RATIO))
-				print_net_slack_ratio(slacks->net_slack_ratio, getEchoFileName(E_ECHO_PRE_PACKING_NET_SLACK_RATIO));
+				print_net_slack_ratio(slacks->net_slack_ratio, FALSE, getEchoFileName(E_ECHO_PRE_PACKING_NET_SLACK_RATIO));
 		}
 
 		criticality = (float*) my_calloc(num_logical_blocks, sizeof(float));
