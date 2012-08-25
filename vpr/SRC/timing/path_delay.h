@@ -34,13 +34,11 @@ void print_timing_graph(const char *fname);
 
 void print_lut_remapping(const char *fname);
 
-void print_net_slack(float ** net_slack, boolean slack_is_normalized, const char *fname);
+void print_slack(float ** slack, boolean slack_is_normalized, const char *fname);
 
-void print_net_slack_ratio(float ** net_slack_ratio, boolean slack_ratio_is_normalized, const char *fname);
+void print_criticality(float ** criticality, boolean criticality_is_normalized, const char *fname);
 
 void print_net_delay(float **net_delay, const char *fname);
-
-void print_timing_place_crit(float ** timing_place_crit, const char *fname);
 #ifndef NET_WEIGHTING
 void print_clustering_timing_info(const char *fname);
 #endif
@@ -68,7 +66,7 @@ extern t_io * constrained_inputs; /* [0..num_constrained_inputs - 1] array of in
 extern int num_constrained_outputs; /* number of outputs with timing constraints */
 extern t_io * constrained_outputs; /* [0..num_constrained_outputs - 1] array of outputs with timing constraints */
 
-extern float ** timing_constraint; /* [0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (destination)] */
+extern float ** timing_constraint; /* [0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (sink)] */
 
 extern int num_cc_constraints; /* number of special-case clock-to-clock constraints overriding default, calculated, timing constraints */
 extern t_override_constraint * cc_constraints; /*  [0..num_cc_constraints - 1] array of such constraints */

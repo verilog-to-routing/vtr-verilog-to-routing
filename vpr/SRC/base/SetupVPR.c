@@ -588,17 +588,17 @@ static void SetupPlacerOpts(INP t_options Options, INP boolean TimingEnabled,
 				Options.inner_loop_recompute_divider;
 	}
 
-	PlacerOpts->place_cost_exp = 1.0; /* DEFAULT */
+	PlacerOpts->place_cost_exp = 1.; /* DEFAULT */
 	if (Options.Count[OT_PLACE_COST_EXP]) {
 		PlacerOpts->place_cost_exp = Options.place_cost_exp;
 	}
 
-	PlacerOpts->td_place_exp_first = 1; /* DEFAULT */
+	PlacerOpts->td_place_exp_first = 1.; /* DEFAULT */
 	if (Options.Count[OT_TD_PLACE_EXP_FIRST]) {
 		PlacerOpts->td_place_exp_first = Options.place_exp_first;
 	}
 
-	PlacerOpts->td_place_exp_last = 8; /* DEFAULT */
+	PlacerOpts->td_place_exp_last = PLACER_FINAL_EXPONENT; /* DEFAULT */
 	if (Options.Count[OT_TD_PLACE_EXP_LAST]) {
 		PlacerOpts->td_place_exp_last = Options.place_exp_last;
 	}

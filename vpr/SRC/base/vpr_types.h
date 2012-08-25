@@ -40,6 +40,10 @@
  ******************************************************************************/
 
 // #define NET_WEIGHTING
+#define DISCOUNT_FUNCTION_BASE 2
+#define PLACER_FINAL_EXPONENT 8.
+#define PATH_WEIGHT 1.
+#define SLACK_SCALING_FACTOR 1.
 
 #ifndef SPEC
 #define DEBUG 1			/* Echoes input & checks error conditions */
@@ -288,7 +292,7 @@ typedef enum {
 	CB_IPIN, /* input pin to complex block */
 	CB_OPIN, /* output pin from complex block */
 	INTERMEDIATE_NODE, /* used in post-packed timing graph only, 
-					   represents junction between two wire segments */
+						represents junction between two wire segments */
 	PRIMITIVE_IPIN, /* input pin to a primitive (e.g. a LUT) */
 	PRIMITIVE_OPIN, /* output pin from a primitive (e.g. a LUT) */
 	FF_IPIN, /* input pin to a flip-flop - goes to FF_SINK */
@@ -310,14 +314,14 @@ typedef struct s_tnode { /* node in the timing graph */
 	boolean used_on_this_traversal; /* Has this tnode been touched on this timing graph traversal? */
 	boolean has_valid_slack; /* Has this tnode been touched on the most recent call of do_timing_analysis? */
 	
-	/* For FF_SINK, FF_SOURCE, FF_CLOCK, and/or I/Os only. */ 
-	int clock_domain; /* index of the clock in constrained_clocks array */
-	float clock_skew; /* the time taken for a clock signal to get to the flip-flop or I/O (0 for I/Os). */
+	/* Used for FF_SINK, FF_SOURCE, FF_CLOCK, INPAD_SOURCE, and OUTPAD_SINK only: */
+	int clock_domain; /* Index of the clock in constrained_clocks which this flip-flop or I/O is constrained on. */
+	float clock_skew; /* The time taken for a clock signal to get to the flip-flop or I/O (assumed 0 for I/Os). */
 
-	/* post-packing timing graph */
+	/* Used in post-packing timing graph only: */
 	t_pb_graph_pin *pb_graph_pin; /* pb_graph_pin that this block is connected to */
 
-	/* pre-packing timing graph */
+	/* Used in pre-packing timing graph only: */
 	int model_port, model_pin; /* technology mapped model port/pin */
 #ifdef NET_WEIGHTING
 	float forward_weight, backward_weight;
@@ -332,7 +336,7 @@ typedef struct s_tnode { /* node in the timing graph */
 
 typedef struct s_clock {
 	char * name;
-	boolean is_netlist_clock; /* currently used only in timing stats */
+	boolean is_netlist_clock; /* currently used only in timing stats calculation */
 	int fanout;
 } t_clock;
 /* Stores the name and fanout (number of flip-flops in clock domain) of each clock,
@@ -348,16 +352,20 @@ typedef struct s_io {
 	 and the delay through the I/O. Used extensively in SDC parsing and timing analysis. */
 
 typedef struct s_timing_stats {
-	float ** critical_path_delay; /* [0..num_netlist_clocks - 1 (source)][0..num_netlist_clocks - 1 (destination)] */
-	float ** least_slack_per_constraint; /* As above */
+	float ** critical_path_delay; 
+	float ** least_slack_per_constraint; 
 } t_timing_stats;
-/* Timing statistics for final reporting. */
+/* Timing statistics for final reporting. 
+[0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (sink)] */
 
 typedef struct s_slack {
-	float ** net_slack;
-	float ** net_slack_ratio;
+	float ** slack;
+	float ** criticality;
+#ifdef NET_WEIGHTING
+	float ** path_weight;
+#endif
 } t_slack;
-/* Matrices storing slacks and slack ratios of each sink pin on each net 
+/* Matrices storing slacks and criticalities of each sink pin on each net 
 [0..num_nets-1][1..num_pins-1] */
 
 typedef struct s_override_constraint {

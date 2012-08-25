@@ -75,7 +75,7 @@ float **delta_io_to_io;
 /* be a big problem */
 
 static float **net_delay;
-static float **net_slack_ratio;
+static float **net_criticality;
 static float *pin_criticality;
 static int *sink_order;
 static t_rt_node **rt_node_of_sink;
@@ -360,7 +360,7 @@ static void alloc_and_assign_internal_structures(struct s_net **original_net,
 	/* [0..num_nets-1][1..num_pins-1] */
 	net_delay = (float **) alloc_matrix(0, NET_COUNT - 1, 1, BLOCK_COUNT - 1,
 			sizeof(float));
-	net_slack_ratio = (float **) alloc_matrix(0, NET_COUNT - 1, 1, BLOCK_COUNT - 1,
+	net_criticality = (float **) alloc_matrix(0, NET_COUNT - 1, 1, BLOCK_COUNT - 1,
 			sizeof(float));
 
 	reset_placement();
@@ -395,7 +395,7 @@ static void free_and_reset_internal_structures(struct s_net *original_net,
 	num_blocks = original_num_blocks;
 
 	free_matrix(net_delay, 0, NET_COUNT - 1, 1, sizeof(float));
-	free_matrix(net_slack_ratio, 0, NET_COUNT - 1, 1, sizeof(float));
+	free_matrix(net_criticality, 0, NET_COUNT - 1, 1, sizeof(float));
 
 }
 
@@ -537,13 +537,13 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 	pres_fac = 0; /* ignore congestion */
 
 	for (ipin = 1; ipin <= clb_net[NET_USED].num_sinks; ipin++)
-		net_slack_ratio[NET_USED][ipin] = 0;
+		net_criticality[NET_USED][ipin] = 1.;
 
 	is_routeable = timing_driven_route_net(NET_USED, pres_fac,
 			router_opts.max_criticality, router_opts.criticality_exp,
 			router_opts.astar_fac, router_opts.bend_cost, 
 			pin_criticality, sink_order, rt_node_of_sink, 
-			net_delay[NET_USED], net_slack_ratio[NET_USED]);
+			net_delay[NET_USED], net_criticality[NET_USED]);
 
 	if (is_routeable) {
 		/*here so that the variable unused warning will not flag 'is_routeable' */

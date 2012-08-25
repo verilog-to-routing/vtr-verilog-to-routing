@@ -196,7 +196,7 @@ void place_and_route(enum e_operation operation,
 		update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled);
 
 		if (timing_inf.timing_analysis_enabled) {
-			assert(slacks->net_slack);
+			assert(slacks->slack);
 
 			if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_FLOW_TIMING_GRAPH)) {
 				print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH),

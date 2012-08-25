@@ -78,10 +78,10 @@ void print_sink_delays(const char *fname) {
 }
 
 /**************************************/
-void load_criticalities(float ** net_slack_ratio, float crit_exponent) {
-	/* Performs a 1-to-1 mapping from net_slack_ratio to timing_place_crit.  
+void load_criticalities(float ** criticality, float crit_exponent) {
+	/* Performs a 1-to-1 mapping from criticality to timing_place_crit.  
 	  For every pin on every net (or, equivalently, for every tedge ending 
-	  in that pin), criticality = (1-slack ratio)^(criticality exponent) */
+	  in that pin), timing_place_crit = criticality^(criticality exponent) */
 
 	int inet, ipin;
 
@@ -91,11 +91,11 @@ void load_criticalities(float ** net_slack_ratio, float crit_exponent) {
 		if (clb_net[inet].is_global)
 			continue;
         for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
-			if (net_slack_ratio[inet][ipin] > HUGE_POSITIVE_FLOAT - 1) {
-				/* We didn't analyze this connection, so give it a dummy, very negative criticality. */
-				timing_place_crit[inet][ipin] = HUGE_NEGATIVE_FLOAT;
+			if (criticality[inet][ipin] > HUGE_POSITIVE_FLOAT - 1) {
+				/* We didn't analyze this connection, so give it a timing_place_crit of 0. */
+				timing_place_crit[inet][ipin] = 0.;
 			} else {
-				timing_place_crit[inet][ipin] = pow(1 - net_slack_ratio[inet][ipin], crit_exponent);
+				timing_place_crit[inet][ipin] = pow(criticality[inet][ipin], crit_exponent);
 			}
 		}
 	}

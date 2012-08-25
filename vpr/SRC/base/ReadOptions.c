@@ -112,13 +112,13 @@ void alloc_and_load_echo_file_info() {
 
 	setEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT, "initial_clb_placement.echo");
 	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH, "initial_placement_timing_graph.echo");
-	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_NET_SLACK, "initial_placement_net_slack.echo");
-	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_NET_SLACK_RATIO, "initial_placement_net_slack_ratio.echo");
+	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_NET_SLACK, "initial_placement_slack.echo");
+	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY, "initial_placement_criticality.echo");
 	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY, "initial_placement_criticality.echo");
 	setEchoFileName(E_ECHO_END_CLB_PLACEMENT, "end_clb_placement.echo");
 	setEchoFileName(E_ECHO_PLACEMENT_SINK_DELAYS, "placement_sink_delays.echo");
-	setEchoFileName(E_ECHO_FINAL_PLACEMENT_NET_SLACK, "final_placement_net_slack.echo");
-	setEchoFileName(E_ECHO_FINAL_PLACEMENT_NET_SLACK_RATIO, "final_placement_net_slack_ratio.echo");
+	setEchoFileName(E_ECHO_FINAL_PLACEMENT_NET_SLACK, "final_placement_slack.echo");
+	setEchoFileName(E_ECHO_FINAL_PLACEMENT_CRITICALITY, "final_placement_criticality.echo");
 	setEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH, "final_placement_timing_graph.echo");
 	setEchoFileName(E_ECHO_PLACEMENT_CRIT_PATH, "placement_crit_path.echo");
 	setEchoFileName(E_ECHO_PB_GRAPH, "pb_graph.echo");
@@ -134,16 +134,16 @@ void alloc_and_load_echo_file_info() {
 	setEchoFileName(E_ECHO_LUT_REMAPPING, "lut_remapping.echo");
 	setEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH, "pre_packing_timing_graph.echo");
 	setEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO, "clustering_timing_info.echo");
-	setEchoFileName(E_ECHO_PRE_PACKING_NET_SLACK, "pre_packing_net_slack.echo");
-	setEchoFileName(E_ECHO_PRE_PACKING_NET_SLACK_RATIO, "pre_packing_net_slack_ratio.echo");
+	setEchoFileName(E_ECHO_PRE_PACKING_NET_SLACK, "pre_packing_slack.echo");
+	setEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY, "pre_packing_criticality.echo");
 	setEchoFileName(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES, "clustering_block_criticalities.echo");
 	setEchoFileName(E_ECHO_PRE_PACKING_MOLECULES_AND_PATTERNS, "pre_packing_molecules_and_patterns.echo");
 	setEchoFileName(E_ECHO_MEM, "mem.echo");
 	setEchoFileName(E_ECHO_RR_GRAPH, "rr_graph.echo");
 	setEchoFileName(E_ECHO_TIMING_CONSTRAINTS, "timing_constraints.echo");	
 	setEchoFileName(E_ECHO_CRITICAL_PATH, "critical_path.echo");	
-	setEchoFileName(E_ECHO_NET_SLACK, "net_slack.echo");	
-	setEchoFileName(E_ECHO_NET_SLACK_RATIO, "net_slack_ratio.echo");
+	setEchoFileName(E_ECHO_NET_SLACK, "slack.echo");	
+	setEchoFileName(E_ECHO_CRITICALITY, "criticality.echo");
 }
 
 void free_echo_file_info() {
@@ -184,11 +184,11 @@ void alloc_and_load_output_file_names() {
 	sprintf(name, "%s.critical_path.out", default_output_name);
 	setOutputFileName(E_CRIT_PATH_FILE, name);
 	
-	sprintf(name, "%s.net_slack.out", default_output_name);
+	sprintf(name, "%s.slack.out", default_output_name);
 	setOutputFileName(E_NET_SLACK_FILE, name);
 	
-	sprintf(name, "%s.net_slack_ratio.out", default_output_name);
-	setOutputFileName(E_NET_SLACK_RATIO_FILE, name);
+	sprintf(name, "%s.criticality.out", default_output_name);
+	setOutputFileName(E_CRITICALITY_FILE, name);
 
 	free(name);
 }

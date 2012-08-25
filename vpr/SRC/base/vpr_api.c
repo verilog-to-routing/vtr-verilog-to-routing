@@ -80,7 +80,7 @@ void vpr_print_usage(void) {
 			"\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, 
 			"\t[--blif_file <string>][--net_file <string>][--place_file <string>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--route_file <string>][--echo_file on | off]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--route_file <string>][--sdc_file <string>][--echo_file on | off]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Packer Options:\n");
 	/*    vpr_printf(TIO_MESSAGE_INFO, "\t[-global_clocks on|off]\n");

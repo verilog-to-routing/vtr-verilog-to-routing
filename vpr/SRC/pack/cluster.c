@@ -99,7 +99,7 @@ static int *net_output_feeds_driving_block_input;
 
 /* Timing information for blocks */
 
-static float *criticality = NULL;
+static float *block_criticality = NULL;
 static int *critindexarray = NULL;
 
 /*****************************************/
@@ -359,12 +359,12 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				print_clustering_timing_info(getEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO));
 #endif
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_NET_SLACK))
-				print_net_slack(slacks->net_slack, FALSE, getEchoFileName(E_ECHO_PRE_PACKING_NET_SLACK));
-			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_NET_SLACK_RATIO))
-				print_net_slack_ratio(slacks->net_slack_ratio, FALSE, getEchoFileName(E_ECHO_PRE_PACKING_NET_SLACK_RATIO));
+				print_slack(slacks->slack, FALSE, getEchoFileName(E_ECHO_PRE_PACKING_NET_SLACK));
+			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_CRITICALITY))
+				print_criticality(slacks->criticality, FALSE, getEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY));
 		}
 
-		criticality = (float*) my_calloc(num_logical_blocks, sizeof(float));
+		block_criticality = (float*) my_calloc(num_logical_blocks, sizeof(float));
 
 		critindexarray = (int*) my_malloc(num_logical_blocks * sizeof(int));
 
@@ -373,16 +373,16 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			critindexarray[i] = i;
 		}
 #ifdef NET_WEIGHTING
-		/* Calculate criticality directly from net_slack_ratio (which includes net weighting). */
+		/* Calculate criticality directly from criticality (which includes net weighting). */
 		for (i = 0; i < num_logical_nets; i++) { 
 			for (j = 1; j <= vpack_net[i].num_sinks; j++) { 
 				/* For each pin on each net, find the logical block iblk which it sinks on. */
 				iblk = vpack_net[i].node_block[j];
 				/* The criticality of each block is the maximum of the criticalities of all its pins.
-				(If the slack ratio for a pin is HUGE_POSITIVE_FLOAT, criticality for that pin will 
+				(If the criticality for a pin is HUGE_POSITIVE_FLOAT, criticality for that pin will 
 				be very negative and will not affect the maximum value). */
-				if (criticality[iblk] < 1 - slacks->net_slack_ratio[i][j]) {
-					criticality[iblk] = 1 - slacks->net_slack_ratio[i][j];
+				if (block_criticality[iblk] < slacks->criticality[i][j]) {
+					block_criticality[iblk] = slacks->criticality[i][j];
 				}
 			}
 		}
@@ -401,13 +401,13 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						* (float) tnode[i].normalized_T_arr;
 				crit = (1 - tnode[i].normalized_slack) + num_paths_scaling
 						+ distance_scaling;
-				if (criticality[iblk] < crit) {
-					criticality[iblk] = crit;
+				if (block_criticality[iblk] < crit) {
+					block_criticality[iblk] = crit;
 				}
 			}
 		}
 #endif
-		heapsort(critindexarray, criticality, num_logical_blocks, 1);
+		heapsort(critindexarray, block_criticality, num_logical_blocks, 1);
 		
 		if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES)) {
 			print_block_criticalities(getEchoFileName(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES));
@@ -585,10 +585,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	free(net_output_feeds_driving_block_input);
 
 	if (timing_driven) {
-		free(criticality);
+		free(block_criticality);
 		free(critindexarray);
 
-		criticality = NULL;
+		block_criticality = NULL;
 		critindexarray = NULL;
 	}
 
@@ -1607,7 +1607,7 @@ static void update_timing_gain_values(int inet, int clustered_block,
 		for (ipin = ifirst; ipin <= vpack_net[inet].num_sinks; ipin++) {
 			iblk = vpack_net[inet].node_block[ipin];
 			if (logical_block[iblk].clb_index == NO_CLUSTER) {
-				timinggain = 1 - slacks->net_slack_ratio[inet][ipin];
+				timinggain = slacks->criticality[inet][ipin];
 				if (timinggain > cur_pb->pb_stats.timinggain[iblk])
 					cur_pb->pb_stats.timinggain[iblk] = timinggain;
 			}
@@ -1621,7 +1621,7 @@ static void update_timing_gain_values(int inet, int clustered_block,
 		newblk = vpack_net[inet].node_block[0];
 		if (logical_block[newblk].clb_index == NO_CLUSTER) {
 			for (ipin = 1; ipin <= vpack_net[inet].num_sinks; ipin++) {
-				timinggain = 1 - slacks->net_slack_ratio[inet][ipin];
+				timinggain = slacks->criticality[inet][ipin];
 				if (timinggain > cur_pb->pb_stats.timinggain[newblk])
 					cur_pb->pb_stats.timinggain[newblk] = timinggain;
 
@@ -2978,7 +2978,7 @@ static void print_block_criticalities(const char * fname) {
 		} else if (len < 16) {
 			fprintf(fp, "\t");
 		}
-		fprintf(fp, "%f\t%d\n", criticality[iblock], critindexarray[iblock]);
+		fprintf(fp, "%f\t%d\n", block_criticality[iblock], critindexarray[iblock]);
 	}
 	fclose(fp);
 }

@@ -10,7 +10,7 @@ void free_lookups_and_criticalities(float ***net_delay, t_slack * slacks);
 
 void print_sink_delays(const char *fname);
 
-void load_criticalities(float ** net_slack_ratio, float crit_exponent);
+void load_criticalities(float ** criticality, float crit_exponent);
 
 extern float **timing_place_crit;
 

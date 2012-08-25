@@ -94,8 +94,8 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 					print_lut_remapping(getEchoFileName(E_ECHO_LUT_REMAPPING));
 			}
 
-			print_net_slack(slacks->net_slack, TRUE, getOutputFileName(E_NET_SLACK_FILE));
-			print_net_slack_ratio(slacks->net_slack_ratio, TRUE, getOutputFileName(E_NET_SLACK_RATIO_FILE));
+			print_slack(slacks->slack, TRUE, getOutputFileName(E_NET_SLACK_FILE));
+			print_criticality(slacks->criticality, TRUE, getOutputFileName(E_CRITICALITY_FILE));
 			print_critical_path(getOutputFileName(E_CRIT_PATH_FILE));
 
 			print_timing_stats();
