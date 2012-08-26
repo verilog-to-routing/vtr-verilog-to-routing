@@ -91,7 +91,7 @@ void load_criticalities(float ** criticality, float crit_exponent) {
 		if (clb_net[inet].is_global)
 			continue;
         for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
-			if (criticality[inet][ipin] > HUGE_POSITIVE_FLOAT - 1) {
+			if (criticality[inet][ipin] < HUGE_NEGATIVE_FLOAT + 1) {
 				/* We didn't analyze this connection, so give it a timing_place_crit of 0. */
 				timing_place_crit[inet][ipin] = 0.;
 			} else {

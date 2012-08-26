@@ -625,7 +625,7 @@ void try_place(struct s_placer_opts placer_opts,
 		vpr_printf(TIO_MESSAGE_INFO, 
 				"%11.5g  %10.6g %11.6g  %11.6g  %11.6g %11.6g %11.4g %9.4g %8.3g  %7.4g  %7.4g  %10d  ",
 				t, av_cost, av_bb_cost, av_timing_cost, av_delay_cost,
-				place_delay_value, critical_path_delay * 1e9, success_rat, std_dev, rlim,
+				place_delay_value, critical_path_delay, success_rat, std_dev, rlim,
 				crit_exponent, tot_iter);
 #endif
 
@@ -807,7 +807,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 		/* Print critical path delay */
 		critical_path_delay = get_critical_path_delay();
-		vpr_printf(TIO_MESSAGE_INFO, "\nPlacement estimated critical path delay: %g ns\n", critical_path_delay * 1e9);
+		vpr_printf(TIO_MESSAGE_INFO, "\nPlacement estimated critical path delay: %g ns\n", critical_path_delay);
 	}
 
 	sprintf(msg,

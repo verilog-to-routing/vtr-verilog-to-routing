@@ -200,7 +200,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 
 		/* Print critical path delay */
 		critical_path_delay = get_critical_path_delay();
-		vpr_printf(TIO_MESSAGE_INFO, "\nCrit. path: %g ns\n", critical_path_delay * 1e9);
+		vpr_printf(TIO_MESSAGE_INFO, "\nCrit. path: %g ns\n", critical_path_delay);
 		/* Deliberately abbreviated so parsing for "Critical path" will not pick this up. */
 
 		fflush(stdout);

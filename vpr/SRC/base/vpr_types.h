@@ -40,10 +40,9 @@
  ******************************************************************************/
 
 // #define NET_WEIGHTING
-#define DISCOUNT_FUNCTION_BASE 2
+#define DISCOUNT_FUNCTION_BASE 3
 #define PLACER_FINAL_EXPONENT 8.
-#define PATH_WEIGHT 1.
-#define SLACK_SCALING_FACTOR 1.
+#define PATH_WEIGHT 0.5
 
 #ifndef SPEC
 #define DEBUG 1			/* Echoes input & checks error conditions */
@@ -340,20 +339,20 @@ typedef struct s_clock {
 	int fanout;
 } t_clock;
 /* Stores the name and fanout (number of flip-flops in clock domain) of each clock,
-	and whether it is a netlist or virtual clock.
-	Used extensively in SDC parsing and timing analysis. */
+	and whether it is a netlist or virtual clock. Used extensively in SDC parsing and timing analysis. */
 
 typedef struct s_io {
-	char * name;
-	char * virtual_clock_name;
-	float delay;
+	char * name; /* I/O port name with an SDC constraint */
+	char * clock_name; /* Clock it was constrained on */
+	float delay; /* Delay through the I/O in this constraint */
+	int file_line_number; /* line in the SDC file I/O was constrained on - used for error reporting */
 } t_io;
-/* Associates each I/O port name with its corresponding virtual (external) clock, 
-	 and the delay through the I/O. Used extensively in SDC parsing and timing analysis. */
+/* Stores information on I/Os given timing constraints.
+Used extensively in SDC parsing and timing analysis. */
 
 typedef struct s_timing_stats {
-	float ** critical_path_delay; 
-	float ** least_slack_per_constraint; 
+	float ** cpd; 
+	float ** least_slack; 
 } t_timing_stats;
 /* Timing statistics for final reporting. 
 [0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (sink)] */
@@ -375,6 +374,7 @@ typedef struct s_override_constraint {
 	int num_sink;
 	float constraint;
 	int num_multicycles;
+	int file_line_number; /* line in the SDC file clock was constrained on - used for error reporting */
 } t_override_constraint;
 /* A special-case constraint to override the default, calculated, timing constraint.  Holds data from 
 set_clock_groups, set_false_path, set_max_delay, and set_multicycle_path commands. Can hold data for 

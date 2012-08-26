@@ -38,6 +38,7 @@ June 21, 2012
 #include "route_common.h"
 #include "timing_place_lookup.h"
 #include "vpr_api.h"
+#include "read_sdc.h"
 
 /* Local subroutines */
 static void free_pb_type(t_pb_type *pb_type);
@@ -692,6 +693,7 @@ void vpr_free_vpr_data_structures(INOUTP t_arch Arch, INOUTP t_options options, 
 	free_echo_file_info();
 	free_output_file_names();
 	free_timing_stats();
+	free_sdc_related_structs();
 }
 
 

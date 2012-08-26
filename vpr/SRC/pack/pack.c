@@ -153,8 +153,8 @@ boolean *alloc_and_load_is_clock(boolean global_clocks) {
 	 * locally generated clocks.                                             */
 
 	if (num_clocks > 1 && global_clocks) {
-		vpr_printf(TIO_MESSAGE_WARNING, "Warning:  circuit contains %d clocks.\n", num_clocks);
-		vpr_printf(TIO_MESSAGE_INFO, "          All clocks will be marked global.\n");
+		vpr_printf(TIO_MESSAGE_WARNING, "Warning:  circuit contains %d clocks."  
+										"All clocks will be marked global.\n", num_clocks);
 	}
 
 	return (is_clock);
