@@ -382,10 +382,14 @@ void try_place(struct s_placer_opts placer_opts,
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH))
 				print_timing_graph(getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH));
-			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_NET_SLACK))
-				print_slack(slacks->slack, FALSE, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_NET_SLACK));
+			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_SLACK))
+				print_slack(slacks->slack, FALSE, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_SLACK));
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_CRITICALITY))
 				print_criticality(slacks->criticality, FALSE, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY));
+#ifdef NET_WEIGHTING
+			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_PATH_WEIGHT))
+				print_path_weight(slacks->path_weight, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_PATH_WEIGHT));
+#endif	
 		}
 		outer_crit_iter_count = 1;
 
@@ -795,10 +799,14 @@ void try_place(struct s_placer_opts placer_opts,
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PLACEMENT_SINK_DELAYS))
 				print_sink_delays(getEchoFileName(E_ECHO_PLACEMENT_SINK_DELAYS));
-			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_NET_SLACK))
-				print_slack(slacks->slack, FALSE, getEchoFileName(E_ECHO_FINAL_PLACEMENT_NET_SLACK));
+			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_SLACK))
+				print_slack(slacks->slack, FALSE, getEchoFileName(E_ECHO_FINAL_PLACEMENT_SLACK));
 			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_CRITICALITY))
 				print_criticality(slacks->criticality, FALSE, getEchoFileName(E_ECHO_FINAL_PLACEMENT_CRITICALITY));
+#ifdef NET_WEIGHTING
+			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_PATH_WEIGHT))
+				print_path_weight(slacks->path_weight, getEchoFileName(E_ECHO_FINAL_PLACEMENT_PATH_WEIGHT));
+#endif	
 			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH))
 				print_timing_graph(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH));
 			if(isEchoFileEnabled(E_ECHO_PLACEMENT_CRIT_PATH))

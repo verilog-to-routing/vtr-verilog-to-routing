@@ -39,7 +39,9 @@ void print_slack(float ** slack, boolean slack_is_normalized, const char *fname)
 void print_criticality(float ** criticality, boolean criticality_is_normalized, const char *fname);
 
 void print_net_delay(float **net_delay, const char *fname);
-#ifndef NET_WEIGHTING
+#ifdef NET_WEIGHTING
+void print_path_weight(float ** path_weight, const char *fname);
+#else
 void print_clustering_timing_info(const char *fname);
 #endif
 void print_timing_stats(void);

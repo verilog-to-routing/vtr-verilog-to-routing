@@ -39,7 +39,7 @@
  * Global data types and constants
  ******************************************************************************/
 
-// #define NET_WEIGHTING
+#define NET_WEIGHTING
 #define DISCOUNT_FUNCTION_BASE 3
 #define PLACER_FINAL_EXPONENT 8.
 #define PATH_WEIGHT 0.5
@@ -52,7 +52,7 @@
 /*#define CREATE_ECHO_FILES*//* prints echo files */
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*//*Displays candidates during packing that failed */
 /*#define PRINT_SINK_DELAYS*//*prints the sink delays to files */
-/*#define PRINT_NET_SLACKS*//*prints out all slacks in the circuit */
+/*#define PRINT_SLACKS*//*prints out all slacks in the circuit */
 /*#define PRINT_PLACE_CRIT_PATH*//*prints out placement estimated critical path */
 /*#define PRINT_NET_DELAYS*//*prints out delays for all connections */
 /*#define PRINT_TIMING_GRAPH*//*prints out the timing graph */
