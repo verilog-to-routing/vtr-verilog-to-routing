@@ -185,14 +185,14 @@ my_chunk_malloc(size_t size, t_chunk *chunk_info) {
 	 * structures where memory-efficiency is crucial.  This routine allocates   *
 	 * large "chunks" of data, and parcels them out as requested.  Whenever     *
 	 * it mallocs a new chunk it adds it to the linked list pointed to by       *
-	 * chunk_info->chunk_ptr_head.  This list can be used to free the		*
-	 * chunked memory.															*
+	 * chunk_info->chunk_ptr_head.  This list can be used to free the	    *
+	 * chunked memory.							    *
 	 * Information about the currently open "chunk" must be stored by the       *
-	 * user program.  chunk_info->mem_avail_ptr points to an int storing	*
-	 * how many bytes are left in the current chunk, while						*
-	 * chunk_info->next_mem_loc_ptr is the address of a pointer to the	*
-	 * next free bytes in the chunk.  To start a new chunk, simply set			*
-	 * chunk_info->mem_avail_ptr = 0.  Each independent set of data		*
+	 * user program.  chunk_info->mem_avail_ptr points to an int storing	    *
+	 * how many bytes are left in the current chunk, while			    *
+	 * chunk_info->next_mem_loc_ptr is the address of a pointer to the	    *
+	 * next free bytes in the chunk.  To start a new chunk, simply set	    *
+	 * chunk_info->mem_avail_ptr = 0.  Each independent set of data		    *
 	 * structures should use a new chunk.                                       */
 
 	/* To make sure the memory passed back is properly aligned, I must *
