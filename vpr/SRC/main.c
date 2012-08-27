@@ -49,6 +49,11 @@ int main(int argc, char **argv) {
 	if (vpr_setup.PlacerOpts.doPlacement || vpr_setup.RouterOpts.doRouting) {
 		vpr_init_pre_place_and_route(vpr_setup, Arch);
 		vpr_place_and_route(vpr_setup, Arch);
+#if 0
+		if(vpr_setup.RouterOpts.doRouting) {
+			vpr_resync_post_route_netlist(&Arch);
+		}
+#endif
 	}
 	
 	entire_flow_end = clock();

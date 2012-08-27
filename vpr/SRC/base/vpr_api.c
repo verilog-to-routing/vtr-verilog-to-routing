@@ -37,6 +37,9 @@ June 21, 2012
 #include "ReadOptions.h"
 #include "route_common.h"
 #include "timing_place_lookup.h"
+#include "cluster_legality.h"
+#include "mst.h"
+#include "route_export.h"
 #include "vpr_api.h"
 #include "read_sdc.h"
 
@@ -49,6 +52,12 @@ static void free_options(t_options *options);
 static void free_circuit(void);
 	
 static boolean has_printhandler_pre_vpr = FALSE;
+
+/* For resync of clustered netlist to the post-route solution.  This function adds local nets to cluster */
+static void reload_intra_cluster_nets(t_pb *pb);
+static t_trace *alloc_and_load_final_routing_trace();
+static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net);
+static void print_complete_net_trace(t_trace* trace, const char *file_name);
 
 /* Local subroutines end */
 
@@ -698,7 +707,9 @@ void vpr_free_vpr_data_structures(INOUTP t_arch Arch, INOUTP t_options options, 
 
 
 void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options, INOUTP t_vpr_setup vpr_setup) {
-	
+	free_rr_graph();
+	free_route_structs();
+	free_trace_structs();	
 	vpr_free_vpr_data_structures(Arch, options, vpr_setup);
 	if(has_printhandler_pre_vpr == FALSE) {
 		PrintHandlerDelete( );
@@ -711,69 +722,313 @@ void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options, INOUTP t_vpr_set
  * Advanced functions
  *  Used when you need fine-grained control over VPR that the main VPR operations do not enable
  ****************************************************************************************************/
-	/* Read in user options */
-	void vpr_read_options(INP int argc,	INP char **argv, OUTP t_options * options) {
-		ReadOptions(argc, argv, options);
+/* Read in user options */
+void vpr_read_options(INP int argc,	INP char **argv, OUTP t_options * options) {
+	ReadOptions(argc, argv, options);
+}
+
+/* Read in arch and circuit */
+void vpr_setup_vpr(INP t_options *Options,
+	INP boolean TimingEnabled,
+	INP boolean readArchFile,
+	OUTP struct s_file_name_opts *FileNameOpts,
+	INOUTP t_arch * Arch,
+	OUTP enum e_operation *Operation,
+	OUTP t_model ** user_models,
+	OUTP t_model ** library_models,
+	OUTP struct s_packer_opts *PackerOpts,
+	OUTP struct s_placer_opts *PlacerOpts,
+	OUTP struct s_annealing_sched *AnnealSched,
+	OUTP struct s_router_opts *RouterOpts,
+	OUTP struct s_det_routing_arch *RoutingArch,
+	OUTP t_segment_inf ** Segments,
+	OUTP t_timing_inf * Timing,
+	OUTP boolean * ShowGraphics,
+	OUTP int *GraphPause) {
+	SetupVPR(Options, TimingEnabled, readArchFile, FileNameOpts, Arch, Operation, user_models, library_models, PackerOpts, PlacerOpts, AnnealSched, RouterOpts,
+			RoutingArch, Segments, Timing, ShowGraphics, GraphPause);
+}
+/* Check inputs are reasonable */
+void vpr_check_options(INP t_options Options, INP boolean TimingEnabled) {
+	CheckOptions(Options, TimingEnabled);
+}
+void vpr_check_arch(INP t_arch Arch, INP boolean TimingEnabled) {
+	CheckArch(Arch, TimingEnabled);
+}
+/* Verify settings don't conflict or otherwise not make sense */
+void vpr_check_setup(INP enum e_operation Operation,
+	INP struct s_placer_opts PlacerOpts,
+	INP struct s_annealing_sched AnnealSched,
+	INP struct s_router_opts RouterOpts,
+	INP struct s_det_routing_arch RoutingArch, INP t_segment_inf * Segments,
+	INP t_timing_inf Timing, INP t_chan_width_dist Chans) {
+	CheckSetup(Operation, PlacerOpts, AnnealSched, RouterOpts, RoutingArch, Segments, Timing,  Chans);
+}
+/* Read blif file and sweep unused components */
+void vpr_read_and_process_blif(INP char *blif_file, INP boolean sweep_hanging_nets_and_inputs,
+	INP t_model *user_models, INP t_model *library_models) {
+	read_and_process_blif(blif_file, sweep_hanging_nets_and_inputs, user_models, library_models);
+}
+/* Show current setup */
+void vpr_show_setup(INP t_options options, INP t_vpr_setup vpr_setup) {
+	ShowSetup(options, vpr_setup);
+}
+
+/* Output file names management */
+void vpr_alloc_and_load_output_file_names() {
+	alloc_and_load_output_file_names();
+}
+void vpr_set_output_file_name(enum e_output_files ename, const char *name) {
+	setOutputFileName(ename, name);
+}
+char *vpr_get_output_file_name(enum e_output_files ename) {
+	return getOutputFileName(ename);
+}
+
+/* logical equivalence scrambles the packed netlist indices with the actual indices, need to resync then re-output clustered netlist */
+/* Returns a trace array [0..num_logical_nets-1] with the final routing of the circuit from the logical_block netlist, index of the trace array corresponds to the index of a vpack_net */
+t_trace* vpr_resync_post_route_netlist(INP const t_arch *arch) {
+	t_trace *trace;
+#if 0
+	int i;
+
+	alloc_and_load_cluster_legality_checker();
+	
+	for(i = 0; i < num_blocks; i++) {
+		/* Regenerate rr_graph (note, can be more runtime efficient but this allows for more code reuse)
+		*/
+		free(block[i].pb->rr_graph);
+		block[i].pb->rr_graph = NULL;
+		alloc_and_load_legalizer_for_cluster(&block[i], i, arch);
+		reload_intra_cluster_nets(block[i].pb);
+		reload_ext_net_rr_terminal_cluster();
+		if(try_breadth_first_route_cluster() == FALSE) {
+			vpr_printf(TIO_MESSAGE_ERROR, "Failed to resync post routed solution with clustered netlist.\n");
+			vpr_printf(TIO_MESSAGE_ERROR, "Cannot recover from error.\n");
+			exit(1);
+		}
+		free_legalizer_for_cluster(&block[i]);
+	}
+	free_cluster_legality_checker();
+#endif
+	trace = alloc_and_load_final_routing_trace();
+	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_COMPLETE_NET_TRACE)) {
+		print_complete_net_trace(trace, getEchoFileName(E_ECHO_COMPLETE_NET_TRACE));
+	}
+	return trace;
+}
+
+/* reload intra cluster nets to complex block */
+static void reload_intra_cluster_nets(t_pb *pb) {
+	int i, j;
+	const t_pb_type* pb_type; 
+	pb_type = pb->pb_graph_node->pb_type;
+	if(pb_type->blif_model != NULL) {
+		setup_intracluster_routing_for_logical_block(pb->logical_block, pb->pb_graph_node);
+	} else if (pb->child_pbs != NULL) {
+		for(i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
+			for(j = 0; j < pb_type->modes[pb->mode].pb_type_children[j].num_pb; j++) {
+				if(pb->child_pbs[i] != NULL) {
+					if(pb->child_pbs[i][j].name != NULL) {
+						reload_intra_cluster_nets(&pb->child_pbs[i][j]);
+					}
+				}
+			}
+		}
+	}
+}
+
+/* Determine trace from logical_block output to logical_block inputs
+   Algorithm traverses intra-block routing, goes to inter-block routing, then returns to intra-block routing
+*/
+static t_trace *alloc_and_load_final_routing_trace() {
+	int i;
+	int iblock;
+	t_trace* final_routing_trace;
+	t_pb_graph_pin *pin;
+
+	final_routing_trace = (t_trace*)my_calloc(num_logical_nets, sizeof(t_trace));
+	for(i = 0; i < num_logical_nets; i++) {
+		pin = get_pb_graph_node_pin_from_vpack_net(i, 0);
+		iblock = clb_net[vpack_to_clb_net_mapping[i]].node_block[0];
+		final_routing_trace[i].iblock = iblock;
+		final_routing_trace[i].iswitch = OPEN;
+		final_routing_trace[i].index = pin->pin_count_in_cluster;
+		final_routing_trace[i].next = NULL;
+		expand_routing_trace(&final_routing_trace[i], i);
 	}
 
-	/* Read in arch and circuit */
-	void vpr_setup_vpr(INP t_options *Options,
-		INP boolean TimingEnabled,
-		INP boolean readArchFile,
-		OUTP struct s_file_name_opts *FileNameOpts,
-		INOUTP t_arch * Arch,
-		OUTP enum e_operation *Operation,
-		OUTP t_model ** user_models,
-		OUTP t_model ** library_models,
-		OUTP struct s_packer_opts *PackerOpts,
-		OUTP struct s_placer_opts *PlacerOpts,
-		OUTP struct s_annealing_sched *AnnealSched,
-		OUTP struct s_router_opts *RouterOpts,
-		OUTP struct s_det_routing_arch *RoutingArch,
-		OUTP t_segment_inf ** Segments,
-		OUTP t_timing_inf * Timing,
-		OUTP boolean * ShowGraphics,
-		OUTP int *GraphPause) {
-		SetupVPR(Options, TimingEnabled, readArchFile, FileNameOpts, Arch, Operation, user_models, library_models, PackerOpts, PlacerOpts, AnnealSched, RouterOpts,
-				RoutingArch, Segments, Timing, ShowGraphics, GraphPause);
-	}
-	/* Check inputs are reasonable */
-	void vpr_check_options(INP t_options Options, INP boolean TimingEnabled) {
-		CheckOptions(Options, TimingEnabled);
-	}
-	void vpr_check_arch(INP t_arch Arch, INP boolean TimingEnabled) {
-		CheckArch(Arch, TimingEnabled);
-	}
-	/* Verify settings don't conflict or otherwise not make sense */
-	void vpr_check_setup(INP enum e_operation Operation,
-		INP struct s_placer_opts PlacerOpts,
-		INP struct s_annealing_sched AnnealSched,
-		INP struct s_router_opts RouterOpts,
-		INP struct s_det_routing_arch RoutingArch, INP t_segment_inf * Segments,
-		INP t_timing_inf Timing, INP t_chan_width_dist Chans) {
-		CheckSetup(Operation, PlacerOpts, AnnealSched, RouterOpts, RoutingArch, Segments, Timing,  Chans);
-	}
-	/* Read blif file and sweep unused components */
-	void vpr_read_and_process_blif(INP char *blif_file, INP boolean sweep_hanging_nets_and_inputs,
-		INP t_model *user_models, INP t_model *library_models) {
-		read_and_process_blif(blif_file, sweep_hanging_nets_and_inputs, user_models, library_models);
-	}
-	/* Show current setup */
-	void vpr_show_setup(INP t_options options, INP t_vpr_setup vpr_setup) {
-		ShowSetup(options, vpr_setup);
-	}
+	return final_routing_trace;
+}
 
-	/* Output file names management */
-	void vpr_alloc_and_load_output_file_names() {
-		alloc_and_load_output_file_names();
+/* Given a routing trace, expand until full trace is complete 
+   returns pointer to last terminal trace
+*/
+static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
+	int i, iblock, inode;
+	int gridx, gridy;
+	t_trace *current, *new_trace, *inter_cb_trace;
+	t_rr_node *local_rr_graph;
+	boolean success;
+	
+	iblock = trace->iblock;
+	inode = trace->index;
+	local_rr_graph = block[iblock].pb->rr_graph;
+	current = trace;
+	
+	if(local_rr_graph[inode].pb_graph_pin->num_output_edges == 0) {
+		if(local_rr_graph[inode].pb_graph_pin->port->type == OUT_PORT) {
+			/* connection to outside cb */
+			inter_cb_trace = trace_head[vpack_to_clb_net_mapping[ivpack_net]];
+			inter_cb_trace = inter_cb_trace->next; /* skip source and go right to opin */
+			while(inter_cb_trace != NULL) {
+				/* continue traversing inter cb trace */
+				if(rr_node[inter_cb_trace->index].type != SINK) {
+					new_trace = (t_trace*)my_calloc(1, sizeof(t_trace));
+					new_trace->iblock = OPEN;
+					new_trace->index = inter_cb_trace->index;
+					new_trace->iswitch = inter_cb_trace->iswitch;
+					new_trace->next = NULL;
+					current->next = new_trace;
+					if(rr_node[inter_cb_trace->index].type == IPIN) {
+						current = current->next;
+						gridx = rr_node[new_trace->index].xlow;
+						gridy = rr_node[new_trace->index].ylow;
+						gridy = gridy - grid[gridx][gridy].offset;
+						new_trace = (t_trace*)my_calloc(1, sizeof(t_trace));
+						new_trace->iblock = grid[gridx][gridy].blocks[rr_node[inter_cb_trace->index].z];
+						new_trace->index = rr_node[inter_cb_trace->index].pb_graph_pin->pin_count_in_cluster;
+						new_trace->iswitch = OPEN;
+						new_trace->next = NULL;
+						current->next = new_trace;
+						current = expand_routing_trace(new_trace, ivpack_net);
+					} else {
+						current = current->next;
+					}
+				}
+				inter_cb_trace = inter_cb_trace->next;
+			}
+		}	
+	} else {
+		/* connection to another intra-cluster pin */
+		current = trace;
+		success = FALSE;
+		for(i = 0; i < local_rr_graph[inode].num_edges; i++) {
+			if(local_rr_graph[local_rr_graph[inode].edges[i]].prev_node == inode) {
+				if(success == FALSE) {
+					success = TRUE;					
+				} else {
+					current->next = (t_trace*)my_calloc(1, sizeof(t_trace));
+					current = current->next;
+					current->iblock = trace->iblock;
+					current->index = trace->index;
+					current->iswitch = trace->iswitch;
+					current->next = NULL;
+				}
+				new_trace = (t_trace*)my_calloc(1, sizeof(t_trace));
+				new_trace->iblock = trace->iblock;
+				new_trace->index = local_rr_graph[inode].edges[i];
+				new_trace->iswitch = OPEN;
+				new_trace->next = NULL;
+				current->next = new_trace;
+				current = expand_routing_trace(new_trace, ivpack_net);
+			}
+		}
+		assert(success);
 	}
-	void vpr_set_output_file_name(enum e_output_files ename, const char *name) {
-		setOutputFileName(ename, name);
-	}
-	char *vpr_get_output_file_name(enum e_output_files ename) {
-		return getOutputFileName(ename);
-	}
+	return current;
+}
 
+static void print_complete_net_trace(t_trace* trace, const char *file_name) {
+	FILE *fp;
+	int iblock, inode, iswitch;
+	t_trace *current;
+	t_rr_node *local_rr_graph;
+	const char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY",
+			"INTRA_CLUSTER_EDGE" };
+	int i;
+	
+	fp = my_fopen(file_name, "w", 0);
+	
+	for(i = 0; i < num_logical_nets; i++) {
+		current = &trace[i];
+		iswitch = 0;
+			
+		fprintf(fp, "Net %s (%d)\n\n", vpack_net[i].name, i);
+		while(current != NULL) {
+			iblock = current->iblock;
+			inode = current->index;
+			if(iblock != OPEN) {
+				if(iswitch != OPEN) {
+					iswitch = OPEN;
+					fprintf(fp, "Block %s (%d) (%d, %d, %d):\n", block[iblock].name, iblock, block[iblock].x, block[iblock].y, block[iblock].z);
+				}
+				local_rr_graph = block[iblock].pb->rr_graph;
+				fprintf(fp, "\tNode:\t%d\t%s[%d].%s[%d]\n", 
+					inode,
+					local_rr_graph[inode].pb_graph_pin->parent_node->pb_type->name,
+					local_rr_graph[inode].pb_graph_pin->parent_node->placement_index,
+					local_rr_graph[inode].pb_graph_pin->port->name,
+					local_rr_graph[inode].pb_graph_pin->pin_number);
+			} else {
+				iswitch = current->iswitch;
+				fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", 
+					inode,
+					name_type[(int)rr_node[inode].type],
+					rr_node[inode].xlow,
+					rr_node[inode].ylow);
+				
+				if ((rr_node[inode].xlow != rr_node[inode].xhigh)
+						|| (rr_node[inode].ylow != rr_node[inode].yhigh))
+					fprintf(fp, "to (%d,%d) ", rr_node[inode].xhigh,
+							rr_node[inode].yhigh);
 
+				switch (rr_node[inode].type) {
+
+				case IPIN:
+				case OPIN:
+					if (grid[rr_node[inode].xlow][rr_node[inode].ylow].type == IO_TYPE) {
+						fprintf(fp, " Pad: ");
+					} else { /* IO Pad. */
+						fprintf(fp, " Pin: ");
+					}
+					break;
+
+				case CHANX:
+				case CHANY:
+					fprintf(fp, " Track: ");
+					break;
+
+				case SOURCE:
+				case SINK:
+					if (grid[rr_node[inode].xlow][rr_node[inode].ylow].type == IO_TYPE) {
+						fprintf(fp, " Pad: ");
+					} else { /* IO Pad. */
+						fprintf(fp, " Class: ");
+					}
+					break;
+
+				default:
+					vpr_printf(TIO_MESSAGE_ERROR, 
+							"in print_route:  Unexpected traceback element "
+							"type: %d (%s).\n", rr_node[inode].type,
+							name_type[rr_node[inode].type]);
+					exit(1);
+					break;
+				}
+
+				fprintf(fp, "%d  ", rr_node[inode].ptc_num);
+
+				/* Uncomment line below if you're debugging and want to see the switch types *
+					* used in the routing.                                                      */
+				/*          fprintf (fp, "Switch: %d", tptr->iswitch);    */
+
+				fprintf(fp, "\n");
+			}
+			current = current->next;
+		}
+		fprintf(fp, "\n");
+	}
+}
 
 

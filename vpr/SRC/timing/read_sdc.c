@@ -244,7 +244,7 @@ static void use_default_timing_constraints(void) {
 			/* We need to create a virtual clock to constrain I/Os on. */
 			num_constrained_clocks = 1;
 			constrained_clocks = (t_clock *) my_malloc(sizeof(t_clock));
-			constrained_clocks[0].name = "virtual_io_clock";
+			constrained_clocks[0].name = my_strdup("virtual_io_clock");
 			constrained_clocks[0].is_netlist_clock = FALSE;
 
 			vpr_printf(TIO_MESSAGE_INFO, "\nDefaulting to: constrain all %d inputs and %d outputs on a virtual, external clock.\n", 
@@ -266,7 +266,7 @@ static void use_default_timing_constraints(void) {
 		 and optimize all clocks to go as fast as possible. */
 
 		constrained_clocks = (t_clock *) my_realloc (constrained_clocks, ++num_constrained_clocks * sizeof(t_clock));
-		constrained_clocks[num_constrained_clocks - 1].name = "virtual_io_clock";
+		constrained_clocks[num_constrained_clocks - 1].name = my_strdup("virtual_io_clock");
 		constrained_clocks[num_constrained_clocks - 1].is_netlist_clock = FALSE;
 		count_netlist_ios_as_constrained_ios(constrained_clocks[num_constrained_clocks - 1].name, 0.);
 

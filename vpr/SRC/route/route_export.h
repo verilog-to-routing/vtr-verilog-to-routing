@@ -11,7 +11,7 @@ boolean feasible_routing(void);
 
 t_ivec **alloc_route_structs(void);
 
-void free_route_structs(t_ivec ** clb_opins_used_locally);
+void free_route_structs();
 
 struct s_trace **alloc_saved_routing(t_ivec ** clb_opins_used_locally,
 		t_ivec *** saved_clb_opins_used_locally_ptr);

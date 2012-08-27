@@ -26,4 +26,10 @@ void set_pb_graph_mode(t_pb_graph_node *pb_graph_node, int mode, int isOn);
 
 void alloc_and_load_rr_graph_for_pb_graph_node(INP t_pb_graph_node *pb_graph_node, INP const t_arch* arch, int mode);
 
+
+/* Power user options */
+void reload_ext_net_rr_terminal_cluster(void);
+void setup_intracluster_routing_for_logical_block(INP int iblock,
+		INP t_pb_graph_node *primitive);
+
 #endif

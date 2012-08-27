@@ -60,7 +60,7 @@ void place_and_route(enum e_operation operation,
 	t_chunk net_delay_ch = {NULL, 0, NULL};
 
 	/*struct s_linked_vptr *net_delay_chunk_list_head;*/
-	t_ivec **clb_opins_used_locally; /* [0..num_blocks-1][0..num_class-1] */
+	t_ivec **clb_opins_used_locally = NULL; /* [0..num_blocks-1][0..num_class-1] */
 	t_mst_edge **mst = NULL; /* Make sure mst is never undefined */
 	int max_pins_per_clb;
 	clock_t begin, end;
@@ -209,11 +209,17 @@ void place_and_route(enum e_operation operation,
 			free_net_delay(net_delay, &net_delay_ch);
 		}
 
-		free_rr_graph();
-		free_route_structs(clb_opins_used_locally);
-		free_trace_structs();
 		fflush(stdout);
 	}
+	if (clb_opins_used_locally != NULL) {
+		for (i = 0; i < num_blocks; i++) {
+			free_ivec_vector(clb_opins_used_locally[i], 0,
+					block[i].type->num_class - 1);
+		}
+		free(clb_opins_used_locally);
+		clb_opins_used_locally = NULL;
+	}
+
 	end = clock();
 #ifdef CLOCKS_PER_SEC
 	vpr_printf(TIO_MESSAGE_INFO, "Routing took %g seconds\n", (float) (end - begin) / CLOCKS_PER_SEC);
@@ -565,11 +571,15 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		free_timing_graph(slacks);
 		free_net_delay(net_delay, &net_delay_ch);
 	}
+	
+	for (i = 0; i < num_blocks; i++) {
+		free_ivec_vector(clb_opins_used_locally[i], 0,
+				block[i].type->num_class - 1);
+	}
+	free(clb_opins_used_locally);
+	clb_opins_used_locally = NULL;
 
-	free_rr_graph();
-	free_route_structs(clb_opins_used_locally);
 	free_saved_routing(best_routing, saved_clb_opins_used_locally);
-	free_trace_structs();
 	fflush(stdout);
 
 	return (final);

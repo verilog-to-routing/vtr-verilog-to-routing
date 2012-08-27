@@ -91,6 +91,9 @@ void vpr_print_usage(void);
 	void vpr_alloc_and_load_output_file_names();
 	void vpr_set_output_file_name(enum e_output_files ename, const char *name);
 	char *vpr_get_output_file_name(enum e_output_files ename);
+
+	/* resync netlists */
+	t_trace* vpr_resync_post_route_netlist(INP const t_arch *arch);
 	
 #endif
 

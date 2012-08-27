@@ -284,6 +284,54 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(t_model_ports *model_p
 	return NULL;
 }
 
+t_pb_graph_pin* get_pb_graph_node_pin_from_vpack_net(int inet, int ipin) {
+	int ilogical_block;
+	t_model_ports *port;
+
+	ilogical_block = vpack_net[inet].node_block[ipin];
+
+	assert(ilogical_block != OPEN);
+	if(logical_block[ilogical_block].pb == NULL) {
+		/* This net has not been packed yet thus pb_graph_pin does not exist */
+		return NULL;
+	}
+
+	if(ipin > 0) {
+		port = logical_block[ilogical_block].model->inputs;
+		if(vpack_net[inet].is_global) {
+			while(port != NULL) {
+				if(port->is_clock) {
+					if(port->index == vpack_net[inet].node_block_port[ipin]) {
+						break;
+					}
+				}
+				port = port->next;
+			}
+		} else {
+			while(port != NULL) {
+				if(!port->is_clock) {
+					if(port->index == vpack_net[inet].node_block_port[ipin]) {
+						break;
+					}
+				}
+				port = port->next;
+			}
+		}
+	} else {
+		/* This is an output pin */
+		port = logical_block[ilogical_block].model->outputs;
+		while(port != NULL) {
+			if(port->index == vpack_net[inet].node_block_port[ipin]) {
+				break;
+			}
+			port = port->next;
+		}
+	}
+
+	assert(port != NULL);
+	return get_pb_graph_node_pin_from_model_port_pin(port, ipin, logical_block[ilogical_block].pb->pb_graph_node);
+}
+
 /**
  * Determine cost for using primitive within a complex block, should use primitives of low cost before selecting primitives of high cost
  For now, assume primitives that have a lot of pins are scarcer than those without so use primitives with less pins before those with more

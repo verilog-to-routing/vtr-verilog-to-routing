@@ -777,11 +777,14 @@ typedef enum e_rr_type {
  * SINK:    A dummy node that is a logical input within a block    *
  *          -- i.e. the gate that needs a signal.                  */
 
-struct s_trace {
+typedef struct s_trace {
 	int index;
 	short iswitch;
+
+	int iblock;
+
 	struct s_trace *next;
-};
+} t_trace;
 
 /* Basic element used to store the traceback (routing) of each net.        *
  * index:   Array index (ID) of this routing resource node.                *
@@ -789,6 +792,7 @@ struct s_trace {
  *           the next one in the routing.  OPEN if there is no next node   *
  *           (i.e. this node is the last one (a SINK) in a branch of the   *
  *           net's routing).                                               *
+ * iblock: index of block that this trace applies to if applicable, OPEN otherwise *
  * next:    pointer to the next traceback element in this route.           */
 
 #define NO_PREVIOUS -1
@@ -825,6 +829,8 @@ typedef struct s_rr_node {
 	t_pb_graph_pin *pb_graph_pin;
 	t_tnode *tnode;
 	float pack_intrinsic_cost;
+
+	int z; /* For IPIN, source, and sink nodes, helps identify which location this rr_node belongs to */
 } t_rr_node;
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *

@@ -790,6 +790,7 @@ void free_rr_graph(void) {
 	rr_node = NULL;
 	rr_node_indices = NULL;
 	rr_indexed_data = NULL;
+	num_rr_nodes = 0;
 }
 
 static void alloc_net_rr_terminals(void) {
@@ -886,6 +887,8 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 	t_type_ptr type;
 	struct s_class *class_inf;
 	int *pin_class;
+	const t_pb_graph_node *pb_graph_node;
+	int iport, ipb_pin, iporttype, z;
 
 	/* Since we share nodes within a large block, only 
 	 * start tile can initialize sinks, sources, and pins */
@@ -897,6 +900,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 	class_inf = type->class_inf;
 	num_pins = type->num_pins;
 	pin_class = type->pin_class;
+	z = 0;
 
 	/* SINKS and SOURCE to OPINP edges */
 	for (iclass = 0; iclass < num_class; iclass++) {
@@ -954,9 +958,16 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 		L_rr_node[inode].drivers = (enum e_drivers)OPEN;
 	}
 
+	iporttype = iport = ipb_pin = 0;
+
+	pb_graph_node = type->pb_graph_head;
+	if(pb_graph_node != NULL && pb_graph_node->num_input_ports == 0) {
+		iporttype = 1;
+	}
 	/* Connect IPINS to SINKS and dummy for OPINS */
 	for (ipin = 0; ipin < num_pins; ipin++) {
 		iclass = pin_class[ipin];
+		z = ipin / (type->pb_type->num_clock_pins + type->pb_type->num_output_pins + type->pb_type->num_input_pins);
 
 		if (class_inf[iclass].type == RECEIVER) {
 			inode = get_rr_node_index(i, j, IPIN, ipin, L_rr_node_indices);
@@ -973,6 +984,38 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 
 			L_rr_node[inode].cost_index = IPIN_COST_INDEX;
 			L_rr_node[inode].type = IPIN;
+
+			/* Add in information so that I can identify which cluster pin this rr_node connects to later */
+			L_rr_node[inode].z = z;
+			if(iporttype == 0) {
+				L_rr_node[inode].pb_graph_pin = &pb_graph_node->input_pins[iport][ipb_pin];
+				ipb_pin++;
+				if(ipb_pin >= pb_graph_node->num_input_pins[iport]) {
+					iport++;
+					ipb_pin = 0;
+					if(iport >= pb_graph_node->num_input_ports) {
+						iporttype++;
+						iport = 0;
+						if(pb_graph_node->num_clock_ports == 0) {
+							iporttype = 0;
+						}
+					}
+				}
+			} else {
+				assert(iporttype == 1);
+				L_rr_node[inode].pb_graph_pin = &pb_graph_node->clock_pins[iport][ipb_pin];
+				if(ipb_pin >= pb_graph_node->num_clock_pins[iport]) {
+					iport++;
+					ipb_pin = 0;
+					if(iport >= pb_graph_node->num_clock_ports) {
+						iporttype = 0;
+						iport = 0;
+						if(pb_graph_node->num_input_ports == 0) {
+							iporttype = 1;
+						}
+					}
+				}
+			}
 		} else {
 			assert(class_inf[iclass].type == DRIVER);
 
@@ -985,6 +1028,20 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 
 			L_rr_node[inode].cost_index = OPIN_COST_INDEX;
 			L_rr_node[inode].type = OPIN;
+
+			L_rr_node[inode].pb_graph_pin = &pb_graph_node->output_pins[iport][ipb_pin];
+			if(ipb_pin >= pb_graph_node->num_output_pins[iport]) {
+				iport++;
+				ipb_pin = 0;
+				if(iport >= pb_graph_node->num_output_ports) {
+					iport = 0;
+					if(pb_graph_node->num_input_ports == 0) {
+						iporttype = 1;
+					} else {
+						iporttype = 0;
+					}
+				}
+			}
 		}
 
 		/* Common to both DRIVERs and RECEIVERs */

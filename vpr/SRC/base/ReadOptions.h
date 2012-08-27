@@ -135,6 +135,7 @@ enum e_echo_files {
 #ifdef PATH_COUNTING
 	E_ECHO_PATH_WEIGHT,
 #endif
+	E_ECHO_COMPLETE_NET_TRACE,
 	E_ECHO_END_TOKEN
 };
 

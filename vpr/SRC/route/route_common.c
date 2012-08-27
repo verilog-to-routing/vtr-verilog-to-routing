@@ -743,25 +743,15 @@ void free_trace_structs(void) {
 	trace_tail = NULL;
 }
 
-void free_route_structs(t_ivec ** clb_opins_used_locally) {
+void free_route_structs() {
 
 	/* Frees the temporary storage needed only during the routing.  The  *
 	 * final routing result is not freed.                                */
-	int i;
-
 	free(heap + 1);
 	free(route_bb);
 
 	heap = NULL; /* Defensive coding:  crash hard if I use these. */
 	route_bb = NULL;
-
-	if (clb_opins_used_locally != NULL) {
-		for (i = 0; i < num_blocks; i++) {
-			free_ivec_vector(clb_opins_used_locally[i], 0,
-					block[i].type->num_class - 1);
-		}
-		free(clb_opins_used_locally);
-	}
 
 	/*free the memory chunks that were used by heap and linked f pointer */
 	free_chunk_memory(&heap_ch);

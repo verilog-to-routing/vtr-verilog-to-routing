@@ -77,7 +77,7 @@ void setEchoEnabled(boolean echo_enabled) {
 
 void setAllEchoFileEnabled(boolean value) {
 	int i;
-	for(i = 0; i < (int) E_ECHO_END_TOKEN - 1; i++) {
+	for(i = 0; i < (int) E_ECHO_END_TOKEN; i++) {
 		echoFileEnabled[i] = value;
 	}
 }
@@ -155,6 +155,7 @@ void alloc_and_load_echo_file_info() {
 #ifdef PATH_COUNTING
 	setEchoFileName(E_ECHO_PATH_WEIGHT, "path_weight.echo");
 #endif
+	setEchoFileName(E_ECHO_COMPLETE_NET_TRACE, "complete_net_trace.echo");
 }
 
 void free_echo_file_info() {

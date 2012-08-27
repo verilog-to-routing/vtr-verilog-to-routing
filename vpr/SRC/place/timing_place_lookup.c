@@ -474,7 +474,7 @@ static void free_routing_structs(struct s_router_opts router_opts,
 	free_rr_graph();
 
 	free_rr_node_route_structs();
-	free_route_structs(clb_opins_used_locally);
+	free_route_structs();
 	free_trace_structs();
 
 	free_timing_driven_route_structs(pin_criticality, sink_order,

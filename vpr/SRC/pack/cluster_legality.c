@@ -36,14 +36,9 @@ static int num_rr_intrinsic_cost = 0;
 /********************* Subroutines local to this module *********************/
 static boolean is_net_in_cluster(INP int inet);
 
-static void setup_intracluster_routing_for_logical_block(INP int iblock,
-		INP t_pb_graph_node *primitive);
-
 static void add_net_rr_terminal_cluster(int iblk_net,
 		t_pb_graph_node * primitive, int ilogical_block,
 		t_model_ports * model_port, int ipin);
-
-static void reload_ext_net_rr_terminal_cluster(void);
 
 static boolean breadth_first_route_net_cluster(int inet);
 
@@ -158,7 +153,7 @@ static void add_net_rr_terminal_cluster(int iblk_net,
 	}
 }
 
-static void reload_ext_net_rr_terminal_cluster(void) {
+void reload_ext_net_rr_terminal_cluster(void) {
 	int i, j, net_index;
 	boolean has_ext_sink, has_ext_source;
 	int curr_ext_output, curr_ext_input, curr_ext_clock;
@@ -229,7 +224,7 @@ void free_cluster_legality_checker(void) {
 	free(best_routing);
 	free(rr_indexed_data);
 	free_rr_node_route_structs();
-	free_route_structs(NULL);
+	free_route_structs();
 	free_trace_structs();
 
 	free_chunk_memory(&rr_mem_ch);
@@ -858,7 +853,7 @@ void setup_intracluster_routing_for_molecule(INP t_pack_molecule *molecule,
 	reload_ext_net_rr_terminal_cluster();
 }
 
-static void setup_intracluster_routing_for_logical_block(INP int iblock,
+void setup_intracluster_routing_for_logical_block(INP int iblock,
 		INP t_pb_graph_node *primitive) {
 
 	/* Allocates and loads the net_rr_terminals data structure.  For each net   *
