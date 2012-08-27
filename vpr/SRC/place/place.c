@@ -386,7 +386,7 @@ void try_place(struct s_placer_opts placer_opts,
 				print_slack(slacks->slack, FALSE, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_SLACK));
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_CRITICALITY))
 				print_criticality(slacks->criticality, FALSE, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY));
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_PATH_WEIGHT))
 				print_path_weight(slacks->path_weight, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_PATH_WEIGHT));
 #endif	
@@ -803,7 +803,7 @@ void try_place(struct s_placer_opts placer_opts,
 				print_slack(slacks->slack, FALSE, getEchoFileName(E_ECHO_FINAL_PLACEMENT_SLACK));
 			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_CRITICALITY))
 				print_criticality(slacks->criticality, FALSE, getEchoFileName(E_ECHO_FINAL_PLACEMENT_CRITICALITY));
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_PATH_WEIGHT))
 				print_path_weight(slacks->path_weight, getEchoFileName(E_ECHO_FINAL_PLACEMENT_PATH_WEIGHT));
 #endif	

@@ -92,7 +92,7 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 					print_net_delay(net_delay, getEchoFileName(E_ECHO_NET_DELAY));
 				if(isEchoFileEnabled(E_ECHO_LUT_REMAPPING))
 					print_lut_remapping(getEchoFileName(E_ECHO_LUT_REMAPPING));
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 				if(isEchoFileEnabled(E_ECHO_PATH_WEIGHT))
 					print_path_weight(slacks->path_weight, getEchoFileName(E_ECHO_PATH_WEIGHT));
 #endif

@@ -139,13 +139,13 @@ static void alloc_timing_stats(void);
 static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain, 
 	boolean is_prepacked, boolean is_final_analysis, long * max_critical_input_paths, 
 	long * max_critical_output_paths);
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 static void do_net_weighting(float criticality_denom);
 #endif
 static void do_lut_rebalancing();
 static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 		INOUTP int *inode, INP t_timing_inf timing_inf);
-#ifndef NET_WEIGHTING
+#ifndef PATH_COUNTING
 static void update_normalized_costs(float T_arr_max_this_domain, long max_critical_input_paths,
 		long max_critical_output_paths);
 #endif
@@ -294,13 +294,13 @@ static t_slack * alloc_slacks(void) {
 	
 	slacks->slack   = (float **) my_malloc(num_timing_nets * sizeof(float *));
 	slacks->criticality = (float **) my_malloc(num_timing_nets * sizeof(float *));
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 	slacks->path_weight = (float **) my_malloc(num_timing_nets * sizeof(float *));
 #endif
 	for (inet = 0; inet < num_timing_nets; inet++) {
 		slacks->slack[inet]	  = (float *) my_chunk_malloc((timing_nets[inet].num_sinks + 1) * sizeof(float), &tedge_ch);
 		slacks->criticality[inet] = (float *) my_chunk_malloc((timing_nets[inet].num_sinks + 1) * sizeof(float), &tedge_ch);
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 		slacks->path_weight[inet] = (float *) my_chunk_malloc((timing_nets[inet].num_sinks + 1) * sizeof(float), &tedge_ch);
 #endif
 	}
@@ -344,7 +344,7 @@ void free_timing_graph(t_slack * slack) {
 
 	free(slack->slack);
 	free(slack->criticality);
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 	free(slack->path_weight);
 #endif
 	free(slack);
@@ -608,7 +608,7 @@ void print_criticality(float ** criticality, boolean criticality_is_normalized, 
 
 	fclose(fp);
 }
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 void print_path_weight(float ** path_weight, const char *fname) {
 
 	/* Prints path weights into a file. */
@@ -622,19 +622,19 @@ void print_path_weight(float ** path_weight, const char *fname) {
 
 	fp = my_fopen(fname, "w", 0);
 
-	/* Go through path_weight once to get the largest and smallest path_weight, both for reporting and 
+	/* Go through path_weight once to get the largest and smallest path weight, both for reporting and 
 	   so that we can delimit the buckets. */
 	for (inet = 0; inet < num_timing_nets; inet++) {
 		driver_tnode = net_to_driver_tnode[inet];
 		num_edges = tnode[driver_tnode].num_edges;
 		for (iedge = 0; iedge < num_edges; iedge++) { 
 			weight = path_weight[inet][iedge + 1];
-			if (weight > HUGE_NEGATIVE_FLOAT + 1) { /* if path_weight was analysed */
+			if (weight > HUGE_NEGATIVE_FLOAT + 1) { /* if path weight was analysed */
 				max_path_weight = max(max_path_weight, weight);
 				min_path_weight = min(min_path_weight, weight);
 				total_path_weight += weight;
 
-			} else { /* path_weight was never analysed */
+			} else { /* path weight was never analysed */
 				num_unused_path_weights++;
 			}
 		}
@@ -654,8 +654,8 @@ void print_path_weight(float ** path_weight, const char *fname) {
 
 	fprintf(fp, "Total path weight in design: %g\n", total_path_weight);
 
-	if (max_path_weight - min_path_weight > EPSILON) { /* Only sort the path_weights into buckets if not all path_weights are the same (if they are identical, no need to sort). */
-		/* Initialize path_weights_in_bucket, an array counting how many path_weights are within certain linearly-spaced ranges (buckets). */
+	if (max_path_weight - min_path_weight > EPSILON) { /* Only sort the path weights into buckets if not all path weights are the same (if they are identical, no need to sort). */
+		/* Initialize path_weights_in_bucket, an array counting how many path weights are within certain linearly-spaced ranges (buckets). */
 		for (ibucket = 0; ibucket < NUM_BUCKETS; ibucket++) {
 			path_weights_in_bucket[ibucket] = 0;
 		}
@@ -672,14 +672,14 @@ void print_path_weight(float ** path_weight, const char *fname) {
 			for (iedge = 0; iedge < num_edges; iedge++) { 
 				weight = path_weight[inet][iedge + 1];
 				if (weight > HUGE_NEGATIVE_FLOAT + 1) {
-					/* We have to watch out for the special case where path_weight = max_path_weight, in which case ibucket = NUM_BUCKETS and we go out of bounds of the array. */
+					/* We have to watch out for the special case where path weight = max_path_weight, in which case ibucket = NUM_BUCKETS and we go out of bounds of the array. */
 					ibucket = min(NUM_BUCKETS - 1, (int) ((weight - min_path_weight)/bucket_size));
 					path_weights_in_bucket[ibucket]++;
 				}
 			}
 		}
 
-		/* Now print how many path_weights are in each bucket. */
+		/* Now print how many path weights are in each bucket. */
 		fprintf(fp, "\n\nRange\t\t");
 		for (ibucket = 0; ibucket < NUM_BUCKETS; ibucket++) {
 			fprintf(fp, "%.1e to ", min_path_weight);
@@ -694,7 +694,7 @@ void print_path_weight(float ** path_weight, const char *fname) {
 		fprintf(fp, "%d", num_unused_path_weights);
 	}
 
-	/* Finally, print all the path_weights, organized by net. */
+	/* Finally, print all the path weights, organized by net. */
 	fprintf(fp, "\n\nNet #\tDriver_tnode\tto_node\tPath weight\n\n");
 
 	for (inet = 0; inet < num_timing_nets; inet++) {
@@ -704,14 +704,14 @@ void print_path_weight(float ** path_weight, const char *fname) {
 		weight = path_weight[inet][1];
 		if (weight > HUGE_NEGATIVE_FLOAT + 1) {
 			fprintf(fp, "%5d\t%5d\t\t%5d\t%g\n", inet, driver_tnode, tedge[0].to_node, weight);
-		} else { /* Criticality is meaningless, so replace with --. */
+		} else { /* Path weight is meaningless, so replace with --. */
 			fprintf(fp, "%5d\t%5d\t\t%5d\t--\n", inet, driver_tnode, tedge[0].to_node);
 		}
 		for (iedge = 1; iedge < num_edges; iedge++) { /* newline and indent subsequent edges after the first */
 			weight = path_weight[inet][iedge+1];
 			if (weight > HUGE_NEGATIVE_FLOAT + 1) {
 				fprintf(fp, "\t\t\t%5d\t%g\n", tedge[iedge].to_node, weight);
-			} else { /* Criticality is meaningless, so replace with --. */
+			} else { /* Path weight is meaningless, so replace with --. */
 				fprintf(fp, "\t\t\t%5d\t--\n", tedge[iedge].to_node);
 			}
 		}
@@ -745,7 +745,7 @@ void print_net_delay(float **net_delay, const char *fname) {
 	fclose(fp);
 }
 
-#ifndef NET_WEIGHTING
+#ifndef PATH_COUNTING
 void print_clustering_timing_info(const char *fname) {
 	/* Print information from tnodes which is used by the clusterer. */
 	int inode;
@@ -1500,7 +1500,7 @@ void print_timing_graph(const char *fname) {
 		/* Arrival and required times, and forward and backward weights, will be meaningless for multiclock
 		designs, since the values currently on the graph will only correspond to the most recent traversal. */
 		fprintf(fp, "\n\nNode #\t\tT_arr\t\tT_req"
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 			"\tForward weight\tBackward weight"
 #endif
 			"\n\n");
@@ -1516,7 +1516,7 @@ void print_timing_graph(const char *fname) {
 			} else {
 				fprintf(fp, "\t\t   -");
 			}
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 			if (tnode[inode].has_valid_slack) {
 				fprintf(fp, "\t%12g\t%12g\n", tnode[inode].forward_weight, tnode[inode].backward_weight);
 			} else {
@@ -1710,9 +1710,9 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 	compute actual slacks instead of normalized ones. */
 
 	int i, j, source_clock_domain, sink_clock_domain, inode, inet, ipin;
-#if defined NET_WEIGHTING || SLACK_DEFINITION == 'S'
+#if defined PATH_COUNTING || SLACK_DEFINITION == 'S'
 	int iedge, num_edges;
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 	float max_path_weight = HUGE_NEGATIVE_FLOAT, path_weight, crit;
 #endif
 #endif
@@ -1758,7 +1758,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 		for (ipin = 0; ipin <= timing_nets[inet].num_sinks; ipin++) {
 			slacks->slack[inet][ipin]		= HUGE_POSITIVE_FLOAT; 
 			slacks->criticality[inet][ipin] = HUGE_NEGATIVE_FLOAT; 
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 			slacks->path_weight[inet][ipin] = HUGE_NEGATIVE_FLOAT;
 #endif
 		}
@@ -1772,7 +1772,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 		}
 	}
 
-#ifndef NET_WEIGHTING
+#ifndef PATH_COUNTING
 	/* Reset normalized values for clusterer. */
 	if (is_prepacked) { 
 		for (inode = 0; inode < num_tnodes; inode++) {			
@@ -1805,7 +1805,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 				/* Perform the forward and backward traversal for this constraint. */
 				criticality_denom = do_timing_analysis_for_constraint(source_clock_domain, sink_clock_domain, 
 					is_prepacked, is_final_analysis, &max_critical_input_paths, &max_critical_output_paths);
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 				/* Weight the importance of each net, used in slack calculation. */
 				do_net_weighting(criticality_denom);
 #endif
@@ -1814,7 +1814,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 				higher (criticality) value than before. */
 				update_slacks(slacks, source_clock_domain, sink_clock_domain, criticality_denom, update_slack);
 
-#ifndef NET_WEIGHTING
+#ifndef PATH_COUNTING
 				/* Update the normalized costs used by the clusterer. */
 				if (is_prepacked) {
 					update_normalized_costs(criticality_denom, max_critical_input_paths, max_critical_output_paths);
@@ -1824,7 +1824,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 		}
 	} 
 
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 	/* Normalize path weights by the largest value in the 
 	circuit. Otherwise, path weights would be unbounded. */
 
@@ -1838,7 +1838,9 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 	for (inet = 0; inet < num_timing_nets; inet++) {
 		num_edges = timing_nets[inet].num_sinks;
 		for (iedge = 0; iedge < num_edges; iedge++) {
-			slacks->path_weight[inet][iedge + 1] /= max_path_weight;
+			if (slacks->path_weight[inet][iedge + 1] > HUGE_NEGATIVE_FLOAT + 1) {
+				slacks->path_weight[inet][iedge + 1] /= max_path_weight;
+			}
 		}
 	}
 
@@ -1851,8 +1853,9 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 			crit = slacks->criticality[inet][iedge + 1];
 			if (crit > HUGE_NEGATIVE_FLOAT + 1) {
 				path_weight = slacks->path_weight[inet][iedge + 1];
-				slacks->criticality[inet][iedge + 1] =		PATH_WEIGHT  * path_weight 
-													 + (1 - PATH_WEIGHT) * crit; 
+				assert(path_weight > HUGE_NEGATIVE_FLOAT + 1);
+				slacks->criticality[inet][iedge + 1] =		PATH_FACTOR  * path_weight 
+													 + (1 - PATH_FACTOR) * crit; 
 			} else {
 				/* Dummy criticality - reset to 0 (even though this should 
 				be  the same as leaving it at HUGE_NEGATIVE_FLOAT). */
@@ -2039,7 +2042,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 
 			num_edges = tnode[inode].num_edges;					/* Get the number of edges fanning out from the node we're visiting */
 			tedge = tnode[inode].out_edges;						/* Get the list of edges from the node we're visiting */
-#ifndef NET_WEIGHTING		
+#ifndef PATH_COUNTING		
 			if (ilevel == 0) {
 				tnode[inode].num_critical_input_paths = 1;		/* Top-level tnodes have one locally-critical input path. */
 			}
@@ -2190,7 +2193,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 					max(timing_stats->cpd[source_clock_domain][sink_clock_domain], 
 					(tnode[inode].T_arr - tnode[inode].clock_skew) * 1e9); /* Convert to nanoseconds */
 
-#ifndef NET_WEIGHTING
+#ifndef PATH_COUNTING
 				tnode[inode].num_critical_output_paths = 1; /* Bottom-level tnodes have only one critical output path */
 #endif
 			} else { /* not a sink */
@@ -2253,7 +2256,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 							(T_req - Tdel - tnode[inode].T_arr) * 1e9); 
 					}
 				}
-#ifndef NET_WEIGHTING
+#ifndef PATH_COUNTING
 
 				/* Similar to before, we count how many locally-critical output paths fan 
 				out from each tnode, and also find the maximum number over all tnodes. */
@@ -2276,7 +2279,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	arrival time and the constraint for this domain pair. */
 	return max(max_Tarr, timing_constraint[source_clock_domain][sink_clock_domain]);
 }
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 static void do_net_weighting(float criticality_denom) {
 	/* Weight the importance of each net used in this constraint by giving it a forward and backward weight.  
 	See "A Novel Net Weighting Algorithm for Timing-Driven Placement" (Kong, 2002). */
@@ -2315,7 +2318,7 @@ static void do_net_weighting(float criticality_denom) {
 					continue;	
 				}
 				forward_local_slack = tnode[to_node].T_arr - tnode[inode].T_arr - tedge[iedge].Tdel;
-				discount = pow(DISCOUNT_FUNCTION_BASE, -1 * forward_local_slack / criticality_denom);
+				discount = pow((float) DISCOUNT_FUNCTION_BASE, -1 * forward_local_slack / criticality_denom);
 				tnode[to_node].forward_weight += discount * tnode[inode].forward_weight;
 			}
 		}
@@ -2341,7 +2344,7 @@ static void do_net_weighting(float criticality_denom) {
 						continue;	
 					}
 					backward_local_slack = tnode[to_node].T_req - tnode[inode].T_req - tedge[iedge].Tdel;
-					discount = pow(DISCOUNT_FUNCTION_BASE, -1 * backward_local_slack / criticality_denom);
+					discount = pow((float) DISCOUNT_FUNCTION_BASE, -1 * backward_local_slack / criticality_denom);
 					tnode[inode].backward_weight += discount * tnode[to_node].backward_weight;
 				}
 			}
@@ -2404,11 +2407,23 @@ static void update_slacks(t_slack * slacks, int source_clock_domain, int sink_cl
 			crit = 1 - (T_req - T_arr - Tdel)/criticality_denom;
 			if (crit > slacks->criticality[inet][iedge + 1]) {
 				slacks->criticality[inet][iedge + 1] = crit; 
-	#ifdef NET_WEIGHTING
+	#ifdef PATH_COUNTING
+		#if TAKE_THE_LOG == 's' //separate
 				slacks->path_weight[inet][iedge + 1] = max(slacks->path_weight[inet][iedge + 1], 
+					log(tnode[inode].forward_weight) * log(tnode[to_node].backward_weight) * 
+					pow((float) FINAL_DISCOUNT_FUNCTION_BASE, crit));
+		#elif TAKE_THE_LOG == 't' //together
+				slacks->path_weight[inet][iedge + 1] = max(slacks->path_weight[inet][iedge + 1], 
+					log(tnode[inode].forward_weight * tnode[to_node].backward_weight) * 
+					pow((float) FINAL_DISCOUNT_FUNCTION_BASE, crit));
+		#else //don't take the log
+				slacks->path_weight[inet][iedge + 1] = max(slacks->path_weight[inet][iedge + 1],
 					tnode[inode].forward_weight * tnode[to_node].backward_weight * 
-					pow(DISCOUNT_FUNCTION_BASE, crit - 1));
-				/* the exponent is: -(slack / criticality_denom), which is the same as criticality - 1 */
+					pow((float) FINAL_DISCOUNT_FUNCTION_BASE, crit));
+		#endif
+					
+				/* Kong uses slack / T_crit for the exponent, which is equivalent to criticality - 1.
+				However, taking out the "minus 1" is equivalent to multiplying all weights by a constant. */
 	#endif
 			}
 #endif
@@ -2659,9 +2674,9 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 			print_slack(slacks->slack, TRUE, getEchoFileName(E_ECHO_SLACK));
 		if(isEchoFileEnabled(E_ECHO_CRITICALITY))
 			print_criticality(slacks->criticality, TRUE, getEchoFileName(E_ECHO_CRITICALITY));
-#ifdef NET_WEIGHTING
-			if(isEchoFileEnabled(E_ECHO_PATH_WEIGHT))
-				print_path_weight(slacks->path_weight, getEchoFileName(E_ECHO_PATH_WEIGHT));
+#ifdef PATH_COUNTING
+		if(isEchoFileEnabled(E_ECHO_PATH_WEIGHT))
+			print_path_weight(slacks->path_weight, getEchoFileName(E_ECHO_PATH_WEIGHT));
 #endif	
 		if(isEchoFileEnabled(E_ECHO_NET_DELAY))
 			print_net_delay(net_delay, getEchoFileName(E_ECHO_NET_DELAY));
@@ -2672,7 +2687,7 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 	free_timing_graph(slacks);
 	free_net_delay(net_delay, &net_delay_ch);
 }
-#ifndef NET_WEIGHTING
+#ifndef PATH_COUNTING
 static void update_normalized_costs(float T_arr_max_this_domain, long max_critical_input_paths,
 		long max_critical_output_paths) {
 	int inode;

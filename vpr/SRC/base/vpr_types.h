@@ -39,10 +39,12 @@
  * Global data types and constants
  ******************************************************************************/
 
-#define NET_WEIGHTING
-#define DISCOUNT_FUNCTION_BASE 3
-#define PLACER_FINAL_EXPONENT 8.
-#define PATH_WEIGHT 0.5
+// #define PATH_COUNTING
+#define FINAL_DISCOUNT_FUNCTION_BASE DISCOUNT_FUNCTION_BASE
+#define DISCOUNT_FUNCTION_BASE 100
+#define PLACER_FINAL_EXPONENT 8. 
+#define PATH_FACTOR 0.4
+// #define TAKE_THE_LOG // 's' = log(forward) * log(backward) / 't' = log(forward * backward)
 
 #ifndef SPEC
 #define DEBUG 1			/* Echoes input & checks error conditions */
@@ -322,7 +324,7 @@ typedef struct s_tnode { /* node in the timing graph */
 
 	/* Used in pre-packing timing graph only: */
 	int model_port, model_pin; /* technology mapped model port/pin */
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 	float forward_weight, backward_weight;
 #else
 	long num_critical_input_paths, num_critical_output_paths; /* count of critical paths fanning into/out of this tnode */
@@ -360,7 +362,7 @@ typedef struct s_timing_stats {
 typedef struct s_slack {
 	float ** slack;
 	float ** criticality;
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 	float ** path_weight;
 #endif
 } t_slack;

@@ -268,7 +268,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	enum e_block_pack_status block_pack_status;
 
 	int *num_used_instances_type, *num_instances_type; /* [0..num_types] Holds array for total number of each cluster_type available */
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 	int j;
 #else
 	float num_paths_scaling, distance_scaling, crit;
@@ -354,7 +354,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH))
 				print_timing_graph(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH));
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_PATH_WEIGHT))
 				print_path_weight(slacks->path_weight, getEchoFileName(E_ECHO_PRE_PACKING_PATH_WEIGHT));
 #else
@@ -375,7 +375,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			assert(logical_block[i].index == i);
 			critindexarray[i] = i;
 		}
-#ifdef NET_WEIGHTING
+#ifdef PATH_COUNTING
 		/* Calculate criticality directly from criticality (which includes net weighting). */
 		for (i = 0; i < num_logical_nets; i++) { 
 			for (j = 1; j <= vpack_net[i].num_sinks; j++) { 
