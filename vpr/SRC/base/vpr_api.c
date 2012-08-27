@@ -861,6 +861,7 @@ static t_trace *alloc_and_load_final_routing_trace() {
 	return final_routing_trace;
 }
 
+
 /* Given a routing trace, expand until full trace is complete 
    returns pointer to last terminal trace
 */
