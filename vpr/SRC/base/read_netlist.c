@@ -27,7 +27,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 
 static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 		INOUTP t_rr_node *rr_graph, INOUTP t_pb **rr_node_to_pb_mapping, INOUTP int *num_primitives, 
-		INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash);
+		INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash, INP int cb_index);
 
 static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 		INP int index, INOUTP int *num_primitives, INP const t_arch *arch, INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash);
@@ -298,7 +298,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 		exit(1);
 	}
 
-	processPb(Parent, cb[index].pb, cb[index].pb->rr_graph, cb[index].pb->rr_node_to_pb_mapping, num_primitives, vpack_net_hash, logical_block_hash);
+	processPb(Parent, cb[index].pb, cb[index].pb->rr_graph, cb[index].pb->rr_node_to_pb_mapping, num_primitives, vpack_net_hash, logical_block_hash, index);
 
 	cb[index].nets = (int *)my_malloc(cb[index].type->num_pins * sizeof(int));
 	for (i = 0; i < cb[index].type->num_pins; i++) {
@@ -333,7 +333,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
  */
 static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 		INOUTP t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping, INOUTP int *num_primitives, 
-		INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash) {
+		INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash, INP int cb_index) {
 	ezxml_t Cur, Prev, lookahead;
 	const char *Prop;
 	const char *instance_type;
@@ -373,6 +373,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 		pb->logical_block = temp_hash->index;
 		assert(logical_block[temp_hash->index].pb == NULL);
 		logical_block[temp_hash->index].pb = pb;
+		logical_block[temp_hash->index].clb_index = cb_index;
 		(*num_primitives)++;
 	} else {
 		/* process children of child if exists */
@@ -478,7 +479,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 					pb->child_pbs[i][pb_index].parent_pb = pb;
 					pb->child_pbs[i][pb_index].rr_graph = pb->rr_graph;
 
-					processPb(Cur, &pb->child_pbs[i][pb_index], rr_graph, rr_node_to_pb_mapping, num_primitives, vpack_net_hash, logical_block_hash);
+					processPb(Cur, &pb->child_pbs[i][pb_index], rr_graph, rr_node_to_pb_mapping, num_primitives, vpack_net_hash, logical_block_hash, cb_index);
 				} else {
 					/* physical block has no used primitives but it may have used routing */
 					pb->child_pbs[i][pb_index].name = NULL;
@@ -514,7 +515,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 						}
 						pb->child_pbs[i][pb_index].parent_pb = pb;
 						pb->child_pbs[i][pb_index].rr_graph = pb->rr_graph;
-						processPb(Cur, &pb->child_pbs[i][pb_index], rr_graph, rr_node_to_pb_mapping, num_primitives, vpack_net_hash, logical_block_hash);
+						processPb(Cur, &pb->child_pbs[i][pb_index], rr_graph, rr_node_to_pb_mapping, num_primitives, vpack_net_hash, logical_block_hash, cb_index);
 					}
 				}
 				Prev = Cur;

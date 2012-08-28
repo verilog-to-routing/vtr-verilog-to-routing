@@ -332,6 +332,52 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_vpack_net(int inet, int ipin) {
 	return get_pb_graph_node_pin_from_model_port_pin(port, ipin, logical_block[ilogical_block].pb->pb_graph_node);
 }
 
+
+t_pb_graph_pin* get_pb_graph_node_pin_from_clb_net(int inet, int ipin) {
+	int i, iblock, target_port, target_pin, count;
+	t_pb_graph_node *pb_graph_node;
+	const t_pb_type *pb_type;
+	
+	iblock = clb_net[inet].node_block[ipin];
+	pb_graph_node = block[iblock].pb->pb_graph_node;
+	pb_type = pb_graph_node->pb_type;
+
+	target_pin = clb_net[inet].node_block_pin[ipin];
+	target_pin %= (pb_type->num_input_pins + pb_type->num_output_pins + pb_type->num_clock_pins);
+
+	if(target_pin < pb_type->num_input_pins) {
+		count = target_pin;
+		for(i = 0; i < pb_graph_node->num_input_ports; i++) {
+			if(count - pb_graph_node->num_input_pins[i] >= 0) {
+				count -= pb_graph_node->num_input_pins[i];
+			} else {
+				return &pb_graph_node->input_pins[i][count];
+			}
+		}
+	} else if (target_pin < pb_type->num_input_pins + pb_type->num_output_pins) {
+		count = target_pin - pb_type->num_input_pins;
+		for(i = 0; i < pb_graph_node->num_output_ports; i++) {
+			if(count - pb_graph_node->num_output_pins[i] >= 0) {
+				count -= pb_graph_node->num_output_pins[i];
+			} else {
+				return &pb_graph_node->output_pins[i][count];
+			}
+		}
+	} else {
+		count = target_pin - pb_type->num_input_pins - pb_type->num_output_pins;
+		for(i = 0; i < pb_graph_node->num_clock_ports; i++) {
+			if(count - pb_graph_node->num_clock_pins[i] >= 0) {
+				count -= pb_graph_node->num_clock_pins[i];
+			} else {
+				return &pb_graph_node->clock_pins[i][count];
+			}
+		}
+	}
+	assert(0);
+	return NULL;
+}
+
+
 /**
  * Determine cost for using primitive within a complex block, should use primitives of low cost before selecting primitives of high cost
  For now, assume primitives that have a lot of pins are scarcer than those without so use primitives with less pins before those with more

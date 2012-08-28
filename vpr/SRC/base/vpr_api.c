@@ -849,8 +849,8 @@ static t_trace *alloc_and_load_final_routing_trace() {
 
 	final_routing_trace = (t_trace*)my_calloc(num_logical_nets, sizeof(t_trace));
 	for(i = 0; i < num_logical_nets; i++) {
+		iblock = logical_block[vpack_net[i].node_block[0]].clb_index;
 		pin = get_pb_graph_node_pin_from_vpack_net(i, 0);
-		iblock = clb_net[vpack_to_clb_net_mapping[i]].node_block[0];
 		final_routing_trace[i].iblock = iblock;
 		final_routing_trace[i].iswitch = OPEN;
 		final_routing_trace[i].index = pin->pin_count_in_cluster;
@@ -866,11 +866,12 @@ static t_trace *alloc_and_load_final_routing_trace() {
    returns pointer to last terminal trace
 */
 static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
-	int i, iblock, inode;
+	int i, iblock, inode, ipin, inet;
 	int gridx, gridy;
 	t_trace *current, *new_trace, *inter_cb_trace;
 	t_rr_node *local_rr_graph;
 	boolean success;
+	t_pb_graph_pin *pb_graph_pin;
 	
 	iblock = trace->iblock;
 	inode = trace->index;
@@ -880,34 +881,52 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 	if(local_rr_graph[inode].pb_graph_pin->num_output_edges == 0) {
 		if(local_rr_graph[inode].pb_graph_pin->port->type == OUT_PORT) {
 			/* connection to outside cb */
-			inter_cb_trace = trace_head[vpack_to_clb_net_mapping[ivpack_net]];
-			inter_cb_trace = inter_cb_trace->next; /* skip source and go right to opin */
-			while(inter_cb_trace != NULL) {
-				/* continue traversing inter cb trace */
-				if(rr_node[inter_cb_trace->index].type != SINK) {
-					new_trace = (t_trace*)my_calloc(1, sizeof(t_trace));
-					new_trace->iblock = OPEN;
-					new_trace->index = inter_cb_trace->index;
-					new_trace->iswitch = inter_cb_trace->iswitch;
-					new_trace->next = NULL;
-					current->next = new_trace;
-					if(rr_node[inter_cb_trace->index].type == IPIN) {
-						current = current->next;
-						gridx = rr_node[new_trace->index].xlow;
-						gridy = rr_node[new_trace->index].ylow;
-						gridy = gridy - grid[gridx][gridy].offset;
+			if(vpack_net[ivpack_net].is_global) {
+				inet = vpack_to_clb_net_mapping[ivpack_net];
+				if(inet != OPEN) {
+					for(ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {					
+						pb_graph_pin = get_pb_graph_node_pin_from_clb_net(inet, ipin);
 						new_trace = (t_trace*)my_calloc(1, sizeof(t_trace));
-						new_trace->iblock = grid[gridx][gridy].blocks[rr_node[inter_cb_trace->index].z];
-						new_trace->index = rr_node[inter_cb_trace->index].pb_graph_pin->pin_count_in_cluster;
+						new_trace->iblock = clb_net[inet].node_block[ipin];
+						new_trace->index = pb_graph_pin->pin_count_in_cluster;
 						new_trace->iswitch = OPEN;
 						new_trace->next = NULL;
 						current->next = new_trace;
 						current = expand_routing_trace(new_trace, ivpack_net);
-					} else {
-						current = current->next;
 					}
 				}
-				inter_cb_trace = inter_cb_trace->next;
+			} else {
+				inter_cb_trace = trace_head[vpack_to_clb_net_mapping[ivpack_net]];
+				if(inter_cb_trace != NULL) {
+					inter_cb_trace = inter_cb_trace->next; /* skip source and go right to opin */
+				}
+				while(inter_cb_trace != NULL) {
+					/* continue traversing inter cb trace */
+					if(rr_node[inter_cb_trace->index].type != SINK) {
+						new_trace = (t_trace*)my_calloc(1, sizeof(t_trace));
+						new_trace->iblock = OPEN;
+						new_trace->index = inter_cb_trace->index;
+						new_trace->iswitch = inter_cb_trace->iswitch;
+						new_trace->next = NULL;
+						current->next = new_trace;
+						if(rr_node[inter_cb_trace->index].type == IPIN) {
+							current = current->next;
+							gridx = rr_node[new_trace->index].xlow;
+							gridy = rr_node[new_trace->index].ylow;
+							gridy = gridy - grid[gridx][gridy].offset;
+							new_trace = (t_trace*)my_calloc(1, sizeof(t_trace));
+							new_trace->iblock = grid[gridx][gridy].blocks[rr_node[inter_cb_trace->index].z];
+							new_trace->index = rr_node[inter_cb_trace->index].pb_graph_pin->pin_count_in_cluster;
+							new_trace->iswitch = OPEN;
+							new_trace->next = NULL;
+							current->next = new_trace;
+							current = expand_routing_trace(new_trace, ivpack_net);
+						} else {
+							current = current->next;
+						}
+					}
+					inter_cb_trace = inter_cb_trace->next;
+				}
 			}
 		}	
 	} else {
@@ -942,7 +961,7 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 
 static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 	FILE *fp;
-	int iblock, inode, iswitch;
+	int iblock, inode, iswitch, iprev_block;
 	t_trace *current;
 	t_rr_node *local_rr_graph;
 	const char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY",
@@ -954,14 +973,15 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 	for(i = 0; i < num_logical_nets; i++) {
 		current = &trace[i];
 		iswitch = 0;
+		iprev_block = OPEN;
 			
 		fprintf(fp, "Net %s (%d)\n\n", vpack_net[i].name, i);
 		while(current != NULL) {
 			iblock = current->iblock;
 			inode = current->index;
 			if(iblock != OPEN) {
-				if(iswitch != OPEN) {
-					iswitch = OPEN;
+				if(iprev_block != iblock) {
+					iprev_block = iblock;
 					fprintf(fp, "Block %s (%d) (%d, %d, %d):\n", block[iblock].name, iblock, block[iblock].x, block[iblock].y, block[iblock].z);
 				}
 				local_rr_graph = block[iblock].pb->rr_graph;
