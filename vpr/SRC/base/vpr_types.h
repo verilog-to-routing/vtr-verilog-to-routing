@@ -42,7 +42,6 @@
 // #define PATH_COUNTING
 #define FINAL_DISCOUNT_FUNCTION_BASE DISCOUNT_FUNCTION_BASE
 #define DISCOUNT_FUNCTION_BASE 100
-#define PLACER_FINAL_EXPONENT 8. 
 #define PATH_FACTOR 0.4
 // #define TAKE_THE_LOG // 's' = log(forward) * log(backward) / 't' = log(forward * backward)
 

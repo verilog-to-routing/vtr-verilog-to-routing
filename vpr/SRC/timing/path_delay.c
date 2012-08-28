@@ -3120,7 +3120,7 @@ void print_timing_stats(void) {
 		for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
 			/* Print the intra-domain constraint if it was analysed. */
 			if (timing_constraint[source_clock_domain][source_clock_domain] > NEGATIVE_EPSILON) { 
-				vpr_printf(TIO_MESSAGE_INFO, "%s to %s: %g ns (%g MHz)\n", 
+				vpr_printf(TIO_MESSAGE_INFO, "%s to %s: %g ns\n (%g MHz)\n", 
 					constrained_clocks[source_clock_domain].name,
 					constrained_clocks[source_clock_domain].name, 
 					timing_stats->cpd[source_clock_domain][source_clock_domain],
@@ -3136,13 +3136,13 @@ void print_timing_stats(void) {
 				if (source_clock_domain == sink_clock_domain) continue; /* already done that */
 				if (timing_constraint[source_clock_domain][sink_clock_domain] > NEGATIVE_EPSILON) { 
 					/* If this domain pair was analysed */
-					vpr_printf(TIO_MESSAGE_INFO, "\t%s to %s: %g ns (%g MHz)\n", 
+					vpr_printf(TIO_MESSAGE_INFO, "%s to %s: %g ns\n (%g MHz)\n", 
 						constrained_clocks[source_clock_domain].name,
 						constrained_clocks[sink_clock_domain].name, 
 						timing_stats->cpd[source_clock_domain][sink_clock_domain],
 						1 / timing_stats->cpd[source_clock_domain][sink_clock_domain]);
 				} else {
-					vpr_printf(TIO_MESSAGE_INFO, "\t%s to %s: --\n", 
+					vpr_printf(TIO_MESSAGE_INFO, "%s to %s: --\n", 
 						constrained_clocks[source_clock_domain].name,
 						constrained_clocks[sink_clock_domain].name);
 				}

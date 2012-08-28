@@ -598,7 +598,7 @@ static void SetupPlacerOpts(INP t_options Options, INP boolean TimingEnabled,
 		PlacerOpts->td_place_exp_first = Options.place_exp_first;
 	}
 
-	PlacerOpts->td_place_exp_last = PLACER_FINAL_EXPONENT; /* DEFAULT */
+	PlacerOpts->td_place_exp_last = 8.; /* DEFAULT */
 	if (Options.Count[OT_TD_PLACE_EXP_LAST]) {
 		PlacerOpts->td_place_exp_last = Options.place_exp_last;
 	}
