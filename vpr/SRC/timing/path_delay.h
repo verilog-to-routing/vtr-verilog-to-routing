@@ -5,12 +5,18 @@
 
 /*********************** Defines for timing options *******************************/
 
-#define SLACK_DEFINITION 'R'
-/* Choose whether, and how, to normalize negative slacks for optimization:
- 
-   'S': If negative slacks exist, increase the value of all slacks by the largest negative slack.  Only the critical path will have 0 slack.
-   'R': Set the required time to the max of the "real" required time (constraint + tnode[inode].clock_skew) and the arrival time.  Only the critical path will have 0 slack.
-
+#define SLACK_DEFINITION 'S'
+/* Choose how to normalize negative slacks for the optimizers (not in the final timing analysis for output statistics):
+   'R' (T_req-relaxed): For each constraint, set the required time at sink nodes to the max of the true required time 
+	   (constraint + tnode[inode].clock_skew) and the max arrival time. This means that the required time is "relaxed" 
+	   to the max arrival time for tight constraints which would otherwise	give negative slack.
+	   Criticalities are computed once per constraint, using a criticality denominator unique to that constraint
+	   (maximum of the constraint and the max arrival time).
+   'S' (Shifted): After all slacks are computed, increase the value of all slacks by the largest negative slack, 
+       if it exists. Equivalent to 'R' for single-clock cases. 
+	   Criticalities are computed once per timing analysis, using a single criticality denominator for all constraints
+	   (maximum of all constraints and all required times).
+	   This can give unusual results with multiple, very dissimilar constraints.
 */
 
 /*************************** Function declarations ********************************/

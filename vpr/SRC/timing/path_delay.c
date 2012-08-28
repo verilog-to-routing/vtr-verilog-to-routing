@@ -139,16 +139,20 @@ static void alloc_timing_stats(void);
 static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain, 
 	boolean is_prepacked, boolean is_final_analysis, long * max_critical_input_paths, 
 	long * max_critical_output_paths);
+
 #ifdef PATH_COUNTING
 static void do_net_weighting(float criticality_denom);
 #endif
+
 static void do_lut_rebalancing();
 static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 		INOUTP int *inode, INP t_timing_inf timing_inf);
+
 #ifndef PATH_COUNTING
 static void update_normalized_costs(float T_arr_max_this_domain, long max_critical_input_paths,
 		long max_critical_output_paths);
 #endif
+
 static void print_primitive_as_blif (FILE *fpout, int iblk);
 
 static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel, boolean do_lut_input_balancing); 
@@ -1686,7 +1690,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 	A very useful metric for optimizers is:
 		1 - slack / criticality_denom
 	where criticality_denom is the maximum of (all arrival times for this constraint's traversal, 
-	the constraint itself).  This normalized slack is called criticality.
+	the constraint itself).  This normalized slack is called criticality. 
 
 	Slack and criticality are only calculated if both the driver of the net and the sink pin were
 	used_on_this_traversal, and are only overwritten if lower than previously-obtained values. 
@@ -1707,7 +1711,13 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 	late into the routing stage of the flow. 
 	
 	Is_final_analysis flags whether this is the final, analysis pass.  If it is, the analyser will 
-	compute actual slacks instead of normalized ones. */
+	compute actual slacks instead of normalized ones.
+	
+	To do: flip-flop to flip-flop and flip-flop to clock domain constraints (set_false_path, set_max_delay,
+	and especially set_multicycle_path). All the info for these constraints is contained in fc_constraints and 
+	ff_constraints, but graph traversals are not included yet. Probably, an entire traversal will be needed for
+	each constraint. Clock domain to flip-flop constraints are coded but not tested, and are done within 
+	existing traversals. */
 
 	int i, j, source_clock_domain, sink_clock_domain, inode, inet, ipin;
 #if defined PATH_COUNTING || SLACK_DEFINITION == 'S'
@@ -1720,17 +1730,18 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 								 /* Only update slack values if we need to print it, i.e.
 								 for the final output file (is_final_analysis) or echo files. */
 
-	float criticality_denom; /* For a particular constraint, the maximum of the constraint and
-							 all arrival times for the constraint's traversal. Used to normalize 
-							 the clusterer's normalized_slack and, more importantly, criticality. */
+	float criticality_denom; /* (SLACK_DEFINITION == 'R' only) For a particular constraint, the maximum of 
+							 the constraint and all arrival times for the constraint's traversal. Used to 
+							 normalize the clusterer's normalized_slack and, more importantly, criticality. */
 
 	long max_critical_output_paths, max_critical_input_paths;
 	t_pb *pb;
 
 #if SLACK_DEFINITION == 'S'
 	float smallest_slack_in_design = HUGE_POSITIVE_FLOAT;
+	/* Shift all slacks upwards by this number if it is negative. */
 
-	criticality_denom_global = HUGE_NEGATIVE_FLOAT; 
+	criticality_denom_global = HUGE_NEGATIVE_FLOAT;
 	/* Denominator of criticality for shifted - max of all arrival times and all constraints. */
 #endif
 
@@ -1809,6 +1820,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 				/* Weight the importance of each net, used in slack calculation. */
 				do_net_weighting(criticality_denom);
 #endif
+
 				/* Update the slack and criticality for each edge of each net which was  
 				analysed on the most recent traversal and has a lower (slack) or 
 				higher (criticality) value than before. */
@@ -1858,7 +1870,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 													 + (1 - PATH_FACTOR) * crit; 
 			} else {
 				/* Dummy criticality - reset to 0 (even though this should 
-				be  the same as leaving it at HUGE_NEGATIVE_FLOAT). */
+				be the same as leaving it at HUGE_NEGATIVE_FLOAT). */
 				slacks->criticality[inet][iedge + 1] = 0.;
 			}
 		}
@@ -1866,6 +1878,10 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 #endif
 
 #if SLACK_DEFINITION == 'S'
+	/* criticality_denom_global currently holds the max arrival time in the design.
+	Now, set it to the max of the max arrival time and all the constraints.
+	DO_NOT_ANALYSE (-1) constraints will be automatically excluded since they are too small. */
+
 	for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
 		for (sink_clock_domain = 0; sink_clock_domain < num_constrained_clocks; sink_clock_domain++) {
 			criticality_denom_global = max(criticality_denom_global, timing_constraint[source_clock_domain][sink_clock_domain]);
@@ -1889,13 +1905,13 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 					slacks->slack[inet][iedge + 1] -= smallest_slack_in_design; 
 					/* Remember, smallest_slack_in_design is negative, so we're INCREASING all the slacks. */
 					/* Note that if slack was equal to HUGE_POSITIVE_FLOAT, it will still be equal to more than this, 
-					so we can ignore it properly when calculating criticalities directly below. */
+					so it will still be ignored when we calculate criticalities. */
 				}
 			}
 		}
 	}
 
-	/* We can now calculate criticalities, only after we normalized slacks. */
+	/* We can now calculate criticalities, only after we normalize slacks. */
 	for (inet = 0; inet < num_timing_nets; inet++) {
 		num_edges = timing_nets[inet].num_sinks;
 		for (iedge = 0; iedge < num_edges; iedge++) {
@@ -1906,6 +1922,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 		}
 	}		
 #endif
+
 	if (is_prepacked) {
 		/* Warn the user if no paths will ever be analysed. There are two possibilities:
 		1. The circuit fits into one complex block except for I/O paths, and  
@@ -2133,16 +2150,19 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 					continue;
 				}
 	
-				/* See if there's an override constraint between the source clock domain (name 
-				is constrained_clocks[source_clock_domain].name) and the (sink) flip-flop or 
-				outpad we're at now (name is find_tnode_net_name(inode, is_prepacked)). */
+				/* See if there's an override constraint between the source clock domain (name is 
+				constrained_clocks[source_clock_domain].name) and the flip-flop or outpad we're at 
+				now (name is find_tnode_net_name(inode, is_prepacked)). We test if 
+				num_cf_constraints > 0 first so that we can save time looking up names in the vast 
+				majority of cases where there are no such constraints. */
+
 				if (num_cf_constraints > 0 && (icf = find_cf_constraint(constrained_clocks[source_clock_domain].name, find_tnode_net_name(inode, is_prepacked))) != -1) {
 					constraint = cf_constraints[icf].constraint;
 					if (constraint < NEGATIVE_EPSILON) { 
 						/* Constraint is DO_NOT_ANALYSE (-1) for this particular sink. */
 						continue;
 					}
-				} else { 
+				} else { /* Use the default constraint from timing_constraint. */
 					constraint = timing_constraint[source_clock_domain][sink_clock_domain];
 					/* Constraint is guaranteed to be valid since we checked for it at the very beginning. */
 				}
@@ -2352,6 +2372,7 @@ static void do_net_weighting(float criticality_denom) {
 	}
 }
 #endif
+
 static void update_slacks(t_slack * slacks, int source_clock_domain, int sink_clock_domain, float criticality_denom,
 	boolean update_slack) {
 
@@ -3089,13 +3110,13 @@ void print_timing_stats(void) {
 	}
 	
 	/* Also print the least slack in the design */
-	vpr_printf(TIO_MESSAGE_INFO, "\nLeast slack in design: %g ns\n", least_slack_in_design);
+	vpr_printf(TIO_MESSAGE_INFO, "\nLeast slack in design: %g ns\n\n", least_slack_in_design);
 
 	if (num_constrained_clocks > 1) { /* Multiple-clock design */
 
 		/* Print minimum possible clock period to meet each constraint */
 
-		vpr_printf(TIO_MESSAGE_INFO, "\nMinimum possible clock period to meet each constraint (including skew effects):\n");
+		vpr_printf(TIO_MESSAGE_INFO, "Minimum possible clock period to meet each constraint (including skew effects):\n");
 		for (source_clock_domain = 0; source_clock_domain < num_constrained_clocks; source_clock_domain++) {
 			/* Print the intra-domain constraint if it was analysed. */
 			if (timing_constraint[source_clock_domain][source_clock_domain] > NEGATIVE_EPSILON) { 

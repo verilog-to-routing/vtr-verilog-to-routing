@@ -1110,7 +1110,7 @@ static void add_override_constraint(char ** from_list, int num_from, char ** to_
 		for (i = 0; i < num_from; i++) {
 			(*constraint_array)[num_constraints - 1].source_list[i] = my_strdup(from_list[i]);
 		}
-		for (i = 0; i < num_from; i++) {
+		for (i = 0; i < num_to; i++) {
 			(*constraint_array)[num_constraints - 1].sink_list[i] = my_strdup(to_list[i]);
 		}
 	} else {
