@@ -4,13 +4,13 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=vtr_flow/tasks/regression_tests/vtr_reg_nightly/vpr_reg_multiclock/blif
+circuits_dir=tasks/regression_tests/vtr_reg_nightly/vpr_reg_multiclock
 
 # Path to directory of architectures to use
 archs_dir=arch/timing
 
 # Path to directory of SDC files to use
-sdc_dir=vtr_flow/tasks/regression_tests/vtr_reg_nightly/vpr_reg_multiclock/sdc
+sdc_dir=tasks/regression_tests/vtr_reg_nightly/vpr_reg_multiclock
 
 # Add circuits to list to sweep
 circuit_list_add=multiclock.blif
