@@ -419,29 +419,29 @@ void define_add_function(nnode_t *node, short type, FILE *out)
 	/* Write the input pins*/
 	for (i = 0;  i < node->num_input_pins; i++)
 	{
-		npin_t *driver_pin = node->input_pins[i]->net->driver_pin;
+			npin_t *driver_pin = node->input_pins[i]->net->driver_pin;
 
-		if (i < node->input_port_sizes[0])
-		{
-			if (!driver_pin->name)
-				j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->next->name, i, driver_pin->node->name);
+			if (i < node->input_port_sizes[0])
+			{
+				if (!driver_pin->name)
+					j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->next->name, i, driver_pin->node->name);
+				else
+					j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->next->name, i, driver_pin->name);
+			}
+			else if(i >= node->input_port_sizes[0] && i < node->input_port_sizes[1] + node->input_port_sizes[0])
+			{
+				if (!driver_pin->name)
+					j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->node->name);
+				else
+					j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->name);
+			}
 			else
-				j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->next->name, i, driver_pin->name);
-		}
-		else if(i >= node->input_port_sizes[0] && i < node->input_port_sizes[1] + node->input_port_sizes[0])
-		{
-			if (!driver_pin->name)
-				j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->node->name);
-			else
-				j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->name);
-		}
-		else
-		{
-			if (!driver_pin->name)
-				j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->node->name);
-			else
-				j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->name);
-		}
+			{
+				if (!driver_pin->name)
+					j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->node->name);
+				else
+					j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->name);
+			}
 
 		if (count + j > 79)
 		{
@@ -568,7 +568,7 @@ void init_split_adder(nnode_t *node, nnode_t *ptr, int a, int sizea, int b, int 
 		for (i = 0; i < current_sizeb; i++)
 			ptr->input_pins[i+current_sizeb] = NULL;
 	}
-	else if(flaga == 2)
+	else if(flagb == 2)
 	{
 		for (i = 0; i < bb; i++)
 		{
@@ -645,7 +645,9 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 	}
 
 	//connect the first cin pin to ground
-	connect_nodes(netlist->gnd_node, 0, node[0], (sizea + sizeb));
+	//node[0]->input_pins[sizea + sizeb] = allocate_npin();
+	//node[0]->input_pins[sizea + sizeb]->name = append_string("", "Unconn");
+	connect_nodes(netlist->pad_node, 0, node[0], (sizea + sizeb));
 
 	//if any input pins beside first cin pins are NULL, connect those pins to ground
 	for(i = 0; i < count; i++)
@@ -654,7 +656,7 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 		for(j = 0; j < num - 1; j++)
 		{
 			if(node[i]->input_pins[j] == NULL)
-				connect_nodes(netlist->gnd_node, 0, node[i], j);
+				connect_nodes(netlist->pad_node, 0, node[i],j);
 		}
 	}
 
@@ -669,9 +671,6 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 		for(i = 1; i < count; i++)
 			connect_nodes(node[i-1], sizeb, node[i], (node[i]->num_input_pins - 1));
 	}
-
-
-
 
 	if(count * sizea == a)
 	{
@@ -704,7 +703,6 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 		node[count - 1]->output_pins[node[(count - 1)]->num_output_pins - 1] = allocate_npin();
 		// Pad outputs with a unique and descriptive name to avoid collisions.
 		node[count - 1]->output_pins[(node[(count - 1)]->num_output_pins - 1)]->name = append_string("", "%s~dummy_output~%d~%d", node[(count - 1)]->name, (count - 1), (node[(count - 1)]->num_output_pins - 1));
-		//connect_nodes(node[count - 1], (node[(count - 1)]->num_output_pins - 1), netlist->gnd_node, 0);
 	}
 
 
@@ -773,7 +771,7 @@ void pad_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, int 
 				//new_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, nodeo, mark);
 			}
 
-			connect_nodes(netlist->gnd_node, 0, node[0], (sizea + sizeb));
+			connect_nodes(netlist->pad_node, 0, node[0], (sizea + sizeb));
 
 			//if any input pins beside first cin pins are NULL, connect those pins to ground
 			for(i = 0; i < count; i++)
@@ -782,7 +780,7 @@ void pad_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, int 
 				for(j = 0; j < num - 1; j++)
 				{
 					if(node[i]->input_pins[j] == NULL)
-						connect_nodes(netlist->gnd_node, 0, node[i], j);
+						connect_nodes(netlist->pad_node, 0, node[i], j);
 				}
 			}
 
