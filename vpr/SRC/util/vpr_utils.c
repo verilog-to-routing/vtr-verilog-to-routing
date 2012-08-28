@@ -334,7 +334,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_vpack_net(int inet, int ipin) {
 
 
 t_pb_graph_pin* get_pb_graph_node_pin_from_clb_net(int inet, int ipin) {
-	int i, iblock, target_port, target_pin, count;
+	int i, iblock, target_pin, count;
 	t_pb_graph_node *pb_graph_node;
 	const t_pb_type *pb_type;
 	
