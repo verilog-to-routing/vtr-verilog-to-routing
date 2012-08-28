@@ -5,7 +5,7 @@
 
 /*********************** Defines for timing options *******************************/
 
-#define SLACK_DEFINITION 'S'
+#define SLACK_DEFINITION 'R'
 /* Choose how to normalize negative slacks for the optimizers (not in the final timing analysis for output statistics):
    'R' (T_req-relaxed): For each constraint, set the required time at sink nodes to the max of the true required time 
 	   (constraint + tnode[inode].clock_skew) and the max arrival time. This means that the required time is "relaxed" 
