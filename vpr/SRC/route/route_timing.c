@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <math.h>
+#include <time.h>
+
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
-#include "mst.h"
 #include "route_export.h"
 #include "route_common.h"
 #include "route_tree_timing.h"
@@ -41,7 +42,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 /************************ Subroutine definitions *****************************/
 
 boolean try_timing_driven_route(struct s_router_opts router_opts,
-		float **net_delay, t_slack * slacks, t_ivec ** clb_opins_used_locally) {
+		float **net_delay, t_slack * slacks, t_ivec ** clb_opins_used_locally, boolean timing_analysis_enabled) {
 
 	/* Timing-driven routing algorithm.  The timing graph (includes slack)   *
 	 * must have already been allocated, and net_delay must have been allocated. *
@@ -53,7 +54,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	float *pin_criticality /* [1..max_pins_per_net-1] */, pres_fac, *sinks, 
 		critical_path_delay;
 	t_rt_node **rt_node_of_sink; /* [1..max_pins_per_net-1] */
-
+	clock_t begin,end;
 	sinks = (float*)my_malloc(sizeof(float) * num_nets);
 	net_index = (int*)my_malloc(sizeof(int) * num_nets);
 
@@ -66,9 +67,12 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	alloc_timing_driven_route_structs(&pin_criticality, &sink_order,
 			&rt_node_of_sink);
 
-	/* First do one routing iteration ignoring congestion and marking all sinks  *
-	 * on each net as critical to get reasonable net delay estimates.            */
-
+	/* When timing analysis is turned on, first do one routing iteration 	*
+	 * ignoring congestion and marking all sinks on each net as critical to	*
+	 * get reasonable net delay estimates. If timing analysis is turned 	*
+	 * off, the criticalities should always be equal to 1			*
+	 * meaning that total wirelength should be optimized.			*/
+		
 	for (inet = 0; inet < num_nets; inet++) {
 		if (clb_net[inet].is_global == FALSE) {
 			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++)
@@ -82,6 +86,8 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	pres_fac = router_opts.first_iter_pres_fac; /* Typically 0 -> ignore cong. */
 
 	for (itry = 1; itry <= router_opts.max_router_iterations; itry++) {
+		begin = clock();
+		vpr_printf(TIO_MESSAGE_INFO, "routing iteration %d\n", itry);
 
 		for (i = 0; i < num_nets; i++) {
 			inet = net_index[i];
@@ -187,22 +193,47 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			pathfinder_update_cost(pres_fac, router_opts.acc_fac);
 		}
 
-		/* Update slack values by doing another timing analysis. *
-		 * Timing_driven_route_net updated the net delay values. */
+		
+		if(timing_analysis_enabled)
+		{		
+			/* Update slack values by doing another timing analysis.                 *
+			 * Timing_driven_route_net updated the net delay values.                 */
 
-		load_timing_graph_net_delays(net_delay);
+			load_timing_graph_net_delays(net_delay);
 
-#ifdef HACK_LUT_PIN_SWAPPING
-		do_timing_analysis(slacks, FALSE, TRUE, FALSE);
-#else
-		do_timing_analysis(slacks, FALSE, FALSE, FALSE);
-#endif
+	#ifdef HACK_LUT_PIN_SWAPPING
+			do_timing_analysis(slacks, FALSE, TRUE, FALSE);
+	#else
+			do_timing_analysis(slacks, FALSE, FALSE, FALSE);
+	#endif
 
-		/* Print critical path delay */
-		critical_path_delay = get_critical_path_delay();
-		vpr_printf(TIO_MESSAGE_INFO, "\nCrit. path: %g ns\n", critical_path_delay);
-		/* Deliberately abbreviated so parsing for "Critical path" will not pick this up. */
-
+			/* Print critical path delay */
+			critical_path_delay = get_critical_path_delay();
+			vpr_printf(TIO_MESSAGE_INFO, "\nCrit. path: %g ns\n", critical_path_delay);
+			/* Deliberately abbreviated so parsing for "Critical path" will not pick this up. */
+		}
+		else 
+		{
+			/* If timing analysis is not enabled, make sure that the criticalities stay as	*
+			 * 1. Also, make sure that the net_delay is always 0. This is to optimize 	*
+			 * wirelength									*/
+			for (inet = 0; inet < num_nets; inet++) {
+				for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++)
+				{
+					slacks->timing_criticality[inet][ipin] = 1.;
+					net_delay[inet][ipin] = 0.;
+				}
+			}
+		}
+		
+		end = clock();
+		#ifdef CLOCKS_PER_SEC
+				vpr_printf(TIO_MESSAGE_INFO, "routing iteration took %g seconds\n",
+						(float) (end - begin) / CLOCKS_PER_SEC);
+		#else
+				vpr_printf(TIO_MESSAGE_INFO, "routing iteration took %g seconds\n", (float)(end - begin) / CLK_PER_SEC);
+		#endif
+		
 		fflush(stdout);
 	}
 
@@ -301,7 +332,8 @@ boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
 			/* Use dummy criticality of 1. */
 			pin_criticality[ipin] = 1.;
 
-		} else { 
+		} 
+		else { 
 			timing_criticality = slacks->timing_criticality[inet][ipin]; 
 			if (timing_criticality < HUGE_NEGATIVE_FLOAT + 1) {
 				/* Pin was not analysed - non-critical. */

@@ -179,8 +179,8 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 		case TIMING_DRIVEN:
 			vpr_printf(TIO_MESSAGE_INFO, "TIMING_DRIVEN\n");
 			break;
-		case DIRECTED_SEARCH:
-			vpr_printf(TIO_MESSAGE_INFO, "DIRECTED_SEARCH\n");
+		case NO_TIMING:
+			vpr_printf(TIO_MESSAGE_INFO, "NO_TIMING\n");
 			break;
 		default:
 			vpr_printf(TIO_MESSAGE_INFO, "<Unknown>\n");
@@ -238,8 +238,8 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 		case TIMING_DRIVEN:
 			vpr_printf(TIO_MESSAGE_INFO, "TIMING_DRIVEN\n");
 			break;
-		case DIRECTED_SEARCH:
-			vpr_printf(TIO_MESSAGE_INFO, "DIRECTED_SEARCH\n");
+		case NO_TIMING:
+			vpr_printf(TIO_MESSAGE_INFO, "NO_TIMING\n");
 			break;
 		default:
 			vpr_printf(TIO_MESSAGE_ERROR, "Unknown router algorithm\n");

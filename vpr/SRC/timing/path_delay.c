@@ -209,7 +209,7 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 
 	slacks = alloc_slacks();
 
-	if (timing_constraint == NULL) {
+	if (timing_inf.timing_analysis_enabled && timing_constraint == NULL) {
 		/* the SDC timing constraints only need to be read in once; *
 		 * if they haven't been already, do it now				    */
 		read_sdc(timing_inf.SDCFile);
@@ -907,6 +907,9 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 		case PRIMITIVE_IPIN:
 			/* Pin info comes from pb_graph block delays
 			 */
+			/*there would be no slack information if timing analysis is off*/
+			if (timing_inf.timing_analysis_enabled)
+			{
 			irr_node = tnode[i].pb_graph_pin->pin_count_in_cluster;
 			local_rr_graph = block[iblock].pb->rr_graph;
 			ipb_graph_pin = local_rr_graph[irr_node].pb_graph_pin;
@@ -935,6 +938,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 						tnode[i].pb_graph_pin->port->name,
 						tnode[i].pb_graph_pin->pin_number);
 				exit(1);
+			}
 			}
 			break;
 		case CB_OPIN:

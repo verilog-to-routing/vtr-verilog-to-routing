@@ -2,7 +2,6 @@
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
-#include "mst.h"
 #include "route_export.h"
 #include "route_common.h"
 #include "route_breadth_first.h"

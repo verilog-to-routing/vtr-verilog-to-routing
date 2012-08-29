@@ -10,7 +10,6 @@
 #include "route_timing.h"
 #include "timing_place_lookup.h"
 #include "rr_graph.h"
-#include "mst.h"
 #include "route_export.h"
 #include <assert.h>
 #include "read_xml_arch_file.h"

@@ -59,7 +59,7 @@ struct s_TokenPair OptionArgTokenList[] = { { "on", OT_ON }, { "off", OT_OFF },
 				"net_timing_driven", OT_NET_TIMING_DRIVEN }, {
 				"path_timing_driven", OT_PATH_TIMING_DRIVEN }, { "breadth_first",
 				OT_BREADTH_FIRST }, { "timing_driven", OT_TIMING_DRIVEN }, {
-				"directed_search", OT_DIRECTED_SEARCH }, { "intrinsic_delay",
+				"NO_TIMING", OT_NO_TIMING }, { "intrinsic_delay",
 				OT_INTRINSIC_DELAY },
 		{ "delay_normalized", OT_DELAY_NORMALIZED }, { "demand_only",
 				OT_DEMAND_ONLY }, { "global", OT_GLOBAL }, { "detailed",

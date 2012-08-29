@@ -6,13 +6,11 @@
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
-#include "mst.h"
 #include "route_export.h"
 #include "route_common.h"
 #include "route_tree_timing.h"
 #include "route_timing.h"
 #include "route_breadth_first.h"
-#include "route_directed_search.h"
 #include "place_and_route.h"
 #include "rr_graph.h"
 #include "read_xml_arch_file.h"
@@ -223,7 +221,7 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, float **net_delay, t_slack * slacks,
 		t_chan_width_dist chan_width_dist, t_ivec ** clb_opins_used_locally,
-		t_mst_edge ** mst, boolean * Fc_clipped) {
+		boolean * Fc_clipped) {
 
 	/* Attempts a routing via an iterated maze router algorithm.  Width_fac *
 	 * specifies the relative width of the channels, while the members of   *
@@ -285,15 +283,11 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 		vpr_printf(TIO_MESSAGE_INFO, "Confirming Router Algorithm: BREADTH_FIRST.\n");
 		success = try_breadth_first_route(router_opts, clb_opins_used_locally,
 				width_fac);
-	} else if (router_opts.router_algorithm == TIMING_DRIVEN) { /* TIMING_DRIVEN route */
+	} else { /* TIMING_DRIVEN route */
 		vpr_printf(TIO_MESSAGE_INFO, "Confirming Router Algorithm: TIMING_DRIVEN.\n");
 		assert(router_opts.route_type != GLOBAL);
 		success = try_timing_driven_route(router_opts, net_delay, slacks,
-				clb_opins_used_locally);
-	} else { /* Directed Search Routability Driven */
-		vpr_printf(TIO_MESSAGE_INFO, "Confirming Router Algorithm: DIRECTED_SEARCH.\n");
-		success = try_directed_search_route(router_opts, clb_opins_used_locally,
-				width_fac, mst);
+			clb_opins_used_locally,timing_inf.timing_analysis_enabled);
 	}
 
 	free_rr_node_route_structs();

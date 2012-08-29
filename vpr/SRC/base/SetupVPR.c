@@ -342,12 +342,12 @@ static void SetupRouterOpts(INP t_options Options, INP boolean TimingEnabled,
 	}
 
 	/* Depends on RouteOpts->route_type */
-	RouterOpts->router_algorithm = DIRECTED_SEARCH; /* DEFAULT */
+	RouterOpts->router_algorithm = NO_TIMING; /* DEFAULT */
 	if (TimingEnabled) {
 		RouterOpts->router_algorithm = TIMING_DRIVEN; /* DEFAULT */
 	}
 	if (GLOBAL == RouterOpts->route_type) {
-		RouterOpts->router_algorithm = DIRECTED_SEARCH; /* DEFAULT */
+		RouterOpts->router_algorithm = NO_TIMING; /* DEFAULT */
 	}
 	if (Options.Count[OT_ROUTER_ALGORITHM]) {
 		RouterOpts->router_algorithm = Options.RouterAlgorithm;
@@ -360,7 +360,7 @@ static void SetupRouterOpts(INP t_options Options, INP boolean TimingEnabled,
 
 	/* Depends on RouterOpts->router_algorithm */
 	RouterOpts->initial_pres_fac = 0.5; /* DEFAULT */
-	if (DIRECTED_SEARCH == RouterOpts->router_algorithm
+	if (NO_TIMING == RouterOpts->router_algorithm
 			|| Options.Count[OT_FAST]) {
 		RouterOpts->initial_pres_fac = 10000.0; /* DEFAULT */
 	}
@@ -373,7 +373,7 @@ static void SetupRouterOpts(INP t_options Options, INP boolean TimingEnabled,
 	if (BREADTH_FIRST == RouterOpts->router_algorithm) {
 		RouterOpts->base_cost_type = DEMAND_ONLY; /* DEFAULT */
 	}
-	if (DIRECTED_SEARCH == RouterOpts->router_algorithm) {
+	if (NO_TIMING == RouterOpts->router_algorithm) {
 		RouterOpts->base_cost_type = DEMAND_ONLY; /* DEFAULT */
 	}
 	if (Options.Count[OT_BASE_COST_TYPE]) {
@@ -385,7 +385,7 @@ static void SetupRouterOpts(INP t_options Options, INP boolean TimingEnabled,
 	if (BREADTH_FIRST == RouterOpts->router_algorithm) {
 		RouterOpts->first_iter_pres_fac = 0.0; /* DEFAULT */
 	}
-	if (DIRECTED_SEARCH == RouterOpts->router_algorithm
+	if (NO_TIMING == RouterOpts->router_algorithm
 			|| Options.Count[OT_FAST]) {
 		RouterOpts->first_iter_pres_fac = 10000.0; /* DEFAULT */
 	}

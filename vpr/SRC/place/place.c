@@ -5,7 +5,6 @@
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
-#include "mst.h"
 #include "place.h"
 #include "read_place.h"
 #include "draw.h"
@@ -255,7 +254,7 @@ void try_place(struct s_placer_opts placer_opts,
 		struct s_annealing_sched annealing_sched,
 		t_chan_width_dist chan_width_dist, struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, t_mst_edge *** mst) {
+		t_timing_inf timing_inf) {
 
 	/* Does almost all the work of placing a circuit.  Width_fac gives the   *
 	 * width of the widest channel.  Place_cost_exp says what exponent the   *
@@ -840,20 +839,6 @@ void try_place(struct s_placer_opts placer_opts,
 		free_lookups_and_criticalities(&net_delay, slacks);
 	}
 
-	/* placement is done - find mst of all nets.
-	 * creating mst for each net; this gives me an ordering of sinks 
-	 * by which I will direct search (A*) for. */
-	if (*mst) {
-		for (inet = 0; inet < num_nets; inet++) {
-			assert((*mst)[inet]);
-			free((*mst)[inet]);
-		}
-		free(*mst);
-	}
-	*mst = (t_mst_edge **) my_malloc(sizeof(t_mst_edge *) * num_nets);
-	for (inet = 0; inet < num_nets; inet++) {
-		(*mst)[inet] = get_mst_of_net(inet);
-	}
 	free_try_swap_arrays();
 }
 
