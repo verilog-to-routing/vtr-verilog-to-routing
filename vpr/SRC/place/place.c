@@ -21,9 +21,12 @@
 /************** Types and defines local to place.c ***************************/
 
 #define SMALL_NET 4		/* Cut off for incremental bounding box updates. */
-
 /* 4 is fastest -- I checked.                    */
-
+#if 0
+#define MIN_TIMING_COST 1.e-12 
+/* Stops timing cost from going to 0 with very lax timing constraints. 
+This would cause division by 0 when auto-normalizing. */
+#endif
 /* For comp_cost.  NORMAL means use the method that generates updateable  *
  * bounding boxes for speed.  CHECK means compute all bounding boxes from *
  * scratch using a very simple routine to allow checks of the other       *
@@ -1626,7 +1629,12 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 			}
 		}
 	}
+#if 0
+	/* Make sure timing cost does not go above MIN_TIMING_COST. */
+	*timing_cost = max(loc_timing_cost, MIN_TIMING_COST);
+#else
 	*timing_cost = loc_timing_cost;
+#endif
 	*connection_delay_sum = loc_connection_delay_sum;
 }
 

@@ -963,7 +963,7 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 
 static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 	FILE *fp;
-	int iblock, inode, iswitch, iprev_block;
+	int iblock, inode, iprev_block;
 	t_trace *current;
 	t_rr_node *local_rr_graph;
 	const char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY",
@@ -974,7 +974,6 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 	
 	for(i = 0; i < num_logical_nets; i++) {
 		current = &trace[i];
-		iswitch = 0;
 		iprev_block = OPEN;
 			
 		fprintf(fp, "Net %s (%d)\n\n", vpack_net[i].name, i);
@@ -994,7 +993,6 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 					local_rr_graph[inode].pb_graph_pin->port->name,
 					local_rr_graph[inode].pb_graph_pin->pin_number);
 			} else {
-				iswitch = current->iswitch;
 				fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", 
 					inode,
 					name_type[(int)rr_node[inode].type],
