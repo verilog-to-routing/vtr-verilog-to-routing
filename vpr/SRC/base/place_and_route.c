@@ -52,7 +52,7 @@ void place_and_route(enum e_operation operation,
 
 	/* This routine controls the overall placement and routing of a circuit. */
 	char msg[BUFSIZE];
-	int width_fac, inet, i;
+	int width_fac, i;
 	boolean success, Fc_clipped;
 	float **net_delay = NULL;
 	t_slack * slacks = NULL;
