@@ -123,7 +123,9 @@ static void read_blif (char *blif_file, boolean sweep_hanging_nets_and_inputs,
 
 	
 	/*checks how well the hash function is performing*/
+	#ifdef VERBOSE
 	get_hash_stats(blif_hash, "blif_hash");
+	#endif
 
 	fclose(blif);
 	check_net(sweep_hanging_nets_and_inputs);
