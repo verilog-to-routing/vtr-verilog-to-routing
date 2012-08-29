@@ -34,11 +34,6 @@
  * variables round-offs check.                                            */
 #define MAX_MOVES_BEFORE_RECOMPUTE 50000
 
-/* The maximum number of tries when trying to place a carry chain at a    *
- * random location before trying exhaustive placement - find the fist     *
- * legal position and place it during initial placement.                  */
-#define MAX_NUM_TRIES_TO_PLACE_CHAINS_RANDOMLY 4
-
 /* Flags for the states of the bounding box.                              *
  * Stored as char for memory efficiency.                                  */
 #define NOT_UPDATED_YET 'N'
