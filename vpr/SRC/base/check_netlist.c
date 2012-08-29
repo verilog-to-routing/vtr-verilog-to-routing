@@ -158,11 +158,14 @@ static int check_clb_conn(int iblk, int num_conn) {
 	type = block[iblk].type;
 
 	if (type == IO_TYPE) {
+	    /*
+		//This triggers incorrectly if other blocks (e.g. I/O buffers) are included in the iopads
 		if (num_conn != 1) {
 			vpr_printf(TIO_MESSAGE_ERROR, "io blk #%d (%s) has %d pins.\n", iblk,
 					block[iblk].name, num_conn);
 			error++;
 		}
+             */
 	} else if (num_conn < 2) {
 		vpr_printf(TIO_MESSAGE_WARNING, "logic block #%d (%s) has only %d pin.\n", iblk,
 				block[iblk].name, num_conn);
