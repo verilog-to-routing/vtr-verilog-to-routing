@@ -243,37 +243,30 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	 
 	 */
 
+	int i, iblk, num_molecules, blocks_since_last_analysis, num_clb, max_nets_in_pb_type,  
+		cur_nets_in_pb_type, num_blocks_hill_added, max_cluster_size, cur_cluster_size, 
+		max_molecule_inputs, max_pb_depth, cur_pb_depth, num_unrelated_clustering_attempts,
+		indexofcrit, savedindexofcrit /* index of next most timing critical block */,
+		detailed_routing_stage, *hill_climbing_inputs_avail;
+
+	int *num_used_instances_type, *num_instances_type; 
+	/* [0..num_types] Holds array for total number of each cluster_type available */
+
+	boolean early_exit, is_cluster_legal;
+	enum e_block_pack_status block_pack_status;
+	float crit;
+
+	t_cluster_placement_stats *cluster_placement_stats, *cur_cluster_placement_stats_ptr;
+	t_pb_graph_node **primitives_list;
+	t_block *clb;
 	t_slack * slacks = NULL;
 	t_pack_molecule *istart, *next_molecule, *prev_molecule, *cur_molecule;
-	int i, iblk, num_molecules;
-	int blocks_since_last_analysis;
-	int max_nets_in_pb_type, cur_nets_in_pb_type;
-	int indexofcrit, savedindexofcrit; /* index of next most timing critical block */
-	int num_blocks_hill_added;
-	int max_cluster_size, cur_cluster_size, max_molecule_inputs, max_pb_depth,
-			cur_pb_depth;
-
-	int *hill_climbing_inputs_avail;
-	t_cluster_placement_stats *cluster_placement_stats,
-			*cur_cluster_placement_stats_ptr;
-	t_pb_graph_node **primitives_list;
-
-	t_block *clb;
-	int num_clb;
-
-	boolean early_exit;
-	boolean is_cluster_legal;
-	int detailed_routing_stage;
-
-	enum e_block_pack_status block_pack_status;
-
-	int *num_used_instances_type, *num_instances_type; /* [0..num_types] Holds array for total number of each cluster_type available */
+	
 #ifdef PATH_COUNTING
-	int j;
+	int inet, ipin;
 #else
-	float num_paths_scaling, distance_scaling, crit;
+	float num_paths_scaling, distance_scaling;
 #endif
-	int num_unrelated_clustering_attempts;
 
 	/* TODO: This is memory inefficient, fix if causes problems */
 	clb = (t_block*)my_calloc(num_logical_blocks, sizeof(t_block));
@@ -356,7 +349,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				print_timing_graph(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH));
 #ifdef PATH_COUNTING
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_PATH_WEIGHT))
-				print_path_weight(slacks->path_weight, getEchoFileName(E_ECHO_PRE_PACKING_PATH_WEIGHT));
+				print_path_criticality(slacks->path_criticality, getEchoFileName(E_ECHO_PRE_PACKING_PATH_WEIGHT));
 #else
 			if(isEchoFileEnabled(E_ECHO_CLUSTERING_TIMING_INFO))
 				print_clustering_timing_info(getEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO));
@@ -364,7 +357,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_SLACK))
 				print_slack(slacks->slack, FALSE, getEchoFileName(E_ECHO_PRE_PACKING_SLACK));
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_CRITICALITY))
-				print_criticality(slacks->criticality, FALSE, getEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY));
+				print_criticality(slacks->timing_criticality, FALSE, getEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY));
 		}
 
 		block_criticality = (float*) my_calloc(num_logical_blocks, sizeof(float));
@@ -375,17 +368,26 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			assert(logical_block[i].index == i);
 			critindexarray[i] = i;
 		}
+
 #ifdef PATH_COUNTING
-		/* Calculate criticality directly from criticality (which includes net weighting). */
-		for (i = 0; i < num_logical_nets; i++) { 
-			for (j = 1; j <= vpack_net[i].num_sinks; j++) { 
-				/* For each pin on each net, find the logical block iblk which it sinks on. */
-				iblk = vpack_net[i].node_block[j];
-				/* The criticality of each block is the maximum of the criticalities of all its pins.
-				(If the criticality for a pin is HUGE_POSITIVE_FLOAT, criticality for that pin will 
-				be very negative and will not affect the maximum value). */
-				if (block_criticality[iblk] < slacks->criticality[i][j]) {
-					block_criticality[iblk] = slacks->criticality[i][j];
+		/* Calculate block criticality from a weighted sum of timing and path criticalities. */
+		for (inet = 0; inet < num_logical_nets; inet++) { 
+			for (ipin = 1; ipin <= vpack_net[inet].num_sinks; ipin++) { 
+			
+				/* Only consider this pin in the block criticality calculation if its slack is valid. */
+				if (slacks->timing_criticality[inet][ipin] > HUGE_NEGATIVE_FLOAT + 1) {
+				
+					/* Find the logical block iblk which this pin is a sink on. */
+					iblk = vpack_net[inet].node_block[ipin];
+					
+					/* The criticality of this pin is a sum of its timing and path criticalities. */
+					crit =		PACK_PATH_WEIGHT  * slacks->path_criticality[inet][ipin] 
+						 + (1 - PACK_PATH_WEIGHT) * slacks->timing_criticality[inet][ipin]; 
+
+					/* The criticality of each block is the maximum of the criticalities of all its pins. */
+					if (block_criticality[iblk] < crit) {
+						block_criticality[iblk] = crit;
+					}
 				}
 			}
 		}
@@ -1610,7 +1612,14 @@ static void update_timing_gain_values(int inet, int clustered_block,
 		for (ipin = ifirst; ipin <= vpack_net[inet].num_sinks; ipin++) {
 			iblk = vpack_net[inet].node_block[ipin];
 			if (logical_block[iblk].clb_index == NO_CLUSTER) {
-				timinggain = slacks->criticality[inet][ipin];
+#ifdef PATH_COUNTING
+				/* Timing gain is a weighted sum of timing and path criticalities. */
+				timinggain =	  TIMING_GAIN_PATH_WEIGHT  * slacks->path_criticality[inet][ipin] 
+						   + (1 - TIMING_GAIN_PATH_WEIGHT) * slacks->timing_criticality[inet][ipin + 1]; 
+#else
+				/* Timing gain is the timing criticality. */
+				timinggain = slacks->timing_criticality[inet][ipin]; 
+#endif
 				if (timinggain > cur_pb->pb_stats.timinggain[iblk])
 					cur_pb->pb_stats.timinggain[iblk] = timinggain;
 			}
@@ -1624,7 +1633,14 @@ static void update_timing_gain_values(int inet, int clustered_block,
 		newblk = vpack_net[inet].node_block[0];
 		if (logical_block[newblk].clb_index == NO_CLUSTER) {
 			for (ipin = 1; ipin <= vpack_net[inet].num_sinks; ipin++) {
-				timinggain = slacks->criticality[inet][ipin];
+#ifdef PATH_COUNTING
+				/* Timing gain is a weighted sum of timing and path criticalities. */
+				timinggain =	  TIMING_GAIN_PATH_WEIGHT  * slacks->path_criticality[inet][ipin] 
+						   + (1 - TIMING_GAIN_PATH_WEIGHT) * slacks->timing_criticality[inet][ipin]; 
+#else
+				/* Timing gain is the timing criticality. */
+				timinggain = slacks->timing_criticality[inet][ipin]; 
+#endif
 				if (timinggain > cur_pb->pb_stats.timinggain[newblk])
 					cur_pb->pb_stats.timinggain[newblk] = timinggain;
 

@@ -378,17 +378,17 @@ void try_place(struct s_placer_opts placer_opts,
 
 		load_timing_graph_net_delays(net_delay);
 		do_timing_analysis(slacks, FALSE, FALSE, FALSE);
-		load_criticalities(slacks->criticality, crit_exponent);
+		load_criticalities(slacks, crit_exponent);
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH))
 				print_timing_graph(getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH));
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_SLACK))
 				print_slack(slacks->slack, FALSE, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_SLACK));
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_CRITICALITY))
-				print_criticality(slacks->criticality, FALSE, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY));
+				print_criticality(slacks->timing_criticality, FALSE, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY));
 #ifdef PATH_COUNTING
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_PATH_WEIGHT))
-				print_path_weight(slacks->path_weight, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_PATH_WEIGHT));
+				print_path_criticality(slacks->path_criticality, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_PATH_WEIGHT));
 #endif	
 		}
 		outer_crit_iter_count = 1;
@@ -500,7 +500,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 				load_timing_graph_net_delays(net_delay);
 				do_timing_analysis(slacks, FALSE, FALSE, FALSE);
-				load_criticalities(slacks->criticality, crit_exponent);
+				load_criticalities(slacks, crit_exponent);
 				/*recompute costs from scratch, based on new criticalities */
 				comp_td_costs(&timing_cost, &delay_cost);
 				outer_crit_iter_count = 0;
@@ -550,7 +550,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 					load_timing_graph_net_delays(net_delay);
 					do_timing_analysis(slacks, FALSE, FALSE, FALSE);
-					load_criticalities(slacks->criticality, crit_exponent);
+					load_criticalities(slacks, crit_exponent);
 					comp_td_costs(&timing_cost, &delay_cost);
 				}
 				inner_crit_iter_count++;
@@ -687,7 +687,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 			load_timing_graph_net_delays(net_delay);
 			do_timing_analysis(slacks, FALSE, FALSE, FALSE);
-			load_criticalities(slacks->criticality, crit_exponent);
+			load_criticalities(slacks, crit_exponent);
 			/*recompute criticaliies */
 			comp_td_costs(&timing_cost, &delay_cost);
 			outer_crit_iter_count = 0;
@@ -733,7 +733,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 					load_timing_graph_net_delays(net_delay);
 					do_timing_analysis(slacks, FALSE, FALSE, FALSE);
-					load_criticalities(slacks->criticality, crit_exponent);
+					load_criticalities(slacks, crit_exponent);
 					comp_td_costs(&timing_cost, &delay_cost);
 				}
 				inner_crit_iter_count++;
@@ -802,10 +802,10 @@ void try_place(struct s_placer_opts placer_opts,
 			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_SLACK))
 				print_slack(slacks->slack, FALSE, getEchoFileName(E_ECHO_FINAL_PLACEMENT_SLACK));
 			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_CRITICALITY))
-				print_criticality(slacks->criticality, FALSE, getEchoFileName(E_ECHO_FINAL_PLACEMENT_CRITICALITY));
+				print_criticality(slacks->timing_criticality, FALSE, getEchoFileName(E_ECHO_FINAL_PLACEMENT_CRITICALITY));
 #ifdef PATH_COUNTING
 			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_PATH_WEIGHT))
-				print_path_weight(slacks->path_weight, getEchoFileName(E_ECHO_FINAL_PLACEMENT_PATH_WEIGHT));
+				print_path_criticality(slacks->path_criticality, getEchoFileName(E_ECHO_FINAL_PLACEMENT_PATH_WEIGHT));
 #endif	
 			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH))
 				print_timing_graph(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH));

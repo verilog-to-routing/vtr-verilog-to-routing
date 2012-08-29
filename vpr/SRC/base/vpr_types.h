@@ -39,11 +39,14 @@
  * Global data types and constants
  ******************************************************************************/
 
-// #define PATH_COUNTING
+//#define PATH_COUNTING
 #define FINAL_DISCOUNT_FUNCTION_BASE DISCOUNT_FUNCTION_BASE
-#define DISCOUNT_FUNCTION_BASE 100
-#define PATH_FACTOR 0.4
-// #define TAKE_THE_LOG // 's' = log(forward) * log(backward) / 't' = log(forward * backward)
+#define DISCOUNT_FUNCTION_BASE 2
+#define PACK_PATH_WEIGHT 1
+#define TIMING_GAIN_PATH_WEIGHT 0
+#define PLACE_PATH_WEIGHT 0.2
+#define ROUTE_PATH_WEIGHT 0.2
+//#define TAKE_THE_LOG // 's' = log(forward) * log(backward) / 't' = log(forward * backward)
 
 #ifndef SPEC
 #define DEBUG 1			/* Echoes input & checks error conditions */
@@ -360,9 +363,9 @@ typedef struct s_timing_stats {
 
 typedef struct s_slack {
 	float ** slack;
-	float ** criticality;
+	float ** timing_criticality;
 #ifdef PATH_COUNTING
-	float ** path_weight;
+	float ** path_criticality;
 #endif
 } t_slack;
 /* Matrices storing slacks and criticalities of each sink pin on each net 

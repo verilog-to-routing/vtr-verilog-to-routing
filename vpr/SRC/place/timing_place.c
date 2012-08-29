@@ -78,12 +78,15 @@ void print_sink_delays(const char *fname) {
 }
 
 /**************************************/
-void load_criticalities(float ** criticality, float crit_exponent) {
+void load_criticalities(t_slack * slacks, float crit_exponent) {
 	/* Performs a 1-to-1 mapping from criticality to timing_place_crit.  
 	  For every pin on every net (or, equivalently, for every tedge ending 
 	  in that pin), timing_place_crit = criticality^(criticality exponent) */
 
 	int inet, ipin;
+#ifdef PATH_COUNTING
+	float timing_criticality, path_criticality; 
+#endif
 
 	for (inet = 0; inet < num_nets; inet++) {
 		if (inet == OPEN)
@@ -91,11 +94,24 @@ void load_criticalities(float ** criticality, float crit_exponent) {
 		if (clb_net[inet].is_global)
 			continue;
         for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
-			if (criticality[inet][ipin] < HUGE_NEGATIVE_FLOAT + 1) {
+			if (slacks->timing_criticality[inet][ipin] < HUGE_NEGATIVE_FLOAT + 1) {
 				/* We didn't analyze this connection, so give it a timing_place_crit of 0. */
 				timing_place_crit[inet][ipin] = 0.;
 			} else {
-				timing_place_crit[inet][ipin] = pow(criticality[inet][ipin], crit_exponent);
+#ifdef PATH_COUNTING
+				/* Calculate criticality as a weighted sum of timing criticality and path 
+				criticality. The placer likes a great deal of contrast between criticalities. 
+				Since path criticality varies much more than timing, we "sharpen" timing 
+				criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
+				path_criticality = slacks->path_criticality[inet][ipin];
+				timing_criticality = pow(slacks->timing_criticality[inet][ipin], crit_exponent);
+
+				timing_place_crit[inet][ipin] =		 PLACE_PATH_WEIGHT  * path_criticality
+											  + (1 - PLACE_PATH_WEIGHT) * timing_criticality; 
+#else
+				/* Just take timing criticality to some power (crit_exponent). */
+				timing_place_crit[inet][ipin] = pow(slacks->timing_criticality[inet][ipin], crit_exponent);
+#endif
 			}
 		}
 	}
