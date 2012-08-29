@@ -20,30 +20,44 @@
 
 /************** Types and defines local to place.c ***************************/
 
-#define SMALL_NET 4		/* Cut off for incremental bounding box updates. */
-/* 4 is fastest -- I checked.                    */
+/* Cut off for incremental bounding box updates.                          *
+ * 4 is fastest -- I checked.                                             */
+/* To turn off incremental bounding box updates, set this to a huge value */
+#define SMALL_NET 4
+
+/* This defines the error tolerance for floating points variables used in *
+ * cost computation. 0.01 means that there is a 1% error tolerance.       */
+#define ERROR_TOL .01
+
+/* This defines the maximum number of swap attempts before invoking the   *
+ * once-in-a-while placement legality check as well as floating point     *
+ * variables round-offs check.                                            */
+#define MAX_MOVES_BEFORE_RECOMPUTE 50000
+
+/* The maximum number of tries when trying to place a carry chain at a    *
+ * random location before trying exhaustive placement - find the fist     *
+ * legal position and place it during initial placement.                  */
+#define MAX_NUM_TRIES_TO_PLACE_CHAINS_RANDOMLY 4
+
+/* Flags for the states of the bounding box.                              *
+ * Stored as char for memory efficiency.                                  */
+#define NOT_UPDATED_YET 'N'
+#define UPDATED_ONCE 'U'
+#define GOT_FROM_SCRATCH 'S'
+
+/* For comp_cost.  NORMAL means use the method that generates updateable  *
+ * bounding boxes for speed.  CHECK means compute all bounding boxes from *
+ * scratch using a very simple routine to allow checks of the other       *
+ * costs.                                                                 */
+enum cost_methods {
+	NORMAL, CHECK
+};
+
 #if 0
 #define MIN_TIMING_COST 1.e-12 
 /* Stops timing cost from going to 0 with very lax timing constraints. 
 This would cause division by 0 when auto-normalizing. */
 #endif
-/* For comp_cost.  NORMAL means use the method that generates updateable  *
- * bounding boxes for speed.  CHECK means compute all bounding boxes from *
- * scratch using a very simple routine to allow checks of the other       *
- * costs.                                                                 */
-
-enum cost_methods {
-	NORMAL, CHECK
-};
-
-/* Flags for the states of the bounding box. */
-/* Stores as char for memory efficiency. */
-#define NOT_UPDATED_YET 'N'
-#define UPDATED_ONCE 'U'
-#define GOT_FROM_SCRATCH 'S'
-
-#define ERROR_TOL .01
-#define MAX_MOVES_BEFORE_RECOMPUTE 50000
 
 /********************** Data Sturcture Definition ***************************/
 /* Stores the information of the move for a block that is       *
