@@ -708,7 +708,9 @@ void vpr_free_vpr_data_structures(INOUTP t_arch Arch, INOUTP t_options options, 
 
 void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options, INOUTP t_vpr_setup vpr_setup) {
 	free_rr_graph();
-	free_route_structs();
+	if (vpr_setup.RouterOpts.doRouting) {
+		free_route_structs();
+	}
 	free_trace_structs();	
 	vpr_free_vpr_data_structures(Arch, options, vpr_setup);
 	if(has_printhandler_pre_vpr == FALSE) {

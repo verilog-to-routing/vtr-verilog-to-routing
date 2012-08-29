@@ -510,6 +510,8 @@ void try_place(struct s_placer_opts placer_opts,
 			/*for normalizing the tradeoff between timing and wirelength (bb)  */
 			inverse_prev_bb_cost = 1 / bb_cost;
 			inverse_prev_timing_cost = 1 / timing_cost;
+			/* Make sure timing_cost is non-zero. */
+			assert(timing_cost > 1e-60);
 		}
 
 		inner_crit_iter_count = 1;

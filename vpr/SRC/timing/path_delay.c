@@ -2363,7 +2363,10 @@ static void update_slacks(t_slack * slacks, int source_clock_domain, int sink_cl
 
 	int inet, iedge, inode, to_node, num_edges;
 	t_tedge *tedge;
-	float T_arr, Tdel, T_req, slk, crit;
+	float T_arr, Tdel, T_req, slk, timing_criticality;
+#ifdef PATH_COUNTING
+	float path_criticality;
+#endif
 
 	for (inet = 0; inet < num_timing_nets; inet++) {
 		inode = net_to_driver_tnode[inet];
@@ -2387,13 +2390,11 @@ static void update_slacks(t_slack * slacks, int source_clock_domain, int sink_cl
 			T_req = tnode[to_node].T_req;
 			
 			if (update_slack) {
-				/* Only update on this traversal if this edge would have 
-				lower slack from this traversal than its current value. */
-				
+				/* Update the slack for this edge. */		
 				slk = T_req - T_arr - Tdel;
 				if (slk < slacks->slack[inet][iedge + 1]) { 
-					
-					/* Update the slack for this edge. */
+				/* Only update on this traversal if this edge would have 
+				lower slack from this traversal than its current value. */				
 					slacks->slack[inet][iedge + 1] = slk;
 				}
 			}
@@ -2401,28 +2402,28 @@ static void update_slacks(t_slack * slacks, int source_clock_domain, int sink_cl
 #if SLACK_DEFINITION == 'R'
 			/* Since criticality_denom is not the same on each traversal, 
 			we have to update criticality separately. */
-			crit = 1 - (T_req - T_arr - Tdel)/criticality_denom;
-			if (crit > slacks->timing_criticality[inet][iedge + 1]) {
-				slacks->timing_criticality[inet][iedge + 1] = crit; 
-	#ifdef PATH_COUNTING
-		#if TAKE_THE_LOG == 's' //separate
-				slacks->path_criticality[inet][iedge + 1] = max(slacks->path_criticality[inet][iedge + 1], 
-					log(tnode[inode].forward_weight) * log(tnode[to_node].backward_weight) * 
-					pow((float) FINAL_DISCOUNT_FUNCTION_BASE, crit));
-		#elif TAKE_THE_LOG == 't' //together
-				slacks->path_criticality[inet][iedge + 1] = max(slacks->path_criticality[inet][iedge + 1], 
-					log(tnode[inode].forward_weight * tnode[to_node].backward_weight) * 
-					pow((float) FINAL_DISCOUNT_FUNCTION_BASE, crit));
-		#else //don't take the log
-				slacks->path_criticality[inet][iedge + 1] = max(slacks->path_criticality[inet][iedge + 1],
-					tnode[inode].forward_weight * tnode[to_node].backward_weight * 
-					pow((float) FINAL_DISCOUNT_FUNCTION_BASE, crit));
-		#endif
-					
-				/* Kong uses slack / T_crit for the exponent, which is equivalent to criticality - 1.
-				However, taking out the "minus 1" is equivalent to multiplying all weights by a constant. */
-	#endif
+			timing_criticality = 1 - (T_req - T_arr - Tdel)/criticality_denom;
+			if (timing_criticality > slacks->timing_criticality[inet][iedge + 1]) {
+				slacks->timing_criticality[inet][iedge + 1] = timing_criticality; 
 			}
+	#ifdef PATH_COUNTING
+			/* Also update path criticality separately.  Kong uses slack / T_crit for the exponent, 
+			which is equivalent to criticality - 1. However, taking out the "minus 1" is equivalent 
+			to multiplying all criticalities by a constant. */
+		#if TAKE_THE_LOG == 's' //separate
+			slacks->path_criticality[inet][iedge + 1] = max(slacks->path_criticality[inet][iedge + 1], 
+				log(tnode[inode].forward_weight) * log(tnode[to_node].backward_weight) * 
+				pow((float) FINAL_DISCOUNT_FUNCTION_BASE, timing_criticality));
+		#elif TAKE_THE_LOG == 't' //together
+			slacks->path_criticality[inet][iedge + 1] = max(slacks->path_criticality[inet][iedge + 1], 
+				log(tnode[inode].forward_weight * tnode[to_node].backward_weight) * 
+				pow((float) FINAL_DISCOUNT_FUNCTION_BASE, timing_criticality));
+		#else //don't take the log
+			slacks->path_criticality[inet][iedge + 1] = max(slacks->path_criticality[inet][iedge + 1],
+				tnode[inode].forward_weight * tnode[to_node].backward_weight * 
+				pow((float) FINAL_DISCOUNT_FUNCTION_BASE, timing_criticality));
+		#endif				
+	#endif
 #endif
 		}
 	}
