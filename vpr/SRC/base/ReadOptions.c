@@ -148,7 +148,7 @@ void alloc_and_load_echo_file_info() {
 	setEchoFileName(E_ECHO_PRE_PACKING_MOLECULES_AND_PATTERNS, "pre_packing_molecules_and_patterns.echo");
 	setEchoFileName(E_ECHO_MEM, "mem.echo");
 	setEchoFileName(E_ECHO_RR_GRAPH, "rr_graph.echo");
-	setEchoFileName(E_ECHO_TIMING_CONSTRAINTS, "timing_constraints.echo");	
+	setEchoFileName(E_ECHO_TIMING_CONSTRAINTS, "g_timing_constraints.echo");	
 	setEchoFileName(E_ECHO_CRITICAL_PATH, "critical_path.echo");	
 	setEchoFileName(E_ECHO_SLACK, "slack.echo");	
 	setEchoFileName(E_ECHO_CRITICALITY, "criticality.echo");

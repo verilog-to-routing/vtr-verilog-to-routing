@@ -40,6 +40,11 @@
 #define UPDATED_ONCE 'U'
 #define GOT_FROM_SCRATCH 'S'
 
+
+#define MIN_TIMING_COST 1.e-9 
+/* Stops timing cost from going to 0 with very lax timing constraints, which 
+avoids multiplying by a gigantic inverse_prev_timing_cost when auto-normalizing. */
+
 /* For comp_cost.  NORMAL means use the method that generates updateable  *
  * bounding boxes for speed.  CHECK means compute all bounding boxes from *
  * scratch using a very simple routine to allow checks of the other       *
@@ -407,7 +412,11 @@ void try_place(struct s_placer_opts placer_opts,
 		/*now we can properly compute costs  */
 		comp_td_costs(&timing_cost, &delay_cost); /*also vpr_printf proper values into point_to_point_delay_cost */
 
-		inverse_prev_timing_cost = 1 / timing_cost;
+		if (timing_cost < MIN_TIMING_COST) {
+			inverse_prev_timing_cost = 1 / MIN_TIMING_COST;
+		} else {
+			inverse_prev_timing_cost = 1 / timing_cost;
+		}
 		inverse_prev_bb_cost = 1 / bb_cost;
 		cost = 1; /*our new cost function uses normalized values of           */
 		/*bb_cost and timing_cost, the value of cost will be reset  */
@@ -522,8 +531,6 @@ void try_place(struct s_placer_opts placer_opts,
 			/*for normalizing the tradeoff between timing and wirelength (bb)  */
 			inverse_prev_bb_cost = 1 / bb_cost;
 			inverse_prev_timing_cost = 1 / timing_cost;
-			/* Make sure timing_cost is non-zero. */
-			assert(timing_cost > 1e-60);
 		}
 
 		inner_crit_iter_count = 1;

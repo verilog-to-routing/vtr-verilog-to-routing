@@ -19,6 +19,27 @@
 	   This can give unusual results with multiple, very dissimilar constraints.
 */
 
+#ifdef PATH_COUNTING /* Path counting options: */
+	#define DISCOUNT_FUNCTION_BASE 100
+	/* The base of the exponential discount function used to calculate 
+	forward and backward path weights. Higher values discount paths 
+	with higher slacks more greatly. */
+	
+	#define FINAL_DISCOUNT_FUNCTION_BASE DISCOUNT_FUNCTION_BASE
+	/* The base of the exponential disount function used to calculate
+	path criticality from forward and backward weights. Higher values 
+	discount paths with higher slacks more greatly. By default, this 
+	is the same as the original discount function base. */
+	
+	#define PACK_PATH_WEIGHT 1
+	#define TIMING_GAIN_PATH_WEIGHT PACK_PATH_WEIGHT
+	#define PLACE_PATH_WEIGHT 0
+	#define ROUTE_PATH_WEIGHT 0
+	/* The percentage of total criticality taken from path criticality 
+	as opposed to timing criticality. A value of 0 uses only timing
+	criticality; a value of 1 uses only path criticality. */
+#endif
+
 /*************************** Function declarations ********************************/
 
 t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf);
@@ -65,27 +86,7 @@ void print_timing_graph_as_blif (const char *fname, t_model *models);
 
 /*************************** Variable declarations ********************************/
 
-extern int num_constrained_clocks; /* number of clocks with timing constraints */
-extern t_clock * constrained_clocks; /* [0..num_constrained_clocks - 1] array of clocks with timing constraints */
-
-extern int num_constrained_inputs; /* number of inputs with timing constraints */
-extern t_io * constrained_inputs; /* [0..num_constrained_inputs - 1] array of inputs with timing constraints */
-
-extern int num_constrained_outputs; /* number of outputs with timing constraints */
-extern t_io * constrained_outputs; /* [0..num_constrained_outputs - 1] array of outputs with timing constraints */
-
-extern float ** timing_constraint; /* [0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (sink)] */
-
-extern int num_cc_constraints; /* number of special-case clock-to-clock constraints overriding default, calculated, timing constraints */
-extern t_override_constraint * cc_constraints; /*  [0..num_cc_constraints - 1] array of such constraints */
-
-extern int num_cf_constraints; /* number of special-case clock-to-flipflop constraints */
-extern t_override_constraint * cf_constraints; /*  [0..num_cf_constraints - 1] array of such constraints */
-
-extern int num_fc_constraints; /* number of special-case flipflop-to-clock constraints */
-extern t_override_constraint * fc_constraints; /*  [0..num_fc_constraints - 1] */
-
-extern int num_ff_constraints; /* number of special-case flipflop-to-flipflop constraints */
-extern t_override_constraint * ff_constraints; /*  [0..num_ff_constraints - 1] array of such constraints */
+extern int num_tnodes; /* Number of nodes (pins) in the timing graph */
+extern t_tnode *tnode; /* [0..num_tnodes - 1] nodes in the timing graph */
 
 #endif

@@ -39,15 +39,6 @@
  * Global data types and constants
  ******************************************************************************/
 
-//#define PATH_COUNTING
-#define FINAL_DISCOUNT_FUNCTION_BASE DISCOUNT_FUNCTION_BASE
-#define DISCOUNT_FUNCTION_BASE 2
-#define PACK_PATH_WEIGHT 1
-#define TIMING_GAIN_PATH_WEIGHT 0
-#define PLACE_PATH_WEIGHT 0.2
-#define ROUTE_PATH_WEIGHT 0.2
-//#define TAKE_THE_LOG // 's' = log(forward) * log(backward) / 't' = log(forward * backward)
-
 #ifndef SPEC
 #define DEBUG 1			/* Echoes input & checks error conditions */
 /* Only causes about a 1% speed degradation in V 3.10 */
@@ -280,6 +271,16 @@ typedef struct s_cluster_placement_stats {
  * Timing data types
  *******************************************************************/
 
+//#define PATH_COUNTING 'S'
+/* Uncomment this to turn on path counting. Its value determines how path criticality
+is calculated from forward and backward weights.  Possible values:
+	'S' - sum of forward and backward weights
+	'P' - product of forward and backward weights
+	'L' - natural log of the product of forward and backward weights
+	'R' - product of the natural logs of forward and backward weights
+See path_delay.h for further path-counting options. */
+
+
 /* Timing graph information */
 
 typedef struct {
@@ -306,7 +307,7 @@ typedef enum {
 	CONSTANT_GEN_SOURCE /* source of a constant logic 1 or 0 */
 } e_tnode_type;
 
-typedef struct s_tnode { /* node in the timing graph */
+typedef struct s_tnode { /* Node in the timing graph. Note: we combine 3 members into a bit field. */
 	e_tnode_type type; /* see the above enum */
 	t_tedge *out_edges; /* [0..num_edges - 1] array of edges fanning out from this tnode */
 	int num_edges;
@@ -314,11 +315,11 @@ typedef struct s_tnode { /* node in the timing graph */
 	float T_req; /* Required arrival time of the last input signal to this node 
 					if the critical path is not to be lengthened. */
 	int block; /* logical block which this tnode is part of */
-	boolean used_on_this_traversal; /* Has this tnode been touched on this timing graph traversal? */
-	boolean has_valid_slack; /* Has this tnode been touched on the most recent call of do_timing_analysis? */
+	boolean used_on_this_traversal : 1; /* Has this tnode been touched on this timing graph traversal? */
+	boolean has_valid_slack : 1; /* Has this tnode been touched on the most recent call of do_timing_analysis? */
 	
 	/* Used for FF_SINK, FF_SOURCE, FF_CLOCK, INPAD_SOURCE, and OUTPAD_SINK only: */
-	int clock_domain; /* Index of the clock in constrained_clocks which this flip-flop or I/O is constrained on. */
+	short clock_domain; /* Index of the clock in g_constrained_clocks which this flip-flop or I/O is constrained on. */
 	float clock_skew; /* The time taken for a clock signal to get to the flip-flop or I/O (assumed 0 for I/Os). */
 
 	/* Used in post-packing timing graph only: */
@@ -359,7 +360,7 @@ typedef struct s_timing_stats {
 	float ** least_slack; 
 } t_timing_stats;
 /* Timing statistics for final reporting. 
-[0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (sink)] */
+[0..g_num_constrained_clocks - 1 (source)][0..g_num_constrained_clocks - 1 (sink)] */
 
 typedef struct s_slack {
 	float ** slack;
@@ -383,7 +384,7 @@ typedef struct s_override_constraint {
 /* A special-case constraint to override the default, calculated, timing constraint.  Holds data from 
 set_clock_groups, set_false_path, set_max_delay, and set_multicycle_path commands. Can hold data for 
 clock-to-clock, clock-to-flip-flop, flip-flop-to-clock or flip-flop-to-flip-flop constraints, each of 
-which has its own array (cc_constraints, cf_constraints, fc_constraints, and ff_constraints). */
+which has its own array (g_cc_constraints, g_cf_constraints, g_fc_constraints, and g_ff_constraints). */
 
 /***************************************************************************
  * Placement and routing data types
