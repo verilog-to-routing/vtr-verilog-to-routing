@@ -197,7 +197,6 @@
     <ClCompile Include="SRC\timing\slre.c" />
     <ClCompile Include="SRC\util\hash.c" />
     <ClCompile Include="SRC\util\heapsort.c" />
-    <ClCompile Include="SRC\util\mst.c" />
     <ClCompile Include="SRC\util\token.c" />
     <ClCompile Include="SRC\util\vpr_utils.c" />
     <ClCompile Include="SRC\pack\cluster.c" />
@@ -215,7 +214,6 @@
     <ClCompile Include="SRC\route\check_rr_graph.c" />
     <ClCompile Include="SRC\route\route_breadth_first.c" />
     <ClCompile Include="SRC\route\route_common.c" />
-    <ClCompile Include="SRC\route\route_directed_search.c" />
     <ClCompile Include="SRC\route\route_timing.c" />
     <ClCompile Include="SRC\route\route_tree_timing.c" />
     <ClCompile Include="SRC\route\rr_graph.c" />

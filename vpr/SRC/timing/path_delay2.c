@@ -6,15 +6,15 @@
 #include "read_xml_arch_file.h"
 
 /************* Variables (globals) shared by all path_delay modules **********/
-/* [0..num_nets - 1].  Gives the index of the tnode that drives each net. */
 
-int *net_to_driver_tnode;
-
-/* [0..num__tnode_levels - 1].  Count and list of tnodes at each level of    *
- * the timing graph, to make breadth-first searches easier.                  */
+int num_tnode_levels; /* Number of levels in the timing graph. */
 
 struct s_ivec *tnodes_at_level;
-int num_tnode_levels; /* Number of levels in the timing graph. */
+/* [0..num__tnode_levels - 1].  Count and list of tnodes at each level of    
+ * the timing graph, to make topological searches easier. Level-0 nodes are
+ * sources to the timing graph (types TN_FF_SOURCE, TN_INPAD_SOURCE
+ * and TN_CONSTANT_GEN_SOURCE). Level-N nodes are in the immediate fanout of 
+ * nodes with level at most N-1. */
 
 /******************* Subroutines local to this module ************************/
 
@@ -80,9 +80,9 @@ alloc_and_load_tnode_fanin_and_check_edges(int *num_sinks_ptr) {
 
 int alloc_and_load_timing_graph_levels(void) {
 
-	/* Does a breadth-first search through the timing graph in order to levelize *
-	 * it.  This allows subsequent breadth-first traversals to be faster. Also   *
-	 * returns the number of sinks in the graph (nodes with no fanout).          */
+	/* Does a breadth-first search through the timing graph in order to levelize  *
+	 * it.  This allows subsequent traversals to be done topologically for speed. *
+	 * Also returns the number of sinks in the graph (nodes with no fanout).      */
 
 	t_linked_int *free_list_head, *nodes_at_level_head;
 	int inode, num_at_level, iedge, to_node, num_edges, num_sinks, num_levels,
@@ -205,10 +205,10 @@ float print_critical_path_node(FILE * fp, t_linked_int * critical_path_node) {
 	int inode, iblk, inet, downstream_node;
 	t_pb_graph_pin * pb_graph_pin;
 	e_tnode_type type;
-	static const char *tnode_type_names[] = { "INPAD_SOURCE", "INPAD_OPIN",
-			"OUTPAD_IPIN", "OUTPAD_SINK", "CB_IPIN", "CB_OPIN",
-			"INTERMEDIATE_NODE", "PRIMITIVE_IPIN", "PRIMITIVE_OPIN", "FF_IPIN",
-			"FF_OPIN", "FF_SINK", "FF_SOURCE", "FF_CLOCK", "CONSTANT_GEN_SOURCE" };
+	static const char *tnode_type_names[] = { "TN_INPAD_SOURCE", "TN_INPAD_OPIN",
+			"TN_OUTPAD_IPIN", "TN_OUTPAD_SINK", "TN_CB_IPIN", "TN_CB_OPIN",
+			"TN_INTERMEDIATE_NODE", "TN_PRIMITIVE_IPIN", "TN_PRIMITIVE_OPIN", "TN_FF_IPIN",
+			"TN_FF_OPIN", "TN_FF_SINK", "TN_FF_SOURCE", "TN_FF_CLOCK", "TN_CONSTANT_GEN_SOURCE" };
 
 	t_linked_int *next_crit_node;
 	float Tdel;
@@ -223,14 +223,14 @@ float print_critical_path_node(FILE * fp, t_linked_int * critical_path_node) {
 
 	if (pb_graph_pin == NULL) {
 		assert(
-				type == INPAD_SOURCE || type == OUTPAD_SINK || type == FF_SOURCE || type == FF_SINK);
+				type == TN_INPAD_SOURCE || type == TN_OUTPAD_SINK || type == TN_FF_SOURCE || type == TN_FF_SINK);
 	}
 
 	if (pb_graph_pin != NULL) {
 		fprintf(fp, "Pin: %s.%s[%d] pb (%s)", pb_graph_pin->parent_node->pb_type->name,
 			pb_graph_pin->port->name, pb_graph_pin->pin_number, block[iblk].pb->rr_node_to_pb_mapping[pb_graph_pin->pin_count_in_cluster]->name);
 	}
-	if (type != INPAD_SOURCE && type != OUTPAD_SINK) {
+	if (type != TN_INPAD_SOURCE && type != TN_OUTPAD_SINK) {
 		fprintf(fp, "\n");
 	}
 
@@ -247,7 +247,7 @@ float print_critical_path_node(FILE * fp, t_linked_int * critical_path_node) {
 		fprintf(fp, "\n");
 	}
 
-	if (type == CB_OPIN) {
+	if (type == TN_CB_OPIN) {
 		inet =
 				block[iblk].pb->rr_graph[pb_graph_pin->pin_count_in_cluster].net_num;
 		inet = vpack_to_clb_net_mapping[inet];
@@ -283,7 +283,7 @@ static void show_combinational_cycle_candidates() {
 		if (found_tnode[i] == FALSE) {
 			vpr_printf(TIO_MESSAGE_INFO, "\t\ttnode %d ", i);
 			if (tnode[i].pb_graph_pin == NULL) {
-				vpr_printf(TIO_MESSAGE_INFO, "block %s port %d pin %d\n", logical_block[tnode[i].block].name, tnode[i].model_port, tnode[i].model_pin);
+				vpr_printf(TIO_MESSAGE_INFO, "block %s port %d pin %d\n", logical_block[tnode[i].block].name, tnode[i].prepacked_data->model_port, tnode[i].prepacked_data->model_pin);
 			} else {
 				vpr_printf(TIO_MESSAGE_INFO, "\n");
 			}

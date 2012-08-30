@@ -9,7 +9,7 @@
 /* Choose how to normalize negative slacks for the optimizers (not in the final timing analysis for output statistics):
    'R' (T_req-relaxed): For each constraint, set the required time at sink nodes to the max of the true required time 
 	   (constraint + tnode[inode].clock_skew) and the max arrival time. This means that the required time is "relaxed" 
-	   to the max arrival time for tight constraints which would otherwise	give negative slack.
+	   to the max arrival time for tight constraints which would otherwise give negative slack.
 	   Criticalities are computed once per constraint, using a criticality denominator unique to that constraint
 	   (maximum of the constraint and the max arrival time).
    'S' (Shifted): After all slacks are computed, increase the value of all slacks by the largest negative slack, 
@@ -66,11 +66,15 @@ void print_slack(float ** slack, boolean slack_is_normalized, const char *fname)
 void print_criticality(float ** criticality, boolean criticality_is_normalized, const char *fname);
 
 void print_net_delay(float **net_delay, const char *fname);
+
 #ifdef PATH_COUNTING
 void print_path_criticality(float ** path_criticality, const char *fname);
 #else
 void print_clustering_timing_info(const char *fname);
+
+boolean has_valid_normalized_T_arr(int inode);
 #endif
+
 void print_timing_stats(void);
 
 float get_critical_path_delay(void);

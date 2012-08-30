@@ -13,6 +13,54 @@
 #include "ReadOptions.h"
 #include "slre.h"
 
+/***************************** Summary **********************************/
+
+/* Author: Michael Wainberg
+
+Looks for an SDC (Synopsys Design Constraints) file called <circuitname>.sdc
+(unless overridden with --sdc_file <filename.sdc> on the command-line, in which 
+case it looks for that filename), and parses the timing constraints in that file. 
+If it doesn't find a file with that name, it uses default timing constraints 
+(which differ depending on whether the circuit has 0, 1, or multiple clocks).
+
+This routine populates many global data structures and some temporary file-scope 
+ones. One of the two key output data structures is g_constrained_clocks, which 
+associates each clock given a timing constraint with a name, fanout and whether 
+it is a netlist or virtual (external) clock.  From this point on, the only clocks 
+we care about are the ones in this array. During timing analysis and data output, 
+clocks are accessed using the indexing of this array.
+
+The other key data structure is the "constraint matrix" g_timing_constraint, which 
+has a timing constraint for each pair (source and sink) of clock domains. These 
+generally come from finding the smallest difference between the posedges of the 
+two clocks over the LCM clock period ("edge counting" - see calculate_constraint()).
+
+Alternatively, entries in g_timing_constraint can come from a special-case, "override 
+constraint" (so named because it overrides the default behaviour of edge counting). 
+Override constraints can cut paths (set_clock_groups, set_false_path commands), 
+create a multicycle (set_multicycle_path) or even override a constraint with a user-
+specified one (set_max_delay). These entries are stored temporarily in g_cc_constraints 
+(cc = clock to clock), which is freed once the g_timing_constraints echo file is 
+created during process_constraints(). 
+
+Flip-flop-level override constraints also exist and are stored in g_cf_constraints, 
+g_fc_constraints and g_ff_constraints (depending on whether the source, sink or neither 
+of the two is a clock domain).Unlike g_cc_constraints, they are placed on the timing 
+graph during timing analysis instead of going into g_timing_constraint, and are not 
+freed until the end of VPR's execution.
+
+I/O constraints from set_input_delay and set_output_delay are stored in constrained_
+inputs and g_constrained_outputs. These associate each I/O in the netlist given a 
+constraint with the clock (often virtual, but could be in the netlist) it was 
+constrained on, and the delay through the I/O in that constraint.
+
+The remaining data structures are temporary and local to this file: netlist_clocks, 
+netlist_inputs and netlist_outputs, which are used to match names of clocks and I/Os
+in the SDC file to those in the netlist; sdc_clocks, which stores info on clock periods 
+and offsets from create_clock commands and is the raw info used in edge counting; and 
+exclusive_groups, used when parsing set_clock_groups commands into g_cc_constraints. */
+
+
 /******************* Externally-accessible variables ************************/
 
 int g_num_constrained_clocks = 0; /* number of clocks with timing constraints */
@@ -70,7 +118,7 @@ char ** netlist_ios; /* [0..num_netlist_clocks - 1] array of names of ios in net
 
 static void alloc_and_load_netlist_clocks_and_ios(void);
 static void use_default_timing_constraints(void);
-static void count_netlist_clocks_as_g_constrained_clocks(void);
+static void count_netlist_clocks_as_constrained_clocks(void);
 static boolean get_sdc_tok(char * buf);
 static boolean is_number(char * ptr);
 static int find_constrained_clock(char * ptr);
@@ -87,49 +135,6 @@ static void free_clock_constraint(t_clock *& clock_array, int num_clocks);
 /********************* Subroutine definitions *******************************/
 
 void read_sdc(char * sdc_file) {
-
-/* Looks for an SDC (Synopsys Design Constraints) file called <circuitname>.sdc
-(unless overridden with --sdc_file <filename.sdc> on the command-line, in which 
-case it looks for that filename), and parses the timing constraints in that file. 
-If it doesn't find a file with that name, it uses default timing constraints 
-(which differ depending on whether the circuit has 0, 1, or multiple clocks).
-
-This routine populates many global data structures and some temporary file-scope 
-ones. One of the two key output data structures is g_constrained_clocks, which 
-associates each clock given a timing constraint with a name, fanout and whether 
-it is a netlist or virtual (external) clock.  From this point on, the only clocks 
-we care about are the ones in this array. During timing analysis and data output, 
-clocks are accessed using the indexing of this array.
-
-The other key data structure is the "constraint matrix" g_timing_constraint, which 
-has a timing constraint for each pair (source and sink) of clock domains. These 
-generally come from finding the smallest difference between the posedges of the 
-two clocks over the LCM clock period ("edge counting" - see calculate_constraint()).
-
-Alternatively, entries in g_timing_constraint can come from a special-case, "override 
-constraint" (so named because it overrides the default behaviour of edge counting). 
-Override constraints can cut paths (set_clock_groups, set_false_path commands), 
-create a multicycle (set_multicycle_path) or even override a constraint with a user-
-specified one (set_max_delay). These entries are stored temporarily in g_cc_constraints 
-(cc = clock to clock), which is freed once the g_timing_constraints echo file is 
-created during process_constraints(). 
-
-Flip-flop-level override constraints also exist and are stored in g_cf_constraints, 
-g_fc_constraints and g_ff_constraints (depending on whether the source, sink or neither 
-of the two is a clock domain).Unlike g_cc_constraints, they are placed on the timing 
-graph during timing analysis instead of going into g_timing_constraint, and are not 
-freed until the end of VPR's execution.
-
-I/O constraints from set_input_delay and set_output_delay are stored in constrained_
-inputs and g_constrained_outputs. These associate each I/O in the netlist given a 
-constraint with the clock (often virtual, but could be in the netlist) it was 
-constrained on, and the delay through the I/O in that constraint.
-
-The remaining data structures are temporary and local to this file: netlist_clocks, 
-netlist_inputs and netlist_outputs, which are used to match names of clocks and I/Os
-in the SDC file to those in the netlist; sdc_clocks, which stores info on clock periods 
-and offsets from create_clock commands and is the raw info used in edge counting; and 
-exclusive_groups, used when parsing set_clock_groups commands into g_cc_constraints. */
 
 	char buf[BUFSIZE];
 	int source_clock_domain, sink_clock_domain, iinput, ioutput, icc, isource, isink;
@@ -256,7 +261,7 @@ static void use_default_timing_constraints(void) {
 	int source_clock_domain, sink_clock_domain;
 	
 	/* Find all netlist clocks and add them as constrained clocks. */
-	count_netlist_clocks_as_g_constrained_clocks();
+	count_netlist_clocks_as_constrained_clocks();
 
 	/* We'll use separate defaults for multi-clock and single-clock/combinational circuits. */
 
@@ -361,7 +366,7 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
 	}
 }
 
-static void count_netlist_clocks_as_g_constrained_clocks(void) {
+static void count_netlist_clocks_as_constrained_clocks(void) {
 	/* Counts how many clocks are in the netlist, and adds them to the array g_constrained_clocks. */
 
 	int iblock, i, clock_net;

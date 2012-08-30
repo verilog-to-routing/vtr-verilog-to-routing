@@ -3,15 +3,14 @@
 extern t_tnode *tnode; /* [0..num_tnodes - 1] */
 extern int num_tnodes; /* Number of nodes in the timing graph */
 
-/* [0..num_nets - 1].  Gives the index of the tnode that drives each net. */
-
-extern int *net_to_driver_tnode;
-
-/* [0..num__tnode_levels - 1].  Count and list of tnodes at each level of    *
- * the timing graph, to make breadth-first searches easier.                  */
+extern int num_tnode_levels; /* Number of levels in the timing graph. */
 
 extern struct s_ivec *tnodes_at_level;
-extern int num_tnode_levels; /* Number of levels in the timing graph. */
+/* [0..num__tnode_levels - 1].  Count and list of tnodes at each level of    
+ * the timing graph, to make topological searches easier. Level-0 nodes are
+ * sources to the timing graph (types TN_FF_SOURCE, TN_INPAD_SOURCE
+ * and TN_CONSTANT_GEN_SOURCE). Level-N nodes are in the immediate fanout of 
+ * nodes with level at most N-1. */
 
 /***************** Subroutines exported by this module ***********************/
 

@@ -265,6 +265,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 #ifdef PATH_COUNTING
 	int inet, ipin;
 #else
+	int inode;
 	float num_paths_scaling, distance_scaling;
 #endif
 
@@ -394,17 +395,19 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 #else
 		/* Calculate criticality based on slacks and tie breakers (# paths, distance from source) */
-		for (i = 0; i < num_tnodes; i++) {
-			/* Only calculate for tnodes which have valid arrival and required times.  
+		for (inode = 0; inode < num_tnodes; inode++) {
+			/* Only calculate for tnodes which have valid normalized values.
+			Either all values will be accurate or none will, so we only have
+			to check whether one particular value (normalized_T_arr) is valid 
 			Tnodes that do not have both times valid were not part of the analysis. 
 			Because we calloc-ed the array criticality, such nodes will have criticality 0, the lowest possible value. */
-			if (tnode[i].has_valid_slack) {
-				iblk = tnode[i].block;
+			if (has_valid_normalized_T_arr(inode)) {
+				iblk = tnode[inode].block;
 				num_paths_scaling = SCALE_NUM_PATHS
-						* (float) tnode[i].normalized_total_critical_paths;
+						* (float) tnode[inode].prepacked_data->normalized_total_critical_paths;
 				distance_scaling = SCALE_DISTANCE_VAL
-						* (float) tnode[i].normalized_T_arr;
-				crit = (1 - tnode[i].normalized_slack) + num_paths_scaling
+						* (float) tnode[inode].prepacked_data->normalized_T_arr;
+				crit = (1 - tnode[inode].prepacked_data->normalized_slack) + num_paths_scaling
 						+ distance_scaling;
 				if (block_criticality[iblk] < crit) {
 					block_criticality[iblk] = crit;

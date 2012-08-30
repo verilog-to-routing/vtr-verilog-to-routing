@@ -108,9 +108,6 @@
     <ClCompile Include="SRC\util\heapsort.c">
       <Filter>Source Files\util</Filter>
     </ClCompile>
-    <ClCompile Include="SRC\util\mst.c">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
     <ClCompile Include="SRC\util\token.c">
       <Filter>Source Files\util</Filter>
     </ClCompile>
@@ -160,9 +157,6 @@
       <Filter>Source Files\route</Filter>
     </ClCompile>
     <ClCompile Include="SRC\route\route_common.c">
-      <Filter>Source Files\route</Filter>
-    </ClCompile>
-    <ClCompile Include="SRC\route\route_directed_search.c">
       <Filter>Source Files\route</Filter>
     </ClCompile>
     <ClCompile Include="SRC\route\route_timing.c">
