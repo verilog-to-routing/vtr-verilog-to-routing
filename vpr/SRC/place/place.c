@@ -40,11 +40,6 @@
 #define UPDATED_ONCE 'U'
 #define GOT_FROM_SCRATCH 'S'
 
-
-#define MIN_TIMING_COST 1.e-9 
-/* Stops timing cost from going to 0 with very lax timing constraints, which 
-avoids multiplying by a gigantic inverse_prev_timing_cost when auto-normalizing. */
-
 /* For comp_cost.  NORMAL means use the method that generates updateable  *
  * bounding boxes for speed.  CHECK means compute all bounding boxes from *
  * scratch using a very simple routine to allow checks of the other       *
@@ -53,11 +48,9 @@ enum cost_methods {
 	NORMAL, CHECK
 };
 
-#if 0
-#define MIN_TIMING_COST 1.e-12 
-/* Stops timing cost from going to 0 with very lax timing constraints. 
-This would cause division by 0 when auto-normalizing. */
-#endif
+#define MIN_TIMING_COST 1.e-10
+/* Stops timing cost from going to 0 with very lax timing constraints, which 
+avoids multiplying by a gigantic inverse_prev_timing_cost when auto-normalizing. */
 
 /********************** Data Sturcture Definition ***************************/
 /* Stores the information of the move for a block that is       *
@@ -412,11 +405,7 @@ void try_place(struct s_placer_opts placer_opts,
 		/*now we can properly compute costs  */
 		comp_td_costs(&timing_cost, &delay_cost); /*also vpr_printf proper values into point_to_point_delay_cost */
 
-		if (timing_cost < MIN_TIMING_COST) {
-			inverse_prev_timing_cost = 1 / MIN_TIMING_COST;
-		} else {
-			inverse_prev_timing_cost = 1 / timing_cost;
-		}
+		inverse_prev_timing_cost = 1 / timing_cost;
 		inverse_prev_bb_cost = 1 / bb_cost;
 		cost = 1; /*our new cost function uses normalized values of           */
 		/*bb_cost and timing_cost, the value of cost will be reset  */
@@ -1645,12 +1634,10 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 			}
 		}
 	}
-#if 0
+
 	/* Make sure timing cost does not go above MIN_TIMING_COST. */
 	*timing_cost = max(loc_timing_cost, MIN_TIMING_COST);
-#else
-	*timing_cost = loc_timing_cost;
-#endif
+
 	*connection_delay_sum = loc_connection_delay_sum;
 }
 
