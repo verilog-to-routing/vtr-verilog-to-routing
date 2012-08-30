@@ -361,8 +361,13 @@ sub calc_geomean {
 				$num++;
 			}
 		}
-		$geomean **= 1/$num;
-		print OUTPUT_FILE "\t" . "${geomean}" ;
+		if ($num) {
+			$geomean **= 1/$num;
+			print OUTPUT_FILE "\t" . "${geomean}";
+		}
+		else {
+			print OUTPUT_FILE "\t" . "-1";
+		}
 		$index++;
 	}
 	my $date = strftime( '%D', localtime );
