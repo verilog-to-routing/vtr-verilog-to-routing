@@ -766,8 +766,9 @@ void free_rr_graph(void) {
 	/* Before adding any more free calls here, be sure the data is NOT chunk *
 	 * allocated, as ALL the chunk allocated data is already free!           */
 
-	free(net_rr_terminals);
-
+	if(net_rr_terminals != NULL) {
+		free(net_rr_terminals);
+	}
 	for (i = 0; i < num_rr_nodes; i++) {
 		if (rr_node[i].edges != NULL) {
 			free(rr_node[i].edges);
@@ -1028,6 +1029,9 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 
 			L_rr_node[inode].cost_index = OPIN_COST_INDEX;
 			L_rr_node[inode].type = OPIN;
+
+			/* Add in information so that I can identify which cluster pin this rr_node connects to later */
+			L_rr_node[inode].z = z;
 
 			L_rr_node[inode].pb_graph_pin = &pb_graph_node->output_pins[iport][ipb_pin];
 			if(ipb_pin >= pb_graph_node->num_output_pins[iport]) {

@@ -593,6 +593,10 @@ void free_traceback(int inet) {
 
 	struct s_trace *tptr, *tempptr;
 
+	if(trace_head == NULL) {
+		return;
+	}
+
 	tptr = trace_head[inet];
 
 	while (tptr != NULL) {
@@ -731,8 +735,10 @@ void free_trace_structs(void) {
 	for (i = 0; i < num_nets; i++)
 		free_traceback(i);
 
-	free(trace_head);
-	free(trace_tail);
+	if(trace_head) {
+		free(trace_head);
+		free(trace_tail);
+	}
 	trace_head = NULL;
 	trace_tail = NULL;
 }
@@ -741,8 +747,12 @@ void free_route_structs() {
 
 	/* Frees the temporary storage needed only during the routing.  The  *
 	 * final routing result is not freed.                                */
-	free(heap + 1);
-	free(route_bb);
+	if(heap != NULL) {
+		free(heap + 1);
+	}
+	if(route_bb != NULL) {
+		free(route_bb);
+	}
 
 	heap = NULL; /* Defensive coding:  crash hard if I use these. */
 	route_bb = NULL;

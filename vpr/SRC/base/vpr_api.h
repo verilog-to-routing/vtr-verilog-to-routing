@@ -33,6 +33,7 @@ June 21, 2012
 #include "globals.h"
 #include "util.h"
 #include "read_xml_arch_file.h"
+#include "vpr_utils.h"
 
 /* Main VPR Operations */
 void vpr_init(INP int argc, INP char **argv, OUTP t_options *options, OUTP t_vpr_setup *vpr_setup, OUTP t_arch *arch);
@@ -93,7 +94,7 @@ void vpr_print_usage(void);
 	char *vpr_get_output_file_name(enum e_output_files ename);
 
 	/* resync netlists */
-	t_trace* vpr_resync_post_route_netlist(INP const t_arch *arch);
+	t_trace* vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture(INP const t_arch *arch);
 	
 #endif
 

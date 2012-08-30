@@ -6,7 +6,6 @@
 #include "physical_types.h"
 #include "vpr_types.h"
 #include "globals.h"
-#include "mst.h"
 #include "route_export.h"
 #include "route_common.h"
 #include "cluster_legality.h"
@@ -546,19 +545,21 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 
 }
 
-void free_legalizer_for_cluster(INP t_block* clb) {
+void free_legalizer_for_cluster(INP t_block* clb, boolean free_local_rr_graph) {
 	int i;
 
 	free_rr_node_route_structs();
-	for (i = 0; i < num_rr_nodes; i++) {
-		if (clb->pb->rr_graph[i].edges != NULL) {
-			free(clb->pb->rr_graph[i].edges);
+	if(free_local_rr_graph == TRUE) {
+		for (i = 0; i < num_rr_nodes; i++) {
+			if (clb->pb->rr_graph[i].edges != NULL) {
+				free(clb->pb->rr_graph[i].edges);
+			}
+			if (clb->pb->rr_graph[i].switches != NULL) {
+				free(clb->pb->rr_graph[i].switches);
+			}
 		}
-		if (clb->pb->rr_graph[i].switches != NULL) {
-			free(clb->pb->rr_graph[i].switches);
-		}
+		free(clb->pb->rr_graph);
 	}
-	free(clb->pb->rr_graph);
 }
 
 void reset_legalizer_for_cluster(t_block *clb) {
@@ -1111,3 +1112,74 @@ void set_pb_graph_mode(t_pb_graph_node *pb_graph_node, int mode, int isOn) {
 		}
 	}
 }
+
+/* If this is done post place and route, use the cb pins determined by place-and-route rather than letting the legalizer freely determine */
+void force_post_place_route_cb_input_pins(int iblock) {
+	int i, j, k, ipin, net_index, ext_net;
+	int pin_offset;
+	boolean has_ext_source, success;
+	int curr_ext_output, curr_ext_input, curr_ext_clock;
+	t_pb_graph_node *pb_graph_node;
+
+	pb_graph_node = block[iblock].pb->pb_graph_node;
+	pin_offset = block[iblock].z * (pb_graph_node->pb_type->num_input_pins + pb_graph_node->pb_type->num_output_pins + pb_graph_node->pb_type->num_clock_pins);
+
+	curr_ext_input = ext_input_rr_node_index;
+	curr_ext_output = ext_output_rr_node_index;
+	curr_ext_clock = ext_clock_rr_node_index;
+
+	for (i = 0; i < num_nets_in_cluster; i++) {
+		net_index = nets_in_cluster[i];
+		has_ext_source = (boolean)
+				(logical_block[vpack_net[net_index].node_block[0]].clb_index
+						!= curr_cluster_index);
+		if(has_ext_source) {
+			ext_net = vpack_to_clb_net_mapping[net_index];
+			assert(ext_net != OPEN);
+			if (vpack_net[net_index].is_global) {
+				free(rr_node[curr_ext_clock].edges);
+				rr_node[curr_ext_clock].edges = NULL;
+				rr_node[curr_ext_clock].num_edges = 0;
+				
+				success = FALSE;
+				ipin = 0;
+				/* force intra-cluster net to use pins from ext route */
+				for(j = 0; j < pb_graph_node->num_clock_ports; j++) {
+					for(k = 0; k < pb_graph_node->num_clock_pins[j]; k++) {
+						if(ext_net == block[iblock].nets[ipin + pb_graph_node->pb_type->num_input_pins + pb_graph_node->pb_type->num_output_pins + pin_offset]) {
+							success = TRUE;
+							rr_node[curr_ext_clock].num_edges++;
+							rr_node[curr_ext_clock].edges = (int*)my_realloc(rr_node[curr_ext_clock].edges, rr_node[curr_ext_clock].num_edges * sizeof(int));
+							rr_node[curr_ext_clock].edges[rr_node[curr_ext_clock].num_edges - 1] = pb_graph_node->clock_pins[j][k].pin_count_in_cluster;
+						}
+						ipin++;
+					}
+				}
+				assert(success);
+				curr_ext_clock++;
+			} else {
+				free(rr_node[curr_ext_input].edges);
+				rr_node[curr_ext_input].edges = NULL;
+				rr_node[curr_ext_input].num_edges = 0;
+				
+				success = FALSE;
+				ipin = 0;
+				/* force intra-cluster net to use pins from ext route */
+				for(j = 0; j < pb_graph_node->num_input_ports; j++) {
+					for(k = 0; k < pb_graph_node->num_input_pins[j]; k++) {
+						if(ext_net == block[iblock].nets[ipin + pin_offset]) {
+							success = TRUE;
+							rr_node[curr_ext_input].num_edges++;
+							rr_node[curr_ext_input].edges = (int*)my_realloc(rr_node[curr_ext_input].edges, rr_node[curr_ext_input].num_edges * sizeof(int));
+							rr_node[curr_ext_input].edges[rr_node[curr_ext_input].num_edges - 1] = pb_graph_node->input_pins[j][k].pin_count_in_cluster;
+						}
+						ipin++;
+					}
+				}
+				curr_ext_input++;
+				assert(success);
+			}			
+		}
+	}
+}
+

@@ -1980,7 +1980,7 @@ static void start_new_cluster(
 					/* TODO: For now, just grab any working cluster, in the future, heuristic needed to grab best complex block based on supply and demand */
 					break;
 				} else {
-					free_legalizer_for_cluster(new_cluster);
+					free_legalizer_for_cluster(new_cluster, TRUE);
 					free_pb_stats(new_cluster->pb);
 					new_cluster->pb->pb_stats.gain = NULL;
 					free(new_cluster->pb);

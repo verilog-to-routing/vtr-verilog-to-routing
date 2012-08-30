@@ -21,6 +21,7 @@ boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type);
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(t_model_ports *model_port, int model_pin, t_pb_graph_node *pb_graph_node);
 t_pb_graph_pin* get_pb_graph_node_pin_from_vpack_net(int inet, int ipin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_clb_net(int inet, int ipin);
+t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(int iblock, int ipin);
 float compute_primitive_base_cost(INP t_pb_graph_node *primitive);
 int num_ext_inputs_logical_block(int iblk);
 

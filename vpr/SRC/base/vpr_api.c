@@ -38,7 +38,6 @@ June 21, 2012
 #include "route_common.h"
 #include "timing_place_lookup.h"
 #include "cluster_legality.h"
-#include "mst.h"
 #include "route_export.h"
 #include "vpr_api.h"
 #include "read_sdc.h"
@@ -58,6 +57,8 @@ static void reload_intra_cluster_nets(t_pb *pb);
 static t_trace *alloc_and_load_final_routing_trace();
 static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net);
 static void print_complete_net_trace(t_trace* trace, const char *file_name);
+static void resync_post_route_netlist();
+static void clay_input_logical_equivalence_handling(const t_arch *arch);
 
 /* Local subroutines end */
 
@@ -787,32 +788,18 @@ char *vpr_get_output_file_name(enum e_output_files ename) {
 	return getOutputFileName(ename);
 }
 
-/* logical equivalence scrambles the packed netlist indices with the actual indices, need to resync then re-output clustered netlist */
+/* logical equivalence scrambles the packed netlist indices with the actual indices, need to resync then re-output clustered netlist, this code assumes I'm dealing with a TI CLAY v1 architecture */
 /* Returns a trace array [0..num_logical_nets-1] with the final routing of the circuit from the logical_block netlist, index of the trace array corresponds to the index of a vpack_net */
-t_trace* vpr_resync_post_route_netlist(INP const t_arch *arch) {
+t_trace* vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture(INP const t_arch *arch) {
 	t_trace *trace;
-#if 0
-	int i;
 
-	alloc_and_load_cluster_legality_checker();
+	/* Map post-routed traces to clb_nets and block */
+	resync_post_route_netlist();
 	
-	for(i = 0; i < num_blocks; i++) {
-		/* Regenerate rr_graph (note, can be more runtime efficient but this allows for more code reuse)
-		*/
-		free(block[i].pb->rr_graph);
-		block[i].pb->rr_graph = NULL;
-		alloc_and_load_legalizer_for_cluster(&block[i], i, arch);
-		reload_intra_cluster_nets(block[i].pb);
-		reload_ext_net_rr_terminal_cluster();
-		if(try_breadth_first_route_cluster() == FALSE) {
-			vpr_printf(TIO_MESSAGE_ERROR, "Failed to resync post routed solution with clustered netlist.\n");
-			vpr_printf(TIO_MESSAGE_ERROR, "Cannot recover from error.\n");
-			exit(1);
-		}
-		free_legalizer_for_cluster(&block[i]);
-	}
-	free_cluster_legality_checker();
-#endif
+	/* Resolve logically equivalent inputs */
+	clay_input_logical_equivalence_handling(arch);
+	
+	/* Finalize traceback */
 	trace = alloc_and_load_final_routing_trace();
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_COMPLETE_NET_TRACE)) {
 		print_complete_net_trace(trace, getEchoFileName(E_ECHO_COMPLETE_NET_TRACE));
@@ -828,8 +815,9 @@ static void reload_intra_cluster_nets(t_pb *pb) {
 	if(pb_type->blif_model != NULL) {
 		setup_intracluster_routing_for_logical_block(pb->logical_block, pb->pb_graph_node);
 	} else if (pb->child_pbs != NULL) {
+		set_pb_graph_mode(pb->pb_graph_node, pb->mode, 1);
 		for(i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
-			for(j = 0; j < pb_type->modes[pb->mode].pb_type_children[j].num_pb; j++) {
+			for(j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
 				if(pb->child_pbs[i] != NULL) {
 					if(pb->child_pbs[i][j].name != NULL) {
 						reload_intra_cluster_nets(&pb->child_pbs[i][j]);
@@ -1052,4 +1040,96 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 	}
 }
 
+void resync_post_route_netlist() {
+	int i, j, iblock;
+	int gridx, gridy;
+	t_trace *trace;
+	for(i = 0; i < num_blocks; i++) {
+		for(j = 0; j < block[i].type->num_pins; j++) {
+			if(block[i].nets[j] != OPEN && clb_net[block[i].nets[j]].is_global == FALSE)
+				block[i].nets[j] = OPEN;
+		}
+	}
+	for(i = 0; i < num_nets; i++) {
+		if(clb_net[i].is_global == TRUE)
+			continue;
+		j = 0;
+		trace = trace_head[i];
+		while(trace != NULL) {
+			if(rr_node[trace->index].type == OPIN && j == 0) {
+				gridx = rr_node[trace->index].xlow;
+				gridy = rr_node[trace->index].ylow;
+				gridy = gridy - grid[gridx][gridy].offset;
+				iblock = grid[gridx][gridy].blocks[rr_node[trace->index].z];
+				assert(clb_net[i].node_block[j] == iblock);
+				clb_net[i].node_block_pin[j] = rr_node[trace->index].ptc_num;
+				block[iblock].nets[rr_node[trace->index].ptc_num] = i;
+				j++;
+			} else if (rr_node[trace->index].type == IPIN) {
+				gridx = rr_node[trace->index].xlow;
+				gridy = rr_node[trace->index].ylow;
+				gridy = gridy - grid[gridx][gridy].offset;
+				iblock = grid[gridx][gridy].blocks[rr_node[trace->index].z];
+				clb_net[i].node_block[j] = iblock;
+				clb_net[i].node_block_pin[j] = rr_node[trace->index].ptc_num;
+				block[iblock].nets[rr_node[trace->index].ptc_num] = i;
+				j++;
+			}
+			trace = trace->next;
+		}
+		assert(j == clb_net[i].num_sinks + 1);
+	}
+}
 
+static void clay_input_logical_equivalence_handling(const t_arch *arch) {
+	t_trace **saved_ext_rr_trace_head, **saved_ext_rr_trace_tail;
+	t_rr_node *saved_ext_rr_node;
+	int num_ext_rr_node, num_ext_nets;
+	int i, j;
+
+	/* Resolve logically equivalent inputs */
+	saved_ext_rr_trace_head = trace_head;
+	saved_ext_rr_trace_tail = trace_tail;
+	saved_ext_rr_node = rr_node;
+	num_ext_rr_node = num_rr_nodes;
+	num_ext_nets = num_nets;
+	num_rr_nodes = 0;
+	rr_node = NULL;
+	trace_head = NULL;
+	trace_tail = NULL;
+	free_rr_graph(); /* free all data structures associated with rr_graph */
+
+	alloc_and_load_cluster_legality_checker();
+	for(i = 0; i < num_blocks; i++) {
+		/* Regenerate rr_graph (note, can be more runtime efficient but this allows for more code reuse)
+		*/
+		rr_node = block[i].pb->rr_graph;
+		num_rr_nodes = block[i].pb->pb_graph_node->total_pb_pins;
+		free_legalizer_for_cluster(&block[i], TRUE);
+		alloc_and_load_legalizer_for_cluster(&block[i], i, arch);
+		reload_intra_cluster_nets(block[i].pb);
+		reload_ext_net_rr_terminal_cluster();
+		force_post_place_route_cb_input_pins(i);
+		/* reset rr_graph */
+		for(j = 0; j < num_rr_nodes; j++) {
+			rr_node[j].occ = 0;
+			rr_node[j].prev_edge = OPEN;
+			rr_node[j].prev_node = OPEN;
+		}
+		if(try_breadth_first_route_cluster() == FALSE) {
+			vpr_printf(TIO_MESSAGE_ERROR, "Failed to resync post routed solution with clustered netlist.\n");
+			vpr_printf(TIO_MESSAGE_ERROR, "Cannot recover from error.\n");
+			exit(1);
+		}
+		save_cluster_solution();
+		reset_legalizer_for_cluster(&block[i]);
+		free_legalizer_for_cluster(&block[i], FALSE);
+	}
+	free_cluster_legality_checker();
+
+	trace_head = saved_ext_rr_trace_head;
+	trace_tail = saved_ext_rr_trace_tail;
+	rr_node = saved_ext_rr_node;
+	num_rr_nodes = num_ext_rr_node;
+	num_nets = num_ext_nets;	
+}

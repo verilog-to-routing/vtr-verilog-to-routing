@@ -334,7 +334,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_vpack_net(int inet, int ipin) {
 
 
 t_pb_graph_pin* get_pb_graph_node_pin_from_clb_net(int inet, int ipin) {
-	int i, iblock, target_pin, count;
+	int iblock, target_pin;
 	t_pb_graph_node *pb_graph_node;
 	const t_pb_type *pb_type;
 	
@@ -343,10 +343,24 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_clb_net(int inet, int ipin) {
 	pb_type = pb_graph_node->pb_type;
 
 	target_pin = clb_net[inet].node_block_pin[ipin];
-	target_pin %= (pb_type->num_input_pins + pb_type->num_output_pins + pb_type->num_clock_pins);
+	
+	return get_pb_graph_node_pin_from_block_pin(iblock, target_pin);
+}
 
-	if(target_pin < pb_type->num_input_pins) {
-		count = target_pin;
+t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(int iblock, int ipin) {
+	int i, count;
+	const t_pb_type *pb_type;
+	t_pb_graph_node *pb_graph_node;
+	
+	pb_graph_node = block[iblock].pb->pb_graph_node;
+	pb_type = pb_graph_node->pb_type;
+
+	/* If this is post-placed, then the ipin may have been shuffled up by the z * num_pins, 
+	bring it back down to 0..num_pins-1 range for easier analysis */
+	ipin %= (pb_type->num_input_pins + pb_type->num_output_pins + pb_type->num_clock_pins);
+		
+	if(ipin < pb_type->num_input_pins) {
+		count = ipin;
 		for(i = 0; i < pb_graph_node->num_input_ports; i++) {
 			if(count - pb_graph_node->num_input_pins[i] >= 0) {
 				count -= pb_graph_node->num_input_pins[i];
@@ -354,8 +368,8 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_clb_net(int inet, int ipin) {
 				return &pb_graph_node->input_pins[i][count];
 			}
 		}
-	} else if (target_pin < pb_type->num_input_pins + pb_type->num_output_pins) {
-		count = target_pin - pb_type->num_input_pins;
+	} else if (ipin < pb_type->num_input_pins + pb_type->num_output_pins) {
+		count = ipin - pb_type->num_input_pins;
 		for(i = 0; i < pb_graph_node->num_output_ports; i++) {
 			if(count - pb_graph_node->num_output_pins[i] >= 0) {
 				count -= pb_graph_node->num_output_pins[i];
@@ -364,7 +378,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_clb_net(int inet, int ipin) {
 			}
 		}
 	} else {
-		count = target_pin - pb_type->num_input_pins - pb_type->num_output_pins;
+		count = ipin - pb_type->num_input_pins - pb_type->num_output_pins;
 		for(i = 0; i < pb_graph_node->num_clock_ports; i++) {
 			if(count - pb_graph_node->num_clock_pins[i] >= 0) {
 				count -= pb_graph_node->num_clock_pins[i];

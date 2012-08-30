@@ -7,7 +7,7 @@ void alloc_and_load_cluster_legality_checker(void);
 
 void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index, INP const t_arch *arch);
 
-void free_legalizer_for_cluster(INP t_block* clb);
+void free_legalizer_for_cluster(INP t_block* clb, boolean free_local_rr_graph);
 
 void free_cluster_legality_checker(void);
 
@@ -29,6 +29,7 @@ void alloc_and_load_rr_graph_for_pb_graph_node(INP t_pb_graph_node *pb_graph_nod
 
 /* Power user options */
 void reload_ext_net_rr_terminal_cluster(void);
+void force_post_place_route_cb_input_pins(int iblock);
 void setup_intracluster_routing_for_logical_block(INP int iblock,
 		INP t_pb_graph_node *primitive);
 
