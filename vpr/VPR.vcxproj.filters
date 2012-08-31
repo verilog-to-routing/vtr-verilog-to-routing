@@ -225,6 +225,9 @@
     <ClCompile Include="SRC\timing\slre.c">
       <Filter>Source Files\timing</Filter>
     </ClCompile>
+    <ClCompile Include="SRC\place\place_macro.c">
+      <Filter>Source Files\place</Filter>
+    </ClCompile>
     <ClCompile Include="SRC\base\verilog_writer.c">
       <Filter>Source Files\base</Filter>
     </ClCompile>
@@ -400,6 +403,9 @@
     </ClInclude>
     <ClInclude Include="SRC\timing\slre.h">
       <Filter>Header Files\timing</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\place\place_macro.h">
+      <Filter>Header Files\place</Filter>
     </ClInclude>
     <ClInclude Include="SRC\base\verilog_writer.h">
       <Filter>Header Files\base</Filter>

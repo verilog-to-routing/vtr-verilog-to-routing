@@ -21,6 +21,6 @@ void place_and_route(enum e_operation operation,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
-		struct s_model *models);
+		struct s_model *models, t_direct_inf *directs, int num_directs);
 
 void init_chan(int cfactor, t_chan_width_dist chan_width_dist);

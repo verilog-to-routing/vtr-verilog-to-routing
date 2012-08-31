@@ -20,6 +20,7 @@
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
 #include "route_common.h"
+#include "place_macro.h"
 #include "verilog_writer.h"
 
 /******************* Subroutines local to this module ************************/
@@ -31,7 +32,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
-		t_model *models);
+		t_model *models, t_direct_inf *directs, int num_directs);
 
 static float comp_width(t_chan * chan, float x, float separation);
 
@@ -49,7 +50,8 @@ void place_and_route(enum e_operation operation,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
-		struct s_model *models) {
+		struct s_model *models,
+		t_direct_inf *directs, int num_directs) {
 
 	/* This routine controls the overall placement and routing of a circuit. */
 	char msg[BUFSIZE];
@@ -82,7 +84,7 @@ void place_and_route(enum e_operation operation,
 				(PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
 		begin = clock();
 		try_place(placer_opts, annealing_sched, chan_width_dist, router_opts,
-				det_routing_arch, segment_inf, timing_inf);
+				det_routing_arch, segment_inf, timing_inf, directs, num_directs);
 		print_place(place_file, net_file, arch_file);
 		end = clock();
 #ifdef CLOCKS_PER_SEC
@@ -108,7 +110,7 @@ void place_and_route(enum e_operation operation,
 				arch_file, route_file, router_opts.full_stats,
 				router_opts.verify_binary_search, annealing_sched, router_opts,
 				det_routing_arch, segment_inf, timing_inf, chan_width_dist,
-				models);
+				models, directs, num_directs);
 	} else {
 		if (det_routing_arch.directionality == UNI_DIRECTIONAL) {
 			if (width_fac % 2 != 0) {
@@ -176,7 +178,10 @@ void place_and_route(enum e_operation operation,
 		init_draw_coords(max_pins_per_clb);
 		update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled);
 		
-
+		if(GetPostSynthesisOption())
+		{
+			verilog_writer();
+		}
 
 		if (timing_inf.timing_analysis_enabled) {
 			assert(slacks->slack);
@@ -201,9 +206,6 @@ void place_and_route(enum e_operation operation,
 		}
 		free(clb_opins_used_locally);
 		clb_opins_used_locally = NULL;
-	}
-	if (GetPostSynthesisOption()) {
-	  verilog_writer();
 	}
 
 	end = clock();
@@ -230,7 +232,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
-		t_model *models) {
+		 t_model *models, t_direct_inf *directs, int num_directs) {
 
 	/* This routine performs a binary search to find the minimum number of      *
 	 * tracks per channel required to successfully route a circuit, and returns *
@@ -348,7 +350,8 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		if (placer_opts.place_freq == PLACE_ALWAYS) {
 			placer_opts.place_chan_width = current;
 			try_place(placer_opts, annealing_sched, chan_width_dist,
-					router_opts, det_routing_arch, segment_inf, timing_inf);
+					router_opts, det_routing_arch, segment_inf, timing_inf,
+					directs, num_directs);
 		}
 		success = try_route(current, router_opts, det_routing_arch, segment_inf,
 				timing_inf, net_delay, slacks, chan_width_dist,
@@ -456,9 +459,9 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			if (placer_opts.place_freq == PLACE_ALWAYS) {
 				placer_opts.place_chan_width = current;
 				try_place(placer_opts, annealing_sched, chan_width_dist,
-						router_opts, det_routing_arch, segment_inf, timing_inf);
+						router_opts, det_routing_arch, segment_inf, timing_inf,
+						directs, num_directs);
 			}
-
 			success = try_route(current, router_opts, det_routing_arch,
 					segment_inf, timing_inf, net_delay, slacks,
 					chan_width_dist, clb_opins_used_locally, &Fc_clipped);

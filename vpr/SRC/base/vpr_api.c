@@ -134,7 +134,7 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--bend_cost <float>] [--route_type global | detailed]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--verify_binary_search] [--route_chan_width <int>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, 
-			"\t[--router_algorithm breadth_first | timing_driven | directed_search]\n");
+			"\t[--router_algorithm breadth_first | timing_driven]\n");
 	vpr_printf(TIO_MESSAGE_INFO, 
 			"\t[--base_cost_type intrinsic_delay | delay_normalized | demand_only]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
@@ -408,7 +408,7 @@ void vpr_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 	place_and_route(vpr_setup.Operation, vpr_setup.PlacerOpts, vpr_setup.FileNameOpts.PlaceFile,
 			vpr_setup.FileNameOpts.NetFile, vpr_setup.FileNameOpts.ArchFile, vpr_setup.FileNameOpts.RouteFile,
 			vpr_setup.AnnealSched, vpr_setup.RouterOpts, vpr_setup.RoutingArch, vpr_setup.Segments, vpr_setup.Timing, arch.Chans,
-			arch.models);
+			arch.models, arch.Directs, arch.num_directs);
 
 	fflush(stdout);
 

@@ -27,6 +27,17 @@ int num_ext_inputs_logical_block(int iblk);
 
 int ** alloc_and_load_net_pin_index();
 
+void get_port_pin_from_blk_pin(int blk_type_index, int blk_pin, int * port,
+		int * port_pin);
+void free_port_pin_from_blk_pin(void);
+
+void get_blk_pin_from_port_pin(int blk_type_index, int port,int port_pin, 
+		int * blk_pin);
+void free_blk_pin_from_port_pin(void);
+
+void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs, 
+		int *** idirect_from_blk_pin, int *** direct_type_from_blk_pin);
+
 void free_cb(t_pb *pb);
 void free_pb_stats(t_pb *pb);
 void free_pb(t_pb *pb);

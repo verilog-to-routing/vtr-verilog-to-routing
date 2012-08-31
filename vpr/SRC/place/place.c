@@ -17,13 +17,14 @@
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
 #include "vpr_utils.h"
+#include "place_macro.h"
 
 /************** Types and defines local to place.c ***************************/
 
 /* Cut off for incremental bounding box updates.                          *
  * 4 is fastest -- I checked.                                             */
 /* To turn off incremental bounding box updates, set this to a huge value */
-#define SMALL_NET 4
+#define SMALL_NET 4000
 
 /* This defines the error tolerance for floating points variables used in *
  * cost computation. 0.01 means that there is a 1% error tolerance.       */
@@ -33,6 +34,11 @@
  * once-in-a-while placement legality check as well as floating point     *
  * variables round-offs check.                                            */
 #define MAX_MOVES_BEFORE_RECOMPUTE 50000
+
+/* The maximum number of tries when trying to place a carry chain at a    *
+ * random location before trying exhaustive placement - find the fist     *
+ * legal position and place it during initial placement.                  */
+#define MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY 4
 
 /* Flags for the states of the bounding box.                              *
  * Stored as char for memory efficiency.                                  */
@@ -46,6 +52,13 @@
  * costs.                                                                 */
 enum cost_methods {
 	NORMAL, CHECK
+};
+
+/* This is for the placement swap routines. A swap attempt could be       *
+ * rejected, accepted or aborted (due to the limitations placed on the    *
+ * carry chain support at this point).                                    */
+enum swap_result {
+	REJECTED, ACCEPTED, ABORTED
 };
 
 #define MIN_TIMING_COST 1.e-9
@@ -69,6 +82,9 @@ typedef struct s_pl_moved_block {
 	int xnew;
 	int yold;
 	int ynew;
+	int zold;
+	int znew;
+	int swapped_to_empty;
 }t_pl_moved_block;
 
 /* Stores the list of blocks to be moved in a swap during       *
@@ -77,7 +93,7 @@ typedef struct s_pl_moved_block {
  *                   swapping two blocks.                       *
  * moved blocks: a list of moved blocks data structure with     *
  *               information on the move.                       *
- *               [0...num_moved_blocks-1]                         *
+ *               [0...num_moved_blocks-1]                       *
  */
 typedef struct s_pl_blocks_to_be_moved {
 	int num_moved_blocks;
@@ -91,11 +107,13 @@ typedef struct s_pl_blocks_to_be_moved {
 static float *net_cost = NULL, *temp_net_cost = NULL; /* [0..num_nets-1] */
 
 /* legal positions for type */
-static struct s_legal_pos {
-		int x;
-		int y;
-		int z;
-	}**legal_pos = NULL; /* [0..num_types-1][0..type_tsize - 1] */
+typedef struct s_legal_pos {
+	int x;
+	int y;
+	int z;
+}t_legal_pos;
+
+static t_legal_pos **legal_pos = NULL; /* [0..num_types-1][0..type_tsize - 1] */
 static int *num_legal_pos = NULL; /* [0..num_legal_pos-1] */
 
 /* [0...num_nets-1]                                                              *
@@ -152,11 +170,24 @@ static t_pl_blocks_to_be_moved blocks_affected;
  *                [0...ny]                [0...nx]                      */
 static float **chanx_place_cost_fac, **chany_place_cost_fac;
 
-/* The following arrays are used by the try_swap function for speed reasons */
+/* The following arrays are used by the try_swap function for speed.   */
 /* [0...num_nets-1] */
 static struct s_bb *ts_bb_coord_new = NULL;
 static struct s_bb *ts_bb_edge_new = NULL;
 static int *ts_nets_to_update = NULL;
+
+/* The pl_macros array stores all the carry chains placement macros.   *
+ * [0...num_pl_macros-1]                                                  */
+static t_pl_macro * pl_macros = NULL;
+static int num_pl_macros;
+
+/* These file-scoped variables keep track of the number of swaps       *
+ * rejected, accepted or aborted. The total number of swap attempts    *
+ * is the sum of the three number.                                     */
+static int num_swap_rejected = 0;
+static int num_swap_accepted = 0;
+static int num_swap_aborted = 0;
+static int num_ts_called = 0;
 
 /* Expected crossing counts for nets with different #'s of pins.  From *
  * ICCAD 94 pp. 690 - 695 (with linear interpolation applied by me).   *
@@ -177,7 +208,8 @@ static const float cross_count[50] = { /* [0..49] */1.0, 1.0, 1.0, 1.0828, 1.153
 
 static void alloc_and_load_placement_structs(
 		float place_cost_exp, float ***old_region_occ_x,
-		float ***old_region_occ_y, struct s_placer_opts placer_opts);
+		float ***old_region_occ_y, struct s_placer_opts placer_opts,
+		t_direct_inf *directs, int num_directs);
 
 static void alloc_and_load_try_swap_structs();
 
@@ -194,12 +226,24 @@ static void load_legal_placements();
 
 static void free_legal_placements();
 
+static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z);
+
+static int try_place_macro(int itype, int ichoice, int imacro, int * free_locations);
+
+static void initial_placement_pl_macros(int macros_max_num_tries, int * free_locations);
+
+static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type pad_loc_type);
+
 static void initial_placement(enum e_pad_loc_type pad_loc_type,
 		char *pad_loc_file);
 
 static float comp_bb_cost(enum cost_methods method);
 
-static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
+static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to);
+
+static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to);
+
+static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 		float rlim, float **old_region_occ_x,
 		float **old_region_occ_y,
 		enum e_place_algorithm place_algorithm, float timing_tradeoff,
@@ -240,7 +284,7 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay);
 
 static void comp_td_costs(float *timing_cost, float *connection_delay_sum);
 
-static int assess_swap(float delta_c, float t);
+static enum swap_result assess_swap(float delta_c, float t);
 
 static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int *x_to, int *y_to);
 
@@ -260,26 +304,27 @@ static double get_net_wirelength_estimate(int inet, struct s_bb *bbptr);
 
 static void free_try_swap_arrays(void);
 
+
 /*****************************************************************************/
 /* RESEARCH TODO: Bounding Box and rlim need to be redone for heterogeneous to prevent a QoR penalty */
 void try_place(struct s_placer_opts placer_opts,
 		struct s_annealing_sched annealing_sched,
 		t_chan_width_dist chan_width_dist, struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf) {
+		t_timing_inf timing_inf, t_direct_inf *directs, int num_directs) {
 
 	/* Does almost all the work of placing a circuit.  Width_fac gives the   *
 	 * width of the widest channel.  Place_cost_exp says what exponent the   *
 	 * width should be taken to when calculating costs.  This allows a       *
 	 * greater bias for anisotropic architectures.                           */
 
-	int tot_iter, inner_iter, success_sum, move_lim, moves_since_cost_recompute, width_fac, 
-		num_connections, inet, ipin, outer_crit_iter_count, inner_crit_iter_count, 
-		inner_recompute_limit;
+	int tot_iter, inner_iter, success_sum, move_lim, moves_since_cost_recompute, width_fac,
+		num_connections, inet, ipin, outer_crit_iter_count, inner_crit_iter_count,
+		inner_recompute_limit, swap_result;
 	float t, success_rat, rlim, cost, timing_cost, bb_cost, new_bb_cost, new_timing_cost,
 		delay_cost, new_delay_cost, place_delay_value, inverse_prev_bb_cost, inverse_prev_timing_cost,
-		oldt, **old_region_occ_x, **old_region_occ_y, **net_delay = NULL, crit_exponent, 
-		first_rlim, final_rlim, inverse_delta_rlim, critical_path_delay = UNDEFINED, 
+		oldt, **old_region_occ_x, **old_region_occ_y, **net_delay = NULL, crit_exponent,
+		first_rlim, final_rlim, inverse_delta_rlim, critical_path_delay = UNDEFINED,
 		**remember_net_delay_original_ptr; /*used to free net_delay if it is re-assigned */
 	double av_cost, av_bb_cost, av_timing_cost, av_delay_cost, sum_of_squares, std_dev;
 	char msg[BUFSIZE];
@@ -344,7 +389,8 @@ void try_place(struct s_placer_opts placer_opts,
 
 	alloc_and_load_placement_structs(
 			placer_opts.place_cost_exp,
-			&old_region_occ_x, &old_region_occ_y, placer_opts);
+			&old_region_occ_x, &old_region_occ_y, placer_opts,
+			directs, num_directs);
 
 	initial_placement(placer_opts.pad_loc_type, placer_opts.pad_loc_file);
 	init_draw_coords((float) width_fac);
@@ -523,23 +569,35 @@ void try_place(struct s_placer_opts placer_opts,
 		inner_crit_iter_count = 1;
 
 		for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
-			if (try_swap(t, &cost, &bb_cost, &timing_cost, rlim,
+			swap_result = try_swap(t, &cost, &bb_cost, &timing_cost, rlim,
 					old_region_occ_x,
 					old_region_occ_y, 
 					placer_opts.place_algorithm, placer_opts.timing_tradeoff,
-					inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost) == 1) {
+					inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost);
+			if (swap_result == ACCEPTED) {
+
+				/* Move was accepted.  Update statistics that are useful for the annealing schedule. */
 				success_sum++;
 				av_cost += cost;
 				av_bb_cost += bb_cost;
 				av_timing_cost += timing_cost;
 				av_delay_cost += delay_cost;
 				sum_of_squares += cost * cost;
+				num_swap_accepted++;
+			} else if (swap_result == ABORTED) {
+				num_swap_aborted++;
+			} else { // swap_result == REJECTED
+				num_swap_rejected++;
 			}
+
 
 			if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
 					|| placer_opts.place_algorithm
 							== PATH_TIMING_DRIVEN_PLACE) {
 
+				/* Do we want to re-timing analyze the circuit to get updated slack and criticality values? 
+				 * We do this only once in a while, since it is expensive.
+				 */
 				if (inner_crit_iter_count >= inner_recompute_limit
 						&& inner_iter != move_lim - 1) { /*on last iteration don't recompute */
 
@@ -550,11 +608,18 @@ void try_place(struct s_placer_opts placer_opts,
 #endif
 					if (placer_opts.place_algorithm
 							== NET_TIMING_DRIVEN_PLACE) {
+					    /* Use a constant delay per connection as the delay estimate, rather than
+						 * estimating based on the current placement.  Not a great idea, but not the 
+						 * default.
+						 */
 						place_delay_value = delay_cost / num_connections;
 						load_constant_net_delay(net_delay, place_delay_value,
 								clb_net, num_nets);
 					}
 
+					/* Using the delays in net_delay, do a timing analysis to update slacks and
+					 * criticalities; then update the timing cost since it will change.
+					 */
 					load_timing_graph_net_delays(net_delay);
 					do_timing_analysis(slacks, FALSE, FALSE, FALSE);
 					load_criticalities(slacks, crit_exponent);
@@ -565,7 +630,7 @@ void try_place(struct s_placer_opts placer_opts,
 #ifdef VERBOSE
 			vpr_printf
 			(TIO_MESSAGE_TRACE, "t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d dmax = %g\n",
-					t, cost, bb_cost, timing_cost, inner_iter, d_max);
+					t, cost, bb_cost, timing_cost, inner_iter, delay_cost);
 			if (fabs
 					(bb_cost -
 							comp_bb_cost(CHECK)) >
@@ -594,8 +659,7 @@ void try_place(struct s_placer_opts placer_opts,
 					|| placer_opts.place_algorithm
 							== PATH_TIMING_DRIVEN_PLACE) {
 				comp_td_costs(&new_timing_cost, &new_delay_cost);
-				if (fabs(new_timing_cost - timing_cost) >
-				timing_cost * ERROR_TOL) {
+				if (fabs(new_timing_cost - timing_cost) > timing_cost * ERROR_TOL) {
 					vpr_printf(TIO_MESSAGE_ERROR, 
 							"in try_place:  new_timing_cost = %g, old timing_cost = %g.\n",
 							new_timing_cost, timing_cost);
@@ -708,10 +772,12 @@ void try_place(struct s_placer_opts placer_opts,
 	inner_crit_iter_count = 1;
 
 	for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
-		if (try_swap(t, &cost, &bb_cost, &timing_cost, rlim,
+		swap_result = try_swap(t, &cost, &bb_cost, &timing_cost, rlim,
 				old_region_occ_x, old_region_occ_y,
 				placer_opts.place_algorithm, placer_opts.timing_tradeoff,
-				inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost) == 1) {
+				inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost);
+		
+		if (swap_result == ACCEPTED) {
 			success_sum++;
 			av_cost += cost;
 			av_bb_cost += bb_cost;
@@ -745,7 +811,13 @@ void try_place(struct s_placer_opts placer_opts,
 				}
 				inner_crit_iter_count++;
 			}
+			num_swap_accepted++;
+		} else if (swap_result == ABORTED) {
+			num_swap_aborted++;
+		} else {
+			num_swap_rejected++;
 		}
+
 #ifdef VERBOSE
 		vpr_printf(TIO_MESSAGE_INFO, "t = %g  cost = %g   move = %d\n", t, cost, tot_iter);
 #endif
@@ -774,6 +846,12 @@ void try_place(struct s_placer_opts placer_opts,
 			tot_iter);
 
 #endif
+
+	// TODO:  
+	// 1. print a message about number of aborted moves.
+	// 2. add some subroutine hierarchy!  Too big!
+	// 3. put statistics counters (av_cost, success_sum, etc.) in a struct so a 
+	// pointer to it can be passed around. 
 
 #ifdef VERBOSE
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_END_CLB_PLACEMENT)) {
@@ -827,6 +905,16 @@ void try_place(struct s_placer_opts placer_opts,
 	vpr_printf(TIO_MESSAGE_INFO, "Placement. Cost: %g  bb_cost: %g  td_cost: %g  delay_cost: %g.\n",
 			cost, bb_cost, timing_cost, delay_cost);
 	update_screen(MAJOR, msg, PLACEMENT, FALSE);
+
+	// Print out swap statistics
+	int total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;
+	float reject_rate = num_swap_rejected / total_swap_attempts;
+	float accept_rate = num_swap_accepted / total_swap_attempts;
+	float abort_rate = num_swap_aborted / total_swap_attempts;
+	vpr_printf(TIO_MESSAGE_INFO, "Placement - Total number of swap attempts: %g.\n"
+			"\tSwap reject rate: %g\n\tSwap accept rate: %g\n\tSwap abort rate: %g\n",
+			total_swap_attempts, reject_rate, accept_rate, abort_rate);
+	
 
 #ifdef SPEC
 	vpr_printf(TIO_MESSAGE_INFO, "Total moves attempted: %d.0\n", tot_iter);
@@ -971,7 +1059,7 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 
 	/* Finds the starting temperature (hot condition).              */
 
-	int i, num_accepted, move_lim;
+	int i, num_accepted, move_lim, swap_result;
 	double std_dev, av, sum_of_squares; /* Double important to avoid round off */
 
 	if (annealing_sched.type == USER_SCHED)
@@ -986,13 +1074,20 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 	/* Try one move per block.  Set t high so essentially all accepted. */
 
 	for (i = 0; i < move_lim; i++) {
-		if (try_swap(HUGE_POSITIVE_FLOAT, cost_ptr, bb_cost_ptr, timing_cost_ptr, rlim,
+		swap_result = try_swap(HUGE_POSITIVE_FLOAT, cost_ptr, bb_cost_ptr, timing_cost_ptr, rlim,
 				old_region_occ_x, old_region_occ_y,
 				place_algorithm, timing_tradeoff,
-				inverse_prev_bb_cost, inverse_prev_timing_cost, delay_cost_ptr) == 1) {
+				inverse_prev_bb_cost, inverse_prev_timing_cost, delay_cost_ptr);
+		
+		if (swap_result == ACCEPTED) {
 			num_accepted++;
 			av += *cost_ptr;
 			sum_of_squares += *cost_ptr * (*cost_ptr);
+			num_swap_accepted++;
+		} else if (swap_result == ABORTED) {
+			num_swap_aborted++;
+		} else {
+			num_swap_rejected++;
 		}
 	}
 
@@ -1020,7 +1115,150 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 	return (20. * std_dev);
 }
 
-static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
+
+static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
+
+	/* Find all the blocks affected when b_from is swapped with b_to. 
+	 * Returns abort_swap.                  */
+
+	int imoved_blk, imacro;
+	int x_from, y_from, z_from, b_to;
+	int abort_swap = FALSE;
+
+	x_from = block[b_from].x;
+	y_from = block[b_from].y;
+	z_from = block[b_from].z;
+
+	b_to = grid[x_to][y_to].blocks[z_to];
+
+	// Check whether the to_location is empty
+	if (b_to == EMPTY) {
+
+		// Swap the block, dont swap the nets yet
+		block[b_from].x = x_to;
+		block[b_from].y = y_to;
+		block[b_from].z = z_to;
+
+		// Sets up the blocks moved
+		imoved_blk = blocks_affected.num_moved_blocks;
+		blocks_affected.moved_blocks[imoved_blk].block_num = b_from;
+		blocks_affected.moved_blocks[imoved_blk].xold = x_from;
+		blocks_affected.moved_blocks[imoved_blk].xnew = x_to;
+		blocks_affected.moved_blocks[imoved_blk].yold = y_from;
+		blocks_affected.moved_blocks[imoved_blk].ynew = y_to;
+		blocks_affected.moved_blocks[imoved_blk].zold = z_from;
+		blocks_affected.moved_blocks[imoved_blk].znew = z_to;
+		blocks_affected.moved_blocks[imoved_blk].swapped_to_empty = TRUE;
+		blocks_affected.num_moved_blocks ++;
+				
+	} else {
+
+		// Does not allow a swap with a macro yet
+		get_imacro_from_iblk(&imacro, b_to, pl_macros, num_pl_macros);
+		if (imacro != -1) {
+			abort_swap = TRUE;
+			return (abort_swap);
+		}
+
+		// Swap the block, dont swap the nets yet
+		block[b_to].x = x_from;
+		block[b_to].y = y_from;
+		block[b_to].z = z_from;
+
+		block[b_from].x = x_to;
+		block[b_from].y = y_to;
+		block[b_from].z = z_to;
+		
+		// Sets up the blocks moved
+		imoved_blk = blocks_affected.num_moved_blocks;
+		blocks_affected.moved_blocks[imoved_blk].block_num = b_from;
+		blocks_affected.moved_blocks[imoved_blk].xold = x_from;
+		blocks_affected.moved_blocks[imoved_blk].xnew = x_to;
+		blocks_affected.moved_blocks[imoved_blk].yold = y_from;
+		blocks_affected.moved_blocks[imoved_blk].ynew = y_to;
+		blocks_affected.moved_blocks[imoved_blk].zold = z_from;
+		blocks_affected.moved_blocks[imoved_blk].znew = z_to;
+		blocks_affected.moved_blocks[imoved_blk].swapped_to_empty = FALSE;
+		blocks_affected.num_moved_blocks ++;
+				
+		imoved_blk = blocks_affected.num_moved_blocks;
+		blocks_affected.moved_blocks[imoved_blk].block_num = b_to;
+		blocks_affected.moved_blocks[imoved_blk].xold = x_to;
+		blocks_affected.moved_blocks[imoved_blk].xnew = x_from;
+		blocks_affected.moved_blocks[imoved_blk].yold = y_to;
+		blocks_affected.moved_blocks[imoved_blk].ynew = y_from;
+		blocks_affected.moved_blocks[imoved_blk].zold = z_to;
+		blocks_affected.moved_blocks[imoved_blk].znew = z_from;
+		blocks_affected.moved_blocks[imoved_blk].swapped_to_empty = FALSE;
+		blocks_affected.num_moved_blocks ++;
+
+	} // Finish swapping the blocks and setting up blocks_affected
+			
+	return (abort_swap);
+
+}
+
+static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {
+
+	/* Finds and set ups the affected_blocks array. 
+	 * Returns abort_swap. */
+
+	int imacro, imember;
+	int x_swap_offset, y_swap_offset, z_swap_offset, x_from, y_from, z_from, b_to;
+	int curr_b_from, curr_x_from, curr_y_from, curr_z_from, curr_b_to, curr_x_to, curr_y_to, curr_z_to;
+	int abort_swap = FALSE;
+	
+	x_from = block[b_from].x;
+	y_from = block[b_from].y;
+	z_from = block[b_from].z;
+
+	b_to = grid[x_to][y_to].blocks[z_to];
+
+	get_imacro_from_iblk(&imacro, b_from, pl_macros, num_pl_macros);
+	if ( imacro != -1) {
+		// b_from is part of a macro, I need to swap the whole macro
+		
+		// Record down the relative position of the swap
+		x_swap_offset = x_to - x_from;
+		y_swap_offset = y_to - y_from;
+		z_swap_offset = z_to - z_from;
+		
+		for (imember = 0; imember < pl_macros[imacro].num_blocks && abort_swap == FALSE; imember++) {
+
+			// Gets the new from and to info for every block in the macro
+			// cannot use the old from and to info
+			curr_b_from = pl_macros[imacro].members[imember].blk_index;
+			
+			curr_x_from = block[curr_b_from].x;
+			curr_y_from = block[curr_b_from].y;
+			curr_z_from = block[curr_b_from].z;
+
+			curr_x_to = curr_x_from + x_swap_offset;
+			curr_y_to = curr_y_from + y_swap_offset;
+			curr_z_to = curr_z_from + z_swap_offset;
+			
+			// Make sure that the swap_to location is still on the chip
+			if (curr_x_to < 1 || curr_x_to > nx+1 || curr_y_to < 1 || curr_y_to > ny+1 || curr_z_to < 0) {
+				abort_swap = TRUE;
+			} else {
+				curr_b_to = grid[curr_x_to][curr_y_to].blocks[curr_z_to];
+				abort_swap = setup_blocks_affected(curr_b_from, curr_x_to, curr_y_to, curr_z_to);
+			}
+
+		} // Finish going through all the blocks in the macro
+
+	} else { 
+		
+		// This is not a macro - I could use the from and to info from before
+		abort_swap = setup_blocks_affected(b_from, x_to, y_to, z_to);
+
+	} // Finish handling cases for blocks in macro and otherwise
+
+	return (abort_swap);
+
+}
+
+static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 		float rlim, float **old_region_occ_x,
 		float **old_region_occ_y, 
 		enum e_place_algorithm place_algorithm, float timing_tradeoff,
@@ -1031,14 +1269,17 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 	 * occupied, switch the blocks.  Assess the change in cost function  *
 	 * and accept or reject the move.  If rejected, return 0.  If        *
 	 * accepted return 1.  Pass back the new value of the cost function. * 
-	 * rlim is the range limiter.                                                                            */
+	 * rlim is the range limiter.                                        */
 
-	int b_from, x_to, y_to, z_to, x_from, y_from, z_from, b_to;
-	int inet, keep_switch;
+	enum swap_result keep_switch;
+	int b_from, x_from, y_from, z_from, x_to, y_to, z_to;
 	int num_nets_affected;
 	float delta_c, bb_delta_c, timing_delta_c, delay_delta_c;
-	int iblk, bnum, iblk_pin, inet_affected;
-	
+	int inet, iblk, bnum, iblk_pin, inet_affected;
+	int abort_swap = FALSE;
+
+	num_ts_called ++;
+
 	/* I'm using negative values of temp_net_cost as a flag, so DO NOT   *
 	 * use cost functions that can go negative.                          */
 
@@ -1059,189 +1300,192 @@ static int try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 	while (block[b_from].isFixed == TRUE) {
 		b_from = my_irand(num_blocks - 1);
 	}
-	
+
 	x_from = block[b_from].x;
 	y_from = block[b_from].y;
 	z_from = block[b_from].z;
 
 	if (!find_to(x_from, y_from, block[b_from].type, rlim, &x_to,
 			&y_to))
-		return FALSE;
+		return REJECTED;
 
-	/* Make the switch in order to make computing the new bounding *
-	 * box simpler.  If the cost increase is too high, switch them *
-	 * back.  (block data structures switched, clbs not switched   *
-	 * until success of move is determined.)                       */
-	/* Also check that whether those are the only 2 blocks         *
-	 * to be moved - check for carry chains and other placement    *
-	 * macros.                                                     *
-	 * Only 2 blocks to be moved for now.                          *
-	 */
-		
 	z_to = 0;
 	if (grid[x_to][y_to].type->capacity > 1) {
 		z_to = my_irand(grid[x_to][y_to].type->capacity - 1);
 	}
-	if (grid[x_to][y_to].blocks[z_to] == EMPTY) { /* Moving to an empty location */
-		b_to = EMPTY;
-		block[b_from].x = x_to;
-		block[b_from].y = y_to;
-		block[b_from].z = z_to;
-		
-		blocks_affected.num_moved_blocks = 1;
-		blocks_affected.moved_blocks[0].block_num = b_from;
-		blocks_affected.moved_blocks[0].xold = x_from;
-		blocks_affected.moved_blocks[0].xnew = x_to;
-		blocks_affected.moved_blocks[0].yold = y_from;
-		blocks_affected.moved_blocks[0].ynew = y_to;
-	} else { /* Swapping two blocks */
-		b_to = grid[x_to][y_to].blocks[z_to];
-		block[b_to].x = x_from;
-		block[b_to].y = y_from;
-		block[b_to].z = z_from;
 
-		block[b_from].x = x_to;
-		block[b_from].y = y_to;
-		block[b_from].z = z_to;
-		
-		blocks_affected.num_moved_blocks = 2;
-		blocks_affected.moved_blocks[0].block_num = b_from;
-		blocks_affected.moved_blocks[0].xold = x_from;
-		blocks_affected.moved_blocks[0].xnew = x_to;
-		blocks_affected.moved_blocks[0].yold = y_from;
-		blocks_affected.moved_blocks[0].ynew = y_to;
+	/* Make the switch in order to make computing the new bounding *
+	 * box simpler.  If the cost increase is too high, switch them *
+	 * back.  (block data structures switched, clbs not switched   *
+	 * until success of move is determined.)                       *
+	 * Also check that whether those are the only 2 blocks         *
+	 * to be moved - check for carry chains and other placement    *
+	 * macros.                                                     */
+	
+	/* Check whether the from_block is part of a macro first.      *
+	 * If it is, the whole macro has to be moved. Calculate the    *
+	 * x, y, z offsets of the swap to maintain relative placements *
+	 * of the blocks. Abort the swap if the to_block is part of a  *
+	 * macro (not supported yet).                                  */
+	
+	abort_swap = find_affected_blocks(b_from, x_to, y_to, z_to);
 
-		blocks_affected.moved_blocks[1].block_num = b_to;
-		blocks_affected.moved_blocks[1].xold = x_to;
-		blocks_affected.moved_blocks[1].xnew = x_from;
-		blocks_affected.moved_blocks[1].yold = y_to;
-		blocks_affected.moved_blocks[1].ynew = y_from;
-	}
+	if (abort_swap == FALSE) {
 
-	num_nets_affected = find_affected_nets(ts_nets_to_update);
+		// Find all the nets affected by this swap
+		num_nets_affected = find_affected_nets(ts_nets_to_update);
 
-	/* Go through all the pins in all the blocks moved and update the bounding boxes.  *
-	 * Do not update the net cost here since it should only be updated once per net,   *
-	 * not once per pin                                                                */
-	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++)
-	{
-		bnum = blocks_affected.moved_blocks[iblk].block_num;
-
-		/* Go through all the pins in the moved block */
-		for (iblk_pin = 0; iblk_pin < block[bnum].type->num_pins; iblk_pin++)
+		/* Go through all the pins in all the blocks moved and update the bounding boxes.  *
+		 * Do not update the net cost here since it should only be updated once per net,   *
+		 * not once per pin                                                                */
+		for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++)
 		{
-			inet = block[bnum].nets[iblk_pin];
-			if (inet == OPEN)
-				continue;
-			if (clb_net[inet].is_global)
-				continue;
+			bnum = blocks_affected.moved_blocks[iblk].block_num;
+
+			/* Go through all the pins in the moved block */
+			for (iblk_pin = 0; iblk_pin < block[bnum].type->num_pins; iblk_pin++)
+			{
+				inet = block[bnum].nets[iblk_pin];
+				if (inet == OPEN)
+					continue;
+				if (clb_net[inet].is_global)
+					continue;
 			
-			if (clb_net[inet].num_sinks < SMALL_NET) {
-				if(bb_updated_before[inet] == NOT_UPDATED_YET)
-					/* Brute force bounding box recomputation, once only for speed. */
-					get_non_updateable_bb(inet, &ts_bb_coord_new[inet]);
-			} else {
-				update_bb(inet, &ts_bb_coord_new[inet],
-						&ts_bb_edge_new[inet], 
-						blocks_affected.moved_blocks[iblk].xold, 
-						blocks_affected.moved_blocks[iblk].yold + block[bnum].type->pin_height[iblk_pin],
-						blocks_affected.moved_blocks[iblk].xnew, 
-						blocks_affected.moved_blocks[iblk].ynew + block[bnum].type->pin_height[iblk_pin]);
+				if (clb_net[inet].num_sinks < SMALL_NET) {
+					if(bb_updated_before[inet] == NOT_UPDATED_YET)
+						/* Brute force bounding box recomputation, once only for speed. */
+						get_non_updateable_bb(inet, &ts_bb_coord_new[inet]);
+				} else {
+					update_bb(inet, &ts_bb_coord_new[inet],
+							&ts_bb_edge_new[inet], 
+							blocks_affected.moved_blocks[iblk].xold, 
+							blocks_affected.moved_blocks[iblk].yold + block[bnum].type->pin_height[iblk_pin],
+							blocks_affected.moved_blocks[iblk].xnew, 
+							blocks_affected.moved_blocks[iblk].ynew + block[bnum].type->pin_height[iblk_pin]);
+				}
 			}
 		}
-	}
 			
-	/* Now update the cost function. The cost is only updated once for every net  *
-	 * May have to do major optimizations here later.                             */
-	for (inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
-		inet = ts_nets_to_update[inet_affected];
+		/* Now update the cost function. The cost is only updated once for every net  *
+		 * May have to do major optimizations here later.                             */
+		for (inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
+			inet = ts_nets_to_update[inet_affected];
 
-		temp_net_cost[inet] = get_net_cost(inet, &ts_bb_coord_new[inet]);
-		bb_delta_c += temp_net_cost[inet] - net_cost[inet];
-	}
+			temp_net_cost[inet] = get_net_cost(inet, &ts_bb_coord_new[inet]);
+			bb_delta_c += temp_net_cost[inet] - net_cost[inet];
+		}
 
-	if (place_algorithm == NET_TIMING_DRIVEN_PLACE
-			|| place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-		/*in this case we redefine delta_c as a combination of timing and bb.  *
-		 *additionally, we normalize all values, therefore delta_c is in       *
-		 *relation to 1*/
-
-		comp_delta_td_cost(&timing_delta_c, &delay_delta_c);
-
-		delta_c = (1 - timing_tradeoff) * bb_delta_c * inverse_prev_bb_cost
-				+ timing_tradeoff * timing_delta_c * inverse_prev_timing_cost;
-	} else {
-		delta_c = bb_delta_c;
-	}
-
-	keep_switch = assess_swap(delta_c, t);
-
-	/* 1 -> move accepted, 0 -> rejected. */
-
-	if (keep_switch) {
-		*cost = *cost + delta_c;
-		*bb_cost = *bb_cost + bb_delta_c;
-	
 		if (place_algorithm == NET_TIMING_DRIVEN_PLACE
 				|| place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-			/*update the point_to_point_timing_cost and point_to_point_delay_cost 
-			 * values from the temporary values */
-			*timing_cost = *timing_cost + timing_delta_c;
-			*delay_cost = *delay_cost + delay_delta_c;
+			/*in this case we redefine delta_c as a combination of timing and bb.  *
+			 *additionally, we normalize all values, therefore delta_c is in       *
+			 *relation to 1*/
 
-			update_td_cost();
+			comp_delta_td_cost(&timing_delta_c, &delay_delta_c);
+
+			delta_c = (1 - timing_tradeoff) * bb_delta_c * inverse_prev_bb_cost
+					+ timing_tradeoff * timing_delta_c * inverse_prev_timing_cost;
+		} else {
+			delta_c = bb_delta_c;
 		}
 
-		/* update net cost functions and reset flags. */
-		for (inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
-			inet = ts_nets_to_update[inet_affected];
+		/* 1 -> move accepted, 0 -> rejected. */
+		keep_switch = assess_swap(delta_c, t);
+		
+		if (keep_switch == ACCEPTED) {
+			*cost = *cost + delta_c;
+			*bb_cost = *bb_cost + bb_delta_c;
+	
+			if (place_algorithm == NET_TIMING_DRIVEN_PLACE
+					|| place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+				/*update the point_to_point_timing_cost and point_to_point_delay_cost 
+				 * values from the temporary values */
+				*timing_cost = *timing_cost + timing_delta_c;
+				*delay_cost = *delay_cost + delay_delta_c;
 
-			bb_coords[inet] = ts_bb_coord_new[inet];
-			if (clb_net[inet].num_sinks >= SMALL_NET)
-				bb_num_on_edges[inet] = ts_bb_edge_new[inet];
+				update_td_cost();
+			}
+
+			/* update net cost functions and reset flags. */
+			for (inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
+				inet = ts_nets_to_update[inet_affected];
+
+				bb_coords[inet] = ts_bb_coord_new[inet];
+				if (clb_net[inet].num_sinks >= SMALL_NET)
+					bb_num_on_edges[inet] = ts_bb_edge_new[inet];
 			
-			net_cost[inet] = temp_net_cost[inet];
+				net_cost[inet] = temp_net_cost[inet];
 
-			/* negative temp_net_cost value is acting as a flag. */
-			temp_net_cost[inet] = -1;
-			bb_updated_before[inet] = NOT_UPDATED_YET;
+				/* negative temp_net_cost value is acting as a flag. */
+				temp_net_cost[inet] = -1;
+				bb_updated_before[inet] = NOT_UPDATED_YET;
+			}
+
+			/* Update clb data structures since we kept the move. */
+			/* Swap physical location */
+			for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
+
+				x_to = blocks_affected.moved_blocks[iblk].xnew;
+				y_to = blocks_affected.moved_blocks[iblk].ynew;
+				z_to = blocks_affected.moved_blocks[iblk].znew;
+
+				x_from = blocks_affected.moved_blocks[iblk].xold;
+				y_from = blocks_affected.moved_blocks[iblk].yold;
+				z_from = blocks_affected.moved_blocks[iblk].zold;
+
+				b_from = blocks_affected.moved_blocks[iblk].block_num;
+
+				grid[x_to][y_to].blocks[z_to] = b_from;
+
+				if (blocks_affected.moved_blocks[iblk].swapped_to_empty == TRUE) {
+					grid[x_to][y_to].usage++;
+					grid[x_from][y_from].usage--;
+					grid[x_from][y_from].blocks[z_from] = -1;
+				}
+			
+			} // Finish updating clb for all blocks
+
+		} else { /* Move was rejected.  */
+
+			/* Reset the net cost function flags first. */
+			for (inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
+				inet = ts_nets_to_update[inet_affected];
+				temp_net_cost[inet] = -1;
+				bb_updated_before[inet] = NOT_UPDATED_YET;
+			}
+
+			/* Restore the block data structures to their state before the move. */
+			for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
+				b_from = blocks_affected.moved_blocks[iblk].block_num;
+
+				block[b_from].x = blocks_affected.moved_blocks[iblk].xold;
+				block[b_from].y = blocks_affected.moved_blocks[iblk].yold;
+				block[b_from].z = blocks_affected.moved_blocks[iblk].zold;
+			}
 		}
 
-		/* Update clb data structures since we kept the move. */
-		/* Swap physical location */
-		grid[x_to][y_to].blocks[z_to] = b_from;
-		grid[x_from][y_from].blocks[z_from] = b_to;
+		/* Resets the num_moved_blocks, but do not free blocks_moved array. Defensive Coding */
+		blocks_affected.num_moved_blocks = 0;
 
-		if (EMPTY == b_to) { /* Moved to an empty location */
-			grid[x_to][y_to].usage++;
-			grid[x_from][y_from].usage--;
-		}
-	}
+		//check_place(*bb_cost, *timing_cost, place_algorithm, *delay_cost);
 
-	else { /* Move was rejected.  */
-
-		/* Reset the net cost function flags first. */
-		for (inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
-			inet = ts_nets_to_update[inet_affected];
-			temp_net_cost[inet] = -1;
-			bb_updated_before[inet] = NOT_UPDATED_YET;
-		}
+		return (keep_switch);
+	} else {
 
 		/* Restore the block data structures to their state before the move. */
-		block[b_from].x = x_from;
-		block[b_from].y = y_from;
-		block[b_from].z = z_from;
-		if (b_to != EMPTY) {
-			block[b_to].x = x_to;
-			block[b_to].y = y_to;
-			block[b_to].z = z_to;
+		for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
+			b_from = blocks_affected.moved_blocks[iblk].block_num;
+
+			block[b_from].x = blocks_affected.moved_blocks[iblk].xold;
+			block[b_from].y = blocks_affected.moved_blocks[iblk].yold;
+			block[b_from].z = blocks_affected.moved_blocks[iblk].zold;
 		}
+
+		/* Resets the num_moved_blocks, but do not free blocks_moved array. Defensive Coding */
+		blocks_affected.num_moved_blocks = 0;
+		
+		return ABORTED;
 	}
-
-	/* Resets the num_moved_blocks, but do not free blocks_moved array. Defensive Coding */
-	blocks_affected.num_moved_blocks = 0;
-
-	return (keep_switch);
 }
 
 static int find_affected_nets(int *nets_to_update) {
@@ -1363,11 +1607,11 @@ static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int 
 	return TRUE;
 }
 
-static int assess_swap(float delta_c, float t) {
+static enum swap_result assess_swap(float delta_c, float t) {
 
 	/* Returns: 1 -> move accepted, 0 -> rejected. */
 
-	int accept;
+	enum swap_result accept;
 	float prob_fac, fnum;
 
 	if (delta_c <= 0) {
@@ -1376,19 +1620,19 @@ static int assess_swap(float delta_c, float t) {
 		fnum = my_frand();
 #endif
 
-		accept = 1;
+		accept = ACCEPTED;
 		return (accept);
 	}
 
 	if (t == 0.)
-		return (0);
+		return (REJECTED);
 
 	fnum = my_frand();
 	prob_fac = exp(-delta_c / t);
 	if (prob_fac > fnum) {
-		accept = 1;
+		accept = ACCEPTED;
 	} else {
-		accept = 0;
+		accept = REJECTED;
 	}
 	return (accept);
 }
@@ -1587,7 +1831,7 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 					delta_timing_cost += temp_point_to_point_timing_cost[inet][ipin]
 						- point_to_point_timing_cost[inet][ipin];
 					delta_delay_cost += temp_point_to_point_delay_cost[inet][ipin]
-						- point_to_point_delay_cost[inet][ipin];
+							- point_to_point_delay_cost[inet][ipin];
 
 				} /* Finished updating the pin */
 			}
@@ -1689,7 +1933,7 @@ static void free_placement_structs(
 	/* Frees the major structures needed by the placer (and not needed       *
 	 * elsewhere).   */
 
-	int inet;
+	int inet, imacro;
 
 	free_legal_placements();
 	free_fast_cost_update();
@@ -1725,16 +1969,29 @@ static void free_placement_structs(
 	free(temp_net_cost);
 	free(bb_num_on_edges);
 	free(bb_coords);
-
+	
+	free_placement_macros_structs();
+	
+	for (imacro = 0; imacro < num_pl_macros; imacro ++)
+		free(pl_macros[imacro].members);
+	free(pl_macros);
+	
 	net_cost = NULL; /* Defensive coding. */
 	temp_net_cost = NULL;
 	bb_num_on_edges = NULL;
 	bb_coords = NULL;
+	pl_macros = NULL;
+
+	/* Frees up all the data structure used in vpr_utils. */
+	free_port_pin_from_blk_pin();
+	free_blk_pin_from_port_pin();
+
 }
 
 static void alloc_and_load_placement_structs(
 		float place_cost_exp, float ***old_region_occ_x,
-		float ***old_region_occ_y, struct s_placer_opts placer_opts) {
+		float ***old_region_occ_y, struct s_placer_opts placer_opts,
+		t_direct_inf *directs, int num_directs) {
 
 	/* Allocates the major structures needed only by the placer, primarily for *
 	 * computing costs quickly and such.                                       */
@@ -1817,6 +2074,8 @@ static void alloc_and_load_placement_structs(
 	net_pin_index = alloc_and_load_net_pin_index();
 
 	alloc_and_load_try_swap_structs();
+
+	num_pl_macros = alloc_and_load_placement_macros(directs, num_directs, &pl_macros);
 }
 
 static void alloc_and_load_try_swap_structs() {
@@ -2264,7 +2523,7 @@ static void update_bb(int inet, struct s_bb *bb_coord_new,
 static void alloc_legal_placements() {
 	int i, j, k;
 
-	legal_pos = (struct s_legal_pos **) my_malloc(num_types * sizeof(struct s_legal_pos *));
+	legal_pos = (t_legal_pos **) my_malloc(num_types * sizeof(t_legal_pos *));
 	num_legal_pos = (int *) my_calloc(num_types, sizeof(int));
 	
 	/* Initialize all occupancy to zero. */
@@ -2282,12 +2541,12 @@ static void alloc_legal_placements() {
 	}
 
 	for (i = 0; i < num_types; i++) {
-		legal_pos[i] = (struct s_legal_pos *) my_malloc(num_legal_pos[i] * sizeof(struct s_legal_pos));
+		legal_pos[i] = (t_legal_pos *) my_malloc(num_legal_pos[i] * sizeof(t_legal_pos));
 	}
 }
 
 static void load_legal_placements() {
-	int i, j, k, type_index;
+	int i, j, k, itype;
 	int *index;
 
 	index = (int *) my_calloc(num_types, sizeof(int));
@@ -2296,11 +2555,11 @@ static void load_legal_placements() {
 		for (j = 0; j <= ny + 1; j++) {
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
 				if (grid[i][j].offset == 0) {
-					type_index = grid[i][j].type->index;
-					legal_pos[type_index][index[type_index]].x = i;
-					legal_pos[type_index][index[type_index]].y = j;
-					legal_pos[type_index][index[type_index]].z = k;
-					index[type_index]++;
+					itype = grid[i][j].type->index;
+					legal_pos[itype][index[itype]].x = i;
+					legal_pos[itype][index[itype]].y = j;
+					legal_pos[itype][index[itype]].z = k;
+					index[itype]++;
 				}
 			}
 		}
@@ -2317,56 +2576,279 @@ static void free_legal_placements() {
 	free(num_legal_pos);
 }
 
-static void initial_placement(enum e_pad_loc_type pad_loc_type,
-		char *pad_loc_file) {
 
-	/* Randomly places the blocks to create an initial placement.     */
-	int i, j, k, iblk, choice, type_index, x, y, z;
-	int *count; /* [0..num_types-1] */
 
-	count = (int *) my_malloc(num_types * sizeof(int));
-	for(i = 0; i < num_types; i++) {
-		count[i] = num_legal_pos[i];
+static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z) {
+
+	int imember;
+	int member_x, member_y, member_z;
+
+	// Every macro can be placed until proven otherwise
+	int macro_can_be_placed = TRUE;
+
+	// Check whether all the members can be placed
+	for (imember = 0; imember < pl_macros[imacro].num_blocks; imember++) {
+		member_x = x + pl_macros[imacro].members[imember].x_offset;
+		member_y = y + pl_macros[imacro].members[imember].y_offset;
+		member_z = z + pl_macros[imacro].members[imember].z_offset;
+
+		// Check whether the location could accept block of this type
+		// Then check whether the location could still accomodate more blocks
+		// Also check whether the member position is valid, that is the member's location
+		// still within the chip's dimemsion and the member_z is allowed at that location on the grid
+		if (member_x <= nx+1 && member_y <= ny+1
+				&& grid[member_x][member_y].type->index == itype
+				&& grid[member_x][member_y].blocks[member_z] == OPEN) {
+			// Can still accomodate blocks here, check the next position
+			continue;
+		} else {
+			// Cant be placed here - skip to the next try
+			macro_can_be_placed = FALSE;
+			break;
+		}
 	}
 	
+	return (macro_can_be_placed);
+}
+
+
+static int try_place_macro(int itype, int ichoice, int imacro, int * free_locations){
+
+	int x, y, z, member_x, member_y, member_z, imember;
+
+	int macro_placed = FALSE;
+
+	// Choose a random position for the head
+	x = legal_pos[itype][ichoice].x;
+	y = legal_pos[itype][ichoice].y;
+	z = legal_pos[itype][ichoice].z;
+			
+	// If that location is occupied, do nothing.
+	if (grid[x][y].blocks[z] != OPEN) {
+		return (macro_placed);
+	} 
+	
+	int macro_can_be_placed = check_macro_can_be_placed(imacro, itype, x, y, z);
+
+	if (macro_can_be_placed == TRUE) {
+		
+		// Place down the macro
+		macro_placed = TRUE;
+		for (imember = 0; imember < pl_macros[imacro].num_blocks; imember++) {
+					
+			member_x = x + pl_macros[imacro].members[imember].x_offset;
+			member_y = y + pl_macros[imacro].members[imember].y_offset;
+			member_z = z + pl_macros[imacro].members[imember].z_offset;
+					
+			block[pl_macros[imacro].members[imember].blk_index].x = member_x;
+			block[pl_macros[imacro].members[imember].blk_index].y = member_y;
+			block[pl_macros[imacro].members[imember].blk_index].z = member_z;
+
+			grid[member_x][member_y].blocks[member_z] = pl_macros[imacro].members[imember].blk_index;
+			grid[member_x][member_y].usage++;
+
+			// Could not ensure that the randomiser would not pick this location again
+			// So, would have to do a lazy removal - whenever I come across a block that could not be placed, 
+			// go ahead and remove it from the legal_pos[][] array
+						
+		} // Finish placing all the members in the macro
+
+	} // End of this choice of legal_pos
+
+	return (macro_placed);
+
+}
+
+
+static void initial_placement_pl_macros(int macros_max_num_tries, int * free_locations) {
+
+	int macro_placed;
+	int imacro, iblk, itype, itry, ichoice;
+
+	/* Macros are harder to place.  Do them first */
+	for (imacro = 0; imacro < num_pl_macros; imacro++) {
+		
+		// Every macro are not placed in the beginnning
+		macro_placed = FALSE;
+		
+		// Assume that all the blocks in the macro are of the same type
+		iblk = pl_macros[imacro].members[0].blk_index;
+		itype = block[iblk].type->index;
+		if (free_locations[itype] < pl_macros[imacro].num_blocks) {
+			vpr_printf (TIO_MESSAGE_ERROR, "Initial placement failed. Could not place "
+					"macro length %d with head block %s£¨#%d); not enough free locations of type %s (#%d).\n", 
+					pl_macros[imacro].num_blocks, block[iblk].name, iblk, type_descriptors[itype].name, itype);
+			exit(1);
+		}
+
+		// Try to place the macro first, if can be placed - place them, otherwise try again
+		for (itry = 0; itry < macros_max_num_tries && macro_placed == FALSE; itry++) {
+			
+			// Choose a random position for the head
+			ichoice = my_irand(free_locations[itype] - 1);
+
+			// Try to place the macro
+			macro_placed = try_place_macro(itype, ichoice, imacro, free_locations);
+
+		} // Finished all tries
+		
+		
+		if (macro_placed == FALSE){
+			// if a macro still could not be placed after macros_max_num_tries times, 
+			// go through the chip exhaustively to find a legal placement for the macro
+			// place the macro on the first location that is legal
+			// then set macro_placed = TRUE;
+			// if there are no legal positions, error out
+
+			// Exhaustive placement of carry macros
+			for (ichoice = 0; ichoice < free_locations[itype] && macro_placed == FALSE; ichoice++) {
+
+				// Try to place the macro
+				macro_placed = try_place_macro(itype, ichoice, imacro, free_locations);
+
+			} // Exhausted all the legal placement position for this macro
+
+			// If macro could not be placed after exhaustive placement, error out
+			if (macro_placed == FALSE) {
+				// Error out
+				vpr_printf (TIO_MESSAGE_ERROR, "Initial placement failed. Could not place "
+					"macro length %d with head block %s£¨#%d); not enough free locations of type %s (#%d).\n", 
+					pl_macros[imacro].num_blocks, block[iblk].name, iblk, type_descriptors[itype].name, itype);
+				exit(1);
+			}
+
+		} else {
+			// This macro has been placed successfully, proceed to place the next macro
+			continue;
+		}
+	} // Finish placing all the pl_macros successfully
+}
+
+static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type pad_loc_type) {
+
+	/* Place blocks that are NOT a part of any macro.
+	 * We'll randomly place each block in the clustered netlist, one by one. 
+	 */
+
+	int iblk, itype;
+	int ichoice, x, y, z;
+
 	for (iblk = 0; iblk < num_blocks; iblk++) {
-		/* Don't do IOs if the user specifies IOs */
+
+		if (block[iblk].x != -1) {
+			// block placed.
+			continue;
+		}
+		/* Don't do IOs if the user specifies IOs; we'll read those locations later. */
 		if (!(block[iblk].type == IO_TYPE && pad_loc_type == USER)) {
-			type_index = block[iblk].type->index;
-			assert(count[type_index] > 0);
-			choice = my_irand(count[type_index] - 1);
-			x = legal_pos[type_index][choice].x;
-			y = legal_pos[type_index][choice].y;
-			z = legal_pos[type_index][choice].z;
+
+		    /* Randomly select a free location of the appropriate type
+			 * for iblk.  We have a linearized list of all the free locations
+			 * that can accomodate a block of that type in free_locations[itype].
+			 * Choose one randomly and put iblk there.  Then we don't want to pick that
+			 * location again, so remove it from the free_locations array.
+			 */
+			itype = block[iblk].type->index;
+			if (free_locations[itype] <= 0) {
+				vpr_printf (TIO_MESSAGE_ERROR, "Initial placement failed. Could not place "
+						"block %s£¨#%d); no free locations of type %s (#%d).\n", 
+						block[iblk].name, iblk, type_descriptors[itype].name, itype);
+				exit(1);
+			}
+
+			ichoice = my_irand(free_locations[itype] - 1);
+			x = legal_pos[itype][ichoice].x;
+			y = legal_pos[itype][ichoice].y;
+			z = legal_pos[itype][ichoice].z;
+
+			// Make sure that the position is OPEN before placing the block down
+			assert (grid[x][y].blocks[z] == OPEN);
+
 			grid[x][y].blocks[z] = iblk;
 			grid[x][y].usage++;
 
-			/* Ensure randomizer doesn't pick this block again */
-			legal_pos[type_index][choice] = legal_pos[type_index][count[type_index] - 1]; /* overwrite used block position */
-			count[type_index]--;
+			block[iblk].x = x;
+			block[iblk].y = y;
+			block[iblk].z = z;
+
+			/* Ensure randomizer doesn't pick this location again, since it's occupied. Could shift all the 
+				* legal positions in legal_pos to remove the entry (choice) we just used, but faster to 
+				* just move the last entry in legal_pos to the spot we just used and decrement the 
+				* count of free_locations.
+				*/
+			legal_pos[itype][ichoice] = legal_pos[itype][free_locations[itype] - 1]; /* overwrite used block position */
+			free_locations[itype]--;
+			
 		}
 	}
+}
+
+static void initial_placement(enum e_pad_loc_type pad_loc_type,
+		char *pad_loc_file) {
+
+	/* Randomly places the blocks to create an initial placement. We rely on
+	 * the legal_pos array already being loaded.  That legal_pos[itype] is an 
+	 * array that gives every legal value of (x,y,z) that can accomodate a block.
+	 * The number of such locations is given by num_legal_pos[itype].
+	 */
+	int i, j, k, iblk, itype, x, y, z, ichoice;
+	int *free_locations; /* [0..num_types-1]. 
+						  * Stores how many locations there are for this type that *might* still be free.
+						  * That is, this stores the number of entries in legal_pos[itype] that are worth considering
+						  * as you look for a free location.
+						  */
+
+	free_locations = (int *) my_malloc(num_types * sizeof(int));
+	for (itype = 0; itype < num_types; itype++) {
+		free_locations[itype] = num_legal_pos[itype];
+	}
+	
+	/* We'll use the grid to record where everything goes. Initialize to the grid has no 
+	 * blocks placed anywhere.
+	 */
+	for (i = 0; i <= nx + 1; i++) {
+		for (j = 0; j <= ny + 1; j++) {
+			grid[i][j].usage = 0;
+			itype = grid[i][j].type->index;
+			for (k = 0; k < type_descriptors[itype].capacity; k++) {
+				grid[i][j].blocks[k] = OPEN;
+			}
+		}
+	}
+
+	/* Similarly, mark all blocks as not being placed yet. */
+	for (iblk = 0; iblk < num_blocks; iblk++) {
+		block[iblk].x = -1;
+		block[iblk].y = -1;
+		block[iblk].z = -1;
+	}
+
+	initial_placement_pl_macros(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, free_locations);
+	
+	// All the macros are placed, update the legal_pos[][] array
+	for (itype = 0; itype < num_types; itype++) {
+		assert (free_locations[itype] >= 0);
+		for (ichoice = 0; ichoice < free_locations[itype]; ichoice++) {
+			x = legal_pos[itype][ichoice].x;
+			y = legal_pos[itype][ichoice].y;
+			z = legal_pos[itype][ichoice].z;
+			
+			// Check if that location is occupied.  If it is, remove from legal_pos
+			if (grid[x][y].blocks[z] != OPEN) {
+				legal_pos[itype][ichoice] = legal_pos[itype][free_locations[itype] - 1];
+				free_locations[itype]--;
+
+				// After the move, I need to check this particular entry again
+				ichoice--;
+				continue;
+			}
+		}
+	} // Finish updating the legal_pos[][] and free_locations[] array
+
+	initial_placement_blocks(free_locations, pad_loc_type);
 
 	if (pad_loc_type == USER) {
 		read_user_pad_loc(pad_loc_file);
-	}
-
-	/* All the blocks are placed now.  Make the block array agree with the    *
-	 * clb array.                                                             */
-
-	for (i = 0; i <= (nx + 1); i++) {
-		for (j = 0; j <= (ny + 1); j++) {
-			for (k = 0; k < grid[i][j].type->capacity; k++) {
-				assert(grid[i][j].blocks != NULL);
-				iblk = grid[i][j].blocks[k];
-
-				if (iblk != EMPTY) {
-					block[iblk].x = i;
-					block[iblk].y = j;
-					block[iblk].z = k;
-				}
-			}
-		}
 	}
 
 	/* Restore legal_pos */
@@ -2378,7 +2860,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 		print_clb_placement(getEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT));
 	}
 #endif
-	free(count);
+	free(free_locations);
 }
 
 static void free_fast_cost_update(void) {
@@ -2494,6 +2976,7 @@ static void check_place(float bb_cost, float timing_cost,
 	float bb_cost_check;
 	int usage_check;
 	float timing_cost_check, delay_cost_check;
+	int imacro, imember, head_iblk, member_iblk, member_x, member_y, member_z;
 
 	bb_cost_check = comp_bb_cost(CHECK);
 	vpr_printf(TIO_MESSAGE_INFO, "bb_cost recomputed from scratch is %g.\n", bb_cost_check);
@@ -2574,9 +3057,44 @@ static void check_place(float bb_cost, float timing_cost,
 			error++;
 		}
 	free(bdone);
+	
+	/* Check the pl_macro placement are legal - blocks are in the proper relative position. */
+	for (imacro = 0; imacro < num_pl_macros; imacro++) {
+		
+		head_iblk = pl_macros[imacro].members[0].blk_index;
+		
+		for (imember = 0; imember < pl_macros[imacro].num_blocks; imember++) {
+			
+			member_iblk = pl_macros[imacro].members[imember].blk_index;
+
+			// Compute the suppossed member's x,y,z location
+			member_x = block[head_iblk].x + pl_macros[imacro].members[imember].x_offset;
+			member_y = block[head_iblk].y + pl_macros[imacro].members[imember].y_offset;
+			member_z = block[head_iblk].z + pl_macros[imacro].members[imember].z_offset;
+
+			// Check the block data structure first
+			if (block[member_iblk].x != member_x 
+					|| block[member_iblk].y != member_y 
+					|| block[member_iblk].z != member_z) {
+				vpr_printf(TIO_MESSAGE_ERROR, "Block %d in pl_macro #%d is not placed "
+					" in the proper orientation.\n", member_iblk, imacro);
+				error++;
+			}
+
+			// Then check the grid data structure
+			if (grid[member_x][member_y].blocks[member_z] != member_iblk) {
+				vpr_printf(TIO_MESSAGE_ERROR, "Block %d in pl_macro #%d is not placed "
+					" in the proper orientation.\n", member_iblk, imacro);
+				error++;
+			}
+		} // Finish going through all the members
+	} // Finish going through all the macros
 
 	if (error == 0) {
 		vpr_printf(TIO_MESSAGE_INFO, "\nCompleted placement consistency check successfully.\n\n");
+
+		vpr_printf(TIO_MESSAGE_INFO, "\nSwaps called = %d.\n\n", num_ts_called);
+
 #ifdef PRINT_REL_POS_DISTR
 		print_relative_pos_distr(void);
 #endif
@@ -2586,6 +3104,7 @@ static void check_place(float bb_cost, float timing_cost,
 		vpr_printf(TIO_MESSAGE_INFO, "Aborting program.\n");
 		exit(1);
 	}
+
 }
 
 #ifdef VERBOSE
@@ -2599,7 +3118,7 @@ static void print_clb_placement(const char *fname) {
 	fp = my_fopen(fname, "w", 0);
 	fprintf(fp, "Complex Block Placements:\n\n");
 
-	fprintf(fp, "Block #\tName\t(X, Y, Z).\n", i, block[i].name, block[i].x, block[i].y, block[i].z);
+	fprintf(fp, "Block #\tName\t(X, Y, Z).\n");
 	for(i = 0; i < num_blocks; i++) {
 		fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, block[i].name, block[i].x, block[i].y, block[i].z);
 	}

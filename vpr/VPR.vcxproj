@@ -194,6 +194,7 @@
     <ClCompile Include="SRC\pack\cluster_feasibility_filter.c" />
     <ClCompile Include="SRC\pack\cluster_placement.c" />
     <ClCompile Include="SRC\pack\prepack.c" />
+    <ClCompile Include="SRC\place\place_macro.c" />
     <ClCompile Include="SRC\timing\read_sdc.c" />
     <ClCompile Include="SRC\timing\slre.c" />
     <ClCompile Include="SRC\util\hash.c" />
@@ -252,6 +253,7 @@
     <ClInclude Include="SRC\pack\cluster_feasibility_filter.h" />
     <ClInclude Include="SRC\pack\cluster_placement.h" />
     <ClInclude Include="SRC\pack\prepack.h" />
+    <ClInclude Include="SRC\place\place_macro.h" />
     <ClInclude Include="SRC\timing\net_delay.h" />
     <ClInclude Include="SRC\timing\path_delay.h" />
     <ClInclude Include="SRC\timing\path_delay2.h" />
