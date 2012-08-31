@@ -572,11 +572,9 @@ static void print_global_criticality_stats(FILE * fp, float ** criticality, cons
 		num_edges = timing_nets[inet].num_sinks;
 		for (iedge = 0; iedge < num_edges; iedge++) { 
 			crit = criticality[inet][iedge + 1];
-			if (crit > HUGE_NEGATIVE_FLOAT + 1) { /* if criticality was analysed */
-				max_criticality = max(max_criticality, crit);
-				min_criticality = min(min_criticality, crit);
-				total_criticality += crit;
-			}
+			max_criticality = max(max_criticality, crit);
+			min_criticality = min(min_criticality, crit);
+			total_criticality += crit;
 		}
 	}
 
@@ -600,11 +598,10 @@ static void print_global_criticality_stats(FILE * fp, float ** criticality, cons
 			num_edges = timing_nets[inet].num_sinks;
 			for (iedge = 0; iedge < num_edges; iedge++) { 
 				crit = criticality[inet][iedge + 1];
-				if (crit > HUGE_NEGATIVE_FLOAT + 1) {
-					/* We have to watch out for the special case where criticality = max_criticality, in which case ibucket = NUM_BUCKETS and we go out of bounds of the array. */
-					ibucket = min(NUM_BUCKETS - 1, (int) ((crit - min_criticality)/bucket_size));
-					criticalities_in_bucket[ibucket]++;
-				}
+				/* We have to watch out for the special case where criticality = max_criticality, in which case ibucket = NUM_BUCKETS and we go out of bounds of the array. */
+				ibucket = min(NUM_BUCKETS - 1, (int) ((crit - min_criticality)/bucket_size));
+				assert(ibucket >= 0 && ibucket < NUM_BUCKETS);
+				criticalities_in_bucket[ibucket]++;
 			}
 		}
 
