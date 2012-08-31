@@ -65,6 +65,7 @@ SRCO = $(addprefix $(SRC_DIR)/,$(strip \
 	read_blif.c \
 	output_graphcrunch_format.c \
 	verilog_preprocessor.c \
+	odin_ii_func.c \
 	odin_ii.c \
 ))
 
