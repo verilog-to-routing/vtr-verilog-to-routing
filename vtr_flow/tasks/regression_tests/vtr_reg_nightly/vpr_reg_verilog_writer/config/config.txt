@@ -1,0 +1,51 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/verilog_writer_benchmarks_blif
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add circuits to list to sweep
+circuit_list_add=alu4.blif
+circuit_list_add=apex2.blif
+circuit_list_add=apex4.blif
+circuit_list_add=bigkey.blif
+circuit_list_add=blob_merge.latren.blif
+circuit_list_add=boundtop.latren.blif
+circuit_list_add=clma.blif
+circuit_list_add=des.blif
+circuit_list_add=diffeq.blif
+circuit_list_add=dsip.blif
+circuit_list_add=elliptic.blif
+circuit_list_add=ex1010.blif
+circuit_list_add=ex5p.blif
+circuit_list_add=frisc.blif
+circuit_list_add=misex3.blif
+circuit_list_add=or1200.latren.blif
+circuit_list_add=pdc.blif
+circuit_list_add=raygentop.latren.blif
+circuit_list_add=s298.blif
+circuit_list_add=s38417.blif
+circuit_list_add=s38584.1.blif
+circuit_list_add=seq.blif
+circuit_list_add=sha.latren.blif
+circuit_list_add=spla.blif
+
+# Add architectures to list to sweep
+arch_list_add=sample_arch.xml
+
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+script_params=-starting_stage vpr -gen_postsynthesis_netlist
