@@ -58,7 +58,10 @@ static t_trace *alloc_and_load_final_routing_trace();
 static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net);
 static void print_complete_net_trace(t_trace* trace, const char *file_name);
 static void resync_post_route_netlist();
-static void clay_input_logical_equivalence_handling(const t_arch *arch);
+static void clay_logical_equivalence_handling(const t_arch *arch);
+static void clay_lut_input_rebalancing(int iblock, t_pb *pb);
+static void clay_reload_ble_locations(int iblock);
+static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node, t_pb *pb);
 
 /* Local subroutines end */
 
@@ -798,8 +801,8 @@ t_trace* vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture(INP const t_ar
 	resync_post_route_netlist();
 	
 	/* Resolve logically equivalent inputs */
-	clay_input_logical_equivalence_handling(arch);
-	
+	clay_logical_equivalence_handling(arch);
+
 	/* Finalize traceback */
 	trace = alloc_and_load_final_routing_trace();
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_COMPLETE_NET_TRACE)) {
@@ -1082,11 +1085,15 @@ void resync_post_route_netlist() {
 	}
 }
 
-static void clay_input_logical_equivalence_handling(const t_arch *arch) {
+static void clay_logical_equivalence_handling(const t_arch *arch) {
 	t_trace **saved_ext_rr_trace_head, **saved_ext_rr_trace_tail;
 	t_rr_node *saved_ext_rr_node;
 	int num_ext_rr_node, num_ext_nets;
 	int i, j;
+
+	for(i = 0; i < num_blocks; i++) {
+		clay_reload_ble_locations(i);
+	}
 
 	/* Resolve logically equivalent inputs */
 	saved_ext_rr_trace_head = trace_head;
@@ -1111,6 +1118,11 @@ static void clay_input_logical_equivalence_handling(const t_arch *arch) {
 		reload_intra_cluster_nets(block[i].pb);
 		reload_ext_net_rr_terminal_cluster();
 		force_post_place_route_cb_input_pins(i);
+		#ifdef HACK_LUT_PIN_SWAPPING
+		/* Resolve rebalancing of LUT inputs */
+			clay_lut_input_rebalancing(i, block[i].pb);
+		#endif
+	
 		/* reset rr_graph */
 		for(j = 0; j < num_rr_nodes; j++) {
 			rr_node[j].occ = 0;
@@ -1134,3 +1146,155 @@ static void clay_input_logical_equivalence_handling(const t_arch *arch) {
 	num_rr_nodes = num_ext_rr_node;
 	num_nets = num_ext_nets;	
 }
+
+/* Force router to use the LUT inputs designated by the timing engine post the LUT input rebalancing optimization */
+static void clay_lut_input_rebalancing(int iblock, t_pb *pb) {
+	int i, j;
+	t_rr_node *local_rr_graph;
+	t_pb_graph_node *lut_wrapper, *lut;
+	int lut_size;
+	int *lut_pin_remap;
+	int snode, input;
+	t_pb_graph_node *pb_graph_node;
+
+	if(pb->name != NULL) {
+		pb_graph_node = pb->pb_graph_node;
+		if(pb_graph_node->pb_type->blif_model != NULL) {
+			lut_pin_remap = pb->lut_pin_remap;
+			if(lut_pin_remap != NULL) {
+				local_rr_graph = block[iblock].pb->rr_graph;
+				lut = pb->pb_graph_node;
+				lut_wrapper = lut->parent_pb_graph_node;
+			
+				/* Ensure that this is actually a LUT */
+				assert(lut->num_input_ports == 1 && lut_wrapper->num_input_ports == 1);
+				assert(lut->num_input_pins[0] == lut_wrapper->num_input_pins[0]);
+				assert(lut->num_output_ports == 1 && lut_wrapper->num_output_ports == 1);
+				assert(lut->num_output_pins[0] == 1 && lut_wrapper->num_output_pins[0] == 1);
+
+				lut_size = lut->num_input_pins[0];
+				for(i = 0; i < lut_size; i++) {
+					snode = lut_wrapper->input_pins[0][i].pin_count_in_cluster;
+					free(local_rr_graph[snode].edges);
+					local_rr_graph[snode].edges = NULL;
+					local_rr_graph[snode].num_edges = 0;				
+				}
+				for(i = 0; i < lut_size; i++) {
+					input = lut_pin_remap[i];
+					if(input != OPEN) {
+						snode = lut_wrapper->input_pins[0][i].pin_count_in_cluster;				
+						assert(local_rr_graph[snode].num_edges == 0);
+						local_rr_graph[snode].num_edges = 1;
+						local_rr_graph[snode].edges = (int*)my_malloc(sizeof(int));
+						local_rr_graph[snode].edges[0] = lut->input_pins[0][input].pin_count_in_cluster;
+					}
+				}
+			}
+		} else if(pb->child_pbs != NULL) {
+			for(i = 0; i < pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children; i++) {
+				if(pb->child_pbs[i] != NULL) {
+					for(j = 0; j < pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
+						clay_lut_input_rebalancing(iblock, & pb->child_pbs[i][j]);
+					}
+				}
+			}
+		}
+	}
+}
+
+/* Swaps BLEs to match output logical equivalence solution from routing solution
+Assumes classical cluster with full crossbar and BLEs, each BLE is a single LUT+FF pair 
+*/
+static void clay_reload_ble_locations(int iblock) {
+	int i, mode, ipin, new_loc;
+	t_pb_graph_node *pb_graph_node;
+	t_pb_graph_pin *pb_graph_pin;
+	const t_pb_type *pb_type;
+	t_trace *trace;
+	t_rr_node *local_rr_graph;
+	int inet, ivpack_net;
+	
+	if(block[iblock].type == IO_TYPE) {
+		return;
+	}
+
+	pb_graph_node = block[iblock].pb->pb_graph_node;
+	pb_type = pb_graph_node->pb_type;
+	mode = block[iblock].pb->mode;
+	local_rr_graph = block[iblock].pb->rr_graph;
+
+	assert(block[iblock].pb->mode == 0);
+	assert(pb_type->modes[mode].num_pb_type_children == 1);
+	assert(pb_type->modes[mode].pb_type_children[0].num_output_pins == 1);
+
+	t_pb** temp;
+	temp = (t_pb**)my_calloc(1, sizeof(t_pb*));
+	temp[0] = (t_pb*)my_calloc(pb_type->modes[mode].pb_type_children[0].num_pb, sizeof(t_pb));
+
+	/* determine new location for BLEs that route out of cluster */
+	for(i = 0; i < pb_type->modes[mode].pb_type_children[0].num_pb; i++) {
+		if(block[iblock].pb->child_pbs[0][i].name != NULL) {
+			ivpack_net = local_rr_graph[pb_graph_node->child_pb_graph_nodes[mode][0][i].output_pins[0][0].pin_count_in_cluster].net_num;
+			inet = vpack_to_clb_net_mapping[ivpack_net];
+			if(inet != OPEN) {
+				ipin = OPEN;
+				trace = trace_head[inet];
+				while(trace) {
+					if(rr_node[trace->index].type == OPIN) {
+						ipin = rr_node[trace->index].ptc_num;
+						break;
+					}
+					trace = trace->next;
+				}
+				assert(ipin);
+				pb_graph_pin = get_pb_graph_node_pin_from_block_pin(iblock, ipin);
+				new_loc = pb_graph_pin->pin_number;
+				assert(temp[0][new_loc].name == NULL);
+				temp[0][new_loc] = block[iblock].pb->child_pbs[0][i];
+			}
+		}
+	}
+
+	/* determine new location for BLEs that do not route out of cluster */
+	new_loc = 0;
+	for(i = 0; i < pb_type->modes[mode].pb_type_children[0].num_pb; i++) {
+		if(block[iblock].pb->child_pbs[0][i].name != NULL) {
+			ivpack_net = local_rr_graph[pb_graph_node->child_pb_graph_nodes[mode][0][i].output_pins[0][0].pin_count_in_cluster].net_num;
+			inet = vpack_to_clb_net_mapping[ivpack_net];
+			if(inet == OPEN) {
+				while(temp[0][new_loc].name != NULL) {
+					new_loc++;
+				}
+				temp[0][new_loc] = block[iblock].pb->child_pbs[0][i];
+			}
+		}
+	}
+
+	free(block[iblock].pb->child_pbs);
+	block[iblock].pb->child_pbs = temp;
+	resync_pb_graph_nodes_in_pb(block[iblock].pb->pb_graph_node, block[iblock].pb);
+}
+
+static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node, t_pb *pb) {
+	int i, j;
+
+	if(pb->name == NULL) {
+		return;
+	}
+
+	assert(strcmp(pb->pb_graph_node->pb_type->name, pb_graph_node->pb_type->name) == 0);
+	
+	pb->pb_graph_node = pb_graph_node;
+	if(pb->child_pbs != NULL) {
+		for(i = 0; i < pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children; i++) {
+			if(pb->child_pbs[i] != NULL) {
+				for(j = 0; j < pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
+					resync_pb_graph_nodes_in_pb(&pb_graph_node->child_pb_graph_nodes[pb->mode][i][j], &pb->child_pbs[i][j]);
+				}
+			}
+		}
+	}
+}
+
+
+
