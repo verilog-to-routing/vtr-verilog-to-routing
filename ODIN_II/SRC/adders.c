@@ -363,13 +363,13 @@ void add_the_blackbox_for_adds(FILE *out)
 		hard_add_outputs = adds->size_cout + adds->size_sumout;
 		for (i = 0; i < hard_add_outputs; i++)
 		{
-			if (i < adds->size_sumout)
+			if (i < adds->size_cout)
 			{
-				count = count + sprintf(buffer, " %s[%d]", psumout, i);
+				count = count + sprintf(buffer, " %s[%d]", pcout, i);
 			}
 			else
 			{
-				count = count + sprintf(buffer, " %s[%d]", pcout, i - adds->size_sumout);
+				count = count + sprintf(buffer, " %s[%d]", psumout, i - adds->size_cout);
 			}
 
 			if (count > 78)
@@ -452,12 +452,12 @@ void define_add_function(nnode_t *node, short type, FILE *out)
 	}
 
 	/* Write the output pins*/
-	for (i = node->num_output_pins - 1; i >= 0; i--)
+	for (i = 0; i < node->num_output_pins; i++)
 	{
-		if(i > node->output_port_sizes[0] - 1)
-			j = sprintf(buffer, " %s[%d]=%s", hard_adders->outputs->name, node->output_port_sizes[1] - i , node->output_pins[(node->output_port_sizes[1] - i)]->name);
+		if(i < node->output_port_sizes[0])
+			j = sprintf(buffer, " %s[%d]=%s", hard_adders->outputs->next->name, i , node->output_pins[i]->name);
 		else
-			j = sprintf(buffer, " %s[%d]=%s", hard_adders->outputs->next->name, i, node->output_pins[(i + node->output_port_sizes[1])]->name);
+			j = sprintf(buffer, " %s[%d]=%s", hard_adders->outputs->name, i - node->output_port_sizes[0], node->output_pins[i]->name);
 		if (count + j > 79)
 		{
 			fprintf(out, "\\\n");
@@ -661,16 +661,16 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 	}
 
 	//connect cout to next node's cin
-	if(sizea > sizeb)
-	{
+	//if(sizea > sizeb)
+	//{
 		for(i = 1; i < count; i++)
-			connect_nodes(node[i-1], sizea, node[i], (node[i]->num_input_pins - 1));
-	}
-	else
-	{
-		for(i = 1; i < count; i++)
-			connect_nodes(node[i-1], sizeb, node[i], (node[i]->num_input_pins - 1));
-	}
+			connect_nodes(node[i-1], 0, node[i], (node[i]->num_input_pins - 1));
+	//}
+	//else
+	//{
+	//	for(i = 1; i < count; i++)
+	//		connect_nodes(node[i-1], sizeb, node[i], (node[i]->num_input_pins - 1));
+	//}
 
 	if(count * sizea == a)
 	{
@@ -678,10 +678,10 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 		for(i = 0; i < count; i++)
 		{
 			for(j = 0; j < node[i]->num_output_pins - 1; j ++)
-				remap_pin_to_new_node(nodeo->output_pins[i * sizea + j], node[i], j);
+				remap_pin_to_new_node(nodeo->output_pins[i * sizea + j], node[i], j + 1);
 		}
 		// the last node's cout should be remapped to the most significant bits of nodeo
-		remap_pin_to_new_node(nodeo->output_pins[(nodeo->num_output_pins - 1)], node[(count - 1)], (node[(count - 1)]->num_output_pins - 1));
+		remap_pin_to_new_node(nodeo->output_pins[(nodeo->num_output_pins - 1)], node[(count - 1)], 0);
 	}
 	else
 	{
@@ -691,18 +691,18 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 			for(j = 0; j < node[i]->num_output_pins - 1; j ++)
 			{
 				if((i * sizea + j) < nodeo->num_output_pins)
-					remap_pin_to_new_node(nodeo->output_pins[i * sizea + j], node[i], j);
+					remap_pin_to_new_node(nodeo->output_pins[i * sizea + j], node[i], j + 1);
 				else
 				{
-					node[i]->output_pins[j] = allocate_npin();
+					node[i]->output_pins[j + 1] = allocate_npin();
 					// Pad outputs with a unique and descriptive name to avoid collisions.
-				    node[i]->output_pins[j]->name = append_string("", "%s~dummy_output~%d~%d", node[i]->name, i, j);
+				    node[i]->output_pins[j + 1]->name = append_string("", "%s~dummy_output~%d~%d", node[i]->name, i, j + 1);
 				}
 			}
 		}
-		node[count - 1]->output_pins[node[(count - 1)]->num_output_pins - 1] = allocate_npin();
+		node[count - 1]->output_pins[0] = allocate_npin();
 		// Pad outputs with a unique and descriptive name to avoid collisions.
-		node[count - 1]->output_pins[(node[(count - 1)]->num_output_pins - 1)]->name = append_string("", "%s~dummy_output~%d~%d", node[(count - 1)]->name, (count - 1), (node[(count - 1)]->num_output_pins - 1));
+		node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[(count - 1)]->name, (count - 1), 0);
 	}
 
 
