@@ -209,7 +209,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 
 			/* Print critical path delay - convert to nanoseconds. */
 			critical_path_delay = get_critical_path_delay();
-			vpr_printf(TIO_MESSAGE_INFO, "\nCrit. path: %g ns\n", critical_path_delay * 1e9);
+			vpr_printf(TIO_MESSAGE_INFO, "\nCrit. path: %g ns\n", critical_path_delay);
 			/* Deliberately abbreviated so parsing for "Critical path" will not pick this up. */
 		}
 		else 
@@ -312,8 +312,7 @@ boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
 
 	int ipin, num_sinks, itarget, target_pin, target_node, inode;
 	float target_criticality, old_tcost, new_tcost, largest_criticality,
-		old_back_cost, new_back_cost;
-	float timing_criticality;
+		old_back_cost, new_back_cost, timing_criticality;
 #ifdef PATH_COUNTING
 	float path_criticality;
 #endif
@@ -331,32 +330,24 @@ boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
 		if (!slacks) {
 			/* Use dummy criticality of 1. */
 			pin_criticality[ipin] = 1.;
-
-		} 
-		else { 
+		} else { 
 			timing_criticality = slacks->timing_criticality[inet][ipin]; 
-			if (timing_criticality < HUGE_NEGATIVE_FLOAT + 1) {
-				/* Pin was not analysed - non-critical. */
-				pin_criticality[ipin] = 0.;
-
-			} else {
-				/* For all analysed pins, set pin_criticality to (max_criticality - 
-				slack ratio)^criticality_exp, but cut off at max_criticality.  
-				Slack ratio is 1 - criticality, but what to use for criticality? */	
+			/* Set pin_criticality to (max_criticality - 
+			slack ratio)^criticality_exp, but cut off at max_criticality.  
+			Slack ratio is 1 - criticality, but what to use for criticality? */	
 #ifdef PATH_COUNTING
-				/* Use a weighted sum of timing and path criticalities. */
-				path_criticality = slacks->path_criticality[inet][ipin];
-				criticality =	  ROUTE_PATH_WEIGHT  * path_criticality
-						   + (1 - ROUTE_PATH_WEIGHT) * timing_criticality; 
-				pin_criticality[ipin] = pow(max_criticality - (1 - criticality), criticality_exp);
+			/* Use a weighted sum of timing and path criticalities. */
+			path_criticality = slacks->path_criticality[inet][ipin];
+			criticality =	  ROUTE_PATH_WEIGHT  * path_criticality
+					   + (1 - ROUTE_PATH_WEIGHT) * timing_criticality; 
+			pin_criticality[ipin] = pow(max_criticality - (1 - criticality), criticality_exp);
 #else
-				/* Use only timing criticality. */
-				pin_criticality[ipin] = pow(max_criticality - (1 - timing_criticality), criticality_exp);
+			/* Use only timing criticality. */
+			pin_criticality[ipin] = pow(max_criticality - (1 - timing_criticality), criticality_exp);
 #endif
-				/* Update the max criticality over all pins. */
-				if (pin_criticality[ipin] > max_criticality) {
-					pin_criticality[ipin] = max_criticality;
-				}
+			/* Update the max criticality over all pins. */
+			if (pin_criticality[ipin] > max_criticality) {
+				pin_criticality[ipin] = max_criticality;
 			}
 		}
 	}

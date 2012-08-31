@@ -372,20 +372,16 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		for (inet = 0; inet < num_logical_nets; inet++) { 
 			for (ipin = 1; ipin <= vpack_net[inet].num_sinks; ipin++) { 
 			
-				/* Only consider this pin in the block criticality calculation if its slack is valid. */
-				if (slacks->timing_criticality[inet][ipin] > HUGE_NEGATIVE_FLOAT + 1) {
-				
-					/* Find the logical block iblk which this pin is a sink on. */
-					iblk = vpack_net[inet].node_block[ipin];
+				/* Find the logical block iblk which this pin is a sink on. */
+				iblk = vpack_net[inet].node_block[ipin];
 					
-					/* The criticality of this pin is a sum of its timing and path criticalities. */
-					crit =		PACK_PATH_WEIGHT  * slacks->path_criticality[inet][ipin] 
-						 + (1 - PACK_PATH_WEIGHT) * slacks->timing_criticality[inet][ipin]; 
+				/* The criticality of this pin is a sum of its timing and path criticalities. */
+				crit =		PACK_PATH_WEIGHT  * slacks->path_criticality[inet][ipin] 
+					 + (1 - PACK_PATH_WEIGHT) * slacks->timing_criticality[inet][ipin]; 
 
-					/* The criticality of each block is the maximum of the criticalities of all its pins. */
-					if (block_criticality[iblk] < crit) {
-						block_criticality[iblk] = crit;
-					}
+				/* The criticality of each block is the maximum of the criticalities of all its pins. */
+				if (block_criticality[iblk] < crit) {
+					block_criticality[iblk] = crit;
 				}
 			}
 		}
