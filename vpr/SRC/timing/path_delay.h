@@ -63,7 +63,7 @@ void print_lut_remapping(const char *fname);
 
 void print_slack(float ** slack, boolean slack_is_normalized, const char *fname);
 
-void print_criticality(float ** criticality, boolean criticality_is_normalized, const char *fname);
+void print_criticality(t_slack * slacks, boolean criticality_is_normalized, const char *fname);
 
 void print_net_delay(float **net_delay, const char *fname);
 

@@ -273,7 +273,7 @@ typedef struct s_cluster_placement_stats {
  * Timing data types
  *******************************************************************/
 
-//#define PATH_COUNTING 'S'
+#define PATH_COUNTING 'S'
 /* Uncomment this to turn on path counting. Its value determines how path criticality
 is calculated from forward and backward weights.  Possible values:
 	'S' - sum of forward and backward weights
@@ -314,9 +314,7 @@ typedef struct s_prepacked_tnode_data {
 /* Data only used by prepacked tnodes. Stored separately so it 
 doesn't need to be allocated in the post-packed netlist. */
 	int model_port, model_pin; /* technology mapped model port/pin */
-#ifdef PATH_COUNTING
-	float forward_weight, backward_weight;
-#else
+#ifndef PATH_COUNTING
 	long num_critical_input_paths, num_critical_output_paths; /* count of critical paths fanning into/out of this tnode */
 	float normalized_slack; /* slack (normalized with respect to max slack) */
 	float normalized_total_critical_paths; /* critical path count (normalized with respect to max count) */
@@ -338,6 +336,11 @@ typedef struct s_tnode {
 	float T_req; /* Required arrival time of the last input signal to this node 
 					if the critical path is not to be lengthened. */
 	int block; /* logical block primitive which this tnode is part of */
+
+#ifdef PATH_COUNTING
+	float forward_weight, backward_weight; /* Weightings of the importance of paths 
+										   fanning into and out of this node, respectively. */
+#endif
 
 	/* Valid values for TN_FF_SINK, TN_FF_SOURCE, TN_FF_CLOCK, TN_INPAD_SOURCE, and TN_OUTPAD_SINK only: */
 	int clock_domain; /* Index of the clock in g_constrained_clocks which this flip-flop or I/O is constrained on. */

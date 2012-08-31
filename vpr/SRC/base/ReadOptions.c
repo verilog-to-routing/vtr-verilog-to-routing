@@ -114,17 +114,11 @@ void alloc_and_load_echo_file_info() {
 	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH, "initial_placement_timing_graph.echo");
 	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_SLACK, "initial_placement_slack.echo");
 	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY, "initial_placement_criticality.echo");
-#ifdef PATH_COUNTING
-	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_PATH_WEIGHT, "initial_placement_path_criticality.echo");
-#endif
 	setEchoFileName(E_ECHO_END_CLB_PLACEMENT, "end_clb_placement.echo");
 	setEchoFileName(E_ECHO_PLACEMENT_SINK_DELAYS, "placement_sink_delays.echo");
 	setEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH, "final_placement_timing_graph.echo");
 	setEchoFileName(E_ECHO_FINAL_PLACEMENT_SLACK, "final_placement_slack.echo");
 	setEchoFileName(E_ECHO_FINAL_PLACEMENT_CRITICALITY, "final_placement_criticality.echo");
-#ifdef PATH_COUNTING
-	setEchoFileName(E_ECHO_FINAL_PLACEMENT_PATH_WEIGHT, "final_placement_path_criticality.echo");
-#endif
 	setEchoFileName(E_ECHO_PLACEMENT_CRIT_PATH, "placement_crit_path.echo");
 	setEchoFileName(E_ECHO_PB_GRAPH, "pb_graph.echo");
 	setEchoFileName(E_ECHO_ARCH, "arch.echo");
@@ -141,9 +135,6 @@ void alloc_and_load_echo_file_info() {
 	setEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO, "clustering_timing_info.echo");
 	setEchoFileName(E_ECHO_PRE_PACKING_SLACK, "pre_packing_slack.echo");
 	setEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY, "pre_packing_criticality.echo");
-#ifdef PATH_COUNTING
-	setEchoFileName(E_ECHO_PRE_PACKING_PATH_WEIGHT, "pre_packing_path_criticality.echo");
-#endif
 	setEchoFileName(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES, "clustering_block_criticalities.echo");
 	setEchoFileName(E_ECHO_PRE_PACKING_MOLECULES_AND_PATTERNS, "pre_packing_molecules_and_patterns.echo");
 	setEchoFileName(E_ECHO_MEM, "mem.echo");
@@ -152,9 +143,6 @@ void alloc_and_load_echo_file_info() {
 	setEchoFileName(E_ECHO_CRITICAL_PATH, "critical_path.echo");	
 	setEchoFileName(E_ECHO_SLACK, "slack.echo");	
 	setEchoFileName(E_ECHO_CRITICALITY, "criticality.echo");
-#ifdef PATH_COUNTING
-	setEchoFileName(E_ECHO_PATH_WEIGHT, "path_criticality.echo");
-#endif
 	setEchoFileName(E_ECHO_COMPLETE_NET_TRACE, "complete_net_trace.echo");
 }
 

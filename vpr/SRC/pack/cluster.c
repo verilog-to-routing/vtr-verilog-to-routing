@@ -348,17 +348,14 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH))
 				print_timing_graph(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH));
-#ifdef PATH_COUNTING
-			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_PATH_WEIGHT))
-				print_path_criticality(slacks->path_criticality, getEchoFileName(E_ECHO_PRE_PACKING_PATH_WEIGHT));
-#else
+#ifndef PATH_COUNTING
 			if(isEchoFileEnabled(E_ECHO_CLUSTERING_TIMING_INFO))
 				print_clustering_timing_info(getEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO));
 #endif
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_SLACK))
 				print_slack(slacks->slack, FALSE, getEchoFileName(E_ECHO_PRE_PACKING_SLACK));
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_CRITICALITY))
-				print_criticality(slacks->timing_criticality, FALSE, getEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY));
+				print_criticality(slacks, FALSE, getEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY));
 		}
 
 		block_criticality = (float*) my_calloc(num_logical_blocks, sizeof(float));

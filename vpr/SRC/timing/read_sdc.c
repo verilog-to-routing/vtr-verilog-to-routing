@@ -60,7 +60,6 @@ in the SDC file to those in the netlist; sdc_clocks, which stores info on clock 
 and offsets from create_clock commands and is the raw info used in edge counting; and 
 exclusive_groups, used when parsing set_clock_groups commands into g_cc_constraints. */
 
-
 /******************* Externally-accessible variables ************************/
 
 int g_num_constrained_clocks = 0; /* number of clocks with timing constraints */
