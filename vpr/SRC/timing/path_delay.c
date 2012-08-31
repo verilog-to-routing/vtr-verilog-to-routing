@@ -562,9 +562,9 @@ static void print_global_criticality_stats(FILE * fp, float ** criticality, cons
 	including maximum criticality, minimum criticality, total criticality in the design,
 	and the number of criticalities within various ranges, or buckets. */
 
-	int inet, iedge, num_edges, ibucket, bucket_size, criticalities_in_bucket[NUM_BUCKETS];
+	int inet, iedge, num_edges, ibucket, criticalities_in_bucket[NUM_BUCKETS];
 	float crit, max_criticality = HUGE_NEGATIVE_FLOAT, min_criticality = HUGE_POSITIVE_FLOAT, 
-		total_criticality = 0;
+		total_criticality = 0, bucket_size;
 
 	/* Go through criticality once to get the largest and smallest timing criticality, 
 	both for reporting and so that we can delimit the buckets. */
