@@ -47,10 +47,6 @@ def parse_args():
                         default=True,
                         help='If the vqm output file already exists, do not re-run Quartus 2 to re-synthesize it')
 
-    quartus_options.add_argument('--cdb_merge', dest='do_cdb_merge', action='store_true',
-                        default=False,
-                        help='Cause quartus to merge the desing using quartus_cdb, before writting out the VQM file')
-
 
     #Options effecting vqm2blif operation
     vqm2blif_options = parser.add_argument_group('vqm2blif options')
@@ -77,7 +73,7 @@ def parse_args():
                             help='Run vpr on the generated blif file (default: %(default)s)')
 
     vpr_options.add_argument('--vpr_opts', dest='vpr_opts', action='store',
-                            default="--fast --timing_analysis off -route_chan_width 300 --nodisp",
+                            default="--fast --timing_analysis off --nodisp --route_chan_width 300",
                             help='Provide additional options to vpr as a string (default: "%(default)s")')
 
 
@@ -169,10 +165,6 @@ def gen_vqm(args):
                     '-project',         quartus_project_file,
                     '-family',          args.device_family,
                     '-vqm_out_file',    args.vqm_file]
-
-        #Runs quartus_cdb --merge, before the quartus_cdb --vqm call
-        if args.do_cdb_merge:
-            q2_cmd.append('-cdb_merge')
 
         #Verilog to vqm conversion
         try:
