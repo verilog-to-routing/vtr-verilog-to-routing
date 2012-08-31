@@ -1496,9 +1496,11 @@ void compute_add_node(nnode_t *node, int cycle, int type)
 
 		int *result = add_arrays(a, node->input_port_sizes[0], b, node->input_port_sizes[1], c, node->input_port_sizes[2],type);
 
+		//update the pin value of output
+		for (i = 1; i < node->num_output_pins; i++)
+			update_pin_value(node->output_pins[i], result[(i - 1)], cycle);
 
-		for (i = 0; i < node->num_output_pins; i++)
-			update_pin_value(node->output_pins[i], result[i], cycle);
+		update_pin_value(node->output_pins[0], result[(node->num_output_pins - 1)], cycle);
 
 		free(result);
 		free(a);
