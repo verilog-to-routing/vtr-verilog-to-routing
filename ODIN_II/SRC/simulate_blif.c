@@ -1054,6 +1054,93 @@ nnode_t **get_children_of(nnode_t *node, int *num_children)
 }
 
 /*
+ * Gets the children of a specific output pin of the given node. Returns the number of
+ * children via the num_children parameter. Throws warnings
+ * or errors if invalid connection patterns are detected.
+ */
+nnode_t **get_children_of_nodepin(nnode_t *node, int *num_children, int output_pin)
+{
+	nnode_t **children = 0;
+	int count = 0;
+	int output_pin_number = node->num_output_pins;
+	if(output_pin < 0 || output_pin > output_pin_number)
+	{
+		error_message(SIMULATION_ERROR, -1, -1, "Requested pin not available");
+		return children;
+	}
+
+	npin_t *pin = node->output_pins[output_pin];
+	nnet_t *net = pin->net;
+	if (net)
+	{
+		/*
+		 *  Detects a net that may be being driven by two
+		 *  or more pins or has an incorrect driver pin assignment.
+		 */
+		if (net->driver_pin != pin && global_args.all_warnings)
+		{
+			char *pin_name  = get_pin_name(pin->name);
+			char *node_name = get_pin_name(node->name);
+			char *net_name  = get_pin_name(net->name);
+
+			warning_message(SIMULATION_ERROR, -1, -1,
+					"Found output pin \"%s\" (%ld) on node \"%s\" (%ld)\n"
+					"             which is mapped to a net \"%s\" (%ld) whose driver pin is \"%s\" (%ld) \n",
+					pin_name,
+					pin->unique_id,
+					node_name,
+					node->unique_id,
+					net_name,
+					net->unique_id,
+					net->driver_pin->name,
+					net->driver_pin->unique_id
+			);
+
+			free(net_name);
+			free(pin_name);
+			free(node_name);
+		}
+
+		int j;
+		for (j = 0; j < net->num_fanout_pins; j++)
+		{
+			npin_t *fanout_pin = net->fanout_pins[j];
+			if (fanout_pin && fanout_pin->type == INPUT && fanout_pin->node)
+			{
+				nnode_t *child_node = fanout_pin->node;
+
+				// Check linkage for inconsistencies.
+				if (fanout_pin->net != net)
+				{
+					print_ancestry(child_node, 0);
+					error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+				}
+				else if (fanout_pin->net->driver_pin->net != net)
+				{
+					print_ancestry(child_node, 0);
+					error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+				}
+
+				else if (fanout_pin->net->driver_pin->node != node)
+				{
+					print_ancestry(child_node, 0);
+					error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+				}
+				else
+				{
+					// Add child.
+					children = realloc(children, sizeof(nnode_t*) * (count + 1));
+					children[count++] = child_node;
+				}
+			}
+		}
+	}
+
+	*num_children = count;
+	return children;
+}
+
+/*
  * Updates the value of a pin and its cycle. Pins should be updated using
  * only this function.
  *
@@ -1110,7 +1197,7 @@ inline void set_pin_cycle(npin_t *pin, int cycle)
 /*
  * Returns FALSE if the cycle is odd.
  */
-inline int is_even_cycle(int cycle)
+int is_even_cycle(int cycle)
 {
 	return !((cycle + 2) % 2);
 }

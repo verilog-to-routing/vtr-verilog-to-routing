@@ -72,10 +72,10 @@ int get_sp_ram_split_depth();
 int get_dp_ram_split_depth();
 
 sp_ram_signals *get_sp_ram_signals(nnode_t *node);
-void free_sp_ram_signals(sp_ram_signals *signals);
+void free_sp_ram_signals(sp_ram_signals *signalsvar);
 
 dp_ram_signals *get_dp_ram_signals(nnode_t *node);
-void free_dp_ram_signals(dp_ram_signals *signals);
+void free_dp_ram_signals(dp_ram_signals *signalsvar);
 
 char is_sp_ram(nnode_t *node);
 char is_dp_ram(nnode_t *node);
@@ -105,8 +105,8 @@ void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlis
 
 signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_list);
 
-void add_input_port_to_memory(nnode_t *node, signal_list_t *signals, char *port_name);
-void add_output_port_to_memory(nnode_t *node, signal_list_t *signals, char *port_name);
+void add_input_port_to_memory(nnode_t *node, signal_list_t *signalsvar, char *port_name);
+void add_output_port_to_memory(nnode_t *node, signal_list_t *signalsvar, char *port_name);
 
 #endif // MEMORIES_H
 

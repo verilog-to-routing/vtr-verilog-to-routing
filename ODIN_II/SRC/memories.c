@@ -146,7 +146,7 @@ void remap_input_port_to_memory(nnode_t *node, signal_list_t *signals, char *por
  *
  * Only allows each port to be added once.
  */
-void add_input_port_to_memory(nnode_t *node, signal_list_t *signals, char *port_name)
+void add_input_port_to_memory(nnode_t *node, signal_list_t *signalsvar, char *port_name)
 {
 	int i;
 	int j = node->num_input_pins;
@@ -163,13 +163,13 @@ void add_input_port_to_memory(nnode_t *node, signal_list_t *signals, char *port_
 	}
 
 	// Make room for the new port.
-	allocate_more_input_pins(node, signals->count);
-	add_input_port_information(node, signals->count);
+	allocate_more_input_pins(node, signalsvar->count);
+	add_input_port_information(node, signalsvar->count);
 
 	// Add the new port.
-	for (i = 0; i < signals->count; i++, j++)
+	for (i = 0; i < signalsvar->count; i++, j++)
 	{
-		npin_t *pin = signals->pins[i];
+		npin_t *pin = signalsvar->pins[i];
 		//if (pin->node && pin->node->input_pins && pin->node->input_pins[pin->pin_node_idx])
 		//	pin->node->input_pins[pin->pin_node_idx] = NULL;
 		pin->mapping = strdup(port_name);
@@ -183,7 +183,7 @@ void add_input_port_to_memory(nnode_t *node, signal_list_t *signals, char *port_
 /*
  * Re-maps the given output signals to the given port name on the given memory node.
  */
-void remap_output_port_to_memory(nnode_t *node, signal_list_t *signals, char *port_name)
+void remap_output_port_to_memory(nnode_t *node, signal_list_t *signalsvar, char *port_name)
 {
 	int i;
 	int j = node->num_output_pins;
@@ -200,13 +200,13 @@ void remap_output_port_to_memory(nnode_t *node, signal_list_t *signals, char *po
 	}
 
 	// Make room for the new port.
-	allocate_more_output_pins(node, signals->count);
-	add_output_port_information(node, signals->count);
+	allocate_more_output_pins(node, signalsvar->count);
+	add_output_port_information(node, signalsvar->count);
 
 	// Add the new port.
-	for (i = 0; i < signals->count; i++, j++)
+	for (i = 0; i < signalsvar->count; i++, j++)
 	{
-		npin_t *pin = signals->pins[i];
+		npin_t *pin = signalsvar->pins[i];
 		pin->mapping = strdup(port_name);
 		remap_pin_to_new_node(pin, node, j);
 	}
@@ -1345,13 +1345,13 @@ sp_ram_signals *get_sp_ram_signals(nnode_t *node)
 	return signals;
 }
 
-void free_sp_ram_signals(sp_ram_signals *signals)
+void free_sp_ram_signals(sp_ram_signals *signalsvar)
 {
-	free_signal_list(signals->data);
-	free_signal_list(signals->addr);
-	free_signal_list(signals->out);
+	free_signal_list(signalsvar->data);
+	free_signal_list(signalsvar->addr);
+	free_signal_list(signalsvar->out);
 
-	free(signals);
+	free(signalsvar);
 }
 
 dp_ram_signals *get_dp_ram_signals(nnode_t *node)
@@ -1425,16 +1425,16 @@ dp_ram_signals *get_dp_ram_signals(nnode_t *node)
 	return signals;
 }
 
-void free_dp_ram_signals(dp_ram_signals *signals)
+void free_dp_ram_signals(dp_ram_signals *signalsvar)
 {
-	free_signal_list(signals->data1);
-	free_signal_list(signals->data2);
-	free_signal_list(signals->addr1);
-	free_signal_list(signals->addr2);
-	free_signal_list(signals->out1);
-	free_signal_list(signals->out2);
+	free_signal_list(signalsvar->data1);
+	free_signal_list(signalsvar->data2);
+	free_signal_list(signalsvar->addr1);
+	free_signal_list(signalsvar->addr2);
+	free_signal_list(signalsvar->out1);
+	free_signal_list(signalsvar->out2);
 
-	free(signals);
+	free(signalsvar);
 }
 
 /*

@@ -620,13 +620,13 @@ signal_list_t *combine_lists_without_freeing_originals(signal_list_t **signal_li
 
 
 
-signal_list_t *copy_input_signals(signal_list_t *signals)
+signal_list_t *copy_input_signals(signal_list_t *signalsvar)
 {
 	signal_list_t *duplicate_signals = init_signal_list();
 	int i;
-	for (i = 0; i < signals->count; i++)
+	for (i = 0; i < signalsvar->count; i++)
 	{
-		npin_t *pin = signals->pins[i];
+		npin_t *pin = signalsvar->pins[i];
 		pin = copy_input_npin(pin);
 		add_pin_to_signal_list(duplicate_signals, pin);
 	}
@@ -634,13 +634,13 @@ signal_list_t *copy_input_signals(signal_list_t *signals)
 }
 
 
-signal_list_t *copy_output_signals(signal_list_t *signals)
+signal_list_t *copy_output_signals(signal_list_t *signalsvar)
 {
 	signal_list_t *duplicate_signals = init_signal_list();
 	int i;
-	for (i = 0; i < signals->count; i++)
+	for (i = 0; i < signalsvar->count; i++)
 	{
-		npin_t *pin = signals->pins[i];
+		npin_t *pin = signalsvar->pins[i];
 		add_pin_to_signal_list(duplicate_signals, copy_output_npin(pin));
 	}
 	return duplicate_signals;

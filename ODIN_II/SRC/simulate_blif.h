@@ -107,6 +107,7 @@ void free_stages(stages *s);
 
 int get_num_covered_nodes(stages *s);
 nnode_t **get_children_of(nnode_t *node, int *count);
+nnode_t **get_children_of_nodepin(nnode_t *node, int *count, int output_pin);
 int is_node_ready(nnode_t* node, int cycle);
 int is_node_complete(nnode_t* node, int cycle);
 int enqueue_node_if_ready(queue_t* queue, nnode_t* node, int cycle);
@@ -128,7 +129,7 @@ inline int get_pin_cycle(npin_t *pin);
 inline void set_pin_cycle(npin_t *pin, int cycle);
 void initialize_pin(npin_t *pin);
 
-inline int is_even_cycle(int cycle);
+int is_even_cycle(int cycle);
 inline int is_clock_node(nnode_t *node);
 
 signed char get_line_pin_value(line_t *line, int pin_num, int cycle);

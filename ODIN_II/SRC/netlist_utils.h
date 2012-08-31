@@ -41,8 +41,8 @@ void add_pin_to_signal_list(signal_list_t *list, npin_t* pin);
 void sort_signal_list_alphabetically(signal_list_t *list);
 signal_list_t *combine_lists(signal_list_t **signal_lists, int num_signal_lists);
 signal_list_t *combine_lists_without_freeing_originals(signal_list_t **signal_lists, int num_signal_lists);
-signal_list_t *copy_input_signals(signal_list_t *signals);
-signal_list_t *copy_output_signals(signal_list_t *signals);
+signal_list_t *copy_input_signals(signal_list_t *signalsvar);
+signal_list_t *copy_output_signals(signal_list_t *signalsvar);
 void free_signal_list(signal_list_t *list);
 
 void hookup_hb_input_pins_from_signal_list(nnode_t *node, int n_start_idx, signal_list_t* input_list, int il_start_idx, int width, netlist_t *netlist) ;
