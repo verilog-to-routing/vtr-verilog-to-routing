@@ -86,7 +86,7 @@ Architecture based off Stratix IV
       <port name="sumout"/>
       </output_ports>
     </model>
-
+<!--
     <model name="sub">
       <input_ports>
       <port name="a"/>
@@ -98,7 +98,7 @@ Architecture based off Stratix IV
       <port name="sumout"/>
       </output_ports>
     </model>
-
+-->
 
   </models>
   <!-- ODIN II specific config ends -->
@@ -726,19 +726,19 @@ Architecture based off Stratix IV
            We will take care of the carry chain for it later, for now, get something that goes through the flow so that Odin II can be tested
       -->
       <pb_type name="adder" height="1">
-        <input name="a" num_pins="3"/>
-        <input name="b" num_pins="3"/>
+        <input name="a" num_pins="4"/>
+        <input name="b" num_pins="4"/>
         <input name="cin" num_pins="1"/>
         <output name="cout" num_pins="1"/>
-        <output name="sumout" num_pins="3"/>
+        <output name="sumout" num_pins="4"/>
 
 	<mode name="sample_adder">
         <pb_type name="sample_adder" blif_model=".subckt adder" num_pb="1">
-            <input name="a" num_pins="3"/>
-            <input name="b" num_pins="3"/>
+            <input name="a" num_pins="4"/>
+            <input name="b" num_pins="4"/>
             <input name="cin" num_pins="1"/>
             <output name="cout" num_pins="1"/>
-            <output name="sumout" num_pins="3"/>
+            <output name="sumout" num_pins="4"/>
             <delay_constant max="1.667e-9" in_port="sample_adder.a" out_port="sample_adder.cout"/>
             <delay_constant max="1.667e-9" in_port="sample_adder.b" out_port="sample_adder.cout"/>
             <delay_constant max="1.667e-9" in_port="sample_adder.cin" out_port="sample_adder.cout"/>
@@ -770,21 +770,21 @@ Architecture based off Stratix IV
         </gridlocations>
       </pb_type>
 
-	<!---->
+	<!--
 	 <pb_type name="sub" height="1">
-        <input name="a" num_pins="3"/>
-        <input name="b" num_pins="3"/>
+        <input name="a" num_pins="4"/>
+        <input name="b" num_pins="4"/>
         <input name="cin" num_pins="1"/>
         <output name="cout" num_pins="1"/>
-        <output name="sumout" num_pins="3"/>
+        <output name="sumout" num_pins="4"/>
 
 	<mode name="sample_sub">
         <pb_type name="sample_sub" blif_model=".subckt sub" num_pb="1">
-            <input name="a" num_pins="3"/>
-            <input name="b" num_pins="3"/>
+            <input name="a" num_pins="4"/>
+            <input name="b" num_pins="4"/>
             <input name="cin" num_pins="1"/>
             <output name="cout" num_pins="1"/>
-            <output name="sumout" num_pins="3"/>
+            <output name="sumout" num_pins="4"/>
             <delay_constant max="1.667e-9" in_port="sample_sub.a" out_port="sample_sub.cout"/>
             <delay_constant max="1.667e-9" in_port="sample_sub.b" out_port="sample_sub.cout"/>
             <delay_constant max="1.667e-9" in_port="sample_sub.cin" out_port="sample_sub.cout"/>
@@ -815,7 +815,7 @@ Architecture based off Stratix IV
           <loc type="col" start="2" repeat="13" priority="10"/>
         </gridlocations>
       </pb_type>
-
+-->
 
     </complexblocklist>
 
