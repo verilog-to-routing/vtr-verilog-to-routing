@@ -85,7 +85,7 @@ is a timing path start or end point.
 To map efficiently from tedges back to the netlist pins, we create the tedge 
 array driven by a tnode the represents a netlist output pin *in the same order 
 as the netlist net pins*.  That means the edge index for the tedge array from 
-such a tnode guarantees iedge = net_pin_index – 1.  The code to map slacks 
+such a tnode guarantees iedge = net_pin_index  1.  The code to map slacks 
 from the timing graph back to the netlist relies on this. */
 
 /*************************** Global variables *******************************/ 

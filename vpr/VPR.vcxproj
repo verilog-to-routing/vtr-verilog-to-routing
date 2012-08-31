@@ -260,7 +260,6 @@
     <ClInclude Include="SRC\route\check_rr_graph.h" />
     <ClInclude Include="SRC\route\route_breadth_first.h" />
     <ClInclude Include="SRC\route\route_common.h" />
-    <ClInclude Include="SRC\route\route_directed_search.h" />
     <ClInclude Include="SRC\route\route_export.h" />
     <ClInclude Include="SRC\route\route_timing.h" />
     <ClInclude Include="SRC\route\route_tree_timing.h" />
@@ -288,7 +287,6 @@
     <ClInclude Include="SRC\timing\slre.h" />
     <ClInclude Include="SRC\util\hash.h" />
     <ClInclude Include="SRC\util\heapsort.h" />
-    <ClInclude Include="SRC\util\mst.h" />
     <ClInclude Include="SRC\util\token.h" />
     <ClInclude Include="SRC\util\vpr_utils.h" />
   </ItemGroup>

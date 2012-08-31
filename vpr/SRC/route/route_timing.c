@@ -313,7 +313,7 @@ boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
 	int ipin, num_sinks, itarget, target_pin, target_node, inode;
 	float target_criticality, old_tcost, new_tcost, largest_criticality,
 		old_back_cost, new_back_cost;
-	float timing_criticality, criticality;
+	float timing_criticality;
 #ifdef PATH_COUNTING
 	float path_criticality;
 #endif
