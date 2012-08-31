@@ -463,6 +463,7 @@ void print_slack(float ** slack, boolean slack_is_normalized, const char *fname)
 				if (slk < HUGE_POSITIVE_FLOAT - 1) {
 					/* We have to watch out for the special case where slack = max_slack, in which case ibucket = NUM_BUCKETS and we go out of bounds of the array. */
 					ibucket = min(NUM_BUCKETS - 1, (int) ((slk - min_slack)/bucket_size));
+					assert(ibucket >= 0 && ibucket < NUM_BUCKETS);
 					slacks_in_bucket[ibucket]++;
 				}
 			}
