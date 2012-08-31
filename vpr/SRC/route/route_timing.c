@@ -348,12 +348,11 @@ boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
 				path_criticality = slacks->path_criticality[inet][ipin];
 				criticality =	  ROUTE_PATH_WEIGHT  * path_criticality
 						   + (1 - ROUTE_PATH_WEIGHT) * timing_criticality; 
+				pin_criticality[ipin] = pow(max_criticality - (1 - criticality), criticality_exp);
 #else
 				/* Use only timing criticality. */
-				criticality = timing_criticality;
+				pin_criticality[ipin] = pow(max_criticality - (1 - timing_criticality), criticality_exp);
 #endif
-				pin_criticality[ipin] = pow(max_criticality - (1 - criticality), criticality_exp);
-
 				/* Update the max criticality over all pins. */
 				if (pin_criticality[ipin] > max_criticality) {
 					pin_criticality[ipin] = max_criticality;

@@ -710,7 +710,7 @@ char *fix_name(char *name)
   int i;
 
   char *new_;
-  new_=strdup(name);
+  new_=my_strdup(name);
 
   for(i=0 ; new_[i]!='\0' ; i++)
     {

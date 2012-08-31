@@ -170,6 +170,7 @@
   <ItemGroup>
     <ClCompile Include="SRC\base\globals.c" />
     <ClCompile Include="SRC\base\read_settings.c" />
+    <ClCompile Include="SRC\base\verilog_writer.c" />
     <ClCompile Include="SRC\base\vpr_api.c" />
     <ClCompile Include="SRC\main.c" />
     <ClCompile Include="SRC\base\check_netlist.c">
@@ -245,6 +246,7 @@
     <ClInclude Include="SRC\base\SetupGrid.h" />
     <ClInclude Include="SRC\base\SetupVPR.h" />
     <ClInclude Include="SRC\base\stats.h" />
+    <ClInclude Include="SRC\base\verilog_writer.h" />
     <ClInclude Include="SRC\base\vpr_api.h" />
     <ClInclude Include="SRC\base\vpr_types.h" />
     <ClInclude Include="SRC\pack\cluster_feasibility_filter.h" />

@@ -1883,7 +1883,16 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 		tnode[inode].T_arr = HUGE_NEGATIVE_FLOAT; 
 		tnode[inode].T_req = HUGE_POSITIVE_FLOAT;
 	}
-	
+
+#ifndef PATH_COUNTING
+	/* Reset num_critical_output_paths. */
+	if (is_prepacked) {
+		for (inode = 0; inode < num_tnodes; inode++) {
+			tnode[inode].prepacked_data->num_critical_output_paths = 0;
+		}
+	}
+#endif
+
 	/* Set arrival times for each top-level tnode on this source domain. */
 	num_at_level = tnodes_at_level[0].nelem;	
 	for (i = 0; i < num_at_level; i++) {
@@ -2140,7 +2149,6 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				so the "local backward slack" (T_req(to_node) - T_req(inode) - T_del) will never be negative.  
 				Hence, we only have to test if the "local backward slack" is 0. */
 				if (is_prepacked) {
-					tnode[inode].prepacked_data->num_critical_output_paths = 0;
 					for (iedge = 0; iedge < num_edges; iedge++) { 
 						to_node = tedge[iedge].to_node;
 						/* If the "local backward slack" (T_arr(to_node) - T_arr(inode) - T_del) for this edge 
@@ -2163,8 +2171,10 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 
 	/* Return max critical input/output paths for this constraint through 
 	the pointers we passed in. */
-	*max_critical_input_paths_ptr = max_critical_input_paths;
-	*max_critical_output_paths_ptr = max_critical_output_paths;
+	if (max_critical_input_paths_ptr && max_critical_output_paths_ptr) {
+		*max_critical_input_paths_ptr = max_critical_input_paths;
+		*max_critical_output_paths_ptr = max_critical_output_paths;
+	}
 
 	/* The criticality denominator is the maximum of the max 
 	arrival time and the constraint for this domain pair. */

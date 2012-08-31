@@ -225,6 +225,9 @@
     <ClCompile Include="SRC\timing\slre.c">
       <Filter>Source Files\timing</Filter>
     </ClCompile>
+    <ClCompile Include="SRC\base\verilog_writer.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SRC\base\check_netlist.h">
@@ -403,6 +406,9 @@
     </ClInclude>
     <ClInclude Include="SRC\timing\slre.h">
       <Filter>Header Files\timing</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\verilog_writer.h">
+      <Filter>Header Files\base</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

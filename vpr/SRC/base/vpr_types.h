@@ -273,7 +273,7 @@ typedef struct s_cluster_placement_stats {
  * Timing data types
  *******************************************************************/
 
-#define PATH_COUNTING 'S'
+// #define PATH_COUNTING 'P'
 /* Uncomment this to turn on path counting. Its value determines how path criticality
 is calculated from forward and backward weights.  Possible values:
 	'S' - sum of forward and backward weights
