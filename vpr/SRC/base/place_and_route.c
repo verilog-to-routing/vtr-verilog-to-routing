@@ -176,9 +176,7 @@ void place_and_route(enum e_operation operation,
 		init_draw_coords(max_pins_per_clb);
 		update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled);
 		
-		if (GetPostSynthesisOption()) {
-            verilog_writer();
-		}
+
 
 		if (timing_inf.timing_analysis_enabled) {
 			assert(slacks->slack);
@@ -203,6 +201,9 @@ void place_and_route(enum e_operation operation,
 		}
 		free(clb_opins_used_locally);
 		clb_opins_used_locally = NULL;
+	}
+	if (GetPostSynthesisOption()) {
+	  verilog_writer();
 	}
 
 	end = clock();

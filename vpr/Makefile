@@ -10,7 +10,7 @@
 ENABLE_GRAPHICS = false
 # can be true or false
 
-export BUILD_TYPE = release
+export BUILD_TYPE = debug
 # can be debug or release - this option gets inherited by the library libarchfpga 
 # by default, though libarchfpga's build type can be set independently in libarchfpga's Makefile.
 
