@@ -42,4 +42,7 @@ clean:
 	@ cd printhandler && make clean
 	@ cd pcre && make clean
 
+clean_vpr:
+	@ cd vpr && make clean
+
 .PHONY: packages subdirs $(SUBDIRS)

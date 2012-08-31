@@ -456,10 +456,9 @@ struct s_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 
 	boolean *is_global_pin; /* [0..num_pins-1] */
 
-	boolean is_Fc_frac;
-	boolean is_Fc_out_full_flex;
-	float Fc_in;
-	float Fc_out;
+	boolean *is_Fc_frac; /* [0..num_pins-1] */
+	boolean *is_Fc_full_flex; /* [0..num_pins-1] */
+	float *Fc; /* [0..num_pins-1] */
 
 	/* Clustering info */
 	struct s_pb_type *pb_type;
@@ -584,6 +583,8 @@ typedef struct s_switch_inf {
             In the format of <block_name>.<pin_name>                        *
  * x_offset:  The x offset from the source to the sink of this connection   *
  * y_offset:  The y offset from the source to the sink of this connection   *
+ * line: The line number in the .arch file that specifies this              *
+ *       particular placement macro.                                        *
  */
 typedef struct s_direct_inf {
 	char *name;
@@ -591,19 +592,10 @@ typedef struct s_direct_inf {
 	char *to_pin;
 	int x_offset;
 	int y_offset;
-}t_direct_inf;
+	int z_offset;
+	int line;
+} t_direct_inf;
 
-struct transistor_record {
-	float min_length;
-	float min_width;
-	float Vth;
-	float CJ;
-	float CJSW;
-	float CJSWG;
-	float CGDO;
-	float COX;
-	float EC;
-};
 /* Record for storing the technology parameters for NMOS and
  PMOS type of transistors
 
@@ -617,15 +609,26 @@ struct transistor_record {
  COX:        gate-oxide cpacitance per unit area
  EC:         contant for leakage current calculation
  */
-
-struct poly_record {
-	float Cpoly;
-	float poly_extension;
+struct transistor_record {
+	float min_length;
+	float min_width;
+	float Vth;
+	float CJ;
+	float CJSW;
+	float CJSWG;
+	float CGDO;
+	float COX;
+	float EC;
 };
+
 /* Record for Poly Data
  Cpoly: poly capacitance
  poly_extention: poly extention
  */
+struct poly_record {
+	float Cpoly;
+	float poly_extension;
+};
 
 /*   Detailed routing architecture */
 typedef struct s_arch t_arch;

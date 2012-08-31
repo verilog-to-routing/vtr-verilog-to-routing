@@ -120,8 +120,7 @@ Architecture based off Stratix IV
           </interconnect>
         </mode>
 
-        <fc_in type="frac">0.15</fc_in>
-        <fc_out type="frac">0.10</fc_out>
+        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
 
         <!-- IOs go on the periphery of the FPGA, for consistency, 
           make it physically equivalent on all sides so that only one definition of I/Os is needed.
@@ -235,9 +234,8 @@ Architecture based off Stratix IV
           </direct>
         </interconnect>
 
-        
-        <fc_in type="frac">0.15</fc_in>
-        <fc_out type="frac">0.1</fc_out>
+
+        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
 
         <pinlocations pattern="spread"/>
         <gridlocations>
@@ -368,8 +366,7 @@ Architecture based off Stratix IV
 
 
 
-        <fc_in type="frac">0.15</fc_in>
-        <fc_out type="frac">0.10</fc_out>
+        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
         <pinlocations pattern="spread"/>
 
         <gridlocations>
@@ -615,8 +612,7 @@ Architecture based off Stratix IV
             </interconnect>
           </mode>
 
-        <fc_in type="frac">0.15</fc_in>
-        <fc_out type="frac">0.10</fc_out>
+        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
         <pinlocations pattern="spread"/>
         <gridlocations>
           <loc type="col" start="2" repeat="8" priority="2"/>
