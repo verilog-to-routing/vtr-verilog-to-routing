@@ -184,6 +184,7 @@ void vpr_init(INP int argc, INP char **argv, OUTP t_options *options, OUTP t_vpr
 	vpr_setup->TimingEnabled = IsTimingEnabled(options);
 	/* Determine whether echo is on or off */
 	setEchoEnabled(IsEchoEnabled(options));
+	SetPostSynthesisOption(IsPostSynthesisEnabled(options));
 	vpr_setup->constant_net_delay = options->constant_net_delay;
 
 	/* Read in arch and circuit */

@@ -21,7 +21,7 @@ struct s_options {
 	float constant_net_delay;
 	boolean TimingAnalysis;
 	boolean CreateEchoFile;
-
+  boolean Generate_Post_Synthesis_Netlist;
 	/* Clustering options */
 	boolean global_clocks;
 	int cluster_size;
@@ -161,7 +161,10 @@ void free_output_file_names();
 boolean IsTimingEnabled(INP t_options *Options);
 boolean IsEchoEnabled(INP t_options *Options);
 
+boolean GetPostSynthesisOption(void);
+void SetPostSynthesisOption(boolean post_synthesis_enabled);
 
+boolean IsPostSynthesisEnabled(INP t_options *Options);
 #endif
 
 

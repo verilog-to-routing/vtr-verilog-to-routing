@@ -10,7 +10,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		OT_AUTO }, { "recompute_crit_iter", OT_RECOMPUTE_CRIT_ITER }, {
 		"inner_loop_recompute_divider", OT_INNER_LOOP_RECOMPUTE_DIVIDER }, {
 		"fix_pins", OT_FIX_PINS }, { "full_stats", OT_FULL_STATS }, { "fast",
-		OT_FAST }, { "echo_file", OT_CREATE_ECHO_FILE }, { "timing_analysis",
+		OT_FAST }, { "echo_file", OT_CREATE_ECHO_FILE },{"gen_postsynthesis_netlist",OT_GENERATE_POST_SYNTHESIS_NETLIST}, { "timing_analysis",
 		OT_TIMING_ANALYSIS }, { "timing_analyze_only_with_net_delay",
 		OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY }, { "init_t", OT_INIT_T }, {
 		"alpha_t", OT_ALPHA_T }, { "exit_t", OT_EXIT_T }, { "inner_num",

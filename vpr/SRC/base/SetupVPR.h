@@ -1,6 +1,8 @@
 #ifndef SETUPVPR_H
 #define SETUPVPR_H
 
+
+
 void SetupVPR(INP t_options *Options,
 		INP boolean TimingEnabled,
 		INP boolean readArchFile,

@@ -11,6 +11,8 @@
 
 static boolean EchoEnabled;
 
+static boolean Generate_PostSynthesis_Netlist;
+
 static boolean *echoFileEnabled = NULL;
 static char **echoFileNames = NULL;
 
@@ -74,6 +76,23 @@ void setEchoEnabled(boolean echo_enabled) {
 		alloc_and_load_echo_file_info();
 	}
 }
+
+boolean GetPostSynthesisOption(void){
+  return Generate_PostSynthesis_Netlist;
+}
+
+void SetPostSynthesisOption(boolean post_synthesis_enabled){
+  Generate_PostSynthesis_Netlist = post_synthesis_enabled;
+}
+
+boolean IsPostSynthesisEnabled(INP t_options *Options) {
+  /* First priority to the '--generate_postsynthesis_netlist' flag */
+  if (Options->Count[OT_GENERATE_POST_SYNTHESIS_NETLIST]) {
+    return Options->Generate_Post_Synthesis_Netlist;
+  }
+  return FALSE;
+}
+
 
 void setAllEchoFileEnabled(boolean value) {
 	int i;
@@ -214,7 +233,7 @@ void free_output_file_names() {
 void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
 	char **Args, **head;
 	int offset;
-
+	
 	/* Clear values and pointers to zero */
 	memset(Options, 0, sizeof(t_options));
 
@@ -283,7 +302,7 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 
 	PrevArgs = Args;
 	Args = ReadBaseToken(Args, &Token);
-
+	
 	if (Token < OT_BASE_UNKNOWN) {
 		/* If this was previously set by a lower priority source
 		 * (ie. a settings file), reset the provenance and the
@@ -331,7 +350,9 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadString(Args, &Options->out_file_prefix);
 	case OT_CREATE_ECHO_FILE:
 		return ReadOnOff(Args, &Options->CreateEchoFile);
-
+	case OT_GENERATE_POST_SYNTHESIS_NETLIST:
+          
+	  return ReadOnOff(Args, &Options->Generate_Post_Synthesis_Netlist);
 		/* Clustering Options */
 	case OT_GLOBAL_CLOCKS:
 		return ReadOnOff(Args, &Options->global_clocks);

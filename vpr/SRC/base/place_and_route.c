@@ -20,6 +20,7 @@
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
 #include "route_common.h"
+#include "verilog_writer.h"
 
 /******************* Subroutines local to this module ************************/
 
@@ -199,6 +200,12 @@ void place_and_route(enum e_operation operation,
 		free(clb_opins_used_locally);
 		clb_opins_used_locally = NULL;
 	}
+
+	if(GetPostSynthesisOption())
+          {
+            verilog_writer();
+          }
+
 
 	end = clock();
 #ifdef CLOCKS_PER_SEC
