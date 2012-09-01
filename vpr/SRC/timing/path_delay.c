@@ -542,12 +542,12 @@ void print_criticality(t_slack * slacks, boolean criticality_is_normalized, cons
 		num_edges = tnode[driver_tnode].num_edges;
 		tedge = tnode[driver_tnode].out_edges;
 
-		fprintf(fp, "\n%5d\t%5d\t\t%5d\t\t%g", inet, driver_tnode, tedge[0].to_node, slacks->timing_criticality[inet][1]);
+		fprintf(fp, "\n%5d\t%5d\t\t%5d\t\t%.6f", inet, driver_tnode, tedge[0].to_node, slacks->timing_criticality[inet][1]);
 #ifdef PATH_COUNTING
 		fprintf(fp, "\t\t%g", slacks->path_criticality[inet][1]);
 #endif
 		for (iedge = 1; iedge < num_edges; iedge++) { /* newline and indent subsequent edges after the first */
-			fprintf(fp, "\n\t\t\t%5d\t\t%g", tedge[iedge].to_node, slacks->timing_criticality[inet][iedge+1]);
+			fprintf(fp, "\n\t\t\t%5d\t\t%.6f", tedge[iedge].to_node, slacks->timing_criticality[inet][iedge+1]);
 #ifdef PATH_COUNTING
 			fprintf(fp, "\t\t%g", slacks->path_criticality[inet][iedge+1]);
 #endif

@@ -1611,7 +1611,7 @@ static void update_timing_gain_values(int inet, int clustered_block,
 #ifdef PATH_COUNTING
 				/* Timing gain is a weighted sum of timing and path criticalities. */
 				timinggain =	  TIMING_GAIN_PATH_WEIGHT  * slacks->path_criticality[inet][ipin] 
-						   + (1 - TIMING_GAIN_PATH_WEIGHT) * slacks->timing_criticality[inet][ipin + 1]; 
+						   + (1 - TIMING_GAIN_PATH_WEIGHT) * slacks->timing_criticality[inet][ipin]; 
 #else
 				/* Timing gain is the timing criticality. */
 				timinggain = slacks->timing_criticality[inet][ipin]; 
