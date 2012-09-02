@@ -25,13 +25,13 @@ http://code.google.com/p/vtr-verilog-to-routing/
 ***********************************************************************************************************/
 
 /*The verilog_writer function is the main function that will generate and write to the verilog and SDF files
-Al the functions declared bellow and above  are called directly or indirectly by verilog_writer()
+All the functions declared bellow are called directly or indirectly by verilog_writer()
 
 Basic Description of how verilog_writer() writes the Verilog and SDF files:
 
 First - The name of the clock signal in the circuit is stored in clock_name. the find_clock_name() function 
         searches through all the inputs of the design and returns the name of the clock in the design. The verilog 
-        writer currently works with only one single clocked circuits
+        writer currently works with only single clocked circuits
 
 Second - instantiate_top_level() module is called. This function will will traverse through all the inputs and 
         outputs in the circuit and instantiate the list of inputs and inputs in the top level module
