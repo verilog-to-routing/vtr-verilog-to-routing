@@ -1694,7 +1694,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 
 	/* Reset slack and criticality */
 	for (inet = 0; inet < num_timing_nets; inet++) {
-		for (ipin = 0; ipin <= timing_nets[inet].num_sinks; ipin++) {
+		for (ipin = 1; ipin <= timing_nets[inet].num_sinks; ipin++) {
 			slacks->slack[inet][ipin]			   = HUGE_POSITIVE_FLOAT; 
 			slacks->timing_criticality[inet][ipin] = 0.; 
 #ifdef PATH_COUNTING
@@ -1776,9 +1776,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 	for (inet = 0; inet < num_timing_nets; inet++) {
 		num_edges = timing_nets[inet].num_sinks;
 		for (iedge = 0; iedge < num_edges; iedge++) {
-			if (slacks->path_criticality[inet][iedge + 1] > HUGE_NEGATIVE_FLOAT + 1) {
-				slacks->path_criticality[inet][iedge + 1] /= max_path_criticality;
-			}
+			slacks->path_criticality[inet][iedge + 1] /= max_path_criticality;
 		}
 	}
 

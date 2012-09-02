@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
-
+#include <assert.h>
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -70,13 +70,16 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	/* When timing analysis is turned on, first do one routing iteration 	*
 	 * ignoring congestion and marking all sinks on each net as critical to	*
 	 * get reasonable net delay estimates. If timing analysis is turned 	*
-	 * off, the criticalities should always be equal to 1			*
+	 * off, the criticalities should always be equal to 0			*
 	 * meaning that total wirelength should be optimized.			*/
 		
 	for (inet = 0; inet < num_nets; inet++) {
 		if (clb_net[inet].is_global == FALSE) {
 			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++)
-				slacks->timing_criticality[inet][ipin] = 1.;
+				slacks->timing_criticality[inet][ipin] = 0.;
+#ifdef PATH_COUNTING
+				slacks->path_criticality[inet][ipin] = 0.;
+#endif
 		} else { /* Set delay of global signals to zero. */
 			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++)
 				net_delay[inet][ipin] = 0.;
@@ -194,8 +197,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		}
 
 		
-		if(timing_analysis_enabled)
-		{		
+		if (timing_analysis_enabled) {		
 			/* Update slack values by doing another timing analysis.                 *
 			 * Timing_driven_route_net updated the net delay values.                 */
 
@@ -211,16 +213,15 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			critical_path_delay = get_critical_path_delay();
 			vpr_printf(TIO_MESSAGE_INFO, "\nCrit. path: %g ns\n", critical_path_delay);
 			/* Deliberately abbreviated so parsing for "Critical path" will not pick this up. */
-		}
-		else 
-		{
-			/* If timing analysis is not enabled, make sure that the criticalities stay as	*
-			 * 1. Also, make sure that the net_delay is always 0. This is to optimize 	*
-			 * wirelength									*/
+		} else {
+			/* If timing analysis is not enabled, make sure that the criticalities and 
+			net delay remain 0, to optimize wirelength. */
 			for (inet = 0; inet < num_nets; inet++) {
-				for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++)
-				{
-					slacks->timing_criticality[inet][ipin] = 1.;
+				for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
+					slacks->timing_criticality[inet][ipin] = 0.;
+#ifdef PATH_COUNTING
+					slacks->path_criticality[inet][ipin] = 0.;
+#endif
 					net_delay[inet][ipin] = 0.;
 				}
 			}
@@ -312,10 +313,7 @@ boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
 
 	int ipin, num_sinks, itarget, target_pin, target_node, inode;
 	float target_criticality, old_tcost, new_tcost, largest_criticality,
-		old_back_cost, new_back_cost, timing_criticality;
-#ifdef PATH_COUNTING
-	float path_criticality, criticality;
-#endif
+		old_back_cost, new_back_cost;
 	t_rt_node *rt_root;
 	struct s_heap *current;
 	struct s_trace *new_route_start_tptr;
@@ -331,24 +329,28 @@ boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
 			/* Use dummy criticality of 1. */
 			pin_criticality[ipin] = 1.;
 		} else { 
-			timing_criticality = slacks->timing_criticality[inet][ipin]; 
-			/* Set pin_criticality to (max_criticality - 
-			slack ratio)^criticality_exp, but cut off at max_criticality.  
-			Slack ratio is 1 - criticality, but what to use for criticality? */	
 #ifdef PATH_COUNTING
-			/* Use a weighted sum of timing and path criticalities. */
-			path_criticality = slacks->path_criticality[inet][ipin];
-			criticality =	  ROUTE_PATH_WEIGHT  * path_criticality
-					   + (1 - ROUTE_PATH_WEIGHT) * timing_criticality; 
-			pin_criticality[ipin] = pow(max_criticality - (1 - criticality), criticality_exp);
+			/* Pin criticality is based on a weighted sum of timing and path criticalities. */	
+			pin_criticality[ipin] =		 ROUTE_PATH_WEIGHT	* slacks->path_criticality[inet][ipin]
+								  + (1 - ROUTE_PATH_WEIGHT) * slacks->timing_criticality[inet][ipin]; 
 #else
-			/* Use only timing criticality. */
-			pin_criticality[ipin] = pow(max_criticality - (1 - timing_criticality), criticality_exp);
+			/* Pin criticality is based on only timing criticality. */
+			pin_criticality[ipin] = slacks->timing_criticality[inet][ipin];
 #endif
-			/* Update the max criticality over all pins. */
-			if (pin_criticality[ipin] > max_criticality) {
-				pin_criticality[ipin] = max_criticality;
-			}
+			/* Currently, pin criticality is between 0 and 1. Now shift it downwards 
+			by 1 - max_criticality (max_criticality is 0.99 by default, so shift down
+			by 0.01) and cut off at 0.  This means that all pins with small criticalities 
+			(<0.01) get criticality 0 and are ignored entirely, and everything
+			else becomes a bit less critical. This effect becomes more pronounced if
+			max_criticality is set lower. */
+			assert(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
+			pin_criticality[ipin] = max(pin_criticality[ipin] - (1 - max_criticality), 0);
+
+			/* Take pin criticality to some power (1 by default). */
+			pin_criticality[ipin] = pow(pin_criticality[ipin], criticality_exp);
+			
+			/* Cut off pin criticality at max_criticality. */
+			pin_criticality[ipin] = min(pin_criticality[ipin], max_criticality);
 		}
 	}
 

@@ -742,11 +742,7 @@ void interconnect_printing(FILE *fp , conn_list *downhill)
   char *fixed_name1;
   char *fixed_name2;
   conn_list *connections;
-  
-  char *temp_port_name = (char *)malloc(1000 * sizeof(char));
   int port_number_out=-1,port_number_in=-1,i;  
-  assert(temp_port_name);
-
 
     for(connections=downhill ; connections!=NULL ; connections=connections->next)/*traverse through all the connected primitives and instantiate a routing interconect module*/
     {

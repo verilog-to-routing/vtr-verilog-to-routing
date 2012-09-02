@@ -896,7 +896,7 @@ static void alloc_and_load_blk_pin_from_port_pin(void) {
 		blk_pin_count = 0;
 		num_ports = type_descriptors[itype].pb_type->num_ports;
 		for (iport = 0; iport < num_ports; iport++) {
-			num_port_pins = num_port_pins = type_descriptors[itype].pb_type->ports[iport].num_pins;
+			num_port_pins = type_descriptors[itype].pb_type->ports[iport].num_pins;
 			for (iport_pin = 0; iport_pin < num_port_pins; iport_pin++) {
 				temp_blk_pin_from_port_pin[itype][iport][iport_pin] = blk_pin_count;
 				blk_pin_count++;

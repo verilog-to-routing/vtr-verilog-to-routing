@@ -290,6 +290,7 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 						"Fc Actual Values: Type = %s, Fc_out = %d, Fc_in = %d.\n",
 						type_descriptors[i].name, Fc_out[i][j], Fc_in[i][j]);
 				}
+			}
 		}
 #endif /* VERBOSE */
 	}
