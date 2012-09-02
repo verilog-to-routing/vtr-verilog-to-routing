@@ -67,22 +67,23 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	alloc_timing_driven_route_structs(&pin_criticality, &sink_order,
 			&rt_node_of_sink);
 
-	/* When timing analysis is turned on, first do one routing iteration 	*
-	 * ignoring congestion and marking all sinks on each net as critical to	*
-	 * get reasonable net delay estimates. If timing analysis is turned 	*
-	 * off, the criticalities should always be equal to 0			*
-	 * meaning that total wirelength should be optimized.			*/
+	/* First do one routing iteration ignoring congestion to	
+	 * get reasonable net delay estimates. Since we set net
+	 * delay to 0, it doesn't matter what criticality we 
+	 * use, so give each net a dummy criticality of 0. */
 		
 	for (inet = 0; inet < num_nets; inet++) {
-		if (clb_net[inet].is_global == FALSE) {
-			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++)
-				slacks->timing_criticality[inet][ipin] = 0.;
+		for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
+			slacks->timing_criticality[inet][ipin] = 0.;
 #ifdef PATH_COUNTING
-				slacks->path_criticality[inet][ipin] = 0.;
+			slacks->path_criticality[inet][ipin] = 0.;
 #endif
-		} else { /* Set delay of global signals to zero. */
-			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++)
+		}
+		/* Set delay of global signals to zero. */
+		if (clb_net[inet].is_global) {
+			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
 				net_delay[inet][ipin] = 0.;
+			}
 		}
 	}
 
@@ -309,7 +310,7 @@ boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
 	 * way resulted in overuse of resources (congestion).  If there is no way   *
 	 * to route this net, even ignoring congestion, it returns FALSE.  In this  *
 	 * case the rr_graph is disconnected and you can give up. If slacks = NULL, *
-	 * give each net a dummy criticality of 1.									*/
+	 * give each net a dummy criticality of 0.									*/
 
 	int ipin, num_sinks, itarget, target_pin, target_node, inode;
 	float target_criticality, old_tcost, new_tcost, largest_criticality,
@@ -326,8 +327,8 @@ boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
 	
 	for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) { 
 		if (!slacks) {
-			/* Use dummy criticality of 1. */
-			pin_criticality[ipin] = 1.;
+			/* Use dummy criticality of 0. (Doesn't matter what number goes here.) */
+			pin_criticality[ipin] = 0.;
 		} else { 
 #ifdef PATH_COUNTING
 			/* Pin criticality is based on a weighted sum of timing and path criticalities. */	
