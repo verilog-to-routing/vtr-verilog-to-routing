@@ -19,11 +19,59 @@
 
 Timing analysis by Vaughn Betz, Jason Luu, and Michael Wainberg.
 
+Timing analysis is a three-step process:
+1. Interpret the constraints specified by the user in an SDC (Synopsys Design
+Constraints) file or, if none is specified, use default constraints.
+2. Convert the pre- or post-packed netlist (depending on the stage of the 
+flow) into a timing graph, where nodes represent pins and edges represent 
+dependencies and delays between pins (see "Timing graph structure", below).
+3. Traverse the timing graph to obtain information about which connections 
+to optimize, as well as statistics for the user.
 
+Steps 1 and 2 are performed through one of two helper functions:
+alloc_and_load_timing_graph and alloc_and_load_pre_packing_timing_graph.
+The first step is to create the timing graph, which is stored in the array 
+tnode ("timing node").  This is done through alloc_and_load_tnodes (post-
+packed) or alloc_and_load_tnodes_from_prepacked_netlist. Then, the timing 
+graph is topologically sorted ("levelized") in 
+alloc_and_load_timing_graph_levels, to allow for faster traversals later.
 
-*/
+read_sdc reads the SDC file, interprets its contents and stores them in 
+the data structure g_sdc.  (This data structure does not need to remain 
+global but it is probably easier, since its information is used in both
+netlists and only needs to be read in once.)
 
-/************************* Timing graph Structure ****************************
+load_clock_domain_and_clock_and_io_delay then gives each flip-flop and I/O
+the index of a constrained clock from the SDC file in g_sdc->constrained_
+clocks, or -1 if an I/O is unconstrained.
+
+process_constraints does a pre-traversal through the timing graph and prunes 
+all constraints between domains that never intersect so they are not analysed.
+
+Step 3 is performed through do_timing_analysis.  For each constraint between 
+a pair of clock domains we do a forward traversal from the "source" domain
+to the "sink" domain to compute each tnode's arrival time, the time when the 
+latest signal would arrive at the node.  We also do a backward traversal to 
+compute required time, the time when the earliest signal has to leave the 
+node to meet the constraint.  The "slack" of each sink pin on each net is 
+basically the difference between the two times. 
+
+If path counting is on, we calculate a forward and backward path weight in 
+do_path_counting.  These represent the importance of paths fanning, 
+respectively, into and out of this pin, in such a way that paths with a 
+higher slack are discounted exponentially in importance.
+
+If path counting is off and we are using the pre-packed netlist, we also 
+calculate normalized costs for the clusterer (normalized arrival time, slack 
+and number of critical paths) in normalized_costs. The clusterer uses these 
+to calculate a criticality for each block.
+
+Finally, in update_slacks, we calculate the slack for each sink pin on each net
+for printing, as well as a derived metric, timing criticality, which the 
+optimizers actually use. If path counting is on, we calculate a path criticality
+from the forward and backward weights on each tnode. */
+
+/************************* Timing graph structure ****************************
 
 Author:  V. Betz
 
@@ -156,7 +204,7 @@ static void print_primitive_as_blif (FILE *fpout, int iblk);
 
 static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel, boolean do_lut_input_balancing); 
 
-static void load_clock_domain_and_skew_and_io_delay(boolean is_prepacked);
+static void load_clock_domain_and_clock_and_io_delay(boolean is_prepacked);
 
 static char * find_tnode_net_name(int inode, boolean is_prepacked);
 
@@ -227,7 +275,7 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 		do_process_constraints = TRUE;
 	}
 	
-	load_clock_domain_and_skew_and_io_delay(FALSE); 
+	load_clock_domain_and_clock_and_io_delay(FALSE); 
 
 	if (do_process_constraints) 
 		process_constraints();
@@ -284,7 +332,7 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 		do_process_constraints = TRUE;
 	}
 	
-	load_clock_domain_and_skew_and_io_delay(TRUE); 
+	load_clock_domain_and_clock_and_io_delay(TRUE); 
 
 	if (do_process_constraints) 
 		process_constraints();
@@ -1447,7 +1495,7 @@ static void process_constraints(void) {
 	to be in seconds rather than nanoseconds. We don't need to normalize g_sdc->cc_constraints
 	because they're already on the g_sdc->domain_constraints matrix, and we don't need
 	to normalize constrained_ios because we already did the normalization when
-	we put the delays onto the timing graph in load_clock_domain_and_skew_and_io_delay. */
+	we put the delays onto the timing graph in load_clock_domain_and_clock_and_io_delay. */
 
 	int source_clock_domain, sink_clock_domain, inode, ilevel, num_at_level, i,
 		num_edges, iedge, to_node, icf, ifc, iff;
@@ -1726,9 +1774,13 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 		do_lut_rebalancing();
 	}
 
-	/* For each valid constraint (pair of source and sink clock domains), 
-	we do one forward and one backward topological traversal, then update 
-	slacks, criticalities and normalized costs used by the clusterer. */
+	/* For each valid constraint (pair of source and sink clock domains), we do one 
+	forward and one backward topological traversal to find arrival and required times,
+	in do_timing_analysis_for_constraint. If path counting is on, we then do another, 
+	simpler traversal to find forward and backward weights, relying on the largest 
+	required time we found from the first traversal.  After each constraint's traversals,
+	we update the slacks, timing criticalities and (if necessary) path criticalities or
+	normalized costs used by the clusterer. */
 
 	for (source_clock_domain = 0; source_clock_domain < g_sdc->num_constrained_clocks; source_clock_domain++) {
 		for (sink_clock_domain = 0; sink_clock_domain < g_sdc->num_constrained_clocks; sink_clock_domain++) {
@@ -2733,12 +2785,18 @@ static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel,
 	} 
 }
 
-static void load_clock_domain_and_skew_and_io_delay(boolean is_prepacked) {
-/* Loads clock domain and clock skew (i.e. clock delay) onto TN_FF_SOURCE and TN_FF_SINK tnodes, 
-by propagating both forward from clock net input pins to TN_FF_CLOCK tnodes, and then looking up the
-TN_FF_CLOCK tnode corresponding to each TN_FF_SOURCE and TN_FF_SINK tnode.  Loads input delay/output delay 
-(from set_input_delay or set_output_delay SDC constraints) onto the tedges between TN_INPAD_SOURCE/OPIN 
-and TN_OUTPAD_IPIN/SINK tnodes.  Finds fanout of each clock domain, including virtual clocks.  
+static void load_clock_domain_and_clock_and_io_delay(boolean is_prepacked) {
+/* Loads clock domain and clock delay onto TN_FF_SOURCE and TN_FF_SINK tnodes.
+The clock domain of each clock is its index in g_sdc->constrained_clocks.
+We do this by matching each clock input pad to a constrained clock name, then
+propagating forward its domain index to all flip-flops fed by it (TN_FF_CLOCK
+tnodes), then later looking up the TN_FF_CLOCK tnode corresponding to every 
+TN_FF_SOURCE and TN_FF_SINK tnode. We also add up the delays along the clock net
+to each TN_FF_CLOCK tnode to give it (and the SOURCE/SINK nodes) a clock delay.
+
+Also loads input delay/output delay (from set_input_delay or set_output_delay SDC 
+constraints) onto the tedges between TN_INPAD_SOURCE/OPIN and TN_OUTPAD_IPIN/SINK 
+tnodes.  Finds fanout of each clock domain, including virtual (external) clocks.  
 Marks unconstrained I/Os with a dummy clock domain (-1). */
 
 	int i, iclock, inode, num_at_level, clock_index, input_index, output_index;
