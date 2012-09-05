@@ -31,8 +31,8 @@ Container::Container(ExplorerScene* scene)
     maxcountPerLayer = 0;
     myOdin = new OdinInterface();
     odinStarted = false;
-    simOffset = 63;
-    maxSimStep = 64;
+    simOffset = 0;
+    maxSimStep = 0;
     actSimStep = 0;
 }
 
@@ -202,7 +202,7 @@ void Container::copySimCyclesIntoNodes()
 {   //for each cycle which was simulated         //int value;
     //int i;, copy the values into the nodes
     int cycle;
-    for(cycle=0;cycle<maxSimStep;cycle++){
+    for(cycle=0+simOffset;cycle<maxSimStep;cycle++){
         QHash<QString, nnode_t *>::const_iterator blockIterator = odinTable.constBegin();
 
         while(blockIterator != odinTable.constEnd()){
@@ -353,6 +353,7 @@ void Container::startOdin(){
 int Container::createNodesFromOdin(){
     QHash<QString, nnode_t *>::const_iterator blockIterator = odinTable.constBegin();
     int items = 0;
+    int odinNodeCount = odinTable.count();
      while(blockIterator != odinTable.constEnd()){
          QString actName = blockIterator.key();
          nnode_t* actOdinNode = blockIterator.value();
@@ -409,6 +410,10 @@ int Container::createNodesFromOdin(){
         //add Unit with name and type
          addUnit(actName, type,QPointF(100,100),actOdinNode);
          items++;
+         if((100*items/odinNodeCount)%5==0)
+         {
+             fprintf(stdout, "VISUALIZATION: Node progress: %d\n", 100*items/odinNodeCount);
+         }
          ++blockIterator;
      }
      fprintf(stderr, "Created Nodes from Netlist: %d\n", items);
@@ -454,7 +459,7 @@ int Container::createConnectionsFromOdin()
     if(myItemcount <= 0)
         return -1;
     //create all connections while traversing through the netlist
-    //leave out the clock
+    //leave out the clocks
     //(visual reasons. The clock should be added last to be at the right port)
     int i, j, conCount;
     conCount = 0;
@@ -479,7 +484,7 @@ int Container::createConnectionsFromOdin()
     // go through the netlist. While doing so
     // remove nodes from the queue and add followup nodes
     LogicUnit* node;
-    LogicUnit* clock;
+    QList<LogicUnit*> clocks;
     bool clockFound = false;
     while(!nodequeue.isEmpty()){
         node = nodequeue.dequeue();
@@ -524,8 +529,8 @@ int Container::createConnectionsFromOdin()
                             conCount++;
                         }
                     }
-                }else{
-                    clock = node;
+                }else if(!clocks.contains(node)){
+                    clocks.append(node);
                     clockFound = true;
                 }
 
@@ -541,15 +546,18 @@ int Container::createConnectionsFromOdin()
     //create clock connections
     int num_children = 0;
     if(clockFound){
-        nnode_t** children = get_children_of(clock->getOdinRef(), &num_children);
-        QString clockName = clock->getName();
+        //for all clocks create the connections
+        foreach(LogicUnit* clock, clocks){
+            nnode_t** children = get_children_of(clock->getOdinRef(), &num_children);
+            QString clockName = clock->getName();
 
-        // connect clock to all children
-        for(i=0; i< num_children; i++){
-            nnode_t* nodeKid = children[i];
-            QString kidName(nodeKid->name);
-            addConnectionHash(clockName,kidName);
-            conCount++;
+            // connect clock to all children
+            for(i=0; i< num_children; i++){
+                nnode_t* nodeKid = children[i];
+                QString kidName(nodeKid->name);
+                addConnectionHash(clockName,kidName);
+                conCount++;
+            }
         }
     }
     //return connection count
@@ -569,10 +577,10 @@ int Container::readInFileOdinOnly(){
     start = clock();
     //let odin ii parse in the file and return a hashtable of all nodes in the netlist
     startOdin();
-
+    fprintf(stdout, "VISUALIZATION: Creating nodes...\n");
     //iterate through the hashtable and create all nodes based on the type
     myItemcount = createNodesFromOdin();
-
+    fprintf(stdout, "VISUALIZATION: Creating Node connections...\n");
      //create connections
     cons = createConnectionsFromOdin();
      if(myItemcount <= 0)
@@ -620,7 +628,7 @@ LogicUnit * Container::getReferenceToUnit(QString name)
  *-------------------------------------------------------------------------------------------*/
 int Container::getMaxSimStep()
 {
-    return 64;
+    return maxSimStep;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -637,10 +645,23 @@ int Container::getActSimStep()
 int Container::startSimulator()
 {
     myOdin->setUpSimulation();
+    maxSimStep = myOdin->simulateNextWave();
+    copySimCyclesIntoNodes();
+    /*
     myOdin->simulateNextWave();
     myOdin->endSimulation();
-    copySimCyclesIntoNodes();
+    copySimCyclesIntoNodes();*/
     return 0;
+}
+
+int Container::simulateNextWave()
+{
+    int success = -1;
+    simOffset = maxSimStep;
+    maxSimStep = myOdin->simulateNextWave();
+    copySimCyclesIntoNodes();
+
+    return success;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -649,6 +670,13 @@ int Container::startSimulator()
 void Container::showSimulationStep(int cycle)
 {
     actSimStep = cycle;
+
+    //if current step is bigger than the last cycle, create new values
+    if(actSimStep>maxSimStep){
+        maxSimStep = myOdin->simulateNextWave();
+        copySimCyclesIntoNodes();
+    }
+
     //visit each node and update the output status of each one of them
     QHash<QString, nnode_t *>::const_iterator blockIterator = odinTable.constBegin();
 
@@ -658,7 +686,7 @@ void Container::showSimulationStep(int cycle)
          visNode->setCurrentCycle(cycle);
          ++blockIterator;
     }
-    actSimStep = (simOffset+1)%64;
+    //actSimStep = (simOffset+1)%64;
 }
 
 /*---------------------------------------------------------------------------------------------

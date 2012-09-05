@@ -93,7 +93,11 @@ void MainWindow::simulationButtonGroupClicked(QAbstractButton* button)
         }
         myContainer->showSimulationStep(actSimStep);
     }else if(text == tr("Next")){
-        actSimStep = (actSimStep+1)%myContainer->getMaxSimStep();
+        actSimStep = (actSimStep+1);//%myContainer->getMaxSimStep();
+        if(actSimStep>=myContainer->getMaxSimStep())
+        {
+            myContainer->simulateNextWave();
+        }
         myContainer->showSimulationStep(actSimStep);
     }else if(text == tr("Start")){
         myContainer->startSimulator();
@@ -423,7 +427,7 @@ void MainWindow::createToolBox()
     //create widget for simulation
 
     simulationButtonGroup = new QButtonGroup(this);
-    connect(simulationButtonGroup, SIGNAL(buttonClicked(QAbstractButton*)),
+    connect(simulationButtonGroup, SIGNAL(buttonReleased(QAbstractButton*)),
             this, SLOT(simulationButtonGroupClicked(QAbstractButton*)));
 
     QGridLayout* simulationLayout = new QGridLayout;

@@ -32,6 +32,8 @@ int current_parse_file;
 OdinInterface::OdinInterface()
 {
     fprintf(stderr,"Creating Odin II object\n");
+    wave = -1;
+    myCycle = 0;
     //myFilename = "/home/kons/Documents/OdinSVN/odin-ii-read-only/ODIN_II/ODIN_II/default_out.blif";
 }
 
@@ -196,7 +198,7 @@ void OdinInterface::setUpSimulation()
     num_vectors = 0;
     input_vector_file = global_args.sim_vector_input_file;
     //The amount of cycles that is being simulated
-    global_args.sim_num_test_vectors = 32;
+    global_args.sim_num_test_vectors = 8;
     if(input_vector_file)
     {
         in = fopen(input_vector_file, "r");
@@ -225,7 +227,7 @@ void OdinInterface::setUpSimulation()
 /*---------------------------------------------------------------------------------------------
  * (function: simulateNextWave)
  *-------------------------------------------------------------------------------------------*/
-void OdinInterface::simulateNextWave()
+int OdinInterface::simulateNextWave()
 {
     if(!num_vectors){
         fprintf(stderr, "No vectors to simulate.\n");
@@ -235,93 +237,93 @@ void OdinInterface::simulateNextWave()
         double simulation_time = 0;
 
         num_cycles = num_vectors*2;
-        num_waves = ceil(num_cycles / (double) SIM_WAVE_LENGTH);
+        num_waves = 1;
         tvector = 0;
 
-        for (wave = 0; wave < num_waves; wave++)
+
+        double wave_start_time = wall_time();
+        //create a new wave
+        wave++;
+        int cycle_offset = SIM_WAVE_LENGTH * wave;
+        int wave_length  = SIM_WAVE_LENGTH;
+
+        // Assign vectors to lines, either by reading or generating them.
+        // Every second cycle gets a new vector.
+
+        for (cycle = cycle_offset; cycle < cycle_offset + wave_length; cycle++)
         {
-            double wave_start_time = wall_time();
-
-            int cycle_offset = SIM_WAVE_LENGTH * wave;
-            int wave_length  = (wave < (num_waves-1))?SIM_WAVE_LENGTH:(num_cycles - cycle_offset);
-
-            // Assign vectors to lines, either by reading or generating them.
-            // Every second cycle gets a new vector.
-
-            for (cycle = cycle_offset; cycle < cycle_offset + wave_length; cycle++)
+            if (is_even_cycle(cycle))
             {
-                if (is_even_cycle(cycle))
-                {
-                        if (input_vector_file)
-                        {
-                                char buffer[BUFFER_MAX_SIZE];
-
-                                if (!get_next_vector(in, buffer))
-                                        error_message(SIMULATION_ERROR, 0, -1, (char*)"Could not read next vector.");
-
-                                tvector = parse_test_vector(buffer);
-                        }
-                        else
-                        {
-                                tvector = generate_random_test_vector(input_lines, cycle, hold_high_index, hold_low_index);
-                        }
-                }
-
-                add_test_vector_to_lines(tvector, input_lines, cycle);
-
-                if (!is_even_cycle(cycle))
-                        free_test_vector(tvector);
-            }
-
-            // Record the input vectors we are using.
-            write_wave_to_file(input_lines, in_out, cycle_offset, wave_length, 1);
-            // Write ModelSim script.
-            write_wave_to_modelsim_file(netlist, input_lines, modelsim_out, cycle_offset, wave_length);
-
-            double simulation_start_time = wall_time();
-
-            // Perform simulation
-            for (cycle = cycle_offset; cycle < cycle_offset + wave_length; cycle++)
-            {
-                    //original_simulate_cycle(netlist, cycle);
-
-                    if (cycle)
+                    if (input_vector_file)
                     {
-                            simulate_cycle(cycle, stgs);
+                            char buffer[BUFFER_MAX_SIZE];
+
+                            if (!get_next_vector(in, buffer))
+                                    error_message(SIMULATION_ERROR, 0, -1, (char*)"Could not read next vector.");
+
+                            tvector = parse_test_vector(buffer);
                     }
                     else
                     {
-                            // The first cycle produces the stages, and adds additional
-                            // lines as specified by the -p option.
-                            pin_names *p = parse_pin_name_list(global_args.sim_additional_pins);
-                            stgs = simulate_first_cycle(netlist, cycle, p, output_lines);
-                            free_pin_name_list(p);
-                            // Make sure the output lines are still OK after adding custom lines.
-                            if (!verify_lines(output_lines))
-                                    error_message(SIMULATION_ERROR, 0, -1,
-                                                    (char*)"Problem detected with the output lines after the first cycle.");
+                            tvector = generate_random_test_vector(input_lines, cycle, hold_high_index, hold_low_index);
                     }
             }
 
-            simulation_time += wall_time() - simulation_start_time;
+            add_test_vector_to_lines(tvector, input_lines, cycle);
 
-            // Write the result of this wave to the output vector file.
-            write_wave_to_file(output_lines, out, cycle_offset, wave_length, output_edge);
+            if (!is_even_cycle(cycle))
+                    free_test_vector(tvector);
+        }
 
-            total_time += wall_time() - wave_start_time;
+        // Record the input vectors we are using.
+        write_wave_to_file(input_lines, in_out, cycle_offset, wave_length, 1);
+        // Write ModelSim script.
+        write_wave_to_modelsim_file(netlist, input_lines, modelsim_out, cycle_offset, wave_length);
 
-            // Print netlist-specific statistics.
-            if (!cycle_offset){
-                    print_netlist_stats(stgs, num_vectors);
-                    fflush(stdout);
+        double simulation_start_time = wall_time();
+
+        // Perform simulation
+        for (cycle = cycle_offset; cycle < cycle_offset + wave_length; cycle++)
+        {
+            if (cycle)
+            {
+                    simulate_cycle(cycle, stgs);
+            }
+            else
+            {
+                    // The first cycle produces the stages, and adds additional
+                    // lines as specified by the -p option.
+                    pin_names *p = parse_pin_name_list(global_args.sim_additional_pins);
+                    stgs = simulate_first_cycle(netlist, cycle, p, output_lines);
+                    free_pin_name_list(p);
+                    // Make sure the output lines are still OK after adding custom lines.
+                    if (!verify_lines(output_lines))
+                            error_message(SIMULATION_ERROR, 0, -1,
+                                            (char*)"Problem detected with the output lines after the first cycle.");
             }
         }
 
+        simulation_time += wall_time() - simulation_start_time;
+
+        // Write the result of this wave to the output vector file.
+        write_wave_to_file(output_lines, out, cycle_offset, wave_length, output_edge);
+
+        total_time += wall_time() - wave_start_time;
+
+        // Print netlist-specific statistics.
+        if (!cycle_offset)
+        {
+                print_netlist_stats(stgs, num_vectors);
+                fflush(stdout);
+        }
 
         // Print statistics.
         print_simulation_stats(stgs, num_vectors, total_time, simulation_time);
-
+        myCycle = cycle;
     }
+
+
+    return myCycle;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -349,7 +351,7 @@ void OdinInterface::endSimulation(){
     if (input_vector_file)
             fclose(in);
     fclose(out);
-    myCycle = cycle;
+
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -358,7 +360,7 @@ void OdinInterface::endSimulation(){
 int OdinInterface::getOutputValue(nnode_t* node, int outPin, int actstep)
 {
     npin_t* pin = node->output_pins[outPin];
-    int val = get_pin_value(pin,myCycle-66+actstep);
+    int val = get_pin_value(pin,actstep);
 
     return val;
 }

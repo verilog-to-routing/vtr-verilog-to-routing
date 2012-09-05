@@ -68,7 +68,7 @@ public:
     QHash<QString, nnode_t *> getNodeTable();
     void setFilename(QString filename);
     void setUpSimulation();
-    void simulateNextWave();
+    int simulateNextWave();
     void endSimulation();
     int getOutputValue(nnode_t* node, int pin, int actstep);
     void setEdge(int i);
