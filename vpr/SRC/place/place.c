@@ -357,7 +357,8 @@ void try_place(struct s_placer_opts placer_opts,
 		else
 		place_delay_value = delta_clb_to_clb[nx][ny];
 
-		vpr_printf(TIO_MESSAGE_INFO, "\nLower bound assuming delay of %g\n", place_delay_value);
+		vpr_printf(TIO_MESSAGE_INFO, "\n");
+		vpr_printf(TIO_MESSAGE_INFO, "Lower bound assuming delay of %g\n", place_delay_value);
 
 		load_constant_net_delay(net_delay, place_delay_value);
 		load_timing_graph_net_delays(net_delay);
@@ -407,8 +408,9 @@ void try_place(struct s_placer_opts placer_opts,
 		crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
 
 		num_connections = count_connections();
-		vpr_printf(TIO_MESSAGE_INFO, "\nThere are %d point to point connections in this circuit\n\n",
-				num_connections);
+		vpr_printf(TIO_MESSAGE_INFO, "\n");
+		vpr_printf(TIO_MESSAGE_INFO, "There are %d point to point connections in this circuit.\n", num_connections);
+		vpr_printf(TIO_MESSAGE_INFO, "\n");
 
 		if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE) {
 			for (inet = 0; inet < num_nets; inet++)
@@ -498,27 +500,25 @@ void try_place(struct s_placer_opts placer_opts,
 			inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost);
 	tot_iter = 0;
 	moves_since_cost_recompute = 0;
-	vpr_printf(TIO_MESSAGE_INFO, 
-			"Initial Placement Cost: %g bb_cost: %g td_cost: %g delay_cost: %g\n\n",
-			cost, bb_cost, timing_cost, delay_cost);
+	vpr_printf(TIO_MESSAGE_INFO, "Initial placement cost: %g bb_cost: %g td_cost: %g delay_cost: %g\n",
+				cost, bb_cost, timing_cost, delay_cost);
+	vpr_printf(TIO_MESSAGE_INFO, "\n");
 
 #ifndef SPEC
-	vpr_printf(TIO_MESSAGE_INFO, 
-			"%11s  %10s %11s  %11s  %11s %11s  %11s %9s %8s  %7s  %7s  %10s  %7s\n",
-			"T", "Cost", "Av. BB Cost", "Av. TD Cost", "Av Tot Del",
+	vpr_printf(TIO_MESSAGE_INFO, "%9s %9s %11s %11s %11s %11s %8s %8s %7s %7s %7s %9s %7s\n",
+			"---------", "---------", "-----------", "-----------", "-----------", "-----------", 
+			"--------", "--------", "-------", "-------", "-------", "---------", "-------");
+	vpr_printf(TIO_MESSAGE_INFO, "%9s %9s %11s %11s %11s %11s %8s %8s %7s %7s %7s %9s %7s\n",
+			"T", "Cost", "Av BB Cost", "Av TD Cost", "Av Tot Del",
 			"P to P Del", "d_max", "Ac Rate", "Std Dev", "R limit", "Exp",
-			"Tot. Moves", "Alpha");
-	vpr_printf(TIO_MESSAGE_INFO, 
-			"%11s  %10s %11s  %11s  %11s %11s  %11s %9s %8s  %7s  %7s  %10s  %7s\n",
-			"--------", "----------", "-----------", "-----------", "---------",
-			"----------", "-----", "-------", "-------", "-------", "-------",
-			"----------", "-----");
+			"Tot Moves", "Alpha");
+	vpr_printf(TIO_MESSAGE_INFO, "%9s %9s %11s %11s %11s %11s %8s %8s %7s %7s %7s %9s %7s\n",
+			"---------", "---------", "-----------", "-----------", "-----------", "-----------", 
+			"--------", "--------", "-------", "-------", "-------", "---------", "-------");
 #endif
 
-	sprintf(msg,
-			"Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g  Delay Cost: %g "
-					"\t Channel Factor: %d", cost, bb_cost,
-			timing_cost, delay_cost, width_fac);
+	sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g  Delay Cost: %g \t Channel Factor: %d", 
+		cost, bb_cost, timing_cost, delay_cost, width_fac);
 	update_screen(MAJOR, msg, PLACEMENT, FALSE);
 
 	while (exit_crit(t, cost, annealing_sched) == 0) {
@@ -541,7 +541,7 @@ void try_place(struct s_placer_opts placer_opts,
 			if (outer_crit_iter_count >= placer_opts.recompute_crit_iter
 					|| placer_opts.inner_loop_recompute_divider != 0) {
 #ifdef VERBOSE
-				vpr_printf(TIO_MESSAGE_INFO, "Outer Loop Recompute Criticalities\n");
+				vpr_printf(TIO_MESSAGE_INFO, "Outer loop recompute criticalities\n");
 #endif
 				place_delay_value = delay_cost / num_connections;
 
@@ -603,8 +603,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 					inner_crit_iter_count = 0;
 #ifdef VERBOSE
-					vpr_printf
-					(TIO_MESSAGE_TRACE, "Inner Loop Recompute Criticalities\n");
+					vpr_printf(TIO_MESSAGE_TRACE, "Inner loop recompute criticalities\n");
 #endif
 					if (placer_opts.place_algorithm
 							== NET_TIMING_DRIVEN_PLACE) {
@@ -628,14 +627,10 @@ void try_place(struct s_placer_opts placer_opts,
 				inner_crit_iter_count++;
 			}
 #ifdef VERBOSE
-			vpr_printf
-			(TIO_MESSAGE_TRACE, "t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d dmax = %g\n",
+			vpr_printf(TIO_MESSAGE_TRACE, "t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d dmax = %g\n",
 					t, cost, bb_cost, timing_cost, inner_iter, delay_cost);
-			if (fabs
-					(bb_cost -
-							comp_bb_cost(CHECK)) >
-					bb_cost * ERROR_TOL)
-			exit(1);
+			if (fabs(bb_cost - comp_bb_cost(CHECK)) > bb_cost * ERROR_TOL)
+				exit(1);
 #endif
 		}
 
@@ -648,8 +643,7 @@ void try_place(struct s_placer_opts placer_opts,
 		if (moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
 			new_bb_cost = recompute_bb_cost();
 			if (fabs(new_bb_cost - bb_cost) > bb_cost * ERROR_TOL) {
-				vpr_printf(TIO_MESSAGE_ERROR, 
-						"in try_place:  new_bb_cost = %g, old bb_cost = %g.\n",
+				vpr_printf(TIO_MESSAGE_ERROR, "in try_place: new_bb_cost = %g, old bb_cost = %g\n", 
 						new_bb_cost, bb_cost);
 				exit(1);
 			}
@@ -660,14 +654,12 @@ void try_place(struct s_placer_opts placer_opts,
 							== PATH_TIMING_DRIVEN_PLACE) {
 				comp_td_costs(&new_timing_cost, &new_delay_cost);
 				if (fabs(new_timing_cost - timing_cost) > timing_cost * ERROR_TOL) {
-					vpr_printf(TIO_MESSAGE_ERROR, 
-							"in try_place:  new_timing_cost = %g, old timing_cost = %g.\n",
+					vpr_printf(TIO_MESSAGE_ERROR, "in try_place: new_timing_cost = %g, old timing_cost = %g\n",
 							new_timing_cost, timing_cost);
 					exit(1);
 				}
 				if (fabs(new_delay_cost - delay_cost) > delay_cost * ERROR_TOL) {
-					vpr_printf(TIO_MESSAGE_ERROR, 
-							"in try_place:  new_delay_cost = %g, old delay_cost = %g.\n",
+					vpr_printf(TIO_MESSAGE_ERROR, "in try_place: new_delay_cost = %g, old delay_cost = %g\n",
 							new_delay_cost, delay_cost);
 					exit(1);
 				}
@@ -695,25 +687,17 @@ void try_place(struct s_placer_opts placer_opts,
 		}
 		std_dev = get_std_dev(success_sum, sum_of_squares, av_cost);
 
-#ifndef SPEC
-		critical_path_delay = get_critical_path_delay();
-		vpr_printf(TIO_MESSAGE_INFO, 
-				"%11.5g  %10.6g %11.6g  %11.6g  %11.6g %11.6g %11.4g %9.4g %8.3g  %7.4g  %7.4g  %10d  ",
-				t, av_cost, av_bb_cost, av_timing_cost, av_delay_cost,
-				place_delay_value, critical_path_delay, success_rat, std_dev, rlim,
-				crit_exponent, tot_iter);
-#endif
-
 		oldt = t; /* for finding and printing alpha. */
 		update_t(&t, std_dev, rlim, success_rat, annealing_sched);
 
 #ifndef SPEC
-		vpr_printf(TIO_MESSAGE_INFO, "%7.4g\n", t / oldt);
-		fflush(stdout);
+		critical_path_delay = get_critical_path_delay();
+		vpr_printf(TIO_MESSAGE_INFO, "%9.5f %9.5g %11.6g %11.6g %11.6g %11.6g %8.4f %8.4f %7.4f %7.4f %7.4f %9d %7.4f\n",
+				oldt, av_cost, av_bb_cost, av_timing_cost, av_delay_cost, place_delay_value, 
+				critical_path_delay, success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
 #endif
 
-		sprintf(msg,
-				"Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
+		sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
 				cost, bb_cost, timing_cost, t);
 		update_screen(MINOR, msg, PLACEMENT, FALSE);
 		update_rlim(&rlim, success_rat);
@@ -748,7 +732,7 @@ void try_place(struct s_placer_opts placer_opts,
 				|| placer_opts.inner_loop_recompute_divider != 0) {
 
 #ifdef VERBOSE
-			vpr_printf(TIO_MESSAGE_INFO, "Outer Loop Recompute Criticalities\n");
+			vpr_printf(TIO_MESSAGE_INFO, "Outer loop recompute criticalities\n");
 #endif
 			place_delay_value = delay_cost / num_connections;
 
@@ -794,8 +778,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 					inner_crit_iter_count = 0;
 #ifdef VERBOSE
-					vpr_printf
-					(TIO_MESSAGE_TRACE, "Inner Loop Recompute Criticalities\n");
+					vpr_printf(TIO_MESSAGE_TRACE, "Inner loop recompute criticalities\n");
 #endif
 					if (placer_opts.place_algorithm
 							== NET_TIMING_DRIVEN_PLACE) {
@@ -819,7 +802,7 @@ void try_place(struct s_placer_opts placer_opts,
 		}
 
 #ifdef VERBOSE
-		vpr_printf(TIO_MESSAGE_INFO, "t = %g  cost = %g   move = %d\n", t, cost, tot_iter);
+		vpr_printf(TIO_MESSAGE_INFO, "t = %g, cost = %g, move = %d\n", t, cost, tot_iter);
 #endif
 	}
 	tot_iter += move_lim;
@@ -839,12 +822,9 @@ void try_place(struct s_placer_opts placer_opts,
 	std_dev = get_std_dev(success_sum, sum_of_squares, av_cost);
 
 #ifndef SPEC
-	vpr_printf(TIO_MESSAGE_INFO, 
-			"%11.5g  %10.6g %11.6g  %11.6g  %11.6g %11.6g %9.4g %8.3g  %7.4g  %7.4g  %10d  \n\n",
-			t, av_cost, av_bb_cost, av_timing_cost, av_delay_cost,
-			place_delay_value, success_rat, std_dev, rlim, crit_exponent,
-			tot_iter);
-
+	vpr_printf(TIO_MESSAGE_INFO, "%9.5f %9.5g %11.6g %11.6g %11.6g %11.6g %8.4f %8s %7.4f %7.4f %7.4f %9d\n",
+			t, av_cost, av_bb_cost, av_timing_cost, av_delay_cost, place_delay_value, 
+			" ", success_rat, std_dev, rlim, crit_exponent, tot_iter);
 #endif
 
 	// TODO:  
@@ -896,13 +876,13 @@ void try_place(struct s_placer_opts placer_opts,
 
 		/* Print critical path delay. */
 		critical_path_delay = get_critical_path_delay();
-		vpr_printf(TIO_MESSAGE_INFO, "\nPlacement estimated critical path delay: %g ns\n", critical_path_delay);
+		vpr_printf(TIO_MESSAGE_INFO, "\n");
+		vpr_printf(TIO_MESSAGE_INFO, "Placement estimated critical path delay: %g ns\n", critical_path_delay);
 	}
 
-	sprintf(msg,
-			"Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
+	sprintf(msg, "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
 			cost, bb_cost, timing_cost, width_fac);
-	vpr_printf(TIO_MESSAGE_INFO, "Placement. Cost: %g  bb_cost: %g  td_cost: %g  delay_cost: %g.\n",
+	vpr_printf(TIO_MESSAGE_INFO, "Placement cost: %g, bb_cost: %g, td_cost: %g, delay_cost: %g\n",
 			cost, bb_cost, timing_cost, delay_cost);
 	update_screen(MAJOR, msg, PLACEMENT, FALSE);
 
@@ -911,9 +891,10 @@ void try_place(struct s_placer_opts placer_opts,
 	float reject_rate = num_swap_rejected / total_swap_attempts;
 	float accept_rate = num_swap_accepted / total_swap_attempts;
 	float abort_rate = num_swap_aborted / total_swap_attempts;
-	vpr_printf(TIO_MESSAGE_INFO, "Placement - Total number of swap attempts: %g.\n"
-			"\tSwap reject rate: %g\n\tSwap accept rate: %g\n\tSwap abort rate: %g\n",
-			total_swap_attempts, reject_rate, accept_rate, abort_rate);
+	vpr_printf(TIO_MESSAGE_INFO, "Placement total # of swap attempts: %g\n", total_swap_attempts);
+	vpr_printf(TIO_MESSAGE_INFO, "\tSwap reject rate: %g\n", reject_rate);
+	vpr_printf(TIO_MESSAGE_INFO, "\tSwap accept rate: %g\n", accept_rate);
+	vpr_printf(TIO_MESSAGE_INFO, "\tSwap abort rate: %g\n",	abort_rate);
 	
 
 #ifdef SPEC
@@ -1100,14 +1081,12 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 
 #ifdef DEBUG
 	if (num_accepted != move_lim) {
-		vpr_printf(TIO_MESSAGE_WARNING, "Starting t: %d of %d configurations accepted.\n",
-				num_accepted, move_lim);
+		vpr_printf(TIO_MESSAGE_WARNING, "Starting t: %d of %d configurations accepted.\n", num_accepted, move_lim);
 	}
 #endif
 
 #ifdef VERBOSE
-	vpr_printf(TIO_MESSAGE_INFO, "std_dev: %g, average cost: %g, starting temp: %g\n",
-			std_dev, av, 20. * std_dev);
+	vpr_printf(TIO_MESSAGE_INFO, "std_dev: %g, average cost: %g, starting temp: %g\n", std_dev, av, 20. * std_dev);
 #endif
 
 	/* Set the initial temperature to 20 times the standard of deviation */
@@ -1598,8 +1577,7 @@ static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int 
 
 #ifdef DEBUG
 	if (*x_to < 0 || *x_to > nx + 1 || *y_to < 0 || *y_to > ny + 1) {
-		vpr_printf(TIO_MESSAGE_ERROR, "in routine find_to:  (x_to,y_to) = (%d,%d)\n", *x_to,
-				*y_to);
+		vpr_printf(TIO_MESSAGE_ERROR, "in routine find_to: (x_to,y_to) = (%d,%d)\n", *x_to, *y_to);
 		exit(1);
 	}
 #endif
@@ -1698,14 +1676,12 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 			delay_source_to_sink = delta_clb_to_clb[delta_x][delta_y];
 	}
 	if (delay_source_to_sink < 0) {
-		vpr_printf(TIO_MESSAGE_ERROR, 
-				"in comp_td_point_to_point_delay in place.c, bad delay_source_to_sink value\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "in comp_td_point_to_point_delay: Bad delay_source_to_sink value\n");
 		exit(1);
 	}
 
 	if (delay_source_to_sink < 0.) {
-		vpr_printf(TIO_MESSAGE_ERROR, 
-				"in comp_td_point_to_point_delay in place.c, delay is less than 0\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "in comp_td_point_to_point_delay: Delay is less than 0\n");
 		exit(1);
 	}
 
@@ -1919,10 +1895,10 @@ static float comp_bb_cost(enum cost_methods method) {
 		}
 	}
 
-	if (method == CHECK)
-		vpr_printf(TIO_MESSAGE_INFO, "BB estimate of min-dist (placement) wirelength is %.0f\n",
-				expected_wirelength);
-
+	if (method == CHECK) {
+		vpr_printf(TIO_MESSAGE_INFO, "\n");
+		vpr_printf(TIO_MESSAGE_INFO, "BB estimate of min-dist (placement) wirelength: %.0f\n", expected_wirelength);
+	}
 	return (cost);
 }
 
@@ -2675,8 +2651,8 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 		iblk = pl_macros[imacro].members[0].blk_index;
 		itype = block[iblk].type->index;
 		if (free_locations[itype] < pl_macros[imacro].num_blocks) {
-			vpr_printf (TIO_MESSAGE_ERROR, "Initial placement failed. Could not place "
-					"macro length %d with head block %s£¨#%d); not enough free locations of type %s (#%d).\n", 
+			vpr_printf (TIO_MESSAGE_ERROR, "Initial placement failed.\n");
+			vpr_printf (TIO_MESSAGE_ERROR, "Could not place macro length %d with head block %s (#%d); not enough free locations of type %s (#%d).\n", 
 					pl_macros[imacro].num_blocks, block[iblk].name, iblk, type_descriptors[itype].name, itype);
 			exit(1);
 		}
@@ -2711,8 +2687,8 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 			// If macro could not be placed after exhaustive placement, error out
 			if (macro_placed == FALSE) {
 				// Error out
-				vpr_printf (TIO_MESSAGE_ERROR, "Initial placement failed. Could not place "
-					"macro length %d with head block %s£¨#%d); not enough free locations of type %s (#%d).\n", 
+				vpr_printf (TIO_MESSAGE_ERROR, "Initial placement failed.\n");
+				vpr_printf (TIO_MESSAGE_ERROR, "Could not place macro length %d with head block %s (#%d); not enough free locations of type %s (#%d).\n", 
 					pl_macros[imacro].num_blocks, block[iblk].name, iblk, type_descriptors[itype].name, itype);
 				exit(1);
 			}
@@ -2750,8 +2726,8 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			 */
 			itype = block[iblk].type->index;
 			if (free_locations[itype] <= 0) {
-				vpr_printf (TIO_MESSAGE_ERROR, "Initial placement failed. Could not place "
-						"block %s£¨#%d); no free locations of type %s (#%d).\n", 
+				vpr_printf (TIO_MESSAGE_ERROR, "Initial placement failed.\n");
+				vpr_printf (TIO_MESSAGE_ERROR, "Could not place block %s (#%d); no free locations of type %s (#%d).\n", 
 						block[iblk].name, iblk, type_descriptors[itype].name, itype);
 				exit(1);
 			}
@@ -2979,31 +2955,25 @@ static void check_place(float bb_cost, float timing_cost,
 	int imacro, imember, head_iblk, member_iblk, member_x, member_y, member_z;
 
 	bb_cost_check = comp_bb_cost(CHECK);
-	vpr_printf(TIO_MESSAGE_INFO, "bb_cost recomputed from scratch is %g.\n", bb_cost_check);
+	vpr_printf(TIO_MESSAGE_INFO, "bb_cost recomputed from scratch: %g\n", bb_cost_check);
 	if (fabs(bb_cost_check - bb_cost) > bb_cost * ERROR_TOL) {
-		vpr_printf(TIO_MESSAGE_ERROR, 
-				"bb_cost_check: %g and bb_cost: %g differ in check_place.\n",
-				bb_cost_check, bb_cost);
+		vpr_printf(TIO_MESSAGE_ERROR, "bb_cost_check: %g and bb_cost: %g differ in check_place.\n", bb_cost_check, bb_cost);
 		error++;
 	}
 
 	if (place_algorithm == NET_TIMING_DRIVEN_PLACE
 			|| place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 		comp_td_costs(&timing_cost_check, &delay_cost_check);
-		vpr_printf(TIO_MESSAGE_INFO, "timing_cost recomputed from scratch is %g. \n",
-				timing_cost_check);
+		vpr_printf(TIO_MESSAGE_INFO, "timing_cost recomputed from scratch: %g\n", timing_cost_check);
 		if (fabs(timing_cost_check - timing_cost) > timing_cost * ERROR_TOL) {
-			vpr_printf(TIO_MESSAGE_ERROR, "timing_cost_check: %g and timing_cost: "
-					"%g differ in check_place.\n", timing_cost_check,
-					timing_cost);
+			vpr_printf(TIO_MESSAGE_ERROR, "timing_cost_check: %g and timing_cost: %g differ in check_place.\n", 
+					   timing_cost_check, timing_cost);
 			error++;
 		}
-		vpr_printf(TIO_MESSAGE_INFO, "delay_cost recomputed from scratch is %g. \n",
-				delay_cost_check);
+		vpr_printf(TIO_MESSAGE_INFO, "delay_cost recomputed from scratch: %g\n", delay_cost_check);
 		if (fabs(delay_cost_check - delay_cost) > delay_cost * ERROR_TOL) {
-			vpr_printf(TIO_MESSAGE_ERROR, "delay_cost_check: %g and delay_cost: "
-					"%g differ in check_place.\n", delay_cost_check,
-					delay_cost);
+			vpr_printf(TIO_MESSAGE_ERROR, "delay_cost_check: %g and delay_cost: %g differ in check_place.\n", 
+					delay_cost_check, delay_cost);
 			error++;
 		}
 	}
@@ -3016,8 +2986,8 @@ static void check_place(float bb_cost, float timing_cost,
 	for (i = 0; i <= (nx + 1); i++)
 		for (j = 0; j <= (ny + 1); j++) {
 			if (grid[i][j].usage > grid[i][j].type->capacity) {
-				vpr_printf(TIO_MESSAGE_ERROR, "block at grid location (%d,%d) overused. "
-						"Usage is %d\n", i, j, grid[i][j].usage);
+				vpr_printf(TIO_MESSAGE_ERROR, "Block at grid location (%d,%d) overused. Usage is %d.\n", 
+						i, j, grid[i][j].usage);
 				error++;
 			}
 			usage_check = 0;
@@ -3027,23 +2997,20 @@ static void check_place(float bb_cost, float timing_cost,
 					continue;
 
 				if (block[bnum].type != grid[i][j].type) {
-					vpr_printf(TIO_MESSAGE_ERROR, 
-							"block %d type does not match grid location (%d,%d) type.\n",
+					vpr_printf(TIO_MESSAGE_ERROR, "Block %d type does not match grid location (%d,%d) type.\n",
 							bnum, i, j);
 					error++;
 				}
 				if ((block[bnum].x != i) || (block[bnum].y != j)) {
-					vpr_printf(TIO_MESSAGE_ERROR, 
-							"block %d location conflicts with grid(%d,%d)"
-									"data.\n", bnum, i, j);
+					vpr_printf(TIO_MESSAGE_ERROR, "Block %d location conflicts with grid(%d,%d) data.\n", 
+							bnum, i, j);
 					error++;
 				}
 				++usage_check;
 				bdone[bnum]++;
 			}
 			if (usage_check != grid[i][j].usage) {
-				vpr_printf(TIO_MESSAGE_ERROR, 
-						"Location (%d,%d) usage is %d, but has actual usage %d.\n",
+				vpr_printf(TIO_MESSAGE_ERROR, "Location (%d,%d) usage is %d, but has actual usage %d.\n",
 						i, j, grid[i][j].usage, usage_check);
 				error++;
 			}
@@ -3052,8 +3019,8 @@ static void check_place(float bb_cost, float timing_cost,
 	/* Check that every block exists in the grid and block arrays somewhere. */
 	for (i = 0; i < num_blocks; i++)
 		if (bdone[i] != 1) {
-			vpr_printf(TIO_MESSAGE_ERROR, "block %d listed %d times in data structures.\n", i,
-					bdone[i]);
+			vpr_printf(TIO_MESSAGE_ERROR, "Block %d listed %d times in data structures.\n",
+					i, bdone[i]);
 			error++;
 		}
 	free(bdone);
@@ -3076,31 +3043,32 @@ static void check_place(float bb_cost, float timing_cost,
 			if (block[member_iblk].x != member_x 
 					|| block[member_iblk].y != member_y 
 					|| block[member_iblk].z != member_z) {
-				vpr_printf(TIO_MESSAGE_ERROR, "Block %d in pl_macro #%d is not placed "
-					" in the proper orientation.\n", member_iblk, imacro);
+				vpr_printf(TIO_MESSAGE_ERROR, "Block %d in pl_macro #%d is not placed in the proper orientation.\n", 
+						member_iblk, imacro);
 				error++;
 			}
 
 			// Then check the grid data structure
 			if (grid[member_x][member_y].blocks[member_z] != member_iblk) {
-				vpr_printf(TIO_MESSAGE_ERROR, "Block %d in pl_macro #%d is not placed "
-					" in the proper orientation.\n", member_iblk, imacro);
+				vpr_printf(TIO_MESSAGE_ERROR, "Block %d in pl_macro #%d is not placed in the proper orientation.\n", 
+						member_iblk, imacro);
 				error++;
 			}
 		} // Finish going through all the members
 	} // Finish going through all the macros
 
 	if (error == 0) {
-		vpr_printf(TIO_MESSAGE_INFO, "\nCompleted placement consistency check successfully.\n\n");
-
-		vpr_printf(TIO_MESSAGE_INFO, "\nSwaps called = %d.\n\n", num_ts_called);
+		vpr_printf(TIO_MESSAGE_INFO, "\n");
+		vpr_printf(TIO_MESSAGE_INFO, "Completed placement consistency check successfully.\n");
+		vpr_printf(TIO_MESSAGE_INFO, "\n");
+		vpr_printf(TIO_MESSAGE_INFO, "Swaps called: %d\n", num_ts_called);
 
 #ifdef PRINT_REL_POS_DISTR
 		print_relative_pos_distr(void);
 #endif
 	} else {
-		vpr_printf(TIO_MESSAGE_ERROR, "\nCompleted placement consistency check, %d Errors found.\n\n",
-				error);
+		vpr_printf(TIO_MESSAGE_ERROR, "\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "Completed placement consistency check, %d errors found.\n", error);
 		vpr_printf(TIO_MESSAGE_INFO, "Aborting program.\n");
 		exit(1);
 	}
@@ -3116,7 +3084,7 @@ static void print_clb_placement(const char *fname) {
 	int i;
 	
 	fp = my_fopen(fname, "w", 0);
-	fprintf(fp, "Complex Block Placements:\n\n");
+	fprintf(fp, "Complex block placements:\n\n");
 
 	fprintf(fp, "Block #\tName\t(X, Y, Z).\n");
 	for(i = 0; i < num_blocks; i++) {
