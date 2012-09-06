@@ -281,14 +281,12 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 		for (i = 1; i < L_num_types; ++i) { /* Skip "<EMPTY>" */
 			for (j = 0; j < type_descriptors[i].num_pins; ++j) { 
 				if (type_descriptors[i].is_Fc_full_flex[j]) {
-					vpr_printf(TIO_MESSAGE_INFO,
-						"Fc Actual Values: Type = %s, Fc_out = full, Fc_in = %d.\n",
-						type_descriptors[i].name, Fc_in[i][j]);
+					vpr_printf(TIO_MESSAGE_INFO, "Fc Actual Values: type = %s, Fc_out = full, Fc_in = %d.\n",
+							type_descriptors[i].name, Fc_in[i][j]);
 				}
 				else {
-					vpr_printf(TIO_MESSAGE_INFO,
-						"Fc Actual Values: Type = %s, Fc_out = %d, Fc_in = %d.\n",
-						type_descriptors[i].name, Fc_out[i][j], Fc_in[i][j]);
+					vpr_printf(TIO_MESSAGE_INFO, "Fc Actual Values: type = %s, Fc_out = %d, Fc_in = %d.\n",
+							type_descriptors[i].name, Fc_out[i][j], Fc_in[i][j]);
 				}
 			}
 		}
@@ -1263,7 +1261,7 @@ void watch_edges(int inode, t_linked_edge * edge_list_head) {
 
 	vpr_printf(TIO_MESSAGE_TRACE, "!!! Watching Node %d !!!!\n", inode);
 	print_rr_node(stdout, rr_node, inode);
-	vpr_printf(TIO_MESSAGE_TRACE, "Currently connects to: \n");
+	vpr_printf(TIO_MESSAGE_TRACE, "Currently connects to:\n");
 	while (list_ptr != NULL) {
 		to_node = list_ptr->edge;
 		print_rr_node(stdout, rr_node, to_node);
@@ -1642,14 +1640,8 @@ static void check_all_tracks_reach_pins(t_type_ptr type,
 
 	for (itrack = 0; itrack < nodes_per_chan; itrack++) {
 		if (num_conns_to_track[itrack] <= 0) {
-			vpr_printf(TIO_MESSAGE_WARNING,
-					"(check_all_tracks_reach_pins):  track %d does not \n"
-							"\tconnect to any CLB ", itrack);
-
-			if (ipin_or_opin == DRIVER)
-				vpr_printf(TIO_MESSAGE_INFO, "OPINs.\n");
-			else
-				vpr_printf(TIO_MESSAGE_INFO, "IPINs.\n");
+			vpr_printf(TIO_MESSAGE_ERROR, "check_all_tracks_reach_pins: Track %d does not connect to any CLB %ss.\n", 
+				itrack, (ipin_or_opin == DRIVER ? "OPIN" : "IPIN"));
 		}
 	}
 
@@ -2093,10 +2085,8 @@ load_uniform_opin_switch_pattern_paired(INP int *Fc_out,
 
 		if (num_edges < 1)
 		{
-			vpr_printf
-			("Error:  opin %d at (%d,%d) does not connect to any "
-					"tracks.\n", L_rr_node[from_node].ptc_num,
-					L_rr_node[from_node].xlow, L_rr_node[from_node].ylow);
+			vpr_printf(TIO_MESSAGE_ERROR, "opin %d at (%d,%d) does not connect to any tracks.\n", 
+					L_rr_node[from_node].ptc_num, L_rr_node[from_node].xlow, L_rr_node[from_node].ylow);
 			exit(1);
 		}
 
@@ -2461,17 +2451,11 @@ view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 	sqrt(percent_range_sum / ((float)array_count - 1.0));
 	std_dev_range = sqrt(range_sum / ((float)array_count - 1.0));
 	vpr_printf(TIO_MESSAGE_INFO, "==== MUX size statistics ====\n");
-	vpr_printf(TIO_MESSAGE_INFO, "max range of mux size within a sblock is; %d\n",
-			global_max_range);
-	vpr_printf(TIO_MESSAGE_INFO, "average range of mux size within a sblock is; %.2f\n", avg_range);
-	vpr_printf(TIO_MESSAGE_INFO, "std dev of range of mux size within a sblock is; %.2f\n",
-			std_dev_range);
-	vpr_printf
-	("average percent range of mux size within a sblock is; %.2f%%\n",
-			avg_percent_range * 100.0);
-	vpr_printf
-	("std dev of percent range of mux size within a sblock is; %.2f%%\n",
-			std_dev_percent_range * 100.0);
+	vpr_printf(TIO_MESSAGE_INFO, "Max range of mux size within a sblock: %d\n", global_max_range);
+	vpr_printf(TIO_MESSAGE_INFO, "Average range of mux size within a sblock: %.2f\n", avg_range);
+	vpr_printf(TIO_MESSAGE_INFO, "Std dev of range of mux size within a sblock: %.2f\n", std_dev_range);
+	vpr_printf(TIO_MESSAGE_INFO, "Average percent range of mux size within a sblock: %.2f%%\n", avg_percent_range * 100.0);
+	vpr_printf(TIO_MESSAGE_INFO, "Std dev of percent range of mux size within a sblock: %.2f%%\n", std_dev_percent_range * 100.0);
 
 	vpr_printf(TIO_MESSAGE_INFO, " -- Detailed MUX size distribution by sblock type -- \n");
 	distr_current = distr_list;

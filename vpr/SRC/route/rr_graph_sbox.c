@@ -218,9 +218,8 @@ int get_simple_switch_block_track(INP enum e_side from_side,
 	/* UDSD Modification by WMF End */
 
 	if (to_track == SBOX_ERROR) {
-		vpr_printf(TIO_MESSAGE_ERROR, 
-				"in get_simple_switch_block_track.  Unexpected connection.\n"
-						"from_side: %d  to_side: %d  switch_block_type: %d.\n",
+		vpr_printf(TIO_MESSAGE_ERROR, "in get_simple_switch_block_track.\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "\tUnexpected connection from_side: %d to_side: %d switch_block_type: %d.\n",
 				from_side, to_side, switch_block_type);
 		exit(1);
 	}

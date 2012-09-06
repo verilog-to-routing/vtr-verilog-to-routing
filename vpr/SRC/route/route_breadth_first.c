@@ -123,7 +123,7 @@ static boolean breadth_first_route_net(int inet, float bend_cost) {
 
 		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
 			vpr_printf (TIO_MESSAGE_INFO, "Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
-				   inet, clb_net[inet].name, i);
+					inet, clb_net[inet].name, i);
 			reset_path_costs(); /* Clean up before leaving. */
 			return (FALSE);
 		}
@@ -151,7 +151,7 @@ static boolean breadth_first_route_net(int inet, float bend_cost) {
 
 			if (current == NULL) { /* Impossible routing. No path for net. */
 				vpr_printf (TIO_MESSAGE_INFO, "Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
-				   inet, clb_net[inet].name, i);
+						inet, clb_net[inet].name, i);
 				reset_path_costs();
 				return (FALSE);
 			}

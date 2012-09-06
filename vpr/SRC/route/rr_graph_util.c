@@ -73,7 +73,7 @@ int seg_index_of_sblock(int from_node, int to_node) {
 				return (rr_node[to_node].xhigh);
 			}
 		} else {
-			vpr_printf(TIO_MESSAGE_ERROR, "In seg_index_of_sblock:  to_node %d is of type %d.\n",
+			vpr_printf(TIO_MESSAGE_ERROR, "in seg_index_of_sblock: to_node %d is of type %d.\n",
 					to_node, to_rr_type);
 			exit(1);
 		}
@@ -89,14 +89,14 @@ int seg_index_of_sblock(int from_node, int to_node) {
 				return (rr_node[to_node].yhigh);
 			}
 		} else {
-			vpr_printf(TIO_MESSAGE_ERROR, "In seg_index_of_sblock:  to_node %d is of type %d.\n",
+			vpr_printf(TIO_MESSAGE_ERROR, "in seg_index_of_sblock: to_node %d is of type %d.\n",
 					to_node, to_rr_type);
 			exit(1);
 		}
 	}
 	/* End from_rr_type is CHANY */
 	else {
-		vpr_printf(TIO_MESSAGE_ERROR, "In seg_index_of_sblock:  from_node %d is of type %d.\n",
+		vpr_printf(TIO_MESSAGE_ERROR, "in seg_index_of_sblock: from_node %d is of type %d.\n",
 				from_node, from_rr_type);
 		exit(1);
 	}

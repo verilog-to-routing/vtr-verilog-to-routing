@@ -266,10 +266,9 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 
 	end = clock();
 #ifdef CLOCKS_PER_SEC
-	vpr_printf(TIO_MESSAGE_INFO, "build rr_graph took %g seconds\n",
-			(float) (end - begin) / CLOCKS_PER_SEC);
+	vpr_printf(TIO_MESSAGE_INFO, "Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 #else
-	vpr_printf(TIO_MESSAGE_INFO, "build rr_graph took %g seconds\n", (float)(end - begin) / CLK_PER_SEC);
+	vpr_printf(TIO_MESSAGE_INFO, "Build rr_graph took %g seconds.\n", (float)(end - begin) / CLK_PER_SEC);
 #endif
 
 	/* Allocate and load some additional rr_graph information needed only by *
@@ -407,13 +406,12 @@ void init_route_structs(int bb_factor) {
 	 * really were.                                                           */
 
 	if (rr_modified_head != NULL) {
-		vpr_printf(TIO_MESSAGE_ERROR, "In init_route_structs.  List of modified rr nodes is \n"
-				"not empty.\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "in init_route_structs. List of modified rr nodes is not empty.\n");
 		exit(1);
 	}
 
 	if (heap_tail != 1) {
-		vpr_printf(TIO_MESSAGE_ERROR, "In init_route_structs.  Heap is not empty.\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "in init_route_structs. Heap is not empty.\n");
 		exit(1);
 	}
 }
@@ -447,9 +445,8 @@ update_traceback(struct s_heap *hptr, int inet) {
 #ifdef DEBUG
 	rr_type = rr_node[inode].type;
 	if (rr_type != SINK) {
-		vpr_printf(TIO_MESSAGE_ERROR, "In update_traceback.  Expected type = SINK (%d).\n",
-				SINK);
-		vpr_printf(TIO_MESSAGE_ERROR, "Got type = %d while tracing back net %d.\n", rr_type, inet);
+		vpr_printf(TIO_MESSAGE_ERROR, "in update_traceback. Expected type = SINK (%d).\n", SINK);
+		vpr_printf(TIO_MESSAGE_ERROR, "\tGot type = %d while tracing back net %d.\n", rr_type, inet);
 		exit(1);
 	}
 #endif
@@ -786,8 +783,7 @@ void alloc_and_load_rr_node_route_structs(void) {
 	int inode;
 
 	if (rr_node_route_inf != NULL) {
-		vpr_printf(TIO_MESSAGE_ERROR, "In alloc_and_load_rr_node_route_structs:  \n"
-				"old rr_node_route_inf array exists.\n");
+ 		vpr_printf(TIO_MESSAGE_ERROR, "in alloc_and_load_rr_node_route_structs: old rr_node_route_inf array exists.\n");
 		exit(1);
 	}
 
@@ -955,8 +951,7 @@ get_heap_head(void) {
 	do {
 		if (heap_tail == 1) { /* Empty heap. */
 			vpr_printf(TIO_MESSAGE_WARNING, "Empty heap occurred in get_heap_head.\n");
-			vpr_printf(TIO_MESSAGE_WARNING, 
-					"Some blocks are impossible to connect in this architecture.\n");
+			vpr_printf(TIO_MESSAGE_WARNING, "Some blocks are impossible to connect in this architecture.\n");
 			return (NULL);
 		}
 
@@ -1109,8 +1104,7 @@ void print_route(char *route_file) {
 		if (clb_net[inet].is_global == FALSE) {
 			if (clb_net[inet].num_sinks == FALSE) {
 				fprintf(fp, "\n\nNet %d (%s)\n\n", inet, clb_net[inet].name);
-				fprintf(fp,
-						"\n\n Used in local cluster only, reserved one CLB pin\n\n");
+				fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
 			} else {
 				fprintf(fp, "\n\nNet %d (%s)\n\n", inet, clb_net[inet].name);
 				tptr = trace_head[inet];
@@ -1154,10 +1148,8 @@ void print_route(char *route_file) {
 						break;
 
 					default:
-						vpr_printf(TIO_MESSAGE_ERROR, 
-								"in print_route:  Unexpected traceback element "
-										"type: %d (%s).\n", rr_type,
-								name_type[rr_type]);
+						vpr_printf(TIO_MESSAGE_ERROR, "in print_route: Unexpected traceback element type: %d (%s).\n", 
+								rr_type, name_type[rr_type]);
 						exit(1);
 						break;
 					}
