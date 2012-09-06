@@ -95,7 +95,7 @@ TIO_PrintHandler_c::TIO_PrintHandler_c(
    this->counts_.internalCount = 0;
 
    this->counts_.maxWarningCount = UINT_MAX;
-   this->counts_.maxErrorCount = 1;
+   this->counts_.maxErrorCount = UINT_MAX;
 
    this->counts_.isMaxWarningEnabled = true;
    this->counts_.isMaxErrorEnabled = true;
