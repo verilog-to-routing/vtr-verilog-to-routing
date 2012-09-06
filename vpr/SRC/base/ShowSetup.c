@@ -53,8 +53,8 @@ void printClusteredNetlistStats() {
 	num_blocks_type = (int*) my_calloc(num_types, sizeof(int));
 
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Netlist num_nets:  %d\n", num_nets);
-	vpr_printf(TIO_MESSAGE_INFO, "Netlist num_blocks:  %d\n", num_blocks);
+	vpr_printf(TIO_MESSAGE_INFO, "Netlist num_nets: %d\n", num_nets);
+	vpr_printf(TIO_MESSAGE_INFO, "Netlist num_blocks: %d\n", num_blocks);
 
 	for (i = 0; i < num_types; i++) {
 		num_blocks_type[i] = 0;
@@ -83,21 +83,20 @@ void printClusteredNetlistStats() {
 
 	for (i = 0; i < num_types; i++) {
 		if (IO_TYPE != &type_descriptors[i]) {
-			vpr_printf(TIO_MESSAGE_INFO, "Netlist %s blocks:  %d\n", type_descriptors[i].name,
-					num_blocks_type[i]);
+			vpr_printf(TIO_MESSAGE_INFO, "Netlist %s blocks: %d.\n", type_descriptors[i].name, num_blocks_type[i]);
 		}
 	}
 
 	/* Print out each block separately instead */
-	vpr_printf(TIO_MESSAGE_INFO, "Netlist inputs pins:  %d\n", L_num_p_inputs);
-	vpr_printf(TIO_MESSAGE_INFO, "Netlist output pins:  %d\n", L_num_p_outputs);
+	vpr_printf(TIO_MESSAGE_INFO, "Netlist inputs pins: %d\n", L_num_p_inputs);
+	vpr_printf(TIO_MESSAGE_INFO, "Netlist output pins: %d\n", L_num_p_outputs);
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 	free(num_blocks_type);
 }
 
 static void ShowRoutingArch(INP struct s_det_routing_arch RoutingArch) {
 
-	vpr_printf(TIO_MESSAGE_INFO, "RoutingArch.directionality:  ");
+	vpr_printf(TIO_MESSAGE_INFO, "RoutingArch.directionality: ");
 	switch (RoutingArch.directionality) {
 	case BI_DIRECTIONAL:
 		vpr_printf(TIO_MESSAGE_INFO, "BI_DIRECTIONAL\n");
@@ -110,7 +109,7 @@ static void ShowRoutingArch(INP struct s_det_routing_arch RoutingArch) {
 		exit(1);
 	}
 
-	vpr_printf(TIO_MESSAGE_INFO, "RoutingArch.switch_block_type:  ");
+	vpr_printf(TIO_MESSAGE_INFO, "RoutingArch.switch_block_type: ");
 	switch (RoutingArch.switch_block_type) {
 	case SUBSET:
 		vpr_printf(TIO_MESSAGE_INFO, "SUBSET\n");
@@ -128,14 +127,14 @@ static void ShowRoutingArch(INP struct s_det_routing_arch RoutingArch) {
 		vpr_printf(TIO_MESSAGE_ERROR, "switch block type\n");
 	}
 
-	vpr_printf(TIO_MESSAGE_INFO, "RoutingArch.Fs:  %d\n", RoutingArch.Fs);
+	vpr_printf(TIO_MESSAGE_INFO, "RoutingArch.Fs: %d\n", RoutingArch.Fs);
 
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 }
 
 static void ShowAnnealSched(INP struct s_annealing_sched AnnealSched) {
 
-	vpr_printf(TIO_MESSAGE_INFO, "AnnealSched.type:  ");
+	vpr_printf(TIO_MESSAGE_INFO, "AnnealSched.type: ");
 	switch (AnnealSched.type) {
 	case AUTO_SCHED:
 		vpr_printf(TIO_MESSAGE_INFO, "AUTO_SCHED\n");
@@ -147,18 +146,18 @@ static void ShowAnnealSched(INP struct s_annealing_sched AnnealSched) {
 		vpr_printf(TIO_MESSAGE_ERROR, "Unknown annealing schedule\n");
 	}
 
-	vpr_printf(TIO_MESSAGE_INFO, "AnnealSched.inner_num:  %f\n", AnnealSched.inner_num);
+	vpr_printf(TIO_MESSAGE_INFO, "AnnealSched.inner_num: %f\n", AnnealSched.inner_num);
 
 	if (USER_SCHED == AnnealSched.type) {
-		vpr_printf(TIO_MESSAGE_INFO, "AnnealSched.init_t:  %f\n", AnnealSched.init_t);
-		vpr_printf(TIO_MESSAGE_INFO, "AnnealSched.alpha_t:  %f\n", AnnealSched.alpha_t);
-		vpr_printf(TIO_MESSAGE_INFO, "AnnealSched.exit_t:  %f\n", AnnealSched.exit_t);
+		vpr_printf(TIO_MESSAGE_INFO, "AnnealSched.init_t: %f\n", AnnealSched.init_t);
+		vpr_printf(TIO_MESSAGE_INFO, "AnnealSched.alpha_t: %f\n", AnnealSched.alpha_t);
+		vpr_printf(TIO_MESSAGE_INFO, "AnnealSched.exit_t: %f\n", AnnealSched.exit_t);
 	}
 }
 
 static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 
-	vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.route_type:  ");
+	vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.route_type: ");
 	switch (RouterOpts.route_type) {
 	case GLOBAL:
 		vpr_printf(TIO_MESSAGE_INFO, "GLOBAL\n");
@@ -171,7 +170,7 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 	}
 
 	if (DETAILED == RouterOpts.route_type) {
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.router_algorithm:  ");
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.router_algorithm: ");
 		switch (RouterOpts.router_algorithm) {
 		case BREADTH_FIRST:
 			vpr_printf(TIO_MESSAGE_INFO, "BREADTH_FIRST\n");
@@ -187,7 +186,7 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 			exit(1);
 		}
 
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.base_cost_type:  ");
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.base_cost_type: ");
 		switch (RouterOpts.base_cost_type) {
 		case INTRINSIC_DELAY:
 			vpr_printf(TIO_MESSAGE_INFO, "INTRINSIC_DELAY\n");
@@ -202,35 +201,30 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Unknown base_cost_type\n");
 		}
 
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.fixed_channel_width:  ");
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.fixed_channel_width: ");
 		if (NO_FIXED_CHANNEL_WIDTH == RouterOpts.fixed_channel_width) {
 			vpr_printf(TIO_MESSAGE_INFO, "NO_FIXED_CHANNEL_WIDTH\n");
 		} else {
 			vpr_printf(TIO_MESSAGE_INFO, "%d\n", RouterOpts.fixed_channel_width);
 		}
 
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.acc_fac:  %f\n", RouterOpts.acc_fac);
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.bb_factor:  %d\n", RouterOpts.bb_factor);
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.bend_cost:  %f\n", RouterOpts.bend_cost);
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.first_iter_pres_fac:  %f\n",
-				RouterOpts.first_iter_pres_fac);
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.initial_pres_fac:  %f\n",
-				RouterOpts.initial_pres_fac);
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.pres_fac_mult:  %f\n", RouterOpts.pres_fac_mult);
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.max_router_iterations:  %d\n",
-				RouterOpts.max_router_iterations);
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.acc_fac: %f\n", RouterOpts.acc_fac);
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.bb_factor: %d\n", RouterOpts.bb_factor);
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.bend_cost: %f\n", RouterOpts.bend_cost);
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.first_iter_pres_fac: %f\n", RouterOpts.first_iter_pres_fac);
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.initial_pres_fac: %f\n", RouterOpts.initial_pres_fac);
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.pres_fac_mult: %f\n", RouterOpts.pres_fac_mult);
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.max_router_iterations: %d\n", RouterOpts.max_router_iterations);
 
 		if (TIMING_DRIVEN == RouterOpts.router_algorithm) {
-			vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.astar_fac:  %f\n", RouterOpts.astar_fac);
-			vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.criticality_exp:  %f\n",
-					RouterOpts.criticality_exp);
-			vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.max_criticality:  %f\n",
-					RouterOpts.max_criticality);
+			vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
+			vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
+			vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
 		}
 	} else {
 		assert(GLOBAL == RouterOpts.route_type);
 
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.router_algorithm:  ");
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.router_algorithm: ");
 		switch (RouterOpts.router_algorithm) {
 		case BREADTH_FIRST:
 			vpr_printf(TIO_MESSAGE_INFO, "BREADTH_FIRST\n");
@@ -245,7 +239,7 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Unknown router algorithm\n");
 		}
 
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.base_cost_type:  ");
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.base_cost_type: ");
 		switch (RouterOpts.base_cost_type) {
 		case INTRINSIC_DELAY:
 			vpr_printf(TIO_MESSAGE_INFO, "INTRINSIC_DELAY\n");
@@ -260,36 +254,31 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Unknown router base cost type\n");
 		}
 
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.fixed_channel_width:  ");
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.fixed_channel_width: ");
 		if (NO_FIXED_CHANNEL_WIDTH == RouterOpts.fixed_channel_width) {
 			vpr_printf(TIO_MESSAGE_INFO, "NO_FIXED_CHANNEL_WIDTH\n");
 		} else {
 			vpr_printf(TIO_MESSAGE_INFO, "%d\n", RouterOpts.fixed_channel_width);
 		}
 
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.acc_fac:  %f\n", RouterOpts.acc_fac);
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.bb_factor:  %d\n", RouterOpts.bb_factor);
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.bend_cost:  %f\n", RouterOpts.bend_cost);
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.first_iter_pres_fac:  %f\n",
-				RouterOpts.first_iter_pres_fac);
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.initial_pres_fac:  %f\n",
-				RouterOpts.initial_pres_fac);
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.pres_fac_mult:  %f\n", RouterOpts.pres_fac_mult);
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.max_router_iterations:  %d\n",
-				RouterOpts.max_router_iterations);
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.acc_fac: %f\n", RouterOpts.acc_fac);
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.bb_factor: %d\n", RouterOpts.bb_factor);
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.bend_cost: %f\n", RouterOpts.bend_cost);
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.first_iter_pres_fac: %f\n", RouterOpts.first_iter_pres_fac);
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.initial_pres_fac: %f\n", RouterOpts.initial_pres_fac);
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.pres_fac_mult: %f\n", RouterOpts.pres_fac_mult);
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.max_router_iterations: %d\n", RouterOpts.max_router_iterations);
 		if (TIMING_DRIVEN == RouterOpts.router_algorithm) {
-			vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.astar_fac:  %f\n", RouterOpts.astar_fac);
-			vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.criticality_exp:  %f\n",
-					RouterOpts.criticality_exp);
-			vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.max_criticality:  %f\n",
-					RouterOpts.max_criticality);
+			vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
+			vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
+			vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
 		}
 	}
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 }
 
 static void ShowOperation(INP enum e_operation Operation) {
-	vpr_printf(TIO_MESSAGE_INFO, "Operation:  ");
+	vpr_printf(TIO_MESSAGE_INFO, "Operation: ");
 	switch (Operation) {
 	case RUN_FLOW:
 		vpr_printf(TIO_MESSAGE_INFO, "RUN_FLOW\n");
@@ -307,7 +296,7 @@ static void ShowPlacerOpts(INP t_options Options,
 		INP struct s_placer_opts PlacerOpts,
 		INP struct s_annealing_sched AnnealSched) {
 
-	vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.place_freq:  ");
+	vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.place_freq: ");
 	switch (PlacerOpts.place_freq) {
 	case PLACE_ONCE:
 		vpr_printf(TIO_MESSAGE_INFO, "PLACE_ONCE\n");
@@ -324,7 +313,7 @@ static void ShowPlacerOpts(INP t_options Options,
 	if ((PLACE_ONCE == PlacerOpts.place_freq)
 			|| (PLACE_ALWAYS == PlacerOpts.place_freq)) {
 
-		vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.place_algorithm:  ");
+		vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.place_algorithm: ");
 		switch (PlacerOpts.place_algorithm) {
 		case BOUNDING_BOX_PLACE:
 			vpr_printf(TIO_MESSAGE_INFO, "BOUNDING_BOX_PLACE\n");
@@ -339,7 +328,7 @@ static void ShowPlacerOpts(INP t_options Options,
 			vpr_printf(TIO_MESSAGE_ERROR, "Unknown placement algorithm\n");
 		}
 
-		vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.pad_loc_type:  ");
+		vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.pad_loc_type: ");
 		switch (PlacerOpts.pad_loc_type) {
 		case FREE:
 			vpr_printf(TIO_MESSAGE_INFO, "FREE\n");
@@ -355,28 +344,22 @@ static void ShowPlacerOpts(INP t_options Options,
 			exit(1);
 		}
 
-		vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.place_cost_exp:  %f\n", PlacerOpts.place_cost_exp);
+		vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.place_cost_exp: %f\n", PlacerOpts.place_cost_exp);
 
 		if (Options.Count[OT_PLACE_CHAN_WIDTH]) {
-			vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.place_chan_width:  %d\n",
-					PlacerOpts.place_chan_width);
+			vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.place_chan_width: %d\n", PlacerOpts.place_chan_width);
 		}
 
 		if ((NET_TIMING_DRIVEN_PLACE == PlacerOpts.place_algorithm)
 				|| (PATH_TIMING_DRIVEN_PLACE == PlacerOpts.place_algorithm)) {
-			vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.inner_loop_recompute_divider:  %d\n",
-					PlacerOpts.inner_loop_recompute_divider);
-			vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.recompute_crit_iter:  %d\n",
-					PlacerOpts.recompute_crit_iter);
-			vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.timing_tradeoff:  %f\n",
-					PlacerOpts.timing_tradeoff);
-			vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.td_place_exp_first:  %f\n",
-					PlacerOpts.td_place_exp_first);
-			vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.td_place_exp_last:  %f\n",
-					PlacerOpts.td_place_exp_last);
+			vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.inner_loop_recompute_divider: %d\n", PlacerOpts.inner_loop_recompute_divider);
+			vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.recompute_crit_iter: %d\n", PlacerOpts.recompute_crit_iter);
+			vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.timing_tradeoff: %f\n", PlacerOpts.timing_tradeoff);
+			vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.td_place_exp_first: %f\n", PlacerOpts.td_place_exp_first);
+			vpr_printf(TIO_MESSAGE_INFO, "PlacerOpts.td_place_exp_last: %f\n", PlacerOpts.td_place_exp_last);
 		}
 
-		vpr_printf(TIO_MESSAGE_INFO, "PlaceOpts.seed:  %d\n", PlacerOpts.seed);
+		vpr_printf(TIO_MESSAGE_INFO, "PlaceOpts.seed: %d\n", PlacerOpts.seed);
 
 		ShowAnnealSched(AnnealSched);
 	}
@@ -387,13 +370,13 @@ static void ShowPlacerOpts(INP t_options Options,
 
 static void ShowPackerOpts(INP struct s_packer_opts PackerOpts) {
 
-	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.allow_early_exit:  %s", (PackerOpts.allow_early_exit ? "TRUE\n" : "FALSE\n"));
-	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.allow_unrelated_clustering:  %s", (PackerOpts.allow_unrelated_clustering ? "TRUE\n" : "FALSE\n"));
-	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.alpha_clustering:  %f\n", PackerOpts.alpha);
-	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.aspect:  %f\n", PackerOpts.aspect);
-	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.beta_clustering:  %f\n", PackerOpts.beta);
-	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.block_delay:  %f\n", PackerOpts.block_delay);
-	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.cluster_seed_type:  ");
+	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.allow_early_exit: %s", (PackerOpts.allow_early_exit ? "TRUE\n" : "FALSE\n"));
+	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.allow_unrelated_clustering: %s", (PackerOpts.allow_unrelated_clustering ? "TRUE\n" : "FALSE\n"));
+	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.alpha_clustering: %f\n", PackerOpts.alpha);
+	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.aspect: %f\n", PackerOpts.aspect);
+	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.beta_clustering: %f\n", PackerOpts.beta);
+	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.block_delay: %f\n", PackerOpts.block_delay);
+	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.cluster_seed_type: ");
 	switch (PackerOpts.cluster_seed_type) {
 	case VPACK_TIMING:
 		vpr_printf(TIO_MESSAGE_INFO, "TIMING\n");
@@ -405,14 +388,14 @@ static void ShowPackerOpts(INP struct s_packer_opts PackerOpts) {
 		vpr_printf(TIO_MESSAGE_INFO, "Unknown packer cluster_seed_type\n");
 		exit(1);
 	}
-	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.connection_driven:  %s", (PackerOpts.connection_driven ? "TRUE\n" : "FALSE\n"));
-	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.global_clocks:  %s", (PackerOpts.global_clocks ? "TRUE\n" : "FALSE\n"));
-	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.hill_climbing_flag:  %s", (PackerOpts.hill_climbing_flag ? "TRUE\n" : "FALSE\n"));
-	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.inter_cluster_net_delay:  %f\n", PackerOpts.inter_cluster_net_delay);
-	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.intra_cluster_net_delay:  %f\n", PackerOpts.intra_cluster_net_delay);
-	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.recompute_timing_after:  %d\n", PackerOpts.recompute_timing_after);
-	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.sweep_hanging_nets_and_inputs:  %s", (PackerOpts.sweep_hanging_nets_and_inputs ? "TRUE\n" : "FALSE\n"));
-	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.timing_driven:  %s", (PackerOpts.timing_driven ? "TRUE\n" : "FALSE\n"));
+	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.connection_driven: %s", (PackerOpts.connection_driven ? "TRUE\n" : "FALSE\n"));
+	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.global_clocks: %s", (PackerOpts.global_clocks ? "TRUE\n" : "FALSE\n"));
+	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.hill_climbing_flag: %s", (PackerOpts.hill_climbing_flag ? "TRUE\n" : "FALSE\n"));
+	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.inter_cluster_net_delay: %f\n", PackerOpts.inter_cluster_net_delay);
+	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.intra_cluster_net_delay: %f\n", PackerOpts.intra_cluster_net_delay);
+	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.recompute_timing_after: %d\n", PackerOpts.recompute_timing_after);
+	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.sweep_hanging_nets_and_inputs: %s", (PackerOpts.sweep_hanging_nets_and_inputs ? "TRUE\n" : "FALSE\n"));
+	vpr_printf(TIO_MESSAGE_INFO, "PackerOpts.timing_driven: %s", (PackerOpts.timing_driven ? "TRUE\n" : "FALSE\n"));
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 }
 
