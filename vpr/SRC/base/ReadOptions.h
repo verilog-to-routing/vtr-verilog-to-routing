@@ -153,9 +153,9 @@ char *getEchoFileName(enum e_echo_files echo_option);
 void alloc_and_load_echo_file_info();
 void free_echo_file_info();
 
-void setOutputFileName(enum e_output_files ename, const char *name);
+void setOutputFileName(enum e_output_files ename, const char *name, const char* default_name);
 char *getOutputFileName(enum e_output_files ename);
-void alloc_and_load_output_file_names();
+void alloc_and_load_output_file_names(const char* default_name);
 void free_output_file_names();
 
 boolean IsTimingEnabled(INP t_options *Options);
@@ -166,6 +166,3 @@ void SetPostSynthesisOption(boolean post_synthesis_enabled);
 
 boolean IsPostSynthesisEnabled(INP t_options *Options);
 #endif
-
-
-

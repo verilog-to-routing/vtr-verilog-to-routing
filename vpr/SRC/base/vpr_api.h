@@ -89,23 +89,11 @@ void vpr_print_usage(void);
 	void vpr_show_setup(INP t_options options, INP t_vpr_setup vpr_setup);
 
 	/* Output file names management */
-	void vpr_alloc_and_load_output_file_names();
-	void vpr_set_output_file_name(enum e_output_files ename, const char *name);
+	void vpr_alloc_and_load_output_file_names(const char* default_name);
+        void vpr_set_output_file_name(enum e_output_files ename, const char *name, const char* default_name);
 	char *vpr_get_output_file_name(enum e_output_files ename);
 
 	/* resync netlists */
 	t_trace* vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture(INP const t_arch *arch);
 	
 #endif
-
-
-
-
-
-
-
-
-
-
-
-

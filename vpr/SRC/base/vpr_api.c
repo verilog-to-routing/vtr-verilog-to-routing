@@ -88,31 +88,26 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "Usage:  vpr fpga_architecture.xml circuit_name [Options ...]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 	vpr_printf(TIO_MESSAGE_INFO, "General Options:  [--nodisp] [--auto <int>] [--pack]\n");
-	vpr_printf(TIO_MESSAGE_INFO, 
-			"\t[--place] [--route] [--timing_analyze_only_with_net_delay <float>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, 
-			"\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, 
-			"\t[--blif_file <string>][--net_file <string>][--place_file <string>]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--place] [--route] [--timing_analyze_only_with_net_delay <float>]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--blif_file <string>][--net_file <string>][--place_file <string>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--route_file <string>][--sdc_file <string>][--echo_file on | off]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Packer Options:\n");
 	/*    vpr_printf(TIO_MESSAGE_INFO, "\t[-global_clocks on|off]\n");
-	 vpr_printf(TIO_MESSAGE_INFO, "\t[-hill_climbing on|off]\n");
-	 vpr_printf(TIO_MESSAGE_INFO, "\t[-sweep_hanging_nets_and_inputs on|off]\n"); */
+	vpr_printf(TIO_MESSAGE_INFO, "\t[-hill_climbing on|off]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[-sweep_hanging_nets_and_inputs on|off]\n"); */
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--timing_driven_clustering on|off]\n");
-	vpr_printf(TIO_MESSAGE_INFO, 
-			"\t[--cluster_seed_type timing|max_inputs] [--alpha_clustering <float>] [--beta_clustering <float>]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--cluster_seed_type timing|max_inputs] [--alpha_clustering <float>] [--beta_clustering <float>]\n");
 	/*    vpr_printf(TIO_MESSAGE_INFO, "\t[-recompute_timing_after <int>] [-cluster_block_delay <float>]\n"); */
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--allow_unrelated_clustering on|off]\n");
 	/*    vpr_printf(TIO_MESSAGE_INFO, "\t[-allow_early_exit on|off]\n"); 
-	 vpr_printf(TIO_MESSAGE_INFO, "\t[-intra_cluster_net_delay <float>] \n");
-	 vpr_printf(TIO_MESSAGE_INFO, "\t[-inter_cluster_net_delay <float>] \n"); */
+	vpr_printf(TIO_MESSAGE_INFO, "\t[-intra_cluster_net_delay <float>] \n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[-inter_cluster_net_delay <float>] \n"); */
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--connection_driven_clustering on|off] \n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Placer Options:\n");
-	vpr_printf(TIO_MESSAGE_INFO, 
-			"\t[--place_algorithm bounding_box | net_timing_driven | path_timing_driven]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--place_algorithm bounding_box | net_timing_driven | path_timing_driven]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--init_t <float>] [--exit_t <float>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--alpha_t <float>] [--inner_num <float>] [--seed <int>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--place_cost_exp <float>]\n");
@@ -133,10 +128,8 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--acc_fac <float>] [--first_iter_pres_fac <float>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--bend_cost <float>] [--route_type global | detailed]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--verify_binary_search] [--route_chan_width <int>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, 
-			"\t[--router_algorithm breadth_first | timing_driven]\n");
-	vpr_printf(TIO_MESSAGE_INFO, 
-			"\t[--base_cost_type intrinsic_delay | delay_normalized | demand_only]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--router_algorithm breadth_first | timing_driven]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--base_cost_type intrinsic_delay | delay_normalized | demand_only]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Routing options valid only for timing-driven routing:\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--astar_fac <float>] [--max_criticality <float>]\n");
@@ -263,7 +256,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 					ny = nint(current / Arch.clb_grid.Aspect);
 				}
 	#if DEBUG
-				vpr_printf(TIO_MESSAGE_INFO, "Auto-sizing FPGA, try x = %d y = %d\n", nx, ny);
+				vpr_printf(TIO_MESSAGE_INFO, "Auto-sizing FPGA, try x = %d y = %d.\n", nx, ny);
 	#endif
 				alloc_and_load_grid(num_instances_type);
 				freeGrid();
@@ -283,9 +276,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 					if (high == -1) {
 						current = current * 2;
 						if (current > MAX_SHORT) {
-							vpr_printf(
-									TIO_MESSAGE_ERROR,
-									"FPGA required is too large for current architecture settings\n");
+							vpr_printf(TIO_MESSAGE_ERROR, "FPGA required is too large for current architecture settings.\n");
 							exit(1);
 						}
 					} else {
@@ -308,15 +299,14 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 				ny = nint(current / Arch.clb_grid.Aspect);
 			}
 			alloc_and_load_grid(num_instances_type);
-			vpr_printf(TIO_MESSAGE_INFO, "FPGA auto-sized to, x = %d y = %d\n", nx, ny);
+			vpr_printf(TIO_MESSAGE_INFO, "FPGA auto-sized to, x = %d y = %d.\n", nx, ny);
 		} else {
 			nx = Arch.clb_grid.W;
 			ny = Arch.clb_grid.H;
 			alloc_and_load_grid(num_instances_type);
 		}
 
-		vpr_printf(TIO_MESSAGE_INFO, "The circuit will be mapped into a %d x %d array of clbs.\n", nx,
-				ny);
+		vpr_printf(TIO_MESSAGE_INFO, "The circuit will be mapped into a %d x %d array of clbs.\n", nx, ny);
 
 		/* Test if netlist fits in grid */
 		fit = TRUE;
@@ -327,18 +317,17 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 			}
 		}
 		if (!fit) {
-			vpr_printf(TIO_MESSAGE_ERROR, "Not enough physical locations for type %s, "
-			"number of blocks is %d but number of locations is %d\n",
-					type_descriptors[i].name, num_blocks_type[i],
-					num_instances_type[i]);
+			vpr_printf(TIO_MESSAGE_ERROR, "Not enough physical locations for type %s, number of blocks is %d but number of locations is %d.\n",
+					type_descriptors[i].name, num_blocks_type[i], num_instances_type[i]);
 			exit(1);
 		}
 
-		vpr_printf(TIO_MESSAGE_INFO, "\nResource Usage:\n");
+		vpr_printf(TIO_MESSAGE_INFO, "\n");
+		vpr_printf(TIO_MESSAGE_INFO, "Resource usage...\n");
 		for (i = 0; i < num_types; i++) {
-			vpr_printf(TIO_MESSAGE_INFO, "Netlist      %d\tblocks of type %s\n", num_blocks_type[i],
+			vpr_printf(TIO_MESSAGE_INFO, "\tNetlist      %d\tblocks of type: %s\n", num_blocks_type[i],
 					type_descriptors[i].name);
-			vpr_printf(TIO_MESSAGE_INFO, "Architecture %d\tblocks of type %s\n", num_instances_type[i],
+			vpr_printf(TIO_MESSAGE_INFO, "\tArchitecture %d\tblocks of type: %s\n", num_instances_type[i],
 					type_descriptors[i].name);
 		}
 		vpr_printf(TIO_MESSAGE_INFO, "\n");
@@ -359,7 +348,7 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 		wire_switch_del, wtoi_switch_del, Rmetal, Cmetal, first_wire_seg_delay,
 		second_wire_seg_delay;
 	begin = clock();
-	vpr_printf(TIO_MESSAGE_INFO, "Initialize packing\n"); 
+	vpr_printf(TIO_MESSAGE_INFO, "Initialize packing.\n"); 
 		
 	/* If needed, estimate inter-cluster delay. Assume the average routing hop goes out of 
 	a block through an opin switch to a length-4 wire, then through a wire switch to another
@@ -387,11 +376,10 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 	try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models, vpr_setup.library_models, vpr_setup.Timing, inter_cluster_delay);
 	end = clock();
 	#ifdef CLOCKS_PER_SEC
-		vpr_printf(TIO_MESSAGE_INFO, "Packing took %g seconds\n",
-					(float) (end - begin) / CLOCKS_PER_SEC);
-		vpr_printf(TIO_MESSAGE_INFO, "Packing completed\n");
+		vpr_printf(TIO_MESSAGE_INFO, "Packing took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
+		vpr_printf(TIO_MESSAGE_INFO, "Packing completed.\n");
 	#else
-		vpr_printf(TIO_MESSAGE_INFO, "Packing took %g seconds\n", (float)(end - begin) / CLK_PER_SEC);
+		vpr_printf(TIO_MESSAGE_INFO, "Packing took %g seconds.\n", (float)(end - begin) / CLK_PER_SEC);
 	#endif
 	fflush(stdout);
 }
@@ -782,11 +770,11 @@ void vpr_show_setup(INP t_options options, INP t_vpr_setup vpr_setup) {
 }
 
 /* Output file names management */
-void vpr_alloc_and_load_output_file_names() {
-	alloc_and_load_output_file_names();
+void vpr_alloc_and_load_output_file_names(const char* default_name) {
+	alloc_and_load_output_file_names(default_name);
 }
-void vpr_set_output_file_name(enum e_output_files ename, const char *name) {
-	setOutputFileName(ename, name);
+void vpr_set_output_file_name(enum e_output_files ename, const char *name, const char* default_name) {
+	setOutputFileName(ename, name, default_name);
 }
 char *vpr_get_output_file_name(enum e_output_files ename) {
 	return getOutputFileName(ename);
@@ -1022,10 +1010,8 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 					break;
 
 				default:
-					vpr_printf(TIO_MESSAGE_ERROR, 
-							"in print_route:  Unexpected traceback element "
-							"type: %d (%s).\n", rr_node[inode].type,
-							name_type[rr_node[inode].type]);
+					vpr_printf(TIO_MESSAGE_ERROR, "in print_route: Unexpected traceback element type: %d (%s).\n", 
+							rr_node[inode].type, name_type[rr_node[inode].type]);
 					exit(1);
 					break;
 				}

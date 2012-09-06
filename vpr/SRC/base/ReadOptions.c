@@ -180,9 +180,9 @@ void free_echo_file_info() {
 	}
 }
 
-void setOutputFileName(enum e_output_files ename, const char *name) {
+void setOutputFileName(enum e_output_files ename, const char *name, const char *default_name) {
 	if(outputFileNames == NULL) {
-		alloc_and_load_output_file_names();
+		alloc_and_load_output_file_names(default_name);
 	}
 	if(outputFileNames[(int)ename] != NULL) {
 		free(outputFileNames[(int)ename]);
@@ -194,22 +194,25 @@ char *getOutputFileName(enum e_output_files ename) {
 	return outputFileNames[(int)ename];
 }
 
-void alloc_and_load_output_file_names() {
+void alloc_and_load_output_file_names(const char *default_name) {
 	char *name;
 
-	outputFileNames = (char**)my_calloc((int)E_FILE_END_TOKEN, sizeof(char*));
+	if(outputFileNames == NULL) {
 
-	name = (char*)my_malloc((strlen(default_output_name) + 40) * sizeof(char));
-	sprintf(name, "%s.critical_path.out", default_output_name);
-	setOutputFileName(E_CRIT_PATH_FILE, name);
-	
-	sprintf(name, "%s.slack.out", default_output_name);
-	setOutputFileName(E_SLACK_FILE, name);
-	
-	sprintf(name, "%s.criticality.out", default_output_name);
-	setOutputFileName(E_CRITICALITY_FILE, name);
+		outputFileNames = (char**)my_calloc((int)E_FILE_END_TOKEN, sizeof(char*));
 
-	free(name);
+		name = (char*)my_malloc((strlen(default_name) + 40) * sizeof(char));
+		sprintf(name, "%s.critical_path.out", default_name);
+		setOutputFileName(E_CRIT_PATH_FILE, name, default_name);
+	
+		sprintf(name, "%s.slack.out", default_name);
+		setOutputFileName(E_SLACK_FILE, name, default_name);
+
+		sprintf(name, "%s.criticality.out", default_name);
+		setOutputFileName(E_CRITICALITY_FILE, name, default_name);
+
+		free(name);
+	}
 }
 
 void free_output_file_names() {
@@ -267,7 +270,8 @@ void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
 			if (offset > 0 && !strcmp(Options->CircuitName + offset, ".blif")) {
 				Options->CircuitName[offset] = '\0';
 			}
-			vpr_printf(TIO_MESSAGE_INFO, "Circuit name: %s.blif\n\n", Options->CircuitName);
+			vpr_printf(TIO_MESSAGE_INFO, "Circuit name: %s.blif\n", Options->CircuitName);
+			vpr_printf(TIO_MESSAGE_INFO, "\n");
 			++Args;
 		} else {
 			/* Not an option and arch and net already specified so fail */
@@ -457,7 +461,7 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 	case OT_CRITICALITY_EXP:
 		return ReadFloat(Args, &Options->criticality_exp);
 	default:
-		vpr_printf(TIO_MESSAGE_ERROR, "Unexpected option '%s' on command line\n", *PrevArgs);
+		vpr_printf(TIO_MESSAGE_ERROR, "Unexpected option '%s' on command line.\n", *PrevArgs);
 		exit(1);
 	}
 }
@@ -730,9 +734,9 @@ ReadToken(INP char **Args, OUTP enum e_OptionArgToken *Token) {
 /* Called for parse errors. Spits out a message and then exits program. */
 static void Error(INP const char *Token) {
 	if (Token) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Unexpected token '%s' on command line\n", Token);
+		vpr_printf(TIO_MESSAGE_ERROR, "Unexpected token '%s' on command line.\n", Token);
 	} else {
-		vpr_printf(TIO_MESSAGE_ERROR, "Missing token at end of command line\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "Missing token at end of command line.\n");
 	}
 	exit(1);
 }
