@@ -103,7 +103,7 @@ void alloc_and_load_all_pb_graphs(void) {
 
 	errors = check_pb_graph();
 	if (errors > 0) {
-		vpr_printf(TIO_MESSAGE_ERROR, "In pb graph");
+		vpr_printf(TIO_MESSAGE_ERROR, "in pb graph");
 		exit(1);
 	}
 	for (i = 0; i < num_types; i++) {
@@ -510,8 +510,8 @@ static void alloc_and_load_mode_interconnect(
 			break;
 
 		default:
-			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Unknown interconnect %d for mode %s in pb_type %s\n"
-															"\tinput %s output %s\n", mode->interconnect[i].line_num,
+			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Unknown interconnect %d for mode %s in pb_type %s, input %s, output %s\n", 
+					mode->interconnect[i].line_num,
 					mode->interconnect[i].type, mode->name,
 					pb_graph_parent_node->pb_type->name, 
 					mode->interconnect[i].input_string,
@@ -564,8 +564,7 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(INP int line_num,
 		} else if (tokens[i].type == TOKEN_CLOSE_SQUIG_BRACKET) {
 			if (!in_squig_bracket) {
 				(*num_sets)++;
-				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] No matching '{' for '}' in port %s\n", line_num,
-						port_string);
+				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] No matching '{' for '}' in port %s\n", line_num, port_string);
 				exit(1);
 			}
 			in_squig_bracket = FALSE;
@@ -596,14 +595,12 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(INP int line_num,
 			in_squig_bracket = TRUE;
 		} else if (tokens[i].type == TOKEN_CLOSE_SQUIG_BRACKET) {
 			if ((*num_ptrs)[curr_set] == 0) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] No data contained in {} in port %s\n", line_num, 
-						port_string);
+				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] No data contained in {} in port %s\n", line_num, port_string);
 				exit(1);
 			}
 			if (!in_squig_bracket) {
 				curr_set++;
-				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] No matching '{' for '}' in port %s\n", line_num,
-						port_string);
+				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] No matching '{' for '}' in port %s\n", line_num, port_string);
 				exit(1);
 			}
 			in_squig_bracket = FALSE;
@@ -615,8 +612,7 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(INP int line_num,
 					&((*num_ptrs)[curr_set]), &pb_graph_pins[curr_set]);
 
 			if (!success) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] syntax error processing port string %s\n", line_num,
-						port_string);
+				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] syntax error processing port string %s\n", line_num, port_string);
 				exit(1);
 			}
 
@@ -943,17 +939,16 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 			/* Check to make sure indices from user match internal data structures for the indices of the parent */
 			if ((pb_lsb != pb_msb)
 					&& (pb_lsb != pb_graph_parent_node->placement_index)) {
-				vpr_printf(
-						TIO_MESSAGE_ERROR, "[LINE %d] Incorrect placement index for %s, expected index %d\n", line_num,
-						tokens[0].data, pb_graph_parent_node->placement_index);
+				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Incorrect placement index for %s, expected index %d\n", 
+						line_num, tokens[0].data, pb_graph_parent_node->placement_index);
 				return FALSE;
 			}
 			pb_lsb = pb_msb = 0; /* Internal representation of parent is always 0 */
 		}
 	} else {
 		if (mode == NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] pb_graph_parent_node %s failed\n", line_num,
-					pb_graph_parent_node->pb_type->name);
+			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] pb_graph_parent_node %s failed\n", 
+					line_num, pb_graph_parent_node->pb_type->name);
 			exit(1);
 		}
 		for (i = 0; i < mode->num_pb_type_children; i++) {
@@ -1004,9 +999,8 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 	}
 
 	if (!found) {
-		vpr_printf(
-				TIO_MESSAGE_ERROR, "[LINE %d] Unknown pb_type name %s, not defined in namespace of mode %s\n", line_num,
-				tokens[*token_index].data, mode->name);
+		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Unknown pb_type name %s, not defined in namespace of mode %s\n", 
+				line_num, tokens[*token_index].data, mode->name);
 		return FALSE;
 	}
 
@@ -1053,12 +1047,13 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 		}
 	} else {
 		if (pb_lsb < 0 || pb_lsb >= max_pb_node_array) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] pb %d out of range [%d,%d]\n", line_num, pb_lsb, max_pb_node_array - 1, 0);
+			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] pb %d out of range [%d,%d]\n", 
+					line_num, pb_lsb, max_pb_node_array - 1, 0);
 			exit(1);
 		}
-		if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb],
-				0) == NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] failed to find port name %s\n", line_num, port_name);
+		if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb], 0) == NULL) {
+			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] failed to find port name %s\n", 
+					line_num, port_name);
 			exit(1);
 		}
 		iport =
@@ -1090,14 +1085,16 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 		j = 0;
 		while (ipin != pin_msb + add_or_subtract_pin) {
 			if (ipb < 0 || ipb >= max_pb_node_array) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] pb %d out of range [%d,%d]\n", line_num, ipb, max_pb_node_array - 1, 0);
+				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] pb %d out of range [%d,%d]\n", 
+						line_num, ipb, max_pb_node_array - 1, 0);
 				exit(1);
 			}
 			(*pb_graph_pins)[i * (abs(pin_msb - pin_lsb) + 1) + j] =
 					get_pb_graph_pin_from_name(port_name, &pb_node_array[ipb],
 							ipin);
 			if ((*pb_graph_pins)[i * (abs(pin_msb - pin_lsb) + 1) + j] == NULL) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Pin %s.%s[%d] cannot be found\n", line_num, pb_node_array[ipb].pb_type->name, port_name, ipin);
+				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Pin %s.%s[%d] cannot be found\n", 
+						line_num, pb_node_array[ipb].pb_type->name, port_name, ipin);
 				exit(1);
 			}
 			iport =
@@ -1111,28 +1108,24 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 				if (pb_node_array == pb_graph_parent_node) {
 					if (is_input_to_interc) {
 						if (iport->type != IN_PORT) {
-							vpr_printf(
-									TIO_MESSAGE_ERROR, "[LINE %d] input to interconnect from parent is not an input or clock pin\n", line_num);
+							vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] input to interconnect from parent is not an input or clock pin\n", line_num);
 							return FALSE;
 						}
 					} else {
 						if (iport->type != OUT_PORT) {
-							vpr_printf(
-									TIO_MESSAGE_ERROR, "[LINE %d] output from interconnect from parent is not an input or clock pin\n", line_num);
+							vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] output from interconnect from parent is not an input or clock pin\n", line_num);
 							return FALSE;
 						}
 					}
 				} else {
 					if (is_input_to_interc) {
 						if (iport->type != OUT_PORT) {
-							vpr_printf(
-									TIO_MESSAGE_ERROR, "[LINE %d] output from interconnect from parent is not an input or clock pin\n", line_num);
+							vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] output from interconnect from parent is not an input or clock pin\n", line_num);
 							return FALSE;
 						}
 					} else {
 						if (iport->type != IN_PORT) {
-							vpr_printf(
-									TIO_MESSAGE_ERROR, "[LINE %d] input to interconnect from parent is not an input or clock pin\n", line_num);
+							vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] input to interconnect from parent is not an input or clock pin\n", line_num);
 							return FALSE;
 						}
 					}
