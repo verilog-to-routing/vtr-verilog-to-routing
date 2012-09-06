@@ -10,7 +10,7 @@ void print_usage (t_boolean terminate){
 	cout << "\tvqm2blif -vqm <VQM file>.vqm -arch <ARCH file>.xml\n" ;
 	cout << "OPTIONAL FLAGS:\n" ;
 	cout << "\t-out <OUT file>.blif\n" ;
-	cout << "\t-elab [none | modes | modes_detailed]\n" ;
+	cout << "\t-elab [none | modes]\n" ;
 	cout << "\t-clean [none | buffers | all]\n" ;
 	cout << "\t-buffouts\n" ;
 	cout << "\t-luts [vqm | blif]\n" ;
@@ -94,7 +94,7 @@ string get_wire_name(t_pin_def* net, int index){
 //============================================================================================
 //============================================================================================
 
-string generate_opname (t_node* vqm_node, t_boolean detailed_elaboration){
+string generate_opname (t_node* vqm_node, t_model* arch_models){
 /*  Generates a mode-hash string based on a node's name and parameter set
  *
  *	ARGUMENTS
@@ -107,7 +107,8 @@ string generate_opname (t_node* vqm_node, t_boolean detailed_elaboration){
 
 	t_node_parameter* temp_param;	//temporary container for the node's parameters
    
-    //We need to save the ram data and address widths, we can only make decisiosn based on all the parameters
+    //We need to save the ram data and address widths, we can only make decision based on all the parameters
+    t_node_parameter* operation_mode = NULL;
     t_node_parameter* port_a_data_width = NULL;
     t_node_parameter* port_a_addr_width = NULL;
     t_node_parameter* port_b_data_width = NULL;
@@ -115,23 +116,14 @@ string generate_opname (t_node* vqm_node, t_boolean detailed_elaboration){
 
     char buffer[128]; //For integer to string conversion, use with snprintf which checks for overflow
 
-	for (size_t i = 0; i < vqm_node->number_of_params; i++){
+	for (int i = 0; i < vqm_node->number_of_params; i++){
 		//Each parameter specifies a configuration of the node in the circuit.
 		temp_param = vqm_node->array_of_params[i];
 
+        //Save the operation mode parameter
 		if (strcmp (temp_param->name, "operation_mode") == 0){
 			assert( temp_param->type == NODE_PARAMETER_STRING );
-
-            //Copy the string
-            char* temp_string_value = my_strdup(temp_param->value.string_value);
-
-            //Remove characters that are invalid in blif
-            clean_name(temp_string_value);
-
-            //Add the opmode
-			mode_hash.append(".opmode{" + (string)temp_string_value + "}");
-
-            free(temp_string_value);
+            operation_mode = temp_param;
             continue;
 		} 
 
@@ -158,22 +150,63 @@ string generate_opname (t_node* vqm_node, t_boolean detailed_elaboration){
         }
     }
 
-    //Detailed memory modes
-    if (detailed_elaboration && (port_a_data_width != NULL) && (port_a_addr_width != NULL)
-                             && (port_b_data_width == NULL) && (port_b_addr_width == NULL)) {
-            //A single port memory, only port A params are found
+    /*
+     *  Which parameters to append to the vqm primitive name depends on what
+     *  primitives are included in the Architecture file.
+     *
+     *  The following code attempts to create the most detailed description of
+     *  a RAM primitive possible, PROVIDED it exists in the architecture file.
+     *
+     *  This is done in several steps:
+     *      1) Create the simplest name (just the opmode)
+     *          e.g. stratixiv_ram_block.opmode{dual_port}
+     *      2) If it is a single port memory, just append both the opmode and address_width
+     *          e.g. stratixiv_ram_block.opmode{single_port}.port_a_address_width{7}
+     *      3) If it is a dual_port memory, with two ports of the same width, append the opmode and address_widths
+     *          e.g. stratixiv_ram_block.opmode{dual_port}.port_a_address_width{5}.port_b_address_width{5}
+     *      4) If it is a dual_port memory, with two ports of different width:
+     *          a) Use the simplest name (1)
+     *          b) Unless the most detailed name (opmode + address_widths + data_widths) exists in the arch file
+     *
+     */
+
+    // 1) Simple opmode name appended
+    //    NOTE: this applies to all blocks, not just memories
+    if (operation_mode != NULL) {
+        //Copy the string
+        char* temp_string_value = my_strdup(operation_mode->value.string_value);
+
+        //Remove characters that are invalid in blif
+        clean_name(temp_string_value);
+
+        //Add the opmode
+        mode_hash.append(".opmode{" + (string)temp_string_value + "}");
+
+        free(temp_string_value);
+    }
+
+    // NOTE: the following only applies to memory blocks
+
+    // 2) A single port memory, only port A params are found
+    if (   (port_a_data_width != NULL) && (port_a_addr_width != NULL)
+        && (port_b_data_width == NULL) && (port_b_addr_width == NULL)) {
 
             //Only print the address width, the data widths are handled by the VPR memory class
             snprintf(buffer, sizeof(buffer), "%d", port_a_addr_width->value.integer_value);
             mode_hash.append(".port_a_address_width{" + (string)buffer + "}");
 
-    } else if (detailed_elaboration && (port_a_data_width != NULL) && (port_a_addr_width != NULL) 
-                                    && (port_b_data_width != NULL) && (port_b_addr_width != NULL)) {
-        //A dual port memory, both port A and B params have been found
+            if (find_arch_model_by_name(mode_hash, arch_models) == NULL){
+                cout << "Error: could not find single port memory primitive '" << mode_hash << "' in architecture file";
+                exit(1);
+            }
+
+    //A dual port memory, both port A and B params have been found
+    } else if (   (port_a_data_width != NULL) && (port_a_addr_width != NULL) 
+               && (port_b_data_width != NULL) && (port_b_addr_width != NULL)) {
       
+        //3) Both ports are the same size, so only append the address widths, the data widths are handled by the VPR memory class
         if (   (port_a_data_width->value.integer_value == port_b_data_width->value.integer_value)
             && (port_a_addr_width->value.integer_value == port_b_addr_width->value.integer_value)) {
-            //Both ports are the same size, so only append the address widths, the data widths are handled by the VPR memory class
 
             snprintf(buffer, sizeof(buffer), "%d", port_a_addr_width->value.integer_value);
             mode_hash.append(".port_a_address_width{" + (string)buffer + "}");
@@ -181,28 +214,57 @@ string generate_opname (t_node* vqm_node, t_boolean detailed_elaboration){
             snprintf(buffer, sizeof(buffer), "%d", port_b_addr_width->value.integer_value);
             mode_hash.append(".port_b_address_width{" + (string)buffer + "}");
 
+            if (find_arch_model_by_name(mode_hash, arch_models) == NULL){
+                cout << "Error: could not find dual port (non-mixed_width) memory primitive '" << mode_hash << "' in architecture file";
+                exit(1);
+            }
+        //4) Mixed width dual port ram
         } else {
+            //Make a temporary copy of the mode hash
+            string tmp_mode_hash = mode_hash;
+
+            /*
+             * Try to see if the detailed version exists in the architecture,
+             * if it does, use it.  Otherwise use the operation mode only.
+             */
+
             //Each port has a different size, so print both the address and data widths. Mixed widths are not handled by the VPR memory class
             snprintf(buffer, sizeof(buffer), "%d", port_a_data_width->value.integer_value);
-            mode_hash.append(".port_a_data_width{" + (string)buffer + "}");
+            tmp_mode_hash.append(".port_a_data_width{" + (string)buffer + "}");
 
             snprintf(buffer, sizeof(buffer), "%d", port_a_addr_width->value.integer_value);
-            mode_hash.append(".port_a_address_width{" + (string)buffer + "}");
+            tmp_mode_hash.append(".port_a_address_width{" + (string)buffer + "}");
 
             snprintf(buffer, sizeof(buffer), "%d", port_b_data_width->value.integer_value);
-            mode_hash.append(".port_b_data_width{" + (string)buffer + "}");
+            tmp_mode_hash.append(".port_b_data_width{" + (string)buffer + "}");
 
             snprintf(buffer, sizeof(buffer), "%d", port_b_addr_width->value.integer_value);
-            mode_hash.append(".port_b_address_width{" + (string)buffer + "}");
+            tmp_mode_hash.append(".port_b_address_width{" + (string)buffer + "}");
 
+
+            if (find_arch_model_by_name(tmp_mode_hash, arch_models) == NULL){
+                //4a) Use the default name (operation mode only) 
+                ; // do nothing
+            } else {
+                //4b) Use the more detailed name, since it was found in the architecture
+                mode_hash = tmp_mode_hash;
+            }
         }
 	} else {
         ; //Not a memory, do nothing
     }
 
+    //Final sanity check
+    if (NULL == find_arch_model_by_name(mode_hash, arch_models)){
+        cout << "Error: could not find primitive '" << mode_hash << "' in architecture file";
+        exit(1);
+    }
+
 	return mode_hash;
 }
 
+//============================================================================================
+//============================================================================================
 void clean_name(char* name) {
     /*
      * Remove invalid characters from blif identifiers
@@ -217,6 +279,28 @@ void clean_name(char* name) {
                     break;
         }
     }
+}
+
+//============================================================================================
+//============================================================================================
+t_model* find_arch_model_by_name(string model_name, t_model* arch_models) {
+    /*
+     * Finds the archtecture module corresponding to the model_name string
+     *
+     *  model_name : the model name to match
+     *  arch_models: the head of the linked list of architecture models
+     *
+     * Returns: A pointer to the corresponding model (or NULL if not found)
+     */
+
+    //Find the correct model, by name matching
+    t_model* arch_model = arch_models;
+    while((arch_model) && (strcmp(model_name.c_str(), arch_model->name) != 0)) {
+        //Move to the next model
+        arch_model = arch_model->next;
+    }
+
+    return arch_model;
 }
 
 //============================================================================================

@@ -146,7 +146,7 @@ Architecture file containing the constinuent primitives of the circuit [e.g. ../
 		Specifies a target BLIF file for output  [e.g. ../my_test.blif].
 		-> Defaults to a filename derived from the input .vqm, located in the working directory.
 
-	-elab [ none | modes | modes_detailed ]
+	-elab [ none | modes ]
 		Instructs the tool on how to interpret VQM modules as BLIF primitives.
 		-> No Elaboration: 
 			Parameter information of VQM modules is completely ignored. Primitives in the BLIF
@@ -158,21 +158,36 @@ Architecture file containing the constinuent primitives of the circuit [e.g. ../
 		   configurations. Currently, the mode name is generated from the block's "operation_mode" 
 		   parameter as follows: 
 
-			"<Block Name>.opmode{<operation_mode Value>}"
-			-> e.g. "stratixiv_mac_out", operation_mode="output_only" ==> "stratixiv_mac_out.opmode{output_only}"
+            If the block is NOT a memory: 
+                "<Block Name>.opmode{<operation_mode Value>}"
+                -> e.g. "stratixiv_mac_out", operation_mode="output_only" ==> "stratixiv_mac_out.opmode{output_only}"
+
+            If the block IS a memory:
+                The operation_mode is appended, along with some combination of the address and data widths of the primitives.
+
+                For single_port/rom:
+                    "<Block Name>.opmode{<operation_mode Value>}.port_a_address_width{<port_a_address_width Value>}"
+                    -> e.g. "stratixiv_ram_block", operation_mode="single_port", port_a_address_width="7" ==> "stratixiv_mac_out.opmode{output_only}.port_a_address_width{7}"
+
+                For dual_port/bidir_dual_port RAMs Port/Roms, with the SAME depth and data width on each port:
+                    "<Block Name>.opmode{<operation_mode Value>}.port_a_address_width{<port_a_address_width Value>}.port_b_address_width{<port_b_address_width Value>}"
+                    -> e.g. "stratixiv_ram_block", operation_mode="dual_port", port_a_address_width="7", port_a_data_width="5", port_b_address_width="7", port_b_data_width="5" 
+                              ==> "stratixiv_ram_block.opmode{dual_port}.port_a_address_width{7}.port_b_address_width{7}"
+
+                For dual_port/bidir_dual_port RAMs Port/Roms, with the DIFFERENT depth and data width on each port:
+                    If the following fully detailed RAM description is included in the Architecture file:
+                        "<Block Name>.opmode{<operation_mode Value>}.port_a_address_width{<port_a_address_width Value>}.port_a_data_width{<port_a_data_width Value>}.port_b_address_width{<port_b_address_width Value>}.port_b_data_width{<port_b_data_width Value>}"
+                        -> e.g. "stratixiv_ram_block", operation_mode="dual_port", port_a_address_width="7", port_a_data_width="5", port_b_address_width="7", port_b_data_width="5" 
+                                  ==> "stratixiv_ram_block.opmode{dual_port}.port_a_address_width{7}.port_a_data_width{5}.port_b_address_width{7}.port_b_data_width{5}"
+
+
+                    If the above fully detailed RAM description is NOT included in the Architecture file, the block is treated as a generic block (only the operation_mode is appended):
+                        "<Block Name>.opmode{<operation_mode Value>}"
+                        -> e.g. "stratixiv_ram_block", operation_mode="dual_port", port_a_address_width="7", port_a_data_width="5", port_b_address_width="7", port_b_data_width="5" 
+                                  ==> "stratixiv_ram_block.opmode{dual_port}"
 
 		   If a block does not have a parameter called "operation_mode", the mode-appended name is
 		   simply the Block Name, as in No Elaboration.
-
-		-> Detailed Mode Elaboration: 
-            Derives a more detailed mode for each primitive and appends it to each name.  This is
-            used by blocks that have additional parameters (beyond operation_mode) that may require
-            additional specification in the architecture file.  
-            
-            Currently this only elaborates the address and data widths of memory blocks, for example:
-  			 "<Block Name>.opmode{<operation_mode Value>}"
-			 -> e.g. "stratixiv_ram_block", operation_mode="dual_port", port_a_data_width=1, port_a_address_width=8, port_b_data_width=1, port_b_address_width=8    
-                        ==> "stratixiv_ram_block.opmode{dual_port}.port_a_data_width{1}.port_a_address_width{8}.port_b_data_width{1}.port_b_address_width{8}"
 
 		Note:	The architecture file must contain primitives corresponding to each primitive 
 			possible in the BLIF. If using Mode-Elaboration, each possible string value of
