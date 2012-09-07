@@ -327,12 +327,22 @@ void try_place(struct s_placer_opts placer_opts,
 		first_rlim, final_rlim, inverse_delta_rlim, critical_path_delay = UNDEFINED,
 		**remember_net_delay_original_ptr; /*used to free net_delay if it is re-assigned */
 	double av_cost, av_bb_cost, av_timing_cost, av_delay_cost, sum_of_squares, std_dev;
+	int total_swap_attempts;
+	float reject_rate;
+	float accept_rate;
+	float abort_rate;
 	char msg[BUFSIZE];
 	t_slack * slacks = NULL;
 
 	/* Allocated here because it goes into timing critical code where each memory allocation is expensive */
 
 	remember_net_delay_original_ptr = NULL; /*prevents compiler warning */
+
+	/* init file scope variables */
+	num_swap_rejected = 0;
+	num_swap_accepted = 0;
+	num_swap_aborted = 0;
+	num_ts_called = 0;
 
 	if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
 			|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
@@ -882,16 +892,16 @@ void try_place(struct s_placer_opts placer_opts,
 
 	sprintf(msg, "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
 			cost, bb_cost, timing_cost, width_fac);
-	vpr_printf(TIO_MESSAGE_INFO, "Placement cost: %g, bb_cost: %g, td_cost: %g, delay_cost: %g\n",
+	vpr_printf(TIO_MESSAGE_INFO, "Placement cost: %g, bb_cost: %g, td_cost: %g, delay_cost: %g\n", 
 			cost, bb_cost, timing_cost, delay_cost);
 	update_screen(MAJOR, msg, PLACEMENT, FALSE);
-
+	 
 	// Print out swap statistics
-	int total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;
-	float reject_rate = num_swap_rejected / total_swap_attempts;
-	float accept_rate = num_swap_accepted / total_swap_attempts;
-	float abort_rate = num_swap_aborted / total_swap_attempts;
-	vpr_printf(TIO_MESSAGE_INFO, "Placement total # of swap attempts: %g\n", total_swap_attempts);
+	total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;
+	reject_rate = num_swap_rejected / total_swap_attempts;
+	accept_rate = num_swap_accepted / total_swap_attempts;
+	abort_rate = num_swap_aborted / total_swap_attempts;
+	vpr_printf(TIO_MESSAGE_INFO, "Placement total # of swap attempts: %d\n", total_swap_attempts);
 	vpr_printf(TIO_MESSAGE_INFO, "\tSwap reject rate: %g\n", reject_rate);
 	vpr_printf(TIO_MESSAGE_INFO, "\tSwap accept rate: %g\n", accept_rate);
 	vpr_printf(TIO_MESSAGE_INFO, "\tSwap abort rate: %g\n",	abort_rate);
