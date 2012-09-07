@@ -71,16 +71,16 @@ OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c $(SRC_
 OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
 
-$(EXE): | notify $(OBJ) Makefile libvpr.a 
 # notify is an order-only prerequisite - note the "|"
+$(EXE): $(OBJ) Makefile libvpr.a | notify
 	$(CC) $(FLAGS) OBJ/main.o -o $(EXE) $(LIB_DIR) $(LIB)
 
-notify:
 # if graphics enabled but libx11-dev is not installed, notify the user
+notify:
 	@ $(PACKAGENOTIFICATION) 
 
-packages: 
 #if graphics enabled but libx11-dev is not installed, install it
+packages: 
 	@ $(PACKAGEINSTALL)
 
 ../libarchfpga/libarchfpga.a:
