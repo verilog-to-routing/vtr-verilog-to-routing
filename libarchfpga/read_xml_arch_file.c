@@ -981,17 +981,16 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode) {
 static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 	enum Fc_type def_type_in, def_type_out, ovr_type;
 	const char *Prop, *Prop2;
+	char *port_name;
 	float def_in_val, def_out_val, ovr_val;
 	int ipin, iclass, end_pin_index, start_pin_index, match_count;
 	int iport, iport_pin, curr_pin, port_found;
 	ezxml_t Child, Junk;
 	
-	for (ipin = 0; ipin < Type->num_pins; ipin++) {
-		Type->is_Fc_frac = (boolean *) my_malloc (Type->num_pins * sizeof(boolean));
-		Type->is_Fc_full_flex = (boolean *) my_malloc (Type->num_pins * sizeof(boolean));
-		Type->Fc = (float *) my_malloc (Type->num_pins * sizeof(float));
-	}
-
+	Type->is_Fc_frac = (boolean *) my_malloc (Type->num_pins * sizeof(boolean));
+	Type->is_Fc_full_flex = (boolean *) my_malloc (Type->num_pins * sizeof(boolean));
+	Type->Fc = (float *) my_malloc (Type->num_pins * sizeof(float));
+	
 	/* Load the default fc_in, if specified */
 	Prop = FindProperty(Node, "default_in_type", FALSE);
 	if (Prop != NULL){
@@ -1070,7 +1069,7 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 			Type->is_Fc_full_flex[ipin] = (def_type_out == FC_FULL) ? TRUE : FALSE;
 			Type->is_Fc_frac[ipin] =(def_type_out == FC_FRAC) ? TRUE : FALSE;
 		} else if (Type->class_inf[iclass].type == RECEIVER) {
-			Type->Fc[ipin] = def_out_val;
+			Type->Fc[ipin] = def_in_val;
 			Type->is_Fc_full_flex[ipin] = (def_type_in == FC_FULL) ? TRUE : FALSE;
 			Type->is_Fc_frac[ipin] = (def_type_in == FC_FRAC) ? TRUE : FALSE;
 		} else {
@@ -1129,6 +1128,8 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 			/* Release the property */
 			ezxml_set_attr(Child, "fc_type", NULL);
 
+			port_name = NULL;
+
 			/* Search for the child pin in Type and overwrites the default values     */
 			/* Check whether the name is in the format of "<port_name>" or            *
 			 * "<port_name> [start_index:end_index]" by looking for the symbol '['    */
@@ -1138,8 +1139,9 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 				end_pin_index = start_pin_index = -1;
 			} else {
 				/* Format "port_name [start_index:end_index]" */
-				match_count = sscanf(Prop, "%s [%d:%d]", Prop, end_pin_index, start_pin_index);
-				if (match_count != 3){
+				match_count = sscanf(Prop, "%s [%d:%d]", port_name, &end_pin_index, &start_pin_index);
+				Prop = port_name;
+				if (match_count != 3 || (match_count != 1 && port_name == NULL)){
 					vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Invalid name for pin child, "
 							"name should be in the format \"port_name\" or "
 							"\"port_name [end_pin_index:start_pin_index]\", "
@@ -1155,7 +1157,7 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 					vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] The end_pin_index should "
 							"be not be less than start_pin_index.\n", Child->line);
 					exit(1);
-				}
+				}				
 			}
 			
 			/* Find the matching port_name in Type */
@@ -2786,7 +2788,7 @@ void EchoArch(INP const char *EchoFile, INP const t_type_descriptor * Types,
 			fprintf(Echo, "\t\tPin number %d: %s\n",j,
 				(Types[i].is_Fc_full_flex[j] ? "TRUE" : "FALSE"));
 			fprintf(Echo, "\tFc_val: \n");
-			fprintf(Echo, "\tPin number %d: %f\n", Types[i].Fc[j]);
+			fprintf(Echo, "\tPin number %d: %f\n", j, Types[i].Fc[j]);
 		}
 		fprintf(Echo, "\tnum_drivers: %d\n", Types[i].num_drivers);
 		fprintf(Echo, "\tnum_receivers: %d\n", Types[i].num_receivers);
