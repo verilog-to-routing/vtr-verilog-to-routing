@@ -35,10 +35,10 @@ sub calc_geomean;
 sub check_golden;
 sub expand_user_path;
 
-# Get Absoluate Path of 'vtr_flow
-Cwd::abs_path($0) =~ m/(.*vtr_flow)/;
-my $vtr_flow_path = $1;
-# my $vtr_flow_path = "./vtr_flow";
+# Get Absolute Path of 'vtr_flow
+# Cwd::abs_path($0) =~ m/(.*vtr_flow)/;
+# my $vtr_flow_path = $1;
+my $vtr_flow_path = "./vtr_flow";
 
 my $run_prefix = "run";
 
