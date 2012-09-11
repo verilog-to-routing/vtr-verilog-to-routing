@@ -256,7 +256,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 					ny = nint(current / Arch.clb_grid.Aspect);
 				}
 	#if DEBUG
-				vpr_printf(TIO_MESSAGE_INFO, "Auto-sizing FPGA, try x = %d y = %d.\n", nx, ny);
+				vpr_printf(TIO_MESSAGE_INFO, "Auto-sizing FPGA at x = %d y = %d\n", nx, ny);
 	#endif
 				alloc_and_load_grid(num_instances_type);
 				freeGrid();
@@ -299,7 +299,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 				ny = nint(current / Arch.clb_grid.Aspect);
 			}
 			alloc_and_load_grid(num_instances_type);
-			vpr_printf(TIO_MESSAGE_INFO, "FPGA auto-sized to, x = %d y = %d.\n", nx, ny);
+			vpr_printf(TIO_MESSAGE_INFO, "FPGA auto-sized to x = %d y = %d\n", nx, ny);
 		} else {
 			nx = Arch.clb_grid.W;
 			ny = Arch.clb_grid.H;
@@ -349,7 +349,7 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 		second_wire_seg_delay;
 	begin = clock();
 	vpr_printf(TIO_MESSAGE_INFO, "Initialize packing.\n"); 
-		
+
 	/* If needed, estimate inter-cluster delay. Assume the average routing hop goes out of 
 	a block through an opin switch to a length-4 wire, then through a wire switch to another
 	length-4 wire, then through a wire-to-ipin-switch into another block. */
