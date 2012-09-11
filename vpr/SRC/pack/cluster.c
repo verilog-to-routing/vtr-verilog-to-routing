@@ -474,7 +474,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 									next_molecule->logical_block_ptrs[next_molecule->root]->model->name);
 							fflush(stdout);
 	#else
-							vpr_printf(TIO_MESSAGE_INFO, ".");
+							vpr_printf(TIO_MESSAGE_DIRECT, ".");
 	#endif
 						} else {
 	#ifdef DEBUG_FAILED_PACKING_CANDIDATES
@@ -484,7 +484,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 									block_pack_status);
 							fflush(stdout);
 	#else
-							vpr_printf(TIO_MESSAGE_INFO, ".");
+							vpr_printf(TIO_MESSAGE_DIRECT, ".");
 	#endif
 						}
 					}
@@ -502,7 +502,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 							next_molecule->logical_block_ptrs[next_molecule->root]->model->name);
 					fflush(stdout);
 	#else
-					vpr_printf(TIO_MESSAGE_INFO, ".");
+					vpr_printf(TIO_MESSAGE_DIRECT, ".");
 	#endif
 				}
 				update_cluster_stats(next_molecule, num_clb - 1, is_clock,
@@ -518,7 +518,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						&num_unrelated_clustering_attempts,
 						cur_cluster_placement_stats_ptr);
 			}
-			vpr_printf(TIO_MESSAGE_INFO, "\n");
+			vpr_printf(TIO_MESSAGE_DIRECT, "\n");
 			if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
 				is_cluster_legal = try_breadth_first_route_cluster();
 				if (is_cluster_legal == TRUE) {
