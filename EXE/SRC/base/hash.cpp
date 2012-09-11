@@ -3,7 +3,7 @@
 #include "../include/hash.h"
 
 extern "C" {
-	#include "../include/libvpr/include/util.h"
+	#include "../include/libarchfpga/include/util.h"
 }
 
 #define HASHSIZE 4093
