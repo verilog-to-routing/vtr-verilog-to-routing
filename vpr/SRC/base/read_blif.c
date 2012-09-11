@@ -1021,48 +1021,46 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 					vpack_net[i].node_block_pin[j]);
 	}
 
-	fprintf(fp, "\n\n\nBlocks\t\t\tBlock Type Legend:\n");
-	fprintf(fp, "\t\t\tINPAD = %d\tOUTPAD = %d\n", VPACK_INPAD, VPACK_OUTPAD);
-	fprintf(fp, "\t\t\tCOMB = %d\t\tLATCH = %d\n", VPACK_COMB, VPACK_LATCH);
-	fprintf(fp, "\t\t\tEMPTY = %d\n", VPACK_EMPTY);
+	fprintf(fp, "\n\nBlocks\t\tBlock type legend:\n");
+	fprintf(fp, "\t\tINPAD = %d\tOUTPAD = %d\n", VPACK_INPAD, VPACK_OUTPAD);
+	fprintf(fp, "\t\tCOMB = %d\tLATCH = %d\n", VPACK_COMB, VPACK_LATCH);
+	fprintf(fp, "\t\tEMPTY = %d\n", VPACK_EMPTY);
 
 	for (i = 0; i < num_logical_blocks; i++) {
-		fprintf(fp, "\nblock %d\t%s\t", i, logical_block[i].name);
-		fprintf(fp, "type: %d\n", logical_block[i].type);
-		fprintf(fp, "model name: %s\n", logical_block[i].model->name);
+		fprintf(fp, "\nblock %d %s ", i, logical_block[i].name);
+		fprintf(fp, "\ttype: %d ", logical_block[i].type);
+		fprintf(fp, "\tmodel name: %s\n", logical_block[i].model->name);
 
 		port = logical_block[i].model->inputs;
 
 		while (port) {
-			fprintf(fp, "\tInput Port: %s\n", port->name);
+			fprintf(fp, "\tinput port: %s \t", port->name);
 			for (j = 0; j < port->size; j++) {
 				if (logical_block[i].input_nets[port->index][j] == OPEN)
-					fprintf(fp, "\tOPEN");
+					fprintf(fp, "OPEN ");
 				else
-					fprintf(fp, "\t%d",
-							logical_block[i].input_nets[port->index][j]);
+					fprintf(fp, "%d ", logical_block[i].input_nets[port->index][j]);
 			}
+			fprintf(fp, "\n");
 			port = port->next;
 		}
 
 		port = logical_block[i].model->outputs;
 		while (port) {
-			fprintf(fp, "\tOutput Port: %s\n", port->name);
+			fprintf(fp, "\toutput port: %s \t", port->name);
 			for (j = 0; j < port->size; j++) {
 				if (logical_block[i].output_nets[port->index][j] == OPEN) {
-					fprintf(fp, "\tOPEN");
+					fprintf(fp, "OPEN ");
 				} else {
-					fprintf(fp, "\t%d",
-							logical_block[i].output_nets[port->index][j]);
+					fprintf(fp, "%d ", logical_block[i].output_nets[port->index][j]);
 				}
 			}
+			fprintf(fp, "\n");
 			port = port->next;
 		}
 
-		fprintf(fp, "\n\tclock net %d\n", logical_block[i].clock_net);
+		fprintf(fp, "\tclock net: %d\n", logical_block[i].clock_net);
 	}
-
-	fprintf(fp, "\n");
 	fclose(fp);
 }
 
@@ -1694,6 +1692,7 @@ void read_and_process_blif (char *blif_file, boolean sweep_hanging_nets_and_inpu
 
 	absorb_buffer_luts();
 	compress_netlist(); /* remove unused inputs */
+
 	/* NB:  It's important to mark clocks and such *after* compressing the   *
 	 * netlist because the vpack_net numbers, etc. may be changed by removing      *
 	 * unused inputs .  */
@@ -1787,15 +1786,13 @@ static void show_blif_stats(t_model *user_models, t_model *library_models) {
 
 	/* Print blif circuit stats */
 
-	vpr_printf(TIO_MESSAGE_INFO, "Blif circuit stats:\n");
+	vpr_printf(TIO_MESSAGE_INFO, "BLIF circuit stats:\n");
 
 	for (i = 0; i <= MAX_LUT_INPUTS; i++) {
-		vpr_printf(TIO_MESSAGE_INFO, "%d LUTs of size %d\n", num_lut_of_size[i], i);
+		vpr_printf(TIO_MESSAGE_INFO, "\t%d LUTs of size %d\n", num_lut_of_size[i], i);
 	}
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-
 	for (i = 0; i < num_model_stats; i++) {
-		vpr_printf(TIO_MESSAGE_INFO, "%d of type %s\n", model_stats[i].count, model_stats[i].model->name);
+		vpr_printf(TIO_MESSAGE_INFO, "\t%d of type %s\n", model_stats[i].count, model_stats[i].model->name);
 	}
 
 	free(model_stats);
