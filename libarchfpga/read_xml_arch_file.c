@@ -986,6 +986,11 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 	int ipin, iclass, end_pin_index, start_pin_index, match_count;
 	int iport, iport_pin, curr_pin, port_found;
 	ezxml_t Child, Junk;
+
+	def_type_in = FC_FRAC;
+	def_type_out = FC_FRAC;
+	def_in_val = OPEN;
+	def_out_val = OPEN;
 	
 	Type->is_Fc_frac = (boolean *) my_malloc (Type->num_pins * sizeof(boolean));
 	Type->is_Fc_full_flex = (boolean *) my_malloc (Type->num_pins * sizeof(boolean));
