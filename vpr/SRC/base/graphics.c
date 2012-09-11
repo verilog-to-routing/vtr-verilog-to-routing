@@ -617,7 +617,7 @@ void init_graphics(const char *window_name) {
 
 	/* connect to X server */
 	if ((display = XOpenDisplay(display_name)) == NULL) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Cannot connect to X server %s.\n", xDisplayName(display_name));
+		vpr_printf(TIO_MESSAGE_ERROR, "Cannot connect to X server\n");
 		exit(-1);
 	}
 

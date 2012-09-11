@@ -36,6 +36,8 @@ typedef struct {
 	float y;
 } t_point; /* Used in calls to fillpoly */
 
+
+
 /* Routine for X Windows Input.  act_on_button responds to buttons  *
  * being pressed in the graphics area.  drawscreen is the user's    *
  * routine that can redraw all the graphics.                        */
@@ -102,3 +104,4 @@ int init_postscript(char *fname); /* Returns 1 if successful */
 /* Closes file and directs output to screen again.       */
 
 void close_postscript(void);
+

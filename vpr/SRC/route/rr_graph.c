@@ -1342,9 +1342,10 @@ alloc_and_load_pin_to_track_map(INP enum e_pin_type pin_type,
 	 * the Fc values of all pins can vary, the max value will continue
 	 * to work for matrix (de)allocation purposes. However, all looping 
 	 * will have to be modified to account for pin-based Fc values. */
-	int max_Fc = Fc[0];
-	for (i = 1; i < Type->num_pins; ++i) {
-		if (Fc[i] > max_Fc) {
+	int max_Fc = 0;
+	for (i = 0; i < Type->num_pins; ++i) {
+		iclass = Type->pin_class[i];
+		if (Fc[i] > max_Fc && Type->class_inf[iclass].type == pin_type) {
 			max_Fc = Fc[i];
 		}
 	}
@@ -1355,7 +1356,7 @@ alloc_and_load_pin_to_track_map(INP enum e_pin_type pin_type,
 	for (ipin = 0; ipin < Type->num_pins; ipin++) {
 		for (ioff = 0; ioff < Type->height; ioff++) {
 			for (iside = 0; iside < 4; iside++) {
-				for (i = 0; i < Fc[ipin]; ++i) {
+				for (i = 0; i < max_Fc; ++i) {
 					tracks_connected_to_pin[ipin][ioff][iside][i] = OPEN; /* Unconnected. */
 				}
 			}
@@ -1874,9 +1875,10 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 	 * to work for matrix allocation purposes. However, all looping 
 	 * will have to be modified to account for pin-based Fc values. */
 	if (type->index > 0) {
-		max_Fc = Fc_out[type->index][0];
-		for (ipin = 1; ipin < type->num_pins; ++ipin) {
-			if (Fc_out[type->index][ipin] > max_Fc) {
+		max_Fc = 0;
+		for (ipin = 0; ipin < type->num_pins; ++ipin) {
+			iclass = type->pin_class[ipin];
+			if (Fc_out[type->index][ipin] > max_Fc && type->class_inf[iclass].type == DRIVER) {
 				max_Fc = Fc_out[type->index][ipin];
 			}
 		}
