@@ -4,6 +4,8 @@
 //
 //           Inline methods include:
 //           - SetTimeStampsEnabled
+//           - SetPrefix
+//           - ClearPrefix
 //           - SetMaxErrorCount
 //           - SetMaxWarningCount
 //           - GetErrorCount
@@ -76,8 +78,11 @@ public:
                size_t lenSpace, 
                const char* pszText, ... );
 
-   void Internal( const char* pszSource, 
+   bool Internal( const char* pszSource, 
                   const char* pszText, ... );
+
+   void Direct( const char* pszText, ... );
+   void Direct( const char* pszText, va_list vaArgs );
 
    void Write( const char* pszText, ... );
    void Write( size_t lenSpace, 
@@ -107,6 +112,10 @@ public:
                            TIO_FileOpenMode_t fileOpenMode = TIO_FILE_OPEN_WRITE );
 
    void SetTimeStampsEnabled( bool timeStampsEnable );
+
+   void SetPrefix( const char* pszPrefix );
+   void SetPrefix( const string& srPrefix );
+   void ClearPrefix( void );
 
    void AddInfoAcceptRegExp( const char* pszRegExp ); 
    void AddInfoRejectRegExp( const char* pszRegExp ); 
@@ -239,7 +248,8 @@ private:
    {
    public:
 
-      bool timeStampsEnabled;             // Enable print message time stamps
+      bool   timeStampsEnabled;           // Enable print message time stamps
+      string srPrefix;                    // Define print message prefix
 
    } formats_;
 
@@ -267,6 +277,27 @@ inline void TIO_PrintHandler_c::SetTimeStampsEnabled(
       bool timeStampsEnabled )
 {
    this->formats_.timeStampsEnabled = timeStampsEnabled;
+}
+
+//===========================================================================//
+inline void TIO_PrintHandler_c::SetPrefix(
+      const char* pszPrefix )
+{
+   this->formats_.srPrefix = TIO_PSZ_STR( pszPrefix );
+}
+
+//===========================================================================//
+inline void TIO_PrintHandler_c::SetPrefix(
+      const string& srPrefix )
+{
+   this->formats_.srPrefix = srPrefix;
+}
+
+//===========================================================================//
+inline void TIO_PrintHandler_c::ClearPrefix(
+      void )
+{
+   this->formats_.srPrefix = "";
 }
 
 //===========================================================================//

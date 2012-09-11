@@ -5,6 +5,7 @@
  *           - PrintHandlerNew
  *           - PrintHandlerDelete
  *           - PrintHandlerInit
+ *           - PrintHandlerExists
  *           - PrintHandlerFilter
  *           - PrintHandlerMessage
  *
@@ -15,20 +16,6 @@
 #include "TIO_SkinHandler.h"
 #include "TIO_PrintHandler.h"
 #include "TIO_PrintHandlerExtern.h"
-
-
-/*===========================================================================*
- * Function       : PrintHandlerExists
- * Purpose        : Returns 1 if TIO_PrintHandler exist, 0 otherwise.
- * Author         : Jason Luu
- *---------------------------------------------------------------------------*/
-extern "C" int PrintHandlerExists(void) {
-	if(TIO_PrintHandler_c::HasInstance()) 
-	{
-		return 1;
-	}
-	return 0;
-}
 
 /*===========================================================================*
  * Function       : PrintHandlerNew
@@ -41,7 +28,7 @@ extern "C" int PrintHandlerExists(void) {
 extern "C" void PrintHandlerNew( 
       char* pszLogFileName )
 {
-   /* Allocate a skin handler 'singleton' for program messasge handling */
+   /* Allocate a skin handler 'singleton' for program message handling */
    TIO_SkinHandler_c& skinHandler = TIO_SkinHandler_c::GetInstance( );
    skinHandler.Set( TIO_SkinHandler_c::TIO_SKIN_VPR );
 
@@ -103,6 +90,20 @@ extern "C" void PrintHandlerInit(
    /* Define optional print handler max warning/error counts */
    printHandler.SetMaxWarningCount( maxWarningCount );
    printHandler.SetMaxErrorCount( maxErrorCount );
+}
+
+/*===========================================================================*
+ * Function       : PrintHandlerExists
+ * Author         : Jeff Rudolph
+ *---------------------------------------------------------------------------*
+ * Version history
+ * 08/15/12 jeffr : Original
+ *===========================================================================*/
+extern "C" bool PrintHandlerExists( 
+      void )
+{
+   TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
+   return( printHandler.HasInstance( ) ? true : false );
 }
 
 /*===========================================================================*
@@ -174,6 +175,7 @@ extern "C" void PrintHandlerFilter(
          break;
       }
       break;
+   case TIO_MESSAGE_DIRECT:
    case TIO_MESSAGE_UNDEFINED:
       break;
    }
@@ -211,6 +213,9 @@ extern "C" unsigned char PrintHandlerMessage(
       break;
    case TIO_MESSAGE_TRACE:
       printHandler.Trace( pszMessage, vaArgs );
+      break;
+   case TIO_MESSAGE_DIRECT:
+      printHandler.Direct( pszMessage, vaArgs );
       break;
    case TIO_MESSAGE_UNDEFINED:
       break;

@@ -17,7 +17,8 @@ enum TIO_MessageMode_e
    TIO_MESSAGE_INFO,
    TIO_MESSAGE_WARNING,
    TIO_MESSAGE_ERROR,
-   TIO_MESSAGE_TRACE
+   TIO_MESSAGE_TRACE,
+   TIO_MESSAGE_DIRECT
 };
 typedef enum TIO_MessageMode_e TIO_MessageMode_t;
 
@@ -38,19 +39,18 @@ extern "C"
 {
 #endif
 
-int PrintHandlerExists(void);
 void PrintHandlerNew( char* pszLogFileName );
 void PrintHandlerDelete( void );
 void PrintHandlerInit( unsigned char enableTimeStamps,
                        unsigned long maxWarningCount,
                        unsigned long maxErrorCount );
+bool PrintHandlerExists( void );
 void PrintHandlerFilter( TIO_MessageMode_t messageMode,
                          TIO_FilterMode_t filterMode,
                          char* pszFilter );
 unsigned char PrintHandlerMessage( TIO_MessageMode_t messageMode,
                                    char* pszMessage,
                                    ... );
-
 #ifdef __cplusplus
 }
 #endif

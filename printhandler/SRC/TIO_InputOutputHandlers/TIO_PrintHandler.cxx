@@ -3,7 +3,7 @@
 //
 //           Public methods include:
 //           - NewInstance, DeleteInstance, GetInstance, HasInstance
-//           - Info, Warning, Error, Fatal, Trace, Internal
+//           - Info, Warning, Error, Fatal, Trace, Internal, Direct
 //           - Write
 //           - WriteBanner
 //           - WriteCenter
@@ -95,12 +95,13 @@ TIO_PrintHandler_c::TIO_PrintHandler_c(
    this->counts_.internalCount = 0;
 
    this->counts_.maxWarningCount = UINT_MAX;
-   this->counts_.maxErrorCount = UINT_MAX;
+   this->counts_.maxErrorCount = 1;
 
    this->counts_.isMaxWarningEnabled = true;
    this->counts_.isMaxErrorEnabled = true;
 
    this->formats_.timeStampsEnabled = false;
+   this->formats_.srPrefix = "";
 
    pinstance_ = 0;
 }
@@ -224,7 +225,7 @@ void TIO_PrintHandler_c::Info(
       const char*   pszText,
             va_list vaArgs )
 {
-   string srText( pszText ? pszText : "" );
+   string srText( TIO_PSZ_STR( pszText ));
    if(( srText.length( ) > 1 ) && ( srText[srText.length( )-1] == '\n' ))
    {
       srText = srText.substr( 0, srText.length( )-1 );
@@ -286,7 +287,7 @@ bool TIO_PrintHandler_c::Warning(
 {
    bool isValid = true;
 
-   string srText( pszText ? pszText : "" );
+   string srText( TIO_PSZ_STR( pszText ));
    if(( srText.length( ) > 1 ) && ( srText[srText.length( )-1] == '\n' ))
    {
       srText = srText.substr( 0, srText.length( )-1 );
@@ -376,7 +377,7 @@ bool TIO_PrintHandler_c::Error(
 {
    bool isValid = true;
 
-   string srText( pszText ? pszText : "" );
+   string srText( TIO_PSZ_STR( pszText ));
    if(( srText.length( ) > 1 ) && ( srText[srText.length( )-1] == '\n' ))
    {
       srText = srText.substr( 0, srText.length( )-1 );
@@ -494,7 +495,7 @@ void TIO_PrintHandler_c::Trace(
       const char*   pszText,
             va_list vaArgs )
 {
-   string srText( pszText ? pszText : "" );
+   string srText( TIO_PSZ_STR( pszText ));
    if(( srText.length( ) > 1 ) && ( srText[srText.length( )-1] == '\n' ))
    {
       srText = srText.substr( 0, srText.length( )-1 );
@@ -568,7 +569,7 @@ void TIO_PrintHandler_c::Trace(
 // Version history
 // 05/01/12 jeffr : Original
 //===========================================================================//
-void TIO_PrintHandler_c::Internal( 
+bool TIO_PrintHandler_c::Internal( 
       const char*  pszSource, 
       const char*  pszText, 
       ... )
@@ -582,6 +583,35 @@ void TIO_PrintHandler_c::Internal(
    ++this->counts_.internalCount;
 
    va_end( vaArgs );                    // Reset variable argument list
+
+   return( false );
+}
+
+//===========================================================================//
+// Method         : Direct
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/01/12 jeffr : Original
+//===========================================================================//
+void TIO_PrintHandler_c::Direct(
+      const char* pszText,
+      ... )
+{
+   va_list vaArgs;                      // Make a variable argument list
+   va_start( vaArgs, pszText );         // Initialize variable argument list
+         
+   this->Direct( pszText, vaArgs );
+
+   va_end( vaArgs );                    // Reset variable argument list
+}
+
+//===========================================================================//
+void TIO_PrintHandler_c::Direct( 
+      const char*   pszText,
+            va_list vaArgs )
+{
+   this->WriteMessage_( TIO_PRINT_DIRECT, pszText, vaArgs );
 }
 
 //===========================================================================//
@@ -600,7 +630,7 @@ void TIO_PrintHandler_c::Write(
    va_list vaArgs;                      // Make a variable argument list
    va_start( vaArgs, pszText );         // Initialize variable argument list
          
-   this->WriteMessage_( TIO_PRINT_DEFAULT, pszText, vaArgs );
+   this->WriteMessage_( TIO_PRINT_DIRECT, pszText, vaArgs );
 
    va_end( vaArgs );                    // Reset variable argument list
 }
@@ -622,7 +652,7 @@ void TIO_PrintHandler_c::Write(
    va_list vaArgs;                   // Make a variable argument list
    va_start( vaArgs, pszText );      // Initialize variable argument list
          
-   this->WriteMessage_( TIO_PRINT_DEFAULT, pszText, vaArgs );
+   this->WriteMessage_( TIO_PRINT_DIRECT, pszText, vaArgs );
 
    va_end( vaArgs );                 // Reset variable argument list
 }
@@ -651,7 +681,7 @@ void TIO_PrintHandler_c::Write(
    va_list vaArgs;                   // Make a variable argument list
    va_start( vaArgs, pszText );      // Initialize variable argument list
          
-   this->WriteMessage_( TIO_PRINT_DEFAULT, pszText, vaArgs );
+   this->WriteMessage_( TIO_PRINT_DIRECT, pszText, vaArgs );
 
    va_end( vaArgs );                 // Reset variable argument list
 
@@ -1369,8 +1399,10 @@ bool TIO_PrintHandler_c::PrefixMessage_(
 {
    if( pszMessage )
    {
-      pszText = ( pszText && *pszText ) ? pszText : "";
-      pszSource = ( pszSource && *pszSource ) ? pszSource : "";
+      const char* pszPrefix = TIO_SR_STR( this->formats_.srPrefix );
+
+      pszText = TIO_PSZ_STR( pszText );
+      pszSource = TIO_PSZ_STR( pszSource );
 
       unsigned long warningCount = this->counts_.warningCount + 1;
       unsigned long errorCount = this->counts_.errorCount + 1;
@@ -1386,27 +1418,27 @@ bool TIO_PrintHandler_c::PrefixMessage_(
             size_t lenTimeStamp = sizeof( szTimeStamp );
             TC_FormatStringDateTimeStamp( szTimeStamp, lenTimeStamp, "[", "] " );
 
-            sprintf( pszMessage, "%s%s", szTimeStamp, pszText );
+            sprintf( pszMessage, "%s%s%s", szTimeStamp, pszPrefix, pszText );
          }
          else
          {
-            sprintf( pszMessage, "%s", pszText );
+            sprintf( pszMessage, "%s%s", pszPrefix, pszText );
          }
          break;
 
       case TIO_PRINT_WARNING:
 
-         sprintf( pszMessage, "WARNING(%lu): %s", warningCount, pszText );
+         sprintf( pszMessage, "%sWARNING(%lu): %s", pszPrefix, warningCount, pszText );
          break;
 
       case TIO_PRINT_ERROR:
 
-         sprintf( pszMessage, "ERROR(%lu): %s", errorCount, pszText );
+         sprintf( pszMessage, "%sERROR(%lu): %s", pszPrefix, errorCount, pszText );
          break;
 
       case TIO_PRINT_FATAL:
 
-         sprintf( pszMessage, "FATAL: %s", pszText );
+         sprintf( pszMessage, "%sFATAL: %s", pszPrefix, pszText );
          break;
 
       case TIO_PRINT_TRACE:
@@ -1417,11 +1449,11 @@ bool TIO_PrintHandler_c::PrefixMessage_(
             size_t lenTimeStamp = sizeof( szTimeStamp );
             TC_FormatStringDateTimeStamp( szTimeStamp, lenTimeStamp, "[", "] " );
 
-            sprintf( pszMessage, "TRACE: %s%s", szTimeStamp, pszText );
+            sprintf( pszMessage, "%sTRACE: %s%s", pszPrefix, szTimeStamp, pszText );
          }
          else
          {
-            sprintf( pszMessage, "TRACE: %s", pszText );
+            sprintf( pszMessage, "%sTRACE: %s", pszPrefix, pszText );
          }
          break;
 
@@ -1431,14 +1463,14 @@ bool TIO_PrintHandler_c::PrefixMessage_(
                               "            %s", internalCount, pszSource, pszText );
          break;
 
+      case TIO_PRINT_DIRECT:
+
+         sprintf( pszMessage, "%s", pszText );
+         break;
+
       case TIO_PRINT_RETURN:
 
          sprintf( pszMessage, "%s\n", pszText );
-         break;
-
-      case TIO_PRINT_DEFAULT:
-
-         sprintf( pszMessage, "%s", pszText );
          break;
 
       default:

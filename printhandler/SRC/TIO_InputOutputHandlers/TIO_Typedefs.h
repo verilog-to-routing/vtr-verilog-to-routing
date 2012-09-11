@@ -75,8 +75,8 @@ enum TIO_PrintMode_e
    TIO_PRINT_FATAL,
    TIO_PRINT_TRACE,
    TIO_PRINT_INTERNAL,
-   TIO_PRINT_RETURN,
-   TIO_PRINT_DEFAULT
+   TIO_PRINT_DIRECT,
+   TIO_PRINT_RETURN
 };
 typedef enum TIO_PrintMode_e TIO_PrintMode_t;
 
@@ -116,6 +116,8 @@ enum TIO_FormatLengths_e              // Lengths used for formatted output
    TIO_FORMAT_STRING_LEN_POINT     = 48,    // Format: (x,y,z)
    TIO_FORMAT_STRING_LEN_BOX       = 80,    // Format: (x,y,z)-(x,y,z)
    TIO_FORMAT_STRING_LEN_REGION    = 64,    // Format: (x,y)-(x,y)
+   TIO_FORMAT_STRING_LEN_RECT      = 80,    // Format: z (x,y)-(x,y)
+   TIO_FORMAT_STRING_LEN_PATH      = 80,    // Format: (x,y)-(x,y) z width
    TIO_FORMAT_STRING_LEN_LINE      = 80,    // Format: (x,y)-(x,y) z
    TIO_FORMAT_STRING_LEN_VALUE     = 16,    // Format: bool/int/uint/float
    TIO_FORMAT_STRING_LEN_DATA      = 256,   // Format: int/uint/long/float/string
