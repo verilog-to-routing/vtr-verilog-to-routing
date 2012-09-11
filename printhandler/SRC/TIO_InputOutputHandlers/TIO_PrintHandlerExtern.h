@@ -44,7 +44,7 @@ void PrintHandlerDelete( void );
 void PrintHandlerInit( unsigned char enableTimeStamps,
                        unsigned long maxWarningCount,
                        unsigned long maxErrorCount );
-bool PrintHandlerExists( void );
+int PrintHandlerExists( void );
 void PrintHandlerFilter( TIO_MessageMode_t messageMode,
                          TIO_FilterMode_t filterMode,
                          char* pszFilter );

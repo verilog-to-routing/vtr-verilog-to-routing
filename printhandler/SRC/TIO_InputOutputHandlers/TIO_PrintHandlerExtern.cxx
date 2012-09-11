@@ -99,7 +99,7 @@ extern "C" void PrintHandlerInit(
  * Version history
  * 08/15/12 jeffr : Original
  *===========================================================================*/
-extern "C" bool PrintHandlerExists( 
+extern "C" int PrintHandlerExists( 
       void )
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
