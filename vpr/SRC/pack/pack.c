@@ -47,7 +47,7 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 	
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 	vpr_printf(TIO_MESSAGE_INFO, "After removing unused inputs...\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\tTotal blocks: %d, total nets: %d, total inputs: %d, total outputs: %d\n",
+	vpr_printf(TIO_MESSAGE_INFO, "\ttotal blocks: %d, total nets: %d, total inputs: %d, total outputs: %d\n",
 			num_logical_blocks, num_logical_nets, num_p_inputs, num_p_outputs);
 
 	vpr_printf(TIO_MESSAGE_INFO, "Begin prepacking.\n");

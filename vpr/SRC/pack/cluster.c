@@ -441,6 +441,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					max_nets_in_pb_type, detailed_routing_stage);
 			vpr_printf(TIO_MESSAGE_INFO, "Complex block %d: %s, type: %s\n", 
 					num_clb, clb[num_clb].name, clb[num_clb].type->name);
+			vpr_printf(TIO_MESSAGE_INFO, "\t");
 			fflush(stdout);
 			update_cluster_stats(istart, num_clb, is_clock, global_clocks, alpha,
 					beta, timing_driven, connection_driven, slacks);
