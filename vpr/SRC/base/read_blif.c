@@ -993,11 +993,14 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 	vpr_printf(TIO_MESSAGE_INFO, "Input netlist file: '%s', model: %s\n", blif_file, model);
 	vpr_printf(TIO_MESSAGE_INFO, "Primary inputs: %d, primary outputs: %d\n", num_p_inputs, num_p_outputs);
 	vpr_printf(TIO_MESSAGE_INFO, "LUTs: %d, latches: %d, subckts: %d\n", num_luts, num_latches, num_subckts);
-	vpr_printf(TIO_MESSAGE_INFO, "# Standard absorbable latches: %d\n", num_absorbable_latch);
+	vpr_printf(TIO_MESSAGE_INFO, "# standard absorbable latches: %d\n", num_absorbable_latch);
+	vpr_printf(TIO_MESSAGE_INFO, "\t");
 	for (i = 0; i < logic_model->inputs[0].size + 1; i++) {
-		vpr_printf(TIO_MESSAGE_INFO, "LUT size %d = %d, ", i, lut_distribution[i]);
+		if( i > 0 )
+			vpr_printf(TIO_MESSAGE_DIRECT, ", ");
+		vpr_printf(TIO_MESSAGE_DIRECT, "LUT size %d = %d", i, lut_distribution[i]);
 	}
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
+	vpr_printf(TIO_MESSAGE_DIRECT, "\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Total blocks: %d, total nets: %d\n", num_logical_blocks,
 			num_logical_nets);
 
