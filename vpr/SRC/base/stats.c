@@ -1,3 +1,4 @@
+
 #include <assert.h>
 #include <stdio.h>
 #include <math.h>
@@ -211,7 +212,7 @@ static void get_channel_occupancy_stats(void) {
 	}
 
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Total Tracks in X-direction: %d  in Y-direction: %d\n", total_x, total_y);
+	vpr_printf(TIO_MESSAGE_INFO, "Total tracks in x-direction: %d, in y-direction: %d\n", total_x, total_y);
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 
 	free_matrix(chanx_occ, 1, nx, 0, sizeof(int));
