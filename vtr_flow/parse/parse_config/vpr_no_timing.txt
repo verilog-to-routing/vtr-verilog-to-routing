@@ -4,7 +4,7 @@ pack_time;vpr.out;Packing took (.*) seconds
 place_time;vpr.out;Placement took (.*) seconds
 min_chan_width_route_time;vpr.out;Routing took (.*) seconds
 num_pre_packed_nets;vpr.out;total nets: (\d+)
-num_pre_packed_blocks;vpr.out;Total blocks: (\d+)
+num_pre_packed_blocks;vpr.out;total blocks: (\d+)
 num_post_packed_nets;vpr.out;Netlist num_nets:\s*(\d+)
 num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
 num_io;vpr.out;Netlist inputs pins:\s*(\d+)
