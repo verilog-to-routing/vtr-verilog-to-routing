@@ -91,7 +91,6 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		} else { /* Set delay of global signals to zero. */
 			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++)
 				net_delay[inet][ipin] = 0.;
-			}
 		}
 	}
 
