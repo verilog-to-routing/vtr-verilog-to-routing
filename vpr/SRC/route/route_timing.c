@@ -52,7 +52,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		segments, *net_index, *sink_order /* [1..max_pins_per_net-1] */;
 	boolean success, is_routable, rip_up_local_opins;
 	float *pin_criticality /* [1..max_pins_per_net-1] */, pres_fac, *sinks, 
-		critical_path_delay;
+		critical_path_delay, init_timing_criticality_val;
 	t_rt_node **rt_node_of_sink; /* [1..max_pins_per_net-1] */
 	clock_t begin,end;
 	sinks = (float*)my_malloc(sizeof(float) * num_nets);
@@ -72,16 +72,24 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	 * delay to 0, it doesn't matter what criticality we 
 	 * use, so give each net a dummy criticality of 0. */
 		
+	/* Initalizing the value for slacks->timing_criticality. Set 		*
+	 * slacks->timing_criticality = 1 when timing analysis is turned on.	*
+	 * This way, all paths are timing critical, and	the emphasis when 	*
+	 * routing would be on that. On the other hand, when timing analysis is *
+	 * turned off, set all timing criticalities to zero so emphasis will be *
+	 * placed on wirelength and congestion from the very beginning.		*/
+
+	if (timing_analysis_enabled)
+		init_timing_criticality_val = 1.;
+	else
+		init_timing_criticality_val = 0.;
+
 	for (inet = 0; inet < num_nets; inet++) {
-		for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
-			slacks->timing_criticality[inet][ipin] = 0.;
-#ifdef PATH_COUNTING
-			slacks->path_criticality[inet][ipin] = 0.;
-#endif
-		}
-		/* Set delay of global signals to zero. */
-		if (clb_net[inet].is_global) {
-			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
+		if (clb_net[inet].is_global == FALSE) {
+			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++)
+				slacks->timing_criticality[inet][ipin] = init_timing_criticality_val;
+		} else { /* Set delay of global signals to zero. */
+			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++)
 				net_delay[inet][ipin] = 0.;
 			}
 		}
@@ -210,15 +218,16 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			critical_path_delay = get_critical_path_delay();
 			vpr_printf(TIO_MESSAGE_INFO, "Critical path: %g ns\n", critical_path_delay);
 			/* Deliberately abbreviated so parsing for "Critical path" will not pick this up. */
-		} else {
-			/* If timing analysis is not enabled, make sure that the criticalities and 
-			net delay remain 0, to optimize wirelength. */
+		}
+		else 
+		{
+			/* If timing analysis is not enabled, make sure that the criticalities and the 	*
+			 * net_delays stay as 0 so that wirelength can be optimized. 			*/
+			
 			for (inet = 0; inet < num_nets; inet++) {
-				for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
+				for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++)
+				{
 					slacks->timing_criticality[inet][ipin] = 0.;
-#ifdef PATH_COUNTING
-					slacks->path_criticality[inet][ipin] = 0.;
-#endif
 					net_delay[inet][ipin] = 0.;
 				}
 			}
