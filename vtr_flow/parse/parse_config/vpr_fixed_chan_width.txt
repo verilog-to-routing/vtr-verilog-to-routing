@@ -1,5 +1,5 @@
 vpr_status;output.txt;vpr_status=(.*)
-critical_path_delay;vpr.out;Critical path:\s*(.*)\s*ns
+critical_path_delay;vpr.out;Final critical path:\s*(.*)\s*ns
 pack_time;vpr.out;Packing took (.*) seconds
 place_time;vpr.out;Placement took (.*) seconds
 min_chan_width_route_time;vpr.out;Routing took (.*) seconds

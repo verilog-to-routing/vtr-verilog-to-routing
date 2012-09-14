@@ -1,6 +1,6 @@
 vpr_status;output.txt;vpr_status=(.*)
 min_chan_width;vpr.out;Best routing used a channel width factor of (\d+)
-critical_path_delay;vpr.crit_path.out;Critical path: (.*) ns
+critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
 pack_time;vpr.out;Packing took (.*) seconds
 place_time;vpr.out;Placement took (.*) seconds
 min_chan_width_route_time;vpr.out;Routing took (.*) seconds
