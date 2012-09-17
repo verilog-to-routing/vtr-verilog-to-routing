@@ -2,30 +2,30 @@
 #------------------------------------------------------------------------#
 #  Run a regression test on the batch system                             #
 #   - runs the regression tests given as input parameters                #
-# 	- parses and checks results upon completion			 #
+# 	- parses and checks results upon completion							 #
 #   - tests can be found in <vtr_flow_path>/tasks/regression_tests/      #
 #                                                                        #
 #  Usage:                                                                #
-#  <While in the top-level directory>               			 #
+#  <While in the top-level directory>                                    #
 #  run_reg_test.pl <TEST1> <TEST2> ...                                   #
-#  									 #
-#  Options:								 #	
-#	-create_golden:  Will create/overwrite the golden results with   #
-#	those of the most recent execution				 #
-#	quick_test: Will run quick test in top-level directory before 	 #
-# 	running specified regression tests.				 #
-#	-display_qor: Will display quality of results of most recent     #
-# 	build of specified regression test.				 #
-#									 #
+#  									                                     #
+#  Options:								                                 #
+#	-create_golden:  Will create/overwrite the golden results with       #
+#	those of the most recent execution				                     #
+#	quick_test: Will run quick test in top-level directory before 	     #
+# 	running specified regression tests.	                                 #
+#	-display_qor: Will display quality of results of most recent         #
+# 	build of specified regression test.				                     #
+#									                                     #
 #  Notes: <TEST> argument is of the format: <project>_reg_<suite>   	 #
-#  See <vtr_flow_path>/tasks/regression_tests for more information.	 #	
-#									 #	
-#  Currently available:							 #
-#		- vtr_reg_basic						 #	
-#		- vtr_reg_strong					 #
-#		- vtr_reg_nightly					 #	
-#		- vtr_reg_weekly					 #
-#									 #
+#  See <vtr_flow_path>/tasks/regression_tests for more information.	     #
+#									                                     #
+#  Currently available:							                         #
+#		- vtr_reg_basic						                             #
+#		- vtr_reg_strong					                             #
+#		- vtr_reg_nightly					                             #
+#		- vtr_reg_weekly                                                 #
+#									                                     #
 #------------------------------------------------------------------------#
 
 use strict;
@@ -43,14 +43,11 @@ sub run_quick_test;
 sub run_odin_test;
 
 # Get absolute path of 'vtr_flow'
-# Cwd::abs_path($0) =~ m/(.*vtr_flow)/;
-# my $vtr_flow_path = $1;
-my $vtr_flow_path = "./vtr_flow";
+my $vtr_flow_path = getcwd;
+$vtr_flow_path = "$vtr_flow_path/vtr_flow";
 
 # Get absolute path of 'regression_tests'
-# Cwd::abs_path($0) =~ m/(.*regression_tests)/;
-# my $reg_test_path = $1;
-my $reg_test_path = "./vtr_flow/tasks/regression_tests";
+my $reg_test_path = "$vtr_flow_path/tasks/regression_tests";
 
 my @tests;
 my $token;
@@ -138,7 +135,8 @@ if ( $#tests == -1 and !$can_quit ) {
 	  . "	- vtr_reg_nightly\n"
 	  . "	- vtr_reg_weekly\n"
 	  . "\n"
-	  . "If you wish to add your own test, place it in <vtr_flow_path>/tasks/regression_tests\n"
+	  . "If you wish to add your own test, place it in 
+      . <vtr_flow_path>/tasks/regression_tests\n"
 	  . "\n";
 }
 
@@ -170,7 +168,6 @@ if ( $#tests > -1 ) {
 	}
 	print "\nTest complete\n\n";
 }
-
 
 
 ##############################################################
@@ -311,7 +308,9 @@ sub run_single_test {
 	}
 
 	print "\nRunning regression test... \n";
-	system("$vtr_flow_path/scripts/run_vtr_task.pl $run_params \n");
+	chdir("$vtr_flow_path");
+	system("scripts/run_vtr_task.pl $run_params \n");
+	chdir("..");
 }
 
 sub parse_single_test {
@@ -332,7 +331,9 @@ sub parse_single_test {
 			print "\nParsing test results... \n";
 		}
 	}
-	system("$vtr_flow_path/scripts/parse_vtr_task.pl $parse_params \n");
+	chdir("$vtr_flow_path");
+	system("scripts/parse_vtr_task.pl $parse_params \n");
+	chdir("..");
 }
 
 sub run_quick_test {
