@@ -58,7 +58,7 @@ def parse_args():
                         help='The output vqm file name (default: <project>_<family>.vqm)')
 
     vqm2blif_options.add_argument('-a', '--arch', dest='arch_file', action='store',
-                        help='The architecture file to use (default: $V2B_REGRESSION_BASE_DIR/BENCHMARKS/ARCH/<project>_arch.xml)')
+                        help='The architecture file to use. If not provided, will stop after VQM generation')
 
     vqm2blif_options.add_argument('--vqm2blif_opts', dest='vqm2blif_extra_opts', action='store',
                         default='-luts vqm', #Outputs blackbox primitives only (no blif .names)
@@ -126,8 +126,8 @@ def check_args(args):
     if not args.blif_file:
         args.blif_file = path.splitext(path.basename(args.quartus_project))[0] + '_' + args.device_family + '.blif'
 
-    if not args.arch_file:
-        args.arch_file = path.join(args.vqm2blif_dir, 'BENCHMARKS/ARCH/%s_arch.xml' % args.device_family)
+    #if not args.arch_file:
+        #args.arch_file = path.join(args.vqm2blif_dir, 'BENCHMARKS/ARCH/%s_arch.xml' % args.device_family)
     
     return args
 
@@ -238,7 +238,8 @@ def print_cmd(cmd_array):
 def vqm2blif_flow(args):
     gen_vqm(args)
 
-    gen_blif(args)
+    if args.arch_file:
+        gen_blif(args)
 
 
 #Execution starts here
@@ -249,7 +250,7 @@ if __name__ == '__main__':
 
     vqm2blif_flow(args) 
     
-    if args.run_vpr:
+    if args.arch_file and args.run_vpr:
         run_vpr(args)
 
     print "\nINFO: vqm2blif_flow script complete"
