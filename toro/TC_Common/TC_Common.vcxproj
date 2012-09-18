@@ -1,0 +1,124 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="TCT_BSearch.h" />
+    <ClInclude Include="TCT_Dims.h" />
+    <ClInclude Include="TCT_DynamicVector.h" />
+    <ClInclude Include="TCT_Generic.h" />
+    <ClInclude Include="TCT_NameList.h" />
+    <ClInclude Include="TCT_OrderedQueue.h" />
+    <ClInclude Include="TCT_OrderedVector.h" />
+    <ClInclude Include="TCT_OrderedVector2D.h" />
+    <ClInclude Include="TCT_QSort.h" />
+    <ClInclude Include="TCT_Range.h" />
+    <ClInclude Include="TCT_RangeOrderedVector.h" />
+    <ClInclude Include="TCT_RegExpIter.h" />
+    <ClInclude Include="TCT_SortedNameDynamicVector.h" />
+    <ClInclude Include="TCT_SortedVector.h" />
+    <ClInclude Include="TCT_Stack.h" />
+    <ClInclude Include="TC_Bit.h" />
+    <ClInclude Include="TC_MapTable.h" />
+    <ClInclude Include="TC_MemoryUtils.h" />
+    <ClInclude Include="TC_MinGrid.h" />
+    <ClInclude Include="TC_Name.h" />
+    <ClInclude Include="TC_NameFile.h" />
+    <ClInclude Include="TC_NameIndex.h" />
+    <ClInclude Include="TC_NameLength.h" />
+    <ClInclude Include="TC_NameType.h" />
+    <ClInclude Include="TC_RegExp.h" />
+    <ClInclude Include="TC_SideIndex.h" />
+    <ClInclude Include="TC_SideName.h" />
+    <ClInclude Include="TC_StringUtils.h" />
+    <ClInclude Include="TC_Typedefs.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="TC_Bit.cxx" />
+    <ClCompile Include="TC_MapTable.cxx" />
+    <ClCompile Include="TC_MemoryUtils.cxx" />
+    <ClCompile Include="TC_MinGrid.cxx" />
+    <ClCompile Include="TC_Name.cxx" />
+    <ClCompile Include="TC_NameFile.cxx" />
+    <ClCompile Include="TC_NameIndex.cxx" />
+    <ClCompile Include="TC_NameLength.cxx" />
+    <ClCompile Include="TC_NameType.cxx" />
+    <ClCompile Include="TC_RegExp.cxx" />
+    <ClCompile Include="TC_SideIndex.cxx" />
+    <ClCompile Include="TC_SideName.cxx" />
+    <ClCompile Include="TC_StringUtils.cxx" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{E35F5701-1462-4D67-886D-29D6D465CAD1}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>vc_Common</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(VCInstallDir)include;..\TIO_InputOutputHandlers;..\..\pcre\SRC;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <OutputFile>$(OutDir)\$(TargetName)$(TargetExt)</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
