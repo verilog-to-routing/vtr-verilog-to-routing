@@ -13,15 +13,15 @@
             },
             "vpr"    : { 
                 "pack"     : {
-                    "walltime_sec": "", 
+                    "walltime_sec": "847", 
                     "memory_MB"   : ""
                 },
                 "place"    : {
-                    "walltime_sec": "", 
+                    "walltime_sec": "14", 
                     "memory_MB"   : ""
                 },
                 "route"    : {
-                    "walltime_sec": "", 
+                    "walltime_sec": "78", 
                     "memory_MB"   : ""
                 }
             }
@@ -91,15 +91,15 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "",
+                    "walltime_sec": "688",
                     "memory_MB"   : ""
                 },
                 "place"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "55",
                     "memory_MB"   : ""
                 },
                 "route"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "224",
                     "memory_MB"   : ""
                 }
             }
@@ -326,7 +326,7 @@
             "vpr"    : {
                 "pack"     : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "29000"
                 },
                 "place"    : {
                     "walltime_sec": "",
