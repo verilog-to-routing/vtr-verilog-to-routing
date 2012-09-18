@@ -1,0 +1,473 @@
+{
+    "benchmarks": {
+        "radar20":          {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "70",
+                    "memory_MB"   : "890"
+                },
+                "fit"      : {
+                    "walltime_sec": "", 
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : { 
+                "pack"     : {
+                    "walltime_sec": "", 
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "", 
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "", 
+                    "memory_MB"   : ""
+                }
+            }
+        },
+        "Reed_Solomon":     {   
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "204",
+                    "memory_MB"   : "866"
+                },
+                "fit"      : {
+                    "walltime_sec": "", 
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : { 
+                "pack"     : {
+                    "walltime_sec": "262", 
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "42", 
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "30", 
+                    "memory_MB"   : ""
+                }
+            }
+        },
+        "MMM":              {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "130",
+                    "memory_MB"   : "916"
+                },
+                "fit"      : {
+                    "walltime_sec": "", 
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : { 
+                "pack"     : {
+                    "walltime_sec": "574", 
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "72", 
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "71", 
+                    "memory_MB"   : "4110"
+                }
+            }
+        },
+        "CH_DFSIN":         {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "974",
+                    "memory_MB"   : "1539"
+                },
+                "fit"      : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            }
+        },
+        "JPEG":             {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "306",
+                    "memory_MB"   : "1115"
+                },
+                "fit"      : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "1178",
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "48",
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "112",
+                    "memory_MB"   : ""
+                }
+            }
+        },
+        "Neuron":           {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "360",
+                    "memory_MB"   : "1540"
+                },
+                "fit"      : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            }
+        },
+        "OpenSparcT1_Core": {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "612",
+                    "memory_MB"   : "1386"
+                },
+                "fit"      : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "3487",
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "274",
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "162",
+                    "memory_MB"   : ""
+                }
+            }
+        },
+        "DES90":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "671",
+                    "memory_MB"   : "1782"
+                },
+                "fit"      : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "1524",
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "44",
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "701",
+                    "memory_MB"   : ""
+                }
+            }
+        },
+        "LU_Network":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "fit"      : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            }
+        },
+        "MCML":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "fit"      : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            }
+        },
+        "Bitonic169_Mesh":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "fit"      : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            }
+        },
+        "LU128":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "fit"      : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            }
+        },
+        "JZ_Switch_Fabric":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "fit"      : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            }
+        },
+        "OpenCV":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "fit"      : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            }
+        },
+        "LU256":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "fit"      : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            }
+        },
+        "OpenSparcT2_Core":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "fit"      : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            }
+        },
+        "DART":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "fit"      : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            }
+        },
+        "Bitonic169_Cyclic":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "fit"      : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "place"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                },
+                "route"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : ""
+                }
+            }
+        }
+    }
+}
+
