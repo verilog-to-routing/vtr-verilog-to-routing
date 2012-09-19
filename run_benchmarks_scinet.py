@@ -32,13 +32,13 @@ def parse_args():
                         help='Directory containing the benchmarks')
     parser.add_argument('--default_memory', dest='default_memory', action='store',
                         default=6000,
-                        help='Default memory used in MB [defaults to %(default) MB], for benchmarks which do not specify it in the info info file')
+                        help='Default memory used in MB [defaults to %(default)s MB], for benchmarks which do not specify it in the info info file')
     parser.add_argument('--default_time', dest='default_time', action='store',
                         default=8000,
-                        help='Default time used in sec [defaults to %(default) sec], for benchmarks which do not specify it in the info info file')
+                        help='Default time used in sec [defaults to %(default)s sec], for benchmarks which do not specify it in the info info file')
     parser.add_argument('--num_procs', '-n', dest='num_processors', action='store',
                         default=8,
-                        help='Default number of processors used per node [defaults to %(default)]')
+                        help='Default number of processors used per node [defaults to %(default)s]')
 
     parser.add_argument('--version', action='version', version=__version__,
                         help='Version information')
@@ -217,7 +217,7 @@ class ClusterJob(object):
     def explain(self):
         print "JobName: %s" % (self.name)
         print "\tPeak Memory: %sMB (%.1f%% of %sMB)" % (self.get_used_memory(), (float(self.used_memory)/self.total_memory*100), self.total_memory)
-        print "\tTotal time : %s sec (%.1f%% of %s hrs)" % (self.get_used_walltime(), (float(self.used_walltime)/self.total_walltime*100), (self.total_walltime/60/60))
+        print "\tTotal time : %s (%.1f%% of %s hrs)" % (self.format_walltime(), (float(self.used_walltime)/self.total_walltime*100), (self.total_walltime/60/60))
         for cnt, action in enumerate(self.action_lists):
             print "\tAction %s: %s" % (cnt, action.get_name())
             print "\t\tMemory: %sMB" % action.get_peak_memory()
@@ -474,8 +474,8 @@ class BenchmarkAction(object):
         self.action_name = action_name
         self.memory_MB = info.get_info(benchmark_name, action_name, 'memory_MB')
         self.walltime_sec = info.get_info(benchmark_name, action_name, 'walltime_sec')
-        self.default_memory = default_memory
-        self.default_time = default_time
+        self.default_memory = int(default_memory)
+        self.default_time = int(default_time)
     
     def get_benchmark_name(self):
         return self.benchmark_name

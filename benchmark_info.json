@@ -299,16 +299,16 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
                 },
                 "place"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "route"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 }
             }
         },
@@ -325,7 +325,7 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "",
+                    "walltime_sec": "unkown",
                     "memory_MB"   : "29000"
                 },
                 "place"    : {
