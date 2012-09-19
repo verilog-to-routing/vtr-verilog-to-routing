@@ -36,7 +36,7 @@ def parse_args():
     parser.add_argument('--default_time', dest='default_time', action='store',
                         default=8000,
                         help='Default time used in sec [defaults to %(default) sec], for benchmarks which do not specify it in the info info file')
-    parser.add_argument('--num_procs', '-n' dest='num_processors', action='store',
+    parser.add_argument('--num_procs', '-n', dest='num_processors', action='store',
                         default=8,
                         help='Default number of processors used per node [defaults to %(default)]')
 
@@ -122,6 +122,7 @@ def partition_benchmarks(action_dict, benchmark_info, args):
                         #It fits so add the benchmark
                         job.add_actionlist(action_list)
                         benchmark_added = True  
+                        break
 
                 #Create a new job and add the benchmark
                 # if the pre-existing jobs are too full
@@ -481,15 +482,19 @@ class BenchmarkAction(object):
     def get_name(self):
         return self.action_name
     def get_memory_MB(self):
-        if self.memory_MB != '':
+        if self.memory_MB == 'unkown':
+            return self.default_memory 
+        elif self.memory_MB != '':
             return int(self.memory_MB)
         else:
-            return self.default_memory
+            return 0
     def get_walltime_sec(self):
-        if self.walltime_sec != '':
+        if self.walltime_sec == 'unkown':
+            return self.default_time
+        elif self.walltime_sec != '':
             return int(self.walltime_sec)
         else:
-            return self.default_time
+            return 0
 
     def get_action_cmd(self, short_name):
         cmd = ''

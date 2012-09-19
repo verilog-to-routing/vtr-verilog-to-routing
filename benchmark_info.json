@@ -144,15 +144,15 @@
             "vpr"    : {
                 "pack"     : {
                     "walltime_sec": "11200",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "place"    : {
                     "walltime_sec": "550",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "route"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 }
             }
         },
@@ -170,15 +170,15 @@
             "vpr"    : {
                 "pack"     : {
                     "walltime_sec": "4400",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "place"    : {
                     "walltime_sec": "400",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "route"    : {
                     "walltime_sec": "162",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 }
             }
         },
@@ -196,15 +196,15 @@
             "vpr"    : {
                 "pack"     : {
                     "walltime_sec": "1524",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "place"    : {
                     "walltime_sec": "44",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "route"    : {
                     "walltime_sec": "701",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 }
             }
         },
@@ -221,16 +221,16 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
                 },
                 "place"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "route"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 }
             }
         },
@@ -247,16 +247,16 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
                 },
                 "place"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "route"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 }
             }
         },
@@ -273,16 +273,16 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
                 },
                 "place"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "route"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 }
             }
         },
@@ -330,11 +330,11 @@
                 },
                 "place"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "route"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 }
             }
         },
@@ -352,15 +352,15 @@
             "vpr"    : {
                 "pack"     : {
                     "walltime_sec": "22000",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "place"    : {
                     "walltime_sec": "1000",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "route"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 }
             }
         },
@@ -377,16 +377,16 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
                 },
                 "place"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "route"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 }
             }
         },
@@ -394,7 +394,7 @@
             "quartus": {
                 "synthesis": {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "fit"      : {
                     "walltime_sec": "",
@@ -403,16 +403,16 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
                 },
                 "place"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "route"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 }
             }
         },
@@ -429,16 +429,16 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
                 },
                 "place"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "route"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 }
             }
         },
@@ -455,16 +455,42 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
                 },
                 "place"    : {
                     "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "memory_MB"   : "unkown"
                 },
                 "route"    : {
                     "walltime_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "OpenSparcT1_Chip2":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "",
+                    "memory_MB"   : "unkown"
+                },
+                "fit"      : {
+                    "walltime_sec": "",
                     "memory_MB"   : ""
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "place"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : "unkown"
+                },
+                "route"    : {
+                    "walltime_sec": "",
+                    "memory_MB"   : "unkown"
                 }
             }
         }
