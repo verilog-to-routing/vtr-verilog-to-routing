@@ -25,10 +25,13 @@ def parse_args():
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument('--benchmarks_info', '-b', dest='benchmark_info_file', action='store',
+                        required=True,
                         help='Benchmark information file')
     parser.add_argument('--actions', '-a', dest='actions', action='store',
-                        help='Benchmark information file')
+                        default="quartus_synthesis vpr_pack vpr_place vpr_route",
+                        help='Benchmark actions [defaults to "%(default)s"]')
     parser.add_argument('--benchmark_source_dir', '-s', dest='benchmark_src_dir', action='store',
+                        required=True,
                         help='Directory containing the benchmarks')
     parser.add_argument('--default_memory', dest='default_memory', action='store',
                         default=6000,
@@ -54,10 +57,10 @@ def parse_args():
     return process_args(args)
 
 def process_args(args):
-    if args.actions == None:
-        args.actions = ['quartus_synthesis', 'vpr_pack', 'vpr_place', 'vpr_route']
-    else:
+    if args.actions:
         args.actions = args.actions.split()
+    else:
+        args.actions = []
     return args
 
 def main(args):
