@@ -16,6 +16,10 @@ import argparse
 import subprocess
 import os
 from os import path
+from time import time
+
+g_timer_queue = []
+
 
 def parse_args():
     description="""\
@@ -58,7 +62,7 @@ def parse_args():
                         help='The output vqm file name (default: <project>_<family>.vqm)')
 
     vqm2blif_options.add_argument('-a', '--arch', dest='arch_file', action='store',
-                        help='The architecture file to use. If not provided, will stop after VQM generation')
+                        help='The architecture file to use (default: <family>_arch.simple.xml')
 
     vqm2blif_options.add_argument('--vqm2blif_opts', dest='vqm2blif_extra_opts', action='store',
                         default='-luts vqm', #Outputs blackbox primitives only (no blif .names)
@@ -126,8 +130,8 @@ def check_args(args):
     if not args.blif_file:
         args.blif_file = path.splitext(path.basename(args.quartus_project))[0] + '_' + args.device_family + '.blif'
 
-    #if not args.arch_file:
-        #args.arch_file = path.join(args.vqm2blif_dir, 'BENCHMARKS/ARCH/%s_arch.xml' % args.device_family)
+    if not args.arch_file:
+        args.arch_file = path.join(args.vqm2blif_dir, 'BENCHMARKS/ARCH/%s_arch.simple.xml' % args.device_family)
     
     return args
 
@@ -236,22 +240,53 @@ def print_cmd(cmd_array):
     print ' '.join(cmd_array)
 
 def vqm2blif_flow(args):
+    push_timer('Generate VQM')
     gen_vqm(args)
+    pop_timer('Generate VQM')
+
 
     if args.arch_file:
+        push_timer('Generate BLIF')
         gen_blif(args)
+        pop_timer('Generate BLIF')
 
+def push_timer(timer_text):
+    global g_timer_queue
+    info_tuple = (timer_text, time())
+    g_timer_queue.append(info_tuple)
+    print "INFO: Started '{timer_text}'".format(timer_text=timer_text)
+
+def pop_timer(timer_text):
+    global g_timer_queue
+
+    time_now = time()
+
+    info_tuple = g_timer_queue.pop()
+    if info_tuple[0] != timer_text:
+        print "Error: Unbalanced Timers, timer_text '%s' and '%s' does not match" % (info_tuple[0],timer_text)
+        sys.exit(1)
+
+    elapsed_time = time_now - info_tuple[1]
+    print "INFO: Ended   '{timer_text}' after {elapsed_time:.2f} sec".format(timer_text=timer_text, elapsed_time=elapsed_time)
 
 #Execution starts here
 if __name__ == '__main__':
+    push_timer('vqm2blif_flow.py script')
     args = parse_args()
     
     args = check_args(args)
+    
 
+    push_timer('VQM to BLIF Conversion')
     vqm2blif_flow(args) 
+    pop_timer('VQM to BLIF Conversion')
     
     if args.arch_file and args.run_vpr:
+        push_timer('vpr')
         run_vpr(args)
+        pop_timer('vpr')
 
-    print "\nINFO: vqm2blif_flow script complete"
+    #print "\nINFO: vqm2blif_flow script complete"
+    print ""
+    pop_timer('vqm2blif_flow.py script')
     sys.exit(0)
