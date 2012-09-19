@@ -88,6 +88,9 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		if (clb_net[inet].is_global == FALSE) {
 			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++)
 				slacks->timing_criticality[inet][ipin] = init_timing_criticality_val;
+#ifdef PATH_COUNTING
+				slacks->path_criticality[inet][ipin] = 0.;
+#endif		
 		} else { /* Set delay of global signals to zero. */
 			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++)
 				net_delay[inet][ipin] = 0.;
@@ -227,6 +230,9 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 				for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++)
 				{
 					slacks->timing_criticality[inet][ipin] = 0.;
+#ifdef PATH_COUNTING 		
+					slacks->path_criticality[inet][ipin] = 0.; 		
+#endif
 					net_delay[inet][ipin] = 0.;
 				}
 			}
