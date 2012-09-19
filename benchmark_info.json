@@ -143,11 +143,11 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "",
+                    "walltime_sec": "11200",
                     "memory_MB"   : ""
                 },
                 "place"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "550",
                     "memory_MB"   : ""
                 },
                 "route"    : {
@@ -169,11 +169,11 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "3487",
+                    "walltime_sec": "4400",
                     "memory_MB"   : ""
                 },
                 "place"    : {
-                    "walltime_sec": "274",
+                    "walltime_sec": "400",
                     "memory_MB"   : ""
                 },
                 "route"    : {
@@ -211,8 +211,8 @@
         "LU_Network":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "walltime_sec": "3000",
+                    "memory_MB"   : "5683"
                 },
                 "fit"      : {
                     "walltime_sec": "",
@@ -263,8 +263,8 @@
         "Bitonic169_Mesh":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "walltime_sec": "1900",
+                    "memory_MB"   : "3200"
                 },
                 "fit"      : {
                     "walltime_sec": "",
@@ -289,8 +289,8 @@
         "LU128":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "walltime_sec": "1426",
+                    "memory_MB"   : "3314"
                 },
                 "fit"      : {
                     "walltime_sec": "",
@@ -341,8 +341,8 @@
         "OpenCV":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "walltime_sec": "1300",
+                    "memory_MB"   : "2731"
                 },
                 "fit"      : {
                     "walltime_sec": "",
@@ -351,11 +351,11 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "",
+                    "walltime_sec": "22000",
                     "memory_MB"   : ""
                 },
                 "place"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "1000",
                     "memory_MB"   : ""
                 },
                 "route"    : {
@@ -367,8 +367,8 @@
         "LU256":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "walltime_sec": "3000",
+                    "memory_MB"   : "6003"
                 },
                 "fit"      : {
                     "walltime_sec": "",
@@ -419,8 +419,8 @@
         "DART":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "walltime_sec": "1000",
+                    "memory_MB"   : "2300"
                 },
                 "fit"      : {
                     "walltime_sec": "",
@@ -445,8 +445,8 @@
         "Bitonic169_Cyclic":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "walltime_sec": "5000",
+                    "memory_MB"   : "3710"
                 },
                 "fit"      : {
                     "walltime_sec": "",

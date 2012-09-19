@@ -1,8 +1,8 @@
 #!/usr/bin/python
 __version__ = """$Revison$
-                 Last Change: $Author: suya $ $Date: 2012-08-30 22:54:17 -0400 (Thu, 30 Aug 2012) $
+                 Last Change: $Author: kmurray $ $Date: 2012-08-30 22:54:17 -0400 (Thu, 30 Aug 2012) $
                  Orig Author: kmurray
-                 $Id: vqm2blif_flow.py 2664 2012-06-21 22:20:09Z kmurray $"""
+                 $Id: run_benchmarks_scinet.py 2664 2012-06-21 22:20:09Z kmurray $"""
 try: import pudb
 except ImportError: pass
 
@@ -28,6 +28,18 @@ def parse_args():
                         help='Benchmark information file')
     parser.add_argument('--actions', '-a', dest='actions', action='store',
                         help='Benchmark information file')
+    parser.add_argument('--benchmark_source_dir', '-s', dest='benchmark_src_dir', action='store',
+                        help='Directory containing the benchmarks')
+    parser.add_argument('--default_memory', dest='default_memory', action='store',
+                        default=6000,
+                        help='Default memory used in MB [defaults to %(default) MB], for benchmarks which do not specify it in the info info file')
+    parser.add_argument('--default_time', dest='default_time', action='store',
+                        default=8000,
+                        help='Default time used in sec [defaults to %(default) sec], for benchmarks which do not specify it in the info info file')
+    parser.add_argument('--num_procs', '-n' dest='num_processors', action='store',
+                        default=8,
+                        help='Default number of processors used per node [defaults to %(default)]')
+
     parser.add_argument('--version', action='version', version=__version__,
                         help='Version information')
 
@@ -58,7 +70,7 @@ def main(args):
     benchmark_action_lists = generate_benchmark_actions(args, benchmark_info)
 
     #Partition the benchmarks into jobs
-    partition_benchmarks(benchmark_action_lists, benchmark_info)
+    partition_benchmarks(benchmark_action_lists, benchmark_info, args)
 
 def parse_benchmark_info(json_file):
     return Benchmark_info(json_file)
@@ -69,14 +81,14 @@ def generate_benchmark_actions(args, benchmark_info):
     for benchmark_name in benchmark_info.get_names():
         action_list = BenchmarkActionList(benchmark_name)
         for action in args.actions:
-            action = BenchmarkAction(benchmark_name, action, benchmark_info)
+            action = BenchmarkAction(benchmark_name, action, benchmark_info, default_memory=args.default_memory, default_time=args.default_time)
             action_list.add_action(action) 
         benchmark_action_dict[benchmark_name] = action_list
 
     return benchmark_action_dict
 
 
-def partition_benchmarks(action_dict, benchmark_info):
+def partition_benchmarks(action_dict, benchmark_info, args):
     #Simple benchmark packer, based on estimated memory usage
     MAX_WALLTIME = 48*60*60 #48 hrs
     RESERVED_MEMORY = 3*1024 #3GB
@@ -91,7 +103,7 @@ def partition_benchmarks(action_dict, benchmark_info):
     job_lists['16GB'] = []
     job_lists['32GB'] = []
     job_lists['128GB'] = []
-
+    cnt = 0
     for benchmark, action_list in action_dict.iteritems():
         benchmark_memory = action_list.get_peak_memory()
         benchmark_walltime = action_list.get_total_walltime()
@@ -114,7 +126,9 @@ def partition_benchmarks(action_dict, benchmark_info):
                 #Create a new job and add the benchmark
                 # if the pre-existing jobs are too full
                 if not benchmark_added:
-                    new_job = ClusterJob(total_memory=memory_capacity[machine_type], total_walltime=MAX_WALLTIME, machine_type=machine_type, job_num=(len(job_list) + 1))
+                    #Increment Job Counter
+                    cnt += 1
+                    new_job = ClusterJob(total_memory=memory_capacity[machine_type], total_walltime=MAX_WALLTIME, machine_type=machine_type, job_num=cnt)
                     new_job.add_actionlist(action_list)
                     job_list.append(new_job)
                     benchmark_added = True
@@ -134,7 +148,7 @@ def partition_benchmarks(action_dict, benchmark_info):
         for job in job_list:
             print
             job.explain()
-            file_name = job.generate_scripts()
+            file_name = job.generate_scripts(args)
 
             job_files.append(file_name)
 
@@ -251,7 +265,7 @@ class ClusterJob(object):
 
         return time_string
 
-    def generate_scripts(self):
+    def generate_scripts(self, args):
         file_name = self.name + '.sh'
         with open(file_name, 'w') as f:
             print >>f, "#!/bin/bash --norc"
@@ -285,8 +299,8 @@ class ClusterJob(object):
             print >>f, ""
             print >>f, "#Job parameters:"
             print >>f, "JOBNAME=%s" % self.name
+            print >>f, "export BENCHMARK_SRC_DIR=%s" % args.benchmark_src_dir
             print >>f, """
-export BENCHMARK_SRC_DIR=~/dev/trees/fpga_benchmarks/benchmarks_for_release/BENCHMARKS
 export ARCH_FILE=~/dev/trees/vqm_to_blif/REG_TEST/BENCHMARKS/ARCH/stratixiv_arch.simple.xml
 export INPUT_SUBDIR=input    # sub-directory (within input_tar) with input files
 export OUTPUT_SUBDIR=output  # sub-directory to contain of output files
@@ -302,8 +316,8 @@ date
 
 function log_top {
     echo "Begining to log top in background"
-    mkdir -p $RAMDISK/$OUTPUT_SUBIDR
-    top -b -M -c -u $USER > $RAMDISK/$OUTPUT_SUBDIR/top.log &
+    mkdir -p $RAMDISK/$OUTPUT_SUBDIR
+    top -b -M -c -d 10 -u $USER > $RAMDISK/$OUTPUT_SUBDIR/top.log &
 }
 
 function save_results {    
@@ -327,8 +341,9 @@ function cleanup_ramdisk {
 }
 
 function trap_term {
-    echo -n "Trapped term (soft kill) signal on "
-    date
+    echo    "######################################################################"
+    echo -n "# Trapped term (soft kill) signal on "; date;
+    echo    "######################################################################"
     save_results
     cleanup_ramdisk
     exit
@@ -337,6 +352,9 @@ function trap_term {
 #Tracks memory/cpu usage
 log_top
 
+#Trap the termination signal (sent by scheduler 30sec before job is killed)
+# Call the trap_term function to save results and cleanup ram disk
+trap "trap_term" TERM
 
 #Compiler pre-reqs for python
 module load intel gcc python
@@ -365,9 +383,11 @@ cp $ARCH_FILE $RAMDISK/$INPUT_SUBDIR/.
 # Execute Parallel commands
 ############################
 """
-            print >>f, 'echo -n "Parallel jobs started on "; date'
+            print >>f, 'echo    "######################################################################"'
+            print >>f, 'echo -n "# Started parallel jobs on "; date'
+            print >>f, 'echo    "######################################################################"'
             print >>f, ""
-            print >>f, "parallel -u -j 8 <<EOF"
+            print >>f, "parallel -u -j %d <<EOF" % args.num_processors
             for action_num, action_list in enumerate(self.action_lists, start=1):
                 script_name = action_list.gen_script(file_name, self.job_num, action_num)
                 print >>f, "./" + script_name
@@ -376,12 +396,11 @@ cp $ARCH_FILE $RAMDISK/$INPUT_SUBDIR/.
             print >>f, "EOF"
 
             print >>f, ""
-            print >>f, 'echo -n "Parallel jobs ended on "; date'
+            print >>f, 'echo    "######################################################################"'
+            print >>f, 'echo -n "# Ended   parallel jobs on "; date'
+            print >>f, 'echo    "######################################################################"'
             print >>f, ""
             print >>f, """
-#Trap the termination signal (sent by scheduler 30sec before job is killed)
-# Call the trap_term function to save results and cleanup ram disk
-trap "trap_term" TERM
 
 save_results
 cleanup_ramdisk
@@ -449,13 +468,13 @@ class BenchmarkActionList(object):
         return cmd_name
 
 class BenchmarkAction(object):
-    default_memory = 800
-    default_time = 70
-    def __init__(self, benchmark_name, action_name, info):
+    def __init__(self, benchmark_name, action_name, info, default_memory, default_time):
         self.benchmark_name = benchmark_name
         self.action_name = action_name
         self.memory_MB = info.get_info(benchmark_name, action_name, 'memory_MB')
         self.walltime_sec = info.get_info(benchmark_name, action_name, 'walltime_sec')
+        self.default_memory = default_memory
+        self.default_time = default_time
     
     def get_benchmark_name(self):
         return self.benchmark_name
