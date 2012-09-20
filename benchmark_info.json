@@ -107,7 +107,7 @@
         "JPEG":             {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "522.69",
+                    "walltime_sec": "530",
                     "memory_MB"   : "1115"
                 },
                 "fit"      : {
@@ -225,7 +225,7 @@
                     "memory_MB"   : "unkown"
                 },
                 "place"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
                 "route"    : {
@@ -359,7 +359,7 @@
                     "memory_MB"   : "unkown"
                 },
                 "route"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 }
             }
@@ -381,7 +381,7 @@
                     "memory_MB"   : "unkown"
                 },
                 "place"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
                 "route"    : {
@@ -485,11 +485,11 @@
                     "memory_MB"   : "unkown"
                 },
                 "place"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
                 "route"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 }
             }
