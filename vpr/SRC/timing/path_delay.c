@@ -319,8 +319,8 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 
 	check_timing_graph(num_sinks);
 
-	if (getEchoEnabled()) {
-		print_timing_graph_as_blif ("pre_packing_timing_graph_as_blif.blif", models);
+	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH_AS_BLIF)) {
+		print_timing_graph_as_blif(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH_AS_BLIF), models);
 	}
 	
 	if (g_sdc == NULL) {
@@ -3090,11 +3090,11 @@ void print_timing_stats(void) {
 
 	if (pb_max_internal_delay != UNDEFINED && pb_max_internal_delay > critical_path_delay) {
 		critical_path_delay = pb_max_internal_delay;
-		vpr_printf(TIO_MESSAGE_INFO, "Final critical path: %g ns\n", 1e9 * critical_path_delay);
+		vpr_printf(TIO_MESSAGE_INFO, "Critical path: %g ns\n", 1e9 * critical_path_delay);
 		vpr_printf(TIO_MESSAGE_INFO, "\t(capped by fmax of block type %s)\n", pbtype_max_internal_delay->name);
 		
 	} else {
-		vpr_printf(TIO_MESSAGE_INFO, "Final critical path: %g ns\n", 1e9 * critical_path_delay);
+		vpr_printf(TIO_MESSAGE_INFO, "Critical path: %g ns\n", 1e9 * critical_path_delay);
 	}
 
 	if (g_sdc->num_constrained_clocks <= 1) {
