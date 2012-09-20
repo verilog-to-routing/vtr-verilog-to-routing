@@ -68,32 +68,31 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			&rt_node_of_sink);
 
 	/* First do one routing iteration ignoring congestion to	
-	 * get reasonable net delay estimates. Since we set net
-	 * delay to 0, it doesn't matter what criticality we 
-	 * use, so give each net a dummy criticality of 0. */
-		
-	/* Initalizing the value for slacks->timing_criticality. Set 		*
-	 * slacks->timing_criticality = 1 when timing analysis is turned on.	*
-	 * This way, all paths are timing critical, and	the emphasis when 	*
-	 * routing would be on that. On the other hand, when timing analysis is *
-	 * turned off, set all timing criticalities to zero so emphasis will be *
-	 * placed on wirelength and congestion from the very beginning.		*/
+	get reasonable net delay estimates. Set criticalities to 1 
+	when timing analysis is on to optimize timing, and to 0 
+	when timing analysis is off to optimize routability. */
 
-	if (timing_analysis_enabled)
+	if (timing_analysis_enabled) {
 		init_timing_criticality_val = 1.;
-	else
+	} else {
 		init_timing_criticality_val = 0.;
+	}
 
 	for (inet = 0; inet < num_nets; inet++) {
 		if (clb_net[inet].is_global == FALSE) {
 			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++)
 				slacks->timing_criticality[inet][ipin] = init_timing_criticality_val;
 #ifdef PATH_COUNTING
-				slacks->path_criticality[inet][ipin] = 0.;
+				slacks->path_criticality[inet][ipin] = init_timing_criticality_val;
 #endif		
-		} else { /* Set delay of global signals to zero. */
-			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++)
+		} else { 
+			/* Set delay of global signals to zero. Non-global net 
+			delays are set by update_net_delays_from_route_tree() 
+			inside timing_driven_route_net(), which is only called
+			for non-global nets. */
+			for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
 				net_delay[inet][ipin] = 0.;
+			}
 		}
 	}
 
@@ -109,10 +108,10 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			if (clb_net[inet].is_global == FALSE) { /* Skip global nets. */
 
 				is_routable = timing_driven_route_net(inet, pres_fac,
-						router_opts.max_criticality,
-						router_opts.criticality_exp, router_opts.astar_fac,
-						router_opts.bend_cost, pin_criticality,
-						sink_order, rt_node_of_sink, net_delay[inet], slacks);
+					router_opts.max_criticality,
+					router_opts.criticality_exp, router_opts.astar_fac,
+					router_opts.bend_cost, pin_criticality,
+					sink_order, rt_node_of_sink, net_delay[inet], slacks);
 
 				/* Impossible to route? (disconnected rr_graph) */
 
@@ -203,7 +202,6 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			pathfinder_update_cost(pres_fac, router_opts.acc_fac);
 		}
 
-		
 		if (timing_analysis_enabled) {		
 			/* Update slack values by doing another timing analysis.                 *
 			 * Timing_driven_route_net updated the net delay values.                 */
@@ -219,16 +217,12 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			/* Print critical path delay - convert to nanoseconds. */
 			critical_path_delay = get_critical_path_delay();
 			vpr_printf(TIO_MESSAGE_INFO, "Critical path: %g ns\n", critical_path_delay);
-			/* Deliberately abbreviated so parsing for "Critical path" will not pick this up. */
-		}
-		else 
-		{
+		} else {
 			/* If timing analysis is not enabled, make sure that the criticalities and the 	*
 			 * net_delays stay as 0 so that wirelength can be optimized. 			*/
 			
 			for (inet = 0; inet < num_nets; inet++) {
-				for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++)
-				{
+				for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
 					slacks->timing_criticality[inet][ipin] = 0.;
 #ifdef PATH_COUNTING 		
 					slacks->path_criticality[inet][ipin] = 0.; 		
@@ -877,7 +871,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
 	for (inet = 0; inet < num_nets; inet++) {
 		for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
 			if (net_delay_check[inet][ipin] == 0.) { /* Should be only GLOBAL nets */
-				if (net_delay[inet][ipin] != 0.) {
+				if (fabs(net_delay[inet][ipin]) > ERROR_TOL) {
 					vpr_printf(TIO_MESSAGE_ERROR, "in timing_driven_check_net_delays: net %d pin %d.\n",
 							inet, ipin);
 					vpr_printf(TIO_MESSAGE_ERROR, "\tIncremental calc. net_delay is %g, but from scratch net delay is %g.\n",
@@ -885,7 +879,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
 					exit(1);
 				}
 			} else {
-				if (fabs( 1.0 - net_delay[inet][ipin] / net_delay_check[inet][ipin]) > ERROR_TOL) {
+				if (fabs(1.0 - net_delay[inet][ipin] / net_delay_check[inet][ipin]) > ERROR_TOL) {
 					vpr_printf(TIO_MESSAGE_ERROR, "in timing_driven_check_net_delays: net %d pin %d.\n",
 							inet, ipin);
 					vpr_printf(TIO_MESSAGE_ERROR, "\tIncremental calc. net_delay is %g, but from scratch net delay is %g.\n",
