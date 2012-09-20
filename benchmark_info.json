@@ -3,7 +3,7 @@
         "radar20":          {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "70",
+                    "walltime_sec": "250",
                     "memory_MB"   : "890"
                 },
                 "fit"      : {
@@ -55,7 +55,7 @@
         "MMM":              {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "130",
+                    "walltime_sec": "300",
                     "memory_MB"   : "916"
                 },
                 "fit"      : {
@@ -65,15 +65,15 @@
             },
             "vpr"    : { 
                 "pack"     : {
-                    "walltime_sec": "574", 
+                    "walltime_sec": "750", 
                     "memory_MB"   : ""
                 },
                 "place"    : {
-                    "walltime_sec": "72", 
+                    "walltime_sec": "110", 
                     "memory_MB"   : ""
                 },
                 "route"    : {
-                    "walltime_sec": "71", 
+                    "walltime_sec": "80", 
                     "memory_MB"   : "4110"
                 }
             }
@@ -81,7 +81,7 @@
         "CH_DFSIN":         {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "974",
+                    "walltime_sec": "1100",
                     "memory_MB"   : "1539"
                 },
                 "fit"      : {
@@ -91,7 +91,7 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "688",
+                    "walltime_sec": "750",
                     "memory_MB"   : ""
                 },
                 "place"    : {
@@ -107,7 +107,7 @@
         "JPEG":             {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "306",
+                    "walltime_sec": "522.69",
                     "memory_MB"   : "1115"
                 },
                 "fit"      : {
@@ -133,7 +133,7 @@
         "Neuron":           {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "360",
+                    "walltime_sec": "540",
                     "memory_MB"   : "1540"
                 },
                 "fit"      : {
@@ -151,7 +151,7 @@
                     "memory_MB"   : "unkown"
                 },
                 "route"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 }
             }
@@ -159,7 +159,7 @@
         "OpenSparcT1_Core": {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "612",
+                    "walltime_sec": "650",
                     "memory_MB"   : "1386"
                 },
                 "fit"      : {
@@ -177,7 +177,7 @@
                     "memory_MB"   : "unkown"
                 },
                 "route"    : {
-                    "walltime_sec": "162",
+                    "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 }
             }
@@ -185,7 +185,7 @@
         "DES90":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "671",
+                    "walltime_sec": "1100",
                     "memory_MB"   : "1782"
                 },
                 "fit"      : {
@@ -195,11 +195,11 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "1524",
+                    "walltime_sec": "9000",
                     "memory_MB"   : "unkown"
                 },
                 "place"    : {
-                    "walltime_sec": "44",
+                    "walltime_sec": "700",
                     "memory_MB"   : "unkown"
                 },
                 "route"    : {
@@ -211,7 +211,7 @@
         "LU_Network":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "3000",
+                    "walltime_sec": "4600",
                     "memory_MB"   : "5683"
                 },
                 "fit"      : {
@@ -237,8 +237,8 @@
         "MCML":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "walltime_sec": "500",
+                    "memory_MB"   : "1400"
                 },
                 "fit"      : {
                     "walltime_sec": "",
@@ -247,15 +247,15 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "unkown",
+                    "walltime_sec": "2000",
                     "memory_MB"   : "unkown"
                 },
                 "place"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "300",
                     "memory_MB"   : "unkown"
                 },
                 "route"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "100",
                     "memory_MB"   : "unkown"
                 }
             }
@@ -263,7 +263,7 @@
         "Bitonic169_Mesh":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "1900",
+                    "walltime_sec": "2100",
                     "memory_MB"   : "3200"
                 },
                 "fit"      : {
@@ -277,7 +277,7 @@
                     "memory_MB"   : "unkown"
                 },
                 "place"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
                 "route"    : {
@@ -289,7 +289,7 @@
         "LU128":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "1426",
+                    "walltime_sec": "2100",
                     "memory_MB"   : "3314"
                 },
                 "fit"      : {
@@ -303,7 +303,7 @@
                     "memory_MB"   : "unkown"
                 },
                 "place"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
                 "route"    : {
@@ -315,8 +315,8 @@
         "JZ_Switch_Fabric":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "",
-                    "memory_MB"   : ""
+                    "walltime_sec": "3500",
+                    "memory_MB"   : "4300"
                 },
                 "fit"      : {
                     "walltime_sec": "",
@@ -341,7 +341,7 @@
         "OpenCV":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "1300",
+                    "walltime_sec": "1600",
                     "memory_MB"   : "2731"
                 },
                 "fit"      : {
@@ -367,7 +367,7 @@
         "LU256":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "3000",
+                    "walltime_sec": "5000",
                     "memory_MB"   : "6003"
                 },
                 "fit"      : {
@@ -393,8 +393,8 @@
         "OpenSparcT2_Core":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "",
-                    "memory_MB"   : "unkown"
+                    "walltime_sec": "3100",
+                    "memory_MB"   : "4516"
                 },
                 "fit"      : {
                     "walltime_sec": "",
@@ -403,15 +403,15 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "unkown",
+                    "walltime_sec": "32000",
                     "memory_MB"   : "unkown"
                 },
                 "place"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "2000",
                     "memory_MB"   : "unkown"
                 },
                 "route"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 }
             }
@@ -419,7 +419,7 @@
         "DART":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "1000",
+                    "walltime_sec": "1200",
                     "memory_MB"   : "2300"
                 },
                 "fit"      : {
@@ -429,15 +429,15 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "unkown",
+                    "walltime_sec": "19000",
                     "memory_MB"   : "unkown"
                 },
                 "place"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "1000",
                     "memory_MB"   : "unkown"
                 },
                 "route"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 }
             }
@@ -459,11 +459,11 @@
                     "memory_MB"   : "unkown"
                 },
                 "place"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
                 "route"    : {
-                    "walltime_sec": "",
+                    "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 }
             }
@@ -471,7 +471,7 @@
         "OpenSparcT1_Chip2":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "",
+                    "walltime_sec": "7100",
                     "memory_MB"   : "unkown"
                 },
                 "fit"      : {

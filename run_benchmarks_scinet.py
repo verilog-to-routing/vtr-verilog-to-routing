@@ -321,7 +321,9 @@ date
 function log_top {
     echo "Begining to log top in background"
     mkdir -p $RAMDISK/$OUTPUT_SUBDIR
-    top -b -M -c -d 10 -u $USER > $RAMDISK/$OUTPUT_SUBDIR/top.log &
+    #Columns 512 ensures the full command line arguments are captured in the log file
+    # The sed command removes any extra whitespace, if the full 512 columns aren't used
+    COLUMNS=512 top -b -M -c -d 10 -u $USER | sed 's/  *$//' > $RAMDISK/$OUTPUT_SUBDIR/top.log &
 }
 
 function save_results {    
