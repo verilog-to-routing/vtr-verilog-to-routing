@@ -146,11 +146,13 @@ void alloc_and_load_echo_file_info() {
 	setEchoFileName(E_ECHO_PLACEMENT_LOGIC_SINK_DELAYS, "placement_logic_sink_delays.echo");
 	setEchoFileName(E_ECHO_ROUTING_SINK_DELAYS, "routing_sink_delays.echo");
 	setEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH, "post_flow_timing_graph.blif");
+	setEchoFileName(E_ECHO_POST_PACK_NETLIST, "post_pack_netlist.blif");
 	setEchoFileName(E_ECHO_BLIF_INPUT, "blif_input.echo");
 	setEchoFileName(E_ECHO_NET_DELAY, "net_delay.echo");
 	setEchoFileName(E_ECHO_TIMING_GRAPH, "timing_graph.echo");
 	setEchoFileName(E_ECHO_LUT_REMAPPING, "lut_remapping.echo");
 	setEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH, "pre_packing_timing_graph.echo");
+	setEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH_AS_BLIF, "pre_packing_timing_graph_as_blif.blif");
 	setEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO, "clustering_timing_info.echo");
 	setEchoFileName(E_ECHO_PRE_PACKING_SLACK, "pre_packing_slack.echo");
 	setEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY, "pre_packing_criticality.echo");
@@ -163,6 +165,7 @@ void alloc_and_load_echo_file_info() {
 	setEchoFileName(E_ECHO_SLACK, "slack.echo");	
 	setEchoFileName(E_ECHO_CRITICALITY, "criticality.echo");
 	setEchoFileName(E_ECHO_COMPLETE_NET_TRACE, "complete_net_trace.echo");
+	setEchoFileName(E_ECHO_SEG_DETAILS, "seg_details.txt");
 }
 
 void free_echo_file_info() {
