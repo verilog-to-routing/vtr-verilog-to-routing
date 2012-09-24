@@ -1,23 +1,31 @@
 ######################################################################
-
-MAKEFILE = Makefile
-MAKE = /usr/atria/bin/clearmake
+#
+# Toro - a VPR front-end
+#
+# Note: This make file is dependent on the platform-specific ISP 
+#       environment variable.  ISP is platform-specific and is used 
+#       to determine various build switches and directories.
+#
+#       This make file currently supports:
+#       - setenv ISP linux24_amd64
+#       - setenv ISP sun8
+#
+######################################################################
 
 ######################################################################
 # Compiler options
 ######################################################################
 
-pC++sun8 = /apps/SUNWspro_6.0-U2/bin/CC
 pC++linux24_amd64 = /usr/bin/g++
+pC++sun8 = /apps/SUNWspro_6.0-U2/bin/CC
 pC++ = $(pC++$(ISP))
 
-PICsun8 = -G -KPIC
 PIClinux24_amd64 = -shared
+PICsun8 = -G -KPIC
 PIC = $(PIC$(ISP))
 
-CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
-# ??? CFLAGSlinux24_amd64 = -W -Wno-deprecated -static -fPIC -DLINUX24_64
 CFLAGSlinux24_amd64 = -Wall -Wpointer-arith -Wcast-qual -Wno-deprecated -static -fPIC -DLINUX24_64
+CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
 CFLAGS = $(CFLAGS$(ISP)) \
 	-I. \
 	-I../TM_Master \
@@ -41,49 +49,31 @@ CFLAGS = $(CFLAGS$(ISP)) \
         -I../TPO_PhysicalObjects \
         -I../TLO_LogicalObjects \
         -I../TNO_NetObjects \
+	-I../TTP_TilePlaneObjects \
 	-I../TGS_GeometricShapes \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
 	-I../pccts/pcctsGeneric -I../pccts/h \
 	-I../pcre \
-	-I../vpr
-
-######################################################################
-# Linker options
-######################################################################
-
-LINKERsun8 = /usr/ccs/bin/ld
-LINKERlinux24_amd64 = /usr/bin/ld
-LINKER = $(LINKER$(ISP))
-
-LFLAGSsun8 = -G -library=iostream -xarch=v9
-LFLAGSlinux24_amd64 = -shared
-LFLAGS = $(LFLAGS$(ISP))
+	-I../vpr/SRC/base -I../vpr/SRC/util -I../libarchfpga/include
 
 ######################################################################
 # Program files
 ######################################################################
 
-LIBSOsun8 = ../sun8/$(PROG).$(SOL)
-LIBSOlinux24_amd64 = ../linux24_amd64/$(PROG).$(SOL)
-LIBSO = $(LIBSO$(ISP))
-
 PROG = toro
 EXE = ../bin.$(ISP)/$(PROG)
 
-OBJSsun8 = sun8/toro.o 
 OBJSlinux24_amd64 = linux24_amd64/toro.o 
+OBJSsun8 = sun8/toro.o 
 OBJECTS = $(OBJS$(ISP))
 
 ######################################################################
 # Target rules
 ######################################################################
 
-# ??? .cxx.o:;
-# ??? .cxx.a:;
-
-SYSLIBSsun8 = -L../pcre/libs/$(ISP) -lpcre -Bdynamic -lresolv
 SYSLIBSlinux24_amd64 = -L../pcre/libs/$(ISP) -lpcre
+SYSLIBSsun8 = -L../pcre/libs/$(ISP) -lpcre -Bdynamic -lresolv
 SYSLIBS = $(SYSLIBS$(ISP))
 LIBDEFS = ../$(ISP)/libTM_Master.a \
 	../$(ISP)/libTI_Input.a \
@@ -145,29 +135,20 @@ LINKLIBS = -L../$(ISP) \
 	-lh \
 	-lvpr
 
-PURE =
 BUILD_TARGET =
+
+all:
+	make Debug
+Optimized:
+	make $(EXE) BUILD_TARGET=Optimized
+Debug:
+	make $(EXE) BUILD_TARGET=Debug
+clean:
+	rm -rf $(ISP)/*
+	rm -f $(ANTLRGEN) $(DLGGEN)
 
 .cxx.o:;
 .cxx.a:;
-
-all:
-	$(MAKE) Debug
-Optimized:
-	$(MAKE) $(EXE) CFLAGS="-O2 $(CFLAGS)" BUILD_TARGET=Optimized
-Debug:
-	$(MAKE) $(EXE) CFLAGS="-g -DDEBUG $(CFLAGS)" BUILD_TARGET=Debug
-Gprof:
-	$(MAKE) $(EXE) CFLAGS="-pg -g -DDEBUG $(CFLAGS)" BUILD_TARGET=Gprof
-Pure:
-	$(MAKE) $(EXE) CFLAGS="-g $(CFLAGS)" PURE=purify
-Quantify:
-	$(MAKE) $(EXE) CFLAGS="-g $(CFLAGS)" PURE=quantify
-
-clean:
-	rm -rf $(ISP)/*
-	rm -f *.lis *.lst purify.log core 
-	rm -f $(ANTLRGEN) $(DLGGEN)
 
 ######################################################################
 # Program rules
@@ -177,28 +158,18 @@ date.h: toro.cxx
 	rm -f date.h
 	echo "#define COMPILEDATE "\"`date`\""" > date.h
 
-../bin.sun8/$(PROG): date.h $(MAKEFILE) $(OBJECTS) $(LIBDEFS)
-	$(PURE) $(pC++) $(CFLAGS) -Bstatic -o $@ $(OBJECTS) \
-	$(LINKLIBS) \
-	-Bstatic $(SYSLIBS) -Bdynamic
-
-../bin.linux24_amd64/$(PROG): date.h $(MAKEFILE) $(OBJECTS) $(LIBDEFS)
-	$(PURE) $(pC++) $(CFLAGS) -o $@ $(OBJECTS) \
+../bin.linux24_amd64/$(PROG): date.h Makefile $(OBJECTS) $(LIBDEFS)
+	$(pC++) $(CFLAGS) -o $@ $(OBJECTS) \
 	$(LINKLIBS) \
 	$(SYSLIBS) 
 
+../bin.sun8/$(PROG): date.h Makefile $(OBJECTS) $(LIBDEFS)
+	$(pC++) $(CFLAGS) -Bstatic -o $@ $(OBJECTS) \
+	$(LINKLIBS) \
+	-Bstatic $(SYSLIBS) -Bdynamic
+
 $(OBJECTS): $(@F:.o=.cxx)
-	$(PURE) $(pC++) -o $@ -c $(@F:.o=.cxx) $(PIC) $(CFLAGS)
-
-$(LIBSOsun8): $(OBJECTS) $(MWBUILDLIBS) $(MWPBLIBS) $(MAKEFILE)
-	$(pC++) $(LFLAGS) -o $(ISP)/$(PROG).$(SOL) $(OBJECTS) \
-	-Bstatic $(SYSLIBS) -Bdynamic ; \
-	mv $(ISP)/$(PROG).$(SOL) $@
-
-$(LIBSOlinux24_amd64): $(OBJECTS) $(MAKEFILE)
-	$(pC++) $(LFLAGS) -o $(ISP)/$(PROG).$(SOL) $(OBJECTS) \
-	$(SYSLIBS) ; \
-	mv $(ISP)/$(PROG).$(SOL) $@
+	$(pC++) -o $@ -c $(@F:.o=.cxx) $(PIC) $(CFLAGS)
 
 ######################################################################
 # Library rules
