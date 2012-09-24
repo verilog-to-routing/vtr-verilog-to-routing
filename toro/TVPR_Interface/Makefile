@@ -1,23 +1,31 @@
 ######################################################################
-
-MAKEFILE = Makefile
-MAKE = /usr/atria/bin/clearmake
+#
+# Toro VPR interface library
+#
+# Note: This make file is dependent on the platform-specific ISP 
+#       environment variable.  ISP is platform-specific and is used 
+#       to determine various build switches and directories.
+#
+#       This make file currently supports:
+#       - setenv ISP linux24_amd64
+#       - setenv ISP sun8
+#
+######################################################################
 
 ######################################################################
 # Compiler options
 ######################################################################
 
-pC++sun8 = /apps/SUNWspro_6.0-U2/bin/CC
 pC++linux24_amd64 = /usr/bin/gcc
+pC++sun8 = /apps/SUNWspro_6.0-U2/bin/CC
 pC++ = $(pC++$(ISP))
 
-PICsun8 = -G -KPIC
 PIClinux24_amd64 = -shared
+PICsun8 = -G -KPIC
 PIC = $(PIC$(ISP))
 
-CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
-# CFLAGSlinux24_amd64 = -W -Wno-deprecated -static -fPIC -DLINUX24_64
 CFLAGSlinux24_amd64 = -Wall -Wpointer-arith -Wcast-qual -Wno-deprecated -static -fPIC -DLINUX24_64
+CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
 CFLAGS = $(CFLAGS$(ISP)) \
 	-I. \
 	-I../TOS_OptionsStore \
@@ -34,96 +42,86 @@ CFLAGS = $(CFLAGS$(ISP)) \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
 	-I../pcre \
-        -I../vpr/SRC/base -I../vpr/SRC/util -I../libarchfpga/include
+	-I../vpr/SRC/base -I../vpr/SRC/util -I../libarchfpga/include
 
 ######################################################################
 # Linker options
 ######################################################################
 
-LINKERsun8 = /usr/ccs/bin/ld
 LINKERlinux24_amd64 = /usr/bin/ld
+LINKERsun8 = /usr/ccs/bin/ld
 LINKER = $(LINKER$(ISP))
 
-LFLAGSsun8 = -G -library=iostream -xarch=v9
 LFLAGSlinux24_amd64 = -shared
+LFLAGSsun8 = -G -library=iostream -xarch=v9
 LFLAGS = $(LFLAGS$(ISP))
 
 ######################################################################
 # Program files
 ######################################################################
 
-SOL = $(SOL$(ISP))
-SOLsun8 = so
 SOLlinux24_amd64 = so
+SOLsun8 = so
+SOL = $(SOL$(ISP))
 
-LIBSOsun8 = ../sun8/$(PROG).$(SOL)
 LIBSOlinux24_amd64 = ../linux24_amd64/$(PROG).$(SOL)
+LIBSOsun8 = ../sun8/$(PROG).$(SOL)
 LIBSO = $(LIBSO$(ISP))
+
+OBJSlinux24_amd64 = linux24_amd64/TVPR_Interface.o \
+                    linux24_amd64/TVPR_OptionsStore.o \
+                    linux24_amd64/TVPR_ArchitectureSpec.o \
+                    linux24_amd64/TVPR_FabricModel.o \
+                    linux24_amd64/TVPR_CircuitDesign.o
+OBJSsun8 = sun8/TVPR_Interface.o \
+           sun8/TVPR_OptionsStore.o \
+           sun8/TVPR_ArchitectureSpec.o \
+           sun8/TVPR_FabricModel.o \
+           sun8/TVPR_CircuitDesign.o
+OBJECTS = $(OBJS$(ISP))
 
 PROG = libTVPR_Interface
 EXE = ../$(ISP)/$(PROG).a
-
-OBJSsun8	= sun8/TVPR_Interface.o \
-                  sun8/TVPR_OptionsStore.o \
-                  sun8/TVPR_ArchitectureSpec.o \
-                  sun8/TVPR_FabricModel.o \
-                  sun8/TVPR_CircuitDesign.o
-OBJSlinux24_amd64	= linux24_amd64/TVPR_Interface.o \
-                          linux24_amd64/TVPR_OptionsStore.o \
-                          linux24_amd64/TVPR_ArchitectureSpec.o \
-                          linux24_amd64/TVPR_FabricModel.o \
-                          linux24_amd64/TVPR_CircuitDesign.o
-
-OBJECTS = $(OBJS$(ISP))
 
 ######################################################################
 # Target rules
 ######################################################################
 
-PURE =
 BUILD_TARGET =
+
+all:
+	make Debug
+Optimized:
+	make $(EXE) CFLAGS="-O2 $(CFLAGS)" BUILD_TARGET=Optimized
+Debug:
+	make $(EXE) CFLAGS="-g -DDEBUG $(CFLAGS)" BUILD_TARGET=Debug
+Gprof:
+	make $(EXE) CFLAGS="-pg -g -DDEBUG $(CFLAGS)" BUILD_TARGET=Debug
+clean:
+	rm -rf $(ISP)/*
 
 .cxx.o:;
 .cxx.a:;
-
-all:
-	$(MAKE) Debug
-Optimized:
-	$(MAKE) $(EXE) CFLAGS="-O2 $(CFLAGS)" BUILD_TARGET=Optimized
-Debug:
-	$(MAKE) $(EXE) CFLAGS="-g -DDEBUG $(CFLAGS)" BUILD_TARGET=Debug
-Gprof:
-	$(MAKE) $(EXE) CFLAGS="-pg -g -DDEBUG $(CFLAGS)" BUILD_TARGET=Debug
-Pure:
-	$(MAKE) $(EXE) CFLAGS="-g $(CFLAGS)" PURE=purify
-Quantify:
-	$(MAKE) $(EXE) CFLAGS="-g $(CFLAGS)" PURE=quantify
-
-clean:
-	rm -rf $(ISP)/*
-	rm -f *.lis *.lst purify.log core 
-	cleartool ls
 
 ######################################################################
 # Program rules
 ######################################################################
 
-ARCMDsun8 = $(pC++) -xar -xarch=v9 -library=iostream -o $(ISP)/$(PROG).a $(OBJECTS) ; \
-	mv $(ISP)/$(PROG).a $(EXE)
 ARCMDlinux24_amd64 = $(LINKER) -r -o $(ISP)/$(PROG).a $(OBJECTS) ; \
+	mv $(ISP)/$(PROG).a $(EXE)
+ARCMDsun8 = $(pC++) -xar -xarch=v9 -library=iostream -o $(ISP)/$(PROG).a $(OBJECTS) ; \
 	mv $(ISP)/$(PROG).a $(EXE)
 ARCMD = $(ARCMD$(ISP))
 $(EXE): $(LIBSO)
 	$(ARCMD)
 
 $(OBJECTS): $(@F:.o=.cxx)
-	$(PURE) $(pC++) -o $@ -c $(@F:.o=.cxx) $(PIC) $(CFLAGS)
+	$(pC++) -o $@ -c $(@F:.o=.cxx) $(PIC) $(CFLAGS)
 
-$(LIBSOsun8): $(OBJECTS) $(MAKEFILE)
+$(LIBSOlinux24_amd64): $(OBJECTS) Makefile
 	$(pC++) $(LFLAGS) -o $(ISP)/$(PROG).$(SOL) $(OBJECTS) ; \
 	mv $(ISP)/$(PROG).$(SOL) $@
-
-$(LIBSOlinux24_amd64): $(OBJECTS) $(MAKEFILE)
+$(LIBSOsun8): $(OBJECTS) Makefile
 	$(pC++) $(LFLAGS) -o $(ISP)/$(PROG).$(SOL) $(OBJECTS) ; \
 	mv $(ISP)/$(PROG).$(SOL) $@
 
