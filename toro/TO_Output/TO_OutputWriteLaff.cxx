@@ -22,7 +22,8 @@
 //
 //===========================================================================//
 
-#include <math.h>
+#include <cmath>
+using namespace std;
 
 #include "TIO_StringText.h"
 #include "TIO_SkinHandler.h"

@@ -8,7 +8,8 @@
 #ifndef TO_OUTPUT_H
 #define TO_OUTPUT_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TCL_CommandLine.h"
 
