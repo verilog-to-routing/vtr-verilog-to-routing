@@ -158,25 +158,25 @@ bool TFV_FabricPlane_c::Add(
          {
             if( *pfabricFigure->GetData( ) == fabricData )
             {
-   	       const TGS_Region_c& fabricRegion( pfabricFigure->GetRegion( ));
-   	       if( fabricRegion.IsWithin( addRegion ))
-   	       {
-   	          addRegion.Reset( );
-   	          break;
-   	       }
+               const TGS_Region_c& fabricRegion( pfabricFigure->GetRegion( ));
+               if( fabricRegion.IsWithin( addRegion ))
+               {
+                  addRegion.Reset( );
+                  break;
+               }
 
-   	       TGS_RegionList_t addRegionList( 4 );
-   	       region.FindDifference( addRegion, fabricRegion, 
+               TGS_RegionList_t addRegionList( 4 );
+               region.FindDifference( addRegion, fabricRegion, 
                                       TGS_ORIENT_VERTICAL, 
-   	                              &addRegionList, minGrid );
+                                      &addRegionList, minGrid );
 
-   	       addRegion = *addRegionList[ 0 ];
-   	       for( size_t i = 1; i < addRegionList.GetLength( ); ++i )
-   	       {
-   	          const TGS_Region_c& addRegion_ = *addRegionList[ i ];
-   	          this->Add( addRegion_, fabricData, addMode );
-   	       }
-   	       continue;
+               addRegion = *addRegionList[ 0 ];
+               for( size_t i = 1; i < addRegionList.GetLength( ); ++i )
+               {
+                  const TGS_Region_c& addRegion_ = *addRegionList[ i ];
+                  this->Add( addRegion_, fabricData, addMode );
+               }
+               continue;
 	    }
 
             TGS_Region_c deleteRegion( pfabricFigure->GetRegion( ));

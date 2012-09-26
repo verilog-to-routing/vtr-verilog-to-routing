@@ -202,9 +202,9 @@ void TFV_FabricPin_c::Print(
    TC_ExtractStringSideMode( this->side_, &srSide );
 
    printHandler.Write( pfile, spaceLen, "\"%s\" %u [%s %0.*f %0.*f]",
-	                                TIO_SR_STR( this->srName_ ),
-	                                this->slice_,
-	                                TIO_SR_STR( srSide ),
+                                        TIO_SR_STR( this->srName_ ),
+                                        this->slice_,
+                                        TIO_SR_STR( srSide ),
                                         precision, this->offset_,
                                         precision, this->width_ );
    if( this->connectionList_.IsValid( ))
@@ -214,8 +214,8 @@ void TFV_FabricPin_c::Print(
       {
          const TFV_Connection_t& connection = *this->connectionList_[i];
          printHandler.Write( pfile, 0, "%s%d",
-			               i == 0 ? "" : " ",
-			               connection.GetIndex( ));
+                                       i == 0 ? "" : " ",
+                                       connection.GetIndex( ));
       }
       printHandler.Write( pfile, 0, ")" );
 

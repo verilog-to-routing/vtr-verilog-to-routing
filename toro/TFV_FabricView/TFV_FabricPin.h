@@ -16,8 +16,7 @@
 #ifndef TFV_FABRIC_PIN_H
 #define TFV_FABRIC_PIN_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 
@@ -39,15 +38,15 @@ public:
 
    TFV_FabricPin_c( void );
    TFV_FabricPin_c( const string& srName,
-		    unsigned int slice = 0,
+                    unsigned int slice = 0,
                     TC_SideMode_t side = TC_SIDE_UNDEFINED,
-		    double offset = 0.0,
-		    double width = 0.0 );
+                    double offset = 0.0,
+                    double width = 0.0 );
    TFV_FabricPin_c( const char* pszName,
-		    unsigned int slice = 0,
-	            TC_SideMode_t side = TC_SIDE_UNDEFINED,
-		    double offset = 0.0,
-		    double width = 0.0 );
+                    unsigned int slice = 0,
+                    TC_SideMode_t side = TC_SIDE_UNDEFINED,
+                    double offset = 0.0,
+                    double width = 0.0 );
    TFV_FabricPin_c( const TFV_FabricPin_c& fabricPin );
    ~TFV_FabricPin_c( void );
 

@@ -163,7 +163,7 @@ void TFV_FabricView_c::Print(
 
    printHandler.Write( pfile, spaceLen, "\"%s\" (%s) [%d-%d]",
                                         TIO_SR_STR( this->srName_ ),
-		                        TIO_SR_STR( srRegion ),
+                                        TIO_SR_STR( srRegion ),
                                         this->layerRange_.i, this->layerRange_.j );
    if(( this->pfabricLayerList_ ) &&
       ( this->pfabricLayerList_->IsValid( )))
@@ -357,7 +357,7 @@ bool TFV_FabricView_c::Add(
          continue;
 
       if( layer > thisLayerRange.j )
-	 break;
+         break;
 
       const TFV_FabricPlane_c* pfabricPlane = fabricView.FindFabricPlane( layer );
       if( !pfabricPlane )
@@ -368,7 +368,7 @@ bool TFV_FabricView_c::Add(
       while( fabricPlaneIter.Next( &pfabricFigure, TFV_FIGURE_SOLID ))
       {
          TGS_Region_c region = pfabricFigure->GetRegion( );
-	 const TFV_FabricData_c& fabricData = *pfabricFigure->GetData( );
+         const TFV_FabricData_c& fabricData = *pfabricFigure->GetData( );
 
          if( thisRegion.IsWithin( region ))
          {
@@ -544,7 +544,7 @@ bool TFV_FabricView_c::Find(
             TGS_Layer_t          layer,
       const TGS_Region_c&        region,
             TFV_FindMode_t       findMode,
-	    TFV_FigureMode_t     figureMode,
+            TFV_FigureMode_t     figureMode,
             TFV_FabricFigure_t** ppfabricFigure ) const
 {
    bool ok = true;
@@ -554,7 +554,7 @@ bool TFV_FabricView_c::Find(
       TFV_FabricLayer_c* pfabricLayer = this->pfabricLayerList_->operator[]( layer );
       if( pfabricLayer )
       {
-	 ok = pfabricLayer->Find( region, findMode, figureMode, ppfabricFigure );
+         ok = pfabricLayer->Find( region, findMode, figureMode, ppfabricFigure );
       }
       else
       {
@@ -577,7 +577,7 @@ bool TFV_FabricView_c::Find(
 bool TFV_FabricView_c::Find( 
       const TGS_Rect_c&          rect,
             TFV_FindMode_t       findMode,
-	    TFV_FigureMode_t     figureMode,
+            TFV_FigureMode_t     figureMode,
             TFV_FabricFigure_t** ppfabricFigure ) const
 {
    TGS_Layer_t layer = rect.layer;
@@ -626,7 +626,7 @@ bool TFV_FabricView_c::Find(
             TGS_Layer_t        layer,
       const TGS_Region_c&      region,
             TFV_FindMode_t     findMode,
-	    TFV_FigureMode_t   figureMode,
+            TFV_FigureMode_t   figureMode,
             TFV_FabricData_c** ppfabricData ) const
 {
    bool ok = true;
@@ -637,7 +637,7 @@ bool TFV_FabricView_c::Find(
    {
       if( ppfabricData )
       {
-	 *ppfabricData = pfabricFigure->GetData( );
+         *ppfabricData = pfabricFigure->GetData( );
       }
    }
    return( ok );
@@ -647,7 +647,7 @@ bool TFV_FabricView_c::Find(
 bool TFV_FabricView_c::Find( 
       const TGS_Rect_c&        rect,
             TFV_FindMode_t     findMode,
-	    TFV_FigureMode_t   figureMode,
+            TFV_FigureMode_t   figureMode,
             TFV_FabricData_c** ppfabricData ) const
 {
    TGS_Layer_t layer = rect.layer;
@@ -661,7 +661,7 @@ bool TFV_FabricView_c::Find(
             TGS_Layer_t        layer,
       const TGS_Point_c&       point,
             TFV_FindMode_t     findMode,
-	    TFV_FigureMode_t   figureMode,
+            TFV_FigureMode_t   figureMode,
             TFV_FabricData_c** ppfabricData ) const
 {
    TGS_Region_c region( point, point );
@@ -702,7 +702,7 @@ bool TFV_FabricView_c::Find(
 // 08/15/12 jeffr : Original
 //===========================================================================//
 bool TFV_FabricView_c::FindConnected( 
-	    TGS_Layer_t     layer,
+            TGS_Layer_t     layer,
       const TGS_Region_c&   region,
             TGS_RectList_t* prectList ) const
 {
@@ -731,7 +731,7 @@ bool TFV_FabricView_c::FindConnected(
       TGS_RegionList_t regionList;
       if( pfabricLayer->FindConnected( thisRegion, &regionList ))
       {
-	 foundConnected = true;
+         foundConnected = true;
 
          for( size_t i = 0; i < regionList.GetLength( ); ++i )
          {
@@ -749,7 +749,7 @@ bool TFV_FabricView_c::FindConnected(
       TGS_RegionList_t regionList;
       if( pprevLayer->Find( thisRegion, &regionList ))
       {
-	 foundConnected = true;
+         foundConnected = true;
 
          for( size_t i = 0; i < regionList.GetLength( ); ++i )
          {
@@ -767,7 +767,7 @@ bool TFV_FabricView_c::FindConnected(
       TGS_RegionList_t regionList;
       if( pnextLayer->Find( thisRegion, &regionList ))
       {
-	 foundConnected = true;
+         foundConnected = true;
 
          for( size_t i = 0; i < regionList.GetLength( ); ++i )
          {
@@ -890,7 +890,7 @@ bool TFV_FabricView_c::FindNearest(
 bool TFV_FabricView_c::FindNearest(
             TGS_Layer_t   layer,
       const TGS_Region_c& region,
-	    TC_SideMode_t sideMode,
+            TC_SideMode_t sideMode,
             TGS_Region_c* pfoundRegion ) const
 {
    TGS_Rect_c foundRect;
@@ -908,7 +908,7 @@ bool TFV_FabricView_c::FindNearest(
 bool TFV_FabricView_c::FindNearest(
             TGS_Layer_t   layer,
       const TGS_Region_c& region,
-	    TC_SideMode_t sideMode,
+            TC_SideMode_t sideMode,
             TGS_Rect_c*   pfoundRect ) const
 {
    TGS_Rect_c rect( layer, region );
@@ -918,7 +918,7 @@ bool TFV_FabricView_c::FindNearest(
 //===========================================================================//
 bool TFV_FabricView_c::FindNearest(
       const TGS_Rect_c&   rect,
-	    TC_SideMode_t sideMode,
+            TC_SideMode_t sideMode,
             TGS_Rect_c*   pfoundRect ) const
 {
    TGS_Rect_c foundRect;
@@ -1014,10 +1014,10 @@ bool TFV_FabricView_c::ApplyIntersect(
       for( TGS_Layer_t layer = thisViewLayerRange.i; layer <= thisViewLayerRange.j; ++layer )
       {
          if( layer < box.lowerLeft.z )
-	    continue;
+            continue;
 
          if( layer > box.upperRight.z )
-	    break;
+            break;
 
          const TFV_FabricPlane_c* pfabricPlane = thisView.FindFabricPlane( layer );
          if( !pfabricPlane )
@@ -1030,7 +1030,7 @@ bool TFV_FabricView_c::ApplyIntersect(
          while( fabricPlaneIter.Next( &pfabricFigure, TFV_FIGURE_SOLID ))
          {
             TGS_Region_c region = pfabricFigure->GetRegion( );
-   	    const TFV_FabricData_c& fabricData = *pfabricFigure->GetData( );
+            const TFV_FabricData_c& fabricData = *pfabricFigure->GetData( );
 
             if( boxRegion.IsWithin( region ))
             {
@@ -1403,7 +1403,7 @@ TFV_FabricLayerList_t* TFV_FabricView_c::Allocate_(
    if( region.IsValid( ) && layerRange.IsValid( ))
    {
       pfabricLayerList = new TC_NOTHROW TFV_FabricLayerList_t( layerRange );
-									      
+
       TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
       if( printHandler.IsValidNew( pfabricLayerList,
                                    sizeof( TFV_FabricLayerList_t ),
@@ -1412,7 +1412,7 @@ TFV_FabricLayerList_t* TFV_FabricView_c::Allocate_(
          for( TGS_Layer_t layer = layerRange.i; layer <= layerRange.j; ++layer )
          {
             string srName;
-   	    TFV_ExtractStringLayerType( static_cast< TFV_LayerType_t >( layer ), &srName );
+            TFV_ExtractStringLayerType( static_cast< TFV_LayerType_t >( layer ), &srName );
    
             TGS_OrientMode_t orient = TGS_ORIENT_UNDEFINED;
             switch( layer )
@@ -1425,7 +1425,7 @@ TFV_FabricLayerList_t* TFV_FabricView_c::Allocate_(
             }
 
             TFV_FabricLayer_c fabricLayer;
-   	    pfabricLayerList->Insert( layer, fabricLayer );
+            pfabricLayerList->Insert( layer, fabricLayer );
 
             TFV_FabricLayer_c* pfabricLayer = pfabricLayerList->operator[]( layer );
             pfabricLayer->Init( srName, layer, orient, region );
@@ -1454,7 +1454,7 @@ void TFV_FabricView_c::Deallocate_(
          TFV_FabricLayer_c* pfabricLayer = pfabricLayerList->operator[]( i );
          if( pfabricLayer )
          {
-	    pfabricLayer->Clear( );
+            pfabricLayer->Clear( );
          }
       }
    }

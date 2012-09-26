@@ -24,8 +24,7 @@
 #ifndef TFV_FABRIC_DATA_H
 #define TFV_FABRIC_DATA_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

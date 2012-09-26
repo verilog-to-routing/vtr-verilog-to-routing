@@ -12,8 +12,7 @@
 #ifndef TFV_FABRIC_VIEW_H
 #define TFV_FABRIC_VIEW_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 
@@ -150,32 +149,32 @@ public:
    bool FindNearest( TGS_Layer_t layer,
                      const TGS_Region_c& region,
                      TGS_Region_c* pfoundRegion,
-		     double maxDistance = TC_FLT_MAX ) const;
+                     double maxDistance = TC_FLT_MAX ) const;
    bool FindNearest( TGS_Layer_t layer,
                      const TGS_Region_c& region,
                      TGS_Rect_c* pfoundRect,
-		     double maxDistance = TC_FLT_MAX ) const;
+                     double maxDistance = TC_FLT_MAX ) const;
    bool FindNearest( const TGS_Rect_c& rect,
                      TGS_Rect_c* pfoundRect,
-		     double maxDistance = TC_FLT_MAX ) const;
+                     double maxDistance = TC_FLT_MAX ) const;
    bool FindNearest( TGS_Layer_t layer,
                      const TGS_Point_c& point,
                      TGS_Region_c* pfoundRegion,
-		     double maxDistance = TC_FLT_MAX ) const;
+                     double maxDistance = TC_FLT_MAX ) const;
    bool FindNearest( TGS_Layer_t layer,
                      const TGS_Point_c& point,
                      TGS_Rect_c* pfoundRect,
-		     double maxDistance = TC_FLT_MAX ) const;
+                     double maxDistance = TC_FLT_MAX ) const;
    bool FindNearest( TGS_Layer_t layer,
                      const TGS_Region_c& region,
-		     TC_SideMode_t sideMode,
+                     TC_SideMode_t sideMode,
                      TGS_Region_c* pfoundRegion ) const;
    bool FindNearest( TGS_Layer_t layer,
                      const TGS_Region_c& region,
-		     TC_SideMode_t sideMode,
+                     TC_SideMode_t sideMode,
                      TGS_Rect_c* pfoundRect ) const;
    bool FindNearest( const TGS_Rect_c& rect,
-		     TC_SideMode_t sideMode,
+                     TC_SideMode_t sideMode,
                      TGS_Rect_c* pfoundRect ) const;
 
    TFV_FabricLayer_c* FindFabricLayer( TGS_Layer_t layer ) const;

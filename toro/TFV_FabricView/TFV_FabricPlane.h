@@ -10,8 +10,7 @@
 #ifndef TFV_FABRIC_PLANE_H
 #define TFV_FABRIC_PLANE_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 
@@ -84,7 +83,7 @@ public:
                      TFV_FabricFigure_t** ppfabricFigure,
                      double maxDistance = TC_FLT_MAX ) const;
    bool FindNearest( const TGS_Region_c& region,
-		     TC_SideMode_t sideMode,
+                     TC_SideMode_t sideMode,
                      TFV_FabricFigure_t** ppfabricFigure ) const;
 
    bool IsClear( const TGS_Point_c& point ) const;

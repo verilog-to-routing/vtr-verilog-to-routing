@@ -227,7 +227,7 @@ void TFV_FabricData_c::ExtractString(
 
          sprintf( szSlice, "%u %u",
                            this->slice_.count, 
-	   	           this->slice_.capacity );
+                           this->slice_.capacity );
          sprintf( szTiming, "%0.*f %0.*e",
                             precision, this->timing_.capInput,
                             precision + 1, this->timing_.delay );
@@ -264,7 +264,7 @@ void TFV_FabricData_c::ExtractString(
 
          sprintf( szTrack, "%u %u",
                            this->track_.horzCount, 
-	   	           this->track_.vertCount ); 
+                           this->track_.vertCount ); 
          *psrData += " ";
          *psrData += this->srName_;
          *psrData += " ";
@@ -278,7 +278,7 @@ void TFV_FabricData_c::ExtractString(
                            this->track_.index );
          sprintf( szTiming, "[%0.*f %0.*e]",
                             precision, this->timing_.res,
-		            precision, this->timing_.capInput );
+                            precision, this->timing_.capInput );
          *psrData += " ";
          *psrData += szTrack;
          *psrData += " ";
