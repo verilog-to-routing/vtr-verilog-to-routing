@@ -9,7 +9,8 @@
 #ifndef TFP_FABRIC_FILE_H
 #define TFP_FABRIC_FILE_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TFM_FabricModel.h"
 
