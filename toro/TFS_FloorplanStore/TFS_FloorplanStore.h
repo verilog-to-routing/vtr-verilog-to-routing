@@ -12,7 +12,8 @@
 #ifndef TFS_FLOORPLAN_STORE_H
 #define TFS_FLOORPLAN_STORE_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TAS_ArchitectureSpec.h"
 
