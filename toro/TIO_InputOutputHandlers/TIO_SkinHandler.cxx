@@ -14,8 +14,6 @@
    #include <time.h>
 #endif
 
-using namespace std;
-
 #include "TC_Typedefs.h"
 
 #include "TIO_StringText.h"

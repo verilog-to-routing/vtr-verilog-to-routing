@@ -12,9 +12,8 @@
 //
 //===========================================================================//
 
-#include <stdio.h>
-#include <stdarg.h>
-
+#include <cstdio>
+#include <cstdarg>
 #include <string>
 using namespace std;
 

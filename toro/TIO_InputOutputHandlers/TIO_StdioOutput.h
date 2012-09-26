@@ -16,7 +16,8 @@
 #ifndef TIO_STDIO_OUTPUT_H
 #define TIO_STDIO_OUTPUT_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 //===========================================================================//
 // Purpose        : Class declaration

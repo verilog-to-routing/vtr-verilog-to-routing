@@ -11,7 +11,8 @@
  *
  *===========================================================================*/
 
-#include <stdarg.h>
+#include <cstdarg>
+using namespace std;
 
 #include "TIO_SkinHandler.h"
 #include "TIO_PrintHandler.h"

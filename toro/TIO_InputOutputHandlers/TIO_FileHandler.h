@@ -12,8 +12,7 @@
 #ifndef TIO_FILE_HANDLER_H
 #define TIO_FILE_HANDLER_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

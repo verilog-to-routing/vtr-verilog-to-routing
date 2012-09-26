@@ -6,7 +6,8 @@
 //
 //===========================================================================//
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TIO_CustomOutput.h"
 

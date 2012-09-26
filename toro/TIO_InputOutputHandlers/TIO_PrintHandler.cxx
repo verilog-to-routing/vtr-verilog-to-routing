@@ -45,9 +45,11 @@
 //
 //===========================================================================//
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdarg>
+#include <cstring>
+#include <string>
+using namespace std;
 
 #if defined( SUN8 ) || defined( SUN10 )
    #include <time.h>
