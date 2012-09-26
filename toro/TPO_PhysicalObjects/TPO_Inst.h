@@ -25,8 +25,7 @@
 #ifndef TPO_INST_H
 #define TPO_INST_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

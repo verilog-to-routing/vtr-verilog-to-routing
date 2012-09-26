@@ -13,8 +13,7 @@
 #ifndef TPO_PIN_MAP_H
 #define TPO_PIN_MAP_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 
