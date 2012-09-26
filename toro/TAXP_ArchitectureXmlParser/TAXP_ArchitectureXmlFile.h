@@ -10,7 +10,8 @@
 #ifndef TAXP_ARCHITECTURE_XML_FILE_H
 #define TAXP_ARCHITECTURE_XML_FILE_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TAS_ArchitectureSpec.h"
 
