@@ -7,8 +7,7 @@
 #ifndef TCD_CIRCUIT_DESIGN_H
 #define TCD_CIRCUIT_DESIGN_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 
