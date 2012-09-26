@@ -9,7 +9,8 @@
 #ifndef TOP_OPTIONS_FILE_H
 #define TOP_OPTIONS_FILE_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TOS_OptionsStore.h"
 
