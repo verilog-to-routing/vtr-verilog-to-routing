@@ -15,7 +15,8 @@
 #ifndef TOS_OPTIONS_STORE_H
 #define TOS_OPTIONS_STORE_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TOS_ControlSwitches.h"
 #include "TOS_RulesSwitches.h"

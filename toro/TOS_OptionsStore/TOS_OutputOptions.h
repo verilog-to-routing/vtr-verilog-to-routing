@@ -7,8 +7,7 @@
 #ifndef TOS_OUTPUT_OPTIONS_H
 #define TOS_OUTPUT_OPTIONS_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

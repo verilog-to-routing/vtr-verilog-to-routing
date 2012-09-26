@@ -6,7 +6,8 @@
 #ifndef TOS_PLACE_OPTIONS_H
 #define TOS_PLACE_OPTIONS_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 //===========================================================================//
 // Purpose        : Class declaration

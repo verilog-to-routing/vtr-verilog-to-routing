@@ -7,7 +7,8 @@
 #ifndef TOS_MESSAGE_OPTIONS_H
 #define TOS_MESSAGE_OPTIONS_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TC_Typedefs.h"
 

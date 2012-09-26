@@ -6,8 +6,7 @@
 #ifndef TOS_INPUT_OPTIONS_H
 #define TOS_INPUT_OPTIONS_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

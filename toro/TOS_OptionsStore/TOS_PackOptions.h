@@ -6,7 +6,8 @@
 #ifndef TOS_PACK_OPTIONS_H
 #define TOS_PACK_OPTIONS_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TOS_Typedefs.h"
 

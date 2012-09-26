@@ -13,7 +13,8 @@
 #ifndef TOS_CONTROL_SWITCHES_H
 #define TOS_CONTROL_SWITCHES_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TOS_InputOptions.h"
 #include "TOS_OutputOptions.h"

@@ -12,7 +12,8 @@
 #ifndef TOS_RULES_SWITCHES_H
 #define TOS_RULES_SWITCHES_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TOS_PackOptions.h"
 #include "TOS_PlaceOptions.h"
