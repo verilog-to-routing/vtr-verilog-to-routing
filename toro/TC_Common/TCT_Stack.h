@@ -19,9 +19,9 @@
 #ifndef TCT_STACK_H
 #define TCT_STACK_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <deque>
+using namespace std;
 
 //===========================================================================//
 // Class declaration

@@ -11,8 +11,7 @@
 #ifndef TC_BIT_H
 #define TC_BIT_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

@@ -23,8 +23,7 @@
 #ifndef TCT_RANGE_ORDERED_VECTOR_H
 #define TCT_RANGE_ORDERED_VECTOR_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

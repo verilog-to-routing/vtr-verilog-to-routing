@@ -15,8 +15,9 @@
 //
 //===========================================================================//
 
-#include "limits.h"
-#include "math.h"
+#include <climits>
+#include <cmath>
+using namespace std;
 
 #include "TCT_Generic.h"
 

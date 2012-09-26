@@ -25,13 +25,13 @@
 #ifndef TCT_ORDERED_QUEUE_H
 #define TCT_ORDERED_QUEUE_H
 
-#include <stdio.h>
-
+#include <cstdio>
+#include <climits>
+#include <cstring>
+#include <string>
 #include <deque>
 #include <iterator>
 #include <algorithm>
-
-#include <string>
 using namespace std;
 
 #include "TIO_Typedefs.h"

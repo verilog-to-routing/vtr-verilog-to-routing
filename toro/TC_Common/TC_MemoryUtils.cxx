@@ -9,7 +9,8 @@
 //
 //===========================================================================//
 
-#include <memory.h>
+#include <memory>
+using namespace std;
 
 #include "TIO_PrintHandler.h"
 

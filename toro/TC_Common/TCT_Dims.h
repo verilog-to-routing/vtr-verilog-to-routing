@@ -20,9 +20,9 @@
 #ifndef TCT_DIMS_H
 #define TCT_DIMS_H
 
-#include <stdio.h>
-#include <limits.h>
-
+#include <cstdio>
+#include <climits>
+#include <cstring>
 #include <string>
 using namespace std;
 

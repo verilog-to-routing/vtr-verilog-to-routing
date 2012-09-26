@@ -22,9 +22,9 @@
 #ifndef TCT_RANGE_H
 #define TCT_RANGE_H
 
-#include <stdio.h>
-#include <limits.h>
-
+#include <cstdio>
+#include <climits>
+#include <cstring>
 #include <string>
 using namespace std;
 

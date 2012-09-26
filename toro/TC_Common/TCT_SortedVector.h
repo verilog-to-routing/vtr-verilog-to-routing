@@ -31,18 +31,18 @@
 #ifndef TCT_SORTED_VECTOR_H
 #define TCT_SORTED_VECTOR_H
 
-#include <stdio.h>
-
+#include <cstdio>
+#include <cstring>
+#include <string>
 #include <vector>
 #include <iterator>
 #include <algorithm>
-
-#include <string>
 using namespace std;
 
 #include "TIO_Typedefs.h"
 
 #include "TC_Typedefs.h"
+#include "TC_MinGrid.h"
 #include "TCT_Generic.h"
 
 //===========================================================================//

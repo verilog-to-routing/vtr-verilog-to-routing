@@ -45,9 +45,9 @@
 #ifndef TCT_SORTED_NAME_DYNAMIC_VECTOR_H
 #define TCT_SORTED_NAME_DYNAMIC_VECTOR_H
 
-#include <stdio.h>
-#include <limits.h>
-
+#include <cstdio>
+#include <climits>
+#include <cstring>
 #include <string>
 using namespace std;
 

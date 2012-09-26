@@ -9,7 +9,8 @@
 #ifndef TC_SIDE_TABLE_H
 #define TC_SIDE_TABLE_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TC_Typedefs.h"
 #include "TC_SideIndex.h"

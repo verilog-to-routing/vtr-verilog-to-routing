@@ -32,14 +32,12 @@
 #ifndef TCT_NAME_LIST_H
 #define TCT_NAME_LIST_H
 
-#include <stdio.h>
-#include <limits.h>
-
+#include <cstdio>
+#include <climits>
+#include <string>
 #include <vector>
 #include <iterator>
 #include <algorithm>
-
-#include <string>
 using namespace std;
 
 #include "TIO_PrintHandler.h"

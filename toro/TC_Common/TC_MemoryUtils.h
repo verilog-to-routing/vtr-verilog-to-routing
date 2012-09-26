@@ -3,7 +3,8 @@
 //
 //===========================================================================//
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #ifndef TC_MEMORY_UTILS_H
 #define TC_MEMORY_UTILS_H

@@ -13,8 +13,7 @@
 #ifndef TC_NAME_TYPE_H
 #define TC_NAME_TYPE_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

@@ -19,9 +19,8 @@
 #ifndef TCT_REGEXP_ITER_H
 #define TCT_REGEXP_ITER_H
 
-#include <stdio.h>
-#include <limits.h>
-
+#include <cstdio>
+#include <climits>
 #include <string>
 using namespace std;
 

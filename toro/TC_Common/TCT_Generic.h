@@ -18,8 +18,9 @@
 #ifndef TCT_GENERIC_H
 #define TCT_GENERIC_H
 
-#include <stdio.h>
-#include <math.h>
+#include <cstdio>
+#include <cmath>
+using namespace std;
 
 #if defined( SUN8 ) || defined( SUN10 )
    #include <time.h>

@@ -21,13 +21,11 @@
 #ifndef TCT_ORDERED_VECTOR_2D_H
 #define TCT_ORDERED_VECTOR_2D_H
 
-#include <stdio.h>
-
+#include <cstdio>
+#include <string>
 #include <vector>
 #include <iterator>
 #include <algorithm>
-
-#include <string>
 using namespace std;
 
 #include "TIO_Typedefs.h"

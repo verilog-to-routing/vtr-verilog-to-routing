@@ -13,10 +13,11 @@
 #ifndef TC_NAME_H
 #define TC_NAME_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
+
+#include "TIO_Typedefs.h"
 
 #include "TC_Typedefs.h"
 

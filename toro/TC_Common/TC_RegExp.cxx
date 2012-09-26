@@ -8,7 +8,9 @@
 //
 //===========================================================================//
 
-#include <string.h>
+#include <cstring>
+#include <string>
+using namespace std;
 
 #include "TC_RegExp.h"
 

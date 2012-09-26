@@ -13,9 +13,8 @@
 #ifndef TC_NAME_LENGTH_H
 #define TC_NAME_LENGTH_H
 
-#include <stdio.h>
-#include <limits.h>
-
+#include <cstdio>
+#include <climits>
 #include <string>
 using namespace std;
 

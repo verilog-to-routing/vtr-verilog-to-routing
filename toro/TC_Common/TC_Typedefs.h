@@ -17,7 +17,9 @@
 // Define float constants as needed
 //---------------------------------------------------------------------------//
 
-#include <float.h>
+#include <cfloat>
+using namespace std;
+
 #define TC_FLT_EPSILON ( static_cast< double >( FLT_RADIX * FLT_EPSILON ))
 #define TC_FLT_MIN ( static_cast< double >( -1.0 * FLT_MAX + ( FLT_RADIX * FLT_EPSILON )))
 #define TC_FLT_MAX ( static_cast< double >( 1.0 * FLT_MAX - ( FLT_RADIX * FLT_EPSILON )))
@@ -40,7 +42,9 @@
    #endif
 #endif
 
-#include <stdlib.h>
+#include <cstdlib>
+using namespace std;
+
 #ifdef RAND_MAX
    #define TC_RAND_MAX RAND_MAX
 #else
@@ -51,7 +55,9 @@
 // Define math constants as needed
 //---------------------------------------------------------------------------//
 
-#include <math.h>
+#include <cmath>
+using namespace std;
+
 #ifndef M_SQRT2
    #define M_SQRT2 1.41421356237309504880
 #endif
@@ -61,7 +67,9 @@
 // Define 'nothrow' keyword if not currently available (ie, make NOP for new) 
 //---------------------------------------------------------------------------//
 
-#include <new.h>
+#include <new>
+using namespace std;
+
 #define TC_NOTHROW (std::nothrow) // Set 'nothrow' behavior for default
 
 //---------------------------------------------------------------------------//
@@ -116,24 +124,6 @@ enum TC_TypeMode_e
    TC_TYPE_GLOBAL
 };
 typedef enum TC_TypeMode_e TC_TypeMode_t;
-
-//---------------------------------------------------------------------------//
-// Define common dims constants as needed
-//---------------------------------------------------------------------------//
-
-#include "TCT_Dims.h"
-
-typedef TCT_Dims_c< int > TC_IntDims_t;
-typedef TCT_Dims_c< double > TC_FloatDims_t;
-
-//---------------------------------------------------------------------------//
-// Define common range constants as needed
-//---------------------------------------------------------------------------//
-
-#include "TCT_Range.h"
-
-typedef TCT_Range_c< int > TC_IntRange_t;
-typedef TCT_Range_c< double > TC_FloatRange_t;
 
 //---------------------------------------------------------------------------//
 // Define common list constants as needed

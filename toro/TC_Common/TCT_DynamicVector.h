@@ -35,7 +35,8 @@
 #ifndef TCT_DYNAMIC_VECTOR_H
 #define TCT_DYNAMIC_VECTOR_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TIO_PrintHandler.h"
 
