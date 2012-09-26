@@ -35,7 +35,7 @@ TGS_ArrayGrid_c::TGS_ArrayGrid_c(
 
 //===========================================================================//
 TGS_ArrayGrid_c::TGS_ArrayGrid_c( 
-      const TC_FloatDims_t& pitchDims )
+      const TGS_FloatDims_t& pitchDims )
       :
       pitchDims_( 0.0, 0.0 ),
       offsetDims_( 0.0, 0.0 )
@@ -45,8 +45,8 @@ TGS_ArrayGrid_c::TGS_ArrayGrid_c(
 
 //===========================================================================//
 TGS_ArrayGrid_c::TGS_ArrayGrid_c( 
-      const TC_FloatDims_t& pitchDims,
-      const TC_FloatDims_t& offsetDims )
+      const TGS_FloatDims_t& pitchDims,
+      const TGS_FloatDims_t& offsetDims )
       :
       pitchDims_( 0.0, 0.0 ),
       offsetDims_( 0.0, 0.0 )
@@ -145,7 +145,7 @@ bool TGS_ArrayGrid_c::operator!=(
 // 08/25/12 jeffr : Original
 //===========================================================================//
 void TGS_ArrayGrid_c::Init( 
-      const TC_FloatDims_t& pitchDims )
+      const TGS_FloatDims_t& pitchDims )
 {
   this->pitchDims_.width = pitchDims.width;
   this->pitchDims_.height = pitchDims.height;
@@ -156,8 +156,8 @@ void TGS_ArrayGrid_c::Init(
 
 //===========================================================================//
 void TGS_ArrayGrid_c::Init( 
-      const TC_FloatDims_t& pitchDims,
-      const TC_FloatDims_t& offsetDims )
+      const TGS_FloatDims_t& pitchDims,
+      const TGS_FloatDims_t& offsetDims )
 {
   this->pitchDims_.width = pitchDims.width;
   this->pitchDims_.height = pitchDims.height;
@@ -200,7 +200,7 @@ void TGS_ArrayGrid_c::Init(
 // 08/25/12 jeffr : Original
 //===========================================================================//
 void TGS_ArrayGrid_c::GetPitch( 
-      TC_FloatDims_t* ppitchDims ) const
+      TGS_FloatDims_t* ppitchDims ) const
 {
    if( ppitchDims )
    {
@@ -228,7 +228,7 @@ void TGS_ArrayGrid_c::GetPitch(
 // 08/25/12 jeffr : Original
 //===========================================================================//
 void TGS_ArrayGrid_c::GetOffset( 
-      TC_FloatDims_t* poffsetDims ) const
+      TGS_FloatDims_t* poffsetDims ) const
 {
    if( poffsetDims )
    {
@@ -257,10 +257,10 @@ void TGS_ArrayGrid_c::GetOffset(
 //===========================================================================//
 void TGS_ArrayGrid_c::FindCount(
       const TGS_Region_c&       region,
-            TC_IntDims_t*       pcount,
+            TGS_IntDims_t*      pcount,
             TGS_ArraySnapMode_t snapMode ) const
 {
-   TC_IntDims_t count;
+   TGS_IntDims_t count;
    this->FindCount( region, 
                     &count.width, 
                     &count.height,

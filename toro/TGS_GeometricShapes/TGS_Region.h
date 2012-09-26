@@ -11,9 +11,8 @@
 #ifndef TGS_REGION_H
 #define TGS_REGION_H
 
-#include <stdio.h>
-#include <math.h>
-
+#include <cstdio>
+#include <cmath>
 #include <string>
 using namespace std;
 

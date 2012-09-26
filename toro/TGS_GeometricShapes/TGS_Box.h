@@ -10,9 +10,10 @@
 #ifndef TGS_BOX_H
 #define TGS_BOX_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cmath>
+using namespace std;
 
 #include "TC_Typedefs.h"
 

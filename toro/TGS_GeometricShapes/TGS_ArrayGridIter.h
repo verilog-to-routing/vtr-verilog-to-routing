@@ -10,6 +10,7 @@
 #ifndef TGS_ARRAY_GRID_ITER_H
 #define TGS_ARRAY_GRID_ITER_H
 
+#include "TGS_Typedefs.h"
 #include "TGS_ArrayGrid.h"
 
 //===========================================================================//
@@ -46,7 +47,7 @@ private:
    TGS_ArrayGrid_c* parrayGrid_;  // Ptr to array grid being iterated
    TGS_Region_c     arrayRegion_; // Initial iterate array grid region
 
-   TC_FloatDims_t   pitch_;       // Cached iterate array grid pitch dims
+   TGS_FloatDims_t  pitch_;       // Cached iterate array grid pitch dims
 
    double x_;                     // Current iterated array grid indices
    double y_;                     // "

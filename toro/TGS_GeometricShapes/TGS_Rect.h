@@ -19,8 +19,7 @@
 #ifndef TGS_RECT_H
 #define TGS_RECT_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

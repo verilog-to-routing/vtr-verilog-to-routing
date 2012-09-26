@@ -10,8 +10,9 @@
 #ifndef TGS_LINE_H
 #define TGS_LINE_H
 
-#include <stdio.h>
-#include <math.h>
+#include <cstdio>
+#include <cmath>
+using namespace std;
 
 #include "TGS_Typedefs.h"
 #include "TGS_Point.h"

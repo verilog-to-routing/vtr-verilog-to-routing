@@ -6,8 +6,10 @@
 #ifndef TGS_TYPEDEFS_H
 #define TGS_TYPEDEFS_H
 
-#include <limits.h>
+#include <climits>
+using namespace std;
 
+#include "TCT_Dims.h"
 #include "TCT_OrderedVector.h"
 
 //---------------------------------------------------------------------------//
@@ -85,6 +87,9 @@ enum TGS_ArraySnapMode_e
 };
 typedef enum TGS_ArraySnapMode_e TGS_ArraySnapMode_t;
  
+typedef TCT_Dims_c< int > TGS_IntDims_t;
+typedef TCT_Dims_c< double > TGS_FloatDims_t;
+
 //---------------------------------------------------------------------------//
 // Define geometric shape class scale typedefs
 //---------------------------------------------------------------------------//

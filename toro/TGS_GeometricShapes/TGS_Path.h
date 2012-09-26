@@ -23,7 +23,8 @@
 #ifndef TGS_PATH_H
 #define TGS_PATH_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TGS_Typedefs.h"
 #include "TGS_Point.h"

@@ -9,7 +9,8 @@
 #ifndef TGS_ARRAY_GRID_H
 #define TGS_ARRAY_GRID_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #if defined( SUN8 ) || defined( SUN10 )
    #include <time.h>
@@ -34,9 +35,9 @@ class TGS_ArrayGrid_c
 public:
 
    TGS_ArrayGrid_c( void );
-   TGS_ArrayGrid_c( const TC_FloatDims_t& pitchDims );
-   TGS_ArrayGrid_c( const TC_FloatDims_t& pitchDims,
-                    const TC_FloatDims_t& offsetDims );
+   TGS_ArrayGrid_c( const TGS_FloatDims_t& pitchDims );
+   TGS_ArrayGrid_c( const TGS_FloatDims_t& pitchDims,
+                    const TGS_FloatDims_t& offsetDims );
    TGS_ArrayGrid_c( double xPitch, double yPitch );
    TGS_ArrayGrid_c( double xPitch, double yPitch,
                     double xOffset, double yOffset );
@@ -46,20 +47,20 @@ public:
    bool operator==( const TGS_ArrayGrid_c& arrayGrid ) const;
    bool operator!=( const TGS_ArrayGrid_c& arrayGrid ) const;
 
-   void Init( const TC_FloatDims_t& pitchDims );
-   void Init( const TC_FloatDims_t& pitchDims,
-              const TC_FloatDims_t& offsetDims );
+   void Init( const TGS_FloatDims_t& pitchDims );
+   void Init( const TGS_FloatDims_t& pitchDims,
+              const TGS_FloatDims_t& offsetDims );
    void Init( double xPitch, double yPitch );
    void Init( double xPitch, double yPitch,
               double xOffset, double yOffset );
 
-   void GetPitch( TC_FloatDims_t* ppitchDims ) const;
+   void GetPitch( TGS_FloatDims_t* ppitchDims ) const;
    void GetPitch( double* pxPitch, double* pyPitch ) const;
-   void GetOffset( TC_FloatDims_t* poffsetDims ) const;
+   void GetOffset( TGS_FloatDims_t* poffsetDims ) const;
    void GetOffset( double* pxOffset, double* pyOffset ) const;
 
    void FindCount( const TGS_Region_c& region,
-                   TC_IntDims_t* pcount,
+                   TGS_IntDims_t* pcount,
                    TGS_ArraySnapMode_t snapMode = TGS_ARRAY_SNAP_WITHIN ) const;
    void FindCount( const TGS_Region_c& region,
                    int* pxCount, int* pyCount,
@@ -92,8 +93,8 @@ private:
 
 private:
 
-   TC_FloatDims_t pitchDims_;
-   TC_FloatDims_t offsetDims_;
+   TGS_FloatDims_t pitchDims_;
+   TGS_FloatDims_t offsetDims_;
 };
 
 //===========================================================================//
