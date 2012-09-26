@@ -7,7 +7,8 @@
 #header
 
 <<
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "stdpccts.h"
 #include "GenericTokenBuffer.h"

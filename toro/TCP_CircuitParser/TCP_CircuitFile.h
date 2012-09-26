@@ -10,7 +10,8 @@
 #ifndef TCP_CIRCUIT_FILE_H
 #define TCP_CIRCUIT_FILE_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TCD_CircuitDesign.h"
 

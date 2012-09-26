@@ -1,0 +1,349 @@
+<<
+/* parser.dlg -- DLG Description of scanner
+ *
+ * Generated from: TCP_CircuitGrammar.g
+ *
+ * Terence Parr, Will Cohen, and Hank Dietz: 1989-2001
+ * Purdue University Electrical Engineering
+ * With AHPCRC, University of Minnesota
+ * ANTLR Version 1.33MR33
+ */
+
+#define ANTLR_VERSION	13333
+#include "tokens.h"
+#include "AToken.h"
+
+#include <stdio.h>
+
+#include "stdpccts.h"
+#include "GenericTokenBuffer.h"
+
+#include "TC_SideName.h"
+#include "TC_StringUtils.h"
+
+#include "TCD_CircuitDesign.h"
+
+#include "TCP_CircuitFile.h"
+#include "TCP_CircuitScanner_c.h"
+>>
+
+<<%%parserclass TCP_CircuitParser_c>>
+
+
+%%START
+
+@
+	<<
+		return END_OF_FILE;
+	>>
+
+[\ \t]+
+	<<
+    skip( );   
+		return (ANTLRTokenType)5;
+	>>
+
+//~[\n]*[\n]
+	<<
+    skip( ); newline( );   
+		return CPP_COMMENT;
+	>>
+
+#~[\n]*[\n]
+	<<
+    skip( ); newline( );   
+		return BLOCK_COMMENT;
+	>>
+
+[\n\\]
+	<<
+    skip( ); newline( );   
+		return NEW_LINE;
+	>>
+
+\"
+	<<
+    mode( QUOTED_VALUE );   
+		return OPEN_QUOTE;
+	>>
+
+=
+	<<
+		return EQUAL;
+	>>
+
+[Cc][Ii][Rr][Cc][Uu][Ii][Tt]
+	<<
+		return CIRCUIT;
+	>>
+
+[Ii]{[Nn][Pp][Uu][Tt]}[Oo]{[Uu][Tt][Pp][Uu][Tt]}
+	<<
+		return IO;
+	>>
+
+[Pp]{[Hh][Yy][Ss][Ii][Cc][Aa][Ll]}[Bb]{[Ll][Oo][Cc][Kk]}
+	<<
+		return PB;
+	>>
+
+[Ss]{[Ww][Ii][Tt][Cc][Hh]}[Bb]{[Oo][Xx]{[Ee][Ss]}}
+	<<
+		return SB;
+	>>
+
+[Pp][Oo][Rr][Tt]
+	<<
+		return PORT;
+	>>
+
+[Ii][Nn][Ss][Tt]
+	<<
+		return INST;
+	>>
+
+[Cc][Ee][Ll][Ll]
+	<<
+		return CELL;
+	>>
+
+[Mm][Aa][Ss][Tt][Ee][Rr]
+	<<
+		return MASTER;
+	>>
+
+[Nn][Ee][Tt]
+	<<
+		return NET;
+	>>
+
+[Pp][Ii][Nn]
+	<<
+		return PIN;
+	>>
+
+[Tt][Yy][Pp][Ee]
+	<<
+		return TYPE;
+	>>
+
+[Rr][Oo][Uu][Tt][Aa][Bb][Ll][Ee]
+	<<
+		return ROUTABLE;
+	>>
+
+[Ss][Tt][Aa][Tt][Uu][Ss]
+	<<
+		return STATUS;
+	>>
+
+[Pp][Aa][Cc][Kk]{[Ii][Nn][Gg]}
+	<<
+		return PACK;
+	>>
+
+[Pp][Ll][Aa][Cc][Ee][Mm][Ee][Nn][Tt]
+	<<
+		return PLACE;
+	>>
+
+[Cc][Hh][Aa][Nn][Nn][Ee][Ll]
+	<<
+		return CHANNEL;
+	>>
+
+[Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee]
+	<<
+		return RELATIVE;
+	>>
+
+[Gg]{[Ll][Oo][Bb][Aa][Ll][_]}[Rr][Oo][Uu][Tt][Ee]
+	<<
+		return GROUTE;
+	>>
+
+[Rr][Oo][Uu][Tt][Ee]
+	<<
+		return ROUTE;
+	>>
+
+[Ss][Ww][Ii][Tt][Cc][Hh][Bb][Oo][Xx]
+	<<
+		return SWITCHBOX;
+	>>
+
+[Ff][Ll][Oo][Aa][Tt]
+	<<
+		return PLACE_FLOAT;
+	>>
+
+[Ff][Ii][Xx][Ee][Dd]
+	<<
+		return PLACE_FIXED;
+	>>
+
+[Pp][Ll][Aa][Cc][Ee][Dd]
+	<<
+		return PLACE_PLACED;
+	>>
+
+[Oo][Pp][Ee][Nn]
+	<<
+		return NET_OPEN;
+	>>
+
+[Gg]{[Ll][Oo][Bb][Aa][Ll][_]}[Rr][Oo][Uu][Tt][Ee][Dd]
+	<<
+		return NET_GROUTED;
+	>>
+
+[Rr][Oo][Uu][Tt][Ee][Dd]
+	<<
+		return NET_ROUTED;
+	>>
+
+[Ll]{[Ee][Ff][Tt]}
+	<<
+		return LEFT;
+	>>
+
+[Rr]{[Ii][Gg][Hh][Tt]}
+	<<
+		return RIGHT;
+	>>
+
+[Ll][Oo][Ww][Ee][Rr]
+	<<
+		return LOWER;
+	>>
+
+[Uu][Pp][Pp][Ee][Rr]
+	<<
+		return UPPER;
+	>>
+
+[Bb]{[Oo][Tt][Tt][Oo][Mm]}
+	<<
+		return BOTTOM;
+	>>
+
+[Tt]{[Oo][Pp]}
+	<<
+		return TOP;
+	>>
+
+[Ii][Nn][Pp][Uu][Tt]
+	<<
+		return INPUT;
+	>>
+
+[Oo][Uu][Tt][Pp][Uu][Tt]
+	<<
+		return OUTPUT;
+	>>
+
+[Ss][Ii][Gg][Nn][Aa][Ll]
+	<<
+		return SIGNAL;
+	>>
+
+[Cc][Ll][Oo][Cc][Kk]
+	<<
+		return CLOCK;
+	>>
+
+[Pp][Oo][Ww][Ee][Rr]
+	<<
+		return POWER;
+	>>
+
+[Gg][Ll][Oo][Bb][Aa][Ll]
+	<<
+		return GLOBAL;
+	>>
+
+([Tt][Rr][Uu][Ee]|[Yy][Ee][Ss]|[Oo][Nn])
+	<<
+		return BOOL_TRUE;
+	>>
+
+([Ff][Aa][Ll][Ss][Ee]|[Nn][Oo]|[Oo][Ff][Ff])
+	<<
+		return BOOL_FALSE;
+	>>
+
+[01]
+	<<
+		return BIT_CHAR;
+	>>
+
+[\-][0-9]+
+	<<
+		return NEG_INT;
+	>>
+
+[0-9]+
+	<<
+		return POS_INT;
+	>>
+
+{\-}{[0-9]+}.[0-9]+
+	<<
+		return FLOAT;
+	>>
+
+{\-}{[0-9]+}.[0-9]+[Ee][\+\-][0-9]+
+	<<
+		return EXP;
+	>>
+
+[a-zA-Z_/\|][a-zA-Z0-9_/\|\(\)\[\]\.\+\-\~]*
+	<<
+		return STRING;
+	>>
+
+<
+	<<
+		return (ANTLRTokenType)63;
+	>>
+
+>
+	<<
+		return (ANTLRTokenType)64;
+	>>
+
+</
+	<<
+		return (ANTLRTokenType)65;
+	>>
+
+/>
+	<<
+		return (ANTLRTokenType)67;
+	>>
+
+
+%%QUOTED_VALUE
+
+@
+	<<
+		return END_OF_FILE;
+	>>
+
+\"
+	<<
+    mode( START );   
+		return CLOSE_QUOTE;
+	>>
+
+~[\"\n]+
+	<<
+		return STRING;
+	>>
+
+[\n]
+	<<
+		return UNCLOSED_STRING;
+	>>
+
+%%
