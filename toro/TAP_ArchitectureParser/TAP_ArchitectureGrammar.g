@@ -7,12 +7,15 @@
 #header
 
 <<
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "stdpccts.h"
 #include "GenericTokenBuffer.h"
 
 #include "TC_StringUtils.h"
+
+#include "TGS_Typedefs.h"
 
 #include "TIO_PrintHandler.h"
 
@@ -286,7 +289,7 @@ inputOutputList[ TAS_InputOutputList_t* pinputOutputList ]
    << 
       TAS_InputOutput_t inputOutput;
 
-      TC_FloatDims_t dims;
+      TGS_FloatDims_t dims;
       TGS_Point_c origin;
    >>
    IO 
@@ -327,7 +330,7 @@ physicalBlockList[ TAS_PhysicalBlockList_t* pphysicalBlockList ]
    <<
       TAS_PhysicalBlock_c physicalBlock;
 
-      TC_FloatDims_t dims;
+      TGS_FloatDims_t dims;
       TGS_Point_c origin;
    >>
    PB 
@@ -432,7 +435,7 @@ switchBoxList[ TAS_SwitchBoxList_t* pswitchBoxList ]
    << 
       TAS_SwitchBox_c switchBox;
 
-      TC_FloatDims_t dims;
+      TGS_FloatDims_t dims;
       TGS_Point_c origin;
       TAS_MapTable_t mapTable;
    >>
@@ -886,7 +889,7 @@ segmentLength[ unsigned int *plength ]
    ;
 
 //===========================================================================//
-floatDims[ TC_FloatDims_t* pfloatDims ]
+floatDims[ TGS_FloatDims_t* pfloatDims ]
    : 
    floatNum[ &pfloatDims->width ]
    floatNum[ &pfloatDims->height ]

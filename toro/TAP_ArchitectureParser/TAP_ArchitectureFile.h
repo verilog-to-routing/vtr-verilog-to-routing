@@ -10,7 +10,8 @@
 #ifndef TAP_ARCHITECTURE_FILE_H
 #define TAP_ARCHITECTURE_FILE_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TAS_ArchitectureSpec.h"
 

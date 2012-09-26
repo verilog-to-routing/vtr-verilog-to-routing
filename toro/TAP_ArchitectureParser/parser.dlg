@@ -1,0 +1,611 @@
+<<
+/* parser.dlg -- DLG Description of scanner
+ *
+ * Generated from: TAP_ArchitectureGrammar.g
+ *
+ * Terence Parr, Will Cohen, and Hank Dietz: 1989-2001
+ * Purdue University Electrical Engineering
+ * With AHPCRC, University of Minnesota
+ * ANTLR Version 1.33MR33
+ */
+
+#define ANTLR_VERSION	13333
+#include "tokens.h"
+#include "AToken.h"
+
+#include <stdio.h>
+
+#include "stdpccts.h"
+#include "GenericTokenBuffer.h"
+
+#include "TC_StringUtils.h"
+
+#include "TIO_PrintHandler.h"
+
+#include "TAS_ArchitectureSpec.h"
+
+#include "TAP_ArchitectureFile.h"
+#include "TAP_ArchitectureScanner_c.h"
+>>
+
+<<%%parserclass TAP_ArchitectureParser_c>>
+
+
+%%START
+
+@
+	<<
+		return END_OF_FILE;
+	>>
+
+[\ \t]+
+	<<
+    skip( );   
+		return (ANTLRTokenType)5;
+	>>
+
+//~[\n]*[\n]
+	<<
+    skip( ); newline( );   
+		return CPP_COMMENT;
+	>>
+
+#~[\n]*[\n]
+	<<
+    skip( ); newline( );   
+		return BLOCK_COMMENT;
+	>>
+
+<\!\-\-~[\n]*[\n]
+	<<
+    skip( ); newline( );   
+		return XML_COMMENT;
+	>>
+
+[\n\\]
+	<<
+    skip( ); newline( );   
+		return NEW_LINE;
+	>>
+
+\"
+	<<
+    mode( QUOTED_VALUE );   
+		return OPEN_QUOTE;
+	>>
+
+=
+	<<
+		return EQUAL;
+	>>
+
+[Aa][Rr][Cc][Hh][Ii][Tt][Ee][Cc][Tt][Uu][Rr][Ee]
+	<<
+		return ARCHITECTURE;
+	>>
+
+[Cc][Oo][Nn][Ff][Ii][Gg]
+	<<
+		return CONFIG;
+	>>
+
+[Ii]{[Nn][Pp][Uu][Tt]}[Oo]{[Uu][Tt][Pp][Uu][Tt]}
+	<<
+		return IO;
+	>>
+
+[Pp]{[Hh][Yy][Ss][Ii][Cc][Aa][Ll]}[Bb]{[Ll][Oo][Cc][Kk]}
+	<<
+		return PB;
+	>>
+
+[Ss]{[Ww][Ii][Tt][Cc][Hh]}[Bb]{[Oo][Xx]{[Ee][Ss]}}
+	<<
+		return SB;
+	>>
+
+[Cc]{[Oo][Nn][Nn][Ee][Cc][Tt][Ii][Oo][Nn]}[Bb]{[Oo][Xx]{[Ee][Ss]}}
+	<<
+		return CB;
+	>>
+
+[Ss][Ee][Gg][Mm][Ee][Nn][Tt]{[Ss]}
+	<<
+		return SEGMENT;
+	>>
+
+[Mm][Oo][Dd][Ee]{[Ll]}{[Ss]}
+	<<
+		return MODEL;
+	>>
+
+[Cc][Ee][Ll][Ll]{[Ss]}
+	<<
+		return CELL;
+	>>
+
+[Pp][Ii][Nn]{[Ss]}
+	<<
+		return PIN;
+	>>
+
+[Tt][Yy][Pp][Ee]
+	<<
+		return TYPE;
+	>>
+
+[Cc][Ll][Aa][Ss][Ss]
+	<<
+		return CLASS;
+	>>
+
+[Ff][Ss]
+	<<
+		return FS;
+	>>
+
+[Ii][Nn][Tt][Ee][Rr][Cc][Oo][Nn][Nn][Ee][Cc][Tt]
+	<<
+		return INTERCONNECT;
+	>>
+
+[Ff][Cc][_][Ii][Nn]
+	<<
+		return FC_IN;
+	>>
+
+[Ff][Cc][_][Oo][Uu][Tt]
+	<<
+		return FC_OUT;
+	>>
+
+[Ww][Ii][Dd][Tt][Hh]
+	<<
+		return WIDTH;
+	>>
+
+[Hh][Ee][Ii][Gg][Hh][Tt]
+	<<
+		return HEIGHT;
+	>>
+
+[Ll][Ee][Nn][Gg][Tt][Hh]
+	<<
+		return LENGTH;
+	>>
+
+[Cc][Aa][Pp][Aa][Cc][Ii][Tt][Yy]
+	<<
+		return CAPACITY;
+	>>
+
+{[Aa][Rr][Rr][Aa][Yy][_]}[Ss][Ii][Zz][Ee]
+	<<
+		return SIZE;
+	>>
+
+{[Aa][Ss][Pp][Ee][Cc][Tt][_]}[Rr][Aa][Tt][Ii][Oo]
+	<<
+		return RATIO;
+	>>
+
+[Oo][Rr][Ii][Gg][Ii][Nn]
+	<<
+		return ORIGIN;
+	>>
+
+[Cc][Oo][Uu][Nn][Tt]
+	<<
+		return COUNT;
+	>>
+
+[Ss][Ii][Dd][Ee]
+	<<
+		return SIDE;
+	>>
+
+[Oo][Ff][Ff][Ss][Ee][Tt]
+	<<
+		return OFFSET;
+	>>
+
+[Ee][Qq][Uu][Ii][Vv][Aa][Ll][Ee][Nn][Cc][Ee]
+	<<
+		return EQUIVALENCE;
+	>>
+
+[Ff][Uu][Ll][Ll]
+	<<
+		return FULL;
+	>>
+
+[Ll][Oo][Nn][Gg][Ll][Ii][Nn][Ee]
+	<<
+		return LONGLINE;
+	>>
+
+[Pp][Ii][Nn][_][Aa][Ss][Ss][Ii][Gg][Nn]{[Mm][Ee][Nn][Tt]}
+	<<
+		return PIN_ASSIGN;
+	>>
+
+[Gg][Rr][Ii][Dd][_][Aa][Ss][Ss][Ii][Gg][Nn]{[Mm][Ee][Nn][Tt]}
+	<<
+		return GRID_ASSIGN;
+	>>
+
+[Mm][Aa][Pp][Pp][Ii][Nn][Gg]
+	<<
+		return MAPPING;
+	>>
+
+[Tt][Ii][Mm][Ii][Nn][Gg]{[_][Aa][Nn][Aa][Ll][Yy][Ss][Ii][Ss]}
+	<<
+		return TIMING;
+	>>
+
+[Rr]
+	<<
+		return R;
+	>>
+
+[Rr][Ee][Ss]
+	<<
+		return RES;
+	>>
+
+[Cc]{[Aa][Pp]}
+	<<
+		return CAP;
+	>>
+
+[Cc]{[Aa][Pp]}{[_]}[Ii][Nn]
+	<<
+		return CAP_IN;
+	>>
+
+[Cc]{[Aa][Pp]}{[_]}[Oo][Uu][Tt]
+	<<
+		return CAP_OUT;
+	>>
+
+[Tt]
+	<<
+		return T;
+	>>
+
+[Dd][Ee][Ll][Aa][Yy]{[_][Ii][Nn]}
+	<<
+		return DELAY;
+	>>
+
+[Ii][Nn][Pp][Uu][Tt][_][Pp][Oo][Rr][Tt][Ss]
+	<<
+		return INPUT_PORTS;
+	>>
+
+[Oo][Uu][Tt][Pp][Uu][Tt][_][Pp][Oo][Rr][Tt][Ss]
+	<<
+		return OUTPUT_PORTS;
+	>>
+
+[Ii][Ss][_][Cc][Ll][Oo][Cc][Kk]
+	<<
+		return IS_CLOCK;
+	>>
+
+[Ii][Nn][Pp][Uu][Tt]
+	<<
+		return INPUT;
+	>>
+
+[Oo][Uu][Tt][Pp][Uu][Tt]
+	<<
+		return OUTPUT;
+	>>
+
+[Cc][Ll][Oo][Cc][Kk]
+	<<
+		return CLOCK;
+	>>
+
+[Mm][Aa][Xx][_][Dd][Ee][Ll][Aa][Yy]
+	<<
+		return MAX_DELAY;
+	>>
+
+{[Mm][Aa][Xx][_]}[Dd][Ee][Ll][Aa][Yy][_][Mm][Aa][Tt][Rr][Ii][Xx]
+	<<
+		return MAX_DELAY_MATRIX;
+	>>
+
+{[Cc][Ll][Oo][Cc][Kk][_]}[Ss][Ee][Tt][Uu][Pp][_][Dd][Ee][Ll][Aa][Yy]
+	<<
+		return CLOCK_SETUP_DELAY;
+	>>
+
+[Cc][Ll][Oo][Cc][Kk]{[_][Tt][Oo][_][Qq]}[_][Dd][Ee][Ll][Aa][Yy]
+	<<
+		return CLOCK_TO_Q_DELAY;
+	>>
+
+[Pp][Rr][Ii][Oo][Rr][Ii][Tt][Yy]
+	<<
+		return PRIORITY;
+	>>
+
+[Pp][Oo][Ss]
+	<<
+		return SINGLE_POS;
+	>>
+
+[Ss][Tt][Aa][Rr][Tt]
+	<<
+		return MULTIPLE_START;
+	>>
+
+[Rr][Ee][Pp][Ee][Aa][Tt]
+	<<
+		return MULTIPLE_REPEAT;
+	>>
+
+[Aa][Uu][Tt][Oo]
+	<<
+		return AUTO;
+	>>
+
+[Mm][Aa][Nn][Uu][Aa][Ll]
+	<<
+		return MANUAL;
+	>>
+
+[Ff][Ii][Xx][Ee][Dd]
+	<<
+		return FIXED;
+	>>
+
+[Ss][Pp][Rr][Ee][Aa][Dd]
+	<<
+		return SPREAD;
+	>>
+
+[Cc][Uu][Ss][Tt][Oo][Mm]
+	<<
+		return CUSTOM;
+	>>
+
+[Ss][Ii][Nn][Gg][Ll][Ee]
+	<<
+		return SINGLE;
+	>>
+
+[Mm][Uu][Ll][Tt][Ii]{[Pp][Ll][Ee]}
+	<<
+		return MULTIPLE;
+	>>
+
+[Cc][Oo][Ll]{[Uu][Mm][Nn]}
+	<<
+		return COL;
+	>>
+
+[Rr][Ee][Ll]
+	<<
+		return REL;
+	>>
+
+[Ff][Ii][Ll][Ll]
+	<<
+		return FILL;
+	>>
+
+[Pp][Ee][Rr][Ii][Mm][Ee][Tt][Ee][Rr]
+	<<
+		return PERIMETER;
+	>>
+
+[Rr][Oo][Ww]
+	<<
+		return ROW;
+	>>
+
+[Mm][Uu][Xx]
+	<<
+		return MUX;
+	>>
+
+[Bb][Uu][Ff][Ff][Ee][Rr]{[Ee][Dd]}
+	<<
+		return BUFFER;
+	>>
+
+[Ww][Ii][Ll][Tt][Oo][Nn]
+	<<
+		return WILTON;
+	>>
+
+[Ss][Uu][Bb][Ss][Ee][Tt]
+	<<
+		return SUBSET;
+	>>
+
+[Dd][Ii][Ss][Jj][Oo][Ii][Nn][Tt]
+	<<
+		return DISJOINT;
+	>>
+
+[Uu][Nn][Ii][Vv][Ee][Rr][Ss][Aa][Ll]
+	<<
+		return UNIVERSAL;
+	>>
+
+[Uu][Nn][Ii]{{[_]}[Dd][Ii][Rr]}
+	<<
+		return UNIDIR;
+	>>
+
+[Bb][Ii]{{[_]}[Dd][Ii][Rr]}
+	<<
+		return BIDIR;
+	>>
+
+[Ll][Uu][Tt]
+	<<
+		return LUT;
+	>>
+
+[Ff]{[Ll][Ii][Pp]}[Ff]{[Ll][Oo][Pp]}
+	<<
+		return FLIPFLOP;
+	>>
+
+([Mm][Ee][Mm][Oo][Rr][Yy]|[Rr][Aa][Mm])
+	<<
+		return MEMORY;
+	>>
+
+([Ss][Uu][Bb][Cc][Kk][Tt]|[Bb][Ll][Ii][Ff])
+	<<
+		return SUBCKT;
+	>>
+
+[Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee]
+	<<
+		return COMPLETE;
+	>>
+
+[Dd][Ii][Rr][Ee][Cc][Tt]
+	<<
+		return DIRECT;
+	>>
+
+[Ll]{[Ee][Ff][Tt]}
+	<<
+		return LEFT;
+	>>
+
+[Rr]{[Ii][Gg][Hh][Tt]}
+	<<
+		return RIGHT;
+	>>
+
+[Ll][Oo][Ww][Ee][Rr]
+	<<
+		return LOWER;
+	>>
+
+[Uu][Pp][Pp][Ee][Rr]
+	<<
+		return UPPER;
+	>>
+
+[Bb]{[Oo][Tt][Tt][Oo][Mm]}
+	<<
+		return BOTTOM;
+	>>
+
+[Tt]{[Oo][Pp]}
+	<<
+		return TOP;
+	>>
+
+[Ss][Ii][Gg][Nn][Aa][Ll]
+	<<
+		return SIGNAL;
+	>>
+
+[Pp][Oo][Ww][Ee][Rr]
+	<<
+		return POWER;
+	>>
+
+[Gg][Ll][Oo][Bb][Aa][Ll]
+	<<
+		return GLOBAL;
+	>>
+
+([Tt][Rr][Uu][Ee]|[Yy][Ee][Ss]|[Oo][Nn])
+	<<
+		return BOOL_TRUE;
+	>>
+
+([Ff][Aa][Ll][Ss][Ee]|[Nn][Oo]|[Oo][Ff][Ff])
+	<<
+		return BOOL_FALSE;
+	>>
+
+[01]
+	<<
+		return BIT_CHAR;
+	>>
+
+[\-][0-9]+
+	<<
+		return NEG_INT;
+	>>
+
+[0-9]+
+	<<
+		return POS_INT;
+	>>
+
+{\-}{[0-9]+}.[0-9]+
+	<<
+		return FLOAT;
+	>>
+
+{\-}{[0-9]+.}[0-9]+[Ee][\+\-][0-9]+
+	<<
+		return EXP;
+	>>
+
+[a-zA-Z_/\|][a-zA-Z0-9_/\|\(\)\[\]\.\+\-\~]*
+	<<
+		return STRING;
+	>>
+
+<
+	<<
+		return (ANTLRTokenType)120;
+	>>
+
+>
+	<<
+		return (ANTLRTokenType)121;
+	>>
+
+</
+	<<
+		return (ANTLRTokenType)122;
+	>>
+
+/>
+	<<
+		return (ANTLRTokenType)123;
+	>>
+
+
+%%QUOTED_VALUE
+
+@
+	<<
+		return END_OF_FILE;
+	>>
+
+\"
+	<<
+    mode( START );   
+		return CLOSE_QUOTE;
+	>>
+
+~[\"\n]+
+	<<
+		return STRING;
+	>>
+
+[\n]
+	<<
+		return UNCLOSED_STRING;
+	>>
+
+%%
