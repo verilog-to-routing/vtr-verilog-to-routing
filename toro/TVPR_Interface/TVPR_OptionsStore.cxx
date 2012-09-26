@@ -14,7 +14,8 @@
 //
 //===========================================================================//
 
-#include <string.h>
+#include <string>
+using namespace std;
 
 #include "TCT_Generic.h"
 #include "TC_StringUtils.h"
@@ -464,16 +465,19 @@ enum e_echo_files TVPR_OptionsStore_c::FindMessageEchoType_(
       { E_ECHO_PLACEMENT_LOGIC_SINK_DELAYS,        "placement_logic_sink_delays" },
       { E_ECHO_PLACEMENT_LOWER_BOUND_SINK_DELAYS,  "placement_lower_bound_sink_delays" },
       { E_ECHO_PLACEMENT_SINK_DELAYS,              "placement_sink_delays" },
-      { E_ECHO_POST_FLOW_TIMING_GRAPH,             "post_flow_timing_graph.blif" },
+      { E_ECHO_POST_FLOW_TIMING_GRAPH,             "post_flow_timing_graph" },
+      { E_ECHO_POST_PACK_NETLIST,                  "post_pack_netlist" },
       { E_ECHO_PRE_PACKING_CRITICALITY,            "pre_packing_criticality" },
       { E_ECHO_PRE_PACKING_MOLECULES_AND_PATTERNS, "pre_packing_molecules_and_patterns" },
       { E_ECHO_PRE_PACKING_SLACK,                  "pre_packing_slack" },
       { E_ECHO_PRE_PACKING_TIMING_GRAPH,           "pre_packing_timing_graph" },
+      { E_ECHO_PRE_PACKING_TIMING_GRAPH_AS_BLIF,   "pre_packing_timing_graph_as_blif" },
       { E_ECHO_ROUTING_SINK_DELAYS,                "routing_sink_delays" },
       { E_ECHO_RR_GRAPH,                           "rr_graph" },
       { E_ECHO_SLACK,                              "slack" },
       { E_ECHO_TIMING_CONSTRAINTS,                 "timing_constraints" },
-      { E_ECHO_TIMING_GRAPH,                       "timing_graph" }
+      { E_ECHO_TIMING_GRAPH,                       "timing_graph" },
+      { E_ECHO_SEG_DETAILS,                        "seg_details" }
    };
 
    enum e_echo_files echoType = E_ECHO_END_TOKEN;

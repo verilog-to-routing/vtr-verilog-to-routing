@@ -7,6 +7,8 @@
 #ifndef TVPR_FABRIC_MODEL_H
 #define TVPR_FABRIC_MODEL_H
 
+#include "TGS_Typedefs.h"
+
 #include "TFM_FabricModel.h"
 
 #include "vpr_api.h"
@@ -40,14 +42,14 @@ private:
    void PopulateBlockPlane_( const TFM_BlockList_t& blockList,
                              TFV_FabricView_c* pfabricView ) const;
    void PopulateChannelPlane_( const TFM_ChannelList_t& channelList,
-			       TFV_FabricView_c* pfabricView ) const;
+                               TFV_FabricView_c* pfabricView ) const;
    void PopulateSegmentPlane_( const TFM_SegmentList_t& segmentList,
-			       TFV_FabricView_c* pfabricView ) const;
+                               TFV_FabricView_c* pfabricView ) const;
    bool PopulateConnectionPlane_( const TFM_BlockList_t& blockList,
-				  TFV_FabricView_c* pfabricView ) const;
+                                  TFV_FabricView_c* pfabricView ) const;
 
    bool GenerateFabricView_( t_grid_tile** vpr_gridArray,
-                             const TC_IntDims_t& vpr_gridDims,
+                             const TGS_IntDims_t& vpr_gridDims,
                              const t_rr_node* vpr_rrNodeArray,
                              int vpr_rrNodeCount,
                              TFV_FabricView_c* pfabricView ) const;
@@ -64,23 +66,23 @@ private:
                          TFM_PinList_t* ppinList ) const;
 
    void PeekInputOutputs_( t_grid_tile** vpr_gridArray,
-                           const TC_IntDims_t& vpr_gridDims,
+                           const TGS_IntDims_t& vpr_gridDims,
                            TFV_FabricView_c* pfabricView ) const;
    void PeekPhysicalBlocks_( t_grid_tile** vpr_gridArray,
-                             const TC_IntDims_t& vpr_gridDims,
+                             const TGS_IntDims_t& vpr_gridDims,
                              TFV_FabricView_c* pfabricView ) const;
-   void PeekChannels_( const TC_IntDims_t& vpr_gridDims,
+   void PeekChannels_( const TGS_IntDims_t& vpr_gridDims,
                        const t_rr_node* vpr_rrNodeArray,
                        int vpr_rrNodeCount,
                        TFV_FabricView_c* pfabricView ) const;
    void PeekSegments_( const t_rr_node* vpr_rrNodeArray,
                        int vpr_rrNodeCount,
                        TFV_FabricView_c* pfabricView ) const;
-   void PeekSwitchBoxes_( const TC_IntDims_t& vpr_gridDims,
+   void PeekSwitchBoxes_( const TGS_IntDims_t& vpr_gridDims,
                           const t_rr_node* vpr_rrNodeArray,
                           int vpr_rrNodeCount,
                           TFV_FabricView_c* pfabricView ) const;
-   bool PeekConnectionBoxes_( const TC_IntDims_t& vpr_gridDims,
+   bool PeekConnectionBoxes_( const TGS_IntDims_t& vpr_gridDims,
                               const t_rr_node* vpr_rrNodeArray,
                               int vpr_rrNodeCount,
                               TFV_FabricView_c* pfabricView ) const;
@@ -100,23 +102,23 @@ private:
                         const t_type_descriptor vpr_type,
                         TFV_FabricData_c* pfabricData ) const;
 
-   void BuildChannelDefaults_( const TC_IntDims_t& vpr_gridDims,
+   void BuildChannelDefaults_( const TGS_IntDims_t& vpr_gridDims,
                                TFV_FabricView_c* pfabricView ) const;
    void UpdateChannelCounts_( const t_rr_node* vpr_rrNodeArray,
                               int vpr_rrNodeCount,
                               const TFV_FabricView_c& fabricView ) const;
-   void ResizeChannelWidths_( const TC_IntDims_t& vpr_gridDims,
+   void ResizeChannelWidths_( const TGS_IntDims_t& vpr_gridDims,
                               TFV_FabricView_c* pfabricView ) const;
-   void ResizeChannelLengths_( const TC_IntDims_t& vpr_gridDims,
+   void ResizeChannelLengths_( const TGS_IntDims_t& vpr_gridDims,
                                TFV_FabricView_c* pfabricView ) const;
 
-   void BuildSwitchBoxes_( const TC_IntDims_t& vpr_gridDims,
+   void BuildSwitchBoxes_( const TGS_IntDims_t& vpr_gridDims,
                            TFV_FabricView_c* pfabricView ) const;
    void UpdateSwitchMapTables_( const t_rr_node* vpr_rrNodeArray,
                                 int vpr_rrNodeCount,
-				      const TFV_FabricView_c& fabricView ) const;
+                                const TFV_FabricView_c& fabricView ) const;
 
-   bool BuildConnectionBoxes_( const TC_IntDims_t& vpr_gridDims,
+   bool BuildConnectionBoxes_( const TGS_IntDims_t& vpr_gridDims,
                                TFV_FabricView_c* pfabricView ) const;
    bool BuildConnectionRegion_( const TFV_FabricView_c& fabricView,
                                 const TFV_FabricPin_c& pin,
@@ -130,23 +132,26 @@ private:
                                  TFV_FabricView_c* pfabricView ) const;
 
    unsigned int CalcMaxPinCount_( t_grid_tile** vpr_gridArray,
-                                  const TC_IntDims_t& vpr_gridDims ) const;
+                                  const TGS_IntDims_t& vpr_gridDims ) const;
    unsigned int CalcMaxPinCount_( const t_type_descriptor vpr_type ) const;
    void CalcPinCountArray_( const t_type_descriptor vpr_type,
                             unsigned int* pcountArray ) const;
    void CalcPinOffsetArray_( const t_type_descriptor vpr_type,
                              const TGS_Region_c& region,
-			     unsigned int index,
+                             unsigned int index,
                              const unsigned int* pcountArray,
                              double* poffsetArray ) const;
 
-   const char* FindPinName_( const t_type_descriptor vpr_type,
-                             int pinIndex ) const;
+   void FindPinName_( const t_type_descriptor vpr_type,
+                      int pinIndex,
+                      string* psrPinName ) const;
+   void FindPinName_( const t_pb_graph_pin* pvpr_pb_graph_pin,
+                      string* psrPinName ) const;
    TC_SideMode_t FindPinSide_( int side ) const;
    TC_SideMode_t FindPinSide_( const t_rr_node& vpr_rrNodePin,
                                const t_rr_node& vpr_rrNodeChan ) const;
    double FindPinOffset_( int side,
-			  double* poffsetArray ) const;
+                          double* poffsetArray ) const;
 
    unsigned int FindChannelCount_( const TFV_FabricView_c& fabricView,
                                    const TGS_Point_c& point,
@@ -172,7 +177,7 @@ private:
                          bool applyTrack = true ) const;
 
    TC_SideMode_t FindSwitchSide_( const t_rr_node& vpr_rrNode,
-				  TGS_DirMode_t refDir,
+                                  TGS_DirMode_t refDir,
                                   const TGS_Point_c& refPoint,
                                   const TGS_Region_c& switchRegion ) const;
 
@@ -193,8 +198,8 @@ private:
                               TFV_DataType_t dataType,
                               const char* pszName,
                               const char* pszMasterName,
-			      unsigned int sliceCount,
-			      unsigned int sliceCapacity,
+                              unsigned int sliceCount,
+                              unsigned int sliceCapacity,
                               TFV_FabricView_c* pfabricView,
                               TFV_FabricData_c** ppfabricData = 0 ) const;
    bool AddFabricViewRegion_( const TGS_Region_c& region,
@@ -215,7 +220,7 @@ private:
                               TFV_FabricView_c* pfabricView,
                               TFV_FabricData_c** ppfabricData = 0 ) const;
    bool ReplaceFabricViewRegion_( const TGS_Region_c& region,
-				  const TGS_Region_c& region_,
+                                  const TGS_Region_c& region_,
                                   const TFV_FabricData_c& fabricData,
                                   TFV_FabricView_c* pfabricView ) const;
 };

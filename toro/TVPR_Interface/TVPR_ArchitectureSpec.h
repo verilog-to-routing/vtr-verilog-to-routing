@@ -82,7 +82,7 @@ private:
    void PokeFc_( const TAS_PhysicalBlock_c& physicalBlock,
                  t_type_descriptor* pvpr_physicalBlock ) const;
    void PokePinAssignList_( const TAS_PinAssignList_t& pinAssignList,
-               	     t_type_descriptor* pvpr_physicalBlock ) const;
+                            t_type_descriptor* pvpr_physicalBlock ) const;
    void PokeGridAssignList_( const TAS_GridAssignList_t& gridAssignList,
                              t_type_descriptor* pvpr_physicalBlock ) const;
 

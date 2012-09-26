@@ -36,7 +36,8 @@ public:
                 int* pvpr_primaryOutputCount,
                 bool deleteInvalidData ) const;
    
-   void Import( const t_block* vpr_blockArray,
+   void Import( const t_arch* vpr_architecture,
+                const t_block* vpr_blockArray,
                 int vpr_blockCount,
                 const t_logical_block* vpr_logicalBlockArray,
                 TCD_CircuitDesign_c* pcircuitDesign ) const;

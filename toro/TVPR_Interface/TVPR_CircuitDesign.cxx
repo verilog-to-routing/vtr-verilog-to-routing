@@ -45,7 +45,8 @@
 //
 //===========================================================================//
 
-#include <string.h>
+#include <string>
+using namespace std;
 
 #include "TC_MemoryUtils.h"
 
@@ -147,6 +148,7 @@ bool TVPR_CircuitDesign_c::Export(
 // 07/25/12 jeffr : Original
 //===========================================================================//
 void TVPR_CircuitDesign_c::Import(
+      const t_arch*              vpr_architecture,
       const t_block*             vpr_blockArray,
             int                  vpr_blockCount,
       const t_logical_block*     vpr_logicalBlockArray,
@@ -421,7 +423,7 @@ void TVPR_CircuitDesign_c::PokeLogic_(
          logicBits[j]->ExtractString( &srLogicBit );
 
          srLogicBits += srLogicBit;
-	 srLogicBits += ( j + 2 == logicBits.GetLength( ) ? " " : "" );
+         srLogicBits += ( j + 2 == logicBits.GetLength( ) ? " " : "" );
       }
 
       t_linked_vptr* ptruth_table = static_cast< t_linked_vptr* >( TC_calloc( 1, sizeof( t_linked_vptr )));
@@ -735,7 +737,7 @@ void TVPR_CircuitDesign_c::UpdateLogicalBlocks_(
 // 07/25/12 jeffr : Original
 //===========================================================================//
 bool TVPR_CircuitDesign_c::UpdateVpackNets_(
-	    t_net*           vpr_netArray,
+            t_net*           vpr_netArray,
       const t_logical_block* vpr_logicalBlockArray,
             int              vpr_logicalBlockCount ) const
 {
@@ -1247,7 +1249,7 @@ void TVPR_CircuitDesign_c::PeekPhysicalBlock_(
    if( vpr_block.pb )
    {
       this->PeekHierMapList_( *vpr_block.pb, vpr_logicalBlockArray,
-		              blockIndex, &packHierMapList );
+                              blockIndex, &packHierMapList );
    }
 
    TPO_StatusMode_t placeStatus = ( vpr_block.isFixed ? 
@@ -1421,7 +1423,7 @@ bool TVPR_CircuitDesign_c::ValidateSubcktList_(
       const TLO_Cell_c* pcell = cellList.Find( pszCellName );
       if( pcell )
       {
-	 const TLO_PortList_t& portList = pcell->GetPortList( );
+         const TLO_PortList_t& portList = pcell->GetPortList( );
 
          const TPO_PinMapList_t& pinMapList = inst.GetSubcktPinMapList( );
          for( size_t j = 0; j < pinMapList.GetLength( ); ++j )
@@ -1482,7 +1484,7 @@ bool TVPR_CircuitDesign_c::ValidateInstList_(
       if( inst.GetSource( ) == TPO_INST_SOURCE_SUBCKT )
       {  
          // [VPR] Delete instance if 0 output pins (and is not an output pad)
-	 size_t outputPinCount = inst.FindPinCount( TC_TYPE_OUTPUT, cellList );
+         size_t outputPinCount = inst.FindPinCount( TC_TYPE_OUTPUT, cellList );
          if( outputPinCount == 0 )
          {
             ok = printHandler.Warning( "Invalid subckt block \"%s\" detected.\n"

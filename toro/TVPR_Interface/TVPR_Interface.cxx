@@ -124,7 +124,7 @@ bool TVPR_Interface_c::Apply(
       printHandler.Info( "Opening VPR interface...\n" );
       ok = this->Open( optionsStore,
                        architectureSpec,
-		       *pfabricModel,
+                       *pfabricModel,
                        *pcircuitDesign );
    }
    if( ok )
@@ -178,7 +178,7 @@ bool TVPR_Interface_c::Open(
    if( ok && architectureSpec.IsValid( ))
    {
       bool isTimingEnabled = ( this->vpr_.setup.TimingEnabled ? true : false );
-	  TVPR_ArchitectureSpec_c vpr_architectureSpec;
+      TVPR_ArchitectureSpec_c vpr_architectureSpec;
       ok = vpr_architectureSpec.Export( architectureSpec, 
                                         &this->vpr_.arch,
                                         &type_descriptors, // [VPR] global variable
@@ -240,12 +240,12 @@ bool TVPR_Interface_c::Open(
       ok = vpr_circuitDesign.Export( circuitDesign,
                                      this->vpr_.setup.library_models, 
                                      this->vpr_.setup.user_models, 
-		      	             &vpack_net,
-    			             &num_logical_nets,
-			             &logical_block,
-    			             &num_logical_blocks,
-    			             &num_p_inputs,
-    			             &num_p_outputs,
+                                     &vpack_net,
+                                     &num_logical_nets,
+                                     &logical_block,
+                                     &num_logical_blocks,
+                                     &num_p_inputs,
+                                     &num_p_outputs,
                                      deleteInvalidData );
    }
 
@@ -322,20 +322,21 @@ bool TVPR_Interface_c::Close(
    {
       if( pfabricModel )
       {
-	 // Extract fabric model from VPR's internal data structures
- 	 // (based on VPR's global "grid", "nx", and "ny")
- 	 // (and, based on VPR's global "rr_node" and "num_rr_nodes")
-	 TVPR_FabricModel_c vpr_fabricModel;
+         // Extract fabric model from VPR's internal data structures
+         // (based on VPR's global "grid", "nx", and "ny")
+         // (and, based on VPR's global "rr_node" and "num_rr_nodes")
+         TVPR_FabricModel_c vpr_fabricModel;
          vpr_fabricModel.Import( grid, nx, ny,
-		    	         rr_node, num_rr_nodes,
+                                 rr_node, num_rr_nodes,
                                  pfabricModel );
       }
       if( pcircuitDesign )
       {
-	 // Extract circuit design from VPR's internal data structures
- 	 // (based on VPR's global "block" and "num_blocks")
-	 TVPR_CircuitDesign_c vpr_circuitDesign;
-         vpr_circuitDesign.Import( block, num_blocks,
+         // Extract circuit design from VPR's internal data structures
+         // (based on VPR's global "block" and "num_blocks")
+         TVPR_CircuitDesign_c vpr_circuitDesign;
+         vpr_circuitDesign.Import( &this->vpr_.arch,
+                                   block, num_blocks,
                                    logical_block,
                                    pcircuitDesign );
       }

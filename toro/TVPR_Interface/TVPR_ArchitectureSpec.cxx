@@ -45,7 +45,8 @@
 //
 //===========================================================================//
 
-#include <string.h>
+#include <string>
+using namespace std;
 
 #include "TC_MemoryUtils.h"
 
@@ -251,7 +252,7 @@ void TVPR_ArchitectureSpec_c::PokeModelLists_(
    {
       const TAS_Cell_c& cell = *cellList[i];
       if( cell.GetSource( ) != TLO_CELL_SOURCE_STANDARD )
-	 continue;
+         continue;
 
       t_model* pvpr_model = &pvpr_architecture->model_library[libraryIndex];
       pvpr_model->index = libraryIndex;
@@ -261,7 +262,7 @@ void TVPR_ArchitectureSpec_c::PokeModelLists_(
 
       if( libraryIndex < libraryLen )
       {
-	 pvpr_model->next = &( pvpr_architecture->model_library[libraryIndex] );
+         pvpr_model->next = &( pvpr_architecture->model_library[libraryIndex] );
       }
    }
 
@@ -272,7 +273,7 @@ void TVPR_ArchitectureSpec_c::PokeModelLists_(
    {
       const TAS_Cell_c& cell = *cellList[i];
       if( cell.GetSource( ) != TLO_CELL_SOURCE_CUSTOM )
-	 continue;
+         continue;
 
       t_model* pvpr_model = static_cast< t_model* >( TC_calloc( 1, sizeof( t_model )));
       pvpr_model->index = modelIndex;
@@ -559,7 +560,7 @@ bool TVPR_ArchitectureSpec_c::PokeSegmentList_(
          }
          else if( segment.length > 0 )
          {
-	    ( *pvpr_segmentArray )[i].length = segment.length;
+            ( *pvpr_segmentArray )[i].length = segment.length;
          }
 
          if( segment.dirType != TAS_SEGMENT_DIR_UNDEFINED )
@@ -666,7 +667,7 @@ void TVPR_ArchitectureSpec_c::PokePbType_(
    if( physicalBlock.srModelName.length( ))
    {
       string srModelName = ( physicalBlock.modelType == TAS_PHYSICAL_BLOCK_MODEL_STANDARD ?
-			     "" : ".subckt " );
+                             "" : ".subckt " );
       srModelName += TC_strdup( physicalBlock.srModelName );
 
       pvpr_pb_type->blif_model = TC_strdup( srModelName );
@@ -1279,8 +1280,8 @@ void TVPR_ArchitectureSpec_c::PokeFc_(
 // 07/10/12 jeffr : Original
 //===========================================================================//
 void TVPR_ArchitectureSpec_c::PokePinAssignList_(
-      const TAS_PinAssignList_t&   pinAssignList,
-		t_type_descriptor* pvpr_physicalBlock ) const
+      const TAS_PinAssignList_t& pinAssignList,
+            t_type_descriptor*   pvpr_physicalBlock ) const
 {
    // [VPR] Alloc and clear pin locations
    pvpr_physicalBlock->pinloc = static_cast< int*** >( TC_calloc( pvpr_physicalBlock->height, sizeof( int** )));
@@ -1426,8 +1427,8 @@ void TVPR_ArchitectureSpec_c::PokePinAssignList_(
 // 07/10/12 jeffr : Original
 //===========================================================================//
 void TVPR_ArchitectureSpec_c::PokeGridAssignList_( 
-      const TAS_GridAssignList_t&  gridAssignList,
-		t_type_descriptor* pvpr_physicalBlock ) const
+      const TAS_GridAssignList_t& gridAssignList,
+            t_type_descriptor*    pvpr_physicalBlock ) const
 {
    if( gridAssignList.IsValid( ))
    {

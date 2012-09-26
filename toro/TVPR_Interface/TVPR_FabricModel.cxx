@@ -56,7 +56,8 @@
 //
 //===========================================================================//
 
-#include <string.h>
+#include <string>
+using namespace std;
 
 #include "TVPR_FabricModel.h"
 
@@ -123,19 +124,19 @@ bool TVPR_FabricModel_c::Import(
    bool ok = true;
 
    // Define local grid dimensions (overall) based on VPR nx/ny values
-   TC_IntDims_t vpr_gridDims( vpr_nx + 2, vpr_ny + 2 );
+   TGS_IntDims_t vpr_gridDims( vpr_nx + 2, vpr_ny + 2 );
 
    // Start by generating fabric view based on VPR's internal data structures
    TFV_FabricView_c* pfabricView = pfabricModel->GetFabricView( );
    ok = this->GenerateFabricView_( vpr_gridArray, vpr_gridDims,
-				   vpr_rrNodeArray, vpr_rrNodeCount,
+                                   vpr_rrNodeArray, vpr_rrNodeCount,
                                    pfabricView );
 
    // Then, extract fabric view contents to populate fabric model
    if( ok )
    {
       this->ExtractFabricView_( *pfabricView,
-                                 pfabricModel );
+                                pfabricModel );
    }
    return( ok );
 }
@@ -213,7 +214,7 @@ void TVPR_FabricModel_c::PopulateBlockPlane_(
       TFV_FabricData_c* pfabricData = 0;
       this->AddFabricViewRegion_( blockRegion, dataType,
                                   pszName, pszMasterName, 
-				  sliceCount, sliceCapacity,
+                                  sliceCount, sliceCapacity,
                                   pfabricView, &pfabricData );
       if( pfabricData )
       {
@@ -338,7 +339,7 @@ bool TVPR_FabricModel_c::PopulateConnectionPlane_(
          if( pfabricData )
          {
             // Update connection box figure per asso. side and track index
-	    pfabricData->AddConnection( fabricPin.GetConnectionList( ));
+            pfabricData->AddConnection( fabricPin.GetConnectionList( ));
          }
       }
       if( !ok )
@@ -356,7 +357,7 @@ bool TVPR_FabricModel_c::PopulateConnectionPlane_(
 //===========================================================================//
 bool TVPR_FabricModel_c::GenerateFabricView_(
             t_grid_tile**     vpr_gridArray,
-      const TC_IntDims_t&     vpr_gridDims,
+      const TGS_IntDims_t&    vpr_gridDims,
       const t_rr_node*        vpr_rrNodeArray,
             int               vpr_rrNodeCount,
             TFV_FabricView_c* pfabricView ) const
@@ -610,7 +611,7 @@ void TVPR_FabricModel_c::ExtractPinList_(
 //===========================================================================//
 void TVPR_FabricModel_c::PeekInputOutputs_(
          t_grid_tile**     vpr_gridArray,
-   const TC_IntDims_t&     vpr_gridDims,
+   const TGS_IntDims_t&    vpr_gridDims,
          TFV_FabricView_c* pfabricView ) const
 {
    // Iterate for every IO found within VPR's grid 
@@ -639,11 +640,11 @@ void TVPR_FabricModel_c::PeekInputOutputs_(
          double dy = TFV_MODEL_INPUT_OUTPUT_DEF_WIDTH;
          ioRegion.ApplyScale( dx, dy, TGS_SNAP_MIN_GRID );
 
-	 unsigned int sliceCount = vpr_type.capacity;
+         unsigned int sliceCount = vpr_type.capacity;
 	 unsigned int sliceCapacity = vpr_type.num_pins / ( vpr_type.capacity ? vpr_type.capacity : 1 );
 
          this->AddFabricViewRegion_( ioRegion, TFV_DATA_INPUT_OUTPUT, 
-				     szName, pszMasterName, 
+                                     szName, pszMasterName, 
                                      sliceCount, sliceCapacity,
                                      pfabricView );
 
@@ -667,7 +668,7 @@ void TVPR_FabricModel_c::PeekInputOutputs_(
 //===========================================================================//
 void TVPR_FabricModel_c::PeekPhysicalBlocks_(
          t_grid_tile**     vpr_gridArray,
-   const TC_IntDims_t&     vpr_gridDims,
+   const TGS_IntDims_t&    vpr_gridDims,
          TFV_FabricView_c* pfabricView ) const
 {
    unsigned int maxPinCount = this->CalcMaxPinCount_( vpr_gridArray, 
@@ -721,7 +722,7 @@ void TVPR_FabricModel_c::PeekPhysicalBlocks_(
 	 unsigned int sliceCapacity = 0;
 
          this->AddFabricViewRegion_( pbRegion, TFV_DATA_PHYSICAL_BLOCK, 
-				     szName, pszMasterName, 
+                                     szName, pszMasterName, 
                                      sliceCount, sliceCapacity, 
                                      pfabricView );
 
@@ -740,7 +741,7 @@ void TVPR_FabricModel_c::PeekPhysicalBlocks_(
 // 08/25/12 jeffr : Original
 //===========================================================================//
 void TVPR_FabricModel_c::PeekChannels_(
-      const TC_IntDims_t&     vpr_gridDims,
+      const TGS_IntDims_t&    vpr_gridDims,
       const t_rr_node*        vpr_rrNodeArray,
             int               vpr_rrNodeCount,
             TFV_FabricView_c* pfabricView ) const
@@ -789,13 +790,13 @@ void TVPR_FabricModel_c::PeekSegments_(
       {
          segmentRegion.ApplyScale( 0.0, segmentWidth / 2.0, TGS_SNAP_MIN_GRID );
          dataType = TFV_DATA_SEGMENT_HORZ;
-         sprintf( szName, "sh[%d]", i );
+         sprintf( szName, "sh[%d].%d", vpr_rrNode.xlow, vpr_rrNode.ptc_num );
       }
       if( vpr_rrNode.type == CHANY )
       {
          segmentRegion.ApplyScale( segmentWidth / 2.0, 0.0, TGS_SNAP_MIN_GRID );
          dataType = TFV_DATA_SEGMENT_VERT;
-         sprintf( szName, "sv[%d]", i );
+         sprintf( szName, "sh[%d].%d", vpr_rrNode.ylow, vpr_rrNode.ptc_num );
       }
       unsigned int trackIndex = static_cast< int >( vpr_rrNode.ptc_num );
 
@@ -812,7 +813,7 @@ void TVPR_FabricModel_c::PeekSegments_(
 // 08/25/12 jeffr : Original
 //===========================================================================//
 void TVPR_FabricModel_c::PeekSwitchBoxes_(
-      const TC_IntDims_t&     vpr_gridDims,
+      const TGS_IntDims_t&    vpr_gridDims,
       const t_rr_node*        vpr_rrNodeArray,
             int               vpr_rrNodeCount,
             TFV_FabricView_c* pfabricView ) const
@@ -832,7 +833,7 @@ void TVPR_FabricModel_c::PeekSwitchBoxes_(
 // 08/25/12 jeffr : Original
 //===========================================================================//
 bool TVPR_FabricModel_c::PeekConnectionBoxes_(
-      const TC_IntDims_t&     vpr_gridDims,
+      const TGS_IntDims_t&    vpr_gridDims,
       const t_rr_node*        vpr_rrNodeArray,
             int               vpr_rrNodeCount,
             TFV_FabricView_c* pfabricView ) const
@@ -968,7 +969,7 @@ void TVPR_FabricModel_c::UpdatePinList_(
          {
             TC_SideMode_t pinSide = FindPinSide_( sideIndex );
             if( onlySide != pinSide )
-	       continue;
+               continue;
 	 }
 
          for( int offsetIndex = 0; offsetIndex < vpr_type.height; ++offsetIndex ) 
@@ -976,14 +977,15 @@ void TVPR_FabricModel_c::UpdatePinList_(
             if( !vpr_type.pinloc[offsetIndex][sideIndex][pinIndex] )
                continue;
 
-            const char* pszPinName = this->FindPinName_( vpr_type, pinIndex );
+            string srPinName;
+            this->FindPinName_( vpr_type, pinIndex, &srPinName );
             TC_SideMode_t pinSide = this->FindPinSide_( sideIndex );
 
             unsigned int pinSlice = ( sliceCapacity ? pinIndex / sliceCapacity : 0 );
             double pinOffset = this->FindPinOffset_( sideIndex, &offsetArray[0] );
             double pinWidth = TFV_MODEL_PIN_DEF_WIDTH;
 
-            TFV_FabricPin_c fabricPin( pszPinName, pinSlice,
+            TFV_FabricPin_c fabricPin( srPinName, pinSlice,
                                        pinSide, pinOffset, pinWidth );
             pfabricData->AddPin( fabricPin );
          }
@@ -999,7 +1001,7 @@ void TVPR_FabricModel_c::UpdatePinList_(
 // 08/25/12 jeffr : Original
 //===========================================================================//
 void TVPR_FabricModel_c::BuildChannelDefaults_(
-      const TC_IntDims_t&     vpr_gridDims,
+      const TGS_IntDims_t&    vpr_gridDims,
             TFV_FabricView_c* pfabricView ) const
 {
    double x1 = 1.0 - TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
@@ -1085,7 +1087,7 @@ void TVPR_FabricModel_c::UpdateChannelCounts_(
 // 08/25/12 jeffr : Original
 //===========================================================================//
 void TVPR_FabricModel_c::ResizeChannelWidths_(
-      const TC_IntDims_t&     vpr_gridDims,
+      const TGS_IntDims_t&    vpr_gridDims,
             TFV_FabricView_c* pfabricView ) const
 {
    double x1 = 1.0 - TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
@@ -1146,7 +1148,7 @@ void TVPR_FabricModel_c::ResizeChannelWidths_(
 // 08/25/12 jeffr : Original
 //===========================================================================//
 void TVPR_FabricModel_c::ResizeChannelLengths_(
-      const TC_IntDims_t&     vpr_gridDims,
+      const TGS_IntDims_t&    vpr_gridDims,
             TFV_FabricView_c* pfabricView ) const
 {
    double x1 = 1.0 - TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
@@ -1223,7 +1225,7 @@ void TVPR_FabricModel_c::ResizeChannelLengths_(
 // 08/25/12 jeffr : Original
 //===========================================================================//
 void TVPR_FabricModel_c::BuildSwitchBoxes_(
-      const TC_IntDims_t&     vpr_gridDims,
+      const TGS_IntDims_t&    vpr_gridDims,
             TFV_FabricView_c* pfabricView ) const
 {
    const TGS_Region_c& fabricRegion = pfabricView->GetRegion( );
@@ -1271,7 +1273,7 @@ void TVPR_FabricModel_c::BuildSwitchBoxes_(
          sprintf( szName, "sb[%d][%d]", x, y );
 
          this->AddFabricViewRegion_( switchRegion, TFV_DATA_SWITCH_BOX, 
-				     szName, horzCount, vertCount, pfabricView );
+                                     szName, horzCount, vertCount, pfabricView );
       }
    }
 }
@@ -1301,7 +1303,7 @@ void TVPR_FabricModel_c::UpdateSwitchMapTables_(
          const t_rr_node& vpr_rrNode2 = vpr_rrNodeArray[vpr_rrNode1.edges[j]];
 
          if(( vpr_rrNode2.type != CHANX ) && ( vpr_rrNode2.type != CHANY ))
-   	    continue;
+            continue;
 
          TGS_Region_c segmentRegion1, segmentRegion2;
          this->FindSegmentRegion_( vpr_rrNode1, fabricView, &segmentRegion1 );
@@ -1343,7 +1345,7 @@ void TVPR_FabricModel_c::UpdateSwitchMapTables_(
 // 08/25/12 jeffr : Original
 //===========================================================================//
 bool TVPR_FabricModel_c::BuildConnectionBoxes_(
-      const TC_IntDims_t&     vpr_gridDims,
+      const TGS_IntDims_t&    vpr_gridDims,
             TFV_FabricView_c* pfabricView ) const
 {
    bool ok = true;
@@ -1472,7 +1474,7 @@ void TVPR_FabricModel_c::UpdateConnectionPoints_(
 
          if(( vpr_rrNode2.type != CHANX ) && ( vpr_rrNode2.type != CHANY ) &&
             ( vpr_rrNode2.type != IPIN ) && ( vpr_rrNode2.type != OPIN ))
-	    continue;
+            continue;
 
          // Handle connection boxes from output pins
          if(( vpr_rrNode1.type == OPIN ) && ( vpr_rrNode2.type == CHANX ))
@@ -1508,10 +1510,9 @@ void TVPR_FabricModel_c::UpdateConnectionPoints_(
             TFV_FabricView_c* pfabricView ) const
 {
    // Determine pin name based on IPIN|OPIN node
-   const char* pszName = ( vpr_rrNodePin.pb_graph_pin &&
-                           vpr_rrNodePin.pb_graph_pin->port ?
-                           vpr_rrNodePin.pb_graph_pin->port->name : 0 );
-   if( pszName )
+   string srPinName;
+   this->FindPinName_( vpr_rrNodePin.pb_graph_pin, &srPinName );
+   if( srPinName.length( ))
    {
       // Determine pin side based on IPIN|OPIN node wrt CHANX|CHANY node
       TC_SideMode_t pinSide = this->FindPinSide_( vpr_rrNodePin, vpr_rrNodeChan );
@@ -1527,7 +1528,7 @@ void TVPR_FabricModel_c::UpdateConnectionPoints_(
          int sliceCount = static_cast< int >( TCT_Max( pfabricData->GetSliceCount( ), 1u ));
          for( int sliceIndex = 0; sliceIndex < sliceCount; ++sliceIndex )
 	 {
-            TFV_FabricPin_c pin( pszName, sliceIndex, pinSide );
+            TFV_FabricPin_c pin( srPinName, sliceIndex, pinSide );
             if( pinList.IsMember( pin ))
             {
                TFV_FabricPin_c* ppin = pinList[pin];
@@ -1551,7 +1552,7 @@ void TVPR_FabricModel_c::UpdateConnectionPoints_(
                if( pfabricView->IsSolid( connectionLayer, pinPoint, &pfabricFigure ))
                {
                   // Update connection box figure per asso. side and track index
-	          pfabricData = pfabricFigure->GetData( );
+                  pfabricData = pfabricFigure->GetData( );
                   pfabricData->AddConnection( connection );
                }
             }
@@ -1568,8 +1569,8 @@ void TVPR_FabricModel_c::UpdateConnectionPoints_(
 // 08/25/12 jeffr : Original
 //===========================================================================//
 unsigned int TVPR_FabricModel_c::CalcMaxPinCount_(
-	    t_grid_tile** vpr_gridArray,
-      const TC_IntDims_t& vpr_gridDims ) const
+            t_grid_tile**  vpr_gridArray,
+      const TGS_IntDims_t& vpr_gridDims ) const
 {
    unsigned int maxPins = 0;
 
@@ -1701,12 +1702,11 @@ void TVPR_FabricModel_c::CalcPinOffsetArray_(
 // Version history
 // 08/25/12 jeffr : Original
 //===========================================================================//
-const char* TVPR_FabricModel_c::FindPinName_(
+void TVPR_FabricModel_c::FindPinName_(
       const t_type_descriptor vpr_type,  
-            int               pinIndex ) const
+            int               pinIndex,
+            string*           psrString ) const
 {
-   const char* pszPinName = 0;
-
    const t_pb_type& vpr_pb_type = *vpr_type.pb_type;
    const t_pb_graph_node& vpr_pb_graph_node = *vpr_type.pb_graph_head;
 
@@ -1721,7 +1721,10 @@ const char* TVPR_FabricModel_c::FindPinName_(
          if( pinIndex < vpr_pb_graph_node.num_input_pins[i] )
          {
             const t_pb_graph_pin* pvpr_pb_graph_pin = &vpr_pb_graph_node.input_pins[i][pinIndex];
-            pszPinName = ( pvpr_pb_graph_pin ? pvpr_pb_graph_pin->port->name : 0 );
+	    if( pvpr_pb_graph_pin )
+            {
+	       this->FindPinName_( pvpr_pb_graph_pin, psrString );
+            } 
             break;
          } 
          pinIndex -= vpr_pb_graph_node.num_input_pins[i];
@@ -1735,7 +1738,10 @@ const char* TVPR_FabricModel_c::FindPinName_(
          if( pinIndex < vpr_pb_graph_node.num_output_pins[i] )
          {
             const t_pb_graph_pin* pvpr_pb_graph_pin = &vpr_pb_graph_node.output_pins[i][pinIndex];
-            pszPinName = ( pvpr_pb_graph_pin ? pvpr_pb_graph_pin->port->name : 0 );
+	    if( pvpr_pb_graph_pin )
+            {
+	       this->FindPinName_( pvpr_pb_graph_pin, psrString );
+            } 
             break;
          } 
          pinIndex -= vpr_pb_graph_node.num_output_pins[i];
@@ -1749,13 +1755,39 @@ const char* TVPR_FabricModel_c::FindPinName_(
          if( pinIndex < vpr_pb_graph_node.num_clock_pins[i] )
          {
             const t_pb_graph_pin* pvpr_pb_graph_pin = &vpr_pb_graph_node.clock_pins[i][pinIndex];
-            pszPinName = ( pvpr_pb_graph_pin ? pvpr_pb_graph_pin->port->name : 0 );
+	    if( pvpr_pb_graph_pin )
+            {
+	       this->FindPinName_( pvpr_pb_graph_pin, psrString );
+            } 
             break;
          } 
          pinIndex -= vpr_pb_graph_node.num_clock_pins[i];
       }
    }
-   return( pszPinName );
+}
+
+//===========================================================================//
+void TVPR_FabricModel_c::FindPinName_(
+      const t_pb_graph_pin* pvpr_pb_graph_pin,
+            string*         psrPinName ) const
+{
+   if( psrPinName )
+   {
+      if( pvpr_pb_graph_pin && 
+          pvpr_pb_graph_pin->port && 
+          pvpr_pb_graph_pin->port->name )
+      {
+         const char* pszName = pvpr_pb_graph_pin->port->name;
+ 
+         char szIndex[TIO_FORMAT_STRING_LEN_VALUE];
+         sprintf( szIndex, "%d", pvpr_pb_graph_pin->pin_number );
+
+         *psrPinName = pszName;
+         *psrPinName += "[";
+         *psrPinName += szIndex;
+         *psrPinName += "]";
+      }
+   }
 }
 
 //===========================================================================//
