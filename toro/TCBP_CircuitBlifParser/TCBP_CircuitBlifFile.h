@@ -10,7 +10,8 @@
 #ifndef TCBP_CIRCUIT_BLIF_FILE_H
 #define TCBP_CIRCUIT_BLIF_FILE_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TCD_CircuitDesign.h"
 

@@ -1,0 +1,203 @@
+<<
+/* parser.dlg -- DLG Description of scanner
+ *
+ * Generated from: TCBP_CircuitBlifGrammar.g
+ *
+ * Terence Parr, Will Cohen, and Hank Dietz: 1989-2001
+ * Purdue University Electrical Engineering
+ * With AHPCRC, University of Minnesota
+ * ANTLR Version 1.33MR33
+ */
+
+#define ANTLR_VERSION	13333
+#include "tokens.h"
+#include "AToken.h"
+
+#include <stdio.h>
+
+#include "stdpccts.h"
+#include "GenericTokenBuffer.h"
+
+#include "TIO_PrintHandler.h"
+
+#include "TCD_CircuitDesign.h"
+
+#include "TCBP_CircuitBlifFile.h"
+#include "TCBP_CircuitBlifScanner_c.h"
+>>
+
+<<%%parserclass TCBP_CircuitBlifParser_c>>
+
+
+%%START
+
+@
+	<<
+		return END_OF_FILE;
+	>>
+
+[\ \t]+
+	<<
+    skip( );   
+		return (ANTLRTokenType)5;
+	>>
+
+//~[\n]*[\n]
+	<<
+    skip( ); newline( );   
+		return CPP_COMMENT;
+	>>
+
+#~[\n]*[\n]
+	<<
+    skip( ); newline( );   
+		return BLOCK_COMMENT;
+	>>
+
+[\n\\]
+	<<
+    skip( ); newline( );   
+		return NEW_LINE;
+	>>
+
+\"
+	<<
+    mode( QUOTED_VALUE );   
+		return OPEN_QUOTE;
+	>>
+
+=
+	<<
+		return EQUAL;
+	>>
+
+[.][Mm][Oo][Dd][Ee][Ll]
+	<<
+		return MODEL;
+	>>
+
+[.][Ii][Nn][Pp][Uu][Tt]{[Ss]}
+	<<
+		return INPUTS;
+	>>
+
+[.][Oo][Uu][Tt][Pp][Uu][Tt]{[Ss]}
+	<<
+		return OUTPUTS;
+	>>
+
+[.][Cc][Ll][Oo][Cc][Kk]{[Ss]}
+	<<
+		return CLOCKS;
+	>>
+
+[.][Nn][Aa][Mm][Ee]{[Ss]}
+	<<
+		return NAMES;
+	>>
+
+[.][Ll][Aa][Tt][Cc][Hh]
+	<<
+		return LATCH;
+	>>
+
+[.][Ss][Uu][Bb][Cc][Kk][Tt]
+	<<
+		return SUBCKT;
+	>>
+
+[.][Ee][Nn][Dd]
+	<<
+		return END;
+	>>
+
+[.][A-Za-z]*
+	<<
+		return IGNORED;
+	>>
+
+[Ff][Ee]
+	<<
+		return TYPE_FALLING_EDGE;
+	>>
+
+[Rr][Ee]
+	<<
+		return TYPE_RISING_EDGE;
+	>>
+
+[Aa][Hh]
+	<<
+		return TYPE_ACTIVE_HIGH;
+	>>
+
+[Aa][Ll]
+	<<
+		return TYPE_ACTIVE_LOW;
+	>>
+
+[Aa][Ss]
+	<<
+		return TYPE_ASYNCHRONOUS;
+	>>
+
+1
+	<<
+		return STATE_TRUE;
+	>>
+
+0
+	<<
+		return STATE_FALSE;
+	>>
+
+2
+	<<
+		return STATE_DONT_CARE;
+	>>
+
+3
+	<<
+		return STATE_UNKNOWN;
+	>>
+
+[01\-]+
+	<<
+		return BIT_STRING;
+	>>
+
+[01][\ \t]+[01]
+	<<
+		return BIT_PAIR;
+	>>
+
+[a-zA-Z_/\|][a-zA-Z0-9_/\|\(\)\[\]\.\+\~\^]*
+	<<
+		return STRING;
+	>>
+
+
+%%QUOTED_VALUE
+
+@
+	<<
+		return END_OF_FILE;
+	>>
+
+\"
+	<<
+    mode( START );   
+		return CLOSE_QUOTE;
+	>>
+
+~[\"\n]+
+	<<
+		return STRING;
+	>>
+
+[\n]
+	<<
+		return UNCLOSED_STRING;
+	>>
+
+%%

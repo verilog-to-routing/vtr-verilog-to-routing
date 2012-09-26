@@ -48,7 +48,7 @@ PIClinux24_amd64 = -shared
 PICsun8 = -G -KPIC
 PIC = $(PIC$(ISP))
 
-CFLAGSlinux24_amd64 = -w -Wno-deprecated -static -fPIC -DLINUX24_64
+CFLAGSlinux24_amd64 = -w -static -fPIC -DLINUX24_64
 CFLAGSsun8 = -w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
 CFLAGS = $(CFLAGS$(ISP)) $(PCCTSINC)\
 	-I. \
