@@ -6,8 +6,7 @@
 #ifndef TFM_FABRIC_MODEL_H
 #define TFM_FABRIC_MODEL_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

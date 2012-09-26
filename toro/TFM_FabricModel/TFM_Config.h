@@ -9,7 +9,8 @@
 #ifndef TFM_CONFIG_H
 #define TFM_CONFIG_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TGS_Region.h"
 

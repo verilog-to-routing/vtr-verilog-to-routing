@@ -12,8 +12,7 @@
 #ifndef TFM_FABRIC_DATA_H
 #define TFM_FABRIC_DATA_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

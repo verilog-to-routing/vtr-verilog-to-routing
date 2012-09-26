@@ -12,8 +12,7 @@
 #ifndef TFM_SEGMENT_H
 #define TFM_SEGMENT_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

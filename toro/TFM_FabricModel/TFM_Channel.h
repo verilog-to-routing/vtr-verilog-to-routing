@@ -12,8 +12,7 @@
 #ifndef TFM_CHANNEL_H
 #define TFM_CHANNEL_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

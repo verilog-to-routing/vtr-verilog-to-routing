@@ -11,8 +11,7 @@
 #ifndef TFM_PIN_H
 #define TFM_PIN_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 
