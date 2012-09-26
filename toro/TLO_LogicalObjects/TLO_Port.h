@@ -22,8 +22,7 @@
 #ifndef TLO_PORT_H
 #define TLO_PORT_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

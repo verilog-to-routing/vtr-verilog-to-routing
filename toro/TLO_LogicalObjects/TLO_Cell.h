@@ -23,8 +23,7 @@
 #ifndef TLO_CELL_H
 #define TLO_CELL_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 
