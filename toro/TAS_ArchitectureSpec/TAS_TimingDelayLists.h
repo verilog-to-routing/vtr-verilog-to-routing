@@ -10,7 +10,8 @@
 #ifndef TAS_TIMING_DELAY_LISTS_H
 #define TAS_TIMING_DELAY_LISTS_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TAS_TimingDelay.h"
 

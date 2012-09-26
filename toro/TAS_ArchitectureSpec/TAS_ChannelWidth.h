@@ -9,7 +9,8 @@
 #ifndef TAS_CHANNEL_WIDTH_H
 #define TAS_CHANNEL_WIDTH_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TAS_Typedefs.h"
 

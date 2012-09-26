@@ -14,8 +14,7 @@
 #ifndef TAS_MODE_H
 #define TAS_MODE_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

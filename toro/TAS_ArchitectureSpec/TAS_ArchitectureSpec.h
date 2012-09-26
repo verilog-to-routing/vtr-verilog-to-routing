@@ -7,8 +7,7 @@
 #ifndef TAS_ARCHITECTURE_SPEC_H
 #define TAS_ARCHITECTURE_SPEC_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

@@ -9,8 +9,7 @@
 #ifndef TAS_PIN_ASSIGN_H
 #define TAS_PIN_ASSIGN_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

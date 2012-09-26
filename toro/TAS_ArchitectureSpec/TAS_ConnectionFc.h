@@ -11,7 +11,8 @@
 #ifndef TAS_CONNECTION_FC_H
 #define TAS_CONNECTION_FC_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TAS_Typedefs.h"
 

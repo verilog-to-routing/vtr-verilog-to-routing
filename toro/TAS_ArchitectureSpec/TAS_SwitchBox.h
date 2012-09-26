@@ -15,8 +15,7 @@
 #ifndef TAS_SWITCH_BOX_H
 #define TAS_SWITCH_BOX_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 
@@ -57,7 +56,7 @@ public:
    const char* GetName( void ) const;
    const char* GetCompare( void ) const;
 
-   void SetDims( const TC_FloatDims_t& dims );
+   void SetDims( const TGS_FloatDims_t& dims );
    void SetOrigin( const TGS_Point_c& origin );
 
    void SetMapTable( const TAS_MapTable_t& mapTable );
@@ -101,8 +100,8 @@ public:
 
 private:
 
-   TC_FloatDims_t dims_;     // Defines width/height dimensions (dx,dy)
-   TGS_Point_c    origin_;   // Defines reference origin (x,y)
+   TGS_FloatDims_t dims_;    // Defines width/height dimensions (dx,dy)
+   TGS_Point_c     origin_;  // Defines reference origin (x,y)
 
    TAS_MapTable_t mapTable_; // Defines switch box side map table
 };
@@ -143,7 +142,7 @@ inline const char* TAS_SwitchBox_c::GetCompare(
 
 //===========================================================================//
 inline void TAS_SwitchBox_c::SetDims(
-      const TC_FloatDims_t& dims )
+      const TGS_FloatDims_t& dims )
 {
    this->dims_ = dims;
 }

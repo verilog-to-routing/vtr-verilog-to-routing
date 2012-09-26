@@ -9,8 +9,7 @@
 #ifndef TAS_SEGMENT_H
 #define TAS_SEGMENT_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

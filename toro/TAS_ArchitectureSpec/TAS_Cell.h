@@ -15,8 +15,7 @@
 #ifndef TAS_CELL_H
 #define TAS_CELL_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 
@@ -80,8 +79,8 @@ public:
 
 private:
 
-   TC_FloatDims_t dims_;     // Defines width/height dimensions (dx,dy)
-   TGS_Point_c    origin_;   // Defines reference origin (x,y)
+   TGS_FloatDims_t dims_;     // Defines width/height dimensions (dx,dy)
+   TGS_Point_c     origin_;   // Defines reference origin (x,y)
 };
 
 //===========================================================================//

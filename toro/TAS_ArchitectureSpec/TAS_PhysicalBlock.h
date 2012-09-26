@@ -19,8 +19,7 @@
 #ifndef TAS_PHYSICAL_BLOCK_H
 #define TAS_PHYSICAL_BLOCK_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 
@@ -70,7 +69,7 @@ public:
    const char* GetName( void ) const;
    const char* GetCompare( void ) const;
 
-   void SetDims( const TC_FloatDims_t& dims );
+   void SetDims( const TGS_FloatDims_t& dims );
    void SetOrigin( const TGS_Point_c& origin );
 
    void SetUsage( TAS_UsageMode_t usage );
@@ -142,8 +141,8 @@ public:
 
 private:
 
-   TC_FloatDims_t dims_;     // Defines width/height dimensions (dx,dy)
-   TGS_Point_c    origin_;   // Defines reference origin (x,y)
+   TGS_FloatDims_t dims_;    // Defines width/height dimensions (dx,dy)
+   TGS_Point_c     origin_;  // Defines reference origin (x,y)
 
    TAS_UsageMode_t usage_;   // Defines usage mode (physical block or input/output)
 
@@ -200,7 +199,7 @@ inline const char* TAS_PhysicalBlock_c::GetCompare(
 
 //===========================================================================//
 inline void TAS_PhysicalBlock_c::SetDims(
-      const TC_FloatDims_t& dims )
+      const TGS_FloatDims_t& dims )
 {
    this->dims_ = dims;
 }

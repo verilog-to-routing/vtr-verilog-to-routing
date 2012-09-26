@@ -9,8 +9,7 @@
 #ifndef TAS_INTERCONNECT_H
 #define TAS_INTERCONNECT_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

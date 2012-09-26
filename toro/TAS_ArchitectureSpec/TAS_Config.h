@@ -9,12 +9,13 @@
 #ifndef TAS_CONFIG_H
 #define TAS_CONFIG_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 
 #include "TC_Typedefs.h"
+
+#include "TGS_Typedefs.h"
 
 #include "TAS_Typedefs.h"
 #include "TAS_ChannelWidth.h"
@@ -65,7 +66,7 @@ public:
       {
       public:
 
-         TC_IntDims_t gridDims;  // Defines manual size mode's width & height
+         TGS_IntDims_t gridDims; // Defines manual size mode's width & height
  	                         // (based on tile grid units)
       } manualSize;
    } layout;

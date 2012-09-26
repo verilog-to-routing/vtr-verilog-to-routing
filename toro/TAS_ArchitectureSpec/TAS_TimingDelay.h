@@ -9,8 +9,7 @@
 #ifndef TAS_TIMING_DELAY_H
 #define TAS_TIMING_DELAY_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 
