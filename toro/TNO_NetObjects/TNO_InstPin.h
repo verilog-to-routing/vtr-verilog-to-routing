@@ -16,8 +16,7 @@
 #ifndef TNO_INST_PIN_H
 #define TNO_INST_PIN_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

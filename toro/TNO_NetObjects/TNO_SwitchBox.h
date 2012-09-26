@@ -14,8 +14,7 @@
 #ifndef TNO_SWITCH_BOX_H
 #define TNO_SWITCH_BOX_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

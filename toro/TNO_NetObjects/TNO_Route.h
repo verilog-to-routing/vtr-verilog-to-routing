@@ -12,8 +12,7 @@
 #ifndef TNO_ROUTE_H
 #define TNO_ROUTE_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 

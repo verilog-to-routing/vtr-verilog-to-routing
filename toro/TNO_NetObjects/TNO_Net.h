@@ -20,8 +20,7 @@
 #ifndef TNO_NET_H
 #define TNO_NET_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 
