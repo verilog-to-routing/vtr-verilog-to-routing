@@ -96,7 +96,8 @@
 #ifndef TTPT_TILE_PLANE_H
 #define TTPT_TILE_PLANE_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TC_Typedefs.h"
 #include "TC_MinGrid.h"

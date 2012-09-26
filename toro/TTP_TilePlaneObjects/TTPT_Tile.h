@@ -36,7 +36,8 @@
 #ifndef TTPT_TILE_H
 #define TTPT_TILE_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TC_Typedefs.h"
 
