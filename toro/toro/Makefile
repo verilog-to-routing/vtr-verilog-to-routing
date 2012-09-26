@@ -24,7 +24,7 @@ PIClinux24_amd64 = -shared
 PICsun8 = -G -KPIC
 PIC = $(PIC$(ISP))
 
-CFLAGSlinux24_amd64 = -Wall -Wpointer-arith -Wcast-qual -Wno-deprecated -static -fPIC -DLINUX24_64
+CFLAGSlinux24_amd64 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX24_64
 CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
 CFLAGS = $(CFLAGS$(ISP)) \
 	-I. \
@@ -72,8 +72,8 @@ OBJECTS = $(OBJS$(ISP))
 # Target rules
 ######################################################################
 
-SYSLIBSlinux24_amd64 = -L../pcre/libs/$(ISP) -lpcre
-SYSLIBSsun8 = -L../pcre/libs/$(ISP) -lpcre -Bdynamic -lresolv
+SYSLIBSlinux24_amd64 = -L../pcre/$(ISP) -lpcre
+SYSLIBSsun8 = -L../pcre/$(ISP) -lpcre -Bdynamic -lresolv
 SYSLIBS = $(SYSLIBS$(ISP))
 LIBDEFS = ../$(ISP)/libTM_Master.a \
 	../$(ISP)/libTI_Input.a \
@@ -100,12 +100,12 @@ LIBDEFS = ../$(ISP)/libTM_Master.a \
 	../$(ISP)/libTGS_GeometricShapes.a \
 	../$(ISP)/libTIO_InputOutputHandlers.a \
 	../$(ISP)/libTC_Common.a \
-	../pccts/libs/$(ISP)/libpcctsGeneric.a \
-	../pccts/libs/$(ISP)/libh.a \
-	../vpr/libs/$(ISP)/libvpr.a
+	../pccts/$(ISP)/libpcctsGeneric.a \
+	../pccts/$(ISP)/libh.a \
+	../vpr/$(ISP)/libvpr.a
 
 LINKLIBS = -L../$(ISP) \
-        -L../pccts/libs/$(ISP) -L../vpr/libs/$(ISP) \
+        -L../pccts/$(ISP) -L../vpr/$(ISP) \
 	-lTM_Master \
 	-lTI_Input \
 	-lTP_Process \
