@@ -16,7 +16,8 @@
 #ifndef TCL_COMMAND_LINE_H
 #define TCL_COMMAND_LINE_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TOS_ControlSwitches.h"
 #include "TOS_RulesSwitches.h"

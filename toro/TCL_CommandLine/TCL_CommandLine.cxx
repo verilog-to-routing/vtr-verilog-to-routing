@@ -126,7 +126,7 @@ bool TCL_CommandLine_c::Parse(
       { 
          while( ok && argc )
          {
-            argc = ok ? --argc : 1;
+            argc = ok ? argc - 1 : 1;
             ok = *++argv ? true : false;   
             if( !ok )
                break;
@@ -140,7 +140,7 @@ bool TCL_CommandLine_c::Parse(
       else if(( TC_stricmp( *argv, "-xml" ) == 0 ) ||
               ( TC_stricmp( *argv, "-x" ) == 0 ))
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -151,7 +151,7 @@ bool TCL_CommandLine_c::Parse(
       else if(( TC_stricmp( *argv, "-blif" ) == 0 ) ||
               ( TC_stricmp( *argv, "-b" ) == 0 ))
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -162,7 +162,7 @@ bool TCL_CommandLine_c::Parse(
       else if(( TC_stricmp( *argv, "-architecture" ) == 0 ) ||
               ( TC_stricmp( *argv, "-a" ) == 0 ))
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -173,7 +173,7 @@ bool TCL_CommandLine_c::Parse(
       else if(( TC_stricmp( *argv, "-fabric" ) == 0 ) ||
               ( TC_stricmp( *argv, "-f" ) == 0 ))
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -184,7 +184,7 @@ bool TCL_CommandLine_c::Parse(
       else if(( TC_stricmp( *argv, "-circuit" ) == 0 ) ||
               ( TC_stricmp( *argv, "-c" ) == 0 ))
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -195,7 +195,7 @@ bool TCL_CommandLine_c::Parse(
       else if(( TC_stricmp( *argv, "+architecture" ) == 0 ) ||
               ( TC_stricmp( *argv, "+a" ) == 0 ))
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -206,7 +206,7 @@ bool TCL_CommandLine_c::Parse(
       else if(( TC_stricmp( *argv, "+fabric" ) == 0 ) ||
               ( TC_stricmp( *argv, "+f" ) == 0 ))
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -217,7 +217,7 @@ bool TCL_CommandLine_c::Parse(
       else if(( TC_stricmp( *argv, "+circuit" ) == 0 ) ||
               ( TC_stricmp( *argv, "+c" ) == 0 ))
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -230,7 +230,7 @@ bool TCL_CommandLine_c::Parse(
               ( TC_stricmp( *argv, "+log" ) == 0 ) ||
               ( TC_stricmp( *argv, "+l" ) == 0 ))
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -242,7 +242,7 @@ bool TCL_CommandLine_c::Parse(
       { 
          while( ok && argc )
          {
-            argc = ok ? --argc : 1;
+            argc = ok ? argc - 1 : 1;
             ok = *++argv ? true : false;   
             if( !ok )
                break;
@@ -262,49 +262,49 @@ bool TCL_CommandLine_c::Parse(
       // VPR file name options...
       else if( TC_stricmp( *argv, "-xml_file" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             pinputOptions->srXmlFileName = *argv;
       }
       else if( TC_stricmp( *argv, "-blif_file" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             pinputOptions->srBlifFileName = *argv;
       }
       else if( TC_stricmp( *argv, "-net_file" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             poutputOptions->srVPR_NetFileName = *argv;
       }
       else if( TC_stricmp( *argv, "-place_file" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             poutputOptions->srVPR_PlaceFileName = *argv;
       }
       else if( TC_stricmp( *argv, "-route_file" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             poutputOptions->srVPR_RouteFileName = *argv;
       }
       else if( TC_stricmp( *argv, "-sdc_file" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             poutputOptions->srVPR_SDC_FileName = *argv;
       }
       else if( TC_stricmp( *argv, "-outfile_prefix" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             poutputOptions->srVPR_OutputFilePrefix = *argv;
@@ -335,7 +335,7 @@ bool TCL_CommandLine_c::Parse(
       }
       else if( TC_stricmp( *argv, "-timing_analysis" ) == 0 )
       {
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -359,7 +359,7 @@ bool TCL_CommandLine_c::Parse(
       }
       else if( TC_stricmp( *argv, "-timing_analyze_only_with_net_delay" ) == 0 )
       {
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -374,7 +374,7 @@ bool TCL_CommandLine_c::Parse(
       }
       else if( TC_stricmp( *argv, "-echo_file" ) == 0 )
       {
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -399,7 +399,7 @@ bool TCL_CommandLine_c::Parse(
       }
       else if( TC_stricmp( *argv, "-connection_driven_clustering" ) == 0 )
       {
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -419,7 +419,7 @@ bool TCL_CommandLine_c::Parse(
       }
       else if( TC_stricmp( *argv, "-allow_unrelated_clustering" ) == 0 )
       {
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -439,21 +439,21 @@ bool TCL_CommandLine_c::Parse(
       }
       else if( TC_stricmp( *argv, "-alpha_clustering" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             ppackOptions->areaWeight = atof( *argv );
       }
       else if( TC_stricmp( *argv, "-beta_clustering" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             ppackOptions->netsWeight = atof( *argv );
       }
       else if( TC_stricmp( *argv, "-timing_driven_clustering" ) == 0 )
       {
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -475,35 +475,35 @@ bool TCL_CommandLine_c::Parse(
       // VPR placer options...
       else if( TC_stricmp( *argv, "-seed" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             pplaceOptions->randomSeed = atoi( *argv );
       }
       else if( TC_stricmp( *argv, "-init_t" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             pplaceOptions->initTemp = atof( *argv );
       }
       else if( TC_stricmp( *argv, "-exit_t" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             pplaceOptions->exitTemp = atof( *argv );
       }
       else if( TC_stricmp( *argv, "-alpha_t" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             pplaceOptions->reduceTemp = atof( *argv );
       }
       else if( TC_stricmp( *argv, "-inner_num" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             pplaceOptions->innerNum = atof( *argv );
@@ -515,7 +515,7 @@ bool TCL_CommandLine_c::Parse(
       }
       else if( TC_stricmp( *argv, "-place_algorithm" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -529,35 +529,35 @@ bool TCL_CommandLine_c::Parse(
       }
       else if( TC_stricmp( *argv, "-timing_tradeoff" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             pplaceOptions->timingCostFactor = atof( *argv );
       }
       else if( TC_stricmp( *argv, "-recompute_crit_iter" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             pplaceOptions->timingUpdateInt = atoi( *argv );
       }
       else if( TC_stricmp( *argv, "-inner_loop_recompute_divider" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             pplaceOptions->timingUpdateCount = atoi( *argv );
       }
       else if( TC_stricmp( *argv, "-td_place_exp_first" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             pplaceOptions->slackInitWeight = atof( *argv );
       }
       else if( TC_stricmp( *argv, "-td_place_exp_last" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             pplaceOptions->slackFinalWeight = atof( *argv );
@@ -566,7 +566,7 @@ bool TCL_CommandLine_c::Parse(
       // VPR router options...
       else if( TC_stricmp( *argv, "-route_type" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -580,63 +580,63 @@ bool TCL_CommandLine_c::Parse(
       }
       else if( TC_stricmp( *argv, "-bb_factor" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             prouteOptions->windowSize = atoi( *argv );
       }
       else if( TC_stricmp( *argv, "-route_chan_width" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             prouteOptions->channelWidth = atoi( *argv );
       }
       else if( TC_stricmp( *argv, "-max_router_iterations" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             prouteOptions->maxIterations = atoi( *argv );
       }
       else if( TC_stricmp( *argv, "-acc_fac" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             prouteOptions->histCongestionFactor = atof( *argv );
       }
       else if( TC_stricmp( *argv, "-initial_pres_fac" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             prouteOptions->initCongestionFactor = atof( *argv );
       }
       else if( TC_stricmp( *argv, "-first_iter_pres_fac" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             prouteOptions->initCongestionFactor = atof( *argv );
       }
       else if( TC_stricmp( *argv, "-pres_fac_mult" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             prouteOptions->presentCongestionFactor = atof( *argv );
       }
       else if( TC_stricmp( *argv, "-bend_cost" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             prouteOptions->bendCostFactor = atof( *argv );
       }
       else if( TC_stricmp( *argv, "-base_cost_type" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -650,7 +650,7 @@ bool TCL_CommandLine_c::Parse(
       }
       else if( TC_stricmp( *argv, "-router_algorithm" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
 	 {
@@ -664,21 +664,21 @@ bool TCL_CommandLine_c::Parse(
       }
       else if( TC_stricmp( *argv, "-astar_fac" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             prouteOptions->timingAStarFactor = atof( *argv );
       }
       else if( TC_stricmp( *argv, "-max_criticality" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             prouteOptions->timingMaxCriticality = atof( *argv );
       }
       else if( TC_stricmp( *argv, "-criticality_exp" ) == 0 )
       { 
-         argc = ok ? --argc : 1;
+         argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
             prouteOptions->slackCriticality = atof( *argv );
