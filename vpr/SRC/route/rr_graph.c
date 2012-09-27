@@ -1879,9 +1879,10 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 	 * to work for matrix allocation purposes. However, all looping 
 	 * will have to be modified to account for pin-based Fc values. */
 	if (type->index > 0) {
-		max_Fc = Fc_out[type->index][0];
-		for (ipin = 1; ipin < type->num_pins; ++ipin) {
-			if (Fc_out[type->index][ipin] > max_Fc) {
+		max_Fc = 0;
+		for (ipin = 0; ipin < type->num_pins; ++ipin) {
+			iclass = type->pin_class[ipin];
+			if (Fc_out[type->index][ipin] > max_Fc && type->class_inf[iclass].type == DRIVER) {
 				max_Fc = Fc_out[type->index][ipin];
 			}
 		}
