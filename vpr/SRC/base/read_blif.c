@@ -1240,8 +1240,7 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 				circuit_p_io_removed = p_io_removed;
 				continue;
 			} else {
-				vpr_printf(TIO_MESSAGE_ERROR, "Sweep hanging nodes in your logic synthesis tool because VPR can not do this yet.\n");
-				error++;
+				vpr_printf(TIO_MESSAGE_WARNING, "Sweep hanging nodes in your logic synthesis tool because VPR can not do this yet.\n");
 			}
 		}
 		count_inputs = 0;
@@ -1364,18 +1363,16 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 					if (logical_block_output_count[i] > 0) {
 						vpr_printf(TIO_MESSAGE_WARNING, "Block contains output -- may be a constant generator.\n");
 					} else {
-						vpr_printf(TIO_MESSAGE_ERROR, "Block contains no output.\n");
-						error++;
+						vpr_printf(TIO_MESSAGE_WARNING, "Block contains no output.\n");
 					}
 				}
 			}
 
 			if (strcmp(logical_block[i].model->name, MODEL_LOGIC) == 0) {
 				if (logical_block_output_count[i] != 1) {
-					vpr_printf(TIO_MESSAGE_ERROR, "Logical_block #%d name %s of model %s has %d output pins instead of 1.\n",
+					vpr_printf(TIO_MESSAGE_WARNING, "Logical_block #%d name %s of model %s has %d output pins instead of 1.\n",
 							i, logical_block[i].name, logical_block[i].model->name, 
 							logical_block_output_count[i]);
-					error++;
 				}
 			}
 		} else {

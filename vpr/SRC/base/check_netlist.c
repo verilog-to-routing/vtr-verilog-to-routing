@@ -188,8 +188,6 @@ static int check_clb_conn(int iblk, int num_conn) {
 					break;
 				}
 			}
-		} else {
-			error++;
 		}
 	}
 
