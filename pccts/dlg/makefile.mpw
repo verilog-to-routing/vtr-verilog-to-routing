@@ -1,0 +1,74 @@
+#//////////////////////////////////////////////////////////////////////////
+#//
+#// FILE NAME
+#//    dlg.make
+#//
+#// AUTHOR
+#//    Scott Haney
+#//
+#// CREATED
+#//    May 29, 1994
+#//
+#// DESCRIPTION
+#//    Controls Macintosh builds of DLG.
+#//
+#//////////////////////////////////////////////////////////////////////////
+
+ObjDir = :Macintosh:
+SetDir = ::support:set
+
+COptions = -mc68020 -model far -warnings off -d MPW -d __STDC__=1 -d USER_ZZSYN ¶
+  -i {SetDir} -i ::h
+LinkOptions = -d -c 'MPS ' -t MPST -mf -model far -br ON -srtsg ALL
+
+Objects = ¶
+	{ObjDir}automata.c.o ¶
+	{ObjDir}dlg_a.c.o ¶
+	{ObjDir}dlg_p.c.o ¶
+	{ObjDir}err.c.o ¶
+	{ObjDir}main.c.o ¶
+	{ObjDir}output.c.o ¶
+	{ObjDir}relabel.c.o ¶
+	{ObjDir}support.c.o ¶
+	{SetDir}{ObjDir}set.c.o ¶
+	"{CLibraries}"StdCLib.o ¶
+	"{Libraries}"Stubs.o ¶
+	"{Libraries}"Runtime.o ¶
+	"{Libraries}"Interface.o ¶
+	"{Libraries}"ToolLibs.o ¶
+
+{ObjDir}automata.c.o Ä automata.c
+
+{ObjDir}dlg_a.c.o Ä dlg_a.c
+
+{ObjDir}dlg_p.c.o Ä dlg_p.c
+
+{ObjDir}err.c.o Ä err.c
+
+{ObjDir}main.c.o Ä main.c
+
+{ObjDir}output.c.o Ä output.c
+
+{ObjDir}relabel.c.o Ä relabel.c
+
+{ObjDir}support.c.o Ä support.c
+
+{SetDir}{ObjDir}set.c.o Ä {SetDir}:set.c
+
+{SetDir}{ObjDir} Ä {SetDir}:
+{ObjDir} Ä :
+{ObjDir} Ä {ObjDir}
+
+
+dlg ÄÄ {Objects}
+   	Link {LinkOptions} -o dlg {Objects}
+
+dlg ÄÄ dlg.r
+	Rez dlg.r -o dlg -a
+
+Bootstrap Ä dlg_p.g
+	antlr dlg_p.g
+	dlg -C2 parser.dlg dlg_a.c
+
+Install  Ä dlg
+	Duplicate dlg "{MPW}"Tools:dlg
