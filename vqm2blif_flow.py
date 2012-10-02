@@ -51,7 +51,7 @@ def parse_args():
                         default=True,
                         help='If the vqm output file already exists, do not re-run Quartus 2 to re-synthesize it')
 
-    quartus_options.add_argument('--fit_only', dest='do_quartus_fit_only', action='store_true',
+    quartus_options.add_argument('--fit', dest='run_fit', action='store_true',
                         default=False,
                         help='Run quartus_fit after synthesis and VQM dumping')
 
@@ -145,12 +145,6 @@ def gen_vqm(args):
     Generates a vqm file from a quartus project
     using quartus_sh
     """
-    #Save the current directory, since we will return here
-    script_run_dir = os.getcwd()
-
-    #Must run quartus from the directory containing the project file
-    quartus_project_file = path.basename(args.quartus_project)
-    quartus_project_dir = path.dirname(args.quartus_project)
 
     #Absolute path to vqm file, so it ends up in the script run directory
     args.vqm_file = path.join(os.getcwd(), args.vqm_file)
@@ -158,24 +152,17 @@ def gen_vqm(args):
     #Re-synthesize if told so, or if the file doesn't exist
     if args.do_resynthesis or not path.isfile(args.vqm_file):
 
-        if quartus_project_dir != '':
-            #Project directory is not the current directory, so move
-            print "INFO: moving to quartus project directory '%s'" % (quartus_project_dir)
-            os.chdir(quartus_project_dir)
-
         #Quartus Verilog to VQM conversion script
-        q2_write_vqm_tcl = path.join(args.vqm2blif_dir, 'SCRIPTS/q2_write_vqm.tcl')
+        q2_flow_tcl = path.join(args.vqm2blif_dir, 'SCRIPTS/q2_flow.tcl')
 
         q2_shell = path.join(args.quartus_dir, 'quartus_sh')
         q2_cmd = [q2_shell,
                     '--64bit',
-                    '-t',               q2_write_vqm_tcl,
-                    '-project',         quartus_project_file,
+                    '-t',               q2_flow_tcl,
+                    '-project',         args.quartus_project,
                     '-family',          args.device_family,
+                    '-synth',
                     '-vqm_out_file',    args.vqm_file]
-
-        if args.do_quartus_fit_only:
-            q2_cmd += ['-fit']
 
         #Verilog to vqm conversion
         try:
@@ -186,13 +173,36 @@ def gen_vqm(args):
             print "ERROR: VQM generation failed (retcode: %s)" % error.returncode
             sys.exit(1)
 
-        #Move back to script run dir
-        print "INFO: moving back to script run directory '%s'" % (script_run_dir)
-        os.chdir(script_run_dir)
-
     else:
         print "INFO: found existing VQM file, not re-synthesizing"
     
+def run_fit(args):
+    """
+    Runs quartus fit on the specific project
+    """
+
+    #Absolute path to vqm file, so it ends up in the script run directory
+    args.vqm_file = path.join(os.getcwd(), args.vqm_file)
+
+    #Quartus Verilog to VQM conversion script
+    q2_flow_tcl = path.join(args.vqm2blif_dir, 'SCRIPTS/q2_flow.tcl')
+
+    q2_shell = path.join(args.quartus_dir, 'quartus_sh')
+    q2_cmd = [q2_shell,
+                '--64bit',
+                '-t',               q2_flow_tcl,
+                '-project',         args.quartus_project,
+                '-family',          args.device_family,
+                '-fit']
+
+    #Quartus fit
+    try:
+        print "\nINFO: Calling Quartus"
+        print_cmd(q2_cmd)
+        subprocess.check_call(q2_cmd)
+    except subprocess.CalledProcessError as error:
+        print "ERROR: Quartus Fit failed (retcode: %s)" % error.returncode
+        sys.exit(1)
 
 def gen_blif(args):
     """
@@ -252,10 +262,9 @@ def vqm2blif_flow(args):
     pop_timer('Generate VQM')
 
 
-    if not args.do_quartus_fit_only:
-        push_timer('Generate BLIF')
-        gen_blif(args)
-        pop_timer('Generate BLIF')
+    push_timer('Generate BLIF')
+    gen_blif(args)
+    pop_timer('Generate BLIF')
 
 
 def push_timer(timer_text):
@@ -288,6 +297,11 @@ if __name__ == '__main__':
     push_timer('VQM to BLIF Conversion')
     vqm2blif_flow(args) 
     pop_timer('VQM to BLIF Conversion')
+
+    if args.run_fit:
+        push_timer('quartus_fit')
+        run_fit(args)
+        pop_timer('quartus_fit')
 
     if args.arch_file and args.run_vpr:
         push_timer('vpr')
