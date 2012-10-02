@@ -51,6 +51,10 @@ def parse_args():
                         default=True,
                         help='If the vqm output file already exists, do not re-run Quartus 2 to re-synthesize it')
 
+    quartus_options.add_argument('--fit_only', dest='do_quartus_fit_only', action='store_true',
+                        default=False,
+                        help='Run quartus_fit after synthesis and VQM dumping')
+
 
     #Options effecting vqm2blif operation
     vqm2blif_options = parser.add_argument_group('vqm2blif options')
@@ -170,6 +174,9 @@ def gen_vqm(args):
                     '-family',          args.device_family,
                     '-vqm_out_file',    args.vqm_file]
 
+        if args.do_quartus_fit_only:
+            q2_cmd += ['-fit']
+
         #Verilog to vqm conversion
         try:
             print "\nINFO: Calling Quartus"
@@ -245,10 +252,11 @@ def vqm2blif_flow(args):
     pop_timer('Generate VQM')
 
 
-    if args.arch_file:
+    if not args.do_quartus_fit_only:
         push_timer('Generate BLIF')
         gen_blif(args)
         pop_timer('Generate BLIF')
+
 
 def push_timer(timer_text):
     global g_timer_queue
@@ -280,7 +288,7 @@ if __name__ == '__main__':
     push_timer('VQM to BLIF Conversion')
     vqm2blif_flow(args) 
     pop_timer('VQM to BLIF Conversion')
-    
+
     if args.arch_file and args.run_vpr:
         push_timer('vpr')
         run_vpr(args)
