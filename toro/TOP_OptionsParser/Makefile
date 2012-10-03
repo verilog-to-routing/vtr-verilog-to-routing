@@ -59,7 +59,7 @@ CFLAGS = $(CFLAGS$(ISP)) $(PCCTSINC)\
 	-I../TOS_OptionsStore \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
-	-I../../pcre \
+	-I../../pcre/SRC \
 	-I../../pccts/pcctsGeneric -I../../pccts/h
 
 ######################################################################
