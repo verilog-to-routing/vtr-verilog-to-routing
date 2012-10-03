@@ -28,14 +28,14 @@ using namespace std;
 // Define limit constants as needed
 //---------------------------------------------------------------------------//
 
-#if defined( LINUX24 )
+#if defined( LINUX_I686 )
    #include <stdint.h>
    #ifndef SIZE_MAX
       #define SIZE_MAX UINT_MAX
    #endif
 #endif
 
-#if defined( LINUX24_64 )
+#if defined( LINUX_X86_64 )
    #include <stdint.h>
    #ifndef SIZE_MAX
       #define SIZE_MAX ULONG_MAX
