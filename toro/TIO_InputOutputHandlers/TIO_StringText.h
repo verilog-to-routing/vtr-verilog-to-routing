@@ -18,9 +18,9 @@
    #define TIO_SZ_PROGRAM_OPSYS " (Sun8)"
 #elif defined( SUN10 )
    #define TIO_SZ_PROGRAM_OPSYS " (Sun10)"
-#elif defined( LINUX24 )
+#elif defined( LINUX_I686 )
    #define TIO_SZ_PROGRAM_OPSYS " (Linux 2.4)"
-#elif defined( LINUX24_64 )
+#elif defined( LINUX_X86_64 )
    #define TIO_SZ_PROGRAM_OPSYS " (Linux 2.4/64)"
 #elif defined( WIN32 ) || defined( _WIN32 )
    #define TIO_SZ_PROGRAM_OPSYS " (Windows/32)"
