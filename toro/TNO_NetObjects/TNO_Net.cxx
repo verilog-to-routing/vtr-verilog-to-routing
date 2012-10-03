@@ -188,7 +188,7 @@ void TNO_Net_c::Print(
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
    printHandler.Write( pfile, 0, "\"%s\" ",
-	                         TIO_PSZ_STR( this->GetName( )));
+                                 TIO_PSZ_STR( this->GetName( )));
 
    if( this->GetType( ) != TC_TYPE_UNDEFINED )
    {
@@ -207,7 +207,7 @@ void TNO_Net_c::Print(
       string srStatus;
       TNO_ExtractStringStatusMode( this->GetStatus( ), &srStatus );
       printHandler.Write( pfile, 0, "status = %s ",  
-			            TIO_SR_STR( srStatus ));
+                                    TIO_SR_STR( srStatus ));
    }
    printHandler.Write( pfile, 0, ">\n" );
 
@@ -215,7 +215,7 @@ void TNO_Net_c::Print(
    {
       for( size_t i = 0; i < this->instPinList_.GetLength( ); ++i )
       {
-	 const TNO_InstPin_c& instPin = *this->instPinList_[i];
+         const TNO_InstPin_c& instPin = *this->instPinList_[i];
 
          string srInstPin;
          instPin.ExtractString( &srInstPin );
@@ -228,42 +228,55 @@ void TNO_Net_c::Print(
    {
       for( size_t i = 0; i < this->globalRouteList_.GetLength( ); ++i )
       {
-	 const TNO_GlobalRoute_t& globalRoute = *this->globalRouteList_[i];
+         const TNO_GlobalRoute_t& globalRoute = *this->globalRouteList_[i];
 
          printHandler.Write( pfile, spaceLen, "<groute \"%s\" %u >\n",  
- 	                                      TIO_PSZ_STR( globalRoute.GetName( )),
+                                              TIO_PSZ_STR( globalRoute.GetName( )),
                                               globalRoute.GetLength( ));
       }
    }
 
    if( this->routeList_.IsValid( ))
    {
-      printHandler.Write( pfile, spaceLen, "<route\n" ); 
-      spaceLen += 3;
-
       for( size_t i = 0; i < this->routeList_.GetLength( ); ++i )
       {
-	 const TNO_Route_c& route = *this->routeList_[i];
-	 if( route.IsInstPin( ))
+         const TNO_Route_t& route = *this->routeList_[i];
+
+         printHandler.Write( pfile, spaceLen, "<route\n" ); 
+         spaceLen += 3;
+
+         for( size_t j = 0; j < route.GetLength( ); ++j )
          {
-            string srInstPin;
-            route.GetInstPin( ).ExtractString( &srInstPin );
-            printHandler.Write( pfile, spaceLen, "<pin %s >\n",
-                                                 TIO_SR_STR( srInstPin ));
-         }
-	 if( route.IsSwitchBox( ))
-         {
-            string srSwitchBox;
-            route.GetSwitchBox( ).ExtractString( &srSwitchBox );
-            printHandler.Write( pfile, spaceLen, "<sb %s >\n",
-                                                 TIO_SR_STR( srSwitchBox ));
-         }
-	 if( route.IsChannel( ))
-         {
-            string srChannel;
-            route.GetChannel( ).ExtractString( &srChannel );
-            printHandler.Write( pfile, spaceLen, "<channel %s >\n",
-                                                 TIO_SR_STR( srChannel ));
+            const TNO_Node_c& node = *route[j];
+
+            if( node.IsInstPin( ))
+            {
+               string srInstPin;
+               node.GetInstPin( ).ExtractString( &srInstPin );
+               printHandler.Write( pfile, spaceLen, "<pin %s >\n",
+                                                    TIO_SR_STR( srInstPin ));
+            }
+            if( node.IsChannel( ))
+            {
+               string srChannel;
+               node.GetChannel( ).ExtractString( &srChannel );
+               printHandler.Write( pfile, spaceLen, "<channel %s >\n",
+                                                    TIO_SR_STR( srChannel ));
+            }
+            if( node.IsSegment( ))
+            {
+               string srSegment;
+               node.GetSegment( ).ExtractString( &srSegment );
+               printHandler.Write( pfile, spaceLen, "<segment %s >\n",
+                                                    TIO_SR_STR( srSegment ));
+            }
+            if( node.IsSwitchBox( ))
+            {
+               string srSwitchBox;
+               node.GetSwitchBox( ).ExtractString( &srSwitchBox );
+               printHandler.Write( pfile, spaceLen, "<sb %s >\n",
+                                                    TIO_SR_STR( srSwitchBox ));
+            }
          }
       }
       spaceLen -= 3;
@@ -325,7 +338,7 @@ void TNO_Net_c::AddGlobalRoute(
 // 05/30/12 jeffr : Original
 //===========================================================================//
 void TNO_Net_c::AddRoute( 
-      const TNO_Route_c& route )
+      const TNO_Route_t& route )
 {
    this->routeList_.Add( route );
 }
