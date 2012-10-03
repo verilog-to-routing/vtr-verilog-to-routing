@@ -5,7 +5,7 @@
 //           - SetName (required for TCT_SortedNameDynamicVector_c class)
 //           - GetName (required for TCT_SortedNameDynamicVector_c class)
 //           - GetCompare (required for TCT_BSearch and TCT_QSort classes)
-//           - GetInstName, GetPinName
+//           - GetInstName, GetPortName, GetPinName
 //           - GetType
 //           - SetType
 //           - Clear
@@ -35,8 +35,28 @@ public:
 
    TNO_InstPin_c( void );
    TNO_InstPin_c( const string& srInstName,
+                  const string& srPortName,
                   const string& srPinName,
-	          TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+                  TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+   TNO_InstPin_c( const char* pszInstName,
+                  const char* pszPortName,
+                  const char* pszPinName,
+                  TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+   TNO_InstPin_c( const string& srInstName,
+                  const string& srPortName,
+		  unsigned int portIndex,
+                  const string& srPinName,
+		  unsigned int pinIndex,
+                  TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+   TNO_InstPin_c( const char* pszInstName,
+                  const char* pszPortName,
+		  unsigned int portIndex,
+                  const char* pszPinName,
+		  unsigned int pinIndex,
+                  TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+   TNO_InstPin_c( const string& srInstName,
+                  const string& srPinName,
+                  TC_TypeMode_t type = TC_TYPE_UNDEFINED );
    TNO_InstPin_c( const char* pszInstName,
                   const char* pszPinName,
                   TC_TypeMode_t type = TC_TYPE_UNDEFINED );
@@ -58,17 +78,26 @@ public:
    const char* GetCompare( void ) const;
 
    const char* GetInstName( void ) const;
+   const char* GetPortName( void ) const;
    const char* GetPinName( void ) const;
    TC_TypeMode_t GetType( void ) const;
 
    void SetType( TC_TypeMode_t type );
 
    void Set( const string& srInstName,
+             const string& srPortName,
              const string& srPinName,
-	     TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+             TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+   void Set( const char* pszInstName,
+             const char* pszPortName,
+             const char* pszPinName,
+             TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+   void Set( const string& srInstName,
+             const string& srPinName,
+             TC_TypeMode_t type = TC_TYPE_UNDEFINED );
    void Set( const char* pszInstName,
              const char* pszPinName,
-	     TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+             TC_TypeMode_t type = TC_TYPE_UNDEFINED );
 
    void Clear( void );
 
@@ -76,8 +105,9 @@ public:
 
 private:
 
-   string srName_;        // Defines instance|pin name string
+   string srName_;        // Defines instance|port|pin name string
    string srInstName_;    // Defines instance name string
+   string srPortName_;    // Defines port name string
    string srPinName_;     // Defines pin name string
    TC_TypeMode_t type_;   // Defines type mode
                           // (eg. input, output, signal, clock, reset, power)
@@ -122,6 +152,13 @@ inline const char* TNO_InstPin_c::GetInstName(
       void ) const
 {
    return( TIO_SR_STR( this->srInstName_ ));
+}
+
+//===========================================================================//
+inline const char* TNO_InstPin_c::GetPortName( 
+      void ) const
+{
+   return( TIO_SR_STR( this->srPortName_ ));
 }
 
 //===========================================================================//

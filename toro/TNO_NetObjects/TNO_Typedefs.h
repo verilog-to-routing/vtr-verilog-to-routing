@@ -25,14 +25,15 @@ enum TNO_StatusMode_e
 };
 typedef enum TNO_StatusMode_e TNO_StatusMode_t;
 
-enum TNO_RouteType_e
+enum TNO_NodeType_e
 {
-   TNO_ROUTE_UNDEFINED = 0,
-   TNO_ROUTE_INST_PIN,
-   TNO_ROUTE_SWITCH_BOX,
-   TNO_ROUTE_CHANNEL
+   TNO_NODE_UNDEFINED = 0,
+   TNO_NODE_INST_PIN,
+   TNO_NODE_CHANNEL,
+   TNO_NODE_SEGMENT,
+   TNO_NODE_SWITCH_BOX
 };
-typedef enum TNO_RouteType_e TNO_RouteType_t;
+typedef enum TNO_NodeType_e TNO_NodeType_t;
 
 //---------------------------------------------------------------------------//
 // Define net list typedefs
@@ -60,16 +61,19 @@ typedef TCT_OrderedVector_c< TNO_GlobalRoute_t > TNO_GlobalRouteList_t;
 // Define route list typedefs
 //---------------------------------------------------------------------------//
 
+class TNO_Node_c; // Forward declaration for subsequent class typedefs
+typedef TCT_OrderedVector_c< TNO_Node_c > TNO_Route_t;
+
 class TNO_Route_c; // Forward declaration for subsequent class typedefs
-typedef TCT_OrderedVector_c< TNO_Route_c > TNO_RouteList_t;
+typedef TCT_OrderedVector_c< TNO_Route_t > TNO_RouteList_t;
 
 //---------------------------------------------------------------------------//
 // Define switch box list typedefs
 //---------------------------------------------------------------------------//
 
-class TC_SideIndex_c; // Forward declaration for subsequent class typedefs
-typedef TC_SideIndex_c TNO_SwitchBoxPin_t;
-typedef TCT_OrderedVector_c< TNO_SwitchBoxPin_t > TNO_SwitchBoxPinList_t;
+// ??? class TC_SideIndex_c; // Forward declaration for subsequent class typedefs
+// ??? typedef TC_SideIndex_c TNO_SwitchBoxPin_t;
+// ??? typedef TCT_OrderedVector_c< TNO_SwitchBoxPin_t > TNO_SwitchBoxPinList_t;
 
 class TNO_SwitchBox_c; // Forward declaration for subsequent class typedefs
 typedef TCT_OrderedVector_c< TNO_SwitchBox_c > TNO_SwitchBoxList_t;

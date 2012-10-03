@@ -19,6 +19,6 @@ using namespace std;
 // 05/30/12 jeffr : Original
 //===========================================================================//
 void TNO_ExtractStringStatusMode( TNO_StatusMode_t mode, string* psrMode );
-void TNO_ExtractStringRouteType( TNO_RouteType_t type, string* psrType );
+void TNO_ExtractStringNodeType( TNO_NodeType_t type, string* psrType );
 
 #endif 

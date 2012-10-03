@@ -3,7 +3,7 @@
 //
 //           Functions include:
 //           - TNO_ExtractStringStatusMode
-//           - TNO_ExtractStringRouteType
+//           - TNO_ExtractStringNodeType
 //
 //===========================================================================//
 
@@ -35,14 +35,14 @@ void TNO_ExtractStringStatusMode(
 } 
 
 //===========================================================================//
-// Function       : TNO_ExtractStringRouteType
+// Function       : TNO_ExtractStringNodeType
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
 // 05/30/12 jeffr : Original
 //===========================================================================//
-void TNO_ExtractStringRouteType(
-      TNO_RouteType_t type,
+void TNO_ExtractStringNodeType(
+      TNO_NodeType_t type,
       string*         psrType )
 {
    if( psrType )
@@ -51,10 +51,11 @@ void TNO_ExtractStringRouteType(
 
       switch( type )
       {
-      case TNO_ROUTE_INST_PIN:   *psrType = "instpin";   break;
-      case TNO_ROUTE_SWITCH_BOX: *psrType = "switchbox"; break;
-      case TNO_ROUTE_CHANNEL:    *psrType = "channel";   break;
-      default:                   *psrType = "*";         break;
+      case TNO_NODE_INST_PIN:   *psrType = "instpin";   break;
+      case TNO_NODE_CHANNEL:    *psrType = "channel";   break;
+      case TNO_NODE_SEGMENT:    *psrType = "segment";   break;
+      case TNO_NODE_SWITCH_BOX: *psrType = "switchbox"; break;
+      default:                  *psrType = "*";         break;
       }
    }
 } 
