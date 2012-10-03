@@ -252,7 +252,7 @@ bool TIO_FileHandler_c::ApplyPreProcessor(
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
    bool isValidCommand = false;
-   #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 ) || defined( LINUX24_64 )
+   #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX_I686 ) || defined( LINUX_X86_64 )
       TIO_FileHandler_c fileHandler;
       isValidCommand = fileHandler.IsValid( TIO_FILE_CPP_COMMAND, TIO_FILE_OPEN_READ );
    #elif defined( WIN32 ) || defined( _WIN32 )
