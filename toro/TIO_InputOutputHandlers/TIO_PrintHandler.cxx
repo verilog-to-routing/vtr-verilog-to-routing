@@ -1086,7 +1086,7 @@ void TIO_PrintHandler_c::FindUserName(
       string* psrUserName ) const
 {
    const char* pszUserNameCmd = "";
-   #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 ) || defined( LINUX24_64 )
+   #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX_I686 ) || defined( LINUX_X86_64 )
       pszUserNameCmd = "whoami"; 
    #elif defined( WIN32 ) || defined( _WIN32 )
       pszUserNameCmd = "echo %USERNAME%";
@@ -1107,7 +1107,7 @@ void TIO_PrintHandler_c::FindHostName(
       string* psrHostName ) const
 {
    const char* pszHostNameCmd = "";
-   #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 ) || defined( LINUX24_64 )
+   #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX_I686 ) || defined( LINUX_X86_64 )
       pszHostNameCmd = "hostname", 
    #elif defined( WIN32 ) || defined( _WIN32 )
       pszHostNameCmd = "hostname", 
@@ -1559,7 +1559,7 @@ void TIO_PrintHandler_c::ApplySystemCommand_(
    {
       *psrCommandStdout = "";
 
-      #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 ) || defined( LINUX24_64 ) || defined( WIN32 ) || defined( _WIN32 )
+      #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX_I686 ) || defined( LINUX_X86_64 ) || defined( WIN32 ) || defined( _WIN32 )
 
          TIO_SkinHandler_c& skinHandler = TIO_SkinHandler_c::GetInstance( );
          const char* pszBinaryName = skinHandler.GetBinaryName( );
