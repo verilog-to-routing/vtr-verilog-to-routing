@@ -518,9 +518,9 @@ template< class T > size_t TCT_NameList_c< T >::FindIndex(
    if( iter != end )
    {
       index = 0;
-      #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 )
+      #if defined( SUN8 ) || defined( SUN10 )
          std::distance( begin, iter, index );
-      #elif defined( LINUX24_64 )
+      #elif defined( LINUX_X86_64 ) || defined( LINUX_I686 )
          index = std::distance( begin, iter );
       #else
          index = std::distance( begin, iter );
