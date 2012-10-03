@@ -7,7 +7,8 @@
 #       to determine various build switches and directories.
 #
 #       This make file currently supports:
-#       - setenv ISP linux24_amd64
+#       - setenv ISP linux_x86_64
+#       - setenv ISP linux_i686
 #       - setenv ISP sun8
 #
 ######################################################################
@@ -16,15 +17,18 @@
 # Compiler options
 ######################################################################
 
-pC++linux24_amd64 = /usr/bin/g++
+pC++linux_x86_64 = /usr/bin/g++
+pC++linux_i686 = /usr/bin/g++
 pC++sun8 = /apps/SUNWspro_6.0-U2/bin/CC
 pC++ = $(pC++$(ISP))
 
-PIClinux24_amd64 = -shared
+PIClinux_x86_64 = -shared
+PIClinux_i686 = -shared
 PICsun8 = -G -KPIC
 PIC = $(PIC$(ISP))
 
-CFLAGSlinux24_amd64 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX24_64
+CFLAGSlinux_x86_64 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_X86_64
+CFLAGSlinux_i686 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_I686
 CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
 CFLAGS = $(CFLAGS$(ISP)) \
 	-I. \
@@ -53,9 +57,9 @@ CFLAGS = $(CFLAGS$(ISP)) \
 	-I../TGS_GeometricShapes \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
-	-I../pccts/pcctsGeneric -I../pccts/h \
-	-I../pcre \
-	-I../vpr/SRC/base -I../vpr/SRC/util -I../libarchfpga/include
+	-I../../pccts/pcctsGeneric -I../../pccts/h \
+	-I../../pcre \
+	-I../../vpr/SRC/base -I../../vpr/SRC/util -I../../libarchfpga/include
 
 ######################################################################
 # Program files
@@ -64,7 +68,8 @@ CFLAGS = $(CFLAGS$(ISP)) \
 PROG = toro
 EXE = ../bin.$(ISP)/$(PROG)
 
-OBJSlinux24_amd64 = linux24_amd64/toro.o 
+OBJSlinux_x86_64 = linux_x86_64/toro.o 
+OBJSlinux_i686 = linux_i686/toro.o 
 OBJSsun8 = sun8/toro.o 
 OBJECTS = $(OBJS$(ISP))
 
@@ -72,8 +77,9 @@ OBJECTS = $(OBJS$(ISP))
 # Target rules
 ######################################################################
 
-SYSLIBSlinux24_amd64 = -L../pcre/$(ISP) -lpcre
-SYSLIBSsun8 = -L../pcre/$(ISP) -lpcre -Bdynamic -lresolv
+SYSLIBSlinux_x86_64 = -L../../pcre/$(ISP) -lpcre
+SYSLIBSlinux_i686 = -L../../pcre/$(ISP) -lpcre
+SYSLIBSsun8 = -L../../pcre/$(ISP) -lpcre -Bdynamic -lresolv
 SYSLIBS = $(SYSLIBS$(ISP))
 LIBDEFS = ../$(ISP)/libTM_Master.a \
 	../$(ISP)/libTI_Input.a \
@@ -100,12 +106,12 @@ LIBDEFS = ../$(ISP)/libTM_Master.a \
 	../$(ISP)/libTGS_GeometricShapes.a \
 	../$(ISP)/libTIO_InputOutputHandlers.a \
 	../$(ISP)/libTC_Common.a \
-	../pccts/$(ISP)/libpcctsGeneric.a \
-	../pccts/$(ISP)/libh.a \
-	../vpr/$(ISP)/libvpr.a
+	../../pccts/$(ISP)/libpcctsGeneric.a \
+	../../pccts/$(ISP)/libh.a \
+	../../vpr/$(ISP)/libvpr.a
 
 LINKLIBS = -L../$(ISP) \
-        -L../pccts/$(ISP) -L../vpr/$(ISP) \
+        -L../../pccts/$(ISP) -L../../vpr/$(ISP) \
 	-lTM_Master \
 	-lTI_Input \
 	-lTP_Process \
@@ -158,11 +164,14 @@ date.h: toro.cxx
 	rm -f date.h
 	echo "#define COMPILEDATE "\"`date`\""" > date.h
 
-../bin.linux24_amd64/$(PROG): date.h Makefile $(OBJECTS) $(LIBDEFS)
+../bin.linux_x86_64/$(PROG): date.h Makefile $(OBJECTS) $(LIBDEFS)
 	$(pC++) $(CFLAGS) -o $@ $(OBJECTS) \
 	$(LINKLIBS) \
 	$(SYSLIBS) 
-
+../bin.linux_i686/$(PROG): date.h Makefile $(OBJECTS) $(LIBDEFS)
+	$(pC++) $(CFLAGS) -o $@ $(OBJECTS) \
+	$(LINKLIBS) \
+	$(SYSLIBS) 
 ../bin.sun8/$(PROG): date.h Makefile $(OBJECTS) $(LIBDEFS)
 	$(pC++) $(CFLAGS) -Bstatic -o $@ $(OBJECTS) \
 	$(LINKLIBS) \
