@@ -31,7 +31,7 @@ using namespace std;
 
 #include "TNO_Typedefs.h"
 #include "TNO_InstPin.h"
-#include "TNO_Route.h"
+#include "TNO_Node.h"
 
 //===========================================================================//
 // Purpose        : Class declaration
@@ -86,7 +86,7 @@ public:
                     const char* pszPinName,
                     TC_TypeMode_t type = TC_TYPE_UNDEFINED );
    void AddGlobalRoute( const TNO_GlobalRoute_t& globalRoute );
-   void AddRoute( const TNO_Route_c& route );
+   void AddRoute( const TNO_Route_t& route );
 
    void AddInstPinList( const TNO_InstPinList_t& instPinList );
    void AddGlobalRouteList( const TNO_GlobalRouteList_t& globalRouteList );
@@ -125,7 +125,7 @@ private:
    TNO_GlobalRouteList_t globalRouteList_; 
                                 // List of global route channels (optional)
                                 // (assumes net status == GROUTED)
-   TNO_RouteList_t routeList_;  // List of detailed route segments (optional)
+   TNO_RouteList_t routeList_;  // List of detailed route nodes (optional)
                                 // (assumes net status == ROUTED)
 private:
 
