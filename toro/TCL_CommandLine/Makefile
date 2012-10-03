@@ -35,7 +35,7 @@ CFLAGS = $(CFLAGS$(ISP)) \
 	-I../TOS_OptionsStore \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
-	-I../../pcre 
+	-I../../pcre/SRC
 
 ######################################################################
 # Linker options
