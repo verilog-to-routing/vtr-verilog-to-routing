@@ -5,8 +5,8 @@
 //           - SetName (required for TCT_SortedNameDynamicVector_c class)
 //           - GetName (required for TCT_SortedNameDynamicVector_c class)
 //           - GetCompare (required for TCT_BSearch and TCT_QSort classes)
-//           - GetInputPin, GetOutputPin
-//           - SetInputPin, SetOutputPin
+//           - GetInput, GetOutput
+//           - SetInput, SetOutput
 //           - IsValid
 //
 //===========================================================================//
@@ -20,7 +20,7 @@ using namespace std;
 
 #include "TC_SideIndex.h"
 
-#include "TNO_Typedefs.h"
+// ??? #include "TNO_Typedefs.h"
 
 //===========================================================================//
 // Purpose        : Class declaration
@@ -53,11 +53,11 @@ public:
    const char* GetName( void ) const;
    const char* GetCompare( void ) const;
 
-   const TNO_SwitchBoxPin_t& GetInputPin( void ) const;
-   const TNO_SwitchBoxPin_t& GetOutputPin( void ) const;
+   const TC_SideIndex_c& GetInput( void ) const;
+   const TC_SideIndex_c& GetOutput( void ) const;
 
-   void SetInputPin( const TNO_SwitchBoxPin_t& inputPin );
-   void SetOutputPin( const TNO_SwitchBoxPin_t& outputPin );
+   void SetInput( const TC_SideIndex_c& input );
+   void SetOutput( const TC_SideIndex_c& output );
 
    void Clear( void );
 
@@ -66,8 +66,8 @@ public:
 private:
 
    string srName_;
-   TNO_SwitchBoxPin_t inputPin_;
-   TNO_SwitchBoxPin_t outputPin_;
+   TC_SideIndex_c input_;
+   TC_SideIndex_c output_;
 };
 
 //===========================================================================//
@@ -105,31 +105,31 @@ inline const char* TNO_SwitchBox_c::GetCompare(
 }
 
 //===========================================================================//
-inline const TNO_SwitchBoxPin_t& TNO_SwitchBox_c::GetInputPin( 
+inline const TC_SideIndex_c& TNO_SwitchBox_c::GetInput( 
       void ) const
 {
-   return( this->inputPin_ );
+   return( this->input_ );
 }
 
 //===========================================================================//
-inline const TNO_SwitchBoxPin_t& TNO_SwitchBox_c::GetOutputPin( 
+inline const TC_SideIndex_c& TNO_SwitchBox_c::GetOutput( 
       void ) const
 {
-   return( this->outputPin_ );
+   return( this->output_ );
 }
 
 //===========================================================================//
-inline void TNO_SwitchBox_c::SetInputPin( 
-      const TNO_SwitchBoxPin_t& inputPin )
+inline void TNO_SwitchBox_c::SetInput( 
+      const TC_SideIndex_c& input )
 {
-   this->inputPin_ = inputPin;
+   this->input_ = input;
 }
 
 //===========================================================================//
-inline void TNO_SwitchBox_c::SetOutputPin( 
-      const TNO_SwitchBoxPin_t& outputPin )
+inline void TNO_SwitchBox_c::SetOutput( 
+      const TC_SideIndex_c& output )
 {
-   this->outputPin_ = outputPin;
+   this->output_ = output;
 }
 
 //===========================================================================//

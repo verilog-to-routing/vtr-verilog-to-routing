@@ -50,8 +50,8 @@ TNO_SwitchBox_c::TNO_SwitchBox_c(
       const TNO_SwitchBox_c& switchBox )
       :
       srName_( switchBox.srName_ ),
-      inputPin_( switchBox.inputPin_ ),
-      outputPin_( switchBox.outputPin_ )
+      input_( switchBox.input_ ),
+      output_( switchBox.output_ )
 {
 } 
 
@@ -80,8 +80,8 @@ TNO_SwitchBox_c& TNO_SwitchBox_c::operator=(
    if( &switchBox != this )
    {
       this->srName_ = switchBox.srName_;
-      this->inputPin_ = switchBox.inputPin_;
-      this->outputPin_ = switchBox.outputPin_;
+      this->input_ = switchBox.input_;
+      this->output_ = switchBox.output_;
    }
    return( *this );
 }
@@ -111,8 +111,8 @@ bool TNO_SwitchBox_c::operator==(
       const TNO_SwitchBox_c& switchBox ) const
 {
    return(( this->srName_ == switchBox.srName_ ) &&
-          ( this->inputPin_ == switchBox.inputPin_ ) &&
-          ( this->outputPin_ == switchBox.outputPin_ ) ?
+          ( this->input_ == switchBox.input_ ) &&
+          ( this->output_ == switchBox.output_ ) ?
           true : false );
 }
 
@@ -161,16 +161,16 @@ void TNO_SwitchBox_c::ExtractString(
    {
       if( this->IsValid( ))
       {
-         string srInputPin, srOutputPin;
-         this->inputPin_.ExtractString( &srInputPin );
-         this->outputPin_.ExtractString( &srOutputPin );
+         string srInput, srOutput;
+         this->input_.ExtractString( &srInput );
+         this->output_.ExtractString( &srOutput );
 
          *psrSwitchBox = "\"";
          *psrSwitchBox += this->srName_;
          *psrSwitchBox += "\" ";
-         *psrSwitchBox += srInputPin;
+         *psrSwitchBox += srInput;
          *psrSwitchBox += " ";
-         *psrSwitchBox += srOutputPin;
+         *psrSwitchBox += srOutput;
       }
       else
       {
@@ -190,6 +190,6 @@ void TNO_SwitchBox_c::Clear(
       void )
 {
    this->srName_ = "";
-   this->inputPin_.Clear( );
-   this->outputPin_.Clear( );
+   this->input_.Clear( );
+   this->output_.Clear( );
 }
