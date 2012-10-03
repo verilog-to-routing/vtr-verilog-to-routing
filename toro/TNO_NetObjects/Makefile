@@ -7,7 +7,8 @@
 #       to determine various build switches and directories.
 #
 #       This make file currently supports:
-#       - setenv ISP linux24_amd64
+#       - setenv ISP linux_x86_64
+#       - setenv ISP linux_i686
 #       - setenv ISP sun8
 #
 ######################################################################
@@ -16,32 +17,37 @@
 # Compiler options
 ######################################################################
 
-pC++linux24_amd64 = /usr/bin/gcc
+pC++linux_x86_64 = /usr/bin/gcc
+pC++linux_i686 = /usr/bin/gcc
 pC++sun8 = /apps/SUNWspro_6.0-U2/bin/CC
 pC++ = $(pC++$(ISP))
 
-PIClinux24_amd64 = -shared
+PIClinux_x86_64 = -shared
+PIClinux_i686 = -shared
 PICsun8 = -G -KPIC
 PIC = $(PIC$(ISP))
 
-CFLAGSlinux24_amd64 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX24_64
+CFLAGSlinux_x86_64 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_X86_64
+CFLAGSlinux_i686 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_I686
 CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
 CFLAGS = $(CFLAGS$(ISP)) \
 	-I. \
 	-I../TGS_GeometricShapes \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
-	-I../pcre 
+	-I../../pcre 
 
 ######################################################################
 # Linker options
 ######################################################################
 
-LINKERlinux24_amd64 = /usr/bin/ld
+LINKERlinux_x86_64 = /usr/bin/ld
+LINKERlinux_i686 = /usr/bin/ld
 LINKERsun8 = /usr/ccs/bin/ld
 LINKER = $(LINKER$(ISP))
 
-LFLAGSlinux24_amd64 = -shared
+LFLAGSlinux_x86_64 = -shared
+LFLAGSlinux_i686 = -shared
 LFLAGSsun8 = -G -library=iostream -xarch=v9
 LFLAGS = $(LFLAGS$(ISP))
 
@@ -49,24 +55,35 @@ LFLAGS = $(LFLAGS$(ISP))
 # Program files
 ######################################################################
 
-SOLlinux24_amd64 = so
+SOLlinux_x86_64 = so
+SOLlinux_i686 = so
 SOLsun8 = so
 SOL = $(SOL$(ISP))
 
-LIBSOlinux24_amd64 = ../linux24_amd64/$(PROG).$(SOL)
+LIBSOlinux_x86_64 = ../linux_x86_64/$(PROG).$(SOL)
+LIBSOlinux_i686 = ../linux_i686/$(PROG).$(SOL)
 LIBSOsun8 = ../sun8/$(PROG).$(SOL)
 LIBSO = $(LIBSO$(ISP))
 
-OBJSlinux24_amd64 = linux24_amd64/TNO_NetList.o \
-                    linux24_amd64/TNO_Net.o \
-                    linux24_amd64/TNO_Route.o \
-                    linux24_amd64/TNO_InstPin.o \
-                    linux24_amd64/TNO_SwitchBox.o \
-                    linux24_amd64/TNO_StringUtils.o
+OBJSlinux_x86_64 = linux_x86_64/TNO_NetList.o \
+                    linux_x86_64/TNO_Net.o \
+                    linux_x86_64/TNO_Node.o \
+                    linux_x86_64/TNO_InstPin.o \
+                    linux_x86_64/TNO_Segment.o \
+                    linux_x86_64/TNO_SwitchBox.o \
+                    linux_x86_64/TNO_StringUtils.o
+OBJSlinux_i686 = linux_i686/TNO_NetList.o \
+                    linux_i686/TNO_Net.o \
+                    linux_i686/TNO_Node.o \
+                    linux_i686/TNO_InstPin.o \
+                    linux_i686/TNO_Segment.o \
+                    linux_i686/TNO_SwitchBox.o \
+                    linux_i686/TNO_StringUtils.o
 OBJSsun8 = sun8/TNO_NetList.o \
            sun8/TNO_Net.o \
-           sun8/TNO_Route.o \
+           sun8/TNO_Node.o \
            sun8/TNO_InstPin.o \
+           sun8/TNO_Segment.o \
            sun8/TNO_SwitchBox.o \
            sun8/TNO_StringUtils.o
 OBJECTS = $(OBJS$(ISP))
@@ -98,7 +115,9 @@ clean:
 # Program rules
 ######################################################################
 
-ARCMDlinux24_amd64 = $(LINKER) -r -o $(ISP)/$(PROG).a $(OBJECTS) ; \
+ARCMDlinux_x86_64 = $(LINKER) -r -o $(ISP)/$(PROG).a $(OBJECTS) ; \
+	mv $(ISP)/$(PROG).a $(EXE)
+ARCMDlinux_i686 = $(LINKER) -r -o $(ISP)/$(PROG).a $(OBJECTS) ; \
 	mv $(ISP)/$(PROG).a $(EXE)
 ARCMDsun8 = $(pC++) -xar -xarch=v9 -library=iostream -o $(ISP)/$(PROG).a $(OBJECTS) ; \
 	mv $(ISP)/$(PROG).a $(EXE)
@@ -109,7 +128,10 @@ $(EXE): $(LIBSO)
 $(OBJECTS): $(@F:.o=.cxx)
 	$(pC++) -o $@ -c $(@F:.o=.cxx) $(PIC) $(CFLAGS)
 
-$(LIBSOlinux24_amd64): $(OBJECTS) Makefile
+$(LIBSOlinux_x86_64): $(OBJECTS) Makefile
+	$(pC++) $(LFLAGS) -o $(ISP)/$(PROG).$(SOL) $(OBJECTS) ; \
+	mv $(ISP)/$(PROG).$(SOL) $@
+$(LIBSOlinux_i686): $(OBJECTS) Makefile
 	$(pC++) $(LFLAGS) -o $(ISP)/$(PROG).$(SOL) $(OBJECTS) ; \
 	mv $(ISP)/$(PROG).$(SOL) $@
 $(LIBSOsun8): $(OBJECTS) Makefile
