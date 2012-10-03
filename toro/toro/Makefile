@@ -58,7 +58,7 @@ CFLAGS = $(CFLAGS$(ISP)) \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
 	-I../../pccts/pcctsGeneric -I../../pccts/h \
-	-I../../pcre \
+	-I../../pcre/SRC \
 	-I../../vpr/SRC/base -I../../vpr/SRC/util -I../../libarchfpga/include
 
 ######################################################################
