@@ -420,37 +420,44 @@ globalRouteList[ TNO_GlobalRouteList_t* pglobalRouteList ]
 routeList[ TNO_RouteList_t* prouteList ]
    :
    <<
-      TNO_Route_c route;
+      TNO_Route_t route;
+      TNO_Node_c node;
 
       TNO_InstPin_c instPin;
-      TNO_SwitchBox_c switchBox;
       TNO_Channel_t channel;
+      TNO_SwitchBox_c switchBox;
    >>
    (  "<"
       (  PIN instPinDef[ &instPin ]
          <<
-            route.Clear( );
-            route.Set( instPin );
-         >>
-      |  SB switchBoxDef[ &switchBox ]
-         <<
-            route.Clear( );
-            route.Set( switchBox );
+            node.Clear( );
+            node.Set( instPin );
          >>
       |  CHANNEL channelDef[ &channel ]
          <<
-            route.Clear( );
-            route.Set( channel );
+            node.Clear( );
+            node.Set( channel );
+         >>
+      |  SB switchBoxDef[ &switchBox ]
+         <<
+            node.Clear( );
+            node.Set( switchBox );
          >>
       )
       ">"
       << 
-         if( route.IsValid( ))
+         if( node.IsValid( ))
          {
-            prouteList->Add( route );
+            route.Add( node );
          }
       >>
    )*
+   << 
+      if( route.IsValid( ))
+      {
+         prouteList->Add( route );
+      }
+   >>
    ;
 
 //===========================================================================//
@@ -468,11 +475,11 @@ switchBoxDef[ TNO_SwitchBox_c* pswitchBox ]
    >>
    sideIndex[ &sideIndex_ ]
    <<
-      pswitchBox->SetInputPin( sideIndex_ );
+      pswitchBox->SetInput( sideIndex_ );
    >>
    sideIndex[ &sideIndex_ ]
    <<
-      pswitchBox->SetOutputPin( sideIndex_ );
+      pswitchBox->SetOutput( sideIndex_ );
    >>
    ;
 
