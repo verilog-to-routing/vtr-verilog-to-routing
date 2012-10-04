@@ -23,11 +23,11 @@
                     "walltime_sec": "100", 
                     "memory_MB"   : "1200"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "100", 
                     "memory_MB"   : "2000"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -56,11 +56,11 @@
                     "walltime_sec": "100", 
                     "memory_MB"   : "2000"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "100", 
                     "memory_MB"   : "2300"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -89,11 +89,11 @@
                     "walltime_sec": "100", 
                     "memory_MB"   : "3500"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "100", 
                     "memory_MB"   : "4100"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -122,11 +122,11 @@
                     "walltime_sec": "100",
                     "memory_MB"   : "1100"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "300",
                     "memory_MB"   : "1900"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -155,11 +155,11 @@
                     "walltime_sec": "100",
                     "memory_MB"   : "2000"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "100",
                     "memory_MB"   : "2500"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -188,11 +188,11 @@
                     "walltime_sec": "600",
                     "memory_MB"   : "3600"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "800",
                     "memory_MB"   : "10300"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -221,12 +221,12 @@
                     "walltime_sec": "400",
                     "memory_MB"   : "3000"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "300",
                     "memory_MB"   : "3300",
                     "successful"  : "False"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -258,12 +258,12 @@
                     "walltime_sec": "700",
                     "memory_MB"   : "8000"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "76600",
                     "memory_MB"   : "11300",
                     "successful"  : "False"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -292,11 +292,11 @@
                     "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -325,11 +325,11 @@
                     "walltime_sec": "300",
                     "memory_MB"   : "3600"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "200",
                     "memory_MB"   : "4500"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -358,11 +358,11 @@
                     "walltime_sec": "1200",
                     "memory_MB"   : "13400"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -391,11 +391,11 @@
                     "walltime_sec": "3100",
                     "memory_MB"   : "25700"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -424,11 +424,11 @@
                     "walltime_sec": "4700",
                     "memory_MB"   : "20500"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -457,11 +457,11 @@
                     "walltime_sec": "1000",
                     "memory_MB"   : "9800"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -490,11 +490,11 @@
                     "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -523,12 +523,12 @@
                     "walltime_sec": "2000",
                     "memory_MB"   : "9100"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "10000",
                     "memory_MB"   : "10300",
                     "successful"  : "False"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -557,12 +557,12 @@
                     "walltime_sec": "1000",
                     "memory_MB"   : "7200"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "over_48hrs",
                     "memory_MB"   : "8900",
                     "successful"  : "False"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -591,11 +591,11 @@
                     "walltime_sec": "1000",
                     "memory_MB"   : "13400"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "2200",
                     "memory_MB"   : "21600"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
@@ -624,11 +624,11 @@
                     "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
-                "route_300"    : {
+                "route300"    : {
                     "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
-                "route_500"    : {
+                "route500"    : {
                     "walltime_sec": "unkown", 
                     "memory_MB"   : "unkown"
                 }
