@@ -1028,6 +1028,7 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 		}
 		fprintf(fp, "\n");
 	}
+	fclose(fp);
 }
 
 void resync_post_route_netlist() {
