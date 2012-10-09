@@ -63,7 +63,7 @@ typedef struct s_power_buffer_sc_levr_inf t_power_buffer_sc_levr_inf;
 typedef struct s_power_tech t_power_tech;
 typedef struct s_transistor_inf t_transistor_inf;
 typedef struct s_transistor_size_inf t_transistor_size_inf;
-
+typedef struct s_rr_node_power t_rr_node_power;
 typedef struct s_power_buffer_size_inf t_power_buffer_size_inf;
 typedef struct s_power_buffer_strength_inf t_power_buffer_strength_inf;
 
@@ -227,6 +227,15 @@ struct s_power_commonly_used {
 
 	int num_cb_buffers;
 	float total_cb_buffer_size;
+};
+
+struct s_rr_node_power {
+	boolean visited;
+	float * in_density;
+	float * in_prob;
+	short num_inputs;
+	short selected_input;
+	short driver_switch_type;
 };
 
 /************************* GLOBALS **********************************/

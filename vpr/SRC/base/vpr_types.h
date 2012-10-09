@@ -39,7 +39,6 @@
  * Global data types and constants
  ******************************************************************************/
 typedef struct s_power_opts t_power_opts;
-typedef struct s_rr_node_power t_rr_node_power;
 
 #ifndef SPEC
 #define DEBUG 1			/* Echoes input & checks error conditions */
@@ -903,7 +902,6 @@ typedef struct s_rr_node {
 
 	/* Used by power calculator */
 	float C_tile_per_m;
-	t_rr_node_power * power_info;
 } t_rr_node;
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
@@ -949,15 +947,6 @@ typedef struct s_rr_node {
  *                       indicates the driving architecture of the track.    *
  *                       Otherwise the value contained in the field should   *
  *                       be ignored.                                         */
-
-struct s_rr_node_power {
-	boolean visited;
-	float * in_density;
-	float * in_prob;
-	short num_inputs;
-	short selected_input;
-	short driver_switch_type;
-};
 
 typedef struct s_rr_indexed_data {
 	float base_cost;
