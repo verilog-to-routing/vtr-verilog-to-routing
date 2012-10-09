@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -O0 -Wall -Wextra
+CFLAGS = -g -O0 -w
 LFLAGS = -g -O0
 
 EXE = ace
