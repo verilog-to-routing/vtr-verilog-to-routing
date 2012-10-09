@@ -1380,14 +1380,18 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
 	}
 }
 
+/* This function performs power estimation, and must be called
+ * after packing, placement AND routing.  Currently, this
+ * will not work when running a partial flow (ex. only routing).
+ */
 void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 	e_power_ret_code power_ret_code;
 	boolean power_error;
 
-	assert(vpr_setup.FileNameOpts.PowerFile);
-
+	/* Ensure we are only using 1 clock */
 	assert(count_netlist_clocks() == 1);
 
+	/* Get the critical path of this clock */
 	g_solution_inf.T_crit = get_critical_path_delay() / 1e9;
 	assert(g_solution_inf.T_crit > 0.);
 
@@ -1395,6 +1399,8 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 	vpr_printf(TIO_MESSAGE_INFO, "-----------------\n");
 
 	vpr_printf(TIO_MESSAGE_INFO, "Initializing power module\n");
+
+	/* Initialize the power module */
 	power_error = power_init(vpr_setup.FileNameOpts.PowerFile,
 			vpr_setup.FileNameOpts.CmosTechFile, &Arch, &vpr_setup.RoutingArch);
 	if (power_error) {
@@ -1405,8 +1411,12 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 		float power_runtime_s;
 
 		vpr_printf(TIO_MESSAGE_INFO, "Running power estimation\n");
+
+		/* Run power estimation */
 		power_ret_code = power_total(&power_runtime_s, &Arch,
 				&vpr_setup.RoutingArch);
+
+		/* Check for errors/warnings */
 		if (power_ret_code == POWER_RET_CODE_ERRORS) {
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"Power estimation failed. See power output for error details.\n");
@@ -1419,6 +1429,7 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 				power_runtime_s);
 	}
 
+	/* Uninitialize power module */
 	if (!power_error) {
 		vpr_printf(TIO_MESSAGE_INFO, "Uninitializing power module\n");
 		power_error = power_uninit();

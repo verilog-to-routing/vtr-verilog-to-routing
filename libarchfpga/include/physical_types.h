@@ -29,13 +29,11 @@
 #include "logic_types.h"
 #include "util.h"
 
-typedef struct s_mux_node t_mux_node;
-typedef struct s_mux_arch t_mux_arch;
-typedef struct s_power_usage t_power_usage;
 typedef struct s_clock_arch t_clock_arch;
 typedef struct s_clock_network t_clock_network;
 typedef struct s_power_arch t_power_arch;
 typedef struct s_interconnect_pins t_interconnect_pins;
+typedef struct s_power_usage t_power_usage;
 
 /*************************************************************************************************/
 /* FPGA basic definitions                                                                        */
@@ -91,17 +89,12 @@ enum e_pin_to_pin_pack_pattern_annotations {
 	E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME = 0
 };
 
-enum e_power_leakage_type {
-	LEAKAGE_UNDEFINED = 0, LEAKAGE_PROVIDED
-};
-
-enum e_power_dynamic_type {
-	DYNAMIC_UNDEFINED = 0, DYNAMIC_C_INTERNAL, DYNAMIC_PROVIDED
-};
-
-enum e_encoding_type {
-	ENCODING_ONE_HOT, ENCODING_DECODER
-};
+/* Power Estimation type for a PB */
+typedef enum {
+	PB_POWER_UNDEFINED = 0, /* User does not provide dynamic power */
+	PB_POWER_C_INTERNAL, /* User provides internal capacitance of block */
+	PB_POWER_PROVIDED /* User provides absolute power of block */
+} e_pb_power_type;
 
 /*************************************************************************************************/
 /* FPGA grid layout data types                                                                   */
@@ -136,43 +129,32 @@ struct s_clb_grid {
 };
 
 /************************* POWER ***********************************/
+
+/* Global clock architecture */
+struct s_clock_arch {
+	int num_global_clocks;
+	t_clock_network *clock_inf; /* Details about each clock */
+};
+
+/* Architecture information for a single clock */
+struct s_clock_network {
+	boolean autosize_buffer; /* autosize clock buffers */
+	float buffer_size; /* if not autosized, the clock buffer size */
+	float C_wire; /* Wire capacitance (per meter) */
+
+	float prob; /* Static probability of net assigned to this clock */
+	float dens; /* Switching density of net assigned to this clock */
+};
+
+/* Power-related architecture information */
+struct s_power_arch {
+	float C_wire_local; /* Capacitance of local interconnect (per meter) */
+};
+
+/* Power usage for an entity */
 struct s_power_usage {
 	float dynamic;
 	float leakage;
-};
-
-struct s_mux_arch {
-	int levels;
-	int num_inputs;
-	float * transistor_sizes; /* [0..levels] */
-	//enum e_encoding_type * encoding_types;
-	t_mux_node * mux_graph_head;
-};
-
-struct s_mux_node {
-	int num_inputs;
-	t_mux_node * children; /* [0..num_inputs-1] */
-	int starting_pin_idx;
-	int level;
-	boolean level_restorer;
-};
-
-struct s_clock_arch {
-	int num_global_clocks;
-	t_clock_network *clock_inf; /* Details about the clock network */
-};
-
-struct s_clock_network{
-	boolean autosize_buffer;
-	float buffer_size;
-	float C_wire;
-
-	float prob;
-	float dens;
-};
-
-struct s_power_arch {
-	float C_wire_local;
 };
 
 /*************************************************************************************************/
@@ -294,7 +276,6 @@ struct s_interconnect {
 	int num_input_ports;
 	int num_output_ports;
 	int num_pins_per_port;
-	//t_mux_arch * mux_arch;
 
 	t_power_usage power_usage;
 };
@@ -323,7 +304,7 @@ struct s_mode {
 	int num_interconnect;
 	struct s_pb_type *parent_pb_type;
 	int index;
-	t_power_usage power_usage;
+	t_power_usage power_usage; /* Power usage of this mode */
 };
 typedef struct s_mode t_mode;
 
@@ -490,19 +471,16 @@ struct s_pb_type {
 	t_pin_to_pin_annotation *annotations; /* [0..num_annotations-1] */
 	int num_annotations;
 
-	/* Power - Jeff */
-	enum e_power_dynamic_type power_dynamic_type;
-	enum e_power_leakage_type power_leakage_type;
+	/* Type of power estimation for this pb */
+	e_pb_power_type power_dynamic_type;
+	e_pb_power_type power_static_type;
 
-	float power_dynamic;
-	float power_leakage;
-	float C_internal;
-
-	int leakage_default_mode;
+	float C_internal; /*Internal capacitance of the pb */
+	int leakage_default_mode; /* Default mode for leakage analysis, if block has no set mode */
 
 	t_power_usage power_usage;
-	float transistor_cnt;
-	float transistor_cnt_interc;
+	float transistor_cnt;	/* Total transistor size of this pb */
+	float transistor_cnt_interc; /* Total transistor size of the interconnect in this pb */
 };
 typedef struct s_pb_type t_pb_type;
 
@@ -641,7 +619,7 @@ typedef struct s_segment_inf {
 	int cb_len;
 	boolean *sb;
 	int sb_len;
-	float Cmetal_per_m;
+	float Cmetal_per_m; /* Wire capacitance (per meter) */
 } t_segment_inf;
 
 /* Lists all the important information about a switch type.                  *

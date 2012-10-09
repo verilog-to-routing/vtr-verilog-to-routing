@@ -900,7 +900,10 @@ typedef struct s_rr_node {
 
 	int z; /* For IPIN, source, and sink nodes, helps identify which location this rr_node belongs to */
 
-	/* Used by power calculator */
+	/* Power Estimation: Wire capacitance in (Farads * tiles / meter)
+	 * This is used to calculate capacitance of this segment, by
+	 * multiplying it by the length per tile (meters/tile).
+	 * This is only the wire capacitance, not including any switches */
 	float C_tile_per_m;
 } t_rr_node;
 /* Main structure describing one routing resource node.  Everything in       *

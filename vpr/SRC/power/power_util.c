@@ -52,7 +52,7 @@ float power_usage_sum(t_power_usage * power_usage) {
 	return power_usage->dynamic + power_usage->leakage;
 }
 
-void power_log_msg(enum e_power_log_type log_type, char * msg) {
+void power_log_msg(e_power_log_type log_type, char * msg) {
 	log_msg(&g_power_output->logs[log_type], msg);
 }
 

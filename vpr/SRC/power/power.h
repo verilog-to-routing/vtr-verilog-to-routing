@@ -47,10 +47,13 @@ typedef enum {
 	POWER_RET_CODE_SUCCESS = 0, POWER_RET_CODE_ERRORS, POWER_RET_CODE_WARNINGS
 } e_power_ret_code;
 
-enum e_power_log_type {
+typedef enum {
 	POWER_LOG_ERROR, POWER_LOG_WARNING, POWER_LOG_NUM_TYPES
-};
+} e_power_log_type;
 
+typedef enum {
+	ENCODING_ONE_HOT, ENCODING_DECODER
+} e_encoding_type;
 /************************* STRUCTS **********************************/
 typedef struct s_power_output t_power_output;
 typedef struct s_log t_log;
@@ -66,14 +69,14 @@ typedef struct s_transistor_size_inf t_transistor_size_inf;
 typedef struct s_rr_node_power t_rr_node_power;
 typedef struct s_power_buffer_size_inf t_power_buffer_size_inf;
 typedef struct s_power_buffer_strength_inf t_power_buffer_strength_inf;
-
+typedef struct s_mux_node t_mux_node;
+typedef struct s_mux_arch t_mux_arch;
 typedef struct s_solution_inf t_solution_inf;
 
 struct s_solution_inf {
 	float T_crit;
 	int channel_width;
 };
-
 
 /* two types of transisters */
 typedef enum {
@@ -236,6 +239,22 @@ struct s_rr_node_power {
 	short num_inputs;
 	short selected_input;
 	short driver_switch_type;
+};
+
+struct s_mux_arch {
+	int levels;
+	int num_inputs;
+	float * transistor_sizes; /* [0..levels] */
+	//enum e_encoding_type * encoding_types;
+	t_mux_node * mux_graph_head;
+};
+
+struct s_mux_node {
+	int num_inputs;
+	t_mux_node * children; /* [0..num_inputs-1] */
+	int starting_pin_idx;
+	int level;
+	boolean level_restorer;
 };
 
 /************************* GLOBALS **********************************/

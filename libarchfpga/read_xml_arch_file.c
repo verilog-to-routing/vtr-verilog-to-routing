@@ -685,30 +685,32 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 	}
 	assert(j == num_ports);
 
-	// Process Power
+	/* Read pb power information */
 	Cur = FindFirstElement(Parent, "power", FALSE);
 
 	Prop = FindProperty(Cur, "dynamic", FALSE);
 	if (Prop) {
-		pb_type->power_dynamic = GetFloatProperty(Cur, "dynamic", FALSE, 0.);
-		pb_type->power_dynamic_type = DYNAMIC_PROVIDED;
+		pb_type->power_usage.dynamic = GetFloatProperty(Cur, "dynamic", FALSE,
+				0.);
+		pb_type->power_dynamic_type = PB_POWER_PROVIDED;
 	} else {
 		Prop = FindProperty(Cur, "C_internal", FALSE);
 		if (Prop) {
 			pb_type->C_internal = GetFloatProperty(Cur, "C_internal", FALSE,
 					0.);
-			pb_type->power_dynamic_type = DYNAMIC_C_INTERNAL;
+			pb_type->power_dynamic_type = PB_POWER_C_INTERNAL;
 		} else {
-			pb_type->power_dynamic_type = DYNAMIC_UNDEFINED;
+			pb_type->power_dynamic_type = PB_POWER_UNDEFINED;
 		}
 	}
 
-	Prop = FindProperty(Cur, "leakage", FALSE);
+	Prop = FindProperty(Cur, "static", FALSE);
 	if (Prop) {
-		pb_type->power_leakage = GetFloatProperty(Cur, "leakage", FALSE, 0.);
-		pb_type->power_leakage_type = LEAKAGE_PROVIDED;
+		pb_type->power_usage.leakage = GetFloatProperty(Cur, "static", FALSE,
+				0.);
+		pb_type->power_static_type = PB_POWER_PROVIDED;
 	} else {
-		pb_type->power_leakage_type = LEAKAGE_UNDEFINED;
+		pb_type->power_static_type = PB_POWER_UNDEFINED;
 	}
 	if (Cur) {
 		FreeNode(Cur);
@@ -881,66 +883,6 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port) {
 		exit(1);
 	}
 }
-
-#if 0
-static void ProcessInterconnectMuxArch(ezxml_t Parent, t_interconnect * interc) {
-	int level_idx;
-	int levels;
-	ezxml_t Cur, Cur2;
-	ezxml_t Prev2;
-
-	/* Get mux architecture information */
-	Cur = FindElement(Parent, "mux_arch", FALSE);
-
-	interc->mux_arch = (t_mux_arch*) my_calloc(1, sizeof(t_mux_arch));
-	if (Cur) {
-		levels = GetIntProperty(Cur, "levels", TRUE, 0);
-	} else {
-		levels = 2;
-	}
-	interc->mux_arch->levels = levels;
-	interc->mux_arch->num_inputs = OPEN;
-	interc->mux_arch->transistor_sizes = (float*) my_calloc(levels,
-			sizeof(float));
-	interc->mux_arch->encoding_types = (e_encoding_type*) my_calloc(levels,
-			sizeof(enum e_encoding_type));
-
-	/* Initialize default properties */
-	for (level_idx = 0; level_idx < levels; level_idx++) {
-		interc->mux_arch->transistor_sizes[level_idx] = 1.0;
-		interc->mux_arch->encoding_types[level_idx] = ENCODING_DECODER;
-	}
-
-	if (Cur) {
-		Cur2 = FindFirstElement(Cur, "level", FALSE);
-		while (Cur2 != NULL) {
-			const char * encoding;
-			level_idx = GetIntProperty(Cur2, "index", TRUE, 0);
-			interc->mux_arch->transistor_sizes[level_idx] = GetFloatProperty(
-					Cur2, "trans_size", FALSE, 1.0);
-			encoding = FindProperty(Cur2, "encoding", FALSE);
-			if (encoding == NULL) {
-			} else if (strcmp(encoding, "one-hot") == 0) {
-				interc->mux_arch->encoding_types[level_idx] = ENCODING_ONE_HOT;
-			} else if (strcmp(encoding, "decoder") == 0) {
-				interc->mux_arch->encoding_types[level_idx] = ENCODING_DECODER;
-			} else {
-				printf(ERRTAG
-						"[Line %d] Invalid mux encoding '%s'.\n", Parent->line,
-						encoding);
-				exit(1);
-			}
-			ezxml_set_attr(Cur2, "encoding", NULL);
-
-			Prev2 = Cur2;
-			Cur2 = Cur2->next;
-			FreeNode(Prev2);
-		}
-
-		FreeNode(Cur);
-	}
-}
-#endif
 
 static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 	int num_interconnect = 0;
@@ -2264,7 +2206,11 @@ void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 		FreeNode(Next);
 	}
 
-	/* Process power */
+	/* Process architecture power information */
+
+	/* If arch->power has been initialized, meaning the user has requested power estimation,
+	 * then the power architecture information is required.
+	 */
 	if (arch->power) {
 		power_reqd = TRUE;
 	} else {
@@ -2276,6 +2222,9 @@ void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 		if (arch->power) {
 			ProcessPower(Next, arch->power, *Types, *NumTypes);
 		} else {
+			/* This information still needs to be read, even if it is just
+			 * thrown away.
+			 */
 			t_power_arch * power_arch_fake = (t_power_arch*) my_calloc(1,
 					sizeof(t_power_arch));
 			ProcessPower(Next, power_arch_fake, *Types, *NumTypes);
@@ -2290,6 +2239,9 @@ void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 		if (arch->clocks) {
 			ProcessClocks(Next, arch->clocks);
 		} else {
+			/* This information still needs to be read, even if it is just
+			 * thrown away.
+			 */
 			t_clock_arch * clocks_fake = (t_clock_arch*) my_calloc(1,
 					sizeof(t_clock_arch));
 			ProcessClocks(Next, clocks_fake);
@@ -3082,6 +3034,7 @@ static void ProcessPower( INOUTP ezxml_t parent,
 		INP int NumTypes) {
 	ezxml_t Cur;
 
+	/* Get the local interconnect capacitances */
 	Cur = FindElement(parent, "local_interconnect", FALSE);
 	if (Cur) {
 		power_arch->C_wire_local = GetFloatProperty(Cur, "C_wire", FALSE, 0.);
@@ -3089,6 +3042,7 @@ static void ProcessPower( INOUTP ezxml_t parent,
 	}
 }
 
+/* Get the clock architcture */
 static void ProcessClocks(ezxml_t Parent, t_clock_arch * clocks) {
 	ezxml_t Node;
 	int i;

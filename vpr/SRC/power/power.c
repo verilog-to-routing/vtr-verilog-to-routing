@@ -228,8 +228,7 @@ static void power_calc_pb_recursive(t_power_usage * power_usage, t_pb * pb,
 
 	/* Check if leakage power is explicitly specified */
 	if (continue_leakage
-			&& (pb_graph_node->pb_type->power_leakage_type == LEAKAGE_PROVIDED)) {
-		power_usage->leakage += pb_graph_node->pb_type->power_leakage;
+			&& (pb_graph_node->pb_type->power_static_type == PB_POWER_PROVIDED)) {
 		continue_leakage = FALSE;
 	}
 
@@ -239,11 +238,10 @@ static void power_calc_pb_recursive(t_power_usage * power_usage, t_pb * pb,
 	if (continue_dynamic) {
 		assert(pb != NULL);
 
-		if (pb_graph_node->pb_type->power_dynamic_type == DYNAMIC_PROVIDED) {
-			power_usage->dynamic += pb_graph_node->pb_type->power_dynamic;
+		if (pb_graph_node->pb_type->power_dynamic_type == PB_POWER_PROVIDED) {
 			continue_dynamic = FALSE;
 		} else if (pb_graph_node->pb_type->power_dynamic_type
-				== DYNAMIC_C_INTERNAL) {
+				== PB_POWER_C_INTERNAL) {
 			/* Just take the average density of inputs pins and use
 			 * that with user-defined block capacitance and leakage */
 			power_usage->dynamic += power_calc_pb_switching_from_c_internal(pb,
@@ -298,6 +296,12 @@ static void power_calc_pb_recursive(t_power_usage * power_usage, t_pb * pb,
 				power_calc_interconnect(&sub_power_usage, pb,
 						&pb_graph_node->interconnect_pins[pb_mode][interc_idx],
 						interc_length);
+				if (!continue_dynamic) {
+					sub_power_usage.dynamic = 0.;
+				}
+				if (!continue_leakage) {
+					sub_power_usage.leakage = 0.;
+				}
 				power_add_usage(power_usage, &sub_power_usage);
 			}
 		}

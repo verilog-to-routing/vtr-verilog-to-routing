@@ -33,7 +33,7 @@ void power_add_usage(t_power_usage * dest, t_power_usage * src);
 
 float power_usage_sum(t_power_usage * power_usage);
 
-void power_log_msg(enum e_power_log_type log_type, char * msg);
+void power_log_msg(e_power_log_type log_type, char * msg);
 
 char * transistor_type_name(e_tx_type type);
 
