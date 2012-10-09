@@ -229,7 +229,7 @@ if ( $stage_idx_abc >= $starting_stage and $stage_idx_abc <= $ending_stage ) {
 
 my $ace_path;
 if ( $stage_idx_ace >= $starting_stage and $stage_idx_ace <= $ending_stage and $do_power) {
-	$ace_path = "$vtr_flow_path/../ACE3/ace";
+	$ace_path = "$vtr_flow_path/../ace2/ace";
 	( -e $ace_path or -e "${ace_path}.exe" )
 	  or die "Cannot find ACE executable ($ace_path)";
 }
