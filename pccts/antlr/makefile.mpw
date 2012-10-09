@@ -1,0 +1,92 @@
+#//////////////////////////////////////////////////////////////////////////
+#//
+#// FILE NAME
+#//    antlr.make
+#//
+#// AUTHOR
+#//    Scott Haney
+#//
+#// CREATED
+#//    May 30, 1994
+#//
+#// DESCRIPTION
+#//    Controls Macintosh builds of ANTLR.
+#//
+#//////////////////////////////////////////////////////////////////////////
+
+ObjDir = :Macintosh:
+SetDir = ::support:set
+
+COptions = -mc68020 -model far -warnings off -d MPW -d __STDC__=1 -d USER_ZZSYN ¶
+  -i {SetDir} -i ::h
+LinkOptions = -d -c 'MPS ' -t MPST -mf -model far -br ON -srtsg ALL
+
+Objects = ¶
+	{ObjDir}antlr.c.o ¶
+	{ObjDir}bits.c.o ¶
+	{ObjDir}build.c.o ¶
+	{ObjDir}err.c.o ¶
+	{ObjDir}fset.c.o ¶
+	{ObjDir}fset2.c.o ¶
+	{ObjDir}gen.c.o ¶
+	{ObjDir}globals.c.o ¶
+	{ObjDir}hash.c.o ¶
+	{ObjDir}lex.c.o ¶
+	{ObjDir}main.c.o ¶
+	{ObjDir}misc.c.o ¶
+	{ObjDir}pred.c.o ¶
+	{ObjDir}scan.c.o ¶
+	{SetDir}{ObjDir}set.c.o ¶
+	"{CLibraries}"StdCLib.o ¶
+	"{Libraries}"Stubs.o ¶
+	"{Libraries}"Runtime.o ¶
+	"{Libraries}"Interface.o ¶
+	"{Libraries}"ToolLibs.o ¶
+
+{ObjDir}antlr.c.o Ä antlr.c
+
+{ObjDir}bits.c.o Ä bits.c
+
+{ObjDir}build.c.o Ä build.c
+
+{ObjDir}err.c.o Ä err.c
+
+{ObjDir}fset.c.o Ä fset.c
+
+{ObjDir}fset2.c.o Ä fset2.c
+
+{ObjDir}gen.c.o Ä gen.c
+
+{ObjDir}globals.c.o Ä globals.c
+
+{ObjDir}hash.c.o Ä hash.c
+
+{ObjDir}lex.c.o Ä lex.c
+
+{ObjDir}main.c.o Ä main.c
+
+{ObjDir}misc.c.o Ä misc.c
+
+{ObjDir}pred.c.o Ä pred.c
+
+{ObjDir}scan.c.o Ä scan.c
+
+{SetDir}{ObjDir}set.c.o Ä {SetDir}:set.c
+
+SetDir}{ObjDir} Ä {SetDir}:
+{ObjDir} Ä :
+{ObjDir} Ä {ObjDir}
+
+antlr ÄÄ {Objects}
+   	Link {LinkOptions} -o antlr {Objects}
+
+antlr ÄÄ antlr.r
+	Rez antlr.r -o antlr -a
+	
+Bootstrap Ä antlr.g
+	antlr -gh antlr.g
+	dlg -C2 parser.dlg scan.c
+
+Install  Ä antlr
+	Duplicate antlr "{MPW}"Tools:antlr
+	

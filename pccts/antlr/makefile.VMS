@@ -1,0 +1,42 @@
+$! File: MAKE.COM - Makefile for ANTLR 1.33 on VAX/OpenVMS
+$!
+$! History:
+$! ---------
+$! 20-Mar-1992  Fred Scholldorf         Hacked together for VAX/VMS.
+$! 24-Mar-1992  Fred Scholldorf         LINK against VAXCRTL sharable library.
+$! 24-Aug-1993  Fred Scholldorf         Upgrade for ANTLR V1.10.
+$!
+$ set noon      !Don't stop on errors.
+$!
+$ if P1 .eqs. "LINK" then goto relink
+$!
+$ define/nolog pccts_h     "[-.h]"
+$ define/nolog support_set "[-.support.set]"
+$!
+$ delete/nolog *.obj;*  !Get rid of existing .OBJ files.
+$!
+$ options = "/INCLUDE=(pccts_h,support_set)"
+$ CC 'options' antlr
+$ CC 'options' scan
+$ CC 'options' err
+$ CC 'options' bits
+$ CC 'options' build
+$ CC 'options' fset2
+$ CC 'options' fset
+$ CC 'options' gen
+$ CC 'options' globals
+$ CC 'options' hash
+$ CC 'options' lex
+$ CC 'options' main
+$ CC 'options' misc
+$ CC 'options' pred
+$ CC 'options' dialog
+$ CC 'options' [-.support.set]set
+$!
+$relink:
+$ LINK	antlr,scan,err,bits,build,	-
+	fset2,fset,gen,globals,hash,	-
+	lex,main,misc,pred,dialog,set,	-
+	sys$input:/options
+	sys$share:vaxcrtl.exe/share
+$ EXIT
