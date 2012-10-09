@@ -1190,7 +1190,7 @@ e_power_ret_code power_total(float * run_time_s, t_arch * arch,
 
 	gettimeofday(&t_start, NULL );
 
-	power_zero_usage(total_power);
+	power_zero_usage(&total_power);
 
 	if (routing_arch->directionality == BI_DIRECTIONAL) {
 		power_log_msg(POWER_LOG_ERROR,
