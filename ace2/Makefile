@@ -50,7 +50,7 @@ $(ABC_LIB_PATH):
 	cd $(ABC_DIR); make $(ABC_LIB)
 	
 clean:
-	rm *.o *.exe $(TARGET)
+	rm -f *.o *.exe $(TARGET)
 	
 %.o: %.c
 	$(CC) -c $< $(CFLAGS) -o $@ $(ABC_HEADERS) $(DEFINES) $(LIBS)
