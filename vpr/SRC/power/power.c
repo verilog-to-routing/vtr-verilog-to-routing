@@ -27,6 +27,7 @@
 #include <signal.h>
 #include <ctype.h>
 #include <math.h>
+#include <sys/time.h>
 
 #include "power.h"
 #include "power_components.h"
