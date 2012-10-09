@@ -1155,6 +1155,7 @@ static void build_rr_xchan(INP int i, INP int j,
 		length = iend - istart + 1;
 		L_rr_node[inode].R = length * seg_details[itrack].Rmetal;
 		L_rr_node[inode].C = length * seg_details[itrack].Cmetal;
+		L_rr_node[inode].C_tile_per_m = length * seg_details[itrack].Cmetal_per_m;
 
 		L_rr_node[inode].ptc_num = itrack;
 		L_rr_node[inode].type = CHANX;
@@ -1248,6 +1249,7 @@ static void build_rr_ychan(INP int i, INP int j,
 		length = iend - istart + 1;
 		L_rr_node[inode].R = length * seg_details[itrack].Rmetal;
 		L_rr_node[inode].C = length * seg_details[itrack].Cmetal;
+		L_rr_node[inode].C_tile_per_m = length * seg_details[itrack].Cmetal_per_m;
 
 		L_rr_node[inode].ptc_num = itrack;
 		L_rr_node[inode].type = CHANY;

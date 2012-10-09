@@ -463,6 +463,17 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadFloat(Args, &Options->max_criticality);
 	case OT_CRITICALITY_EXP:
 		return ReadFloat(Args, &Options->criticality_exp);
+
+		/* Power options */
+	case OT_POWER:
+		return Args;
+	case OT_ACTIVITY_FILE:
+		return ReadString(Args, &Options->ActFile);
+	case OT_POWER_OUT_FILE:
+		return ReadString(Args, &Options->PowerFile);
+	case OT_CMOS_TECH_BEHAVIOR_FILE:
+		return ReadString(Args, &Options->CmosTechFile);
+
 	default:
 		vpr_printf(TIO_MESSAGE_ERROR, "Unexpected option '%s' on command line.\n", *PrevArgs);
 		exit(1);

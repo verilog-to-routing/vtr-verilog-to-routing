@@ -12,11 +12,9 @@
  * arguments as the standard library ones, but exit    *
  * the program if they find an error condition.        */
 
-
 int file_line_number; /* file in line number being parsed */
 char *out_file_prefix = NULL;
 messagelogger vpr_printf = PrintHandlerMessage;
-
 
 static int cont; /* line continued? */
 
@@ -24,8 +22,8 @@ static int cont; /* line continued? */
  * is emitted. */
 int limit_value(int cur, int max, const char *name) {
 	if (cur > max) {
-		vpr_printf(TIO_MESSAGE_WARNING, "%s is being limited from [%d] to [%d]\n", name, cur,
-				max);
+		vpr_printf(TIO_MESSAGE_WARNING,
+				"%s is being limited from [%d] to [%d]\n", name, cur, max);
 		return max;
 	}
 	return cur;
@@ -78,7 +76,7 @@ my_fopen(const char *fname, const char *flag, int prompt) {
 			;
 
 		while (check_num_of_entered_values != 1) {
-			vpr_printf(TIO_MESSAGE_ERROR, 
+			vpr_printf(TIO_MESSAGE_ERROR,
 					"Was expecting one file name to be entered, with no spaces. You have entered %d parameters. Please try again: \n",
 					check_num_of_entered_values);
 			check_num_of_entered_values = scanf("%s", prompt_filename);
@@ -87,7 +85,9 @@ my_fopen(const char *fname, const char *flag, int prompt) {
 	}
 
 	if (NULL == (fp = fopen(fname, flag))) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Error opening file %s for %s access: %s.\n", fname, flag, strerror(errno));
+		vpr_printf(TIO_MESSAGE_ERROR,
+				"Error opening file %s for %s access: %s.\n", fname, flag,
+				strerror(errno));
 		exit(1);
 	}
 
@@ -102,8 +102,8 @@ my_strdup(const char *str) {
 	int Len;
 	char *Dst;
 
-	if (str == NULL) {
-		return NULL;
+	if (str == NULL ) {
+		return NULL ;
 	}
 
 	Len = 1 + strlen(str);
@@ -120,7 +120,8 @@ int my_atoi(const char *str) {
 
 	if (str[0] < '0' || str[0] > '9') {
 		if (!(str[0] == '-' && str[1] >= '0' && str[1] <= '9')) {
-			vpr_printf(TIO_MESSAGE_ERROR, "expected number instead of '%s'.\n", str);
+			vpr_printf(TIO_MESSAGE_ERROR, "expected number instead of '%s'.\n",
+					str);
 			exit(1);
 		}
 	}
@@ -131,11 +132,12 @@ void *
 my_calloc(size_t nelem, size_t size) {
 	void *ret;
 	if (nelem == 0) {
-		return NULL;
+		return NULL ;
 	}
 
-	if ((ret = calloc(nelem, size)) == NULL) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Error:  Unable to calloc memory.  Aborting.\n");
+	if ((ret = calloc(nelem, size)) == NULL ) {
+		vpr_printf(TIO_MESSAGE_ERROR,
+				"Error:  Unable to calloc memory.  Aborting.\n");
 		exit(1);
 	}
 	return (ret);
@@ -145,11 +147,12 @@ void *
 my_malloc(size_t size) {
 	void *ret;
 	if (size == 0) {
-		return NULL;
+		return NULL ;
 	}
 
-	if ((ret = malloc(size)) == NULL) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Error:  Unable to malloc memory.  Aborting.\n");
+	if ((ret = malloc(size)) == NULL ) {
+		vpr_printf(TIO_MESSAGE_ERROR,
+				"Error:  Unable to malloc memory.  Aborting.\n");
 		abort();
 		exit(1);
 	}
@@ -167,16 +170,15 @@ my_realloc(void *ptr, size_t size) {
 	ret = realloc(ptr, size);
 	if (NULL == ret) {
 		vpr_printf(TIO_MESSAGE_ERROR, "Unable to realloc memory. Aborting. "
-		"ptr=%p, Size=%d.\n", ptr, (int) size);
-		if (ptr == NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR, "my_realloc: ptr == NULL. Aborting.\n");
+				"ptr=%p, Size=%d.\n", ptr, (int) size);
+		if (ptr == NULL ) {
+			vpr_printf(TIO_MESSAGE_ERROR,
+					"my_realloc: ptr == NULL. Aborting.\n");
 		}
 		exit(1);
 	}
 	return (ret);
 }
-
-
 
 void *
 my_chunk_malloc(size_t size, t_chunk *chunk_info) {
@@ -218,22 +220,23 @@ my_chunk_malloc(size_t size, t_chunk *chunk_info) {
 			/* When debugging, uncomment the code below to see if memory allocation size */
 			/* makes sense */
 			/*#ifdef DEBUG
-			vpr_printf("NB:  my_chunk_malloc got a request for %d bytes.\n",
-			size);
-			vpr_printf("You should consider using my_malloc for such big requests.\n");
-			#endif */
+			 vpr_printf("NB:  my_chunk_malloc got a request for %d bytes.\n",
+			 size);
+			 vpr_printf("You should consider using my_malloc for such big requests.\n");
+			 #endif */
 
-			assert (chunk_info != NULL);
-			chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head, tmp_ptr);
+			assert(chunk_info != NULL);
+			chunk_info->chunk_ptr_head = insert_in_vptr_list(
+					chunk_info->chunk_ptr_head, tmp_ptr);
 			return (tmp_ptr);
 		}
 
 		if (chunk_info->mem_avail < FRAGMENT_THRESHOLD) { /* Only a small scrap left. */
 			chunk_info->next_mem_loc_ptr = (char *) my_malloc(CHUNK_SIZE);
 			chunk_info->mem_avail = CHUNK_SIZE;
-			assert (chunk_info != NULL);
-			chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head,
-				chunk_info->next_mem_loc_ptr);
+			assert(chunk_info != NULL);
+			chunk_info->chunk_ptr_head = insert_in_vptr_list(
+					chunk_info->chunk_ptr_head, chunk_info->next_mem_loc_ptr);
 		}
 
 		/* Execute else clause only when the chunk we want is pretty big,  *
@@ -242,8 +245,9 @@ my_chunk_malloc(size_t size, t_chunk *chunk_info) {
 
 		else {
 			tmp_ptr = (char *) my_malloc(size);
-			assert (chunk_info != NULL);
-			chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head, tmp_ptr);
+			assert(chunk_info != NULL);
+			chunk_info->chunk_ptr_head = insert_in_vptr_list(
+					chunk_info->chunk_ptr_head, tmp_ptr);
 			return (tmp_ptr);
 		}
 	}
@@ -271,7 +275,7 @@ void free_chunk_memory(t_chunk *chunk_info) {
 
 	curr_ptr = chunk_info->chunk_ptr_head;
 
-	while (curr_ptr != NULL) {
+	while (curr_ptr != NULL ) {
 		free(curr_ptr->data_vptr); /* Free memory "chunk". */
 		prev_ptr = curr_ptr;
 		curr_ptr = curr_ptr->next;
@@ -304,8 +308,8 @@ struct s_linked_vptr *
 delete_in_vptr_list(struct s_linked_vptr *head) {
 	struct s_linked_vptr *linked_vptr;
 
-	if (head == NULL)
-		return NULL;
+	if (head == NULL )
+		return NULL ;
 	linked_vptr = head->next;
 	free(head);
 	return linked_vptr; /* New head of the list */
@@ -322,7 +326,7 @@ insert_in_int_list(t_linked_int * head, int data,
 
 	t_linked_int *linked_int;
 
-	if (*free_list_head_ptr != NULL) {
+	if (*free_list_head_ptr != NULL ) {
 		linked_int = *free_list_head_ptr;
 		*free_list_head_ptr = linked_int->next;
 	} else {
@@ -343,7 +347,7 @@ void free_int_list(t_linked_int ** int_list_head_ptr) {
 
 	linked_int = *int_list_head_ptr;
 
-	while (linked_int != NULL) {
+	while (linked_int != NULL ) {
 		next_linked_int = linked_int->next;
 		free(linked_int);
 		linked_int = next_linked_int;
@@ -369,10 +373,11 @@ void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 		ivec->nelem = 0;
 		ivec->list = NULL;
 
-		if (list_head != NULL) {
+		if (list_head != NULL ) {
 			vpr_printf(TIO_MESSAGE_ERROR,
-			"alloc_ivector_and_copy_int_list: Copied %d elements, "
-			"but list at %p contains more.\n", num_items, (void *) list_head);
+					"alloc_ivector_and_copy_int_list: Copied %d elements, "
+							"but list at %p contains more.\n", num_items,
+					(void *) list_head);
 			exit(1);
 		}
 		return;
@@ -390,8 +395,8 @@ void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 
 	list[num_items - 1] = linked_int->data;
 
-	if (linked_int->next != NULL) {
-		vpr_printf(TIO_MESSAGE_ERROR, 
+	if (linked_int->next != NULL ) {
+		vpr_printf(TIO_MESSAGE_ERROR,
 				"Error in alloc_ivector_and_copy_int_list:\n Copied %d elements, "
 						"but list at %p contains more.\n", num_items,
 				(void *) list_head);
@@ -414,17 +419,17 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 
 	char ch;
 	int i;
-	
+
 	cont = 0; /* line continued? */
 	file_line_number++; /* global variable */
 
 	for (i = 0; i < max_size - 1; i++) { /* Keep going until the line finishes or the buffer is full */
-		
+
 		ch = fgetc(fp);
 
 		if (feof(fp)) { /* end of file */
 			if (i == 0) {
-				return NULL; /* required so we can write while (my_fgets(...) != NULL) */
+				return NULL ; /* required so we can write while (my_fgets(...) != NULL) */
 			} else { /* no newline before end of file - last line must be returned */
 				buf[i] = '\0';
 				return buf;
@@ -433,19 +438,19 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 
 		if (ch == '#') { /* comment */
 			buf[i] = '\0';
-			while ((ch = fgetc(fp)) != '\n' && !feof(fp)) 
+			while ((ch = fgetc(fp)) != '\n' && !feof(fp))
 				; /* skip the rest of the line */
 			return buf;
 		}
 
 		if (ch == '\r' || ch == '\n') { /* newline (cross-platform) */
-			if (i != 0 && buf[i-1] == '\\') { /* if \ at end of line, line continued */
-				cont = 1; 
-				buf[i-1] = '\n'; /* May need this for tokens */
+			if (i != 0 && buf[i - 1] == '\\') { /* if \ at end of line, line continued */
+				cont = 1;
+				buf[i - 1] = '\n'; /* May need this for tokens */
 				buf[i] = '\0';
 			} else {
 				buf[i] = '\n';
-				buf[i+1] = '\0';
+				buf[i + 1] = '\0';
 			}
 			return buf;
 		}
@@ -455,10 +460,11 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 	}
 
 	/* Buffer is full but line has not terminated, so error */
-	vpr_printf(TIO_MESSAGE_ERROR, "Error on line %d -- line is too long for input buffer.\n",
+	vpr_printf(TIO_MESSAGE_ERROR,
+			"Error on line %d -- line is too long for input buffer.\n",
 			file_line_number);
-	vpr_printf(TIO_MESSAGE_ERROR, "All lines must be at most %d characters long.\n",
-			BUFSIZE - 2);
+	vpr_printf(TIO_MESSAGE_ERROR,
+			"All lines must be at most %d characters long.\n", BUFSIZE - 2);
 	exit(1);
 }
 
@@ -482,8 +488,8 @@ my_strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {
 			return (val);
 
 		/* return unless we have a null value and a continuation line */
-		if (my_fgets(buf, BUFSIZE, fp) == NULL)
-			return (NULL);
+		if (my_fgets(buf, BUFSIZE, fp) == NULL )
+			return (NULL );
 
 		val = strtok(buf, tokens);
 	}
@@ -718,7 +724,9 @@ int my_irand(int imax) {
 			/* Due to random floating point rounding, sometimes above calculation gives number greater than ival by 1 */
 			ival = imax;
 		} else {
-			vpr_printf(TIO_MESSAGE_ERROR, "Bad value in my_irand, imax = %d  ival = %d\n", imax, ival);
+			vpr_printf(TIO_MESSAGE_ERROR,
+					"Bad value in my_irand, imax = %d  ival = %d\n", imax,
+					ival);
 			exit(1);
 		}
 	}
@@ -740,7 +748,8 @@ float my_frand(void) {
 
 #ifdef CHECK_RAND
 	if ((fval < 0) || (fval > 1.)) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Bad value in my_frand, fval = %g\n", fval);
+		vpr_printf(TIO_MESSAGE_ERROR, "Bad value in my_frand, fval = %g\n",
+				fval);
 		exit(1);
 	}
 #endif
@@ -748,4 +757,32 @@ float my_frand(void) {
 	return (fval);
 }
 
+boolean file_exists(const char * filename) {
+	FILE * file;
 
+	if (filename == NULL ) {
+		return FALSE;
+	}
+
+	file = fopen(filename, "r");
+	if (file) {
+		fclose(file);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int ipow(int base, int exp) {
+	int result = 1;
+
+	assert(exp >= 0);
+
+	while (exp) {
+		if (exp & 1)
+			result *= base;
+		exp >>= 1;
+		base *= base;
+	}
+
+	return result;
+}

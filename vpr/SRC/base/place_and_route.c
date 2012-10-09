@@ -22,6 +22,7 @@
 #include "route_common.h"
 #include "place_macro.h"
 #include "verilog_writer.h"
+#include "power.h"
 
 /******************* Subroutines local to this module ************************/
 
@@ -105,12 +106,13 @@ void place_and_route(enum e_operation operation,
 
 	/* If channel width not fixed, use binary search to find min W */
 	if (NO_FIXED_CHANNEL_WIDTH == width_fac) {
-		binary_search_place_and_route(placer_opts, place_file, net_file,
+		g_solution_inf.channel_width = binary_search_place_and_route(placer_opts, place_file, net_file,
 				arch_file, route_file, router_opts.full_stats,
 				router_opts.verify_binary_search, annealing_sched, router_opts,
 				det_routing_arch, segment_inf, timing_inf, chan_width_dist,
 				models, directs, num_directs);
 	} else {
+		g_solution_inf.channel_width = width_fac;
 		if (det_routing_arch.directionality == UNI_DIRECTIONAL) {
 			if (width_fac % 2 != 0) {
 				vpr_printf(TIO_MESSAGE_ERROR, "in pack_place_and_route.c: Given odd chan width (%d) for udsd architecture.\n",

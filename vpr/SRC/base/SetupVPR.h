@@ -19,7 +19,8 @@ void SetupVPR(INP t_options *Options,
 		OUTP t_segment_inf ** Segments,
 		OUTP t_timing_inf * Timing,
 		OUTP boolean * ShowGraphics,
-		OUTP int *GraphPause);
+		OUTP int *GraphPause,
+		OUTP t_power_opts * power_opts);
 
 void CheckSetup(INP enum e_operation Operation,
 		INP struct s_placer_opts PlacerOpts,

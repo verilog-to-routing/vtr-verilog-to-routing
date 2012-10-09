@@ -393,13 +393,17 @@ sub run_single_task {
 		my @job_ids;
 		foreach my $circuit (@circuits) {
 			foreach my $arch (@archs) {
-				open( PBS_FILE, ">pbs_job.txt" );
+				open( PBS_FILE, ">$task_dir/$run_prefix${experiment_number}/${arch}/${circuit}/pbs_job.txt" );
 				print PBS_FILE "#!/bin/bash\n";
 				print PBS_FILE "#PBS -S /bin/bash\n";
 				print PBS_FILE "#PBS -N $task-$arch-$circuit\n";
 				print PBS_FILE "#PBS -l nodes=1\n";
-				print PBS_FILE "#PBS -l walltime=96:00:00\n";
-				print PBS_FILE "#PBS -l mem=1024mb\n";
+				print PBS_FILE "#PBS -l walltime=720:00:00\n";
+				if ($circuit =~ /PEEng/) {
+					print PBS_FILE "#PBS -l mem=6000mb\n";
+				} else {
+					print PBS_FILE "#PBS -l mem=1500mb\n";
+				}
 				print PBS_FILE
 				  "#PBS -o $task_dir/$run_prefix${experiment_number}/${arch}/${circuit}/pbs_out.txt\n";
 				print PBS_FILE
@@ -411,7 +415,7 @@ sub run_single_task {
 				  "$script_path $circuits_dir/$circuit $archs_dir/$arch $script_params\n";
 				close(PBS_FILE);
 
-				my $line = `qsub pbs_job.txt`;
+				my $line = `qsub $task_dir/$run_prefix${experiment_number}/${arch}/${circuit}/pbs_job.txt`;
 				$line =~ /(\d+)\D/;
 				push(
 					@job_ids,

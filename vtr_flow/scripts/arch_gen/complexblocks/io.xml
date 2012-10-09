@@ -4,7 +4,7 @@
 	<clock name="clock" num_pins="1"/>
 
 	<!-- IOs can operate as either inputs or outputs -->
-	<mode name="inpad">		  
+	<mode name="inpad">
 		<pb_type name="inpad" blif_model=".input" num_pb="1">
 			<output name="inpad" num_pins="1"/>
 		</pb_type>
@@ -26,8 +26,7 @@
 		</interconnect>
 	</mode>
 
-	<fc_in type="frac">0.15</fc_in>
-	<fc_out type="frac">0.10</fc_out>
+	<fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
 
 	<!-- IOs go on the periphery of the FPGA, for consistency, 
           make it physically equivalent on all sides so that only one definition of I/Os is needed.

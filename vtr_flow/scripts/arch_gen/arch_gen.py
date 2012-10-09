@@ -10,6 +10,8 @@ do_power = True
 Fc_in = 0.15
 Fc_out = 0.1
 
+power_short_circuit_percentage = 0.0
+
 R_minW_nmos = 6065.520020
 R_minW_pmos = 18138.500000
 ipin_mux_trans_size = 1.222260
@@ -23,10 +25,6 @@ switch_T_del = 6.837e-11
 switch_mux_trans_size = 2.630740
 switch_buf_size = 27.645901
 
-seg_Cmetal_per_m = 2.52e-10
-CLB_interc_Cmetal_per_m = 2.52e-10
-clock_Cmetal_per_m = 2.52e-10 
-
 delay_CLB_I_to_ble = 8.044000e-11
 delay_ble_to_ble = 7.354000e-11
 
@@ -34,6 +32,31 @@ delay_LUT = 2.690e-10
 
 T_setup = 2.448e-10
 T_clock_to_Q = 7.732e-11
+
+def C_wire_glb(tech):
+    if (tech == 130):
+        return 190e-12
+    elif (tech == 45):
+        return 170e-12    
+    elif (tech == 22):
+        return 145e-12
+    else:
+        assert(0)
+
+def C_wire_local(tech):
+    return C_wire_glb(tech)
+
+    if (tech == 130):
+        return 230e-12
+    elif (tech == 45):
+        return 190e-12
+    elif (tech == 22):
+        return 170e-12
+    else:
+        assert(0)
+        
+def C_wire_clk(tech):
+    return C_wire_glb(tech)
 
 def xprint(s, newline=False):
     for i in range(tabs):
@@ -77,7 +100,7 @@ def xcopy(fsrc):
 def xprop(s, v):
     f.write(" " + s + "=\"" + str(v) + "\"")
     
-def xport(type, name, p,  e = "", c = ""):
+def xport(type, name, p, e="", c=""):
     assert (type == "input" or type == "output" or type == "clock")
         
     xbegin(type)
@@ -94,7 +117,15 @@ def xcomment(s):
     f.write("<!-- ")
     f.write(s)
     f.write(" -->\n")
-    
+
+def outputs_by_frac_stage(frac_stage):
+    if (frac_stage == 0):
+        return 1
+    elif (frac_stage == 1):
+        return 2
+    elif (frac_stage == 2 or frac_stage == 3):
+        return 4
+
 def xLUT(LUT_size, num_LUT):
     xbegin("pb_type")
     xprop("name", "lut" + str(LUT_size))
@@ -102,8 +133,8 @@ def xLUT(LUT_size, num_LUT):
     xprop("num_pb", num_LUT)
     xprop("class", "lut")
     xclose()
-    xport("input", "in", LUT_size, c = "lut_in")
-    xport("output", "out", 1, c = "lut_out")
+    xport("input", "in", LUT_size, c="lut_in")
+    xport("output", "out", 1, c="lut_out")
     
     xbegin("delay_matrix")
     xprop("type", "max")
@@ -116,11 +147,12 @@ def xLUT(LUT_size, num_LUT):
     
     xend() #pb_type lut
     
-def xCLB(k_LUT, N_BLE, I_CLB, fracture_level, num_FF):    
+def xCLB(k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF):    
     O_LUT = 2 ** fracture_level
     O_soft = O_LUT
     O_ble = O_soft
     O_CLB = N_BLE * O_ble
+    I_soft = I_BLE
     
     assert((O_LUT % num_FF) == 0)
     
@@ -130,7 +162,7 @@ def xCLB(k_LUT, N_BLE, I_CLB, fracture_level, num_FF):
     
     xport("input", "I", I_CLB, "true")
     xport("output", "O", O_CLB, "false")
-    xport("clock", "clk", 1 )
+    xport("clock", "clk", 1)
     
     xbegin("interconnect")
     xclose()
@@ -170,11 +202,12 @@ def xCLB(k_LUT, N_BLE, I_CLB, fracture_level, num_FF):
     
     xend() #interconnect
     
+    ### BLE ###
     xbegin("pb_type")
     xprop("name", "ble")
     xprop("num_pb", N_BLE)
     xclose()
-    xport("input", "in", k_LUT)
+    xport("input", "in", I_BLE)
     xport("output", "out", O_ble)
     xport("clock", "clk", 1)
     
@@ -199,6 +232,11 @@ def xCLB(k_LUT, N_BLE, I_CLB, fracture_level, num_FF):
         xcloseend()
         i = i + 1
     
+    if (fracture_level == 2):
+        frac_stages = 4
+    else:
+        frac_stages = fracture_level + 1
+    
     # Connections from Soft Logic to FFs
     soft_per_ff = O_soft / num_FF
     for j in range(num_FF):
@@ -210,7 +248,34 @@ def xCLB(k_LUT, N_BLE, I_CLB, fracture_level, num_FF):
         inputs = inputs.strip()
         xprop("input", inputs)
         xprop("output", "ff[" + str(j) + ":" + str(j) + "].D")
-        xcloseend()
+        xclose()
+        
+        if (j == 0):
+            xbegin("pack_pattern");
+            xprop("name", "bleF0")
+            xprop("in_port", "soft_logic.out[0:0]")
+            xprop("out_port", "ff[0:0].D")
+            xcloseend()
+        
+        if (frac_stages > 1):  
+            if (num_FF == 1):
+                xbegin("pack_pattern");                
+                xprop("name", "bleF1A")
+                xprop("in_port", "soft_logic.out[0:0]")
+                xprop("out_port", "ff[0:0].D")
+                xcloseend()
+                xbegin("pack_pattern");                
+                xprop("name", "bleF1B")
+                xprop("in_port", "soft_logic.out[1:1]")
+                xprop("out_port", "ff[0:0].D")
+                xcloseend() 
+            else:
+                xbegin("pack_pattern");                
+                xprop("name", "bleF1" + chr(65 + j))
+                xprop("in_port", "soft_logic.out[" + str(j) + ":" + str(j) + "]")
+                xprop("out_port", "ff[" + str(j) + ":" + str(j) + "].D")
+                xcloseend()
+        xend()
         i = i + 1
     
     # Connections from Soft/FF to BLE output    
@@ -226,20 +291,18 @@ def xCLB(k_LUT, N_BLE, I_CLB, fracture_level, num_FF):
     
     xend() #interconnect
     
+    ### SOFT LOGIC ###
     xbegin("pb_type")
     xprop("name", "soft_logic")
     xprop("num_pb", 1)
     xclose()
     
-    xport("input", "in", k_LUT)
+    xport("input", "in", I_soft)
     xport("output", "out", O_soft)
     
-    if (fracture_level == 2):
-        frac_stages = 4
-    else:
-        frac_stages = fracture_level + 1
+
         
-    for frac_stage in range(frac_stages):
+    for frac_stage in reversed(range(frac_stages)):
         if (frac_stage == 3):
             # This is a special configuration with 1x(k-1) and 2x(k-2) LUTs
             special_stage = True
@@ -253,8 +316,8 @@ def xCLB(k_LUT, N_BLE, I_CLB, fracture_level, num_FF):
             
             num_LUT = 2 ** frac_stage
             LUT_size = k_LUT - frac_stage
-            idx = "[" + str(LUT_size - 1) + ":0]"     
-         
+                 
+        idx = "[" + str(LUT_size - 1) + ":0]"
         xbegin("mode")
         if (special_stage):
             xprop("name", "n3" + "_lut" + str(LUT_size) + "-" + str(LUT_size_special))
@@ -266,11 +329,24 @@ def xCLB(k_LUT, N_BLE, I_CLB, fracture_level, num_FF):
         xclose()
         i = 0    
         
+        max_shift = I_soft - LUT_size;
+        
+        shift_interval = int(num_LUT)
+        
         # Soft Logic to LUTs
         for j in range(num_LUT):
+            if (num_LUT == 1):
+                shift = 0;
+            elif (special_stage):
+                shift = int(float(j) / (num_LUT * 2 - 1) * max_shift)
+            else:
+                shift = int(float(j) / (num_LUT - 1) * max_shift)
+                
+            soft_idx = I_soft - 1 - shift;
+            
             xbegin("direct")
             xprop("name", "direct" + str(i))        
-            xprop("input", "soft_logic.in" + idx)
+            xprop("input", "soft_logic.in[" + str(LUT_size - 1 + shift) + ":" + str(shift) + "]")
             xprop("output", "lut" + str(LUT_size) + "[" + str(j) + ":" + str(j) + "].in" + idx)
             xcloseend()
             i = i + 1
@@ -279,7 +355,7 @@ def xCLB(k_LUT, N_BLE, I_CLB, fracture_level, num_FF):
         if (special_stage):            
             xbegin("direct")
             xprop("name", "direct" + str(i))        
-            xprop("input", "soft_logic.in" + idx_special)
+            xprop("input", "soft_logic.in[" + str(I_soft - 1) + ":" + str(I_soft - LUT_size_special) + "]")
             xprop("output", "lut" + str(LUT_size_special) + "[0:0].in" + idx_special)
             xcloseend()
             i = i + 1
@@ -288,9 +364,22 @@ def xCLB(k_LUT, N_BLE, I_CLB, fracture_level, num_FF):
         for j in range(num_LUT):
             xbegin("direct")
             xprop("name", "direct" + str(i))
-            xprop("input", "lut" + str(LUT_size) + "[" + str(j) + ":" + str(j) + "].out")
-            xprop("output", "soft_logic.out[" + str(j) + ":" + str(j) + "]")
+            in_str = "lut" + str(LUT_size) + "[" + str(j) + ":" + str(j) + "].out"
+            out_str = "soft_logic.out[" + str(j) + ":" + str(j) + "]"
+            xprop("input", in_str)
+            xprop("output", out_str)
+            xclose()
+            
+            if (outputs_by_frac_stage(frac_stage) > 1):
+                char = chr(65 + j)
+            else:
+                char = ""
+            xbegin("pack_pattern")
+            xprop("name", "bleF" + str(frac_stage) + char)
+            xprop("in_port", in_str)
+            xprop("out_port", out_str)
             xcloseend()
+            xend()
             i = i + 1
             
         # Special LUT to soft Logic
@@ -320,9 +409,9 @@ def xCLB(k_LUT, N_BLE, I_CLB, fracture_level, num_FF):
     xprop("num_pb", num_FF)
     xprop("class", "flipflop")
     xclose()
-    xport("input", "D", 1, c = "D")
-    xport("output", "Q", 1, c = "Q")
-    xport("clock", "clk", 1, c = "clock")
+    xport("input", "D", 1, c="D")
+    xport("output", "Q", 1, c="Q")
+    xport("clock", "clk", 1, c="clock")
     
     xbegin("T_setup")
     xprop("value", T_setup)
@@ -340,17 +429,12 @@ def xCLB(k_LUT, N_BLE, I_CLB, fracture_level, num_FF):
     
     xend() #pb_type ble
     
-    xbegin("fc_in")
-    xprop("type", "frac")
-    xclose()
-    xprint(Fc_in, True)
-    xend() #fc_in
-    
-    xbegin("fc_out")
-    xprop("type", "frac")
-    xclose()
-    xprint(Fc_out, True)
-    xend() #fc_out
+    xbegin("fc")
+    xprop("default_in_type", "frac")
+    xprop("default_in_val", Fc_in)
+    xprop("default_out_type", "frac")
+    xprop("default_out_val", Fc_out)
+    xcloseend()
     
     xbegin("pinlocations")
     xprop("pattern", "spread")
@@ -366,14 +450,14 @@ def xCLB(k_LUT, N_BLE, I_CLB, fracture_level, num_FF):
     
     xend() #pb_type clb
     
-def gen_arch(dir, k_LUT, N_BLE, I_CLB, fracture_level, num_FF, seg_length):
+def gen_arch(dir, k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, seg_length, tech_nm):
     global f
     global tabs
 
     assert(fracture_level == 0 or fracture_level == 1 or fracture_level == 2)
     
 
-    filename = "k" + str(k_LUT) + "_N" + str(N_BLE) + "_I" + str(I_CLB) + "_L" + str(seg_length) + "_frac" + str(fracture_level) + "_ff" + str(num_FF) + ".xml"    
+    filename = "k" + str(k_LUT) + "_N" + str(N_BLE) + "_I" + str(I_CLB) + "_Fi" + str(I_BLE) + "_L" + str(seg_length) + "_frac" + str(fracture_level) + "_ff" + str(num_FF) + "_" + str(tech_nm) + "nm.xml"    
      
     tabs = 0
     
@@ -387,11 +471,12 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, fracture_level, num_FF, seg_length):
     models = ["multiply", "single_port_ram", "dual_port_ram"]
     cbs = ["io", "clb", "memory", "mult_36"]
     
-    f = open(os.path.join(dir, filename),'w')
+    f = open(os.path.join(dir, filename), 'w')
     
     xcomment("k = " + str(k_LUT))
     xcomment("N = " + str(N_BLE))
     xcomment("I = " + str(I_CLB))
+    xcomment("Fi = " + str(I_BLE))
     xcomment("frac_level = " + str(fracture_level))
     xcomment("ff = " + str(num_FF))
     
@@ -402,7 +487,7 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, fracture_level, num_FF, seg_length):
     xclose()
     
     for model in models: 
-        xcopy(os.path.join(script_dir, "models",  model + ".xml"))
+        xcopy(os.path.join(script_dir, "models", model + ".xml"))
     
     xend() #Models
     
@@ -479,7 +564,7 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, fracture_level, num_FF, seg_length):
     xprop("Rmetal", 0.0)
     xprop("Cmetal", 0.0)
     if (do_power):
-        xprop("Cmetal_per_m", seg_Cmetal_per_m)
+        xprop("Cmetal_per_m", C_wire_glb(tech_nm))
     xclose()
     
     xbegin("mux")
@@ -487,7 +572,7 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, fracture_level, num_FF, seg_length):
     xcloseend()
     
     xbegin("sb")
-    xprop("type","pattern")
+    xprop("type", "pattern")
     xclose()
     s = ""
     for i in range(seg_length + 1):
@@ -498,7 +583,7 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, fracture_level, num_FF, seg_length):
     
        
     xbegin("cb")
-    xprop("type","pattern")
+    xprop("type", "pattern")
     xclose()
     
     s = ""
@@ -519,9 +604,9 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, fracture_level, num_FF, seg_length):
     
     for cb in cbs: 
         if (cb == "clb"):
-            xCLB(k_LUT, N_BLE, I_CLB, fracture_level, num_FF)
+            xCLB(k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF)
         else:
-            xcopy(os.path.join(script_dir, "complexblocks",  cb + ".xml"))
+            xcopy(os.path.join(script_dir, "complexblocks", cb + ".xml"))
      
     xend() #complexblocklist
     
@@ -529,12 +614,12 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, fracture_level, num_FF, seg_length):
         xbegin("power")
         xclose()
         
-        xbegin("short_circuit_power")
-        xprop("percentage", 0.0)
-        xcloseend()
+        #xbegin("short_circuit_power")
+        #xprop("percentage", power_short_circuit_percentage)
+        #xcloseend()
         
         xbegin("local_interconnect")
-        xprop("C_wire", CLB_interc_Cmetal_per_m)
+        xprop("C_wire", C_wire_local(tech_nm))
         xcloseend()
         
         xend() #Power
@@ -543,7 +628,7 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, fracture_level, num_FF, seg_length):
         xclose()
         xbegin("clock")
         xprop("buffer_size", "auto")
-        xprop("C_wire", clock_Cmetal_per_m)
+        xprop("C_wire", C_wire_clk(tech_nm))
         xcloseend()
         xend() #clocks
     
@@ -554,41 +639,60 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, fracture_level, num_FF, seg_length):
 
 # Architecture Options
 arches = []
-#              k    N       I_CLB   frac    num_FF  seg_length
-arches.append([6,   10,     33,     0,      1,      4])
-arches.append([6,   10,     33,     1,      1,      4])
-arches.append([6,   10,     33,     1,      2,      4])
-arches.append([6,   10,     33,     2,      1,      4])
-arches.append([6,   10,     33,     2,      2,      4])
-arches.append([6,   10,     33,     2,      4,      4])
-arches.append([6,   10,     33,     0,      1,      3])
-arches.append([6,   10,     33,     1,      1,      3])
-arches.append([6,   10,     33,     1,      2,      3])
-arches.append([6,   10,     33,     2,      1,      3])
-arches.append([6,   10,     33,     2,      2,      3])
-arches.append([6,   10,     33,     2,      4,      3])
-arches.append([6,   10,     33,     0,      1,      5])
-arches.append([6,   10,     33,     1,      1,      5])
-arches.append([6,   10,     33,     1,      2,      5])
-arches.append([6,   10,     33,     2,      1,      5])
-arches.append([6,   10,     33,     2,      2,      5])
-arches.append([6,   10,     33,     2,      4,      5])
-arches.append([6,   10,     33,     0,      1,      6])
-arches.append([6,   10,     33,     1,      1,      6])
-arches.append([6,   10,     33,     1,      2,      6])
-arches.append([6,   10,     33,     2,      1,      6])
-arches.append([6,   10,     33,     2,      2,      6])
-arches.append([6,   10,     33,     2,      4,      6])
+#              k    N       I_CLB   I_BLE   frac    num_FF  seg_length
 
+sweep = 0
 
+if (sweep):
+    dir = "C:/Users/Jeff/Dropbox/linux_home/vtr/vtr_flow/arch/power/sweep"
+    a_k = [4,6]
+    a_N = [6,8,10]
+    a_seg = [1,2,3,4]
+    a_CLB_frac = [0.6, 0.8]
+    
+    
+    for l_k in (a_k):
+        for l_N in (a_N):
+            for l_I_BLE in range(l_k, l_k + 3):
+                for l_CLB_frac in (a_CLB_frac): 
+                    for l_frac in range(0, 2):
+                        for l_num_FF in range(1, l_frac+2):
+                            for l_seg_length in a_seg:
+                                arches.append([l_k, l_N, int(l_N * l_I_BLE * l_CLB_frac), l_I_BLE, l_frac, l_num_FF, l_seg_length, 45])
+    
+else:
 
-
-
-
-dir = "C:\\Users\\Jeff\\Dropbox\\linux_home\\vtr\\vtr_flow\\arch\\timing_gen"
-
+    # Base Arch
+    arches.append([6, 10, 33, 6, 0, 1, 4, 45])
+    
+    # Fracturable LUT
+    arches.append([6, 10, 33, 6, 1, 1, 4, 45])
+    arches.append([6, 10, 33, 6, 1, 2, 4, 45])
+    arches.append([6, 10, 39, 7, 1, 1, 4, 45])
+    arches.append([6, 10, 39, 7, 1, 2, 4, 45])
+    arches.append([6, 10, 44, 8, 1, 1, 4, 45])
+    arches.append([6, 10, 44, 8, 1, 2, 4, 45])
+    
+    arches.append([6, 10, 33, 7, 1, 1, 4, 45])
+    arches.append([6, 10, 33, 7, 1, 2, 4, 45])
+    arches.append([6, 10, 33, 8, 1, 1, 4, 45])
+    arches.append([6, 10, 33, 8, 1, 2, 4, 45])
+    
+    #Segment Variation
+    arches.append([6, 10, 33, 6, 0, 1, 1, 45])
+    arches.append([6, 10, 33, 6, 0, 1, 2, 45])
+    arches.append([6, 10, 33, 6, 0, 1, 3, 45])
+    arches.append([6, 10, 33, 6, 0, 1, 5, 45])
+    arches.append([6, 10, 33, 6, 0, 1, 6, 45])
+    
+    arches.append([6, 10, 33, 6, 0, 1, 4, 130])
+    
+    arches.append([6, 10, 33, 6, 0, 1, 4, 22])
+    
+    dir = "C:/Users/Jeff/Dropbox/linux_home/vtr/vtr_flow/arch/power"
+    
 for arch in arches:
-    gen_arch(dir, arch[0], arch[1], arch[2], arch[3], arch[4], arch[5])
+    gen_arch(dir, arch[0], arch[1], arch[2], arch[3], arch[4], arch[5], arch[6], arch[7])
 print "Done\n"
 
 

@@ -120,8 +120,7 @@
 
 
 
-	<fc_in type="frac">0.15</fc_in>
-	<fc_out type="frac">0.10</fc_out>
+	<fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
 	<pinlocations pattern="spread"/>
 
 	<gridlocations>

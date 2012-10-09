@@ -446,4 +446,38 @@ void print_lambda(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "Average lambda (input pins used per clb) is: %g\n", lambda);
 }
 
+int count_netlist_clocks(void) {
+
+	/* Count how many clocks are in the netlist. */
+
+	int iblock, i, clock_net;
+	char * name;
+	boolean found;
+	int num_clocks = 0;
+	char ** clock_names = NULL;
+
+	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
+		if (logical_block[iblock].type == VPACK_LATCH) {
+			clock_net = logical_block[iblock].clock_net;
+			assert(clock_net != OPEN);
+			name = logical_block[clock_net].name;
+			/* Now that we've found a clock, let's see if we've counted it already */
+			found = FALSE;
+			for (i = 0; !found && i < num_clocks; i++) {
+				if (strcmp(clock_names[i], name) == 0) {
+					found = TRUE;
+				}
+			}
+			if (!found) {
+				/* If we get here, the clock is new and so we dynamically grow the array netlist_clocks by one. */
+				clock_names = (char **) my_realloc (clock_names, ++num_clocks * sizeof(char *));
+				clock_names[num_clocks - 1] = name;
+			}
+		}
+	}
+	free (clock_names);
+	return num_clocks;
+}
+
+
 

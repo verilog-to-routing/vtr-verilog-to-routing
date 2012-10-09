@@ -30,44 +30,45 @@ static void SetupTiming(INP t_options Options, INP t_arch Arch,
 static void SetupSwitches(INP t_arch Arch,
 		INOUTP struct s_det_routing_arch *RoutingArch,
 		INP struct s_switch_inf *ArchSwitches, INP int NumArchSwitches);
+static void SetupPowerOpts(t_options Options, t_power_opts *power_opts,
+		t_arch * Arch);
 
 /* Sets VPR parameters and defaults. Does not do any error checking
  * as this should have been done by the various input checkers */
-void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,		
-		INP boolean readArchFile,
-		OUTP struct s_file_name_opts *FileNameOpts,
-		INOUTP t_arch * Arch,
-		OUTP enum e_operation *Operation, OUTP t_model ** user_models,
-		OUTP t_model ** library_models, OUTP struct s_packer_opts *PackerOpts,
+void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
+		INP boolean readArchFile, OUTP struct s_file_name_opts *FileNameOpts,
+		INOUTP t_arch * Arch, OUTP enum e_operation *Operation,
+		OUTP t_model ** user_models, OUTP t_model ** library_models,
+		OUTP struct s_packer_opts *PackerOpts,
 		OUTP struct s_placer_opts *PlacerOpts,
 		OUTP struct s_annealing_sched *AnnealSched,
 		OUTP struct s_router_opts *RouterOpts,
 		OUTP struct s_det_routing_arch *RoutingArch,
 		OUTP t_segment_inf ** Segments, OUTP t_timing_inf * Timing,
-		OUTP boolean * ShowGraphics, OUTP int *GraphPause) {
+		OUTP boolean * ShowGraphics, OUTP int *GraphPause,
+		t_power_opts * PowerOpts) {
 	int i, j, len;
 
 	len = strlen(Options->CircuitName) + 6; /* circuit_name.blif/0*/
-	if (Options->out_file_prefix != NULL) {
+	if (Options->out_file_prefix != NULL ) {
 		len += strlen(Options->out_file_prefix);
 	}
 	default_output_name = (char*) my_calloc(len, sizeof(char));
-	if (Options->out_file_prefix == NULL) {
+	if (Options->out_file_prefix == NULL ) {
 		sprintf(default_output_name, "%s", Options->CircuitName);
 	} else {
 		sprintf(default_output_name, "%s%s", Options->out_file_prefix,
 				Options->CircuitName);
 	}
-	
 
 	/* init default filenames */
-	if (Options->BlifFile == NULL) {
+	if (Options->BlifFile == NULL ) {
 		len = strlen(Options->CircuitName) + 6; /* circuit_name.blif/0*/
-		if (Options->out_file_prefix != NULL) {
+		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
 		Options->BlifFile = (char*) my_calloc(len, sizeof(char));
-		if (Options->out_file_prefix == NULL) {
+		if (Options->out_file_prefix == NULL ) {
 			sprintf(Options->BlifFile, "%s.blif", Options->CircuitName);
 		} else {
 			sprintf(Options->BlifFile, "%s%s.blif", Options->out_file_prefix,
@@ -75,13 +76,13 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 		}
 	}
 
-	if (Options->NetFile == NULL) {
+	if (Options->NetFile == NULL ) {
 		len = strlen(Options->CircuitName) + 5; /* circuit_name.net/0*/
-		if (Options->out_file_prefix != NULL) {
+		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
 		Options->NetFile = (char*) my_calloc(len, sizeof(char));
-		if (Options->out_file_prefix == NULL) {
+		if (Options->out_file_prefix == NULL ) {
 			sprintf(Options->NetFile, "%s.net", Options->CircuitName);
 		} else {
 			sprintf(Options->NetFile, "%s%s.net", Options->out_file_prefix,
@@ -89,13 +90,13 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 		}
 	}
 
-	if (Options->PlaceFile == NULL) {
+	if (Options->PlaceFile == NULL ) {
 		len = strlen(Options->CircuitName) + 7; /* circuit_name.place/0*/
-		if (Options->out_file_prefix != NULL) {
+		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
 		Options->PlaceFile = (char*) my_calloc(len, sizeof(char));
-		if (Options->out_file_prefix == NULL) {
+		if (Options->out_file_prefix == NULL ) {
 			sprintf(Options->PlaceFile, "%s.place", Options->CircuitName);
 		} else {
 			sprintf(Options->PlaceFile, "%s%s.place", Options->out_file_prefix,
@@ -103,16 +104,43 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 		}
 	}
 
-	if (Options->RouteFile == NULL) {
+	if (Options->RouteFile == NULL ) {
 		len = strlen(Options->CircuitName) + 7; /* circuit_name.route/0*/
-		if (Options->out_file_prefix != NULL) {
+		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
 		Options->RouteFile = (char*) my_calloc(len, sizeof(char));
-		if (Options->out_file_prefix == NULL) {
+		if (Options->out_file_prefix == NULL ) {
 			sprintf(Options->RouteFile, "%s.route", Options->CircuitName);
 		} else {
 			sprintf(Options->RouteFile, "%s%s.route", Options->out_file_prefix,
+					Options->CircuitName);
+		}
+	}
+	if (Options->ActFile == NULL ) {
+		len = strlen(Options->CircuitName) + 7; /* circuit_name.route/0*/
+		if (Options->out_file_prefix != NULL ) {
+			len += strlen(Options->out_file_prefix);
+		}
+		Options->ActFile = (char*) my_calloc(len, sizeof(char));
+		if (Options->out_file_prefix == NULL ) {
+			sprintf(Options->ActFile, "%s.act", Options->CircuitName);
+		} else {
+			sprintf(Options->ActFile, "%s%s.act", Options->out_file_prefix,
+					Options->CircuitName);
+		}
+	}
+
+	if (Options->PowerFile == NULL ) {
+		len = strlen(Options->CircuitName) + 7; /* circuit_name.route/0*/
+		if (Options->out_file_prefix != NULL ) {
+			len += strlen(Options->out_file_prefix);
+		}
+		Options->PowerFile = (char*) my_calloc(len, sizeof(char));
+		if (Options->out_file_prefix == NULL ) {
+			sprintf(Options->PowerFile, "%s.power", Options->CircuitName);
+		} else {
+			sprintf(Options->ActFile, "%s%s.power", Options->out_file_prefix,
 					Options->CircuitName);
 		}
 	}
@@ -125,14 +153,18 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	FileNameOpts->NetFile = Options->NetFile;
 	FileNameOpts->PlaceFile = Options->PlaceFile;
 	FileNameOpts->RouteFile = Options->RouteFile;
+	FileNameOpts->ActFile = Options->ActFile;
+	FileNameOpts->PowerFile = Options->PowerFile;
+	FileNameOpts->CmosTechFile = Options->CmosTechFile;
 	FileNameOpts->out_file_prefix = Options->out_file_prefix;
-	
+
 	SetupOperation(*Options, Operation);
 	SetupPlacerOpts(*Options, TimingEnabled, PlacerOpts);
 	SetupAnnealSched(*Options, AnnealSched);
 	SetupRouterOpts(*Options, TimingEnabled, RouterOpts);
+	SetupPowerOpts(*Options, PowerOpts, Arch);
 
-	if (readArchFile == TRUE)	{
+	if (readArchFile == TRUE) {
 		XmlReadArch(Options->ArchFile, TimingEnabled, Arch, &type_descriptors,
 				&num_types);
 	}
@@ -167,7 +199,8 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	SetupRoutingArch(*Arch, RoutingArch);
 	SetupTiming(*Options, *Arch, TimingEnabled, *Operation, *PlacerOpts,
 			*RouterOpts, Timing);
-	SetupPackerOpts(*Options, TimingEnabled, *Arch, Options->NetFile, PackerOpts);
+	SetupPackerOpts(*Options, TimingEnabled, *Arch, Options->NetFile,
+			PackerOpts);
 
 	/* init global variables */
 	out_file_prefix = Options->out_file_prefix;
@@ -202,7 +235,8 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 #endif /* NO_GRAPHICS */
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ARCH)) {
-		EchoArch(getEchoFileName(E_ECHO_ARCH), type_descriptors, num_types, Arch);
+		EchoArch(getEchoFileName(E_ECHO_ARCH), type_descriptors, num_types,
+				Arch);
 	}
 
 }
@@ -224,8 +258,9 @@ static void SetupTiming(INP t_options Options, INP t_arch Arch,
 	Timing->timing_analysis_enabled = TimingEnabled;
 
 	/* If the user specified an SDC filename on the command line, look for specified_name.sdc, otherwise look for circuit_name.sdc*/
-	if (Options.SDCFile == NULL) {
-		Timing->SDCFile = (char*) my_calloc(strlen(Options.CircuitName)+5, sizeof(char)); /* circuit_name.sdc/0*/
+	if (Options.SDCFile == NULL ) {
+		Timing->SDCFile = (char*) my_calloc(strlen(Options.CircuitName) + 5,
+				sizeof(char)); /* circuit_name.sdc/0*/
 		sprintf(Timing->SDCFile, "%s.sdc", Options.CircuitName);
 	} else {
 		Timing->SDCFile = (char*) my_strdup(Options.SDCFile);
@@ -263,6 +298,9 @@ static void SetupSwitches(INP t_arch Arch,
 	switch_inf[RoutingArch->delayless_switch].Cin = 0.;
 	switch_inf[RoutingArch->delayless_switch].Cout = 0.;
 	switch_inf[RoutingArch->delayless_switch].Tdel = 0.;
+	switch_inf[RoutingArch->delayless_switch].autosize_buffer = FALSE;
+	switch_inf[RoutingArch->delayless_switch].buffer_last_stage_size = 0.;
+	switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
 
 	/* The wire to ipin switch for all types. Curently all types
 	 * must share ipin switch. Some of the timing code would
@@ -272,6 +310,9 @@ static void SetupSwitches(INP t_arch Arch,
 	switch_inf[RoutingArch->wire_to_ipin_switch].Cin = Arch.C_ipin_cblock;
 	switch_inf[RoutingArch->wire_to_ipin_switch].Cout = 0.;
 	switch_inf[RoutingArch->wire_to_ipin_switch].Tdel = Arch.T_ipin_cblock;
+	switch_inf[RoutingArch->wire_to_ipin_switch].autosize_buffer = FALSE;
+	switch_inf[RoutingArch->wire_to_ipin_switch].buffer_last_stage_size = 0.;
+	switch_inf[RoutingArch->wire_to_ipin_switch].mux_trans_size = 0.;
 }
 
 /* Sets up routing structures. Since checks are already done, this
@@ -360,8 +401,7 @@ static void SetupRouterOpts(INP t_options Options, INP boolean TimingEnabled,
 
 	/* Depends on RouterOpts->router_algorithm */
 	RouterOpts->initial_pres_fac = 0.5; /* DEFAULT */
-	if (NO_TIMING == RouterOpts->router_algorithm
-			|| Options.Count[OT_FAST]) {
+	if (NO_TIMING == RouterOpts->router_algorithm || Options.Count[OT_FAST]) {
 		RouterOpts->initial_pres_fac = 10000.0; /* DEFAULT */
 	}
 	if (Options.Count[OT_INITIAL_PRES_FAC]) {
@@ -385,8 +425,7 @@ static void SetupRouterOpts(INP t_options Options, INP boolean TimingEnabled,
 	if (BREADTH_FIRST == RouterOpts->router_algorithm) {
 		RouterOpts->first_iter_pres_fac = 0.0; /* DEFAULT */
 	}
-	if (NO_TIMING == RouterOpts->router_algorithm
-			|| Options.Count[OT_FAST]) {
+	if (NO_TIMING == RouterOpts->router_algorithm || Options.Count[OT_FAST]) {
 		RouterOpts->first_iter_pres_fac = 10000.0; /* DEFAULT */
 	}
 	if (Options.Count[OT_FIRST_ITER_PRES_FAC]) {
@@ -429,7 +468,8 @@ static void SetupAnnealSched(INP t_options Options,
 		AnnealSched->alpha_t = Options.PlaceAlphaT;
 	}
 	if (AnnealSched->alpha_t >= 1 || AnnealSched->alpha_t <= 0) {
-		vpr_printf(TIO_MESSAGE_ERROR, "alpha_t must be between 0 and 1 exclusive.\n");
+		vpr_printf(TIO_MESSAGE_ERROR,
+				"alpha_t must be between 0 and 1 exclusive.\n");
 		exit(1);
 	}
 	AnnealSched->exit_t = 0.01; /* DEFAULT */
@@ -449,7 +489,8 @@ static void SetupAnnealSched(INP t_options Options,
 		exit(1);
 	}
 	if (AnnealSched->init_t < AnnealSched->exit_t) {
-		vpr_printf(TIO_MESSAGE_ERROR, "init_t must be greater or equal to than exit_t.\n");
+		vpr_printf(TIO_MESSAGE_ERROR,
+				"init_t must be greater or equal to than exit_t.\n");
 		exit(1);
 	}
 	AnnealSched->inner_num = 10.0; /* DEFAULT */
@@ -485,7 +526,7 @@ void SetupPackerOpts(INP t_options Options, INP boolean TimingEnabled,
 	PackerOpts->output_file = net_file;
 
 	PackerOpts->blif_file_name = Options.BlifFile;
-	
+
 	PackerOpts->doPacking = FALSE; /* DEFAULT */
 	if (Options.Count[OT_PACK]) {
 		PackerOpts->doPacking = TRUE;
@@ -534,7 +575,7 @@ void SetupPackerOpts(INP t_options Options, INP boolean TimingEnabled,
 		PackerOpts->timing_driven = Options.timing_driven;
 	}
 	PackerOpts->cluster_seed_type = (
-		TimingEnabled ? VPACK_TIMING : VPACK_MAX_INPUTS); /* DEFAULT */
+			TimingEnabled ? VPACK_TIMING : VPACK_MAX_INPUTS); /* DEFAULT */
 	if (Options.Count[OT_CLUSTER_SEED]) {
 		PackerOpts->cluster_seed_type = Options.cluster_seed_type;
 	}
@@ -676,5 +717,23 @@ static void SetupOperation(INP t_options Options,
 	}
 }
 
+static void SetupPowerOpts(t_options Options, t_power_opts *power_opts,
+		t_arch * Arch) {
 
+	if (Options.Count[OT_POWER]) {
+		power_opts->do_power = TRUE;
+	} else {
+		power_opts->do_power = FALSE;
+	}
 
+	if (power_opts->do_power) {
+		Arch->power = (t_power_arch*) my_malloc(sizeof(t_power_arch));
+		Arch->clocks = (t_clock_arch*) my_malloc(sizeof(t_clock_arch));
+		g_clock_arch = Arch->clocks;
+	} else {
+		Arch->power = NULL;
+		Arch->clocks = NULL;
+		g_clock_arch = NULL;
+	}
+
+}

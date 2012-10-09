@@ -50,7 +50,10 @@ struct s_TokenPair OptionBaseTokenList[] = {
 				OT_CLUSTER_BLOCK_DELAY }, { "intra_cluster_net_delay",
 				OT_INTRA_CLUSTER_NET_DELAY }, { "inter_cluster_net_delay",
 				OT_INTER_CLUSTER_NET_DELAY }, { "pack", OT_PACK }, {
-				"packer_algorithm", OT_PACKER_ALGORITHM }, { NULL,
+				"packer_algorithm", OT_PACKER_ALGORITHM }, { "activity_file",
+				OT_ACTIVITY_FILE }, { "power_output_file", OT_POWER_OUT_FILE },
+		{ "power", OT_POWER }, { "cmos_tech_behavior_file",
+				OT_CMOS_TECH_BEHAVIOR_FILE }, { NULL,
 				OT_BASE_UNKNOWN } /* End of list marker */
 };
 

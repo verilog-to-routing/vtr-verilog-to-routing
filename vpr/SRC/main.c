@@ -55,6 +55,10 @@ int main(int argc, char **argv) {
 		}
 #endif
 	}
+
+	if (vpr_setup.PowerOpts.do_power) {
+		vpr_power_estimation(vpr_setup, Arch);
+	}
 	
 	entire_flow_end = clock();
 	
@@ -70,7 +74,6 @@ int main(int argc, char **argv) {
 	/* Return 0 to single success to scripts */
 	return 0;
 }
-
 
 
 

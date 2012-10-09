@@ -2,7 +2,7 @@
 # Makefile to build CAD tools in Verilog-to-Routing (VTR) Framework #
 #####################################################################
 
-SUBDIRS = ODIN_II vpr abc_with_bb_support libarchfpga pcre printhandler
+SUBDIRS = ODIN_II vpr abc_with_bb_support libarchfpga pcre printhandler ace2
 
 all: notifications subdirs
 
@@ -34,9 +34,11 @@ libarchfpga: printhandler
 
 printhandler: pcre
 
+ace2: abc_with_bb_support
 clean:
 	@ cd ODIN_II && make clean
 	@ cd abc_with_bb_support && make clean
+	@ cd ace2 && make clean
 	@ cd vpr && make clean
 	@ cd libarchfpga && make clean
 	@ cd printhandler && make clean

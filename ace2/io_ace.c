@@ -83,12 +83,12 @@ void ace_io_print_activity(Abc_Ntk_t * ntk, FILE * fp) {
 			if (fp != NULL) {
 				//fprintf (fp, "%d-%d %s\n", Abc_ObjId(obj), Abc_ObjType(obj), name);
 				//fprintf (fp, "%d-%d %s %f %f %f\n", Abc_ObjId(obj), Abc_ObjType(obj), name, info->static_prob, info->switch_prob, info->switch_act);
-				fprintf(fp, "%s %f %f %f\n", name, info->static_prob,
-						info->switch_prob, info->switch_act);
+				fprintf(fp, "%s %f %f\n", name, info->static_prob,
+						info->switch_act);
 
 			} else {
-				printf("%s %f %f %f\n", Abc_ObjName(obj), info->static_prob,
-						info->switch_prob, info->switch_act);
+				printf("%s %f %f\n", Abc_ObjName(obj), info->static_prob,
+						info->switch_act);
 			}
 		}
 	}

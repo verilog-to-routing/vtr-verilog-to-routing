@@ -143,6 +143,7 @@ if ($do_power) {
 	elsif ( not -r $tech_file ) {
 		die "The CMOS technology behavior file ($tech_file) cannot be opened.";
 	}
+	$tech_file = Cwd::abs_path($tech_file);
 }
 
 if ( $vpr_cluster_seed_type eq "" ) {

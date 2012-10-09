@@ -40,7 +40,7 @@ ABC_HEADERS = -I $(ABC_DIR)/src/base/io \
 			-I $(ABC_DIR)/src/map/if \
 			-I $(ABC_DIR)/src/sat/bsat
 			
-LIBS = -lreadline -lm -ldl
+LIBS = -lm -ldl
 DEFINES = -DLIN
 
 $(EXE): $(OBJS) Makefile $(ABC_LIB_PATH)

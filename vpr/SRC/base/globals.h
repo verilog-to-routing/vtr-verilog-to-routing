@@ -122,5 +122,10 @@ struct s_linked_f_pointer *g_linked_f_pointer_free_head;*/
 extern float pb_max_internal_delay; /* biggest internal delay of block */
 extern const t_pb_type *pbtype_max_internal_delay; /* block type with highest internal delay */
 
+/*******************************************************************
+ Clock Network
+ ********************************************************************/
+extern t_clock_arch * g_clock_arch;
+
 #endif
 

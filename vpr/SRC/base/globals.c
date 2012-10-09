@@ -93,3 +93,5 @@ struct s_linked_vptr *circuit_p_io_removed = NULL;
 float pb_max_internal_delay = UNDEFINED; /* biggest internal delay of physical block */
 const t_pb_type *pbtype_max_internal_delay = NULL; /* physical block type with highest internal delay */
 
+/********** Structures representing the global clock network */
+t_clock_arch * g_clock_arch;

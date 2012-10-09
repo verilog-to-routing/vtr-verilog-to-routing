@@ -17,7 +17,7 @@
  net - Connectivity data structure for the user netlist
  block - An already clustered logic block
  rr_node - The basic building block of the interconnect in the FPGA architecture
-  
+
  Cluster-specific main data structure:
 
  t_pb: Stores the mapping between the user netlist and the logic blocks on the FPGA achitecture.  For example, if a user design has 10 clusters of 5 LUTs each, you will have 10 t_pb instances of type cluster and within each of those clusters another 5 t_pb instances of type LUT.
@@ -38,6 +38,8 @@
 /*******************************************************************************
  * Global data types and constants
  ******************************************************************************/
+typedef struct s_power_opts t_power_opts;
+typedef struct s_rr_node_power t_rr_node_power;
 
 #ifndef SPEC
 #define DEBUG 1			/* Echoes input & checks error conditions */
@@ -52,8 +54,8 @@
 /*#define PRINT_NET_DELAYS*//*prints out delays for all connections */
 /*#define PRINT_TIMING_GRAPH*//*prints out the timing graph */
 /*#define PRINT_REL_POS_DISTR *//*prints out the relative distribution graph for placements */
-/*#define DUMP_BLIF_ECHO*/ /*dump blif of internal representation of user circuit.  Useful for ensuring functional correctness via logical equivalence with input blif*/
-/*#define HACK_LUT_PIN_SWAPPING*/ /* Hack to enable LUT input pin swapping for delay purposes */
+/*#define DUMP_BLIF_ECHO*//*dump blif of internal representation of user circuit.  Useful for ensuring functional correctness via logical equivalence with input blif*/
+/*#define HACK_LUT_PIN_SWAPPING*//* Hack to enable LUT input pin swapping for delay purposes */
 
 #ifdef SPEC
 #define NO_GRAPHICS		/* Rips out graphics (for non-X11 systems)      */
@@ -72,7 +74,7 @@ typedef size_t bitfield;
 #define MAX_SHORT 32767
 
 /* Values large enough to be way out of range for any data, but small enough
-to allow a small number to be added to them without going out of range. */
+ to allow a small number to be added to them without going out of range. */
 #define HUGE_POSITIVE_FLOAT 1.e30
 #define HUGE_NEGATIVE_FLOAT -1.e30
 
@@ -126,7 +128,7 @@ typedef struct s_pb_stats {
 	float *gain; /* Attraction (inverse of cost) function */
 
 	float *timinggain; /* [0..num_logical_blocks-1]. The timing criticality score of this logical_block. 
-						Determined by the most critical vpack_net between this logical_block and any logical_block in the current pb */
+	 Determined by the most critical vpack_net between this logical_block and any logical_block in the current pb */
 	float *connectiongain; /* [0..num_logical_blocks-1] Weighted sum of connections to attraction function */
 	float *prevconnectiongainincr; /* [0..num_logical_blocks-1] Prev sum to weighted sum of connections to attraction function */
 	float *sharinggain; /* [0..num_logical_blocks-1]. How many nets on this logical_block are already in the pb under consideration */
@@ -187,13 +189,13 @@ typedef struct s_pb {
 
 	struct s_net *local_nets; /* Records post-packing connections, valid only for top-level */
 	int num_local_nets; /* Records post-packing connections, valid only for top-level */
-	
+
 	int clock_net; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
-	
+
 	int *lut_pin_remap; /* [0..num_lut_inputs-1] applies only to LUT primitives, stores how LUT inputs were swapped during CAD flow, 
-						   LUT inputs can be swapped by changing the logic in the LUT, this is useful because the fastest LUT input compared to the slowest is often significant (2-5x),
-						   so this optimization is crucial for handling LUT based FPGAs.
-						   */
+	 LUT inputs can be swapped by changing the logic in the LUT, this is useful because the fastest LUT input compared to the slowest is often significant (2-5x),
+	 so this optimization is crucial for handling LUT based FPGAs.
+	 */
 } t_pb;
 
 struct s_tnode;
@@ -275,23 +277,23 @@ typedef struct s_cluster_placement_stats {
 
 // #define PATH_COUNTING 'P'
 /* Uncomment this to turn on path counting. Its value determines how path criticality
-is calculated from forward and backward weights.  Possible values:
-	'S' - sum of forward and backward weights
-	'P' - product of forward and backward weights
-	'L' - natural log of the product of forward and backward weights
-	'R' - product of the natural logs of forward and backward weights
-See path_delay.h for further path-counting options. */
+ is calculated from forward and backward weights.  Possible values:
+ 'S' - sum of forward and backward weights
+ 'P' - product of forward and backward weights
+ 'L' - natural log of the product of forward and backward weights
+ 'R' - product of the natural logs of forward and backward weights
+ See path_delay.h for further path-counting options. */
 
 /* Timing graph information */
 
-typedef struct s_tedge { 
-/* Edge in the timing graph. */
+typedef struct s_tedge {
+	/* Edge in the timing graph. */
 	int to_node; /* index of node at the sink end of this edge */
 	float Tdel; /* delay to go to to_node along this edge */
 } t_tedge;
 
-typedef enum { 
-/* Types of tnodes (timing graph nodes). */
+typedef enum {
+	/* Types of tnodes (timing graph nodes). */
 	TN_INPAD_SOURCE, /* input to an input I/O pad */
 	TN_INPAD_OPIN, /* output from an input I/O pad */
 	TN_OUTPAD_IPIN, /* input to an output I/O pad */
@@ -299,7 +301,7 @@ typedef enum {
 	TN_CB_IPIN, /* input pin to complex block */
 	TN_CB_OPIN, /* output pin from complex block */
 	TN_INTERMEDIATE_NODE, /* Used in post-packed timing graph only: 
-						connection between intra-cluster pins. */
+	 connection between intra-cluster pins. */
 	TN_PRIMITIVE_IPIN, /* input pin to a primitive (e.g. a LUT) */
 	TN_PRIMITIVE_OPIN, /* output pin from a primitive (e.g. a LUT) */
 	TN_FF_IPIN, /* input pin to a flip-flop - goes to TN_FF_SINK */
@@ -311,8 +313,8 @@ typedef enum {
 } e_tnode_type;
 
 typedef struct s_prepacked_tnode_data {
-/* Data only used by prepacked tnodes. Stored separately so it 
-doesn't need to be allocated in the post-packed netlist. */
+	/* Data only used by prepacked tnodes. Stored separately so it
+	 doesn't need to be allocated in the post-packed netlist. */
 	int model_port, model_pin; /* technology mapped model port/pin */
 #ifndef PATH_COUNTING
 	long num_critical_input_paths, num_critical_output_paths; /* count of critical paths fanning into/out of this tnode */
@@ -322,24 +324,24 @@ doesn't need to be allocated in the post-packed netlist. */
 #endif
 } t_prepacked_tnode_data;
 
-typedef struct s_tnode { 
-/* Node in the timing graph. Note: we combine 2 members into a bit field. */
+typedef struct s_tnode {
+	/* Node in the timing graph. Note: we combine 2 members into a bit field. */
 	e_tnode_type type; /* see the above enum */
 	t_tedge *out_edges; /* [0..num_edges - 1] array of edges fanning out from this tnode.
-						Note: there is a correspondence in indexing between out_edges and the 
-						net data structure: out_edges[iedge] = net[inet].node_block[iedge + 1]
-						There is an offset of 1 because net[inet].node_block includes the driver
-						node at index 0, while out_edges is part of the driver node and does
-						not bother to refer to itself. */
+	 Note: there is a correspondence in indexing between out_edges and the
+	 net data structure: out_edges[iedge] = net[inet].node_block[iedge + 1]
+	 There is an offset of 1 because net[inet].node_block includes the driver
+	 node at index 0, while out_edges is part of the driver node and does
+	 not bother to refer to itself. */
 	int num_edges;
 	float T_arr; /* Arrival time of the last input signal to this node. */
 	float T_req; /* Required arrival time of the last input signal to this node 
-					if the critical path is not to be lengthened. */
+	 if the critical path is not to be lengthened. */
 	int block; /* logical block primitive which this tnode is part of */
 
 #ifdef PATH_COUNTING
 	float forward_weight, backward_weight; /* Weightings of the importance of paths 
-										   fanning into and out of this node, respectively. */
+	 fanning into and out of this node, respectively. */
 #endif
 
 	/* Valid values for TN_FF_SINK, TN_FF_SOURCE, TN_FF_CLOCK, TN_INPAD_SOURCE, and TN_OUTPAD_SINK only: */
@@ -356,16 +358,16 @@ typedef struct s_tnode {
 /* Other structures storing timing information */
 
 typedef struct s_clock {
-/* Stores information on clocks given timing constraints.
-Used in SDC parsing and timing analysis. */
+	/* Stores information on clocks given timing constraints.
+	 Used in SDC parsing and timing analysis. */
 	char * name;
 	boolean is_netlist_clock; /* Is this a netlist or virtual (external) clock? */
 	int fanout;
 } t_clock;
 
 typedef struct s_io {
-/* Stores information on I/Os given timing constraints.
-Used in SDC parsing and timing analysis. */
+	/* Stores information on I/Os given timing constraints.
+	 Used in SDC parsing and timing analysis. */
 	char * name; /* I/O port name with an SDC constraint */
 	char * clock_name; /* Clock it was constrained on */
 	float delay; /* Delay through the I/O in this constraint */
@@ -373,27 +375,27 @@ Used in SDC parsing and timing analysis. */
 } t_io;
 
 typedef struct s_timing_stats {
-/* Timing statistics for final reporting for each constraint 
-(pair of constrained source and sink clock domains). 
+	/* Timing statistics for final reporting for each constraint
+	 (pair of constrained source and sink clock domains).
 
-cpd holds the critical path delay, the longest path between the 
-pair of domains, or equivalently the path with the least slack. 
+	 cpd holds the critical path delay, the longest path between the
+	 pair of domains, or equivalently the path with the least slack.
 
-least_slack holds the slack of the connection with the least slack 
-over all paths in this constraint, even if this connection is part 
-of another constraint and has a lower slack from that constraint.
+	 least_slack holds the slack of the connection with the least slack
+	 over all paths in this constraint, even if this connection is part
+	 of another constraint and has a lower slack from that constraint.
 
-The "critical path" of the entire design is the path with the least 
-slack in the constraint with the least slack 
-(see get_critical_path_delay()). */
+	 The "critical path" of the entire design is the path with the least
+	 slack in the constraint with the least slack
+	 (see get_critical_path_delay()). */
 
-	float ** cpd; 
-	float ** least_slack; 
+	float ** cpd;
+	float ** least_slack;
 } t_timing_stats;
 
 typedef struct s_slack {
-/* Matrices storing slacks and criticalities of each sink pin on each net 
-[0..num_nets-1][1..num_pins-1] for both pre- and post-packed netlists. */
+	/* Matrices storing slacks and criticalities of each sink pin on each net
+	 [0..num_nets-1][1..num_pins-1] for both pre- and post-packed netlists. */
 	float ** slack;
 	float ** timing_criticality;
 #ifdef PATH_COUNTING
@@ -402,12 +404,12 @@ typedef struct s_slack {
 } t_slack;
 
 typedef struct s_override_constraint {
-/* A special-case constraint to override the default, calculated, timing constraint.  Holds data from 
-set_clock_groups, set_false_path, set_max_delay, and set_multicycle_path commands. Can hold data for 
-clock-to-clock, clock-to-flip-flop, flip-flop-to-clock or flip-flop-to-flip-flop constraints, each of 
-which has its own array (g_sdc->cc_constraints, g_sdc->cf_constraints, g_sdc->fc_constraints, and g_sdc->ff_constraints). */
+	/* A special-case constraint to override the default, calculated, timing constraint.  Holds data from
+	 set_clock_groups, set_false_path, set_max_delay, and set_multicycle_path commands. Can hold data for
+	 clock-to-clock, clock-to-flip-flop, flip-flop-to-clock or flip-flop-to-flip-flop constraints, each of
+	 which has its own array (g_sdc->cc_constraints, g_sdc->cf_constraints, g_sdc->fc_constraints, and g_sdc->ff_constraints). */
 	char ** source_list; /* Array of net names of flip-flops or clocks */
-	char ** sink_list; 
+	char ** sink_list;
 	int num_source;
 	int num_sink;
 	float constraint;
@@ -416,27 +418,27 @@ which has its own array (g_sdc->cc_constraints, g_sdc->cf_constraints, g_sdc->fc
 } t_override_constraint;
 
 typedef struct s_timing_constraints { /* Container structure for all SDC timing constraints. 
-									  See top-level comment to read_sdc.c for details on members. */
+ See top-level comment to read_sdc.c for details on members. */
 	int num_constrained_clocks; /* number of clocks with timing constraints */
 	t_clock * constrained_clocks; /* [0..g_sdc->num_constrained_clocks - 1] array of clocks with timing constraints */
-	
+
 	float ** domain_constraint; /* [0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (destination)] */
 
 	int num_constrained_inputs; /* number of inputs with timing constraints */
 	t_io * constrained_inputs; /* [0..num_constrained_inputs - 1] array of inputs with timing constraints */
-	
+
 	int num_constrained_outputs; /* number of outputs with timing constraints */
 	t_io * constrained_outputs; /* [0..num_constrained_outputs - 1] array of outputs with timing constraints */
-		
+
 	int num_cc_constraints; /* number of special-case clock-to-clock constraints overriding default, calculated, timing constraints */
 	t_override_constraint * cc_constraints; /*  [0..num_cc_constraints - 1] array of such constraints */
-	
+
 	int num_cf_constraints; /* number of special-case clock-to-flipflop constraints */
 	t_override_constraint * cf_constraints; /*  [0..num_cf_constraints - 1] array of such constraints */
-	
+
 	int num_fc_constraints; /* number of special-case flipflop-to-clock constraints */
 	t_override_constraint * fc_constraints; /*  [0..num_fc_constraints - 1] */
-	
+
 	int num_ff_constraints; /* number of special-case flipflop-to-flipflop constraints */
 	t_override_constraint * ff_constraints; /*  [0..num_ff_constraints - 1] array of such constraints */
 } t_timing_constraints;
@@ -490,6 +492,8 @@ typedef struct s_net {
 	int *node_block_pin;
 	boolean is_global;
 	boolean is_const_gen;
+	float probability;
+	float density;
 } t_net;
 
 /* s_grid_tile is the minimum tile of the fpga                         
@@ -559,6 +563,9 @@ struct s_file_name_opts {
 	char *NetFile;
 	char *PlaceFile;
 	char *RouteFile;
+	char *ActFile;
+	char *PowerFile;
+	char *CmosTechFile;
 	char *out_file_prefix;
 };
 
@@ -609,6 +616,7 @@ struct s_annealing_sched {
 enum e_place_algorithm {
 	BOUNDING_BOX_PLACE, NET_TIMING_DRIVEN_PLACE, PATH_TIMING_DRIVEN_PLACE
 };
+
 struct s_placer_opts {
 	enum e_place_algorithm place_algorithm;
 	float timing_tradeoff;
@@ -667,6 +675,7 @@ enum e_base_cost_type {
 
 #define NO_FIXED_CHANNEL_WIDTH -1
 
+typedef struct s_router_opts t_router_opts;
 struct s_router_opts {
 	float first_iter_pres_fac;
 	float initial_pres_fac;
@@ -728,6 +737,7 @@ struct s_router_opts {
  *                  criticality_exp (then clip to max_criticality).         
  * doRouting: True if routing is supposed to be done, FALSE otherwise */
 
+typedef struct s_det_routing_arch t_det_routing_arch;
 struct s_det_routing_arch {
 	enum e_directionality directionality; /* UDSD by AY */
 	int Fs;
@@ -790,6 +800,7 @@ typedef struct s_seg_details {
 	int group_start;
 	int group_size;
 	int index;
+	float Cmetal_per_m; /* Used for power */
 } t_seg_details;
 
 /* Lists detailed information about segmentation.  [0 .. W-1].              *
@@ -889,6 +900,10 @@ typedef struct s_rr_node {
 	float pack_intrinsic_cost;
 
 	int z; /* For IPIN, source, and sink nodes, helps identify which location this rr_node belongs to */
+
+	/* Used by power calculator */
+	float C_tile_per_m;
+	t_rr_node_power * power_info;
 } t_rr_node;
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
@@ -935,6 +950,15 @@ typedef struct s_rr_node {
  *                       Otherwise the value contained in the field should   *
  *                       be ignored.                                         */
 
+struct s_rr_node_power {
+	boolean visited;
+	float * in_density;
+	float * in_prob;
+	short num_inputs;
+	short selected_input;
+	short driver_switch_type;
+};
+
 typedef struct s_rr_indexed_data {
 	float base_cost;
 	float saved_base_cost;
@@ -979,6 +1003,11 @@ enum e_cost_indices {
 /* Gives the index of the SOURCE, SINK, OPIN, IPIN, etc. member of           *
  * rr_indexed_data.                                                          */
 
+/* Power estimation options */
+struct s_power_opts {
+	boolean do_power; /* Perform power estimation? */
+};
+
 /* Type to store our list of token to enum pairings */
 struct s_TokenPair {
 	const char *Str;
@@ -987,22 +1016,23 @@ struct s_TokenPair {
 
 /* Store settings for VPR */
 typedef struct s_vpr_setup {
-	boolean TimingEnabled;					/* Is VPR timing enabled */
-	struct s_file_name_opts FileNameOpts;	/* File names */
-	enum e_operation Operation;			/* run VPR or do analysis only */
-	t_model * user_models;					/* blif models defined by the user */
-	t_model * library_models;				/* blif models in VPR */
-	struct s_packer_opts PackerOpts;		/* Options for packer */
-	struct s_placer_opts PlacerOpts;		/* Options for placer */
-	struct s_annealing_sched AnnealSched;	/* Placement option annealing schedule */
-	struct s_router_opts RouterOpts;		/* router options */
+	boolean TimingEnabled; /* Is VPR timing enabled */
+	struct s_file_name_opts FileNameOpts; /* File names */
+	enum e_operation Operation; /* run VPR or do analysis only */
+	t_model * user_models; /* blif models defined by the user */
+	t_model * library_models; /* blif models in VPR */
+	struct s_packer_opts PackerOpts; /* Options for packer */
+	struct s_placer_opts PlacerOpts; /* Options for placer */
+	struct s_annealing_sched AnnealSched; /* Placement option annealing schedule */
+	struct s_router_opts RouterOpts; /* router options */
 	struct s_det_routing_arch RoutingArch; /* routing architecture */
-	t_segment_inf * Segments;				/* wires in routing architecture */
-	t_timing_inf Timing;					/* timing information */
-	float constant_net_delay;				/* timing information when place and route not run */
-	boolean ShowGraphics;					/* option to show graphics */
-	int GraphPause;						/* user interactiveness graphics option */
-} t_vpr_setup; 
+	t_segment_inf * Segments; /* wires in routing architecture */
+	t_timing_inf Timing; /* timing information */
+	float constant_net_delay; /* timing information when place and route not run */
+	boolean ShowGraphics; /* option to show graphics */
+	int GraphPause; /* user interactiveness graphics option */
+	t_power_opts PowerOpts;
+} t_vpr_setup;
 
 #endif
 

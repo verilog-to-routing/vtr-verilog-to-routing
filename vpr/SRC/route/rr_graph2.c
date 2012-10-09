@@ -321,6 +321,7 @@ alloc_and_load_seg_details(INOUTP int *nodes_per_chan, INP int max_len,
 
 			seg_details[cur_track].Rmetal = segment_inf[i].Rmetal;
 			seg_details[cur_track].Cmetal = segment_inf[i].Cmetal;
+			seg_details[cur_track].Cmetal_per_m = segment_inf[i].Cmetal_per_m;
 
 			seg_details[cur_track].wire_switch = wire_switch;
 			seg_details[cur_track].opin_switch = opin_switch;

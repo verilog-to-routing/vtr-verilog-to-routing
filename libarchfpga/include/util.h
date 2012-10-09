@@ -127,6 +127,7 @@ char *my_strtok(char *ptr, const char *tokens, FILE * fp, char *buf);
 
 FILE* my_fopen(const char *fname, const char *flag, int prompt);
 char *my_fgets(char *buf, int max_size, FILE * fp);
+boolean file_exists(const char * filename);
 
 /*********************** Portable random number generators *******************/
 void my_srandom(int seed);
@@ -141,6 +142,9 @@ extern messagelogger vpr_printf;
 #ifdef __cplusplus 
 }
 #endif
+
+/*********************** Math operations *************************************/
+int ipow(int base, int exp);
 
 #endif
 
