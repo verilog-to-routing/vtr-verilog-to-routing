@@ -43,17 +43,25 @@
 #define POWER_TRANSISTOR_SPACING_FACTOR 1.2
 
 /************************* ENUMS ************************************/
+
+/* Return code used by power functions */
 typedef enum {
 	POWER_RET_CODE_SUCCESS = 0, POWER_RET_CODE_ERRORS, POWER_RET_CODE_WARNINGS
 } e_power_ret_code;
 
+/* Power log types */
 typedef enum {
 	POWER_LOG_ERROR, POWER_LOG_WARNING, POWER_LOG_NUM_TYPES
 } e_power_log_type;
 
+/* Multiplexer select encoding types */
+#if 0
 typedef enum {
-	ENCODING_ONE_HOT, ENCODING_DECODER
-} e_encoding_type;
+	ENCODING_ONE_HOT, /* One SRAM bit per mux input */
+	ENCODING_DECODER /* Log2(mux_inputs) SRAM bits */
+}e_encoding_type;
+#endif
+
 /************************* STRUCTS **********************************/
 typedef struct s_power_output t_power_output;
 typedef struct s_log t_log;
@@ -73,6 +81,7 @@ typedef struct s_mux_node t_mux_node;
 typedef struct s_mux_arch t_mux_arch;
 typedef struct s_solution_inf t_solution_inf;
 
+/* Information on the solution obtained by VPR */
 struct s_solution_inf {
 	float T_crit;
 	int channel_width;
@@ -83,6 +92,7 @@ typedef enum {
 	NMOS, PMOS
 } e_tx_type;
 
+/* Information for a given transistor size */
 struct s_transistor_size_inf {
 	float size;
 
@@ -195,20 +205,27 @@ struct s_log {
  */
 struct s_power_commonly_used {
 
+	/* Capacitances */
 	float NMOS_1X_C_g;
 	float NMOS_1X_C_d;
 	float NMOS_1X_C_s;
-	float NMOS_1X_st_leakage;
-	float NMOS_2X_st_leakage;
+
 	float PMOS_1X_C_g;
 	float PMOS_1X_C_d;
 	float PMOS_1X_C_s;
-	float PMOS_1X_st_leakage;
-	float PMOS_2X_st_leakage;
-	float INV_1X_C_in;
 
+	float INV_1X_C_in;
 	float INV_1X_C;
 	float INV_2X_C;
+
+	/* Subthreshold leakages */
+	float NMOS_1X_st_leakage;
+	float NMOS_2X_st_leakage;
+	float PMOS_1X_st_leakage;
+	float PMOS_2X_st_leakage;
+
+	/* Local interconnect capacitance */
+	float C_wire_local;
 
 	/* Mux architecture information for 0..mux_arch_max_size */
 	int mux_arch_max_size;
@@ -232,15 +249,20 @@ struct s_power_commonly_used {
 	float total_cb_buffer_size;
 };
 
+/* 1-to-1 data structure with t_rr_node
+ */
 struct s_rr_node_power {
-	boolean visited;
-	float * in_density;
-	float * in_prob;
-	short num_inputs;
-	short selected_input;
-	short driver_switch_type;
+	boolean visited; /* When traversing netlist, need to track whether the node has been processed */
+	float * in_dens; /* Switching density of inputs */
+	float * in_prob; /* Static probability of inputs */
+	short num_inputs; /* Number of inputs */
+	short selected_input; /* Input index that is selected */
+	short driver_switch_type; /* Switch type that drives this resource */
 };
 
+/* Architecture information for a multiplexer.
+ * This is used to specify transistor sizes, encoding, etc.
+ */
 struct s_mux_arch {
 	int levels;
 	int num_inputs;
@@ -249,20 +271,22 @@ struct s_mux_arch {
 	t_mux_node * mux_graph_head;
 };
 
+/* A single-level multiplexer data structure.
+ * These are combined in a hierarchy to represent
+ * multi-level multiplexers
+ */
 struct s_mux_node {
-	int num_inputs;
-	t_mux_node * children; /* [0..num_inputs-1] */
-	int starting_pin_idx;
-	int level;
-	boolean level_restorer;
+	int num_inputs; /* Number of inputs */
+	t_mux_node * children; /* Multiplexers that drive the inputs [0..num_inputs-1] */
+	int starting_pin_idx; /* Applicable to level 0 only, the overall mux primary input index */
+	int level; /* Level in the full multilevel mux - 0 = primary inputs to mux */
+	boolean level_restorer; /* Whether the output of this mux is level restored */
 };
 
 /************************* GLOBALS **********************************/
 extern t_solution_inf g_solution_inf;
-extern t_power_arch * g_power_arch;
 extern t_power_output * g_power_output;
 extern t_power_commonly_used * g_power_commonly_used;
-extern t_power_opts * g_power_opts;
 extern t_power_tech * g_power_tech;
 
 /************************* FUNCTION DECLARATIONS ********************/

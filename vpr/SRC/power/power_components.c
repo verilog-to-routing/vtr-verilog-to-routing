@@ -533,7 +533,7 @@ void power_calc_interconnect(t_power_usage * power_usage, t_pb * pb,
 	/* Interconnect Wire Capacitances */
 
 	/* Assume input/output wire length are each half of interc_length */
-	C_wire = 0.5 * interc_length * g_power_arch->C_wire_local;
+	C_wire = 0.5 * interc_length * g_power_commonly_used->C_wire_local;
 
 	for (out_port_idx = 0;
 			out_port_idx < interc_pins->interconnect->num_output_ports;
