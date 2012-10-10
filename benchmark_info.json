@@ -3,8 +3,8 @@
         "radar20":          {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "200",
-                    "memory_MB"   : "900"
+                    "walltime_sec": "102",
+                    "memory_MB"   : "888"
                 },
                 "fit"      : {
                     "walltime_sec": "229", 
@@ -16,28 +16,28 @@
             },
             "vpr"    : { 
                 "pack"     : {
-                    "walltime_sec": "900", 
-                    "memory_MB"   : "1300"
+                    "walltime_sec": "892", 
+                    "memory_MB"   : "1229"
                 },
                 "place"    : {
-                    "walltime_sec": "100", 
-                    "memory_MB"   : "1200"
+                    "walltime_sec": "14", 
+                    "memory_MB"   : "298"
                 },
                 "route300"    : {
                     "walltime_sec": "100", 
                     "memory_MB"   : "2000"
                 },
                 "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
+                    "walltime_sec": "177", 
+                    "memory_MB"   : "2253"
                 }
             }
         },
         "Reed_Solomon":     {   
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "300",
-                    "memory_MB"   : "900"
+                    "walltime_sec": "230",
+                    "memory_MB"   : "867"
                 },
                 "fit"      : {
                     "walltime_sec": "482", 
@@ -49,28 +49,28 @@
             },
             "vpr"    : { 
                 "pack"     : {
-                    "walltime_sec": "300", 
-                    "memory_MB"   : "1800"
+                    "walltime_sec": "244", 
+                    "memory_MB"   : "1024"
                 },
                 "place"    : {
-                    "walltime_sec": "100", 
-                    "memory_MB"   : "2000"
+                    "walltime_sec": "61", 
+                    "memory_MB"   : "1946"
                 },
                 "route300"    : {
                     "walltime_sec": "100", 
                     "memory_MB"   : "2300"
                 },
                 "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
+                    "walltime_sec": "68", 
+                    "memory_MB"   : "2355"
                 }
             }
         },
         "MMM":              {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "200",
-                    "memory_MB"   : "1000"
+                    "walltime_sec": "161",
+                    "memory_MB"   : "912"
                 },
                 "fit"      : {
                     "walltime_sec": "613", 
@@ -82,28 +82,28 @@
             },
             "vpr"    : { 
                 "pack"     : {
-                    "walltime_sec": "700", 
-                    "memory_MB"   : "3000"
+                    "walltime_sec": "764", 
+                    "memory_MB"   : "2970"
                 },
                 "place"    : {
-                    "walltime_sec": "100", 
-                    "memory_MB"   : "3500"
+                    "walltime_sec": "101", 
+                    "memory_MB"   : "3482"
                 },
                 "route300"    : {
                     "walltime_sec": "100", 
                     "memory_MB"   : "4100"
                 },
                 "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
+                    "walltime_sec": "153", 
+                    "memory_MB"   : "4403"
                 }
             }
         },
         "CH_DFSIN":         {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "1100",
-                    "memory_MB"   : "1600"
+                    "walltime_sec": "1050",
+                    "memory_MB"   : "1516"
                 },
                 "fit"      : {
                     "walltime_sec": "610",
@@ -115,28 +115,28 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "700",
-                    "memory_MB"   : "1300"
+                    "walltime_sec": "694",
+                    "memory_MB"   : "1229"
                 },
                 "place"    : {
-                    "walltime_sec": "100",
-                    "memory_MB"   : "1100"
+                    "walltime_sec": "55",
+                    "memory_MB"   : "1024"
                 },
                 "route300"    : {
                     "walltime_sec": "300",
                     "memory_MB"   : "1900"
                 },
                 "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
+                    "walltime_sec": "193", 
+                    "memory_MB"   : "2253"
                 }
             }
         },
         "JPEG":             {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "500",
-                    "memory_MB"   : "1200"
+                    "walltime_sec": "459",
+                    "memory_MB"   : "1330"
                 },
                 "fit"      : {
                     "walltime_sec": "626",
@@ -148,28 +148,28 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "1000",
-                    "memory_MB"   : "2100"
+                    "walltime_sec": "959",
+                    "memory_MB"   : "2048"
                 },
                 "place"    : {
-                    "walltime_sec": "100",
-                    "memory_MB"   : "2000"
+                    "walltime_sec": "68",
+                    "memory_MB"   : "1946"
                 },
                 "route300"    : {
                     "walltime_sec": "100",
                     "memory_MB"   : "2500"
                 },
                 "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
+                    "walltime_sec": "127", 
+                    "memory_MB"   : "2560"
                 }
             }
         },
         "Neuron":           {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "500",
-                    "memory_MB"   : "1600"
+                    "walltime_sec": "431",
+                    "memory_MB"   : "1509"
                 },
                 "fit"      : {
                     "walltime_sec": "1900",
@@ -181,28 +181,28 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "10300",
-                    "memory_MB"   : "4200"
+                    "walltime_sec": "10308",
+                    "memory_MB"   : "4198"
                 },
                 "place"    : {
-                    "walltime_sec": "600",
-                    "memory_MB"   : "3600"
+                    "walltime_sec": "524",
+                    "memory_MB"   : "3584"
                 },
                 "route300"    : {
                     "walltime_sec": "800",
                     "memory_MB"   : "10300"
                 },
                 "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
+                    "walltime_sec": "1281", 
+                    "memory_MB"   : "11264"
                 }
             }
         },
         "OpenSparcT1_Core": {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "600",
-                    "memory_MB"   : "1400"
+                    "walltime_sec": "614",
+                    "memory_MB"   : "1355"
                 },
                 "fit"      : {
                     "walltime_sec": "2000",
@@ -214,12 +214,12 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "4100",
-                    "memory_MB"   : "3300"
+                    "walltime_sec": "4020",
+                    "memory_MB"   : "2867"
                 },
                 "place"    : {
-                    "walltime_sec": "400",
-                    "memory_MB"   : "3000"
+                    "walltime_sec": "368",
+                    "memory_MB"   : "2970"
                 },
                 "route300"    : {
                     "walltime_sec": "300",
@@ -227,19 +227,16 @@
                     "successful"  : "False"
                 },
                 "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
+                    "walltime_sec": "242", 
+                    "memory_MB"   : "3482"
                 }
             }
         },
         "DES90":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "1000",
-                    "pack_time_sec":  "200",
-                    "place_time_sec": "900",
-                    "route_time_sec": "500",
-                    "memory_MB"   : "1800"
+                    "walltime_sec": "988",
+                    "memory_MB"   : "1764"
                 },
                 "fit"      : {
                     "walltime_sec": "2200",
@@ -251,12 +248,12 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "7900",
-                    "memory_MB"   : "8400"
+                    "walltime_sec": "7826",
+                    "memory_MB"   : "8397"
                 },
                 "place"    : {
-                    "walltime_sec": "700",
-                    "memory_MB"   : "8000"
+                    "walltime_sec": "653",
+                    "memory_MB"   : "7987"
                 },
                 "route300"    : {
                     "walltime_sec": "76600",
@@ -264,16 +261,16 @@
                     "successful"  : "False"
                 },
                 "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
+                    "walltime_sec": "801", 
+                    "memory_MB"   : "12288"
                 }
             }
         },
         "LU_Network":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "5000",
-                    "memory_MB"   : "5700"
+                    "walltime_sec": "4580",
+                    "memory_MB"   : "5659"
                 },
                 "fit"      : {
                     "walltime_sec": "unkown",
@@ -305,8 +302,8 @@
         "MCML":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "500",
-                    "memory_MB"   : "1400"
+                    "walltime_sec": "452",
+                    "memory_MB"   : "1330"
                 },
                 "fit"      : {
                     "walltime_sec": "758",
@@ -318,28 +315,28 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "1800",
-                    "memory_MB"   : "3800"
+                    "walltime_sec": "2010",
+                    "memory_MB"   : "3891"
                 },
                 "place"    : {
-                    "walltime_sec": "300",
-                    "memory_MB"   : "3600"
+                    "walltime_sec": "269",
+                    "memory_MB"   : "3584"
                 },
                 "route300"    : {
                     "walltime_sec": "200",
                     "memory_MB"   : "4500"
                 },
                 "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
+                    "walltime_sec": "206", 
+                    "memory_MB"   : "4710"
                 }
             }
         },
         "Bitonic169_Mesh":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "2100",
-                    "memory_MB"   : "3200"
+                    "walltime_sec": "1924",
+                    "memory_MB"   : "3149"
                 },
                 "fit"      : {
                     "walltime_sec": "8300",
@@ -351,28 +348,28 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "22000",
-                    "memory_MB"   : "15400"
+                    "walltime_sec": "21766",
+                    "memory_MB"   : "15360"
                 },
                 "place"    : {
-                    "walltime_sec": "1200",
-                    "memory_MB"   : "13400"
+                    "walltime_sec": "1038",
+                    "memory_MB"   : "13312"
                 },
                 "route300"    : {
                     "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
                 "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
+                    "walltime_sec": "1987", 
+                    "memory_MB"   : "23552"
                 }
             }
         },
         "LU128":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "2000",
-                    "memory_MB"   : "3400"
+                    "walltime_sec": "1814",
+                    "memory_MB"   : "3294"
                 },
                 "fit"      : {
                     "walltime_sec": "11300",
@@ -384,12 +381,12 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "88000",
-                    "memory_MB"   : "26700"
+                    "walltime_sec": "88582",
+                    "memory_MB"   : "26624"
                 },
                 "place"    : {
-                    "walltime_sec": "3100",
-                    "memory_MB"   : "25700"
+                    "walltime_sec": "3018",
+                    "memory_MB"   : "25600"
                 },
                 "route300"    : {
                     "walltime_sec": "unkown",
@@ -397,15 +394,15 @@
                 },
                 "route500"    : {
                     "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
+                    "memory_MB"   : "over_32GB"
                 }
             }
         },
         "JZ_Switch_Fabric":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "3600",
-                    "memory_MB"   : "4300"
+                    "walltime_sec": "3475",
+                    "memory_MB"   : "4243"
                 },
                 "fit"      : {
                     "walltime_sec": "26900",
@@ -417,12 +414,12 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "150000",
-                    "memory_MB"   : "22600"
+                    "walltime_sec": "147133",
+                    "memory_MB"   : "22528"
                 },
                 "place"    : {
-                    "walltime_sec": "4700",
-                    "memory_MB"   : "20500"
+                    "walltime_sec": "4681",
+                    "memory_MB"   : "20480"
                 },
                 "route300"    : {
                     "walltime_sec": "unkown",
@@ -430,15 +427,15 @@
                 },
                 "route500"    : {
                     "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
+                    "memory_MB"   : "over_32GB"
                 }
             }
         },
         "OpenCV":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "1500",
-                    "memory_MB"   : "2800"
+                    "walltime_sec": "1481",
+                    "memory_MB"   : "2709"
                 },
                 "fit"      : {
                     "walltime_sec": "3900",
@@ -450,28 +447,28 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "20800",
-                    "memory_MB"   : "10300"
+                    "walltime_sec": "20836",
+                    "memory_MB"   : "10240"
                 },
                 "place"    : {
-                    "walltime_sec": "1000",
-                    "memory_MB"   : "9800"
+                    "walltime_sec": "806",
+                    "memory_MB"   : "10035"
                 },
                 "route300"    : {
                     "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
                 },
                 "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
+                    "walltime_sec": "1873", 
+                    "memory_MB"   : "19456"
                 }
             }
         },
         "LU256":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "5000",
-                    "memory_MB"   : "6000"
+                    "walltime_sec": "4609",
+                    "memory_MB"   : "5899"
                 },
                 "fit"      : {
                     "walltime_sec": "unkown",
@@ -503,8 +500,8 @@
         "OpenSparcT2_Core":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "3400",
-                    "memory_MB"   : "4600"
+                    "walltime_sec": "3055",
+                    "memory_MB"   : "4485"
                 },
                 "fit"      : {
                     "walltime_sec": "12600",
@@ -516,12 +513,12 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "31200",
-                    "memory_MB"   : "10200"
+                    "walltime_sec": "31888",
+                    "memory_MB"   : "10138"
                 },
                 "place"    : {
-                    "walltime_sec": "2000",
-                    "memory_MB"   : "9100"
+                    "walltime_sec": "1960",
+                    "memory_MB"   : "9011"
                 },
                 "route300"    : {
                     "walltime_sec": "10000",
@@ -537,8 +534,8 @@
         "DART":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "1300",
-                    "memory_MB"   : "2300"
+                    "walltime_sec": "1182",
+                    "memory_MB"   : "2252"
                 },
                 "fit"      : {
                     "walltime_sec": "5200",
@@ -550,12 +547,12 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "18800",
-                    "memory_MB"   : "8000"
+                    "walltime_sec": "18705",
+                    "memory_MB"   : "7987"
                 },
                 "place"    : {
-                    "walltime_sec": "1000",
-                    "memory_MB"   : "7200"
+                    "walltime_sec": "961",
+                    "memory_MB"   : "7168"
                 },
                 "route300"    : {
                     "walltime_sec": "over_48hrs",
@@ -563,16 +560,17 @@
                     "successful"  : "False"
                 },
                 "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
+                    "walltime_sec": "92060", 
+                    "memory_MB"   : "9300",
+                    "successful"  : "False"
                 }
             }
         },
         "Bitonic169_Cyclic":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "5100",
-                    "memory_MB"   : "3200"
+                    "walltime_sec": "5021",
+                    "memory_MB"   : "3150"
                 },
                 "fit"      : {
                     "walltime_sec": "unkown",
@@ -584,16 +582,49 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "22200",
-                    "memory_MB"   : "15400"
+                    "walltime_sec": "22159",
+                    "memory_MB"   : "15360"
                 },
                 "place"    : {
-                    "walltime_sec": "1000",
-                    "memory_MB"   : "13400"
+                    "walltime_sec": "956",
+                    "memory_MB"   : "13312"
                 },
                 "route300"    : {
                     "walltime_sec": "2200",
                     "memory_MB"   : "21600"
+                },
+                "route500"    : {
+                    "walltime_sec": "1860", 
+                    "memory_MB"   : "25600"
+                }
+            }
+        },
+        "OpenSparcT1_Chip2":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "8502",
+                    "memory_MB"   : "22840"
+                },
+                "fit"      : {
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "place"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
                 },
                 "route500"    : {
                     "walltime_sec": "unkown", 
@@ -601,11 +632,308 @@
                 }
             }
         },
-        "OpenSparcT1_Chip2":            {
+        "denoise":            {
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "8500",
-                    "memory_MB"   : "22900"
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "fit"      : {
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "place"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "segmentation":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "fit"      : {
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "place"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "EKF-SLAM_SphericalCoords":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "fit"      : {
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "place"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "EKF-SLAM_Jacobians":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "fit"      : {
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "place"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "SURF_desc":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "fit"      : {
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "place"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "jacobi":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "fit"      : {
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "place"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "random":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "fit"      : {
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "place"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "smithwaterman":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "fit"      : {
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "place"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "smithwaterman_synth":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "22000"
+                },
+                "fit"      : {
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "place"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "Gaussianblur1":            {
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "22000"
                 },
                 "fit"      : {
                     "walltime_sec": "unkown",
