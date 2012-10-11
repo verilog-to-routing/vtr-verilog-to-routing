@@ -284,8 +284,13 @@ FILE* open_source_file(char* filename)
 		fprintf(stderr, "Invalid state in open_source_file.");
 	}
 	
-	char* last_slash = strrchr(path, '/') + 1;
-	*last_slash = '\0';
+	char* last_slash = strrchr(path, '/');
+	if (last_slash == NULL) /* No other path to try to find the file */
+	{
+		free(path);
+		return NULL;
+	}
+	*(last_slash + 1) = '\0';
 	strcat(path, filename);
 	
 	src_file = fopen(path, "r");
