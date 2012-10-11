@@ -75,6 +75,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 <INITIAL>"or"			{ MP; return vOR;}
 <INITIAL>"output"		{ MP; return vOUTPUT;}
 <INITIAL>"parameter"		{ MP; return vPARAMETER;}
+<INITIAL>"localparam"		{ MP; return vPARAMETER;}
 <INITIAL>"posedge"		{ MP; return vPOSEDGE;}
 <INITIAL>"reg"			{ MP; return vREG;}
 <INITIAL>"scalared"		{ MP; return vNOT_SUPPORT;}
