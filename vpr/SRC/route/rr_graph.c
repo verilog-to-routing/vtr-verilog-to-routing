@@ -575,22 +575,27 @@ alloc_and_load_actual_fc(INP int L_num_types, INP t_type_ptr types,
 		for (j = 0; j < types[i].num_pins; ++j) {
 			Fc[j] = types[i].Fc[j];
 		
-			if (types[i].is_Fc_frac[j]) {
-				Result[i][j] = fac * nint(num_sets * Fc[j]);
+			if(Fc[j] == 0) {
+				/* Special case indicating that this pin does not connect to general-purpose routing */
+				Result[i][j] = 0;
 			} else {
-				Result[i][j] = (int)Fc[j];
-			}
+				/* General case indicating that this pin connects to general-purpose routing */
+				if (types[i].is_Fc_frac[j]) {
+					Result[i][j] = fac * nint(num_sets * Fc[j]);
+				} else {
+					Result[i][j] = (int)Fc[j];
+				}
 
-			if (is_Fc_out && types[i].is_Fc_full_flex[j]) {
-				Result[i][j] = nodes_per_chan;
-			}
+				if (is_Fc_out && types[i].is_Fc_full_flex[j]) {
+					Result[i][j] = nodes_per_chan;
+				}
 
-			Result[i][j] = max(Result[i][j], fac);
-			if (Result[i][j] > nodes_per_chan) {
-				*Fc_clipped = TRUE;
-				Result[i][j] = nodes_per_chan;
+				Result[i][j] = max(Result[i][j], fac);
+				if (Result[i][j] > nodes_per_chan) {
+					*Fc_clipped = TRUE;
+					Result[i][j] = nodes_per_chan;
+				}
 			}
-
 			assert(Result[i][j] % fac == 0);
 		}
 		free(Fc);
@@ -1947,6 +1952,12 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 				}
 			}
 		}
+
+		/* Add in direct connections */
+#if 0
+		/* jedit todo */
+		num_edges += get_opin_direct_connecions(i, j, ipin, &edge_list,	L_rr_node_indices);
+#endif
 
 		/* Add the edges */
 		inode = get_rr_node_index(i, j, OPIN, ipin, L_rr_node_indices);

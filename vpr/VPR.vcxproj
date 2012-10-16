@@ -81,7 +81,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\libarchfpga\include;SRC\pcre;SRC\util;SRC\timing;SRC\route;SRC\place;SRC\pack;SRC\base;../printhandler/SRC/TIO_InputOutputHandlers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libarchfpga\include;SRC\pcre;SRC\util;SRC\timing;SRC\route;SRC\place;SRC\power;SRC\pack;SRC\base;../printhandler/SRC/TIO_InputOutputHandlers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;NO_GRAPHICS;_DEBUG;_CONSOLE;CREATE_ECHO_FILES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <SmallerTypeCheck>true</SmallerTypeCheck>
@@ -195,6 +195,13 @@
     <ClCompile Include="SRC\pack\cluster_placement.c" />
     <ClCompile Include="SRC\pack\prepack.c" />
     <ClCompile Include="SRC\place\place_macro.c" />
+    <ClCompile Include="SRC\power\power.c" />
+    <ClCompile Include="SRC\power\power_cmos_tech.c" />
+    <ClCompile Include="SRC\power\power_components.c" />
+    <ClCompile Include="SRC\power\power_lowlevel.c" />
+    <ClCompile Include="SRC\power\power_transistor_cnt.c" />
+    <ClCompile Include="SRC\power\power_util.c" />
+    <ClCompile Include="SRC\power\power_verify.c" />
     <ClCompile Include="SRC\timing\read_sdc.c" />
     <ClCompile Include="SRC\timing\slre.c" />
     <ClCompile Include="SRC\util\hash.c" />
@@ -254,6 +261,13 @@
     <ClInclude Include="SRC\pack\cluster_placement.h" />
     <ClInclude Include="SRC\pack\prepack.h" />
     <ClInclude Include="SRC\place\place_macro.h" />
+    <ClInclude Include="SRC\power\power.h" />
+    <ClInclude Include="SRC\power\power_cmos_tech.h" />
+    <ClInclude Include="SRC\power\power_components.h" />
+    <ClInclude Include="SRC\power\power_lowlevel.h" />
+    <ClInclude Include="SRC\power\power_transistor_cnt.h" />
+    <ClInclude Include="SRC\power\power_util.h" />
+    <ClInclude Include="SRC\power\power_verify.h" />
     <ClInclude Include="SRC\timing\net_delay.h" />
     <ClInclude Include="SRC\timing\path_delay.h" />
     <ClInclude Include="SRC\timing\path_delay2.h" />

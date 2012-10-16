@@ -49,6 +49,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
     </Filter>
+    <Filter Include="Header Files\power">
+      <UniqueIdentifier>{1edf2d2a-f65f-4a30-aaa3-3950f5e77d92}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\power">
+      <UniqueIdentifier>{1d2574d7-c4aa-4e8e-9778-d94875ddc535}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SRC\main.c">
@@ -231,6 +237,27 @@
     <ClCompile Include="SRC\base\verilog_writer.c">
       <Filter>Source Files\base</Filter>
     </ClCompile>
+    <ClCompile Include="SRC\power\power_verify.c">
+      <Filter>Source Files\power</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\power\power.c">
+      <Filter>Source Files\power</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\power\power_cmos_tech.c">
+      <Filter>Source Files\power</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\power\power_components.c">
+      <Filter>Source Files\power</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\power\power_lowlevel.c">
+      <Filter>Source Files\power</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\power\power_transistor_cnt.c">
+      <Filter>Source Files\power</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\power\power_util.c">
+      <Filter>Source Files\power</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SRC\base\check_netlist.h">
@@ -409,6 +436,27 @@
     </ClInclude>
     <ClInclude Include="SRC\base\verilog_writer.h">
       <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\power\power.h">
+      <Filter>Header Files\power</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\power\power_verify.h">
+      <Filter>Header Files\power</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\power\power_cmos_tech.h">
+      <Filter>Header Files\power</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\power\power_components.h">
+      <Filter>Header Files\power</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\power\power_lowlevel.h">
+      <Filter>Header Files\power</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\power\power_transistor_cnt.h">
+      <Filter>Header Files\power</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\power\power_util.h">
+      <Filter>Header Files\power</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

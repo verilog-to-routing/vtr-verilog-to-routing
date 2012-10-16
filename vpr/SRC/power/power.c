@@ -27,7 +27,7 @@
 #include <signal.h>
 #include <ctype.h>
 #include <math.h>
-#include <sys/time.h>
+#include <time.h>
 
 #include "power.h"
 #include "power_components.h"
@@ -1184,11 +1184,11 @@ e_power_ret_code power_total(float * run_time_s, t_arch * arch,
 		t_det_routing_arch * routing_arch) {
 	t_power_usage total_power;
 	t_power_usage sub_power_usage;
-	struct timeval t_start;
-	struct timeval t_end;
+	clock_t t_start;
+	clock_t t_end;
 	t_power_usage clb_power_usage;
 
-	gettimeofday(&t_start, NULL );
+	t_start = clock();
 
 	power_zero_usage(&total_power);
 
@@ -1239,10 +1239,9 @@ e_power_ret_code power_total(float * run_time_s, t_arch * arch,
 	power_print_title(g_power_output->out, "Tile Power Breakdown");
 	power_print_clb_usage(g_power_output->out);
 
-	gettimeofday(&t_end, NULL );
+	t_end = clock();
 
-	*run_time_s = (t_end.tv_usec - t_start.tv_usec) / 1000000.
-			+ (t_end.tv_sec - t_start.tv_sec);
+	*run_time_s = (float)(t_end - t_start) / CLOCKS_PER_SEC;
 
 	/* Return code */
 	if (g_power_output->logs[POWER_LOG_ERROR].num_messages) {

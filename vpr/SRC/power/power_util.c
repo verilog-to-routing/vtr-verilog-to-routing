@@ -194,7 +194,7 @@ int calc_buffer_num_stages(float final_stage_size, float desired_stage_effort) {
  */
 float calc_buffer_stage_effort(int N, float final_stage_size) {
 	if (N > 1)
-		return pow(final_stage_size, (1.0 / ((double) N - 1)));
+		return pow((double)final_stage_size, (1.0 / ((double) N - 1)));
 	else
 		return 1.0;
 }
@@ -404,7 +404,7 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
 
 /* Reduce mux levels for multiplexers that are too small for the preset number of levels */
 void mux_arch_fix_levels(t_mux_arch * mux_arch) {
-	while ((pow(2, mux_arch->levels) > mux_arch->num_inputs)
+	while (((1 << mux_arch->levels) > mux_arch->num_inputs)
 			&& (mux_arch->levels > 1)) {
 		mux_arch->levels--;
 	}

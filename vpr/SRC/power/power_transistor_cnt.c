@@ -116,7 +116,7 @@ static float power_count_transistors_mux(t_mux_arch * mux_arch) {
 
 	for (lvl_idx = 0; lvl_idx < mux_arch->levels; lvl_idx++) {
 		/* Assume there is decoder logic */
-		transistor_cnt += ceil(log2((float) max_inputs[lvl_idx]))
+		transistor_cnt += ceil(log(max_inputs[lvl_idx])/log((double)2.0))
 				* power_cnt_transistor_SRAM_bit();
 
 		/*
@@ -395,12 +395,12 @@ static float power_count_transistors_LUT(int LUT_size) {
 	 + 2 * (2 + 2 * g_power_arch->P_to_N_size_ratio));*/
 
 	/* SRAM bits */
-	transistor_cnt += power_cnt_transistor_SRAM_bit() * pow(2, LUT_size);
+	transistor_cnt += power_cnt_transistor_SRAM_bit() * (1 << LUT_size); /* power_cnt_transistor_SRAM_bit() * 2 ^ LUT_size */
 
 	for (level_idx = 0; level_idx < LUT_size; level_idx++) {
 
 		/* Pass transistors */
-		transistor_cnt += pow(2, LUT_size - level_idx);
+		transistor_cnt += (1 << LUT_size) - level_idx; /* 2 ^ (LUT_size - level_idx) - level_idx */
 
 		/* Add level restorer after every 2 stages (level_idx %2 == 1)
 		 * But if there is an odd # of stages, just put one at the last
@@ -410,7 +410,7 @@ static float power_count_transistors_LUT(int LUT_size) {
 		if (((level_idx % 2 == 1) && (level_idx != LUT_size - 2))
 				|| (level_idx == LUT_size - 1)) {
 			/* Each level restorer has a P/N=1/2 inverter and a W/L=1/2 PMOS */
-			transistor_cnt += pow(2, LUT_size - level_idx - 1) * (3 + 2);
+			transistor_cnt += (1 << (LUT_size - level_idx - 1)) * (3 + 2); /* 2 ^ (LUT_size - level_idx - 1) * (3 + 2) */
 		}
 	}
 
