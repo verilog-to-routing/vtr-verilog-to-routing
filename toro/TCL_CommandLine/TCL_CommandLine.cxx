@@ -101,6 +101,12 @@ bool TCL_CommandLine_c::Parse(
    // Iterate, parsing any command-line arguments
    argc = ( --argc <= 0 ? 0 : argc );
 
+   if(( argc == 1 ) && ( **(argv+1) != '-' ))
+   {
+      pinputOptions->optionsFileNameList.Add( *(argv+1) );
+      argc = 0;
+   }
+
    while( ok && argc )
    {
       --argc; 
@@ -143,10 +149,10 @@ bool TCL_CommandLine_c::Parse(
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             pinputOptions->srXmlFileName = *argv;
-	    pinputOptions->xmlFileEnable = ok;
-	 }
+            pinputOptions->xmlFileEnable = ok;
+         }
       }
       else if(( TC_stricmp( *argv, "-blif" ) == 0 ) ||
               ( TC_stricmp( *argv, "-b" ) == 0 ))
@@ -154,10 +160,10 @@ bool TCL_CommandLine_c::Parse(
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             pinputOptions->srBlifFileName = *argv;
-	    pinputOptions->blifFileEnable = ok;
-	 }
+            pinputOptions->blifFileEnable = ok;
+         }
       }
       else if(( TC_stricmp( *argv, "-architecture" ) == 0 ) ||
               ( TC_stricmp( *argv, "-a" ) == 0 ))
@@ -165,10 +171,10 @@ bool TCL_CommandLine_c::Parse(
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             pinputOptions->srArchitectureFileName = *argv;
-	    pinputOptions->architectureFileEnable = ok;
-	 }
+            pinputOptions->architectureFileEnable = ok;
+         }
       }
       else if(( TC_stricmp( *argv, "-fabric" ) == 0 ) ||
               ( TC_stricmp( *argv, "-f" ) == 0 ))
@@ -176,10 +182,10 @@ bool TCL_CommandLine_c::Parse(
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             pinputOptions->srFabricFileName = *argv;
-	    pinputOptions->fabricFileEnable = ok;
-	 }
+            pinputOptions->fabricFileEnable = ok;
+         }
       }
       else if(( TC_stricmp( *argv, "-circuit" ) == 0 ) ||
               ( TC_stricmp( *argv, "-c" ) == 0 ))
@@ -187,10 +193,10 @@ bool TCL_CommandLine_c::Parse(
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             pinputOptions->srCircuitFileName = *argv;
-	    pinputOptions->circuitFileEnable = ok;
-	 }
+            pinputOptions->circuitFileEnable = ok;
+         }
       }
       else if(( TC_stricmp( *argv, "+architecture" ) == 0 ) ||
               ( TC_stricmp( *argv, "+a" ) == 0 ))
@@ -198,10 +204,10 @@ bool TCL_CommandLine_c::Parse(
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             poutputOptions->srArchitectureFileName = *argv;
-	    pinputOptions->architectureFileEnable = ok;
-	 }
+            pinputOptions->architectureFileEnable = ok;
+         }
       }
       else if(( TC_stricmp( *argv, "+fabric" ) == 0 ) ||
               ( TC_stricmp( *argv, "+f" ) == 0 ))
@@ -209,10 +215,10 @@ bool TCL_CommandLine_c::Parse(
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             poutputOptions->srFabricFileName = *argv;
-	    pinputOptions->fabricFileEnable = ok;
-	 }
+            pinputOptions->fabricFileEnable = ok;
+         }
       }
       else if(( TC_stricmp( *argv, "+circuit" ) == 0 ) ||
               ( TC_stricmp( *argv, "+c" ) == 0 ))
@@ -220,10 +226,10 @@ bool TCL_CommandLine_c::Parse(
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             poutputOptions->srCircuitFileName = *argv;
-	    pinputOptions->circuitFileEnable = ok;
-	 }
+            pinputOptions->circuitFileEnable = ok;
+         }
       }
       else if(( TC_stricmp( *argv, "-log" ) == 0 ) ||
               ( TC_stricmp( *argv, "-l" ) == 0 ) ||
@@ -233,9 +239,9 @@ bool TCL_CommandLine_c::Parse(
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             poutputOptions->srLogFileName = *argv;
-	 }
+         }
       }
       else if(( TC_stricmp( *argv, "-execute" ) == 0 ) || 
               ( TC_stricmp( *argv, "-e" ) == 0 ))
@@ -338,46 +344,42 @@ bool TCL_CommandLine_c::Parse(
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             bool enabled;
             if( this->ParseBool_( *argv, &enabled ))
             {
                ppackOptions->costMode = ( enabled ? TOS_PACK_COST_TIMING_DRIVEN : 
                                                     TOS_PACK_COST_ROUTABILITY_DRIVEN );
-	       pplaceOptions->costMode = ( enabled ? TOS_PLACE_COST_PATH_TIMING_DRIVEN : 
+               pplaceOptions->costMode = ( enabled ? TOS_PLACE_COST_PATH_TIMING_DRIVEN : 
                                                      TOS_PLACE_COST_ROUTABILITY_DRIVEN );
-	       prouteOptions->costMode = ( enabled ? TOS_ROUTE_COST_TIMING_DRIVEN : 
-					             TOS_ROUTE_COST_BREADTH_FIRST );
+               prouteOptions->costMode = ( enabled ? TOS_ROUTE_COST_TIMING_DRIVEN : 
+                                                     TOS_ROUTE_COST_BREADTH_FIRST );
             }
             else
             {
                printHandler.Error( "Invalid argument '%s'!\n", *argv );
                argc = 0;
-	       ok = false;
+               ok = false;
             }
-	 }
+         }
       }
       else if( TC_stricmp( *argv, "-timing_analyze_only_with_net_delay" ) == 0 )
       {
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             ppackOptions->fixedDelay = atof( *argv );
             pplaceOptions->fixedDelay = atof( *argv );
             prouteOptions->fixedDelay = atof( *argv );
          }
-      }
-      else if( TC_stricmp( *argv, "-full_stats" ) == 0 )
-      {
-         poutputOptions->metricsFileEnable = true;
       }
       else if( TC_stricmp( *argv, "-echo_file" ) == 0 )
       {
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             bool enabled;
             if( this->ParseBool_( *argv, &enabled ))
             {
@@ -387,9 +389,9 @@ bool TCL_CommandLine_c::Parse(
             {
                printHandler.Error( "Invalid argument '%s'!\n", *argv );
                argc = 0;
-	       ok = false;
+               ok = false;
             }
-	 }
+         }
       }
 
       // VPR packer options...
@@ -402,7 +404,7 @@ bool TCL_CommandLine_c::Parse(
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             bool enabled;
             if( this->ParseBool_( *argv, &enabled ))
             {
@@ -413,16 +415,16 @@ bool TCL_CommandLine_c::Parse(
             {
                printHandler.Error( "Invalid argument '%s'!\n", *argv );
                argc = 0;
-	       ok = false;
+               ok = false;
             }
-	 }
+         }
       }
       else if( TC_stricmp( *argv, "-allow_unrelated_clustering" ) == 0 )
       {
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             bool enabled;
             if( this->ParseBool_( *argv, &enabled ))
             {
@@ -433,9 +435,9 @@ bool TCL_CommandLine_c::Parse(
             {
                printHandler.Error( "Invalid argument '%s'!\n", *argv );
                argc = 0;
-	       ok = false;
+               ok = false;
             }
-	 }
+         }
       }
       else if( TC_stricmp( *argv, "-alpha_clustering" ) == 0 )
       { 
@@ -456,7 +458,7 @@ bool TCL_CommandLine_c::Parse(
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             bool enabled;
             if( this->ParseBool_( *argv, &enabled ))
             {
@@ -467,9 +469,9 @@ bool TCL_CommandLine_c::Parse(
             {
                printHandler.Error( "Invalid argument '%s'!\n", *argv );
                argc = 0;
-	       ok = false;
+               ok = false;
             }
-	 }
+         }
       }
 
       // VPR placer options...
@@ -518,14 +520,14 @@ bool TCL_CommandLine_c::Parse(
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             ok = this->ParsePlaceCostMode_( *argv, &pplaceOptions->costMode );
             if( !ok )
             {
                printHandler.Error( "Invalid argument '%s'!\n", *argv );
                argc = 0;
             }
-	 }
+         }
       }
       else if( TC_stricmp( *argv, "-timing_tradeoff" ) == 0 )
       { 
@@ -569,14 +571,14 @@ bool TCL_CommandLine_c::Parse(
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             ok = this->ParseRouteAbstractMode_( *argv, &prouteOptions->abstractMode );
             if( !ok )
             {
                printHandler.Error( "Invalid argument '%s'!\n", *argv );
                argc = 0;
             }
-	 }
+         }
       }
       else if( TC_stricmp( *argv, "-bb_factor" ) == 0 )
       { 
@@ -639,28 +641,28 @@ bool TCL_CommandLine_c::Parse(
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             ok = this->ParseRouteResourceMode_( *argv, &prouteOptions->resourceMode );
             if( !ok )
             {
                printHandler.Error( "Invalid argument '%s'!\n", *argv );
                argc = 0;
             }
-	 }
+         }
       }
       else if( TC_stricmp( *argv, "-router_algorithm" ) == 0 )
       { 
          argc = ok ? argc - 1 : 1;
          ok = *++argv ? true : false;   
          if( ok )
-	 {
+         {
             ok = this->ParseRouteCostMode_( *argv, &prouteOptions->costMode );
             if( !ok )
             {
                printHandler.Error( "Invalid argument '%s'!\n", *argv );
                argc = 0;
             }
-	 }
+         }
       }
       else if( TC_stricmp( *argv, "-astar_fac" ) == 0 )
       { 
@@ -766,7 +768,7 @@ bool TCL_CommandLine_c::ParseBool_(
    {
       if(( TC_stricmp( pszBool, "on" ) == 0 ) ||
          ( TC_stricmp( pszBool, "yes" ) == 0 ) ||
-	 ( TC_stricmp( pszBool, "true" ) == 0 ))
+         ( TC_stricmp( pszBool, "true" ) == 0 ))
       {
          *pbool = true;
       }
@@ -778,7 +780,7 @@ bool TCL_CommandLine_c::ParseBool_(
       } 
       else
       {
-	 ok = false;
+         ok = false;
       } 
    }
    return( ok );
@@ -821,7 +823,7 @@ bool TCL_CommandLine_c::ParseExecuteToolMode_(
       } 
       else
       {
-	 ok = false;
+         ok = false;
       } 
    }
    return( ok );
@@ -844,19 +846,19 @@ bool TCL_CommandLine_c::ParsePlaceCostMode_(
    {
       if( TC_stricmp( pszMode, "bounding_box" ) == 0 )
       {
-	 *pmode = TOS_PLACE_COST_ROUTABILITY_DRIVEN;
+         *pmode = TOS_PLACE_COST_ROUTABILITY_DRIVEN;
       }
       else if( TC_stricmp( pszMode, "path_timing_driven" ) == 0 )
       {
-	 *pmode = TOS_PLACE_COST_PATH_TIMING_DRIVEN;
+         *pmode = TOS_PLACE_COST_PATH_TIMING_DRIVEN;
       }
       else if( TC_stricmp( pszMode, "net_timing_driven" ) == 0 )
       {
-	 *pmode = TOS_PLACE_COST_NET_TIMING_DRIVEN;
+         *pmode = TOS_PLACE_COST_NET_TIMING_DRIVEN;
       }
       else
       {
-	 ok = false;
+         ok = false;
       } 
    }
    return( ok );
@@ -879,15 +881,15 @@ bool TCL_CommandLine_c::ParseRouteAbstractMode_(
    {
       if( TC_stricmp( pszMode, "global" ) == 0 )
       {
-	 *pmode = TOS_ROUTE_ABSTRACT_GLOBAL;
+         *pmode = TOS_ROUTE_ABSTRACT_GLOBAL;
       }
       else if( TC_stricmp( pszMode, "detailed" ) == 0 )
       {
-	 *pmode = TOS_ROUTE_ABSTRACT_DETAILED;
+         *pmode = TOS_ROUTE_ABSTRACT_DETAILED;
       }
       else
       {
-	 ok = false;
+         ok = false;
       } 
    }
    return( ok );
@@ -910,15 +912,15 @@ bool TCL_CommandLine_c::ParseRouteResourceMode_(
    {
       if( TC_stricmp( pszMode, "demand_only" ) == 0 )
       {
-	 *pmode = TOS_ROUTE_RESOURCE_DEMAND_ONLY;
+         *pmode = TOS_ROUTE_RESOURCE_DEMAND_ONLY;
       }
       else if( TC_stricmp( pszMode, "delay_normalized" ) == 0 )
       {
-	 *pmode = TOS_ROUTE_RESOURCE_DELAY_NORMALIZED;
+         *pmode = TOS_ROUTE_RESOURCE_DELAY_NORMALIZED;
       }
       else
       {
-	 ok = false;
+         ok = false;
       } 
    }
    return( ok );
@@ -941,15 +943,15 @@ bool TCL_CommandLine_c::ParseRouteCostMode_(
    {
       if( TC_stricmp( pszMode, "breadth_first" ) == 0 )
       {
-	 *pmode = TOS_ROUTE_COST_BREADTH_FIRST;
+         *pmode = TOS_ROUTE_COST_BREADTH_FIRST;
       }
       else if( TC_stricmp( pszMode, "timing_driven" ) == 0 )
       {
-	 *pmode = TOS_ROUTE_COST_TIMING_DRIVEN;
+         *pmode = TOS_ROUTE_COST_TIMING_DRIVEN;
       }
       else
       {
-	 ok = false;
+         ok = false;
       } 
    }
    return( ok );
