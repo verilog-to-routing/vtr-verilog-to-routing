@@ -68,7 +68,8 @@ void vpr_setup_vpr(INP t_options *Options, INP boolean TimingEnabled,
 		OUTP struct s_router_opts *RouterOpts,
 		OUTP struct s_det_routing_arch *RoutingArch,
 		OUTP t_segment_inf ** Segments, OUTP t_timing_inf * Timing,
-		OUTP boolean * ShowGraphics, OUTP int *GraphPause);
+		OUTP boolean * ShowGraphics, OUTP int *GraphPause,
+		t_power_opts * PowerOpts);
 /* Check inputs are reasonable */
 void vpr_check_options(INP t_options Options, INP boolean TimingEnabled);
 void vpr_check_arch(INP t_arch Arch, INP boolean TimingEnabled);
