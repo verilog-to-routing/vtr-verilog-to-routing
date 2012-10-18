@@ -11,6 +11,8 @@
 //           Inline private methods include:
 //           - FindPlaceStatusMode_
 //           - FindNetStatusMode_
+//           - FindLatchType_
+//           - FindLatchState_
 //           - FindSideMode_
 //           - FindTypeMode_
 //           - FindBool_
@@ -159,6 +161,49 @@ TNO_StatusMode_t TCP_CircuitParser_c::FindNetStatusMode_(
    case NET_ROUTED:  mode = TNO_STATUS_ROUTED;  break;
    }
    return( mode );
+}
+
+//===========================================================================//
+// Method         : FindLatchType_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/15/12 jeffr : Original
+//===========================================================================//
+TPO_LatchType_t TCP_CircuitParser_c::FindLatchType_(
+      ANTLRTokenType tokenType )
+{
+   TPO_LatchType_t type = TPO_LATCH_TYPE_UNDEFINED;
+   switch( tokenType )
+   {
+   case TYPE_FALLING_EDGE: type = TPO_LATCH_TYPE_FALLING_EDGE; break;
+   case TYPE_RISING_EDGE:  type = TPO_LATCH_TYPE_RISING_EDGE;  break;
+   case TYPE_ACTIVE_HIGH:  type = TPO_LATCH_TYPE_ACTIVE_HIGH;  break;
+   case TYPE_ACTIVE_LOW:   type = TPO_LATCH_TYPE_ACTIVE_LOW;   break;
+   case TYPE_ASYNCHRONOUS: type = TPO_LATCH_TYPE_ASYNCHRONOUS; break;
+   }
+   return( type );
+}
+
+//===========================================================================//
+// Method         : FindLatchState_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/15/12 jeffr : Original
+//===========================================================================//
+TPO_LatchState_t TCP_CircuitParser_c::FindLatchState_(
+      ANTLRTokenType tokenType )
+{
+   TPO_LatchState_t state = TPO_LATCH_STATE_UNDEFINED;
+   switch( tokenType )
+   {
+   case STATE_TRUE:      state = TPO_LATCH_STATE_TRUE;      break;
+   case STATE_FALSE:     state = TPO_LATCH_STATE_FALSE;     break;
+   case STATE_DONT_CARE: state = TPO_LATCH_STATE_DONT_CARE; break;
+   case STATE_UNKNOWN:   state = TPO_LATCH_STATE_UNKNOWN;   break;
+   }
+   return( state );
 }
 
 //===========================================================================//
