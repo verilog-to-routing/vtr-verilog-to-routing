@@ -147,10 +147,6 @@ bool TO_Output_c::Apply(
       { 
          ok = this->WriteLaffFile_( fabricView, outputOptions );
       }
-      if( ok && outputOptions.metricsFileEnable )
-      { 
-         ok = this->WriteMetricsFile_( );
-      }
       if( ok && outputOptions.metricsEmailEnable )
       { 
          ok = this->SendMetricsEmail_( inputOptions, outputOptions );

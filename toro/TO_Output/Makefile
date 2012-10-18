@@ -2,14 +2,14 @@
 #
 # Toro I-P-O output object library
 #
-# Note: This make file is dependent on the platform-specific ISP 
-#       environment variable.  ISP is platform-specific and is used 
+# Note: This make file is dependent on the platform-specific ISM 
+#       environment variable.  ISM is platform-specific and is used 
 #       to determine various build switches and directories.
 #
 #       This make file currently supports:
-#       - setenv ISP linux_x86_64
-#       - setenv ISP linux_i686
-#       - setenv ISP sun8
+#       - setenv ISM linux_x86_64
+#       - setenv ISM linux_i686
+#       - setenv ISM sun8
 #
 ######################################################################
 
@@ -20,17 +20,17 @@
 pC++linux_x86_64 = /usr/bin/gcc
 pC++linux_i686 = /usr/bin/gcc
 pC++sun8 = /apps/SUNWspro_6.0-U2/bin/CC
-pC++ = $(pC++$(ISP))
+pC++ = $(pC++$(ISM))
 
 PIClinux_x86_64 = -shared
 PIClinux_i686 = -shared
 PICsun8 = -G -KPIC
-PIC = $(PIC$(ISP))
+PIC = $(PIC$(ISM))
 
 CFLAGSlinux_x86_64 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_X86_64
 CFLAGSlinux_i686 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_I686
 CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
-CFLAGS = $(CFLAGS$(ISP)) \
+CFLAGS = $(CFLAGS$(ISM)) \
 	-I. \
 	-I../TCL_CommandLine \
 	-I../TOS_OptionsStore \
@@ -55,26 +55,37 @@ CFLAGS = $(CFLAGS$(ISP)) \
 LINKERlinux_x86_64 = /usr/bin/ld
 LINKERlinux_i686 = /usr/bin/ld
 LINKERsun8 = /usr/ccs/bin/ld
-LINKER = $(LINKER$(ISP))
+LINKER = $(LINKER$(ISM))
 
 LFLAGSlinux_x86_64 = -shared
 LFLAGSlinux_i686 = -shared
 LFLAGSsun8 = -G -library=iostream -xarch=v9
-LFLAGS = $(LFLAGS$(ISP))
+LFLAGS = $(LFLAGS$(ISM))
 
 ######################################################################
 # Program files
 ######################################################################
 
+PROG = libTO_Output
+EXE = ../$(ISM)/$(PROG).a
+
+ARCMDlinux_x86_64 = $(LINKER) -r -o $(ISM)/$(PROG).a $(OBJECTS) ; \
+	mv $(ISM)/$(PROG).a $(EXE)
+ARCMDlinux_i686 = $(LINKER) -r -o $(ISM)/$(PROG).a $(OBJECTS) ; \
+	mv $(ISM)/$(PROG).a $(EXE)
+ARCMDsun8 = $(pC++) -xar -xarch=v9 -library=iostream -o $(ISM)/$(PROG).a $(OBJECTS) ; \
+	mv $(ISM)/$(PROG).a $(EXE)
+ARCMD = $(ARCMD$(ISM))
+
 SOLlinux_x86_64 = so
 SOLlinux_i686 = so
 SOLsun8 = so
-SOL = $(SOL$(ISP))
+SOL = $(SOL$(ISM))
 
 LIBSOlinux_x86_64 = ../linux_x86_64/$(PROG).$(SOL)
 LIBSOlinux_i686 = ../linux_i686/$(PROG).$(SOL)
 LIBSOsun8 = ../sun8/$(PROG).$(SOL)
-LIBSO = $(LIBSO$(ISP))
+LIBSO = $(LIBSO$(ISM))
 
 OBJSlinux_x86_64 = linux_x86_64/TO_Output.o \
                     linux_x86_64/TO_OutputWriteLaff.o \
@@ -84,7 +95,6 @@ OBJSlinux_x86_64 = linux_x86_64/TO_Output.o \
                     linux_x86_64/TO_OutputWriteArchitecture.o \
                     linux_x86_64/TO_OutputWriteFabric.o \
                     linux_x86_64/TO_OutputWriteCircuit.o \
-                    linux_x86_64/TO_OutputWriteMetrics.o \
                     linux_x86_64/TO_OutputEmailMetrics.o
 OBJSlinux_i686 = linux_i686/TO_Output.o \
                     linux_i686/TO_OutputWriteLaff.o \
@@ -94,7 +104,6 @@ OBJSlinux_i686 = linux_i686/TO_Output.o \
                     linux_i686/TO_OutputWriteArchitecture.o \
                     linux_i686/TO_OutputWriteFabric.o \
                     linux_i686/TO_OutputWriteCircuit.o \
-                    linux_i686/TO_OutputWriteMetrics.o \
                     linux_i686/TO_OutputEmailMetrics.o
 OBJSsun8 = sun8/TO_Output.o \
            sun8/TO_OutputWriteOptions.o \
@@ -104,12 +113,8 @@ OBJSsun8 = sun8/TO_Output.o \
            sun8/TO_OutputWriteFabric.o \
            sun8/TO_OutputWriteCircuit.o \
            sun8/TO_OutputWriteLaff.o \
-           sun8/TO_OutputWriteMetrics.o \
            sun8/TO_OutputEmailMetrics.o
-OBJECTS = $(OBJS$(ISP))
-
-PROG = libTO_Output
-EXE = ../$(ISP)/$(PROG).a
+OBJECTS = $(OBJS$(ISM))
 
 ######################################################################
 # Target rules
@@ -126,7 +131,7 @@ Debug:
 Gprof:
 	make $(EXE) CFLAGS="-pg -g -DDEBUG $(CFLAGS)" BUILD_TARGET=Debug
 clean:
-	rm -rf $(ISP)/*
+	rm -rf $(ISM)/*
 
 .cxx.o:;
 .cxx.a:;
@@ -135,71 +140,64 @@ clean:
 # Program rules
 ######################################################################
 
-ARCMDlinux_x86_64 = $(LINKER) -r -o $(ISP)/$(PROG).a $(OBJECTS) ; \
-	mv $(ISP)/$(PROG).a $(EXE)
-ARCMDlinux_i686 = $(LINKER) -r -o $(ISP)/$(PROG).a $(OBJECTS) ; \
-	mv $(ISP)/$(PROG).a $(EXE)
-ARCMDsun8 = $(pC++) -xar -xarch=v9 -library=iostream -o $(ISP)/$(PROG).a $(OBJECTS) ; \
-	mv $(ISP)/$(PROG).a $(EXE)
-ARCMD = $(ARCMD$(ISP))
 $(EXE): $(LIBSO)
 	$(ARCMD)
 
-$(OBJECTS): $(@F:.o=.cxx)
-	$(pC++) -o $@ -c $(@F:.o=.cxx) $(PIC) $(CFLAGS)
-
 $(LIBSOlinux_x86_64): $(OBJECTS) Makefile
-	$(pC++) $(LFLAGS) -o $(ISP)/$(PROG).$(SOL) $(OBJECTS) ; \
-	mv $(ISP)/$(PROG).$(SOL) $@
+	$(pC++) $(LFLAGS) -o $(ISM)/$(PROG).$(SOL) $(OBJECTS) ; \
+	mv $(ISM)/$(PROG).$(SOL) $@
 $(LIBSOlinux_i686): $(OBJECTS) Makefile
-	$(pC++) $(LFLAGS) -o $(ISP)/$(PROG).$(SOL) $(OBJECTS) ; \
-	mv $(ISP)/$(PROG).$(SOL) $@
+	$(pC++) $(LFLAGS) -o $(ISM)/$(PROG).$(SOL) $(OBJECTS) ; \
+	mv $(ISM)/$(PROG).$(SOL) $@
 $(LIBSOsun8): $(OBJECTS) Makefile
-	$(pC++) $(LFLAGS) -o $(ISP)/$(PROG).$(SOL) $(OBJECTS) ; \
-	mv $(ISP)/$(PROG).$(SOL) $@
+	$(pC++) $(LFLAGS) -o $(ISM)/$(PROG).$(SOL) $(OBJECTS) ; \
+	mv $(ISM)/$(PROG).$(SOL) $@
+
+$(OBJECTS): $(ISM)/%.o:%.cxx
+	$(pC++) -o $@ -c $(@F:.o=.cxx) $(PIC) $(CFLAGS)
 
 ######################################################################
 # Library rules
 ######################################################################
 
-../$(ISP)/libTCL_CommandLine.a:
+../$(ISM)/libTCL_CommandLine.a:
 	cd ../TCL_CommandLine ; $(MAKE) $(BUILD_TARGET)
 
-../$(ISP)/libTOS_OptionsStore.a:
+../$(ISM)/libTOS_OptionsStore.a:
 	cd ../TOS_OptionsStore ; $(MAKE) $(BUILD_TARGET)
 
-../$(ISP)/libTFS_FloorplanStore.a:
+../$(ISM)/libTFS_FloorplanStore.a:
 	cd ../TFS_FloorplanStore ; $(MAKE) $(BUILD_TARGET)
 
-../$(ISP)/libTAS_ArchitectureSpec.a:
+../$(ISM)/libTAS_ArchitectureSpec.a:
 	cd ../TAS_ArchitectureSpec ; $(MAKE) $(BUILD_TARGET)
 
-../$(ISP)/libTFM_FabricModel.a:
+../$(ISM)/libTFM_FabricModel.a:
 	cd ../TFM_FabricModel ; $(MAKE) $(BUILD_TARGET)
 
-../$(ISP)/libTFV_FabricView.a:
+../$(ISM)/libTFV_FabricView.a:
 	cd ../TFV_FabricView ; $(MAKE) $(BUILD_TARGET)
 
-../$(ISP)/libTCD_CircuitDesign.a:
+../$(ISM)/libTCD_CircuitDesign.a:
 	cd ../TCD_CircuitDesign ; $(MAKE) $(BUILD_TARGET)
 
-../$(ISP)/libTLO_LogicalObjects.a:
+../$(ISM)/libTLO_LogicalObjects.a:
 	cd ../TLO_LogicalObjects ; $(MAKE) $(BUILD_TARGET)
 
-../$(ISP)/libTPO_PhysicalObjects.a:
+../$(ISM)/libTPO_PhysicalObjects.a:
 	cd ../TPO_PhysicalObjects ; $(MAKE) $(BUILD_TARGET)
 
-../$(ISP)/libTNO_NetObjects.a:
+../$(ISM)/libTNO_NetObjects.a:
 	cd ../TNO_NetObjects ; $(MAKE) $(BUILD_TARGET)
 
-../$(ISP)/libTTPT_TilePlaneObjects.a:
+../$(ISM)/libTTPT_TilePlaneObjects.a:
 	cd ../TTP_TilePlaneObjects ; $(MAKE) $(BUILD_TARGET)
 
-../$(ISP)/libTGS_GeometricShapes.a:
+../$(ISM)/libTGS_GeometricShapes.a:
 	cd ../TGS_GeometricShapes ; $(MAKE) $(BUILD_TARGET)
 
-../$(ISP)/libTIO_InputOutputHandlers.a:
+../$(ISM)/libTIO_InputOutputHandlers.a:
 	cd ../TIO_InputOutputHandlers ; $(MAKE) $(BUILD_TARGET)
 
-../$(ISP)/libTC_Common.a:
+../$(ISM)/libTC_Common.a:
 	cd ../TC_Common ; $(MAKE) $(BUILD_TARGET)

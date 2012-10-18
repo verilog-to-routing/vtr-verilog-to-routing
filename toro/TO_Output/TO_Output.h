@@ -142,9 +142,6 @@ private:
 
    TO_LaffLayerId_t WriteLaffMapLayerId_( TGS_Layer_t layer ) const;
 
-   // See TO_OutputWriteMetrics.cxx
-   bool WriteMetricsFile_( void ) const;
- 
    // See TO_OutputEmailMetrics.cxx
    bool SendMetricsEmail_( const TOS_InputOptions_c& inputOptions,
                            const TOS_OutputOptions_c& outputOptions ) const;
