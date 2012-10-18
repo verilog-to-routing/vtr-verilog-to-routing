@@ -6,7 +6,8 @@
 //
 //===========================================================================//
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TIO_CustomOutput.h"
 
@@ -34,8 +35,8 @@ bool TIO_CustomOutput_c::Write(
                        "                      text : %s\n"
                        "                      src  : %s\n",
                        printMode,
-                       pszPrintText ? pszPrintText : "",
-                       pszPrintSrc ? pszPrintSrc : "" );
+                       TIO_PSZ_STR( pszPrintText ),
+                       TIO_PSZ_STR( pszPrintSrc ));
    }
    return( this->pfxCustomHandler_ ? true : false );
 } 

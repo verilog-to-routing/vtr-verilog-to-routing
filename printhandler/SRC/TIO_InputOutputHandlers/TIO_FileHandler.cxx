@@ -12,9 +12,8 @@
 //
 //===========================================================================//
 
-#include <stdio.h>
-#include <stdarg.h>
-
+#include <cstdio>
+#include <cstdarg>
 #include <string>
 using namespace std;
 
@@ -39,6 +38,18 @@ TIO_FileHandler_c::TIO_FileHandler_c(
 
 //===========================================================================//
 TIO_FileHandler_c::TIO_FileHandler_c( 
+      const string&            srFileName,
+            TIO_FileOpenMode_t fileOpen,
+      const char*              pszFileType,
+            TIO_PrintMode_t    printMode )
+      :
+      pfileStream_( 0 )
+{
+   this->Open( srFileName, fileOpen, pszFileType, printMode );
+}
+
+//===========================================================================//
+TIO_FileHandler_c::TIO_FileHandler_c( 
       const char*              pszFileName,
             TIO_FileOpenMode_t fileOpen,
       const char*              pszFileType,
@@ -50,18 +61,6 @@ TIO_FileHandler_c::TIO_FileHandler_c(
    {
       this->Open( pszFileName, fileOpen, pszFileType, printMode );
    }
-}
-
-//===========================================================================//
-TIO_FileHandler_c::TIO_FileHandler_c( 
-      const string&            srFileName,
-            TIO_FileOpenMode_t fileOpen,
-      const char*              pszFileType,
-            TIO_PrintMode_t    printMode )
-      :
-      pfileStream_( 0 )
-{
-   this->Open( srFileName, fileOpen, pszFileType, printMode );
 }
 
 //===========================================================================//
@@ -165,7 +164,7 @@ bool TIO_FileHandler_c::Open(
       const char*              pszFileType,
             TIO_PrintMode_t    printMode )
 {
-   string srFileName( pszFileName ? pszFileName : "" );
+   string srFileName( TIO_PSZ_STR( pszFileName ));
    return( this->Open( srFileName, fileOpen, pszFileType, printMode ));
 }
 
@@ -253,7 +252,7 @@ bool TIO_FileHandler_c::ApplyPreProcessor(
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
    bool isValidCommand = false;
-   #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 ) || defined( LINUX24_64 )
+   #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX_I686 ) || defined( LINUX_X86_64 )
       TIO_FileHandler_c fileHandler;
       isValidCommand = fileHandler.IsValid( TIO_FILE_CPP_COMMAND, TIO_FILE_OPEN_READ );
    #elif defined( WIN32 ) || defined( _WIN32 )
@@ -341,7 +340,7 @@ bool TIO_FileHandler_c::IsValid(
       const char*              pszFileType,
             TIO_PrintMode_t  printMode ) const
 {
-   string srFileName( pszFileName ? pszFileName : "" );
+   string srFileName( TIO_PSZ_STR( pszFileName ));
    return( this->IsValid( srFileName, fileOpen, pszFileType, printMode ));
 } 
 

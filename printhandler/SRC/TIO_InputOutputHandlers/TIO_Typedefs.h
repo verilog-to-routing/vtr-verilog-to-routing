@@ -25,7 +25,7 @@ typedef enum TIO_FileOpenMode_e TIO_FileOpenMode_t;
 #if defined( SUN8 ) || defined( SUN10 )
    #define TIO_FILE_CPP_COMMAND "/usr/lib/cpp"
    #define TIO_FILE_CPP_OPTIONS "-C"
-#elif defined( LINUX24 ) || defined( LINUX24_64 )
+#elif defined( LINUX_I686 ) || defined( LINUX_X86_64 )
    #define TIO_FILE_CPP_COMMAND "/usr/bin/cpp"
    #define TIO_FILE_CPP_OPTIONS "-C"
 #elif defined( WIN32 ) || defined( _WIN32 )
@@ -38,7 +38,7 @@ typedef enum TIO_FileOpenMode_e TIO_FileOpenMode_t;
 
 #if defined( SUN8 ) || defined( SUN10 ) 
    #define TIO_FILE_HIDDEN_PREFIX "."
-#elif defined( LINUX24 ) || defined( LINUX24_64 )
+#elif defined( LINUX_I686 ) || defined( LINUX_X86_64 )
    #define TIO_FILE_HIDDEN_PREFIX "."
 #elif defined( WIN32 ) || defined( _WIN32 )
    #define TIO_FILE_HIDDEN_PREFIX "_"
@@ -46,7 +46,7 @@ typedef enum TIO_FileOpenMode_e TIO_FileOpenMode_t;
    #define TIO_FILE_HIDDEN_PREFIX "."
 #endif
 
-#if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 ) || defined( LINUX24_64 )
+#if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX_I686 ) || defined( LINUX_X86_64 )
    #define TIO_FILE_HIDDEN_PREFIX "."
 #elif defined( WIN32 ) || defined( _WIN32 )
    #define TIO_FILE_HIDDEN_PREFIX "_"
@@ -54,7 +54,7 @@ typedef enum TIO_FileOpenMode_e TIO_FileOpenMode_t;
    #define TIO_FILE_HIDDEN_PREFIX "."
 #endif
 
-#if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 ) || defined( LINUX24_64 )
+#if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX_I686 ) || defined( LINUX_X86_64 )
    #define TIO_FILE_DIR_DELIMITER "/"
 #elif defined( WIN32 ) || defined( _WIN32 )
    #define TIO_FILE_DIR_DELIMITER "\\"

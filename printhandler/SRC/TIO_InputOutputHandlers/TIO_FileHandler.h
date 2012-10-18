@@ -12,8 +12,7 @@
 #ifndef TIO_FILE_HANDLER_H
 #define TIO_FILE_HANDLER_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 
@@ -31,21 +30,21 @@ class TIO_FileHandler_c
 public:
 
    TIO_FileHandler_c( void );
-   TIO_FileHandler_c( const char* pszFileName,
+   TIO_FileHandler_c( const string& srFileName, 
                       TIO_FileOpenMode_t fileOpen = TIO_FILE_OPEN_UNDEFINED,
                       const char* pszFileType = 0,
                       TIO_PrintMode_t printMode = TIO_PRINT_ERROR );
-   TIO_FileHandler_c( const string& srFileName, 
+   TIO_FileHandler_c( const char* pszFileName,
                       TIO_FileOpenMode_t fileOpen = TIO_FILE_OPEN_UNDEFINED,
                       const char* pszFileType = 0,
                       TIO_PrintMode_t printMode = TIO_PRINT_ERROR );
    ~TIO_FileHandler_c( void );
     
-   bool Open( const char* pszFileName, 
+   bool Open( const string& srFileName, 
               TIO_FileOpenMode_t fileOpen,
               const char* pszFileType = 0,
               TIO_PrintMode_t printMode = TIO_PRINT_ERROR );
-   bool Open( const string& srFileName, 
+   bool Open( const char* pszFileName, 
               TIO_FileOpenMode_t fileOpen,
               const char* pszFileType = 0,
               TIO_PrintMode_t printMode = TIO_PRINT_ERROR );
@@ -62,11 +61,11 @@ public:
 
    bool ApplyPreProcessor( void );
 
-   bool IsValid( const char* pszFileName, 
+   bool IsValid( const string& srFileName, 
                  TIO_FileOpenMode_t fileOpen,
                  const char* pszFileType = 0,
                  TIO_PrintMode_t printMode = TIO_PRINT_ERROR ) const;
-   bool IsValid( const string& srFileName, 
+   bool IsValid( const char* pszFileName, 
                  TIO_FileOpenMode_t fileOpen,
                  const char* pszFileType = 0,
                  TIO_PrintMode_t printMode = TIO_PRINT_ERROR ) const;
@@ -88,7 +87,7 @@ private:
 inline void TIO_FileHandler_c::Flush( 
       void )
 {
-   if ( this->pfileStream_ )
+   if( this->pfileStream_ )
    {
       fflush( this->pfileStream_ );
    }
@@ -98,17 +97,10 @@ inline void TIO_FileHandler_c::Flush(
 inline void TIO_FileHandler_c::Reset( 
       void ) const
 {
-   if ( this->pfileStream_ )
+   if( this->pfileStream_ )
    {
       fseek( this->pfileStream_, 0, SEEK_SET );
    }
-}
-
-//===========================================================================//
-inline const char* TIO_FileHandler_c::GetFileName( 
-      void ) const
-{
-   return( this->srFileName_.data( ));
 }
 
 //===========================================================================//
@@ -116,6 +108,13 @@ inline FILE* TIO_FileHandler_c::GetFileStream(
       void ) const
 {
    return( this->pfileStream_ );
+}
+
+//===========================================================================//
+inline const char* TIO_FileHandler_c::GetFileName( 
+      void ) const
+{
+   return( this->srFileName_.data( ));
 }
 
 #endif

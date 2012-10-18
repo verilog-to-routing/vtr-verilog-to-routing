@@ -21,7 +21,7 @@ bool TIO_FileOutput_c::Open(
       const char*              pszFileName,
             TIO_FileOpenMode_t fileOpen )
 {
-   string srFileName( pszFileName ? pszFileName : "" );
+   string srFileName( TIO_PSZ_STR( pszFileName ));
    return( this->Open( srFileName, fileOpen ));
 }
 
