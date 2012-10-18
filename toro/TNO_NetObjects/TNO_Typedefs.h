@@ -71,10 +71,6 @@ typedef TCT_OrderedVector_c< TNO_Route_t > TNO_RouteList_t;
 // Define switch box list typedefs
 //---------------------------------------------------------------------------//
 
-// ??? class TC_SideIndex_c; // Forward declaration for subsequent class typedefs
-// ??? typedef TC_SideIndex_c TNO_SwitchBoxPin_t;
-// ??? typedef TCT_OrderedVector_c< TNO_SwitchBoxPin_t > TNO_SwitchBoxPinList_t;
-
 class TNO_SwitchBox_c; // Forward declaration for subsequent class typedefs
 typedef TCT_OrderedVector_c< TNO_SwitchBox_c > TNO_SwitchBoxList_t;
 

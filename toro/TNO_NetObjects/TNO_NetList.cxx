@@ -17,6 +17,7 @@
 //===========================================================================//
 
 #include "TIO_Typedefs.h"
+#include "TIO_PrintHandler.h"
 
 #include "TNO_NetList.h"
 
@@ -145,8 +146,11 @@ void TNO_NetList_c::Print(
 {
    for( size_t i = 0; i < this->GetLength( ); ++i )
    {
+      TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
+      printHandler.Write( pfile, spaceLen, "<" );
+
       const TNO_Net_c& net = *this->operator[]( i );
-      net.Print( pfile, spaceLen );
+      net.Print( pfile, spaceLen + 3 );
    }
 }
 
@@ -162,7 +166,7 @@ void TNO_NetList_c::Print(
 bool TNO_NetList_c::ExpandNameList( 
       const TNO_NameList_t& netNameList,
             TNO_NameList_t* pnetNameList,
-	    TC_TypeMode_t   netType,
+            TC_TypeMode_t   netType,
             bool            isExpandBusEnabled,
             bool            isShowWarningEnabled,
             bool            isShowErrorEnabled,
@@ -190,42 +194,42 @@ bool TNO_NetList_c::ExpandNameList(
       ok = this->ApplyRegExp_( netNameList_,
                                &netNameList_,
                                isShowWarningEnabled,
-			       isShowErrorEnabled,
+                               isShowErrorEnabled,
                                pszShowRegExpType );
       if( ok )
       {
-	 // Add all expanded net names to a sortable net list
-	 TNO_NetList_c netList_( netNameList_.GetLength( ));
+         // Add all expanded net names to a sortable net list
+         TNO_NetList_c netList_( netNameList_.GetLength( ));
 
-	 for( size_t i = 0; i < netNameList_.GetLength( ); ++i )
+         for( size_t i = 0; i < netNameList_.GetLength( ); ++i )
          {
             const TC_Name_c& netName_ = *netNameList_[i];
             const char* pszNetName_ = netName_.GetName( );
 
             TNO_Net_c* pnet = this->Find( pszNetName_ );
-	    if( !pnet )
-	       continue;
+            if( !pnet )
+               continue;
 
-	    if( !pnet->IsRoutable( ))
-	       continue;
+            if( !pnet->IsRoutable( ))
+               continue;
 
-	    if(( netType != TC_TYPE_UNDEFINED ) && ( netType != pnet->GetType( )))
-	       continue;
+            if(( netType != TC_TYPE_UNDEFINED ) && ( netType != pnet->GetType( )))
+               continue;
  
             TNO_Net_c net( pszNetName_ );
-	    netList_.Add( net );
+            netList_.Add( net );
          }
 
          // Force sort to detect and remove duplicate nets
-	 netList_.Find( "" );
+         netList_.Find( "" );
 
-	 // Load and return net name list base on non-duplicate net list
-	 for( size_t i = 0; i < netList_.GetLength( ); ++i )
+         // Load and return net name list base on non-duplicate net list
+         for( size_t i = 0; i < netList_.GetLength( ); ++i )
          {
             const TNO_Net_c& net = *netList_[i];
 
-	    const char* pszNetName = net.GetName( ); 
-	    TC_Name_c netName_( pszNetName ); 
+            const char* pszNetName = net.GetName( ); 
+            TC_Name_c netName_( pszNetName ); 
             pnetNameList->Add( netName_ );
          }
       }
@@ -247,8 +251,8 @@ bool TNO_NetList_c::ExpandNameList(
                                  pnetNameList,
                                  netType,
                                  isExpandBusEnabled,
-				 isShowWarningEnabled,
-				 isShowErrorEnabled,
+                                 isShowWarningEnabled,
+                                 isShowErrorEnabled,
                                  pszShowRegExpType ));
 }
 
@@ -268,8 +272,8 @@ bool TNO_NetList_c::ExpandNameList(
    return( this->ExpandNameList( netNameList, 
                                  pnetNameList,
                                  isExpandBusEnabled,
-				 isShowWarningEnabled,
-				 isShowErrorEnabled,
+                                 isShowWarningEnabled,
+                                 isShowErrorEnabled,
                                  pszShowRegExpType ));
 }
 
@@ -289,8 +293,8 @@ bool TNO_NetList_c::ExpandNameList(
    return( this->ExpandNameList( netNameList, 
                                  pnetNameList,
                                  isExpandBusEnabled,
-			         isShowWarningEnabled,
-				 isShowErrorEnabled,
+                                 isShowWarningEnabled,
+                                 isShowErrorEnabled,
                                  pszShowRegExpType ));
 }
 
@@ -456,6 +460,6 @@ bool TNO_NetList_c::ApplyRegExp_(
                                                                  pnameList,
                                                                  isShowWarningEnabled,
                                                                  isShowErrorEnabled,
- 								 pszShowRegExpType );
+                                                                 pszShowRegExpType );
    return( ok );
 }

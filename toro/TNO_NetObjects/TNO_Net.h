@@ -11,6 +11,7 @@
 //           - AddInstPinList, AddGlobalRouteList, AddRouteList
 //           - GetInstPinList, GetGlobalRouteList, GetRouteList
 //           - HasInstPinList, HasGlobalRouteList, HasRouteList
+//           - ClearInstPinList, ClearGlobalRouteList, ClearRouteList
 //           - SetInstPinListCapacity
 //           - IsRoutable
 //           - IsValid
@@ -96,11 +97,15 @@ public:
    const TNO_GlobalRouteList_t& GetGlobalRouteList( void ) const;
    const TNO_RouteList_t& GetRouteList( void ) const;
 
-   size_t FindInstPinCount( TC_TypeMode_t type = TC_TYPE_UNDEFINED ) const;
-
    bool HasInstPinList( void ) const;
    bool HasGlobalRouteList( void ) const;
    bool HasRouteList( void ) const;
+
+   void ClearInstPinList( void );
+   void ClearGlobalRouteList( void );
+   void ClearRouteList( void );
+
+   size_t FindInstPinCount( TC_TypeMode_t type = TC_TYPE_UNDEFINED ) const;
 
    void SetInstPinListCapacity( size_t capacity );
 
@@ -288,6 +293,27 @@ inline bool TNO_Net_c::HasRouteList(
       void ) const
 {
    return( this->routeList_.GetLength( ) > 0 ? true : false );
+}
+
+//===========================================================================//
+inline void TNO_Net_c::ClearInstPinList( 
+      void )
+{
+   this->instPinList_.Clear( );
+}
+
+//===========================================================================//
+inline void TNO_Net_c::ClearGlobalRouteList( 
+      void )
+{
+   this->globalRouteList_.Clear( );
+}
+
+//===========================================================================//
+inline void TNO_Net_c::ClearRouteList( 
+      void )
+{
+   this->routeList_.Clear( );
 }
 
 //===========================================================================//

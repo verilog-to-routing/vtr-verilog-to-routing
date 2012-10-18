@@ -245,19 +245,19 @@ void TNO_InstPin_c::ExtractString(
          *psrInstPin = "";
          if( this->srInstName_.length( ))
          {
-            *psrInstPin = "\"";
+            *psrInstPin += "\"";
             *psrInstPin += this->srInstName_;
             *psrInstPin += "\"";
          }
          if( this->srPortName_.length( ))
          {
-            *psrInstPin = " \"";
+            *psrInstPin += " \"";
             *psrInstPin += this->srPortName_;
             *psrInstPin += "\"";
          }
          if( this->srPinName_.length( ))
          {
-            *psrInstPin = " \"";
+            *psrInstPin += " \"";
             *psrInstPin += this->srPinName_;
             *psrInstPin += "\"";
          }

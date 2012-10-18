@@ -213,13 +213,35 @@ void TNO_Net_c::Print(
 
    if( this->instPinList_.IsValid( ))
    {
+      string srInstPin;
       for( size_t i = 0; i < this->instPinList_.GetLength( ); ++i )
       {
          const TNO_InstPin_c& instPin = *this->instPinList_[i];
+         if( instPin.GetType( ) != TC_TYPE_OUTPUT )
+            continue;
 
-         string srInstPin;
          instPin.ExtractString( &srInstPin );
-         printHandler.Write( pfile, spaceLen, "<pin %s >\n",
+         printHandler.Write( pfile, spaceLen, "<pin %s />\n",
+                                              TIO_SR_STR( srInstPin ));
+      }
+      for( size_t i = 0; i < this->instPinList_.GetLength( ); ++i )
+      {
+         const TNO_InstPin_c& instPin = *this->instPinList_[i];
+         if( instPin.GetType( ) != TC_TYPE_INPUT )
+            continue;
+
+         instPin.ExtractString( &srInstPin );
+         printHandler.Write( pfile, spaceLen, "<pin %s />\n",
+                                              TIO_SR_STR( srInstPin ));
+      }
+      for( size_t i = 0; i < this->instPinList_.GetLength( ); ++i )
+      {
+         const TNO_InstPin_c& instPin = *this->instPinList_[i];
+         if( instPin.GetType( ) != TC_TYPE_CLOCK )
+            continue;
+
+         instPin.ExtractString( &srInstPin );
+         printHandler.Write( pfile, spaceLen, "<pin %s />\n",
                                               TIO_SR_STR( srInstPin ));
       }
    }
@@ -230,7 +252,7 @@ void TNO_Net_c::Print(
       {
          const TNO_GlobalRoute_t& globalRoute = *this->globalRouteList_[i];
 
-         printHandler.Write( pfile, spaceLen, "<groute \"%s\" %u >\n",  
+         printHandler.Write( pfile, spaceLen, "<groute \"%s\" %u />\n",  
                                               TIO_PSZ_STR( globalRoute.GetName( )),
                                               globalRoute.GetLength( ));
       }
@@ -253,34 +275,34 @@ void TNO_Net_c::Print(
             {
                string srInstPin;
                node.GetInstPin( ).ExtractString( &srInstPin );
-               printHandler.Write( pfile, spaceLen, "<pin %s >\n",
+               printHandler.Write( pfile, spaceLen, "<pin %s />\n",
                                                     TIO_SR_STR( srInstPin ));
             }
             if( node.IsChannel( ))
             {
                string srChannel;
                node.GetChannel( ).ExtractString( &srChannel );
-               printHandler.Write( pfile, spaceLen, "<channel %s >\n",
+               printHandler.Write( pfile, spaceLen, "<channel %s />\n",
                                                     TIO_SR_STR( srChannel ));
             }
             if( node.IsSegment( ))
             {
                string srSegment;
                node.GetSegment( ).ExtractString( &srSegment );
-               printHandler.Write( pfile, spaceLen, "<segment %s >\n",
+               printHandler.Write( pfile, spaceLen, "<segment %s />\n",
                                                     TIO_SR_STR( srSegment ));
             }
             if( node.IsSwitchBox( ))
             {
                string srSwitchBox;
                node.GetSwitchBox( ).ExtractString( &srSwitchBox );
-               printHandler.Write( pfile, spaceLen, "<sb %s >\n",
+               printHandler.Write( pfile, spaceLen, "<sb %s />\n",
                                                     TIO_SR_STR( srSwitchBox ));
             }
          }
+         spaceLen -= 3;
+         printHandler.Write( pfile, spaceLen, "</route>\n" ); 
       }
-      spaceLen -= 3;
-      printHandler.Write( pfile, spaceLen, "/>\n" ); 
    }
 }
 

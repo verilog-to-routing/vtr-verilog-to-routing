@@ -57,7 +57,7 @@ public:
 
    bool ExpandNameList( const TNO_NameList_t& netNameList,
                         TNO_NameList_t* pnetNameList,
-		        TC_TypeMode_t netType,
+                        TC_TypeMode_t netType,
                         bool isShowBusEnabled = true,
                         bool isShowWarningEnabled = true,
                         bool isShowErrorEnabled = false,

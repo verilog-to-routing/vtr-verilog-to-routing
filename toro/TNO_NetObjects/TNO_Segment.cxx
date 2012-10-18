@@ -1,8 +1,8 @@
 //===========================================================================//
-//Purpose : Method definitions for the TNO_SwitchBox class.
+//Purpose : Method definitions for the TNO_Segment class.
 //
 //           Public methods include:
-//           - TNO_SwitchBox_c, ~TNO_SwitchBox_c
+//           - TNO_Segment_c, ~TNO_Segment_c
 //           - operator=, operator<
 //           - operator==, operator!=
 //           - Print
@@ -15,106 +15,82 @@
 
 #include "TC_StringUtils.h"
 
-#include "TNO_SwitchBox.h"
+#include "TNO_Segment.h"
 
 //===========================================================================//
-// Method         : TNO_SwitchBox_c
+// Method         : TNO_Segment_c
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
 // 05/30/12 jeffr : Original
 //===========================================================================//
-TNO_SwitchBox_c::TNO_SwitchBox_c( 
+TNO_Segment_c::TNO_Segment_c( 
       void )
+      :
+      track_( 0 )
 {
 } 
 
 //===========================================================================//
-TNO_SwitchBox_c::TNO_SwitchBox_c( 
+TNO_Segment_c::TNO_Segment_c( 
       const string& srName )
       :
-      srName_( srName )
+      srName_( srName ),
+      track_( 0 )
 {
 } 
 
 //===========================================================================//
-TNO_SwitchBox_c::TNO_SwitchBox_c( 
+TNO_Segment_c::TNO_Segment_c( 
       const char* pszName )
       :
-      srName_( TIO_PSZ_STR( pszName ))
-{
-} 
-
-//===========================================================================//
-TNO_SwitchBox_c::TNO_SwitchBox_c( 
-      const string&         srName,
-      const TC_SideIndex_c& input,
-      const TC_SideIndex_c& output )
-      :
-      srName_( srName ),
-      input_( input ),
-      output_( output )
-{
-} 
-
-//===========================================================================//
-TNO_SwitchBox_c::TNO_SwitchBox_c( 
-      const char*           pszName,
-      const TC_SideIndex_c& input,
-      const TC_SideIndex_c& output )
-      :
       srName_( TIO_PSZ_STR( pszName )),
-      input_( input ),
-      output_( output )
+      track_( 0 )
 {
 } 
 
 //===========================================================================//
-TNO_SwitchBox_c::TNO_SwitchBox_c( 
+TNO_Segment_c::TNO_Segment_c( 
       const string&       srName,
-            TC_SideMode_t inputSide,
-            size_t        inputIndex,
-            TC_SideMode_t outputSide,
-            size_t        outputIndex )
+      const TGS_Region_c& channel,
+            unsigned int  track )
       :
       srName_( srName ),
-      input_( inputSide, inputIndex ),
-      output_( outputSide, outputIndex )
+      channel_( channel ),
+      track_( track )
 {
 } 
 
 //===========================================================================//
-TNO_SwitchBox_c::TNO_SwitchBox_c( 
+TNO_Segment_c::TNO_Segment_c( 
       const char*         pszName,
-            TC_SideMode_t inputSide,
-            size_t        inputIndex,
-            TC_SideMode_t outputSide,
-            size_t        outputIndex )
+      const TGS_Region_c& channel,
+            unsigned int  track )
       :
       srName_( TIO_PSZ_STR( pszName )),
-      input_( inputSide, inputIndex ),
-      output_( outputSide, outputIndex )
+      channel_( channel ),
+      track_( track )
 {
 } 
 
 //===========================================================================//
-TNO_SwitchBox_c::TNO_SwitchBox_c( 
-      const TNO_SwitchBox_c& switchBox )
+TNO_Segment_c::TNO_Segment_c( 
+      const TNO_Segment_c& segment )
       :
-      srName_( switchBox.srName_ ),
-      input_( switchBox.input_ ),
-      output_( switchBox.output_ )
+      srName_( segment.srName_ ),
+      channel_( segment.channel_ ),
+      track_( segment.track_ )
 {
 } 
 
 //===========================================================================//
-// Method         : ~TNO_SwitchBox_c
+// Method         : ~TNO_Segment_c
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
 // 05/30/12 jeffr : Original
 //===========================================================================//
-TNO_SwitchBox_c::~TNO_SwitchBox_c( 
+TNO_Segment_c::~TNO_Segment_c( 
       void )
 {
 }
@@ -126,14 +102,14 @@ TNO_SwitchBox_c::~TNO_SwitchBox_c(
 // Version history
 // 05/30/12 jeffr : Original
 //===========================================================================//
-TNO_SwitchBox_c& TNO_SwitchBox_c::operator=( 
-      const TNO_SwitchBox_c& switchBox )
+TNO_Segment_c& TNO_Segment_c::operator=( 
+      const TNO_Segment_c& segment )
 {
-   if( &switchBox != this )
+   if( &segment != this )
    {
-      this->srName_ = switchBox.srName_;
-      this->input_ = switchBox.input_;
-      this->output_ = switchBox.output_;
+      this->srName_ = segment.srName_;
+      this->channel_ = segment.channel_;
+      this->track_ = segment.track_;
    }
    return( *this );
 }
@@ -145,10 +121,10 @@ TNO_SwitchBox_c& TNO_SwitchBox_c::operator=(
 // Version history
 // 05/30/12 jeffr : Original
 //===========================================================================//
-bool TNO_SwitchBox_c::operator<( 
-      const TNO_SwitchBox_c& switchBox ) const
+bool TNO_Segment_c::operator<( 
+      const TNO_Segment_c& segment ) const
 {
-   return(( TC_CompareStrings( this->srName_, switchBox.srName_ ) < 0 ) ? 
+   return(( TC_CompareStrings( this->srName_, segment.srName_ ) < 0 ) ? 
           true : false );
 }
 
@@ -159,12 +135,12 @@ bool TNO_SwitchBox_c::operator<(
 // Version history
 // 05/30/12 jeffr : Original
 //===========================================================================//
-bool TNO_SwitchBox_c::operator==( 
-      const TNO_SwitchBox_c& switchBox ) const
+bool TNO_Segment_c::operator==( 
+      const TNO_Segment_c& segment ) const
 {
-   return(( this->srName_ == switchBox.srName_ ) &&
-          ( this->input_ == switchBox.input_ ) &&
-          ( this->output_ == switchBox.output_ ) ?
+   return(( this->srName_ == segment.srName_ ) &&
+          ( this->channel_ == segment.channel_ ) &&
+          ( this->track_ == segment.track_ ) ?
           true : false );
 }
 
@@ -175,10 +151,10 @@ bool TNO_SwitchBox_c::operator==(
 // Version history
 // 05/30/12 jeffr : Original
 //===========================================================================//
-bool TNO_SwitchBox_c::operator!=( 
-      const TNO_SwitchBox_c& switchBox ) const
+bool TNO_Segment_c::operator!=( 
+      const TNO_Segment_c& segment ) const
 {
-   return( !this->operator==( switchBox ) ? true : false );
+   return( !this->operator==( segment ) ? true : false );
 }
 
 //===========================================================================//
@@ -188,15 +164,15 @@ bool TNO_SwitchBox_c::operator!=(
 // Version history
 // 05/30/12 jeffr : Original
 //===========================================================================//
-void TNO_SwitchBox_c::Print( 
+void TNO_Segment_c::Print( 
       FILE*  pfile,
       size_t spaceLen ) const
 {
-   string srSwitchBox;
-   this->ExtractString( &srSwitchBox );
+   string srSegment;
+   this->ExtractString( &srSegment );
 
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
-   printHandler.Write( pfile, spaceLen, "%s\n", TIO_SR_STR( srSwitchBox ));
+   printHandler.Write( pfile, spaceLen, "%s\n", TIO_SR_STR( srSegment ));
 }
 
 //===========================================================================//
@@ -206,27 +182,29 @@ void TNO_SwitchBox_c::Print(
 // Version history
 // 05/30/12 jeffr : Original
 //===========================================================================//
-void TNO_SwitchBox_c::ExtractString( 
-      string* psrSwitchBox ) const
+void TNO_Segment_c::ExtractString( 
+      string* psrSegment ) const
 {
-   if( psrSwitchBox )
+   if( psrSegment )
    {
       if( this->IsValid( ))
       {
-         string srInput, srOutput;
-         this->input_.ExtractString( &srInput );
-         this->output_.ExtractString( &srOutput );
+         string srChannel;
+         this->channel_.ExtractString( &srChannel );
 
-         *psrSwitchBox = "\"";
-         *psrSwitchBox += this->srName_;
-         *psrSwitchBox += "\" ";
-         *psrSwitchBox += srInput;
-         *psrSwitchBox += " ";
-         *psrSwitchBox += srOutput;
+         char szTrack[TIO_FORMAT_STRING_LEN_VALUE];
+         sprintf( szTrack, "%u", this->track_ );
+
+         *psrSegment = "\"";
+         *psrSegment += this->srName_;
+         *psrSegment += "\" ";
+         *psrSegment += srChannel;
+         *psrSegment += " ";
+         *psrSegment += szTrack;
       }
       else
       {
-         *psrSwitchBox = "?";
+         *psrSegment = "?";
       }
    }
 } 
@@ -238,10 +216,10 @@ void TNO_SwitchBox_c::ExtractString(
 // Version history
 // 05/30/12 jeffr : Original
 //===========================================================================//
-void TNO_SwitchBox_c::Clear( 
+void TNO_Segment_c::Clear( 
       void )
 {
    this->srName_ = "";
-   this->input_.Clear( );
-   this->output_.Clear( );
+   this->channel_.Reset( );
+   this->track_ = 0;
 }
