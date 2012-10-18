@@ -890,11 +890,17 @@ static t_trace *alloc_and_load_final_routing_trace() {
 			sizeof(t_trace));
 	for (i = 0; i < num_logical_nets; i++) {
 		iblock = logical_block[vpack_net[i].node_block[0]].clb_index;
-		pin = get_pb_graph_node_pin_from_vpack_net(i, 0);
+
 		final_routing_trace[i].iblock = iblock;
 		final_routing_trace[i].iswitch = OPEN;
-		final_routing_trace[i].index = pin->pin_count_in_cluster;
+		final_routing_trace[i].index = OPEN;
 		final_routing_trace[i].next = NULL;
+
+		pin = get_pb_graph_node_pin_from_vpack_net(i, 0);
+		if( !pin )
+			continue;
+		final_routing_trace[i].index = pin->pin_count_in_cluster;
+
 		expand_routing_trace(&final_routing_trace[i], i);
 	}
 
@@ -930,6 +936,7 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 						new_trace->iblock = clb_net[inet].node_block[ipin];
 						new_trace->index = pb_graph_pin->pin_count_in_cluster;
 						new_trace->iswitch = OPEN;
+						new_trace->num_siblings = 0;
 						new_trace->next = NULL;
 						current->next = new_trace;
 						current = expand_routing_trace(new_trace, ivpack_net);
@@ -948,6 +955,7 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 						new_trace->iblock = OPEN;
 						new_trace->index = inter_cb_trace->index;
 						new_trace->iswitch = inter_cb_trace->iswitch;
+						new_trace->num_siblings = 0;
 						new_trace->next = NULL;
 						current->next = new_trace;
 						if (rr_node[inter_cb_trace->index].type == IPIN) {
@@ -962,6 +970,7 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 							new_trace->index =
 									rr_node[inter_cb_trace->index].pb_graph_pin->pin_count_in_cluster;
 							new_trace->iswitch = OPEN;
+	    						new_trace->num_siblings = 0;
 							new_trace->next = NULL;
 							current->next = new_trace;
 							current = expand_routing_trace(new_trace,
@@ -995,6 +1004,7 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 				new_trace->iblock = trace->iblock;
 				new_trace->index = local_rr_graph[inode].edges[i];
 				new_trace->iswitch = OPEN;
+				new_trace->num_siblings = 0;
 				new_trace->next = NULL;
 				current->next = new_trace;
 				current = expand_routing_trace(new_trace, ivpack_net);
@@ -1032,15 +1042,17 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 							block[iblock].y, block[iblock].z);
 				}
 				local_rr_graph = block[iblock].pb->rr_graph;
-				fprintf(fp, "\tNode:\t%d\t%s[%d].%s[%d]\n", inode,
-						local_rr_graph[inode].pb_graph_pin->parent_node->pb_type->name,
-						local_rr_graph[inode].pb_graph_pin->parent_node->placement_index,
-						local_rr_graph[inode].pb_graph_pin->port->name,
-						local_rr_graph[inode].pb_graph_pin->pin_number);
+				fprintf(fp, "\tNode:\t%d\t%s[%d].%s[%d]", 
+					inode,
+					local_rr_graph[inode].pb_graph_pin->parent_node->pb_type->name,
+					local_rr_graph[inode].pb_graph_pin->parent_node->placement_index,
+					local_rr_graph[inode].pb_graph_pin->port->name,
+					local_rr_graph[inode].pb_graph_pin->pin_number);
 			} else {
-				fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode,
-						name_type[(int) rr_node[inode].type],
-						rr_node[inode].xlow, rr_node[inode].ylow);
+				fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", 
+					inode,
+					name_type[(int) rr_node[inode].type],
+					rr_node[inode].xlow, rr_node[inode].ylow);
 
 				if ((rr_node[inode].xlow != rr_node[inode].xhigh)
 						|| (rr_node[inode].ylow != rr_node[inode].yhigh))
