@@ -140,38 +140,59 @@ void TCD_CircuitDesign_c::Print(
                                         TIO_SR_STR( this->srName ));
    spaceLen += 3;
 
-   for( size_t i = 0; i < this->blockList.GetLength( ); ++i )
+   if( this->blockList.IsValid( ))
    {
-      printHandler.Write( pfile, spaceLen, "<block " );
-      this->blockList[i]->Print( pfile, spaceLen + 3 );
-      printHandler.Write( pfile, spaceLen, "</block>\n" );
+      printHandler.Write( pfile, spaceLen, "\n" );
+      for( size_t i = 0; i < this->blockList.GetLength( ); ++i )
+      {
+         printHandler.Write( pfile, spaceLen, "<block " );
+         this->blockList[i]->Print( pfile, spaceLen + 3 );
+         printHandler.Write( pfile, spaceLen, "</block>\n" );
+      }
    }
-   for( size_t i = 0; i < this->portList.GetLength( ); ++i )
+   if( this->portList.IsValid( ))
    {
-      printHandler.Write( pfile, spaceLen, "<port " );
-      this->portList[i]->Print( pfile, spaceLen + 3 );
-      printHandler.Write( pfile, spaceLen, "</port>\n" );
+      printHandler.Write( pfile, spaceLen, "\n" );
+      for( size_t i = 0; i < this->portList.GetLength( ); ++i )
+      {
+         printHandler.Write( pfile, spaceLen, "<port " );
+         this->portList[i]->Print( pfile, spaceLen + 3 );
+         printHandler.Write( pfile, spaceLen, "</port>\n" );
+      }
    }
-   for( size_t i = 0; i < this->instList.GetLength( ); ++i )
+   if( this->instList.IsValid( ))
    {
-      printHandler.Write( pfile, spaceLen, "<inst " );
-      this->instList[i]->Print( pfile, spaceLen + 3 );
-      printHandler.Write( pfile, spaceLen, "</inst>\n" );
+      printHandler.Write( pfile, spaceLen, "\n" );
+      for( size_t i = 0; i < this->instList.GetLength( ); ++i )
+      {
+         printHandler.Write( pfile, spaceLen, "<inst " );
+         this->instList[i]->Print( pfile, spaceLen + 3 );
+         printHandler.Write( pfile, spaceLen, "</inst>\n" );
+      }
    }
-   for( size_t i = 0; i < this->cellList.GetLength( ); ++i )
+   if( this->cellList.IsValid( ))
    {
-      printHandler.Write( pfile, spaceLen, "<cell " );
-      this->cellList[i]->Print( pfile, spaceLen + 3 );
-      printHandler.Write( pfile, spaceLen, "</cell>\n" );
+      printHandler.Write( pfile, spaceLen, "\n" );
+      for( size_t i = 0; i < this->cellList.GetLength( ); ++i )
+      {
+         printHandler.Write( pfile, spaceLen, "<cell " );
+         this->cellList[i]->Print( pfile, spaceLen + 3 );
+         printHandler.Write( pfile, spaceLen, "</cell>\n" );
+      }
    }
-   for( size_t i = 0; i < this->netList.GetLength( ); ++i )
+   if( this->netList.IsValid( ))
    {
-      printHandler.Write( pfile, spaceLen, "<net " );
-      this->netList[i]->Print( pfile, spaceLen + 3 );
-      printHandler.Write( pfile, spaceLen, "</net>\n" );
+      printHandler.Write( pfile, spaceLen, "\n" );
+      for( size_t i = 0; i < this->netList.GetLength( ); ++i )
+      {
+         printHandler.Write( pfile, spaceLen, "<net " );
+         this->netList[i]->Print( pfile, spaceLen + 3 );
+         printHandler.Write( pfile, spaceLen, "</net>\n" );
+      }
    }
 
    spaceLen -= 3;
+   printHandler.Write( pfile, spaceLen, "\n" );
    printHandler.Write( pfile, spaceLen, "</circuit>\n" );
 }
 
@@ -320,10 +341,6 @@ bool TCD_CircuitDesign_c::InitValidate(
    }
 
 // TBD ???  Given: .latch <input> <output> [<type> <control>] [<init_val>]
-// TBD ???  can we validate input pin names exist in pin list (with matching type)?
-// TBD ???  can we validate output pin name exists in pin list (with matching type)?
-
-// TBD ???  Given: .latch <input> <output> [<type> <control>] [<init_val>]
 // TBD ???  can we validate input pin name exists in pin list (with matching type)?
 // TBD ???  can we validate output pin name exists in pin list (with matching type)?
 // TBD ???  can we validate clock pin name exists in pin list (with matching type)?
@@ -372,11 +389,6 @@ bool TCD_CircuitDesign_c::InitValidate(
          }
       }
    }
-
-// TBD ???... May need to validate NetList's net...
-// TBD ???... Each net must have exactly one OUTPUT port
-// TBD ???... Each net must be one or more INPUT ports
-
    return( ok );
 }
 
