@@ -181,19 +181,18 @@ inputOutputList[ TFM_InputOutputList_t* pinputOutputList ]
    )*
    ">"
    (  "<" 
-      (  REGION regionDef[ &inputOutput.region ] ">"
-      |  PIN pinList[ &inputOutput.pinList ] ( "/>" | "</" PIN ">" )
+      (  REGION regionDef[ &inputOutput.region ]
+      |  PIN pinList[ &inputOutput.pinList ]
       |  SLICE
          (  COUNT { EQUAL } uintNum[ &inputOutput.slice.count ]
          |  CAPACITY { EQUAL } uintNum[ &inputOutput.slice.capacity ]
          )* 
-         ">"
       |  TIMING
          (  ( CAP | CAP_IN ) { EQUAL } floatNum[ &inputOutput.timing.capInput ]
          |  ( T | DELAY ) { EQUAL } expNum[ &inputOutput.timing.delay ]
          )* 
-         ">"
       )
+      ( { "/" } | "</" PIN ) ">"
    )*
    "</" IO ">"
    <<
@@ -217,19 +216,18 @@ physicalBlockList[ TFM_PhysicalBlockList_t* pphysicalBlockList ]
    )*
    ">"
    (  "<" 
-      (  REGION regionDef[ &physicalBlock.region ] ">"
-      |  PIN pinList[ &physicalBlock.pinList ] ( "/>" | "</" PIN ">" )
+      (  REGION regionDef[ &physicalBlock.region ]
+      |  PIN pinList[ &physicalBlock.pinList ]
       |  SLICE
          (  COUNT { EQUAL } uintNum[ &physicalBlock.slice.count ]
          |  CAPACITY { EQUAL } uintNum[ &physicalBlock.slice.capacity ]
          )* 
-         ">"
       |  TIMING
          (  ( CAP | CAP_IN ) { EQUAL } floatNum[ &physicalBlock.timing.capInput ]
          |  ( T | DELAY ) { EQUAL } expNum[ &physicalBlock.timing.delay ]
          )* 
-         ">"
       )
+      ( { "/" } | "</" PIN ) ">"
    )*
    "</" PB ">"
    <<
@@ -352,8 +350,8 @@ pinList[ TFM_PinList_t* ppinList ]
    |  WIDTH { EQUAL } floatNum[ &pin.width ]
    |  SLICE { EQUAL } uintNum[ &pin.slice ]
    )*
-   (  ">"
-      connectionPattern[ &pin.connectionPattern ]
+   ">"
+   (  connectionPattern[ &pin.connectionPattern ]
    )*
    <<
       if( pin.IsValid( ))
