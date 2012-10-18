@@ -45,9 +45,11 @@
 //
 //===========================================================================//
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdarg>
+#include <cstring>
+#include <string>
+using namespace std;
 
 #if defined( SUN8 ) || defined( SUN10 )
    #include <time.h>
@@ -173,15 +175,18 @@ void TIO_PrintHandler_c::DeleteInstance(
 // 05/01/12 jeffr : Original
 //===========================================================================//
 TIO_PrintHandler_c& TIO_PrintHandler_c::GetInstance(
-      void )
+      bool newInstance )
 {
    if( !pinstance_ )
    {
-      NewInstance( );
-
-      if( pinstance_ )
+      if( newInstance )
       {
-         pinstance_->SetStdioOutput( stdout );
+         NewInstance( );
+
+         if( pinstance_ )
+         {
+            pinstance_->SetStdioOutput( stdout );
+         }
       }
    }
    return( *pinstance_ );
@@ -215,15 +220,16 @@ void TIO_PrintHandler_c::Info(
    va_list vaArgs;                      // Make a variable argument list
    va_start( vaArgs, pszText );         // Initialize variable argument list
          
-   this->Info( pszText, vaArgs );
+   this->Info( TIO_PRINT_INFO, pszText, vaArgs );
 
    va_end( vaArgs );                    // Reset variable argument list
 }
 
 //===========================================================================//
 void TIO_PrintHandler_c::Info(
-      const char*   pszText,
-            va_list vaArgs )
+            TIO_PrintMode_t mode,
+      const char*           pszText,
+            va_list         vaArgs )
 {
    string srText( TIO_PSZ_STR( pszText ));
    if(( srText.length( ) > 1 ) && ( srText[srText.length( )-1] == '\n' ))
@@ -234,7 +240,7 @@ void TIO_PrintHandler_c::Info(
    TCT_NameList_c< TC_Name_c >* pinfoAcceptList = static_cast< TCT_NameList_c< TC_Name_c >* >( this->display_.pinfoAcceptList );
    TCT_NameList_c< TC_Name_c >* pinfoRejectList = static_cast< TCT_NameList_c< TC_Name_c >* >( this->display_.pinfoRejectList );
 
-   TIO_PrintMode_t mode = ( !pinfoAcceptList ? TIO_PRINT_INFO : TIO_PRINT_UNDEFINED );
+   mode = ( !pinfoAcceptList ? mode : TIO_PRINT_UNDEFINED );
    if( pinfoAcceptList && ( mode == TIO_PRINT_UNDEFINED ))
    {
       if( pinfoAcceptList->MatchRegExp( srText ))
@@ -273,7 +279,7 @@ bool TIO_PrintHandler_c::Warning(
    va_list vaArgs;                      // Make a variable argument list
    va_start( vaArgs, pszText );         // Initialize variable argument list
          
-   bool isValid = this->Warning( pszText, vaArgs );
+   bool isValid = this->Warning( TIO_PRINT_WARNING, pszText, vaArgs );
 
    va_end( vaArgs );                    // Reset variable argument list
 
@@ -282,8 +288,9 @@ bool TIO_PrintHandler_c::Warning(
 
 //===========================================================================//
 bool TIO_PrintHandler_c::Warning(
-      const char*   pszText,
-            va_list vaArgs )
+            TIO_PrintMode_t mode,
+      const char*           pszText,
+            va_list         vaArgs )
 {
    bool isValid = true;
 
@@ -298,7 +305,7 @@ bool TIO_PrintHandler_c::Warning(
    TCT_NameList_c< TC_Name_c >* perrorAcceptList = static_cast< TCT_NameList_c< TC_Name_c >* >( this->display_.perrorAcceptList );
    TCT_NameList_c< TC_Name_c >* perrorRejectList = static_cast< TCT_NameList_c< TC_Name_c >* >( this->display_.perrorRejectList );
 
-   TIO_PrintMode_t mode = ( !pwarningAcceptList && !perrorAcceptList ? TIO_PRINT_WARNING : TIO_PRINT_UNDEFINED );
+   mode = ( !pwarningAcceptList && !perrorAcceptList ? mode : TIO_PRINT_UNDEFINED );
    if( pwarningAcceptList && ( mode == TIO_PRINT_UNDEFINED ))
    {
       if( pwarningAcceptList->MatchRegExp( srText ))
@@ -363,7 +370,7 @@ bool TIO_PrintHandler_c::Error(
    va_list vaArgs;                      // Make a variable argument list
    va_start( vaArgs, pszText );         // Initialize variable argument list
          
-   bool isValid = this->Error( pszText, vaArgs );
+   bool isValid = this->Error( TIO_PRINT_ERROR, pszText, vaArgs );
 
    va_end( vaArgs );                    // Reset variable argument list
 
@@ -372,8 +379,9 @@ bool TIO_PrintHandler_c::Error(
 
 //===========================================================================//
 bool TIO_PrintHandler_c::Error(
-      const char*   pszText,
-            va_list vaArgs )
+            TIO_PrintMode_t mode,
+      const char*           pszText,
+            va_list         vaArgs )
 {
    bool isValid = true;
 
@@ -388,7 +396,7 @@ bool TIO_PrintHandler_c::Error(
    TCT_NameList_c< TC_Name_c >* pwarningAcceptList = static_cast< TCT_NameList_c< TC_Name_c >* >( this->display_.pwarningAcceptList );
    TCT_NameList_c< TC_Name_c >* pwarningRejectList = static_cast< TCT_NameList_c< TC_Name_c >* >( this->display_.pwarningRejectList );
 
-   TIO_PrintMode_t mode = ( !perrorAcceptList && !pwarningAcceptList ? TIO_PRINT_ERROR : TIO_PRINT_UNDEFINED );
+   mode = ( !perrorAcceptList && !pwarningAcceptList ? mode : TIO_PRINT_UNDEFINED );
    if( perrorAcceptList && ( mode == TIO_PRINT_UNDEFINED ))
    {
       if( perrorAcceptList->MatchRegExp( srText ))
@@ -452,7 +460,7 @@ bool TIO_PrintHandler_c::Fatal(
    va_list vaArgs;                      // Make a variable argument list
    va_start( vaArgs, pszText );         // Initialize variable argument list
          
-   this->Fatal( pszText, vaArgs );
+   this->Fatal( TIO_PRINT_FATAL, pszText, vaArgs );
 
    va_end( vaArgs );                    // Reset variable argument list
 
@@ -460,11 +468,12 @@ bool TIO_PrintHandler_c::Fatal(
 }
 
 //===========================================================================//
-bool TIO_PrintHandler_c::Fatal( 
-      const char*   pszText,
-            va_list vaArgs )
+bool TIO_PrintHandler_c::Fatal(
+            TIO_PrintMode_t mode,
+      const char*           pszText,
+            va_list         vaArgs )
 {
-   this->WriteMessage_( TIO_PRINT_FATAL, pszText, vaArgs );
+   this->WriteMessage_( mode, pszText, vaArgs );
 
    return( false );
 }
@@ -485,45 +494,9 @@ void TIO_PrintHandler_c::Trace(
    va_list vaArgs;                      // Make a variable argument list
    va_start( vaArgs, pszText );         // Initialize variable argument list
          
-   this->Trace( pszText, vaArgs );
+   this->Trace( TIO_PRINT_TRACE, pszText, vaArgs );
 
    va_end( vaArgs );                    // Reset variable argument list
-}
-
-//===========================================================================//
-void TIO_PrintHandler_c::Trace( 
-      const char*   pszText,
-            va_list vaArgs )
-{
-   string srText( TIO_PSZ_STR( pszText ));
-   if(( srText.length( ) > 1 ) && ( srText[srText.length( )-1] == '\n' ))
-   {
-      srText = srText.substr( 0, srText.length( )-1 );
-   }
-
-   TCT_NameList_c< TC_Name_c >* ptraceAcceptList = static_cast< TCT_NameList_c< TC_Name_c >* >( this->display_.ptraceAcceptList );
-   TCT_NameList_c< TC_Name_c >* ptraceRejectList = static_cast< TCT_NameList_c< TC_Name_c >* >( this->display_.ptraceRejectList );
-
-   TIO_PrintMode_t mode = ( ptraceRejectList ? TIO_PRINT_TRACE : TIO_PRINT_UNDEFINED );
-   if( ptraceAcceptList && ( mode == TIO_PRINT_UNDEFINED ))
-   {
-      if( ptraceAcceptList->MatchRegExp( srText ))
-      {
-         mode = TIO_PRINT_TRACE;
-      }
-   }
-   if( ptraceRejectList && ( mode == TIO_PRINT_TRACE ))
-   {
-      if( ptraceRejectList->MatchRegExp( srText ))
-      {
-         mode = TIO_PRINT_UNDEFINED;
-      }
-   }
-
-   if( mode != TIO_PRINT_UNDEFINED )
-   {
-      this->WriteMessage_( mode, pszText, vaArgs );
-   }
 }
 
 //===========================================================================//
@@ -550,13 +523,50 @@ void TIO_PrintHandler_c::Trace(
    va_list vaArgs;                   // Make a variable argument list
    va_start( vaArgs, pszText );      // Initialize variable argument list
          
-   this->WriteMessage_( TIO_PRINT_TRACE, pszText, vaArgs );
+   this->Trace( TIO_PRINT_TRACE, pszText, vaArgs );
 
    va_end( vaArgs );                 // Reset variable argument list
 
    if( pfile )
    {
       this->outputs_.stdioOutput.SetStream( pstream );
+   }
+}
+
+//===========================================================================//
+void TIO_PrintHandler_c::Trace(
+            TIO_PrintMode_t mode,
+      const char*           pszText,
+            va_list         vaArgs )
+{
+   string srText( TIO_PSZ_STR( pszText ));
+   if(( srText.length( ) > 1 ) && ( srText[srText.length( )-1] == '\n' ))
+   {
+      srText = srText.substr( 0, srText.length( )-1 );
+   }
+
+   TCT_NameList_c< TC_Name_c >* ptraceAcceptList = static_cast< TCT_NameList_c< TC_Name_c >* >( this->display_.ptraceAcceptList );
+   TCT_NameList_c< TC_Name_c >* ptraceRejectList = static_cast< TCT_NameList_c< TC_Name_c >* >( this->display_.ptraceRejectList );
+
+   mode = ( ptraceRejectList ? mode : TIO_PRINT_UNDEFINED );
+   if( ptraceAcceptList && ( mode == TIO_PRINT_UNDEFINED ))
+   {
+      if( ptraceAcceptList->MatchRegExp( srText ))
+      {
+         mode = TIO_PRINT_TRACE;
+      }
+   }
+   if( ptraceRejectList && ( mode == TIO_PRINT_TRACE ))
+   {
+      if( ptraceRejectList->MatchRegExp( srText ))
+      {
+         mode = TIO_PRINT_UNDEFINED;
+      }
+   }
+
+   if( mode != TIO_PRINT_UNDEFINED )
+   {
+      this->WriteMessage_( mode, pszText, vaArgs );
    }
 }
 
@@ -577,12 +587,24 @@ bool TIO_PrintHandler_c::Internal(
    va_list vaArgs;                      // Make a variable argument list
    va_start( vaArgs, pszText );         // Initialize variable argument list
          
-   this->WriteMessage_( TIO_PRINT_INTERNAL, pszText, vaArgs, pszSource );
+   this->Internal( TIO_PRINT_INTERNAL, pszSource, pszText, vaArgs );
 
    // Update current internal count
    ++this->counts_.internalCount;
 
    va_end( vaArgs );                    // Reset variable argument list
+
+   return( false );
+}
+
+//===========================================================================//
+bool TIO_PrintHandler_c::Internal( 
+            TIO_PrintMode_t mode,
+      const char*           pszSource, 
+      const char*           pszText,
+            va_list         vaArgs )
+{
+   this->WriteMessage_( mode, pszText, vaArgs, pszSource );
 
    return( false );
 }
@@ -601,17 +623,18 @@ void TIO_PrintHandler_c::Direct(
    va_list vaArgs;                      // Make a variable argument list
    va_start( vaArgs, pszText );         // Initialize variable argument list
          
-   this->Direct( pszText, vaArgs );
+   this->Direct( TIO_PRINT_DIRECT, pszText, vaArgs );
 
    va_end( vaArgs );                    // Reset variable argument list
 }
 
 //===========================================================================//
-void TIO_PrintHandler_c::Direct( 
-      const char*   pszText,
-            va_list vaArgs )
+void TIO_PrintHandler_c::Direct(
+            TIO_PrintMode_t mode,
+      const char*           pszText,
+            va_list         vaArgs )
 {
-   this->WriteMessage_( TIO_PRINT_DIRECT, pszText, vaArgs );
+   this->WriteMessage_( mode, pszText, vaArgs );
 }
 
 //===========================================================================//
@@ -1066,7 +1089,7 @@ void TIO_PrintHandler_c::FindUserName(
       string* psrUserName ) const
 {
    const char* pszUserNameCmd = "";
-   #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 ) || defined( LINUX24_64 )
+   #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX_I686 ) || defined( LINUX_X86_64 )
       pszUserNameCmd = "whoami"; 
    #elif defined( WIN32 ) || defined( _WIN32 )
       pszUserNameCmd = "echo %USERNAME%";
@@ -1087,7 +1110,7 @@ void TIO_PrintHandler_c::FindHostName(
       string* psrHostName ) const
 {
    const char* pszHostNameCmd = "";
-   #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 ) || defined( LINUX24_64 )
+   #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX_I686 ) || defined( LINUX_X86_64 )
       pszHostNameCmd = "hostname", 
    #elif defined( WIN32 ) || defined( _WIN32 )
       pszHostNameCmd = "hostname", 
@@ -1539,7 +1562,7 @@ void TIO_PrintHandler_c::ApplySystemCommand_(
    {
       *psrCommandStdout = "";
 
-      #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 ) || defined( LINUX24_64 ) || defined( WIN32 ) || defined( _WIN32 )
+      #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX_I686 ) || defined( LINUX_X86_64 ) || defined( WIN32 ) || defined( _WIN32 )
 
          TIO_SkinHandler_c& skinHandler = TIO_SkinHandler_c::GetInstance( );
          const char* pszBinaryName = skinHandler.GetBinaryName( );

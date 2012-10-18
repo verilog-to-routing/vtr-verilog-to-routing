@@ -11,7 +11,8 @@
  *
  *===========================================================================*/
 
-#include <stdarg.h>
+#include <cstdarg>
+using namespace std;
 
 #include "TIO_SkinHandler.h"
 #include "TIO_PrintHandler.h"
@@ -102,7 +103,7 @@ extern "C" void PrintHandlerInit(
 extern "C" int PrintHandlerExists( 
       void )
 {
-   TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
+   TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( false );
    return( printHandler.HasInstance( ) ? true : false );
 }
 
@@ -203,19 +204,19 @@ extern "C" unsigned char PrintHandlerMessage(
    switch( messageMode )
    {
    case TIO_MESSAGE_INFO:
-      printHandler.Info( pszMessage, vaArgs );
+      printHandler.Info( TIO_PRINT_INFO, pszMessage, vaArgs );
       break;
    case TIO_MESSAGE_WARNING:
-      ok = printHandler.Warning( pszMessage, vaArgs );
+      ok = printHandler.Warning( TIO_PRINT_WARNING, pszMessage, vaArgs );
       break;
    case TIO_MESSAGE_ERROR:
-      ok = printHandler.Error( pszMessage, vaArgs );
+      ok = printHandler.Error( TIO_PRINT_ERROR, pszMessage, vaArgs );
       break;
    case TIO_MESSAGE_TRACE:
-      printHandler.Trace( pszMessage, vaArgs );
+      printHandler.Trace( TIO_PRINT_TRACE, pszMessage, vaArgs );
       break;
    case TIO_MESSAGE_DIRECT:
-      printHandler.Direct( pszMessage, vaArgs );
+      printHandler.Direct( TIO_PRINT_DIRECT, pszMessage, vaArgs );
       break;
    case TIO_MESSAGE_UNDEFINED:
       break;

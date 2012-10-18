@@ -37,7 +37,6 @@
 #define TIO_PRINT_HANDLER_H
 
 #include <string>
-#include <cstdarg>
 using namespace std;
 
 #include "TIO_Typedefs.h"
@@ -58,32 +57,41 @@ public:
 
    static void NewInstance( void );
    static void DeleteInstance( void );
-   static TIO_PrintHandler_c& GetInstance( void );
+   static TIO_PrintHandler_c& GetInstance( bool newInstance = true );
    static bool HasInstance( void );
 
    void Info( const char* pszText, ... );
-   void Info( const char* pszText, va_list vaArgs );
+   void Info( TIO_PrintMode_t mode, 
+              const char* pszText, va_list vaArgs );
 
    bool Warning( const char* pszText, ... );
-   bool Warning( const char* pszText, va_list vaArgs );
+   bool Warning( TIO_PrintMode_t mode, 
+                 const char* pszText, va_list vaArgs );
 
    bool Error( const char* pszText, ... );
-   bool Error( const char* pszText, va_list vaArgs );
+   bool Error( TIO_PrintMode_t mode, 
+               const char* pszText, va_list vaArgs );
 
    bool Fatal( const char* pszText, ... );
-   bool Fatal( const char* pszText, va_list vaArgs );
+   bool Fatal( TIO_PrintMode_t mode, 
+               const char* pszText, va_list vaArgs );
 
    void Trace( const char* pszText, ... );
-   void Trace( const char* pszText, va_list vaArgs );
    void Trace( FILE* pfile, 
                size_t lenSpace, 
                const char* pszText, ... );
+   void Trace( TIO_PrintMode_t mode, 
+               const char* pszText, va_list vaArgs );
 
    bool Internal( const char* pszSource, 
                   const char* pszText, ... );
+   bool Internal( TIO_PrintMode_t mode, 
+                  const char* pszSource, 
+                  const char* pszText, va_list vaArgs );
 
    void Direct( const char* pszText, ... );
-   void Direct( const char* pszText, va_list vaArgs );
+   void Direct( TIO_PrintMode_t mode, 
+                const char* pszText, va_list vaArgs );
 
    void Write( const char* pszText, ... );
    void Write( size_t lenSpace, 
