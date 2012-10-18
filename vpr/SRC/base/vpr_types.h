@@ -848,20 +848,24 @@ typedef enum e_rr_type {
 typedef struct s_trace {
 	int index;
 	short iswitch;
-
 	int iblock;
-
+	int num_siblings;
 	struct s_trace *next;
 } t_trace;
 
 /* Basic element used to store the traceback (routing) of each net.        *
  * index:   Array index (ID) of this routing resource node.                *
- * iswitch:  Index of the switch type used to go from this rr_node to      *
- *           the next one in the routing.  OPEN if there is no next node   *
- *           (i.e. this node is the last one (a SINK) in a branch of the   *
- *           net's routing).                                               *
- * iblock: index of block that this trace applies to if applicable, OPEN otherwise *
- * next:    pointer to the next traceback element in this route.           */
+ * iswitch: Index of the switch type used to go from this rr_node to       *
+ *          the next one in the routing.  OPEN if there is no next node    *
+ *          (i.e. this node is the last one (a SINK) in a branch of the    *
+ *          net's routing).                                                *
+ * iblock:  Index of block that this trace applies to if applicable, OPEN  *
+ *          otherwise                                                      *
+ * num_siblings: Number of traceback sibling nodes (including self). This  *
+ *               count is used to help extract individual route paths for  *
+ *               each net. A '0' indicates a terminal node, '1' means a    *
+ *               single child, '+1' defines branch with 2 or more children.*
+ * next:    Pointer to the next traceback element in this route.           */
 
 #define NO_PREVIOUS -1
 
