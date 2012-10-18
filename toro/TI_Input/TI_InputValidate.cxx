@@ -24,8 +24,7 @@ bool TI_Input_c::ValidateOptionsStore_(
 {
    bool ok = true;
 
-// TBD ???
-    // This is a stub... (currently looking for work)
+   // This is only a stub... (currently looking for intereseting work to do)
 
    return( ok );
 }
@@ -62,8 +61,7 @@ bool TI_Input_c::ValidateFabricModel_(
 {
    bool ok = true;
 
-// TBD ???
-    // This is a stub... (currently looking for work)
+   // This is only a stub... (currently looking for intereseting work to do)
 
    return( ok );
 }

@@ -173,8 +173,6 @@ void TI_Input_c::ApplyDefaultBaseName_(
                                 srDefaultBaseName, TIO_SZ_OUTPUT_CIRCUIT_DEF_EXT );
    this->ApplyDefaultBaseName_( &poutputOptions->srLaffFileName,
                                 srDefaultBaseName, TIO_SZ_OUTPUT_LAFF_DEF_EXT );
-   this->ApplyDefaultBaseName_( &poutputOptions->srMetricsFileName,
-                                srDefaultBaseName, TIO_SZ_OUTPUT_METRICS_DEF_EXT );
 
    for( size_t i = 0; i < pmessageOptions->trace.vpr.echoFileNameList.GetLength( ); ++i )
    {

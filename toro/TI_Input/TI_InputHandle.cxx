@@ -115,8 +115,7 @@ bool TI_Input_c::HandleArchitectureSpec_(
 void TI_Input_c::HandleFabricModel_( 
       void )
 {
-// TBD ???
-    // This is a stub... (currently looking for work)
+   // This is only a stub... (currently looking for intereseting work to do)
 }
 
 //===========================================================================//

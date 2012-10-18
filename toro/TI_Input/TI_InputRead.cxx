@@ -369,10 +369,6 @@ void TI_Input_c::ApplyCommandLineOptions_(
       poutputOptions->srCircuitFileName = controlSwitches.outputOptions.srCircuitFileName;
       poutputOptions->circuitFileEnable = true;
    }
-   if( controlSwitches.outputOptions.metricsFileEnable )
-   {
-      poutputOptions->metricsFileEnable = controlSwitches.outputOptions.metricsFileEnable;
-   }
 
    if( controlSwitches.executeOptions.toolMask != TOS_EXECUTE_TOOL_UNDEFINED )
       pexecuteOptions->toolMask = controlSwitches.executeOptions.toolMask;
