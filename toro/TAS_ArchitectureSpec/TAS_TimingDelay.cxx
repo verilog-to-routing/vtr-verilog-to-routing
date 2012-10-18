@@ -142,21 +142,21 @@ void TAS_TimingDelay_c::Print(
       printHandler.Write( pfile, 0, "input = \"%s\" ", TIO_SR_STR( this->srInputPortName ));
       printHandler.Write( pfile, 0, "output = \"%s\" ", TIO_SR_STR( this->srOutputPortName ));
       printHandler.Write( pfile, 0, "delay = %0.*e ", expPrecision, this->delay );
-      printHandler.Write( pfile, 0, ">\n" );
+      printHandler.Write( pfile, 0, "/>\n" );
    }
    else if( this->type == TAS_TIMING_DELAY_SETUP )
    {
       printHandler.Write( pfile, 0, "input = \"%s\" ", TIO_SR_STR( this->srInputPortName ));
       printHandler.Write( pfile, 0, "clock = \"%s\" ", TIO_SR_STR( this->srClockPortName ));
       printHandler.Write( pfile, 0, "delay = %0.*e ", expPrecision, this->delay );
-      printHandler.Write( pfile, 0, ">\n" );
+      printHandler.Write( pfile, 0, "/>\n" );
    }
    else if( this->type == TAS_TIMING_DELAY_CLOCK_TO_Q )
    {
       printHandler.Write( pfile, 0, "output = \"%s\" ", TIO_SR_STR( this->srOutputPortName ));
       printHandler.Write( pfile, 0, "clock = \"%s\" ", TIO_SR_STR( this->srClockPortName ));
       printHandler.Write( pfile, 0, "delay = %0.*e ", expPrecision, this->delay );
-      printHandler.Write( pfile, 0, ">\n" );
+      printHandler.Write( pfile, 0, "/>\n" );
    }
    else if( this->type == TAS_TIMING_DELAY_MATRIX )
    {
@@ -171,7 +171,7 @@ void TAS_TimingDelay_c::Print(
       printHandler.Write( pfile, spaceLen, "delay = %s", TIO_SR_STR( srDelayMatrix ));
 
       spaceLen -= 3;
-      printHandler.Write( pfile, spaceLen, ">\n" );
+      printHandler.Write( pfile, spaceLen, "/>\n" );
    }
 }
 

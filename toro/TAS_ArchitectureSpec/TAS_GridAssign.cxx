@@ -156,7 +156,7 @@ void TAS_GridAssign_c::Print(
       printHandler.Write( pfile, 0, "multiple_start = %u ", this->multipleStart );
       printHandler.Write( pfile, 0, "multiple_repeat = %u ", this->multipleRepeat );
    }
-   printHandler.Write( pfile, 0, ">\n" );
+   printHandler.Write( pfile, 0, "/>\n" );
 }
 
 //===========================================================================//

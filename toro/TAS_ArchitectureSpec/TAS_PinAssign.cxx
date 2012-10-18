@@ -152,10 +152,10 @@ void TAS_PinAssign_c::Print(
             const TC_Name_c& portName = *this->portNameList[i];
             printHandler.Write( pfile, 0, "\"%s\" ", TIO_PSZ_STR( portName.GetName( )));
          }
-         printHandler.Write( pfile, 0, ">\n" );
+         printHandler.Write( pfile, 0, "/>\n" );
       }
       spaceLen -= 3;
-      printHandler.Write( pfile, spaceLen, "/>\n" );
+      printHandler.Write( pfile, spaceLen, "</pin_assign>\n" );
    }
    else
    {

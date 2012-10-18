@@ -145,13 +145,13 @@ void TAS_Mode_c::Print(
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   printHandler.Write( pfile, spaceLen, "<mode \"%s\" >\n", TIO_SR_STR( this->srName ));
+   printHandler.Write( pfile, spaceLen, "<model \"%s\" >\n", TIO_SR_STR( this->srName ));
    spaceLen += 3;
 
    for( size_t i = 0; i < this->physicalBlockList.GetLength( ); ++i )
    {
       const TAS_PhysicalBlock_c& physicalBlock = *this->physicalBlockList[i];
-      printHandler.Write( pfile, spaceLen, "<pb \"%s\" >\n", TIO_PSZ_STR( physicalBlock.GetName( )));
+      printHandler.Write( pfile, spaceLen, "<pb \"%s\" />\n", TIO_PSZ_STR( physicalBlock.GetName( )));
    }
 
    if( this->interconnectList.IsValid( ))
@@ -160,7 +160,7 @@ void TAS_Mode_c::Print(
    }
 
    spaceLen -= 3;
-   printHandler.Write( pfile, spaceLen, "</mode>\n" );
+   printHandler.Write( pfile, spaceLen, "</model>\n" );
 
    for( size_t i = 0; i < this->physicalBlockList.GetLength( ); ++i )
    {

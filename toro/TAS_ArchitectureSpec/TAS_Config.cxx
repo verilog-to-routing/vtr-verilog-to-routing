@@ -39,10 +39,10 @@ TAS_Config_c::TAS_Config_c(
 
    this->device.segments.dirType = TAS_SEGMENT_DIR_UNDEFINED;
 
-   this->device.areaModel.resMinWidthNMOS = 1.0;
-   this->device.areaModel.resMinWidthPMOS = 1.0;
-   this->device.areaModel.sizeInputPinMux = 1.0;
-   this->device.areaModel.areaGridTile = 1.0;
+   this->device.areaModel.resMinWidthNMOS = 0.0;
+   this->device.areaModel.resMinWidthPMOS = 0.0;
+   this->device.areaModel.sizeInputPinMux = 0.0;
+   this->device.areaModel.areaGridTile = 0.0;
 } 
 
 //===========================================================================//
@@ -190,7 +190,37 @@ void TAS_Config_c::Print(
          printHandler.Write( pfile, 0, "width = %u height = %u ", this->layout.manualSize.gridDims.width,
                                                                   this->layout.manualSize.gridDims.height );
       }
-      printHandler.Write( pfile, 0, ">\n" );
+      printHandler.Write( pfile, 0, "/>\n" );
+   }
+
+   if( TCTF_IsGT( this->device.areaModel.resMinWidthNMOS, 0.0 ) ||
+       TCTF_IsGT( this->device.areaModel.resMinWidthPMOS, 0.0 ) ||
+       TCTF_IsGT( this->device.areaModel.sizeInputPinMux, 0.0 ) ||
+       TCTF_IsGT( this->device.areaModel.areaGridTile, 0.0 ))
+   {
+      printHandler.Write( pfile, spaceLen, "<est " );
+
+      if( TCTF_IsGT( this->device.areaModel.resMinWidthNMOS, 0.0 ))
+      {
+         printHandler.Write( pfile, 0, "min_width_nmos_res = %0.*f ", 
+                                       precision, this->device.areaModel.resMinWidthNMOS );
+      }
+      if( TCTF_IsGT( this->device.areaModel.resMinWidthPMOS, 0.0 ))
+      {
+         printHandler.Write( pfile, 0, "min_width_pmos_res = %0.*f ", 
+                                       precision, this->device.areaModel.resMinWidthPMOS );
+      }
+      if( TCTF_IsGT( this->device.areaModel.sizeInputPinMux, 0.0 ))
+      {
+         printHandler.Write( pfile, 0, "mux_trans_in_pin_size = %0.*f ", 
+                                       precision, this->device.areaModel.sizeInputPinMux );
+      }
+      if( TCTF_IsGT( this->device.areaModel.areaGridTile, 0.0 ))
+      {
+         printHandler.Write( pfile, 0, "grid_logic_tile_area = %0.*f ", 
+                                       precision, this->device.areaModel.areaGridTile );
+      }
+      printHandler.Write( pfile, 0, "/>\n" );
    }
 
    if( this->device.switchBoxes.modelType != TAS_SWITCH_BOX_MODEL_UNDEFINED )
@@ -198,13 +228,15 @@ void TAS_Config_c::Print(
       string srSwitchBoxModel;
       TAS_ExtractStringSwitchBoxModelType( this->device.switchBoxes.modelType, &srSwitchBoxModel );
 
-      printHandler.Write( pfile, spaceLen, "<sb %s >\n", TIO_SR_STR( srSwitchBoxModel ));
+      printHandler.Write( pfile, spaceLen, "<sb %s fs = %u />\n", TIO_SR_STR( srSwitchBoxModel ),
+                                                                  this->device.switchBoxes.fs );
+
    }
 
    if( TCTF_IsGT( this->device.connectionBoxes.capInput, 0.0 ) ||
        TCTF_IsGT( this->device.connectionBoxes.delayInput, 0.0 ))
    {
-      printHandler.Write( pfile, spaceLen, "<cb cap_in = %0.*f delay_in = %0.*e >\n",
+      printHandler.Write( pfile, spaceLen, "<cb cap_in = %0.*e delay_in = %0.*e />\n",
                                            precision + 1, this->device.connectionBoxes.capInput,
                                            precision + 1, this->device.connectionBoxes.delayInput );
    }
@@ -214,7 +246,7 @@ void TAS_Config_c::Print(
       string srSegmentDir;
       TAS_ExtractStringSegmentDirType( this->device.segments.dirType, &srSegmentDir );
 
-      printHandler.Write( pfile, spaceLen, "<segments %s >\n", TIO_SR_STR( srSegmentDir ));
+      printHandler.Write( pfile, spaceLen, "<segments %s />\n", TIO_SR_STR( srSegmentDir ));
    }
 
    spaceLen -= 3;
@@ -268,7 +300,7 @@ void TAS_Config_c::PrintXML(
                                         precision, this->device.areaModel.sizeInputPinMux );
    printHandler.Write( pfile, spaceLen, "<area grid_logic_tile_area=\"%0.*f\"/>\n",
                                         precision, this->device.areaModel.areaGridTile );
-   printHandler.Write( pfile, spaceLen, "<timing C_ipin_cblock=\"%0.*f\" T_ipin_cblock=\"%0.*e\"/>\n",
+   printHandler.Write( pfile, spaceLen, "<timing C_ipin_cblock=\"%0.*e\" T_ipin_cblock=\"%0.*e\"/>\n",
                                         precision + 1, this->device.connectionBoxes.capInput,
                                         precision + 1, this->device.connectionBoxes.delayInput ); 
 

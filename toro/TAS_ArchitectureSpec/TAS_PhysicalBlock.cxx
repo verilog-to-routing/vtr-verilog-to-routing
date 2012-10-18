@@ -275,6 +275,16 @@ void TAS_PhysicalBlock_c::Print(
       printHandler.Write( pfile, 0, "cell = \"%s\" ", TIO_SR_STR( this->srModelName ));
    }
 
+   if(( this->classType == TAS_CLASS_LUT ) ||
+      ( this->classType == TAS_CLASS_FLIPFLOP ) ||
+      ( this->classType == TAS_CLASS_MEMORY ))
+   {
+      string srClassType;
+      TAS_ExtractStringClassType( this->classType, &srClassType );
+      printHandler.Write( pfile, 0, "class = %s ",
+ 	                            TIO_SR_STR( srClassType ));
+   }
+
    this->fcIn.Print( pfile, 0 );
    this->fcOut.Print( pfile, 0 );
 
@@ -293,7 +303,7 @@ void TAS_PhysicalBlock_c::Print(
                                                                 precision, this->origin_.y );
       }
    }
-   printHandler.Write( pfile, 0, ">\n" );
+   printHandler.Write( pfile, 0, "/>\n" );
    spaceLen += 3;
    
    if( this->modeNameList.IsValid( ))
@@ -305,7 +315,7 @@ void TAS_PhysicalBlock_c::Print(
          const TC_Name_c& modeName = *this->modeNameList[i];
          printHandler.Write( pfile, 0, "\"%s\" ", TIO_PSZ_STR( modeName.GetName( )));
       }
-      printHandler.Write( pfile, 0, ">\n" );
+      printHandler.Write( pfile, 0, "/>\n" );
    }
    if( this->modeList.IsValid( ))
    {
@@ -316,13 +326,13 @@ void TAS_PhysicalBlock_c::Print(
          const TAS_Mode_c& mode = *this->modeList[i];
          printHandler.Write( pfile, 0, "\"%s\" ", TIO_SR_STR( mode.srName ));
       }
-      printHandler.Write( pfile, 0, ">\n" );
+      printHandler.Write( pfile, 0, "/>\n" );
    }
    if( !this->modeNameList.IsValid( ) &&
        !this->modeList.IsValid( ) &&
        this->physicalBlockList.IsValid( ))
    {
-      printHandler.Write( pfile, spaceLen, "<mode \"%s\" >\n", TIO_SR_STR( this->srName ));
+      printHandler.Write( pfile, spaceLen, "<mode \"%s\" />\n", TIO_SR_STR( this->srName ));
    }
 
    this->portList.Print( pfile, spaceLen );
@@ -449,7 +459,7 @@ void TAS_PhysicalBlock_c::PrintXML(
       for( size_t i = 0; i < this->modeNameList.GetLength( ); ++i )
       {
          const TC_Name_c& modeName = *this->modeNameList[i];
-         printHandler.Write( pfile, spaceLen, "<mode \"%s\"/>\n", TIO_PSZ_STR( modeName.GetName( )));
+         printHandler.Write( pfile, spaceLen, "<mode \"%s\" />\n", TIO_PSZ_STR( modeName.GetName( )));
       }
    }
    if( this->modeList.IsValid( ))

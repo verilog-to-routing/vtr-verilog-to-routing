@@ -241,11 +241,11 @@ void TAS_SwitchBox_c::Print(
       }
       if( TCTF_IsGT( this->timing.capInput, 0.0 ))
       {
-         printHandler.Write( pfile, spaceLen, "cap_in = %0.*f\n", precision, this->timing.capInput );
+         printHandler.Write( pfile, spaceLen, "cap_in = %0.*e\n", precision + 1, this->timing.capInput );
       }
       if( TCTF_IsGT( this->timing.capOutput, 0.0 ))
       {
-         printHandler.Write( pfile, spaceLen, "cap_out = %0.*f\n", precision, this->timing.capOutput );
+         printHandler.Write( pfile, spaceLen, "cap_out = %0.*e\n", precision + 1, this->timing.capOutput );
       }
       if( TCTF_IsGT( this->timing.delay, 0.0 ))
       {

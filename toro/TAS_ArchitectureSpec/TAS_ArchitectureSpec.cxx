@@ -161,43 +161,61 @@ void TAS_ArchitectureSpec_c::Print(
                                         TIO_SR_STR( this->srName ));
    spaceLen += 3;
 
+   printHandler.Write( pfile, spaceLen, "\n" );
    this->config.Print( pfile, spaceLen );
 
-   TAS_ModeList_t modeList_;
-   for( size_t i = 0; i < this->physicalBlockList.GetLength( ); ++i )
+   if( this->physicalBlockList.IsValid( ))
    {
-      if( this->physicalBlockList[i]->GetUsage( ) == TAS_USAGE_INPUT_OUTPUT )
+      printHandler.Write( pfile, spaceLen, "\n" );
+
+      TAS_ModeList_t modeList_;
+      for( size_t i = 0; i < this->physicalBlockList.GetLength( ); ++i )
       {
-         this->physicalBlockList[i]->Print( pfile, spaceLen,
-                                            0, &modeList_ );
+         if( this->physicalBlockList[i]->GetUsage( ) == TAS_USAGE_INPUT_OUTPUT )
+         {
+            this->physicalBlockList[i]->Print( pfile, spaceLen,
+                                               0, &modeList_ );
+         }
       }
-   }
-   for( size_t i = 0; i < this->physicalBlockList.GetLength( ); ++i )
-   {
-      if( this->physicalBlockList[i]->GetUsage( ) == TAS_USAGE_PHYSICAL_BLOCK )
+      for( size_t i = 0; i < this->physicalBlockList.GetLength( ); ++i )
       {
-         this->physicalBlockList[i]->Print( pfile, spaceLen,
-                                            0, &modeList_ );
+         if( this->physicalBlockList[i]->GetUsage( ) == TAS_USAGE_PHYSICAL_BLOCK )
+         {
+            this->physicalBlockList[i]->Print( pfile, spaceLen,
+                                               0, &modeList_ );
+         }
       }
-   }
-   for( size_t i = 0; i < this->physicalBlockList.GetLength( ); ++i )
-   {
-      if(( this->physicalBlockList[i]->GetUsage( ) != TAS_USAGE_INPUT_OUTPUT ) &&
-         ( this->physicalBlockList[i]->GetUsage( ) != TAS_USAGE_PHYSICAL_BLOCK ))
+      for( size_t i = 0; i < this->physicalBlockList.GetLength( ); ++i )
       {
-         this->physicalBlockList[i]->Print( pfile, spaceLen,
-                                            0, &modeList_ );
+         if(( this->physicalBlockList[i]->GetUsage( ) != TAS_USAGE_INPUT_OUTPUT ) &&
+            ( this->physicalBlockList[i]->GetUsage( ) != TAS_USAGE_PHYSICAL_BLOCK ))
+         {
+            this->physicalBlockList[i]->Print( pfile, spaceLen,
+                                               0, &modeList_ );
+         }
       }
    }
 
-   this->switchBoxList.Print( pfile, spaceLen );
-   this->segmentList.Print( pfile, spaceLen );
-
-   for( size_t i = 0; i < this->cellList.GetLength( ); ++i )
+   if( this->switchBoxList.IsValid( ))
    {
-      if( this->cellList[i]->GetSource( ) == TLO_CELL_SOURCE_STANDARD )
-	 continue;
-      this->cellList[i]->Print( pfile, spaceLen );
+      printHandler.Write( pfile, spaceLen, "\n" );
+      this->switchBoxList.Print( pfile, spaceLen );
+   }
+   if( this->segmentList.IsValid( ))
+   {
+      printHandler.Write( pfile, spaceLen, "\n" );
+      this->segmentList.Print( pfile, spaceLen );
+   }
+
+   if( this->cellList.IsValid( ))
+   {
+      printHandler.Write( pfile, spaceLen, "\n" );
+      for( size_t i = 0; i < this->cellList.GetLength( ); ++i )
+      {
+         if( this->cellList[i]->GetSource( ) == TLO_CELL_SOURCE_STANDARD )
+            continue;
+         this->cellList[i]->Print( pfile, spaceLen );
+      }
    }
 
    spaceLen -= 3;
@@ -239,8 +257,8 @@ void TAS_ArchitectureSpec_c::PrintXML(
       printHandler.Write( pfile, spaceLen, "<models>\n" );
       for( size_t i = 0; i < this->cellList.GetLength( ); ++i )
       {
-	 if( this->cellList[i]->GetSource( ) == TLO_CELL_SOURCE_STANDARD )
-	    continue;
+         if( this->cellList[i]->GetSource( ) == TLO_CELL_SOURCE_STANDARD )
+            continue;
 
          this->cellList[i]->PrintXML( pfile, spaceLen + 3 );
       }
@@ -341,7 +359,7 @@ bool TAS_ArchitectureSpec_c::InitValidate(
    if( ok )
    {
       ok = this->InitValidatePhysicalBlockList_( &this->physicalBlockList,
-   				                 this->cellList, 0 );
+                                                 this->cellList, 0 );
    }
    if( ok )
    {
@@ -398,7 +416,7 @@ bool TAS_ArchitectureSpec_c::IsValid(
           ( this->switchBoxList.IsValid( )) ||
           ( this->segmentList.IsValid( )) ||
           ( this->cellList.IsValid( )) ?
-	  true : false );
+          true : false );
 }
 
 //===========================================================================//
@@ -502,21 +520,21 @@ bool TAS_ArchitectureSpec_c::InitDefaultsBlockHier_(
       TAS_Mode_c mode;
       if( this->modeList.Find( modeName.GetName( ), &mode ))
       {
-	 TAS_Mode_c* pmode_ = pphysicalBlock->modeList.Add( mode );
+         TAS_Mode_c* pmode_ = pphysicalBlock->modeList.Add( mode );
 
          for( size_t j = 0; j < pmode_->physicalBlockList.GetLength( ); ++j )
          {
-	    TAS_PhysicalBlock_c* pphysicalBlock_ = pmode_->physicalBlockList[j];
+            TAS_PhysicalBlock_c* pphysicalBlock_ = pmode_->physicalBlockList[j];
             TAS_PhysicalBlock_c physicalBlock;
             if( pphysicalBlockList->Find( *pphysicalBlock_, &physicalBlock ))
-	    {
+            {
                pphysicalBlockList->Delete( physicalBlock );
                pphysicalBlock_ = pmode_->physicalBlockList.Replace( physicalBlock );
 
                ok = InitDefaultsBlockHier_( pphysicalBlockList, pphysicalBlock_ );
                if( !ok )
                   break;
-	    }
+            }
             else
             {
                ok = printHandler.Error( "Invalid architecture specification!\n"
@@ -527,7 +545,7 @@ bool TAS_ArchitectureSpec_c::InitDefaultsBlockHier_(
                if( !ok )
                   break;
             }
-	 }
+         }
       }
       else
       {
@@ -553,7 +571,7 @@ bool TAS_ArchitectureSpec_c::InitDefaultsBlockHier_(
 // 05/15/12 jeffr : Original
 //===========================================================================//
 void TAS_ArchitectureSpec_c::InitDefaultsParentLinks_(
-	    TAS_PhysicalBlock_c* pphysicalBlock,
+            TAS_PhysicalBlock_c* pphysicalBlock,
       const TAS_PhysicalBlock_c* pphysicalBlockParent,
       const TAS_Mode_c*          pmodeParent ) const
 {
@@ -576,7 +594,7 @@ void TAS_ArchitectureSpec_c::InitDefaultsParentLinks_(
 
 //===========================================================================//
 void TAS_ArchitectureSpec_c::InitDefaultsParentLinks_(
-	    TAS_Mode_c*          pmode,
+            TAS_Mode_c*          pmode,
       const TAS_PhysicalBlock_c* pphysicalBlockParent ) const
 {
    // Initialize links to parent (either physical block or mode)
@@ -748,10 +766,10 @@ bool TAS_ArchitectureSpec_c::InitValidatePhysicalBlockList_(
          const TAS_GridAssignList_t& gridAssignList = physicalBlock.gridAssignList;
          for( size_t j = 0; j < gridAssignList.GetLength( ); ++j )
          {
-	    const TAS_GridAssign_c& gridAssign = *gridAssignList[j];
-	    if( gridAssign.distr == TAS_GRID_ASSIGN_DISTR_FILL )
+            const TAS_GridAssign_c& gridAssign = *gridAssignList[j];
+            if( gridAssign.distr == TAS_GRID_ASSIGN_DISTR_FILL )
             {
-	       isGridFillDefined = true;
+               isGridFillDefined = true;
             }
          }
       }
@@ -829,7 +847,7 @@ bool TAS_ArchitectureSpec_c::InitValidatePhysicalBlock_(
    {
       // Validate each physical block (recursively)
       ok = this->InitValidatePhysicalBlockList_( &pphysicalBlock->physicalBlockList,
-				                 cellList_, 
+                                                 cellList_, 
                                                  hierarchyLevel );
    }
    if( ok )
@@ -844,7 +862,7 @@ bool TAS_ArchitectureSpec_c::InitValidatePhysicalBlock_(
    if( ok )
    {
       ok = this->InitValidateModeList_( &pphysicalBlock->modeList,
-				        cellList_,
+                                        cellList_,
                                         hierarchyLevel );
    }
    if( ok )
@@ -942,7 +960,7 @@ bool TAS_ArchitectureSpec_c::InitValidateMode_(
       for( size_t i = 0; i < pmode->physicalBlockList.GetLength( ); ++i )
       {
          ok = this->InitValidatePhysicalBlock_( pmode->physicalBlockList[i],
-   					        cellList_, 
+                                                cellList_, 
                                                 hierarchyLevel );
          if( !ok )
             break;
@@ -973,9 +991,9 @@ bool TAS_ArchitectureSpec_c::InitValidatePinAssignList_(
       {
          const TAS_PinAssign_c& pinAssign = *pinAssignList[j];
          if( pinAssign.pattern != TAS_PIN_ASSIGN_PATTERN_CUSTOM )
-	    continue;
+            continue;
 
-	 if( pinAssign.offset == 0 )
+         if( pinAssign.offset == 0 )
             continue;
 
          if( pinAssign.offset >= height )
@@ -1038,34 +1056,34 @@ bool TAS_ArchitectureSpec_c::InitValidateGridAssignList_(
       {
       case TAS_GRID_ASSIGN_DISTR_SINGLE:
          if( gridAssign.singlePercent == 0 )
-	 {
+         {
             ok = printHandler.Error( "Missing physical block grid location property!\n"
                                      "%sGrid location type \"rel\" must include a 'pos' value\n",
                                      TIO_PREFIX_ERROR_SPACE );
-	 }
-	 break;
+         }
+         break;
       case TAS_GRID_ASSIGN_DISTR_MULTIPLE:
-	 if( gridAssign.multipleStart == 0 )
-	 {
+         if( gridAssign.multipleStart == 0 )
+         {
             ok = printHandler.Error( "Missing physical block grid location property!\n"
                                      "%sGrid location type \"col\" must include a 'start' value\n",
                                      TIO_PREFIX_ERROR_SPACE );
-	 }
+         }
          if( gridAssign.multipleRepeat == 0 )
-	 {
+         {
             ok = printHandler.Error( "Missing physical block grid location property!\n"
                                      "%sGrid location type \"col\" must include a 'repeat' value\n",
                                      TIO_PREFIX_ERROR_SPACE );
-	 }
-	 break;
+         }
+         break;
       case TAS_GRID_ASSIGN_DISTR_FILL:
          ++fillCount;
-	 break;
+         break;
       case TAS_GRID_ASSIGN_DISTR_PERIMETER:
          ++perimeterCount;
-	 break;
+         break;
       case TAS_GRID_ASSIGN_DISTR_UNDEFINED:
-	 break;
+         break;
       }
       if( !ok )
          break;

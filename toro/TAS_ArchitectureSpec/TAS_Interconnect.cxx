@@ -157,12 +157,12 @@ void TAS_Interconnect_c::Print(
    for( size_t i = 0; i < this->inputNameList.GetLength( ); ++i )
    {
       const TC_Name_c& inputName = *this->inputNameList[i];
-      printHandler.Write( pfile, spaceLen, "<input \"%s\" >\n", TIO_PSZ_STR( inputName.GetName( )));
+      printHandler.Write( pfile, spaceLen, "<input \"%s\" />\n", TIO_PSZ_STR( inputName.GetName( )));
    }
    for( size_t i = 0; i < this->outputNameList.GetLength( ); ++i )
    {
       const TC_Name_c& outputName = *this->outputNameList[i];
-      printHandler.Write( pfile, spaceLen, "<output \"%s\" >\n", TIO_PSZ_STR( outputName.GetName( )));
+      printHandler.Write( pfile, spaceLen, "<output \"%s\" />\n", TIO_PSZ_STR( outputName.GetName( )));
    }
 
    this->timingDelayLists.Print( pfile, spaceLen );
