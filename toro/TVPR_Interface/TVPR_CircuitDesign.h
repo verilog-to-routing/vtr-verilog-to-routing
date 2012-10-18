@@ -9,6 +9,9 @@
 
 #include "TCD_CircuitDesign.h"
 
+#include "TVPR_IndexCount.h"
+#include "TVPR_Typedefs.h"
+
 #include "vpr_api.h"
 
 //===========================================================================//
@@ -37,9 +40,12 @@ public:
                 bool deleteInvalidData ) const;
    
    void Import( const t_arch* vpr_architecture,
+                t_net* vpr_netArray,
+                int vpr_netCount,
                 const t_block* vpr_blockArray,
                 int vpr_blockCount,
                 const t_logical_block* vpr_logicalBlockArray,
+                const t_rr_node* vpr_rrNodeArray,
                 TCD_CircuitDesign_c* pcircuitDesign ) const;
 
 private:
@@ -169,6 +175,14 @@ private:
                           int nodeIndex,
                           TPO_HierNameList_t* phierNameList,
                           TPO_HierMapList_t* phierMapList ) const;
+   void PeekNetList_( const t_arch* vpr_architecture,
+                      const t_net* vpr_netArray,
+                      int vpr_netCount,
+                      const t_block* vpr_blockArray,
+                      int vpr_blockCount,
+                      const t_logical_block* vpr_logicalBlockArray,
+                      const t_rr_node* vpr_rrNodeArray,
+                      TNO_NetList_c* pnetList ) const;
 
    bool ValidateModelList_( const TLO_CellList_t& cellList,
                             const t_model* pvpr_customModels ) const;
@@ -214,6 +228,44 @@ private:
    void FreeLogicalBlock_( t_logical_block* vpr_logicalBlockArray,
                            int blockIndex ) const;
    
+   void ExtractNetList_( const t_net* vpr_netArray,
+                         int vpr_netCount,
+                         TNO_NetList_c* pnetList ) const;
+   void ExtractNetListInstPins_( const t_net* vpr_netArray,
+                                 int vpr_netCount,
+                                 const t_block* vpr_blockArray,
+                                 const t_logical_block* vpr_logicalBlockArray,
+                                 TNO_NetList_c* pnetList ) const;
+   void ExtractNetListRoutes_( const t_arch* vpr_architecture,
+                               const t_net* vpr_netArray,
+                               int vpr_netCount,
+                               const t_block* vpr_blockArray,
+                               int vpr_blockCount,
+                               const t_rr_node* vpr_rrNodeArray,
+                               TNO_NetList_c* pnetList ) const;
+   void ExtractNetRoutes_( const t_block* vpr_blockArray,
+                           const t_rr_node* vpr_rrNodeArray,
+                           t_trace* pvpr_traceList,
+                           TNO_RouteList_t* prouteList ) const;
+   bool IsNetOpen_( const t_trace* pvpr_traceList ) const;
+   
+   void MakeTraceNodeCountList_( const t_trace* pvpr_traceList,
+                                 TVPR_IndexCountList_t* ptraceCountList ) const;
+   void UpdateTraceSiblingCount_( t_trace* pvpr_traceList,
+                                  const TVPR_IndexCountList_t& traceCountList ) const;
+   
+   void LoadTraceRoutes_( const t_block* vpr_blockArray,
+                          const t_rr_node* vpr_rrNodeArray,
+                          const t_trace* pvpr_traceThis,
+                          const t_trace* pvpr_tracePrev,
+                          TNO_Route_t* proute,
+                          TNO_RouteList_t* prouteList ) const;
+   void LoadTraceNodes_( const t_block* vpr_blockArray,
+                         const t_rr_node* vpr_rrNodeArray,
+                         const t_trace* pvpr_traceThis,
+                         const t_trace* pvpr_tracePrev,
+                         TNO_Route_t* proute ) const;
+
    const t_model* FindModel_( const t_model* pvpr_models,
                               const char* pszModelName ) const;
    const t_model_ports* FindModelPort_( const t_model* pvpr_model,
@@ -223,6 +275,24 @@ private:
                             TC_TypeMode_t portType ) const;
    bool FindPinIndex_( const char* pszPinName,
                        int* ppinIndex ) const;
+
+   const t_pb_graph_pin* FindGraphPin_( const t_logical_block* vpr_logicalBlockArray,
+                                        const t_net& vpr_net,
+                                        int nodeIndex ) const;
+   const t_pb_graph_pin* FindGraphPin_( const t_pb_graph_node& vpr_graphNode,
+                                        const t_model_ports* pvpr_port, 
+                                        int pinIndex ) const;
+   size_t FindTraceListLength_( const t_trace* pvpr_traceList ) const;
+   const t_trace* FindTraceListNode_( const t_trace* pvpr_traceList,
+                                      int index ) const;
+   void FindSwitchBoxCoord_( const t_rr_node& vpr_rrNode1,
+                             const t_rr_node& vpr_rrNode2,
+                             int* px,
+                             int* py ) const;
+   void FindSwitchBoxSides_( const t_rr_node& vpr_rrNode1,
+                             const t_rr_node& vpr_rrNode2,
+                             TC_SideMode_t* pside1,
+                             TC_SideMode_t* pside2 ) const;
 };
 
 #endif 

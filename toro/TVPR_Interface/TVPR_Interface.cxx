@@ -162,8 +162,9 @@ bool TVPR_Interface_c::Open(
 
    // VPR snippet copied from VPR's vpr_init function...
    memset( &this->vpr_.options, 0, sizeof( t_options ));
-   memset( &this->vpr_.setup, 0, sizeof( t_vpr_setup ));
    memset( &this->vpr_.arch, 0, sizeof( t_arch ));
+   memset( &this->vpr_.setup, 0, sizeof( t_vpr_setup ));
+   memset( &this->vpr_.powerOpts, 0, sizeof( t_power_opts ));
 
    // Toro snippet specific to TVPR_Interface_c's initialization
    TVPR_OptionsStore_c vpr_optionsStore;
@@ -177,6 +178,8 @@ bool TVPR_Interface_c::Open(
    // Toro snippet specific to TVPR_Interface_c's initialization
    if( ok && architectureSpec.IsValid( ))
    {
+      printHandler.Info( "Exporting architecture spec to VPR...\n" );
+
       bool isTimingEnabled = ( this->vpr_.setup.TimingEnabled ? true : false );
       TVPR_ArchitectureSpec_c vpr_architectureSpec;
       ok = vpr_architectureSpec.Export( architectureSpec, 
@@ -187,6 +190,8 @@ bool TVPR_Interface_c::Open(
    }
    if( ok && fabricModel.IsValid( ))
    {
+      printHandler.Info( "Exporting fabric model to VPR...\n" );
+
       TVPR_FabricModel_c vpr_fabricModel;
       ok = vpr_fabricModel.Export( fabricModel );
    }
@@ -213,7 +218,8 @@ bool TVPR_Interface_c::Open(
                      &this->vpr_.setup.Segments, 
                      &this->vpr_.setup.Timing,
                      &this->vpr_.setup.ShowGraphics, 
-                     &this->vpr_.setup.GraphPause );
+                     &this->vpr_.setup.GraphPause,
+                     &this->vpr_.powerOpts );
 
       // VPR snippet copied from VPR's vpr_init function...
       vpr_check_options( this->vpr_.options, 
@@ -235,6 +241,8 @@ bool TVPR_Interface_c::Open(
    // Toro snippet specific to TVPR_Interface_c's initialization
    if( ok && circuitDesign.IsValid( ))
    {
+      printHandler.Info( "Exporting circuit design to VPR...\n" );
+
       bool deleteInvalidData = ( this->vpr_.setup.PackerOpts.sweep_hanging_nets_and_inputs ? true : false );
       TVPR_CircuitDesign_c vpr_circuitDesign;
       ok = vpr_circuitDesign.Export( circuitDesign,
@@ -254,10 +262,13 @@ bool TVPR_Interface_c::Open(
    {
       printHandler.SetPrefix( TIO_SZ_VPR_PREFIX );
 
+      boolean readActivityFile = FALSE;
+      char* pszActivityFileName = 0;
       vpr_read_and_process_blif( this->vpr_.setup.PackerOpts.blif_file_name, 
                                  this->vpr_.setup.PackerOpts.sweep_hanging_nets_and_inputs, 
                                  this->vpr_.setup.user_models, 
-                                 this->vpr_.setup.library_models );
+                                 this->vpr_.setup.library_models,
+                                 readActivityFile, pszActivityFileName );
       printHandler.ClearPrefix( );
    }
 
@@ -322,6 +333,8 @@ bool TVPR_Interface_c::Close(
    {
       if( pfabricModel )
       {
+         printHandler.Info( "Importing fabric model from VPR...\n" );
+
          // Extract fabric model from VPR's internal data structures
          // (based on VPR's global "grid", "nx", and "ny")
          // (and, based on VPR's global "rr_node" and "num_rr_nodes")
@@ -332,12 +345,16 @@ bool TVPR_Interface_c::Close(
       }
       if( pcircuitDesign )
       {
+         printHandler.Info( "Importing circuit design from VPR...\n" );
+
          // Extract circuit design from VPR's internal data structures
          // (based on VPR's global "block" and "num_blocks")
          TVPR_CircuitDesign_c vpr_circuitDesign;
          vpr_circuitDesign.Import( &this->vpr_.arch,
+                                   vpack_net, num_logical_nets,
                                    block, num_blocks,
-                                   logical_block,
+                                   logical_block, 
+                                   rr_node,
                                    pcircuitDesign );
       }
 

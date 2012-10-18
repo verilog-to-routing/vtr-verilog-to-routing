@@ -53,9 +53,10 @@ private:
    {
    public:
 
-      t_options   options;   // Define VPR's API data structures
-      t_arch      arch;      // "
-      t_vpr_setup setup;     // "
+      t_options    options;   // Define VPR's API data structures
+      t_arch       arch;      // "
+      t_vpr_setup  setup;     // "
+      t_power_opts powerOpts; // "
    } vpr_;
 
    bool isAlive_;   // TRUE => interface is active (ie. is initialized)

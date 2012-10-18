@@ -790,13 +790,13 @@ void TVPR_FabricModel_c::PeekSegments_(
       {
          segmentRegion.ApplyScale( 0.0, segmentWidth / 2.0, TGS_SNAP_MIN_GRID );
          dataType = TFV_DATA_SEGMENT_HORZ;
-         sprintf( szName, "sh[%d].%d", vpr_rrNode.xlow, vpr_rrNode.ptc_num );
+         sprintf( szName, "sh[%d].%d", vpr_rrNode.ylow, vpr_rrNode.ptc_num );
       }
       if( vpr_rrNode.type == CHANY )
       {
          segmentRegion.ApplyScale( segmentWidth / 2.0, 0.0, TGS_SNAP_MIN_GRID );
          dataType = TFV_DATA_SEGMENT_VERT;
-         sprintf( szName, "sh[%d].%d", vpr_rrNode.ylow, vpr_rrNode.ptc_num );
+         sprintf( szName, "sv[%d].%d", vpr_rrNode.xlow, vpr_rrNode.ptc_num );
       }
       unsigned int trackIndex = static_cast< int >( vpr_rrNode.ptc_num );
 

@@ -100,13 +100,22 @@ bool TVPR_OptionsStore_c::Export(
    vpr_set_output_file_name( E_CRIT_PATH_FILE, 
                              srVPR_CriticalPathName.data( ), srVPR_DefaultName.data( ));
 
-   if( inputOptions.srXmlFileName.length( ))
+   if( inputOptions.xmlFileEnable && inputOptions.srXmlFileName.length( ))
    {
       pvpr_options->ArchFile = TC_strdup( inputOptions.srXmlFileName );
    }
-   if( inputOptions.srBlifFileName.length( ))
+   else if( inputOptions.architectureFileEnable && inputOptions.srArchitectureFileName.length( ))
+   {
+      pvpr_options->ArchFile = TC_strdup( inputOptions.srArchitectureFileName );
+   }
+   if( inputOptions.blifFileEnable && inputOptions.srBlifFileName.length( ))
    {
       pvpr_options->BlifFile = TC_strdup( inputOptions.srBlifFileName );
+      pvpr_options->Count[OT_BLIF_FILE] += 1;
+   }
+   else if( inputOptions.circuitFileEnable && inputOptions.srCircuitFileName.length( ))
+   {
+      pvpr_options->BlifFile = TC_strdup( inputOptions.srCircuitFileName );
       pvpr_options->Count[OT_BLIF_FILE] += 1;
    }
 

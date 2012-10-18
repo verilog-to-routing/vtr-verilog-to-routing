@@ -29,6 +29,7 @@
 //           - PeekPhysicalBlockList_
 //           - PeekPhysicalBlock_
 //           - PeekHierMapList_
+//           - PeekNetList_
 //           - ValidateModelList_
 //           - ValidateSubcktList_
 //           - ValidateInstList_
@@ -38,16 +39,31 @@
 //           - AddLogicalBlockLatch_
 //           - FreeVpackNet_
 //           - FreeLogicalBlock_
+//           - ExtractNetList_
+//           - ExtractNetListInstPins_
+//           - ExtractNetListRoutes_
+//           - ExtractNetRoutes_
+//           - IsNetOpen_
+//           - MakeTraceNodeCountList_
+//           - UpdateTraceSiblingCount_
+//           - LoadTraceRoutes_
+//           - LoadTraceNodes_
 //           - FindModel_
 //           - FindModelPort_
 //           - FindModelPortCount_
 //           - FindPinIndex_
+//           - FindGraphPin_
+//           - FindTraceListLength_
+//           - FindTraceListNode_
+//           - FindSwitchBoxCoord_
+//           - FindSwitchBoxSides_
 //
 //===========================================================================//
 
 #include <string>
 using namespace std;
 
+#include "TC_Typedefs.h"
 #include "TC_MemoryUtils.h"
 
 #include "TVPR_CircuitDesign.h"
@@ -149,21 +165,29 @@ bool TVPR_CircuitDesign_c::Export(
 //===========================================================================//
 void TVPR_CircuitDesign_c::Import(
       const t_arch*              vpr_architecture,
+            t_net*               vpr_netArray,
+            int                  vpr_netCount,
       const t_block*             vpr_blockArray,
             int                  vpr_blockCount,
       const t_logical_block*     vpr_logicalBlockArray,
+      const t_rr_node*           vpr_rrNodeArray,
             TCD_CircuitDesign_c* pcircuitDesign ) const
 { 
    TPO_InstList_t* pblockList = &pcircuitDesign->blockList;
+   TNO_NetList_c* pnetList = &pcircuitDesign->netList;
 
+   pblockList->Clear( );
    this->PeekInputOutputList_( vpr_blockArray, vpr_blockCount,
                                pblockList );
    this->PeekPhysicalBlockList_( vpr_blockArray, vpr_blockCount,
                                  vpr_logicalBlockArray,
                                  pblockList );
-
-   // WIP ??? this->PeekCellList_
-   // WIP ??? this->PeekNetList_
+   this->PeekNetList_( vpr_architecture, 
+                       vpr_netArray, vpr_netCount,
+                       vpr_blockArray, vpr_blockCount,
+                       vpr_logicalBlockArray,
+                       vpr_rrNodeArray,
+                       pnetList );
 }
 
 //===========================================================================//
@@ -1176,13 +1200,13 @@ void TVPR_CircuitDesign_c::PeekInputOutput_(
    }
 
    TPO_StatusMode_t placeStatus = ( vpr_block.isFixed ? 
-                                    TPO_STATUS_FIXED : TPO_STATUS_FLOAT );
+                                    TPO_STATUS_FIXED : TPO_STATUS_UNDEFINED );
 
    string srPlaceFabricName;
    if(( vpr_block.x >= 0 ) && ( vpr_block.y >= 0 ))
    {
       char szPlaceFabricName[TIO_FORMAT_STRING_LEN_DATA];
-      sprintf( szPlaceFabricName, "fabric[%d][%d]", vpr_block.x, vpr_block.y );
+      sprintf( szPlaceFabricName, "fabric[%d][%d].%d", vpr_block.x, vpr_block.y, vpr_block.z );
       srPlaceFabricName = szPlaceFabricName;
    }
 
@@ -1253,7 +1277,7 @@ void TVPR_CircuitDesign_c::PeekPhysicalBlock_(
    }
 
    TPO_StatusMode_t placeStatus = ( vpr_block.isFixed ? 
-                                    TPO_STATUS_FIXED : TPO_STATUS_FLOAT );
+                                    TPO_STATUS_FIXED : TPO_STATUS_UNDEFINED );
 
    string srPlaceFabricName;
    if(( vpr_block.x >= 0 ) && ( vpr_block.y >= 0 ))
@@ -1351,6 +1375,44 @@ void TVPR_CircuitDesign_c::PeekHierMapList_(
          phierMapList->Add( hierMap );
       }
    }
+}
+
+//===========================================================================//
+// Method         : PeekNetList_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 10/05/12 jeffr : Original
+//===========================================================================//
+void TVPR_CircuitDesign_c::PeekNetList_(
+      const t_arch*          vpr_architecture,
+      const t_net*           vpr_netArray,
+            int              vpr_netCount,
+      const t_block*         vpr_blockArray,
+            int              vpr_blockCount,
+      const t_logical_block* vpr_logicalBlockArray,
+      const t_rr_node*       vpr_rrNodeArray,
+            TNO_NetList_c*   pnetList ) const
+{
+   // Initialize net list based on all nets defined in given VPR net list
+   this->ExtractNetList_( vpr_netArray, vpr_netCount,
+                          pnetList );
+
+   // Update net list based on all net instance ports asso. with VPR nets
+   this->ExtractNetListInstPins_( vpr_netArray, vpr_netCount,
+                                  vpr_blockArray, 
+                                  vpr_logicalBlockArray,
+                                  pnetList );
+
+   // Update net list based on any available net global routes
+// WIP ??? this->ExtractNetListGlobalRoutes_
+
+   // Update net list based on any available net routes
+   this->ExtractNetListRoutes_( vpr_architecture,
+                                vpr_netArray, vpr_netCount,
+                                vpr_blockArray, vpr_blockCount,
+                                vpr_rrNodeArray,
+                                pnetList );
 }
 
 //===========================================================================//
@@ -1793,6 +1855,463 @@ void TVPR_CircuitDesign_c::FreeLogicalBlock_(
 }
 
 //===========================================================================//
+// Method         : ExtractNetList_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 10/05/12 jeffr : Original
+//===========================================================================//
+void TVPR_CircuitDesign_c::ExtractNetList_(
+      const t_net*         vpr_netArray,
+            int            vpr_netCount,
+            TNO_NetList_c* pnetList ) const
+{
+   // Iterate for every net in the existing VPR net list...
+   for( int netIndex = 0; netIndex < vpr_netCount; ++netIndex )
+   {
+      const t_net& vpr_net = vpr_netArray[netIndex];
+
+      const char* pszNetName = vpr_net.name;
+      if( pnetList->IsMember( pszNetName ))
+         continue;
+
+      // Define and add a new net node based on next VPR net
+      TC_TypeMode_t netType = ( vpr_net.is_global ? TC_TYPE_GLOBAL : TC_TYPE_SIGNAL ); 
+      
+      TNO_Net_c net( pszNetName, netType );
+      pnetList->Add( net );
+   }
+}
+
+//===========================================================================//
+// Method         : ExtractNetListInstPins_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 10/05/12 jeffr : Original
+//===========================================================================//
+void TVPR_CircuitDesign_c::ExtractNetListInstPins_(
+      const t_net*           vpr_netArray,
+            int              vpr_netCount,
+      const t_block*         vpr_blockArray,
+      const t_logical_block* vpr_logicalBlockArray,
+            TNO_NetList_c*   pnetList ) const
+{
+   // Iterate for every net in the existing VPR net list...
+   for( int netIndex = 0; netIndex < vpr_netCount; ++netIndex )
+   {
+      const t_net& vpr_net = vpr_netArray[netIndex];
+
+      const char* pszNetName = vpr_net.name;
+      TNO_Net_c* pnet = pnetList->Find( pszNetName );
+
+      pnet->ClearInstPinList( );
+
+      // Iterate for every pin in the existing VPR net...
+      int pinCount = 1 + vpr_net.num_sinks; // [VPR] Assume [0] for output pin
+      for( int nodeIndex = 0; nodeIndex < pinCount; ++nodeIndex )
+      {
+         // Extract pin's instance (ie. block) name and port/pin name
+         int blockIndex = vpr_net.node_block[nodeIndex];
+         const char* pszBlockName = vpr_logicalBlockArray[blockIndex].name;
+
+         const t_pb_graph_pin* pvpr_graphPin = 0;
+         pvpr_graphPin = this->FindGraphPin_( vpr_logicalBlockArray, 
+                                              vpr_net, nodeIndex );
+         if( pvpr_graphPin )
+         {
+            const char* pszPortName = pvpr_graphPin->port->name;
+
+            TC_TypeMode_t ioType = TC_TYPE_OUTPUT;
+            ioType = ( nodeIndex > 0 ? TC_TYPE_INPUT : ioType );
+            ioType = ( pvpr_graphPin->port->is_clock ? TC_TYPE_CLOCK : ioType );
+
+            // Update new net's instance/pin list
+            TNO_InstPin_c instPin( pszBlockName, pszPortName, ioType );
+
+            pnet->AddInstPin( instPin );
+         }
+      }
+   }
+}
+
+//===========================================================================//
+// Method         : ExtractNetListRoutes_
+// Reference:       See Jason Luu's original vpr_resync_post_route_netlist()
+//                  source code.  This includes support for resolving logical
+//                  equivalence on CLB pins.
+//                  
+//                  "Logical equivalence scrambles the packed netlist indices 
+//                  with the actual indices, need to resync then re-output 
+//                  clustered netlist.  This code assumes we are dealing with 
+//                  a TI CLAY v1 architecture." -- Jason Luu
+//                  
+//                  "Returns a trace array [0..num_logical_nets-1] with the 
+//                  final routing of the circuit from the logical_block 
+//                  netlist, index of the trace array corresponds to the 
+//                  index of a vpack_net." -- Jason Luu
+//
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 10/05/12 jeffr : Original
+//===========================================================================//
+void TVPR_CircuitDesign_c::ExtractNetListRoutes_(
+      const t_arch*          vpr_architecture,
+      const t_net*           vpr_netArray,
+            int              vpr_netCount,
+      const t_block*         vpr_blockArray,
+            int              vpr_blockCount,
+      const t_rr_node*       vpr_rrNodeArray,
+            TNO_NetList_c*   pnetList ) const
+{
+   if( vpr_netCount && vpr_blockCount )
+   {
+      // Call VPR API's special TI-specific function to find all net trace lists
+      t_trace* pvpr_traceArray = 0;
+      pvpr_traceArray = vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture( vpr_architecture );
+
+      // Iterate for every net in the existing VPR net list...
+      for( int netIndex = 0; netIndex < vpr_netCount; ++netIndex )
+      {
+         const t_net& vpr_net = vpr_netArray[netIndex];
+
+         const char* pszNetName = vpr_net.name;
+         TNO_Net_c* pnet = pnetList->Find( pszNetName );
+
+         pnet->ClearRouteList( );
+
+         if( !vpr_blockArray || !vpr_rrNodeArray )
+            continue;
+
+         t_trace* pvpr_traceList = &pvpr_traceArray[netIndex];
+         if( this->IsNetOpen_( pvpr_traceList ))
+            continue;
+
+         TNO_RouteList_t routeList;
+         this->ExtractNetRoutes_( vpr_blockArray, vpr_rrNodeArray,
+                                  pvpr_traceList, &routeList );
+
+         pnet->SetStatus( TNO_STATUS_ROUTED );
+         pnet->AddRouteList( routeList );
+      }
+      free( pvpr_traceArray );
+   }
+}
+
+//===========================================================================//
+// Method         : ExtractNetRoutes_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 10/05/12 jeffr : Original
+//===========================================================================//
+void TVPR_CircuitDesign_c::ExtractNetRoutes_(
+      const t_block*         vpr_blockArray,
+      const t_rr_node*       vpr_rrNodeArray,
+            t_trace*         pvpr_traceList,
+            TNO_RouteList_t* prouteList ) const
+{
+   // Generate a trace node count list based on current trace list
+   TVPR_IndexCountList_t traceCountList;
+   this->MakeTraceNodeCountList_( pvpr_traceList, &traceCountList );
+
+   // Update current trace list's sibling counts using node count list
+   this->UpdateTraceSiblingCount_( pvpr_traceList, traceCountList );
+
+   // Apply recursion to load list of route paths based on current trace list
+   const t_trace* pvpr_traceThis = pvpr_traceList;
+   const t_trace* pvpr_tracePrev = 0;
+   TNO_Route_t route;
+   this->LoadTraceRoutes_( vpr_blockArray, vpr_rrNodeArray,
+                           pvpr_traceThis, pvpr_tracePrev,
+                           &route, prouteList );
+}
+
+//===========================================================================//
+// Method         : IsNetOpen_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 10/05/12 jeffr : Original
+//===========================================================================//
+bool TVPR_CircuitDesign_c::IsNetOpen_(
+      const t_trace* pvpr_traceList ) const
+{
+   // Determine if net is open (or routed) based on current trace list
+   // (open impiles unique output/input block and no intra-CLB trace routing)
+   int blockIndex = OPEN;
+   bool hasSingleBlock = false;
+   bool hasRouteTrace = false;
+
+   for( const t_trace* pvpr_trace = pvpr_traceList;
+        pvpr_trace; pvpr_trace = pvpr_trace->next )
+   {
+      if( pvpr_trace->iblock != OPEN ) 
+      {
+         if( blockIndex == OPEN )
+         {
+            blockIndex = pvpr_trace->iblock;
+            hasSingleBlock = true;
+         }
+         else if( blockIndex != pvpr_trace->iblock )
+         {
+            hasSingleBlock = false;
+            break;
+         }
+      } 
+      else 
+      {
+         hasRouteTrace = true;
+         break;
+      }
+   }
+   return( !hasSingleBlock && !hasRouteTrace ? true : false );
+}
+
+//===========================================================================//
+// Method         : MakeTraceNodeCountList_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 10/05/12 jeffr : Original
+//===========================================================================//
+void TVPR_CircuitDesign_c::MakeTraceNodeCountList_(
+      const t_trace*               pvpr_traceList,
+            TVPR_IndexCountList_t* ptraceCountList ) const
+{
+   // Allocate a node index/count list used to determine trace sibling counts
+   size_t len = this->FindTraceListLength_( pvpr_traceList );
+   ptraceCountList->SetCapacity( len );
+
+   // Load node index/count list based on trace sibling (ie. duplicate nodes)
+   for( const t_trace* pvpr_trace = pvpr_traceList; 
+        pvpr_trace; pvpr_trace = pvpr_trace->next )
+   {
+      TVPR_IndexCount_c indexCount( pvpr_trace->iblock, pvpr_trace->index );
+      if( !ptraceCountList->IsMember( indexCount ))
+      {
+         TVPR_IndexCount_c* pindexCount = ptraceCountList->Add( indexCount );
+         pindexCount->SetSiblingCount( 1 );
+      }
+      else
+      {
+         TVPR_IndexCount_c* pindexCount = ( *ptraceCountList )[ indexCount ];
+         pindexCount->SetSiblingCount( pindexCount->GetSiblingCount( ) + 1 );
+      }
+   }
+}
+
+//===========================================================================//
+// Method         : UpdateTraceSiblingCount_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 10/05/12 jeffr : Original
+//===========================================================================//
+void TVPR_CircuitDesign_c::UpdateTraceSiblingCount_(
+            t_trace*               pvpr_traceList,
+      const TVPR_IndexCountList_t& traceCountList ) const
+{
+   // Update sibling count for all trace nodes baesd on node count list
+   for( t_trace* pvpr_trace = pvpr_traceList; 
+        pvpr_trace; pvpr_trace = pvpr_trace->next )
+   {
+      TVPR_IndexCount_c indexCount( pvpr_trace->iblock, pvpr_trace->index );
+      TVPR_IndexCount_c* pindexCount = traceCountList[ indexCount ];
+      pvpr_trace->num_siblings = static_cast< int >( pindexCount->GetSiblingCount( ));
+   }
+
+   for( t_trace* pvpr_trace = pvpr_traceList; 
+        pvpr_trace; pvpr_trace = pvpr_trace->next )
+   {
+      if( pvpr_trace->num_siblings == 1 )
+      {
+         if( !pvpr_trace->next )
+         {
+            pvpr_trace->num_siblings = 0;
+         }
+      }
+      if( pvpr_trace->num_siblings > 1 )
+      {
+         t_trace* pprev_trace = pvpr_trace;
+         while(( pprev_trace ) && 
+               ( pprev_trace->next ))
+         {
+            if( pprev_trace->next->index == pvpr_trace->index )
+               break;
+
+            pprev_trace = pprev_trace->next;
+         }
+
+         if(( pprev_trace ) &&
+            ( pprev_trace->iblock != OPEN ))
+         {
+            pprev_trace->num_siblings = 0;
+         }
+      }
+   }
+}
+
+//===========================================================================//
+// Method         : LoadTraceRoutes_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 10/05/12 jeffr : Original
+//===========================================================================//
+void TVPR_CircuitDesign_c::LoadTraceRoutes_(
+      const t_block*         vpr_blockArray,
+      const t_rr_node*       vpr_rrNodeArray,
+      const t_trace*         pvpr_traceThis,
+      const t_trace*         pvpr_tracePrev,
+            TNO_Route_t*     proute,
+            TNO_RouteList_t* prouteList ) const
+{
+   // Load current track node (ie. 'instPin' or 'segment'+'switchBox')
+   this->LoadTraceNodes_( vpr_blockArray, vpr_rrNodeArray,
+                          pvpr_traceThis, pvpr_tracePrev, proute );
+
+   if( pvpr_traceThis->num_siblings == 0 )
+   {
+      // Reached terminal for the current route path
+      // (add route to route list and start unwinding recursion)
+      prouteList->Add( *proute );
+   }
+   else if( pvpr_traceThis->num_siblings == 1 )
+   {
+      // Apply recursion to update route based on next trace node
+      pvpr_tracePrev = pvpr_traceThis;
+      pvpr_traceThis = pvpr_traceThis->next;
+      this->LoadTraceRoutes_( vpr_blockArray, vpr_rrNodeArray,
+                              pvpr_traceThis, pvpr_tracePrev,
+                              proute, prouteList );
+   }
+   else if( pvpr_traceThis->num_siblings > 1 )
+   {
+      // Hande multiple routes based on split at this trace node
+      int index = pvpr_traceThis->index;
+      int num_siblings = pvpr_traceThis->num_siblings;
+      for( int i = 0; i < num_siblings; ++i )
+      {
+         // Find next trace node with matching index (if any) 
+         pvpr_traceThis = this->FindTraceListNode_( pvpr_traceThis, index );
+         if( !pvpr_traceThis )
+            break;
+
+         // Make local route to handle multiple routes from this split
+         TNO_Route_t route( *proute );
+
+         // Apply recursion to update route based on next trace node
+         pvpr_tracePrev = pvpr_traceThis;
+         pvpr_traceThis = pvpr_traceThis->next;
+         this->LoadTraceRoutes_( vpr_blockArray, vpr_rrNodeArray,
+                                 pvpr_traceThis, pvpr_tracePrev,
+                                 &route, prouteList );
+      }
+   }
+}
+
+//===========================================================================//
+// Method         : LoadTraceNodes_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 10/05/12 jeffr : Original
+//===========================================================================//
+void TVPR_CircuitDesign_c::LoadTraceNodes_(
+      const t_block*     vpr_blockArray,
+      const t_rr_node*   vpr_rrNodeArray,
+      const t_trace*     pvpr_traceThis,
+      const t_trace*     pvpr_tracePrev,
+            TNO_Route_t* proute ) const
+{
+   // Decide if we are adding 'instPin' or 'segment'+'switchBox' route nodes
+   if( pvpr_traceThis->iblock != OPEN ) 
+   {
+      // Adding an 'instpin' route node based in block and port name  
+      int blockIndex = pvpr_traceThis->iblock;
+      int nodeIndex = pvpr_traceThis->index;
+
+      const char* pszBlockName = vpr_blockArray[blockIndex].name;
+
+      const t_rr_node* vpr_rrGraph = vpr_blockArray[blockIndex].pb->rr_graph;
+      const t_rr_node& vpr_rrNode = vpr_rrGraph[nodeIndex];
+      const t_pb_graph_pin& vpr_graphPin = *vpr_rrNode.pb_graph_pin;
+
+      const char* pszParentName = vpr_graphPin.parent_node->pb_type->name;
+      int parentIndex = vpr_graphPin.parent_node->placement_index;
+      const char* pszPortName = vpr_graphPin.port->name;
+      int portIndex = vpr_graphPin.pin_number;
+
+      TNO_InstPin_c instPin( pszBlockName, 
+                             pszParentName, parentIndex,
+                             pszPortName, portIndex );
+      TNO_Node_c node( instPin );
+      proute->Add( node );
+   } 
+   else 
+   {
+      int nodeIndexThis = pvpr_traceThis->index;
+      const t_rr_node& vpr_rrNodeThis = vpr_rrNodeArray[nodeIndexThis];
+
+      // First, need to consider adding a 'switchBox' route node
+      // (if prev/this nodes are either OPIN->CHANX|Y or CHANX|Y->CHANX|Y)
+      if( pvpr_tracePrev )
+      {
+         int nodeIndexPrev = pvpr_tracePrev->index;
+         const t_rr_node& vpr_rrNodePrev = vpr_rrNodeArray[nodeIndexPrev];
+
+         if((( vpr_rrNodePrev.type == CHANX ) || ( vpr_rrNodePrev.type == CHANY )) &&
+            (( vpr_rrNodeThis.type == CHANX ) || ( vpr_rrNodeThis.type == CHANY )))
+         {  
+            int x, y;
+            this->FindSwitchBoxCoord_( vpr_rrNodePrev, vpr_rrNodeThis, &x, &y );
+
+            char szName[TIO_FORMAT_STRING_LEN_DATA];
+            sprintf( szName, "sb[%d][%d]", x, y );
+
+            TC_SideMode_t sidePrev = TC_SIDE_UNDEFINED;
+            TC_SideMode_t sideThis = TC_SIDE_UNDEFINED;
+            this->FindSwitchBoxSides_( vpr_rrNodePrev, vpr_rrNodeThis, &sidePrev, &sideThis );
+
+            size_t trackPrev = vpr_rrNodePrev.ptc_num;
+            size_t trackThis = vpr_rrNodeThis.ptc_num;
+
+            TNO_SwitchBox_c switchBox( szName, sidePrev, trackPrev, sideThis, trackThis );
+            TNO_Node_c node( switchBox );
+            proute->Add( node );
+         }
+      }
+
+      // Next, need to consider adding a 'segment' route node
+      if(( vpr_rrNodeThis.type == CHANX ) || ( vpr_rrNodeThis.type == CHANY ))
+      {
+         char szName[TIO_FORMAT_STRING_LEN_DATA];
+         if( vpr_rrNodeThis.type == CHANX )
+         {
+            sprintf( szName, "sh[%d].%d", vpr_rrNodeThis.ylow, vpr_rrNodeThis.ptc_num );
+         }
+         else // if( vpr_rrNodeThis.type == CHANY ))
+         {
+            sprintf( szName, "sv[%d].%d", vpr_rrNodeThis.xlow, vpr_rrNodeThis.ptc_num );
+         }
+         TGS_Region_c channel( vpr_rrNodeThis.xlow, vpr_rrNodeThis.ylow, 
+                               vpr_rrNodeThis.xhigh, vpr_rrNodeThis.yhigh );
+         unsigned int track = vpr_rrNodeThis.ptc_num;
+
+         TNO_Segment_c segment( szName, channel, track );
+         TNO_Node_c node( segment );
+         proute->Add( node );
+      }
+      else if(( vpr_rrNodeThis.type == IPIN ) || ( vpr_rrNodeThis.type == OPIN ))
+      {
+         // No action needed for these cases 
+      }
+   }
+}
+
+//===========================================================================//
 // Method         : FindModel_
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
@@ -1919,4 +2438,245 @@ bool TVPR_CircuitDesign_c::FindPinIndex_(
       *ppinIndex = pinIndex;
    }
    return( foundIndex );
+}
+
+//===========================================================================//
+// Method         : FindGraphPin_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 10/05/12 jeffr : Original
+//===========================================================================//
+const t_pb_graph_pin* TVPR_CircuitDesign_c::FindGraphPin_(
+      const t_logical_block* vpr_logicalBlockArray,
+      const t_net&           vpr_net,
+            int              nodeIndex ) const
+{
+   const t_pb_graph_pin* pvpr_graphPin = 0;
+   const t_model_ports* pvpr_port = 0;
+
+   int blockIndex = vpr_net.node_block[nodeIndex];
+   if( vpr_logicalBlockArray[blockIndex].pb ) 
+   {
+      int portIndex = vpr_net.node_block_port[nodeIndex];
+
+      // [VPR] This net has been packed, hence pb_graph_pin does exist
+      if( nodeIndex > 0 ) 
+      {
+         // [VPR] This is an input or clock pin
+         if( !vpr_net.is_global ) 
+         {
+            for( pvpr_port = vpr_logicalBlockArray[blockIndex].model->inputs; 
+                 pvpr_port; pvpr_port = pvpr_port->next )
+            {
+               if( pvpr_port->is_clock ) 
+                  continue;
+
+               if( pvpr_port->index == portIndex )
+                  break;
+            }
+         } 
+         else 
+         {
+            for( pvpr_port = vpr_logicalBlockArray[blockIndex].model->inputs; 
+                 pvpr_port; pvpr_port = pvpr_port->next )
+            {
+               if( !pvpr_port->is_clock ) 
+                  continue;
+
+               if( pvpr_port->index == portIndex )
+                  break;
+            }
+         }
+      } 
+      else 
+      {
+         // [VPR] This is an output pin
+         for( pvpr_port = vpr_logicalBlockArray[blockIndex].model->outputs; 
+              pvpr_port; pvpr_port = pvpr_port->next )
+         {
+            if( pvpr_port->index == portIndex )
+               break;
+         }
+      }
+   }
+
+   if( pvpr_port )
+   {
+      int pinIndex = vpr_net.node_block_pin[nodeIndex];
+      const t_pb_graph_node* pvpr_graphNode = 0;
+      pvpr_graphNode = vpr_logicalBlockArray[blockIndex].pb->pb_graph_node;
+      pvpr_graphPin = this->FindGraphPin_( *pvpr_graphNode, pvpr_port, pinIndex ); 
+   }
+   return( pvpr_graphPin );
+}
+
+//===========================================================================//
+const t_pb_graph_pin* TVPR_CircuitDesign_c::FindGraphPin_(
+      const t_pb_graph_node& vpr_graphNode,
+      const t_model_ports*   pvpr_port, 
+            int              pinIndex ) const
+{
+   const t_pb_graph_pin* pvpr_graphPin = 0;
+
+   if( pvpr_port->dir == IN_PORT )
+   {
+      if( !pvpr_port->is_clock )
+      {
+         for( int portIndex = 0; portIndex < vpr_graphNode.num_input_ports; ++portIndex ) 
+         {
+            if(( vpr_graphNode.input_pins[portIndex][0].port->model_port == pvpr_port ) &&
+               ( vpr_graphNode.num_input_pins[portIndex] > pinIndex ))
+            {
+               pvpr_graphPin = &vpr_graphNode.input_pins[portIndex][pinIndex];
+               break;
+            }
+         }
+      }
+      else
+      {
+         for( int portIndex = 0; portIndex < vpr_graphNode.num_clock_ports; ++portIndex ) 
+         {
+            if(( vpr_graphNode.clock_pins[portIndex][0].port->model_port == pvpr_port ) &&
+               ( vpr_graphNode.num_clock_pins[portIndex] > pinIndex ))
+            {
+               pvpr_graphPin = &vpr_graphNode.clock_pins[portIndex][pinIndex];
+               break;
+            }
+         }
+      }
+   } 
+   else 
+   {
+      for( int portIndex = 0; portIndex < vpr_graphNode.num_output_ports; ++portIndex ) 
+      {
+         if(( vpr_graphNode.output_pins[portIndex][0].port->model_port == pvpr_port ) &&
+            ( vpr_graphNode.num_output_pins[portIndex] > pinIndex ))
+         {
+            pvpr_graphPin = &vpr_graphNode.output_pins[portIndex][pinIndex];
+            break;
+         }
+      }
+   }
+   return( pvpr_graphPin );
+}
+
+//===========================================================================//
+// Method         : FindTraceListLength_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 10/05/12 jeffr : Original
+//===========================================================================//
+size_t TVPR_CircuitDesign_c::FindTraceListLength_(
+      const t_trace* pvpr_traceList ) const
+{
+   size_t len = 0;
+
+   for( const t_trace* pvpr_trace = pvpr_traceList; 
+        pvpr_trace; pvpr_trace = pvpr_trace->next )
+   {
+      ++len;
+   }
+   return( len );
+}
+
+//===========================================================================//
+// Method         : FindTraceListNode_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 10/05/12 jeffr : Original
+//===========================================================================//
+const t_trace* TVPR_CircuitDesign_c::FindTraceListNode_(
+      const t_trace* pvpr_traceList,
+            int      index ) const
+{
+   const t_trace* pvpr_trace_ = 0;
+
+   for( const t_trace* pvpr_trace = pvpr_traceList; 
+        pvpr_trace; pvpr_trace = pvpr_trace->next )
+   {
+      if( pvpr_trace->index == index )
+      {
+         pvpr_trace_ = pvpr_trace;
+         break;
+      }
+   }
+   return( pvpr_trace_ );
+}
+
+//===========================================================================//
+// Method         : FindSwitchBoxCoord_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 10/05/12 jeffr : Original
+//===========================================================================//
+void TVPR_CircuitDesign_c::FindSwitchBoxCoord_(
+      const t_rr_node& vpr_rrNode1,
+      const t_rr_node& vpr_rrNode2,
+            int*       px,
+            int*       py ) const
+{
+   TGS_Region_c region1( vpr_rrNode1.xlow, vpr_rrNode1.ylow,
+                         vpr_rrNode1.xhigh, vpr_rrNode1.yhigh );
+   TGS_Region_c region2( vpr_rrNode2.xlow, vpr_rrNode2.ylow,
+                         vpr_rrNode2.xhigh, vpr_rrNode2.yhigh );
+
+   TGS_Point_c point1, point2;
+   region1.FindNearest( region2, &point2, &point1 );
+   
+   TGS_Region_c region( point1, point2 );
+   TGS_Point_c center = region.FindCenter( );
+
+   *px = static_cast< int >( center.x );
+   *py = static_cast< int >( center.y );
+}
+
+//===========================================================================//
+// Method         : FindSwitchBoxSides_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 10/05/12 jeffr : Original
+//===========================================================================//
+void TVPR_CircuitDesign_c::FindSwitchBoxSides_(
+      const t_rr_node&     vpr_rrNode1,
+      const t_rr_node&     vpr_rrNode2,
+            TC_SideMode_t* pside1,
+            TC_SideMode_t* pside2 ) const
+{
+   if( vpr_rrNode1.type == CHANX )
+   {
+      *pside1 = ( vpr_rrNode1.direction == INC_DIRECTION ?
+                  TC_SIDE_LEFT : TC_SIDE_RIGHT );
+
+      if( vpr_rrNode2.type == CHANX )
+      {
+         *pside2 = ( vpr_rrNode1.direction == INC_DIRECTION ?
+                     TC_SIDE_RIGHT : TC_SIDE_LEFT );
+      }
+      else if( vpr_rrNode2.type == CHANY )
+      {
+         *pside2 = ( vpr_rrNode2.direction == INC_DIRECTION ?
+                     TC_SIDE_UPPER : TC_SIDE_LOWER );
+      }
+   }
+   else if( vpr_rrNode1.type == CHANY )
+   {
+      *pside1 = ( vpr_rrNode1.direction == INC_DIRECTION ?
+                  TC_SIDE_LOWER : TC_SIDE_UPPER );
+
+      if( vpr_rrNode2.type == CHANY )
+      {
+         *pside2 = ( vpr_rrNode1.direction == INC_DIRECTION ?
+                     TC_SIDE_UPPER : TC_SIDE_LOWER );
+      }
+      else if( vpr_rrNode2.type == CHANX )
+      {
+         *pside2 = ( vpr_rrNode2.direction == INC_DIRECTION ?
+                     TC_SIDE_RIGHT : TC_SIDE_LEFT );
+      }
+   }
 }
