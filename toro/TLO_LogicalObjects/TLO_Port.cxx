@@ -185,6 +185,10 @@ void TLO_Port_c::Print(
    {
       printHandler.Write( pfile, 0, "equivalence = %s ", TIO_BOOL_VAL( this->isEquivalent_ ));
    }
+   if( this->srClass_.length( ))
+   {
+      printHandler.Write( pfile, 0, "class = \"%s\" ", TIO_SR_STR( this->srClass_ ));
+   }
 
    if( TCTF_IsGT( this->cap_, 0.0 ) ||
        TCTF_IsGT( this->delay_, 0.0 ))
@@ -195,12 +199,16 @@ void TLO_Port_c::Print(
       TC_MinGrid_c& MinGrid = TC_MinGrid_c::GetInstance( );
       unsigned int precision = MinGrid.GetPrecision( );
 
-      printHandler.Write( pfile, spaceLen, "<timing cap_in = %0.*f delay_in = %0.*e >\n", 
+      printHandler.Write( pfile, spaceLen, "<timing cap_in = %0.*f delay_in = %0.*e />\n", 
                                            precision, this->cap_, 
                                            precision + 1, this->delay_ );
       spaceLen -= 3;
+      printHandler.Write( pfile, spaceLen, "</pin>\n" );
    }
-   printHandler.Write( pfile, 0, "/>\n" );
+   else
+   {
+      printHandler.Write( pfile, 0, "/>\n" );
+   }
 }
 
 //===========================================================================//
