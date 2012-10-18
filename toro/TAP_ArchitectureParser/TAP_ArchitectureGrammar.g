@@ -56,6 +56,7 @@ using namespace std;
 #token CELL              "[Cc][Ee][Ll][Ll]{[Ss]}"
 #token PIN               "[Pp][Ii][Nn]{[Ss]}"
 
+#token NAME              "[Nn][Aa][Mm][Ee]"
 #token TYPE              "[Tt][Yy][Pp][Ee]"
 #token CLASS             "[Cc][Ll][Aa][Ss][Ss]"
 #token FS                "[Ff][Ss]"
@@ -94,6 +95,19 @@ using namespace std;
 #token CAP_OUT           "[Cc]{[Aa][Pp]}{[_]}[Oo][Uu][Tt]"
 #token T                 "[Tt]"
 #token DELAY             "[Dd][Ee][Ll][Aa][Yy]{[_][Ii][Nn]}"
+
+#token EST               "[Ee][Ss][Tt]{[Ii][Mm][Aa][Tt][Ee][Dd]}"
+#token MINW_NMOS_R       "[Mm][Ii][Nn][_][Ww][Ii][Dd][Tt][Hh][_][Nn][Mm][Oo][Ss][_][Rr][Ee][Ss]"
+#token MINW_PMOS_R       "[Mm][Ii][Nn][_][Ww][Ii][Dd][Tt][Hh][_][Pp][Mm][Oo][Ss][_][Rr][Ee][Ss]"
+#token MUX_IN_PIN_SIZE   "[Mm][Uu][Xx][_][Tt][Rr][Aa][Nn][Ss][_][Ii][Nn][_][Pp][Ii][Nn][_][Ss][Ii][Zz][Ee]"
+#token LOGIC_TILE_AREA   "[Gg][Rr][Ii][Dd][_][Ll][Oo][Gg][Ii][Cc][_][Tt][Ii][Ll][Ee][_][Aa][Rr][Ee][Aa]"
+
+#token FREQ              "[Ff][Rr][Ee][Qq]"
+
+#token WIRE_SWITCH       "[Ww][Ii][Rr][Ee][_][Ss][Ww][Ii][Tt][Cc][Hh]"
+#token OPIN_SWITCH       "[Oo][Pp][Ii][Nn][_][Ss][Ww][Ii][Tt][Cc][Hh]"
+
+#token PATTERN           "[Pp][Aa][Tt][Tt][Ee][Rr][Nn]"
 
 #token INPUT_PORTS       "[Ii][Nn][Pp][Uu][Tt][_][Pp][Oo][Rr][Tt][Ss]"
 #token OUTPUT_PORTS      "[Oo][Uu][Tt][Pp][Uu][Tt][_][Pp][Oo][Rr][Tt][Ss]"
@@ -254,8 +268,7 @@ configDef[ TAS_Config_c* pconfig ]
    :
    CONFIG ">"
    (  "<"
-      (  SIZE
-         arraySizeModeVal:ARRAY_SIZE_MODE_VAL
+      (  SIZE arraySizeModeVal:ARRAY_SIZE_MODE_VAL
          << 
             pconfig->layout.sizeMode = this->FindArraySizeMode_( arraySizeModeVal->getType( ));
          >>
@@ -263,22 +276,27 @@ configDef[ TAS_Config_c* pconfig ]
          |  WIDTH { EQUAL } intNum[ &pconfig->layout.manualSize.gridDims.width ]
          |  HEIGHT { EQUAL } intNum[ &pconfig->layout.manualSize.gridDims.height ]
          )*
-      |  SB
-         modelTypeVal:SB_MODEL_TYPE_VAL
+      |  EST
+         (  MINW_NMOS_R { EQUAL } floatNum[ &pconfig->device.areaModel.resMinWidthNMOS ]
+         |  MINW_PMOS_R { EQUAL } floatNum[ &pconfig->device.areaModel.resMinWidthPMOS ]
+         |  MUX_IN_PIN_SIZE { EQUAL } floatNum[ &pconfig->device.areaModel.sizeInputPinMux ]
+         |  LOGIC_TILE_AREA { EQUAL } floatNum[ &pconfig->device.areaModel.areaGridTile ]
+         )*
+      |  SB modelTypeVal:SB_MODEL_TYPE_VAL
          << 
             pconfig->device.switchBoxes.modelType = this->FindSwitchBoxModelType_( modelTypeVal->getType( ));
          >>
+         { FS { EQUAL } uintNum[ &pconfig->device.switchBoxes.fs ] }
       |  CB
-         (  ( CAP | CAP_IN ) { EQUAL } floatNum[ &pconfig->device.connectionBoxes.capInput ]
+         (  ( CAP | CAP_IN ) { EQUAL } expNum[ &pconfig->device.connectionBoxes.capInput ]
          |  ( T | DELAY ) { EQUAL } expNum[ &pconfig->device.connectionBoxes.delayInput ]
          )*
-      |  SEGMENT
-         dirTypeVal:SEGMENT_DIR_TYPE_VAL
+      |  SEGMENT dirTypeVal:SEGMENT_DIR_TYPE_VAL
          << 
             pconfig->device.segments.dirType = this->FindSegmentDirType_( dirTypeVal->getType( ));
          >>
       )
-      ">"
+      "/>"
    )*
    "</" CONFIG ">"
    ;
@@ -300,16 +318,18 @@ inputOutputList[ TAS_InputOutputList_t* pinputOutputList ]
    |  SIZE { EQUAL } floatDims[ &dims ]
    |  ORIGIN { EQUAL } originPoint[ &origin ]
    )*
-   ">"
+   "/>"
 
    (  "<"
-      (  MODEL modeNameList[ &inputOutput.modeNameList ] ">"
-      |  PIN pinList[ &inputOutput.portList ] "/>"
-      |  TIMING timingDelayLists[ &inputOutput.timingDelayLists ] ">"
+      (  MODEL modeNameList[ &inputOutput.modeNameList ] "/>"
+      |  PIN pinList[ &inputOutput.portList ]
+         ( "/>" | "</" PIN ">" )
       |  PIN_ASSIGN pinAssignList[ &inputOutput.pinAssignPattern,
-                                   &inputOutput.pinAssignList ] "/>"
-      |  GRID_ASSIGN gridAssignList[ &inputOutput.gridAssignList ] ">"
-      )
+                                   &inputOutput.pinAssignList ] 
+         ( "/>" | "</" PIN_ASSIGN ">" )
+      |  GRID_ASSIGN gridAssignList[ &inputOutput.gridAssignList ] "/>"
+      |  TIMING timingDelayLists[ &inputOutput.timingDelayLists ] "/>"
+      )      
    )*
    "</" IO ">"
    <<
@@ -338,20 +358,26 @@ physicalBlockList[ TAS_PhysicalBlockList_t* pphysicalBlockList ]
    (  COUNT { EQUAL } uintNum[ &physicalBlock.numPB ]
    |  CELL { EQUAL } cellModelText[ &physicalBlock.srModelName,
                                     &physicalBlock.modelType ]
+   |  CLASS { EQUAL } classTypeVal:CLASS_TYPE_VAL
+      << 
+         physicalBlock.classType = this->FindClassType_( classTypeVal->getType( ));
+      >>
    |  FC_IN { EQUAL } fcDef[ &physicalBlock.fcIn ]
    |  FC_OUT { EQUAL } fcDef[ &physicalBlock.fcOut ]
    |  SIZE { EQUAL } floatDims[ &dims ]
    |  ORIGIN { EQUAL } originPoint[ &origin ]
    )*
-   ">"
+   "/>"
 
    (  "<"
-      (  MODEL modeNameList[ &physicalBlock.modeNameList ] ">"
-      |  PIN pinList[ &physicalBlock.portList ] "/>"
-      |  TIMING timingDelayLists[ &physicalBlock.timingDelayLists ] ">"
+      (  MODEL modeNameList[ &physicalBlock.modeNameList ] "/>"
+      |  PIN pinList[ &physicalBlock.portList ] 
+         ( "/>" | "</" PIN ">" )
       |  PIN_ASSIGN pinAssignList[ &physicalBlock.pinAssignPattern,
-                                   &physicalBlock.pinAssignList ] "/>"
-      |  GRID_ASSIGN gridAssignList[ &physicalBlock.gridAssignList ] ">"
+                                   &physicalBlock.pinAssignList ] 
+         ( "/>" | "</" PIN_ASSIGN ">" )
+      |  GRID_ASSIGN gridAssignList[ &physicalBlock.gridAssignList ] "/>"
+      |  TIMING timingDelayLists[ &physicalBlock.timingDelayLists ] "/>"
       )
    )*
    "</" PB ">"
@@ -382,7 +408,7 @@ modeList[ TAS_ModeList_t* pmodeList ]
    (  "<"
       (  PB
          stringText[ &physicalBlock.srName ]
-         ">"
+         "/>"
          <<
             physicalBlock.SetUsage( TAS_USAGE_PHYSICAL_BLOCK );
             mode.physicalBlockList.Add( physicalBlock );
@@ -403,16 +429,17 @@ modeList[ TAS_ModeList_t* pmodeList ]
          >>
          ">"
          (  "<"
-            (  INPUT stringText[ &srInputName ] ">"
+            (  INPUT stringText[ &srInputName ]
                <<
                   interconnect.inputNameList.Add( srInputName );
                >>
-            |  OUTPUT stringText[ &srOutputName ] ">"
+            |  OUTPUT stringText[ &srOutputName ]
                <<
                   interconnect.outputNameList.Add( srOutputName );
                >>
-            |  TIMING timingDelayLists[ &interconnect.timingDelayLists ] ">"
+            |  TIMING timingDelayLists[ &interconnect.timingDelayLists ]
             )
+            "/>"
          )*
          "</" INTERCONNECT ">" 
          <<
@@ -455,15 +482,15 @@ switchBoxList[ TAS_SwitchBoxList_t* pswitchBoxList ]
    )*
    ">"
    (  "<" 
-      (  MAPPING mapSideTable[ switchBox.fs, &mapTable ] "/>"
+      (  MAPPING mapSideTable[ switchBox.fs, &mapTable ]
       |  TIMING
          (  ( R | RES ) { EQUAL } floatNum[ &switchBox.timing.res ]
-         |  ( CAP | CAP_IN ) { EQUAL } floatNum[ &switchBox.timing.capInput ]
-         |  CAP_OUT { EQUAL } floatNum[ &switchBox.timing.capOutput ]
-         |  ( T | DELAY ) { EQUAL } floatNum[ &switchBox.timing.delay ]
+         |  ( CAP | CAP_IN ) { EQUAL } expNum[ &switchBox.timing.capInput ]
+         |  CAP_OUT { EQUAL } expNum[ &switchBox.timing.capOutput ]
+         |  ( T | DELAY ) { EQUAL } expNum[ &switchBox.timing.delay ]
          )* 
-         ">"
       )
+      "/>"
    )*
    "</" SB ">"
    <<
@@ -486,13 +513,25 @@ segmentList[ TAS_SegmentList_t* psegmentList ]
    >>
    SEGMENT 
    (  LENGTH { EQUAL } segmentLength[ &segment.length ]
+   |  TYPE { EQUAL } dirTypeVal:SEGMENT_DIR_TYPE_VAL
+      <<
+         segment.dirType = this->FindSegmentDirType_( dirTypeVal->getType( ));
+      >>
+   |  FREQ { EQUAL } floatNum[ &segment.trackFreq ]
    )*
    ">"
-   (  "<" TIMING
-      (  ( R | RES ) { EQUAL } floatNum[ &segment.timing.res ]
-      |  CAP { EQUAL } floatNum[ &segment.timing.cap ]
-      )*
-      ">"
+   (  "<" 
+      (  TIMING
+         (  ( R | RES ) { EQUAL } floatNum[ &segment.timing.res ]
+         |  CAP { EQUAL } expNum[ &segment.timing.cap ]
+         )*
+         "/>"
+      | sbList[ &segment.sbPattern ]
+      | cbList[ &segment.cbPattern ]
+      | MUX NAME { EQUAL } stringText[ &segment.srMuxSwitchName ] "/>"
+      | WIRE_SWITCH NAME { EQUAL } stringText[ &segment.srWireSwitchName ] "/>"
+      | OPIN_SWITCH NAME { EQUAL } stringText[ &segment.srOutputSwitchName ] "/>"
+      )
    )*
    "</" SEGMENT ">"
    <<
@@ -609,6 +648,7 @@ pinList[ TLO_PortList_t* pportList ]
       TC_TypeMode_t type = TC_TYPE_UNDEFINED;
       unsigned int count = 0;
       bool isEquivalent = false;
+      string srClass;
       double cap = 0.0;
       double delay = 0.0;
    >>
@@ -630,10 +670,14 @@ pinList[ TLO_PortList_t* pportList ]
          isEquivalent = this->FindBool_( boolVal->getType( ));
          port.SetEquivalent( isEquivalent );
       >>
+   |  CLASS { EQUAL } stringText[ &srClass ]
+      << 
+         port.SetClass( srClass );
+      >>
    )*
-   (  ">"
+   {  ">" 
       "<" TIMING
-      (  ( CAP | CAP_IN ) { EQUAL } floatNum[ &cap ]
+      (  ( CAP | CAP_IN ) { EQUAL } expNum[ &cap ]
          << 
             port.SetCap( cap );
          >>
@@ -642,8 +686,8 @@ pinList[ TLO_PortList_t* pportList ]
             port.SetDelay( delay );
          >>
       )*
-      ">"
-   )*
+      "/>"
+   }
    <<
       pportList->Add( port );
    >>
@@ -708,8 +752,8 @@ delayMatrixDef[ TAS_DelayMatrix_t* pdelayMatrix ]
       <<
          delayList.Add( value );
 
-         curTokenLine = LT( 0 )->getLine( );
-         nextTokenLine = LT( 1 )->getLine( );
+         curTokenLine = ( LT( 0 ) ? LT( 0 )->getLine( ) : 0 );
+         nextTokenLine = ( LT( 1 ) ? LT( 1 )->getLine( ) : 0 );
          if( curTokenLine != nextTokenLine )
          {
             delayTable.Add( delayList );
@@ -783,15 +827,15 @@ pinAssignList[ TAS_PinAssignPatternType_t* ppinAssignPattern,
       >>
    |  OFFSET { EQUAL } uintNum[ &pinAssign.offset ]
    )*
-   (  ">"
+   {  ">" 
       "<" PIN 
       (  stringText[ &srPortName ] 
          <<
             pinAssign.portNameList.Add( srPortName );
          >>
       )*
-      ">"
-   )*
+      "/>"
+   }
    <<
       if( pinAssign.IsValid( ))
       {
@@ -886,6 +930,40 @@ segmentLength[ unsigned int *plength ]
       >>
    |  uintNum[ plength ]
    )
+   ;
+
+//===========================================================================//
+sbList[ TAS_BitPattern_t* psbPattern ]
+   :
+   SB TYPE { EQUAL } PATTERN ">"
+   (  bitStringVal:BIT_CHAR
+      <<
+         string srBit = bitStringVal->getText( );
+         if( srBit.length( ))
+         {
+            TC_Bit_c bit( srBit[ 0 ] );
+            psbPattern->Add( bit );
+         }
+      >>
+   )*
+   "</" SB ">"
+   ;
+
+//===========================================================================//
+cbList[ TAS_BitPattern_t* pcbPattern ]
+   :
+   CB TYPE { EQUAL } PATTERN ">"
+   (  bitStringVal:BIT_CHAR
+      <<
+         string srBit = bitStringVal->getText( );
+         if( srBit.length( ))
+         {
+            TC_Bit_c bit( srBit[ 0 ] );
+            pcbPattern->Add( bit );
+         }
+      >>
+   )*
+   "</" CB ">"
    ;
 
 //===========================================================================//
