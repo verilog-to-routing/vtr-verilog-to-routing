@@ -160,6 +160,5 @@ void TOS_RulesSwitches_c::Init(
 void TOS_RulesSwitches_c::Apply(
       void )
 {
-// TBD ???
-    // This is a stub... (currently looking for work)
+    // This is only a stub... (currently looking for interesting work to do)
 }

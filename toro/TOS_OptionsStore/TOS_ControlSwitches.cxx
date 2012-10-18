@@ -138,7 +138,6 @@ void TOS_ControlSwitches_c::Init(
    this->outputOptions.srCircuitFileName = "";
    this->outputOptions.srRcDelaysFileName = "";
    this->outputOptions.srLaffFileName = "";
-   this->outputOptions.srMetricsFileName = "";
    this->outputOptions.srMetricsEmailAddress = "";
 
    this->outputOptions.srVPR_NetFileName = "";
@@ -156,7 +155,6 @@ void TOS_ControlSwitches_c::Init(
    this->outputOptions.circuitFileEnable = false;
    this->outputOptions.rcDelaysFileEnable = false;
    this->outputOptions.laffFileEnable = false;
-   this->outputOptions.metricsFileEnable = false;
    this->outputOptions.metricsEmailEnable = false;
 
    this->outputOptions.laffMask = TOS_OUTPUT_LAFF_ALL;

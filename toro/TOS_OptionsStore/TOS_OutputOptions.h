@@ -37,7 +37,6 @@ public:
                         const string& srCircuitFileName,
                         const string& srRcDelaysFileName,
                         const string& srLaffFileName,
-                        const string& srMetricsFileName,
                         const string& srMetricsEmailAddress,
                         bool logFileEnable,
                         bool optionsFileEnable,
@@ -48,7 +47,6 @@ public:
                         bool circuitFileEnable,
                         bool rcDelaysFileEnable,
                         bool laffFileEnable,
-                        bool metricsFileEnable,
                         bool metricsEmailEnable,
                         int laffMask,
 			TOS_RcDelaysExtractMode_t rcDelaysExtractMode,
@@ -71,7 +69,6 @@ public:
    string srCircuitFileName;         // Circuit file name for program inspection
    string srRcDelaysFileName;        // RC delays file name for data analysis
    string srLaffFileName;            // LAFF file name for data visualization
-   string srMetricsFileName;         // Metrics file name for program analysis
    string srMetricsEmailAddress;     // Metrics Email address for program usage
 
    string srVPR_NetFileName;         // VPR-specific file names (command-line)
@@ -89,7 +86,6 @@ public:
    bool circuitFileEnable;           // "
    bool rcDelaysFileEnable;          // "
    bool laffFileEnable;              // "
-   bool metricsFileEnable;           // "
    bool metricsEmailEnable;          // Enable sending email notification
 
    int laffMask;                     // Selects LAFF file object content

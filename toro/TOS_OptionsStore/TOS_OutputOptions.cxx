@@ -34,7 +34,6 @@ TOS_OutputOptions_c::TOS_OutputOptions_c(
       srCircuitFileName( "" ),
       srRcDelaysFileName( "" ),
       srLaffFileName( "" ),
-      srMetricsFileName( "" ),
       srMetricsEmailAddress( "" ),
       srVPR_NetFileName( "" ),
       srVPR_PlaceFileName( "" ),
@@ -50,7 +49,6 @@ TOS_OutputOptions_c::TOS_OutputOptions_c(
       circuitFileEnable( false ),
       rcDelaysFileEnable( false ),
       laffFileEnable( false ),
-      metricsFileEnable( false ),
       metricsEmailEnable( false ),
       laffMask( TOS_OUTPUT_LAFF_UNDEFINED ),
       rcDelaysExtractMode( TOS_RC_DELAYS_EXTRACT_UNDEFINED ),
@@ -72,7 +70,6 @@ TOS_OutputOptions_c::TOS_OutputOptions_c(
       const string&                   srCircuitFileName_,
       const string&                   srRcDelaysFileName_,
       const string&                   srLaffFileName_,
-      const string&                   srMetricsFileName_,
       const string&                   srMetricsEmailAddress_,
             bool                      logFileEnable_,
             bool                      optionsFileEnable_,
@@ -83,7 +80,6 @@ TOS_OutputOptions_c::TOS_OutputOptions_c(
             bool                      circuitFileEnable_,
             bool                      rcDelaysFileEnable_,
             bool                      laffFileEnable_,
-            bool                      metricsFileEnable_,
             bool                      metricsEmailEnable_,
             int                       laffMask_,
 	    TOS_RcDelaysExtractMode_t rcDelaysExtractMode_,
@@ -101,7 +97,6 @@ TOS_OutputOptions_c::TOS_OutputOptions_c(
       srCircuitFileName( srCircuitFileName_ ),
       srRcDelaysFileName( srRcDelaysFileName_ ),
       srLaffFileName( srLaffFileName_ ),
-      srMetricsFileName( srMetricsFileName_ ),
       srMetricsEmailAddress( srMetricsEmailAddress_ ),
       srVPR_NetFileName( "" ),
       srVPR_PlaceFileName( "" ),
@@ -117,7 +112,6 @@ TOS_OutputOptions_c::TOS_OutputOptions_c(
       circuitFileEnable( circuitFileEnable_ ),
       rcDelaysFileEnable( rcDelaysFileEnable_ ),
       laffFileEnable( laffFileEnable_ ),
-      metricsFileEnable( metricsFileEnable_ ),
       metricsEmailEnable( metricsEmailEnable_ ),
       laffMask( laffMask_ ),
       rcDelaysExtractMode( rcDelaysExtractMode_ ),
@@ -174,7 +168,6 @@ void TOS_OutputOptions_c::Print(
    printHandler.Write( pfile, spaceLen, "OUTPUT_FILE_CIRCUIT        = \"%s\"\n", TIO_SR_STR( this->srCircuitFileName ));
    printHandler.Write( pfile, spaceLen, "OUTPUT_FILE_RC_DELAYS      = \"%s\"\n", TIO_SR_STR( this->srRcDelaysFileName ));
    printHandler.Write( pfile, spaceLen, "OUTPUT_FILE_LAFF           = \"%s\"\n", TIO_SR_STR( this->srLaffFileName ));
-   printHandler.Write( pfile, spaceLen, "OUTPUT_FILE_METRICS        = \"%s\"\n", TIO_SR_STR( this->srMetricsFileName ));
 
    printHandler.Write( pfile, spaceLen, "OUTPUT_EMAIL_METRICS       = \"%s\"\n", TIO_SR_STR( this->srMetricsEmailAddress ));
 
@@ -187,7 +180,6 @@ void TOS_OutputOptions_c::Print(
    printHandler.Write( pfile, spaceLen, "OUTPUT_ENABLE_CIRCUIT      = %s\n", TIO_BOOL_STR( this->circuitFileEnable ));
    printHandler.Write( pfile, spaceLen, "OUTPUT_ENABLE_RC_DELAYS    = %s\n", TIO_BOOL_STR( this->rcDelaysFileEnable ));
    printHandler.Write( pfile, spaceLen, "OUTPUT_ENABLE_LAFF         = %s\n", TIO_BOOL_STR( this->laffFileEnable ));
-   printHandler.Write( pfile, spaceLen, "OUTPUT_ENABLE_METRICS      = %s\n", TIO_BOOL_STR( this->metricsFileEnable ));
 
    printHandler.Write( pfile, spaceLen, "OUTPUT_LAFF_MODE           = %s\n", TIO_SR_STR( srLaffMask ));
 
