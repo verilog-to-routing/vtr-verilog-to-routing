@@ -12,7 +12,6 @@
 
 #include <cstdio>
 #include <climits>
-#include <string>
 using namespace std;
 
 #include "TC_Typedefs.h"

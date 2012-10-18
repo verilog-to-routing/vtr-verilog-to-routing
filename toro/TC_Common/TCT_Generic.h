@@ -98,15 +98,13 @@ template< class T > inline bool TCTF_IsEQ( T n, T o )
 {
    double f = static_cast< double >( n );
    double g = static_cast< double >( o );
-   return( fabs( f - g ) <= TC_FLT_EPSILON ? true : false );
+   return( fabs( f - g ) <= TC_FLT_EPSILON * TCT_Max( abs( f ), abs( g )) ? true : false );
 } 
 
 //===========================================================================//
 template< class T > inline bool TCTF_IsNEQ( T n, T o )
 {
-   double f = static_cast< double >( n );
-   double g = static_cast< double >( o );
-   return( fabs( f - g ) > TC_FLT_EPSILON ? true : false );
+   return( TCTF_IsEQ( n, o ) ? false : true );
 } 
 
 //===========================================================================//
@@ -114,7 +112,7 @@ template< class T > inline bool TCTF_IsLE( T n, T o )
 {
    double f = static_cast< double >( n );
    double g = static_cast< double >( o );
-   return( f <= ( g + TC_FLT_EPSILON ) ? true : false );
+   return( f <= g + TC_FLT_EPSILON * TCT_Max( abs( f ), abs( g )) ? true : false );
 } 
 
 //===========================================================================//
@@ -122,37 +120,32 @@ template< class T > inline bool TCTF_IsLT( T n, T o )
 {
    double f = static_cast< double >( n );
    double g = static_cast< double >( o );
-   return( f < ( g - TC_FLT_EPSILON ) ? true : false );
+   return( f < g - TC_FLT_EPSILON * TCT_Max( abs( f ), abs( g )) ? true : false );
 } 
 
 //===========================================================================//
 template< class T > inline bool TCTF_IsGE( T n, T o )
 {
-   double f = static_cast< double >( n );
-   double g = static_cast< double >( o );
-   return( f >= ( g - TC_FLT_EPSILON ) ? true : false );
+   return( TCTF_IsLT( n, o ) ? false : true );
 } 
 
 //===========================================================================//
 template< class T > inline bool TCTF_IsGT( T n, T o )
 {
-   double f = static_cast< double >( n );
-   double g = static_cast< double >( o );
-   return( f > ( g + TC_FLT_EPSILON ) ? true : false );
+   return( TCTF_IsLE( n, o ) ? false : true );
 } 
 
 //===========================================================================//
 template< class T > inline bool TCTF_IsZE( T n )
 {
    double f = static_cast< double >( n );
-   return( fabs( f ) <= TC_FLT_EPSILON ? true : false );
+   return( TCTF_IsEQ( f, 0.0 ) ? true : false );
 } 
 
 //===========================================================================//
 template< class T > inline bool TCTF_IsNZE( T n )
 {
-   double f = static_cast< double >( n );
-   return( fabs( f ) > TC_FLT_EPSILON ? true : false );
+   return( TCTF_IsZE( n ) ? false : true );
 }
 
 //===========================================================================//
