@@ -290,38 +290,51 @@ void TPO_Inst_c::Print(
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   printHandler.Write( pfile, 0, "\"%s\" ", 
-                                 TIO_SR_STR( this->srName_ ));
+   printHandler.Write( pfile, 0, "\"%s\" ", TIO_SR_STR( this->srName_ ));
    if( this->srCellName_.length( ))
    {
-      printHandler.Write( pfile, 0, "cell = \"%s\" ", 
-                                    TIO_SR_STR( this->srCellName_ ));
+      printHandler.Write( pfile, 0, "\"%s\" ", TIO_SR_STR( this->srCellName_ ));
    }
    else if( this->source_ != TPO_INST_SOURCE_UNDEFINED )
    {
       string srSource;
       TPO_ExtractStringInstSource( this->source_, &srSource );
-      printHandler.Write( pfile, 0, "cell = \".%s\" ", 
-                                    TIO_SR_STR( srSource ));
+      printHandler.Write( pfile, 0, "\".%s\" ", TIO_SR_STR( srSource ));
    }
 
    if( this->place_.status != TPO_STATUS_UNDEFINED )
    {
       string srStatus;
       TPO_ExtractStringStatusMode( this->place_.status, &srStatus );
-      printHandler.Write( pfile, 0, "status = %s ", 
-                                    TIO_SR_STR( srStatus ));
+      printHandler.Write( pfile, 0, "status = %s ", TIO_SR_STR( srStatus ));
    }
    printHandler.Write( pfile, 0, ">\n" );
+
+   if( this->source_ == TPO_INST_SOURCE_LATCH )
+   {
+      printHandler.Write( pfile, spaceLen, "<clock " ); 
+      if( this->latch_.clockType != TPO_LATCH_TYPE_UNDEFINED )
+      {
+         string srClockType;
+         TPO_ExtractStringLatchType( this->latch_.clockType, &srClockType );
+         printHandler.Write( pfile, 0, "type = %s ", TIO_SR_STR( srClockType ));
+      }
+      if( this->latch_.initState != TPO_LATCH_STATE_UNDEFINED )
+      {
+         string srInitState;
+         TPO_ExtractStringLatchState( this->latch_.initState, &srInitState );
+         printHandler.Write( pfile, 0, "state = %s ", TIO_SR_STR( srInitState ));
+      }
+      printHandler.Write( pfile, 0, "/>\n" );
+   }
 
    if( this->pinList_.IsValid( ))
    {
       for( size_t i = 0; i < this->pinList_.GetLength( ); ++i )
       {
-	 string srPin;
+         string srPin;
          this->pinList_[i]->ExtractString( &srPin );   
-         printHandler.Write( pfile, spaceLen, "<pin %s >\n", 
-                                              TIO_SR_STR( srPin ));
+         printHandler.Write( pfile, spaceLen, "<pin %s />\n", TIO_SR_STR( srPin ));
       }
    }
 
@@ -332,24 +345,22 @@ void TPO_Inst_c::Print(
 
    if( this->place_.srFabricName.length( ))
    {
-      printHandler.Write( pfile, spaceLen, "<placement \"%s\" />\n",
-			                   TIO_SR_STR( this->place_.srFabricName ));
+      const string& srFabricName = this->place_.srFabricName;
+      printHandler.Write( pfile, spaceLen, "<placement \"%s\" />\n", TIO_SR_STR( srFabricName ));
    }
 
    for( size_t i = 0; i < this->place_.relativeList.GetLength( ); ++i )
    {
       string srRelative;
       this->place_.relativeList[i]->ExtractString( &srRelative );
-      printHandler.Write( pfile, spaceLen, "<relative %s >\n",
-			                   TIO_SR_STR( srRelative ));
+      printHandler.Write( pfile, spaceLen, "<relative %s />\n", TIO_SR_STR( srRelative ));
    }
 
    for( size_t i = 0; i < this->place_.regionList.GetLength( ); ++i )
    {
       string srRegion;
       this->place_.regionList[i]->ExtractString( &srRegion );
-      printHandler.Write( pfile, spaceLen, "<region %s >\n",
-			                   TIO_SR_STR( srRegion ));
+      printHandler.Write( pfile, spaceLen, "<region %s />\n", TIO_SR_STR( srRegion ));
    }
 }
 
@@ -375,7 +386,7 @@ void TPO_Inst_c::PrintBLIF(
       printHandler.Write( pfile, spaceLen, ".names" );
       for( size_t i = 0; i < this->pinList_.GetLength( ); ++i )
       {
-	 const TPO_Pin_t& pin = *this->pinList_[i];
+         const TPO_Pin_t& pin = *this->pinList_[i];
          printHandler.Write( pfile, spaceLen, " %s",
                                               TIO_PSZ_STR( pin.GetName( )));
 
@@ -388,11 +399,11 @@ void TPO_Inst_c::PrintBLIF(
          const TPO_LogicBits_t& logicBits = *this->names_.logicBitsList[i];
          for( size_t j = 0; j < logicBits.GetLength( ); ++j )
          {
-	    string srLogicBit;
-	    logicBits[j]->ExtractString( &srLogicBit );
+            string srLogicBit;
+            logicBits[j]->ExtractString( &srLogicBit );
 
             srLogicBits += srLogicBit;
-	    srLogicBits += ( j + 2 == logicBits.GetLength( ) ? " " : "" );
+            srLogicBits += ( j + 2 == logicBits.GetLength( ) ? " " : "" );
          }
          printHandler.Write( pfile, spaceLen, "%s\n",
                                               TIO_SR_STR( srLogicBits ));
@@ -406,15 +417,15 @@ void TPO_Inst_c::PrintBLIF(
       srClockPin = ( this->pinList_[2] ? this->pinList_[2]->GetName( ) : "" );
 
       printHandler.Write( pfile, spaceLen, ".latch %s %s",
-	                                   TIO_SR_STR( srInputPin ),
-			                   TIO_SR_STR( srOutputPin ));
+                                           TIO_SR_STR( srInputPin ),
+                                           TIO_SR_STR( srOutputPin ));
       if( this->latch_.clockType != TPO_LATCH_TYPE_UNDEFINED )
       {
          string srClockType;
          TPO_ExtractStringLatchType( this->latch_.clockType, &srClockType );
          printHandler.Write( pfile, spaceLen, " %s %s",
                                               TIO_SR_STR( srClockType ),
-	 		                      TIO_SR_STR( srClockPin ));
+                                               TIO_SR_STR( srClockPin ));
       }
       if( this->latch_.initState != TPO_LATCH_STATE_UNDEFINED )
       {
@@ -429,11 +440,11 @@ void TPO_Inst_c::PrintBLIF(
    case TPO_INST_SOURCE_SUBCKT:
 
       printHandler.Write( pfile, spaceLen, ".subckt %s",
-	                                   TIO_SR_STR( this->srCellName_ ));
+                                           TIO_SR_STR( this->srCellName_ ));
 
       for( size_t i = 0; i < this->subckt_.pinMapList.GetLength( ); ++i )
       {
-	 const TPO_PinMap_c& pinMap = *this->subckt_.pinMapList[i];
+         const TPO_PinMap_c& pinMap = *this->subckt_.pinMapList[i];
          printHandler.Write( pfile, 0, " %s=%s",
                                        TIO_PSZ_STR( pinMap.GetCellPinName( )),
                                        TIO_PSZ_STR( pinMap.GetInstPinName( )));
@@ -626,8 +637,8 @@ const TPO_Pin_t* TPO_Inst_c::FindPin(
       const TPO_Pin_t& pin = *this->pinList_[i];
       if( pin.GetType( ) == type )
       {
-	 ppin = this->pinList_[i];
-	 break;
+         ppin = this->pinList_[i];
+         break;
       }
    }
    return( ppin );

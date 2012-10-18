@@ -138,8 +138,8 @@ void TPO_HierMap_c::Print(
       printHandler.Write( pfile, 0, "\"%s\" ", 
                                     TIO_PSZ_STR( hierName.GetName( )));
    }
-   printHandler.Write( pfile, 0, ">\n" );
+   printHandler.Write( pfile, 0, "/>\n" );
 
    spaceLen -= 3;
-   printHandler.Write( pfile, spaceLen, "/>\n" );
+   printHandler.Write( pfile, spaceLen, "</pack>\n" );
 }
