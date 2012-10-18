@@ -114,6 +114,12 @@ using namespace std;
 
 #token FC_IN            "[Ff][Cc][_][Ii][Nn]"
 #token FC_OUT           "[Ff][Cc][_][Oo][Uu][Tt]"
+#token FC               "[Ff][Cc]"
+
+#token DEFAULT_IN_TYPE  "[Dd][Ee][Ff][Aa][Uu][Ll][Tt][_][Ii][Nn][_][Tt][Yy][Pp][Ee]"
+#token DEFAULT_IN_VAL   "[Dd][Ee][Ff][Aa][Uu][Ll][Tt][_][Ii][Nn][_][Vv][Aa][Ll]"
+#token DEFAULT_OUT_TYPE "[Dd][Ee][Ff][Aa][Uu][Ll][Tt][_][Oo][Uu][Tt][_][Tt][Yy][Pp][Ee]"
+#token DEFAULT_OUT_VAL  "[Dd][Ee][Ff][Aa][Uu][Ll][Tt][_][Oo][Uu][Tt][_][Vv][Aa][Ll]"
 
 #token PINLOCATIONS     "[Pp][Ii][Nn][Ll][Oo][Cc][Aa][Tt][Ii][Oo][Nn][Ss]"
 #token GRIDLOCATIONS    "[Gg][Rr][Ii][Dd][Ll][Oo][Cc][Aa][Tt][Ii][Oo][Nn][Ss]"
@@ -254,7 +260,7 @@ deviceDef[ TAS_Config_c* pconfig ]
          )*
          "/>"
       |  TIMING
-         (  C_IPIN_CBLOCK EQUAL floatNum[ &pconfig->device.connectionBoxes.capInput ]
+         (  C_IPIN_CBLOCK EQUAL expNum[ &pconfig->device.connectionBoxes.capInput ]
          |  T_IPIN_CBLOCK EQUAL expNum[ &pconfig->device.connectionBoxes.delayInput ]
          )*
          "/>"
@@ -325,9 +331,9 @@ switchBoxDef[ TAS_SwitchBoxList_t* pswitchBoxList ]
    (  NAME EQUAL stringText[ &switchBox.srName ]
    |  TYPE EQUAL switchBoxType[ &switchBox.type ]
    |  R EQUAL floatNum[ &switchBox.timing.res ]
-   |  CIN EQUAL floatNum[ &switchBox.timing.capInput ]
-   |  COUT EQUAL floatNum[ &switchBox.timing.capOutput ]
-   |  TDEL EQUAL floatNum[ &switchBox.timing.delay ]
+   |  CIN EQUAL expNum[ &switchBox.timing.capInput ]
+   |  COUT EQUAL expNum[ &switchBox.timing.capOutput ]
+   |  TDEL EQUAL expNum[ &switchBox.timing.delay ]
    |  BUF_SIZE EQUAL floatNum[ &switchBox.area.buffer ]
    |  MUX_TRANS_SIZE EQUAL floatNum[ &switchBox.area.muxTransistor ]
    )*
@@ -534,25 +540,43 @@ fcDef[ TAS_ConnectionFc_c* pfcIn,
        TAS_ConnectionFc_c* pfcOut ]
    :
    <<
-      double floatValue = 0.0;
-      unsigned int uintValue = 0;
+      double floatInValue = 0.0;
+      double floatOutValue = 0.0;
+      unsigned int uintInValue = 0;
+      unsigned int uintOutValue = 0;
    >>
    (  FC_IN TYPE EQUAL connectionBoxInType[ &pfcIn->type ] ">"
-      { floatNum[ &floatValue ] } 
+      { floatNum[ &floatInValue ] } 
       "</" FC_IN ">"
       <<
-         uintValue = static_cast< unsigned int >( floatValue + TC_FLT_EPSILON );
-         pfcIn->percent = ( pfcIn->type == TAS_CONNECTION_BOX_FRACTION ? floatValue : 0.0 );
-         pfcIn->absolute = ( pfcIn->type == TAS_CONNECTION_BOX_ABSOLUTE ? uintValue : 0 );
+         uintInValue = static_cast< unsigned int >( floatInValue + TC_FLT_EPSILON );
+         pfcIn->percent = ( pfcIn->type == TAS_CONNECTION_BOX_FRACTION ? floatInValue : 0.0 );
+         pfcIn->absolute = ( pfcIn->type == TAS_CONNECTION_BOX_ABSOLUTE ? uintInValue : 0 );
       >>
    |  FC_OUT TYPE EQUAL connectionBoxOutType[ &pfcOut->type ] ">"
-      { floatNum[ &floatValue ] } 
+      { floatNum[ &floatOutValue ] } 
       "</" FC_OUT ">"
       <<
-         uintValue = static_cast< unsigned int >( floatValue + TC_FLT_EPSILON );
-         pfcOut->percent = ( pfcOut->type == TAS_CONNECTION_BOX_FRACTION ? floatValue : 0.0 );
-         pfcOut->absolute = ( pfcOut->type == TAS_CONNECTION_BOX_ABSOLUTE ? uintValue : 0 );
+         uintOutValue = static_cast< unsigned int >( floatOutValue + TC_FLT_EPSILON );
+         pfcOut->percent = ( pfcOut->type == TAS_CONNECTION_BOX_FRACTION ? floatOutValue : 0.0 );
+         pfcOut->absolute = ( pfcOut->type == TAS_CONNECTION_BOX_ABSOLUTE ? uintOutValue : 0 );
       >>
+   |  FC
+      DEFAULT_IN_TYPE EQUAL connectionBoxInType[ &pfcIn->type ]
+      { DEFAULT_IN_VAL EQUAL floatNum[ &floatInValue ] }
+      <<
+         uintInValue = static_cast< unsigned int >( floatInValue + TC_FLT_EPSILON );
+         pfcIn->percent = ( pfcIn->type == TAS_CONNECTION_BOX_FRACTION ? floatInValue : 0.0 );
+         pfcIn->absolute = ( pfcIn->type == TAS_CONNECTION_BOX_ABSOLUTE ? uintInValue : 0 );
+      >>
+      DEFAULT_OUT_TYPE EQUAL connectionBoxInType[ &pfcOut->type ]
+      { DEFAULT_OUT_VAL EQUAL floatNum[ &floatOutValue ] }
+      <<
+         uintOutValue = static_cast< unsigned int >( floatOutValue + TC_FLT_EPSILON );
+         pfcIn->percent = ( pfcIn->type == TAS_CONNECTION_BOX_FRACTION ? floatOutValue : 0.0 );
+         pfcIn->absolute = ( pfcIn->type == TAS_CONNECTION_BOX_ABSOLUTE ? uintOutValue : 0 );
+      >>
+      "/>"
    )
    ;
 
@@ -1161,11 +1185,13 @@ sideMode[ TC_SideMode_t* pmode ]
       {
          *pmode = TC_SIDE_RIGHT;
       }
-      else if( TC_stricmp( srMode.data( ), "bottom" ) == 0 )
+      else if(( TC_stricmp( srMode.data( ), "bottom" ) == 0 ) ||
+              ( TC_stricmp( srMode.data( ), "lower" ) == 0 ))
       {
          *pmode = TC_SIDE_LOWER;
       }
-      else if( TC_stricmp( srMode.data( ), "top" ) == 0 )
+      else if(( TC_stricmp( srMode.data( ), "top" ) == 0 ) ||
+              ( TC_stricmp( srMode.data( ), "upper" ) == 0 ))
       {
          *pmode = TC_SIDE_UPPER;
       }
