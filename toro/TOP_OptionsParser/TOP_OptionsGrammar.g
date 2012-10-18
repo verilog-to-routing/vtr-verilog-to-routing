@@ -64,7 +64,6 @@ using namespace std;
 #token OUTPUT_FILE_CIRCUIT     "[Oo][Uu][Tt][Pp][Uu][Tt][_][Ff][Ii][Ll][Ee][_][Cc][Ii][Rr][Cc][Uu][Ii][Tt]"
 #token OUTPUT_FILE_RC_DELAYS   "[Oo][Uu][Tt][Pp][Uu][Tt][_][Ff][Ii][Ll][Ee][_]{[Rr][Cc][_]}[Dd][Ee][Ll][Aa][Yy][Ss]"
 #token OUTPUT_FILE_LAFF        "[Oo][Uu][Tt][Pp][Uu][Tt][_][Ff][Ii][Ll][Ee][_][Ll][Aa][Ff][Ff]"
-#token OUTPUT_FILE_METRICS     "[Oo][Uu][Tt][Pp][Uu][Tt][_][Ff][Ii][Ll][Ee][_][Mm][Ee][Tt][Rr][Ii][Cc][Ss]"
 #token OUTPUT_EMAIL_METRICS    "[Oo][Uu][Tt][Pp][Uu][Tt][_][Ee][Mm][Aa][Ii][Ll][_]([Aa][Dd][Dd][Rr][Ee][Ss][Ss]|[Mm][Ee][Tt][Rr][Ii][Cc][Ss])"
 #token OUTPUT_ENABLE_LOG       "[Oo][Uu][Tt][Pp][Uu][Tt][_][Ee][Nn][Aa][Bb][Ll][Ee][_][Ll][Oo][Gg]"
 #token OUTPUT_ENABLE_OPTIONS   "[Oo][Uu][Tt][Pp][Uu][Tt][_][Ee][Nn][Aa][Bb][Ll][Ee][_][Oo][Pp][Tt]{[Ii][Oo][Nn]}[Ss]"
@@ -75,7 +74,6 @@ using namespace std;
 #token OUTPUT_ENABLE_CIRCUIT   "[Oo][Uu][Tt][Pp][Uu][Tt][_][Ee][Nn][Aa][Bb][Ll][Ee][_][Cc][Ii][Rr][Cc][Uu][Ii][Tt]"
 #token OUTPUT_ENABLE_RC_DELAYS "[Oo][Uu][Tt][Pp][Uu][Tt][_][Ee][Nn][Aa][Bb][Ll][Ee][_]{[Rr][Cc][_]}[Dd][Ee][Ll][Aa][Yy][Ss]"
 #token OUTPUT_ENABLE_LAFF      "[Oo][Uu][Tt][Pp][Uu][Tt][_][Ee][Nn][Aa][Bb][Ll][Ee][_][Ll][Aa][Ff][Ff]"
-#token OUTPUT_ENABLE_METRICS   "[Oo][Uu][Tt][Pp][Uu][Tt][_][Ee][Nn][Aa][Bb][Ll][Ee][_][Mm][Ee][Tt][Rr][Ii][Cc][Ss]"
 #token OUTPUT_LAFF_MODE        "[Oo][Uu][Tt][Pp][Uu][Tt][_][Ll][Aa][Ff][Ff][_][Mm][Oo][Dd][Ee]"
 #token OUTPUT_RC_DELAYS_MODE   "[Oo][Uu][Tt][Pp][Uu][Tt][_]{[Rr][Cc][_]}[Dd][Ee][Ll][Aa][Yy]{[Ss]}[_][Mm][Oo][Dd][Ee]"
 #token OUTPUT_RC_DELAYS_SORT   "[Oo][Uu][Tt][Pp][Uu][Tt][_]{[Rr][Cc][_]}[Dd][Ee][Ll][Aa][Yy]{[Ss]}[_][Ss][Oo][Rr][Tt]"
@@ -333,7 +331,6 @@ outputOptions
    |  OUTPUT_FILE_CIRCUIT { EQUAL } stringText[ &poutputOptions_->srCircuitFileName ]
    |  OUTPUT_FILE_RC_DELAYS { EQUAL } stringText[ &poutputOptions_->srRcDelaysFileName ]
    |  OUTPUT_FILE_LAFF { EQUAL } stringText[ &poutputOptions_->srLaffFileName ]
-   |  OUTPUT_FILE_METRICS { EQUAL } stringText[ &poutputOptions_->srMetricsFileName ]
 
    |  OUTPUT_EMAIL_METRICS { EQUAL } stringText[ &poutputOptions_->srMetricsEmailAddress ]
 
@@ -346,7 +343,6 @@ outputOptions
    |  OUTPUT_ENABLE_CIRCUIT { EQUAL } boolType[ &poutputOptions_->circuitFileEnable ]
    |  OUTPUT_ENABLE_RC_DELAYS { EQUAL } boolType[ &poutputOptions_->rcDelaysFileEnable ]
    |  OUTPUT_ENABLE_LAFF { EQUAL } boolType[ &poutputOptions_->laffFileEnable ]
-   |  OUTPUT_ENABLE_METRICS { EQUAL } boolType[ &poutputOptions_->metricsFileEnable ]
 
    |  OUTPUT_LAFF_MODE { EQUAL } outputLaffMask[ &poutputOptions_->laffMask ]
 
