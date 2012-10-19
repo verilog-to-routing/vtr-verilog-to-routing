@@ -35,97 +35,105 @@ using namespace std;
 //===========================================================================//
 #lexclass START
 
-#token                   "[\ \t]+"           << skip( ); >>
-#token CPP_COMMENT       "//~[\n]*[\n]"      << skip( ); newline( ); >>
-#token BLOCK_COMMENT     "#~[\n]*[\n]"       << skip( ); newline( ); >>
-#token XML_COMMENT       "<\!\-\-~[\n]*[\n]" << skip( ); newline( ); >>
-#token NEW_LINE          "[\n\\]"            << skip( ); newline( ); >>
-#token END_OF_FILE       "@"
-#token OPEN_QUOTE        "\""                << mode( QUOTED_VALUE ); >>
-#token EQUAL             "="
+#token                  "[\ \t]+"           << skip( ); >>
+#token CPP_COMMENT      "//~[\n]*[\n]"      << skip( ); newline( ); >>
+#token BLOCK_COMMENT    "#~[\n]*[\n]"       << skip( ); newline( ); >>
+#token XML_COMMENT      "<\!\-\-~[\n]*[\n]" << skip( ); newline( ); >>
+#token NEW_LINE         "[\n\\]"            << skip( ); newline( ); >>
+#token END_OF_FILE      "@"
+#token OPEN_QUOTE       "\""                << mode( QUOTED_VALUE ); >>
+#token EQUAL            "="
 
-#token ARCHITECTURE      "[Aa][Rr][Cc][Hh][Ii][Tt][Ee][Cc][Tt][Uu][Rr][Ee]"
+#token ARCHITECTURE     "[Aa][Rr][Cc][Hh][Ii][Tt][Ee][Cc][Tt][Uu][Rr][Ee]"
 
-#token CONFIG            "[Cc][Oo][Nn][Ff][Ii][Gg]"
-#token IO                "[Ii]{[Nn][Pp][Uu][Tt]}[Oo]{[Uu][Tt][Pp][Uu][Tt]}"
-#token PB                "[Pp]{[Hh][Yy][Ss][Ii][Cc][Aa][Ll]}[Bb]{[Ll][Oo][Cc][Kk]}"
-#token SB                "[Ss]{[Ww][Ii][Tt][Cc][Hh]}[Bb]{[Oo][Xx]{[Ee][Ss]}}"
-#token CB                "[Cc]{[Oo][Nn][Nn][Ee][Cc][Tt][Ii][Oo][Nn]}[Bb]{[Oo][Xx]{[Ee][Ss]}}"
-#token SEGMENT           "[Ss][Ee][Gg][Mm][Ee][Nn][Tt]{[Ss]}"
-#token MODEL             "[Mm][Oo][Dd][Ee]{[Ll]}{[Ss]}"
-#token CELL              "[Cc][Ee][Ll][Ll]{[Ss]}"
-#token PIN               "[Pp][Ii][Nn]{[Ss]}"
+#token CONFIG           "[Cc][Oo][Nn][Ff][Ii][Gg]"
+#token IO               "[Ii]{[Nn][Pp][Uu][Tt]}[Oo]{[Uu][Tt][Pp][Uu][Tt]}"
+#token PB               "[Pp]{[Hh][Yy][Ss][Ii][Cc][Aa][Ll]}[Bb]{[Ll][Oo][Cc][Kk]}"
+#token SB               "[Ss]{[Ww][Ii][Tt][Cc][Hh]}[Bb]{[Oo][Xx]{[Ee][Ss]}}"
+#token CB               "[Cc]{[Oo][Nn][Nn][Ee][Cc][Tt][Ii][Oo][Nn]}[Bb]{[Oo][Xx]{[Ee][Ss]}}"
+#token SEGMENT          "[Ss][Ee][Gg][Mm][Ee][Nn][Tt]{[Ss]}"
+#token MODEL            "[Mm][Oo][Dd][Ee]{[Ll]}{[Ss]}"
+#token CELL             "[Cc][Ee][Ll][Ll]{[Ss]}"
+#token PIN              "[Pp][Ii][Nn]{[Ss]}"
 
-#token NAME              "[Nn][Aa][Mm][Ee]"
-#token TYPE              "[Tt][Yy][Pp][Ee]"
-#token CLASS             "[Cc][Ll][Aa][Ss][Ss]"
-#token FS                "[Ff][Ss]"
+#token NAME             "[Nn][Aa][Mm][Ee]"
+#token TYPE             "[Tt][Yy][Pp][Ee]"
+#token CLASS            "[Cc][Ll][Aa][Ss][Ss]"
+#token FS               "[Ff][Ss]"
 
-#token INTERCONNECT      "[Ii][Nn][Tt][Ee][Rr][Cc][Oo][Nn][Nn][Ee][Cc][Tt]"
+#token INTERCONNECT     "[Ii][Nn][Tt][Ee][Rr][Cc][Oo][Nn][Nn][Ee][Cc][Tt]"
 
-#token FC_IN             "[Ff][Cc][_][Ii][Nn]"
-#token FC_OUT            "[Ff][Cc][_][Oo][Uu][Tt]"
+#token FC_IN            "[Ff][Cc][_][Ii][Nn]"
+#token FC_OUT           "[Ff][Cc][_][Oo][Uu][Tt]"
 
-#token WIDTH             "[Ww][Ii][Dd][Tt][Hh]"
-#token HEIGHT            "[Hh][Ee][Ii][Gg][Hh][Tt]"
-#token LENGTH            "[Ll][Ee][Nn][Gg][Tt][Hh]"
-#token CAPACITY          "[Cc][Aa][Pp][Aa][Cc][Ii][Tt][Yy]"
+#token WIDTH            "[Ww][Ii][Dd][Tt][Hh]"
+#token HEIGHT           "[Hh][Ee][Ii][Gg][Hh][Tt]"
+#token LENGTH           "[Ll][Ee][Nn][Gg][Tt][Hh]"
+#token CAPACITY         "[Cc][Aa][Pp][Aa][Cc][Ii][Tt][Yy]"
 
-#token SIZE              "{[Aa][Rr][Rr][Aa][Yy][_]}[Ss][Ii][Zz][Ee]"
-#token RATIO             "{[Aa][Ss][Pp][Ee][Cc][Tt][_]}[Rr][Aa][Tt][Ii][Oo]"
-#token ORIGIN            "[Oo][Rr][Ii][Gg][Ii][Nn]"
-#token COUNT             "[Cc][Oo][Uu][Nn][Tt]"
-#token SIDE              "[Ss][Ii][Dd][Ee]"
-#token OFFSET            "[Oo][Ff][Ff][Ss][Ee][Tt]"
-#token EQUIVALENCE       "[Ee][Qq][Uu][Ii][Vv][Aa][Ll][Ee][Nn][Cc][Ee]"
+#token SIZE             "{[Aa][Rr][Rr][Aa][Yy][_]}[Ss][Ii][Zz][Ee]"
+#token RATIO            "{[Aa][Ss][Pp][Ee][Cc][Tt][_]}[Rr][Aa][Tt][Ii][Oo]"
+#token ORIGIN           "[Oo][Rr][Ii][Gg][Ii][Nn]"
+#token COUNT            "[Cc][Oo][Uu][Nn][Tt]"
+#token SIDE             "[Ss][Ii][Dd][Ee]"
+#token OFFSET           "[Oo][Ff][Ff][Ss][Ee][Tt]"
+#token EQUIVALENCE      "[Ee][Qq][Uu][Ii][Vv][Aa][Ll][Ee][Nn][Cc][Ee]"
 
-#token FULL              "[Ff][Uu][Ll][Ll]"
-#token LONGLINE          "[Ll][Oo][Nn][Gg][Ll][Ii][Nn][Ee]"
+#token FULL             "[Ff][Uu][Ll][Ll]"
+#token LONGLINE         "[Ll][Oo][Nn][Gg][Ll][Ii][Nn][Ee]"
 
-#token PIN_ASSIGN        "[Pp][Ii][Nn][_][Aa][Ss][Ss][Ii][Gg][Nn]{[Mm][Ee][Nn][Tt]}"
-#token GRID_ASSIGN       "[Gg][Rr][Ii][Dd][_][Aa][Ss][Ss][Ii][Gg][Nn]{[Mm][Ee][Nn][Tt]}"
+#token PIN_ASSIGN       "[Pp][Ii][Nn][_][Aa][Ss][Ss][Ii][Gg][Nn]{[Mm][Ee][Nn][Tt]}"
+#token GRID_ASSIGN      "[Gg][Rr][Ii][Dd][_][Aa][Ss][Ss][Ii][Gg][Nn]{[Mm][Ee][Nn][Tt]}"
 
-#token MAPPING           "[Mm][Aa][Pp][Pp][Ii][Nn][Gg]"
+#token MAPPING          "[Mm][Aa][Pp][Pp][Ii][Nn][Gg]"
 
-#token TIMING            "[Tt][Ii][Mm][Ii][Nn][Gg]{[_][Aa][Nn][Aa][Ll][Yy][Ss][Ii][Ss]}"
-#token R                 "[Rr]"
-#token RES               "[Rr][Ee][Ss]"
-#token CAP               "[Cc]{[Aa][Pp]}"
-#token CAP_IN            "[Cc]{[Aa][Pp]}{[_]}[Ii][Nn]"
-#token CAP_OUT           "[Cc]{[Aa][Pp]}{[_]}[Oo][Uu][Tt]"
-#token T                 "[Tt]"
-#token DELAY             "[Dd][Ee][Ll][Aa][Yy]{[_][Ii][Nn]}"
+#token TIMING           "[Tt][Ii][Mm][Ii][Nn][Gg]{[_][Aa][Nn][Aa][Ll][Yy][Ss][Ii][Ss]}"
+#token R                "[Rr]"
+#token RES              "[Rr][Ee][Ss]"
+#token CAP              "[Cc]{[Aa][Pp]}"
+#token CAP_IN           "[Cc]{[Aa][Pp]}{[_]}[Ii][Nn]"
+#token CAP_OUT          "[Cc]{[Aa][Pp]}{[_]}[Oo][Uu][Tt]"
+#token T                "[Tt]"
+#token DELAY            "[Dd][Ee][Ll][Aa][Yy]{[_][Ii][Nn]}"
 
-#token EST               "[Ee][Ss][Tt]{[Ii][Mm][Aa][Tt][Ee][Dd]}"
-#token MINW_NMOS_R       "[Mm][Ii][Nn][_][Ww][Ii][Dd][Tt][Hh][_][Nn][Mm][Oo][Ss][_][Rr][Ee][Ss]"
-#token MINW_PMOS_R       "[Mm][Ii][Nn][_][Ww][Ii][Dd][Tt][Hh][_][Pp][Mm][Oo][Ss][_][Rr][Ee][Ss]"
-#token MUX_IN_PIN_SIZE   "[Mm][Uu][Xx][_][Tt][Rr][Aa][Nn][Ss][_][Ii][Nn][_][Pp][Ii][Nn][_][Ss][Ii][Zz][Ee]"
-#token LOGIC_TILE_AREA   "[Gg][Rr][Ii][Dd][_][Ll][Oo][Gg][Ii][Cc][_][Tt][Ii][Ll][Ee][_][Aa][Rr][Ee][Aa]"
+#token EST              "[Ee][Ss][Tt]{[Ii][Mm][Aa][Tt][Ee][Dd]}"
+#token MINW_NMOS_R      "[Mm][Ii][Nn][_][Ww][Ii][Dd][Tt][Hh][_][Nn][Mm][Oo][Ss][_][Rr][Ee][Ss]"
+#token MINW_PMOS_R      "[Mm][Ii][Nn][_][Ww][Ii][Dd][Tt][Hh][_][Pp][Mm][Oo][Ss][_][Rr][Ee][Ss]"
+#token MUX_IN_PIN_SIZE  "[Mm][Uu][Xx][_][Tt][Rr][Aa][Nn][Ss][_][Ii][Nn][_][Pp][Ii][Nn][_][Ss][Ii][Zz][Ee]"
+#token LOGIC_TILE_AREA  "[Gg][Rr][Ii][Dd][_][Ll][Oo][Gg][Ii][Cc][_][Tt][Ii][Ll][Ee][_][Aa][Rr][Ee][Aa]"
 
-#token FREQ              "[Ff][Rr][Ee][Qq]"
+#token FREQ             "[Ff][Rr][Ee][Qq]"
 
-#token WIRE_SWITCH       "[Ww][Ii][Rr][Ee][_][Ss][Ww][Ii][Tt][Cc][Hh]"
-#token OPIN_SWITCH       "[Oo][Pp][Ii][Nn][_][Ss][Ww][Ii][Tt][Cc][Hh]"
+#token WIRE_SWITCH      "[Ww][Ii][Rr][Ee][_][Ss][Ww][Ii][Tt][Cc][Hh]"
+#token OPIN_SWITCH      "[Oo][Pp][Ii][Nn][_][Ss][Ww][Ii][Tt][Cc][Hh]"
 
-#token PATTERN           "[Pp][Aa][Tt][Tt][Ee][Rr][Nn]"
+#token PATTERN          "[Pp][Aa][Tt][Tt][Ee][Rr][Nn]"
 
-#token INPUT_PORTS       "[Ii][Nn][Pp][Uu][Tt][_][Pp][Oo][Rr][Tt][Ss]"
-#token OUTPUT_PORTS      "[Oo][Uu][Tt][Pp][Uu][Tt][_][Pp][Oo][Rr][Tt][Ss]"
-#token IS_CLOCK          "[Ii][Ss][_][Cc][Ll][Oo][Cc][Kk]"
+#token INPUT_PORTS      "[Ii][Nn][Pp][Uu][Tt][_][Pp][Oo][Rr][Tt][Ss]"
+#token OUTPUT_PORTS     "[Oo][Uu][Tt][Pp][Uu][Tt][_][Pp][Oo][Rr][Tt][Ss]"
+#token IS_CLOCK         "[Ii][Ss][_][Cc][Ll][Oo][Cc][Kk]"
 
-#token INPUT             "[Ii][Nn][Pp][Uu][Tt]"
-#token OUTPUT            "[Oo][Uu][Tt][Pp][Uu][Tt]"
-#token CLOCK             "[Cc][Ll][Oo][Cc][Kk]"
+#token INPUT            "[Ii][Nn][Pp][Uu][Tt]"
+#token OUTPUT           "[Oo][Uu][Tt][Pp][Uu][Tt]"
+#token CLOCK            "[Cc][Ll][Oo][Cc][Kk]"
 
-#token MAX_DELAY         "[Mm][Aa][Xx][_][Dd][Ee][Ll][Aa][Yy]"
-#token MAX_DELAY_MATRIX  "{[Mm][Aa][Xx][_]}[Dd][Ee][Ll][Aa][Yy][_][Mm][Aa][Tt][Rr][Ii][Xx]"
-#token CLOCK_SETUP_DELAY "{[Cc][Ll][Oo][Cc][Kk][_]}[Ss][Ee][Tt][Uu][Pp][_][Dd][Ee][Ll][Aa][Yy]"
-#token CLOCK_TO_Q_DELAY  "[Cc][Ll][Oo][Cc][Kk]{[_][Tt][Oo][_][Qq]}[_][Dd][Ee][Ll][Aa][Yy]"
+#token DELAY_CONSTANT   "[Dd][Ee][Ll][Aa][Yy][_][Cc][Oo][Nn][Ss][Tt][Aa][Nn][Tt]"
+#token DELAY_MATRIX     "[Dd][Ee][Ll][Aa][Yy][_][Mm][Aa][Tt][Rr][Ii][Xx]"
+#token T_SETUP          "([Tt]|[Cc][Ll][Oo][Cc][Kk])[_][Ss][Ee][Tt][Uu][Pp]"
+#token T_HOLD           "([Tt]|[Cc][Ll][Oo][Cc][Kk])[_][Hh][Oo][Ll][Dd]"
+#token T_CLOCK_TO_Q     "([Tt]|[Cc][Ll][Oo][Cc][Kk]){[_][Cc][Ll][Oo][Cc][Kk]}[_][Tt][Oo][_][Qq]"
+#token CAP_CONSTANT     "[Cc][Aa][Pp][_][Cc][Oo][Nn][Ss][Tt][Aa][Nn][Tt]"
+#token CAP_MATRIX       "[Cc][Aa][Pp][_][Mm][Aa][Tt][Rr][Ii][Xx]"
+#token PACK_PATTERN     "[Pp][Aa][Cc][Kk][_][Pp][Aa][Tt][Tt][Ee][Rr][Nn]"
 
-#token PRIORITY          "[Pp][Rr][Ii][Oo][Rr][Ii][Tt][Yy]"
-#token SINGLE_POS        "[Pp][Oo][Ss]"
-#token MULTIPLE_START    "[Ss][Tt][Aa][Rr][Tt]"
-#token MULTIPLE_REPEAT   "[Rr][Ee][Pp][Ee][Aa][Tt]"
+#token PRIORITY         "[Pp][Rr][Ii][Oo][Rr][Ii][Tt][Yy]"
+#token SINGLE_POS       "[Pp][Oo][Ss]"
+#token MULTIPLE_START   "[Ss][Tt][Aa][Rr][Tt]"
+#token MULTIPLE_REPEAT  "[Rr][Ee][Pp][Ee][Aa][Tt]"
+
+#token MIN          "[Mm][Ii][Nn]"
+#token MAX          "[Mm][Aa][Xx]"
+#token VALUE        "[Vv][Aa][Ll][Uu][Ee]"
 
 #token AUTO         "[Aa][Uu][Tt][Oo]"
 #token MANUAL       "[Mm][Aa][Nn][Uu][Aa][Ll]"
@@ -417,10 +425,15 @@ modeList[ TAS_ModeList_t* pmodeList ]
          << 
             interconnect.inputNameList.Clear( );
             interconnect.outputNameList.Clear( );
+
             interconnect.timingDelayLists.delayList.Clear( );
             interconnect.timingDelayLists.delayMatrixList.Clear( );
-            interconnect.timingDelayLists.delayClockSetupList.Clear( );
-            interconnect.timingDelayLists.delayClockToQList.Clear( );
+            interconnect.timingDelayLists.tSetupList.Clear( );
+            interconnect.timingDelayLists.tHoldList.Clear( );
+            interconnect.timingDelayLists.clockToQList.Clear( );
+            interconnect.timingDelayLists.capList.Clear( );
+            interconnect.timingDelayLists.capMatrixList.Clear( );
+            interconnect.timingDelayLists.packPatternList.Clear( );
          >>
          stringText[ &interconnect.srName ]
          mapTypeVal:MAP_TYPE_VAL
@@ -699,87 +712,132 @@ timingDelayLists[ TAS_TimingDelayLists_c* ptimingDelayLists ]
    <<
       TAS_TimingDelay_c timingDelay;
    >>
-   (  MAX_DELAY 
-      (  ( T | DELAY ) { EQUAL } expNum[ &timingDelay.delay ]
-      |  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
+   (  ( DELAY | DELAY_CONSTANT )
+      (  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
       |  OUTPUT { EQUAL } stringText[ &timingDelay.srOutputPortName ]
+      |  MIN { EQUAL } expNum[ &timingDelay.valueMin ] 
+         << timingDelay.type = TAS_TIMING_TYPE_MIN; >>
+      |  MAX { EQUAL } expNum[ &timingDelay.valueMax ] 
+         << timingDelay.type = TAS_TIMING_TYPE_MAX; >>
       )*
-      << 
-         timingDelay.type = TAS_TIMING_DELAY_CONSTANT;
+      <<
+         timingDelay.mode = TAS_TIMING_MODE_DELAY_CONSTANT;
          ptimingDelayLists->delayList.Add( timingDelay );
       >>
-   |  MAX_DELAY_MATRIX
-      (  ( T | DELAY ) { EQUAL } delayMatrixDef[ &timingDelay.delayMatrix ]
-      |  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
+   |  DELAY_MATRIX
+      (  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
       |  OUTPUT { EQUAL } stringText[ &timingDelay.srOutputPortName ]
+      |  MIN { EQUAL } timingValueMatrixDef[ &timingDelay.valueMatrix ]
+         << timingDelay.type = TAS_TIMING_TYPE_MIN; >>
+      |  MAX { EQUAL } timingValueMatrixDef[ &timingDelay.valueMatrix ]
+         << timingDelay.type = TAS_TIMING_TYPE_MAX; >>
       )*
-      << 
-         timingDelay.type = TAS_TIMING_DELAY_MATRIX;
+      <<
+         timingDelay.mode = TAS_TIMING_MODE_DELAY_MATRIX;
          ptimingDelayLists->delayMatrixList.Add( timingDelay );
       >>
-   |  CLOCK_SETUP_DELAY
-      (  ( T | DELAY ) { EQUAL } expNum[ &timingDelay.delay ]
-      |  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
+   |  T_SETUP 
+      (  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
       |  CLOCK { EQUAL } stringText[ &timingDelay.srClockPortName ]
+      |  VALUE { EQUAL } expNum[ &timingDelay.valueNom ]
       )*
-      << 
-         timingDelay.type = TAS_TIMING_DELAY_SETUP;
-         ptimingDelayLists->delayClockSetupList.Add( timingDelay );
+      <<
+         timingDelay.mode = TAS_TIMING_MODE_T_SETUP;
+         ptimingDelayLists->tSetupList.Add( timingDelay );
       >>
-   |  CLOCK_TO_Q_DELAY 
-      (  ( T | DELAY ) { EQUAL } expNum[ &timingDelay.delay ]
-      |  OUTPUT { EQUAL } stringText[ &timingDelay.srOutputPortName ]
+   |  T_HOLD 
+      (  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
       |  CLOCK { EQUAL } stringText[ &timingDelay.srClockPortName ]
+      |  VALUE { EQUAL } expNum[ &timingDelay.valueNom ]
       )*
-      << 
-         timingDelay.type = TAS_TIMING_DELAY_CLOCK_TO_Q;
-         ptimingDelayLists->delayClockToQList.Add( timingDelay );
+      <<
+         timingDelay.mode = TAS_TIMING_MODE_T_HOLD;
+         ptimingDelayLists->tHoldList.Add( timingDelay );
+      >>
+   |  T_CLOCK_TO_Q
+      (  OUTPUT { EQUAL } stringText[ &timingDelay.srOutputPortName ]
+      |  CLOCK { EQUAL } stringText[ &timingDelay.srClockPortName ]
+      |  MIN { EQUAL } expNum[ &timingDelay.valueMin ] 
+         << timingDelay.type = TAS_TIMING_TYPE_MIN; >>
+      |  MAX { EQUAL } expNum[ &timingDelay.valueMax ] 
+         << timingDelay.type = TAS_TIMING_TYPE_MAX; >>
+      )*
+      <<
+         timingDelay.mode = TAS_TIMING_MODE_CLOCK_TO_Q;
+         ptimingDelayLists->clockToQList.Add( timingDelay );
+      >>
+   |  ( CAP | CAP_CONSTANT )
+      (  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
+      |  OUTPUT { EQUAL } stringText[ &timingDelay.srOutputPortName ]
+      |  VALUE { EQUAL } floatNum[ &timingDelay.valueNom ] 
+      )*
+      <<
+         timingDelay.mode = TAS_TIMING_MODE_CAP_CONSTANT;
+         ptimingDelayLists->capList.Add( timingDelay );
+      >>
+   |  CAP_MATRIX
+      (  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
+      |  OUTPUT { EQUAL } stringText[ &timingDelay.srOutputPortName ]
+      |  VALUE { EQUAL } timingValueMatrixDef[ &timingDelay.valueMatrix ]
+      )*
+      <<
+         timingDelay.mode = TAS_TIMING_MODE_CAP_MATRIX;
+         ptimingDelayLists->capMatrixList.Add( timingDelay );
+      >>
+   |  PACK_PATTERN
+      (  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
+      |  OUTPUT { EQUAL } stringText[ &timingDelay.srOutputPortName ]
+      |  NAME { EQUAL } stringText[ &timingDelay.srPackPatternName ]
+      )*
+      <<
+         timingDelay.mode = TAS_TIMING_MODE_PACK_PATTERN;
+         ptimingDelayLists->packPatternList.Add( timingDelay );
       >>
    )
    ;
 
 //===========================================================================//
-delayMatrixDef[ TAS_DelayMatrix_t* pdelayMatrix ]
+timingValueMatrixDef[ TAS_TimingValueMatrix_t* pvalueMatrix ]
    :
    <<
-      TAS_DelayTable_t delayTable;
-      TAS_DelayList_t delayList;
+      TAS_TimingValueTable_t valueTable;
+      TAS_TimingValueList_t valueList;
 
       double value;
       size_t curTokenLine, nextTokenLine;
    >>
    (  expNum[ &value ]
       <<
-         delayList.Add( value );
+         valueList.Add( value );
 
          curTokenLine = ( LT( 0 ) ? LT( 0 )->getLine( ) : 0 );
          nextTokenLine = ( LT( 1 ) ? LT( 1 )->getLine( ) : 0 );
          if( curTokenLine != nextTokenLine )
          {
-            delayTable.Add( delayList );
-            delayList.Clear( );
+            valueTable.Add( valueList );
+            valueList.Clear( );
          }
       >>
    )+
    <<
-      if( delayTable.IsValid( ) && delayTable[ 0 ]->IsValid( ))
+      if( valueTable.IsValid( ) && valueTable[ 0 ]->IsValid( ))
       {
-         size_t height = delayTable.GetLength( );
+         size_t height = valueTable.GetLength( );
          size_t width = SIZE_MAX;
-         for( size_t i = 0; i < delayTable.GetLength( ); ++i )
+         for( size_t i = 0; i < valueTable.GetLength( ); ++i )
          {
-            width = TCT_Min( width, delayTable[ i ]->GetLength( ));
+            width = TCT_Min( width, valueTable[ i ]->GetLength( ));
          }
 
          value = 0.0;
-         pdelayMatrix->SetCapacity( width, height, value );
+         pvalueMatrix->SetCapacity( width, height, value );
    
          for( size_t j = 0; j < height; ++j )
          {
-            const TAS_DelayList_t& delayList_ = *delayTable[ j ];
+            const TAS_TimingValueList_t& valueList_ = *valueTable[ j ];
             for( size_t i = 0; i < width; ++i )
             {
-               ( *pdelayMatrix )[i][j] = *delayList_[ i ];
+               ( *pvalueMatrix )[i][j] = *valueList_[ i ];
             }
          }
       }
