@@ -1588,20 +1588,28 @@ void TVPR_ArchitectureSpec_c::PokeTimingDelayLists_(
 {
    const TAS_TimingDelayList_t& delayList = timingDelayLists.delayList;
    const TAS_TimingDelayList_t& delayMatrixList = timingDelayLists.delayMatrixList;
-   const TAS_TimingDelayList_t& delayClockSetupList = timingDelayLists.delayClockSetupList;
-   const TAS_TimingDelayList_t& delayClockToQList = timingDelayLists.delayClockToQList;
+   const TAS_TimingDelayList_t& tSetupList = timingDelayLists.tSetupList;
+   const TAS_TimingDelayList_t& tHoldList = timingDelayLists.tHoldList;
+   const TAS_TimingDelayList_t& clockToQList = timingDelayLists.clockToQList;
+   const TAS_TimingDelayList_t& capList = timingDelayLists.capList;
+   const TAS_TimingDelayList_t& capMatrixList = timingDelayLists.capMatrixList;
+   const TAS_TimingDelayList_t& packPatternList = timingDelayLists.packPatternList;
 
    *pvpr_annotationCount = static_cast< int >( delayList.GetLength( ) +
                                                delayMatrixList.GetLength( ) +
-                                               delayClockSetupList.GetLength( ) +
-                                               delayClockToQList.GetLength( ));
+                                               tSetupList.GetLength( ) +
+                                               tHoldList.GetLength( ) +
+                                               clockToQList.GetLength( ) +
+                                               capList.GetLength( ) +
+                                               capMatrixList.GetLength( ) +
+                                               packPatternList.GetLength( ));
 
    *pvpr_annotationArray = static_cast< t_pin_to_pin_annotation* >( TC_calloc( *pvpr_annotationCount, sizeof( t_pin_to_pin_annotation )));
    int index = 0;
    for( size_t i = 0; i < delayList.GetLength( ); ++i )
    {
-      const TAS_TimingDelay_c& delay = *delayList[i];
-      this->PokeTimingDelay_( delay,
+      const TAS_TimingDelay_c& delayConstant = *delayList[i];
+      this->PokeTimingDelay_( delayConstant,
                               &( *pvpr_annotationArray )[index] );
       ++index;
    }
@@ -1612,17 +1620,45 @@ void TVPR_ArchitectureSpec_c::PokeTimingDelayLists_(
                               &( *pvpr_annotationArray )[index] );
       ++index;
    }
-   for( size_t i = 0; i < delayClockSetupList.GetLength( ); ++i )
+   for( size_t i = 0; i < tSetupList.GetLength( ); ++i )
    {
-      const TAS_TimingDelay_c& delayClockSetup = *delayClockSetupList[i];
-      this->PokeTimingDelay_( delayClockSetup,
+      const TAS_TimingDelay_c& tSetup = *tSetupList[i];
+      this->PokeTimingDelay_( tSetup,
                               &( *pvpr_annotationArray )[index] );
       ++index;
    }
-   for( size_t i = 0; i < delayClockToQList.GetLength( ); ++i )
+   for( size_t i = 0; i < tHoldList.GetLength( ); ++i )
    {
-      const TAS_TimingDelay_c& delayClockToQ = *delayClockToQList[i];
-      this->PokeTimingDelay_( delayClockToQ,
+      const TAS_TimingDelay_c& tHold = *tHoldList[i];
+      this->PokeTimingDelay_( tHold,
+                              &( *pvpr_annotationArray )[index] );
+      ++index;
+   }
+   for( size_t i = 0; i < clockToQList.GetLength( ); ++i )
+   {
+      const TAS_TimingDelay_c& clockToQ = *clockToQList[i];
+      this->PokeTimingDelay_( clockToQ,
+                              &( *pvpr_annotationArray )[index] );
+      ++index;
+   }
+   for( size_t i = 0; i < capList.GetLength( ); ++i )
+   {
+      const TAS_TimingDelay_c& capConstant = *capList[i];
+      this->PokeTimingDelay_( capConstant,
+                              &( *pvpr_annotationArray )[index] );
+      ++index;
+   }
+   for( size_t i = 0; i < capMatrixList.GetLength( ); ++i )
+   {
+      const TAS_TimingDelay_c& capMatrix = *capMatrixList[i];
+      this->PokeTimingDelay_( capMatrix,
+                              &( *pvpr_annotationArray )[index] );
+      ++index;
+   }
+   for( size_t i = 0; i < packPatternList.GetLength( ); ++i )
+   {
+      const TAS_TimingDelay_c& packPattern = *packPatternList[i];
+      this->PokeTimingDelay_( packPattern,
                               &( *pvpr_annotationArray )[index] );
       ++index;
    }
@@ -1640,54 +1676,136 @@ void TVPR_ArchitectureSpec_c::PokeTimingDelay_(
             t_pin_to_pin_annotation* pvpr_annotation ) const
 {
    TC_MinGrid_c& MinGrid = TC_MinGrid_c::GetInstance( );
-   unsigned int precision = MinGrid.GetPrecision( ) + 1;
+   unsigned int precision = MinGrid.GetPrecision( );
 
-   char szDelayValue[TIO_FORMAT_STRING_LEN_DATA];
-   memset( szDelayValue, 0, sizeof( szDelayValue ));
-   sprintf( szDelayValue, "%0.*e", precision + 1, timingDelay.delay );
+   char szValueMin[TIO_FORMAT_STRING_LEN_DATA];
+   memset( szValueMin, 0, sizeof( szValueMin ));
+   sprintf( szValueMin, "%0.*e", precision + 1, timingDelay.valueMin );
 
-   string srDelayMatrix;
-   timingDelay.delayMatrix.ExtractString( TC_DATA_EXP, &srDelayMatrix, precision, SIZE_MAX, 0 );
+   char szValueMax[TIO_FORMAT_STRING_LEN_DATA];
+   memset( szValueMax, 0, sizeof( szValueMax ));
+   sprintf( szValueMax, "%0.*e", precision + 1, timingDelay.valueMax );
 
-   pvpr_annotation->num_value_prop_pairs = 1;
-   pvpr_annotation->prop = static_cast< int* >( TC_calloc( 1, sizeof( int )));
-   pvpr_annotation->value = static_cast< char** >( TC_calloc( 1, sizeof( char* )));
+   char szValueNom[TIO_FORMAT_STRING_LEN_DATA];
+   memset( szValueNom, 0, sizeof( szValueNom ));
+   sprintf( szValueNom, "%0.*e", precision + 1, timingDelay.valueNom );
 
-   switch( timingDelay.type )
+   string srDelayMatrix, srCapMatrix;
+   timingDelay.valueMatrix.ExtractString( TC_DATA_EXP, &srDelayMatrix, precision + 1, SIZE_MAX, 0 );
+   timingDelay.valueMatrix.ExtractString( TC_DATA_FLOAT, &srCapMatrix, precision, SIZE_MAX, 0 );
+
+   size_t i = 0;
+   size_t valueCt = ( TCTF_IsGT( timingDelay.valueMin, 0.0 ) && 
+                      TCTF_IsGT( timingDelay.valueMax, 0.0 ) ?
+                      2 : 1 );
+
+   pvpr_annotation->num_value_prop_pairs = static_cast< int >( valueCt );
+   pvpr_annotation->prop = static_cast< int* >( TC_calloc( valueCt, sizeof( int )));
+   pvpr_annotation->value = static_cast< char** >( TC_calloc( valueCt, sizeof( char* )));
+
+   switch( timingDelay.mode )
    {
-   case TAS_TIMING_DELAY_CONSTANT:
+   case TAS_TIMING_MODE_DELAY_CONSTANT:
+
       pvpr_annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
       pvpr_annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
-      pvpr_annotation->prop[0] = E_ANNOT_PIN_TO_PIN_DELAY_MAX;
-      pvpr_annotation->value[0] = TC_strdup( szDelayValue );
+      if( TCTF_IsGT( timingDelay.valueMax, 0.0 ))
+      {
+         pvpr_annotation->prop[i] = E_ANNOT_PIN_TO_PIN_DELAY_MAX;
+         pvpr_annotation->value[i] = TC_strdup( szValueMax );
+         ++i;
+      }
+      if( TCTF_IsGT( timingDelay.valueMin, 0.0 ))
+      {
+         pvpr_annotation->prop[i] = E_ANNOT_PIN_TO_PIN_DELAY_MIN;
+         pvpr_annotation->value[i] = TC_strdup( szValueMin );
+      }
       pvpr_annotation->input_pins = TC_strdup( timingDelay.srInputPortName );
       pvpr_annotation->output_pins = TC_strdup( timingDelay.srOutputPortName );
       break;
-   case TAS_TIMING_DELAY_MATRIX:
+
+   case TAS_TIMING_MODE_DELAY_MATRIX:
+
       pvpr_annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
       pvpr_annotation->format = E_ANNOT_PIN_TO_PIN_MATRIX;
-      pvpr_annotation->prop[0] = E_ANNOT_PIN_TO_PIN_DELAY_MAX;
+      pvpr_annotation->prop[0] = ( timingDelay.type == TAS_TIMING_TYPE_MAX ?
+                                   E_ANNOT_PIN_TO_PIN_DELAY_MAX : 
+                                   E_ANNOT_PIN_TO_PIN_DELAY_MIN );
       pvpr_annotation->value[0] = TC_strdup( srDelayMatrix );
       pvpr_annotation->input_pins = TC_strdup( timingDelay.srInputPortName );
       pvpr_annotation->output_pins = TC_strdup( timingDelay.srOutputPortName );
       break;
-   case TAS_TIMING_DELAY_SETUP:
+
+   case TAS_TIMING_MODE_T_SETUP:
+
       pvpr_annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
       pvpr_annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
       pvpr_annotation->prop[0] = E_ANNOT_PIN_TO_PIN_DELAY_TSETUP;
-      pvpr_annotation->value[0] = TC_strdup( szDelayValue );
+      pvpr_annotation->value[0] = TC_strdup( szValueNom );
       pvpr_annotation->input_pins = TC_strdup( timingDelay.srInputPortName );
       pvpr_annotation->clock = TC_strdup( timingDelay.srClockPortName );
       break;
-   case TAS_TIMING_DELAY_CLOCK_TO_Q:
+
+   case TAS_TIMING_MODE_T_HOLD:
+
       pvpr_annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
       pvpr_annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
-      pvpr_annotation->prop[0] = E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX;
-      pvpr_annotation->value[0] = TC_strdup( szDelayValue );
+      pvpr_annotation->prop[0] = E_ANNOT_PIN_TO_PIN_DELAY_THOLD;
+      pvpr_annotation->value[0] = TC_strdup( szValueNom );
+      pvpr_annotation->input_pins = TC_strdup( timingDelay.srInputPortName );
+      pvpr_annotation->clock = TC_strdup( timingDelay.srClockPortName );
+      break;
+
+   case TAS_TIMING_MODE_CLOCK_TO_Q:
+
+      pvpr_annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
+      pvpr_annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
+      if( TCTF_IsGT( timingDelay.valueMax, 0.0 ))
+      {
+         pvpr_annotation->prop[i] = E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX;
+         pvpr_annotation->value[i] = TC_strdup( szValueMax );
+         ++i;
+      }
+      if( TCTF_IsGT( timingDelay.valueMin, 0.0 ))
+      {
+         pvpr_annotation->prop[i] = E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN;
+         pvpr_annotation->value[i] = TC_strdup( szValueMin );
+      }
       pvpr_annotation->input_pins = TC_strdup( timingDelay.srOutputPortName );
       pvpr_annotation->clock = TC_strdup( timingDelay.srClockPortName );
       break;
-   case TAS_TIMING_DELAY_UNDEFINED:
+
+   case TAS_TIMING_MODE_CAP_CONSTANT:
+
+      pvpr_annotation->type = E_ANNOT_PIN_TO_PIN_CAPACITANCE;
+      pvpr_annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
+      pvpr_annotation->prop[0] = E_ANNOT_PIN_TO_PIN_CAPACITANCE_C;
+      pvpr_annotation->value[0] = TC_strdup( szValueMax );
+      pvpr_annotation->input_pins = TC_strdup( timingDelay.srInputPortName );
+      pvpr_annotation->output_pins = TC_strdup( timingDelay.srOutputPortName );
+      break;
+
+   case TAS_TIMING_MODE_CAP_MATRIX:
+
+      pvpr_annotation->type = E_ANNOT_PIN_TO_PIN_CAPACITANCE;
+      pvpr_annotation->format = E_ANNOT_PIN_TO_PIN_MATRIX;
+      pvpr_annotation->prop[0] = E_ANNOT_PIN_TO_PIN_CAPACITANCE_C;
+      pvpr_annotation->value[0] = TC_strdup( srCapMatrix );
+      pvpr_annotation->input_pins = TC_strdup( timingDelay.srInputPortName );
+      pvpr_annotation->output_pins = TC_strdup( timingDelay.srOutputPortName );
+      break;
+
+   case TAS_TIMING_MODE_PACK_PATTERN:
+
+      pvpr_annotation->type = E_ANNOT_PIN_TO_PIN_PACK_PATTERN;
+      pvpr_annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
+      pvpr_annotation->prop[0] = E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME;
+      pvpr_annotation->value[0] = TC_strdup( timingDelay.srPackPatternName );
+      pvpr_annotation->input_pins = TC_strdup( timingDelay.srInputPortName );
+      pvpr_annotation->output_pins = TC_strdup( timingDelay.srOutputPortName );
+      break;
+
+   default:
       break;
    }
 }
