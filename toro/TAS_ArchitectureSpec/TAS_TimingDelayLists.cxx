@@ -24,8 +24,12 @@ TAS_TimingDelayLists_c::TAS_TimingDelayLists_c(
       :
       delayList( TAS_DELAY_LIST_DEF_CAPACITY ),
       delayMatrixList( TAS_DELAY_MATRIX_LIST_DEF_CAPACITY ),
-      delayClockSetupList ( TAS_DELAY_CLOCK_SETUP_LIST_DEF_CAPACITY ),
-      delayClockToQList( TAS_DELAY_CLOCK_TO_Q_LIST_DEF_CAPACITY )
+      tSetupList ( TAS_T_SETUP_LIST_DEF_CAPACITY ),
+      tHoldList ( TAS_T_HOLD_LIST_DEF_CAPACITY ),
+      clockToQList( TAS_CLOCK_TO_Q_LIST_DEF_CAPACITY ),
+      capList( TAS_CAP_LIST_DEF_CAPACITY ),
+      capMatrixList( TAS_CAP_MATRIX_LIST_DEF_CAPACITY ),
+      packPatternList( TAS_PACK_PATTERN_LIST_DEF_CAPACITY )
 {
 }
 
@@ -35,8 +39,12 @@ TAS_TimingDelayLists_c::TAS_TimingDelayLists_c(
       :
       delayList( timingDelayLists.delayList ),
       delayMatrixList( timingDelayLists.delayMatrixList ),
-      delayClockSetupList ( timingDelayLists.delayClockSetupList  ),
-      delayClockToQList( timingDelayLists.delayClockToQList )
+      tSetupList ( timingDelayLists.tSetupList  ),
+      tHoldList ( timingDelayLists.tHoldList  ),
+      clockToQList( timingDelayLists.clockToQList ),
+      capList( timingDelayLists.capList ),
+      capMatrixList( timingDelayLists.capMatrixList ),
+      packPatternList( timingDelayLists.packPatternList )
 {
 }
 
@@ -66,8 +74,12 @@ TAS_TimingDelayLists_c& TAS_TimingDelayLists_c::operator=(
    {
       this->delayList = timingDelayLists.delayList;
       this->delayMatrixList = timingDelayLists.delayMatrixList;
-      this->delayClockSetupList  = timingDelayLists.delayClockSetupList;
-      this->delayClockToQList = timingDelayLists.delayClockToQList;
+      this->tSetupList = timingDelayLists.tSetupList;
+      this->tHoldList = timingDelayLists.tHoldList;
+      this->clockToQList = timingDelayLists.clockToQList;
+      this->capList = timingDelayLists.capList;
+      this->capMatrixList = timingDelayLists.capMatrixList;
+      this->packPatternList = timingDelayLists.packPatternList;
    }
    return( *this );
 }
@@ -84,8 +96,12 @@ bool TAS_TimingDelayLists_c::operator==(
 {
    return(( this->delayList == timingDelayLists.delayList ) &&
           ( this->delayMatrixList == timingDelayLists.delayMatrixList ) &&
-          ( this->delayClockSetupList == timingDelayLists.delayClockSetupList ) &&
-          ( this->delayClockToQList == timingDelayLists.delayClockToQList ) ?
+          ( this->tSetupList == timingDelayLists.tSetupList ) &&
+          ( this->tHoldList == timingDelayLists.tHoldList ) &&
+          ( this->clockToQList == timingDelayLists.clockToQList ) &&
+          ( this->capList == timingDelayLists.capList ) &&
+          ( this->capMatrixList == timingDelayLists.capMatrixList ) &&
+          ( this->packPatternList == timingDelayLists.packPatternList ) ?
           true : false );
 }
 
@@ -115,8 +131,12 @@ void TAS_TimingDelayLists_c::Print(
 {
    this->delayList.Print( pfile, spaceLen );
    this->delayMatrixList.Print( pfile, spaceLen );
-   this->delayClockSetupList.Print( pfile, spaceLen );
-   this->delayClockToQList.Print( pfile, spaceLen );
+   this->tSetupList.Print( pfile, spaceLen );
+   this->tHoldList.Print( pfile, spaceLen );
+   this->clockToQList.Print( pfile, spaceLen );
+   this->capList.Print( pfile, spaceLen );
+   this->capMatrixList.Print( pfile, spaceLen );
+   this->packPatternList.Print( pfile, spaceLen );
 }
 
 //===========================================================================//
@@ -148,12 +168,28 @@ void TAS_TimingDelayLists_c::PrintXML(
    {
       this->delayMatrixList[i]->PrintXML( pfile, spaceLen );
    }
-   for( size_t i = 0; i < this->delayClockSetupList.GetLength( ); ++i )
+   for( size_t i = 0; i < this->tSetupList.GetLength( ); ++i )
    {
-      this->delayClockSetupList[i]->PrintXML( pfile, spaceLen );
+      this->tSetupList[i]->PrintXML( pfile, spaceLen );
    }
-   for( size_t i = 0; i < this->delayClockToQList.GetLength( ); ++i )
+   for( size_t i = 0; i < this->tHoldList.GetLength( ); ++i )
    {
-      this->delayClockToQList[i]->PrintXML( pfile, spaceLen );
+      this->tHoldList[i]->PrintXML( pfile, spaceLen );
+   }
+   for( size_t i = 0; i < this->clockToQList.GetLength( ); ++i )
+   {
+      this->clockToQList[i]->PrintXML( pfile, spaceLen );
+   }
+   for( size_t i = 0; i < this->capList.GetLength( ); ++i )
+   {
+      this->capList[i]->PrintXML( pfile, spaceLen );
+   }
+   for( size_t i = 0; i < this->capMatrixList.GetLength( ); ++i )
+   {
+      this->capMatrixList[i]->PrintXML( pfile, spaceLen );
+   }
+   for( size_t i = 0; i < this->packPatternList.GetLength( ); ++i )
+   {
+      this->packPatternList[i]->PrintXML( pfile, spaceLen );
    }
 }

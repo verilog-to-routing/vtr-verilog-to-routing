@@ -29,7 +29,8 @@ void TAS_ExtractStringPinAssignPatternType( TAS_PinAssignPatternType_t type, str
 void TAS_ExtractStringGridAssignDistrMode( TAS_GridAssignDistrMode_t mode, string* psrMode );
 void TAS_ExtractStringGridAssignOrientMode( TAS_GridAssignOrientMode_t mode, string* psrMode );
 
-void TAS_ExtractStringTimingDelayType( TAS_TimingDelayType_t type, string* psrType );
+void TAS_ExtractStringTimingMode( TAS_TimingMode_t mode, string* psrMode );
+void TAS_ExtractStringTimingType( TAS_TimingType_t type, string* psrType );
 
 void TAS_ExtractStringArraySizeMode( TAS_ArraySizeMode_t mode, string* psrMode );
 

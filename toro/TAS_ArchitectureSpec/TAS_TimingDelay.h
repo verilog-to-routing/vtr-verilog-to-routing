@@ -43,20 +43,24 @@ public:
 
 public:
 
-   TAS_TimingDelayType_t type; // Selects delay type: CONSTANT|MATRIX
+   TAS_TimingMode_t mode; // Selects delay type: CONSTANT|MATRIX|etc.
+   TAS_TimingType_t type; // Selects delay type: MIN|MAX
 
-   double delay;
-   TAS_DelayMatrix_t delayMatrix;
+   double valueMin;
+   double valueMax;
+   double valueNom;
+   TAS_TimingValueMatrix_t valueMatrix;
 
    string srInputPortName;
    string srOutputPortName;
    string srClockPortName;
+   string srPackPatternName;
 
 private:
 
    enum TAS_DefCapacity_e 
    { 
-      TAS_DELAY_MATRIX_DEF_CAPACITY = 0
+      TAS_TIMING_VALUE_MATRIX_DEF_CAPACITY = 0
    };
 };
 
@@ -70,7 +74,7 @@ private:
 inline bool TAS_TimingDelay_c::IsValid( 
       void ) const
 {
-   return( this->type != TAS_TIMING_DELAY_UNDEFINED ? true : false );
+   return( this->mode != TAS_TIMING_MODE_UNDEFINED ? true : false );
 }
 
 #endif

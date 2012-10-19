@@ -55,10 +55,10 @@ typedef TCT_OrderedVector_c< TAS_GridAssign_c > TAS_GridAssignList_t;
 class TAS_TimingDelay_c; // Forward declaration for subsequent class typedefs
 typedef TCT_OrderedVector_c< TAS_TimingDelay_c > TAS_TimingDelayList_t;
 
-typedef TCT_OrderedQueue_c< double > TAS_DelayList_t;
-typedef TCT_OrderedVector_c< TAS_DelayList_t > TAS_DelayTable_t;
+typedef TCT_OrderedQueue_c< double > TAS_TimingValueList_t;
+typedef TCT_OrderedVector_c< TAS_TimingValueList_t > TAS_TimingValueTable_t;
 
-typedef TCT_OrderedVector2D_c< double > TAS_DelayMatrix_t;
+typedef TCT_OrderedVector2D_c< double > TAS_TimingValueMatrix_t;
 
 enum TAS_PhysicalBlockModelType_e
 {
@@ -112,15 +112,27 @@ enum TAS_GridAssignOrientMode_e
 };
 typedef TAS_GridAssignOrientMode_e TAS_GridAssignOrientMode_t;
 
-enum TAS_TimingDelayType_e
+enum TAS_TimingMode_e
 {
-   TAS_TIMING_DELAY_UNDEFINED = 0,
-   TAS_TIMING_DELAY_CONSTANT,
-   TAS_TIMING_DELAY_MATRIX,
-   TAS_TIMING_DELAY_SETUP,
-   TAS_TIMING_DELAY_CLOCK_TO_Q
+   TAS_TIMING_MODE_UNDEFINED = 0,
+   TAS_TIMING_MODE_DELAY_CONSTANT,
+   TAS_TIMING_MODE_DELAY_MATRIX,
+   TAS_TIMING_MODE_T_SETUP,
+   TAS_TIMING_MODE_T_HOLD,
+   TAS_TIMING_MODE_CLOCK_TO_Q,
+   TAS_TIMING_MODE_CAP_CONSTANT,
+   TAS_TIMING_MODE_CAP_MATRIX,
+   TAS_TIMING_MODE_PACK_PATTERN
 };
-typedef TAS_TimingDelayType_e TAS_TimingDelayType_t;
+typedef TAS_TimingMode_e TAS_TimingMode_t;
+
+enum TAS_TimingType_e
+{
+   TAS_TIMING_TYPE_UNDEFINED = 0,
+   TAS_TIMING_TYPE_MIN,
+   TAS_TIMING_TYPE_MAX
+};
+typedef TAS_TimingType_e TAS_TimingType_t;
 
 typedef TCT_NameList_c< TC_Name_c > TAS_InputNameList_t;
 typedef TCT_NameList_c< TC_Name_c > TAS_OutputNameList_t;

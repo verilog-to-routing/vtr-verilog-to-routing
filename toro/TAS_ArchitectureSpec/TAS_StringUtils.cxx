@@ -9,7 +9,8 @@
 //           - TAS_ExtractStringPinAssignPatternType
 //           - TAS_ExtractStringGridAssignDistrMode
 //           - TAS_ExtractStringGridAssignOrientMode
-//           - TAS_ExtractStringTimingDelayType
+//           - TAS_ExtractStringTimingMode
+//           - TAS_ExtractStringTimingType
 //           - TAS_ExtractStringArraySizeMode
 //           - TAS_ExtractStringSwitchBoxType
 //           - TAS_ExtractStringSwitchBoxModelType
@@ -196,15 +197,45 @@ void TAS_ExtractStringGridAssignOrientMode(
 }
 
 //===========================================================================//
-// Function       : TAS_ExtractStringTimingDelayType
+// Function       : TAS_ExtractStringTimingMode
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
 // 05/15/12 jeffr : Original
 //===========================================================================//
-void TAS_ExtractStringTimingDelayType(
-      TAS_TimingDelayType_t type,
-      string*               psrType )
+void TAS_ExtractStringTimingMode(
+      TAS_TimingMode_t mode,
+      string*          psrMode )
+{
+   if( psrMode )
+   {
+      *psrMode = "";
+
+      switch( mode )
+      {
+      case TAS_TIMING_MODE_DELAY_CONSTANT: *psrMode = "delay";        break;
+      case TAS_TIMING_MODE_DELAY_MATRIX:   *psrMode = "delay_matrix"; break;
+      case TAS_TIMING_MODE_T_SETUP:        *psrMode = "t_setup";      break;
+      case TAS_TIMING_MODE_T_HOLD:         *psrMode = "t_hold";       break;
+      case TAS_TIMING_MODE_CLOCK_TO_Q:     *psrMode = "clock_to_q";   break;
+      case TAS_TIMING_MODE_CAP_CONSTANT:   *psrMode = "cap";          break;
+      case TAS_TIMING_MODE_CAP_MATRIX:     *psrMode = "cap_matrix";   break;
+      case TAS_TIMING_MODE_PACK_PATTERN:   *psrMode = "pack_pattern"; break;
+      default:                             *psrMode = "?";            break;
+      }
+   }
+}
+
+//===========================================================================//
+// Function       : TAS_ExtractStringTimingType
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/15/12 jeffr : Original
+//===========================================================================//
+void TAS_ExtractStringTimingType(
+      TAS_TimingType_t type,
+      string*          psrType )
 {
    if( psrType )
    {
@@ -212,11 +243,9 @@ void TAS_ExtractStringTimingDelayType(
 
       switch( type )
       {
-      case TAS_TIMING_DELAY_MATRIX:     *psrType = "delay_matrix";     break;
-      case TAS_TIMING_DELAY_CONSTANT:   *psrType = "max_delay";        break;
-      case TAS_TIMING_DELAY_SETUP:      *psrType = "setup_delay";      break;
-      case TAS_TIMING_DELAY_CLOCK_TO_Q: *psrType = "clock_to_q_delay"; break;
-      default:                          *psrType = "?";                break;
+      case TAS_TIMING_TYPE_MIN: *psrType = "min"; break;
+      case TAS_TIMING_TYPE_MAX: *psrType = "max"; break;
+      default:                  *psrType = "?";   break;
       }
    }
 }

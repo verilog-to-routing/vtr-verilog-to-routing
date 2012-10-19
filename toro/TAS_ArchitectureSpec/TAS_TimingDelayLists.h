@@ -44,29 +44,48 @@ public:
 public:
 
    TAS_TimingDelayList_t delayList; 
-                             // Defines a common max delay from all pins
+                             // Defines common min/max delays from all pins
                              // asso. with the given input port to all pins
                              // asso. with the given output port
    TAS_TimingDelayList_t delayMatrixList;    
-                             // Defines unique max delays from each pin 
+                             // Defines unique min/max delays from each pin 
                              // asso. with the given input port to each pin 
                              // asso. with the given output port
-   TAS_TimingDelayList_t delayClockSetupList;     
+   TAS_TimingDelayList_t tSetupList;     
                              // Defines clock setup time for all pins 
                              // asso. with the given port
                              // Applies to sequential blocks (see flipflops)
-   TAS_TimingDelayList_t delayClockToQList;
+   TAS_TimingDelayList_t tHoldList;     
+                             // Defines clock hold time for all pins 
+                             // asso. with the given port
+                             // Applies to sequential blocks (see flipflops)
+   TAS_TimingDelayList_t clockToQList;
                              // Defines clock-to-Q delay for all pins 
                              // asso. with the given output port 
                              // Applies to sequential blocks (see flipflops)
+   TAS_TimingDelayList_t capList; 
+                             // Defines common min/max caps from all pins
+                             // asso. with the given input port to all pins
+                             // asso. with the given output port
+   TAS_TimingDelayList_t capMatrixList;    
+                             // Defines unique min/max caps from each pin 
+                             // asso. with the given input port to each pin 
+                             // asso. with the given output port
+   TAS_TimingDelayList_t packPatternList; 
+                             // Defines pack pattern (for molecule support)
+
 private:
 
    enum TAS_DefCapacity_e 
    { 
       TAS_DELAY_LIST_DEF_CAPACITY = 1,
       TAS_DELAY_MATRIX_LIST_DEF_CAPACITY = 1,
-      TAS_DELAY_CLOCK_SETUP_LIST_DEF_CAPACITY = 1,
-      TAS_DELAY_CLOCK_TO_Q_LIST_DEF_CAPACITY = 1
+      TAS_T_SETUP_LIST_DEF_CAPACITY = 1,
+      TAS_T_HOLD_LIST_DEF_CAPACITY = 1,
+      TAS_CLOCK_TO_Q_LIST_DEF_CAPACITY = 1,
+      TAS_CAP_LIST_DEF_CAPACITY = 1,
+      TAS_CAP_MATRIX_LIST_DEF_CAPACITY = 1,
+      TAS_PACK_PATTERN_LIST_DEF_CAPACITY = 1
    };
 };
 
@@ -82,8 +101,12 @@ inline bool TAS_TimingDelayLists_c::IsValid(
 {
    return( this->delayList.IsValid( ) ||
            this->delayMatrixList.IsValid( ) ||
-           this->delayClockSetupList.IsValid( ) ||
-           this->delayClockToQList.IsValid( ) ?
+           this->tSetupList.IsValid( ) ||
+           this->tHoldList.IsValid( ) ||
+           this->clockToQList.IsValid( ) ||
+           this->capList.IsValid( ) ||
+           this->capMatrixList.IsValid( ) ||
+           this->packPatternList.IsValid( ) ?
            true : false );
 }
 
