@@ -115,7 +115,7 @@ using namespace std;
 #token POS_INT    "[0-9]+"
 #token FLOAT      "{\-}{[0-9]+}.[0-9]+"
 #token EXP        "{\-}{[0-9]+}.[0-9]+[Ee][\+\-][0-9]+"
-#token STRING     "[a-zA-Z_/\|][a-zA-Z0-9_/\|\(\)\[\]\.\+\-\~]*"
+#token STRING     "[a-zA-Z_/\|\[\]][a-zA-Z0-9_/\|\[\]\(\)\.\+\-\~]*"
 
 //===========================================================================//
 // Purpose        : Class declaration
