@@ -3077,7 +3077,7 @@ static void check_place(float bb_cost, float timing_cost,
 		print_relative_pos_distr(void);
 #endif
 	} else {
-		vpr_printf(TIO_MESSAGE_ERROR, "\n");
+		vpr_printf(TIO_MESSAGE_INFO, "\n");
 		vpr_printf(TIO_MESSAGE_ERROR, "Completed placement consistency check, %d errors found.\n", error);
 		vpr_printf(TIO_MESSAGE_INFO, "Aborting program.\n");
 		exit(1);
