@@ -64,7 +64,7 @@ using namespace std;
 
 #token BIT_STRING   "[01\-]+"
 #token BIT_PAIR     "[01][\ \t]+[01]"
-#token STRING       "[a-zA-Z_/\|][a-zA-Z0-9_/\|\(\)\[\]\.\+\~\^]*"
+#token STRING       "[a-zA-Z_/\|\[\]][a-zA-Z0-9_/\|\[\]\(\)\.\+\~\^]*"
 
 //===========================================================================//
 // Purpose        : Class declaration
