@@ -102,6 +102,7 @@ bool TI_Input_c::HandleArchitectureSpec_(
       void )
 {
    bool ok = this->parchitectureSpec_->InitDefaults( );
+
    return( ok );
 }
 
