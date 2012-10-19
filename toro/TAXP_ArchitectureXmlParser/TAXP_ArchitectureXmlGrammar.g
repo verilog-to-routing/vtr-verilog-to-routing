@@ -96,6 +96,7 @@ using namespace std;
 #token OPIN_SWITCH      "[Oo][Pp][Ii][Nn][_][Ss][Ww][Ii][Tt][Cc][Hh]"
 
 #token R                "[Rr]"
+#token C                "[Cc]"
 #token CIN              "[Cc][Ii][Nn]"
 #token COUT             "[Cc][Oo][Uu][Tt]"
 #token TDEL             "[Tt][Dd][Ee][Ll]"
@@ -128,8 +129,12 @@ using namespace std;
 #token DELAY            "[Dd][Ee][Ll][Aa][Yy]"
 #token DELAY_CONSTANT   "[Dd][Ee][Ll][Aa][Yy][_][Cc][Oo][Nn][Ss][Tt][Aa][Nn][Tt]"
 #token DELAY_MATRIX     "[Dd][Ee][Ll][Aa][Yy][_][Mm][Aa][Tt][Rr][Ii][Xx]"
-#token T_CLOCK          "[Tt][_][Cc][Ll][Oo][Cc][Kk][_][Tt][Oo][_][Qq]"
-#token T_SETUP          "[Tt][_][Ss][Ee][Tt][Uu][Pp]"
+#token T_SETUP          "([Tt]|[Cc][Ll][Oo][Cc][Kk])[_][Ss][Ee][Tt][Uu][Pp]"
+#token T_HOLD           "([Tt]|[Cc][Ll][Oo][Cc][Kk])[_][Hh][Oo][Ll][Dd]"
+#token T_CLOCK_TO_Q     "([Tt]|[Cc][Ll][Oo][Cc][Kk]){[_][Cc][Ll][Oo][Cc][Kk]}[_][Tt][Oo][_][Qq]"
+#token C_CONSTANT       "[Cc]{[Aa][Pp]}[_][Cc][Oo][Nn][Ss][Tt][Aa][Nn][Tt]"
+#token C_MATRIX         "[Cc]{[Aa][Pp]}[_][Mm][Aa][Tt][Rr][Ii][Xx]"
+#token PACK_PATTERN     "[Pp][Aa][Cc][Kk][_][Pp][Aa][Tt][Tt][Ee][Rr][Nn]"
 
 #token PRIORITY         "[Pp][Rr][Ii][Oo][Rr][Ii][Tt][Yy]"
 #token MULTIPLE_START   "[Ss][Tt][Aa][Rr][Tt]"
@@ -155,6 +160,7 @@ using namespace std;
 #token SIDE       "[Ss][Ii][Dd][Ee]"
 #token OFFSET     "[Oo][Ff][Ff][Ss][Ee][Tt]"
 
+#token MIN        "[Mm][Ii][Nn]"
 #token MAX        "[Mm][Aa][Xx]"
 #token IN_PORT    "[Ii][Nn][_][Pp][Oo][Rr][Tt]"
 #token OUT_PORT   "[Oo][Uu][Tt][_][Pp][Oo][Rr][Tt]"
@@ -428,10 +434,10 @@ pbtypeDef[ TAS_PhysicalBlockList_t* pphysicalBlockList ]
       |  pbtypeList[ &physicalBlock.physicalBlockList ]
       |  interconnectList[ &physicalBlock.interconnectList ] 
       |  portDef[ &physicalBlock.portList ]
-      |  timingDelayLists[ &physicalBlock.timingDelayLists ]  
       |  pinAssignList[ &physicalBlock.pinAssignPattern,
                         &physicalBlock.pinAssignList ] 
       |  gridAssignList[ &physicalBlock.gridAssignList ]
+      |  timingDelayLists[ &physicalBlock.timingDelayLists ]  
       )
    )*
    <<
@@ -573,8 +579,8 @@ fcDef[ TAS_ConnectionFc_c* pfcIn,
       { DEFAULT_OUT_VAL EQUAL floatNum[ &floatOutValue ] }
       <<
          uintOutValue = static_cast< unsigned int >( floatOutValue + TC_FLT_EPSILON );
-         pfcIn->percent = ( pfcIn->type == TAS_CONNECTION_BOX_FRACTION ? floatOutValue : 0.0 );
-         pfcIn->absolute = ( pfcIn->type == TAS_CONNECTION_BOX_ABSOLUTE ? uintOutValue : 0 );
+         pfcOut->percent = ( pfcOut->type == TAS_CONNECTION_BOX_FRACTION ? floatOutValue : 0.0 );
+         pfcOut->absolute = ( pfcOut->type == TAS_CONNECTION_BOX_ABSOLUTE ? uintOutValue : 0 );
       >>
       "/>"
    )
@@ -650,11 +656,12 @@ interconnectElem[ TAS_Interconnect_c* pinterconnect,
       <<
          pinterconnect->outputNameList.Add( srOutputName );
       >>
-   |  ">"
+   )+
+   {  ">"
       (  "<"
          timingDelayLists[ &pinterconnect->timingDelayLists ]  
-      )+
-   )+
+      )*
+   }
    ;
 
 //===========================================================================//
@@ -691,107 +698,6 @@ portTypeDef[ TLO_PortList_t* pportList, TC_TypeMode_t type ]
       port.SetClass( srClass );
 
       pportList->Add( port );
-   >>
-   ;
-
-//===========================================================================//
-timingDelayLists[ TAS_TimingDelayLists_c* ptimingDelayLists ]  
-   :
-   <<
-      TAS_TimingDelay_c timingDelay;
-
-      string srMax;
-   >>
-   (  DELAY_CONSTANT 
-      (  MAX EQUAL floatNum[ &timingDelay.delay ] 
-      |  IN_PORT EQUAL stringText[ &timingDelay.srInputPortName ]
-      |  OUT_PORT EQUAL stringText[ &timingDelay.srOutputPortName ]
-      )*
-      "/>"
-      <<
-         timingDelay.type = TAS_TIMING_DELAY_CONSTANT;
-         ptimingDelayLists->delayList.Add( timingDelay );
-      >>
-   |  DELAY_MATRIX
-      (  TYPE EQUAL stringText[ &srMax ]
-      |  IN_PORT EQUAL stringText[ &timingDelay.srInputPortName ]
-      |  OUT_PORT EQUAL stringText[ &timingDelay.srOutputPortName ]
-      )*
-      ">"
-      delayMatrixDef[ &timingDelay.delayMatrix ]
-      "</" DELAY_MATRIX ">"
-      <<
-         timingDelay.type = TAS_TIMING_DELAY_MATRIX;
-         ptimingDelayLists->delayMatrixList.Add( timingDelay );
-      >>
-   |  T_SETUP 
-      (  VALUE EQUAL floatNum[ &timingDelay.delay ] 
-      |  PORT EQUAL stringText[ &timingDelay.srOutputPortName ]
-      |  CLOCK EQUAL stringText[ &timingDelay.srClockPortName ]
-      )*
-      "/>"
-      <<
-         timingDelay.type = TAS_TIMING_DELAY_SETUP;
-         ptimingDelayLists->delayClockSetupList.Add( timingDelay );
-      >>
-   |  T_CLOCK
-      (  MAX EQUAL floatNum[ &timingDelay.delay ] 
-      |  PORT EQUAL stringText[ &timingDelay.srOutputPortName ]
-      |  CLOCK EQUAL stringText[ &timingDelay.srClockPortName ]
-      )*
-      "/>"
-      <<
-         timingDelay.type = TAS_TIMING_DELAY_CLOCK_TO_Q;
-         ptimingDelayLists->delayClockToQList.Add( timingDelay );
-      >>
-   )
-   ;
-
-//===========================================================================//
-delayMatrixDef[ TAS_DelayMatrix_t* pdelayMatrix ]
-   :
-   <<
-      TAS_DelayTable_t delayTable;
-      TAS_DelayList_t delayList;
-
-      double value;
-      size_t curTokenLine, nextTokenLine;
-   >>
-   (  expNum[ &value ]
-      <<
-         delayList.Add( value );
-
-         curTokenLine = LT( 0 )->getLine( );
-         nextTokenLine = LT( 1 )->getLine( );
-         if( curTokenLine != nextTokenLine )
-         {
-            delayTable.Add( delayList );
-            delayList.Clear( );
-         }
-      >>
-   )+
-   <<
-      if( delayTable.IsValid( ) && delayTable[ 0 ]->IsValid( ))
-      {
-         size_t height = delayTable.GetLength( );
-         size_t width = SIZE_MAX;
-         for( size_t i = 0; i < delayTable.GetLength( ); ++i )
-         {
-            width = TCT_Min( width, delayTable[ i ]->GetLength( ));
-         }
-
-         value = 0.0;
-         pdelayMatrix->SetCapacity( width, height, value );
-   
-         for( size_t j = 0; j < height; ++j )
-         {
-            const TAS_DelayList_t& delayList_ = *delayTable[ j ];
-            for( size_t i = 0; i < width; ++i )
-            {
-               ( *pdelayMatrix )[i][j] = *delayList_[ i ];
-            }
-         }
-      }
    >>
    ;
 
@@ -872,6 +778,152 @@ gridAssignDef[ TAS_GridAssignList_t* pgridAssignList ]
    ;
 
 //===========================================================================//
+timingDelayLists[ TAS_TimingDelayLists_c* ptimingDelayLists ]  
+   :
+   <<
+      TAS_TimingDelay_c timingDelay;
+   >>
+   (  DELAY_CONSTANT 
+      (  MIN EQUAL expNum[ &timingDelay.valueMin ] 
+         << timingDelay.type = TAS_TIMING_TYPE_MIN; >>
+      |  MAX EQUAL expNum[ &timingDelay.valueMax ] 
+         << timingDelay.type = TAS_TIMING_TYPE_MAX; >>
+      |  IN_PORT EQUAL stringText[ &timingDelay.srInputPortName ]
+      |  OUT_PORT EQUAL stringText[ &timingDelay.srOutputPortName ]
+      )*
+      "/>"
+      <<
+         timingDelay.mode = TAS_TIMING_MODE_DELAY_CONSTANT;
+         ptimingDelayLists->delayList.Add( timingDelay );
+      >>
+   |  DELAY_MATRIX
+      (  TYPE EQUAL timingType[ &timingDelay.type ]
+      |  IN_PORT EQUAL stringText[ &timingDelay.srInputPortName ]
+      |  OUT_PORT EQUAL stringText[ &timingDelay.srOutputPortName ]
+      )*
+      ">"
+      timingValueMatrixDef[ &timingDelay.valueMatrix ]
+      "</" DELAY_MATRIX ">"
+      <<
+         timingDelay.mode = TAS_TIMING_MODE_DELAY_MATRIX;
+         ptimingDelayLists->delayMatrixList.Add( timingDelay );
+      >>
+   |  T_SETUP 
+      (  VALUE EQUAL expNum[ &timingDelay.valueNom ] 
+      |  PORT EQUAL stringText[ &timingDelay.srInputPortName ]
+      |  CLOCK EQUAL stringText[ &timingDelay.srClockPortName ]
+      )*
+      "/>"
+      <<
+         timingDelay.mode = TAS_TIMING_MODE_T_SETUP;
+         ptimingDelayLists->tSetupList.Add( timingDelay );
+      >>
+   |  T_HOLD 
+      (  VALUE EQUAL expNum[ &timingDelay.valueNom ] 
+      |  PORT EQUAL stringText[ &timingDelay.srInputPortName ]
+      |  CLOCK EQUAL stringText[ &timingDelay.srClockPortName ]
+      )*
+      "/>"
+      <<
+         timingDelay.mode = TAS_TIMING_MODE_T_HOLD;
+         ptimingDelayLists->tHoldList.Add( timingDelay );
+      >>
+   |  T_CLOCK_TO_Q
+      (  MIN EQUAL expNum[ &timingDelay.valueMin ] 
+         << timingDelay.type = TAS_TIMING_TYPE_MIN; >>
+      |  MAX EQUAL expNum[ &timingDelay.valueMax ] 
+         << timingDelay.type = TAS_TIMING_TYPE_MAX; >>
+      |  PORT EQUAL stringText[ &timingDelay.srOutputPortName ]
+      |  CLOCK EQUAL stringText[ &timingDelay.srClockPortName ]
+      )*
+      "/>"
+      <<
+         timingDelay.mode = TAS_TIMING_MODE_CLOCK_TO_Q;
+         ptimingDelayLists->clockToQList.Add( timingDelay );
+      >>
+   |  C_CONSTANT 
+      (  C EQUAL floatNum[ &timingDelay.valueNom ] 
+      |  IN_PORT EQUAL stringText[ &timingDelay.srInputPortName ]
+      |  OUT_PORT EQUAL stringText[ &timingDelay.srOutputPortName ]
+      )*
+      "/>"
+      <<
+         timingDelay.mode = TAS_TIMING_MODE_CAP_CONSTANT;
+         ptimingDelayLists->capList.Add( timingDelay );
+      >>
+   |  C_MATRIX
+      (  IN_PORT EQUAL stringText[ &timingDelay.srInputPortName ]
+      |  OUT_PORT EQUAL stringText[ &timingDelay.srOutputPortName ]
+      )*
+      ">"
+      timingValueMatrixDef[ &timingDelay.valueMatrix ]
+      "</" C_MATRIX ">"
+      <<
+         timingDelay.mode = TAS_TIMING_MODE_CAP_MATRIX;
+         ptimingDelayLists->capMatrixList.Add( timingDelay );
+      >>
+   |  PACK_PATTERN
+      (  NAME EQUAL stringText[ &timingDelay.srPackPatternName ]
+      |  IN_PORT EQUAL stringText[ &timingDelay.srInputPortName ]
+      |  OUT_PORT EQUAL stringText[ &timingDelay.srOutputPortName ]
+      )*
+      "/>"
+      <<
+         timingDelay.mode = TAS_TIMING_MODE_PACK_PATTERN;
+         ptimingDelayLists->packPatternList.Add( timingDelay );
+      >>
+   )
+   ;
+
+//===========================================================================//
+timingValueMatrixDef[ TAS_TimingValueMatrix_t* pvalueMatrix ]
+   :
+   <<
+      TAS_TimingValueTable_t valueTable;
+      TAS_TimingValueList_t valueList;
+
+      double value;
+      size_t curTokenLine, nextTokenLine;
+   >>
+   (  expNum[ &value ]
+      <<
+         valueList.Add( value );
+
+         curTokenLine = LT( 0 )->getLine( );
+         nextTokenLine = LT( 1 )->getLine( );
+         if( curTokenLine != nextTokenLine )
+         {
+            valueTable.Add( valueList );
+            valueList.Clear( );
+         }
+      >>
+   )+
+   <<
+      if( valueTable.IsValid( ) && valueTable[ 0 ]->IsValid( ))
+      {
+         size_t height = valueTable.GetLength( );
+         size_t width = SIZE_MAX;
+         for( size_t i = 0; i < valueTable.GetLength( ); ++i )
+         {
+            width = TCT_Min( width, valueTable[ i ]->GetLength( ));
+         }
+
+         value = 0.0;
+         pvalueMatrix->SetCapacity( width, height, value );
+   
+         for( size_t j = 0; j < height; ++j )
+         {
+            const TAS_TimingValueList_t& valueList_ = *valueTable[ j ];
+            for( size_t i = 0; i < width; ++i )
+            {
+               ( *pvalueMatrix )[i][j] = *valueList_[ i ];
+            }
+         }
+      }
+   >>
+   ;
+
+//===========================================================================//
 segmentLength[ unsigned int* plength ]
    :
    <<
@@ -883,6 +935,34 @@ segmentLength[ unsigned int* plength ]
          *plength = UINT_MAX;
       else
          *plength = static_cast< unsigned int >( atol( srLength.data( )));
+   >>
+   ;
+
+//===========================================================================//
+timingType[ TAS_TimingType_t* ptype ]
+   :
+   <<
+      string srType;
+   >>
+   stringText[ &srType ]
+   <<
+      if( TC_stricmp( srType.data( ), "min" ) == 0 )
+      {
+         *ptype = TAS_TIMING_TYPE_MIN;
+      }
+      else if( TC_stricmp( srType.data( ), "max" ) == 0 )
+      {
+         *ptype = TAS_TIMING_TYPE_MAX;
+      }
+      else
+      {
+         *ptype = TAS_TIMING_TYPE_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid type, expected \"min\" or \"max\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
    >>
    ;
 
