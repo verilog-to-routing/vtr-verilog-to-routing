@@ -57,7 +57,7 @@ public:
 
    static void NewInstance( void );
    static void DeleteInstance( void );
-   static TIO_PrintHandler_c& GetInstance( void );
+   static TIO_PrintHandler_c& GetInstance( bool newInstance = true );
    static bool HasInstance( void );
 
    void Info( const char* pszText, ... );

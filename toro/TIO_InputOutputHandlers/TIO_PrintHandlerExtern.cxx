@@ -103,7 +103,7 @@ extern "C" void PrintHandlerInit(
 extern "C" int PrintHandlerExists( 
       void )
 {
-   TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
+   TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( false );
    return( printHandler.HasInstance( ) ? true : false );
 }
 

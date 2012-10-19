@@ -175,15 +175,18 @@ void TIO_PrintHandler_c::DeleteInstance(
 // 05/01/12 jeffr : Original
 //===========================================================================//
 TIO_PrintHandler_c& TIO_PrintHandler_c::GetInstance(
-      void )
+      bool newInstance )
 {
    if( !pinstance_ )
    {
-      NewInstance( );
-
-      if( pinstance_ )
+      if( newInstance )
       {
-         pinstance_->SetStdioOutput( stdout );
+         NewInstance( );
+
+         if( pinstance_ )
+         {
+            pinstance_->SetStdioOutput( stdout );
+         }
       }
    }
    return( *pinstance_ );
