@@ -832,7 +832,7 @@ void try_place(struct s_placer_opts placer_opts,
 	std_dev = get_std_dev(success_sum, sum_of_squares, av_cost);
 
 #ifndef SPEC
-	vpr_printf(TIO_MESSAGE_INFO, "%9.5f %9.5g %11.6g %11.6g %11.6g %11.6g %8.4f %8s %7.4f %7.4f %7.4f %9d\n",
+	vpr_printf(TIO_MESSAGE_INFO, "%9.5f %9.5g %11.6g %11.6g %11.6g %11.6g %8s %8.4f %7.4f %7.4f %7.4f %9d\n",
 			t, av_cost, av_bb_cost, av_timing_cost, av_delay_cost, place_delay_value, 
 			" ", success_rat, std_dev, rlim, crit_exponent, tot_iter);
 #endif
