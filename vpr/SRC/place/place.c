@@ -61,9 +61,9 @@ enum swap_result {
 	REJECTED, ACCEPTED, ABORTED
 };
 
-#define MIN_TIMING_COST 1.e-9
-/* Stops timing cost from going to 0 with very lax timing constraints, which 
-avoids multiplying by a gigantic inverse_prev_timing_cost when auto-normalizing. 
+#define MAX_INV_TIMING_COST 1.e9
+/* Stops inverse timing cost from going to infinity with very lax timing constraints, 
+which avoids multiplying by a gigantic inverse_prev_timing_cost when auto-normalizing. 
 The exact value of this cost has relatively little impact, but should not be
 large enough to be on the order of timing costs for normal constraints. */
 
@@ -573,7 +573,8 @@ void try_place(struct s_placer_opts placer_opts,
 			/*at each temperature change we update these values to be used     */
 			/*for normalizing the tradeoff between timing and wirelength (bb)  */
 			inverse_prev_bb_cost = 1 / bb_cost;
-			inverse_prev_timing_cost = 1 / timing_cost;
+			/*Prevent inverse timing cost from going to infinity */
+			inverse_prev_timing_cost = min(1 / timing_cost, MAX_INV_TIMING_COST);
 		}
 
 		inner_crit_iter_count = 1;
@@ -760,7 +761,8 @@ void try_place(struct s_placer_opts placer_opts,
 		outer_crit_iter_count++;
 
 		inverse_prev_bb_cost = 1 / (bb_cost);
-		inverse_prev_timing_cost = 1 / (timing_cost);
+		/*Prevent inverse timing cost from going to infinity */		
+		inverse_prev_timing_cost = min(1 / timing_cost, MAX_INV_TIMING_COST);
 	}
 
 	inner_crit_iter_count = 1;
@@ -1860,7 +1862,7 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 	}
 
 	/* Make sure timing cost does not go above MIN_TIMING_COST. */
-	*timing_cost = max(loc_timing_cost, MIN_TIMING_COST);
+	*timing_cost = loc_timing_cost;
 
 	*connection_delay_sum = loc_connection_delay_sum;
 }
