@@ -132,7 +132,7 @@ void place_and_route(enum e_operation operation,
 
 		success = try_route(width_fac, router_opts, det_routing_arch,
 				segment_inf, timing_inf, net_delay, slacks, chan_width_dist,
-				clb_opins_used_locally, &Fc_clipped);
+				clb_opins_used_locally, &Fc_clipped, directs, num_directs);
 
 		if (Fc_clipped) {
 			vpr_printf(TIO_MESSAGE_WARNING, "Fc_output was too high and was clipped to full (maximum) connectivity.\n");
@@ -344,7 +344,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		}
 		success = try_route(current, router_opts, det_routing_arch, segment_inf,
 				timing_inf, net_delay, slacks, chan_width_dist,
-				clb_opins_used_locally, &Fc_clipped);
+				clb_opins_used_locally, &Fc_clipped, directs, num_directs);
 		attempt_count++;
 		fflush(stdout);
 #if 1
@@ -451,7 +451,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			}
 			success = try_route(current, router_opts, det_routing_arch,
 					segment_inf, timing_inf, net_delay, slacks,
-					chan_width_dist, clb_opins_used_locally, &Fc_clipped);
+					chan_width_dist, clb_opins_used_locally, &Fc_clipped, directs, num_directs);
 
 			if (success && Fc_clipped == FALSE) {
 				final = current;
@@ -495,6 +495,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			det_routing_arch.global_route_switch,
 			det_routing_arch.delayless_switch, timing_inf,
 			det_routing_arch.wire_to_ipin_switch, router_opts.base_cost_type,
+			directs, num_directs,
 			&warnings);
 
 	restore_routing(best_routing, clb_opins_used_locally,

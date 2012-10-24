@@ -33,6 +33,15 @@ typedef struct s_mux_size_distribution {
 	struct s_mux_size_distribution *next;
 } t_mux_size_distribution;
 
+typedef struct s_clb_to_clb_directs {
+	t_type_descriptor *from_clb_type;
+	int from_clb_pin_start_index;
+	int from_clb_pin_end_index;
+	t_type_descriptor *to_clb_type;
+	int to_clb_pin_start_index;
+	int to_clb_pin_end_index;
+} t_clb_to_clb_directs;
+
 /* UDSD Modifications by WMF End */
 
 /******************* Variables local to this module. ***********************/
@@ -131,6 +140,8 @@ static void alloc_net_rr_terminals(void);
 
 static void alloc_and_load_rr_clb_source(t_ivec *** L_rr_node_indices);
 
+static t_clb_to_clb_directs *alloc_and_load_clb_to_clb_directs(INP t_direct_inf *directs, INP int num_directs);
+
 #if 0
 static void load_uniform_opin_switch_pattern_paired(INP int *Fc_out,
 		INP int num_pins,
@@ -181,7 +192,8 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 		INP int num_switches, INP t_segment_inf * segment_inf,
 		INP int global_route_switch, INP int delayless_switch,
 		INP t_timing_inf timing_inf, INP int wire_to_ipin_switch,
-		INP enum e_base_cost_type base_cost_type, OUTP int *Warnings) {
+		INP enum e_base_cost_type base_cost_type, INP t_direct_inf *directs, 
+		INP int num_directs, OUTP int *Warnings) {
 	/* Temp structures used to build graph */
 	int nodes_per_chan, i, j;
 	t_seg_details *seg_details = NULL;
@@ -201,6 +213,7 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 	enum e_directionality directionality;
 	int **Fc_xofs = NULL; /* [0..ny-1][0..nx-1] */
 	int **Fc_yofs = NULL; /* [0..nx-1][0..ny-1] */
+	t_clb_to_clb_directs *clb_to_clb_directs;
 
 	rr_node_indices = NULL;
 	rr_node = NULL;
@@ -229,6 +242,11 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 	/* Global routing uses a single longwire track */
 	nodes_per_chan = (is_global_graph ? 1 : chan_width);
 	assert(nodes_per_chan > 0);
+
+	clb_to_clb_directs = NULL;
+	if(num_directs > 0) {
+		clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, num_directs);
+	}
 
 	/* START SEG_DETAILS */
 	if (is_global_graph) {
@@ -458,6 +476,9 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 
 	free_type_pin_to_track_map(ipin_to_track_map, types);
 	free_type_track_to_ipin_map(track_to_ipin_lookup, types, nodes_per_chan);
+	if(clb_to_clb_directs != NULL) {
+		free(clb_to_clb_directs);
+	}
 }
 
 static void rr_graph_externals(t_timing_inf timing_inf,
@@ -2536,3 +2557,87 @@ print_distribution(FILE * fptr,
 
 }
 #endif
+
+/**
+ * Parse out which CLB pins should connect directly to which other CLB pins then store that in a clb_to_clb_directs data structure
+ * This data structure supplements the the info in the "directs" data structure
+ * TODO: The function that does this parsing in placement is poorly done because it lacks generality on heterogeniety, should replace with this one
+ */
+static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(INP t_direct_inf *directs, INP int num_directs) {
+	int i, j;
+	t_clb_to_clb_directs *clb_to_clb_directs;
+	char *pb_type_name, *port_name;
+	int start_pin_index, end_pin_index;
+	t_pb_type *pb_type;
+
+	clb_to_clb_directs = (t_clb_to_clb_directs*)my_calloc(num_directs, sizeof(t_clb_to_clb_directs));
+
+	pb_type_name = NULL;
+	port_name = NULL;
+
+	for(i = 0; i < num_directs; i++) {
+		pb_type_name = (char*)my_malloc((strlen(directs[i].from_pin) + strlen(directs[i].to_pin)) * sizeof(char));
+		port_name = (char*)my_malloc((strlen(directs[i].from_pin) + strlen(directs[i].to_pin)) * sizeof(char));
+
+		// Load from pins
+		// Parse out the pb_type name, port name, and pin range
+		parse_direct_pin_name(directs[i].from_pin, directs[i].line, &start_pin_index, &end_pin_index, pb_type_name, port_name);
+
+		assert(start_pin_index == end_pin_index);
+		
+		// Figure out which type, port, and pin is used
+		for(j = 0; j < num_types; j++) {
+			if(strcmp(type_descriptors[j].name, pb_type_name) == 0) {
+				break;
+			}
+		}
+		assert(j < num_types);
+		clb_to_clb_directs[i].from_clb_type = &type_descriptors[j];
+		pb_type = clb_to_clb_directs[i].from_clb_type->pb_type;
+
+		for(j = 0; j < pb_type->num_ports; j++) {
+			if(strcmp(pb_type->ports[j].name, port_name) == 0) {
+				break;
+			}
+		}
+		assert(j < pb_type->num_ports);
+
+		get_blk_pin_from_port_pin(clb_to_clb_directs[i].from_clb_type->index, j, start_pin_index, &clb_to_clb_directs[i].from_clb_pin_start_index);
+		get_blk_pin_from_port_pin(clb_to_clb_directs[i].from_clb_type->index, j, end_pin_index, &clb_to_clb_directs[i].from_clb_pin_end_index);
+
+		// Load to pins
+		// Parse out the pb_type name, port name, and pin range
+		parse_direct_pin_name(directs[i].to_pin, directs[i].line, &start_pin_index, &end_pin_index, pb_type_name, port_name);
+
+		assert(start_pin_index == end_pin_index);
+		
+		// Figure out which type, port, and pin is used
+		for(j = 0; j < num_types; j++) {
+			if(strcmp(type_descriptors[j].name, pb_type_name) == 0) {
+				break;
+			}
+		}
+		assert(j < num_types);
+		clb_to_clb_directs[i].to_clb_type = &type_descriptors[j];
+		pb_type = clb_to_clb_directs[i].to_clb_type->pb_type;
+
+		for(j = 0; j < pb_type->num_ports; j++) {
+			if(strcmp(pb_type->ports[j].name, port_name) == 0) {
+				break;
+			}
+		}
+		assert(j < pb_type->num_ports);
+
+		get_blk_pin_from_port_pin(clb_to_clb_directs[i].to_clb_type->index, j, start_pin_index, &clb_to_clb_directs[i].to_clb_pin_start_index);
+		get_blk_pin_from_port_pin(clb_to_clb_directs[i].to_clb_type->index, j, end_pin_index, &clb_to_clb_directs[i].to_clb_pin_end_index);
+
+		if(abs(clb_to_clb_directs[i].from_clb_pin_start_index - clb_to_clb_directs[i].from_clb_pin_end_index) != abs(clb_to_clb_directs[i].to_clb_pin_start_index - clb_to_clb_directs[i].to_clb_pin_end_index)) {
+			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Range mismatch from %s to %s.\n", directs[i].line, directs[i].from_pin, directs[i].to_pin);
+				exit(1);
+		}
+
+		free(pb_type_name);
+		free(port_name);
+	}
+	return clb_to_clb_directs;
+}

@@ -36,6 +36,8 @@ void build_rr_graph(INP t_graph_type graph_type,
 		INP t_timing_inf timing_inf, 
 		INP int wire_to_ipin_switch,
 		INP enum e_base_cost_type base_cost_type, 
+		INP t_direct_inf *directs, 
+		INP int num_directs,
 		OUTP int *Warnings);
 
 void free_rr_graph(void);

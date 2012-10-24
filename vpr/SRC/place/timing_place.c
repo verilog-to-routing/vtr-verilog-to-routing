@@ -121,7 +121,8 @@ void load_criticalities(t_slack * slacks, float crit_exponent) {
 t_slack * alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, float ***net_delay) {
+		t_timing_inf timing_inf, float ***net_delay, INP t_direct_inf *directs, 
+		INP int num_directs) {
 
 	t_slack * slacks = alloc_and_load_timing_graph(timing_inf);
 
@@ -129,7 +130,7 @@ t_slack * alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 			num_nets);
 
 	compute_delay_lookup_tables(router_opts, det_routing_arch, segment_inf,
-			timing_inf, chan_width_dist);
+			timing_inf, chan_width_dist, directs, num_directs);
 	
 	timing_place_crit = alloc_crit(&timing_place_crit_ch);
 

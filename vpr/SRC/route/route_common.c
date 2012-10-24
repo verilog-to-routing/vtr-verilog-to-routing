@@ -221,7 +221,7 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, float **net_delay, t_slack * slacks,
 		t_chan_width_dist chan_width_dist, t_ivec ** clb_opins_used_locally,
-		boolean * Fc_clipped) {
+		boolean * Fc_clipped, t_direct_inf *directs, int num_directs) {
 
 	/* Attempts a routing via an iterated maze router algorithm.  Width_fac *
 	 * specifies the relative width of the channels, while the members of   *
@@ -262,6 +262,7 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 			det_routing_arch.global_route_switch,
 			det_routing_arch.delayless_switch, timing_inf,
 			det_routing_arch.wire_to_ipin_switch, router_opts.base_cost_type,
+			directs, num_directs,
 			&tmp);
 
 	end = clock();

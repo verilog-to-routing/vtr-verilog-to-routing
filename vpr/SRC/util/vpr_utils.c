@@ -52,12 +52,6 @@ static void alloc_and_load_port_pin_from_blk_pin(void);
  * The arrays are freed in free_placement_structs()                      */
 static void alloc_and_load_blk_pin_from_port_pin(void);
 
-/* Parses out the pb_type_name and port_name from the direct passed in.   *
- * If the start_pin_index and end_pin_index is specified, parse them too. *
- * Return the values parsed by reference.                                 */
-static void parse_direct_pin_name(char * src_string, int line, int * start_pin_index, 
-		int * end_pin_index, char * pb_type_name, char * port_name);
-
 /* Go through all the ports in all the blocks to find the port that has the same   *
  * name as port_name and belongs to the block type that has the name pb_type_name. *
  * Then, check that whether start_pin_index and end_pin_index are specified. If    *
@@ -922,7 +916,7 @@ static void alloc_and_load_blk_pin_from_port_pin(void) {
  *                                                                                     *
  ***************************************************************************************/
 
-static void parse_direct_pin_name(char * src_string, int line, int * start_pin_index, 
+void parse_direct_pin_name(char * src_string, int line, int * start_pin_index, 
 		int * end_pin_index, char * pb_type_name, char * port_name){
 
 	/* Parses out the pb_type_name and port_name from the direct passed in.   *

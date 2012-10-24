@@ -349,7 +349,7 @@ void try_place(struct s_placer_opts placer_opts,
 			|| placer_opts.enable_timing_computations) {
 		/*do this before the initial placement to avoid messing up the initial placement */
 		slacks = alloc_lookups_and_criticalities(chan_width_dist, router_opts,
-				det_routing_arch, segment_inf, timing_inf, &net_delay);
+				det_routing_arch, segment_inf, timing_inf, &net_delay, directs, num_directs);
 
 		remember_net_delay_original_ptr = net_delay;
 
