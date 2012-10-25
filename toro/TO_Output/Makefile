@@ -46,7 +46,7 @@ CFLAGS = $(CFLAGS$(ISM)) \
 	-I../TGS_GeometricShapes \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
-	-I../../pcre/SRC
+	-I../../libpcre/SRC
 
 ######################################################################
 # Linker options
