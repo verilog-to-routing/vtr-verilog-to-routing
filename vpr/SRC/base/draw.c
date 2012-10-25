@@ -430,7 +430,7 @@ void init_draw_coords(float width_val) {
 	pin_size = 0.3;
 	for (i = 0; i < num_types; ++i) {
 		pin_size = min(pin_size,
-				(tile_width / (4.0 * type_descriptors[i].num_pins)));
+				(tile_width / (4.0F * type_descriptors[i].num_pins)));
 	}
 
 	j = 0;
