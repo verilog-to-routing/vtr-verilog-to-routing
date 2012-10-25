@@ -65,7 +65,8 @@ static void build_bidir_rr_opins(INP int i, INP int j,
 		INOUTP t_rr_node * L_rr_node, INP t_ivec *** L_rr_node_indices,
 		INP int *****opin_to_track_map, INP int **Fc_out,
 		INP boolean * L_rr_edge_done, INP t_seg_details * seg_details,
-		INP struct s_grid_tile **L_grid);
+		INP struct s_grid_tile **L_grid, INP int delayless_switch,
+		INP t_direct_inf *directs, INP int num_directs, INP t_clb_to_clb_directs *clb_to_clb_directs);
 
 static void build_unidir_rr_opins(INP int i, INP int j,
 		INP struct s_grid_tile **L_grid, INP int **Fc_out,
@@ -700,7 +701,8 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 			if (BI_DIRECTIONAL == directionality) {
 				build_bidir_rr_opins(i, j, L_rr_node, L_rr_node_indices,
 						opin_to_track_map, Fc_out, L_rr_edge_done, seg_details,
-						L_grid);
+						L_grid, delayless_switch,
+						directs, num_directs, clb_to_clb_directs);
 			} else {
 				assert(UNI_DIRECTIONAL == directionality);
 				build_unidir_rr_opins(i, j, L_grid, Fc_out, nodes_per_chan,
@@ -748,7 +750,8 @@ static void build_bidir_rr_opins(INP int i, INP int j,
 		INOUTP t_rr_node * L_rr_node, INP t_ivec *** L_rr_node_indices,
 		INP int *****opin_to_track_map, INP int **Fc_out,
 		INP boolean * L_rr_edge_done, INP t_seg_details * seg_details,
-		INP struct s_grid_tile **L_grid) {
+		INP struct s_grid_tile **L_grid, INP int delayless_switch,
+		INP t_direct_inf *directs, INP int num_directs, INP t_clb_to_clb_directs *clb_to_clb_directs) {
 
 	int ipin, inode, num_edges, *Fc, ofs;
 	t_type_ptr type;
@@ -777,6 +780,9 @@ static void build_bidir_rr_opins(INP int i, INP int j,
 					&edge_list, opin_to_track_map, Fc[i], L_rr_edge_done,
 					L_rr_node_indices, seg_details);
 		}
+
+		/* Add in direct connections */
+		num_edges += get_opin_direct_connecions(i, j, ipin, &edge_list,	L_rr_node_indices, delayless_switch, directs, num_directs, clb_to_clb_directs);
 
 		inode = get_rr_node_index(i, j, OPIN, ipin, L_rr_node_indices);
 		alloc_and_load_edges_and_switches(L_rr_node, inode, num_edges,
