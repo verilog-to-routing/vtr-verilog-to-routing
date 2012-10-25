@@ -33,7 +33,7 @@ CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
 CFLAGS = $(CFLAGS$(ISM)) \
 	-I. \
 	-I../TC_Common \
-	-I../../pcre/SRC
+	-I../../libpcre/SRC 
 
 ######################################################################
 # Linker options
