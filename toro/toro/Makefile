@@ -54,11 +54,12 @@ CFLAGS = $(CFLAGS$(ISM)) \
         -I../TLO_LogicalObjects \
         -I../TNO_NetObjects \
 	-I../TTP_TilePlaneObjects \
+	-I../TGO_GeometricObjects \
 	-I../TGS_GeometricShapes \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
-	-I../../pccts/pcctsGeneric -I../../pccts/h \
-	-I../../pcre/SRC \
+	-I../../libpccts/pcctsGeneric -I../../libpccts/h \
+	-I../../libpcre/SRC \
 	-I../../vpr/SRC/base -I../../vpr/SRC/util -I../../libarchfpga/include
 
 ######################################################################
@@ -78,7 +79,7 @@ OBJECTS = $(OBJS$(ISM))
 ######################################################################
 
 LINKLIBS = -L../$(ISM) \
-        -L../../pccts/$(ISM) -L../../vpr/$(ISM) \
+        -L../../libpccts/$(ISM) -L../../vpr/$(ISM) \
 	-lTM_Master \
 	-lTI_Input \
 	-lTP_Process \
@@ -101,6 +102,7 @@ LINKLIBS = -L../$(ISM) \
 	-lTPO_PhysicalObjects \
 	-lTNO_NetObjects \
 	-lTTP_TilePlaneObjects \
+	-lTGO_GeometricObjects \
 	-lTGS_GeometricShapes \
 	-lTIO_InputOutputHandlers \
 	-lTC_Common \
@@ -108,9 +110,9 @@ LINKLIBS = -L../$(ISM) \
 	-lh \
 	-lvpr
 
-SYSLIBSlinux_x86_64 = -L../../pcre/$(ISM) -lpcre
-SYSLIBSlinux_i686 = -L../../pcre/$(ISM) -lpcre
-SYSLIBSsun8 = -L../../pcre/$(ISM) -lpcre -Bdynamic -lresolv
+SYSLIBSlinux_x86_64 = -L../../libpcre/$(ISM) -lpcre
+SYSLIBSlinux_i686 = -L../../libpcre/$(ISM) -lpcre
+SYSLIBSsun8 = -L../../libpcre/$(ISM) -lpcre -Bdynamic -lresolv
 SYSLIBS = $(SYSLIBS$(ISM))
 LIBDEFS = ../$(ISM)/libTM_Master.a \
 	../$(ISM)/libTI_Input.a \
@@ -134,11 +136,12 @@ LIBDEFS = ../$(ISM)/libTM_Master.a \
 	../$(ISM)/libTPO_PhysicalObjects.a \
 	../$(ISM)/libTNO_NetObjects.a \
 	../$(ISM)/libTTP_TilePlaneObjects.a \
+	../$(ISM)/libTGO_GeometricObjects.a \
 	../$(ISM)/libTGS_GeometricShapes.a \
 	../$(ISM)/libTIO_InputOutputHandlers.a \
 	../$(ISM)/libTC_Common.a \
-	../../pccts/$(ISM)/libpcctsGeneric.a \
-	../../pccts/$(ISM)/libh.a \
+	../../libpccts/$(ISM)/libpcctsGeneric.a \
+	../../libpccts/$(ISM)/libh.a \
 	../../vpr/$(ISM)/libvpr.a
 
 .PHONY: $(LIBDEFS)
@@ -245,6 +248,9 @@ $(OBJECTS): $(ISM)/%.o:%.cxx
 
 ../$(ISM)/libTTP_TilePlaneObjects.a:
 	cd ../TTP_TilePlaneObjects && $(MAKE) $(BUILD_TARGET)
+
+../$(ISM)/libTGO_GeometricObjects.a:
+	cd ../TGO_GeometricObjects && $(MAKE) $(BUILD_TARGET)
 
 ../$(ISM)/libTGS_GeometricShapes.a:
 	cd ../TGS_GeometricShapes && $(MAKE) $(BUILD_TARGET)
