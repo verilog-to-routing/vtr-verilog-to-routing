@@ -7,6 +7,7 @@
 //   /_/   /______/ /_/ /_/ /______/             |___/ /_/     /_/ /_/
 // 
 //===========================================================================//
+//
 // Purpose : Main for 'Toro* - The Next Generation VPR'.  This function
 //           is responsible for capturing command-line arguments, then 
 //           invoking the master input-processing-output object.
@@ -15,7 +16,22 @@
 //           - main
 //
 //===========================================================================//
-const char *sccsid = "@(#)toro* (c) 2012 Texas Instruments";
+
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
 
 #include "TIO_SkinHandler.h"
 #include "TIO_PrintHandler.h"
