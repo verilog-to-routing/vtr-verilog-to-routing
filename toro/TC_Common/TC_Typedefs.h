@@ -6,6 +6,22 @@
 // 05/01/12 jeffr : Original
 //===========================================================================//
 
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
 #ifndef TC_TYPEDEFS_H
 #define TC_TYPEDEFS_H
 
@@ -33,12 +49,15 @@ using namespace std;
    #ifndef SIZE_MAX
       #define SIZE_MAX UINT_MAX
    #endif
-#endif
-
-#if defined( LINUX_X86_64 )
+#elif defined( LINUX_X86_64 )
    #include <stdint.h>
    #ifndef SIZE_MAX
       #define SIZE_MAX ULONG_MAX
+   #endif
+#else
+   #include <stdint.h>
+   #ifndef SIZE_MAX
+      #define SIZE_MAX UIN_MAX
    #endif
 #endif
 
