@@ -708,7 +708,7 @@ static void power_calc_routing(t_power_usage * power_usage,
 				buffer_size =
 						switch_inf[node_power->driver_switch_type].buffer_last_stage_size;
 			}
-			buffer_size = max(buffer_size, 1);
+			buffer_size = max(buffer_size, 1.0F);
 
 			g_power_commonly_used->num_sb_buffers++;
 			g_power_commonly_used->total_sb_buffer_size += buffer_size;
@@ -866,8 +866,8 @@ boolean power_init(char * power_out_filepath,
 
 		switch (node->type) {
 		case IPIN:
-			max_IPIN_fanin = max(max_IPIN_fanin, node->fan_in);
-			max_fanin = max(max_fanin, node->fan_in);
+			max_IPIN_fanin = max(max_IPIN_fanin, static_cast<int>(node->fan_in));
+			max_fanin = max(max_fanin, static_cast<int>(node->fan_in));
 
 			node_power->in_dens = (float*) my_calloc(node->fan_in,
 					sizeof(float));
@@ -888,7 +888,7 @@ boolean power_init(char * power_out_filepath,
 			max_seg_to_IPIN_fanout =
 					max(max_seg_to_IPIN_fanout, fanout_to_IPIN);
 			max_seg_to_seg_fanout = max(max_seg_to_seg_fanout, fanout_to_seg);
-			max_fanin = max(max_fanin, node->fan_in);
+			max_fanin = max(max_fanin, static_cast<int>(node->fan_in));
 
 			node_power->in_dens = (float*) my_calloc(node->fan_in,
 					sizeof(float));

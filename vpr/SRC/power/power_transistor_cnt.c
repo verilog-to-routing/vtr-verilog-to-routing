@@ -62,7 +62,7 @@ static float power_count_transistors_connectionbox(void) {
 			g_power_commonly_used->max_seg_to_IPIN_fanout
 					* (g_power_commonly_used->NMOS_1X_C_d
 							/ g_power_commonly_used->INV_1X_C_in)/ POWER_BUFFER_STAGE_GAIN;
-	buffer_size = max(1, buffer_size);
+	buffer_size = max(1.0F, buffer_size);
 	transistor_cnt += g_solution_inf.channel_width
 			* power_count_transistors_buffer(buffer_size);
 
@@ -146,7 +146,7 @@ static float power_count_transistors_mux(t_mux_arch * mux_arch) {
 static void power_mux_node_max_inputs(t_mux_node * mux_node, float * max_inputs) {
 
 	max_inputs[mux_node->level] =
-			max(max_inputs[mux_node->level], mux_node->num_inputs);
+			max(max_inputs[mux_node->level], static_cast<float>(mux_node->num_inputs));
 
 	if (mux_node->level != 0) {
 		int child_idx;

@@ -460,7 +460,7 @@ void output_logs(FILE * fp, t_log * logs, int num_logs) {
 }
 
 float power_buffer_size_from_logical_effort(float C_load) {
-	return max(1, C_load / g_power_commonly_used->INV_1X_C_in / POWER_BUFFER_STAGE_GAIN);
+	return max(1.0, C_load / g_power_commonly_used->INV_1X_C_in / POWER_BUFFER_STAGE_GAIN);
 }
 
 void power_print_title(FILE * fp, char * title) {
