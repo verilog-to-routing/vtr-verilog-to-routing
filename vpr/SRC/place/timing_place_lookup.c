@@ -453,7 +453,7 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 			det_routing_arch.global_route_switch,
 			det_routing_arch.delayless_switch, timing_inf,
 			det_routing_arch.wire_to_ipin_switch, router_opts.base_cost_type,
-			directs, num_directs,
+			NULL, 0, /* do not send in direct connections because we care about general placement timing instead of special pin placement timing */
 			&warnings);
 
 	alloc_and_load_rr_node_route_structs();

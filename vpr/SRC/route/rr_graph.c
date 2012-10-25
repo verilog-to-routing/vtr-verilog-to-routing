@@ -72,7 +72,11 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 		INP int nodes_per_chan, INP t_seg_details * seg_details,
 		INOUTP int **Fc_xofs, INOUTP int **Fc_yofs,
 		INOUTP t_rr_node * L_rr_node, INOUTP boolean * L_rr_edge_done,
-		OUTP boolean * Fc_clipped, INP t_ivec *** L_rr_node_indices);
+		OUTP boolean * Fc_clipped, INP t_ivec *** L_rr_node_indices, INP int delayless_switch,
+		INP t_direct_inf *directs, INP int num_directs, INP t_clb_to_clb_directs *clb_to_clb_directs);
+
+static int get_opin_direct_connecions(int x, int y, int opin, INOUTP t_linked_edge ** edge_list_ptr, INP t_ivec *** L_rr_node_indices, 
+	INP int delayless_switch, INP t_direct_inf *directs, INP int num_directs, INP t_clb_to_clb_directs *clb_to_clb_directs);
 
 static void alloc_and_load_rr_graph(INP int num_nodes,
 		INP t_rr_node * L_rr_node, INP int num_seg_types,
@@ -84,7 +88,7 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 		INP int **Fc_yofs, INP t_ivec *** L_rr_node_indices,
 		INP int nodes_per_chan, INP enum e_switch_block_type sb_type,
 		INP int delayless_switch, INP enum e_directionality directionality,
-		INP int wire_to_ipin_switch, OUTP boolean * Fc_clipped);
+		INP int wire_to_ipin_switch, OUTP boolean * Fc_clipped, INP t_direct_inf *directs, INP int num_directs, INP t_clb_to_clb_directs *clb_to_clb_directs);
 
 static void load_uniform_switch_pattern(INP t_type_ptr type,
 		INOUTP int ****tracks_connected_to_pin, INP int num_phys_pins,
@@ -315,7 +319,7 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 	perturb_ipins = alloc_and_load_perturb_ipins(nodes_per_chan, L_num_types,
 			Fc_in, Fc_out, directionality);
 	/* END FC */
-
+	
 	/* Alloc node lookups, count nodes, alloc rr nodes */
 	num_rr_nodes = 0;
 	rr_node_indices = alloc_and_load_rr_node_indices(nodes_per_chan, L_nx, L_ny,
@@ -397,7 +401,7 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 			L_rr_edge_done, track_to_ipin_lookup, opin_to_track_map,
 			switch_block_conn, L_grid, L_nx, L_ny, Fs, unidir_sb_pattern,
 			Fc_out, Fc_xofs, Fc_yofs, rr_node_indices, nodes_per_chan, sb_type,
-			delayless_switch, directionality, wire_to_ipin_switch, &Fc_clipped);
+			delayless_switch, directionality, wire_to_ipin_switch, &Fc_clipped, directs, num_directs, clb_to_clb_directs);
 
 #ifdef MUX_SIZE_DIST_DISPLAY
 	if (UNI_DIRECTIONAL == directionality)
@@ -671,7 +675,9 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 		INP int **Fc_yofs, INP t_ivec *** L_rr_node_indices,
 		INP int nodes_per_chan, INP enum e_switch_block_type sb_type,
 		INP int delayless_switch, INP enum e_directionality directionality,
-		INP int wire_to_ipin_switch, OUTP boolean * Fc_clipped) {
+		INP int wire_to_ipin_switch, OUTP boolean * Fc_clipped,
+		INP t_direct_inf *directs, INP int num_directs,
+		INP t_clb_to_clb_directs *clb_to_clb_directs) {
 
 	int i, j;
 	boolean clipped;
@@ -699,7 +705,8 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 				assert(UNI_DIRECTIONAL == directionality);
 				build_unidir_rr_opins(i, j, L_grid, Fc_out, nodes_per_chan,
 						seg_details, Fc_xofs, Fc_yofs, L_rr_node,
-						L_rr_edge_done, &clipped, L_rr_node_indices);
+						L_rr_edge_done, &clipped, L_rr_node_indices, delayless_switch,
+						directs, num_directs, clb_to_clb_directs);
 				if (clipped) {
 					*Fc_clipped = TRUE;
 				}
@@ -1877,7 +1884,8 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 		INP int nodes_per_chan, INP t_seg_details * seg_details,
 		INOUTP int **Fc_xofs, INOUTP int **Fc_yofs,
 		INOUTP t_rr_node * L_rr_node, INOUTP boolean * L_rr_edge_done,
-		OUTP boolean * Fc_clipped, INP t_ivec *** L_rr_node_indices) {
+		OUTP boolean * Fc_clipped, INP t_ivec *** L_rr_node_indices, INP int delayless_switch,
+		INP t_direct_inf *directs, INP int num_directs, INP t_clb_to_clb_directs *clb_to_clb_directs) {
 	/* This routine returns a list of the opins rr_nodes on each
 	 * side/offset of the block. You must free the result with
 	 * free_matrix. */
@@ -1975,10 +1983,7 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 		}
 
 		/* Add in direct connections */
-#if 0
-		/* jedit todo */
-		num_edges += get_opin_direct_connecions(i, j, ipin, &edge_list,	L_rr_node_indices);
-#endif
+		num_edges += get_opin_direct_connecions(i, j, ipin, &edge_list,	L_rr_node_indices, delayless_switch, directs, num_directs, clb_to_clb_directs);
 
 		/* Add the edges */
 		inode = get_rr_node_index(i, j, OPIN, ipin, L_rr_node_indices);
@@ -2583,8 +2588,6 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(INP t_direct_inf
 		// Parse out the pb_type name, port name, and pin range
 		parse_direct_pin_name(directs[i].from_pin, directs[i].line, &start_pin_index, &end_pin_index, pb_type_name, port_name);
 
-		assert(start_pin_index == end_pin_index);
-		
 		// Figure out which type, port, and pin is used
 		for(j = 0; j < num_types; j++) {
 			if(strcmp(type_descriptors[j].name, pb_type_name) == 0) {
@@ -2602,6 +2605,11 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(INP t_direct_inf
 		}
 		assert(j < pb_type->num_ports);
 
+		if(start_pin_index == OPEN) {
+			assert(start_pin_index == end_pin_index);
+			start_pin_index = 0;
+			end_pin_index = pb_type->ports[j].num_pins - 1;
+		}
 		get_blk_pin_from_port_pin(clb_to_clb_directs[i].from_clb_type->index, j, start_pin_index, &clb_to_clb_directs[i].from_clb_pin_start_index);
 		get_blk_pin_from_port_pin(clb_to_clb_directs[i].from_clb_type->index, j, end_pin_index, &clb_to_clb_directs[i].from_clb_pin_end_index);
 
@@ -2609,8 +2617,6 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(INP t_direct_inf
 		// Parse out the pb_type name, port name, and pin range
 		parse_direct_pin_name(directs[i].to_pin, directs[i].line, &start_pin_index, &end_pin_index, pb_type_name, port_name);
 
-		assert(start_pin_index == end_pin_index);
-		
 		// Figure out which type, port, and pin is used
 		for(j = 0; j < num_types; j++) {
 			if(strcmp(type_descriptors[j].name, pb_type_name) == 0) {
@@ -2628,6 +2634,12 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(INP t_direct_inf
 		}
 		assert(j < pb_type->num_ports);
 
+		if(start_pin_index == OPEN) {
+			assert(start_pin_index == end_pin_index);
+			start_pin_index = 0;
+			end_pin_index = pb_type->ports[j].num_pins - 1;
+		}
+
 		get_blk_pin_from_port_pin(clb_to_clb_directs[i].to_clb_type->index, j, start_pin_index, &clb_to_clb_directs[i].to_clb_pin_start_index);
 		get_blk_pin_from_port_pin(clb_to_clb_directs[i].to_clb_type->index, j, end_pin_index, &clb_to_clb_directs[i].to_clb_pin_end_index);
 
@@ -2641,3 +2653,68 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(INP t_direct_inf
 	}
 	return clb_to_clb_directs;
 }
+
+/* Add all direct clb-pin-to-clb-pin edges to given opin */ 
+static int get_opin_direct_connecions(int x, int y, int opin, INOUTP t_linked_edge ** edge_list_ptr, INP t_ivec *** L_rr_node_indices, 
+	INP int delayless_switch, INP t_direct_inf *directs, INP int num_directs, INP t_clb_to_clb_directs *clb_to_clb_directs) {
+	t_type_ptr type;
+	int grid_ofs;
+	int i, ipin, inode;
+	t_linked_edge *edge_list_head;
+	int max_index, min_index, offset, swap;
+	int new_edges;
+
+	type = grid[x][y].type;
+	edge_list_head = *edge_list_ptr;
+	new_edges = 0;
+
+	/* Iterate through all direct connections */
+	for(i = 0; i < num_directs; i++) {
+		/* Find matching direct clb-to-clb connections with the same type as current grid location */
+		if(clb_to_clb_directs[i].from_clb_type == type) {
+			/* Compute index of opin with regards to given pins */ 
+			if(clb_to_clb_directs[i].from_clb_pin_start_index > clb_to_clb_directs[i].from_clb_pin_end_index) {
+				swap = TRUE;
+				max_index = clb_to_clb_directs[i].from_clb_pin_start_index;
+				min_index = clb_to_clb_directs[i].from_clb_pin_end_index;
+			} else {
+				swap = FALSE;
+				min_index = clb_to_clb_directs[i].from_clb_pin_start_index;
+				max_index = clb_to_clb_directs[i].from_clb_pin_end_index;
+			}
+			if(max_index >= opin && min_index <= opin) {
+				offset = opin - min_index;
+				/* This opin is specified to connect directly to an ipin, now compute which ipin to connect to */
+				if(x + directs[i].x_offset < nx + 1 &&
+				   x + directs[i].x_offset > 0 &&
+				   y + directs[i].y_offset < ny + 1 &&
+				   y + directs[i].y_offset > 0) {
+					   ipin = OPEN;
+						if(clb_to_clb_directs[i].to_clb_pin_start_index > clb_to_clb_directs[i].to_clb_pin_end_index) {
+							if(swap == TRUE) {
+								ipin = clb_to_clb_directs[i].to_clb_pin_end_index + offset;
+							} else {
+								ipin = clb_to_clb_directs[i].to_clb_pin_start_index - offset;
+							}
+						} else {
+							if(swap == TRUE) {
+								ipin = clb_to_clb_directs[i].to_clb_pin_end_index - offset;
+							} else {
+								ipin = clb_to_clb_directs[i].to_clb_pin_start_index + offset;
+							}
+						}
+						/* Add new ipin edge to list of edges */
+					   grid_ofs = grid[x + directs[i].x_offset][y + directs[i].y_offset].offset;
+					   inode = get_rr_node_index(x + directs[i].x_offset, y + directs[i].y_offset - grid_ofs, IPIN, ipin, L_rr_node_indices);
+					   edge_list_head = insert_in_edge_list(edge_list_head, inode, delayless_switch);
+					   new_edges++;
+				}
+			}
+		}
+	}
+	*edge_list_ptr = edge_list_head;
+	return new_edges;
+}
+
+
+

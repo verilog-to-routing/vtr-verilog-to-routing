@@ -289,7 +289,11 @@ static boolean check_adjacent(int from_node, int to_node) {
 	/* This routine checks if the rr_node to_node is reachable from from_node.   *
 	 * It returns TRUE if is reachable and FALSE if it is not.  Check_node has   *
 	 * already been used to verify that both nodes are valid rr_nodes, so only   *
-	 * adjacency is checked here.                                                */
+	 * adjacency is checked here.                                                
+	 * Special case: direct OPIN to IPIN connections need not be adjacent.  These
+	 * represent specially-crafted connections such as carry-chains or more advanced
+	 * blocks where adjacency is overridden by the architect */
+
 
 	int from_xlow, from_ylow, to_xlow, to_ylow, from_ptc, to_ptc, iclass;
 	int num_adj, to_xhigh, to_yhigh, from_xhigh, from_yhigh, iconn;
@@ -349,8 +353,12 @@ static boolean check_adjacent(int from_node, int to_node) {
 		break;
 
 	case OPIN:
-		assert(to_type == CHANX || to_type == CHANY);
-		num_adj += pin_and_chan_adjacent(from_node, to_node);
+		if(to_type == CHANX || to_type == CHANY) {
+			num_adj += pin_and_chan_adjacent(from_node, to_node);
+		} else {
+			assert(to_type == IPIN); /* direct OPIN to IPIN connections not necessarily adjacent */
+			return TRUE; /* Special case, direct OPIN to IPIN connections need not be adjacent */
+		}
 
 		break;
 

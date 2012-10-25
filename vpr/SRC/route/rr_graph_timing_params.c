@@ -143,10 +143,10 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 				/* UDSD by ICK Start */
 				to_node = rr_node[inode].edges[iedge];
 				to_rr_type = rr_node[to_node].type;
-				assert(to_rr_type == CHANX || to_rr_type == CHANY);
+				assert(to_rr_type == CHANX || to_rr_type == CHANY || to_rr_type == IPIN);
 				if (rr_node[to_node].drivers != SINGLE) {
 					Cout = switch_inf[switch_index].Cout;
-					to_node = rr_node[inode].edges[iedge]; /* Will be CHANX or CHANY */
+					to_node = rr_node[inode].edges[iedge]; /* Will be CHANX or CHANY or IPIN */
 					rr_node[to_node].C += Cout;
 				}
 			}
