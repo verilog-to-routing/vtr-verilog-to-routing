@@ -4,6 +4,22 @@
 //
 //===========================================================================//
 
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
 #ifndef TVPR_CIRCUIT_DESIGN_H
 #define TVPR_CIRCUIT_DESIGN_H
 
@@ -61,11 +77,13 @@ private:
    
    bool PokeStructures_( const TPO_InstList_t& instList,
                          const TPO_PortList_t& portList,
+                         const TPO_InstList_t& blockList,
                          const TNO_NetList_c& netList,
                          const t_model* pvpr_standardModels,
                          const t_model* pvpr_customModels,
                          t_net* vpr_netArray,
                          t_logical_block* vpr_logicalBlockArray,
+                         int vpr_logicalBlockCount,
                          int* pvpr_primaryInputCount,
                          int* pvpr_primaryOutputCount ) const;
    void PokeInputOutputList_( const TPO_PortList_t& portList,
@@ -122,6 +140,9 @@ private:
                      t_net* vpr_netArray,
                      t_logical_block* vpr_logicalBlockArray,
                      int* pvpr_blockIndex ) const;
+   void PokeBlockList_( const TPO_InstList_t& blockList,
+                        t_logical_block* vpr_logicalBlockArray,
+                        int vpr_logicalBlockCount ) const;
    
    bool UpdateStructures_( t_net** pvpr_netArray,
                            int* pvpr_netCount,

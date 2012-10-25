@@ -31,6 +31,7 @@ CFLAGSlinux_x86_64 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_X86
 CFLAGSlinux_i686 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_I686
 CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
 CFLAGS = $(CFLAGS$(ISM)) \
+	-DPLACEMENT_REGIONS_ENABLE \
 	-I. \
 	-I../TOS_OptionsStore \
 	-I../TFS_FloorplanStore \
@@ -42,10 +43,11 @@ CFLAGS = $(CFLAGS$(ISM)) \
 	-I../TPO_PhysicalObjects \
 	-I../TNO_NetObjects \
 	-I../TTP_TilePlaneObjects \
+	-I../TGO_GeometricObjects \
 	-I../TGS_GeometricShapes \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
-	-I../../pcre/SRC \
+	-I../../libpcre/SRC \
 	-I../../vpr/SRC/base -I../../vpr/SRC/util -I../../libarchfpga/include
 
 ######################################################################
