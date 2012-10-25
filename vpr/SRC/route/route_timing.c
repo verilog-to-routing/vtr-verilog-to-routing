@@ -197,7 +197,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			pres_fac *= router_opts.pres_fac_mult;
 
 			/* Avoid overflow for high iteration counts, even if acc_cost is big */
-			pres_fac = min(pres_fac, HUGE_POSITIVE_FLOAT / 1e5);
+			pres_fac = min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
 
 			pathfinder_update_cost(pres_fac, router_opts.acc_fac);
 		}
@@ -348,7 +348,7 @@ boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
 			else becomes a bit less critical. This effect becomes more pronounced if
 			max_criticality is set lower. */
 			assert(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
-			pin_criticality[ipin] = max(pin_criticality[ipin] - (1 - max_criticality), 0);
+			pin_criticality[ipin] = max(pin_criticality[ipin] - (1.0 - max_criticality), 0.0);
 
 			/* Take pin criticality to some power (1 by default). */
 			pin_criticality[ipin] = pow(pin_criticality[ipin], criticality_exp);

@@ -1371,7 +1371,7 @@ static void get_switch_type(boolean is_from_sbox, boolean is_to_sbox,
 
 	boolean forward_pass_trans;
 	boolean backward_pass_trans;
-	int used, min, max;
+	int used, min_switch, max_switch;
 
 	switch_types[0] = OPEN; /* No switch */
 	switch_types[1] = OPEN;
@@ -1399,14 +1399,14 @@ static void get_switch_type(boolean is_from_sbox, boolean is_to_sbox,
 
 	/* Take the larger pass trans if there are two */
 	if (forward_pass_trans && backward_pass_trans) {
-		min = min(to_node_switch, from_node_switch);
-		max = max(to_node_switch, from_node_switch);
+		min_switch = min(to_node_switch, from_node_switch);
+		max_switch = max(to_node_switch, from_node_switch);
 
 		/* Take the smaller index unless the other 
 		 * pass_trans is bigger (smaller R). */
-		switch_types[used] = min;
-		if (switch_inf[max].R < switch_inf[min].R) {
-			switch_types[used] = max;
+		switch_types[used] = min_switch;
+		if (switch_inf[max_switch].R < switch_inf[min_switch].R) {
+			switch_types[used] = max_switch;
 		}
 		++used;
 	}

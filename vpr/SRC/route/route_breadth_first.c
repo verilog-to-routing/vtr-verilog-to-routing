@@ -81,7 +81,7 @@ boolean try_breadth_first_route(struct s_router_opts router_opts,
 		else
 			pres_fac *= router_opts.pres_fac_mult;
 
-		pres_fac = min(pres_fac, HUGE_POSITIVE_FLOAT / 1e5);
+		pres_fac = min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
 
 		pathfinder_update_cost(pres_fac, router_opts.acc_fac);
 	}
