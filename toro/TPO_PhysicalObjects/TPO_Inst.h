@@ -13,14 +13,30 @@
 //           - GetLatchClockType, GetLatchInitState
 //           - GetSubcktPinMapList
 //           - GetPackHierMapList
+//           - GetPlaceRegionList, GetPlaceRelativeList
 //           - GetPlaceStatus, GetPlaceFabricName
-//           - GetPlaceRelativeList, GetPlaceRegionList
 //           - SetCellName
 //           - SetPinList
 //           - SetSource
 //           - IsValid
 //
 //===========================================================================//
+
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
 
 #ifndef TPO_INST_H
 #define TPO_INST_H
@@ -114,10 +130,10 @@ public:
    const TPO_PinMapList_t& GetSubcktPinMapList( void ) const;
 
    const TPO_HierMapList_t& GetPackHierMapList( void ) const;
+   const TGS_RegionList_t& GetPlaceRegionList( void ) const;
+   const TPO_RelativeList_t& GetPlaceRelativeList( void ) const;
    TPO_StatusMode_t GetPlaceStatus( void ) const;
    const char* GetPlaceFabricName( void ) const;
-   const TPO_RelativeList_t& GetPlaceRelativeList( void ) const;
-   const TGS_RegionList_t& GetPlaceRegionList( void ) const;
    
    void SetCellName( const string& srCellName );
    void SetCellName( const char* pszCellName );
@@ -130,11 +146,11 @@ public:
    void SetSource( TPO_InstSource_t source );
 
    void SetPackHierMapList( const TPO_HierMapList_t& hierMapList );
+   void SetPlaceRegionList( const TGS_RegionList_t& regionList );
+   void SetPlaceRelativeList( const TPO_RelativeList_t& relativeList );
    void SetPlaceStatus( TPO_StatusMode_t status );
    void SetPlaceFabricName( const string& srFabricName );
    void SetPlaceFabricName( const char* pszFabricName );
-   void SetPlaceRelativeList( const TPO_RelativeList_t& relativeList );
-   void SetPlaceRegionList( const TGS_RegionList_t& regionList );
 
    void AddPin( const TPO_Pin_t& pin );
 
@@ -200,11 +216,12 @@ private:
    {
    public:
 
-      TPO_StatusMode_t status;    // Defines placement status mode (optional)
-      string srFabricName;        // Defines placement fabric name (optional)
       TPO_RelativeList_t relativeList;
                                   // Defines placement relative(s) (optional)
       TGS_RegionList_t regionList;// Defines placement region(s) (optional)
+
+      TPO_StatusMode_t status;    // Defines placement status mode (optional)
+      string srFabricName;        // Defines placement fabric name (optional)
    } place_;
 
 private:
@@ -318,6 +335,20 @@ inline const TPO_HierMapList_t& TPO_Inst_c::GetPackHierMapList(
 }
 
 //===========================================================================//
+inline const TGS_RegionList_t& TPO_Inst_c::GetPlaceRegionList( 
+      void ) const
+{
+   return( this->place_.regionList );
+}
+
+//===========================================================================//
+inline const TPO_RelativeList_t& TPO_Inst_c::GetPlaceRelativeList( 
+      void ) const
+{
+   return( this->place_.relativeList );
+}
+
+//===========================================================================//
 inline TPO_StatusMode_t TPO_Inst_c::GetPlaceStatus(
       void ) const
 {
@@ -329,20 +360,6 @@ inline const char* TPO_Inst_c::GetPlaceFabricName(
       void ) const
 {
    return( TIO_SR_STR( this->place_.srFabricName ));
-}
-
-//===========================================================================//
-inline const TPO_RelativeList_t& TPO_Inst_c::GetPlaceRelativeList( 
-      void ) const
-{
-   return( this->place_.relativeList );
-}
-
-//===========================================================================//
-inline const TGS_RegionList_t& TPO_Inst_c::GetPlaceRegionList( 
-      void ) const
-{
-   return( this->place_.regionList );
 }
 
 //===========================================================================//

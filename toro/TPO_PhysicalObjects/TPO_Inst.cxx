@@ -12,14 +12,30 @@
 //           - SetLatchClockType, SetLatchInitState
 //           - SetSubcktPinMapList
 //           - SetPackHierMapList
+//           - SetPlaceRegionList, SetPlaceRelativeList
 //           - SetPlaceStatus, SetPlaceFabricName
-//           - SetPlaceRelativeList, SetPlaceRegionList
 //           - AddPin
 //           - FindPin
 //           - FindPinCount
 //           - Clear
 //
 //===========================================================================//
+
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
 
 #include "TC_StringUtils.h"
 
@@ -189,10 +205,11 @@ TPO_Inst_c::TPO_Inst_c(
 
    this->pack_.hierMapList = inst.pack_.hierMapList;
 
-   this->place_.status = inst.place_.status;
-   this->place_.srFabricName = inst.place_.srFabricName;
    this->place_.relativeList = inst.place_.relativeList;
    this->place_.regionList = inst.place_.regionList;
+
+   this->place_.status = inst.place_.status;
+   this->place_.srFabricName = inst.place_.srFabricName;
 } 
 
 //===========================================================================//
@@ -229,10 +246,10 @@ TPO_Inst_c& TPO_Inst_c::operator=(
       this->latch_.initState = inst.latch_.initState;
       this->subckt_.pinMapList = inst.subckt_.pinMapList;
       this->pack_.hierMapList = inst.pack_.hierMapList;
-      this->place_.status = inst.place_.status;
-      this->place_.srFabricName = inst.place_.srFabricName;
       this->place_.relativeList = inst.place_.relativeList;
       this->place_.regionList = inst.place_.regionList;
+      this->place_.status = inst.place_.status;
+      this->place_.srFabricName = inst.place_.srFabricName;
    }
    return( *this );
 }
@@ -343,10 +360,11 @@ void TPO_Inst_c::Print(
       this->pack_.hierMapList.Print( pfile, spaceLen );
    }
 
-   if( this->place_.srFabricName.length( ))
+   for( size_t i = 0; i < this->place_.regionList.GetLength( ); ++i )
    {
-      const string& srFabricName = this->place_.srFabricName;
-      printHandler.Write( pfile, spaceLen, "<placement \"%s\" />\n", TIO_SR_STR( srFabricName ));
+      string srRegion;
+      this->place_.regionList[i]->ExtractString( &srRegion );
+      printHandler.Write( pfile, spaceLen, "<region %s />\n", TIO_SR_STR( srRegion ));
    }
 
    for( size_t i = 0; i < this->place_.relativeList.GetLength( ); ++i )
@@ -356,11 +374,10 @@ void TPO_Inst_c::Print(
       printHandler.Write( pfile, spaceLen, "<relative %s />\n", TIO_SR_STR( srRelative ));
    }
 
-   for( size_t i = 0; i < this->place_.regionList.GetLength( ); ++i )
+   if( this->place_.srFabricName.length( ))
    {
-      string srRegion;
-      this->place_.regionList[i]->ExtractString( &srRegion );
-      printHandler.Write( pfile, spaceLen, "<region %s />\n", TIO_SR_STR( srRegion ));
+      const string& srFabricName = this->place_.srFabricName;
+      printHandler.Write( pfile, spaceLen, "<placement \"%s\" />\n", TIO_SR_STR( srFabricName ));
    }
 }
 
@@ -549,6 +566,32 @@ void TPO_Inst_c::SetPackHierMapList(
 }
 
 //===========================================================================//
+// Method         : SetPlaceRegionList
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/15/12 jeffr : Original
+//===========================================================================//
+void TPO_Inst_c::SetPlaceRegionList(
+      const TGS_RegionList_t& regionList )
+{
+   this->place_.regionList = regionList;
+}
+
+//===========================================================================//
+// Method         : SetPlaceRelativeList
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/15/12 jeffr : Original
+//===========================================================================//
+void TPO_Inst_c::SetPlaceRelativeList(
+      const TPO_RelativeList_t& relativeList )
+{
+   this->place_.relativeList = relativeList;
+}
+
+//===========================================================================//
 // Method         : SetPlaceStatus
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
@@ -579,32 +622,6 @@ void TPO_Inst_c::SetPlaceFabricName(
       const char* pszFabricName )
 {
    this->place_.srFabricName = TIO_PSZ_STR( pszFabricName );
-}
-
-//===========================================================================//
-// Method         : SetPlaceRelativeList
-// Author         : Jeff Rudolph
-//---------------------------------------------------------------------------//
-// Version history
-// 05/15/12 jeffr : Original
-//===========================================================================//
-void TPO_Inst_c::SetPlaceRelativeList(
-      const TPO_RelativeList_t& relativeList )
-{
-   this->place_.relativeList = relativeList;
-}
-
-//===========================================================================//
-// Method         : SetPlaceRegionList
-// Author         : Jeff Rudolph
-//---------------------------------------------------------------------------//
-// Version history
-// 05/15/12 jeffr : Original
-//===========================================================================//
-void TPO_Inst_c::SetPlaceRegionList(
-      const TGS_RegionList_t& regionList )
-{
-   this->place_.regionList = regionList;
 }
 
 //===========================================================================//
@@ -697,10 +714,11 @@ void TPO_Inst_c::Clear(
    this->pack_.hierMapList.Clear( );
    this->pack_.hierMapList.SetCapacity( TPO_HIER_MAP_LIST_DEF_CAPACITY );
 
-   this->place_.status = TPO_STATUS_UNDEFINED;
-   this->place_.srFabricName = "";
-   this->place_.relativeList.Clear( );
-   this->place_.relativeList.SetCapacity( TPO_RELATIVE_LIST_DEF_CAPACITY );
    this->place_.regionList.Clear( );
    this->place_.regionList.SetCapacity( TPO_REGION_LIST_DEF_CAPACITY );
+   this->place_.relativeList.Clear( );
+   this->place_.relativeList.SetCapacity( TPO_RELATIVE_LIST_DEF_CAPACITY );
+
+   this->place_.status = TPO_STATUS_UNDEFINED;
+   this->place_.srFabricName = "";
 }
