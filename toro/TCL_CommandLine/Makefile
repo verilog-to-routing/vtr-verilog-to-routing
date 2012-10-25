@@ -35,7 +35,7 @@ CFLAGS = $(CFLAGS$(ISM)) \
 	-I../TOS_OptionsStore \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
-	-I../../pcre/SRC
+	-I../../libpcre/SRC
 
 ######################################################################
 # Linker options
