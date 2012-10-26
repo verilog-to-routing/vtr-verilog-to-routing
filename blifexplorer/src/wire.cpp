@@ -41,11 +41,11 @@ Wire::Wire(LogicUnit *startUnit, LogicUnit *endUnit,
     mySafeColor = Qt::black;
 
     //The values for an turned on and turned off wire
-    wireOff = 3;
-    wireOn = wireOff*2;
+   // wireOff = QColor(0,0,255);
+    wireOn = QColor(255,0,0);
 
     //penwidth can be used to show "active" wires after simulation
-    myPenwidth = wireOff;
+    myPenwidth = 3;
 
     setPen(QPen(myColor,myPenwidth,Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));
     //myNumber is always set by the logic block wich creates it. 0 is default until setNumber is called
@@ -219,13 +219,13 @@ void Wire::updateWireStatus()
     status = myStartUnit->getOutValue(myOutPinNumber);
 
     if(status==0){
-        myPenwidth = wireOff;
+        //myPenwidth = wireOff;
         myColor = mySafeColor;
     } else if(status == 1){
-        myPenwidth = wireOn;
-        myColor = mySafeColor;
+        myColor = QColor(wireOn.red(),mySafeColor.green(),mySafeColor.blue());;
+        //myColor = mySafeColor;
     }else{
-        myPenwidth = wireOn;
+        //myPenwidth = wireOn;
         myColor = QColor(mySafeColor.red(),255,mySafeColor.blue());
     }
     update();

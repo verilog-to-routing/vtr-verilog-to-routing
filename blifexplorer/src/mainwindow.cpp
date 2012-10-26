@@ -404,6 +404,14 @@ void MainWindow::createToolBox()
                                LogicUnit::ADDER_FUNC), 1, 1);
     layout->addWidget(createCellWidget(tr("CARRY"),
                                LogicUnit::CARRY_FUNC), 2, 1);
+    layout->addWidget(createCellWidget(tr("Hard ADD"),
+                               LogicUnit::ADD), 3, 1);
+    layout->addWidget(createCellWidget(tr("Hard Minus"),
+                               LogicUnit::MINUS), 4, 1);
+    layout->addWidget(createCellWidget(tr("Hard Mult"),
+                               LogicUnit::MULTIPLY), 5, 1);
+    layout->addWidget(createCellWidget(tr("Hard Memory"),
+                               LogicUnit::MEMORY), 6, 1);
 
     QToolButton *textButton = new QToolButton;
     textButton->setCheckable(true);
@@ -438,6 +446,7 @@ void MainWindow::createToolBox()
     simulationLayout->addWidget(createSimulationCellWidget(tr("Next"),
                 ":/images/next.png"), 2, 0);
 
+
     //add edge control for the simulation
     edgeRadioLayout = new QVBoxLayout;
     QGroupBox* groupBox = new QGroupBox(tr("Show Edge"));
@@ -457,6 +466,12 @@ void MainWindow::createToolBox()
     connect(radFallRise, SIGNAL(toggled(bool)),
         this, SLOT(setEdgeFallRise(bool)));
 
+    QLabel* legend = new QLabel();
+    QSize size(100,100);
+    QPixmap* pixmap = new QPixmap(size);
+    pixmap->convertFromImage(QImage(":/images/legend.png"));
+    legend->setPixmap(*pixmap);
+    simulationLayout->addWidget(legend,4,0);
 
     simStatLayout = new QGridLayout;
     simstatLabel = new QLabel();
@@ -464,9 +479,9 @@ void MainWindow::createToolBox()
 
     QWidget *simwidget = new QWidget;
     simwidget->setLayout(simStatLayout);
-    simulationLayout->addWidget(simwidget,4,0);
+    simulationLayout->addWidget(simwidget,5,0);
 
-    simulationLayout->setRowStretch(4,10);
+    simulationLayout->setRowStretch(6,10);
     simulationLayout->setColumnStretch(2,10);
 
     QWidget* simulationWidget = new QWidget;
@@ -939,11 +954,11 @@ void MainWindow::showAllConnection()
                 qgraphicsitem_cast<LogicUnit *>(scene->selectedItems().first());
             QList<Wire *> list = unit->getAllCons();
             foreach (Wire *wire, list) {
-                wire->setColor(QColor(255,0,0,255));
+                wire->setColor(QColor(0,0,255,255));
                 wire->update();
                 wire->setZValue(905);
             }
-            unit->setBrush(QColor(255,0,0,255));
+            unit->setBrush(QColor(0,0,255,255));
             unit->setZValue(900);
         }
 
@@ -954,8 +969,10 @@ void MainWindow::showAllConnection()
  *-------------------------------------------------------------------------------------------*/
 void MainWindow::resetHighlighting()
 {
-    if (scene->selectedItems().isEmpty())
-        return;
+    if (scene->selectedItems().isEmpty()){
+       myContainer->resetAllHighlights();
+       return;
+    }
 
     QGraphicsItem *item = scene->selectedItems().first();
 

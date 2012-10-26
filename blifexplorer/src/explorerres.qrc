@@ -11,11 +11,7 @@
         <file>images/delete.png</file>
         <file>images/sendtoback.png</file>
         <file>images/linecolor.png</file>
-        <file>images/background1.png</file>
-        <file>images/background2.png</file>
-        <file>images/background3.png</file>
         <file>images/background4.png</file>
-        <file>images/paint.png</file>
         <file>images/start.png</file>
         <file>images/next.png</file>
         <file>images/previous.png</file>
@@ -30,5 +26,10 @@
         <file>images/nodeTypes/MUX.png</file>
         <file>images/nodeTypes/CARRY_FUNC.png</file>
         <file>images/icon.png</file>
+        <file>images/legend.png</file>
+        <file>images/nodeTypes/Hadd.png</file>
+        <file>images/nodeTypes/Hmemory.png</file>
+        <file>images/nodeTypes/Hmult.png</file>
+        <file>images/nodeTypes/Hminus.png</file>
     </qresource>
 </RCC>

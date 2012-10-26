@@ -54,6 +54,7 @@ public:
     void showSimulationStep(int cycle);
     void setEdge(int i);
     int simulateNextWave();
+    void resetAllHighlights();
 private:
     Wire* getConnectionBetween(QString nodeName, QString kidName);
     void computeLayers();

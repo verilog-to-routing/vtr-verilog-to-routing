@@ -60,7 +60,7 @@ public:
     enum { Type = UserType + 15 };
     enum UnitType { LogicGate, Input, Output, Latch,
                     Clock, And, Or, Nand, Nor, Not,
-                    Xor,Xnor, MUX, ADDER_FUNC, CARRY_FUNC};
+                    Xor,Xnor, MUX, ADDER_FUNC, CARRY_FUNC,MINUS, MEMORY, MULTIPLY, ADD};
 
     LogicUnit(QString name, UnitType unitType, QMenu *contextMenu,
         QGraphicsItem *parent = 0, QGraphicsScene *scene = 0);

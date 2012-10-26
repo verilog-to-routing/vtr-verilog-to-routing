@@ -75,8 +75,8 @@ private:
     int myMaxNumber;
     int myOutPinNumber;
     int myOutPinMax;
-    int wireOff;
-    int wireOn;
+    QColor wireOff;
+    QColor wireOn;
 };
 
 #endif // WIRE_H

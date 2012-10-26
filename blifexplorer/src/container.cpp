@@ -403,6 +403,18 @@ int Container::createNodesFromOdin(){
          case CARRY_FUNC:
              type = LogicUnit::CARRY_FUNC;
              break;
+         case MULTIPLY:
+             type = LogicUnit::MULTIPLY;
+             break;
+         case ADD:
+             type = LogicUnit::ADD;
+             break;
+         case MINUS:
+             type = LogicUnit::MINUS;
+             break;
+         case MEMORY:
+             type = LogicUnit::MEMORY;
+             break;
          default:
              type = LogicUnit::LogicGate;
              break;
@@ -662,6 +674,24 @@ int Container::simulateNextWave()
     copySimCyclesIntoNodes();
 
     return success;
+}
+
+void Container::resetAllHighlights()
+{
+    QHash<QString, LogicUnit *> hash =unithashtable;
+    QHash<QString, LogicUnit *>::const_iterator blockIterator = hash.constBegin();
+
+     while(blockIterator != unithashtable.constEnd()){
+        LogicUnit *unit = blockIterator.value();
+        unit->setBrush(QColor(255,255,255,255));
+        QList<Wire *> list = unit->getAllCons();
+        foreach (Wire *wire, list) {
+            wire->setColor(QColor(0,0,0,255));
+            wire->setZValue(-1000);
+            wire->update();
+        }
+         ++blockIterator;
+     }
 }
 
 /*---------------------------------------------------------------------------------------------

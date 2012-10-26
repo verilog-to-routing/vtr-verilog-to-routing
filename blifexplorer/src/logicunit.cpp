@@ -83,6 +83,10 @@ LogicUnit::LogicUnit(QString name, UnitType unitType, QMenu *contextMenu,
     case ADDER_FUNC:
     case MUX:
     case CARRY_FUNC:
+    case ADD:
+    case MINUS:
+    case MULTIPLY:
+    case MEMORY:
         myPolygon << QPointF(-50, -50) << QPointF(50, -50)
               << QPointF(50, 50) << QPointF(-50, 50)
               << QPointF(-50, -50);
@@ -197,6 +201,22 @@ QPixmap* LogicUnit::image() const
         pixmap->convertFromImage(QImage(":/images/nodeTypes/CARRY_FUNC.png"));
         pixmap->scaled(size);
         break;
+    case MULTIPLY:
+        pixmap->convertFromImage(QImage(":/images/nodeTypes/Hmult.png"));
+        pixmap->scaled(size);
+        break;
+    case ADD:
+        pixmap->convertFromImage(QImage(":/images/nodeTypes/Hadd.png"));
+        pixmap->scaled(size);
+        break;
+    case MINUS:
+        pixmap->convertFromImage(QImage(":/images/nodeTypes/Hminus.png"));
+        pixmap->scaled(size);
+        break;
+    case MEMORY:
+        pixmap->convertFromImage(QImage(":/images/nodeTypes/Hmemory.png"));
+        pixmap->scaled(size);
+        break;
     default:
         pixmap->fill(Qt::transparent);
         QPainter painter(pixmap);
@@ -287,6 +307,23 @@ QImage image;
     case CARRY_FUNC:
         image.load(":/images/nodeTypes/CARRY_FUNC.png");
         painter->drawImage(boundingRect(),image);
+        break;
+    case MEMORY:
+        image.load(":/images/nodeTypes/Hmemory.png");
+        painter->drawImage(boundingRect(),image);
+        break;
+    case MINUS:
+        image.load(":/images/nodeTypes/Hminus.png");
+        painter->drawImage(boundingRect(),image);
+        break;
+    case ADD:
+        image.load(":/images/nodeTypes/Hadd.png");
+        painter->drawImage(boundingRect(),image);
+        break;
+    case MULTIPLY:
+        image.load(":/images/nodeTypes/Hmult.png");
+        painter->drawImage(boundingRect(),image);
+        break;
     case LogicGate:
     case Input:
     case Output:
@@ -299,7 +336,7 @@ QImage image;
 
     painter->setFont(QFont("Times", 9));
 
-    painter->setPen(QPen(Qt::green));
+    painter->setPen(QPen(Qt::red));
     painter->drawText(boundingRect(),
                       Qt::TextWrapAnywhere |
                       Qt::AlignVCenter |
