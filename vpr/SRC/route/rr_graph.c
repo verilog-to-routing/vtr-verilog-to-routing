@@ -774,11 +774,12 @@ static void build_bidir_rr_opins(INP int i, INP int j,
 
 		num_edges = 0;
 		edge_list = NULL;
-
-		for (ofs = 0; ofs < type->height; ++ofs) {
-			num_edges += get_bidir_opin_connections(i, j + ofs, ipin,
-					&edge_list, opin_to_track_map, Fc[i], L_rr_edge_done,
-					L_rr_node_indices, seg_details);
+		if(Fc[ipin] != 0) {
+			for (ofs = 0; ofs < type->height; ++ofs) {
+				num_edges += get_bidir_opin_connections(i, j + ofs, ipin,
+						&edge_list, opin_to_track_map, Fc[i], L_rr_edge_done,
+						L_rr_node_indices, seg_details);
+			}
 		}
 
 		/* Add in direct connections */
@@ -1941,47 +1942,49 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 
 		num_edges = 0;
 		edge_list = NULL;
-		for (ofs = 0; ofs < type->height; ++ofs) {
-			for (side = (enum e_side)0; side < 4; side = (enum e_side)(side + 1)) {
-				/* Can't do anything if pin isn't at this location */
-				if (0 == type->pinloc[ofs][side][ipin]) {
-					continue;
-				}
+		if(Fc_out[type->index][ipin] != 0) {
+			for (ofs = 0; ofs < type->height; ++ofs) {
+				for (side = (enum e_side)0; side < 4; side = (enum e_side)(side + 1)) {
+					/* Can't do anything if pin isn't at this location */
+					if (0 == type->pinloc[ofs][side][ipin]) {
+						continue;
+					}
 
-				/* Figure out the chan seg at that side. 
-				 * side is the side of the logic or io block. */
-				vert = (boolean) ((side == TOP) || (side == BOTTOM));
-				pos_dir = (boolean) ((side == TOP) || (side == RIGHT));
-				chan_type = (vert ? CHANX : CHANY);
-				chan = (vert ? (j + ofs) : i);
-				seg = (vert ? i : (j + ofs));
-				max_len = (vert ? nx : ny);
-				Fc_ofs = (vert ? Fc_xofs : Fc_yofs);
-				if (FALSE == pos_dir) {
-					--chan;
-				}
+					/* Figure out the chan seg at that side. 
+					 * side is the side of the logic or io block. */
+					vert = (boolean) ((side == TOP) || (side == BOTTOM));
+					pos_dir = (boolean) ((side == TOP) || (side == RIGHT));
+					chan_type = (vert ? CHANX : CHANY);
+					chan = (vert ? (j + ofs) : i);
+					seg = (vert ? i : (j + ofs));
+					max_len = (vert ? nx : ny);
+					Fc_ofs = (vert ? Fc_xofs : Fc_yofs);
+					if (FALSE == pos_dir) {
+						--chan;
+					}
 
-				/* Skip the location if there is no channel. */
-				if (chan < 0) {
-					continue;
-				}
-				if (seg < 1) {
-					continue;
-				}
-				if (seg > (vert ? nx : ny)) {
-					continue;
-				}
-				if (chan > (vert ? ny : nx)) {
-					continue;
-				}
+					/* Skip the location if there is no channel. */
+					if (chan < 0) {
+						continue;
+					}
+					if (seg < 1) {
+						continue;
+					}
+					if (seg > (vert ? nx : ny)) {
+						continue;
+					}
+					if (chan > (vert ? ny : nx)) {
+						continue;
+					}
 
-				/* Get the list of opin to mux connections for that chan seg. */
-				num_edges += get_unidir_opin_connections(chan, seg,
-						max_Fc, chan_type, seg_details, &edge_list,
-						Fc_ofs, L_rr_edge_done, max_len, nodes_per_chan,
-						L_rr_node_indices, &clipped);
-				if (clipped) {
-					*Fc_clipped = TRUE;
+					/* Get the list of opin to mux connections for that chan seg. */
+					num_edges += get_unidir_opin_connections(chan, seg,
+							max_Fc, chan_type, seg_details, &edge_list,
+							Fc_ofs, L_rr_edge_done, max_len, nodes_per_chan,
+							L_rr_node_indices, &clipped);
+					if (clipped) {
+						*Fc_clipped = TRUE;
+					}
 				}
 			}
 		}
