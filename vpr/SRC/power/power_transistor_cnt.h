@@ -26,8 +26,23 @@
 /************************* INCLUDES *********************************/
 #include "physical_types.h"
 
+/************************* DEFINES **********************************/
+
+/* Design rules, values in LAMBDA, where tech size = 2 LAMBDA */
+#define POWER_DR_MIN_L 2.0
+#define POWER_DR_MIN_W 2.0
+#define POWER_DR_MIN_WELL 12.0
+#define POWER_DR_MIN_WELL_TO_WELL 6.0
+#define POWER_DR_MIN_POLY_EXT 2.5
+#define POWER_DR_MIN_POLY_TO_POLY 3.0
+
+#define POWER_TRANSISTOR_AREA (POWER_DR_MIN_WELL * POWER_DR_MIN_W)
+#define POWER_TRANSISTOR_LAYOUT_AREA ((POWER_DR_MIN_WELL + POWER_DR_MIN_WELL_TO_WELL) * (POWER_DR_MIN_W+POWER_DR_MIN_POLY_EXT+POWER_DR_MIN_POLY_TO_POLY))
+
+#define POWER_TRANSISTOR_AREA_SPACING_FACTOR (POWER_TRANSISTOR_AREA / POWER_TRANSISTOR_LAYOUT_AREA)
+
 /************************* FUNCTION DECLARATION *********************/
-float power_count_transistors(t_arch * arch);
-float power_count_transistors_buffer(float buffer_size);
-float power_transistor_area(float num_transistors);
+double power_count_transistors(t_arch * arch);
+double power_count_transistors_buffer(float buffer_size);
+double power_transistor_area(double num_transistors);
 #endif

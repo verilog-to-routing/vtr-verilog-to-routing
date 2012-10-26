@@ -36,11 +36,6 @@
 /* Desired stage gain in buffer design */
 #define POWER_BUFFER_STAGE_GAIN 4.0
 
-/* This the assumed spacing between transistors. For example,
- * if the value is 1.2, the area of the transistor is assumed to be
- * 20% larger than the physical area consumed (depletion regions + gate)
- */
-#define POWER_TRANSISTOR_SPACING_FACTOR 1.2
 
 /************************* ENUMS ************************************/
 
@@ -224,9 +219,6 @@ struct s_power_commonly_used {
 	float PMOS_1X_st_leakage;
 	float PMOS_2X_st_leakage;
 
-	/* Local interconnect capacitance */
-	float C_wire_local;
-
 	/* Mux architecture information for 0..mux_arch_max_size */
 	int mux_arch_max_size;
 	t_mux_arch * mux_arch;
@@ -288,6 +280,7 @@ extern t_solution_inf g_solution_inf;
 extern t_power_output * g_power_output;
 extern t_power_commonly_used * g_power_commonly_used;
 extern t_power_tech * g_power_tech;
+extern t_power_arch * g_power_arch;
 
 /************************* FUNCTION DECLARATIONS ********************/
 

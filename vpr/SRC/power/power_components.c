@@ -520,11 +520,14 @@ void power_calc_interconnect(t_power_usage * power_usage, t_pb * pb,
 	/* Ensure port/pins are structured as expected */
 	switch (interc_pins->interconnect->type) {
 	case DIRECT_INTERC:
-		assert(interc_pins->interconnect->num_input_ports == 1);
-		assert(interc_pins->interconnect->num_output_ports == 1);
+		assert(
+				interc_pins->interconnect->interconnect_power->num_input_ports == 1);
+		assert(
+				interc_pins->interconnect->interconnect_power->num_output_ports == 1);
 		break;
 	case MUX_INTERC:
-		assert(interc_pins->interconnect->num_output_ports == 1);
+		assert(
+				interc_pins->interconnect->interconnect_power->num_output_ports == 1);
 		break;
 	case COMPLETE_INTERC:
 		break;
@@ -533,18 +536,21 @@ void power_calc_interconnect(t_power_usage * power_usage, t_pb * pb,
 	/* Interconnect Wire Capacitances */
 
 	/* Assume input/output wire length are each half of interc_length */
-	C_wire = 0.5 * interc_length * g_power_commonly_used->C_wire_local;
+	C_wire = 0.5 * interc_length * g_power_arch->C_wire_local;
 
 	for (out_port_idx = 0;
-			out_port_idx < interc_pins->interconnect->num_output_ports;
+			out_port_idx
+					< interc_pins->interconnect->interconnect_power->num_output_ports;
 			out_port_idx++) {
 		for (pin_idx = 0;
-				pin_idx < interc_pins->interconnect->num_pins_per_port;
+				pin_idx
+						< interc_pins->interconnect->interconnect_power->num_pins_per_port;
 				pin_idx++) {
 
 			/* Wires to inputs */
 			for (in_port_idx = 0;
-					in_port_idx < interc_pins->interconnect->num_input_ports;
+					in_port_idx
+							< interc_pins->interconnect->interconnect_power->num_input_ports;
 					in_port_idx++) {
 				dens = pin_density(pb,
 						interc_pins->input_pins[in_port_idx][pin_idx]);
@@ -574,17 +580,24 @@ void power_calc_interconnect(t_power_usage * power_usage, t_pb * pb,
 		/* Many-to-1, or Many-to-Many
 		 * Implemented as a multiplexer for each output
 		 * */
-		in_dens = (float*) my_calloc(interc->num_input_ports, sizeof(float));
-		in_prob = (float*) my_calloc(interc->num_input_ports, sizeof(float));
+		in_dens = (float*) my_calloc(
+				interc->interconnect_power->num_input_ports, sizeof(float));
+		in_prob = (float*) my_calloc(
+				interc->interconnect_power->num_input_ports, sizeof(float));
 
-		for (out_port_idx = 0; out_port_idx < interc->num_output_ports;
+		for (out_port_idx = 0;
+				out_port_idx < interc->interconnect_power->num_output_ports;
 				out_port_idx++) {
-			for (pin_idx = 0; pin_idx < interc->num_pins_per_port; pin_idx++) {
+			for (pin_idx = 0;
+					pin_idx < interc->interconnect_power->num_pins_per_port;
+					pin_idx++) {
 				t_power_usage MUX_power;
 				int selected_input = OPEN;
 
 				/* Clear input densities */
-				for (in_port_idx = 0; in_port_idx < interc->num_input_ports;
+				for (in_port_idx = 0;
+						in_port_idx
+								< interc->interconnect_power->num_input_ports;
 						in_port_idx++) {
 					in_dens[in_port_idx] = 0.;
 					in_prob[in_port_idx] = 0.;
@@ -599,7 +612,8 @@ void power_calc_interconnect(t_power_usage * power_usage, t_pb * pb,
 						selected_input = 0;
 					} else {
 						for (in_port_idx = 0;
-								in_port_idx < interc->num_input_ports;
+								in_port_idx
+										< interc->interconnect_power->num_input_ports;
 								in_port_idx++) {
 							t_pb_graph_pin * input_pin =
 									interc_pins->input_pins[in_port_idx][pin_idx];
@@ -628,7 +642,8 @@ void power_calc_interconnect(t_power_usage * power_usage, t_pb * pb,
 
 				/* Calculate power of the multiplexer */
 				power_calc_mux_multilevel(&MUX_power,
-						power_get_mux_arch(interc_pins->interconnect->num_input_ports),
+						power_get_mux_arch(
+								interc_pins->interconnect->interconnect_power->num_input_ports),
 						in_prob, in_dens, selected_input, TRUE);
 
 				power_add_usage(power_usage, &MUX_power);
@@ -644,7 +659,8 @@ void power_calc_interconnect(t_power_usage * power_usage, t_pb * pb,
 		assert(0);
 	}
 
-	power_add_usage(&interc_pins->interconnect->power_usage, power_usage);
+	power_add_usage(&interc_pins->interconnect->interconnect_power->power_usage,
+			power_usage);
 }
 
 /**

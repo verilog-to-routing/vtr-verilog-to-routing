@@ -1,7 +1,7 @@
 #ifndef PB_TYPE_GRAPH_H
 #define PB_TYPE_GRAPH_H
 
-void alloc_and_load_all_pb_graphs(void);
+void alloc_and_load_all_pb_graphs(boolean load_power_structures);
 void echo_pb_graph(char * filename);
 void free_all_pb_graph_nodes(void);
 t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(INP int line_num,

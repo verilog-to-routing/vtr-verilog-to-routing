@@ -687,7 +687,7 @@ float power_calc_pb_switching_from_c_internal(t_pb * pb,
 	if (num_pins != 0) {
 		density = density / num_pins;
 	}
-	return power_calc_node_switching(pb_graph_node->pb_type->C_internal,
+	return power_calc_node_switching(pb_graph_node->pb_type->pb_type_power->C_internal,
 			density);
 }
 

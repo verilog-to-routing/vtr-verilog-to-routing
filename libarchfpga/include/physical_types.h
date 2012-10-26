@@ -34,6 +34,9 @@ typedef struct s_clock_network t_clock_network;
 typedef struct s_power_arch t_power_arch;
 typedef struct s_interconnect_pins t_interconnect_pins;
 typedef struct s_power_usage t_power_usage;
+typedef struct s_pb_type_power t_pb_type_power;
+typedef struct s_mode_power t_mode_power;
+typedef struct s_interconnect_power t_interconnect_power;
 
 /*************************************************************************************************/
 /* FPGA basic definitions                                                                        */
@@ -149,6 +152,7 @@ struct s_clock_network {
 /* Power-related architecture information */
 struct s_power_arch {
 	float C_wire_local; /* Capacitance of local interconnect (per meter) */
+	int seg_buffer_split; /* Split segment for distributed buffer (no split=1) */
 };
 
 /* Power usage for an entity */
@@ -272,14 +276,23 @@ struct s_interconnect {
 
 	int parent_mode_index;
 
+	/* Power related members */
+	t_interconnect_power * interconnect_power;
+};
+typedef struct s_interconnect t_interconnect;
+
+struct s_interconnect_power {
+
+	t_power_usage power_usage;
+
+	/* These are not necessarily power-related; however, at the moment
+	 * only power estimation uses them
+	 */
 	boolean port_info_initialized;
 	int num_input_ports;
 	int num_output_ports;
 	int num_pins_per_port;
-
-	t_power_usage power_usage;
 };
-typedef struct s_interconnect t_interconnect;
 
 struct s_interconnect_pins {
 	t_interconnect * interconnect;
@@ -304,9 +317,15 @@ struct s_mode {
 	int num_interconnect;
 	struct s_pb_type *parent_pb_type;
 	int index;
-	t_power_usage power_usage; /* Power usage of this mode */
+
+	/* Power releated members */
+	t_mode_power * mode_power;
 };
 typedef struct s_mode t_mode;
+
+struct s_mode_power {
+	t_power_usage power_usage; /* Power usage of this mode */
+};
 
 /* Identify pb pin type for timing purposes */
 enum e_pb_graph_pin_type {
@@ -471,6 +490,12 @@ struct s_pb_type {
 	t_pin_to_pin_annotation *annotations; /* [0..num_annotations-1] */
 	int num_annotations;
 
+	/* Power related members */
+	t_pb_type_power * pb_type_power;
+};
+typedef struct s_pb_type t_pb_type;
+
+struct s_pb_type_power {
 	/* Type of power estimation for this pb */
 	e_pb_power_type power_dynamic_type;
 	e_pb_power_type power_static_type;
@@ -479,10 +504,9 @@ struct s_pb_type {
 	int leakage_default_mode; /* Default mode for leakage analysis, if block has no set mode */
 
 	t_power_usage power_usage;
-	float transistor_cnt;	/* Total transistor size of this pb */
+	float transistor_cnt; /* Total transistor size of this pb */
 	float transistor_cnt_interc; /* Total transistor size of the interconnect in this pb */
 };
-typedef struct s_pb_type t_pb_type;
 
 /* Describes the type for a physical logic block
  name: unique identifier for type  

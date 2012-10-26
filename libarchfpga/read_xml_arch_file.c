@@ -685,32 +685,35 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 	}
 	assert(j == num_ports);
 
-	/* Read pb power information */
+	/* Allocate and read pb power information */
+	pb_type->pb_type_power = (t_pb_type_power*) my_malloc(
+			sizeof(t_pb_type_power));
+
 	Cur = FindFirstElement(Parent, "power", FALSE);
 
 	Prop = FindProperty(Cur, "dynamic", FALSE);
 	if (Prop) {
-		pb_type->power_usage.dynamic = GetFloatProperty(Cur, "dynamic", FALSE,
-				0.);
-		pb_type->power_dynamic_type = PB_POWER_PROVIDED;
+		pb_type->pb_type_power->power_usage.dynamic = GetFloatProperty(Cur,
+				"dynamic", FALSE, 0.);
+		pb_type->pb_type_power->power_dynamic_type = PB_POWER_PROVIDED;
 	} else {
 		Prop = FindProperty(Cur, "C_internal", FALSE);
 		if (Prop) {
-			pb_type->C_internal = GetFloatProperty(Cur, "C_internal", FALSE,
-					0.);
-			pb_type->power_dynamic_type = PB_POWER_C_INTERNAL;
+			pb_type->pb_type_power->C_internal = GetFloatProperty(Cur,
+					"C_internal", FALSE, 0.);
+			pb_type->pb_type_power->power_dynamic_type = PB_POWER_C_INTERNAL;
 		} else {
-			pb_type->power_dynamic_type = PB_POWER_UNDEFINED;
+			pb_type->pb_type_power->power_dynamic_type = PB_POWER_UNDEFINED;
 		}
 	}
 
 	Prop = FindProperty(Cur, "static", FALSE);
 	if (Prop) {
-		pb_type->power_usage.leakage = GetFloatProperty(Cur, "static", FALSE,
-				0.);
-		pb_type->power_static_type = PB_POWER_PROVIDED;
+		pb_type->pb_type_power->power_usage.leakage = GetFloatProperty(Cur,
+				"static", FALSE, 0.);
+		pb_type->pb_type_power->power_static_type = PB_POWER_PROVIDED;
 	} else {
-		pb_type->power_static_type = PB_POWER_UNDEFINED;
+		pb_type->pb_type_power->power_static_type = PB_POWER_UNDEFINED;
 	}
 	if (Cur) {
 		FreeNode(Cur);
@@ -807,7 +810,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 		/* container pb_type, process modes */
 		assert(pb_type->class_type == UNKNOWN_CLASS);
 		pb_type->num_modes = CountChildren(Parent, "mode", 0);
-		pb_type->leakage_default_mode = 0;
+		pb_type->pb_type_power->leakage_default_mode = 0;
 
 		if (pb_type->num_modes == 0) {
 			/* The pb_type operates in an implied one mode */
@@ -829,7 +832,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 					pb_type->modes[i].index = i;
 					ProcessMode(Cur, &pb_type->modes[i], &default_leakage_mode);
 					if (default_leakage_mode) {
-						pb_type->leakage_default_mode = i;
+						pb_type->pb_type_power->leakage_default_mode = i;
 					}
 
 					/* get next iteration */
@@ -973,7 +976,12 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 			}
 			assert(k == num_annotations);
 
-			mode->interconnect[i].port_info_initialized = FALSE;
+			/* Power */
+			mode->interconnect[i].interconnect_power =
+					(t_interconnect_power*) my_calloc(1,
+							sizeof(t_interconnect_power));
+			mode->interconnect[i].interconnect_power->port_info_initialized =
+					FALSE;
 
 			//ProcessInterconnectMuxArch(Cur, &mode->interconnect[i]);
 
@@ -1024,6 +1032,9 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode,
 	} else {
 		mode->pb_type_children = NULL;
 	}
+
+	/* Allocate power structure */
+	mode->mode_power = (t_mode_power*) my_calloc(1, sizeof(t_mode_power));
 
 	Cur = FindElement(Parent, "interconnect", TRUE);
 	ProcessInterconnect(Cur, mode);
@@ -1684,6 +1695,8 @@ static void alloc_and_load_default_child_for_pb_type(INOUTP t_pb_type *pb_type,
 					pb_type->annotations[i].value[j]);
 		}
 	}
+	copy->pb_type_power = (t_pb_type_power*) my_calloc(1,
+			sizeof(t_pb_type_power));
 }
 
 /* populate special lut class */
@@ -1700,7 +1713,7 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 	}
 
 	lut_pb_type->num_modes = 2;
-	lut_pb_type->leakage_default_mode = 1;
+	lut_pb_type->pb_type_power->leakage_default_mode = 1;
 	lut_pb_type->modes = (t_mode*) my_calloc(lut_pb_type->num_modes,
 			sizeof(t_mode));
 
@@ -1709,6 +1722,8 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 	lut_pb_type->modes[0].parent_pb_type = lut_pb_type;
 	lut_pb_type->modes[0].index = 0;
 	lut_pb_type->modes[0].num_pb_type_children = 0;
+	lut_pb_type->modes[0].mode_power = (t_mode_power*) my_calloc(1,
+			sizeof(t_mode_power));
 
 	/* Process interconnect */
 	/* TODO: add timing annotations to route-through */
@@ -1741,6 +1756,8 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 			sizeof(char));
 	sprintf(lut_pb_type->modes[0].interconnect[0].output_string, "%s.%s",
 			lut_pb_type->name, out_port->name);
+	lut_pb_type->modes[0].interconnect->interconnect_power =
+			(t_interconnect_power*) my_calloc(1, sizeof(t_interconnect_power));
 
 	lut_pb_type->modes[0].interconnect[0].annotations =
 			(t_pin_to_pin_annotation*) my_calloc(lut_pb_type->num_annotations,
@@ -1785,6 +1802,8 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 	lut_pb_type->modes[1].parent_pb_type = lut_pb_type;
 	lut_pb_type->modes[1].index = 1;
 	lut_pb_type->modes[1].num_pb_type_children = 1;
+	lut_pb_type->modes[1].mode_power = (t_mode_power*) my_calloc(1,
+			sizeof(t_mode_power));
 	lut_pb_type->modes[1].pb_type_children = (t_pb_type*) my_calloc(1,
 			sizeof(t_pb_type));
 	alloc_and_load_default_child_for_pb_type(lut_pb_type, default_name,
@@ -1831,6 +1850,8 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 			strlen(default_name) + strlen(in_port->name) + 2, sizeof(char));
 	sprintf(lut_pb_type->modes[1].interconnect[0].output_string, "%s.%s",
 			default_name, in_port->name);
+	lut_pb_type->modes[1].interconnect[0].interconnect_power =
+			(t_interconnect_power*) my_calloc(1, sizeof(t_interconnect_power));
 
 	lut_pb_type->modes[1].interconnect[1].name = (char*) my_calloc(
 			strlen(lut_pb_type->name) + 11, sizeof(char));
@@ -1848,6 +1869,8 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 	sprintf(lut_pb_type->modes[1].interconnect[1].output_string, "%s.%s",
 			lut_pb_type->name, out_port->name);
 	lut_pb_type->modes[1].interconnect[1].infer_annotations = TRUE;
+	lut_pb_type->modes[1].interconnect[1].interconnect_power =
+			(t_interconnect_power*) my_calloc(1, sizeof(t_interconnect_power));
 
 	free(default_name);
 
@@ -1872,7 +1895,8 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 	mem_pb_type->modes[0].name = my_strdup(default_name);
 	mem_pb_type->modes[0].parent_pb_type = mem_pb_type;
 	mem_pb_type->modes[0].index = 0;
-
+	mem_pb_type->modes[0].mode_power = (t_mode_power*) my_calloc(1,
+			sizeof(t_mode_power));
 	num_pb = OPEN;
 	for (i = 0; i < mem_pb_type->num_ports; i++) {
 		if (mem_pb_type->ports[i].port_class != NULL
@@ -1909,6 +1933,15 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 	mem_pb_type->modes[0].num_interconnect = mem_pb_type->num_ports * num_pb;
 	mem_pb_type->modes[0].interconnect = (t_interconnect*) my_calloc(
 			mem_pb_type->modes[0].num_interconnect, sizeof(t_interconnect));
+
+	/* Allocate interconnect power structures */
+	for (i = 0; i < mem_pb_type->modes[0].num_interconnect; i++) {
+		if (!mem_pb_type->modes[0].interconnect[i].interconnect_power) {
+			mem_pb_type->modes[0].interconnect[i].interconnect_power =
+					(t_interconnect_power*) my_calloc(1,
+							sizeof(t_interconnect_power));
+		}
+	}
 
 	/* Process interconnect */
 	i_inter = 0;
@@ -2835,7 +2868,7 @@ static void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 					}
 					pb_type->ports[p].model_port = model_port;
 					assert(pb_type->ports[p].type == model_port->dir);
-					assert(pb_type->ports[p].is_clock == model_port->is_clock);
+					assert( pb_type->ports[p].is_clock == model_port->is_clock);
 					found = TRUE;
 				}
 				model_port = model_port->next;
@@ -3038,6 +3071,15 @@ static void ProcessPower( INOUTP ezxml_t parent,
 	Cur = FindElement(parent, "local_interconnect", FALSE);
 	if (Cur) {
 		power_arch->C_wire_local = GetFloatProperty(Cur, "C_wire", FALSE, 0.);
+		FreeNode(Cur);
+	}
+
+	/* Get segment split */
+	power_arch->seg_buffer_split = 1;
+	Cur = FindElement(parent, "segment_buffer_split", FALSE);
+	if (Cur) {
+		power_arch->seg_buffer_split = GetIntProperty(Cur, "split_into", TRUE,
+				1);
 		FreeNode(Cur);
 	}
 }

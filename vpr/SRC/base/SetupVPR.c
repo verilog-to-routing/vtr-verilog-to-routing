@@ -215,7 +215,7 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	my_srandom(PlacerOpts->seed);
 
 	vpr_printf(TIO_MESSAGE_INFO, "Building complex block graph.\n");
-	alloc_and_load_all_pb_graphs();
+	alloc_and_load_all_pb_graphs(PowerOpts->do_power);
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PB_GRAPH)) {
 		echo_pb_graph(getEchoFileName(E_ECHO_PB_GRAPH));

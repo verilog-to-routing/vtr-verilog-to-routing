@@ -55,13 +55,13 @@ t_solution_inf g_solution_inf;
 t_power_output * g_power_output;
 t_power_commonly_used * g_power_commonly_used;
 t_power_tech * g_power_tech;
-
+t_power_arch * g_power_arch;
 static t_rr_node_power * rr_node_power;
 
 /************************* Function Declarations ********************/
 /* Routing */
 static void power_calc_routing(t_power_usage * power_usage,
-		t_det_routing_arch * routing_arch);
+		t_det_routing_arch * routing_arch, t_segment_inf * segment_inf);
 
 /* Tiles */
 static void power_calc_clb_usage(t_power_usage * power_usage);
@@ -225,7 +225,7 @@ static void power_calc_pb_recursive(t_power_usage * power_usage, t_pb * pb,
 		pb_mode = pb->mode;
 	} else {
 		/* Default mode if not initialized (will only affect leakage power) */
-		pb_mode = pb_graph_node->pb_type->leakage_default_mode;
+		pb_mode = pb_graph_node->pb_type->pb_type_power->leakage_default_mode;
 
 		/* No dynamic power if this block is not used */
 		continue_dynamic = FALSE;
@@ -233,7 +233,8 @@ static void power_calc_pb_recursive(t_power_usage * power_usage, t_pb * pb,
 
 	/* Check if leakage power is explicitly specified */
 	if (continue_leakage
-			&& (pb_graph_node->pb_type->power_static_type == PB_POWER_PROVIDED)) {
+			&& (pb_graph_node->pb_type->pb_type_power->power_static_type
+					== PB_POWER_PROVIDED)) {
 		continue_leakage = FALSE;
 	}
 
@@ -243,9 +244,10 @@ static void power_calc_pb_recursive(t_power_usage * power_usage, t_pb * pb,
 	if (continue_dynamic) {
 		assert(pb != NULL);
 
-		if (pb_graph_node->pb_type->power_dynamic_type == PB_POWER_PROVIDED) {
+		if (pb_graph_node->pb_type->pb_type_power->power_dynamic_type
+				== PB_POWER_PROVIDED) {
 			continue_dynamic = FALSE;
-		} else if (pb_graph_node->pb_type->power_dynamic_type
+		} else if (pb_graph_node->pb_type->pb_type_power->power_dynamic_type
 				== PB_POWER_C_INTERNAL) {
 			/* Just take the average density of inputs pins and use
 			 * that with user-defined block capacitance and leakage */
@@ -296,7 +298,7 @@ static void power_calc_pb_recursive(t_power_usage * power_usage, t_pb * pb,
 						0.5
 								* sqrt(
 										power_transistor_area(
-												pb_graph_node->pb_type->transistor_cnt_interc));
+												pb_graph_node->pb_type->pb_type_power->transistor_cnt_interc));
 
 				power_calc_interconnect(&sub_power_usage, pb,
 						&pb_graph_node->interconnect_pins[pb_mode][interc_idx],
@@ -336,11 +338,13 @@ static void power_calc_pb_recursive(t_power_usage * power_usage, t_pb * pb,
 				power_add_usage(power_usage, &sub_power_usage);
 			}
 		}
-		power_add_usage(&pb_graph_node->pb_type->modes[pb_mode].power_usage,
+		power_add_usage(
+				&pb_graph_node->pb_type->modes[pb_mode].mode_power->power_usage,
 				power_usage);
 	}
 
-	power_add_usage(&pb_graph_node->pb_type->power_usage, power_usage);
+	power_add_usage(&pb_graph_node->pb_type->pb_type_power->power_usage,
+			power_usage);
 }
 
 /* Resets the power stats for all physical blocks */
@@ -349,10 +353,10 @@ static void power_reset_pb_type(t_pb_type * pb_type) {
 	int child_idx;
 	int interc_idx;
 
-	power_zero_usage(&pb_type->power_usage);
+	power_zero_usage(&pb_type->pb_type_power->power_usage);
 
 	for (mode_idx = 0; mode_idx < pb_type->num_modes; mode_idx++) {
-		power_zero_usage(&pb_type->modes[mode_idx].power_usage);
+		power_zero_usage(&pb_type->modes[mode_idx].mode_power->power_usage);
 
 		for (child_idx = 0;
 				child_idx < pb_type->modes[mode_idx].num_pb_type_children;
@@ -364,7 +368,7 @@ static void power_reset_pb_type(t_pb_type * pb_type) {
 				interc_idx < pb_type->modes[mode_idx].num_interconnect;
 				interc_idx++) {
 			power_zero_usage(
-					&pb_type->modes[mode_idx].interconnect[interc_idx].power_usage);
+					&pb_type->modes[mode_idx].interconnect[interc_idx].interconnect_power->power_usage);
 		}
 	}
 }
@@ -435,7 +439,6 @@ static void power_calc_clock(t_power_usage * power_usage,
 	Clock_power_dissipation = 0;
 	total_clock_buffers = 0;
 	total_clock_segments = 0;
-
 
 	/* if no global clock, then return */
 	if (clock_arch->num_global_clocks == 0) {
@@ -564,7 +567,7 @@ static void dealloc_mux_graph_recursive(t_mux_node * node) {
  * Calculates the power of the entire routing fabric (not local routing
  */
 static void power_calc_routing(t_power_usage * power_usage,
-		t_det_routing_arch * routing_arch) {
+		t_det_routing_arch * routing_arch, t_segment_inf * segment_inf) {
 	int rr_node_idx;
 	int net_idx;
 	int edge_idx;
@@ -653,6 +656,9 @@ static void power_calc_routing(t_power_usage * power_usage,
 		int switch_idx;
 		int connectionbox_fanout;
 		int switchbox_fanout;
+		float C_per_seg_split;
+		int i;
+		int wire_length;
 
 		switch (node->type) {
 		case SOURCE:
@@ -672,8 +678,7 @@ static void power_calc_routing(t_power_usage * power_usage,
 				/* Multiplexor */
 				power_calc_mux_multilevel(&sub_power_usage,
 						power_get_mux_arch(node->fan_in), node_power->in_prob,
-						node_power->in_dens, node_power->selected_input,
-						TRUE);
+						node_power->in_dens, node_power->selected_input, TRUE);
 				power_add_usage(power_usage, &sub_power_usage);
 				power_component_add_usage(&sub_power_usage,
 						POWER_COMPONENT_ROUTE_CB);
@@ -688,7 +693,16 @@ static void power_calc_routing(t_power_usage * power_usage,
 			 * 	- A buffer at the end of the wire, going to switchbox/connectionbox */
 			assert(node_power->in_dens);
 			assert(node_power->in_prob);
-			C_wire = node->C_tile_per_m * g_power_commonly_used->tile_length;
+
+			if (node->type == CHANX) {
+				wire_length = node->xhigh - node->xlow + 1;
+			} else if (node->type == CHANY) {
+				wire_length = node->yhigh - node->ylow + 1;
+			}
+			C_wire =
+					wire_length
+							* segment_inf[rr_indexed_data[node->cost_index].seg_index].Cmetal_per_m
+							* g_power_commonly_used->tile_length;
 			assert(node_power->selected_input < node->fan_in);
 
 			/* Multiplexor */
@@ -701,26 +715,43 @@ static void power_calc_routing(t_power_usage * power_usage,
 
 			/* Buffer Size */
 			if (switch_inf[node_power->driver_switch_type].autosize_buffer) {
+				C_per_seg_split = ((float) node->num_edges
+						* g_power_commonly_used->INV_1X_C_in + C_wire)
+						/ (float) g_power_arch->seg_buffer_split;
 				buffer_size = power_buffer_size_from_logical_effort(
-						(float) node->num_edges
-								* g_power_commonly_used->INV_1X_C_in + C_wire);
+						C_per_seg_split);
 			} else {
 				buffer_size =
 						switch_inf[node_power->driver_switch_type].buffer_last_stage_size;
 			}
 			buffer_size = max(buffer_size, 1.0F);
 
-			g_power_commonly_used->num_sb_buffers++;
-			g_power_commonly_used->total_sb_buffer_size += buffer_size;
+			g_power_commonly_used->num_sb_buffers +=
+					g_power_arch->seg_buffer_split;
+			g_power_commonly_used->total_sb_buffer_size += buffer_size
+					* g_power_arch->seg_buffer_split;
 
-			/* Buffer */
-			power_calc_buffer(&sub_power_usage, buffer_size,
-					node_power->in_prob[node_power->selected_input],
-					node_power->in_dens[node_power->selected_input], TRUE,
-					power_get_mux_arch(node->fan_in)->mux_graph_head->num_inputs);
-			power_add_usage(power_usage, &sub_power_usage);
-			power_component_add_usage(&sub_power_usage,
-					POWER_COMPONENT_ROUTE_SB);
+			/* Buffers */
+			for (i = 0; i < g_power_arch->seg_buffer_split; i++) {
+				if (i == 0) {
+					power_calc_buffer(&sub_power_usage, buffer_size,
+							node_power->in_prob[node_power->selected_input],
+							node_power->in_dens[node_power->selected_input],
+							TRUE,
+							power_get_mux_arch(node->fan_in)->mux_graph_head->num_inputs);
+					power_add_usage(power_usage, &sub_power_usage);
+					power_component_add_usage(&sub_power_usage,
+							POWER_COMPONENT_ROUTE_SB);
+				} else {
+					power_calc_buffer(&sub_power_usage, buffer_size,
+							node_power->in_prob[node_power->selected_input],
+							node_power->in_dens[node_power->selected_input],
+							FALSE, 0);
+					power_add_usage(power_usage, &sub_power_usage);
+					power_component_add_usage(&sub_power_usage,
+							POWER_COMPONENT_ROUTE_SB);
+				}
+			}
 
 			/* Wire Capacitance */
 			power_calc_wire(&sub_power_usage, C_wire,
@@ -750,8 +781,8 @@ static void power_calc_routing(t_power_usage * power_usage,
 						switchbox_fanout * g_power_commonly_used->NMOS_1X_C_d);
 				power_calc_buffer(&sub_power_usage, buffer_size,
 						1 - node_power->in_prob[node_power->selected_input],
-						node_power->in_dens[node_power->selected_input],
-						FALSE, 0);
+						node_power->in_dens[node_power->selected_input], FALSE,
+						0);
 				power_add_usage(power_usage, &sub_power_usage);
 				power_component_add_usage(&sub_power_usage,
 						POWER_COMPONENT_ROUTE_SB);
@@ -787,6 +818,14 @@ static void power_calc_routing(t_power_usage * power_usage,
 	}
 }
 
+void power_pb_alloc() {
+
+}
+
+void power_pb_dealloc() {
+
+}
+
 /**
  * Initialization for all power-related functions
  */
@@ -804,6 +843,7 @@ boolean power_init(char * power_out_filepath,
 	float transistors_per_tile;
 
 	/* Set global power architecture & options */
+	g_power_arch = arch->power;
 	g_power_commonly_used = (t_power_commonly_used*) my_malloc(
 			sizeof(t_power_commonly_used));
 	g_power_tech = (t_power_tech*) my_malloc(sizeof(t_power_tech));
@@ -825,6 +865,9 @@ boolean power_init(char * power_out_filepath,
 		}
 	}
 
+	/* Allocate Data Structures */
+	power_pb_alloc();
+
 	power_tech_load_xml_file(cmos_tech_behavior_filepath);
 
 	power_components_init();
@@ -832,7 +875,6 @@ boolean power_init(char * power_out_filepath,
 	power_lowlevel_init();
 
 	/* Initialize Commonly Used Values */
-	g_power_commonly_used->C_wire_local = arch->power->C_wire_local;
 	g_power_commonly_used->mux_arch = NULL;
 	g_power_commonly_used->mux_arch_max_size = 0;
 
@@ -905,10 +947,10 @@ boolean power_init(char * power_out_filepath,
 	g_power_commonly_used->max_seg_to_seg_fanout = max_seg_to_seg_fanout;
 	g_power_commonly_used->max_seg_to_IPIN_fanout = max_seg_to_IPIN_fanout;
 
-	if (PRINT_SPICE_COMPARISON) {
+#if (PRINT_SPICE_COMPARISON)
 		g_power_commonly_used->max_routing_mux_size =
 				max(g_power_commonly_used->max_routing_mux_size, 26);
-	}
+#endif
 
 	/* Populate driver switch type */
 	for (rr_node_idx = 0; rr_node_idx < num_rr_nodes; rr_node_idx++) {
@@ -1033,14 +1075,16 @@ static void power_print_pb_usage_recursive(FILE * fp, t_pb_type * type,
 	int interc_idx;
 	float pb_type_power;
 
-	pb_type_power = type->power_usage.dynamic + type->power_usage.leakage;
+	pb_type_power = type->pb_type_power->power_usage.dynamic
+			+ type->pb_type_power->power_usage.leakage;
 
 	print_tabs(fp, indent_level);
 	fprintf(fp,
 			"<pb_type name=\"%s\" P=\"%.4g\" P_parent=\"%.3g\" P_total=\"%.3g\" P_dyn=\"%.3g\" transistors=\"%g\">\n",
 			type->name, pb_type_power, pb_type_power / parent_power * 100,
 			pb_type_power / total_power * 100,
-			type->power_usage.dynamic / pb_type_power, type->transistor_cnt);
+			type->pb_type_power->power_usage.dynamic / pb_type_power,
+			type->pb_type_power->transistor_cnt);
 
 	mode_indent = 0;
 	if (type->num_modes > 1) {
@@ -1049,8 +1093,8 @@ static void power_print_pb_usage_recursive(FILE * fp, t_pb_type * type,
 
 	for (mode_idx = 0; mode_idx < type->num_modes; mode_idx++) {
 		float mode_power;
-		mode_power = type->modes[mode_idx].power_usage.dynamic
-				+ type->modes[mode_idx].power_usage.leakage;
+		mode_power = type->modes[mode_idx].mode_power->power_usage.dynamic
+				+ type->modes[mode_idx].mode_power->power_usage.leakage;
 
 		if (type->num_modes > 1) {
 			print_tabs(fp, indent_level + mode_indent);
@@ -1059,7 +1103,8 @@ static void power_print_pb_usage_recursive(FILE * fp, t_pb_type * type,
 					type->modes[mode_idx].name, mode_power,
 					mode_power / pb_type_power * 100,
 					mode_power / total_power * 100,
-					type->modes[mode_idx].power_usage.dynamic / mode_power);
+					type->modes[mode_idx].mode_power->power_usage.dynamic
+							/ mode_power);
 		}
 
 		if (type->modes[mode_idx].num_interconnect) {
@@ -1072,7 +1117,7 @@ static void power_print_pb_usage_recursive(FILE * fp, t_pb_type * type,
 					interc_idx < type->modes[mode_idx].num_interconnect;
 					interc_idx++) {
 				power_add_usage(&interc_power_usage,
-						&type->modes[mode_idx].interconnect[interc_idx].power_usage);
+						&type->modes[mode_idx].interconnect[interc_idx].interconnect_power->power_usage);
 			}
 			interc_total_power = interc_power_usage.dynamic
 					+ interc_power_usage.leakage;
@@ -1088,8 +1133,8 @@ static void power_print_pb_usage_recursive(FILE * fp, t_pb_type * type,
 					interc_idx < type->modes[mode_idx].num_interconnect;
 					interc_idx++) {
 				float interc_power =
-						type->modes[mode_idx].interconnect[interc_idx].power_usage.dynamic
-								+ type->modes[mode_idx].interconnect[interc_idx].power_usage.leakage;
+						type->modes[mode_idx].interconnect[interc_idx].interconnect_power->power_usage.dynamic
+								+ type->modes[mode_idx].interconnect[interc_idx].interconnect_power->power_usage.leakage;
 				/* Each interconnect */
 				print_tabs(fp, indent_level + mode_indent + 2);
 				fprintf(fp,
@@ -1099,7 +1144,7 @@ static void power_print_pb_usage_recursive(FILE * fp, t_pb_type * type,
 						type->modes[mode_idx].interconnect[interc_idx].name,
 						interc_power, interc_power / interc_total_power * 100,
 						interc_power / total_power * 100,
-						type->modes[mode_idx].interconnect[interc_idx].power_usage.dynamic
+						type->modes[mode_idx].interconnect[interc_idx].interconnect_power->power_usage.dynamic
 								/ interc_power);
 			}
 			print_tabs(fp, indent_level + mode_indent + 1);
@@ -1112,8 +1157,8 @@ static void power_print_pb_usage_recursive(FILE * fp, t_pb_type * type,
 			power_print_pb_usage_recursive(fp,
 					&type->modes[mode_idx].pb_type_children[child_idx],
 					indent_level + mode_indent + 1,
-					type->modes[mode_idx].power_usage.dynamic
-							+ type->modes[mode_idx].power_usage.leakage,
+					type->modes[mode_idx].mode_power->power_usage.dynamic
+							+ type->modes[mode_idx].mode_power->power_usage.leakage,
 					total_power);
 		}
 
@@ -1198,17 +1243,16 @@ e_power_ret_code power_total(float * run_time_s, t_arch * arch,
 		return POWER_RET_CODE_ERRORS;
 	}
 
-
-	if (PRINT_SPICE_COMPARISON) {
+#if (PRINT_SPICE_COMPARISON)
 		/* Used for SPICE comparisons, this outputs power of various
 		 * components, and IGNORES the user-circuit. */
 		power_print_spice_comparison();
-	} else {
+#else
 
 		/* Calculate Power */
 
 		/* Routing */
-		power_calc_routing(&sub_power_usage, routing_arch);
+		power_calc_routing(&sub_power_usage, routing_arch, arch->Segments);
 		power_add_usage(&total_power, &sub_power_usage);
 		power_component_add_usage(&sub_power_usage, POWER_COMPONENT_ROUTING);
 
@@ -1221,8 +1265,8 @@ e_power_ret_code power_total(float * run_time_s, t_arch * arch,
 		power_calc_clb_usage(&clb_power_usage);
 		power_add_usage(&total_power, &clb_power_usage);
 		power_component_add_usage(&clb_power_usage, POWER_COMPONENT_CLB);
+#endif
 
-	}
 	power_component_add_usage(&total_power, POWER_COMPONENT_TOTAL);
 
 	/* Print Error & Warning Logs */
@@ -1241,7 +1285,7 @@ e_power_ret_code power_total(float * run_time_s, t_arch * arch,
 
 	t_end = clock();
 
-	*run_time_s = (float)(t_end - t_start) / CLOCKS_PER_SEC;
+	*run_time_s = (float) (t_end - t_start) / CLOCKS_PER_SEC;
 
 	/* Return code */
 	if (g_power_output->logs[POWER_LOG_ERROR].num_messages) {
