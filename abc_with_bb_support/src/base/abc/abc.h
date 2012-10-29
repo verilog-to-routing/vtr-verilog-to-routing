@@ -105,6 +105,15 @@ typedef enum {
     ABC_INIT_OTHER      // 4:  unused
 } Abc_InitType_t;
 
+// latch type
+typedef enum {
+  ABC_FALLING_EDGE = 0,
+  ABC_RISING_EDGE,
+  ABC_ACTIVE_HIGH,
+  ABC_ACTIVE_LOW,
+  ABC_ASYNC
+} Abc_LatchType_t;
+
 ////////////////////////////////////////////////////////////////////////
 ///                         BASIC TYPES                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -226,6 +235,15 @@ struct Abc_Lib_t_
     Abc_Lib_t *       pLibrary;      // the library used to map this design
     void *            pGenlib;       // the genlib library used to map this design
 };
+
+struct Abc_LatchInfo_t_
+{
+  Abc_InitType_t    InitValue;
+  Abc_LatchType_t   LatchType;
+  char              *pClkName;
+};
+
+typedef struct Abc_LatchInfo_t_ Abc_LatchInfo_t;
 
 ////////////////////////////////////////////////////////////////////////
 ///                      MACRO DEFINITIONS                           ///
@@ -425,16 +443,15 @@ static inline bool        Abc_NodeIsTravIdCurrent( Abc_Obj_t * pNode )       { r
 static inline bool        Abc_NodeIsTravIdPrevious( Abc_Obj_t * pNode )      { return (bool)(pNode->TravId == pNode->pNtk->nTravIds - 1); }
 
 // checking initial state of the latches
-static inline void        Abc_LatchSetInitNone( Abc_Obj_t * pLatch ) { assert(Abc_ObjIsLatch(pLatch)); pLatch->pData = (void *)ABC_INIT_NONE;         }
-static inline void        Abc_LatchSetInit0( Abc_Obj_t * pLatch )    { assert(Abc_ObjIsLatch(pLatch)); pLatch->pData = (void *)ABC_INIT_ZERO;         }
-static inline void        Abc_LatchSetInit1( Abc_Obj_t * pLatch )    { assert(Abc_ObjIsLatch(pLatch)); pLatch->pData = (void *)ABC_INIT_ONE;          }
-static inline void        Abc_LatchSetInitDc( Abc_Obj_t * pLatch )   { assert(Abc_ObjIsLatch(pLatch)); pLatch->pData = (void *)ABC_INIT_DC;           }
-static inline bool        Abc_LatchIsInitNone( Abc_Obj_t * pLatch )  { assert(Abc_ObjIsLatch(pLatch)); return pLatch->pData == (void *)ABC_INIT_NONE; }
-static inline bool        Abc_LatchIsInit0( Abc_Obj_t * pLatch )     { assert(Abc_ObjIsLatch(pLatch)); return pLatch->pData == (void *)ABC_INIT_ZERO; }
-static inline bool        Abc_LatchIsInit1( Abc_Obj_t * pLatch )     { assert(Abc_ObjIsLatch(pLatch)); return pLatch->pData == (void *)ABC_INIT_ONE;  }
-static inline bool        Abc_LatchIsInitDc( Abc_Obj_t * pLatch )    { assert(Abc_ObjIsLatch(pLatch)); return pLatch->pData == (void *)ABC_INIT_DC;   }
-static inline int         Abc_LatchInit( Abc_Obj_t * pLatch )        { assert(Abc_ObjIsLatch(pLatch)); return (int)pLatch->pData;                     }
-
+static inline void        Abc_LatchSetInitNone( Abc_Obj_t * pLatch ) { assert(Abc_ObjIsLatch(pLatch)); ((Abc_LatchInfo_t *)(pLatch->pData))->InitValue = ABC_INIT_NONE;                       }
+static inline void        Abc_LatchSetInit0( Abc_Obj_t * pLatch )    { assert(Abc_ObjIsLatch(pLatch)); ((Abc_LatchInfo_t *)(pLatch->pData))->InitValue = ABC_INIT_ZERO;                       }
+static inline void        Abc_LatchSetInit1( Abc_Obj_t * pLatch )    { assert(Abc_ObjIsLatch(pLatch)); ((Abc_LatchInfo_t *)(pLatch->pData))->InitValue = ABC_INIT_ONE;                        }
+static inline void        Abc_LatchSetInitDc( Abc_Obj_t * pLatch )   { assert(Abc_ObjIsLatch(pLatch)); ((Abc_LatchInfo_t *)(pLatch->pData))->InitValue = ABC_INIT_DC;                         }
+static inline int         Abc_LatchIsInitNone( Abc_Obj_t * pLatch )  { assert(Abc_ObjIsLatch(pLatch)); return ((Abc_LatchInfo_t *)(pLatch->pData))->InitValue == ABC_INIT_NONE;               }
+static inline int         Abc_LatchIsInit0( Abc_Obj_t * pLatch )     { assert(Abc_ObjIsLatch(pLatch)); return ((Abc_LatchInfo_t *)(pLatch->pData))->InitValue == ABC_INIT_ZERO;               }
+static inline int         Abc_LatchIsInit1( Abc_Obj_t * pLatch )     { assert(Abc_ObjIsLatch(pLatch)); return ((Abc_LatchInfo_t *)(pLatch->pData))->InitValue == ABC_INIT_ONE;                }
+static inline int         Abc_LatchIsInitDc( Abc_Obj_t * pLatch )    { assert(Abc_ObjIsLatch(pLatch)); return ((Abc_LatchInfo_t *)(pLatch->pData))->InitValue == ABC_INIT_DC;                 }
+static inline int         Abc_LatchInit( Abc_Obj_t * pLatch )        { assert(Abc_ObjIsLatch(pLatch)); return (int)((Abc_LatchInfo_t *)(pLatch->pData))->InitValue;                           }
 // global BDDs of the nodes
 static inline void *      Abc_NtkGlobalBdd( Abc_Ntk_t * pNtk )          { return (void *)Vec_PtrEntry(pNtk->vAttrs, VEC_ATTR_GLOBAL_BDD);             }
 static inline DdManager * Abc_NtkGlobalBddMan( Abc_Ntk_t * pNtk )       { return (DdManager *)Vec_AttMan( (Vec_Att_t *)Abc_NtkGlobalBdd(pNtk) );                   }

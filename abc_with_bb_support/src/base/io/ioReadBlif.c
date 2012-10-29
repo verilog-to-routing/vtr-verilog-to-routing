@@ -361,6 +361,8 @@ int Io_ReadBlifNetworkLatch( Io_ReadBlif_t * p, Vec_Ptr_t * vTokens )
 { 
     Abc_Ntk_t * pNtk = p->pNtkCur;
     Abc_Obj_t * pLatch;
+	char * pLatchType;
+    Abc_LatchInfo_t* pLatchInfo;
     int ResetValue;
     if ( vTokens->nSize < 3 )
     {
@@ -376,6 +378,30 @@ int Io_ReadBlifNetworkLatch( Io_ReadBlif_t * p, Vec_Ptr_t * vTokens )
         Abc_LatchSetInitDc( pLatch );
     else
     {
+		pLatchInfo = ((Abc_LatchInfo_t *)pLatch->pData);
+
+		if (vTokens->nSize >= 5)
+		{
+			pLatchInfo->pClkName = strdup(vTokens->pArray[4]);
+			pLatchType = vTokens->pArray[3];
+
+			if (!strcmp(pLatchType, "re"))
+				pLatchInfo->LatchType = ABC_RISING_EDGE;
+			else if (!strcmp(pLatchType, "fe"))
+				pLatchInfo->LatchType = ABC_FALLING_EDGE;
+			else if (!strcmp(pLatchType, "ah"))
+				pLatchInfo->LatchType = ABC_ACTIVE_HIGH;
+			else if (!strcmp(pLatchType, "al"))
+				pLatchInfo->LatchType = ABC_ACTIVE_LOW;
+			else
+				pLatchInfo->LatchType = ABC_ASYNC; // god knows when it is used...
+		}
+		else
+		{
+			pLatchInfo->pClkName = 0;
+			pLatchInfo->LatchType = ABC_ASYNC;
+		}
+
         ResetValue = atoi(vTokens->pArray[vTokens->nSize-1]);
         if ( ResetValue != 0 && ResetValue != 1 && ResetValue != 2 )
         {

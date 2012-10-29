@@ -46,6 +46,7 @@ struct Io_MvMod_t_
     Vec_Ptr_t *          vInputs;      // .inputs lines
     Vec_Ptr_t *          vOutputs;     // .outputs lines
     Vec_Ptr_t *          vLatches;     // .latch lines
+	Vec_Ptr_t *          vFlops;       // .flop lines
     Vec_Ptr_t *          vResets;      // .reset lines
     Vec_Ptr_t *          vNames;       // .names lines
     Vec_Ptr_t *          vSubckts;     // .subckt lines
@@ -293,6 +294,7 @@ static Io_MvMod_t * Io_MvModAlloc()
     p->vInputs  = Vec_PtrAlloc( 512 );
     p->vOutputs = Vec_PtrAlloc( 512 );
     p->vLatches = Vec_PtrAlloc( 512 );
+	p->vFlops   = Vec_PtrAlloc( 512 );
     p->vResets  = Vec_PtrAlloc( 512 );
     p->vNames   = Vec_PtrAlloc( 512 );
     p->vSubckts = Vec_PtrAlloc( 512 );
@@ -318,6 +320,7 @@ static void Io_MvModFree( Io_MvMod_t * p )
     Vec_PtrFree( p->vInputs );
     Vec_PtrFree( p->vOutputs );
     Vec_PtrFree( p->vLatches );
+	Vec_PtrFree( p->vFlops );
     Vec_PtrFree( p->vResets );
     Vec_PtrFree( p->vNames );
     Vec_PtrFree( p->vSubckts );
@@ -844,6 +847,8 @@ static int Io_MvParseLineLatch( Io_MvMod_t * p, char * pLine )
     Vec_Ptr_t * vTokens = p->pMan->vTokens;
     Abc_Obj_t * pObj, * pNet;
     char * pToken;
+	char * pLatchType;
+    Abc_LatchInfo_t* pLatchInfo;
     int Init;
     Io_MvSplitIntoTokens( vTokens, pLine, '\0' );
     pToken = Vec_PtrEntry(vTokens,0);
@@ -857,11 +862,31 @@ static int Io_MvParseLineLatch( Io_MvMod_t * p, char * pLine )
     if ( p->pResetLatch == NULL )
     {
         pObj = Io_ReadCreateLatch( p->pNtk, Vec_PtrEntry(vTokens,1), Vec_PtrEntry(vTokens,2) );
+
+		pLatchInfo = ((Abc_LatchInfo_t *)pObj->pData);
+		pLatchInfo->pClkName = strdup((char *)Vec_PtrEntry(vTokens,4));
+	
+		pLatchType = (char *)Vec_PtrEntry(vTokens,3);
+		
+		if (!strcmp(pLatchType, "re"))
+			pLatchInfo->LatchType = ABC_RISING_EDGE;
+		else if (!strcmp(pLatchType, "fe"))
+			pLatchInfo->LatchType = ABC_FALLING_EDGE;
+		else if (!strcmp(pLatchType, "ah"))
+			pLatchInfo->LatchType = ABC_ACTIVE_HIGH;
+		else if (!strcmp(pLatchType, "al"))
+			pLatchInfo->LatchType = ABC_ACTIVE_LOW;
+		else
+			pLatchInfo->LatchType = ABC_ASYNC; // god knows when it is used...
+
         // get initial value
         if ( p->pMan->fBlifMv )
             Abc_LatchSetInit0( pObj );
         else
         {
+			if ( Vec_PtrSize(vTokens) > 6 )
+                printf( "Warning: Line %d has .latch directive with unrecognized entries (the total of %d entries).\n", 
+                    Io_MvGetLine(p->pMan, pToken), Vec_PtrSize(vTokens) ); 
             if ( Vec_PtrSize(vTokens) > 3 )
                 Init = atoi( Vec_PtrEntry(vTokens,3) );
             else

@@ -384,7 +384,7 @@ void Io_NtkWriteAsserts( FILE * pFile, Abc_Ntk_t * pNtk )
 
 /**Function*************************************************************
 
-  Synopsis    [Write the latch into a file.]
+  Synopsis    [Write subcircuit info into a file.]
 
   Description []
                
@@ -397,24 +397,64 @@ void Io_NtkWriteSubckt( FILE * pFile, Abc_Obj_t * pNode )
 {
     Abc_Ntk_t * pModel = pNode->pData;
     Abc_Obj_t * pTerm;
+	char * str;
     int i;
-    // write the subcircuit
-//    fprintf( pFile, ".subckt %s %s", Abc_NtkName(pModel), Abc_ObjName(pNode) );
+	int LineLength;
+    int AddedLength;
+    
+	// write the subcircuit
     fprintf( pFile, ".subckt %s", Abc_NtkName(pModel) );
+
+	LineLength = 8 + strlen(Abc_NtkName(pModel)) + 1;
+
     // write pairs of the formal=actual names
     Abc_NtkForEachPi( pModel, pTerm, i )
     {
-        fprintf( pFile, " %s", Abc_ObjName(Abc_ObjFanout0(pTerm)) );
+		str = Abc_ObjName(Abc_ObjFanout0(pTerm));
+        fprintf( pFile, " %s", str );
+		AddedLength = strlen(str) + 1;
+
         pTerm = Abc_ObjFanin( pNode, i );
-        fprintf( pFile, "=%s", Abc_ObjName(Abc_ObjFanin0(pTerm)) );
+
+		str = Abc_ObjName(Abc_ObjFanin0(pTerm));
+        fprintf( pFile, "=%s", str );
+		AddedLength += strlen(str) + 1;
+
+		if ( LineLength + AddedLength + 3 > IO_WRITE_LINE_LENGTH )
+        { 
+            fprintf( pFile, " \\\n" );
+            LineLength  = 0;
+        }
+		else
+		{
+			LineLength += AddedLength;
+		}
     }
+
     Abc_NtkForEachPo( pModel, pTerm, i )
     {
-        fprintf( pFile, " %s", Abc_ObjName(Abc_ObjFanin0(pTerm)) );
+		str = Abc_ObjName(Abc_ObjFanin0(pTerm));
+        fprintf( pFile, " %s", str );
+		AddedLength = strlen(str) + 1;
+
         pTerm = Abc_ObjFanout( pNode, i );
-        fprintf( pFile, "=%s", Abc_ObjName(Abc_ObjFanout0(pTerm)) );
+
+		str = Abc_ObjName(Abc_ObjFanout0(pTerm));
+        fprintf( pFile, "=%s", str );
+		AddedLength += strlen(str) + 1;
+
+		if ( LineLength + AddedLength + 3 > IO_WRITE_LINE_LENGTH )
+        { 
+            fprintf( pFile, " \\\n" );
+            LineLength  = 0;
+        }
+		else
+		{
+			LineLength += AddedLength;
+		}
     }
-    fprintf( pFile, "\n" );
+
+	fprintf( pFile, "\n" );
 }
 
 /**Function*************************************************************
@@ -431,14 +471,39 @@ void Io_NtkWriteSubckt( FILE * pFile, Abc_Obj_t * pNode )
 void Io_NtkWriteLatch( FILE * pFile, Abc_Obj_t * pLatch )
 {
     Abc_Obj_t * pNetLi, * pNetLo;
+	Abc_LatchInfo_t *pLatchInfo;
     int Reset;
+
+	pLatchInfo = ((Abc_LatchInfo_t *)(pLatch->pData));
+
     pNetLi = Abc_ObjFanin0( Abc_ObjFanin0(pLatch) );
     pNetLo = Abc_ObjFanout0( Abc_ObjFanout0(pLatch) );
-    Reset  = (int)Abc_ObjData( pLatch );
+    Reset  = pLatchInfo->InitValue;
     // write the latch line
     fprintf( pFile, ".latch" );
     fprintf( pFile, " %10s",    Abc_ObjName(pNetLi) );
     fprintf( pFile, " %10s",    Abc_ObjName(pNetLo) );
+
+	switch (pLatchInfo->LatchType)
+    {
+    case ABC_RISING_EDGE:
+        fprintf( pFile, " re");
+        break;
+    case ABC_FALLING_EDGE:
+        fprintf( pFile, " fe");
+        break;
+    case ABC_ACTIVE_HIGH:
+        fprintf( pFile, " ah");
+        break;
+    case ABC_ACTIVE_LOW:
+        fprintf( pFile, " al");
+        break;
+    default:
+        fprintf( pFile, " as");
+        break;
+    }
+
+    fprintf( pFile, " %10s",   ((Abc_LatchInfo_t *)pLatch->pData)->pClkName);
     fprintf( pFile, "  %d\n",   Reset-1 );
 }
 

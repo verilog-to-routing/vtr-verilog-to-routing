@@ -58,7 +58,7 @@ my $temp_dir = "./temp";
 my $stage_idx_odin   = 1;
 my $stage_idx_abc    = 2;
 my $stage_idx_ace    = 3;
-my $stage_idx_script = 4;
+my $stage_idx_prevpr = 4;
 my $stage_idx_vpr    = 5;
 
 my $circuit_file_path      = expand_user_path( shift(@ARGV) );
@@ -234,24 +234,6 @@ if ( $stage_idx_ace >= $starting_stage and $stage_idx_ace <= $ending_stage and $
 	  or die "Cannot find ACE executable ($ace_path)";
 }
 
-my $hack_fix_lines_n_latches;
-my $clock_path;
-my $clock_path_user;
-if (    $stage_idx_script >= $starting_stage
-	and $stage_idx_script <= $ending_stage )
-{
-	$hack_fix_lines_n_latches =
-	  "$vtr_flow_path/scripts/hack_fix_lines_and_latches.pl";
-	( -e $hack_fix_lines_n_latches )
-	  or die "Cannot find line/latch fixing script ($hack_fix_lines_n_latches)";
-
-	$clock_path = "$vtr_flow_path/benchmarks/misc/benchmark_clocks.clock";
-	( -e $clock_path )
-	  or die "Cannot find benchmark clock file ($clock_path)";
-
-	$clock_path_user = "$vtr_flow_path/benchmarks/misc/user_clocks.clock";
-}
-
 # Get circuit name (everything up to the first '.' in the circuit file)
 my ( $vol, $path, $circuit_file_name ) =
   File::Spec->splitpath($circuit_file_path);
@@ -301,9 +283,9 @@ my $ace_output_blif_path = "$temp_dir$ace_output_blif_name";
 my $ace_output_act_name = "$benchmark_name" . ".act";
 my $ace_output_act_path = "$temp_dir$ace_output_act_name";
 
-my $scripts_output_file_name =
-  "$benchmark_name" . file_ext_for_stage($stage_idx_script);
-my $scripts_output_file_path = "$temp_dir$scripts_output_file_name";
+my $prevpr_output_file_name =
+  "$benchmark_name" . file_ext_for_stage($stage_idx_prevpr);
+my $prevpr_output_file_path = "$temp_dir$prevpr_output_file_name";
 
 my $vpr_route_output_file_name = "$benchmark_name.route";
 my $vpr_route_output_file_path = "$temp_dir$vpr_route_output_file_name";
@@ -416,42 +398,29 @@ if (    $starting_stage <= $stage_idx_ace
 }
 
 #################################################################################
-################################## FIX SCRIPTS ##################################
+################################## PRE-VPR ######################################
 #################################################################################
-if (    $starting_stage <= $stage_idx_script
-	and $ending_stage >= $stage_idx_script
+if (    $starting_stage <= $stage_idx_prevpr
+	and $ending_stage >= $stage_idx_prevpr
 	and !$error_code )
 {
-	my $scripts_success   = 0;
-	my $stage_output_file = "${temp_dir}fix_scripts.out";
-	my $script_input_blif_path;
+	my $prevpr_success   = 1;
+	my $prevpr_input_blif_path;
 	if ($do_power) {
-		$script_input_blif_path = $ace_output_blif_path; 
+		$prevpr_input_blif_path = $ace_output_blif_path; 
 	} else {
-		$script_input_blif_path = $abc_output_file_path;
+		$prevpr_input_blif_path = $abc_output_file_path;
 	}
 	
-	
-	system
-	  "$hack_fix_lines_n_latches $script_input_blif_path $scripts_output_file_path $clock_path $clock_path_user > $stage_output_file";
+	copy($prevpr_input_blif_path, $prevpr_output_file_path);
 
-	if ( -r $scripts_output_file_path ) {
-		open( OUTPUT_FILE, $stage_output_file );
-		my $file_contents = do { local $/; <OUTPUT_FILE> };
-		close(OUTPUT_FILE);
-
-		if ( $file_contents =~ /^Success$/m ) {
-			$scripts_success = 1;
-		}
-	}
-
-	if ($scripts_success) {
+	if ($prevpr_success) {
 		if ( !$keep_intermediate_files ) {
-			system "rm -f $script_input_blif_path";
+			system "rm -f $prevpr_input_blif_path";
 		}
 	}
 	else {
-		print "failed: scripts";
+		print "failed: prevpr";
 		$error_code = 1;
 	}
 }
@@ -473,7 +442,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			$vpr_path,                    "vpr.out",
 			$timeout,                     $temp_dir,
 			$architecture_file_name,      "$benchmark_name",
-			"--blif_file",				  "$scripts_output_file_name",
+			"--blif_file",				  "$prevpr_output_file_path",
 			"--timing_analysis",          "$timing_driven",
 			"--timing_driven_clustering", "$timing_driven",
 			"--cluster_seed_type",        "$vpr_cluster_seed_type",
@@ -517,7 +486,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 					$timeout,                $temp_dir,
 					$architecture_file_name, "$benchmark_name",
 					"--route",
-					"--blif_file",           "$scripts_output_file_name",
+					"--blif_file",           "$prevpr_output_file_path",
 					"--route_chan_width",    "$min_chan_width",
 					"--cluster_seed_type",   "$vpr_cluster_seed_type",
 					"--nodisp",              @vpr_power_args,
@@ -531,7 +500,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			$vpr_path,                    "vpr.out",
 			$timeout,                     $temp_dir,
 			$architecture_file_name,      "$benchmark_name",
-			"--blif_file",                "$scripts_output_file_name",
+			"--blif_file",                "$prevpr_output_file_path",
 			"--timing_analysis",          "$timing_driven",
 			"--timing_driven_clustering", "$timing_driven",
 			"--route_chan_width",         "$min_chan_width",
@@ -552,12 +521,12 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 							$timeout,
 							$temp_dir,
 							"-c", 
-							"cec $scripts_output_file_name post_pack_netlist.blif;sec $scripts_output_file_name post_pack_netlist.blif"
+							"cec $prevpr_output_file_path post_pack_netlist.blif;sec $prevpr_output_file_path post_pack_netlist.blif"
 			);
 		}
 		if (! $keep_intermediate_files)
 		{
-			system "rm -f $scripts_output_file_path";
+			system "rm -f $prevpr_output_file_path";
 			system "rm -f ${temp_dir}*.xml";
 			system "rm -f ${temp_dir}*.net";
 			system "rm -f ${temp_dir}*.place";
@@ -703,8 +672,8 @@ sub stage_index {
 	if ( lc($stage_name) eq "ace" ) {
 		return $stage_idx_ace;
 	}
-	if ( lc($stage_name) eq "scripts" ) {
-		return $stage_idx_script;
+	if ( lc($stage_name) eq "prevpr" ) {
+		return $stage_idx_prevpr;
 	}
 	if ( lc($stage_name) eq "vpr" ) {
 		return $stage_idx_vpr;
@@ -727,7 +696,7 @@ sub file_ext_for_stage {
 	elsif ( $stage_idx == $stage_idx_ace ) {
 		return ".ace.blif";
 	}
-	elsif ( $stage_idx == $stage_idx_script ) {
+	elsif ( $stage_idx == $stage_idx_prevpr ) {
 		return ".pre-vpr.blif";
 	}
 }

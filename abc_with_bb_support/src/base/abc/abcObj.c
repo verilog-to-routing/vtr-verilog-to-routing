@@ -102,6 +102,8 @@ void Abc_ObjRecycle( Abc_Obj_t * pObj )
 Abc_Obj_t * Abc_NtkCreateObj( Abc_Ntk_t * pNtk, Abc_ObjType_t Type )
 {
     Abc_Obj_t * pObj;
+	Abc_LatchInfo_t * pLatchInfo;
+
     // create new object, assign ID, and add to the array
     pObj = Abc_ObjAlloc( pNtk, Type );
     pObj->Id = pNtk->vObjs->nSize;
@@ -142,7 +144,9 @@ Abc_Obj_t * Abc_NtkCreateObj( Abc_Ntk_t * pNtk, Abc_ObjType_t Type )
         case ABC_OBJ_NODE: 
             break;
         case ABC_OBJ_LATCH:     
-            pObj->pData = (void *)ABC_INIT_NONE;
+            pLatchInfo = (Abc_LatchInfo_t *)ALLOC( Abc_LatchInfo_t, 1);
+			pLatchInfo->InitValue = ABC_INIT_NONE;
+			pObj->pData = (void *)pLatchInfo;
         case ABC_OBJ_WHITEBOX:     
         case ABC_OBJ_BLACKBOX:     
             if ( pNtk->vBoxes ) Vec_PtrPush( pNtk->vBoxes, pObj );
@@ -169,6 +173,7 @@ void Abc_NtkDeleteObj( Abc_Obj_t * pObj )
 {
     Abc_Ntk_t * pNtk = pObj->pNtk;
     Vec_Ptr_t * vNodes;
+	Abc_LatchInfo_t * pLatchInfo;
     int i;
     assert( !Abc_ObjIsComplement(pObj) );
     // remove from the table of names
@@ -225,7 +230,10 @@ void Abc_NtkDeleteObj( Abc_Obj_t * pObj )
                 Cudd_RecursiveDeref( pNtk->pManFunc, pObj->pData );
             pObj->pData = NULL;
             break;
-        case ABC_OBJ_LATCH:     
+        case ABC_OBJ_LATCH: 
+			pLatchInfo = ((Abc_LatchInfo_t *)pObj->pData);
+			if (pLatchInfo->pClkName)
+				FREE(pLatchInfo->pClkName);
         case ABC_OBJ_WHITEBOX:     
         case ABC_OBJ_BLACKBOX:     
             if ( pNtk->vBoxes ) Vec_PtrRemove( pNtk->vBoxes, pObj );
@@ -316,6 +324,8 @@ void Abc_NtkDeleteAll_rec( Abc_Obj_t * pObj )
 Abc_Obj_t * Abc_NtkDupObj( Abc_Ntk_t * pNtkNew, Abc_Obj_t * pObj, int fCopyName )
 {
     Abc_Obj_t * pObjNew;
+	Abc_LatchInfo_t * pLatchInfo;
+
     // create the new object
     pObjNew = Abc_NtkCreateObj( pNtkNew, pObj->Type );
     // transfer names of the terminal objects
@@ -363,8 +373,13 @@ Abc_Obj_t * Abc_NtkDupObj( Abc_Ntk_t * pNtkNew, Abc_Obj_t * pObj, int fCopyName 
     else if ( Abc_ObjIsNet(pObj) ) // copy the name
     {
     }
-    else if ( Abc_ObjIsLatch(pObj) ) // copy the reset value
-        pObjNew->pData = pObj->pData;
+	else if ( Abc_ObjIsLatch(pObj) ) { // copy the reset value
+		pLatchInfo = (Abc_LatchInfo_t *)ALLOC( Abc_LatchInfo_t, 1);
+		pLatchInfo->InitValue = ((Abc_LatchInfo_t *)pObj->pData)->InitValue;
+		pLatchInfo->pClkName = strdup(((Abc_LatchInfo_t *)pObj->pData)->pClkName);
+		pLatchInfo->LatchType = ((Abc_LatchInfo_t *)pObj->pData)->LatchType;
+		pObjNew->pData = (void *)pLatchInfo;
+	}
     // transfer HAIG
 //    pObjNew->pEquiv = pObj->pEquiv;
     // remember the new node in the old node
