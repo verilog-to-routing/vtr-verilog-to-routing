@@ -140,7 +140,7 @@ void check_rr_graph(INP t_graph_type graph_type, INP t_type_ptr types,
 				 */
 
 				if(rr_type == IPIN) {
-					type == grid[rr_node[inode].xlow][rr_node[inode].ylow].type;
+					type = grid[rr_node[inode].xlow][rr_node[inode].ylow].type;
 					if(Fc_in[type->index][rr_node[inode].ptc_num] == 0) {
 						is_chain = TRUE;
 					}
@@ -406,7 +406,7 @@ void check_node(int inode, enum e_route_type route_type) {
 	/* Check that the number of (out) edges is reasonable. */
 	num_edges = rr_node[inode].num_edges;
 
-	if (rr_type != SINK) {
+	if (rr_type != SINK || rr_type != IPIN) {
 		if (num_edges <= 0) {
 			/* Just a warning, since a very poorly routable rr-graph could have nodes with no edges.  *
 			 * If such a node was ever used in a final routing (not just in an rr_graph), other       *
