@@ -36,6 +36,7 @@ void check_rr_graph(INP t_graph_type graph_type, INP t_type_ptr types,
 	t_rr_type rr_type, to_rr_type;
 	enum e_route_type route_type;
 	boolean is_fringe_warning_sent;
+	t_type_ptr type;
 
 	route_type = DETAILED;
 	if (graph_type == GRAPH_GLOBAL) {
@@ -131,9 +132,19 @@ void check_rr_graph(INP t_graph_type graph_type, INP t_type_ptr types,
 					&& !rr_node_is_global_clb_ipin(inode)) {
 				boolean is_fringe;
 				boolean is_wire;
+				boolean is_chain;
 
 				/* A global CLB input pin will not have any edges, and neither will  *
-				 * a SOURCE.  Anything else is an error.                             */
+				 * a SOURCE or the start of a carry-chain.  Anything else is an error.                             
+				 * For simplicity, carry-chain input pin are entirely ignored in this test				 
+				 */
+
+				if(rr_type == IPIN) {
+					type == grid[rr_node[inode].xlow][rr_node[inode].ylow].type;
+					if(Fc_in[type->index][rr_node[inode].ptc_num] == 0) {
+						is_chain = TRUE;
+					}
+				}
 
 				is_fringe = (boolean)((rr_node[inode].xlow == 1)
 						|| (rr_node[inode].ylow == 1)
@@ -142,10 +153,10 @@ void check_rr_graph(INP t_graph_type graph_type, INP t_type_ptr types,
 				is_wire = (boolean)(rr_node[inode].type == CHANX
 						|| rr_node[inode].type == CHANY);
 
-				if (!is_fringe && !is_wire) {
+				if (!is_chain && !is_fringe && !is_wire) {
 					vpr_printf(TIO_MESSAGE_ERROR, "in check_rr_graph: node %d has no fanin.\n", inode);
 					exit(1);
-				} else if (!is_fringe_warning_sent) {
+				} else if (!is_chain && !is_fringe_warning_sent) {
 					vpr_printf(TIO_MESSAGE_WARNING, "in check_rr_graph: fringe node %d has no fanin.\n", inode);
 					vpr_printf(TIO_MESSAGE_WARNING, "\tThis is possible on the fringe for low Fc_out, N, and certain Lengths\n");
 					is_fringe_warning_sent = TRUE;

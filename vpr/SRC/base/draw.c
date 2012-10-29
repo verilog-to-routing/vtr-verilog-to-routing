@@ -119,6 +119,7 @@ static void draw_rr_chany(int inode, int itrack);
 static void get_rr_pin_draw_coords(int inode, int iside, int ioff, float *xcen,
 		float *ycen);
 static void draw_pin_to_chan_edge(int pin_node, int chan_node);
+static void draw_pin_to_pin(int opin, int ipin);
 static void draw_x(float x, float y, float size);
 static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 		int to_track, short switch_type);
@@ -943,7 +944,11 @@ static void draw_rr_edges(int inode) {
 					setcolor(RED);
 				draw_pin_to_chan_edge(inode, to_node);
 				break;
-
+			case IPIN:
+				setcolor(KHAKI);
+				draw_pin_to_pin(inode, to_node);
+				setcolor(RED);
+				break;
 			default:
 				vpr_printf(TIO_MESSAGE_ERROR, "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
 						inode, from_type, to_node, to_type);
@@ -1497,8 +1502,12 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 
 			case IPIN:
 				draw_rr_pin(inode, net_color[inet]);
-				prev_track = get_track_num(prev_node, chanx_track, chany_track);
-				draw_pin_to_chan_edge(inode, prev_node);
+				if(rr_node[prev_node].type == OPIN) {
+					draw_pin_to_pin(prev_node, inode);
+				} else {
+					prev_track = get_track_num(prev_node, chanx_track, chany_track);
+					draw_pin_to_chan_edge(inode, prev_node);
+				}
 				break;
 
 			case CHANX:
@@ -1994,6 +2003,64 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 		yend = y2 + (y1 - y2) / 10.;
 		draw_triangle_along_line(xend, yend, x1, x2, y1, y2);
 	}
+}
+
+static void draw_pin_to_pin(int opin_node, int ipin_node) {
+	
+	/* This routine draws an edge from the opin rr node to the ipin rr node */
+	int opin_grid_x, opin_grid_y, opin_pin_num, opin;
+	int ipin_grid_x, ipin_grid_y, ipin_pin_num, ipin;
+	int ofs;
+	float x1, x2, y1, y2;
+	float xend, yend;
+	enum e_side iside;
+	t_type_ptr type;
+
+	assert(rr_node[opin_node].type == OPIN);
+	assert(rr_node[ipin_node].type == IPIN);
+	iside = (enum e_side)0;
+	x1 = y1 = x2 = y2 = 0;
+
+	/* get opin coordinate */
+	opin_grid_x = rr_node[opin_node].xlow;
+	opin_grid_y = rr_node[opin_node].ylow;
+	opin_grid_y = opin_grid_y - grid[opin_grid_x][opin_grid_y].offset;
+	opin = rr_node[opin_node].ptc_num;
+	opin_pin_num = rr_node[opin_node].ptc_num;
+	type = grid[opin_grid_x][opin_grid_y].type;
+	
+	for (ofs = 0; ofs < type->height; ++ofs) {
+		for (iside = (enum e_side)0; iside < 4; iside = (enum e_side)(iside + 1)) {
+			/* Find first location of pin */
+			if (0 == type->pinloc[ofs][iside][opin]) {
+				break;
+			}
+		}
+	}
+
+	/* get ipin coordinate */
+	ipin_grid_x = rr_node[ipin_node].xlow;
+	ipin_grid_y = rr_node[ipin_node].ylow;
+	ipin_grid_y = ipin_grid_y - grid[ipin_grid_x][ipin_grid_y].offset;
+	ipin = rr_node[ipin_node].ptc_num;
+	ipin_pin_num = rr_node[ipin_node].ptc_num;
+	type = grid[ipin_grid_x][ipin_grid_y].type;
+	
+	for (ofs = 0; ofs < type->height; ++ofs) {
+		for (iside = (enum e_side)0; iside < 4; iside = (enum e_side)(iside + 1)) {
+			/* Find first location of pin */
+			if (0 == type->pinloc[ofs][iside][ipin]) {
+				break;
+			}
+		}
+	}
+
+	get_rr_pin_draw_coords(ipin, iside, ofs, &x2, &y2);
+	
+	drawline(x1, y1, x2, y2);	
+	xend = x2 + (x1 - x2) / 10.;
+	yend = y2 + (y1 - y2) / 10.;
+	draw_triangle_along_line(xend, yend, x1, x2, y1, y2);
 }
 
 /* UDSD by AY End */
