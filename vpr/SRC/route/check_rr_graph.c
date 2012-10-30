@@ -406,7 +406,7 @@ void check_node(int inode, enum e_route_type route_type) {
 	/* Check that the number of (out) edges is reasonable. */
 	num_edges = rr_node[inode].num_edges;
 
-	if (rr_type != SINK || rr_type != IPIN) {
+	if (rr_type != SINK && rr_type != IPIN) {
 		if (num_edges <= 0) {
 			/* Just a warning, since a very poorly routable rr-graph could have nodes with no edges.  *
 			 * If such a node was ever used in a final routing (not just in an rr_graph), other       *
@@ -415,7 +415,7 @@ void check_node(int inode, enum e_route_type route_type) {
 		}
 	}
 
-	else { /* SINK -- remove this check if feedthroughs allowed */
+	else if (rr_type == SINK) { /* SINK -- remove this check if feedthroughs allowed */
 		if (num_edges != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "in check_node: node %d is a sink, but has %d edges.\n", 
 					inode, num_edges);

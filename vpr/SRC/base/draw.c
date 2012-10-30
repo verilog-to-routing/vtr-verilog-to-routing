@@ -945,9 +945,8 @@ static void draw_rr_edges(int inode) {
 				draw_pin_to_chan_edge(inode, to_node);
 				break;
 			case IPIN:
-				setcolor(KHAKI);
-				draw_pin_to_pin(inode, to_node);
 				setcolor(RED);
+				draw_pin_to_pin(inode, to_node);
 				break;
 			default:
 				vpr_printf(TIO_MESSAGE_ERROR, "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
@@ -2010,10 +2009,11 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	/* This routine draws an edge from the opin rr node to the ipin rr node */
 	int opin_grid_x, opin_grid_y, opin_pin_num, opin;
 	int ipin_grid_x, ipin_grid_y, ipin_pin_num, ipin;
-	int ofs;
+	int ofs, pin_ofs;
+	boolean found;
 	float x1, x2, y1, y2;
 	float xend, yend;
-	enum e_side iside;
+	enum e_side iside, pin_side;
 	t_type_ptr type;
 
 	assert(rr_node[opin_node].type == OPIN);
@@ -2029,14 +2029,19 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	opin_pin_num = rr_node[opin_node].ptc_num;
 	type = grid[opin_grid_x][opin_grid_y].type;
 	
-	for (ofs = 0; ofs < type->height; ++ofs) {
-		for (iside = (enum e_side)0; iside < 4; iside = (enum e_side)(iside + 1)) {
+	found = FALSE;
+	for (ofs = 0; ofs < type->height && !found; ++ofs) {
+		for (iside = (enum e_side)0; iside < 4 && !found; iside = (enum e_side)(iside + 1)) {
 			/* Find first location of pin */
-			if (0 == type->pinloc[ofs][iside][opin]) {
-				break;
+			if (1 == type->pinloc[ofs][iside][opin]) {
+				pin_ofs = ofs;
+				pin_side = iside;
+				found = TRUE;
 			}
 		}
 	}
+	get_rr_pin_draw_coords(opin_node, pin_side, pin_ofs, &x1, &y1);
+	
 
 	/* get ipin coordinate */
 	ipin_grid_x = rr_node[ipin_node].xlow;
@@ -2046,17 +2051,19 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	ipin_pin_num = rr_node[ipin_node].ptc_num;
 	type = grid[ipin_grid_x][ipin_grid_y].type;
 	
-	for (ofs = 0; ofs < type->height; ++ofs) {
-		for (iside = (enum e_side)0; iside < 4; iside = (enum e_side)(iside + 1)) {
+	found = FALSE;
+	for (ofs = 0; ofs < type->height && !found; ++ofs) {
+		for (iside = (enum e_side)0; iside < 4 && !found; iside = (enum e_side)(iside + 1)) {
 			/* Find first location of pin */
-			if (0 == type->pinloc[ofs][iside][ipin]) {
-				break;
+			if (1 == type->pinloc[ofs][iside][ipin]) {
+				pin_ofs = ofs;
+				pin_side = iside;
+				found = TRUE;
 			}
 		}
 	}
 
-	get_rr_pin_draw_coords(ipin, iside, ofs, &x2, &y2);
-	
+	get_rr_pin_draw_coords(ipin_node, pin_side, pin_ofs, &x2, &y2);
 	drawline(x1, y1, x2, y2);	
 	xend = x2 + (x1 - x2) / 10.;
 	yend = y2 + (y1 - y2) / 10.;
