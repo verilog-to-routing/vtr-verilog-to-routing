@@ -2020,6 +2020,8 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	assert(rr_node[ipin_node].type == IPIN);
 	iside = (enum e_side)0;
 	x1 = y1 = x2 = y2 = 0;
+	pin_ofs = 0;
+	pin_side = TOP;
 
 	/* get opin coordinate */
 	opin_grid_x = rr_node[opin_node].xlow;
@@ -2040,6 +2042,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 			}
 		}
 	}
+	assert(found);
 	get_rr_pin_draw_coords(opin_node, pin_side, pin_ofs, &x1, &y1);
 	
 
@@ -2062,7 +2065,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 			}
 		}
 	}
-
+	assert(found);
 	get_rr_pin_draw_coords(ipin_node, pin_side, pin_ofs, &x2, &y2);
 	drawline(x1, y1, x2, y2);	
 	xend = x2 + (x1 - x2) / 10.;
