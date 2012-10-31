@@ -805,7 +805,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 			assert(CountChildren(Parent, "mode", 0) == 0);
 		}
 	} else {
-		boolean default_leakage_mode;
+		boolean default_leakage_mode = FALSE;
 
 		/* container pb_type, process modes */
 		assert(pb_type->class_type == UNKNOWN_CLASS);
@@ -2607,7 +2607,7 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 			(*Switches)[i].autosize_buffer = TRUE;
 		} else {
 			(*Switches)[i].autosize_buffer = FALSE;
-			(*Switches)[i].buffer_last_stage_size = atof(buf_size);
+			(*Switches)[i].buffer_last_stage_size = (float)atof(buf_size);
 		}
 		ezxml_set_attr(Node, "buf_last_stage_size", NULL );
 
@@ -3111,7 +3111,7 @@ static void ProcessClocks(ezxml_t Parent, t_clock_arch * clocks) {
 			clocks->clock_inf[i].autosize_buffer = TRUE;
 		} else {
 			clocks->clock_inf[i].autosize_buffer = FALSE;
-			clocks->clock_inf[i].buffer_size = atof(tmp);
+			clocks->clock_inf[i].buffer_size = (float)atof(tmp);
 		}
 		ezxml_set_attr(Node, "buffer_size", NULL );
 
