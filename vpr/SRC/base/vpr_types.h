@@ -314,7 +314,8 @@ typedef enum {
 typedef struct s_prepacked_tnode_data {
 	/* Data only used by prepacked tnodes. Stored separately so it
 	 doesn't need to be allocated in the post-packed netlist. */
-	int model_port, model_pin; /* technology mapped model port/pin */
+	int model_port, model_pin; /* technology mapped model pin */
+	t_model_ports *model_port_ptr;
 #ifndef PATH_COUNTING
 	long num_critical_input_paths, num_critical_output_paths; /* count of critical paths fanning into/out of this tnode */
 	float normalized_slack; /* slack (normalized with respect to max slack) */

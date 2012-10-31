@@ -1074,6 +1074,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 			f_net_to_driver_tnode[logical_block[i].output_nets[0][0]] = inode;
 			tnode[inode].prepacked_data->model_pin = 0;
 			tnode[inode].prepacked_data->model_port = 0;
+			tnode[inode].prepacked_data->model_port_ptr = model->outputs;
 			tnode[inode].block = i;
 			tnode[inode].type = TN_INPAD_OPIN;
 
@@ -1096,6 +1097,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 			logical_block[i].input_net_tnodes[0][0] = &tnode[inode];
 			tnode[inode].prepacked_data->model_pin = 0;
 			tnode[inode].prepacked_data->model_port = 0;
+			tnode[inode].prepacked_data->model_port_ptr = model->inputs;
 			tnode[inode].block = i;
 			tnode[inode].type = TN_OUTPAD_IPIN;
 			tnode[inode].num_edges = 1;
@@ -1118,6 +1120,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 					if (logical_block[i].output_nets[j][k] != OPEN) {
 						tnode[inode].prepacked_data->model_pin = k;
 						tnode[inode].prepacked_data->model_port = j;
+						tnode[inode].prepacked_data->model_port_ptr = model_port;
 						tnode[inode].block = i;
 						f_net_to_driver_tnode[logical_block[i].output_nets[j][k]] =
 								inode;
@@ -1164,6 +1167,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 						if (logical_block[i].input_nets[j][k] != OPEN) {
 							tnode[inode].prepacked_data->model_pin = k;
 							tnode[inode].prepacked_data->model_port = j;
+							tnode[inode].prepacked_data->model_port_ptr = model_port;
 							tnode[inode].block = i;
 							logical_block[i].input_net_tnodes[j][k] =
 									&tnode[inode];
@@ -1214,6 +1218,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 						tnode[inode].block = i;
 						tnode[inode].prepacked_data->model_pin = 0;
 						tnode[inode].prepacked_data->model_port = 0;
+						tnode[inode].prepacked_data->model_port_ptr = model_port;
 						tnode[inode].num_edges = 0;
 						tnode[inode].out_edges = NULL;
 						tnode[inode].type = TN_FF_CLOCK;
@@ -2081,6 +2086,10 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				}
 	
 				if (!(tnode[inode].type == TN_OUTPAD_SINK || tnode[inode].type == TN_FF_SINK)) {
+					vpr_printf(TIO_MESSAGE_ERROR, "Dangling pin on block %s.%s[%d]\n", 
+													logical_block[tnode[inode].block].name, 
+													tnode[inode].prepacked_data->model_port_ptr->name, 
+													tnode[inode].prepacked_data->model_pin);
 					vpr_printf(TIO_MESSAGE_ERROR, "Timing graph terminated on node %s.%s[%d].\n",
 							tnode[inode].pb_graph_pin->parent_node->pb_type->name, 
 							tnode[inode].pb_graph_pin->port->name, 

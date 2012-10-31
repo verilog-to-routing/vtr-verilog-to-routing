@@ -132,7 +132,7 @@ void check_rr_graph(INP t_graph_type graph_type, INP t_type_ptr types,
 					&& !rr_node_is_global_clb_ipin(inode)) {
 				boolean is_fringe;
 				boolean is_wire;
-				boolean is_chain;
+				boolean is_chain = FALSE;
 
 				/* A global CLB input pin will not have any edges, and neither will  *
 				 * a SOURCE or the start of a carry-chain.  Anything else is an error.                             
