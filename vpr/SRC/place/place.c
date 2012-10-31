@@ -1229,7 +1229,7 @@ static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {
 			curr_z_to = curr_z_from + z_swap_offset;
 			
 			// Make sure that the swap_to location is still on the chip
-			if (curr_x_to < 1 || curr_x_to > nx+1 || curr_y_to < 1 || curr_y_to > ny+1 || curr_z_to < 0) {
+			if (curr_x_to < 1 || curr_x_to > nx || curr_y_to < 1 || curr_y_to > ny || curr_z_to < 0) {
 				abort_swap = TRUE;
 			} else {
 				curr_b_to = grid[curr_x_to][curr_y_to].blocks[curr_z_to];
@@ -1688,11 +1688,7 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 			delay_source_to_sink = delta_clb_to_clb[delta_x][delta_y];
 	}
 	if (delay_source_to_sink < 0) {
-		vpr_printf(TIO_MESSAGE_ERROR, "in comp_td_point_to_point_delay: Bad delay_source_to_sink value\n");
-		exit(1);
-	}
-
-	if (delay_source_to_sink < 0.) {
+		vpr_printf(TIO_MESSAGE_ERROR, "in comp_td_point_to_point_delay: Bad delay_source_to_sink value delta(%d, %d) delay of %g\n", delta_x, delta_y, delay_source_to_sink);
 		vpr_printf(TIO_MESSAGE_ERROR, "in comp_td_point_to_point_delay: Delay is less than 0\n");
 		exit(1);
 	}

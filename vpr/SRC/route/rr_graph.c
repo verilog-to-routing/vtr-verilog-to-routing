@@ -185,7 +185,7 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
 
 static int **alloc_and_load_actual_fc(INP int L_num_types, INP t_type_ptr types,
 		INP int nodes_per_chan, INP boolean is_Fc_out,
-		INP enum e_directionality directionality, OUTP boolean * Fc_clipped);
+		INP enum e_directionality directionality, OUTP boolean * Fc_clipped, INP boolean ignore_Fc_0);
 
 /******************* Subroutine definitions *******************************/
 
@@ -198,7 +198,7 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 		INP int global_route_switch, INP int delayless_switch,
 		INP t_timing_inf timing_inf, INP int wire_to_ipin_switch,
 		INP enum e_base_cost_type base_cost_type, INP t_direct_inf *directs, 
-		INP int num_directs, OUTP int *Warnings) {
+		INP int num_directs, INP boolean ignore_Fc_0, OUTP int *Warnings) {
 	/* Temp structures used to build graph */
 	int nodes_per_chan, i, j;
 	t_seg_details *seg_details = NULL;
@@ -290,13 +290,13 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 	} else {
 		Fc_clipped = FALSE;
 		Fc_in = alloc_and_load_actual_fc(L_num_types, types, nodes_per_chan,
-				FALSE, directionality, &Fc_clipped);
+				FALSE, directionality, &Fc_clipped, ignore_Fc_0);
 		if (Fc_clipped) {
 			*Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
 		}
 		Fc_clipped = FALSE;
 		Fc_out = alloc_and_load_actual_fc(L_num_types, types, nodes_per_chan,
-				TRUE, directionality, &Fc_clipped);
+				TRUE, directionality, &Fc_clipped, ignore_Fc_0);
 		if (Fc_clipped) {
 			*Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
 		}
@@ -569,7 +569,7 @@ alloc_and_load_global_route_seg_details(INP int nodes_per_chan,
 static int **
 alloc_and_load_actual_fc(INP int L_num_types, INP t_type_ptr types,
 		INP int nodes_per_chan, INP boolean is_Fc_out,
-		INP enum e_directionality directionality, OUTP boolean * Fc_clipped) {
+		INP enum e_directionality directionality, OUTP boolean * Fc_clipped, INP boolean ignore_Fc_0) {
 
 	int i, j;
 	int **Result = NULL;
@@ -601,7 +601,7 @@ alloc_and_load_actual_fc(INP int L_num_types, INP t_type_ptr types,
 		for (j = 0; j < types[i].num_pins; ++j) {
 			Fc[j] = types[i].Fc[j];
 		
-			if(Fc[j] == 0) {
+			if(Fc[j] == 0 && ignore_Fc_0 == FALSE) {
 				/* Special case indicating that this pin does not connect to general-purpose routing */
 				Result[i][j] = 0;
 			} else {

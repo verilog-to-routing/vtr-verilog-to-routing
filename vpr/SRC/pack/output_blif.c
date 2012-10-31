@@ -307,7 +307,7 @@ static void print_primitive(FILE *fpout, int iblk) {
 		}
 		fprintf(fpout, "\n");
 	} else if (logical_block[iblk].type == VPACK_COMB) {
-		if (strcmp(logical_block[iblk].model->name, ".names")) {
+		if (strcmp(logical_block[iblk].model->name, ".names") == 0) {
 			fprintf(fpout, ".names ");
 			in_port_index = 0;
 			out_port_index = 0;
@@ -315,7 +315,7 @@ static void print_primitive(FILE *fpout, int iblk) {
 				if (pb_type->ports[i].type == IN_PORT
 						&& pb_type->ports[i].is_clock == FALSE) {
 					for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-						if (logical_block[iblk].input_nets[i][j] != OPEN) {
+						if (logical_block[iblk].input_nets[in_port_index][j] != OPEN) {
 							node_index =
 									pb->pb_graph_node->input_pins[in_port_index][j].pin_count_in_cluster;
 							fprintf(fpout, "clb_%d_rr_node_%d ", clb_index,
@@ -344,7 +344,7 @@ static void print_primitive(FILE *fpout, int iblk) {
 				truth_table = truth_table->next;
 			}
 		} else {
-			assert(0);
+			vpr_printf(TIO_MESSAGE_WARNING, "TODO: Implement blif dumper for subckt");
 		}
 	}
 }

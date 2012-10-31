@@ -262,7 +262,7 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 			det_routing_arch.global_route_switch,
 			det_routing_arch.delayless_switch, timing_inf,
 			det_routing_arch.wire_to_ipin_switch, router_opts.base_cost_type,
-			directs, num_directs,
+			directs, num_directs, FALSE,
 			&tmp);
 
 	end = clock();

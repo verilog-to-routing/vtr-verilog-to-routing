@@ -495,7 +495,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			det_routing_arch.global_route_switch,
 			det_routing_arch.delayless_switch, timing_inf,
 			det_routing_arch.wire_to_ipin_switch, router_opts.base_cost_type,
-			directs, num_directs,
+			directs, num_directs, FALSE,
 			&warnings);
 
 	restore_routing(best_routing, clb_opins_used_locally,
