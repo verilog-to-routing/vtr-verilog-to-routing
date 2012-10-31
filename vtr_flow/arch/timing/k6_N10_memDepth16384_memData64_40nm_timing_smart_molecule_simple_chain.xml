@@ -108,6 +108,10 @@ Architecture based off Stratix IV
 			<cb type="pattern">1 1 1 1</cb>
 			</segment>
 		</segmentlist>
+    <directlist>
+      <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="1" z_offset="0"/>
+    </directlist>
+
 
 		<complexblocklist>
       <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
@@ -161,7 +165,9 @@ Architecture based off Stratix IV
 
       <pb_type name="clb">
         <input name="I" num_pins="33" equivalent="true"/>
+        <input name="cin" num_pins="1"/>
         <output name="O" num_pins="20" equivalent="false"/>
+        <output name="cout" num_pins="1"/>
         <clock name="clk" num_pins="1"/>
 
         <mode name="logic">
@@ -277,46 +283,53 @@ Architecture based off Stratix IV
             <output name="sumout" num_pins="10"/>
             <output name="cout" num_pins="1"/>
             
-            <!-- sumout path from inputs = adder_sumout + lut_as_wire_delay -->
-            <delay_constant max="5.38e-10" in_port="adder.a" out_port="adder.sumout"/>
-            <delay_constant max="5.38e-10" in_port="adder.b" out_port="adder.sumout"/>
+            <!-- sumout path from inputs = adder_sumout + lut_as_wire_delay + carry 
+                 It's unreadable to write out all 200 delay entries so I'll simplify conservatively by making all delays for each output pin set to max local carry delay for that output pin
+            -->
+            <delay_constant max="5.38e-10" in_port="adder.a[0:0]" out_port="adder.sumout[0]"/>
+            <delay_constant max="5.38e-10" in_port="adder.b[0:0]" out_port="adder.sumout[0]"/>
+            <delay_constant max="5.48e-10" in_port="adder.a[1:0]" out_port="adder.sumout[1]"/>
+            <delay_constant max="5.48e-10" in_port="adder.b[1:0]" out_port="adder.sumout[1]"/>
+            <delay_constant max="5.58e-10" in_port="adder.a[2:0]" out_port="adder.sumout[2]"/>
+            <delay_constant max="5.58e-10" in_port="adder.b[2:0]" out_port="adder.sumout[2]"/>
+            <delay_constant max="5.68e-10" in_port="adder.a[3:0]" out_port="adder.sumout[3]"/>
+            <delay_constant max="5.68e-10" in_port="adder.b[3:0]" out_port="adder.sumout[3]"/>
+            <delay_constant max="5.78e-10" in_port="adder.a[4:0]" out_port="adder.sumout[4]"/>
+            <delay_constant max="5.78e-10" in_port="adder.b[4:0]" out_port="adder.sumout[4]"/>
+            <delay_constant max="5.88e-10" in_port="adder.a[5:0]" out_port="adder.sumout[5]"/>
+            <delay_constant max="5.88e-10" in_port="adder.b[5:0]" out_port="adder.sumout[5]"/>
+            <delay_constant max="5.98e-10" in_port="adder.a[6:0]" out_port="adder.sumout[6]"/>
+            <delay_constant max="5.98e-10" in_port="adder.b[6:0]" out_port="adder.sumout[6]"/>
+            <delay_constant max="6.08e-10" in_port="adder.a[7:0]" out_port="adder.sumout[7]"/>
+            <delay_constant max="6.08e-10" in_port="adder.b[7:0]" out_port="adder.sumout[7]"/>
+            <delay_constant max="6.18e-10" in_port="adder.a[8:0]" out_port="adder.sumout[8]"/>
+            <delay_constant max="6.18e-10" in_port="adder.b[8:0]" out_port="adder.sumout[8]"/>
+            <delay_constant max="6.28e-10" in_port="adder.a[9:0]" out_port="adder.sumout[9]"/>
+            <delay_constant max="6.28e-10" in_port="adder.b[9:0]" out_port="adder.sumout[9]"/>
+
             <!-- sumout path from cin = adder_sumout + carry-chain delay -->
-            <delay_matrix type="max" in_port="adder.cin" out_port="adder.sumout">              
-              2.790e-10 2.890e-10 2.990e-10 3.090e-10 3.190e-10 3.290e-10 3.390e-10 3.490e-10 3.590e-10 3.690e-10
-            </delay_matrix>
-            <!-- cout path from inputs = lut_as_wire_delay + carry-chain delay -->
-            <delay_matrix type="max" in_port="adder.a" out_port="adder.cout">              
-              2.790e-10
-              2.890e-10
-              2.990e-10
-              3.090e-10
-              3.190e-10
-              3.290e-10
-              3.390e-10
-              3.490e-10
-              3.590e-10
-              3.690e-10         
-            </delay_matrix>
-            <delay_matrix type="max" in_port="adder.b" out_port="adder.cout">              
-              2.790e-10
-              2.890e-10
-              2.990e-10
-              3.090e-10
-              3.190e-10
-              3.290e-10
-              3.390e-10
-              3.490e-10
-              3.590e-10
-              3.690e-10         
-            </delay_matrix>
+            <delay_constant max="2.79e-10" in_port="adder.cin" out_port="adder.sumout[0]"/>
+            <delay_constant max="2.89e-10" in_port="adder.cin" out_port="adder.sumout[1]"/>
+            <delay_constant max="2.99e-10" in_port="adder.cin" out_port="adder.sumout[2]"/>
+            <delay_constant max="3.09e-10" in_port="adder.cin" out_port="adder.sumout[3]"/>
+            <delay_constant max="3.19e-10" in_port="adder.cin" out_port="adder.sumout[4]"/>
+            <delay_constant max="3.29e-10" in_port="adder.cin" out_port="adder.sumout[5]"/>
+            <delay_constant max="3.39e-10" in_port="adder.cin" out_port="adder.sumout[6]"/>
+            <delay_constant max="3.49e-10" in_port="adder.cin" out_port="adder.sumout[7]"/>
+            <delay_constant max="3.59e-10" in_port="adder.cin" out_port="adder.sumout[8]"/>
+            <delay_constant max="3.69e-10" in_port="adder.cin" out_port="adder.sumout[9]"/>
+            
+            <!-- cout path from inputs = lut_as_wire_delay + carry-chain delay, for simplicity, I will assume max delay because it doesn't make sense for cout to be used unless whole adder is used -->
+            <delay_constant max="3.69e-10" in_port="adder.a" out_port="adder.cout"/>
+            <delay_constant max="3.69e-10" in_port="adder.b" out_port="adder.cout"/>
             <!-- cout path from cin = carry-chain delay -->
             <delay_constant max="1.0e-10" in_port="adder.cin" out_port="adder.cout"/>
           </pb_type>
           <interconnect>
-            <complete name="crossbar" input="clb.I" output="adder.A">
+            <complete name="crossbar" input="clb.I" output="adder.a">
               <delay_constant max="8.044000e-11" in_port="clb.I" out_port="adder.a" />
             </complete>
-            <complete name="crossbar2" input="clb.I" output="adder.B">
+            <complete name="crossbar2" input="clb.I" output="adder.b">
               <delay_constant max="8.044000e-11" in_port="clb.I" out_port="adder.b" />
             </complete>
             <direct name="direct1" input="adder.sumout" output="clb.O[9:0]"/>
@@ -329,7 +342,10 @@ Architecture based off Stratix IV
         </mode>
 
 
-        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
+        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10">
+          <pin name="cin" fc_type="frac" fc_val="0"/>
+          <pin name="cout" fc_type="frac" fc_val="0"/>
+        </fc>
 
         <pinlocations pattern="spread"/>
         <gridlocations>
