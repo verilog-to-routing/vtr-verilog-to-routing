@@ -10,7 +10,7 @@ OBJ_DIR = OBJ
 
 EXEO = odin_II.exe
 
-DEBUG_FLAGS = -g
+DEBUG_FLAGS = -g 
 
 OPT_FLAGS = -O2 
 # Use this value of OPT_FLAGS to simulate in parallel (requires GCC >= 4.2)

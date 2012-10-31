@@ -343,6 +343,10 @@ void allocate_children_to_node(ast_node_t* node, int num_children, ...)
  *-------------------------------------------------------------------------------------------*/
 void add_child_to_node(ast_node_t* node, ast_node_t *child) 
 {
+	/* Handle case where we have an empty statement. */
+	if (child == NULL)
+		return;
+
 	/* allocate space for the children */
 	node->children = (ast_node_t**)realloc(node->children, sizeof(ast_node_t*)*(node->num_children+1));
 	node->num_children ++;
