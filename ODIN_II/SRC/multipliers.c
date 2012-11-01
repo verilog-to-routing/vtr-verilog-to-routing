@@ -527,7 +527,6 @@ void define_mult_function(nnode_t *node, short type, FILE *out)
 		}
 	}
 
-
 	for (i = 0;  i < node->num_input_pins; i++)
 	{
 		if (i < node->input_port_sizes[flip?1:0])
@@ -950,6 +949,7 @@ void pad_multiplier(nnode_t *node, netlist_t *netlist)
 {
 	int diffa, diffb, diffout, i;
 	int sizea, sizeb, sizeout;
+	int ina, inb;
 
 	int testa, testb;
 
@@ -964,8 +964,15 @@ void pad_multiplier(nnode_t *node, netlist_t *netlist)
 	record_mult_distribution(node);
 
 	/* Calculate the BEST fit hard multiplier to use */
-	diffa = hard_multipliers->inputs->size - sizea;
-	diffb = hard_multipliers->inputs->next->size - sizeb;
+	ina = hard_multipliers->inputs->size;
+	inb = hard_multipliers->inputs->next->size;
+	if (ina < inb)
+	{
+		ina = hard_multipliers->inputs->next->size;
+		inb = hard_multipliers->inputs->size;
+	}
+	diffa = ina - sizea;
+	diffb = inb - sizeb;
 	diffout = hard_multipliers->outputs->size - sizeout;
 
 	if (configuration.split_hard_multiplier == 1)

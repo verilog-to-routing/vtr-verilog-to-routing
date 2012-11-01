@@ -199,14 +199,14 @@ veri_include* add_veri_include(char *path, int line, veri_include *included_from
 	}
 	
 	/* Scan previous includes to make sure the file wasn't included previously. */
-	for (i = 0; i < veri_includes.current_index && i < veri_includes.current_size && inc_iterator != NULL; inc_iterator = veri_includes.included_files[++i]) 
-	{
-		if (0 == strcmp(path, inc_iterator->path))
-		{
-			free(new_inc);
-			return NULL;
-		}
-	}
+//	for (i = 0; i < veri_includes.current_index && i < veri_includes.current_size && inc_iterator != NULL; inc_iterator = veri_includes.included_files[++i]) 
+//	{
+//		if (0 == strcmp(path, inc_iterator->path))
+//		{
+//			free(new_inc);
+//			return NULL;
+//		}
+//	}
 	
 	new_inc->path = (char *)strdup(path);
 	new_inc->included_from = included_from;
