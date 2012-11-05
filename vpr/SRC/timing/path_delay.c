@@ -737,6 +737,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 	int normalized_pin, normalization;
 	t_pb_graph_pin *ipb_graph_pin;
 	t_rr_node *local_rr_graph, *d_rr_graph;
+	int num_dangling_pins;
 
 	f_net_to_driver_tnode = (int*)my_malloc(num_timing_nets * sizeof(int));
 
@@ -778,6 +779,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 		}
 	}
 	assert(inode == num_tnodes);
+	num_dangling_pins = 0;
 
 	/* load edge delays and initialize clock domains to OPEN 
 	and prepacked_data (which is not used post-packing) to NULL. */
@@ -887,11 +889,8 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 			}
 			tnode[i].num_edges -= (j - k); /* remove unused edges */
 			if (tnode[i].num_edges == 0) {
-				vpr_printf(TIO_MESSAGE_ERROR, "No timing information for pin %s.%s[%d].\n",
-						tnode[i].pb_graph_pin->parent_node->pb_type->name,
-						tnode[i].pb_graph_pin->port->name,
-						tnode[i].pb_graph_pin->pin_number);
-				exit(1);
+				/* Dangling pin */
+				num_dangling_pins++;
 			}
 			}
 			break;
@@ -983,6 +982,9 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 			assert(0);
 			break;
 		}
+	}
+	if(num_dangling_pins > 0) {
+		vpr_printf(TIO_MESSAGE_WARNING, "Unconnected logic in design, number of dangling tnodes = %d\n", num_dangling_pins);
 	}
 }
 
@@ -1937,6 +1939,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 								   /* Max of all arrival times for this constraint - 
 									  used to relax required times. */
 	t_tedge * tedge;
+	int num_dangling_nodes;
 	boolean found;
 	long max_critical_input_paths = 0, max_critical_output_paths = 0;
 
@@ -2044,7 +2047,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	}
 	
 	assert(total == num_tnodes);
-	
+	num_dangling_nodes = 0;
 	/* Compute required times with a backward topological traversal from sinks to sources. */
 	
 	for (ilevel = num_tnode_levels - 1; ilevel >= 0; ilevel--) {
@@ -2086,16 +2089,14 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				}
 	
 				if (!(tnode[inode].type == TN_OUTPAD_SINK || tnode[inode].type == TN_FF_SINK)) {
-					vpr_printf(TIO_MESSAGE_ERROR, "Dangling pin on block %s.%s[%d]\n", 
+					if(is_prepacked) {
+						vpr_printf(TIO_MESSAGE_WARNING, "Pin on block %s.%s[%d] not used\n", 
 													logical_block[tnode[inode].block].name, 
 													tnode[inode].prepacked_data->model_port_ptr->name, 
 													tnode[inode].prepacked_data->model_pin);
-					vpr_printf(TIO_MESSAGE_ERROR, "Timing graph terminated on node %s.%s[%d].\n",
-							tnode[inode].pb_graph_pin->parent_node->pb_type->name, 
-							tnode[inode].pb_graph_pin->port->name, 
-							tnode[inode].pb_graph_pin->pin_number);
-					vpr_printf(TIO_MESSAGE_ERROR, "Likely cause: Timing edges not specified for block\n"); 
-					exit(1);
+					}
+					num_dangling_nodes++;
+					/* Note: Still need to do standard traversals with dangling pins so that algorithm runs properly, but T_arr and T_Req to values such that it dangling nodes do not affect actual timing values */
 				}
 		
 				/* Skip nodes not on the sink clock domain of the 
@@ -2252,6 +2253,10 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	if (max_critical_input_paths_ptr && max_critical_output_paths_ptr) {
 		*max_critical_input_paths_ptr = max_critical_input_paths;
 		*max_critical_output_paths_ptr = max_critical_output_paths;
+	}
+
+	if(num_dangling_nodes > 0 && (is_final_analysis || is_prepacked)) {
+		vpr_printf(TIO_MESSAGE_WARNING, "%d unused pins \n",  num_dangling_nodes);
 	}
 
 	/* The criticality denominator is the maximum of the max 

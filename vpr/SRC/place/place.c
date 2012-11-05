@@ -2662,6 +2662,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 			vpr_printf (TIO_MESSAGE_ERROR, "Initial placement failed.\n");
 			vpr_printf (TIO_MESSAGE_ERROR, "Could not place macro length %d with head block %s (#%d); not enough free locations of type %s (#%d).\n", 
 					pl_macros[imacro].num_blocks, block[iblk].name, iblk, type_descriptors[itype].name, itype);
+			vpr_printf (TIO_MESSAGE_INFO, "VPR cannot auto-size for your circuit, please resize the FPGA manually.\n");
 			exit(1);
 		}
 
@@ -2698,6 +2699,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 				vpr_printf (TIO_MESSAGE_ERROR, "Initial placement failed.\n");
 				vpr_printf (TIO_MESSAGE_ERROR, "Could not place macro length %d with head block %s (#%d); not enough free locations of type %s (#%d).\n", 
 					pl_macros[imacro].num_blocks, block[iblk].name, iblk, type_descriptors[itype].name, itype);
+				vpr_printf (TIO_MESSAGE_INFO, "Please manually size the FPGA because VPR can't do this yet.\n");
 				exit(1);
 			}
 

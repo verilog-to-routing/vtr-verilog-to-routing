@@ -1151,6 +1151,7 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 	t_model_ports *port;
 	struct s_linked_vptr *p_io_removed;
 	int removed_nets;
+	int count_unconn_blocks;
 
 	explicit_vpack_models = num_blif_models + 1;
 
@@ -1276,6 +1277,7 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 	}
 	vpr_printf(TIO_MESSAGE_INFO, "Swept away %d nets with no fanout.\n",
 			removed_nets);
+	count_unconn_blocks = 0;
 	for (i = 0; i < num_logical_blocks; i++) {
 		/* This block has no output and is not an output pad so it has no use, hence we remove it */
 		if ((logical_block_output_count[i] == 0)
@@ -1294,6 +1296,7 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 				circuit_p_io_removed = p_io_removed;
 				continue;
 			} else {
+				count_unconn_blocks++;
 				vpr_printf(TIO_MESSAGE_WARNING,
 						"Sweep hanging nodes in your logic synthesis tool because VPR can not do this yet.\n");
 			}
@@ -1457,7 +1460,8 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 					logical_block[i].name);
 		}
 	}
-
+	vpr_printf(TIO_MESSAGE_INFO, "%d unconnected blocks in input netlist.\n", count_unconn_blocks);
+		
 	if (error != 0) {
 		vpr_printf(TIO_MESSAGE_ERROR,
 				"Found %d fatal errors in the input netlist.\n", error);
