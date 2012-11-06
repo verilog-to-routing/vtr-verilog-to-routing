@@ -47,7 +47,7 @@ static double power_count_transistors_inv(float size);
 static double power_count_transistors_trans_gate();
 static double power_count_transistors_levr();
 static double power_transistor_eqiv_layout_size(float size);
-static void power_size_local_buffers_and_wires_pin(t_pb_graph_pin * pin);
+static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin);
 static double power_transistors_for_pb_node(t_pb_graph_node * pb_node);
 
 /************************* FUNCTION DEFINITIONS *********************/
@@ -518,7 +518,7 @@ void power_size_pb_rec(t_pb_graph_node * pb_node) {
 		for (port_idx = 0; port_idx < pb_node->num_input_ports; port_idx++) {
 			for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx];
 					pin_idx++) {
-				power_size_local_buffers_and_wires_pin(
+				power_size_pin_buffers_and_wires(
 						&pb_node->input_pins[port_idx][pin_idx]);
 			}
 		}
@@ -526,7 +526,7 @@ void power_size_pb_rec(t_pb_graph_node * pb_node) {
 		for (port_idx = 0; port_idx < pb_node->num_output_ports; port_idx++) {
 			for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx];
 					pin_idx++) {
-				power_size_local_buffers_and_wires_pin(
+				power_size_pin_buffers_and_wires(
 						&pb_node->output_pins[port_idx][pin_idx]);
 			}
 		}
@@ -534,7 +534,7 @@ void power_size_pb_rec(t_pb_graph_node * pb_node) {
 		for (port_idx = 0; port_idx < pb_node->num_clock_ports; port_idx++) {
 			for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx];
 					pin_idx++) {
-				power_size_local_buffers_and_wires_pin(
+				power_size_pin_buffers_and_wires(
 						&pb_node->clock_pins[port_idx][pin_idx]);
 			}
 		}
@@ -552,7 +552,7 @@ void power_size_pb(void) {
 	}
 }
 
-static void power_size_local_buffers_and_wires_pin(t_pb_graph_pin * pin) {
+static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin) {
 	int edge_idx;
 	int list_cnt;
 	t_interconnect ** list;
@@ -571,6 +571,62 @@ static void power_size_local_buffers_and_wires_pin(t_pb_graph_pin * pin) {
 	this_pb_type = pin->parent_node->pb_type;
 	if (pin->parent_node->parent_pb_graph_node) {
 		parent_pb_type = pin->parent_node->parent_pb_graph_node->pb_type;
+	} else {
+		parent_pb_type = NULL;
+	}
+
+	/* Pins are connected to a wire that is connected to:
+	 * 1. Interconnect structures belonging its pb_node, and/or
+	 * 		- The pb_node may have one or more modes, each with a set of
+	 * 		interconnect.  The capacitance is the worst-case capacitance
+	 * 		between the different modes.
+	 *
+	 * 2. Interconnect structures belonging to its parent pb_node
+	 */
+
+	/* Determine pin fan-out */
+	/* Loop through all edges, building a list of interconnect that this pin connects to */
+	list = NULL;
+	list_cnt = 0;
+	for (edge_idx = 0; edge_idx < pin->num_output_edges; edge_idx++) {
+		/* Check if its already in the list */
+		found = FALSE;
+		for (i = 0; i < list_cnt; i++) {
+			if (list[i] == pin->output_edges[edge_idx]->interconnect) {
+				found = TRUE;
+				break;
+			}
+		}
+
+		if (!found) {
+			list_cnt++;
+			list = (t_interconnect**) my_realloc(list,
+					list_cnt * sizeof(t_interconnect*));
+			list[list_cnt - 1] = pin->output_edges[edge_idx]->interconnect;
+		}
+	}
+
+	fanout_to_parent = 0;
+	fanout_per_mode = (int*) my_calloc(this_pb_type->num_modes, sizeof(int));
+
+	for (i = 0; i < list_cnt; i++) {
+		t_pb_type * interc_pb_type = list[i]->parent_mode->parent_pb_type;
+
+		if (interc_pb_type == this_pb_type) {
+			/*Interconnect belongs to this pb_type */
+			fanout_per_mode[list[i]->parent_mode_index]++;
+		} else if (interc_pb_type == parent_pb_type) {
+			/* Interconnect belongs to parent pb_type */
+			fanout_to_parent++;
+		} else {
+			assert(0);
+		}
+	}
+	free(list);
+
+	fanout_to_mode = 0;
+	for (i = 0; i < this_pb_type->num_modes; i++) {
+		fanout_to_mode = max(fanout_to_mode, fanout_per_mode[i]);
 	}
 
 	/* Wirelength */
@@ -595,59 +651,6 @@ static void power_size_local_buffers_and_wires_pin(t_pb_graph_pin * pin) {
 		break;
 
 	case POWER_WIRE_TYPE_AUTO:
-		/* Pins are connected to a wire that is connected to:
-		 * 1. Interconnect structures belonging its pb_node, and/or
-		 * 		- The pb_node may have one or more modes, each with a set of
-		 * 		interconnect.  The capacitance is the worst-case capacitance
-		 * 		between the different modes.
-		 *
-		 * 2. Interconnect structures belonging to its parent pb_node
-		 */
-
-		/* Loop through all edges, building a list of interconnect that this pin connects to */
-		list = NULL;
-		list_cnt = 0;
-		for (edge_idx = 0; edge_idx < pin->num_output_edges; edge_idx++) {
-			/* Check if its already in the list */
-			found = FALSE;
-			for (i = 0; i < list_cnt; i++) {
-				if (list[i] == pin->output_edges[edge_idx]->interconnect) {
-					found = TRUE;
-					break;
-				}
-			}
-
-			if (!found) {
-				list_cnt++;
-				list = (t_interconnect**) my_realloc(list,
-						list_cnt * sizeof(t_interconnect*));
-				list[list_cnt - 1] = pin->output_edges[edge_idx]->interconnect;
-			}
-		}
-
-		fanout_to_parent = 0;
-		fanout_per_mode = (int*) my_calloc(this_pb_type->num_modes,
-				sizeof(int));
-
-		for (i = 0; i < list_cnt; i++) {
-			t_pb_type * interc_pb_type = list[i]->parent_mode->parent_pb_type;
-
-			if (interc_pb_type == this_pb_type) {
-				/*Interconnect belongs to this pb_type */
-				fanout_per_mode[list[i]->parent_mode_index]++;
-			} else if (interc_pb_type == parent_pb_type) {
-				/* Interconnect belongs to parent pb_type */
-				fanout_to_parent++;
-			} else {
-				assert(0);
-			}
-		}
-		free(list);
-
-		fanout_to_mode = 0;
-		for (i = 0; i < this_pb_type->num_modes; i++) {
-			fanout_to_mode = max(fanout_to_mode, fanout_per_mode[i]);
-		}
 
 		pin->pin_power->C_wire = 0.;
 		if (fanout_to_mode) {

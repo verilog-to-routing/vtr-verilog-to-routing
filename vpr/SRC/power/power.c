@@ -307,6 +307,7 @@ static void power_calc_pb_rec(t_power_usage * power_usage, t_pb * pb,
 
 		/* Average the activity of all pins */
 		num_pins = 0;
+		dens_avg = 0.;
 		for (port_idx = 0; port_idx < pb_node->num_input_ports; port_idx++) {
 			for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx];
 					pin_idx++) {
@@ -1440,7 +1441,7 @@ static void power_print_clb_summary_rec(FILE * fp, t_pb_type * pb_type,
 		buf[i] = ' ';
 	}
 	strncpy(buf + indent, pb_type->name, 50 - indent);
-	buf[51] = '\0';
+	buf[50] = '\0';
 	buf[strlen(pb_type->name) + indent] = '\0';
 	fprintf(fp, "%-50s%-15g%-15s\n", buf,
 			power_usage_sum(&pb_type->pb_type_power->power_usage),
