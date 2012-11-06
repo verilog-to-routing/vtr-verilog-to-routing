@@ -33,10 +33,6 @@
 #define CLOCK_PROB 0.5
 #define CLOCK_DENS 2
 
-/* Desired stage gain in buffer design */
-#define POWER_BUFFER_STAGE_GAIN 4.0
-
-
 /************************* ENUMS ************************************/
 
 /* Return code used by power functions */

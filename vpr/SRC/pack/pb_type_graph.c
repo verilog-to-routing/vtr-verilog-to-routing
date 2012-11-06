@@ -320,6 +320,15 @@ static void alloc_and_load_pb_graph(INOUTP t_pb_graph_node *pb_graph_node,
 		}
 	}
 
+	/* Power */
+	if (load_power_structures) {
+		pb_graph_node->pb_node_power = (t_pb_graph_node_power*) my_calloc(1,
+				sizeof(t_pb_graph_node_power));
+		pb_graph_node->pb_node_power->transistor_cnt_buffers = 0.;
+		pb_graph_node->pb_node_power->transistor_cnt_interc = 0.;
+		pb_graph_node->pb_node_power->transistor_cnt_pb_children = 0.;
+	}
+
 	/* Allocate and load child nodes for each mode and create interconnect in each mode */
 	pb_graph_node->child_pb_graph_nodes = (t_pb_graph_node***) my_calloc(
 			pb_type->num_modes, sizeof(t_pb_graph_node **));

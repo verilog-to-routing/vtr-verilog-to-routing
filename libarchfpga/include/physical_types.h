@@ -37,6 +37,10 @@ typedef struct s_power_usage t_power_usage;
 typedef struct s_pb_type_power t_pb_type_power;
 typedef struct s_mode_power t_mode_power;
 typedef struct s_interconnect_power t_interconnect_power;
+typedef struct s_port_power t_port_power;
+typedef struct s_pb_graph_pin_power t_pb_graph_pin_power;
+typedef struct s_mode t_mode;
+typedef struct s_pb_graph_node_power t_pb_graph_node_power;
 
 /*************************************************************************************************/
 /* FPGA basic definitions                                                                        */
@@ -94,10 +98,14 @@ enum e_pin_to_pin_pack_pattern_annotations {
 
 /* Power Estimation type for a PB */
 typedef enum {
-	PB_POWER_UNDEFINED = 0, /* User does not provide dynamic power */
-	PB_POWER_C_INTERNAL, /* User provides internal capacitance of block */
-	PB_POWER_PROVIDED /* User provides absolute power of block */
-} e_pb_power_type;
+	POWER_METHOD_UNDEFINED = 0,
+	POWER_METHOD_IGNORE,
+	POWER_METHOD_AUTO_SIZES,
+	POWER_METHOD_SPECIFY_SIZES,
+	POWER_METHOD_TOGGLE_PINS,
+	POWER_METHOD_C_INTERNAL,
+	POWER_METHOD_ABSOLUTE
+} e_power_estimation_method;
 
 /*************************************************************************************************/
 /* FPGA grid layout data types                                                                   */
@@ -153,6 +161,9 @@ struct s_clock_network {
 struct s_power_arch {
 	float C_wire_local; /* Capacitance of local interconnect (per meter) */
 	int seg_buffer_split; /* Split segment for distributed buffer (no split=1) */
+	float logical_effort_factor;
+	float local_interc_factor;
+	float transistors_per_SRAM_bit;
 };
 
 /* Power usage for an entity */
@@ -219,6 +230,8 @@ struct s_port {
 	int index;
 	int port_index_by_type;
 	char *chain_name;
+
+	t_port_power * port_power;
 };
 typedef struct s_port t_port;
 
@@ -277,6 +290,8 @@ struct s_interconnect {
 	int parent_mode_index;
 
 	/* Power related members */
+	t_mode * parent_mode;
+
 	t_interconnect_power * interconnect_power;
 };
 typedef struct s_interconnect t_interconnect;
@@ -297,8 +312,8 @@ struct s_interconnect_power {
 struct s_interconnect_pins {
 	t_interconnect * interconnect;
 
-	struct s_pb_graph_pin *** input_pins;
-	struct s_pb_graph_pin *** output_pins;
+	struct s_pb_graph_pin *** input_pins; // [0..num_input_ports-1][0..num_pins_per_port-1]
+	struct s_pb_graph_pin *** output_pins; // [0..num_output_ports-1][0..num_pins_per_port-1]
 };
 
 /** Describes mode
@@ -321,7 +336,6 @@ struct s_mode {
 	/* Power releated members */
 	t_mode_power * mode_power;
 };
-typedef struct s_mode t_mode;
 
 struct s_mode_power {
 	t_power_usage power_usage; /* Power usage of this mode */
@@ -375,8 +389,45 @@ struct s_pb_graph_pin {
 	/* Applies to output pins of primitives only */
 	struct s_pb_graph_pin ***list_of_connectable_input_pin_ptrs; /* [0..depth-1][0..num_connectable_primtive_input_pins-1] what input pins this output can connect to without exiting cluster at given depth */
 	int *num_connectable_primtive_input_pins; /* [0..depth-1] number of input pins that this output pin can reach without exiting cluster at given depth */
+
+	t_pb_graph_pin_power * pin_power;
 };
 typedef struct s_pb_graph_pin t_pb_graph_pin;
+
+struct s_pb_graph_pin_power {
+	float C_wire;
+	float buffer_size;
+};
+
+typedef enum {
+	POWER_WIRE_TYPE_UNDEFINED = 0,
+	POWER_WIRE_TYPE_IGNORED,
+	POWER_WIRE_TYPE_C,
+	POWER_WIRE_TYPE_ABSOLUTE_LENGTH,
+	POWER_WIRE_TYPE_RELATIVE_LENGTH,
+	POWER_WIRE_TYPE_AUTO
+} e_power_wire_type;
+
+typedef enum {
+	POWER_BUFFER_TYPE_UNDEFINED = 0,
+	POWER_BUFFER_TYPE_NONE,
+	POWER_BUFFER_TYPE_AUTO,
+	POWER_BUFFER_TYPE_ABSOLUTE_SIZE
+} e_power_buffer_type;
+
+struct s_port_power {
+	float energy_per_toggle;
+
+	e_power_wire_type wire_type;
+	union {
+		float C;
+		float absolute_length;
+		float relative_length;
+	} wire;
+
+	e_power_buffer_type buffer_type;
+	float buffer_size;
+};
 
 struct s_pb_graph_node;
 
@@ -442,8 +493,6 @@ struct s_pb_graph_node {
 
 	int total_pb_pins; /* only valid for top-level */
 
-	t_interconnect_pins ** interconnect_pins; /* [0..num_modes-1][0..num_interconnect_in_mode] */
-
 	void *temp_scratch_pad; /* temporary data, useful for keeping track of things when traversing data structure */
 	struct s_cluster_placement_primitive *cluster_placement_primitive; /* pointer to indexing structure useful during packing stage */
 
@@ -451,8 +500,20 @@ struct s_pb_graph_node {
 	int num_input_pin_class; /* number of pin classes that this input pb_graph_node has */
 	int *output_pin_class_size; /* Stores the number of pins that belong to a particular output pin class */
 	int num_output_pin_class; /* number of output pin classes that this pb_graph_node has */
+
+	/* Interconnect instances for this pb
+	 * Only used for power
+	 */
+	t_pb_graph_node_power * pb_node_power;
+	t_interconnect_pins ** interconnect_pins; /* [0..num_modes-1][0..num_interconnect_in_mode] */
 };
 typedef struct s_pb_graph_node t_pb_graph_node;
+
+struct s_pb_graph_node_power {
+	float transistor_cnt_pb_children; /* Total transistor size of this pb */
+	float transistor_cnt_interc; /* Total transistor size of the interconnect in this pb */
+	float transistor_cnt_buffers;
+};
 
 /** Describes a physical block type
  * name: name of the physical block type
@@ -497,15 +558,14 @@ typedef struct s_pb_type t_pb_type;
 
 struct s_pb_type_power {
 	/* Type of power estimation for this pb */
-	e_pb_power_type power_dynamic_type;
-	e_pb_power_type power_static_type;
+	e_power_estimation_method estimation_method;
+
+	t_power_usage absolute_power_per_instance; /* User-provided absolute power per block */
 
 	float C_internal; /*Internal capacitance of the pb */
 	int leakage_default_mode; /* Default mode for leakage analysis, if block has no set mode */
 
 	t_power_usage power_usage;
-	float transistor_cnt; /* Total transistor size of this pb */
-	float transistor_cnt_interc; /* Total transistor size of the interconnect in this pb */
 };
 
 /* Describes the type for a physical logic block
@@ -667,8 +727,8 @@ typedef struct s_switch_inf {
 	float mux_trans_size;
 	float buf_size;
 	char *name;
-	boolean autosize_buffer;
-	float buffer_last_stage_size;
+	e_power_buffer_type power_buffer_type;
+	float power_buffer_size;
 } t_switch_inf;
 
 /* Lists all the important information about a direct chain connection.     *

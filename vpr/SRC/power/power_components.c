@@ -165,9 +165,9 @@ static void power_component_print_usage_rec(FILE * fp, char * name,
 		break;
 	case (POWER_COMPONENT_CLB):
 		power_component_print_usage_rec(fp, "Interconnect",
-				POWER_COMPONENT_LOCAL_INTERC, type, indent_level + 1);
+				POWER_COMPONENT_LOCAL_INTERC_MUXES, type, indent_level + 1);
 		power_component_print_usage_rec(fp, "LocalWire",
-				POWER_COMPONENT_LOCAL_WIRE, type, indent_level + 1);
+				POWER_COMPONENT_LOCAL_BUFFERS_AND_WIRE, type, indent_level + 1);
 		power_component_print_usage_rec(fp, "FF", POWER_COMPONENT_FF, type,
 				indent_level + 1);
 		power_component_print_usage_rec(fp, "LUT", POWER_COMPONENT_LUT, type,
@@ -470,7 +470,7 @@ void power_calc_LUT(t_power_usage * power_usage, int LUT_size,
 			/* Add the level-restoring buffer if necessary */
 			if (level_restorer_this_level) {
 				/* Level restorer */
-				power_calc_buffer(&sub_power, 1,
+				power_usage_buffer(&sub_power, 1,
 						internal_prob[level_idx + 1][MUX_idx],
 						internal_dens[level_idx + 1][MUX_idx], TRUE, 2);
 				power_add_usage(power_usage, &sub_power);
@@ -503,71 +503,30 @@ void power_calc_LUT(t_power_usage * power_usage, int LUT_size,
  * - interc_pins: The interconnect input/ouput pin information
  * - interc_length: The physical length spanned by the interconnect (meters)
  */
-void power_calc_interconnect(t_power_usage * power_usage, t_pb * pb,
-		t_interconnect_pins * interc_pins, float interc_length) {
+void power_calc_local_interc_mux(t_power_usage * power_usage, t_pb * pb,
+		t_interconnect_pins * interc_pins) {
 	int pin_idx;
 	int out_port_idx;
 	int in_port_idx;
 	float * in_dens;
 	float * in_prob;
-	float C_wire;
-	float dens;
+	t_power_usage MUX_power;
 	t_interconnect * interc = interc_pins->interconnect;
-	t_power_usage sub_power_usage;
+	t_interconnect_power * interc_power = interc->interconnect_power;
 
 	power_zero_usage(power_usage);
 
 	/* Ensure port/pins are structured as expected */
 	switch (interc_pins->interconnect->type) {
 	case DIRECT_INTERC:
-		assert(
-				interc_pins->interconnect->interconnect_power->num_input_ports == 1);
-		assert(
-				interc_pins->interconnect->interconnect_power->num_output_ports == 1);
+		assert(interc_power->num_input_ports == 1);
+		assert(interc_power->num_output_ports == 1);
 		break;
 	case MUX_INTERC:
-		assert(
-				interc_pins->interconnect->interconnect_power->num_output_ports == 1);
+		assert(interc_power->num_output_ports == 1);
 		break;
 	case COMPLETE_INTERC:
 		break;
-	}
-
-	/* Interconnect Wire Capacitances */
-
-	/* Assume input/output wire length are each half of interc_length */
-	C_wire = 0.5 * interc_length * g_power_arch->C_wire_local;
-
-	for (out_port_idx = 0;
-			out_port_idx
-					< interc_pins->interconnect->interconnect_power->num_output_ports;
-			out_port_idx++) {
-		for (pin_idx = 0;
-				pin_idx
-						< interc_pins->interconnect->interconnect_power->num_pins_per_port;
-				pin_idx++) {
-
-			/* Wires to inputs */
-			for (in_port_idx = 0;
-					in_port_idx
-							< interc_pins->interconnect->interconnect_power->num_input_ports;
-					in_port_idx++) {
-				dens = pin_density(pb,
-						interc_pins->input_pins[in_port_idx][pin_idx]);
-				power_calc_wire(&sub_power_usage, C_wire, dens);
-				power_add_usage(power_usage, &sub_power_usage);
-				power_component_add_usage(&sub_power_usage,
-						POWER_COMPONENT_LOCAL_WIRE);
-			}
-
-			/* Wire from output */
-			dens = pin_density(pb,
-					interc_pins->output_pins[out_port_idx][pin_idx]);
-			power_calc_wire(&sub_power_usage, C_wire, dens);
-			power_add_usage(power_usage, &sub_power_usage);
-			power_component_add_usage(&sub_power_usage,
-					POWER_COMPONENT_LOCAL_WIRE);
-		}
 	}
 
 	/* Power of transistors to build interconnect structure */
@@ -591,7 +550,7 @@ void power_calc_interconnect(t_power_usage * power_usage, t_pb * pb,
 			for (pin_idx = 0;
 					pin_idx < interc->interconnect_power->num_pins_per_port;
 					pin_idx++) {
-				t_power_usage MUX_power;
+
 				int selected_input = OPEN;
 
 				/* Clear input densities */
@@ -627,8 +586,7 @@ void power_calc_interconnect(t_power_usage * power_usage, t_pb * pb,
 
 							/* Initialize input densities */
 							if (input_pin_net != OPEN) {
-								in_dens[in_port_idx] = pin_density(pb,
-										input_pin);
+								in_dens[in_port_idx] = pin_dens(pb, input_pin);
 								in_prob[in_port_idx] = pin_prob(pb, input_pin);
 							}
 						}
@@ -647,8 +605,6 @@ void power_calc_interconnect(t_power_usage * power_usage, t_pb * pb,
 						in_prob, in_dens, selected_input, TRUE);
 
 				power_add_usage(power_usage, &MUX_power);
-				power_component_add_usage(&MUX_power,
-						POWER_COMPONENT_LOCAL_INTERC);
 			}
 		}
 
@@ -764,7 +720,7 @@ static void power_calc_mux_rec(t_power_usage * power_usage, float * out_prob,
  * - level_restored: Whether this buffer must level restore the input
  * - input_mux_size: If fed by a mux, the size of this mutliplexer
  */
-void power_calc_buffer(t_power_usage * power_usage, float size, float in_prob,
+void power_usage_buffer(t_power_usage * power_usage, float size, float in_prob,
 		float in_dens, boolean level_restorer, int input_mux_size) {
 	t_power_usage sub_power_usage;
 	int i, num_stages;
@@ -775,11 +731,12 @@ void power_calc_buffer(t_power_usage * power_usage, float size, float in_prob,
 
 	power_zero_usage(power_usage);
 
-	if (size == 0) {
+	if (size == 0.) {
 		return;
 	}
 
-	num_stages = calc_buffer_num_stages(size, POWER_BUFFER_STAGE_GAIN);
+	num_stages = calc_buffer_num_stages(size,
+			g_power_arch->logical_effort_factor);
 	stage_effort = calc_buffer_stage_effort(num_stages, size);
 
 	stage_in_prob = in_prob;

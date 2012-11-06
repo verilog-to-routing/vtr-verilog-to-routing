@@ -42,7 +42,8 @@
 #define POWER_TRANSISTOR_AREA_SPACING_FACTOR (POWER_TRANSISTOR_AREA / POWER_TRANSISTOR_LAYOUT_AREA)
 
 /************************* FUNCTION DECLARATION *********************/
-double power_count_transistors(t_arch * arch);
+void power_size_pb(void);
+double power_transistors_per_tile(t_arch * arch);
 double power_count_transistors_buffer(float buffer_size);
 double power_transistor_area(double num_transistors);
 #endif

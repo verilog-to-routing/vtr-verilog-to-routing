@@ -57,20 +57,22 @@ void power_print_spice_comparison(void) {
 
 	g_solution_inf.T_crit = 5.0e-9;
 
-	fprintf(g_power_output->out, "Energy of INV (High Activity)\n");
-	for (i = 0; i < (sizeof(inv_sizes) / sizeof(float)); i++) {
-		power_calc_inverter(&sub_power_usage, 2, 0.5, inv_sizes[i]);
-		fprintf(g_power_output->out, "%g\t%g\n", inv_sizes[i],
-				(sub_power_usage.dynamic + sub_power_usage.leakage)
-						* g_solution_inf.T_crit);
-	}
+	if (0) {
+		fprintf(g_power_output->out, "Energy of INV (High Activity)\n");
+		for (i = 0; i < (sizeof(inv_sizes) / sizeof(float)); i++) {
+			power_calc_inverter(&sub_power_usage, 2, 0.5, inv_sizes[i]);
+			fprintf(g_power_output->out, "%g\t%g\n", inv_sizes[i],
+					(sub_power_usage.dynamic + sub_power_usage.leakage)
+							* g_solution_inf.T_crit);
+		}
 
-	fprintf(g_power_output->out, "Energy of INV (No Activity)\n");
-	for (i = 0; i < (sizeof(inv_sizes) / sizeof(float)); i++) {
-		power_calc_inverter(&sub_power_usage, 0, 1, inv_sizes[i]);
-		fprintf(g_power_output->out, "%g\t%g\n", inv_sizes[i],
-				(sub_power_usage.dynamic + sub_power_usage.leakage)
-						* g_solution_inf.T_crit);
+		fprintf(g_power_output->out, "Energy of INV (No Activity)\n");
+		for (i = 0; i < (sizeof(inv_sizes) / sizeof(float)); i++) {
+			power_calc_inverter(&sub_power_usage, 0, 1, inv_sizes[i]);
+			fprintf(g_power_output->out, "%g\t%g\n", inv_sizes[i],
+					(sub_power_usage.dynamic + sub_power_usage.leakage)
+							* g_solution_inf.T_crit);
+		}
 	}
 
 	fprintf(g_power_output->out, "Energy of Mux (High Activity)\n");
@@ -86,8 +88,7 @@ void power_print_spice_comparison(void) {
 			prob[j] = 0.5;
 		}
 		power_calc_mux_multilevel(&mux_power_usage,
-				power_get_mux_arch(mux_sizes[i]), prob, dens, 0,
-				FALSE);
+				power_get_mux_arch(mux_sizes[i]), prob, dens, 0, FALSE);
 		fprintf(g_power_output->out, "%d\t%g\n", mux_sizes[i],
 				(mux_power_usage.dynamic + mux_power_usage.leakage)
 						* g_solution_inf.T_crit);
@@ -111,8 +112,7 @@ void power_print_spice_comparison(void) {
 			}
 		}
 		power_calc_mux_multilevel(&mux_power_usage,
-				power_get_mux_arch(mux_sizes[i]), prob, dens, 0,
-				FALSE);
+				power_get_mux_arch(mux_sizes[i]), prob, dens, 0, FALSE);
 		fprintf(g_power_output->out, "%d\t%g\n", mux_sizes[i],
 				(mux_power_usage.dynamic + mux_power_usage.leakage)
 						* g_solution_inf.T_crit);
@@ -120,7 +120,7 @@ void power_print_spice_comparison(void) {
 
 	fprintf(g_power_output->out, "Energy of Buffer (High Activity)\n");
 	for (i = 0; i < (sizeof(buffer_sizes) / sizeof(float)); i++) {
-		power_calc_buffer(&sub_power_usage, buffer_sizes[i], 0.5, 2, FALSE, 0);
+		power_usage_buffer(&sub_power_usage, buffer_sizes[i], 0.5, 2, FALSE, 0);
 		fprintf(g_power_output->out, "%g\t%g\n", buffer_sizes[i],
 				(sub_power_usage.dynamic + sub_power_usage.leakage)
 						* g_solution_inf.T_crit);
@@ -128,7 +128,7 @@ void power_print_spice_comparison(void) {
 
 	fprintf(g_power_output->out, "Energy of Buffer (No Activity)\n");
 	for (i = 0; i < (sizeof(buffer_sizes) / sizeof(float)); i++) {
-		power_calc_buffer(&sub_power_usage, buffer_sizes[i], 1, 0, FALSE, 0);
+		power_usage_buffer(&sub_power_usage, buffer_sizes[i], 1, 0, FALSE, 0);
 		fprintf(g_power_output->out, "%g\t%g\n", buffer_sizes[i],
 				(sub_power_usage.dynamic + sub_power_usage.leakage)
 						* g_solution_inf.T_crit);
@@ -166,7 +166,8 @@ void power_print_spice_comparison(void) {
 	fprintf(g_power_output->out, "Energy of LUT (No Activity)\n");
 	for (i = 0; i < (sizeof(LUT_sizes) / sizeof(int)); i++) {
 		for (j = 1; j <= LUT_sizes[i]; j++) {
-			SRAM_bits = (char*) my_realloc(SRAM_bits, ((1 << j) + 1) * sizeof(char));
+			SRAM_bits = (char*) my_realloc(SRAM_bits,
+					((1 << j) + 1) * sizeof(char));
 			if (j == 1) {
 				SRAM_bits[0] = '1';
 				SRAM_bits[1] = '0';
@@ -179,8 +180,8 @@ void power_print_spice_comparison(void) {
 			SRAM_bits[1 << j] = '\0';
 		}
 
-		dens = (float*)my_realloc(dens, LUT_sizes[i] * sizeof(float));
-		prob = (float*)my_realloc(prob, LUT_sizes[i] * sizeof(float));
+		dens = (float*) my_realloc(dens, LUT_sizes[i] * sizeof(float));
+		prob = (float*) my_realloc(prob, LUT_sizes[i] * sizeof(float));
 		for (j = 0; j < LUT_sizes[i]; j++) {
 			dens[j] = 0;
 			prob[j] = 1;
@@ -209,19 +210,18 @@ void power_print_spice_comparison(void) {
 
 		power_zero_usage(&sb_power_usage);
 
-		dens = (float*)my_realloc(dens, sb_mux_sizes[i] * sizeof(float));
-		prob = (float*)my_realloc(prob, sb_mux_sizes[i] * sizeof(float));
+		dens = (float*) my_realloc(dens, sb_mux_sizes[i] * sizeof(float));
+		prob = (float*) my_realloc(prob, sb_mux_sizes[i] * sizeof(float));
 		for (j = 0; j < sb_mux_sizes[i]; j++) {
 			dens[j] = 2;
 			prob[j] = 0.5;
 		}
 
 		power_calc_mux_multilevel(&sub_power_usage,
-				power_get_mux_arch(sb_mux_sizes[i]), prob, dens,
-				0, TRUE);
+				power_get_mux_arch(sb_mux_sizes[i]), prob, dens, 0, TRUE);
 		power_add_usage(&sb_power_usage, &sub_power_usage);
 
-		power_calc_buffer(&sub_power_usage, sb_buffer_sizes[i], 0.5, 2, TRUE,
+		power_usage_buffer(&sub_power_usage, sb_buffer_sizes[i], 0.5, 2, TRUE,
 				power_get_mux_arch(sb_mux_sizes[i])->mux_graph_head->num_inputs);
 		power_add_usage(&sb_power_usage, &sub_power_usage);
 
@@ -250,11 +250,10 @@ void power_print_spice_comparison(void) {
 		}
 
 		power_calc_mux_multilevel(&sub_power_usage,
-				power_get_mux_arch(sb_mux_sizes[i]), prob, dens,
-				0, TRUE);
+				power_get_mux_arch(sb_mux_sizes[i]), prob, dens, 0, TRUE);
 		power_add_usage(&sb_power_usage, &sub_power_usage);
 
-		power_calc_buffer(&sub_power_usage, sb_buffer_sizes[i], 1, 0, TRUE,
+		power_usage_buffer(&sub_power_usage, sb_buffer_sizes[i], 1, 0, TRUE,
 				power_get_mux_arch(sb_mux_sizes[i])->mux_graph_head->num_inputs);
 		power_add_usage(&sb_power_usage, &sub_power_usage);
 

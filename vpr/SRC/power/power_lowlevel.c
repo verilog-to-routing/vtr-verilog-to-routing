@@ -29,7 +29,6 @@
 #include "globals.h"
 
 /************************* FUNCTION DELCARATIONS ********************/
-static float power_calc_node_switching(float capacitance, float density);
 static float power_calc_node_switching_v(float capacitance, float density,
 		float voltage);
 static void power_calc_transistor_capacitance(float *C_d, float *C_s,
@@ -85,7 +84,7 @@ void power_lowlevel_init() {
  * - capacitance: The capacitance of the nodoe
  * - density: The transition density of the node
  */
-static float power_calc_node_switching(float capacitance, float density) {
+float power_calc_node_switching(float capacitance, float density) {
 	return 0.5 * g_power_tech->Vdd * g_power_tech->Vdd * capacitance * density
 			/ g_solution_inf.T_crit;
 }
@@ -379,7 +378,7 @@ static float power_calc_leakage_st_pass_transistor(float size, float v_ds) {
  * - capacitance: Capacitance of the wire (F)
  * - density: Transition density of the wire
  */
-void power_calc_wire(t_power_usage * power_usage, float capacitance,
+void power_usage_wire(t_power_usage * power_usage, float capacitance,
 		float density) {
 	power_usage->leakage = 0.;
 	power_usage->dynamic = power_calc_node_switching(capacitance, density);
@@ -654,41 +653,6 @@ void power_calc_level_restorer(t_power_usage * power_usage,
 			* g_power_tech->PMOS_inf.long_trans_inf->leakage_subthreshold;
 
 	*dyn_power_in = input_dyn_power;
-}
-
-/**
- * This function calculates the switching power of a logic block, based on the
- * internal capacitance.  This function is only used for user-created logic blocks
- * where only the internal capacitance is known.
- * - pb: The physical block instance
- * - pb_graph_node: The physical block graph node
- */
-float power_calc_pb_switching_from_c_internal(t_pb * pb,
-		t_pb_graph_node * pb_graph_node) {
-	float density = 0.;
-
-	int port_idx;
-	int pin_idx;
-	int num_pins = 0;
-
-	/* Average the activity of all pins */
-	for (port_idx = 0; port_idx < pb_graph_node->num_input_ports; port_idx++) {
-		for (pin_idx = 0; pin_idx < pb_graph_node->num_input_pins[port_idx];
-				pin_idx++) {
-			if (pb->rr_graph[pb_graph_node->input_pins[port_idx][pin_idx].pin_count_in_cluster].net_num
-					!= OPEN) {
-				density += pin_density(pb,
-						&pb_graph_node->input_pins[port_idx][pin_idx]);
-			}
-			num_pins++;
-		}
-	}
-
-	if (num_pins != 0) {
-		density = density / num_pins;
-	}
-	return power_calc_node_switching(pb_graph_node->pb_type->pb_type_power->C_internal,
-			density);
 }
 
 /**

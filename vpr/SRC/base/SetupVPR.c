@@ -298,8 +298,7 @@ static void SetupSwitches(INP t_arch Arch,
 	switch_inf[RoutingArch->delayless_switch].Cin = 0.;
 	switch_inf[RoutingArch->delayless_switch].Cout = 0.;
 	switch_inf[RoutingArch->delayless_switch].Tdel = 0.;
-	switch_inf[RoutingArch->delayless_switch].autosize_buffer = FALSE;
-	switch_inf[RoutingArch->delayless_switch].buffer_last_stage_size = 0.;
+	switch_inf[RoutingArch->delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
 	switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
 
 	/* The wire to ipin switch for all types. Curently all types
@@ -310,8 +309,7 @@ static void SetupSwitches(INP t_arch Arch,
 	switch_inf[RoutingArch->wire_to_ipin_switch].Cin = Arch.C_ipin_cblock;
 	switch_inf[RoutingArch->wire_to_ipin_switch].Cout = 0.;
 	switch_inf[RoutingArch->wire_to_ipin_switch].Tdel = Arch.T_ipin_cblock;
-	switch_inf[RoutingArch->wire_to_ipin_switch].autosize_buffer = FALSE;
-	switch_inf[RoutingArch->wire_to_ipin_switch].buffer_last_stage_size = 0.;
+	switch_inf[RoutingArch->wire_to_ipin_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
 	switch_inf[RoutingArch->wire_to_ipin_switch].mux_trans_size = 0.;
 }
 

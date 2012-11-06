@@ -66,7 +66,7 @@ char * transistor_type_name(e_tx_type type) {
 	}
 }
 
-float pin_density(t_pb * pb, t_pb_graph_pin * pin) {
+float pin_dens(t_pb * pb, t_pb_graph_pin * pin) {
 	float density = 0.;
 
 	if (pb) {
@@ -194,7 +194,7 @@ int calc_buffer_num_stages(float final_stage_size, float desired_stage_effort) {
  */
 float calc_buffer_stage_effort(int N, float final_stage_size) {
 	if (N > 1)
-		return pow((double)final_stage_size, (1.0 / ((double) N - 1)));
+		return pow((double) final_stage_size, (1.0 / ((double) N - 1)));
 	else
 		return 1.0;
 }
@@ -460,7 +460,7 @@ void output_logs(FILE * fp, t_log * logs, int num_logs) {
 }
 
 float power_buffer_size_from_logical_effort(float C_load) {
-	return max(1.0, C_load / g_power_commonly_used->INV_1X_C_in / POWER_BUFFER_STAGE_GAIN);
+	return max(1.0, C_load / g_power_commonly_used->INV_1X_C_in / g_power_arch->logical_effort_factor);
 }
 
 void power_print_title(FILE * fp, char * title) {
@@ -556,4 +556,18 @@ static void alloc_and_load_mux_graph_recursive(t_mux_node * node,
 		}
 	}
 }
+
+boolean power_method_is_transistor_level(
+		e_power_estimation_method estimation_method) {
+	switch (estimation_method) {
+	case POWER_METHOD_AUTO_SIZES:
+	case POWER_METHOD_SPECIFY_SIZES:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+
+
 

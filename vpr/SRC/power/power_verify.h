@@ -27,11 +27,6 @@
 
 /************************* DEFINES **********************************/
 
-/* This controls whether the tools is run in verification mode.
- * IN VERIFICATION MODE, THE INPUT CIRCUIT WILL BE IGNORED.
- */
-#define PRINT_SPICE_COMPARISON 0
-
 /************************* FUNCTION DECLARATIONS ********************/
 void power_print_spice_comparison(void);
 

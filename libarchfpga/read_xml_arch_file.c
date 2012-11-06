@@ -62,7 +62,8 @@ static void SetupTypeTiming(ezxml_t timing,
 /*    Process XML hiearchy */
 static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 		t_mode * mode);
-static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port);
+static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port,
+		e_power_estimation_method power_method);
 static void ProcessPinToPinAnnotations(ezxml_t parent,
 		t_pin_to_pin_annotation *annotation);
 static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode);
@@ -109,6 +110,11 @@ static void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 
 static void PrintPb_types_rec(INP FILE * Echo, INP const t_pb_type * pb_type,
 		int level);
+static void ProcessPb_TypePower(ezxml_t Parent, t_pb_type * pb_type);
+static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
+		e_power_estimation_method power_method);
+e_power_estimation_method power_method_inherited(
+		e_power_estimation_method parent_power_method);
 
 /* Sets up the pinloc map and pin classes for the type. Unlinks the loc nodes
  * from the XML tree.
@@ -599,6 +605,90 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 	assert(i == annotation->num_value_prop_pairs);
 }
 
+static void ProcessPb_TypePower(ezxml_t Parent, t_pb_type * pb_type) {
+	ezxml_t cur, child;
+	const char * prop;
+	boolean require_dynamic_absolute = FALSE;
+	boolean require_static_absolute = FALSE;
+	boolean require_dynamic_C_internal = FALSE;
+	e_power_estimation_method parent_power_method;
+
+	/* Allocate and read pb power information */
+	pb_type->pb_type_power = (t_pb_type_power*) my_calloc(1,
+			sizeof(t_pb_type_power));
+	pb_type->pb_type_power->power_usage.dynamic = 0.;
+	pb_type->pb_type_power->power_usage.leakage = 0.;
+	pb_type->pb_type_power->C_internal = 0.;
+
+	prop = NULL;
+
+	cur = FindFirstElement(Parent, "power", FALSE);
+	if (cur) {
+		prop = FindProperty(cur, "method", FALSE);
+	}
+
+	if (pb_type->parent_mode && pb_type->parent_mode->parent_pb_type) {
+		parent_power_method =
+				pb_type->parent_mode->parent_pb_type->pb_type_power->estimation_method;
+	} else {
+		parent_power_method = POWER_METHOD_AUTO_SIZES;
+	}
+
+	if (!prop) {
+		/* default method is auto-size */
+		pb_type->pb_type_power->estimation_method = power_method_inherited(
+				parent_power_method);
+	} else if (strcmp(prop, "auto-size") == 0) {
+		pb_type->pb_type_power->estimation_method = POWER_METHOD_AUTO_SIZES;
+	} else if (strcmp(prop, "specify-size") == 0) {
+		pb_type->pb_type_power->estimation_method = POWER_METHOD_SPECIFY_SIZES;
+	} else if (strcmp(prop, "pin-toggle") == 0) {
+		pb_type->pb_type_power->estimation_method = POWER_METHOD_TOGGLE_PINS;
+		require_static_absolute = TRUE;
+	} else if (strcmp(prop, "c-internal") == 0) {
+		pb_type->pb_type_power->estimation_method = POWER_METHOD_C_INTERNAL;
+		require_dynamic_C_internal = TRUE;
+		require_static_absolute = TRUE;
+	} else if (strcmp(prop, "absolute") == 0) {
+		pb_type->pb_type_power->estimation_method = POWER_METHOD_ABSOLUTE;
+		require_dynamic_absolute = TRUE;
+		require_static_absolute = TRUE;
+	} else {
+		vpr_printf(TIO_MESSAGE_ERROR,
+				"Invalid power estimation method for pb_type '%s'",
+				pb_type->name);
+	}
+
+	if (prop) {
+		ezxml_set_attr(cur, "method", NULL );
+	}
+
+	if (require_static_absolute) {
+		child = FindElement(cur, "static_power", TRUE);
+		pb_type->pb_type_power->absolute_power_per_instance.leakage =
+				GetFloatProperty(child, "power_per_instance", TRUE, 0.);
+		FreeNode(child);
+	}
+
+	if (require_dynamic_absolute) {
+		child = FindElement(cur, "dynamic_power", TRUE);
+		pb_type->pb_type_power->absolute_power_per_instance.dynamic =
+				GetFloatProperty(child, "power_per_instance", TRUE, 0.);
+		FreeNode(child);
+	}
+
+	if (require_dynamic_C_internal) {
+		child = FindElement(cur, "dynamic_power", TRUE);
+		pb_type->pb_type_power->C_internal = GetFloatProperty(child,
+				"C_internal", TRUE, 0.);
+		FreeNode(child);
+	}
+
+	if (cur) {
+		FreeNode(cur);
+	}
+}
+
 /* Takes in a pb_type, allocates and loads data for it and recurses downwards */
 static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 		t_mode * mode) {
@@ -649,6 +739,8 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 		pb_type->num_pb = GetIntProperty(Parent, "num_pb", TRUE, 0);
 	}
 
+	ProcessPb_TypePower(Parent, pb_type);
+
 	assert(pb_type->num_pb > 0);
 	num_ports = 0;
 	num_ports += CountChildren(Parent, "input", 0);
@@ -671,7 +763,8 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 			Cur = FindFirstElement(Parent, "clock", FALSE);
 		}
 		while (Cur != NULL ) {
-			ProcessPb_TypePort(Cur, &pb_type->ports[j]);
+			ProcessPb_TypePort(Cur, &pb_type->ports[j],
+					pb_type->pb_type_power->estimation_method);
 			pb_type->ports[j].parent_pb_type = pb_type;
 			pb_type->ports[j].index = j;
 			pb_type->ports[j].port_index_by_type = k;
@@ -684,40 +777,6 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 		}
 	}
 	assert(j == num_ports);
-
-	/* Allocate and read pb power information */
-	pb_type->pb_type_power = (t_pb_type_power*) my_malloc(
-			sizeof(t_pb_type_power));
-
-	Cur = FindFirstElement(Parent, "power", FALSE);
-
-	Prop = FindProperty(Cur, "dynamic", FALSE);
-	if (Prop) {
-		pb_type->pb_type_power->power_usage.dynamic = GetFloatProperty(Cur,
-				"dynamic", FALSE, 0.);
-		pb_type->pb_type_power->power_dynamic_type = PB_POWER_PROVIDED;
-	} else {
-		Prop = FindProperty(Cur, "C_internal", FALSE);
-		if (Prop) {
-			pb_type->pb_type_power->C_internal = GetFloatProperty(Cur,
-					"C_internal", FALSE, 0.);
-			pb_type->pb_type_power->power_dynamic_type = PB_POWER_C_INTERNAL;
-		} else {
-			pb_type->pb_type_power->power_dynamic_type = PB_POWER_UNDEFINED;
-		}
-	}
-
-	Prop = FindProperty(Cur, "static", FALSE);
-	if (Prop) {
-		pb_type->pb_type_power->power_usage.leakage = GetFloatProperty(Cur,
-				"static", FALSE, 0.);
-		pb_type->pb_type_power->power_static_type = PB_POWER_PROVIDED;
-	} else {
-		pb_type->pb_type_power->power_static_type = PB_POWER_UNDEFINED;
-	}
-	if (Cur) {
-		FreeNode(Cur);
-	}
 
 	/* Count stats on the number of each type of pin */
 	pb_type->num_clock_pins = pb_type->num_input_pins =
@@ -847,7 +906,117 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 	}
 }
 
-static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port) {
+static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
+		e_power_estimation_method power_method) {
+	ezxml_t cur;
+	const char * prop;
+	bool wire_defined = FALSE;
+
+	port->port_power = (t_port_power*) my_calloc(1, sizeof(t_port_power));
+	port->port_power->energy_per_toggle = 0.0;
+
+	//Defaults
+	if (power_method == POWER_METHOD_AUTO_SIZES) {
+		port->port_power->wire_type = POWER_WIRE_TYPE_AUTO;
+		port->port_power->buffer_type = POWER_BUFFER_TYPE_AUTO;
+	} else if (power_method == POWER_METHOD_SPECIFY_SIZES) {
+		port->port_power->wire_type = POWER_WIRE_TYPE_IGNORED;
+		port->port_power->buffer_type = POWER_BUFFER_TYPE_NONE;
+	}
+
+	cur = FindElement(Parent, "power", FALSE);
+
+	if (cur) {
+		/* Check for toggle power */
+		prop = FindProperty(cur, "energy_per_toggle", FALSE);
+		if (prop) {
+			if (power_method != POWER_METHOD_TOGGLE_PINS) {
+				vpr_printf(TIO_MESSAGE_ERROR,
+						"Pin toggle energy defined for port '%s', but the parent pb_type '%s' is not configured to use the pin toggle power estimation method.",
+						port->name, port->parent_pb_type->name);
+			} else {
+				port->port_power->energy_per_toggle = atof(prop);
+			}
+		}
+
+		/* Wire capacitance */
+
+		/* Absolute C provided */
+		prop = FindProperty(cur, "wire_capacitance", FALSE);
+		if (prop) {
+			if (!(power_method == POWER_METHOD_AUTO_SIZES
+					|| power_method == POWER_METHOD_SPECIFY_SIZES)) {
+				vpr_printf(TIO_MESSAGE_ERROR,
+						"Wire capacitance defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
+						port->name, port->parent_pb_type->name);
+			} else {
+				wire_defined = TRUE;
+				port->port_power->wire_type = POWER_WIRE_TYPE_C;
+				port->port_power->wire.C = atof(prop);
+			}
+		}
+
+		/* Wire absolute length provided */
+		prop = FindProperty(cur, "wire_length", FALSE);
+		if (prop) {
+			if (!(power_method == POWER_METHOD_AUTO_SIZES
+					|| power_method == POWER_METHOD_SPECIFY_SIZES)) {
+				vpr_printf(TIO_MESSAGE_ERROR,
+						"Wire length defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
+						port->name, port->parent_pb_type->name);
+			} else if (wire_defined) {
+				vpr_printf(TIO_MESSAGE_ERROR,
+						"Multiple wire properties defined for port '%s', pb_type '%s'.",
+						port->name, port->parent_pb_type->name);
+			} else if (strcmp(prop, "auto") == 0) {
+				wire_defined = TRUE;
+				port->port_power->wire_type = POWER_WIRE_TYPE_AUTO;
+			} else {
+				wire_defined = TRUE;
+				port->port_power->wire_type = POWER_WIRE_TYPE_ABSOLUTE_LENGTH;
+				port->port_power->wire.absolute_length = atof(prop);
+			}
+		}
+
+		/* Wire relative length provided */
+		prop = FindProperty(cur, "wire_relative_length", FALSE);
+		if (prop) {
+			if (!(power_method == POWER_METHOD_AUTO_SIZES
+					|| power_method == POWER_METHOD_SPECIFY_SIZES)) {
+				vpr_printf(TIO_MESSAGE_ERROR,
+						"Wire relative length defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
+						port->name, port->parent_pb_type->name);
+			} else if (wire_defined) {
+				vpr_printf(TIO_MESSAGE_ERROR,
+						"Multiple wire properties defined for port '%s', pb_type '%s'.",
+						port->name, port->parent_pb_type->name);
+			} else {
+				wire_defined = TRUE;
+				port->port_power->wire_type = POWER_WIRE_TYPE_RELATIVE_LENGTH;
+				port->port_power->wire.relative_length = atof(prop);
+			}
+		}
+
+		/* Buffer Size */
+		prop = FindProperty(cur, "buffer_size", FALSE);
+		if (prop) {
+			if (!(power_method == POWER_METHOD_AUTO_SIZES
+					|| power_method == POWER_METHOD_SPECIFY_SIZES)) {
+				vpr_printf(TIO_MESSAGE_ERROR,
+						"Buffer size defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
+						port->name, port->parent_pb_type->name);
+			} else if (strcmp(prop, "auto") == 0) {
+				port->port_power->buffer_type = POWER_BUFFER_TYPE_AUTO;
+			} else {
+				port->port_power->buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
+				port->port_power->buffer_size = atof(prop);
+			}
+		}
+	}
+}
+
+static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port,
+		e_power_estimation_method power_method) {
 	const char *Prop;
 	Prop = FindProperty(Parent, "name", TRUE);
 	port->name = my_strdup(Prop);
@@ -885,6 +1054,8 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port) {
 				Parent->line, Parent->name);
 		exit(1);
 	}
+
+	ProcessPb_TypePort_Power(Parent, port, power_method);
 }
 
 static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
@@ -924,6 +1095,8 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 			mode->interconnect[i].line_num = Cur->line;
 
 			mode->interconnect[i].parent_mode_index = mode->index;
+			mode->interconnect[i].parent_mode = mode;
+
 			Prop = FindProperty(Cur, "input", TRUE);
 			mode->interconnect[i].input_string = my_strdup(Prop);
 			ezxml_set_attr(Cur, "input", NULL );
@@ -1265,7 +1438,7 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 					}
 
 					/* Go through the pins in the port from start_pin_index to end_pin_index
-					 * and overwrite the default fc_val and fc_type with the values parsed in 
+					 * and overwrite the default fc_val and fc_type with the values parsed in
 					 * from above. */
 					for (curr_pin = start_pin_index; curr_pin <= end_pin_index;
 							curr_pin++) {
@@ -1628,7 +1801,7 @@ static void SetupEmptyType(void) {
 	type->num_grid_loc_def = 0;
 }
 
-static void alloc_and_load_default_child_for_pb_type(INOUTP t_pb_type *pb_type,
+static void alloc_and_load_default_child_for_pb_type( INOUTP t_pb_type *pb_type,
 		char *new_name, t_pb_type *copy) {
 	int i, j;
 	char *dot;
@@ -1656,6 +1829,8 @@ static void alloc_and_load_default_child_for_pb_type(INOUTP t_pb_type *pb_type,
 		copy->ports[i].parent_pb_type = copy;
 		copy->ports[i].name = my_strdup(pb_type->ports[i].name);
 		copy->ports[i].port_class = my_strdup(pb_type->ports[i].port_class);
+		copy->ports[i].port_power = (t_port_power*) my_calloc(1,
+				sizeof(t_port_power));
 	}
 
 	copy->max_internal_delay = pb_type->max_internal_delay;
@@ -1697,6 +1872,8 @@ static void alloc_and_load_default_child_for_pb_type(INOUTP t_pb_type *pb_type,
 	}
 	copy->pb_type_power = (t_pb_type_power*) my_calloc(1,
 			sizeof(t_pb_type_power));
+	copy->pb_type_power->estimation_method = power_method_inherited(
+			pb_type->pb_type_power->estimation_method);
 }
 
 /* populate special lut class */
@@ -1756,7 +1933,10 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 			sizeof(char));
 	sprintf(lut_pb_type->modes[0].interconnect[0].output_string, "%s.%s",
 			lut_pb_type->name, out_port->name);
-	lut_pb_type->modes[0].interconnect->interconnect_power =
+
+	lut_pb_type->modes[0].interconnect[0].parent_mode_index = 0;
+	lut_pb_type->modes[0].interconnect[0].parent_mode = &lut_pb_type->modes[0];
+	lut_pb_type->modes[0].interconnect[0].interconnect_power =
 			(t_interconnect_power*) my_calloc(1, sizeof(t_interconnect_power));
 
 	lut_pb_type->modes[0].interconnect[0].annotations =
@@ -1850,6 +2030,9 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 			strlen(default_name) + strlen(in_port->name) + 2, sizeof(char));
 	sprintf(lut_pb_type->modes[1].interconnect[0].output_string, "%s.%s",
 			default_name, in_port->name);
+
+	lut_pb_type->modes[1].interconnect[0].parent_mode_index = 1;
+	lut_pb_type->modes[1].interconnect[0].parent_mode = &lut_pb_type->modes[1];
 	lut_pb_type->modes[1].interconnect[0].interconnect_power =
 			(t_interconnect_power*) my_calloc(1, sizeof(t_interconnect_power));
 
@@ -1869,6 +2052,9 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 	sprintf(lut_pb_type->modes[1].interconnect[1].output_string, "%s.%s",
 			lut_pb_type->name, out_port->name);
 	lut_pb_type->modes[1].interconnect[1].infer_annotations = TRUE;
+
+	lut_pb_type->modes[1].interconnect[1].parent_mode_index = 1;
+	lut_pb_type->modes[1].interconnect[1].parent_mode = &lut_pb_type->modes[1];
 	lut_pb_type->modes[1].interconnect[1].interconnect_power =
 			(t_interconnect_power*) my_calloc(1, sizeof(t_interconnect_power));
 
@@ -1934,8 +2120,12 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 	mem_pb_type->modes[0].interconnect = (t_interconnect*) my_calloc(
 			mem_pb_type->modes[0].num_interconnect, sizeof(t_interconnect));
 
-	/* Allocate interconnect power structures */
 	for (i = 0; i < mem_pb_type->modes[0].num_interconnect; i++) {
+		mem_pb_type->modes[0].interconnect[i].parent_mode_index = 0;
+		mem_pb_type->modes[0].interconnect[i].parent_mode =
+				&mem_pb_type->modes[0];
+
+		/* Allocate interconnect power structures */
 		if (!mem_pb_type->modes[0].interconnect[i].interconnect_power) {
 			mem_pb_type->modes[0].interconnect[i].interconnect_power =
 					(t_interconnect_power*) my_calloc(1,
@@ -2082,7 +2272,7 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 	int i;
 
 	/* Alloc the type list. Need one additional t_type_desctiptors:
-	 * 1: empty psuedo-type 
+	 * 1: empty psuedo-type
 	 */
 	*NumTypes = CountChildren(Node, "pb_type", 1) + 1;
 	*Types = (t_type_descriptor *) my_malloc(
@@ -2168,7 +2358,7 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 	}
 }
 
-/* Loads the given architecture file. Currently only 
+/* Loads the given architecture file. Currently only
  * handles type information */
 void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 		OUTP struct s_arch *arch, OUTP t_type_descriptor ** Types,
@@ -2382,7 +2572,7 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 			FreeNode(SubElem);
 
 			/* Unidir muxes must have the same switch
-			 * for wire and opin fanin since there is 
+			 * for wire and opin fanin since there is
 			 * really only the mux in unidir. */
 			(*Segs)[i].wire_switch = j;
 			(*Segs)[i].opin_switch = j;
@@ -2460,7 +2650,7 @@ static void ProcessCB_SB(INOUTP ezxml_t Node, INOUTP boolean * list,
 	const char *tmp = NULL;
 	int i;
 
-	/* Check the type. We only support 'pattern' for now. 
+	/* Check the type. We only support 'pattern' for now.
 	 * Should add frac back eventually. */
 	tmp = FindProperty(Node, "type", TRUE);
 	if (0 == strcmp(tmp, "pattern")) {
@@ -2600,16 +2790,16 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 		(*Switches)[i].mux_trans_size = GetFloatProperty(Node, "mux_trans_size",
 				FALSE, 1);
 
-		buf_size = FindProperty(Node, "buf_last_stage_size", FALSE);
+		buf_size = FindProperty(Node, "power_buf_size", FALSE);
 		if (buf_size == NULL ) {
-			(*Switches)[i].autosize_buffer = TRUE;
+			(*Switches)[i].power_buffer_type = POWER_BUFFER_TYPE_AUTO;
 		} else if (strcmp(buf_size, "auto") == 0) {
-			(*Switches)[i].autosize_buffer = TRUE;
+			(*Switches)[i].power_buffer_type = POWER_BUFFER_TYPE_AUTO;
 		} else {
-			(*Switches)[i].autosize_buffer = FALSE;
-			(*Switches)[i].buffer_last_stage_size = (float)atof(buf_size);
+			(*Switches)[i].power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
+			(*Switches)[i].power_buffer_size = (float) atof(buf_size);
 		}
-		ezxml_set_attr(Node, "buf_last_stage_size", NULL );
+		ezxml_set_attr(Node, "power_buf_size", NULL );
 
 		/* Remove the switch element from parse tree */
 		FreeNode(Node);
@@ -2868,7 +3058,7 @@ static void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 					}
 					pb_type->ports[p].model_port = model_port;
 					assert(pb_type->ports[p].type == model_port->dir);
-					assert( pb_type->ports[p].is_clock == model_port->is_clock);
+					assert(pb_type->ports[p].is_clock == model_port->is_clock);
 					found = TRUE;
 				}
 				model_port = model_port->next;
@@ -3068,9 +3258,12 @@ static void ProcessPower( INOUTP ezxml_t parent,
 	ezxml_t Cur;
 
 	/* Get the local interconnect capacitances */
+	power_arch->local_interc_factor = 0.5;
 	Cur = FindElement(parent, "local_interconnect", FALSE);
 	if (Cur) {
 		power_arch->C_wire_local = GetFloatProperty(Cur, "C_wire", FALSE, 0.);
+		power_arch->local_interc_factor = GetFloatProperty(Cur, "factor", FALSE,
+				0.5);
 		FreeNode(Cur);
 	}
 
@@ -3080,6 +3273,24 @@ static void ProcessPower( INOUTP ezxml_t parent,
 	if (Cur) {
 		power_arch->seg_buffer_split = GetIntProperty(Cur, "split_into", TRUE,
 				1);
+		FreeNode(Cur);
+	}
+
+	/* Get logical effort factor */
+	power_arch->logical_effort_factor = 4.0;
+	Cur = FindElement(parent, "buffers", FALSE);
+	if (Cur) {
+		power_arch->logical_effort_factor = GetFloatProperty(Cur,
+				"logical_effort_factor", TRUE, 0);
+		FreeNode(Cur);
+	}
+
+	/* Get SRAM Size */
+	power_arch->transistors_per_SRAM_bit = 6.0;
+	Cur = FindElement(parent, "sram", FALSE);
+	if (Cur) {
+		power_arch->transistors_per_SRAM_bit = GetFloatProperty(Cur,
+				"transistors_per_bit", TRUE, 0);
 		FreeNode(Cur);
 	}
 }
@@ -3111,12 +3322,30 @@ static void ProcessClocks(ezxml_t Parent, t_clock_arch * clocks) {
 			clocks->clock_inf[i].autosize_buffer = TRUE;
 		} else {
 			clocks->clock_inf[i].autosize_buffer = FALSE;
-			clocks->clock_inf[i].buffer_size = (float)atof(tmp);
+			clocks->clock_inf[i].buffer_size = (float) atof(tmp);
 		}
 		ezxml_set_attr(Node, "buffer_size", NULL );
 
 		clocks->clock_inf[i].C_wire = GetFloatProperty(Node, "C_wire", TRUE, 0);
 		FreeNode(Node);
+	}
+}
+
+e_power_estimation_method power_method_inherited(
+		e_power_estimation_method parent_power_method) {
+	switch (parent_power_method) {
+	case POWER_METHOD_IGNORE:
+	case POWER_METHOD_AUTO_SIZES:
+	case POWER_METHOD_SPECIFY_SIZES:
+	case POWER_METHOD_TOGGLE_PINS:
+		return parent_power_method;
+	case POWER_METHOD_C_INTERNAL:
+	case POWER_METHOD_ABSOLUTE:
+		return POWER_METHOD_IGNORE;
+	case POWER_METHOD_UNDEFINED:
+		return POWER_METHOD_UNDEFINED;
+	default:
+		assert(0);
 	}
 }
 

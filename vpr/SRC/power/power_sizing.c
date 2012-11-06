@@ -24,7 +24,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "power_transistor_cnt.h"
+#include "power_sizing.h"
 #include "power.h"
 #include "globals.h"
 #include "power_util.h"
@@ -36,17 +36,19 @@ static double power_count_transistors_mux(t_mux_arch * mux_arch);
 static double power_count_transistors_mux_node(t_mux_node * mux_node,
 		float * transistor_sizes);
 static void power_mux_node_max_inputs(t_mux_node * mux_node, float * max_inputs);
-static double power_count_transistors_interconnect(t_interconnect * interc);
-static double power_count_transistors_pb_type(t_pb_type * pb_type);
+static double power_count_transistors_interc(t_interconnect * interc);
+static double power_count_transistors_pb_node(t_pb_graph_node * pb_node);
 static double power_count_transistors_switchbox(t_arch * arch);
-static double power_count_transistors_blif_primitive(t_pb_type * pb_type);
+static double power_count_transistors_primitive(t_pb_type * pb_type);
 static double power_count_transistors_LUT(int LUT_size);
 static double power_count_transistors_FF(void);
 static double power_cnt_transistor_SRAM_bit(void);
 static double power_count_transistors_inv(float size);
 static double power_count_transistors_trans_gate();
-static double power_count_transistor_levr();
+static double power_count_transistors_levr();
 static double power_transistor_eqiv_layout_size(float size);
+static void power_size_local_buffers_and_wires_pin(t_pb_graph_pin * pin);
+static double power_transistors_for_pb_node(t_pb_graph_node * pb_node);
 
 /************************* FUNCTION DEFINITIONS *********************/
 
@@ -62,10 +64,10 @@ static double power_count_transistors_connectionbox(void) {
 	CLB_inputs = FILL_TYPE->pb_graph_head->num_input_pins[0];
 
 	/* Buffers from Tracks */
-	buffer_size =
-			g_power_commonly_used->max_seg_to_IPIN_fanout
-					* (g_power_commonly_used->NMOS_1X_C_d
-							/ g_power_commonly_used->INV_1X_C_in)/ POWER_BUFFER_STAGE_GAIN;
+	buffer_size = g_power_commonly_used->max_seg_to_IPIN_fanout
+			* (g_power_commonly_used->NMOS_1X_C_d
+					/ g_power_commonly_used->INV_1X_C_in)
+			/ g_power_arch->logical_effort_factor;
 	buffer_size = max(1.0F, buffer_size);
 	transistor_cnt += g_solution_inf.channel_width
 			* power_count_transistors_buffer(buffer_size);
@@ -89,7 +91,8 @@ double power_count_transistors_buffer(float buffer_size) {
 	int stage_idx;
 	double transistor_cnt = 0.;
 
-	stages = calc_buffer_num_stages(buffer_size, POWER_BUFFER_STAGE_GAIN);
+	stages = calc_buffer_num_stages(buffer_size,
+			g_power_arch->logical_effort_factor);
 	effort = calc_buffer_stage_effort(stages, buffer_size);
 
 	stage_size = 1;
@@ -188,7 +191,7 @@ static double power_count_transistors_mux_node(t_mux_node * mux_node,
 /**
  * This function returns the number of transistors in an interconnect structure
  */
-static double power_count_transistors_interconnect(t_interconnect * interc) {
+static double power_count_transistors_interc(t_interconnect * interc) {
 	double transistor_cnt = 0.;
 
 	switch (interc->type) {
@@ -220,17 +223,10 @@ static double power_count_transistors_interconnect(t_interconnect * interc) {
  * It returns the number of transistors in a grid of the FPGA (logic block,
  * switch box, 2 connection boxes)
  */
-double power_count_transistors(t_arch * arch) {
-	int type_idx;
+double power_transistors_per_tile(t_arch * arch) {
 	double transistor_cnt = 0.;
 
-	for (type_idx = 0; type_idx < num_types; type_idx++) {
-		if (type_descriptors[type_idx].pb_type) {
-			power_count_transistors_pb_type(type_descriptors[type_idx].pb_type);
-		}
-	}
-
-	transistor_cnt += FILL_TYPE->pb_type->pb_type_power->transistor_cnt;
+	transistor_cnt += power_transistors_for_pb_node(FILL_TYPE->pb_graph_head);
 
 	transistor_cnt += 2 * power_count_transistors_switchbox(arch);
 
@@ -239,28 +235,40 @@ double power_count_transistors(t_arch * arch) {
 	return transistor_cnt;
 }
 
+static double power_transistors_for_pb_node(t_pb_graph_node * pb_node) {
+	return pb_node->pb_node_power->transistor_cnt_interc
+			+ pb_node->pb_node_power->transistor_cnt_pb_children
+			+ pb_node->pb_node_power->transistor_cnt_buffers;
+}
+
 /**
  * This function counts the number of transistors for a given physical block type
  */
-static double power_count_transistors_pb_type(t_pb_type * pb_type) {
+static double power_count_transistors_pb_node(t_pb_graph_node * pb_node) {
 	int mode_idx;
-	double transistor_cnt_max = 0;
-	double transistor_cnt_interc = 0;
+	int interc;
+	int child;
+	int pb_idx;
+
+	double tc_children_max = 0;
+	double tc_interc_max = 0;
 	boolean ignore_interc = FALSE;
+
+	t_pb_type * pb_type = pb_node->pb_type;
 
 	/* Check if this is a leaf node, or whether it has children */
 	if (pb_type->num_modes == 0) {
 		/* Leaf node */
-		transistor_cnt_interc = 0;
-		transistor_cnt_max = power_count_transistors_blif_primitive(pb_type);
+		tc_interc_max = 0;
+		tc_children_max = power_count_transistors_primitive(pb_type);
 	} else {
 		/* Find max transistor count between all modes */
 		for (mode_idx = 0; mode_idx < pb_type->num_modes; mode_idx++) {
-			int interc_idx;
-			int child_type_idx;
-			double transistor_cnt_mode;
-			double transistor_cnt_children = 0;
-			double transistor_cnt_mode_interc = 0;
+
+			double tc_children = 0;
+			double tc_interc = 0;
+
+			t_mode * mode = &pb_type->modes[mode_idx];
 
 			if (pb_type->class_type == LUT_CLASS) {
 				/* LUTs will have a child node that is used for routing purposes
@@ -272,40 +280,32 @@ static double power_count_transistors_pb_type(t_pb_type * pb_type) {
 
 			/* Count Interconnect Transistors */
 			if (!ignore_interc) {
-				for (interc_idx = 0;
-						interc_idx < pb_type->modes[mode_idx].num_interconnect;
-						interc_idx++) {
-					transistor_cnt_mode_interc +=
-							power_count_transistors_interconnect(
-									&pb_type->modes[mode_idx].interconnect[interc_idx]);
+				for (interc = 0; interc < mode->num_interconnect; interc++) {
+					tc_interc += power_count_transistors_interc(
+							&mode->interconnect[interc]);
+				}
+			}
+			tc_interc_max = max(tc_interc_max, tc_interc);
+
+			/* Count Child PB Types */
+			for (child = 0; child < mode->num_pb_type_children; child++) {
+				t_pb_type * child_type = &mode->pb_type_children[child];
+
+				for (pb_idx = 0; pb_idx < child_type->num_pb; pb_idx++) {
+					tc_children +=
+							power_transistors_for_pb_node(
+									&pb_node->child_pb_graph_nodes[mode_idx][child][pb_idx]);
 				}
 			}
 
-			/* Count Child Transistors */
-			for (child_type_idx = 0;
-					child_type_idx
-							< pb_type->modes[mode_idx].num_pb_type_children;
-					child_type_idx++) {
-				t_pb_type * child_type =
-						&pb_type->modes[mode_idx].pb_type_children[child_type_idx];
-				transistor_cnt_children += child_type->num_pb
-						* power_count_transistors_pb_type(child_type);
-			}
-
-			transistor_cnt_mode = (transistor_cnt_mode_interc
-					+ transistor_cnt_children);
-
-			if (transistor_cnt_mode > transistor_cnt_max) {
-				transistor_cnt_max = transistor_cnt_mode;
-				transistor_cnt_interc = transistor_cnt_mode_interc;
-			}
+			tc_children_max = max(tc_children_max, tc_children);
 		}
 	}
 
-	pb_type->pb_type_power->transistor_cnt = transistor_cnt_max;
-	pb_type->pb_type_power->transistor_cnt_interc = transistor_cnt_interc;
+	pb_node->pb_node_power->transistor_cnt_interc = tc_interc_max;
+	pb_node->pb_node_power->transistor_cnt_pb_children = tc_children_max;
 
-	return transistor_cnt_max;
+	return (tc_interc_max + tc_children_max);
 }
 
 /**
@@ -319,7 +319,7 @@ static double power_count_transistors_switchbox(t_arch * arch) {
 	/* Buffer */
 	transistors_per_buf_mux += power_count_transistors_buffer(
 			(float) g_power_commonly_used->max_seg_fanout
-					/ POWER_BUFFER_STAGE_GAIN);
+					/ g_power_arch->logical_effort_factor);
 
 	/* Multiplexor */
 	transistors_per_buf_mux += power_count_transistors_mux(
@@ -345,7 +345,7 @@ static double power_count_transistors_switchbox(t_arch * arch) {
 /**
  * This function calculates the number of transistors for a primitive physical block
  */
-static double power_count_transistors_blif_primitive(t_pb_type * pb_type) {
+static double power_count_transistors_primitive(t_pb_type * pb_type) {
 	double transistor_cnt;
 
 	if (strcmp(pb_type->blif_model, ".names") == 0) {
@@ -371,11 +371,10 @@ static double power_count_transistors_blif_primitive(t_pb_type * pb_type) {
  * Returns the transistor count of an SRAM cell
  */
 static double power_cnt_transistor_SRAM_bit(void) {
-
-	return 6;
+	return g_power_arch->transistors_per_SRAM_bit;
 }
 
-static double power_count_transistor_levr() {
+static double power_count_transistors_levr() {
 	double transistor_cnt = 0.;
 
 	/* Each level restorer has a P/N=1/2 inverter and a W/L=1/2 PMOS */
@@ -419,7 +418,7 @@ static double power_count_transistors_LUT(int LUT_size) {
 		 */
 		if (((level_idx % 2 == 1) && (level_idx != LUT_size - 2))
 				|| (level_idx == LUT_size - 1)) {
-			transistor_cnt += power_count_transistor_levr();
+			transistor_cnt += power_count_transistors_levr();
 		}
 	}
 
@@ -477,4 +476,231 @@ double power_transistor_area(double num_transistors) {
 static double power_transistor_eqiv_layout_size(float size) {
 	return (size * POWER_TRANSISTOR_AREA_SPACING_FACTOR)
 			+ (1 - POWER_TRANSISTOR_AREA_SPACING_FACTOR);
+}
+
+void power_size_pb_rec(t_pb_graph_node * pb_node) {
+	int port_idx, pin_idx;
+	int mode_idx, type_idx, pb_idx;
+	boolean size_buffers_and_wires = TRUE;
+
+	/* Recursive call for all child pb nodes */
+	for (mode_idx = 0; mode_idx < pb_node->pb_type->num_modes; mode_idx++) {
+		t_mode * mode = &pb_node->pb_type->modes[mode_idx];
+
+		for (type_idx = 0; type_idx < mode->num_pb_type_children; type_idx++) {
+			int num_pb = mode->pb_type_children[type_idx].num_pb;
+
+			for (pb_idx = 0; pb_idx < num_pb; pb_idx++) {
+
+				power_size_pb_rec(
+						&pb_node->child_pb_graph_nodes[mode_idx][type_idx][pb_idx]);
+			}
+		}
+	}
+
+	power_count_transistors_pb_node(pb_node);
+
+	if (pb_node->pb_type->class_type == LUT_CLASS) {
+		/* LUTs will have a child node that is used for routing purposes
+		 * For the routing algorithms it is completely connected; however,
+		 * this interconnect does not exist in FPGA hardware and should
+		 * be ignored for power calculations. */
+		size_buffers_and_wires = FALSE;
+	}
+
+	if (!power_method_is_transistor_level(
+			pb_node->pb_type->pb_type_power->estimation_method)) {
+		size_buffers_and_wires = FALSE;
+	}
+
+	if (size_buffers_and_wires) {
+		/* Loop through all pins */
+		for (port_idx = 0; port_idx < pb_node->num_input_ports; port_idx++) {
+			for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx];
+					pin_idx++) {
+				power_size_local_buffers_and_wires_pin(
+						&pb_node->input_pins[port_idx][pin_idx]);
+			}
+		}
+
+		for (port_idx = 0; port_idx < pb_node->num_output_ports; port_idx++) {
+			for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx];
+					pin_idx++) {
+				power_size_local_buffers_and_wires_pin(
+						&pb_node->output_pins[port_idx][pin_idx]);
+			}
+		}
+
+		for (port_idx = 0; port_idx < pb_node->num_clock_ports; port_idx++) {
+			for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx];
+					pin_idx++) {
+				power_size_local_buffers_and_wires_pin(
+						&pb_node->clock_pins[port_idx][pin_idx]);
+			}
+		}
+	}
+
+}
+
+void power_size_pb(void) {
+	int type_idx;
+
+	for (type_idx = 0; type_idx < num_types; type_idx++) {
+		if (type_descriptors[type_idx].pb_graph_head) {
+			power_size_pb_rec(type_descriptors[type_idx].pb_graph_head);
+		}
+	}
+}
+
+static void power_size_local_buffers_and_wires_pin(t_pb_graph_pin * pin) {
+	int edge_idx;
+	int list_cnt;
+	t_interconnect ** list;
+	boolean found;
+	int i;
+	int * fanout_per_mode;
+	int fanout_to_mode;
+	int fanout_to_parent;
+	float C_load;
+	float this_pb_length;
+	float parent_pb_length;
+
+	t_pb_type * this_pb_type;
+	t_pb_type * parent_pb_type;
+
+	this_pb_type = pin->parent_node->pb_type;
+	if (pin->parent_node->parent_pb_graph_node) {
+		parent_pb_type = pin->parent_node->parent_pb_graph_node->pb_type;
+	}
+
+	/* Wirelength */
+	switch (pin->port->port_power->wire_type) {
+	case POWER_WIRE_TYPE_IGNORED:
+		/* User is ignoring this wirelength */
+		pin->pin_power->C_wire = 0.;
+		break;
+	case POWER_WIRE_TYPE_C:
+		pin->pin_power->C_wire = pin->port->port_power->wire.C;
+		break;
+	case POWER_WIRE_TYPE_ABSOLUTE_LENGTH:
+		pin->pin_power->C_wire = pin->port->port_power->wire.absolute_length
+				* g_power_arch->C_wire_local;
+		break;
+	case POWER_WIRE_TYPE_RELATIVE_LENGTH:
+		this_pb_length = sqrt(
+				power_transistor_area(
+						power_transistors_for_pb_node(pin->parent_node)));
+		pin->pin_power->C_wire = pin->port->port_power->wire.relative_length
+				* this_pb_length * g_power_arch->C_wire_local;
+		break;
+
+	case POWER_WIRE_TYPE_AUTO:
+		/* Pins are connected to a wire that is connected to:
+		 * 1. Interconnect structures belonging its pb_node, and/or
+		 * 		- The pb_node may have one or more modes, each with a set of
+		 * 		interconnect.  The capacitance is the worst-case capacitance
+		 * 		between the different modes.
+		 *
+		 * 2. Interconnect structures belonging to its parent pb_node
+		 */
+
+		/* Loop through all edges, building a list of interconnect that this pin connects to */
+		list = NULL;
+		list_cnt = 0;
+		for (edge_idx = 0; edge_idx < pin->num_output_edges; edge_idx++) {
+			/* Check if its already in the list */
+			found = FALSE;
+			for (i = 0; i < list_cnt; i++) {
+				if (list[i] == pin->output_edges[edge_idx]->interconnect) {
+					found = TRUE;
+					break;
+				}
+			}
+
+			if (!found) {
+				list_cnt++;
+				list = (t_interconnect**) my_realloc(list,
+						list_cnt * sizeof(t_interconnect*));
+				list[list_cnt - 1] = pin->output_edges[edge_idx]->interconnect;
+			}
+		}
+
+		fanout_to_parent = 0;
+		fanout_per_mode = (int*) my_calloc(this_pb_type->num_modes,
+				sizeof(int));
+
+		for (i = 0; i < list_cnt; i++) {
+			t_pb_type * interc_pb_type = list[i]->parent_mode->parent_pb_type;
+
+			if (interc_pb_type == this_pb_type) {
+				/*Interconnect belongs to this pb_type */
+				fanout_per_mode[list[i]->parent_mode_index]++;
+			} else if (interc_pb_type == parent_pb_type) {
+				/* Interconnect belongs to parent pb_type */
+				fanout_to_parent++;
+			} else {
+				assert(0);
+			}
+		}
+		free(list);
+
+		fanout_to_mode = 0;
+		for (i = 0; i < this_pb_type->num_modes; i++) {
+			fanout_to_mode = max(fanout_to_mode, fanout_per_mode[i]);
+		}
+
+		pin->pin_power->C_wire = 0.;
+		if (fanout_to_mode) {
+			this_pb_length = sqrt(
+					power_transistor_area(
+							power_transistors_for_pb_node(pin->parent_node)));
+			pin->pin_power->C_wire = g_power_arch->local_interc_factor
+					* g_power_arch->C_wire_local * this_pb_length
+					* fanout_to_mode;
+		}
+		if (fanout_to_parent) {
+			parent_pb_length = sqrt(
+					power_transistor_area(
+							power_transistors_for_pb_node(
+									pin->parent_node->parent_pb_graph_node)));
+
+			pin->pin_power->C_wire += g_power_arch->local_interc_factor
+					* g_power_arch->C_wire_local * parent_pb_length
+					* fanout_to_parent;
+		}
+		break;
+	case POWER_WIRE_TYPE_UNDEFINED:
+	default:
+		assert(0);
+		break;
+	}
+
+	/* Buffer */
+	switch (pin->port->port_power->buffer_type) {
+	case POWER_BUFFER_TYPE_NONE:
+		/* User assumes no buffer */
+		pin->pin_power->buffer_size = 0.;
+		break;
+	case POWER_BUFFER_TYPE_ABSOLUTE_SIZE:
+		pin->pin_power->buffer_size = pin->port->port_power->buffer_size;
+		break;
+	case POWER_BUFFER_TYPE_AUTO:
+		/* Asume the buffer drives the wire & fanout muxes */
+		C_load = pin->pin_power->C_wire
+				+ (fanout_to_mode + fanout_to_parent)
+						* g_power_commonly_used->NMOS_1X_C_d;
+		if (C_load > g_power_commonly_used->INV_1X_C_in) {
+			pin->pin_power->buffer_size = power_buffer_size_from_logical_effort(
+					C_load);
+		} else {
+			pin->pin_power->buffer_size = 0.;
+		}
+		break;
+	case POWER_BUFFER_TYPE_UNDEFINED:
+	default:
+		assert(0);
+	}
+
+	pin->parent_node->pb_node_power->transistor_cnt_buffers +=
+			power_count_transistors_buffer(pin->pin_power->buffer_size);
 }

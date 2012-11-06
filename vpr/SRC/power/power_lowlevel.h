@@ -41,7 +41,7 @@ void power_calc_inverter_irregular(t_power_usage * power_usage,
 		float PMOS_size, float NMOS_size);
 
 
-void power_calc_wire(t_power_usage * power_usage, float capacitance,
+void power_usage_wire(t_power_usage * power_usage, float capacitance,
 		float density);
 
 void power_calc_mux_singlelevel_static(t_power_usage * power_usage,
@@ -68,4 +68,6 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
 
 float power_calc_buffer_sc(int stages, float gain, boolean level_restored,
 		int input_mux_size);
+
+float power_calc_node_switching(float capacitance, float density);
 #endif

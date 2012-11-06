@@ -54,8 +54,8 @@ typedef enum {
 	POWER_COMPONENT_CLOCK_WIRE, /* Wires in clock network */
 
 	POWER_COMPONENT_CLB, /* Logic Blocks, and other hard blocks */
-	POWER_COMPONENT_LOCAL_INTERC, /* Local interconnect structures */
-	POWER_COMPONENT_LOCAL_WIRE, /* Local interconnect wires */
+	POWER_COMPONENT_LOCAL_INTERC_MUXES, /* Local interconnect structures */
+	POWER_COMPONENT_LOCAL_BUFFERS_AND_WIRE, /* Local interconnect wires */
 	POWER_COMPONENT_FF, /* Flip-flops */
 	POWER_COMPONENT_LUT, /* LUTs */
 	POWER_COMPONENT_LUT_DRIVER, /* LUT input drivers */
@@ -82,12 +82,12 @@ void power_calc_FF(t_power_usage * power_usage, float D_prob, float D_dens,
 void power_calc_LUT(t_power_usage * power_usage, int LUT_size,
 		char * SRAM_values, float * input_densities,
 		float * input_probabilities);
-void power_calc_interconnect(t_power_usage * power_usage, t_pb * pb,
-		t_interconnect_pins * interc_pins, float interc_length);
+void power_calc_local_interc_mux(t_power_usage * power_usage, t_pb * pb,
+		t_interconnect_pins * interc_pins);
 void power_calc_mux_multilevel(t_power_usage * power_usage,
 		t_mux_arch * mux_arch, float * in_prob, float * in_dens,
 		int selected_input, boolean output_level_restored);
-void power_calc_buffer(t_power_usage * power_usage, float size, float in_prob,
+void power_usage_buffer(t_power_usage * power_usage, float size, float in_prob,
 		float in_dens, boolean level_restored, int input_mux_size);
 
 #endif
