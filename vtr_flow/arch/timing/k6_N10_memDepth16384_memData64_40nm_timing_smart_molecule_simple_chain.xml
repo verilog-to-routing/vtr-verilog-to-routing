@@ -109,7 +109,7 @@ Architecture based off Stratix IV
 			</segment>
 		</segmentlist>
     <directlist>
-      <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="1" z_offset="0"/>
+      <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
     </directlist>
 
 
@@ -335,7 +335,7 @@ Architecture based off Stratix IV
             <direct name="direct1" input="adder.sumout" output="clb.O[9:0]"/>
             <direct name="direct2" input="adder.cout" output="clb.cout">
               <!-- Intercluster carry-delay -->
-              <delay_constant max="0.16e-9" in_port="clb.cout" out_port="adder.cout"/>
+              <delay_constant max="0.16e-9" in_port="adder.cout" out_port="clb.cout"/>
             </direct>
             <direct name="direct3" input="clb.cin" output="adder.cin"/>
           </interconnect>
