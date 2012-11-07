@@ -1434,7 +1434,7 @@ void print_timing_graph(const char *fname) {
 
 		/* Print all edges after edge 0 on separate lines */
 		tedge = tnode[inode].out_edges;
-		if (tedge) {
+		if (tnode[inode].num_edges > 0) {
 			fprintf(fp, "\t%4d\t%7.3g", tedge[0].to_node, tedge[0].Tdel);
 			for (iedge = 1; iedge < tnode[inode].num_edges; iedge++) {
 				fprintf(fp, "\n\t\t\t\t\t\t\t\t\t\t%4d\t%7.3g", tedge[iedge].to_node, tedge[iedge].Tdel);
