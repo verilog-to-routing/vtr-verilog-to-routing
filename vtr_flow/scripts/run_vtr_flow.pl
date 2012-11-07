@@ -353,7 +353,7 @@ if (    $starting_stage <= $stage_idx_abc
 	and !$error_code )
 {
 	$q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
-		"read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size -a; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_output_file_name; print_stats"
+		"read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_output_file_name; print_stats"
 	);
 
 	if ( -e $abc_output_file_path ) {
