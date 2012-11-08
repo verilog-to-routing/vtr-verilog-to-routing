@@ -63,3 +63,4 @@ int get_output_pin_index_from_mapping(nnode_t *node, char *name);
 int get_output_port_index_from_mapping(nnode_t *node, char *name);
 int get_input_pin_index_from_mapping(nnode_t *node, char *name);
 int get_input_port_index_from_mapping(nnode_t *node, char *name);
+chain_information_t* allocate_chain_info();

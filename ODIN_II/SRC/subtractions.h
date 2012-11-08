@@ -28,20 +28,28 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "adders.h"
 
 extern t_model *hard_subs;
+extern t_model *hard_subs_unary;
 extern struct s_linked_vptr *subs_list;
 extern struct s_linked_vptr *sub_list;
 extern struct s_linked_vptr *sub_one_node_list;
+extern struct s_linked_vptr *subs_one_node_list;
+
+extern struct s_linked_vptr *sub_chain_list;
 
 extern void init_sub_distribution();
 extern void report_sub_distribution();
 extern void declare_hard_adder_for_sub(nnode_t *node);
-extern void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t *netlist);
+extern void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t *netlist, int type);
 extern void find_hard_adders_for_sub();
 extern void add_the_blackbox_for_subs(FILE *out);
+extern void add_the_blackbox_for_unary_subs(FILE *out);
 extern void define_sub_function(nnode_t *node, short type, FILE *out);
+extern void define_unary_sub_function(nnode_t *node, short type, FILE *out);
 extern void split_adder_for_sub(nnode_t *node, int a, int b, int sizea, int sizeb, int cin, int cout, int count, netlist_t *netlist);
 extern void iterate_adders_for_sub(netlist_t *netlist);
 extern void clean_adders_for_sub();
+extern void init_split_unary_sub(nnode_t *node, nnode_t *ptr, int a, int sizea, int cin, int cout, int index);
+extern void split_unary_sub(nnode_t *nodeo, int a, int sizea, int cin, int cout, int count, netlist_t *netlist);
 
 #endif // SUBS_H
 

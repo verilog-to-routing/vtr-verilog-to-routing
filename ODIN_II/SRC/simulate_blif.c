@@ -734,7 +734,10 @@ void compute_and_store_value(nnode_t *node, int cycle)
 			compute_add_node(node, cycle, 0);
 			break;
 		case MINUS:
-			compute_add_node(node, cycle, 1);
+			if(node->num_input_port_sizes == 3)
+				compute_add_node(node, cycle, 1);
+			else
+				compute_unary_sub_node(node, cycle);
 			break;
 		/* These should have already been converted to softer versions. */
 		case BITWISE_AND:
@@ -1579,7 +1582,14 @@ void compute_add_node(nnode_t *node, int cycle, int type)
 			b[i] = get_pin_value(node->input_pins[node->input_port_sizes[0] + i],cycle);
 
 		for (i = 0; i < node->input_port_sizes[2]; i++)
-			c[i] = get_pin_value(node->input_pins[node->input_port_sizes[0]+ node->input_port_sizes[1] + i],cycle);
+			//the initial cin of carry chain subtractor should be 1
+			if((node->input_pins[node->input_port_sizes[0]+ node->input_port_sizes[1] + i]->net->driver_pin->node->type == PAD_NODE) && type == 1)
+				c[i] = 1;
+			//the initial cin of carry chain adder should be 0
+			else if((node->input_pins[node->input_port_sizes[0]+ node->input_port_sizes[1] + i]->net->driver_pin->node->type == PAD_NODE) && type == 0)
+				c[i] = 0;
+			else
+				c[i] = get_pin_value(node->input_pins[node->input_port_sizes[0]+ node->input_port_sizes[1] + i],cycle);
 
 		int *result = add_arrays(a, node->input_port_sizes[0], b, node->input_port_sizes[1], c, node->input_port_sizes[2],type);
 
@@ -1677,6 +1687,92 @@ int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int c_length
 					temp_carry_in = result[i+1];
 				}
 			}
+		}
+	}
+	return result;
+}
+
+/*
+ * Computes the given add node for the given cycle.
+ * add by Sen
+ */
+void compute_unary_sub_node(nnode_t *node, int cycle)
+{
+	oassert(node->num_input_port_sizes == 2);
+	oassert(node->num_output_port_sizes == 2);
+
+	int i;
+	char unknown = FALSE;
+	for (i = 0; i < (node->input_port_sizes[0] + node->input_port_sizes[1]); i++)
+	{
+		signed char pin = get_pin_value(node->input_pins[i],cycle);
+		if (pin < 0)
+		{
+			unknown = TRUE;
+			break;
+		}
+	}
+
+	if (unknown)
+	{
+		for (i = 0; i < (node->output_port_sizes[0] + node->output_port_sizes[1]); i++)
+			update_pin_value(node->output_pins[i], -1, cycle);
+	}
+	else
+	{
+		int *a = malloc(sizeof(int)*node->input_port_sizes[0]);
+		int *c = malloc(sizeof(int)*node->input_port_sizes[1]);
+
+		for (i = 0; i < node->input_port_sizes[0]; i++)
+			a[i] = get_pin_value(node->input_pins[i],cycle);
+
+		for (i = 0; i < node->input_port_sizes[1]; i++)
+			if((node->input_pins[node->input_port_sizes[0]+ node->input_port_sizes[1] + i]->net->driver_pin->node->type == PAD_NODE))
+				c[i] = 1;
+			else
+				c[i] = get_pin_value(node->input_pins[node->input_port_sizes[0] + i],cycle);
+
+		int *result = unary_sub_arrays(a, node->input_port_sizes[0], c, node->input_port_sizes[1]);
+
+
+		for (i = 1; i < node->num_output_pins; i++)
+			update_pin_value(node->output_pins[i], result[(i - 1)], cycle);
+
+		update_pin_value(node->output_pins[0], result[(node->num_output_pins - 1)], cycle);
+
+		free(result);
+		free(a);
+		free(c);
+	}
+
+}
+
+/*
+ * Takes two arrays of integers (1's and 0's) and returns an array
+ * of integers (1's and 0's) that represent their sum. The
+ * length of the returned array is the maximum of the two parameters plus one.
+ * add by Sen
+ * This array will need to be freed later!
+ */
+int *unary_sub_arrays(int *a, int a_length, int *c, int c_length)
+{
+	int result_size = a_length + 1;
+	int *result = calloc(sizeof(int), result_size);
+
+	int i;
+	int temp_carry_in;
+
+	c[0] = 1;
+	result[0] = (!a[0]) ^ c[0] ^ 0;
+	result[1] = ((!a[0]) & 0) | (c[0] & 0) | ((!a[0]) & c[0]);
+
+	temp_carry_in = result[1];
+	if(result_size > 2){
+		for(i = 1; i < a_length; i++)
+		{
+			result[i] = (!a[i]) ^ 0 ^ temp_carry_in;
+			result[i+1] = ((!a[i]) & 0) | ((!a[i]) & temp_carry_in) | (temp_carry_in & 0);
+			temp_carry_in = result[i+1];
 		}
 	}
 	return result;

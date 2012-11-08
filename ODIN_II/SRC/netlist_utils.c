@@ -1079,3 +1079,15 @@ int get_input_port_index_from_mapping(nnode_t *node, char *name)
 	}
 	return -1;
 }
+
+chain_information_t* allocate_chain_info()
+{
+	chain_information_t *new_node;
+
+	new_node = (chain_information_t *)my_malloc_struct(sizeof(chain_information_t));
+
+	new_node->name = NULL;
+	new_node->count = 0;
+
+	return new_node;
+}

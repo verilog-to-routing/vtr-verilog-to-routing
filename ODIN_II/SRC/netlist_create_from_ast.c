@@ -2615,8 +2615,7 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 			/* subtract the largest bit width + the other input padded with 0's ... concern for 2's comp */
 			output_port_width = max_input_port_width;
 			input_port_width = output_port_width;
-			if(list_size == 2)
-				sub_list = insert_in_vptr_list(sub_list, operation_node);
+			sub_list = insert_in_vptr_list(sub_list, operation_node);
 
 			break;
 		case MULTIPLY: // *
@@ -2690,19 +2689,6 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 		case MODULO: // %
 			error_message(NETLIST_ERROR,  op->line_number, op->file_number, "Modulo operation not supported by Odin\n");
 			break;
-		//add by sen begin
-			/* add the largest bit width + the other input padded with 0's */
-			/*
-		case FULLADDER:
-
-			return_list->is_adder = TRUE;
-			output_port_width = (max_input_port_width + 1) / 2;
-			input_port_width = max_input_port_width;
-			//error_message(NETLIST_ERROR,  op->line_number, op->file_number, "input_port = " + input_port_width +"\n");
-			//error_message(NETLIST_ERROR,  op->line_number, op->file_number, "output_port = " + output_port_width +"\n");
-			break;
-		//add by sen end
-		 * */
 		default:
 			error_message(NETLIST_ERROR,  op->line_number, op->file_number, "Operation not supported by Odin\n");
 			break;

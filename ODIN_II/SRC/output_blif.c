@@ -358,10 +358,11 @@ void output_node(nnode_t *node, short traverse_number, FILE *fp)
 			break;
 
 		case MINUS:
-			if (hard_adders == NULL)
+			if (hard_subs == NULL)
 				oassert(FALSE); /* should be soft logic! */
 			#ifdef VPR6
-			define_sub_function(node, node->type, fp);
+			if(hard_subs != NULL)
+				define_sub_function(node, node->type, fp);
 			#endif
 			break;
 
@@ -619,9 +620,8 @@ void define_set_input_logical_function(nnode_t *node, char *bit_output, FILE *ou
 			if ((node->input_pins[i]->net->driver_pin->node->type == MULTIPLY) ||
 			    (node->input_pins[i]->net->driver_pin->node->type == HARD_IP) ||
 			    (node->input_pins[i]->net->driver_pin->node->type == MEMORY) ||
-			    (node->input_pins[i]->net->driver_pin->node->type == ADD))
-			    //||
-			    //(node->input_pins[i]->net->driver_pin->node->type == FULLADDER))
+			    (node->input_pins[i]->net->driver_pin->node->type == ADD) ||
+			    (node->input_pins[i]->net->driver_pin->node->type == MINUS))
 			{
 				fprintf(out, " %s", node->input_pins[i]->net->driver_pin->name); 
 			}
@@ -730,7 +730,8 @@ void define_decoded_mux(nnode_t *node, FILE *out)
 				    (net->driver_pin->node->type == HARD_IP) ||
 				    (net->driver_pin->node->type == MEMORY) ||
 				    (net->driver_pin->node->type == ADD) ||
-				    (net->driver_pin->node->type == FULLADDER))
+				    (net->driver_pin->node->type == FULLADDER) ||
+				    (net->driver_pin->node->type == MINUS))
 				{
 					fprintf(out, " %s", net->driver_pin->name);
 				}

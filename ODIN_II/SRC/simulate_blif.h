@@ -118,6 +118,7 @@ void compute_hard_ip_node(nnode_t *node, int cycle);
 void compute_multiply_node(nnode_t *node, int cycle);
 void compute_generic_node(nnode_t *node, int cycle);
 void compute_add_node(nnode_t *node, int cycle, int type);
+void compute_unary_sub_node(nnode_t *node, int cycle);
 
 
 void update_pin_value(npin_t *pin, signed char value, int cycle);
@@ -141,6 +142,8 @@ void compute_mux_2_node(nnode_t *node, int cycle);
 int *multiply_arrays(int *a, int a_length, int *b, int b_length);
 
 int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int c_length, int flag);
+
+int *unary_sub_arrays(int *a, int a_length, int *c, int c_length);
 
 void compute_single_port_memory(nnode_t *node, int cycle);
 void compute_dual_port_memory(nnode_t *node, int cycle);

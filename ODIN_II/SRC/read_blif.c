@@ -541,6 +541,8 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 		new_node->type = MULTIPLY;
 	else if (!strcmp(subcircuit_name, "adder") || !strcmp(subcircuit_name_prefix, "adder"))
 		new_node->type = ADD;
+	else if (!strcmp(subcircuit_name, "sub") || !strcmp(subcircuit_name_prefix, "sub"))
+			new_node->type = MINUS;
 	else
 		new_node->type = MEMORY;
 	free(subcircuit_name_prefix);

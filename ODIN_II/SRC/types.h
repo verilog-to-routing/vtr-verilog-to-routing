@@ -52,6 +52,7 @@ typedef struct signal_list_t_t signal_list_t;
 typedef struct char_list_t_t char_list_t;
 typedef struct netlist_t_t netlist_t;
 typedef struct netlist_stats_t_t netlist_stats_t;
+typedef struct chain_information_t_t chain_information_t;
 
 /* for parsing and AST creation errors */
 #define PARSE_ERROR -3
@@ -374,7 +375,12 @@ struct info_ast_visit_t_t
 //-----------------------------------------------------------------------------------------------------
 #ifndef NETLIST_UTILS_H
 #define NETLIST_UTILS_H
-
+/* DEFINTIONS for carry chain*/
+struct chain_information_t_t
+{
+	char *name;//unique name of the chain
+	int count;//the number of hard blocks in this chain
+};
 
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version 
  * of these names, so if you add new tpyes in here, be sure to add those same types in utils.c */
