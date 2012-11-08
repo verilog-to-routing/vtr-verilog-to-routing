@@ -447,7 +447,9 @@ void define_logical_function(nnode_t *node, short type, FILE *out)
 			{
 				if ((net->driver_pin->node->type == MULTIPLY) ||
 					(net->driver_pin->node->type == HARD_IP) ||
-					(net->driver_pin->node->type == MEMORY))
+					(net->driver_pin->node->type == MEMORY) ||
+					(net->driver_pin->node->type == ADD) ||
+					(net->driver_pin->node->type == MINUS) )
 				{
 					fprintf(out, " %s", net->driver_pin->name);
 				}
@@ -730,7 +732,6 @@ void define_decoded_mux(nnode_t *node, FILE *out)
 				    (net->driver_pin->node->type == HARD_IP) ||
 				    (net->driver_pin->node->type == MEMORY) ||
 				    (net->driver_pin->node->type == ADD) ||
-				    (net->driver_pin->node->type == FULLADDER) ||
 				    (net->driver_pin->node->type == MINUS))
 				{
 					fprintf(out, " %s", net->driver_pin->name);
