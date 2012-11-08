@@ -179,7 +179,8 @@ static int check_clb_conn(int iblk, int num_conn) {
 					iclass = type->pin_class[ipin];
 
 					if (type->class_inf[iclass].type != DRIVER) {
-						error++;
+						vpr_printf(TIO_MESSAGE_INFO, "Pin is an input -- this whole block is hanging logic that should be swept in logic synthesis.\n");
+						vpr_printf(TIO_MESSAGE_INFO, "\tNon-fatal, but check this.\n");
 					} else {
 						vpr_printf(TIO_MESSAGE_INFO, "Pin is an output -- may be a constant generator.\n");
 						vpr_printf(TIO_MESSAGE_INFO, "\tNon-fatal, but check this.\n");
