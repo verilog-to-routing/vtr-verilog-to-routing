@@ -607,16 +607,21 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 
 	//connect the first cin pin to unconn
 	connect_nodes(netlist->pad_node, 0, node[0], (sizea + sizeb));
-	//add_input_pin_to_node(node[0], get_one_pin(netlist), (sizea + sizeb));
 
-	//if any input pins beside first cin pins are NULL, connect those pins to ground
+	//for normal subtraction: if any input pins beside intial cin is NULL, it should connect to unconn
+	//for unary subtraction: the first number should has the number of a input pins connected to gnd. The others are as same as normal subtraction
 	for(i = 0; i < count; i++)
 	{
 		num = node[i]->num_input_pins;
 		for(j = 0; j < num - 1; j++)
 		{
 			if(node[i]->input_pins[j] == NULL)
-				connect_nodes(netlist->pad_node, 0, node[i], j);
+			{
+				if(nodeo->num_input_port_sizes != 3 && i * sizea + j < a)
+					connect_nodes(netlist->gnd_node, 0, node[i], j);
+				else
+					connect_nodes(netlist->pad_node, 0, node[i], j);
+			}
 		}
 	}
 
@@ -624,21 +629,21 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 	for(i = 1; i < count; i++)
 		connect_nodes(node[i-1], 0, node[i], (node[i]->num_input_pins - 1));
 
-	if(count * sizea == a)
-	{
+	//if(count * sizea == a)
+	//{
 		//remap the output pins of each adder to nodeo
-		for(i = 0; i < count; i++)
-		{
-			for(j = 0; j < node[i]->num_output_pins - 1; j ++)
-				remap_pin_to_new_node(nodeo->output_pins[i * sizea + j], node[i], j + 1);
-		}
+	//	for(i = 0; i < count; i++)
+	//	{
+	//		for(j = 0; j < node[i]->num_output_pins - 1; j ++)
+	//			remap_pin_to_new_node(nodeo->output_pins[i * sizea + j], node[i], j + 1);
+	//	}
 		// the last node's cout should be remapped to the most significant bits of nodeo
-		remap_pin_to_new_node(nodeo->output_pins[(nodeo->num_output_pins - 1)], node[(count - 1)], 1);
-		//node[count - 1]->output_pins[0] = allocate_npin();
-		//node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[(count - 1)]->name, (count - 1), (node[(count - 1)]->num_output_pins - 1));
-	}
-	else
-	{
+		//remap_pin_to_new_node(nodeo->output_pins[(nodeo->num_output_pins - 1)], node[(count - 1)], 0);
+	//	node[count - 1]->output_pins[0] = allocate_npin();
+	//	node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[(count - 1)]->name, (count - 1), (node[(count - 1)]->num_output_pins - 1));
+	//}
+	//else
+	//{
 		//remap the output pins of each adder to nodeo
 		for(i = 0; i < count; i++)
 		{
@@ -658,7 +663,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 		// Pad outputs with a unique and descriptive name to avoid collisions.
 		node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[(count - 1)]->name, (count - 1), 0);
 		//connect_nodes(node[count - 1], (node[(count - 1)]->num_output_pins - 1), netlist->gnd_node, 0);
-	}
+	//}
 
 
 	/* Probably more to do here in freeing the old node! */
@@ -936,9 +941,15 @@ void iterate_adders_for_sub(netlist_t *netlist)
 			//fixed_hard_adder = 0 then the use hard block for extra bits
 			if(configuration.fixed_hard_adder == 0){
 				// how many subtractors base on a can split
-				counta = a / sizea + 1;
+				if(a % sizea == 0)
+					counta = a / sizea;
+				else
+					counta = a / sizea + 1;
 				// how many subtractors base on b can split
-				countb = b / sizeb + 1;
+				if(b % sizeb == 0)
+					countb = b / sizeb;
+				else
+					countb = b / sizeb + 1;
 				// how many subtractors need to be split
 				if(counta >= countb)
 					count = counta;

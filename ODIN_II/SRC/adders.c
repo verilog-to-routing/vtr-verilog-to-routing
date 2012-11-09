@@ -573,7 +573,14 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 	//connect the first cin pin to ground
 	connect_nodes(netlist->pad_node, 0, node[0], (sizea + sizeb));
 
-	//if any input pins beside first cin pins are NULL, connect those pins to ground
+	if((count-1)*sizea == a)
+	{
+		connect_nodes(netlist->gnd_node, 0, node[count-1],0);
+		connect_nodes(netlist->gnd_node, 0, node[count-1],sizea);
+	}
+
+
+	//if any input pins beside first cin pins are NULL, connect those pins to unconn
 	for(i = 0; i < count; i++)
 	{
 		num = node[i]->num_input_pins;
