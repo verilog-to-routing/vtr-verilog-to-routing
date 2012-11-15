@@ -410,8 +410,8 @@ void init_split_adder(nnode_t *node, nnode_t *ptr, int a, int sizea, int b, int 
 	ptr->node_data = NULL;
 
 	/* decide the current size of input a and b */
-	current_sizea = a - sizea * index;
-	current_sizeb = b - sizeb * index;
+	current_sizea = (a + 1) - sizea * index;
+	current_sizeb = (b + 1) - sizeb * index;
 	if(current_sizea >= sizea)
 		current_sizea = sizea;
 	else if(current_sizea <= 0)
@@ -450,7 +450,7 @@ void init_split_adder(nnode_t *node, nnode_t *ptr, int a, int sizea, int b, int 
 	ptr->output_port_sizes = (int *)malloc(2 * sizeof(int));
 	ptr->output_port_sizes[0] = cout;
 
-	/* The size of output port sumout equals the maxim size of a and b  */
+	/* The size of output port sumout equals the maxim size of sizea and sizeb  */
 	if(current_sizea > current_sizeb)
 		ptr->output_port_sizes[1] = current_sizea;
 	else
@@ -467,21 +467,53 @@ void init_split_adder(nnode_t *node, nnode_t *ptr, int a, int sizea, int b, int 
 	}
 	else if(flaga == 2)
 	{
-		for (i = 0; i < aa; i++)
+		if(index == 0)
 		{
-			ptr->input_pins[i] = node->input_pins[i + index * sizea];
-			ptr->input_pins[i]->node = ptr;
+			ptr->input_pins[0] = NULL;
+			if(sizea > 1){
+				for (i = 1; i < aa; i++)
+				{
+					ptr->input_pins[i] = node->input_pins[i + index * sizea - 1];
+					ptr->input_pins[i]->node = ptr;
+				}
+				for (i = 0; i < (sizea - aa); i++)
+					ptr->input_pins[i + aa] = NULL;
+			}
 		}
-		for (i = 0; i < (sizea - aa); i++)
-			ptr->input_pins[i + aa] = NULL;
+		else
+		{
+			for (i = 0; i < aa; i++)
+			{
+				ptr->input_pins[i] = node->input_pins[i + index * sizea - 1];
+				ptr->input_pins[i]->node = ptr;
+			}
+			for (i = 0; i < (sizea - aa); i++)
+				ptr->input_pins[i + aa] = NULL;
+		}
 	}
 	else
 	{
-		for (i = 0; i < current_sizea; i++)
+		if(index == 0)
 		{
-			ptr->input_pins[i] = node->input_pins[i + index * sizea];
-			ptr->input_pins[i]->node = ptr;
+			ptr->input_pins[0] = NULL;
+			if(current_sizea > 1)
+			{
+				for (i = 1; i < current_sizea; i++)
+				{
+					ptr->input_pins[i] = node->input_pins[i + index * sizea - 1];
+					ptr->input_pins[i]->node = ptr;
+				}
+			}
 		}
+		else
+		{
+			for (i = 0; i < current_sizea; i++)
+			{
+				ptr->input_pins[i] = node->input_pins[i + index * sizea - 1];
+				ptr->input_pins[i]->node = ptr;
+			}
+		}
+
 	}
 
 	if(flagb == 1)
@@ -491,20 +523,52 @@ void init_split_adder(nnode_t *node, nnode_t *ptr, int a, int sizea, int b, int 
 	}
 	else if(flagb == 2)
 	{
-		for (i = 0; i < bb; i++)
+		if(index == 0)
 		{
-			ptr->input_pins[i + current_sizea] = node->input_pins[i + a + index * sizeb];
-			ptr->input_pins[i + current_sizea]->node = ptr;
+			ptr->input_pins[sizea] = NULL;
+			if(current_sizeb > 1)
+			{
+				for (i = 1; i < bb; i++)
+				{
+					ptr->input_pins[i + current_sizea] = node->input_pins[i + a + index * sizeb - 1];
+					ptr->input_pins[i + current_sizea]->node = ptr;
+				}
+				for (i = 0; i < (sizeb - bb); i++)
+					ptr->input_pins[i + current_sizea + bb] = NULL;
+			}
 		}
-		for (i = 0; i < (sizeb - bb); i++)
-			ptr->input_pins[i + current_sizea + bb] = NULL;
+		else
+		{
+			for (i = 0; i < bb; i++)
+			{
+				ptr->input_pins[i + current_sizea] = node->input_pins[i + a + index * sizeb - 1];
+				ptr->input_pins[i + current_sizea]->node = ptr;
+			}
+			for (i = 0; i < (sizeb - bb); i++)
+				ptr->input_pins[i + current_sizea + bb] = NULL;
+		}
 	}
 	else
 	{
-		for (i = 0; i < current_sizeb; i++)
+		if(index == 0)
 		{
-			ptr->input_pins[i + current_sizea] = node->input_pins[i + a + index * sizeb];
-			ptr->input_pins[i + current_sizea]->node = ptr;
+			ptr->input_pins[sizea] = NULL;
+			if(current_sizeb > 1)
+			{
+				for (i = 1; i < current_sizeb; i++)
+				{
+					ptr->input_pins[i + current_sizea] = node->input_pins[i + a + index * sizeb - 1];
+					ptr->input_pins[i + current_sizea]->node = ptr;
+				}
+			}
+		}
+		else
+		{
+			for (i = 0; i < current_sizeb; i++)
+			{
+				ptr->input_pins[i + current_sizea] = node->input_pins[i + a + index * sizeb - 1];
+				ptr->input_pins[i + current_sizea]->node = ptr;
+			}
 		}
 	}
 
@@ -570,10 +634,16 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 	adder_chain->name = nodeo->name;
 	chain_list = insert_in_vptr_list(chain_list, adder_chain);
 
+	//connect the a[0] and b[0] of first adder node to ground
+	connect_nodes(netlist->gnd_node, 0, node[0], 0);
+	connect_nodes(netlist->gnd_node, 0, node[0], sizea);
+	//hang the first sumout
+	node[0]->output_pins[1] = allocate_npin();
+	node[0]->output_pins[1]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, 0, 1);
 	//connect the first cin pin to ground
 	connect_nodes(netlist->pad_node, 0, node[0], (sizea + sizeb));
 
-	if((count-1)*sizea == a)
+	if((count-1)*sizea == (a + 1))
 	{
 		connect_nodes(netlist->gnd_node, 0, node[count-1],0);
 		connect_nodes(netlist->gnd_node, 0, node[count-1],sizea);
@@ -594,38 +664,55 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 	for(i = 1; i < count; i++)
 		connect_nodes(node[i-1], 0, node[i], (node[i]->num_input_pins - 1));
 
+	/*
 	if(count * sizea == a)
 	{
 		//remap the output pins of each adder to nodeo
-		for(i = 0; i < count; i++)
+		for(j = 1; j < node[i]->num_output_pins - 1; j ++)
+			remap_pin_to_new_node(nodeo->output_pins[j - 1], node[i], j + 1);
+		for(i = 1; i < count; i++)
 		{
 			for(j = 0; j < node[i]->num_output_pins - 1; j ++)
-				remap_pin_to_new_node(nodeo->output_pins[i * sizea + j], node[i], j + 1);
+				remap_pin_to_new_node(nodeo->output_pins[i * sizea + j - 1], node[i], j + 1);
 		}
 		// the last node's cout should be remapped to the most significant bits of nodeo
 		remap_pin_to_new_node(nodeo->output_pins[(nodeo->num_output_pins - 1)], node[(count - 1)], 1);
 	}
 	else
 	{
+	*/
 		//remap the output pins of each adder to nodeo
-		for(i = 0; i < count; i++)
+		for(j = 0; j < node[0]->num_output_pins - 2; j++)
 		{
-			for(j = 0; j < node[i]->num_output_pins - 1; j ++)
+			if(j < nodeo->num_output_pins)
+				remap_pin_to_new_node(nodeo->output_pins[j], node[0], j + 2);
+			else
 			{
-				if((i * sizea + j) < nodeo->num_output_pins)
-					remap_pin_to_new_node(nodeo->output_pins[i * sizea + j], node[i], j + 1);
-				else
+				node[0]->output_pins[j + 2] = allocate_npin();
+				node[0]->output_pins[j + 2]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, i, j + 2);
+			}
+		}
+		if(count > 1)
+		{
+			for(i = 1; i < count; i++)
+			{
+				for(j = 0; j < node[i]->num_output_pins - 1; j ++)
 				{
-					node[i]->output_pins[j + 1] = allocate_npin();
-					// Pad outputs with a unique and descriptive name to avoid collisions.
-				    node[i]->output_pins[j + 1]->name = append_string("", "%s~dummy_output~%d~%d", node[i]->name, i, j + 1);
+					if((i * sizea + j - 1) < nodeo->num_output_pins)
+						remap_pin_to_new_node(nodeo->output_pins[i * sizea + j - 1], node[i], j + 1);
+					else
+					{
+						node[i]->output_pins[j + 1] = allocate_npin();
+						// Pad outputs with a unique and descriptive name to avoid collisions.
+						node[i]->output_pins[j + 1]->name = append_string("", "%s~dummy_output~%d~%d", node[i]->name, i, j + 2);
+					}
 				}
 			}
 		}
 		node[count - 1]->output_pins[0] = allocate_npin();
 		// Pad outputs with a unique and descriptive name to avoid collisions.
 		node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[(count - 1)]->name, (count - 1), 0);
-	}
+	//}
 
 
 	/* Probably more to do here in freeing the old node! */
@@ -896,9 +983,9 @@ void iterate_adders(netlist_t *netlist)
 		//fixed_hard_adder = 0 then the use hard block for extra bits
 		if(configuration.fixed_hard_adder == 0){
 			// how many adders a can split
-			counta = a / sizea + 1;
+			counta = (a + 1) / sizea + 1;
 			// how many adders b can split
-			countb = b / sizeb + 1;
+			countb = (b + 1) / sizeb + 1;
 			// how many adders need to be split
 			if(counta >= countb)
 				count = counta;

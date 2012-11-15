@@ -1551,8 +1551,8 @@ void compute_add_node(nnode_t *node, int cycle, int type)
 	oassert(node->num_input_port_sizes == 3);
 	oassert(node->num_output_port_sizes == 2);
 
-	int i;
-	//int flag = 0;
+	int i, num;
+	int flag = 0;
 	char unknown = FALSE;
 	for (i = 0; i < (node->input_port_sizes[0] + node->input_port_sizes[1] + node->input_port_sizes[2]); i++)
 	{
@@ -1575,29 +1575,65 @@ void compute_add_node(nnode_t *node, int cycle, int type)
 		int *b = malloc(sizeof(int)*node->input_port_sizes[1]);
 		int *c = malloc(sizeof(int)*node->input_port_sizes[2]);
 
-		for (i = 0; i < node->input_port_sizes[0]; i++)
-			a[i] = get_pin_value(node->input_pins[i],cycle);
-
-		for (i = 0; i < node->input_port_sizes[1]; i++)
-			b[i] = get_pin_value(node->input_pins[node->input_port_sizes[0] + i],cycle);
+		num = node->input_port_sizes[0]+ node->input_port_sizes[1];
+		//if cin connect to unconn(PAD_NODE), a[0] connect to ground(GND_NODE) and b[0] connect to ground, flag = 0 the initial adder for addition
+		//if cin connect to unconn(PAD_NODE), a[0] connect to ground(GND_NODE) and b[0] connect to vcc, flag = 1 the initial adder for subtraction
+		if(node->input_pins[num]->net->driver_pin->node->type == PAD_NODE)
+		{
+			if(node->input_pins[0]->net->driver_pin->node->type == GND_NODE && node->input_pins[node->input_port_sizes[0]]->net->driver_pin->node->type == GND_NODE)
+				flag = 0;
+			else if(node->input_pins[0]->net->driver_pin->node->type == GND_NODE && node->input_pins[node->input_port_sizes[0]]->net->driver_pin->node->type == VCC_NODE)
+				flag = 1;
+		}
+		else
+			flag = 2;
+		/*
+		if(flag != 2)
+		{
+			for (i = 1; i < node->input_port_sizes[0]; i++)
+				a[i - 1] = get_pin_value(node->input_pins[i],cycle);
+			for (i = 1; i < node->input_port_sizes[1]; i++)
+				b[i - 1] = get_pin_value(node->input_pins[node->input_port_sizes[0] + i],cycle);
+		}
+		else
+		{
+		*/
+			for (i = 0; i < node->input_port_sizes[0]; i++)
+				a[i] = get_pin_value(node->input_pins[i],cycle);
+			for (i = 0; i < node->input_port_sizes[1]; i++)
+				b[i] = get_pin_value(node->input_pins[node->input_port_sizes[0] + i],cycle);
+		//}
 
 		for (i = 0; i < node->input_port_sizes[2]; i++)
 			//the initial cin of carry chain subtractor should be 1
-			if((node->input_pins[node->input_port_sizes[0]+ node->input_port_sizes[1] + i]->net->driver_pin->node->type == PAD_NODE) && type == 1)
+			if(flag == 1)
 				c[i] = 1;
 			//the initial cin of carry chain adder should be 0
-			else if((node->input_pins[node->input_port_sizes[0]+ node->input_port_sizes[1] + i]->net->driver_pin->node->type == PAD_NODE) && type == 0)
+			else if(flag == 0)
 				c[i] = 0;
 			else
 				c[i] = get_pin_value(node->input_pins[node->input_port_sizes[0]+ node->input_port_sizes[1] + i],cycle);
 
 		int *result = add_arrays(a, node->input_port_sizes[0], b, node->input_port_sizes[1], c, node->input_port_sizes[2],type);
+		/*
+		if(flag != 2)
+		{
+			//update the pin value of output
+			for (i = 2; i < node->num_output_pins; i++)
+				update_pin_value(node->output_pins[i], result[(i - 2)], cycle);
 
-		//update the pin value of output
-		for (i = 1; i < node->num_output_pins; i++)
-			update_pin_value(node->output_pins[i], result[(i - 1)], cycle);
+			update_pin_value(node->output_pins[0], result[(node->num_output_pins - 2)], cycle);
 
-		update_pin_value(node->output_pins[0], result[(node->num_output_pins - 1)], cycle);
+		}
+		else
+		{*/
+			//update the pin value of output
+			for (i = 1; i < node->num_output_pins; i++)
+				update_pin_value(node->output_pins[i], result[(i - 1)], cycle);
+
+			update_pin_value(node->output_pins[0], result[(node->num_output_pins - 1)], cycle);
+			//free(result);
+		//}
 
 		free(result);
 		free(a);
@@ -1622,8 +1658,8 @@ int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int c_length
 	int i;
 	int temp_carry_in;
 
-	if(flag == 0)
-	{
+	//if(flag == 0)
+	//{
 		//least significant bit would use the input carryIn, the other bits would use the compute value
 		result[0] = a[0] ^ b[0] ^ c[0];
 		result[1] = (a[0] & b[0]) | (c[0] & b[0]) | (a[0] & c[0]);
@@ -1655,7 +1691,8 @@ int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int c_length
 				}
 			}
 		}
-	}
+	//}
+	/*
 	else
 	{
 		result[0] = a[0] ^ (!b[0]) ^ c[0];
@@ -1689,6 +1726,7 @@ int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int c_length
 			}
 		}
 	}
+	*/
 	return result;
 }
 
