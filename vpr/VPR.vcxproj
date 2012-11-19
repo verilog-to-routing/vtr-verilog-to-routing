@@ -199,7 +199,7 @@
     <ClCompile Include="SRC\power\power_cmos_tech.c" />
     <ClCompile Include="SRC\power\power_components.c" />
     <ClCompile Include="SRC\power\power_lowlevel.c" />
-    <ClCompile Include="SRC\power\power_transistor_cnt.c" />
+    <ClCompile Include="SRC\power\power_sizing.c" />
     <ClCompile Include="SRC\power\power_util.c" />
     <ClCompile Include="SRC\power\power_verify.c" />
     <ClCompile Include="SRC\timing\read_sdc.c" />
@@ -265,7 +265,7 @@
     <ClInclude Include="SRC\power\power_cmos_tech.h" />
     <ClInclude Include="SRC\power\power_components.h" />
     <ClInclude Include="SRC\power\power_lowlevel.h" />
-    <ClInclude Include="SRC\power\power_transistor_cnt.h" />
+    <ClInclude Include="SRC\power\power_sizing.h" />
     <ClInclude Include="SRC\power\power_util.h" />
     <ClInclude Include="SRC\power\power_verify.h" />
     <ClInclude Include="SRC\timing\net_delay.h" />

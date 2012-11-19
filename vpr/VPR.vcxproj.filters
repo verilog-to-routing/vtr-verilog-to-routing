@@ -252,10 +252,10 @@
     <ClCompile Include="SRC\power\power_lowlevel.c">
       <Filter>Source Files\power</Filter>
     </ClCompile>
-    <ClCompile Include="SRC\power\power_transistor_cnt.c">
+    <ClCompile Include="SRC\power\power_util.c">
       <Filter>Source Files\power</Filter>
     </ClCompile>
-    <ClCompile Include="SRC\power\power_util.c">
+    <ClCompile Include="SRC\power\power_sizing.c">
       <Filter>Source Files\power</Filter>
     </ClCompile>
   </ItemGroup>
@@ -452,10 +452,10 @@
     <ClInclude Include="SRC\power\power_lowlevel.h">
       <Filter>Header Files\power</Filter>
     </ClInclude>
-    <ClInclude Include="SRC\power\power_transistor_cnt.h">
+    <ClInclude Include="SRC\power\power_util.h">
       <Filter>Header Files\power</Filter>
     </ClInclude>
-    <ClInclude Include="SRC\power\power_util.h">
+    <ClInclude Include="SRC\power\power_sizing.h">
       <Filter>Header Files\power</Filter>
     </ClInclude>
   </ItemGroup>
