@@ -209,7 +209,7 @@ Architecture based off Stratix IV
                   <interconnect>
                     <direct name="direct1" input="ble5.in[4:0]" output="lut5[0:0].in[4:0]"/>
                     <direct name="direct2" input="lut5[0:0].out" output="ff[0:0].D">
-                      <pack_pattern name="ble" in_port="lut5[0:0].out" out_port="ff[0:0].D"/>
+                      <pack_pattern name="ble5" in_port="lut5[0:0].out" out_port="ff[0:0].D"/>
                     </direct>
                     <direct name="direct3" input="ble5.clk" output="ff[0:0].clk"/>                    
                     <mux name="mux1" input="ff[0:0].Q lut5.out[0:0]" output="ble5.out[0:0]"/>
@@ -257,7 +257,7 @@ Architecture based off Stratix IV
                 <interconnect>
                   <direct name="direct1" input="ble6.in" output="lut6[0:0].in"/>
                   <direct name="direct2" input="lut6.out" output="ff.D">
-                    <pack_pattern name="ble" in_port="lut6.out" out_port="ff.D"/>
+                    <pack_pattern name="ble6" in_port="lut6.out" out_port="ff.D"/>
                   </direct>
                   <direct name="direct3" input="ble6.clk" output="ff.clk"/>                    
                   <mux name="mux1" input="ff.Q lut6.out" output="ble6.out"/>
