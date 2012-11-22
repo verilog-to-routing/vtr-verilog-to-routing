@@ -134,6 +134,12 @@ LogicUnit * Wire::endUnit() const
  *-------------------------------------------------------------------------------------------*/
 void Wire::updatePosition()
 {
+    if(!startUnit()->isVisible() || !endUnit()->isVisible()){
+        setVisible(false);
+    }else{
+        setVisible(true);
+    }
+
     //draw line according to start and end positions
     double inputPosition = ((float)myNumber)/(myMaxNumber+1);
     inputPosition = inputPosition*100;
@@ -141,6 +147,8 @@ void Wire::updatePosition()
     outputPosition = outputPosition*100;
     QLineF line(mapFromItem(myStartUnit,50,outputPosition-50),mapFromItem(myEndUnit,-50,inputPosition-50));
     setLine(line);
+
+    update();
 //    QLineF line(mapFromItem(myStartUnit,50,0),mapFromItem(myEndUnit,-50,0));
 //    setLine(line);
 }

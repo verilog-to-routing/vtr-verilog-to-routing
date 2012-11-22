@@ -559,6 +559,17 @@ void LogicUnit::setCurrentCycle(int cycle)
     updateWires();
 }
 
+bool LogicUnit::isShown()
+{
+    return shown;
+}
+
+void LogicUnit::setShown(bool value)
+{
+    shown = value;
+    setVisible(value);
+}
+
 /*---------------------------------------------------------------------------------------------
  * (function: getChildren)
  *-------------------------------------------------------------------------------------------*/

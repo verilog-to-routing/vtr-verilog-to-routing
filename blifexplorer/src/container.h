@@ -55,6 +55,7 @@ public:
     void setEdge(int i);
     int simulateNextWave();
     void resetAllHighlights();
+    void setVisibilityForAll(bool value);
 private:
     Wire* getConnectionBetween(QString nodeName, QString kidName);
     void computeLayers();
@@ -65,6 +66,7 @@ private:
     int createNodes();
     int createNodesFromOdin();
     int createConnectionsFromOdin();
+    int createConnectionsFromOdinIterate();
     int createLatches();
     int createConnections();
     int getNodeListFromOdin();

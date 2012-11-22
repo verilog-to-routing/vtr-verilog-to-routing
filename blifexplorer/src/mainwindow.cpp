@@ -585,6 +585,18 @@ void MainWindow::createActions()
     removeHighlightingAction = new QAction(tr("Reset Highlighting"), this);
     removeHighlightingAction->setStatusTip("Highlight the logic block and all connections connected to it.");
     connect(removeHighlightingAction, SIGNAL(triggered()),this,SLOT(resetHighlighting()));
+
+    showNodeAndNeighboursOnlyAction = new QAction(tr("Show Node and Neighbours Only"), this);
+    showNodeAndNeighboursOnlyAction->setStatusTip("Hides all nodes except for the selected node and its parents and children.");
+    connect(showNodeAndNeighboursOnlyAction, SIGNAL(triggered()),this,SLOT(showNodeAndNeighboursOnly()));
+
+    addParentsToHighlightingAction = new QAction(tr("Add Parents to Visibility"), this);
+    addParentsToHighlightingAction->setStatusTip("Adds parents of the selected node to visualization.");
+    connect(addParentsToHighlightingAction, SIGNAL(triggered()),this,SLOT(addParentsToHighlighting()));
+
+    addChildrenToHighlightingAction = new QAction(tr("Add Children to Visibility"), this);
+    addChildrenToHighlightingAction->setStatusTip("Adds child nodes of the selected node to visualization.");
+    connect(addChildrenToHighlightingAction, SIGNAL(triggered()),this,SLOT(addChildrenToHighlighting()));
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -610,6 +622,10 @@ void MainWindow::createMenus()
     itemMenu->addSeparator();
     itemMenu->addAction(showAllConnectionsAction);
     itemMenu->addAction(removeHighlightingAction);
+    itemMenu->addSeparator();
+    itemMenu->addAction(showNodeAndNeighboursOnlyAction);
+    itemMenu->addAction(addParentsToHighlightingAction);
+    itemMenu->addAction(addChildrenToHighlightingAction);
 
     aboutMenu = menuBar()->addMenu(tr("&Help"));
     aboutMenu->addAction(aboutAction);
@@ -931,6 +947,11 @@ void MainWindow::findBlock()
         result = myContainer->findByName(itemName);
         scene->clearSelection();
         fprintf(stderr, "Find process done\n");
+        if(result.count()!=0){
+            LogicUnit* match = result.constBegin().value();
+            view->centerOn(match->x(),match->y());
+        }
+
         QString message;
         message = "Search complete.\n Items found: ";
         message.append(QString("%1").arg(result.count()));
@@ -958,6 +979,12 @@ void MainWindow::showAllConnection()
                 wire->update();
                 wire->setZValue(905);
             }
+            list = unit->getOutCons();
+            foreach (Wire *wire, list) {
+                wire->setColor(QColor(0,200,200,255));
+                wire->update();
+                wire->setZValue(905);
+            }
             unit->setBrush(QColor(0,0,255,255));
             unit->setZValue(900);
         }
@@ -971,6 +998,7 @@ void MainWindow::resetHighlighting()
 {
     if (scene->selectedItems().isEmpty()){
        myContainer->resetAllHighlights();
+       myContainer->setVisibilityForAll(true);
        return;
     }
 
@@ -987,6 +1015,100 @@ void MainWindow::resetHighlighting()
                 wire->setZValue(-1000);
                 wire->update();
             }
+        }
+}
+
+void MainWindow::showNodeAndNeighboursOnly()
+{
+    //nothing to do if no node is selected
+    if (scene->selectedItems().isEmpty())
+        return;
+
+    QGraphicsItem *item = scene->selectedItems().first();
+
+        if (item->type() == LogicUnit::Type) {
+            LogicUnit *unit =
+                qgraphicsitem_cast<LogicUnit *>(scene->selectedItems().first());
+
+            //set all nodes to invisible
+            myContainer->setVisibilityForAll(false);
+
+
+            unit->setShown(true);
+
+            //make children visible
+            QList<LogicUnit*> kidslist = unit->getChildren();
+            foreach(LogicUnit* kid, kidslist){
+                kid->setShown(true);
+            }
+
+            //make parents visible
+            QList<LogicUnit*> parentslist = unit->getParents();
+            foreach(LogicUnit* parent, parentslist){
+                parent->setShown(true);
+            }
+
+            QList<Wire *> list = unit->getAllCons();
+            foreach (Wire *wire, list) {
+                wire->updatePosition();
+            }
+
+            myContainer->arrangeContainer();
+            view->centerOn(unit->x(),unit->y());
+        }
+}
+
+void MainWindow::addParentsToHighlighting()
+{
+    //nothing to do if no node is selected
+    if (scene->selectedItems().isEmpty())
+        return;
+
+    QGraphicsItem *item = scene->selectedItems().first();
+
+        if (item->type() == LogicUnit::Type) {
+            LogicUnit *unit =
+                qgraphicsitem_cast<LogicUnit *>(scene->selectedItems().first());
+
+            //make parents visible
+            QList<LogicUnit*> parentslist = unit->getParents();
+            foreach(LogicUnit* parent, parentslist){
+                parent->setShown(true);
+            }
+
+            QList<Wire *> list = unit->getAllCons();
+            foreach (Wire *wire, list) {
+                wire->updatePosition();
+            }
+
+            myContainer->arrangeContainer();
+        }
+}
+
+void MainWindow::addChildrenToHighlighting()
+{
+    //nothing to do if no node is selected
+    if (scene->selectedItems().isEmpty())
+        return;
+
+    QGraphicsItem *item = scene->selectedItems().first();
+
+        if (item->type() == LogicUnit::Type) {
+            LogicUnit *unit =
+                qgraphicsitem_cast<LogicUnit *>(scene->selectedItems().first());
+
+            //make parents visible
+            QList<LogicUnit*> kidslist = unit->getChildren();
+            foreach(LogicUnit* kid, kidslist){
+                kid->setShown(true);
+            }
+
+            QList<Wire *> list = unit->getAllCons();
+            foreach (Wire *wire, list) {
+                wire->updatePosition();
+            }
+
+            myContainer->arrangeContainer();
         }
 }
 

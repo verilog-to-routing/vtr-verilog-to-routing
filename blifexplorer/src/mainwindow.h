@@ -84,6 +84,10 @@ private slots:
     void selectAll();
     void showAllConnection();
     void resetHighlighting();
+    void showNodeAndNeighboursOnly();
+    void addParentsToHighlighting();
+    void addChildrenToHighlighting();
+
     void setEdgeFall(bool);
     void setEdgeRise(bool);
     void setEdgeFallRise(bool);
@@ -115,6 +119,9 @@ private:
     QAction *findAction;
     QAction *showAllConnectionsAction;
     QAction *removeHighlightingAction;
+    QAction *showNodeAndNeighboursOnlyAction;
+    QAction *addParentsToHighlightingAction;
+    QAction *addChildrenToHighlightingAction;
 
     QAction *toFrontAction;
     QAction *sendBackAction;

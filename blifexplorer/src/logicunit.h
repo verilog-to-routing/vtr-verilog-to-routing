@@ -94,6 +94,8 @@ public:
     bool isHighlighted();
     void setHighlighted(bool value);
     void setCurrentCycle(int cycle);
+    bool isShown();
+    void setShown(bool value);
 
 
 
@@ -114,6 +116,7 @@ private:
     nnode_t *myOdinNode;
     bool hasOdinNode;
     bool highlighted;
+    bool shown;
     int myCurrentCycle;
 };
 

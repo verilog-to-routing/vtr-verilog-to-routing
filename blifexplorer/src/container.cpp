@@ -257,7 +257,11 @@ void Container::computeLayers()
         QString nodeName(node->getName());
         //assign layer
         maxparent = getMaxParentLayer(node);
-        node->setLayer(maxparent+1);
+
+        //only if the node is visible it is considered for a layer
+        if(node->isVisible()){
+            node->setLayer(maxparent+1);
+        }
         if(node->getLayer()>maxlayer){
             maxlayer = node->getLayer();
         }
@@ -308,27 +312,31 @@ void Container::spreadLayers()
     LogicUnit* lastUnit = NULL;
     int counter = 0;
     int offset = 200;
-    int lastcount;
+
     for(int i = 0; i<=maxlayer;i++){
         blockIterator = unithashtable.constBegin();
-        lastcount = 0;
+
         while(blockIterator != unithashtable.constEnd()){
             LogicUnit* actUnit = blockIterator.value();
-            if(actUnit->getLayer()== i){
-                actUnit->setPos(offset+15*counter,100.0+200*counter);
-                actUnit->updateWires();
-                lastUnit = actUnit;
-
-                counter++;
+            if(actUnit->isVisible()){
+                if(actUnit->getLayer()== i){
+                    actUnit->setPos(offset+15*counter,100.0+200*counter);
+                    actUnit->updateWires();
+                    lastUnit = actUnit;
+                    counter++;
+                }
+                if(maxcountPerLayer < counter){
+                    maxcountPerLayer = counter;
+                }
             }
-            lastcount++;
-            if(maxcountPerLayer < counter){
-                maxcountPerLayer = counter;
-            }
-
             ++blockIterator;
         }
-        offset = lastUnit->x()+200;
+        if(lastUnit!=NULL){
+            offset = lastUnit->x()+200;
+        }else{
+            offset = 200;
+        }
+
         counter = 0;
 
     }
@@ -437,6 +445,13 @@ int Container::createNodesFromOdin(){
  *-------------------------------------------------------------------------------------------*/
 bool Container::parentsDone(LogicUnit *unit, QHash<QString, LogicUnit *> donehashlist)
 {
+    //in case it is a flipFlop the parents don't have to be done
+    //FlipFlops can be parts of cycles.
+    if(unit->unitType() == LogicUnit::Latch ||
+            unit->unitType() == LogicUnit::MEMORY){
+        return true;
+    }
+
     bool result = true;
     QList<LogicUnit*> parents = unit->getParents();
     foreach(LogicUnit* parent,parents){
@@ -461,6 +476,102 @@ bool Container::parentsDone(LogicUnit *unit)
     }
     return result;
 }
+
+
+int Container::createConnectionsFromOdinIterate()
+{
+    //only create connections if nodes are created
+    if(myItemcount <= 0)
+        return -1;
+    //create all connections while iterating through all nodes
+    //leave out the clocks
+    //(visual reasons. The clock should be added last to be at the right port)
+    int conCount = 0;
+    int itemNr = 0;
+    int j,i, itemTotal;
+    QList<LogicUnit*> clocks;
+    bool clocksFound = false;
+
+    QHash<QString, LogicUnit *> hash =unithashtable;
+    QHash<QString, LogicUnit *>::const_iterator blockIterator = hash.constBegin();
+    itemTotal = hash.count();
+     while(blockIterator != hash.constEnd()){
+         QString actName = blockIterator.key();
+         LogicUnit* actNode = blockIterator.value();
+
+         if(actNode->getOdinRef()->type == CLOCK_NODE){
+             if(!clocks.contains(actNode)){
+                clocks.append(actNode);
+                clocksFound = true;
+             }
+         }else{//if the node is not a clock node, create all output connections
+             int output_number = actNode->getOdinRef()->num_output_pins;
+             for(j=0; j<output_number;j++)
+             {
+                 int num_children = 0;
+                 nnode_t** children = get_children_of_nodepin(actNode->getOdinRef(), &num_children,j);
+                 QHash<QString, nnode_t*> childrenDone;
+                 for(i=0; i< num_children; i++){
+                     nnode_t* nodeKid = children[i];
+                     QString kidName(nodeKid->name);
+                     //LogicUnit* kidUnit = getReferenceToUnit(kidName);
+
+                     if(!childrenDone.contains(kidName)){
+                         //bool success = addConnectionHashByRef(actNode,kidUnit);
+                         bool success = addConnectionHash(actName,kidName);
+                         if(!success){
+                             /*FIXME: This error is sometimes created by Odin as
+                                         the method get_children_of(node->getOdinRef(), &num_children)
+                                         sometimes returns a node itself as its child.*/
+                             fprintf(stderr, "CONTAINER:  Warning: Node has itself in childlist in Odin II:");
+                             fprintf(stderr,actName.toAscii().data());
+                             fprintf(stderr,"\n");
+                         }else{
+                         //for hard blocks add the output pin of the created connection
+                             Wire* newWire = getConnectionBetween(actName, kidName);
+                             newWire->setMaxOutputPinNumber(
+                                         actNode->getOdinRef()->num_output_pins);
+                             newWire->setMyOutputPinNumber(j+1);
+                             childrenDone[kidName] = nodeKid;
+                             conCount++;
+                             if(conCount%500 == 0){
+                                fprintf(stdout, "CONTAINER:  Connection progress: %d Cons, %d.%d Percent.\n", conCount, 100*itemNr/itemTotal,
+                                        (10000*itemNr/itemTotal)%100);
+                                fflush(stdout);
+                             }
+                         }
+                     }
+                 }
+             }
+         }
+
+         //go through each output pin of the node and create all connections
+         itemNr++;
+         ++blockIterator;
+     }
+
+     //create all clock connections if clocks exist
+     if(clocksFound){
+         //for all clocks create the connections
+         foreach(LogicUnit* clock, clocks){
+             int num_children = 0;
+             nnode_t** children = get_children_of(clock->getOdinRef(), &num_children);
+             QString clockName = clock->getName();
+
+             // connect clock to all children
+             for(i=0; i< num_children; i++){
+                 nnode_t* nodeKid = children[i];
+                 QString kidName(nodeKid->name);
+                 addConnectionHash(clockName,kidName);
+                 conCount++;
+             }
+         }
+     }
+     return conCount;
+
+
+}
+
 
 /*---------------------------------------------------------------------------------------------
  * (function: createConnectionsFromOdin)
@@ -594,7 +705,7 @@ int Container::readInFileOdinOnly(){
     myItemcount = createNodesFromOdin();
     fprintf(stdout, "VISUALIZATION: Creating Node connections...\n");
      //create connections
-    cons = createConnectionsFromOdin();
+    cons = createConnectionsFromOdinIterate();
      if(myItemcount <= 0)
          return -1;
 
@@ -689,6 +800,22 @@ void Container::resetAllHighlights()
             wire->setColor(QColor(0,0,0,255));
             wire->setZValue(-1000);
             wire->update();
+        }
+         ++blockIterator;
+     }
+}
+
+void Container::setVisibilityForAll(bool value)
+{
+    QHash<QString, LogicUnit *> hash =unithashtable;
+    QHash<QString, LogicUnit *>::const_iterator blockIterator = hash.constBegin();
+
+     while(blockIterator != unithashtable.constEnd()){
+        LogicUnit *unit = blockIterator.value();
+        unit->setShown(value);
+        QList<Wire *> list = unit->getAllCons();
+        foreach (Wire *wire, list) {
+            wire->updatePosition();
         }
          ++blockIterator;
      }
