@@ -442,7 +442,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			$vpr_path,                    "vpr.out",
 			$timeout,                     $temp_dir,
 			$architecture_file_name,      "$benchmark_name",
-			"--blif_file",				  "$prevpr_output_file_path",
+			"--blif_file",				  "$prevpr_output_file_name",
 			"--timing_analysis",          "$timing_driven",
 			"--timing_driven_clustering", "$timing_driven",
 			"--cluster_seed_type",        "$vpr_cluster_seed_type",
@@ -486,7 +486,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 					$timeout,                $temp_dir,
 					$architecture_file_name, "$benchmark_name",
 					"--route",
-					"--blif_file",           "$prevpr_output_file_path",
+					"--blif_file",           "$prevpr_output_file_name",
 					"--route_chan_width",    "$min_chan_width",
 					"--cluster_seed_type",   "$vpr_cluster_seed_type",
 					"--nodisp",              @vpr_power_args,
@@ -500,7 +500,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			$vpr_path,                    "vpr.out",
 			$timeout,                     $temp_dir,
 			$architecture_file_name,      "$benchmark_name",
-			"--blif_file",                "$prevpr_output_file_path",
+			"--blif_file",                "$prevpr_output_file_name",
 			"--timing_analysis",          "$timing_driven",
 			"--timing_driven_clustering", "$timing_driven",
 			"--route_chan_width",         "$min_chan_width",
@@ -521,12 +521,12 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 							$timeout,
 							$temp_dir,
 							"-c", 
-							"cec $prevpr_output_file_path post_pack_netlist.blif;sec $prevpr_output_file_path post_pack_netlist.blif"
+							"cec $prevpr_output_file_name post_pack_netlist.blif;sec $prevpr_output_file_name post_pack_netlist.blif"
 			);
 		}
 		if (! $keep_intermediate_files)
 		{
-			system "rm -f $prevpr_output_file_path";
+			system "rm -f $prevpr_output_file_name";
 			system "rm -f ${temp_dir}*.xml";
 			system "rm -f ${temp_dir}*.net";
 			system "rm -f ${temp_dir}*.place";
