@@ -402,18 +402,76 @@ ast_node_t *markAndProcessSymbolListWith(ids id, ast_node_t *symbol_list)
 {
 	int i;
 	long sc_spot;
+	long range_temp_max = 0;
+	long range_temp_min = 0;
 	ast_node_t *range_min = 0;
 	ast_node_t *range_max = 0;
+	ast_node_t *newNode = 0;
 
 	for (i = 0; i < symbol_list->num_children; i++)
 	{
-		/* checks range is legal */
+		/* checks range is legal.  */
 		get_range(symbol_list->children[i]);
 
-		if ((i == 0) && (symbol_list->children[0]->children[1] != NULL)&& (symbol_list->children[0]->children[2] != NULL) && (symbol_list->children[0]->children[1]->type == NUMBERS) && (symbol_list->children[0]->children[2]->type == NUMBERS))
+		if ((i == 0) && (symbol_list->children[0]->children[1] != NULL) && (symbol_list->children[0]->children[2] != NULL)
+				&& ((symbol_list->children[0]->children[1]->type == NUMBERS) || (symbol_list->children[0]->children[1]->type == IDENTIFIERS))
+				&& ((symbol_list->children[0]->children[2]->type == NUMBERS) || (symbol_list->children[0]->children[2]->type == IDENTIFIERS)))
 		{
-			range_max = symbol_list->children[0]->children[1];
-			range_min = symbol_list->children[0]->children[2];
+			/* Do lookup in sc_add_string */
+			/* Verify node->type.variables.is_parameter == TRUE */
+			/* ELSE REPORT ERROR */
+			if (symbol_list->children[0]->children[1]->type == IDENTIFIERS)
+			{
+				if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], symbol_list->children[0]->children[1]->types.identifier)) != -1)
+				{
+					newNode = defines_for_module_sc[num_modules]->data[sc_spot];
+					if (newNode->types.variable.is_parameter == TRUE)
+					{
+						range_max = symbol_list->children[0]->children[1];
+						range_temp_max = newNode->types.number.value;
+					}
+					else
+						error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
+								"parameter %s don't match\n", symbol_list->children[0]->children[1]->types.identifier);
+				}
+				else
+					error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
+								"parameter %s don't match\n", symbol_list->children[0]->children[1]->types.identifier);
+			}
+			else if(symbol_list->children[0]->children[1]->type == NUMBERS)
+			{
+				range_max = symbol_list->children[0]->children[1];
+				range_temp_max = range_max->types.number.value;
+			}
+
+			if (symbol_list->children[0]->children[2]->type == IDENTIFIERS)
+			{
+				if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], symbol_list->children[0]->children[2]->types.identifier)) != -1)
+				{
+					newNode = defines_for_module_sc[num_modules]->data[sc_spot];
+					if (newNode->types.variable.is_parameter == TRUE)
+					{
+						range_min = symbol_list->children[0]->children[2];
+						range_temp_min = newNode->types.number.value;
+					}
+					else
+						error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
+								"parameter %s don't match\n", symbol_list->children[0]->children[2]->types.identifier);
+					}
+					else
+						error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
+								"parameter %s don't match\n", symbol_list->children[0]->children[2]->types.identifier);
+				}
+				else if(symbol_list->children[0]->children[2]->type == NUMBERS)
+				{
+					range_min = symbol_list->children[0]->children[2];
+					range_temp_min = range_min->types.number.value;
+				}
+				if(range_temp_min > range_temp_max)
+				{
+					error_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support arrays declared [m:n] where m is less than n.");
+				}
+
 		}
 
 		if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
@@ -481,7 +539,7 @@ ast_node_t *markAndProcessSymbolListWith(ids id, ast_node_t *symbol_list)
 						symbol_list->children[i]->children[0]->types.identifier, 
 						((ast_node_t*)(defines_for_module_sc[num_modules]->data[sc_spot]))->line_number);
 				}
-
+				symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
 				defines_for_module_sc[num_modules]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
 				/* mark the node as shared so we don't delete it */
 				symbol_list->children[i]->children[5]->shared_node = TRUE;

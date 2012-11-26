@@ -113,7 +113,7 @@ void do_high_level_synthesis()
 	#ifdef VPR6
 	find_hard_multipliers();
 	find_hard_adders();
-	find_hard_adders_for_sub();
+	//find_hard_adders_for_sub();
 	register_hard_blocks();
 	#endif
 	global_param_table_sc = sc_new_string_cache();

@@ -215,7 +215,6 @@ void output_blif(char *file_name, netlist_t *netlist)
 #ifdef VPR6
 	add_the_blackbox_for_mults(out);
 	add_the_blackbox_for_adds(out);
-	//add_the_blackbox_for_subs(out);
 	output_hard_blocks(out);
 #endif
 
@@ -358,10 +357,10 @@ void output_node(nnode_t *node, short traverse_number, FILE *fp)
 			break;
 
 		case MINUS:
-			if (hard_subs == NULL)
+			if (hard_adders == NULL)
 				oassert(FALSE); /* should be soft logic! */
 			#ifdef VPR6
-			if(hard_subs != NULL)
+			if(hard_adders != NULL)
 				define_add_function(node, node->type, fp);
 			#endif
 			break;

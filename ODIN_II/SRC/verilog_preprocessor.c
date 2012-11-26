@@ -152,14 +152,14 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
 #endif
 			else if (0 != strcmp(def_iterator->value, value))
 			{
-				fprintf(stderr, "\tWarning: The value of %s has been redefined to %s, the prvious value was %s\n\n",
+				fprintf(stderr, "\tWarning: The value of %s has been redefined to %s, the previous value was %s\n\n",
 					symbol, value, def_iterator->value);
 				free(def_iterator->value);
 				def_iterator->value = (char *)strdup(value);
 			}
 
 			free(new_def);
-			return 0;
+			return -2;
 		}
 	}
 	
@@ -456,7 +456,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 		
 		//fprintf(stderr, "%s:%d\t%s\n", current_include->path,line_number, line);
 
-		/* Preprocessor directives have a backtick on the first coloumn. */
+		/* Preprocessor directives have a backtick on the first column. */
 		if (line[0] == '`') 
 		{
 			token = trim((char *)strtok(line, " \t"));
@@ -602,7 +602,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 			{
 				pop(skip);
 			}
-			/* Leave unhandled preprcessor directives in place. */
+			/* Leave unhandled preprocessor directives in place. */
 			else if (top(skip) < 1)
 			{
 				fprintf(preproc_producer, "%s %s\n", line, line + 1 + strlen(line));

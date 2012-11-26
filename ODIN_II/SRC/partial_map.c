@@ -201,12 +201,12 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 			break;
 		case MINUS:
 			#ifdef VPR6
-			if (hard_subs != NULL && node->num_input_port_sizes == 3)
+			if (hard_adders != NULL && node->num_input_port_sizes == 3)
 			{
 				if ((node->input_port_sizes[0] + node->input_port_sizes[1]) > 0)
 					instantiate_hard_adder_subtraction(node, traverse_number, netlist, 0);
 			}
-			else if(hard_subs != NULL && node->num_input_port_sizes == 2)
+			else if(hard_adders != NULL && node->num_input_port_sizes == 2)
 			{
 				if ((node->input_port_sizes[0]) > 0)
 					instantiate_hard_adder_subtraction(node, traverse_number, netlist, 1);

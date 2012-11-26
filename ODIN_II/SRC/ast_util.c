@@ -355,16 +355,18 @@ void add_child_to_node(ast_node_t* node, ast_node_t *child)
 
 /*---------------------------------------------------------------------------------------------
  * (function: get_range)
+ *  Check the node range is legal. Will return the range if it's legal.
+ *  Node should have three children. Second and Third children's type should be NUMBERS.
  *-------------------------------------------------------------------------------------------*/
 int get_range(ast_node_t* first_node) 
 {
 	long temp_value;
 	/* look at the first item to see if it has a range */
-	if (first_node->children[1] != NULL && first_node->children[1]->type == NUMBERS)
+	if (first_node->children[1] != NULL && first_node->children[1]->type == NUMBERS && first_node->children[2] != NULL && first_node->children[2]->type == NUMBERS)
 	{
 		/* IF the first element in the list has a second element...that is the range */
-		oassert(first_node->children[2] != NULL); // the third element should be a value
-		oassert((first_node->children[1]->type == NUMBERS) && (first_node->children[2]->type == NUMBERS)); // should be numbers
+		//oassert(first_node->children[2] != NULL); // the third element should be a value
+		//oassert((first_node->children[1]->type == NUMBERS) && (first_node->children[2]->type == NUMBERS)); // should be numbers
 		if(first_node->children[1]->types.number.value < first_node->children[2]->types.number.value)
 		{
 			// Reversing the indicies doesn't produce correct code. We need to actually handle these correctly.

@@ -326,7 +326,10 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	char buffer[READ_BLIF_BUFFER];
 	while ((ptr = my_strtok (NULL, TOKENS, file, buffer)) != NULL)
 	{
-		names = (char**)realloc(names, sizeof(char*)* (input_token_count + 1));
+		if(input_token_count == 0)
+			names = (char**)malloc((sizeof(char*)));
+		else
+			names = (char**)realloc(names, (sizeof(char*))* (input_token_count + 1));
 		names[input_token_count++] = strdup(ptr);
 	}
 
@@ -402,6 +405,7 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 
 	/* Free the char** names */
 	free(names);
+	free(ptr);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -764,6 +768,8 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 {
 	fpos_t pos;
 	int last_line = file_line_number;
+	char *One = "1";
+	char *Zero = "0";
 	fgetpos(file,&pos);
 
 	if(!input_count)
@@ -782,7 +788,7 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 	}
 
 	char **bit_map = NULL;
-	char *output_bit_map = 0;// to distinguish whether for the bit_map output is 1 or 0
+	char *output_bit_map = NULL;// to distinguish whether for the bit_map output is 1 or 0
 	int line_count_bitmap = 0; //stores the number of lines in a particular bit map
 	char buffer[READ_BLIF_BUFFER];
 	while(1)
@@ -793,8 +799,19 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 
 		bit_map = (char**)realloc(bit_map,sizeof(char*) * (line_count_bitmap + 1));
 		bit_map[line_count_bitmap++] = strdup(my_strtok(buffer,TOKENS, file, buffer));
-
+		if (output_bit_map != NULL) free(output_bit_map);
 		output_bit_map = strdup(my_strtok(NULL,TOKENS, file, buffer));
+	}
+
+	if (!strcmp(output_bit_map, One))
+	{
+		free(output_bit_map);
+		output_bit_map = One;
+	}
+	else
+	{
+		free(output_bit_map);
+		output_bit_map = Zero;
 	}
 
 	file_line_number = last_line;

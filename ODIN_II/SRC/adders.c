@@ -49,10 +49,11 @@ int *adder = NULL;
  *-------------------------------------------------------------------------*/
 void init_add_distribution()
 {
-	int i;
+	int i, j;
 	oassert(hard_adders != NULL);
-	adder = (int *)malloc(sizeof(int) * (hard_adders->inputs->size + 1));
-	for (i = 0; i <= (hard_adders->inputs->size + hard_adders->inputs->next->size); i++)
+	j = hard_adders->inputs->size + hard_adders->inputs->next->size;
+	adder = (int *)malloc(sizeof(int) * (j + 1));
+	for (i = 0; i <= j; i++)
 		adder[i] = 0;
 	return;
 }
@@ -198,15 +199,13 @@ void instantiate_hard_adder(nnode_t *node, short mark, netlist_t *netlist)
 	{
 		if (node->output_pins[i]->name == NULL)
 		{
-			len = strlen(node->name) + 6; /* 6 chars for pin idx */
+			len = strlen(node->name) + 20; /* 6 chars for pin idx */
 			new_name = (char*)malloc(len);
 			sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
 			node->output_pins[i]->name = new_name;
 		}
 	}
 
-	free(node->name);
-	node->name = new_name;
 	node->traverse_visited = mark;
 	return;
 }
@@ -618,12 +617,12 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 	oassert(nodeo->input_port_sizes[0] == a);
 	oassert(nodeo->input_port_sizes[1] == b);
 
-	node  = (nnode_t**)malloc(sizeof(nnode_t*)*(count + 1));
+	node  = (nnode_t**)malloc(sizeof(nnode_t*)*(count));
 
 	for(i = 0; i < count; i++)
 	{
 		node[i] = allocate_nnode();
-		node[i]->name = (char *)malloc(strlen(nodeo->name) + 4);
+		node[i]->name = (char *)malloc(strlen(nodeo->name) + 20);
 		sprintf(node[i]->name, "%s-%d", nodeo->name, i);
 		init_split_adder(nodeo, node[i], a, sizea, b, sizeb, cin, cout, i);
 		add_list = insert_in_vptr_list(add_list, node[i]);

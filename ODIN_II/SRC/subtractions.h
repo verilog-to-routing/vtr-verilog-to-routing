@@ -27,8 +27,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "util.h"
 #include "adders.h"
 
-extern t_model *hard_subs;
-extern t_model *hard_subs_unary;
+//extern t_model *hard_subs;
 extern struct s_linked_vptr *subs_list;
 extern struct s_linked_vptr *sub_list;
 extern struct s_linked_vptr *sub_one_node_list;
@@ -40,11 +39,6 @@ extern void init_sub_distribution();
 extern void report_sub_distribution();
 extern void declare_hard_adder_for_sub(nnode_t *node);
 extern void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t *netlist, int type);
-extern void find_hard_adders_for_sub();
-extern void add_the_blackbox_for_subs(FILE *out);
-extern void add_the_blackbox_for_unary_subs(FILE *out);
-extern void define_sub_function(nnode_t *node, short type, FILE *out);
-extern void define_unary_sub_function(nnode_t *node, short type, FILE *out);
 extern void split_adder_for_sub(nnode_t *node, int a, int b, int sizea, int sizeb, int cin, int cout, int count, netlist_t *netlist);
 extern void iterate_adders_for_sub(netlist_t *netlist);
 extern void clean_adders_for_sub();

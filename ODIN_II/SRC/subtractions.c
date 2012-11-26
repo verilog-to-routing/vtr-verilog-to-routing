@@ -35,7 +35,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "globals.h"
 #include "errors.h"
 
-t_model *hard_subs = NULL;
+//t_model *hard_adders = NULL;
 struct s_linked_vptr *subs_list = NULL;
 struct s_linked_vptr *sub_list = NULL;
 struct s_linked_vptr *sub_one_node_list = NULL;
@@ -47,20 +47,6 @@ int *sub = NULL;
 #ifdef VPR6
 
 /*---------------------------------------------------------------------------
- * (function: init_add_distribution)
- *  For adder, the output will only be the maxim input size + 1
- *-------------------------------------------------------------------------*/
-void init_sub_distribution()
-{
-	int i;
-	oassert(hard_subs != NULL);
-	sub = (int *)malloc(sizeof(int) * (hard_subs->inputs->size + 1));
-	for (i = 0; i <= (hard_subs->inputs->size + hard_subs->inputs->next->size); i++)
-		sub[i] = 0;
-	return;
-}
-
-/*---------------------------------------------------------------------------
  * (function: report_add_distribution)
  *-------------------------------------------------------------------------*/
 
@@ -70,7 +56,7 @@ void report_sub_distribution()
 	int totalsub = 0;
 	chain_information_t *sub_chain;
 
-	if(hard_subs == NULL)
+	if(hard_adders == NULL)
 		return;
 
 	printf("\nHard MINUS Distribution\n");
@@ -100,29 +86,6 @@ void report_sub_distribution()
 }
 
 /*---------------------------------------------------------------------------
- * (function: find_hard_adders_for_sub)
- *-------------------------------------------------------------------------*/
-void find_hard_adders_for_sub()
-{
-
-	hard_subs = Arch.models;
-
-	while (hard_subs != NULL)
-	{
-		if (strcmp(hard_subs->name, "adder") == 0)
-		{
-			init_sub_distribution();
-			return;
-		}
-		else
-		{
-			hard_subs = hard_subs->next;
-		}
-	}
-	return;
-}
-
-/*---------------------------------------------------------------------------
  * (function: declare_hard_adder_for_sub)
  *-------------------------------------------------------------------------*/
 void declare_hard_adder_for_sub(nnode_t *node)
@@ -131,11 +94,11 @@ void declare_hard_adder_for_sub(nnode_t *node)
 	int width_a, width_b, width_sumout;
 
 	/* See if this size instance of adder exists?*/
-	if (hard_subs == NULL)
+	if (hard_adders == NULL)
 	{
-		printf(ERRTAG "Instantiating subtraction where subs do not exist\n");
+		printf(ERRTAG "Instantiating subtraction where carry chain adders do not exist\n");
 	}
-	tmp = (t_adder *)hard_subs->instances;
+	tmp = (t_adder *)hard_adders->instances;
 	width_a = node->input_port_sizes[0];
 	width_b = node->input_port_sizes[1];
 	width_sumout = node->output_port_sizes[1];
@@ -150,8 +113,8 @@ void declare_hard_adder_for_sub(nnode_t *node)
 
 	/* Does not exist - must create an instance*/
 	tmp = (t_adder *)malloc(sizeof(t_adder));
-	tmp->next = (t_adder *)hard_subs->instances;
-	hard_subs->instances = tmp;
+	tmp->next = (t_adder *)hard_adders->instances;
+	hard_adders->instances = tmp;
 	tmp->size_a = width_a;
 	tmp->size_b = width_b;
 	tmp->size_cin = 1;
@@ -189,200 +152,16 @@ void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t *ne
 	{
 		if (node->output_pins[i]->name ==NULL)
 		{
-			len = strlen(node->name) + 6; /* 6 chars for pin idx */
+			len = strlen(node->name) + 20; /* 6 chars for pin idx */
 			new_name = (char*)malloc(len);
 			sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
 			node->output_pins[i]->name = new_name;
 		}
 	}
 
-	free(node->name);
-	node->name = new_name;
 	node->traverse_visited = mark;
 	return;
 }
-
-/*----------------------------------------------------------------------------
- * function: add_the_blackbox_for_subs()
- *--------------------------------------------------------------------------*/
-void add_the_blackbox_for_subs(FILE *out)
-{
-	int i;
-	int count;
-	int hard_add_inputs, hard_add_outputs;
-	t_adder *subs;
-	t_model_ports *ports;
-	char buffer[MAX_BUF];
-	char *pa, *pb, *psumout, *pcin, *pcout;
-
-	/* Check to make sure this target architecture has hard adders */
-	if (hard_subs == NULL)
-		return;
-
-	/* Get the names of the ports for the adder */
-	ports = hard_subs->inputs;
-	pcin = ports->name;
-	ports = ports->next;
-	pb = ports->name;
-	ports = ports->next;
-	pa = ports->name;
-
-	ports = hard_subs->outputs;
-	psumout = ports->name;
-	ports = ports->next;
-	pcout = ports->name;
-
-	/* find the adder devices in the tech library */
-	subs = (t_adder *)(hard_subs->instances);
-	if (subs == NULL) /* No adders instantiated */
-		return;
-
-	/* simplified way of getting the multsize, but fine for quick example */
-	while (subs != NULL)
-	{
-		/* write out this adder model */
-		if (configuration.fixed_hard_adder != 0)
-			count = fprintf(out, ".model adder\n");
-		else
-			count = fprintf(out, ".model adder\n");
-
-		/* add the inputs */
-		count = count + fprintf(out, ".inputs");
-		hard_add_inputs = subs->size_a + subs->size_b + subs->size_cin;
-		for (i = 0; i < hard_add_inputs; i++)
-		{
-			if (i < subs->size_a)
-			{
-				count = count + sprintf(buffer, " %s[%d]", pa, i);
-			}
-			else if(i < hard_add_inputs - subs->size_cin && i >= subs->size_a)
-			{
-				count = count + sprintf(buffer, " %s[%d]", pb, i - subs->size_a);
-			}
-			else
-			{
-				count = count + sprintf(buffer, " %s[%d]", pcin, i - subs->size_a - subs->size_b);
-			}
-			if (count > 78)
-				count = fprintf(out, " \\\n %s", buffer) - 3;
-			else
-				fprintf(out, " %s", buffer);
-		}
-		fprintf(out, "\n");
-
-		/* add the outputs */
-		count = fprintf(out, ".outputs");
-		hard_add_outputs = subs->size_cout + subs->size_sumout;
-		for (i = 0; i < hard_add_outputs; i++)
-		{
-			if (i < subs->size_sumout)
-			{
-				count = count + sprintf(buffer, " %s[%d]", psumout, i);
-			}
-			else
-			{
-				count = count + sprintf(buffer, " %s[%d]", pcout, i - subs->size_sumout);
-			}
-
-			if (count > 78)
-			{
-				fprintf(out, " \\\n%s", buffer);
-				count = strlen(buffer);
-			}
-			else
-				fprintf(out, "%s", buffer);
-		}
-		fprintf(out, "\n");
-		fprintf(out, ".blackbox\n");
-		fprintf(out, ".end\n");
-		fprintf(out, "\n");
-
-		subs = subs->next;
-	}
-}
-
-
-/*-------------------------------------------------------------------------
- * (function: define_sub_function)
- *-----------------------------------------------------------------------*/
-void define_sub_function(nnode_t *node, short type, FILE *out)
-{
-	int i, j;
-	int count;
-	char buffer[MAX_BUF];
-
-	count = fprintf(out, "\n.subckt");
-	count--;
-	oassert(node->input_port_sizes[0] > 0);
-	oassert(node->input_port_sizes[1] > 0);
-	//oassert(node->input_port_sizes[2] > 0);
-	oassert(node->output_port_sizes[0] > 0);
-	oassert(node->output_port_sizes[1] > 0);
-
-	/* Write out the model adder  */
-	if (configuration.fixed_hard_adder != 0)
-	{
-		count += fprintf(out, " adder");
-	}
-	else
-	{
-		count += fprintf(out, " adder");
-	}
-
-	/* Write the input pins*/
-	for (i = 0;  i < node->num_input_pins; i++)
-	{
-		npin_t *driver_pin = node->input_pins[i]->net->driver_pin;
-
-		if (i < node->input_port_sizes[0])
-		{
-			if (!driver_pin->name)
-				j = sprintf(buffer, " %s[%d]=%s", hard_subs->inputs->next->next->name, i, driver_pin->node->name);
-			else
-				j = sprintf(buffer, " %s[%d]=%s", hard_subs->inputs->next->next->name, i, driver_pin->name);
-		}
-		else if(i >= node->input_port_sizes[0] && i < node->input_port_sizes[1] + node->input_port_sizes[0])
-		{
-			if (!driver_pin->name)
-				j = sprintf(buffer, " %s[%d]=%s", hard_subs->inputs->next->name, i - node->input_port_sizes[0], driver_pin->node->name);
-			else
-				j = sprintf(buffer, " %s[%d]=%s", hard_subs->inputs->next->name, i - node->input_port_sizes[0], driver_pin->name);
-		}
-		else
-		{
-			if (!driver_pin->name)
-				j = sprintf(buffer, " %s[%d]=%s", hard_subs->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->node->name);
-			else
-				j = sprintf(buffer, " %s[%d]=%s", hard_subs->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->name);
-		}
-
-		if (count + j > 79)
-		{
-			fprintf(out, "\\\n");
-			count = 0;
-		}
-		count += fprintf(out, "%s", buffer);
-	}
-
-	/* Write the output pins*/
-	for (i = 0; i < node->num_output_pins; i++)
-	{
-		if(i < node->output_port_sizes[0])
-			j = sprintf(buffer, " %s[%d]=%s", hard_subs->outputs->next->name, i , node->output_pins[i]->name);
-		else
-			j = sprintf(buffer, " %s[%d]=%s", hard_subs->outputs->name, i - node->output_port_sizes[0], node->output_pins[i]->name);
-		if (count + j > 79)
-		{
-			fprintf(out, "\\\n");
-			count = 0;
-		}
-		count += fprintf(out, "%s", buffer);
-	}
-
-	fprintf(out, "\n\n");
-	return;
-}
-
 
 /*-----------------------------------------------------------------------
  * (function: init_split_adder)
@@ -567,8 +346,8 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 	adder_chain->name = nodeo->name;
 	sub_chain_list = insert_in_vptr_list(sub_chain_list, adder_chain);
 
-	node  = (nnode_t**)malloc(sizeof(nnode_t*)*(count + 1));
-	not_node = (nnode_t**)malloc(sizeof(nnode_t*)*(b + 1));
+	node  = (nnode_t**)malloc(sizeof(nnode_t*)*(count));
+	not_node = (nnode_t**)malloc(sizeof(nnode_t*)*(b));
 
 	for(i = 0; i < b; i++)
 	{
@@ -583,7 +362,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 	for(i = 0; i < count; i++)
 	{
 		node[i] = allocate_nnode();
-		node[i]->name = (char *)malloc(strlen(nodeo->name) + 4);
+		node[i]->name = (char *)malloc(strlen(nodeo->name) + 20);
 		sprintf(node[i]->name, "%s-%d", nodeo->name, i);
 		init_split_adder_for_sub(nodeo, node[i], a, sizea, b, sizeb, cin, cout, i);
 		sub_list = insert_in_vptr_list(sub_list, node[i]);
@@ -710,7 +489,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
  * (function: pad_adder)
  *
  * Fill out a adder to a fixed size. Size is retrieved from global
- *	hard_subs data.
+ *	hard_adders data.
  * node, a, b, sizea, sizeb, 1, 1, count, netlist
  * NOTE: The inputs are extended based on adder padding setting.
  *-----------------------------------------------------------------------*/
@@ -931,14 +710,14 @@ void iterate_adders_for_sub(netlist_t *netlist)
 	nnode_t *node;
 
 	/* Can only perform the optimisation if hard adders exist! */
-	if (hard_subs == NULL)
+	if (hard_adders == NULL)
 		return;
 	else
 	{
 		//In hard block adder, the summand and addend are same size.
-		sizecin = hard_subs->inputs->size;
-		sizeb = hard_subs->inputs->next->size;
-		sizea = hard_subs->inputs->next->size;
+		sizecin = hard_adders->inputs->size;
+		sizeb = hard_adders->inputs->next->size;
+		sizea = hard_adders->inputs->next->size;
 
 		oassert(sizecin == 1);
 
