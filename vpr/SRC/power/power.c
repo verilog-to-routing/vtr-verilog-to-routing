@@ -34,7 +34,7 @@
 #include "power_util.h"
 #include "power_lowlevel.h"
 #include "power_sizing.h"
-#include "power_verify.h"
+#include "power_callibrate.h"
 #include "power_cmos_tech.h"
 
 #include "physical_types.h"
@@ -134,11 +134,12 @@ static void power_calc_primitive(t_power_usage * power_usage, t_pb * pb,
 			SRAM_values = alloc_SRAM_values_from_truth_table(LUT_size,
 					logical_block[pb->logical_block].truth_table);
 		} else {
-			SRAM_values = alloc_SRAM_values_from_truth_table(LUT_size, NULL );
+			SRAM_values = alloc_SRAM_values_from_truth_table(LUT_size, NULL);
 		}
-		power_calc_LUT(&sub_power_usage, LUT_size, SRAM_values,
-				input_probabilities, input_densities);
+		power_usage_lut(&sub_power_usage, LUT_size, SRAM_values,
+				input_probabilities, input_densities, g_solution_inf.T_crit);
 		power_add_usage(power_usage, &sub_power_usage);
+		power_component_add_usage(&sub_power_usage, POWER_COMPONENT_LUT);
 		free(SRAM_values);
 		free(input_probabilities);
 		free(input_densities);
@@ -163,9 +164,10 @@ static void power_calc_primitive(t_power_usage * power_usage, t_pb * pb,
 		clk_prob = g_clock_arch->clock_inf[0].prob;
 		clk_dens = g_clock_arch->clock_inf[0].dens;
 
-		power_calc_FF(&sub_power_usage, D_prob, D_dens, Q_prob, Q_dens,
-				clk_prob, clk_dens);
+		power_usage_ff(&sub_power_usage, D_prob, D_dens, Q_prob, Q_dens,
+				clk_prob, clk_dens, g_solution_inf.T_crit);
 		power_add_usage(power_usage, &sub_power_usage);
+		power_component_add_usage(&sub_power_usage, POWER_COMPONENT_FF);
 
 	} else {
 		char msg[BUFSIZE];
@@ -203,13 +205,14 @@ void power_usage_local_pin_buffer_and_wire(t_power_usage * power_usage,
 
 	/* Wire switching */
 	C_wire = pin->pin_power->C_wire;
-	power_usage_wire(&sub_power_usage, C_wire, pin_dens(pb, pin));
+	power_usage_wire(&sub_power_usage, C_wire, pin_dens(pb, pin),
+			g_solution_inf.T_crit);
 	power_add_usage(power_usage, &sub_power_usage);
 
 	/* Buffer power */
 	if (buffer_size) {
 		power_usage_buffer(&sub_power_usage, buffer_size, pin_prob(pb, pin),
-				pin_dens(pb, pin), FALSE, 0);
+				pin_dens(pb, pin), FALSE, 0, g_solution_inf.T_crit);
 		power_add_usage(power_usage, &sub_power_usage);
 	}
 }
@@ -287,6 +290,7 @@ static void power_calc_pb_rec(t_power_usage * power_usage, t_pb * pb,
 	boolean estimate_buffers_and_wire = FALSE;
 	boolean estimate_multiplexers = FALSE;
 	boolean estimate_primitives = FALSE;
+	boolean recursive_children = FALSE;
 
 	/* Get mode */
 	if (pb) {
@@ -297,6 +301,9 @@ static void power_calc_pb_rec(t_power_usage * power_usage, t_pb * pb,
 	}
 
 	switch (pb_node->pb_type->pb_type_power->estimation_method) {
+	case POWER_METHOD_IGNORE:
+		break;
+
 	case POWER_METHOD_ABSOLUTE:
 		power_add_usage(power_usage, &pb_power->absolute_power_per_instance);
 		break;
@@ -320,7 +327,7 @@ static void power_calc_pb_rec(t_power_usage * power_usage, t_pb * pb,
 			dens_avg = dens_avg / num_pins;
 		}
 		power_usage->dynamic += power_calc_node_switching(pb_power->C_internal,
-				dens_avg);
+				dens_avg, g_solution_inf.T_crit);
 
 		/* Leakage is an absolute */
 		power_usage->leakage += pb_power->absolute_power_per_instance.leakage;
@@ -362,16 +369,19 @@ static void power_calc_pb_rec(t_power_usage * power_usage, t_pb * pb,
 				power_add_usage(power_usage, &pin_power);
 			}
 		}
+		recursive_children = TRUE;
 		break;
 	case POWER_METHOD_SPECIFY_SIZES:
 		estimate_buffers_and_wire = TRUE;
 		estimate_multiplexers = TRUE;
 		estimate_primitives = TRUE;
+		recursive_children = TRUE;
 		break;
 	case POWER_METHOD_AUTO_SIZES:
 		estimate_buffers_and_wire = TRUE;
 		estimate_multiplexers = TRUE;
 		estimate_primitives = TRUE;
+		recursive_children = TRUE;
 		break;
 	case POWER_METHOD_UNDEFINED:
 	default:
@@ -429,32 +439,34 @@ static void power_calc_pb_rec(t_power_usage * power_usage, t_pb * pb,
 		}
 
 		/* Add power for children */
-		for (pb_type_idx = 0;
-				pb_type_idx
-						< pb_node->pb_type->modes[pb_mode].num_pb_type_children;
-				pb_type_idx++) {
-			for (pb_idx = 0;
-					pb_idx
-							< pb_node->pb_type->modes[pb_mode].pb_type_children[pb_type_idx].num_pb;
-					pb_idx++) {
-				t_pb * child_pb = NULL;
-				t_pb_graph_node * child_pb_graph_node;
+		if (recursive_children) {
+			for (pb_type_idx = 0;
+					pb_type_idx
+							< pb_node->pb_type->modes[pb_mode].num_pb_type_children;
+					pb_type_idx++) {
+				for (pb_idx = 0;
+						pb_idx
+								< pb_node->pb_type->modes[pb_mode].pb_type_children[pb_type_idx].num_pb;
+						pb_idx++) {
+					t_pb * child_pb = NULL;
+					t_pb_graph_node * child_pb_graph_node;
 
-				if (pb && pb->child_pbs[pb_type_idx][pb_idx].name) {
-					/* Child is initialized */
-					child_pb = &pb->child_pbs[pb_type_idx][pb_idx];
+					if (pb && pb->child_pbs[pb_type_idx][pb_idx].name) {
+						/* Child is initialized */
+						child_pb = &pb->child_pbs[pb_type_idx][pb_idx];
+					}
+					child_pb_graph_node =
+							&pb_node->child_pb_graph_nodes[pb_mode][pb_type_idx][pb_idx];
+
+					power_calc_pb_rec(&sub_power_usage, child_pb,
+							child_pb_graph_node);
+					power_add_usage(power_usage, &sub_power_usage);
 				}
-				child_pb_graph_node =
-						&pb_node->child_pb_graph_nodes[pb_mode][pb_type_idx][pb_idx];
-
-				power_calc_pb_rec(&sub_power_usage, child_pb,
-						child_pb_graph_node);
-				power_add_usage(power_usage, &sub_power_usage);
 			}
+			power_add_usage(
+					&pb_node->pb_type->modes[pb_mode].mode_power->power_usage,
+					power_usage);
 		}
-		power_add_usage(
-				&pb_node->pb_type->modes[pb_mode].mode_power->power_usage,
-				power_usage);
 	}
 
 	power_add_usage(&pb_node->pb_type->pb_type_power->power_usage, power_usage);
@@ -567,6 +579,9 @@ static void power_calc_clock(t_power_usage * power_usage,
 			if (clock_arch->clock_inf[clock_idx].dens == 0) {
 				clock_arch->clock_inf[clock_idx].dens = 2;
 				clock_arch->clock_inf[clock_idx].prob = 0.5;
+
+				// This will need to change for multi-clock
+				clock_arch->clock_inf[clock_idx].period = g_solution_inf.T_crit;
 			}
 		}
 		/* find the power dissipated by each clock network */
@@ -632,7 +647,7 @@ static void power_calc_clock_single(t_power_usage * power_usage,
 
 	/* Calculate the capacitance and leakage power for the clock buffer */
 	power_calc_inverter(&clock_buffer_power, single_clock->dens,
-			single_clock->prob, buffer_size);
+			single_clock->prob, buffer_size, single_clock->period);
 
 	length = 0;
 
@@ -651,7 +666,8 @@ static void power_calc_clock_single(t_power_usage * power_usage,
 	power_add_usage(power_usage, &buffer_power);
 	power_component_add_usage(&buffer_power, POWER_COMPONENT_CLOCK_BUFFER);
 
-	power_usage_wire(&wire_power, length * C_segment, single_clock->dens);
+	power_usage_wire(&wire_power, length * C_segment, single_clock->dens,
+			single_clock->period);
 	power_add_usage(power_usage, &wire_power);
 	power_component_add_usage(&wire_power, POWER_COMPONENT_CLOCK_WIRE);
 
@@ -704,7 +720,7 @@ static void power_calc_routing(t_power_usage * power_usage,
 	for (net_idx = 0; net_idx < num_nets; net_idx++) {
 		struct s_trace * trace;
 
-		for (trace = trace_head[net_idx]; trace != NULL ; trace = trace->next) {
+		for (trace = trace_head[net_idx]; trace != NULL; trace = trace->next) {
 			rr_node_power[trace->index].visited = FALSE;
 		}
 	}
@@ -713,7 +729,7 @@ static void power_calc_routing(t_power_usage * power_usage,
 	for (net_idx = 0; net_idx < num_nets; net_idx++) {
 		struct s_trace * trace;
 
-		for (trace = trace_head[net_idx]; trace != NULL ; trace = trace->next) {
+		for (trace = trace_head[net_idx]; trace != NULL; trace = trace->next) {
 			t_rr_node * node = &rr_node[trace->index];
 			t_rr_node_power * node_power = &rr_node_power[trace->index];
 
@@ -789,9 +805,10 @@ static void power_calc_routing(t_power_usage * power_usage,
 				assert(node_power->in_prob);
 
 				/* Multiplexor */
-				power_calc_mux_multilevel(&sub_power_usage,
+				power_usage_mux_multilevel(&sub_power_usage,
 						power_get_mux_arch(node->fan_in), node_power->in_prob,
-						node_power->in_dens, node_power->selected_input, TRUE);
+						node_power->in_dens, node_power->selected_input, TRUE,
+						g_solution_inf.T_crit);
 				power_add_usage(power_usage, &sub_power_usage);
 				power_component_add_usage(&sub_power_usage,
 						POWER_COMPONENT_ROUTE_CB);
@@ -819,9 +836,10 @@ static void power_calc_routing(t_power_usage * power_usage,
 			assert(node_power->selected_input < node->fan_in);
 
 			/* Multiplexor */
-			power_calc_mux_multilevel(&sub_power_usage,
+			power_usage_mux_multilevel(&sub_power_usage,
 					power_get_mux_arch(node->fan_in), node_power->in_prob,
-					node_power->in_dens, node_power->selected_input, TRUE);
+					node_power->in_dens, node_power->selected_input, TRUE,
+					g_solution_inf.T_crit);
 			power_add_usage(power_usage, &sub_power_usage);
 			power_component_add_usage(&sub_power_usage,
 					POWER_COMPONENT_ROUTE_SB);
@@ -861,7 +879,8 @@ static void power_calc_routing(t_power_usage * power_usage,
 							node_power->in_prob[node_power->selected_input],
 							node_power->in_dens[node_power->selected_input],
 							TRUE,
-							power_get_mux_arch(node->fan_in)->mux_graph_head->num_inputs);
+							power_get_mux_arch(node->fan_in)->mux_graph_head->num_inputs,
+							g_solution_inf.T_crit);
 					power_add_usage(power_usage, &sub_power_usage);
 					power_component_add_usage(&sub_power_usage,
 							POWER_COMPONENT_ROUTE_SB);
@@ -869,7 +888,7 @@ static void power_calc_routing(t_power_usage * power_usage,
 					power_usage_buffer(&sub_power_usage, buffer_size,
 							node_power->in_prob[node_power->selected_input],
 							node_power->in_dens[node_power->selected_input],
-							FALSE, 0);
+							FALSE, 0, g_solution_inf.T_crit);
 					power_add_usage(power_usage, &sub_power_usage);
 					power_component_add_usage(&sub_power_usage,
 							POWER_COMPONENT_ROUTE_SB);
@@ -878,7 +897,7 @@ static void power_calc_routing(t_power_usage * power_usage,
 
 			/* Wire Capacitance */
 			power_usage_wire(&sub_power_usage, C_wire,
-					clb_net_density(node->net_num));
+					clb_net_density(node->net_num), g_solution_inf.T_crit);
 			power_add_usage(power_usage, &sub_power_usage);
 			power_component_add_usage(&sub_power_usage,
 					POWER_COMPONENT_ROUTE_GLB_WIRE);
@@ -905,7 +924,7 @@ static void power_calc_routing(t_power_usage * power_usage,
 				power_usage_buffer(&sub_power_usage, buffer_size,
 						1 - node_power->in_prob[node_power->selected_input],
 						node_power->in_dens[node_power->selected_input], FALSE,
-						0);
+						0, g_solution_inf.T_crit);
 				power_add_usage(power_usage, &sub_power_usage);
 				power_component_add_usage(&sub_power_usage,
 						POWER_COMPONENT_ROUTE_SB);
@@ -921,7 +940,7 @@ static void power_calc_routing(t_power_usage * power_usage,
 				power_usage_buffer(&sub_power_usage, buffer_size,
 						node_power->in_dens[node_power->selected_input],
 						1 - node_power->in_prob[node_power->selected_input],
-						FALSE, 0);
+						FALSE, 0, g_solution_inf.T_crit);
 				power_add_usage(power_usage, &sub_power_usage);
 				power_component_add_usage(&sub_power_usage,
 						POWER_COMPONENT_ROUTE_CB);
@@ -1041,6 +1060,10 @@ boolean power_init(char * power_out_filepath,
 		}
 	}
 
+	/* Initialize Commonly Used Values */
+	g_power_commonly_used->mux_arch = NULL;
+	g_power_commonly_used->mux_arch_max_size = 0;
+
 	/* Load technology properties */
 	power_tech_load_xml_file(cmos_tech_behavior_filepath);
 
@@ -1048,9 +1071,7 @@ boolean power_init(char * power_out_filepath,
 	power_components_init();
 	power_lowlevel_init();
 
-	/* Initialize Commonly Used Values */
-	g_power_commonly_used->mux_arch = NULL;
-	g_power_commonly_used->mux_arch_max_size = 0;
+	power_callibrate();
 
 	/* Copy probability/density values to new netlist */
 	for (net_idx = 0; net_idx < num_nets; net_idx++) {
@@ -1082,7 +1103,8 @@ boolean power_init(char * power_out_filepath,
 
 		switch (node->type) {
 		case IPIN:
-			max_IPIN_fanin = max(max_IPIN_fanin, static_cast<int>(node->fan_in));
+			max_IPIN_fanin =
+					max(max_IPIN_fanin, static_cast<int>(node->fan_in));
 			max_fanin = max(max_fanin, static_cast<int>(node->fan_in));
 
 			node_power->in_dens = (float*) my_calloc(node->fan_in,
@@ -1398,8 +1420,8 @@ void power_print_stats(FILE * fp) {
 void power_print_clb_summary(FILE * fp) {
 	int i;
 
-	fprintf(fp, "%-50s%-15s%-15s\n", "PB Type", "Power", "Est. Method");
-	fprintf(fp, "%-50s%-15s%-15s\n", "-------", "-----", "-----------");
+	fprintf(fp, "%-50s%-15s%-25s\n", "PB Type", "Power", "Est. Method");
+	fprintf(fp, "%-50s%-15s%-25s\n", "-------", "-----", "-----------");
 	for (i = 0; i < num_types; i++) {
 		if (type_descriptors[i].pb_type) {
 			power_print_clb_summary_rec(fp, type_descriptors[i].pb_type, 0);
@@ -1414,11 +1436,11 @@ const char * power_estimation_method_name(
 	case POWER_METHOD_UNDEFINED:
 		return "Undefined";
 	case POWER_METHOD_IGNORE:
-		return "Ignored";
+		return "N/A";
 	case POWER_METHOD_AUTO_SIZES:
-		return "Auto-Size";
+		return "Transistor Auto-Size";
 	case POWER_METHOD_SPECIFY_SIZES:
-		return "Specify-Size";
+		return "Transistor Specify-Size";
 	case POWER_METHOD_TOGGLE_PINS:
 		return "Pin-Toggle";
 	case POWER_METHOD_C_INTERNAL:
@@ -1444,7 +1466,7 @@ static void power_print_clb_summary_rec(FILE * fp, t_pb_type * pb_type,
 	buf[50] = '\0';
 	buf[strlen(pb_type->name) + indent] = '\0';
 	fprintf(fp, "%-50s%-15g%-15s\n", buf,
-			power_usage_sum(&pb_type->pb_type_power->power_usage),
+			power_sum_usage(&pb_type->pb_type_power->power_usage),
 			power_estimation_method_name(
 					pb_type->pb_type_power->estimation_method));
 

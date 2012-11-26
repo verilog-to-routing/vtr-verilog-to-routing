@@ -20,7 +20,7 @@
  */
 
 /************************* INCLUDES *********************************/
-#include "power_verify.h"
+#include "power_callibrate.h"
 #include "power_components.h"
 #include "power_lowlevel.h"
 #include "power_util.h"
@@ -60,7 +60,8 @@ void power_print_spice_comparison(void) {
 	if (0) {
 		fprintf(g_power_output->out, "Energy of INV (High Activity)\n");
 		for (i = 0; i < (sizeof(inv_sizes) / sizeof(float)); i++) {
-			power_calc_inverter(&sub_power_usage, 2, 0.5, inv_sizes[i]);
+			power_calc_inverter(&sub_power_usage, 2, 0.5, inv_sizes[i],
+					power_callib_period);
 			fprintf(g_power_output->out, "%g\t%g\n", inv_sizes[i],
 					(sub_power_usage.dynamic + sub_power_usage.leakage)
 							* g_solution_inf.T_crit);
@@ -68,7 +69,8 @@ void power_print_spice_comparison(void) {
 
 		fprintf(g_power_output->out, "Energy of INV (No Activity)\n");
 		for (i = 0; i < (sizeof(inv_sizes) / sizeof(float)); i++) {
-			power_calc_inverter(&sub_power_usage, 0, 1, inv_sizes[i]);
+			power_calc_inverter(&sub_power_usage, 0, 1, inv_sizes[i],
+					power_callib_period);
 			fprintf(g_power_output->out, "%g\t%g\n", inv_sizes[i],
 					(sub_power_usage.dynamic + sub_power_usage.leakage)
 							* g_solution_inf.T_crit);
@@ -87,8 +89,9 @@ void power_print_spice_comparison(void) {
 			dens[j] = 2;
 			prob[j] = 0.5;
 		}
-		power_calc_mux_multilevel(&mux_power_usage,
-				power_get_mux_arch(mux_sizes[i]), prob, dens, 0, FALSE);
+		power_usage_mux_multilevel(&mux_power_usage,
+				power_get_mux_arch(mux_sizes[i]), prob, dens, 0, FALSE,
+				power_callib_period);
 		fprintf(g_power_output->out, "%d\t%g\n", mux_sizes[i],
 				(mux_power_usage.dynamic + mux_power_usage.leakage)
 						* g_solution_inf.T_crit);
@@ -111,8 +114,9 @@ void power_print_spice_comparison(void) {
 				prob[j] = 0;
 			}
 		}
-		power_calc_mux_multilevel(&mux_power_usage,
-				power_get_mux_arch(mux_sizes[i]), prob, dens, 0, FALSE);
+		power_usage_mux_multilevel(&mux_power_usage,
+				power_get_mux_arch(mux_sizes[i]), prob, dens, 0, FALSE,
+				power_callib_period);
 		fprintf(g_power_output->out, "%d\t%g\n", mux_sizes[i],
 				(mux_power_usage.dynamic + mux_power_usage.leakage)
 						* g_solution_inf.T_crit);
@@ -120,7 +124,8 @@ void power_print_spice_comparison(void) {
 
 	fprintf(g_power_output->out, "Energy of Buffer (High Activity)\n");
 	for (i = 0; i < (sizeof(buffer_sizes) / sizeof(float)); i++) {
-		power_usage_buffer(&sub_power_usage, buffer_sizes[i], 0.5, 2, FALSE, 0);
+		power_usage_buffer(&sub_power_usage, buffer_sizes[i], 0.5, 2, FALSE, 0,
+				power_callib_period);
 		fprintf(g_power_output->out, "%g\t%g\n", buffer_sizes[i],
 				(sub_power_usage.dynamic + sub_power_usage.leakage)
 						* g_solution_inf.T_crit);
@@ -128,7 +133,8 @@ void power_print_spice_comparison(void) {
 
 	fprintf(g_power_output->out, "Energy of Buffer (No Activity)\n");
 	for (i = 0; i < (sizeof(buffer_sizes) / sizeof(float)); i++) {
-		power_usage_buffer(&sub_power_usage, buffer_sizes[i], 1, 0, FALSE, 0);
+		power_usage_buffer(&sub_power_usage, buffer_sizes[i], 1, 0, FALSE, 0,
+				power_callib_period);
 		fprintf(g_power_output->out, "%g\t%g\n", buffer_sizes[i],
 				(sub_power_usage.dynamic + sub_power_usage.leakage)
 						* g_solution_inf.T_crit);
@@ -157,7 +163,8 @@ void power_print_spice_comparison(void) {
 			dens[j] = 1;
 			prob[j] = 0.5;
 		}
-		power_calc_LUT(&sub_power_usage, LUT_sizes[i], SRAM_bits, prob, dens);
+		power_usage_lut(&sub_power_usage, LUT_sizes[i], SRAM_bits, prob, dens,
+				power_callib_period);
 		fprintf(g_power_output->out, "%d\t%g\n", LUT_sizes[i],
 				(sub_power_usage.dynamic + sub_power_usage.leakage)
 						* g_solution_inf.T_crit * 2);
@@ -186,20 +193,22 @@ void power_print_spice_comparison(void) {
 			dens[j] = 0;
 			prob[j] = 1;
 		}
-		power_calc_LUT(&sub_power_usage, LUT_sizes[i], SRAM_bits, prob, dens);
+		power_usage_lut(&sub_power_usage, LUT_sizes[i], SRAM_bits, prob, dens,
+				power_callib_period);
 		fprintf(g_power_output->out, "%d\t%g\n", LUT_sizes[i],
 				(sub_power_usage.dynamic + sub_power_usage.leakage)
 						* g_solution_inf.T_crit * 2);
 	}
 
 	fprintf(g_power_output->out, "Energy of FF (High Activity)\n");
-	power_calc_FF(&sub_power_usage, 0.5, 3, 0.5, 1, 0.5, 2);
+	power_usage_ff(&sub_power_usage, 0.5, 3, 0.5, 1, 0.5, 2,
+			power_callib_period);
 	fprintf(g_power_output->out, "%g\n",
 			(sub_power_usage.dynamic + sub_power_usage.leakage)
 					* g_solution_inf.T_crit * 2);
 
 	fprintf(g_power_output->out, "Energy of FF (No Activity)\n");
-	power_calc_FF(&sub_power_usage, 1, 0, 1, 0, 1, 0);
+	power_usage_ff(&sub_power_usage, 1, 0, 1, 0, 1, 0, power_callib_period);
 	fprintf(g_power_output->out, "%g\n",
 			(sub_power_usage.dynamic + sub_power_usage.leakage)
 					* g_solution_inf.T_crit * 2);
@@ -217,12 +226,14 @@ void power_print_spice_comparison(void) {
 			prob[j] = 0.5;
 		}
 
-		power_calc_mux_multilevel(&sub_power_usage,
-				power_get_mux_arch(sb_mux_sizes[i]), prob, dens, 0, TRUE);
+		power_usage_mux_multilevel(&sub_power_usage,
+				power_get_mux_arch(sb_mux_sizes[i]), prob, dens, 0, TRUE,
+				power_callib_period);
 		power_add_usage(&sb_power_usage, &sub_power_usage);
 
 		power_usage_buffer(&sub_power_usage, sb_buffer_sizes[i], 0.5, 2, TRUE,
-				power_get_mux_arch(sb_mux_sizes[i])->mux_graph_head->num_inputs);
+				power_get_mux_arch(sb_mux_sizes[i])->mux_graph_head->num_inputs,
+				power_callib_period);
 		power_add_usage(&sb_power_usage, &sub_power_usage);
 
 		fprintf(g_power_output->out, "%d\t%.0f\t%g\n", sb_mux_sizes[i],
@@ -249,12 +260,14 @@ void power_print_spice_comparison(void) {
 			}
 		}
 
-		power_calc_mux_multilevel(&sub_power_usage,
-				power_get_mux_arch(sb_mux_sizes[i]), prob, dens, 0, TRUE);
+		power_usage_mux_multilevel(&sub_power_usage,
+				power_get_mux_arch(sb_mux_sizes[i]), prob, dens, 0, TRUE,
+				power_callib_period);
 		power_add_usage(&sb_power_usage, &sub_power_usage);
 
 		power_usage_buffer(&sub_power_usage, sb_buffer_sizes[i], 1, 0, TRUE,
-				power_get_mux_arch(sb_mux_sizes[i])->mux_graph_head->num_inputs);
+				power_get_mux_arch(sb_mux_sizes[i])->mux_graph_head->num_inputs,
+				power_callib_period);
 		power_add_usage(&sb_power_usage, &sub_power_usage);
 
 		fprintf(g_power_output->out, "%d\t%.0f\t%g\n", sb_mux_sizes[i],
@@ -271,4 +284,102 @@ static char binary_not(char c) {
 	} else {
 		return '1';
 	}
+}
+
+float power_usage_buf_for_callibration(float size) {
+	t_power_usage power_usage;
+
+	power_usage_buffer(&power_usage, size, 0.5, 2.0, FALSE, 0,
+			power_callib_period);
+
+	return power_sum_usage(&power_usage);
+}
+
+float power_usage_buf_levr_for_callibration(float size) {
+	t_power_usage power_usage;
+
+	power_usage_buffer(&power_usage, size, 0.5, 2.0, TRUE, 5,
+			power_callib_period);
+
+	return power_sum_usage(&power_usage);
+}
+
+float power_usage_mux_for_callibration(float size) {
+	t_power_usage power_usage;
+	float * dens;
+	float * prob;
+
+	int mux_inputs = (int) size;
+
+	dens = (float*) my_malloc(mux_inputs * sizeof(float));
+	prob = (float*) my_malloc(mux_inputs * sizeof(float));
+	for (int i = 0; i < mux_inputs; i++) {
+		dens[i] = 2;
+		prob[i] = 0.5;
+	}
+	power_usage_mux_multilevel(&power_usage, power_get_mux_arch(mux_inputs),
+			prob, dens, 0, FALSE, power_callib_period);
+
+	free(dens);
+	free(prob);
+
+	return power_sum_usage(&power_usage);
+}
+
+float power_usage_lut_for_callibration(float size) {
+	t_power_usage power_usage;
+	char * SRAM_bits;
+	float * dens;
+	float * prob;
+	int lut_size = (int) size;
+
+	/* Initialize an SRAM pattern that guarantees the outputs toggle with
+	 * every input toggle.
+	 */
+	SRAM_bits = (char*) my_malloc(((1 << lut_size) + 1) * sizeof(char));
+	for (int i = 1; i <= lut_size; i++) {
+		if (i == 1) {
+			SRAM_bits[0] = '1';
+			SRAM_bits[1] = '0';
+		} else {
+			for (int sram_idx = 0; sram_idx < (1 << (i - 1)); sram_idx++) {
+				SRAM_bits[sram_idx + (1 << (i - 1))] = binary_not(
+						SRAM_bits[sram_idx]);
+			}
+		}
+		SRAM_bits[1 << i] = '\0';
+	}
+
+	dens = (float*) my_malloc(lut_size * sizeof(float));
+	prob = (float*) my_malloc(lut_size * sizeof(float));
+	for (int i = 0; i < lut_size; i++) {
+		dens[i] = 1;
+		prob[i] = 0.5;
+	}
+	power_usage_lut(&power_usage, lut_size, SRAM_bits, prob, dens,
+			power_callib_period);
+
+	free(SRAM_bits);
+	free(dens);
+	free(prob);
+
+	return power_sum_usage(&power_usage);
+}
+
+float power_usage_ff_for_callibration(float size) {
+	t_power_usage power_usage;
+
+	power_usage_ff(&power_usage, 0.5, 3, 0.5, 1, 0.5, 2, power_callib_period);
+
+	return power_sum_usage(&power_usage);
+}
+
+void power_callibrate(void) {
+	/* Buffers and Mux must be done before LUT/FF */
+
+	g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER]->callibrate();
+	g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR]->callibrate();
+	g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_MUX]->callibrate();
+	g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_LUT]->callibrate();
+	g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_FF]->callibrate();
 }

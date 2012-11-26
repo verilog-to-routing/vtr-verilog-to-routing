@@ -69,7 +69,7 @@
 		<switch_block type="wilton" fs="3"/>
 	</device>
 	<switchlist>
-		<switch type="mux" name="0" R="0.0" Cin="0.0" Cout="0.0" Tdel="6.837e-11" mux_trans_size="2.63074" buf_size="27.645901" buf_last_stage_size="auto"/>
+		<switch type="mux" name="0" R="0.0" Cin="0.0" Cout="0.0" Tdel="6.837e-11" mux_trans_size="2.63074" buf_size="27.645901"/>
 	</switchlist>
 	<segmentlist>
 		<segment freq="1.0" length="4" type="unidir" Rmetal="0.0" Cmetal="0.0" Cmetal_per_m="1.7e-10">
@@ -128,6 +128,10 @@
 				<loc type="perimeter" priority="10"/>
 			</gridlocations>
 		
+			<power method="absolute">
+				<dynamic_power power_per_instance="0.0"/>
+				<static_power power_per_instance="0.0"/>
+			</power>
 		</pb_type>
 		<pb_type name="clb">
 			<input name="I" num_pins="33" equivalent="true"/>
@@ -432,6 +436,10 @@
 			<gridlocations>
 				<loc type="col" start="2" repeat="8" priority="2"/>
 			</gridlocations>
+			
+			<power method="pin-toggle">
+				<static_power power_per_instance="0.0"/>
+			</power>
 		</pb_type>
 
 		<pb_type name="mult_36" height="4">
@@ -562,6 +570,10 @@
 			<gridlocations>
 				<loc type="col" start="4" repeat="8" priority="2"/>
 			</gridlocations>
+			
+			<power method="pin-toggle">
+				<static_power power_per_instance="0.0"/>
+			</power>
 		</pb_type>
 
 	</complexblocklist>

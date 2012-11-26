@@ -155,6 +155,7 @@ struct s_clock_network {
 
 	float prob; /* Static probability of net assigned to this clock */
 	float dens; /* Switching density of net assigned to this clock */
+	float period; /* Period of clock */
 };
 
 /* Power-related architecture information */

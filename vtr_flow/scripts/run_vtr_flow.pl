@@ -434,7 +434,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 
 	if ($do_power) {
 		push( @vpr_power_args, "--power" );
-		push( @vpr_power_args, "--cmos_tech_behavior_file" );
+		push( @vpr_power_args, "--tech_properties" );
 		push( @vpr_power_args, "$tech_file" );
 	}
 	if ( $min_chan_width < 0 ) {

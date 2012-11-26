@@ -32,6 +32,8 @@
 #include "ezxml.h"
 #include "util.h"
 #include "read_xml_util.h"
+#include "PowerSpicedComponent.h"
+#include "power_callibrate.h"
 
 /************************* GLOBALS **********************************/
 static t_transistor_inf * g_transistor_last_searched;
@@ -53,6 +55,7 @@ static int power_compare_buffer_strength(const void * key_void,
 		const void * elem_void);
 static int power_compare_buffer_sc_levr(const void * key_void,
 		const void * elem_void);
+static void power_tech_xml_load_components(ezxml_t parent);
 
 /************************* FUNCTION DEFINITIONS *********************/
 
@@ -128,7 +131,62 @@ void power_tech_load_xml_file(char * cmos_tech_behavior_filepath) {
 	power_tech_xml_load_sc(child);
 	FreeNode(child);
 
+	/* Components */
+	child = FindElement(cur, "components", TRUE);
+	power_tech_xml_load_components(child);
+	FreeNode(child);
+
 	FreeNode(cur);
+}
+
+static void power_tech_xml_load_component(ezxml_t parent,
+		PowerSpicedComponent ** component, char * name,
+		float (*usage_fn)(float size)) {
+	ezxml_t cur;
+	ezxml_t child, prev;
+
+	*component = new PowerSpicedComponent(usage_fn);
+
+	cur = FindElement(parent, name, TRUE);
+	child = FindFirstElement(cur, "instance", TRUE);
+	while (child) {
+		float size = GetFloatProperty(child, "size", TRUE, 0.);
+		float power = GetFloatProperty(child, "power", TRUE, 0.);
+		(*component)->add_entry(size, power);
+
+		prev = child;
+		child = child->next;
+		FreeNode(prev);
+	}
+	FreeNode(cur);
+}
+
+static void power_tech_xml_load_components(ezxml_t parent) {
+
+	g_power_commonly_used->component_callibration =
+			(PowerSpicedComponent**) my_malloc(
+					POWER_CALLIB_COMPONENT_MAX * sizeof(PowerSpicedComponent*));
+
+	power_tech_xml_load_component(parent,
+			&g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER],
+			"buf", power_usage_buf_for_callibration);
+
+	power_tech_xml_load_component(parent,
+			&g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR],
+			"buf_levr", power_usage_buf_levr_for_callibration);
+
+	power_tech_xml_load_component(parent,
+			&g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_MUX],
+			"mux", power_usage_mux_for_callibration);
+
+	power_tech_xml_load_component(parent,
+			&g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_LUT],
+			"lut", power_usage_lut_for_callibration);
+
+	power_tech_xml_load_component(parent,
+			&g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_FF],
+			"dff", power_usage_ff_for_callibration);
+
 }
 
 /**

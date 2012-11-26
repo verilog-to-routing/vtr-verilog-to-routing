@@ -248,6 +248,8 @@ This method allows the users to specify the dynamic power of a block in terms of
 </pb_type>
 \end{BVerbatim}
 
+It is assumed that the power usage specified here includes power of all child \texttt{pb_types}.  No further recursive power estimation will be performed.
+
 \subsubsection{\texttt{absolute}}
 This method is the most basic power estimation method, and allows users to specify both the dynamic and static power of a block as absolute values (in Watts).  This is done using the following construct:
 
@@ -260,6 +262,7 @@ This method is the most basic power estimation method, and allows users to speci
 </pb_type>
 \end{BVerbatim}
 
+It is assumed that the power usage specified here includes power of all child \texttt{pb_types}.  No further recursive power estimation will be performed.
 
 \subsection{Global Routing}	
 Global routing consists of switch boxes and input connection boxes.

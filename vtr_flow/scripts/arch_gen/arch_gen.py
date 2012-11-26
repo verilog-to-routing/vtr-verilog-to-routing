@@ -550,8 +550,6 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, seg_length
     xprop("Tdel", switch_T_del)
     xprop("mux_trans_size", switch_mux_trans_size)
     xprop("buf_size", switch_buf_size)
-    if (do_power):
-        xprop("buf_last_stage_size", "auto")
     xcloseend()
     xend() #switchlist
     

@@ -35,7 +35,8 @@ static double power_count_transistors_connectionbox(void);
 static double power_count_transistors_mux(t_mux_arch * mux_arch);
 static double power_count_transistors_mux_node(t_mux_node * mux_node,
 		float * transistor_sizes);
-static void power_mux_node_max_inputs(t_mux_node * mux_node, float * max_inputs);
+static void power_mux_node_max_inputs(t_mux_node * mux_node,
+		float * max_inputs);
 static double power_count_transistors_interc(t_interconnect * interc);
 static double power_count_transistors_pb_node(t_pb_graph_node * pb_node);
 static double power_count_transistors_switchbox(t_arch * arch);
@@ -149,10 +150,11 @@ static double power_count_transistors_mux(t_mux_arch * mux_arch) {
  *  This function is used recursively to determine the largest single-level
  *  multiplexer at each level of a multi-level multiplexer
  */
-static void power_mux_node_max_inputs(t_mux_node * mux_node, float * max_inputs) {
+static void power_mux_node_max_inputs(t_mux_node * mux_node,
+		float * max_inputs) {
 
 	max_inputs[mux_node->level] =
-	max(max_inputs[mux_node->level], static_cast<float>(mux_node->num_inputs));
+			max(max_inputs[mux_node->level], static_cast<float>(mux_node->num_inputs));
 
 	if (mux_node->level != 0) {
 		int child_idx;

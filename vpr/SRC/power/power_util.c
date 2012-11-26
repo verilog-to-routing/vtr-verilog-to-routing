@@ -48,7 +48,12 @@ void power_add_usage(t_power_usage * dest, t_power_usage * src) {
 	dest->leakage += src->leakage;
 }
 
-float power_usage_sum(t_power_usage * power_usage) {
+void power_scale_usage(t_power_usage * power_usage, float scale_factor) {
+	power_usage->dynamic *= scale_factor;
+	power_usage->leakage *= scale_factor;
+}
+
+float power_sum_usage(t_power_usage * power_usage) {
 	return power_usage->dynamic + power_usage->leakage;
 }
 

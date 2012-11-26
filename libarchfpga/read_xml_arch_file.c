@@ -1819,6 +1819,14 @@ static void alloc_and_load_default_child_for_pb_type( INOUTP t_pb_type *pb_type,
 	copy->num_input_pins = pb_type->num_input_pins;
 	copy->num_output_pins = pb_type->num_output_pins;
 	copy->num_pb = 1;
+
+	/* Power */
+	copy->pb_type_power = (t_pb_type_power*) my_calloc(1,
+			sizeof(t_pb_type_power));
+	copy->pb_type_power->estimation_method = power_method_inherited(
+			pb_type->pb_type_power->estimation_method);
+
+	/* Ports */
 	copy->num_ports = pb_type->num_ports;
 	copy->ports = (t_port*) my_calloc(pb_type->num_ports, sizeof(t_port));
 	for (i = 0; i < pb_type->num_ports; i++) {
@@ -1829,8 +1837,17 @@ static void alloc_and_load_default_child_for_pb_type( INOUTP t_pb_type *pb_type,
 		copy->ports[i].parent_pb_type = copy;
 		copy->ports[i].name = my_strdup(pb_type->ports[i].name);
 		copy->ports[i].port_class = my_strdup(pb_type->ports[i].port_class);
+
 		copy->ports[i].port_power = (t_port_power*) my_calloc(1,
 				sizeof(t_port_power));
+		//Defaults
+		if (copy->pb_type_power->estimation_method == POWER_METHOD_AUTO_SIZES) {
+			copy->ports[i].port_power->wire_type = POWER_WIRE_TYPE_AUTO;
+			copy->ports[i].port_power->buffer_type = POWER_BUFFER_TYPE_AUTO;
+		} else if (copy->pb_type_power->estimation_method == POWER_METHOD_SPECIFY_SIZES) {
+			copy->ports[i].port_power->wire_type = POWER_WIRE_TYPE_IGNORED;
+			copy->ports[i].port_power->buffer_type = POWER_BUFFER_TYPE_NONE;
+		}
 	}
 
 	copy->max_internal_delay = pb_type->max_internal_delay;
@@ -1870,10 +1887,7 @@ static void alloc_and_load_default_child_for_pb_type( INOUTP t_pb_type *pb_type,
 					pb_type->annotations[i].value[j]);
 		}
 	}
-	copy->pb_type_power = (t_pb_type_power*) my_calloc(1,
-			sizeof(t_pb_type_power));
-	copy->pb_type_power->estimation_method = power_method_inherited(
-			pb_type->pb_type_power->estimation_method);
+
 }
 
 /* populate special lut class */

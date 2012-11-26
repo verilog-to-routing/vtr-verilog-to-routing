@@ -26,8 +26,26 @@
 #include "power.h"
 
 /************************* DEFINES **********************************/
+const float power_callib_period = 5e-9;
+
+/************************* STRUCTS **********************************/
+/************************* ENUMS ************************************/
+typedef enum {
+	POWER_CALLIB_COMPONENT_BUFFER = 0,
+	POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR,
+	POWER_CALLIB_COMPONENT_MUX,
+	POWER_CALLIB_COMPONENT_LUT,
+	POWER_CALLIB_COMPONENT_FF,
+	POWER_CALLIB_COMPONENT_MAX
+} e_power_callib_component;
 
 /************************* FUNCTION DECLARATIONS ********************/
 void power_print_spice_comparison(void);
+void power_callibrate(void);
+float power_usage_buf_for_callibration(float size);
+float power_usage_buf_levr_for_callibration(float size);
+float power_usage_mux_for_callibration(float size);
+float power_usage_lut_for_callibration(float size);
+float power_usage_ff_for_callibration(float size);
 
 #endif

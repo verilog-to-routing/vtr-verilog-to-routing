@@ -239,4 +239,8 @@
 	<gridlocations>
 		<loc type="col" start="2" repeat="8" priority="2"/>
 	</gridlocations>
+	
+	<power method="pin-toggle">
+		<static_power power_per_instance="0.0"/>
+	</power>
 </pb_type>

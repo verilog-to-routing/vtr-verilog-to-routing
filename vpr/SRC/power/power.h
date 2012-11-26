@@ -24,6 +24,7 @@
 
 /************************* INCLUDES *********************************/
 #include "vpr_types.h"
+#include "PowerSpicedComponent.h"
 
 /************************* DEFINES ***********************************/
 /* Maximum size of logs */
@@ -208,6 +209,9 @@ struct s_power_commonly_used {
 	float INV_1X_C_in;
 	float INV_1X_C;
 	float INV_2X_C;
+
+	/* Component Callibrations Array [0..POWER_CALLIB_COMPONENT_MAX-1] */
+	PowerSpicedComponent ** component_callibration;
 
 	/* Subthreshold leakages */
 	float NMOS_1X_st_leakage;
