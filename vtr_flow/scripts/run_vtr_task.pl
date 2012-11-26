@@ -86,7 +86,7 @@ while ( $token = shift(@ARGV) ) {
 
 	# must be a task name
 	else {
-		if ( $token =~ /(.*)\// ) {
+		if ( $token =~ /(.*)\/$/ ) {
 			$token = $1;
 		}
 		push( @tasks, $token );
