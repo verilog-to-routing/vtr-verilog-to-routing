@@ -70,7 +70,7 @@ clean:
 tags:
 	ctags -R .
 
-$(PROG): $(OBJ)
+$(PROG): $(OBJ) lib$(PROG).a
 	$(LD) -o $@ $^ $(LIBS)
 
 lib$(PROG).a: $(OBJ)
