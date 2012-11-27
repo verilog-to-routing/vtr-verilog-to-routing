@@ -46,8 +46,6 @@ DEFINES = -DLIN
 $(EXE): $(OBJS) Makefile $(ABC_LIB_PATH)
 	$(CC) $(OBJS) $(CFLAGS) $(ABC_HEADERS) $(ABC_LIB_PATH) $(LIBS) -o $(EXE)
 	
-.PHONY: $(ABC_LIB_PATH)
-	
 clean:
 	rm -f *.o *.exe $(TARGET)
 	

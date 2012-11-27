@@ -38,7 +38,7 @@ circuit_list_add=sha.v
 arch_list_add=k6_N10_I33_Fi6_L4_frac1_ff2_45nm.xml
 
 # Parse info and how to parse
-parse_file=vpr_standard_power.txt
+parse_file=vpr_power_detailed.txt
 
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
