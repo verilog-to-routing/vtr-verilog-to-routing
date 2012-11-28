@@ -385,8 +385,6 @@ Architecture based off Stratix IV
             </interconnect>
           </mode>
 
-
-
         <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
         <pinlocations pattern="spread"/>
 
