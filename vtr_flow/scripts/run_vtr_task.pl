@@ -398,7 +398,7 @@ sub run_single_task {
 				print PBS_FILE "#PBS -S /bin/bash\n";
 				print PBS_FILE "#PBS -N $task-$arch-$circuit\n";
 				print PBS_FILE "#PBS -l nodes=1\n";
-				print PBS_FILE "#PBS -l walltime=720:00:00\n";
+				print PBS_FILE "#PBS -l walltime=168:00:00\n";
 				if ($circuit =~ /PEEng/) {
 					print PBS_FILE "#PBS -l mem=6000mb\n";
 				} else {
