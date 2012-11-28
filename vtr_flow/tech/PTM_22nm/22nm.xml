@@ -2043,4 +2043,32 @@
 			</strength>
 		</stages>
 	</buffer_sc>
+	<components>
+		<buf_levr>
+			<instance size="1" power="5.5262E-08"/>
+			<instance size="4" power="1.7393E-07"/>
+			<instance size="16" power="6.1361E-07"/>
+			<instance size="64" power="2.3057E-06"/>
+		</buf_levr>
+		<buf>
+			<instance size="1" power="3.1499E-08"/>
+			<instance size="4" power="1.4324E-07"/>
+			<instance size="16" power="5.7475E-07"/>
+			<instance size="64" power="2.2701E-06"/>
+		</buf>
+		<mux>
+			<instance size="4" power="8.0030E-08"/>
+			<instance size="9" power="1.6268E-07"/>
+			<instance size="16" power="2.6787E-07"/>
+			<instance size="25" power="4.0309E-07"/>
+		</mux>
+		<lut>
+			<instance size="2" power="3.1760E-07"/>
+			<instance size="4" power="1.3397E-06"/>
+			<instance size="6" power="5.1630E-06"/>
+		</lut>
+		<dff>
+			<instance size="1" power="2.3059E-07"/>
+		</dff>
+	</components>
 </technology>
