@@ -214,8 +214,8 @@ Architecture based off Stratix IV
         </pb_type>
         <interconnect>
           <complete name="crossbar" input="clb.I ble[9:0].out" output="ble[9:0].in">
-            <delay_constant max="8.044000e-11" in_port="clb.I" out_port="ble[9:0].in" />
-            <delay_constant max="7.354000e-11" in_port="ble[9:0].out" out_port="ble[9:0].in" />
+            <delay_constant max="4.620e-11" in_port="clb.I" out_port="ble[9:0].in" />
+            <delay_constant max="4.607e-11" in_port="ble[9:0].out" out_port="ble[9:0].in" />
           </complete>
           <complete name="clks" input="clb.clk" output="ble[9:0].clk">
           </complete>
