@@ -727,6 +727,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 	t_pack_molecule *list_of_molecules_head;
 	t_pack_molecule *cur_molecule;
 	int L_num_blocks;
+	struct s_linked_vptr* logical_block_molecule;
 
 	cur_molecule = list_of_molecules_head = NULL;
 
@@ -785,24 +786,24 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 
 	/* Reduce incentive to use logical blocks as standalone blocks when molecules already exist */
 	for (i = 0; i < num_logical_blocks; i++) {
-		cur_molecule =
-				(t_pack_molecule*) logical_block[i].packed_molecules->data_vptr;
+		logical_block_molecule = logical_block[i].packed_molecules;
 		L_num_blocks = 1;
-		while (cur_molecule != NULL) {
-			if (cur_molecule->num_blocks > 1) {
+		while (logical_block_molecule != NULL) {
+			cur_molecule = (t_pack_molecule*)logical_block_molecule->data_vptr;
+			if (cur_molecule->num_blocks > L_num_blocks) {
 				L_num_blocks = cur_molecule->num_blocks;
 				break;
 			}
-			cur_molecule = cur_molecule->next;
+			logical_block_molecule = logical_block_molecule->next;
 		}
 		if (L_num_blocks > 1) {
-			cur_molecule =
-					(t_pack_molecule*) logical_block[i].packed_molecules->data_vptr;
-			while (cur_molecule != NULL) {
+			logical_block_molecule = logical_block[i].packed_molecules;
+			while (logical_block_molecule != NULL) {
+				cur_molecule = (t_pack_molecule*)logical_block_molecule->data_vptr;
 				if (cur_molecule->num_blocks == 1) {
 					cur_molecule->base_gain /= L_num_blocks;
 				}
-				cur_molecule = cur_molecule->next;
+				logical_block_molecule = logical_block_molecule->next;
 			}
 		}
 	}
