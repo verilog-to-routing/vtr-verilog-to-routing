@@ -244,7 +244,7 @@ static void alloc_block(void) {
 
 	max_pins = 0;
 	for (i = 0; i < NUM_TYPES_USED; i++) {
-		max_pins = max(max_pins, type_descriptors[i].num_pins);
+		max_pins = std::max(max_pins, type_descriptors[i].num_pins);
 	}
 
 	block = (struct s_block *) my_malloc(num_blocks * sizeof(struct s_block));
@@ -405,7 +405,7 @@ static void setup_chan_width(struct s_router_opts router_opts,
 
 	max_pins_per_clb = 0;
 	for (i = 0; i < num_types; i++) {
-		max_pins_per_clb = max(max_pins_per_clb, type_descriptors[i].num_pins);
+		max_pins_per_clb = std::max(max_pins_per_clb, type_descriptors[i].num_pins);
 	}
 
 	if (router_opts.fixed_channel_width == NO_FIXED_CHANNEL_WIDTH)

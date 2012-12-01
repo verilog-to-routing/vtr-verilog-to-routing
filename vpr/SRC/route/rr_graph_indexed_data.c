@@ -76,7 +76,7 @@ void alloc_and_load_rr_indexed_data(INP t_segment_inf * segment_inf,
 		if (segment_inf[iseg].longline)
 			length = nx;
 		else
-			length = min(segment_inf[iseg].length, nx);
+			length = std::min(segment_inf[iseg].length, nx);
 
 		rr_indexed_data[index].inv_length = 1. / length;
 		rr_indexed_data[index].seg_index = iseg;
@@ -95,7 +95,7 @@ void alloc_and_load_rr_indexed_data(INP t_segment_inf * segment_inf,
 		if (segment_inf[iseg].longline)
 			length = ny;
 		else
-			length = min(segment_inf[iseg].length, ny);
+			length = std::min(segment_inf[iseg].length, ny);
 
 		rr_indexed_data[index].inv_length = 1. / length;
 		rr_indexed_data[index].seg_index = iseg;

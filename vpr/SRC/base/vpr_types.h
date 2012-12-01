@@ -34,6 +34,7 @@
 #define VPR_TYPES_H
 
 #include "arch_types.h"
+#include <map>
 
 /*******************************************************************************
  * Global data types and constants
@@ -124,13 +125,13 @@ struct s_pack_molecule;
 /* jedit TODO: Move to pb_graph_node to minimize memory allocation/deallocation */
 typedef struct s_pb_stats {
 	/* Packing statistics */
-	float *gain; /* Attraction (inverse of cost) function */
+	std::map<int, float> gain; /* Attraction (inverse of cost) function */
 
-	float *timinggain; /* [0..num_logical_blocks-1]. The timing criticality score of this logical_block. 
+	std::map<int, float> timinggain; /* [0..num_logical_blocks-1]. The timing criticality score of this logical_block. 
 	 Determined by the most critical vpack_net between this logical_block and any logical_block in the current pb */
-	float *connectiongain; /* [0..num_logical_blocks-1] Weighted sum of connections to attraction function */
-	float *prevconnectiongainincr; /* [0..num_logical_blocks-1] Prev sum to weighted sum of connections to attraction function */
-	float *sharinggain; /* [0..num_logical_blocks-1]. How many nets on this logical_block are already in the pb under consideration */
+	std::map<int, float> connectiongain; /* [0..num_logical_blocks-1] Weighted sum of connections to attraction function */
+	std::map<int, float> prevconnectiongainincr; /* [0..num_logical_blocks-1] Prev sum to weighted sum of connections to attraction function */
+	std::map<int, float> sharinggain; /* [0..num_logical_blocks-1]. How many nets on this logical_block are already in the pb under consideration */
 
 	/* [0..num_logical_blocks-1]. This is the gain used for hill-climbing. It stores*
 	 * the reduction in the number of pins that adding this logical_block to the the*
@@ -138,7 +139,7 @@ typedef struct s_pb_stats {
 	 * addition of a logical_block to a pb may reduce the number of inputs     *
 	 * required if it shares inputs with all other BLEs and it's output is  *
 	 * used by all other child pbs in this parent pb.                               */
-	float *hillgain;
+	std::map<int, float> hillgain;
 
 	/* [0..num_marked_nets] and [0..num_marked_blocks] respectively.  List  *
 	 * the indices of the nets and blocks that have had their num_pins_of_  *
@@ -149,7 +150,7 @@ typedef struct s_pb_stats {
 
 	/* [0..num_logical_nets-1].  How many pins of each vpack_net are contained in the *
 	 * currently open pb?                                          */
-	int *num_pins_of_net_in_pb; /* jedit TODO: This looks like an optimization error, num_logical_nets is huge so the cost of allocating/deallocating memory itself far outweights just checking all the pins in the cluster */
+	std::map<int, int> num_pins_of_net_in_pb;
 
 	/* Record of pins of class used TODO: Jason Luu: Should really be using hash table for this for speed, too lazy to write one now, performance isn't too bad since I'm at most iterating over the number of pins of a pb which is effectively a constant for reasonable architectures */
 	int **input_pins_used; /* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of input pins of this class that are used */
@@ -184,7 +185,7 @@ typedef struct s_pb {
 
 	struct s_rr_node *rr_graph; /* pointer to rr_graph connecting pbs of cluster */
 	struct s_pb **rr_node_to_pb_mapping; /* [0..num_local_rr_nodes-1] pointer look-up of which pb this rr_node belongs based on index, NULL if pb does not exist  */
-	struct s_pb_stats pb_stats; /* statistics for current pb */
+	struct s_pb_stats *pb_stats; /* statistics for current pb */
 
 	struct s_net *local_nets; /* Records post-packing connections, valid only for top-level */
 	int num_local_nets; /* Records post-packing connections, valid only for top-level */

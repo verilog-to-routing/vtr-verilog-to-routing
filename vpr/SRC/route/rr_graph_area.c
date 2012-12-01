@@ -127,7 +127,7 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 
 	num_inputs_to_cblock = (int *) my_calloc(num_rr_nodes, sizeof(int));
 
-	maxlen = max(nx, ny) + 1;
+	maxlen = std::max(nx, ny) + 1;
 	cblock_counted = (boolean *) my_calloc(maxlen, sizeof(boolean));
 	shared_buffer_trans = (float *) my_calloc(maxlen, sizeof(float));
 
@@ -160,7 +160,7 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 
 					if (switch_inf[iswitch].buffered) {
 						iseg = seg_index_of_sblock(from_node, to_node);
-						shared_buffer_trans[iseg] = max(
+						shared_buffer_trans[iseg] = std::max(
 								shared_buffer_trans[iseg],
 								sharable_switch_trans[iswitch]);
 
@@ -179,7 +179,7 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 
 				case IPIN:
 					num_inputs_to_cblock[to_node]++;
-					max_inputs_to_cblock = max(max_inputs_to_cblock,
+					max_inputs_to_cblock = std::max(max_inputs_to_cblock,
 							num_inputs_to_cblock[to_node]);
 
 					iseg = seg_index_of_cblock(from_rr_type, to_node);
@@ -239,7 +239,7 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 						+ sharable_switch_trans[iswitch];
 				ntrans_sharing += unsharable_switch_trans[iswitch];
 
-				shared_opin_buffer_trans = max(shared_opin_buffer_trans,
+				shared_opin_buffer_trans = std::max(shared_opin_buffer_trans,
 						sharable_switch_trans[iswitch]);
 			}
 
@@ -319,7 +319,7 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 			R_minW_pmos);
 
 	num_inputs_to_cblock = (int *) my_calloc(num_rr_nodes, sizeof(int));
-	maxlen = max(nx, ny) + 1;
+	maxlen = std::max(nx, ny) + 1;
 	cblock_counted = (boolean *) my_calloc(maxlen, sizeof(boolean));
 
 	ntrans = 0;
@@ -372,7 +372,7 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 
 				case IPIN:
 					num_inputs_to_cblock[to_node]++;
-					max_inputs_to_cblock = max(max_inputs_to_cblock,
+					max_inputs_to_cblock = std::max(max_inputs_to_cblock,
 							num_inputs_to_cblock[to_node]);
 					iseg = seg_index_of_cblock(from_rr_type, to_node);
 
@@ -543,7 +543,7 @@ static float trans_per_buf(float Rbuf, float R_minW_nmos, float R_minW_pmos) {
 		 * ones.                                                                  */
 
 		num_stage = nint(log10(R_minW_nmos / Rbuf) / log10(4.));
-		num_stage = max(num_stage, 1);
+		num_stage = std::max(num_stage, 1);
 		stage_ratio = pow((float)(R_minW_nmos / Rbuf), (float)( 1. / (float) num_stage));
 
 		Rstage = R_minW_nmos;

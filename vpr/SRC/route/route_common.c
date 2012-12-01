@@ -882,10 +882,10 @@ static void load_route_bb(int bb_factor) {
 		/* Expand the net bounding box by bb_factor, then clip to the physical *
 		 * chip area.                                                          */
 
-		route_bb[inet].xmin = max(xmin - bb_factor, 0);
-		route_bb[inet].xmax = min(xmax + bb_factor, nx + 1);
-		route_bb[inet].ymin = max(ymin - bb_factor, 0);
-		route_bb[inet].ymax = min(ymax + bb_factor, ny + 1);
+		route_bb[inet].xmin = std::max(xmin - bb_factor, 0);
+		route_bb[inet].xmax = std::min(xmax + bb_factor, nx + 1);
+		route_bb[inet].ymin = std::max(ymin - bb_factor, 0);
+		route_bb[inet].ymax = std::min(ymax + bb_factor, ny + 1);
 	}
 }
 

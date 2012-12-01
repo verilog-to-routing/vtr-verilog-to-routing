@@ -69,7 +69,7 @@ static double power_count_transistors_connectionbox(void) {
 			* (g_power_commonly_used->NMOS_1X_C_d
 					/ g_power_commonly_used->INV_1X_C_in)
 			/ g_power_arch->logical_effort_factor;
-	buffer_size = max(1.0F, buffer_size);
+	buffer_size = std::max(1.0F, buffer_size);
 	transistor_cnt += g_solution_inf.channel_width
 			* power_count_transistors_buffer(buffer_size);
 
@@ -154,7 +154,7 @@ static void power_mux_node_max_inputs(t_mux_node * mux_node,
 		float * max_inputs) {
 
 	max_inputs[mux_node->level] =
-			max(max_inputs[mux_node->level], static_cast<float>(mux_node->num_inputs));
+			std::max(max_inputs[mux_node->level], static_cast<float>(mux_node->num_inputs));
 
 	if (mux_node->level != 0) {
 		int child_idx;
@@ -287,7 +287,7 @@ static double power_count_transistors_pb_node(t_pb_graph_node * pb_node) {
 							&mode->interconnect[interc]);
 				}
 			}
-			tc_interc_max = max(tc_interc_max, tc_interc);
+			tc_interc_max = std::max(tc_interc_max, tc_interc);
 
 			/* Count Child PB Types */
 			for (child = 0; child < mode->num_pb_type_children; child++) {
@@ -300,7 +300,7 @@ static double power_count_transistors_pb_node(t_pb_graph_node * pb_node) {
 				}
 			}
 
-			tc_children_max = max(tc_children_max, tc_children);
+			tc_children_max = std::max(tc_children_max, tc_children);
 		}
 	}
 
@@ -628,7 +628,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin) {
 
 	fanout_to_mode = 0;
 	for (i = 0; i < this_pb_type->num_modes; i++) {
-		fanout_to_mode = max(fanout_to_mode, fanout_per_mode[i]);
+		fanout_to_mode = std::max(fanout_to_mode, fanout_per_mode[i]);
 	}
 
 	/* Wirelength */

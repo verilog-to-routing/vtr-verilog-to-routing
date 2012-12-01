@@ -609,37 +609,43 @@ void free_pb(t_pb *pb) {
 		pb->logical_block = OPEN;
 	}
 	free_pb_stats(pb);
-	pb->pb_stats.gain = NULL;
 }
 
 void free_pb_stats(t_pb *pb) {
 	int i;
 	t_pb_graph_node *pb_graph_node = pb->pb_graph_node;
 
-	if (pb->pb_stats.gain != NULL) {
-		free(pb->pb_stats.gain);
-		free(pb->pb_stats.timinggain);
-		free(pb->pb_stats.sharinggain);
-		free(pb->pb_stats.hillgain);
-		free(pb->pb_stats.connectiongain);
-		for (i = 0; i < pb_graph_node->num_input_pin_class; i++) {
-			free(pb->pb_stats.input_pins_used[i]);
-			free(pb->pb_stats.lookahead_input_pins_used[i]);
-		}
-		free(pb->pb_stats.input_pins_used);
-		free(pb->pb_stats.lookahead_input_pins_used);
-		for (i = 0; i < pb_graph_node->num_output_pin_class; i++) {
-			free(pb->pb_stats.output_pins_used[i]);
-			free(pb->pb_stats.lookahead_output_pins_used[i]);
-		}
-		free(pb->pb_stats.output_pins_used);
-		free(pb->pb_stats.lookahead_output_pins_used);
-		free(pb->pb_stats.feasible_blocks);
-		free(pb->pb_stats.num_pins_of_net_in_pb);
-		free(pb->pb_stats.marked_nets);
-		free(pb->pb_stats.marked_blocks);
-		pb->pb_stats.gain = NULL;
+	if(pb->pb_stats == NULL) {
+		return;
 	}
+
+	pb->pb_stats->gain.clear();
+	pb->pb_stats->timinggain.clear();
+	pb->pb_stats->sharinggain.clear();
+	pb->pb_stats->hillgain.clear();
+	pb->pb_stats->connectiongain.clear();
+	pb->pb_stats->num_pins_of_net_in_pb.clear();
+	
+	if(pb->pb_stats->marked_blocks != NULL) {
+		for (i = 0; i < pb_graph_node->num_input_pin_class; i++) {
+			free(pb->pb_stats->input_pins_used[i]);
+			free(pb->pb_stats->lookahead_input_pins_used[i]);
+		}
+		free(pb->pb_stats->input_pins_used);
+		free(pb->pb_stats->lookahead_input_pins_used);
+		for (i = 0; i < pb_graph_node->num_output_pin_class; i++) {
+			free(pb->pb_stats->output_pins_used[i]);
+			free(pb->pb_stats->lookahead_output_pins_used[i]);
+		}
+		free(pb->pb_stats->output_pins_used);
+		free(pb->pb_stats->lookahead_output_pins_used);
+		free(pb->pb_stats->feasible_blocks);
+		free(pb->pb_stats->marked_nets);
+		free(pb->pb_stats->marked_blocks);
+	}
+	pb->pb_stats->marked_blocks = NULL;
+	delete pb->pb_stats;
+	pb->pb_stats = NULL;
 }
 
 int ** alloc_and_load_net_pin_index() {
@@ -653,7 +659,7 @@ int ** alloc_and_load_net_pin_index() {
 
 	/* Compute required size. */
 	for (itype = 0; itype < num_types; itype++)
-		max_pins_per_clb = max(max_pins_per_clb, type_descriptors[itype].num_pins);
+		max_pins_per_clb = std::max(max_pins_per_clb, type_descriptors[itype].num_pins);
 	
 	/* Allocate for maximum size. */
 	temp_net_pin_index = (int **) alloc_matrix(0, num_blocks - 1, 0,

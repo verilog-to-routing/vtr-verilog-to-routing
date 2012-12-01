@@ -262,7 +262,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	max_pins_per_clb = 0;
 	for (i = 0; i < num_types; i++) {
-		max_pins_per_clb = max(max_pins_per_clb, type_descriptors[i].num_pins);
+		max_pins_per_clb = std::max(max_pins_per_clb, type_descriptors[i].num_pins);
 	}
 
 	clb_opins_used_locally = alloc_route_structs();
@@ -577,13 +577,13 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 				cfactor * comp_width(&chan_x_dist, x, separation) + 0.5);
 
 		/* No zero width channels */
-		chan_width_x[1] = max(chan_width_x[1], 1);
+		chan_width_x[1] = std::max(chan_width_x[1], 1);
 
 		for (i = 1; i < ny - 1; i++) {
 			x = (float) i / ((float) (ny - 2.));
 			chan_width_x[i + 1] = (int) floor(
 					cfactor * comp_width(&chan_x_dist, x, separation) + 0.5);
-			chan_width_x[i + 1] = max(chan_width_x[i + 1], 1);
+			chan_width_x[i + 1] = std::max(chan_width_x[i + 1], 1);
 		}
 	}
 
@@ -593,13 +593,13 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 		chan_width_y[1] = (int) floor(
 				cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
 
-		chan_width_y[1] = max(chan_width_y[1], 1);
+		chan_width_y[1] = std::max(chan_width_y[1], 1);
 
 		for (i = 1; i < nx - 1; i++) {
 			x = (float) i / ((float) (nx - 2.));
 			chan_width_y[i + 1] = (int) floor(
 					cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
-			chan_width_y[i + 1] = max(chan_width_y[i + 1], 1);
+			chan_width_y[i + 1] = std::max(chan_width_y[i + 1], 1);
 		}
 	}
 #ifdef VERBOSE

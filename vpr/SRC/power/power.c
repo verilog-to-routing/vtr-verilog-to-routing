@@ -852,12 +852,12 @@ static void power_calc_routing(t_power_usage * power_usage,
 						/ (float) g_power_arch->seg_buffer_split;
 				buffer_size = power_buffer_size_from_logical_effort(
 						C_per_seg_split);
-				buffer_size = max(buffer_size, 1.0F);
+				buffer_size = std::max(buffer_size, 1.0F);
 				break;
 			case POWER_BUFFER_TYPE_ABSOLUTE_SIZE:
 				buffer_size =
 						switch_inf[node_power->driver_switch_type].power_buffer_size;
-				buffer_size = max(buffer_size, 1.0F);
+				buffer_size = std::max(buffer_size, 1.0F);
 				break;
 			case POWER_BUFFER_TYPE_NONE:
 				buffer_size = 0.;
@@ -1104,8 +1104,8 @@ boolean power_init(char * power_out_filepath,
 		switch (node->type) {
 		case IPIN:
 			max_IPIN_fanin =
-					max(max_IPIN_fanin, static_cast<int>(node->fan_in));
-			max_fanin = max(max_fanin, static_cast<int>(node->fan_in));
+					std::max(max_IPIN_fanin, static_cast<int>(node->fan_in));
+			max_fanin = std::max(max_fanin, static_cast<int>(node->fan_in));
 
 			node_power->in_dens = (float*) my_calloc(node->fan_in,
 					sizeof(float));
@@ -1124,9 +1124,9 @@ boolean power_init(char * power_out_filepath,
 				}
 			}
 			max_seg_to_IPIN_fanout =
-					max(max_seg_to_IPIN_fanout, fanout_to_IPIN);
-			max_seg_to_seg_fanout = max(max_seg_to_seg_fanout, fanout_to_seg);
-			max_fanin = max(max_fanin, static_cast<int>(node->fan_in));
+					std::max(max_seg_to_IPIN_fanout, fanout_to_IPIN);
+			max_seg_to_seg_fanout = std::max(max_seg_to_seg_fanout, fanout_to_seg);
+			max_fanin = std::max(max_fanin, static_cast<int>(node->fan_in));
 
 			node_power->in_dens = (float*) my_calloc(node->fan_in,
 					sizeof(float));
@@ -1145,7 +1145,7 @@ boolean power_init(char * power_out_filepath,
 
 #if (PRINT_SPICE_COMPARISON)
 	g_power_commonly_used->max_routing_mux_size =
-	max(g_power_commonly_used->max_routing_mux_size, 26);
+	std::max(g_power_commonly_used->max_routing_mux_size, 26);
 #endif
 
 	/* Populate driver switch type */

@@ -1231,7 +1231,7 @@ static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_do
 	for (i = 0; i < num_source_edges + 1; i++) {
 		for (j = 0; j < num_sink_edges + 1; j++) {
 			if (sink_edges[j] > source_edges[i]) {
-				constraint_as_int = min(constraint_as_int, sink_edges[j] - source_edges[i]);
+				constraint_as_int = std::min(constraint_as_int, sink_edges[j] - source_edges[i]);
 			}
 		}
 	}

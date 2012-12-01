@@ -263,7 +263,7 @@ alloc_and_load_seg_details(INOUTP int *nodes_per_chan, INP int max_len,
 			 * * twisting of wires. */
 			seg_details[cur_track].group_start = group_start;
 			seg_details[cur_track].group_size =
-					min(ntracks + first_track - group_start,
+					std::min(ntracks + first_track - group_start,
 							length * fac);
 			assert(0 == seg_details[cur_track].group_size % fac);
 			if (0 == seg_details[cur_track].group_size) {
@@ -585,7 +585,7 @@ int get_unidir_opin_connections(INP int chan, INP int seg, INP int Fc,
 	/* Clip Fc to the number of muxes. */
 	if (((Fc / 2) > num_inc_muxes) || ((Fc / 2) > num_dec_muxes)) {
 		*Fc_clipped = TRUE;
-		Fc = 2 * min(num_inc_muxes, num_dec_muxes);
+		Fc = 2 * std::min(num_inc_muxes, num_dec_muxes);
 	}
 
 	/* Assign tracks to meet Fc demand */
@@ -1399,8 +1399,8 @@ static void get_switch_type(boolean is_from_sbox, boolean is_to_sbox,
 
 	/* Take the larger pass trans if there are two */
 	if (forward_pass_trans && backward_pass_trans) {
-		min_switch = min(to_node_switch, from_node_switch);
-		max_switch = max(to_node_switch, from_node_switch);
+		min_switch = std::min(to_node_switch, from_node_switch);
+		max_switch = std::max(to_node_switch, from_node_switch);
 
 		/* Take the smaller index unless the other 
 		 * pass_trans is bigger (smaller R). */

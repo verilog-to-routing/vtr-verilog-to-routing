@@ -26,7 +26,7 @@ void get_segment_usage_stats(int num_segment, t_segment_inf * segment_inf) {
 	max_segment_length = 0;
 	for (seg_type = 0; seg_type < num_segment; seg_type++) {
 		if (segment_inf[seg_type].longline == FALSE)
-			max_segment_length = max(max_segment_length,
+			max_segment_length = std::max(max_segment_length,
 					segment_inf[seg_type].length);
 	}
 

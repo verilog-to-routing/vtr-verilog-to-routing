@@ -263,7 +263,7 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 		 * If use_full_seg_groups is specified, nodes_per_chan may be 
 		 * changed. Warning should be singled to caller if this happens. */
 		seg_details = alloc_and_load_seg_details(&nodes_per_chan,
-				max(L_nx, L_ny), num_seg_types, segment_inf,
+				std::max(L_nx, L_ny), num_seg_types, segment_inf,
 				use_full_seg_groups, is_global_graph, directionality);
 		if ((is_global_graph ? 1 : chan_width) != nodes_per_chan) {
 			*Warnings |= RR_GRAPH_WARN_CHAN_WIDTH_CHANGED;
@@ -616,7 +616,7 @@ alloc_and_load_actual_fc(INP int L_num_types, INP t_type_ptr types,
 					Result[i][j] = nodes_per_chan;
 				}
 
-				Result[i][j] = max(Result[i][j], fac);
+				Result[i][j] = std::max(Result[i][j], fac);
 				if (Result[i][j] > nodes_per_chan) {
 					*Fc_clipped = TRUE;
 					Result[i][j] = nodes_per_chan;
@@ -1582,7 +1582,7 @@ static void load_uniform_switch_pattern(INP t_type_ptr type,
 			itrack = ((int) f_track) * group_size;
 
 			/* Catch possible floating point round error */
-			itrack = min(itrack, nodes_per_chan - group_size);
+			itrack = std::min(itrack, nodes_per_chan - group_size);
 
 			/* Assign the group of tracks for the Fc pattern */
 			for (k = 0; k < group_size; ++k) {

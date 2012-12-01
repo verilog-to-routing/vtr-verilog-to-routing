@@ -463,8 +463,8 @@ void print_slack(float ** slack, boolean slack_is_normalized, const char *fname)
 		for (iedge = 0; iedge < num_edges; iedge++) { 
 			slk = slack[inet][iedge + 1];
 			if (slk < HUGE_POSITIVE_FLOAT - 1) { /* if slack was analysed */
-				max_slack = max(max_slack, slk);
-				min_slack = min(min_slack, slk);
+				max_slack = std::max(max_slack, slk);
+				min_slack = std::min(min_slack, slk);
 				total_slack += slk;
 				if (slk < NEGATIVE_EPSILON) { 
 					total_negative_slack -= slk; /* By convention, we'll have total_negative_slack be a positive number. */
@@ -508,7 +508,7 @@ void print_slack(float ** slack, boolean slack_is_normalized, const char *fname)
 				slk = slack[inet][iedge + 1];
 				if (slk < HUGE_POSITIVE_FLOAT - 1) {
 					/* We have to watch out for the special case where slack = max_slack, in which case ibucket = NUM_BUCKETS and we go out of bounds of the array. */
-					ibucket = min(NUM_BUCKETS - 1, (int) ((slk - min_slack)/bucket_size));
+					ibucket = std::min(NUM_BUCKETS - 1, (int) ((slk - min_slack)/bucket_size));
 					assert(ibucket >= 0 && ibucket < NUM_BUCKETS);
 					slacks_in_bucket[ibucket]++;
 				}
@@ -619,8 +619,8 @@ static void print_global_criticality_stats(FILE * fp, float ** criticality, cons
 		num_edges = timing_nets[inet].num_sinks;
 		for (iedge = 0; iedge < num_edges; iedge++) { 
 			crit = criticality[inet][iedge + 1];
-			max_criticality = max(max_criticality, crit);
-			min_criticality = min(min_criticality, crit);
+			max_criticality = std::max(max_criticality, crit);
+			min_criticality = std::min(min_criticality, crit);
 			total_criticality += crit;
 		}
 	}
@@ -646,7 +646,7 @@ static void print_global_criticality_stats(FILE * fp, float ** criticality, cons
 			for (iedge = 0; iedge < num_edges; iedge++) { 
 				crit = criticality[inet][iedge + 1];
 				/* We have to watch out for the special case where criticality = max_criticality, in which case ibucket = NUM_BUCKETS and we go out of bounds of the array. */
-				ibucket = min(NUM_BUCKETS - 1, (int) ((crit - min_criticality)/bucket_size));
+				ibucket = std::min(NUM_BUCKETS - 1, (int) ((crit - min_criticality)/bucket_size));
 				assert(ibucket >= 0 && ibucket < NUM_BUCKETS);
 				criticalities_in_bucket[ibucket]++;
 			}
@@ -1811,7 +1811,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 
 #if SLACK_DEFINITION == 'S'
 				/* Set criticality_denom_global to the max of criticality_denom over all traversals. */
-				criticality_denom_global = max(criticality_denom_global, criticality_denom);
+				criticality_denom_global = std::max(criticality_denom_global, criticality_denom);
 #endif
 			}
 		}
@@ -1824,7 +1824,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 	for (inet = 0; inet < num_timing_nets; inet++) {
 		num_edges = timing_nets[inet].num_sinks;
 		for (iedge = 0; iedge < num_edges; iedge++) {
-			max_path_criticality = max(max_path_criticality, slacks->path_criticality[inet][iedge + 1]);
+			max_path_criticality = std::max(max_path_criticality, slacks->path_criticality[inet][iedge + 1]);
 		}
 	}
 
@@ -1843,7 +1843,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 		/* Find the smallest slack in the design. */
 		for (i = 0; i < g_sdc->num_constrained_clocks; i++) {
 			for (j = 0; j < g_sdc->num_constrained_clocks; j++) {
-				smallest_slack_in_design = min(smallest_slack_in_design, f_timing_stats->least_slack[i][j]);
+				smallest_slack_in_design = std::min(smallest_slack_in_design, f_timing_stats->least_slack[i][j]);
 			}
 		}
 
@@ -2041,7 +2041,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				/* Since we updated the destination node (to_node), change the max arrival  
 				time for the forward traversal if to_node's arrival time is greater than 
 				the existing maximum. */
-				max_Tarr = max(max_Tarr, tnode[to_node].T_arr);	
+				max_Tarr = std::max(max_Tarr, tnode[to_node].T_arr);	
 			}
 		}
 	}
@@ -2141,7 +2141,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				if (is_final_analysis) {
 					tnode[inode].T_req =     constraint + tnode[inode].clock_delay;
 				} else {
-					tnode[inode].T_req = max(constraint + tnode[inode].clock_delay, max_Tarr);
+					tnode[inode].T_req = std::max(constraint + tnode[inode].clock_delay, max_Tarr);
 				}
 #else					
 				/* Don't do the relaxation and always set T_req equal to the "real" required time. */
@@ -2159,7 +2159,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				datapath delay. */
 
 				f_timing_stats->cpd[source_clock_domain][sink_clock_domain] = 
-					max(f_timing_stats->cpd[source_clock_domain][sink_clock_domain], 
+					std::max(f_timing_stats->cpd[source_clock_domain][sink_clock_domain], 
 					   (tnode[inode].T_arr - tnode[inode].clock_delay)); 
 
 #ifndef PATH_COUNTING
@@ -2208,7 +2208,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 					to_node = tedge[iedge].to_node;
 					Tdel = tedge[iedge].Tdel;
 					T_req = tnode[to_node].T_req;
-					tnode[inode].T_req = min(tnode[inode].T_req, T_req - Tdel);
+					tnode[inode].T_req = std::min(tnode[inode].T_req, T_req - Tdel);
 					
 					/* Update least slack per constraint. This is NOT the same as the minimum slack we will
 					calculate on this traversal for post-packed netlists, which only count inter-cluster 
@@ -2216,7 +2216,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 					all paths go through one of these edges. */
 					if (tnode[to_node].num_edges == 0 && tnode[to_node].clock_domain == sink_clock_domain) {
 						f_timing_stats->least_slack[source_clock_domain][sink_clock_domain] = 
-							min(f_timing_stats->least_slack[source_clock_domain][sink_clock_domain],
+							std::min(f_timing_stats->least_slack[source_clock_domain][sink_clock_domain],
 							   (T_req - Tdel - tnode[inode].T_arr)); 
 					}
 				}
@@ -2261,7 +2261,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 
 	/* The criticality denominator is the maximum of the max 
 	arrival time and the constraint for this domain pair. */
-	return max(max_Tarr, g_sdc->domain_constraint[source_clock_domain][sink_clock_domain]);
+	return std::max(max_Tarr, g_sdc->domain_constraint[source_clock_domain][sink_clock_domain]);
 }
 #ifdef PATH_COUNTING
 static void do_path_counting(float criticality_denom) {
@@ -2690,11 +2690,11 @@ static void update_normalized_costs(float criticality_denom, long max_critical_i
 	for (inode = 0; inode < num_tnodes; inode++) {
 		/* Only calculate for tnodes which have valid arrival and required times. */
 		if (has_valid_T_arr(inode) && has_valid_T_req(inode)) {
-			tnode[inode].prepacked_data->normalized_slack = min(tnode[inode].prepacked_data->normalized_slack, 
+			tnode[inode].prepacked_data->normalized_slack = std::min(tnode[inode].prepacked_data->normalized_slack, 
 				(tnode[inode].T_req - tnode[inode].T_arr)/criticality_denom);
-			tnode[inode].prepacked_data->normalized_T_arr = max(tnode[inode].prepacked_data->normalized_T_arr, 
+			tnode[inode].prepacked_data->normalized_T_arr = std::max(tnode[inode].prepacked_data->normalized_T_arr, 
 				tnode[inode].T_arr/criticality_denom);
-			tnode[inode].prepacked_data->normalized_total_critical_paths = max(tnode[inode].prepacked_data->normalized_total_critical_paths, 
+			tnode[inode].prepacked_data->normalized_total_critical_paths = std::max(tnode[inode].prepacked_data->normalized_total_critical_paths, 
 					((float) tnode[inode].prepacked_data->num_critical_input_paths + tnode[inode].prepacked_data->num_critical_output_paths) /
 							 ((float) max_critical_input_paths + max_critical_output_paths));
 		}
@@ -2715,7 +2715,7 @@ static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel,
 	float min_delay, highest_T_arr, balanced_T_arr;
 
 	/* Normal case for determining arrival time */
-	tnode[to_node].T_arr = max(tnode[to_node].T_arr, tnode[from_node].T_arr + Tdel);
+	tnode[to_node].T_arr = std::max(tnode[to_node].T_arr, tnode[from_node].T_arr + Tdel);
 
 	/* Do LUT input rebalancing for LUTs */
 	if (do_lut_input_balancing && tnode[to_node].type == TN_PRIMITIVE_OPIN && tnode[to_node].pb_graph_pin != NULL) {
@@ -3250,7 +3250,7 @@ static void print_timing_constraint_info(const char *fname) {
 	for (sink_clock_domain = 0; sink_clock_domain < g_sdc->num_constrained_clocks; sink_clock_domain++) {
 		fprintf(fp, "%s", g_sdc->constrained_clocks[sink_clock_domain].name);
 		/* Minimum column width of 8 */
-		print_spaces(fp, max(8 - clock_name_length[sink_clock_domain], 4));
+		print_spaces(fp, std::max(8 - clock_name_length[sink_clock_domain], 4));
 	}
 	fprintf(fp, "\n");
 
@@ -3260,7 +3260,7 @@ static void print_timing_constraint_info(const char *fname) {
 		for (sink_clock_domain = 0; sink_clock_domain < g_sdc->num_constrained_clocks; sink_clock_domain++) {
 			fprintf(fp, "%5.2f", g_sdc->domain_constraint[source_clock_domain][sink_clock_domain]);
 			/* Minimum column width of 8 */
-			print_spaces(fp, max(clock_name_length[sink_clock_domain] - 1, 3));
+			print_spaces(fp, std::max(clock_name_length[sink_clock_domain] - 1, 3));
 		}
 		fprintf(fp, "\n");
 	}
