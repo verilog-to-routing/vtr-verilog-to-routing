@@ -21,10 +21,6 @@ typedef int boolean;
 #define INOUTP
 
 #define BUFSIZE 4096 /* Maximum line length for various parsing proc. */
-#ifndef max
-#define max(a,b) (((a) > (b))? (a) : (b))
-#define min(a,b) ((a) > (b)? (b) : (a))
-#endif
 #define nint(a) ((int) floor (a + 0.5))
 
 #define ERRTAG "ERROR:\t"
