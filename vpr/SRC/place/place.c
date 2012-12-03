@@ -24,7 +24,7 @@
 /* Cut off for incremental bounding box updates.                          *
  * 4 is fastest -- I checked.                                             */
 /* To turn off incremental bounding box updates, set this to a huge value */
-#define SMALL_NET 4000
+#define SMALL_NET 4
 
 /* This defines the error tolerance for floating points variables used in *
  * cost computation. 0.01 means that there is a 1% error tolerance.       */
