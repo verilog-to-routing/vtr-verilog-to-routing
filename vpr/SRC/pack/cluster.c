@@ -32,7 +32,7 @@
 #define AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST 5 /* Maximum constant number of pins that can exceed input pins before giving up */
 
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
-#define AAPACK_MAX_NET_SINKS_COMPUTE_CONNECTION_GAIN 32 /* Connection gain requires traversing all sinks of a net, for high-fanout nets, this is too runtime costly for only a meagre connection gain, thus ignore those high fanout nets */
+#define AAPACK_MAX_NET_SINKS_IGNORE 64 /* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
 
 #define SCALE_NUM_PATHS 1e-2     /*this value is used as a multiplier to assign a    *
 				  *slightly higher criticality value to nets that    *
@@ -1420,7 +1420,7 @@ static void update_connection_gain_values(int inet, int clustered_block,
 	int clb_index;
 	int num_internal_connections, num_open_connections, num_stuck_connections;
 
-	if(vpack_net[inet].num_sinks > AAPACK_MAX_NET_SINKS_COMPUTE_CONNECTION_GAIN) {
+	if(vpack_net[inet].num_sinks > AAPACK_MAX_NET_SINKS_IGNORE) {
 		/* Connection gain requires traversing all sinks of a net, for high-fanout nets, this is too runtime costly for measuring a net that probably has no hope of ever getting packed, thus ignore those high fanout nets */
 		return;
 	}
@@ -1597,7 +1597,7 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 			else
 				ifirst = 1;
 
-			if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(inet) == 0) {
+			if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(inet) == 0 && vpack_net[inet].num_sinks < AAPACK_MAX_NET_SINKS_IGNORE) {
 				for (ipin = ifirst; ipin <= vpack_net[inet].num_sinks; ipin++) {
 					iblk = vpack_net[inet].node_block[ipin];
 					if (logical_block[iblk].clb_index == NO_CLUSTER) {
