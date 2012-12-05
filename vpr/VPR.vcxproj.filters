@@ -237,9 +237,6 @@
     <ClCompile Include="SRC\base\verilog_writer.c">
       <Filter>Source Files\base</Filter>
     </ClCompile>
-    <ClCompile Include="SRC\power\power_verify.c">
-      <Filter>Source Files\power</Filter>
-    </ClCompile>
     <ClCompile Include="SRC\power\power.c">
       <Filter>Source Files\power</Filter>
     </ClCompile>
@@ -256,6 +253,12 @@
       <Filter>Source Files\power</Filter>
     </ClCompile>
     <ClCompile Include="SRC\power\power_sizing.c">
+      <Filter>Source Files\power</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\power\power_callibrate.c">
+      <Filter>Source Files\power</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\power\PowerSpicedComponent.c">
       <Filter>Source Files\power</Filter>
     </ClCompile>
   </ItemGroup>
@@ -440,9 +443,6 @@
     <ClInclude Include="SRC\power\power.h">
       <Filter>Header Files\power</Filter>
     </ClInclude>
-    <ClInclude Include="SRC\power\power_verify.h">
-      <Filter>Header Files\power</Filter>
-    </ClInclude>
     <ClInclude Include="SRC\power\power_cmos_tech.h">
       <Filter>Header Files\power</Filter>
     </ClInclude>
@@ -456,6 +456,12 @@
       <Filter>Header Files\power</Filter>
     </ClInclude>
     <ClInclude Include="SRC\power\power_sizing.h">
+      <Filter>Header Files\power</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\power\power_callibrate.h">
+      <Filter>Header Files\power</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\power\PowerSpicedComponent.h">
       <Filter>Header Files\power</Filter>
     </ClInclude>
   </ItemGroup>
