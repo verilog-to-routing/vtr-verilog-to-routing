@@ -62,13 +62,20 @@
 %\date{} %%If commented, the current date is used.
 \maketitle
 
+The latest version of this document can be obtained here: \url{http://vtr-verilog-to-routing.googlecode.com/svn/trunk/doc/power/power_manual.pdf}
+
 \setcounter{tocdepth}{2}
 \tableofcontents %Table of contents
 
 
 \newpage
 \section{Overview}
-	TBD (\autoref{fig:flow}).
+This document describes the power estimation tool for VTR.  This tool provides transistor-level dynamic and static power estimates for a given architecture and circuit.
+
+\autoref{fig:flow} illustrates how the VTR flow is modified to add power estimation.  The actual power estimation is performed within the VPR executable; however, additional files must be provided.  In addition to the circuit and architecture files, power estimation requires files detailing the signal activities and technology properties.  
+
+\autoref{sec:running} details how to run power estimation for VTR.  \autoref{sec:tools} provides details on the supporting tools that are used to generate the signal activities and technology properties files.  \autoref{sec:arch_modelling} provides details about how the tool models architectures, including different options of modelling methods.  \autoref{sec:options} provides more advanced configuration options.
+
 \begin{figure}[ht]
 	\centering
 	\includegraphics[scale=0.8]{images/flow.pdf}
@@ -78,19 +85,38 @@
 
 
 \newpage
-\section{Running VTR with Power Estimation}
+\section{Running VTR with Power Estimation} \label{sec:running}
 \subsection{VTR Flow}
-\subsection{VTR Tasks}
+	The easiest way to run the VTR flow is to use the \texttt{run\_vtr\_flow.pl} script.  See \url{http://code.google.com/p/vtr-verilog-to-routing/wiki/Run_VTR_Flow} for instructions on how to use the script.
+	
+In order to perform power estimation, you must add the following options:
+
+\begin{BVerbatim}[bgcolor=LightGray, boxwidth=\textwidth]
+-power 
+-cmos_tech <cmos_technology_properties_file.xml>
+\end{BVerbatim}	
+
+The CMOS technology properties file is an XML file that contains relevant process-dependent information needed for power estimation. XML files for 22\,nm, 45\,nm, and 130\,nm PTM models can be found here:
+
+\begin{BVerbatim}[bgcolor=LightGray, boxwidth=\textwidth]
+<vtr>/vtr_flow/tech/.../*.xml
+\end{BVerbatim}
+
+See \autoref{sec:tpg} for information on how to generate an XML file for your own SPICE technology model.
+
+%\subsection{VTR Tasks}
 \subsection{VPR 6.0}
+The easiest way to perform power estimation is to use the \texttt{run\_vtr\_flow.pl} script.  However, if you wish, you may run VPR directly.
 The following command-line options are added to the VPR executable to facilitate power estimation (all are required): \newline
 \texttt{\--\--power}:  Use this option to enable power estimation. \newline
 \texttt{\--\--activity\_file <activities.act>}: The activity file, produce by ACE 2.0, or another tool. \newline
 \texttt{\--\--tech\_properties <tech\_properties.xml>}: The technology properties XML file.
 
+This requires a activity file, which can be generated as described in \autoref{sec:ace}.
 
 \newpage
-\section{Supporting Tools}
-\subsection{Technology Properties Generation}
+\section{Supporting Tools} \label{sec:tools}
+\subsection{Technology Properties Generation} \label{sec:tpg}
 Power estimation requires information detailing the properties of the CMOS technology.  
 This information, which includes transistor capacitances, leakage currents, etc. is included in an \texttt{.xml} file, and provided as a parameter to VPR.
 This XML file is generated using a script which automatically runs HSPICE, performs multiple circuit simulations, and extract the necessary values.
@@ -113,7 +139,7 @@ If the user wishes to use a different CMOS technology file, they must run the fo
 \texttt{<Vdd>}: Supply voltage in Volts. \newline
 \texttt{<temp>}: Operating temperature, in Celcius. 
 
-\subsection{ACE 2.0 Activity Estimation}
+\subsection{ACE 2.0 Activity Estimation} \label{sec:ace}
 Power estimation requires activity information for the entire netlist.  This ativity information consists of two values:
 \vspace{-10pt}
 \begin{enumerate}
@@ -146,7 +172,7 @@ User's may with to use their own activity estimation tool.  The produced activit
 	
 
 \newpage
-\section{Architecture Modelling}
+\section{Architecture Modelling} \label{sec:arch_modelling}
 The following section describes the architectural assumptions made by the power model, and the related parameters in the architecture file.
 
 \subsection{Complex Blocks} \label{sec:clbs}
@@ -211,7 +237,7 @@ For all child \texttt{pb\_types}, the algorithm performs a recursive call. Event
 These are primitives, such as flip-flops, LUTs, or other hard-blocks.  The power model includes functions to perform transistor-level power estimation for flip-flops and LUTs. 
 If the user wishes to use a design with other primitive types (memories, multipliers, etc), they must provide an equivalent function.  If the user makes such a function, the \texttt{power\_calc\_primitive} function should be modified to call it.  Alternatively, these blocks can be configured to use higher-level power estimation methods.
 
-\textbf{NOTE:} Default Leakage Mode TBD
+%\textbf{NOTE:} Default Leakage Mode TBD
 
 \subsubsection{\texttt{auto-size}}
 This estimation method also performs detailed transistor-level modelling.  It is almost identical to the \texttt{specify-size} method described above.  The only difference is that the local wire capacitance and buffers are automatically inserted for all pins, when necessary.  This is equivalent to using the \texttt{specify-size} method with the \texttt{wire\_length="auto"} and 
@@ -248,7 +274,7 @@ This method allows the users to specify the dynamic power of a block in terms of
 </pb_type>
 \end{BVerbatim}
 
-It is assumed that the power usage specified here includes power of all child \texttt{pb_types}.  No further recursive power estimation will be performed.
+It is assumed that the power usage specified here includes power of all child \texttt{pb\_types}.  No further recursive power estimation will be performed.
 
 \subsubsection{\texttt{absolute}}
 This method is the most basic power estimation method, and allows users to specify both the dynamic and static power of a block as absolute values (in Watts).  This is done using the following construct:
@@ -262,7 +288,7 @@ This method is the most basic power estimation method, and allows users to speci
 </pb_type>
 \end{BVerbatim}
 
-It is assumed that the power usage specified here includes power of all child \texttt{pb_types}.  No further recursive power estimation will be performed.
+It is assumed that the power usage specified here includes power of all child \texttt{pb\_types}.  No further recursive power estimation will be performed.
 
 \subsection{Global Routing}	
 Global routing consists of switch boxes and input connection boxes.
@@ -363,7 +389,7 @@ The following clock options are supported:
 
 
 \clearpage
-\section{Other Architecture Options \& Techniques}
+\section{Other Architecture Options \& Techniques} \label{sec:options}
 \subsection{Area Estimations} \label{sec:area_est}
 The power estimator performs area estimations of both the global routing structures and the complex blocks.  The CLB area is determined through a recursive function that counts the area of interconnect, buffers, and primitives (flip-flops and LUTs).  
 
@@ -429,8 +455,8 @@ If using the \texttt{auto-size} or \texttt{wire-length} options (\autoref{sec:cl
 \end{BVerbatim}
 
 
-\subsection{SRAM}
-TBD
+%\subsection{SRAM}
+%TBD
 
 \newpage
 \section{Support}
