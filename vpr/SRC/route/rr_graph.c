@@ -777,7 +777,7 @@ static void build_bidir_rr_opins(INP int i, INP int j,
 		if(Fc[ipin] != 0) {
 			for (ofs = 0; ofs < type->height; ++ofs) {
 				num_edges += get_bidir_opin_connections(i, j + ofs, ipin,
-						&edge_list, opin_to_track_map, Fc[i], L_rr_edge_done,
+						&edge_list, opin_to_track_map, Fc[ipin], L_rr_edge_done,
 						L_rr_node_indices, seg_details);
 			}
 		}
