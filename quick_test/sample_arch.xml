@@ -16,6 +16,8 @@ Architecture based off Stratix IV
            created 4 18x18 mulitpliers, logiclocked them to a single DSP block, compile
            result - 2 18x18 multipliers got packed together, the other 2 got ejected out of the logiclock region without error
            conclusion - just take the 600 MHz as is, and Quartus II logiclock hasn't fixed the bug that I've seen it do to registers when I worked at Altera (ie. eject without warning)
+
+  NOTE: Area numbers for hard blocks unknown!
 -->
   
   <architecture>
@@ -63,13 +65,13 @@ Architecture based off Stratix IV
   </models>
   <!-- ODIN II specific config ends -->
  
-  <!-- Physical descriptions begin (area optimized for N8-K6-L4 -->
+  <!-- Physical descriptions begin (area optimized for N10-K6-L4) -->
   <layout auto="1.0"/>
 
 		<device>
 			<sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000" ipin_mux_trans_size="1.222260"/>
 			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="7.247000e-11"/>
-			<area grid_logic_tile_area="14813.392"/>
+			<area grid_logic_tile_area="14813.392"/> <!-- soft logic only, we don't know what area the hard logic blocks are -->
 			<chan_width_distr>
 				<io width="1.000000"/>
 				<x distr="uniform" peak="1.000000"/>
@@ -118,8 +120,7 @@ Architecture based off Stratix IV
           </interconnect>
         </mode>
 
-        <fc_in type="frac">0.15</fc_in>
-        <fc_out type="frac">0.10</fc_out>
+        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
 
         <!-- IOs go on the periphery of the FPGA, for consistency, 
           make it physically equivalent on all sides so that only one definition of I/Os is needed.
@@ -144,7 +145,7 @@ Architecture based off Stratix IV
         <output name="O" num_pins="10" equivalent="false"/>
         <clock name="clk" num_pins="1"/>
 
-        <!-- Describe basic logic element, Virtex V-like fracturable LUTs to more closely match ifar delay numbers -->
+        <!-- Describe basic logic element ifar delay numbers -->
         <pb_type name="ble" num_pb="10">
           <input name="in" num_pins="6"/>
              <output name="out" num_pins="1"/>
@@ -199,9 +200,8 @@ Architecture based off Stratix IV
           </direct>
         </interconnect>
 
-        
-        <fc_in type="frac">0.15</fc_in>
-        <fc_out type="frac">0.1</fc_out>
+
+        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
 
         <pinlocations pattern="spread"/>
         <gridlocations>
@@ -332,8 +332,7 @@ Architecture based off Stratix IV
 
 
 
-        <fc_in type="frac">0.15</fc_in>
-        <fc_out type="frac">0.10</fc_out>
+        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
         <pinlocations pattern="spread"/>
 
         <gridlocations>
@@ -579,8 +578,7 @@ Architecture based off Stratix IV
             </interconnect>
           </mode>
 
-        <fc_in type="frac">0.15</fc_in>
-        <fc_out type="frac">0.10</fc_out>
+        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
         <pinlocations pattern="spread"/>
         <gridlocations>
           <loc type="col" start="2" repeat="8" priority="2"/>
