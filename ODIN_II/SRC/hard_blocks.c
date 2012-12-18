@@ -142,6 +142,10 @@ void define_hard_block(nnode_t *node, short type, FILE *out)
 	oassert(node->input_port_sizes[0] > 0);
 	oassert(node->output_port_sizes[0] > 0);
 
+	//IF the hard_blocks is an adder or a multiplier, we ignore it.(Already print out in define_add_function and define_mult_function)
+	if(strcmp(node->related_ast_node->children[0]->types.identifier, "multiply") == 0 || strcmp(node->related_ast_node->children[0]->types.identifier, "adder") == 0)
+		return;
+
 	count = fprintf(out, "\n.subckt ");
 	count--;
 	count += fprintf(out, "%s", node->related_ast_node->children[0]->types.identifier);
@@ -217,6 +221,13 @@ void output_hard_blocks(FILE *out)
 	{
 		if (hard_blocks->used == 1) /* Hard Block is utilized */
 		{
+			//IF the hard_blocks is an adder or a multiplier, we ignore it.(Already print out in add_the_blackbox_for_adds and add_the_blackbox_for_mults)
+			if(strcmp(hard_blocks->name, "adder") == 0 ||strcmp(hard_blocks->name, "multiply") == 0)
+			{
+				hard_blocks = hard_blocks->next;
+				break;
+			}
+
 			fprintf(out, "\n.model %s\n", hard_blocks->name);
 			count = fprintf(out, ".inputs");
 			hb_ports = hard_blocks->inputs;

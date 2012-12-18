@@ -823,6 +823,7 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 
 	free(new_add_cells);
 	free(new_carry_cells);
+	free(new_not_cells);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -890,6 +891,7 @@ void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist)
 
 	free(new_add_cells);
 	free(new_carry_cells);
+	free(new_not_cells);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1123,6 +1125,9 @@ void instantiate_GT(nnode_t *node, short type, short mark, netlist_t *netlist)
 	oassert(logical_or_gate->num_output_pins == 1);
 
 	instantiate_bitwise_logic(xor_gate, BITWISE_XOR, mark, netlist);
+	free(xor_gate);
+	free(gt_cells);
+	free(or_cells);
 }
 
 /*---------------------------------------------------------------------------------------------

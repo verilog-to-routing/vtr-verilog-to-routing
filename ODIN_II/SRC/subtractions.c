@@ -35,11 +35,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "globals.h"
 #include "errors.h"
 
-//t_model *hard_adders = NULL;
-struct s_linked_vptr *subs_list = NULL;
 struct s_linked_vptr *sub_list = NULL;
-struct s_linked_vptr *sub_one_node_list = NULL;
-struct s_linked_vptr *subs_one_node_list = NULL;
 struct s_linked_vptr *sub_chain_list = NULL;
 int subchaintotal = 0;
 int *sub = NULL;
@@ -365,7 +361,6 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 		node[i]->name = (char *)malloc(strlen(nodeo->name) + 20);
 		sprintf(node[i]->name, "%s-%d", nodeo->name, i);
 		init_split_adder_for_sub(nodeo, node[i], a, sizea, b, sizeb, cin, cout, i);
-		sub_list = insert_in_vptr_list(sub_list, node[i]);
 	}
 
 	if(sizeb > 1)
@@ -481,6 +476,8 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 	free(nodeo->input_pins);
 	free(nodeo->output_pins);
 	free(nodeo);
+	free(node);
+	free(not_node);
 	return;
 }
 
@@ -721,17 +718,10 @@ void iterate_adders_for_sub(netlist_t *netlist)
 
 		oassert(sizecin == 1);
 
-		while(sub_list != NULL)
+		while (sub_list != NULL)
 		{
 			node = (nnode_t *)sub_list->data_vptr;
 			sub_list = delete_in_vptr_list(sub_list);
-			subs_list = insert_in_vptr_list(subs_list, node);
-		}
-
-		while (subs_list != NULL)
-		{
-			node = (nnode_t *)subs_list->data_vptr;
-			subs_list = delete_in_vptr_list(subs_list);
 
 			oassert(node != NULL);
 			oassert(node->type == MINUS);

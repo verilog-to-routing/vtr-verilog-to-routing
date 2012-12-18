@@ -93,7 +93,7 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix);
 nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_prefix);
 nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instance_name_prefix);
 
-void connect_hard_block_and_alias(ast_node_t* module_instance, char *instance_name_prefix);
+void connect_hard_block_and_alias(ast_node_t* module_instance, char *instance_name_prefix, int outport_size);
 void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_instance, char *instance_name_prefix);
 void create_symbol_table_for_module(ast_node_t* module_items, char *module_name);
 
@@ -664,7 +664,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				connect_memory_and_alias(node, instance_name_prefix);
 				break;
 			case HARD_BLOCK:
-				connect_hard_block_and_alias(node, instance_name_prefix);
+				connect_hard_block_and_alias(node, instance_name_prefix, return_sig_list->count);
 				break;
 			#endif
 			case IF:
@@ -1435,7 +1435,7 @@ void connect_memory_and_alias(ast_node_t* hb_instance, char *instance_name_prefi
  * 	Assume that ports are written in the same order as the instantiation.
  * 	Also, we will assume that the portwidths have to match
  *-------------------------------------------------------------------------*/
-void connect_hard_block_and_alias(ast_node_t* hb_instance, char *instance_name_prefix)
+void connect_hard_block_and_alias(ast_node_t* hb_instance, char *instance_name_prefix, int outport_size)
 {
 	t_model *hb_model;
 	ast_node_t *hb_connect_list;
@@ -1456,6 +1456,7 @@ void connect_hard_block_and_alias(ast_node_t* hb_instance, char *instance_name_p
 	for (i = 0; i < hb_connect_list->num_children; i++)
 	{
 		int port_size;
+		int flag = 0;
 		enum PORTS port_dir;
 		ast_node_t *hb_var_node = hb_connect_list->children[i]->children[0];
 		ast_node_t *hb_instance_var_node = hb_connect_list->children[i]->children[1];
@@ -1466,6 +1467,15 @@ void connect_hard_block_and_alias(ast_node_t* hb_instance, char *instance_name_p
 		{
 			port_size = hard_block_port_size(hb_model, hb_var_node->types.identifier);
 			oassert(port_size != 0);
+			port_size = outport_size;
+
+			if(strcmp(hb_model->name, "adder") == 0)
+			{
+				if(strcmp(hb_var_node->types.identifier, "cout") == 0 && flag == 0)
+					port_size = 1;
+				else if(strcmp(hb_var_node->types.identifier, "sumout") == 0 && flag == 0)
+					port_size = port_size - 1;
+			}
 
 			for (j = 0; j < port_size; j++)
 			{
@@ -1534,19 +1544,23 @@ void connect_hard_block_and_alias(ast_node_t* hb_instance, char *instance_name_p
 
 					/* if they haven't been combined already,
 						then join the inputs and output */
-					in_net->name = net->name;
-					combine_nets(net, in_net, verilog_netlist);
-                                        
-					/* since the driver net is deleted,
-						copy the spot of the in_net over */
-					input_nets_sc->data[sc_spot_input_old] = (void*)in_net;
-					output_nets_sc->data[sc_spot_output] = (void*)in_net;
+					if(in_net != NULL)
+					{
+						in_net->name = net->name;
+						combine_nets(net, in_net, verilog_netlist);
 
-					/* if this input is not yet used in this module
-						then we'll add it */
-					sc_spot_input_new = sc_add_string(input_nets_sc, full_name);
-					/* copy the pin to the old spot */
-					input_nets_sc->data[sc_spot_input_new] = (void *)in_net;
+                                        
+						/* since the driver net is deleted,
+							copy the spot of the in_net over */
+						input_nets_sc->data[sc_spot_input_old] = (void*)in_net;
+						output_nets_sc->data[sc_spot_output] = (void*)in_net;
+
+						/* if this input is not yet used in this module
+							then we'll add it */
+						sc_spot_input_new = sc_add_string(input_nets_sc, full_name);
+						/* copy the pin to the old spot */
+						input_nets_sc->data[sc_spot_input_new] = (void *)in_net;
+					}
 				}
 
 				free(full_name);
@@ -4125,6 +4139,8 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 	int i, j, current_idx, current_out_idx;
 	int is_mult = 0;
 	int mult_size = 0;
+	int adder_size = 0;
+	int is_adder = 0;
 
 	char *identifier = block->children[0]->types.identifier;
 
@@ -4160,6 +4176,10 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 	if (strcmp(hb_model->name, "multiply") == 0)
 	{
 		is_mult = 1;
+	}
+	else if(strcmp(hb_model->name, "adder") == 0)
+	{
+		is_adder = 1;
 	}
 
 	return_list = init_signal_list();
@@ -4241,6 +4261,17 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 				mult_size = mult_size + min_size;
 			}
 
+			/* IF a adder -*/
+			if (is_adder == 1)
+			{
+				min_size = in_list[i]->count;
+				port_size = in_list[i]->count;
+				if(min_size > adder_size)
+				{
+					adder_size = min_size;
+				}
+			}
+
 			for (j = 0; j < min_size; j++)
 				in_list[i]->pins[j]->mapping = ip_name;
 
@@ -4261,7 +4292,7 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 		{
 			/* IF a multiplier - need to process the output pins last!!! */
 			/* Makes the assumption that a multiplier has only 1 output */
-			if (is_mult == 0)
+			if (is_mult == 0 && is_adder == 0)
 			{
 				allocate_more_output_pins(block_node, hb_ports->size);
 				add_output_port_information(block_node, hb_ports->size);
@@ -4352,6 +4383,64 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 		}
 		current_out_idx += j;
 	}
+	/* IF a multiplier - need to process the output pins now */
+	else if (is_adder == 1)
+	{
+		/*adder_size is the size of sumout*/
+		allocate_more_output_pins(block_node, adder_size + 1);
+		add_output_port_information(block_node, adder_size + 1);
+
+
+		for (j = 0; j < adder_size + 1; j++)
+		{
+			npin_t *new_pin1;
+			npin_t *new_pin2;
+			nnet_t *new_net;
+			char *pin_name;
+			long sc_spot;
+
+			new_pin1 = allocate_npin();
+			new_pin2 = allocate_npin();
+			new_net = allocate_nnet();
+			/*For sumout - make the implicit output list and hook up the outputs */
+			if(j < adder_size)
+			{
+				if (adder_size > 1)
+				{
+					pin_name = make_full_ref_name(block_node->name, NULL, NULL, hb_ports->name, j);
+					new_pin1->mapping = make_signal_name(hb_ports->name, j);
+				}
+				else
+				{
+					pin_name = make_full_ref_name(block_node->name, NULL, NULL, hb_ports->name, -1);
+					new_pin1->mapping = make_signal_name(hb_ports->name, -1);
+				}
+				new_net->name = hb_ports->name;
+			}
+			/*For cout - make the implicit output list and hook up the outputs */
+			else
+			{
+				pin_name = make_full_ref_name(block_node->name, NULL, NULL, hb_ports->next->name, -1);
+				new_pin1->mapping = make_signal_name(hb_ports->next->name, -1);
+				new_net->name = hb_ports->next->name;
+			}
+
+			/* hook the output pin into the node */
+			add_output_pin_to_node(block_node, new_pin1, current_out_idx + j);
+			/* hook up new pin 1 into the new net */
+			add_driver_pin_to_net(new_net, new_pin1);
+			/* hook up the new pin 2 to this new net */
+			add_fanout_pin_to_net(new_net, new_pin2);
+
+			/* add the new_pin 2 to the list of outputs */
+			add_pin_to_signal_list(return_list, new_pin2);
+
+			/* add the net to the list of inputs */
+			sc_spot = sc_add_string(input_nets_sc, pin_name);
+			input_nets_sc->data[sc_spot] = (void*)new_net;
+		}
+		current_out_idx += j;
+	}
 
 	for (i = 0; i < block_list->num_children; i++)
 	{
@@ -4361,6 +4450,9 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 	/* Add multiplier to list for later splitting and optimizing */
 	if (is_mult == 1)
 		mult_list = insert_in_vptr_list(mult_list, block_node);
+	/* Add adder to list for later splitting and optimizing */
+	if (is_adder == 1)
+		add_list = insert_in_vptr_list(add_list, block_node);
 
 	return return_list;
 }

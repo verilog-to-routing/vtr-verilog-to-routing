@@ -45,7 +45,6 @@ typedef struct {
 } adder_signals;
 
 extern t_model *hard_adders;
-extern struct s_linked_vptr *adder_list;
 extern struct s_linked_vptr *add_list;
 extern struct s_linked_vptr *chain_list;
 extern int total;

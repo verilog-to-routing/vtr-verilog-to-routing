@@ -625,7 +625,6 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 		node[i]->name = (char *)malloc(strlen(nodeo->name) + 20);
 		sprintf(node[i]->name, "%s-%d", nodeo->name, i);
 		init_split_adder(nodeo, node[i], a, sizea, b, sizeb, cin, cout, i);
-		add_list = insert_in_vptr_list(add_list, node[i]);
 	}
 
 	chain_information_t *adder_chain = allocate_chain_info();
@@ -640,7 +639,10 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 	node[0]->output_pins[1] = allocate_npin();
 	node[0]->output_pins[1]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, 0, 1);
 	//connect the first cin pin to ground
-	connect_nodes(netlist->pad_node, 0, node[0], (sizea + sizeb));
+	if(nodeo->num_input_port_sizes == 2)
+		connect_nodes(netlist->pad_node, 0, node[0], (sizea + sizeb));
+	else if(nodeo->num_input_port_sizes == 3)
+		remap_pin_to_new_node(nodeo->input_pins[nodeo->num_input_pins - 1], node[0], (sizea + sizeb));
 
 	if((count-1)*sizea == (a + 1))
 	{
@@ -663,23 +665,6 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 	for(i = 1; i < count; i++)
 		connect_nodes(node[i-1], 0, node[i], (node[i]->num_input_pins - 1));
 
-	/*
-	if(count * sizea == a)
-	{
-		//remap the output pins of each adder to nodeo
-		for(j = 1; j < node[i]->num_output_pins - 1; j ++)
-			remap_pin_to_new_node(nodeo->output_pins[j - 1], node[i], j + 1);
-		for(i = 1; i < count; i++)
-		{
-			for(j = 0; j < node[i]->num_output_pins - 1; j ++)
-				remap_pin_to_new_node(nodeo->output_pins[i * sizea + j - 1], node[i], j + 1);
-		}
-		// the last node's cout should be remapped to the most significant bits of nodeo
-		remap_pin_to_new_node(nodeo->output_pins[(nodeo->num_output_pins - 1)], node[(count - 1)], 1);
-	}
-	else
-	{
-	*/
 		//remap the output pins of each adder to nodeo
 		for(j = 0; j < node[0]->num_output_pins - 2; j++)
 		{
@@ -723,6 +708,7 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 	free(nodeo->input_pins);
 	free(nodeo->output_pins);
 	free(nodeo);
+	free(node);
 	return;
 }
 
@@ -748,7 +734,6 @@ void pad_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, int 
 		oassert(nodeo->input_port_sizes[0] == a);
 		oassert(nodeo->input_port_sizes[1] == b);
 
-		//mark = 10;
 		aleft = a - sizea * count;
 		bleft = b - sizea * count;
 		if(aleft > bleft)
@@ -960,20 +945,16 @@ void iterate_adders(netlist_t *netlist)
 
 	oassert(sizecin == 1);
 
-	while(add_list != NULL)
+	while (add_list != NULL)
 	{
 		node = (nnode_t *)add_list->data_vptr;
 		add_list = delete_in_vptr_list(add_list);
-		adder_list = insert_in_vptr_list(adder_list, node);
-	}
-
-	while (adder_list != NULL)
-	{
-		node = (nnode_t *)adder_list->data_vptr;
-		adder_list = delete_in_vptr_list(adder_list);
 		total++;
 
 		oassert(node != NULL);
+		if (node->type == HARD_IP)
+			node->type = ADD;
+
 		oassert(node->type == ADD);
 
 		a = node->input_port_sizes[0];

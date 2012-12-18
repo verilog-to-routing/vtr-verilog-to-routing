@@ -33,6 +33,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "read_xml_arch_file.h"
 #include "globals.h"
 #include "errors.h"
+#include "adders.h"
 
 t_model *hard_multipliers = NULL;
 struct s_linked_vptr *mult_list = NULL;
@@ -668,6 +669,8 @@ void init_cascade_adder(nnode_t *node, nnode_t *a, int b)
 	node->output_pins = (npin_t**)malloc(sizeof(void *) * size);
 	for (i = 0; i < size; i++)
 		node->output_pins[i] = NULL;
+
+	add_list = insert_in_vptr_list(add_list, node);
 	return;
 }
 
