@@ -59,13 +59,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 <INITIAL>"endmodule"		{ MP; return vENDMODULE;}
 <INITIAL>"endspecify"		{ MP; return vNOT_SUPPORT;}
 <INITIAL>"endtask"		{ MP; return vNOT_SUPPORT;}
-<INITIAL>"for"			{ MP; return vNOT_SUPPORT;}
+<INITIAL>"for"			{ MP; return vFOR;}
 <INITIAL>"function"		{ MP; return vNOT_SUPPORT;}
 <INITIAL>"if"			{ MP; return vIF;}
 <INITIAL>"initial"		{ MP; return vNOT_SUPPORT;}
 <INITIAL>"inout"		{ MP; return vINOUT;}
 <INITIAL>"input"		{ MP; return vINPUT;}
-<INITIAL>"integer"		{ MP; return vNOT_SUPPORT;}
+<INITIAL>"integer"		{ MP; return vINTEGER;}
 <INITIAL>"macromodule"		{ MP; return vNOT_SUPPORT;}
 <INITIAL>"module"		{ MP; return vMODULE;}
 <INITIAL>"nand"			{ MP; return vNAND;}
@@ -86,7 +86,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 <INITIAL>"task"			{ MP; return vNOT_SUPPORT;}
 <INITIAL>"tri"			{ MP; return vNOT_SUPPORT;}
 <INITIAL>"vectored"		{ MP; return vNOT_SUPPORT;}
-<INITIAL>"while"		{ MP; return vNOT_SUPPORT;}
+<INITIAL>"while"		{ MP; return vWHILE;}
 <INITIAL>"wire"			{ MP; return vWIRE;}
 <INITIAL>"xnor"			{ MP; return vXNOR;}
 <INITIAL>"xor"			{ MP; return vXOR;}

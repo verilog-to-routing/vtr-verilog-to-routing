@@ -68,10 +68,11 @@ int yywrap()
 %token <num_value> vNUMBER_ID
 %token <num_value> vDELAY_ID
 %token vALWAYS vAND vASSIGN vBEGIN vCASE vDEFAULT vDEFINE vELSE vEND vENDCASE 
-%token vENDMODULE vIF vINOUT vINPUT vMODULE vNAND vNEGEDGE vNOR vNOT vOR 
+%token vENDMODULE vIF vINOUT vINPUT vMODULE vNAND vNEGEDGE vNOR vNOT vOR vFOR 
 %token vOUTPUT vPARAMETER vPOSEDGE vREG vWIRE vXNOR vXOR vDEFPARAM voANDAND 
 %token voOROR voLTE voGTE voSLEFT voSRIGHT voEQUAL voNOTEQUAL voCASEEQUAL 
-%token voCASENOTEQUAL voXNOR voNAND voNOR vNOT_SUPPORT
+%token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER 
+%token vNOT_SUPPORT
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']'
 
 %right '?' ':'  
@@ -171,6 +172,7 @@ inout_declaration: vINOUT variable_list ';'					{$$ = markAndProcessSymbolListWi
 
 net_declaration: vWIRE variable_list ';'					{$$ = markAndProcessSymbolListWith(WIRE, $2);}
 	| vREG variable_list ';'						{$$ = markAndProcessSymbolListWith(REG, $2);}
+	| vINTEGER variable_list ';'						{$$ = markAndProcessSymbolListWith(INTEGER, $2);}
 	;
 
 variable_list: variable_list ',' variable					{$$ = newList_entry($1, $3);}
@@ -239,6 +241,8 @@ statement: seq_block								{$$ = $1;}
 	| vIF '(' expression ')' statement %prec LOWER_THAN_ELSE 		{$$ = newIf($3, $5, NULL, yylineno);}
 	| vIF '(' expression ')' statement vELSE statement 			{$$ = newIf($3, $5, $7, yylineno);}
 	| vCASE '(' expression ')' case_item_list vENDCASE			{$$ = newCase($3, $5, yylineno);}
+	| vFOR '(' blocking_assignment ';' expression ';' blocking_assignment ')' statement  	{$$ = newFor($3, $5, $7, $9, yylineno);}
+	| vWHILE '(' expression ')' statement  					{$$ = newWhile($3, $5, yylineno);}
 	| ';'									{$$ = NULL;}
 	;
 	 

@@ -577,6 +577,12 @@ ast_node_t *markAndProcessSymbolListWith(ids id, ast_node_t *symbol_list)
 			case REG:
 				symbol_list->children[i]->types.variable.is_reg = TRUE;
 				break;
+			case INTEGER:
+				symbol_list->children[i]->types.variable.is_integer = TRUE;
+				/* This should be removed when elaboration of integers is added */
+				printf("integer data type is currently NOT supported: %s\n", symbol_list->children[i]->children[0]->types.identifier);
+				oassert(FALSE);
+				break;
 			default:
 				oassert(FALSE);
 		}
@@ -742,6 +748,40 @@ ast_node_t *newBlocking(ast_node_t *expression1, ast_node_t *expression2, int li
 	ast_node_t* new_node = create_node_w_type(BLOCKING_STATEMENT, line_number, current_parse_file);
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 2, expression1, expression2);
+
+	return new_node;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: newFor)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newFor(ast_node_t *initial, ast_node_t *compare_expression, ast_node_t *terminal, ast_node_t *statement, int line_number)
+{
+	/* create a node for this for reference */
+	ast_node_t* new_node = create_node_w_type(FOR, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 4, initial, compare_expression, terminal, statement);
+
+	/* This needs to be removed once elaboration support is added */
+	printf("For statement is NOT supported: line %d\n", line_number);
+	oassert(0);
+
+	return new_node;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: newWhile)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newWhile(ast_node_t *compare_expression, ast_node_t *statement, int line_number)
+{
+	/* create a node for this for reference */
+	ast_node_t* new_node = create_node_w_type(WHILE, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 2, compare_expression, statement);
+
+	/* This needs to be removed once elaboration support is added */
+	printf("While statement is NOT supported: line %d\n", line_number);
+	oassert(0);
 
 	return new_node;
 }

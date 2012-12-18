@@ -249,6 +249,7 @@ typedef enum
 	INOUT,
 	WIRE,
 	REG,
+	INTEGER,
 	PARAMETER,
 	PORT,
 	/* OTHER MODULE ITEMS */
@@ -277,6 +278,8 @@ typedef enum
 	ALWAYS,
 	IF,
 	IF_Q,
+	FOR,
+	WHILE,
 	/* Delay Control */
 	DELAY_CONTROL,
 	POSEDGE,
@@ -331,6 +334,7 @@ struct ast_node_t_t
 			short is_inout;
 			short is_wire;
 			short is_reg;
+			short is_integer;
 		} variable;
 		struct
 		{
