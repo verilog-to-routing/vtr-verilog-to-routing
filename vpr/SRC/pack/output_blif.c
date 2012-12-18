@@ -307,7 +307,7 @@ static void print_primitive(FILE *fpout, int iblk) {
 		}
 		fprintf(fpout, "\n");
 	} else if (logical_block[iblk].type == VPACK_COMB) {
-		if (strcmp(logical_block[iblk].model->name, ".names") == 0) {
+		if (strcmp(logical_block[iblk].model->name, "names") == 0) {
 			fprintf(fpout, ".names ");
 			in_port_index = 0;
 			out_port_index = 0;
@@ -344,7 +344,7 @@ static void print_primitive(FILE *fpout, int iblk) {
 				truth_table = truth_table->next;
 			}
 		} else {
-			vpr_printf(TIO_MESSAGE_WARNING, "TODO: Implement blif dumper for subckt");
+			vpr_printf(TIO_MESSAGE_WARNING, "TODO: Implement blif dumper for subckt %s model %s", logical_block[iblk].name, logical_block[iblk].model->name);
 		}
 	}
 }
