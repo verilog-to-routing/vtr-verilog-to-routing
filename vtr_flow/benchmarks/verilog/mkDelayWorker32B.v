@@ -514,10 +514,10 @@ module mkDelayWorker32B(wciS0_Clk,
   reg endOfMessage;
   wire endOfMessage__D_IN, endOfMessage__EN;
 
-  // register errCount
-  reg [255 : 0] errCount;
-  wire [255 : 0] errCount__D_IN;
-  wire errCount__EN;
+  // register errCount // jluu removed because never used
+//  reg [255 : 0] errCount;
+//  wire [255 : 0] errCount__D_IN;
+//  wire errCount__EN;
 
   // register impreciseBurst
   reg impreciseBurst;
@@ -2544,13 +2544,13 @@ wire [255:0] dp_out_not_used2;
 	     wsiS_reqFifo__D_OUT[307:296] == 12'b01 ||
 	     WILL_FIRE_RL_wmwt_messageFinalize ;
 
-  // register errCount
-  assign errCount__D_IN = errCount + 256'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001 ;
-  assign errCount__EN =
-	     WILL_FIRE_RL_wmwt_messagePushImprecise &&
-	     wsiS_reqFifo__D_OUT[295:40] != valExpect &&
-	     (wsiS_reqFifo__D_OUT[307:296] != 12'b01 ||
-	      wsiS_reqFifo__D_OUT[39:8] != 32'b00000000000000000000000000000000) ;
+  // register errCount - jluu: removed because never used
+//  assign errCount__D_IN = errCount + 256'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001 ;
+//  assign errCount__EN =
+//	     WILL_FIRE_RL_wmwt_messagePushImprecise &&
+//	     wsiS_reqFifo__D_OUT[295:40] != valExpect &&
+//	     (wsiS_reqFifo__D_OUT[307:296] != 12'b01 ||
+//	      wsiS_reqFifo__D_OUT[39:8] != 32'b00000000000000000000000000000000) ;
 
   // register impreciseBurst
   always@(WILL_FIRE_RL_wmwt_doAbort or
@@ -3555,7 +3555,7 @@ wire [255:0] dp_out_not_used2;
 	dlyWordsStored_value <=  20'b00000000000000000000;
 	doAbort <=  1'b0;
 	endOfMessage <=  1'b0;
-	errCount <=  256'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
+//	errCount <=  256'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
 	impreciseBurst <=  1'b0;
 	mesgLength <=  15'b010101010101010;
 	mesgLengthSoFar <=  14'b00000000000000;
@@ -3666,7 +3666,7 @@ wire [255:0] dp_out_not_used2;
 	if (doAbort__EN) doAbort <=  doAbort__D_IN;
 	if (endOfMessage__EN)
 	  endOfMessage <=  endOfMessage__D_IN;
-	if (errCount__EN) errCount <=  errCount__D_IN;
+//	if (errCount__EN) errCount <=  errCount__D_IN;
 	if (impreciseBurst__EN)
 	  impreciseBurst <=  impreciseBurst__D_IN;
 	if (mesgLength__EN)
