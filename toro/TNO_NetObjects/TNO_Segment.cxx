@@ -211,12 +211,19 @@ void TNO_Segment_c::ExtractString(
          char szTrack[TIO_FORMAT_STRING_LEN_VALUE];
          sprintf( szTrack, "%u", this->track_ );
 
-         *psrSegment = "\"";
+         *psrSegment = "<segment ";
+         *psrSegment += "name=\"";
          *psrSegment += this->srName_;
          *psrSegment += "\" ";
+         *psrSegment += "track=\"";
+         *psrSegment += szTrack;
+         *psrSegment += "\"> ";
+         *psrSegment += "<channel>";
+         *psrSegment += " ";
          *psrSegment += srChannel;
          *psrSegment += " ";
-         *psrSegment += szTrack;
+         *psrSegment += "</channel> ";
+         *psrSegment += "</segment>";
       }
       else
       {
