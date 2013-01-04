@@ -169,7 +169,7 @@ bool TFV_FabricData_c::operator==(
           ( this->track_.vertCount == fabricData.track_.vertCount ) &&
           ( this->slice_.count == fabricData.slice_.count ) &&
           ( this->slice_.capacity == fabricData.slice_.capacity ) &&
- 	  ( TCTF_IsEQ( this->timing_.res, fabricData.timing_.res )) &&
+          ( TCTF_IsEQ( this->timing_.res, fabricData.timing_.res )) &&
           ( TCTF_IsEQ( this->timing_.capInput, fabricData.timing_.capInput )) &&
           ( TCTF_IsEQ( this->timing_.capOutput, fabricData.timing_.capOutput )) &&
           ( TCTF_IsEQ( this->timing_.delay, fabricData.timing_.delay )) &&
@@ -257,7 +257,7 @@ void TFV_FabricData_c::ExtractString(
          *psrData += szSlice;
          *psrData += " ";
          *psrData += szTiming;
-	 break;
+         break;
 
       case TFV_DATA_SWITCH_BOX:
 
@@ -270,10 +270,10 @@ void TFV_FabricData_c::ExtractString(
          *psrData += this->srName_;
          *psrData += " ";
          *psrData += szTiming;
-	 break;
+         break;
 
       case TFV_DATA_CONNECTION_BOX:
-	 break;
+         break;
 
       case TFV_DATA_CHANNEL_HORZ:
       case TFV_DATA_CHANNEL_VERT:
@@ -285,7 +285,7 @@ void TFV_FabricData_c::ExtractString(
          *psrData += this->srName_;
          *psrData += " ";
          *psrData += szTrack;
-	 break;
+         break;
 
       case TFV_DATA_SEGMENT_HORZ:
       case TFV_DATA_SEGMENT_VERT:
@@ -299,10 +299,10 @@ void TFV_FabricData_c::ExtractString(
          *psrData += szTrack;
          *psrData += " ";
          *psrData += szTiming;
-	 break;
+         break;
 
       default:
-	 break;
+         break;
       }
    }
 }
