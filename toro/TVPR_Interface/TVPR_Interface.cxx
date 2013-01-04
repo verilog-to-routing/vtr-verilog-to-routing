@@ -32,12 +32,14 @@
 #include "TIO_StringText.h"
 #include "TIO_PrintHandler.h"
 
-#include "TVPR_Interface.h"
+#include "TRP_RelativePlaceHandler.h"
 
 #include "TVPR_OptionsStore.h"
 #include "TVPR_ArchitectureSpec.h"
 #include "TVPR_FabricModel.h"
 #include "TVPR_CircuitDesign.h"
+
+#include "TVPR_Interface.h"
 
 // Initialize the VPR interface "singleton" class, as needed
 TVPR_Interface_c* TVPR_Interface_c::pinstance_ = 0;
@@ -146,7 +148,8 @@ bool TVPR_Interface_c::Apply(
    if( ok )
    {
       printHandler.Info( "Executing VPR interface...\n" );
-      ok = this->Execute( );
+      ok = this->Execute( optionsStore,
+                          *pcircuitDesign );
    }
    if( ok )
    {
@@ -309,7 +312,8 @@ bool TVPR_Interface_c::Open(
 // 07/10/12 jeffr : Original
 //===========================================================================//
 bool TVPR_Interface_c::Execute(
-      void ) const
+      const TOS_OptionsStore_c&  optionsStore,
+      const TCD_CircuitDesign_c& circuitDesign ) const
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
@@ -324,8 +328,24 @@ bool TVPR_Interface_c::Execute(
       if( this->vpr_.setup.PlacerOpts.doPlacement || 
           this->vpr_.setup.RouterOpts.doRouting ) 
       {
+         // Initialize relative placement handler 'singleton' prior to place
+         // (in order to handle relative placement constraints, if any)
+         TRP_RelativePlaceHandler_c::NewInstance( );
+
+         const TOS_PlaceOptions_c& placeOptions = optionsStore.GetPlaceOptions( );
+         if( placeOptions.relativePlace.enable )
+	 {
+            TRP_RelativePlaceHandler_c& relativePlaceHandler = TRP_RelativePlaceHandler_c::GetInstance( );
+            relativePlaceHandler.Configure( placeOptions.relativePlace.rotateEnable,
+                                            placeOptions.relativePlace.maxPlaceRetryCt,
+                                            placeOptions.relativePlace.maxMacroRetryCt,
+                                            circuitDesign.blockList );
+         }
+
          vpr_init_pre_place_and_route( this->vpr_.setup, this->vpr_.arch );
          vpr_place_and_route( this->vpr_.setup, this->vpr_.arch );
+
+         TRP_RelativePlaceHandler_c::DeleteInstance( );
       }
       printHandler.ClearPrefix( );
    }
