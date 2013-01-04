@@ -3,8 +3,8 @@
 //
 //           Inline methods include:
 //           - GetType
-//           - GetInstPin, GetChannel, GetSegment, GetSwitchBox
-//           - IsInstPin, IsChannel, IsSegment, IsSwitchBox
+//           - GetInstPin, GetSegment, GetSwitchBox
+//           - IsInstPin, IsSegment, IsSwitchBox
 //           - IsValid
 //
 //===========================================================================//
@@ -52,7 +52,6 @@ public:
 
    TNO_Node_c( void );
    TNO_Node_c( const TNO_InstPin_c& instPin );
-   TNO_Node_c( const TNO_Channel_t& channel );
    TNO_Node_c( const TNO_Segment_c& segment );
    TNO_Node_c( const TNO_SwitchBox_c& switchBox );
    TNO_Node_c( const TNO_Node_c& node );
@@ -66,19 +65,16 @@ public:
 
    TNO_NodeType_t GetType( void ) const;
    const TNO_InstPin_c& GetInstPin( void ) const;
-   const TNO_Channel_t& GetChannel( void ) const;
    const TNO_Segment_c& GetSegment( void ) const;
    const TNO_SwitchBox_c& GetSwitchBox( void ) const;
 
    void Set( const TNO_InstPin_c& instPin );
-   void Set( const TNO_Channel_t& channel );
    void Set( const TNO_Segment_c& segment );
    void Set( const TNO_SwitchBox_c& switchBox );
 
    void Clear( void );
 
    bool IsInstPin( void ) const;
-   bool IsChannel( void ) const;
    bool IsSegment( void ) const;
    bool IsSwitchBox( void ) const;
 
@@ -87,9 +83,8 @@ public:
 private:
 
    TNO_NodeType_t  type_;      // Defines route node type ;
-                               // (ie. INST_PIN, CHANNEL, SEGMENT, or SWITCH_BOX)
+                               // (ie. INST_PIN, SEGMENT, or SWITCH_BOX)
    TNO_InstPin_c   instPin_;
-   TNO_Channel_t   channel_;
    TNO_Segment_c   segment_;
    TNO_SwitchBox_c switchBox_;
 };
@@ -115,13 +110,6 @@ inline const TNO_InstPin_c& TNO_Node_c::GetInstPin(
 }
 
 //===========================================================================//
-inline const TNO_Channel_t& TNO_Node_c::GetChannel( 
-      void ) const
-{
-   return( this->channel_ );
-}
-
-//===========================================================================//
 inline const TNO_Segment_c& TNO_Node_c::GetSegment( 
       void ) const
 {
@@ -140,13 +128,6 @@ inline bool TNO_Node_c::IsInstPin(
       void ) const
 {
    return( this->type_ == TNO_NODE_INST_PIN ? true : false );
-}
-
-//===========================================================================//
-inline bool TNO_Node_c::IsChannel( 
-      void ) const
-{
-   return( this->type_ == TNO_NODE_CHANNEL ? true : false );
 }
 
 //===========================================================================//
