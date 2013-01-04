@@ -173,8 +173,8 @@ void TVPR_ArchitectureSpec_c::PokeLayout_(
    if( config.layout.manualSize.gridDims.IsValid( ))
    {
       pvpr_architecture->clb_grid.IsAuto = static_cast< boolean >( false );
-      pvpr_architecture->clb_grid.W = config.layout.manualSize.gridDims.width;
-      pvpr_architecture->clb_grid.H = config.layout.manualSize.gridDims.height;
+      pvpr_architecture->clb_grid.W = config.layout.manualSize.gridDims.dx;
+      pvpr_architecture->clb_grid.H = config.layout.manualSize.gridDims.dy;
    }
    else if( TCTF_IsGT( config.layout.autoSize.aspectRatio, 0.0 ))
    {
@@ -1744,7 +1744,7 @@ void TVPR_ArchitectureSpec_c::PokeTimingDelay_(
 
       pvpr_annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
       pvpr_annotation->format = E_ANNOT_PIN_TO_PIN_MATRIX;
-      pvpr_annotation->prop[0] = ( timingDelay.type == TAS_TIMING_TYPE_MAX ?
+      pvpr_annotation->prop[0] = ( timingDelay.type == TAS_TIMING_TYPE_MAX_MATRIX ?
                                    E_ANNOT_PIN_TO_PIN_DELAY_MAX : 
                                    E_ANNOT_PIN_TO_PIN_DELAY_MIN );
       pvpr_annotation->value[0] = TC_strdup( srDelayMatrix );
