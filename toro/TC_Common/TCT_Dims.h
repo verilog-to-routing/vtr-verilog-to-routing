@@ -1,5 +1,5 @@
 //===========================================================================//
-// Purpose : Template version for a TCT_Dims_c dimensions (width, height) 
+// Purpose : Template version for a TCT_Dims_c dimensions (dx,dy,dz)
 //           class.
 //
 //           Inline methods include:
@@ -60,8 +60,9 @@ template< class T > class TCT_Dims_c
 {
 public:
 
-   TCT_Dims_c( T width = static_cast< T >( INT_MAX ), 
-               T height = static_cast< T >( INT_MAX ));
+   TCT_Dims_c( T dx = static_cast< T >( INT_MAX ), 
+               T dy = static_cast< T >( INT_MAX ),
+               T dz = static_cast< T >( INT_MAX ));
    TCT_Dims_c( const TCT_Dims_c< T >& dims );
    ~TCT_Dims_c( void );
 
@@ -74,7 +75,8 @@ public:
                        size_t precision = SIZE_MAX ) const;
 
    void Set( const TCT_Dims_c< T >& dims );
-   void Set( T i, T j );
+   void Set( T dx, T dy, T dz );
+   void Set( T dx, T dy );
    void Reset( void );
 
    T FindMin( void ) const;
@@ -87,8 +89,9 @@ public:
 
 public:
 
-   T width;
-   T height;
+   T dx;
+   T dy;
+   T dz;
 };
 
 //===========================================================================//
@@ -99,11 +102,13 @@ public:
 // 05/15/12 jeffr : Original
 //===========================================================================//
 template< class T > inline TCT_Dims_c< T >::TCT_Dims_c( 
-      T width_,
-      T height_ )
+      T dx_,
+      T dy_,
+      T dz_ )
       :
-      width( width_ ),
-      height( height_ )
+      dx( dx_ ),
+      dy( dy_ ),
+      dz( dz_ )
 {
 }
 
@@ -111,8 +116,9 @@ template< class T > inline TCT_Dims_c< T >::TCT_Dims_c(
 template< class T > inline TCT_Dims_c< T >::TCT_Dims_c( 
       const TCT_Dims_c< T >& dims )
       :
-      width( dims.width ),
-      height( dims.height )
+      dx( dims.dx ),
+      dy( dims.dy ),
+      dz( dims.dz )
 {
 }
 
@@ -126,54 +132,67 @@ template< class T > inline TCT_Dims_c< T >::~TCT_Dims_c(
 template< class T > inline void TCT_Dims_c< T >::Set(
       const TCT_Dims_c< T >& dims )
 {
-   this->width = dims.width;
-   this->height = dims.height;
+   this->dx = dims.dx;
+   this->dy = dims.dy;
+   this->dz = dims.dz;
 }
 
 //===========================================================================//
 template< class T > inline void TCT_Dims_c< T >::Set(
-      T width_,
-      T height_ )
+      T dx_,
+      T dy_,
+      T dz_ )
 {
-   this->width = width_;
-   this->height = height_;
+   this->dx = dx_;
+   this->dy = dy_;
+   this->dz = dz_;
+}
+
+//===========================================================================//
+template< class T > inline void TCT_Dims_c< T >::Set(
+      T dx_,
+      T dy_ )
+{
+   this->dx = dx_;
+   this->dy = dy_;
 }
 
 //===========================================================================//
 template< class T > inline void TCT_Dims_c< T >::Reset(
       void )
 {
-   this->width = static_cast< T >( INT_MAX );
-   this->height = static_cast< T >( INT_MAX );
+   this->dx = static_cast< T >( INT_MAX );
+   this->dy = static_cast< T >( INT_MAX );
+   this->dz = static_cast< T >( INT_MAX );
 }
 
 //===========================================================================//
 template< class T > inline T TCT_Dims_c< T >::FindMin( 
       void ) const
 {
-   return( TCT_Min( this->width, this->height ));
+   return( TCT_Min( this->dx, this->dy ));
 }
 
 //===========================================================================//
 template< class T > inline T TCT_Dims_c< T >::FindMax( 
       void ) const
 {
-   return( TCT_Max( this->width, this->height ));
+   return( TCT_Max( this->dx, this->dy ));
 }
 
 //===========================================================================//
 template< class T > inline T TCT_Dims_c< T >::FindArea( 
       void ) const
 {
-   return( this->width * this->height );
+   return( this->dx * this->dy );
 }
 
 //===========================================================================//
 template< class T > inline bool TCT_Dims_c< T >::HasArea( 
       void ) const
 {
-   return(( TCTF_IsGT( this->width, static_cast< T >( 0 ))) &&
-          ( TCTF_IsGT( this->height, static_cast< T >( 0 ))) ?
+   return(( TCTF_IsGT( this->dx, static_cast< T >( 0 ))) &&
+          ( TCTF_IsGT( this->dy, static_cast< T >( 0 ))) ?
           true : false );
 }
 
@@ -181,8 +200,8 @@ template< class T > inline bool TCT_Dims_c< T >::HasArea(
 template< class T > inline bool TCT_Dims_c< T >::IsValid( 
       void ) const
 {
-   return(( TCTF_IsLT( this->width, static_cast< T >( INT_MAX ))) &&
-          ( TCTF_IsLT( this->height, static_cast< T >( INT_MAX ))) ?
+   return(( TCTF_IsLT( this->dx, static_cast< T >( INT_MAX ))) &&
+          ( TCTF_IsLT( this->dy, static_cast< T >( INT_MAX ))) ?
           true : false );
 }
 
@@ -198,8 +217,9 @@ template< class T > TCT_Dims_c< T >& TCT_Dims_c< T >::operator=(
 {
    if( &dims != this )
    {
-      this->width = dims.width;
-      this->height = dims.height;
+      this->dx = dims.dx;
+      this->dy = dims.dy;
+      this->dz = dims.dz;
    }
    return( *this );
 }
@@ -214,8 +234,9 @@ template< class T > TCT_Dims_c< T >& TCT_Dims_c< T >::operator=(
 template< class T > bool TCT_Dims_c< T >::operator==( 
       const TCT_Dims_c< T >& dims ) const
 {
-   return(( TCTF_IsEQ( this->width, dims.width )) &&
-          ( TCTF_IsEQ( this->height, dims.height )) ?
+   return(( TCTF_IsEQ( this->dx, dims.dx )) &&
+          ( TCTF_IsEQ( this->dy, dims.dy )) &&
+          ( TCTF_IsEQ( this->dz, dims.dz )) ?
           true : false );
 }
 
@@ -260,52 +281,122 @@ template<class T> void TCT_Dims_c< T >::ExtractString(
       switch( mode )
       {
       case TC_DATA_INT:
-         sprintf( szData, "%d %d", 
-                          *reinterpret_cast< int* >( &pdims->width ),
-                          *reinterpret_cast< int* >( &pdims->height ));
+         if( TCTF_IsEQ( this->dz, static_cast< T >( INT_MAX )))
+         {
+            sprintf( szData, "%d %d", 
+                             *reinterpret_cast< int* >( &pdims->dx ),
+                             *reinterpret_cast< int* >( &pdims->dy ));
+         }
+         else
+         {
+            sprintf( szData, "%d %d %d", 
+                             *reinterpret_cast< int* >( &pdims->dx ),
+                             *reinterpret_cast< int* >( &pdims->dy ),
+                             *reinterpret_cast< int* >( &pdims->dz ));
+         }
          break;
 
       case TC_DATA_UINT:
-         sprintf( szData, "%u %u", 
-		          *reinterpret_cast< unsigned int* >( &pdims->width ),
-                          *reinterpret_cast< unsigned int* >( &pdims->height ));
+         if( TCTF_IsEQ( this->dz, static_cast< T >( INT_MAX )))
+         {
+            sprintf( szData, "%u %u", 
+                             *reinterpret_cast< unsigned int* >( &pdims->dx ),
+                             *reinterpret_cast< unsigned int* >( &pdims->dy ));
+         }
+         else
+         {
+            sprintf( szData, "%u %u %u", 
+                             *reinterpret_cast< unsigned int* >( &pdims->dx ),
+                             *reinterpret_cast< unsigned int* >( &pdims->dy ),
+                             *reinterpret_cast< unsigned int* >( &pdims->dz ));
+         }
          break;
 
       case TC_DATA_LONG:
-         sprintf( szData, "%ld %ld", 
-		          *reinterpret_cast< long* >( &pdims->width ),
-                          *reinterpret_cast< long* >( &pdims->height ));
+         if( TCTF_IsEQ( this->dz, static_cast< T >( INT_MAX )))
+         {
+            sprintf( szData, "%ld %ld", 
+                             *reinterpret_cast< long* >( &pdims->dx ),
+                             *reinterpret_cast< long* >( &pdims->dy ));
+         }
+         else
+         {
+            sprintf( szData, "%ld %ld %ld", 
+                             *reinterpret_cast< long* >( &pdims->dx ),
+                             *reinterpret_cast< long* >( &pdims->dy ),
+                             *reinterpret_cast< long* >( &pdims->dz ));
+         }
          break;
 
       case TC_DATA_ULONG:
-         sprintf( szData, "%lu %lu", 
-		          *reinterpret_cast< unsigned long* >( &pdims->width ),
-                          *reinterpret_cast< unsigned long* >( &pdims->height ));
+         if( TCTF_IsEQ( this->dz, static_cast< T >( INT_MAX )))
+         {
+            sprintf( szData, "%lu %lu", 
+                             *reinterpret_cast< unsigned long* >( &pdims->dx ),
+                             *reinterpret_cast< unsigned long* >( &pdims->dy ));
+         }
+         else
+         {
+            sprintf( szData, "%lu %lu %lu", 
+                             *reinterpret_cast< unsigned long* >( &pdims->dx ),
+                             *reinterpret_cast< unsigned long* >( &pdims->dy ),
+                             *reinterpret_cast< unsigned long* >( &pdims->dz ));
+         }
          break;
 
       case TC_DATA_SIZE:
-         sprintf( szData, "%lu %lu", 
-		          *reinterpret_cast< size_t* >( &pdims->width ),
-                          *reinterpret_cast< size_t* >( &pdims->height ));
+         if( TCTF_IsEQ( this->dz, static_cast< T >( INT_MAX )))
+         {
+            sprintf( szData, "%lu %lu", 
+                             *reinterpret_cast< size_t* >( &pdims->dx ),
+                             *reinterpret_cast< size_t* >( &pdims->dy ));
+         }
+         else
+         {
+            sprintf( szData, "%lu %lu %lu", 
+                             *reinterpret_cast< size_t* >( &pdims->dx ),
+                             *reinterpret_cast< size_t* >( &pdims->dy ),
+                             *reinterpret_cast< size_t* >( &pdims->dz ));
+         }
          break;
 
       case TC_DATA_FLOAT:
-         sprintf( szData, "%0.*f %0.*f", 
-		          static_cast< int >( precision ), *reinterpret_cast< double* >( &pdims->width ),
-                          static_cast< int >( precision ), *reinterpret_cast< double* >( &pdims->height ));
+         if( TCTF_IsEQ( this->dz, static_cast< T >( INT_MAX )))
+         {
+            sprintf( szData, "%0.*f %0.*f", 
+                             static_cast< int >( precision ), *reinterpret_cast< double* >( &pdims->dx ),
+                             static_cast< int >( precision ), *reinterpret_cast< double* >( &pdims->dy ));
+         }
+         else
+         {
+            sprintf( szData, "%0.*f %0.*f %0.*f", 
+                             static_cast< int >( precision ), *reinterpret_cast< double* >( &pdims->dx ),
+                             static_cast< int >( precision ), *reinterpret_cast< double* >( &pdims->dy ),
+                             static_cast< int >( precision ), *reinterpret_cast< double* >( &pdims->dz ));
+         }
          break;
 
       case TC_DATA_EXP:
-         sprintf( szData, "%0.*e %0.*e", 
-		          static_cast< int >( precision + 1 ), *reinterpret_cast< double* >( &pdims->width ),
-                          static_cast< int >( precision + 1 ), *reinterpret_cast< double* >( &pdims->height ));
+         if( TCTF_IsEQ( this->dz, static_cast< T >( INT_MAX )))
+         {
+            sprintf( szData, "%0.*e %0.*e", 
+                             static_cast< int >( precision + 1 ), *reinterpret_cast< double* >( &pdims->dx ),
+                             static_cast< int >( precision + 1 ), *reinterpret_cast< double* >( &pdims->dy ));
+         }
+         else
+         {
+            sprintf( szData, "%0.*e %0.*e %0.*e", 
+                             static_cast< int >( precision + 1 ), *reinterpret_cast< double* >( &pdims->dx ),
+                             static_cast< int >( precision + 1 ), *reinterpret_cast< double* >( &pdims->dy ),
+                             static_cast< int >( precision + 1 ), *reinterpret_cast< double* >( &pdims->dz ));
+         }
          break;
 
       case TC_DATA_STRING:
          break;
 
       case TC_DATA_UNDEFINED:
-         sprintf( szData, "? ?" );
+         sprintf( szData, "? ? ?" );
          break;
       }  
 
