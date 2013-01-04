@@ -54,7 +54,11 @@ public:
                        unsigned int timingUpdateInt,
                        unsigned int timingUpdateCount,
                        double slackInitWeight,
-                       double slackFinalWeight );
+                       double slackFinalWeight,
+                       bool relativePlace_enable_,
+                       bool relativePlace_rotateEnable_,
+                       unsigned int relativePlace_maxPlaceRetryCt_,
+                       unsigned int relativePlace_maxMacroRetryCt_ );
    ~TOS_PlaceOptions_c( void );
 
    void Print( FILE* pfile = stdout, size_t spaceLen = 0 ) const;
@@ -79,10 +83,22 @@ public:
    double              fixedDelay; // Overrides timing analysis net delays (VPR-specific option)
 
    double        timingCostFactor; // Timing-driven placement constraints
-   unsigned int timingUpdateInt;   // "
-   unsigned int timingUpdateCount; // "
+   unsigned int  timingUpdateInt;  // "
+   unsigned int  timingUpdateCount;// "
    double        slackInitWeight;  // "
    double        slackFinalWeight; // "
+
+   class TOS_RelativePlace_c
+   {
+   public:
+
+      bool         enable;         // Enables applying relative placement constraints, if any
+      bool         rotateEnable;   // Enables relative placement rotate & mirror transforms
+      unsigned int maxPlaceRetryCt;// Defines initial relative placement retry count
+                                   // (default = 3)
+      unsigned int maxMacroRetryCt;// Defines initial relative macro retry count
+                                   // (default = 10 * rotate (1 or 8) * relative macro len)
+   } relativePlace;
 };
 
 #endif 
