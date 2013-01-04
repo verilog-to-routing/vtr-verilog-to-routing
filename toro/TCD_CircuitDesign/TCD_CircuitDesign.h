@@ -85,8 +85,13 @@ public:
    string srName;   // Define design's top-level name
 
    TPO_InstList_t blockList; // Define design's physical block list
+
    TPO_PortList_t portList;  // Define design's input/output port list
+   TPO_NameList_t portNameList;
+
    TPO_InstList_t instList;  // Define design's primatives (based on BLIF)
+   TPO_NameList_t instNameList;
+
    TLO_CellList_t cellList;  // Define design's non-standard cell list
                              // (see BLIF ".subckt")
    TNO_NetList_c  netList;   // Define design's net list
@@ -98,7 +103,9 @@ private:
    { 
       TCD_BLOCK_LIST_DEF_CAPACITY = 64,
       TCD_PORT_LIST_DEF_CAPACITY = 64,
+      TCD_PORT_NAME_LIST_DEF_CAPACITY = 64,
       TCD_INST_LIST_DEF_CAPACITY = 64,
+      TCD_INST_NAME_LIST_DEF_CAPACITY = 64,
       TCD_CELL_LIST_DEF_CAPACITY = 64,
       TCD_NET_LIST_DEF_CAPACITY = 1024,
       TCD_NET_NAME_LIST_DEF_CAPACITY = 1024
