@@ -191,8 +191,10 @@ bool TI_Input_c::ReadFileParser_(
 
       if( fileMode == TI_Input_c::TI_FILE_CIRCUIT )
       {
+         TCP_CircuitHandler_c circuitHandler( this->pcircuitDesign_ );
          TCP_CircuitFile_c circuitFile( fileHandler.GetFileStream( ),
                                         fileHandler.GetFileName( ),
+                                        &circuitHandler,
                                         this->pcircuitDesign_ );
          ok = circuitFile.IsValid( );
 
