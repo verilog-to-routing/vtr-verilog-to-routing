@@ -45,7 +45,6 @@ enum TNO_NodeType_e
 {
    TNO_NODE_UNDEFINED = 0,
    TNO_NODE_INST_PIN,
-   TNO_NODE_CHANNEL,
    TNO_NODE_SEGMENT,
    TNO_NODE_SWITCH_BOX
 };
@@ -89,13 +88,5 @@ typedef TCT_OrderedVector_c< TNO_Route_t > TNO_RouteList_t;
 
 class TNO_SwitchBox_c; // Forward declaration for subsequent class typedefs
 typedef TCT_OrderedVector_c< TNO_SwitchBox_c > TNO_SwitchBoxList_t;
-
-//---------------------------------------------------------------------------//
-// Define channel list typedefs
-//---------------------------------------------------------------------------//
-
-class TC_NameIndex_c; // Forward declaration for subsequent class typedefs
-typedef TC_NameIndex_c TNO_Channel_t;
-typedef TCT_OrderedVector_c< TNO_Channel_t > TNO_ChannelList_t;
 
 #endif
