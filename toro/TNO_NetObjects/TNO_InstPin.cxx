@@ -258,22 +258,25 @@ void TNO_InstPin_c::ExtractString(
    {
       if( this->IsValid( ))
       {
-         *psrInstPin = "";
+         *psrInstPin = "<pin";
          if( this->srInstName_.length( ))
          {
-            *psrInstPin += "\"";
+            *psrInstPin += psrInstPin->length( ) ? " " : "";
+            *psrInstPin += "inst=\"";
             *psrInstPin += this->srInstName_;
             *psrInstPin += "\"";
          }
          if( this->srPortName_.length( ))
          {
-            *psrInstPin += " \"";
+            *psrInstPin += psrInstPin->length( ) ? " " : "";
+            *psrInstPin += "port=\"";
             *psrInstPin += this->srPortName_;
             *psrInstPin += "\"";
          }
          if( this->srPinName_.length( ))
          {
-            *psrInstPin += " \"";
+            *psrInstPin += psrInstPin->length( ) ? " " : "";
+            *psrInstPin += "pin=\"";
             *psrInstPin += this->srPinName_;
             *psrInstPin += "\"";
          }
@@ -283,9 +286,12 @@ void TNO_InstPin_c::ExtractString(
             string srType;
             TC_ExtractStringTypeMode( this->type_, &srType );
 
-            *psrInstPin += " ";
+            *psrInstPin += psrInstPin->length( ) ? " " : "";
+            *psrInstPin += "type=\"";
             *psrInstPin += srType;
+            *psrInstPin += "\"";
          }
+         *psrInstPin += "/>";
       }
       else
       {
