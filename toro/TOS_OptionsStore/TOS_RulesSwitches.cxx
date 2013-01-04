@@ -115,6 +115,7 @@ void TOS_RulesSwitches_c::Print(
 //---------------------------------------------------------------------------//
 // Version history
 // 05/01/12 jeffr : Original
+// 01/15/13 jeffr : Added support for placeOptions' relativePlace members
 //===========================================================================//
 void TOS_RulesSwitches_c::Init(
       void )
@@ -148,6 +149,10 @@ void TOS_RulesSwitches_c::Init(
    this->placeOptions.timingUpdateCount = 0;
    this->placeOptions.slackInitWeight = 1.0;
    this->placeOptions.slackFinalWeight = 8.0;
+   this->placeOptions.relativePlace.enable = false;
+   this->placeOptions.relativePlace.rotateEnable = true;
+   this->placeOptions.relativePlace.maxPlaceRetryCt = TOS_PLACE_RELATIVE_INITIAL_PLACE_RETRY;
+   this->placeOptions.relativePlace.maxMacroRetryCt = TOS_PLACE_RELATIVE_INITIAL_MACRO_RETRY;
 
    this->routeOptions.algorithmMode = TOS_ROUTE_ALGORITHM_PATHFINDER;
    this->routeOptions.abstractMode = TOS_ROUTE_ABSTRACT_DETAILED;
