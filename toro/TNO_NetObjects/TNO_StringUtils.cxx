@@ -68,7 +68,6 @@ void TNO_ExtractStringNodeType(
       switch( type )
       {
       case TNO_NODE_INST_PIN:   *psrType = "instpin";   break;
-      case TNO_NODE_CHANNEL:    *psrType = "channel";   break;
       case TNO_NODE_SEGMENT:    *psrType = "segment";   break;
       case TNO_NODE_SWITCH_BOX: *psrType = "switchbox"; break;
       default:                  *psrType = "*";         break;
