@@ -139,5 +139,5 @@ bool TFS_FloorplanStore_c::IsValid(
    return(( this->architectureSpec.IsValid( )) &&
           ( this->fabricModel.IsValid( )) &&
           ( this->circuitDesign.IsValid( )) ?
-	  true : false );
+          true : false );
 }
