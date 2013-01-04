@@ -148,29 +148,33 @@ void TAS_GridAssign_c::Print(
 
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   printHandler.Write( pfile, spaceLen, "<grid_assign " );
+   printHandler.Write( pfile, spaceLen, "<grid_assign" );
 
    string srDistrMode;
    TAS_ExtractStringGridAssignDistrMode( this->distr, &srDistrMode );
-   printHandler.Write( pfile, 0, "%s ", TIO_SR_STR( srDistrMode ));
+   printHandler.Write( pfile, 0, " mode=\"%s\"", 
+                                 TIO_SR_STR( srDistrMode ));
 
    if( this->orient != TAS_GRID_ASSIGN_ORIENT_UNDEFINED )
    {
       string srOrientMode;
       TAS_ExtractStringGridAssignOrientMode( this->orient, &srOrientMode );
-      printHandler.Write( pfile, 0, "orient = %s ", TIO_SR_STR( srOrientMode ));
+      printHandler.Write( pfile, 0, " orient=\"%s\"", 
+                                    TIO_SR_STR( srOrientMode ));
    }
-
-   printHandler.Write( pfile, 0, "priority = %u ", this->priority );
+   printHandler.Write( pfile, 0, " priority=\"%u\"", 
+                                 this->priority );
 
    if( this->distr == TAS_GRID_ASSIGN_DISTR_SINGLE )
    {
-      printHandler.Write( pfile, 0, "single_percent = %0.*f ", precision, this->singlePercent );
+      printHandler.Write( pfile, 0, " single_percent=\"%0.*f\"", 
+                                    precision, this->singlePercent );
    }
    else if( this->distr == TAS_GRID_ASSIGN_DISTR_MULTIPLE )
    {
-      printHandler.Write( pfile, 0, "multiple_start = %u ", this->multipleStart );
-      printHandler.Write( pfile, 0, "multiple_repeat = %u ", this->multipleRepeat );
+      printHandler.Write( pfile, 0, " multiple_start=\"%u\" multiple_repeat=\"%u\"", 
+                                    this->multipleStart,
+                                    this->multipleRepeat );
    }
    printHandler.Write( pfile, 0, "/>\n" );
 }
