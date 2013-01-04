@@ -302,45 +302,58 @@ bool TPO_Inst_c::operator!=(
 // 05/15/12 jeffr : Original
 //===========================================================================//
 void TPO_Inst_c::Print( 
-      FILE*  pfile,
-      size_t spaceLen ) const
+            FILE*  pfile,
+            size_t spaceLen,
+      const char*  pszUsage ) const
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   printHandler.Write( pfile, 0, "\"%s\" ", TIO_SR_STR( this->srName_ ));
+   pszUsage = ( pszUsage && *pszUsage ? pszUsage : "inst" );
+
+   printHandler.Write( pfile, spaceLen, "<%s", 
+                                        TIO_PSZ_STR( pszUsage ));
+
+   printHandler.Write( pfile, 0, " name=\"%s\"", 
+                                 TIO_SR_STR( this->srName_ ));
    if( this->srCellName_.length( ))
    {
-      printHandler.Write( pfile, 0, "\"%s\" ", TIO_SR_STR( this->srCellName_ ));
+      printHandler.Write( pfile, 0, " master=\"%s\"", 
+                                    TIO_SR_STR( this->srCellName_ ));
    }
    else if( this->source_ != TPO_INST_SOURCE_UNDEFINED )
    {
       string srSource;
       TPO_ExtractStringInstSource( this->source_, &srSource );
-      printHandler.Write( pfile, 0, "\".%s\" ", TIO_SR_STR( srSource ));
+      printHandler.Write( pfile, 0, " source=\".%s\"", 
+                                    TIO_SR_STR( srSource ));
    }
 
    if( this->place_.status != TPO_STATUS_UNDEFINED )
    {
       string srStatus;
       TPO_ExtractStringStatusMode( this->place_.status, &srStatus );
-      printHandler.Write( pfile, 0, "status = %s ", TIO_SR_STR( srStatus ));
+      printHandler.Write( pfile, 0, " status=\"%s\"", 
+                                    TIO_SR_STR( srStatus ));
    }
    printHandler.Write( pfile, 0, ">\n" );
+   spaceLen += 3;
 
    if( this->source_ == TPO_INST_SOURCE_LATCH )
    {
-      printHandler.Write( pfile, spaceLen, "<clock " ); 
+      printHandler.Write( pfile, spaceLen, "<clock" ); 
       if( this->latch_.clockType != TPO_LATCH_TYPE_UNDEFINED )
       {
          string srClockType;
          TPO_ExtractStringLatchType( this->latch_.clockType, &srClockType );
-         printHandler.Write( pfile, 0, "type = %s ", TIO_SR_STR( srClockType ));
+         printHandler.Write( pfile, 0, " type=\"%s\"", 
+                                       TIO_SR_STR( srClockType ));
       }
       if( this->latch_.initState != TPO_LATCH_STATE_UNDEFINED )
       {
          string srInitState;
          TPO_ExtractStringLatchState( this->latch_.initState, &srInitState );
-         printHandler.Write( pfile, 0, "state = %s ", TIO_SR_STR( srInitState ));
+         printHandler.Write( pfile, 0, " state=\"%s\"", 
+                                       TIO_SR_STR( srInitState ));
       }
       printHandler.Write( pfile, 0, "/>\n" );
    }
@@ -349,9 +362,17 @@ void TPO_Inst_c::Print(
    {
       for( size_t i = 0; i < this->pinList_.GetLength( ); ++i )
       {
-         string srPin;
-         this->pinList_[i]->ExtractString( &srPin );   
-         printHandler.Write( pfile, spaceLen, "<pin %s />\n", TIO_SR_STR( srPin ));
+         const TPO_Pin_t& pin = *this->pinList_[i];
+         printHandler.Write( pfile, spaceLen, "<pin name=\"%s\"", 
+                                              TIO_PSZ_STR( pin.GetName( )));
+         if( pin.GetType( ) != TC_TYPE_UNDEFINED )
+         {
+            string srType;
+            TC_ExtractStringTypeMode( this->pinList_[i]->GetType( ), &srType );
+            printHandler.Write( pfile, 0, " type=\"%s\"",
+                                          TIO_SR_STR( srType ));
+         }
+         printHandler.Write( pfile, 0, "/>\n" );
       }
    }
 
@@ -364,21 +385,28 @@ void TPO_Inst_c::Print(
    {
       string srRegion;
       this->place_.regionList[i]->ExtractString( &srRegion );
-      printHandler.Write( pfile, spaceLen, "<region %s />\n", TIO_SR_STR( srRegion ));
+      printHandler.Write( pfile, spaceLen, "<region> %s </region>\n", 
+                                           TIO_SR_STR( srRegion ));
    }
 
    for( size_t i = 0; i < this->place_.relativeList.GetLength( ); ++i )
    {
       string srRelative;
       this->place_.relativeList[i]->ExtractString( &srRelative );
-      printHandler.Write( pfile, spaceLen, "<relative %s />\n", TIO_SR_STR( srRelative ));
+      printHandler.Write( pfile, spaceLen, "<relative> %s </relative>\n", 
+                                           TIO_SR_STR( srRelative ));
    }
 
    if( this->place_.srFabricName.length( ))
    {
       const string& srFabricName = this->place_.srFabricName;
-      printHandler.Write( pfile, spaceLen, "<placement \"%s\" />\n", TIO_SR_STR( srFabricName ));
+      printHandler.Write( pfile, spaceLen, "<placement name=\"%s\"/>\n", 
+                                           TIO_SR_STR( srFabricName ));
    }
+
+   spaceLen -= 3;
+   printHandler.Write( pfile, spaceLen, "</%s>\n",
+                                        TIO_PSZ_STR( pszUsage ));
 }
 
 //===========================================================================//
