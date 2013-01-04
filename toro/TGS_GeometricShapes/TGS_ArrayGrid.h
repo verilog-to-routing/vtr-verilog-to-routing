@@ -123,8 +123,8 @@ private:
 inline bool TGS_ArrayGrid_c::IsValid(
       void ) const
 {
-   return( TCTF_IsGT( this->pitchDims_.width, 0.0 ) &&
-           TCTF_IsGT( this->pitchDims_.height, 0.0 ) ?
+   return( TCTF_IsGT( this->pitchDims_.dx, 0.0 ) &&
+           TCTF_IsGT( this->pitchDims_.dy, 0.0 ) ?
            true : false );
 }
 
