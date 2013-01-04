@@ -162,9 +162,6 @@ void TNO_NetList_c::Print(
 {
    for( size_t i = 0; i < this->GetLength( ); ++i )
    {
-      TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
-      printHandler.Write( pfile, spaceLen, "<" );
-
       const TNO_Net_c& net = *this->operator[]( i );
       net.Print( pfile, spaceLen + 3 );
    }
