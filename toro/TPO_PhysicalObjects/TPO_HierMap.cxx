@@ -45,8 +45,8 @@ TPO_HierMap_c::TPO_HierMap_c(
 
 //===========================================================================//
 TPO_HierMap_c::TPO_HierMap_c( 
-      const string&             srInstName,
-      const TPO_HierNameList_t& hierNameList )
+      const string&         srInstName,
+      const TPO_NameList_t& hierNameList )
       :
       srInstName_( srInstName ),
       hierNameList_( hierNameList )
@@ -55,8 +55,8 @@ TPO_HierMap_c::TPO_HierMap_c(
 
 //===========================================================================//
 TPO_HierMap_c::TPO_HierMap_c( 
-      const char*               pszInstName,
-      const TPO_HierNameList_t& hierNameList )
+      const char*           pszInstName,
+      const TPO_NameList_t& hierNameList )
       :
       srInstName_( TIO_PSZ_STR( pszInstName )),
       hierNameList_( hierNameList )
@@ -143,18 +143,18 @@ void TPO_HierMap_c::Print(
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   printHandler.Write( pfile, spaceLen, "<pack \"%s\" >\n", 
+   printHandler.Write( pfile, spaceLen, "<pack name=\"%s\">\n", 
                                         TIO_SR_STR( this->srInstName_ ));
    spaceLen += 3;
 
-   printHandler.Write( pfile, spaceLen, "<hier " );
+   printHandler.Write( pfile, spaceLen, "<hier> " );
    for( size_t i = 0; i < this->hierNameList_.GetLength( ); ++i )
    {
       const TC_Name_c& hierName = *this->hierNameList_[i];
       printHandler.Write( pfile, 0, "\"%s\" ", 
                                     TIO_PSZ_STR( hierName.GetName( )));
    }
-   printHandler.Write( pfile, 0, "/>\n" );
+   printHandler.Write( pfile, 0, "</hier>\n" );
 
    spaceLen -= 3;
    printHandler.Write( pfile, spaceLen, "</pack>\n" );
