@@ -163,11 +163,11 @@ bool TGS_ArrayGrid_c::operator!=(
 void TGS_ArrayGrid_c::Init( 
       const TGS_FloatDims_t& pitchDims )
 {
-  this->pitchDims_.width = pitchDims.width;
-  this->pitchDims_.height = pitchDims.height;
+  this->pitchDims_.dx = pitchDims.dx;
+  this->pitchDims_.dy = pitchDims.dy;
 
-  this->offsetDims_.width = 0.0;
-  this->offsetDims_.height = 0.0;
+  this->offsetDims_.dx = 0.0;
+  this->offsetDims_.dy = 0.0;
 }
 
 //===========================================================================//
@@ -175,11 +175,11 @@ void TGS_ArrayGrid_c::Init(
       const TGS_FloatDims_t& pitchDims,
       const TGS_FloatDims_t& offsetDims )
 {
-  this->pitchDims_.width = pitchDims.width;
-  this->pitchDims_.height = pitchDims.height;
+  this->pitchDims_.dx = pitchDims.dx;
+  this->pitchDims_.dy = pitchDims.dy;
 
-  this->offsetDims_.width = fmod( offsetDims.width, pitchDims.width );
-  this->offsetDims_.height = fmod( offsetDims.height, pitchDims.height );
+  this->offsetDims_.dx = fmod( offsetDims.dx, pitchDims.dx );
+  this->offsetDims_.dy = fmod( offsetDims.dy, pitchDims.dy );
 }
 
 //===========================================================================//
@@ -187,11 +187,11 @@ void TGS_ArrayGrid_c::Init(
       double xPitch, 
       double yPitch )
 {
-  this->pitchDims_.width = xPitch;
-  this->pitchDims_.height = yPitch;
+  this->pitchDims_.dx = xPitch;
+  this->pitchDims_.dy = yPitch;
 
-  this->offsetDims_.width = 0.0;
-  this->offsetDims_.height = 0.0;
+  this->offsetDims_.dx = 0.0;
+  this->offsetDims_.dy = 0.0;
 }
 
 //===========================================================================//
@@ -201,11 +201,11 @@ void TGS_ArrayGrid_c::Init(
       double xOffset, 
       double yOffset )
 {
-  this->pitchDims_.width = xPitch;
-  this->pitchDims_.height = yPitch;
+  this->pitchDims_.dx = xPitch;
+  this->pitchDims_.dy = yPitch;
 
-  this->offsetDims_.width = fmod( xOffset, xPitch );
-  this->offsetDims_.height = fmod( yOffset, yPitch );
+  this->offsetDims_.dx = fmod( xOffset, xPitch );
+  this->offsetDims_.dy = fmod( yOffset, yPitch );
 }
 
 //===========================================================================//
@@ -231,8 +231,8 @@ void TGS_ArrayGrid_c::GetPitch(
 {
    if( pxPitch && pyPitch )
    {
-      *pxPitch = this->pitchDims_.width;
-      *pyPitch = this->pitchDims_.height;
+      *pxPitch = this->pitchDims_.dx;
+      *pyPitch = this->pitchDims_.dy;
    }
 }
 
@@ -259,8 +259,8 @@ void TGS_ArrayGrid_c::GetOffset(
 {
    if( pxOffset && pyOffset )
    {
-      *pxOffset = this->offsetDims_.width;
-      *pyOffset = this->offsetDims_.height;
+      *pxOffset = this->offsetDims_.dx;
+      *pyOffset = this->offsetDims_.dy;
    }
 }
 
@@ -278,8 +278,8 @@ void TGS_ArrayGrid_c::FindCount(
 {
    TGS_IntDims_t count;
    this->FindCount( region, 
-                    &count.width, 
-                    &count.height,
+                    &count.dx, 
+                    &count.dy,
                     snapMode );
    if( pcount )
    {
@@ -304,8 +304,8 @@ void TGS_ArrayGrid_c::FindCount(
 
    if( region_.IsValid( ))
    {
-      double xPitch = this->pitchDims_.width;
-      double yPitch = this->pitchDims_.height;
+      double xPitch = this->pitchDims_.dx;
+      double yPitch = this->pitchDims_.dy;
 
       xCount = ( TCTF_IsGT( xPitch, 0.0 ) ?
                  ( region_.GetDx( ) + TC_FLT_EPSILON ) / xPitch + 1.0:
@@ -335,25 +335,25 @@ void TGS_ArrayGrid_c::SnapToGrid(
             TGS_CornerMode_t cornerMode ) const
 {
    double x = this->SnapDims_( point.x, 
-                               this->pitchDims_.width, 
-                               this->offsetDims_.width );
+                               this->pitchDims_.dx, 
+                               this->offsetDims_.dx );
    double y = this->SnapDims_( point.y, 
-                               this->pitchDims_.height, 
-                               this->offsetDims_.height );
+                               this->pitchDims_.dy, 
+                               this->offsetDims_.dy );
    switch( cornerMode )
    {
    case TGS_CORNER_LOWER_LEFT: 
    case TGS_CORNER_UPPER_LEFT:
    
-      if( TCTF_IsGT( x, point.x ))     // Snapped point to nearest right
-         x -= this->pitchDims_.width;  // Apply pitch to snap left instead
+      if( TCTF_IsGT( x, point.x )) // Snapped point to nearest right
+         x -= this->pitchDims_.dx; // Apply pitch to snap left instead
       break;
    
    case TGS_CORNER_LOWER_RIGHT:
    case TGS_CORNER_UPPER_RIGHT:
    
-      if( TCTF_IsLT( x, point.x ))     // Snapped point to nearest left
-         x += this->pitchDims_.width;  // Apply pitch to snap right instead
+      if( TCTF_IsLT( x, point.x )) // Snapped point to nearest left
+         x += this->pitchDims_.dx; // Apply pitch to snap right instead
       break;
    
    default:
@@ -365,15 +365,15 @@ void TGS_ArrayGrid_c::SnapToGrid(
    case TGS_CORNER_LOWER_LEFT: 
    case TGS_CORNER_LOWER_RIGHT:
    
-      if( TCTF_IsGT( y, point.y ))     // Snapped point to nearest upper
-         y -= this->pitchDims_.height; // Apply pitch to snap lower instead
+      if( TCTF_IsGT( y, point.y )) // Snapped point to nearest upper
+         y -= this->pitchDims_.dy; // Apply pitch to snap lower instead
       break;
    
    case TGS_CORNER_UPPER_LEFT:
    case TGS_CORNER_UPPER_RIGHT:
    
-      if( TCTF_IsLT( y, point.y ))     // Snapped point to nearest lower
-         y += this->pitchDims_.height; // Apply pitch to snap upperinstead;
+      if( TCTF_IsLT( y, point.y )) // Snapped point to nearest lower
+         y += this->pitchDims_.dy; // Apply pitch to snap upperinstead;
       break;
    
    default:
@@ -393,24 +393,24 @@ void TGS_ArrayGrid_c::SnapToGrid(
             TGS_ArraySnapMode_t snapMode ) const
 {
    double x1 = this->SnapDims_( region.x1, 
-                                this->pitchDims_.width, 
-                                this->offsetDims_.width );
+                                this->pitchDims_.dx, 
+                                this->offsetDims_.dx );
    double y1 = this->SnapDims_( region.y1, 
-                                this->pitchDims_.height, 
-                                this->offsetDims_.height );
+                                this->pitchDims_.dy, 
+                                this->offsetDims_.dy );
    double x2 = this->SnapDims_( region.x2, 
-                                this->pitchDims_.width, 
-                                this->offsetDims_.width );
+                                this->pitchDims_.dx, 
+                                this->offsetDims_.dx );
    double y2 = this->SnapDims_( region.y2, 
-                                this->pitchDims_.height, 
-                                this->offsetDims_.height );
+                                this->pitchDims_.dy, 
+                                this->offsetDims_.dy );
 
    if( snapMode == TGS_ARRAY_SNAP_WITHIN )
    {
-      x1 += ( TCTF_IsLT( x1, region.x1 ) ? this->pitchDims_.width : 0.0 );
-      y1 += ( TCTF_IsLT( y1, region.y1 ) ? this->pitchDims_.height : 0.0 );
-      x2 -= ( TCTF_IsGT( x2, region.x2 ) ? this->pitchDims_.width : 0.0 );
-      y2 -= ( TCTF_IsGT( y2, region.y2 ) ? this->pitchDims_.height : 0.0 );
+      x1 += ( TCTF_IsLT( x1, region.x1 ) ? this->pitchDims_.dx : 0.0 );
+      y1 += ( TCTF_IsLT( y1, region.y1 ) ? this->pitchDims_.dy : 0.0 );
+      x2 -= ( TCTF_IsGT( x2, region.x2 ) ? this->pitchDims_.dx : 0.0 );
+      y2 -= ( TCTF_IsGT( y2, region.y2 ) ? this->pitchDims_.dy : 0.0 );
    }
 
    if( pregion )
@@ -436,18 +436,18 @@ void TGS_ArrayGrid_c::SnapToGrid(
 {
    int z = point.z;
    double x = this->SnapDims_( point.x, 
-                               this->pitchDims_.width, 
-                               this->offsetDims_.width );
+                               this->pitchDims_.dx, 
+                               this->offsetDims_.dx );
    double y = this->SnapDims_( point.y, 
-                               this->pitchDims_.height, 
-                               this->offsetDims_.height );
+                               this->pitchDims_.dy, 
+                               this->offsetDims_.dy );
 
    if( snapMode == TGS_ARRAY_SNAP_WITHIN )
    {
-      x += ( TCTF_IsLT( x, region.x1 ) ? this->pitchDims_.width : 0.0 );
-      y += ( TCTF_IsLT( y, region.y1 ) ? this->pitchDims_.height : 0.0 );
-      x -= ( TCTF_IsGT( x, region.x2 ) ? this->pitchDims_.width : 0.0 );
-      y -= ( TCTF_IsGT( y, region.y2 ) ? this->pitchDims_.height : 0.0 );
+      x += ( TCTF_IsLT( x, region.x1 ) ? this->pitchDims_.dx : 0.0 );
+      y += ( TCTF_IsLT( y, region.y1 ) ? this->pitchDims_.dy : 0.0 );
+      x -= ( TCTF_IsGT( x, region.x2 ) ? this->pitchDims_.dx : 0.0 );
+      y -= ( TCTF_IsGT( y, region.y2 ) ? this->pitchDims_.dy : 0.0 );
    }
 
    if( ppoint )
@@ -476,9 +476,9 @@ void TGS_ArrayGrid_c::SnapToPitch(
             TGS_Point_c* ppoint ) const
 {
    double x = this->SnapDims_( point.x, 
-                               this->pitchDims_.width );
+                               this->pitchDims_.dx );
    double y = this->SnapDims_( point.y, 
-                               this->pitchDims_.height );
+                               this->pitchDims_.dy );
    if( ppoint )
    {
       ppoint->Set( x, y );
@@ -492,20 +492,20 @@ void TGS_ArrayGrid_c::SnapToPitch(
             TGS_ArraySnapMode_t snapMode ) const
 {
    double x1 = this->SnapDims_( region.x1, 
-                                this->pitchDims_.width );
+                                this->pitchDims_.dx );
    double y1 = this->SnapDims_( region.y1, 
-                                this->pitchDims_.height );
+                                this->pitchDims_.dy );
    double x2 = this->SnapDims_( region.x2, 
-                                this->pitchDims_.width );
+                                this->pitchDims_.dx );
    double y2 = this->SnapDims_( region.y2, 
-                                this->pitchDims_.height );
+                                this->pitchDims_.dy );
 
    if( snapMode == TGS_ARRAY_SNAP_WITHIN )
    {
-      x1 += ( TCTF_IsLT( x1, region.x1 ) ? this->pitchDims_.width : 0.0 );
-      y1 += ( TCTF_IsLT( y1, region.y1 ) ? this->pitchDims_.height : 0.0 );
-      x2 -= ( TCTF_IsGT( x2, region.x2 ) ? this->pitchDims_.width : 0.0 );
-      y2 -= ( TCTF_IsGT( y2, region.y2 ) ? this->pitchDims_.height : 0.0 );
+      x1 += ( TCTF_IsLT( x1, region.x1 ) ? this->pitchDims_.dx : 0.0 );
+      y1 += ( TCTF_IsLT( y1, region.y1 ) ? this->pitchDims_.dy : 0.0 );
+      x2 -= ( TCTF_IsGT( x2, region.x2 ) ? this->pitchDims_.dx : 0.0 );
+      y2 -= ( TCTF_IsGT( y2, region.y2 ) ? this->pitchDims_.dy : 0.0 );
    }
 
    if( pregion )
