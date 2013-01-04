@@ -158,11 +158,11 @@ void TAS_Cell_c::Print(
 
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   printHandler.Write( pfile, spaceLen, "<cell \"%s\" ",
+   printHandler.Write( pfile, spaceLen, "<cell name=\"%s\"",
                                         TIO_PSZ_STR( TLO_Cell_c::GetName( )));
    if( TLO_Cell_c::GetMasterName( ) && *TLO_Cell_c::GetMasterName( ))
    {
-      printHandler.Write( pfile, 0, "master = \"%s\" ",
+      printHandler.Write( pfile, 0, " master=\"%s\"",
                                     TIO_PSZ_STR( TLO_Cell_c::GetMasterName( )));
    }
 
@@ -170,7 +170,8 @@ void TAS_Cell_c::Print(
    {
       string srClassType;
       TAS_ExtractStringClassType( this->classType, &srClassType );
-      printHandler.Write( pfile, 0, "class = %s ", TIO_SR_STR( srClassType ));
+      printHandler.Write( pfile, 0, " class=\"%s\"", 
+                                    TIO_SR_STR( srClassType ));
    }
 
    if( this->dims_.IsValid( ) || this->origin_.IsValid( ))
@@ -179,13 +180,15 @@ void TAS_Cell_c::Print(
 
       if( this->dims_.IsValid( ))
       {
-         printHandler.Write( pfile, 0, "size = %0.*f %0.*f ", precision, this->dims_.width, 
-                                                              precision, this->dims_.height );
+         printHandler.Write( pfile, 0, "<size> %0.*f %0.*f </size>", 
+                                       precision, this->dims_.dx, 
+                                       precision, this->dims_.dy );
       }
       if( this->origin_.IsValid( ))
       {
-         printHandler.Write( pfile, 0, "origin = %0.*f %0.*f ", precision, this->origin_.x, 
-                                                                precision, this->origin_.y );
+         printHandler.Write( pfile, 0, "<origin> %0.*f %0.*f </origin>", 
+                                       precision, this->origin_.x, 
+                                       precision, this->origin_.y );
       }
    }
    printHandler.Write( pfile, 0, ">\n" );
@@ -236,12 +239,12 @@ void TAS_Cell_c::PrintXML(
       for( size_t i = 0; i < portList.GetLength( ); ++i )
       {
          const TLO_Port_c& port = *portList[i];
-	 if(( port.GetType( ) != TC_TYPE_INPUT ) && ( port.GetType( ) != TC_TYPE_CLOCK ))
+         if(( port.GetType( ) != TC_TYPE_INPUT ) && ( port.GetType( ) != TC_TYPE_CLOCK ))
             continue;
 
          printHandler.Write( pfile, spaceLen, "<port name=\"%s\" is_clock=\"%s\"/>\n",
                                               TIO_PSZ_STR( port.GetName( )),
-			                      port.GetType( ) == TC_TYPE_CLOCK ? "1" : "0" );
+                                              port.GetType( ) == TC_TYPE_CLOCK ? "1" : "0" );
       }
       spaceLen -= 3;
       printHandler.Write( pfile, spaceLen, "</input_ports>\n" );
@@ -256,7 +259,7 @@ void TAS_Cell_c::PrintXML(
       for( size_t i = 0; i < portList.GetLength( ); ++i )
       {
          const TLO_Port_c& port = *portList[i];
-	 if( port.GetType( ) != TC_TYPE_OUTPUT )
+         if( port.GetType( ) != TC_TYPE_OUTPUT )
             continue;
 
          printHandler.Write( pfile, spaceLen, "<port name=\"%s\"/>\n",
