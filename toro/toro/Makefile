@@ -31,12 +31,15 @@ CFLAGSlinux_x86_64 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_X86
 CFLAGSlinux_i686 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_I686
 CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
 CFLAGS = $(CFLAGS$(ISM)) \
+	-DPLACEMENT_REGIONS_ENABLE \
+	-DPLACEMENT_RELATIVE_ENABLE \
 	-I. \
 	-I../TM_Master \
 	-I../TI_Input \
 	-I../TP_Process \
 	-I../TO_Output \
 	-I../TVPR_Interface \
+	-I../TRP_RelativePlace \
 	-I../TCL_CommandLine \
         -I../TOP_OptionsParser -I../TOP_OptionsParser/$(ISM) \
         -I../TAP_ArchitectureParser -I../TAP_ArchitectureParser/$(ISM) \
@@ -85,6 +88,7 @@ LINKLIBS = -L../$(ISM) \
 	-lTP_Process \
 	-lTO_Output \
 	-lTVPR_Interface \
+	-lTRP_RelativePlace \
 	-lTCL_CommandLine \
 	-lTOP_OptionsParser \
 	-lTAP_ArchitectureParser \
@@ -119,6 +123,7 @@ LIBDEFS = ../$(ISM)/libTM_Master.a \
 	../$(ISM)/libTP_Process.a \
 	../$(ISM)/libTO_Output.a \
 	../$(ISM)/libTVPR_Interface.a \
+	../$(ISM)/libTRP_RelativePlace.a \
 	../$(ISM)/libTCL_CommandLine.a \
 	../$(ISM)/libTOP_OptionsParser.a \
 	../$(ISM)/libTAP_ArchitectureParser.a \
@@ -197,6 +202,9 @@ $(OBJECTS): $(ISM)/%.o:%.cxx
 
 ../$(ISM)/libTVPR_Interface.a:
 	cd ../TVPR_Interface && $(MAKE) $(BUILD_TARGET)
+
+../$(ISM)/libTRP_RelativePlace.a:
+	cd ../TRP_RelativePlace ; $(MAKE) $(BUILD_TARGET)
 
 ../$(ISM)/libTCL_CommandLine.a:
 	cd ../TCL_CommandLine && $(MAKE) $(BUILD_TARGET)
