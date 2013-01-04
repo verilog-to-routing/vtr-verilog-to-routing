@@ -55,24 +55,24 @@ void TCBP_CircuitBlifParser_c::syn(
 
       if( LT( 1 )->getType( ) == UNCLOSED_STRING )
       {
-	 srMsg = "at newline character. Closing quote is missing";
+         srMsg = "at newline character. Closing quote is missing";
       }
       else
       {
-	 srMsg  = "at " + srFoundToken + " token, ";
-	 srMsg += "\"" + srFoundText + "\"";
+         srMsg  = "at " + srFoundToken + " token, ";
+         srMsg += "\"" + srFoundText + "\"";
 
          if( tokenType && ( tokenType != DLGminToken ))
          {
             string srExpectToken = this->token_tbl[tokenType];
-	    srMsg += ", expected a " + srExpectToken + " token";
+            srMsg += ", expected a " + srExpectToken + " token";
          }
 
-	 if( strlen( pszGroup ) > 0 )
-	 {
-	    srMsg += " in ";
-	    srMsg += pszGroup;
-	 }
+         if( strlen( pszGroup ) > 0 )
+         {
+            srMsg += " in ";
+            srMsg += pszGroup;
+         }
       }
 
       this->pcircuitBlifFile_->SyntaxError( lineNum, 
