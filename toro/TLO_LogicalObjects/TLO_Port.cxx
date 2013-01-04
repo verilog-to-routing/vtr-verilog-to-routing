@@ -187,27 +187,29 @@ void TLO_Port_c::Print(
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   printHandler.Write( pfile, spaceLen, "<pin \"%s\" ", TIO_SR_STR( this->srName_ ));
-
+   printHandler.Write( pfile, spaceLen, "<pin name=\"%s\"", 
+                                        TIO_SR_STR( this->srName_ ));
    string srType;
    TC_ExtractStringTypeMode( this->type_, &srType );
-   printHandler.Write( pfile, 0, "%s ", TIO_SR_STR( srType ));
-
+   printHandler.Write( pfile, 0, " type=\"%s\"", 
+                                 TIO_SR_STR( srType ));
    if( this->count_ > 0 )
    {
-      printHandler.Write( pfile, 0, "count = %u ", this->count_ );
+      printHandler.Write( pfile, 0, " count=\"%u\"", 
+                                    this->count_ );
    }
    if( this->isEquivalent_ )
    {
-      printHandler.Write( pfile, 0, "equivalence = %s ", TIO_BOOL_VAL( this->isEquivalent_ ));
+      printHandler.Write( pfile, 0, " equivalence=\"%s\"", 
+                                    TIO_BOOL_VAL( this->isEquivalent_ ));
    }
    if( this->srClass_.length( ))
    {
-      printHandler.Write( pfile, 0, "class = \"%s\" ", TIO_SR_STR( this->srClass_ ));
+      printHandler.Write( pfile, 0, " class=\"%s\"", 
+                                    TIO_SR_STR( this->srClass_ ));
    }
 
-   if( TCTF_IsGT( this->cap_, 0.0 ) ||
-       TCTF_IsGT( this->delay_, 0.0 ))
+   if( TCTF_IsGT( this->cap_, 0.0 ) || TCTF_IsGT( this->delay_, 0.0 ))
    {
       printHandler.Write( pfile, 0, ">\n" );
       spaceLen += 3;
@@ -215,7 +217,7 @@ void TLO_Port_c::Print(
       TC_MinGrid_c& MinGrid = TC_MinGrid_c::GetInstance( );
       unsigned int precision = MinGrid.GetPrecision( );
 
-      printHandler.Write( pfile, spaceLen, "<timing cap_in = %0.*f delay_in = %0.*e />\n", 
+      printHandler.Write( pfile, spaceLen, "<timing cap_in=\"%0.*f\" delay_in=\"%0.*e\"/>\n", 
                                            precision, this->cap_, 
                                            precision + 1, this->delay_ );
       spaceLen -= 3;
