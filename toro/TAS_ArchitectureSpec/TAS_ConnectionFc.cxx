@@ -106,8 +106,8 @@ bool TAS_ConnectionFc_c::operator==(
 {
    return(( this->type == connectionFc.type ) &&
           ( TCTF_IsEQ( this->percent, connectionFc.percent )) &&
-	  ( this->absolute == connectionFc.absolute ) &&
-	  ( this->dir_ == connectionFc.dir_ ) ?
+          ( this->absolute == connectionFc.absolute ) &&
+          ( this->dir_ == connectionFc.dir_ ) ?
           true : false );
 }
 
@@ -150,19 +150,21 @@ void TAS_ConnectionFc_c::Print(
 
    if( this->type == TAS_CONNECTION_BOX_FRACTION )
    {
-      printHandler.Write( pfile, 0, "%s = %0.*f ", TIO_PSZ_STR( pszFc ), 
-                                                   precision, this->percent );
+      printHandler.Write( pfile, spaceLen, "%s=\"%0.*f\"", 
+                                           TIO_PSZ_STR( pszFc ), 
+                                           precision, this->percent );
    }
    else if( this->type == TAS_CONNECTION_BOX_ABSOLUTE )
    {
-      printHandler.Write( pfile, 0, "%s = %u ", TIO_PSZ_STR( pszFc ),
-                                                this->absolute );
+      printHandler.Write( pfile, spaceLen, "%s=\"%u\"", 
+                                           TIO_PSZ_STR( pszFc ),
+                                           this->absolute );
    }
    else if( this->type == TAS_CONNECTION_BOX_FULL )
    {
-      printHandler.Write( pfile, 0, "%s = full ", TIO_PSZ_STR( pszFc ));
+      printHandler.Write( pfile, spaceLen, "%s=\"full\"", 
+                                           TIO_PSZ_STR( pszFc ));
    }
-   spaceLen = 0; // To quiet a compiler warning regarding unused parameter
 }
 
 //===========================================================================//
@@ -208,7 +210,7 @@ void TAS_ConnectionFc_c::PrintXML(
                                            TIO_PSZ_STR( pszFc ),
                                            TIO_SR_STR( srFcInType ),
                                            precision, this->percent,
-			                   TIO_PSZ_STR( pszFc ));
+                                           TIO_PSZ_STR( pszFc ));
    }
    else if( this->type == TAS_CONNECTION_BOX_ABSOLUTE )
    {
@@ -216,13 +218,13 @@ void TAS_ConnectionFc_c::PrintXML(
                                            TIO_PSZ_STR( pszFc ),
                                            TIO_SR_STR( srFcInType ),
                                            this->absolute,
-			                   TIO_PSZ_STR( pszFc ));
+                                           TIO_PSZ_STR( pszFc ));
    }
    else if( this->type == TAS_CONNECTION_BOX_FULL )
    {
       printHandler.Write( pfile, spaceLen, "<%s type=\"%s\"></%s>\n",
                                            TIO_PSZ_STR( pszFc ),
                                            TIO_SR_STR( srFcInType ),
-			                   TIO_PSZ_STR( pszFc ));
+                                           TIO_PSZ_STR( pszFc ));
    }
 }
