@@ -77,13 +77,19 @@ LIBSO = $(LIBSO$(ISM))
 
 OBJSlinux_x86_64 = linux_x86_64/TGO_Point.o \
                     linux_x86_64/TGO_Region.o \
-                    linux_x86_64/TGO_Box.o
+                    linux_x86_64/TGO_Box.o \
+                    linux_x86_64/TGO_Transform.o \
+                    linux_x86_64/TGO_StringUtils.o
 OBJSlinux_i686 = linux_i686/TGO_Point.o \
                     linux_i686/TGO_Region.o \
-                    linux_i686/TGO_Box.o
+                    linux_i686/TGO_Box.o \
+                    linux_i686/TGO_Transform.o \
+                    linux_i686/TGO_StringUtils.o
 OBJSsun8 = sun8/TGO_Point.o \
            sun8/TGO_Region.o \
-           sun8/TGO_Box.o 
+           sun8/TGO_Box.o \
+           sun8/TGO_Transform.o \
+           sun8/TGO_StringUtils.o 
 OBJECTS = $(OBJS$(ISM))
 
 ######################################################################
