@@ -193,7 +193,7 @@ bool TFV_FabricPlane_c::Add(
                   this->Add( addRegion_, fabricData, addMode );
                }
                continue;
-	    }
+            }
 
             TGS_Region_c deleteRegion( pfabricFigure->GetRegion( ));
             deleteRegion.ApplyIntersect( addRegion );
@@ -384,7 +384,7 @@ bool TFV_FabricPlane_c::Find(
    {
       if( pfabricRegion )
       {
-	 *pfabricRegion = pfabricFigure->GetRegion( );
+         *pfabricRegion = pfabricFigure->GetRegion( );
       }
    }
    return( ok );
