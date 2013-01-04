@@ -130,7 +130,7 @@ void TFM_Config_c::Print(
       string srFabricRegion;
       this->fabricRegion.ExtractString( &srFabricRegion );
 
-      printHandler.Write( pfile, spaceLen, "<region %s >\n", 
+      printHandler.Write( pfile, spaceLen, "<region> %s </region>\n", 
                                            TIO_SR_STR( srFabricRegion ));
       spaceLen -= 3;
       printHandler.Write( pfile, spaceLen, "</config>\n" );
