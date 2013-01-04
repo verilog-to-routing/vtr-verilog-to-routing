@@ -81,6 +81,12 @@ enum TOS_PlaceCostMode_e
 };
 typedef enum TOS_PlaceCostMode_e TOS_PlaceCostMode_t;
 
+enum TOS_PlaceRelativeDefs_e
+{
+   TOS_PLACE_RELATIVE_INITIAL_PLACE_RETRY = 3,
+   TOS_PLACE_RELATIVE_INITIAL_MACRO_RETRY = 10
+};
+
 //---------------------------------------------------------------------------//
 // Define route option constants and typedefs
 //---------------------------------------------------------------------------//
