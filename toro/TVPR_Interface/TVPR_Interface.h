@@ -54,7 +54,8 @@ public:
               const TAS_ArchitectureSpec_c& architectureSpec,
               const TFM_FabricModel_c& fabricModel,
               const TCD_CircuitDesign_c& circuitDesign );
-   bool Execute( void ) const;
+   bool Execute( const TOS_OptionsStore_c& optionsStore,
+                 const TCD_CircuitDesign_c& circuitDesign ) const;
    bool Close( TFM_FabricModel_c* pfabricModel = 0,
                TCD_CircuitDesign_c* pcircuitDesign = 0 );
 
