@@ -165,25 +165,27 @@ void TFM_Channel_c::Print(
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   printHandler.Write( pfile, spaceLen, "<channel " );
-
-   printHandler.Write( pfile, 0, "\"%s\" ", TIO_SR_STR( this->srName ));
+   printHandler.Write( pfile, spaceLen, "<channel name=\"%s\"", 
+                                        TIO_SR_STR( this->srName ));
 
    if( this->orient != TGS_ORIENT_UNDEFINED )
    {
       string srOrient;
       TGS_ExtractStringOrientMode( this->orient, &srOrient );
-      printHandler.Write( pfile, 0, "orient = %s ", TIO_SR_STR( srOrient ));
+      printHandler.Write( pfile, 0, " orient=\"%s\"", 
+                                    TIO_SR_STR( srOrient ));
    }
    if( this->count != 0 )
    {
-      printHandler.Write( pfile, 0, "count = %d ", this->count );
+      printHandler.Write( pfile, 0, " count=\"%d\"", 
+                                    this->count );
    }
    printHandler.Write( pfile, 0, "> " );
 
    string srRegion;
    this->region.ExtractString( &srRegion );
-   printHandler.Write( pfile, 0, "<region %s > ", TIO_SR_STR( srRegion ));
+   printHandler.Write( pfile, 0, "<region> %s </region> ", 
+                                 TIO_SR_STR( srRegion ));
 
    printHandler.Write( pfile, 0, "</channel>\n" );
 }
