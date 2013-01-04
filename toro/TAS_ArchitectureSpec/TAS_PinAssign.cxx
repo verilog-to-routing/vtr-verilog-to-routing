@@ -136,11 +136,12 @@ void TAS_PinAssign_c::Print(
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   printHandler.Write( pfile, spaceLen, "<pin_assign " );
+   printHandler.Write( pfile, spaceLen, "<pin_assign" );
 
    string srPattern;
    TAS_ExtractStringPinAssignPatternType( this->pattern, &srPattern );
-   printHandler.Write( pfile, 0, "%s ", TIO_SR_STR( srPattern ));
+   printHandler.Write( pfile, 0, " pattern=\"%s\"", 
+                                 TIO_SR_STR( srPattern ));
 
    if(( this->side != TC_SIDE_UNDEFINED ) ||
       ( this->offset > 0 ) ||
@@ -150,11 +151,13 @@ void TAS_PinAssign_c::Print(
       {
          string srSide;
          TC_ExtractStringSideMode( this->side, &srSide );
-         printHandler.Write( pfile, 0, "side = %s ", TIO_SR_STR( srSide ));
+         printHandler.Write( pfile, 0, " side=\"%s\"", 
+                                       TIO_SR_STR( srSide ));
       }
       if( this->offset > 0 )
       {
-         printHandler.Write( pfile, 0, "offset = %u ", this->offset );
+         printHandler.Write( pfile, 0, " offset=\"%u\"", 
+                                       this->offset );
       }
       printHandler.Write( pfile, 0, ">\n" );
       spaceLen += 3;
@@ -162,13 +165,13 @@ void TAS_PinAssign_c::Print(
       if( this->portNameList.IsValid( ))
       {
          const char* pszS = ( this->portNameList.GetLength( ) > 1 ? "s" : "" );
-         printHandler.Write( pfile, spaceLen, "<pin%s ", TIO_PSZ_STR( pszS ));
+         printHandler.Write( pfile, spaceLen, "<pin%s> ", TIO_PSZ_STR( pszS ));
          for( size_t i = 0; i < this->portNameList.GetLength( ); ++i )
          {
             const TC_Name_c& portName = *this->portNameList[i];
             printHandler.Write( pfile, 0, "\"%s\" ", TIO_PSZ_STR( portName.GetName( )));
          }
-         printHandler.Write( pfile, 0, "/>\n" );
+         printHandler.Write( pfile, 0, "</pin%s>\n", TIO_PSZ_STR( pszS ));
       }
       spaceLen -= 3;
       printHandler.Write( pfile, spaceLen, "</pin_assign>\n" );
@@ -205,8 +208,8 @@ void TAS_PinAssign_c::PrintXML(
    string srSide;
    TC_ExtractStringSideMode( this->side, &srSide );
    printHandler.Write( pfile, spaceLen, "<loc side=\"%s\" offset=\"%u\">",
-	                                TIO_SR_STR( srSide ),
-		                        this->offset );
+                                        TIO_SR_STR( srSide ),
+                                        this->offset );
    if( this->portNameList.IsValid( ))
    {
       spaceLen += 3;
@@ -215,7 +218,7 @@ void TAS_PinAssign_c::PrintXML(
       {
          const TC_Name_c& portName = *this->portNameList[i];
          printHandler.Write( pfile, 0, "%s%s",
-	                               TIO_PSZ_STR( portName.GetName( )),
+                                       TIO_PSZ_STR( portName.GetName( )),
                                        i + 1 == this->portNameList.GetLength( ) ? "" : " " );
       }
       spaceLen -= 3;
