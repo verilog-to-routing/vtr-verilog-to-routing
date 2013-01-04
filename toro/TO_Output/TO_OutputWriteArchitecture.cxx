@@ -55,9 +55,9 @@ bool TO_Output_c::WriteArchitectureFile_(
       printHandler.DisableOutput( TIO_PRINT_OUTPUT_ALL );
       printHandler.EnableOutput( TIO_PRINT_OUTPUT_USER_FILE );
 
-      this->WriteFileHeader_( 0, "Architecture Spec", "//", "//" );
+      this->WriteFileHeader_( 0, "Architecture Spec", "<!-- ", " -->" );
       architectureSpec.Print( 0 );
-      this->WriteFileFooter_( 0, "//", "//" );
+      this->WriteFileFooter_( 0, "<!-- ", " -->" );
 
       printHandler.EnableOutput( TIO_PRINT_OUTPUT_ALL );
       printHandler.DisableOutput( TIO_PRINT_OUTPUT_USER_FILE );
