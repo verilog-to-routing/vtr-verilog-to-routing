@@ -189,7 +189,7 @@ void TGO_Region_c::Print(
    string srRegion;
    this->ExtractString( &srRegion );
 
-   printHandler.Write( pfile, spaceLen, "[region] %s", TIO_SR_STR( srRegion ));
+   printHandler.Write( pfile, spaceLen, "[region] %s\n", TIO_SR_STR( srRegion ));
 }
 
 //===========================================================================//
@@ -601,33 +601,30 @@ bool TGO_Region_c::IsOverlapping(
 {
    bool isOverlapping = false;
 
-   bool isOverlappingX = false;
-   bool isOverlappingY = false;
-
    if(( region.x1 <= this->x1 ) && ( region.x2 >= this->x2 ))
    {
-      isOverlappingX = true;
+      isOverlapping = true;
    }
    else if(( region.x1 >= this->x1 ) && ( region.x1 <= this->x2 ))
    {
-      isOverlappingX = true;
+      isOverlapping = true;
    }
    else if(( region.x2 >= this->x1 ) && ( region.x2 <= this->x2 ))
    {
-      isOverlappingX = true;
+      isOverlapping = true;
    }
 
    if(( region.y1 <= this->y1 ) && ( region.y2 >= this->y2 ))
    {
-      isOverlappingY = true;
+      isOverlapping = true;
    }
    else if(( region.y1 >= this->y1 ) && ( region.y1 <= this->y2 ))
    {
-      isOverlappingY = true;
+      isOverlapping = true;
    }
    else if(( region.y2 >= this->y1 ) && ( region.y2 <= this->y2 ))
    {
-      isOverlappingY = true;
+      isOverlapping = true;
    }
    return( isOverlapping );
 }
