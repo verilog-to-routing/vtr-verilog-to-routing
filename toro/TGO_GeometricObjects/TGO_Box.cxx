@@ -215,7 +215,7 @@ void TGO_Box_c::Print(
    string srBox;
    this->ExtractString( &srBox );
 
-   printHandler.Write( pfile, spaceLen, "[box] %s", TIO_SR_STR( srBox ));
+   printHandler.Write( pfile, spaceLen, "[box] %s\n", TIO_SR_STR( srBox ));
 }
 
 //===========================================================================//
