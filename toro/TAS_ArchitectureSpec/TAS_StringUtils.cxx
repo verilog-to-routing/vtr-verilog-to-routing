@@ -259,9 +259,11 @@ void TAS_ExtractStringTimingType(
 
       switch( type )
       {
-      case TAS_TIMING_TYPE_MIN: *psrType = "min"; break;
-      case TAS_TIMING_TYPE_MAX: *psrType = "max"; break;
-      default:                  *psrType = "?";   break;
+      case TAS_TIMING_TYPE_MIN_VALUE:  *psrType = "min_value";  break;
+      case TAS_TIMING_TYPE_MAX_VALUE:  *psrType = "max_value";  break;
+      case TAS_TIMING_TYPE_MIN_MATRIX: *psrType = "min_matrix"; break;
+      case TAS_TIMING_TYPE_MAX_MATRIX: *psrType = "max_matrix"; break;
+      default:                         *psrType = "?";          break;
       }
    }
 }
