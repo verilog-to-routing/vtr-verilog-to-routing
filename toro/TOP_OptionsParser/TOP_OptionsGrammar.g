@@ -150,6 +150,11 @@ using namespace std;
 #token PLACE_SLACK_INIT_WEIGHT   "[Pp][Ll][Aa][Cc][Ee][_]{[Tt][Ii][Mm][Ii][Nn][Gg][_]}[Ss][Ll][Aa][Cc][Kk][_][Ii][Nn][Ii][Tt][_][Ww][Ee][Ii][Gg][Hh][Tt]"
 #token PLACE_SLACK_FINAL_WEIGHT  "[Pp][Ll][Aa][Cc][Ee][_]{[Tt][Ii][Mm][Ii][Nn][Gg][_]}[Ss][Ll][Aa][Cc][Kk][_][Ff][Ii][Nn][Aa][Ll][_][Ww][Ee][Ii][Gg][Hh][Tt]"
 
+#token PLACE_RELATIVE_ENABLE     "[Pp][Ll][Aa][Cc][Ee][_][Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee][_][Ee][Nn][Aa][Bb][Ll][Ee]"
+#token PLACE_RELATIVE_ROTATE     "[Pp][Ll][Aa][Cc][Ee][_][Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee][_][Rr][Oo][Tt][Aa][Tt][Ee]{[_][Ee][Nn][Aa][Bb][Ll][Ee]}"
+#token PLACE_RELATIVE_INIT_PLACE "[Pp][Ll][Aa][Cc][Ee][_][Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee][_][Ii][Nn][Ii][Tt]{[Ii][Aa][Ll]}[_][Pp][Ll][Aa][Cc][Ee]{[_][Rr][Ee][Tt][Rr][Yy]}"
+#token PLACE_RELATIVE_INIT_MACRO "[Pp][Ll][Aa][Cc][Ee][_][Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee][_][Ii][Nn][Ii][Tt]{[Ii][Aa][Ll]}[_][Mm][Aa][Cc][Rr][Oo]{[_][Rr][Ee][Tt][Rr][Yy]}"
+
 #token ROUTE_ALGORITHM           "[Rr][Oo][Uu][Tt][Ee][_][Aa][Ll][Gg][Oo][Rr][Ii][Tt][Hh][Mm]"
 #token ROUTE_TYPE                "[Rr][Oo][Uu][Tt][Ee][_][Tt][Yy][Pp][Ee]"
 #token ROUTE_WINDOW_SIZE         "[Rr][Oo][Uu][Tt][Ee][_][Ww][Ii][Nn][Dd][Oo][Ww][_][Ss][Ii][Zz][Ee]"
@@ -477,6 +482,11 @@ placeOptions
    |  PLACE_TIMING_UPDATE_COUNT { EQUAL } uintNum[ &pplaceOptions_->timingUpdateCount ]
    |  PLACE_SLACK_INIT_WEIGHT { EQUAL } floatNum[ &pplaceOptions_->slackInitWeight ]
    |  PLACE_SLACK_FINAL_WEIGHT { EQUAL } floatNum[ &pplaceOptions_->slackFinalWeight ]
+
+   |  PLACE_RELATIVE_ENABLE { EQUAL } boolType[ &pplaceOptions_->relativePlace.enable ]
+   |  PLACE_RELATIVE_ROTATE { EQUAL } boolType[ &pplaceOptions_->relativePlace.rotateEnable ]
+   |  PLACE_RELATIVE_INIT_PLACE { EQUAL } uintNum[ &pplaceOptions_->relativePlace.maxPlaceRetryCt ]
+   |  PLACE_RELATIVE_INIT_MACRO { EQUAL } uintNum[ &pplaceOptions_->relativePlace.maxMacroRetryCt ]
    <<
       this->srActiveCmd_ = ( LT( 1 ) ? LT( 1 )->getText( ) : "" );
    >>
