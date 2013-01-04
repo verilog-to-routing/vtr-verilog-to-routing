@@ -36,6 +36,7 @@
 //---------------------------------------------------------------------------//
 // Version history
 // 05/01/12 jeffr : Original
+// 01/15/13 jeffr : Added support for relativePlace members
 //===========================================================================//
 TOS_PlaceOptions_c::TOS_PlaceOptions_c( 
       void )
@@ -60,6 +61,10 @@ TOS_PlaceOptions_c::TOS_PlaceOptions_c(
       slackInitWeight( 0.0 ),
       slackFinalWeight( 0.0 )
 {
+   this->relativePlace.enable = false;
+   this->relativePlace.rotateEnable = false;
+   this->relativePlace.maxPlaceRetryCt = 0;
+   this->relativePlace.maxMacroRetryCt = 0;
 }
 
 //===========================================================================//
@@ -81,7 +86,11 @@ TOS_PlaceOptions_c::TOS_PlaceOptions_c(
       unsigned int             timingUpdateInt_,
       unsigned int             timingUpdateCount_,
       double                   slackInitWeight_,
-      double                   slackFinalWeight_ )
+      double                   slackFinalWeight_,
+      bool                     relativePlace_enable_,
+      bool                     relativePlace_rotateEnable_,
+      unsigned int             relativePlace_maxPlaceRetryCt_,
+      unsigned int             relativePlace_maxMacroRetryCt_ )
       :
       algorithmMode( algorithmMode_ ),
       randomSeed( randomSeed_ ),
@@ -103,6 +112,10 @@ TOS_PlaceOptions_c::TOS_PlaceOptions_c(
       slackInitWeight( slackInitWeight_ ),
       slackFinalWeight( slackFinalWeight_ )
 {
+   this->relativePlace.enable = relativePlace_enable_;
+   this->relativePlace.rotateEnable = relativePlace_rotateEnable_;
+   this->relativePlace.maxPlaceRetryCt = relativePlace_maxPlaceRetryCt_;
+   this->relativePlace.maxMacroRetryCt = relativePlace_maxMacroRetryCt_;
 }
 
 //===========================================================================//
@@ -123,6 +136,7 @@ TOS_PlaceOptions_c::~TOS_PlaceOptions_c(
 //---------------------------------------------------------------------------//
 // Version history
 // 05/01/12 jeffr : Original
+// 01/15/13 jeffr : Added support for relativePlace members
 //===========================================================================//
 void TOS_PlaceOptions_c::Print( 
       FILE*  pfile,
@@ -158,4 +172,9 @@ void TOS_PlaceOptions_c::Print(
    printHandler.Write( pfile, spaceLen, "PLACE_TIMING_UPDATE_COUNT  = %u\n", this->timingUpdateCount );
    printHandler.Write( pfile, spaceLen, "PLACE_SLACK_INIT_WEIGHT    = %0.*f\n", precision, this->slackInitWeight );
    printHandler.Write( pfile, spaceLen, "PLACE_SLACK_FINAL_WEIGHT   = %0.*f\n", precision, this->slackFinalWeight );
+
+   printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_ENABLE      = %s\n", TIO_BOOL_STR( this->relativePlace.enable ));
+   printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_ROTATE      = %s\n", TIO_BOOL_STR( this->relativePlace.rotateEnable ));
+   printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_INIT_PLACE  = %u\n", this->relativePlace.maxPlaceRetryCt );
+   printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_INIT_MACRO  = %u\n", this->relativePlace.maxMacroRetryCt );
 }
