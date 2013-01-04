@@ -213,7 +213,7 @@ void TGS_Line_c::Print(
    string srLine;
    this->ExtractString( &srLine );
 
-   printHandler.Write( pfile, spaceLen, "[line] %s", TIO_SR_STR( srLine ));
+   printHandler.Write( pfile, spaceLen, "[line] %s\n", TIO_SR_STR( srLine ));
 }
 
 //===========================================================================//
