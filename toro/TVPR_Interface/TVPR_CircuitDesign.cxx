@@ -137,7 +137,9 @@ bool TVPR_CircuitDesign_c::Export(
    blif_circuit_name = TC_strdup( circuitDesign.srName ); // VPR global trickery...
 
    TPO_InstList_t instList = circuitDesign.instList;
+   const TPO_NameList_t& instNameList = circuitDesign.instNameList;
    const TPO_PortList_t& portList = circuitDesign.portList;
+   const TPO_NameList_t& portNameList = circuitDesign.portNameList;
    const TLO_CellList_t& cellList = circuitDesign.cellList;
    const TPO_InstList_t& blockList = circuitDesign.blockList;
    const TNO_NetList_c& netList = circuitDesign.netList;
@@ -159,11 +161,14 @@ bool TVPR_CircuitDesign_c::Export(
    }
    if( ok )
    {
-      this->InitStructures_( instList, portList, netList, netNameList,
+      this->InitStructures_( instList, portList, 
+                             netList, netNameList,
                              pvpr_netArray, pvpr_netCount,
                              pvpr_logicalBlockArray, pvpr_logicalBlockCount );
 
-      ok = this->PokeStructures_( instList, portList, blockList, netList,
+      ok = this->PokeStructures_( instList, instNameList,
+                                  portList, portNameList, 
+                                  blockList, netList,
                                   pvpr_standardModels, pvpr_customModels,
                                   *pvpr_netArray,
                                   *pvpr_logicalBlockArray, *pvpr_logicalBlockCount,
@@ -199,17 +204,18 @@ void TVPR_CircuitDesign_c::Import(
    TNO_NetList_c* pnetList = &pcircuitDesign->netList;
 
    pblockList->Clear( );
-   this->PeekInputOutputList_( vpr_blockArray, vpr_blockCount,
-                               pblockList );
-   this->PeekPhysicalBlockList_( vpr_blockArray, vpr_blockCount,
-                                 vpr_logicalBlockArray,
-                                 pblockList );
    this->PeekNetList_( vpr_architecture, 
                        vpr_netArray, vpr_netCount,
                        vpr_blockArray, vpr_blockCount,
                        vpr_logicalBlockArray,
                        vpr_rrNodeArray,
                        pnetList );
+
+   this->PeekInputOutputList_( vpr_blockArray, vpr_blockCount,
+                               pblockList );
+   this->PeekPhysicalBlockList_( vpr_blockArray, vpr_blockCount,
+                                 vpr_logicalBlockArray,
+                                 pblockList );
 }
 
 //===========================================================================//
@@ -265,7 +271,9 @@ void TVPR_CircuitDesign_c::InitStructures_(
 //===========================================================================//
 bool TVPR_CircuitDesign_c::PokeStructures_(
       const TPO_InstList_t&   instList,
+      const TPO_NameList_t&   instNameList,
       const TPO_PortList_t&   portList,
+      const TPO_NameList_t&   portNameList,
       const TPO_InstList_t&   blockList,
       const TNO_NetList_c&    netList,
       const t_model*          pvpr_standardModels,
@@ -291,25 +299,25 @@ bool TVPR_CircuitDesign_c::PokeStructures_(
       int vpr_blockIndex = 0;
 
       // [VPR] First, write ".inputs" and ".outputs" data
-      this->PokeInputOutputList_( portList, netList,
+      this->PokeInputOutputList_( portList, portNameList, netList,
                                   pvpr_inputModel, pvpr_outputModel,
                                   vpr_netArray,
                                   vpr_logicalBlockArray, &vpr_blockIndex,
                                   pvpr_primaryInputCount, pvpr_primaryOutputCount );
 
       // [VPR] Then, write ".latch" flipflop data
-      this->PokeLatchList_( instList, netList,
+      this->PokeLatchList_( instList, instNameList, netList,
                             pvpr_latchModel, 
                             vpr_netArray,
                             vpr_logicalBlockArray, &vpr_blockIndex );
       // [VPR] Next, write ".names" LUT data
-      this->PokeLogicList_( instList, netList,
+      this->PokeLogicList_( instList, instNameList, netList,
                             pvpr_logicModel, 
                             vpr_netArray,
                             vpr_logicalBlockArray, &vpr_blockIndex );
 
       // [VPR] Next, write ".subckt" data, if any
-      this->PokeSubcktList_( instList, netList,
+      this->PokeSubcktList_( instList, instNameList, netList,
                              pvpr_customModels,
                              vpr_netArray,
                              vpr_logicalBlockArray, &vpr_blockIndex );
@@ -331,6 +339,7 @@ bool TVPR_CircuitDesign_c::PokeStructures_(
 //===========================================================================//
 void TVPR_CircuitDesign_c::PokeInputOutputList_(
       const TPO_PortList_t&   portList,
+      const TPO_NameList_t&   portNameList,
       const TNO_NetList_c&    netList,
       const t_model*          pvpr_inputModel,
       const t_model*          pvpr_outputModel,
@@ -340,9 +349,13 @@ void TVPR_CircuitDesign_c::PokeInputOutputList_(
             int*              pvpr_primaryInputCount,
             int*              pvpr_primaryOutputCount ) const
 {
-   for( size_t i = 0; i < portList.GetLength( ); ++i )
+   for( size_t i = 0; i < portNameList.GetLength( ); ++i )
    {
-      this->PokeInputOutput_( *portList[i], netList,
+      const TC_Name_c& portName = *portNameList[i];
+      const char* pszPortName = portName.GetName( );
+      const TPO_Port_t& port = *portList.Find( pszPortName );
+
+      this->PokeInputOutput_( port, netList,
                               pvpr_inputModel, pvpr_outputModel,
                               vpr_netArray, 
                               vpr_logicalBlockArray, pvpr_blockIndex,
@@ -396,15 +409,19 @@ void TVPR_CircuitDesign_c::PokeInputOutput_(
 //===========================================================================//
 void TVPR_CircuitDesign_c::PokeLogicList_(
       const TPO_InstList_t&   instList,
+      const TPO_NameList_t&   instNameList,
       const TNO_NetList_c&    netList,
       const t_model*          pvpr_logicModel,
             t_net*            vpr_netArray,
             t_logical_block*  vpr_logicalBlockArray,
             int*              pvpr_blockIndex ) const
 {
-   for( size_t i = 0; i < instList.GetLength( ); ++i )
+   for( size_t i = 0; i < instNameList.GetLength( ); ++i )
    {
-      const TPO_Inst_c& inst = *instList[i];
+      const TC_Name_c& instName = *instNameList[i];
+      const char* pszInstName = instName.GetName( );
+      const TPO_Inst_c& inst = *instList.Find( pszInstName );
+
       if( inst.GetSource( ) != TPO_INST_SOURCE_NAMES )
          continue;
 
@@ -496,15 +513,19 @@ void TVPR_CircuitDesign_c::PokeLogic_(
 //===========================================================================//
 void TVPR_CircuitDesign_c::PokeLatchList_(
       const TPO_InstList_t&   instList,
+      const TPO_NameList_t&   instNameList,
       const TNO_NetList_c&    netList,
       const t_model*          pvpr_latchModel,
             t_net*            vpr_netArray,
             t_logical_block*  vpr_logicalBlockArray,
             int*              pvpr_blockIndex ) const
 {
-   for( size_t i = 0; i < instList.GetLength( ); ++i )
+   for( size_t i = 0; i < instNameList.GetLength( ); ++i )
    {
-      const TPO_Inst_c& inst = *instList[i];
+      const TC_Name_c& instName = *instNameList[i];
+      const char* pszInstName = instName.GetName( );
+      const TPO_Inst_c& inst = *instList.Find( pszInstName );
+
       if( inst.GetSource( ) != TPO_INST_SOURCE_LATCH )
          continue;
 
@@ -567,15 +588,19 @@ void TVPR_CircuitDesign_c::PokeLatch_(
 //===========================================================================//
 void TVPR_CircuitDesign_c::PokeSubcktList_(
       const TPO_InstList_t&   instList,
+      const TPO_NameList_t&   instNameList,
       const TNO_NetList_c&    netList,
       const t_model*          pvpr_customModels,
             t_net*            vpr_netArray,
             t_logical_block*  vpr_logicalBlockArray,
             int*              pvpr_blockIndex ) const
 {
-   for( size_t i = 0; i < instList.GetLength( ); ++i )
+   for( size_t i = 0; i < instNameList.GetLength( ); ++i )
    {
-      const TPO_Inst_c& inst = *instList[i];
+      const TC_Name_c& instName = *instNameList[i];
+      const char* pszInstName = instName.GetName( );
+      const TPO_Inst_c& inst = *instList.Find( pszInstName );
+
       if( inst.GetSource( ) != TPO_INST_SOURCE_SUBCKT )
          continue;
 
@@ -805,6 +830,9 @@ void TVPR_CircuitDesign_c::UpdateLogicalBlocks_(
 {
    for( int blockIndex = 0; blockIndex < vpr_logicalBlockCount; ++blockIndex )
    {
+      if( !vpr_logicalBlockArray[blockIndex].model )
+         continue;
+
       int inputPinCount = 0;
       for( t_model_ports* pvpr_port = vpr_logicalBlockArray[blockIndex].model->inputs;
            pvpr_port;
@@ -845,6 +873,9 @@ bool TVPR_CircuitDesign_c::UpdateVpackNets_(
 
    for( int blockIndex = 0; blockIndex < vpr_logicalBlockCount; ++blockIndex )
    {
+      if( !vpr_logicalBlockArray[blockIndex].model )
+         continue;
+
       int inputPinCount = vpr_logicalBlockArray[blockIndex].used_input_pins;
 
       for( t_model_ports* pvpr_port = vpr_logicalBlockArray[blockIndex].model->outputs;
@@ -905,6 +936,9 @@ bool TVPR_CircuitDesign_c::UpdateAbsorbLogic_(
       if( vpr_logicalBlockArray[blockIndex].type == VPACK_OUTPAD ) 
          continue;
 
+      if( !vpr_logicalBlockArray[blockIndex].model )
+         continue;
+
       int outputCount = 0;
       for( const t_model_ports* pvpr_port = vpr_logicalBlockArray[blockIndex].model->outputs;
            pvpr_port;
@@ -938,6 +972,9 @@ bool TVPR_CircuitDesign_c::UpdateAbsorbLogic_(
    int deletedLogicCount = 0;
    for( int blockIndex = 0; blockIndex < vpr_logicalBlockCount; ++blockIndex )
    {
+      if( !vpr_logicalBlockArray[blockIndex].model )
+         continue;
+
       if( strcmp( vpr_logicalBlockArray[blockIndex].model->name, "names") != 0 )
          continue;
    
@@ -1422,18 +1459,18 @@ void TVPR_CircuitDesign_c::PeekHierMapList_(
             TPO_HierMapList_t* phierMapList ) const
 {
    // Apply recursion to read physical block's hierarchical pack map list
-   TPO_HierNameList_t hierNameList;
+   TPO_NameList_t hierNameList;
    this->PeekHierMapList_( vpr_pb, vpr_logicalBlockArray,
                            nodeIndex, &hierNameList, phierMapList );
 }
 
 //===========================================================================//
 void TVPR_CircuitDesign_c::PeekHierMapList_(
-      const t_pb&                 vpr_pb,
-      const t_logical_block*      vpr_logicalBlockArray,
-              int                 nodeIndex,
-              TPO_HierNameList_t* phierNameList,
-              TPO_HierMapList_t*  phierMapList ) const
+      const t_pb&                vpr_pb,
+      const t_logical_block*     vpr_logicalBlockArray,
+              int                nodeIndex,
+              TPO_NameList_t*    phierNameList,
+              TPO_HierMapList_t* phierMapList ) const
 {
    if( vpr_pb.name )
    {
@@ -1455,11 +1492,11 @@ void TVPR_CircuitDesign_c::PeekHierMapList_(
                    vpr_pb.child_pbs[typeIndex] &&
                    vpr_pb.child_pbs[typeIndex][instIndex].name )
                {
-                  TPO_HierNameList_t hierNameList( *phierNameList );
+                  TPO_NameList_t hierNameList( *phierNameList );
 
                   const t_pb& child_pb = vpr_pb.child_pbs[typeIndex][instIndex];
                   this->PeekHierMapList_( child_pb, vpr_logicalBlockArray,
-                                          typeIndex, &hierNameList, phierMapList );
+                                          instIndex, &hierNameList, phierMapList );
                }
             }
          }
@@ -1813,9 +1850,11 @@ void TVPR_CircuitDesign_c::AddLogicalBlockLogic_(
       const TPO_Pin_t& pin = *pinList[i];
 
       const char* pszNetName = pin.GetName( );
-      const TNO_Net_c& net = *netList.Find( pszNetName );
-      unsigned int netIndex = net.GetIndex( );
+      const TNO_Net_c* pnet = netList.Find( pszNetName );
+      if( !pnet )
+         continue;
 
+      unsigned int netIndex = pnet->GetIndex( );
       if( pin.GetType( ) == TC_TYPE_OUTPUT )
       {
          vpr_logicalBlockArray[blockIndex].output_nets[0][0] = netIndex;
@@ -1846,32 +1885,37 @@ void TVPR_CircuitDesign_c::AddLogicalBlockLatch_(
             t_logical_block* vpr_logicalBlockArray,
             int              vpr_blockIndex ) const
 {
-   int blockIndex = vpr_blockIndex;
-
-   const TNO_Net_c& outputNet = *netList.Find( pszOutputPinName );
-   const TNO_Net_c& inputNet = *netList.Find( pszInputPinName );
-   const TNO_Net_c& clockNet = *netList.Find( pszClockPinName );
-
-   unsigned int outputNetIndex = outputNet.GetIndex( );
-   unsigned int inputNetIndex = inputNet.GetIndex( );
-   unsigned int clockNetIndex = clockNet.GetIndex( );
-
-   vpr_logicalBlockArray[blockIndex].name = TC_strdup( pszOutputPinName );
-
-   vpr_logicalBlockArray[blockIndex].type = VPACK_LATCH;
-   vpr_logicalBlockArray[blockIndex].model = const_cast< t_model* >( pvpr_latchModel );
-
-   vpr_logicalBlockArray[blockIndex].output_nets = static_cast< int** >( TC_calloc( 1, sizeof( int* )));
-   vpr_logicalBlockArray[blockIndex].output_nets[0] = static_cast< int* >( TC_calloc( 1, sizeof( int )));
-   vpr_logicalBlockArray[blockIndex].output_nets[0][0] = static_cast< int >( outputNetIndex );
-
-   vpr_logicalBlockArray[blockIndex].input_nets = static_cast< int** >( TC_calloc( 1, sizeof( int* )));
-   vpr_logicalBlockArray[blockIndex].input_nets[0] = static_cast< int* >( TC_calloc( 1, sizeof( int )));
-   vpr_logicalBlockArray[blockIndex].input_nets[0][0] = static_cast< int >( inputNetIndex );
-
-   vpr_logicalBlockArray[blockIndex].clock_net = static_cast< int >( clockNetIndex );
-
-   vpr_logicalBlockArray[blockIndex].truth_table = 0;
+   if( netList.IsMember( pszOutputPinName ) &&
+       netList.IsMember( pszInputPinName ) &&
+       netList.IsMember( pszClockPinName ))
+   {
+      int blockIndex = vpr_blockIndex;
+   
+      const TNO_Net_c& outputNet = *netList.Find( pszOutputPinName );
+      const TNO_Net_c& inputNet = *netList.Find( pszInputPinName );
+      const TNO_Net_c& clockNet = *netList.Find( pszClockPinName );
+   
+      unsigned int outputNetIndex = outputNet.GetIndex( );
+      unsigned int inputNetIndex = inputNet.GetIndex( );
+      unsigned int clockNetIndex = clockNet.GetIndex( );
+   
+      vpr_logicalBlockArray[blockIndex].name = TC_strdup( pszOutputPinName );
+   
+      vpr_logicalBlockArray[blockIndex].type = VPACK_LATCH;
+      vpr_logicalBlockArray[blockIndex].model = const_cast< t_model* >( pvpr_latchModel );
+   
+      vpr_logicalBlockArray[blockIndex].output_nets = static_cast< int** >( TC_calloc( 1, sizeof( int* )));
+      vpr_logicalBlockArray[blockIndex].output_nets[0] = static_cast< int* >( TC_calloc( 1, sizeof( int )));
+      vpr_logicalBlockArray[blockIndex].output_nets[0][0] = static_cast< int >( outputNetIndex );
+   
+      vpr_logicalBlockArray[blockIndex].input_nets = static_cast< int** >( TC_calloc( 1, sizeof( int* )));
+      vpr_logicalBlockArray[blockIndex].input_nets[0] = static_cast< int* >( TC_calloc( 1, sizeof( int )));
+      vpr_logicalBlockArray[blockIndex].input_nets[0][0] = static_cast< int >( inputNetIndex );
+   
+      vpr_logicalBlockArray[blockIndex].clock_net = static_cast< int >( clockNetIndex );
+   
+      vpr_logicalBlockArray[blockIndex].truth_table = 0;
+   }
 }
 
 //===========================================================================//
