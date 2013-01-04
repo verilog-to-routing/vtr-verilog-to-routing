@@ -54,10 +54,14 @@ using namespace std;
    #ifndef SIZE_MAX
       #define SIZE_MAX ULONG_MAX
    #endif
+#elif defined( SUN8 )
+   #ifndef SIZE_MAX
+      #define SIZE_MAX UINT_MAX
+   #endif
 #else
    #include <stdint.h>
    #ifndef SIZE_MAX
-      #define SIZE_MAX UIN_MAX
+      #define SIZE_MAX UINT_MAX
    #endif
 #endif
 
