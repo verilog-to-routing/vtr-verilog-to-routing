@@ -88,11 +88,11 @@ TGS_Rect_c::TGS_Rect_c(
 //===========================================================================//
 TGS_Rect_c::TGS_Rect_c( 
             TGS_Layer_t    layer_,
-      const TGS_Region_c&  region,
+      const TGS_Region_c&  region_,
             TGS_SnapMode_t snap )
       :
       layer( layer_ ),
-      region( region.x1, region.y1, region.x2, region.y2, snap )
+      region( region_.x1, region_.y1, region_.x2, region_.y2, snap )
 {
 }
 
@@ -249,7 +249,7 @@ void TGS_Rect_c::Print(
    string srRect;
    this->ExtractString( &srRect );
 
-   printHandler.Write( pfile, spaceLen, "[rect] %s", TIO_SR_STR( srRect ));
+   printHandler.Write( pfile, spaceLen, "[rect] %s\n", TIO_SR_STR( srRect ));
 }
 
 //===========================================================================//
