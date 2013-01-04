@@ -32,7 +32,9 @@ CFLAGSlinux_i686 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_I686
 CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
 CFLAGS = $(CFLAGS$(ISM)) \
 	-DPLACEMENT_REGIONS_ENABLE \
+	-DPLACEMENT_RELATIVE_ENABLE \
 	-I. \
+	-I../TRP_RelativePlace \
 	-I../TOS_OptionsStore \
 	-I../TFS_FloorplanStore \
 	-I../TAS_ArchitectureSpec \
@@ -152,6 +154,9 @@ $(OBJECTS): $(ISM)/%.o:%.cxx
 # Library rules
 ######################################################################
 
+../$(ISM)/libTRP_RelativePlace.a:
+	cd ../TRP_RelativePlace ; $(MAKE) $(BUILD_TARGET)
+
 ../$(ISM)/libTOS_OptionsStore.a:
 	cd ../TOS_OptionsStore ; $(MAKE) $(BUILD_TARGET)
 
@@ -181,6 +186,9 @@ $(OBJECTS): $(ISM)/%.o:%.cxx
 
 ../$(ISM)/libTTPT_TilePlaneObjects.a:
 	cd ../TTP_TilePlaneObjects ; $(MAKE) $(BUILD_TARGET)
+
+../$(ISM)/libTGO_GeometricObjects.a:
+	cd ../TGO_GeometricObjects ; $(MAKE) $(BUILD_TARGET)
 
 ../$(ISM)/libTGS_GeometricShapes.a:
 	cd ../TGS_GeometricShapes ; $(MAKE) $(BUILD_TARGET)
