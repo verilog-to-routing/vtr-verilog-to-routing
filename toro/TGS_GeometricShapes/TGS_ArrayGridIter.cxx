@@ -104,7 +104,7 @@ void TGS_ArrayGridIter_c::Init(
          this->parrayGrid_->GetPitch( &this->pitch_ );
 
          // Default initial indices to array region lower-left corner
-         this->x_ = this->arrayRegion_.x1 - this->pitch_.width;
+         this->x_ = this->arrayRegion_.x1 - this->pitch_.dx;
          this->y_ = this->arrayRegion_.y1;
       }
    }
@@ -136,12 +136,12 @@ bool TGS_ArrayGridIter_c::Next(
       if( TCTF_IsLE( this->x_, this->arrayRegion_.x2 ) || 
           TCTF_IsLE( this->y_, this->arrayRegion_.y2 ))
       {
-	 this->x_ += this->pitch_.width;
+	 this->x_ += this->pitch_.dx;
 
          if( TCTF_IsGT( this->x_, this->arrayRegion_.x2 ))
 	 {
             this->x_ = this->arrayRegion_.x1;
-            this->y_ += this->pitch_.height;
+            this->y_ += this->pitch_.dy;
 
             if( TCTF_IsGT( this->y_, this->arrayRegion_.y2 ))
 	    {
