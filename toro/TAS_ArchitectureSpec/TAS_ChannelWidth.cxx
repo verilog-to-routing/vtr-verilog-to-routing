@@ -156,9 +156,9 @@ void TAS_ChannelWidth_c::Print(
    switch( this->usageMode )
    {
    case TAS_CHANNEL_USAGE_IO:
-      printHandler.Write( pfile, spaceLen, "<%s width = %0.*f />",
+      printHandler.Write( pfile, spaceLen, "<%s width=\"%0.*f\"/>",
                                            TIO_SR_STR( srUsageMode ),
-	                                   precision, this->width );
+                                           precision, this->width );
       break;
 
    case TAS_CHANNEL_USAGE_X:
@@ -166,30 +166,30 @@ void TAS_ChannelWidth_c::Print(
       switch( this->distrMode )
       {
       case TAS_CHANNEL_DISTR_UNIFORM:
-         printHandler.Write( pfile, spaceLen, "<%s distr = %s peak = %0.*f />",
+         printHandler.Write( pfile, spaceLen, "<%s distr=\"%s\" peak=\"%0.*f\"/>",
                                               TIO_SR_STR( srUsageMode ),
                                               TIO_SR_STR( srDistrMode ),
-	                                      precision, this->peak );
+                                              precision, this->peak );
          break;
 
       case TAS_CHANNEL_DISTR_GAUSSIAN:
       case TAS_CHANNEL_DISTR_PULSE:
-         printHandler.Write( pfile, spaceLen, "<%s distr = %s peak = %0.*f xpeak = %0.*f dc = %0.*f width = %0.*f />",
+         printHandler.Write( pfile, spaceLen, "<%s distr=\"%s\" peak=\"%0.*f\" xpeak=\"%0.*f\" dc=\"%0.*f\" width=\"%0.*f\"/>",
                                               TIO_SR_STR( srUsageMode ),
                                               TIO_SR_STR( srDistrMode ),
-	                                      precision, this->peak,
-	                                      precision, this->xpeak,
-	                                      precision, this->dc,
-	                                      precision, this->width );
+                                              precision, this->peak,
+                                              precision, this->xpeak,
+                                              precision, this->dc,
+                                              precision, this->width );
          break;
 
       case TAS_CHANNEL_DISTR_DELTA:
-         printHandler.Write( pfile, spaceLen, "<%s distr = %s peak = %0.*f xpeak = %0.*f dc = %0.*f />",
+         printHandler.Write( pfile, spaceLen, "<%s distr=\"%s\" peak=\"%0.*f\" xpeak=\"%0.*f\" dc=\"%0.*f\"/>",
                                               TIO_SR_STR( srUsageMode ),
                                               TIO_SR_STR( srDistrMode ),
-	                                      precision, this->peak,
-	                                      precision, this->xpeak,
-	                                      precision, this->dc );
+                                              precision, this->peak,
+                                              precision, this->xpeak,
+                                              precision, this->dc );
          break;
 
       case TAS_CHANNEL_DISTR_UNDEFINED:
@@ -239,7 +239,7 @@ void TAS_ChannelWidth_c::PrintXML(
    case TAS_CHANNEL_USAGE_IO:
       printHandler.Write( pfile, spaceLen, "<%s width=\"%0.*f\"/>\n",
                                            TIO_SR_STR( srUsageMode ),
-	                                   precision, this->width );
+                                           precision, this->width );
       break;
 
    case TAS_CHANNEL_USAGE_X:
@@ -250,7 +250,7 @@ void TAS_ChannelWidth_c::PrintXML(
          printHandler.Write( pfile, spaceLen, "<%s distr=\"%s\" peak=\"%0.*f\"/>\n",
                                               TIO_SR_STR( srUsageMode ),
                                               TIO_SR_STR( srDistrMode ),
-	                                      precision, this->peak );
+                                              precision, this->peak );
          break;
 
       case TAS_CHANNEL_DISTR_GAUSSIAN:
@@ -258,19 +258,19 @@ void TAS_ChannelWidth_c::PrintXML(
          printHandler.Write( pfile, spaceLen, "<%s distr=\"%s\" peak=\"%0.*f\" xpeak=\"%0.*f\" dc=\"%0.*f\" width=\"%0.*f\"/>\n",
                                               TIO_SR_STR( srUsageMode ),
                                               TIO_SR_STR( srDistrMode ),
-	                                      precision, this->peak,
-	                                      precision, this->xpeak,
-	                                      precision, this->dc,
-	                                      precision, this->width );
+                                              precision, this->peak,
+                                              precision, this->xpeak,
+                                              precision, this->dc,
+                                              precision, this->width );
          break;
 
       case TAS_CHANNEL_DISTR_DELTA:
          printHandler.Write( pfile, spaceLen, "<%s distr=\"%s\" peak=\"%0.*f\" xpeak=\"%0.*f\" dc=\"%0.*f\"/>\n",
                                               TIO_SR_STR( srUsageMode ),
                                               TIO_SR_STR( srDistrMode ),
-	                                      precision, this->peak,
-	                                      precision, this->xpeak,
-	                                      precision, this->dc );
+                                              precision, this->peak,
+                                              precision, this->xpeak,
+                                              precision, this->dc );
          break;
 
       case TAS_CHANNEL_DISTR_UNDEFINED:
