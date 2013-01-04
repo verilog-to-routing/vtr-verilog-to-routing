@@ -43,6 +43,7 @@
 TCP_CircuitFile_c::TCP_CircuitFile_c( 
             FILE*                   pfile,    
       const char*                   pszFileName,
+            TCP_CircuitInterface_c* pcircuitInterface,
             TCD_CircuitDesign_c*    pcircuitDesign )
 {
    this->ok_ = true;
@@ -61,6 +62,9 @@ TCP_CircuitFile_c::TCP_CircuitFile_c(
 
    // Define a token parser attached to token buffer
    TCP_CircuitParser_c circuitParser( &tokenBuffer );
+
+   // Define a pointer to the default interface handler class
+   circuitParser.SetInterface( pcircuitInterface );
 
    // Define a pointer to the default scanner class
    circuitParser.SetScanner( &circuitScanner );
