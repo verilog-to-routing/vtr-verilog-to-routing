@@ -195,7 +195,7 @@ void TGS_Path_c::Print(
    string srPath;
    this->ExtractString( &srPath );
 
-   printHandler.Write( pfile, spaceLen, "[path] %s", TIO_SR_STR( srPath ));
+   printHandler.Write( pfile, spaceLen, "[path] %s\n", TIO_SR_STR( srPath ));
 }
 
 //===========================================================================//
