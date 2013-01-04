@@ -57,15 +57,6 @@ TNO_Node_c::TNO_Node_c(
 
 //===========================================================================//
 TNO_Node_c::TNO_Node_c( 
-      const TNO_Channel_t& channel )
-      :
-      type_( TNO_NODE_CHANNEL ),
-      channel_( channel )
-{
-} 
-
-//===========================================================================//
-TNO_Node_c::TNO_Node_c( 
       const TNO_Segment_c& segment )
       :
       type_( TNO_NODE_SEGMENT ),
@@ -88,7 +79,6 @@ TNO_Node_c::TNO_Node_c(
       :
       type_( node.type_ ),
       instPin_( node.instPin_ ),
-      channel_( node.channel_ ),
       segment_( node.segment_ ),
       switchBox_( node.switchBox_ )
 {
@@ -120,7 +110,6 @@ TNO_Node_c& TNO_Node_c::operator=(
    {
       this->type_ = node.type_;
       this->instPin_ = node.instPin_;
-      this->channel_ = node.channel_;
       this->segment_ = node.segment_;
       this->switchBox_ = node.switchBox_;
    }
@@ -139,7 +128,6 @@ bool TNO_Node_c::operator==(
 {
    return(( this->type_ == node.type_ ) &&
           ( this->instPin_ == node.instPin_ ) &&
-          ( this->channel_ == node.channel_ ) &&
           ( this->segment_ == node.segment_ ) &&
           ( this->switchBox_ == node.switchBox_ ) ?
           true : false );
@@ -173,15 +161,12 @@ void TNO_Node_c::Print(
    TNO_ExtractStringNodeType( this->type_, &srType );
 
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
-   printHandler.Write( pfile, spaceLen, "type = %s\n", TIO_SR_STR( srType ));
+   printHandler.Write( pfile, spaceLen, "type=\"%s\"\n", TIO_SR_STR( srType ));
 
    switch( this->type_ )
    {
    case TNO_NODE_INST_PIN: 
       this->instPin_.Print( pfile, spaceLen + 3 );
-      break;
-   case TNO_NODE_CHANNEL: 
-      this->channel_.Print( pfile, spaceLen + 3 );
       break;
    case TNO_NODE_SEGMENT: 
       this->segment_.Print( pfile, spaceLen + 3 );
@@ -208,16 +193,6 @@ void TNO_Node_c::Set(
 
    this->type_ = TNO_NODE_INST_PIN;
    this->instPin_ = instPin;
-} 
-
-//===========================================================================//
-void TNO_Node_c::Set( 
-      const TNO_Channel_t& channel )
-{
-   this->Clear( );
-
-   this->type_ = TNO_NODE_CHANNEL;
-   this->channel_ = channel;
 } 
 
 //===========================================================================//
@@ -253,7 +228,6 @@ void TNO_Node_c::Clear(
    this->type_ = TNO_NODE_UNDEFINED;
 
    this->instPin_.Clear( );
-   this->channel_.Clear( );
    this->segment_.Clear( );
    this->switchBox_.Clear( );
 } 
