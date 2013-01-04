@@ -188,12 +188,11 @@ void TLO_Cell_c::Print(
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   printHandler.Write( pfile, 0, "\"%s\" ",
-                                 TIO_SR_STR( this->srName_ ));
-
+   printHandler.Write( pfile, spaceLen, "<cell name=\"%s\"",
+                                        TIO_SR_STR( this->srName_ ));
    if( this->srMasterName_.length( )) 
    {
-      printHandler.Write( pfile, 0, "master = \"%s\" ",
+      printHandler.Write( pfile, 0, " master=\"%s\"",
                                     TIO_SR_STR( this->srMasterName_ ));
    }
 
@@ -201,7 +200,7 @@ void TLO_Cell_c::Print(
    {
       string srSource;
       TLO_ExtractStringCellSource( this->source_, &srSource );
-      printHandler.Write( pfile, 0, "source = %s ",
+      printHandler.Write( pfile, 0, " source=\"%s\"",
                                     TIO_SR_STR( srSource ));
    }
 
@@ -211,12 +210,12 @@ void TLO_Cell_c::Print(
       TC_MinGrid_c& MinGrid = TC_MinGrid_c::GetInstance( );
       unsigned int precision = MinGrid.GetPrecision( );
 
-      printHandler.Write( pfile, 0, "cap_in = %0.*f ",
-                                    precision, this->timing_.inputPinCap );
-      printHandler.Write( pfile, 0, "delay_in = %0.*e ",
+      printHandler.Write( pfile, 0, " cap_in=\"%0.*f\" delay_in=\"%0.*e\"",
+                                    precision, this->timing_.inputPinCap,
                                     precision + 1, this->timing_.inputPinDelay );
    }
    printHandler.Write( pfile, 0, ">\n" );
+   spaceLen += 3;
 
    if( this->portList_.IsValid( ))
    {
@@ -226,6 +225,9 @@ void TLO_Cell_c::Print(
    {
       this->pinList_.Print( pfile, spaceLen );
    }
+
+   spaceLen -= 3;
+   printHandler.Write( pfile, spaceLen, "</cell>\n" );
 }
 
 //===========================================================================//
