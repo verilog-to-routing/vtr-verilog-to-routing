@@ -9,10 +9,6 @@
 //           - SetFabricFile
 //           - SetFabricModel
 //
-//           Inline private methods include:
-//           - FindOrientMode_
-//           - FindSideMode_
-//
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
@@ -56,24 +52,24 @@ void TFP_FabricParser_c::syn(
 
       if( LT( 1 )->getType( ) == UNCLOSED_STRING )
       {
-	 srMsg = "at newline character. Closing quote is missing";
+         srMsg = "at newline character. Closing quote is missing";
       }
       else
       {
-	 srMsg  = "at " + srFoundToken + " token, ";
-	 srMsg += "\"" + srFoundText + "\"";
+         srMsg  = "at " + srFoundToken + " token, ";
+         srMsg += "\"" + srFoundText + "\"";
 
          if( tokenType && ( tokenType != DLGminToken ))
          {
             string srExpectToken = this->token_tbl[tokenType];
-	    srMsg += ", expected a " + srExpectToken + " token";
+            srMsg += ", expected a " + srExpectToken + " token";
          }
 
-	 if( strlen( pszGroup ) > 0 )
-	 {
-	    srMsg += " in ";
-	    srMsg += pszGroup;
-	 }
+         if( strlen( pszGroup ) > 0 )
+         {
+            srMsg += " in ";
+            srMsg += pszGroup;
+         }
       }
 
       this->pfabricFile_->SyntaxError( lineNum, 
@@ -146,48 +142,4 @@ void TFP_FabricParser_c::SetFabricModel(
       TFM_FabricModel_c* pfabricModel )
 {
    this->pfabricModel_ = pfabricModel;
-}
-
-//===========================================================================//
-// Method         : FindOrientMode_
-// Author         : Jeff Rudolph
-//---------------------------------------------------------------------------//
-// Version history
-// 06/15/12 jeffr : Original
-//===========================================================================//
-TGS_OrientMode_t TFP_FabricParser_c::FindOrientMode_(
-      ANTLRTokenType tokenType )
-{
-   TGS_OrientMode_t mode = TGS_ORIENT_UNDEFINED;
-   switch( tokenType )
-   {
-   case HORIZONTAL: mode = TGS_ORIENT_HORIZONTAL; break;
-   case VERTICAL:   mode = TGS_ORIENT_VERTICAL;   break;
-   }
-   return( mode );
-}
-
-//===========================================================================//
-// Method         : FindSideMode_
-// Author         : Jeff Rudolph
-//---------------------------------------------------------------------------//
-// Version history
-// 06/15/12 jeffr : Original
-//===========================================================================//
-TC_SideMode_t TFP_FabricParser_c::FindSideMode_(
-      ANTLRTokenType tokenType )
-{
-   TC_SideMode_t mode = TC_SIDE_UNDEFINED;
-   switch( tokenType )
-   {
-   case LEFT:   mode = TC_SIDE_LEFT;  break;
-   case R:
-   case RIGHT:  mode = TC_SIDE_RIGHT; break;
-   case BOTTOM: 
-   case LOWER:  mode = TC_SIDE_LOWER; break;
-   case T: 
-   case TOP:    
-   case UPPER:  mode = TC_SIDE_UPPER; break;
-   }
-   return( mode );
 }
