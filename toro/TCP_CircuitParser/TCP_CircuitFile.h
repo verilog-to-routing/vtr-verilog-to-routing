@@ -31,6 +31,8 @@ using namespace std;
 
 #include "TCD_CircuitDesign.h"
 
+#include "TCP_CircuitInterface.h"
+
 //===========================================================================//
 // Purpose        : Class declaration
 // Author         : Jeff Rudolph
@@ -44,6 +46,7 @@ public:
 
    TCP_CircuitFile_c( FILE* pfile, 
                       const char* pszFileParserName,
+                      TCP_CircuitInterface_c* pcircuitInterface,
                       TCD_CircuitDesign_c* pcircuitDesign );
    ~TCP_CircuitFile_c( void );
 
