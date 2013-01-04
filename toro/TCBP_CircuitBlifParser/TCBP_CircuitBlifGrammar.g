@@ -127,24 +127,28 @@ private:
 start 
    : 
    topModel[ &pcircuitDesign_->srName,
+             &pcircuitDesign_->portList,
+             &pcircuitDesign_->portNameList,
              &pcircuitDesign_->instList,
-             &pcircuitDesign_->portList ]
+             &pcircuitDesign_->instNameList ]
    (  cellModel[ &pcircuitDesign_->cellList ] )*
    END_OF_FILE
    ;
 
 //===========================================================================//
 topModel[ string* psrName,
+          TPO_PortList_t* pportList,
+          TPO_NameList_t* pportNameList,
           TPO_InstList_t* pinstList,
-          TPO_PortList_t* pportList ]
+          TPO_NameList_t* pinstNameList ]
    : 
    MODEL stringText[ psrName ]
-   (  INPUTS pinList[ pportList, TC_TYPE_OUTPUT ]
-   |  OUTPUTS pinList[ pportList, TC_TYPE_INPUT ]
-   |  CLOCKS pinList[ pportList, TC_TYPE_CLOCK ]
-   |  NAMES namesElem[ pinstList ]
-   |  LATCH latchElem[ pinstList ]
-   |  SUBCKT subcktElem[ pinstList ]
+   (  INPUTS pinList[ pportList, pportNameList, TC_TYPE_OUTPUT ]
+   |  OUTPUTS pinList[ pportList, pportNameList, TC_TYPE_INPUT ]
+   |  CLOCKS pinList[ pportList, pportNameList, TC_TYPE_CLOCK ]
+   |  NAMES namesElem[ pinstList, pinstNameList ]
+   |  LATCH latchElem[ pinstList, pinstNameList ]
+   |  SUBCKT subcktElem[ pinstList, pinstNameList ]
    )*
    END
    ;
@@ -173,6 +177,7 @@ cellModel[ TLO_CellList_t* pcellList ]
 
 //===========================================================================//
 pinList[ TPO_PortList_t* pportList, 
+         TPO_NameList_t* pportNameList,
          TC_TypeMode_t type ]
    : 
    <<
@@ -185,6 +190,7 @@ pinList[ TPO_PortList_t* pportList,
          TPO_Pin_t pin( srPinName, type );
          port.AddPin( pin );
          pportList->Add( port );
+         pportNameList->Add( port.GetName( ));
       >>
    )+
    ;
@@ -205,7 +211,8 @@ portList[ TLO_PortList_t* pportList,
    ;
 
 //===========================================================================//
-namesElem[ TPO_InstList_t* pinstList ]
+namesElem[ TPO_InstList_t* pinstList,
+           TPO_NameList_t* pinstNameList ]
    : 
    <<
       string srPinName;
@@ -239,11 +246,13 @@ namesElem[ TPO_InstList_t* pinstList ]
       inst.SetPinList( pinList );
       inst.SetNamesLogicBitsList( logicBitsList );
       pinstList->Add( inst );
+      pinstNameList->Add( inst.GetName( ));
    >>
    ;
 
 //===========================================================================//
-latchElem[ TPO_InstList_t* pinstList ]
+latchElem[ TPO_InstList_t* pinstList,
+           TPO_NameList_t* pinstNameList ]
    : 
    <<
       string srInputName;
@@ -281,11 +290,13 @@ latchElem[ TPO_InstList_t* pinstList ]
       inst.SetLatchClockType( clockType );
       inst.SetLatchInitState( initState );
       pinstList->Add( inst );
+      pinstNameList->Add( inst.GetName( ));
    >>
    ;
 
 //===========================================================================//
-subcktElem[ TPO_InstList_t* pinstList ]
+subcktElem[ TPO_InstList_t* pinstList,
+            TPO_NameList_t* pinstNameList ]
    : 
    <<
       string srInstName;
@@ -325,8 +336,8 @@ subcktElem[ TPO_InstList_t* pinstList ]
       inst.SetPinList( pinList );
       inst.SetCellName( srCellName );
       inst.SetSubcktPinMapList( pinMapList );
-
       pinstList->Add( inst );
+      pinstNameList->Add( inst.GetName( ));
    >>
    ;
 
