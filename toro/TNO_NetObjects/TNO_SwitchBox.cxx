@@ -233,12 +233,18 @@ void TNO_SwitchBox_c::ExtractString(
          this->input_.ExtractString( &srInput );
          this->output_.ExtractString( &srOutput );
 
-         *psrSwitchBox = "\"";
+         *psrSwitchBox = "<sb ";
+         *psrSwitchBox += "name=\"";
          *psrSwitchBox += this->srName_;
-         *psrSwitchBox += "\" ";
+         *psrSwitchBox += "\"> ";
+         *psrSwitchBox += "<sides>";
+         *psrSwitchBox += " ";
          *psrSwitchBox += srInput;
          *psrSwitchBox += " ";
          *psrSwitchBox += srOutput;
+         *psrSwitchBox += " ";
+         *psrSwitchBox += "</sides> ";
+         *psrSwitchBox += "</sb>";
       }
       else
       {
