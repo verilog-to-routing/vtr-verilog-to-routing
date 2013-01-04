@@ -272,23 +272,28 @@ void TAS_PhysicalBlock_c::Print(
    case TAS_USAGE_INPUT_OUTPUT:   pszUsage = "io"; break; 
    case TAS_USAGE_UNDEFINED:      pszUsage = ( this->capacity ? "io" : "pb" ); break;
    }
-   printHandler.Write( pfile, spaceLen, "<%s \"%s\" ", TIO_PSZ_STR( pszUsage ),
-                                                       TIO_SR_STR( this->srName ));
+   printHandler.Write( pfile, spaceLen, "<%s name=\"%s\"", 
+                                        TIO_PSZ_STR( pszUsage ),
+                                        TIO_SR_STR( this->srName ));
    if( this->height > 0 )
    {
-      printHandler.Write( pfile, 0, "height = %u ", this->height );
+      printHandler.Write( pfile, 0, " height=\"%u\"", 
+                                    this->height );
    }
    if( this->capacity > 0 )
    {
-      printHandler.Write( pfile, 0, "capacity = %u ", this->capacity );
+      printHandler.Write( pfile, 0, " capacity=\"%u\"", 
+                                    this->capacity );
    }
    if( this->numPB > 0 )
    {
-      printHandler.Write( pfile, 0, "count = %u ", this->numPB );
+      printHandler.Write( pfile, 0, " count=\"%u\"", 
+                                    this->numPB );
    }
    if( this->srModelName.length( ))
    {
-      printHandler.Write( pfile, 0, "cell = \"%s\" ", TIO_SR_STR( this->srModelName ));
+      printHandler.Write( pfile, 0, " cell=\"%s\"", 
+                                    TIO_SR_STR( this->srModelName ));
    }
 
    if(( this->classType == TAS_CLASS_LUT ) ||
@@ -297,12 +302,12 @@ void TAS_PhysicalBlock_c::Print(
    {
       string srClassType;
       TAS_ExtractStringClassType( this->classType, &srClassType );
-      printHandler.Write( pfile, 0, "class = %s ",
- 	                            TIO_SR_STR( srClassType ));
+      printHandler.Write( pfile, 0, " class=\"%s\"",
+                                    TIO_SR_STR( srClassType ));
    }
 
-   this->fcIn.Print( pfile, 0 );
-   this->fcOut.Print( pfile, 0 );
+   this->fcIn.Print( pfile, 1 );
+   this->fcOut.Print( pfile, 1 );
 
    if( this->dims_.IsValid( ) || this->origin_.IsValid( ))
    {
@@ -310,45 +315,48 @@ void TAS_PhysicalBlock_c::Print(
 
       if( this->dims_.IsValid( ))
       {
-         printHandler.Write( pfile, 0, "size = %0.*f %0.*f ", precision, this->dims_.width, 
-                                                              precision, this->dims_.height );
+         printHandler.Write( pfile, 0, "<size> %0.*f %0.*f </size>", 
+                                       precision, this->dims_.dx, 
+                                       precision, this->dims_.dy );
       }
       if( this->origin_.IsValid( ))
       {
-         printHandler.Write( pfile, 0, "origin = %0.*f %0.*f ", precision, this->origin_.x, 
-                                                                precision, this->origin_.y );
+         printHandler.Write( pfile, 0, "<origin> %0.*f %0.*f </origin>", 
+                                       precision, this->origin_.x, 
+                                       precision, this->origin_.y );
       }
    }
-   printHandler.Write( pfile, 0, "/>\n" );
+   printHandler.Write( pfile, 0, ">\n" );
    spaceLen += 3;
    
    if( this->modeNameList.IsValid( ))
    {
       const char* pszS = ( this->modeNameList.GetLength( ) > 1 ? "s" : "" );
-      printHandler.Write( pfile, spaceLen, "<mode%s ", TIO_PSZ_STR( pszS ));
+      printHandler.Write( pfile, spaceLen, "<mode%s> ", TIO_PSZ_STR( pszS ));
       for( size_t i = 0; i < this->modeNameList.GetLength( ); ++i )
       {
          const TC_Name_c& modeName = *this->modeNameList[i];
          printHandler.Write( pfile, 0, "\"%s\" ", TIO_PSZ_STR( modeName.GetName( )));
       }
-      printHandler.Write( pfile, 0, "/>\n" );
+      printHandler.Write( pfile, 0, "</mode%s>\n", TIO_PSZ_STR( pszS ));
    }
    if( this->modeList.IsValid( ))
    {
       const char* pszS = ( this->modeList.GetLength( ) > 1 ? "s" : "" );
-      printHandler.Write( pfile, spaceLen, "<mode%s ", TIO_PSZ_STR( pszS ));
+      printHandler.Write( pfile, spaceLen, "<mode%s> ", TIO_PSZ_STR( pszS ));
       for( size_t i = 0; i < this->modeList.GetLength( ); ++i )
       {
          const TAS_Mode_c& mode = *this->modeList[i];
          printHandler.Write( pfile, 0, "\"%s\" ", TIO_SR_STR( mode.srName ));
       }
-      printHandler.Write( pfile, 0, "/>\n" );
+      printHandler.Write( pfile, 0, "</mode%s>\n", TIO_PSZ_STR( pszS ));
    }
    if( !this->modeNameList.IsValid( ) &&
        !this->modeList.IsValid( ) &&
        this->physicalBlockList.IsValid( ))
    {
-      printHandler.Write( pfile, spaceLen, "<mode \"%s\" />\n", TIO_SR_STR( this->srName ));
+      printHandler.Write( pfile, spaceLen, "<mode> \"%s\" </mode>\n", 
+                                           TIO_SR_STR( this->srName ));
    }
 
    this->portList.Print( pfile, spaceLen );
@@ -362,7 +370,8 @@ void TAS_PhysicalBlock_c::Print(
    {
       string srPattern;
       TAS_ExtractStringPinAssignPatternType( this->pinAssignPattern, &srPattern );
-      printHandler.Write( pfile, spaceLen, "<pin_assign %s />\n", TIO_SR_STR( srPattern ));
+      printHandler.Write( pfile, spaceLen, "<pin_assign pattern=\"%s\"/>\n", 
+                                           TIO_SR_STR( srPattern ));
    }
    this->gridAssignList.Print( pfile, spaceLen );
 
@@ -389,13 +398,13 @@ void TAS_PhysicalBlock_c::Print(
       for( size_t i = 0; i < this->modeList.GetLength( ); ++i )
       {
          const TAS_Mode_c& mode = *this->modeList[i];
-	 if( pmodeList )
+         if( pmodeList )
          { 
             if( pmodeList->IsMember( mode ))
-	       continue;
+               continue;
 
             pmodeList->Add( mode );
-	 }
+         }
          mode.Print( pfile, spaceLen, hierLevel+1, pmodeList );
       }
    }
@@ -432,7 +441,7 @@ void TAS_PhysicalBlock_c::PrintXML(
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
    printHandler.Write( pfile, spaceLen, "<pb_type name=\"%s\" ",
-		                        TIO_SR_STR( this->srName ));
+                                        TIO_SR_STR( this->srName ));
    if( this->height > 0 )
    {
       printHandler.Write( pfile, 0, "height=\"%u\" ",
@@ -446,12 +455,12 @@ void TAS_PhysicalBlock_c::PrintXML(
    if( this->srModelName.length( ))
    {
       printHandler.Write( pfile, 0, "blif_model=\"%s\" ",
-	 	                    TIO_SR_STR( this->srModelName ));
+                                    TIO_SR_STR( this->srModelName ));
    }
    if( this->numPB > 0 )
    {
       printHandler.Write( pfile, 0, "num_pb=\"%u\" ",
-	 	                    this->numPB );
+                                    this->numPB );
    }
 
    if(( this->classType == TAS_CLASS_LUT ) ||
@@ -461,7 +470,7 @@ void TAS_PhysicalBlock_c::PrintXML(
       string srClassType;
       TAS_ExtractStringClassType( this->classType, &srClassType );
       printHandler.Write( pfile, 0, "class=\"%s\" ",
- 	                            TIO_SR_STR( srClassType ));
+                                    TIO_SR_STR( srClassType ));
    }
 
    printHandler.Write( pfile, 0, ">\n" );
@@ -511,13 +520,13 @@ void TAS_PhysicalBlock_c::PrintXML(
       TC_ExtractStringTypeMode( port.GetType( ), &srPortType );
 
       printHandler.Write( pfile, spaceLen, "<%s name=\"%s\" num_pins=\"%u\"",
-	 	                           TIO_SR_STR( srPortType ),
-	 	                           TIO_PSZ_STR( port.GetName( )),
-			                   port.GetCount( ));
+                                           TIO_SR_STR( srPortType ),
+                                           TIO_PSZ_STR( port.GetName( )),
+                                           port.GetCount( ));
       if( port.GetClass( ) && *port.GetClass( ))
       {
          printHandler.Write( pfile, 0, " port_class=\"%s\"",
-	 	                       TIO_PSZ_STR( port.GetClass( )));
+                                       TIO_PSZ_STR( port.GetClass( )));
       }
       if( port.IsEquivalent( ))
       {
