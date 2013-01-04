@@ -55,18 +55,18 @@ public:
    TFM_Block_c( TFM_BlockType_t blockType );
    TFM_Block_c( TFM_BlockType_t blockType,
                 const string& srName,
-		const string& srMasterName,
-		const TGS_Region_c& region );
+                const string& srMasterName,
+                const TGS_Region_c& region );
    TFM_Block_c( TFM_BlockType_t blockType,
                 const char* pszName,
-		const char* pszMasterName,
-		const TGS_Region_c& region );
+                const char* pszMasterName,
+                const TGS_Region_c& region );
    TFM_Block_c( TFM_BlockType_t blockType,
                 const string& srName,
-		const TGS_Region_c& region );
+                const TGS_Region_c& region );
    TFM_Block_c( TFM_BlockType_t blockType,
                 const char* pszName,
-		const TGS_Region_c& region );
+                const TGS_Region_c& region );
    TFM_Block_c( const TFM_Block_c& block );
    ~TFM_Block_c( void );
 
