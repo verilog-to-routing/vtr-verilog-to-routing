@@ -275,19 +275,19 @@ void TFM_Block_c::Print(
    case TFM_BLOCK_SWITCH_BOX:     pszUsage = "sb"; break;
    case TFM_BLOCK_UNDEFINED:                       break;
    }
-   printHandler.Write( pfile, spaceLen, "<%s ", pszUsage );
+   printHandler.Write( pfile, spaceLen, "<%s", pszUsage );
 
-   printHandler.Write( pfile, 0, "\"%s\" ", TIO_SR_STR( this->srName ));
+   printHandler.Write( pfile, 0, " name=\"%s\"", TIO_SR_STR( this->srName ));
    if( this->srMasterName.length( ))
    {
-      printHandler.Write( pfile, 0, "master = \"%s\" ", TIO_SR_STR( this->srMasterName ));
+      printHandler.Write( pfile, 0, " master=\"%s\"", TIO_SR_STR( this->srMasterName ));
    }
    printHandler.Write( pfile, 0, "> " );
    if( this->region.IsValid( ))
    {
       string srRegion;
       this->region.ExtractString( &srRegion );
-      printHandler.Write( pfile, 0, "<region %s >", TIO_SR_STR( srRegion ));
+      printHandler.Write( pfile, 0, "<region> %s </region>", TIO_SR_STR( srRegion ));
    }
    printHandler.Write( pfile, 0, "\n" );
    spaceLen += 3;
@@ -299,15 +299,15 @@ void TFM_Block_c::Print(
 
    if( this->mapTable.IsValid( ))
    {
-      printHandler.Write( pfile, spaceLen, "<mapping\n" );
+      printHandler.Write( pfile, spaceLen, "<mapping>\n" );
       this->mapTable.Print( pfile, spaceLen + 3 );
-      printHandler.Write( pfile, spaceLen, ">\n" );
+      printHandler.Write( pfile, spaceLen, "</mapping>\n" );
    }
 
    if( this->slice.count ||
        this->slice.capacity )
    {
-      printHandler.Write( pfile, spaceLen, "<slice count = %u capacity = %u >\n",
+      printHandler.Write( pfile, spaceLen, "<slice count=\"%u\" capacity=\"%u\"/>\n",
                                            this->slice.count,
                                            this->slice.capacity );
    }
@@ -317,7 +317,7 @@ void TFM_Block_c::Print(
        TCTF_IsGT( this->timing.capOutput, 0.0 ) ||
        TCTF_IsGT( this->timing.delay, 0.0 ))
    {
-      printHandler.Write( pfile, spaceLen, "<timing res = %0.*f cap_in = %0.*f cap_out = %0.*f delay = %0.*e >\n",
+      printHandler.Write( pfile, spaceLen, "<timing res=\"%0.*f\" cap_in=\"%0.*f\" cap_out=\"%0.*f\" delay=\"%0.*e\"/>\n",
                                            precision, this->timing.res,
                                            precision, this->timing.capInput,
                                            precision, this->timing.capOutput,
