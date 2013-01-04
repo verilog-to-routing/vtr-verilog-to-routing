@@ -158,13 +158,13 @@ void TAS_Interconnect_c::Print(
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   printHandler.Write( pfile, spaceLen, "<interconnect \"%s\" ", TIO_SR_STR( this->srName ));
+   printHandler.Write( pfile, spaceLen, "<interconnect name=\"%s\"", TIO_SR_STR( this->srName ));
 
    if( this->mapType != TAS_INTERCONNECT_MAP_UNDEFINED )
    {
       string srMapType;
       TAS_ExtractStringInterconnectMapType( this->mapType, &srMapType );
-      printHandler.Write( pfile, 0, "%s ", TIO_SR_STR( srMapType ));
+      printHandler.Write( pfile, 0, " type=\"%s\"", TIO_SR_STR( srMapType ));
    }
    printHandler.Write( pfile, 0, ">\n" );
 
@@ -173,12 +173,12 @@ void TAS_Interconnect_c::Print(
    for( size_t i = 0; i < this->inputNameList.GetLength( ); ++i )
    {
       const TC_Name_c& inputName = *this->inputNameList[i];
-      printHandler.Write( pfile, spaceLen, "<input \"%s\" />\n", TIO_PSZ_STR( inputName.GetName( )));
+      printHandler.Write( pfile, spaceLen, "<input name=\"%s\"/>\n", TIO_PSZ_STR( inputName.GetName( )));
    }
    for( size_t i = 0; i < this->outputNameList.GetLength( ); ++i )
    {
       const TC_Name_c& outputName = *this->outputNameList[i];
-      printHandler.Write( pfile, spaceLen, "<output \"%s\" />\n", TIO_PSZ_STR( outputName.GetName( )));
+      printHandler.Write( pfile, spaceLen, "<output name=\"%s\"/>\n", TIO_PSZ_STR( outputName.GetName( )));
    }
 
    this->timingDelayLists.Print( pfile, spaceLen );
@@ -224,7 +224,7 @@ void TAS_Interconnect_c::PrintXML(
                                            TIO_SR_STR( srMapType ),
                                            TIO_SR_STR( this->srName ),
                                            TIO_SR_STR( srInputNameList ),
-		                           TIO_SR_STR( srOutputNameList ));
+                                           TIO_SR_STR( srOutputNameList ));
    }
    else
    {
@@ -232,7 +232,7 @@ void TAS_Interconnect_c::PrintXML(
                                            TIO_SR_STR( srMapType ),
                                            TIO_SR_STR( this->srName ),
                                            TIO_SR_STR( srInputNameList ),
-		                           TIO_SR_STR( srOutputNameList ));
+                                           TIO_SR_STR( srOutputNameList ));
 
       this->timingDelayLists.PrintXML( pfile, spaceLen + 3 );
 
