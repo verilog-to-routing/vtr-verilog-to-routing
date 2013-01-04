@@ -251,7 +251,7 @@ void TGS_Region_c::Print(
    string srRegion;
    this->ExtractString( &srRegion );
 
-   printHandler.Write( pfile, spaceLen, "[region] %s", TIO_SR_STR( srRegion ));
+   printHandler.Write( pfile, spaceLen, "[region] %s\n", TIO_SR_STR( srRegion ));
 }
 
 //===========================================================================//
