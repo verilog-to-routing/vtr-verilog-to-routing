@@ -56,8 +56,8 @@ TFV_FabricPin_c::TFV_FabricPin_c(
       const string&       srName,
             unsigned int  slice,
             TC_SideMode_t side,
-	    double        offset,
-	    double        width )
+            double        offset,
+            double        width )
       :
       srName_( srName ),
       slice_( slice ),
@@ -74,8 +74,8 @@ TFV_FabricPin_c::TFV_FabricPin_c(
       const char*         pszName,
             unsigned int  slice,
             TC_SideMode_t side,
-	    double        offset,
-	    double        width )
+            double        offset,
+            double        width )
       :
       srName_( TIO_PSZ_STR( pszName )),
       slice_( slice ),
