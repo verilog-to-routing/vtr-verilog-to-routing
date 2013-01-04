@@ -25,7 +25,7 @@
 #include "TCT_SortedVector.h"
 
 //---------------------------------------------------------------------------//
-// Define circuit design data constants and typedefs
+// Define VPR interface data constants and typedefs
 //---------------------------------------------------------------------------//
 
 class TVPR_IndexCount_c; // Forward declaration for subsequent class typedefs
