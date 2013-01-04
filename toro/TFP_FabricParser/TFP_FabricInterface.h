@@ -45,7 +45,7 @@ public:
 
    virtual bool SyntaxError( unsigned int lineNum, 
                              const string& srFileName,
-			     const char* pszMessageText ) = 0;
+                             const char* pszMessageText ) = 0;
 
    virtual bool IsValid( void ) const = 0;
 };
