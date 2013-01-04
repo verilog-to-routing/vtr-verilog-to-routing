@@ -162,100 +162,112 @@ void TAS_TimingDelay_c::Print(
 
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   printHandler.Write( pfile, spaceLen, "<timing " );
+   printHandler.Write( pfile, spaceLen, "<timing" );
 
    string srMode;
    TAS_ExtractStringTimingMode( this->mode, &srMode );
-   printHandler.Write( pfile, 0, "%s ", TIO_SR_STR( srMode ));
+   printHandler.Write( pfile, 0, " mode=\"%s\"", 
+                                 TIO_SR_STR( srMode ));
 
    string srType;
    TAS_ExtractStringTimingType( this->type, &srType );
 
    if( this->mode == TAS_TIMING_MODE_DELAY_CONSTANT )
    {
-      printHandler.Write( pfile, 0, "input = \"%s\" ", TIO_SR_STR( this->srInputPortName ));
-      printHandler.Write( pfile, 0, "output = \"%s\" ", TIO_SR_STR( this->srOutputPortName ));
+      printHandler.Write( pfile, 0, " input=\"%s\" output=\"%s\"", 
+                                    TIO_SR_STR( this->srInputPortName ),
+                                    TIO_SR_STR( this->srOutputPortName ));
       if( TCTF_IsGT( this->valueMin, 0.0 ))
       {
-         printHandler.Write( pfile, 0, "min = %0.*e ", precision + 1, this->valueMin );
+         printHandler.Write( pfile, 0, " %s=\"%0.*e\"", 
+                                       TIO_SR_STR( srType ), 
+                                       precision + 1, this->valueMin );
       }
       if( TCTF_IsGT( this->valueMax, 0.0 ))
       {
-         printHandler.Write( pfile, 0, "max = %0.*e ", precision + 1, this->valueMax );
+         printHandler.Write( pfile, 0, " %s=\"%0.*e\"", 
+                                       TIO_SR_STR( srType ), 
+                                       precision + 1, this->valueMax );
       }
       printHandler.Write( pfile, 0, "/>\n" );
    }
    else if( this->mode == TAS_TIMING_MODE_DELAY_MATRIX )
    {
-      printHandler.Write( pfile, 0, "input = \"%s\" ", TIO_SR_STR( this->srInputPortName ));
-      printHandler.Write( pfile, 0, "output = \"%s\" ", TIO_SR_STR( this->srOutputPortName ));
-      printHandler.Write( pfile, 0, "\n" );
+      printHandler.Write( pfile, 0, " input=\"%s\" output=\"%s\"\n",
+                                    TIO_SR_STR( this->srInputPortName ),
+                                    TIO_SR_STR( this->srOutputPortName ));
       spaceLen += 3;
 
       string srTimingDelayMatrix;
       this->valueMatrix.ExtractString( TC_DATA_EXP, &srTimingDelayMatrix, 
-                                       4, SIZE_MAX, spaceLen + 6, 0 );
-      printHandler.Write( pfile, spaceLen, "%s = %s", TIO_SR_STR( srType ), 
-                                                      TIO_SR_STR( srTimingDelayMatrix ));
+                                       4, SIZE_MAX, spaceLen + 12, 0 );
+      printHandler.Write( pfile, spaceLen, " %s=%s", 
+                                           TIO_SR_STR( srType ), 
+                                           TIO_SR_STR( srTimingDelayMatrix ));
       spaceLen -= 3;
       printHandler.Write( pfile, spaceLen, "/>\n" );
    }
    else if( this->mode == TAS_TIMING_MODE_T_SETUP )
    {
-      printHandler.Write( pfile, 0, "input = \"%s\" ", TIO_SR_STR( this->srInputPortName ));
-      printHandler.Write( pfile, 0, "clock = \"%s\" ", TIO_SR_STR( this->srClockPortName ));
-      printHandler.Write( pfile, 0, "value = %0.*e ", precision + 1, this->valueNom );
-      printHandler.Write( pfile, 0, "/>\n" );
+      printHandler.Write( pfile, 0, "input=\"%s\" clock=\"%s\" value=\"%0.*e\"/>\n",
+                                    TIO_SR_STR( this->srInputPortName ),
+                                    TIO_SR_STR( this->srClockPortName ),
+                                    precision + 1, this->valueNom );
    }
    else if( this->mode == TAS_TIMING_MODE_T_HOLD )
    {
-      printHandler.Write( pfile, 0, "input = \"%s\" ", TIO_SR_STR( this->srInputPortName ));
-      printHandler.Write( pfile, 0, "clock = \"%s\" ", TIO_SR_STR( this->srClockPortName ));
-      printHandler.Write( pfile, 0, "value = %0.*e ", precision + 1, this->valueNom );
-      printHandler.Write( pfile, 0, "/>\n" );
+      printHandler.Write( pfile, 0, "input=\"%s\" clock=\"%s\" value=\"%0.*e\"/>\n",
+                                    TIO_SR_STR( this->srInputPortName ),
+                                    TIO_SR_STR( this->srClockPortName ),
+                                    precision + 1, this->valueNom );
    }
    else if( this->mode == TAS_TIMING_MODE_CLOCK_TO_Q )
    {
-      printHandler.Write( pfile, 0, "output = \"%s\" ", TIO_SR_STR( this->srOutputPortName ));
-      printHandler.Write( pfile, 0, "clock = \"%s\" ", TIO_SR_STR( this->srClockPortName ));
+      printHandler.Write( pfile, 0, " output=\"%s\" clock=\"%s\"", 
+                                    TIO_SR_STR( this->srOutputPortName ),
+                                    TIO_SR_STR( this->srClockPortName ));
       if( TCTF_IsGT( this->valueMin, 0.0 ))
       {
-         printHandler.Write( pfile, 0, "min = %0.*e ", precision + 1, this->valueMin );
+         printHandler.Write( pfile, 0, " %s=\"%0.*e\"", 
+                                    TIO_SR_STR( srType ), 
+                                    precision + 1, this->valueMin );
       }
       if( TCTF_IsGT( this->valueMax, 0.0 ))
       {
-         printHandler.Write( pfile, 0, "max = %0.*e ", precision + 1, this->valueMax );
+         printHandler.Write( pfile, 0, " %s=\"%0.*e\"", 
+                                    TIO_SR_STR( srType ), 
+                                    precision + 1, this->valueMax );
       }
       printHandler.Write( pfile, 0, "/>\n" );
    }
    else if( this->mode == TAS_TIMING_MODE_CAP_CONSTANT )
    {
-      printHandler.Write( pfile, 0, "input = \"%s\" ", TIO_SR_STR( this->srInputPortName ));
-      printHandler.Write( pfile, 0, "output = \"%s\" ", TIO_SR_STR( this->srOutputPortName ));
-      printHandler.Write( pfile, 0, "value = %0.*f ", precision, this->valueNom );
-      printHandler.Write( pfile, 0, "/>\n" );
+      printHandler.Write( pfile, 0, " input=\"%s\" output=\"%s\" value=\"%0.*f\"\n",
+                                    TIO_SR_STR( this->srInputPortName ),
+                                    TIO_SR_STR( this->srOutputPortName ),
+                                    precision, this->valueNom );
    }
    else if( this->mode == TAS_TIMING_MODE_CAP_MATRIX )
    {
-      printHandler.Write( pfile, 0, "input = \"%s\" ", TIO_SR_STR( this->srInputPortName ));
-      printHandler.Write( pfile, 0, "output = \"%s\" ", TIO_SR_STR( this->srOutputPortName ));
-      printHandler.Write( pfile, 0, "\n" );
+      printHandler.Write( pfile, 0, " input=\"%s\" output=\"%s\"\n",
+                                    TIO_SR_STR( this->srInputPortName ),
+                                    TIO_SR_STR( this->srOutputPortName ));
       spaceLen += 3;
 
       string srTimingDelayMatrix;
       this->valueMatrix.ExtractString( TC_DATA_FLOAT, &srTimingDelayMatrix, 
-                                       4, SIZE_MAX, spaceLen + 8, 0 );
-      printHandler.Write( pfile, spaceLen, "value = %s", TIO_SR_STR( srTimingDelayMatrix ));
-
+                                       4, SIZE_MAX, spaceLen + 10, 0 );
+      printHandler.Write( pfile, spaceLen, "matrix=\"%s\"", 
+                                           TIO_SR_STR( srTimingDelayMatrix ));
       spaceLen -= 3;
       printHandler.Write( pfile, spaceLen, "/>\n" );
    }
    else if( this->mode == TAS_TIMING_MODE_PACK_PATTERN )
    {
-      printHandler.Write( pfile, 0, "input = \"%s\" ", TIO_SR_STR( this->srInputPortName ));
-      printHandler.Write( pfile, 0, "output = \"%s\" ", TIO_SR_STR( this->srOutputPortName ));
-      printHandler.Write( pfile, 0, "name = \"%s\" ", TIO_SR_STR( this->srPackPatternName ));
-      printHandler.Write( pfile, 0, "/>\n" );
+      printHandler.Write( pfile, 0, " input=\"%s\" output=\"%s\" name=\"%s\"/>\n",
+                                    TIO_SR_STR( this->srInputPortName ),
+                                    TIO_SR_STR( this->srOutputPortName ),
+                                    TIO_SR_STR( this->srPackPatternName ));
    }
 }
 
@@ -285,8 +297,17 @@ void TAS_TimingDelay_c::PrintXML(
 
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   string srType;
-   TAS_ExtractStringTimingType( this->type, &srType );
+   const char* pszType = "";
+   if(( this->type == TAS_TIMING_TYPE_MAX_VALUE ) ||
+      ( this->type == TAS_TIMING_TYPE_MAX_MATRIX ))
+   {
+      pszType = "max";
+   }
+   if(( this->type == TAS_TIMING_TYPE_MIN_VALUE ) ||
+      ( this->type == TAS_TIMING_TYPE_MIN_MATRIX ))
+   {
+      pszType = "min";
+   }
 
    switch( this->mode )
    {
@@ -317,7 +338,7 @@ void TAS_TimingDelay_c::PrintXML(
 
    case TAS_TIMING_MODE_DELAY_MATRIX:
       printHandler.Write( pfile, spaceLen, "<delay_matrix type=\"%s\" in_port=\"%s\" out_port=\"%s\">\n",
-                                           TIO_SR_STR( srType ),
+                                           TIO_PSZ_STR( pszType ),
                                            TIO_SR_STR( this->srInputPortName ),
                                            TIO_SR_STR( this->srOutputPortName ));
 
