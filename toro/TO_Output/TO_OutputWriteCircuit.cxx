@@ -55,9 +55,9 @@ bool TO_Output_c::WriteCircuitFile_(
       printHandler.DisableOutput( TIO_PRINT_OUTPUT_ALL );
       printHandler.EnableOutput( TIO_PRINT_OUTPUT_USER_FILE );
 
-      this->WriteFileHeader_( 0, "Circuit Design", "//", "//" );
+      this->WriteFileHeader_( 0, "Circuit Design", "<!-- ", " -->" );
       circuitDesign.Print( 0 );
-      this->WriteFileFooter_( 0, "//", "//" );
+      this->WriteFileFooter_( 0, "<!-- ", " -->" );
 
       printHandler.EnableOutput( TIO_PRINT_OUTPUT_ALL );
       printHandler.DisableOutput( TIO_PRINT_OUTPUT_USER_FILE );
