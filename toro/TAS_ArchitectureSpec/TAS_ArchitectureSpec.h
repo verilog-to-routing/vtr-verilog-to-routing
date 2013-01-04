@@ -71,23 +71,23 @@ private:
                                 TAS_PhysicalBlock_c* pphysicalBlock );
    void InitDefaultsParentLinks_( TAS_PhysicalBlock_c* pphysicalBlock,
                                   const TAS_PhysicalBlock_c* pphysicalBlockParent,
-				  const TAS_Mode_c* pmodeParent ) const;
+                                  const TAS_Mode_c* pmodeParent ) const;
    void InitDefaultsParentLinks_( TAS_Mode_c* pmode,
-				  const TAS_PhysicalBlock_c* pphysicalBlockParent ) const;
+                                  const TAS_PhysicalBlock_c* pphysicalBlockParent ) const;
    void InitDefaultsCellList_( TAS_CellList_t* pcellList ) const;
 
    bool InitValidateConfig_( void );
    bool InitValidatePhysicalBlockList_( TAS_PhysicalBlockList_t* pphysicalBlockList,
-        			        const TAS_CellList_t& cellList,
+                                        const TAS_CellList_t& cellList,
                                         size_t hierarchyLevel = 0 ) const;
    bool InitValidatePhysicalBlock_( TAS_PhysicalBlock_c* pphysicalBlock,
-    			     	    const TAS_CellList_t& cellList,
+                                    const TAS_CellList_t& cellList,
                                     size_t hierarchyLevel = 0 ) const;
    bool InitValidateModeList_( TAS_ModeList_t* pmodeList,
-			       const TAS_CellList_t& cellList,
+                               const TAS_CellList_t& cellList,
                                size_t hierarchyLevel = 0 ) const;
    bool InitValidateMode_( TAS_Mode_c* pmode,
-			   const TAS_CellList_t& cellList,
+                           const TAS_CellList_t& cellList,
                            size_t hierarchyLevel = 0 ) const;
    bool InitValidatePinAssignList_( const TAS_PinAssignList_t& pinAssignList,
                                     unsigned int height ) const;
