@@ -111,7 +111,8 @@ public:
    bool operator==( const TPO_Inst_c& inst ) const;
    bool operator!=( const TPO_Inst_c& inst ) const;
 
-   void Print( FILE* pfile = stdout, size_t spaceLen = 0 ) const;
+   void Print( FILE* pfile = stdout, size_t spaceLen = 0,
+               const char* pszUsage = 0 ) const;
    void PrintBLIF( FILE* pfile = stdout, size_t spaceLen = 0 ) const;
 
    void SetName( const string& srName );
