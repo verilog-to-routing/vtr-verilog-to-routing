@@ -55,9 +55,9 @@ bool TO_Output_c::WriteFabricFile_(
       printHandler.DisableOutput( TIO_PRINT_OUTPUT_ALL );
       printHandler.EnableOutput( TIO_PRINT_OUTPUT_USER_FILE );
 
-      this->WriteFileHeader_( 0, "Fabric Model", "//", "//" );
+      this->WriteFileHeader_( 0, "Fabric Model", "<!-- ", " -->" );
       fabricModel.Print( 0 );
-      this->WriteFileFooter_( 0, "//", "//" );
+      this->WriteFileFooter_( 0, "<!-- ", " -->" );
 
       printHandler.EnableOutput( TIO_PRINT_OUTPUT_ALL );
       printHandler.DisableOutput( TIO_PRINT_OUTPUT_USER_FILE );
