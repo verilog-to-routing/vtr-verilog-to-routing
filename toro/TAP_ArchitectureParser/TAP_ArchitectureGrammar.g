@@ -118,11 +118,11 @@ using namespace std;
 #token MUX_IN_PIN_SIZE  "[Mm][Uu][Xx][_][Tt][Rr][Aa][Nn][Ss][_][Ii][Nn][_][Pp][Ii][Nn][_][Ss][Ii][Zz][Ee]"
 #token LOGIC_TILE_AREA  "[Gg][Rr][Ii][Dd][_][Ll][Oo][Gg][Ii][Cc][_][Tt][Ii][Ll][Ee][_][Aa][Rr][Ee][Aa]"
 
-#token FREQ             "[Ff][Rr][Ee][Qq]"
-
 #token WIRE_SWITCH      "[Ww][Ii][Rr][Ee][_][Ss][Ww][Ii][Tt][Cc][Hh]"
 #token OPIN_SWITCH      "[Oo][Pp][Ii][Nn][_][Ss][Ww][Ii][Tt][Cc][Hh]"
 
+#token FREQ             "[Ff][Rr][Ee][Qq]"
+#token MUX              "[Mm][Uu][Xx]"
 #token PATTERN          "[Pp][Aa][Tt][Tt][Ee][Rr][Nn]"
 
 #token INPUT_PORTS      "[Ii][Nn][Pp][Uu][Tt][_][Pp][Oo][Rr][Tt][Ss]"
@@ -133,84 +133,21 @@ using namespace std;
 #token OUTPUT           "[Oo][Uu][Tt][Pp][Uu][Tt]"
 #token CLOCK            "[Cc][Ll][Oo][Cc][Kk]"
 
-#token DELAY_CONSTANT   "[Dd][Ee][Ll][Aa][Yy][_][Cc][Oo][Nn][Ss][Tt][Aa][Nn][Tt]"
-#token DELAY_MATRIX     "[Dd][Ee][Ll][Aa][Yy][_][Mm][Aa][Tt][Rr][Ii][Xx]"
-#token T_SETUP          "([Tt]|[Cc][Ll][Oo][Cc][Kk])[_][Ss][Ee][Tt][Uu][Pp]"
-#token T_HOLD           "([Tt]|[Cc][Ll][Oo][Cc][Kk])[_][Hh][Oo][Ll][Dd]"
-#token T_CLOCK_TO_Q     "([Tt]|[Cc][Ll][Oo][Cc][Kk]){[_][Cc][Ll][Oo][Cc][Kk]}[_][Tt][Oo][_][Qq]"
-#token CAP_CONSTANT     "[Cc][Aa][Pp][_][Cc][Oo][Nn][Ss][Tt][Aa][Nn][Tt]"
-#token CAP_MATRIX       "[Cc][Aa][Pp][_][Mm][Aa][Tt][Rr][Ii][Xx]"
-#token PACK_PATTERN     "[Pp][Aa][Cc][Kk][_][Pp][Aa][Tt][Tt][Ee][Rr][Nn]"
-
 #token PRIORITY         "[Pp][Rr][Ii][Oo][Rr][Ii][Tt][Yy]"
 #token SINGLE_POS       "[Pp][Oo][Ss]"
 #token MULTIPLE_START   "[Ss][Tt][Aa][Rr][Tt]"
 #token MULTIPLE_REPEAT  "[Rr][Ee][Pp][Ee][Aa][Tt]"
 
-#token MIN          "[Mm][Ii][Nn]"
-#token MAX          "[Mm][Aa][Xx]"
-#token VALUE        "[Vv][Aa][Ll][Uu][Ee]"
+#token VALUE            "[Vv][Aa][Ll][Uu][Ee]"
+#token MIN_VALUE        "[Mm][Ii][Nn]{[_][Vv][Aa][Ll][Uu][Ee]}"
+#token MAX_VALUE        "[Mm][Aa][Xx]{[_][Vv][Aa][Ll][Uu][Ee]}"
 
-#token AUTO         "[Aa][Uu][Tt][Oo]"
-#token MANUAL       "[Mm][Aa][Nn][Uu][Aa][Ll]"
-#token FIXED        "[Ff][Ii][Xx][Ee][Dd]"
-#tokclass ARRAY_SIZE_MODE_VAL { AUTO MANUAL FIXED }
-
-#token SPREAD       "[Ss][Pp][Rr][Ee][Aa][Dd]"
-#token CUSTOM       "[Cc][Uu][Ss][Tt][Oo][Mm]"
-#tokclass PIN_PATTERN_TYPE_VAL { SPREAD CUSTOM }
-
-#token SINGLE       "[Ss][Ii][Nn][Gg][Ll][Ee]"
-#token MULTIPLE     "[Mm][Uu][Ll][Tt][Ii]{[Pp][Ll][Ee]}"
-#token COL          "[Cc][Oo][Ll]{[Uu][Mm][Nn]}"
-#token REL          "[Rr][Ee][Ll]"
-#token FILL         "[Ff][Ii][Ll][Ll]"
-#token PERIMETER    "[Pp][Ee][Rr][Ii][Mm][Ee][Tt][Ee][Rr]"
-#tokclass GRID_DISTR_MODE_VAL { SINGLE MULTIPLE REL COL FILL PERIMETER }
-
-#token ROW          "[Rr][Oo][Ww]"
-#tokclass GRID_ORIENT_MODE_VAL { COL ROW }
-
-#token MUX          "[Mm][Uu][Xx]"
-#token BUFFER       "[Bb][Uu][Ff][Ff][Ee][Rr]{[Ee][Dd]}"
-#tokclass SB_TYPE_VAL { BUFFER MUX }
-
-#token WILTON       "[Ww][Ii][Ll][Tt][Oo][Nn]"
-#token SUBSET       "[Ss][Uu][Bb][Ss][Ee][Tt]"
-#token DISJOINT     "[Dd][Ii][Ss][Jj][Oo][Ii][Nn][Tt]"
-#token UNIVERSAL    "[Uu][Nn][Ii][Vv][Ee][Rr][Ss][Aa][Ll]"
-#tokclass SB_MODEL_TYPE_VAL { WILTON SUBSET DISJOINT UNIVERSAL CUSTOM }
-
-#token UNIDIR       "[Uu][Nn][Ii]{{[_]}[Dd][Ii][Rr]}"
-#token BIDIR        "[Bb][Ii]{{[_]}[Dd][Ii][Rr]}"
-#tokclass SEGMENT_DIR_TYPE_VAL { UNIDIR BIDIR }
-
-#token LUT          "[Ll][Uu][Tt]"
-#token FLIPFLOP     "[Ff]{[Ll][Ii][Pp]}[Ff]{[Ll][Oo][Pp]}"
-#token MEMORY       "([Mm][Ee][Mm][Oo][Rr][Yy]|[Rr][Aa][Mm])"
-#token SUBCKT       "([Ss][Uu][Bb][Cc][Kk][Tt]|[Bb][Ll][Ii][Ff])"
-#tokclass CLASS_TYPE_VAL { LUT FLIPFLOP MEMORY SUBCKT }
-
-#token COMPLETE     "[Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee]"
-#token DIRECT       "[Dd][Ii][Rr][Ee][Cc][Tt]"
-#tokclass MAP_TYPE_VAL { COMPLETE DIRECT MUX }
-
-#token LEFT         "[Ll]{[Ee][Ff][Tt]}"
-#token RIGHT        "[Rr]{[Ii][Gg][Hh][Tt]}"
-#token LOWER        "[Ll][Oo][Ww][Ee][Rr]"
-#token UPPER        "[Uu][Pp][Pp][Ee][Rr]"
-#token BOTTOM       "[Bb]{[Oo][Tt][Tt][Oo][Mm]}"
-#token TOP          "[Tt]{[Oo][Pp]}"
-#tokclass SIDE_VAL  { LEFT RIGHT LOWER UPPER BOTTOM TOP R T }
-
-#token SIGNAL       "[Ss][Ii][Gg][Nn][Aa][Ll]"
-#token POWER        "[Pp][Oo][Ww][Ee][Rr]"
-#token GLOBAL       "[Gg][Ll][Oo][Bb][Aa][Ll]"
-#tokclass TYPE_VAL  { INPUT OUTPUT SIGNAL CLOCK POWER GLOBAL }
+#token MATRIX           "[Mm][Aa][Tt][Rr][Ii][Xx]"
+#token MIN_MATRIX       "[Mm][Ii][Nn][_][Mm][Aa][Tt][Rr][Ii][Xx]"
+#token MAX_MATRIX       "[Mm][Aa][Xx][_][Mm][Aa][Tt][Rr][Ii][Xx]"
 
 #token BOOL_TRUE    "([Tt][Rr][Uu][Ee]|[Yy][Ee][Ss]|[Oo][Nn])"
 #token BOOL_FALSE   "([Ff][Aa][Ll][Ss][Ee]|[Nn][Oo]|[Oo][Ff][Ff])"
-#tokclass BOOL_VAL  { BOOL_TRUE BOOL_FALSE }
 
 #token BIT_CHAR     "[01]"
 #token NEG_INT      "[\-][0-9]+"
@@ -247,21 +184,6 @@ public:
 <<
 private:
 
-   TAS_ClassType_t FindClassType_( ANTLRTokenType tokenType );
-   TAS_ArraySizeMode_t FindArraySizeMode_( ANTLRTokenType tokenType );
-   TAS_SwitchBoxType_t FindSwitchBoxType_( ANTLRTokenType tokenType );
-   TAS_SwitchBoxModelType_t FindSwitchBoxModelType_( ANTLRTokenType tokenType );
-   TAS_SegmentDirType_t FindSegmentDirType_( ANTLRTokenType tokenType );
-   TAS_PinAssignPatternType_t FindPinAssignPatternType_( ANTLRTokenType tokenType );
-   TAS_GridAssignDistrMode_t FindGridAssignDistrMode_( ANTLRTokenType tokenType );
-   TAS_GridAssignOrientMode_t FindGridAssignOrientMode_( ANTLRTokenType tokenType );
-   TAS_InterconnectMapType_t FindInterconnectMapType_( ANTLRTokenType tokenType );
-   TC_SideMode_t FindSideMode_( ANTLRTokenType tokenType );
-   TC_TypeMode_t FindTypeMode_( ANTLRTokenType tokenType );
-   bool FindBool_( ANTLRTokenType tokenType );
-
-private:
-
    TAP_ArchitectureInterface_c* pinterface_;
    TAP_ArchitectureScanner_c*   pscanner_;
    string                       srFileName_;
@@ -272,7 +194,7 @@ private:
 //===========================================================================//
 start 
    : 
-   "<" ARCHITECTURE stringText[ &this->parchitectureSpec_->srName ] ">"
+   "<" ARCHITECTURE { NAME { EQUAL } } stringText[ &this->parchitectureSpec_->srName ] ">"
    (  "<"
       (  configDef[ &this->parchitectureSpec_->config ]
       |  inputOutputList[ &this->parchitectureSpec_->physicalBlockList ]
@@ -292,13 +214,10 @@ configDef[ TAS_Config_c* pconfig ]
    :
    CONFIG ">"
    (  "<"
-      (  SIZE arraySizeModeVal:ARRAY_SIZE_MODE_VAL
-         << 
-            pconfig->layout.sizeMode = this->FindArraySizeMode_( arraySizeModeVal->getType( ));
-         >>
+      (  SIZE MODEL { EQUAL } arraySizeMode[ &pconfig->layout.sizeMode ]
          (  RATIO { EQUAL } floatNum[ &pconfig->layout.autoSize.aspectRatio ]
-         |  WIDTH { EQUAL } intNum[ &pconfig->layout.manualSize.gridDims.width ]
-         |  HEIGHT { EQUAL } intNum[ &pconfig->layout.manualSize.gridDims.height ]
+         |  WIDTH { EQUAL } intNum[ &pconfig->layout.manualSize.gridDims.dx ]
+         |  HEIGHT { EQUAL } intNum[ &pconfig->layout.manualSize.gridDims.dy ]
          )*
       |  EST
          (  MINW_NMOS_R { EQUAL } floatNum[ &pconfig->device.areaModel.resMinWidthNMOS ]
@@ -306,19 +225,17 @@ configDef[ TAS_Config_c* pconfig ]
          |  MUX_IN_PIN_SIZE { EQUAL } floatNum[ &pconfig->device.areaModel.sizeInputPinMux ]
          |  LOGIC_TILE_AREA { EQUAL } floatNum[ &pconfig->device.areaModel.areaGridTile ]
          )*
-      |  SB modelTypeVal:SB_MODEL_TYPE_VAL
-         << 
-            pconfig->device.switchBoxes.modelType = this->FindSwitchBoxModelType_( modelTypeVal->getType( ));
-         >>
-         { FS { EQUAL } uintNum[ &pconfig->device.switchBoxes.fs ] }
+      |  SB 
+         (  MODEL { EQUAL } switchBoxModelType[ &pconfig->device.switchBoxes.modelType ]
+         |  FS { EQUAL } uintNum[ &pconfig->device.switchBoxes.fs ] 
+         )*
       |  CB
          (  ( CAP | CAP_IN ) { EQUAL } expNum[ &pconfig->device.connectionBoxes.capInput ]
          |  ( T | DELAY ) { EQUAL } expNum[ &pconfig->device.connectionBoxes.delayInput ]
          )*
-      |  SEGMENT dirTypeVal:SEGMENT_DIR_TYPE_VAL
-         << 
-            pconfig->device.segments.dirType = this->FindSegmentDirType_( dirTypeVal->getType( ));
-         >>
+      |  SEGMENT 
+         (  TYPE { EQUAL } segmentDirType[ &pconfig->device.segments.dirType ]
+         )*
       )
       "/>"
    )*
@@ -335,17 +252,16 @@ inputOutputList[ TAS_InputOutputList_t* pinputOutputList ]
       TGS_Point_c origin;
    >>
    IO 
-   stringText[ &inputOutput.srName ]
+   { NAME { EQUAL } } stringText[ &inputOutput.srName ]
    (  CAPACITY { EQUAL } uintNum[ &inputOutput.capacity ]
    |  FC_IN { EQUAL } fcDef[ &inputOutput.fcIn ]
    |  FC_OUT { EQUAL } fcDef[ &inputOutput.fcOut ]
    |  SIZE { EQUAL } floatDims[ &dims ]
    |  ORIGIN { EQUAL } originPoint[ &origin ]
    )*
-   "/>"
-
+   ">"
    (  "<"
-      (  MODEL modeNameList[ &inputOutput.modeNameList ] "/>"
+      (  MODEL ">" modeNameList[ &inputOutput.modeNameList ] "</" MODEL ">"
       |  PIN pinList[ &inputOutput.portList ]
          ( "/>" | "</" PIN ">" )
       |  PIN_ASSIGN pinAssignList[ &inputOutput.pinAssignPattern,
@@ -378,23 +294,19 @@ physicalBlockList[ TAS_PhysicalBlockList_t* pphysicalBlockList ]
       TGS_Point_c origin;
    >>
    PB 
-   stringText[ &physicalBlock.srName ]
+   { NAME { EQUAL } } stringText[ &physicalBlock.srName ]
    (  COUNT { EQUAL } uintNum[ &physicalBlock.numPB ]
    |  CELL { EQUAL } cellModelText[ &physicalBlock.srModelName,
                                     &physicalBlock.modelType ]
-   |  CLASS { EQUAL } classTypeVal:CLASS_TYPE_VAL
-      << 
-         physicalBlock.classType = this->FindClassType_( classTypeVal->getType( ));
-      >>
+   |  CLASS { EQUAL } classType[ &physicalBlock.classType ]
    |  FC_IN { EQUAL } fcDef[ &physicalBlock.fcIn ]
    |  FC_OUT { EQUAL } fcDef[ &physicalBlock.fcOut ]
    |  SIZE { EQUAL } floatDims[ &dims ]
    |  ORIGIN { EQUAL } originPoint[ &origin ]
    )*
-   "/>"
-
+   ">"
    (  "<"
-      (  MODEL modeNameList[ &physicalBlock.modeNameList ] "/>"
+      (  MODEL ">" modeNameList[ &physicalBlock.modeNameList ] "</" MODEL ">"
       |  PIN pinList[ &physicalBlock.portList ] 
          ( "/>" | "</" PIN ">" )
       |  PIN_ASSIGN pinAssignList[ &physicalBlock.pinAssignPattern,
@@ -427,11 +339,11 @@ modeList[ TAS_ModeList_t* pmodeList ]
       string srInputName, srOutputName;
    >>
    MODEL
-   stringText[ &mode.srName ] 
+   { NAME { EQUAL } } stringText[ &mode.srName ] 
    ">"
    (  "<"
       (  PB
-         stringText[ &physicalBlock.srName ]
+         { NAME { EQUAL } } stringText[ &physicalBlock.srName ]
          "/>"
          <<
             physicalBlock.SetUsage( TAS_USAGE_PHYSICAL_BLOCK );
@@ -451,18 +363,15 @@ modeList[ TAS_ModeList_t* pmodeList ]
             interconnect.timingDelayLists.capMatrixList.Clear( );
             interconnect.timingDelayLists.packPatternList.Clear( );
          >>
-         stringText[ &interconnect.srName ]
-         mapTypeVal:MAP_TYPE_VAL
-         << 
-            interconnect.mapType = this->FindInterconnectMapType_( mapTypeVal->getType( ));
-         >>
+         { NAME { EQUAL } } stringText[ &interconnect.srName ]
+         TYPE { EQUAL } interconnectMapType[ &interconnect.mapType ]
          ">"
          (  "<"
-            (  INPUT stringText[ &srInputName ]
+            (  INPUT NAME { EQUAL } stringText[ &srInputName ]
                <<
                   interconnect.inputNameList.Add( srInputName );
                >>
-            |  OUTPUT stringText[ &srOutputName ]
+            |  OUTPUT NAME { EQUAL } stringText[ &srOutputName ]
                <<
                   interconnect.outputNameList.Add( srOutputName );
                >>
@@ -496,15 +405,9 @@ switchBoxList[ TAS_SwitchBoxList_t* pswitchBoxList ]
       TAS_MapTable_t mapTable;
    >>
    SB 
-   stringText[ &switchBox.srName ]
-   (  TYPE { EQUAL } typeVal:SB_TYPE_VAL
-      << 
-         switchBox.type = this->FindSwitchBoxType_( typeVal->getType( ));
-      >>
-   |  MODEL { EQUAL } modelTypeVal:SB_MODEL_TYPE_VAL
-      << 
-         switchBox.model = this->FindSwitchBoxModelType_( modelTypeVal->getType( ));
-      >>
+   { NAME { EQUAL } } stringText[ &switchBox.srName ]
+   (  TYPE { EQUAL } switchBoxType[ &switchBox.type ]
+   |  MODEL { EQUAL } switchBoxModelType[ &switchBox.model ]
    |  FS { EQUAL } uintNum[ &switchBox.fs ]
    |  SIZE { EQUAL } floatDims[ &dims ]
    |  ORIGIN { EQUAL } originPoint[ &origin ]
@@ -542,10 +445,7 @@ segmentList[ TAS_SegmentList_t* psegmentList ]
    >>
    SEGMENT 
    (  LENGTH { EQUAL } segmentLength[ &segment.length ]
-   |  TYPE { EQUAL } dirTypeVal:SEGMENT_DIR_TYPE_VAL
-      <<
-         segment.dirType = this->FindSegmentDirType_( dirTypeVal->getType( ));
-      >>
+   |  TYPE { EQUAL } segmentDirType[ &segment.dirType ]
    |  FREQ { EQUAL } floatNum[ &segment.trackFreq ]
    )*
    ">"
@@ -582,26 +482,22 @@ cellList[ TAS_CellList_t* pcellList ]
       TC_TypeMode_t type = TC_TYPE_UNDEFINED;
    >>
    CELL 
-   stringText[ &srName ] 
+   { NAME { EQUAL } } stringText[ &srName ] 
    <<
       cell.SetName( srName );
    >>
-   (  CLASS { EQUAL } classTypeVal:CLASS_TYPE_VAL
-      << 
-         cell.classType = this->FindClassType_( classTypeVal->getType( ));
-      >>
+   (  CLASS { EQUAL } classType[ &cell.classType ]
    )*
    ">"
    (  "<" 
       (  PIN
-         stringText[ &srName ]
+         { NAME { EQUAL } } stringText[ &srName ]
          <<
             port.Clear( );
             port.SetName( srName );
          >>
-         typeVal:TYPE_VAL
+         TYPE { EQUAL } typeMode[ &type ]
          << 
-            type = this->FindTypeMode_( typeVal->getType( ));
             port.SetType( type );
          >>
          "/>"
@@ -632,25 +528,41 @@ fcDef[ TAS_ConnectionFc_c* pfc ]
          pfc->percent = 0.0;
          pfc->absolute = 0;
       >>
+   |  OPEN_QUOTE
+      (  qfloatVal:STRING
+         <<
+            pfc->type = TAS_CONNECTION_BOX_FRACTION;
+            pfc->percent = atof( qfloatVal->getText( ));
+         >>
+      |  quintVal:POS_INT
+         <<
+            pfc->type = TAS_CONNECTION_BOX_ABSOLUTE;
+            pfc->absolute = static_cast< unsigned int >( atol( quintVal->getText( )));
+         >>
+      |  qbitVal:BIT_CHAR
+         <<
+            pfc->type = TAS_CONNECTION_BOX_ABSOLUTE;
+            pfc->absolute = static_cast< unsigned int >( atol( qbitVal->getText( )));
+         >>
+      )
+      CLOSE_QUOTE
    |  floatVal:FLOAT
       <<
          pfc->type = TAS_CONNECTION_BOX_FRACTION;
          pfc->percent = atof( floatVal->getText( ));
-         pfc->absolute = 0;
       >>
    |  uintVal:POS_INT
       <<
          pfc->type = TAS_CONNECTION_BOX_ABSOLUTE;
-         pfc->percent = 0.0;
          pfc->absolute = static_cast< unsigned int >( atol( uintVal->getText( )));
       >>
    |  bitVal:BIT_CHAR
       <<
          pfc->type = TAS_CONNECTION_BOX_ABSOLUTE;
-         pfc->percent = 0.0;
          pfc->absolute = static_cast< unsigned int >( atol( bitVal->getText( )));
       >>
    )
+   { CLOSE_QUOTE }
    ;
 
 //===========================================================================//
@@ -676,28 +588,26 @@ pinList[ TLO_PortList_t* pportList ]
       string srName;
       TC_TypeMode_t type = TC_TYPE_UNDEFINED;
       unsigned int count = 0;
-      bool isEquivalent = false;
+      bool equivalent = false;
       string srClass;
       double cap = 0.0;
       double delay = 0.0;
    >>
-   stringText[ &srName ]
+   { NAME { EQUAL } } stringText[ &srName ]
    <<
       port.SetName( srName );
    >>
-   typeVal:TYPE_VAL
-   << 
-      type = this->FindTypeMode_( typeVal->getType( ));
-      port.SetType( type );
-   >>
-   (  COUNT { EQUAL } uintNum[ &count ]
+   (  TYPE { EQUAL } typeMode[ &type ]
+      << 
+         port.SetType( type );
+      >>
+   |  COUNT { EQUAL } uintNum[ &count ]
       << 
          port.SetCount( count );
       >>
-   |  EQUIVALENCE { EQUAL } boolVal:BOOL_VAL
+   |  EQUIVALENCE { EQUAL } boolType[ &equivalent ]
       << 
-         isEquivalent = this->FindBool_( boolVal->getType( ));
-         port.SetEquivalent( isEquivalent );
+         port.SetEquivalent( equivalent );
       >>
    |  CLASS { EQUAL } stringText[ &srClass ]
       << 
@@ -728,88 +638,25 @@ timingDelayLists[ TAS_TimingDelayLists_c* ptimingDelayLists ]
    <<
       TAS_TimingDelay_c timingDelay;
    >>
-   (  ( DELAY | DELAY_CONSTANT )
-      (  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
-      |  OUTPUT { EQUAL } stringText[ &timingDelay.srOutputPortName ]
-      |  MIN { EQUAL } expNum[ &timingDelay.valueMin ] 
-         << timingDelay.type = TAS_TIMING_TYPE_MIN; >>
-      |  MAX { EQUAL } expNum[ &timingDelay.valueMax ] 
-         << timingDelay.type = TAS_TIMING_TYPE_MAX; >>
-      )*
-      <<
-         timingDelay.mode = TAS_TIMING_MODE_DELAY_CONSTANT;
-         ptimingDelayLists->delayList.Add( timingDelay );
-      >>
-   |  DELAY_MATRIX
-      (  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
-      |  OUTPUT { EQUAL } stringText[ &timingDelay.srOutputPortName ]
-      |  MIN { EQUAL } timingValueMatrixDef[ &timingDelay.valueMatrix ]
-         << timingDelay.type = TAS_TIMING_TYPE_MIN; >>
-      |  MAX { EQUAL } timingValueMatrixDef[ &timingDelay.valueMatrix ]
-         << timingDelay.type = TAS_TIMING_TYPE_MAX; >>
-      )*
-      <<
-         timingDelay.mode = TAS_TIMING_MODE_DELAY_MATRIX;
-         ptimingDelayLists->delayMatrixList.Add( timingDelay );
-      >>
-   |  T_SETUP 
-      (  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
-      |  CLOCK { EQUAL } stringText[ &timingDelay.srClockPortName ]
-      |  VALUE { EQUAL } expNum[ &timingDelay.valueNom ]
-      )*
-      <<
-         timingDelay.mode = TAS_TIMING_MODE_T_SETUP;
-         ptimingDelayLists->tSetupList.Add( timingDelay );
-      >>
-   |  T_HOLD 
-      (  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
-      |  CLOCK { EQUAL } stringText[ &timingDelay.srClockPortName ]
-      |  VALUE { EQUAL } expNum[ &timingDelay.valueNom ]
-      )*
-      <<
-         timingDelay.mode = TAS_TIMING_MODE_T_HOLD;
-         ptimingDelayLists->tHoldList.Add( timingDelay );
-      >>
-   |  T_CLOCK_TO_Q
-      (  OUTPUT { EQUAL } stringText[ &timingDelay.srOutputPortName ]
-      |  CLOCK { EQUAL } stringText[ &timingDelay.srClockPortName ]
-      |  MIN { EQUAL } expNum[ &timingDelay.valueMin ] 
-         << timingDelay.type = TAS_TIMING_TYPE_MIN; >>
-      |  MAX { EQUAL } expNum[ &timingDelay.valueMax ] 
-         << timingDelay.type = TAS_TIMING_TYPE_MAX; >>
-      )*
-      <<
-         timingDelay.mode = TAS_TIMING_MODE_CLOCK_TO_Q;
-         ptimingDelayLists->clockToQList.Add( timingDelay );
-      >>
-   |  ( CAP | CAP_CONSTANT )
-      (  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
-      |  OUTPUT { EQUAL } stringText[ &timingDelay.srOutputPortName ]
-      |  VALUE { EQUAL } floatNum[ &timingDelay.valueNom ] 
-      )*
-      <<
-         timingDelay.mode = TAS_TIMING_MODE_CAP_CONSTANT;
-         ptimingDelayLists->capList.Add( timingDelay );
-      >>
-   |  CAP_MATRIX
-      (  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
-      |  OUTPUT { EQUAL } stringText[ &timingDelay.srOutputPortName ]
-      |  VALUE { EQUAL } timingValueMatrixDef[ &timingDelay.valueMatrix ]
-      )*
-      <<
-         timingDelay.mode = TAS_TIMING_MODE_CAP_MATRIX;
-         ptimingDelayLists->capMatrixList.Add( timingDelay );
-      >>
-   |  PACK_PATTERN
-      (  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
-      |  OUTPUT { EQUAL } stringText[ &timingDelay.srOutputPortName ]
-      |  NAME { EQUAL } stringText[ &timingDelay.srPackPatternName ]
-      )*
-      <<
-         timingDelay.mode = TAS_TIMING_MODE_PACK_PATTERN;
-         ptimingDelayLists->packPatternList.Add( timingDelay );
-      >>
-   )
+   MODEL { EQUAL } timingMode[ &timingDelay.mode ]
+   (  INPUT { EQUAL } stringText[ &timingDelay.srInputPortName ]
+   |  OUTPUT { EQUAL } stringText[ &timingDelay.srOutputPortName ]
+   |  CLOCK { EQUAL } stringText[ &timingDelay.srClockPortName ]
+   |  NAME { EQUAL } stringText[ &timingDelay.srPackPatternName ]
+   |  VALUE { EQUAL } expNum[ &timingDelay.valueNom ]
+   |  MIN_VALUE { EQUAL } expNum[ &timingDelay.valueMin ] 
+      << timingDelay.type = TAS_TIMING_TYPE_MIN_VALUE; >>
+   |  MAX_VALUE { EQUAL } expNum[ &timingDelay.valueMax ] 
+      << timingDelay.type = TAS_TIMING_TYPE_MAX_VALUE; >>
+   |  MATRIX { EQUAL } timingValueMatrixDef[ &timingDelay.valueMatrix ]
+   |  MIN_MATRIX { EQUAL } timingValueMatrixDef[ &timingDelay.valueMatrix ]
+      << timingDelay.type = TAS_TIMING_TYPE_MIN_MATRIX; >>
+   |  MAX_MATRIX { EQUAL } timingValueMatrixDef[ &timingDelay.valueMatrix ]
+      << timingDelay.type = TAS_TIMING_TYPE_MAX_MATRIX; >>
+   )*
+   <<
+      ptimingDelayLists->delayList.Add( timingDelay );
+   >>
    ;
 
 //===========================================================================//
@@ -890,25 +737,21 @@ pinAssignList[ TAS_PinAssignPatternType_t* ppinAssignPattern,
 
       string srPortName;
    >>
-   patternTypeVal:PIN_PATTERN_TYPE_VAL
-   <<
-      pinAssign.pattern = this->FindPinAssignPatternType_( patternTypeVal->getType( ));
-      *ppinAssignPattern = pinAssign.pattern;
-   >>
-   (  SIDE { EQUAL } sideVal:SIDE_VAL
-      << 
-         pinAssign.side = this->FindSideMode_( sideVal->getType( ));
+   (  PATTERN { EQUAL } pinAssignPatternType[ &pinAssign.pattern ]
+      <<
+         *ppinAssignPattern = pinAssign.pattern;
       >>
+   |  SIDE { EQUAL } sideMode[ &pinAssign.side ]
    |  OFFSET { EQUAL } uintNum[ &pinAssign.offset ]
    )*
    {  ">" 
-      "<" PIN 
+      "<" PIN ">"
       (  stringText[ &srPortName ] 
          <<
             pinAssign.portNameList.Add( srPortName );
          >>
       )*
-      "/>"
+      "</" PIN ">"
    }
    <<
       if( pinAssign.IsValid( ))
@@ -924,14 +767,8 @@ gridAssignList[ TAS_GridAssignList_t* pgridAssignList ]
    <<
       TAS_GridAssign_c gridAssign;
    >>
-   distrModeVal:GRID_DISTR_MODE_VAL
-   <<
-      gridAssign.distr = this->FindGridAssignDistrMode_( distrModeVal->getType( ));
-   >>
-   (  ORIENT { EQUAL } orientModeVal:GRID_ORIENT_MODE_VAL
-      <<
-         gridAssign.orient = this->FindGridAssignOrientMode_( orientModeVal->getType( ));
-      >>
+   (  MODEL { EQUAL } gridAssignDistrMode[ &gridAssign.distr ]
+   |  ORIENT { EQUAL } gridAssignOrientMode[ &gridAssign.orient ]
    |  PRIORITY { EQUAL } uintNum[ &gridAssign.priority ]
    |  SINGLE_POS { EQUAL } floatNum[ &gridAssign.singlePercent ] 
    |  MULTI_START { EQUAL } uintNum[ &gridAssign.multipleStart ]
@@ -981,10 +818,7 @@ mapSideIndex[ TC_SideIndex_c* psideIndex ]
       TC_SideMode_t side = TC_SIDE_UNDEFINED;
       unsigned int index = 0;
    >>
-   sideVal:SIDE_VAL
-   << 
-      side = this->FindSideMode_( sideVal->getType( ));
-   >>
+   sideMode[ &side ]
    uintNum[ &index ]
    << 
       psideIndex->Set( side, index );
@@ -1009,7 +843,10 @@ segmentLength[ unsigned int *plength ]
 //===========================================================================//
 sbList[ TAS_BitPattern_t* psbPattern ]
    :
-   SB TYPE { EQUAL } PATTERN ">"
+   <<
+      string srPattern;
+   >>
+   SB TYPE { EQUAL } stringText[ &srPattern ] ">"
    (  bitStringVal:BIT_CHAR
       <<
          string srBit = bitStringVal->getText( );
@@ -1026,7 +863,10 @@ sbList[ TAS_BitPattern_t* psbPattern ]
 //===========================================================================//
 cbList[ TAS_BitPattern_t* pcbPattern ]
    :
-   CB TYPE { EQUAL } PATTERN ">"
+   <<
+      string srPattern;
+   >>
+   CB TYPE { EQUAL } stringText[ &srPattern ] ">"
    (  bitStringVal:BIT_CHAR
       <<
          string srBit = bitStringVal->getText( );
@@ -1043,8 +883,8 @@ cbList[ TAS_BitPattern_t* pcbPattern ]
 //===========================================================================//
 floatDims[ TGS_FloatDims_t* pfloatDims ]
    : 
-   floatNum[ &pfloatDims->width ]
-   floatNum[ &pfloatDims->height ]
+   floatNum[ &pfloatDims->dx ]
+   floatNum[ &pfloatDims->dy ]
    ;
 
 //===========================================================================//
@@ -1052,6 +892,431 @@ originPoint[ TGS_Point_c* poriginPoint ]
    : 
    floatNum[ &poriginPoint->x ]
    floatNum[ &poriginPoint->y ]
+   ;
+
+//===========================================================================//
+typeMode[ TC_TypeMode_t* ptype ]
+   :
+   <<
+      string srType;
+   >>
+   stringText[ &srType ]
+   <<
+      if( TC_stricmp( srType.data( ), "input" ) == 0 )
+      {
+         *ptype = TC_TYPE_INPUT;
+      }
+      else if( TC_stricmp( srType.data( ), "output" ) == 0 )
+      {
+         *ptype = TC_TYPE_OUTPUT;
+      }
+      else if( TC_stricmp( srType.data( ), "signal" ) == 0 )
+      {
+         *ptype = TC_TYPE_SIGNAL;
+      }
+      else if( TC_stricmp( srType.data( ), "clock" ) == 0 )
+      {
+         *ptype = TC_TYPE_CLOCK;
+      }
+      else if( TC_stricmp( srType.data( ), "power" ) == 0 )
+      {
+         *ptype = TC_TYPE_POWER;
+      }
+      else if( TC_stricmp( srType.data( ), "global" ) == 0 )
+      {
+         *ptype = TC_TYPE_GLOBAL;
+      }
+      else
+      {
+         *ptype = TC_TYPE_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid type, expected \"input\", \"output\", \"signal\", \"clock\", \"power\", or \"global\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+sideMode[ TC_SideMode_t* pside ]
+   :
+   <<
+      string srSide;
+   >>
+   stringText[ &srSide ]
+   <<
+      if( TC_stricmp( srSide.data( ), "left" ) == 0 )
+      {
+         *pside = TC_SIDE_LEFT;
+      }
+      else if( TC_stricmp( srSide.data( ), "right" ) == 0 )
+      {
+         *pside = TC_SIDE_RIGHT;
+      }
+      else if(( TC_stricmp( srSide.data( ), "lower" ) == 0 ) ||
+              ( TC_stricmp( srSide.data( ), "bottom" ) == 0 ))
+      {
+         *pside = TC_SIDE_LOWER;
+      }
+      else if(( TC_stricmp( srSide.data( ), "upper" ) == 0 ) ||
+              ( TC_stricmp( srSide.data( ), "top" ) == 0 ))
+      {
+         *pside = TC_SIDE_UPPER;
+      }
+      else
+      {
+         *pside = TC_SIDE_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid side, expected \"left\", \"right\", \"lower\", or \"upper\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+classType[ TAS_ClassType_t* ptype ]
+   :
+   <<
+      string srType;
+   >>
+   stringText[ &srType ]
+   <<
+      if( TC_stricmp( srType.data( ), "lut" ) == 0 )
+      {
+         *ptype = TAS_CLASS_LUT;
+      }
+      else if(( TC_stricmp( srType.data( ), "flipflop" ) == 0 ) ||
+              ( TC_stricmp( srType.data( ), "ff" ) == 0 ))
+      {
+         *ptype = TAS_CLASS_FLIPFLOP;
+      }
+      else if(( TC_stricmp( srType.data( ), "memory" ) == 0 ) ||
+              ( TC_stricmp( srType.data( ), "ram" ) == 0 ))
+      {
+         *ptype = TAS_CLASS_MEMORY;
+      }
+      else if(( TC_stricmp( srType.data( ), "subckt" ) == 0 ) ||
+              ( TC_stricmp( srType.data( ), "blif" ) == 0 ))
+      {
+         *ptype = TAS_CLASS_SUBCKT;
+      }
+      else
+      {
+         *ptype = TAS_CLASS_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid class type, expected \"lut\", \"flipflop\", \"memory\", or \"subckt\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+arraySizeMode[ TAS_ArraySizeMode_t* pmode ]
+   :
+   <<
+      string srMode;
+   >>
+   stringText[ &srMode ]
+   <<
+      if( TC_stricmp( srMode.data( ), "auto" ) == 0 )
+      {
+         *pmode = TAS_ARRAY_SIZE_AUTO;
+      }
+      else if(( TC_stricmp( srMode.data( ), "manual" ) == 0 ) ||
+              ( TC_stricmp( srMode.data( ), "fixed" ) == 0 ))
+      {
+         *pmode = TAS_ARRAY_SIZE_MANUAL;
+      }
+      else
+      {
+         *pmode = TAS_ARRAY_SIZE_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid array size mode, expected \"auto\" or \"manual\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+switchBoxType[ TAS_SwitchBoxType_t* ptype ]
+   :
+   <<
+      string srType;
+   >>
+   stringText[ &srType ]
+   <<
+      if( TC_stricmp( srType.data( ), "buffer" ) == 0 )
+      {
+         *ptype = TAS_SWITCH_BOX_BUFFERED;
+      }
+      else if( TC_stricmp( srType.data( ), "mux" ) == 0 )
+      {
+         *ptype = TAS_SWITCH_BOX_MUX;
+      }
+      else
+      {
+         *ptype = TAS_SWITCH_BOX_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid switchbox type, expected \"buffer\" or \"mux\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+switchBoxModelType[ TAS_SwitchBoxModelType_t* ptype ]
+   :
+   <<
+      string srType;
+   >>
+   stringText[ &srType ]
+   <<
+      if( TC_stricmp( srType.data( ), "wilton" ) == 0 )
+      {
+         *ptype = TAS_SWITCH_BOX_MODEL_WILTON;
+      }
+      else if(( TC_stricmp( srType.data( ), "subset" ) == 0 ) ||
+              ( TC_stricmp( srType.data( ), "disjoint" ) == 0 ))
+      {
+         *ptype = TAS_SWITCH_BOX_MODEL_SUBSET;
+      }
+      else if( TC_stricmp( srType.data( ), "universal" ) == 0 )
+      {
+         *ptype = TAS_SWITCH_BOX_MODEL_UNIVERSAL;
+      }
+      else if( TC_stricmp( srType.data( ), "custom" ) == 0 )
+      {
+         *ptype = TAS_SWITCH_BOX_MODEL_CUSTOM;
+      }
+      else
+      {
+         *ptype = TAS_SWITCH_BOX_MODEL_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid switchbox model type, expected \"wilton\", \"subset\", \"universal\", or \"custom\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+segmentDirType[ TAS_SegmentDirType_t* ptype ]
+   :
+   <<
+      string srType;
+   >>
+   stringText[ &srType ]
+   <<
+      if(( TC_stricmp( srType.data( ), "unidir" ) == 0 ) ||
+         ( TC_stricmp( srType.data( ), "uni" ) == 0 ))
+      {
+         *ptype = TAS_SEGMENT_DIR_UNIDIRECTIONAL;
+      }
+      else if(( TC_stricmp( srType.data( ), "bidir" ) == 0 ) ||
+              ( TC_stricmp( srType.data( ), "bi" ) == 0 ))
+      {
+         *ptype = TAS_SEGMENT_DIR_BIDIRECTIONAL;
+      }
+      else
+      {
+         *ptype = TAS_SEGMENT_DIR_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid segment type, expected \"unidir\" or \"bidir\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+pinAssignPatternType[ TAS_PinAssignPatternType_t* ptype ]
+   :
+   <<
+      string srType;
+   >>
+   stringText[ &srType ]
+   <<
+      if( TC_stricmp( srType.data( ), "spread" ) == 0 )
+      {
+         *ptype = TAS_PIN_ASSIGN_PATTERN_SPREAD;
+      }
+      else if( TC_stricmp( srType.data( ), "custom" ) == 0 )
+      {
+         *ptype = TAS_PIN_ASSIGN_PATTERN_CUSTOM;
+      }
+      else
+      {
+         *ptype = TAS_PIN_ASSIGN_PATTERN_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid pin assign pattern type, expected \"spread\" or \"custom\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+gridAssignDistrMode[ TAS_GridAssignDistrMode_t* pmode ]
+   :
+   <<
+      string srMode;
+   >>
+   stringText[ &srMode ]
+   <<
+      if(( TC_stricmp( srMode.data( ), "single" ) == 0 ) ||
+         ( TC_stricmp( srMode.data( ), "rel" ) == 0 ))
+      {
+         *pmode = TAS_GRID_ASSIGN_DISTR_SINGLE;
+      }
+      else if(( TC_stricmp( srMode.data( ), "multiple" ) == 0 ) ||
+              ( TC_stricmp( srMode.data( ), "multi" ) == 0 ) ||
+              ( TC_stricmp( srMode.data( ), "col" ) == 0 ))
+      {
+         *pmode = TAS_GRID_ASSIGN_DISTR_MULTIPLE;
+      }
+      else if( TC_stricmp( srMode.data( ), "fill" ) == 0 )
+      {
+         *pmode = TAS_GRID_ASSIGN_DISTR_FILL;
+      }
+      else if( TC_stricmp( srMode.data( ), "perimeter" ) == 0 )
+      {
+         *pmode = TAS_GRID_ASSIGN_DISTR_PERIMETER;
+      }
+      else
+      {
+         *pmode = TAS_GRID_ASSIGN_DISTR_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid grid assign distribution mode, expected \"single\", \"multiple\", \"fill\", or \"perimeter\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+gridAssignOrientMode[ TAS_GridAssignOrientMode_t* pmode ]
+   :
+   <<
+      string srMode;
+   >>
+   stringText[ &srMode ]
+   <<
+      if(( TC_stricmp( srMode.data( ), "column" ) == 0 ) ||
+         ( TC_stricmp( srMode.data( ), "col" ) == 0 ))
+      {
+         *pmode = TAS_GRID_ASSIGN_ORIENT_COLUMN;
+      }
+      else if( TC_stricmp( srMode.data( ), "row" ) == 0 )
+      {
+         *pmode = TAS_GRID_ASSIGN_ORIENT_ROW;
+      }
+      else
+      {
+         *pmode = TAS_GRID_ASSIGN_ORIENT_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid grid assign orientation mode, expected \"column\" or \"row\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+interconnectMapType[ TAS_InterconnectMapType_t* ptype ]
+   :
+   <<
+      string srType;
+   >>
+   stringText[ &srType ]
+   <<
+      if( TC_stricmp( srType.data( ), "complete" ) == 0 )
+      {
+         *ptype = TAS_INTERCONNECT_MAP_COMPLETE;
+      }
+      else if( TC_stricmp( srType.data( ), "direct" ) == 0 )
+      {
+         *ptype = TAS_INTERCONNECT_MAP_DIRECT;
+      }
+      else if( TC_stricmp( srType.data( ), "mux" ) == 0 )
+      {
+         *ptype = TAS_INTERCONNECT_MAP_MUX;
+      }
+      else
+      {
+         *ptype = TAS_INTERCONNECT_MAP_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid grid assign orientation type, expected \"complete\", \"direct\", or \"mux\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+timingMode[ TAS_TimingMode_t* pmode ]
+   :
+   <<
+      string srMode;
+   >>
+   stringText[ &srMode ]
+   <<
+      if(( TC_stricmp( srMode.data( ), "delay_constant" ) == 0 ) ||
+         ( TC_stricmp( srMode.data( ), "delay" ) == 0 ))
+      {
+         *pmode = TAS_TIMING_MODE_DELAY_CONSTANT;
+      }
+      else if( TC_stricmp( srMode.data( ), "delay_matrix" ) == 0 )
+      {
+         *pmode = TAS_TIMING_MODE_DELAY_MATRIX;
+      }
+      else if(( TC_stricmp( srMode.data( ), "t_setup" ) == 0 ) ||
+              ( TC_stricmp( srMode.data( ), "clock_setup" ) == 0 ))
+      {
+         *pmode = TAS_TIMING_MODE_T_SETUP;
+      }
+      else if(( TC_stricmp( srMode.data( ), "t_clock_to_q" ) == 0 ) ||
+              ( TC_stricmp( srMode.data( ), "clock_to_q" ) == 0 ))
+      {
+         *pmode = TAS_TIMING_MODE_CLOCK_TO_Q;
+      }
+      else if(( TC_stricmp( srMode.data( ), "cap_constant" ) == 0 ) ||
+              ( TC_stricmp( srMode.data( ), "cap" ) == 0 ))
+      {
+         *pmode = TAS_TIMING_MODE_CAP_CONSTANT;
+      }
+      else if( TC_stricmp( srMode.data( ), "cap_matrix" ) == 0 )
+      {
+         *pmode = TAS_TIMING_MODE_CAP_MATRIX;
+      }
+      else if( TC_stricmp( srMode.data( ), "pack_pattern" ) == 0 )
+      {
+         *pmode = TAS_TIMING_MODE_PACK_PATTERN;
+      }
+      else
+      {
+         *pmode = TAS_TIMING_MODE_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid timing mode, expected \"delay_constant\", \"delay_matrix\", \"t_setup\", \"t_hold\", \"clock_to_q\", \"cap_constant\", \"cap_matrix\", or \"pack_pattern\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
    ;
 
 //===========================================================================//
@@ -1076,7 +1341,7 @@ stringText[ string* psrString ]
 //===========================================================================//
 floatNum[ double* pdouble ]
    : 
-   (  OPEN_QUOTE
+      OPEN_QUOTE
       (  qfloatVal:STRING
          <<
             *pdouble = atof( qfloatVal->getText( ));
@@ -1107,13 +1372,12 @@ floatNum[ double* pdouble ]
       <<
          *pdouble = atof( bitVal->getText( ));
       >>
-   )
    ;
 
 //===========================================================================//
 expNum[ double* pdouble ]
    : 
-   (  OPEN_QUOTE
+      OPEN_QUOTE
       (  qexpVal:EXP
          <<
             *pdouble = atof( qexpVal->getText( ));
@@ -1152,13 +1416,12 @@ expNum[ double* pdouble ]
       <<
          *pdouble = atof( bitVal->getText( ));
       >>
-   )
    ;
 
 //===========================================================================//
 intNum[ int* pint ]
    :
-   (  OPEN_QUOTE
+      OPEN_QUOTE
       qintVal:STRING
       <<
          *pint = static_cast< int >( atol( qintVal->getText( )));
@@ -1172,13 +1435,12 @@ intNum[ int* pint ]
       <<
          *pint = static_cast< int >( atol( bitVal->getText( )));
       >>
-   )
    ;
 
 //===========================================================================//
 uintNum[ unsigned int* puint ]
    :
-   (  OPEN_QUOTE
+      OPEN_QUOTE
       quintVal:STRING
       <<
          *puint = static_cast< unsigned int >( atol( quintVal->getText( )));
@@ -1192,7 +1454,6 @@ uintNum[ unsigned int* puint ]
       <<
          *puint = static_cast< unsigned int >( atol( bitVal->getText( )));
       >>
-   )
    ;
 
 //===========================================================================//
