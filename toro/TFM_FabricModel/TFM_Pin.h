@@ -53,15 +53,15 @@ public:
 
    TFM_Pin_c( void );
    TFM_Pin_c( const string& srName,
-	      TC_SideMode_t side,
-	      double offset,
-	      double width,
-	      unsigned int slice );
+              TC_SideMode_t side,
+              double offset,
+              double width,
+              unsigned int slice );
    TFM_Pin_c( const char* pszName,
-	      TC_SideMode_t side,
-	      double offset,
-	      double width,
-	      unsigned int slice );
+              TC_SideMode_t side,
+              double offset,
+              double width,
+              unsigned int slice );
    TFM_Pin_c( const TFM_Pin_c& pin );
    ~TFM_Pin_c( void );
 
