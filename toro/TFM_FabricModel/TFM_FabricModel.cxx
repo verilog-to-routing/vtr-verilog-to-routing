@@ -147,7 +147,7 @@ void TFM_FabricModel_c::Print(
       size_t spaceLen ) const
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
-   printHandler.Write( pfile, spaceLen, "<fabric \"%s\" >\n",
+   printHandler.Write( pfile, spaceLen, "<fabric name=\"%s\">\n",
                                         TIO_SR_STR( this->srName ));
    spaceLen += 3;
 
@@ -231,5 +231,5 @@ bool TFM_FabricModel_c::IsValid(
           ( this->switchBoxList.IsValid( )) &&
           ( this->channelList.IsValid( )) &&
           ( this->segmentList.IsValid( )) ?
-	  true : false );
+          true : false );
 }
