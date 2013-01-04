@@ -83,7 +83,7 @@ public:
       public:
 
          TGS_IntDims_t gridDims; // Defines manual size mode's width & height
- 	                         // (based on tile grid units)
+                                 // (based on tile grid units)
       } manualSize;
    } layout;
 
@@ -98,7 +98,7 @@ public:
                                  // Defines switch box model type 
                                  // (eg. "Wilton", "subset", or "universal")
          unsigned int fs;        // Defines 'Fs', the switch box flexibility
-                             	 // (ie. #of wires that connect to switch box)
+                                 // (ie. #of wires that connect to switch box)
       } switchBoxes;
 
       class TAS_ConfigDeviceConnectionBoxes_c
@@ -106,9 +106,9 @@ public:
       public:
 
          double capInput;        // Buffer input pin C (farads) 
- 	                         // from routing track to a connection box
+                                 // from routing track to a connection box
          double delayInput;      // Buffer delay (seconds)
- 	                         // from routing track to a connection box
+                                 // from routing track to a connection box
       } connectionBoxes;
 
       class TAS_ConfigDeviceSegments_c
