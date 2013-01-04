@@ -52,9 +52,9 @@ public:
 
    TPO_HierMap_c( void );
    TPO_HierMap_c( const string& srInsName,
-                  const TPO_HierNameList_t& hierNameList );
+                  const TPO_NameList_t& hierNameList );
    TPO_HierMap_c( const char* pszInsName,
-                  const TPO_HierNameList_t& hierNameList );
+                  const TPO_NameList_t& hierNameList );
    TPO_HierMap_c( const TPO_HierMap_c& hierMap );
    ~TPO_HierMap_c( void );
 
@@ -65,18 +65,18 @@ public:
    void Print( FILE* pfile = stdout, size_t spaceLen = 0 ) const;
 
    const char* GetInstName( void ) const;
-   const TPO_HierNameList_t& GetHierNameList( void ) const;
+   const TPO_NameList_t& GetHierNameList( void ) const;
 
    void SetInstName( const string& srInstName );
    void SetInstName( const char* pszInstName );
-   void SetHierNameList( const TPO_HierNameList_t& hierNameList );
+   void SetHierNameList( const TPO_NameList_t& hierNameList );
 
    bool IsValid( void ) const;
 
 private:
 
    string srInstName_; // Defines instance name to be packed (per BLIF)
-   TPO_HierNameList_t hierNameList_;
+   TPO_NameList_t hierNameList_;
                        // Defines a hierarchical architecture PB name list
 
 private:
@@ -101,7 +101,7 @@ inline const char* TPO_HierMap_c::GetInstName(
 }
 
 //===========================================================================//
-inline const TPO_HierNameList_t& TPO_HierMap_c::GetHierNameList( 
+inline const TPO_NameList_t& TPO_HierMap_c::GetHierNameList( 
       void ) const
 {
    return( this->hierNameList_ );
@@ -123,7 +123,7 @@ inline void TPO_HierMap_c::SetInstName(
 
 //===========================================================================//
 inline void TPO_HierMap_c::SetHierNameList(
-      const TPO_HierNameList_t& hierNameList )
+      const TPO_NameList_t& hierNameList )
 {
    this->hierNameList_ = hierNameList;
 }
