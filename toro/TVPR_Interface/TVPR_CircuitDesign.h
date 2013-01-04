@@ -76,7 +76,9 @@ private:
                          int* pvpr_logicalBlockCount ) const;
    
    bool PokeStructures_( const TPO_InstList_t& instList,
+                         const TPO_NameList_t& instNameList,
                          const TPO_PortList_t& portList,
+                         const TPO_NameList_t& portNameList,
                          const TPO_InstList_t& blockList,
                          const TNO_NetList_c& netList,
                          const t_model* pvpr_standardModels,
@@ -87,6 +89,7 @@ private:
                          int* pvpr_primaryInputCount,
                          int* pvpr_primaryOutputCount ) const;
    void PokeInputOutputList_( const TPO_PortList_t& portList,
+                              const TPO_NameList_t& portNameList,
                               const TNO_NetList_c& netList,
                               const t_model* pvpr_inputModel,
                               const t_model* pvpr_outputModel,
@@ -105,6 +108,7 @@ private:
                           int* pvpr_primaryInputCount,
                           int* pvpr_primaryOutputCount ) const;
    void PokeLogicList_( const TPO_InstList_t& instList,
+                        const TPO_NameList_t& instNameList,
                         const TNO_NetList_c& netList,
                         const t_model* pvpr_logicModel,
                         t_net* vpr_netArray,
@@ -117,6 +121,7 @@ private:
                     t_logical_block* vpr_logicalBlockArray,
                     int* pvpr_blockIndex ) const;
    void PokeLatchList_( const TPO_InstList_t& instList,
+                        const TPO_NameList_t& instNameList,
                         const TNO_NetList_c& netList,
                         const t_model* pvpr_latchModel,
                         t_net* vpr_netArray,
@@ -129,6 +134,7 @@ private:
                     t_logical_block* vpr_logicalBlockArray,
                     int* pvpr_blockIndex ) const;
    void PokeSubcktList_( const TPO_InstList_t& instList,
+                         const TPO_NameList_t& instNameList,
                          const TNO_NetList_c& netList,
                          const t_model* pvpr_customModels,
                          t_net* vpr_netArray,
@@ -194,7 +200,7 @@ private:
    void PeekHierMapList_( const t_pb& vpr_pb,
                           const t_logical_block* vpr_logicalBlockArray,
                           int nodeIndex,
-                          TPO_HierNameList_t* phierNameList,
+                          TPO_NameList_t* phierNameList,
                           TPO_HierMapList_t* phierMapList ) const;
    void PeekNetList_( const t_arch* vpr_architecture,
                       const t_net* vpr_netArray,
