@@ -200,29 +200,32 @@ void TAS_SwitchBox_c::Print(
 
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   printHandler.Write( pfile, spaceLen, "<switchbox \"%s\" ", TIO_SR_STR( this->srName ));
+   printHandler.Write( pfile, spaceLen, "<switchbox name=\"%s\"", 
+                                        TIO_SR_STR( this->srName ));
 
    if( this->model != TAS_SWITCH_BOX_MODEL_UNDEFINED )
    {
       string srModel;
       TAS_ExtractStringSwitchBoxModelType( this->model, &srModel );
-      printHandler.Write( pfile, 0, "model = %s ", TIO_SR_STR( srModel ));
+      printHandler.Write( pfile, 0, " model=\"%s\"", 
+                                    TIO_SR_STR( srModel ));
    }
 
    if( this->type != TAS_SWITCH_BOX_UNDEFINED )
    {
       string srType;
       TAS_ExtractStringSwitchBoxType( this->type, &srType );
-      printHandler.Write( pfile, 0, "type = %s ", TIO_SR_STR( srType ));
+      printHandler.Write( pfile, 0, " type=\"%s\"", 
+                                    TIO_SR_STR( srType ));
    }
 
    if( this->fs != UINT_MAX )
    {
-      printHandler.Write( pfile, 0, "fs = %u ", this->fs );
+      printHandler.Write( pfile, 0, " fs=\"%u\"", this->fs );
    }
    else
    {
-      printHandler.Write( pfile, 0, "fs = full " );
+      printHandler.Write( pfile, 0, " fs=\"full\"" );
    }
 
    if( this->dims_.IsValid( ) || this->origin_.IsValid( ))
@@ -231,13 +234,15 @@ void TAS_SwitchBox_c::Print(
 
       if( this->dims_.IsValid( ))
       {
-         printHandler.Write( pfile, 0, "size = %0.*f %0.*f ", precision, this->dims_.width, 
-                                                              precision, this->dims_.height );
+         printHandler.Write( pfile, 0, "<size> %0.*f %0.*f </size>", 
+                                       precision, this->dims_.dx, 
+                                       precision, this->dims_.dy );
       }
       if( this->origin_.IsValid( ))
       {
-         printHandler.Write( pfile, 0, "origin = %0.*f %0.*f ", precision, this->origin_.x, 
-                                                                precision, this->origin_.y );
+         printHandler.Write( pfile, 0, "<origin> %0.*f %0.*f </origin>", 
+                                       precision, this->origin_.x, 
+                                       precision, this->origin_.y );
       }
    }
    printHandler.Write( pfile, 0, ">\n" );
@@ -253,19 +258,23 @@ void TAS_SwitchBox_c::Print(
 
       if( TCTF_IsGT( this->timing.res, 0.0 ))
       {
-         printHandler.Write( pfile, spaceLen, "res = %0.*f\n", precision, this->timing.res );
+         printHandler.Write( pfile, spaceLen, "res=\"%0.*f\"\n", 
+                                              precision, this->timing.res );
       }
       if( TCTF_IsGT( this->timing.capInput, 0.0 ))
       {
-         printHandler.Write( pfile, spaceLen, "cap_in = %0.*e\n", precision + 1, this->timing.capInput );
+         printHandler.Write( pfile, spaceLen, "cap_in=\"%0.*e\"\n", 
+                                              precision + 1, this->timing.capInput );
       }
       if( TCTF_IsGT( this->timing.capOutput, 0.0 ))
       {
-         printHandler.Write( pfile, spaceLen, "cap_out = %0.*e\n", precision + 1, this->timing.capOutput );
+         printHandler.Write( pfile, spaceLen, "cap_out=\"%0.*e\"\n", 
+                                              precision + 1, this->timing.capOutput );
       }
       if( TCTF_IsGT( this->timing.delay, 0.0 ))
       {
-         printHandler.Write( pfile, spaceLen, "delay = %0.*e\n", precision + 1, this->timing.delay );
+         printHandler.Write( pfile, spaceLen, "delay=\"%0.*e\"\n", 
+                                              precision + 1, this->timing.delay );
       }
 
       spaceLen -= 3;
@@ -274,7 +283,7 @@ void TAS_SwitchBox_c::Print(
 
    if( this->mapTable_.IsValid( ))
    {
-      printHandler.Write( pfile, spaceLen, "mapping\n" );
+      printHandler.Write( pfile, spaceLen, "<mapping>\n" );
       spaceLen += 3;
 
       for( size_t i = 0; i < this->mapTable_.GetLength( ); ++i )
@@ -285,14 +294,14 @@ void TAS_SwitchBox_c::Print(
          for( size_t j = 0; j < mapList.GetLength( ); ++j )
          {
             TAS_SideIndex_t& sideIndex = *mapList[j];
-	    string srSideIndex;
+            string srSideIndex;
             sideIndex.ExtractString( &srSideIndex, 1 );
             printHandler.Write( pfile, 0, "%s ", TIO_SR_STR( srSideIndex ));
-	 }
+         }
          printHandler.Write( pfile, 0, "\n" );
       }
       spaceLen -= 3;
-      printHandler.Write( pfile, spaceLen, ">\n" );
+      printHandler.Write( pfile, spaceLen, "</mapping>\n" );
    }
 
    spaceLen -= 3;
@@ -335,6 +344,6 @@ void TAS_SwitchBox_c::PrintXML(
                                         precision + 1, this->timing.capInput,
                                         precision + 1, this->timing.capOutput,
                                         precision + 1, this->timing.delay,
-		                        precision, this->area.buffer,
-		                        precision, this->area.muxTransistor );
+                                        precision, this->area.buffer,
+                                        precision, this->area.muxTransistor );
 }
