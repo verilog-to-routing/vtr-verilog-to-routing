@@ -187,7 +187,7 @@ void TGO_Point_c::Print(
    string srPoint;
    this->ExtractString( &srPoint );
 
-   printHandler.Write( pfile, spaceLen, "[point] %s", TIO_SR_STR( srPoint ));
+   printHandler.Write( pfile, spaceLen, "[point] %s\n", TIO_SR_STR( srPoint ));
 }
 
 //===========================================================================//
