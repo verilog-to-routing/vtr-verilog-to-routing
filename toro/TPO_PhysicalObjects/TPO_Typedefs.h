@@ -26,7 +26,6 @@
 #include "TCT_OrderedVector.h"
 #include "TCT_SortedNameDynamicVector.h"
 
-#include "TC_Name.h"
 #include "TCT_NameList.h"
 
 //---------------------------------------------------------------------------//
@@ -38,6 +37,9 @@ typedef TCT_SortedNameDynamicVector_c< TPO_Inst_c > TPO_InstList_t;
 
 typedef TPO_Inst_c TPO_Port_t; 
 typedef TCT_SortedNameDynamicVector_c< TPO_Port_t > TPO_PortList_t;
+
+class TC_Name_c; // Forward declaration for subsequent class typedefs
+typedef TCT_NameList_c< TC_Name_c > TPO_NameList_t;
 
 enum TPO_InstSource_e
 {
@@ -83,8 +85,6 @@ enum TPO_StatusMode_e
    TPO_STATUS_PLACED
 };
 typedef enum TPO_StatusMode_e TPO_StatusMode_t;
-
-typedef TCT_NameList_c< TC_Name_c > TPO_HierNameList_t;
 
 class TPO_HierMap_c; // Forward declaration for subsequent class typedefs
 typedef TCT_OrderedVector_c< TPO_HierMap_c > TPO_HierMapList_t;
