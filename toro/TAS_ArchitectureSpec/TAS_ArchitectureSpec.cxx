@@ -173,7 +173,7 @@ void TAS_ArchitectureSpec_c::Print(
       size_t spaceLen ) const
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
-   printHandler.Write( pfile, spaceLen, "<architecture \"%s\" >\n",
+   printHandler.Write( pfile, spaceLen, "<architecture name=\"%s\">\n",
                                         TIO_SR_STR( this->srName ));
    spaceLen += 3;
 
@@ -682,8 +682,8 @@ bool TAS_ArchitectureSpec_c::InitValidateConfig_(
                                     "%sValid parameters limited to either \"auto\" or \"width\" and \"height\" values.\n"
                                     "%sDefaulting to auto=\"%0.*f\".\n",
                                     precision, this->config.layout.autoSize.aspectRatio,
-                                    this->config.layout.manualSize.gridDims.width,
-                                    this->config.layout.manualSize.gridDims.height,
+                                    this->config.layout.manualSize.gridDims.dx,
+                                    this->config.layout.manualSize.gridDims.dy,
                                     TIO_PREFIX_WARNING_SPACE,
                                     TIO_PREFIX_WARNING_SPACE,
                                     precision, this->config.layout.autoSize.aspectRatio );
