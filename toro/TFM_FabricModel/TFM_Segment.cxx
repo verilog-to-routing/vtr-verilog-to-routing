@@ -171,27 +171,28 @@ void TFM_Segment_c::Print(
 
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   printHandler.Write( pfile, spaceLen, "<segment \"%s\" ", TIO_SR_STR( this->srName ));
-   printHandler.Write( pfile, 0, "index = %u ", this->index );
-
+   printHandler.Write( pfile, spaceLen, "<segment name=\"%s\" index=\"%u\"",
+                                        TIO_SR_STR( this->srName ),
+                                        this->index );
    if( TCTF_IsGT( this->path.width, 0.0 ))
    {
-      printHandler.Write( pfile, 0, "width = %0.*f ", precision, this->path.width );
+      printHandler.Write( pfile, 0, " width=\"%0.*f\"", 
+                                    precision, this->path.width );
    }
-   printHandler.Write( pfile, 0, "> " );
+   printHandler.Write( pfile, 0, ">" );
 
    string srLine;
    this->path.line.ExtractString( &srLine );
-   printHandler.Write( pfile, 0, "<line %s > ", TIO_SR_STR( srLine ));
+   printHandler.Write( pfile, 0, " <line> %s </line>", TIO_SR_STR( srLine ));
 
    if( TCTF_IsGT( this->timing.res, 0.0 ) ||
        TCTF_IsGT( this->timing.cap, 0.0 ))
    {
       printHandler.Write( pfile, 0, "\n" );
-      printHandler.Write( pfile, spaceLen + 3, "<timing res = %0.*f cap = %0.*f >\n",
+      printHandler.Write( pfile, spaceLen + 3, " <timing res=\"%0.*f\" cap=\"%0.*f\"/>\n",
                                                precision, this->timing.res,
                                                precision, this->timing.cap );
       printHandler.Write( pfile, spaceLen, "" );
    }
-   printHandler.Write( pfile, 0, "</segment>\n" );
+   printHandler.Write( pfile, 0, " </segment>\n" );
 }
