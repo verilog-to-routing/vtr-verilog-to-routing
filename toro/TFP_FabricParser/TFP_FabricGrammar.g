@@ -47,64 +47,54 @@ using namespace std;
 //===========================================================================//
 #lexclass START
 
-#token                 "[\ \t]+"      << skip( ); >>
-#token CPP_COMMENT     "//~[\n]*[\n]" << skip( ); newline( ); >>
-#token BLOCK_COMMENT   "#~[\n]*[\n]"  << skip( ); newline( ); >>
-#token NEW_LINE        "[\n\\]"       << skip( ); newline( ); >>
-#token END_OF_FILE     "@"
-#token OPEN_QUOTE      "\""           << mode( QUOTED_VALUE ); >>
-#token EQUAL           "="
+#token               "[\ \t]+"           << skip( ); >>
+#token CPP_COMMENT   "//~[\n]*[\n]"      << skip( ); newline( ); >>
+#token BLOCK_COMMENT "#~[\n]*[\n]"       << skip( ); newline( ); >>
+#token XML_COMMENT   "<\!\-\-~[\n]*[\n]" << skip( ); newline( ); >>
+#token NEW_LINE      "[\n\\]"            << skip( ); newline( ); >>
+#token END_OF_FILE   "@"
+#token OPEN_QUOTE    "\""                << mode( QUOTED_VALUE ); >>
+#token EQUAL         "="
 
-#token FABRIC       "[Ff][Aa][Bb][Rr][Ii][Cc]"
-#token CONFIG       "[Cc][Oo][Nn][Ff][Ii][Gg]"
-#token IO           "[Ii]{[Nn][Pp][Uu][Tt]}[Oo]{[Uu][Tt][Pp][Uu][Tt]}"
-#token PB           "[Pp]{[Hh][Yy][Ss][Ii][Cc][Aa][Ll]}[Bb]{[Ll][Oo][Cc][Kk]}"
-#token SB           "[Ss]{[Ww][Ii][Tt][Cc][Hh]}[Bb]{[Oo][Xx]{[Ee][Ss]}}"
-#token CB           "[Cc]{[Oo][Nn][Nn][Ee][Cc][Tt][Ii][Oo][Nn]}[Bb]{[Oo][Xx]{[Ee][Ss]}}"
-#token CHANNEL      "[Cc][Hh][Aa][Nn][Nn][Ee][Ll]{[Ss]}"
-#token SEGMENT      "[Ss][Ee][Gg][Mm][Ee][Nn][Tt]{[Ss]}"
+#token FABRIC     "[Ff][Aa][Bb][Rr][Ii][Cc]"
+#token NAME       "[Nn][Aa][Mm][Ee]"
+#token CONFIG     "[Cc][Oo][Nn][Ff][Ii][Gg]"
+#token IO         "[Ii]{[Nn][Pp][Uu][Tt]}[Oo]{[Uu][Tt][Pp][Uu][Tt]}"
+#token PB         "[Pp]{[Hh][Yy][Ss][Ii][Cc][Aa][Ll]}[Bb]{[Ll][Oo][Cc][Kk]}"
+#token SB         "[Ss]{[Ww][Ii][Tt][Cc][Hh]}[Bb]{[Oo][Xx]{[Ee][Ss]}}"
+#token CB         "[Cc]{[Oo][Nn][Nn][Ee][Cc][Tt][Ii][Oo][Nn]}[Bb]{[Oo][Xx]{[Ee][Ss]}}"
+#token CHANNEL    "[Cc][Hh][Aa][Nn][Nn][Ee][Ll]{[Ss]}"
+#token SEGMENT    "[Ss][Ee][Gg][Mm][Ee][Nn][Tt]{[Ss]}"
 
-#token SIZE         "{[Ff][Aa][Bb][Rr][Ii][Cc][_]}[Ss][Ii][Zz][Ee]"
-#token COUNT        "[Cc][Oo][Uu][Nn][Tt]"
-#token WIDTH        "[Ww][Ii][Dd][Tt][Hh]"
-#token HEIGHT       "[Hh][Ee][Ii][Gg][Hh][Tt]"
+#token SIZE       "{[Ff][Aa][Bb][Rr][Ii][Cc][_]}[Ss][Ii][Zz][Ee]"
+#token COUNT      "[Cc][Oo][Uu][Nn][Tt]"
+#token WIDTH      "[Ww][Ii][Dd][Tt][Hh]"
+#token HEIGHT     "[Hh][Ee][Ii][Gg][Hh][Tt]"
 
-#token SIDE         "[Ss][Ii][Dd][Ee]"
-#token OFFSET       "[Oo][Ff][Ff][Ss][Ee][Tt]"
-#token INDEX        "[Ii][Nn][Dd][Ee][Xx]"
-#token SLICE        "[Ss][Ll][Ii][Cc][Ee]"
-#token CAPACITY     "[Cc][Aa][Pp][Aa][Cc][Ii][Tt][Yy]"
+#token SIDE       "[Ss][Ii][Dd][Ee]"
+#token OFFSET     "[Oo][Ff][Ff][Ss][Ee][Tt]"
+#token INDEX      "[Ii][Nn][Dd][Ee][Xx]"
+#token SLICE      "[Ss][Ll][Ii][Cc][Ee]"
+#token CAPACITY   "[Cc][Aa][Pp][Aa][Cc][Ii][Tt][Yy]"
 
-#token CELL         "[Cc][Ee][Ll][Ll]"
-#token MASTER       "[Mm][Aa][Ss][Tt][Ee][Rr]"
-#token PIN          "[Pp][Ii][Nn]"
+#token CELL       "[Cc][Ee][Ll][Ll]"
+#token MASTER     "[Mm][Aa][Ss][Tt][Ee][Rr]"
+#token PIN        "[Pp][Ii][Nn]"
 
-#token MAPPING      "[Mm][Aa][Pp][Pp][Ii][Nn][Gg]"
+#token MAPPING    "[Mm][Aa][Pp][Pp][Ii][Nn][Gg]"
 
-#token LINE         "[Ll][Ii][Nn][Ee]"
-#token REGION       "[Rr][Ee][Gg][Ii][Oo][Nn]"
-#token ORIENT       "[Oo][Rr][Ii][Ee][Nn][Tt]"
+#token LINE       "[Ll][Ii][Nn][Ee]"
+#token REGION     "[Rr][Ee][Gg][Ii][Oo][Nn]"
+#token ORIENT     "[Oo][Rr][Ii][Ee][Nn][Tt]"
 
-#token TIMING       "[Tt][Ii][Mm][Ii][Nn][Gg]{[_][Aa][Nn][Aa][Ll][Yy][Ss][Ii][Ss]}"
-#token R            "[Rr]"
-#token RES          "[Rr][Ee][Ss]"
-#token CAP          "[Cc]{[Aa][Pp]}"
-#token CAP_IN       "[Cc]{[Aa][Pp]}{[_]}[Ii][Nn]"
-#token CAP_OUT      "[Cc]{[Aa][Pp]}{[_]}[Oo][Uu][Tt]"
-#token T            "[Tt]"
-#token DELAY        "[Dd][Ee][Ll][Aa][Yy]{[_][Ii][Nn]}"
-
-#token HORIZONTAL   "[Hh]{[Oo][Rr]{[Ii]}[Zz]{[Oo][Nn][Tt][Aa][Ll]}}"
-#token VERTICAL     "[Vv]{[Ee][Rr][Tt]{[Ii][Cc][Aa][Ll]}}"
-#tokclass ORIENT_VAL { HORIZONTAL VERTICAL }
-
-#token LEFT         "[Ll]{[Ee][Ff][Tt]}"
-#token RIGHT        "[Rr]{[Ii][Gg][Hh][Tt]}"
-#token LOWER        "[Ll][Oo][Ww][Ee][Rr]"
-#token UPPER        "[Uu][Pp][Pp][Ee][Rr]"
-#token BOTTOM       "[Bb]{[Oo][Tt][Tt][Oo][Mm]}"
-#token TOP          "[Tt]{[Oo][Pp]}"
-#tokclass SIDE_VAL  { LEFT RIGHT LOWER UPPER BOTTOM TOP R T }
+#token TIMING     "[Tt][Ii][Mm][Ii][Nn][Gg]{[_][Aa][Nn][Aa][Ll][Yy][Ss][Ii][Ss]}"
+#token R          "[Rr]"
+#token RES        "[Rr][Ee][Ss]"
+#token CAP        "[Cc]{[Aa][Pp]}"
+#token CAP_IN     "[Cc]{[Aa][Pp]}{[_]}[Ii][Nn]"
+#token CAP_OUT    "[Cc]{[Aa][Pp]}{[_]}[Oo][Uu][Tt]"
+#token T          "[Tt]"
+#token DELAY      "[Dd][Ee][Ll][Aa][Yy]{[_][Ii][Nn]}"
 
 #token BIT_CHAR   "[01]"
 #token NEG_INT    "[\-][0-9]+"
@@ -141,12 +131,6 @@ public:
 <<
 private:
 
-   TGS_OrientMode_t FindOrientMode_( ANTLRTokenType tokenType );
-   TC_SideMode_t FindSideMode_( ANTLRTokenType tokenType );
->> 
-<<
-private:
-
    TFP_FabricInterface_c* pinterface_;
    TFP_FabricScanner_c*   pscanner_;
    string                 srFileName_;
@@ -157,7 +141,7 @@ private:
 //===========================================================================//
 start 
    :
-   "<" FABRIC stringText[ &this->pfabricModel_->srName ] ">"
+   "<" FABRIC { NAME { EQUAL } } stringText[ &this->pfabricModel_->srName ] ">"
    (  "<"
       ( configDef[ &pfabricModel_->config ]
       |  inputOutputList[ &pfabricModel_->inputOutputList ]
@@ -175,11 +159,8 @@ start
 configDef[ TFM_Config_c* pconfig ]
    :
    CONFIG ">"
-   (  "<"
-      (  REGION regionDef[ &pconfig->fabricRegion ]
-      )*
-      ">"
-   )
+   (  "<" REGION ">" regionDef[ &pconfig->fabricRegion ] "</" REGION ">"
+   )*
    "</" CONFIG ">"
    ;
 
@@ -192,23 +173,24 @@ inputOutputList[ TFM_InputOutputList_t* pinputOutputList ]
       TC_SideName_c channel;
    >>
    IO 
-   stringText[ &inputOutput.srName ]
+   { NAME { EQUAL } } stringText[ &inputOutput.srName ]
    (  ( CELL | MASTER ) { EQUAL } stringText[ &inputOutput.srMasterName ]
    )*
    ">"
    (  "<" 
-      (  REGION regionDef[ &inputOutput.region ]
-      |  PIN pinList[ &inputOutput.pinList ]
+      (  REGION ">" regionDef[ &inputOutput.region ] "</" REGION ">"
+      |  PIN pinList[ &inputOutput.pinList ] ( "/>" | "</" PIN ">" )
       |  SLICE
          (  COUNT { EQUAL } uintNum[ &inputOutput.slice.count ]
          |  CAPACITY { EQUAL } uintNum[ &inputOutput.slice.capacity ]
          )* 
+         "/>"
       |  TIMING
          (  ( CAP | CAP_IN ) { EQUAL } floatNum[ &inputOutput.timing.capInput ]
          |  ( T | DELAY ) { EQUAL } expNum[ &inputOutput.timing.delay ]
          )* 
+         "/>"
       )
-      ( { "/" } | "</" PIN ) ">"
    )*
    "</" IO ">"
    <<
@@ -227,23 +209,24 @@ physicalBlockList[ TFM_PhysicalBlockList_t* pphysicalBlockList ]
       TFM_PhysicalBlock_t physicalBlock;
    >>
    PB 
-   stringText[ &physicalBlock.srName ]
+   { NAME { EQUAL } } stringText[ &physicalBlock.srName ]
    (  ( CELL | MASTER ) { EQUAL } stringText[ &physicalBlock.srMasterName ]
    )*
    ">"
    (  "<" 
-      (  REGION regionDef[ &physicalBlock.region ]
-      |  PIN pinList[ &physicalBlock.pinList ]
+      (  REGION ">" regionDef[ &physicalBlock.region ] "</" REGION ">"
+      |  PIN pinList[ &physicalBlock.pinList ] ( "/>" | "</" PIN ">" )
       |  SLICE
          (  COUNT { EQUAL } uintNum[ &physicalBlock.slice.count ]
          |  CAPACITY { EQUAL } uintNum[ &physicalBlock.slice.capacity ]
          )* 
+         "/>"
       |  TIMING
          (  ( CAP | CAP_IN ) { EQUAL } floatNum[ &physicalBlock.timing.capInput ]
          |  ( T | DELAY ) { EQUAL } expNum[ &physicalBlock.timing.delay ]
          )* 
+         "/>"
       )
-      ( { "/" } | "</" PIN ) ">"
    )*
    "</" PB ">"
    <<
@@ -264,21 +247,21 @@ switchBoxList[ TFM_SwitchBoxList_t* pswitchBoxList ]
       TC_SideName_c channel;
    >>
    SB 
-   stringText[ &switchBox.srName ]
+   { NAME { EQUAL } } stringText[ &switchBox.srName ]
    (  ( CELL | MASTER ) { EQUAL } stringText[ &switchBox.srMasterName ]
    )*
    ">"
    (  "<" 
-      (  REGION regionDef[ &switchBox.region ]
-      |  MAPPING sideMapTable[ &switchBox.mapTable ]
+      (  REGION ">" regionDef[ &switchBox.region ] "</" REGION ">"
+      |  MAPPING ">" sideMapTable[ &switchBox.mapTable ] "</" MAPPING ">"
       |  TIMING
          (  ( R | RES ) { EQUAL } floatNum[ &switchBox.timing.res ]
          |  ( CAP | CAP_IN ) { EQUAL } floatNum[ &switchBox.timing.capInput ]
          |  CAP_OUT { EQUAL } floatNum[ &switchBox.timing.capOutput ]
          |  ( T | DELAY ) { EQUAL } expNum[ &switchBox.timing.delay ]
          )* 
+         "/>"
       )
-      ">"
    )*
    "</" SB ">"
    <<
@@ -297,15 +280,12 @@ channelList[ TFM_ChannelList_t* pchannelList ]
       TFM_Channel_c channel;
    >>
    CHANNEL 
-   stringText[ &channel.srName ]
-   (  ORIENT { EQUAL } orientVal:ORIENT_VAL
-      << 
-         channel.orient = this->FindOrientMode_( orientVal->getType( ));
-      >>
+   { NAME { EQUAL } } stringText[ &channel.srName ]
+   (  ORIENT { EQUAL } orientMode[ &channel.orient ]
    |  COUNT { EQUAL } uintNum[ &channel.count ]
    )*
    ">"
-   (  "<" REGION regionDef[ &channel.region ] ">"
+   (  "<" REGION ">" regionDef[ &channel.region ] "</" REGION ">"
    )*
    "</" CHANNEL ">"
    <<
@@ -323,19 +303,19 @@ segmentList[ TFM_SegmentList_t* psegmentList ]
       TFM_Segment_c segment;
    >>
    SEGMENT 
-   stringText[ &segment.srName ]
+   { NAME { EQUAL } } stringText[ &segment.srName ]
    (  INDEX { EQUAL } uintNum[ &segment.index ]
    |  WIDTH { EQUAL } floatNum[ &segment.path.width ]
    )*
    ">"
    (  "<" 
-      (  LINE lineDef[ &segment.path.line ]
+      (  LINE ">" lineDef[ &segment.path.line ] "</" LINE ">"
       |  TIMING
          (  ( R | RES ) { EQUAL } floatNum[ &segment.timing.res ]
          |  CAP { EQUAL } floatNum[ &segment.timing.cap ]
          )* 
+         ">"
       )
-      ">"
    )*
    "</" SEGMENT ">"
    <<
@@ -354,21 +334,19 @@ pinList[ TFM_PinList_t* ppinList ]
 
       string srName;
    >>
-   stringText[ &srName ]
+   { NAME { EQUAL } } stringText[ &srName ]
    <<
       pin.SetName( srName );
    >>
-   (  SIDE { EQUAL } sideVal:SIDE_VAL
-      << 
-         pin.side = this->FindSideMode_( sideVal->getType( ));
-      >>
+   (  SIDE { EQUAL } sideMode[ &pin.side ]
    |  OFFSET { EQUAL } floatNum[ &pin.offset ]
    |  WIDTH { EQUAL } floatNum[ &pin.width ]
    |  SLICE { EQUAL } uintNum[ &pin.slice ]
    )*
-   ">"
-   (  connectionPattern[ &pin.connectionPattern ]
-   )*
+   {  ">"
+      ( connectionPattern[ &pin.connectionPattern ]
+      )*
+   }
    <<
       if( pin.IsValid( ))
       {
@@ -383,7 +361,7 @@ connectionPattern[ TFM_BitPattern_t* pconnectionPattern ]
    <<
       string srPattern;
    >>
-   "<" CB
+   "<" CB ">"
    (  bitStringVal:BIT_CHAR
       <<
          string srBit = bitStringVal->getText( );
@@ -394,7 +372,7 @@ connectionPattern[ TFM_BitPattern_t* pconnectionPattern ]
          }
       >>
    )*
-   ">"
+   "</" CB ">"
    ;
 
 //===========================================================================//
@@ -421,8 +399,8 @@ sideMapTable[ TC_MapTable_c* pmapTable ]
             sideList.Add( sideIndex );
          }
 
-         curTokenLine = LT( 0 )->getLine( );
-         nextTokenLine = LT( 1 )->getLine( );
+         curTokenLine = ( LT( 0 ) ? LT( 0 )->getLine( ) : 0 );
+         nextTokenLine = ( LT( 1 ) ? LT( 1 )->getLine( ) : 0 );
          if( curTokenLine != nextTokenLine )
          {
             pmapTable->Add( side, index, sideList );
@@ -440,10 +418,7 @@ sideMapIndex[ TC_SideIndex_c* psideIndex ]
       TC_SideMode_t side = TC_SIDE_UNDEFINED;
       unsigned int index = 0;
    >>
-   sideVal:SIDE_VAL
-   << 
-      side = this->FindSideMode_( sideVal->getType( ));
-   >>
+   sideMode[ &side ]
    uintNum[ &index ]
    << 
       psideIndex->Set( side, index );
@@ -469,6 +444,74 @@ lineDef[ TGS_Line_c* pline ]
    ;
 
 //===========================================================================//
+orientMode[ TGS_OrientMode_t* porient ]
+   :
+   <<
+      string srOrient;
+   >>
+   stringText[ &srOrient ]
+   <<
+      if(( TC_stricmp( srOrient.data( ), "horizontal" ) == 0 ) ||
+         ( TC_stricmp( srOrient.data( ), "horz" ) == 0 ))
+      {
+         *porient = TGS_ORIENT_HORIZONTAL;
+      }
+      else if(( TC_stricmp( srOrient.data( ), "vertical" ) == 0 ) ||
+              ( TC_stricmp( srOrient.data( ), "vert" ) == 0 ))
+      {
+         *porient = TGS_ORIENT_VERTICAL;
+      }
+      else
+      {
+         *porient = TGS_ORIENT_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid orientation, expected \"horizontal\" or \"vertical\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+sideMode[ TC_SideMode_t* pside ]
+   :
+   <<
+      string srSide;
+   >>
+   stringText[ &srSide ]
+   <<
+      if( TC_stricmp( srSide.data( ), "left" ) == 0 )
+      {
+         *pside = TC_SIDE_LEFT;
+      }
+      else if( TC_stricmp( srSide.data( ), "right" ) == 0 )
+      {
+         *pside = TC_SIDE_RIGHT;
+      }
+      else if(( TC_stricmp( srSide.data( ), "lower" ) == 0 ) ||
+              ( TC_stricmp( srSide.data( ), "bottom" ) == 0 ))
+      {
+         *pside = TC_SIDE_LOWER;
+      }
+      else if(( TC_stricmp( srSide.data( ), "upper" ) == 0 ) ||
+              ( TC_stricmp( srSide.data( ), "top" ) == 0 ))
+      {
+         *pside = TC_SIDE_UPPER;
+      }
+      else
+      {
+         *pside = TC_SIDE_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid side, expected \"left\", \"right\", \"lower\", or \"upper\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
 stringText[ string* psrString ]
    : 
    <<
@@ -490,7 +533,22 @@ stringText[ string* psrString ]
 //===========================================================================//
 floatNum[ double* pdouble ]
    : 
-      floatVal:FLOAT
+      OPEN_QUOTE
+      (  qfloatVal:STRING
+         <<
+            *pdouble = atof( qfloatVal->getText( ));
+         >>
+      |  qposIntVal:POS_INT
+         <<
+            *pdouble = atof( qposIntVal->getText( ));
+         >>
+      |  qnegIntVal:NEG_INT
+         <<
+            *pdouble = atof( qnegIntVal->getText( ));
+         >>
+      )
+      CLOSE_QUOTE
+   |  floatVal:FLOAT
       <<
          *pdouble = atof( floatVal->getText( ));
       >>
@@ -511,7 +569,26 @@ floatNum[ double* pdouble ]
 //===========================================================================//
 expNum[ double* pdouble ]
    : 
-      expVal:EXP
+      OPEN_QUOTE
+      (  qexpVal:EXP
+         <<
+            *pdouble = atof( qexpVal->getText( ));
+         >>
+      |  qfloatVal:STRING
+         <<
+            *pdouble = atof( qfloatVal->getText( ));
+         >>
+      |  qposIntVal:POS_INT
+         <<
+            *pdouble = atof( qposIntVal->getText( ));
+         >>
+      |  qnegIntVal:NEG_INT
+         <<
+            *pdouble = atof( qnegIntVal->getText( ));
+         >>
+      )
+      CLOSE_QUOTE
+   |  expVal:EXP
       <<
          *pdouble = atof( expVal->getText( ));
       >>
@@ -536,7 +613,13 @@ expNum[ double* pdouble ]
 //===========================================================================//
 uintNum[ unsigned int* puint ]
    :
-      uintVal:POS_INT
+      OPEN_QUOTE
+      quintVal:STRING
+      <<
+         *puint = static_cast< unsigned int >( atol( quintVal->getText( )));
+      >>
+      CLOSE_QUOTE
+   |  uintVal:POS_INT
       <<
          *puint = static_cast< unsigned int >( atol( uintVal->getText( )));
       >>
