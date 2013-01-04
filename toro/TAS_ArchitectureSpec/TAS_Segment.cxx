@@ -164,25 +164,28 @@ void TAS_Segment_c::Print(
 
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   printHandler.Write( pfile, spaceLen, "<segment " );
+   printHandler.Write( pfile, spaceLen, "<segment" );
 
    if( this->length != UINT_MAX )
    {
-      printHandler.Write( pfile, 0, "length = %u ", this->length );
+      printHandler.Write( pfile, 0, " length=\"%u\"", 
+                                    this->length );
    }
    else
    {
-      printHandler.Write( pfile, 0, "length = longline " );
+      printHandler.Write( pfile, 0, " length=\"longline\"" );
    }
    if( this->dirType != TAS_SEGMENT_DIR_UNDEFINED )
    {
       string srDirType;
       TAS_ExtractStringSegmentDirType( this->dirType, &srDirType );
-      printHandler.Write( pfile, 0, "type = %s ", TIO_SR_STR( srDirType ));
+      printHandler.Write( pfile, 0, " type=\"%s\"", 
+                                    TIO_SR_STR( srDirType ));
    }
    if( TCTF_IsGT( this->trackFreq, 0.0 ))
    {
-      printHandler.Write( pfile, 0, "freq = %0.*f ", precision, this->trackFreq );
+      printHandler.Write( pfile, 0, " freq=\"%0.*f\"", 
+                                    precision, this->trackFreq );
    }
    printHandler.Write( pfile, 0, ">\n" );
    spaceLen += 3;
@@ -191,44 +194,43 @@ void TAS_Segment_c::Print(
    {
       string srSwitchBoxPattern;
       this->sbPattern.ExtractString( &srSwitchBoxPattern );
-      printHandler.Write( pfile, spaceLen, "<sb type = pattern > %s </sb>\n",
+      printHandler.Write( pfile, spaceLen, "<sb type=\"pattern\"> %s </sb>\n",
                                             TIO_SR_STR( srSwitchBoxPattern ));
    }
    if( this->cbPattern.IsValid( ))
    {
       string srConnectionBoxPattern;
       this->cbPattern.ExtractString( &srConnectionBoxPattern );
-      printHandler.Write( pfile, spaceLen, "<cb type = pattern > %s </cb>\n",
+      printHandler.Write( pfile, spaceLen, "<cb type=\"pattern\"> %s </cb>\n",
                                             TIO_SR_STR( srConnectionBoxPattern ));
    }
    if( this->srMuxSwitchName.length( ))
    {
-      printHandler.Write( pfile, spaceLen, "<mux name = \"%s\" />\n", 
+      printHandler.Write( pfile, spaceLen, "<mux name=\"%s\"/>\n", 
                                             TIO_SR_STR( this->srMuxSwitchName ));
    }
    if( this->srWireSwitchName.length( ))
    {
-      printHandler.Write( pfile, spaceLen, "<wire_switch name = \"%s\" />\n", 
+      printHandler.Write( pfile, spaceLen, "<wire_switch name=\"%s\"/>\n", 
                                             TIO_SR_STR( this->srWireSwitchName ));
    }
    if( this->srOutputSwitchName.length( ))
    {
-      printHandler.Write( pfile, spaceLen, "<opin_switch name =\"%s\" />\n", 
+      printHandler.Write( pfile, spaceLen, "<opin_switch name=\"%s\"/>\n", 
                                             TIO_SR_STR( this->srOutputSwitchName ));
    }
-   if( TCTF_IsGT( this->timing.res, 0.0 ) ||
-       TCTF_IsGT( this->timing.cap, 0.0 ))
+   if( TCTF_IsGT( this->timing.res, 0.0 ) || TCTF_IsGT( this->timing.cap, 0.0 ))
    {
       printHandler.Write( pfile, spaceLen, "<timing\n" );
       spaceLen += 3;
 
       if( TCTF_IsGT( this->timing.res, 0.0 ))
       {
-         printHandler.Write( pfile, spaceLen, "res = %0.*f\n", precision, this->timing.res );
+         printHandler.Write( pfile, spaceLen, "res=\"%0.*f\"\n", precision, this->timing.res );
       }
       if( TCTF_IsGT( this->timing.cap, 0.0 ))
       {
-         printHandler.Write( pfile, spaceLen, "cap = %0.*e\n", precision + 1, this->timing.cap );
+         printHandler.Write( pfile, spaceLen, "cap=\"%0.*e\"\n", precision + 1, this->timing.cap );
       }
 
       spaceLen -= 3;
