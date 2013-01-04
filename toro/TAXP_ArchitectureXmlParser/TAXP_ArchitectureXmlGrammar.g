@@ -249,8 +249,14 @@ layoutDef[ TAS_Config_c* pconfig ]
    :
    LAYOUT
    {  AUTO EQUAL floatNum[ &pconfig->layout.autoSize.aspectRatio ]
-   |  WIDTH EQUAL intNum[ &pconfig->layout.manualSize.gridDims.width ]
-      HEIGHT EQUAL intNum[ &pconfig->layout.manualSize.gridDims.height ]
+      <<
+         pconfig->layout.sizeMode = TAS_ARRAY_SIZE_AUTO;
+      >>
+   |  WIDTH EQUAL intNum[ &pconfig->layout.manualSize.gridDims.dx ]
+      HEIGHT EQUAL intNum[ &pconfig->layout.manualSize.gridDims.dy ]
+      <<
+         pconfig->layout.sizeMode = TAS_ARRAY_SIZE_MANUAL;
+      >>
    }
    "/>"
    ;
@@ -801,9 +807,9 @@ timingDelayLists[ TAS_TimingDelayLists_c* ptimingDelayLists ]
    >>
    (  DELAY_CONSTANT 
       (  MIN EQUAL expNum[ &timingDelay.valueMin ] 
-         << timingDelay.type = TAS_TIMING_TYPE_MIN; >>
+         << timingDelay.type = TAS_TIMING_TYPE_MIN_VALUE; >>
       |  MAX EQUAL expNum[ &timingDelay.valueMax ] 
-         << timingDelay.type = TAS_TIMING_TYPE_MAX; >>
+         << timingDelay.type = TAS_TIMING_TYPE_MAX_VALUE; >>
       |  IN_PORT EQUAL stringText[ &timingDelay.srInputPortName ]
       |  OUT_PORT EQUAL stringText[ &timingDelay.srOutputPortName ]
       )*
@@ -846,9 +852,9 @@ timingDelayLists[ TAS_TimingDelayLists_c* ptimingDelayLists ]
       >>
    |  T_CLOCK_TO_Q
       (  MIN EQUAL expNum[ &timingDelay.valueMin ] 
-         << timingDelay.type = TAS_TIMING_TYPE_MIN; >>
+         << timingDelay.type = TAS_TIMING_TYPE_MIN_VALUE; >>
       |  MAX EQUAL expNum[ &timingDelay.valueMax ] 
-         << timingDelay.type = TAS_TIMING_TYPE_MAX; >>
+         << timingDelay.type = TAS_TIMING_TYPE_MAX_VALUE; >>
       |  PORT EQUAL stringText[ &timingDelay.srOutputPortName ]
       |  CLOCK EQUAL stringText[ &timingDelay.srClockPortName ]
       )*
@@ -964,11 +970,11 @@ timingType[ TAS_TimingType_t* ptype ]
    <<
       if( TC_stricmp( srType.data( ), "min" ) == 0 )
       {
-         *ptype = TAS_TIMING_TYPE_MIN;
+         *ptype = TAS_TIMING_TYPE_MIN_MATRIX;
       }
       else if( TC_stricmp( srType.data( ), "max" ) == 0 )
       {
-         *ptype = TAS_TIMING_TYPE_MAX;
+         *ptype = TAS_TIMING_TYPE_MAX_MATRIX;
       }
       else
       {
@@ -1394,7 +1400,7 @@ stringText[ string* psrString ]
 //===========================================================================//
 floatNum[ double* pdouble ]
    : 
-   (  OPEN_QUOTE
+      OPEN_QUOTE
       (  qfloatVal:STRING
          <<
             *pdouble = atof( qfloatVal->getText( ));
@@ -1421,13 +1427,12 @@ floatNum[ double* pdouble ]
       <<
          *pdouble = atof( negIntVal->getText( ));
       >>
-   )
    ;
 
 //===========================================================================//
 expNum[ double* pdouble ]
    : 
-   (  OPEN_QUOTE
+      OPEN_QUOTE
       (  qexpVal:EXP
          <<
             *pdouble = atof( qexpVal->getText( ));
@@ -1462,13 +1467,12 @@ expNum[ double* pdouble ]
       <<
          *pdouble = atof( negIntVal->getText( ));
       >>
-   )
    ;
 
 //===========================================================================//
 intNum[ int* pint ]
    :
-   (  OPEN_QUOTE
+      OPEN_QUOTE
       qintVal:STRING
       <<
          *pint = static_cast< int >( atol( qintVal->getText( )));
@@ -1478,13 +1482,12 @@ intNum[ int* pint ]
       <<
          *pint = static_cast< int >( atol( intVal->getText( )));
       >>
-   )
    ;
 
 //===========================================================================//
 uintNum[ unsigned int* puint ]
    :
-   (  OPEN_QUOTE
+      OPEN_QUOTE
       quintVal:STRING
       <<
          *puint = static_cast< unsigned int >( atol( quintVal->getText( )));
@@ -1494,7 +1497,6 @@ uintNum[ unsigned int* puint ]
       <<
          *puint = static_cast< unsigned int >( atol( uintVal->getText( )));
       >>
-   )
    ;
 
 //===========================================================================//
