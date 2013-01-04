@@ -52,10 +52,10 @@ TFM_Pin_c::TFM_Pin_c(
 //===========================================================================//
 TFM_Pin_c::TFM_Pin_c( 
       const string&       srName,
-	    TC_SideMode_t side_,
-	    double        offset_,
-	    double        width_,
-	    unsigned int  slice_ )
+            TC_SideMode_t side_,
+            double        offset_,
+            double        width_,
+            unsigned int  slice_ )
       :
       TPO_Pin_t( srName ),
       side( side_ ),
@@ -68,10 +68,10 @@ TFM_Pin_c::TFM_Pin_c(
 //===========================================================================//
 TFM_Pin_c::TFM_Pin_c( 
       const char*         pszName,
-	    TC_SideMode_t side_,
-	    double        offset_,
-	    double        width_,
-	    unsigned int  slice_ )
+            TC_SideMode_t side_,
+            double        offset_,
+            double        width_,
+            unsigned int  slice_ )
       :
       TPO_Pin_t( pszName ),
       side( side_ ),
@@ -170,24 +170,31 @@ void TFM_Pin_c::Print(
 
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   printHandler.Write( pfile, spaceLen, "<pin \"%s\" ",
+   printHandler.Write( pfile, spaceLen, "<pin name=\"%s\"",
                                         TIO_PSZ_STR( TPO_Pin_t::GetName( )));
    if( this->side != TC_SIDE_UNDEFINED )
    {
       string srSide;
       TC_ExtractStringSideMode( this->side, &srSide );
-      printHandler.Write( pfile, 0, "side = %s offset = %0.*f width = %0.*f slice = %u > ", 
+      printHandler.Write( pfile, 0, " side=\"%s\" offset=\"%0.*f\" width=\"%0.*f\" slice=\"%u\"", 
                                     TIO_SR_STR( srSide ),
-			            precision, this->offset,
+                                    precision, this->offset,
                                     precision, this->width,
                                     this->slice );
    }
    if( this->connectionPattern.IsValid( ))
    {
+      printHandler.Write( pfile, 0, ">\n" );
+
       string srConnectionBoxPattern;
       this->connectionPattern.ExtractString( &srConnectionBoxPattern );
-      printHandler.Write( pfile, 0, "<cb %s > ",
- 			            TIO_SR_STR( srConnectionBoxPattern ));
+      printHandler.Write( pfile, spaceLen + 3, "<cb> %s </cb>\n",
+                                               TIO_SR_STR( srConnectionBoxPattern ));
+
+      printHandler.Write( pfile, spaceLen, "</pin>\n" );
    }
-   printHandler.Write( pfile, 0, "</pin>\n" );
+   else
+   {
+      printHandler.Write( pfile, 0, "/>\n" );
+   }
 }
