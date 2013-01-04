@@ -51,7 +51,9 @@ TCD_CircuitDesign_c::TCD_CircuitDesign_c(
       :
       blockList( TCD_BLOCK_LIST_DEF_CAPACITY ),
       portList( TCD_PORT_LIST_DEF_CAPACITY ),
+      portNameList( TCD_PORT_NAME_LIST_DEF_CAPACITY ),
       instList( TCD_INST_LIST_DEF_CAPACITY ),
+      instNameList( TCD_INST_NAME_LIST_DEF_CAPACITY ),
       cellList( TCD_CELL_LIST_DEF_CAPACITY ),
       netList( TCD_NET_LIST_DEF_CAPACITY ),
       netNameList( TCD_NET_NAME_LIST_DEF_CAPACITY )
@@ -65,7 +67,9 @@ TCD_CircuitDesign_c::TCD_CircuitDesign_c(
       srName( circuitDesign.srName ),
       blockList( circuitDesign.blockList ),
       portList( circuitDesign.portList ),
+      portNameList( circuitDesign.portNameList ),
       instList( circuitDesign.instList ),
+      instNameList( circuitDesign.instNameList ),
       cellList( circuitDesign.cellList ),
       netList( circuitDesign.netList ),
       netNameList( circuitDesign.netNameList )
@@ -99,7 +103,9 @@ TCD_CircuitDesign_c& TCD_CircuitDesign_c::operator=(
       this->srName = circuitDesign.srName;
       this->blockList = circuitDesign.blockList;
       this->portList = circuitDesign.portList;
+      this->portNameList = circuitDesign.portNameList;
       this->instList = circuitDesign.instList;
+      this->instNameList = circuitDesign.instNameList;
       this->cellList = circuitDesign.cellList;
       this->netList = circuitDesign.netList;
       this->netNameList = circuitDesign.netNameList;
@@ -120,7 +126,9 @@ bool TCD_CircuitDesign_c::operator==(
    return(( this->srName == circuitDesign.srName ) && 
           ( this->blockList == circuitDesign.blockList ) && 
           ( this->portList == circuitDesign.portList ) && 
+          ( this->portNameList == circuitDesign.portNameList ) && 
           ( this->instList == circuitDesign.instList ) && 
+          ( this->instNameList == circuitDesign.instNameList ) && 
           ( this->cellList == circuitDesign.cellList ) &&
           ( this->netList == circuitDesign.netList ) &&
           ( this->netNameList == circuitDesign.netNameList ) ?
@@ -152,7 +160,7 @@ void TCD_CircuitDesign_c::Print(
       size_t spaceLen ) const
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
-   printHandler.Write( pfile, spaceLen, "<circuit \"%s\" >\n",
+   printHandler.Write( pfile, spaceLen, "<circuit name=\"%s\">\n",
                                         TIO_SR_STR( this->srName ));
    spaceLen += 3;
 
@@ -161,29 +169,31 @@ void TCD_CircuitDesign_c::Print(
       printHandler.Write( pfile, spaceLen, "\n" );
       for( size_t i = 0; i < this->blockList.GetLength( ); ++i )
       {
-         printHandler.Write( pfile, spaceLen, "<block " );
-         this->blockList[i]->Print( pfile, spaceLen + 3 );
-         printHandler.Write( pfile, spaceLen, "</block>\n" );
+         this->blockList[i]->Print( pfile, spaceLen, "block" );
       }
    }
-   if( this->portList.IsValid( ))
+   if( this->portNameList.IsValid( ) && this->portList.IsValid( ))
    {
       printHandler.Write( pfile, spaceLen, "\n" );
-      for( size_t i = 0; i < this->portList.GetLength( ); ++i )
+      for( size_t i = 0; i < this->portNameList.GetLength( ); ++i )
       {
-         printHandler.Write( pfile, spaceLen, "<port " );
-         this->portList[i]->Print( pfile, spaceLen + 3 );
-         printHandler.Write( pfile, spaceLen, "</port>\n" );
+         const TC_Name_c& portName = *this->portNameList[i];
+         const char* pszPortName = portName.GetName( );
+         const TPO_Port_t& port = *this->portList.Find( pszPortName );
+
+         port.Print( pfile, spaceLen, "port" );
       }
    }
-   if( this->instList.IsValid( ))
+   if( this->instNameList.IsValid( ) && this->instList.IsValid( ))
    {
       printHandler.Write( pfile, spaceLen, "\n" );
-      for( size_t i = 0; i < this->instList.GetLength( ); ++i )
+      for( size_t i = 0; i < this->instNameList.GetLength( ); ++i )
       {
-         printHandler.Write( pfile, spaceLen, "<inst " );
-         this->instList[i]->Print( pfile, spaceLen + 3 );
-         printHandler.Write( pfile, spaceLen, "</inst>\n" );
+         const TC_Name_c& instName = *this->instNameList[i];
+         const char* pszInstName = instName.GetName( );
+         const TPO_Inst_c& inst = *this->instList.Find( pszInstName );
+
+         inst.Print( pfile, spaceLen, "inst" );
       }
    }
    if( this->cellList.IsValid( ))
@@ -191,9 +201,7 @@ void TCD_CircuitDesign_c::Print(
       printHandler.Write( pfile, spaceLen, "\n" );
       for( size_t i = 0; i < this->cellList.GetLength( ); ++i )
       {
-         printHandler.Write( pfile, spaceLen, "<cell " );
-         this->cellList[i]->Print( pfile, spaceLen + 3 );
-         printHandler.Write( pfile, spaceLen, "</cell>\n" );
+         this->cellList[i]->Print( pfile, spaceLen );
       }
    }
    if( this->netList.IsValid( ))
@@ -201,9 +209,7 @@ void TCD_CircuitDesign_c::Print(
       printHandler.Write( pfile, spaceLen, "\n" );
       for( size_t i = 0; i < this->netList.GetLength( ); ++i )
       {
-         printHandler.Write( pfile, spaceLen, "<net " );
-         this->netList[i]->Print( pfile, spaceLen + 3 );
-         printHandler.Write( pfile, spaceLen, "</net>\n" );
+         this->netList[i]->Print( pfile, spaceLen );
       }
    }
 
@@ -238,9 +244,12 @@ void TCD_CircuitDesign_c::PrintBLIF(
                                         TIO_SR_STR( this->srName ));
 
    printHandler.Write( pfile, spaceLen, ".inputs" );
-   for( size_t i = 0; i < this->portList.GetLength( ); ++i )
+   for( size_t i = 0; i < this->portNameList.GetLength( ); ++i )
    {
-      const TPO_Port_t& port = *this->portList[i];
+      const TC_Name_c& portName = *this->portNameList[i];
+      const char* pszPortName = portName.GetName( );
+      const TPO_Port_t& port = *this->portList.Find( pszPortName );
+
       const TPO_PinList_t& pinList = port.GetPinList( );
       const TPO_Pin_t& pin = *pinList[0];
       if( pin.GetType( ) == TC_TYPE_OUTPUT )
@@ -252,9 +261,12 @@ void TCD_CircuitDesign_c::PrintBLIF(
    printHandler.Write( pfile, 0, "\n" );
 
    printHandler.Write( pfile, spaceLen, ".outputs" );
-   for( size_t j = 0; j < this->portList.GetLength( ); ++j )
+   for( size_t i = 0; i < this->portNameList.GetLength( ); ++i )
    {
-      const TPO_Port_t& port = *this->portList[j];
+      const TC_Name_c& portName = *this->portNameList[i];
+      const char* pszPortName = portName.GetName( );
+      const TPO_Port_t& port = *this->portList.Find( pszPortName );
+
       const TPO_PinList_t& pinList = port.GetPinList( );
       const TPO_Pin_t& pin = *pinList[0];
       if( pin.GetType( ) == TC_TYPE_INPUT )
@@ -265,25 +277,37 @@ void TCD_CircuitDesign_c::PrintBLIF(
    }
    printHandler.Write( pfile, 0, "\n" );
 
-   for( size_t i = 0; i < this->instList.GetLength( ); ++i )
+   for( size_t i = 0; i < this->instNameList.GetLength( ); ++i )
    {
-      if( this->instList[i]->GetSource( ) == TPO_INST_SOURCE_LATCH )
+      const TC_Name_c& instName = *this->instNameList[i];
+      const char* pszInstName = instName.GetName( );
+      const TPO_Inst_c& inst = *this->instList.Find( pszInstName );
+
+      if( inst.GetSource( ) == TPO_INST_SOURCE_LATCH )
       {
-         this->instList[i]->PrintBLIF( pfile, spaceLen );
+         inst.PrintBLIF( pfile, spaceLen );
       }
    }
-   for( size_t i = 0; i < this->instList.GetLength( ); ++i )
+   for( size_t i = 0; i < this->instNameList.GetLength( ); ++i )
    {
-      if( this->instList[i]->GetSource( ) == TPO_INST_SOURCE_NAMES )
+      const TC_Name_c& instName = *this->instNameList[i];
+      const char* pszInstName = instName.GetName( );
+      const TPO_Inst_c& inst = *this->instList.Find( pszInstName );
+
+      if( inst.GetSource( ) == TPO_INST_SOURCE_NAMES )
       {
-         this->instList[i]->PrintBLIF( pfile, spaceLen );
+         inst.PrintBLIF( pfile, spaceLen );
       }
    }
-   for( size_t i = 0; i < this->instList.GetLength( ); ++i )
+   for( size_t i = 0; i < this->instNameList.GetLength( ); ++i )
    {
-      if( this->instList[i]->GetSource( ) == TPO_INST_SOURCE_SUBCKT )
+      const TC_Name_c& instName = *this->instNameList[i];
+      const char* pszInstName = instName.GetName( );
+      const TPO_Inst_c& inst = *this->instList.Find( pszInstName );
+
+      if( inst.GetSource( ) == TPO_INST_SOURCE_SUBCKT )
       {
-         this->instList[i]->PrintBLIF( pfile, spaceLen );
+         inst.PrintBLIF( pfile, spaceLen );
       }
    }
    printHandler.Write( pfile, spaceLen, ".end\n" );
@@ -400,8 +424,8 @@ bool TCD_CircuitDesign_c::InitValidate(
             break;
 
          if( pinList_.GetLength( ) != pcell->GetPinList( ).GetLength( ))
-	 {
-	    pcell->SetPinList( pinList_ );
+         {
+            pcell->SetPinList( pinList_ );
          }
       }
    }
@@ -490,15 +514,15 @@ void TCD_CircuitDesign_c::InitDefaultsNetList_(
 
             if( pin.GetType( ) == TC_TYPE_OUTPUT )
             {
-	       pnet->AddInstPin( inst.GetName( ), "out", TC_TYPE_OUTPUT );
+               pnet->AddInstPin( inst.GetName( ), "out", TC_TYPE_OUTPUT );
             }
             else if( pin.GetType( ) == TC_TYPE_INPUT )
             {
                char szPinName[TIO_FORMAT_STRING_LEN_DATA];
                sprintf( szPinName, "in[%u]", inputCount++ );
-	       pnet->AddInstPin( inst.GetName( ), szPinName, TC_TYPE_INPUT );
+               pnet->AddInstPin( inst.GetName( ), szPinName, TC_TYPE_INPUT );
             }
-	 }
+         }
       }
       else if( inst.GetSource( ) == TPO_INST_SOURCE_LATCH )
       {
@@ -509,18 +533,18 @@ void TCD_CircuitDesign_c::InitDefaultsNetList_(
 
             if( pin.GetType( ) == TC_TYPE_OUTPUT )
             {
-	       pnet->AddInstPin( inst.GetName( ), "Q", TC_TYPE_OUTPUT );
+               pnet->AddInstPin( inst.GetName( ), "Q", TC_TYPE_OUTPUT );
             }
             else if( pin.GetType( ) == TC_TYPE_INPUT )
             {
-	       pnet->AddInstPin( inst.GetName( ), "D", TC_TYPE_INPUT );
+               pnet->AddInstPin( inst.GetName( ), "D", TC_TYPE_INPUT );
             }
             else if( pin.GetType( ) == TC_TYPE_CLOCK )
             {
                pnet->AddInstPin( inst.GetName( ), "clk", TC_TYPE_CLOCK );
-	       pnet->SetRoutable( false );
+               pnet->SetRoutable( false );
             }
-	 }
+         }
       }
       else if( inst.GetSource( ) == TPO_INST_SOURCE_SUBCKT )
       {
@@ -532,12 +556,12 @@ void TCD_CircuitDesign_c::InitDefaultsNetList_(
 
             const TLO_Cell_c* pcell = cellList_.Find( inst.GetCellName( ));
             if( !pcell )
-	       continue;
+               continue;
 
-   	    const TLO_PortList_t& portList__ = pcell->GetPortList( );
+            const TLO_PortList_t& portList__ = pcell->GetPortList( );
             const TLO_Port_c* pport = portList__.Find( pinMap.GetCellPinName( ));
             if( !pport )
-	       continue;
+               continue;
 
             pnet->AddInstPin( pinMap.GetInstPinName( ), pinMap.GetCellPinName( ), 
                               pport->GetType( ));
@@ -588,7 +612,7 @@ void TCD_CircuitDesign_c::InitDefaultsNetNameList_(
       TNO_Net_c* pnet = netList_.Find( port.GetName( ));
       if( pnet && pnet->IsRoutable( ))
       {
-   	 pnet->SetRoutable( false );
+         pnet->SetRoutable( false );
          pnetNameList_->Add( port.GetName( ));
 
          pnet = pnetList_->Find( port.GetName( ));
@@ -604,15 +628,15 @@ void TCD_CircuitDesign_c::InitDefaultsNetNameList_(
       {
          const TPO_Pin_t& pin = *pinList_[j];
          TNO_Net_c* pnet = netList_.Find( pin.GetName( ));
-	 if( pnet && pnet->IsRoutable( ))
-	 {
-   	    pnet->SetRoutable( false );
+         if( pnet && pnet->IsRoutable( ))
+         {
+            pnet->SetRoutable( false );
             pnetNameList_->Add( pin.GetName( ));
 
             pnet = pnetList_->Find( pin.GetName( ));
-	    pnet->SetIndex( netIndex );
+            pnet->SetIndex( netIndex );
             ++netIndex;
-	 }
+         }
       }
    }
 }
@@ -641,7 +665,7 @@ bool TCD_CircuitDesign_c::InitValidateNetList_(
    {
       const TNO_Net_c& net = *( *pnetList )[i];
       if( !net.IsRoutable( ))
-	 continue;
+         continue;
 
       size_t inputPinCount = net.FindInstPinCount( TC_TYPE_INPUT );
       if( inputPinCount == 0 )
@@ -743,40 +767,40 @@ bool TCD_CircuitDesign_c::InitValidateInstList_(
             const char* pszInstName = inst.GetName( );
             ok = printHandler.Error( "Invalid LUT size for .names \"%s\"!\n"
                                      "%sInput pin count exeeds VPR architecture LUT number of pins (%d)\n",
-				     TIO_PSZ_STR( pszInstName ),
+                                     TIO_PSZ_STR( pszInstName ),
                                      TIO_PREFIX_ERROR_SPACE,
                                      cellInputCount );
          }
          if( !ok )
-	    break;
+            break;
       }
 
       const TPO_PinList_t& pinList = inst.GetPinList( );
       for( size_t j = 0; j < pinList.GetLength( ); ++j )
       {
-	 const TPO_Pin_t& pin = *pinList[j];
-	 const char* pszPinName = pin.GetName( );
+         const TPO_Pin_t& pin = *pinList[j];
+         const char* pszPinName = pin.GetName( );
 
          if( strcmp( pszPinName, "open" ) == 0 )
          {
             const char* pszSource = "instance";
-	    if( inst.GetSource( ) == TPO_INST_SOURCE_NAMES )
+            if( inst.GetSource( ) == TPO_INST_SOURCE_NAMES )
             {
-	       pszSource = ".names";
+               pszSource = ".names";
             }
-	    if( inst.GetSource( ) == TPO_INST_SOURCE_LATCH )
+            if( inst.GetSource( ) == TPO_INST_SOURCE_LATCH )
             {
-	       pszSource = ".latch";
+               pszSource = ".latch";
             }
-	    if( inst.GetSource( ) == TPO_INST_SOURCE_SUBCKT )
+            if( inst.GetSource( ) == TPO_INST_SOURCE_SUBCKT )
             {
-	       pszSource = ".subckt";
+               pszSource = ".subckt";
             }
 
             ok = printHandler.Error( "Invalid pin name for %s \"%s\"!\n"
                                      "%sPin name \"open\" is a reserved VPR keyword\n",
-				     TIO_PSZ_STR( pszSource ),
-				     TIO_PSZ_STR( pszPinName ),
+                                     TIO_PSZ_STR( pszSource ),
+                                     TIO_PSZ_STR( pszPinName ),
                                      TIO_PREFIX_ERROR_SPACE );
             if( !ok )
                break;
