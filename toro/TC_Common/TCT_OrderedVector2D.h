@@ -208,12 +208,15 @@ template< class T > TCT_OrderedVector2D_c< T >& TCT_OrderedVector2D_c< T >::oper
    this->width_ = orderedVector2D.width_;
    this->height_ = orderedVector2D.height_;
 
+   this->vector2D_.resize( this->width_ );
    for( size_t i = 0; i < this->width_; ++i )
    {
-      this->vector2D_[i].operator=( orderedVector2D.vector2D_[i] );
+      this->vector2D_[i].resize( this->height_ );
+      for( size_t j = 0; j < this->height_; ++j )
+      {
+         this->vector2D_[i][j] = orderedVector2D[i][j];
+      }
    }
-   this->vector2D_.operator=( orderedVector2D.vector2D_ );
-
    return( *this );
 }
 
