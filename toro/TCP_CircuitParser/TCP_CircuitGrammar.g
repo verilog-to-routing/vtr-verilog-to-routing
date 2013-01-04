@@ -40,7 +40,7 @@ using namespace std;
 
 //===========================================================================//
 #lexclass QUOTED_VALUE
-
+ 
 #token CLOSE_QUOTE     "\""                    << mode( START ); >>
 #token STRING          "~[\"\n]+"
 #token UNCLOSED_STRING "[\n]"
@@ -48,91 +48,57 @@ using namespace std;
 //===========================================================================//
 #lexclass START
 
-#token                 "[\ \t]+"      << skip( ); >>
-#token CPP_COMMENT     "//~[\n]*[\n]" << skip( ); newline( ); >>
-#token BLOCK_COMMENT   "#~[\n]*[\n]"  << skip( ); newline( ); >>
-#token NEW_LINE        "[\n\\]"       << skip( ); newline( ); >>
-#token END_OF_FILE     "@"
-#token OPEN_QUOTE      "\""           << mode( QUOTED_VALUE ); >>
-#token EQUAL           "="
+#token               "[\ \t]+"           << skip( ); >>
+#token CPP_COMMENT   "//~[\n]*[\n]"      << skip( ); newline( ); >>
+#token BLOCK_COMMENT "#~[\n]*[\n]"       << skip( ); newline( ); >>
+#token XML_COMMENT   "<\!\-\-~[\n]*[\n]" << skip( ); newline( ); >>
+#token NEW_LINE      "[\n\\]"            << skip( ); newline( ); >>
+#token END_OF_FILE   "@"
+#token OPEN_QUOTE    "\""                << mode( QUOTED_VALUE ); >>
+#token EQUAL         "="
 
-#token CIRCUIT      "[Cc][Ii][Rr][Cc][Uu][Ii][Tt]"
-#token IO           "[Ii]{[Nn][Pp][Uu][Tt]}[Oo]{[Uu][Tt][Pp][Uu][Tt]}"
-#token PB           "[Pp]{[Hh][Yy][Ss][Ii][Cc][Aa][Ll]}[Bb]{[Ll][Oo][Cc][Kk]}"
-#token SB           "[Ss]{[Ww][Ii][Tt][Cc][Hh]}[Bb]{[Oo][Xx]{[Ee][Ss]}}"
-#token BLOCK        "[Bb][Ll][Oo][Cc][Kk]"
-#token PORT         "[Pp][Oo][Rr][Tt]"
-#token INST         "[Ii][Nn][Ss][Tt]"
-#token CELL         "[Cc][Ee][Ll][Ll]"
-#token MASTER       "[Mm][Aa][Ss][Tt][Ee][Rr]"
-#token NET          "[Nn][Ee][Tt]"
-#token PIN          "[Pp][Ii][Nn]"
+#token CIRCUIT    "[Cc][Ii][Rr][Cc][Uu][Ii][Tt]"
+#token IO         "[Ii]{[Nn][Pp][Uu][Tt]}[Oo]{[Uu][Tt][Pp][Uu][Tt]}"
+#token PB         "[Pp]{[Hh][Yy][Ss][Ii][Cc][Aa][Ll]}[Bb]{[Ll][Oo][Cc][Kk]}"
+#token SB         "[Ss]{[Ww][Ii][Tt][Cc][Hh]}[Bb]{[Oo][Xx]{[Ee][Ss]}}"
+#token BLOCK      "[Bb][Ll][Oo][Cc][Kk]"
+#token PORT       "[Pp][Oo][Rr][Tt]"
+#token INST       "[Ii][Nn][Ss][Tt]"
+#token CELL       "[Cc][Ee][Ll][Ll]"
+#token NAME       "[Nn][Aa][Mm][Ee]"
+#token MASTER     "[Mm][Aa][Ss][Tt][Ee][Rr]"
+#token SOURCE     "[Ss][Oo][Uu][Rr][Cc][Ee]"
+#token NET        "[Nn][Ee][Tt]"
+#token PIN        "[Pp][Ii][Nn]"
+#token CLOCK      "[Cc][Ll][Oo][Cc][Kk]"
 
-#token TYPE         "[Tt][Yy][Pp][Ee]"
-#token STATE        "[Ss][Tt][Aa][Tt][Ee]"
-#token ROUTABLE     "[Rr][Oo][Uu][Tt][Aa][Bb][Ll][Ee]"
-#token STATUS       "[Ss][Tt][Aa][Tt][Uu][Ss]"
-#token HIER         "[Hh][Ii][Ee][Rr]{[Aa][Rr][Cc][Hh][Yy]}"
-#token PACK         "[Pp][Aa][Cc][Kk]{[Ii][Nn][Gg]}"
-#token PLACE        "[Pp][Ll][Aa][Cc][Ee][Mm][Ee][Nn][Tt]"
-#token CHANNEL      "[Cc][Hh][Aa][Nn][Nn][Ee][Ll]"
-#token SEGMENT      "[Ss][Ee][Gg][Mm][Ee][Nn][Tt]"
-#token RELATIVE     "[Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee]"
-#token REGION       "[Rr][Ee][Gg][Ii][Oo][Nn]"
+#token TYPE       "[Tt][Yy][Pp][Ee]"
+#token STATE      "[Ss][Tt][Aa][Tt][Ee]"
+#token ROUTABLE   "[Rr][Oo][Uu][Tt][Aa][Bb][Ll][Ee]"
+#token STATUS     "[Ss][Tt][Aa][Tt][Uu][Ss]"
+#token HIER       "[Hh][Ii][Ee][Rr]{[Aa][Rr][Cc][Hh][Yy]}"
+#token PACK       "[Pp][Aa][Cc][Kk]{[Ii][Nn][Gg]}"
+#token PLACE      "[Pp][Ll][Aa][Cc][Ee][Mm][Ee][Nn][Tt]"
+#token TRACK      "[Tt][Rr][Aa][Cc][Kk]"
+#token CHANNEL    "[Cc][Hh][Aa][Nn][Nn][Ee][Ll]"
+#token SEGMENT    "[Ss][Ee][Gg][Mm][Ee][Nn][Tt]"
+#token SIDES      "[Ss][Ii][Dd][Ee]{[Ss]}"
+#token LENGTH     "[Ll][Ee][Nn][Gg][Tt][Hh]"
+#token RELATIVE   "[Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee]"
+#token REGION     "[Rr][Ee][Gg][Ii][Oo][Nn]"
 
-#token GROUTE       "[Gg]{[Ll][Oo][Bb][Aa][Ll][_]}[Rr][Oo][Uu][Tt][Ee]"
-#token ROUTE        "[Rr][Oo][Uu][Tt][Ee]"
-#token SWITCHBOX    "[Ss][Ww][Ii][Tt][Cc][Hh][Bb][Oo][Xx]"
+#token GROUTE     "[Gg]{[Ll][Oo][Bb][Aa][Ll][_]}[Rr][Oo][Uu][Tt][Ee]"
+#token ROUTE      "[Rr][Oo][Uu][Tt][Ee]"
+#token SWITCHBOX  "[Ss][Ww][Ii][Tt][Cc][Hh][Bb][Oo][Xx]"
 
-#token PLACE_FLOAT  "[Ff][Ll][Oo][Aa][Tt]"
-#token PLACE_FIXED  "[Ff][Ii][Xx][Ee][Dd]"
-#token PLACE_PLACED "[Pp][Ll][Aa][Cc][Ee][Dd]"
-#tokclass PLACE_STATUS_VAL { PLACE_FLOAT PLACE_FIXED PLACE_PLACED }
+#token BOOL_TRUE  "([Tt][Rr][Uu][Ee]|[Yy][Ee][Ss]|[Oo][Nn])"
+#token BOOL_FALSE "([Ff][Aa][Ll][Ss][Ee]|[Nn][Oo]|[Oo][Ff][Ff])"
 
-#token NET_OPEN     "[Oo][Pp][Ee][Nn]"
-#token NET_GROUTED  "[Gg]{[Ll][Oo][Bb][Aa][Ll][_]}[Rr][Oo][Uu][Tt][Ee][Dd]"
-#token NET_ROUTED   "[Rr][Oo][Uu][Tt][Ee][Dd]"
-#tokclass NET_STATUS_VAL { NET_OPEN NET_GROUTED NET_ROUTED }
-
-#token TYPE_FALLING_EDGE "[Ff][Ee]"
-#token TYPE_RISING_EDGE  "[Rr][Ee]"
-#token TYPE_ACTIVE_HIGH  "[Aa][Hh]"
-#token TYPE_ACTIVE_LOW   "[Aa][Ll]"
-#token TYPE_ASYNCHRONOUS "[Aa][Ss]"
-#tokclass LATCH_TYPE_VAL  { TYPE_FALLING_EDGE TYPE_RISING_EDGE TYPE_ACTIVE_HIGH TYPE_ACTIVE_LOW TYPE_ASYNCHRONOUS }
-
-#token STATE_TRUE        "1"
-#token STATE_FALSE       "0"
-#token STATE_DONT_CARE   "2"
-#token STATE_UNKNOWN     "3"
-#tokclass LATCH_STATE_VAL { STATE_TRUE STATE_FALSE STATE_DONT_CARE STATE_UNKNOWN }
-
-#token LEFT         "[Ll]{[Ee][Ff][Tt]}"
-#token RIGHT        "[Rr]{[Ii][Gg][Hh][Tt]}"
-#token LOWER        "[Ll][Oo][Ww][Ee][Rr]"
-#token UPPER        "[Uu][Pp][Pp][Ee][Rr]"
-#token BOTTOM       "[Bb]{[Oo][Tt][Tt][Oo][Mm]}"
-#token TOP          "[Tt]{[Oo][Pp]}"
-#tokclass SIDE_VAL  { LEFT RIGHT LOWER UPPER BOTTOM TOP R T }
-
-#token INPUT        "[Ii][Nn][Pp][Uu][Tt]"
-#token OUTPUT       "[Oo][Uu][Tt][Pp][Uu][Tt]"
-#token SIGNAL       "[Ss][Ii][Gg][Nn][Aa][Ll]"
-#token CLOCK        "[Cc][Ll][Oo][Cc][Kk]"
-#token POWER        "[Pp][Oo][Ww][Ee][Rr]"
-#token GLOBAL       "[Gg][Ll][Oo][Bb][Aa][Ll]"
-#tokclass TYPE_VAL  { INPUT OUTPUT SIGNAL CLOCK POWER GLOBAL }
-
-#token BOOL_TRUE    "([Tt][Rr][Uu][Ee]|[Yy][Ee][Ss]|[Oo][Nn])"
-#token BOOL_FALSE   "([Ff][Aa][Ll][Ss][Ee]|[Nn][Oo]|[Oo][Ff][Ff])"
-#tokclass BOOL_VAL  { BOOL_TRUE BOOL_FALSE }
-
-#token BIT_CHAR   "[01]"
 #token NEG_INT    "[\-][0-9]+"
 #token POS_INT    "[0-9]+"
 #token FLOAT      "{\-}{[0-9]+}.[0-9]+"
 #token EXP        "{\-}{[0-9]+}.[0-9]+[Ee][\+\-][0-9]+"
-#token STRING     "[a-zA-Z_/\|\[\]][a-zA-Z0-9_/\|\[\]\(\)\.\+\-\~]*"
+#token STRING     "[a-zA-Z_/\|\[\]\.][a-zA-Z0-9_/\|\[\]\(\)\.\+\-\~]*"
 
 //===========================================================================//
 // Purpose        : Class declaration
@@ -153,6 +119,7 @@ public:
              ANTLRTokenType      tokenType,
              int                 /* k */ );
             
+   void SetInterface( TCP_CircuitInterface_c* pinterface );
    void SetScanner( TCP_CircuitScanner_c* pscanner );
    void SetFileName( const char* pszFileName );
    void SetCircuitFile( TCP_CircuitFile_c* pcircuitFile );
@@ -161,17 +128,7 @@ public:
 <<
 private:
 
-   TPO_StatusMode_t FindPlaceStatusMode_( ANTLRTokenType tokenType );
-   TNO_StatusMode_t FindNetStatusMode_( ANTLRTokenType tokenType );
-   TPO_LatchType_t FindLatchType_( ANTLRTokenType tokenType );
-   TPO_LatchState_t FindLatchState_( ANTLRTokenType tokenType );
-   TC_SideMode_t FindSideMode_( ANTLRTokenType tokenType );
-   TC_TypeMode_t FindTypeMode_( ANTLRTokenType tokenType );
-   bool FindBool_( ANTLRTokenType tokenType );
->> 
-<<
-private:
-
+   TCP_CircuitInterface_c* pinterface_;
    TCP_CircuitScanner_c*   pscanner_;
    string                  srFileName_;
    TCP_CircuitFile_c*      pcircuitFile_;
@@ -181,11 +138,13 @@ private:
 //===========================================================================//
 start 
    :
-   "<" CIRCUIT stringText[ &pcircuitDesign_->srName ] ">"
+   "<" CIRCUIT { NAME { EQUAL } } stringText[ &pcircuitDesign_->srName ] ">"
    (  "<"
       (  blockList[ &pcircuitDesign_->blockList ] 
-      |  portList[ &pcircuitDesign_->portList ]
-      |  instList[ &pcircuitDesign_->instList ] 
+      |  portList[ &pcircuitDesign_->portList,
+                   &pcircuitDesign_->portNameList ]
+      |  instList[ &pcircuitDesign_->instList,
+                   &pcircuitDesign_->instNameList ]
       |  netList[ &pcircuitDesign_->netList ]
       )
    )*
@@ -201,34 +160,36 @@ blockList[ TPO_InstList_t* pblockList ]
       string srName;
       string srCellName;
       string srPlaceFabricName;
+      TPO_StatusMode_t placeStatus = TPO_STATUS_UNDEFINED;
+
       TPO_HierMapList_t hierMapList_;
       TPO_RelativeList_t relativeList_;
       TGS_RegionList_t regionList_;
    >>
    ( BLOCK | PB )
-   stringText[ &srName ]
+   { NAME { EQUAL } } stringText[ &srName ]
    <<
       inst.SetName( srName );
    >>
-   stringText[ &srCellName ]
-   <<
-      inst.SetCellName( srCellName );
-   >>
-   (  STATUS { EQUAL } statusVal:PLACE_STATUS_VAL
+   (  MASTER { EQUAL } stringText[ &srCellName ]
       <<
-         inst.SetPlaceStatus( this->FindPlaceStatusMode_( statusVal->getType( )));
+         inst.SetCellName( srCellName );
+      >>
+   |  STATUS { EQUAL } placeStatusMode[ &placeStatus ]
+      <<
+         inst.SetPlaceStatus( placeStatus );
       >>
    )*
    ">"
    (  "<" 
       (  PACK hierMapList[ &hierMapList_ ] "</" PACK ">"
-      |  PLACE stringText[ &srPlaceFabricName ]
+      |  REGION ">" regionList[ &regionList_ ] "</" REGION ">"
+      |  RELATIVE ">" relativeList[ &relativeList_ ] "</" RELATIVE ">"
+      |  PLACE { NAME { EQUAL } } stringText[ &srPlaceFabricName ]
          <<
             inst.SetPlaceFabricName( srPlaceFabricName );
          >>
          "/>"
-      |  RELATIVE relativeList[ &relativeList_ ] "/>"
-      |  REGION regionList[ &regionList_ ] "/>"
       )
    )*
    "</" ( BLOCK | PB ) ">"
@@ -245,7 +206,8 @@ blockList[ TPO_InstList_t* pblockList ]
    ;
 
 //===========================================================================//
-portList[ TPO_PortList_t* pportList ]
+portList[ TPO_PortList_t* pportList,
+          TPO_NameList_t* pportNameList ]
    :
    <<
       TPO_Inst_c port;
@@ -255,20 +217,25 @@ portList[ TPO_PortList_t* pportList ]
       string srName;
       string srCellName;
       string srPlaceFabricName;
+      TPO_StatusMode_t placeStatus = TPO_STATUS_UNDEFINED;
    >>
    ( PORT | IO )
-   stringText[ &srName ]
+   { NAME { EQUAL } } stringText[ &srName ]
    <<
       port.SetName( srName );
    >>
-   cellSourceText[ &srCellName, &source ]
-   <<
-      port.SetCellName( srCellName );
-      port.SetSource( source );
-   >>
-   (  STATUS { EQUAL } statusVal:PLACE_STATUS_VAL
+   (  MASTER { EQUAL } stringText[ &srCellName ]
       <<
-         port.SetPlaceStatus( this->FindPlaceStatusMode_( statusVal->getType( )));
+         port.SetCellName( srCellName );
+      >>
+   |  SOURCE { EQUAL } cellSourceText[ &srCellName, &source ]
+      <<
+         port.SetCellName( srCellName );
+         port.SetSource( source );
+      >>
+   |  STATUS { EQUAL } placeStatusMode[ &placeStatus ]
+      <<
+         port.SetPlaceStatus( placeStatus );
       >>
    )*
    ">"
@@ -290,12 +257,14 @@ portList[ TPO_PortList_t* pportList ]
       if( port.IsValid( ))
       {
          pportList->Add( port );
+         pportNameList->Add( port.GetName( ));
       }
    >>
    ;
 
 //===========================================================================//
-instList[ TPO_InstList_t* pinstList ]
+instList[ TPO_InstList_t* pinstList,
+          TPO_NameList_t* pinstNameList ]
    :
    <<
       TPO_Inst_c inst;
@@ -306,15 +275,20 @@ instList[ TPO_InstList_t* pinstList ]
       string srCellName;
    >>
    INST
-   stringText[ &srName ]
+   { NAME { EQUAL } } stringText[ &srName ]
    <<
       inst.SetName( srName );
    >>
-   cellSourceText[ &srCellName, &source ]
-   <<
-      inst.SetCellName( srCellName );
-      inst.SetSource( source );
-   >>
+   (  MASTER { EQUAL } stringText[ &srCellName ]
+      <<
+         inst.SetCellName( srCellName );
+      >>
+   |  SOURCE { EQUAL } cellSourceText[ &srCellName, &source ]
+      <<
+         inst.SetCellName( srCellName );
+         inst.SetSource( source );
+      >>
+   )*
    ">"
    (  "<"
       (  CLOCK latchDef[ &inst ]
@@ -330,6 +304,7 @@ instList[ TPO_InstList_t* pinstList ]
       if( inst.IsValid( ))
       {
          pinstList->Add( inst );
+         pinstNameList->Add( inst.GetName( ));
       }
    >>
    ;
@@ -341,33 +316,37 @@ netList[ TNO_NetList_c* pnetList ]
       TNO_Net_c net;
 
       string srName;
+      TC_TypeMode_t type = TC_TYPE_UNDEFINED;
+      TNO_StatusMode_t netStatus = TNO_STATUS_UNDEFINED;
+      bool routable = false;
+
       TNO_InstPinList_t instPinList_;
       TNO_GlobalRouteList_t globalRouteList_;
       TNO_RouteList_t routeList_;
    >>
    NET 
-   stringText[ &srName ]
+   { NAME { EQUAL } } stringText[ &srName ]
    <<
       net.SetName( srName );
    >>
-   (  TYPE { EQUAL } typeVal:TYPE_VAL
+   (  TYPE { EQUAL } typeMode[ &type ]
       << 
-         net.SetType( this->FindTypeMode_( typeVal->getType( )));
+         net.SetType( type );
       >>
-   |  ROUTABLE { EQUAL } boolVal:BOOL_VAL
-      << 
-         net.SetRoutable( this->FindBool_( boolVal->getType( )));
-      >>
-   |  STATUS { EQUAL } statusVal:NET_STATUS_VAL
+   |  STATUS { EQUAL } netStatusMode[ &netStatus ]
       <<
-         net.SetStatus( this->FindNetStatusMode_( statusVal->getType( )));
+         net.SetStatus( netStatus );
+      >>
+   |  ROUTABLE { EQUAL } boolType[ &routable ]
+      << 
+         net.SetRoutable( routable );
       >>
    )*
    ">"
    (  "<"
       (  PIN instPinList[ &instPinList_ ] "/>"
       |  GROUTE globalRouteList[ &globalRouteList_ ] "/>"
-      |  ROUTE routeList[ &routeList_ ] "</" ROUTE ">"
+      |  ROUTE ">" routeList[ &routeList_ ] "</" ROUTE ">"
       )
    )*
    "</" NET ">"
@@ -390,14 +369,12 @@ latchDef[ TPO_Inst_c* pinst ]
       TPO_LatchType_t clockType = TPO_LATCH_TYPE_UNDEFINED;
       TPO_LatchState_t initState = TPO_LATCH_STATE_UNDEFINED;
    >>
-   (  TYPE { EQUAL } typeVal:LATCH_TYPE_VAL
+   (  TYPE { EQUAL } latchType[ &clockType ]
       << 
-         clockType = this->FindLatchType_( typeVal->getType( ));
          pinst->SetLatchClockType( clockType );
       >>
-   |  STATE { EQUAL } stateVal:LATCH_STATE_VAL
+   |  STATE { EQUAL } latchState[ &initState ]
       << 
-         initState = this->FindLatchState_( stateVal->getType( ));
          pinst->SetLatchInitState( initState );
       >>
    )*
@@ -412,12 +389,9 @@ pinDef[ TPO_Pin_t* ppin ]
 
       ppin->Clear( );
    >>
-   stringText[ &srName ]
-   typeVal:TYPE_VAL
-   <<
-   >>
+   NAME { EQUAL } stringText[ &srName ]
+   { TYPE { EQUAL } typeMode[ &type ] }
    << 
-      type = this->FindTypeMode_( typeVal->getType( ));
       ppin->Set( srName, type );
    >>
    ;
@@ -442,12 +416,14 @@ instPinDef[ TNO_InstPin_c* pinstPin ]
    :
    <<
       string srInstName, srPortName, srPinName;
+      TC_TypeMode_t type = TC_TYPE_UNDEFINED;
 
       pinstPin->Clear( );
    >>
-   stringText[ &srInstName ]
-   stringText[ &srPortName ]
-   {  stringText[ &srPinName ]  }
+   (  INST { EQUAL } stringText[ &srInstName ]
+   |  PORT { EQUAL } stringText[ &srPortName ]
+   |  PIN { EQUAL } stringText[ &srPinName ]  
+   )*
    <<
       if( srPinName.length( ))
       {
@@ -458,9 +434,9 @@ instPinDef[ TNO_InstPin_c* pinstPin ]
          pinstPin->Set( srInstName, srPortName );
       }
    >>
-   {  typeVal:TYPE_VAL 
+   {  TYPE { EQUAL } typeMode[ &type ]
       << 
-         pinstPin->SetType( this->FindTypeMode_( typeVal->getType( )));
+         pinstPin->SetType( type );
       >>
    }
    ;
@@ -474,8 +450,8 @@ globalRouteList[ TNO_GlobalRouteList_t* pglobalRouteList ]
       string srName;
       unsigned int length = 0;
    >>
-   stringText[ &srName ]
-   uintNum[ &length ]
+   NAME { EQUAL } stringText[ &srName ]
+   LENGTH { EQUAL } uintNum[ &length ]
    << 
       globalRoute.Set( srName, length );
       pglobalRouteList->Add( globalRoute );
@@ -494,23 +470,22 @@ routeList[ TNO_RouteList_t* prouteList ]
       TNO_SwitchBox_c switchBox;
    >>
    (  "<"
-      (  PIN instPinDef[ &instPin ]
+      (  PIN instPinDef[ &instPin ] "/>"
          <<
             node.Clear( );
             node.Set( instPin );
          >>
-      |  SEGMENT segmentDef[ &segment ]
+      |  SEGMENT segmentDef[ &segment ] "</" SEGMENT ">"
          <<
             node.Clear( );
             node.Set( segment );
          >>
-      |  SB switchBoxDef[ &switchBox ]
+      |  SB switchBoxDef[ &switchBox ] "</" SB ">"
          <<
             node.Clear( );
             node.Set( switchBox );
          >>
       )
-      "/>"
       << 
          if( node.IsValid( ))
          {
@@ -535,9 +510,9 @@ switchBoxDef[ TNO_SwitchBox_c* pswitchBox ]
 
       pswitchBox->Clear( );
    >>
-   stringText[ &srName ]
-   sideIndex[ &sideIndex_ ]
-   sideIndex[ &sideIndex_ ]
+   NAME { EQUAL } stringText[ &srName ]
+   ">"
+   "<" SIDES ">" sideIndex[ &sideIndex_ ] sideIndex[ &sideIndex_ ] "</" SIDES ">"
    <<
       pswitchBox->SetName( srName );
       pswitchBox->SetInput( sideIndex_ );
@@ -555,9 +530,11 @@ segmentDef[ TNO_Segment_c* psegment ]
 
       psegment->Clear( );
    >>
-   stringText[ &srName ]
-   regionDef[ &channel ]
-   uintNum[ &track ]
+   (  NAME { EQUAL } stringText[ &srName ]
+   |  TRACK { EQUAL } uintNum[ &track ]
+   )*
+   ">"
+   "<" CHANNEL ">" regionDef[ &channel ] "</" CHANNEL ">"
    << 
       psegment->SetName( srName );
       psegment->SetChannel( channel );
@@ -572,21 +549,21 @@ hierMapList[ TPO_HierMapList_t* phierMapList ]
       TPO_HierMap_c hierMap;
 
       string srName;
-      TPO_HierNameList_t hierNameList;
+      TPO_NameList_t hierNameList;
    >>
-   stringText[ &srName ]
+   { NAME { EQUAL } } stringText[ &srName ]
    << 
       hierMap.SetInstName( srName );
    >>
    (  ">" 
-      "<" HIER 
+      "<" HIER ">"
       (
          stringText[ &srName ]
          << 
             hierNameList.Add( srName );
          >>
       )*
-      "/>"
+      "</" HIER ">"
       << 
          hierMap.SetHierNameList( hierNameList );
       >>
@@ -608,10 +585,7 @@ relativeList[ TPO_RelativeList_t* prelativeList ]
       TC_SideMode_t side = TC_SIDE_UNDEFINED;
       string srName;
    >>
-   sideVal:SIDE_VAL
-   << 
-      side = this->FindSideMode_( sideVal->getType( ));
-   >>
+   sideMode[ &side ]
    stringText[ &srName ]
    << 
       relative.Set( side, srName );
@@ -626,10 +600,7 @@ sideIndex[ TC_SideIndex_c* psideIndex ]
       TC_SideMode_t side = TC_SIDE_UNDEFINED;
       unsigned int index = 0;
    >>
-   sideVal:SIDE_VAL
-   << 
-      side = this->FindSideMode_( sideVal->getType( ));
-   >>
+   sideMode[ &side ]
    uintNum[ &index ]
    << 
       psideIndex->Set( side, index );
@@ -658,6 +629,229 @@ regionDef[ TGS_Region_c* pregion ]
    floatNum[ &pregion->y1 ]
    floatNum[ &pregion->x2 ]
    floatNum[ &pregion->y2 ]
+   ;
+
+//===========================================================================//
+typeMode[ TC_TypeMode_t* ptype ]
+   :
+   <<
+      string srType;
+   >>
+   stringText[ &srType ]
+   <<
+      if( TC_stricmp( srType.data( ), "input" ) == 0 )
+      {
+         *ptype = TC_TYPE_INPUT;
+      }
+      else if( TC_stricmp( srType.data( ), "output" ) == 0 )
+      {
+         *ptype = TC_TYPE_OUTPUT;
+      }
+      else if( TC_stricmp( srType.data( ), "signal" ) == 0 )
+      {
+         *ptype = TC_TYPE_SIGNAL;
+      }
+      else if( TC_stricmp( srType.data( ), "clock" ) == 0 )
+      {
+         *ptype = TC_TYPE_CLOCK;
+      }
+      else if( TC_stricmp( srType.data( ), "power" ) == 0 )
+      {
+         *ptype = TC_TYPE_POWER;
+      }
+      else if( TC_stricmp( srType.data( ), "global" ) == 0 )
+      {
+         *ptype = TC_TYPE_GLOBAL;
+      }
+      else
+      {
+         *ptype = TC_TYPE_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid type, expected \"input\", \"output\", \"signal\", \"clock\", \"power\", or \"global\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+sideMode[ TC_SideMode_t* pside ]
+   :
+   <<
+      string srSide;
+   >>
+   stringText[ &srSide ]
+   <<
+      if( TC_stricmp( srSide.data( ), "left" ) == 0 )
+      {
+         *pside = TC_SIDE_LEFT;
+      }
+      else if( TC_stricmp( srSide.data( ), "right" ) == 0 )
+      {
+         *pside = TC_SIDE_RIGHT;
+      }
+      else if(( TC_stricmp( srSide.data( ), "lower" ) == 0 ) ||
+              ( TC_stricmp( srSide.data( ), "bottom" ) == 0 ))
+      {
+         *pside = TC_SIDE_LOWER;
+      }
+      else if(( TC_stricmp( srSide.data( ), "upper" ) == 0 ) ||
+              ( TC_stricmp( srSide.data( ), "top" ) == 0 ))
+      {
+         *pside = TC_SIDE_UPPER;
+      }
+      else
+      {
+         *pside = TC_SIDE_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid side, expected \"left\", \"right\", \"lower\", or \"upper\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+latchType[ TPO_LatchType_t* platchType ]
+   :
+   <<
+      string srLatchType;
+   >>
+   stringText[ &srLatchType ]
+   <<
+      if( TC_stricmp( srLatchType.data( ), "fe" ) == 0 )
+      {
+         *platchType = TPO_LATCH_TYPE_FALLING_EDGE;
+      }
+      else if( TC_stricmp( srLatchType.data( ), "re" ) == 0 )
+      {
+         *platchType = TPO_LATCH_TYPE_RISING_EDGE;
+      }
+      else if( TC_stricmp( srLatchType.data( ), "ah" ) == 0 )
+      {
+         *platchType = TPO_LATCH_TYPE_ACTIVE_HIGH;
+      }
+      else if( TC_stricmp( srLatchType.data( ), "al" ) == 0 )
+      {
+         *platchType = TPO_LATCH_TYPE_ACTIVE_LOW;
+      }
+      else if( TC_stricmp( srLatchType.data( ), "as" ) == 0 )
+      {
+         *platchType = TPO_LATCH_TYPE_ASYNCHRONOUS;
+      }
+      else
+      {
+         *platchType = TPO_LATCH_TYPE_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid latch type, expected \"fe\", \"re\", \"ah\", \"al\", or \"as\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+latchState[ TPO_LatchState_t* platchState ]
+   :
+   <<
+      string srLatchState;
+   >>
+   stringText[ &srLatchState ]
+   <<
+      if( TC_stricmp( srLatchState.data( ), "0" ) == 0 )
+      {
+         *platchState = TPO_LATCH_STATE_FALSE;
+      }
+      else if( TC_stricmp( srLatchState.data( ), "1" ) == 0 )
+      {
+         *platchState = TPO_LATCH_STATE_TRUE;
+      }
+      else if( TC_stricmp( srLatchState.data( ), "2" ) == 0 )
+      {
+         *platchState = TPO_LATCH_STATE_DONT_CARE;
+      }
+      else if( TC_stricmp( srLatchState.data( ), "3" ) == 0 )
+      {
+         *platchState = TPO_LATCH_STATE_UNKNOWN;
+      }
+      else
+      {
+         *platchState = TPO_LATCH_STATE_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid latch state, expected \"0\", \"1\", \"2\", or \"3\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+placeStatusMode[ TPO_StatusMode_t* pstatusMode ]
+   :
+   <<
+      string srStatusMode;
+   >>
+   stringText[ &srStatusMode ]
+   <<
+      if( TC_stricmp( srStatusMode.data( ), "float" ) == 0 )
+      {
+         *pstatusMode = TPO_STATUS_FLOAT;
+      }
+      else if( TC_stricmp( srStatusMode.data( ), "fixed" ) == 0 )
+      {
+         *pstatusMode = TPO_STATUS_FIXED;
+      }
+      else if( TC_stricmp( srStatusMode.data( ), "placed" ) == 0 )
+      {
+         *pstatusMode = TPO_STATUS_PLACED;
+      }
+      else
+      {
+         *pstatusMode = TPO_STATUS_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid place status, expected \"float\", \"fixed\", or \"placed\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+netStatusMode[ TNO_StatusMode_t* pstatusMode ]
+   :
+   <<
+      string srStatusMode;
+   >>
+   stringText[ &srStatusMode ]
+   <<
+      if( TC_stricmp( srStatusMode.data( ), "open" ) == 0 )
+      {
+         *pstatusMode = TNO_STATUS_OPEN;
+      }
+      else if(( TC_stricmp( srStatusMode.data( ), "global_routed" ) == 0 ) ||
+              ( TC_stricmp( srStatusMode.data( ), "grouted" ) == 0 ))
+      {
+         *pstatusMode = TNO_STATUS_GROUTED;
+      }
+      else if( TC_stricmp( srStatusMode.data( ), "routed" ) == 0 )
+      {
+         *pstatusMode = TNO_STATUS_ROUTED;
+      }
+      else
+      {
+         *pstatusMode = TNO_STATUS_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid net status, expected \"open\", \"global_routed\", or \"routed\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
    ;
 
 //===========================================================================//
@@ -712,7 +906,22 @@ stringText[ string* psrString ]
 //===========================================================================//
 floatNum[ double* pdouble ]
    : 
-      floatVal:FLOAT
+      OPEN_QUOTE
+      (  qfloatVal:STRING
+         <<
+            *pdouble = atof( qfloatVal->getText( ));
+         >>
+      |  qposIntVal:POS_INT
+         <<
+            *pdouble = atof( qposIntVal->getText( ));
+         >>
+      |  qnegIntVal:NEG_INT
+         <<
+            *pdouble = atof( qnegIntVal->getText( ));
+         >>
+      )
+      CLOSE_QUOTE
+   |  floatVal:FLOAT
       <<
          *pdouble = atof( floatVal->getText( ));
       >>
@@ -724,20 +933,31 @@ floatNum[ double* pdouble ]
       <<
          *pdouble = atof( negIntVal->getText( ));
       >>
-   |  bitVal:BIT_CHAR
-      <<
-         *pdouble = atof( bitVal->getText( ));
-      >>
-   |  latchStateVal:LATCH_STATE_VAL
-      <<
-         *pdouble = atof( latchStateVal->getText( ));
-      >>
    ;
 
 //===========================================================================//
 expNum[ double* pdouble ]
    : 
-      expVal:EXP
+      OPEN_QUOTE
+      (  qexpVal:EXP
+         <<
+            *pdouble = atof( qexpVal->getText( ));
+         >>
+      |  qfloatVal:STRING
+         <<
+            *pdouble = atof( qfloatVal->getText( ));
+         >>
+      |  qposIntVal:POS_INT
+         <<
+            *pdouble = atof( qposIntVal->getText( ));
+         >>
+      |  qnegIntVal:NEG_INT
+         <<
+            *pdouble = atof( qnegIntVal->getText( ));
+         >>
+      )
+      CLOSE_QUOTE
+   |  expVal:EXP
       <<
          *pdouble = atof( expVal->getText( ));
       >>
@@ -753,37 +973,64 @@ expNum[ double* pdouble ]
       <<
          *pdouble = atof( negIntVal->getText( ));
       >>
-   |  bitVal:BIT_CHAR
-      <<
-         *pdouble = atof( bitVal->getText( ));
-      >>
-   |  latchStateVal:LATCH_STATE_VAL
-      <<
-         *pdouble = atof( latchStateVal->getText( ));
-      >>
    ;
 
 //===========================================================================//
 uintNum[ unsigned int* puint ]
    :
-      uintVal:POS_INT
+      OPEN_QUOTE
+      quintVal:STRING
+      <<
+         *puint = static_cast< unsigned int >( atol( quintVal->getText( )));
+      >>
+      CLOSE_QUOTE
+   |  uintVal:POS_INT
       <<
          *puint = static_cast< unsigned int >( atol( uintVal->getText( )));
-      >>
-   |  bitVal:BIT_CHAR
-      <<
-         *puint = static_cast< unsigned int >( atol( bitVal->getText( )));
-      >>
-   |  latchStateVal:LATCH_STATE_VAL
-      <<
-         *puint = static_cast< unsigned int >( atol( latchStateVal->getText( )));
       >>
    ;
 
 //===========================================================================//
+boolType[ bool* pbool ]
+   :
+   (  <<
+         const char* pszBool;
+      >>
+      OPEN_QUOTE
+      qboolVal:STRING
+      <<
+         pszBool = qboolVal->getText( );
+         if( TC_stricmp( pszBool, "true" ) == 0 )
+         {
+            *pbool = true;
+         }
+         else if( TC_stricmp( pszBool, "false" ) == 0 )
+         {
+            *pbool = false;
+         }
+         else
+         {
+            this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                            this->srFileName_,
+                                            ": Invalid boolean, expected \"true\" or \"false\"" );
+            this->consumeUntilToken( END_OF_FILE );
+         }
+      >>
+      CLOSE_QUOTE
+   |  BOOL_TRUE
+      <<
+         *pbool = true;
+      >>
+   |  BOOL_FALSE
+      <<
+         *pbool = false;
+      >>
+   )
+   ;
 
 }
 
+//===========================================================================//
 <<
 #include "TCP_CircuitGrammar.h"
 >>
