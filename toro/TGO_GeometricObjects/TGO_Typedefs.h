@@ -22,6 +22,7 @@
 #ifndef TGO_TYPEDEFS_H
 #define TGO_TYPEDEFS_H
 
+#include "TCT_Dims.h"
 #include "TCT_OrderedVector.h"
 
 //---------------------------------------------------------------------------//
@@ -56,8 +57,29 @@ enum TGO_DirMode_e
 typedef enum TGO_DirMode_e TGO_DirMode_t;
 
 //---------------------------------------------------------------------------//
+// Define geometric object class rotate typedefs
+//---------------------------------------------------------------------------//
+
+enum TGO_RotateMode_e
+{
+   TGO_ROTATE_UNDEFINED = 0,
+   TGO_ROTATE_R0,
+   TGO_ROTATE_R90,
+   TGO_ROTATE_R180,
+   TGO_ROTATE_R270,
+   TGO_ROTATE_MX,
+   TGO_ROTATE_MXR90,
+   TGO_ROTATE_MY,
+   TGO_ROTATE_MYR90,
+   TGO_ROTATE_MAX
+};
+typedef enum TGO_RotateMode_e TGO_RotateMode_t;
+
+//---------------------------------------------------------------------------//
 // Define geometric object list typedefs
 //---------------------------------------------------------------------------//
+
+typedef TCT_Dims_c< int > TGO_IntDims_t;
 
 class TGO_Point_c; // Forward declaration for subsequent class
 typedef TCT_OrderedVector_c< TGO_Point_c > TGO_PointList_t;
