@@ -319,7 +319,7 @@ bool TFV_FabricLayer_c::Find(
 bool TFV_FabricLayer_c::Find( 
       const TGS_Region_c&        region,
             TFV_FindMode_t       findMode,
-	    TFV_FigureMode_t     figureMode,
+            TFV_FigureMode_t     figureMode,
             TFV_FabricFigure_t** ppfabricFigure ) const
 {
    return( this->plane_.Find( region, findMode, figureMode, ppfabricFigure ));
@@ -337,7 +337,7 @@ bool TFV_FabricLayer_c::Find(
 bool TFV_FabricLayer_c::Find( 
       const TGS_Region_c&      region,
             TFV_FindMode_t     findMode,
-	    TFV_FigureMode_t   figureMode,
+            TFV_FigureMode_t   figureMode,
             TFV_FabricData_c** ppfabricData ) const
 {
    return( this->plane_.Find( region, findMode, figureMode, ppfabricData ));
@@ -384,7 +384,7 @@ bool TFV_FabricLayer_c::Find(
          TFV_FabricFigure_t* pfabricFigure = 0;
          while( fabricPlaneIter.Next( &pfabricFigure, TFV_FIGURE_SOLID ))
          {
-   	    if( fabricData == *pfabricFigure->GetData( ))
+            if( fabricData == *pfabricFigure->GetData( ))
             {
                const TGS_Region_c& fabricRegion = pfabricFigure->GetRegion( );
                pregionList->Add( fabricRegion );
@@ -438,7 +438,7 @@ bool TFV_FabricLayer_c::FindConnected(
 bool TFV_FabricLayer_c::FindNearest(
       const TGS_Region_c& region,
             TGS_Region_c* pfoundRegion,
-	    double        maxDistance ) const
+            double        maxDistance ) const
 {
    TGS_Region_c foundRegion;
 
