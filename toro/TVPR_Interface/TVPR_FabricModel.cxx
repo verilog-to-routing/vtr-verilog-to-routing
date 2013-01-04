@@ -388,7 +388,7 @@ bool TVPR_FabricModel_c::GenerateFabricView_(
       fabricRegion = pfabricView->GetRegion( );
    }
 
-   TGS_Region_c gridRegion( 0.0, 0.0, vpr_gridDims.width - 1, vpr_gridDims.height - 1 );
+   TGS_Region_c gridRegion( 0.0, 0.0, vpr_gridDims.dx - 1, vpr_gridDims.dy - 1 );
    gridRegion.ApplyScale( 1.0 );
    fabricRegion.ApplyUnion( gridRegion );
 
@@ -632,9 +632,9 @@ void TVPR_FabricModel_c::PeekInputOutputs_(
 {
    // Iterate for every IO found within VPR's grid 
    // (includes condition where IO may not be located the grid perimeter)
-   for( int x = 0; x < vpr_gridDims.width; ++x )
+   for( int x = 0; x < vpr_gridDims.dx; ++x )
    {
-      for( int y = 0; y < vpr_gridDims.height; ++y )
+      for( int y = 0; y < vpr_gridDims.dy; ++y )
       {
          if( vpr_gridArray[x][y].type != IO_TYPE )
             continue;
@@ -666,9 +666,9 @@ void TVPR_FabricModel_c::PeekInputOutputs_(
 
 	 TC_SideMode_t onlySide = TC_SIDE_UNDEFINED;
 	 onlySide = ( x == 0 ? TC_SIDE_RIGHT : onlySide );
-	 onlySide = ( x == vpr_gridDims.width - 1 ? TC_SIDE_LEFT : onlySide );
+	 onlySide = ( x == vpr_gridDims.dx - 1 ? TC_SIDE_LEFT : onlySide );
 	 onlySide = ( y == 0 ? TC_SIDE_UPPER : onlySide );
-	 onlySide = ( y == vpr_gridDims.height - 1 ? TC_SIDE_LOWER : onlySide );
+	 onlySide = ( y == vpr_gridDims.dy - 1 ? TC_SIDE_LOWER : onlySide );
          this->UpdatePinList_( ioRegion, onlySide, TFV_DATA_INPUT_OUTPUT, 
                                vpr_type, pfabricView );
       }
@@ -691,9 +691,9 @@ void TVPR_FabricModel_c::PeekPhysicalBlocks_(
                                                       vpr_gridDims );
 
    // Iterate for every physical block found within VPR's grid 
-   for( int x = 0; x < vpr_gridDims.width; ++x )
+   for( int x = 0; x < vpr_gridDims.dx; ++x )
    {
-      for( int y = 0; y < vpr_gridDims.height; ++y )
+      for( int y = 0; y < vpr_gridDims.dy; ++y )
       {
          if( vpr_gridArray[x][y].type != FILL_TYPE )
             continue;
@@ -1022,11 +1022,11 @@ void TVPR_FabricModel_c::BuildChannelDefaults_(
 {
    double x1 = 1.0 - TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
    double y1 = 1.0 - TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
-   double x2 = vpr_gridDims.width - 2.0 + TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
-   double y2 = vpr_gridDims.height - 2.0 + TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
+   double x2 = vpr_gridDims.dx - 2.0 + TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
+   double y2 = vpr_gridDims.dy - 2.0 + TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
 
    // Generate initial 0-width channels based on given VPR grid dimensions
-   for( int y = 0; y < vpr_gridDims.height - 1; ++y )
+   for( int y = 0; y < vpr_gridDims.dy - 1; ++y )
    {
       TGS_Region_c channelRegion( x1, y, x2, y );
       channelRegion.ApplyShift( 0.5, TGS_ORIENT_HORIZONTAL );
@@ -1037,7 +1037,7 @@ void TVPR_FabricModel_c::BuildChannelDefaults_(
       this->AddFabricViewRegion_( channelRegion, TFV_DATA_CHANNEL_HORZ, 
                                   szName, pfabricView );
    }
-   for( int x = 0; x < vpr_gridDims.width - 1; ++x )
+   for( int x = 0; x < vpr_gridDims.dx - 1; ++x )
    {
       TGS_Region_c channelRegion( x, y1, x, y2 );
       channelRegion.ApplyShift( 0.5, TGS_ORIENT_VERTICAL );
@@ -1108,13 +1108,13 @@ void TVPR_FabricModel_c::ResizeChannelWidths_(
 {
    double x1 = 1.0 - TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
    double y1 = 1.0 - TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
-   double x2 = vpr_gridDims.width - 2.0 + TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
-   double y2 = vpr_gridDims.height - 2.0 + TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
+   double x2 = vpr_gridDims.dx - 2.0 + TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
+   double y2 = vpr_gridDims.dy - 2.0 + TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
 
    // Resize channel widths based on max track count (per each channel)
    double segmentWidth = TFV_MODEL_SEGMENT_DEF_WIDTH;
    double segmentSpacing = TFV_MODEL_SEGMENT_DEF_SPACING;
-   for( int y = 0; y < vpr_gridDims.height - 1; ++y )
+   for( int y = 0; y < vpr_gridDims.dy - 1; ++y )
    {
       TGS_Region_c channelRegion( x1, y, x2, y );
       channelRegion.ApplyShift( 0.5, TGS_ORIENT_HORIZONTAL );
@@ -1134,7 +1134,7 @@ void TVPR_FabricModel_c::ResizeChannelWidths_(
       this->ReplaceFabricViewRegion_( channelRegion, replaceRegion, 
                                       *pfabricData, pfabricView );
    }
-   for( int x = 0; x < vpr_gridDims.width - 1; ++x )
+   for( int x = 0; x < vpr_gridDims.dx - 1; ++x )
    {
       TGS_Region_c channelRegion( x, y1, x, y2 );
       channelRegion.ApplyShift( 0.5, TGS_ORIENT_VERTICAL );
@@ -1169,11 +1169,11 @@ void TVPR_FabricModel_c::ResizeChannelLengths_(
 {
    double x1 = 1.0 - TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
    double y1 = 1.0 - TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
-   double x2 = vpr_gridDims.width - 2.0 + TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
-   double y2 = vpr_gridDims.height - 2.0 + TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
+   double x2 = vpr_gridDims.dx - 2.0 + TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
+   double y2 = vpr_gridDims.dy - 2.0 + TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
 
    // Resize channel lengths based on orthogonal channels (per each channel)
-   for( int y = 0; y < vpr_gridDims.height - 1; ++y )
+   for( int y = 0; y < vpr_gridDims.dy - 1; ++y )
    {
       TGS_Region_c channelRegion( x1, y, x2, y );
       channelRegion.ApplyShift( 0.5, TGS_ORIENT_HORIZONTAL );
@@ -1202,7 +1202,7 @@ void TVPR_FabricModel_c::ResizeChannelLengths_(
       this->ReplaceFabricViewRegion_( channelRegion, replaceRegion, 
                                       *pfabricData, pfabricView );
    }
-   for( int x = 0; x < vpr_gridDims.width - 1; ++x )
+   for( int x = 0; x < vpr_gridDims.dx - 1; ++x )
    {
       TGS_Region_c channelRegion( x, y1, x, y2 );
       channelRegion.ApplyShift( 0.5, TGS_ORIENT_VERTICAL );
@@ -1247,12 +1247,12 @@ void TVPR_FabricModel_c::BuildSwitchBoxes_(
    const TGS_Region_c& fabricRegion = pfabricView->GetRegion( );
 
    double x1 = 1.0 - TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
-   double x2 = vpr_gridDims.width - 2.0 + TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
+   double x2 = vpr_gridDims.dx - 2.0 + TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
    double y1 = 1.0 - TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
-   double y2 = vpr_gridDims.height - 2.0 + TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
+   double y2 = vpr_gridDims.dy - 2.0 + TFV_MODEL_PHYSICAL_BLOCK_DEF_WIDTH;
 
    // Iterate based on VPR's grid to define switch box locations
-   for( int x = 0; x < vpr_gridDims.width - 1; ++x )
+   for( int x = 0; x < vpr_gridDims.dx - 1; ++x )
    {
       // Find vertical channel asso. with next set of switch boxes
       TGS_Region_c vertRegion( x, y1, x, y2 );
@@ -1267,7 +1267,7 @@ void TVPR_FabricModel_c::BuildSwitchBoxes_(
                       pfabricFigure->GetRegion( ).x2, fabricRegion.y2 );
       unsigned int vertCount = pfabricFigure->GetData( )->GetTrackVertCount( );
       
-      for( int y = 0; y < vpr_gridDims.height - 1; ++y )
+      for( int y = 0; y < vpr_gridDims.dy - 1; ++y )
       {
          // Find horizontal channel asso. with next set of switch boxes
          TGS_Region_c horzRegion( x1, y, x2, y );
@@ -1367,9 +1367,9 @@ bool TVPR_FabricModel_c::BuildConnectionBoxes_(
    bool ok = true;
 
    // Iterate for every PB|IO found within VPR's grid 
-   for( int x = 0; x < vpr_gridDims.width; ++x )
+   for( int x = 0; x < vpr_gridDims.dx; ++x )
    {
-      for( int y = 0; y < vpr_gridDims.height; ++y )
+      for( int y = 0; y < vpr_gridDims.dy; ++y )
       {
          // Get fabric's PB|IO figure (ie. region and asso. data)
          TGS_Point_c point( x, y );
@@ -1590,9 +1590,9 @@ unsigned int TVPR_FabricModel_c::CalcMaxPinCount_(
 {
    unsigned int maxPins = 0;
 
-   for( int x = 0; x < vpr_gridDims.width; ++x )
+   for( int x = 0; x < vpr_gridDims.dx; ++x )
    {
-      for( int y = 0; y < vpr_gridDims.height; ++y )
+      for( int y = 0; y < vpr_gridDims.dy; ++y )
       {
          if( vpr_gridArray[x][y].type != FILL_TYPE )
             continue;
