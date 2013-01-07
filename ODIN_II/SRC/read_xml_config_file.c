@@ -334,7 +334,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 				ezxml_set_attr(child, "fixed", NULL);
 			}
 			else /* Default: No fixed hard multiply size */
-				config->fixed_hard_adder = 0;
+				config->fixed_hard_adder = 1;
 
 			prop = FindProperty(child, "fracture", (boolean)FALSE);
 			if (prop != NULL)

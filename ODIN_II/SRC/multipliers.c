@@ -838,9 +838,9 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
 	init_cascade_adder(addsmall, a1b, a1 + b);
 	
 	/* Connect pins for addsmall */
-	for (i = 0; i < a0b->output_port_sizes[0]; i++)
-		connect_nodes(a0b, i, addsmall, i);
-	for (i = a0b->output_port_sizes[0]; i < b+a1; i++) /* Sign extend */
+	for (i = a0; i < a0b->output_port_sizes[0]; i++)
+		connect_nodes(a0b, i, addsmall, i-a0);
+	for (i = a0b->output_port_sizes[0] - a0; i < a1+b; i++) /* Sign extend */
 		connect_nodes(a0b, a0b->output_port_sizes[0]-1, addsmall, i);
 	for (i = b+a1; i < (2 * (a1 + b)); i++)
 		connect_nodes(a1b, i-(b+a1), addsmall, i);
@@ -1108,16 +1108,16 @@ void iterate_multipliers(netlist_t *netlist)
 		/* Do I need to split the multiplier on both inputs? */
 		if ((mula > sizea) && (mulb > sizeb))
 		{
-			a1 = sizea;
-			a0 = mula - sizea;
-			b1 = sizeb;
-			b0 = mulb - sizeb;
+			a0 = sizea;
+			a1 = mula - sizea;
+			b0 = sizeb;
+			b1 = mulb - sizeb;
 			split_multiplier(node, a0, b0, a1, b1);
 		}
 		else if (mula > sizea) /* split multiplier on a input? */
 		{
-			a1 = sizea;
-			a0 = mula - sizea;
+			a0 = sizea;
+			a1 = mula - sizea;
 			split_multiplier_a(node, a0, a1, mulb);
 		}
 		else if (mulb > sizeb) /* split multiplier on b input? */

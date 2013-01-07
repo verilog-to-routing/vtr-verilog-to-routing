@@ -663,8 +663,11 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 	nnode_t **new_carry_cells;
 
 	oassert(node->num_input_pins > 0);
-	oassert(node->num_input_port_sizes == 2);
-	width = node->output_port_sizes[0];
+	//oassert(node->num_input_port_sizes == 2);
+	if(node->num_input_port_sizes == 2)
+		width = node->output_port_sizes[0];
+	else
+		width = node->num_output_pins;
 	width_a = node->input_port_sizes[0];
 	width_b = node->input_port_sizes[1];
 
@@ -681,10 +684,22 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 	}
 
     	/* ground first carry in */
-	add_input_pin_to_node(new_add_cells[0], get_zero_pin(netlist), 0);
-	if (i > 1)
+	if(node->num_input_port_sizes == 2)
 	{
-		add_input_pin_to_node(new_carry_cells[0], get_zero_pin(netlist), 0);
+		add_input_pin_to_node(new_add_cells[0], get_zero_pin(netlist), 0);
+		if (i > 1)
+		{
+			add_input_pin_to_node(new_carry_cells[0], get_zero_pin(netlist), 0);
+		}
+	}
+	else
+	{
+		remap_pin_to_new_node(node->input_pins[width_a + width_b], new_add_cells[0], 0);
+		if (i > 1)
+		{
+			add_input_pin_to_node(new_carry_cells[0], copy_input_npin(new_add_cells[0]->input_pins[0]), 0);
+			//remap_pin_to_new_node(node->input_pins[width_a + width_b], new_carry_cells[0], 0);
+		}
 	}
 
 	/* connect inputs */
@@ -719,7 +734,29 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 		}
 
 		/* join that gate to the output */
-		remap_pin_to_new_node(node->output_pins[i], new_add_cells[i], 0);
+		if(node->num_input_port_sizes == 2)
+			remap_pin_to_new_node(node->output_pins[i], new_add_cells[i], 0);
+		else
+		{
+			if(i != width - 1)
+			{
+				if(node->output_pins[i + 1]->type != NO_ID)
+					remap_pin_to_new_node(node->output_pins[i + 1], new_add_cells[i], 0);
+				else
+				{
+					new_add_cells[i]->output_pins[0] = allocate_npin();
+					new_add_cells[i]->output_pins[0]->name = append_string("", "%s~dummy_output~%d", new_add_cells[i]->name, 0);
+				}
+			}
+			else
+				if(node->output_pins[0]->type != NO_ID)
+					remap_pin_to_new_node(node->output_pins[0], new_add_cells[i], 0);
+				else
+				{
+					new_add_cells[i]->output_pins[0] = allocate_npin();
+					new_add_cells[i]->output_pins[0]->name = append_string("", "%s~dummy_output~%d", new_add_cells[i]->name, 0);
+				}
+		}
 	}
 	
 	/* connect carry outs with carry ins */

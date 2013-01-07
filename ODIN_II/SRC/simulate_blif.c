@@ -1558,93 +1558,51 @@ void compute_add_node(nnode_t *node, int cycle, int type)
 
 	int i, num;
 	int flag = 0;
-	char unknown = FALSE;
-	for (i = 0; i < (node->input_port_sizes[0] + node->input_port_sizes[1] + node->input_port_sizes[2]); i++)
-	{
-		signed char pin = get_pin_value(node->input_pins[i],cycle);
-		if (pin < 0)
-		{
-			unknown = TRUE;
-			break;
-		}
-	}
 
-	if (unknown)
+	int *a = malloc(sizeof(int)*node->input_port_sizes[0]);
+	int *b = malloc(sizeof(int)*node->input_port_sizes[1]);
+	int *c = malloc(sizeof(int)*node->input_port_sizes[2]);
+
+	num = node->input_port_sizes[0]+ node->input_port_sizes[1];
+	//if cin connect to unconn(PAD_NODE), a[0] connect to ground(GND_NODE) and b[0] connect to ground, flag = 0 the initial adder for addition
+	//if cin connect to unconn(PAD_NODE), a[0] connect to ground(GND_NODE) and b[0] connect to vcc, flag = 1 the initial adder for subtraction
+	if(node->input_pins[num]->net->driver_pin->node->type == PAD_NODE)
 	{
-		for (i = 0; i < (node->output_port_sizes[0] + node->output_port_sizes[1]); i++)
-			update_pin_value(node->output_pins[i], -1, cycle);
+		if(node->input_pins[0]->net->driver_pin->node->type == GND_NODE && node->input_pins[node->input_port_sizes[0]]->net->driver_pin->node->type == GND_NODE)
+			flag = 0;
+		else if(node->input_pins[0]->net->driver_pin->node->type == GND_NODE && node->input_pins[node->input_port_sizes[0]]->net->driver_pin->node->type == VCC_NODE)
+			flag = 1;
 	}
 	else
-	{
-		int *a = malloc(sizeof(int)*node->input_port_sizes[0]);
-		int *b = malloc(sizeof(int)*node->input_port_sizes[1]);
-		int *c = malloc(sizeof(int)*node->input_port_sizes[2]);
+		flag = 2;
 
-		num = node->input_port_sizes[0]+ node->input_port_sizes[1];
-		//if cin connect to unconn(PAD_NODE), a[0] connect to ground(GND_NODE) and b[0] connect to ground, flag = 0 the initial adder for addition
-		//if cin connect to unconn(PAD_NODE), a[0] connect to ground(GND_NODE) and b[0] connect to vcc, flag = 1 the initial adder for subtraction
-		if(node->input_pins[num]->net->driver_pin->node->type == PAD_NODE)
-		{
-			if(node->input_pins[0]->net->driver_pin->node->type == GND_NODE && node->input_pins[node->input_port_sizes[0]]->net->driver_pin->node->type == GND_NODE)
-				flag = 0;
-			else if(node->input_pins[0]->net->driver_pin->node->type == GND_NODE && node->input_pins[node->input_port_sizes[0]]->net->driver_pin->node->type == VCC_NODE)
-				flag = 1;
-		}
+	for (i = 0; i < node->input_port_sizes[0]; i++)
+		a[i] = get_pin_value(node->input_pins[i],cycle);
+	for (i = 0; i < node->input_port_sizes[1]; i++)
+		b[i] = get_pin_value(node->input_pins[node->input_port_sizes[0] + i],cycle);
+
+	for (i = 0; i < node->input_port_sizes[2]; i++)
+		//the initial cin of carry chain subtractor should be 1
+		if(flag == 1)
+			c[i] = 1;
+		//the initial cin of carry chain adder should be 0
+		else if(flag == 0)
+			c[i] = 0;
 		else
-			flag = 2;
-		/*
-		if(flag != 2)
-		{
-			for (i = 1; i < node->input_port_sizes[0]; i++)
-				a[i - 1] = get_pin_value(node->input_pins[i],cycle);
-			for (i = 1; i < node->input_port_sizes[1]; i++)
-				b[i - 1] = get_pin_value(node->input_pins[node->input_port_sizes[0] + i],cycle);
-		}
-		else
-		{
-		*/
-			for (i = 0; i < node->input_port_sizes[0]; i++)
-				a[i] = get_pin_value(node->input_pins[i],cycle);
-			for (i = 0; i < node->input_port_sizes[1]; i++)
-				b[i] = get_pin_value(node->input_pins[node->input_port_sizes[0] + i],cycle);
-		//}
+			c[i] = get_pin_value(node->input_pins[node->input_port_sizes[0]+ node->input_port_sizes[1] + i],cycle);
 
-		for (i = 0; i < node->input_port_sizes[2]; i++)
-			//the initial cin of carry chain subtractor should be 1
-			if(flag == 1)
-				c[i] = 1;
-			//the initial cin of carry chain adder should be 0
-			else if(flag == 0)
-				c[i] = 0;
-			else
-				c[i] = get_pin_value(node->input_pins[node->input_port_sizes[0]+ node->input_port_sizes[1] + i],cycle);
+	int *result = add_arrays(a, node->input_port_sizes[0], b, node->input_port_sizes[1], c, node->input_port_sizes[2],type);
 
-		int *result = add_arrays(a, node->input_port_sizes[0], b, node->input_port_sizes[1], c, node->input_port_sizes[2],type);
-		/*
-		if(flag != 2)
-		{
-			//update the pin value of output
-			for (i = 2; i < node->num_output_pins; i++)
-				update_pin_value(node->output_pins[i], result[(i - 2)], cycle);
+	//update the pin value of output
+	for (i = 1; i < node->num_output_pins; i++)
+		update_pin_value(node->output_pins[i], result[(i - 1)], cycle);
 
-			update_pin_value(node->output_pins[0], result[(node->num_output_pins - 2)], cycle);
+	update_pin_value(node->output_pins[0], result[(node->num_output_pins - 1)], cycle);
 
-		}
-		else
-		{*/
-			//update the pin value of output
-			for (i = 1; i < node->num_output_pins; i++)
-				update_pin_value(node->output_pins[i], result[(i - 1)], cycle);
-
-			update_pin_value(node->output_pins[0], result[(node->num_output_pins - 1)], cycle);
-			//free(result);
-		//}
-
-		free(result);
-		free(a);
-		free(b);
-		free(c);
-	}
+	free(result);
+	free(a);
+	free(b);
+	free(c);
 
 }
 
@@ -1663,75 +1621,69 @@ int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int c_length
 	int i;
 	int temp_carry_in;
 
-	//if(flag == 0)
-	//{
-		//least significant bit would use the input carryIn, the other bits would use the compute value
+	//least significant bit would use the input carryIn, the other bits would use the compute value
+	//if one of the number is unknown, then the answer should be unknown(same as ModelSim)
+	if(a[0] == -1 || b[0] == -1 || c[0] == -1)
+	{
+		result[0] = -1;
+		result[1] = -1;
+	}
+	else
+	{
 		result[0] = a[0] ^ b[0] ^ c[0];
 		result[1] = (a[0] & b[0]) | (c[0] & b[0]) | (a[0] & c[0]);
+	}
 
-		temp_carry_in = result[1];
-		if(result_size > 2){
-			for(i = 1; i < min(a_length,b_length); i++)
+	temp_carry_in = result[1];
+	if(result_size > 2){
+		for(i = 1; i < min(a_length,b_length); i++)
+		{
+			if(a[i] == -1 || b[i] == -1 || temp_carry_in == -1)
+			{
+				result[i] = -1;
+				result[i+1] = -1;
+			}
+			else
 			{
 				result[i] = a[i] ^ b[i] ^ temp_carry_in;
 				result[i+1] = (a[i] & b[i]) | (a[i] & temp_carry_in) | (temp_carry_in & b[i]);
-				temp_carry_in = result[i+1];
 			}
-			if(a_length >= b_length)
+			temp_carry_in = result[i+1];
+		}
+		if(a_length >= b_length)
+		{
+			for(i = b_length; i < a_length; i++)
 			{
-				for(i = b_length; i < a_length; i++)
+				if(a[i] == -1 || temp_carry_in == -1)
+				{
+					result[i] = -1;
+					result[i+1] = -1;
+				}
+				else
 				{
 					result[i] = a[i] ^ temp_carry_in;
 					result[i+1] = a[i] & temp_carry_in;
-					temp_carry_in = result[i+1];
 				}
+				temp_carry_in = result[i+1];
 			}
-			else
+		}
+		else
+		{
+			for(i = a_length; i < b_length; i++)
 			{
-				for(i = a_length; i < b_length; i++)
+				if(b[i] == -1 || temp_carry_in == -1)
+				{
+					result[i] = -1;
+					result[i+1] = -1;
+				}else
 				{
 					result[i] = b[i] ^ temp_carry_in;
 					result[i+1] = b[i] & temp_carry_in;
-					temp_carry_in = result[i+1];
 				}
-			}
-		}
-	//}
-	/*
-	else
-	{
-		result[0] = a[0] ^ (!b[0]) ^ c[0];
-		result[1] = (a[0] & !b[0]) | (c[0] & !b[0]) | (a[0] & c[0]);
-
-		temp_carry_in = result[1];
-		if(result_size > 2){
-			for(i = 1; i < min(a_length,b_length); i++)
-			{
-				result[i] = a[i] ^ !b[i] ^ temp_carry_in;
-				result[i+1] = (a[i] & !b[i]) | (a[i] & temp_carry_in) | (temp_carry_in & !b[i]);
 				temp_carry_in = result[i+1];
-			}
-			if(a_length >= b_length)
-			{
-				for(i = b_length; i < a_length; i++)
-				{
-					result[i] = a[i] ^ temp_carry_in ^ 1;
-					result[i+1] = (a[i] & 1) | (a[i] & temp_carry_in) | (temp_carry_in & 1);
-					temp_carry_in = result[i+1];
-				}
-			}
-			else
-			{
-				for(i = a_length; i < b_length; i++)
-				{
-					result[i] = !b[i] ^ temp_carry_in ^ 0;
-					result[i+1] = (0 & !b[i]) | (0 & temp_carry_in) | (temp_carry_in & !b[i]);
-					temp_carry_in = result[i+1];
-				}
 			}
 		}
 	}
-	*/
 	return result;
 }
 

@@ -384,6 +384,7 @@ struct chain_information_t_t
 {
 	char *name;//unique name of the chain
 	int count;//the number of hard blocks in this chain
+	int num_bits;
 };
 
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version 
