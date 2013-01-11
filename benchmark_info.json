@@ -1,6 +1,9 @@
 {
     "benchmarks": {
         "radar20":          {
+            "info": {
+                "total_blocks":     "7862"
+            },
             "quartus": {
                 "synthesis": {
                     "walltime_sec": "102",
@@ -34,6 +37,9 @@
             }
         },
         "Reed_Solomon":     {   
+            "info": {
+                "total_blocks":     "20904"
+            },
             "quartus": {
                 "synthesis": {
                     "walltime_sec": "230",
@@ -67,6 +73,9 @@
             }
         },
         "MMM":              {
+            "info": {
+                "total_blocks":     "24149"
+            },
             "quartus": {
                 "synthesis": {
                     "walltime_sec": "161",
@@ -99,40 +108,46 @@
                 }
             }
         },
-        "CH_DFSIN":         {
+        "stap_steering":            {
+            "info": {
+                "total_blocks":     "30221"
+            },
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "1050",
-                    "memory_MB"   : "1516"
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
                 },
                 "fit"      : {
-                    "walltime_sec": "610",
-                    "pack_time_sec":  "38",
-                    "place_time_sec": "283",
-                    "route_time_sec": "121",
-                    "memory_MB"   : "7300"
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
                 }
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "694",
-                    "memory_MB"   : "1229"
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
                 },
                 "place"    : {
-                    "walltime_sec": "55",
-                    "memory_MB"   : "1024"
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
                 },
                 "route300"    : {
-                    "walltime_sec": "300",
-                    "memory_MB"   : "1900"
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
                 },
                 "route500"    : {
-                    "walltime_sec": "193", 
-                    "memory_MB"   : "2253"
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
                 }
             }
         },
         "JPEG":             {
+            "info": {
+                "total_blocks":     "33162"
+            },
             "quartus": {
                 "synthesis": {
                     "walltime_sec": "459",
@@ -165,7 +180,298 @@
                 }
             }
         },
+        "CH_DFSIN":         {
+            "info": {
+                "total_blocks":     "35046"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "1050",
+                    "memory_MB"   : "1516"
+                },
+                "fit"      : {
+                    "walltime_sec": "610",
+                    "pack_time_sec":  "38",
+                    "place_time_sec": "283",
+                    "route_time_sec": "121",
+                    "memory_MB"   : "7300"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "694",
+                    "memory_MB"   : "1229"
+                },
+                "place"    : {
+                    "walltime_sec": "55",
+                    "memory_MB"   : "1024"
+                },
+                "route300"    : {
+                    "walltime_sec": "300",
+                    "memory_MB"   : "1900"
+                },
+                "route500"    : {
+                    "walltime_sec": "193", 
+                    "memory_MB"   : "2253"
+                }
+            }
+        },
+        "random":            {
+            "info": {
+                "total_blocks":     "37043"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "1056",
+                    "memory_MB"   : "1006"
+                },
+                "fit"      : {
+                    "walltime_sec": "126",
+                    "pack_time_sec":  "51",
+                    "place_time_sec": "485",
+                    "route_time_sec": "193",
+                    "memory_MB"   : "2098"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "880",
+                    "memory_MB"   : "1741"
+                },
+                "place"    : {
+                    "walltime_sec": "78",
+                    "memory_MB"   : "2355"
+                },
+                "route300"    : {
+                    "walltime_sec": "199",
+                    "memory_MB"   : "3994"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "jacobi":            {
+            "info": {
+                "total_blocks":     "38467"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "1283",
+                    "memory_MB"   : "1017"
+                },
+                "fit"      : {
+                    "walltime_sec": "1027",
+                    "pack_time_sec":  "52",
+                    "place_time_sec": "394",
+                    "route_time_sec": "226",
+                    "memory_MB"   : "1469"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "543",
+                    "memory_MB"   : "1946"
+                },
+                "place"    : {
+                    "walltime_sec": "99",
+                    "memory_MB"   : "2048"
+                },
+                "route300"    : {
+                    "walltime_sec": "880",
+                    "memory_MB"   : "2765"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "MCML":            {
+            "info": {
+                "total_blocks":     "46287"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "452",
+                    "memory_MB"   : "1330"
+                },
+                "fit"      : {
+                    "walltime_sec": "758",
+                    "pack_time_sec":  "61",
+                    "place_time_sec": "319",
+                    "route_time_sec": "126",
+                    "memory_MB"   : "1400"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "2010",
+                    "memory_MB"   : "3891"
+                },
+                "place"    : {
+                    "walltime_sec": "269",
+                    "memory_MB"   : "3584"
+                },
+                "route300"    : {
+                    "walltime_sec": "200",
+                    "memory_MB"   : "4500"
+                },
+                "route500"    : {
+                    "walltime_sec": "206", 
+                    "memory_MB"   : "4710"
+                }
+            }
+        },
+        "SURF_desc":            {
+            "info": {
+                "total_blocks":     "46641"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "1174",
+                    "memory_MB"   : "1148"
+                },
+                "fit"      : {
+                    "walltime_sec": "1054",
+                    "pack_time_sec":  "62",
+                    "place_time_sec": "427",
+                    "route_time_sec": "208",
+                    "memory_MB"   : "1589"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "801",
+                    "memory_MB"   : "2765"
+                },
+                "place"    : {
+                    "walltime_sec": "89",
+                    "memory_MB"   : "2355"
+                },
+                "route300"    : {
+                    "walltime_sec": "119",
+                    "memory_MB"   : "3277"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "smithwaterman":            {
+            "info": {
+                "total_blocks":     "49585"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "1186",
+                    "memory_MB"   : "1672"
+                },
+                "fit"      : {
+                    "walltime_sec": "1049",
+                    "pack_time_sec":  "49",
+                    "place_time_sec": "486",
+                    "route_time_sec": "197",
+                    "memory_MB"   : "1391"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "848",
+                    "memory_MB"   : "1434"
+                },
+                "place"    : {
+                    "walltime_sec": "115",
+                    "memory_MB"   : "1331"
+                },
+                "route300"    : {
+                    "walltime_sec": "41",
+                    "memory_MB"   : "1434"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "EKF-SLAM_Jacobians":            {
+            "info": {
+                "total_blocks":     "56441"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "1283",
+                    "memory_MB"   : "1017"
+                },
+                "fit"      : {
+                    "walltime_sec": "4089",
+                    "pack_time_sec":  "98",
+                    "place_time_sec": "1225",
+                    "route_time_sec": "1976",
+                    "memory_MB"   : "2474"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "1301",
+                    "memory_MB"   : "2355"
+                },
+                "place"    : {
+                    "walltime_sec": "150",
+                    "memory_MB"   : "2662"
+                },
+                "route300"    : {
+                    "walltime_sec": "1751",
+                    "memory_MB"   : "3994"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "CHERI":            {
+            "info": {
+                "total_blocks":     "69599"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "fit"      : {
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "place"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
         "Neuron":           {
+            "info": {
+                "total_blocks":     "75538"
+            },
             "quartus": {
                 "synthesis": {
                     "walltime_sec": "431",
@@ -199,6 +505,9 @@
             }
         },
         "OpenSparcT1_Core": {
+            "info": {
+                "total_blocks":     "83203"
+            },
             "quartus": {
                 "synthesis": {
                     "walltime_sec": "614",
@@ -232,7 +541,46 @@
                 }
             }
         },
+        "cholesky_mc":            {
+            "info": {
+                "total_blocks":     "91737"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "621",
+                    "memory_MB"   : "1679"
+                },
+                "fit"      : {
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "8852",
+                    "memory_MB"   : "6554"
+                },
+                "place"    : {
+                    "walltime_sec": "270",
+                    "memory_MB"   : "6042"
+                },
+                "route300"    : {
+                    "walltime_sec": "382",
+                    "memory_MB"   : "8499"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
         "DES90":            {
+            "info": {
+                "total_blocks":     "102607"
+            },
             "quartus": {
                 "synthesis": {
                     "walltime_sec": "988",
@@ -266,172 +614,46 @@
                 }
             }
         },
-        "LU_Network":            {
+        "EKF-SLAM_SphericalCoords":            {
+            "info": {
+                "total_blocks":     "124963"
+            },
             "quartus": {
                 "synthesis": {
-                    "walltime_sec": "4580",
-                    "memory_MB"   : "5659"
+                    "walltime_sec": "1886",
+                    "memory_MB"   : "1712"
                 },
                 "fit"      : {
-                    "walltime_sec": "unkown",
-                    "pack_time_sec":  "",
-                    "place_time_sec": "",
-                    "route_time_sec": "",
-                    "memory_MB"   : "unkown"
-                }
-            },
-            "vpr"    : {
-                "pack"     : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "place"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route300"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
-                }
-            }
-        },
-        "MCML":            {
-            "quartus": {
-                "synthesis": {
-                    "walltime_sec": "452",
-                    "memory_MB"   : "1330"
-                },
-                "fit"      : {
-                    "walltime_sec": "758",
-                    "pack_time_sec":  "61",
-                    "place_time_sec": "319",
-                    "route_time_sec": "126",
-                    "memory_MB"   : "1400"
-                }
-            },
-            "vpr"    : {
-                "pack"     : {
-                    "walltime_sec": "2010",
-                    "memory_MB"   : "3891"
-                },
-                "place"    : {
-                    "walltime_sec": "269",
-                    "memory_MB"   : "3584"
-                },
-                "route300"    : {
-                    "walltime_sec": "200",
-                    "memory_MB"   : "4500"
-                },
-                "route500"    : {
-                    "walltime_sec": "206", 
-                    "memory_MB"   : "4710"
-                }
-            }
-        },
-        "Bitonic169_Mesh":            {
-            "quartus": {
-                "synthesis": {
-                    "walltime_sec": "1924",
-                    "memory_MB"   : "3149"
-                },
-                "fit"      : {
-                    "walltime_sec": "8300",
-                    "pack_time_sec":  "400",
-                    "place_time_sec": "2200",
-                    "route_time_sec": "4500",
-                    "memory_MB"   : "4800"
-                }
-            },
-            "vpr"    : {
-                "pack"     : {
-                    "walltime_sec": "21766",
-                    "memory_MB"   : "15360"
-                },
-                "place"    : {
-                    "walltime_sec": "1038",
-                    "memory_MB"   : "13312"
-                },
-                "route300"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route500"    : {
-                    "walltime_sec": "1987", 
-                    "memory_MB"   : "23552"
-                }
-            }
-        },
-        "LU128":            {
-            "quartus": {
-                "synthesis": {
-                    "walltime_sec": "1814",
-                    "memory_MB"   : "3294"
-                },
-                "fit"      : {
-                    "walltime_sec": "11300",
-                    "pack_time_sec":  "1000",
-                    "place_time_sec": "3600",
-                    "route_time_sec": "4600",
-                    "memory_MB"   : "5500"
-                }
-            },
-            "vpr"    : {
-                "pack"     : {
-                    "walltime_sec": "88582",
-                    "memory_MB"   : "26624"
-                },
-                "place"    : {
-                    "walltime_sec": "3018",
-                    "memory_MB"   : "25600"
-                },
-                "route300"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "over_32GB"
-                }
-            }
-        },
-        "JZ_Switch_Fabric":            {
-            "quartus": {
-                "synthesis": {
                     "walltime_sec": "3475",
-                    "memory_MB"   : "4243"
-                },
-                "fit"      : {
-                    "walltime_sec": "26900",
-                    "pack_time_sec":  "1400",
-                    "place_time_sec": "6100",
-                    "route_time_sec": "7900",
-                    "memory_MB"   : "7100"
+                    "pack_time_sec":  "242",
+                    "place_time_sec": "1714",
+                    "route_time_sec": "733",
+                    "memory_MB"   : "2658"
                 }
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "147133",
-                    "memory_MB"   : "22528"
+                    "walltime_sec": "3818",
+                    "memory_MB"   : "5837"
                 },
                 "place"    : {
-                    "walltime_sec": "4681",
-                    "memory_MB"   : "20480"
+                    "walltime_sec": "501",
+                    "memory_MB"   : "4915"
                 },
                 "route300"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
+                    "walltime_sec": "9769",
+                    "memory_MB"   : "7885"
                 },
                 "route500"    : {
                     "walltime_sec": "unkown", 
-                    "memory_MB"   : "over_32GB"
+                    "memory_MB"   : "unkown"
                 }
             }
         },
         "OpenCV":            {
+            "info": {
+                "total_blocks":     "155095"
+            },
             "quartus": {
                 "synthesis": {
                     "walltime_sec": "1481",
@@ -455,7 +677,7 @@
                     "memory_MB"   : "10035"
                 },
                 "route300"    : {
-                    "walltime_sec": "unkown",
+                    "walltime_sec": "over_48hrs",
                     "memory_MB"   : "unkown"
                 },
                 "route500"    : {
@@ -464,74 +686,10 @@
                 }
             }
         },
-        "LU256":            {
-            "quartus": {
-                "synthesis": {
-                    "walltime_sec": "4609",
-                    "memory_MB"   : "5899"
-                },
-                "fit"      : {
-                    "walltime_sec": "unkown",
-                    "pack_time_sec":  "",
-                    "place_time_sec": "",
-                    "route_time_sec": "",
-                    "memory_MB"   : "unkown"
-                }
-            },
-            "vpr"    : {
-                "pack"     : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "place"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route300"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
-                }
-            }
-        },
-        "OpenSparcT2_Core":            {
-            "quartus": {
-                "synthesis": {
-                    "walltime_sec": "3055",
-                    "memory_MB"   : "4485"
-                },
-                "fit"      : {
-                    "walltime_sec": "12600",
-                    "pack_time_sec":  "700",
-                    "place_time_sec": "4200",
-                    "route_time_sec": "6400",
-                    "memory_MB"   : "4100"
-                }
-            },
-            "vpr"    : {
-                "pack"     : {
-                    "walltime_sec": "31888",
-                    "memory_MB"   : "10138"
-                },
-                "place"    : {
-                    "walltime_sec": "1960",
-                    "memory_MB"   : "9011"
-                },
-                "route300"    : {
-                    "walltime_sec": "10000",
-                    "memory_MB"   : "10300",
-                    "successful"  : "False"
-                },
-                "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
-                }
-            }
-        },
         "DART":            {
+            "info": {
+                "total_blocks":     "169751"
+            },
             "quartus": {
                 "synthesis": {
                     "walltime_sec": "1182",
@@ -555,7 +713,7 @@
                     "memory_MB"   : "7168"
                 },
                 "route300"    : {
-                    "walltime_sec": "over_48hrs",
+                    "walltime_sec": "",
                     "memory_MB"   : "8900",
                     "successful"  : "False"
                 },
@@ -566,7 +724,82 @@
                 }
             }
         },
+        "segmentation":            {
+            "info": {
+                "total_blocks":     "172793"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "5399",
+                    "memory_MB"   : "3395"
+                },
+                "fit"      : {
+                    "walltime_sec": "4542",
+                    "pack_time_sec":  "335",
+                    "place_time_sec": "2257",
+                    "route_time_sec": "1031",
+                    "memory_MB"   : "3092"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "3511",
+                    "memory_MB"   : "9933"
+                },
+                "place"    : {
+                    "walltime_sec": "648",
+                    "memory_MB"   : "8704"
+                },
+                "route300"    : {
+                    "walltime_sec": "320",
+                    "memory_MB"   : "10138"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "Bitonic169_Mesh":            {
+            "info": {
+                "total_blocks":     "182071"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "1924",
+                    "memory_MB"   : "3149"
+                },
+                "fit"      : {
+                    "walltime_sec": "8300",
+                    "pack_time_sec":  "400",
+                    "place_time_sec": "2200",
+                    "route_time_sec": "4500",
+                    "memory_MB"   : "4800"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "21766",
+                    "memory_MB"   : "15360"
+                },
+                "place"    : {
+                    "walltime_sec": "1038",
+                    "memory_MB"   : "13312"
+                },
+                "route300"    : {
+                    "walltime_sec": "over_48hrs",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "1987", 
+                    "memory_MB"   : "23552"
+                }
+            }
+        },
         "Bitonic169_Cyclic":            {
+            "info": {
+                "total_blocks":     "182332"
+            },
             "quartus": {
                 "synthesis": {
                     "walltime_sec": "5021",
@@ -599,14 +832,378 @@
                 }
             }
         },
+        "MINRES":            {
+            "info": {
+                "total_blocks":     "195860"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "fit"      : {
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "place"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "stap_qrd":            {
+            "info": {
+                "total_blocks":     "198218"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "fit"      : {
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "place"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "cholesky_bdti":            {
+            "info": {
+                "total_blocks":     "212719"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "fit"      : {
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "place"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "OpenSparcT2_Core":            {
+            "info": {
+                "total_blocks":     "242972"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "3055",
+                    "memory_MB"   : "4485"
+                },
+                "fit"      : {
+                    "walltime_sec": "12600",
+                    "pack_time_sec":  "700",
+                    "place_time_sec": "4200",
+                    "route_time_sec": "6400",
+                    "memory_MB"   : "4100"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "31888",
+                    "memory_MB"   : "10138"
+                },
+                "place"    : {
+                    "walltime_sec": "1960",
+                    "memory_MB"   : "9011"
+                },
+                "route300"    : {
+                    "walltime_sec": "10000",
+                    "memory_MB"   : "10300",
+                    "successful"  : "False"
+                },
+                "route500"    : {
+                    "walltime_sec": "over_48hrs", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "LU128":            {
+            "info": {
+                "total_blocks":     "257363"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "1814",
+                    "memory_MB"   : "3294"
+                },
+                "fit"      : {
+                    "walltime_sec": "11300",
+                    "pack_time_sec":  "1000",
+                    "place_time_sec": "3600",
+                    "route_time_sec": "4600",
+                    "memory_MB"   : "5500"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "88582",
+                    "memory_MB"   : "26624"
+                },
+                "place"    : {
+                    "walltime_sec": "3018",
+                    "memory_MB"   : "25600"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "over_32GB"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "over_32GB"
+                }
+            }
+        },
+        "denoise":            {
+            "info": {
+                "total_blocks":     "341987"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "8931",
+                    "memory_MB"   : "3369"
+                },
+                "fit"      : {
+                    "walltime_sec": "10929",
+                    "pack_time_sec":  "829",
+                    "place_time_sec": "6186",
+                    "route_time_sec": "2215",
+                    "memory_MB"   : "5513"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "10729",
+                    "memory_MB"   : "14336"
+                },
+                "place"    : {
+                    "walltime_sec": "2052",
+                    "memory_MB"   : "13312"
+                },
+                "route300"    : {
+                    "walltime_sec": "778",
+                    "memory_MB"   : "15360"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "JZ_Switch_Fabric":            {
+            "info": {
+                "total_blocks":     "428923"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "3475",
+                    "memory_MB"   : "4243"
+                },
+                "fit"      : {
+                    "walltime_sec": "26900",
+                    "pack_time_sec":  "1400",
+                    "place_time_sec": "6100",
+                    "route_time_sec": "7900",
+                    "memory_MB"   : "7100"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "147133",
+                    "memory_MB"   : "22528"
+                },
+                "place"    : {
+                    "walltime_sec": "4681",
+                    "memory_MB"   : "20480"
+                },
+                "route300"    : {
+                    "walltime_sec": "over_48hrs",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "over_32GB"
+                }
+            }
+        },
+        "LU230":            {
+            "info": {
+                "total_blocks":     "456248"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "fit"      : {
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "place"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "LU256":            {
+            "info": {
+                "total_blocks":     "509423"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "4609",
+                    "memory_MB"   : "5899"
+                },
+                "fit"      : {
+                    "walltime_sec": "will_not_fit",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "over_32GB"
+                },
+                "place"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
+        "LU_Network":            {
+            "info": {
+                "total_blocks":     "513145"
+            },
+            "quartus": {
+                "synthesis": {
+                    "walltime_sec": "4580",
+                    "memory_MB"   : "5659"
+                },
+                "fit"      : {
+                    "walltime_sec": "unkown",
+                    "pack_time_sec":  "",
+                    "place_time_sec": "",
+                    "route_time_sec": "",
+                    "memory_MB"   : "unkown"
+                }
+            },
+            "vpr"    : {
+                "pack"     : {
+                    "walltime_sec": "over_48hrs",
+                    "memory_MB"   : "unkown"
+                },
+                "place"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route300"    : {
+                    "walltime_sec": "unkown",
+                    "memory_MB"   : "unkown"
+                },
+                "route500"    : {
+                    "walltime_sec": "unkown", 
+                    "memory_MB"   : "unkown"
+                }
+            }
+        },
         "OpenSparcT1_Chip2":            {
+            "info": {
+                "total_blocks":     "746993"
+            },
             "quartus": {
                 "synthesis": {
                     "walltime_sec": "8502",
                     "memory_MB"   : "22840"
                 },
                 "fit"      : {
-                    "walltime_sec": "unkown",
+                    "walltime_sec": "30000",
                     "pack_time_sec":  "",
                     "place_time_sec": "",
                     "route_time_sec": "",
@@ -615,7 +1212,7 @@
             },
             "vpr"    : {
                 "pack"     : {
-                    "walltime_sec": "unkown",
+                    "walltime_sec": "over_48hrs",
                     "memory_MB"   : "unkown"
                 },
                 "place"    : {
@@ -632,275 +1229,14 @@
                 }
             }
         },
-        "denoise":            {
-            "quartus": {
-                "synthesis": {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "fit"      : {
-                    "walltime_sec": "unkown",
-                    "pack_time_sec":  "",
-                    "place_time_sec": "",
-                    "route_time_sec": "",
-                    "memory_MB"   : "unkown"
-                }
+        "directrf":            {
+            "info": {
+                "total_blocks":     "771761"
             },
-            "vpr"    : {
-                "pack"     : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "place"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route300"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
-                }
-            }
-        },
-        "segmentation":            {
             "quartus": {
                 "synthesis": {
                     "walltime_sec": "unkown",
                     "memory_MB"   : "unkown"
-                },
-                "fit"      : {
-                    "walltime_sec": "unkown",
-                    "pack_time_sec":  "",
-                    "place_time_sec": "",
-                    "route_time_sec": "",
-                    "memory_MB"   : "unkown"
-                }
-            },
-            "vpr"    : {
-                "pack"     : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "place"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route300"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
-                }
-            }
-        },
-        "EKF-SLAM_SphericalCoords":            {
-            "quartus": {
-                "synthesis": {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "fit"      : {
-                    "walltime_sec": "unkown",
-                    "pack_time_sec":  "",
-                    "place_time_sec": "",
-                    "route_time_sec": "",
-                    "memory_MB"   : "unkown"
-                }
-            },
-            "vpr"    : {
-                "pack"     : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "place"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route300"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
-                }
-            }
-        },
-        "EKF-SLAM_Jacobians":            {
-            "quartus": {
-                "synthesis": {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "fit"      : {
-                    "walltime_sec": "unkown",
-                    "pack_time_sec":  "",
-                    "place_time_sec": "",
-                    "route_time_sec": "",
-                    "memory_MB"   : "unkown"
-                }
-            },
-            "vpr"    : {
-                "pack"     : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "place"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route300"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
-                }
-            }
-        },
-        "SURF_desc":            {
-            "quartus": {
-                "synthesis": {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "fit"      : {
-                    "walltime_sec": "unkown",
-                    "pack_time_sec":  "",
-                    "place_time_sec": "",
-                    "route_time_sec": "",
-                    "memory_MB"   : "unkown"
-                }
-            },
-            "vpr"    : {
-                "pack"     : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "place"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route300"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
-                }
-            }
-        },
-        "jacobi":            {
-            "quartus": {
-                "synthesis": {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "fit"      : {
-                    "walltime_sec": "unkown",
-                    "pack_time_sec":  "",
-                    "place_time_sec": "",
-                    "route_time_sec": "",
-                    "memory_MB"   : "unkown"
-                }
-            },
-            "vpr"    : {
-                "pack"     : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "place"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route300"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
-                }
-            }
-        },
-        "random":            {
-            "quartus": {
-                "synthesis": {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "fit"      : {
-                    "walltime_sec": "unkown",
-                    "pack_time_sec":  "",
-                    "place_time_sec": "",
-                    "route_time_sec": "",
-                    "memory_MB"   : "unkown"
-                }
-            },
-            "vpr"    : {
-                "pack"     : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "place"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route300"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
-                }
-            }
-        },
-        "smithwaterman":            {
-            "quartus": {
-                "synthesis": {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "fit"      : {
-                    "walltime_sec": "unkown",
-                    "pack_time_sec":  "",
-                    "place_time_sec": "",
-                    "route_time_sec": "",
-                    "memory_MB"   : "unkown"
-                }
-            },
-            "vpr"    : {
-                "pack"     : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "place"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route300"    : {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "unkown"
-                },
-                "route500"    : {
-                    "walltime_sec": "unkown", 
-                    "memory_MB"   : "unkown"
-                }
-            }
-        },
-        "smithwaterman_synth":            {
-            "quartus": {
-                "synthesis": {
-                    "walltime_sec": "unkown",
-                    "memory_MB"   : "22000"
                 },
                 "fit"      : {
                     "walltime_sec": "unkown",
@@ -930,6 +1266,9 @@
             }
         },
         "Gaussianblur1":            {
+            "info": {
+                "total_blocks":     "1859358"
+            },
             "quartus": {
                 "synthesis": {
                     "walltime_sec": "unkown",
