@@ -194,7 +194,9 @@ static void check_sink(int inode, int inet, boolean * pin_done) {
 	}
 
 	if (ifound < 1) {
-		vpr_printf(TIO_MESSAGE_ERROR, "in check_sink: node %d does not connect to any terminal of net %d.\n", inode, inet);
+		vpr_printf(TIO_MESSAGE_ERROR, "in check_sink: node %d does not connect to any terminal of net %s #%d.\n"
+									  "This error usually is caused by incorrectly specified logical equivalence in your architecture file\n"
+									  "You can try to respecify what pins are equivalent or turn off logical equivalence altogether.\n", inode, clb_net[inet].name, inet);
 		exit(1);
 	}
 }
