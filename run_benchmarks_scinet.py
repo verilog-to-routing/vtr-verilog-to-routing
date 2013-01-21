@@ -1,3 +1,4 @@
+#!/scinet/gpc/tools/Python/Python272-shared/bin/python
 #!/usr/bin/python
 __version__ = """$Revison$
                  Last Change: $Author: kmurray $ $Date: 2012-08-30 22:54:17 -0400 (Thu, 30 Aug 2012) $
@@ -13,6 +14,9 @@ import json
 from math import floor, ceil
 from collections import OrderedDict
 
+MAX_WALLTIME = 48*60*60 #48 hrs
+RESERVED_MEMORY = 3*1024 #3GB
+
 def parse_args():
     description="""\
     Runs the VQM2BLIF flow on the specified Quartus 2 Project to generate a BLIF file,
@@ -27,12 +31,20 @@ def parse_args():
     parser.add_argument('--benchmarks_info', '-b', dest='benchmark_info_file', action='store',
                         required=True,
                         help='Benchmark information file')
-    parser.add_argument('--actions', '-a', dest='actions', action='store',
-                        default="quartus_synthesis vpr_pack vpr_place vpr_route",
+    parser.add_argument('--actions', dest='actions', action='store',
+                        default="quartus_synthesis vpr_pack vpr_place vpr_route300",
                         help='Benchmark actions [defaults to "%(default)s"]')
+    parser.add_argument('--run_list', '-r', dest='run_list', action='store',
+                        help='A list of benchmarks to run, defaults to all benchmarks in benchmark info file')
     parser.add_argument('--benchmark_source_dir', '-s', dest='benchmark_src_dir', action='store',
                         required=True,
                         help='Directory containing the benchmarks')
+    parser.add_argument('--arch', '-a', dest='arch_file', action='store',
+                        required=True,
+                        help='The architecture file')
+    parser.add_argument('--total_block_limit', '-l', action='store',
+                        type=int, default=None,
+                        help='Only runs benchmarks with size less than TOTAL_BLOCK_LIMIT')
     parser.add_argument('--default_memory', dest='default_memory', action='store',
                         default=6000,
                         help='Default memory used in MB [defaults to %(default)s MB], for benchmarks which do not specify it in the info info file')
@@ -61,6 +73,11 @@ def process_args(args):
         args.actions = args.actions.split()
     else:
         args.actions = []
+
+    if args.run_list:
+        args.run_list = args.run_list.split()
+    else:
+        args.run_list = []
     return args
 
 def main(args):
@@ -75,13 +92,16 @@ def main(args):
     #Partition the benchmarks into jobs
     partition_benchmarks(benchmark_action_lists, benchmark_info, args)
 
-def parse_benchmark_info(json_file):
-    return Benchmark_info(json_file)
-
 def generate_benchmark_actions(args, benchmark_info):
     benchmark_action_dict = {}
 
-    for benchmark_name in benchmark_info.get_names():
+    for benchmark_name in benchmark_info.get_names_by_size(args.total_block_limit):
+        #Zero size runlist means run all benchmarks
+        if len(args.run_list) != 0:
+            if benchmark_name not in args.run_list:
+                #Only run benchmarsk that are in the run_list
+                continue
+
         action_list = BenchmarkActionList(benchmark_name)
         for action in args.actions:
             action = BenchmarkAction(benchmark_name, action, benchmark_info, default_memory=args.default_memory, default_time=args.default_time)
@@ -92,9 +112,7 @@ def generate_benchmark_actions(args, benchmark_info):
 
 
 def partition_benchmarks(action_dict, benchmark_info, args):
-    #Simple benchmark packer, based on estimated memory usage
-    MAX_WALLTIME = 48*60*60 #48 hrs
-    RESERVED_MEMORY = 3*1024 #3GB
+    #Simple benchmark packer, based on estimated memory/walltime usage
 
     memory_capacity = {'16GB': 16*1024 - RESERVED_MEMORY,
                        '32GB': 32*1024 - RESERVED_MEMORY,
@@ -156,6 +174,7 @@ def partition_benchmarks(action_dict, benchmark_info, args):
 
             job_files.append(file_name)
 
+    #Create a submission script
     with open('go.sh', 'w') as f:
         print >>f, '#!/bin/bash --norc'
         print >>f, ''
@@ -163,6 +182,24 @@ def partition_benchmarks(action_dict, benchmark_info, args):
         for job_script in job_files:
             print >>f, 'qsub {job_script}'.format(job_script=job_script)
 
+    #Create the extraction script
+    with open('extract.sh', 'w') as f:
+        print >>f, '#!/bin/bash --norc'
+        print >>f, ''
+        print >>f, '#Extract all found job files'
+        print >>f, """extract_base_dir=extract
+for tar_file in `ls | grep tar` 
+do
+    old_pwd=`pwd`
+    tar_dir=${tar_file%%.*}
+    extract_dir=$extract_base_dir/$tar_dir
+    mkdir -p $extract_dir
+    cd $extract_dir
+    tar -xvf $old_pwd/$tar_file
+    cd $old_pwd
+
+done
+"""
 
 
             #print benchmark, action.get_name()
@@ -210,7 +247,7 @@ class ClusterJob(object):
             self.used_memory += action_list_mem
 
         if action_list_time > self.get_available_walltime():
-            print "Error: too much walltime required to add", action_list.get_name()
+            print "Error: too much walltime required to add", action_list.get_name(), "(", action_list_time - self.get_available_walltime(), "sec)"
             sys.exit(1)
         else:
             self.used_walltime = max(self.used_walltime, action_list_time)
@@ -232,7 +269,10 @@ class ClusterJob(object):
         seconds_per_hour = seconds_per_minute * minutes_per_hour
 
         #Use a margin on walltime
-        walltime = int(floor(self.walltime_margin * self.get_used_walltime()))
+        margined_walltime = int(floor(self.walltime_margin * self.get_used_walltime()))
+        # min avoid margin going over the MAX_WALLTIME limit,
+        # -1 puts us ahead (in the queue) of everyone using integer times
+        walltime = min(MAX_WALLTIME, margined_walltime) - 1
 
         walltime_hrs = 0
         walltime_min = 0
@@ -304,8 +344,8 @@ class ClusterJob(object):
             print >>f, "#Job parameters:"
             print >>f, "JOBNAME=%s" % self.name
             print >>f, "export BENCHMARK_SRC_DIR=%s" % args.benchmark_src_dir
+            print >>f, "export ARCH_FILE=%s" % args.arch_file
             print >>f, """
-export ARCH_FILE=~/dev/trees/vqm_to_blif/REG_TEST/BENCHMARKS/ARCH/stratixiv_arch.simple.xml
 export INPUT_SUBDIR=input    # sub-directory (within input_tar) with input files
 export OUTPUT_SUBDIR=output  # sub-directory to contain of output files
 export OUTPUT_TAR=output_${JOBNAME}.tar
@@ -331,8 +371,8 @@ function save_results {
     date
     orig_pwd=`pwd`
     cd $RAMDISK
-    tar -cf $OUTPUT_TAR $OUTPUT_SUBDIR/*
-    cp $OUTPUT_TAR $PBS_O_WORKDIR
+    tar -cf $PBS_O_WORKDIR/$OUTPUT_TAR $OUTPUT_SUBDIR/*
+    #cp $OUTPUT_TAR $PBS_O_WORKDIR
     echo -n "Copying of output complete on "
     date
     cd $orig_pwd
@@ -377,7 +417,7 @@ module load use.own quartus
 echo "Stage-in: copying files to ramdisk directory $RAMDISK"
 mkdir -p $RAMDISK/$INPUT_SUBDIR
 mkdir -p $RAMDISK/$OUTPUT_SUBDIR
-Copy input tar files
+#Copy input tar files
 #cp -rf $PBS_O_WORKDIR/input $RAMDISK
 cp $ARCH_FILE $RAMDISK/$INPUT_SUBDIR/.
 
@@ -395,7 +435,7 @@ cp $ARCH_FILE $RAMDISK/$INPUT_SUBDIR/.
             print >>f, ""
             print >>f, "parallel -u -j %d <<EOF" % args.num_processors
             for action_num, action_list in enumerate(self.action_lists, start=1):
-                script_name = action_list.gen_script(file_name, self.job_num, action_num)
+                script_name = action_list.gen_script(file_name, self.job_num, action_num, args)
                 print >>f, "./" + script_name
 
             print >>f, ""
@@ -443,7 +483,7 @@ class BenchmarkActionList(object):
             total_time += action.get_walltime_sec()
         return total_time
 
-    def gen_script(self, job_name, job_num, action_num):
+    def gen_script(self, job_name, job_num, action_num, args):
         cmd_name = '{job_name}_action_{action_num:03d}_{benchmark_name}.sh'.format(job_name=job_name.split('.')[0], action_num=action_num, benchmark_name=self.get_name())
 
         with open(cmd_name, 'w') as f:
@@ -466,7 +506,8 @@ class BenchmarkActionList(object):
             print >>f, '# Execute Action'
             print >>f, '##########################'
             for action in self.get_actions():
-                print >>f, action.get_action_cmd(self.get_name()) 
+                for cmd in action.get_action_cmd(self.get_name(), args):
+                    print >>f, cmd 
 
             print >>f, ''
             print >>f, 'echo "Ended   Job {job_num} Action {action_num} {benchmark_name} on `date`"'.format(job_num=job_num, action_num=action_num, benchmark_name=self.get_name())
@@ -489,6 +530,8 @@ class BenchmarkAction(object):
     def get_memory_MB(self):
         if self.memory_MB == 'unkown':
             return self.default_memory 
+        elif self.memory_MB == 'over_32GB':
+            return 0
         elif self.memory_MB != '':
             return int(self.memory_MB)
         else:
@@ -496,41 +539,50 @@ class BenchmarkAction(object):
     def get_walltime_sec(self):
         if self.walltime_sec == 'unkown':
             return self.default_time
+        elif self.walltime_sec == 'over_48hrs':
+            return 0
+        elif self.walltime_sec == 'will_not_fit':
+            return 0
         elif self.walltime_sec != '':
             return int(self.walltime_sec)
         else:
             return 0
 
-    def get_action_cmd(self, short_name):
-        cmd = ''
+    def get_action_cmd(self, short_name, args):
+        cmd = []
 
         qpf_file = '$JOB_INPUT_DIR/quartus2_proj/*.qpf'
 
-        arch_file = '$RAMDISK/$INPUT_SUBDIR/stratixiv_arch.simple.xml'
+        arch_file = '$RAMDISK/$INPUT_SUBDIR/' + os.path.basename(args.arch_file)
         blif_file = '$RAMDISK/$OUTPUT_SUBDIR/{short_name}/*_stratixiv.blif'.format(short_name=short_name)
 
         vpr_opts = {'pack' : ['--pack' , '--timing_analysis off', '--nodisp'], 
                     'place': ['--place', '--fast', '--timing_analysis off', '--nodisp'], 
-                    'route': ['--route', '--route_chan_width 300', '--timing_analysis off', '--nodisp']}
+                    'route300': ['--route', '--route_chan_width 300', '--timing_analysis off', '--nodisp'],
+                    'route500': ['--route', '--route_chan_width 500', '--timing_analysis off', '--nodisp']}
 
         if self.get_name() == "quartus_synthesis":
-            cmd = 'vqm2blif_flow.py -q {qpf_file} -a {arch_file} &> {short_name}-{action_name}.log'.format(qpf_file=qpf_file, \
-                  arch_file=arch_file, short_name=short_name, action_name=self.get_name())
+            cmd += ['vqm2blif_flow.py -q {qpf_file} -a {arch_file} &> {short_name}-{action_name}.log'.format(qpf_file=qpf_file, \
+                   arch_file=arch_file, short_name=short_name, action_name=self.get_name())]
 
         elif self.get_name() == "quartus_fit":
-            raise NotImplementedError
+            cmd += ['quartus_sh -t {q2_flow_tcl} -project {qpf_file} -family {family} -fit -fit_ini_vars "fit_report_lab_usage_stats=on" -fit_assignment_vars "FITTER_EFFORT=Standard Fit" &> {short_name}-{action_name}.log'.format(qpf_file=qpf_file, \
+                   q2_flow_tcl='~/dev/trees/vqm_to_blif/REG_TEST/SCRIPTS/q2_flow.tcl', family=os.path.basename(arch_file).split('_')[0], short_name=short_name, action_name=self.get_name())]
 
         elif self.get_name() == "vpr_pack":
-            cmd = 'vpr {arch_file} {blif_file} {vpr_opts} &> {short_name}-{action_name}.log'.format(arch_file=arch_file, \
-                  blif_file=blif_file, vpr_opts=' '.join(vpr_opts['pack']), short_name=short_name, action_name=self.get_name())
+            cmd += ['vpr {arch_file} {blif_file} {vpr_opts} &> {short_name}-{action_name}.log'.format(arch_file=arch_file, \
+                   blif_file=blif_file, vpr_opts=' '.join(vpr_opts['pack']), short_name=short_name, action_name=self.get_name())]
 
         elif self.get_name() == "vpr_place":
-            cmd = 'vpr {arch_file} {blif_file} {vpr_opts} &> {short_name}-{action_name}.log'.format(arch_file=arch_file, \
-                  blif_file=blif_file, vpr_opts=' '.join(vpr_opts['place']), short_name=short_name, action_name=self.get_name())
+            cmd += ['vpr {arch_file} {blif_file} {vpr_opts} &> {short_name}-{action_name}.log'.format(arch_file=arch_file, \
+                   blif_file=blif_file, vpr_opts=' '.join(vpr_opts['place']), short_name=short_name, action_name=self.get_name())]
 
-        elif self.get_name() == "vpr_route":
-            cmd = 'vpr {arch_file} {blif_file} {vpr_opts} &> {short_name}-{action_name}.log'.format(arch_file=arch_file, \
-                  blif_file=blif_file, vpr_opts=' '.join(vpr_opts['route']), short_name=short_name, action_name=self.get_name())
+        elif self.get_name() == "vpr_route300":
+            cmd += ['vpr {arch_file} {blif_file} {vpr_opts} &> {short_name}-{action_name}.log'.format(arch_file=arch_file, \
+                   blif_file=blif_file, vpr_opts=' '.join(vpr_opts['route300']), short_name=short_name, action_name=self.get_name())]
+        elif self.get_name() == "vpr_route500":
+            cmd += ['vpr {arch_file} {blif_file} {vpr_opts} &> {short_name}-{action_name}.log'.format(arch_file=arch_file, \
+                   blif_file=blif_file, vpr_opts=' '.join(vpr_opts['route500']), short_name=short_name, action_name=self.get_name())]
 
         else:
             print "ERROR: Unknown action %s" % self.get_name()
@@ -560,13 +612,31 @@ class BenchmarkInfo(object):
         try: 
             data = self.info[benchmark][tool][action_name][mem_or_cpu]
         except KeyError:
+            
             print "Error: %s %s %s %s not found" % (benchmark, tool, action, mem_or_cpu)
             sys.exit(1)
+        if data == 'unkown' and action == 'vpr_route500':
+            data = self.info[benchmark][tool]['route300'][mem_or_cpu]
 
         return data
 
     def get_names(self):
         return self.info.keys()
+
+    def get_names_by_size(self, total_block_limit=None, reverse=False):
+        sizes = {}
+        for benchmark in self.get_names():
+            size = int(self.info[benchmark]['info']['total_blocks'])
+            if total_block_limit != None:
+                if size != 0 and size > total_block_limit:
+                    continue
+            sizes[benchmark] = size
+
+        ordered_dict = OrderedDict(sorted(sizes.iteritems(), key=lambda x: x[1], reverse=reverse))
+
+        #print ordered_dict
+        return ordered_dict
+
 
 
 if __name__ == '__main__':

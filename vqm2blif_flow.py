@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/scinet/gpc/tools/Python/Python272-shared/bin/python
 __version__ = """$Revison$
                  Last Change: $Author$ $Date$
                  Orig Author: kmurray
