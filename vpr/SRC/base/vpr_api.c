@@ -473,17 +473,17 @@ void free_arch(t_arch* Arch) {
 	chan_width_y = NULL;
 
 	for (i = 0; i < Arch->num_switches; i++) {
-		if (Arch->Switches->name != NULL ) {
+		if (Arch->Switches->name != NULL) {
 			free(Arch->Switches[i].name);
 		}
 	}
 	free(Arch->Switches);
 	free(switch_inf);
 	for (i = 0; i < Arch->num_segments; i++) {
-		if (Arch->Segments->cb != NULL ) {
+		if (Arch->Segments->cb != NULL) {
 			free(Arch->Segments[i].cb);
 		}
-		if (Arch->Segments->sb != NULL ) {
+		if (Arch->Segments->sb != NULL) {
 			free(Arch->Segments[i].sb);
 		}
 	}
@@ -699,12 +699,12 @@ void free_circuit() {
 	vpack_to_clb_net_mapping = NULL;
 
 	/* Free logical blocks and nets */
-	if (logical_block != NULL ) {
+	if (logical_block != NULL) {
 		free_logical_blocks();
 		free_logical_nets();
 	}
 
-	if (clb_net != NULL ) {
+	if (clb_net != NULL) {
 		for (i = 0; i < num_nets; i++) {
 			free(clb_net[i].name);
 			free(clb_net[i].node_block);
@@ -715,9 +715,9 @@ void free_circuit() {
 	free(clb_net);
 	clb_net = NULL;
 
-	if (block != NULL ) {
+	if (block != NULL) {
 		for (i = 0; i < num_blocks; i++) {
-			if (block[i].pb != NULL ) {
+			if (block[i].pb != NULL) {
 				free_cb(block[i].pb);
 				free(block[i].pb);
 			}
@@ -737,7 +737,7 @@ void free_circuit() {
 void vpr_free_vpr_data_structures(INOUTP t_arch Arch, INOUTP t_options options,
 		INOUTP t_vpr_setup vpr_setup) {
 
-	if (vpr_setup.Timing.SDCFile != NULL ) {
+	if (vpr_setup.Timing.SDCFile != NULL) {
 		free(vpr_setup.Timing.SDCFile);
 		vpr_setup.Timing.SDCFile = NULL;
 	}
@@ -859,16 +859,16 @@ static void reload_intra_cluster_nets(t_pb *pb) {
 	int i, j;
 	const t_pb_type* pb_type;
 	pb_type = pb->pb_graph_node->pb_type;
-	if (pb_type->blif_model != NULL ) {
+	if (pb_type->blif_model != NULL) {
 		setup_intracluster_routing_for_logical_block(pb->logical_block,
 				pb->pb_graph_node);
-	} else if (pb->child_pbs != NULL ) {
+	} else if (pb->child_pbs != NULL) {
 		set_pb_graph_mode(pb->pb_graph_node, pb->mode, 1);
 		for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
 			for (j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb;
 					j++) {
-				if (pb->child_pbs[i] != NULL ) {
-					if (pb->child_pbs[i][j].name != NULL ) {
+				if (pb->child_pbs[i] != NULL) {
+					if (pb->child_pbs[i][j].name != NULL) {
 						reload_intra_cluster_nets(&pb->child_pbs[i][j]);
 					}
 				}
@@ -897,7 +897,7 @@ static t_trace *alloc_and_load_final_routing_trace() {
 		final_routing_trace[i].next = NULL;
 
 		pin = get_pb_graph_node_pin_from_vpack_net(i, 0);
-		if( !pin )
+		if (!pin)
 			continue;
 		final_routing_trace[i].index = pin->pin_count_in_cluster;
 
@@ -945,10 +945,10 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 			} else {
 				inter_cb_trace =
 						trace_head[vpack_to_clb_net_mapping[ivpack_net]];
-				if (inter_cb_trace != NULL ) {
+				if (inter_cb_trace != NULL) {
 					inter_cb_trace = inter_cb_trace->next; /* skip source and go right to opin */
 				}
-				while (inter_cb_trace != NULL ) {
+				while (inter_cb_trace != NULL) {
 					/* continue traversing inter cb trace */
 					if (rr_node[inter_cb_trace->index].type != SINK) {
 						new_trace = (t_trace*) my_calloc(1, sizeof(t_trace));
@@ -970,7 +970,7 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 							new_trace->index =
 									rr_node[inter_cb_trace->index].pb_graph_pin->pin_count_in_cluster;
 							new_trace->iswitch = OPEN;
-	    						new_trace->num_siblings = 0;
+							new_trace->num_siblings = 0;
 							new_trace->next = NULL;
 							current->next = new_trace;
 							current = expand_routing_trace(new_trace,
@@ -1031,7 +1031,7 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 		iprev_block = OPEN;
 
 		fprintf(fp, "Net %s (%d)\n\n", vpack_net[i].name, i);
-		while (current != NULL ) {
+		while (current != NULL) {
 			iblock = current->iblock;
 			inode = current->index;
 			if (iblock != OPEN) {
@@ -1042,17 +1042,15 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 							block[iblock].y, block[iblock].z);
 				}
 				local_rr_graph = block[iblock].pb->rr_graph;
-				fprintf(fp, "\tNode:\t%d\t%s[%d].%s[%d]", 
-					inode,
-					local_rr_graph[inode].pb_graph_pin->parent_node->pb_type->name,
-					local_rr_graph[inode].pb_graph_pin->parent_node->placement_index,
-					local_rr_graph[inode].pb_graph_pin->port->name,
-					local_rr_graph[inode].pb_graph_pin->pin_number);
+				fprintf(fp, "\tNode:\t%d\t%s[%d].%s[%d]", inode,
+						local_rr_graph[inode].pb_graph_pin->parent_node->pb_type->name,
+						local_rr_graph[inode].pb_graph_pin->parent_node->placement_index,
+						local_rr_graph[inode].pb_graph_pin->port->name,
+						local_rr_graph[inode].pb_graph_pin->pin_number);
 			} else {
-				fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", 
-					inode,
-					name_type[(int) rr_node[inode].type],
-					rr_node[inode].xlow, rr_node[inode].ylow);
+				fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode,
+						name_type[(int) rr_node[inode].type],
+						rr_node[inode].xlow, rr_node[inode].ylow);
 
 				if ((rr_node[inode].xlow != rr_node[inode].xhigh)
 						|| (rr_node[inode].ylow != rr_node[inode].yhigh))
@@ -1126,7 +1124,7 @@ void resync_post_route_netlist() {
 			continue;
 		j = 0;
 		trace = trace_head[i];
-		while (trace != NULL ) {
+		while (trace != NULL) {
 			if (rr_node[trace->index].type == OPIN && j == 0) {
 				gridx = rr_node[trace->index].xlow;
 				gridy = rr_node[trace->index].ylow;
@@ -1225,11 +1223,11 @@ static void clay_lut_input_rebalancing(int iblock, t_pb *pb) {
 	int snode, input;
 	t_pb_graph_node *pb_graph_node;
 
-	if (pb->name != NULL ) {
+	if (pb->name != NULL) {
 		pb_graph_node = pb->pb_graph_node;
-		if (pb_graph_node->pb_type->blif_model != NULL ) {
+		if (pb_graph_node->pb_type->blif_model != NULL) {
 			lut_pin_remap = pb->lut_pin_remap;
-			if (lut_pin_remap != NULL ) {
+			if (lut_pin_remap != NULL) {
 				local_rr_graph = block[iblock].pb->rr_graph;
 				lut = pb->pb_graph_node;
 				lut_wrapper = lut->parent_pb_graph_node;
@@ -1265,12 +1263,12 @@ static void clay_lut_input_rebalancing(int iblock, t_pb *pb) {
 					}
 				}
 			}
-		} else if (pb->child_pbs != NULL ) {
+		} else if (pb->child_pbs != NULL) {
 			for (i = 0;
 					i
 							< pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children;
 					i++) {
-				if (pb->child_pbs[i] != NULL ) {
+				if (pb->child_pbs[i] != NULL) {
 					for (j = 0;
 							j
 									< pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i].num_pb;
@@ -1316,7 +1314,7 @@ static void clay_reload_ble_locations(int iblock) {
 
 	/* determine new location for BLEs that route out of cluster */
 	for (i = 0; i < pb_type->modes[mode].pb_type_children[0].num_pb; i++) {
-		if (block[iblock].pb->child_pbs[0][i].name != NULL ) {
+		if (block[iblock].pb->child_pbs[0][i].name != NULL) {
 			ivpack_net =
 					local_rr_graph[pb_graph_node->child_pb_graph_nodes[mode][0][i].output_pins[0][0].pin_count_in_cluster].net_num;
 			inet = vpack_to_clb_net_mapping[ivpack_net];
@@ -1343,12 +1341,12 @@ static void clay_reload_ble_locations(int iblock) {
 	/* determine new location for BLEs that do not route out of cluster */
 	new_loc = 0;
 	for (i = 0; i < pb_type->modes[mode].pb_type_children[0].num_pb; i++) {
-		if (block[iblock].pb->child_pbs[0][i].name != NULL ) {
+		if (block[iblock].pb->child_pbs[0][i].name != NULL) {
 			ivpack_net =
 					local_rr_graph[pb_graph_node->child_pb_graph_nodes[mode][0][i].output_pins[0][0].pin_count_in_cluster].net_num;
 			inet = vpack_to_clb_net_mapping[ivpack_net];
 			if (inet == OPEN) {
-				while (temp[0][new_loc].name != NULL ) {
+				while (temp[0][new_loc].name != NULL) {
 					new_loc++;
 				}
 				temp[0][new_loc] = block[iblock].pb->child_pbs[0][i];
@@ -1366,7 +1364,7 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
 		t_pb *pb) {
 	int i, j;
 
-	if (pb->name == NULL ) {
+	if (pb->name == NULL) {
 		return;
 	}
 
@@ -1374,11 +1372,11 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
 			strcmp(pb->pb_graph_node->pb_type->name, pb_graph_node->pb_type->name) == 0);
 
 	pb->pb_graph_node = pb_graph_node;
-	if (pb->child_pbs != NULL ) {
+	if (pb->child_pbs != NULL) {
 		for (i = 0;
 				i < pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children;
 				i++) {
-			if (pb->child_pbs[i] != NULL ) {
+			if (pb->child_pbs[i] != NULL) {
 				for (j = 0;
 						j
 								< pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i].num_pb;
@@ -1425,7 +1423,7 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 		vpr_printf(TIO_MESSAGE_INFO, "Running power estimation\n");
 
 		/* Run power estimation */
-		power_ret_code = power_total(&power_runtime_s, &Arch,
+		power_ret_code = power_total(&power_runtime_s, vpr_setup, &Arch,
 				&vpr_setup.RoutingArch);
 
 		/* Check for errors/warnings */
