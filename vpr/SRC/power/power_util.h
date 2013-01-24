@@ -37,9 +37,10 @@ void pb_foreach_pin(t_pb_graph_node * pb_node,
 
 /* Power Usage */
 void power_zero_usage(t_power_usage * power_usage);
-void power_add_usage(t_power_usage * dest, t_power_usage * src);
+void power_add_usage(t_power_usage * dest, const t_power_usage * src);
 void power_scale_usage(t_power_usage * power_usage, float scale_factor);
 float power_sum_usage(t_power_usage * power_usage);
+float power_perc_dynamic(t_power_usage * power_usage);
 
 /* Message Logger */
 void power_log_msg(e_power_log_type log_type, char * msg);

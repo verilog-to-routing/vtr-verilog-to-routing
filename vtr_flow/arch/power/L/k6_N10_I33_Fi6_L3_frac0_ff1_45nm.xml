@@ -60,7 +60,7 @@
 	<device>
 		<sizing R_minW_nmos="6065.52002" R_minW_pmos="18138.5" ipin_mux_trans_size="1.22226"/>
 		<timing C_ipin_cblock="0.0" T_ipin_cblock="7.247e-11"/>
-		<area grid_logic_tile_area="14813.392"/>
+		<area grid_logic_tile_area="18748.199219"/>
 		<chan_width_distr>
 			<io width="1.0"/>
 			<x distr="uniform" peak="1.0"/>
@@ -72,13 +72,13 @@
 		<switch type="mux" name="0" R="0.0" Cin="0.0" Cout="0.0" Tdel="6.837e-11" mux_trans_size="2.63074" buf_size="27.645901"/>
 	</switchlist>
 	<segmentlist>
-		<segment freq="1.0" length="6" type="unidir" Rmetal="0.0" Cmetal="0.0" Cmetal_per_m="1.7e-10">
+		<segment freq="1.0" length="3" type="unidir" Rmetal="0.0" Cmetal="0.0" Cmetal_per_m="1.7e-10">
 			<mux name="0"/>
 			<sb type="pattern">
-				1 1 1 1 1 1 1
+				1 1 1 1
 			</sb>
 			<cb type="pattern">
-				1 1 1 1 1 1
+				1 1 1
 			</cb>
 		</segment>
 	</segmentlist>
@@ -139,8 +139,8 @@
 			<clock name="clk" num_pins="1"/>
 			<interconnect>
 				<complete name="crossbar" input="clb.I ble[9:0].out" output="ble[9:0].in">
-					<delay_constant max="8.044e-11" in_port="clb.I" out_port="ble[9:0].in"/>
-					<delay_constant max="7.354e-11" in_port="ble[9:0].out" out_port="ble[9:0].in"/>
+					<delay_constant max="4.62e-11" in_port="clb.I" out_port="ble[9:0].in"/>
+					<delay_constant max="4.607e-11" in_port="ble[9:0].out" out_port="ble[9:0].in"/>
 				</complete>
 				<complete name="clks" input="clb.clk" output="ble[9:0].clk"/>
 				<direct name="clbouts" input="ble[9:0].out" output="clb.O"/>

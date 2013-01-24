@@ -71,7 +71,8 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode,
 		boolean * default_leakage_mode);
 static void Process_Fc(ezxml_t Node, t_type_descriptor * Type);
 static void ProcessComplexBlockProps(ezxml_t Node, t_type_descriptor * Type);
-static void ProcessChanWidthDistr(INOUTP ezxml_t Node, OUTP struct s_arch *arch);
+static void ProcessChanWidthDistr(INOUTP ezxml_t Node,
+		OUTP struct s_arch *arch);
 static void ProcessChanWidthDistrDir(INOUTP ezxml_t Node, OUTP t_chan * chan);
 static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch);
 static void ProcessLayout(INOUTP ezxml_t Node, OUTP struct s_arch *arch);
@@ -142,7 +143,7 @@ static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 				Locations->line, Prop);
 		exit(1);
 	}
-	ezxml_set_attr(Locations, "pattern", NULL );
+	ezxml_set_attr(Locations, "pattern", NULL);
 
 	/* Alloc and clear pin locations */
 	Type->pinloc = (int ***) my_malloc(Type->height * sizeof(int **));
@@ -206,7 +207,7 @@ static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 						Prop);
 				exit(1);
 			}
-			ezxml_set_attr(Cur, "side", NULL );
+			ezxml_set_attr(Cur, "side", NULL);
 
 			/* Check location is on perimeter */
 			if ((TOP == j) && (i != (Type->height - 1))) {
@@ -347,7 +348,7 @@ static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {
 				assert(IO_TYPE == Type);
 				/* IO goes to boundary */
 			} else if (strcmp(Prop, "fill") == 0) {
-				if (Type->num_grid_loc_def != 1 || FILL_TYPE != NULL ) {
+				if (Type->num_grid_loc_def != 1 || FILL_TYPE != NULL) {
 					vpr_printf(TIO_MESSAGE_ERROR,
 							"[LINE %d] Another loc specified for fill.\n",
 							Cur->line);
@@ -365,19 +366,19 @@ static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {
 						Cur->line, Prop, Type->name);
 				exit(1);
 			}
-			ezxml_set_attr(Cur, "type", NULL );
+			ezxml_set_attr(Cur, "type", NULL);
 		}
 		Prop = FindProperty(Cur, "start", FALSE);
 		if (Type->grid_loc_def[i].grid_loc_type == COL_REPEAT) {
-			if (Prop == NULL ) {
+			if (Prop == NULL) {
 				vpr_printf(TIO_MESSAGE_ERROR,
 						"[LINE %d] grid location property 'start' must be specified for grid location type 'col'.\n",
 						Cur->line);
 				exit(1);
 			}
 			Type->grid_loc_def[i].start_col = my_atoi(Prop);
-			ezxml_set_attr(Cur, "start", NULL );
-		} else if (Prop != NULL ) {
+			ezxml_set_attr(Cur, "start", NULL);
+		} else if (Prop != NULL) {
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"[LINE %d] grid location property 'start' valid for grid location type 'col' only.\n",
 					Cur->line);
@@ -385,11 +386,11 @@ static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {
 		}
 		Prop = FindProperty(Cur, "repeat", FALSE);
 		if (Type->grid_loc_def[i].grid_loc_type == COL_REPEAT) {
-			if (Prop != NULL ) {
+			if (Prop != NULL) {
 				Type->grid_loc_def[i].repeat = my_atoi(Prop);
-				ezxml_set_attr(Cur, "repeat", NULL );
+				ezxml_set_attr(Cur, "repeat", NULL);
 			}
-		} else if (Prop != NULL ) {
+		} else if (Prop != NULL) {
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"[LINE %d] grid location property 'repeat' valid for grid location type 'col' only.\n",
 					Cur->line);
@@ -397,15 +398,15 @@ static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {
 		}
 		Prop = FindProperty(Cur, "pos", FALSE);
 		if (Type->grid_loc_def[i].grid_loc_type == COL_REL) {
-			if (Prop == NULL ) {
+			if (Prop == NULL) {
 				vpr_printf(TIO_MESSAGE_ERROR,
 						"[LINE %d] grid location property 'pos' must be specified for grid location type 'rel'.\n",
 						Cur->line);
 				exit(1);
 			}
 			Type->grid_loc_def[i].col_rel = (float) atof(Prop);
-			ezxml_set_attr(Cur, "pos", NULL );
-		} else if (Prop != NULL ) {
+			ezxml_set_attr(Cur, "pos", NULL);
+		} else if (Prop != NULL) {
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"[LINE %d] grid location property 'pos' valid for grid location type 'rel' only.\n",
 					Cur->line);
@@ -458,23 +459,23 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		if (Prop) {
 			annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_MAX;
 			annotation->value[i] = my_strdup(Prop);
-			ezxml_set_attr(Parent, "max", NULL );
+			ezxml_set_attr(Parent, "max", NULL);
 			i++;
 		}
 		Prop = FindProperty(Parent, "min", FALSE);
 		if (Prop) {
 			annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_MIN;
 			annotation->value[i] = my_strdup(Prop);
-			ezxml_set_attr(Parent, "min", NULL );
+			ezxml_set_attr(Parent, "min", NULL);
 			i++;
 		}
 		annotation->line_num = Parent->line;
 		Prop = FindProperty(Parent, "in_port", TRUE);
 		annotation->input_pins = my_strdup(Prop);
-		ezxml_set_attr(Parent, "in_port", NULL );
+		ezxml_set_attr(Parent, "in_port", NULL);
 		Prop = FindProperty(Parent, "out_port", TRUE);
 		annotation->output_pins = my_strdup(Prop);
-		ezxml_set_attr(Parent, "out_port", NULL );
+		ezxml_set_attr(Parent, "out_port", NULL);
 	} else if (0 == strcmp(Parent->name, "delay_matrix")) {
 		annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
 		annotation->format = E_ANNOT_PIN_TO_PIN_MATRIX;
@@ -487,29 +488,29 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 			assert(0 == strcmp(Prop, "min"));
 			annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_MIN;
 		}
-		ezxml_set_attr(Parent, "type", NULL );
+		ezxml_set_attr(Parent, "type", NULL);
 		i++;
 		Prop = FindProperty(Parent, "in_port", TRUE);
 		annotation->input_pins = my_strdup(Prop);
-		ezxml_set_attr(Parent, "in_port", NULL );
+		ezxml_set_attr(Parent, "in_port", NULL);
 		Prop = FindProperty(Parent, "out_port", TRUE);
 		annotation->output_pins = my_strdup(Prop);
-		ezxml_set_attr(Parent, "out_port", NULL );
+		ezxml_set_attr(Parent, "out_port", NULL);
 	} else if (0 == strcmp(Parent->name, "C_constant")) {
 		annotation->type = E_ANNOT_PIN_TO_PIN_CAPACITANCE;
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
 		Prop = FindProperty(Parent, "C", TRUE);
 		annotation->value[i] = my_strdup(Prop);
-		ezxml_set_attr(Parent, "C", NULL );
+		ezxml_set_attr(Parent, "C", NULL);
 		annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_CAPACITANCE_C;
 		i++;
 
 		Prop = FindProperty(Parent, "in_port", FALSE);
 		annotation->input_pins = my_strdup(Prop);
-		ezxml_set_attr(Parent, "in_port", NULL );
+		ezxml_set_attr(Parent, "in_port", NULL);
 		Prop = FindProperty(Parent, "out_port", FALSE);
 		annotation->output_pins = my_strdup(Prop);
-		ezxml_set_attr(Parent, "out_port", NULL );
+		ezxml_set_attr(Parent, "out_port", NULL);
 		assert(
 				annotation->output_pins != NULL || annotation->input_pins != NULL);
 	} else if (0 == strcmp(Parent->name, "C_matrix")) {
@@ -521,10 +522,10 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		i++;
 		Prop = FindProperty(Parent, "in_port", FALSE);
 		annotation->input_pins = my_strdup(Prop);
-		ezxml_set_attr(Parent, "in_port", NULL );
+		ezxml_set_attr(Parent, "in_port", NULL);
 		Prop = FindProperty(Parent, "out_port", FALSE);
 		annotation->output_pins = my_strdup(Prop);
-		ezxml_set_attr(Parent, "out_port", NULL );
+		ezxml_set_attr(Parent, "out_port", NULL);
 		assert(
 				annotation->output_pins != NULL || annotation->input_pins != NULL);
 	} else if (0 == strcmp(Parent->name, "T_setup")) {
@@ -533,14 +534,14 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		Prop = FindProperty(Parent, "value", TRUE);
 		annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_TSETUP;
 		annotation->value[i] = my_strdup(Prop);
-		ezxml_set_attr(Parent, "value", NULL );
+		ezxml_set_attr(Parent, "value", NULL);
 		i++;
 		Prop = FindProperty(Parent, "port", TRUE);
 		annotation->input_pins = my_strdup(Prop);
-		ezxml_set_attr(Parent, "port", NULL );
+		ezxml_set_attr(Parent, "port", NULL);
 		Prop = FindProperty(Parent, "clock", TRUE);
 		annotation->clock = my_strdup(Prop);
-		ezxml_set_attr(Parent, "clock", NULL );
+		ezxml_set_attr(Parent, "clock", NULL);
 	} else if (0 == strcmp(Parent->name, "T_clock_to_Q")) {
 		annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
@@ -548,53 +549,53 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		if (Prop) {
 			annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX;
 			annotation->value[i] = my_strdup(Prop);
-			ezxml_set_attr(Parent, "max", NULL );
+			ezxml_set_attr(Parent, "max", NULL);
 			i++;
 		}
 		Prop = FindProperty(Parent, "min", FALSE);
 		if (Prop) {
 			annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN;
 			annotation->value[i] = my_strdup(Prop);
-			ezxml_set_attr(Parent, "min", NULL );
+			ezxml_set_attr(Parent, "min", NULL);
 			i++;
 		}
 
 		Prop = FindProperty(Parent, "port", TRUE);
 		annotation->input_pins = my_strdup(Prop);
-		ezxml_set_attr(Parent, "port", NULL );
+		ezxml_set_attr(Parent, "port", NULL);
 		Prop = FindProperty(Parent, "clock", TRUE);
 		annotation->clock = my_strdup(Prop);
-		ezxml_set_attr(Parent, "clock", NULL );
+		ezxml_set_attr(Parent, "clock", NULL);
 	} else if (0 == strcmp(Parent->name, "T_hold")) {
 		annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
 		Prop = FindProperty(Parent, "value", TRUE);
 		annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_THOLD;
 		annotation->value[i] = my_strdup(Prop);
-		ezxml_set_attr(Parent, "value", NULL );
+		ezxml_set_attr(Parent, "value", NULL);
 		i++;
 
 		Prop = FindProperty(Parent, "port", TRUE);
 		annotation->input_pins = my_strdup(Prop);
-		ezxml_set_attr(Parent, "port", NULL );
+		ezxml_set_attr(Parent, "port", NULL);
 		Prop = FindProperty(Parent, "clock", TRUE);
 		annotation->clock = my_strdup(Prop);
-		ezxml_set_attr(Parent, "clock", NULL );
+		ezxml_set_attr(Parent, "clock", NULL);
 	} else if (0 == strcmp(Parent->name, "pack_pattern")) {
 		annotation->type = E_ANNOT_PIN_TO_PIN_PACK_PATTERN;
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
 		Prop = FindProperty(Parent, "name", TRUE);
 		annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME;
 		annotation->value[i] = my_strdup(Prop);
-		ezxml_set_attr(Parent, "name", NULL );
+		ezxml_set_attr(Parent, "name", NULL);
 		i++;
 
 		Prop = FindProperty(Parent, "in_port", TRUE);
 		annotation->input_pins = my_strdup(Prop);
-		ezxml_set_attr(Parent, "in_port", NULL );
+		ezxml_set_attr(Parent, "in_port", NULL);
 		Prop = FindProperty(Parent, "out_port", TRUE);
 		annotation->output_pins = my_strdup(Prop);
-		ezxml_set_attr(Parent, "out_port", NULL );
+		ezxml_set_attr(Parent, "out_port", NULL);
 	} else {
 		vpr_printf(TIO_MESSAGE_ERROR,
 				"[LINE %d] Unknown port type %s in %s in %s", Parent->line,
@@ -618,6 +619,8 @@ static void ProcessPb_TypePower(ezxml_t Parent, t_pb_type * pb_type) {
 			sizeof(t_pb_type_power));
 	pb_type->pb_type_power->power_usage.dynamic = 0.;
 	pb_type->pb_type_power->power_usage.leakage = 0.;
+	pb_type->pb_type_power->power_usage_bufs_wires.dynamic = 0.;
+	pb_type->pb_type_power->power_usage_bufs_wires.leakage = 0.;
 	pb_type->pb_type_power->C_internal = 0.;
 
 	prop = NULL;
@@ -660,7 +663,7 @@ static void ProcessPb_TypePower(ezxml_t Parent, t_pb_type * pb_type) {
 	}
 
 	if (prop) {
-		ezxml_set_attr(cur, "method", NULL );
+		ezxml_set_attr(cur, "method", NULL);
 	}
 
 	if (require_static_absolute) {
@@ -698,11 +701,11 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 	char* class_name;
 
 	pb_type->parent_mode = mode;
-	if (mode != NULL && mode->parent_pb_type != NULL ) {
+	if (mode != NULL && mode->parent_pb_type != NULL) {
 		pb_type->depth = mode->parent_pb_type->depth + 1;
 		Prop = FindProperty(Parent, "name", TRUE);
 		pb_type->name = my_strdup(Prop);
-		ezxml_set_attr(Parent, "name", NULL );
+		ezxml_set_attr(Parent, "name", NULL);
 	} else {
 		pb_type->depth = 0;
 		/* same name as type */
@@ -710,14 +713,14 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 
 	Prop = FindProperty(Parent, "blif_model", FALSE);
 	pb_type->blif_model = my_strdup(Prop);
-	ezxml_set_attr(Parent, "blif_model", NULL );
+	ezxml_set_attr(Parent, "blif_model", NULL);
 
 	pb_type->class_type = UNKNOWN_CLASS;
 	Prop = FindProperty(Parent, "class", FALSE);
 	class_name = my_strdup(Prop);
 
 	if (class_name) {
-		ezxml_set_attr(Parent, "class", NULL );
+		ezxml_set_attr(Parent, "class", NULL);
 		if (0 == strcmp(class_name, "lut")) {
 			pb_type->class_type = LUT_CLASS;
 		} else if (0 == strcmp(class_name, "flipflop")) {
@@ -733,7 +736,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 		free(class_name);
 	}
 
-	if (mode == NULL ) {
+	if (mode == NULL) {
 		pb_type->num_pb = 1;
 	} else {
 		pb_type->num_pb = GetIntProperty(Parent, "num_pb", TRUE, 0);
@@ -762,7 +765,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 			k = 0;
 			Cur = FindFirstElement(Parent, "clock", FALSE);
 		}
-		while (Cur != NULL ) {
+		while (Cur != NULL) {
 			ProcessPb_TypePort(Cur, &pb_type->ports[j],
 					pb_type->pb_type_power->estimation_method);
 			pb_type->ports[j].parent_pb_type = pb_type;
@@ -808,7 +811,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 	pb_type->num_annotations = 0;
 	i = 0;
 	/* Determine if this is a leaf or container pb_type */
-	if (pb_type->blif_model != NULL ) {
+	if (pb_type->blif_model != NULL) {
 		/* Process delay and capacitance annotations */
 		num_annotations = 0;
 		num_annotations += CountChildren(Parent, "delay_constant", 0);
@@ -841,7 +844,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 			} else if (i == 6) {
 				Cur = FindFirstElement(Parent, "T_hold", FALSE);
 			}
-			while (Cur != NULL ) {
+			while (Cur != NULL) {
 				ProcessPinToPinAnnotations(Cur, &pb_type->annotations[j]);
 
 				/* get next iteration */
@@ -885,7 +888,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 					sizeof(t_mode));
 
 			Cur = FindFirstElement(Parent, "mode", TRUE);
-			while (Cur != NULL ) {
+			while (Cur != NULL) {
 				if (0 == strcmp(Cur->name, "mode")) {
 					pb_type->modes[i].parent_pb_type = pb_type;
 					pb_type->modes[i].index = i;
@@ -1020,15 +1023,15 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port,
 	const char *Prop;
 	Prop = FindProperty(Parent, "name", TRUE);
 	port->name = my_strdup(Prop);
-	ezxml_set_attr(Parent, "name", NULL );
+	ezxml_set_attr(Parent, "name", NULL);
 
 	Prop = FindProperty(Parent, "port_class", FALSE);
 	port->port_class = my_strdup(Prop);
-	ezxml_set_attr(Parent, "port_class", NULL );
+	ezxml_set_attr(Parent, "port_class", NULL);
 
 	Prop = FindProperty(Parent, "chain", FALSE);
 	port->chain_name = my_strdup(Prop);
-	ezxml_set_attr(Parent, "chain", NULL );
+	ezxml_set_attr(Parent, "chain", NULL);
 
 	port->equivalent = GetBooleanProperty(Parent, "equivalent", FALSE, FALSE);
 	port->num_pins = GetIntProperty(Parent, "num_pins", TRUE, 0);
@@ -1082,7 +1085,7 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 		} else {
 			Cur = FindFirstElement(Parent, "mux", FALSE);
 		}
-		while (Cur != NULL ) {
+		while (Cur != NULL) {
 			if (0 == strcmp(Cur->name, "complete")) {
 				mode->interconnect[i].type = COMPLETE_INTERC;
 			} else if (0 == strcmp(Cur->name, "direct")) {
@@ -1099,15 +1102,15 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 
 			Prop = FindProperty(Cur, "input", TRUE);
 			mode->interconnect[i].input_string = my_strdup(Prop);
-			ezxml_set_attr(Cur, "input", NULL );
+			ezxml_set_attr(Cur, "input", NULL);
 
 			Prop = FindProperty(Cur, "output", TRUE);
 			mode->interconnect[i].output_string = my_strdup(Prop);
-			ezxml_set_attr(Cur, "output", NULL );
+			ezxml_set_attr(Cur, "output", NULL);
 
 			Prop = FindProperty(Cur, "name", TRUE);
 			mode->interconnect[i].name = my_strdup(Prop);
-			ezxml_set_attr(Cur, "name", NULL );
+			ezxml_set_attr(Cur, "name", NULL);
 
 			/* Process delay and capacitance annotations */
 			num_annotations = 0;
@@ -1136,7 +1139,7 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 				} else if (j == 4) {
 					Cur2 = FindFirstElement(Cur, "pack_pattern", FALSE);
 				}
-				while (Cur2 != NULL ) {
+				while (Cur2 != NULL) {
 					ProcessPinToPinAnnotations(Cur2,
 							&(mode->interconnect[i].annotations[k]));
 
@@ -1181,7 +1184,7 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode,
 	} else {
 		Prop = FindProperty(Parent, "name", TRUE);
 		mode->name = my_strdup(Prop);
-		ezxml_set_attr(Parent, "name", NULL );
+		ezxml_set_attr(Parent, "name", NULL);
 	}
 
 	mode->num_pb_type_children = CountChildren(Parent, "pb_type", 0);
@@ -1191,7 +1194,7 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode,
 
 		i = 0;
 		Cur = FindFirstElement(Parent, "pb_type", TRUE);
-		while (Cur != NULL ) {
+		while (Cur != NULL) {
 			if (0 == strcmp(Cur->name, "pb_type")) {
 				ProcessPb_Type(Cur, &mode->pb_type_children[i], mode);
 
@@ -1237,7 +1240,7 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 
 	/* Load the default fc_in, if specified */
 	Prop = FindProperty(Node, "default_in_type", FALSE);
-	if (Prop != NULL ) {
+	if (Prop != NULL) {
 		if (0 == strcmp(Prop, "abs")) {
 			def_type_in = FC_ABS;
 		} else if (0 == strcmp(Prop, "frac")) {
@@ -1258,18 +1261,18 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 		case FC_FRAC:
 			Prop2 = FindProperty(Node, "default_in_val", TRUE);
 			def_in_val = (float) atof(Prop2);
-			ezxml_set_attr(Node, "default_in_val", NULL );
+			ezxml_set_attr(Node, "default_in_val", NULL);
 			break;
 		default:
 			def_in_val = -1;
 		}
 		/* Release the property */
-		ezxml_set_attr(Node, "default_in_type", NULL );
+		ezxml_set_attr(Node, "default_in_type", NULL);
 	}
 
 	/* Load the default fc_out, if specified */
 	Prop = FindProperty(Node, "default_out_type", FALSE);
-	if (Prop != NULL ) {
+	if (Prop != NULL) {
 		if (0 == strcmp(Prop, "abs")) {
 			def_type_out = FC_ABS;
 		} else if (0 == strcmp(Prop, "frac")) {
@@ -1290,13 +1293,13 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 		case FC_FRAC:
 			Prop2 = FindProperty(Node, "default_out_val", TRUE);
 			def_out_val = (float) atof(Prop2);
-			ezxml_set_attr(Node, "default_out_val", NULL );
+			ezxml_set_attr(Node, "default_out_val", NULL);
 			break;
 		default:
 			def_out_val = -1;
 		}
 		/* Release the property */
-		ezxml_set_attr(Node, "default_out_type", NULL );
+		ezxml_set_attr(Node, "default_out_type", NULL);
 	}
 
 	/* Go though all the pins in Type, assign def_in_val and def_out_val     *
@@ -1323,18 +1326,18 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 
 	/* Now, check for pin-based fc override - look for pin child. */
 	Child = ezxml_child(Node, "pin");
-	while (Child != NULL ) {
+	while (Child != NULL) {
 		/* Get all the properties of the child first */
 		Prop = FindProperty(Child, "name", TRUE);
-		if (Prop == NULL ) {
+		if (Prop == NULL) {
 			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Pin child with no name "
 					"is not allowed.\n", Child->line);
 			exit(1);
 		}
-		ezxml_set_attr(Child, "name", NULL );
+		ezxml_set_attr(Child, "name", NULL);
 
 		Prop2 = FindProperty(Child, "fc_type", TRUE);
-		if (Prop2 != NULL ) {
+		if (Prop2 != NULL) {
 			if (0 == strcmp(Prop2, "abs")) {
 				ovr_type = FC_ABS;
 			} else if (0 == strcmp(Prop2, "frac")) {
@@ -1354,20 +1357,20 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 			case FC_ABS:
 			case FC_FRAC:
 				Prop2 = FindProperty(Child, "fc_val", TRUE);
-				if (Prop2 == NULL ) {
+				if (Prop2 == NULL) {
 					vpr_printf(TIO_MESSAGE_ERROR,
 							"[LINE %d] Pin child with no fc_val specified "
 									"is not allowed.\n", Child->line);
 					exit(1);
 				}
 				ovr_val = (float) atof(Prop2);
-				ezxml_set_attr(Child, "fc_val", NULL );
+				ezxml_set_attr(Child, "fc_val", NULL);
 				break;
 			default:
 				ovr_val = -1;
 			}
 			/* Release the property */
-			ezxml_set_attr(Child, "fc_type", NULL );
+			ezxml_set_attr(Child, "fc_type", NULL);
 
 			port_name = NULL;
 
@@ -1375,7 +1378,7 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 			/* Check whether the name is in the format of "<port_name>" or            *
 			 * "<port_name> [start_index:end_index]" by looking for the symbol '['    */
 			Prop2 = strstr(Prop, "[");
-			if (Prop2 == NULL ) {
+			if (Prop2 == NULL) {
 				/* Format "port_name" , Prop stores the port_name */
 				end_pin_index = start_pin_index = -1;
 			} else {
@@ -1384,7 +1387,7 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 						&end_pin_index, &start_pin_index);
 				Prop = port_name;
 				if (match_count != 3
-						|| (match_count != 1 && port_name == NULL )) {
+						|| (match_count != 1 && port_name == NULL)) {
 					vpr_printf(TIO_MESSAGE_ERROR,
 							"[LINE %d] Invalid name for pin child, "
 									"name should be in the format \"port_name\" or "
@@ -1506,7 +1509,7 @@ static void ProcessComplexBlockProps(ezxml_t Node, t_type_descriptor * Type) {
 	/* Load type name */
 	Prop = FindProperty(Node, "name", TRUE);
 	Type->name = my_strdup(Prop);
-	ezxml_set_attr(Node, "name", NULL );
+	ezxml_set_attr(Node, "name", NULL);
 
 	/* Load properties */
 	Type->capacity = GetIntProperty(Node, "capacity", FALSE, 1); /* TODO: Any block with capacity > 1 that is not I/O has not been tested, must test */
@@ -1538,14 +1541,14 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 
 	arch->models = NULL;
 	child = ezxml_child(Node, "model");
-	while (child != NULL ) {
+	while (child != NULL) {
 		temp = (t_model*) my_calloc(1, sizeof(t_model));
 		temp->used = 0;
 		temp->inputs = temp->outputs = NULL;
 		temp->instances = NULL;
 		Prop = FindProperty(child, "name", TRUE);
 		temp->name = my_strdup(Prop);
-		ezxml_set_attr(child, "name", NULL );
+		ezxml_set_attr(child, "name", NULL);
 		temp->pb_types = NULL;
 		temp->index = L_index;
 		L_index++;
@@ -1553,18 +1556,18 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 		/* Process the inputs */
 		p = ezxml_child(child, "input_ports");
 		junkp = p;
-		if (p == NULL )
+		if (p == NULL)
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"Required input ports not found for element '%s'.\n",
 					temp->name);
 
 		p = ezxml_child(p, "port");
-		if (p != NULL ) {
-			while (p != NULL ) {
+		if (p != NULL) {
+			while (p != NULL) {
 				tp = (t_model_ports*) my_calloc(1, sizeof(t_model_ports));
 				Prop = FindProperty(p, "name", TRUE);
 				tp->name = my_strdup(Prop);
-				ezxml_set_attr(p, "name", NULL );
+				ezxml_set_attr(p, "name", NULL);
 				tp->size = -1; /* determined later by pb_types */
 				tp->min_size = -1; /* determined later by pb_types */
 				tp->next = temp->inputs;
@@ -1576,7 +1579,7 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 				if (Prop && my_atoi(Prop) != 0) {
 					tp->is_clock = TRUE;
 				}
-				ezxml_set_attr(p, "is_clock", NULL );
+				ezxml_set_attr(p, "is_clock", NULL);
 				if (tp->is_clock == TRUE && tp->is_non_clock_global == TRUE) {
 					vpr_printf(TIO_MESSAGE_ERROR,
 							"[LINE %d] Signal cannot be both a clock and a non-clock signal simultaneously\n",
@@ -1598,18 +1601,18 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 		/* Process the outputs */
 		p = ezxml_child(child, "output_ports");
 		junkp = p;
-		if (p == NULL )
+		if (p == NULL)
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"Required output ports not found for element '%s'.\n",
 					temp->name);
 
 		p = ezxml_child(p, "port");
-		if (p != NULL ) {
-			while (p != NULL ) {
+		if (p != NULL) {
+			while (p != NULL) {
 				tp = (t_model_ports*) my_calloc(1, sizeof(t_model_ports));
 				Prop = FindProperty(p, "name", TRUE);
 				tp->name = my_strdup(Prop);
-				ezxml_set_attr(p, "name", NULL );
+				ezxml_set_attr(p, "name", NULL);
 				tp->size = -1; /* determined later by pb_types */
 				tp->min_size = -1; /* determined later by pb_types */
 				tp->next = temp->outputs;
@@ -1648,23 +1651,23 @@ static void ProcessLayout(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 
 	/* Load width and height if applicable */
 	Prop = FindProperty(Node, "width", FALSE);
-	if (Prop != NULL ) {
+	if (Prop != NULL) {
 		arch->clb_grid.IsAuto = FALSE;
 		arch->clb_grid.W = my_atoi(Prop);
-		ezxml_set_attr(Node, "width", NULL );
+		ezxml_set_attr(Node, "width", NULL);
 
 		arch->clb_grid.H = GetIntProperty(Node, "height", TRUE, UNDEFINED);
 	}
 
 	/* Load aspect ratio if applicable */
 	Prop = FindProperty(Node, "auto", arch->clb_grid.IsAuto);
-	if (Prop != NULL ) {
+	if (Prop != NULL) {
 		if (arch->clb_grid.IsAuto == FALSE) {
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"Auto-sizing, width and height cannot be specified\n");
 		}
 		arch->clb_grid.Aspect = (float) atof(Prop);
-		ezxml_set_attr(Node, "auto", NULL );
+		ezxml_set_attr(Node, "auto", NULL);
 		if (arch->clb_grid.Aspect <= 0) {
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"Grid aspect ratio is less than or equal to zero %g\n",
@@ -1689,7 +1692,7 @@ static void ProcessDevice(INOUTP ezxml_t Node, OUTP struct s_arch *arch,
 	FreeNode(Cur);
 
 	Cur = FindElement(Node, "timing", timing_enabled);
-	if (Cur != NULL ) {
+	if (Cur != NULL) {
 		arch->C_ipin_cblock = GetFloatProperty(Cur, "C_ipin_cblock", FALSE, 0);
 		arch->T_ipin_cblock = GetFloatProperty(Cur, "T_ipin_cblock", FALSE, 0);
 		FreeNode(Cur);
@@ -1701,7 +1704,7 @@ static void ProcessDevice(INOUTP ezxml_t Node, OUTP struct s_arch *arch,
 	FreeNode(Cur);
 
 	Cur = FindElement(Node, "chan_width_distr", FALSE);
-	if (Cur != NULL ) {
+	if (Cur != NULL) {
 		ProcessChanWidthDistr(Cur, arch);
 		FreeNode(Cur);
 	}
@@ -1720,7 +1723,7 @@ static void ProcessDevice(INOUTP ezxml_t Node, OUTP struct s_arch *arch,
 				Cur->line, Prop);
 		exit(1);
 	}
-	ezxml_set_attr(Cur, "type", NULL );
+	ezxml_set_attr(Cur, "type", NULL);
 
 	arch->Fs = GetIntProperty(Cur, "fs", TRUE, 3);
 
@@ -1730,7 +1733,8 @@ static void ProcessDevice(INOUTP ezxml_t Node, OUTP struct s_arch *arch,
 /* Takes in node pointing to <chan_width_distr> and loads all the
  * child type objects. Unlinks the entire <chan_width_distr> node
  * when complete. */
-static void ProcessChanWidthDistr(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
+static void ProcessChanWidthDistr(INOUTP ezxml_t Node,
+		OUTP struct s_arch *arch) {
 	ezxml_t Cur;
 
 	Cur = FindElement(Node, "io", TRUE);
@@ -1769,7 +1773,7 @@ static void ProcessChanWidthDistrDir(INOUTP ezxml_t Node, OUTP t_chan * chan) {
 				Node->line, Prop);
 		exit(1);
 	}
-	ezxml_set_attr(Node, "distr", NULL );
+	ezxml_set_attr(Node, "distr", NULL);
 	chan->peak = GetFloatProperty(Node, "peak", TRUE, UNDEFINED);
 	chan->width = GetFloatProperty(Node, "width", hasWidth, 0);
 	chan->xpeak = GetFloatProperty(Node, "xpeak", hasXpeak, 0);
@@ -1844,7 +1848,8 @@ static void alloc_and_load_default_child_for_pb_type( INOUTP t_pb_type *pb_type,
 		if (copy->pb_type_power->estimation_method == POWER_METHOD_AUTO_SIZES) {
 			copy->ports[i].port_power->wire_type = POWER_WIRE_TYPE_AUTO;
 			copy->ports[i].port_power->buffer_type = POWER_BUFFER_TYPE_AUTO;
-		} else if (copy->pb_type_power->estimation_method == POWER_METHOD_SPECIFY_SIZES) {
+		} else if (copy->pb_type_power->estimation_method
+				== POWER_METHOD_SPECIFY_SIZES) {
 			copy->ports[i].port_power->wire_type = POWER_WIRE_TYPE_IGNORED;
 			copy->ports[i].port_power->buffer_type = POWER_BUFFER_TYPE_NONE;
 		}
@@ -1862,7 +1867,7 @@ static void alloc_and_load_default_child_for_pb_type( INOUTP t_pb_type *pb_type,
 		copy->annotations[i].input_pins[0] = '\0';
 		strcat(copy->annotations[i].input_pins, new_name);
 		strcat(copy->annotations[i].input_pins, dot);
-		if (pb_type->annotations[i].output_pins != NULL ) {
+		if (pb_type->annotations[i].output_pins != NULL) {
 			dot = strstr(pb_type->annotations[i].output_pins, ".");
 			copy->annotations[i].output_pins = (char*) my_malloc(
 					sizeof(char) * (strlen(new_name) + strlen(dot) + 1));
@@ -2325,7 +2330,7 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 				exit(1);
 			}
 		}
-		ProcessPb_Type(CurType, Type->pb_type, NULL );
+		ProcessPb_Type(CurType, Type->pb_type, NULL);
 		Type->num_pins = Type->capacity
 				* (Type->pb_type->num_input_pins
 						+ Type->pb_type->num_output_pins
@@ -2365,7 +2370,7 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 		FreeNode(Prev);
 
 	}
-	if (FILL_TYPE == NULL ) {
+	if (FILL_TYPE == NULL) {
 		vpr_printf(TIO_MESSAGE_ERROR,
 				"grid location type 'fill' must be specified.\n");
 		exit(1);
@@ -2393,13 +2398,13 @@ void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 	CheckElement(Cur, "architecture");
 	/* TODO: do version processing properly with string delimiting on the . */
 	Prop = FindProperty(Cur, "version", FALSE);
-	if (Prop != NULL ) {
+	if (Prop != NULL) {
 		if (atof(Prop) > atof(VPR_VERSION)) {
 			vpr_printf(TIO_MESSAGE_WARNING,
 					"This architecture version is for VPR %f while your current VPR version is " VPR_VERSION ", compatability issues may arise\n",
 					atof(Prop));
 		}
-		ezxml_set_attr(Cur, "version", NULL );
+		ezxml_set_attr(Cur, "version", NULL);
 	}
 
 	/* Process models */
@@ -2530,7 +2535,7 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 			}
 		}
 		(*Segs)[i].length = length;
-		ezxml_set_attr(Node, "length", NULL );
+		ezxml_set_attr(Node, "length", NULL);
 
 		/* Get the frequency */
 		(*Segs)[i].frequency = 1; /* DEFAULT */
@@ -2538,7 +2543,7 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 		if (tmp) {
 			(*Segs)[i].frequency = (int) (atof(tmp) * MAX_CHANNEL_WIDTH);
 		}
-		ezxml_set_attr(Node, "freq", NULL );
+		ezxml_set_attr(Node, "freq", NULL);
 
 		/* Get timing info */
 		(*Segs)[i].Rmetal = GetFloatProperty(Node, "Rmetal", timing_enabled, 0);
@@ -2563,7 +2568,7 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 					"[LINE %d] Invalid switch type '%s'.\n", Node->line, tmp);
 			exit(1);
 		}
-		ezxml_set_attr(Node, "type", NULL );
+		ezxml_set_attr(Node, "type", NULL);
 
 		/* Get the wire and opin switches, or mux switch if unidir */
 		if (UNI_DIRECTIONAL == (*Segs)[i].directionality) {
@@ -2582,7 +2587,7 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 						SubElem->line, tmp);
 				exit(1);
 			}
-			ezxml_set_attr(SubElem, "name", NULL );
+			ezxml_set_attr(SubElem, "name", NULL);
 			FreeNode(SubElem);
 
 			/* Unidir muxes must have the same switch
@@ -2610,7 +2615,7 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 				exit(1);
 			}
 			(*Segs)[i].wire_switch = j;
-			ezxml_set_attr(SubElem, "name", NULL );
+			ezxml_set_attr(SubElem, "name", NULL);
 			FreeNode(SubElem);
 			SubElem = FindElement(Node, "opin_switch", TRUE);
 			tmp = FindProperty(SubElem, "name", TRUE);
@@ -2628,7 +2633,7 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 				exit(1);
 			}
 			(*Segs)[i].opin_switch = j;
-			ezxml_set_attr(SubElem, "name", NULL );
+			ezxml_set_attr(SubElem, "name", NULL);
 			FreeNode(SubElem);
 		}
 
@@ -2730,7 +2735,7 @@ static void ProcessCB_SB(INOUTP ezxml_t Node, INOUTP boolean * list,
 						"cb and sb depopulation.\n", Node->line, tmp);
 		exit(1);
 	}
-	ezxml_set_attr(Node, "type", NULL );
+	ezxml_set_attr(Node, "type", NULL);
 }
 
 static void ProcessSwitches(INOUTP ezxml_t Parent,
@@ -2772,7 +2777,7 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 			}
 		}
 		(*Switches)[i].name = my_strdup(switch_name);
-		ezxml_set_attr(Node, "name", NULL );
+		ezxml_set_attr(Node, "name", NULL);
 
 		/* Figure out the type of switch. */
 		if (0 == strcmp(type_name, "mux")) {
@@ -2794,7 +2799,7 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 					type_name);
 			exit(1);
 		}
-		ezxml_set_attr(Node, "type", NULL );
+		ezxml_set_attr(Node, "type", NULL);
 		(*Switches)[i].R = GetFloatProperty(Node, "R", timing_enabled, 0);
 		(*Switches)[i].Cin = GetFloatProperty(Node, "Cin", timing_enabled, 0);
 		(*Switches)[i].Cout = GetFloatProperty(Node, "Cout", timing_enabled, 0);
@@ -2805,7 +2810,7 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 				FALSE, 1);
 
 		buf_size = FindProperty(Node, "power_buf_size", FALSE);
-		if (buf_size == NULL ) {
+		if (buf_size == NULL) {
 			(*Switches)[i].power_buffer_type = POWER_BUFFER_TYPE_AUTO;
 		} else if (strcmp(buf_size, "auto") == 0) {
 			(*Switches)[i].power_buffer_type = POWER_BUFFER_TYPE_AUTO;
@@ -2813,7 +2818,7 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 			(*Switches)[i].power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
 			(*Switches)[i].power_buffer_size = (float) atof(buf_size);
 		}
-		ezxml_set_attr(Node, "power_buf_size", NULL );
+		ezxml_set_attr(Node, "power_buf_size", NULL);
 
 		/* Remove the switch element from parse tree */
 		FreeNode(Node);
@@ -2855,7 +2860,7 @@ static void ProcessDirects(INOUTP ezxml_t Parent, OUTP t_direct_inf **Directs,
 			}
 		}
 		(*Directs)[i].name = my_strdup(direct_name);
-		ezxml_set_attr(Node, "name", NULL );
+		ezxml_set_attr(Node, "name", NULL);
 
 		/* Figure out the source pin and sink pin name */
 		from_pin_name = FindProperty(Node, "from_pin", TRUE);
@@ -2870,15 +2875,15 @@ static void ProcessDirects(INOUTP ezxml_t Parent, OUTP t_direct_inf **Directs,
 		}
 		(*Directs)[i].from_pin = my_strdup(from_pin_name);
 		(*Directs)[i].to_pin = my_strdup(to_pin_name);
-		ezxml_set_attr(Node, "from_pin", NULL );
-		ezxml_set_attr(Node, "to_pin", NULL );
+		ezxml_set_attr(Node, "from_pin", NULL);
+		ezxml_set_attr(Node, "to_pin", NULL);
 
 		(*Directs)[i].x_offset = GetIntProperty(Node, "x_offset", TRUE, 0);
 		(*Directs)[i].y_offset = GetIntProperty(Node, "y_offset", TRUE, 0);
 		(*Directs)[i].z_offset = GetIntProperty(Node, "z_offset", TRUE, 0);
-		ezxml_set_attr(Node, "x_offset", NULL );
-		ezxml_set_attr(Node, "y_offset", NULL );
-		ezxml_set_attr(Node, "z_offset", NULL );
+		ezxml_set_attr(Node, "x_offset", NULL);
+		ezxml_set_attr(Node, "y_offset", NULL);
+		ezxml_set_attr(Node, "z_offset", NULL);
 
 		/* Check that the direct chain connection is not zero in both direction */
 		if ((*Directs)[i].x_offset == 0 && (*Directs)[i].y_offset == 0) {
@@ -2991,7 +2996,7 @@ static void SyncModelsPbTypes(INOUTP struct s_arch *arch,
 		INP t_type_descriptor * Types, INP int NumTypes) {
 	int i;
 	for (i = 0; i < NumTypes; i++) {
-		if (Types[i].pb_type != NULL ) {
+		if (Types[i].pb_type != NULL) {
 			SyncModelsPbTypes_rec(arch, Types[i].pb_type);
 		}
 	}
@@ -3007,7 +3012,7 @@ static void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 
 	boolean found;
 
-	if (pb_type->blif_model != NULL ) {
+	if (pb_type->blif_model != NULL) {
 
 		/* get actual name of subckt */
 		if (strstr(pb_type->blif_model, ".subckt ") == pb_type->blif_model) {
@@ -3116,7 +3121,7 @@ static void UpdateAndCheckModels(INOUTP struct s_arch *arch) {
 	int i, j;
 	cur_model = arch->models;
 	while (cur_model) {
-		if (cur_model->pb_types == NULL ) {
+		if (cur_model->pb_types == NULL) {
 			vpr_printf(TIO_MESSAGE_ERROR, "No pb_type found for model %s\n",
 					cur_model->name);
 			exit(1);
@@ -3184,7 +3189,7 @@ void EchoArch(INP const char *EchoFile, INP const t_type_descriptor * Types,
 			}
 			cur_vptr = cur_model->pb_types;
 			i = 0;
-			while (cur_vptr != NULL ) {
+			while (cur_vptr != NULL) {
 				fprintf(Echo, "\tpb_type %d: \"%s\"\n", i,
 						((t_pb_type*) cur_vptr->data_vptr)->name);
 				cur_vptr = cur_vptr->next;
@@ -3338,7 +3343,7 @@ static void ProcessClocks(ezxml_t Parent, t_clock_arch * clocks) {
 			clocks->clock_inf[i].autosize_buffer = FALSE;
 			clocks->clock_inf[i].buffer_size = (float) atof(tmp);
 		}
-		ezxml_set_attr(Node, "buffer_size", NULL );
+		ezxml_set_attr(Node, "buffer_size", NULL);
 
 		clocks->clock_inf[i].C_wire = GetFloatProperty(Node, "C_wire", TRUE, 0);
 		FreeNode(Node);

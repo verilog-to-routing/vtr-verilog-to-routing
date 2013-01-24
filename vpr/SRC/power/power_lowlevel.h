@@ -31,32 +31,32 @@
 /************************* FUNCTION DECLARATION *********************/
 void power_lowlevel_init();
 
-void power_calc_inverter(t_power_usage * power_usage, float in_dens,
+void power_usage_inverter(t_power_usage * power_usage, float in_dens,
 		float in_prob, float size, float period);
 void power_calc_inverter_with_input(t_power_usage * power_usage,
 		float * input_dynamic_power, float in_density, float in_prob,
 		float size);
-void power_calc_inverter_irregular(t_power_usage * power_usage,
+void power_usage_inverter_irregular(t_power_usage * power_usage,
 		float * dyn_power_input, float in_density, float in_probability,
 		float PMOS_size, float NMOS_size, float period);
 
 void power_usage_wire(t_power_usage * power_usage, float capacitance,
 		float density, float period);
 
-void power_calc_mux_singlelevel_static(t_power_usage * power_usage,
+void power_usage_mux_singlelevel_static(t_power_usage * power_usage,
 		float * out_prob, float * out_dens, float * V_out, int num_inputs,
 		int selected_idx, float * in_prob, float * in_dens, float * v_in,
 		float transistor_size, boolean v_out_restored, float period);
 
-void power_calc_MUX2_transmission(t_power_usage * power_usage, float * in_dens,
+void power_usage_MUX2_transmission(t_power_usage * power_usage, float * in_dens,
 		float * in_prob, float sel_dens, float sel_prob, float out_dens, float period);
 
-void power_calc_mux_singlelevel_dynamic(t_power_usage * power_usage,
+void power_usage_mux_singlelevel_dynamic(t_power_usage * power_usage,
 		int num_inputs, float out_density, float out_prob, float v_out,
 		float * in_prob, float * in_density, float * v_in, float sel_dens,
 		float sel_prob, float transistor_size, float period);
 
-void power_calc_level_restorer(t_power_usage * power_usage,
+void power_usage_level_restorer(t_power_usage * power_usage,
 		float * dyn_power_in, float in_density, float in_probability, float period);
 
 float power_calc_pb_switching_from_c_internal(t_pb * pb,

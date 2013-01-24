@@ -308,6 +308,7 @@ struct s_interconnect_power {
 	int num_input_ports;
 	int num_output_ports;
 	int num_pins_per_port;
+	float transistor_cnt;
 };
 
 struct s_interconnect_pins {
@@ -472,6 +473,7 @@ struct s_cluster_placement_primitive;
  * child_pb_graph_nodes: array of children pb graph nodes organized into modes
  * parent_pb_graph_node: parent pb graph node
  */
+typedef struct s_pb_graph_node t_pb_graph_node;
 struct s_pb_graph_node {
 	struct s_pb_type *pb_type;
 
@@ -508,7 +510,6 @@ struct s_pb_graph_node {
 	t_pb_graph_node_power * pb_node_power;
 	t_interconnect_pins ** interconnect_pins; /* [0..num_modes-1][0..num_interconnect_in_mode] */
 };
-typedef struct s_pb_graph_node t_pb_graph_node;
 
 struct s_pb_graph_node_power {
 	float transistor_cnt_pb_children; /* Total transistor size of this pb */
@@ -566,7 +567,8 @@ struct s_pb_type_power {
 	float C_internal; /*Internal capacitance of the pb */
 	int leakage_default_mode; /* Default mode for leakage analysis, if block has no set mode */
 
-	t_power_usage power_usage;
+	t_power_usage power_usage; /* Total power usage of this pb type */
+	t_power_usage power_usage_bufs_wires; /* Power dissipated in local buffers and wire switching (Subset of total power) */
 };
 
 /* Describes the type for a physical logic block

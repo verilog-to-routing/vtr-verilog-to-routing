@@ -1,6 +1,6 @@
 <!-- k = 6 -->
 <!-- N = 10 -->
-<!-- I = 33 -->
+<!-- I = 44 -->
 <!-- Fi = 8 -->
 <!-- frac_level = 1 -->
 <!-- ff = 1 -->
@@ -60,7 +60,7 @@
 	<device>
 		<sizing R_minW_nmos="6065.52002" R_minW_pmos="18138.5" ipin_mux_trans_size="1.22226"/>
 		<timing C_ipin_cblock="0.0" T_ipin_cblock="7.247e-11"/>
-		<area grid_logic_tile_area="14813.392"/>
+		<area grid_logic_tile_area="18748.199219"/>
 		<chan_width_distr>
 			<io width="1.0"/>
 			<x distr="uniform" peak="1.0"/>
@@ -134,13 +134,13 @@
 			</power>
 		</pb_type>
 		<pb_type name="clb">
-			<input name="I" num_pins="33" equivalent="true"/>
+			<input name="I" num_pins="44" equivalent="true"/>
 			<output name="O" num_pins="20" equivalent="false"/>
 			<clock name="clk" num_pins="1"/>
 			<interconnect>
 				<complete name="crossbar" input="clb.I ble[9:0].out" output="ble[9:0].in">
-					<delay_constant max="8.044e-11" in_port="clb.I" out_port="ble[9:0].in"/>
-					<delay_constant max="7.354e-11" in_port="ble[9:0].out" out_port="ble[9:0].in"/>
+					<delay_constant max="4.62e-11" in_port="clb.I" out_port="ble[9:0].in"/>
+					<delay_constant max="4.607e-11" in_port="ble[9:0].out" out_port="ble[9:0].in"/>
 				</complete>
 				<complete name="clks" input="clb.clk" output="ble[9:0].clk"/>
 				<direct name="clbouts" input="ble[9:0].out" output="clb.O"/>

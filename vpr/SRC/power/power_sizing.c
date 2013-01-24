@@ -43,13 +43,17 @@ static double power_count_transistors_switchbox(t_arch * arch);
 static double power_count_transistors_primitive(t_pb_type * pb_type);
 static double power_count_transistors_LUT(int LUT_size);
 static double power_count_transistors_FF(void);
-static double power_cnt_transistor_SRAM_bit(void);
+static double power_count_transistor_SRAM_bit(void);
 static double power_count_transistors_inv(float size);
 static double power_count_transistors_trans_gate();
 static double power_count_transistors_levr();
 static double power_transistor_eqiv_layout_size(float size);
-static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin);
+static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
+		boolean pin_is_an_input);
 static double power_transistors_for_pb_node(t_pb_graph_node * pb_node);
+static double power_transistors_per_tile(t_arch * arch);
+static void power_size_pb(void);
+static void power_size_pb_rec(t_pb_graph_node * pb_node);
 
 /************************* FUNCTION DEFINITIONS *********************/
 
@@ -124,7 +128,7 @@ static double power_count_transistors_mux(t_mux_arch * mux_arch) {
 	for (lvl_idx = 0; lvl_idx < mux_arch->levels; lvl_idx++) {
 		/* Assume there is decoder logic */
 		transistor_cnt += ceil(log(max_inputs[lvl_idx]) / log((double) 2.0))
-				* power_cnt_transistor_SRAM_bit();
+				* power_count_transistor_SRAM_bit();
 
 		/*
 		 if (mux_arch->encoding_types[lvl_idx] == ENCODING_DECODER) {
@@ -217,7 +221,26 @@ static double power_count_transistors_interc(t_interconnect * interc) {
 		assert(0);
 	}
 
+	interc->interconnect_power->transistor_cnt = transistor_cnt;
 	return transistor_cnt;
+}
+
+void power_init_sizing(t_arch * arch) {
+	float transistors_per_tile;
+
+	// Determines physical size of different PBs
+	power_size_pb();
+
+	/* Find # of transistors in each tile type */
+	transistors_per_tile = power_transistors_per_tile(arch);
+
+	/* Calculate CLB tile size
+	 *  - Assume a square tile
+	 *  - Assume min transistor size is Wx6L
+	 *  - Assume an overhead to space transistors
+	 */
+	g_power_commonly_used->tile_length = sqrt(
+			power_transistor_area(transistors_per_tile));
 }
 
 /**
@@ -225,7 +248,7 @@ static double power_count_transistors_interc(t_interconnect * interc) {
  * It returns the number of transistors in a grid of the FPGA (logic block,
  * switch box, 2 connection boxes)
  */
-double power_transistors_per_tile(t_arch * arch) {
+static double power_transistors_per_tile(t_arch * arch) {
 	double transistor_cnt = 0.;
 
 	transistor_cnt += power_transistors_for_pb_node(FILL_TYPE->pb_graph_head);
@@ -372,7 +395,7 @@ static double power_count_transistors_primitive(t_pb_type * pb_type) {
 /**
  * Returns the transistor count of an SRAM cell
  */
-static double power_cnt_transistor_SRAM_bit(void) {
+static double power_count_transistor_SRAM_bit(void) {
 	return g_power_arch->transistors_per_SRAM_bit;
 }
 
@@ -405,7 +428,7 @@ static double power_count_transistors_LUT(int LUT_size) {
 					+ 2 * power_count_transistors_inv(2.0));
 
 	/* SRAM bits */
-	transistor_cnt += power_cnt_transistor_SRAM_bit() * (1 << LUT_size);
+	transistor_cnt += power_count_transistor_SRAM_bit() * (1 << LUT_size);
 
 	for (level_idx = 0; level_idx < LUT_size; level_idx++) {
 
@@ -480,7 +503,17 @@ static double power_transistor_eqiv_layout_size(float size) {
 			+ (1 - POWER_TRANSISTOR_AREA_SPACING_FACTOR);
 }
 
-void power_size_pb_rec(t_pb_graph_node * pb_node) {
+static void power_size_pb(void) {
+	int type_idx;
+
+	for (type_idx = 0; type_idx < num_types; type_idx++) {
+		if (type_descriptors[type_idx].pb_graph_head) {
+			power_size_pb_rec(type_descriptors[type_idx].pb_graph_head);
+		}
+	}
+}
+
+static void power_size_pb_rec(t_pb_graph_node * pb_node) {
 	int port_idx, pin_idx;
 	int mode_idx, type_idx, pb_idx;
 	boolean size_buffers_and_wires = TRUE;
@@ -500,6 +533,7 @@ void power_size_pb_rec(t_pb_graph_node * pb_node) {
 		}
 	}
 
+	/* Determine # of transistors for this node */
 	power_count_transistors_pb_node(pb_node);
 
 	if (pb_node->pb_type->class_type == LUT_CLASS) {
@@ -515,13 +549,13 @@ void power_size_pb_rec(t_pb_graph_node * pb_node) {
 		size_buffers_and_wires = FALSE;
 	}
 
+	/* Size all local buffers and wires */
 	if (size_buffers_and_wires) {
-		/* Loop through all pins */
 		for (port_idx = 0; port_idx < pb_node->num_input_ports; port_idx++) {
 			for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx];
 					pin_idx++) {
 				power_size_pin_buffers_and_wires(
-						&pb_node->input_pins[port_idx][pin_idx]);
+						&pb_node->input_pins[port_idx][pin_idx], TRUE);
 			}
 		}
 
@@ -529,7 +563,7 @@ void power_size_pb_rec(t_pb_graph_node * pb_node) {
 			for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx];
 					pin_idx++) {
 				power_size_pin_buffers_and_wires(
-						&pb_node->output_pins[port_idx][pin_idx]);
+						&pb_node->output_pins[port_idx][pin_idx], FALSE);
 			}
 		}
 
@@ -537,44 +571,89 @@ void power_size_pb_rec(t_pb_graph_node * pb_node) {
 			for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx];
 					pin_idx++) {
 				power_size_pin_buffers_and_wires(
-						&pb_node->clock_pins[port_idx][pin_idx]);
+						&pb_node->clock_pins[port_idx][pin_idx], TRUE);
 			}
 		}
 	}
 
 }
 
-void power_size_pb(void) {
-	int type_idx;
+/* Provides statistics about the connection between the pin and interconnect */
+static void power_size_pin_to_interconnect(t_interconnect * interc,
+		float pb_interc_sidelength, int * fanout, float * wirelength) {
 
-	for (type_idx = 0; type_idx < num_types; type_idx++) {
-		if (type_descriptors[type_idx].pb_graph_head) {
-			power_size_pb_rec(type_descriptors[type_idx].pb_graph_head);
-		}
+	float this_interc_sidelength;
+
+	/* Pin to interconnect wirelength */
+	switch (interc->type) {
+	case DIRECT_INTERC:
+	case MUX_INTERC:
+		*wirelength = g_power_arch->local_interc_factor * pb_interc_sidelength;
+		*fanout = 1;
+		break;
+	case COMPLETE_INTERC:
+		/* The sidelength of this crossbar */
+		this_interc_sidelength = sqrt(
+				power_transistor_area(
+						interc->interconnect_power->transistor_cnt));
+
+		/* Assume that inputs to the crossbar have a structure like this:
+		 *
+		 * A   B|-----
+		 * -----|---C-
+		 *      |-----
+		 *
+		 * A - wire from pin to point of fanout (grows pb interconnect area)
+		 * B - fanout wire (sidelength of this crossbar)
+		 * C - fanouts to crossbar muxes (grows with pb interconnect area)
+		 */
+
+		*fanout = interc->interconnect_power->num_output_ports;
+		*wirelength = ((1 + *fanout) / 2.0) * g_power_arch->local_interc_factor
+				* pb_interc_sidelength + this_interc_sidelength;
+		break;
+	default:
+		assert(0);
+		break;
 	}
+
 }
 
-static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin) {
+static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
+		boolean pin_is_an_input) {
 	int edge_idx;
 	int list_cnt;
 	t_interconnect ** list;
 	boolean found;
 	int i;
-	int * fanout_per_mode;
-	int fanout_to_mode;
-	int fanout_to_parent;
+
 	float C_load;
 	float this_pb_length;
-	float parent_pb_length;
 
-	t_pb_type * this_pb_type;
-	t_pb_type * parent_pb_type;
+	int fanout;
+	float wirelength_out;
+	float wirelength_in;
 
-	this_pb_type = pin->parent_node->pb_type;
-	if (pin->parent_node->parent_pb_graph_node) {
-		parent_pb_type = pin->parent_node->parent_pb_graph_node->pb_type;
+	int fanout_tmp;
+	float wirelength_tmp;
+
+	float this_pb_interc_sidelength;
+	float parent_pb_interc_sidelength;
+	boolean top_level_pb;
+
+	t_pb_type * this_pb_type = pin->parent_node->pb_type;
+
+	this_pb_interc_sidelength = sqrt(
+			power_transistor_area(
+					pin->parent_node->pb_node_power->transistor_cnt_interc));
+	if (pin->parent_node->parent_pb_graph_node == NULL) {
+		top_level_pb = TRUE;
 	} else {
-		parent_pb_type = NULL;
+		top_level_pb = FALSE;
+		parent_pb_interc_sidelength =
+				sqrt(
+						power_transistor_area(
+								pin->parent_node->parent_pb_graph_node->pb_node_power->transistor_cnt_interc));
 	}
 
 	/* Pins are connected to a wire that is connected to:
@@ -586,8 +665,12 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin) {
 	 * 2. Interconnect structures belonging to its parent pb_node
 	 */
 
-	/* Determine pin fan-out */
-	/* Loop through all edges, building a list of interconnect that this pin connects to */
+	/* We want to estimate the physical pin fan-out, unfortunately it is not defined in the architecture file.
+	 * Instead, we know the modes of operation, and the fanout may differ depending on the mode.  We assume
+	 * that the physical fanout is the max of the connections to the various modes (although in reality it could
+	 * be higher)*/
+
+	/* Loop through all edges, building a list of interconnect that this pin drives */
 	list = NULL;
 	list_cnt = 0;
 	for (edge_idx = 0; edge_idx < pin->num_output_edges; edge_idx++) {
@@ -608,28 +691,76 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin) {
 		}
 	}
 
-	fanout_to_parent = 0;
-	fanout_per_mode = (int*) my_calloc(this_pb_type->num_modes, sizeof(int));
+	/* Determine the:
+	 * 1. Wirelength connected to the pin
+	 * 2. Fanout of the pin
+	 */
+	if (pin_is_an_input) {
+		/* Pin is an input to the PB.
+		 * Thus, all interconnect it drives belong to the modes of the PB.
+		 */
+		int * fanout_per_mode;
+		float * wirelength_out_per_mode;
 
-	for (i = 0; i < list_cnt; i++) {
-		t_pb_type * interc_pb_type = list[i]->parent_mode->parent_pb_type;
+		fanout_per_mode = (int*) my_calloc(this_pb_type->num_modes,
+				sizeof(int));
+		wirelength_out_per_mode = (float *) my_calloc(this_pb_type->num_modes,
+				sizeof(float));
 
-		if (interc_pb_type == this_pb_type) {
-			/*Interconnect belongs to this pb_type */
-			fanout_per_mode[list[i]->parent_mode_index]++;
-		} else if (interc_pb_type == parent_pb_type) {
-			/* Interconnect belongs to parent pb_type */
-			fanout_to_parent++;
-		} else {
-			assert(0);
+		for (i = 0; i < list_cnt; i++) {
+			int mode_idx = list[i]->parent_mode_index;
+
+			power_size_pin_to_interconnect(list[i], this_pb_interc_sidelength,
+					&fanout_tmp, &wirelength_tmp);
+
+			fanout_per_mode[mode_idx] += fanout_tmp;
+			wirelength_out_per_mode[mode_idx] += wirelength_tmp;
 		}
+
+		fanout = 0;
+		wirelength_out = 0.;
+
+		/* Find worst-case between modes*/
+		for (i = 0; i < this_pb_type->num_modes; i++) {
+			fanout = std::max(fanout, fanout_per_mode[i]);
+			wirelength_out = std::max(wirelength_out, wirelength_out_per_mode[i]);
+		}
+
+		free(fanout_per_mode);
+		free(wirelength_out_per_mode);
+
+		/* Input wirelength - from parent PB */
+		if (!top_level_pb) {
+			wirelength_in = g_power_arch->local_interc_factor
+					* parent_pb_interc_sidelength;
+		}
+
+	} else {
+		/* Pin is an output of the PB.
+		 * Thus, all interconnect it drives belong to the parent PB.
+		 */
+		fanout = 0;
+		wirelength_out = 0.;
+
+		if (top_level_pb) {
+			/* Outputs of top-level pb should not drive interconnect */
+			assert(list_cnt == 0);
+		}
+
+		/* Loop through all interconnect that this pin drives */
+		for (i = 0; i < list_cnt; i++) {
+			power_size_pin_to_interconnect(list[i], parent_pb_interc_sidelength,
+					&fanout_tmp, &wirelength_tmp);
+			fanout += fanout_tmp;
+			wirelength_out += wirelength_tmp;
+		}
+
+		/* Input wirelength - from this PB */
+		wirelength_in = g_power_arch->local_interc_factor
+				* this_pb_interc_sidelength;
+
 	}
 	free(list);
-
-	fanout_to_mode = 0;
-	for (i = 0; i < this_pb_type->num_modes; i++) {
-		fanout_to_mode = std::max(fanout_to_mode, fanout_per_mode[i]);
-	}
 
 	/* Wirelength */
 	switch (pin->port->port_power->wire_type) {
@@ -653,26 +784,8 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin) {
 		break;
 
 	case POWER_WIRE_TYPE_AUTO:
-
-		pin->pin_power->C_wire = 0.;
-		if (fanout_to_mode) {
-			this_pb_length = sqrt(
-					power_transistor_area(
-							power_transistors_for_pb_node(pin->parent_node)));
-			pin->pin_power->C_wire = g_power_arch->local_interc_factor
-					* g_power_arch->C_wire_local * this_pb_length
-					* fanout_to_mode;
-		}
-		if (fanout_to_parent) {
-			parent_pb_length = sqrt(
-					power_transistor_area(
-							power_transistors_for_pb_node(
-									pin->parent_node->parent_pb_graph_node)));
-
-			pin->pin_power->C_wire += g_power_arch->local_interc_factor
-					* g_power_arch->C_wire_local * parent_pb_length
-					* fanout_to_parent;
-		}
+		pin->pin_power->C_wire += g_power_arch->C_wire_local
+				* (wirelength_in + wirelength_out);
 		break;
 	case POWER_WIRE_TYPE_UNDEFINED:
 	default:
@@ -692,8 +805,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin) {
 	case POWER_BUFFER_TYPE_AUTO:
 		/* Asume the buffer drives the wire & fanout muxes */
 		C_load = pin->pin_power->C_wire
-				+ (fanout_to_mode + fanout_to_parent)
-						* g_power_commonly_used->NMOS_1X_C_d;
+				+ (fanout) * g_power_commonly_used->NMOS_1X_C_d;
 		if (C_load > g_power_commonly_used->INV_1X_C_in) {
 			pin->pin_power->buffer_size = power_buffer_size_from_logical_effort(
 					C_load);

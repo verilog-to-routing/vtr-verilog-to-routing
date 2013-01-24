@@ -107,7 +107,7 @@ static float power_calc_node_switching_v(float capacitance, float density,
  * - in_prob: The signal probability of the input
  * - size: The inverter size, relative to a min-size inverter
  */
-void power_calc_inverter(t_power_usage * power_usage, float in_dens,
+void power_usage_inverter(t_power_usage * power_usage, float in_dens,
 		float in_prob, float size, float period) {
 	float C_drain, C_gate, C_source;
 	float C_inv;
@@ -146,7 +146,7 @@ void power_calc_inverter(t_power_usage * power_usage, float in_dens,
  * - PMOS_size: (W/L) of the PMOS
  * - NMOS_size: (W/L) of the NMOS
  */
-void power_calc_inverter_irregular(t_power_usage * power_usage,
+void power_usage_inverter_irregular(t_power_usage * power_usage,
 		float * dyn_power_input, float in_density, float in_probability,
 		float PMOS_size, float NMOS_size, float period) {
 	float C_drain, C_gate, C_source;
@@ -391,7 +391,7 @@ void power_usage_wire(t_power_usage * power_usage, float capacitance,
  * - sel_prob: Signal probability of select line
  * - out_dens: Transition density of the output
  */
-void power_calc_MUX2_transmission(t_power_usage * power_usage, float * in_dens,
+void power_usage_MUX2_transmission(t_power_usage * power_usage, float * in_dens,
 		float * in_prob, float sel_dens, float sel_prob, float out_dens,
 		float period) {
 
@@ -439,7 +439,7 @@ void power_calc_MUX2_transmission(t_power_usage * power_usage, float * in_dens,
  * - transistor_size: Size of the NMOS transistors (must be 1.0)
  * - v_out_restored: Whether the output will be level restored to Vdd
  */
-void power_calc_mux_singlelevel_static(t_power_usage * power_usage,
+void power_usage_mux_singlelevel_static(t_power_usage * power_usage,
 		float * out_prob, float * out_dens, float * v_out, int num_inputs,
 		int selected_idx, float * in_prob, float * in_dens, float * v_in,
 		float transistor_size, boolean v_out_restored, float period) {
@@ -574,7 +574,7 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
  * - sel_prob: Signal probability of the select line
  * - tranisistor_size: NMOS transistor sizes (must be 1.0)
  */
-void power_calc_mux_singlelevel_dynamic(t_power_usage * power_usage,
+void power_usage_mux_singlelevel_dynamic(t_power_usage * power_usage,
 		int num_inputs, float out_density, float out_prob, float v_out,
 		float * in_prob, float * in_dens, float * v_in, float sel_dens,
 		float sel_prob, float transistor_size, float period) {
@@ -626,7 +626,7 @@ void power_calc_mux_singlelevel_dynamic(t_power_usage * power_usage,
  * - in_density: Transition density of the input
  * - in_prob: Signal probability of the input
  */
-void power_calc_level_restorer(t_power_usage * power_usage,
+void power_usage_level_restorer(t_power_usage * power_usage,
 		float * dyn_power_in, float in_dens, float in_prob, float period) {
 	t_power_usage sub_power_usage;
 	float C;
@@ -636,7 +636,7 @@ void power_calc_level_restorer(t_power_usage * power_usage,
 	power_zero_usage(power_usage);
 
 	/* Inverter */
-	power_calc_inverter_irregular(&sub_power_usage, &input_dyn_power, in_dens,
+	power_usage_inverter_irregular(&sub_power_usage, &input_dyn_power, in_dens,
 			in_prob, 1.0, 2.0, period);
 	power_add_usage(power_usage, &sub_power_usage);
 

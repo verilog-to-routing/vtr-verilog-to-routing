@@ -43,7 +43,7 @@ void power_zero_usage(t_power_usage * power_usage) {
 	power_usage->leakage = 0.;
 }
 
-void power_add_usage(t_power_usage * dest, t_power_usage * src) {
+void power_add_usage(t_power_usage * dest, const t_power_usage * src) {
 	dest->dynamic += src->dynamic;
 	dest->leakage += src->leakage;
 }
@@ -55,6 +55,10 @@ void power_scale_usage(t_power_usage * power_usage, float scale_factor) {
 
 float power_sum_usage(t_power_usage * power_usage) {
 	return power_usage->dynamic + power_usage->leakage;
+}
+
+float power_perc_dynamic(t_power_usage * power_usage) {
+	return power_usage->dynamic / power_sum_usage(power_usage);
 }
 
 void power_log_msg(e_power_log_type log_type, char * msg) {
@@ -332,13 +336,13 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
 
 	/* Count truth table terms */
 	num_terms = 0;
-	for (list_ptr = truth_table; list_ptr != NULL ; list_ptr = list_ptr->next) {
+	for (list_ptr = truth_table; list_ptr != NULL; list_ptr = list_ptr->next) {
 		num_terms++;
 	}
 	terms = (char**) my_calloc(num_terms, sizeof(char *));
 
 	/* Extract truth table terms */
-	for (list_ptr = truth_table, term_idx = 0; list_ptr != NULL ; list_ptr =
+	for (list_ptr = truth_table, term_idx = 0; list_ptr != NULL; list_ptr =
 			list_ptr->next, term_idx++) {
 		terms[term_idx] = (char*) my_calloc(LUT_size + 1, sizeof(char));
 
@@ -465,7 +469,9 @@ void output_logs(FILE * fp, t_log * logs, int num_logs) {
 }
 
 float power_buffer_size_from_logical_effort(float C_load) {
-	return std::max(1.0f, C_load / g_power_commonly_used->INV_1X_C_in / g_power_arch->logical_effort_factor);
+	return std::max(1.0f,
+			C_load / g_power_commonly_used->INV_1X_C_in
+					/ g_power_arch->logical_effort_factor);
 }
 
 void power_print_title(FILE * fp, char * title) {
@@ -572,7 +578,4 @@ boolean power_method_is_transistor_level(
 		return FALSE;
 	}
 }
-
-
-
 

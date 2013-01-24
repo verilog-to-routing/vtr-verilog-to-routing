@@ -60,7 +60,7 @@ void power_print_spice_comparison(void) {
 	if (0) {
 		fprintf(g_power_output->out, "Energy of INV (High Activity)\n");
 		for (i = 0; i < (sizeof(inv_sizes) / sizeof(float)); i++) {
-			power_calc_inverter(&sub_power_usage, 2, 0.5, inv_sizes[i],
+			power_usage_inverter(&sub_power_usage, 2, 0.5, inv_sizes[i],
 					power_callib_period);
 			fprintf(g_power_output->out, "%g\t%g\n", inv_sizes[i],
 					(sub_power_usage.dynamic + sub_power_usage.leakage)
@@ -69,7 +69,7 @@ void power_print_spice_comparison(void) {
 
 		fprintf(g_power_output->out, "Energy of INV (No Activity)\n");
 		for (i = 0; i < (sizeof(inv_sizes) / sizeof(float)); i++) {
-			power_calc_inverter(&sub_power_usage, 0, 1, inv_sizes[i],
+			power_usage_inverter(&sub_power_usage, 0, 1, inv_sizes[i],
 					power_callib_period);
 			fprintf(g_power_output->out, "%g\t%g\n", inv_sizes[i],
 					(sub_power_usage.dynamic + sub_power_usage.leakage)
@@ -124,7 +124,7 @@ void power_print_spice_comparison(void) {
 
 	fprintf(g_power_output->out, "Energy of Buffer (High Activity)\n");
 	for (i = 0; i < (sizeof(buffer_sizes) / sizeof(float)); i++) {
-		power_usage_buffer(&sub_power_usage, buffer_sizes[i], 0.5, 2, FALSE, 0,
+		power_usage_buffer(&sub_power_usage, buffer_sizes[i], 0.5, 2, FALSE,
 				power_callib_period);
 		fprintf(g_power_output->out, "%g\t%g\n", buffer_sizes[i],
 				(sub_power_usage.dynamic + sub_power_usage.leakage)
@@ -133,7 +133,7 @@ void power_print_spice_comparison(void) {
 
 	fprintf(g_power_output->out, "Energy of Buffer (No Activity)\n");
 	for (i = 0; i < (sizeof(buffer_sizes) / sizeof(float)); i++) {
-		power_usage_buffer(&sub_power_usage, buffer_sizes[i], 1, 0, FALSE, 0,
+		power_usage_buffer(&sub_power_usage, buffer_sizes[i], 1, 0, FALSE,
 				power_callib_period);
 		fprintf(g_power_output->out, "%g\t%g\n", buffer_sizes[i],
 				(sub_power_usage.dynamic + sub_power_usage.leakage)
@@ -232,7 +232,6 @@ void power_print_spice_comparison(void) {
 		power_add_usage(&sb_power_usage, &sub_power_usage);
 
 		power_usage_buffer(&sub_power_usage, sb_buffer_sizes[i], 0.5, 2, TRUE,
-				power_get_mux_arch(sb_mux_sizes[i])->mux_graph_head->num_inputs,
 				power_callib_period);
 		power_add_usage(&sb_power_usage, &sub_power_usage);
 
@@ -266,7 +265,6 @@ void power_print_spice_comparison(void) {
 		power_add_usage(&sb_power_usage, &sub_power_usage);
 
 		power_usage_buffer(&sub_power_usage, sb_buffer_sizes[i], 1, 0, TRUE,
-				power_get_mux_arch(sb_mux_sizes[i])->mux_graph_head->num_inputs,
 				power_callib_period);
 		power_add_usage(&sb_power_usage, &sub_power_usage);
 
@@ -289,7 +287,7 @@ static char binary_not(char c) {
 float power_usage_buf_for_callibration(float size) {
 	t_power_usage power_usage;
 
-	power_usage_buffer(&power_usage, size, 0.5, 2.0, FALSE, 0,
+	power_usage_buffer(&power_usage, size, 0.5, 2.0, FALSE,
 			power_callib_period);
 
 	return power_sum_usage(&power_usage);
@@ -298,8 +296,7 @@ float power_usage_buf_for_callibration(float size) {
 float power_usage_buf_levr_for_callibration(float size) {
 	t_power_usage power_usage;
 
-	power_usage_buffer(&power_usage, size, 0.5, 2.0, TRUE, 5,
-			power_callib_period);
+	power_usage_buffer(&power_usage, size, 0.5, 2.0, TRUE, power_callib_period);
 
 	return power_sum_usage(&power_usage);
 }

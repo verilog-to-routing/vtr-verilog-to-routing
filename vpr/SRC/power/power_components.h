@@ -53,14 +53,24 @@ typedef enum {
 	POWER_COMPONENT_CLOCK_BUFFER, /* Buffers in clock network */
 	POWER_COMPONENT_CLOCK_WIRE, /* Wires in clock network */
 
-	POWER_COMPONENT_CLB, /* Logic Blocks, and other hard blocks */
-	POWER_COMPONENT_LOCAL_INTERC_MUXES, /* Local interconnect structures */
-	POWER_COMPONENT_LOCAL_BUFFERS_AND_WIRE, /* Local interconnect wires */
-	POWER_COMPONENT_FF, /* Flip-flops */
-	POWER_COMPONENT_LUT, /* LUTs */
+	POWER_COMPONENT_BLOCKS, /* Logic Blocks, and other hard blocks */
+	POWER_COMPONENT_PRIMITIVES, /* Primitives (LUTs, FF, etc) */
+	POWER_COMPONENT_LOCAL_INTERC, /* Local interconnect structures (muxes) */
+	POWER_COMPONENT_LOCAL_BUF_WIRE, /* Local buffers and wire capacitance */
+	POWER_COMPONENT_BLOCKS_OTHER, /* Power from other estimation methods - not transistor-level */
 
 	POWER_COMPONENT_MAX_NUM
 } e_power_component_type;
+
+/************************* STRUCTS **********************************/
+typedef struct s_power_breakdown t_power_components;
+
+struct s_power_breakdown {
+	t_power_usage * components;
+};
+
+/************************* FUNCTION DECLARATIONS ********************/
+extern t_power_components g_power_by_component;
 
 /************************* FUNCTION DECLARATIONS ********************/
 
@@ -72,20 +82,18 @@ void power_component_add_usage(t_power_usage * power_usage,
 		e_power_component_type component_idx);
 float power_component_get_usage_sum(e_power_component_type component_idx);
 
-void power_component_print_usage(FILE * fp);
-
 void power_usage_ff(t_power_usage * power_usage, float D_prob, float D_dens,
 		float Q_prob, float Q_dens, float clk_prob, float clk_dens,
 		float period);
 void power_usage_lut(t_power_usage * power_usage, int LUT_size,
 		char * SRAM_values, float * input_densities,
 		float * input_probabilities, float period);
-void power_calc_local_interc_mux(t_power_usage * power_usage, t_pb * pb,
+void power_usage_local_interc_mux(t_power_usage * power_usage, t_pb * pb,
 		t_interconnect_pins * interc_pins);
 void power_usage_mux_multilevel(t_power_usage * power_usage,
 		t_mux_arch * mux_arch, float * in_prob, float * in_dens,
 		int selected_input, boolean output_level_restored, float period);
 void power_usage_buffer(t_power_usage * power_usage, float size, float in_prob,
-		float in_dens, boolean level_restored, int input_mux_size, float period);
+		float in_dens, boolean level_restored, float period);
 
 #endif
