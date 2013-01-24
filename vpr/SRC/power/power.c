@@ -234,7 +234,6 @@ static void power_usage_local_buffers_and_wires(t_power_usage * power_usage,
 	int port_idx;
 	int pin_idx;
 	t_power_usage pin_power;
-	int interc_idx;
 
 	power_zero_usage(power_usage);
 

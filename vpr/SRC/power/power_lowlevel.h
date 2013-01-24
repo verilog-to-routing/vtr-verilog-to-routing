@@ -49,7 +49,8 @@ void power_usage_mux_singlelevel_static(t_power_usage * power_usage,
 		float transistor_size, boolean v_out_restored, float period);
 
 void power_usage_MUX2_transmission(t_power_usage * power_usage, float * in_dens,
-		float * in_prob, float sel_dens, float sel_prob, float out_dens, float period);
+		float * in_prob, float sel_dens, float sel_prob, float out_dens,
+		float period);
 
 void power_usage_mux_singlelevel_dynamic(t_power_usage * power_usage,
 		int num_inputs, float out_density, float out_prob, float v_out,
@@ -57,7 +58,8 @@ void power_usage_mux_singlelevel_dynamic(t_power_usage * power_usage,
 		float sel_prob, float transistor_size, float period);
 
 void power_usage_level_restorer(t_power_usage * power_usage,
-		float * dyn_power_in, float in_density, float in_probability, float period);
+		float * dyn_power_in, float in_density, float in_probability,
+		float period);
 
 float power_calc_pb_switching_from_c_internal(t_pb * pb,
 		t_pb_graph_node * pb_graph_node);

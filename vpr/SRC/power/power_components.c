@@ -32,7 +32,6 @@
 
 /************************* STRUCTS **********************************/
 
-
 /************************* GLOBALS **********************************/
 t_power_components g_power_by_component;
 
@@ -72,7 +71,8 @@ void power_components_uninit(void) {
  */
 void power_component_add_usage(t_power_usage * power_usage,
 		e_power_component_type component_idx) {
-	power_add_usage(&g_power_by_component.components[component_idx], power_usage);
+	power_add_usage(&g_power_by_component.components[component_idx],
+			power_usage);
 }
 
 /**
@@ -93,10 +93,6 @@ void power_component_get_usage(t_power_usage * power_usage,
 float power_component_get_usage_sum(e_power_component_type component_idx) {
 	return power_sum_usage(&g_power_by_component.components[component_idx]);
 }
-
-
-
-
 
 /**
  * Calculates power of a D flip-flop

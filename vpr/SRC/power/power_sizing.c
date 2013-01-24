@@ -157,8 +157,8 @@ static double power_count_transistors_mux(t_mux_arch * mux_arch) {
 static void power_mux_node_max_inputs(t_mux_node * mux_node,
 		float * max_inputs) {
 
-	max_inputs[mux_node->level] =
-			std::max(max_inputs[mux_node->level], static_cast<float>(mux_node->num_inputs));
+	max_inputs[mux_node->level] = std::max(max_inputs[mux_node->level],
+			static_cast<float>(mux_node->num_inputs));
 
 	if (mux_node->level != 0) {
 		int child_idx;
@@ -723,7 +723,8 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 		/* Find worst-case between modes*/
 		for (i = 0; i < this_pb_type->num_modes; i++) {
 			fanout = std::max(fanout, fanout_per_mode[i]);
-			wirelength_out = std::max(wirelength_out, wirelength_out_per_mode[i]);
+			wirelength_out = std::max(wirelength_out,
+					wirelength_out_per_mode[i]);
 		}
 
 		free(fanout_per_mode);

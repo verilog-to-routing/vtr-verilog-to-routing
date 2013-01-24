@@ -292,7 +292,7 @@ boolean power_init(char * power_out_filepath,
 boolean power_uninit(void);
 
 /* Top-Level Function */
-e_power_ret_code power_total(float * run_time_s, t_vpr_setup vpr_setup,t_arch * arch,
-		t_det_routing_arch * routing_arch);
+e_power_ret_code power_total(float * run_time_s, t_vpr_setup vpr_setup,
+		t_arch * arch, t_det_routing_arch * routing_arch);
 
 #endif /* __POWER_H__ */
