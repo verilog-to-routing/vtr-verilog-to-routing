@@ -1029,41 +1029,44 @@ conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_li
 	 
 	  if(pb->rr_graph[pin_number].net_num != OPEN) /* If this output pin is used*/
 	    {                                                   /*Then we will use the logical_block netlist method for finding the connectivity and timing information*/
-	      for(k=1 ; k<vpack_net[vpck_net].num_sinks+1 ; k++)/*traversing through all the sink primitives that the source primitive connects to*/
+	      if(vpck_net != OPEN)
 		{
-		  next_block = vpack_net[vpck_net].node_block[k];/*next_blk holds the logical block index for the primitive that the source primitive connects to*/
-		
-		  /*must do these two for loops to find the correct port number based on the t_model data structure*/		  
-		  for(temp=logical_block[next_block].pb->pb_graph_node->pb_type->model->inputs ; temp!=NULL ; temp=temp->next) /*t_model contains architectural port number*/
+		  for(k=1 ; k<vpack_net[vpck_net].num_sinks+1 ; k++)/*traversing through all the sink primitives that the source primitive connects to*/
 		    {
-		      if(temp->index == vpack_net[vpck_net].node_block_port[k] && !temp->is_clock)
+		      next_block = vpack_net[vpck_net].node_block[k];/*next_blk holds the logical block index for the primitive that the source primitive connects to*/
+		      
+		      /*must do these two for loops to find the correct port number based on the t_model data structure*/		  
+		      for(temp=logical_block[next_block].pb->pb_graph_node->pb_type->model->inputs ; temp!=NULL ; temp=temp->next) /*t_model contains architectural port number*/
 			{
-			  strcpy(temp_port_name ,temp->name);/*If this is the right architectural port then copy the port name*/
-			  break;
+			  if(temp->index == vpack_net[vpck_net].node_block_port[k] && !temp->is_clock)
+			    {
+			      strcpy(temp_port_name ,temp->name);/*If this is the right architectural port then copy the port name*/
+			      break;
+			    }
 			}
-		    }
-		  for(h=0 ; h< logical_block[next_block].pb->pb_graph_node->num_input_ports ; h++)/*Now match the copied port name with the right pb_graph port*/
-		    {
-		      if(!strcmp(temp_port_name , logical_block[next_block].pb->pb_graph_node->input_pins[h][0].port->name))
+		      for(h=0 ; h< logical_block[next_block].pb->pb_graph_node->num_input_ports ; h++)/*Now match the copied port name with the right pb_graph port*/
 			{
-			  port_number_out = h;/*correct port number*/
-			  break;
+			  if(!strcmp(temp_port_name , logical_block[next_block].pb->pb_graph_node->input_pins[h][0].port->name))
+			    {
+			      port_number_out = h;/*correct port number*/
+			      break;
+			    }
 			}
-		    }
 
 		 
-		  pin_number_out = vpack_net[vpck_net].node_block_pin[k];  /*The pin number that the output pin connects to*/
-		  
-		  assert(port_number_out != -1);
-		 
-		  pin_count = logical_block[next_block].pb->pb_graph_node->input_pins[port_number_out][pin_number_out].pin_count_in_cluster;/*pin count for the sink pin*/
-		  assert(logical_block[next_block].pb->rr_graph[pin_count].tnode);
-		  
-		  start_delay = pb->rr_graph[pin_number].tnode->T_arr; /*The arrival time of the source pin*/		
-		  end_delay = logical_block[next_block].pb->rr_graph[pin_count].tnode->T_arr;/*The arrival time of the sink pin*/
-		  delay = end_delay - start_delay;   /*The difference of start and end arrival times is the delay for going from the source to sink pin*/		
-		  list=insert_to_linked_list_conn(pb , logical_block[next_block].pb , &pb->pb_graph_node->output_pins[i][j] , &logical_block[next_block].pb->pb_graph_node->input_pins[port_number_out][pin_number_out] , delay , list);/*Insert this sink primitive in the linked list pointer to by "list"*/
-		  
+		      pin_number_out = vpack_net[vpck_net].node_block_pin[k];  /*The pin number that the output pin connects to*/
+		      
+		      assert(port_number_out != -1);
+		      
+		      pin_count = logical_block[next_block].pb->pb_graph_node->input_pins[port_number_out][pin_number_out].pin_count_in_cluster;/*pin count for the sink pin*/
+		      assert(logical_block[next_block].pb->rr_graph[pin_count].tnode);
+		      
+		      start_delay = pb->rr_graph[pin_number].tnode->T_arr; /*The arrival time of the source pin*/		
+		      end_delay = logical_block[next_block].pb->rr_graph[pin_count].tnode->T_arr;/*The arrival time of the sink pin*/
+		      delay = end_delay - start_delay;   /*The difference of start and end arrival times is the delay for going from the source to sink pin*/		
+		      list=insert_to_linked_list_conn(pb , logical_block[next_block].pb , &pb->pb_graph_node->output_pins[i][j] , &logical_block[next_block].pb->pb_graph_node->input_pins[port_number_out][pin_number_out] , delay , list);/*Insert this sink primitive in the linked list pointer to by "list"*/
+		      
+		    }
 		}
 	    }
 	}
