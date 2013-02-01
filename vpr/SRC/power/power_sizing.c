@@ -609,8 +609,10 @@ static void power_size_pin_to_interconnect(t_interconnect * interc,
 		 */
 
 		*fanout = interc->interconnect_power->num_output_ports;
-		*wirelength = ((1 + *fanout) / 2.0) * g_power_arch->local_interc_factor
-				* pb_interc_sidelength + this_interc_sidelength;
+		*wirelength = g_power_arch->local_interc_factor * pb_interc_sidelength
+				+ this_interc_sidelength;
+		//*wirelength = ((1 + *fanout) / 2.0) * g_power_arch->local_interc_factor
+		//		* pb_interc_sidelength + this_interc_sidelength;
 		break;
 	default:
 		assert(0);
@@ -631,14 +633,14 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 	float this_pb_length;
 
 	int fanout;
-	float wirelength_out;
-	float wirelength_in;
+	float wirelength_out = 0;
+	float wirelength_in = 0;
 
 	int fanout_tmp;
 	float wirelength_tmp;
 
-	float this_pb_interc_sidelength;
-	float parent_pb_interc_sidelength;
+	float this_pb_interc_sidelength = 0;
+	float parent_pb_interc_sidelength = 0;
 	boolean top_level_pb;
 
 	t_pb_type * this_pb_type = pin->parent_node->pb_type;
@@ -648,6 +650,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 					pin->parent_node->pb_node_power->transistor_cnt_interc));
 	if (pin->parent_node->parent_pb_graph_node == NULL) {
 		top_level_pb = TRUE;
+		parent_pb_interc_sidelength = 0.;
 	} else {
 		top_level_pb = FALSE;
 		parent_pb_interc_sidelength =
@@ -749,6 +752,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 		}
 
 		/* Loop through all interconnect that this pin drives */
+
 		for (i = 0; i < list_cnt; i++) {
 			power_size_pin_to_interconnect(list[i], parent_pb_interc_sidelength,
 					&fanout_tmp, &wirelength_tmp);
