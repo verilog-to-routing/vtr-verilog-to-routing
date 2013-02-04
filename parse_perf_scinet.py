@@ -7,11 +7,12 @@ import os
 import sys
 import re
 import csv
+import fnmatch
 from collections import OrderedDict
 from run_benchmarks_scinet import BenchmarkInfo
 
-actions = ['quartus_synthesis', 'vpr_pack', 'vpr_place', 'vpr_route300', 'vpr_route500']
-#actions = ['quartus_synthesis', 'quartus_fit']
+#actions = ['quartus_synthesis', 'vpr_pack', 'vpr_place', 'vpr_route300', 'vpr_route500']
+actions = ['quartus_synthesis', 'quartus_fit']
 #actions = ['vpr_route']
 
 class BenchmarkResults(object):
@@ -29,7 +30,8 @@ class BenchmarkResults(object):
                           'Pack Success', 'Pack Time (s)', 'Pack Memory (MB)', 
                           'Place Success', 'Place Time (s)', 'Place Memory (MB)', 
                           'Route300 Success', 'Route300 Time (s)', 'Route300 Memory (MB)', 
-                          'Route500 Success', 'Route500 Time (s)', 'Route500 Memory (MB)')
+                          'Route500 Success', 'Route500 Time (s)', 'Route500 Memory (MB)',
+                          'Misc Time (s)', 'Total Time [VPR] (s)', 'Peak Memory [VPR] (MB)')
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             headers = dict( (n,n) for n in fieldnames)
             writer.writerow(headers)
@@ -38,7 +40,7 @@ class BenchmarkResults(object):
                     self.benchmarks[benchmark_name].write_csv_row(writer, fieldnames, benchmark_size)
                 except KeyError:
                     #No results for this benchmark, add a place holder
-                    writer.writerow({'Name': benchmark_name, 'Total Blocks': benchmark_size})
+                    writer.writerow({'Name': benchmark_name})
 
     def print_summary(self):
         print "#### SUMARY ####"
@@ -56,7 +58,7 @@ class BenchmarkResult(object):
         self.action_results[action_result.name] = action_result
 
     def write_csv_row(self, writer, fieldnames, size):
-        results = {'Name': self.name, 'Total Blocks': size}
+        results = {'Name': self.name}
         for action_name, action_result in self.action_results.iteritems():
             results = action_result.add_csv_results(results)
         writer.writerow(results)
@@ -139,9 +141,7 @@ def main():
 
     benchmarks = []
     pwd = os.getcwd()
-    for job_dir in os.listdir(pwd):
-        if job_dir == 'results.csv':
-            continue
+    for job_dir in fnmatch.filter(os.listdir(pwd), 'output*'):
 
         for file_name in os.listdir(os.path.join(job_dir, 'output')):
             if file_name == 'top.log':
