@@ -601,8 +601,10 @@ sub system_with_timeout {
 		# Redirect STDOUT for vpr
 		chdir $_[3];
 
+		
 		open( STDOUT, "> $_[1]" );
-		open( STDERR, "> $_[1]" );
+		open( STDERR, ">&STDOUT" );
+		
 
 		# Copy the args and cut out first four
 		my @VPRARGS = @_;
