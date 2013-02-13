@@ -309,6 +309,7 @@ sub run_single_test {
 
 	print "\nRunning regression test... \n";
 	chdir("$vtr_flow_path");
+	print "scripts/run_vtr_task.pl $run_params \n";
 	system("scripts/run_vtr_task.pl $run_params \n");
 	chdir("..");
 }
@@ -332,6 +333,7 @@ sub parse_single_test {
 		}
 	}
 	chdir("$vtr_flow_path");
+	print "scripts/parse_vtr_task.pl $parse_params \n";
 	system("scripts/parse_vtr_task.pl $parse_params \n");
 	chdir("..");
 }
