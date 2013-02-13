@@ -175,11 +175,11 @@ sub setup_single_test {
 	# Task list exists. Execute script with list instead.
 	if ( -e "$test_dir/task_list.txt" ) {
 		$run_params = "-l $test_dir/task_list.txt";
-		$parse_params = $parse_params . "-l $test_dir/task_list.txt ";
+		$parse_params = "-l $test_dir/task_list.txt ";
 	}
 	else {
 		$run_params = "$test_dir";
-		$parse_params = $parse_params . "$test_dir ";
+		$parse_params = "$test_dir ";
 	}
 }
 
