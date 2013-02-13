@@ -55,7 +55,6 @@ my $test_dir;
 my $test_name;
 my $run_params = "";
 my $parse_params = "";
-my $revision = "";
 # Override variables
 my $first = 1;
 my $parse_only = 0;
@@ -67,11 +66,6 @@ my $can_quit = 0;
 
 # Parse Input Arguments
 while ( $token = shift(@ARGV) ) {
-
-	if ( $token eq "-revision" ) {
-		$revision = shift(@ARGV);
-		$parse_params = "-revision $revision ";
-	}
 	elsif ( $token eq "-parse") {
 		$parse_only = 1;
 	}
