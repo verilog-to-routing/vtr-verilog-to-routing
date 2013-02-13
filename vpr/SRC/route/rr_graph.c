@@ -440,11 +440,11 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 		seg_details = NULL;
 	}
 	if (Fc_in) {
-		free(Fc_in);
+		free_matrix(Fc_in,0, L_num_types, 0, sizeof(int));
 		Fc_in = NULL;
 	}
 	if (Fc_out) {
-		free(Fc_out);
+		free_matrix(Fc_out,0, L_num_types, 0, sizeof(int));
 		Fc_out = NULL;
 	}
 	if (perturb_ipins) {
@@ -595,7 +595,6 @@ alloc_and_load_actual_fc(INP int L_num_types, INP t_type_ptr types,
 
 	Result = (int **) alloc_matrix(0, L_num_types, 0, max_pins, sizeof(int));
 
-	Result[0] = NULL; /* Skip "<EMPTY>" */
 	for (i = 1; i < L_num_types; ++i) { 
 		float *Fc = (float *) my_malloc(sizeof(float) * types[i].num_pins); /* [0..num_pins-1] */ 
 		for (j = 0; j < types[i].num_pins; ++j) {
