@@ -571,12 +571,14 @@ void power_usage_mux_multilevel(t_power_usage * power_usage,
 
 	free(selector_values);
 
+
 	callibration =
 			g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_MUX];
 	if (callibration->is_done_callibration()) {
 		scale_factor = callibration->scale_factor(mux_arch->num_inputs);
 		power_scale_usage(power_usage, scale_factor);
 	}
+
 }
 
 /**

@@ -1169,7 +1169,8 @@ boolean power_init(char * power_out_filepath,
 							node->switches[edge_idx];
 				} else {
 					assert(
-							rr_node_power[node->edges[edge_idx]].driver_switch_type == node->switches[edge_idx]);
+							rr_node_power[node->edges[edge_idx]].driver_switch_type
+									== node->switches[edge_idx]);
 				}
 			}
 		}
@@ -1680,47 +1681,37 @@ static void power_print_breakdown_component(FILE * fp, char * name,
 	case (POWER_COMPONENT_TOTAL):
 		power_print_breakdown_component(fp, "Routing", POWER_COMPONENT_ROUTING,
 				indent_level + 1);
-		power_print_breakdown_component(fp, "Clock", POWER_COMPONENT_CLOCK,
-				indent_level + 1);
 		power_print_breakdown_component(fp, "PB Types", POWER_COMPONENT_BLOCKS,
 				indent_level + 1);
+		power_print_breakdown_component(fp, "Clock", POWER_COMPONENT_CLOCK,
+						indent_level + 1);
 		break;
 	case (POWER_COMPONENT_ROUTING):
-		power_print_breakdown_component(fp, "Switchbox",
+		power_print_breakdown_component(fp, "Switch Box",
 				POWER_COMPONENT_ROUTE_SB, indent_level + 1);
-		power_print_breakdown_component(fp, "Connectionbox",
+		power_print_breakdown_component(fp, "Connection Box",
 				POWER_COMPONENT_ROUTE_CB, indent_level + 1);
-		power_print_breakdown_component(fp, "GlobalWires",
+		power_print_breakdown_component(fp, "Global Wires",
 				POWER_COMPONENT_ROUTE_GLB_WIRE, indent_level + 1);
 		break;
 	case (POWER_COMPONENT_CLOCK):
-		power_print_breakdown_component(fp, "ClockBuffer",
-				POWER_COMPONENT_CLOCK_BUFFER, indent_level + 1);
-		power_print_breakdown_component(fp, "ClockWire",
-				POWER_COMPONENT_CLOCK_WIRE, indent_level + 1);
+		/*
+		 power_print_breakdown_component(fp, "Clock Buffers",
+		 POWER_COMPONENT_CLOCK_BUFFER, indent_level + 1);
+		 power_print_breakdown_component(fp, "Clock Wires",
+		 POWER_COMPONENT_CLOCK_WIRE, indent_level + 1);
+		 */
 		break;
 	case (POWER_COMPONENT_BLOCKS):
 		power_print_breakdown_component(fp, "Primitives",
 				POWER_COMPONENT_PRIMITIVES, indent_level + 1);
 		power_print_breakdown_component(fp, "Interc Structures",
 				POWER_COMPONENT_LOCAL_INTERC, indent_level + 1);
-		power_print_breakdown_component(fp, "Buffers and Wire",
+		power_print_breakdown_component(fp, "Buffers and Wires",
 				POWER_COMPONENT_LOCAL_BUF_WIRE, indent_level + 1);
 		power_print_breakdown_component(fp, "Other Estimation Methods",
 				POWER_COMPONENT_BLOCKS_OTHER, indent_level + 1);
 		break;
-
-		/*
-		 case (POWER_COMPONENT_LUT):
-
-		 power_component_print_usage_rec(fp, "Driver",
-		 POWER_COMPONENT_LUT_DRIVER, type, indent_level + 1);
-		 power_component_print_usage_rec(fp, "Mux", POWER_COMPONENT_LUT_MUX,
-		 type, indent_level + 1);
-		 power_component_print_usage_rec(fp, "Restorer",
-		 POWER_COMPONENT_LUT_BUFFERS, type, indent_level + 1);
-
-		 break; */
 	default:
 		break;
 	}

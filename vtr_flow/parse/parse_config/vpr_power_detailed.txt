@@ -14,25 +14,32 @@ num_outputs;vpr.out;Netlist output pins:\s*(\d+)
 unabsorb_ff;vpr.out;(\d+) FFs in input netlist not absorbable
 num_memories;vpr.out;Netlist memory blocks:\s*(\d+)
 num_mult;vpr.out;Netlist mult_36 blocks:\s*(\d+)
+
 total_power;*.power;^Total\s+(.*?)\s+
-routing_power_perc;*.power;^\s+Routing\s+\S+\s+(.*?)\s+
-clock_power_perc;*.power;^\s+Clock\s+\S+\s+(.*?)\s+
-tile_power_perc;*.power;^\s+CLBs\s+\S+\s+(.*?)\s+
-power_dyn_perc;*.power;^Total\s+\S+\s+\S+\s+\S+\s+(.*?)\s+
+routing_power;*.power;^\s+Routing\s+(.*?)\s+
+pb_power;*.power;^\s+PB Types\s+(.*?)\s+
+clock_power;*.power;^\s+Clock\s+(.*?)\s+
+
+total_dyn;*.power;^Total\s+\S+\s+\S+\s+(.*?)\s+
+routing_dyn;*.power;^\s+Routing\s+\S+\s+\S+\s+(.*?)\s+
+pb_dyn;*.power;^\s+PB Types\s+\S+\s+\S+\s+(.*?)\s+
+clock_dyn;*.power;^\s+Clock\s+\S+\s+\S+\s+(.*?)\s+
+
+
+sb_power;*.power;^\s+Switch Box\s+(.*?)\s+
+cb_power;*.power;^\s+Connection Box\s+(.*?)\s+
+glb_wire_power;*.power;^\s+Global Wires\s+(.*?)\s+
+
+
+primitives_power;*.power;^\s+Primitives\s+(.*?)\s+
+interc_muxes_power;*.power;^\s+Interc Structures\s+(.*?)\s+
+local_buf_wire_power;*.power;^\s+Buffers and Wires\s+(.*?)\s+
+other_est_methods_power;*.power;^\s+Other Estimation Methods\s+(.*?)\s+
+
+sb_buffer_size;*.power;Average SB Buffer Size: (.*)
 clb_array_size;vpr.out;The circuit will be mapped into a (\d+) x \d+ array of clbs.
 chan_width;vpr.crit_path.out;--route_chan_width (\d+)
-sb_power_perc;*.power;^\s+Switchbox\s+\S+\s+\S+\s+(.*?)\s+
-cb_power_perc;*.power;^\s+Connectionbox\s+\S+\s+\S+\s+(.*?)\s+
-glb_wire_power_perc;*.power;^\s+GlobalWires\s+\S+\s+\S+\s+(.*?)\s+
-clkbuffer_power_perc;*.power;^\s+ClockBuffer\s+\S+\s+\S+\s+(.*?)\s+
-clkwire_power_perc;*.power;^\s+ClockWire\s+\S+\s+\S+\s+(.*?)\s+
-interc_power_perc;*.power;^\s+Interconnect\s+\S+\s+\S+\s+(.*?)\s+
-local_wire_power_perc;*.power;^\s+LocalWire\s+\S+\s+\S+\s+(.*?)\s+
-ff_power_perc;*.power;^\s+FF\s+\S+\s+\S+\s+(.*?)\s+
-lut_power_perc;*.power;^\s+LUT\s+\S+\s+\S+\s+(.*?)\s+
-route_dyn_perc;*.power;<Routing.*?P_dyn="(.*?)"
-tile_dyn_perc;*.power;<Tiles.*?P_dyn="(.*?)"
-clock_dyn_perc;*.power;<Clock.*?P_dyn="(.*?)"
-sb_buffer_size;*.power;Average SB Buffer Size: (.*)
+
+
 error;output.txt;error=(.*)
 

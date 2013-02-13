@@ -69,6 +69,7 @@ float PowerSpicedComponent::scale_factor(float size) {
 	perc_upper = (size - result->size) / ((result + 1)->size - result->size);
 
 	return perc_upper * (result + 1)->factor + (1 - perc_upper) * result->factor;
+
 }
 
 int compare_callib_pair(const void * a, const void * b) {
@@ -103,7 +104,7 @@ void PowerSpicedComponent::callibrate(void) {
 
 	// Set min-value placeholder
 	size_factors[0].size = 0.;
-	size_factors[1].factor = size_factors[1].factor;
+	size_factors[0].factor = size_factors[1].factor;
 
 	// Set max-value placeholder
 	size_factors[num_entries - 1].size = FLT_MAX;

@@ -1921,7 +1921,7 @@ static void read_activity(char * activity_file) {
 		word1 = strtok(buf, TOKENS);
 		word2 = strtok(NULL, TOKENS);
 		word3 = strtok(NULL, TOKENS);
-		printf("word1:%s|word2:%s|word3:%s\n", word1, word2, word3);
+		//printf("word1:%s|word2:%s|word3:%s\n", word1, word2, word3);
 		fail |= add_activity_to_net(word1, atof(word2), atof(word3));
 
 		ptr = my_fgets(buf, BUFSIZE, act_file_hdl);
