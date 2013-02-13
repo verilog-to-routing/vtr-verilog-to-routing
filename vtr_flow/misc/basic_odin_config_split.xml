@@ -15,6 +15,7 @@
 	<optimizations>
 		<multiply size="3" fixed="1" fracture="0" padding="-1"/>
 		<memory split_memory_width="1" split_memory_depth="PPP"/>
+    <adder size="AAA"/>
 	</optimizations>
 	<debug_outputs>
 		<!-- Various debug options -->
