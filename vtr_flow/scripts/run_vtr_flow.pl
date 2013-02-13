@@ -79,6 +79,7 @@ my $tech_file               = "";
 my $do_power                = 0;
 my $check_equivalent = "off";
 my $seed					= 1;
+my $min_hard_adder_size		= 1;
 
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-sdc_file" ) {
@@ -122,6 +123,9 @@ while ( $token = shift(@ARGV) ) {
 	}
 	elsif ( $token eq "-seed" ) {
 		$seed = shift(@ARGV);
+	}
+	elsif ( $token eq "-min_hard_adder_size" ) {
+		$min_hard_adder_size = shift(@ARGV);
 	}
 	else {
 		die "Error: Invalid argument ($token)\n";
@@ -325,6 +329,7 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 	file_find_and_replace( $odin_config_file_path, "ZZZ",
 		$odin_output_file_name );
 	file_find_and_replace( $odin_config_file_path, "PPP", $mem_size );
+	file_find_and_replace( $odin_config_file_path, "AAA", $min_hard_adder_size );
 
 	if ( !$error_code ) {
 		$q =
