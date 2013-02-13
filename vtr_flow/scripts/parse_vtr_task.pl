@@ -17,6 +17,8 @@
 #					most recent execution.
 #   -calc_geomean:  Used for the purposes of computing quality of results geomeans 
 # 					of the most recent execution.
+#
+# Authors: Jason Luu and Jeff Goeders
 ###################################################################################
 
 use strict;
