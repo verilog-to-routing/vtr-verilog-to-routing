@@ -14,25 +14,25 @@ sdc_dir=tasks/regression_tests/sdc
 
 # Add circuits to list to sweep
 circuit_list_add=alu4.pre-vpr.blif
-circuit_list_add=apex2.pre-vpr.blif
-circuit_list_add=apex4.pre-vpr.blif
-circuit_list_add=bigkey.pre-vpr.blif
-circuit_list_add=clma.pre-vpr.blif
-circuit_list_add=des.pre-vpr.blif
-circuit_list_add=diffeq.pre-vpr.blif
-circuit_list_add=dsip.pre-vpr.blif
-circuit_list_add=elliptic.pre-vpr.blif
-circuit_list_add=ex1010.pre-vpr.blif
-circuit_list_add=ex5p.pre-vpr.blif
-circuit_list_add=frisc.pre-vpr.blif
-circuit_list_add=misex3.pre-vpr.blif
-circuit_list_add=pdc.pre-vpr.blif
-circuit_list_add=s298.pre-vpr.blif
-circuit_list_add=s38417.pre-vpr.blif
-circuit_list_add=s38584.1.pre-vpr.blif
-circuit_list_add=seq.pre-vpr.blif
-circuit_list_add=spla.pre-vpr.blif
-circuit_list_add=tseng.pre-vpr.blif
+#circuit_list_add=apex2.pre-vpr.blif
+#circuit_list_add=apex4.pre-vpr.blif
+#circuit_list_add=bigkey.pre-vpr.blif
+#circuit_list_add=clma.pre-vpr.blif
+#circuit_list_add=des.pre-vpr.blif
+#circuit_list_add=diffeq.pre-vpr.blif
+#circuit_list_add=dsip.pre-vpr.blif
+#circuit_list_add=elliptic.pre-vpr.blif
+#circuit_list_add=ex1010.pre-vpr.blif
+#circuit_list_add=ex5p.pre-vpr.blif
+#circuit_list_add=frisc.pre-vpr.blif
+#circuit_list_add=misex3.pre-vpr.blif
+#circuit_list_add=pdc.pre-vpr.blif
+#circuit_list_add=s298.pre-vpr.blif
+#circuit_list_add=s38417.pre-vpr.blif
+#circuit_list_add=s38584.1.pre-vpr.blif
+#circuit_list_add=seq.pre-vpr.blif
+#circuit_list_add=spla.pre-vpr.blif
+#circuit_list_add=tseng.pre-vpr.blif
 
 
 # Add architectures to list to sweep
