@@ -432,6 +432,13 @@ static void free_pb_graph(INOUTP t_pb_graph_node *pb_graph_node) {
 		}
 		free(pb_graph_node->clock_pins[i]);
 	}
+
+
+	for(i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
+		free(pb_graph_node->interconnect_pins[i]);
+	}
+	free(pb_graph_node->interconnect_pins);
+	
 	free(pb_graph_node->input_pins);
 	free(pb_graph_node->output_pins);
 	free(pb_graph_node->clock_pins);

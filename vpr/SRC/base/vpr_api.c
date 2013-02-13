@@ -528,6 +528,13 @@ void free_arch(t_arch* Arch) {
 		}
 	}
 
+	for (i = 0; i < Arch->num_directs; i++) {
+		free(Arch->Directs[i].name);
+		free(Arch->Directs[i].from_pin);
+		free(Arch->Directs[i].to_pin);
+	}
+	free(Arch->Directs);
+
 	free(Arch->model_library[0].name);
 	free(Arch->model_library[0].outputs->name);
 	free(Arch->model_library[0].outputs);
@@ -554,12 +561,16 @@ void free_arch(t_arch* Arch) {
 void free_options(t_options *options) {
 	free(options->ArchFile);
 	free(options->CircuitName);
+	if (options->ActFile)
+		free(options->ActFile);
 	if (options->BlifFile)
 		free(options->BlifFile);
 	if (options->NetFile)
 		free(options->NetFile);
 	if (options->PlaceFile)
 		free(options->PlaceFile);
+	if (options->PowerFile)
+		free(options->PowerFile);
 	if (options->RouteFile)
 		free(options->RouteFile);
 	if (options->out_file_prefix)
@@ -604,7 +615,9 @@ static void free_complex_block_types(void) {
 		free(type_descriptors[i].is_global_pin);
 		free(type_descriptors[i].pin_class);
 		free(type_descriptors[i].grid_loc_def);
-
+		free(type_descriptors[i].is_Fc_frac);
+		free(type_descriptors[i].is_Fc_full_flex);
+		free(type_descriptors[i].Fc);
 		free_pb_type(type_descriptors[i].pb_type);
 		free(type_descriptors[i].pb_type);
 	}
@@ -653,9 +666,13 @@ static void free_pb_type(t_pb_type *pb_type) {
 				free(pb_type->modes[i].interconnect[j].annotations[k].value);
 			}
 			free(pb_type->modes[i].interconnect[j].annotations);
+			if(pb_type->modes[i].interconnect[j].interconnect_power)
+				free(pb_type->modes[i].interconnect[j].interconnect_power);
 		}
 		if (pb_type->modes[i].interconnect)
 			free(pb_type->modes[i].interconnect);
+		if (pb_type->modes[i].mode_power)
+			free(pb_type->modes[i].mode_power);
 	}
 	if (pb_type->modes)
 		free(pb_type->modes);
@@ -680,10 +697,17 @@ static void free_pb_type(t_pb_type *pb_type) {
 		free(pb_type->annotations);
 	}
 
+	if(pb_type->pb_type_power) {
+		free(pb_type->pb_type_power);
+	}
+
 	for (i = 0; i < pb_type->num_ports; i++) {
 		free(pb_type->ports[i].name);
 		if (pb_type->ports[i].port_class) {
 			free(pb_type->ports[i].port_class);
+		}
+		if (pb_type->ports[i].port_power) {
+			free(pb_type->ports[i].port_power);
 		}
 	}
 	free(pb_type->ports);
