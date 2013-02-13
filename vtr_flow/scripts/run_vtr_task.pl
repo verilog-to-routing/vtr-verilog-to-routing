@@ -19,6 +19,9 @@
 #
 # Note: At least one task must be specified, either directly as a parameter or
 #		through the -l option.
+#
+# Authors: Jason Luu and Jeff Goeders
+# 
 ###################################################################################
 
 use strict;
