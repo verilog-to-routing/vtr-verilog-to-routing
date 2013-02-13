@@ -66,7 +66,7 @@ my $can_quit = 0;
 
 # Parse Input Arguments
 while ( $token = shift(@ARGV) ) {
-	elsif ( $token eq "-parse") {
+	if ( $token eq "-parse") {
 		$parse_only = 1;
 	}
 	elsif ( $token eq "-create_golden" ) {
