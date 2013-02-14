@@ -2143,10 +2143,6 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 		mem_pb_type->modes[0].interconnect[i].parent_mode_index = 0;
 		mem_pb_type->modes[0].interconnect[i].parent_mode =
 				&mem_pb_type->modes[0];
-				/* Allocate interconnect power structures */
-		mem_pb_type->modes[0].interconnect[i].interconnect_power =
-					(t_interconnect_power*) my_calloc(1,
-							sizeof(t_interconnect_power));
 	}
 
 	/* Process interconnect */
@@ -2155,6 +2151,11 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 		mem_pb_type->modes[0].interconnect[i_inter].type = DIRECT_INTERC;
 		input_port_name = mem_pb_type->ports[i].name;
 		output_port_name = mem_pb_type->ports[i].name;
+
+		/* Allocate interconnect power structures */
+		mem_pb_type->modes[0].interconnect[i_inter].interconnect_power =
+					(t_interconnect_power*) my_calloc(1,
+							sizeof(t_interconnect_power));
 
 		if (mem_pb_type->ports[i].type == IN_PORT) {
 			input_name = mem_pb_type->name;
