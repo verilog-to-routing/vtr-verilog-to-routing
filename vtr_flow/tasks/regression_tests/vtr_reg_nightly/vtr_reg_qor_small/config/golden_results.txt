@@ -1,12 +1,12 @@
 arch	circuit	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error
-k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	bgm.v	success	110	27.96	1565.59	1549.17	2191.37	59.74	36236	35751	21312	2879	257	32	0	11	
-k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	blob_merge.v	success	88	15.9069	352.7	68.95	532.76	6.63	6787	6887	3473	552	36	100	0	0	
-k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	boundtop.v	success	56	7.69482	248.77	33.45	33.16	1.39	4895	5087	2345	255	275	192	1	0	
-k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	ch_intrinsics.v	success	54	3.44001	22.22	3.62	1.88	0.16	753	883	472	41	99	130	1	0	
-k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	diffeq1.v	success	60	19.0949	17.61	4.83	18.38	1.05	952	889	732	39	162	96	0	5	
-k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	diffeq2.v	success	54	16.1731	96.07	2.6	17.26	1.09	603	539	450	21	66	96	0	5	
-k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	mkDelayWorker32B.v	success	86	7.90385	504.76	101.81	2891.85	27.13	9917	10470	5628	496	511	553	41	0	
-k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	mkSMAdapter4B.v	success	66	7.72005	180.85	22.86	65.01	1.65	3289	3494	1823	182	195	205	5	0	
-k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	raygentop.v	success	72	6.37828	336.27	26.88	23.91	2.06	4023	4139	2172	185	239	305	1	7	
-k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	sha.v	success	58	16.5339	341.11	15.7	45.06	1.39	3161	3197	1409	209	38	36	0	0	
-k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	stereovision0.v	success	62	4.47522	2355.18	167.91	300.56	7.8	25024	25221	8905	1128	157	197	0	0	
+k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	bgm.v	success	130	18.3254	172.62	1829.15	9185.77	73.97	38531	38046	21384	2964	257	32	0	11	
+k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	blob_merge.v	success	74	7.74493	15.91	62.77	247.69	5	6790	6890	3067	544	36	100	0	0	
+k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	boundtop.v	success	64	5.03758	10.16	35.38	17.25	1.86	5032	5224	2215	234	275	192	1	0	
+k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	ch_intrinsics.v	success	48	2.69311	0.66	3.5	1.78	0.17	765	895	414	37	99	130	1	0	
+k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	diffeq1.v	success	58	13.0437	0.63	4.91	14.47	1.02	1004	941	705	37	162	96	0	5	
+k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	diffeq2.v	success	62	10.7883	0.48	2.97	19.31	1.08	649	585	466	26	66	96	0	5	
+k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	mkDelayWorker32B.v	success	84	6.16276	19.32	100.04	424.22	31.62	9933	10486	5274	450	511	553	43	0	
+k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	mkSMAdapter4B.v	success	60	5.23236	7.41	20.51	47.78	1.58	3308	3513	1554	166	195	205	5	0	
+k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	raygentop.v	success	68	3.96198	8.44	26.01	22.75	2.21	4037	4153	1913	174	239	305	1	7	
+k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	sha.v	success	50	10.0188	11.47	16.73	22.82	1.21	3226	3262	1351	209	38	36	0	0	
+k6_N10_memDepth16384_memData64_40nm_timing_smart_molecule.xml	stereovision0.v	success	62	3.33184	47.35	149.01	157.37	5.65	25022	25219	8300	908	157	197	0	0	
