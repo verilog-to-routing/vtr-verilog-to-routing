@@ -29,7 +29,7 @@
 #include "power.h"
 
 /************************* FUNCTION DECLARATIONS ********************/
-void power_tech_load_xml_file(char * cmos_tech_behavior_filepath);
+void power_tech_init(char * cmos_tech_behavior_filepath);
 boolean power_find_transistor_info(t_transistor_size_inf ** lower,
 		t_transistor_size_inf ** upper, e_tx_type type, float size);
 void power_find_mux_volt_inf(t_power_mux_volt_pair ** lower,

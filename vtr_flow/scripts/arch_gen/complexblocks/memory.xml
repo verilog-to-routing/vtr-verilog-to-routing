@@ -241,6 +241,7 @@
 	</gridlocations>
 	
 	<power method="pin-toggle">
+		<port name="clk" energy_per_toggle="0e0" scaled_by_static_prob="we1"/>
 		<static_power power_per_instance="0.0"/>
 	</power>
 </pb_type>

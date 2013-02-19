@@ -397,8 +397,12 @@ struct s_pb_graph_pin {
 typedef struct s_pb_graph_pin t_pb_graph_pin;
 
 struct s_pb_graph_pin_power {
+	/* Transistor-level Power Properties */
 	float C_wire;
 	float buffer_size;
+
+	/* Pin-Toggle Power Properties */
+	t_pb_graph_pin * scaled_by_pin;
 };
 
 typedef enum {
@@ -418,8 +422,9 @@ typedef enum {
 } e_power_buffer_type;
 
 struct s_port_power {
-	float energy_per_toggle;
+	/* Transistor-Level Power Properties */
 
+	// Wire
 	e_power_wire_type wire_type;
 	union {
 		float C;
@@ -427,8 +432,16 @@ struct s_port_power {
 		float relative_length;
 	} wire;
 
+	// Buffer
 	e_power_buffer_type buffer_type;
 	float buffer_size;
+
+	/* Pin-Toggle Power Properties */
+	boolean pin_toggle_initialized;
+	float energy_per_toggle;
+	t_port * scaled_by_port;
+	int scaled_by_port_pin_idx;
+	boolean reverse_scaled;  /* Scale by (1-prob) */
 };
 
 struct s_pb_graph_node;

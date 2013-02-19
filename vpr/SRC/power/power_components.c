@@ -127,7 +127,7 @@ void power_usage_ff(t_power_usage * power_usage, float D_prob, float D_dens,
 	mux_in_prob[0] = D_prob;
 	mux_in_prob[1] = D_prob;
 	power_usage_MUX2_transmission(&sub_power_usage, mux_in_dens, mux_in_prob,
-			clk_dens, clk_prob, (1 - clk_prob) * D_dens, period);
+			clk_dens, (1 - clk_prob) * D_dens, period);
 	power_add_usage(power_usage, &sub_power_usage);
 
 	power_usage_inverter(&sub_power_usage, (1 - clk_prob) * D_dens, D_prob, 1.0,
@@ -144,7 +144,7 @@ void power_usage_ff(t_power_usage * power_usage, float D_prob, float D_dens,
 	mux_in_prob[0] = (1 - Q_prob);
 	mux_in_prob[1] = (1 - D_prob);
 	power_usage_MUX2_transmission(&sub_power_usage, mux_in_dens, mux_in_prob,
-			clk_dens, clk_prob, Q_dens, period);
+			clk_dens, Q_dens, period);
 	power_add_usage(power_usage, &sub_power_usage);
 
 	power_usage_inverter(&sub_power_usage, Q_dens, 1 - Q_prob, 1.0, period);
@@ -368,7 +368,6 @@ void power_usage_lut(t_power_usage * power_usage, int lut_size,
 			/* Calculate power of the 2-mux */
 			power_usage_mux_singlelevel_dynamic(&sub_power, 2,
 					internal_dens[level_idx + 1][MUX_idx],
-					internal_prob[level_idx + 1][MUX_idx],
 					internal_v[level_idx + 1][MUX_idx],
 					&internal_prob[level_idx][MUX_idx * 2],
 					&internal_dens[level_idx][MUX_idx * 2],
@@ -570,7 +569,6 @@ void power_usage_mux_multilevel(t_power_usage * power_usage,
 			in_dens, output_level_restored, period);
 
 	free(selector_values);
-
 
 	callibration =
 			g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_MUX];

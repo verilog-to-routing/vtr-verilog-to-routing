@@ -392,8 +392,7 @@ void power_usage_wire(t_power_usage * power_usage, float capacitance,
  * - out_dens: Transition density of the output
  */
 void power_usage_MUX2_transmission(t_power_usage * power_usage, float * in_dens,
-		float * in_prob, float sel_dens, float sel_prob, float out_dens,
-		float period) {
+		float * in_prob, float sel_dens, float out_dens, float period) {
 
 	power_zero_usage(power_usage);
 
@@ -575,9 +574,9 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
  * - tranisistor_size: NMOS transistor sizes (must be 1.0)
  */
 void power_usage_mux_singlelevel_dynamic(t_power_usage * power_usage,
-		int num_inputs, float out_density, float out_prob, float v_out,
-		float * in_prob, float * in_dens, float * v_in, float sel_dens,
-		float sel_prob, float transistor_size, float period) {
+		int num_inputs, float out_density, float v_out, float * in_prob,
+		float * in_dens, float * v_in, float sel_dens, float sel_prob,
+		float transistor_size, float period) {
 
 	assert(num_inputs == 2);
 	assert(transistor_size = 1.0);

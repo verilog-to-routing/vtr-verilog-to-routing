@@ -225,7 +225,7 @@ static double power_count_transistors_interc(t_interconnect * interc) {
 	return transistor_cnt;
 }
 
-void power_init_sizing(t_arch * arch) {
+void power_sizing_init(t_arch * arch) {
 	float transistors_per_tile;
 
 	// Determines physical size of different PBs

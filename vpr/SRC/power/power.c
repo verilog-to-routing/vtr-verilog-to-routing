@@ -90,7 +90,7 @@ static void power_usage_clock_single(t_power_usage * power_usage,
 
 /* Init/Uninit */
 static void dealloc_mux_graph(t_mux_node * node);
-static void dealloc_mux_graph_recursive(t_mux_node * node);
+static void dealloc_mux_graph_rec(t_mux_node * node);
 
 /* Printing */
 static void power_print_breakdown_pb_rec(FILE * fp, t_pb_type * pb_type,
@@ -107,6 +107,7 @@ static void power_print_breakdown_pb(FILE * fp);
 
 static char * power_estimation_method_name(
 		e_power_estimation_method power_method);
+
 /************************* FUNCTION DEFINITIONS *********************/
 /**
  *  This function calculates the power of primitives (ff, lut, etc),
@@ -199,11 +200,23 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 
 void power_usage_local_pin_toggle(t_power_usage * power_usage, t_pb * pb,
 		t_pb_graph_pin * pin) {
+	float scale_factor;
+
 	power_zero_usage(power_usage);
 
+	if (pin->pin_power->scaled_by_pin) {
+		scale_factor = pin_prob(pb, pin->pin_power->scaled_by_pin);
+		if (pin->port->port_power->reverse_scaled) {
+			scale_factor = 1 - scale_factor;
+		}
+	} else {
+		scale_factor = 1.0;
+	}
+
 	/* Divide by 2 because density is switches/cycle, but a toggle is 2 switches */
-	power_usage->dynamic += pin->port->port_power->energy_per_toggle
-			* pin_dens(pb, pin) / 2.0;
+	power_usage->dynamic += scale_factor
+			* pin->port->port_power->energy_per_toggle * pin_dens(pb, pin)
+			/ 2.0;
 }
 
 void power_usage_local_pin_buffer_and_wire(t_power_usage * power_usage,
@@ -686,17 +699,17 @@ static void power_usage_clock_single(t_power_usage * power_usage,
 
 /* Frees a multiplexer graph */
 static void dealloc_mux_graph(t_mux_node * node) {
-	dealloc_mux_graph_recursive(node);
+	dealloc_mux_graph_rec(node);
 	free(node);
 }
 
-static void dealloc_mux_graph_recursive(t_mux_node * node) {
+static void dealloc_mux_graph_rec(t_mux_node * node) {
 	int child_idx;
 
 	/* Dealloc Children */
 	if (node->level != 0) {
 		for (child_idx = 0; child_idx < node->num_inputs; child_idx++) {
-			dealloc_mux_graph_recursive(&node->children[child_idx]);
+			dealloc_mux_graph_rec(&node->children[child_idx]);
 		}
 		free(node->children);
 	}
@@ -968,74 +981,121 @@ static void power_usage_routing(t_power_usage * power_usage,
 	}
 }
 
-void power_pb_pin_alloc_rec(t_pb_graph_node * pb_node) {
-	int mode_idx;
-	int type_idx;
-	int pb_idx;
+void power_alloc_and_init_pb_pin(t_pb_graph_pin * pin) {
+	int port_idx;
+	t_port * port_to_find;
+	t_pb_graph_node * node = pin->parent_node;
+	boolean found;
+
+	pin->pin_power = (t_pb_graph_pin_power*) malloc(
+			sizeof(t_pb_graph_pin_power));
+	pin->pin_power->C_wire = 0.;
+	pin->pin_power->buffer_size = 0.;
+	pin->pin_power->scaled_by_pin = NULL;
+
+	if (pin->port->port_power->scaled_by_port) {
+
+		port_to_find = pin->port->port_power->scaled_by_port;
+
+		/*pin->pin_power->scaled_by_pin =
+		 get_pb_graph_node_pin_from_model_port_pin(
+		 port_to_find->model_port,
+		 pin->port->port_power->scaled_by_port_pin_idx,
+		 pin->parent_node);*/
+		/* Search input, output, clock ports */
+
+		found = FALSE;
+		for (port_idx = 0; port_idx < node->num_input_ports; port_idx++) {
+			if (node->input_pins[port_idx][0].port == port_to_find) {
+				pin->pin_power->scaled_by_pin =
+						&node->input_pins[port_idx][pin->port->port_power->scaled_by_port_pin_idx];
+				found = TRUE;
+				break;
+			}
+		}
+		if (!found) {
+			for (port_idx = 0; port_idx < node->num_output_ports; port_idx++) {
+				if (node->output_pins[port_idx][0].port == port_to_find) {
+					pin->pin_power->scaled_by_pin =
+							&node->output_pins[port_idx][pin->port->port_power->scaled_by_port_pin_idx];
+					found = TRUE;
+					break;
+				}
+			}
+		}
+		if (!found) {
+			for (port_idx = 0; port_idx < node->num_clock_ports; port_idx++) {
+				if (node->clock_pins[port_idx][0].port == port_to_find) {
+					pin->pin_power->scaled_by_pin =
+							&node->clock_pins[port_idx][pin->port->port_power->scaled_by_port_pin_idx];
+					found = TRUE;
+					break;
+				}
+			}
+		}
+		assert(found);
+
+		assert(pin->pin_power->scaled_by_pin);
+	}
+}
+
+void power_init_pb_pins_rec(t_pb_graph_node * pb_node) {
+	int mode;
+	int type;
+	int pb;
 	int port_idx;
 	int pin_idx;
 
 	for (port_idx = 0; port_idx < pb_node->num_input_ports; port_idx++) {
 		for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx];
 				pin_idx++) {
-
-			pb_node->input_pins[port_idx][pin_idx].pin_power =
-					(t_pb_graph_pin_power*) my_calloc(1,
-							sizeof(t_pb_graph_pin_power));
+			power_alloc_and_init_pb_pin(
+					&pb_node->input_pins[port_idx][pin_idx]);
 		}
 	}
 
 	for (port_idx = 0; port_idx < pb_node->num_output_ports; port_idx++) {
 		for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx];
 				pin_idx++) {
-			pb_node->output_pins[port_idx][pin_idx].pin_power =
-					(t_pb_graph_pin_power*) my_calloc(1,
-							sizeof(t_pb_graph_pin_power));
+			power_alloc_and_init_pb_pin(
+					&pb_node->output_pins[port_idx][pin_idx]);
 		}
 	}
 
 	for (port_idx = 0; port_idx < pb_node->num_clock_ports; port_idx++) {
 		for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx];
 				pin_idx++) {
-			pb_node->clock_pins[port_idx][pin_idx].pin_power =
-					(t_pb_graph_pin_power*) my_calloc(1,
-							sizeof(t_pb_graph_pin_power));
+			power_alloc_and_init_pb_pin(
+					&pb_node->clock_pins[port_idx][pin_idx]);
 		}
 	}
 
-	for (mode_idx = 0; mode_idx < pb_node->pb_type->num_modes; mode_idx++) {
-		for (type_idx = 0;
-				type_idx
-						< pb_node->pb_type->modes[mode_idx].num_pb_type_children;
-				type_idx++) {
-			for (pb_idx = 0;
-					pb_idx
-							< pb_node->pb_type->modes[mode_idx].pb_type_children[type_idx].num_pb;
-					pb_idx++) {
-				power_pb_pin_alloc_rec(
-						&pb_node->child_pb_graph_nodes[mode_idx][type_idx][pb_idx]);
+	for (mode = 0; mode < pb_node->pb_type->num_modes; mode++) {
+		for (type = 0;
+				type < pb_node->pb_type->modes[mode].num_pb_type_children;
+				type++) {
+			for (pb = 0;
+					pb
+							< pb_node->pb_type->modes[mode].pb_type_children[type].num_pb;
+					pb++) {
+				power_init_pb_pins_rec(
+						&pb_node->child_pb_graph_nodes[mode][type][pb]);
 			}
 		}
 	}
 }
 
-void power_pb_pin_alloc() {
+void power_pb_pins_init() {
 	int type_idx;
 
 	for (type_idx = 0; type_idx < num_types; type_idx++) {
 		if (type_descriptors[type_idx].pb_graph_head) {
-			power_pb_pin_alloc_rec(type_descriptors[type_idx].pb_graph_head);
+			power_init_pb_pins_rec(type_descriptors[type_idx].pb_graph_head);
 		}
 	}
 }
 
-/**
- * Initialization for all power-related functions
- */
-boolean power_init(char * power_out_filepath,
-		char * cmos_tech_behavior_filepath, t_arch * arch,
-		t_det_routing_arch * routing_arch) {
-	boolean error = FALSE;
+void power_routing_init(t_det_routing_arch * routing_arch) {
 	int net_idx;
 	int rr_node_idx;
 	int max_fanin;
@@ -1043,42 +1103,6 @@ boolean power_init(char * power_out_filepath,
 	int max_seg_to_IPIN_fanout;
 	int max_seg_to_seg_fanout;
 	int max_seg_fanout;
-
-	/* Set global power architecture & options */
-	g_power_arch = arch->power;
-	g_power_commonly_used = (t_power_commonly_used*) my_malloc(
-			sizeof(t_power_commonly_used));
-	g_power_tech = (t_power_tech*) my_malloc(sizeof(t_power_tech));
-	g_power_output = (t_power_output*) my_malloc(sizeof(t_power_output));
-
-	/* Set up Logs */
-	g_power_output->num_logs = POWER_LOG_NUM_TYPES;
-	g_power_output->logs = (t_log*) my_calloc(g_power_output->num_logs,
-			sizeof(t_log));
-	g_power_output->logs[POWER_LOG_ERROR].name = my_strdup("Errors");
-	g_power_output->logs[POWER_LOG_WARNING].name = my_strdup("Warnings");
-
-	/* Initialize output file */
-	if (!error) {
-		g_power_output->out = NULL;
-		g_power_output->out = my_fopen(power_out_filepath, "w", 0);
-		if (!g_power_output->out) {
-			error = TRUE;
-		}
-	}
-
-	/* Initialize Commonly Used Values */
-	g_power_commonly_used->mux_arch = NULL;
-	g_power_commonly_used->mux_arch_max_size = 0;
-
-	/* Load technology properties */
-	power_tech_load_xml_file(cmos_tech_behavior_filepath);
-
-	/* Initialize sub-modules */
-	power_components_init();
-	power_lowlevel_init();
-
-	power_callibrate();
 
 	/* Copy probability/density values to new netlist */
 	for (net_idx = 0; net_idx < num_nets; net_idx++) {
@@ -1169,8 +1193,7 @@ boolean power_init(char * power_out_filepath,
 							node->switches[edge_idx];
 				} else {
 					assert(
-							rr_node_power[node->edges[edge_idx]].driver_switch_type
-									== node->switches[edge_idx]);
+							rr_node_power[node->edges[edge_idx]].driver_switch_type == node->switches[edge_idx]);
 				}
 			}
 		}
@@ -1194,11 +1217,63 @@ boolean power_init(char * power_out_filepath,
 		}
 	}
 	g_power_commonly_used->max_seg_fanout = max_seg_fanout;
+}
+
+/**
+ * Initialization for all power-related functions
+ */
+boolean power_init(char * power_out_filepath,
+		char * cmos_tech_behavior_filepath, t_arch * arch,
+		t_det_routing_arch * routing_arch) {
+	boolean error = FALSE;
+
+	/* Set global power architecture & options */
+	g_power_arch = arch->power;
+	g_power_commonly_used = (t_power_commonly_used*) my_malloc(
+			sizeof(t_power_commonly_used));
+	g_power_tech = (t_power_tech*) my_malloc(sizeof(t_power_tech));
+	g_power_output = (t_power_output*) my_malloc(sizeof(t_power_output));
+
+	/* Set up Logs */
+	g_power_output->num_logs = POWER_LOG_NUM_TYPES;
+	g_power_output->logs = (t_log*) my_calloc(g_power_output->num_logs,
+			sizeof(t_log));
+	g_power_output->logs[POWER_LOG_ERROR].name = my_strdup("Errors");
+	g_power_output->logs[POWER_LOG_WARNING].name = my_strdup("Warnings");
+
+	/* Initialize output file */
+	if (!error) {
+		g_power_output->out = NULL;
+		g_power_output->out = my_fopen(power_out_filepath, "w", 0);
+		if (!g_power_output->out) {
+			error = TRUE;
+		}
+	}
+
+	/* Initialize Commonly Used Values */
+	g_power_commonly_used->mux_arch = NULL;
+	g_power_commonly_used->mux_arch_max_size = 0;
+
+	/* Load technology properties */
+	power_tech_init(cmos_tech_behavior_filepath);
+
+	/* Low-Level Initialization */
+	power_lowlevel_init();
+
+	/* Initialize sub-modules */
+	power_components_init();
+
+	/* Perform callibration */
+	power_callibrate();
+
+	/* Initialize routing information */
+	power_routing_init(routing_arch);
 
 	// Allocates power structures for each pb pin
-	power_pb_pin_alloc();
+	power_pb_pins_init();
 
-	power_init_sizing(arch);
+	/* Size all components */
+	power_sizing_init(arch);
 
 	return error;
 }
@@ -1684,7 +1759,7 @@ static void power_print_breakdown_component(FILE * fp, char * name,
 		power_print_breakdown_component(fp, "PB Types", POWER_COMPONENT_BLOCKS,
 				indent_level + 1);
 		power_print_breakdown_component(fp, "Clock", POWER_COMPONENT_CLOCK,
-						indent_level + 1);
+				indent_level + 1);
 		break;
 	case (POWER_COMPONENT_ROUTING):
 		power_print_breakdown_component(fp, "Switch Box",

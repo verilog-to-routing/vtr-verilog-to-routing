@@ -41,6 +41,7 @@ static t_power_buffer_strength_inf * g_buffer_strength_last_searched;
 static t_power_mux_volt_inf * g_mux_volt_last_searched;
 
 /************************* FUNCTION DECLARATIONS ********************/
+static void power_tech_load_xml_file(char * cmos_tech_behavior_filepath);
 static void process_tech_xml_load_transistor_info(ezxml_t parent);
 static void power_tech_xml_load_multiplexer_info(ezxml_t parent);
 static void power_tech_xml_load_nmos_st_leakages(ezxml_t parent);
@@ -58,6 +59,10 @@ static int power_compare_buffer_sc_levr(const void * key_void,
 static void power_tech_xml_load_components(ezxml_t parent);
 
 /************************* FUNCTION DEFINITIONS *********************/
+
+void power_tech_init(char * cmos_tech_behavior_filepath) {
+	power_tech_load_xml_file(cmos_tech_behavior_filepath);
+}
 
 /**
  * Reads the transistor properties from the .xml file

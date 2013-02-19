@@ -111,7 +111,7 @@ static void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 
 static void PrintPb_types_rec(INP FILE * Echo, INP const t_pb_type * pb_type,
 		int level);
-static void ProcessPb_TypePower(ezxml_t Parent, t_pb_type * pb_type);
+static void ProcessPb_TypePowerEstMethod(ezxml_t Parent, t_pb_type * pb_type);
 static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 		e_power_estimation_method power_method);
 e_power_estimation_method power_method_inherited(
@@ -606,64 +606,140 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 	assert(i == annotation->num_value_prop_pairs);
 }
 
+static t_port * findPortByName(const char * name, t_pb_type * pb_type,
+		int * high_index, int * low_index) {
+	t_port * port;
+	int i;
+	unsigned int high;
+	unsigned int low;
+	unsigned int bracket_pos;
+	unsigned int colon_pos;
+
+	bracket_pos = strcspn(name, "[");
+
+	/* Find port by name */
+	port = NULL;
+	for (i = 0; i < pb_type->num_ports; i++) {
+		char * compare_to = pb_type->ports[i].name;
+
+		if (strlen(compare_to) == bracket_pos
+				&& strncmp(name, compare_to, bracket_pos)==0) {
+			port = &pb_type->ports[i];
+			break;
+		}
+	}
+	if (i >= pb_type->num_ports) {
+		return NULL;
+	}
+
+	/* Get indices */
+	if (strlen(name) > bracket_pos) {
+		high = atoi(&name[bracket_pos + 1]);
+
+		colon_pos = strcspn(name, ":");
+
+		if (colon_pos < strlen(name)) {
+			low = atoi(&name[colon_pos + 1]);
+		} else {
+			low = high;
+		}
+	} else {
+		high = port->num_pins - 1;
+		low = 0;
+	}
+
+	if (high_index && low_index) {
+		*high_index = high;
+		*low_index = low;
+	}
+
+	return port;
+}
+
+static void ProcessPb_TypePowerPinToggle(ezxml_t parent, t_pb_type * pb_type) {
+	ezxml_t cur, prev;
+	const char * prop;
+	t_port * port;
+	int high, low;
+
+	cur = FindFirstElement(parent, "port", FALSE);
+	while (cur) {
+		prop = FindProperty(cur, "name", TRUE);
+
+		port = findPortByName(prop, pb_type, &high, &low);
+		if (!port) {
+			vpr_printf(TIO_MESSAGE_ERROR,
+					"Could not find port '%s' needed for energy per toggle.",
+					prop);
+			return;
+		}
+		if (high != port->num_pins - 1 || low != 0) {
+			vpr_printf(TIO_MESSAGE_ERROR,
+					"Pin-toggle does not support pin indices (%s)", prop);
+		}
+
+		if (port->port_power->pin_toggle_initialized) {
+			vpr_printf(TIO_MESSAGE_ERROR,
+					"Duplicate pin-toggle energy for port '%s'", port->name);
+		}
+		ezxml_set_attr(cur, "name", NULL);
+
+		/* Get energy per toggle */
+		port->port_power->energy_per_toggle = GetFloatProperty(cur,
+				"energy_per_toggle", TRUE, 0.);
+
+		/* Get scaled by factor */
+		prop = FindProperty(cur, "scaled_by_static_prob", FALSE);
+		if (!prop) {
+			prop = FindProperty(cur, "scaled_by_static_prob_n", FALSE);
+		}
+
+		if (prop) {
+			port->port_power->scaled_by_port = findPortByName(prop, pb_type,
+					&high, &low);
+			if (high != low) {
+				vpr_printf(TIO_MESSAGE_ERROR,
+						"Pin-toggle 'scaled_by_static_prob' must be a single pin (%s)",
+						prop);
+				return;
+			}
+			port->port_power->scaled_by_port_pin_idx = high;
+		}
+		ezxml_set_attr(cur, "scaled_by_static_prob", NULL);
+		ezxml_set_attr(cur, "scaled_by_static_prob_n", NULL);
+
+		prev = cur;
+		cur = cur->next;
+		FreeNode(prev);
+	}
+}
+
 static void ProcessPb_TypePower(ezxml_t Parent, t_pb_type * pb_type) {
 	ezxml_t cur, child;
-	const char * prop;
 	boolean require_dynamic_absolute = FALSE;
 	boolean require_static_absolute = FALSE;
 	boolean require_dynamic_C_internal = FALSE;
-	e_power_estimation_method parent_power_method;
-
-	/* Allocate and read pb power information */
-	pb_type->pb_type_power = (t_pb_type_power*) my_calloc(1,
-			sizeof(t_pb_type_power));
-	pb_type->pb_type_power->power_usage.dynamic = 0.;
-	pb_type->pb_type_power->power_usage.leakage = 0.;
-	pb_type->pb_type_power->power_usage_bufs_wires.dynamic = 0.;
-	pb_type->pb_type_power->power_usage_bufs_wires.leakage = 0.;
-	pb_type->pb_type_power->C_internal = 0.;
-
-	prop = NULL;
 
 	cur = FindFirstElement(Parent, "power", FALSE);
-	if (cur) {
-		prop = FindProperty(cur, "method", FALSE);
+	if (!cur) {
+		return;
 	}
 
-	if (pb_type->parent_mode && pb_type->parent_mode->parent_pb_type) {
-		parent_power_method =
-				pb_type->parent_mode->parent_pb_type->pb_type_power->estimation_method;
-	} else {
-		parent_power_method = POWER_METHOD_AUTO_SIZES;
-	}
-
-	if (!prop) {
-		/* default method is auto-size */
-		pb_type->pb_type_power->estimation_method = power_method_inherited(
-				parent_power_method);
-	} else if (strcmp(prop, "auto-size") == 0) {
-		pb_type->pb_type_power->estimation_method = POWER_METHOD_AUTO_SIZES;
-	} else if (strcmp(prop, "specify-size") == 0) {
-		pb_type->pb_type_power->estimation_method = POWER_METHOD_SPECIFY_SIZES;
-	} else if (strcmp(prop, "pin-toggle") == 0) {
-		pb_type->pb_type_power->estimation_method = POWER_METHOD_TOGGLE_PINS;
+	switch (pb_type->pb_type_power->estimation_method) {
+	case POWER_METHOD_TOGGLE_PINS:
+		ProcessPb_TypePowerPinToggle(cur, pb_type);
 		require_static_absolute = TRUE;
-	} else if (strcmp(prop, "c-internal") == 0) {
-		pb_type->pb_type_power->estimation_method = POWER_METHOD_C_INTERNAL;
+		break;
+	case POWER_METHOD_C_INTERNAL:
 		require_dynamic_C_internal = TRUE;
 		require_static_absolute = TRUE;
-	} else if (strcmp(prop, "absolute") == 0) {
-		pb_type->pb_type_power->estimation_method = POWER_METHOD_ABSOLUTE;
+		break;
+	case POWER_METHOD_ABSOLUTE:
 		require_dynamic_absolute = TRUE;
 		require_static_absolute = TRUE;
-	} else {
-		vpr_printf(TIO_MESSAGE_ERROR,
-				"Invalid power estimation method for pb_type '%s'",
-				pb_type->name);
-	}
-
-	if (prop) {
-		ezxml_set_attr(cur, "method", NULL);
+		break;
+	default:
+		break;
 	}
 
 	if (require_static_absolute) {
@@ -690,6 +766,53 @@ static void ProcessPb_TypePower(ezxml_t Parent, t_pb_type * pb_type) {
 	if (cur) {
 		FreeNode(cur);
 	}
+
+}
+
+static void ProcessPb_TypePowerEstMethod(ezxml_t Parent, t_pb_type * pb_type) {
+	ezxml_t cur;
+	const char * prop;
+
+	e_power_estimation_method parent_power_method;
+
+	prop = NULL;
+
+	cur = FindFirstElement(Parent, "power", FALSE);
+	if (cur) {
+		prop = FindProperty(cur, "method", FALSE);
+	}
+
+	if (pb_type->parent_mode && pb_type->parent_mode->parent_pb_type) {
+		parent_power_method =
+				pb_type->parent_mode->parent_pb_type->pb_type_power->estimation_method;
+	} else {
+		parent_power_method = POWER_METHOD_AUTO_SIZES;
+	}
+
+	if (!prop) {
+		/* default method is auto-size */
+		pb_type->pb_type_power->estimation_method = power_method_inherited(
+				parent_power_method);
+	} else if (strcmp(prop, "auto-size") == 0) {
+		pb_type->pb_type_power->estimation_method = POWER_METHOD_AUTO_SIZES;
+	} else if (strcmp(prop, "specify-size") == 0) {
+		pb_type->pb_type_power->estimation_method = POWER_METHOD_SPECIFY_SIZES;
+	} else if (strcmp(prop, "pin-toggle") == 0) {
+		pb_type->pb_type_power->estimation_method = POWER_METHOD_TOGGLE_PINS;
+	} else if (strcmp(prop, "c-internal") == 0) {
+		pb_type->pb_type_power->estimation_method = POWER_METHOD_C_INTERNAL;
+	} else if (strcmp(prop, "absolute") == 0) {
+		pb_type->pb_type_power->estimation_method = POWER_METHOD_ABSOLUTE;
+	} else {
+		vpr_printf(TIO_MESSAGE_ERROR,
+				"Invalid power estimation method for pb_type '%s'",
+				pb_type->name);
+	}
+
+	if (prop) {
+		ezxml_set_attr(cur, "method", NULL);
+	}
+
 }
 
 /* Takes in a pb_type, allocates and loads data for it and recurses downwards */
@@ -742,8 +865,6 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 		pb_type->num_pb = GetIntProperty(Parent, "num_pb", TRUE, 0);
 	}
 
-	ProcessPb_TypePower(Parent, pb_type);
-
 	assert(pb_type->num_pb > 0);
 	num_ports = 0;
 	num_ports += CountChildren(Parent, "input", 0);
@@ -751,6 +872,11 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 	num_ports += CountChildren(Parent, "clock", 0);
 	pb_type->ports = (t_port*) my_calloc(num_ports, sizeof(t_port));
 	pb_type->num_ports = num_ports;
+
+	/* Initialize Power Structure */
+	pb_type->pb_type_power = (t_pb_type_power*) my_calloc(1,
+			sizeof(t_pb_type_power));
+	ProcessPb_TypePowerEstMethod(Parent, pb_type);
 
 	/* process ports */
 	j = 0;
@@ -907,6 +1033,9 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 		}
 		assert(i == pb_type->num_modes);
 	}
+
+	ProcessPb_TypePower(Parent, pb_type);
+
 }
 
 static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
@@ -916,7 +1045,6 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 	bool wire_defined = FALSE;
 
 	port->port_power = (t_port_power*) my_calloc(1, sizeof(t_port_power));
-	port->port_power->energy_per_toggle = 0.0;
 
 	//Defaults
 	if (power_method == POWER_METHOD_AUTO_SIZES) {
@@ -930,18 +1058,6 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 	cur = FindElement(Parent, "power", FALSE);
 
 	if (cur) {
-		/* Check for toggle power */
-		prop = FindProperty(cur, "energy_per_toggle", FALSE);
-		if (prop) {
-			if (power_method != POWER_METHOD_TOGGLE_PINS) {
-				vpr_printf(TIO_MESSAGE_ERROR,
-						"Pin toggle energy defined for port '%s', but the parent pb_type '%s' is not configured to use the pin toggle power estimation method.",
-						port->name, port->parent_pb_type->name);
-			} else {
-				port->port_power->energy_per_toggle = atof(prop);
-			}
-		}
-
 		/* Wire capacitance */
 
 		/* Absolute C provided */
@@ -2361,7 +2477,7 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 			SetupTypeTiming(Cur, Type);
 			FreeNode(Cur);
 		}
-#endif   
+#endif
 		Type->index = i;
 
 		/* Type fully read */
@@ -2478,7 +2594,7 @@ void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 		FreeNode(Next);
 	}
 
-	// Process Clocks
+// Process Clocks
 	Next = FindElement(Cur, "clocks", power_reqd);
 	if (Next) {
 		if (arch->clocks) {
