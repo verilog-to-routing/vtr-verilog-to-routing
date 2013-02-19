@@ -1,8 +1,8 @@
 arch	circuit	vpr_status	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error
-soft_fpu_arch_timing.xml	bfly.v	success	37.98	71.66	1116.4	93.04	93.04	22157	22221	16386	5568	193	64	-1	-1	
-soft_fpu_arch_timing.xml	bgm.v	success	40.9013	637.02	6890.74	344.35	344.35	58005	58037	43501	14637	257	32	-1	-1	
-soft_fpu_arch_timing.xml	dscg.v	success	37.3957	71.48	1081.54	119.74	119.74	22091	22155	16324	5557	129	64	-1	-1	
-soft_fpu_arch_timing.xml	fir.v	success	38.2606	65.46	1022.22	76.16	76.16	21351	21383	15560	5371	161	32	-1	-1	
-soft_fpu_arch_timing.xml	mm3.v	success	38.1086	35.32	540.54	64.78	64.78	15572	15604	11621	3911	193	32	-1	-1	
-soft_fpu_arch_timing.xml	ode.v	success	40.4711	24.46	341.73	50.15	50.15	12931	13003	9197	3190	130	72	-1	-1	
-soft_fpu_arch_timing.xml	syn2.v	success	36.6719	79.61	1225.83	107.41	107.41	22936	23064	16993	5769	161	128	-1	-1	
+soft_fpu_arch_timing.xml	bfly.v	success	35.8938 	18.66	1690.06	112.95	112.95	25525	25589	18940	6403	193	64	-1	-1	
+soft_fpu_arch_timing.xml	bgm.v	success	36.954 	126.42	9140.89	425.88	425.88	67933	67965	49840	17090	257	32	-1	-1	
+soft_fpu_arch_timing.xml	dscg.v	success	34.2644 	18.51	1568.26	120.12	120.12	25171	25235	18577	6343	129	64	-1	-1	
+soft_fpu_arch_timing.xml	fir.v	success	35.17 	17.34	1591.29	100.17	100.17	24719	24751	18394	6219	161	32	-1	-1	
+soft_fpu_arch_timing.xml	mm3.v	success	34.5773 	9.71	838.9	97.03	97.03	18098	18130	13557	4543	193	32	-1	-1	
+soft_fpu_arch_timing.xml	ode.v	success	33.7374 	6.41	516.69	43.62	43.62	14485	14557	10490	3584	130	72	-1	-1	
+soft_fpu_arch_timing.xml	syn2.v	success	35.1906 	19.74	1714.54	109.57	109.57	26146	26274	19310	6560	161	128	-1	-1	
