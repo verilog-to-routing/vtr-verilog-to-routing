@@ -272,15 +272,15 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 	/* Parse all pbs and CB internal nets*/
 	cb[index].pb->logical_block = OPEN;
 	cb[index].pb->pb_graph_node = cb[index].type->pb_graph_head;
-	rr_node = (t_rr_node*)my_calloc(cb[index].type->pb_graph_head->total_pb_pins + cb[index].type->pb_type->num_input_pins
+	num_rr_nodes = cb[index].pb->pb_graph_node->total_pb_pins;
+	rr_node = (t_rr_node*)my_calloc((num_rr_nodes * 2) + cb[index].type->pb_type->num_input_pins
 			+ cb[index].type->pb_type->num_output_pins + cb[index].type->pb_type->num_clock_pins,
 			sizeof(t_rr_node));
 	alloc_and_load_rr_graph_for_pb_graph_node(cb[index].pb->pb_graph_node, arch,
 			0);
 	cb[index].pb->rr_node_to_pb_mapping = (t_pb **)my_calloc(cb[index].type->pb_graph_head->total_pb_pins, sizeof(t_pb *));
 	cb[index].pb->rr_graph = rr_node;
-	num_rr_nodes = cb[index].pb->pb_graph_node->total_pb_pins;
-
+	
 	Prop = FindProperty(Parent, "mode", TRUE);
 	ezxml_set_attr(Parent, "mode", NULL);
 

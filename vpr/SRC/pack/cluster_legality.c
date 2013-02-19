@@ -29,8 +29,6 @@ static int ext_input_rr_node_index, ext_output_rr_node_index,
 		ext_clock_rr_node_index, max_ext_index;
 static int **saved_net_rr_terminals;
 static float pres_fac;
-static float *rr_intrinsic_cost;
-static int num_rr_intrinsic_cost = 0;
 
 /********************* Subroutines local to this module *********************/
 static boolean is_net_in_cluster(INP int inet);
@@ -122,8 +120,8 @@ static void add_net_rr_terminal_cluster(int iblk_net,
 			}
 		}
 		assert(net_pin != OPEN);
-		net_rr_terminals[iblk_net][net_pin] =
-				primitive->clock_pins[clock_port][ipin].pin_count_in_cluster;
+		assert(rr_node[primitive->clock_pins[clock_port][ipin].pin_count_in_cluster].num_edges == 1);
+		net_rr_terminals[iblk_net][net_pin] = rr_node[primitive->clock_pins[clock_port][ipin].pin_count_in_cluster].edges[0];
 	} else if (prim_port->type == IN_PORT) {
 		for (i = 1; i <= vpack_net[iblk_net].num_sinks; i++) {
 			if (vpack_net[iblk_net].node_block[i] == ilogical_block
@@ -135,8 +133,8 @@ static void add_net_rr_terminal_cluster(int iblk_net,
 			}
 		}
 		assert(net_pin != OPEN);
-		net_rr_terminals[iblk_net][net_pin] =
-				primitive->input_pins[input_port][ipin].pin_count_in_cluster;
+		assert(rr_node[primitive->input_pins[input_port][ipin].pin_count_in_cluster].num_edges == 1);
+		net_rr_terminals[iblk_net][net_pin] = rr_node[primitive->input_pins[input_port][ipin].pin_count_in_cluster].edges[0];
 	} else if (prim_port->type == OUT_PORT) {
 		i = 0;
 		if (vpack_net[iblk_net].node_block[i] == ilogical_block
@@ -234,10 +232,6 @@ void free_cluster_legality_checker(void) {
 	free(net_rr_terminals);
 	free(nets_in_cluster);
 	free(saved_net_rr_terminals);
-
-	free(rr_intrinsic_cost);
-	rr_intrinsic_cost = NULL;
-	num_rr_intrinsic_cost = 0;
 }
 
 void alloc_and_load_rr_graph_for_pb_graph_node(
@@ -261,7 +255,7 @@ void alloc_and_load_rr_graph_for_pb_graph_node(
 			rr_node[index].edges = (int *) my_malloc(
 					rr_node[index].num_edges * sizeof(int));
 			rr_node[index].switches = (short *) my_calloc(rr_node[index].num_edges,
-					sizeof(int));
+					sizeof(short));
 			rr_node[index].net_num = OPEN;
 			rr_node[index].prev_node = OPEN;
 			rr_node[index].prev_edge = OPEN;
@@ -281,7 +275,35 @@ void alloc_and_load_rr_graph_for_pb_graph_node(
 			}
 			rr_node[index].type = INTRA_CLUSTER_EDGE;
 			if (is_primitive) {
-				rr_node[index].type = SINK;
+				/* This is a terminating pin, add SINK node */
+				assert(rr_node[index].num_edges == 0);
+				rr_node[index].num_edges = 1;
+				rr_node[index].edges = (int *) my_calloc(rr_node[index].num_edges, sizeof(int));
+				rr_node[index].switches = (short *) my_calloc(rr_node[index].num_edges, sizeof(short));
+				rr_node[index].edges[0] = num_rr_nodes;
+				
+				/* Create SINK node */
+				rr_node[num_rr_nodes].pb_graph_pin = NULL;
+				rr_node[num_rr_nodes].fan_in = 1;
+				rr_node[num_rr_nodes].num_edges = 0;
+				rr_node[num_rr_nodes].pack_intrinsic_cost = 1;
+				rr_node[num_rr_nodes].edges = NULL;
+				rr_node[num_rr_nodes].switches = NULL;
+				rr_node[num_rr_nodes].net_num = OPEN;
+				rr_node[num_rr_nodes].prev_node = OPEN;
+				rr_node[num_rr_nodes].prev_edge = OPEN;
+				rr_node[num_rr_nodes].capacity = 1;
+				rr_node[num_rr_nodes].type = SINK;					
+				num_rr_nodes++;
+
+				if(pb_graph_node->pb_type->class_type == LUT_CLASS) {
+					/* LUTs are special, they have logical equivalence at inputs, logical equivalence is represented by a single high capacity sink instead of multiple single capacity sinks */
+					rr_node[num_rr_nodes - 1].capacity = pb_graph_node->num_input_pins[i];					
+					if(j != 0) {
+						num_rr_nodes--;
+						rr_node[index].edges[0] = num_rr_nodes - 1;
+					}					
+				}				
 			}
 		}
 	}
@@ -299,7 +321,7 @@ void alloc_and_load_rr_graph_for_pb_graph_node(
 			rr_node[index].edges = (int *) my_malloc(
 					rr_node[index].num_edges * sizeof(int));
 			rr_node[index].switches = (short *) my_calloc(rr_node[index].num_edges,
-					sizeof(int));
+					sizeof(short));
 			rr_node[index].net_num = OPEN;
 			rr_node[index].prev_node = OPEN;
 			rr_node[index].prev_edge = OPEN;
@@ -337,7 +359,7 @@ void alloc_and_load_rr_graph_for_pb_graph_node(
 			rr_node[index].edges = (int *) my_malloc(
 					rr_node[index].num_edges * sizeof(int));
 			rr_node[index].switches = (short *) my_calloc(rr_node[index].num_edges,
-					sizeof(int));
+					sizeof(short));
 			rr_node[index].net_num = OPEN;
 			rr_node[index].prev_node = OPEN;
 			rr_node[index].prev_edge = OPEN;
@@ -357,7 +379,26 @@ void alloc_and_load_rr_graph_for_pb_graph_node(
 			}
 			rr_node[index].type = INTRA_CLUSTER_EDGE;
 			if (is_primitive) {
-				rr_node[index].type = SINK;
+				/* This is a terminating pin, add SINK node */
+				assert(rr_node[index].num_edges == 0);
+				rr_node[index].num_edges = 1;
+				rr_node[index].edges = (int *) my_calloc(rr_node[index].num_edges, sizeof(int));
+				rr_node[index].switches = (short *) my_calloc(rr_node[index].num_edges, sizeof(short));
+				rr_node[index].edges[0] = num_rr_nodes;
+				
+				/* Create SINK node */
+				rr_node[num_rr_nodes].pb_graph_pin = NULL;
+				rr_node[num_rr_nodes].fan_in = 1;
+				rr_node[num_rr_nodes].num_edges = 0;
+				rr_node[num_rr_nodes].pack_intrinsic_cost = 1;
+				rr_node[num_rr_nodes].edges = NULL;
+				rr_node[num_rr_nodes].switches = NULL;
+				rr_node[num_rr_nodes].net_num = OPEN;
+				rr_node[num_rr_nodes].prev_node = OPEN;
+				rr_node[num_rr_nodes].prev_edge = OPEN;
+				rr_node[num_rr_nodes].capacity = 1;
+				rr_node[num_rr_nodes].type = SINK;	
+				num_rr_nodes++;
 			}
 		}
 	}
@@ -402,12 +443,9 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 	pb_graph_node = clb->type->pb_graph_head;
 	num_rr_nodes = pb_graph_node->total_pb_pins + pb_type->num_input_pins
 			+ pb_type->num_output_pins + pb_type->num_clock_pins;
-	if (num_rr_nodes > num_rr_intrinsic_cost) {
-		free(rr_intrinsic_cost);
-		rr_intrinsic_cost = (float *) my_calloc(num_rr_nodes, sizeof(float));
-		num_rr_intrinsic_cost = num_rr_nodes;
-	}
-	rr_node = (t_rr_node *) my_calloc(num_rr_nodes, sizeof(t_rr_node));
+
+	/* allocate memory for rr_node resources + additional memory for any additional sources/sinks, 2x is an overallocation but guarantees that there will be enough sources/sinks available */
+	rr_node = (t_rr_node *) my_calloc(num_rr_nodes * 2, sizeof(t_rr_node));
 	clb->pb->rr_graph = rr_node;
 
 	alloc_and_load_rr_graph_for_pb_graph_node(pb_graph_node, arch, 0);
@@ -435,7 +473,6 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 		rr_node[index].switches = (short *) my_calloc(rr_node[index].num_edges,
 				sizeof(int));
 		rr_node[index].capacity = 1;
-		rr_intrinsic_cost[index] = 0;
 	}
 
 	for (i = 0; i < pb_type->num_output_pins; i++) {
@@ -446,7 +483,6 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 		rr_node[index].pack_intrinsic_cost = 1
 				+ (float) rr_node[index].num_edges / 5; /* need to normalize better than 5 */
 		rr_node[index].capacity = 1;
-		rr_intrinsic_cost[index] = 0;
 	}
 
 	for (i = 0; i < pb_type->num_clock_pins; i++) {
@@ -462,7 +498,6 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 		rr_node[index].switches = (short *) my_calloc(rr_node[index].num_edges,
 				sizeof(int));
 		rr_node[index].capacity = 1;
-		rr_intrinsic_cost[index] = 0;
 	}
 
 	ipin = 0;
