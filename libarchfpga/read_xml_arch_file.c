@@ -2153,9 +2153,9 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 			sizeof(t_interconnect));
 	lut_pb_type->modes[1].interconnect[0].name = (char*) my_calloc(
 			strlen(lut_pb_type->name) + 10, sizeof(char));
-	sprintf(lut_pb_type->modes[1].interconnect[0].name, "complete:%s",
+	sprintf(lut_pb_type->modes[1].interconnect[0].name, "direct:%s",
 			lut_pb_type->name);
-	lut_pb_type->modes[1].interconnect[0].type = COMPLETE_INTERC;
+	lut_pb_type->modes[1].interconnect[0].type = DIRECT_INTERC;
 	lut_pb_type->modes[1].interconnect[0].input_string = (char*) my_calloc(
 			strlen(lut_pb_type->name) + strlen(in_port->name) + 2,
 			sizeof(char));
