@@ -348,6 +348,7 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 	free(pl_macro_num_members);
 	free(pl_macro_idirect);
 	free(pl_macro_member_blk_num);
+	free(pl_macro_member_blk_num_of_this_blk);
 	
 	/* Returns the pointer to the macro by reference. */
 	*macros = macro;

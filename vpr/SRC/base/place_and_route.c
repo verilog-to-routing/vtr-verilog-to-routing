@@ -188,6 +188,7 @@ void place_and_route(enum e_operation operation,
 
 		fflush(stdout);
 	}
+
 	if (clb_opins_used_locally != NULL) {
 		for (i = 0; i < num_blocks; i++) {
 			free_ivec_vector(clb_opins_used_locally[i], 0,
@@ -196,6 +197,11 @@ void place_and_route(enum e_operation operation,
 		free(clb_opins_used_locally);
 		clb_opins_used_locally = NULL;
 	}
+
+	/* Frees up all the data structure used in vpr_utils. */
+	free_port_pin_from_blk_pin();
+	free_blk_pin_from_port_pin();
+
 	if(GetPostSynthesisOption())
 		{
 			verilog_writer();

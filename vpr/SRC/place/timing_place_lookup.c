@@ -469,6 +469,7 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 static void free_routing_structs(struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf) {
+	int i;
 	free_rr_graph();
 
 	free_rr_node_route_structs();
@@ -477,6 +478,15 @@ static void free_routing_structs(struct s_router_opts router_opts,
 
 	free_timing_driven_route_structs(pin_criticality, sink_order,
 			rt_node_of_sink);
+	
+	if (clb_opins_used_locally != NULL) {
+		for (i = 0; i < num_blocks; i++) {
+			free_ivec_vector(clb_opins_used_locally[i], 0,
+					block[i].type->num_class - 1);
+		}
+		free(clb_opins_used_locally);
+		clb_opins_used_locally = NULL;
+	}
 }
 
 /**************************************/
