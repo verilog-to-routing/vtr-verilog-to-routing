@@ -193,6 +193,10 @@ static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
 	int inode, sink_node, last_ipin_node;
 
 	tptr = start_ptr;
+	if(tptr != NULL && rr_node[tptr->index].type == SINK) {
+		/* During logical equivalence case, only use one opin */
+		tptr = tptr->next;
+	}
 
 	if (remaining_connections_to_sink == 0) { /* Usual case. */
 		while (tptr != NULL) {

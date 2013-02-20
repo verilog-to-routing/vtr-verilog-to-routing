@@ -379,6 +379,12 @@ boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
 		highfanout_rlim = mark_node_expansion_by_bin(inet, target_node,
 				rt_root);
 
+		if(itarget > 1) {
+			/* opin already determined, do not use another opin */
+			assert(rr_node[rt_root->inode].type == SOURCE);
+			rt_root->re_expand = FALSE;
+		}
+
 		add_route_tree_to_heap(rt_root, target_node, target_criticality,
 				astar_fac);
 
