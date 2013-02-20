@@ -784,16 +784,66 @@ static void breadth_first_expand_trace_segment_cluster(
 	 * the same logic block, and since the and-inputs are logically-equivalent, *
 	 * this means two connections to the same SINK.                             */
 
-	struct s_trace *tptr;
+	struct s_trace *tptr, *next_ptr;
+	int inode, sink_node, last_ipin_node;
 
 	tptr = start_ptr;
 
-	/* For intra-cluster routing, logical equivalence does not occur, so it is impossible to get a value bigger than 0 */
-	assert(remaining_connections_to_sink == 0);
+	if (remaining_connections_to_sink == 0) { /* Usual case. */
+		while (tptr != NULL) {
+			node_to_heap(tptr->index, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
+			tptr = tptr->next;
+		}
+	}
 
-	while (tptr != NULL) {
-		node_to_heap(tptr->index, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
-		tptr = tptr->next;
+	else { /* This case never executes for most logic blocks. */
+
+		/* Weird case.  Lots of hacks. The cleanest way to do this would be to empty *
+		 * the heap, update the congestion due to the partially-completed route, put *
+		 * the whole route so far (excluding IPINs and SINKs) on the heap with cost  *
+		 * 0., and expand till you hit the next SINK.  That would be slow, so I      *
+		 * do some hacks to enable incremental wavefront expansion instead.          */
+
+		if (tptr == NULL)
+			return; /* No route yet */
+
+		next_ptr = tptr->next;
+		last_ipin_node = OPEN; /* Stops compiler from complaining. */
+
+		/* Can't put last SINK on heap with NO_PREVIOUS, etc, since that won't let  *
+		 * us reach it again.  Instead, leave the last traceback element (SINK) off *
+		 * the heap.                                                                */
+
+		while (next_ptr != NULL) {
+			inode = tptr->index;
+			node_to_heap(inode, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
+
+			if (rr_node[inode].type == IPIN)
+				last_ipin_node = inode;
+
+			tptr = next_ptr;
+			next_ptr = tptr->next;
+		}
+
+		/* This will stop the IPIN node used to get to this SINK from being         *
+		 * reexpanded for the remainder of this net's routing.  This will make us   *
+		 * hook up more IPINs to this SINK (which is what we want).  If IPIN        *
+		 * doglegs are allowed in the graph, we won't be able to use this IPIN to   *
+		 * do a dogleg, since it won't be re-expanded.  Shouldn't be a big problem. */
+
+		rr_node_route_inf[last_ipin_node].path_cost = -HUGE_POSITIVE_FLOAT;
+
+		/* Also need to mark the SINK as having high cost, so another connection can *
+		 * be made to it.                                                            */
+
+		sink_node = tptr->index;
+		rr_node_route_inf[sink_node].path_cost = HUGE_POSITIVE_FLOAT;
+
+		/* Finally, I need to remove any pending connections to this SINK via the    *
+		 * IPIN I just used (since they would result in congestion).  Scan through   *
+		 * the heap to do this.                                                      */
+
+		invalidate_heap_entries(sink_node, last_ipin_node);
 	}
 }
 
@@ -849,7 +899,7 @@ static void mark_ends_cluster(int inet) {
 		if (inode == OPEN)
 			continue;
 		rr_node_route_inf[inode].target_flag++;
-		assert(rr_node_route_inf[inode].target_flag == 1);
+		assert(rr_node_route_inf[inode].target_flag > 0 && rr_node_route_inf[inode].target_flag <= rr_node[inode].capacity);
 	}
 }
 
