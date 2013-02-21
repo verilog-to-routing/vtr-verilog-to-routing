@@ -73,6 +73,8 @@ MainWindow::MainWindow()
 
     myContainer = new Container(scene);
     actSimStep = 0;
+    activityBase = 5000;
+    fileopen = false;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -89,7 +91,7 @@ void MainWindow::simulationButtonGroupClicked(QAbstractButton* button)
     if(text == tr("Previous")){
         actSimStep = actSimStep-1;
         if(actSimStep<0){
-            actSimStep = myContainer->getMaxSimStep();
+            actSimStep =0;
         }
         myContainer->showSimulationStep(actSimStep);
     }else if(text == tr("Next")){
@@ -100,6 +102,9 @@ void MainWindow::simulationButtonGroupClicked(QAbstractButton* button)
         }
         myContainer->showSimulationStep(actSimStep);
     }else if(text == tr("Start")){
+        //configure clocks
+        configureClocks();
+        //start simulation
         myContainer->startSimulator();
     }
 
@@ -120,9 +125,9 @@ void MainWindow::simulationButtonGroupClicked(QAbstractButton* button)
  *-------------------------------------------------------------------------------------------*/
 void MainWindow::buttonGroupClicked(int id)
 {
-    QList<QAbstractButton *> buttons = buttonGroup->buttons();
+    QList<QAbstractButton *> buttons = nodeButtonGroup->buttons();
     foreach (QAbstractButton *button, buttons) {
-    if (buttonGroup->button(id) != button)
+    if (nodeButtonGroup->button(id) != button)
         button->setChecked(false);
     }
     if (id == InsertTextButton) {
@@ -131,6 +136,21 @@ void MainWindow::buttonGroupClicked(int id)
         scene->setUnitType(LogicUnit::UnitType(id));
         scene->setMode(ExplorerScene::InsertItem);
     }
+}
+
+void MainWindow::powerButtonGroupClicked(QAbstractButton *button)
+{
+    QList<QAbstractButton *> buttons = powerButtonGroup->buttons();
+    foreach (QAbstractButton *myButton, buttons) {
+    if (myButton != button)
+        button->setChecked(false);
+    }
+
+    QString text = button->text();
+    //if(text == tr("Start")){
+        myContainer->getActivityInformation();
+        myContainer->showActivity();
+    //}
 }
 
 
@@ -216,7 +236,7 @@ void MainWindow::itemInserted(LogicUnit *item)
 {
     pointerTypeGroup->button(int(ExplorerScene::MoveItem))->setChecked(true);
     scene->setMode(ExplorerScene::Mode(pointerTypeGroup->checkedId()));
-    buttonGroup->button(int(item->unitType()))->setChecked(false);
+    nodeButtonGroup->button(int(item->unitType()))->setChecked(false);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -224,7 +244,7 @@ void MainWindow::itemInserted(LogicUnit *item)
  *-------------------------------------------------------------------------------------------*/
 void MainWindow::textInserted(QGraphicsTextItem *)
 {
-    buttonGroup->button(InsertTextButton)->setChecked(false);
+    nodeButtonGroup->button(InsertTextButton)->setChecked(false);
     scene->setMode(ExplorerScene::Mode(pointerTypeGroup->checkedId()));
 }
 
@@ -371,9 +391,9 @@ void MainWindow::about()
  *-------------------------------------------------------------------------------------------*/
 void MainWindow::createToolBox()
 {
-    buttonGroup = new QButtonGroup(this);
-    buttonGroup->setExclusive(false);
-    connect(buttonGroup, SIGNAL(buttonClicked(int)),
+    nodeButtonGroup = new QButtonGroup(this);
+    nodeButtonGroup->setExclusive(false);
+    connect(nodeButtonGroup, SIGNAL(buttonClicked(int)),
             this, SLOT(buttonGroupClicked(int)));
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(createCellWidget(tr("LogicUnit"),
@@ -412,10 +432,12 @@ void MainWindow::createToolBox()
                                LogicUnit::MULTIPLY), 5, 1);
     layout->addWidget(createCellWidget(tr("Hard Memory"),
                                LogicUnit::MEMORY), 6, 1);
+    layout->addWidget(createCellWidget(tr("Module"),
+                               LogicUnit::Module), 7, 1);
 
     QToolButton *textButton = new QToolButton;
     textButton->setCheckable(true);
-    buttonGroup->addButton(textButton, InsertTextButton);
+    nodeButtonGroup->addButton(textButton, InsertTextButton);
     textButton->setIcon(QIcon(QPixmap(":/images/textpointer.png")
                         .scaled(30, 30)));
     textButton->setIconSize(QSize(50, 50));
@@ -487,12 +509,49 @@ void MainWindow::createToolBox()
     QWidget* simulationWidget = new QWidget;
     simulationWidget->setLayout(simulationLayout);
 
+    powerButtonGroup = new QButtonGroup(this);
+    connect(powerButtonGroup, SIGNAL(buttonReleased(QAbstractButton*)),
+            this, SLOT(powerButtonGroupClicked(QAbstractButton*)));
+
+    QGridLayout* powerLayout = new QGridLayout;
+    powerLayout->addWidget(createPowerCellWidget(tr("Static Probability"),
+                ":/images/start.png"), 0, 0);
+    powerLayout->addWidget(createPowerCellWidget(tr("Switching Probability"),
+                ":/images/start.png"), 1, 0);
+    powerLayout->addWidget(createPowerCellWidget(tr("Switching Activity"),
+                ":/images/start.png"), 2, 0);
+
+
+    //create cycle input field
+    QSpinBox *activitySpinBox = new QSpinBox;
+    activitySpinBox->setRange(100, 1000000);
+    activitySpinBox->setSingleStep(100);
+    //activitySpinBox->setSuffix(" cycles");
+    activitySpinBox->setValue(5000);
+    connect(activitySpinBox, SIGNAL(valueChanged(int)),
+            this, SLOT(activityCycleCountChangedChanged(int)));
+    //add caption
+    QGridLayout *activityLayout = new QGridLayout;
+    activityLayout->addWidget(activitySpinBox, 0, 0, Qt::AlignHCenter);
+    activityLayout->addWidget(new QLabel("Estimation Cycle Base"), 1, 0, Qt::AlignCenter);
+    QWidget *activityWidget = new QWidget;
+    activityWidget->setLayout(activityLayout);
+
+    //place cycle input field in tab
+    powerLayout->addWidget(activityWidget,3,0);
+
+    powerLayout->setRowStretch(6,10);
+    powerLayout->setColumnStretch(2,10);
+    QWidget* powerWidget = new QWidget;
+    powerWidget->setLayout(powerLayout);
+
 
     toolBox = new QToolBox;
     toolBox->setSizePolicy(QSizePolicy(QSizePolicy::Maximum, QSizePolicy::Ignored));
     toolBox->setMinimumWidth(itemWidget->sizeHint().width());
     toolBox->addItem(itemWidget, tr("Tools"));
     toolBox->addItem(simulationWidget, tr("Simulation"));
+    toolBox->addItem(powerWidget, tr("Power Estimation"));
 }
 
 
@@ -597,6 +656,13 @@ void MainWindow::createActions()
     addChildrenToHighlightingAction = new QAction(tr("Add Children to Visibility"), this);
     addChildrenToHighlightingAction->setStatusTip("Adds child nodes of the selected node to visualization.");
     connect(addChildrenToHighlightingAction, SIGNAL(triggered()),this,SLOT(addChildrenToHighlighting()));
+
+    showRelevantGraphAction = new QAction(tr("Show relevant Graph"), this);
+    showRelevantGraphAction->setStatusTip("Shows the relevant sub graph for the current node.");
+    connect(showRelevantGraphAction, SIGNAL(triggered()),this,SLOT(showRelevantGraph()));
+
+    expandCollapseAction = new QAction(tr("Expand/Collapse Module"), this);
+    connect(expandCollapseAction, SIGNAL(triggered()),this,SLOT(expandCollapse()));
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -611,6 +677,8 @@ void MainWindow::createMenus()
     fileMenu->addAction(exitAction);
 
     itemMenu = menuBar()->addMenu(tr("&Item"));
+    itemMenu->addAction(expandCollapseAction);
+    itemMenu->addSeparator();
     itemMenu->addAction(setNameAction);
     itemMenu->addAction(deleteAction);
     itemMenu->addAction(selectAllAction);
@@ -626,6 +694,7 @@ void MainWindow::createMenus()
     itemMenu->addAction(showNodeAndNeighboursOnlyAction);
     itemMenu->addAction(addParentsToHighlightingAction);
     itemMenu->addAction(addChildrenToHighlightingAction);
+    itemMenu->addAction(showRelevantGraphAction);
 
     aboutMenu = menuBar()->addMenu(tr("&Help"));
     aboutMenu->addAction(aboutAction);
@@ -781,7 +850,7 @@ QWidget *MainWindow::createCellWidget(const QString &text,
     button->setIcon(icon);
     button->setIconSize(QSize(50, 50));
     button->setCheckable(true);
-    buttonGroup->addButton(button, int(type));
+    nodeButtonGroup->addButton(button, int(type));
 
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(button, 0, 0, Qt::AlignHCenter);
@@ -887,6 +956,7 @@ void MainWindow::openFileWithOdin(){
     title.append(actBlifFilename);
     setWindowTitle(title);
     view->centerOn(0,0);
+    fileopen = true;
     }
 
 }
@@ -999,23 +1069,27 @@ void MainWindow::resetHighlighting()
     if (scene->selectedItems().isEmpty()){
        myContainer->resetAllHighlights();
        myContainer->setVisibilityForAll(true);
+       myContainer->arrangeContainer();
        return;
     }
 
     QGraphicsItem *item = scene->selectedItems().first();
 
-        if (item->type() == LogicUnit::Type) {
-            LogicUnit *unit =
-                qgraphicsitem_cast<LogicUnit *>(scene->selectedItems().first());
-            unit->setBrush(QColor(255,255,255,255));
-            unit->setZValue(0);
-            QList<Wire *> list = unit->getAllCons();
-            foreach (Wire *wire, list) {
-                wire->setColor(QColor(0,0,0,255));
-                wire->setZValue(-1000);
-                wire->update();
-            }
+    if (item->type() == LogicUnit::Type) {
+        LogicUnit *unit =
+            qgraphicsitem_cast<LogicUnit *>(scene->selectedItems().first());
+        unit->setBrush(QColor(255,255,255,255));
+        unit->setZValue(0);
+        QList<Wire *> list = unit->getAllCons();
+        foreach (Wire *wire, list) {
+            wire->setColor(QColor(0,0,0,255));
+            wire->setZValue(-1000);
+            wire->update();
         }
+    }
+
+
+
 }
 
 void MainWindow::showNodeAndNeighboursOnly()
@@ -1112,6 +1186,87 @@ void MainWindow::addChildrenToHighlighting()
         }
 }
 
+void MainWindow::showRelevantGraph()
+{
+    //nothing to do if no node is selected
+    if (scene->selectedItems().isEmpty())
+        return;
+
+    QQueue<LogicUnit*> queue;
+    QList<LogicUnit*> donelist;
+    LogicUnit *node;
+
+    QGraphicsItem *item = scene->selectedItems().first();
+
+    if (item->type() == LogicUnit::Type) {
+        node =
+            qgraphicsitem_cast<LogicUnit *>(scene->selectedItems().first());
+    } else {
+        return;
+    }
+
+    //set all nodes to invisible
+    myContainer->setVisibilityForAll(false);
+
+
+    node->setShown(true);
+
+
+    //go left in the graph until inputs are reached
+        queue.enqueue(node);
+        while(!queue.empty()){
+            LogicUnit *actNode = queue.dequeue();
+
+            //make parents visible
+            QList<LogicUnit*> parentslist = actNode->getParents();
+            foreach(LogicUnit* parent, parentslist){
+                if(!queue.contains(parent) && !donelist.contains(parent)){
+                    queue.enqueue(parent);
+                }
+                parent->setShown(true);
+
+            }
+
+            QList<Wire *> list = actNode->getAllCons();
+            foreach (Wire *wire, list) {
+                wire->updatePosition();
+            }
+
+            donelist.append(actNode);
+        }
+
+    //go right in the graph until outputs are reached
+    queue.enqueue(node);
+    while(!queue.empty()){
+        LogicUnit *actNode =
+            queue.dequeue();
+
+        //make parents visible
+        QList<LogicUnit*> kidslist = actNode->getChildren();
+        foreach(LogicUnit* kid, kidslist){
+            if(!queue.contains(kid) && !donelist.contains(kid)){
+                queue.enqueue(kid);
+            }
+            kid->setShown(true);
+        }
+
+        QList<Wire *> list = actNode->getAllCons();
+        foreach (Wire *wire, list) {
+            wire->updatePosition();
+        }
+
+        donelist.append(actNode);
+    }
+
+    myContainer->arrangeContainer();
+    view->centerOn(node->x(),node->y());
+    QString message;
+    message = "Relevant graph node count: ";
+    message.append(QString("%1").arg(donelist.count()+1));//the constant 1 re[resents the initiator node
+    QMessageBox::information(this, tr("Relevant graph"), message);
+
+}
+
 /*---------------------------------------------------------------------------------------------
  * (function: createSimulationCellWidget)
  *-------------------------------------------------------------------------------------------*/
@@ -1123,6 +1278,25 @@ QWidget * MainWindow::createSimulationCellWidget(const QString &text, const QStr
     button->setIconSize(QSize(50, 50));
     button->setCheckable(true);
     simulationButtonGroup->addButton(button);
+
+    QGridLayout *layout = new QGridLayout;
+    layout->addWidget(button, 0, 0, Qt::AlignHCenter);
+    layout->addWidget(new QLabel(text), 1, 0, Qt::AlignCenter);
+
+    QWidget *widget = new QWidget;
+    widget->setLayout(layout);
+
+    return widget;
+}
+
+QWidget * MainWindow::createPowerCellWidget(const QString &text, const QString &image)
+{
+    QToolButton *button = new QToolButton;
+    button->setText(text);
+    button->setIcon(QIcon(image));
+    button->setIconSize(QSize(50, 50));
+    button->setCheckable(true);
+    powerButtonGroup->addButton(button);
 
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(button, 0, 0, Qt::AlignHCenter);
@@ -1160,3 +1334,46 @@ void MainWindow::setEdgeFallRise(bool val){
         myContainer->setEdge(-1);
     }
 }
+
+void MainWindow::activityCycleCountChangedChanged(int number)
+{
+    activityBase = number;
+}
+
+void MainWindow::configureClocks()
+{
+    QList<LogicUnit*> clocks = myContainer->getClocks();
+
+    //if less than 2 clocks available, end configuration
+    if(!fileopen || clocks.length() < 2)
+        return;
+
+
+    clkconfig.passClockList(clocks);
+    clkconfig.exec();
+}
+
+void MainWindow::expandCollapse()
+{
+    //nothing to do if no node is selected
+    if (scene->selectedItems().isEmpty())
+        return;
+
+    QGraphicsItem *item = scene->selectedItems().first();
+
+        if (item->type() == LogicUnit::Type) {
+            LogicUnit *unit =
+                qgraphicsitem_cast<LogicUnit *>(scene->selectedItems().first());
+
+            //if module start right away, otherwise extract module name
+            if(unit->unitType() == LogicUnit::Module){
+                myContainer->expandCollapse(unit->getName());
+            } else if(unit->getName().contains("+")){
+                QString moduleName = myContainer->extractModuleFromName(
+                            unit->getName());
+                myContainer->expandCollapse(moduleName);
+            }
+        }
+}
+
+

@@ -41,6 +41,7 @@ LogicUnit::LogicUnit(QString name, UnitType unitType, QMenu *contextMenu,
     myOutVal[0].append(0);
     hasOdinNode = false;
     highlighted = false;
+    hasModule = false;
     myCurrentCycle = 0;
 
 //different types and shapes are possible here.
@@ -87,6 +88,7 @@ LogicUnit::LogicUnit(QString name, UnitType unitType, QMenu *contextMenu,
     case MINUS:
     case MULTIPLY:
     case MEMORY:
+    case Module:
         myPolygon << QPointF(-50, -50) << QPointF(50, -50)
               << QPointF(50, 50) << QPointF(-50, 50)
               << QPointF(-50, -50);
@@ -140,17 +142,39 @@ void LogicUnit::removeConnections()
  *-------------------------------------------------------------------------------------------*/
 void LogicUnit::addConnection(Wire *wire)
 {
-    //increase the input count if this instance is the ending point
-    if(wire->endUnit()->getName().compare(myName) == 0){
-        myIncount++;
-        foreach (Wire *oldwire, wires) {
-            oldwire->setMaxNumber(myIncount);
+    if(myUnitType != LogicUnit::Module){
+        //increase the input count if this instance is the ending point
+        if(wire->endUnit()->getName().compare(myName) == 0){
+            myIncount++;
+            foreach (Wire *oldwire, wires) {
+                oldwire->setMaxNumber(myIncount);
+            }
+            wire->setNumber(myIncount);
+            wire->setMaxNumber(myIncount);
+        }
+        wires.append(wire);
+        itemChange(QGraphicsPolygonItem::ItemPositionChange,QVariant(0));
+    }else{//I am a Module
+        if(wire->startUnit()->hasModule){
+            //I am the start module
+            if(wire->startUnit()->getModule()->getName().compare(myName)==0){
+                LogicUnit* startNode = wire->startUnit();
+                if(!outNodes.contains(startNode)){
+                       outNodes.append(startNode);
+                }
+                wires.append(wire);
+                wire->setMyOutputPinNumberModule(outNodes.indexOf(startNode)+1);
+            }
+        }else if(wire->endUnit()->hasModule){
+            //I am the end Module
+            if(wire->endUnit()->getModule()->getName().compare(myName)==0){
+                myIncount++;
+                wires.append(wire);
+                wire->setNumberModule(myIncount);
+            }
         }
     }
-    wire->setNumber(myIncount);
-    wire->setMaxNumber(myIncount);
-    wires.append(wire);
-    itemChange(QGraphicsPolygonItem::ItemPositionChange,QVariant(0));
+
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -215,6 +239,10 @@ QPixmap* LogicUnit::image() const
         break;
     case MEMORY:
         pixmap->convertFromImage(QImage(":/images/nodeTypes/Hmemory.png"));
+        pixmap->scaled(size);
+        break;
+    case Module:
+        pixmap->convertFromImage(QImage(":/images/nodeTypes/module.png"));
         pixmap->scaled(size);
         break;
     default:
@@ -310,6 +338,10 @@ QImage image;
         break;
     case MEMORY:
         image.load(":/images/nodeTypes/Hmemory.png");
+        painter->drawImage(boundingRect(),image);
+        break;
+    case Module:
+        image.load(":/images/nodeTypes/module.png");
         painter->drawImage(boundingRect(),image);
         break;
     case MINUS:
@@ -581,6 +613,47 @@ QList<LogicUnit*> LogicUnit::getChildren(){
             children.append(wire->endUnit());
     }
 
-    return children;
+   return children;
+}
+
+/*
+  Connects modules with nodes and the other way round
+*/
+void LogicUnit::addPartner(LogicUnit *partner)
+{
+    moduleViewPartners.append(partner);
+    if(myUnitType != LogicUnit::Module)
+        hasModule = true;
+}
+
+LogicUnit * LogicUnit::getModule()
+{
+    return moduleViewPartners.at(0);
+}
+
+int LogicUnit::getMaxOutNumber()
+{
+    return outNodes.count();
+}
+
+int LogicUnit::getMaxNumber()
+{
+    return myIncount;
+}
+
+void LogicUnit::showActivity()
+{
+    int activity = 0;
+
+    if(wires.count()>0){
+        foreach(Wire* wire, wires){
+            activity += wire->getActivity();
+        }
+        int count = wires.count();
+        activity = activity / wires.count();
+        setBrush(QColor(activity,255-activity,0));
+    }
+
+
 }
 

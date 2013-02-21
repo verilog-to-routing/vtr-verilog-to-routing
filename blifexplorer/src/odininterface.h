@@ -72,6 +72,7 @@ public:
     void endSimulation();
     int getOutputValue(nnode_t* node, int pin, int actstep);
     void setEdge(int i);
+    netlist_t* getNetlist();
 private:
     void init_options();
     //void do_high_level_synthesis();

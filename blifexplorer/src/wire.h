@@ -58,7 +58,26 @@ public:
     int getMaxOutputPinNumber();
     void setMyOutputPinNumber(int number);
     void setMaxOutputPinNumber(int number);
+
+    void setNumberModule(int number);
+    void setMaxNumberModule(int maxnumber);
+    int getMyCountModule();
+    int getMaxCountModule();
+    int getMyOutputPinNumberModule();
+    int getMaxOutputPinNumberModule();
+    void setMyOutputPinNumberModule(int number);
+    void setMaxOutputPinNumberModule(int number);
+
     QPointF getMyInputPosition();
+    int getActivity();
+    void setActivity(int value);
+    void showActivity();
+    void setStartModule(LogicUnit* start);
+    void setEndModule(LogicUnit* end);
+    LogicUnit* getStartModule();
+    LogicUnit* getEndModule();
+    bool hasStartModule, hasEndModule;
+
 
 public slots:
     void updatePosition();
@@ -68,6 +87,9 @@ protected:
                QWidget *widget = 0);
 private:
     LogicUnit *myStartUnit, *myEndUnit;
+    LogicUnit *myStartModule, *myEndModule;
+    bool startFromModule();
+    bool endOnModule();
     QColor myColor;
     QColor mySafeColor;
     qreal myPenwidth;
@@ -75,8 +97,16 @@ private:
     int myMaxNumber;
     int myOutPinNumber;
     int myOutPinMax;
+    //in case modules are involved
+    int myNumberModule;
+    int myMaxNumberModule;
+    int myOutPinNumberModule;
+    int myOutPinMaxModule;
     QColor wireOff;
     QColor wireOn;
+    int activity;
+
+
 };
 
 #endif // WIRE_H

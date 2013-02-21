@@ -50,9 +50,22 @@ Wire::Wire(LogicUnit *startUnit, LogicUnit *endUnit,
     setPen(QPen(myColor,myPenwidth,Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));
     //myNumber is always set by the logic block wich creates it. 0 is default until setNumber is called
     myNumber=0;
+    myMaxNumber = 0;
     //output position which is needed for hord blocks
     myOutPinNumber = 1;
     myOutPinMax = 1;
+
+    //module position params
+    myNumberModule = 0;
+    myMaxNumberModule = 0;
+    myOutPinNumberModule = 1;
+    myOutPinMaxModule = 1;
+
+    //activity estimation
+    activity = 0;
+
+    hasStartModule = false;
+    hasEndModule = false;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -134,18 +147,44 @@ LogicUnit * Wire::endUnit() const
  *-------------------------------------------------------------------------------------------*/
 void Wire::updatePosition()
 {
-    if(!startUnit()->isVisible() || !endUnit()->isVisible()){
+
+    if(!myStartUnit->isVisible() && !startFromModule()){
+        setVisible(false);
+    }else if(!myEndUnit->isVisible() && !endOnModule()){
         setVisible(false);
     }else{
         setVisible(true);
     }
 
+    LogicUnit* start;
+    LogicUnit* end;
+    int number, maxnumber, outnumber, outmaxnumber;
+    if(endOnModule()){
+        number = myNumberModule;
+        maxnumber = myEndModule->getMaxNumber();
+        end = myEndModule;
+    } else {
+        number = myNumber;
+        maxnumber = myMaxNumber;
+        end = myEndUnit;
+    }
+
+    if(startFromModule()){
+        outnumber = myOutPinNumberModule;
+        outmaxnumber = myStartModule->getMaxOutNumber();
+        start = myStartModule;
+    }else{
+        outnumber = myOutPinNumber;
+        outmaxnumber = myOutPinMax;
+        start = myStartUnit;
+    }
+
     //draw line according to start and end positions
-    double inputPosition = ((float)myNumber)/(myMaxNumber+1);
+    double inputPosition = ((float)number)/(maxnumber+1);
     inputPosition = inputPosition*100;
-    double outputPosition = ((float)myOutPinNumber)/(myOutPinMax+1);
+    double outputPosition = ((float)outnumber)/(outmaxnumber+1);
     outputPosition = outputPosition*100;
-    QLineF line(mapFromItem(myStartUnit,50,outputPosition-50),mapFromItem(myEndUnit,-50,inputPosition-50));
+    QLineF line(mapFromItem(start,50,outputPosition-50),mapFromItem(end,-50,inputPosition-50));
     setLine(line);
 
     update();
@@ -301,4 +340,101 @@ QPointF Wire::getMyInputPosition()
     return QPointF(-50,i-50);
 }
 
+int Wire::getActivity()
+{
+    return activity;
+}
 
+void Wire::setActivity(int value)
+{
+    activity = value;
+}
+
+void Wire::showActivity()
+{
+    myColor = QColor(activity,255-activity,0);
+}
+
+void Wire::setStartModule(LogicUnit *start)
+{
+    myStartModule = start;
+    hasStartModule = true;
+}
+
+void Wire::setEndModule(LogicUnit *end)
+{
+    myEndModule = end;
+    hasEndModule = true;
+}
+
+LogicUnit * Wire::getStartModule()
+{
+    return myStartModule;
+}
+
+LogicUnit * Wire::getEndModule()
+{
+    return myEndModule;
+}
+
+bool Wire::startFromModule(){
+    if(!startUnit()->isVisible() && hasStartModule){
+        if(myStartModule->isVisible()){
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool Wire::endOnModule(){
+    bool c1 = !endUnit()->isVisible();
+    bool c2 = hasEndModule;
+    if(!endUnit()->isVisible() && hasEndModule){
+        if(myEndModule->isVisible()){
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void Wire::setNumberModule(int number)
+{
+    myNumberModule = number;
+}
+
+void Wire::setMaxNumberModule(int maxnumber)
+{
+    myMaxNumberModule = maxnumber;
+}
+
+int Wire::getMyCountModule()
+{
+    return myNumberModule;
+}
+
+int Wire::getMaxCountModule()
+{
+    return myMaxNumberModule;
+}
+
+int Wire::getMyOutputPinNumberModule()
+{
+    return myOutPinNumberModule;
+}
+
+int Wire::getMaxOutputPinNumberModule()
+{
+    return myOutPinMaxModule;
+}
+
+void Wire::setMyOutputPinNumberModule(int number)
+{
+    myOutPinNumberModule = number;
+}
+
+void Wire::setMaxOutputPinNumberModule(int number)
+{
+    myOutPinMaxModule = number;
+}

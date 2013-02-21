@@ -17,7 +17,8 @@ SOURCES += main.cpp\
     explorerscene.cpp \
     diagramtextitem.cpp \
     container.cpp \
-    odininterface.cpp
+    odininterface.cpp \
+    clockconfig.cpp
 
 HEADERS  += mainwindow.h \
     logicunit.h \
@@ -67,9 +68,11 @@ HEADERS  += mainwindow.h \
     ../../printhandler/SRC/TC_Common/TC_Name.h \
     ../../printhandler/SRC/TC_Common/TC_StringUtils.h \
     ../../printhandler/SRC/TC_Common/RegExp.h \
+    clockconfig.h
 
 
-FORMS    +=
+FORMS    += \
+    clockconfig.ui
 
 RESOURCES += \
     explorerres.qrc
@@ -133,4 +136,3 @@ LIBS += -L../../libarchfpga \
 ../../printhandler/OBJ/TC_Common/TC_Name.o \
 ../../printhandler/OBJ/TC_Common/TC_StringUtils.o \
 ../../printhandler/OBJ/TC_Common/RegExp.o \
-

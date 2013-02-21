@@ -706,7 +706,8 @@ void compute_and_store_value(nnode_t *node, int cycle)
 		{
 			int i;
 			for (i = 0; i < node->num_output_pins; i++)
-				update_pin_value(node->output_pins[i], is_even_cycle(cycle)?0:1, cycle);
+				//toggle according to ratio
+				update_pin_value(node->output_pins[i], is_even_cycle(cycle/node->ratio)?0:1, cycle);
 			break;
 		}
 		case GND_NODE:
@@ -793,7 +794,7 @@ void update_undriven_input_pins(nnode_t *node, int cycle)
 	for (i = 0; i < node->num_undriven_pins; i++)
 	{
 		npin_t *pin = node->undriven_pins[i];
-		update_pin_value(pin, -1, cycle);
+		update_pin_value(pin, global_args.sim_initial_value, cycle);
 	}
 
 	// By the third cycle everything in the netlist should have been updated.
@@ -979,6 +980,26 @@ int is_node_ready(nnode_t* node, int cycle)
 }
 
 /*
+ * Returns the ration of a clock node.
+ * */
+int get_clock_ratio(nnode_t *node)
+{
+	return node->ratio;
+}
+
+/*
+ * Changes the ratio of a clock node
+ */
+void set_clock_ratio(int rat, nnode_t *node)
+{
+	//change the value only for clocks
+	if(node->type != CLOCK_NODE)
+	 return;
+
+	node->ratio = rat;
+}
+
+/*
  * Gets the children of the given node. Returns the number of
  * children via the num_children parameter. Throws warnings
  * or errors if invalid connection patterns are detected.
@@ -1059,6 +1080,89 @@ nnode_t **get_children_of(nnode_t *node, int *num_children)
 	}
 	*num_children = count;
 	return children;
+}
+
+/*
+ * Gets the children of the given node. Returns the number of
+ * children via the num_children parameter. Throws warnings
+ * or errors if invalid connection patterns are detected.
+ */
+int *get_children_pinnumber_of(nnode_t *node, int *num_children)
+{
+	int *pin_numbers = 0;
+	int count = 0;
+	int i;
+	for (i = 0; i < node->num_output_pins; i++)
+	{
+		npin_t *pin = node->output_pins[i];
+		nnet_t *net = pin->net;
+		if (net)
+		{
+			/*
+			 *  Detects a net that may be being driven by two
+			 *  or more pins or has an incorrect driver pin assignment.
+			 */
+			if (net->driver_pin != pin && global_args.all_warnings)
+			{
+				char *pin_name  = get_pin_name(pin->name);
+				char *node_name = get_pin_name(node->name);
+				char *net_name  = get_pin_name(net->name);
+
+				warning_message(SIMULATION_ERROR, -1, -1,
+						"Found output pin \"%s\" (%ld) on node \"%s\" (%ld)\n"
+						"             which is mapped to a net \"%s\" (%ld) whose driver pin is \"%s\" (%ld) \n",
+						pin_name,
+						pin->unique_id,
+						node_name,
+						node->unique_id,
+						net_name,
+						net->unique_id,
+						net->driver_pin->name,
+						net->driver_pin->unique_id
+				);
+
+				free(net_name);
+				free(pin_name);
+				free(node_name);
+			}
+
+			int j;
+			for (j = 0; j < net->num_fanout_pins; j++)
+			{
+				npin_t *fanout_pin = net->fanout_pins[j];
+				if (fanout_pin && fanout_pin->type == INPUT && fanout_pin->node)
+				{
+					nnode_t *child_node = fanout_pin->node;
+
+					// Check linkage for inconsistencies.
+					if (fanout_pin->net != net)
+					{
+						print_ancestry(child_node, 0);
+						error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+					}
+					else if (fanout_pin->net->driver_pin->net != net)
+					{
+						print_ancestry(child_node, 0);
+						error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+					}
+
+					else if (fanout_pin->net->driver_pin->node != node)
+					{
+						print_ancestry(child_node, 0);
+						error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+					}
+					else
+					{
+						// Add child.
+						pin_numbers = realloc(pin_numbers, sizeof(int) * (count + 1));
+						pin_numbers[count++] = i;
+					}
+				}
+			}
+		}
+	}
+	*num_children = count;
+	return pin_numbers;
 }
 
 /*
@@ -1169,7 +1273,7 @@ void update_pin_value(npin_t *pin, signed char value, int cycle)
 signed char get_pin_value(npin_t *pin, int cycle)
 {
 	if (!pin->values || cycle < 0)
-		return -1;
+		return global_args.sim_initial_value;
 	return pin->values[get_values_offset(cycle)];
 }
 
@@ -1254,7 +1358,7 @@ void initialize_pin(npin_t *pin)
 
 	int i;
 	for (i = 0; i < SIM_WAVE_LENGTH; i++)
-		pin->values[i] = -1;
+		pin->values[i] = global_args.sim_initial_value;
 
 	set_pin_cycle(pin, -1);
 }

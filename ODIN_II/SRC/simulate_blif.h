@@ -106,7 +106,10 @@ stages *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes);
 void free_stages(stages *s);
 
 int get_num_covered_nodes(stages *s);
+int get_clock_ratio(nnode_t *node);
+void set_clock_ratio(int rat, nnode_t *node);
 nnode_t **get_children_of(nnode_t *node, int *count);
+int *get_children_pinnumber_of(nnode_t *node, int *num_children);
 nnode_t **get_children_of_nodepin(nnode_t *node, int *count, int output_pin);
 int is_node_ready(nnode_t* node, int cycle);
 int is_node_complete(nnode_t* node, int cycle);

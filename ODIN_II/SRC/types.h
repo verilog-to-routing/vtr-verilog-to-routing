@@ -167,6 +167,8 @@ struct global_args_t_t
 	char *sim_hold_high;
 	// Comma-separated list of primary input pins to hold low for all cycles but the first.
 	char *sim_hold_low;
+	//
+	int sim_initial_value;
 };
 
 #endif // TYPES_H
@@ -431,6 +433,7 @@ struct nnode_t_t
 	int in_queue; // Flag used by the simulator to avoid double queueing.
 	npin_t **undriven_pins; // These pins have been found by the simulator to have no driver.
 	int  num_undriven_pins;
+	int ratio;//clock ration for clock nodes
 };
 
 struct npin_t_t

@@ -137,7 +137,7 @@ int count_blif_lines(FILE *file);
  */
 void read_blif(char * blif_file)
 {
-	char local_blif[80];
+	char local_blif[255];
 	sprintf(local_blif, "%s", blif_file);
 
 	verilog_netlist = allocate_netlist();

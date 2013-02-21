@@ -164,6 +164,7 @@ void print_usage()
 			"         cycle 0, and high for all subsequent cycles.>\n"
 			"     -3 Generate three valued logic. (Default is binary.)\n"
 			"  -t <input vector file>: Supply a predefined input vector file\n"
+			"  -U Initialize output pins with -1 instead of 0\n"
 
 			" Other Simulation Options: \n"
 			"  -T <output vector file>: Supply an output vector file to check output\n"
@@ -195,7 +196,7 @@ void get_options(int argc, char **argv)
 	
 
 	/* Parse the command line options.  */
-	const char *optString = "hc:V:WREh:o:a:B:b:N:f:s:S:p:g:t:T:L:H:GA3";
+	const char *optString = "hc:V:WREh:o:a:B:b:N:f:s:S:p:g:t:T:L:H:GA3U";
 	int opt = getopt(argc, argv, optString);
 	while(opt != -1) 
 	{
@@ -256,6 +257,9 @@ void get_options(int argc, char **argv)
 			break;
 			case 'T':
 				global_args.sim_vector_output_file = optarg;
+			break;
+			case 'U':
+				global_args.sim_initial_value = -1;
 			break;
 			case 'p':
 				global_args.sim_additional_pins = optarg;

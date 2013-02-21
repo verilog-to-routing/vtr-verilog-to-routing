@@ -79,6 +79,7 @@ void OdinInterface::init_options()
     global_args.high_level_block = NULL;
     global_args.sim_vector_output_file = NULL;
     global_args.sim_hold_low = NULL;
+    global_args.sim_vector_input_file = NULL;
     global_args.sim_hold_high = NULL;
     configuration.output_type = (char*)"blif";
     configuration.split_memory_depth = 15;
@@ -379,6 +380,11 @@ void OdinInterface::setEdge(int i ){
         global_args.sim_output_both_edges = 0;
         global_args.sim_output_rising_edge = 0;
     }
+}
+
+netlist_t* OdinInterface::getNetlist()
+{
+    return verilog_netlist;
 }
 
 

@@ -60,7 +60,7 @@ public:
     enum { Type = UserType + 15 };
     enum UnitType { LogicGate, Input, Output, Latch,
                     Clock, And, Or, Nand, Nor, Not,
-                    Xor,Xnor, MUX, ADDER_FUNC, CARRY_FUNC,MINUS, MEMORY, MULTIPLY, ADD};
+                    Xor,Xnor, MUX, ADDER_FUNC, CARRY_FUNC,MINUS, MEMORY, MULTIPLY, ADD, Module};
 
     LogicUnit(QString name, UnitType unitType, QMenu *contextMenu,
         QGraphicsItem *parent = 0, QGraphicsScene *scene = 0);
@@ -96,9 +96,12 @@ public:
     void setCurrentCycle(int cycle);
     bool isShown();
     void setShown(bool value);
-
-
-
+    void addPartner(LogicUnit* partner);
+    bool hasModule;
+    LogicUnit* getModule();
+    int getMaxOutNumber();
+    int getMaxNumber();
+    void showActivity();
 protected:
     void contextMenuEvent(QGraphicsSceneContextMenuEvent *event);
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
@@ -113,11 +116,17 @@ private:
     int myIncount;
     int myLayer;
     QList< QList<int> > myOutVal;
+    //a nodes partner is its module
+    //a modules partner are the containing nodes
+    QList<LogicUnit *> moduleViewPartners;
     nnode_t *myOdinNode;
     bool hasOdinNode;
     bool highlighted;
     bool shown;
     int myCurrentCycle;
+
+    //module specific vars
+    QList<LogicUnit*> outNodes;
 };
 
 #endif

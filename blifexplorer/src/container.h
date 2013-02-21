@@ -37,9 +37,11 @@ public:
     Container(ExplorerScene* scene);
     void setFilename(QString filename);
     void addUnit(QString name, LogicUnit::UnitType type, QPointF position);
+    LogicUnit * addModule(QString name);
     LogicUnit * addUnit(QString name,LogicUnit::UnitType type, QPointF position, nnode_t* odinRef);
     void addConnection(QString start, QString end);
     bool addConnectionHash(QString start, QString end);
+    bool addConnectionHashByRef(LogicUnit* parent, LogicUnit* kid);
     void arrangeContainer();
     void deleteModule(QString name);
     void clearContainer();
@@ -55,9 +57,15 @@ public:
     void setEdge(int i);
     int simulateNextWave();
     void resetAllHighlights();
+    void showActivity();
+    void getActivityInformation();
     void setVisibilityForAll(bool value);
+    QList<LogicUnit*> getClocks();
+    void expandCollapse(QString modulename);
+    QString extractModuleFromName(QString name);
 private:
     Wire* getConnectionBetween(QString nodeName, QString kidName);
+    LogicUnit* addNodeFromReference(nnode_t* odinNode);
     void computeLayers();
     void spreadLayers();
     void computeLayersHash();
@@ -70,12 +78,19 @@ private:
     int createLatches();
     int createConnections();
     int getNodeListFromOdin();
+    int getAndCopyOdinGraph();
     void conectNodeToLogicUnit(nnode_t *node, QString name);
     void startOdin();
     bool parentsDone(LogicUnit* unit, QHash<QString,LogicUnit*> donehashlist);
     bool parentsDone(LogicUnit *unit);
     int getMaxParentLayer(LogicUnit* node);
     void copySimCyclesIntoNodes();
+    void assignToModule(QString actName);
+    void assignNodeToModule(QString nodeName, QString moduleName);
+    int  processClocks();
+    int createConnectionInGraphCopy(LogicUnit* parent, LogicUnit* kid, int kidOutputPin);
+
+
     QString myFilename;
     QList<LogicUnit *> unitcontainer;
     ExplorerScene* myScene;
@@ -90,6 +105,8 @@ private:
     int myItemcount;
     QHash<QString, LogicUnit *> completeNodes;
     int simOffset, maxSimStep, actSimStep;
+    QList<LogicUnit*> clocks;
+    QQueue<nnode_t *> nodequeue;
 
     };
 

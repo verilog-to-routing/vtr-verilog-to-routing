@@ -62,6 +62,34 @@ LogicUnit * Container::addUnit(QString name,LogicUnit::UnitType type, QPointF po
 }
 
 /*---------------------------------------------------------------------------------------------
+ * (function: addModule)
+ *-------------------------------------------------------------------------------------------*/
+LogicUnit * Container::addModule(QString name)
+{
+    LogicUnit* newUnit;
+    //create in scene
+    newUnit = myScene->addLogicUnit(name,LogicUnit::Module,QPointF(100,100));
+    newUnit->setPos(QPointF(100,100));
+    unithashtable[name] = newUnit;
+    unitcontainer.append(newUnit);
+    return newUnit;
+}
+
+bool Container::addConnectionHashByRef(LogicUnit* parent, LogicUnit* kid){
+
+    QString startName = parent->getName();
+    QString endName = kid->getName();
+
+    //do not connect nodes with themself
+    if(startName.compare(endName) == 0)
+        return false;
+
+    myScene->addConnection(parent, kid);
+
+    return true;
+}
+
+/*---------------------------------------------------------------------------------------------
  * (function: addConnectionHash)
  *-------------------------------------------------------------------------------------------*/
 bool Container::addConnectionHash(QString start, QString end)
@@ -351,7 +379,7 @@ void Container::startOdin(){
         myOdin->setFilename(myFilename);
         myOdin->startOdin();
         odinStarted = true;
-        odinTable = myOdin->getNodeTable();
+        //odinTable = myOdin->getNodeTable();
     }
 }
 
@@ -429,6 +457,10 @@ int Container::createNodesFromOdin(){
          }
         //add Unit with name and type
          addUnit(actName, type,QPointF(100,100),actOdinNode);
+         if(actName.contains("+")){
+             assignToModule(actName);
+             unithashtable[actName]->setVisible(false);
+         }
          items++;
          if((100*items/odinNodeCount)%5==0)
          {
@@ -489,7 +521,6 @@ int Container::createConnectionsFromOdinIterate()
     int conCount = 0;
     int itemNr = 0;
     int j,i, itemTotal;
-    QList<LogicUnit*> clocks;
     bool clocksFound = false;
 
     QHash<QString, LogicUnit *> hash =unithashtable;
@@ -498,6 +529,11 @@ int Container::createConnectionsFromOdinIterate()
      while(blockIterator != hash.constEnd()){
          QString actName = blockIterator.key();
          LogicUnit* actNode = blockIterator.value();
+
+         if(actNode->unitType() == LogicUnit::Module){
+             ++blockIterator;
+             continue;
+         }
 
          if(actNode->getOdinRef()->type == CLOCK_NODE){
              if(!clocks.contains(actNode)){
@@ -532,6 +568,35 @@ int Container::createConnectionsFromOdinIterate()
                              newWire->setMaxOutputPinNumber(
                                          actNode->getOdinRef()->num_output_pins);
                              newWire->setMyOutputPinNumber(j+1);
+                             //add modules to connection if needed
+                             LogicUnit* startNode = unithashtable[actName];
+                             LogicUnit* startModule;
+                             LogicUnit* endNode = unithashtable[kidName];
+                             LogicUnit* endModule;
+                             if(startNode->hasModule){
+                                startModule = startNode->getModule();
+                             }
+                             if(endNode->hasModule){
+                                 endModule = endNode->getModule();
+                             }
+                             if(startNode->hasModule && endNode->hasModule){
+                                 if(startModule->getName().compare(endModule->getName())==0){
+                                     //do nothing because the connection is inside the module
+                                     ;
+                                 }else{//both connections are in modules
+                                     startModule->addConnection(newWire);
+                                     endModule->addConnection(newWire);
+                                     newWire->setEndModule(endModule);
+                                     newWire->setStartModule(startModule);
+                                 }
+                             }else if(startNode->hasModule){
+                                 startModule->addConnection(newWire);
+                                 newWire->setStartModule(startModule);
+                             }else if(endNode->hasModule){
+                                endModule->addConnection(newWire);
+                                newWire->setEndModule(endModule);
+                             }
+
                              childrenDone[kidName] = nodeKid;
                              conCount++;
                              if(conCount%500 == 0){
@@ -563,6 +628,36 @@ int Container::createConnectionsFromOdinIterate()
                  nnode_t* nodeKid = children[i];
                  QString kidName(nodeKid->name);
                  addConnectionHash(clockName,kidName);
+
+                 Wire* newWire = getConnectionBetween(clockName, kidName);
+                 LogicUnit* startNode = unithashtable[clockName];
+                 LogicUnit* startModule;
+                 LogicUnit* endNode = unithashtable[kidName];
+                 LogicUnit* endModule;
+                 if(startNode->hasModule){
+                    startModule = startNode->getModule();
+                 }
+                 if(endNode->hasModule){
+                     endModule = endNode->getModule();
+                 }
+                 if(startNode->hasModule && endNode->hasModule){
+                     if(startModule->getName().compare(endModule->getName())==0){
+                         //do nothing because the connection is inside the module
+                         ;
+                     }else{//both connections are in modules
+                         startModule->addConnection(newWire);
+                         endModule->addConnection(newWire);
+                         newWire->setEndModule(endModule);
+                         newWire->setStartModule(startModule);
+                     }
+                 }else if(startNode->hasModule){
+                     startModule->addConnection(newWire);
+                     newWire->setStartModule(startModule);
+                 }else if(endNode->hasModule){
+                    endModule->addConnection(newWire);
+                    newWire->setEndModule(endModule);
+                 }
+
                  conCount++;
              }
          }
@@ -701,11 +796,14 @@ int Container::readInFileOdinOnly(){
     //let odin ii parse in the file and return a hashtable of all nodes in the netlist
     startOdin();
     fprintf(stdout, "VISUALIZATION: Creating nodes...\n");
+    getAndCopyOdinGraph();
     //iterate through the hashtable and create all nodes based on the type
-    myItemcount = createNodesFromOdin();
+    //myItemcount = createNodesFromOdin();
     fprintf(stdout, "VISUALIZATION: Creating Node connections...\n");
      //create connections
-    cons = createConnectionsFromOdinIterate();
+    //cons = createConnectionsFromOdinIterate();
+
+    myItemcount = unithashtable.count();
      if(myItemcount <= 0)
          return -1;
 
@@ -821,6 +919,48 @@ void Container::setVisibilityForAll(bool value)
      }
 }
 
+void Container::showActivity()
+{
+    QHash<QString, nnode_t *>::const_iterator blockIterator = odinTable.constBegin();
+
+    while(blockIterator != odinTable.constEnd()){
+         QString name = blockIterator.key();
+         LogicUnit* visNode = unithashtable[name];
+         //get all connections outgoing and advise them to
+         //represent the activity by color
+         QList<Wire*> outgoingWires = visNode->getOutCons();
+         foreach(Wire* wire, outgoingWires){
+             wire->showActivity();
+             wire->update();
+         }
+         visNode->showActivity();
+
+         ++blockIterator;
+    }
+
+}
+
+void Container::getActivityInformation()
+{
+    //right now it is a dummy function. the activity values are
+    //generated randomly
+    QHash<QString, nnode_t *>::const_iterator blockIterator = odinTable.constBegin();
+
+    while(blockIterator != odinTable.constEnd()){
+         QString name = blockIterator.key();
+         LogicUnit* visNode = unithashtable[name];
+         //get all connections outgoing and advise them to
+         //represent the activity by color
+         QList<Wire*> outgoingWires = visNode->getOutCons();
+         foreach(Wire* wire, outgoingWires){
+             int act = qrand() % 255;
+             wire->setActivity(act);
+
+         }
+        ++blockIterator;
+    }
+}
+
 /*---------------------------------------------------------------------------------------------
  * (function: showSimulationStep)
  *-------------------------------------------------------------------------------------------*/
@@ -880,5 +1020,339 @@ Wire *Container::getConnectionBetween(QString nodeName, QString kidName)
      }
      return result;
 }
+
+QList<LogicUnit *> Container::getClocks()
+{
+    return clocks;
+}
+
+QString Container::extractModuleFromName(QString name){
+    if(!name.contains("+"))
+        return QString("");
+
+    QString result = name.left(name.lastIndexOf("+"));
+    result = result.right(result.length()-name.lastIndexOf(".")-1);
+    return result;
+}
+
+void Container::assignNodeToModule(QString nodeName,
+                                   QString moduleName){
+    LogicUnit* node = unithashtable[nodeName];
+    LogicUnit* module = unithashtable[moduleName];
+
+    node->addPartner(module);
+    module->addPartner(node);
+}
+
+void Container::assignToModule(QString actName)
+{
+    //extract module
+    QString moduleName = extractModuleFromName(actName);
+    //check if module exist
+    if(!unithashtable.contains(moduleName)){
+        //create module
+        addModule(moduleName);
+    }
+    //assign node to module
+    assignNodeToModule(actName, moduleName);
+}
+
+void Container::expandCollapse(QString modulename)
+{
+    bool makeAllVisible;
+    LogicUnit* module = unithashtable[modulename];
+
+    makeAllVisible = module->isVisible();
+
+    //toggle module visibility
+    module->setVisible(!module->isVisible());
+    bool now = module->isVisible();
+
+    QHash<QString, LogicUnit *> hash =unithashtable;
+    QHash<QString, LogicUnit *>::const_iterator blockIterator = hash.constBegin();
+
+     while(blockIterator != unithashtable.constEnd()){
+         LogicUnit* actNode = blockIterator.value();
+         if(actNode->hasModule &&
+                 actNode->getModule()->getName().compare(modulename)==0){
+            actNode->setVisible(makeAllVisible);
+         }
+         ++blockIterator;
+     }
+     arrangeContainer();
+
+
+}
+
+LogicUnit* Container::addNodeFromReference(nnode_t* odinNode){
+     QString actName(odinNode->name);
+     operation_list odinType = odinNode->type;
+     LogicUnit::UnitType type;
+     LogicUnit* result;
+
+     switch(odinType){
+     case CLOCK_NODE:
+         type = LogicUnit::Clock;
+         break;
+     case INPUT_NODE:
+         type = LogicUnit::Input;
+        break;
+     case FF_NODE:
+         type = LogicUnit::Latch;
+         break;
+     case OUTPUT_NODE:
+         type = LogicUnit::Output;
+         break;
+     case LOGICAL_AND:
+         type = LogicUnit::And;
+         break;
+     case LOGICAL_OR:
+         type = LogicUnit::Or;
+         break;
+     case LOGICAL_NOT:
+         type = LogicUnit::Not;
+         break;
+     case LOGICAL_NAND:
+         type = LogicUnit::Nand;
+         break;
+     case LOGICAL_XOR:
+         type = LogicUnit::Xor;
+         break;
+     case LOGICAL_XNOR:
+         type = LogicUnit::Xnor;
+         break;
+     case LOGICAL_NOR:
+         type = LogicUnit::Nor;
+         break;
+     case MUX_2:
+         type = LogicUnit::MUX;
+         break;
+     case ADDER_FUNC:
+         type = LogicUnit::ADDER_FUNC;
+         break;
+     case CARRY_FUNC:
+         type = LogicUnit::CARRY_FUNC;
+         break;
+     case MULTIPLY:
+         type = LogicUnit::MULTIPLY;
+         break;
+     case ADD:
+         type = LogicUnit::ADD;
+         break;
+     case MINUS:
+         type = LogicUnit::MINUS;
+         break;
+     case MEMORY:
+         type = LogicUnit::MEMORY;
+         break;
+     default:
+         type = LogicUnit::LogicGate;
+         break;
+     }
+    //add Unit with name and type
+     result = addUnit(actName, type,QPointF(100,100),odinNode);
+     if(actName.contains("+")){
+         assignToModule(actName);
+         unithashtable[actName]->setVisible(false);
+     }
+
+     return result;
+}
+
+int Container::processClocks(){
+    int result = 0;
+
+    foreach(LogicUnit* clock, clocks){
+        int num_children = 0;
+
+        int i;
+
+        nnode_t** children = get_children_of(clock->getOdinRef(), &num_children);
+        QString clockName = clock->getName();
+
+        // connect clock to all children
+        for(i=0; i< num_children; i++){
+            nnode_t* nodeKid = children[i];
+            QString kidName(nodeKid->name);
+            addConnectionHash(clockName,kidName);
+
+            Wire* newWire = getConnectionBetween(clockName, kidName);
+            LogicUnit* startNode = unithashtable[clockName];
+            LogicUnit* startModule;
+            LogicUnit* endNode = unithashtable[kidName];
+            LogicUnit* endModule;
+            if(startNode->hasModule){
+               startModule = startNode->getModule();
+            }
+            if(endNode->hasModule){
+                endModule = endNode->getModule();
+            }
+            if(startNode->hasModule && endNode->hasModule){
+                if(startModule->getName().compare(endModule->getName())==0){
+                    //do nothing because the connection is inside the module
+                    ;
+                }else{//both connections are in modules
+                    startModule->addConnection(newWire);
+                    endModule->addConnection(newWire);
+                    newWire->setEndModule(endModule);
+                    newWire->setStartModule(startModule);
+                }
+            }else if(startNode->hasModule){
+                startModule->addConnection(newWire);
+                newWire->setStartModule(startModule);
+            }else if(endNode->hasModule){
+               endModule->addConnection(newWire);
+               newWire->setEndModule(endModule);
+            }
+
+            result++;
+        }
+    }
+
+    return result;
+}
+
+int Container::getAndCopyOdinGraph()
+{
+    netlist_t* odinNetlist = myOdin->getNetlist();
+
+    //create and enqueue input nodes
+    int i, items, cons;
+    bool clocksFound = false;
+    items = 0;
+    cons = 0;
+    for (i = 0; i < odinNetlist->num_top_input_nodes; i++){
+        nodequeue.enqueue(odinNetlist->top_input_nodes[i]);
+        addNodeFromReference(odinNetlist->top_input_nodes[i]);
+    }
+
+    //create and enqueue constant nodes
+    // Enqueue constant nodes.
+    nnode_t *constant_nodes[] = {verilog_netlist->gnd_node,
+                                 verilog_netlist->vcc_node,
+                                 verilog_netlist->pad_node};
+    int num_constant_nodes = 3;
+    for (i = 0; i < num_constant_nodes; i++){
+        nodequeue.enqueue(constant_nodes[i]);
+        addNodeFromReference(constant_nodes[i]);
+    }
+
+    // go through the netlist. While doing so
+    // remove nodes from the queue and add followup nodes
+    nnode_t *node;
+    QHash<QString, nnode_t *> processedNodes;
+    while(!nodequeue.isEmpty()){
+        node = nodequeue.dequeue();
+
+        items++;
+        //remember name of the node so it is not processed again
+        QString nodeName(node->name);
+        LogicUnit* visNode = unithashtable[nodeName];
+        LogicUnit* kidNode;
+        //save node in hash, so it will be processed only once
+        processedNodes[nodeName] = node;
+
+        //Enqueue child nodes which are ready
+        int num_children = 0;
+        int num_children_verify = 0;
+        nnode_t **children = get_children_of(node, &num_children);
+        int* kidpins = get_children_pinnumber_of(node, &num_children_verify);
+
+
+        // should not happen as both numbers are computed the same way.
+        // if it happens make sure get_children and get_children_pinnumber... are still computing the same things
+        if(num_children != num_children_verify)
+            return -1;
+
+
+        //make sure children are not already done or in queue
+        for(i=0; i< num_children; i++){
+            nnode_t *nodeKid = children[i];
+            QString kidName(nodeKid->name);
+            //if not in queue and not yet processed
+
+            if(!nodequeue.contains(nodeKid) && !processedNodes.contains(kidName)){
+                nodequeue.enqueue(nodeKid);
+                kidNode = addNodeFromReference(nodeKid);
+
+            }else{
+                kidNode = getReferenceToUnit(kidName);
+            }
+            //create connections
+
+            //if clock, remember it
+            //otherwise connect parent and kid
+            if(node->type == CLOCK_NODE){
+                 if(!clocks.contains(visNode)){
+                    clocks.append(visNode);
+                    clocksFound = true;
+                 }
+            }else{
+                createConnectionInGraphCopy(visNode, kidNode, kidpins[i]);
+            }
+
+        }
+    }
+
+    //process clocks
+    if(clocksFound){
+        //for all clocks create the connections
+        processClocks();
+    }
+
+}
+
+int Container::createConnectionInGraphCopy(LogicUnit* parent, LogicUnit* kid, int kidOutputPin){
+
+    QString nodeName = parent->getName();
+    QString kidName = kid->getName();
+
+    int cons = 0;
+
+    bool success = addConnectionHashByRef(parent,kid);
+    if(!success){
+         fprintf(stderr, "CONTAINER:  Warning: Node has itself in childlist in Odin II:");
+         fprintf(stderr,nodeName.toAscii().data());
+         fprintf(stderr,"\n");
+    }else{
+         nnode_t* node = parent->getOdinRef();
+         Wire* newWire = getConnectionBetween(nodeName, kidName);
+         newWire->setMaxOutputPinNumber(
+                     node->num_output_pins);
+         newWire->setMyOutputPinNumber(kidOutputPin+1);//IMPORTANT!! FIX THIS! connections need to know the starting output pin number
+         //add modules to connection if needed
+         LogicUnit* startNode = unithashtable[nodeName];
+         LogicUnit* startModule;
+         LogicUnit* endNode = unithashtable[kidName];
+         LogicUnit* endModule;
+         if(startNode->hasModule){
+            startModule = startNode->getModule();
+         }
+         if(endNode->hasModule){
+             endModule = endNode->getModule();
+         }
+         if(startNode->hasModule && endNode->hasModule){
+             if(startModule->getName().compare(endModule->getName())==0){
+                 //do nothing because the connection is inside the module
+                 ;
+             }else{//both connections are in modules
+                 startModule->addConnection(newWire);
+                 endModule->addConnection(newWire);
+                 newWire->setEndModule(endModule);
+                 newWire->setStartModule(startModule);
+             }
+         }else if(startNode->hasModule){
+             startModule->addConnection(newWire);
+             newWire->setStartModule(startModule);
+         }else if(endNode->hasModule){
+            endModule->addConnection(newWire);
+            newWire->setEndModule(endModule);
+         }
+         cons++;
+    }
+
+    return cons;
+}
+
 
 

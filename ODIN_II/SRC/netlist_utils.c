@@ -79,6 +79,8 @@ nnode_t* allocate_nnode() {
 	new_node->undriven_pins = 0;
 	new_node->num_undriven_pins = 0;
 
+	new_node->ratio = 1;
+
 	return new_node;
 }
 

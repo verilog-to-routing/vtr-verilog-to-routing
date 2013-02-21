@@ -31,5 +31,6 @@
         <file>images/nodeTypes/Hmemory.png</file>
         <file>images/nodeTypes/Hmult.png</file>
         <file>images/nodeTypes/Hminus.png</file>
+        <file>images/nodeTypes/module.png</file>
     </qresource>
 </RCC>
