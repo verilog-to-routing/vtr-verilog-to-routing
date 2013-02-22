@@ -2165,6 +2165,7 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 			strlen(default_name) + strlen(in_port->name) + 2, sizeof(char));
 	sprintf(lut_pb_type->modes[1].interconnect[0].output_string, "%s.%s",
 			default_name, in_port->name);
+	lut_pb_type->modes[1].interconnect[0].infer_annotations = TRUE;
 
 	lut_pb_type->modes[1].interconnect[0].parent_mode_index = 1;
 	lut_pb_type->modes[1].interconnect[0].parent_mode = &lut_pb_type->modes[1];
