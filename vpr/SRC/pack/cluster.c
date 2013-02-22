@@ -32,7 +32,7 @@
 #define AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST 5 /* Maximum constant number of pins that can exceed input pins before giving up */
 
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
-#define AAPACK_MAX_NET_SINKS_IGNORE 2048 /* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
+#define AAPACK_MAX_NET_SINKS_IGNORE 2048				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
 
 #define SCALE_NUM_PATHS 1e-2     /*this value is used as a multiplier to assign a    *
 				  *slightly higher criticality value to nets that    *
@@ -1110,6 +1110,7 @@ static void alloc_and_load_pb_stats(t_pb *pb, int max_models,
 	pb->pb_stats->feasible_blocks = (t_pack_molecule**) my_calloc(
 			AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE, sizeof(t_pack_molecule *));
 
+	pb->pb_stats->tie_break_high_fanout_net = OPEN;
 	for (i = 0; i < pb->pb_graph_node->num_input_pin_class; i++) {
 		pb->pb_stats->input_pins_used[i] = (int*) my_malloc(
 				pb->pb_graph_node->input_pin_class_size[i] * sizeof(int));
@@ -1420,11 +1421,6 @@ static void update_connection_gain_values(int inet, int clustered_block,
 	int clb_index;
 	int num_internal_connections, num_open_connections, num_stuck_connections;
 
-	if(vpack_net[inet].num_sinks > AAPACK_MAX_NET_SINKS_IGNORE) {
-		/* Connection gain requires traversing all sinks of a net, for high-fanout nets, this is too runtime costly for measuring a net that probably has no hope of ever getting packed, thus ignore those high fanout nets */
-		return;
-	}
-
 	num_internal_connections = num_open_connections = num_stuck_connections = 0;
 
 	clb_index = logical_block[clustered_block].clb_index;
@@ -1571,10 +1567,26 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 	 * cluster. The timinggain is the criticality of the most critical*
 	 * vpack_net between this logical_block and a logical_block in the cluster.             */
 
-	int iblk, ipin, ifirst;
+	int iblk, ipin, ifirst, stored_net;
 	t_pb *cur_pb;
 
 	cur_pb = logical_block[clustered_block].pb->parent_pb;
+
+	
+	if (vpack_net[inet].num_sinks > AAPACK_MAX_NET_SINKS_IGNORE) {
+		/* Optimization: It can be too runtime costly for marking all sinks for a high fanout-net that probably has no hope of ever getting packed, thus ignore those high fanout nets */
+		if(vpack_net[inet].is_global != TRUE) {
+			/* If no low/medium fanout nets, we may need to consider high fan-out nets for packing, so select one and store it */ 
+			while(cur_pb->parent_pb != NULL) {
+				cur_pb = cur_pb->parent_pb;
+			}
+			stored_net = cur_pb->pb_stats->tie_break_high_fanout_net;
+			if(stored_net == OPEN || vpack_net[inet].num_sinks < vpack_net[stored_net].num_sinks) {
+				cur_pb->pb_stats->tie_break_high_fanout_net = inet;
+			}
+		}
+		return;
+	}
 
 	while (cur_pb) {
 		/* Mark vpack_net as being visited, if necessary. */
@@ -1597,7 +1609,7 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 			else
 				ifirst = 1;
 
-			if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(inet) == 0 && vpack_net[inet].num_sinks < AAPACK_MAX_NET_SINKS_IGNORE) {
+			if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(inet) == 0) {
 				for (ipin = ifirst; ipin <= vpack_net[inet].num_sinks; ipin++) {
 					iblk = vpack_net[inet].node_block[ipin];
 					if (logical_block[iblk].clb_index == NO_CLUSTER) {
@@ -1954,7 +1966,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 	 * function passed in as is_feasible.  If there are no feasible *
 	 * blocks it returns NO_CLUSTER.                                */
 
-	int i, j, iblk, index;
+	int i, j, iblk, index, inet, count;
 	boolean success;
 	struct s_linked_vptr *cur;
 
@@ -2030,6 +2042,45 @@ static t_pack_molecule *get_highest_gain_molecule(
 							if (success) {
 								add_molecule_to_pb_stats_candidates(molecule,
 										cur_pb->pb_stats->gain, cur_pb);
+							}
+						}
+						cur = cur->next;
+					}
+				}
+			}
+		}
+
+		if(cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net != OPEN) {
+			/* Because the packer ignores high fanout nets when marking what blocks to consider, if no marked blocks, use one of the ignored high fanout net to determine gain */
+			inet = cur_pb->pb_stats->tie_break_high_fanout_net;
+			count = 0;
+			for (i = 0; i <= vpack_net[inet].num_sinks && count < AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE; i++) {
+				iblk = vpack_net[inet].node_block[i];
+				if (logical_block[iblk].clb_index == NO_CLUSTER) {
+					cur = logical_block[iblk].packed_molecules;
+					while (cur != NULL) {
+						molecule = (t_pack_molecule *) cur->data_vptr;
+						if (molecule->valid) {
+							success = TRUE;
+							for (j = 0;
+									j < get_array_size_of_molecule(molecule);
+									j++) {
+								if (molecule->logical_block_ptrs[j] != NULL) {
+									assert(
+											molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
+									if (!exists_free_primitive_for_logical_block(
+											cluster_placement_stats_ptr,
+											iblk)) { /* jedit debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
+										success = FALSE;
+										break;
+									}
+								}
+							}
+							if (success) {
+								printf("jedit added %s\n", logical_block[iblk].name);
+								add_molecule_to_pb_stats_candidates(molecule,
+										cur_pb->pb_stats->gain, cur_pb);
+								count++;
 							}
 						}
 						cur = cur->next;

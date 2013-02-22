@@ -148,6 +148,8 @@ typedef struct s_pb_stats {
 	int num_marked_nets, num_marked_blocks;
 	int num_child_blocks_in_pb;
 
+	int tie_break_high_fanout_net; /* If no marked candidate atoms, use this high fanout net to determine the next candidate atom */
+
 	/* [0..num_logical_nets-1].  How many pins of each vpack_net are contained in the *
 	 * currently open pb?                                          */
 	std::map<int, int> num_pins_of_net_in_pb;
