@@ -1,0 +1,40 @@
+.param rise = 'simt/500'
+
+Vin in 0 PULSE(Vol 0 'simt/4' 'rise' 'rise' 'simt/2-rise' 'simt')
+Vdrive Vdrive 0 Vol
+Vref Vref 0 Vol
+Vsram sram1 0 Vol
+
+
+X0 in a Vdrive 0 inv nsize=10 psize='10*pnratio'
+Xref in x Vref 0 inv nsize=10 psize='10*pnratio'
+X1 a a a a mida sram1 0 0 0 mux4 size=1
+X2 a a a a midb sram1 0 0 0 mux4 size=1
+X3 a a a a midc sram1 0 0 0 mux4 size=1
+X4 mida midb midc out sram1 0 0 mux3 size=1
+
+*Xb1 out outa Vbuf 0 levr
+*Xb1 out outa Vbuf 0 inv nsize=2 psize='1'
+*Xb2 outa outb Vbuf 0 inv nsize=4 psize='pnratio*4'
+*Xb3 outb outc Vbuf 0 inv nsize=16 psize='pnratio*16'
+
+
+.TEMP tempr
+
+.OP
+.OPTIONS POST
+
+
+
+.tran 'simt/10000' 'simt'
+
+.measure tran Edrive integ I(Vdrive)
+.measure tran Eref integ I(Vref)
+.measure tran Esram integ I(Vsram)
+
+.measure tran E Param=('(-Edrive+Eref)*Vol')
+
+
+
+.end
+

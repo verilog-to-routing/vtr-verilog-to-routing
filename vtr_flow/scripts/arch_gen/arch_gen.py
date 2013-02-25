@@ -789,16 +789,16 @@ for arch in arches:
     gen_arch(dir, *arch)
     
 for arch in arches_i:
-    gen_arch(os.path.join(dir, "I"), *arch)
+    gen_arch(dir, *arch)
     
 for arch in arches_l:
-    gen_arch(os.path.join(dir, "L"), *arch)
+    gen_arch(dir, *arch)
   
 for arch in arches_fi:
-    gen_arch(os.path.join(dir, "Fi"), *arch)  
+    gen_arch(dir, *arch)  
     
 for arch in arches_c:
-    gen_arch(os.path.join(dir, "C"), *arch)
+    gen_arch(dir, *arch)
     
 print "Done\n"
 
