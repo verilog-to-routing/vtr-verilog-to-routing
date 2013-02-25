@@ -810,7 +810,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 	case POWER_BUFFER_TYPE_AUTO:
 		/* Asume the buffer drives the wire & fanout muxes */
 		C_load = pin->pin_power->C_wire
-				+ (fanout) * g_power_commonly_used->NMOS_1X_C_d;
+				+ (fanout) * g_power_commonly_used->INV_1X_C_in; //g_power_commonly_used->NMOS_1X_C_d;
 		if (C_load > g_power_commonly_used->INV_1X_C_in) {
 			pin->pin_power->buffer_size = power_buffer_size_from_logical_effort(
 					C_load);
