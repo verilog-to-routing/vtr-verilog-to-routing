@@ -51,7 +51,7 @@ static int power_compare_voltage_pair(const void * key_void,
 		const void * elem_void);
 static int power_compare_leakage_pair(const void * key_void,
 		const void * elem_void);
-static void power_tech_xml_load_sc(ezxml_t parent);
+//static void power_tech_xml_load_sc(ezxml_t parent);
 static int power_compare_buffer_strength(const void * key_void,
 		const void * elem_void);
 static int power_compare_buffer_sc_levr(const void * key_void,
@@ -200,6 +200,7 @@ static void power_tech_xml_load_components(ezxml_t parent) {
  * Read short-circuit buffer information from the transistor .xml file.
  * This contains values for buffers of various 1) # Stages 2) Stage strength 3) Input type & capacitance
  */
+#if 0
 static void power_tech_xml_load_sc(ezxml_t parent) {
 	ezxml_t child, prev, gc, ggc;
 	int i, j, k;
@@ -268,6 +269,7 @@ static void power_tech_xml_load_sc(ezxml_t parent) {
 		i++;
 	}
 }
+#endif
 
 /**
  *  Read NMOS subthreshold leakage currents from the .xml transistor characteristics
