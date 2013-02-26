@@ -10,7 +10,7 @@ X0 in a Vdrive 0 inv nsize=8 psize='8*pnratio'
 Xref in x Vref 0 inv nsize=8 psize='8*pnratio'
 X1 a a a mida sram1 0 0 mux3 size=1
 X2 a a a midb sram1 0 0 mux3 size=1
-X3 a a midc sram1 0 mux2 size=1
+X3 a a a midc sram1 0 0 mux3 size=1
 X4 mida midb midc out sram1 0 0 mux3 size=1
 
 
@@ -29,7 +29,7 @@ X4 mida midb midc out sram1 0 0 mux3 size=1
 .measure tran Esram integ I(Vsram)
 .measure tran Ebuf integ I(Vbuf)
 .measure tran E Param=('(-Edrive+Eref)*Vol')
-
+.measure tran power Param=('E/simt')
 
 
 .end

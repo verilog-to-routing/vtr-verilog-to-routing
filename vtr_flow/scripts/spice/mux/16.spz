@@ -29,7 +29,7 @@ X5 mida midb midc midd out sram1 0 0 0 mux4 size=1
 .measure tran Esram integ I(Vsram)
 .measure tran Ebuf integ I(Vbuf)
 .measure tran E Param=('(-Edrive+Eref)*Vol')
-
+.measure tran power Param=('E/simt')
 
 
 .end

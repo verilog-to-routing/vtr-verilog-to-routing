@@ -1,0 +1,29 @@
+.param rise = 'simt/500'
+
+Vdut Vdut 0 Vol
+Vdrive Vdrive 0 Vol
+Vref Vref 0 Vol
+
+Vin in 0 PULSE(0 Vol 'simt/4' 'rise' rise' 'simt/2' 'simt')
+
+X2 Vref mid2 Vdut 0 inv nsize='1' psize='1*pnratio'
+
+
+
+.TEMP tempr
+
+.OP
+.OPTIONS POST
+
+.tran 'simt/10000' 'simt'
+
+.measure tran Edut INTEG I(Vdut)
+.measure tran Edrive INTEG I(Vdrive)
+.measure tran Eref INTEG I(Vref)
+.measure tran E Param=('(-Edut)*Vol')
+.measure tran power Param=('E/simt')
+
+
+
+
+.end

@@ -1,0 +1,51 @@
+.param rise = 'simt/1000'
+
+Vdd Vdd 0 Vol
+Vd D 0 Vol
+
+
+Vclkref Vclkref 0 Vol
+
+Vclknref Vclknref 0 Vol
+
+Vclk clk 0 Vol
+
+*Vclki clki 0 PULSE(0 Vol 'simt/4' 0n 0n 'simt/2' 'simt')
+*Vclkni clkni 0 PULSE(Vol 0 'simt/4' 0n 0n 'simt/2' 'simt')
+
+* Master loop
+X0 D m1b m1o clk 0 Vdd 0 mux2trans size=1 pnratio='pnratio'
+X1 m1o m2b Vdd 0 inv nsize=1 psize='pnratio'
+X2 m2b m1b Vdd 0 inv nsize=1 psize='pnratio'
+
+X3 m2a m2b m2o clk 0 Vdd 0 mux2trans size=1 pnratio='pnratio'
+X4 m2o Q Vdd 0 inv nsize=1 psize='pnratio'
+X5 Q m2a Vdd 0 inv nsize=1 psize='pnratio'
+
+
+.TEMP tempr
+
+.OP
+.OPTIONS POST
+
+.IC V(Q)='Vol'
+.IC V(m1o)='Vol'
+.IC V(m1b)='Vol'
+.IC V(m2b)=0
+.IC V(m1a)=0
+
+.tran 'simt/10000' 'simt*2'
+
+.measure tran Ebuffers INTEG I(Vdd)
+.measure tran Ed INTEG I(Vd)
+.measure tran Eclk INTEG I(Vclk)
+
+
+.measure tran Eclkref INTEG I(Vclkref)
+.measure tran Eclkn INTEG I(Vclkn)
+.measure tran Eclknref INTEG I(Vclknref)
+.measure tran E Param=('(-Ebuffers-Ed-Eclk)*Vol')
+.measure tran power Param=('E/simt/2')
+.end
+
+

@@ -6,13 +6,13 @@ Vref Vref 0 Vol
 Vsram sram1 0 Vol
 Vbuf Vbuf 0 Vol
 
-X0 in a Vdrive 0 inv nsize=10 psize='10*pnratio'
-Xref in x Vref 0 inv nsize=10 psize='10*pnratio'
-X1 a a a a a mida sram1 0 0 0 0 mux5 size=1
-X2 a a a a a midb sram1 0 0 0 0 mux5 size=1
-X3 a a a a a midc sram1 0 0 0 0 mux5 size=1
-X4 a a a a a midd sram1 0 0 0 0 mux5 size=1
-X6 mida midb midc midd out sram1 0 0 0 mux4 size=1
+X0 in a Vdrive 0 inv nsize=4 psize='4*pnratio'
+Xref in x Vref 0 inv nsize=4 psize='4*pnratio'
+
+X1 a a mida sram1 0 mux2 size=1
+X2 a a midb sram1 0 mux2 size=1
+X3 mida midb out sram1 0 mux2 size=1
+
 
 
 .TEMP tempr
@@ -29,7 +29,7 @@ X6 mida midb midc midd out sram1 0 0 0 mux4 size=1
 .measure tran Esram integ I(Vsram)
 .measure tran Ebuf integ I(Vbuf)
 .measure tran E Param=('(-Edrive+Eref)*Vol')
-
+.measure tran power Param=('E/simt')
 
 
 .end
