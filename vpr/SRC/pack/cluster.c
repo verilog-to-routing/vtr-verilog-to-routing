@@ -32,7 +32,8 @@
 #define AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST 5 /* Maximum constant number of pins that can exceed input pins before giving up */
 
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
-#define AAPACK_MAX_NET_SINKS_IGNORE 2048				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
+#define AAPACK_MAX_NET_SINKS_IGNORE 512				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
+#define AAPACK_CONSIDER_HIGH_FANOUT_TIE_BREAK_THRESHOLD 4      /* Number of feasible candidates below which the packer should start considering high fanout nets */
 
 #define SCALE_NUM_PATHS 1e-2     /*this value is used as a multiplier to assign a    *
 				  *slightly higher criticality value to nets that    *
@@ -2050,10 +2051,10 @@ static t_pack_molecule *get_highest_gain_molecule(
 			}
 		}
 
-		if(cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net != OPEN) {
-			/* Because the packer ignores high fanout nets when marking what blocks to consider, if no marked blocks, use one of the ignored high fanout net to determine gain */
+		if(cur_pb->pb_stats->num_feasible_blocks < AAPACK_CONSIDER_HIGH_FANOUT_TIE_BREAK_THRESHOLD && cur_pb->pb_stats->tie_break_high_fanout_net != OPEN) {
+			/* Because the packer ignores high fanout nets when marking what blocks to consider, use one of the ignored high fanout net to fill up lightly related blocks */
 			inet = cur_pb->pb_stats->tie_break_high_fanout_net;
-			count = 0;
+			count = cur_pb->pb_stats->num_feasible_blocks;
 			for (i = 0; i <= vpack_net[inet].num_sinks && count < AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE; i++) {
 				iblk = vpack_net[inet].node_block[i];
 				if (logical_block[iblk].clb_index == NO_CLUSTER) {
@@ -2077,7 +2078,6 @@ static t_pack_molecule *get_highest_gain_molecule(
 								}
 							}
 							if (success) {
-								printf("jedit added %s\n", logical_block[iblk].name);
 								add_molecule_to_pb_stats_candidates(molecule,
 										cur_pb->pb_stats->gain, cur_pb);
 								count++;
