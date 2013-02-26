@@ -32,8 +32,8 @@
 #define AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST 5 /* Maximum constant number of pins that can exceed input pins before giving up */
 
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
-#define AAPACK_MAX_NET_SINKS_IGNORE 512				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
-#define AAPACK_CONSIDER_HIGH_FANOUT_TIE_BREAK_THRESHOLD 4      /* Number of feasible candidates below which the packer should start considering high fanout nets */
+#define AAPACK_MAX_NET_SINKS_IGNORE 256				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
+#define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10			/* For high-fanout nets that are ignored, consider a maximum of this many nets */
 
 #define SCALE_NUM_PATHS 1e-2     /*this value is used as a multiplier to assign a    *
 				  *slightly higher criticality value to nets that    *
@@ -2050,44 +2050,45 @@ static t_pack_molecule *get_highest_gain_molecule(
 				}
 			}
 		}
-
-		if(cur_pb->pb_stats->num_feasible_blocks < AAPACK_CONSIDER_HIGH_FANOUT_TIE_BREAK_THRESHOLD && cur_pb->pb_stats->tie_break_high_fanout_net != OPEN) {
-			/* Because the packer ignores high fanout nets when marking what blocks to consider, use one of the ignored high fanout net to fill up lightly related blocks */
-			inet = cur_pb->pb_stats->tie_break_high_fanout_net;
-			count = cur_pb->pb_stats->num_feasible_blocks;
-			for (i = 0; i <= vpack_net[inet].num_sinks && count < AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE; i++) {
-				iblk = vpack_net[inet].node_block[i];
-				if (logical_block[iblk].clb_index == NO_CLUSTER) {
-					cur = logical_block[iblk].packed_molecules;
-					while (cur != NULL) {
-						molecule = (t_pack_molecule *) cur->data_vptr;
-						if (molecule->valid) {
-							success = TRUE;
-							for (j = 0;
-									j < get_array_size_of_molecule(molecule);
-									j++) {
-								if (molecule->logical_block_ptrs[j] != NULL) {
-									assert(
-											molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
-									if (!exists_free_primitive_for_logical_block(
-											cluster_placement_stats_ptr,
-											iblk)) { /* jedit debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
-										success = FALSE;
-										break;
-									}
+	}
+	if(cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net != OPEN) {
+		/* Because the packer ignores high fanout nets when marking what blocks to consider, use one of the ignored high fanout net to fill up lightly related blocks */
+		reset_tried_but_unused_cluster_placements(cluster_placement_stats_ptr);
+		inet = cur_pb->pb_stats->tie_break_high_fanout_net;
+		count = 0;
+		for (i = 0; i <= vpack_net[inet].num_sinks && count < AAPACK_MAX_HIGH_FANOUT_EXPLORE; i++) {
+			iblk = vpack_net[inet].node_block[i];
+			if (logical_block[iblk].clb_index == NO_CLUSTER) {
+				cur = logical_block[iblk].packed_molecules;
+				while (cur != NULL) {
+					molecule = (t_pack_molecule *) cur->data_vptr;
+					if (molecule->valid) {
+						success = TRUE;
+						for (j = 0;
+								j < get_array_size_of_molecule(molecule);
+								j++) {
+							if (molecule->logical_block_ptrs[j] != NULL) {
+								assert(
+										molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
+								if (!exists_free_primitive_for_logical_block(
+										cluster_placement_stats_ptr,
+										iblk)) { /* jedit debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
+									success = FALSE;
+									break;
 								}
 							}
-							if (success) {
-								add_molecule_to_pb_stats_candidates(molecule,
-										cur_pb->pb_stats->gain, cur_pb);
-								count++;
-							}
 						}
-						cur = cur->next;
+						if (success) {
+							add_molecule_to_pb_stats_candidates(molecule,
+									cur_pb->pb_stats->gain, cur_pb);
+							count++;
+						}
 					}
+					cur = cur->next;
 				}
 			}
 		}
+		cur_pb->pb_stats->tie_break_high_fanout_net = OPEN; /* Mark off that this high fanout net has been considered */
 	}
 	molecule = NULL;
 	for (j = 0; j < cur_pb->pb_stats->num_feasible_blocks; j++) {

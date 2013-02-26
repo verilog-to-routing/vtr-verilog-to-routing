@@ -27,4 +27,8 @@ boolean exists_free_primitive_for_logical_block(
 		INOUTP t_cluster_placement_stats *cluster_placement_stats,
 		INP int ilogical_block);
 
+void reset_tried_but_unused_cluster_placements(
+		INOUTP t_cluster_placement_stats *cluster_placement_stats);
+
+
 #endif
