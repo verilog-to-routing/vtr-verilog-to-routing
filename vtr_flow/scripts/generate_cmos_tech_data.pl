@@ -3,6 +3,8 @@
 use strict;
 use POSIX;
 use File::Basename;
+use File::Spec;
+use Cwd 'abs_path';
 
 sub get_capacitances;
 sub get_pn_ratio;
@@ -24,7 +26,7 @@ my $vin_intervals   = 10;
 my $vds_intervals   = 100;
 my $max_buffer_size = 100;
 my $buffer_interval = 1.5;
-my $mux_interval = 4;
+my $mux_interval    = 4;
 
 my $number_arguments = @ARGV;
 if ( $number_arguments < 4 ) {
@@ -61,8 +63,8 @@ if ( !$full ) {
 #print get_buffer_sc( 1, 1, 2, 1.7 ) . "\n";
 #exit
 
+my $optimal_p_to_n = 1.0;
 
-my $optimal_p_to_n;
 if ($full) {
 	$optimal_p_to_n = get_pn_ratio();
 }
@@ -132,9 +134,44 @@ for ( my $i = 0 ; $i <= $vds_intervals ; $i++ ) {
 
 print "\t </nmos_leakages>\n";
 
-print_buffer_sc($optimal_p_to_n);
+#print_buffer_sc($optimal_p_to_n);
+
+print_components();
 
 print "</technology>\n";
+
+sub print_components() {
+	my $script_path = abs_path($0);
+	$script_path = ( fileparse($script_path) )[1];
+
+	my $spice_script = File::Spec->join( $script_path, "spice", "run_spice.py" );
+	my $temp_file    = File::Spec->join( $script_path, "spice", "temp", "temp.txt" );
+
+	my $tech_size_nm = $tech_size * 1e9;
+
+	my @components = ( [ "buf_levr", [ 1, 4, 16, 64 ] ], ["buf", [1,4,16,64]], ["mux",[4,9,16,25]], ["lut",[2,4,6]], ["dff",[1]] );
+
+	print "\t<components>\n";
+
+	foreach my $component_ref (@components) {
+		my @component = @$component_ref;
+
+		my $component_name = @component[0];
+		print "\t\t<$component_name>\n";
+
+		my $sizes_ref = @component[1];
+		foreach my $size (@$sizes_ref) {
+			my $cmd    = "$spice_script $tech_file $tech_size_nm $Vdd $optimal_p_to_n $temp h $component_name $size";
+			my $result = `$cmd`;
+			chomp($result);
+			print "\t\t\t<instance size=\"" . $size . "\" power=\"" . $result . "\"/>\n";
+		}
+
+		print "\t\t</$component_name>\n";
+	}
+
+	print "\t</components>\n";
+}
 
 sub get_pn_ratio {
 	my @sizes;
@@ -308,7 +345,7 @@ sub calc_buffer_num_stages {
 		return 2;
 	}
 	else {
-		my $N = int(log($S) / log(4.0) + 1);
+		my $N = int( log($S) / log(4.0) + 1 );
 		if ( abs( calc_buffer_stage_effort( $N + 1, $S ) - 4 ) < abs( calc_buffer_stage_effort( $N, $S ) - 4 ) ) {
 			$N = $N + 1;
 		}
@@ -321,25 +358,24 @@ sub print_buffer_sc {
 
 	print "\t<buffer_sc>\n";
 
-	for ( my $N = 1.0 ; $N <= 5; $N = $N + 1 ) {
-		
+	for ( my $N = 1.0 ; $N <= 5 ; $N = $N + 1 ) {
+
 		print "\t\t<stages num_stages='" . $N . "'>\n";
 
-		for ( my $g = 1; $g <= 6; $g = $g + 1) {
-			
+		for ( my $g = 1 ; $g <= 6 ; $g = $g + 1 ) {
+
 			my $sc_nolevr = get_buffer_sc( $N, $g, 0, 0, $pn_ratio );
-			
+
 			print "\t\t\t<strength gain='" . $g . "' sc_nolevr='" . $sc_nolevr . "'>\n";
-			
-			for (my $i = 1; $i <= $max_mux_size + $mux_interval; $i = $i + $mux_interval) {
-				my $sc_levr = get_buffer_sc($N, $g, 1, $i, $pn_ratio);
+
+			for ( my $i = 1 ; $i <= $max_mux_size + $mux_interval ; $i = $i + $mux_interval ) {
+				my $sc_levr = get_buffer_sc( $N, $g, 1, $i, $pn_ratio );
 				print "\t\t\t\t<input_cap mux_size='" . $i . "' sc_levr='" . $sc_levr . "'/>\n";
 			}
-			
 
 			print "\t\t\t</strength>\n";
-			
-			if ($N == 1) {
+
+			if ( $N == 1 ) {
 				last;
 			}
 		}
@@ -351,12 +387,11 @@ sub print_buffer_sc {
 }
 
 sub get_buffer_sc {
-	my $N         = shift(@_);
-	my $g 		= shift(@_);
+	my $N              = shift(@_);
+	my $g              = shift(@_);
 	my $level_restorer = shift(@_);
 	my $mux_in_size    = shift(@_);
 	my $pn_ratio       = shift(@_);
-
 
 	my $s = "";
 
@@ -366,9 +401,9 @@ sub get_buffer_sc {
 	for ( my $i = 0 ; $i < $N ; $i = $i + 1 ) {
 		$s = $s . "Vup" . $i . " Vdd VupL" . $i . " 0\n";
 		$s = $s . "Vdown" . $i . " VdownH" . $i . " 0 0\n";
-		$s = $s . "Vgate" . $i . " VgateH" . $i . " out" . ($i+1) . " 0\n";
-		$s = $s . "VgP" . ($i+1) . " out" . ($i+1) . " VgLP" . ($i+1) . " 0\n";
-		$s = $s . "VgN" . ($i+1) . " out" . ($i+1) . " VgLN" . ($i+1) . " 0\n";
+		$s = $s . "Vgate" . $i . " VgateH" . $i . " out" . ( $i + 1 ) . " 0\n";
+		$s = $s . "VgP" . ( $i + 1 ) . " out" . ( $i + 1 ) . " VgLP" . ( $i + 1 ) . " 0\n";
+		$s = $s . "VgN" . ( $i + 1 ) . " out" . ( $i + 1 ) . " VgLN" . ( $i + 1 ) . " 0\n";
 	}
 
 	# Input Pulse
@@ -378,12 +413,13 @@ sub get_buffer_sc {
 		$s = $s . "Xmux0pre in Vdd inA 0 nfet size='1'\n";
 		$s = $s . "Xmux0 inA Vdd out0 0 nfet size='1'\n";
 		for ( my $i = 1 ; $i < $mux_in_size ; $i = $i + 1 ) {
-			if ($i % 2 == 0) {
-			$s = $s . "Xmux" . $i . " 0 0 out0 0 nfet size='1'\n";	
-			} else {
+			if ( $i % 2 == 0 ) {
+				$s = $s . "Xmux" . $i . " 0 0 out0 0 nfet size='1'\n";
+			}
+			else {
 				$s = $s . "Xmux" . $i . " Vdd 0 out0 0 nfet size='1'\n";
 			}
-			
+
 		}
 		$s = $s . "X0 out0 VgateH0 VupL0 VdownH0 levr\n";
 	}
@@ -401,40 +437,39 @@ sub get_buffer_sc {
 	}
 
 	$s = $s . spice_sim(10000);
-	
-	
 
 	my $up = 1;
 	for ( my $i = 0 ; $i < $N ; $i = $i + 1 ) {
 		if ($up) {
 			$s = $s . ".measure rs" . $i . " when V(out" . $i . ")='0.1*Vol' CROSS=1\n";
-			$s = $s . ".measure re" . $i . " when V(out" . ($i+1) . ")='0.1*Vol' CROSS=1\n";			
+			$s = $s . ".measure re" . $i . " when V(out" . ( $i + 1 ) . ")='0.1*Vol' CROSS=1\n";
 			$s = $s . ".measure fs" . $i . " when V(out" . $i . ")='0.9*Vol' CROSS=2\n";
-			$s = $s . ".measure fe" . $i . " when V(out" . ($i+1) . ")='0.9*Vol' CROSS=2\n";
+			$s = $s . ".measure fe" . $i . " when V(out" . ( $i + 1 ) . ")='0.9*Vol' CROSS=2\n";
 		}
 		else {
 			$s = $s . ".measure fs" . $i . " when V(out" . $i . ")='0.9*Vol' CROSS=1\n";
-			$s = $s . ".measure fe" . $i . " when V(out" . ($i+1) . ")='0.9*Vol' CROSS=1\n";
+			$s = $s . ".measure fe" . $i . " when V(out" . ( $i + 1 ) . ")='0.9*Vol' CROSS=1\n";
 			$s = $s . ".measure rs" . $i . " when V(out" . $i . ")='0.1*Vol' CROSS=2\n";
-			$s = $s . ".measure re" . $i . " when V(out" . ($i+1) . ")='0.1*Vol' CROSS=2\n";
+			$s = $s . ".measure re" . $i . " when V(out" . ( $i + 1 ) . ")='0.1*Vol' CROSS=2\n";
 		}
-		$s = $s . ".measure rd" . $i . " param=('re" . $i . "-rs" . $i . "')\n";
-		$s = $s . ".measure fd" . $i . " param=('fe" . $i . "-fs" . $i . "')\n";
+		$s  = $s . ".measure rd" . $i . " param=('re" . $i . "-rs" . $i . "')\n";
+		$s  = $s . ".measure fd" . $i . " param=('fe" . $i . "-fs" . $i . "')\n";
 		$up = !$up;
 
-		$s = $s . ".measure tran ITr" . $i . " integ Par('0.5*(I(Vdown" . $i . ") + abs(I(Vdown" . $i . ")))') FROM '(rs" . $i . " - 0.25 * rd" . $i . ")' TO '(re" . $i . " + 0.25 * rd" . $i . ")'\n";		
+		$s = $s . ".measure tran ITr" . $i . " integ Par('0.5*(I(Vdown" . $i . ") + abs(I(Vdown" . $i . ")))') FROM '(rs" . $i . " - 0.25 * rd" . $i . ")' TO '(re" . $i . " + 0.25 * rd" . $i . ")'\n";
 		$s = $s . ".measure tran ISCr" . $i . " integ Par('0.5*(I(Vup" . $i . ") + abs(I(Vup" . $i . ")))') FROM '(rs" . $i . " - 0.25 * rd" . $i . ")' TO '(re" . $i . " + 0.25 * rd" . $i . ")'\n";
+
 		#$s = $s . ".measure tran IGr" . $i . " integ I(Vgate" . $i . ") FROM 'rs" . $i . "' TO 're" . $i . "'\n";
 		#$s = $s . ".measure tran IPr" . $i . " integ I(VgP" . ($i+1) . ") FROM 'rs" . $i . "' TO 're" . $i . "'\n";
 		#$s = $s . ".measure tran INr" . $i . " integ I(VgN" . ($i+1) . ") FROM 'rs" . $i . "' TO 're" . $i . "'\n";
-		
-		
+
 		$s = $s . ".measure tran ITf" . $i . " integ Par('0.5*(I(Vup" . $i . ") + abs(I(Vup" . $i . ")))') FROM '(fs" . $i . " - 0.25 * fd" . $i . ")' TO '(fe" . $i . " + 0.25 * fd" . $i . ")'\n";
 		$s = $s . ".measure tran ISCf" . $i . " integ Par('0.5*(I(Vdown" . $i . ") + abs(I(Vdown" . $i . ")))') FROM '(fs" . $i . " - 0.25 * fd" . $i . ")' TO '(fe" . $i . " + 0.25 * fd" . $i . ")'\n";
+
 		#$s = $s . ".measure tran IGf" . $i . " integ I(Vgate" . $i . ") FROM 'fs" . $i . "' TO 'fe" . $i . "'\n";
 		#$s = $s . ".measure tran IPf" . $i . " integ I(VgP" . ($i+1) . ") FROM 'fs" . $i . "' TO 'fe" . $i . "'\n";
 		#$s = $s . ".measure tran INf" . $i . " integ I(VgN" . ($i+1) . ") FROM 'fs" . $i . "' TO 'fe" . $i . "'\n";
-		
+
 		$s = $s . ".measure tran fSC" . $i . " Param=('(ISCr" . $i . "+ISCf" . $i . ")/(ITr" . $i . " + ITf" . $i . " - ISCr" . $i . " - ISCf" . $i . ")')\n";
 	}
 
@@ -521,7 +556,7 @@ sub spice_header {
 	$s = $s . "X0 out in Gnd Gnd nfet size='nsize'\n";
 	$s = $s . "X1 out in Vdd Vdd pfet size='psize'\n";
 	$s = $s . ".ends\n";
-	
+
 	$s = $s . ".subckt invd inp inn out Vdd Gnd nsize=1 psize=2\n";
 	$s = $s . "X0 out inn Gnd Gnd nfet size='nsize'\n";
 	$s = $s . "X1 out inp Vdd Vdd pfet size='psize'\n";
@@ -678,12 +713,12 @@ sub get_capacitances {
 	# Gate, Drain, Source Inputs
 	# Time	NMOS		PMOS	Valid For:
 	# 		G 	D 	S		G 	D 	S
-	# 0		0 	0 	0		0 	0 	0	
-	# 1		0 	0 	1     	0 	1 	1	
-	# 2		0 	1 	0     	1 	0 	0	
-	# 3		0 	1 	1     	1 	0 	1	
-	# 4		1 	0 	0     	1 	1 	0	
-	# 5		1 	1 	1	    1 	1 	1	
+	# 0		0 	0 	0		0 	0 	0
+	# 1		0 	0 	1     	0 	1 	1
+	# 2		0 	1 	0     	1 	0 	0
+	# 3		0 	1 	1     	1 	0 	1
+	# 4		1 	0 	0     	1 	1 	0
+	# 5		1 	1 	1	    1 	1 	1
 
 	$s = $s . ".param t0s = '0*tick+2*rise'\n";
 	$s = $s . ".param t0e = '1*tick-rise'\n";
