@@ -132,9 +132,11 @@ void power_tech_load_xml_file(char * cmos_tech_behavior_filepath) {
 	FreeNode(child);
 
 	/* Buffer SC Info */
+	/*
 	child = FindElement(cur, "buffer_sc", TRUE);
 	power_tech_xml_load_sc(child);
 	FreeNode(child);
+	*/
 
 	/* Components */
 	child = FindElement(cur, "components", TRUE);
