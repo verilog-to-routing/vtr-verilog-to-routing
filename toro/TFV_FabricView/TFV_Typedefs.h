@@ -4,7 +4,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -109,8 +109,8 @@ typedef TTPT_Tile_c< TFV_FabricData_c > TFV_FabricFigure_t;
 #define TFV_MODEL_CONNECTION_BOX_DEF_WIDTH 0.004
 #define TFV_MODEL_PIN_DEF_WIDTH            0.002
 #define TFV_MODEL_PIN_DEF_SPACING          0.004
-#define TFV_MODEL_SEGMENT_DEF_WIDTH        0.005
-#define TFV_MODEL_SEGMENT_DEF_SPACING      0.005
+#define TFV_MODEL_SEGMENT_DEF_WIDTH        0.001
+#define TFV_MODEL_SEGMENT_DEF_SPACING      0.001
 
 //---------------------------------------------------------------------------//
 // Define fabric pin constants and typedefs
