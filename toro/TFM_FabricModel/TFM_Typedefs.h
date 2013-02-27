@@ -4,7 +4,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -23,6 +23,7 @@
 #define TFM_TYPEDEFS_H
 
 #include "TCT_SortedNameDynamicVector.h"
+#include "TCT_SortedVector.h"
 #include "TCT_OrderedVector.h"
 
 //---------------------------------------------------------------------------//
@@ -81,7 +82,7 @@ typedef TCT_SortedNameDynamicVector_c< TFM_Segment_c > TFM_SegmentList_t;
 //---------------------------------------------------------------------------//
 
 class TFM_Pin_c; // Forward declaration for subsequent class typedefs
-typedef TCT_OrderedVector_c< TFM_Pin_c > TFM_PinList_t;
+typedef TCT_SortedVector_c< TFM_Pin_c > TFM_PinList_t;
 
 class TC_Bit_c; // Forward declaration for subsequent class typedefs
 typedef TCT_OrderedVector_c< TC_Bit_c > TFM_BitPattern_t;
