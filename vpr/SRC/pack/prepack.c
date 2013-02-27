@@ -750,7 +750,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 		assert(is_used[best_pattern] == FALSE);
 		is_used[best_pattern] = TRUE;
 		for (j = 0; j < num_logical_blocks; j++) {
-			cur_molecule = try_create_molecule(list_of_pack_patterns, i, j);
+			cur_molecule = try_create_molecule(list_of_pack_patterns, best_pattern, j);
 			if (cur_molecule != NULL) {
 				cur_molecule->next = list_of_molecules_head;
 				/* In the event of multiple molecules with the same logical block pattern, bias to use the molecule with less costly physical resources first */
