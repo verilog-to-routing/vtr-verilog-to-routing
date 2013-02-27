@@ -17,7 +17,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -117,10 +117,12 @@ bool TCL_CommandLine_c::Parse(
    // Iterate, parsing any command-line arguments
    argc = ( --argc <= 0 ? 0 : argc );
 
-   if(( argc == 1 ) && ( **(argv+1) != '-' ))
+   if( ok && argc && **(argv+1) != '-' )
    {
-      pinputOptions->optionsFileNameList.Add( *(argv+1) );
-      argc = 0;
+      argc = ok ? argc - 1 : 1;
+      ok = *++argv ? true : false;   
+
+      pinputOptions->optionsFileNameList.Add( *argv );
    }
 
    while( ok && argc )
@@ -544,6 +546,13 @@ bool TCL_CommandLine_c::Parse(
                argc = 0;
             }
          }
+      }
+      else if( TC_stricmp( *argv, "-place_chan_width" ) == 0 )
+      { 
+         argc = ok ? argc - 1 : 1;
+         ok = *++argv ? true : false;   
+         if( ok )
+            pplaceOptions->channelWidth = atoi( *argv );
       }
       else if( TC_stricmp( *argv, "-timing_tradeoff" ) == 0 )
       { 
