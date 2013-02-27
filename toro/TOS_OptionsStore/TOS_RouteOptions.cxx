@@ -8,7 +8,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -36,6 +36,7 @@
 //---------------------------------------------------------------------------//
 // Version history
 // 05/01/12 jeffr : Original
+// 02/21/13 jeffr : Added support for preRouted members
 //===========================================================================//
 TOS_RouteOptions_c::TOS_RouteOptions_c( 
       void )
@@ -56,6 +57,8 @@ TOS_RouteOptions_c::TOS_RouteOptions_c(
       timingMaxCriticality( 0.0 ),
       slackCriticality( 0.0 )
 {
+   this->preRouted.enable = false;
+   this->preRouted.orderMode = TOS_ROUTE_ORDER_UNDEFINED;
 }
 
 //===========================================================================//
@@ -73,7 +76,9 @@ TOS_RouteOptions_c::TOS_RouteOptions_c(
       TOS_RouteCostMode_t      costMode_,
       double                   timingAStarFactor_,
       double                   timingMaxCriticality_,
-      double                   slackCriticality_ )
+      double                   slackCriticality_,
+      bool                     preRouted_enable_,
+      TOS_RouteOrderMode_t     preRouted_orderMode_ )
       :
       algorithmMode( algorithmMode_ ),
       abstractMode( abstractMode_ ), 
@@ -91,6 +96,8 @@ TOS_RouteOptions_c::TOS_RouteOptions_c(
       timingMaxCriticality( timingMaxCriticality_ ), 
       slackCriticality( slackCriticality_ )
 {
+   this->preRouted.enable = preRouted_enable_;
+   this->preRouted.orderMode = preRouted_orderMode_;
 }
 
 //===========================================================================//
@@ -111,6 +118,7 @@ TOS_RouteOptions_c::~TOS_RouteOptions_c(
 //---------------------------------------------------------------------------//
 // Version history
 // 05/01/12 jeffr : Original
+// 02/21/13 jeffr : Added support for preRouted members
 //===========================================================================//
 void TOS_RouteOptions_c::Print( 
       FILE*  pfile,
@@ -121,11 +129,12 @@ void TOS_RouteOptions_c::Print(
 
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   string srAlgorithmMode, srAbstractMode, srResourceMode, srCostMode;
+   string srAlgorithmMode, srAbstractMode, srResourceMode, srCostMode, srOrderMode;
    TOS_ExtractStringRouteAlgorithmMode( this->algorithmMode, &srAlgorithmMode );
    TOS_ExtractStringRouteAbstractMode( this->abstractMode, &srAbstractMode );
    TOS_ExtractStringRouteResourceMode( this->resourceMode, &srResourceMode );
    TOS_ExtractStringRouteCostMode( this->costMode, &srCostMode );
+   TOS_ExtractStringRouteOrderMode( this->preRouted.orderMode, &srOrderMode );
 
    printHandler.Write( pfile, spaceLen, "ROUTE_ALGORITHM            = %s\n", TIO_SR_STR( srAlgorithmMode ));
    printHandler.Write( pfile, spaceLen, "ROUTE_TYPE                 = %s\n", TIO_SR_STR( srAbstractMode ));
@@ -144,4 +153,7 @@ void TOS_RouteOptions_c::Print(
    printHandler.Write( pfile, spaceLen, "ROUTE_TIMING_ASTAR_FACTOR  = %0.*f\n", precision, this->timingAStarFactor );
    printHandler.Write( pfile, spaceLen, "ROUTE_TIMING_MAX_CRIT      = %0.*f\n", precision, this->timingMaxCriticality );
    printHandler.Write( pfile, spaceLen, "ROUTE_TIMING_SLACK_CRIT    = %0.*f\n", precision, this->slackCriticality );
+
+   printHandler.Write( pfile, spaceLen, "ROUTE_PREROUTED_ENABLE     = %s\n", TIO_BOOL_STR( this->preRouted.enable ));
+   printHandler.Write( pfile, spaceLen, "ROUTE_PREROUTED_ORDER      = %s\n", TIO_SR_STR( srOrderMode ));
 }
