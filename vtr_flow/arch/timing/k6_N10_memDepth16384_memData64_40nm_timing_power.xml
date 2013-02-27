@@ -155,10 +155,10 @@
 					<direct name="direct2" input="ble.clk" output="ff[1:1].clk"/>
 					<mux name="mux3" input="soft_logic.out[0:0]" output="ff[0:0].D">
 						<pack_pattern name="bleF0" in_port="soft_logic.out[0:0]" out_port="ff[0:0].D"/>
-						<pack_pattern name="bleF1A" in_port="soft_logic.out[0:0]" out_port="ff[0:0].D"/>
+						<pack_pattern name="bleF1" in_port="soft_logic.out[0:0]" out_port="ff[0:0].D"/>
 					</mux>
 					<mux name="mux4" input="soft_logic.out[1:1]" output="ff[1:1].D">
-						<pack_pattern name="bleF1B" in_port="soft_logic.out[1:1]" out_port="ff[1:1].D"/>
+						<pack_pattern name="bleF1" in_port="soft_logic.out[1:1]" out_port="ff[1:1].D"/>
 					</mux>
 					<mux name="mux5" input="soft_logic.out[0:0] ff[0:0].Q" output="ble.out[0:0]"/>
 					<mux name="mux6" input="soft_logic.out[1:1] ff[1:1].Q" output="ble.out[1:1]"/>
@@ -171,10 +171,10 @@
 							<direct name="direct0" input="soft_logic.in[4:0]" output="lut5[0:0].in[4:0]"/>
 							<direct name="direct1" input="soft_logic.in[5:1]" output="lut5[1:1].in[4:0]"/>
 							<direct name="direct2" input="lut5[0:0].out" output="soft_logic.out[0:0]">
-								<pack_pattern name="bleF1A" in_port="lut5[0:0].out" out_port="soft_logic.out[0:0]"/>
+								<pack_pattern name="bleF1" in_port="lut5[0:0].out" out_port="soft_logic.out[0:0]"/>
 							</direct>
 							<direct name="direct3" input="lut5[1:1].out" output="soft_logic.out[1:1]">
-								<pack_pattern name="bleF1B" in_port="lut5[1:1].out" out_port="soft_logic.out[1:1]"/>
+								<pack_pattern name="bleF1" in_port="lut5[1:1].out" out_port="soft_logic.out[1:1]"/>
 							</direct>
 						</interconnect>
 						<pb_type name="lut5" blif_model=".names" num_pb="2" class="lut">
