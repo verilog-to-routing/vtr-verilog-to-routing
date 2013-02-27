@@ -10,7 +10,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -140,10 +140,6 @@ void TOS_ControlSwitches_c::Init(
    this->inputOptions.architectureFileEnable = false;
    this->inputOptions.fabricFileEnable = false;
    this->inputOptions.circuitFileEnable = false;
-
-   this->inputOptions.prePackedDataMode = TOS_INPUT_DATA_ANY;
-   this->inputOptions.prePlacedDataMode = TOS_INPUT_DATA_ANY;
-   this->inputOptions.preRoutedDataMode = TOS_INPUT_DATA_ANY;
 
    this->outputOptions.srLogFileName = "";
    this->outputOptions.srOptionsFileName = "";
