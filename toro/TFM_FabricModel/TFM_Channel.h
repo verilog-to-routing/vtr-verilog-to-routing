@@ -10,7 +10,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -50,11 +50,15 @@ public:
    TFM_Channel_c( const string& srName,
                   const TGS_Region_c& region,
                   TGS_OrientMode_t orient,
+                  unsigned int index,
                   unsigned int count );
    TFM_Channel_c( const char* pszName,
                   const TGS_Region_c& region,
                   TGS_OrientMode_t orient,
+                  unsigned int index,
                   unsigned int count );
+   TFM_Channel_c( const string& srName );
+   TFM_Channel_c( const char* pszName );
    TFM_Channel_c( const TFM_Channel_c& channel );
    ~TFM_Channel_c( void );
 
@@ -78,6 +82,7 @@ public:
    TGS_Region_c region; // Specifies routing channel region within a floorplan
    TGS_OrientMode_t orient;
                         // Defines channel orientation (ie. horizontal | vertical)
+   unsigned int index;  // Defines channel index (unique identifier)
    unsigned int count;  // Defines #of routing segments available within channel
 };
 
