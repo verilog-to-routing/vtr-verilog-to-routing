@@ -15,7 +15,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -333,6 +333,11 @@ bool TVPR_OptionsStore_c::Export(
 
    if( executeOptions.toolMask & TOS_EXECUTE_TOOL_PLACE )
    {
+      if( placeOptions.channelWidth > 0 )
+      {
+         pvpr_options->PlaceChanWidth = placeOptions.channelWidth;
+         pvpr_options->Count[OT_PLACE_CHAN_WIDTH] += 1;
+      }
       if( TCTF_IsGT( placeOptions.timingCostFactor, 0.0 ))
       {
          pvpr_options->PlaceTimingTradeoff = static_cast< float >( placeOptions.timingCostFactor );
