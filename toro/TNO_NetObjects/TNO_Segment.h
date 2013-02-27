@@ -5,14 +5,14 @@
 //           - SetName (required for TCT_SortedNameDynamicVector_c class)
 //           - GetName (required for TCT_SortedNameDynamicVector_c class)
 //           - GetCompare (required for TCT_BSearch and TCT_QSort classes)
-//           - GetChannel, GetTrack
-//           - SetChannel, SetTrack
+//           - GetOrient, GetChannel, GetTrack
+//           - SetOrient, SetChannel, SetTrack
 //           - IsValid
 //
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -34,6 +34,7 @@
 #include <string>
 using namespace std;
 
+#include "TGS_Typedefs.h"
 #include "TGS_Region.h"
 
 //===========================================================================//
@@ -51,9 +52,11 @@ public:
    TNO_Segment_c( const string& srName );
    TNO_Segment_c( const char* pszName );
    TNO_Segment_c( const string& srName,
+                  TGS_OrientMode_t orient,
                   const TGS_Region_c& channel,
                   unsigned int track );
    TNO_Segment_c( const char* pszName,
+                  TGS_OrientMode_t orient,
                   const TGS_Region_c& channel,
                   unsigned int track );
    TNO_Segment_c( const TNO_Segment_c& segment );
@@ -73,9 +76,11 @@ public:
    const char* GetName( void ) const;
    const char* GetCompare( void ) const;
 
+   TGS_OrientMode_t GetOrient( void ) const;
    const TGS_Region_c& GetChannel( void ) const;
    unsigned int GetTrack( void ) const;
 
+   void SetOrient( TGS_OrientMode_t orient );
    void SetChannel( const TGS_Region_c& channel );
    void SetTrack( unsigned int track );
 
@@ -86,6 +91,7 @@ public:
 private:
 
    string srName_;
+   TGS_OrientMode_t orient_;
    TGS_Region_c channel_;
    unsigned int track_;
 };
@@ -132,10 +138,24 @@ inline const TGS_Region_c& TNO_Segment_c::GetChannel(
 }
 
 //===========================================================================//
+inline TGS_OrientMode_t TNO_Segment_c::GetOrient(
+      void ) const
+{
+   return( this->orient_ );
+}
+
+//===========================================================================//
 inline unsigned int TNO_Segment_c::GetTrack( 
       void ) const
 {
    return( this->track_ );
+}
+
+//===========================================================================//
+inline void TNO_Segment_c::SetOrient(
+      TGS_OrientMode_t orient )
+{
+   this->orient_ = orient;
 }
 
 //===========================================================================//
