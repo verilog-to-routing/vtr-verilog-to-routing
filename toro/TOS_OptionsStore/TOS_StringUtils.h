@@ -4,7 +4,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -47,8 +47,7 @@ void TOS_ExtractStringRouteAlgorithmMode( TOS_RouteAlgorithmMode_t mode, string*
 void TOS_ExtractStringRouteAbstractMode( TOS_RouteAbstractMode_t mode, string* psrMode );
 void TOS_ExtractStringRouteResourceMode( TOS_RouteResourceMode_t mode, string* psrMode );
 void TOS_ExtractStringRouteCostMode( TOS_RouteCostMode_t mode, string* psrMode );
-
-void TOS_ExtractStringInputDataMode( TOS_InputDataMode_t mode, string* psrMode );
+void TOS_ExtractStringRouteOrderMode( TOS_RouteOrderMode_t mode, string* psrMode );
 
 void TOS_ExtractStringOutputLaffMask( int mask, string* psrMask );
 
