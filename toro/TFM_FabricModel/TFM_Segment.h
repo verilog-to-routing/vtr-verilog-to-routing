@@ -10,7 +10,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -52,6 +52,8 @@ public:
    TFM_Segment_c( const char* pszName,
                   const TGS_Path_c& path,
                   unsigned int index );
+   TFM_Segment_c( const string& srName );
+   TFM_Segment_c( const char* pszName );
    TFM_Segment_c( const TFM_Segment_c& segment );
    ~TFM_Segment_c( void );
 
