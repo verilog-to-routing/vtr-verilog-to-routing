@@ -5,7 +5,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -43,43 +43,43 @@ public:
    TVPR_FabricModel_c( void );
    ~TVPR_FabricModel_c( void );
 
-   bool Export( const TFM_FabricModel_c& fabricModel ) const;
+   bool Export( const TFM_FabricModel_c& fabricModel,
+                t_arch* pvpr_architecture ) const;
    bool Import( t_grid_tile** vpr_gridArray,
                 int vpr_nx,
                 int vpr_ny,
                 const t_rr_node* vpr_rrNodeArray,
                 int vpr_rrNodeCount,
+                const int* vpr_xChanWidthArray,
+                const int* vpr_yChanWidthArray,
                 TFM_FabricModel_c* pfabricModel ) const;
 
 private:
 
-   bool PopulateFabricView_( const TFM_FabricModel_c& fabricModel,
+   bool GenerateFabricView_( const TFM_FabricModel_c& fabricModel,
                              TFV_FabricView_c* pfabricView ) const;
-   void PopulateBlockPlane_( const TFM_BlockList_t& blockList,
+   void GenerateBlockPlane_( const TFM_BlockList_t& blockList,
                              TFV_FabricView_c* pfabricView ) const;
-   void PopulateChannelPlane_( const TFM_ChannelList_t& channelList,
+   void GenerateChannelPlane_( const TFM_ChannelList_t& channelList,
                                TFV_FabricView_c* pfabricView ) const;
-   void PopulateSegmentPlane_( const TFM_SegmentList_t& segmentList,
+   void GenerateSegmentPlane_( const TFM_SegmentList_t& segmentList,
                                TFV_FabricView_c* pfabricView ) const;
-   bool PopulateConnectionPlane_( const TFM_BlockList_t& blockList,
+   bool GenerateConnectionPlane_( const TFM_BlockList_t& blockList,
                                   TFV_FabricView_c* pfabricView ) const;
 
-   bool GenerateFabricView_( t_grid_tile** vpr_gridArray,
-                             const TGS_IntDims_t& vpr_gridDims,
-                             const t_rr_node* vpr_rrNodeArray,
-                             int vpr_rrNodeCount,
-                             TFV_FabricView_c* pfabricView ) const;
+   void PokeFabricView_( const TFM_FabricModel_c& fabricModel,
+                         const TFV_FabricView_c& fabricView,
+                         t_arch* pvpr_architecture ) const;
+   void PokeBlockGrid_( const TFM_BlockList_t& blockList ) const;
+   void PokeChannelWidths_( const TFM_ChannelList_t& channelList ) const;
 
-   void ExtractFabricView_( const TFV_FabricView_c& fabricView,
-                            TFM_FabricModel_c* pfabricModel ) const;
-   void ExtractBlockPlane_( const TFV_FabricPlane_t& fabricPlane,
-                            TFM_BlockList_t* pblockList ) const;
-   void ExtractChannelPlane_( const TFV_FabricPlane_t& fabricPlane,
-                              TFM_ChannelList_t* pchannelList ) const;
-   void ExtractSegmentPlane_( const TFV_FabricPlane_t& fabricPlane,
-                              TFM_SegmentList_t* psegmentList ) const;
-   void ExtractPinList_( const TFV_FabricPinList_t& fabricPinList,
-                         TFM_PinList_t* ppinList ) const;
+   bool PeekFabricView_( t_grid_tile** vpr_gridArray,
+                         const TGS_IntDims_t& vpr_gridDims,
+                         const t_rr_node* vpr_rrNodeArray,
+                         int vpr_rrNodeCount,
+                         const int* vpr_xChanWidthArray,
+                         const int* vpr_yChanWidthArray,
+                         TFV_FabricView_c* pfabricView ) const;
 
    void PeekInputOutputs_( t_grid_tile** vpr_gridArray,
                            const TGS_IntDims_t& vpr_gridDims,
@@ -90,6 +90,8 @@ private:
    void PeekChannels_( const TGS_IntDims_t& vpr_gridDims,
                        const t_rr_node* vpr_rrNodeArray,
                        int vpr_rrNodeCount,
+                       const int* vpr_xChanWidthArray,
+                       const int* vpr_yChanWidthArray,
                        TFV_FabricView_c* pfabricView ) const;
    void PeekSegments_( const t_rr_node* vpr_rrNodeArray,
                        int vpr_rrNodeCount,
@@ -102,6 +104,17 @@ private:
                               const t_rr_node* vpr_rrNodeArray,
                               int vpr_rrNodeCount,
                               TFV_FabricView_c* pfabricView ) const;
+
+   void ExtractFabricView_( const TFV_FabricView_c& fabricView,
+                            TFM_FabricModel_c* pfabricModel ) const;
+   void ExtractBlockPlane_( const TFV_FabricPlane_t& fabricPlane,
+                            TFM_BlockList_t* pblockList ) const;
+   void ExtractChannelPlane_( const TFV_FabricPlane_t& fabricPlane,
+                              TFM_ChannelList_t* pchannelList ) const;
+   void ExtractSegmentPlane_( const TFV_FabricPlane_t& fabricPlane,
+                              TFM_SegmentList_t* psegmentList ) const;
+   void ExtractPinList_( const TFV_FabricPinList_t& fabricPinList,
+                         TFM_PinList_t* ppinList ) const;
 
    void AddBlockPinList_( const TFM_PinList_t& pinList,
                           TFV_FabricData_c* pfabricData ) const;
@@ -122,6 +135,8 @@ private:
                                TFV_FabricView_c* pfabricView ) const;
    void UpdateChannelCounts_( const t_rr_node* vpr_rrNodeArray,
                               int vpr_rrNodeCount,
+                              const int* vpr_xChanWidthArray,
+                              const int* vpr_yChanWidthArray,
                               const TFV_FabricView_c& fabricView ) const;
    void ResizeChannelWidths_( const TGS_IntDims_t& vpr_gridDims,
                               TFV_FabricView_c* pfabricView ) const;
@@ -221,6 +236,7 @@ private:
    bool AddFabricViewRegion_( const TGS_Region_c& region,
                               TFV_DataType_t dataType,
                               const char* pszName,
+                              unsigned int trackIndex,
                               unsigned int trackHorzCount,
                               unsigned int trackVertCount,
                               TFV_FabricView_c* pfabricView,
