@@ -34,6 +34,7 @@ CFLAGS = $(CFLAGS$(ISM)) \
 	-I. \
 	-I../TLO_LogicalObjects \
 	-I../TGS_GeometricShapes \
+	-I../TGO_GeometricObjects \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
 	-I../../libpcre/SRC
@@ -140,6 +141,9 @@ $(OBJECTS): $(ISM)/%.o:%.cxx
 
 ../$(ISM)/libTGS_GeometricShapes.a:
 	cd ../TGS_GeometricShapes ; $(MAKE) $(BUILD_TARGET)
+
+../$(ISM)/libTGO_GeometricObjects.a:
+	cd ../TGO_GeometricObjects ; $(MAKE) $(BUILD_TARGET)
 
 ../$(ISM)/libTIO_InputOutputHandlers.a:
 	cd ../TIO_InputOutputHandlers ; $(MAKE) $(BUILD_TARGET)
