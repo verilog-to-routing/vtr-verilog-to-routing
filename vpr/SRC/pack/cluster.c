@@ -1445,12 +1445,11 @@ static void update_connection_gain_values(int inet, int clustered_block,
 		for (ipin = 1; ipin <= vpack_net[inet].num_sinks; ipin++) {
 			iblk = vpack_net[inet].node_block[ipin];
 			if (logical_block[iblk].clb_index == NO_CLUSTER) {
-				/* jedit TODO: Goal is to pack nets that will get absorbed, if sink of net already committed to another block, need penalty */
-				/* jedit TODO: should really be accurate about this and include prevconnectiongainincr */
-				/* Only works if net has one connection to block, TODO: handle case where net has multi-connection to block */
+				/* jedit TODO: Gain function accurate only if net has one connection to block, TODO: Should we handle case where net has multi-connection to block? Gain computation is only off by a bit in this case */
 				if(cur_pb->pb_stats->connectiongain.count(iblk) == 0) {
 					cur_pb->pb_stats->connectiongain[iblk] = 0;
 				}
+				
 				if (num_internal_connections > 1) {
 					cur_pb->pb_stats->connectiongain[iblk] -= 1
 							/ (float) (vpack_net[inet].num_sinks

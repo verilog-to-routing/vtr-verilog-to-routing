@@ -45,6 +45,7 @@ static void backward_expand_pack_pattern_from_edge(
 		INOUTP t_pack_patterns *list_of_packing_patterns,
 		INP int curr_pattern_index, INP t_pb_graph_pin *destination_pin,
 		INP t_pack_pattern_block *destination_block, INP int *L_num_blocks);
+static int compare_pack_pattern(const t_pack_patterns *pattern_a, const t_pack_patterns *pattern_b);
 static void free_pack_pattern(INOUTP t_pack_pattern_block *pattern_block, INOUTP t_pack_pattern_block **pattern_block_list);
 static t_pack_molecule *try_create_molecule(
 		INP t_pack_patterns *list_of_pack_patterns, INP int pack_pattern_index,
@@ -57,6 +58,7 @@ static void print_pack_molecules(INP const char *fname,
 		INP t_pack_molecule *list_of_molecules);
 static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block(INP int ilogical_block);
 static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block_in_pb_graph_node(INP int ilogical_block, INP t_pb_graph_node *curr_pb_graph_node, OUTP float *cost);
+
 
 /*****************************************/
 /*Function Definitions					 */
@@ -108,6 +110,7 @@ t_pack_patterns *alloc_and_load_pack_patterns(OUTP int *num_packing_patterns) {
 	free_hash_table(nhash);
 
 	*num_packing_patterns = ncount;
+
 	return list_of_packing_patterns;
 }
 
@@ -723,17 +726,29 @@ static void backward_expand_pack_pattern_from_edge(
 t_pack_molecule *alloc_and_load_pack_molecules(
 		INP t_pack_patterns *list_of_pack_patterns,
 		INP int num_packing_patterns, OUTP int *num_pack_molecule) {
-	int i, j;
+	int i, j, best_pattern;
 	t_pack_molecule *list_of_molecules_head;
 	t_pack_molecule *cur_molecule;
-	int L_num_blocks;
-	struct s_linked_vptr* logical_block_molecule;
+	boolean *is_used;
+
+	is_used = (boolean*)my_calloc(num_packing_patterns, sizeof(boolean));
 
 	cur_molecule = list_of_molecules_head = NULL;
 
 	/* Find forced pack patterns */
-	/* TODO: Need to properly empirically investigate the right base cost function values (gain variable) and do some normalization */
+	/* Simplifying assumptions: Each atom can map to at most one molecule, use first-fit mapping based on priority of pattern */
+	/* TODO: Need to investigate better mapping strategies than first-fit */
 	for (i = 0; i < num_packing_patterns; i++) {
+		best_pattern = i;
+		for(j = 1; j < num_packing_patterns; j++) {
+			if(is_used[best_pattern]) {
+				best_pattern = j;
+			} else if (compare_pack_pattern(&list_of_pack_patterns[j], &list_of_pack_patterns[best_pattern]) == 1) {
+				best_pattern = j;
+			}
+		}
+		assert(is_used[best_pattern] == FALSE);
+		is_used[best_pattern] = TRUE;
 		for (j = 0; j < num_logical_blocks; j++) {
 			cur_molecule = try_create_molecule(list_of_pack_patterns, i, j);
 			if (cur_molecule != NULL) {
@@ -746,6 +761,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			}
 		}
 	}
+	free(is_used);
 
 	/* jedit TODO: Find chain patterns */
 
@@ -754,10 +770,6 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 
 	 If a block belongs to a molecule, then carrying the single atoms around can make the packing problem
 	 more difficult because now it needs to consider splitting molecules.
-
-	 TODO: Need to handle following corner case, if I have a LUT -> FF -> multiplier, LUT + FF is one molecule and FF + multiplier is another,
-	 need to ensure that this is packable.  Solution is probably to allow for single atom molecules until something a particular packing forces
-	 another molecule to get broken
 	 */
 	for (i = 0; i < num_logical_blocks; i++) {
 		logical_block[i].expected_lowest_cost_primitive = get_expected_lowest_cost_primitive_for_logical_block(i);
@@ -784,29 +796,6 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 		}
 	}
 
-	/* Reduce incentive to use logical blocks as standalone blocks when molecules already exist */
-	for (i = 0; i < num_logical_blocks; i++) {
-		logical_block_molecule = logical_block[i].packed_molecules;
-		L_num_blocks = 1;
-		while (logical_block_molecule != NULL) {
-			cur_molecule = (t_pack_molecule*)logical_block_molecule->data_vptr;
-			if (cur_molecule->num_blocks > L_num_blocks) {
-				L_num_blocks = cur_molecule->num_blocks;
-				break;
-			}
-			logical_block_molecule = logical_block_molecule->next;
-		}
-		if (L_num_blocks > 1) {
-			logical_block_molecule = logical_block[i].packed_molecules;
-			while (logical_block_molecule != NULL) {
-				cur_molecule = (t_pack_molecule*)logical_block_molecule->data_vptr;
-				if (cur_molecule->num_blocks == 1) {
-					cur_molecule->base_gain /= L_num_blocks;
-				}
-				logical_block_molecule = logical_block_molecule->next;
-			}
-		}
-	}
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PRE_PACKING_MOLECULES_AND_PATTERNS)) {
 		print_pack_molecules(getEchoFileName(E_ECHO_PRE_PACKING_MOLECULES_AND_PATTERNS),
 				list_of_pack_patterns, num_packing_patterns,
@@ -894,7 +883,7 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 	boolean success = FALSE;
 	t_pack_pattern_connections *cur_pack_pattern_connection;
 
-	/* If the block in the pattern has already been visited, then there is no need to revisit it */
+		/* If the block in the pattern has already been visited, then there is no need to revisit it */
 	if (molecule->logical_block_ptrs[current_pattern_block->block_id] != NULL) {
 		if (molecule->logical_block_ptrs[current_pattern_block->block_id]
 				!= &logical_block[logical_block_index]) {
@@ -905,7 +894,15 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 		}
 	}
 
-	/* This node has never been visited, expand it and explore neighbouring nodes */
+	/* This node has never been visited */
+	/* Simplifying assumption: An atom can only map to one molecule */
+	if(logical_block[logical_block_index].packed_molecules != NULL) {
+		/* This block is already in a molecule, return FALSE */
+		return FALSE;
+	}
+
+	
+	/* expand it and explore neighbouring nodes */
 	molecule->logical_block_ptrs[current_pattern_block->block_id] =
 			&logical_block[logical_block_index]; /* store that this node has been visited */
 	molecule->num_ext_inputs +=
@@ -1069,6 +1066,32 @@ static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block_in_
 
 	*cost = best_cost;
 	return best;
+}
+
+
+/* Determine which of two pack pattern should take priority */
+static int compare_pack_pattern(const t_pack_patterns *pattern_a, const t_pack_patterns *pattern_b) {
+	float base_gain_a, base_gain_b, diff;
+
+	/* Bigger patterns should take higher priority than smaller patterns because they are harder to fit */
+	if (pattern_a->num_blocks > pattern_b->num_blocks) {
+		return 1;
+	} else if (pattern_a->num_blocks < pattern_b->num_blocks) {
+		return -1;
+	}
+
+	base_gain_a = pattern_a->base_cost;
+	base_gain_b = pattern_b->base_cost;
+	diff = base_gain_a - base_gain_b;
+
+	/* Less costly patterns should be used before more costly patterns */
+	if (diff < 0) {
+		return 1;
+	}
+	if (diff > 0) {
+		return -1;
+	}
+	return 0;
 }
 
 
