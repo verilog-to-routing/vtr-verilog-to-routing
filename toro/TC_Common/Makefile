@@ -81,6 +81,7 @@ OBJSlinux_x86_64 = linux_x86_64/TC_Name.o \
                     linux_x86_64/TC_NameLength.o \
                     linux_x86_64/TC_SideName.o \
                     linux_x86_64/TC_SideIndex.o \
+                    linux_x86_64/TC_IndexCount.o \
                     linux_x86_64/TC_MapTable.o \
                     linux_x86_64/TC_Bit.o \
                     linux_x86_64/TC_MinGrid.o \
@@ -94,6 +95,7 @@ OBJSlinux_i686 = linux_i686/TC_Name.o \
                     linux_i686/TC_NameLength.o \
                     linux_i686/TC_SideName.o \
                     linux_i686/TC_SideIndex.o \
+                    linux_i686/TC_IndexCount.o \
                     linux_i686/TC_MapTable.o \
                     linux_i686/TC_Bit.o \
                     linux_i686/TC_MinGrid.o \
@@ -107,6 +109,7 @@ OBJSsun8 = sun8/TC_Name.o \
            sun8/TC_NameLength.o \
            sun8/TC_SideName.o \
            sun8/TC_SideIndex.o \
+           sun8/TC_IndexCount.o \
            sun8/TC_MapTable.o \
            sun8/TC_Bit.o \
            sun8/TC_MinGrid.o \
