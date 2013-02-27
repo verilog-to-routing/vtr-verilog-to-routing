@@ -12,7 +12,7 @@
 //           - TOS_ExtractStringRouteAbstractMode
 //           - TOS_ExtractStringRouteResourceMode
 //           - TOS_ExtractStringRouteCostMode
-//           - TOS_ExtractStringInputDataMode
+//           - TOS_ExtractStringRouteOrderMode
 //           - TOS_ExtractStringOutputLaffMask
 //           - TOS_ExtractStringRcDelaysExtractMode
 //           - TOS_ExtractStringRcDelaysSortMode
@@ -21,7 +21,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -276,15 +276,15 @@ void TOS_ExtractStringRouteCostMode(
 }
 
 //===========================================================================//
-// Function       : TOS_ExtractStringInputDataMode
+// Function       : TOS_ExtractStringRouteOrderMode
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
-// 05/01/12 jeffr : Original
+// 02/21/12 jeffr : Original
 //===========================================================================//
-void TOS_ExtractStringInputDataMode(
-      TOS_InputDataMode_t mode,
-      string*             psrMode )
+void TOS_ExtractStringRouteOrderMode(
+      TOS_RouteOrderMode_t mode,
+      string*              psrMode )
 {
    if( psrMode )
    {
@@ -292,11 +292,9 @@ void TOS_ExtractStringInputDataMode(
 
       switch( mode )
       {
-      case TOS_INPUT_DATA_NONE:   *psrMode = "NONE";   break;
-      case TOS_INPUT_DATA_BLOCKS: *psrMode = "BLOCKS"; break;
-      case TOS_INPUT_DATA_IOS:    *psrMode = "IOS";    break;
-      case TOS_INPUT_DATA_ALL:    *psrMode = "ALL";    break;
-      default:                    *psrMode = "?";      break;
+      case TOS_ROUTE_ORDER_FIRST: *psrMode = "FIRST"; break;
+      case TOS_ROUTE_ORDER_AUTO:  *psrMode = "AUTO";  break;
+      default:                    *psrMode = "?";     break;
       }
    }
 }
