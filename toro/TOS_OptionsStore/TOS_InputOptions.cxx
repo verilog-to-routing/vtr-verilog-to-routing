@@ -8,7 +8,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -48,10 +48,7 @@ TOS_InputOptions_c::TOS_InputOptions_c(
       blifFileEnable( false ),
       architectureFileEnable( false ),
       fabricFileEnable( false ),
-      circuitFileEnable( false ),
-      prePackedDataMode( TOS_INPUT_DATA_UNDEFINED ),
-      prePlacedDataMode( TOS_INPUT_DATA_UNDEFINED ),
-      preRoutedDataMode( TOS_INPUT_DATA_UNDEFINED )
+      circuitFileEnable( false )
 {
 }
 
@@ -67,10 +64,7 @@ TOS_InputOptions_c::TOS_InputOptions_c(
             bool                   blifFileEnable_,
             bool                   architectureFileEnable_,
             bool                   fabricFileEnable_,
-            bool                   circuitFileEnable_,
-            TOS_InputDataMode_t    prePackedDataMode_,
-            TOS_InputDataMode_t    prePlacedDataMode_,
-            TOS_InputDataMode_t    preRoutedDataMode_ )
+            bool                   circuitFileEnable_ )
       :
       optionsFileNameList( optionsFileNameList_ ),
       srXmlFileName( srXmlFileName_ ),
@@ -82,10 +76,7 @@ TOS_InputOptions_c::TOS_InputOptions_c(
       blifFileEnable( blifFileEnable_ ),
       architectureFileEnable( architectureFileEnable_ ),
       fabricFileEnable( fabricFileEnable_ ),
-      circuitFileEnable( circuitFileEnable_ ),
-      prePackedDataMode( prePackedDataMode_ ),
-      prePlacedDataMode( prePlacedDataMode_ ),
-      preRoutedDataMode( preRoutedDataMode_ )
+      circuitFileEnable( circuitFileEnable_ )
 {
 }
 
@@ -113,11 +104,6 @@ void TOS_InputOptions_c::Print(
       size_t spaceLen ) const
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
-
-   string srPrePackedDataMode, srPrePlacedDataMode, srPreRoutedDataMode;
-   TOS_ExtractStringInputDataMode( this->prePackedDataMode, &srPrePackedDataMode );
-   TOS_ExtractStringInputDataMode( this->prePlacedDataMode, &srPrePlacedDataMode );
-   TOS_ExtractStringInputDataMode( this->preRoutedDataMode, &srPreRoutedDataMode );
 
    if( this->srXmlFileName.length( ))
    {
@@ -167,8 +153,4 @@ void TOS_InputOptions_c::Print(
    printHandler.Write( pfile, spaceLen, "INPUT_ENABLE_ARCH          = %s\n", TIO_BOOL_STR( this->architectureFileEnable ));
    printHandler.Write( pfile, spaceLen, "INPUT_ENABLE_FABRIC        = %s\n", TIO_BOOL_STR( this->fabricFileEnable ));
    printHandler.Write( pfile, spaceLen, "INPUT_ENABLE_CIRCUIT       = %s\n", TIO_BOOL_STR( this->circuitFileEnable ));
-
-   printHandler.Write( pfile, spaceLen, "INPUT_DATA_PREPACKED       = %s\n", TIO_SR_STR( srPrePackedDataMode ));
-   printHandler.Write( pfile, spaceLen, "INPUT_DATA_PREPLACED       = %s\n", TIO_SR_STR( srPrePlacedDataMode ));
-   printHandler.Write( pfile, spaceLen, "INPUT_DATA_PREROUTED       = %s\n", TIO_SR_STR( srPreRoutedDataMode ));
 }
