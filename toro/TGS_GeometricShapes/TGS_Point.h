@@ -4,13 +4,11 @@
 //
 //           Inline methods include:
 //           - GetDx, GetDy, GetDz
-//           - IsLeft, IsRight, IsLower, IsUpper
-//           - IsLowerLeft, IsLowerRight, IsUpperLeft, IsUpperRight
 //
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -136,70 +134,6 @@ inline int TGS_Point_c::GetDz(
       const TGS_Point_c& point ) const
 {
    return( abs( this->z - point.z ));
-}
-
-//===========================================================================//
-inline bool TGS_Point_c::IsLeft( 
-      const TGS_Point_c& point ) const
-{
-   return( TCTF_IsLT( this->x, point.x ) && TCTF_IsEQ( this->y, point.y ) ?
-           true : false );
-}
-
-//===========================================================================//
-inline bool TGS_Point_c::IsRight( 
-      const TGS_Point_c& point ) const
-{
-   return( TCTF_IsGT( this->x, point.x ) && TCTF_IsEQ( this->y, point.y ) ?
-           true : false );
-}
-
-//===========================================================================//
-inline bool TGS_Point_c::IsLower( 
-      const TGS_Point_c& point ) const
-{
-   return( TCTF_IsEQ( this->x, point.x ) && TCTF_IsLT( this->y, point.y ) ?
-           true : false );
-}
-
-//===========================================================================//
-inline bool TGS_Point_c::IsUpper( 
-      const TGS_Point_c& point ) const
-{
-   return( TCTF_IsEQ( this->x, point.x ) && TCTF_IsGT( this->y, point.y ) ?
-           true : false );
-}
-
-//===========================================================================//
-inline bool TGS_Point_c::IsLowerLeft( 
-      const TGS_Point_c& point ) const
-{
-   return( TCTF_IsLT( this->x, point.x ) && TCTF_IsLT( this->y, point.y ) ?
-           true : false );
-}
-
-//===========================================================================//
-inline bool TGS_Point_c::IsLowerRight( 
-      const TGS_Point_c& point ) const
-{
-   return( TCTF_IsGT( this->x, point.x ) && TCTF_IsLT( this->y, point.y ) ?
-           true : false );
-}
-
-//===========================================================================//
-inline bool TGS_Point_c::IsUpperLeft( 
-      const TGS_Point_c& point ) const
-{
-   return( TCTF_IsLT( this->x, point.x ) && TCTF_IsGT( this->y, point.y ) ?
-           true : false );
-}
-
-//===========================================================================//
-inline bool TGS_Point_c::IsUpperRight( 
-      const TGS_Point_c& point ) const
-{
-   return( TCTF_IsGT( this->x, point.x ) && TCTF_IsGT( this->y, point.y ) ?
-           true : false );
 }
 
 #endif
