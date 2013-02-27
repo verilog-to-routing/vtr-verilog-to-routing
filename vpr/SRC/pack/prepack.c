@@ -739,11 +739,11 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 	/* Simplifying assumptions: Each atom can map to at most one molecule, use first-fit mapping based on priority of pattern */
 	/* TODO: Need to investigate better mapping strategies than first-fit */
 	for (i = 0; i < num_packing_patterns; i++) {
-		best_pattern = i;
+		best_pattern = 0;
 		for(j = 1; j < num_packing_patterns; j++) {
 			if(is_used[best_pattern]) {
 				best_pattern = j;
-			} else if (compare_pack_pattern(&list_of_pack_patterns[j], &list_of_pack_patterns[best_pattern]) == 1) {
+			} else if (is_used[j] == FALSE && compare_pack_pattern(&list_of_pack_patterns[j], &list_of_pack_patterns[best_pattern]) == 1) {
 				best_pattern = j;
 			}
 		}
