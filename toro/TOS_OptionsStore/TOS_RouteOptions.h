@@ -4,7 +4,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -50,7 +50,9 @@ public:
                        TOS_RouteCostMode_t costMode,
                        double timingAStarFactor,
                        double timingMaxCriticality,
-                       double slackCriticality );
+                       double slackCriticality,
+                       bool preRouted_enable_,
+                       TOS_RouteOrderMode_t preRouted_orderMode_ );
 
    ~TOS_RouteOptions_c( void );
 
@@ -77,6 +79,15 @@ public:
    double timingAStarFactor;       // Timing-driven routing constraints
    double timingMaxCriticality;    // "
    double slackCriticality;        // "
+
+   class TOS_PreRouted_c
+   {
+   public:
+
+      bool                 enable;    // Enables applying pre-routed route constraints, if any
+      TOS_RouteOrderMode_t orderMode; // Selects pre-routed route order: first|auto
+
+   } preRouted;
 };
 
 #endif 
