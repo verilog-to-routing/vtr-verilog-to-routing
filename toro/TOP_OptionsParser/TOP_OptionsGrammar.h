@@ -9,7 +9,6 @@
 //           - SetOptionsStore
 //
 //           Inline private methods include:
-//           - FindInputDataMode_
 //           - FindOutputLaffMask_
 //           - FindExecuteToolMask_
 //           - FindBool_
@@ -17,7 +16,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -150,28 +149,6 @@ void TOP_OptionsParser_c::SetOptionsStore(
    this->ppackOptions_ = &poptionsStore->rulesSwitches.packOptions;
    this->pplaceOptions_ = &poptionsStore->rulesSwitches.placeOptions;
    this->prouteOptions_ = &poptionsStore->rulesSwitches.routeOptions;
-}
-
-//===========================================================================//
-// Method         : FindInputDataMode_
-// Author         : Jeff Rudolph
-//---------------------------------------------------------------------------//
-// Version history
-// 05/01/12 jeffr : Original
-//===========================================================================//
-TOS_InputDataMode_t TOP_OptionsParser_c::FindInputDataMode_(
-      ANTLRTokenType tokenType )
-{
-   TOS_InputDataMode_t mode = TOS_INPUT_DATA_UNDEFINED;
-   switch( tokenType )
-   {
-   case NONE:   mode = TOS_INPUT_DATA_NONE;   break;
-   case BLOCKS: mode = TOS_INPUT_DATA_BLOCKS; break;
-   case IOS:    mode = TOS_INPUT_DATA_IOS;    break;
-   case ANY:
-   case ALL:    mode = TOS_INPUT_DATA_ALL;    break;
-   }
-   return( mode );
 }
 
 //===========================================================================//
