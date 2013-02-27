@@ -4,7 +4,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -53,10 +53,7 @@ public:
                        bool blifFileEnable,
                        bool architectureFileEnable,
                        bool fabricFileEnable,
-                       bool circuitFileEnable,
-                       TOS_InputDataMode_t prePackedDataMode,
-                       TOS_InputDataMode_t prePlacedDataMode,
-                       TOS_InputDataMode_t preRoutedDataMode );
+                       bool circuitFileEnable );
    ~TOS_InputOptions_c( void );
 
    void Print( FILE* pfile = stdout, size_t spaceLen = 0 ) const;
@@ -76,10 +73,6 @@ public:
    bool architectureFileEnable;   // "
    bool fabricFileEnable;         // "
    bool circuitFileEnable;        // "
-
-   TOS_InputDataMode_t prePackedDataMode; // Pre-packed mode: none|any
-   TOS_InputDataMode_t prePlacedDataMode; // Pre-placed mode: none|blocks|ios|any
-   TOS_InputDataMode_t preRoutedDataMode; // Pre-routed mode: none|any
 
 private:
 
