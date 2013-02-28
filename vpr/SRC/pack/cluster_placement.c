@@ -93,9 +93,6 @@ boolean get_next_primitive_list(
 	best = NULL;
 	before_best = NULL;
 
-	/* TODO: need to implement carry-chain, for now, exit out */
-	assert(molecule->type != MOLECULE_CHAIN);
-
 	if (cluster_placement_stats->curr_molecule != molecule) {
 		/* New block, requeue tried primitives and in-flight primitives */
 		flush_intermediate_queues(cluster_placement_stats);

@@ -231,7 +231,7 @@ typedef struct s_logical_block {
 } t_logical_block;
 
 enum e_pack_pattern_molecule_type {
-	MOLECULE_SINGLE_ATOM, MOLECULE_FORCED_PACK, MOLECULE_CHAIN
+	MOLECULE_SINGLE_ATOM, MOLECULE_FORCED_PACK
 };
 
 /**

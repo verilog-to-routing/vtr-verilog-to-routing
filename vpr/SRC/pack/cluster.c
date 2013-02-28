@@ -792,14 +792,8 @@ static void alloc_and_init_clustering(boolean global_clocks, float alpha,
 	max_molecule_size = 1;
 	cur_molecule = molecules_head;
 	while (cur_molecule != NULL) {
-		if (cur_molecule->type == MOLECULE_CHAIN) {
-			if (cur_molecule->pack_pattern->num_blocks > max_molecule_size) {
-				max_molecule_size = cur_molecule->pack_pattern->num_blocks;
-			}
-		} else {
-			if (cur_molecule->num_blocks > max_molecule_size) {
-				max_molecule_size = cur_molecule->num_blocks;
-			}
+		if (cur_molecule->num_blocks > max_molecule_size) {
+			max_molecule_size = cur_molecule->num_blocks;
 		}
 		cur_molecule = cur_molecule->next;
 	}
@@ -1920,10 +1914,6 @@ static void start_new_cluster(
 			if (molecule->type == MOLECULE_FORCED_PACK) {
 				vpr_printf(TIO_MESSAGE_ERROR, "\tPattern %s %s\n", 
 						molecule->pack_pattern->name,
-						molecule->logical_block_ptrs[molecule->root]->name);
-			} else if (molecule->type == MOLECULE_CHAIN) {
-				vpr_printf(TIO_MESSAGE_ERROR, "\tChain %s %s\n", 
-						molecule->chain_pattern->name,
 						molecule->logical_block_ptrs[molecule->root]->name);
 			} else {
 				vpr_printf(TIO_MESSAGE_ERROR, "\tAtom %s\n",
