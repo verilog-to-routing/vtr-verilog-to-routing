@@ -213,7 +213,7 @@ Architecture based off Stratix IV
                     <interconnect>
                       <direct name="direct1" input="flut5.in[4:0]" output="lut5.in[4:0]"/>
                       <direct name="direct2" input="lut5.out" output="flut5.out">
-                        <pack_pattern name="ble5" in_port="lut5.out" out_port="lut5.out"/>
+                        <pack_pattern name="ble5" in_port="lut5.out" out_port="flut5.out"/>
                       </direct>
                     </interconnect>
                   </mode>
