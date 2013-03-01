@@ -36,8 +36,8 @@ static void power_calc_transistor_capacitance(float *C_d, float *C_s,
 static float power_calc_leakage_st(e_tx_type transistor_type, float size);
 static float power_calc_leakage_st_pass_transistor(float size, float v_ds);
 static float power_calc_leakage_gate(e_tx_type transistor_type, float size);
-static float power_calc_buffer_sc_levr(
-		t_power_buffer_strength_inf * buffer_strength, int input_mux_size);
+/*static float power_calc_buffer_sc_levr(
+		t_power_buffer_strength_inf * buffer_strength, int input_mux_size);*/
 
 /************************* FUNCTION DEFINITIONS *********************/
 
@@ -665,6 +665,8 @@ void power_usage_level_restorer(t_power_usage * power_usage,
  *  - level_restorer: Whether this buffer must level-restore the input to Vdd
  *  - input_mux_size: For level-restoring buffers, what is the size of the mux driving it
  */
+// Not used anymore
+#if 0
 float power_calc_buffer_sc(int stages, float gain, boolean level_restorer,
 		int input_mux_size) {
 
@@ -733,3 +735,4 @@ static float power_calc_buffer_sc_levr(
 				+ percent_upper * mux_upper->sc_levr;
 	}
 }
+#endif

@@ -33,9 +33,9 @@ void power_lowlevel_init();
 
 void power_usage_inverter(t_power_usage * power_usage, float in_dens,
 		float in_prob, float size, float period);
-void power_calc_inverter_with_input(t_power_usage * power_usage,
-		float * input_dynamic_power, float in_density, float in_prob,
-		float size);
+/*void power_calc_inverter_with_input(t_power_usage * power_usage,
+ float * input_dynamic_power, float in_density, float in_prob,
+ float size);*/
 void power_usage_inverter_irregular(t_power_usage * power_usage,
 		float * dyn_power_input, float in_density, float in_probability,
 		float PMOS_size, float NMOS_size, float period);
@@ -49,8 +49,7 @@ void power_usage_mux_singlelevel_static(t_power_usage * power_usage,
 		float transistor_size, boolean v_out_restored, float period);
 
 void power_usage_MUX2_transmission(t_power_usage * power_usage, float * in_dens,
-		float * in_prob, float sel_dens, float out_dens,
-		float period);
+		float * in_prob, float sel_dens, float out_dens, float period);
 
 void power_usage_mux_singlelevel_dynamic(t_power_usage * power_usage,
 		int num_inputs, float out_density, float v_out, float * in_prob,
@@ -67,8 +66,8 @@ float power_calc_pb_switching_from_c_internal(t_pb * pb,
 float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
 		float in_prob_avg);
 
-float power_calc_buffer_sc(int stages, float gain, boolean level_restored,
-		int input_mux_size);
+/*float power_calc_buffer_sc(int stages, float gain, boolean level_restored,
+ int input_mux_size);*/
 
 float power_calc_node_switching(float capacitance, float density, float period);
 #endif
