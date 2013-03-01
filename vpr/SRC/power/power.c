@@ -307,7 +307,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 	boolean estimate_buffers_and_wire = FALSE;
 	boolean estimate_multiplexers = FALSE;
 	boolean estimate_primitives = FALSE;
-	boolean recursive_children = FALSE;
+	boolean recursive_children;
 
 	/* Get mode */
 	if (pb) {
@@ -316,6 +316,9 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 		/* Default mode if not initialized (will only affect leakage power) */
 		pb_mode = pb_type->pb_type_power->leakage_default_mode;
 	}
+
+	recursive_children = power_method_is_recursive(
+			pb_node->pb_type->pb_type_power->estimation_method);
 
 	switch (pb_node->pb_type->pb_type_power->estimation_method) {
 	case POWER_METHOD_IGNORE:
@@ -386,19 +389,16 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 				power_add_usage(power_usage, &pin_power);
 			}
 		}
-		recursive_children = TRUE;
 		break;
 	case POWER_METHOD_SPECIFY_SIZES:
 		estimate_buffers_and_wire = TRUE;
 		estimate_multiplexers = TRUE;
 		estimate_primitives = TRUE;
-		recursive_children = TRUE;
 		break;
 	case POWER_METHOD_AUTO_SIZES:
 		estimate_buffers_and_wire = TRUE;
 		estimate_multiplexers = TRUE;
 		estimate_primitives = TRUE;
-		recursive_children = TRUE;
 		break;
 	case POWER_METHOD_UNDEFINED:
 	default:
@@ -1269,7 +1269,7 @@ boolean power_init(char * power_out_filepath,
 	/* Initialize routing information */
 	power_routing_init(routing_arch);
 
-	// Allocates power structures for each pb pin
+// Allocates power structures for each pb pin
 	power_pb_pins_init();
 
 	/* Size all components */
@@ -1536,63 +1536,71 @@ static void power_print_breakdown_pb_rec(FILE * fp, t_pb_type * pb_type,
 			power_estimation_method_name(
 					pb_type->pb_type_power->estimation_method));
 
-	/* Local bufs and wires */
-	power_print_breakdown_entry(fp, indent + 1,
-			POWER_BREAKDOWN_ENTRY_TYPE_BUFS_WIRES, "Bufs/Wires",
-			power_sum_usage(&pb_power->power_usage_bufs_wires), total_power,
-			power_perc_dynamic(&pb_power->power_usage_bufs_wires), NULL);
-
-	if (pb_type->num_modes > 1) {
-		child_indent = indent + 2;
-	} else {
-		child_indent = indent + 1;
+	if (power_method_is_transistor_level(
+			pb_type->pb_type_power->estimation_method)) {
+		/* Local bufs and wires */
+		power_print_breakdown_entry(fp, indent + 1,
+				POWER_BREAKDOWN_ENTRY_TYPE_BUFS_WIRES, "Bufs/Wires",
+				power_sum_usage(&pb_power->power_usage_bufs_wires), total_power,
+				power_perc_dynamic(&pb_power->power_usage_bufs_wires), NULL);
 	}
 
-	for (mode_idx = 0; mode_idx < pb_type->num_modes; mode_idx++) {
-		mode = &pb_type->modes[mode_idx];
-
+	if (power_method_is_recursive(pb_type->pb_type_power->estimation_method)) {
 		if (pb_type->num_modes > 1) {
-			power_print_breakdown_entry(fp, indent + 1,
-					POWER_BREAKDOWN_ENTRY_TYPE_MODE, mode->name,
-					power_sum_usage(&mode->mode_power->power_usage),
-					total_power,
-					power_perc_dynamic(&mode->mode_power->power_usage), NULL);
+			child_indent = indent + 2;
+		} else {
+			child_indent = indent + 1;
 		}
 
-		/* Interconnect Power */
-		power_zero_usage(&interc_usage);
+		for (mode_idx = 0; mode_idx < pb_type->num_modes; mode_idx++) {
+			mode = &pb_type->modes[mode_idx];
 
-		/* Sum the interconnect */
-		for (interc_idx = 0; interc_idx < mode->num_interconnect;
-				interc_idx++) {
-			power_add_usage(&interc_usage,
-					&mode->interconnect[interc_idx].interconnect_power->power_usage);
-		}
-		if (mode->num_interconnect) {
-			power_print_breakdown_entry(fp, child_indent,
-					POWER_BREAKDOWN_ENTRY_TYPE_INTERC, "Interc:",
-					power_sum_usage(&interc_usage), total_power,
-					power_perc_dynamic(&interc_usage), NULL);
-		}
+			if (pb_type->num_modes > 1) {
+				power_print_breakdown_entry(fp, indent + 1,
+						POWER_BREAKDOWN_ENTRY_TYPE_MODE, mode->name,
+						power_sum_usage(&mode->mode_power->power_usage),
+						total_power,
+						power_perc_dynamic(&mode->mode_power->power_usage),
+						NULL);
+			}
 
-		/* Print Interconnect Breakdown */
-		for (interc_idx = 0; interc_idx < mode->num_interconnect;
-				interc_idx++) {
-			t_interconnect * interc = &mode->interconnect[interc_idx];
-			power_print_breakdown_entry(fp, child_indent + 1,
-					POWER_BREAKDOWN_ENTRY_TYPE_INTERC, interc->name,
-					power_sum_usage(&interc->interconnect_power->power_usage),
-					total_power,
-					power_perc_dynamic(
-							&interc->interconnect_power->power_usage), NULL);
-		}
+			/* Interconnect Power */
+			power_zero_usage(&interc_usage);
 
-		for (child_idx = 0;
-				child_idx < pb_type->modes[mode_idx].num_pb_type_children;
-				child_idx++) {
-			power_print_breakdown_pb_rec(fp,
-					&pb_type->modes[mode_idx].pb_type_children[child_idx],
-					child_indent);
+			/* Sum the interconnect */
+			for (interc_idx = 0; interc_idx < mode->num_interconnect;
+					interc_idx++) {
+				power_add_usage(&interc_usage,
+						&mode->interconnect[interc_idx].interconnect_power->power_usage);
+			}
+			if (mode->num_interconnect) {
+				power_print_breakdown_entry(fp, child_indent,
+						POWER_BREAKDOWN_ENTRY_TYPE_INTERC, "Interc:",
+						power_sum_usage(&interc_usage), total_power,
+						power_perc_dynamic(&interc_usage), NULL);
+			}
+
+			/* Print Interconnect Breakdown */
+			for (interc_idx = 0; interc_idx < mode->num_interconnect;
+					interc_idx++) {
+				t_interconnect * interc = &mode->interconnect[interc_idx];
+				power_print_breakdown_entry(fp, child_indent + 1,
+						POWER_BREAKDOWN_ENTRY_TYPE_INTERC, interc->name,
+						power_sum_usage(
+								&interc->interconnect_power->power_usage),
+						total_power,
+						power_perc_dynamic(
+								&interc->interconnect_power->power_usage),
+						NULL);
+			}
+
+			for (child_idx = 0;
+					child_idx < pb_type->modes[mode_idx].num_pb_type_children;
+					child_idx++) {
+				power_print_breakdown_pb_rec(fp,
+						&pb_type->modes[mode_idx].pb_type_children[child_idx],
+						child_indent);
+			}
 		}
 	}
 }

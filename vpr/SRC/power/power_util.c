@@ -579,3 +579,19 @@ boolean power_method_is_transistor_level(
 	}
 }
 
+boolean power_method_is_recursive(e_power_estimation_method method) {
+	switch (method) {
+	case POWER_METHOD_IGNORE:
+	case POWER_METHOD_TOGGLE_PINS:
+	case POWER_METHOD_C_INTERNAL:
+	case POWER_METHOD_ABSOLUTE:
+		return FALSE;
+	case POWER_METHOD_AUTO_SIZES:
+	case POWER_METHOD_SPECIFY_SIZES:
+		return TRUE;
+	case POWER_METHOD_UNDEFINED:
+	default:
+		assert(0);
+	}
+}
+

@@ -518,6 +518,16 @@ static void power_size_pb_rec(t_pb_graph_node * pb_node) {
 	int mode_idx, type_idx, pb_idx;
 	boolean size_buffers_and_wires = TRUE;
 
+	if (!power_method_is_transistor_level(
+			pb_node->pb_type->pb_type_power->estimation_method)
+			&& pb_node != FILL_TYPE->pb_graph_head) {
+		/* Area information is only needed for:
+		 *  1. Transistor-level estimation methods
+		 *  2. the FILL_TYPE for tile size calculations
+		 */
+		return;
+	}
+
 	/* Recursive call for all child pb nodes */
 	for (mode_idx = 0; mode_idx < pb_node->pb_type->num_modes; mode_idx++) {
 		t_mode * mode = &pb_node->pb_type->modes[mode_idx];
