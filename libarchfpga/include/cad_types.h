@@ -33,8 +33,10 @@ typedef struct s_pack_patterns {
 	t_pack_pattern_block *root_block; /* root block used by this pattern */
 	float base_cost; /* base cost of pattern eg. If a group of logical blocks match a pattern of smaller primitives, that is better than the same group using bigger primitives */
 	int num_blocks; /* number of blocks in pattern */
+	boolean *is_block_optional; /* [0..num_blocks-1] is the block_id in this pattern mandatory or optional to form a molecule */
+
 	boolean is_chain; /* Does this pattern chain across logic blocks */
-	t_pb_graph_pin *chain_root_pin;
+	t_pb_graph_pin *chain_root_pin; /* pointer to logic block input pin that drives this chain from the preceding logic block */	
 } t_pack_patterns;
 
 typedef struct s_model_chain_pattern {
