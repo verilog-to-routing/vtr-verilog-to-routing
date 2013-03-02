@@ -73,7 +73,7 @@ static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block_in_
  *              If this limitation is too constraining, code is designed so that this limitation can be removed
  */
 t_pack_patterns *alloc_and_load_pack_patterns(OUTP int *num_packing_patterns) {
-	int i, j, ncount;
+	int i, j, ncount, k;
 	int L_num_blocks;
 	struct s_hash **nhash;
 	t_pack_patterns *list_of_packing_patterns;
@@ -103,6 +103,16 @@ t_pack_patterns *alloc_and_load_pack_patterns(OUTP int *num_packing_patterns) {
 			backward_expand_pack_pattern_from_edge(expansion_edge,
 					list_of_packing_patterns, i, NULL, NULL, &L_num_blocks);
 			list_of_packing_patterns[i].num_blocks = L_num_blocks;
+
+			/* Default settings: A section of a netlist must match all blocks in a pack pattern before it can be made a molecule except for carry-chains.  For carry-chains, since carry-chains are typically
+			quite flexible in terms of size, it is optional whether or not an atom in a netlist matches any particular block inside the chain */
+			list_of_packing_patterns[i].is_block_optional = (boolean*) my_malloc(L_num_blocks * sizeof(boolean));
+			for(k = 0; k < L_num_blocks; k++) {
+				list_of_packing_patterns[i].is_block_optional[k] = FALSE;
+				if(list_of_packing_patterns[i].is_chain && list_of_packing_patterns[i].root_block->block_id != k) {
+					list_of_packing_patterns[i].is_block_optional[k] = TRUE;
+				}
+			}
 			break;
 		}
 	}
@@ -314,6 +324,7 @@ void free_list_of_pack_patterns(INP t_pack_patterns *list_of_pack_patterns, INP 
 			num_pack_pattern_blocks = list_of_pack_patterns[i].num_blocks;
 			pattern_block_list = (t_pack_pattern_block **)my_calloc(num_pack_pattern_blocks, sizeof(t_pack_pattern_block *));
 			free(list_of_pack_patterns[i].name);
+			free(list_of_pack_patterns[i].is_block_optional);
 			free_pack_pattern(list_of_pack_patterns[i].root_block, pattern_block_list);
 			for (j = 0; j < num_pack_pattern_blocks; j++) {
 				free(pattern_block_list[j]);
@@ -871,7 +882,10 @@ static t_pack_molecule *try_create_molecule(
 			molecule->pack_pattern->root_block) == TRUE) {
 		/* Success! commit module */
 		for (i = 0; i < molecule->pack_pattern->num_blocks; i++) {
-			assert(molecule->logical_block_ptrs[i] != NULL);
+			if(molecule->logical_block_ptrs[i] == NULL) {
+				assert(list_of_pack_patterns[pack_pattern_index].is_block_optional[i] == FALSE);
+				continue;
+			}			
 			molecule_linked_list = (struct s_linked_vptr*) my_calloc(1, sizeof(struct s_linked_vptr));
 			molecule_linked_list->data_vptr = (void *) molecule;
 			molecule_linked_list->next =
@@ -897,15 +911,17 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 		INP int logical_block_index,
 		INP t_pack_pattern_block *current_pattern_block) {
 	int iport, ipin, inet;
-	boolean success = FALSE;
+	boolean success;
+	boolean is_optional;
 	t_pack_pattern_connections *cur_pack_pattern_connection;
+	is_optional = molecule->pack_pattern->is_block_optional[current_pattern_block->block_id];
 
 		/* If the block in the pattern has already been visited, then there is no need to revisit it */
 	if (molecule->logical_block_ptrs[current_pattern_block->block_id] != NULL) {
 		if (molecule->logical_block_ptrs[current_pattern_block->block_id]
 				!= &logical_block[logical_block_index]) {
-			/* Mismatch between the visited block and the current block implies that the current netlist structure does not match the expected pattern, return fail */
-			return FALSE;
+			/* Mismatch between the visited block and the current block implies that the current netlist structure does not match the expected pattern, return whether or not this matters */
+			return is_optional;
 		} else {
 			return TRUE;
 		}
@@ -914,20 +930,20 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 	/* This node has never been visited */
 	/* Simplifying assumption: An atom can only map to one molecule */
 	if(logical_block[logical_block_index].packed_molecules != NULL) {
-		/* This block is already in a molecule, return FALSE */
-		return FALSE;
+		/* This block is already in a molecule, return whether or not this matters */
+		return is_optional;
 	}
 
-	
-	/* expand it and explore neighbouring nodes */
-	molecule->logical_block_ptrs[current_pattern_block->block_id] =
-			&logical_block[logical_block_index]; /* store that this node has been visited */
-	molecule->num_ext_inputs +=
-			logical_block[logical_block_index].used_input_pins;
 	if (primitive_type_feasible(logical_block_index,
 			current_pattern_block->pb_type)) {
+
 		success = TRUE;
-		/* If the primitive types match, check for connections */
+		/* If the primitive types match, store it, expand it and explore neighbouring nodes */
+		molecule->logical_block_ptrs[current_pattern_block->block_id] =
+				&logical_block[logical_block_index]; /* store that this node has been visited */
+		molecule->num_ext_inputs +=
+				logical_block[logical_block_index].used_input_pins;
+		
 		cur_pack_pattern_connection = current_pattern_block->connections;
 		while (cur_pack_pattern_connection != NULL && success == TRUE) {
 			if (cur_pack_pattern_connection->from_block
@@ -941,7 +957,7 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 
 				/* Check if net is valid */
 				if (inet == OPEN || vpack_net[inet].num_sinks != 1) { /* One fanout assumption */
-					success = FALSE;
+					success = is_optional;
 				} else {
 					success = try_expand_molecule(molecule,
 							vpack_net[inet].node_block[1],
@@ -963,7 +979,7 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 				}
 				/* Check if net is valid */
 				if (inet == OPEN || vpack_net[inet].num_sinks != 1) { /* One fanout assumption */
-					success = FALSE;
+					success = is_optional;
 				} else {
 					success = try_expand_molecule(molecule,
 							vpack_net[inet].node_block[0],
@@ -973,7 +989,7 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 			cur_pack_pattern_connection = cur_pack_pattern_connection->next;
 		}
 	} else {
-		success = FALSE;
+		success = is_optional;
 	}
 
 	return success;
