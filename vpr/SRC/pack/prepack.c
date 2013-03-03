@@ -58,7 +58,7 @@ static void print_pack_molecules(INP const char *fname,
 		INP t_pack_molecule *list_of_molecules);
 static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block(INP int ilogical_block);
 static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block_in_pb_graph_node(INP int ilogical_block, INP t_pb_graph_node *curr_pb_graph_node, OUTP float *cost);
-
+static int find_new_root_atom_for_chain(INP int block_index, INP t_pack_patterns *list_of_pack_pattern);
 
 /*****************************************/
 /*Function Definitions					 */
@@ -788,6 +788,10 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 				cur_molecule->base_gain = cur_molecule->num_blocks
 						- (cur_molecule->pack_pattern->base_cost / 100);
 				list_of_molecules_head = cur_molecule;
+				if(logical_block[j].packed_molecules->data_vptr != cur_molecule) {
+					/* molecule did not cover current atom (possibly because molecule created is part of a long chain that extends past multiple logic blocks), try again */
+					j--;
+				}
 			}
 		}
 	}
@@ -878,12 +882,17 @@ static t_pack_molecule *try_create_molecule(
 			list_of_pack_patterns[pack_pattern_index].root_block->block_id;
 	molecule->num_ext_inputs = 0;
 
-	if (try_expand_molecule(molecule, block_index,
+	if(list_of_pack_patterns[pack_pattern_index].is_chain == TRUE) {
+		/* A chain pattern extends beyond a single logic block so we must find the block_index that matches with the portion of a chain for this particular logic block */
+		block_index = find_new_root_atom_for_chain(block_index, &list_of_pack_patterns[pack_pattern_index]);
+	}
+
+	if (block_index != OPEN && try_expand_molecule(molecule, block_index,
 			molecule->pack_pattern->root_block) == TRUE) {
 		/* Success! commit module */
 		for (i = 0; i < molecule->pack_pattern->num_blocks; i++) {
 			if(molecule->logical_block_ptrs[i] == NULL) {
-				assert(list_of_pack_patterns[pack_pattern_index].is_block_optional[i] == FALSE);
+				assert(list_of_pack_patterns[pack_pattern_index].is_block_optional[i] == TRUE);
 				continue;
 			}			
 			molecule_linked_list = (struct s_linked_vptr*) my_calloc(1, sizeof(struct s_linked_vptr));
@@ -913,8 +922,10 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 	int iport, ipin, inet;
 	boolean success;
 	boolean is_optional;
+	boolean *is_block_optional;
 	t_pack_pattern_connections *cur_pack_pattern_connection;
-	is_optional = molecule->pack_pattern->is_block_optional[current_pattern_block->block_id];
+	is_block_optional = molecule->pack_pattern->is_block_optional;
+	is_optional = is_block_optional[current_pattern_block->block_id];
 
 		/* If the block in the pattern has already been visited, then there is no need to revisit it */
 	if (molecule->logical_block_ptrs[current_pattern_block->block_id] != NULL) {
@@ -957,7 +968,7 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 
 				/* Check if net is valid */
 				if (inet == OPEN || vpack_net[inet].num_sinks != 1) { /* One fanout assumption */
-					success = is_optional;
+					success = is_block_optional[cur_pack_pattern_connection->to_block->block_id];
 				} else {
 					success = try_expand_molecule(molecule,
 							vpack_net[inet].node_block[1],
@@ -979,7 +990,7 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 				}
 				/* Check if net is valid */
 				if (inet == OPEN || vpack_net[inet].num_sinks != 1) { /* One fanout assumption */
-					success = is_optional;
+					success = is_block_optional[cur_pack_pattern_connection->from_block->block_id];
 				} else {
 					success = try_expand_molecule(molecule,
 							vpack_net[inet].node_block[0],
@@ -1025,10 +1036,14 @@ static void print_pack_molecules(INP const char *fname,
 					list_of_molecules_current->pack_pattern->name);
 			for (i = 0; i < list_of_molecules_current->pack_pattern->num_blocks;
 					i++) {
-				fprintf(fp, "\tpattern index %d: logical block [%d] name %s\n",
+				if(list_of_molecules_current->logical_block_ptrs[i] == NULL) {
+					fprintf(fp, "\tpattern index %d: empty \n",	i);
+				} else {
+					fprintf(fp, "\tpattern index %d: logical block [%d] name %s\n",
 						i,
 						list_of_molecules_current->logical_block_ptrs[i]->index,
 						list_of_molecules_current->logical_block_ptrs[i]->name);
+				}
 			}
 		} else {
 			assert(0);
@@ -1124,5 +1139,50 @@ static int compare_pack_pattern(const t_pack_patterns *pattern_a, const t_pack_p
 	}
 	return 0;
 }
+
+/* A chain can extend across multiple logic blocks.  Must segment the chain to fit in a logic block by identifying the actual atom that forms the root of the new chain.
+ * Returns OPEN if this block_index doesn't match up with any chain
+ *
+ * Assumes that the root of a chain is the primitive that starts the chain or is driven from outside the logic block
+ * block_index: index of current atom
+ * list_of_pack_pattern: ptr to current chain pattern
+ */
+static int find_new_root_atom_for_chain(INP int block_index, INP t_pack_patterns *list_of_pack_pattern) {
+	int new_index = OPEN;
+	t_pb_graph_pin *root_ipin;
+	t_pb_graph_node *root_pb_graph_node;
+	t_model_ports *model_port;
+	int driver_net, driver_block;
+	
+	assert(list_of_pack_pattern->is_chain == TRUE);
+	root_ipin = list_of_pack_pattern->chain_root_pin;
+	root_pb_graph_node = root_ipin->parent_node;
+
+	if(primitive_type_feasible(block_index, root_pb_graph_node->pb_type) == FALSE) {
+		return OPEN;
+	}
+
+	/* Assign driver furthest up the chain that matches the root node and is unassigned to a molecule as the root */
+	model_port = logical_block[block_index].model->inputs;
+	driver_net = logical_block[block_index].input_nets[model_port->index][root_ipin->pin_number];
+	if(driver_net == OPEN) {
+		/* The current block is the furthest up the chain, return it */
+		return block_index;
+	}
+
+	driver_block = vpack_net[driver_net].node_block[0];
+	if(logical_block[driver_block].packed_molecules != NULL) {
+		/* Driver is used/invalid, so current block is the furthest up the chain, return it */
+		return block_index;
+	}
+
+	new_index = find_new_root_atom_for_chain(driver_block, list_of_pack_pattern);
+	if(new_index == OPEN) {
+		return block_index;
+	} else {
+		return new_index;
+	}
+}
+
 
 
