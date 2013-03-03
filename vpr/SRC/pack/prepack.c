@@ -712,7 +712,7 @@ static void backward_expand_pack_pattern_from_edge(
 					forward_expand_pack_pattern_from_edge(
 									expansion_edge,
 									list_of_packing_patterns,
-									curr_pattern_index, L_num_blocks, FALSE);
+									curr_pattern_index, L_num_blocks, TRUE);
 				}
 			} else {
 				for (j = 0; j < expansion_edge->input_pins[i]->num_input_edges;
