@@ -237,6 +237,9 @@ enum e_pack_pattern_molecule_type {
 /**
  * Represents a grouping of logical_blocks that match a pack_pattern, these groups are intended to be placed as a single unit during packing 
  * Store in linked list
+ * 
+ * A chain is a special type of pack pattern.  A chain can extend across multiple logic blocks.  Must segment the chain to fit in a logic block by identifying the actual atom that forms the root of the new chain.
+ * Assumes that the root of a chain is the primitive that starts the chain or is driven from outside the logic block
  */
 typedef struct s_pack_molecule {
 	enum e_pack_pattern_molecule_type type; /* what kind of molecule is this? */
