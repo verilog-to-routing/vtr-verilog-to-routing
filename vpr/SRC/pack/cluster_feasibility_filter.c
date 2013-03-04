@@ -53,6 +53,10 @@ static void expand_pb_graph_node_and_load_pin_class_by_depth(
 		OUTP int *input_count, OUTP int *output_count);
 static void sum_pin_class(INOUTP t_pb_graph_node *pb_graph_node);
 
+static void discover_all_forced_connections(INOUTP t_pb_graph_node *pb_graph_node);
+static boolean is_forced_connection(INP t_pb_graph_pin *pb_graph_pin);
+
+
 /* Identify all pin class information for complex block
  */
 void load_pin_classes_in_pb_graph_head(INOUTP t_pb_graph_node *pb_graph_node) {
@@ -72,6 +76,7 @@ void load_pin_classes_in_pb_graph_head(INOUTP t_pb_graph_node *pb_graph_node) {
 	/* Load internal output-to-input connections within each cluster */
 	reset_pin_class_scratch_pad_rec(pb_graph_node);
 	load_list_of_connectable_input_pin_ptrs(pb_graph_node);
+	discover_all_forced_connections(pb_graph_node);
 }
 
 /**
@@ -535,4 +540,50 @@ static void sum_pin_class(INOUTP t_pb_graph_node *pb_graph_node) {
 		}
 	}
 }
+
+/* Recursively visit all pb_graph_pins and determine primitive output pins that connect to nothing else than one primitive input pin.  If a net maps to this output pin, then the primitive corresponding to that input must be used */
+static void discover_all_forced_connections(INOUTP t_pb_graph_node *pb_graph_node) {
+	int i, j, k;
+
+	/* If primitive, allocate space, else go to primitive */
+	if (pb_graph_node->pb_type->num_modes == 0) {
+		for(i = 0; i < pb_graph_node->num_output_ports; i++) {
+			for(j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
+				pb_graph_node->output_pins[i][j].is_forced_connection = is_forced_connection(&pb_graph_node->output_pins[i][j]);
+			}
+		}
+	} else {
+		for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
+			for (j = 0;
+					j < pb_graph_node->pb_type->modes[i].num_pb_type_children;
+					j++) {
+				for (k = 0;
+						k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb;
+						k++) {
+					discover_all_forced_connections(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
+				}
+			}
+		}
+	}
+}
+
+/**
+ * Given an output pin, determine if it connects to only one input pin and nothing else. 
+ */
+static boolean is_forced_connection(INP t_pb_graph_pin *pb_graph_pin) {
+	if(pb_graph_pin->num_output_edges > 1) {
+		return FALSE;
+	}
+	if(pb_graph_pin->num_output_edges == 0) {
+		if(pb_graph_pin->parent_node->pb_type->num_modes == 0) {
+			return TRUE;
+		} else {
+			return FALSE;
+		}
+	}
+	return is_forced_connection(pb_graph_pin->output_edges[0]->output_pins[0]);
+}
+
+
+
 

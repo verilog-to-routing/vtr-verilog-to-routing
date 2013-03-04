@@ -44,6 +44,7 @@ static t_pb_graph_pin *expand_pack_molecule_pin_edge(INP int pattern_id,
 		INP t_pb_graph_pin *cur_pin, INP boolean forward);
 static void flush_intermediate_queues(
 		INOUTP t_cluster_placement_stats *cluster_placement_stats);
+static boolean root_passes_early_filter(INP t_pb_graph_node *root, INP t_pack_molecule *molecule);
 
 /****************************************/
 /*Function Definitions					*/
@@ -460,17 +461,19 @@ static float try_place_molecule(INP t_pack_molecule *molecule,
 			molecule->logical_block_ptrs[molecule->root]->index,
 			root->pb_type)) {
 		if (root->cluster_placement_primitive->valid == TRUE) {
-			for (i = 0; i < list_size; i++) {
-				primitives_list[i] = NULL;
-			}
-			cost = root->cluster_placement_primitive->base_cost
-					+ root->cluster_placement_primitive->incremental_cost;
-			primitives_list[molecule->root] = root;
-			if (molecule->type == MOLECULE_FORCED_PACK) {
-				if (!expand_forced_pack_molecule_placement(molecule,
-						molecule->pack_pattern->root_block, primitives_list,
-						&cost)) {
-					return HUGE_POSITIVE_FLOAT;
+			if(root_passes_early_filter(root, molecule)) {
+				for (i = 0; i < list_size; i++) {
+					primitives_list[i] = NULL;
+				}
+				cost = root->cluster_placement_primitive->base_cost
+						+ root->cluster_placement_primitive->incremental_cost;
+				primitives_list[molecule->root] = root;
+				if (molecule->type == MOLECULE_FORCED_PACK) {
+					if (!expand_forced_pack_molecule_placement(molecule,
+							molecule->pack_pattern->root_block, primitives_list,
+							&cost)) {
+						return HUGE_POSITIVE_FLOAT;
+					}
 				}
 			}
 		}
@@ -741,5 +744,31 @@ boolean exists_free_primitive_for_logical_block(
 void reset_tried_but_unused_cluster_placements(
 		INOUTP t_cluster_placement_stats *cluster_placement_stats) {
 	flush_intermediate_queues(cluster_placement_stats);
+}
+
+
+/* Quick, additional filter to see if root is feasible for molecule */
+static boolean root_passes_early_filter(INP t_pb_graph_node *root, INP t_pack_molecule *molecule) {
+	int i, j, k;
+	boolean feasible;
+	t_logical_block *root_block;
+	t_model_ports *model_port;
+
+	feasible = TRUE;
+	root_block = molecule->logical_block_ptrs[molecule->root];
+	for(i = 0; feasible && i < root->num_output_ports; i++) {
+		for(j = 0; feasible && j < root->num_output_pins[i]; j++) {
+			if(root->output_pins[i][j].is_forced_connection) {
+				model_port = root->output_pins[i][j].port->model_port;
+				if(root_block->output_nets[model_port->index][j] != OPEN) {
+					/* This output pin has a dedicated connection to one output, make sure that molecule works */
+					if(molecule->type == MOLECULE_SINGLE_ATOM) {
+						feasible = FALSE;
+					}
+				}
+			}
+		}
+	}
+	return feasible;
 }
 
