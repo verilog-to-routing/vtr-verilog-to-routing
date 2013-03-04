@@ -42,7 +42,7 @@ static int num_luts = 0, num_latches = 0, num_subckts = 0;
 /* # of .input, .output, .model and .end lines */
 static int ilines, olines, model_lines, endlines;
 static struct s_hash **blif_hash;
-static char *model;
+static char *model = NULL;
 static FILE *blif;
 
 static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
@@ -287,12 +287,18 @@ static void get_blif_tok(char *buffer, int doall, boolean *done,
 		ptr = my_strtok(NULL, TOKENS, blif, buffer);
 		if (doall) {
 			if (ptr != NULL ) {
+				if(model != NULL) {
+					free(model);
+				}
 				model = (char *) my_malloc((strlen(ptr) + 1) * sizeof(char));
 				strcpy(model, ptr);
 				if (blif_circuit_name == NULL ) {
 					blif_circuit_name = my_strdup(model);
 				}
 			} else {
+				if(model != NULL) {
+					free(model);
+				}
 				model = (char *) my_malloc(sizeof(char));
 				model[0] = '\0';
 			}
@@ -667,6 +673,7 @@ static void add_subckt(int doall, t_model *user_models) {
 
 		logical_block[num_logical_blocks - 1].type = VPACK_COMB;
 		logical_block[num_logical_blocks - 1].truth_table = NULL;
+		logical_block[num_logical_blocks - 1].name = NULL;
 
 		/* setup the index signal if open or not */
 
@@ -740,14 +747,17 @@ static void add_subckt(int doall, t_model *user_models) {
 			}
 
 			/* record the name to be first output net parsed */
-			logical_block[num_logical_blocks - 1].name = my_strdup(
-					subckt_logical_block_name);
+			if(logical_block[num_logical_blocks - 1].name == NULL) {
+				logical_block[num_logical_blocks - 1].name = my_strdup(
+						subckt_logical_block_name);
+			}
 
 			if (!found_subckt_signal) {
 				vpr_printf(TIO_MESSAGE_ERROR, "Unknown subckt port %s.\n",
 						subckt_signal_name[i]);
 				exit(1);
 			}
+			free(port_name);
 		}
 	}
 

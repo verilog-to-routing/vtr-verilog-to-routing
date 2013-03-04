@@ -347,6 +347,9 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 	/* Frees up the temporary data structures. */
 	free(pl_macro_num_members);
 	free(pl_macro_idirect);
+	for(imacro=0; imacro < num_macro; imacro++) {
+		free(pl_macro_member_blk_num[imacro]);
+	}
 	free(pl_macro_member_blk_num);
 	free(pl_macro_member_blk_num_of_this_blk);
 	

@@ -715,6 +715,7 @@ static void free_pb_type(t_pb_type *pb_type) {
 
 void free_circuit() {
 	int i;
+	struct s_linked_vptr *p_io_removed;
 
 	/* Free netlist reference tables for nets */
 	free(clb_to_vpack_net_mapping);
@@ -756,6 +757,13 @@ void free_circuit() {
 	free(default_output_name);
 	blif_circuit_name = NULL;
 
+	p_io_removed = circuit_p_io_removed;
+	while(p_io_removed != NULL) {
+		circuit_p_io_removed = p_io_removed->next;
+		free(p_io_removed->data_vptr);
+		free(p_io_removed);
+		p_io_removed = circuit_p_io_removed;
+	}
 }
 
 void vpr_free_vpr_data_structures(INOUTP t_arch Arch, INOUTP t_options options,
