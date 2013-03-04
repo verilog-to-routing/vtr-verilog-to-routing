@@ -1,28 +1,37 @@
 <!-- 
-Architecture based off Stratix IV
-  Use closest ifar architecture: K06 N10 45nm fc 0.15 area-delay optimized, scale to 40 nm using linear scaling
-      n10k06l04.fc15.area1delay1.cmos45nm.bptm.cmos45nm.xml
-      - because documentation sparser for soft logic (delays not in QUIP), harder to track down, not worth our time considering the level of accuracy is approximate
-      - delays multiplied by 40/45 to normalize for process difference between stratix 4 and 45 nm technology (full scaling)
+  Flagship Heterogeneous Architecture (No Carry Chains) for VTR 7.0.
 
-  Use delay numbers off Altera device handbook:
+  - 40 nm technology
+  - General purpose logic block: K = 6, N = 10, fracturable 6 LUTs (can operate as one 6-LUT or two 5-LUTs with all 5 inputs shared) with optionally registered outputs
+  - Memory size 32 Kbits, memory aspect ratios vary from a data width of 1 to data width of 64.  Height = 6, found on every (8n+2)th column
+  - Multiplier modes: one 36x36, two 18x18, each 18x18 can also operate as two 9x9.  Height = 4, found on every (8n+6)th column
+  - Routing architecture: L = 4, fc_in = 0.15, Fc_out = 0.1
 
-    http://www.altera.com/literature/hb/stratix-iv/stx4_5v1.pdf
-      http://www.altera.com/literature/hb/stratix-iv/stx4_siv51004.pdf
-      http://www.altera.com/literature/hb/stratix-iv/stx4_siv51003.pdf
-    multipliers at 600 MHz, no detail on 9x9 vs 36x36
-     - datasheets unclear
-      - claims 4 18x18 independant multipliers, following test indicates that this is not the case:
-           created 4 18x18 mulitpliers, logiclocked them to a single DSP block, compile
-           result - 2 18x18 multipliers got packed together, the other 2 got ejected out of the logiclock region without error
-           conclusion - just take the 600 MHz as is, and Quartus II logiclock hasn't fixed the bug that I've seen it do to registers when I worked at Altera (ie. eject without warning)
+  Details on Modelling:
 
-   NOTE: Area numbers for hard blocks unknown!
+  The electrical design of the architecture described here is NOT from an optimized, SPICED architecture.  Instead, we attempt to create a reasonable architecture file by using an existing commercial FPGA to approximate the area, delay, and power of the underlying components.  The following describes, in detail, how we obtained the various electrical parameters values for this architecture.
+
+  Rmin for nmos and pmos, routing buffer sizes, and I/O pad delays from ifar architecture: K06 N10 45nm fc 0.15 area-delay optimized architecture, scaled to 40 nm using linear scaling (n10k06l04.fc15.area1delay1.cmos45nm.bptm.cmos45nm.xml)      
+
+  Delay numbers obtained by measuring delays of routing, soft logic blocks, memories, and multipliers from test circuits on a Stratix IV GX device (EP4SGX230DF29C2X).
+  For routing, we measured took the average delay of H4 and V4 wires.  R and C values were obtained from work done by Charles Chiasson.
+  For the general purpose logic block, we assume that the area and delay of the Stratix IV crossbar will be close enough to the full crossbar modelled here.  This assumption can be broadly justified as the Stratix IV crossbar has more inputs and outputs than our full crossbar so we expect that this roughly balances out the area/delay gain from going sparse.
+  For LUTs, we include LUT delays measured from Stratix IV which is dependant on the input used (ie. some LUT inputs are faster than others).  The CAD tools at the time of VTR 7 does not consider differences in LUT input delays.
+
+  Logic block area numbers obtained by scaling overall tile area of a 65nm Stratix III device to 40 nm, then subtracting out routing area at a channel width of 300.
+
+  Sanity checks employed:
+    1.  Routing buffer delay ~1/3rd of total routing delay.
+
+
+  Authors: Jason Luu, Jeff Goeders, Vaughn Betz
 -->
   
   <architecture>
   
-  <!-- ODIN II specific config -->
+  <!-- ODIN II specific config begins 
+       Describes the types of netlist blocks (in blif, this corresponds to ".model [type_of_block]") that this architecture supports.
+  -->
   <models>
     <model name="multiply">
       <input_ports>
@@ -65,7 +74,7 @@ Architecture based off Stratix IV
   </models>
   <!-- ODIN II specific config ends -->
  
-  <!-- Physical descriptions begin (area-delay optimized for N10-K6-L4) -->
+  <!-- Physical descriptions begin -->
   <layout auto="1.0"/>
 
   		<device>
@@ -75,7 +84,7 @@ Architecture based off Stratix IV
 			     proposed FPGA, and which is also 40 nm -->
 			<sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000" ipin_mux_trans_size="1.222260"/>
 			<timing C_ipin_cblock="1.7e-15" T_ipin_cblock="7.247000e-11"/>
-			<area grid_logic_tile_area="18748.199219"/>
+			<area grid_logic_tile_area="TODO: Jason Luu needs to find this value!"/>
 			<!-- Total Stratix IV tile area is about 8100 um^2 -->
 			<chan_width_distr>
 				<io width="1.000000"/>
@@ -103,6 +112,8 @@ Architecture based off Stratix IV
 		</segmentlist>
 
 		<complexblocklist>
+      
+      <!-- Define I/O pads begin -->
       <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
       <pb_type name="io" capacity="8">
         <input name="outpad" num_pins="1"/>
@@ -150,19 +161,24 @@ Architecture based off Stratix IV
         </gridlocations>
 
       </pb_type>
+      <!-- Define I/O pads ends -->
 
-
+      <!-- Define general purpose logic block (CLB) begin -->
       <pb_type name="clb">
         <input name="I" num_pins="33" equivalent="true"/>
         <output name="O" num_pins="20" equivalent="false"/>
         <clock name="clk" num_pins="1"/>
 
-        <!-- Describe basic logic element with ifar delay numbers -->
+        <!-- Describe fracturable logic element.  
+             Each fracturable logic element has a 6-LUT that can alternatively operate as two 5-LUTs with shared inputs. 
+             The outputs of the fracturable logic element can be optionally registered
+        -->
         <pb_type name="fle" num_pb="10">
           <input name="in" num_pins="6"/>
           <output name="out" num_pins="2"/>
           <clock name="clk" num_pins="1"/>
 
+          <!-- Dual 5-LUT mode definition begin -->
           <mode name="n2_lut5">
             <pb_type name="lut5inter" num_pb="1">
               <input name="in" num_pins="5"/>
@@ -172,24 +188,28 @@ Architecture based off Stratix IV
                 <input name="in" num_pins="5"/>
                 <output name="out" num_pins="1"/>
                 <clock name="clk" num_pins="1"/> 
+
+                <!-- Define the LUT -->
                 <pb_type name="lut5" blif_model=".names" num_pb="1" class="lut">
                   <input name="in" num_pins="5" port_class="lut_in"/>
                   <output name="out" num_pins="1" port_class="lut_out"/>
                   <!-- LUT timing using delay matrix -->
                   <delay_matrix type="max" in_port="lut5.in" out_port="lut5.out">
-                     2.690e-10
-                     2.690e-10
-                     2.690e-10
-                     2.690e-10
-                     2.690e-10
+                    82e-12
+                    173e-12
+                    261e-12
+                    263e-12
+                    398e-12
                   </delay_matrix>
                 </pb_type>
+
+                <!-- Define the flip-flop -->
                 <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
                   <input name="D" num_pins="1" port_class="D"/>
                   <output name="Q" num_pins="1" port_class="Q"/>
                   <clock name="clk" num_pins="1" port_class="clock"/>
-                  <T_setup value="2.448e-10" port="ff.D" clock="clk"/>
-                  <T_clock_to_Q max="7.732e-11" port="ff.Q" clock="clk"/>
+                  <T_setup value="TODO: Jason Luu needs to find this value!" port="ff.D" clock="clk"/>
+                  <T_clock_to_Q max="TODO: Jason Luu needs to find this value!" port="ff.Q" clock="clk"/>
                 </pb_type>
 
                 <interconnect>
@@ -213,8 +233,11 @@ Architecture based off Stratix IV
               <direct name="direct2" input="lut5inter.out" output="fle.out"/>
               <direct name="direct3" input="fle.clk" output="lut5inter.clk"/>
             </interconnect>
-          </mode> <!-- n2_lut5 -->
+          </mode> 
+          <!-- Dual 5-LUT mode definition end -->
+          <!-- 6-LUT mode definition begin -->
           <mode name="n1_lut6">
+            <!-- Define 6-LUT mode -->
             <pb_type name="ble6" num_pb="1">
               <input name="in" num_pins="6"/>
               <output name="out" num_pins="1"/>
@@ -224,20 +247,20 @@ Architecture based off Stratix IV
                 <output name="out" num_pins="1" port_class="lut_out"/>
                 <!-- LUT timing using delay matrix -->
                 <delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
-                   2.690e-10
-                   2.690e-10
-                   2.690e-10
-                   2.690e-10
-                   2.690e-10
-                   2.690e-10
+                    82e-12
+                    173e-12
+                    261e-12
+                    263e-12
+                    398e-12
+                    397e-12
                 </delay_matrix>
               </pb_type>
               <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
                 <input name="D" num_pins="1" port_class="D"/>
                 <output name="Q" num_pins="1" port_class="Q"/>
                 <clock name="clk" num_pins="1" port_class="clock"/>
-                <T_setup value="2.448e-10" port="ff.D" clock="clk"/>
-                <T_clock_to_Q max="7.732e-11" port="ff.Q" clock="clk"/>
+                <T_setup value="TODO: Jason Luu needs to find this value!" port="ff.D" clock="clk"/>
+                <T_clock_to_Q max="TODO: Jason Luu needs to find this value!" port="ff.Q" clock="clk"/>
               </pb_type>
 
               <interconnect>
@@ -254,17 +277,19 @@ Architecture based off Stratix IV
               <direct name="direct2" input="ble6.out" output="fle.out[0:0]"/>
               <direct name="direct3" input="fle.clk" output="ble6.clk"/>
             </interconnect>
-          </mode> <!-- n1_lut6 -->
+          </mode>
+          <!-- 6-LUT mode definition end -->
         </pb_type>
         <interconnect>
+          <!-- We use a full crossbar to get logical equivalence at inputs of CLB -->
           <complete name="crossbar" input="clb.I fle[9:0].out" output="fle[9:0].in">
-            <delay_constant max="4.620e-11" in_port="clb.I" out_port="fle[9:0].in" />
-            <delay_constant max="4.607e-11" in_port="fle[9:0].out" out_port="fle[9:0].in" />
+            <delay_constant max="167e-12" in_port="clb.I" out_port="fle[9:0].in" />
+            <delay_constant max="157e-12" in_port="fle[9:0].out" out_port="fle[9:0].in" />
           </complete>
           <complete name="clks" input="clb.clk" output="fle[9:0].clk">
           </complete>
-          <direct name="clbouts" input="fle[9:0].out" output="clb.O">
-          </direct>
+          <direct name="clbouts1" input="fle[9:0].out[0:0]" output="clb.O[9:0]"/>
+          <direct name="clbouts2" input="fle[9:0].out[1:1]" output="clb.O[19:10]"/>
         </interconnect>
 
 
@@ -275,8 +300,10 @@ Architecture based off Stratix IV
           <loc type="fill" priority="1"/>
         </gridlocations>
       </pb_type>
+      <!-- Define general purpose logic block (CLB) ends -->
 
-      <!-- This is the 36*36 uniform mult -->
+      <!-- Define fracturable multiplier begin -->
+      <!-- This multiplier can operate as a 36x36 multiplier that can fracture to two 18x18 multipliers each of which can further fracture to two 9x9 multipliers -->
       <pb_type name="mult_36" height="4">
           <input name="a" num_pins="36"/>
           <input name="b" num_pins="36"/>
@@ -401,12 +428,14 @@ Architecture based off Stratix IV
         <pinlocations pattern="spread"/>
 
         <gridlocations>
-          <loc type="col" start="4" repeat="8" priority="2"/>
+          <loc type="col" start="6" repeat="8" priority="2"/>
         </gridlocations>
       </pb_type>
+      <!-- Define fracturable multiplier end -->
 
-
-<!-- 32 Kb Memory based off Stratix IV 9K memory and Virtex V 36 Kb.  Setup time set to match flip-flop setup time at 40 nm. Clock to q based off Stratix IV 600 max MHz  -->
+      <!-- Define fracturable memory begin -->
+      <!-- 32 Kb Memory that can operate from 512x64 to 32Kx1 for single-port mode and 1024x32 to 32Kx1 for dual-port mode.  
+           Area and delay based off Stratix IV 9K and 144K memories (delay interpolated from a square-root relation).  -->
       <pb_type name="memory" height="6">
           <input name="addr1" num_pins="15"/>
           <input name="addr2" num_pins="15"/>
@@ -855,7 +884,7 @@ Architecture based off Stratix IV
           <loc type="col" start="2" repeat="8" priority="2"/>
         </gridlocations>
       </pb_type>
-
+      <!-- Define fracturable memory end -->
 
 
     </complexblocklist>
