@@ -505,7 +505,7 @@ static boolean expand_forced_pack_molecule_placement(
 		} else {
 			next_block = cur->from_block;
 		}
-		if (primitives_list[next_block->block_id] == NULL) {
+		if (primitives_list[next_block->block_id] == NULL && molecule->logical_block_ptrs[next_block->block_id] != NULL) {
 			/* first time visiting location */
 
 			/* find next primitive based on pattern connections, expand next primitive if not visited */
