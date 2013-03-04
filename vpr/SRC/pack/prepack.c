@@ -934,6 +934,7 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 			/* Mismatch between the visited block and the current block implies that the current netlist structure does not match the expected pattern, return whether or not this matters */
 			return is_optional;
 		} else {
+			molecule->num_ext_inputs--; /* This block is revisited, implies net is entirely internal to molecule, reduce count */
 			return TRUE;
 		}
 	}
@@ -977,7 +978,6 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 			} else {
 				assert(
 						cur_pack_pattern_connection->to_block == current_pattern_block);
-				molecule->num_ext_inputs--; /* input to logical block is internal to molecule */
 				/* find net corresponding to pattern */
 				iport =
 						cur_pack_pattern_connection->to_pin->port->model_port->index;
@@ -1039,10 +1039,15 @@ static void print_pack_molecules(INP const char *fname,
 				if(list_of_molecules_current->logical_block_ptrs[i] == NULL) {
 					fprintf(fp, "\tpattern index %d: empty \n",	i);
 				} else {
-					fprintf(fp, "\tpattern index %d: logical block [%d] name %s\n",
+					fprintf(fp, "\tpattern index %d: logical block [%d] name %s",
 						i,
 						list_of_molecules_current->logical_block_ptrs[i]->index,
 						list_of_molecules_current->logical_block_ptrs[i]->name);
+					if(list_of_molecules_current->pack_pattern->root_block->block_id == i) {
+						fprintf(fp, " root node\n");
+					} else {
+						fprintf(fp, "\n");
+					}
 				}
 			}
 		} else {
@@ -1163,7 +1168,7 @@ static int find_new_root_atom_for_chain(INP int block_index, INP t_pack_patterns
 	}
 
 	/* Assign driver furthest up the chain that matches the root node and is unassigned to a molecule as the root */
-	model_port = logical_block[block_index].model->inputs;
+	model_port = root_ipin->port->model_port;
 	driver_net = logical_block[block_index].input_nets[model_port->index][root_ipin->pin_number];
 	if(driver_net == OPEN) {
 		/* The current block is the furthest up the chain, return it */

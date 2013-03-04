@@ -26,7 +26,7 @@
 #include "cluster_placement.h"
 #include "ReadOptions.h"
 
-//#define DEBUG_FAILED_PACKING_CANDIDATES
+/*#define DEBUG_FAILED_PACKING_CANDIDATES*/
 
 #define AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC 2 /* Maximum relative number of pins that can exceed input pins before giving up */
 #define AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST 5 /* Maximum constant number of pins that can exceed input pins before giving up */
@@ -163,7 +163,8 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		INP t_pb *cb, OUTP t_pb **parent, INP int max_models,
 		INP int max_cluster_size, INP int clb_index,
 		INP int max_nets_in_pb_type,
-		INP t_cluster_placement_stats *cluster_placement_stats_ptr);
+		INP t_cluster_placement_stats *cluster_placement_stats_ptr,
+		INP boolean is_root_of_chain, INP t_pb_graph_pin *chain_root_pin);
 static void revert_place_logical_block(INP int ilogical_block,
 		INP int max_models);
 
@@ -1180,6 +1181,11 @@ static enum e_block_pack_status try_pack_molecule(
 	enum e_block_pack_status block_pack_status;
 	struct s_linked_vptr *cur_molecule;
 	t_pb *parent;
+	t_pb *cur_pb;
+	t_logical_block *chain_root_block;
+	boolean is_root_of_chain;
+	t_pb_graph_pin *chain_root_pin;
+
 	
 	parent = NULL;
 	
@@ -1193,17 +1199,25 @@ static enum e_block_pack_status try_pack_molecule(
 		if (get_next_primitive_list(cluster_placement_stats_ptr, molecule,
 				primitives_list)) {
 			block_pack_status = BLK_PASSED;
+			
 			for (i = 0; i < molecule_size && block_pack_status == BLK_PASSED;
 					i++) {
 				assert(
 						(primitives_list[i] == NULL) == (molecule->logical_block_ptrs[i] == NULL));
 				failed_location = i + 1;
 				if (molecule->logical_block_ptrs[i] != NULL) {
+					if(molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain && i == molecule->pack_pattern->root_block->block_id) {
+						chain_root_pin = molecule->pack_pattern->chain_root_pin;
+						is_root_of_chain = TRUE;
+					} else {
+						chain_root_pin = NULL;
+						is_root_of_chain = FALSE;
+					}
 					block_pack_status = try_place_logical_block_rec(
 							primitives_list[i],
 							molecule->logical_block_ptrs[i]->index, pb, &parent,
 							max_models, max_cluster_size, clb_index,
-							max_nets_in_pb_type, cluster_placement_stats_ptr);
+							max_nets_in_pb_type, cluster_placement_stats_ptr, is_root_of_chain, chain_root_pin);
 				}
 			}
 			if (block_pack_status == BLK_PASSED) {
@@ -1227,6 +1241,16 @@ static enum e_block_pack_status try_pack_molecule(
 					 jedit may want to update cluster stats here too instead of doing it outside
 					 */
 					assert(block_pack_status == BLK_PASSED);
+					if(molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain) {
+						/* Chained molecules often take up lots of area and are important, if a chain is packed in, want to rename logic block to match chain name */
+						chain_root_block = molecule->logical_block_ptrs[molecule->pack_pattern->root_block->block_id];
+						cur_pb = chain_root_block->pb->parent_pb;
+						while(cur_pb != NULL) {
+							free(cur_pb->name);
+							cur_pb->name = my_strdup(chain_root_block->name);
+							cur_pb = cur_pb->parent_pb;
+						}
+					}
 					for (i = 0; i < molecule_size; i++) {
 						if (molecule->logical_block_ptrs[i] != NULL) {
 							/* invalidate all molecules that share logical block with current molecule */
@@ -1271,7 +1295,8 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		INP t_pb *cb, OUTP t_pb **parent, INP int max_models,
 		INP int max_cluster_size, INP int clb_index,
 		INP int max_nets_in_pb_type,
-		INP t_cluster_placement_stats *cluster_placement_stats_ptr) {
+		INP t_cluster_placement_stats *cluster_placement_stats_ptr,
+		INP boolean is_root_of_chain, INP t_pb_graph_pin *chain_root_pin) {
 	int i, j;
 	boolean is_primitive;
 	enum e_block_pack_status block_pack_status;
@@ -1279,6 +1304,8 @@ static enum e_block_pack_status try_place_logical_block_rec(
 	t_pb *my_parent;
 	t_pb *pb, *parent_pb;
 	const t_pb_type *pb_type;
+
+	t_model_ports *root_port;
 
 	my_parent = NULL;
 
@@ -1289,7 +1316,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		block_pack_status = try_place_logical_block_rec(
 				pb_graph_node->parent_pb_graph_node, ilogical_block, cb,
 				&my_parent, max_models, max_cluster_size, clb_index,
-				max_nets_in_pb_type, cluster_placement_stats_ptr);
+				max_nets_in_pb_type, cluster_placement_stats_ptr, is_root_of_chain, chain_root_pin);
 		parent_pb = my_parent;
 	} else {
 		parent_pb = cb;
@@ -1301,7 +1328,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		parent_pb->logical_block = OPEN;
 		parent_pb->name = my_strdup(logical_block[ilogical_block].name);
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
-		set_pb_graph_mode(parent_pb->pb_graph_node, 0, 0); /* jedit TODO: default mode is to use mode 1, document this! */
+		set_pb_graph_mode(parent_pb->pb_graph_node, 0, 0); /* jedit TODO: default mode is to use mode 0, document this! */
 		set_pb_graph_mode(parent_pb->pb_graph_node, parent_pb->mode, 1);
 		parent_pb->child_pbs =
 				(t_pb **) my_calloc(
@@ -1362,6 +1389,18 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		if (!primitive_feasible(ilogical_block, pb)) {
 			/* failed location feasibility check, revert pack */
 			block_pack_status = BLK_FAILED_FEASIBLE;
+		}
+
+		if (block_pack_status == BLK_PASSED && is_root_of_chain == TRUE) {
+			/* is carry chain, must check if this carry chain spans multiple logic blocks or not */
+			root_port = chain_root_pin->port->model_port;
+			if(logical_block[ilogical_block].input_nets[root_port->index][chain_root_pin->pin_number] != OPEN) {
+				/* this carry chain spans multiple logic blocks, must match up correctly with previous chain for this to route */
+				if(pb_graph_node != chain_root_pin->parent_node) {
+					/* this location does not match with the dedicated chain input from outside logic block, therefore not feasible */
+					block_pack_status = BLK_FAILED_FEASIBLE;
+				}
+			}
 		}
 	}
 
