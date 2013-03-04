@@ -247,7 +247,8 @@ typedef struct s_module {
 typedef struct s_array_ref
 {
 	void **pointer;
-	int array_size;
+	size_t array_size;
+    size_t allocated_size;
 } t_array_ref;
 
 
@@ -274,6 +275,23 @@ typedef struct s_rvalue {
 	} data;
 } t_rvalue;
 /* Structure to pass RValue information */
+
+/*
+ * Identifies whether the current parsing pass is for counting or actual
+ * data structure allocation.
+ */
+typedef enum e_parsing_pass_type { COUNT_PASS = 0, ALLOCATE_PASS} t_parsing_pass_type;
+
+/*
+ * Identifies
+ */
+typedef struct s_parse_info {
+    t_parsing_pass_type pass_type;
+    int number_of_pins;
+    int number_of_assignments;
+    int number_of_nodes;
+    int number_of_modules;
+} t_parse_info;
 
 /*****************************************************/
 /*** FUNCTION DECLARATIONS ***************************/

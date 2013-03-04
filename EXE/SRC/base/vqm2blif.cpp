@@ -252,7 +252,8 @@ int main(int argc, char* argv[])
 	assert (source_file.length() < MAX_LEN );
 	strcpy ( temp_name, source_file.c_str() );
 
-	my_module = vqm_parse_file(temp_name);	//VQM Parser call, requires char*
+    //VQM Parser Call, requires char* filename
+    my_module = vqm_parse_file(temp_name);
 
 	int processEnd = clock();
 	cout << "\n>> VQM Parsing took " << (float)(processEnd - processStart)/CLOCKS_PER_SEC << " seconds.\n" ;

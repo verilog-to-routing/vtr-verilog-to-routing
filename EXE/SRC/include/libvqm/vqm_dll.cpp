@@ -43,24 +43,66 @@ VQM_DLL_API t_module *vqm_parse_file(char *filename)
 /* Parse a VQM file and return the module contained within it. Return NULL on failure. */
 {
 	t_module	*my_module = NULL;
-
+    
 	assert(filename != NULL);
+
+    //Initialize parse counting structure
+    t_parse_info* parse_info = (t_parse_info*) malloc(sizeof(t_parse_info)); 
+    parse_info->pass_type = COUNT_PASS;
+    parse_info->number_of_pins = 0;
+    parse_info->number_of_assignments = 0;
+    parse_info->number_of_nodes = 0;
+    parse_info->number_of_modules = 0;
 
 	yyin = fopen(filename,"r");
 	if (yyin != NULL)
 	{
-		yyparse();
+
+        //Initial pass to count items
+        printf("\tCounting Pass\n");
+		yyparse(parse_info);
 		if (module_list != NULL)
 		{
 			my_module = (t_module *) module_list->pointer[0];
 		}
-		yyrestart(yyin);
+
+
 		fclose(yyin);
 	} else {
-		printf("ERROR: Could not open %s.\n", filename);
+		printf("ERROR: Could not open %s for counting pass.\n", filename);
 		exit(1);
 	}
 
+    //Next pass type
+    parse_info->pass_type = ALLOCATE_PASS;
+
+    //Counting statistics
+    printf("\tVQM Contains:\n");
+    printf("\t\t%d pin(s)\n", parse_info->number_of_pins);
+    printf("\t\t%d assignment(s)\n", parse_info->number_of_assignments);
+    printf("\t\t%d node(s)\n", parse_info->number_of_nodes);
+    printf("\t\t%d module(s)\n", parse_info->number_of_modules);
+	
+    yyin = fopen(filename,"r");
+	if (yyin != NULL)
+	{
+
+        //Initial pass to count items
+        printf("\tAllocating Pass\n");
+		yyparse(parse_info);
+		if (module_list != NULL)
+		{
+			my_module = (t_module *) module_list->pointer[0];
+		}
+
+
+		fclose(yyin);
+	} else {
+		printf("ERROR: Could not open %s for allocating pass.\n", filename);
+		exit(1);
+	}
+    //Cleanup
+    free(parse_info);
 	return my_module;
 }
 
