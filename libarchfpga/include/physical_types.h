@@ -392,6 +392,8 @@ struct s_pb_graph_pin {
 	struct s_pb_graph_pin ***list_of_connectable_input_pin_ptrs; /* [0..depth-1][0..num_connectable_primtive_input_pins-1] what input pins this output can connect to without exiting cluster at given depth */
 	int *num_connectable_primtive_input_pins; /* [0..depth-1] number of input pins that this output pin can reach without exiting cluster at given depth */
 
+	boolean is_forced_connection; /* This output pin connects to one and only one input pin */
+
 	t_pb_graph_pin_power * pin_power;
 };
 typedef struct s_pb_graph_pin t_pb_graph_pin;
