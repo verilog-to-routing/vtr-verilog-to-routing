@@ -246,8 +246,8 @@ int main(int argc, char* argv[])
 	//Parse the .vqm and express it in memory: from vqm_dll.cpp
     cout << "\n>> Parsing VQM file " << source_file << endl ;
 
-	int flowStart = clock();
-	int processStart = clock();
+	unsigned long flowStart = clock();
+	unsigned long processStart = clock();
 
 	assert (source_file.length() < MAX_LEN );
 	strcpy ( temp_name, source_file.c_str() );
@@ -255,7 +255,7 @@ int main(int argc, char* argv[])
     //VQM Parser Call, requires char* filename
     my_module = vqm_parse_file(temp_name);
 
-	int processEnd = clock();
+	unsigned long processEnd = clock();
 	cout << "\n>> VQM Parsing took " << (float)(processEnd - processStart)/CLOCKS_PER_SEC << " seconds.\n" ;
 
     cout << "\n>> Verifying module";
@@ -360,7 +360,7 @@ int main(int argc, char* argv[])
 	cout << "\n>> Cleaning up\n";
 	all_data_cleanup();
 	
-	int flowEnd = clock();
+	unsigned long flowEnd = clock();
 	cout << "\n>> VQM->BLIF Total Runtime: " << (float)(flowEnd - flowStart)/CLOCKS_PER_SEC << " seconds.\n" ;
 
 	cout << "\nComplete.\n";
@@ -1654,8 +1654,12 @@ void dump_subckt_models(t_model* temp_model, ofstream& outfile, t_boolean debug)
  *  debug:
  *	flag to indicate whether to print in DEBUG or BLIF format.
  */	
+    unsigned long total_block_count = 0;
 	while(temp_model){
 		if (model_count[temp_model->index] > 0){
+            //Count the number of blocks
+            total_block_count += model_count[temp_model->index];
+
 			//dump all .subckt models declared in the architecture 
 			//Use the model_count array to only output the models that were used.
 			if (!debug){
@@ -1673,6 +1677,7 @@ void dump_subckt_models(t_model* temp_model, ofstream& outfile, t_boolean debug)
 		}	
 		temp_model = temp_model->next;
 	}
+    cout << "\t>> Total Block Count: " << total_block_count;
 }
 
 //============================================================================================

@@ -41,6 +41,7 @@ void netlist_cleanup (t_module* module){
 	cout << "\t>> VQM Netlist contains " << buffer_count << " buffers.\n" ;
 	cout << "\t>> VQM Netlist contains " << invert_count << " invertors.\n" ;
 
+    //Verify that the initial netlist is ok
 	verify_netlist ( module->array_of_nodes, module->number_of_nodes, &buses, hash_table );
 
 	cout << "\t>> Removing buffered nets" << ((clean_mode == CL_BUFF)? "":" and inverted subckt inputs") << "...\n";
@@ -50,6 +51,7 @@ void netlist_cleanup (t_module* module){
 	cout << "\t>> Removed " << buffers_elim << " buffers of " << buffer_count << ".\n" ;
 	cout << "\t>> Removed " << inverts_elim << " invertors of " << invert_count << ".\n" ;
 
+    //Verify that the final modified netlist is ok
 	verify_netlist ( module->array_of_nodes, module->number_of_nodes, &buses, hash_table );
 
 	print_to_module ( module, &buses, hash_table );
@@ -259,7 +261,8 @@ void clean_netlist ( busvec* buses, struct s_hash** hash_table, t_node** nodes, 
 		out_sink_elim = (buffers_elim+inverts_elim);
 		cout << "\t\t>> Removed " << out_sink_elim << " nets from output sinks.\n" ;
 
-		verify_netlist (nodes, num_nodes, buses, hash_table);
+        //Reduce run time by only verifying at the end
+		//verify_netlist (nodes, num_nodes, buses, hash_table);
 	}
 
 #ifdef CLEAN_DEBUG
@@ -309,7 +312,8 @@ void clean_netlist ( busvec* buses, struct s_hash** hash_table, t_node** nodes, 
 		cout << "\t\t>> Removed " << (buffers_elim + inverts_elim) << " nets from subcircuit sinks.\n";
 	}
 
-	verify_netlist (nodes, num_nodes, buses, hash_table);
+    //Reduce run-time by only verifying at the end
+	//verify_netlist (nodes, num_nodes, buses, hash_table);
 
 #ifdef CLEAN_DEBUG
 	cout << "\t\t>> Dumping to all_buff.out\n" ;
