@@ -749,7 +749,7 @@ void reset_tried_but_unused_cluster_placements(
 
 /* Quick, additional filter to see if root is feasible for molecule */
 static boolean root_passes_early_filter(INP t_pb_graph_node *root, INP t_pack_molecule *molecule) {
-	int i, j, k;
+	int i, j;
 	boolean feasible;
 	t_logical_block *root_block;
 	t_model_ports *model_port;
