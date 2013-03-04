@@ -164,7 +164,7 @@ Architecture based off Stratix IV
 
 
       <pb_type name="clb">
-        <input name="I" num_pins="33" equivalent="true"/>
+        <input name="I" num_pins="40" equivalent="true"/>
         <input name="cin" num_pins="1"/>
         <output name="O" num_pins="20" equivalent="true"/>
         <output name="cout" num_pins="1"/>
@@ -236,6 +236,12 @@ Architecture based off Stratix IV
                       <input name="cin" num_pins="1"/>                      
                       <output name="cout" num_pins="1"/>
                       <output name="sumout" num_pins="1"/>
+					  <delay_constant max="0.01e-9" in_port="adder.a" out_port="adder.sumout"/>
+					  <delay_constant max="0.01e-9" in_port="adder.b" out_port="adder.sumout"/>
+					  <delay_constant max="0.01e-9" in_port="adder.cin" out_port="adder.sumout"/>
+					  <delay_constant max="0.01e-9" in_port="adder.a" out_port="adder.cout"/>
+					  <delay_constant max="0.01e-9" in_port="adder.b" out_port="adder.cout"/>
+					  <delay_constant max="0.01e-9" in_port="adder.cin" out_port="adder.cout"/>
                     </pb_type>    
                     <interconnect>
                       <direct name="lut_in1" input="flut5.in[3:0]" output="lut4[0:0].in[3:0]"/>
