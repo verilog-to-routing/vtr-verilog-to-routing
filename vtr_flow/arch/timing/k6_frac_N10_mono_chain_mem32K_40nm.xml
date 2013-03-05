@@ -48,7 +48,7 @@
   all pins except clock virtual) then measuring the delays in chip-planner, 
   sumout delay = 0.271ns to 0.348 ns, intra-block carry delay = 0.011 ns, 
   inter-block carry delay = 0.327 ns.  Given this data, I will approximate 
-  sumout = iFAR LUT delay = 0.269 ns, intra-block carry-delay = 0.01 ns, and 
+  sumout 0.3 ns, intra-block carry-delay = 0.01 ns, and 
   inter-block carry-delay = 0.16 ns (since Altera inter-block carry delay has 
   overhead that we don't have, I'll approximate the delay of a simpler chain at 
   one half what they have.  This is very rough, anything from 0.01ns to 0.327ns 

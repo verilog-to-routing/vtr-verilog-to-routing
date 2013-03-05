@@ -48,15 +48,11 @@
   all pins except clock virtual) then measuring the delays in chip-planner, 
   sumout delay = 0.271ns to 0.348 ns, intra-block carry delay = 0.011 ns, 
   inter-block carry delay = 0.327 ns.  Given this data, I will approximate 
-  sumout = iFAR LUT delay = 0.269 ns, intra-block carry-delay = 0.01 ns, and 
+  sumout 0.3 ns, intra-block carry-delay = 0.01 ns, and 
   inter-block carry-delay = 0.16 ns (since Altera inter-block carry delay has 
   overhead that we don't have, I'll approximate the delay of a simpler chain at 
   one half what they have.  This is very rough, anything from 0.01ns to 0.327ns 
-  can be justified).  Assume a CLB in arithmetic operates as a single, 
-  monolithic adder.  Real FPGAs of course behave different but we don't have 
-  sufficient algorithmic modelling for this yet.  For now, even with this simple 
-  modelling, we expect to get much more architecturally accurate delay numbers 
-  than the current no-carry-chain academic work.
+  can be justified).
 
   Logic block area numbers obtained by scaling overall tile area of a 65nm 
   Stratix III device to 40 nm, then subtracting out routing area at a channel 
@@ -308,11 +304,11 @@
                       <input name="cin" num_pins="1"/>                      
                       <output name="cout" num_pins="1"/>
                       <output name="sumout" num_pins="1"/>
-                      <delay_constant max="0.01e-9" in_port="adder.a" out_port="adder.sumout"/>
-                      <delay_constant max="0.01e-9" in_port="adder.b" out_port="adder.sumout"/>
-                      <delay_constant max="0.01e-9" in_port="adder.cin" out_port="adder.sumout"/>
-                      <delay_constant max="0.01e-9" in_port="adder.a" out_port="adder.cout"/>
-                      <delay_constant max="0.01e-9" in_port="adder.b" out_port="adder.cout"/>
+                      <delay_constant max="0.3e-9" in_port="adder.a" out_port="adder.sumout"/>
+                      <delay_constant max="0.3e-9" in_port="adder.b" out_port="adder.sumout"/>
+                      <delay_constant max="0.3e-9" in_port="adder.cin" out_port="adder.sumout"/>
+                      <delay_constant max="0.3e-9" in_port="adder.a" out_port="adder.cout"/>
+                      <delay_constant max="0.3e-9" in_port="adder.b" out_port="adder.cout"/>
                       <delay_constant max="0.01e-9" in_port="adder.cin" out_port="adder.cout"/>
                     </pb_type>    
                     <interconnect>
@@ -455,6 +451,8 @@
 
           <!-- Carry chain links -->
           <direct name="carry_in" input="clb.cin" output="fle[0:0].cin">
+            <!-- Put all inter-block carry chain delay on this one edge -->
+            <delay_constant max="0.16e-9" in_port="clb.cin" out_port="fle[0:0].cin"/>
             <pack_pattern name="chain" in_port="clb.cin" out_port="fle[0:0].cin"/>
           </direct>
           <direct name="carry_out" input="fle[9:9].cout" output="clb.cout">
