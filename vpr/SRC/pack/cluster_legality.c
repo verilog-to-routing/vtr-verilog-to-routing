@@ -251,7 +251,7 @@ void alloc_and_load_rr_graph_for_pb_graph_node(
 			rr_node[index].num_edges =
 					pb_graph_node->input_pins[i][j].num_output_edges;
 			rr_node[index].pack_intrinsic_cost = 1
-					+ (float) rr_node[index].num_edges / 5; /* need to normalize better than 5 */
+					+ (float) rr_node[index].num_edges / 5 + ((float)j/(float)pb_graph_node->num_input_pins[i])/(float)10; /* need to normalize better than 5 and 10, bias router to use earlier inputs pins */
 			rr_node[index].edges = (int *) my_malloc(
 					rr_node[index].num_edges * sizeof(int));
 			rr_node[index].switches = (short *) my_calloc(rr_node[index].num_edges,
