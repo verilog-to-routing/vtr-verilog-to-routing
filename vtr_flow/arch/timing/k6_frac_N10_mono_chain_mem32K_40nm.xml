@@ -120,6 +120,18 @@
       </output_ports>
     </model>
 
+    <model name="adder">
+      <input_ports>
+        <port name="a"/>
+        <port name="b"/>
+        <port name="cin"/>
+      </input_ports>
+      <output_ports>
+        <port name="cout"/>
+        <port name="sumout"/>
+      </output_ports>
+    </model>
+
   </models>
   <!-- ODIN II specific config ends -->
  
