@@ -5,7 +5,7 @@
   - General purpose logic block: 
     K = 6, N = 10, fracturable 6 LUTs (can operate as one 6-LUT or two 5-LUTs with all 5 inputs shared) 
     with optionally registered outputs
-    Entire logic block can be configured as one 20-bit combinational adder with carry chain links to 
+    Entire logic block can be configured as one 16-bit combinational adder with carry chain links to 
     vertically adjacent logic blocks
   - Memory size 32 Kbits, memory aspect ratios vary from a data width of 1 to data width of 64.  
     Height = 6, found on every (8n+2)th column
@@ -385,7 +385,7 @@
             <direct name="clbouts2" input="fle[9:0].out[1:1]" output="clb.O[19:10]"/>
           </interconnect>
         </mode>
-                <mode name="arithmetic">
+        <mode name="arithmetic">
           <pb_type name="adder" blif_model=".adder" num_pb="1">
             <input name="a" num_pins="16"/>
             <input name="b" num_pins="16"/>

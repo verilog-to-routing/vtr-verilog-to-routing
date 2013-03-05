@@ -1,35 +1,87 @@
 <!-- 
-Architecture based off Stratix IV
-  Use closest ifar architecture: K06 N10 45nm fc 0.15 area-delay optimized, scale to 40 nm using linear scaling
-      n10k06l04.fc15.area1delay1.cmos45nm.bptm.cmos45nm.xml
-      - because documentation sparser for soft logic (delays not in QUIP), harder to track down, not worth our time considering the level of accuracy is approximate
-      - delays multiplied by 40/45 to normalize for process difference between stratix 4 and 45 nm technology (called full scaling)
+  Flagship Heterogeneous Architecture with Carry Chains for VTR 7.0.
 
-  Use delay numbers off Altera device handbook:
+  - 40 nm technology
+  - General purpose logic block: 
+    K = 6, N = 10, fracturable 6 LUTs (can operate as one 6-LUT or two 5-LUTs with all 5 inputs shared) 
+    with optionally registered outputs
+    Each 5-LUT has an arithemtic mode that converts it to a single-bit adder with both inputs driven by 4-LUTs (both 4-LUTs share all 4 inputs)
+    Carry chain links to vertically adjacent logic blocks
+  - Memory size 32 Kbits, memory aspect ratios vary from a data width of 1 to data width of 64.  
+    Height = 6, found on every (8n+2)th column
+  - Multiplier modes: one 36x36, two 18x18, each 18x18 can also operate as two 9x9.  
+    Height = 4, found on every (8n+6)th column
+  - Routing architecture: L = 4, fc_in = 0.15, Fc_out = 0.1
 
-    http://www.altera.com/literature/hb/stratix-iv/stx4_5v1.pdf
-      http://www.altera.com/literature/hb/stratix-iv/stx4_siv51004.pdf
-      http://www.altera.com/literature/hb/stratix-iv/stx4_siv51003.pdf
-    multipliers at 600 MHz, no detail on 9x9 vs 36x36
-     - datasheets unclear
-      - claims 4 18x18 independant multipliers, following test indicates that this is not the case:
-           created 4 18x18 mulitpliers, logiclocked them to a single DSP block, compile
-           result - 2 18x18 multipliers got packed together, the other 2 got ejected out of the logiclock region without error
-           conclusion - just take the 600 MHz as is, and Quartus II logiclock hasn't fixed the bug that I've seen it do to registers when I worked at Altera (ie. eject without warning)
+  Details on Modelling:
 
-  Monolithic 10-bit adders carry-chained together at the placement level.  Delays obtained as approximate values from a Stratix IV EP4SE230F29C3 device.  
-  Delay obtained by compiling a 256 bit adder (registered inputs and outputs, all pins except clock virtual) then measuring the delays in chip-planner, sumout delay = 0.271ns to 0.348 ns, intra-block carry delay = 0.011 ns, 
-  inter-block carry delay = 0.327 ns.  Given this data, I will approximate sumout = iFAR LUT delay = 0.269 ns, intra-block carry-delay = 0.01 ns, and inter-block carry-delay = 0.16 ns 
-  (since Altera inter-block carry delay has overhead that we don't have, I'll approximate the delay of a simpler chain at one half what they have.  This is very rough, anything from 0.01ns to 0.327ns can be justified).  
-  Assume a CLB in arithmetic operates as a single, monolithic adder.  Real FPGAs of course behave different but we don't have sufficient algorithmic modelling for this yet.  For now, even with this simple modelling, we expect to get much more architecturally accurate delay numbers than the current no-carry-chain academic work.
+  The electrical design of the architecture described here is NOT from an 
+  optimized, SPICED architecture.  Instead, we attempt to create a reasonable 
+  architecture file by using an existing commercial FPGA to approximate the area, 
+  delay, and power of the underlying components.  The following describes, in 
+  detail, how we obtained the various electrical values for this 
+  architecture.
+
+  Rmin for nmos and pmos, routing buffer sizes, and I/O pad delays are from the ifar 
+  architecture: K06 N10 45nm fc 0.15 area-delay optimized architecture, scaled 
+  to 40 nm using linear scaling 
+  (n10k06l04.fc15.area1delay1.cmos45nm.bptm.cmos45nm.xml)      
+
+  Delay numbers obtained by measuring delays of routing, soft logic blocks, 
+  memories, and multipliers from test circuits on a Stratix IV GX device 
+  (EP4SGX230DF29C2X). For routing, we took the average delay of H4 and V4 wires.  
+  R and C values were obtained from work done by Charles Chiasson. For the general 
+  purpose logic block, we assume that the area and delays of the Stratix IV 
+  crossbar is close enough to the crossbar modelled here.  We justify this 
+  rough approximation as follows: The Stratix IV crossbar has more inputs and 
+  outputs than our full crossbar which should increase its area and delay, but the 
+  Stratix IV crossbar is also 50% sparse which should reduce its area and delay.  We 
+  approximate that these two factors roughly balances each other out so we take 
+  the values from Stratix IV as is for our crossbar. For LUTs, we include LUT 
+  delays measured from Stratix IV which is dependant on the input used (ie. some 
+  LUT inputs are faster than others).  The CAD tools at the time of VTR 7 does 
+  not consider differences in LUT input delays.
+
+  Monolithic 10-bit adders carry-chained together at the placement level.  
+  Delays obtained as approximate values from a Stratix IV EP4SE230F29C3 device.  
+  Delay obtained by compiling a 256 bit adder (registered inputs and outputs, 
+  all pins except clock virtual) then measuring the delays in chip-planner, 
+  sumout delay = 0.271ns to 0.348 ns, intra-block carry delay = 0.011 ns, 
+  inter-block carry delay = 0.327 ns.  Given this data, I will approximate 
+  sumout = iFAR LUT delay = 0.269 ns, intra-block carry-delay = 0.01 ns, and 
+  inter-block carry-delay = 0.16 ns (since Altera inter-block carry delay has 
+  overhead that we don't have, I'll approximate the delay of a simpler chain at 
+  one half what they have.  This is very rough, anything from 0.01ns to 0.327ns 
+  can be justified).  Assume a CLB in arithmetic operates as a single, 
+  monolithic adder.  Real FPGAs of course behave different but we don't have 
+  sufficient algorithmic modelling for this yet.  For now, even with this simple 
+  modelling, we expect to get much more architecturally accurate delay numbers 
+  than the current no-carry-chain academic work.
+
+  Logic block area numbers obtained by scaling overall tile area of a 65nm 
+  Stratix III device to 40 nm, then subtracting out routing area at a channel 
+  width of 300.
 
 
-   NOTE: Area numbers for hard blocks unknown!
+  Sanity checks employed:
+    1.  Routing buffer delay ~1/3rd of total routing delay.
+
+
+  Authors: Jason Luu, Jeff Goeders, Vaughn Betz
 -->
+  
   
   <architecture>
   
-  <!-- ODIN II specific config -->
+  <!-- 
+       ODIN II specific config begins 
+       Describes the types of user-specified netlist blocks (in blif, this corresponds to 
+       ".model [type_of_block]") that this architecture supports.
+
+       Note: Basic LUTs, I/Os, and flip-flops are not included here as there are 
+       already special structures in blif (.names, .input, .output, and .latch) 
+       that describe them.
+  -->
   <models>
     <model name="multiply">
       <input_ports>
@@ -84,13 +136,20 @@ Architecture based off Stratix IV
   </models>
   <!-- ODIN II specific config ends -->
  
-  <!-- Physical descriptions begin (area-delay optimized for N10-K6-L4) -->
+  <!-- Physical descriptions begin -->
   <layout auto="1.0"/>
 
-		<device>
+  		<device>
+			<!-- VB & JL: Using Ian Kuon's transistor sizing and drive strength data for routing, at 40 nm. Ian used BPTM 
+			     models. We are modifying the delay values however, to include metal C and R, which allows more architecture
+			     experimentation. The delay values are lined up with Stratix IV, which has an architecture similar to this
+			     proposed FPGA, and which is also 40 nm -->
 			<sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000" ipin_mux_trans_size="1.222260"/>
-			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="7.247000e-11"/>
-			<area grid_logic_tile_area="18748.199219"/>
+			<timing C_ipin_cblock="1.7e-15" T_ipin_cblock="7.247000e-11"/>
+
+      <!-- Total Stratix IV tile area is about 8100 um^2, minimum width transistor area is 60 L^2 yields a tile area of 84375 MWTAs,
+           Routing at W=300 is 30481 MWTAs, leaving us with a total of 53894 MWTAs for logic block area -->
+			<area grid_logic_tile_area="53894"/>
 			<chan_width_distr>
 				<io width="1.000000"/>
 				<x distr="uniform" peak="1.000000"/>
@@ -99,21 +158,31 @@ Architecture based off Stratix IV
 			<switch_block type="wilton" fs="3"/>
 		</device>
 		<switchlist>
-			<switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="6.837e-11" mux_trans_size="2.630740" buf_size="27.645901"/>
+			<!-- VB & JL: we reverse engineered this buffer to be 11x minimum drive, 2 stage. pmos is 33x minimum drive.
+			     first stage is assumed to be 3x min drive n and p. Took Cgate and Cdiff from Charles' 22 nm data, and 
+			     scaled up by 2.45x which is (40/22)^1.5 -->
+			<switch type="mux" name="0" R="551" Cin=".32e-15" Cout="3.5e-15" Tdel="46e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
 		</switchlist>
 		<segmentlist>
-			<segment freq="1.000000" length="4" type="unidir" Rmetal="0.000000" Cmetal="0.000000e+00">
+			<!--- VB & JL: using ITRS metal stack data, 96 nm half pitch wires, which are intermediate metal width/space.  
+			     Increasing the capacitance by 15% to account for crosstalk and to better match SIV routing delays.
+			     such wires would take 60 um of height, vs. a 90 nm high (approximated as square) Stratix IV tile so this seems
+			     reasonable. Using a tile length of 90 nm, corresponding to the length of a Stratix IV tile if it were square. -->
+			<segment freq="1.000000" length="4" type="unidir" Rmetal="101" Cmetal="26e-15">
 			<mux name="0"/>
 			<sb type="pattern">1 1 1 1 1</sb>
 			<cb type="pattern">1 1 1 1</cb>
 			</segment>
 		</segmentlist>
+
     <directlist>
+      <!-- Define carry chain links across logic blocks.  The carry chain in this architecture drives the logic block immediately below current one -->
       <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
     </directlist>
 
-
 		<complexblocklist>
+      
+      <!-- Define I/O pads begin -->
       <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
       <pb_type name="io" capacity="8">
         <input name="outpad" num_pins="1"/>
@@ -143,6 +212,7 @@ Architecture based off Stratix IV
           </interconnect>
         </mode>
 
+        <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
         <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
 
         <!-- IOs go on the periphery of the FPGA, for consistency, 
@@ -156,13 +226,15 @@ Architecture based off Stratix IV
           <loc side="bottom">io.outpad io.inpad io.clock</loc>
         </pinlocations>
 
+        <!-- Place I/Os on the sides of the FPGA -->
         <gridlocations>
           <loc type="perimeter" priority="10"/>
         </gridlocations>
 
       </pb_type>
+      <!-- Define I/O pads ends -->
 
-
+      <!-- Define general purpose logic block (CLB) begin -->
       <pb_type name="clb">
         <input name="I" num_pins="40" equivalent="true"/>
         <input name="cin" num_pins="1"/>
@@ -203,11 +275,11 @@ Architecture based off Stratix IV
                       <output name="out" num_pins="1" port_class="lut_out"/>
                       <!-- LUT timing using delay matrix -->
                       <delay_matrix type="max" in_port="lut5.in" out_port="lut5.out">
-                         2.690e-10
-                         2.690e-10
-                         2.690e-10
-                         2.690e-10
-                         2.690e-10
+                        82e-12
+                        173e-12
+                        261e-12
+                        263e-12
+                        398e-12
                       </delay_matrix>
                     </pb_type>                      
                     <interconnect>
@@ -224,10 +296,10 @@ Architecture based off Stratix IV
                       <output name="out" num_pins="1" port_class="lut_out"/>
                       <!-- LUT timing using delay matrix -->
                       <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
-                         2.690e-10
-                         2.690e-10
-                         2.690e-10
-                         2.690e-10
+                        82e-12
+                        173e-12
+                        261e-12
+                        263e-12
                       </delay_matrix>
                     </pb_type>    
                     <pb_type name="adder" blif_model=".subckt adder" num_pb="1">
@@ -236,12 +308,12 @@ Architecture based off Stratix IV
                       <input name="cin" num_pins="1"/>                      
                       <output name="cout" num_pins="1"/>
                       <output name="sumout" num_pins="1"/>
-					  <delay_constant max="0.01e-9" in_port="adder.a" out_port="adder.sumout"/>
-					  <delay_constant max="0.01e-9" in_port="adder.b" out_port="adder.sumout"/>
-					  <delay_constant max="0.01e-9" in_port="adder.cin" out_port="adder.sumout"/>
-					  <delay_constant max="0.01e-9" in_port="adder.a" out_port="adder.cout"/>
-					  <delay_constant max="0.01e-9" in_port="adder.b" out_port="adder.cout"/>
-					  <delay_constant max="0.01e-9" in_port="adder.cin" out_port="adder.cout"/>
+                      <delay_constant max="0.01e-9" in_port="adder.a" out_port="adder.sumout"/>
+                      <delay_constant max="0.01e-9" in_port="adder.b" out_port="adder.sumout"/>
+                      <delay_constant max="0.01e-9" in_port="adder.cin" out_port="adder.sumout"/>
+                      <delay_constant max="0.01e-9" in_port="adder.a" out_port="adder.cout"/>
+                      <delay_constant max="0.01e-9" in_port="adder.b" out_port="adder.cout"/>
+                      <delay_constant max="0.01e-9" in_port="adder.cin" out_port="adder.cout"/>
                     </pb_type>    
                     <interconnect>
                       <direct name="lut_in1" input="flut5.in[3:0]" output="lut4[0:0].in[3:0]"/>
@@ -268,8 +340,8 @@ Architecture based off Stratix IV
                   <input name="D" num_pins="1" port_class="D"/>
                   <output name="Q" num_pins="1" port_class="Q"/>
                   <clock name="clk" num_pins="1" port_class="clock"/>
-                  <T_setup value="2.448e-10" port="ff.D" clock="clk"/>
-                  <T_clock_to_Q max="7.732e-11" port="ff.Q" clock="clk"/>
+                  <T_setup value="66e-12" port="ff.D" clock="clk"/>
+                  <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
                 </pb_type>
 
                 <interconnect>
@@ -285,7 +357,10 @@ Architecture based off Stratix IV
                   <direct name="carry_out" input="flut5.cout" output="ble5.cout">
                     <pack_pattern name="chain" in_port="flut5.cout" out_port="ble5.cout"/>
                   </direct>
-                  <mux name="mux1" input="ff[0:0].Q flut5.out[0:0]" output="ble5.out[0:0]"/>
+                  <mux name="mux1" input="ff[0:0].Q flut5.out[0:0]" output="ble5.out[0:0]">
+                    <delay_constant max="25e-12" in_port="flut5.out[0:0]" out_port="ble5.out[0:0]" />
+                    <delay_constant max="45e-12" in_port="ff[0:0].Q" out_port="ble5.out[0:0]" />
+                  </mux>
                 </interconnect>
               </pb_type>
               <interconnect>
@@ -326,20 +401,20 @@ Architecture based off Stratix IV
                 <output name="out" num_pins="1" port_class="lut_out"/>
                 <!-- LUT timing using delay matrix -->
                 <delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
-                   2.690e-10
-                   2.690e-10
-                   2.690e-10
-                   2.690e-10
-                   2.690e-10
-                   2.690e-10
+                  82e-12
+                  173e-12
+                  261e-12
+                  263e-12
+                  398e-12
+                  397e-12
                 </delay_matrix>
               </pb_type>
               <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
                 <input name="D" num_pins="1" port_class="D"/>
                 <output name="Q" num_pins="1" port_class="Q"/>
                 <clock name="clk" num_pins="1" port_class="clock"/>
-                <T_setup value="2.448e-10" port="ff.D" clock="clk"/>
-                <T_clock_to_Q max="7.732e-11" port="ff.Q" clock="clk"/>
+                <T_setup value="66e-12" port="ff.D" clock="clk"/>
+                <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
               </pb_type>
 
               <interconnect>
@@ -348,7 +423,10 @@ Architecture based off Stratix IV
                   <pack_pattern name="ble6" in_port="lut6.out" out_port="ff.D"/>
                 </direct>
                 <direct name="direct3" input="ble6.clk" output="ff.clk"/>                    
-                <mux name="mux1" input="ff.Q lut6.out" output="ble6.out"/>
+                <mux name="mux1" input="ff.Q lut6.out" output="ble6.out">
+                  <delay_constant max="25e-12" in_port="lut6.out" out_port="ble6.out" />
+                  <delay_constant max="45e-12" in_port="ff.Q" out_port="ble6.out" />
+                </mux>
               </interconnect>
             </pb_type>
             <interconnect>
@@ -359,14 +437,23 @@ Architecture based off Stratix IV
           </mode> <!-- n1_lut6 -->
         </pb_type>
         <interconnect>
+          <!-- Full crossbar connections any CLB/FLE outputs with any FLE inputs, enables logical equivalence of inputs -->
           <complete name="crossbar" input="clb.I fle[9:0].out" output="fle[9:0].in">
-            <delay_constant max="4.620e-11" in_port="clb.I" out_port="fle[9:0].in" />
-            <delay_constant max="4.607e-11" in_port="fle[9:0].out" out_port="fle[9:0].in" />
+            <delay_constant max="167e-12" in_port="clb.I" out_port="fle[9:0].in" />
+            <delay_constant max="157e-12" in_port="fle[9:0].out" out_port="fle[9:0].in" />
           </complete>
           <complete name="clks" input="clb.clk" output="fle[9:0].clk">
           </complete>
-          <direct name="clbouts" input="fle[9:0].out" output="clb.O">
-          </direct>
+
+          <!-- This way of specifying direct connection to clb outputs is important because this architecture uses automatic spreading of opins.  
+                 By grouping to output pins in this fashion, if a logic block is completely filled by 6-LUTs, 
+                 then the outputs those 6-LUTs take get evenly distributed across all four sides of the CLB instead of clumped on two sides (which is what happens with a more
+                 naive specification).
+          -->
+          <direct name="clbouts1" input="fle[9:0].out[0:0]" output="clb.O[9:0]"/>
+          <direct name="clbouts2" input="fle[9:0].out[1:1]" output="clb.O[19:10]"/>
+
+          <!-- Carry chain links -->
           <direct name="carry_in" input="clb.cin" output="fle[0:0].cin">
             <pack_pattern name="chain" in_port="clb.cin" out_port="fle[0:0].cin"/>
           </direct>
@@ -389,8 +476,14 @@ Architecture based off Stratix IV
           <loc type="fill" priority="1"/>
         </gridlocations>
       </pb_type>
+      <!-- Define general purpose logic block (CLB) ends -->
 
-      <!-- This is the 36*36 uniform mult -->
+      <!-- Define fracturable multiplier begin -->
+      <!-- This multiplier can operate as a 36x36 multiplier that can fracture to two 18x18 multipliers each of which can further fracture to two 9x9 multipliers 
+           For delay modelling, the 36x36 DSP multiplier in Stratix IV has a delay of 1.523 ns. For the input and output interconnect delays, unlike Stratix IV, we don't
+           have any routing/logic flexibility at the inputs or outputs of the multiplier.  At the same time, the delay to get in and out are not 0.  We take the conservative
+           approach modelling the input as the same as the Stratix IV input delay and the output delay the same as the Stratix IV DSP out delay.
+      -->
       <pb_type name="mult_36" height="4">
           <input name="a" num_pins="36"/>
           <input name="b" num_pins="36"/>
@@ -412,8 +505,8 @@ Architecture based off Stratix IV
                     <input name="a" num_pins="9"/>
                     <input name="b" num_pins="9"/>
                     <output name="out" num_pins="18"/>
-                    <delay_constant max="1.667e-9" in_port="mult_9x9.a" out_port="mult_9x9.out"/>
-                    <delay_constant max="1.667e-9" in_port="mult_9x9.b" out_port="mult_9x9.out"/>
+                    <delay_constant max="1.523e-9" in_port="mult_9x9.a" out_port="mult_9x9.out"/>
+                    <delay_constant max="1.523e-9" in_port="mult_9x9.b" out_port="mult_9x9.out"/>
                   </pb_type>
 
                   <interconnect>
@@ -445,8 +538,8 @@ Architecture based off Stratix IV
                     <input name="a" num_pins="18"/>
                     <input name="b" num_pins="18"/>
                     <output name="out" num_pins="36"/>
-                    <delay_constant max="1.667e-9" in_port="mult_18x18.a" out_port="mult_18x18.out"/>
-                    <delay_constant max="1.667e-9" in_port="mult_18x18.b" out_port="mult_18x18.out"/>
+                    <delay_constant max="1.523e-9" in_port="mult_18x18.a" out_port="mult_18x18.out"/>
+                    <delay_constant max="1.523e-9" in_port="mult_18x18.b" out_port="mult_18x18.out"/>
                   </pb_type>
 
                   <interconnect>
@@ -469,11 +562,18 @@ Architecture based off Stratix IV
               </mode>
             </pb_type>
             <interconnect>
-              <direct name="a2a" input="mult_36.a" output="divisible_mult_18x18[1:0].a">
+              <!-- Stratix IV input delay of 207ps is conservative for this architecture because this architecture does not have an input crossbar in the multiplier. 
+                   We use a input delay of because the Stratix IV input delay includes connection box delay.
+                   Stratix IV output delay of 1.09ns is also conservative for this architecture because this architecture has a much simpler output interconnect.
+              -->
+             <direct name="a2a" input="mult_36.a" output="divisible_mult_18x18[1:0].a">
+                <delay_constant max="134e-12" in_port="mult_36.a" out_port="divisible_mult_18x18[1:0].a"/>
               </direct>
               <direct name="b2b" input="mult_36.b" output="divisible_mult_18x18[1:0].b">
+                <delay_constant max="134e-12" in_port="mult_36.b" out_port="divisible_mult_18x18[1:0].b"/>
               </direct>
               <direct name="out2out" input="divisible_mult_18x18[1:0].out" output="mult_36.out">
+                <delay_constant max="1.09e-9" in_port="divisible_mult_18x18[1:0].out" out_port="mult_36.out"/>
               </direct>
             </interconnect>
           </mode>
@@ -488,8 +588,8 @@ Architecture based off Stratix IV
                 <input name="a" num_pins="36"/>
                 <input name="b" num_pins="36"/>
                 <output name="out" num_pins="72"/>
-                <delay_constant max="1.667e-9" in_port="mult_36x36.a" out_port="mult_36x36.out"/>
-                <delay_constant max="1.667e-9" in_port="mult_36x36.b" out_port="mult_36x36.out"/>
+                <delay_constant max="1.523e-9" in_port="mult_36x36.a" out_port="mult_36x36.out"/>
+                <delay_constant max="1.523e-9" in_port="mult_36x36.b" out_port="mult_36x36.out"/>
               </pb_type>
 
               <interconnect>
@@ -502,26 +602,38 @@ Architecture based off Stratix IV
               </interconnect>
             </pb_type>
             <interconnect>
+              <!-- Stratix IV input delay of 207ps is conservative for this architecture because this architecture does not have an input crossbar in the multiplier. 
+                   We use a input delay of because the Stratix IV input delay includes connection box delay.
+                   Stratix IV output delay of 1.09ns is also conservative for this architecture because this architecture has a much simpler output interconnect.
+              -->
               <direct name="a2a" input="mult_36.a" output="mult_36x36_slice.A_cfg">
+                <delay_constant max="134e-12" in_port="mult_36.a" out_port="mult_36x36_slice.A_cfg"/>
               </direct>
               <direct name="b2b" input="mult_36.b" output="mult_36x36_slice.B_cfg">
+                <delay_constant max="134e-12" in_port="mult_36.b" out_port="mult_36x36_slice.B_cfg"/>
               </direct>
               <direct name="out2out" input="mult_36x36_slice.OUT_cfg" output="mult_36.out">
+                <delay_constant max="1.09e-9" in_port="mult_36x36_slice.OUT_cfg" out_port="mult_36.out"/>
               </direct>
             </interconnect>
           </mode>
 
-
-
         <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
         <pinlocations pattern="spread"/>
 
+        <!-- Place this multiplier block every 8 columns from (and including) the sixth column -->
         <gridlocations>
-          <loc type="col" start="4" repeat="8" priority="2"/>
+          <loc type="col" start="6" repeat="8" priority="2"/>
         </gridlocations>
       </pb_type>
+      <!-- Define fracturable multiplier end -->
 
-<!-- 32 Kb Memory based off Stratix IV 9K memory and Virtex V 36 Kb.  Setup time set to match flip-flop setup time at 40 nm. Clock to q based off Stratix IV 600 max MHz  -->
+      <!-- Define fracturable memory begin -->
+      <!-- 32 Kb Memory that can operate from 512x64 to 32Kx1 for single-port mode and 1024x32 to 32Kx1 for dual-port mode.  
+           Area and delay based off Stratix IV 9K and 144K memories (delay from linear interpolation, Tsu(483 ps, 636 ps) Tco(1084ps, 1969ps)).  
+           Input delay = 204ps (from Stratix IV LAB line) - 72ps (this architecture does not lump connection box delay in internal delay)
+           Output delay = M4K buffer 50ps
+      -->
       <pb_type name="memory" height="6">
           <input name="addr1" num_pins="15"/>
           <input name="addr2" num_pins="15"/>
@@ -531,6 +643,7 @@ Architecture based off Stratix IV
           <output name="out" num_pins="64"/>
           <clock name="clk" num_pins="1"/>
 
+          <!-- Specify single port mode first -->
           <mode name="mem_512x64_sp">
             <pb_type name="mem_512x64_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
               <input name="addr" num_pins="9" port_class="address"/>
@@ -538,19 +651,23 @@ Architecture based off Stratix IV
               <input name="we" num_pins="1" port_class="write_en"/>
               <output name="out" num_pins="64" port_class="data_out"/>
               <clock name="clk" num_pins="1" port_class="clock"/>
-              <T_setup value="2.448e-10" port="mem_512x64_sp.addr" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_512x64_sp.data" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_512x64_sp.we" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_512x64_sp.out" clock="clk"/>
+              <T_setup value="509e-12" port="mem_512x64_sp.addr" clock="clk"/>
+              <T_setup value="509e-12" port="mem_512x64_sp.data" clock="clk"/>
+              <T_setup value="509e-12" port="mem_512x64_sp.we" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_512x64_sp.out" clock="clk"/>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[8:0]" output="mem_512x64_sp.addr">
+                <delay_constant max="132e-12" in_port="memory.addr1[8:0]" out_port="mem_512x64_sp.addr"/>
               </direct>
               <direct name="data1" input="memory.data[63:0]" output="mem_512x64_sp.data">
+                <delay_constant max="132e-12" in_port="memory.data[63:0]" out_port="mem_512x64_sp.data"/>
               </direct>
               <direct name="writeen1" input="memory.we1" output="mem_512x64_sp.we">
+                <delay_constant max="132e-12" in_port="memory.we1" out_port="mem_512x64_sp.we"/>
               </direct>
               <direct name="dataout1" input="mem_512x64_sp.out" output="memory.out[63:0]">
+                <delay_constant max="40e-12" in_port="mem_512x64_sp.out" out_port="memory.out[63:0]"/>
               </direct>
               <direct name="clk" input="memory.clk" output="mem_512x64_sp.clk">
               </direct>
@@ -564,19 +681,23 @@ Architecture based off Stratix IV
               <input name="we" num_pins="1" port_class="write_en"/>
               <output name="out" num_pins="32" port_class="data_out"/>
               <clock name="clk" num_pins="1" port_class="clock"/>
-              <T_setup value="2.448e-10" port="mem_1024x32_sp.addr" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_1024x32_sp.data" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_1024x32_sp.we" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_1024x32_sp.out" clock="clk"/>
+              <T_setup value="509e-12" port="mem_1024x32_sp.addr" clock="clk"/>
+              <T_setup value="509e-12" port="mem_1024x32_sp.data" clock="clk"/>
+              <T_setup value="509e-12" port="mem_1024x32_sp.we" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_1024x32_sp.out" clock="clk"/>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[9:0]" output="mem_1024x32_sp.addr">
+                <delay_constant max="132e-12" in_port="memory.addr1[9:0]" out_port="mem_1024x32_sp.addr"/>
               </direct>
               <direct name="data1" input="memory.data[31:0]" output="mem_1024x32_sp.data">
+                <delay_constant max="132e-12" in_port="memory.data[31:0]" out_port="mem_1024x32_sp.data"/>
               </direct>
               <direct name="writeen1" input="memory.we1" output="mem_1024x32_sp.we">
+                <delay_constant max="132e-12" in_port="memory.we1" out_port="mem_1024x32_sp.we"/>
               </direct>
               <direct name="dataout1" input="mem_1024x32_sp.out" output="memory.out[31:0]">
+                <delay_constant max="40e-12" in_port="mem_1024x32_sp.out" out_port="memory.out[31:0]"/>
               </direct>
               <direct name="clk" input="memory.clk" output="mem_1024x32_sp.clk">
               </direct>
@@ -591,19 +712,23 @@ Architecture based off Stratix IV
               <input name="we" num_pins="1" port_class="write_en"/>
               <output name="out" num_pins="16" port_class="data_out"/>
               <clock name="clk" num_pins="1" port_class="clock"/>
-              <T_setup value="2.448e-10" port="mem_2048x16_sp.addr" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_2048x16_sp.data" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_2048x16_sp.we" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_2048x16_sp.out" clock="clk"/>
+              <T_setup value="509e-12" port="mem_2048x16_sp.addr" clock="clk"/>
+              <T_setup value="509e-12" port="mem_2048x16_sp.data" clock="clk"/>
+              <T_setup value="509e-12" port="mem_2048x16_sp.we" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_2048x16_sp.out" clock="clk"/>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[10:0]" output="mem_2048x16_sp.addr">
+                <delay_constant max="132e-12" in_port="memory.addr1[10:0]" out_port="mem_2048x16_sp.addr"/>
               </direct>
               <direct name="data1" input="memory.data[15:0]" output="mem_2048x16_sp.data">
+                <delay_constant max="132e-12" in_port="memory.data[15:0]" out_port="mem_2048x16_sp.data"/>
               </direct>
               <direct name="writeen1" input="memory.we1" output="mem_2048x16_sp.we">
+                <delay_constant max="132e-12" in_port="memory.we1" out_port="mem_2048x16_sp.we"/>
               </direct>
               <direct name="dataout1" input="mem_2048x16_sp.out" output="memory.out[15:0]">
+                <delay_constant max="40e-12" in_port="mem_2048x16_sp.out" out_port="memory.out[15:0]"/>
               </direct>
               <direct name="clk" input="memory.clk" output="mem_2048x16_sp.clk">
               </direct>
@@ -617,19 +742,23 @@ Architecture based off Stratix IV
               <input name="we" num_pins="1" port_class="write_en"/>
               <output name="out" num_pins="8" port_class="data_out"/>
               <clock name="clk" num_pins="1" port_class="clock"/>
-              <T_setup value="2.448e-10" port="mem_4096x8_sp.addr" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_4096x8_sp.data" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_4096x8_sp.we" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_4096x8_sp.out" clock="clk"/>
+              <T_setup value="509e-12" port="mem_4096x8_sp.addr" clock="clk"/>
+              <T_setup value="509e-12" port="mem_4096x8_sp.data" clock="clk"/>
+              <T_setup value="509e-12" port="mem_4096x8_sp.we" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_4096x8_sp.out" clock="clk"/>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[11:0]" output="mem_4096x8_sp.addr">
+                <delay_constant max="132e-12" in_port="memory.addr1[11:0]" out_port="mem_4096x8_sp.addr"/>
               </direct>
               <direct name="data1" input="memory.data[7:0]" output="mem_4096x8_sp.data">
+                <delay_constant max="132e-12" in_port="memory.data[7:0]" out_port="mem_4096x8_sp.data"/>
               </direct>
               <direct name="writeen1" input="memory.we1" output="mem_4096x8_sp.we">
+                <delay_constant max="132e-12" in_port="memory.we1" out_port="mem_4096x8_sp.we"/>
               </direct>
               <direct name="dataout1" input="mem_4096x8_sp.out" output="memory.out[7:0]">
+                <delay_constant max="40e-12" in_port="mem_4096x8_sp.out" out_port="memory.out[7:0]"/>
               </direct>
               <direct name="clk" input="memory.clk" output="mem_4096x8_sp.clk">
               </direct>
@@ -643,19 +772,23 @@ Architecture based off Stratix IV
               <input name="we" num_pins="1" port_class="write_en"/>
               <output name="out" num_pins="4" port_class="data_out"/>
               <clock name="clk" num_pins="1" port_class="clock"/>
-              <T_setup value="2.448e-10" port="mem_8192x4_sp.addr" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_8192x4_sp.data" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_8192x4_sp.we" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_8192x4_sp.out" clock="clk"/>
+              <T_setup value="509e-12" port="mem_8192x4_sp.addr" clock="clk"/>
+              <T_setup value="509e-12" port="mem_8192x4_sp.data" clock="clk"/>
+              <T_setup value="509e-12" port="mem_8192x4_sp.we" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_8192x4_sp.out" clock="clk"/>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[12:0]" output="mem_8192x4_sp.addr">
+                <delay_constant max="132e-12" in_port="memory.addr1[12:0]" out_port="mem_8192x4_sp.addr"/>
               </direct>
               <direct name="data1" input="memory.data[3:0]" output="mem_8192x4_sp.data">
+                <delay_constant max="132e-12" in_port="memory.data[3:0]" out_port="mem_8192x4_sp.data"/>
               </direct>
               <direct name="writeen1" input="memory.we1" output="mem_8192x4_sp.we">
+                <delay_constant max="132e-12" in_port="memory.we1" out_port="mem_8192x4_sp.we"/>
               </direct>
               <direct name="dataout1" input="mem_8192x4_sp.out" output="memory.out[3:0]">
+                <delay_constant max="40e-12" in_port="mem_8192x4_sp.out" out_port="memory.out[3:0]"/>
               </direct>
               <direct name="clk" input="memory.clk" output="mem_8192x4_sp.clk">
               </direct>
@@ -669,19 +802,23 @@ Architecture based off Stratix IV
               <input name="we" num_pins="1" port_class="write_en"/>
               <output name="out" num_pins="2" port_class="data_out"/>
               <clock name="clk" num_pins="1" port_class="clock"/>
-              <T_setup value="2.448e-10" port="mem_16384x2_sp.addr" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_16384x2_sp.data" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_16384x2_sp.we" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_16384x2_sp.out" clock="clk"/>
+              <T_setup value="509e-12" port="mem_16384x2_sp.addr" clock="clk"/>
+              <T_setup value="509e-12" port="mem_16384x2_sp.data" clock="clk"/>
+              <T_setup value="509e-12" port="mem_16384x2_sp.we" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_16384x2_sp.out" clock="clk"/>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[13:0]" output="mem_16384x2_sp.addr">
+                <delay_constant max="132e-12" in_port="memory.addr1[13:0]" out_port="mem_16384x2_sp.addr"/>
               </direct>
               <direct name="data1" input="memory.data[1:0]" output="mem_16384x2_sp.data">
+                <delay_constant max="132e-12" in_port="memory.data[1:0]" out_port="mem_16384x2_sp.data"/>
               </direct>
               <direct name="writeen1" input="memory.we1" output="mem_16384x2_sp.we">
+                <delay_constant max="132e-12" in_port="memory.we1" out_port="mem_16384x2_sp.we"/>
               </direct>
               <direct name="dataout1" input="mem_16384x2_sp.out" output="memory.out[1:0]">
+                <delay_constant max="40e-12" in_port="mem_16384x2_sp.out" out_port="memory.out[1:0]"/>
               </direct>
               <direct name="clk" input="memory.clk" output="mem_16384x2_sp.clk">
               </direct>
@@ -695,25 +832,30 @@ Architecture based off Stratix IV
               <input name="we" num_pins="1" port_class="write_en"/>
               <output name="out" num_pins="1" port_class="data_out"/>
               <clock name="clk" num_pins="1" port_class="clock"/>
-              <T_setup value="2.448e-10" port="mem_32768x1_sp.addr" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_32768x1_sp.data" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_32768x1_sp.we" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_32768x1_sp.out" clock="clk"/>
+              <T_setup value="509e-12" port="mem_32768x1_sp.addr" clock="clk"/>
+              <T_setup value="509e-12" port="mem_32768x1_sp.data" clock="clk"/>
+              <T_setup value="509e-12" port="mem_32768x1_sp.we" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_32768x1_sp.out" clock="clk"/>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[14:0]" output="mem_32768x1_sp.addr">
+                <delay_constant max="132e-12" in_port="memory.addr1[14:0]" out_port="mem_32768x1_sp.addr"/>
               </direct>
               <direct name="data1" input="memory.data[0:0]" output="mem_32768x1_sp.data">
+                <delay_constant max="132e-12" in_port="memory.data[0:0]" out_port="mem_32768x1_sp.data"/>
               </direct>
               <direct name="writeen1" input="memory.we1" output="mem_32768x1_sp.we">
+                <delay_constant max="132e-12" in_port="memory.we1" out_port="mem_32768x1_sp.we"/>
               </direct>
               <direct name="dataout1" input="mem_32768x1_sp.out" output="memory.out[0:0]">
+                <delay_constant max="40e-12" in_port="mem_32768x1_sp.out" out_port="memory.out[0:0]"/>
               </direct>
               <direct name="clk" input="memory.clk" output="mem_32768x1_sp.clk">
               </direct>
             </interconnect>
           </mode> 
                    
+          <!-- Specify true dual port mode next -->
           <mode name="mem_1024x32_dp">
             <pb_type name="mem_1024x32_dp" blif_model=".subckt dual_port_ram" class="memory" num_pb="1">
               <input name="addr1" num_pins="10" port_class="address1"/>
@@ -725,31 +867,39 @@ Architecture based off Stratix IV
               <output name="out1" num_pins="32" port_class="data_out1"/>
               <output name="out2" num_pins="32" port_class="data_out2"/>
               <clock name="clk" num_pins="1" port_class="clock"/>
-              <T_setup value="2.448e-10" port="mem_1024x32_dp.addr1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_1024x32_dp.data1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_1024x32_dp.we1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_1024x32_dp.addr2" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_1024x32_dp.data2" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_1024x32_dp.we2" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_1024x32_dp.out1" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_1024x32_dp.out2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_1024x32_dp.addr1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_1024x32_dp.data1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_1024x32_dp.we1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_1024x32_dp.addr2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_1024x32_dp.data2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_1024x32_dp.we2" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_1024x32_dp.out1" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_1024x32_dp.out2" clock="clk"/>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[9:0]" output="mem_1024x32_dp.addr1">
+                <delay_constant max="132e-12" in_port="memory.addr1[9:0]" out_port="mem_1024x32_dp.addr1"/>
               </direct>
               <direct name="address2" input="memory.addr2[9:0]" output="mem_1024x32_dp.addr2">
+                <delay_constant max="132e-12" in_port="memory.addr2[9:0]" out_port="mem_1024x32_dp.addr2"/>
               </direct>
               <direct name="data1" input="memory.data[31:0]" output="mem_1024x32_dp.data1">
+                <delay_constant max="132e-12" in_port="memory.data[31:0]" out_port="mem_1024x32_dp.data1"/>
               </direct>
               <direct name="data2" input="memory.data[63:32]" output="mem_1024x32_dp.data2">
+                <delay_constant max="132e-12" in_port="memory.data[63:32]" out_port="mem_1024x32_dp.data2"/>
               </direct>
               <direct name="writeen1" input="memory.we1" output="mem_1024x32_dp.we1">
+                <delay_constant max="132e-12" in_port="memory.we1" out_port="mem_1024x32_dp.we1"/>
               </direct>
               <direct name="writeen2" input="memory.we2" output="mem_1024x32_dp.we2">
+                <delay_constant max="132e-12" in_port="memory.we2" out_port="mem_1024x32_dp.we2"/>
               </direct>
               <direct name="dataout1" input="mem_1024x32_dp.out1" output="memory.out[31:0]">
+                <delay_constant max="40e-12" in_port="mem_1024x32_dp.out1" out_port="memory.out[31:0]"/>
               </direct>
               <direct name="dataout2" input="mem_1024x32_dp.out2" output="memory.out[63:32]">
+                <delay_constant max="40e-12" in_port="mem_1024x32_dp.out2" out_port="memory.out[63:32]"/>
               </direct>
               <direct name="clk" input="memory.clk" output="mem_1024x32_dp.clk">
               </direct>
@@ -767,31 +917,39 @@ Architecture based off Stratix IV
               <output name="out1" num_pins="16" port_class="data_out1"/>
               <output name="out2" num_pins="16" port_class="data_out2"/>
               <clock name="clk" num_pins="1" port_class="clock"/>
-              <T_setup value="2.448e-10" port="mem_2048x16_dp.addr1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_2048x16_dp.data1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_2048x16_dp.we1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_2048x16_dp.addr2" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_2048x16_dp.data2" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_2048x16_dp.we2" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_2048x16_dp.out1" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_2048x16_dp.out2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_2048x16_dp.addr1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_2048x16_dp.data1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_2048x16_dp.we1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_2048x16_dp.addr2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_2048x16_dp.data2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_2048x16_dp.we2" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_2048x16_dp.out1" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_2048x16_dp.out2" clock="clk"/>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[10:0]" output="mem_2048x16_dp.addr1">
+                <delay_constant max="132e-12" in_port="memory.addr1[10:0]" out_port="mem_2048x16_dp.addr1"/>
               </direct>
               <direct name="address2" input="memory.addr2[10:0]" output="mem_2048x16_dp.addr2">
+                <delay_constant max="132e-12" in_port="memory.addr2[10:0]" out_port="mem_2048x16_dp.addr2"/>
               </direct>
               <direct name="data1" input="memory.data[15:0]" output="mem_2048x16_dp.data1">
+                <delay_constant max="132e-12" in_port="memory.data[15:0]" out_port="mem_2048x16_dp.data1"/>
               </direct>
               <direct name="data2" input="memory.data[31:16]" output="mem_2048x16_dp.data2">
+                <delay_constant max="132e-12" in_port="memory.data[31:16]" out_port="mem_2048x16_dp.data2"/>
               </direct>
               <direct name="writeen1" input="memory.we1" output="mem_2048x16_dp.we1">
+                <delay_constant max="132e-12" in_port="memory.we1" out_port="mem_2048x16_dp.we1"/>
               </direct>
               <direct name="writeen2" input="memory.we2" output="mem_2048x16_dp.we2">
+                <delay_constant max="132e-12" in_port="memory.we2" out_port="mem_2048x16_dp.we2"/>
               </direct>
               <direct name="dataout1" input="mem_2048x16_dp.out1" output="memory.out[15:0]">
+                <delay_constant max="40e-12" in_port="mem_2048x16_dp.out1" out_port="memory.out[15:0]"/>
               </direct>
               <direct name="dataout2" input="mem_2048x16_dp.out2" output="memory.out[31:16]">
+                <delay_constant max="40e-12" in_port="mem_2048x16_dp.out2" out_port="memory.out[31:16]"/>
               </direct>
               <direct name="clk" input="memory.clk" output="mem_2048x16_dp.clk">
               </direct>
@@ -809,31 +967,39 @@ Architecture based off Stratix IV
               <output name="out1" num_pins="8" port_class="data_out1"/>
               <output name="out2" num_pins="8" port_class="data_out2"/>
               <clock name="clk" num_pins="1" port_class="clock"/>
-              <T_setup value="2.448e-10" port="mem_2048x8_dp.addr1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_2048x8_dp.data1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_2048x8_dp.we1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_2048x8_dp.addr2" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_2048x8_dp.data2" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_2048x8_dp.we2" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_2048x8_dp.out1" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_2048x8_dp.out2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_2048x8_dp.addr1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_2048x8_dp.data1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_2048x8_dp.we1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_2048x8_dp.addr2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_2048x8_dp.data2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_2048x8_dp.we2" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_2048x8_dp.out1" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_2048x8_dp.out2" clock="clk"/>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[11:0]" output="mem_2048x8_dp.addr1">
+                <delay_constant max="132e-12" in_port="memory.addr1[11:0]" out_port="mem_2048x8_dp.addr1"/>
               </direct>
               <direct name="address2" input="memory.addr2[11:0]" output="mem_2048x8_dp.addr2">
+                <delay_constant max="132e-12" in_port="memory.addr2[11:0]" out_port="mem_2048x8_dp.addr2"/>
               </direct>
               <direct name="data1" input="memory.data[7:0]" output="mem_2048x8_dp.data1">
+                <delay_constant max="132e-12" in_port="memory.data[7:0]" out_port="mem_2048x8_dp.data1"/>
               </direct>
               <direct name="data2" input="memory.data[15:8]" output="mem_2048x8_dp.data2">
+                <delay_constant max="132e-12" in_port="memory.data[15:8]" out_port="mem_2048x8_dp.data2"/>
               </direct>
               <direct name="writeen1" input="memory.we1" output="mem_2048x8_dp.we1">
+                <delay_constant max="132e-12" in_port="memory.we1" out_port="mem_2048x8_dp.we1"/>
               </direct>
               <direct name="writeen2" input="memory.we2" output="mem_2048x8_dp.we2">
+                <delay_constant max="132e-12" in_port="memory.we2" out_port="mem_2048x8_dp.we2"/>
               </direct>
               <direct name="dataout1" input="mem_2048x8_dp.out1" output="memory.out[7:0]">
+                <delay_constant max="40e-12" in_port="mem_2048x8_dp.out1" out_port="memory.out[7:0]"/>
               </direct>
               <direct name="dataout2" input="mem_2048x8_dp.out2" output="memory.out[15:8]">
+                <delay_constant max="40e-12" in_port="mem_2048x8_dp.out2" out_port="memory.out[15:8]"/>
               </direct>
               <direct name="clk" input="memory.clk" output="mem_2048x8_dp.clk">
               </direct>
@@ -850,31 +1016,39 @@ Architecture based off Stratix IV
               <output name="out1" num_pins="4" port_class="data_out1"/>
               <output name="out2" num_pins="4" port_class="data_out2"/>
               <clock name="clk" num_pins="1" port_class="clock"/>
-              <T_setup value="2.448e-10" port="mem_8192x4_dp.addr1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_8192x4_dp.data1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_8192x4_dp.we1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_8192x4_dp.addr2" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_8192x4_dp.data2" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_8192x4_dp.we2" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_8192x4_dp.out1" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_8192x4_dp.out2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_8192x4_dp.addr1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_8192x4_dp.data1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_8192x4_dp.we1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_8192x4_dp.addr2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_8192x4_dp.data2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_8192x4_dp.we2" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_8192x4_dp.out1" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_8192x4_dp.out2" clock="clk"/>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[12:0]" output="mem_8192x4_dp.addr1">
+                <delay_constant max="132e-12" in_port="memory.addr1[12:0]" out_port="mem_8192x4_dp.addr1"/>
               </direct>
               <direct name="address2" input="memory.addr2[12:0]" output="mem_8192x4_dp.addr2">
+                <delay_constant max="132e-12" in_port="memory.addr2[12:0]" out_port="mem_8192x4_dp.addr2"/>
               </direct>
               <direct name="data1" input="memory.data[3:0]" output="mem_8192x4_dp.data1">
+                <delay_constant max="132e-12" in_port="memory.data[3:0]" out_port="mem_8192x4_dp.data1"/>
               </direct>
               <direct name="data2" input="memory.data[7:4]" output="mem_8192x4_dp.data2">
+                <delay_constant max="132e-12" in_port="memory.data[7:4]" out_port="mem_8192x4_dp.data2"/>
               </direct>
               <direct name="writeen1" input="memory.we1" output="mem_8192x4_dp.we1">
+                <delay_constant max="132e-12" in_port="memory.we1" out_port="mem_8192x4_dp.we1"/>
               </direct>
               <direct name="writeen2" input="memory.we2" output="mem_8192x4_dp.we2">
+                <delay_constant max="132e-12" in_port="memory.we2" out_port="mem_8192x4_dp.we2"/>
               </direct>
               <direct name="dataout1" input="mem_8192x4_dp.out1" output="memory.out[3:0]">
+                <delay_constant max="40e-12" in_port="mem_8192x4_dp.out1" out_port="memory.out[3:0]"/>
               </direct>
               <direct name="dataout2" input="mem_8192x4_dp.out2" output="memory.out[7:4]">
+                <delay_constant max="40e-12" in_port="mem_8192x4_dp.out2" out_port="memory.out[7:4]"/>
               </direct>
               <direct name="clk" input="memory.clk" output="mem_8192x4_dp.clk">
               </direct>
@@ -891,31 +1065,39 @@ Architecture based off Stratix IV
               <output name="out1" num_pins="2" port_class="data_out1"/>
               <output name="out2" num_pins="2" port_class="data_out2"/>
               <clock name="clk" num_pins="1" port_class="clock"/>
-              <T_setup value="2.448e-10" port="mem_16384x2_dp.addr1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_16384x2_dp.data1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_16384x2_dp.we1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_16384x2_dp.addr2" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_16384x2_dp.data2" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_16384x2_dp.we2" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_16384x2_dp.out1" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_16384x2_dp.out2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_16384x2_dp.addr1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_16384x2_dp.data1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_16384x2_dp.we1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_16384x2_dp.addr2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_16384x2_dp.data2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_16384x2_dp.we2" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_16384x2_dp.out1" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_16384x2_dp.out2" clock="clk"/>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[13:0]" output="mem_16384x2_dp.addr1">
+                <delay_constant max="132e-12" in_port="memory.addr1[13:0]" out_port="mem_16384x2_dp.addr1"/>
               </direct>
               <direct name="address2" input="memory.addr2[13:0]" output="mem_16384x2_dp.addr2">
+                <delay_constant max="132e-12" in_port="memory.addr2[13:0]" out_port="mem_16384x2_dp.addr2"/>
               </direct>
               <direct name="data1" input="memory.data[1:0]" output="mem_16384x2_dp.data1">
+                <delay_constant max="132e-12" in_port="memory.data[1:0]" out_port="mem_16384x2_dp.data1"/>
               </direct>
               <direct name="data2" input="memory.data[3:2]" output="mem_16384x2_dp.data2">
+                <delay_constant max="132e-12" in_port="memory.data[3:2]" out_port="mem_16384x2_dp.data2"/>
               </direct>
               <direct name="writeen1" input="memory.we1" output="mem_16384x2_dp.we1">
+                <delay_constant max="132e-12" in_port="memory.we1" out_port="mem_16384x2_dp.we1"/>
               </direct>
               <direct name="writeen2" input="memory.we2" output="mem_16384x2_dp.we2">
+                <delay_constant max="132e-12" in_port="memory.we2" out_port="mem_16384x2_dp.we2"/>
               </direct>
               <direct name="dataout1" input="mem_16384x2_dp.out1" output="memory.out[1:0]">
+                <delay_constant max="40e-12" in_port="mem_16384x2_dp.out1" out_port="memory.out[1:0]"/>
               </direct>
               <direct name="dataout2" input="mem_16384x2_dp.out2" output="memory.out[3:2]">
+                <delay_constant max="40e-12" in_port="mem_16384x2_dp.out2" out_port="memory.out[3:2]"/>
               </direct>
               <direct name="clk" input="memory.clk" output="mem_16384x2_dp.clk">
               </direct>
@@ -933,43 +1115,55 @@ Architecture based off Stratix IV
               <output name="out1" num_pins="1" port_class="data_out1"/>
               <output name="out2" num_pins="1" port_class="data_out2"/>
               <clock name="clk" num_pins="1" port_class="clock"/>
-              <T_setup value="2.448e-10" port="mem_32768x1_dp.addr1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_32768x1_dp.data1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_32768x1_dp.we1" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_32768x1_dp.addr2" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_32768x1_dp.data2" clock="clk"/>
-              <T_setup value="2.448e-10" port="mem_32768x1_dp.we2" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_32768x1_dp.out1" clock="clk"/>
-              <T_clock_to_Q max="1.667e-9" port="mem_32768x1_dp.out2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_32768x1_dp.addr1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_32768x1_dp.data1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_32768x1_dp.we1" clock="clk"/>
+              <T_setup value="509e-12" port="mem_32768x1_dp.addr2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_32768x1_dp.data2" clock="clk"/>
+              <T_setup value="509e-12" port="mem_32768x1_dp.we2" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_32768x1_dp.out1" clock="clk"/>
+              <T_clock_to_Q max="1.234e-9" port="mem_32768x1_dp.out2" clock="clk"/>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[14:0]" output="mem_32768x1_dp.addr1">
+                <delay_constant max="132e-12" in_port="memory.addr1[14:0]" out_port="mem_32768x1_dp.addr1"/>
               </direct>
               <direct name="address2" input="memory.addr2[14:0]" output="mem_32768x1_dp.addr2">
+                <delay_constant max="132e-12" in_port="memory.addr2[14:0]" out_port="mem_32768x1_dp.addr2"/>
               </direct>
               <direct name="data1" input="memory.data[0:0]" output="mem_32768x1_dp.data1">
+                <delay_constant max="132e-12" in_port="memory.data[0:0]" out_port="mem_32768x1_dp.data1"/>
               </direct>
               <direct name="data2" input="memory.data[1:1]" output="mem_32768x1_dp.data2">
+                <delay_constant max="132e-12" in_port="memory.data[1:1]" out_port="mem_32768x1_dp.data2"/>
               </direct>
               <direct name="writeen1" input="memory.we1" output="mem_32768x1_dp.we1">
+                <delay_constant max="132e-12" in_port="memory.we1" out_port="mem_32768x1_dp.we1"/>
               </direct>
               <direct name="writeen2" input="memory.we2" output="mem_32768x1_dp.we2">
+                <delay_constant max="132e-12" in_port="memory.we2" out_port="mem_32768x1_dp.we2"/>
               </direct>
               <direct name="dataout1" input="mem_32768x1_dp.out1" output="memory.out[0:0]">
+                <delay_constant max="40e-12" in_port="mem_32768x1_dp.out1" out_port="memory.out[0:0]"/>
               </direct>
               <direct name="dataout2" input="mem_32768x1_dp.out2" output="memory.out[1:1]">
+                <delay_constant max="40e-12" in_port="mem_32768x1_dp.out2" out_port="memory.out[1:1]"/>
               </direct>
               <direct name="clk" input="memory.clk" output="mem_32768x1_dp.clk">
               </direct>
             </interconnect>
           </mode>
 
+        <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
         <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
         <pinlocations pattern="spread"/>
+
+        <!-- Place this memory block every 8 columns from (and including) the second column -->
         <gridlocations>
           <loc type="col" start="2" repeat="8" priority="2"/>
         </gridlocations>
       </pb_type>
+      <!-- Define fracturable memory end -->
 
 
     </complexblocklist>
