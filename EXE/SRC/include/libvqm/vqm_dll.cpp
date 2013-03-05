@@ -78,7 +78,7 @@ VQM_DLL_API t_module *vqm_parse_file(char *filename)
 
     //Counting statistics
     printf("\tVQM Contains:\n");
-    printf("\t\t%d pin(s)\n", parse_info->number_of_pins);
+    printf("\t\t%d pin/net(s)\n", parse_info->number_of_pins);
     printf("\t\t%d assignment(s)\n", parse_info->number_of_assignments);
     printf("\t\t%d node(s)\n", parse_info->number_of_nodes);
     printf("\t\t%d module(s)\n", parse_info->number_of_modules);
@@ -101,6 +101,7 @@ VQM_DLL_API t_module *vqm_parse_file(char *filename)
 		printf("ERROR: Could not open %s for allocating pass.\n", filename);
 		exit(1);
 	}
+
     //Cleanup
     free(parse_info);
 	return my_module;

@@ -41,6 +41,7 @@ extern t_array_ref *module_list;
 extern t_array_ref *assignment_list;
 extern t_array_ref *node_list;
 extern t_array_ref *pin_list;
+extern t_hash_table *pin_hash;
 
 /*******************************************************************************************/
 /****************************           DECLARATIONS             ***************************/
@@ -72,6 +73,9 @@ t_array_ref			*create_array_of_net_to_port_assignments(t_array_ref *con_array);
 void				define_instance_parameter(t_identifier_pass *identifier, char *parameter_name, char *string_value, int integer_value);
 void				add_concatenation_assignments(t_array_ref *con_array, t_pin_def *target_pin, t_boolean invert_wire, t_parse_info* parse_info);
 t_array_ref			*create_wire_port_connections(t_array_ref *concat_array, char *port_name);
+
+void print_hash_stats(t_hash_table* hash_table);
+
 extern t_node		*most_recently_used_node;
 extern char			most_recent_error[ERROR_LENGTH];
 extern char*		yytext;

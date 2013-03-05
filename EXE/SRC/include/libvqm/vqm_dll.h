@@ -283,7 +283,7 @@ typedef struct s_rvalue {
 typedef enum e_parsing_pass_type { COUNT_PASS = 0, ALLOCATE_PASS} t_parsing_pass_type;
 
 /*
- * Identifies
+ * Structure used to count number of elements during counting pass
  */
 typedef struct s_parse_info {
     t_parsing_pass_type pass_type;
@@ -292,6 +292,30 @@ typedef struct s_parse_info {
     int number_of_nodes;
     int number_of_modules;
 } t_parse_info;
+
+/*
+ * A hash table element
+ */
+typedef struct s_hash_elem t_hash_elem;
+struct s_hash_elem {
+    char* key;
+    size_t value;
+    t_hash_elem* next; //In case of hash collision, make a linked list
+};
+
+/*
+ * A hash table
+ */
+typedef struct s_hash_table {
+    t_hash_elem* table; //Array of t_hash_elem from [0..size-1]
+    size_t size; //Number of entries in table
+} t_hash_table;
+
+typedef struct s_index_pass {
+    t_boolean found; //The net was found and the index field should be valid
+    size_t index; //The index into the array_ref passed to find_position_for_net_in_array_by_hash
+} t_index_pass;
+
 
 /*****************************************************/
 /*** FUNCTION DECLARATIONS ***************************/

@@ -70,6 +70,7 @@ t_array_ref *module_list = NULL;
 t_array_ref *assignment_list = NULL;
 t_array_ref *node_list = NULL;
 t_array_ref *pin_list = NULL;
+t_hash_table *pin_hash = NULL;
 t_node	*most_recently_used_node = NULL;
 
 int calculate_array_size_using_bounds(int element_count);
@@ -83,6 +84,10 @@ int find_position_for_net_in_array(char *name, t_array_ref *net_list);
 
 char most_recent_error[ERROR_LENGTH];
 
+size_t hash_func(char* key, t_hash_table* hash_table);
+t_hash_elem* get_hash_entry(char* key, t_hash_table* hash_table);
+void insert_hash(char* key, size_t value, t_hash_table* hash_table);
+t_index_pass find_position_for_net_in_array_by_hash(char* name, t_array_ref *net_list); 
 /*******************************************************************************************/
 /****************************          IMPLEMENTATION            ***************************/
 /*******************************************************************************************/
@@ -340,28 +345,24 @@ t_pin_def *add_pin(char *name, int left, int right, t_pin_def_type type, t_parse
 		pin_list->pointer = (void**) malloc(parse_info->number_of_pins * ELEMENT_SIZE);
 	}
 
-	/* Add pin to pin list */
-	/* First find a proper place for the item and then insert it into the proper position in the array.
-	 * This will speed up the search. 
-	 */
-	index = find_position_for_net_in_array( pin->name, pin_list );
-	if ((index >= 0) && (index < pin_list->array_size))
-	{
-		test_pin = (t_pin_def *) pin_list->pointer[index];
-		if (strcmp(test_pin->name, pin->name)==0)
-		{
-			printf("Warning: Duplicate net (%s) declaration found on line %i. Ignoring duplicate wire.\r\n", pin->name, yylineno);
-			free(pin->name);
-			free(pin);
-			return test_pin;
-		}
-	}
-	pin_list->array_size = insert_element_at_index((long) pin, pin_list, index);
-        /*
-		 *insert_element_at_index(	(long) pin,
-		 *                            (long **) &(pin_list->pointer),
-		 *                            pin_list->array_size, index);
-         */
+    /* Create the hash table for quick name -> pin_index lookup */
+    if (pin_hash == NULL) {
+
+        pin_hash = (t_hash_table*) malloc(sizeof(t_hash_table));
+
+        //Allocate twice as many spaces in the hash table as is needed, this should prevent
+        //the table from becoming too full.
+        pin_hash->table = (t_hash_elem*) malloc(2*parse_info->number_of_pins*sizeof(t_hash_elem));
+        pin_hash->size = 2*parse_info->number_of_pins;
+    }
+
+    //Append the element, the position is one less thatn the size of the array
+    //which is returned by append_array_element
+    size_t position = append_array_element( (long) pin, pin_list) - 1;
+
+    //Add the pin to the hash for quick name -> pin look up
+    insert_hash(pin->name, position, pin_hash);
+
 	return pin;
 }
 
@@ -610,16 +611,16 @@ t_pin_def *locate_net_by_name(char *name)
 /* Given a specific pin name locate a net in the circuit.
  */
 {
-	size_t index;
 	t_pin_def *result = NULL;
 	
 	assert(pin_list != NULL);
 
-	index = find_position_for_net_in_array(name, pin_list);
+	/*index = find_position_for_net_in_array(name, pin_list);*/
+    t_index_pass index_pass = find_position_for_net_in_array_by_hash(name, pin_list);
 
-	if (index < pin_list->array_size)
+	if (index_pass.found == T_TRUE && index_pass.index < pin_list->array_size)
 	{
-		result = (t_pin_def *) pin_list->pointer[index];
+		result = (t_pin_def *) pin_list->pointer[index_pass.index];
 		if (strcmp(result->name, name) != 0)
 		{
 			result = NULL;
@@ -628,6 +629,160 @@ t_pin_def *locate_net_by_name(char *name)
 	return result;
 }
 
+
+size_t hash_func(char* key, t_hash_table* hash_table)
+/* A hash function based on the key string, and
+ * size of the hash table
+ */
+{
+    //VPRs hash function
+
+    int i;
+	int hash_val = 0, mult = 1;
+
+	i = strlen(key);
+	for (i = strlen(key) - 1; i >= 0; i--) {
+		hash_val += mult * ((int) key[i]);
+		mult *= 7;
+	}
+	hash_val += (int) key[0];
+	hash_val %= hash_table->size;
+	
+	hash_val = abs(hash_val);
+
+    return hash_val;
+}
+
+t_hash_elem* get_hash_entry(char* key, t_hash_table* hash_table)
+/* Given a key, returns the hash table entry.
+ * The returned entry may be either valid or empty,
+ * caller must handle both cases. If the 
+ */
+{
+    //Simple hash function
+    size_t hash_index = hash_func(key, hash_table);
+
+    //The hash table entry
+    t_hash_elem* entry = &hash_table->table[hash_index];
+
+    //Check the linked list for this table entry to find the matching name
+    while(entry->next != NULL) {
+        if(strcmp(key, entry->key) == 0) {
+            //Match
+            break;
+        } 
+
+        //Check the next entry in the linked list
+        entry = entry->next;
+    }
+
+    return entry;
+}
+
+void insert_hash(char* key, size_t value, t_hash_table* hash_table)
+/* Inserts the key, value pair into the hash_table
+ */
+{
+    //Find the emtpy slot for this key, or the last member of the linked list
+    //in the slot
+    t_hash_elem* entry = get_hash_entry(key, hash_table);
+
+    if(entry->key != NULL) {
+        //Entry is in use
+
+        if(strcmp(key, entry->key) == 0) {
+            //Duplicate entry
+            printf("Warning: atempting to add duplicate hash entry for key: '%s'. No action taken.\n", key);
+            return; //Do nothing
+
+        } else {
+            //If we didn't match key, we should already be at the end of the linked list
+            // from get_hash_entry
+            assert(entry->next == NULL);
+
+            //Allocate a new entry
+            t_hash_elem* new_entry = (t_hash_elem*) malloc(sizeof(t_hash_elem));
+
+            //Add to the end of the linked list
+            entry->next = new_entry;
+
+            //Advance to the new entry
+            entry = entry->next;
+        }
+    }
+
+    //Now have an empty entry to work with, set the appropriate values
+    entry->key = key;
+    entry->value = value;
+    entry->next = NULL;
+
+    return;
+}
+
+void print_hash_stats(t_hash_table* hash_table) 
+/* Prints usage statistics of internal hash table
+ */
+{
+    size_t used_table_entries = 0;
+    size_t total_elements = 0;
+    size_t maximum_list_length = 0;
+
+    size_t index;
+    for(index = 0; index < hash_table->size; index++) {
+        t_hash_elem* entry = &hash_table->table[index];
+
+        size_t list_length = 0;
+        if(entry->key != NULL) {
+            used_table_entries++;
+            list_length++;
+
+            while(entry->next != NULL) {
+                entry = entry->next;
+                list_length++;
+            }
+
+            if(list_length > maximum_list_length) {
+                maximum_list_length = list_length;
+            }
+
+            total_elements += list_length;
+        }
+    }
+
+    printf("Hash Table Stats\n");
+    printf("\tTable Entry Usage: %zu/%zu (%.4f)\n", used_table_entries, hash_table->size, (float) used_table_entries/hash_table->size);
+    printf("\tTotal Elements Stored: %zu\n", total_elements);
+    printf("\tLongest Entry Linked List: %zu\n", maximum_list_length);
+}
+
+t_index_pass find_position_for_net_in_array_by_hash(char* name, t_array_ref *net_list) 
+/* Given a net name use a simple hash function to return the index into the
+ * has table.  Retrieve the hash table element, which should contain the
+ * index into the netlist for the named net.
+ */
+{
+    t_index_pass net_index;
+
+    //Init
+    net_index.found = T_FALSE;
+    net_index.index = 0;
+
+    t_hash_elem* entry = get_hash_entry(name, pin_hash);
+
+    //We now should have a matching element, the name field should not
+    //be NULL.  If it is, then this name hasn't been seen before.
+    if (entry->key == NULL) {
+        net_index.found = T_FALSE;
+        net_index.index = 0; //Set index to zero, but it isn't really valid
+
+    } else {
+        //We now have a valid entry, so return the appropriate index value
+        net_index.found = T_TRUE;
+        net_index.index = entry->value;
+    }
+
+    return net_index;
+}
 
 int find_position_for_net_in_array(char *name, t_array_ref *net_list)
 /* Given a net name try to locate it in the list of nets. Use a binary search to
