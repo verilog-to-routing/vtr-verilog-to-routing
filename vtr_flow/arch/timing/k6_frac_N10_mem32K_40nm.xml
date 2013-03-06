@@ -16,36 +16,57 @@
   The electrical design of the architecture described here is NOT from an 
   optimized, SPICED architecture.  Instead, we attempt to create a reasonable 
   architecture file by using an existing commercial FPGA to approximate the area, 
-  delay, and power of the underlying components.  The following describes, in 
-  detail, how we obtained the various electrical values for this 
+  delay, and power of the underlying components. This is combined with a reasonable 40 nm 
+  model of wiring and circuit design for low-level routing components, where available.
+  The resulting architecture has delays that roughly match a commercial 40 nm FPGA, but also 
+  has wiring electrical parameters that allow the wire lengths and switch patterns to be 
+  modified and you will still get reasonable delay results for the new architecture.
+  The following describes, in detail, how we obtained the various electrical values for this 
   architecture.
 
   Rmin for nmos and pmos, routing buffer sizes, and I/O pad delays are from the ifar 
-  architecture: K06 N10 45nm fc 0.15 area-delay optimized architecture, scaled 
-  to 40 nm using linear scaling 
+  architecture created by Ian Kuon: K06 N10 45nm fc 0.15 area-delay optimized architecture. 
   (n10k06l04.fc15.area1delay1.cmos45nm.bptm.cmos45nm.xml)      
+  This routing architecture was optimized for 45 nm, and we have scaled it linearly to 40 nm to 
+  match the overall target (a 40 nm FPGA).
 
-  Delay numbers obtained by measuring delays of routing, soft logic blocks, 
+  We obtain delay numbers by measuring delays of routing, soft logic blocks, 
   memories, and multipliers from test circuits on a Stratix IV GX device 
-  (EP4SGX230DF29C2X). For routing, we took the average delay of H4 and V4 wires.  
-  R and C values were obtained from work done by Charles Chiasson. For the general 
-  purpose logic block, we assume that the area and delays of the Stratix IV 
-  crossbar is close enough to the crossbar modelled here.  We justify this 
-  rough approximation as follows: The Stratix IV crossbar has more inputs and 
-  outputs than our full crossbar which should increase its area and delay, but the 
-  Stratix IV crossbar is also 50% sparse which should reduce its area and delay.  We 
-  approximate that these two factors roughly balances each other out so we take 
-  the values from Stratix IV as is for our crossbar. For LUTs, we include LUT 
+  (EP4SGX230DF29C2X, i.e. fastest speed grade). For routing, we took the average delay of H4 and V4 
+  wires.  Rmetal and Cmetal values for the routing wires were obtained from work done by Charles 
+  Chiasson. We use a 96 nm half-pitch (corresponding to mid-level metal stack 40 nm routing) and 
+  take the R and C data from the ITRS roadmap.  
+
+ For the general purpose logic block, we assume that the area and delays of the Stratix IV 
+  crossbar is close enough to the crossbar modelled here.  We use 33 inputs and 20 feedback lines in 
+  the cluster and a full crossbar, leading to 53:1 multiplexers in front of each BLE input.
+  Stratix IV uses 52 inputs and 20 feedback lines, but only a half-populated crossbar, leading to 
+  36:1 multiplexers.  We require 60 such multiplexers, while Stratix IV requires 88 for its more
+  complex fracturable BLEs + the extra control signals. We justify this rough approximation as follows: 
+  The Stratix IV crossbar has more inputs (72 vs. 53) and 
+  outputs (88 vs. 60) than our full crossbar which should increase its area and delay, but the 
+  Stratix IV crossbar is also 50% sparse (each mux is 36:1 instead of 53:1) which should reduce its 
+  area and delay.  The total number of crossbar switch points is very similar between the two 
+  architectures (3160 for SIV and 3180 for the academic architecture below), so we can use the area 
+  & delay of the Stratix IV crossbar as a good approximation of our crossbar.
+
+  For LUTs, we include LUT 
   delays measured from Stratix IV which is dependant on the input used (ie. some 
   LUT inputs are faster than others).  The CAD tools at the time of VTR 7 does 
   not consider differences in LUT input delays.
 
   Logic block area numbers obtained by scaling overall tile area of a 65nm 
-  Stratix III device to 40 nm, then subtracting out routing area at a channel 
-  width of 300.
+  Stratix III device, (as given in Wong, Betz and Rose, FPGA 2011) to 40 nm, then subtracting out 
+  routing area at a channel width of 300. We use a channel width of 300 because it can route 
+  all the VTR 6.0 benchmark circuits with an approximately 20% safety margin, and is also close to the
+  total channel width of Stratix IV. Hence this channel width is close to the commercial practice of
+  choosing a width that provides high routability. The architecture can be routed at different channel
+  widths, but we estimate the tile size and hence the physical length of routing wires assuming
+  a channel width of 300.
 
   Sanity checks employed:
-    1.  Routing buffer delay ~1/3rd of total routing delay.
+    1.  We confirmed the routing buffer delay is ~1/3rd of total routing delay at L = 4. This matches 
+        common electrical design.
 
 
   Authors: Jason Luu, Jeff Goeders, Vaughn Betz
@@ -116,7 +137,13 @@
 			<timing C_ipin_cblock="1.7e-15" T_ipin_cblock="7.247000e-11"/>
 
       <!-- Total Stratix IV tile area is about 8100 um^2, minimum width transistor area is 60 L^2 yields a tile area of 84375 MWTAs,
-           Routing at W=300 is 30481 MWTAs, leaving us with a total of 53894 MWTAs for logic block area -->
+	   Routing at W=300 is 30481 MWTAs, leaving us with a total of 53000 MWTAs for logic block area 
+	   This means that only 37% of our area is in the general routing, and 63% is inside the logic
+	   block. Note that the crossbar / local interconnect is considered part of the logic block
+	   area in this analysis. That is a lower proportion of of routing area than most academics
+	   assume, but note that the total routing area really includes the crossbar, which would push
+	   routing area up significantly, we estimate into the ~70% range.
+	   -->
 			<area grid_logic_tile_area="53894"/>
 			<chan_width_distr>
 				<io width="1.000000"/>
@@ -152,7 +179,11 @@
         <output name="inpad" num_pins="1"/>
         <clock name="clock" num_pins="1"/>
 
-        <!-- IOs can operate as either inputs or outputs -->
+	<!-- IOs can operate as either inputs or outputs.
+	     Delays below come from Ian Kuon. They are small, so they should be interpreted as
+	     the delays to and from registers in the I/O (and generally I/Os are registered 
+	     today and that is when you timing analyze them.
+	     -->
         <mode name="inpad">
           <pb_type name="inpad" blif_model=".input" num_pb="1">
             <output name="inpad" num_pins="1"/>
@@ -329,10 +360,18 @@
           <!-- 6-LUT mode definition end -->
         </pb_type>
         <interconnect>
-          <!-- We use a full crossbar to get logical equivalence at inputs of CLB -->
+		<!-- We use a full crossbar to get logical equivalence at inputs of CLB 
+		     The delays below come from Stratix IV. the delay through a connection block
+		     input mux + the crossbar in Stratix IV is 167 ps. We already have a 72 ps 
+		     delay on the connection block input mux (modeled by Ian Kuon), so the remaining
+		     delay within the crossbar is 95 ps. 
+		     The delays of cluster feedbacks in Stratix IV is 100 ps, when driven by a LUT.
+		     Since all our outputs LUT outputs go to a BLE output, and have a delay of 
+		     25 ps to do so, we subtract 25 ps from the 100 ps delay of a feedback
+		     to get the part that should be marked on the crossbar.	 -->
           <complete name="crossbar" input="clb.I fle[9:0].out" output="fle[9:0].in">
-            <delay_constant max="167e-12" in_port="clb.I" out_port="fle[9:0].in" />
-            <delay_constant max="157e-12" in_port="fle[9:0].out" out_port="fle[9:0].in" />
+            <delay_constant max="95e-12" in_port="clb.I" out_port="fle[9:0].in" />
+            <delay_constant max="75e-12" in_port="fle[9:0].out" out_port="fle[9:0].in" />
           </complete>
           <complete name="clks" input="clb.clk" output="fle[9:0].clk">
           </complete>
@@ -360,8 +399,14 @@
 
       <!-- Define fracturable multiplier begin -->
       <!-- This multiplier can operate as a 36x36 multiplier that can fracture to two 18x18 multipliers each of which can further fracture to two 9x9 multipliers 
-           For delay modelling, the 36x36 DSP multiplier in Stratix IV has a delay of 1.523 ns. For the input and output interconnect delays, unlike Stratix IV, we don't
-           have any routing/logic flexibility at the inputs or outputs of the multiplier.  At the same time, the delay to get in and out are not 0.  We take the conservative
+	   For delay modelling, the 36x36 DSP multiplier in Stratix IV has a delay of 1.523 ns + 1.93 ns
+	    = 3.45 ns. The 18x18 mode doesn't need to sum four 18x18 multipliers, so it is a bit
+	   faster: 1.523 ns for the multiplier, and 1.09 ns for the multiplier output block.
+	    For the input and output interconnect delays, unlike Stratix IV, we don't
+	   have any routing/logic flexibility (crossbars) at the inputs.  There is some output muxing
+	   in Stratix IV and this architecture to select which multiplier outputs should go out (e.g.
+	   9x9 outputs, 18x18 or 36x36) so those are very close between the two architectures. 
+	   We take the conservative (slightly pessimistic)
            approach modelling the input as the same as the Stratix IV input delay and the output delay the same as the Stratix IV DSP out delay.
       -->
       <pb_type name="mult_36" height="4">
@@ -375,6 +420,9 @@
               <input name="b" num_pins="18"/>
               <output name="out" num_pins="36"/>
 
+	      <!-- Model 9x9 delay and 18x18 delay as the same.  9x9 could be faster, but in Stratix IV
+	          isn't, presumably because the multiplier layout is really optimized for 18x18.
+		-->
               <mode name="two_mult_9x9">
                 <pb_type name="mult_9x9_slice" num_pb="2">
                   <input name="A_cfg" num_pins="9"/>
@@ -443,8 +491,7 @@
             </pb_type>
             <interconnect>
               <!-- Stratix IV input delay of 207ps is conservative for this architecture because this architecture does not have an input crossbar in the multiplier. 
-                   We use a input delay of because the Stratix IV input delay includes connection box delay.
-                   Stratix IV output delay of 1.09ns is also conservative for this architecture because this architecture has a much simpler output interconnect.
+		   Subtract 72.5 ps delay, which is already in the connection block input mux, leading
               -->
              <direct name="a2a" input="mult_36.a" output="divisible_mult_18x18[1:0].a">
                 <delay_constant max="134e-12" in_port="mult_36.a" out_port="divisible_mult_18x18[1:0].a"/>
@@ -483,8 +530,8 @@
             </pb_type>
             <interconnect>
               <!-- Stratix IV input delay of 207ps is conservative for this architecture because this architecture does not have an input crossbar in the multiplier. 
-                   We use a input delay of because the Stratix IV input delay includes connection box delay.
-                   Stratix IV output delay of 1.09ns is also conservative for this architecture because this architecture has a much simpler output interconnect.
+		   Subtract 72.5 ps delay, which is already in the connection block input mux, leading
+		   to a 134 ps delay.
               -->
               <direct name="a2a" input="mult_36.a" output="mult_36x36_slice.A_cfg">
                 <delay_constant max="134e-12" in_port="mult_36.a" out_port="mult_36x36_slice.A_cfg"/>
@@ -493,7 +540,7 @@
                 <delay_constant max="134e-12" in_port="mult_36.b" out_port="mult_36x36_slice.B_cfg"/>
               </direct>
               <direct name="out2out" input="mult_36x36_slice.OUT_cfg" output="mult_36.out">
-                <delay_constant max="1.09e-9" in_port="mult_36x36_slice.OUT_cfg" out_port="mult_36.out"/>
+                <delay_constant max="1.93e-9" in_port="mult_36x36_slice.OUT_cfg" out_port="mult_36.out"/>
               </direct>
             </interconnect>
           </mode>
