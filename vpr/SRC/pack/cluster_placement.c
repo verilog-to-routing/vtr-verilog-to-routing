@@ -475,12 +475,12 @@ static float try_place_molecule(INP t_pack_molecule *molecule,
 						return HUGE_POSITIVE_FLOAT;
 					}
 				}
+				for (i = 0; i < list_size; i++) {
+					assert(
+							(primitives_list[i] == NULL) == (molecule->logical_block_ptrs[i] == NULL));
+				}
 			}
 		}
-	}
-	for (i = 0; i < list_size; i++) {
-		assert(
-				(primitives_list[i] == NULL) == (molecule->logical_block_ptrs[i] == NULL));
 	}
 	return cost;
 }
