@@ -779,7 +779,17 @@ else:
     arches_c.append([6, 10, 33, 6, 1, 2, 4, 45, "45"])
     arches_c.append([6, 10, 33, 6, 1, 2, 4, 45, "50"])
     arches_c.append([6, 10, 33, 6, 1, 2, 4, 45, "53"])
-
+    
+    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "8"])
+    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "10"])
+    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "15"])
+    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "20"])
+    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "25"])
+    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "30"])
+    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "35"])
+    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "40"])
+    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "43"])
+    
     
     dir = "C:/Users/Jeff/Dropbox/linux_home/vtr/vtr_flow/arch/power/"
     

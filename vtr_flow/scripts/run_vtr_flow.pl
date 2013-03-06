@@ -391,8 +391,7 @@ if (    $starting_stage <= $stage_idx_ace
 
 	if ( -e $ace_output_blif_path ) {
 		if ( !$keep_intermediate_files ) {
-
-			#system "rm -f $odin_output_file_path";
+			system "rm -f $abc_output_file_path";
 			#system "rm -f ${temp_dir}*.rc";
 		}
 	}
@@ -537,6 +536,9 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			system "rm -f ${temp_dir}*.net";
 			system "rm -f ${temp_dir}*.place";
 			system "rm -f ${temp_dir}*.route";
+			if ($do_power) {
+				system "rm -f $ace_output_act_path";
+			}
 		}
 	}
 	else {
