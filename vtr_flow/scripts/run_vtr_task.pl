@@ -21,7 +21,7 @@
 #		through the -l option.
 #
 # Authors: Jason Luu and Jeff Goeders
-# 
+#
 ###################################################################################
 
 use strict;
@@ -146,7 +146,7 @@ foreach my $task (@tasks) {
 sub run_single_task {
 	my $circuits_dir;
 	my $archs_dir;
-	my $sdc_dir = "sdc";
+	my $sdc_dir        = "sdc";
 	my $script_default = "run_vtr_flow.pl";
 	my $script         = $script_default;
 	my $script_path;
@@ -183,7 +183,7 @@ sub run_single_task {
 		elsif ( $key eq "archs_dir" ) {
 			$archs_dir = $value;
 		}
-		elsif ($key eq "sdc_dir" ) {
+		elsif ( $key eq "sdc_dir" ) {
 			$sdc_dir = $value;
 		}
 		elsif ( $key eq "circuit_list_add" ) {
@@ -201,7 +201,11 @@ sub run_single_task {
 		elsif ( $key eq "cmos_tech_behavior" ) {
 			$cmos_tech_path = $value;
 		}
-		elsif ( $key eq "parse_file" or $key eq "qor_parse_file" or $key eq "pass_requirements_file" ) {
+		elsif ($key eq "parse_file"
+			or $key eq "qor_parse_file"
+			or $key eq "pass_requirements_file" )
+		{
+
 			#Used by parser
 		}
 		else {
@@ -211,6 +215,7 @@ sub run_single_task {
 
 	# Using default script
 	if ( $script eq $script_default ) {
+
 		# This is hack to automatically add the option '-temp_dir .' if using the run_vtr_flow.pl script
 		# This ensures that a 'temp' folder is not created in each circuit directory
 		if ( !( $script_params =~ /-temp_dir/ ) ) {
@@ -347,7 +352,7 @@ sub run_single_task {
 					  )
 					  ; # or die "Cannot change to directory $StartDir/$run_prefix${experiment_number}/${arch}/${circuit}: $!";
 
-					# SDC file defaults to circuit_name.sdc					
+					# SDC file defaults to circuit_name.sdc
 					my $sdc = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";
 					system(
 						"$script_path $circuits_dir/$circuit $archs_dir/$arch -sdc_file $sdc_dir/$sdc $script_params\n"
@@ -366,8 +371,8 @@ sub run_single_task {
 				foreach my $arch (@archs) {
 					my $dir =
 					  "$task_dir/$run_prefix${experiment_number}/${arch}/${circuit}";
-					
-					# SDC file defaults to circuit_name.sdc					
+
+					# SDC file defaults to circuit_name.sdc
 					my $sdc = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";
 
 					my $command =
@@ -396,15 +401,21 @@ sub run_single_task {
 		my @job_ids;
 		foreach my $circuit (@circuits) {
 			foreach my $arch (@archs) {
-				open( PBS_FILE, ">$task_dir/$run_prefix${experiment_number}/${arch}/${circuit}/pbs_job.txt" );
+				open( PBS_FILE,
+					">$task_dir/$run_prefix${experiment_number}/${arch}/${circuit}/pbs_job.txt"
+				);
 				print PBS_FILE "#!/bin/bash\n";
 				print PBS_FILE "#PBS -S /bin/bash\n";
 				print PBS_FILE "#PBS -N $task-$arch-$circuit\n";
 				print PBS_FILE "#PBS -l nodes=1\n";
 				print PBS_FILE "#PBS -l walltime=168:00:00\n";
-				if ($circuit =~ /PEEng/) {
+				if ( $circuit =~ /PEEng/ ) {
 					print PBS_FILE "#PBS -l mem=6000mb\n";
-				} else {
+				}
+				elsif ( $circuit =~ /mcml/ or $circuit =~ /stereovision2/ ) {
+					print PBS_FILE "#PBS -l mem=3000mb\n";
+				}
+				else {
 					print PBS_FILE "#PBS -l mem=1500mb\n";
 				}
 				print PBS_FILE
@@ -418,7 +429,8 @@ sub run_single_task {
 				  "$script_path $circuits_dir/$circuit $archs_dir/$arch $script_params\n";
 				close(PBS_FILE);
 
-				my $line = `qsub $task_dir/$run_prefix${experiment_number}/${arch}/${circuit}/pbs_job.txt`;
+				my $line =
+				  `qsub $task_dir/$run_prefix${experiment_number}/${arch}/${circuit}/pbs_job.txt`;
 				$line =~ /(\d+)\D/;
 				push(
 					@job_ids,
@@ -436,6 +448,7 @@ sub run_single_task {
 
 		# Wait for all of the jobs to finish
 		while ( ( $#job_ids + 1 ) != 0 ) {
+
 			# Check job status at intervals
 			sleep(5);
 
