@@ -494,6 +494,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 					"--blif_file",           "$prevpr_output_file_name",
 					"--route_chan_width",    "$min_chan_width",
 					"--cluster_seed_type",   "$vpr_cluster_seed_type",
+					"--max_router_iterations", "100",
 					"--nodisp",              @vpr_power_args,
 					"--sdc_file",			 "$sdc_file_path"
 				);
