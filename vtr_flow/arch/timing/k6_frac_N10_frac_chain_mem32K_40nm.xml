@@ -283,11 +283,19 @@
                       <output name="out" num_pins="1" port_class="lut_out"/>
                       <!-- LUT timing using delay matrix -->
                       <delay_matrix type="max" in_port="lut5.in" out_port="lut5.out">
+                        <!-- These are the physical delay inputs on a Stratix IV LUT but because VPR cannot do LUT rebalancing,
+                           we instead take the average of these numbers to get more stable results
                         82e-12
                         173e-12
                         261e-12
                         263e-12
                         398e-12
+                        -->
+                        235e-12
+                        235e-12
+                        235e-12
+                        235e-12
+                        235e-12
                       </delay_matrix>
                     </pb_type>                      
                     <interconnect>
@@ -304,10 +312,17 @@
                       <output name="out" num_pins="1" port_class="lut_out"/>
                       <!-- LUT timing using delay matrix -->
                       <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
+                        <!-- These are the physical delay inputs on a Stratix IV LUT but because VPR cannot do LUT rebalancing,
+                             we instead take the average of these numbers to get more stable results
                         82e-12
                         173e-12
                         261e-12
                         263e-12
+                        -->
+                        195e-12
+                        195e-12
+                        195e-12
+                        195e-12
                       </delay_matrix>
                     </pb_type>    
                     <pb_type name="adder" blif_model=".subckt adder" num_pb="1">
@@ -409,12 +424,21 @@
                 <output name="out" num_pins="1" port_class="lut_out"/>
                 <!-- LUT timing using delay matrix -->
                 <delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
+                  <!-- These are the physical delay inputs on a Stratix IV LUT but because VPR cannot do LUT rebalancing,
+                       we instead take the average of these numbers to get more stable results
                   82e-12
                   173e-12
                   261e-12
                   263e-12
                   398e-12
                   397e-12
+                  -->
+                  261e-12
+                  261e-12
+                  261e-12
+                  261e-12
+                  261e-12
+                  261e-12
                 </delay_matrix>
               </pb_type>
               <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
