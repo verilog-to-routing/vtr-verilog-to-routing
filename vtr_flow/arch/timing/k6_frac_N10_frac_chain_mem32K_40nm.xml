@@ -136,6 +136,18 @@
       </output_ports>
     </model>
 
+    <model name="adder">
+      <input_ports>
+        <port name="a"/>
+        <port name="b"/>
+        <port name="cin"/>
+      </input_ports>
+      <output_ports>
+        <port name="cout"/>
+        <port name="sumout"/>
+      </output_ports>
+    </model>
+
   </models>
   <!-- ODIN II specific config ends -->
  
@@ -271,12 +283,11 @@
                 <output name="out" num_pins="1"/>
                 <output name="cout" num_pins="1"/>
                 <clock name="clk" num_pins="1"/> 
-                <pb_type name="flut5" num_pb="1">
-                  <input name="in" num_pins="5"/>
-                  <input name="cin" num_pins="1"/>              
-                  <output name="out" num_pins="1"/>
-                  <output name="cout" num_pins="1"/>
-                  <mode name="lut5">
+                <mode name="blut5">
+                  <pb_type name="flut5" num_pb="1">
+                    <input name="in" num_pins="5"/>
+                    <output name="out" num_pins="1"/>
+                    <clock name="clk" num_pins="1"/> 
                     <!-- Regular LUT mode -->
                     <pb_type name="lut5" blif_model=".names" num_pb="1" class="lut">
                       <input name="in" num_pins="5" port_class="lut_in"/>
@@ -297,15 +308,42 @@
                         235e-12
                         235e-12
                       </delay_matrix>
-                    </pb_type>                      
+                    </pb_type>       
+                    
+                    <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+                      <input name="D" num_pins="1" port_class="D"/>
+                      <output name="Q" num_pins="1" port_class="Q"/>
+                      <clock name="clk" num_pins="1" port_class="clock"/>
+                      <T_setup value="66e-12" port="ff.D" clock="clk"/>
+                      <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
+                    </pb_type>
+
+
                     <interconnect>
-                      <direct name="direct1" input="flut5.in[4:0]" output="lut5.in[4:0]"/>
-                      <direct name="direct2" input="lut5.out" output="flut5.out">
-                        <pack_pattern name="ble5" in_port="lut5.out" out_port="flut5.out"/>
+                      <direct name="direct1" input="flut5.in" output="lut5.in"/>
+                      <direct name="direct2" input="lut5.out" output="ff.D">
+                        <pack_pattern name="ble5" in_port="lut5.out" out_port="ff.D"/>
                       </direct>
+                      <direct name="direct3" input="flut5.clk" output="ff.clk"/>                    
+                      <mux name="mux1" input="ff.Q lut5.out" output="flut5.out">
+                        <delay_constant max="25e-12" in_port="lut5.out" out_port="flut5.out" />
+                        <delay_constant max="45e-12" in_port="ff.Q" out_port="flut5.out" />
+                      </mux>
                     </interconnect>
-                  </mode>
-                  <mode name="adder">
+                  </pb_type>
+                  <interconnect>
+                    <direct name="direct1" input="ble5.in" output="flut5.in"/>
+                    <direct name="direct2" input="ble5.clk" output="flut5.clk"/>
+                    <direct name="direct3" input="flut5.out" output="ble5.out"/>                                          
+                  </interconnect>
+                </mode>
+                <mode name="arithmetic">
+                  <pb_type name="arithmetic" num_pb="1">
+                    <input name="in" num_pins="4"/>
+                    <input name="cin" num_pins="1"/>
+                    <output name="out" num_pins="1"/>
+                    <output name="cout" num_pins="1"/>
+                    <clock name="clk" num_pins="1"/> 
                     <!-- Special dual-LUT mode that drives adder only -->
                     <pb_type name="lut4" blif_model=".names" num_pb="2" class="lut">
                       <input name="in" num_pins="4" port_class="lut_in"/>
@@ -337,54 +375,52 @@
                       <delay_constant max="0.3e-9" in_port="adder.a" out_port="adder.cout"/>
                       <delay_constant max="0.3e-9" in_port="adder.b" out_port="adder.cout"/>
                       <delay_constant max="0.01e-9" in_port="adder.cin" out_port="adder.cout"/>
-                    </pb_type>    
+                    </pb_type>
+                    <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+                      <input name="D" num_pins="1" port_class="D"/>
+                      <output name="Q" num_pins="1" port_class="Q"/>
+                      <clock name="clk" num_pins="1" port_class="clock"/>
+                      <T_setup value="66e-12" port="ff.D" clock="clk"/>
+                      <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
+                    </pb_type>
                     <interconnect>
-                      <direct name="lut_in1" input="flut5.in[3:0]" output="lut4[0:0].in[3:0]"/>
-                      <direct name="lut_in2" input="flut5.in[3:0]" output="lut4[1:1].in[3:0]"/>
+                      <direct name="lut_in1" input="arithmetic.in[3:0]" output="lut4[0:0].in[3:0]"/>
+                      <direct name="lut_in2" input="arithmetic.in[3:0]" output="lut4[1:1].in[3:0]"/>
                       <direct name="lut_to_add1" input="lut4[0:0].out" output="adder.a">
                         <pack_pattern name="chain" in_port="lut4[0:0].out" out_port="adder.a"/>
                       </direct>
                       <direct name="lut_to_add2" input="lut4[1:1].out" output="adder.b">
                         <pack_pattern name="chain" in_port="lut4[1:1].out" out_port="adder.b"/>
                       </direct>
-                      <direct name="sumout" input="adder.sumout" output="flut5.out">
-                        <pack_pattern name="chain" in_port="adder.sumout" out_port="flut5.out"/>
+                      <direct name="add_to_ff" input="adder.sumout" output="ff.D">
+                        <pack_pattern name="chain" in_port="adder.sumout" out_port="ff.D"/>
                       </direct>
-                      <direct name="carry_in" input="flut5.cin" output="adder.cin">
-                        <pack_pattern name="chain" in_port="flut5.cin" out_port="adder.cin"/>
+                      <direct name="carry_in" input="arithmetic.cin" output="adder.cin">
+                        <pack_pattern name="chain" in_port="arithmetic.cin" out_port="adder.cin"/>
                       </direct>
-                      <direct name="carry_out" input="adder.cout" output="flut5.cout">
-                        <pack_pattern name="chain" in_port="adder.cout" out_port="flut5.cout"/>
+                      <direct name="carry_out" input="adder.cout" output="arithmetic.cout">
+                        <pack_pattern name="chain" in_port="adder.cout" out_port="arithmetic.cout"/>
                       </direct>
+                      <mux name="sumout" input="ff.Q adder.sumout" output="arithmetic.out">
+                        <delay_constant max="25e-12" in_port="adder.sumout" out_port="arithmetic.out" />
+                        <delay_constant max="45e-12" in_port="ff.Q" out_port="arithmetic.out" />
+                        <pack_pattern name="chain" in_port="adder.sumout" out_port="arithmetic.out"/>
+                      </mux>
                     </interconnect>
-                  </mode>
-                </pb_type>
-                <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
-                  <input name="D" num_pins="1" port_class="D"/>
-                  <output name="Q" num_pins="1" port_class="Q"/>
-                  <clock name="clk" num_pins="1" port_class="clock"/>
-                  <T_setup value="66e-12" port="ff.D" clock="clk"/>
-                  <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
-                </pb_type>
+                  </pb_type>
 
-                <interconnect>
-                  <direct name="direct1" input="ble5.in[4:0]" output="flut5[0:0].in[4:0]"/>
-                  <direct name="direct2" input="flut5[0:0].out" output="ff[0:0].D">
-                    <pack_pattern name="ble5" in_port="flut5[0:0].out" out_port="ff[0:0].D"/>
-                    <pack_pattern name="chain" in_port="flut5[0:0].out" out_port="ff[0:0].D"/>
-                  </direct>
-                  <direct name="direct3" input="ble5.clk" output="ff[0:0].clk"/>                    
-                  <direct name="carry_in" input="ble5.cin" output="flut5.cin">
-                    <pack_pattern name="chain" in_port="ble5.cin" out_port="flut5.cin"/>
-                  </direct>
-                  <direct name="carry_out" input="flut5.cout" output="ble5.cout">
-                    <pack_pattern name="chain" in_port="flut5.cout" out_port="ble5.cout"/>
-                  </direct>
-                  <mux name="mux1" input="ff[0:0].Q flut5.out[0:0]" output="ble5.out[0:0]">
-                    <delay_constant max="25e-12" in_port="flut5.out[0:0]" out_port="ble5.out[0:0]" />
-                    <delay_constant max="45e-12" in_port="ff[0:0].Q" out_port="ble5.out[0:0]" />
-                  </mux>
-                </interconnect>
+                  <interconnect>
+                    <direct name="direct1" input="ble5.in[3:0]" output="arithmetic.in"/>
+                    <direct name="carry_in" input="ble5.cin" output="arithmetic.cin">
+                      <pack_pattern name="chain" in_port="ble5.cin" out_port="arithmetic.cin"/>
+                    </direct>
+                    <direct name="carry_out" input="arithmetic.cout" output="ble5.cout">
+                      <pack_pattern name="chain" in_port="arithmetic.cout" out_port="ble5.cout"/>
+                    </direct>
+                    <direct name="direct2" input="ble5.clk" output="arithmetic.clk"/>
+                    <direct name="direct3" input="arithmetic.out" output="ble5.out"/> 
+                  </interconnect>
+                </mode>
               </pb_type>
               <interconnect>
                 <direct name="direct1" input="lut5inter.in" output="ble5[0:0].in"/>
@@ -518,7 +554,7 @@
           <loc type="fill" priority="1"/>
         </gridlocations>
       </pb_type>
-      <!-- Define general purpose logic block (CLB) ends -->
+       <!-- Define general purpose logic block (CLB) ends -->
 
       <!-- Define fracturable multiplier begin -->
       <!-- This multiplier can operate as a 36x36 multiplier that can fracture to two 18x18 multipliers each of which can further fracture to two 9x9 multipliers 
