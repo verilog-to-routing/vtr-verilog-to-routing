@@ -192,8 +192,10 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 			#ifdef VPR6
 			if (hard_adders != NULL)
 			{
-				if ((node->input_port_sizes[0] + node->input_port_sizes[1]) > 0)
+				if ((node->input_port_sizes[0] + node->input_port_sizes[1]) >= min_add)
 					instantiate_hard_adder(node, traverse_number, netlist);
+				else
+					instantiate_add_w_carry(node, traverse_number, netlist);
 			}
 			else
 			#endif
@@ -203,13 +205,17 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 			#ifdef VPR6
 			if (hard_adders != NULL && node->num_input_port_sizes == 3)
 			{
-				if ((node->input_port_sizes[0] + node->input_port_sizes[1]) > 0)
+				if ((node->input_port_sizes[0] + node->input_port_sizes[1]) >= min_add)
 					instantiate_hard_adder_subtraction(node, traverse_number, netlist, 0);
+				else
+					instantiate_add_w_carry(node, traverse_number, netlist);
 			}
 			else if(hard_adders != NULL && node->num_input_port_sizes == 2)
 			{
-				if ((node->input_port_sizes[0]) > 0)
+				if ((2 * node->input_port_sizes[0]) >= min_add)
 					instantiate_hard_adder_subtraction(node, traverse_number, netlist, 1);
+				else
+					instantiate_unary_sub(node, traverse_number, netlist);
 			}
 			else
 			#endif
@@ -683,7 +689,7 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 
 	}
 
-    	/* ground first carry in */
+    /* ground first carry in */
 	if(node->num_input_port_sizes == 2)
 	{
 		add_input_pin_to_node(new_add_cells[0], get_zero_pin(netlist), 0);

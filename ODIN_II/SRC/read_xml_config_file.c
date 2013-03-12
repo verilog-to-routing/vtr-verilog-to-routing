@@ -315,7 +315,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 				config->min_hard_adder = atoi(prop);
 				ezxml_set_attr(child, "size", NULL);
 			}
-			else /* Default: No minimum hard multiply size */
+			else /* Default: No minimum hard adder size */
 				config->min_hard_adder = 0;
 
 			prop = FindProperty(child, "padding", (boolean)FALSE);
@@ -333,7 +333,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 				config->fixed_hard_adder = atoi(prop);
 				ezxml_set_attr(child, "fixed", NULL);
 			}
-			else /* Default: No fixed hard multiply size */
+			else /* Default: Fixed hard adder size */
 				config->fixed_hard_adder = 1;
 
 			prop = FindProperty(child, "fracture", (boolean)FALSE);
@@ -342,7 +342,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 				config->split_hard_adder = atoi(prop);
 				ezxml_set_attr(child, "fracture", NULL);
 			}
-			else /* Default: use fractured hard multiply size */
+			else /* Default: use fractured hard adder size */
 				config->split_hard_adder = 1;
 			FreeNode(child);
 		}
