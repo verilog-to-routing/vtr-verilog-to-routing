@@ -902,6 +902,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 			Prev = Cur;
 			Cur = Cur->next;
 			j++;
+			k++;
 			FreeNode(Prev);
 		}
 	}
