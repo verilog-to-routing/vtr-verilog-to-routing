@@ -6,7 +6,7 @@ extern "C" {
 	#include "../include/libarchfpga/include/util.h"
 }
 
-#define HASHSIZE 4093
+#define HASHSIZE 5000001
 
 static int hash_value(char *name);
 
