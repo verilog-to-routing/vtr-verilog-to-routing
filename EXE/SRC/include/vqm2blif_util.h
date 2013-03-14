@@ -19,7 +19,6 @@
 //============================================================================================
 //				INCLUDES
 //============================================================================================
-#include <vector>
 #include <stdlib.h>
 #include <assert.h>
 #include <time.h>
@@ -40,6 +39,9 @@
 
 #include <string>
 #include <map>
+#include <vector>
+#include <queue>
+#include <set>
 #include <string.h>
 
 #include "libvqm/vqm_dll.h"	//VQM Parser
@@ -75,6 +77,7 @@ enum v_OptionBaseToken
 	OT_LUTS,
 	OT_CLEAN,
 	OT_BUFFOUTS,
+    OT_FIXGLOBALS,
 	OT_UNKNOWN
 };
 

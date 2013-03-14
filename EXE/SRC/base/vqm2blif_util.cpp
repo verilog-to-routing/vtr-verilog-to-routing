@@ -14,6 +14,7 @@ void print_usage (t_boolean terminate){
 	cout << "\t-clean [none | buffers | all]\n" ;
 	cout << "\t-buffouts\n" ;
 	cout << "\t-luts [vqm | blif]\n" ;
+    cout << "\t-fixglobals\n";
 	cout << "\t-debug\n" ;
 	cout << "\t-verbose\n" ;
 	cout << "\nNote: All flags are order-independant. For more information, see README.txt\n\n";

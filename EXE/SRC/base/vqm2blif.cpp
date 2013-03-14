@@ -113,6 +113,10 @@ e_clean clean_mode;
 
 t_boolean buffd_outs;	//user-set flag that regulates whether to keep buffered outputs
 
+t_boolean fix_global_nets;  //user-set flag which controls whether to insert fake buffers in 
+                            //an attempt to make VPR treat some signals (i.e. clocks) as 
+                            //globals
+
 //============================================================================================
 //			FUNCTION DECLARATIONS
 //============================================================================================
@@ -291,7 +295,7 @@ int main(int argc, char* argv[])
     cout << "\n>> Preprocessing Netlist...\n";
     processStart = clock();
 
-    preprocess_netlist(my_module, &arch);
+    preprocess_netlist(my_module, &arch, types, numTypes, fix_global_nets);
 
     processEnd = clock();
 	cout << "\n>> Preprocessing Netlist took " << (float)(processEnd - processStart)/CLOCKS_PER_SEC << " seconds.\n" ;
@@ -406,6 +410,7 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 	lut_mode = VQM;
 	clean_mode = CL_ALL;
 	buffd_outs = T_FALSE;
+    fix_global_nets = T_FALSE;
 
 	//Now read the command line to configure input variables.
 	for (int i = 1; i < argc; i++){
@@ -504,6 +509,9 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 					}
 					i++;
 					break;
+                case OT_FIXGLOBALS:
+                    fix_global_nets = T_TRUE;
+                    break;
 				default:
 					//Should never get here; unknown tokens aren't mapped.
 					cout << "\nERROR: Token " << argv[i] << " mishandled.\n" ;
@@ -549,6 +557,7 @@ void setup_tokens (tokmap* tokens){
 	tokens->insert(tokpair("-luts", OT_LUTS));
 	tokens->insert(tokpair("-clean", OT_CLEAN));
 	tokens->insert(tokpair("-buffouts", OT_BUFFOUTS));
+	tokens->insert(tokpair("-fixglobals", OT_FIXGLOBALS));
 }
 
 //============================================================================================
