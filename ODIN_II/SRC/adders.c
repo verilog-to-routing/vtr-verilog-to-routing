@@ -40,6 +40,7 @@ struct s_linked_vptr *chain_list = NULL;
 int total = 0;
 int *adder = NULL;
 int min_add = 0;
+int min_threshold_adder = 0;
 
 #ifdef VPR6
 
@@ -115,6 +116,7 @@ void find_hard_adders()
 {
 	hard_adders = Arch.models;
 	min_add = configuration.min_hard_adder;
+	min_threshold_adder = configuration.min_threshold_adder;
 
 	while (hard_adders != NULL)
 	{
@@ -908,7 +910,6 @@ void iterate_adders(netlist_t *netlist)
 	{
 		node = (nnode_t *)add_list->data_vptr;
 		add_list = delete_in_vptr_list(add_list);
-		total++;
 
 		oassert(node != NULL);
 		if (node->type == HARD_IP)
@@ -919,19 +920,21 @@ void iterate_adders(netlist_t *netlist)
 		a = node->input_port_sizes[0];
 		b = node->input_port_sizes[1];
 
+		if(a + b >= min_threshold_adder)
+		{
+			// how many adders a can split
+			counta = (a + 1) / sizea + 1;
+			// how many adders b can split
+			countb = (b + 1) / sizeb + 1;
+			// how many adders need to be split
+			if(counta >= countb)
+				count = counta;
+			else
+				count = countb;
+			total++;
 
-		// how many adders a can split
-		counta = (a + 1) / sizea + 1;
-		// how many adders b can split
-		countb = (b + 1) / sizeb + 1;
-		// how many adders need to be split
-		if(counta >= countb)
-			count = counta;
-		else
-			count = countb;
-
-		split_adder(node, a, b, sizea, sizeb, 1, 1, count, netlist);
-
+			split_adder(node, a, b, sizea, sizeb, 1, 1, count, netlist);
+		}
 	}
 	return;
 }

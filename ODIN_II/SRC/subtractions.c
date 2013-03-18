@@ -122,7 +122,7 @@ void declare_hard_adder_for_sub(nnode_t *node)
 /*---------------------------------------------------------------------------
  * (function: instantiate_hard_adder_subtraction )
  *-------------------------------------------------------------------------*/
-void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t *netlist, int type)
+void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t *netlist)
 {
 	char *new_name;
 	int len, sanity, i;
@@ -580,9 +580,9 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 
 
 /*-------------------------------------------------------------------------
- * (function: iterate_adders)
+ * (function: iterate_adders_for_sub)
  *
- * This function will iterate over all of the add operations that
+ * This function will iterate over all of the minus operations that
  *	exist in the netlist and perform a splitting so that they can
  *	fit into a basic hard adder block that exists on the FPGA.
  *	If the proper option is set, then it will be expanded as well
@@ -615,31 +615,33 @@ void iterate_adders_for_sub(netlist_t *netlist)
 			oassert(node != NULL);
 			oassert(node->type == MINUS);
 
-			subchaintotal++;
-
 			a = node->input_port_sizes[0];
 			if(node->num_input_port_sizes == 2)
 				b = node->input_port_sizes[1];
 			else
 				b = node->input_port_sizes[0];
 
-			// how many subtractors base on a can split
-			if((a + 1) % sizea == 0)
-				counta = (a + 1) / sizea;
-			else
-				counta = (a + 1) / sizea + 1;
-			// how many subtractors base on b can split
-			if((b + 1) % sizeb == 0)
-				countb = (b + 1) / sizeb;
-			else
-				countb = (b + 1) / sizeb + 1;
-			// how many subtractors need to be split
-			if(counta >= countb)
-				count = counta;
-			else
-				count = countb;
+			if((a + b) >= min_threshold_adder)
+			{
+				// how many subtractors base on a can split
+				if((a + 1) % sizea == 0)
+					counta = (a + 1) / sizea;
+				else
+					counta = (a + 1) / sizea + 1;
+				// how many subtractors base on b can split
+				if((b + 1) % sizeb == 0)
+					countb = (b + 1) / sizeb;
+				else
+					countb = (b + 1) / sizeb + 1;
+				// how many subtractors need to be split
+				if(counta >= countb)
+					count = counta;
+				else
+					count = countb;
+				subchaintotal++;
 
-			split_adder_for_sub(node, a, b, sizea, sizeb, 1, 1, count, netlist);
+				split_adder_for_sub(node, a, b, sizea, sizeb, 1, 1, count, netlist);
+			}
 		}
 	}
 

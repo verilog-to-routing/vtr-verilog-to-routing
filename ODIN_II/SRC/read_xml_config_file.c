@@ -225,6 +225,7 @@ void set_default_optimization_settings(config_t *config)
 	config->min_hard_adder = 0;
 	config->fixed_hard_adder = 0;
 	config->split_hard_adder = 1;
+	config->min_threshold_adder = 0;
 	return;
 }
 
@@ -317,6 +318,15 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 			}
 			else /* Default: No minimum hard adder size */
 				config->min_hard_adder = 0;
+
+			prop = FindProperty(child, "threshold_size", (boolean)FALSE);
+			if (prop != NULL)
+			{
+				config->min_threshold_adder = atoi(prop);
+				ezxml_set_attr(child, "threshold_size", NULL);
+			}
+			else /* Default: No minimum hard adder size */
+				config->min_threshold_adder = 0;
 
 			prop = FindProperty(child, "padding", (boolean)FALSE);
 			if (prop != NULL)

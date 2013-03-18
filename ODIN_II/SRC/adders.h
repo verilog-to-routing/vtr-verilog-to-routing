@@ -49,6 +49,7 @@ extern struct s_linked_vptr *add_list;
 extern struct s_linked_vptr *chain_list;
 extern int total;
 extern int min_add;
+extern int min_threshold_adder;
 
 extern void init_add_distribution();
 extern void report_add_distribution();
