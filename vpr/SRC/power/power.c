@@ -808,7 +808,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 		int switch_idx;
 		int connectionbox_fanout;
 		int switchbox_fanout;
-		float C_per_seg_split;
+		//float C_per_seg_split;
 		int wire_length;
 
 		switch (node->type) {
