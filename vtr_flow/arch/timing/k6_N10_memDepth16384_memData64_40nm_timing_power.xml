@@ -72,7 +72,7 @@
 		<switch type="mux" name="0" R="0.0" Cin="0.0" Cout="0.0" Tdel="6.837e-11" mux_trans_size="2.63074" buf_size="27.645901"/>
 	</switchlist>
 	<segmentlist>
-		<segment freq="1.0" length="4" type="unidir" Rmetal="0.0" Cmetal="0.0" Cmetal_per_m="1.7e-10">
+		<segment freq="1.0" length="4" type="unidir" Rmetal="0.0" Cmetal="0.0">
 			<mux name="0"/>
 			<sb type="pattern">
 				1 1 1 1 1
