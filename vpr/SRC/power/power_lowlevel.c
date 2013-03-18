@@ -37,7 +37,7 @@ static float power_calc_leakage_st(e_tx_type transistor_type, float size);
 static float power_calc_leakage_st_pass_transistor(float size, float v_ds);
 static float power_calc_leakage_gate(e_tx_type transistor_type, float size);
 /*static float power_calc_buffer_sc_levr(
-		t_power_buffer_strength_inf * buffer_strength, int input_mux_size);*/
+ t_power_buffer_strength_inf * buffer_strength, int input_mux_size);*/
 
 /************************* FUNCTION DEFINITIONS *********************/
 
@@ -687,9 +687,9 @@ float power_calc_buffer_sc(int stages, float gain, boolean level_restorer,
 			sc = strength_lower->sc_no_levr;
 		} else {
 			float percent_upper = (gain - strength_lower->stage_gain)
-					/ (strength_upper->stage_gain - strength_lower->stage_gain);
+			/ (strength_upper->stage_gain - strength_lower->stage_gain);
 			sc = (1 - percent_upper) * strength_lower->sc_no_levr
-					+ percent_upper * strength_upper->sc_no_levr;
+			+ percent_upper * strength_upper->sc_no_levr;
 		}
 	} else {
 		/* Level Restored - Short Circuit depends on input mux size */
@@ -706,7 +706,7 @@ float power_calc_buffer_sc(int stages, float gain, boolean level_restorer,
 					input_mux_size);
 
 			float percent_upper = (gain - strength_lower->stage_gain)
-					/ (strength_upper->stage_gain - strength_lower->stage_gain);
+			/ (strength_upper->stage_gain - strength_lower->stage_gain);
 			sc = (1 - percent_upper) * sc_buf_low + percent_upper * sc_buf_high;
 		}
 	}
@@ -730,9 +730,52 @@ static float power_calc_buffer_sc_levr(
 		return mux_lower->sc_levr;
 	} else {
 		float percent_upper = (input_mux_size - mux_lower->mux_size)
-				/ (mux_upper->mux_size - mux_lower->mux_size);
+		/ (mux_upper->mux_size - mux_lower->mux_size);
 		return (1 - percent_upper) * mux_lower->sc_levr
-				+ percent_upper * mux_upper->sc_levr;
+		+ percent_upper * mux_upper->sc_levr;
 	}
 }
 #endif
+
+float power_calc_buffer_size_from_Cout(float C_out) {
+	int i;
+	float C_found;
+
+	t_transistor_inf * nmos_info = &g_power_tech->NMOS_inf;
+	t_transistor_inf * pmos_info = &g_power_tech->PMOS_inf;
+
+	assert(nmos_info->num_size_entries == pmos_info->num_size_entries);
+
+	for (i = 0; i < nmos_info->num_size_entries; i++) {
+		C_found = nmos_info->size_inf[i].C_d + pmos_info->size_inf[i].C_d;
+
+		/* Not likely, since floating point */
+		if (C_out == C_found) {
+			return nmos_info->size_inf[i].size;
+		}
+
+		/* Gone past */
+		if (C_found > C_out) {
+			if (i == 0) {
+				power_log_msg(POWER_LOG_WARNING,
+						"Attempted to search for a transistor with a capacitance smaller than the smallest in the technology file.\n");
+				return nmos_info->size_inf[i].size;
+			} else {
+				float C_prev = nmos_info->size_inf[i - 1].C_d
+						+ pmos_info->size_inf[i - 1].C_d;
+				float percent_upper = (C_out - C_prev) / (C_found - C_prev);
+				return percent_upper * nmos_info->size_inf[i].size
+						+ (1 - percent_upper) * nmos_info->size_inf[i - 1].size;
+			}
+		}
+
+		/* Reached the End */
+		if (i == nmos_info->num_size_entries - 1) {
+			power_log_msg(POWER_LOG_WARNING,
+					"Attempted to search for a transistor with a capacitance greater than the largest in the technology file.\n");
+			return nmos_info->size_inf[i].size;
+		}
+	}
+
+	return 0;
+}

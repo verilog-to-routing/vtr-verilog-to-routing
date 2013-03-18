@@ -2671,8 +2671,9 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 		(*Segs)[i].Cmetal = GetFloatProperty(Node, "Cmetal", timing_enabled, 0);
 
 		/* Get Power info */
+		/*
 		(*Segs)[i].Cmetal_per_m = GetFloatProperty(Node, "Cmetal_per_m", FALSE,
-				0.);
+				0.);*/
 
 		/* Get the type */
 		tmp = FindProperty(Node, "type", TRUE);
@@ -3408,13 +3409,14 @@ static void ProcessPower( INOUTP ezxml_t parent,
 	}
 
 	/* Get segment split */
+	/*
 	power_arch->seg_buffer_split = 1;
 	Cur = FindElement(parent, "segment_buffer_split", FALSE);
 	if (Cur) {
 		power_arch->seg_buffer_split = GetIntProperty(Cur, "split_into", TRUE,
 				1);
 		FreeNode(Cur);
-	}
+	}*/
 
 	/* Get logical effort factor */
 	power_arch->logical_effort_factor = 4.0;

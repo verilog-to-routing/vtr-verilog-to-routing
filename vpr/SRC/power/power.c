@@ -809,7 +809,6 @@ static void power_usage_routing(t_power_usage * power_usage,
 		int connectionbox_fanout;
 		int switchbox_fanout;
 		float C_per_seg_split;
-		int i;
 		int wire_length;
 
 		switch (node->type) {
@@ -854,8 +853,8 @@ static void power_usage_routing(t_power_usage * power_usage,
 			}
 			C_wire =
 					wire_length
-							* segment_inf[rr_indexed_data[node->cost_index].seg_index].Cmetal_per_m
-							* g_power_commonly_used->tile_length;
+							* segment_inf[rr_indexed_data[node->cost_index].seg_index].Cmetal;
+			//(double)g_power_commonly_used->tile_length);
 			assert(node_power->selected_input < node->fan_in);
 
 			/* Multiplexor */
@@ -870,12 +869,16 @@ static void power_usage_routing(t_power_usage * power_usage,
 			/* Buffer Size */
 			switch (switch_inf[node_power->driver_switch_type].power_buffer_type) {
 			case POWER_BUFFER_TYPE_AUTO:
-				C_per_seg_split = ((float) node->num_edges
-						* g_power_commonly_used->INV_1X_C_in + C_wire)
-						/ (float) g_power_arch->seg_buffer_split;
-				buffer_size = power_buffer_size_from_logical_effort(
-						C_per_seg_split);
-				buffer_size = std::max(buffer_size, 1.0F);
+				/*
+				 C_per_seg_split = ((float) node->num_edges
+				 * g_power_commonly_used->INV_1X_C_in + C_wire);
+				 // / (float) g_power_arch->seg_buffer_split;
+				 buffer_size = power_buffer_size_from_logical_effort(
+				 C_per_seg_split);
+				 buffer_size = std::max(buffer_size, 1.0F);
+				 */
+				buffer_size = power_calc_buffer_size_from_Cout(
+						switch_inf[node_power->driver_switch_type].Cout);
 				break;
 			case POWER_BUFFER_TYPE_ABSOLUTE_SIZE:
 				buffer_size =
@@ -890,31 +893,24 @@ static void power_usage_routing(t_power_usage * power_usage,
 				break;
 			}
 
-			g_power_commonly_used->num_sb_buffers +=
-					g_power_arch->seg_buffer_split;
-			g_power_commonly_used->total_sb_buffer_size += buffer_size
-					* g_power_arch->seg_buffer_split;
+			g_power_commonly_used->num_sb_buffers++;
+			g_power_commonly_used->total_sb_buffer_size += buffer_size;
 
-			/* Buffers */
-			for (i = 0; i < g_power_arch->seg_buffer_split; i++) {
-				if (i == 0) {
-					power_usage_buffer(&sub_power_usage, buffer_size,
-							node_power->in_prob[node_power->selected_input],
-							node_power->in_dens[node_power->selected_input],
-							TRUE, g_solution_inf.T_crit);
-					power_add_usage(power_usage, &sub_power_usage);
-					power_component_add_usage(&sub_power_usage,
-							POWER_COMPONENT_ROUTE_SB);
-				} else {
-					power_usage_buffer(&sub_power_usage, buffer_size,
-							node_power->in_prob[node_power->selected_input],
-							node_power->in_dens[node_power->selected_input],
-							FALSE, g_solution_inf.T_crit);
-					power_add_usage(power_usage, &sub_power_usage);
-					power_component_add_usage(&sub_power_usage,
-							POWER_COMPONENT_ROUTE_SB);
-				}
-			}
+			/*
+			 g_power_commonly_used->num_sb_buffers +=
+			 g_power_arch->seg_buffer_split;
+			 g_power_commonly_used->total_sb_buffer_size += buffer_size
+			 * g_power_arch->seg_buffer_split;
+			 */
+
+			/* Buffer */
+			power_usage_buffer(&sub_power_usage, buffer_size,
+					node_power->in_prob[node_power->selected_input],
+					node_power->in_dens[node_power->selected_input], TRUE,
+					g_solution_inf.T_crit);
+			power_add_usage(power_usage, &sub_power_usage);
+			power_component_add_usage(&sub_power_usage,
+					POWER_COMPONENT_ROUTE_SB);
 
 			/* Wire Capacitance */
 			power_usage_wire(&sub_power_usage, C_wire,

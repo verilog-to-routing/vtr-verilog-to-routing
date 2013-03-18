@@ -661,7 +661,7 @@ void power_usage_buffer(t_power_usage * power_usage, float size, float in_prob,
 		return;
 	}
 
-	num_stages = calc_buffer_num_stages(size,
+	num_stages = power_calc_buffer_num_stages(size,
 			g_power_arch->logical_effort_factor);
 	stage_effort = calc_buffer_stage_effort(num_stages, size);
 

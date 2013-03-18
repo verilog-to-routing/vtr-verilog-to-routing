@@ -46,7 +46,7 @@ float power_perc_dynamic(t_power_usage * power_usage);
 void power_log_msg(e_power_log_type log_type, char * msg);
 
 /* Buffers */
-int calc_buffer_num_stages(float final_stage_size, float desired_stage_effort);
+int power_calc_buffer_num_stages(float final_stage_size, float desired_stage_effort);
 float calc_buffer_stage_effort(int N, float final_stage_size);
 float power_buffer_size_from_logical_effort(float C_load);
 

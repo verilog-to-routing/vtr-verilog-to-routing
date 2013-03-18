@@ -161,7 +161,7 @@ struct s_clock_network {
 /* Power-related architecture information */
 struct s_power_arch {
 	float C_wire_local; /* Capacitance of local interconnect (per meter) */
-	int seg_buffer_split; /* Split segment for distributed buffer (no split=1) */
+	//int seg_buffer_split; /* Split segment for distributed buffer (no split=1) */
 	float logical_effort_factor;
 	float local_interc_factor;
 	float transistors_per_SRAM_bit;
@@ -721,7 +721,7 @@ typedef struct s_segment_inf {
 	int cb_len;
 	boolean *sb;
 	int sb_len;
-	float Cmetal_per_m; /* Wire capacitance (per meter) */
+	//float Cmetal_per_m; /* Wire capacitance (per meter) */
 } t_segment_inf;
 
 /* Lists all the important information about a switch type.                  *

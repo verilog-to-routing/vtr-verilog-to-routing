@@ -70,4 +70,7 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
  int input_mux_size);*/
 
 float power_calc_node_switching(float capacitance, float density, float period);
+
+float power_calc_buffer_size_from_Cout(float C_out);
+
 #endif

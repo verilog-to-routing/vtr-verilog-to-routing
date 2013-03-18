@@ -173,7 +173,7 @@ static void log_msg(t_log * log_ptr, char * msg) {
  * final_stage_size: Size of the final inverter in the buffer, relative to a min size
  * desired_stage_effort: The desired gain between stages, typically 4
  */
-int calc_buffer_num_stages(float final_stage_size, float desired_stage_effort) {
+int power_calc_buffer_num_stages(float final_stage_size, float desired_stage_effort) {
 	int N = 1;
 
 	if (final_stage_size <= 1.0) {
@@ -183,14 +183,10 @@ int calc_buffer_num_stages(float final_stage_size, float desired_stage_effort) {
 	else {
 		N = (int) (log(final_stage_size) / log(desired_stage_effort) + 1);
 
-		/* Based on the above, we could use N or (N+1) buffer stages
-		 * N stages will require gain > 4
-		 * N+1 stages will require gain < 4
-		 * Check which provides a effort closer to 4. */
-		if (fabs(calc_buffer_stage_effort(N + 1, final_stage_size) - 4)
-				< fabs(calc_buffer_stage_effort(N, final_stage_size) - 4)) {
-			N++;
-		}
+		/* We always round down.
+		 * Perhaps N+1 would be closer to the desired stage effort, but the delay savings
+		 * would likely not be worth the extra power/area
+		 */
 	}
 
 	return N;
@@ -469,9 +465,9 @@ void output_logs(FILE * fp, t_log * logs, int num_logs) {
 }
 
 float power_buffer_size_from_logical_effort(float C_load) {
-	return std::max(1.0f,
+	return std::max(1.0,
 			C_load / g_power_commonly_used->INV_1X_C_in
-					/ g_power_arch->logical_effort_factor);
+					/ 8.0);
 }
 
 void power_print_title(FILE * fp, char * title) {

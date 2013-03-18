@@ -29,6 +29,7 @@
 #include "globals.h"
 #include "power_util.h"
 /************************* GLOBALS **********************************/
+static double g_MTA_area;
 
 /************************* FUNCTION DELCARATIONS ********************/
 static double power_count_transistors_connectionbox(void);
@@ -47,14 +48,15 @@ static double power_count_transistor_SRAM_bit(void);
 static double power_count_transistors_inv(float size);
 static double power_count_transistors_trans_gate();
 static double power_count_transistors_levr();
-static double power_transistor_eqiv_layout_size(float size);
+static double power_MTAs(float size);
 static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 		boolean pin_is_an_input);
 static double power_transistors_for_pb_node(t_pb_graph_node * pb_node);
 static double power_transistors_per_tile(t_arch * arch);
 static void power_size_pb(void);
 static void power_size_pb_rec(t_pb_graph_node * pb_node);
-
+static double power_MTAs(float W_size);
+static double power_MTAs_L(float L_size);
 /************************* FUNCTION DEFINITIONS *********************/
 
 /**
@@ -96,7 +98,7 @@ double power_count_transistors_buffer(float buffer_size) {
 	int stage_idx;
 	double transistor_cnt = 0.;
 
-	stages = calc_buffer_num_stages(buffer_size,
+	stages = power_calc_buffer_num_stages(buffer_size,
 			g_power_arch->logical_effort_factor);
 	effort = calc_buffer_stage_effort(stages, buffer_size);
 
@@ -227,6 +229,10 @@ static double power_count_transistors_interc(t_interconnect * interc) {
 
 void power_sizing_init(t_arch * arch) {
 	float transistors_per_tile;
+
+	// tech size = 2 lambda, so lambda^2/4.0 = tech^2
+	g_MTA_area = ((POWER_MTA_L * POWER_MTA_W)/ 4.0)*pow(g_power_tech->tech_size,
+			2.0);
 
 	// Determines physical size of different PBs
 	power_size_pb();
@@ -405,12 +411,11 @@ static double power_count_transistors_levr() {
 	/* Each level restorer has a P/N=1/2 inverter and a W/L=1/2 PMOS */
 
 	/* Inverter */
-	transistor_cnt += power_transistor_eqiv_layout_size(2); // NMOS
+	transistor_cnt += power_MTAs(2); // NMOS
 	transistor_cnt += 1.0; // PMOS
 
 	/* Pull-up */
-	transistor_cnt += power_transistor_eqiv_layout_size(
-			(POWER_DR_MIN_WELL + POWER_DR_MIN_L) / POWER_DR_MIN_WELL); // Double length
+	transistor_cnt += power_MTAs_L(2.0); // Double length
 
 	return transistor_cnt;
 }
@@ -433,8 +438,7 @@ static double power_count_transistors_LUT(int LUT_size) {
 	for (level_idx = 0; level_idx < LUT_size; level_idx++) {
 
 		/* Pass transistors */
-		transistor_cnt += (1 << (LUT_size - level_idx))
-				* power_transistor_eqiv_layout_size(1.0);
+		transistor_cnt += (1 << (LUT_size - level_idx)) * power_MTAs(1.0);
 
 		/* Add level restorer after every 2 stages (level_idx %2 == 1)
 		 * But if there is an odd # of stages, just put one at the last
@@ -453,8 +457,8 @@ static double power_count_transistors_LUT(int LUT_size) {
 static double power_count_transistors_trans_gate() {
 	double transistor_cnt = 0.;
 
-	transistor_cnt += power_transistor_eqiv_layout_size(1.0);
-	transistor_cnt += power_transistor_eqiv_layout_size(g_power_tech->PN_ratio);
+	transistor_cnt += power_MTAs(1.0);
+	transistor_cnt += power_MTAs(g_power_tech->PN_ratio);
 
 	return transistor_cnt;
 }
@@ -463,11 +467,10 @@ static double power_count_transistors_inv(float size) {
 	double transistor_cnt = 0.;
 
 	/* NMOS */
-	transistor_cnt += power_transistor_eqiv_layout_size(size);
+	transistor_cnt += power_MTAs(size);
 
 	/* PMOS */
-	transistor_cnt += power_transistor_eqiv_layout_size(
-			g_power_tech->PN_ratio * size);
+	transistor_cnt += power_MTAs(g_power_tech->PN_ratio * size);
 
 	return transistor_cnt;
 }
@@ -487,20 +490,16 @@ static double power_count_transistors_FF(void) {
 	return transistor_cnt;
 }
 
-double power_transistor_area(double num_transistors) {
-
-	/* Area of a single transistor,
-	 * POWER_TRANSISTOR_AREA is in units LAMBDA^2,
-	 * since tech_size = 2 LABDA, we must divice by 4 */
-	double area_per_transistor = (POWER_TRANSISTOR_AREA / 4.0)
-			* pow(g_power_tech->tech_size, 2);
-
-	return num_transistors * area_per_transistor;
+double power_transistor_area(double num_MTAs) {
+	return num_MTAs * g_MTA_area;
 }
 
-static double power_transistor_eqiv_layout_size(float size) {
-	return (size * POWER_TRANSISTOR_AREA_SPACING_FACTOR)
-			+ (1 - POWER_TRANSISTOR_AREA_SPACING_FACTOR);
+static double power_MTAs(float W_size) {
+	return 1 + (W_size - 1) * (POWER_DRC_MIN_W / POWER_MTA_W);
+}
+
+static double power_MTAs_L(float L_size) {
+	return 1 + (L_size-1) * (POWER_DRC_MIN_L / POWER_MTA_L);
 }
 
 static void power_size_pb(void) {
