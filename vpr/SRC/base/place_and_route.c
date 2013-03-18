@@ -696,8 +696,7 @@ void post_place_sync(INP int L_num_blocks,
 						block[iblk].nets[j];
 				block[iblk].nets[j] = OPEN;
 				for (k = 0; k <= clb_net[inet].num_sinks; k++) {
-					if (clb_net[inet].node_block[k] == iblk) {
-						assert(clb_net[inet]. node_block_pin[k] == j);
+					if (clb_net[inet].node_block[k] == iblk && clb_net[inet]. node_block_pin[k] == j) {
 						clb_net[inet].node_block_pin[k] = j
 								+ block[iblk].z * max_num_block_pins;
 						break;
