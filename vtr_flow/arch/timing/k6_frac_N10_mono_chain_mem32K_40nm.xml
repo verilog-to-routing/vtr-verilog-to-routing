@@ -200,6 +200,10 @@
 			</segment>
 		</segmentlist>
 
+    <directlist>
+      <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+    </directlist>
+
 		<complexblocklist>
       
       <!-- Define I/O pads begin -->
