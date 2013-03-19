@@ -13,7 +13,7 @@
 #include "cad_types.h"
 
 /* Constant describing architecture library version number */
-#define VPR_VERSION "6.1 Internal Release"
+#define VPR_VERSION "7.0"
 
 /* Input file parsing. */
 #define TOKENS " \t\n"
