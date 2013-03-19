@@ -1,0 +1,26 @@
+vpr_status;output.txt;vpr_status=(.*)
+min_chan_width;vpr.out;Best routing used a channel width factor of (\d+)
+critical_path_delay;vpr.out;Final critical path:\s*(.*)\s*ns
+pack_time;vpr.out;Packing took (.*) seconds
+place_time;vpr.out;Placement took (.*) seconds
+min_chan_width_route_time;vpr.out;Routing took (.*) seconds
+crit_path_route_time;vpr.out;Routing took (.*) seconds
+num_pre_packed_nets;vpr.out;total nets: (\d+)
+num_pre_packed_blocks;vpr.out;total blocks: (\d+)
+num_post_packed_nets;vpr.out;Netlist num_nets:\s*(\d+)
+num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
+num_io;vpr.out;Netlist inputs pins:\s*(\d+)
+num_outputs;vpr.out;Netlist output pins:\s*(\d+)
+num_memories;vpr.out;Netlist memory blocks:\s*(\d+)
+num_mult;vpr.out;Netlist mult_36 blocks:\s*(\d+)
+num_phys_add;odin.out;The Total Number of Hard Block adders: (\d+)
+num_LUTs;vpr.out;(\d+) of type names
+num_6LUT;vpr.out;(\d+) LUTs of size 6
+num_5LUT;vpr.out;(\d+) LUTs of size 5
+num_4LUT;vpr.out;(\d+) LUTs of size 4
+num_3LUT;vpr.out;(\d+) LUTs of size 3
+num_2LUT;vpr.out;(\d+) LUTs of size 2
+num_1LUT;vpr.out;(\d+) LUTs of size 1
+num_0LUT;vpr.out;(\d+) LUTs of size 0
+abc_depth;abc.out;lev\s*=\s*(\d+)
+error;output.txt;error=(.*)
