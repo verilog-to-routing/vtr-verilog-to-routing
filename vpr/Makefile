@@ -83,11 +83,11 @@ notify:
 packages: 
 	@ $(PACKAGEINSTALL)
 
-../libarchfpga/libarchfpga.a:
+libarchfpga:
 	@ cd ../libarchfpga && make
 
 
-libvpr.a: $(OBJ) Makefile ../libarchfpga/libarchfpga.a
+libvpr.a: $(OBJ) Makefile libarchfpga
 	@ cp ../libarchfpga/libarchfpga.a $@
 	@ ar rcs $@ $(OBJ)
 	@ ar d $@ main.o
