@@ -367,6 +367,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 	nnode_t **not_node;
 	int i,j;
 	int num;
+	int max_num = 0;
 	int flag = 0, lefta = 0, leftb = 0;
 
 	/* Check for a legitimate split */
@@ -414,8 +415,10 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 					lefta = (a + 1) % sizea;
 					leftb = (b + 1) % sizeb;
 				}
+
+				max_num = (lefta >= leftb)? lefta: leftb;
 				// if fixed_hard_adder = 0, and the left of a and b is more than min_add, then adder need to be remain the same size.
-				if(lefta + leftb >= min_add || lefta + leftb == 0)
+				if(max_num >= min_add || lefta + leftb == 0)
 					init_split_adder_for_sub(nodeo, node[i], a, sizea, b, sizeb, cin, cout, i, flag);
 				else
 				{
@@ -593,6 +596,7 @@ void iterate_adders_for_sub(netlist_t *netlist)
 	int sizea, sizeb, sizecin;//the size of
 	int a, b;
 	int count,counta,countb;
+	int num;
 	nnode_t *node;
 
 	/* Can only perform the optimisation if hard adders exist! */
@@ -620,8 +624,9 @@ void iterate_adders_for_sub(netlist_t *netlist)
 				b = node->input_port_sizes[1];
 			else
 				b = node->input_port_sizes[0];
+			num = (a >= b)? a : b;
 
-			if((a + b) >= min_threshold_adder)
+			if(num >= min_threshold_adder)
 			{
 				// how many subtractors base on a can split
 				if((a + 1) % sizea == 0)

@@ -115,7 +115,8 @@ void report_add_distribution()
 void find_hard_adders()
 {
 	hard_adders = Arch.models;
-	min_add = configuration.min_hard_adder;
+	//Disable the size in configuration file.(The threshold for the extra bits).
+	//min_add = configuration.min_hard_adder;
 	min_threshold_adder = configuration.min_threshold_adder;
 
 	while (hard_adders != NULL)
@@ -696,6 +697,7 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 	nnode_t **node;
 	int i,j;
 	int num, lefta = 0, leftb = 0;
+	int max_num = 0;
 	int flag = 0;
 
 	/* Check for a legitimate split */
@@ -726,8 +728,10 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 					lefta = (a + 1) % sizea;
 					leftb = (b + 1) % sizeb;
 				}
+
+				max_num = (lefta >= leftb)? lefta: leftb;
 				// if fixed_hard_adder = 0, and the left of a and b is more than min_add, then adder need to be remain the same size.
-				if(lefta + leftb >= min_add)
+				if(max_num >= min_add)
 					init_split_adder(nodeo, node[i], a, sizea, b, sizeb, cin, cout, i, flag, netlist);
 				else
 				{
@@ -894,6 +898,7 @@ void iterate_adders(netlist_t *netlist)
 	int sizea, sizeb, sizecin;//the size of
 	int a, b;
 	int count,counta,countb;
+	int num = 0;
 	nnode_t *node;
 
 	/* Can only perform the optimisation if hard adders exist! */
@@ -919,8 +924,9 @@ void iterate_adders(netlist_t *netlist)
 
 		a = node->input_port_sizes[0];
 		b = node->input_port_sizes[1];
+		num = (a >= b)? a : b;
 
-		if(a + b >= min_threshold_adder)
+		if(num >= min_threshold_adder)
 		{
 			// how many adders a can split
 			counta = (a + 1) / sizea + 1;

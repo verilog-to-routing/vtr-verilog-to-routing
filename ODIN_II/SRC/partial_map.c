@@ -192,8 +192,8 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 			#ifdef VPR6
 			if (hard_adders != NULL)
 			{
-				if ((node->input_port_sizes[0] + node->input_port_sizes[1]) >= min_add &&
-						(node->input_port_sizes[0] + node->input_port_sizes[1]) >= min_threshold_adder)
+				int max_num = (node->input_port_sizes[0] >= node->input_port_sizes[1])? node->input_port_sizes[0] : node->input_port_sizes[1];
+				if (max_num >= min_add && max_num >= min_threshold_adder)
 					instantiate_hard_adder(node, traverse_number, netlist);
 				else
 					instantiate_add_w_carry(node, traverse_number, netlist);
@@ -208,7 +208,8 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 			{
 				if(node->num_input_port_sizes == 3)
 				{
-					if ((node->input_port_sizes[0] + node->input_port_sizes[1]) >= min_add)
+					int max_num = (node->input_port_sizes[0] >= node->input_port_sizes[1])? node->input_port_sizes[0] : node->input_port_sizes[1];
+					if (max_num >= min_add)
 						instantiate_hard_adder_subtraction(node, traverse_number, netlist);
 					else
 						instantiate_add_w_carry(node, traverse_number, netlist);
