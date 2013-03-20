@@ -122,7 +122,6 @@ struct s_pack_molecule;
 /* defined later, but need to declare here because it is used */
 
 /* Stores statistical information for pb such as cost information */
-/* jedit TODO: Move to pb_graph_node to minimize memory allocation/deallocation */
 typedef struct s_pb_stats {
 	/* Packing statistics */
 	std::map<int, float> gain; /* Attraction (inverse of cost) function */

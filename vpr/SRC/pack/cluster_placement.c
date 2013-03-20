@@ -100,7 +100,7 @@ boolean get_next_primitive_list(
 
 		cluster_placement_stats->curr_molecule = molecule;
 	} else {
-		/* jedit Hack! Same failed molecule may re-enter if upper stream functions suck, I'm going to make the molecule selector more intelligent, Remove later */
+		/* Hack! Same failed molecule may re-enter if upper stream functions suck, I'm going to make the molecule selector more intelligent, TODO: Remove later */
 		if (cluster_placement_stats->in_flight != NULL) {
 			/* Hack end */
 

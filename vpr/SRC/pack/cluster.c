@@ -62,7 +62,7 @@ enum e_gain_type {
 enum e_removal_policy {
 	REMOVE_CLUSTERED, LEAVE_CLUSTERED
 };
-/* jedit REMOVE_CLUSTERED no longer used, remove */
+/* TODO: REMOVE_CLUSTERED no longer used, remove */
 enum e_net_relation_to_clustered_block {
 	INPUT, OUTPUT
 };
@@ -985,7 +985,7 @@ static t_pack_molecule *get_molecule_by_num_ext_inputs(
 					ilogical_blk =
 							ptr->moleculeptr->logical_block_ptrs[i]->index;
 					if (!exists_free_primitive_for_logical_block(
-							cluster_placement_stats_ptr, ilogical_blk)) { /* jedit: I should be using a better filtering check especially when I'm dealing with multiple clock/multiple global reset signals where the clock/reset packed in matters, need to do later when I have the circuits to check my work */
+							cluster_placement_stats_ptr, ilogical_blk)) { /* TODO: I should be using a better filtering check especially when I'm dealing with multiple clock/multiple global reset signals where the clock/reset packed in matters, need to do later when I have the circuits to check my work */
 						success = FALSE;
 						break;
 					}
@@ -1238,7 +1238,7 @@ static enum e_block_pack_status try_pack_molecule(
 					block_pack_status = BLK_FAILED_ROUTE;
 				} else {
 					/* Pack successful, commit 
-					 jedit may want to update cluster stats here too instead of doing it outside
+					 TODO: SW Engineering note - may want to update cluster stats here too instead of doing it outside
 					 */
 					assert(block_pack_status == BLK_PASSED);
 					if(molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain) {
@@ -1328,7 +1328,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		parent_pb->logical_block = OPEN;
 		parent_pb->name = my_strdup(logical_block[ilogical_block].name);
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
-		set_pb_graph_mode(parent_pb->pb_graph_node, 0, 0); /* jedit TODO: default mode is to use mode 0, document this! */
+		set_pb_graph_mode(parent_pb->pb_graph_node, 0, 0); /* TODO: default mode is to use mode 0, document this! */
 		set_pb_graph_mode(parent_pb->pb_graph_node, parent_pb->mode, 1);
 		parent_pb->child_pbs =
 				(t_pb **) my_calloc(
@@ -1478,7 +1478,7 @@ static void update_connection_gain_values(int inet, int clustered_block,
 		for (ipin = 1; ipin <= vpack_net[inet].num_sinks; ipin++) {
 			iblk = vpack_net[inet].node_block[ipin];
 			if (logical_block[iblk].clb_index == NO_CLUSTER) {
-				/* jedit TODO: Gain function accurate only if net has one connection to block, TODO: Should we handle case where net has multi-connection to block? Gain computation is only off by a bit in this case */
+				/* TODO: Gain function accurate only if net has one connection to block, TODO: Should we handle case where net has multi-connection to block? Gain computation is only off by a bit in this case */
 				if(cur_pb->pb_stats->connectiongain.count(iblk) == 0) {
 					cur_pb->pb_stats->connectiongain[iblk] = 0;
 				}
@@ -2031,7 +2031,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 											molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
 									if (!exists_free_primitive_for_logical_block(
 											cluster_placement_stats_ptr,
-											iblk)) { /* jedit debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
+											iblk)) { /* TODO: debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
 										success = FALSE;
 										break;
 									}
@@ -2100,7 +2100,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 										molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
 								if (!exists_free_primitive_for_logical_block(
 										cluster_placement_stats_ptr,
-										iblk)) { /* jedit debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
+										iblk)) { /* TODO: debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
 									success = FALSE;
 									break;
 								}
@@ -2687,7 +2687,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 				}
 				if (i == vpack_net[inet].num_sinks + 1) {
 					count = 0;
-					/* TODO: jedit I should cache the absorbed outputs, once net is absorbed, net is forever absorbed, no point in rechecking every time */
+					/* TODO: I should cache the absorbed outputs, once net is absorbed, net is forever absorbed, no point in rechecking every time */
 					for (i = 0;
 							i
 									< pb_graph_pin->num_connectable_primtive_input_pins[depth];
