@@ -225,6 +225,7 @@
           <loc type="perimeter" priority="10"/>
         </gridlocations>
 
+		<power method="ignore"/>			
       </pb_type>
       <!-- Define I/O pads ends -->
 
@@ -462,6 +463,11 @@
                     <direct name="out2out" input="mult_9x9.out" output="mult_9x9_slice.OUT_cfg">
                     </direct>
                   </interconnect>
+				  <power method="pin-toggle">
+					<port name="A_cfg" energy_per_toggle="1.45e-12"/>
+					<port name="B_cfg" energy_per_toggle="1.45e-12"/>
+					<static_power power_per_instance="0.0"/>
+				</power>
                 </pb_type>
                 <interconnect>
                   <direct name="a2a" input="divisible_mult_18x18.a" output="mult_9x9_slice[1:0].A_cfg">
@@ -471,6 +477,7 @@
                   <direct name="out2out" input="mult_9x9_slice[1:0].OUT_cfg" output="divisible_mult_18x18.out">
                   </direct>
                 </interconnect>
+				
               </mode>
 
               <mode name="mult_18x18">
@@ -495,6 +502,11 @@
                     <direct name="out2out" input="mult_18x18.out" output="mult_18x18_slice.OUT_cfg">
                     </direct>
                   </interconnect>
+				  <power method="pin-toggle">
+					<port name="A_cfg" energy_per_toggle="1.09e-12"/>
+					<port name="B_cfg" energy_per_toggle="1.09e-12"/>
+					<static_power power_per_instance="0.0"/>					
+					</power>
                 </pb_type>
                 <interconnect>
                   <direct name="a2a" input="divisible_mult_18x18.a" output="mult_18x18_slice.A_cfg">
@@ -505,7 +517,9 @@
                   </direct>
                 </interconnect>
               </mode>
-            </pb_type>
+            
+			  <power method="sum-of-children"/>
+			</pb_type>
             <interconnect>
               <!-- Stratix IV input delay of 207ps is conservative for this architecture because this architecture does not have an input crossbar in the multiplier. 
 		   Subtract 72.5 ps delay, which is already in the connection block input mux, leading
@@ -544,6 +558,12 @@
                 <direct name="out2out" input="mult_36x36.out" output="mult_36x36_slice.OUT_cfg">
                 </direct>
               </interconnect>
+			  
+			<power method="pin-toggle">
+				<port name="A_cfg" energy_per_toggle="2.13e-12"/>
+				<port name="B_cfg" energy_per_toggle="2.13e-12"/>
+				<static_power power_per_instance="0.0"/>
+			</power>
             </pb_type>
             <interconnect>
               <!-- Stratix IV input delay of 207ps is conservative for this architecture because this architecture does not have an input crossbar in the multiplier. 
@@ -560,6 +580,7 @@
                 <delay_constant max="1.93e-9" in_port="mult_36x36_slice.OUT_cfg" out_port="mult_36.out"/>
               </direct>
             </interconnect>
+			
           </mode>
 
         <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
@@ -568,7 +589,8 @@
         <!-- Place this multiplier block every 8 columns from (and including) the sixth column -->
         <gridlocations>
           <loc type="col" start="6" repeat="8" priority="2"/>
-        </gridlocations>
+        </gridlocations>		  
+		<power method="sum-of-children"/>
       </pb_type>
       <!-- Define fracturable multiplier end -->
 
@@ -599,6 +621,10 @@
               <T_setup value="509e-12" port="mem_512x64_sp.data" clock="clk"/>
               <T_setup value="509e-12" port="mem_512x64_sp.we" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_512x64_sp.out" clock="clk"/>
+			  <power method="pin-toggle">
+					<port name="clk" energy_per_toggle="9.0e-12"/>					
+					<static_power power_per_instance="0.0"/>
+				</power>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[8:0]" output="mem_512x64_sp.addr">
@@ -629,6 +655,10 @@
               <T_setup value="509e-12" port="mem_1024x32_sp.data" clock="clk"/>
               <T_setup value="509e-12" port="mem_1024x32_sp.we" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_1024x32_sp.out" clock="clk"/>
+			  <power method="pin-toggle">
+					<port name="clk" energy_per_toggle="9.0e-12"/>					
+					<static_power power_per_instance="0.0"/>
+				</power>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[9:0]" output="mem_1024x32_sp.addr">
@@ -660,6 +690,10 @@
               <T_setup value="509e-12" port="mem_2048x16_sp.data" clock="clk"/>
               <T_setup value="509e-12" port="mem_2048x16_sp.we" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_2048x16_sp.out" clock="clk"/>
+			  <power method="pin-toggle">
+					<port name="clk" energy_per_toggle="9.0e-12"/>					
+					<static_power power_per_instance="0.0"/>
+				</power>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[10:0]" output="mem_2048x16_sp.addr">
@@ -690,6 +724,10 @@
               <T_setup value="509e-12" port="mem_4096x8_sp.data" clock="clk"/>
               <T_setup value="509e-12" port="mem_4096x8_sp.we" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_4096x8_sp.out" clock="clk"/>
+			  <power method="pin-toggle">
+					<port name="clk" energy_per_toggle="9.0e-12"/>					
+					<static_power power_per_instance="0.0"/>
+				</power>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[11:0]" output="mem_4096x8_sp.addr">
@@ -720,6 +758,10 @@
               <T_setup value="509e-12" port="mem_8192x4_sp.data" clock="clk"/>
               <T_setup value="509e-12" port="mem_8192x4_sp.we" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_8192x4_sp.out" clock="clk"/>
+			  <power method="pin-toggle">
+					<port name="clk" energy_per_toggle="9.0e-12"/>					
+					<static_power power_per_instance="0.0"/>
+				</power>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[12:0]" output="mem_8192x4_sp.addr">
@@ -750,6 +792,10 @@
               <T_setup value="509e-12" port="mem_16384x2_sp.data" clock="clk"/>
               <T_setup value="509e-12" port="mem_16384x2_sp.we" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_16384x2_sp.out" clock="clk"/>
+			  <power method="pin-toggle">
+					<port name="clk" energy_per_toggle="9.0e-12"/>					
+					<static_power power_per_instance="0.0"/>
+				</power>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[13:0]" output="mem_16384x2_sp.addr">
@@ -780,6 +826,10 @@
               <T_setup value="509e-12" port="mem_32768x1_sp.data" clock="clk"/>
               <T_setup value="509e-12" port="mem_32768x1_sp.we" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_32768x1_sp.out" clock="clk"/>
+			  <power method="pin-toggle">
+					<port name="clk" energy_per_toggle="9.0e-12"/>					
+					<static_power power_per_instance="0.0"/>
+				</power>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[14:0]" output="mem_32768x1_sp.addr">
@@ -819,6 +869,10 @@
               <T_setup value="509e-12" port="mem_1024x32_dp.we2" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_1024x32_dp.out1" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_1024x32_dp.out2" clock="clk"/>
+			  <power method="pin-toggle">
+					<port name="clk" energy_per_toggle="17.9e-12"/>					
+					<static_power power_per_instance="0.0"/>
+				</power>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[9:0]" output="mem_1024x32_dp.addr1">
@@ -869,6 +923,10 @@
               <T_setup value="509e-12" port="mem_2048x16_dp.we2" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_2048x16_dp.out1" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_2048x16_dp.out2" clock="clk"/>
+			  <power method="pin-toggle">
+					<port name="clk" energy_per_toggle="17.9e-12"/>					
+					<static_power power_per_instance="0.0"/>
+				</power>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[10:0]" output="mem_2048x16_dp.addr1">
@@ -919,6 +977,10 @@
               <T_setup value="509e-12" port="mem_2048x8_dp.we2" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_2048x8_dp.out1" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_2048x8_dp.out2" clock="clk"/>
+			  <power method="pin-toggle">
+					<port name="clk" energy_per_toggle="17.9e-12"/>					
+					<static_power power_per_instance="0.0"/>
+				</power>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[11:0]" output="mem_2048x8_dp.addr1">
@@ -968,6 +1030,10 @@
               <T_setup value="509e-12" port="mem_8192x4_dp.we2" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_8192x4_dp.out1" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_8192x4_dp.out2" clock="clk"/>
+			  <power method="pin-toggle">
+					<port name="clk" energy_per_toggle="17.9e-12"/>					
+					<static_power power_per_instance="0.0"/>
+				</power>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[12:0]" output="mem_8192x4_dp.addr1">
@@ -1017,6 +1083,10 @@
               <T_setup value="509e-12" port="mem_16384x2_dp.we2" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_16384x2_dp.out1" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_16384x2_dp.out2" clock="clk"/>
+			  <power method="pin-toggle">
+					<port name="clk" energy_per_toggle="17.9e-12"/>					
+					<static_power power_per_instance="0.0"/>
+				</power>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[13:0]" output="mem_16384x2_dp.addr1">
@@ -1067,6 +1137,10 @@
               <T_setup value="509e-12" port="mem_32768x1_dp.we2" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_32768x1_dp.out1" clock="clk"/>
               <T_clock_to_Q max="1.234e-9" port="mem_32768x1_dp.out2" clock="clk"/>
+			  <power method="pin-toggle">
+					<port name="clk" energy_per_toggle="17.9e-12"/>					
+					<static_power power_per_instance="0.0"/>
+				</power>
             </pb_type>
             <interconnect>
               <direct name="address1" input="memory.addr1[14:0]" output="mem_32768x1_dp.addr1">
@@ -1106,9 +1180,17 @@
         <gridlocations>
           <loc type="col" start="2" repeat="8" priority="2"/>
         </gridlocations>
+		
+		<power method="sum-of-children"/>
       </pb_type>
       <!-- Define fracturable memory end -->
 
 
     </complexblocklist>
+	<power>
+		<local_interconnect C_wire="2.5e-10"/>
+	</power>
+	<clocks>
+		<clock buffer_size="auto" C_wire="2.5e-10"/>
+	</clocks>
   </architecture>
