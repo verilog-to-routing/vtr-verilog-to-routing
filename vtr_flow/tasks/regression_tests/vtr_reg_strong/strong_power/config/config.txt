@@ -20,7 +20,7 @@ circuit_list_add=ch_intrinsics.v
 circuit_list_add=diffeq1.v
 
 # Add architectures to list to sweep
-arch_list_add=k6_N10_memDepth16384_memData64_40nm_timing_power.xml
+arch_list_add=k6_frac_N10_mem32K_40nm.xml
 
 # Parse info and how to parse
 parse_file=vpr_power.txt
