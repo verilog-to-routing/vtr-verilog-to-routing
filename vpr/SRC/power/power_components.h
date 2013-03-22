@@ -53,11 +53,12 @@ typedef enum {
 	POWER_COMPONENT_CLOCK_BUFFER, /* Buffers in clock network */
 	POWER_COMPONENT_CLOCK_WIRE, /* Wires in clock network */
 
-	POWER_COMPONENT_BLOCKS, /* Logic Blocks, and other hard blocks */
-	POWER_COMPONENT_PRIMITIVES, /* Primitives (LUTs, FF, etc) */
-	POWER_COMPONENT_LOCAL_INTERC, /* Local interconnect structures (muxes) */
-	POWER_COMPONENT_LOCAL_BUF_WIRE, /* Local buffers and wire capacitance */
-	POWER_COMPONENT_BLOCKS_OTHER, /* Power from other estimation methods - not transistor-level */
+	POWER_COMPONENT_PB, /* Logic Blocks, and other hard blocks */
+	POWER_COMPONENT_PB_PRIMITIVES, /* Primitives (LUTs, FF, etc) */
+	POWER_COMPONENT_PB_INTERC_MUXES, /* Local interconnect structures (muxes) */
+	POWER_COMPONENT_PB_BUFS_WIRE, /* Local buffers and wire capacitance */
+
+	POWER_COMPONENT_PB_OTHER, /* Power from other estimation methods - not transistor-level */
 
 	POWER_COMPONENT_MAX_NUM
 } e_power_component_type;

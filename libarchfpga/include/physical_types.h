@@ -99,12 +99,13 @@ enum e_pin_to_pin_pack_pattern_annotations {
 /* Power Estimation type for a PB */
 typedef enum {
 	POWER_METHOD_UNDEFINED = 0,
-	POWER_METHOD_IGNORE,
-	POWER_METHOD_AUTO_SIZES,
-	POWER_METHOD_SPECIFY_SIZES,
-	POWER_METHOD_TOGGLE_PINS,
-	POWER_METHOD_C_INTERNAL,
-	POWER_METHOD_ABSOLUTE
+	POWER_METHOD_IGNORE,			/* Ignore power of this PB, and all children PB */
+	POWER_METHOD_SUM_OF_CHILDREN,	/* Ignore power of this PB, but consider children */
+	POWER_METHOD_AUTO_SIZES,		/* Transistor-level, auto-sized buffers/wires */
+	POWER_METHOD_SPECIFY_SIZES,		/* Transistor-level, user-specified buffers/wires */
+	POWER_METHOD_TOGGLE_PINS,		/* Dynamic: Energy per pin toggle, Static: Absolute */
+	POWER_METHOD_C_INTERNAL,		/* Dynamic: Equiv. Internal capacitance, Static: Absolute */
+	POWER_METHOD_ABSOLUTE			/* Dynamic: Aboslute, Static: Absolute */
 } e_power_estimation_method;
 
 /*************************************************************************************************/

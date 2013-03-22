@@ -803,6 +803,10 @@ static void ProcessPb_TypePowerEstMethod(ezxml_t Parent, t_pb_type * pb_type) {
 		pb_type->pb_type_power->estimation_method = POWER_METHOD_C_INTERNAL;
 	} else if (strcmp(prop, "absolute") == 0) {
 		pb_type->pb_type_power->estimation_method = POWER_METHOD_ABSOLUTE;
+	} else if (strcmp(prop, "ignore") == 0) {
+		pb_type->pb_type_power->estimation_method = POWER_METHOD_IGNORE;
+	} else if (strcmp(prop, "sum-of-children") == 0) {
+		pb_type->pb_type_power->estimation_method = POWER_METHOD_SUM_OF_CHILDREN;
 	} else {
 		vpr_printf(TIO_MESSAGE_ERROR,
 				"Invalid power estimation method for pb_type '%s'",
@@ -3486,6 +3490,9 @@ e_power_estimation_method power_method_inherited(
 		return POWER_METHOD_IGNORE;
 	case POWER_METHOD_UNDEFINED:
 		return POWER_METHOD_UNDEFINED;
+	case POWER_METHOD_SUM_OF_CHILDREN:
+		/* Just revert to the default */
+		return POWER_METHOD_AUTO_SIZES;
 	default:
 		assert(0);
 	}

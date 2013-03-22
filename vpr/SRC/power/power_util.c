@@ -477,10 +477,10 @@ void power_print_title(FILE * fp, char * title) {
 	int firsthalf = (width - strlen(title) - 2) / 2;
 	int secondhalf = width - strlen(title) - 2 - firsthalf;
 
-	for (i = 1; i < firsthalf; i++)
+	for (i = 1; i <= firsthalf; i++)
 		fprintf(fp, "-");
 	fprintf(fp, " %s ", title);
-	for (i = 1; i < secondhalf; i++)
+	for (i = 1; i <= secondhalf; i++)
 		fprintf(fp, "-");
 	fprintf(fp, "\n");
 }
@@ -584,6 +584,7 @@ boolean power_method_is_recursive(e_power_estimation_method method) {
 		return FALSE;
 	case POWER_METHOD_AUTO_SIZES:
 	case POWER_METHOD_SPECIFY_SIZES:
+	case POWER_METHOD_SUM_OF_CHILDREN:
 		return TRUE;
 	case POWER_METHOD_UNDEFINED:
 	default:
