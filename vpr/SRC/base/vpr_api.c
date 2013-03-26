@@ -174,7 +174,7 @@ void vpr_init(INP int argc, INP char **argv, OUTP t_options *options,
 		OUTP t_vpr_setup *vpr_setup, OUTP t_arch *arch) {
 	char* pszLogFileName = "vpr_stdout.log";
 	unsigned char enableTimeStamps = 1;
-	unsigned long maxWarningCount = 1000;
+	unsigned long maxWarningCount = 100000;
 	unsigned long maxErrorCount = 1000;
 
 	if (PrintHandlerExists() == 1) {
