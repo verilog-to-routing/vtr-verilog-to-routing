@@ -576,6 +576,7 @@ static boolean is_forced_connection(INP t_pb_graph_pin *pb_graph_pin) {
 	}
 	if(pb_graph_pin->num_output_edges == 0) {
 		if(pb_graph_pin->parent_node->pb_type->num_modes == 0) {
+			/* Check that this pin belongs to a primitive */
 			return TRUE;
 		} else {
 			return FALSE;

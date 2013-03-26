@@ -35,7 +35,7 @@ static void requeue_primitive(
 static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node,
 		INP float incremental_cost, INP boolean valid);
 static float try_place_molecule(INP t_pack_molecule *molecule,
-		INP t_pb_graph_node *root, INOUTP t_pb_graph_node **primitives_list);
+		INP t_pb_graph_node *root, INOUTP t_pb_graph_node **primitives_list, INP int clb_index);
 static boolean expand_forced_pack_molecule_placement(
 		INP t_pack_molecule *molecule,
 		INP t_pack_pattern_block *pack_pattern_block,
@@ -44,7 +44,7 @@ static t_pb_graph_pin *expand_pack_molecule_pin_edge(INP int pattern_id,
 		INP t_pb_graph_pin *cur_pin, INP boolean forward);
 static void flush_intermediate_queues(
 		INOUTP t_cluster_placement_stats *cluster_placement_stats);
-static boolean root_passes_early_filter(INP t_pb_graph_node *root, INP t_pack_molecule *molecule);
+static boolean root_passes_early_filter(INP t_pb_graph_node *root, INP t_pack_molecule *molecule, INP int clb_index);
 
 /****************************************/
 /*Function Definitions					*/
@@ -87,7 +87,7 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void) {
  */
 boolean get_next_primitive_list(
 		INOUTP t_cluster_placement_stats *cluster_placement_stats,
-		INP t_pack_molecule *molecule, INOUTP t_pb_graph_node **primitives_list) {
+		INP t_pack_molecule *molecule, INOUTP t_pb_graph_node **primitives_list, INP int clb_index) {
 	t_cluster_placement_primitive *cur, *next, *best, *before_best, *prev;
 	int i;
 	float cost, lowest_cost;
@@ -144,7 +144,7 @@ boolean get_next_primitive_list(
 				}
 				/* try place molecule at root location cur */
 				cost = try_place_molecule(molecule, cur->pb_graph_node,
-						primitives_list);
+						primitives_list, clb_index);
 				if (cost < lowest_cost) {
 					lowest_cost = cost;
 					best = cur;
@@ -162,7 +162,7 @@ boolean get_next_primitive_list(
 		}
 	} else {
 		/* populate primitive list with best */
-		cost = try_place_molecule(molecule, best->pb_graph_node, primitives_list);
+		cost = try_place_molecule(molecule, best->pb_graph_node, primitives_list, clb_index);
 		assert(cost == lowest_cost);
 
 		/* take out best node and put it in flight */
@@ -452,7 +452,7 @@ static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node,
  * Try place molecule at root location, populate primitives list with locations of placement if successful
  */
 static float try_place_molecule(INP t_pack_molecule *molecule,
-		INP t_pb_graph_node *root, INOUTP t_pb_graph_node **primitives_list) {
+		INP t_pb_graph_node *root, INOUTP t_pb_graph_node **primitives_list, INP int clb_index) {
 	int list_size, i;
 	float cost = HUGE_POSITIVE_FLOAT;
 	list_size = get_array_size_of_molecule(molecule);
@@ -461,7 +461,7 @@ static float try_place_molecule(INP t_pack_molecule *molecule,
 			molecule->logical_block_ptrs[molecule->root]->index,
 			root->pb_type)) {
 		if (root->cluster_placement_primitive->valid == TRUE) {
-			if(root_passes_early_filter(root, molecule)) {
+			if(root_passes_early_filter(root, molecule, clb_index)) {
 				for (i = 0; i < list_size; i++) {
 					primitives_list[i] = NULL;
 				}
@@ -747,12 +747,24 @@ void reset_tried_but_unused_cluster_placements(
 }
 
 
-/* Quick, additional filter to see if root is feasible for molecule */
-static boolean root_passes_early_filter(INP t_pb_graph_node *root, INP t_pack_molecule *molecule) {
+/* Quick, additional filter to see if root is feasible for molecule 
+
+   Limitation: This code can absorb a single atom by a "forced connection".  A forced connection is one where there is no interconnect flexibility connecting
+               two primitives so if one primitive is used, then the other must also be used.
+
+			   TODO: jluu - Many ways to make this either more efficient or more robust.
+							1.  For forced connections, I can get the packer to try forced connections first thus avoid trying out other locations that 
+							    I know are bad thus saving runtime and potentially improving robustness because the placement cost function is not always 100%.
+							2.  I need to extend this so that molecules can be pulled in instead of just atoms.
+*/
+static boolean root_passes_early_filter(INP t_pb_graph_node *root, INP t_pack_molecule *molecule, INP int clb_index) {
 	int i, j;
 	boolean feasible;
 	t_logical_block *root_block;
 	t_model_ports *model_port;
+	int inet;
+	int isink;
+	t_pb_graph_pin *sink_pb_graph_pin;
 
 	feasible = TRUE;
 	root_block = molecule->logical_block_ptrs[molecule->root];
@@ -760,10 +772,26 @@ static boolean root_passes_early_filter(INP t_pb_graph_node *root, INP t_pack_mo
 		for(j = 0; feasible && j < root->num_output_pins[i]; j++) {
 			if(root->output_pins[i][j].is_forced_connection) {
 				model_port = root->output_pins[i][j].port->model_port;
-				if(root_block->output_nets[model_port->index][j] != OPEN) {
+				inet = root_block->output_nets[model_port->index][j];
+				if(inet != OPEN) {
 					/* This output pin has a dedicated connection to one output, make sure that molecule works */
 					if(molecule->type == MOLECULE_SINGLE_ATOM) {
-						feasible = FALSE;
+						feasible = FALSE; /* There is only one case where an atom can fit in here, so by default, feasibility is false unless proven otherwise */
+						if(vpack_net[inet].num_sinks == 1) {
+							isink = vpack_net[inet].node_block[1];
+							if(logical_block[isink].clb_index == clb_index) {
+								sink_pb_graph_pin = &root->output_pins[i][j];
+								while(sink_pb_graph_pin->num_output_edges != 0) {
+									assert(sink_pb_graph_pin->num_output_edges == 1);
+									assert(sink_pb_graph_pin->output_edges[0]->num_output_pins == 1);
+									sink_pb_graph_pin = sink_pb_graph_pin->output_edges[0]->output_pins[0];
+								}
+								if(sink_pb_graph_pin->parent_node == logical_block[isink].pb->pb_graph_node) {
+									/* There is a logical block mapped to the physical position that pulls in the atom in question */
+									feasible = TRUE;
+								}
+							}
+						}
 					}
 				}
 			}

@@ -1197,7 +1197,7 @@ static enum e_block_pack_status try_pack_molecule(
 	while (block_pack_status != BLK_PASSED) {
 		save_and_reset_routing_cluster(); /* save current routing information because speculative packing will change routing*/
 		if (get_next_primitive_list(cluster_placement_stats_ptr, molecule,
-				primitives_list)) {
+				primitives_list, clb_index)) {
 			block_pack_status = BLK_PASSED;
 			
 			for (i = 0; i < molecule_size && block_pack_status == BLK_PASSED;
