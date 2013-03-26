@@ -392,10 +392,8 @@
                       <direct name="lut_in1" input="arithmetic.in[3:0]" output="lut4[0:0].in[3:0]"/>
                       <direct name="lut_in2" input="arithmetic.in[3:0]" output="lut4[1:1].in[3:0]"/>
                       <direct name="lut_to_add1" input="lut4[0:0].out" output="adder.a">
-                        <pack_pattern name="chain" in_port="lut4[0:0].out" out_port="adder.a"/>
                       </direct>
                       <direct name="lut_to_add2" input="lut4[1:1].out" output="adder.b">
-                        <pack_pattern name="chain" in_port="lut4[1:1].out" out_port="adder.b"/>
                       </direct>
                       <direct name="add_to_ff" input="adder.sumout" output="ff.D">
                         <pack_pattern name="chain" in_port="adder.sumout" out_port="ff.D"/>
