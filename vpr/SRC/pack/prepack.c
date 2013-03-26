@@ -788,7 +788,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 				cur_molecule->base_gain = cur_molecule->num_blocks
 						- (cur_molecule->pack_pattern->base_cost / 100);
 				list_of_molecules_head = cur_molecule;
-				if(logical_block[j].packed_molecules->data_vptr != cur_molecule) {
+				if(logical_block[j].packed_molecules == NULL || logical_block[j].packed_molecules->data_vptr != cur_molecule) {
 					/* molecule did not cover current atom (possibly because molecule created is part of a long chain that extends past multiple logic blocks), try again */
 					j--;
 				}
