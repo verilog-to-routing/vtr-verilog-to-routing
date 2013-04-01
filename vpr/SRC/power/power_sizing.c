@@ -232,7 +232,7 @@ void power_sizing_init(t_arch * arch) {
 
 	// tech size = 2 lambda, so lambda^2/4.0 = tech^2
 	g_MTA_area = ((POWER_MTA_L * POWER_MTA_W)/ 4.0)*pow(g_power_tech->tech_size,
-			2.0);
+			(float)2.0);
 
 	// Determines physical size of different PBs
 	power_size_pb();
