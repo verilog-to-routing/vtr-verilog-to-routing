@@ -176,14 +176,15 @@
 	       (diff of second stage) listed below.  Jeff's models are in tech/ptm_45nm, and are in min feature multiples.
 	       The minimum contactable transistor is 2.5 * 45 nm, so I need to multiply the drive strength sizes above by 
 	       2.5x when looking up in Jeff's tables.
-    <switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4-15" Tdel="46e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
+	       Finally, we choose a switch delay (58 ps) that leads to length 4 wires having a delay equal to that of SIV of 126 ps.
+	       This also leads to the switch being 46% of the total wire delay, which is reasonable. -->
+    <switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
   </switchlist>
   <segmentlist>
     <!--- VB & JL: using ITRS metal stack data, 96 nm half pitch wires, which are intermediate metal width/space.  
-			     Increasing the capacitance by 15% to account for crosstalk and to better match SIV routing delays.
 			     With the 96 nm half pitch, such wires would take 60 um of height, vs. a 90 nm high (approximated as square) Stratix IV tile so this seems
 			     reasonable. Using a tile length of 90 nm, corresponding to the length of a Stratix IV tile if it were square. -->
-    <segment freq="1.000000" length="4" type="unidir" Rmetal="101" Cmetal="26e-15">
+    <segment freq="1.000000" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15">
       <mux name="0"/>
       <sb type="pattern">1 1 1 1 1</sb>
       <cb type="pattern">1 1 1 1</cb>
