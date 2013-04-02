@@ -131,10 +131,22 @@
   <device>
     <!-- VB & JL: Using Ian Kuon's transistor sizing and drive strength data for routing, at 40 nm. Ian used BPTM 
 			     models. We are modifying the delay values however, to include metal C and R, which allows more architecture
-			     experimentation. The delay values are lined up with Stratix IV, which has an architecture similar to this
-			     proposed FPGA, and which is also 40 nm -->
-    <sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000" ipin_mux_trans_size="1.222260"/>
-    <timing C_ipin_cblock="1.7e-15" T_ipin_cblock="7.247000e-11"/>
+			     experimentation. We are also modifying the relative resistance of PMOS to be 1.8x that of NMOS
+			     (vs. Ian's 3x) as 1.8x lines up with Jeff G's data from a 45 nm process (and is more typical of 
+			     45 nm in general). I'm upping the Rmin_nmos from Ian's just over 6k to nearly 9k, and dropping 
+			     RminW_pmos from 18k to 16k to hit this 1.8x ratio, while keeping the delays of buffers approximately
+			     lined up with Stratix IV. 
+			     We are using Jeff G.'s capacitance data for 45 nm (in tech/ptm_45nm).
+			     Jeff's tables list C in for transistors with widths in multiples of the minimum feature size (45 nm).
+			     The minimum contactable transistor is 2.5 * 45 nm, so I need to multiply drive strength sizes in this file
+	                     by 2.5x when looking up in Jeff's tables.
+			     The delay values are lined up with Stratix IV, which has an architecture similar to this
+			     proposed FPGA, and which is also 40 nm 
+			     C_ipin_cblock: input capacitance of a track buffer, which VPR assumes is a single-stage
+			     4x minimum drive strength buffer. -->
+   
+    <sizing R_minW_nmos="8926" R_minW_pmos="16067" ipin_mux_trans_size="1.222260"/>
+    <timing C_ipin_cblock="1.47e-15" T_ipin_cblock="7.247000e-11"/>
 
     <!-- Total Stratix IV tile area is about 8100 um^2, minimum width transistor area is 60 L^2 yields a tile area of 84375 MWTAs,
 	   Routing at W=300 is 30481 MWTAs, leaving us with a total of 53000 MWTAs for logic block area 
@@ -153,15 +165,23 @@
     <switch_block type="wilton" fs="3"/>
   </device>
   <switchlist>
-    <!-- VB & JL: we reverse engineered this buffer to be 11x minimum drive, 2 stage. pmos is 33x minimum drive.
-			     first stage is assumed to be 3x min drive n and p. Took Cgate and Cdiff from Charles' 22 nm data, and 
-			     scaled up by 2.45x which is (40/22)^1.5 -->
-    <switch type="mux" name="0" R="551" Cin=".32e-15" Cout="3.5e-15" Tdel="46e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
+	  <!-- VB: the mux_trans_size and buf_size data below is in minimum width transistor *areas*, assuming the purple
+	       book area formula. This means the mux transistors are about 5x minimum drive strength.
+	       We assume the first stage of the buffer is 3x min drive strength to be reasonable given the large 
+	       mux transistors, and this gives a reasonable stage ratio of a bit over 5x to the second stage. We assume
+	       the n and p transistors in the first stage are equal-sized to lower the buffer trip point, since it's fed
+	       by a pass transistor mux. We can then reverse engineer the buffer second stage to hit the specified 
+	       buf_size (really buffer area) - 16.2x minimum drive nmos and 1.8*16.2 = 29.2x minimum drive.
+	       I then took the data from Jeff G.'s PTM modeling of 45 nm to get the Cin (gate of first stage) and Cout 
+	       (diff of second stage) listed below.  Jeff's models are in tech/ptm_45nm, and are in min feature multiples.
+	       The minimum contactable transistor is 2.5 * 45 nm, so I need to multiply the drive strength sizes above by 
+	       2.5x when looking up in Jeff's tables.
+    <switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4-15" Tdel="46e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
   </switchlist>
   <segmentlist>
     <!--- VB & JL: using ITRS metal stack data, 96 nm half pitch wires, which are intermediate metal width/space.  
 			     Increasing the capacitance by 15% to account for crosstalk and to better match SIV routing delays.
-			     such wires would take 60 um of height, vs. a 90 nm high (approximated as square) Stratix IV tile so this seems
+			     With the 96 nm half pitch, such wires would take 60 um of height, vs. a 90 nm high (approximated as square) Stratix IV tile so this seems
 			     reasonable. Using a tile length of 90 nm, corresponding to the length of a Stratix IV tile if it were square. -->
     <segment freq="1.000000" length="4" type="unidir" Rmetal="101" Cmetal="26e-15">
       <mux name="0"/>
