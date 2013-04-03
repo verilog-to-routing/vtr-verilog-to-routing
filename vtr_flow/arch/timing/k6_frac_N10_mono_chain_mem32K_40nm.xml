@@ -208,7 +208,7 @@
            2.5x when looking up in Jeff's tables.
            Finally, we choose a switch delay (58 ps) that leads to length 4 wires having a delay equal to that of SIV of 126 ps.
            This also leads to the switch being 46% of the total wire delay, which is reasonable. -->
-      <switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
+      <switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
     </switchlist>
     <segmentlist>
       <!--- VB & JL: using ITRS metal stack data, 96 nm half pitch wires, which are intermediate metal width/space.  
