@@ -12,34 +12,51 @@ Fc_out = 0.1
 
 power_short_circuit_percentage = 0.0
 
-R_minW_nmos = 6065.520020
-R_minW_pmos = 18138.500000
+R_minW_nmos = 8926
+R_minW_pmos = 16067
 ipin_mux_trans_size = 1.222260
 
-C_ipin_cblock = 0.000000e+00
-T_ipin_cblock = 7.247000e-11
+C_ipin_cblock = 1.47e-15
+T_ipin_cblock = 7.247e-11
 
-grid_logic_tile_area = 18748.199219
+grid_logic_tile_area = 53894
 
-switch_T_del = 6.837e-11
+switch_R = 551
+switch_Cin = 0.77e-15
+switch_Cout = 4e-15
+switch_T_del = 58e-12
 switch_mux_trans_size = 2.630740
 switch_buf_size = 27.645901
 
-delay_CLB_I_to_ble = 4.620e-11
-delay_ble_to_ble = 4.607e-11
+segment_Rmetal = 101
+segment_Cmetal = 22.5e-15
 
-delay_LUT = 2.690e-10
+delay_crossbar_CLB_in_to_BLE_in = 95e-12
+delay_crossbar_BLE_out_to_BLE_in = 75e-12
 
-T_setup = 2.448e-10
-T_clock_to_Q = 7.732e-11
+delay_FF_T_setup = 66e-12
+delay_FF_T_clk_Q = 124e-12
+
+delay_LUT_out_to_BLE_out = 25e-12
+delay_FF_out_to_BLE_out = 45e-12
+
+def delay_LUT(size):
+    if (size == 6):
+        return 261e-12
+    elif (size == 5):
+        return 235e-12
+    else:
+        assert(0);
+        
+    
 
 def C_wire_glb(tech):
     if (tech == 130):
-        return 190e-12
+        return 285e-12
     elif (tech == 45):
-        return 170e-12    
+        return 250e-12    
     elif (tech == 22):
-        return 145e-12
+        return 218e-12
     else:
         assert(0)
 
@@ -60,7 +77,7 @@ def C_wire_clk(tech):
 
 def xprint(s, newline=False):
     for i in range(tabs):
-        f.write('\t')
+        f.write('  ')
     f.write(str(s))
     
     if (newline):
@@ -142,7 +159,7 @@ def xLUT(LUT_size, num_LUT):
     xprop("out_port", "lut" + str(LUT_size) + ".out")
     xclose()
     for j in range(LUT_size):
-        xprint(delay_LUT, True)
+        xprint(delay_LUT(LUT_size), True)
     xend()  # delay_matrix
     
     xend()  # pb_type lut
@@ -183,13 +200,13 @@ def xCLB(k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, crossbar_str):
         xclose()    
         
         xbegin("delay_constant")
-        xprop("max", delay_CLB_I_to_ble)
+        xprop("max", delay_crossbar_CLB_in_to_BLE_in)
         xprop("in_port", "clb.I")
         xprop("out_port", ble_array + ".in")
         xcloseend()
         
         xbegin("delay_constant")
-        xprop("max", delay_ble_to_ble)
+        xprop("max", delay_crossbar_BLE_out_to_BLE_in)
         xprop("in_port", ble_array + ".out")
         xprop("out_port", ble_array + ".in")
         xcloseend()
@@ -205,7 +222,7 @@ def xCLB(k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, crossbar_str):
             
             
             incr = i_ble + 1;
-            #incr = 1
+            # incr = 1
             
             next_start = 0
                         
@@ -248,9 +265,9 @@ def xCLB(k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, crossbar_str):
                 for input in inputs:
                     xbegin("delay_constant")
                     if (input[:3] == "clb") :
-                        xprop("max", delay_CLB_I_to_ble)
+                        xprop("max", delay_crossbar_CLB_in_to_BLE_in)
                     else:
-                        xprop("max", delay_ble_to_ble)
+                        xprop("max", delay_crossbar_BLE_out_to_BLE_in)
                     xprop("in_port", input)
                     xprop("out_port", output)
                     xcloseend()
@@ -350,11 +367,29 @@ def xCLB(k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, crossbar_str):
     
     # Connections from Soft/FF to BLE output    
     for j in range(O_ble):
+        soft_logic_out = "soft_logic.out[" + str(j) + ":" + str(j) + "]"
+        FF_out = "ff[" + str(j / soft_per_ff) + ":" + str(j / soft_per_ff) + "].Q"
+        BLE_out = "ble.out[" + str(j) + ":" + str(j) + "]"
+        
         xbegin("mux")
         xprop("name", "mux" + str(i))
-        xprop("input", "soft_logic.out[" + str(j) + ":" + str(j) + "] ff[" + str(j / soft_per_ff) + ":" + str(j / soft_per_ff) + "].Q")
-        xprop("output", "ble.out[" + str(j) + ":" + str(j) + "]")
+        xprop("input", soft_logic_out + " " + FF_out)
+        xprop("output", BLE_out)
+        xclose()
+        
+        xbegin("delay_constant")
+        xprop("max", delay_LUT_out_to_BLE_out)
+        xprop("in_port", soft_logic_out)
+        xprop("out_port", BLE_out)
         xcloseend()
+        
+        xbegin("delay_constant")
+        xprop("max", delay_FF_out_to_BLE_out)
+        xprop("in_port", FF_out)
+        xprop("out_port", BLE_out)
+        xcloseend()
+        
+        xend()
         i = i + 1        
     
 
@@ -484,13 +519,13 @@ def xCLB(k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, crossbar_str):
     xport("clock", "clk", 1, c="clock")
     
     xbegin("T_setup")
-    xprop("value", T_setup)
+    xprop("value", delay_FF_T_setup)
     xprop("port", "ff.D")
     xprop("clock", "clk")
     xcloseend()
     
     xbegin("T_clock_to_Q")
-    xprop("max", T_clock_to_Q)
+    xprop("max", delay_FF_T_clk_Q)
     xprop("port", "ff.Q")
     xprop("clock", "clk")
     xcloseend()
@@ -542,7 +577,7 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, seg_length
     
     
     models = ["multiply", "single_port_ram", "dual_port_ram"]
-    cbs = ["io", "clb", "memory", "mult_36"]
+    cbs = ["io", "clb", "mult_36", "memory"]
     
     f = open(os.path.join(dir, filename), 'w')
     
@@ -617,9 +652,9 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, seg_length
     xbegin("switch")
     xprop("type", "mux")
     xprop("name", "0")
-    xprop("R", 0.0)
-    xprop("Cin", 0.0)
-    xprop("Cout", 0.0)
+    xprop("R", switch_R)
+    xprop("Cin", switch_Cin)
+    xprop("Cout", switch_Cout)
     xprop("Tdel", switch_T_del)
     xprop("mux_trans_size", switch_mux_trans_size)
     xprop("buf_size", switch_buf_size)
@@ -632,10 +667,10 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, seg_length
     xprop("freq", 1.0)
     xprop("length", seg_length)
     xprop("type", "unidir")
-    xprop("Rmetal", 0.0)
-    xprop("Cmetal", 0.0)
-    if (do_power):
-        xprop("Cmetal_per_m", C_wire_glb(tech_nm))
+    xprop("Rmetal", segment_Rmetal)
+    xprop("Cmetal", segment_Cmetal)
+    # if (do_power):
+    #    xprop("Cmetal_per_m", C_wire_glb(tech_nm))
     xclose()
     
     xbegin("mux")

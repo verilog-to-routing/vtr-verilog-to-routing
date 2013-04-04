@@ -291,11 +291,10 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 		t_pb_graph_node * pb_node) {
 
 	t_power_usage power_usage_bufs_wires;
-	t_power_usage power_usage_prim;
 	t_power_usage power_usage_local_muxes;
 	t_power_usage power_usage_children;
 	t_power_usage power_usage_pin_toggle;
-	t_power_usage power_usage_c_internal;
+	t_power_usage power_usage_sub;
 
 	int pb_type_idx;
 	int pb_idx;
@@ -327,6 +326,8 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 	recursive_children = power_method_is_recursive(
 			pb_node->pb_type->pb_type_power->estimation_method);
 
+	power_zero_usage(&power_usage_sub);
+
 	switch (pb_node->pb_type->pb_type_power->estimation_method) {
 	case POWER_METHOD_IGNORE:
 	case POWER_METHOD_SUM_OF_CHILDREN:
@@ -339,7 +340,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 		break;
 
 	case POWER_METHOD_C_INTERNAL:
-		power_zero_usage(&power_usage_c_internal);
+		power_zero_usage(&power_usage_sub);
 
 		/* Just take the average density of inputs pins and use
 		 * that with user-defined block capacitance and leakage */
@@ -358,24 +359,22 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 		if (num_pins != 0) {
 			dens_avg = dens_avg / num_pins;
 		}
-		power_usage_c_internal.dynamic += power_calc_node_switching(
+		power_usage_sub.dynamic += power_calc_node_switching(
 				pb_power->C_internal, dens_avg, g_solution_inf.T_crit);
 
 		/* Leakage is an absolute */
-		power_usage_c_internal.leakage +=
+		power_usage_sub.leakage +=
 				pb_power->absolute_power_per_instance.leakage;
 
-		power_add_usage(power_usage, &power_usage_c_internal);
-		power_component_add_usage(&power_usage_c_internal,
-				POWER_COMPONENT_PB_OTHER);
+		/* Add to power of this PB */
+		power_add_usage(power_usage, &power_usage_sub);
+
+		// Add to component type
+		power_component_add_usage(&power_usage_sub, POWER_COMPONENT_PB_OTHER);
 		break;
 
 	case POWER_METHOD_TOGGLE_PINS:
 		power_zero_usage(&power_usage_pin_toggle);
-
-		/* Static is supplied as an absolute */
-		power_usage_pin_toggle.leakage +=
-				pb_power->absolute_power_per_instance.leakage;
 
 		/* Add toggle power of each input pin */
 		for (port_idx = 0; port_idx < pb_node->num_input_ports; port_idx++) {
@@ -385,7 +384,6 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 				power_usage_local_pin_toggle(&pin_power, pb,
 						&pb_node->input_pins[port_idx][pin_idx]);
 				power_add_usage(&power_usage_pin_toggle, &pin_power);
-				power_component_add_usage(&pin_power, POWER_COMPONENT_PB_OTHER);
 			}
 		}
 
@@ -397,7 +395,6 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 				power_usage_local_pin_toggle(&pin_power, pb,
 						&pb_node->output_pins[port_idx][pin_idx]);
 				power_add_usage(&power_usage_pin_toggle, &pin_power);
-				power_component_add_usage(&pin_power, POWER_COMPONENT_PB_OTHER);
 			}
 		}
 
@@ -409,10 +406,17 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 				power_usage_local_pin_toggle(&pin_power, pb,
 						&pb_node->clock_pins[port_idx][pin_idx]);
 				power_add_usage(&power_usage_pin_toggle, &pin_power);
-
 			}
 		}
+
+		/* Static is supplied as an absolute */
+		power_usage_pin_toggle.leakage +=
+				pb_power->absolute_power_per_instance.leakage;
+
+		// Add to this PB power
 		power_add_usage(power_usage, &power_usage_pin_toggle);
+
+		// Add to component type power
 		power_component_add_usage(&power_usage_pin_toggle,
 				POWER_COMPONENT_PB_OTHER);
 		break;
@@ -446,10 +450,15 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 		/* This is a leaf node, which is a primitive (lut, ff, etc) */
 		if (estimate_primitives) {
 			assert(pb_node->pb_type->blif_model);
-			power_usage_primitive(&power_usage_prim, pb, pb_node);
-			power_component_add_usage(&power_usage_prim,
+			power_usage_primitive(&power_usage_sub, pb, pb_node);
+
+			// Add to power of this PB
+			power_add_usage(power_usage, &power_usage_sub);
+
+			// Add to power of component type
+			power_component_add_usage(&power_usage_sub,
 					POWER_COMPONENT_PB_PRIMITIVES);
-			power_add_usage(power_usage, &power_usage_prim);
+
 		}
 
 	} else {
@@ -473,21 +482,31 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 
 		/* Interconnect Structures (multiplexers) */
 		if (estimate_multiplexers) {
-
+			power_zero_usage(&power_usage_local_muxes);
 			for (interc_idx = 0;
 					interc_idx < pb_type->modes[pb_mode].num_interconnect;
 					interc_idx++) {
-
-				power_usage_local_interc_mux(&power_usage_local_muxes, pb,
+				power_usage_local_interc_mux(&power_usage_sub, pb,
 						&pb_node->interconnect_pins[pb_mode][interc_idx]);
-				power_component_add_usage(&power_usage_local_muxes,
-						POWER_COMPONENT_PB_INTERC_MUXES);
-				power_add_usage(power_usage, &power_usage_local_muxes);
+				power_add_usage(&power_usage_local_muxes, &power_usage_sub);
+
 			}
+			// Add to power of this PB
+			power_add_usage(power_usage, &power_usage_local_muxes);
+
+			// Add to component type power
+			power_component_add_usage(&power_usage_local_muxes,
+					POWER_COMPONENT_PB_INTERC_MUXES);
+
+			// Add to power of this mode
+			power_add_usage(
+					&pb_node->pb_type->modes[pb_mode].mode_power->power_usage,
+					&power_usage_local_muxes);
 		}
 
 		/* Add power for children */
 		if (recursive_children) {
+			power_zero_usage(&power_usage_children);
 			for (pb_type_idx = 0;
 					pb_type_idx
 							< pb_node->pb_type->modes[pb_mode].num_pb_type_children;
@@ -506,17 +525,18 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 					child_pb_graph_node =
 							&pb_node->child_pb_graph_nodes[pb_mode][pb_type_idx][pb_idx];
 
-					power_usage_pb(&power_usage_children, child_pb,
+					power_usage_pb(&power_usage_sub, child_pb,
 							child_pb_graph_node);
-					power_add_usage(power_usage, &power_usage_children);
+					power_add_usage(&power_usage_children, &power_usage_sub);
 				}
 			}
+			// Add to power of this PB
+			power_add_usage(power_usage, &power_usage_children);
+
+			// Add to power of this mode
 			power_add_usage(
 					&pb_node->pb_type->modes[pb_mode].mode_power->power_usage,
 					&power_usage_children);
-			power_add_usage(
-					&pb_node->pb_type->modes[pb_mode].mode_power->power_usage,
-					&power_usage_local_muxes);
 		}
 	}
 
