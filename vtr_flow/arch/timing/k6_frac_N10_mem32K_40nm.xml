@@ -290,11 +290,11 @@
                       398e-12
                       -->
                 <delay_matrix type="max" in_port="lut5.in" out_port="lut5.out">
-								  235e-12
-								  235e-12
-								  235e-12
-								  235e-12
-								  235e-12
+                  235e-12
+                  235e-12
+                  235e-12
+                  235e-12
+                  235e-12
                 </delay_matrix>
               </pb_type>
 
