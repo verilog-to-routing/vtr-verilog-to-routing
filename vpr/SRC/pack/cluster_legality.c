@@ -818,8 +818,13 @@ static void breadth_first_expand_trace_segment_cluster(
 			inode = tptr->index;
 			node_to_heap(inode, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
 
-			if (rr_node[inode].type == IPIN)
-				last_ipin_node = inode;
+			if (rr_node[inode].type == INTRA_CLUSTER_EDGE)
+			{
+				if(rr_node[inode].pb_graph_pin != NULL && rr_node[inode].pb_graph_pin->num_output_edges == 0)
+				{
+					last_ipin_node = inode;
+				}
+			}
 
 			tptr = next_ptr;
 			next_ptr = tptr->next;
@@ -830,7 +835,7 @@ static void breadth_first_expand_trace_segment_cluster(
 		 * hook up more IPINs to this SINK (which is what we want).  If IPIN        *
 		 * doglegs are allowed in the graph, we won't be able to use this IPIN to   *
 		 * do a dogleg, since it won't be re-expanded.  Shouldn't be a big problem. */
-
+		assert(last_ipin_node != OPEN);
 		rr_node_route_inf[last_ipin_node].path_cost = -HUGE_POSITIVE_FLOAT;
 
 		/* Also need to mark the SINK as having high cost, so another connection can *
