@@ -12,8 +12,13 @@ mkdir vtr_release/ODIN_II
 mkdir vtr_release/ODIN_II/OBJ
 mkdir vtr_release/abc_with_bb_support
 mkdir vtr_release/libarchfpga
+mkdir vtr_release/pcre
+mkdir vtr_release/printhandler
 mkdir vtr_release/quick_test
 mkdir vtr_release/vpr
+
+echo "Clean builds"
+make clean
 
 echo "Build ODIN II"
 cp ODIN_II/*.txt vtr_release/ODIN_II
@@ -27,6 +32,14 @@ cp -r ODIN_II/USEFUL_TOOLS vtr_release/ODIN_II
 
 echo "Build ABC"
 cp -r abc_with_bb_support/* vtr_release/abc_with_bb_support
+
+echo "Build printhandler"
+cp -r printhandler vtr_release/printhandler
+rm -rf vtr_release/printhandler/Debug
+
+echo "Build pcre"
+cp -r pcre vtr_release/pcre
+rm -rf vtr_release/pcre/Debug
 
 echo "Build libarchfpga"
 cp -r libarchfpga/arch vtr_release/libarchfpga
