@@ -1,0 +1,1972 @@
+# Benchmark "memset" written by ABC on Tue Apr  9 16:34:34 2013
+.model memset
+.inputs top^clk top^reset top^start top^m~0 top^m~1 top^m~2 top^m~3 top^m~4 \
+ top^m~5 top^m~6 top^m~7 top^m~8 top^m~9 top^m~10 top^m~11 top^m~12 \
+ top^m~13 top^m~14 top^m~15 top^m~16 top^m~17 top^m~18 top^m~19 top^m~20 \
+ top^m~21 top^m~22 top^m~23 top^m~24 top^m~25 top^m~26 top^m~27 top^m~28 \
+ top^m~29 top^m~30 top^m~31 top^c~0 top^c~1 top^c~2 top^c~3 top^c~4 top^c~5 \
+ top^c~6 top^c~7 top^c~8 top^c~9 top^c~10 top^c~11 top^c~12 top^c~13 \
+ top^c~14 top^c~15 top^c~16 top^c~17 top^c~18 top^c~19 top^c~20 top^c~21 \
+ top^c~22 top^c~23 top^c~24 top^c~25 top^c~26 top^c~27 top^c~28 top^c~29 \
+ top^c~30 top^c~31 top^n~0 top^n~1 top^n~2 top^n~3 top^n~4 top^n~5 top^n~6 \
+ top^n~7 top^n~8 top^n~9 top^n~10 top^n~11 top^n~12 top^n~13 top^n~14 \
+ top^n~15 top^n~16 top^n~17 top^n~18 top^n~19 top^n~20 top^n~21 top^n~22 \
+ top^n~23 top^n~24 top^n~25 top^n~26 top^n~27 top^n~28 top^n~29 top^n~30 \
+ top^n~31
+.outputs top^return_val~0 top^return_val~1 top^return_val~2 \
+ top^return_val~3 top^return_val~4 top^return_val~5 top^return_val~6 \
+ top^return_val~7 top^return_val~8 top^return_val~9 top^return_val~10 \
+ top^return_val~11 top^return_val~12 top^return_val~13 top^return_val~14 \
+ top^return_val~15 top^return_val~16 top^return_val~17 top^return_val~18 \
+ top^return_val~19 top^return_val~20 top^return_val~21 top^return_val~22 \
+ top^return_val~23 top^return_val~24 top^return_val~25 top^return_val~26 \
+ top^return_val~27 top^return_val~28 top^return_val~29 top^return_val~30 \
+ top^return_val~31 top^finish top^memory_controller_address~0 \
+ top^memory_controller_address~1 top^memory_controller_address~2 \
+ top^memory_controller_address~3 top^memory_controller_address~4 \
+ top^memory_controller_address~5 top^memory_controller_address~6 \
+ top^memory_controller_address~7 top^memory_controller_address~8 \
+ top^memory_controller_address~9 top^memory_controller_address~10 \
+ top^memory_controller_address~11 top^memory_controller_address~12 \
+ top^memory_controller_address~13 top^memory_controller_address~14 \
+ top^memory_controller_address~15 top^memory_controller_address~16 \
+ top^memory_controller_address~17 top^memory_controller_address~18 \
+ top^memory_controller_address~19 top^memory_controller_address~20 \
+ top^memory_controller_address~21 top^memory_controller_address~22 \
+ top^memory_controller_address~23 top^memory_controller_address~24 \
+ top^memory_controller_address~25 top^memory_controller_address~26 \
+ top^memory_controller_address~27 top^memory_controller_address~28 \
+ top^memory_controller_address~29 top^memory_controller_address~30 \
+ top^memory_controller_address~31 top^memory_controller_write_enable \
+ top^memory_controller_in~0 top^memory_controller_in~1 \
+ top^memory_controller_in~2 top^memory_controller_in~3 \
+ top^memory_controller_in~4 top^memory_controller_in~5 \
+ top^memory_controller_in~6 top^memory_controller_in~7 \
+ top^memory_controller_in~8 top^memory_controller_in~9 \
+ top^memory_controller_in~10 top^memory_controller_in~11 \
+ top^memory_controller_in~12 top^memory_controller_in~13 \
+ top^memory_controller_in~14 top^memory_controller_in~15 \
+ top^memory_controller_in~16 top^memory_controller_in~17 \
+ top^memory_controller_in~18 top^memory_controller_in~19 \
+ top^memory_controller_in~20 top^memory_controller_in~21 \
+ top^memory_controller_in~22 top^memory_controller_in~23 \
+ top^memory_controller_in~24 top^memory_controller_in~25 \
+ top^memory_controller_in~26 top^memory_controller_in~27 \
+ top^memory_controller_in~28 top^memory_controller_in~29 \
+ top^memory_controller_in~30 top^memory_controller_in~31 \
+ top^memory_controller_out~0 top^memory_controller_out~1 \
+ top^memory_controller_out~2 top^memory_controller_out~3 \
+ top^memory_controller_out~4 top^memory_controller_out~5 \
+ top^memory_controller_out~6 top^memory_controller_out~7 \
+ top^memory_controller_out~8 top^memory_controller_out~9 \
+ top^memory_controller_out~10 top^memory_controller_out~11 \
+ top^memory_controller_out~12 top^memory_controller_out~13 \
+ top^memory_controller_out~14 top^memory_controller_out~15 \
+ top^memory_controller_out~16 top^memory_controller_out~17 \
+ top^memory_controller_out~18 top^memory_controller_out~19 \
+ top^memory_controller_out~20 top^memory_controller_out~21 \
+ top^memory_controller_out~22 top^memory_controller_out~23 \
+ top^memory_controller_out~24 top^memory_controller_out~25 \
+ top^memory_controller_out~26 top^memory_controller_out~27 \
+ top^memory_controller_out~28 top^memory_controller_out~29 \
+ top^memory_controller_out~30 top^memory_controller_out~31
+
+.latch       n337 top^FF_NODE~91 re    top^clk  0
+.latch       n342 top^FF_NODE~92 re    top^clk  0
+.latch       n347 top^FF_NODE~93 re    top^clk  0
+.latch       n352 top^FF_NODE~94 re    top^clk  0
+.latch       n357 top^FF_NODE~95 re    top^clk  0
+.latch       n362 top^FF_NODE~129 re    top^clk  0
+.latch       n367 top^FF_NODE~257 re    top^clk  0
+.latch       n372 top^FF_NODE~225 re    top^clk  0
+.latch       n377 top^FF_NODE~193 re    top^clk  0
+.latch       n382 top.memory_controller+memtroll^FF_NODE~7 re    top^clk  0
+.latch       n387 top^FF_NODE~97 re    top^clk  0
+.latch       n392 top^FF_NODE~130 re    top^clk  0
+.latch       n397 top^FF_NODE~258 re    top^clk  0
+.latch       n402 top^FF_NODE~226 re    top^clk  0
+.latch       n407 top^FF_NODE~194 re    top^clk  0
+.latch       n412 top^FF_NODE~98 re    top^clk  0
+.latch       n417 top^FF_NODE~131 re    top^clk  0
+.latch       n422 top^FF_NODE~259 re    top^clk  0
+.latch       n427 top^FF_NODE~227 re    top^clk  0
+.latch       n432 top^FF_NODE~195 re    top^clk  0
+.latch       n437 top^FF_NODE~99 re    top^clk  0
+.latch       n442 top^FF_NODE~132 re    top^clk  0
+.latch       n447 top^FF_NODE~260 re    top^clk  0
+.latch       n452 top^FF_NODE~228 re    top^clk  0
+.latch       n457 top^FF_NODE~196 re    top^clk  0
+.latch       n462 top^FF_NODE~100 re    top^clk  0
+.latch       n467 top^FF_NODE~133 re    top^clk  0
+.latch       n472 top^FF_NODE~261 re    top^clk  0
+.latch       n477 top^FF_NODE~229 re    top^clk  0
+.latch       n482 top^FF_NODE~197 re    top^clk  0
+.latch       n487 top^FF_NODE~101 re    top^clk  0
+.latch       n492 top^FF_NODE~134 re    top^clk  0
+.latch       n497 top^FF_NODE~262 re    top^clk  0
+.latch       n502 top^FF_NODE~230 re    top^clk  0
+.latch       n507 top^FF_NODE~198 re    top^clk  0
+.latch       n512 top^FF_NODE~102 re    top^clk  0
+.latch       n517 top^FF_NODE~135 re    top^clk  0
+.latch       n522 top^FF_NODE~263 re    top^clk  0
+.latch       n527 top^FF_NODE~231 re    top^clk  0
+.latch       n532 top^FF_NODE~199 re    top^clk  0
+.latch       n537 top^FF_NODE~103 re    top^clk  0
+.latch       n542 top^FF_NODE~136 re    top^clk  0
+.latch       n547 top^FF_NODE~264 re    top^clk  0
+.latch       n552 top^FF_NODE~232 re    top^clk  0
+.latch       n557 top^FF_NODE~200 re    top^clk  0
+.latch       n562 top^FF_NODE~104 re    top^clk  0
+.latch       n567 top^FF_NODE~137 re    top^clk  0
+.latch       n572 top^FF_NODE~265 re    top^clk  0
+.latch       n577 top^FF_NODE~233 re    top^clk  0
+.latch       n582 top^FF_NODE~201 re    top^clk  0
+.latch       n587 top^FF_NODE~105 re    top^clk  0
+.latch       n592 top^FF_NODE~138 re    top^clk  0
+.latch       n597 top^FF_NODE~266 re    top^clk  0
+.latch       n602 top^FF_NODE~234 re    top^clk  0
+.latch       n607 top^FF_NODE~202 re    top^clk  0
+.latch       n612 top^FF_NODE~106 re    top^clk  0
+.latch       n617 top^FF_NODE~139 re    top^clk  0
+.latch       n622 top^FF_NODE~267 re    top^clk  0
+.latch       n627 top^FF_NODE~235 re    top^clk  0
+.latch       n632 top^FF_NODE~203 re    top^clk  0
+.latch       n637 top^FF_NODE~107 re    top^clk  0
+.latch       n642 top^FF_NODE~140 re    top^clk  0
+.latch       n647 top^FF_NODE~268 re    top^clk  0
+.latch       n652 top^FF_NODE~236 re    top^clk  0
+.latch       n657 top^FF_NODE~204 re    top^clk  0
+.latch       n662 top^FF_NODE~108 re    top^clk  0
+.latch       n667 top^FF_NODE~141 re    top^clk  0
+.latch       n672 top^FF_NODE~269 re    top^clk  0
+.latch       n677 top^FF_NODE~237 re    top^clk  0
+.latch       n682 top^FF_NODE~205 re    top^clk  0
+.latch       n687 top^FF_NODE~109 re    top^clk  0
+.latch       n692 top^FF_NODE~142 re    top^clk  0
+.latch       n697 top^FF_NODE~270 re    top^clk  0
+.latch       n702 top^FF_NODE~238 re    top^clk  0
+.latch       n707 top^FF_NODE~206 re    top^clk  0
+.latch       n712 top^FF_NODE~110 re    top^clk  0
+.latch       n717 top^FF_NODE~143 re    top^clk  0
+.latch       n722 top^FF_NODE~271 re    top^clk  0
+.latch       n727 top^FF_NODE~239 re    top^clk  0
+.latch       n732 top^FF_NODE~207 re    top^clk  0
+.latch       n737 top^FF_NODE~111 re    top^clk  0
+.latch       n742 top^FF_NODE~144 re    top^clk  0
+.latch       n747 top^FF_NODE~272 re    top^clk  0
+.latch       n752 top^FF_NODE~240 re    top^clk  0
+.latch       n757 top^FF_NODE~208 re    top^clk  0
+.latch       n762 top^FF_NODE~112 re    top^clk  0
+.latch       n767 top^FF_NODE~145 re    top^clk  0
+.latch       n772 top^FF_NODE~273 re    top^clk  0
+.latch       n777 top^FF_NODE~241 re    top^clk  0
+.latch       n782 top^FF_NODE~209 re    top^clk  0
+.latch       n787 top^FF_NODE~113 re    top^clk  0
+.latch       n792 top^FF_NODE~146 re    top^clk  0
+.latch       n797 top^FF_NODE~274 re    top^clk  0
+.latch       n802 top^FF_NODE~242 re    top^clk  0
+.latch       n807 top^FF_NODE~210 re    top^clk  0
+.latch       n812 top^FF_NODE~114 re    top^clk  0
+.latch       n817 top^FF_NODE~147 re    top^clk  0
+.latch       n822 top^FF_NODE~275 re    top^clk  0
+.latch       n827 top^FF_NODE~243 re    top^clk  0
+.latch       n832 top^FF_NODE~211 re    top^clk  0
+.latch       n837 top^FF_NODE~115 re    top^clk  0
+.latch       n842 top^FF_NODE~148 re    top^clk  0
+.latch       n847 top^FF_NODE~276 re    top^clk  0
+.latch       n852 top^FF_NODE~244 re    top^clk  0
+.latch       n857 top^FF_NODE~212 re    top^clk  0
+.latch       n862 top^FF_NODE~116 re    top^clk  0
+.latch       n867 top^FF_NODE~149 re    top^clk  0
+.latch       n872 top^FF_NODE~277 re    top^clk  0
+.latch       n877 top^FF_NODE~245 re    top^clk  0
+.latch       n882 top^FF_NODE~213 re    top^clk  0
+.latch       n887 top^FF_NODE~117 re    top^clk  0
+.latch       n892 top^FF_NODE~150 re    top^clk  0
+.latch       n897 top^FF_NODE~278 re    top^clk  0
+.latch       n902 top^FF_NODE~246 re    top^clk  0
+.latch       n907 top^FF_NODE~214 re    top^clk  0
+.latch       n912 top^FF_NODE~118 re    top^clk  0
+.latch       n917 top^FF_NODE~151 re    top^clk  0
+.latch       n922 top^FF_NODE~279 re    top^clk  0
+.latch       n927 top^FF_NODE~247 re    top^clk  0
+.latch       n932 top^FF_NODE~215 re    top^clk  0
+.latch       n937 top^FF_NODE~119 re    top^clk  0
+.latch       n942 top^FF_NODE~152 re    top^clk  0
+.latch       n947 top^FF_NODE~280 re    top^clk  0
+.latch       n952 top^FF_NODE~248 re    top^clk  0
+.latch       n957 top^FF_NODE~216 re    top^clk  0
+.latch       n962 top^FF_NODE~120 re    top^clk  0
+.latch       n967 top^FF_NODE~153 re    top^clk  0
+.latch       n972 top^FF_NODE~281 re    top^clk  0
+.latch       n977 top^FF_NODE~249 re    top^clk  0
+.latch       n982 top^FF_NODE~217 re    top^clk  0
+.latch       n987 top^FF_NODE~121 re    top^clk  0
+.latch       n992 top^FF_NODE~154 re    top^clk  0
+.latch       n997 top^FF_NODE~282 re    top^clk  0
+.latch      n1002 top^FF_NODE~250 re    top^clk  0
+.latch      n1007 top^FF_NODE~218 re    top^clk  0
+.latch      n1012 top^FF_NODE~122 re    top^clk  0
+.latch      n1017 top^FF_NODE~155 re    top^clk  0
+.latch      n1022 top^FF_NODE~283 re    top^clk  0
+.latch      n1027 top^FF_NODE~251 re    top^clk  0
+.latch      n1032 top^FF_NODE~219 re    top^clk  0
+.latch      n1037 top^FF_NODE~123 re    top^clk  0
+.latch      n1042 top^FF_NODE~156 re    top^clk  0
+.latch      n1047 top^FF_NODE~284 re    top^clk  0
+.latch      n1052 top^FF_NODE~252 re    top^clk  0
+.latch      n1057 top^FF_NODE~220 re    top^clk  0
+.latch      n1062 top^FF_NODE~124 re    top^clk  0
+.latch      n1067 top^FF_NODE~157 re    top^clk  0
+.latch      n1072 top^FF_NODE~285 re    top^clk  0
+.latch      n1077 top^FF_NODE~253 re    top^clk  0
+.latch      n1082 top^FF_NODE~221 re    top^clk  0
+.latch      n1087 top^FF_NODE~125 re    top^clk  0
+.latch      n1092 top^FF_NODE~158 re    top^clk  0
+.latch      n1097 top^FF_NODE~286 re    top^clk  0
+.latch      n1102 top^FF_NODE~254 re    top^clk  0
+.latch      n1107 top^FF_NODE~222 re    top^clk  0
+.latch      n1112 top^FF_NODE~126 re    top^clk  0
+.latch      n1117 top^FF_NODE~159 re    top^clk  0
+.latch      n1122 top^FF_NODE~287 re    top^clk  0
+.latch      n1127 top^FF_NODE~255 re    top^clk  0
+.latch      n1132 top^FF_NODE~223 re    top^clk  0
+.latch      n1137 top^FF_NODE~127 re    top^clk  0
+.latch      n1142 top^FF_NODE~160 re    top^clk  0
+.latch      n1147 top^FF_NODE~288 re    top^clk  0
+.latch      n1152 top^FF_NODE~256 re    top^clk  0
+.latch      n1157 top^FF_NODE~224 re    top^clk  0
+.latch      n1162 top^FF_NODE~128 re    top^clk  0
+.latch      n1167 top^FF_NODE~96 re    top^clk  0
+.latch      n1172 top^FF_NODE~161 re    top^clk  0
+.latch      n1177 top^FF_NODE~162 re    top^clk  0
+.latch      n1182 top^FF_NODE~163 re    top^clk  0
+.latch      n1187 top^FF_NODE~164 re    top^clk  0
+.latch      n1192 top^FF_NODE~165 re    top^clk  0
+.latch      n1197 top^FF_NODE~166 re    top^clk  0
+.latch      n1202 top^FF_NODE~167 re    top^clk  0
+.latch      n1207 top^FF_NODE~168 re    top^clk  0
+.latch      n1212 top^FF_NODE~169 re    top^clk  0
+.latch      n1217 top^FF_NODE~170 re    top^clk  0
+.latch      n1222 top^FF_NODE~171 re    top^clk  0
+.latch      n1227 top^FF_NODE~172 re    top^clk  0
+.latch      n1232 top^FF_NODE~173 re    top^clk  0
+.latch      n1237 top^FF_NODE~174 re    top^clk  0
+.latch      n1242 top^FF_NODE~175 re    top^clk  0
+.latch      n1247 top^FF_NODE~176 re    top^clk  0
+.latch      n1252 top^FF_NODE~177 re    top^clk  0
+.latch      n1257 top^FF_NODE~178 re    top^clk  0
+.latch      n1262 top^FF_NODE~179 re    top^clk  0
+.latch      n1267 top^FF_NODE~180 re    top^clk  0
+.latch      n1272 top^FF_NODE~181 re    top^clk  0
+.latch      n1277 top^FF_NODE~182 re    top^clk  0
+.latch      n1282 top^FF_NODE~183 re    top^clk  0
+.latch      n1287 top^FF_NODE~184 re    top^clk  0
+.latch      n1292 top^FF_NODE~185 re    top^clk  0
+.latch      n1297 top^FF_NODE~186 re    top^clk  0
+.latch      n1302 top^FF_NODE~187 re    top^clk  0
+.latch      n1307 top^FF_NODE~188 re    top^clk  0
+.latch      n1312 top^FF_NODE~189 re    top^clk  0
+.latch      n1317 top^FF_NODE~190 re    top^clk  0
+.latch      n1322 top^FF_NODE~191 re    top^clk  0
+.latch      n1327 top^FF_NODE~192 re    top^clk  0
+.latch      n1332 top^FF_NODE~289 re    top^clk  0
+.latch      n1337 top^FF_NODE~290 re    top^clk  0
+.latch      n1342 top^FF_NODE~291 re    top^clk  0
+.latch      n1347 top^FF_NODE~292 re    top^clk  0
+.latch      n1352 top^FF_NODE~293 re    top^clk  0
+.latch      n1357 top^FF_NODE~294 re    top^clk  0
+.latch      n1362 top^FF_NODE~295 re    top^clk  0
+.latch      n1367 top^FF_NODE~296 re    top^clk  0
+.latch      n1372 top^FF_NODE~297 re    top^clk  0
+.latch      n1377 top^FF_NODE~298 re    top^clk  0
+.latch      n1382 top^FF_NODE~299 re    top^clk  0
+.latch      n1387 top^FF_NODE~300 re    top^clk  0
+.latch      n1392 top^FF_NODE~301 re    top^clk  0
+.latch      n1397 top^FF_NODE~302 re    top^clk  0
+.latch      n1402 top^FF_NODE~303 re    top^clk  0
+.latch      n1407 top^FF_NODE~304 re    top^clk  0
+.latch      n1412 top^FF_NODE~305 re    top^clk  0
+.latch      n1417 top^FF_NODE~306 re    top^clk  0
+.latch      n1422 top^FF_NODE~307 re    top^clk  0
+.latch      n1427 top^FF_NODE~308 re    top^clk  0
+.latch      n1432 top^FF_NODE~309 re    top^clk  0
+.latch      n1437 top^FF_NODE~310 re    top^clk  0
+.latch      n1442 top^FF_NODE~311 re    top^clk  0
+.latch      n1447 top^FF_NODE~312 re    top^clk  0
+.latch      n1452 top^FF_NODE~313 re    top^clk  0
+.latch      n1457 top^FF_NODE~314 re    top^clk  0
+.latch      n1462 top^FF_NODE~315 re    top^clk  0
+.latch      n1467 top^FF_NODE~316 re    top^clk  0
+.latch      n1472 top^FF_NODE~317 re    top^clk  0
+.latch      n1477 top^FF_NODE~318 re    top^clk  0
+.latch      n1482 top^FF_NODE~319 re    top^clk  0
+.latch      n1487 top^FF_NODE~320 re    top^clk  0
+.latch      n1652 top^FF_NODE~353 re    top^clk  0
+.latch      n1657 top^FF_NODE~354 re    top^clk  0
+
+
+.subckt single_port_ram clk=top^clk data=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~553 \
+ addr[0]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~541 addr[1]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~542 \
+ addr[2]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~543 addr[3]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~544 \
+ addr[4]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~545 addr[5]=unconn \
+ addr[6]=unconn addr[7]=unconn addr[8]=unconn addr[9]=unconn addr[10]=unconn \
+ addr[11]=unconn addr[12]=unconn addr[13]=unconn addr[14]=unconn we=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~554 \
+ out=top.memory_controller+memtroll.single_port_ram+str^out~7
+.subckt single_port_ram clk=top^clk data=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~546 \
+ addr[0]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~541 addr[1]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~542 \
+ addr[2]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~543 addr[3]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~544 \
+ addr[4]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~545 addr[5]=unconn \
+ addr[6]=unconn addr[7]=unconn addr[8]=unconn addr[9]=unconn addr[10]=unconn \
+ addr[11]=unconn addr[12]=unconn addr[13]=unconn addr[14]=unconn we=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~554 \
+ out=top.memory_controller+memtroll.single_port_ram+str^out~0
+.subckt single_port_ram clk=top^clk data=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~547 \
+ addr[0]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~541 addr[1]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~542 \
+ addr[2]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~543 addr[3]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~544 \
+ addr[4]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~545 addr[5]=unconn \
+ addr[6]=unconn addr[7]=unconn addr[8]=unconn addr[9]=unconn addr[10]=unconn \
+ addr[11]=unconn addr[12]=unconn addr[13]=unconn addr[14]=unconn we=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~554 \
+ out=top.memory_controller+memtroll.single_port_ram+str^out~1
+.subckt single_port_ram clk=top^clk data=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~548 \
+ addr[0]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~541 addr[1]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~542 \
+ addr[2]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~543 addr[3]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~544 \
+ addr[4]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~545 addr[5]=unconn \
+ addr[6]=unconn addr[7]=unconn addr[8]=unconn addr[9]=unconn addr[10]=unconn \
+ addr[11]=unconn addr[12]=unconn addr[13]=unconn addr[14]=unconn we=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~554 \
+ out=top.memory_controller+memtroll.single_port_ram+str^out~2
+.subckt single_port_ram clk=top^clk data=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~549 \
+ addr[0]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~541 addr[1]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~542 \
+ addr[2]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~543 addr[3]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~544 \
+ addr[4]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~545 addr[5]=unconn \
+ addr[6]=unconn addr[7]=unconn addr[8]=unconn addr[9]=unconn addr[10]=unconn \
+ addr[11]=unconn addr[12]=unconn addr[13]=unconn addr[14]=unconn we=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~554 \
+ out=top.memory_controller+memtroll.single_port_ram+str^out~3
+.subckt single_port_ram clk=top^clk data=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~550 \
+ addr[0]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~541 addr[1]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~542 \
+ addr[2]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~543 addr[3]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~544 \
+ addr[4]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~545 addr[5]=unconn \
+ addr[6]=unconn addr[7]=unconn addr[8]=unconn addr[9]=unconn addr[10]=unconn \
+ addr[11]=unconn addr[12]=unconn addr[13]=unconn addr[14]=unconn we=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~554 \
+ out=top.memory_controller+memtroll.single_port_ram+str^out~4
+.subckt single_port_ram clk=top^clk data=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~551 \
+ addr[0]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~541 addr[1]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~542 \
+ addr[2]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~543 addr[3]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~544 \
+ addr[4]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~545 addr[5]=unconn \
+ addr[6]=unconn addr[7]=unconn addr[8]=unconn addr[9]=unconn addr[10]=unconn \
+ addr[11]=unconn addr[12]=unconn addr[13]=unconn addr[14]=unconn we=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~554 \
+ out=top.memory_controller+memtroll.single_port_ram+str^out~5
+.subckt single_port_ram clk=top^clk data=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~552 \
+ addr[0]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~541 addr[1]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~542 \
+ addr[2]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~543 addr[3]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~544 \
+ addr[4]=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~545 addr[5]=unconn \
+ addr[6]=unconn addr[7]=unconn addr[8]=unconn addr[9]=unconn addr[10]=unconn \
+ addr[11]=unconn addr[12]=unconn addr[13]=unconn addr[14]=unconn we=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~554 \
+ out=top.memory_controller+memtroll.single_port_ram+str^out~6
+
+.names top^FF_NODE~193 top^memory_controller_write_enable \
+ top^memory_controller_address~0
+11 1
+.names top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 top^FF_NODE~94 \
+ top^memory_controller_write_enable
+1011 1
+.names top^FF_NODE~194 top^memory_controller_write_enable \
+ top^memory_controller_address~1
+11 1
+.names top^FF_NODE~205 top^memory_controller_write_enable \
+ top^memory_controller_address~2
+11 1
+.names top^FF_NODE~216 top^memory_controller_write_enable \
+ top^memory_controller_address~3
+11 1
+.names top^FF_NODE~219 top^memory_controller_write_enable \
+ top^memory_controller_address~4
+11 1
+.names top^FF_NODE~220 top^memory_controller_write_enable \
+ top^memory_controller_address~5
+11 1
+.names top^FF_NODE~221 top^memory_controller_write_enable \
+ top^memory_controller_address~6
+11 1
+.names top^FF_NODE~222 top^memory_controller_write_enable \
+ top^memory_controller_address~7
+11 1
+.names top^FF_NODE~223 top^memory_controller_write_enable \
+ top^memory_controller_address~8
+11 1
+.names top^FF_NODE~224 top^memory_controller_write_enable \
+ top^memory_controller_address~9
+11 1
+.names top^FF_NODE~195 top^memory_controller_write_enable \
+ top^memory_controller_address~10
+11 1
+.names top^FF_NODE~196 top^memory_controller_write_enable \
+ top^memory_controller_address~11
+11 1
+.names top^FF_NODE~197 top^memory_controller_write_enable \
+ top^memory_controller_address~12
+11 1
+.names top^FF_NODE~198 top^memory_controller_write_enable \
+ top^memory_controller_address~13
+11 1
+.names top^FF_NODE~199 top^memory_controller_write_enable \
+ top^memory_controller_address~14
+11 1
+.names top^FF_NODE~200 top^memory_controller_write_enable \
+ top^memory_controller_address~15
+11 1
+.names top^FF_NODE~201 top^memory_controller_write_enable \
+ top^memory_controller_address~16
+11 1
+.names top^FF_NODE~202 top^memory_controller_write_enable \
+ top^memory_controller_address~17
+11 1
+.names top^FF_NODE~203 top^memory_controller_write_enable \
+ top^memory_controller_address~18
+11 1
+.names top^FF_NODE~204 top^memory_controller_write_enable \
+ top^memory_controller_address~19
+11 1
+.names top^FF_NODE~206 top^memory_controller_write_enable \
+ top^memory_controller_address~20
+11 1
+.names top^FF_NODE~207 top^memory_controller_write_enable \
+ top^memory_controller_address~21
+11 1
+.names top^FF_NODE~208 top^memory_controller_write_enable \
+ top^memory_controller_address~22
+11 1
+.names top^FF_NODE~209 top^memory_controller_write_enable \
+ top^memory_controller_address~23
+11 1
+.names top^FF_NODE~210 top^memory_controller_write_enable \
+ top^memory_controller_address~24
+11 1
+.names top^FF_NODE~211 top^memory_controller_write_enable \
+ top^memory_controller_address~25
+11 1
+.names top^FF_NODE~212 top^memory_controller_write_enable \
+ top^memory_controller_address~26
+11 1
+.names top^FF_NODE~213 top^memory_controller_write_enable \
+ top^memory_controller_address~27
+11 1
+.names top^FF_NODE~214 top^memory_controller_write_enable \
+ top^memory_controller_address~28
+11 1
+.names top^FF_NODE~215 top^memory_controller_write_enable \
+ top^memory_controller_address~29
+11 1
+.names top^FF_NODE~217 top^memory_controller_write_enable \
+ top^memory_controller_address~30
+11 1
+.names top^FF_NODE~218 top^memory_controller_write_enable \
+ top^memory_controller_address~31
+11 1
+.names top^c~0 top^memory_controller_write_enable \
+ top^memory_controller_in~0
+11 1
+.names top^c~1 top^memory_controller_write_enable \
+ top^memory_controller_in~1
+11 1
+.names top^c~2 top^memory_controller_write_enable \
+ top^memory_controller_in~2
+11 1
+.names top^c~3 top^memory_controller_write_enable \
+ top^memory_controller_in~3
+11 1
+.names top^c~4 top^memory_controller_write_enable \
+ top^memory_controller_in~4
+11 1
+.names top^c~5 top^memory_controller_write_enable \
+ top^memory_controller_in~5
+11 1
+.names top^c~6 top^memory_controller_write_enable \
+ top^memory_controller_in~6
+11 1
+.names top^c~7 top^memory_controller_write_enable \
+ top^memory_controller_in~7
+11 1
+.names top^c~8 top^memory_controller_write_enable \
+ top^memory_controller_in~8
+11 1
+.names top^c~9 top^memory_controller_write_enable \
+ top^memory_controller_in~9
+11 1
+.names top^c~10 top^memory_controller_write_enable \
+ top^memory_controller_in~10
+11 1
+.names top^c~11 top^memory_controller_write_enable \
+ top^memory_controller_in~11
+11 1
+.names top^c~12 top^memory_controller_write_enable \
+ top^memory_controller_in~12
+11 1
+.names top^c~13 top^memory_controller_write_enable \
+ top^memory_controller_in~13
+11 1
+.names top^c~14 top^memory_controller_write_enable \
+ top^memory_controller_in~14
+11 1
+.names top^c~15 top^memory_controller_write_enable \
+ top^memory_controller_in~15
+11 1
+.names top^c~16 top^memory_controller_write_enable \
+ top^memory_controller_in~16
+11 1
+.names top^c~17 top^memory_controller_write_enable \
+ top^memory_controller_in~17
+11 1
+.names top^c~18 top^memory_controller_write_enable \
+ top^memory_controller_in~18
+11 1
+.names top^c~19 top^memory_controller_write_enable \
+ top^memory_controller_in~19
+11 1
+.names top^c~20 top^memory_controller_write_enable \
+ top^memory_controller_in~20
+11 1
+.names top^c~21 top^memory_controller_write_enable \
+ top^memory_controller_in~21
+11 1
+.names top^c~22 top^memory_controller_write_enable \
+ top^memory_controller_in~22
+11 1
+.names top^c~23 top^memory_controller_write_enable \
+ top^memory_controller_in~23
+11 1
+.names top^c~24 top^memory_controller_write_enable \
+ top^memory_controller_in~24
+11 1
+.names top^c~25 top^memory_controller_write_enable \
+ top^memory_controller_in~25
+11 1
+.names top^c~26 top^memory_controller_write_enable \
+ top^memory_controller_in~26
+11 1
+.names top^c~27 top^memory_controller_write_enable \
+ top^memory_controller_in~27
+11 1
+.names top^c~28 top^memory_controller_write_enable \
+ top^memory_controller_in~28
+11 1
+.names top^c~29 top^memory_controller_write_enable \
+ top^memory_controller_in~29
+11 1
+.names top^c~30 top^memory_controller_write_enable \
+ top^memory_controller_in~30
+11 1
+.names top^c~31 top^memory_controller_write_enable \
+ top^memory_controller_in~31
+11 1
+.names top.memory_controller+memtroll.single_port_ram+str^out~0 \
+ top.memory_controller+memtroll^FF_NODE~7 top^memory_controller_out~0
+10 1
+.names top.memory_controller+memtroll.single_port_ram+str^out~1 \
+ top.memory_controller+memtroll^FF_NODE~7 top^memory_controller_out~1
+10 1
+.names top.memory_controller+memtroll.single_port_ram+str^out~2 \
+ top.memory_controller+memtroll^FF_NODE~7 top^memory_controller_out~2
+10 1
+.names top.memory_controller+memtroll.single_port_ram+str^out~3 \
+ top.memory_controller+memtroll^FF_NODE~7 top^memory_controller_out~3
+10 1
+.names top.memory_controller+memtroll.single_port_ram+str^out~4 \
+ top.memory_controller+memtroll^FF_NODE~7 top^memory_controller_out~4
+10 1
+.names top.memory_controller+memtroll.single_port_ram+str^out~5 \
+ top.memory_controller+memtroll^FF_NODE~7 top^memory_controller_out~5
+10 1
+.names top.memory_controller+memtroll.single_port_ram+str^out~6 \
+ top.memory_controller+memtroll^FF_NODE~7 top^memory_controller_out~6
+10 1
+.names top.memory_controller+memtroll.single_port_ram+str^out~7 \
+ top.memory_controller+memtroll^FF_NODE~7 top^memory_controller_out~7
+10 1
+.names top^memory_controller_in~7 n1123_1 n1125 n1127_1 n1129 n1131 \
+ top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~553
+11111- 1
+1----1 1
+.names n1124 top^FF_NODE~201 top^memory_controller_write_enable \
+ top^FF_NODE~202 top^FF_NODE~203 top^FF_NODE~204 n1123_1
+10-000 1
+1-0--- 1
+.names top^FF_NODE~206 top^FF_NODE~207 top^FF_NODE~208 top^FF_NODE~209 \
+ top^memory_controller_write_enable n1124
+0000- 1
+----0 1
+.names n1126 top^FF_NODE~210 top^memory_controller_write_enable \
+ top^FF_NODE~211 top^FF_NODE~212 top^FF_NODE~213 n1125
+10-000 1
+1-0--- 1
+.names top^FF_NODE~214 top^FF_NODE~215 top^FF_NODE~217 top^FF_NODE~218 \
+ top^memory_controller_write_enable n1126
+0000- 1
+----0 1
+.names n1128_1 top^FF_NODE~193 top^memory_controller_write_enable \
+ top^FF_NODE~194 top^FF_NODE~205 top^FF_NODE~216 n1127_1
+10-000 1
+1-0--- 1
+.names top^FF_NODE~219 top^FF_NODE~220 top^FF_NODE~221 top^FF_NODE~222 \
+ top^memory_controller_write_enable n1128_1
+0000- 1
+----0 1
+.names n1130 top^FF_NODE~223 top^memory_controller_write_enable \
+ top^FF_NODE~224 top^FF_NODE~195 top^FF_NODE~196 n1129
+10-000 1
+1-0--- 1
+.names top^FF_NODE~197 top^FF_NODE~198 top^FF_NODE~199 top^FF_NODE~200 \
+ top^memory_controller_write_enable n1130
+0000- 1
+----0 1
+.names n1132_1 n1137_1 n1142_1 n1147_1 n1131
+1111 1
+.names n1133_1 n1134 n1135 n1136 n1132_1
+1111 1
+.names top^c~21 top^c~22 top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1133_1
+1-1011 0
+-11011 0
+.names top^c~20 top^c~23 top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1134
+1-1011 0
+-11011 0
+.names top^c~17 top^c~18 top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1135
+1-1011 0
+-11011 0
+.names top^c~16 top^c~19 top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1136
+1-1011 0
+-11011 0
+.names n1138_1 n1139 n1140 n1141 n1137_1
+1111 1
+.names top^c~29 top^c~30 top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1138_1
+1-1011 0
+-11011 0
+.names top^c~28 top^c~31 top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1139
+1-1011 0
+-11011 0
+.names top^c~25 top^c~26 top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1140
+1-1011 0
+-11011 0
+.names top^c~24 top^c~27 top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1141
+1-1011 0
+-11011 0
+.names n1143_1 n1144 n1145 n1146 n1142_1
+1111 1
+.names top^c~5 top^c~6 top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1143_1
+1-1011 0
+-11011 0
+.names top^c~4 top^c~7 top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1144
+1-1011 0
+-11011 0
+.names top^c~1 top^c~2 top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1145
+1-1011 0
+-11011 0
+.names top^c~0 top^c~3 top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1146
+1-1011 0
+-11011 0
+.names n1148_1 n1149 n1150 n1151 n1147_1
+1111 1
+.names top^c~13 top^c~14 top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1148_1
+1-1011 0
+-11011 0
+.names top^c~12 top^c~15 top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1149
+1-1011 0
+-11011 0
+.names top^c~9 top^c~10 top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1150
+1-1011 0
+-11011 0
+.names top^c~8 top^c~11 top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1151
+1-1011 0
+-11011 0
+.names top^memory_controller_address~0 n1123_1 n1125 n1127_1 n1129 n1131 \
+ top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~541
+11111- 1
+1----1 1
+.names top^memory_controller_address~1 n1123_1 n1125 n1127_1 n1129 n1131 \
+ top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~542
+11111- 1
+1----1 1
+.names top^memory_controller_address~2 n1123_1 n1125 n1127_1 n1129 n1131 \
+ top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~543
+11111- 1
+1----1 1
+.names top^memory_controller_address~3 n1123_1 n1125 n1127_1 n1129 n1131 \
+ top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~544
+11111- 1
+1----1 1
+.names top^memory_controller_address~4 n1123_1 n1125 n1127_1 n1129 n1131 \
+ top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~545
+11111- 1
+1----1 1
+.names top^memory_controller_write_enable n1123_1 n1125 n1127_1 n1129 n1131 \
+ top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~554
+11111- 1
+1----1 1
+.names top^memory_controller_in~0 n1123_1 n1125 n1127_1 n1129 n1131 \
+ top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~546
+11111- 1
+1----1 1
+.names top^memory_controller_in~1 n1123_1 n1125 n1127_1 n1129 n1131 \
+ top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~547
+11111- 1
+1----1 1
+.names top^memory_controller_in~2 n1123_1 n1125 n1127_1 n1129 n1131 \
+ top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~548
+11111- 1
+1----1 1
+.names top^memory_controller_in~3 n1123_1 n1125 n1127_1 n1129 n1131 \
+ top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~549
+11111- 1
+1----1 1
+.names top^memory_controller_in~4 n1123_1 n1125 n1127_1 n1129 n1131 \
+ top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~550
+11111- 1
+1----1 1
+.names top^memory_controller_in~5 n1123_1 n1125 n1127_1 n1129 n1131 \
+ top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~551
+11111- 1
+1----1 1
+.names top^memory_controller_in~6 n1123_1 n1125 n1127_1 n1129 n1131 \
+ top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~552
+11111- 1
+1----1 1
+.names top^reset n1166 n337
+00 1
+.names top^start top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1167_1 n1166
+0-0000 1
+-1---0 1
+--1110 1
+.names top^FF_NODE~95 top^memory_controller_write_enable n1167_1
+01 1
+.names top^reset n1169 n1170 n342
+00- 1
+0-0 1
+.names top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 top^FF_NODE~94 \
+ top^FF_NODE~95 top^FF_NODE~354 n1169
+0110-- 0
+10111- 0
+-110-1 0
+.names top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 top^FF_NODE~94 \
+ top^FF_NODE~353 n1170
+010-- 0
+100-- 0
+10-0- 0
+-1001 0
+.names top^reset top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1169 n347
+0001-- 1
+0110-- 1
+0-010- 1
+0----0 1
+.names top^reset top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n352
+01110 1
+0-0-1 1
+0--01 1
+.names top^FF_NODE~127 top^FF_NODE~319 n1175 n1176 n1177_1 n1178_1 n1174
+001011 1
+111011 1
+.names top^FF_NODE~106 top^FF_NODE~110 top^FF_NODE~118 top^FF_NODE~298 \
+ top^FF_NODE~302 top^FF_NODE~310 n1175
+0--1-- 0
+1--0-- 0
+-0--1- 0
+-1--0- 0
+--0--1 0
+--1--0 0
+.names top^FF_NODE~107 top^FF_NODE~299 n1176
+01 1
+10 1
+.names top^FF_NODE~99 top^FF_NODE~115 top^FF_NODE~291 top^FF_NODE~307 \
+ n1177_1
+0000 1
+0101 1
+1010 1
+1111 1
+.names top^FF_NODE~116 top^FF_NODE~125 top^FF_NODE~308 top^FF_NODE~317 \
+ n1179 n1178_1
+00001 1
+01011 1
+10101 1
+11111 1
+.names top^reset top^FF_NODE~112 top^FF_NODE~124 top^FF_NODE~304 \
+ top^FF_NODE~316 n1179
+0000- 1
+00-01 1
+0101- 1
+01-11 1
+.names top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 top^FF_NODE~94 n1181 \
+ n1184 n1180
+110111 1
+.names top^FF_NODE~101 top^FF_NODE~123 top^FF_NODE~293 top^FF_NODE~315 \
+ n1182_1 n1183_1 n1181
+01--11 1
+0--011 1
+-11-11 1
+--1011 1
+.names top^FF_NODE~109 top^FF_NODE~117 top^FF_NODE~301 top^FF_NODE~309 \
+ n1182_1
+1-0- 0
+-0-1 0
+.names top^FF_NODE~98 top^FF_NODE~117 top^FF_NODE~126 top^FF_NODE~290 \
+ top^FF_NODE~309 top^FF_NODE~318 n1183_1
+1--0-- 0
+-1--0- 0
+--0--1 0
+--1--0 0
+.names top^FF_NODE~101 top^FF_NODE~109 top^FF_NODE~123 top^FF_NODE~293 \
+ top^FF_NODE~301 top^FF_NODE~315 n1184
+0--1-- 0
+-0--1- 0
+--1--0 0
+.names top^FF_NODE~122 top^FF_NODE~128 top^FF_NODE~314 top^FF_NODE~320 \
+ n1186 n1187_1 n1185
+000011 1
+010111 1
+101011 1
+111111 1
+.names top^FF_NODE~102 top^FF_NODE~105 top^FF_NODE~294 top^FF_NODE~297 \
+ n1186
+0000 1
+0101 1
+1010 1
+1111 1
+.names top^FF_NODE~111 top^FF_NODE~119 top^FF_NODE~303 top^FF_NODE~311 \
+ n1188_1 n1187_1
+00001 1
+01011 1
+10101 1
+11111 1
+.names top^FF_NODE~103 top^FF_NODE~108 top^FF_NODE~295 top^FF_NODE~300 \
+ n1188_1
+0000 1
+0101 1
+1010 1
+1111 1
+.names top^FF_NODE~114 top^FF_NODE~120 top^FF_NODE~306 top^FF_NODE~312 \
+ n1190 n1191 n1189
+000011 1
+010111 1
+101011 1
+111111 1
+.names top^FF_NODE~97 top^FF_NODE~98 top^FF_NODE~104 top^FF_NODE~289 \
+ top^FF_NODE~290 top^FF_NODE~296 n1190
+0--1-- 0
+1--0-- 0
+-0--1- 0
+--1--0 0
+.names top^FF_NODE~104 top^FF_NODE~121 top^FF_NODE~296 top^FF_NODE~313 \
+ n1192_1 n1193_1 n1191
+11--11 1
+1--011 1
+-10-11 1
+--0011 1
+.names top^FF_NODE~100 top^FF_NODE~113 top^FF_NODE~121 top^FF_NODE~292 \
+ top^FF_NODE~305 top^FF_NODE~313 n1192_1
+0--1-- 0
+-0--1- 0
+-1--0- 0
+--1--0 0
+.names top^FF_NODE~100 top^FF_NODE~124 top^FF_NODE~292 top^FF_NODE~316 \
+ n1193_1
+1-0- 0
+-0-1 0
+.names top^reset top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1194
+011-1 1
+.names top^reset top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1196
+0011- 1
+0101- 1
+0---1 1
+.names top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 top^FF_NODE~94 n1197_1
+000- 1
+00-0 1
+11-0 1
+1-11 1
+--00 1
+.names top^FF_NODE~95 top^FF_NODE~97 top^memory_controller_write_enable \
+ n1198_1
+1-1 1
+-11 1
+.names top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 top^FF_NODE~94 n1200
+0101 1
+.names top^reset top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1201
+0---1 1
+.names top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 top^FF_NODE~94 n1202_1
+010- 1
+111- 1
+---0 1
+.names top^reset top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~94 n1201 n1204
+1---1 1
+-11-1 1
+---01 1
+.names top^reset top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1205
+01101 1
+.names top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 top^FF_NODE~94 n1207_1
+0011 1
+.names top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 top^FF_NODE~94 n1208_1
+001- 1
+111- 1
+---0 1
+.names n1123_1 n1125 n1127_1 n1129 n1131 n382
+1111- 0
+----1 0
+.names top^FF_NODE~95 top^FF_NODE~98 top^memory_controller_write_enable \
+ n1212_1
+1-1 1
+-11 1
+.names top^FF_NODE~95 top^memory_controller_write_enable n1197_1 n1218_1
+0-1 1
+-01 1
+.names top^FF_NODE~95 top^FF_NODE~128 top^memory_controller_write_enable \
+ n1364
+1-1 1
+-11 1
+.names top^FF_NODE~92 top^FF_NODE~93 top^FF_NODE~94 n1201 n1371
+11-1 1
+--01 1
+.names top^reset top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1372_1
+00111 1
+.names top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 top^FF_NODE~94 n1405
+0001 1
+.names top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 top^FF_NODE~94 n1406
+000- 1
+111- 1
+---0 1
+.names top^reset top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 n1439
+0111- 1
+0-0-0 1
+0--00 1
+.names top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~94 top^FF_NODE~353 n1439 \
+ n1652
+1-01- 1
+-001- 1
+---10 1
+.names top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 top^FF_NODE~94 n1476
+0110 1
+.names top^reset top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 top^FF_NODE~354 n1477_1
+00110- 0
+01111- 0
+-----0 0
+.names top^n~20 top^n~21 top^n~22 top^n~26 n1478_1
+0000 1
+.names top^n~6 top^n~16 top^n~27 top^n~31 n1480 n1479
+00001 1
+.names top^n~8 top^n~9 top^n~18 top^n~24 n1480
+0000 1
+.names top^n~7 top^n~14 top^n~15 top^n~17 n1482_1 n1484 n1481
+000011 1
+.names top^n~4 top^n~23 top^n~25 top^n~29 n1483_1 n1482_1
+00001 1
+.names top^n~11 top^n~13 top^n~28 top^n~30 n1483_1
+0000 1
+.names top^n~5 top^n~10 top^n~12 top^n~19 n1484
+0000 1
+.names top^FF_NODE~161 top^return_val~0
+1 1
+.names top^FF_NODE~162 top^return_val~1
+1 1
+.names top^FF_NODE~173 top^return_val~2
+1 1
+.names top^FF_NODE~184 top^return_val~3
+1 1
+.names top^FF_NODE~187 top^return_val~4
+1 1
+.names top^FF_NODE~188 top^return_val~5
+1 1
+.names top^FF_NODE~189 top^return_val~6
+1 1
+.names top^FF_NODE~190 top^return_val~7
+1 1
+.names top^FF_NODE~191 top^return_val~8
+1 1
+.names top^FF_NODE~192 top^return_val~9
+1 1
+.names top^FF_NODE~163 top^return_val~10
+1 1
+.names top^FF_NODE~164 top^return_val~11
+1 1
+.names top^FF_NODE~165 top^return_val~12
+1 1
+.names top^FF_NODE~166 top^return_val~13
+1 1
+.names top^FF_NODE~167 top^return_val~14
+1 1
+.names top^FF_NODE~168 top^return_val~15
+1 1
+.names top^FF_NODE~169 top^return_val~16
+1 1
+.names top^FF_NODE~170 top^return_val~17
+1 1
+.names top^FF_NODE~171 top^return_val~18
+1 1
+.names top^FF_NODE~172 top^return_val~19
+1 1
+.names top^FF_NODE~174 top^return_val~20
+1 1
+.names top^FF_NODE~175 top^return_val~21
+1 1
+.names top^FF_NODE~176 top^return_val~22
+1 1
+.names top^FF_NODE~177 top^return_val~23
+1 1
+.names top^FF_NODE~178 top^return_val~24
+1 1
+.names top^FF_NODE~179 top^return_val~25
+1 1
+.names top^FF_NODE~180 top^return_val~26
+1 1
+.names top^FF_NODE~181 top^return_val~27
+1 1
+.names top^FF_NODE~182 top^return_val~28
+1 1
+.names top^FF_NODE~183 top^return_val~29
+1 1
+.names top^FF_NODE~185 top^return_val~30
+1 1
+.names top^FF_NODE~186 top^return_val~31
+1 1
+.names top^FF_NODE~96 top^finish
+1 1
+.names top^memory_controller_out~8
+ 0
+.names top^memory_controller_out~9
+ 0
+.names top^memory_controller_out~10
+ 0
+.names top^memory_controller_out~11
+ 0
+.names top^memory_controller_out~12
+ 0
+.names top^memory_controller_out~13
+ 0
+.names top^memory_controller_out~14
+ 0
+.names top^memory_controller_out~15
+ 0
+.names top^memory_controller_out~16
+ 0
+.names top^memory_controller_out~17
+ 0
+.names top^memory_controller_out~18
+ 0
+.names top^memory_controller_out~19
+ 0
+.names top^memory_controller_out~20
+ 0
+.names top^memory_controller_out~21
+ 0
+.names top^memory_controller_out~22
+ 0
+.names top^memory_controller_out~23
+ 0
+.names top^memory_controller_out~24
+ 0
+.names top^memory_controller_out~25
+ 0
+.names top^memory_controller_out~26
+ 0
+.names top^memory_controller_out~27
+ 0
+.names top^memory_controller_out~28
+ 0
+.names top^memory_controller_out~29
+ 0
+.names top^memory_controller_out~30
+ 0
+.names top^memory_controller_out~31
+ 0
+.names unconn
+ 0
+.names top^FF_NODE~95 n1174 n1180 n1185 n1189 n1194 n357
+1----0 1
+-1111- 1
+.names top^reset top^FF_NODE~95 top^FF_NODE~129 n1196 n1197_1 n1198_1 n362
+00---1 1
+0-1-0- 1
+0-1--1 1
+--10-- 1
+.names top^reset top^FF_NODE~129 top^FF_NODE~257 n1200 n1201 n1202_1 n367
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~0 top^FF_NODE~257 top^FF_NODE~225 n1204 n1205 n372
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~225 top^FF_NODE~193 n1207_1 n1201 n1208_1 n377
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~129 top^FF_NODE~97 n1200 n1201 n1202_1 n387
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~95 top^FF_NODE~130 n1196 n1197_1 n1212_1 n392
+00---1 1
+0-1-0- 1
+0-1--1 1
+--10-- 1
+.names top^reset top^FF_NODE~130 top^FF_NODE~258 n1200 n1201 n1202_1 n397
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~1 top^FF_NODE~258 top^FF_NODE~226 n1204 n1205 n402
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~226 top^FF_NODE~194 n1207_1 n1201 n1208_1 n407
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~130 top^FF_NODE~98 n1200 n1201 n1202_1 n412
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~131 top^FF_NODE~99 n1167_1 n1196 n1218_1 n417
+01---0 1
+0-11-- 1
+-1--0- 1
+.names top^reset top^FF_NODE~131 top^FF_NODE~259 n1200 n1201 n1202_1 n422
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~10 top^FF_NODE~259 top^FF_NODE~227 n1204 n1205 n427
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~227 top^FF_NODE~195 n1207_1 n1201 n1208_1 n432
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~131 top^FF_NODE~99 n1200 n1201 n1202_1 n437
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~132 top^FF_NODE~100 n1167_1 n1196 n1218_1 n442
+01---0 1
+0-11-- 1
+-1--0- 1
+.names top^reset top^FF_NODE~132 top^FF_NODE~260 n1200 n1201 n1202_1 n447
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~11 top^FF_NODE~260 top^FF_NODE~228 n1204 n1205 n452
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~228 top^FF_NODE~196 n1207_1 n1201 n1208_1 n457
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~132 top^FF_NODE~100 n1200 n1201 n1202_1 n462
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~133 top^FF_NODE~101 n1167_1 n1196 n1218_1 n467
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~133 top^FF_NODE~261 n1200 n1201 n1202_1 n472
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~12 top^FF_NODE~261 top^FF_NODE~229 n1204 n1205 n477
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~229 top^FF_NODE~197 n1207_1 n1201 n1208_1 n482
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~133 top^FF_NODE~101 n1200 n1201 n1202_1 n487
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~134 top^FF_NODE~102 n1167_1 n1196 n1218_1 n492
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~134 top^FF_NODE~262 n1200 n1201 n1202_1 n497
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~13 top^FF_NODE~262 top^FF_NODE~230 n1204 n1205 n502
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~230 top^FF_NODE~198 n1207_1 n1201 n1208_1 n507
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~134 top^FF_NODE~102 n1200 n1201 n1202_1 n512
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~135 top^FF_NODE~103 n1167_1 n1196 n1218_1 n517
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~135 top^FF_NODE~263 n1200 n1201 n1202_1 n522
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~14 top^FF_NODE~263 top^FF_NODE~231 n1204 n1205 n527
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~231 top^FF_NODE~199 n1207_1 n1201 n1208_1 n532
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~135 top^FF_NODE~103 n1200 n1201 n1202_1 n537
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~136 top^FF_NODE~104 n1167_1 n1196 n1218_1 n542
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~136 top^FF_NODE~264 n1200 n1201 n1202_1 n547
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~15 top^FF_NODE~264 top^FF_NODE~232 n1204 n1205 n552
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~232 top^FF_NODE~200 n1207_1 n1201 n1208_1 n557
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~136 top^FF_NODE~104 n1200 n1201 n1202_1 n562
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~137 top^FF_NODE~105 n1167_1 n1196 n1218_1 n567
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~137 top^FF_NODE~265 n1200 n1201 n1202_1 n572
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~16 top^FF_NODE~265 top^FF_NODE~233 n1204 n1205 n577
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~233 top^FF_NODE~201 n1207_1 n1201 n1208_1 n582
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~137 top^FF_NODE~105 n1200 n1201 n1202_1 n587
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~138 top^FF_NODE~106 n1167_1 n1196 n1218_1 n592
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~138 top^FF_NODE~266 n1200 n1201 n1202_1 n597
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~17 top^FF_NODE~266 top^FF_NODE~234 n1204 n1205 n602
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~234 top^FF_NODE~202 n1207_1 n1201 n1208_1 n607
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~138 top^FF_NODE~106 n1200 n1201 n1202_1 n612
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~139 top^FF_NODE~107 n1167_1 n1196 n1218_1 n617
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~139 top^FF_NODE~267 n1200 n1201 n1202_1 n622
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~18 top^FF_NODE~267 top^FF_NODE~235 n1204 n1205 n627
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~235 top^FF_NODE~203 n1207_1 n1201 n1208_1 n632
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~139 top^FF_NODE~107 n1200 n1201 n1202_1 n637
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~140 top^FF_NODE~108 n1167_1 n1196 n1218_1 n642
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~140 top^FF_NODE~268 n1200 n1201 n1202_1 n647
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~19 top^FF_NODE~268 top^FF_NODE~236 n1204 n1205 n652
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~236 top^FF_NODE~204 n1207_1 n1201 n1208_1 n657
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~140 top^FF_NODE~108 n1200 n1201 n1202_1 n662
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~141 top^FF_NODE~109 n1167_1 n1196 n1218_1 n667
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~141 top^FF_NODE~269 n1200 n1201 n1202_1 n672
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~2 top^FF_NODE~269 top^FF_NODE~237 n1204 n1205 n677
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~237 top^FF_NODE~205 n1207_1 n1201 n1208_1 n682
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~141 top^FF_NODE~109 n1200 n1201 n1202_1 n687
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~142 top^FF_NODE~110 n1167_1 n1196 n1218_1 n692
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~142 top^FF_NODE~270 n1200 n1201 n1202_1 n697
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~20 top^FF_NODE~270 top^FF_NODE~238 n1204 n1205 n702
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~238 top^FF_NODE~206 n1207_1 n1201 n1208_1 n707
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~142 top^FF_NODE~110 n1200 n1201 n1202_1 n712
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~143 top^FF_NODE~111 n1167_1 n1196 n1218_1 n717
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~143 top^FF_NODE~271 n1200 n1201 n1202_1 n722
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~21 top^FF_NODE~271 top^FF_NODE~239 n1204 n1205 n727
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~239 top^FF_NODE~207 n1207_1 n1201 n1208_1 n732
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~143 top^FF_NODE~111 n1200 n1201 n1202_1 n737
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~144 top^FF_NODE~112 n1167_1 n1196 n1218_1 n742
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~144 top^FF_NODE~272 n1200 n1201 n1202_1 n747
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~22 top^FF_NODE~272 top^FF_NODE~240 n1204 n1205 n752
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~240 top^FF_NODE~208 n1207_1 n1201 n1208_1 n757
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~144 top^FF_NODE~112 n1200 n1201 n1202_1 n762
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~145 top^FF_NODE~113 n1167_1 n1196 n1218_1 n767
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~145 top^FF_NODE~273 n1200 n1201 n1202_1 n772
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~23 top^FF_NODE~273 top^FF_NODE~241 n1204 n1205 n777
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~241 top^FF_NODE~209 n1207_1 n1201 n1208_1 n782
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~145 top^FF_NODE~113 n1200 n1201 n1202_1 n787
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~146 top^FF_NODE~114 n1167_1 n1196 n1218_1 n792
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~146 top^FF_NODE~274 n1200 n1201 n1202_1 n797
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~24 top^FF_NODE~274 top^FF_NODE~242 n1204 n1205 n802
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~242 top^FF_NODE~210 n1207_1 n1201 n1208_1 n807
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~146 top^FF_NODE~114 n1200 n1201 n1202_1 n812
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~147 top^FF_NODE~115 n1167_1 n1196 n1218_1 n817
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~147 top^FF_NODE~275 n1200 n1201 n1202_1 n822
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~25 top^FF_NODE~275 top^FF_NODE~243 n1204 n1205 n827
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~243 top^FF_NODE~211 n1207_1 n1201 n1208_1 n832
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~147 top^FF_NODE~115 n1200 n1201 n1202_1 n837
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~148 top^FF_NODE~116 n1167_1 n1196 n1218_1 n842
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~148 top^FF_NODE~276 n1200 n1201 n1202_1 n847
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~26 top^FF_NODE~276 top^FF_NODE~244 n1204 n1205 n852
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~244 top^FF_NODE~212 n1207_1 n1201 n1208_1 n857
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~148 top^FF_NODE~116 n1200 n1201 n1202_1 n862
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~149 top^FF_NODE~117 n1167_1 n1196 n1218_1 n867
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~149 top^FF_NODE~277 n1200 n1201 n1202_1 n872
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~27 top^FF_NODE~277 top^FF_NODE~245 n1204 n1205 n877
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~245 top^FF_NODE~213 n1207_1 n1201 n1208_1 n882
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~149 top^FF_NODE~117 n1200 n1201 n1202_1 n887
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~150 top^FF_NODE~118 n1167_1 n1196 n1218_1 n892
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~150 top^FF_NODE~278 n1200 n1201 n1202_1 n897
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~28 top^FF_NODE~278 top^FF_NODE~246 n1204 n1205 n902
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~246 top^FF_NODE~214 n1207_1 n1201 n1208_1 n907
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~150 top^FF_NODE~118 n1200 n1201 n1202_1 n912
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~151 top^FF_NODE~119 n1167_1 n1196 n1218_1 n917
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~151 top^FF_NODE~279 n1200 n1201 n1202_1 n922
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~29 top^FF_NODE~279 top^FF_NODE~247 n1204 n1205 n927
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~247 top^FF_NODE~215 n1207_1 n1201 n1208_1 n932
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~151 top^FF_NODE~119 n1200 n1201 n1202_1 n937
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~152 top^FF_NODE~120 n1167_1 n1196 n1218_1 n942
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~152 top^FF_NODE~280 n1200 n1201 n1202_1 n947
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~3 top^FF_NODE~280 top^FF_NODE~248 n1204 n1205 n952
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~248 top^FF_NODE~216 n1207_1 n1201 n1208_1 n957
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~152 top^FF_NODE~120 n1200 n1201 n1202_1 n962
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~153 top^FF_NODE~121 n1167_1 n1196 n1218_1 n967
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~153 top^FF_NODE~281 n1200 n1201 n1202_1 n972
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~30 top^FF_NODE~281 top^FF_NODE~249 n1204 n1205 n977
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~249 top^FF_NODE~217 n1207_1 n1201 n1208_1 n982
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~153 top^FF_NODE~121 n1200 n1201 n1202_1 n987
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~154 top^FF_NODE~122 n1167_1 n1196 n1218_1 n992
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~154 top^FF_NODE~282 n1200 n1201 n1202_1 n997
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~31 top^FF_NODE~282 top^FF_NODE~250 n1204 n1205 n1002
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~250 top^FF_NODE~218 n1207_1 n1201 n1208_1 \
+ n1007
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~154 top^FF_NODE~122 n1200 n1201 n1202_1 n1012
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~155 top^FF_NODE~123 n1167_1 n1196 n1218_1 \
+ n1017
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~155 top^FF_NODE~283 n1200 n1201 n1202_1 n1022
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~4 top^FF_NODE~283 top^FF_NODE~251 n1204 n1205 n1027
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~251 top^FF_NODE~219 n1207_1 n1201 n1208_1 \
+ n1032
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~155 top^FF_NODE~123 n1200 n1201 n1202_1 n1037
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~156 top^FF_NODE~124 n1167_1 n1196 n1218_1 \
+ n1042
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~156 top^FF_NODE~284 n1200 n1201 n1202_1 n1047
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~5 top^FF_NODE~284 top^FF_NODE~252 n1204 n1205 n1052
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~252 top^FF_NODE~220 n1207_1 n1201 n1208_1 \
+ n1057
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~156 top^FF_NODE~124 n1200 n1201 n1202_1 n1062
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~157 top^FF_NODE~125 n1167_1 n1196 n1218_1 \
+ n1067
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~157 top^FF_NODE~285 n1200 n1201 n1202_1 n1072
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~6 top^FF_NODE~285 top^FF_NODE~253 n1204 n1205 n1077
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~253 top^FF_NODE~221 n1207_1 n1201 n1208_1 \
+ n1082
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~157 top^FF_NODE~125 n1200 n1201 n1202_1 n1087
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~158 top^FF_NODE~126 n1167_1 n1196 n1218_1 \
+ n1092
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~158 top^FF_NODE~286 n1200 n1201 n1202_1 n1097
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~7 top^FF_NODE~286 top^FF_NODE~254 n1204 n1205 n1102
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~254 top^FF_NODE~222 n1207_1 n1201 n1208_1 \
+ n1107
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~158 top^FF_NODE~126 n1200 n1201 n1202_1 n1112
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~159 top^FF_NODE~127 n1167_1 n1196 n1218_1 \
+ n1117
+0-11-- 1
+-1--0- 1
+-1---0 1
+.names top^reset top^FF_NODE~159 top^FF_NODE~287 n1200 n1201 n1202_1 n1122
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~8 top^FF_NODE~287 top^FF_NODE~255 n1204 n1205 n1127
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~255 top^FF_NODE~223 n1207_1 n1201 n1208_1 \
+ n1132
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~159 top^FF_NODE~127 n1200 n1201 n1202_1 n1137
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~95 top^FF_NODE~160 n1196 n1197_1 n1364 n1142
+00---1 1
+0-1-0- 1
+0-1--1 1
+--10-- 1
+.names top^reset top^FF_NODE~160 top^FF_NODE~288 n1200 n1201 n1202_1 n1147
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^m~9 top^FF_NODE~288 top^FF_NODE~256 n1204 n1205 n1152
+11--1 1
+--10- 1
+.names top^reset top^FF_NODE~256 top^FF_NODE~224 n1207_1 n1201 n1208_1 \
+ n1157
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~160 top^FF_NODE~128 n1200 n1201 n1202_1 n1162
+01-1-- 1
+0-1--0 1
+--1-0- 1
+.names top^reset top^FF_NODE~91 top^FF_NODE~92 top^FF_NODE~93 \
+ top^FF_NODE~94 top^FF_NODE~96 n1167
+00000- 0
+01111- 0
+1----0 0
+--0--0 0
+---0-0 0
+----00 0
+.names top^m~0 top^FF_NODE~161 n1371 n1372_1 n1172
+1--1 1
+-10- 1
+.names top^m~1 top^FF_NODE~162 n1371 n1372_1 n1177
+1--1 1
+-10- 1
+.names top^m~10 top^FF_NODE~163 n1371 n1372_1 n1182
+1--1 1
+-10- 1
+.names top^m~11 top^FF_NODE~164 n1371 n1372_1 n1187
+1--1 1
+-10- 1
+.names top^m~12 top^FF_NODE~165 n1371 n1372_1 n1192
+1--1 1
+-10- 1
+.names top^m~13 top^FF_NODE~166 n1371 n1372_1 n1197
+1--1 1
+-10- 1
+.names top^m~14 top^FF_NODE~167 n1371 n1372_1 n1202
+1--1 1
+-10- 1
+.names top^m~15 top^FF_NODE~168 n1371 n1372_1 n1207
+1--1 1
+-10- 1
+.names top^m~16 top^FF_NODE~169 n1371 n1372_1 n1212
+1--1 1
+-10- 1
+.names top^m~17 top^FF_NODE~170 n1371 n1372_1 n1217
+1--1 1
+-10- 1
+.names top^m~18 top^FF_NODE~171 n1371 n1372_1 n1222
+1--1 1
+-10- 1
+.names top^m~19 top^FF_NODE~172 n1371 n1372_1 n1227
+1--1 1
+-10- 1
+.names top^m~2 top^FF_NODE~173 n1371 n1372_1 n1232
+1--1 1
+-10- 1
+.names top^m~20 top^FF_NODE~174 n1371 n1372_1 n1237
+1--1 1
+-10- 1
+.names top^m~21 top^FF_NODE~175 n1371 n1372_1 n1242
+1--1 1
+-10- 1
+.names top^m~22 top^FF_NODE~176 n1371 n1372_1 n1247
+1--1 1
+-10- 1
+.names top^m~23 top^FF_NODE~177 n1371 n1372_1 n1252
+1--1 1
+-10- 1
+.names top^m~24 top^FF_NODE~178 n1371 n1372_1 n1257
+1--1 1
+-10- 1
+.names top^m~25 top^FF_NODE~179 n1371 n1372_1 n1262
+1--1 1
+-10- 1
+.names top^m~26 top^FF_NODE~180 n1371 n1372_1 n1267
+1--1 1
+-10- 1
+.names top^m~27 top^FF_NODE~181 n1371 n1372_1 n1272
+1--1 1
+-10- 1
+.names top^m~28 top^FF_NODE~182 n1371 n1372_1 n1277
+1--1 1
+-10- 1
+.names top^m~29 top^FF_NODE~183 n1371 n1372_1 n1282
+1--1 1
+-10- 1
+.names top^m~3 top^FF_NODE~184 n1371 n1372_1 n1287
+1--1 1
+-10- 1
+.names top^m~30 top^FF_NODE~185 n1371 n1372_1 n1292
+1--1 1
+-10- 1
+.names top^m~31 top^FF_NODE~186 n1371 n1372_1 n1297
+1--1 1
+-10- 1
+.names top^m~4 top^FF_NODE~187 n1371 n1372_1 n1302
+1--1 1
+-10- 1
+.names top^m~5 top^FF_NODE~188 n1371 n1372_1 n1307
+1--1 1
+-10- 1
+.names top^m~6 top^FF_NODE~189 n1371 n1372_1 n1312
+1--1 1
+-10- 1
+.names top^m~7 top^FF_NODE~190 n1371 n1372_1 n1317
+1--1 1
+-10- 1
+.names top^m~8 top^FF_NODE~191 n1371 n1372_1 n1322
+1--1 1
+-10- 1
+.names top^m~9 top^FF_NODE~192 n1371 n1372_1 n1327
+1--1 1
+-10- 1
+.names top^reset top^n~0 top^FF_NODE~289 n1201 n1405 n1406 n1332
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~1 top^FF_NODE~290 n1201 n1405 n1406 n1337
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~10 top^FF_NODE~291 n1201 n1405 n1406 n1342
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~11 top^FF_NODE~292 n1201 n1405 n1406 n1347
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~12 top^FF_NODE~293 n1201 n1405 n1406 n1352
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~13 top^FF_NODE~294 n1201 n1405 n1406 n1357
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~14 top^FF_NODE~295 n1201 n1405 n1406 n1362
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~15 top^FF_NODE~296 n1201 n1405 n1406 n1367
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~16 top^FF_NODE~297 n1201 n1405 n1406 n1372
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~17 top^FF_NODE~298 n1201 n1405 n1406 n1377
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~18 top^FF_NODE~299 n1201 n1405 n1406 n1382
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~19 top^FF_NODE~300 n1201 n1405 n1406 n1387
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~2 top^FF_NODE~301 n1201 n1405 n1406 n1392
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~20 top^FF_NODE~302 n1201 n1405 n1406 n1397
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~21 top^FF_NODE~303 n1201 n1405 n1406 n1402
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~22 top^FF_NODE~304 n1201 n1405 n1406 n1407
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~23 top^FF_NODE~305 n1201 n1405 n1406 n1412
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~24 top^FF_NODE~306 n1201 n1405 n1406 n1417
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~25 top^FF_NODE~307 n1201 n1405 n1406 n1422
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~26 top^FF_NODE~308 n1201 n1405 n1406 n1427
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~27 top^FF_NODE~309 n1201 n1405 n1406 n1432
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~28 top^FF_NODE~310 n1201 n1405 n1406 n1437
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~29 top^FF_NODE~311 n1201 n1405 n1406 n1442
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~3 top^FF_NODE~312 n1201 n1405 n1406 n1447
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~30 top^FF_NODE~313 n1201 n1405 n1406 n1452
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~31 top^FF_NODE~314 n1201 n1405 n1406 n1457
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~4 top^FF_NODE~315 n1201 n1405 n1406 n1462
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~5 top^FF_NODE~316 n1201 n1405 n1406 n1467
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~6 top^FF_NODE~317 n1201 n1405 n1406 n1472
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~7 top^FF_NODE~318 n1201 n1405 n1406 n1477
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~8 top^FF_NODE~319 n1201 n1405 n1406 n1482
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset top^n~9 top^FF_NODE~320 n1201 n1405 n1406 n1487
+01--1- 1
+0-1--0 1
+--10-- 1
+.names top^reset n1476 n1477_1 n1478_1 n1479 n1481 n1657
+1-0--- 0
+-00--- 0
+--0111 0
+.end
+
+
+.model single_port_ram
+.inputs clk data addr[0] addr[1] addr[2] addr[3] addr[4] addr[5] addr[6] \
+ addr[7] addr[8] addr[9] addr[10] addr[11] addr[12] addr[13] addr[14] we
+.outputs out
+.blackbox
+.end
