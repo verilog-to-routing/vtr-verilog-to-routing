@@ -128,7 +128,7 @@ void vpr_print_usage(void) {
 			"\t[--alpha_t <float>] [--inner_num <float>] [--seed <int>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--place_cost_exp <float>]\n");
 	vpr_printf(TIO_MESSAGE_INFO,
-			"\t[--place_chan_width <int>] [--num_regions <int>] \n");
+			"\t[--place_chan_width <int>] \n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--fix_pins random | <file.pads>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--enable_timing_computations on | off]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--block_dist <int>]\n");
