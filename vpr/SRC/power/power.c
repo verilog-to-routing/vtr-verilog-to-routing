@@ -216,7 +216,7 @@ void power_usage_local_pin_toggle(t_power_usage * power_usage, t_pb * pb,
 	/* Divide by 2 because density is switches/cycle, but a toggle is 2 switches */
 	power_usage->dynamic += scale_factor
 			* pin->port->port_power->energy_per_toggle * pin_dens(pb, pin)
-			/ 2.0;
+			/ 2.0 / g_solution_inf.T_crit;
 }
 
 void power_usage_local_pin_buffer_and_wire(t_power_usage * power_usage,
