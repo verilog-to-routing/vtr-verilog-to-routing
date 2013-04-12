@@ -5,7 +5,6 @@ num_mult;vpr.out;Netlist mult_36 blocks:\s*(\d+)
 sb_buffer_size;*.power;Average SB Buffer Size: (.*)
 clb_array_size;vpr.out;The circuit will be mapped into a (\d+) x \d+ array of clbs.
 chan_width;vpr.crit_path.out;--route_chan_width (\d+)
-
 total_power;*.power;^Total\s+(.*?)\s+
 total_dyn;*.power;^Total\s+\S+\s+\S+\s+(.*?)\s+
 
@@ -49,3 +48,5 @@ mult_dyn;*.power;^mult_36\s+\S+\s+\S+\s+(.*?)\s+
 
 clock_power;*.power;^\s+Clock\s+(.*?)\s+
 clock_dyn;*.power;^\s+Clock\s+\S+\s+\S+\s+(.*?)\s+
+
+critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns

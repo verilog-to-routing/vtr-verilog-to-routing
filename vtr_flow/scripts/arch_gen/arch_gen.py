@@ -712,7 +712,7 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, seg_length
         if (cb == "clb"):
             xCLB(k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, crossbar_str)
         else:
-            xcopy(os.path.join(script_dir, "complexblocks", cb + ".xml"))
+            xcopy(os.path.join(script_dir, "complexblocks", str(tech_nm) + "nm", cb + ".xml"))
      
     xend()  # complexblocklist
     

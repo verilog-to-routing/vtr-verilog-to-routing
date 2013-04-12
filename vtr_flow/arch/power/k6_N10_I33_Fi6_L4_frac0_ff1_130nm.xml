@@ -238,8 +238,8 @@
                 </direct>
               </interconnect>
               <power method="pin-toggle">
-                <port name="A_cfg" energy_per_toggle="1.45e-12"/>
-                <port name="B_cfg" energy_per_toggle="1.45e-12"/>
+                <port name="A_cfg" energy_per_toggle="5.04e-12"/>
+                <port name="B_cfg" energy_per_toggle="5.04e-12"/>
                 <static_power power_per_instance="0.0"/>
               </power>
             </pb_type>
@@ -277,8 +277,8 @@
                 </direct>
               </interconnect>
               <power method="pin-toggle">
-                <port name="A_cfg" energy_per_toggle="1.09e-12"/>
-                <port name="B_cfg" energy_per_toggle="1.09e-12"/>
+                <port name="A_cfg" energy_per_toggle="3.79e-12"/>
+                <port name="B_cfg" energy_per_toggle="3.79e-12"/>
                 <static_power power_per_instance="0.0"/>					
               </power>
             </pb_type>
@@ -334,8 +334,8 @@
           </interconnect>
     
           <power method="pin-toggle">
-            <port name="A_cfg" energy_per_toggle="2.13e-12"/>
-            <port name="B_cfg" energy_per_toggle="2.13e-12"/>
+            <port name="A_cfg" energy_per_toggle="7.40e-12"/>
+            <port name="B_cfg" energy_per_toggle="7.40e-12"/>
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -388,7 +388,7 @@
           <T_setup value="509e-12" port="mem_512x64_sp.we" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_512x64_sp.out" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="9.0e-12"/>					
+            <port name="clk" energy_per_toggle="31.3e-12"/>					
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -422,7 +422,7 @@
           <T_setup value="509e-12" port="mem_1024x32_sp.we" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_1024x32_sp.out" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="9.0e-12"/>					
+            <port name="clk" energy_per_toggle="31.3e-12"/>					
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -457,7 +457,7 @@
           <T_setup value="509e-12" port="mem_2048x16_sp.we" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_2048x16_sp.out" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="9.0e-12"/>					
+            <port name="clk" energy_per_toggle="31.3e-12"/>					
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -491,7 +491,7 @@
           <T_setup value="509e-12" port="mem_4096x8_sp.we" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_4096x8_sp.out" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="9.0e-12"/>					
+            <port name="clk" energy_per_toggle="31.3e-12"/>					
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -525,7 +525,7 @@
           <T_setup value="509e-12" port="mem_8192x4_sp.we" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_8192x4_sp.out" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="9.0e-12"/>					
+            <port name="clk" energy_per_toggle="31.3e-12"/>					
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -559,7 +559,7 @@
           <T_setup value="509e-12" port="mem_16384x2_sp.we" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_16384x2_sp.out" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="9.0e-12"/>					
+            <port name="clk" energy_per_toggle="31.3e-12"/>					
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -593,7 +593,7 @@
           <T_setup value="509e-12" port="mem_32768x1_sp.we" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_32768x1_sp.out" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="9.0e-12"/>					
+            <port name="clk" energy_per_toggle="31.3e-12"/>					
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -636,7 +636,7 @@
           <T_clock_to_Q max="1.234e-9" port="mem_1024x32_dp.out1" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_1024x32_dp.out2" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="17.9e-12"/>					
+            <port name="clk" energy_per_toggle="62.2e-12"/>					
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -690,7 +690,7 @@
           <T_clock_to_Q max="1.234e-9" port="mem_2048x16_dp.out1" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_2048x16_dp.out2" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="17.9e-12"/>					
+            <port name="clk" energy_per_toggle="62.2e-12"/>					
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -744,7 +744,7 @@
           <T_clock_to_Q max="1.234e-9" port="mem_2048x8_dp.out1" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_2048x8_dp.out2" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="17.9e-12"/>					
+            <port name="clk" energy_per_toggle="62.2e-12"/>					
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -797,7 +797,7 @@
           <T_clock_to_Q max="1.234e-9" port="mem_8192x4_dp.out1" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_8192x4_dp.out2" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="17.9e-12"/>					
+            <port name="clk" energy_per_toggle="62.2e-12"/>					
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -850,7 +850,7 @@
           <T_clock_to_Q max="1.234e-9" port="mem_16384x2_dp.out1" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_16384x2_dp.out2" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="17.9e-12"/>					
+            <port name="clk" energy_per_toggle="62.2e-12"/>					
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
@@ -904,7 +904,7 @@
           <T_clock_to_Q max="1.234e-9" port="mem_32768x1_dp.out1" clock="clk"/>
           <T_clock_to_Q max="1.234e-9" port="mem_32768x1_dp.out2" clock="clk"/>
           <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="17.9e-12"/>					
+            <port name="clk" energy_per_toggle="62.2e-12"/>					
             <static_power power_per_instance="0.0"/>
           </power>
         </pb_type>
