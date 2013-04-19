@@ -173,7 +173,8 @@ static void log_msg(t_log * log_ptr, char * msg) {
  * final_stage_size: Size of the final inverter in the buffer, relative to a min size
  * desired_stage_effort: The desired gain between stages, typically 4
  */
-int power_calc_buffer_num_stages(float final_stage_size, float desired_stage_effort) {
+int power_calc_buffer_num_stages(float final_stage_size,
+		float desired_stage_effort) {
 	int N = 1;
 
 	if (final_stage_size <= 1.0) {
@@ -467,7 +468,7 @@ void output_logs(FILE * fp, t_log * logs, int num_logs) {
 float power_buffer_size_from_logical_effort(float C_load) {
 	return std::max(1.0,
 			C_load / g_power_commonly_used->INV_1X_C_in
-					/ 8.0);
+					/ (2 * g_power_arch->logical_effort_factor));
 }
 
 void power_print_title(FILE * fp, char * title) {

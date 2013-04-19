@@ -16,7 +16,8 @@
 \usepackage[svgnames]{xcolor}
 %\usepackage{natbib}
 \usepackage[style=verbose, backend=bibtex]{biblatex}
-
+\usepackage{enumitem}
+\usepackage{booktabs}
 
 
 \usepackage{hyperref}
@@ -191,6 +192,11 @@ The following is a list of valid estimation methods. Detailed descriptions of ea
 \item \texttt{C-internal}: Higher-level modelling.  The user supplies the internal capacitance of the block.  Static power provided as an absolute.
 \item \texttt{absolute}: Highest-level modelling.  The user supplies both dynamic and static power as absolutes.
 \end{enumerate}
+Other methods of estimation:
+\begin{enumerate}[resume]
+\item \texttt{ignore}: The power of the \texttt{pb\_type} is ignored, including any children.
+\item \texttt{sum-of-children}: Power of \texttt{pb\_type} is solely the sum of all children \texttt{pb\_types}; interconnect between the \texttt{pb\_type} and its children is ignored.
+\end{enumerate}
 
 If no estimation method is provided, it is inherited from the parent \texttt{pb\_type}. \textit{\textbf{If the top-level \texttt{pb\_type} has no estimation method, \texttt{auto-size} is assumed.}}  
 
@@ -246,21 +252,25 @@ This estimation method also performs detailed transistor-level modelling.  It is
 \textbf{This is the default power estimation method.}  Although not as accurate as user-provided buffer and wire sizes, it is capable of automatically capturing trends in power dissipation as architectures are modified.  
 
 \subsubsection{\texttt{pin-toggle}}
-This method allows users to specify the dynamic power of a block in terms of the energy per toggle of each input, output or clock pin for the \texttt{pb\_type}.  The static power is provided as an absolute (in Watts). This is done using the following construct:
+This method allows users to specify the dynamic power of a block in terms of the energy per toggle (in Joules) of each input, output or clock pin for the \texttt{pb\_type}.  The static power is provided as an absolute (in Watts). This is done using the following construct:
 
 \begin{BVerbatim}[bgcolor=LightGray, boxwidth=\textwidth] 
-<pb_type>
-	<input name="my_input" num_pins="1">
-		<power energy_per_toggle="1.0e-16">
-	</input>
+<pb_type>	
 	...
 	<power method="pin-toggle">
+		<port name="A" energy_per_toggle="1.0e-12"/>
+		<port name="B[3:2]" energy_per_toggle="1.0e-12"/>
+		<port name="C" energy_per_toggle="1.0e-12" scaled_by_static_prob="en1"/>
+		<port name="D" energy_per_toggle="1.0e-12" scaled_by_static_prob_n="en2"/>
 		<static_power power_per_instance="1.0e-6"/>
 	</power>
 </pb_type>
 \end{BVerbatim}
 
-This method does not perform any transistor-level estimations; the entire power estimation is performed using the above values.  \texttt{energy\_per\_toggle} specifies the energy consumed (in Joules) for a single toggle of a pin.  Keep in mind that the port construct allows for multiple pins per port.  These energy per toggle will be applied to each pin in the port.  If necessary, the user can seperate a port into multiple ports with different energy per toggle values.
+Keep in mind that the port construct allows for multiple pins per port.  Unless an subset index is provided, the energy per toggle will be applied to each pin in the port.  The energy per toggle can be scaled by another signal using the \texttt{scaled\_by\_static\_prob}.  For example, you could scale the energy of a memory block by the read enable pin.  If the read enable were high 80\% of the time, then the energy would be scaled by the $signal\_probability$, 0.8.  Alternatively \texttt{scaled\_by\_static\_prob\_n} can be used for active low signals, and the energy will be scaled by $(1-signal\_probability)$.
+
+
+This method does not perform any transistor-level estimations; the entire power estimation is performed using the above values.  It is assumed that the power usage specified here includes power of all child \texttt{pb\_types}.  No further recursive power estimation will be performed.
 
 \subsubsection{\texttt{C-internal}}
 This method allows the users to specify the dynamic power of a block in terms of the internal capacitance of the block.  The activity will be averaged across all of the input pins, and will be supplied with the internal capacitance to the standard equation $P_{dyn}=\sfrac{1}{2}\alpha CV^2$.  Again, the static power is provided as an absolute (in Watts).  This is done using the following construct:
@@ -315,8 +325,15 @@ Switch boxes are modelled as the following components (\autoref{fig:sb}):
 	The number of inputs to the multiplexer is automatically determined.
 	
 \textbf{Buffer} 
-The buffer is a multistage CMOS buffer.  
-Typically, this buffer is sized to drive the capacitance of the wire, as well as fanouts to other switch boxes and conneciton boxes.  The size of the buffer is specified by the user in the architecture file, as shown below. 
+The buffer is a multistage CMOS buffer.  The buffer size is determined based upon output capacitance provided in the architecture file: 
+
+\begin{BVerbatim}[bgcolor=LightGray, boxwidth=\textwidth] 
+<switchlist>
+	<switch type="mux" ... C_out="XXX"
+</switchlist>
+\end{BVerbatim}
+
+The user may override this method by providing the buffer size as shown below:
 
 \begin{BVerbatim}[bgcolor=LightGray, boxwidth=\textwidth] 
 <switchlist>
@@ -324,23 +341,24 @@ Typically, this buffer is sized to drive the capacitance of the wire, as well as
 </switchlist>
 \end{BVerbatim}
 
+The size is the drive strength of the buffer, relative to a minimum-sized inverter.
 
-Alternatively, the size can be replaced by the "\texttt{auto}" keyword, and the buffer will be automatically sized based on the load capacitance.  See \autoref{sec:buffer_sizing} for information about buffer sizings. 
+%Alternatively, the size can be replaced by the "\texttt{auto}" keyword, and the buffer will be automatically sized based on the load capacitance.  See \autoref{sec:buffer_sizing} for information about buffer sizings. 
 
-\textbf{Wire Capacitance} The wire capacitance is determined using the segment information in the architecture file:
+%\textbf{Wire Capacitance} The wire capacitance is determined using the information in the architecture file:
+%
+%\begin{BVerbatim}[bgcolor=LightGray, boxwidth=\textwidth] 
+%<segmentlist>
+%	<segment type="unidir" ... Cmetal="XXX" .../>
+%</segmentlist>
+%\end{BVerbatim}
 
-\begin{BVerbatim}[bgcolor=LightGray, boxwidth=\textwidth] 
-<segmentlist>
-	<segment type="unidir" ... power_options .../>
-</segmentlist>
-\end{BVerbatim}
-
-The following options can be used to specify wire capacitance:
-\vspace{-10pt}
-\begin{itemize*}
-\item \texttt{power\_wire\_c}: Absolute wire capacitance, in farads.
-\item \texttt{power\_wire\_c\_per\_m}: Wire capacitance in farads per meter.  The capacitance is calculated using an automatically determined wirelength, based on the area of a tile in the FPGA (\autoref{sec:area_est}).
-\end{itemize*}
+%The following options can be used to specify wire capacitance:
+%\vspace{-10pt}
+%\begin{itemize*}
+%\item \texttt{power\_wire\_c}: Absolute wire capacitance, in farads.
+%\item \texttt{power\_wire\_c\_per\_m}: Wire capacitance in farads per meter.  The capacitance is calculated using an automatically determined wirelength, based on the area of a tile in the FPGA (\autoref{sec:area_est}).
+%\end{itemize*}
 
 \subsection{Input Connection Boxes} \label{sec:cb}
 Input connection boxes are modelled as the following components (\autoref{fig:cb}):
@@ -390,24 +408,51 @@ The following clock options are supported:
 
 \clearpage
 \section{Other Architecture Options \& Techniques} \label{sec:options}
-\subsection{Area Estimations} \label{sec:area_est}
-The power estimator performs area estimations of both the global routing structures and the complex blocks.  The CLB area is determined through a recursive function that counts the area of interconnect, buffers, and primitives (flip-flops and LUTs).  
 
-If an architecture uses new primitives in CLBs, it should include a function that returns the transistor count.  This function should be called from within \texttt{power\_count\_transistors\_primitive()}.
 
 \subsection{Local Wire Auto-Sizing} \label{sec:local_wire_autosize}
-The power estimator contains a basic algorithm to estimate local interconnect wirelengths.  The algorithms determines the area of the interconnect structures, and calculates the side-length of the interconnect based on a square layout.  This side length is referred to as $L_{interc}$, as illustrated in \autoref{fig:local_interc_wirelength}.
+Due to the significant user effort required to provide local buffer and wire sizes, we developed an algorithm to estimate them automatically.  
+This algorithm recursively calculates the area of all entities within a CLB, which consists of the area of primitives and the area of local interconnect multiplexers.  
+If an architecture uses new primitives in CLBs, it should include a function that returns the transistor count.  This function should be called from within \texttt{power\_count\_transistors\_primitive()}.
+
+
+ In order to determine the wire length that connects a parent entity to its children, the following assumptions are made:
+
+\begin{itemize}
+	\item Assumption 1: All components (CLB entities, multiplexers, crossbars) are assumed to be contained in a square-shaped area.
+	\item Assumption 2: All wires connecting a parent entity to its child pass through the \emph{interconnect square}, which is the sum area of all interconnect multiplexers belonging to the parent entity.
+\end{itemize}
+	
+\autoref{fig:local_interc} provides an illustration of a parent entity connected to its child entities, containing one of each interconnect type (direct, many-to-1, and complete).  In this figure,
+the square on the left represents the area used by the transistors of the interconnect multiplexers.  It is assumed that all connections from parent to child will pass through this area.  Real wire lengths could me more or less than this estimate; some pins in the parent may be directly adjacent to child entities, or they may have to 
+traverse a distance greater than just the interconnect area.  Unfortuantely, a more rigorous estimation would require some information about the transistor layout.	
+
 
 
 \begin{figure}[ht]
 	\centering
-		\includegraphics[scale=0.7]{images/local_interc_wirelength.pdf}
-	\caption{Local interconnect wirelength}
-	\label{fig:local_interc_wirelength}
+	\includegraphics[width=\textwidth]{images/local_interc}
+	\caption[D Flip-Flop]{Local interconnect wirelength.}
+	\label{fig:local_interc}
 \end{figure}
 
+\begin{table}
+		\centering
+		\begin{tabular}{lccc}\toprule
+		Connection from Entity Pin to:  & Estimated Wirelength & Transistor  Capacitance \\ \midrule
+		Direct (Input or Output) & $0.5 \cdot L_{interc}$ & 0\\ 
+		Many-to-1 (Input or Output)  & $0.5 \cdot L_{interc}$ & $C_{INV}$ \\ 
+		Complete $m$:$n$ (Input) &$0.5 \cdot L_{interc} + L_{crossbar}$ & $n\cdot C_{INV}$ \\
+		Complete $m$:$n$ (Output) & $0.5 \cdot L_{interc}$ & $C_{INV}$\\ \bottomrule
+		\end{tabular}
+	\caption{Local interconnect wirelength and capacitance.  ($C_{INV}$ is the input capacitance of a minimum-sized inverter.)}
+	\label{tab:local_interc_wirelength}	
+\end{table}
+
+\autoref{tab:local_interc_wirelength} details how local wire lengths are determined as a function of entity and interconnect areas.
 It is assumed that each wire connecting a pin of a \texttt{pb\_type} to an interconnect structure is of length $0.5 \cdot L_{interc}$.  In reality, this length depends on the actual transistor
 layout, and may be much larger or much smaller than the estimated value.  If desired, the user can override the 0.5 constant in the architecture file:
+
 
 \begin{BVerbatim}[bgcolor=LightGray, boxwidth=\textwidth] 
 <architecture>
@@ -419,13 +464,13 @@ layout, and may be much larger or much smaller than the estimated value.  If des
 
 \subsection{Buffer Sizing} \label{sec:buffer_sizing}
 In the power estimator, a buffer size refers to the size of the final stage of multi-stage buffer (if small, only a single stage is used).  The specified size is the (\sfrac{W}{L}) of the NMOS transistor.  The PMOS transistor will automatically be sized larger.    
-Generally, buffers are sized depending on the load capacitance, using the following equation (logical effort model):
+Generally, buffers are sized depending on the load capacitance, using the following equation:
 
 \begin{align}
-	\text{Buffer Size}=\frac{1}{f_{LE}}*\frac{C_{Load}}{C_{INV}}
+	\text{Buffer Size}=\frac{1}{2\cdot f_{LE}}*\frac{C_{Load}}{C_{INV}}
 	\label{eq:autosize}
 \end{align}	
-In this equation, $C_{INV}$ is the input capacitance of a minimum-sized inverter, and $f_{LE}$ is the logical effort factor, which by default is 4.  This is standard design practise for high-performance devices.  The logical effort factor can be modified in the architecture file: 
+In this equation, $C_{INV}$ is the input capacitance of a minimum-sized inverter, and $f_{LE}$ is the logical effort factor.  The logical effort factor is the gain between stages of the multi-stage buffer, which by default is 4 (minimal delay).  The term $(2\cdot f_{LE})$ is used so that the ratio of the final stage to the driven capacitance is smaller.  This produces a much lower-area, lower-power buffer that is still close to the optimal delay, more representative of common design practises. The logical effort factor can be modified in the architecture file: 
 
 
 \begin{BVerbatim}[bgcolor=LightGray, boxwidth=\textwidth] 
@@ -436,7 +481,7 @@ In this equation, $C_{INV}$ is the input capacitance of a minimum-sized inverter
 </architecture>
 \end{BVerbatim}
 
-The number of buffer stages is chosen such that each stage is close to $f_{LE}$ times larger than the previous stage.
+%The number of buffer stages is chosen such that each stage is close to $f_{LE}$ times larger than the previous stage.
 
 
 
@@ -449,7 +494,7 @@ If using the \texttt{auto-size} or \texttt{wire-length} options (\autoref{sec:cl
 \begin{BVerbatim}[bgcolor=LightGray, boxwidth=\textwidth] 
 <architecture>
 	<power>
-		<local_interconnect C_wire="1.0e-15">
+		<local_interconnect C_wire="2.5e-15">
 	</power>
 </architecture>
 \end{BVerbatim}
