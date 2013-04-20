@@ -1180,9 +1180,9 @@ static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_do
 	float constraint;
 
 	/* If the source and sink domains have the same period and edges, the constraint is just the common clock period. */
-	if ((source_domain.period - sink_domain.period < EPSILON) && 
-		(source_domain.rising_edge - sink_domain.rising_edge < EPSILON) &&
-		(source_domain.falling_edge - sink_domain.falling_edge < EPSILON)) {
+	if (fabs(source_domain.period - sink_domain.period) < EPSILON && 
+		fabs(source_domain.rising_edge - sink_domain.rising_edge) < EPSILON &&
+		fabs(source_domain.falling_edge - sink_domain.falling_edge) < EPSILON) {
 		return source_domain.period; /* or, equivalently, sink_domain.period */
 	}
 
@@ -1194,10 +1194,10 @@ static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_do
 	 /* Multiply periods and edges by 1000 and round down  *				  
 	  * to the nearest integer, to avoid messy decimals.   */
 
-	source_period = static_cast<int>(source_domain.period) * 1000;
-	sink_period = static_cast<int>(sink_domain.period) * 1000;
-	source_rising_edge = static_cast<int>(source_domain.rising_edge) * 1000;
-	sink_rising_edge = static_cast<int>(sink_domain.rising_edge) * 1000;	
+	source_period = static_cast<int>(source_domain.period * 1000);
+	sink_period = static_cast<int>(sink_domain.period * 1000);
+	source_rising_edge = static_cast<int>(source_domain.rising_edge * 1000);
+	sink_rising_edge = static_cast<int>(sink_domain.rising_edge * 1000);	
 
 	/* If we get here, we have to use edge counting.  Find the LCM of the two periods.		   *
 	* This determines how long it takes before the pattern of the two clocks starts repeating. */

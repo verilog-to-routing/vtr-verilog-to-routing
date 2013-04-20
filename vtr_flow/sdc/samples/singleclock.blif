@@ -1,0 +1,30 @@
+.model multiclock
+.inputs in1 in2 in3 clk clk2
+.outputs out1 out2 out3
+
+.latch to_FFA FFA re clk 0
+.latch to_FFC FFC re clk 0
+.latch to_FFD FFD re clk 0
+.latch to_FFB FFB re clk 0
+
+.names FFA FFB to_FFC
+11 1
+.names FFA FFB to_FFD
+11 1
+
+.names in1 to_FFA
+1 1
+
+.names in2 to_FFB
+1 1
+
+.names FFC out1
+1 1
+
+.names FFD out2
+1 1
+
+.names in3 out3
+1 1
+
+.end
