@@ -1,15 +1,15 @@
 <!-- 
-  Architecture with no fracturable LUTs
+  Flagship Heterogeneous Architecture (No Carry Chains) for VTR 7.0.
 
   - 40 nm technology
   - General purpose logic block: 
-    K = 6, N = 10
+    K = 6, N = 10, fracturable 6 LUTs (can operate as one 6-LUT or two 5-LUTs with all 5 inputs shared) 
+    with optionally registered outputs
   - Routing architecture: L = 4, fc_in = 0.15, Fc_out = 0.1
 
   Details on Modelling:
 
-  Based on flagship k6_frac_N10_mem32K_40nm.xml architecture.  This architecture has no fracturable LUTs nor any heterogeneous blocks.
-
+  Based on flagship k6_frac_N10_mem32K_40nm.xml architecture.
 
   Authors: Jason Luu, Jeff Goeders, Vaughn Betz
 -->
@@ -195,16 +195,88 @@
     <!-- Define general purpose logic block (CLB) begin -->
     <pb_type name="clb">
       <input name="I" num_pins="33" equivalent="true"/>
-      <output name="O" num_pins="10" equivalent="true"/>
+      <output name="O" num_pins="20" equivalent="false"/>
       <clock name="clk" num_pins="1"/>
 
-      <!-- Describe basic logic element.  
-             Each basic logic element has a 6-LUT that can be optionally registered
+      <!-- Describe fracturable logic element.  
+             Each fracturable logic element has a 6-LUT that can alternatively operate as two 5-LUTs with shared inputs. 
+             The outputs of the fracturable logic element can be optionally registered
         -->
       <pb_type name="fle" num_pb="10">
         <input name="in" num_pins="6"/>
-        <output name="out" num_pins="1"/>
+        <output name="out" num_pins="2"/>
         <clock name="clk" num_pins="1"/>
+
+        <!-- Dual 5-LUT mode definition begin -->
+        <mode name="n2_lut5">
+          <pb_type name="lut5inter" num_pb="1">
+            <input name="in" num_pins="5"/>
+            <output name="out" num_pins="2"/>
+            <clock name="clk" num_pins="1"/>
+            <pb_type name="ble5" num_pb="2">
+              <input name="in" num_pins="5"/>
+              <output name="out" num_pins="1"/>
+              <clock name="clk" num_pins="1"/> 
+
+              <!-- Define the LUT -->
+              <pb_type name="lut5" blif_model=".names" num_pb="1" class="lut">
+                <input name="in" num_pins="5" port_class="lut_in"/>
+                <output name="out" num_pins="1" port_class="lut_out"/>
+                <!-- LUT timing using delay matrix -->
+                <!-- These are the physical delay inputs on a Stratix IV LUT but because VPR cannot do LUT rebalancing,
+                           we instead take the average of these numbers to get more stable results
+                      82e-12
+                      173e-12
+                      261e-12
+                      263e-12
+                      398e-12
+                      -->
+                <delay_matrix type="max" in_port="lut5.in" out_port="lut5.out">
+                  235e-12
+                  235e-12
+                  235e-12
+                  235e-12
+                  235e-12
+                </delay_matrix>
+              </pb_type>
+
+              <!-- Define the flip-flop -->
+              <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+                <input name="D" num_pins="1" port_class="D"/>
+                <output name="Q" num_pins="1" port_class="Q"/>
+                <clock name="clk" num_pins="1" port_class="clock"/>
+                <T_setup value="66e-12" port="ff.D" clock="clk"/>
+                <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
+              </pb_type>
+
+              <interconnect>
+                <direct name="direct1" input="ble5.in[4:0]" output="lut5[0:0].in[4:0]"/>
+                <direct name="direct2" input="lut5[0:0].out" output="ff[0:0].D">
+                  <!-- Advanced user option that tells CAD tool to find LUT+FF pairs in netlist -->
+                  <pack_pattern name="ble5" in_port="lut5[0:0].out" out_port="ff[0:0].D"/>
+                </direct>
+                <direct name="direct3" input="ble5.clk" output="ff[0:0].clk"/>                    
+                <mux name="mux1" input="ff[0:0].Q lut5.out[0:0]" output="ble5.out[0:0]">
+                  <!-- LUT to output is faster than FF to output on a Stratix IV -->
+                  <delay_constant max="25e-12" in_port="lut5.out[0:0]" out_port="ble5.out[0:0]" />
+                  <delay_constant max="45e-12" in_port="ff[0:0].Q" out_port="ble5.out[0:0]" />
+                </mux>
+              </interconnect>
+            </pb_type>
+            <interconnect>
+              <direct name="direct1" input="lut5inter.in" output="ble5[0:0].in"/>
+              <direct name="direct2" input="lut5inter.in" output="ble5[1:1].in"/>
+              <direct name="direct3" input="ble5[1:0].out" output="lut5inter.out"/>                 
+              <complete name="complete1" input="lut5inter.clk" output="ble5[1:0].clk"/>                  
+            </interconnect>
+          </pb_type>
+          <interconnect>
+            <direct name="direct1" input="fle.in[4:0]" output="lut5inter.in"/>
+            <direct name="direct2" input="lut5inter.out" output="fle.out"/>
+            <direct name="direct3" input="fle.clk" output="lut5inter.clk"/>
+          </interconnect>
+        </mode> 
+        <!-- Dual 5-LUT mode definition end -->
         <!-- 6-LUT mode definition begin -->
         <mode name="n1_lut6">
           <!-- Define 6-LUT mode -->
@@ -290,7 +362,8 @@
                then the outputs those 6-LUTs take get evenly distributed across all four sides of the CLB instead of clumped on two sides (which is what happens with a more
                naive specification).
           -->
-        <direct name="clbouts1" input="fle[9:0].out" output="clb.O"/>
+        <direct name="clbouts1" input="fle[9:0].out[0:0]" output="clb.O[9:0]"/>
+        <direct name="clbouts2" input="fle[9:0].out[1:1]" output="clb.O[19:10]"/>
       </interconnect>
 
       <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
@@ -304,7 +377,6 @@
       </gridlocations>
     </pb_type>
     <!-- Define general purpose logic block (CLB) ends -->
-
   </complexblocklist>
   <power>
     <local_interconnect C_wire="2.5e-10"/>
