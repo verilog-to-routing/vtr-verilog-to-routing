@@ -1,2 +1,2 @@
 arch	circuit	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error
-k6_N10_memDepth16384_memData64_40nm_timing.xml	ch_intrinsics.v	success	50	2.59373	18.82	4.6	2.74	0.18	765	895	462	40	99	130	1	0	
+k6_frac_N10_mem32K_40nm.xml	ch_intrinsics.v	success	50	2.59373	18.82	4.6	2.74	0.18	765	895	462	40	99	130	1	0	

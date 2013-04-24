@@ -15,7 +15,7 @@ sdc_dir = tasks/regression_tests/sdc
 circuit_list_add=diffeq.pre-vpr.blif
 
 # Add architectures to list to sweep
-arch_list_add=k6_N10_soft_logic_only.xml
+arch_list_add=k6_frac_N10_40nm.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt
