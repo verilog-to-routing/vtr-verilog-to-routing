@@ -69,10 +69,10 @@
     <switch_block type="wilton" fs="3"/>
   </device>
   <switchlist>
-    <switch type="mux" name="0" R="551" Cin="7.7e-16" Cout="4e-15" Tdel="5.8e-11" mux_trans_size="2.63074" buf_size="27.645901"/>
+    <switch type="mux" name="0" R="551" Cin="7.7e-16" Cout="4.56e-15" Tdel="5.8e-11" mux_trans_size="2.63074" buf_size="27.645901"/>
   </switchlist>
   <segmentlist>
-    <segment freq="1.0" length="4" type="unidir" Rmetal="101" Cmetal="2.25e-14">
+    <segment freq="1.0" length="4" type="unidir" Rmetal="101" Cmetal="2.565e-14">
       <mux name="0"/>
       <sb type="pattern">
         1 1 1 1 1
