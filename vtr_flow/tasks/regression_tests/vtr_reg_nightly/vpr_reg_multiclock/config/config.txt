@@ -16,7 +16,7 @@ sdc_dir=tasks/regression_tests/vtr_reg_nightly/vpr_reg_multiclock
 circuit_list_add=multiclock.blif
 
 # Add architectures to list to sweep
-arch_list_add=k6_N10_memDepth16384_memData64_40nm_timing.xml
+arch_list_add=k6_frac_N10_mem32K_40nm.xml
 
 # Parse info and how to parse
 parse_file=vpr_multiclock.txt
