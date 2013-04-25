@@ -40,6 +40,16 @@ delay_FF_T_clk_Q = 124e-12
 delay_LUT_out_to_BLE_out = 25e-12
 delay_FF_out_to_BLE_out = 45e-12
 
+wire_C_per_m = 250e-12
+
+def wire_C_scaling(tech):
+    if (tech == 45):
+        return 1.0
+    elif (tech == 130):
+        return (285.0/250.0)
+    elif (tech == 22):
+        return (218.0/250.0)
+
 def delay_LUT(size):
     if (size == 6):
         return 261e-12
@@ -47,33 +57,7 @@ def delay_LUT(size):
         return 235e-12
     else:
         assert(0);
-        
-    
 
-def C_wire_glb(tech):
-    if (tech == 130):
-        return 285e-12
-    elif (tech == 45):
-        return 250e-12    
-    elif (tech == 22):
-        return 218e-12
-    else:
-        assert(0)
-
-def C_wire_local(tech):
-    return C_wire_glb(tech)
-
-    if (tech == 130):
-        return 230e-12
-    elif (tech == 45):
-        return 190e-12
-    elif (tech == 22):
-        return 170e-12
-    else:
-        assert(0)
-        
-def C_wire_clk(tech):
-    return C_wire_glb(tech)
 
 def xprint(s, newline=False):
     for i in range(tabs):
@@ -654,7 +638,7 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, seg_length
     xprop("name", "0")
     xprop("R", switch_R)
     xprop("Cin", switch_Cin)
-    xprop("Cout", switch_Cout)
+    xprop("Cout", switch_Cout * wire_C_scaling(tech_nm))
     xprop("Tdel", switch_T_del)
     xprop("mux_trans_size", switch_mux_trans_size)
     xprop("buf_size", switch_buf_size)
@@ -668,7 +652,7 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, seg_length
     xprop("length", seg_length)
     xprop("type", "unidir")
     xprop("Rmetal", segment_Rmetal)
-    xprop("Cmetal", segment_Cmetal)
+    xprop("Cmetal", segment_Cmetal * wire_C_scaling(tech_nm))
     # if (do_power):
     #    xprop("Cmetal_per_m", C_wire_glb(tech_nm))
     xclose()
@@ -725,7 +709,7 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, seg_length
         # xcloseend()
         
         xbegin("local_interconnect")
-        xprop("C_wire", C_wire_local(tech_nm))
+        xprop("C_wire", wire_C_per_m * wire_C_scaling(tech_nm))
         xcloseend()
         
         xend()  # Power
@@ -734,7 +718,7 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, seg_length
         xclose()
         xbegin("clock")
         xprop("buffer_size", "auto")
-        xprop("C_wire", C_wire_clk(tech_nm))
+        xprop("C_wire", wire_C_per_m * wire_C_scaling(tech_nm))
         xcloseend()
         xend()  # clocks
     

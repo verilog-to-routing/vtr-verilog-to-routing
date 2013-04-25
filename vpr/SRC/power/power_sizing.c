@@ -55,6 +55,8 @@ static double power_transistors_for_pb_node(t_pb_graph_node * pb_node);
 static double power_transistors_per_tile(t_arch * arch);
 static void power_size_pb(void);
 static void power_size_pb_rec(t_pb_graph_node * pb_node);
+static void power_size_pin_to_interconnect(t_interconnect * interc,
+		int * fanout, float * wirelength);
 static double power_MTAs(float W_size);
 static double power_MTAs_L(float L_size);
 /************************* FUNCTION DEFINITIONS *********************/
@@ -232,7 +234,7 @@ void power_sizing_init(t_arch * arch) {
 
 	// tech size = 2 lambda, so lambda^2/4.0 = tech^2
 	g_MTA_area = ((POWER_MTA_L * POWER_MTA_W)/ 4.0)*pow(g_power_tech->tech_size,
-			(float)2.0);
+			(float) 2.0);
 
 	// Determines physical size of different PBs
 	power_size_pb();
@@ -499,7 +501,7 @@ static double power_MTAs(float W_size) {
 }
 
 static double power_MTAs_L(float L_size) {
-	return 1 + (L_size-1) * (POWER_DRC_MIN_L / POWER_MTA_L);
+	return 1 + (L_size - 1) * (POWER_DRC_MIN_L / POWER_MTA_L);
 }
 
 static void power_size_pb(void) {
@@ -589,17 +591,18 @@ static void power_size_pb_rec(t_pb_graph_node * pb_node) {
 
 /* Provides statistics about the connection between the pin and interconnect */
 static void power_size_pin_to_interconnect(t_interconnect * interc,
-		float pb_interc_sidelength, int * fanout, float * wirelength) {
+		int * fanout, float * wirelength) {
 
 	float this_interc_sidelength;
 
 	/* Pin to interconnect wirelength */
 	switch (interc->type) {
 	case DIRECT_INTERC:
-	case MUX_INTERC:
-		*wirelength = g_power_arch->local_interc_factor * pb_interc_sidelength;
+		*wirelength = 0;
 		*fanout = 1;
 		break;
+	case MUX_INTERC:
+
 	case COMPLETE_INTERC:
 		/* The sidelength of this crossbar */
 		this_interc_sidelength = sqrt(
@@ -618,8 +621,7 @@ static void power_size_pin_to_interconnect(t_interconnect * interc,
 		 */
 
 		*fanout = interc->interconnect_power->num_output_ports;
-		*wirelength = g_power_arch->local_interc_factor * pb_interc_sidelength
-				+ this_interc_sidelength;
+		*wirelength = this_interc_sidelength;
 		//*wirelength = ((1 + *fanout) / 2.0) * g_power_arch->local_interc_factor
 		//		* pb_interc_sidelength + this_interc_sidelength;
 		break;
@@ -653,6 +655,11 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 	boolean top_level_pb;
 
 	t_pb_type * this_pb_type = pin->parent_node->pb_type;
+
+	/*
+	 if (strcmp(pin->parent_node->pb_type->name, "clb") == 0) {
+	 //printf("here\n");
+	 }*/
 
 	this_pb_interc_sidelength = sqrt(
 			power_transistor_area(
@@ -722,8 +729,8 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 		for (i = 0; i < list_cnt; i++) {
 			int mode_idx = list[i]->parent_mode_index;
 
-			power_size_pin_to_interconnect(list[i], this_pb_interc_sidelength,
-					&fanout_tmp, &wirelength_tmp);
+			power_size_pin_to_interconnect(list[i], &fanout_tmp,
+					&wirelength_tmp);
 
 			fanout_per_mode[mode_idx] += fanout_tmp;
 			wirelength_out_per_mode[mode_idx] += wirelength_tmp;
@@ -737,6 +744,10 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 			fanout = std::max(fanout, fanout_per_mode[i]);
 			wirelength_out = std::max(wirelength_out,
 					wirelength_out_per_mode[i]);
+		}
+		if (wirelength_out != 0) {
+			wirelength_out += g_power_arch->local_interc_factor
+					* this_pb_interc_sidelength;
 		}
 
 		free(fanout_per_mode);
@@ -763,10 +774,14 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 		/* Loop through all interconnect that this pin drives */
 
 		for (i = 0; i < list_cnt; i++) {
-			power_size_pin_to_interconnect(list[i], parent_pb_interc_sidelength,
-					&fanout_tmp, &wirelength_tmp);
+			power_size_pin_to_interconnect(list[i], &fanout_tmp,
+					&wirelength_tmp);
 			fanout += fanout_tmp;
 			wirelength_out += wirelength_tmp;
+		}
+		if (wirelength_out != 0) {
+			wirelength_out += g_power_arch->local_interc_factor
+					* parent_pb_interc_sidelength;
 		}
 
 		/* Input wirelength - from this PB */
