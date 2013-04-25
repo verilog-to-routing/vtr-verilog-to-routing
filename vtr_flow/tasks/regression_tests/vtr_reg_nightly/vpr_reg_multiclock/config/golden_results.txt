@@ -1,2 +1,2 @@
 arch	circuit	crit_path_delay_(mcw)	clk_to_clk	clk_to_clk2	clk_to_input	clk_to_output	clk2_to_clk2	clk2_to_clk	clk2_to_input	clk2_to_output	input_to_input	input_to_clk	input_to_clk2	input_to_output	output_to_output	output_to_clk	output_to_clk2	output_to_input
-k6_N10_memDepth16384_memData64_40nm_timing.xml	multiclock.blif	1.3429	1.30268	0.8124	-1	1.97069	0.66466	1.15494	-1	1.3429	-1	1.23508	-1	1.97069	-1	-1	-1	-1
+k6_frac_N10_mem32K_40nm.xml	multiclock.blif	1.3429	1.30268	0.8124	-1	1.97069	0.66466	1.15494	-1	1.3429	-1	1.23508	-1	1.97069	-1	-1	-1	-1
