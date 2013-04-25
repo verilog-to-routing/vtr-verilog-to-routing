@@ -39,6 +39,6 @@ parse_file=vpr_chain.txt
 
 
 # Pass requirements
-pass_requirements_file=pass_requirements.txt
+pass_requirements_file=pass_requirements_chain.txt
 
 script_params=-lut_size 6
