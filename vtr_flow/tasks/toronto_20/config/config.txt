@@ -37,7 +37,7 @@ circuit_list_add=tseng.blif
 #circuit_list_add=spla.blif
 
 # Add architectures to list to sweep
-arch_list_add=k6_N10_memDepth16384_memData64_40nm_timing.xml
+arch_list_add=k6_frac_N10.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt
