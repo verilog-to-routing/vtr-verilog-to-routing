@@ -207,7 +207,7 @@ bool TCH_VPR_Data_c::operator==(
           ( this->vpr_rrNodeArray == vpr_data.vpr_rrNodeArray ) &&
           ( this->vpr_rrNodeCount == vpr_data.vpr_rrNodeCount ) &&
           ( this->vpr_freeLocationArray == vpr_data.vpr_freeLocationArray ) &&
-	  ( this->vpr_legalPosArray == vpr_data.vpr_legalPosArray ) ?
+          ( this->vpr_legalPosArray == vpr_data.vpr_legalPosArray ) ?
           true : false );
 }
 
@@ -500,7 +500,7 @@ const t_pb_graph_pin* TCH_VPR_Data_c::FindGraphPin(
       pinIndex %= ( vpr_pb_type.num_input_pins + 
                     vpr_pb_type.num_output_pins + 
                     vpr_pb_type.num_clock_pins );
-		
+                
       if( pinIndex < vpr_pb_type.num_input_pins ) 
       {
          for( int portIndex = 0; portIndex < vpr_pb_graph_node.num_input_ports; ++portIndex ) 
@@ -512,13 +512,13 @@ const t_pb_graph_pin* TCH_VPR_Data_c::FindGraphPin(
             else
             {
                pvpr_graph_pin = &vpr_pb_graph_node.input_pins[portIndex][pinIndex];
-	       break;
+               break;
             }
          }
       } 
       else if( pinIndex < ( vpr_pb_type.num_input_pins + vpr_pb_type.num_output_pins ))
       {
-	 pinIndex -= vpr_pb_type.num_input_pins;
+         pinIndex -= vpr_pb_type.num_input_pins;
          for( int portIndex = 0; portIndex < vpr_pb_graph_node.num_output_ports; ++portIndex )
          {
             if( pinIndex - vpr_pb_graph_node.num_output_pins[portIndex] >= 0 )
@@ -528,13 +528,13 @@ const t_pb_graph_pin* TCH_VPR_Data_c::FindGraphPin(
             else
             {
                pvpr_graph_pin = &vpr_pb_graph_node.output_pins[portIndex][pinIndex];
-	       break;
+               break;
             }
          }
       } 
       else 
       {
-	 pinIndex -= ( vpr_pb_type.num_input_pins + vpr_pb_type.num_output_pins );
+         pinIndex -= ( vpr_pb_type.num_input_pins + vpr_pb_type.num_output_pins );
          for( int portIndex = 0; portIndex < vpr_pb_graph_node.num_clock_ports; ++portIndex )
          {
             if( pinIndex - vpr_pb_graph_node.num_clock_pins[portIndex] >= 0 )
@@ -544,7 +544,7 @@ const t_pb_graph_pin* TCH_VPR_Data_c::FindGraphPin(
             else
             {
                pvpr_graph_pin = &vpr_pb_graph_node.clock_pins[portIndex][pinIndex];
-	       break;
+               break;
             }
          }
       }
