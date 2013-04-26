@@ -271,7 +271,7 @@ template< class T > T* TCT_SortedVector_c< T >::operator[](
    {
       if( !isSorted_ )
       {
-	this->Sort_( );
+         this->Sort_( );
       }
       pdata = &this->vector_.operator[]( index );
    }
@@ -361,7 +361,7 @@ template<class T> void TCT_SortedVector_c< T >::ExtractString(
          memset( szDataString, 0, sizeof( szDataString ));
 
          switch( mode )
-	 {
+         {
          case TC_DATA_INT:
             iDataValue = *reinterpret_cast< int* >( this->operator[]( i ));
             sprintf( szDataString, "%d", iDataValue );
@@ -405,13 +405,13 @@ template<class T> void TCT_SortedVector_c< T >::ExtractString(
          case TC_DATA_UNDEFINED:
             sprintf( szDataString, "?" );
             break;
-	 }
+         }
 
-	 size_t lenDataString = TCT_Max( strlen( szDataString ), strlen( "..." ));
+         size_t lenDataString = TCT_Max( strlen( szDataString ), strlen( "..." ));
          if( psrData->length( ) + lenDataString >= maxLen )
-	 {
-	    *psrData += "...";
-	    break;
+         {
+            *psrData += "...";
+            break;
          }
 
          *psrData += szDataString;
