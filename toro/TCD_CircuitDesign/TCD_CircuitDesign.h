@@ -5,7 +5,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -63,6 +63,7 @@ public:
    bool InitDefaults( const string& srDefaultBaseName );
    bool InitValidate( void );
 
+   bool IsLegal( void ) const;
    bool IsValid( void ) const;
 
 private:
@@ -96,6 +97,7 @@ public:
                              // (see BLIF ".subckt")
    TNO_NetList_c  netList;   // Define design's net list
    TNO_NameList_t netNameList;
+   TNO_NameList_t netOrderList;
 
 private:
 
@@ -108,7 +110,8 @@ private:
       TCD_INST_NAME_LIST_DEF_CAPACITY = 64,
       TCD_CELL_LIST_DEF_CAPACITY = 64,
       TCD_NET_LIST_DEF_CAPACITY = 1024,
-      TCD_NET_NAME_LIST_DEF_CAPACITY = 1024
+      TCD_NET_NAME_LIST_DEF_CAPACITY = 1024,
+      TCD_NET_ORDER_LIST_DEF_CAPACITY = 1024
    };
 };
 
