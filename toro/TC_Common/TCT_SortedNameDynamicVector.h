@@ -582,7 +582,7 @@ template< class T > bool TCT_SortedNameDynamicVector_c< T >::ApplyRegExp(
          // Iterate over given list and add matching name elements
          size_t matchCount = 0;  
          while( matchCount < SIZE_MAX )
-	 {
+         {
             size_t matchIndex = thisRegExpIter.Next( );
             if( matchIndex == SIZE_MAX )
                break;
@@ -597,7 +597,7 @@ template< class T > bool TCT_SortedNameDynamicVector_c< T >::ApplyRegExp(
          }
 
          if( matchCount == 0 )
-	 {
+         {
             ok = this->ShowMessageInvalidRegExpName_( srRegExpName, 
                                                       isShowWarningEnabled,
                                                       isShowErrorEnabled,
@@ -609,11 +609,11 @@ template< class T > bool TCT_SortedNameDynamicVector_c< T >::ApplyRegExp(
       else 
       {
          if( this->IsMember( srRegExpName ))
-	 {
+         {
             pnameList->Add( srRegExpName );
-	 }
+         }
          else
-	 {
+         {
             ok = this->ShowMessageMissingRegExpName_( srRegExpName, 
                                                       isShowWarningEnabled,
                                                       isShowErrorEnabled,
@@ -639,9 +639,9 @@ template< class T > bool TCT_SortedNameDynamicVector_c< T >::ApplyRegExp(
 
    bool ok = this->ApplyRegExp( nameList, 
                                 pnameList,
-				isShowWarningEnabled,
-				isShowErrorEnabled,
-				pszShowRegExpType );
+                                isShowWarningEnabled,
+                                isShowErrorEnabled,
+                                pszShowRegExpType );
    return( ok );
 }
 
@@ -827,8 +827,8 @@ template< class T > T* TCT_SortedNameDynamicVector_c< T >::Search_(
    {
       if( this->pdataMR_ )
       {
-	 // Attempt to use pointer to cached 'most-recent search data
-	 const T& dataMR = *this->pdataMR_;
+         // Attempt to use pointer to cached 'most-recent search data
+         const T& dataMR = *this->pdataMR_;
          int i = TCT_BSearchCompare( &dataMR, &data, 
                                      TC_CompareStrings );
          pdata = ( i == 0 ? this->pdataMR_ : 0 );
@@ -836,13 +836,13 @@ template< class T > T* TCT_SortedNameDynamicVector_c< T >::Search_(
 
       if( !pdata )
       {
-	 // Hi-Ho, Hi-Ho... its off to (binary-search) work we go...
+         // Hi-Ho, Hi-Ho... its off to (binary-search) work we go...
          pdata = TCT_BSearch( data, 
                               TCT_DynamicVector_c< T >::padata_, 
                               TCT_DynamicVector_c< T >::curLen_,
                               TC_CompareStrings );
 
-	 // Don't forget to update pointer to cached 'most-recent search data
+         // Don't forget to update pointer to cached 'most-recent search data
          // (this cast may be removed if compiler supports "mutable" keyword)
          TCT_SortedNameDynamicVector_c* psortedNameDynamicVector = 0;
          psortedNameDynamicVector = const_cast< TCT_SortedNameDynamicVector_c* >( this );
@@ -935,7 +935,7 @@ template< class T > size_t TCT_SortedNameDynamicVector_c< T >::SortTagDuplicates
          if( pszName_i && pszName_j &&
              strcmp( pszName_i, pszName_j ) == 0 )
          {
-	    foundDuplicate = true;
+            foundDuplicate = true;
 
             // Tag this duplicate name w/special prefix, then update count
             this->operator[]( j )->SetName( "~" );
