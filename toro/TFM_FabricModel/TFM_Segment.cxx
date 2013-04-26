@@ -10,7 +10,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -74,6 +74,26 @@ TFM_Segment_c::TFM_Segment_c(
       srName( TIO_PSZ_STR( pszName )),
       path( path_ ),
       index( index_ )
+{
+   this->timing.res = 0.0;
+   this->timing.cap = 0.0;
+}
+
+//===========================================================================//
+TFM_Segment_c::TFM_Segment_c( 
+      const string& srName_ )
+      :
+      srName( srName_ )
+{
+   this->timing.res = 0.0;
+   this->timing.cap = 0.0;
+}
+
+//===========================================================================//
+TFM_Segment_c::TFM_Segment_c( 
+      const char* pszName )
+      :
+      srName( TIO_PSZ_STR( pszName ))
 {
    this->timing.res = 0.0;
    this->timing.cap = 0.0;
