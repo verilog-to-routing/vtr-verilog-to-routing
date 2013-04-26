@@ -4,7 +4,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -122,23 +122,19 @@ enum TOS_RouteCostMode_e
 };
 typedef enum TOS_RouteCostMode_e TOS_RouteCostMode_t;
 
+enum TOS_RouteOrderMode_e 
+{ 
+   TOS_ROUTE_ORDER_UNDEFINED,
+   TOS_ROUTE_ORDER_FIRST,
+   TOS_ROUTE_ORDER_AUTO
+};
+typedef enum TOS_RouteOrderMode_e TOS_RouteOrderMode_t;
+
 //---------------------------------------------------------------------------//
 // Define input option constants and typedefs
 //---------------------------------------------------------------------------//
 
 typedef TCT_NameList_c< TC_Name_c > TOS_OptionsNameList_t;
-
-enum TOS_InputDataMask_e
-{
-   TOS_INPUT_DATA_UNDEFINED = 0x00,
-   TOS_INPUT_DATA_NONE      = 0x01,
-   TOS_INPUT_DATA_BLOCKS    = 0x02,
-   TOS_INPUT_DATA_IOS       = 0x04,
-   TOS_INPUT_DATA_ANY       = 0xFF,
-   TOS_INPUT_DATA_ALL       = 0xFF
-};
-typedef enum TOS_InputDataMask_e TOS_InputDataMask_t;
-typedef enum TOS_InputDataMask_e TOS_InputDataMode_t;
 
 //---------------------------------------------------------------------------//
 // Define output option constants and typedefs
