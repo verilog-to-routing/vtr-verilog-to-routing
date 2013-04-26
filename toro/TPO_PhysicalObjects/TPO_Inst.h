@@ -13,8 +13,9 @@
 //           - GetLatchClockType, GetLatchInitState
 //           - GetSubcktPinMapList
 //           - GetPackHierMapList
+//           - GetPlaceFabricName
+//           - GetPlaceStatus, GetPlaceOrigin
 //           - GetPlaceRegionList, GetPlaceRelativeList
-//           - GetPlaceStatus, GetPlaceFabricName
 //           - SetCellName
 //           - SetPinList
 //           - SetSource
@@ -23,7 +24,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -52,6 +53,9 @@ using namespace std;
 #include "TGS_Typedefs.h"
 #include "TGS_Region.h"
 
+#include "TGO_Typedefs.h"
+#include "TGO_Point.h"
+
 #include "TLO_Typedefs.h"
 #include "TLO_Cell.h"
 
@@ -74,35 +78,35 @@ public:
    TPO_Inst_c( const string& srName );
    TPO_Inst_c( const char* pszName );
    TPO_Inst_c( const string& srName,
-	       const string& srCellName,
-	       const TPO_PinList_t& pinList,
+               const string& srCellName,
+               const TPO_PinList_t& pinList,
                TPO_InstSource_t source,
                const TPO_LogicBitsList_t& logicBitsList );
    TPO_Inst_c( const char* pszName,
-	       const char* pszCellName,
-	       const TPO_PinList_t& pinList,
+               const char* pszCellName,
+               const TPO_PinList_t& pinList,
                TPO_InstSource_t source,
                const TPO_LogicBitsList_t& logicBitsList );
    TPO_Inst_c( const string& srName,
-	       const string& srCellName,
-	       const TPO_PinList_t& pinList,
+               const string& srCellName,
+               const TPO_PinList_t& pinList,
                TPO_InstSource_t source,
                TPO_LatchType_t clockType,
                TPO_LatchState_t initState );
    TPO_Inst_c( const char* pszName,
-	       const char* pszCellName,
-	       const TPO_PinList_t& pinList,
+               const char* pszCellName,
+               const TPO_PinList_t& pinList,
                TPO_InstSource_t source,
                TPO_LatchType_t clockType,
                TPO_LatchState_t initState );
    TPO_Inst_c( const string& srName,
-	       const string& srCellName,
+               const string& srCellName,
                TPO_InstSource_t source,
-	       const TPO_PinMapList_t& pinMapList );
+               const TPO_PinMapList_t& pinMapList );
    TPO_Inst_c( const char* pszName,
-	       const char* pszCellName,
+               const char* pszCellName,
                TPO_InstSource_t source,
-	       const TPO_PinMapList_t& pinMapList );
+               const TPO_PinMapList_t& pinMapList );
    TPO_Inst_c( const TPO_Inst_c& inst );
    ~TPO_Inst_c( void );
 
@@ -131,27 +135,32 @@ public:
    const TPO_PinMapList_t& GetSubcktPinMapList( void ) const;
 
    const TPO_HierMapList_t& GetPackHierMapList( void ) const;
+
+   const char* GetPlaceFabricName( void ) const;
+   TPO_StatusMode_t GetPlaceStatus( void ) const;
+   const TGO_Point_c& GetPlaceOrigin( void ) const;
    const TGS_RegionList_t& GetPlaceRegionList( void ) const;
    const TPO_RelativeList_t& GetPlaceRelativeList( void ) const;
-   TPO_StatusMode_t GetPlaceStatus( void ) const;
-   const char* GetPlaceFabricName( void ) const;
    
    void SetCellName( const string& srCellName );
    void SetCellName( const char* pszCellName );
    void SetPinList( const TPO_PinList_t& pinList );
+   void SetSource( TPO_InstSource_t source );
+
    void SetInputOutputType( TC_TypeMode_t type );
    void SetNamesLogicBitsList( const TPO_LogicBitsList_t& logicBitsList );
    void SetLatchClockType( TPO_LatchType_t clockType );
    void SetLatchInitState( TPO_LatchState_t initState );
    void SetSubcktPinMapList( const TPO_PinMapList_t& pinMapList );
-   void SetSource( TPO_InstSource_t source );
 
    void SetPackHierMapList( const TPO_HierMapList_t& hierMapList );
-   void SetPlaceRegionList( const TGS_RegionList_t& regionList );
-   void SetPlaceRelativeList( const TPO_RelativeList_t& relativeList );
-   void SetPlaceStatus( TPO_StatusMode_t status );
+
    void SetPlaceFabricName( const string& srFabricName );
    void SetPlaceFabricName( const char* pszFabricName );
+   void SetPlaceStatus( TPO_StatusMode_t status );
+   void SetPlaceOrigin( const TGO_Point_c& origin );
+   void SetPlaceRegionList( const TGS_RegionList_t& regionList );
+   void SetPlaceRelativeList( const TPO_RelativeList_t& relativeList );
 
    void AddPin( const TPO_Pin_t& pin );
 
@@ -217,12 +226,12 @@ private:
    {
    public:
 
+      string srFabricName;        // Defines placement fabric name (optional)
+      TPO_StatusMode_t status;    // Defines placement status mode (optional)
+      TGO_Point_c origin;         // Defines placement origin point (optional)
+      TGS_RegionList_t regionList;// Defines placement region(s) (optional)
       TPO_RelativeList_t relativeList;
                                   // Defines placement relative(s) (optional)
-      TGS_RegionList_t regionList;// Defines placement region(s) (optional)
-
-      TPO_StatusMode_t status;    // Defines placement status mode (optional)
-      string srFabricName;        // Defines placement fabric name (optional)
    } place_;
 
 private:
@@ -336,6 +345,27 @@ inline const TPO_HierMapList_t& TPO_Inst_c::GetPackHierMapList(
 }
 
 //===========================================================================//
+inline const char* TPO_Inst_c::GetPlaceFabricName( 
+      void ) const
+{
+   return( TIO_SR_STR( this->place_.srFabricName ));
+}
+
+//===========================================================================//
+inline TPO_StatusMode_t TPO_Inst_c::GetPlaceStatus(
+      void ) const
+{
+   return( this->place_.status );
+}
+
+//===========================================================================//
+inline const TGO_Point_c& TPO_Inst_c::GetPlaceOrigin(
+      void ) const
+{
+   return( this->place_.origin );
+}
+
+//===========================================================================//
 inline const TGS_RegionList_t& TPO_Inst_c::GetPlaceRegionList( 
       void ) const
 {
@@ -347,20 +377,6 @@ inline const TPO_RelativeList_t& TPO_Inst_c::GetPlaceRelativeList(
       void ) const
 {
    return( this->place_.relativeList );
-}
-
-//===========================================================================//
-inline TPO_StatusMode_t TPO_Inst_c::GetPlaceStatus(
-      void ) const
-{
-   return( this->place_.status );
-}
-
-//===========================================================================//
-inline const char* TPO_Inst_c::GetPlaceFabricName( 
-      void ) const
-{
-   return( TIO_SR_STR( this->place_.srFabricName ));
 }
 
 //===========================================================================//
