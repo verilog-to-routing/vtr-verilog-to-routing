@@ -1498,7 +1498,7 @@ bool TIO_PrintHandler_c::PrefixMessage_(
 
       case TIO_PRINT_INTERNAL:
 
-	 sprintf( pszMessage, "INTERNAL(%lu) @ %s\n"
+         sprintf( pszMessage, "INTERNAL(%lu) @ %s\n"
                               "            %s", internalCount, pszSource, pszText );
          break;
 
