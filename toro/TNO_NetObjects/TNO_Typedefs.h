@@ -4,7 +4,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -53,6 +53,10 @@ typedef enum TNO_NodeType_e TNO_NodeType_t;
 //---------------------------------------------------------------------------//
 // Define net list typedefs
 //---------------------------------------------------------------------------//
+
+#define TNO_NET_INDEX_INVALID SIZE_MAX
+#define TNO_PORT_INDEX_INVALID SIZE_MAX
+#define TNO_PIN_INDEX_INVALID SIZE_MAX
 
 class TC_Name_c; // Forward declaration for subsequent class typedefs
 typedef TCT_NameList_c< TC_Name_c > TNO_NameList_t;
