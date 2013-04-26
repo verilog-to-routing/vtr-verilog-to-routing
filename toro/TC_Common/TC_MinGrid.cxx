@@ -305,7 +305,7 @@ double TC_MinGrid_c::SnapToGrid(
       double fmax = static_cast< double >( INT_MAX );
       if( TCTF_IsGT( f, fmin ) && TCTF_IsLT( f, fmax ))
       {
-	 fdelta = floor( f );
+         fdelta = floor( f );
          i = this->FloatToInt( f - fdelta );
       }
    }
