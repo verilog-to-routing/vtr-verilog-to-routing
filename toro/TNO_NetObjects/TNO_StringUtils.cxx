@@ -4,11 +4,13 @@
 //           Functions include:
 //           - TNO_ExtractStringStatusMode
 //           - TNO_ExtractStringNodeType
+//           - TNO_FormatNameIndex
+//           - TNO_ParseNameIndex
 //
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -74,3 +76,92 @@ void TNO_ExtractStringNodeType(
       }
    }
 } 
+
+//===========================================================================//
+// Function       : TNO_FormatNameIndex
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 02/21/12 jeffr : Original
+//===========================================================================//
+void TNO_FormatNameIndex(
+      const char*   pszName,
+            size_t  index,
+            string* psrNameIndex ) 
+{
+   if( psrNameIndex )
+   {  
+      *psrNameIndex = "";
+
+      if( pszName )
+      {
+         *psrNameIndex += pszName;
+      }
+      if( index != SIZE_MAX )
+      {
+         char szIndex[TIO_FORMAT_STRING_LEN_VALUE];
+         sprintf( szIndex, "%lu", static_cast< unsigned long >( index ));
+         *psrNameIndex += "[";
+         *psrNameIndex += szIndex;
+         *psrNameIndex += "]";
+      }
+   }
+}
+
+//===========================================================================//
+void TNO_FormatNameIndex(
+      const string& srName,
+            size_t  index,
+            string* psrNameIndex )
+{
+   const char* pszName = ( srName.length( ) ? srName.data( ) : 0 );
+   TNO_FormatNameIndex( pszName, index, psrNameIndex );
+}
+
+//===========================================================================//
+// Function       : TNO_ParseNameIndex
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 02/21/12 jeffr : Original
+//===========================================================================//
+void TNO_ParseNameIndex(
+      const char*   pszNameIndex,
+            string* psrName,
+            size_t* pindex )
+{
+   string srName( "" );
+   size_t index = SIZE_MAX;
+
+   if( pszNameIndex )
+   {
+      srName = pszNameIndex;
+      size_t left = srName.find( '[' );
+      size_t right = srName.find( ']' );
+      if(( left != string::npos ) && ( right != string::npos ))
+      {
+         string srIndex( srName.substr( left + 1, right - left - 1 ));
+         index = atoi( srIndex.data( ));
+         srName = srName.substr( 0, left );
+      }
+   }
+
+   if( psrName )
+   {
+      *psrName = srName;
+   }
+   if( pindex )
+   {
+      *pindex = index;
+   }
+}
+
+//===========================================================================//
+void TNO_ParseNameIndex(
+      const string& srNameIndex,
+            string* psrName,
+            size_t* pindex )
+{
+   const char* pszNameIndex = ( srNameIndex.length( ) ? srNameIndex.data( ) : 0 );
+   TNO_ParseNameIndex( pszNameIndex, psrName, pindex );
+}
