@@ -321,9 +321,9 @@ template< class T > bool TTPT_TilePlaneIter_c< T >::Next(
       if( ptile )
       {
          if(( mode == TTP_TILE_CLEAR && ptile->IsSolid( )) ||
-	    ( mode == TTP_TILE_SOLID && ptile->IsClear( )))
+            ( mode == TTP_TILE_SOLID && ptile->IsClear( )))
          {
-	    this->Next( &ptile, mode );
+            this->Next( &ptile, mode );
          }
       }
    }
@@ -537,14 +537,14 @@ template< class T > bool TTPT_TilePlaneIter_c< T >::NextByRegion_(
                   if( TCTF_IsGE( nextRegion.y1, tileRegion.y1 ))
                   {
                      // Push next tile if lower-left corner "touches" tile
- 		     // (ie. if lower-left point "touches" right side of tile)
+                     // (ie. if lower-left point "touches" right side of tile)
                      this->ptileStack_->Push( pnextTile );
                   }
                   else if( nextRegion.IsIntersecting( iterRegion, TC_SIDE_LOWER ) &&
                            tileRegion.IsIntersecting( iterRegion, TC_SIDE_LOWER ))
                   {
                      // Push next tile if both tiles intersect at lower edge
-		     // (ie. both tiles intersect bottom of iteration region)
+                     // (ie. both tiles intersect bottom of iteration region)
                      this->ptileStack_->Push( pnextTile );
                   }
                }
@@ -556,7 +556,7 @@ template< class T > bool TTPT_TilePlaneIter_c< T >::NextByRegion_(
             }
             else
             {
-	      break;
+               break;
             }
          }
       }
