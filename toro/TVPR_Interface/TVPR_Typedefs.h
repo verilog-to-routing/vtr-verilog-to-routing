@@ -4,7 +4,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -30,5 +30,8 @@
 
 class TVPR_IndexCount_c; // Forward declaration for subsequent class typedefs
 typedef TCT_SortedVector_c< TVPR_IndexCount_c > TVPR_IndexCountList_t;
+
+class TC_NameIndex_c; // Forward declaration for subsequent class typedefs
+typedef TCT_SortedVector_c< TC_NameIndex_c > TVPR_NameIndexList_t;
 
 #endif
