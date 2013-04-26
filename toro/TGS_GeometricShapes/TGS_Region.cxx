@@ -43,7 +43,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -595,28 +595,28 @@ void TGS_Region_c::FindRegion(
       { 
       case TC_SIDE_PREV:
          if( this->IsWide( ) && !this->IsTall( ))
-	 {
-	    side = TC_SIDE_LEFT;
-	 }
+         {
+            side = TC_SIDE_LEFT;
+         }
          if( this->IsTall( ) && !this->IsWide( ))
-	 {
-	    side = TC_SIDE_LOWER;
-	 }
-	 break;
+         {
+            side = TC_SIDE_LOWER;
+         }
+         break;
 
       case TC_SIDE_NEXT:
          if( this->IsWide( ) && !this->IsTall( ))
-	 {
-	    side = TC_SIDE_RIGHT;
-	 }
+         {
+            side = TC_SIDE_RIGHT;
+         }
          if( this->IsTall( ) && !this->IsWide( ))
-	 {
-	    side = TC_SIDE_UPPER;
-	 }
-	 break;
+         {
+            side = TC_SIDE_UPPER;
+         }
+         break;
 
       default:
-	 break;
+         break;
       }
 
       switch( side )
@@ -1171,22 +1171,22 @@ void TGS_Region_c::ApplyDifference(
       {
          if( TCTF_IsGE( regionA.x1 - regionB.x1, regionB.x2 - regionA.x2 ))
          {
-	    this->Set( regionB.x1, regionB.y1, regionA.x1, regionB.y2 );
+            this->Set( regionB.x1, regionB.y1, regionA.x1, regionB.y2 );
          }
          else
          {
-	    this->Set( regionA.x2, regionB.y1, regionB.x2, regionB.y2 );
+            this->Set( regionA.x2, regionB.y1, regionB.x2, regionB.y2 );
          }
       }
       else // if( orient == TGS_ORIENT_VERTICAL )
       {
          if( TCTF_IsGE( regionA.y1 - regionB.y1, regionB.y2 - regionA.y2 ))
          {
-	    this->Set( regionB.x1, regionB.y1, regionB.x2, regionA.y1 );
+            this->Set( regionB.x1, regionB.y1, regionB.x2, regionA.y1 );
          }
          else
          {
-	    this->Set( regionB.x1, regionA.y2, regionB.x2, regionB.y2 );
+            this->Set( regionB.x1, regionA.y2, regionB.x2, regionB.y2 );
          }
       }
    }
@@ -1628,7 +1628,7 @@ bool TGS_Region_c::IsCrossed(
 //===========================================================================//
 bool TGS_Region_c::IsCrossed( 
       const TGS_Region_c&    region,
-    	    TGS_OrientMode_t orient,
+            TGS_OrientMode_t orient,
             double           minDistance ) const
 {
    bool isCrossed = false;
@@ -1643,7 +1643,7 @@ bool TGS_Region_c::IsCrossed(
          if( TCTF_IsGE( region.y1, this->y1 + minDistance ) &&
              TCTF_IsLE( region.y2, this->y2 - minDistance ))
          {
-      	    isCrossed = true;
+            isCrossed = true;
          }
       }
       break;
@@ -1656,7 +1656,7 @@ bool TGS_Region_c::IsCrossed(
          if( TCTF_IsGE( region.x1, this->x1 + minDistance ) &&
              TCTF_IsLE( region.x2, this->x2 - minDistance ))
          {
-	    isCrossed = true;
+            isCrossed = true;
          }
       }
       break;
