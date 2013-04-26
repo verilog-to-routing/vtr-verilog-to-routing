@@ -142,7 +142,7 @@ void TOS_MessageOptions_c::Print(
    {
       for( size_t i = 0; i < this->info.acceptList.GetLength( ); ++i )
       {
- 	 const TC_Name_c& infoAccept = *this->info.acceptList[i];
+         const TC_Name_c& infoAccept = *this->info.acceptList[i];
          printHandler.Write( pfile, spaceLen, "DISPLAY_INFO_ACCEPT        = \"%s\"\n", TIO_PSZ_STR( infoAccept.GetName( )));
       }
    }
@@ -229,7 +229,7 @@ void TOS_MessageOptions_c::Print(
    {
       for( size_t i = 0; i < this->trace.rejectList.GetLength( ); ++i )
       {
-	 const TC_Name_c& traceReject = *this->trace.rejectList[i];
+         const TC_Name_c& traceReject = *this->trace.rejectList[i];
          printHandler.Write( pfile, spaceLen, "DISPLAY_TRACE_REJECT       = \"%s\"\n", TIO_PSZ_STR( traceReject.GetName( )));
       }
    }
@@ -251,18 +251,18 @@ void TOS_MessageOptions_c::Print(
    {
       for( size_t i = 0; i < this->trace.vpr.echoFileNameList.GetLength( ); ++i )
       {
-	 const TC_NameFile_c& echoFileName = *this->trace.vpr.echoFileNameList[i];
-	 if( echoFileName.GetFileName( ) && *echoFileName.GetFileName( ))
-	 {
+         const TC_NameFile_c& echoFileName = *this->trace.vpr.echoFileNameList[i];
+         if( echoFileName.GetFileName( ) && *echoFileName.GetFileName( ))
+         {
             printHandler.Write( pfile, spaceLen, "TRACE_VPR_ECHO_FILE        = \"%s\" \"%s\"\n", 
                                                                                TIO_PSZ_STR( echoFileName.GetName( )),
                                                                                TIO_PSZ_STR( echoFileName.GetFileName( )));
-	 }
-	 else
-	 {
+         }
+         else
+         {
             printHandler.Write( pfile, spaceLen, "TRACE_VPR_ECHO_FILE        = \"%s\"\n", 
                                                                                TIO_PSZ_STR( echoFileName.GetName( )));
-	 }
+         }
       }
    }
 }
