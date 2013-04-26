@@ -4,7 +4,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -68,9 +68,11 @@ using namespace std;
 
 #token SIZE       "{[Ff][Aa][Bb][Rr][Ii][Cc][_]}[Ss][Ii][Zz][Ee]"
 #token COUNT      "[Cc][Oo][Uu][Nn][Tt]"
+#token DELTA      "[Dd][Ee][Ll][Tt][Aa]"
 #token WIDTH      "[Ww][Ii][Dd][Tt][Hh]"
 #token HEIGHT     "[Hh][Ee][Ii][Gg][Hh][Tt]"
 
+#token TYPE       "[Tt][Yy][Pp][Ee]"
 #token SIDE       "[Ss][Ii][Dd][Ee]"
 #token OFFSET     "[Oo][Ff][Ff][Ss][Ee][Tt]"
 #token INDEX      "[Ii][Nn][Dd][Ee][Xx]"
@@ -83,8 +85,9 @@ using namespace std;
 
 #token MAPPING    "[Mm][Aa][Pp][Pp][Ii][Nn][Gg]"
 
-#token LINE       "[Ll][Ii][Nn][Ee]"
+#token ORIGIN     "[Oo][Rr][Ii][Gg][Ii][Nn]"
 #token REGION     "[Rr][Ee][Gg][Ii][Oo][Nn]"
+#token LINE       "[Ll][Ii][Nn][Ee]"
 #token ORIENT     "[Oo][Rr][Ii][Ee][Nn][Tt]"
 
 #token TIMING     "[Tt][Ii][Mm][Ii][Nn][Gg]{[_][Aa][Nn][Aa][Ll][Yy][Ss][Ii][Ss]}"
@@ -178,7 +181,8 @@ inputOutputList[ TFM_InputOutputList_t* pinputOutputList ]
    )*
    ">"
    (  "<" 
-      (  REGION ">" regionDef[ &inputOutput.region ] "</" REGION ">"
+      (  ORIGIN ">" pointDef[ &inputOutput.origin ] "</" ORIGIN ">"
+      |  REGION ">" regionDef[ &inputOutput.region ] "</" REGION ">"
       |  PIN pinList[ &inputOutput.pinList ] ( "/>" | "</" PIN ">" )
       |  SLICE
          (  COUNT { EQUAL } uintNum[ &inputOutput.slice.count ]
@@ -214,7 +218,8 @@ physicalBlockList[ TFM_PhysicalBlockList_t* pphysicalBlockList ]
    )*
    ">"
    (  "<" 
-      (  REGION ">" regionDef[ &physicalBlock.region ] "</" REGION ">"
+      (  ORIGIN ">" pointDef[ &physicalBlock.origin ] "</" ORIGIN ">"
+      |  REGION ">" regionDef[ &physicalBlock.region ] "</" REGION ">"
       |  PIN pinList[ &physicalBlock.pinList ] ( "/>" | "</" PIN ">" )
       |  SLICE
          (  COUNT { EQUAL } uintNum[ &physicalBlock.slice.count ]
@@ -252,7 +257,8 @@ switchBoxList[ TFM_SwitchBoxList_t* pswitchBoxList ]
    )*
    ">"
    (  "<" 
-      (  REGION ">" regionDef[ &switchBox.region ] "</" REGION ">"
+      (  ORIGIN ">" pointDef[ &switchBox.origin ] "</" ORIGIN ">"
+      |  REGION ">" regionDef[ &switchBox.region ] "</" REGION ">"
       |  MAPPING ">" sideMapTable[ &switchBox.mapTable ] "</" MAPPING ">"
       |  TIMING
          (  ( R | RES ) { EQUAL } floatNum[ &switchBox.timing.res ]
@@ -282,6 +288,7 @@ channelList[ TFM_ChannelList_t* pchannelList ]
    CHANNEL 
    { NAME { EQUAL } } stringText[ &channel.srName ]
    (  ORIENT { EQUAL } orientMode[ &channel.orient ]
+   |  INDEX { EQUAL } uintNum[ &channel.index ]
    |  COUNT { EQUAL } uintNum[ &channel.count ]
    )*
    ">"
@@ -338,8 +345,10 @@ pinList[ TFM_PinList_t* ppinList ]
    <<
       pin.SetName( srName );
    >>
-   (  SIDE { EQUAL } sideMode[ &pin.side ]
-   |  OFFSET { EQUAL } floatNum[ &pin.offset ]
+   (  TYPE { EQUAL } typeMode[ &pin.type ]
+   |  SIDE { EQUAL } sideMode[ &pin.side ]
+   |  OFFSET { EQUAL } intNum[ &pin.offset ]
+   |  DELTA { EQUAL } floatNum[ &pin.delta ]
    |  WIDTH { EQUAL } floatNum[ &pin.width ]
    |  SLICE { EQUAL } uintNum[ &pin.slice ]
    )*
@@ -426,6 +435,13 @@ sideMapIndex[ TC_SideIndex_c* psideIndex ]
    ;
 
 //===========================================================================//
+pointDef[ TGO_Point_c* ppoint ]
+   :
+   intNum[ &ppoint->x ]
+   intNum[ &ppoint->y ]
+   ;
+
+//===========================================================================//
 regionDef[ TGS_Region_c* pregion ]
    :
    floatNum[ &pregion->x1 ]
@@ -468,6 +484,41 @@ orientMode[ TGS_OrientMode_t* porient ]
          this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
                                          this->srFileName_,
                                          ": Invalid orientation, expected \"horizontal\" or \"vertical\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+typeMode[ TC_TypeMode_t* ptype ]
+   :
+   <<
+      string srType;
+   >>
+   stringText[ &srType ]
+   <<
+      if(( TC_stricmp( srType.data( ), "input" ) == 0 ) ||
+         ( TC_stricmp( srType.data( ), "in" ) == 0 ))
+      {
+         *ptype = TC_TYPE_INPUT;
+      }
+      else if(( TC_stricmp( srType.data( ), "output" ) == 0 ) ||
+              ( TC_stricmp( srType.data( ), "out" ) == 0 ))
+      {
+         *ptype = TC_TYPE_OUTPUT;
+      }
+      else if(( TC_stricmp( srType.data( ), "clock" ) == 0 ) ||
+              ( TC_stricmp( srType.data( ), "clk" ) == 0 ))
+      {
+         *ptype = TC_TYPE_CLOCK;
+      }
+      else
+      {
+         *ptype = TC_TYPE_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid type, expected \"input\", \"output\", or \"clock\"" );
          this->consumeUntilToken( END_OF_FILE );
       }
    >>
@@ -607,6 +658,25 @@ expNum[ double* pdouble ]
    |  bitVal:BIT_CHAR
       <<
          *pdouble = atof( bitVal->getText( ));
+      >>
+   ;
+
+//===========================================================================//
+intNum[ int* pint ]
+   :
+      OPEN_QUOTE
+      qintVal:STRING
+      <<
+         *pint = static_cast< int >( atol( qintVal->getText( )));
+      >>
+      CLOSE_QUOTE
+   |  intVal:POS_INT
+      <<
+         *pint = static_cast< int >( atol( intVal->getText( )));
+      >>
+   |  bitVal:BIT_CHAR
+      <<
+         *pint = static_cast< int >( atol( bitVal->getText( )));
       >>
    ;
 
