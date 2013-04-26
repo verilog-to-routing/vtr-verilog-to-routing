@@ -200,7 +200,7 @@ void TVPR_IndexCount_c::ExtractString(
          if( this->siblingCount_ != SIZE_MAX )
          {
             char szSiblingCount[TIO_FORMAT_STRING_LEN_VALUE];
-            sprintf( szSiblingCount, "%lu", this->siblingCount_ );
+            sprintf( szSiblingCount, "%lu", static_cast< unsigned long >( this->siblingCount_ ));
 
             *psrIndexCount += " ";
             *psrIndexCount += "[";
