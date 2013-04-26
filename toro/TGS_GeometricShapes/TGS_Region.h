@@ -57,14 +57,14 @@ public:
    TGS_Region_c( const TGS_Region_c& region,
                  TGS_SnapMode_t snap = TGS_SNAP_UNDEFINED );
    TGS_Region_c( const TGS_Region_c& region,
-		 double dx, double dy,
+                 double dx, double dy,
                  TGS_SnapMode_t snap = TGS_SNAP_UNDEFINED );
    TGS_Region_c( const TGS_Region_c& region,
-		 double scale,
+                 double scale,
                  TGS_SnapMode_t snap = TGS_SNAP_UNDEFINED );
    TGS_Region_c( const TGS_Point_c& pointA, 
                  const TGS_Point_c& pointB,
-		 double scale,
+                 double scale,
                  TGS_SnapMode_t snap = TGS_SNAP_UNDEFINED );
    TGS_Region_c( const TGS_Region_c& regionA,
                  const TGS_Region_c& regionB );
