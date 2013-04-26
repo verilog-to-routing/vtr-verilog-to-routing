@@ -104,8 +104,10 @@ public:
 
    string srName;       // Physical block name
 
-   unsigned int height; // Defines block height in tile grid units (for IOs) 
+   unsigned int width;  // Defines block width in tile grid units
+   unsigned int height; // Defines block height in tile grid units
    unsigned int capacity;
+                        // Defines block capacity (for IOs)
    unsigned int numPB;  // Defines number of cluster or leaf (BLE) nodes
                         // A "cluster" is assumed to contain 1+ <pb_type>
                         // A "leaf" is assumed to contain 0 <pb_type>
