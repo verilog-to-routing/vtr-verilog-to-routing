@@ -11,7 +11,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -64,7 +64,7 @@ void* TC_New(
 //===========================================================================//
 void* TC_calloc( 
             size_t allocLen,
-	    size_t allocSize,
+            size_t allocSize,
       const char*  pszSource )
 {
    void* pvoid = 0;
@@ -85,9 +85,9 @@ void* TC_calloc(
 // 07/10/12 jeffr : Original
 //===========================================================================//
 void* TC_realloc( 
-	    void*  pvoid,
+            void*  pvoid,
             size_t allocLen,
-	    size_t allocSize,
+            size_t allocSize,
       const char*  pszSource )
 {
    if( allocLen * allocSize )
