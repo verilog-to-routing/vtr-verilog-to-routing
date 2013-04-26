@@ -4,7 +4,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -301,6 +301,8 @@ physicalBlockList[ TAS_PhysicalBlockList_t* pphysicalBlockList ]
    |  CLASS { EQUAL } classType[ &physicalBlock.classType ]
    |  FC_IN { EQUAL } fcDef[ &physicalBlock.fcIn ]
    |  FC_OUT { EQUAL } fcDef[ &physicalBlock.fcOut ]
+   |  WIDTH uintNum[ &physicalBlock.width ]
+   |  HEIGHT uintNum[ &physicalBlock.height ]
    |  SIZE { EQUAL } floatDims[ &dims ]
    |  ORIGIN { EQUAL } originPoint[ &origin ]
    )*
@@ -321,6 +323,8 @@ physicalBlockList[ TAS_PhysicalBlockList_t* pphysicalBlockList ]
       if( physicalBlock.IsValid( ))
       {
          physicalBlock.SetUsage( TAS_USAGE_PHYSICAL_BLOCK );
+         physicalBlock.SetDims( dims );
+         physicalBlock.SetOrigin( origin );
 
          pphysicalBlockList->Add( physicalBlock );
       }
@@ -685,8 +689,8 @@ timingValueMatrixDef[ TAS_TimingValueMatrix_t* pvalueMatrix ]
    <<
       if( valueTable.IsValid( ) && valueTable[ 0 ]->IsValid( ))
       {
-         size_t height = valueTable.GetLength( );
          size_t width = SIZE_MAX;
+         size_t height = valueTable.GetLength( );
          for( size_t i = 0; i < valueTable.GetLength( ); ++i )
          {
             width = TCT_Min( width, valueTable[ i ]->GetLength( ));
