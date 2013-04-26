@@ -351,10 +351,10 @@ template< class T > void TCT_OrderedVector_c< T >::ExtractString(
          if( data.IsValid( ))
          {
             string srData;
-	    data.ExtractString( &srData );
+            data.ExtractString( &srData );
 
             *psrData += srData;
-	    *psrData += ( i + 1 == this->GetLength( ) ? "" : " " );
+            *psrData += ( i + 1 == this->GetLength( ) ? "" : " " );
          }
       }
    }
@@ -391,7 +391,7 @@ template< class T > void TCT_OrderedVector_c< T >::ExtractString(
          memset( szDataString, 0, sizeof( szDataString ));
 
          switch( mode )
-	 {
+         {
          case TC_DATA_INT:
             iDataValue = *reinterpret_cast< int* >( this->At( i ));
             sprintf( szDataString, "%d", iDataValue );
@@ -435,13 +435,13 @@ template< class T > void TCT_OrderedVector_c< T >::ExtractString(
          case TC_DATA_UNDEFINED:
             sprintf( szDataString, "?" );
             break;
-	 }
+         }
 
-	 size_t lenDataString = TCT_Max( strlen( szDataString ), strlen( "..." ));
+         size_t lenDataString = TCT_Max( strlen( szDataString ), strlen( "..." ));
          if( psrData->length( ) + lenDataString >= maxLen )
-	 {
-	    *psrData += "...";
-	    break;
+         {
+            *psrData += "...";
+            break;
          }
 
          *psrData += szDataString;
@@ -488,7 +488,7 @@ template< class T > T* TCT_OrderedVector_c< T >::Add(
 // 05/15/12 jeffr : Original
 //===========================================================================//
 template< class T > T* TCT_OrderedVector_c< T >::Insert( 
-	    size_t index,
+            size_t index,
       const T&     data )
 {
    for( size_t i = this->GetLength( ); i < index; ++i )
