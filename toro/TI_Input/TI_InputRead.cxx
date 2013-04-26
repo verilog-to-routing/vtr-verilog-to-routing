@@ -12,7 +12,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -71,7 +71,7 @@ bool TI_Input_c::ReadFileProcess_(
       for( size_t i = 0; i < fileNameList.GetLength( ); ++i )
       {
          const TC_Name_c& fileName = *fileNameList[i];
-	 const char* pszFileName = fileName.GetName( );
+         const char* pszFileName = fileName.GetName( );
 
          ok = this->ReadFileParser_( fileMode, pszFileType, pszFileName, 
                                      showInfoMessage );
@@ -126,9 +126,9 @@ bool TI_Input_c::ReadFileParser_(
          ok = optionsFile.IsValid( );
 
          if( this->pcontrolSwitches_->messageOptions.trace.read.options )
-	 {
+         {
             this->poptionsStore_->Print( );
-	 }
+         }
       }
 
       if( fileMode == TI_Input_c::TI_FILE_XML )
@@ -141,9 +141,9 @@ bool TI_Input_c::ReadFileParser_(
          ok = architectureXmlFile.IsValid( );
 
          if( this->pcontrolSwitches_->messageOptions.trace.read.xml )
-	 {
+         {
             this->parchitectureSpec_->PrintXML( );
-	 }
+         }
       }
 
       if( fileMode == TI_Input_c::TI_FILE_BLIF )
@@ -154,9 +154,9 @@ bool TI_Input_c::ReadFileParser_(
          ok = circuitBlifFile.IsValid( );
 
          if( this->pcontrolSwitches_->messageOptions.trace.read.blif )
-	 {
+         {
             this->pcircuitDesign_->PrintBLIF( );
-	 }
+         }
       }
 
       if( fileMode == TI_Input_c::TI_FILE_ARCHITECTURE )
@@ -169,9 +169,9 @@ bool TI_Input_c::ReadFileParser_(
          ok = architectureFile.IsValid( );
 
          if( this->pcontrolSwitches_->messageOptions.trace.read.architecture )
-	 {
+         {
             this->parchitectureSpec_->Print( );
-	 }
+         }
       }
 
       if( fileMode == TI_Input_c::TI_FILE_FABRIC )
@@ -184,9 +184,9 @@ bool TI_Input_c::ReadFileParser_(
          ok = fabricFile.IsValid( );
 
          if( this->pcontrolSwitches_->messageOptions.trace.read.fabric )
-	 {
+         {
             this->pfabricModel_->Print( );
-	 }
+         }
       }
 
       if( fileMode == TI_Input_c::TI_FILE_CIRCUIT )
@@ -199,9 +199,9 @@ bool TI_Input_c::ReadFileParser_(
          ok = circuitFile.IsValid( );
 
          if( this->pcontrolSwitches_->messageOptions.trace.read.circuit )
-	 {
+         {
             this->pcircuitDesign_->Print( );
-	 }
+         }
       }
    }
    return( ok );
@@ -404,6 +404,8 @@ void TI_Input_c::ApplyCommandLineOptions_(
 
    if( rulesSwitches.placeOptions.randomSeed != 0 )
       pplaceOptions->randomSeed = rulesSwitches.placeOptions.randomSeed;
+   if( rulesSwitches.placeOptions.channelWidth != 0 )
+      pplaceOptions->channelWidth = rulesSwitches.placeOptions.channelWidth;
    if( TCTF_IsNEQ( rulesSwitches.placeOptions.initTemp, 0.0 ))
       pplaceOptions->initTemp = rulesSwitches.placeOptions.initTemp;
    if( TCTF_IsNEQ( rulesSwitches.placeOptions.exitTemp, 0.0 ))
