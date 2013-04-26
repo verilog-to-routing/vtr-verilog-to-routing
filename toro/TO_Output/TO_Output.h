@@ -112,13 +112,13 @@ private:
                                const TFV_FabricPlane_c& fabricPlane ) const;
 
    void WriteLaffFabricMapTable_( const TGS_Region_c& region,
-			 	  const TFV_FabricData_c& fabricData ) const;
+                                  const TFV_FabricData_c& fabricData ) const;
    void WriteLaffFabricMapTable_( const TGS_Region_c& region,
-		 		  const TFV_FabricData_c& fabricData,
+                                  const TFV_FabricData_c& fabricData,
                                   TC_SideMode_t side,
                                   const TC_MapSideList_t& mapSideList ) const;
    void WriteLaffFabricMapTable_( const TGS_Region_c& region,
-	 			  const TFV_FabricData_c& fabricData,
+                                  const TFV_FabricData_c& fabricData,
                                   TC_SideMode_t side,
                                   unsigned int index,
                                   const TC_SideList_t& sideList ) const;
