@@ -274,37 +274,37 @@ template<class T> void TCT_Range_c< T >::ExtractString(
 
       case TC_DATA_UINT:
          sprintf( szData, "%u %u", 
-		          *reinterpret_cast< unsigned int* >( &prange->i ),
+                          *reinterpret_cast< unsigned int* >( &prange->i ),
                           *reinterpret_cast< unsigned int* >( &prange->j ));
          break;
 
       case TC_DATA_LONG:
          sprintf( szData, "%ld %ld", 
-		          *reinterpret_cast< long* >( &prange->i ),
+                          *reinterpret_cast< long* >( &prange->i ),
                           *reinterpret_cast< long* >( &prange->j ));
          break;
 
       case TC_DATA_ULONG:
          sprintf( szData, "%lu %lu", 
-		          *reinterpret_cast< unsigned long* >( &prange->i ),
+                          *reinterpret_cast< unsigned long* >( &prange->i ),
                           *reinterpret_cast< unsigned long* >( &prange->j ));
          break;
 
       case TC_DATA_SIZE:
          sprintf( szData, "%lu %lu", 
-		          *reinterpret_cast< size_t* >( &prange->i ),
+                          *reinterpret_cast< size_t* >( &prange->i ),
                           *reinterpret_cast< size_t* >( &prange->j ));
          break;
 
       case TC_DATA_FLOAT:
          sprintf( szData, "%0.*f %0.*f", 
-		          precision, *reinterpret_cast< double* >( &prange->i ),
+                          precision, *reinterpret_cast< double* >( &prange->i ),
                           precision, *reinterpret_cast< double* >( &prange->j ));
          break;
 
       case TC_DATA_EXP:
          sprintf( szData, "%0.*e %0.*e", 
-		          static_cast< int >( precision + 1 ), *reinterpret_cast< double* >( &prange->i ),
+                          static_cast< int >( precision + 1 ), *reinterpret_cast< double* >( &prange->i ),
                           static_cast< int >( precision + 1 ), *reinterpret_cast< double* >( &prange->j ));
          break;
 
@@ -402,8 +402,8 @@ template< class T > bool TCT_Range_c< T >::IsConnected(
       const TCT_Range_c< T >& range ) const
 {
   return( this->IsOverlapping( range ) ||
-	  this->IsWithin( range ) ||
-	  range.IsWithin( *this ) ?
+          this->IsWithin( range ) ||
+          range.IsWithin( *this ) ?
           true : false );
 }
 
