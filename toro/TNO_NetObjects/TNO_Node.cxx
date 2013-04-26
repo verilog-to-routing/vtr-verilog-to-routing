@@ -12,7 +12,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -155,13 +155,17 @@ bool TNO_Node_c::operator!=(
 //===========================================================================//
 void TNO_Node_c::Print( 
       FILE*  pfile,
-      size_t spaceLen ) const
+      size_t spaceLen,
+      bool   verbose ) const
 {
-   string srType;
-   TNO_ExtractStringNodeType( this->type_, &srType );
+   if( verbose )
+   {
+      string srType;
+      TNO_ExtractStringNodeType( this->type_, &srType );
 
-   TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
-   printHandler.Write( pfile, spaceLen, "type=\"%s\"\n", TIO_SR_STR( srType ));
+      TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
+      printHandler.Write( pfile, spaceLen, "type=\"%s\"\n", TIO_SR_STR( srType ));
+   }
 
    switch( this->type_ )
    {
