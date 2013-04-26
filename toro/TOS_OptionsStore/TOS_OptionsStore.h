@@ -6,6 +6,7 @@
 //           - GetOutputOptions
 //           - GetMessageOptions
 //           - GetExecuteOptions
+//           - GetFabricOptions
 //           - GetPackOptions
 //           - GetPlaceOptions
 //           - GetRouteOptions
@@ -62,6 +63,7 @@ public:
    const TOS_MessageOptions_c& GetMessageOptions( void ) const;
    const TOS_ExecuteOptions_c& GetExecuteOptions( void ) const;
 
+   const TOS_FabricOptions_c& GetFabricOptions( void ) const;
    const TOS_PackOptions_c& GetPackOptions( void ) const;
    const TOS_PlaceOptions_c& GetPlaceOptions( void ) const;
    const TOS_RouteOptions_c& GetRouteOptions( void ) const;
@@ -104,6 +106,13 @@ inline const TOS_ExecuteOptions_c& TOS_OptionsStore_c::GetExecuteOptions(
       void ) const
 {
    return( this->controlSwitches.GetExecuteOptions( ));
+}
+
+//===========================================================================//
+inline const TOS_FabricOptions_c& TOS_OptionsStore_c::GetFabricOptions(
+      void ) const
+{
+   return( this->rulesSwitches.GetFabricOptions( ));
 }
 
 //===========================================================================//
