@@ -57,11 +57,11 @@ public:
 
    TLO_Port_c( void );
    TLO_Port_c( const string& srName,
- 	       TC_TypeMode_t type = TC_TYPE_UNDEFINED,
+               TC_TypeMode_t type = TC_TYPE_UNDEFINED,
                size_t count = 0,
                bool isEquivalent = false );
    TLO_Port_c( const char* pszName,
-	       TC_TypeMode_t type = TC_TYPE_UNDEFINED,
+               TC_TypeMode_t type = TC_TYPE_UNDEFINED,
                size_t count = 0,
                bool isEquivalent = false );
    TLO_Port_c( const TLO_Port_c& port );
