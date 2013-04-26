@@ -47,7 +47,7 @@ bool TO_Output_c::WriteBlifFile_(
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
    printHandler.Info( "Writing %s file '%s'...\n",
                       TIO_SZ_OUTPUT_BLIF_DEF_TYPE,
-		      TIO_PSZ_STR( pszBlifFileName ));
+                      TIO_PSZ_STR( pszBlifFileName ));
 
    ok = printHandler.SetUserFileOutput( pszBlifFileName );
    if( ok )
@@ -65,8 +65,8 @@ bool TO_Output_c::WriteBlifFile_(
    else
    {
       printHandler.Error( "Failed to open %s file '%s' in \"%s\" mode.\n",
-			  TIO_SZ_OUTPUT_BLIF_DEF_TYPE,
-			  TIO_PSZ_STR( pszBlifFileName ),
+                          TIO_SZ_OUTPUT_BLIF_DEF_TYPE,
+                          TIO_PSZ_STR( pszBlifFileName ),
                           "write" );
    }
    return( ok );
