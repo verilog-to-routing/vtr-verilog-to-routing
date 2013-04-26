@@ -51,7 +51,7 @@ public:
                TGS_SnapMode_t snap = TGS_SNAP_UNDEFINED );
    TGS_Line_c( const TGS_Point_c& beginPoint, 
                const TGS_Point_c& endPoint,
-	       int z,
+               int z,
                TGS_SnapMode_t snap = TGS_SNAP_UNDEFINED );
    TGS_Line_c( const TGS_Point_c& beginPoint, 
                const TGS_Point_c& endPoint,
