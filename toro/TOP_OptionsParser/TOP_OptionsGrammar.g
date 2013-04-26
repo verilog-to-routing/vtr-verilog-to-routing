@@ -4,7 +4,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -67,9 +67,6 @@ using namespace std;
 #token INPUT_ENABLE_ARCH       "[Ii][Nn][Pp][Uu][Tt][_][Ee][Nn][Aa][Bb][Ll][Ee][_][Aa][Rr][Cc][Hh]{[Ii][Tt][Ee][Cc][Tt][Uu][Rr][Ee]}{[_][Dd][Ee][Ss][Cc][Rr][Ii][Pp][Tt][Ii][Oo][Nn]}{[_][Ff][Ii][Ll][Ee]}"
 #token INPUT_ENABLE_FABRIC     "[Ii][Nn][Pp][Uu][Tt][_][Ee][Nn][Aa][Bb][Ll][Ee][_][Ff][Aa][Bb][Rr][Ii][Cc]"
 #token INPUT_ENABLE_CIRCUIT    "[Ii][Nn][Pp][Uu][Tt][_][Ee][Nn][Aa][Bb][Ll][Ee][_][Cc][Ii][Rr][Cc][Uu][Ii][Tt]"
-#token INPUT_DATA_PREPACKED    "[Ii][Nn][Pp][Uu][Tt][_][Dd][Aa][Tt][Aa][_]{[Pp][Rr][Ee]}[Pp][Aa][Cc][Kk]{[Ee][Dd]}"
-#token INPUT_DATA_PREPLACED    "[Ii][Nn][Pp][Uu][Tt][_][Dd][Aa][Tt][Aa][_]{[Pp][Rr][Ee]}[Pp][Ll][Aa][Cc][Ee]{([Dd]|[Mm][Ee][Nn][Tt])}"
-#token INPUT_DATA_PREROUTED    "[Ii][Nn][Pp][Uu][Tt][_][Dd][Aa][Tt][Aa][_]{[Pp][Rr][Ee]}[Rr][Oo][Uu][Tt][Ee]{([Dd]|[Ii][Nn][Gg]|[Ss])}"
 
 #token OUTPUT_FILE_LOG         "[Oo][Uu][Tt][Pp][Uu][Tt][_][Ff][Ii][Ll][Ee][_][Ll][Oo][Gg]"
 #token OUTPUT_FILE_OPTIONS     "[Oo][Uu][Tt][Pp][Uu][Tt][_][Ff][Ii][Ll][Ee][_][Oo][Pp][Tt]{[Ii][Oo][Nn]}[Ss]"
@@ -122,6 +119,12 @@ using namespace std;
 #token HALT_MAX_ERRORS         "[Hh][Aa][Ll][Tt][_][Mm][Aa][Xx][_][Ee][Rr][Rr][Oo][Rr]{[Ss]}"
 #token EXECUTE_MODE            "[Ee][Xx][Ee][Cc][Uu][Tt][Ee]{[_][Mm][Oo][Dd][Ee]{[Ss]}}"
 
+#token FABRIC_BLOCK_ENABLE       "[Ff][Aa][Bb][Rr][Ii][Cc][_]([Bb][Ll][Oo][Cc][Kk]|[Cc][Ll][Bb]){[Ss]}[_]{[Oo][Vv][Ee][Rr][Rr][Ii][Dd][Ee][_]}[Ee][Nn][Aa][Bb][Ll][Ee]"
+#token FABRIC_CHANNEL_ENABLE     "[Ff][Aa][Bb][Rr][Ii][Cc][_][Cc][Hh][Aa][Nn][Nn][Ee][Ll]{[Ss]}[_]{[Oo][Vv][Ee][Rr][Rr][Ii][Dd][Ee][_]}[Ee][Nn][Aa][Bb][Ll][Ee]"
+#token FABRIC_SWITCHBOX_ENABLE   "[Ff][Aa][Bb][Rr][Ii][Cc][_][Ss]{[Ww][Ii][Tt][Cc][Hh]}[Bb]{[Oo][Xx]{[Ee][Ss]}}[_]{[Oo][Vv][Ee][Rr][Rr][Ii][Dd][Ee][_]}[Ee][Nn][Aa][Bb][Ll][Ee]"
+#token FABRIC_CONNECTIONBLOCK_ENABLE
+                                 "[Ff][Aa][Bb][Rr][Ii][Cc][_][Cc]{[Oo][Nn][Nn][Ee][Cc][Tt]{[Ii][Oo][Nn]}}[Bb]{[Ll][Oo][Cc][Kk]}{[Ss]}[_]{[Oo][Vv][Ee][Rr][Rr][Ii][Dd][Ee][_]}[Ee][Nn][Aa][Bb][Ll][Ee]"
+
 #token PACK_ALGORITHM            "[Pp][Aa][Cc][Kk][_][Aa][Ll][Gg][Oo][Rr][Ii][Tt][Hh][Mm]"
 #token PACK_CLUSTER_NETS         "[Pp][Aa][Cc][Kk][_]{[Aa][Aa][Pp][Aa][Cc][Kk][_]}[Cc][Ll][Uu][Ss][Tt][Ee][Rr][_][Nn][Ee][Tt][Ss]"
 #token PACK_AREA_WEIGHT          "[Pp][Aa][Cc][Kk][_]{[Aa][Aa][Pp][Aa][Cc][Kk][_]}([Aa][Rr][Ee][Aa]|[Aa][Ll][Pp][Hh][Aa])[_][Ww][Ee][Ii][Gg][Hh][Tt]"
@@ -132,6 +135,7 @@ using namespace std;
 #token PACK_COST_MODE            "[Pp][Aa][Cc][Kk][_][Cc][Oo][Ss][Tt][_][Mm][Oo][Dd][Ee]"
 
 #token PLACE_ALGORITHM           "[Pp][Ll][Aa][Cc][Ee][_][Aa][Ll][Gg][Oo][Rr][Ii][Tt][Hh][Mm]"
+#token PLACE_CHANNEL_WIDTH       "[Pp][Ll][Aa][Cc][Ee][_][Cc][Hh][Aa][Nn][Nn][Ee][Ll][_][Ww][Ii][Dd][Tt][Hh]"
 #token PLACE_RANDOM_SEED         "[Pp][Ll][Aa][Cc][Ee][_][Rr][Aa][Nn][Dd][Oo][MM][_][Ss][Ee][Ee][Dd]"
 #token PLACE_TEMP_INIT           "[Pp][Ll][Aa][Cc][Ee][_][Tt][Ee][Mm][Pp]{[Ee][Rr][Aa][Tt][Uu][Rr][Ee]}[_][Ii][Nn][Ii][Tt]"
 #token PLACE_TEMP_INIT_FACTOR    "[Pp][Ll][Aa][Cc][Ee][_][Tt][Ee][Mm][Pp]{[Ee][Rr][Aa][Tt][Uu][Rr][Ee]}[_][Ii][Nn][Ii][Tt][_][Ff][Aa][Cc][Tt][Oo][Rr]"
@@ -155,6 +159,8 @@ using namespace std;
 #token PLACE_RELATIVE_INIT_PLACE "[Pp][Ll][Aa][Cc][Ee][_][Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee][_][Ii][Nn][Ii][Tt]{[Ii][Aa][Ll]}[_][Pp][Ll][Aa][Cc][Ee]{[_][Rr][Ee][Tt][Rr][Yy]}"
 #token PLACE_RELATIVE_INIT_MACRO "[Pp][Ll][Aa][Cc][Ee][_][Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee][_][Ii][Nn][Ii][Tt]{[Ii][Aa][Ll]}[_][Mm][Aa][Cc][Rr][Oo]{[_][Rr][Ee][Tt][Rr][Yy]}"
 
+#token PLACE_PREPLACED_ENABLE    "[Pp][Ll][Aa][Cc][Ee][_][Pp][Rr][Ee]{[_]}[Pp][Ll][Aa][Cc][Ee]{[Dd]|[Ss]}[_][Ee][Nn][Aa][Bb][Ll][Ee]"
+
 #token ROUTE_ALGORITHM           "[Rr][Oo][Uu][Tt][Ee][_][Aa][Ll][Gg][Oo][Rr][Ii][Tt][Hh][Mm]"
 #token ROUTE_TYPE                "[Rr][Oo][Uu][Tt][Ee][_][Tt][Yy][Pp][Ee]"
 #token ROUTE_WINDOW_SIZE         "[Rr][Oo][Uu][Tt][Ee][_][Ww][Ii][Nn][Dd][Oo][Ww][_][Ss][Ii][Zz][Ee]"
@@ -169,6 +175,9 @@ using namespace std;
 #token ROUTE_TIMING_ASTAR_FACTOR "[Rr][Oo][Uu][Tt][Ee][_][Tt][Ii][Mm][Ii][Nn][Gg][_][Aa][Ss][Tt][Aa][Rr][_][Ff][Aa][Cc][Tt][Oo][Rr]"
 #token ROUTE_TIMING_MAX_CRIT     "[Rr][Oo][Uu][Tt][Ee][_][Tt][Ii][Mm][Ii][Nn][Gg][_][Mm][Aa][Xx][_][Cc][Rr][Ii][Tt]{[Ii][Cc][Aa][Ll][Ii][Tt][Yy]}"
 #token ROUTE_TIMING_SLACK_CRIT   "[Rr][Oo][Uu][Tt][Ee][_]{[Tt][Ii][Mm][Ii][Nn][Gg][_]}[Ss][Ll][Aa][Cc][Kk][_][Cc][Rr][Ii][Tt]{[Ii][Cc][Aa][Ll][Ii][Tt][Yy]}"
+
+#token ROUTE_PREROUTED_ENABLE    "[Rr][Oo][Uu][Tt][Ee][_][Pp][Rr][Ee]{[_]}[Rr][Oo][Uu][Tt][Ee]{[Dd]|[Ss]}[_][Ee][Nn][Aa][Bb][Ll][Ee]"
+#token ROUTE_PREROUTED_ORDER     "[Rr][Oo][Uu][Tt][Ee][_][Pp][Rr][Ee]{[_]}[Rr][Oo][Uu][Tt][Ee]{[Dd]|[Ss]}[_][Oo][Rr][Dd][Ee][Rr]"
 
 #token NONE               "[Nn][Oo][Nn][Ee]"
 #token ANY                "[Aa][Nn][Yy]"
@@ -210,6 +219,9 @@ using namespace std;
 #token DEMAND_ONLY        "[Dd][Ee][Mm][Aa][Nn][Dd][_][Oo][Nn][Ll][Yy]"
 #token DELAY_NORMALIZED   "[Dd][Ee][Ll][Aa][Yy][_][Nn][Oo][Rr][Mm][Aa][Ll][Ii][Zz][Ee][Dd]"
 
+#token FIRST              "[Ff][Ii][Rr][Ss][Tt]"
+#token AUTO               "[Aa][Uu][Tt][Oo]"
+
 #token BOOL_TRUE          "[Tt][Rr][Uu][Ee]"
 #token BOOL_FALSE         "[Ff][Aa][Ll][Ss][Ee]"
 #token BOOL_YES           "[Yy][Ee][Ss]"
@@ -223,7 +235,6 @@ using namespace std;
 #token CHAR               "[a-zA-Z0-9_/\\\|\*\+\-]"
 #token STRING             "[a-zA-Z_/\|][a-zA-Z0-9_/\|\(\)\[\]\.\+\~]*"
 
-#tokclass INPUT_DATA_VAL   { NONE BLOCKS IOS ANY ALL }
 #tokclass OUTPUT_LAFF_VAL  { NONE FABRIC_VIEW BOUNDING_BOX INTERNAL_GRID ANY ALL }
 #tokclass EXECUTE_TOOL_VAL { NONE PACK PLACE ROUTE ANY ALL }
 
@@ -256,7 +267,6 @@ public:
 <<
 private:
 
-   TOS_InputDataMode_t FindInputDataMode_( ANTLRTokenType tokenType );
    int FindOutputLaffMask_( ANTLRTokenType tokenType );
    int FindExecuteToolMask_( ANTLRTokenType tokenType );
 
@@ -273,6 +283,7 @@ private:
    TOS_OutputOptions_c*  poutputOptions_;
    TOS_MessageOptions_c* pmessageOptions_;
    TOS_ExecuteOptions_c* pexecuteOptions_;
+   TOS_FabricOptions_c*  pfabricOptions_;
    TOS_PackOptions_c*    ppackOptions_;
    TOS_PlaceOptions_c*   pplaceOptions_;
    TOS_RouteOptions_c*   prouteOptions_;
@@ -290,6 +301,7 @@ start
    |  outputOptions
    |  messageOptions
    |  executeOptions
+   |  fabricOptions
    |  packOptions
    |  placeOptions
    |  routeOptions
@@ -328,10 +340,6 @@ inputOptions
    |  INPUT_ENABLE_ARCH { EQUAL } boolType[ &pinputOptions_->architectureFileEnable ]
    |  INPUT_ENABLE_FABRIC { EQUAL } boolType[ &pinputOptions_->fabricFileEnable ]
    |  INPUT_ENABLE_CIRCUIT { EQUAL } boolType[ &pinputOptions_->circuitFileEnable ]
-
-   |  INPUT_DATA_PREPACKED { EQUAL } inputDataMode[ &pinputOptions_->prePackedDataMode ]
-   |  INPUT_DATA_PREPLACED { EQUAL } inputDataMode[ &pinputOptions_->prePlacedDataMode ]
-   |  INPUT_DATA_PREROUTED { EQUAL } inputDataMode[ &pinputOptions_->preRoutedDataMode ]
    <<
       this->srActiveCmd_ = "";
    >>
@@ -435,6 +443,21 @@ executeOptions
    ;
 
 //===========================================================================//
+fabricOptions
+   : 
+   <<
+      this->srActiveCmd_ = "";
+   >>
+      FABRIC_BLOCK_ENABLE { EQUAL } boolType[ &pfabricOptions_->blocks.override ]
+   |  FABRIC_SWITCHBOX_ENABLE { EQUAL } boolType[ &pfabricOptions_->switchBoxes.override ]
+   |  FABRIC_CONNECTIONBLOCK_ENABLE { EQUAL } boolType[ &pfabricOptions_->connectionBlocks.override ]
+   |  FABRIC_CHANNEL_ENABLE { EQUAL } boolType[ &pfabricOptions_->channels.override ]
+   <<
+      this->srActiveCmd_ = ( LT( 1 ) ? LT( 1 )->getText( ) : "" );
+   >>
+   ;
+
+//===========================================================================//
 packOptions
    : 
    <<
@@ -463,6 +486,8 @@ placeOptions
    >>
       PLACE_ALGORITHM { EQUAL } placeAlgorithmMode[ &pplaceOptions_->algorithmMode ]
 
+   |  PLACE_CHANNEL_WIDTH { EQUAL } uintNum[ &pplaceOptions_->channelWidth ]
+
    |  PLACE_RANDOM_SEED { EQUAL } uintNum[ &pplaceOptions_->randomSeed ]
    |  PLACE_TEMP_INIT { EQUAL } floatNum[ &pplaceOptions_->initTemp ]
    |  PLACE_TEMP_INIT_FACTOR { EQUAL } floatNum[ &pplaceOptions_->initTempFactor ]
@@ -487,6 +512,8 @@ placeOptions
    |  PLACE_RELATIVE_ROTATE { EQUAL } boolType[ &pplaceOptions_->relativePlace.rotateEnable ]
    |  PLACE_RELATIVE_INIT_PLACE { EQUAL } uintNum[ &pplaceOptions_->relativePlace.maxPlaceRetryCt ]
    |  PLACE_RELATIVE_INIT_MACRO { EQUAL } uintNum[ &pplaceOptions_->relativePlace.maxMacroRetryCt ]
+
+   |  PLACE_PREPLACED_ENABLE { EQUAL } boolType[ &pplaceOptions_->prePlaced.enable ]
    <<
       this->srActiveCmd_ = ( LT( 1 ) ? LT( 1 )->getText( ) : "" );
    >>
@@ -516,28 +543,12 @@ routeOptions
    |  ROUTE_TIMING_ASTAR_FACTOR { EQUAL } floatNum[ &prouteOptions_->timingAStarFactor ]
    |  ROUTE_TIMING_MAX_CRIT { EQUAL } floatNum[ &prouteOptions_->timingMaxCriticality ]
    |  ROUTE_TIMING_SLACK_CRIT { EQUAL } floatNum[ &prouteOptions_->slackCriticality ]
+
+   |  ROUTE_PREROUTED_ENABLE { EQUAL } boolType[ &prouteOptions_->preRouted.enable ]
+   |  ROUTE_PREROUTED_ORDER { EQUAL } routeOrderMode[ &prouteOptions_->preRouted.orderMode ]
    <<
       this->srActiveCmd_ = ( LT( 1 ) ? LT( 1 )->getText( ) : "" );
    >>
-   ;
-
-//===========================================================================//
-inputDataMode[ TOS_InputDataMode_t* pmode ]
-   : 
-   <<
-      *pmode = TOS_INPUT_DATA_UNDEFINED;
-   >>
-   OPEN_BRACE
-   (  modeListVal:INPUT_DATA_VAL
-      << 
-         *pmode = this->FindInputDataMode_( modeListVal->getType( ));
-      >>
-   )+
-   CLOSE_BRACE
-   |  modeVal:INPUT_DATA_VAL
-      << 
-         *pmode = this->FindInputDataMode_( modeVal->getType( ));
-      >>
    ;
 
 //===========================================================================//
@@ -773,6 +784,19 @@ routeCostMode[ TOS_RouteCostMode_t* pmode ]
    |  TIMING_DRIVEN
       <<
          *pmode = TOS_ROUTE_COST_TIMING_DRIVEN;
+      >>
+   ;
+
+//===========================================================================//
+routeOrderMode[ TOS_RouteOrderMode_t* pmode ]
+   :
+      FIRST
+      <<
+         *pmode = TOS_ROUTE_ORDER_FIRST;
+      >>
+   |  AUTO
+      <<
+         *pmode = TOS_ROUTE_ORDER_AUTO;
       >>
    ;
 
