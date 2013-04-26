@@ -15,7 +15,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -260,8 +260,8 @@ void TLO_Cell_c::PrintBLIF(
          printHandler.Write( pfile, spaceLen, ".input" );
          for( size_t i = 0; i < this->portList_.GetLength( ); ++i )
          {
-	    const TLO_Port_c& port = *this->portList_[i];
-	    if( port.GetType( ) == TC_TYPE_INPUT )
+            const TLO_Port_c& port = *this->portList_[i];
+            if( port.GetType( ) == TC_TYPE_INPUT )
             {  
                printHandler.Write( pfile, spaceLen, " %s",
                                                     TIO_PSZ_STR( port.GetName( )));
@@ -274,9 +274,9 @@ void TLO_Cell_c::PrintBLIF(
          printHandler.Write( pfile, spaceLen, ".output" );
          for( size_t i = 0; i < this->portList_.GetLength( ); ++i )
          {
-	    const TLO_Port_c& port = *this->portList_[i];
-	    if( port.GetType( ) == TC_TYPE_OUTPUT )
-	    {
+            const TLO_Port_c& port = *this->portList_[i];
+            if( port.GetType( ) == TC_TYPE_OUTPUT )
+            {
                printHandler.Write( pfile, spaceLen, " %s",
                                                     TIO_PSZ_STR( port.GetName( )));
             }
@@ -355,7 +355,7 @@ size_t TLO_Cell_c::FindPortCount(
       const TLO_Port_c& port = *this->portList_[i];
       if( port.GetType( ) == type )
       {
-	 ++portCount;
+         ++portCount;
       }
    }   
    return( portCount );
@@ -378,8 +378,8 @@ bool TLO_Cell_c::HasPortType(
       const TLO_Port_c& port = *this->portList_[i];
       if( port.GetType( ) == type )
       {
-	 hasPortType = true;
-	 break;
+         hasPortType = true;
+         break;
       }
    }   
    return( hasPortType );
