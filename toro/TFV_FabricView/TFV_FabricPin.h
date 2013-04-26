@@ -5,8 +5,10 @@
 //           - SetName (required for TCT_SortedNameDynamicVector_c class)
 //           - GetName (required for TCT_SortedNameDynamicVector_c class)
 //           - GetCompare (required for TCT_BSearch and TCT_QSort classes)
-//           - SetSlice, SetSide, SetOffset, SetWidth, SetChannelCount
-//           - GetSlice, GetSide, GetOffset, GetWidth, GetChannelCount
+//           - SetType, SetSide, SetOffset, SetDelta, SetWidth, SetSlice
+//           - SetChannelCount
+//           - GetType, GetSide, GetOffset, GetDelta, GetWidth, SetSlice
+//           - GetChannelCount
 //           - AddConnection
 //           - GetConnectionList
 //           - IsValid
@@ -54,15 +56,25 @@ public:
 
    TFV_FabricPin_c( void );
    TFV_FabricPin_c( const string& srName,
-                    unsigned int slice = 0,
+                    TC_TypeMode_t type = TC_TYPE_UNDEFINED,
                     TC_SideMode_t side = TC_SIDE_UNDEFINED,
-                    double offset = 0.0,
-                    double width = 0.0 );
+                    int offset = 0,
+                    double delta = 0.0,
+                    double width = 0.0,
+                    unsigned int slice = 0 );
    TFV_FabricPin_c( const char* pszName,
-                    unsigned int slice = 0,
+                    TC_TypeMode_t type = TC_TYPE_UNDEFINED,
                     TC_SideMode_t side = TC_SIDE_UNDEFINED,
-                    double offset = 0.0,
-                    double width = 0.0 );
+                    int offset = 0,
+                    double delta = 0.0,
+                    double width = 0.0,
+                    unsigned int slice = 0 );
+   TFV_FabricPin_c( const string& srName,
+                    unsigned int slice,
+                    TC_SideMode_t side );
+   TFV_FabricPin_c( const char* pszName,
+                    unsigned int slice,
+                    TC_SideMode_t side );
    TFV_FabricPin_c( const TFV_FabricPin_c& fabricPin );
    ~TFV_FabricPin_c( void );
 
@@ -78,16 +90,20 @@ public:
    const char* GetName( void ) const;
    const char* GetCompare( void ) const;
 
-   void SetSlice( unsigned int slice );
+   void SetType( TC_TypeMode_t type );
    void SetSide( TC_SideMode_t side );
-   void SetOffset( double offset );
+   void SetOffset( int offset );
+   void SetDelta( double delta );
    void SetWidth( double width );
+   void SetSlice( unsigned int slice );
    void SetChannelCount( unsigned int channelCount );
 
-   unsigned int GetSlice( void ) const;
+   TC_TypeMode_t GetType( void ) const;
    TC_SideMode_t GetSide( void ) const;
-   double GetOffset( void ) const;
+   int GetOffset( void ) const;
+   double GetDelta( void ) const;
    double GetWidth( void ) const;
+   unsigned int GetSlice( void ) const;
    unsigned int GetChannelCount( void ) const;
 
    void AddConnection( const TFV_Connection_t& connection );
@@ -99,10 +115,12 @@ private:
 
    string        srName_;
 
-   unsigned int  slice_;
+   TC_TypeMode_t type_;
    TC_SideMode_t side_;
-   double        offset_;
+   int           offset_;
+   double        delta_;
    double        width_;
+   unsigned int  slice_;
 
    unsigned int  channelCount_;
 
@@ -151,10 +169,10 @@ inline const char* TFV_FabricPin_c::GetCompare(
 }
 
 //===========================================================================//
-inline void TFV_FabricPin_c::SetSlice( 
-      unsigned int slice )
+inline void TFV_FabricPin_c::SetType( 
+      TC_TypeMode_t type )
 {
-   this->slice_ = slice;
+   this->type_ = type;
 }
 
 //===========================================================================//
@@ -166,9 +184,16 @@ inline void TFV_FabricPin_c::SetSide(
 
 //===========================================================================//
 inline void TFV_FabricPin_c::SetOffset( 
-      double offset )
+      int offset )
 {
    this->offset_ = offset;
+}
+
+//===========================================================================//
+inline void TFV_FabricPin_c::SetDelta( 
+      double delta )
+{
+   this->delta_ = delta;
 }
 
 //===========================================================================//
@@ -179,6 +204,13 @@ inline void TFV_FabricPin_c::SetWidth(
 }
 
 //===========================================================================//
+inline void TFV_FabricPin_c::SetSlice( 
+      unsigned int slice )
+{
+   this->slice_ = slice;
+}
+
+//===========================================================================//
 inline void TFV_FabricPin_c::SetChannelCount( 
       unsigned int channelCount )
 {
@@ -186,10 +218,10 @@ inline void TFV_FabricPin_c::SetChannelCount(
 }
 
 //===========================================================================//
-inline unsigned int TFV_FabricPin_c::GetSlice( 
+inline TC_TypeMode_t TFV_FabricPin_c::GetType( 
       void ) const
 {
-   return( this->slice_ );
+   return( this->type_ );
 }
 
 //===========================================================================//
@@ -200,10 +232,17 @@ inline TC_SideMode_t TFV_FabricPin_c::GetSide(
 }
 
 //===========================================================================//
-inline double TFV_FabricPin_c::GetOffset( 
+inline int TFV_FabricPin_c::GetOffset( 
       void ) const
 {
    return( this->offset_ );
+}
+
+//===========================================================================//
+inline double TFV_FabricPin_c::GetDelta( 
+      void ) const
+{
+   return( this->delta_ );
 }
 
 //===========================================================================//
@@ -211,6 +250,13 @@ inline double TFV_FabricPin_c::GetWidth(
       void ) const
 {
    return( this->width_ );
+}
+
+//===========================================================================//
+inline unsigned int TFV_FabricPin_c::GetSlice( 
+      void ) const
+{
+   return( this->slice_ );
 }
 
 //===========================================================================//
