@@ -185,10 +185,10 @@ bool TCH_RelativeMove_c::operator==(
 {
    return(( this->fromMacroIndex_ == relativeMove.fromMacroIndex_ ) &&
           ( this->fromPoint_ == relativeMove.fromPoint_ ) &&
-	  ( this->fromEmpty_ == relativeMove.fromEmpty_ ) &&
+          ( this->fromEmpty_ == relativeMove.fromEmpty_ ) &&
           ( this->toMacroIndex_ == relativeMove.toMacroIndex_ ) &&
           ( this->toPoint_ == relativeMove.toPoint_ ) &&
-	  ( this->toEmpty_ == relativeMove.toEmpty_ ) ?
+          ( this->toEmpty_ == relativeMove.toEmpty_ ) ?
           true : false );
 }
 
