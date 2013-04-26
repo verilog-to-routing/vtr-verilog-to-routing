@@ -98,7 +98,7 @@ int TC_CompareStrings(
             else
             {
                // Detected mis-compare between given alphanumeric strings
-    	       i = ( l > 0 ? 1 : -1 );
+               i = ( l > 0 ? 1 : -1 );
                break;
             }
          }
@@ -396,7 +396,7 @@ int TC_stricmp(
 {
    while(( pszStringA && *pszStringA ) && 
          ( pszStringB && *pszStringB ) && 
-	 ( toupper( *pszStringA ) == toupper( *pszStringB )))
+         ( toupper( *pszStringA ) == toupper( *pszStringB )))
    {
       ++pszStringA;
       ++pszStringB;
@@ -429,7 +429,7 @@ int TC_strnicmp(
 {
    while(( pszStringA && *pszStringA ) && 
          ( pszStringB && *pszStringB ) && 
-	 ( toupper( *pszStringA ) == toupper( *pszStringB )) &&
+         ( toupper( *pszStringA ) == toupper( *pszStringB )) &&
          ( i ))
    {
       ++pszStringA;
