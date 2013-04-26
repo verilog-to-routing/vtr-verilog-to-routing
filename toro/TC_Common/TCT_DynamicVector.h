@@ -426,8 +426,8 @@ template< class T > bool TCT_DynamicVector_c< T >::Init_(
       {
          for( size_t i = 0; i < this->maxLen_; ++i )
          {
- 	    // Need to copy each element into the newly allocated list
-	    // (using 'deep' copy, instead of a faster 'shallow' memcpy)
+            // Need to copy each element into the newly allocated list
+            // (using 'deep' copy, instead of a faster 'shallow' memcpy)
             *( this->padata_ + i ) = *( dynamicVector.padata_ + i );
          }
       }
@@ -511,7 +511,7 @@ template< class T > void TCT_DynamicVector_c< T >::Delete_(
       // Delete existing data element by shifting subsequent data elements
       while( i < this->curLen_ - 1 )
       {
- 	 // Need to copy each element into the newly allocated list
+         // Need to copy each element into the newly allocated list
          // (using 'deep' copy, instead of a faster 'shallow' memcpy)
          *( this->padata_ + i ) = *( this->padata_ + i + 1 );
 
@@ -582,8 +582,8 @@ template< class T > bool TCT_DynamicVector_c< T >::Expand_(
       {
          for( size_t i = 0; i < this->curLen_; ++i )
          {
- 	    // Need to copy each element into the newly allocated list
-	    // (using 'deep' copy, instead of a faster 'shallow' memcpy)
+            // Need to copy each element into the newly allocated list
+            // (using 'deep' copy, instead of a faster 'shallow' memcpy)
             *( padata + i ) = *( this->padata_ + i );
          }
       }
@@ -631,8 +631,8 @@ template< class T > bool TCT_DynamicVector_c< T >::Shrink_(
                                        "TCT_DynamicVector_c< T >::Shrink_" );
          if( ok )
          {
- 	    // Need to copy each element into the newly allocated list
-	    // (using 'deep' copy, instead of a faster 'shallow' memcpy)
+            // Need to copy each element into the newly allocated list
+            // (using 'deep' copy, instead of a faster 'shallow' memcpy)
             for( size_t i = 0; i < this->maxLen_; ++i )
             {
                *( padata + i ) = *( this->padata_ + i );
