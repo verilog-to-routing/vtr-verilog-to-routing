@@ -133,36 +133,4 @@ enum TCH_RouteOrderMode_e
 };
 typedef enum TCH_RouteOrderMode_e TCH_RouteOrderMode_t;
 
-//---------------------------------------------------------------------------//
-// Define VPR place.c structures (temporary solution until place.c updated...)
-//---------------------------------------------------------------------------//
-// ???
-#ifndef PLACE_MACRO_H
-   typedef struct s_pl_moved_block 
-   {
-   	int block_num;
-   	int xold;
-   	int xnew;
-   	int yold;
-   	int ynew;
-   	int zold;
-   	int znew;
-   	int swapped_to_was_empty;
-   	int swapped_from_is_empty;
-   } t_pl_moved_block;
-
-   typedef struct s_pl_blocks_to_be_moved 
-   {
-   	int num_moved_blocks;
-   	t_pl_moved_block * moved_blocks;
-   } t_pl_blocks_to_be_moved;
-
-   typedef struct s_legal_pos
-   {
-	int x;
-	int y;
-	int z;
-   } t_legal_pos;
-#endif
-
 #endif
