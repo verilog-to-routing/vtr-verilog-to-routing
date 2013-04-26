@@ -5,7 +5,6 @@
 //           - GetName
 //           - GetRegion
 //           - GetLayerRange
-//           - IsValid
 //
 //===========================================================================//
 
@@ -282,17 +281,6 @@ inline const TGS_LayerRange_t& TFV_FabricView_c::GetLayerRange(
       void ) const
 {
    return( this->layerRange_ );
-}
-
-//===========================================================================//
-inline bool TFV_FabricView_c::IsValid( 
-      void ) const
-{
-   return(( this->region_.IsValid( )) &&
-          ( this->layerRange_.IsValid( )) &&
-          ( this->pfabricLayerList_ ) &&
-          ( this->pfabricLayerList_->IsValid( )) ?
-          true : false );
 }
 
 #endif
