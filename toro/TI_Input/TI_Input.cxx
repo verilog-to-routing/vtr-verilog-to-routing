@@ -140,7 +140,7 @@ bool TI_Input_c::Apply(
 
       if( ok )
       {
-	 // Next, display interesting program execution status
+         // Next, display interesting program execution status
          this->DisplayProgramOwner_( );
          this->DisplayProgramCommand_( );
 
@@ -199,7 +199,7 @@ bool TI_Input_c::Apply(
 
       if( ok )
       {
- 	 // Ready to validate all input data at this time
+         // Ready to validate all input data at this time
          if( ok )
          {
             ok = this->ValidateOptionsStore_( );
