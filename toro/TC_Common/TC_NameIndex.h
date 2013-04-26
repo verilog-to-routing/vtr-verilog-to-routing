@@ -34,6 +34,10 @@
 #include <string>
 using namespace std;
 
+#include "TC_Typedefs.h"
+
+#include "TIO_Typedefs.h"
+
 //===========================================================================//
 // Purpose        : Class declaration
 // Author         : Jeff Rudolph
@@ -47,9 +51,9 @@ public:
 
    TC_NameIndex_c( void );
    TC_NameIndex_c( const string& srName,
-  	           size_t index = SIZE_MAX );
+                   size_t index = SIZE_MAX );
    TC_NameIndex_c( const char* pszName,
-  	           size_t index = SIZE_MAX );
+                   size_t index = SIZE_MAX );
    TC_NameIndex_c( const TC_NameIndex_c& nameIndex );
    ~TC_NameIndex_c( void );
 
