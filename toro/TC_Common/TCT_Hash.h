@@ -178,7 +178,7 @@ template< class Key, class T > bool TCT_Hash_c< Key, T >::operator==(
       typename std::map< Key, T >::const_iterator end = this->map_.end( );
       for( typename std::map< Key, T >::const_iterator p = begin; p != end; ++p )
       {
- 	 T value;
+         T value;
          isEqual = ( hash.Find( p->first, &value ) && ( p->second == value ) ? 
                      true : false );
          if( !isEqual )
