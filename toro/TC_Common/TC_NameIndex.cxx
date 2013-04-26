@@ -184,10 +184,10 @@ void TC_NameIndex_c::ExtractString(
          *psrNameIndex += this->srName_;
          *psrNameIndex += "\"";
 
-	 if( this->index_ != SIZE_MAX )
-	 {
-   	    char szIndex[TIO_FORMAT_STRING_LEN_VALUE];
-            sprintf( szIndex, "%lu", this->index_ );
+         if( this->index_ != SIZE_MAX )
+         {
+            char szIndex[TIO_FORMAT_STRING_LEN_VALUE];
+            sprintf( szIndex, "%lu", static_cast< unsigned long >( this->index_ ));
 
             *psrNameIndex += " ";
             *psrNameIndex += szIndex;
