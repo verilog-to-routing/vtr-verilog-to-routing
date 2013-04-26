@@ -10,7 +10,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -136,23 +136,23 @@ bool TGS_ArrayGridIter_c::Next(
       if( TCTF_IsLE( this->x_, this->arrayRegion_.x2 ) || 
           TCTF_IsLE( this->y_, this->arrayRegion_.y2 ))
       {
-	 this->x_ += this->pitch_.dx;
+         this->x_ += this->pitch_.dx;
 
          if( TCTF_IsGT( this->x_, this->arrayRegion_.x2 ))
-	 {
+         {
             this->x_ = this->arrayRegion_.x1;
             this->y_ += this->pitch_.dy;
 
             if( TCTF_IsGT( this->y_, this->arrayRegion_.y2 ))
-	    {
-	       this->x_ = TC_FLT_MAX;
-	       this->y_ = TC_FLT_MAX;
+            {
+               this->x_ = TC_FLT_MAX;
+               this->y_ = TC_FLT_MAX;
             }
          }
       }
       else
       {
-	 this->x_ = TC_FLT_MAX;
+         this->x_ = TC_FLT_MAX;
          this->y_ = TC_FLT_MAX;
       }
 
