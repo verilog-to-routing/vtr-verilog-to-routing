@@ -275,7 +275,7 @@ void TCH_RelativePlaceHandler_c::Set(
 {
    // Set local reference to VPR's grid array
    this->vpr_data_.Init( vpr_gridArray, vpr_nx, vpr_ny, 
-			 vpr_blockArray, vpr_blockCount,
+                         vpr_blockArray, vpr_blockCount,
                          vpr_typeArray, vpr_typeCount,
                          vpr_freeLocationArray, vpr_legalPosArray );
 }
@@ -322,7 +322,7 @@ bool TCH_RelativePlaceHandler_c::InitialPlace(
             int                vpr_nx,
             int                vpr_ny,
             t_block*           vpr_blockArray,
-	    int                vpr_blockCount,
+            int                vpr_blockCount,
       const t_type_descriptor* vpr_typeArray,
             int                vpr_typeCount,
             int*               vpr_freeLocationArray,
@@ -852,14 +852,14 @@ bool TCH_RelativePlaceHandler_c::HasExistingSideConstraint_(
 
          if( psrFromBlockName )
          {
-	    fromNodeIndex = ( toNode.HasSideIndex( side ) ? 
+            fromNodeIndex = ( toNode.HasSideIndex( side ) ? 
                               toNode.GetSideIndex( side ) : fromNodeIndex );
             const TCH_RelativeNode_c* pfromNode = relativeMacro[fromNodeIndex];
             *psrFromBlockName = ( pfromNode ? pfromNode->GetBlockName( ) : "" );
          }
          if( psrToBlockName )
          {
-	    toNodeIndex = ( fromNode.HasSideIndex( antiSide ) ? 
+            toNodeIndex = ( fromNode.HasSideIndex( antiSide ) ? 
                             fromNode.GetSideIndex( antiSide ) : toNodeIndex );
             const TCH_RelativeNode_c* ptoNode = relativeMacro[toNodeIndex];
             *psrToBlockName = ( ptoNode ? ptoNode->GetBlockName( ) : "" );
@@ -956,18 +956,18 @@ void TCH_RelativePlaceHandler_c::ResetRelativeMacroList_(
       TCH_RelativeMacro_c* prelativeMacro = (*prelativeMacroList)[i];
       for( size_t j = 0; j < prelativeMacro->GetLength( ); ++j )
       {
-	 TCH_RelativeNode_c* prelativeNode = (*prelativeMacro)[j];
+         TCH_RelativeNode_c* prelativeNode = (*prelativeMacro)[j];
 
          TGO_Point_c vpr_gridPoint;
          prelativeNode->SetVPR_GridPoint( vpr_gridPoint );
 
          const char* pszBlockName = prelativeNode->GetBlockName( );
          const TCH_RelativeBlock_c* prelativeBlock = relativeBlockList.Find( pszBlockName );
-	 if( !prelativeBlock )
+         if( !prelativeBlock )
             continue;
 
          const t_type_descriptor* vpr_type = prelativeBlock->GetVPR_Type( );
-	 prelativeNode->SetVPR_Type( vpr_type );
+         prelativeNode->SetVPR_Type( vpr_type );
       }
    }
 }
@@ -1055,8 +1055,8 @@ bool TCH_RelativePlaceHandler_c::InitialPlaceMacros_(
          bool foundPlacement = false;
          ok = this->InitialPlaceMacroNodes_( prelativeMacro, 
                                              &validPlacement, &triedPlacement, &foundPlacement );
-	 if( !ok )
-	    break;
+         if( !ok )
+            break;
 
          foundAllPlacements = validPlacement;
          if( !validPlacement )
@@ -1711,11 +1711,11 @@ void TCH_RelativePlaceHandler_c::PlaceMacroUpdateMoveList_(
          const TCH_RelativeMove_c& relativeMove = *(*prelativeMoveList)[j];
          
          if( relativeMove.GetToPoint( ) == fromPoint )
-	 {
+         {
             fromEmpty = false;
          }
          if( relativeMove.GetFromPoint( ) == toPoint )
-	 {
+         {
             toEmpty = false;
          }
       }
@@ -1897,10 +1897,10 @@ TGO_Point_c TCH_RelativePlaceHandler_c::FindRandomOriginPoint_(
       if( !this->placeOptions_.rotateEnable )
       {
          int lastIndex = vpr_freeLocationArray[typeIndex] - 1;
-	 if( lastIndex >= 0 )
-	 {
+         if( lastIndex >= 0 )
+         {
             vpr_legalPosArray[typeIndex][posIndex] = vpr_legalPosArray[typeIndex][lastIndex];
-	 }
+         }
          --vpr_freeLocationArray[typeIndex];
       }
    }
