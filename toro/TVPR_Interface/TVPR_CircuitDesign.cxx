@@ -52,7 +52,6 @@
 //           - FindModel_
 //           - FindModelPort_
 //           - FindModelPortCount_
-//           - FindPinIndex_
 //           - FindGraphPin_
 //           - FindTraceListLength_
 //           - FindTraceListNode_
@@ -62,7 +61,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -86,6 +85,8 @@ using namespace std;
 #include "TGS_ArrayGrid.h"
 
 #include "TGO_Region.h"
+
+#include "TNO_StringUtils.h"
 
 #include "TVPR_CircuitDesign.h"
 
@@ -200,6 +201,7 @@ void TVPR_CircuitDesign_c::Import(
       const t_rr_node*           vpr_rrNodeArray,
             TCD_CircuitDesign_c* pcircuitDesign ) const
 { 
+   TPO_InstList_t blockList( pcircuitDesign->blockList );
    TPO_InstList_t* pblockList = &pcircuitDesign->blockList;
    TNO_NetList_c* pnetList = &pcircuitDesign->netList;
 
@@ -212,10 +214,10 @@ void TVPR_CircuitDesign_c::Import(
                        pnetList );
 
    this->PeekInputOutputList_( vpr_blockArray, vpr_blockCount,
-                               pblockList );
+                               blockList, pblockList );
    this->PeekPhysicalBlockList_( vpr_blockArray, vpr_blockCount,
                                  vpr_logicalBlockArray,
-                                 pblockList );
+                                 blockList, pblockList );
 }
 
 //===========================================================================//
@@ -309,18 +311,22 @@ bool TVPR_CircuitDesign_c::PokeStructures_(
       this->PokeLatchList_( instList, instNameList, netList,
                             pvpr_latchModel, 
                             vpr_netArray,
-                            vpr_logicalBlockArray, &vpr_blockIndex );
+                            vpr_logicalBlockArray,
+                            &vpr_blockIndex );
+
       // [VPR] Next, write ".names" LUT data
       this->PokeLogicList_( instList, instNameList, netList,
                             pvpr_logicModel, 
                             vpr_netArray,
-                            vpr_logicalBlockArray, &vpr_blockIndex );
+                            vpr_logicalBlockArray,
+                            &vpr_blockIndex );
 
       // [VPR] Next, write ".subckt" data, if any
       this->PokeSubcktList_( instList, instNameList, netList,
                              pvpr_customModels,
                              vpr_netArray,
-                             vpr_logicalBlockArray, &vpr_blockIndex );
+                             vpr_logicalBlockArray,
+                             &vpr_blockIndex );
 
       // Lastly, update VPR's block array based on optional placement regions
       this->PokeBlockList_( blockList,
@@ -680,8 +686,9 @@ void TVPR_CircuitDesign_c::PokeSubckt_(
       const char* pszCellPinName = pinMap.GetCellPinName( );
       const char* pszInstPinName = pinMap.GetInstPinName( );
    
-      int cellPinIndex = 0;
-      this->FindPinIndex_( pszCellPinName, &cellPinIndex );
+      size_t index; 
+      TNO_ParseNameIndex( pszCellPinName, 0, &index );
+      int cellPinIndex = static_cast< int >( index );
 
       const t_model_ports* pvpr_port = 0;
       pvpr_port = this->FindModelPort_( pvpr_model, pszCellPinName, TC_TYPE_OUTPUT );
@@ -1275,6 +1282,7 @@ bool TVPR_CircuitDesign_c::LoadModelLibrary_(
 void TVPR_CircuitDesign_c::PeekInputOutputList_(
       const t_block*        vpr_blockArray,
             int             vpr_blockCount,
+      const TPO_InstList_t& inputOutputList,
             TPO_InstList_t* pinputOutputList ) const
 { 
    // Iterate VPR's global block list for IO_TYPE blocks
@@ -1285,7 +1293,7 @@ void TVPR_CircuitDesign_c::PeekInputOutputList_(
          continue;
 
       this->PeekInputOutput_( vpr_block, 
-                              pinputOutputList );
+                              inputOutputList, pinputOutputList );
    }
 }
 
@@ -1298,6 +1306,7 @@ void TVPR_CircuitDesign_c::PeekInputOutputList_(
 //===========================================================================//
 void TVPR_CircuitDesign_c::PeekInputOutput_(
       const t_block&        vpr_block,
+      const TPO_InstList_t& inputOutputList,
             TPO_InstList_t* pinputOutputList ) const
 { 
    const char* pszInstName = vpr_block.name;
@@ -1310,23 +1319,6 @@ void TVPR_CircuitDesign_c::PeekInputOutput_(
       pszCellName = vpr_block.pb->pb_graph_node->pb_type->name;
    }
 
-   TGS_RegionList_t placeRegionList;
-   if( vpr_block.placement_region_list.IsValid( ))
-   {
-      for( size_t i = 0; i < vpr_block.placement_region_list.GetLength( ); ++i )
-      {
-         const TGO_Region_c& placementRegion = *vpr_block.placement_region_list[i];
-	 TGS_Region_c placeRegion( static_cast< double >( placementRegion.x1 ),
-                                   static_cast< double >( placementRegion.y1 ),
-                                   static_cast< double >( placementRegion.x2 ),
-                                   static_cast< double >( placementRegion.y2 ));
-
-         placeRegionList.Add( placeRegion );
-      }
-   }
-
-   TPO_StatusMode_t placeStatus = ( vpr_block.isFixed ? 
-                                    TPO_STATUS_FIXED : TPO_STATUS_UNDEFINED );
    string srPlaceFabricName;
    if(( vpr_block.x >= 0 ) && ( vpr_block.y >= 0 ))
    {
@@ -1335,13 +1327,47 @@ void TVPR_CircuitDesign_c::PeekInputOutput_(
       srPlaceFabricName = szPlaceFabricName;
    }
 
+   TPO_StatusMode_t placeStatus = ( vpr_block.isFixed ? 
+                                    TPO_STATUS_FIXED : TPO_STATUS_PLACED );
+
+   TGO_Point_c placeOrigin( vpr_block.x, vpr_block.y, vpr_block.z );
+
+   TGS_RegionList_t placeRegionList;
+   if( vpr_block.placement_region_list.IsValid( ))
+   {
+      for( size_t i = 0; i < vpr_block.placement_region_list.GetLength( ); ++i )
+      {
+         const TGO_Region_c& placementRegion = *vpr_block.placement_region_list[i];
+         TGS_Region_c placeRegion( static_cast< double >( placementRegion.x1 ),
+                                   static_cast< double >( placementRegion.y1 ),
+                                   static_cast< double >( placementRegion.x2 ),
+                                   static_cast< double >( placementRegion.y2 ));
+
+         placeRegionList.Add( placeRegion );
+      }
+   }
+
+   TPO_RelativeList_t placeRelativeList; 
+   if( inputOutputList.IsMember( pszInstName ))
+   {
+      const TPO_Inst_c& inputOutput = *inputOutputList.Find( pszInstName );
+      const TPO_RelativeList_t& placeRelativeList_ = inputOutput.GetPlaceRelativeList( );
+      for( size_t i = 0; i < placeRelativeList_.GetLength( ); ++i )
+      {
+         const TPO_Relative_t& placeRelative = *placeRelativeList_[i];
+         placeRelativeList.Add( placeRelative );
+      }
+   }
+
    if( pszInstName && *pszInstName )
    {
       TPO_Inst_c inputOutput( pszInstName );
       inputOutput.SetCellName( pszCellName );
-      inputOutput.SetPlaceRegionList( placeRegionList );
-      inputOutput.SetPlaceStatus( placeStatus );
       inputOutput.SetPlaceFabricName( srPlaceFabricName );
+      inputOutput.SetPlaceStatus( placeStatus );
+      inputOutput.SetPlaceOrigin( placeOrigin );
+      inputOutput.SetPlaceRegionList( placeRegionList );
+      inputOutput.SetPlaceRelativeList( placeRelativeList );
 
       pinputOutputList->Add( inputOutput );
    }
@@ -1358,6 +1384,7 @@ void TVPR_CircuitDesign_c::PeekPhysicalBlockList_(
       const t_block*         vpr_blockArray,
             int              vpr_blockCount,
       const t_logical_block* vpr_logicalBlockArray,
+      const TPO_InstList_t&  physicalBlockList,
             TPO_InstList_t*  pphysicalBlockList ) const
 { 
    // Iterate VPR's global block list for non-IO_TYPE blocks
@@ -1367,8 +1394,8 @@ void TVPR_CircuitDesign_c::PeekPhysicalBlockList_(
       if( vpr_block.type == IO_TYPE )
          continue;
 
-      this->PeekPhysicalBlock_( vpr_block, vpr_logicalBlockArray,
-                                blockIndex, pphysicalBlockList );
+      this->PeekPhysicalBlock_( vpr_block, vpr_logicalBlockArray, blockIndex, 
+                                physicalBlockList, pphysicalBlockList );
    }
 }
 
@@ -1383,6 +1410,7 @@ void TVPR_CircuitDesign_c::PeekPhysicalBlock_(
       const t_block&         vpr_block,
       const t_logical_block* vpr_logicalBlockArray,
             int              blockIndex,
+      const TPO_InstList_t&  physicalBlockList,
             TPO_InstList_t*  pphysicalBlockList ) const
 { 
    const char* pszInstName = vpr_block.name;
@@ -1395,34 +1423,6 @@ void TVPR_CircuitDesign_c::PeekPhysicalBlock_(
       pszCellName = vpr_block.pb->pb_graph_node->pb_type->name;
    }
 
-   TPO_HierMapList_t packHierMapList;
-   if( vpr_block.pb )
-   {
-      this->PeekHierMapList_( *vpr_block.pb, vpr_logicalBlockArray,
-                              blockIndex, &packHierMapList );
-   }
-
-   TGS_RegionList_t placeRegionList;
-   if( vpr_block.placement_region_list.IsValid( ))
-   {
-      for( size_t i = 0; i < vpr_block.placement_region_list.GetLength( ); ++i )
-      {
-         const TGO_Region_c& placementRegion = *vpr_block.placement_region_list[i];
-	 TGS_Region_c placeRegion( static_cast< double >( placementRegion.x1 ),
-                                   static_cast< double >( placementRegion.y1 ),
-                                   static_cast< double >( placementRegion.x2 ),
-                                   static_cast< double >( placementRegion.y2 ));
-
-         placeRegionList.Add( placeRegion );
-      }
-   }
-
-// WIP ??? 
-   TPO_RelativeList_t placeRelativeList; 
-
-   TPO_StatusMode_t placeStatus = ( vpr_block.isFixed ? 
-                                    TPO_STATUS_FIXED : TPO_STATUS_UNDEFINED );
-
    string srPlaceFabricName;
    if(( vpr_block.x >= 0 ) && ( vpr_block.y >= 0 ))
    {
@@ -1431,15 +1431,55 @@ void TVPR_CircuitDesign_c::PeekPhysicalBlock_(
       srPlaceFabricName = szPlaceFabricName;
    }
 
+   TPO_HierMapList_t packHierMapList;
+   if( vpr_block.pb )
+   {
+      this->PeekHierMapList_( *vpr_block.pb, vpr_logicalBlockArray,
+                              blockIndex, &packHierMapList );
+   }
+
+   TPO_StatusMode_t placeStatus = ( vpr_block.isFixed ? 
+                                    TPO_STATUS_FIXED : TPO_STATUS_PLACED );
+
+   TGO_Point_c placeOrigin( vpr_block.x, vpr_block.y );
+
+   TGS_RegionList_t placeRegionList;
+   if( vpr_block.placement_region_list.IsValid( ))
+   {
+      for( size_t i = 0; i < vpr_block.placement_region_list.GetLength( ); ++i )
+      {
+         const TGO_Region_c& placementRegion = *vpr_block.placement_region_list[i];
+         TGS_Region_c placeRegion( static_cast< double >( placementRegion.x1 ),
+                                   static_cast< double >( placementRegion.y1 ),
+                                   static_cast< double >( placementRegion.x2 ),
+                                   static_cast< double >( placementRegion.y2 ));
+
+         placeRegionList.Add( placeRegion );
+      }
+   }
+
+   TPO_RelativeList_t placeRelativeList; 
+   if( physicalBlockList.IsMember( pszInstName ))
+   {
+      const TPO_Inst_c& physicalBlock = *physicalBlockList.Find( pszInstName );
+      const TPO_RelativeList_t& placeRelativeList_ = physicalBlock.GetPlaceRelativeList( );
+      for( size_t i = 0; i < placeRelativeList_.GetLength( ); ++i )
+      {
+         const TPO_Relative_t& placeRelative = *placeRelativeList_[i];
+         placeRelativeList.Add( placeRelative );
+      }
+   }
+
    if( pszInstName && *pszInstName )
    {
       TPO_Inst_c physicalBlock( pszInstName );
       physicalBlock.SetCellName( pszCellName );
       physicalBlock.SetPackHierMapList( packHierMapList );
+      physicalBlock.SetPlaceFabricName( srPlaceFabricName );
+      physicalBlock.SetPlaceStatus( placeStatus );
+      physicalBlock.SetPlaceOrigin( placeOrigin );
       physicalBlock.SetPlaceRegionList( placeRegionList );
       physicalBlock.SetPlaceRelativeList( placeRelativeList );
-      physicalBlock.SetPlaceStatus( placeStatus );
-      physicalBlock.SetPlaceFabricName( srPlaceFabricName );
 
       pphysicalBlockList->Add( physicalBlock );
    }
@@ -1539,7 +1579,6 @@ void TVPR_CircuitDesign_c::PeekNetList_(
 
    // Update net list based on all net instance ports asso. with VPR nets
    this->ExtractNetListInstPins_( vpr_netArray, vpr_netCount,
-                                  vpr_blockArray, 
                                   vpr_logicalBlockArray,
                                   pnetList );
 
@@ -2039,7 +2078,6 @@ void TVPR_CircuitDesign_c::ExtractNetList_(
 void TVPR_CircuitDesign_c::ExtractNetListInstPins_(
       const t_net*           vpr_netArray,
             int              vpr_netCount,
-      const t_block*         vpr_blockArray,
       const t_logical_block* vpr_logicalBlockArray,
             TNO_NetList_c*   pnetList ) const
 {
@@ -2116,30 +2154,32 @@ void TVPR_CircuitDesign_c::ExtractNetListRoutes_(
       // Call VPR API's special TI-specific function to find all net trace lists
       t_trace* pvpr_traceArray = 0;
       pvpr_traceArray = vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture( vpr_architecture );
-
-      // Iterate for every net in the existing VPR net list...
-      for( int netIndex = 0; netIndex < vpr_netCount; ++netIndex )
+      if( pvpr_traceArray )
       {
-         const t_net& vpr_net = vpr_netArray[netIndex];
+         // Iterate for every net in the existing VPR net list...
+         for( int netIndex = 0; netIndex < vpr_netCount; ++netIndex )
+         {
+            const t_net& vpr_net = vpr_netArray[netIndex];
 
-         const char* pszNetName = vpr_net.name;
-         TNO_Net_c* pnet = pnetList->Find( pszNetName );
+            const char* pszNetName = vpr_net.name;
+            TNO_Net_c* pnet = pnetList->Find( pszNetName );
 
-         pnet->ClearRouteList( );
+            pnet->ClearRouteList( );
 
-         if( !vpr_blockArray || !vpr_rrNodeArray )
-            continue;
+            if( !vpr_blockArray || !vpr_rrNodeArray )
+               continue;
 
-         t_trace* pvpr_traceList = &pvpr_traceArray[netIndex];
-         if( this->IsNetOpen_( pvpr_traceList ))
-            continue;
+            t_trace* pvpr_traceList = &pvpr_traceArray[netIndex];
+            if( this->IsNetOpen_( pvpr_traceList ))
+               continue;
 
-         TNO_RouteList_t routeList;
-         this->ExtractNetRoutes_( vpr_blockArray, vpr_rrNodeArray,
-                                  pvpr_traceList, &routeList );
+            TNO_RouteList_t routeList;
+            this->ExtractNetRoutes_( vpr_blockArray, vpr_rrNodeArray,
+                                     pvpr_traceList, &routeList );
 
-         pnet->SetStatus( TNO_STATUS_ROUTED );
-         pnet->AddRouteList( routeList );
+            pnet->SetStatus( TNO_STATUS_ROUTED );
+            pnet->AddRouteList( routeList );
+         }
       }
       free( pvpr_traceArray );
    }
@@ -2390,11 +2430,45 @@ void TVPR_CircuitDesign_c::LoadTraceNodes_(
       const char* pszPortName = vpr_graphPin.port->name;
       int portIndex = vpr_graphPin.pin_number;
 
-      TNO_InstPin_c instPin( pszBlockName, 
-                             pszParentName, parentIndex,
-                             pszPortName, portIndex );
-      TNO_Node_c node( instPin );
-      proute->Add( node );
+      // Check if this route node is a PAD (ie. has capacity) and 
+      // if the next route node is an OPIN (ie. does not have block index) or
+      // if the previous route node was an IPIN (ie. does not have block index)
+      // (if so, need to update this node's parent and port indices)
+      if( vpr_blockArray[blockIndex].type &&
+          vpr_blockArray[blockIndex].type->capacity > 1 )
+      {
+         int numPins = vpr_blockArray[blockIndex].type->num_pins;
+         int capacity = vpr_blockArray[blockIndex].type->capacity;
+         if(( pvpr_traceThis->next ) &&
+            ( pvpr_traceThis->next->iblock == OPEN ))
+         {
+            int nextIndex = pvpr_traceThis->next->index;
+            int ptcNum = vpr_rrNodeArray[nextIndex].ptc_num;
+
+            parentIndex = ptcNum / ( numPins / capacity );
+            portIndex = ptcNum % ( numPins / capacity );
+            pszPortName = vpr_blockArray[blockIndex].type->pb_type->ports[portIndex].name;
+         }
+         else if(( pvpr_tracePrev ) &&
+                 ( pvpr_tracePrev->iblock == OPEN ))
+         {
+            int prevIndex = pvpr_tracePrev->index;
+            int ptcNum = vpr_rrNodeArray[prevIndex].ptc_num;
+
+            parentIndex = ptcNum / ( numPins / capacity );
+            portIndex = ptcNum % ( numPins / capacity );
+            pszPortName = vpr_blockArray[blockIndex].type->pb_type->ports[portIndex].name;
+         }
+      }
+
+      if( vpr_rrNode.type != SOURCE )
+      {
+            TNO_InstPin_c instPin( pszBlockName, 
+                                   pszParentName, parentIndex,
+                                   pszPortName, portIndex );
+            TNO_Node_c node( instPin );
+            proute->Add( node );
+      }
    } 
    else 
    {
@@ -2442,11 +2516,13 @@ void TVPR_CircuitDesign_c::LoadTraceNodes_(
          {
             sprintf( szName, "sv[%d].%d", vpr_rrNodeThis.xlow, vpr_rrNodeThis.ptc_num );
          }
+         TGS_OrientMode_t orient( vpr_rrNodeThis.type == CHANX ?
+                                  TGS_ORIENT_HORIZONTAL : TGS_ORIENT_VERTICAL );
          TGS_Region_c channel( vpr_rrNodeThis.xlow, vpr_rrNodeThis.ylow, 
                                vpr_rrNodeThis.xhigh, vpr_rrNodeThis.yhigh );
          unsigned int track = vpr_rrNodeThis.ptc_num;
 
-         TNO_Segment_c segment( szName, channel, track );
+         TNO_Segment_c segment( szName, orient, channel, track );
          TNO_Node_c node( segment );
          proute->Add( node );
       }
@@ -2552,38 +2628,6 @@ int TVPR_CircuitDesign_c::FindModelPortCount_(
       pvpr_port = pvpr_port->next;
    }
    return( portCount );
-}
-
-//===========================================================================//
-// Method         : FindPinIndex_
-// Author         : Jeff Rudolph
-//---------------------------------------------------------------------------//
-// Version history
-// 07/25/12 jeffr : Original
-//===========================================================================//
-bool TVPR_CircuitDesign_c::FindPinIndex_(
-      const char* pszPinName,
-            int*  ppinIndex ) const
-{
-   bool foundIndex = false;
-   int pinIndex = 0;
-
-   string srPinName( pszPinName );
-   size_t left = srPinName.find( '[' );
-   size_t right = srPinName.find( ']' );
-   if(( left != string::npos ) &&
-      ( right != string::npos ))
-   {
-      string srPinIndex( srPinName.substr( left + 1, right - left - 1 ));
-      pinIndex = atoi( srPinIndex.data( ));
-      foundIndex = true;
-   }
-
-   if( ppinIndex )
-   {
-      *ppinIndex = pinIndex;
-   }
-   return( foundIndex );
 }
 
 //===========================================================================//
