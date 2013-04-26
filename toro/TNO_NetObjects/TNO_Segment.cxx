@@ -12,7 +12,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -31,6 +31,8 @@
 
 #include "TC_StringUtils.h"
 
+#include "TGS_StringUtils.h"
+
 #include "TNO_Segment.h"
 
 //===========================================================================//
@@ -43,6 +45,7 @@
 TNO_Segment_c::TNO_Segment_c( 
       void )
       :
+      orient_( TGS_ORIENT_UNDEFINED ),
       track_( 0 )
 {
 } 
@@ -52,6 +55,7 @@ TNO_Segment_c::TNO_Segment_c(
       const string& srName )
       :
       srName_( srName ),
+      orient_( TGS_ORIENT_UNDEFINED ),
       track_( 0 )
 {
 } 
@@ -61,17 +65,20 @@ TNO_Segment_c::TNO_Segment_c(
       const char* pszName )
       :
       srName_( TIO_PSZ_STR( pszName )),
+      orient_( TGS_ORIENT_UNDEFINED ),
       track_( 0 )
 {
 } 
 
 //===========================================================================//
 TNO_Segment_c::TNO_Segment_c( 
-      const string&       srName,
-      const TGS_Region_c& channel,
-            unsigned int  track )
+      const string&          srName,
+            TGS_OrientMode_t orient,
+      const TGS_Region_c&    channel,
+            unsigned int     track )
       :
       srName_( srName ),
+      orient_( orient ),
       channel_( channel ),
       track_( track )
 {
@@ -79,11 +86,14 @@ TNO_Segment_c::TNO_Segment_c(
 
 //===========================================================================//
 TNO_Segment_c::TNO_Segment_c( 
-      const char*         pszName,
-      const TGS_Region_c& channel,
-            unsigned int  track )
+      const char*            pszName,
+            TGS_OrientMode_t orient,
+      const TGS_Region_c&    channel,
+            unsigned int     track )
+
       :
       srName_( TIO_PSZ_STR( pszName )),
+      orient_( orient ),
       channel_( channel ),
       track_( track )
 {
@@ -94,6 +104,7 @@ TNO_Segment_c::TNO_Segment_c(
       const TNO_Segment_c& segment )
       :
       srName_( segment.srName_ ),
+      orient_( segment.orient_ ),
       channel_( segment.channel_ ),
       track_( segment.track_ )
 {
@@ -124,6 +135,7 @@ TNO_Segment_c& TNO_Segment_c::operator=(
    if( &segment != this )
    {
       this->srName_ = segment.srName_;
+      this->orient_ = segment.orient_;
       this->channel_ = segment.channel_;
       this->track_ = segment.track_;
    }
@@ -155,6 +167,7 @@ bool TNO_Segment_c::operator==(
       const TNO_Segment_c& segment ) const
 {
    return(( this->srName_ == segment.srName_ ) &&
+          ( this->orient_ == segment.orient_ ) &&
           ( this->channel_ == segment.channel_ ) &&
           ( this->track_ == segment.track_ ) ?
           true : false );
@@ -205,6 +218,9 @@ void TNO_Segment_c::ExtractString(
    {
       if( this->IsValid( ))
       {
+         string srOrient;
+         TGS_ExtractStringOrientMode( this->orient_, &srOrient );
+
          string srChannel;
          this->channel_.ExtractString( &srChannel );
 
@@ -214,6 +230,9 @@ void TNO_Segment_c::ExtractString(
          *psrSegment = "<segment ";
          *psrSegment += "name=\"";
          *psrSegment += this->srName_;
+         *psrSegment += "\" ";
+         *psrSegment += "orient=\"";
+         *psrSegment += srOrient;
          *psrSegment += "\" ";
          *psrSegment += "track=\"";
          *psrSegment += szTrack;
@@ -243,6 +262,7 @@ void TNO_Segment_c::Clear(
       void )
 {
    this->srName_ = "";
+   this->orient_ = TGS_ORIENT_UNDEFINED;
    this->channel_.Reset( );
    this->track_ = 0;
 }
