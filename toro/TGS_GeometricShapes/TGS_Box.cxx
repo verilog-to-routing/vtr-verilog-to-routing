@@ -39,7 +39,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -302,10 +302,10 @@ void TGS_Box_c::ExtractString(
       if( this->IsValid( ))
       {
          sprintf( szBox, "%0.*f %0.*f %d %0.*f %0.*f %d",
- 		         static_cast< int >( precision ), this->lowerLeft.x, 
+                         static_cast< int >( precision ), this->lowerLeft.x, 
                          static_cast< int >( precision ), this->lowerLeft.y, 
                          this->lowerLeft.z,
-		         static_cast< int >( precision ), this->upperRight.x, 
+                         static_cast< int >( precision ), this->upperRight.x, 
                          static_cast< int >( precision ), this->upperRight.y, 
                          this->upperRight.z );
       }
@@ -719,7 +719,7 @@ void TGS_Box_c::FindNearest(
       }
       else if( refPoint.z > this->upperRight.z )
       {
-	 thisNearestPoint.z = this->upperRight.z;
+         thisNearestPoint.z = this->upperRight.z;
       }
    }
    else
