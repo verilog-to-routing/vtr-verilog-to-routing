@@ -10,7 +10,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -77,11 +77,13 @@ TFM_Block_c::TFM_Block_c(
             TFM_BlockType_t blockType_,
       const string&         srName_,
       const string&         srMasterName_,
+      const TGO_Point_c&    origin_,
       const TGS_Region_c&   region_ )
       :
       blockType( blockType_ ),
       srName( srName_ ),
       srMasterName( srMasterName_ ),
+      origin( origin_ ),
       region( region_ )
 {
    this->slice.count = 0;
@@ -98,11 +100,13 @@ TFM_Block_c::TFM_Block_c(
             TFM_BlockType_t blockType_,
       const char*           pszName_,
       const char*           pszMasterName_,
+      const TGO_Point_c&    origin_,
       const TGS_Region_c&   region_ )
       :
       blockType( blockType_ ),
       srName( TIO_PSZ_STR( pszName_ )),
       srMasterName( TIO_PSZ_STR( pszMasterName_ )),
+      origin( origin_ ),
       region( region_ )
 {
    this->slice.count = 0;
@@ -118,10 +122,12 @@ TFM_Block_c::TFM_Block_c(
 TFM_Block_c::TFM_Block_c( 
             TFM_BlockType_t blockType_,
       const string&         srName_,
+      const TGO_Point_c&    origin_,
       const TGS_Region_c&   region_ )
       :
       blockType( blockType_ ),
       srName( srName_ ),
+      origin( origin_ ),
       region( region_ )
 {
    this->slice.count = 0;
@@ -137,11 +143,45 @@ TFM_Block_c::TFM_Block_c(
 TFM_Block_c::TFM_Block_c( 
             TFM_BlockType_t blockType_,
       const char*           pszName_,
+      const TGO_Point_c&    origin_,
       const TGS_Region_c&   region_ )
       :
       blockType( blockType_ ),
       srName( TIO_PSZ_STR( pszName_ )),
+      origin( origin_ ),
       region( region_ )
+{
+   this->slice.count = 0;
+   this->slice.capacity = 0;
+
+   this->timing.res = 0.0;
+   this->timing.capInput = 0.0;
+   this->timing.capOutput = 0.0;
+   this->timing.delay = 0.0;
+}
+
+//===========================================================================//
+TFM_Block_c::TFM_Block_c( 
+      const string& srName_ )
+      :
+      blockType( TFM_BLOCK_UNDEFINED ),
+      srName( srName_ )
+{
+   this->slice.count = 0;
+   this->slice.capacity = 0;
+
+   this->timing.res = 0.0;
+   this->timing.capInput = 0.0;
+   this->timing.capOutput = 0.0;
+   this->timing.delay = 0.0;
+}
+
+//===========================================================================//
+TFM_Block_c::TFM_Block_c( 
+      const char* pszName_ )
+      :
+      blockType( TFM_BLOCK_UNDEFINED ),
+      srName( TIO_PSZ_STR( pszName_ ))
 {
    this->slice.count = 0;
    this->slice.capacity = 0;
@@ -159,6 +199,7 @@ TFM_Block_c::TFM_Block_c(
       blockType( block.blockType ),
       srName( block.srName ),
       srMasterName( block.srMasterName ),
+      origin( block.origin ),
       region( block.region ),
       pinList( block.pinList ),
       mapTable( block.mapTable )
@@ -199,6 +240,7 @@ TFM_Block_c& TFM_Block_c::operator=(
       this->blockType = block.blockType;
       this->srName = block.srName;
       this->srMasterName = block.srMasterName;
+      this->origin = block.origin;
       this->region = block.region;
       this->pinList = block.pinList;
       this->mapTable = block.mapTable;
@@ -225,6 +267,7 @@ bool TFM_Block_c::operator==(
    return(( this->blockType == block.blockType ) &&
           ( this->srName == block.srName ) &&
           ( this->srMasterName == block.srMasterName ) &&
+          ( this->origin == block.origin ) &&
           ( this->region == block.region ) &&
           ( this->pinList == block.pinList ) &&
           ( this->mapTable == block.mapTable ) &&
@@ -282,18 +325,24 @@ void TFM_Block_c::Print(
    {
       printHandler.Write( pfile, 0, " master=\"%s\"", TIO_SR_STR( this->srMasterName ));
    }
-   printHandler.Write( pfile, 0, "> " );
+   printHandler.Write( pfile, 0, ">\n" );
+
+   spaceLen += 3;
+   if( this->origin.IsValid( ))
+   {
+      printHandler.Write( pfile, spaceLen, "<origin> %d %d </origin>\n", this->origin.x, this->origin.y );
+   }
    if( this->region.IsValid( ))
    {
       string srRegion;
       this->region.ExtractString( &srRegion );
-      printHandler.Write( pfile, 0, "<region> %s </region>", TIO_SR_STR( srRegion ));
+      printHandler.Write( pfile, spaceLen, "<region> %s </region>\n", TIO_SR_STR( srRegion ));
    }
-   printHandler.Write( pfile, 0, "\n" );
-   spaceLen += 3;
 
    if( this->pinList.IsValid( ))
    {
+      // Force sort prior to print (list may not be sorted yet)
+      this->pinList[0];
       this->pinList.Print( pfile, spaceLen );
    }
 
