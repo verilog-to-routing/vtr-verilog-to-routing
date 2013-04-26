@@ -3,6 +3,7 @@
 //           class.
 //
 //           Inline methods include:
+//           - GetFabricOptions
 //           - GetPackOptions
 //           - GetPlaceOptions
 //           - GetRouteOptions
@@ -31,6 +32,7 @@
 #include <cstdio>
 using namespace std;
 
+#include "TOS_FabricOptions.h"
 #include "TOS_PackOptions.h"
 #include "TOS_PlaceOptions.h"
 #include "TOS_RouteOptions.h"
@@ -55,15 +57,17 @@ public:
    void Init( void );
    void Apply( void );
 
+   const TOS_FabricOptions_c& GetFabricOptions( void ) const;
    const TOS_PackOptions_c& GetPackOptions( void ) const;
    const TOS_PlaceOptions_c& GetPlaceOptions( void ) const;
    const TOS_RouteOptions_c& GetRouteOptions( void ) const;
 
 public:
 
-   TOS_PackOptions_c  packOptions;
-   TOS_PlaceOptions_c placeOptions;
-   TOS_RouteOptions_c routeOptions;
+   TOS_FabricOptions_c fabricOptions;
+   TOS_PackOptions_c   packOptions;
+   TOS_PlaceOptions_c  placeOptions;
+   TOS_RouteOptions_c  routeOptions;
 };
 
 //===========================================================================//
@@ -72,6 +76,13 @@ public:
 //---------------------------------------------------------------------------//
 // Version history
 // 05/01/12 jeffr : Original
+//===========================================================================//
+inline const TOS_FabricOptions_c& TOS_RulesSwitches_c::GetFabricOptions(
+      void ) const
+{
+   return( this->fabricOptions );
+}
+
 //===========================================================================//
 inline const TOS_PackOptions_c& TOS_RulesSwitches_c::GetPackOptions(
       void ) const
