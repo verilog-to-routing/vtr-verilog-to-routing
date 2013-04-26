@@ -76,7 +76,7 @@ bool TO_Output_c::WriteLaffFile_(
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
    printHandler.Info( "Writing %s file '%s'...\n",
                       TIO_SZ_OUTPUT_LAFF_DEF_TYPE,
-		      TIO_PSZ_STR( pszLaffFileName ));
+                      TIO_PSZ_STR( pszLaffFileName ));
 
    ok = printHandler.SetUserFileOutput( pszLaffFileName );
    if( ok )
@@ -106,8 +106,8 @@ bool TO_Output_c::WriteLaffFile_(
    else
    {
       printHandler.Error( "Failed to open %s file '%s' in \"%s\" mode.\n",
-			  TIO_SZ_OUTPUT_LAFF_DEF_TYPE,
-			  TIO_PSZ_STR( pszLaffFileName ),
+                          TIO_SZ_OUTPUT_LAFF_DEF_TYPE,
+                          TIO_PSZ_STR( pszLaffFileName ),
                           "write" );
    }
    return( ok );
@@ -361,16 +361,16 @@ void TO_Output_c::WriteLaffFabricPlane_(
          this->WriteLaffRegion_( layerId, region, pszText );
 
          const TC_MapTable_c& mapTable = fabricData.GetMapTable( );
-	 if( mapTable.IsValid( ))
-	 {
+         if( mapTable.IsValid( ))
+         {
             this->WriteLaffFabricMapTable_( region, fabricData );
-	 }
+         }
 
          const TFV_FabricPinList_t& pinList = fabricData.GetPinList( );
-	 if( pinList.IsValid( ))
-	 {
+         if( pinList.IsValid( ))
+         {
             this->WriteLaffFabricPinList_( region, pinList );
-	 }
+         }
 
          const TFV_ConnectionList_t& connectionList = fabricData.GetConnectionList( );
          if( connectionList.IsValid( ))
@@ -421,7 +421,7 @@ void TO_Output_c::WriteLaffFabricMapTable_(
    {
       const TC_SideList_t& sideList = *mapSideList[i];
       if( !sideList.IsValid( ))
-	 continue;
+         continue;
 
       unsigned int index = static_cast< unsigned int >( i );
       this->WriteLaffFabricMapTable_( region, fabricData,
@@ -618,20 +618,20 @@ void TO_Output_c::WriteLaffLine_(
       if( pszText )
       {
          unsigned int height = ( units >= 100 ? 16 : 4 );
-	 long int x = (( line.FindOrient( ) == TGS_ORIENT_HORIZONTAL ) ?
-		       (( x2 - x1 ) / 2 + x1 ) : x1 );
-	 long int y = (( line.FindOrient( ) == TGS_ORIENT_VERTICAL ) ?
-		       (( y2 - y1 ) / 2 + y1 ) : y1 );
+         long int x = (( line.FindOrient( ) == TGS_ORIENT_HORIZONTAL ) ?
+                       (( x2 - x1 ) / 2 + x1 ) : x1 );
+         long int y = (( line.FindOrient( ) == TGS_ORIENT_VERTICAL ) ?
+                       (( y2 - y1 ) / 2 + y1 ) : y1 );
 
          printHandler.Write( "    (CLF %d %d %ld %ld %ld %ld (\n", layerId, width, x1, y1, x2, y2 );
-	 if( strlen( pszText ) <= 256 )
-	 {
+         if( strlen( pszText ) <= 256 )
+         {
             printHandler.Write( "      (SNAM %d %u 1 %ld %ld '%s')))\n", layerId, height, x, y, pszText );
-	 }
+         }
          else
-	 {
+         {
             printHandler.Write( "      (SNAM %d %u 1 %ld %ld '%0.255s...')))\n", layerId, height, x, y, pszText );
-	 }
+         }
       }
       else
       {
@@ -679,14 +679,14 @@ void TO_Output_c::WriteLaffRegion_(
          unsigned int height = ( units >= 100 ? 16 : 4 );
 
          printHandler.Write( "    (RECT %d %ld %ld %ld %ld (\n", layerId, x1, y1, x2, y2 );
-	 if( strlen( pszText ) <= 256 )
-	 {
+         if( strlen( pszText ) <= 256 )
+         {
             printHandler.Write( "      (SNAM %d %u 1 %ld %ld '%s')))\n", layerId, height, x1, y1, pszText );
-	 }
+         }
          else
-	 {
+         {
             printHandler.Write( "      (SNAM %d %u 1 %ld %ld '%0.255s...')))\n", layerId, height, x1, y1, pszText );
-	 }
+         }
       }
       else
       {
