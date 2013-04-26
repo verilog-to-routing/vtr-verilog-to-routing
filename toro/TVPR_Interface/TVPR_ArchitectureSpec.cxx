@@ -46,7 +46,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -407,6 +407,7 @@ void TVPR_ArchitectureSpec_c::PokePhysicalBlockList_(
 
    t_type_descriptor* pvpr_emptyBlock = &type_descriptors[EMPTY_TYPE_INDEX];
    pvpr_emptyBlock->name = const_cast< char* >( "<EMPTY>" );
+   pvpr_emptyBlock->width = 1;
    pvpr_emptyBlock->height = 1;
 
    int index = 1; // [VPR] Skip over 'empty' type
@@ -433,6 +434,7 @@ void TVPR_ArchitectureSpec_c::PokePhysicalBlock_(
             t_type_descriptor*   pvpr_physicalBlock ) const
 {
    pvpr_physicalBlock->name = TC_strdup( physicalBlock.srName.data( ));
+   pvpr_physicalBlock->width = (( physicalBlock.width > 0 ) ? physicalBlock.width : 1 );
    pvpr_physicalBlock->height = (( physicalBlock.height > 0 ) ? physicalBlock.height : 1 );
    pvpr_physicalBlock->capacity = (( physicalBlock.capacity > 0 ) ? physicalBlock.capacity : 1 );
    pvpr_physicalBlock->area = -1;
@@ -1300,27 +1302,41 @@ void TVPR_ArchitectureSpec_c::PokePinAssignList_(
             t_type_descriptor*   pvpr_physicalBlock ) const
 {
    // [VPR] Alloc and clear pin locations
-   pvpr_physicalBlock->pinloc = static_cast< int*** >( TC_calloc( pvpr_physicalBlock->height, sizeof( int** )));
-   pvpr_physicalBlock->pin_height = static_cast< int* >( TC_calloc( pvpr_physicalBlock->num_pins, sizeof( int )));
-   for( int i = 0; i < pvpr_physicalBlock->height; ++i ) 
+   int width = static_cast< int >( pvpr_physicalBlock->width );
+   int height = static_cast< int >( pvpr_physicalBlock->height );
+   int num_pins = static_cast< int >( pvpr_physicalBlock->num_pins );
+
+   pvpr_physicalBlock->pinloc = static_cast< int**** >( TC_calloc( width, sizeof( int** )));
+   for( int i = 0; i < width; ++i ) 
    {
-      pvpr_physicalBlock->pinloc[i] = static_cast< int** >( TC_calloc( 4, sizeof( int* )));
-      for( int j = 0; j < 4; ++j ) 
+      pvpr_physicalBlock->pinloc[i] = static_cast< int*** >( TC_calloc( height, sizeof( int* )));
+      for( int j = 0; j < pvpr_physicalBlock->height; ++j ) 
       {
-         pvpr_physicalBlock->pinloc[i][j] = static_cast< int* >( TC_calloc( pvpr_physicalBlock->num_pins, sizeof( int )));
-         for( int k = 0; k < pvpr_physicalBlock->num_pins; ++k ) 
+         pvpr_physicalBlock->pinloc[i][j] = static_cast< int** >( TC_calloc( 4, sizeof( int* )));
+         for( int side = 0; side < 4; ++side ) 
          {
-            pvpr_physicalBlock->pinloc[i][j][k] = 0;
+            pvpr_physicalBlock->pinloc[i][j][side] = static_cast< int* >( TC_calloc( num_pins, sizeof( int )));
+            for( int pin = 0; pin < num_pins; ++pin ) 
+            {
+               pvpr_physicalBlock->pinloc[i][j][side][pin] = 0;
+            }
          }
       }
    }
+   pvpr_physicalBlock->pin_width = static_cast< int* >( TC_calloc( pvpr_physicalBlock->num_pins, sizeof( int )));
+   pvpr_physicalBlock->pin_height = static_cast< int* >( TC_calloc( pvpr_physicalBlock->num_pins, sizeof( int )));
 
-   pvpr_physicalBlock->pin_loc_assignments = static_cast< char**** >( TC_calloc( pvpr_physicalBlock->height, sizeof( char*** )));
-   pvpr_physicalBlock->num_pin_loc_assignments = static_cast< int** >( TC_calloc( pvpr_physicalBlock->height, sizeof( int* )));
-   for( int i = 0; i < pvpr_physicalBlock->height; ++i ) 
+   pvpr_physicalBlock->pin_loc_assignments = static_cast< char***** >( TC_calloc( width, sizeof( char**** )));
+   pvpr_physicalBlock->num_pin_loc_assignments = static_cast< int*** >( TC_calloc( width, sizeof( int** )));
+   for( int i = 0; i < width; ++i ) 
    {
-      pvpr_physicalBlock->pin_loc_assignments[i] = static_cast< char*** >( TC_calloc( 4, sizeof( char** )));
-      pvpr_physicalBlock->num_pin_loc_assignments[i] = static_cast< int* >( TC_calloc( 4, sizeof( int )));
+      pvpr_physicalBlock->pin_loc_assignments[i] = static_cast< char**** >( TC_calloc( height, sizeof( char*** )));
+      pvpr_physicalBlock->num_pin_loc_assignments[i] = static_cast< int** >( TC_calloc( height, sizeof( int* )));
+      for( int j = 0; j < height; ++j ) 
+      {
+         pvpr_physicalBlock->pin_loc_assignments[i][j] = static_cast< char*** >( TC_calloc( 4, sizeof( char** )));
+         pvpr_physicalBlock->num_pin_loc_assignments[i][j] = static_cast< int* >( TC_calloc( 4, sizeof( int )));
+      }
    }
 
    if( pinAssignList.IsValid( ))
@@ -1338,12 +1354,13 @@ void TVPR_ArchitectureSpec_c::PokePinAssignList_(
          int offset = pinAssign.offset;
          int side = this->FindSideMode_( pinAssign.side );
          int len = static_cast< int >( pinAssign.portNameList.GetLength( ));
-         pvpr_physicalBlock->num_pin_loc_assignments[offset][side] = len;
-         pvpr_physicalBlock->pin_loc_assignments[offset][side] = static_cast< char** >( TC_calloc( len, sizeof( char* )));
+
+         pvpr_physicalBlock->num_pin_loc_assignments[0][offset][side] = len;
+         pvpr_physicalBlock->pin_loc_assignments[0][offset][side] = static_cast< char** >( TC_calloc( len, sizeof( char* )));
          for( size_t port = 0; port < pinAssign.portNameList.GetLength( ); ++port )
          {
             const TC_Name_c& portName = *pinAssign.portNameList[port];
-            pvpr_physicalBlock->pin_loc_assignments[offset][side][port] = TC_strdup( portName.GetName( ));
+            pvpr_physicalBlock->pin_loc_assignments[0][offset][side][port] = TC_strdup( portName.GetName( ));
          }
       }
    }
