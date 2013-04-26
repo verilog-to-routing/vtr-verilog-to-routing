@@ -47,7 +47,7 @@ public:
 
    TC_IndexCount_c( void );
    TC_IndexCount_c( int index,
- 	            size_t count = SIZE_MAX );
+                    size_t count = SIZE_MAX );
    TC_IndexCount_c( const TC_IndexCount_c& indexCount );
    ~TC_IndexCount_c( void );
 
