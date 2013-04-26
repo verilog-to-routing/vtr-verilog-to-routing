@@ -50,9 +50,9 @@ public:
 
    TC_SideName_c( void );
    TC_SideName_c( TC_SideMode_t side,
- 	          const string& srName );
+                  const string& srName );
    TC_SideName_c( TC_SideMode_t side,
- 	          const char* pszName );
+                  const char* pszName );
    TC_SideName_c( const TC_SideName_c& sideName );
    ~TC_SideName_c( void );
 
