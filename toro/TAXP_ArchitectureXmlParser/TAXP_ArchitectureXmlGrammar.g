@@ -4,7 +4,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -440,7 +440,8 @@ pbtypeDef[ TAS_PhysicalBlockList_t* pphysicalBlockList ]
       unsigned int ignored;
    >>
    NAME EQUAL stringText[ &physicalBlock.srName ]
-   (  HEIGHT EQUAL uintNum[ &physicalBlock.height ]
+   (  WIDTH EQUAL uintNum[ &physicalBlock.width ]
+   |  HEIGHT EQUAL uintNum[ &physicalBlock.height ]
    |  CAPACITY EQUAL uintNum[ &physicalBlock.capacity ]
    |  AREA EQUAL uintNum[ &ignored ]
    |  NUM_PB EQUAL uintNum[ &physicalBlock.numPB ]
