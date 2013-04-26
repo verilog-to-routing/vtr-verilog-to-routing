@@ -54,15 +54,15 @@ public:
    TNO_InstPin_c( void );
    TNO_InstPin_c( const string& srInstName,
                   const string& srPortName,
-		  size_t portIndex,
+                  size_t portIndex,
                   const string& srPinName,
-		  size_t pinIndex,
+                  size_t pinIndex,
                   TC_TypeMode_t type = TC_TYPE_UNDEFINED );
    TNO_InstPin_c( const char* pszInstName,
                   const char* pszPortName,
-		  size_t portIndex,
+                  size_t portIndex,
                   const char* pszPinName,
-		  size_t pinIndex,
+                  size_t pinIndex,
                   TC_TypeMode_t type = TC_TYPE_UNDEFINED );
    TNO_InstPin_c( const string& srInstName,
                   const string& srPortName,
@@ -106,13 +106,13 @@ public:
 
    void Set( const string& srInstName,
              const string& srPortName,
-	     size_t portIndex,
+             size_t portIndex,
              const string& srPinName,
              size_t pinIndex,
              TC_TypeMode_t type = TC_TYPE_UNDEFINED );
    void Set( const char* pszInstName,
              const char* pszPortName,
-	     size_t portIndex,
+             size_t portIndex,
              const char* pszPinName,
              size_t pinIndex,
              TC_TypeMode_t type = TC_TYPE_UNDEFINED );
