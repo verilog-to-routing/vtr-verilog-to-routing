@@ -190,13 +190,13 @@ void TC_SideName_c::ExtractString(
    {
       if( this->IsValid( ))
       {
-	 string srSide;
+         string srSide;
          TC_ExtractStringSideMode( this->side_, &srSide );
 
          *psrSideName = srSide;
 
-	 if( this->srName_.length( ))
-	 {
+         if( this->srName_.length( ))
+         {
             *psrSideName += " ";
             *psrSideName += "\"";
             *psrSideName += this->srName_;
