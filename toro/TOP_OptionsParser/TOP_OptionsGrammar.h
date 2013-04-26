@@ -56,33 +56,33 @@ void TOP_OptionsParser_c::syn(
 
       if( LT( 1 )->getType( ) == UNCLOSED_STRING )
       {
-	 srMsg = "at newline character. Closing quote is missing";
+         srMsg = "at newline character. Closing quote is missing";
       }
       else
       {
-	 srMsg  = "at " + srFoundToken + " token, ";
-	 srMsg += "\"" + srFoundText + "\"";
+         srMsg  = "at " + srFoundToken + " token, ";
+         srMsg += "\"" + srFoundText + "\"";
 
          if( tokenType && ( tokenType != DLGminToken ))
          {
             string srExpectToken = this->token_tbl[tokenType];
-	    srMsg += ", expected a " + srExpectToken + " token";
+            srMsg += ", expected a " + srExpectToken + " token";
          }
          else
          {
             if( this->srActiveCmd_.length( ))
             {
                srMsg += ", check \"";
-	       srMsg += this->srActiveCmd_;
-	       srMsg += "\" parameters";
+               srMsg += this->srActiveCmd_;
+               srMsg += "\" parameters";
             }
          }
 
-	 if( strlen( pszGroup ) > 0 )
-	 {
-	    srMsg += " in ";
-	    srMsg += pszGroup;
-	 }
+         if( strlen( pszGroup ) > 0 )
+         {
+            srMsg += " in ";
+            srMsg += pszGroup;
+         }
       }
 
       this->poptionsFile_->SyntaxError( lineNum, 
@@ -146,6 +146,7 @@ void TOP_OptionsParser_c::SetOptionsStore(
    this->pmessageOptions_ = &poptionsStore->controlSwitches.messageOptions;
    this->pexecuteOptions_ = &poptionsStore->controlSwitches.executeOptions;
 
+   this->pfabricOptions_ = &poptionsStore->rulesSwitches.fabricOptions;
    this->ppackOptions_ = &poptionsStore->rulesSwitches.packOptions;
    this->pplaceOptions_ = &poptionsStore->rulesSwitches.placeOptions;
    this->prouteOptions_ = &poptionsStore->rulesSwitches.routeOptions;
