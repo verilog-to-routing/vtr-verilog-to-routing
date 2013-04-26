@@ -148,7 +148,7 @@ bool TCH_RoutePath_c::operator<(
          isLessThan = true;
       }
       else if(( TC_CompareStrings( pszThisSourceName, pszRoutePathSourceName ) == 0 ) &&
-	      ( TC_CompareStrings( pszThisSinkName, pszRoutePathSinkName ) < 0 ))
+              ( TC_CompareStrings( pszThisSinkName, pszRoutePathSinkName ) < 0 ))
       {
          isLessThan = true;
       }
@@ -369,23 +369,22 @@ bool TCH_RoutePath_c::ValidateRouteNodeList(
          if( vpr_rrChildIndex == vpr_rrToIndex )
          {
             validFromToNode = true;
-	    break;
+            break;
          }
       }
 
-// ???
       if( !validFromToNode )
       {
-	 if( pfromRouteNode->GetVPR_Type( ) == IPIN )
+         if( pfromRouteNode->GetVPR_Type( ) == IPIN )
          {
-	    validFromToNode = true;
+            validFromToNode = true;
          }
       }
 
       if( validFromToNode )
       {
          pfromRouteNode->SetLegal( true );
-	 if( ptoRouteNode->GetVPR_Type( ) == SINK )
+         if( ptoRouteNode->GetVPR_Type( ) == SINK )
          {
             ptoRouteNode->SetLegal( true );
          }
