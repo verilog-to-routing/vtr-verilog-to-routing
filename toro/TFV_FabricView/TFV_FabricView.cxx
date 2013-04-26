@@ -21,6 +21,7 @@
 //           - IsSolid, IsSolidAny, IsSolidAll
 //           - IsWithin
 //           - IsIntersecting
+//           - IsValid
 //
 //           Private methods include:
 //           - Allocate_, Deallocate_
@@ -1401,6 +1402,23 @@ bool TFV_FabricView_c::IsIntersecting(
    const TGS_Region_c& region = rect.region;
 
    return( this->IsIntersecting( layer, region ));
+}
+
+//===========================================================================//
+// Method         : IsValid
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 08/15/12 jeffr : Original
+//===========================================================================//
+bool TFV_FabricView_c::IsValid( 
+      void ) const
+{
+   return(( this->region_.IsValid( )) &&
+          ( this->layerRange_.IsValid( )) &&
+          ( this->pfabricLayerList_ ) &&
+          ( this->pfabricLayerList_->IsValid( )) ?
+          true : false );
 }
 
 //===========================================================================//
