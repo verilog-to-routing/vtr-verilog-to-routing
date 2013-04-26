@@ -46,9 +46,9 @@ public:
 
    TC_NameFile_c( void );
    TC_NameFile_c( const string& srName,
-   	          const string& srFileName );
+                  const string& srFileName );
    TC_NameFile_c( const char* pszName,
-   	          const char* pszFileName );
+                  const char* pszFileName );
    TC_NameFile_c( const TC_NameFile_c& nameFile );
    ~TC_NameFile_c( void );
 
@@ -69,9 +69,9 @@ public:
    const char* GetFileName( void ) const;
 
    void Set( const string& srName,
-	     const string& srFileName );
+             const string& srFileName );
    void Set( const char* pszName,
-   	     const char* pszFileName );
+             const char* pszFileName );
    void Clear( void );
 
    bool IsValid( void ) const;
