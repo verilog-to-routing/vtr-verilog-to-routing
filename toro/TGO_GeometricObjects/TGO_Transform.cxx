@@ -154,7 +154,7 @@ bool TGO_Transform_c::operator!=(
 // 01/15/13 jeffr : Original
 //===========================================================================//
 void TGO_Transform_c::Print(
-      FILE*  pfile,		       
+      FILE*  pfile,
       size_t spaceLen ) const
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
@@ -189,7 +189,7 @@ void TGO_Transform_c::ExtractString(
          this->translate_.ExtractString( TC_DATA_INT, &srTranslate );
 
          *psrTransform = "";
-	 *psrTransform += "(";
+         *psrTransform += "(";
          *psrTransform += srOrigin;
          *psrTransform += ")";
          *psrTransform += " ";
