@@ -6,7 +6,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -74,6 +74,7 @@ private:
       t_arch       arch;      // "
       t_vpr_setup  setup;     // "
       t_power_opts powerOpts; // "
+      boolean      success;   // Define VPR's API return status
    } vpr_;
 
    bool isAlive_;   // TRUE => interface is active (ie. is initialized)
