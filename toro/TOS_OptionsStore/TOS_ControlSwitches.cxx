@@ -241,9 +241,9 @@ void TOS_ControlSwitches_c::Apply(
       {
          printHandler.SetLogFileOutput( outputOptions_.srLogFileName.data( ));
 
-	 printHandler.DisableOutput( TIO_PRINT_OUTPUT_STDIO | TIO_PRINT_OUTPUT_CUSTOM );
-	 printHandler.WriteBanner( );
-	 printHandler.EnableOutput( TIO_PRINT_OUTPUT_STDIO | TIO_PRINT_OUTPUT_CUSTOM );
+         printHandler.DisableOutput( TIO_PRINT_OUTPUT_STDIO | TIO_PRINT_OUTPUT_CUSTOM );
+         printHandler.WriteBanner( );
+         printHandler.EnableOutput( TIO_PRINT_OUTPUT_STDIO | TIO_PRINT_OUTPUT_CUSTOM );
       }
    }
 
