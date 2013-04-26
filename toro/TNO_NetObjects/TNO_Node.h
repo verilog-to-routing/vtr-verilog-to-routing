@@ -10,7 +10,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -61,7 +61,8 @@ public:
    bool operator==( const TNO_Node_c& node ) const;
    bool operator!=( const TNO_Node_c& node ) const;
 
-   void Print( FILE* pfile = stdout, size_t spaceLen = 0 ) const;
+   void Print( FILE* pfile = stdout, size_t spaceLen = 0, 
+               bool verbose = true ) const;
 
    TNO_NodeType_t GetType( void ) const;
    const TNO_InstPin_c& GetInstPin( void ) const;
