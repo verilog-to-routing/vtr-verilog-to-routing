@@ -152,17 +152,17 @@ bool TIO_FileHandler_c::Open(
                                      pszFileType, 
                                      TIO_SR_STR( srFileName ),
                                      pszFileOpen );
-   	       break;
+               break;
             case TIO_PRINT_ERROR:
                printHandler.Error( "Failed to open %s file '%s' in \"%s\" mode!\n",
                                    pszFileType, 
                                    TIO_SR_STR( srFileName ),
                                    pszFileOpen );
-   	       break;
-	    default: 
+               break;
+            default: 
                ok = printHandler.Fatal( "TIO_FileHandler_c::Open - Unknown TIO_PrintMode_t\n" );
-   	       break;
-	    }
+               break;
+            }
          }
       }
    }
@@ -310,13 +310,13 @@ bool TIO_FileHandler_c::ApplyPreProcessor(
       else if( rc > 0 )
       {
          printHandler.Error( "Failed to complete %s preprocessor command.\n", 
-		             TIO_PSZ_STR( TIO_FILE_CPP_COMMAND ));
+                             TIO_PSZ_STR( TIO_FILE_CPP_COMMAND ));
          ok = false;
       }
       else if( rc < 0 )
       {
          printHandler.Error( "Failed to execute %s preprocessor command.\n", 
-		             TIO_PSZ_STR( TIO_FILE_CPP_COMMAND ));
+                             TIO_PSZ_STR( TIO_FILE_CPP_COMMAND ));
          ok = false;
       }
    }
