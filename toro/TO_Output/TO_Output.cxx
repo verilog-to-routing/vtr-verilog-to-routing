@@ -145,7 +145,7 @@ bool TO_Output_c::Apply(
       }
       if( ok && outputOptions.blifFileEnable )
       { 
-	 ok = this->WriteBlifFile_( circuitDesign, outputOptions );
+         ok = this->WriteBlifFile_( circuitDesign, outputOptions );
       }
       if( ok && outputOptions.architectureFileEnable )
       { 
