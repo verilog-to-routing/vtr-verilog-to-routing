@@ -11,6 +11,8 @@
 //           - FindOrient
 //           - FindDistance
 //           - CrossProduct
+//           - IsLeft, IsRight, IsLower, IsUpper
+//           - IsLowerLeft, IsLowerRight, IsUpperLeft, IsUpperRight
 //           - IsOrthogonal
 //           - IsHorizontal, IsVertical
 //           - IsValid
@@ -18,7 +20,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -142,7 +144,7 @@ bool TGS_Point_c::operator<(
       }
       else if( TCTF_IsEQ( this->x, point.x ))
       {
- 	 if( TCTF_IsLT( this->y, point.y ))
+         if( TCTF_IsLT( this->y, point.y ))
          {
             isLessThan = true;
          }
@@ -222,17 +224,17 @@ void TGS_Point_c::ExtractString(
 
       if( this->IsValid( ))
       {
-	 if( this->z != INT_MIN )
+         if( this->z != INT_MIN )
          {
             sprintf( szPoint, "%0.*f %0.*f %d",
-  	   	              static_cast< int >( precision ), this->x, 
+                              static_cast< int >( precision ), this->x, 
                               static_cast< int >( precision ), this->y, 
                               this->z );
          }
-	 else
+         else
          {
             sprintf( szPoint, "%0.*f %0.*f",
-  	   	              static_cast< int >( precision ), this->x, 
+                              static_cast< int >( precision ), this->x, 
                               static_cast< int >( precision ), this->y ); 
          }
       }
@@ -386,6 +388,118 @@ int TGS_Point_c::CrossProduct(
       crossProduct = -1;
    }
    return( crossProduct );
+}
+
+//===========================================================================//
+// Method         : IsLeft
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/20/12 jeffr : Original
+//===========================================================================//
+bool TGS_Point_c::IsLeft( 
+      const TGS_Point_c& point ) const
+{
+   return( TCTF_IsLT( this->x, point.x ) && TCTF_IsEQ( this->y, point.y ) ?
+           true : false );
+}
+
+//===========================================================================//
+// Method         : IsRight
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/20/12 jeffr : Original
+//===========================================================================//
+bool TGS_Point_c::IsRight( 
+      const TGS_Point_c& point ) const
+{
+   return( TCTF_IsGT( this->x, point.x ) && TCTF_IsEQ( this->y, point.y ) ?
+           true : false );
+}
+
+//===========================================================================//
+// Method         : IsLower
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/20/12 jeffr : Original
+//===========================================================================//
+bool TGS_Point_c::IsLower( 
+      const TGS_Point_c& point ) const
+{
+   return( TCTF_IsEQ( this->x, point.x ) && TCTF_IsLT( this->y, point.y ) ?
+           true : false );
+}
+
+//===========================================================================//
+// Method         : IsUpper
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/20/12 jeffr : Original
+//===========================================================================//
+bool TGS_Point_c::IsUpper( 
+      const TGS_Point_c& point ) const
+{
+   return( TCTF_IsEQ( this->x, point.x ) && TCTF_IsGT( this->y, point.y ) ?
+           true : false );
+}
+
+//===========================================================================//
+// Method         : IsLowerLeft
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/20/12 jeffr : Original
+//===========================================================================//
+bool TGS_Point_c::IsLowerLeft( 
+      const TGS_Point_c& point ) const
+{
+   return( TCTF_IsLT( this->x, point.x ) && TCTF_IsLT( this->y, point.y ) ?
+           true : false );
+}
+
+//===========================================================================//
+// Method         : IsLowerRight
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/20/12 jeffr : Original
+//===========================================================================//
+bool TGS_Point_c::IsLowerRight( 
+      const TGS_Point_c& point ) const
+{
+   return( TCTF_IsGT( this->x, point.x ) && TCTF_IsLT( this->y, point.y ) ?
+           true : false );
+}
+
+//===========================================================================//
+// Method         : IsUpperLeft
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/20/12 jeffr : Original
+//===========================================================================//
+bool TGS_Point_c::IsUpperLeft( 
+      const TGS_Point_c& point ) const
+{
+   return( TCTF_IsLT( this->x, point.x ) && TCTF_IsGT( this->y, point.y ) ?
+           true : false );
+}
+
+//===========================================================================//
+// Method         : IsUpperRight
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/20/12 jeffr : Original
+//===========================================================================//
+bool TGS_Point_c::IsUpperRight( 
+      const TGS_Point_c& point ) const
+{
+   return( TCTF_IsGT( this->x, point.x ) && TCTF_IsGT( this->y, point.y ) ?
+           true : false );
 }
 
 //===========================================================================//
