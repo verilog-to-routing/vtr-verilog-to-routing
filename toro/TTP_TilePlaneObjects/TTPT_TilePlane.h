@@ -204,10 +204,10 @@ public:
    TTPT_Tile_c< T >* FindNearest( const TGS_Region_c& refRegion,
                                   const TGS_OrientMode_t* porientMode = 0 ) const;
    TTPT_Tile_c< T >* FindNearest( const TGS_Region_c& refRegion,
-				  double searchDistance,
+                                  double searchDistance,
                                   const TGS_OrientMode_t* porientMode = 0 ) const;
    TTPT_Tile_c< T >* FindNearest( const TGS_Region_c& refRegion,
-				  TC_SideMode_t searchSide ) const;
+                                  TC_SideMode_t searchSide ) const;
 
    bool FindConnected( const TGS_Region_c& region,
                        TTPT_TilePlane_c< T >* ptilePlane ) const;
@@ -501,7 +501,7 @@ private:
                         TGS_CornerMode_t cornerMode );
    void StitchFromSide_( TTPT_Tile_c< T >* ptile,
                          TC_SideMode_t side,
-			 TTPT_Tile_c< T >* ptileP = 0 );
+                         TTPT_Tile_c< T >* ptileP = 0 );
 
    void LoadTileList_( TTPT_Tile_c< T >* ptile,
                        TCT_OrderedVector_c< TTPT_Tile_c< T >* >* ptileList );
@@ -646,8 +646,8 @@ template< class T > inline bool TTPT_TilePlane_c< T >::IsValid(
       void ) const
 {
    return(( this->region_.IsValid( )) && 
-	  ( this->ptileLL_ && this->ptileMRC_ && this->ptileMRS_ ) ?
-	  true : false );
+          ( this->ptileLL_ && this->ptileMRC_ && this->ptileMRS_ ) ?
+          true : false );
 }
 
 //===========================================================================//
@@ -759,7 +759,7 @@ template< class T > bool TTPT_TilePlane_c< T >::operator==(
 
       if( isEqual )
       {
-	 // Test to see if every tile in this plane matches given tile plane
+         // Test to see if every tile in this plane matches given tile plane
          TTPT_TilePlaneIter_c< T > thisIter( *this );
          TTPT_Tile_c< T >* ptile = 0;
          while( thisIter.Next( &ptile, TTP_TILE_SOLID ))
@@ -769,23 +769,23 @@ template< class T > bool TTPT_TilePlane_c< T >::operator==(
                                                                  region.y1 );
 
             isEqual = ( pfoundTile && *pfoundTile == *ptile ? true : false );
-	    if( !isEqual )
+            if( !isEqual )
                break;
          }
       }
       if( isEqual )
       {
-	 // Test to see if every tile in given tile plane matches this plane
+         // Test to see if every tile in given tile plane matches this plane
          TTPT_TilePlaneIter_c< T > tilePlaneIter( tilePlane );
          TTPT_Tile_c< T >* ptile = 0;
          while( tilePlaneIter.Next( &ptile, TTP_TILE_SOLID ))
          {  
             const TGS_Region_c& region = ptile->GetRegion( );
             const TTPT_Tile_c< T >* pfoundTile = this->Find( region.x1,
-	   			     	 	             region.y1 );
+                                                             region.y1 );
 
             isEqual = ( pfoundTile && *pfoundTile == *ptile ? true : false );
-	    if( !isEqual )
+            if( !isEqual )
                break;
          }
       }
@@ -929,11 +929,11 @@ template< class T > void TTPT_TilePlane_c< T >::PrintLaff(
          unsigned int height = ( units >= 100 ? 16 : 4 );
 
          for( unsigned int i = 0; i < ptile->GetCount( ); ++i )
-	 {
-   	    const T& data = *ptile->FindData( i );
+         {
+            const T& data = *ptile->FindData( i );
 
             string srData;
-   	    data.ExtractString( &srData );
+            data.ExtractString( &srData );
 
             printHandler.Write( "    (RECT %u %ld %ld %ld %ld (\n", layer, x1, y1, x2, y2 );
             printHandler.Write( "      (SNAM %u %u 1 %ld %ld '%s')))\n", layer, height, x1, y1 + i * units, TIO_SR_STR( srData ));
@@ -1036,12 +1036,12 @@ template< class T > void TTPT_TilePlane_c< T >::Reset(
                               this->FindCount( TTP_TILE_SOLID );
       if( tilePlaneCount == 1 ) 
       {
- 	 // Handle simplest case of single tile (for fastest delete code)
+         // Handle simplest case of single tile (for fastest delete code)
          delete this->ptileLL_;
       }
       else if( tilePlaneCount <= 16 ) 
       {
- 	 // Handle next case of small tile count (for fast delete code)
+         // Handle next case of small tile count (for fast delete code)
          TCT_OrderedVector_c< TTPT_Tile_c< T >* > tileList( tilePlaneCount );
 
          // Use recursion to enable "fast" deletion on "small" tile planes
@@ -1055,7 +1055,7 @@ template< class T > void TTPT_TilePlane_c< T >::Reset(
       }
       else
       {
-	 // Handle worst case where we iterate to delete allocated memory
+         // Handle worst case where we iterate to delete allocated memory
          this->tilePlaneIter_.Init( *this, this->region_ );
          TTPT_Tile_c< T >* ptile = 0;  
          while( this->tilePlaneIter_.Next( &ptile ))
@@ -1292,7 +1292,7 @@ template< class T > bool TTPT_TilePlane_c< T >::Delete(
       {
       case TTP_DELETE_EXACT:
 
-	 ok = this->DeletePerExact_( region );
+         ok = this->DeletePerExact_( region );
          break;
 
       case TTP_DELETE_WITHIN:
@@ -1302,12 +1302,12 @@ template< class T > bool TTPT_TilePlane_c< T >::Delete(
    
       case TTP_DELETE_INTERSECT:
    
-	ok = this->DeletePerIntersect_( region );
+         ok = this->DeletePerIntersect_( region );
          break;
    
       case TTP_DELETE_INTERSECT_MIN:
    
-	 ok = this->DeletePerIntersectMin_( region );
+         ok = this->DeletePerIntersectMin_( region );
          break;
 
       default:
@@ -1336,17 +1336,17 @@ template< class T > bool TTPT_TilePlane_c< T >::Delete(
       {
       case TTP_DELETE_EXACT:
 
- 	 ok = this->DeletePerExact_( region, data );
+         ok = this->DeletePerExact_( region, data );
          break;
 
       case TTP_DELETE_WITHIN:
 
-	 ok = this->DeletePerWithin_( region, data );
+         ok = this->DeletePerWithin_( region, data );
          break;
 
       case TTP_DELETE_INTERSECT:
 
-	 ok = this->DeletePerIntersect_( region, data );
+         ok = this->DeletePerIntersect_( region, data );
          break;
    
       case TTP_DELETE_INTERSECT_MIN:
@@ -1473,7 +1473,7 @@ template< class T > TTPT_Tile_c< T >* TTPT_TilePlane_c< T >::FindNearest(
       {
          // Need to iterate region based on nearest potential "solid" tile
          double searchDistance = psolidTile->FindDistance( refRegion );
-	 searchDistance += this->minGrid_;
+         searchDistance += this->minGrid_;
 
          ptile = this->FindNearestByRegion_( refRegion, 
                                              searchDistance,
@@ -1621,7 +1621,7 @@ template< class T > bool TTPT_TilePlane_c< T >::FindAdjacents(
          TTPT_Tile_c< T >* ptile = 0;
          while( tilePlaneIter.Next( &ptile, TTP_TILE_SOLID ))
          {
-	    TGS_Region_c iterRegion = ptile->GetRegion( );
+            TGS_Region_c iterRegion = ptile->GetRegion( );
 
             // Ignore any iterate regions that fall outside search region
             iterRegion.ApplyIntersect( searchRegion );
@@ -1873,7 +1873,7 @@ template< class T > bool TTPT_TilePlane_c< T >::Split(
             TGS_CornerMode_t cornerMode = TGS_CORNER_UPPER_RIGHT;
             if( TCTF_IsLT( ptile->FindArea( ), ptileP->FindArea( )))
             {
-       	       TTPT_Tile_c< T > tile( *ptile );
+               TTPT_Tile_c< T > tile( *ptile );
                TTPT_Tile_c< T > tileP( *ptileP );
       
                *ptile = tileP;
@@ -1898,7 +1898,7 @@ template< class T > bool TTPT_TilePlane_c< T >::Split(
                this->StitchFromSide_( ptileP, TC_SIDE_LEFT );
                this->StitchFromSide_( ptileP, TC_SIDE_RIGHT );
                this->StitchFromSide_( ptileP, TC_SIDE_UPPER );
-   	    }
+            }
          }
          else // if( orientMode == TGS_ORIENT_VERTICAL )
          {
@@ -1909,7 +1909,7 @@ template< class T > bool TTPT_TilePlane_c< T >::Split(
             TGS_CornerMode_t cornerMode = TGS_CORNER_UPPER_RIGHT;
             if( TCTF_IsLT( ptile->FindArea( ), ptileP->FindArea( )))
             {
- 	       TTPT_Tile_c< T > tile( *ptile );
+               TTPT_Tile_c< T > tile( *ptile );
                TTPT_Tile_c< T > tileP( *ptileP );
 
                *ptile = tileP;
@@ -1934,7 +1934,7 @@ template< class T > bool TTPT_TilePlane_c< T >::Split(
                this->StitchFromSide_( ptileP, TC_SIDE_LOWER );
                this->StitchFromSide_( ptileP, TC_SIDE_UPPER );
                this->StitchFromSide_( ptileP, TC_SIDE_RIGHT );
-   	    }
+            }
          }
          ok = true;
       }
@@ -1976,7 +1976,7 @@ template< class T > bool TTPT_TilePlane_c< T >::Split(
                                        leftRegion.x2 + this->minGrid_, tileRegion.y1 );
             pleftTile = ptile->GetStitchLowerLeft( );
             if( pleftTile->IsClear( ))
-	    {
+            {
                ok = this->Split( pleftTile, lowerIntersect, TGS_DIR_DOWN );
             }
          }
@@ -1986,25 +1986,25 @@ template< class T > bool TTPT_TilePlane_c< T >::Split(
                                        leftRegion.x2 + this->minGrid_, tileRegion.y2 );
             pleftTile = ptile->GetStitchLowerLeft( );
             if( pleftTile->IsClear( ))
-	    {
+            {
                ok = this->Split( pleftTile, upperIntersect, TGS_DIR_UP );
             }
-	 }
-	 else
-	 {
-	    pleftTile = this->Find( leftRegion.x2, tileRegion.y2, ptile );
-	    if( pleftTile->IsClear( ))
-	    {
-	       leftRegion = pleftTile->GetRegion( );
-	       if(( TCTF_IsGT( leftRegion.y2, tileRegion.y2 )) &&
-	          ( TCTF_IsLE( leftRegion.y1, tileRegion.y2 )))
-	       {
-	             TGS_Line_c upperIntersect( leftRegion.x1 - this->minGrid_, tileRegion.y2, 
-	                                        leftRegion.x2 + this->minGrid_, tileRegion.y2 );
-	             ok = this->Split( pleftTile, upperIntersect, TGS_DIR_UP );
-	       }
-	    }
-	 }
+         }
+         else
+         {
+            pleftTile = this->Find( leftRegion.x2, tileRegion.y2, ptile );
+            if( pleftTile->IsClear( ))
+            {
+               leftRegion = pleftTile->GetRegion( );
+               if(( TCTF_IsGT( leftRegion.y2, tileRegion.y2 )) &&
+                  ( TCTF_IsLE( leftRegion.y1, tileRegion.y2 )))
+               {
+                     TGS_Line_c upperIntersect( leftRegion.x1 - this->minGrid_, tileRegion.y2, 
+                                                leftRegion.x2 + this->minGrid_, tileRegion.y2 );
+                     ok = this->Split( pleftTile, upperIntersect, TGS_DIR_UP );
+               }
+            }
+         }
       }
       break;
 
@@ -2021,7 +2021,7 @@ template< class T > bool TTPT_TilePlane_c< T >::Split(
                                        rightRegion.x2 + this->minGrid_, tileRegion.y1 );
             prightTile = ptile->GetStitchUpperRight( );
             if( prightTile->IsClear( ))
-	    {
+            {
                ok = this->Split( prightTile, lowerIntersect, TGS_DIR_DOWN );
             }
          }
@@ -2031,25 +2031,25 @@ template< class T > bool TTPT_TilePlane_c< T >::Split(
                                        rightRegion.x2 + this->minGrid_, tileRegion.y2 );
             prightTile = ptile->GetStitchUpperRight( );
             if( prightTile->IsClear( ))
-	    {
+            {
                ok = this->Split( prightTile, upperIntersect, TGS_DIR_UP );
             }
-	 }
-	 else
-	 {
-	    prightTile = this->Find( rightRegion.x1, tileRegion.y2, ptile );
-	    if( prightTile->IsClear( ))
-	    {
-	       rightRegion = prightTile->GetRegion( );
-	       if(( TCTF_IsGT( rightRegion.y2, tileRegion.y2 )) &&
-	          ( TCTF_IsLE( rightRegion.y1, tileRegion.y2 )))
-	       {
-	             TGS_Line_c upperIntersect( rightRegion.x1 - this->minGrid_, tileRegion.y2, 
-	                                        rightRegion.x2 + this->minGrid_, tileRegion.y2 );
-	             ok = this->Split( prightTile, upperIntersect, TGS_DIR_UP );
-	       }
-	    }
-	 }
+         }
+         else
+         {
+            prightTile = this->Find( rightRegion.x1, tileRegion.y2, ptile );
+            if( prightTile->IsClear( ))
+            {
+               rightRegion = prightTile->GetRegion( );
+               if(( TCTF_IsGT( rightRegion.y2, tileRegion.y2 )) &&
+                  ( TCTF_IsLE( rightRegion.y1, tileRegion.y2 )))
+               {
+                     TGS_Line_c upperIntersect( rightRegion.x1 - this->minGrid_, tileRegion.y2, 
+                                                rightRegion.x2 + this->minGrid_, tileRegion.y2 );
+                     ok = this->Split( prightTile, upperIntersect, TGS_DIR_UP );
+               }
+            }
+         }
       }
       break;
 
@@ -2143,7 +2143,7 @@ template< class T > bool TTPT_TilePlane_c< T >::Merge(
          if( cornerMode == TGS_CORNER_LOWER_LEFT )
          {
             // Update tile (T) per tile (T') y1 coord and 'left_lower' & 'lower_left' stitches
-   	    this->MergeRegionCoords_( ptile, ptileP, orientMode, cornerMode );
+            this->MergeRegionCoords_( ptile, ptileP, orientMode, cornerMode );
             this->StitchToMerge_( ptile, ptileP, orientMode, cornerMode );
    
             // Iterate left, right, and lower sides to update neighbor tile stitches
@@ -2154,7 +2154,7 @@ template< class T > bool TTPT_TilePlane_c< T >::Merge(
          if( cornerMode == TGS_CORNER_UPPER_RIGHT )
          {
             // Update tile (T) per tile (T') y2 coord and 'right_upper' & 'upper_right' stitches
-   	    this->MergeRegionCoords_( ptile, ptileP, orientMode, cornerMode );
+            this->MergeRegionCoords_( ptile, ptileP, orientMode, cornerMode );
             this->StitchToMerge_( ptile, ptileP, orientMode, cornerMode );
    
             // Iterate left, right, and upper sides to update neighbor tile stitches
@@ -2168,7 +2168,7 @@ template< class T > bool TTPT_TilePlane_c< T >::Merge(
          if( cornerMode == TGS_CORNER_LOWER_LEFT )
          {
             // Update tile (T) per tile (T') x1 coord and 'left_lower' & 'lower_left' stitches
-   	    this->MergeRegionCoords_( ptile, ptileP, orientMode, cornerMode );
+            this->MergeRegionCoords_( ptile, ptileP, orientMode, cornerMode );
             this->StitchToMerge_( ptile, ptileP, orientMode, cornerMode );
    
             // Iterate lower, upper, and left sides to update neighbor tile stitches
@@ -2179,7 +2179,7 @@ template< class T > bool TTPT_TilePlane_c< T >::Merge(
          if( cornerMode == TGS_CORNER_UPPER_RIGHT )
          {
             // Update tile (T) per tile (T') x2 coord and 'right_upper' & 'upper_right' stitches
-      	    this->MergeRegionCoords_( ptile, ptileP, orientMode, cornerMode );
+            this->MergeRegionCoords_( ptile, ptileP, orientMode, cornerMode );
             this->StitchToMerge_( ptile, ptileP, orientMode, cornerMode );
    
             // Iterate lower, upper, and right sides to update neighbor tile stitches
@@ -2363,13 +2363,13 @@ template< class T > bool TTPT_TilePlane_c< T >::MergeAdjacents(
       TTPT_Tile_c< T >* pmergeTile = 0;
       while( thisIter.Next( &pmergeTile, tileMode ))
       {
-	 TGS_Region_c mergeRegion;
+         TGS_Region_c mergeRegion;
          if( this->MergeAdjacents( *pmergeTile, &mergeRegion, 
                                    mergeMode, orientMode ) &&
              mergeRegion.IsWithin( region ))
          {
-	    ptile = pmergeTile;
-	    break;
+            ptile = pmergeTile;
+            break;
          }
       }
    }
@@ -2542,7 +2542,7 @@ template< class T > bool TTPT_TilePlane_c< T >::JoinAdjacents(
         pleftTile = pleftTile->GetStitchRightUpper( ))
    {
       if( TCTF_IsGT( pleftTile->GetRegion( ).y1, region.y2 ))
-	 break;
+         break;
 
       if(( pleftTile->GetMode( ) == tileMode ) &&
          ( pleftTile->IsEqualData( count, pdata )))
@@ -2570,7 +2570,7 @@ template< class T > bool TTPT_TilePlane_c< T >::JoinAdjacents(
         prightTile = prightTile->GetStitchLeftLower( ))
    {
       if( TCTF_IsLT( prightTile->GetRegion( ).y2, region.y1 ))
-	 break;
+         break;
 
       if(( prightTile->GetMode( ) == tileMode ) &&
          ( prightTile->IsEqualData( count, pdata )))
@@ -2598,7 +2598,7 @@ template< class T > bool TTPT_TilePlane_c< T >::JoinAdjacents(
         plowerTile = plowerTile->GetStitchUpperRight( ))
    {
       if( TCTF_IsGT( plowerTile->GetRegion( ).x1, region.x2 ))
-	 break;
+         break;
 
       if(( plowerTile->GetMode( ) == tileMode ) &&
          ( plowerTile->IsEqualData( count, pdata )))
@@ -2626,7 +2626,7 @@ template< class T > bool TTPT_TilePlane_c< T >::JoinAdjacents(
         pupperTile = pupperTile->GetStitchLowerLeft( ))
    {
       if( TCTF_IsLT( pupperTile->GetRegion( ).x2, region.x1 ))
-	 break;
+         break;
 
       if(( pupperTile->GetMode( ) == tileMode ) &&
          ( pupperTile->IsEqualData( count, pdata )))
@@ -2791,7 +2791,7 @@ template< class T > bool TTPT_TilePlane_c< T >::HasNeighbor(
             TGS_Region_c searchRegion( tileRegion.x1 - minDistance,
                                        upperRegion.y2 + this->minGrid_,
                                        tileRegion.x2 + minDistance,
-            		               tileRegion.y2 + minDistance );
+                                       tileRegion.y2 + minDistance );
             hasNeighbor = this->IsSolid( TTP_IS_SOLID_ANY, searchRegion );
          }
       }
@@ -2805,7 +2805,7 @@ template< class T > bool TTPT_TilePlane_c< T >::HasNeighbor(
       {
          const TGS_Region_c& leftRegion = pleftTile->GetRegion( );
          if( TCTF_IsGT( leftRegion.y1, tileRegion.y2 ))
-   	    break;
+            break;
 
          if( pleftTile->IsSolid( ))
          {
@@ -2831,7 +2831,7 @@ template< class T > bool TTPT_TilePlane_c< T >::HasNeighbor(
       {
          const TGS_Region_c& rightRegion = prightTile->GetRegion( );
          if( TCTF_IsLT( rightRegion.y2, tileRegion.y1 ))
-   	    break;
+            break;
 
          if( prightTile->IsSolid( ))
          {
@@ -3503,18 +3503,18 @@ template< class T > bool TTPT_TilePlane_c< T >::IsLegal(
       {
          isLegal = this->ShowInternalMessage_( TTP_MESSAGE_IS_LEGAL_INVALID_REGION, 
                                                "TTPT_TilePlane_c::IsLegal", 
-				               &tileRegion );
+                                               &tileRegion );
       }
 
       if(( ptile->IsClear( )) &&
-	 ( ptile->GetStitchUpperRight( )) &&
+         ( ptile->GetStitchUpperRight( )) &&
          ( ptile->GetStitchUpperRight( )->IsClear( )))
       {
          const TGS_Region_c& nextRegion = ptile->GetStitchUpperRight( )->GetRegion( );
 
          isLegal = this->ShowInternalMessage_( TTP_MESSAGE_IS_LEGAL_INVALID_REGION, 
                                                "TTPT_TilePlane_c::IsLegal", 
-				               &tileRegion, &nextRegion );
+                                               &tileRegion, &nextRegion );
       }
    }
    return( isLegal );
@@ -3563,7 +3563,7 @@ template< class T > bool TTPT_TilePlane_c< T >::AddPerRegion_(
       // (ie. merge with left/right/upper solid tiles, if possible)
       if( ok )
       {
-	 // Find solid tile based on upper-right corner of region 
+         // Find solid tile based on upper-right corner of region 
          TTPT_Tile_c< T >* psolidTile = this->Find( addRegion.x2, addRegion.y2 );
          psolidTile->MakeSolid( addCount, paddData );
 
@@ -3574,7 +3574,7 @@ template< class T > bool TTPT_TilePlane_c< T >::AddPerRegion_(
       // (ie. re-merge with lower/upper vertically aligned solid tiles, if any)
       if( ok )
       {
-	 // Find solid tile based on upper-right corner of region 
+         // Find solid tile based on upper-right corner of region 
          TTPT_Tile_c< T >* psolidTile = this->Find( addRegion.x2, addRegion.y2 );
 
          TGS_Region_c solidRegion = psolidTile->GetRegion( );
@@ -3861,7 +3861,7 @@ template< class T > bool TTPT_TilePlane_c< T >::AddPerOverlap_(
    bool isWithin = this->IsWithin( addRegion );
    bool isSolidNotAny = isWithin ?
                         this->IsSolidNot( TTP_IS_SOLID_ANY,
-				          addRegion, addCount, paddData, 
+                                          addRegion, addCount, paddData, 
                                           &pintersectTile ) : false;
    if( isWithin && isSolidNotAny )
    {
@@ -3931,11 +3931,11 @@ template< class T > bool TTPT_TilePlane_c< T >::AddPerOverlap_(
          {
             const T* paddData_j = ( paddData + j );
             if( *poverlapData_i == *paddData_j )
-	    {
-	       isMemberOverlapData_i = true;
+            {
+               isMemberOverlapData_i = true;
                break;
             }
-	 }
+         }
          if( !isMemberOverlapData_i )
          {
             ok = intersectTile.AddData( 1, poverlapData_i );
@@ -4165,7 +4165,7 @@ template< class T > bool TTPT_TilePlane_c< T >::AddPerSolidTileMerges_(
       const TTPT_Tile_c< T >& mergedTile = *this->Find( upperLeft );
       const TGS_Region_c& mergedRegion = mergedTile.GetRegion( );
       if( mergedRegion == solidRegion )
-	break;
+         break;
    }
    return( ok );
 }
@@ -4353,7 +4353,7 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerExact_(
          if( psolidTile->GetRegion( ) != deleteRegion )
             continue;
 
-	 if( !psolidTile->FindData( deleteData ))
+         if( !psolidTile->FindData( deleteData ))
             continue;
 
          TTPT_Tile_c< T > replaceTile( *psolidTile );
@@ -4365,10 +4365,10 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerExact_(
          if( !ok )
             break;
 
-	 if( replaceTile.IsValid( ) && replaceTile.HasData( ))
+         if( replaceTile.IsValid( ) && replaceTile.HasData( ))
          {
             TGS_OrientMode_t addOrient = TGS_ORIENT_UNDEFINED;
-	    ok = this->AddPerNew_( replaceTile, addOrient );
+            ok = this->AddPerNew_( replaceTile, addOrient );
             if( !ok )
                break;
          }
@@ -4445,7 +4445,7 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerWithin_(
          if( !psolidTile->IsWithin( deleteRegion ))
             continue;
 
-	 if( !psolidTile->FindData( deleteData ))
+         if( !psolidTile->FindData( deleteData ))
             continue;
 
          TTPT_Tile_c< T > replaceTile( *psolidTile );
@@ -4457,10 +4457,10 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerWithin_(
          if( !ok )
             break;
 
-	 if( replaceTile.IsValid( ) && replaceTile.HasData( ))
+         if( replaceTile.IsValid( ) && replaceTile.HasData( ))
          {
             TGS_OrientMode_t addOrient = TGS_ORIENT_UNDEFINED;
-	    ok = this->AddPerNew_( replaceTile, addOrient );
+            ok = this->AddPerNew_( replaceTile, addOrient );
             if( !ok )
                break;
          }
@@ -4554,7 +4554,7 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerIntersect_(
                                         &subRegionList, this->minGrid_ );
             for( size_t i = 0; i < subRegionList.GetLength( ); ++i )
             {
-	       TTPT_Tile_c< T > subTile( TTP_TILE_SOLID, *subRegionList[i], 
+               TTPT_Tile_c< T > subTile( TTP_TILE_SOLID, *subRegionList[i], 
                                          solidCount, psolidData );
                TGS_OrientMode_t addOrient = TGS_ORIENT_UNDEFINED;
                ok = this->AddPerNew_( subTile, addOrient );
@@ -4595,7 +4595,7 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerIntersect_(
          unsigned int solidCount = solidTile.GetCount( );
          const T* psolidData = solidTile.GetData( );
 
-	 if( !psolidTile->FindData( deleteData ))
+         if( !psolidTile->FindData( deleteData ))
             continue;
 
          TTPT_Tile_c< T > replaceTile( *psolidTile );
@@ -4612,7 +4612,7 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerIntersect_(
                                      &subRegionList, this->minGrid_ );
          for( size_t i = 0; i < subRegionList.GetLength( ); ++i )
          {
-	    TTPT_Tile_c< T > subTile( TTP_TILE_SOLID, *subRegionList[i], 
+            TTPT_Tile_c< T > subTile( TTP_TILE_SOLID, *subRegionList[i], 
                                       solidCount, psolidData );
             TGS_OrientMode_t addOrient = TGS_ORIENT_UNDEFINED;
             ok = this->AddPerNew_( subTile, addOrient );
@@ -4622,10 +4622,10 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerIntersect_(
          if( !ok )
             break;
 
-	 if( replaceTile.IsValid( ) && replaceTile.HasData( ))
+         if( replaceTile.IsValid( ) && replaceTile.HasData( ))
          {
             TGS_OrientMode_t addOrient = TGS_ORIENT_UNDEFINED;
-	    ok = this->AddPerNew_( replaceTile, addOrient );
+            ok = this->AddPerNew_( replaceTile, addOrient );
             if( !ok )
                break;
          }
@@ -4680,7 +4680,7 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerIntersectMin_(
                                      &subRegionList, this->minGrid_, this->minGrid_ );
          for( size_t i = 0; i < subRegionList.GetLength( ); ++i )
          {
-	    TTPT_Tile_c< T > subTile( TTP_TILE_SOLID, *subRegionList[i], 
+            TTPT_Tile_c< T > subTile( TTP_TILE_SOLID, *subRegionList[i], 
                                       solidCount, psolidData );
             TGS_OrientMode_t addOrient = TGS_ORIENT_UNDEFINED;
             ok = this->AddPerNew_( subTile, addOrient );
@@ -4722,7 +4722,7 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerIntersectMin_(
          unsigned int solidCount = solidTile.GetCount( );
          const T* psolidData = solidTile.GetData( );
 
-	 if( !psolidTile->FindData( deleteData ))
+         if( !psolidTile->FindData( deleteData ))
             continue;
 
          TTPT_Tile_c< T > replaceTile( *psolidTile );
@@ -4739,7 +4739,7 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerIntersectMin_(
                                      &subRegionList, this->minGrid_, this->minGrid_ );
          for( size_t i = 0; i < subRegionList.GetLength( ); ++i )
          {
-	    TTPT_Tile_c< T > subTile( TTP_TILE_SOLID, *subRegionList[i], 
+            TTPT_Tile_c< T > subTile( TTP_TILE_SOLID, *subRegionList[i], 
                                       solidCount, psolidData );
             TGS_OrientMode_t addOrient = TGS_ORIENT_UNDEFINED;
             ok = this->AddPerNew_( subTile, addOrient );
@@ -4749,10 +4749,10 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerIntersectMin_(
          if( !ok )
             break;
 
-	 if( replaceTile.IsValid( ) && replaceTile.HasData( ))
+         if( replaceTile.IsValid( ) && replaceTile.HasData( ))
          {
             TGS_OrientMode_t addOrient = TGS_ORIENT_UNDEFINED;
-	    ok = this->AddPerNew_( replaceTile, addOrient );
+            ok = this->AddPerNew_( replaceTile, addOrient );
             if( !ok )
                break;
          }
@@ -4790,7 +4790,7 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerRightSide_(
       TGS_Region_c rightRegion = prightTile->GetRegion( );
       const TGS_Region_c& deleteRegion = deleteTile.GetRegion( );
       TGS_Point_c clearPoint( deleteRegion.x1, 
-			      TCT_Max( deleteRegion.y1, rightRegion.y1 ));
+                              TCT_Max( deleteRegion.y1, rightRegion.y1 ));
 
       if( prightTile->IsClear( ))
       {
@@ -4808,7 +4808,7 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerRightSide_(
          TTPT_Tile_c< T >* pclearTile = this->Find( clearPoint );
          const TGS_Region_c& clearRegion = pclearTile->GetRegion( );
          if( TCTF_IsNEQ( clearRegion.x2, deleteRegion.x2 ))
-	 {
+         {
             // And merge neighbor lower tile with merged tile, if possible
             pclearTile = this->Find( clearPoint );
             ok = this->Merge( pclearTile, TC_SIDE_LOWER );
@@ -4832,7 +4832,7 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerRightSide_(
       prightTile = this->Find( deleteRegion.x2 + this->minGrid_, 
                                deleteRegion.y1 );
       if( !prightTile )
-	 break;
+         break;
 
       TGS_Region_c rightRegion = prightTile->GetRegion( );
       if( prightTile->IsClear( ) &&
@@ -4868,7 +4868,7 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerLeftSide_(
       TGS_Point_c leftPoint( iterRegion.x1 - this->minGrid_, iterRegion.y1 );
       TTPT_Tile_c< T >* pleftTile = this->Find( leftPoint );
       if( !pleftTile )
-	break;
+        break;
 
       TGS_Region_c leftRegion = pleftTile->GetRegion( );
       iterRegion.y1 = leftRegion.y2 + this->minGrid_;
@@ -4880,7 +4880,7 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerLeftSide_(
       // on adjacent neighbor clear left tile
       const TGS_Region_c& deleteRegion = deleteTile.GetRegion( );
       TGS_Point_c rightPoint( deleteRegion.x1, 
-			      TCT_Max( deleteRegion.y1, leftRegion.y1 ));
+                              TCT_Max( deleteRegion.y1, leftRegion.y1 ));
 
       // Find "dead" right tile w.r.t. current neighbor left tile's region
       TTPT_Tile_c< T >* prightTile = this->Find( rightPoint );
@@ -4901,7 +4901,7 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerLeftSide_(
          TTPT_Tile_c< T >* pclearTile = this->Find( rightPoint );
          const TGS_Region_c& clearRegion = pclearTile->GetRegion( );
          if( TCTF_IsNEQ( clearRegion.x1, iterRegion.x1 ))
-	 {
+         {
             // And merge neighbor lower tile with merged tile, if possible
             pclearTile = this->Find( rightPoint );
             ok = this->Merge( pclearTile, TC_SIDE_LOWER );
@@ -4919,7 +4919,7 @@ template< class T > bool TTPT_TilePlane_c< T >::DeletePerLeftSide_(
          rightPoint.y = rightRegion.y2 + this->minGrid_;
          prightTile = this->Find( rightPoint );
          if( !prightTile )
-	    break;
+            break;
 
          rightRegion = prightTile->GetRegion( );
       }
@@ -5094,7 +5094,7 @@ template< class T > TTPT_Tile_c< T >* TTPT_TilePlane_c< T >::FindPerPoint_(
          ptile = ptileRightUpper;
       }
       else if( ptile &&
-	     ( ptileLowerLeft || ptileRightUpper ) &&
+             ( ptileLowerLeft || ptileRightUpper ) &&
              ( ptile->IsGreaterThan( point, TGS_ORIENT_HORIZONTAL ) ||
                ptile->IsLessThan( point, TGS_ORIENT_VERTICAL )))
       {
@@ -5103,7 +5103,7 @@ template< class T > TTPT_Tile_c< T >* TTPT_TilePlane_c< T >::FindPerPoint_(
          ptile = ( TCTF_IsLE( distLowerLeft, distRightUpper ) ? ptileLowerLeft : ptileRightUpper );
       }
       else if( ptile &&
-	     ( ptileUpperRight || ptileLeftLower ) &&
+             ( ptileUpperRight || ptileLeftLower ) &&
              ( ptile->IsLessThan( point, TGS_ORIENT_HORIZONTAL ) ||
                ptile->IsGreaterThan( point, TGS_ORIENT_VERTICAL )))
       {
@@ -5285,13 +5285,13 @@ template< class T > TTPT_Tile_c< T >* TTPT_TilePlane_c< T >::FindPerIntersect_(
          TGS_Point_c point( region.x1, region.y1 );
          TTPT_Tile_c< T >* ptileLL = this->FindPerPoint_( point );
          if( ptileLL && ( ptileLL->GetMode( ) & tileMode ) &&
-	     ptileLL->IsIntersecting( region ))
-	 {
-	    ptile = ptileLL;
+             ptileLL->IsIntersecting( region ))
+         {
+            ptile = ptileLL;
          }
-	 else if( ptileLL && !( ptileLL->GetMode( ) & tileMode ) &&
+         else if( ptileLL && !( ptileLL->GetMode( ) & tileMode ) &&
                   ptileLL->IsWithin( region ))
-	 {
+         {
             findOK = false;
          }
       }
@@ -5301,13 +5301,13 @@ template< class T > TTPT_Tile_c< T >* TTPT_TilePlane_c< T >::FindPerIntersect_(
          TGS_Point_c point( region.x2, region.y2 );
          TTPT_Tile_c< T >* ptileUR = this->FindPerPoint_( point );
          if( ptileUR && ( ptileUR->GetMode( ) & tileMode ) &&
-	     ptileUR->IsIntersecting( region ))
-	 {
-	    ptile = ptileUR;
+             ptileUR->IsIntersecting( region ))
+         {
+            ptile = ptileUR;
          }
-	 else if( ptileUR && !( ptileUR->GetMode( ) & tileMode ) &&
+         else if( ptileUR && !( ptileUR->GetMode( ) & tileMode ) &&
                   ptileUR->IsWithin( region ))
-	 {
+         {
             findOK = false;
          }
       }
@@ -5319,7 +5319,7 @@ template< class T > TTPT_Tile_c< T >* TTPT_TilePlane_c< T >::FindPerIntersect_(
          while( ptilePlane->tilePlaneIter_.Next( &ptile, tileMode ))
          {  
             if( ptile->IsIntersecting( region ))
-	       break;
+               break;
          }
       }
    }
@@ -5353,12 +5353,12 @@ template< class T > TTPT_Tile_c< T >* TTPT_TilePlane_c< T >::FindNearestBySides_
       if( pleftTile )
       {
          double leftDistance = pleftTile->FindDistance( refRegion );
-	 if(( porientMode ) &&
+         if(( porientMode ) &&
             ( *porientMode != TGS_ORIENT_UNDEFINED ) &&
             ( *porientMode != pleftTile->FindOrient( )))
-	 {
-	    leftDistance = TC_FLT_MAX;
-	 }
+         {
+            leftDistance = TC_FLT_MAX;
+         }
 
          if( TCTF_IsGT( nearestDistance, leftDistance ))
          {
@@ -5376,12 +5376,12 @@ template< class T > TTPT_Tile_c< T >* TTPT_TilePlane_c< T >::FindNearestBySides_
       if( prightTile )
       {
          double rightDistance = prightTile->FindDistance( refRegion );
-	 if(( porientMode ) &&
+         if(( porientMode ) &&
             ( *porientMode != TGS_ORIENT_UNDEFINED ) &&
             ( *porientMode != prightTile->FindOrient( )))
-	 {
-	    rightDistance = TC_FLT_MAX;
-	 }
+         {
+            rightDistance = TC_FLT_MAX;
+         }
 
          if( TCTF_IsGT( nearestDistance, rightDistance ))
          {
@@ -5399,12 +5399,12 @@ template< class T > TTPT_Tile_c< T >* TTPT_TilePlane_c< T >::FindNearestBySides_
       if( plowerTile )
       {
          double lowerDistance = plowerTile->FindDistance( refRegion );
-	 if(( porientMode ) &&
+         if(( porientMode ) &&
             ( *porientMode != TGS_ORIENT_UNDEFINED ) &&
             ( *porientMode != plowerTile->FindOrient( )))
-	 {
-	    lowerDistance = TC_FLT_MAX;
-	 }
+         {
+            lowerDistance = TC_FLT_MAX;
+         }
 
          if( TCTF_IsGT( nearestDistance, lowerDistance ))
          {
@@ -5422,12 +5422,12 @@ template< class T > TTPT_Tile_c< T >* TTPT_TilePlane_c< T >::FindNearestBySides_
       if( pupperTile )
       {
          double upperDistance = pupperTile->FindDistance( refRegion );
-	 if(( porientMode ) &&
+         if(( porientMode ) &&
             ( *porientMode != TGS_ORIENT_UNDEFINED ) &&
             ( *porientMode != pupperTile->FindOrient( )))
-	 {
-	    upperDistance = TC_FLT_MAX;
-	 }
+         {
+            upperDistance = TC_FLT_MAX;
+         }
 
          if( TCTF_IsGT( nearestDistance, upperDistance ))
          {
@@ -5713,7 +5713,7 @@ template< class T > TTPT_Tile_c< T >* TTPT_TilePlane_c< T >::FindNearestByRegion
       {
          solidDistance = TC_FLT_MAX;
 
-	 continue;
+         continue;
       }
 
       if( TCTF_IsGT( nearestDistance, solidDistance ))
@@ -5894,7 +5894,7 @@ template< class T > bool TTPT_TilePlane_c< T >::MergeAdjacentsByExtent_(
             unsigned int     tileCount,
       const T*               ptileData,
             TTP_TileMode_t   tileMode,
-	    TTP_MergeMode_t  mergeMode,
+            TTP_MergeMode_t  mergeMode,
             TGS_Region_c*    pmergedRegion ) const
 {
    bool mergedAdjacents = false;
@@ -5957,20 +5957,20 @@ template< class T > bool TTPT_TilePlane_c< T >::MergeAdjacentsToLeft_(
          ( TCTF_IsGE( pleftTile->GetRegion( ).y2, pmergedRegion->y2 )))
       {
          if( mergeMode == TTP_MERGE_REGION )
-	 {
+         {
             pmergedRegion->x1 = pleftTile->GetRegion( ).x1;
             mergedAdjacents = true;
-	 }
+         }
          else if(( mergeMode == TTP_MERGE_EXACT ) &&
                  ( pleftTile->IsEqualData( tileCount, ptileData )))
-	 {
+         {
             pmergedRegion->x1 = pleftTile->GetRegion( ).x1;
             mergedAdjacents = true;
-	 }
+         }
          else
-	 {
+         {
             break;
-	 }
+         }
       }
       else if(( pleftTile ) && 
               ( pleftTile->GetMode( ) == tileMode ) &&
@@ -5984,7 +5984,7 @@ template< class T > bool TTPT_TilePlane_c< T >::MergeAdjacentsToLeft_(
                                                        pleftTile->GetRegion( ).y2 + this->minGrid_ );
          while(( pneighborTile ) &&
                ( pneighborTile->GetMode( ) == tileMode ) &&
-	       ( TCTF_IsLE( pneighborTile->GetRegion( ).y1, pmergedRegion->y2 )))
+               ( TCTF_IsLE( pneighborTile->GetRegion( ).y1, pmergedRegion->y2 )))
          {
             x1 = TCT_Max( x1, pneighborTile->GetRegion( ).x1 );
             y2 = pneighborTile->GetRegion( ).y2;
@@ -5995,14 +5995,14 @@ template< class T > bool TTPT_TilePlane_c< T >::MergeAdjacentsToLeft_(
 
          if(( mergeMode == TTP_MERGE_REGION ) && 
             ( TCTF_IsGE( y2, pmergedRegion->y2 )))
-	 {
+         {
             pmergedRegion->x1 = x1;
             mergedAdjacents = true;
-	 }
+         }
          else
-	 {
+         {
             break;
-	 }
+         }
       }
       else
       {
@@ -6038,20 +6038,20 @@ template< class T > bool TTPT_TilePlane_c< T >::MergeAdjacentsToRight_(
          ( TCTF_IsGE( prightTile->GetRegion( ).y2, pmergedRegion->y2 )))
       {
          if( mergeMode == TTP_MERGE_REGION )
-	 {
+         {
             pmergedRegion->x2 = prightTile->GetRegion( ).x2;
             mergedAdjacents = true;
-	 }
+         }
          else if(( mergeMode == TTP_MERGE_EXACT ) &&
                  ( prightTile->IsEqualData( tileCount, ptileData )))
-	 {
+         {
             pmergedRegion->x2 = prightTile->GetRegion( ).x2;
             mergedAdjacents = true;
-	 }
+         }
          else
-	 {
+         {
             break;
-	 }
+         }
       }
       else if(( prightTile ) && 
               ( prightTile->GetMode( ) == tileMode ) &&
@@ -6076,14 +6076,14 @@ template< class T > bool TTPT_TilePlane_c< T >::MergeAdjacentsToRight_(
 
          if(( mergeMode == TTP_MERGE_REGION ) && 
             ( TCTF_IsLE( y1, pmergedRegion->y1 )))
-	 {
+         {
             pmergedRegion->x2 = x2;
             mergedAdjacents = true;
-	 }
+         }
          else
-	 {
+         {
             break;
-	 }
+         }
       }
       else
       {
@@ -6119,20 +6119,20 @@ template< class T > bool TTPT_TilePlane_c< T >::MergeAdjacentsToLower_(
          ( TCTF_IsGE( plowerTile->GetRegion( ).x2, pmergedRegion->x2 )))
       {
          if( mergeMode == TTP_MERGE_REGION )
-	 {
+         {
             pmergedRegion->y1 = plowerTile->GetRegion( ).y1;
             mergedAdjacents = true;
-	 }
+         }
          else if(( mergeMode == TTP_MERGE_EXACT ) &&
                  ( plowerTile->IsEqualData( tileCount, ptileData )))
-	 {
+         {
             pmergedRegion->y1 = plowerTile->GetRegion( ).y1;
             mergedAdjacents = true;
-	 }
+         }
          else
-	 {
+         {
             break;
-	 }
+         }
       }
       else if(( plowerTile ) && 
               ( plowerTile->GetMode( ) == tileMode ) &&
@@ -6157,14 +6157,14 @@ template< class T > bool TTPT_TilePlane_c< T >::MergeAdjacentsToLower_(
 
          if(( mergeMode == TTP_MERGE_REGION ) && 
             ( TCTF_IsGE( x2, pmergedRegion->x2 )))
-	 {
+         {
             pmergedRegion->y1 = y1;
             mergedAdjacents = true;
-	 }
+         }
          else
-	 {
+         {
             break;
-	 }
+         }
       }
       else
       {
@@ -6200,20 +6200,20 @@ template< class T > bool TTPT_TilePlane_c< T >::MergeAdjacentsToUpper_(
          ( TCTF_IsGE( pupperTile->GetRegion( ).x2, pmergedRegion->x2 )))
       {
          if( mergeMode == TTP_MERGE_REGION )
-	 {
+         {
             pmergedRegion->y2 = pupperTile->GetRegion( ).y2;
             mergedAdjacents = true;
-	 }
+         }
          else if(( mergeMode == TTP_MERGE_EXACT ) &&
                  ( pupperTile->IsEqualData( tileCount, ptileData )))
-	 {
+         {
             pmergedRegion->y2 = pupperTile->GetRegion( ).y2;
             mergedAdjacents = true;
-	 }
+         }
          else
-	 {
+         {
             break;
-	 }
+         }
       }
       else if(( pupperTile ) && 
               ( pupperTile->GetMode( ) == tileMode ) &&
@@ -6238,14 +6238,14 @@ template< class T > bool TTPT_TilePlane_c< T >::MergeAdjacentsToUpper_(
 
          if(( mergeMode == TTP_MERGE_REGION ) && 
             ( TCTF_IsLE( x1, pmergedRegion->x1 )))
-	 {
+         {
             pmergedRegion->y2 = y2;
             mergedAdjacents = true;
-	 }
+         }
          else
-	 {
+         {
             break;
-	 }
+         }
       }
       else
       {
@@ -6314,8 +6314,8 @@ template< class T > bool TTPT_TilePlane_c< T >::JoinAdjacentsPerIntersect_(
       {
          for( size_t i = 0; i < regionList.GetLength( ); ++i )
          { 
-	    if( pregionList->IsMember( *regionList[i] ))
-	       continue;
+            if( pregionList->IsMember( *regionList[i] ))
+               continue;
 
             pregionList->Add( *regionList[i] );
 
@@ -6905,8 +6905,8 @@ template< class T > void TTPT_TilePlane_c< T >::StitchFromSide_(
       if( side == TC_SIDE_LEFT )
       {
          TTPT_Tile_c< T >* pleftTile = ptile->GetStitchLowerLeft( );
-	 if( pleftTile )
-	 {
+         if( pleftTile )
+         {
             const TGS_Region_c& leftRegion = pleftTile->GetRegion( );
             if( TCTF_IsGT( leftRegion.y2, tileRegion.y2 ))
             {
@@ -6918,15 +6918,15 @@ template< class T > void TTPT_TilePlane_c< T >::StitchFromSide_(
             }
             else // if( TCTF_IsLT( leftRegion.y2, tileRegion.y2 ))
             {
-    	       iterateSide = true;                 // Need to iterate over side
+               iterateSide = true;                 // Need to iterate over side
             }
          }
       }
       if( side == TC_SIDE_RIGHT )
       {
          TTPT_Tile_c< T >* prightTile = ptile->GetStitchUpperRight( );
-	 if( prightTile )
-	 {
+         if( prightTile )
+         {
             const TGS_Region_c& rightRegion = prightTile->GetRegion( );
             if( TCTF_IsLT( rightRegion.y1, tileRegion.y1 ))
             {
@@ -6938,15 +6938,15 @@ template< class T > void TTPT_TilePlane_c< T >::StitchFromSide_(
             }
             else // if( TCTF_IsGT( rightRegion.y1, tileRegion.y1 ))
             {
-    	       iterateSide = true;                 // Need to iterate over side
+               iterateSide = true;                 // Need to iterate over side
             }
          }
       }
       if( side == TC_SIDE_LOWER )
       {
          TTPT_Tile_c< T >* plowerTile = ptile->GetStitchLeftLower( );
-	 if( plowerTile )
-	 {
+         if( plowerTile )
+         {
             const TGS_Region_c& lowerRegion = plowerTile->GetRegion( );
             if( TCTF_IsGT( lowerRegion.x2, tileRegion.x2 ))
             {
@@ -6958,15 +6958,15 @@ template< class T > void TTPT_TilePlane_c< T >::StitchFromSide_(
             }
             else // if( TCTF_IsLT( lowerRegion.x2, tileRegion.x2 ))
             {
-    	       iterateSide = true;                 // Need to iterate over side
+               iterateSide = true;                 // Need to iterate over side
             }
          }
       }
       if( side == TC_SIDE_UPPER )
       {
          TTPT_Tile_c< T >* pupperTile = ptile->GetStitchRightUpper( );
-	 if( pupperTile )
-	 {
+         if( pupperTile )
+         {
             const TGS_Region_c& upperRegion = pupperTile->GetRegion( );
             if( TCTF_IsLT( upperRegion.x1, tileRegion.x1 ))
             {
@@ -6978,7 +6978,7 @@ template< class T > void TTPT_TilePlane_c< T >::StitchFromSide_(
             }
             else // if( TCTF_IsGT( upperRegion.x1, tileRegion.x1 ))
             {
-    	       iterateSide = true;                 // Need to iterate over side
+               iterateSide = true;                 // Need to iterate over side
             }
          }
       }
@@ -6993,28 +6993,28 @@ template< class T > void TTPT_TilePlane_c< T >::StitchFromSide_(
             const TGS_Region_c& neighborRegion = pneighbor->GetRegion( );
    
             if( side == TC_SIDE_LEFT )
-   	    {
+            {
                if( TCTF_IsLE( neighborRegion.y2, tileRegion.y2 ))
                {
                   pneighbor->SetStitchUpperRight( ptile );
                }
             }
             if( side == TC_SIDE_RIGHT )
-   	    {
+            {
                if( TCTF_IsGE( neighborRegion.y1, tileRegion.y1 ))
                {
                   pneighbor->SetStitchLowerLeft( ptile );
                }
             }
             if( side == TC_SIDE_LOWER )
-   	    {
+            {
                if( TCTF_IsLE( neighborRegion.x2, tileRegion.x2 ))
                {
                   pneighbor->SetStitchRightUpper( ptile );
                }
             }
             if( side == TC_SIDE_UPPER )
-   	    {
+            {
                if( TCTF_IsGE( neighborRegion.x1, tileRegion.x1 ))
                {
                   pneighbor->SetStitchLeftLower( ptile );
@@ -7061,7 +7061,7 @@ template< class T > void TTPT_TilePlane_c< T >::LoadTileList_(
          {
             ptileUpperRight->SetStitchLowerLeft( 0 );
          }
-	 this->LoadTileList_( ptileUpperRight, ptileList );
+         this->LoadTileList_( ptileUpperRight, ptileList );
       }
       if( ptile->GetStitchLeftLower( ))
       {
@@ -7072,7 +7072,7 @@ template< class T > void TTPT_TilePlane_c< T >::LoadTileList_(
          {
             ptileLeftLower->SetStitchRightUpper( 0 );
          }
-	 this->LoadTileList_( ptileLeftLower, ptileList );
+         this->LoadTileList_( ptileLeftLower, ptileList );
       }
       if( ptile->GetStitchRightUpper( ))
       {
@@ -7083,7 +7083,7 @@ template< class T > void TTPT_TilePlane_c< T >::LoadTileList_(
          {
             ptileRightUpper->SetStitchLeftLower( 0 );
          }
-	 this->LoadTileList_( ptileRightUpper, ptileList );
+         this->LoadTileList_( ptileRightUpper, ptileList );
       }
       ptileList->Add( ptile );
    }
@@ -7472,7 +7472,7 @@ template< class T > bool TTPT_TilePlane_c< T >::IsSolidAny_(
          const TGS_Region_c& clearRegion = ptile->GetRegion( );
          if( TCTF_IsLT( clearRegion.x2, iterRegion.x2 ))
          {
-  	    ptile = this->Find( clearRegion.x2 + this->minGrid_, iterRegion.y2 );
+            ptile = this->Find( clearRegion.x2 + this->minGrid_, iterRegion.y2 );
             break;
          }
 
@@ -7480,7 +7480,7 @@ template< class T > bool TTPT_TilePlane_c< T >::IsSolidAny_(
          iterRegion.y2 = clearRegion.y1 - this->minGrid_;
          if( TCTF_IsGE( iterRegion.y2, iterRegion.y1 ))
          {
-	    // Continue with next file found in upper-left corner of region
+            // Continue with next file found in upper-left corner of region
             ptile = this->Find( iterRegion.x1, iterRegion.y2 );
          }
          else
@@ -7682,16 +7682,16 @@ template< class T > bool TTPT_TilePlane_c< T >::IsSolidMax_(
       TTPT_Tile_c< T >* pnext = 0;
       while( ptilePlane->tilePlaneIter_.Next( &pnext ))
       {
-	 if( pnext->IsSolid( ))
+         if( pnext->IsSolid( ))
          {
-	    if( !ptile )
-	    {
+            if( !ptile )
+            {
                ptile = pnext;
-	    }
+            }
             else if( TCTF_IsLT( ptile->FindArea( ), pnext->FindArea( )))
-	    {
+            {
                ptile = pnext;
-	    }
+            }
          }
       }
    }
@@ -7735,14 +7735,14 @@ template< class T > bool TTPT_TilePlane_c< T >::IsSolidMax_(
          if(( pnext->IsSolid( )) &&
             ( pnext->IsEqualData( count, pdata )))
          {
-	    if( !ptile )
-	    {
+            if( !ptile )
+            {
                ptile = pnext;
-	    }
+            }
             else if( TCTF_IsLT( ptile->FindArea( ), pnext->FindArea( )))
-	    {
+            {
                ptile = pnext;
-	    }
+            }
          }
       }
    }
@@ -8078,7 +8078,7 @@ template< class T > void TTPT_TilePlane_c< T >::Deallocate_(
 //===========================================================================//
 template< class T > bool TTPT_TilePlane_c< T >::ShowInternalMessage_(
             TTP_MessageType_t messageType,
-	    const char*       pszSourceMethod,
+            const char*       pszSourceMethod,
       const TGS_Region_c*     ptileRegion, 
       const TGS_Region_c*     pnextRegion ) const
 {
