@@ -31,15 +31,16 @@ CFLAGSlinux_x86_64 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_X86
 CFLAGSlinux_i686 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_I686
 CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
 CFLAGS = $(CFLAGS$(ISM)) \
-	-DPLACEMENT_REGIONS_ENABLE \
-	-DPLACEMENT_RELATIVE_ENABLE \
+	-DTORO_FABRIC_GRID_VALID_ENABLE \
+	-DTORO_FABRIC_CHANNEL_WIDTHS_ENABLE \
+	-DTORO_REGION_PLACEMENT_ENABLE \
+	-DTORO_RELATIVE_PLACEMENT_ENABLE \
 	-I. \
 	-I../TM_Master \
 	-I../TI_Input \
 	-I../TP_Process \
 	-I../TO_Output \
 	-I../TVPR_Interface \
-	-I../TRP_RelativePlace \
 	-I../TCL_CommandLine \
         -I../TOP_OptionsParser -I../TOP_OptionsParser/$(ISM) \
         -I../TAP_ArchitectureParser -I../TAP_ArchitectureParser/$(ISM) \
@@ -52,7 +53,9 @@ CFLAGS = $(CFLAGS$(ISM)) \
         -I../TAS_ArchitectureSpec \
         -I../TFM_FabricModel \
         -I../TFV_FabricView \
+	-I../TFH_FabricHandlers \
         -I../TCD_CircuitDesign \
+	-I../TCH_CircuitHandlers \
         -I../TPO_PhysicalObjects \
         -I../TLO_LogicalObjects \
         -I../TNO_NetObjects \
@@ -88,7 +91,6 @@ LINKLIBS = -L../$(ISM) \
 	-lTP_Process \
 	-lTO_Output \
 	-lTVPR_Interface \
-	-lTRP_RelativePlace \
 	-lTCL_CommandLine \
 	-lTOP_OptionsParser \
 	-lTAP_ArchitectureParser \
@@ -101,7 +103,9 @@ LINKLIBS = -L../$(ISM) \
 	-lTAS_ArchitectureSpec \
 	-lTFM_FabricModel \
 	-lTFV_FabricView \
+	-lTFH_FabricHandlers \
 	-lTCD_CircuitDesign \
+	-lTCH_CircuitHandlers \
 	-lTLO_LogicalObjects \
 	-lTPO_PhysicalObjects \
 	-lTNO_NetObjects \
@@ -123,7 +127,6 @@ LIBDEFS = ../$(ISM)/libTM_Master.a \
 	../$(ISM)/libTP_Process.a \
 	../$(ISM)/libTO_Output.a \
 	../$(ISM)/libTVPR_Interface.a \
-	../$(ISM)/libTRP_RelativePlace.a \
 	../$(ISM)/libTCL_CommandLine.a \
 	../$(ISM)/libTOP_OptionsParser.a \
 	../$(ISM)/libTAP_ArchitectureParser.a \
@@ -136,7 +139,9 @@ LIBDEFS = ../$(ISM)/libTM_Master.a \
 	../$(ISM)/libTAS_ArchitectureSpec.a \
 	../$(ISM)/libTFM_FabricModel.a \
 	../$(ISM)/libTFV_FabricView.a \
+	../$(ISM)/libTFH_FabricHandlers.a \
 	../$(ISM)/libTCD_CircuitDesign.a \
+	../$(ISM)/libTCH_CircuitHandlers.a \
 	../$(ISM)/libTLO_LogicalObjects.a \
 	../$(ISM)/libTPO_PhysicalObjects.a \
 	../$(ISM)/libTNO_NetObjects.a \
@@ -203,9 +208,6 @@ $(OBJECTS): $(ISM)/%.o:%.cxx
 ../$(ISM)/libTVPR_Interface.a:
 	cd ../TVPR_Interface && $(MAKE) $(BUILD_TARGET)
 
-../$(ISM)/libTRP_RelativePlace.a:
-	cd ../TRP_RelativePlace ; $(MAKE) $(BUILD_TARGET)
-
 ../$(ISM)/libTCL_CommandLine.a:
 	cd ../TCL_CommandLine && $(MAKE) $(BUILD_TARGET)
 
@@ -242,8 +244,14 @@ $(OBJECTS): $(ISM)/%.o:%.cxx
 ../$(ISM)/libTFV_FabricView.a:
 	cd ../TFV_FabricView && $(MAKE) $(BUILD_TARGET)
 
+../$(ISM)/libTFH_FabricHandlers.a:
+	cd ../TFH_FabricHandlers ; $(MAKE) $(BUILD_TARGET)
+
 ../$(ISM)/libTCD_CircuitDesign.a:
 	cd ../TCD_CircuitDesign && $(MAKE) $(BUILD_TARGET)
+
+../$(ISM)/libTCH_CircuitHandlers.a:
+	cd ../TCH_CircuitHandlers ; $(MAKE) $(BUILD_TARGET)
 
 ../$(ISM)/libTLO_LogicalObjects.a:
 	cd ../TLO_LogicalObjects && $(MAKE) $(BUILD_TARGET)
