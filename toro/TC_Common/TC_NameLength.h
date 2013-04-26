@@ -47,9 +47,9 @@ public:
 
    TC_NameLength_c( void );
    TC_NameLength_c( const string& srName,
-   	            unsigned int length = UINT_MAX );
+                    unsigned int length = UINT_MAX );
    TC_NameLength_c( const char* pszName,
-   	            unsigned int length = UINT_MAX );
+                    unsigned int length = UINT_MAX );
    TC_NameLength_c( const TC_NameLength_c& nameLength );
    ~TC_NameLength_c( void );
 
