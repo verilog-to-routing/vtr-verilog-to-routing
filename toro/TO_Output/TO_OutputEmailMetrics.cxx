@@ -52,7 +52,7 @@ bool TO_Output_c::SendMetricsEmail_(
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
    printHandler.Info( "Sending %s email to '%s'...\n",
                       TIO_SZ_OUTPUT_METRICS_DEF_TYPE,
-		      TIO_SR_STR( srEmailAddress ));
+                      TIO_SR_STR( srEmailAddress ));
 
    const char* pszOptionsFileName = inputOptions.optionsFileNameList[0]->GetName( );
 
@@ -179,7 +179,7 @@ bool TO_Output_c::MailMetricsEmailMessage_(
    sprintf( szSendCmd, "echo \"%*s\" | mail -s \"%*s\" %*s",
                        lenBody, TIO_SR_STR( srBody ),
                        lenSubject, TIO_SR_STR( srSubject ),
-	               lenAddress, TIO_SR_STR( srAddress ));
+                       lenAddress, TIO_SR_STR( srAddress ));
    ok = ( system( szSendCmd ) >= 0 ? true : false );
 
    return( ok );
