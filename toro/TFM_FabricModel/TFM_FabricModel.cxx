@@ -13,7 +13,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -149,28 +149,39 @@ void TFM_FabricModel_c::Print(
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
    printHandler.Write( pfile, spaceLen, "<fabric name=\"%s\">\n",
                                         TIO_SR_STR( this->srName ));
+   printHandler.Write( pfile, spaceLen, "\n" );
+
    spaceLen += 3;
 
-   printHandler.Write( pfile, spaceLen, "\n" );
    this->config.Print( pfile, spaceLen );
-
    printHandler.Write( pfile, spaceLen, "\n" );
-   this->inputOutputList.Print( pfile, spaceLen );
 
-   printHandler.Write( pfile, spaceLen, "\n" );
-   this->physicalBlockList.Print( pfile, spaceLen );
-
-   printHandler.Write( pfile, spaceLen, "\n" );
-   this->switchBoxList.Print( pfile, spaceLen );
-
-   printHandler.Write( pfile, spaceLen, "\n" );
-   this->channelList.Print( pfile, spaceLen );
-
-   printHandler.Write( pfile, spaceLen, "\n" );
-   this->segmentList.Print( pfile, spaceLen );
-
+   if( this->inputOutputList.IsValid( ))
+   {
+      this->inputOutputList.Print( pfile, spaceLen );
+      printHandler.Write( pfile, spaceLen, "\n" );
+   }
+   if( this->physicalBlockList.IsValid( ))
+   {
+      this->physicalBlockList.Print( pfile, spaceLen );
+      printHandler.Write( pfile, spaceLen, "\n" );
+   }
+   if( this->switchBoxList.IsValid( ))
+   {
+      this->switchBoxList.Print( pfile, spaceLen );
+      printHandler.Write( pfile, spaceLen, "\n" );
+   }
+   if( this->channelList.IsValid( ))
+   {
+      this->channelList.Print( pfile, spaceLen );
+      printHandler.Write( pfile, spaceLen, "\n" );
+   }
+   if( this->segmentList.IsValid( ))
+   {
+      this->segmentList.Print( pfile, spaceLen );
+      printHandler.Write( pfile, spaceLen, "\n" );
+   }
    spaceLen -= 3;
-   printHandler.Write( pfile, spaceLen, "\n" );
    printHandler.Write( pfile, spaceLen, "</fabric>\n" );
 }
 
@@ -225,11 +236,11 @@ TFV_FabricView_c* TFM_FabricModel_c::GetFabricView(
 bool TFM_FabricModel_c::IsValid(
       void ) const
 {
-   return(( this->config.IsValid( )) &&
-          ( this->physicalBlockList.IsValid( )) &&
-          ( this->inputOutputList.IsValid( )) &&
-          ( this->switchBoxList.IsValid( )) &&
-          ( this->channelList.IsValid( )) &&
-          ( this->segmentList.IsValid( )) ?
+   return(( this->config.IsValid( ) &&
+          ( this->physicalBlockList.IsValid( ) ||
+            this->inputOutputList.IsValid( ) ||
+            this->switchBoxList.IsValid( ) ||
+            this->channelList.IsValid( ) ||
+            this->segmentList.IsValid( ))) ? 
           true : false );
 }
