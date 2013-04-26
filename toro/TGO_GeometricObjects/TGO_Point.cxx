@@ -17,7 +17,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -132,7 +132,7 @@ bool TGO_Point_c::operator<(
       }
       else if( this->x == point.x )
       {
- 	 if( this->y < point.y )
+         if( this->y < point.y )
          {
             isLessThan = true;
          }
@@ -206,11 +206,11 @@ void TGO_Point_c::ExtractString(
 
       if( this->IsValid( ))
       {
-	 if(( this->z != INT_MIN ) && ( this->z != INT_MAX ))
+         if(( this->z != INT_MIN ) && ( this->z != INT_MAX ))
          {
             sprintf( szPoint, "%d %d %d", this->x, this->y, this->z );
          }
-	 else
+         else
          {
             sprintf( szPoint, "%d %d", this->x, this->y ); 
          }
