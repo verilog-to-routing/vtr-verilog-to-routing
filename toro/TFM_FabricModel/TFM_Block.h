@@ -10,7 +10,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -32,6 +32,7 @@
 #include <string>
 using namespace std;
 
+#include "TGO_Point.h"
 #include "TGS_Region.h"
 
 #include "TC_Typedefs.h"
@@ -56,17 +57,23 @@ public:
    TFM_Block_c( TFM_BlockType_t blockType,
                 const string& srName,
                 const string& srMasterName,
+                const TGO_Point_c& origin,
                 const TGS_Region_c& region );
    TFM_Block_c( TFM_BlockType_t blockType,
                 const char* pszName,
                 const char* pszMasterName,
+                const TGO_Point_c& origin,
                 const TGS_Region_c& region );
    TFM_Block_c( TFM_BlockType_t blockType,
                 const string& srName,
+                const TGO_Point_c& origin,
                 const TGS_Region_c& region );
    TFM_Block_c( TFM_BlockType_t blockType,
                 const char* pszName,
+                const TGO_Point_c& origin,
                 const TGS_Region_c& region );
+   TFM_Block_c( const string& srName );
+   TFM_Block_c( const char* pszName );
    TFM_Block_c( const TFM_Block_c& block );
    ~TFM_Block_c( void );
 
@@ -90,10 +97,11 @@ public:
    string srName;               // Unique identifier
    string srMasterName;         // Reference to an architecture master
 
-   TGS_Region_c region;         // Defines PB|IO|SB region coordinates
+   TGO_Point_c  origin;         // Defines PB|IO|SB origin coordinates (grid)
+   TGS_Region_c region;         // Defines PB|IO|SB region coordinates (microns)
 
    TFM_PinList_t pinList;       // Specifies IO instance|pin list
-   TC_MapTable_c mapTable;      // Specifies SB side-name map table
+   TC_MapTable_c mapTable;      // Specifies SB side-index map table
 
    class TFM_BlockSlice_c
    {
