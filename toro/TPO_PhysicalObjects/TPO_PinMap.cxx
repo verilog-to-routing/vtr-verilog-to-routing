@@ -172,7 +172,7 @@ void TPO_PinMap_c::Print(
    printHandler.Write( pfile, spaceLen, "\"%s\"=\"%s\" %s\n",
                                         TIO_SR_STR( this->srInstPinName_ ),
                                         TIO_SR_STR( this->srCellPinName_ ),
-	                                TIO_SR_STR( srType ));
+                                        TIO_SR_STR( srType ));
 }
 
 //===========================================================================//
