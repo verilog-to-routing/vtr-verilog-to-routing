@@ -45,7 +45,7 @@ public:
 
    TC_SideIndex_c( void );
    TC_SideIndex_c( TC_SideMode_t side,
- 	           size_t index = SIZE_MAX );
+                   size_t index = SIZE_MAX );
    TC_SideIndex_c( const TC_SideIndex_c& sideIndex );
    ~TC_SideIndex_c( void );
 
