@@ -48,9 +48,9 @@ public:
 
    TC_NameType_c( void );
    TC_NameType_c( const string& srName,
-   	          TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+                  TC_TypeMode_t type = TC_TYPE_UNDEFINED );
    TC_NameType_c( const char* pszName,
-	          TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+                  TC_TypeMode_t type = TC_TYPE_UNDEFINED );
    TC_NameType_c( const TC_NameType_c& nameType );
    ~TC_NameType_c( void );
 
@@ -71,9 +71,9 @@ public:
    TC_TypeMode_t GetType( void ) const;
 
    void Set( const string& srName,
-	     TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+             TC_TypeMode_t type = TC_TYPE_UNDEFINED );
    void Set( const char* pszName,
-	     TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+             TC_TypeMode_t type = TC_TYPE_UNDEFINED );
    void Clear( void );
 
    bool IsValid( void ) const;
