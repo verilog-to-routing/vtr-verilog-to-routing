@@ -14,7 +14,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -32,7 +32,12 @@
 #include "TIO_StringText.h"
 #include "TIO_PrintHandler.h"
 
-#include "TRP_RelativePlaceHandler.h"
+#include "TFH_FabricSwitchBoxHandler.h"
+#include "TFH_FabricConnectionBlockHandler.h"
+#include "TFH_FabricChannelHandler.h"
+#include "TCH_RelativePlaceHandler.h"
+#include "TCH_PrePlacedHandler.h"
+#include "TCH_PreRoutedHandler.h"
 
 #include "TVPR_OptionsStore.h"
 #include "TVPR_ArchitectureSpec.h"
@@ -56,7 +61,33 @@ TVPR_Interface_c::TVPR_Interface_c(
       :
       isAlive_( false )
 {
+   this->vpr_.success = FALSE;
+
    pinstance_ = 0;
+
+   // Initialize switch box handler 'singleton' prior to routing
+   // (in order to handle fabric switch box overrides, if any)
+   TFH_FabricSwitchBoxHandler_c::NewInstance( );
+
+   // Initialize connection block handler 'singleton' prior to routing
+   // (in order to handle fabric connection block overrides, if any)
+   TFH_FabricConnectionBlockHandler_c::NewInstance( );
+
+   // Initialize channel widths handler 'singleton' prior to placement
+   // (in order to handle fabric channel width overrides, if any)
+   TFH_FabricChannelHandler_c::NewInstance( );
+
+   // Initialize relative placement handler 'singleton' prior to placement
+   // (in order to handle relative placement constraints, if any)
+   TCH_RelativePlaceHandler_c::NewInstance( );
+
+   // Initialize pre-placed placement handler 'singleton' prior to placement
+   // (in order to handle pre-placed placement constraints, if any)
+   TCH_PrePlacedHandler_c::NewInstance( );
+
+   // Initialize pre-routed route handler 'singleton' prior to routing
+   // (in order to handle pre-routed route constraints, if any)
+   TCH_PreRoutedHandler_c::NewInstance( );
 }
 
 //===========================================================================//
@@ -69,6 +100,18 @@ TVPR_Interface_c::TVPR_Interface_c(
 TVPR_Interface_c::~TVPR_Interface_c( 
       void )
 {
+   TCH_PreRoutedHandler_c::DeleteInstance( );
+
+   TCH_PrePlacedHandler_c::DeleteInstance( );
+
+   TCH_RelativePlaceHandler_c::DeleteInstance( );
+
+   TFH_FabricChannelHandler_c::DeleteInstance( );
+
+   TFH_FabricConnectionBlockHandler_c::DeleteInstance( );
+
+   TFH_FabricSwitchBoxHandler_c::DeleteInstance( );
+
    this->Close( );
 }
 
@@ -211,8 +254,21 @@ bool TVPR_Interface_c::Open(
    {
       printHandler.Info( "Exporting fabric model to VPR...\n" );
 
+      const TOS_FabricOptions_c& fabricOptions = optionsStore.GetFabricOptions( );
+      bool overrideBlocks = fabricOptions.blocks.override;
+      bool overrideSwitchBoxes = fabricOptions.switchBoxes.override;
+      bool overrideConnectionBlocks = fabricOptions.connectionBlocks.override;
+      bool overrideChannels = fabricOptions.channels.override;
+
       TVPR_FabricModel_c vpr_fabricModel;
-      ok = vpr_fabricModel.Export( fabricModel );
+      ok = vpr_fabricModel.Export( fabricModel,
+                                   &this->vpr_.arch,
+                                   type_descriptors, // [VPR] global variable
+                                   num_types,        // [VPR] global variable
+                                   overrideBlocks,
+                                   overrideSwitchBoxes,
+                                   overrideConnectionBlocks,
+                                   overrideChannels );
    }
 
    // VPR snippet copied from VPR's vpr_init function...
@@ -258,7 +314,7 @@ bool TVPR_Interface_c::Open(
    }
 
    // Toro snippet specific to TVPR_Interface_c's initialization
-   if( ok && circuitDesign.IsValid( ))
+   if( ok && circuitDesign.IsValid( ) && circuitDesign.IsLegal( ))
    {
       printHandler.Info( "Exporting circuit design to VPR...\n" );
 
@@ -277,7 +333,8 @@ bool TVPR_Interface_c::Open(
    }
 
    // VPR snippet copied from VPR's vpr_init function...
-   if( ok && !circuitDesign.IsValid( ))
+   if(( ok && !circuitDesign.IsValid( )) ||
+      ( ok && circuitDesign.IsValid( ) && !circuitDesign.IsLegal( )))
    {
       printHandler.SetPrefix( TIO_SZ_VPR_PREFIX );
 
@@ -328,24 +385,40 @@ bool TVPR_Interface_c::Execute(
       if( this->vpr_.setup.PlacerOpts.doPlacement || 
           this->vpr_.setup.RouterOpts.doRouting ) 
       {
-         // Initialize relative placement handler 'singleton' prior to place
-         // (in order to handle relative placement constraints, if any)
-         TRP_RelativePlaceHandler_c::NewInstance( );
-
          const TOS_PlaceOptions_c& placeOptions = optionsStore.GetPlaceOptions( );
          if( placeOptions.relativePlace.enable )
-	 {
-            TRP_RelativePlaceHandler_c& relativePlaceHandler = TRP_RelativePlaceHandler_c::GetInstance( );
+         {
+            TCH_RelativePlaceHandler_c& relativePlaceHandler = TCH_RelativePlaceHandler_c::GetInstance( );
             relativePlaceHandler.Configure( placeOptions.relativePlace.rotateEnable,
                                             placeOptions.relativePlace.maxPlaceRetryCt,
                                             placeOptions.relativePlace.maxMacroRetryCt,
                                             circuitDesign.blockList );
          }
+         if( placeOptions.prePlaced.enable )
+         {
+            TCH_PrePlacedHandler_c& prePlacedHandler = TCH_PrePlacedHandler_c::GetInstance( );
+            prePlacedHandler.Configure( circuitDesign.blockList );
+         }
+
+         const TOS_RouteOptions_c& routeOptions = optionsStore.GetRouteOptions( );
+         if( routeOptions.preRouted.enable )
+         {
+            TOS_RouteOrderMode_t preRoutedOrder = routeOptions.preRouted.orderMode;
+            TCH_RouteOrderMode_t preRoutedOrder_ = ( preRoutedOrder == TOS_ROUTE_ORDER_FIRST ?
+                                                     TCH_ROUTE_ORDER_FIRST : TCH_ROUTE_ORDER_AUTO );
+
+            TCH_PreRoutedHandler_c& preRoutedHandler = TCH_PreRoutedHandler_c::GetInstance( );
+            preRoutedHandler.Configure( circuitDesign.netList, 
+                                        circuitDesign.netOrderList,
+                                        preRoutedOrder_ );
+         }
 
          vpr_init_pre_place_and_route( this->vpr_.setup, this->vpr_.arch );
-         vpr_place_and_route( this->vpr_.setup, this->vpr_.arch );
+         boolean success = vpr_place_and_route( this->vpr_.setup, 
+                                                this->vpr_.arch );
 
-         TRP_RelativePlaceHandler_c::DeleteInstance( );
+         TVPR_Interface_c* pinterface = const_cast< TVPR_Interface_c* >( this );
+         pinterface->vpr_.success = success;
       }
       printHandler.ClearPrefix( );
    }
@@ -377,6 +450,7 @@ bool TVPR_Interface_c::Close(
          TVPR_FabricModel_c vpr_fabricModel;
          vpr_fabricModel.Import( grid, nx, ny,
                                  rr_node, num_rr_nodes,
+                                 chan_width_x, chan_width_y,
                                  pfabricModel );
       }
       if( pcircuitDesign )
