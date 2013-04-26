@@ -20,7 +20,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -220,24 +220,24 @@ void TGS_Path_c::ExtractString(
 
       if( this->IsValid( ))
       {
-	 if( this->line.z != INT_MIN )
+         if( this->line.z != INT_MIN )
          {
             sprintf( szPath, "%0.*f %0.*f %0.*f %0.*f %d %0.*f",
                              static_cast< int >( precision ), this->line.x1,
                              static_cast< int >( precision ), this->line.y1,
                              static_cast< int >( precision ), this->line.x2,
-	                     static_cast< int >( precision ), this->line.y2,
+                             static_cast< int >( precision ), this->line.y2,
                              this->line.z,
-	   	             static_cast< int >( precision ), this->width );
+                             static_cast< int >( precision ), this->width );
          }
-	 else
+         else
          {
             sprintf( szPath, "%0.*f %0.*f %0.*f %0.*f %0.*f",
                              static_cast< int >( precision ), this->line.x1,
                              static_cast< int >( precision ), this->line.y1,
                              static_cast< int >( precision ), this->line.x2,
-	                     static_cast< int >( precision ), this->line.y2,
-	   	             static_cast< int >( precision ), this->width );
+                             static_cast< int >( precision ), this->line.y2,
+                             static_cast< int >( precision ), this->width );
          }
       }
       else
@@ -304,13 +304,13 @@ void TGS_Path_c::Set(
    {
       this->width = region.GetDy( );
       this->line.Set( region.x1, region.y1 + this->width / 2.0,
-	 	      region.x2, region.y2 - this->width / 2.0 );
+                      region.x2, region.y2 - this->width / 2.0 );
    }
    else // if( region.IsTall( ))
    {
       this->width = region.GetDx( );
       this->line.Set( region.x1 + this->width / 2.0, region.y1,
-	 	      region.x2 - this->width / 2.0, region.y2 );
+                      region.x2 - this->width / 2.0, region.y2 );
    }
    this->ApplySnap( snap );
 }
