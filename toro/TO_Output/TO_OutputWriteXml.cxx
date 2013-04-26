@@ -47,7 +47,7 @@ bool TO_Output_c::WriteXmlFile_(
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
    printHandler.Info( "Writing %s file '%s'...\n",
                       TIO_SZ_OUTPUT_XML_DEF_TYPE,
-		      TIO_PSZ_STR( pszXmlFileName ));
+                      TIO_PSZ_STR( pszXmlFileName ));
 
    ok = printHandler.SetUserFileOutput( pszXmlFileName );
    if( ok )
@@ -65,8 +65,8 @@ bool TO_Output_c::WriteXmlFile_(
    else
    {
       printHandler.Error( "Failed to open %s file '%s' in \"%s\" mode.\n",
-			  TIO_SZ_OUTPUT_XML_DEF_TYPE,
-			  TIO_PSZ_STR( pszXmlFileName ),
+                          TIO_SZ_OUTPUT_XML_DEF_TYPE,
+                          TIO_PSZ_STR( pszXmlFileName ),
                           "write" );
    }
    return( ok );
