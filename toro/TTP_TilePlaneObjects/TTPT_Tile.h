@@ -192,7 +192,7 @@ private:
 
 private:
 
-   TGS_Region_c	region_;       // Define region or area asso. with this tile
+   TGS_Region_c region_;       // Define region or area asso. with this tile
 
    unsigned int mode_ : 2;     // Define tile mode (ie. "clear" or "solid")
    unsigned int count_ : 16;   // Define user-defined data count
@@ -593,7 +593,7 @@ template< class T > void TTPT_Tile_c< T >::Print(
    printHandler.Write( pfile, spaceLen, "%s %s%s%s\n",  
                                         TIO_SR_STR( srMode ),
                                         TIO_SR_STR( srRegion ),
-	 	                        srData.length( ) ? " " : "",
+                                        srData.length( ) ? " " : "",
                                         TIO_SR_STR( srData ));
 }
 
@@ -760,7 +760,7 @@ template< class T > T* TTPT_Tile_c< T >::FindData(
    {
       if( data == *( this->pdata_ + i ))
       {
-	 pdata = this->pdata_ + i;
+         pdata = this->pdata_ + i;
          break;
       }
    }
@@ -777,7 +777,7 @@ template< class T > T* TTPT_Tile_c< T >::FindData(
    {
       if( data == *( this->pdata_ + i ))
       {
-	 pdata = this->pdata_ + i;
+         pdata = this->pdata_ + i;
          break;
       }
    }
@@ -1233,7 +1233,7 @@ template< class T > bool TTPT_Tile_c< T >::NewAllocData_(
       {
          unsigned int i = 0;
          while( i < this->GetCount( ) - 1 )
-	 {
+         {
             *( pdata + i ) = *( this->pdata_ + i );
             ++i;
          }
