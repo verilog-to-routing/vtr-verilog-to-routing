@@ -59,9 +59,9 @@ void TI_Input_c::HandleOptionsStore_(
          const string srLogFileName = outputOptions.srLogFileName;
          printHandler.SetLogFileOutput( srLogFileName.data( ));
 
-	 printHandler.DisableOutput( TIO_PRINT_OUTPUT_STDIO | TIO_PRINT_OUTPUT_CUSTOM );
-	 printHandler.WriteBanner( );
-	 printHandler.EnableOutput( TIO_PRINT_OUTPUT_STDIO | TIO_PRINT_OUTPUT_CUSTOM );
+         printHandler.DisableOutput( TIO_PRINT_OUTPUT_STDIO | TIO_PRINT_OUTPUT_CUSTOM );
+         printHandler.WriteBanner( );
+         printHandler.EnableOutput( TIO_PRINT_OUTPUT_STDIO | TIO_PRINT_OUTPUT_CUSTOM );
       }
    }
 
