@@ -8,17 +8,17 @@
 //           - FindMin, FindMax
 //           - FindArea
 //           - HasArea
-//           - IsValid
 //
 //           Public methods include:
 //           - operator=
 //           - operator==, operator!=
 //           - ExtractString
+//           - IsValid
 //
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -197,15 +197,6 @@ template< class T > inline bool TCT_Dims_c< T >::HasArea(
 }
 
 //===========================================================================//
-template< class T > inline bool TCT_Dims_c< T >::IsValid( 
-      void ) const
-{
-   return(( TCTF_IsLT( this->dx, static_cast< T >( INT_MAX ))) &&
-          ( TCTF_IsLT( this->dy, static_cast< T >( INT_MAX ))) ?
-          true : false );
-}
-
-//===========================================================================//
 // Method         : operator=
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
@@ -348,15 +339,15 @@ template<class T> void TCT_Dims_c< T >::ExtractString(
          if( TCTF_IsEQ( this->dz, static_cast< T >( INT_MAX )))
          {
             sprintf( szData, "%lu %lu", 
-                             *reinterpret_cast< size_t* >( &pdims->dx ),
-                             *reinterpret_cast< size_t* >( &pdims->dy ));
+                             *reinterpret_cast< unsigned long* >( &pdims->dx ),
+                             *reinterpret_cast< unsigned long* >( &pdims->dy ));
          }
          else
          {
             sprintf( szData, "%lu %lu %lu", 
-                             *reinterpret_cast< size_t* >( &pdims->dx ),
-                             *reinterpret_cast< size_t* >( &pdims->dy ),
-                             *reinterpret_cast< size_t* >( &pdims->dz ));
+                             *reinterpret_cast< unsigned long* >( &pdims->dx ),
+                             *reinterpret_cast< unsigned long* >( &pdims->dy ),
+                             *reinterpret_cast< unsigned long* >( &pdims->dz ));
          }
          break;
 
@@ -402,6 +393,21 @@ template<class T> void TCT_Dims_c< T >::ExtractString(
 
       *psrData = szData;
    }
+}
+
+//===========================================================================//
+// Method         : IsValid
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/15/12 jeffr : Original
+//===========================================================================//
+template< class T > bool TCT_Dims_c< T >::IsValid( 
+      void ) const
+{
+   return(( TCTF_IsLT( this->dx, static_cast< T >( INT_MAX ))) &&
+          ( TCTF_IsLT( this->dy, static_cast< T >( INT_MAX ))) ?
+          true : false );
 }
 
 #endif 
