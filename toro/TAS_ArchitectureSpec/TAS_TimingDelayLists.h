@@ -2,9 +2,6 @@
 // Purpose : Declaration and inline definitions for a TAS_TimingDelayLists 
 //           class.
 //
-//           Inline methods include:
-//           - IsValid
-//
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
@@ -104,26 +101,5 @@ private:
       TAS_PACK_PATTERN_LIST_DEF_CAPACITY = 1
    };
 };
-
-//===========================================================================//
-// Purpose        : Class inline definition(s)
-// Author         : Jeff Rudolph
-//---------------------------------------------------------------------------//
-// Version history
-// 08/15/12 jeffr : Original
-//===========================================================================//
-inline bool TAS_TimingDelayLists_c::IsValid( 
-      void ) const
-{
-   return( this->delayList.IsValid( ) ||
-           this->delayMatrixList.IsValid( ) ||
-           this->tSetupList.IsValid( ) ||
-           this->tHoldList.IsValid( ) ||
-           this->clockToQList.IsValid( ) ||
-           this->capList.IsValid( ) ||
-           this->capMatrixList.IsValid( ) ||
-           this->packPatternList.IsValid( ) ?
-           true : false );
-}
 
 #endif
