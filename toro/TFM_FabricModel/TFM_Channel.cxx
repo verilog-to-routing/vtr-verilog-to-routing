@@ -10,7 +10,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -46,6 +46,7 @@ TFM_Channel_c::TFM_Channel_c(
       void )
       :
       orient( TGS_ORIENT_UNDEFINED ),
+      index( UINT_MAX ),
       count( 0 )
 {
 }
@@ -55,12 +56,14 @@ TFM_Channel_c::TFM_Channel_c(
       const string&          srName_,
       const TGS_Region_c&    region_,
             TGS_OrientMode_t orient_,
+            unsigned int     index_,
             unsigned int     count_ )
 
       :
       srName( srName_ ),
       region( region_ ),
       orient( orient_ ),
+      index( index_ ),
       count( count_ )
 {
 }
@@ -70,12 +73,36 @@ TFM_Channel_c::TFM_Channel_c(
       const char*            pszName,
       const TGS_Region_c&    region_,
             TGS_OrientMode_t orient_,
+            unsigned int     index_,
             unsigned int     count_ )
       :
       srName( TIO_PSZ_STR( pszName )),
       region( region_ ),
       orient( orient_ ),
+      index( index_ ),
       count( count_ )
+{
+}
+
+//===========================================================================//
+TFM_Channel_c::TFM_Channel_c( 
+      const string& srName_ )
+      :
+      srName( srName_ ),
+      orient( TGS_ORIENT_UNDEFINED ),
+      index( UINT_MAX ),
+      count( 0 )
+{
+}
+
+//===========================================================================//
+TFM_Channel_c::TFM_Channel_c( 
+      const char* pszName )
+      :
+      srName( TIO_PSZ_STR( pszName )),
+      orient( TGS_ORIENT_UNDEFINED ),
+      index( UINT_MAX ),
+      count( 0 )
 {
 }
 
@@ -86,6 +113,7 @@ TFM_Channel_c::TFM_Channel_c(
       srName( channel.srName ),
       region( channel.region ),
       orient( channel.orient ),
+      index( channel.index ),
       count( channel.count )
 {
 }
@@ -117,6 +145,7 @@ TFM_Channel_c& TFM_Channel_c::operator=(
       this->srName = channel.srName;
       this->region = channel.region;
       this->orient = channel.orient;
+      this->index = channel.index;
       this->count = channel.count;
    }
    return( *this );
@@ -135,6 +164,7 @@ bool TFM_Channel_c::operator==(
    return(( this->srName == channel.srName ) &&
           ( this->region == channel.region ) &&
           ( this->orient == channel.orient ) &&
+          ( this->index == channel.index ) &&
           ( this->count == channel.count ) ?
           true : false );
 }
@@ -174,6 +204,11 @@ void TFM_Channel_c::Print(
       TGS_ExtractStringOrientMode( this->orient, &srOrient );
       printHandler.Write( pfile, 0, " orient=\"%s\"", 
                                     TIO_SR_STR( srOrient ));
+   }
+   if( this->index != UINT_MAX )
+   {
+      printHandler.Write( pfile, 0, " index=\"%d\"", 
+                                    this->index );
    }
    if( this->count != 0 )
    {
