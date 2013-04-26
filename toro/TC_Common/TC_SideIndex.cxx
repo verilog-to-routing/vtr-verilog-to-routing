@@ -182,19 +182,19 @@ void TC_SideIndex_c::ExtractString(
    {
       if( this->IsValid( ))
       {
-	 string srSide;
+         string srSide;
          TC_ExtractStringSideMode( this->side_, &srSide );
 
-	 if( sideLength )
-	 {
-	    srSide = srSide.substr( 0, sideLength );
-	 }
+         if( sideLength )
+         {
+            srSide = srSide.substr( 0, sideLength );
+         }
          *psrSideIndex = srSide;
 
-	 if( this->index_ != SIZE_MAX )
-	 {
-   	    char szIndex[TIO_FORMAT_STRING_LEN_VALUE];
-            sprintf( szIndex, "%lu", this->index_ );
+         if( this->index_ != SIZE_MAX )
+         {
+            char szIndex[TIO_FORMAT_STRING_LEN_VALUE];
+            sprintf( szIndex, "%lu", static_cast< unsigned long >( this->index_ ));
 
             *psrSideIndex += " ";
             *psrSideIndex += szIndex;
