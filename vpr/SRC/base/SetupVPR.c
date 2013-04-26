@@ -491,10 +491,7 @@ static void SetupAnnealSched(INP t_options Options,
 				"init_t must be greater or equal to than exit_t.\n");
 		exit(1);
 	}
-	AnnealSched->inner_num = 10.0; /* DEFAULT */
-	if (Options.Count[OT_FAST]) {
-		AnnealSched->inner_num = 1.0; /* DEFAULT for fast*/
-	}
+	AnnealSched->inner_num = 1.0; /* DEFAULT */
 	if (Options.Count[OT_INNER_NUM]) {
 		AnnealSched->inner_num = Options.PlaceInnerNum;
 	}
