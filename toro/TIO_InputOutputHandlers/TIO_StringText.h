@@ -4,7 +4,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -27,7 +27,7 @@
 //---------------------------------------------------------------------------//
 
 #define TIO_SZ_PROGRAM_MAJOR "1"
-#define TIO_SZ_PROGRAM_MINOR "102"
+#define TIO_SZ_PROGRAM_MINOR "425"
 #define TIO_SZ_PROGRAM_PATCH "0"
 
 #if defined( SUN8 )
@@ -78,7 +78,7 @@
 #define TIO_SZ_TORO_PROGRAM_TITLE "Toro - A VPR Front-End"
 #define TIO_SZ_TORO_BINARY_NAME   "toro"
 #define TIO_SZ_TORO_SOURCE_NAME   "TORO"
-#define TIO_SZ_TORO_COPYRIGHT     "(c) Copyright 2012 Texas Instruments (under GNU GPL)"
+#define TIO_SZ_TORO_COPYRIGHT     "(c) Copyright 2012-2013 Texas Instruments (under GNU GPL)"
 
 //---------------------------------------------------------------------------//
 // Define strings used to display brief help summary
