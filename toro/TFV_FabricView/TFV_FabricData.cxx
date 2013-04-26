@@ -13,7 +13,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -91,6 +91,7 @@ TFV_FabricData_c::TFV_FabricData_c(
       dataType_( fabricData.dataType_ ),
       srName_( fabricData.srName_ ),
       srMasterName_( fabricData.srMasterName_ ),
+      origin_( fabricData.origin_ ),
       pinList_( fabricData.pinList_ ),
       connectionList_( fabricData.connectionList_ ),
       mapTable_( fabricData.mapTable_ )
@@ -135,6 +136,7 @@ TFV_FabricData_c& TFV_FabricData_c::operator=(
       this->dataType_ = fabricData.dataType_;
       this->srName_ = fabricData.srName_;
       this->srMasterName_ = fabricData.srMasterName_;
+      this->origin_ = fabricData.origin_;
       this->track_.index = fabricData.track_.index;
       this->track_.horzCount = fabricData.track_.horzCount;
       this->track_.vertCount = fabricData.track_.vertCount;
@@ -164,6 +166,7 @@ bool TFV_FabricData_c::operator==(
    return(( this->dataType_ == fabricData.dataType_ ) &&
           ( this->srName_ == fabricData.srName_ ) &&
           ( this->srMasterName_ == fabricData.srMasterName_ ) &&
+          ( this->origin_ == fabricData.origin_ ) &&
           ( this->track_.index == fabricData.track_.index ) &&
           ( this->track_.horzCount == fabricData.track_.horzCount ) &&
           ( this->track_.vertCount == fabricData.track_.vertCount ) &&
@@ -209,7 +212,7 @@ void TFV_FabricData_c::Print(
    string srFabricData;
    this->ExtractString( &srFabricData );
 
-   printHandler.Write( pfile, spaceLen, "[fabric] %s", TIO_SR_STR( srFabricData ));
+   printHandler.Write( pfile, spaceLen, "[fabric] %s\n", TIO_SR_STR( srFabricData ));
 }
 
 //===========================================================================//
@@ -232,6 +235,7 @@ void TFV_FabricData_c::ExtractString(
 
       *psrData = srDataType;
 
+      char szOrigin[TIO_FORMAT_STRING_LEN_DATA];
       char szTrack[TIO_FORMAT_STRING_LEN_DATA];
       char szSlice[TIO_FORMAT_STRING_LEN_DATA];
       char szTiming[TIO_FORMAT_STRING_LEN_DATA];
@@ -241,6 +245,9 @@ void TFV_FabricData_c::ExtractString(
       case TFV_DATA_PHYSICAL_BLOCK:
       case TFV_DATA_INPUT_OUTPUT:
 
+         sprintf( szOrigin, "%d %d",
+                           this->origin_.x,
+                           this->origin_.y );
          sprintf( szSlice, "%u %u",
                            this->slice_.count, 
                            this->slice_.capacity );
@@ -254,6 +261,10 @@ void TFV_FabricData_c::ExtractString(
          *psrData += this->srMasterName_;
          *psrData += ")";
          *psrData += " ";
+         *psrData += "[";
+         *psrData += szOrigin;
+         *psrData += "]";
+         *psrData += " ";
          *psrData += szSlice;
          *psrData += " ";
          *psrData += szTiming;
@@ -261,6 +272,9 @@ void TFV_FabricData_c::ExtractString(
 
       case TFV_DATA_SWITCH_BOX:
 
+         sprintf( szOrigin, "%d %d",
+                           this->origin_.x,
+                           this->origin_.y );
          sprintf( szTiming, "[%0.*f %0.*f %0.*f %0.*e]",
                             precision, this->timing_.res,
                             precision, this->timing_.capInput,
@@ -268,6 +282,10 @@ void TFV_FabricData_c::ExtractString(
                             precision + 1, this->timing_.delay );
          *psrData += " ";
          *psrData += this->srName_;
+         *psrData += " ";
+         *psrData += "[";
+         *psrData += szOrigin;
+         *psrData += "]";
          *psrData += " ";
          *psrData += szTiming;
          break;
@@ -411,7 +429,7 @@ TGS_Point_c TFV_FabricData_c::CalcPoint(
 {
    return( this->CalcPoint( region,
                             pin.GetSide( ),
-                            pin.GetOffset( ),
+                            pin.GetDelta( ),
                             pin.GetWidth( )));
 }
 
@@ -419,7 +437,7 @@ TGS_Point_c TFV_FabricData_c::CalcPoint(
 TGS_Point_c TFV_FabricData_c::CalcPoint(
       const TGS_Region_c& region,
             TC_SideMode_t side,
-            double        offset,
+            double        delta,
             double        width ) const
 {
    double x = 0.0;
@@ -429,18 +447,18 @@ TGS_Point_c TFV_FabricData_c::CalcPoint(
    {
    case TC_SIDE_LEFT:
       x = region.x1 + width / 2.0;
-      y = region.y1 + width / 2.0 + offset;
+      y = region.y1 + width / 2.0 + delta;
       break;
    case TC_SIDE_RIGHT:
       x = region.x2 - width / 2.0;
-      y = region.y1 + width / 2.0 + offset;
+      y = region.y1 + width / 2.0 + delta;
       break;
    case TC_SIDE_LOWER:
-      x = region.x1 + width / 2.0 + offset;
+      x = region.x1 + width / 2.0 + delta;
       y = region.y1 + width / 2.0;
       break;
    case TC_SIDE_UPPER:
-      x = region.x1 + width / 2.0 + offset;
+      x = region.x1 + width / 2.0 + delta;
       y = region.y2 - width / 2.0;
       break;
    default:
