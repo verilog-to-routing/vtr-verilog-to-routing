@@ -9,6 +9,7 @@
 //           - PrintBLIF
 //           - InitDefaults
 //           - InitValidate
+//           - IsLegal
 //           - IsValid
 //
 //           Private methods include:
@@ -20,7 +21,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -56,7 +57,8 @@ TCD_CircuitDesign_c::TCD_CircuitDesign_c(
       instNameList( TCD_INST_NAME_LIST_DEF_CAPACITY ),
       cellList( TCD_CELL_LIST_DEF_CAPACITY ),
       netList( TCD_NET_LIST_DEF_CAPACITY ),
-      netNameList( TCD_NET_NAME_LIST_DEF_CAPACITY )
+      netNameList( TCD_NET_NAME_LIST_DEF_CAPACITY ),
+      netOrderList( TCD_NET_ORDER_LIST_DEF_CAPACITY )
 {
 } 
 
@@ -72,7 +74,8 @@ TCD_CircuitDesign_c::TCD_CircuitDesign_c(
       instNameList( circuitDesign.instNameList ),
       cellList( circuitDesign.cellList ),
       netList( circuitDesign.netList ),
-      netNameList( circuitDesign.netNameList )
+      netNameList( circuitDesign.netNameList ),
+      netOrderList( circuitDesign.netOrderList )
 {
 } 
 
@@ -109,6 +112,7 @@ TCD_CircuitDesign_c& TCD_CircuitDesign_c::operator=(
       this->cellList = circuitDesign.cellList;
       this->netList = circuitDesign.netList;
       this->netNameList = circuitDesign.netNameList;
+      this->netOrderList = circuitDesign.netOrderList;
    }
    return( *this );
 }
@@ -131,7 +135,8 @@ bool TCD_CircuitDesign_c::operator==(
           ( this->instNameList == circuitDesign.instNameList ) && 
           ( this->cellList == circuitDesign.cellList ) &&
           ( this->netList == circuitDesign.netList ) &&
-          ( this->netNameList == circuitDesign.netNameList ) ?
+          ( this->netNameList == circuitDesign.netNameList ) &&
+          ( this->netOrderList == circuitDesign.netOrderList ) ?
           true : false );
 }
 
@@ -430,6 +435,24 @@ bool TCD_CircuitDesign_c::InitValidate(
       }
    }
    return( ok );
+}
+
+//===========================================================================//
+// Method         : IsLegal
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/15/12 jeffr : Original
+//===========================================================================//
+bool TCD_CircuitDesign_c::IsLegal(
+      void ) const
+{
+   return( this->IsValid( ) &&
+           this->blockList.IsValid( ) &&
+           this->portList.IsValid( ) &&
+           this->instList.IsValid( ) &&
+           this->netList.IsValid( ) ?
+           true : false );
 }
 
 //===========================================================================//
