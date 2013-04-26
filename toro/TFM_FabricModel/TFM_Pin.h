@@ -9,7 +9,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -53,19 +53,24 @@ public:
 
    TFM_Pin_c( void );
    TFM_Pin_c( const string& srName,
+              TC_TypeMode_t type,
               TC_SideMode_t side,
-              double offset,
+              int offset,
+              double delta,
               double width,
               unsigned int slice );
    TFM_Pin_c( const char* pszName,
+              TC_TypeMode_t type,
               TC_SideMode_t side,
-              double offset,
+              int offset,
+              double delta,
               double width,
               unsigned int slice );
    TFM_Pin_c( const TFM_Pin_c& pin );
    ~TFM_Pin_c( void );
 
    TFM_Pin_c& operator=( const TFM_Pin_c& pin );
+   bool operator<( const TFM_Pin_c& pin ) const;
    bool operator==( const TFM_Pin_c& pin ) const;
    bool operator!=( const TFM_Pin_c& pin ) const;
 
@@ -80,8 +85,10 @@ public:
 
 public:
 
+   TC_TypeMode_t    type;      // Defines pin type (INPUT|OUTPUT|CLOCK)
    TC_SideMode_t    side;      // Defines pin side (LEFT|RIGHT|LOWER|UPPER)
-   double           offset;    // Defines pin offset (wrt LEFT|LOWER)
+   int              offset;    // Defines pin offset (index wrt LEFT|LOWER)
+   double           delta;     // Defines pin delta (distance wrt LEFT|LOWER)
    double           width;     // Defines pin width (optional visualization)
 
    unsigned int     slice;     // Describes IO block slice (optional)
