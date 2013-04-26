@@ -515,7 +515,7 @@ enum e_echo_files TVPR_OptionsStore_c::FindMessageEchoType_(
    {
       if( TC_stricmp( pszEchoType, echoTypeStore[i].pszFileType ) == 0 )
       {
-	 echoType = echoTypeStore[i].echoType;
+         echoType = echoTypeStore[i].echoType;
          break;
       }
    }
