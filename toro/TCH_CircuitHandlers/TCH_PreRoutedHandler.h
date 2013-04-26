@@ -59,7 +59,7 @@ public:
    static bool HasInstance( void );
 
    bool Configure( const TNO_NetList_c& netList,
-		   const TNO_NameList_t& netOrderList,
+                   const TNO_NameList_t& netOrderList,
                    TCH_RouteOrderMode_t orderMode );
 
    void Set( t_grid_tile** vpr_gridArray,
@@ -136,7 +136,6 @@ private:
    void UpdateNetListRoutePaths_( const t_rr_node* vpr_rrNodeArray,
                                   int vpr_rrNodeCount,
                                   t_grid_tile** vpr_gridArray,
-                                  const t_block* vpr_blockArray,
                                   TCH_NetList_t* pnetList ) const;
 
    bool ExistsRoutePathInstPin_( const t_block* vpr_blockArray,
@@ -149,7 +148,6 @@ private:
    void LoadVPR_GraphNodeList_( const t_rr_node* vpr_rrNodeArray,
                                 int vpr_rrNodeCount,
                                 t_grid_tile** vpr_gridArray,
-                                const t_block* vpr_blockArray,
                                 TCH_VPR_GraphNodeList_t* pvpr_graphNodeList ) const;
    const TCH_VPR_GraphNode_c* FindVPR_GraphNode_( const TCH_VPR_GraphNodeList_t& vpr_graphNodeList,
                                                   const TCH_RouteNode_c& routeNode ) const;
