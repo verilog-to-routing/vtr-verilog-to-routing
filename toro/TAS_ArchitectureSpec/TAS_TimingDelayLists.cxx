@@ -7,6 +7,7 @@
 //           - operator==, operator!=
 //           - Print
 //           - PrintXML
+//           - IsValid
 //
 //===========================================================================//
 
@@ -208,4 +209,25 @@ void TAS_TimingDelayLists_c::PrintXML(
    {
       this->packPatternList[i]->PrintXML( pfile, spaceLen );
    }
+}
+
+//===========================================================================//
+// Method         : IsValid
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 08/15/12 jeffr : Original
+//===========================================================================//
+bool TAS_TimingDelayLists_c::IsValid( 
+      void ) const
+{
+   return( this->delayList.IsValid( ) ||
+           this->delayMatrixList.IsValid( ) ||
+           this->tSetupList.IsValid( ) ||
+           this->tHoldList.IsValid( ) ||
+           this->clockToQList.IsValid( ) ||
+           this->capList.IsValid( ) ||
+           this->capMatrixList.IsValid( ) ||
+           this->packPatternList.IsValid( ) ?
+           true : false );
 }
