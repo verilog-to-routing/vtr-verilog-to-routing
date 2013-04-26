@@ -182,8 +182,8 @@ void TC_NameFile_c::ExtractString(
          *psrNameFile += this->srName_;
          *psrNameFile += "\"";
 
-	 if( this->srFileName_.length( ))
-	 {
+         if( this->srFileName_.length( ))
+         {
             *psrNameFile += " ";
             *psrNameFile += "\"";
             *psrNameFile += this->srFileName_;
