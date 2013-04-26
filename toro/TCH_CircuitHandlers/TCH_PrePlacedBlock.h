@@ -59,12 +59,12 @@ public:
    TCH_PrePlacedBlock_c( const string& srName );
    TCH_PrePlacedBlock_c( const char* pszName );
    TCH_PrePlacedBlock_c( const string& srName,
-			 TCH_PlaceStatusMode_t status,
+                         TCH_PlaceStatusMode_t status,
                          const TGO_Point_c& origin,
                          int vpr_index = -1,
                          const t_type_descriptor* vpr_type = 0 );
    TCH_PrePlacedBlock_c( const char* pszName,
-			 TCH_PlaceStatusMode_t status,
+                         TCH_PlaceStatusMode_t status,
                          const TGO_Point_c& origin,
                          int vpr_index = -1,
                          const t_type_descriptor* vpr_type = 0 );
