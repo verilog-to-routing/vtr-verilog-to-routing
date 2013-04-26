@@ -98,11 +98,11 @@ TOS_OutputOptions_c::TOS_OutputOptions_c(
             bool                      laffFileEnable_,
             bool                      metricsEmailEnable_,
             int                       laffMask_,
-	    TOS_RcDelaysExtractMode_t rcDelaysExtractMode_,
-	    TOS_RcDelaysSortMode_t    rcDelaysSortMode_,
+            TOS_RcDelaysExtractMode_t rcDelaysExtractMode_,
+            TOS_RcDelaysSortMode_t    rcDelaysSortMode_,
       const TOS_RcDelaysNameList_t&   rcDelaysNetNameList_,
       const TOS_RcDelaysNameList_t&   rcDelaysBlockNameList_,
-	    double                    rcDelaysMaxWireLength_ )
+            double                    rcDelaysMaxWireLength_ )
       :
       srLogFileName( srLogFileName_ ),
       srOptionsFileName( srOptionsFileName_ ),
