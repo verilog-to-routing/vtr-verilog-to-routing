@@ -206,7 +206,7 @@ void TCH_PrePlacedHandler_c::Set(
 {
    // Set local reference to VPR's grid array and asso. global data structures
    this->vpr_data_.Init( vpr_gridArray, vpr_nx, vpr_ny, 
-			 vpr_blockArray, vpr_blockCount,
+                         vpr_blockArray, vpr_blockCount,
                          vpr_typeArray, vpr_typeCount,
                          vpr_freeLocationArray, vpr_legalPosArray );
 }
@@ -248,7 +248,7 @@ bool TCH_PrePlacedHandler_c::InitialPlace(
             int                vpr_nx,
             int                vpr_ny,
             t_block*           vpr_blockArray,
-	    int                vpr_blockCount,
+            int                vpr_blockCount,
       const t_type_descriptor* vpr_typeArray,
             int                vpr_typeCount,
             int*               vpr_freeLocationArray,
