@@ -27,11 +27,11 @@
 #include "TCT_SortedVector.h"
 
 //---------------------------------------------------------------------------//
-// Define fabric block grid constants and typedefs
+// Define fabric grid block constants and typedefs
 //---------------------------------------------------------------------------//
 
-class TFH_BlockGrid_c; // Forward declaration for subsequent class
-typedef TCT_SortedVector_c< TFH_BlockGrid_c > TFH_BlockGridList_t;
+class TFH_GridBlock_c; // Forward declaration for subsequent class
+typedef TCT_SortedVector_c< TFH_GridBlock_c > TFH_GridBlockList_t;
 
 enum TFH_BlockType_e
 {
@@ -41,6 +41,26 @@ enum TFH_BlockType_e
    TFH_BLOCK_SWITCH_BOX
 };
 typedef enum TFH_BlockType_e TFH_BlockType_t;
+
+//---------------------------------------------------------------------------//
+// Define fabric switch box constants and typedefs
+//---------------------------------------------------------------------------//
+
+class TFH_SwitchBox_c; // Forward declaration for subsequent class
+typedef TCT_SortedVector_c< TFH_SwitchBox_c > TFH_SwitchBoxList_t;
+
+//---------------------------------------------------------------------------//
+// Define fabric connection block constants and typedefs
+//---------------------------------------------------------------------------//
+
+class TFH_ConnectionBlock_c; // Forward declaration for subsequent class
+typedef TCT_SortedVector_c< TFH_ConnectionBlock_c > TFH_ConnectionBlockList_t;
+
+class TFH_ConnectionMap_c; // Forward declaration for subsequent class
+typedef TCT_SortedVector_c< TFH_ConnectionMap_c > TFH_ConnectionMapList_t;
+
+class TC_Bit_c; // Forward declaration for subsequent class typedefs
+typedef TCT_OrderedVector_c< TC_Bit_c > TFH_BitPattern_t;
 
 //---------------------------------------------------------------------------//
 // Define fabric channel width constants and typedefs
