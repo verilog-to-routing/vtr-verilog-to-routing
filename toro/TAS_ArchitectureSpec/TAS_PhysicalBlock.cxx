@@ -11,7 +11,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -45,6 +45,7 @@
 TAS_PhysicalBlock_c::TAS_PhysicalBlock_c( 
       void )
       :
+      width( 0 ),
       height( 0 ),
       capacity( 0 ),
       numPB( 0 ),
@@ -76,6 +77,7 @@ TAS_PhysicalBlock_c::TAS_PhysicalBlock_c(
       const string& srName_ )
       :
       srName( srName_ ),
+      width( 0 ),
       height( 0 ),
       capacity( 0 ),
       numPB( 0 ),
@@ -107,6 +109,7 @@ TAS_PhysicalBlock_c::TAS_PhysicalBlock_c(
       const char* pszName )
       :
       srName( TIO_PSZ_STR( pszName )),
+      width( 0 ),
       height( 0 ),
       capacity( 0 ),
       numPB( 0 ),
@@ -138,6 +141,7 @@ TAS_PhysicalBlock_c::TAS_PhysicalBlock_c(
       const TAS_PhysicalBlock_c& physicalBlock )
       :
       srName( physicalBlock.srName ),
+      width( physicalBlock.width ),
       height( physicalBlock.height ),
       capacity( physicalBlock.capacity ),
       numPB( physicalBlock.numPB ),
@@ -193,6 +197,7 @@ TAS_PhysicalBlock_c& TAS_PhysicalBlock_c::operator=(
    if( &physicalBlock != this )
    {
       this->srName = physicalBlock.srName;
+      this->width = physicalBlock.width;
       this->height = physicalBlock.height;
       this->capacity = physicalBlock.capacity;
       this->numPB = physicalBlock.numPB;
@@ -275,6 +280,11 @@ void TAS_PhysicalBlock_c::Print(
    printHandler.Write( pfile, spaceLen, "<%s name=\"%s\"", 
                                         TIO_PSZ_STR( pszUsage ),
                                         TIO_SR_STR( this->srName ));
+   if( this->width > 0 )
+   {
+      printHandler.Write( pfile, 0, " width=\"%u\"", 
+                                    this->width );
+   }
    if( this->height > 0 )
    {
       printHandler.Write( pfile, 0, " height=\"%u\"", 
@@ -442,6 +452,11 @@ void TAS_PhysicalBlock_c::PrintXML(
 
    printHandler.Write( pfile, spaceLen, "<pb_type name=\"%s\" ",
                                         TIO_SR_STR( this->srName ));
+   if( this->width > 0 )
+   {
+      printHandler.Write( pfile, 0, "width=\"%u\" ",
+                                           this->width );
+   }
    if( this->height > 0 )
    {
       printHandler.Write( pfile, 0, "height=\"%u\" ",
