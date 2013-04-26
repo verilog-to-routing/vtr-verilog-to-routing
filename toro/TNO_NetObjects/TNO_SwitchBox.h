@@ -57,15 +57,15 @@ public:
                     const TC_SideIndex_c& input,
                     const TC_SideIndex_c& output );
    TNO_SwitchBox_c( const string& srName,
-		    TC_SideMode_t inputSide,
-		    size_t inputIndex,
-		    TC_SideMode_t outputSide,
-		    size_t outputIndex );
+                    TC_SideMode_t inputSide,
+                    size_t inputIndex,
+                    TC_SideMode_t outputSide,
+                    size_t outputIndex );
    TNO_SwitchBox_c( const char* pszName,
-		    TC_SideMode_t inputSide,
-		    size_t inputIndex,
-		    TC_SideMode_t outputSide,
-		    size_t outputIndex );
+                    TC_SideMode_t inputSide,
+                    size_t inputIndex,
+                    TC_SideMode_t outputSide,
+                    size_t outputIndex );
    TNO_SwitchBox_c( const TNO_SwitchBox_c& switchBox );
    ~TNO_SwitchBox_c( void );
 
