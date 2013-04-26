@@ -121,7 +121,7 @@ void TI_Input_c::BuildDefaultBaseName_(
       size_t i = psrDefaultBaseName->rfind( '.' );
       if( i != string::npos )
       {
-	 psrDefaultBaseName->erase( i );
+         psrDefaultBaseName->erase( i );
       }
    }
 
@@ -136,7 +136,7 @@ void TI_Input_c::BuildDefaultBaseName_(
       if( i != string::npos && 
           psrDefaultBaseName->substr( i + 1, lenBinaryName ) == srBinaryName )
       {
-	 psrDefaultBaseName->erase( i );
+         psrDefaultBaseName->erase( i );
       }
    }
 }
@@ -194,7 +194,7 @@ void TI_Input_c::ApplyDefaultBaseName_(
    {
       TC_NameFile_c* pechoFileName = pmessageOptions->trace.vpr.echoFileNameList[i];
       if( !pechoFileName->GetFileName( ) || !*pechoFileName->GetFileName( ))
-	 continue;
+         continue;
    
       string srEchoName( pechoFileName->GetName( ));
       string srFileName( pechoFileName->GetFileName( ));
@@ -215,7 +215,7 @@ void TI_Input_c::ApplyDefaultBaseName_(
       string srDefaultExtName;
 
       this->ApplyDefaultBaseName_( srFileName, &srFileName,
-			           srDefaultBaseName, srDefaultExtName );
+                                   srDefaultBaseName, srDefaultExtName );
       *psrFileName = srFileName;
    }
 }
@@ -232,7 +232,7 @@ void TI_Input_c::ApplyDefaultBaseName_(
       string srDefaultExtName( pszDefaultExtName );
 
       this->ApplyDefaultBaseName_( srFileName, &srFileName,
-			           srDefaultBaseName, srDefaultExtName );
+                                   srDefaultBaseName, srDefaultExtName );
       *psrFileName = srFileName;
    }
 }
