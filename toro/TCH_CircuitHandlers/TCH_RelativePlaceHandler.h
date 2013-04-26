@@ -121,11 +121,11 @@ private:
 
    bool MergeSideConstraints_( TCH_RelativeBlock_c* pfromBlock,
                                TCH_RelativeBlock_c* ptoBlock,
-			       TC_SideMode_t side );
+                               TC_SideMode_t side );
    bool MergeSideConstraints_( size_t fromMacroIndex,
                                const TCH_RelativeMacro_c& toMacro,
                                const TCH_RelativeNode_c& toNode,
-			       TC_SideMode_t side );
+                               TC_SideMode_t side );
 
    bool ExistingSideConstraint_( const TCH_RelativeBlock_c& fromBlock,
                                  TCH_RelativeBlock_c* ptoBlock,
@@ -181,7 +181,7 @@ private:
 
    bool PlaceMacroIsRelativeCoord_( const TGO_Point_c& point ) const;
    bool PlaceMacroIsAvailableCoord_( const TGO_Point_c& fromOrigin,
-				     const TGO_Point_c& toOrigin,
+                                     const TGO_Point_c& toOrigin,
                                      TGO_RotateMode_t toRotate,
                                      TCH_RelativeMoveList_t* prelativeMoveList ) const;
 
