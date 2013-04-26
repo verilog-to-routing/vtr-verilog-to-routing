@@ -65,11 +65,11 @@ public:
                         bool laffFileEnable,
                         bool metricsEmailEnable,
                         int laffMask,
-			TOS_RcDelaysExtractMode_t rcDelaysExtractMode,
-			TOS_RcDelaysSortMode_t rcDelaysSortMode,
-			const TOS_RcDelaysNameList_t& rcDelaysNetNameList,
-			const TOS_RcDelaysNameList_t& rcDelaysBlockNameList,
-			double rcDelaysMaxWireLength );
+                        TOS_RcDelaysExtractMode_t rcDelaysExtractMode,
+                        TOS_RcDelaysSortMode_t rcDelaysSortMode,
+                        const TOS_RcDelaysNameList_t& rcDelaysNetNameList,
+                        const TOS_RcDelaysNameList_t& rcDelaysBlockNameList,
+                        double rcDelaysMaxWireLength );
    ~TOS_OutputOptions_c( void );
 
    void Print( FILE* pfile = stdout, size_t spaceLen = 0 ) const;
