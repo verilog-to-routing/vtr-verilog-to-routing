@@ -78,7 +78,7 @@ bool TP_Process_c::Apply(
    TCD_CircuitDesign_c* pcircuitDesign = &pfloorplanStore->circuitDesign;
    ok = vprInterface.Apply( optionsStore,
                             architectureSpec,
-			    pfabricModel,
+                            pfabricModel,
                             pcircuitDesign );
 
    TVPR_Interface_c::DeleteInstance( );
