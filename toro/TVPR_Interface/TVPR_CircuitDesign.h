@@ -5,7 +5,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -182,16 +182,20 @@ private:
    
    void PeekInputOutputList_( const t_block* vpr_blockArray,
                               int vpr_blockCount,
+                              const TPO_InstList_t& inputOutputList,
                               TPO_InstList_t* pinputOutputList ) const;
    void PeekInputOutput_( const t_block& vpr_block,
+                          const TPO_InstList_t& inputOutputList,
                           TPO_InstList_t* pinputOutputList ) const;
    void PeekPhysicalBlockList_( const t_block* vpr_blockArray,
                                 int vpr_blockCount,
                                 const t_logical_block* vpr_logicalBlockArray,
+                                const TPO_InstList_t& physicalBlockList,
                                 TPO_InstList_t* pphysicalBlockList ) const;
    void PeekPhysicalBlock_( const t_block& vpr_block,
                             const t_logical_block* vpr_logicalBlockArray,
                             int blockIndex,
+                            const TPO_InstList_t& physicalBlockList,
                             TPO_InstList_t* pphysicalBlockList ) const;
    void PeekHierMapList_( const t_pb& vpr_pb,
                           const t_logical_block* vpr_logicalBlockArray,
@@ -260,7 +264,6 @@ private:
                          TNO_NetList_c* pnetList ) const;
    void ExtractNetListInstPins_( const t_net* vpr_netArray,
                                  int vpr_netCount,
-                                 const t_block* vpr_blockArray,
                                  const t_logical_block* vpr_logicalBlockArray,
                                  TNO_NetList_c* pnetList ) const;
    void ExtractNetListRoutes_( const t_arch* vpr_architecture,
@@ -300,8 +303,6 @@ private:
                                         TC_TypeMode_t portType ) const;
    int FindModelPortCount_( const t_model* pvpr_model,
                             TC_TypeMode_t portType ) const;
-   bool FindPinIndex_( const char* pszPinName,
-                       int* ppinIndex ) const;
 
    const t_pb_graph_pin* FindGraphPin_( const t_logical_block* vpr_logicalBlockArray,
                                         const t_net& vpr_net,
