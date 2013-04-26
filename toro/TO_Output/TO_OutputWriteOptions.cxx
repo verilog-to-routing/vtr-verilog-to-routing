@@ -47,7 +47,7 @@ bool TO_Output_c::WriteOptionsFile_(
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
    printHandler.Info( "Writing %s file '%s'...\n",
                       TIO_SZ_OUTPUT_OPTIONS_DEF_TYPE,
-		      TIO_PSZ_STR( pszOptionsFileName ));
+                      TIO_PSZ_STR( pszOptionsFileName ));
 
    ok = printHandler.SetUserFileOutput( pszOptionsFileName );
    if( ok )
@@ -65,8 +65,8 @@ bool TO_Output_c::WriteOptionsFile_(
    else
    {
       printHandler.Error( "Failed to open %s file '%s' in \"%s\" mode.\n",
-			  TIO_SZ_OUTPUT_OPTIONS_DEF_TYPE,
-			  TIO_PSZ_STR( pszOptionsFileName ),
+                          TIO_SZ_OUTPUT_OPTIONS_DEF_TYPE,
+                          TIO_PSZ_STR( pszOptionsFileName ),
                           "write" );
    }
    return( ok );
