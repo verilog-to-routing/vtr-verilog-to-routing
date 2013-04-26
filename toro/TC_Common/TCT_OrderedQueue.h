@@ -282,10 +282,10 @@ template<class T> void TCT_OrderedQueue_c< T >::ExtractString(
          if( data.IsValid( ))
          {
             string srData;
-	    data.ExtractString( &srData );
+            data.ExtractString( &srData );
 
             *psrData += srData;
-	    *psrData += ( i + 1 == this->GetLength( ) ? "" : " " );
+            *psrData += ( i + 1 == this->GetLength( ) ? "" : " " );
          }
       }
    }
@@ -321,7 +321,7 @@ template<class T> void TCT_OrderedQueue_c< T >::ExtractString(
          memset( szDataString, 0, sizeof( szDataString ));
 
          switch( mode )
-	 {
+         {
          case TC_DATA_INT:
             iDataValue = *reinterpret_cast< int* >( this->operator[]( i ));
             sprintf( szDataString, "%d", iDataValue );
@@ -365,7 +365,7 @@ template<class T> void TCT_OrderedQueue_c< T >::ExtractString(
          case TC_DATA_UNDEFINED:
             sprintf( szDataString, "?" );
             break;
-	 }
+         }
 
          *psrData += szDataString;
          *psrData += ( i < this->GetLength( ) - 1 ? " " : "" );
