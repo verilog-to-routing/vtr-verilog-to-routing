@@ -9,7 +9,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -47,7 +47,7 @@ bool TO_Output_c::WriteCircuitFile_(
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
    printHandler.Info( "Writing %s file '%s'...\n",
                       TIO_SZ_OUTPUT_CIRCUIT_DEF_TYPE,
-		      TIO_PSZ_STR( pszCircuitFileName ));
+                      TIO_PSZ_STR( pszCircuitFileName ));
 
    ok = printHandler.SetUserFileOutput( pszCircuitFileName );
    if( ok )
@@ -65,8 +65,8 @@ bool TO_Output_c::WriteCircuitFile_(
    else
    {
       printHandler.Error( "Failed to open %s file '%s' in \"%s\" mode.\n",
-			  TIO_SZ_OUTPUT_CIRCUIT_DEF_TYPE,
-			  TIO_PSZ_STR( pszCircuitFileName ),
+                          TIO_SZ_OUTPUT_CIRCUIT_DEF_TYPE,
+                          TIO_PSZ_STR( pszCircuitFileName ),
                           "write" );
    }
    return( ok );
