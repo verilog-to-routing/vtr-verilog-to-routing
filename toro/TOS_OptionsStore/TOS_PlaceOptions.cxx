@@ -8,7 +8,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -37,11 +37,13 @@
 // Version history
 // 05/01/12 jeffr : Original
 // 01/15/13 jeffr : Added support for relativePlace members
+// 01/18/13 jeffr : Added support for prePlaced members
 //===========================================================================//
 TOS_PlaceOptions_c::TOS_PlaceOptions_c( 
       void )
       :
       algorithmMode( TOS_PLACE_ALGORITHM_UNDEFINED ),
+      channelWidth( 0 ),
       randomSeed( 0 ),
       initTemp( 0.0 ),
       initTempFactor( 0.0 ),
@@ -65,11 +67,14 @@ TOS_PlaceOptions_c::TOS_PlaceOptions_c(
    this->relativePlace.rotateEnable = false;
    this->relativePlace.maxPlaceRetryCt = 0;
    this->relativePlace.maxMacroRetryCt = 0;
+
+   this->prePlaced.enable = false;
 }
 
 //===========================================================================//
 TOS_PlaceOptions_c::TOS_PlaceOptions_c( 
       TOS_PlaceAlgorithmMode_t algorithmMode_,
+      unsigned int             channelWidth_,
       unsigned int             randomSeed_,
       double                   initTemp_,
       double                   initTempFactor_,
@@ -90,9 +95,11 @@ TOS_PlaceOptions_c::TOS_PlaceOptions_c(
       bool                     relativePlace_enable_,
       bool                     relativePlace_rotateEnable_,
       unsigned int             relativePlace_maxPlaceRetryCt_,
-      unsigned int             relativePlace_maxMacroRetryCt_ )
+      unsigned int             relativePlace_maxMacroRetryCt_,
+      bool                     prePlaced_enable_ )
       :
       algorithmMode( algorithmMode_ ),
+      channelWidth( channelWidth_ ), 
       randomSeed( randomSeed_ ),
       initTemp( initTemp_ ),
       initTempFactor( initTempFactor_ ),
@@ -116,6 +123,8 @@ TOS_PlaceOptions_c::TOS_PlaceOptions_c(
    this->relativePlace.rotateEnable = relativePlace_rotateEnable_;
    this->relativePlace.maxPlaceRetryCt = relativePlace_maxPlaceRetryCt_;
    this->relativePlace.maxMacroRetryCt = relativePlace_maxMacroRetryCt_;
+
+   this->prePlaced.enable = prePlaced_enable_;
 }
 
 //===========================================================================//
@@ -137,6 +146,7 @@ TOS_PlaceOptions_c::~TOS_PlaceOptions_c(
 // Version history
 // 05/01/12 jeffr : Original
 // 01/15/13 jeffr : Added support for relativePlace members
+// 01/18/13 jeffr : Added support for prePlaced members
 //===========================================================================//
 void TOS_PlaceOptions_c::Print( 
       FILE*  pfile,
@@ -152,6 +162,8 @@ void TOS_PlaceOptions_c::Print(
    TOS_ExtractStringPlaceCostMode( this->costMode, &srCostMode );
 
    printHandler.Write( pfile, spaceLen, "PLACE_ALGORITHM            = %s\n", TIO_SR_STR( srAlgorithmMode ));
+
+   printHandler.Write( pfile, spaceLen, "PLACE_CHANNEL_WIDTH        = %u\n", this->channelWidth );
 
    printHandler.Write( pfile, spaceLen, "PLACE_RANDOM_SEED          = %u\n", this->randomSeed );
    printHandler.Write( pfile, spaceLen, "PLACE_TEMP_INIT            = %0.*f\n", precision, this->initTemp );
@@ -177,4 +189,6 @@ void TOS_PlaceOptions_c::Print(
    printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_ROTATE      = %s\n", TIO_BOOL_STR( this->relativePlace.rotateEnable ));
    printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_INIT_PLACE  = %u\n", this->relativePlace.maxPlaceRetryCt );
    printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_INIT_MACRO  = %u\n", this->relativePlace.maxMacroRetryCt );
+
+   printHandler.Write( pfile, spaceLen, "PLACE_PREPLACED_ENABLE     = %s\n", TIO_BOOL_STR( this->prePlaced.enable ));
 }
