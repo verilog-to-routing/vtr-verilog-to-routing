@@ -37,7 +37,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -238,22 +238,22 @@ void TGS_Line_c::ExtractString(
 
       if( this->IsValid( ))
       {
-	 if( this->z != INT_MIN )
+         if( this->z != INT_MIN )
          {
             sprintf( szLine, "%0.*f %0.*f %0.*f %0.*f %d",
                              static_cast< int >( precision ), this->x1,
                              static_cast< int >( precision ), this->y1,
                              static_cast< int >( precision ), this->x2,
-	                     static_cast< int >( precision ), this->y2,
+                             static_cast< int >( precision ), this->y2,
                              this->z );
          }
-	 else
+         else
          {
             sprintf( szLine, "%0.*f %0.*f %0.*f %0.*f",
                              static_cast< int >( precision ), this->x1,
                              static_cast< int >( precision ), this->y1,
                              static_cast< int >( precision ), this->x2,
-	                     static_cast< int >( precision ), this->y2 );
+                             static_cast< int >( precision ), this->y2 );
          }
       }
       else
@@ -420,22 +420,22 @@ void TGS_Line_c::ExtendLength(
    {
       if( this->IsLeft( ))
       {
-	 if( TCTF_IsGE( length, 0.0 ))
+         if( TCTF_IsGE( length, 0.0 ))
          {
             this->x2 += length;
          }   
-	 else // if( TCTF_IsLT( length, 0.0 ))
+         else // if( TCTF_IsLT( length, 0.0 ))
          {
             this->x1 += length;
          }   
       }   
       else // if( this->IsRight( ))
       {
-	 if( TCTF_IsGE( length, 0.0 ))
+         if( TCTF_IsGE( length, 0.0 ))
          {
             this->x2 -= length;
          }   
-	 else // if( TCTF_IsLT( length, 0.0 ))
+         else // if( TCTF_IsLT( length, 0.0 ))
          {
             this->x1 -= length;
          }   
@@ -445,22 +445,22 @@ void TGS_Line_c::ExtendLength(
    {
       if( this->IsLower( ))
       {
-	 if( TCTF_IsGE( length, 0.0 ))
+         if( TCTF_IsGE( length, 0.0 ))
          {
             this->y2 += length;
          }   
-	 else // if( TCTF_IsLT( length, 0.0 ))
+         else // if( TCTF_IsLT( length, 0.0 ))
          {
             this->y1 += length;
          }   
       }   
       else // if( this->IsUpper( ))
       {
-	 if( TCTF_IsGE( length, 0.0 ))
+         if( TCTF_IsGE( length, 0.0 ))
          {
             this->y2 -= length;
          }   
-	 else // if( TCTF_IsLT( length, 0.0 ))
+         else // if( TCTF_IsLT( length, 0.0 ))
          {
             this->y1 -= length;
          }   
@@ -888,7 +888,7 @@ void TGS_Line_c::FindIntersect(
          }
          else
          {
- 	    // Find and return intersect point for collinear lines
+            // Find and return intersect point for collinear lines
             this->FindNearest( pointD, pthisIntersectPoint );
          }
       }
@@ -982,12 +982,12 @@ void TGS_Line_c::ApplyUnion(
       if( this->IsLeft( ))
       {
          this->x1 = TCT_Min( this->x1, xMin ); 
-	 this->x2 = TCT_Max( this->x2, xMax ); 
+         this->x2 = TCT_Max( this->x2, xMax ); 
       }   
       else if( this->IsRight( ))
       {
          this->x1 = TCT_Max( this->x1, xMax ); 
-	 this->x2 = TCT_Min( this->x2, xMin ); 
+         this->x2 = TCT_Min( this->x2, xMin ); 
       }   
    }   
    else if( this->IsVertical( ))
@@ -998,12 +998,12 @@ void TGS_Line_c::ApplyUnion(
       if( this->IsLower( ))
       {
          this->y1 = TCT_Min( this->y1, yMin ); 
-	 this->y2 = TCT_Max( this->y2, yMax ); 
+         this->y2 = TCT_Max( this->y2, yMax ); 
       }   
       else if( this->IsUpper( ))
       {
          this->y1 = TCT_Max( this->y1, yMax ); 
-	 this->y2 = TCT_Min( this->y2, yMin ); 
+         this->y2 = TCT_Min( this->y2, yMin ); 
       }   
    }
 }
@@ -1047,12 +1047,12 @@ void TGS_Line_c::ApplyIntersect(
       if( this->IsLeft( ))
       {
          this->x1 = TCT_Max( this->x1, xMin ); 
-	 this->x2 = TCT_Min( this->x2, xMax ); 
+         this->x2 = TCT_Min( this->x2, xMax ); 
       }   
       else if( this->IsRight( ))
       {
          this->x1 = TCT_Min( this->x1, xMax ); 
-	 this->x2 = TCT_Max( this->x2, xMin ); 
+         this->x2 = TCT_Max( this->x2, xMin ); 
       }   
    }   
    else if( this->IsVertical( ))
@@ -1063,12 +1063,12 @@ void TGS_Line_c::ApplyIntersect(
       if( this->IsLower( ))
       {
          this->y1 = TCT_Max( this->y1, yMin ); 
-	 this->y2 = TCT_Min( this->y2, yMax ); 
+         this->y2 = TCT_Min( this->y2, yMax ); 
       }   
       else if( this->IsUpper( ))
       {
          this->y1 = TCT_Min( this->y1, yMax ); 
-	 this->y2 = TCT_Max( this->y2, yMin ); 
+         this->y2 = TCT_Max( this->y2, yMin ); 
       }   
    }
 }
