@@ -38,7 +38,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -483,28 +483,28 @@ void TGS_Rect_c::FindRect(
       { 
       case TC_SIDE_PREV:
          if( this->IsWide( ) && !this->IsTall( ))
-	 {
-	    side = TC_SIDE_LEFT;
-	 }
+         {
+            side = TC_SIDE_LEFT;
+         }
          if( this->IsTall( ) && !this->IsWide( ))
-	 {
-	    side = TC_SIDE_LOWER;
-	 }
-	 break;
+         {
+            side = TC_SIDE_LOWER;
+         }
+         break;
 
       case TC_SIDE_NEXT:
          if( this->IsWide( ) && !this->IsTall( ))
-	 {
-	    side = TC_SIDE_RIGHT;
-	 }
+         {
+            side = TC_SIDE_RIGHT;
+         }
          if( this->IsTall( ) && !this->IsWide( ))
-	 {
-	    side = TC_SIDE_UPPER;
-	 }
-	 break;
+         {
+            side = TC_SIDE_UPPER;
+         }
+         break;
 
       default:
-	 break;
+         break;
       }
 
       switch( side )
@@ -537,7 +537,7 @@ void TGS_Rect_c::FindRect(
          break;
 
       default:
-	 break;
+         break;
       }
    }
 }
@@ -751,8 +751,8 @@ void TGS_Rect_c::ApplyScale(
    thisBox.ApplyScale( dx, dy, 0, snap );
 
    this->Set( thisBox.lowerLeft.z, 
-	      thisBox.lowerLeft.x, thisBox.lowerLeft.y,
-	      thisBox.upperRight.x, thisBox.upperRight.y );
+              thisBox.lowerLeft.x, thisBox.lowerLeft.y,
+              thisBox.upperRight.x, thisBox.upperRight.y );
 }
 
 //===========================================================================//
@@ -775,8 +775,8 @@ void TGS_Rect_c::ApplyScale(
    thisBox.ApplyScale( scale, orient, snap );
 
    this->Set( thisBox.lowerLeft.z, 
-	      thisBox.lowerLeft.x, thisBox.lowerLeft.y,
-	      thisBox.upperRight.x, thisBox.upperRight.y );
+              thisBox.lowerLeft.x, thisBox.lowerLeft.y,
+              thisBox.upperRight.x, thisBox.upperRight.y );
 }
 
 //===========================================================================//
@@ -791,8 +791,8 @@ void TGS_Rect_c::ApplyScale(
    thisBox.ApplyScale( scale, side, snap );
 
    this->Set( thisBox.lowerLeft.z, 
-	      thisBox.lowerLeft.x, thisBox.lowerLeft.y,
-	      thisBox.upperRight.x, thisBox.upperRight.y );
+              thisBox.lowerLeft.x, thisBox.lowerLeft.y,
+              thisBox.upperRight.x, thisBox.upperRight.y );
 }
 
 //===========================================================================//
@@ -817,8 +817,8 @@ void TGS_Rect_c::ApplyUnion(
    thisBox.ApplyUnion( rectBoxA, rectBoxB );
 
    this->Set( thisBox.lowerLeft.z, 
-	      thisBox.lowerLeft.x, thisBox.lowerLeft.y,
-	      thisBox.upperRight.x, thisBox.upperRight.y );
+              thisBox.lowerLeft.x, thisBox.lowerLeft.y,
+              thisBox.upperRight.x, thisBox.upperRight.y );
 }
 
 //===========================================================================//
@@ -850,8 +850,8 @@ void TGS_Rect_c::ApplyIntersect(
    thisBox.ApplyIntersect( rectBoxA, rectBoxB );
 
    this->Set( thisBox.lowerLeft.z, 
-	      thisBox.lowerLeft.x, thisBox.lowerLeft.y,
-	      thisBox.upperRight.x, thisBox.upperRight.y );
+              thisBox.lowerLeft.x, thisBox.lowerLeft.y,
+              thisBox.upperRight.x, thisBox.upperRight.y );
 }
 
 //===========================================================================//
@@ -882,8 +882,8 @@ void TGS_Rect_c::ApplyOverlap(
    thisBox.ApplyOverlap( rectBoxA, rectBoxB );
 
    this->Set( thisBox.lowerLeft.z, 
-	      thisBox.lowerLeft.x, thisBox.lowerLeft.y,
-	      thisBox.upperRight.x, thisBox.upperRight.y );
+              thisBox.lowerLeft.x, thisBox.lowerLeft.y,
+              thisBox.upperRight.x, thisBox.upperRight.y );
 }
 
 //===========================================================================//
@@ -1027,7 +1027,7 @@ bool TGS_Rect_c::IsAdjacent(
 {
    bool isAdjacent = (( rect.layer == this->layer ) &&
                       ( rect.region.IsAdjacent( this->region )) ?
-		      true : false );
+                      true : false );
    return( isAdjacent );
 }
 
@@ -1047,7 +1047,7 @@ bool TGS_Rect_c::IsIntersecting(
 {
    bool isIntersecting = (( rect.layer == this->layer ) &&
                           ( rect.region.IsIntersecting( this->region )) ?
-	    	          true : false );
+                          true : false );
    return( isIntersecting );
 }
 
