@@ -19,7 +19,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -239,7 +239,7 @@ template< class T > bool TCT_OrderedVector2D_c< T >::operator==(
       {
          for( size_t i = 0; i < this->width_; ++i )
          {
-	    isEqual = ( this->vector2D_[i][j] == orderedVector2D[i][j] ) ?
+            isEqual = ( this->vector2D_[i][j] == orderedVector2D[i][j] ) ?
                       true : false;
             if( !isEqual )
                break;
@@ -364,18 +364,18 @@ template< class T > void TCT_OrderedVector2D_c< T >::ExtractString(
 
       if( firstLen == SIZE_MAX )
       {
-	 firstLen = spaceLen;
+         firstLen = spaceLen;
       }
 
       for( size_t j = 0; j < this->height_; ++j )
       {
-	 if(( j == 0 ) && ( firstLen > 0 ))
-	 {
+         if(( j == 0 ) && ( firstLen > 0 ))
+         {
             char szFirstText[TIO_FORMAT_STRING_LEN_MAX];
             sprintf( szFirstText, "%*s", static_cast< int >( firstLen ), firstLen ? " " : "" );
             *psrData += szFirstText;
          }
-	 else if(( j > 0 ) && ( spaceLen > 0 ))
+         else if(( j > 0 ) && ( spaceLen > 0 ))
          {
             char szSpaceText[TIO_FORMAT_STRING_LEN_MAX];
             sprintf( szSpaceText, "%*s", static_cast< int >( spaceLen ), spaceLen ? " " : "" );
@@ -397,7 +397,7 @@ template< class T > void TCT_OrderedVector2D_c< T >::ExtractString(
             memset( szDataString, 0, sizeof( szDataString ));
 
             switch( mode )
-   	    {
+            {
             case TC_DATA_INT:
                iDataValue = *reinterpret_cast< int* >( this->At( i, j ));
                sprintf( szDataString, "%d", iDataValue );
@@ -420,7 +420,7 @@ template< class T > void TCT_OrderedVector2D_c< T >::ExtractString(
 
             case TC_DATA_SIZE:
                sDataValue = *reinterpret_cast< size_t* >( this->At( i, j ));
-               sprintf( szDataString, "%lu", sDataValue );
+               sprintf( szDataString, "%lu", static_cast< unsigned long >( sDataValue ));
                break;
 
             case TC_DATA_FLOAT:
@@ -441,19 +441,19 @@ template< class T > void TCT_OrderedVector2D_c< T >::ExtractString(
             case TC_DATA_UNDEFINED:
                sprintf( szDataString, "?" );
                break;
-   	    }
+            }
 
-   	    size_t lenDataString = TCT_Max( strlen( szDataString ), strlen( "..." ));
+            size_t lenDataString = TCT_Max( strlen( szDataString ), strlen( "..." ));
             if( psrData->length( ) + lenDataString >= maxLen )
-   	    {
-   	       *psrData += "...";
-   	       break;
+            {
+               *psrData += "...";
+               break;
             }
    
             *psrData += szDataString;
             *psrData += ( i < this->width_ - 1 ? " " : "" );
          }
-	 *psrData += "\n";
+         *psrData += "\n";
       }
    }
 }
@@ -475,7 +475,9 @@ template< class T > void TCT_OrderedVector2D_c< T >::SetCapacity(
 
    T data;
    if( pdata )
+   {
       data = *pdata;
+   }
 
    this->vector2D_.resize( this->width_ );
    for( size_t i = 0; i < this->width_; ++i )
