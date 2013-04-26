@@ -179,10 +179,10 @@ void TC_IndexCount_c::ExtractString(
 
          *psrIndexCount = szIndex;
 
-	 if( this->count_ != SIZE_MAX )
-	 {
+         if( this->count_ != SIZE_MAX )
+         {
             char szCount[TIO_FORMAT_STRING_LEN_VALUE];
-            sprintf( szCount, "%lu", this->count_ );
+            sprintf( szIndex, "%lu", static_cast< unsigned long >( this->count_ ));
 
             *psrIndexCount += " ";
             *psrIndexCount += szCount;
