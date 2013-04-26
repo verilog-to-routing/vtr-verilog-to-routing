@@ -296,7 +296,6 @@ bool TCH_PreRoutedHandler_c::ValidatePreRoutes(
       this->UpdateNetListRoutePaths_( this->vpr_data_.vpr_rrNodeArray, 
                                       this->vpr_data_.vpr_rrNodeCount,
                                       this->vpr_data_.vpr_gridArray,
-                                      this->vpr_data_.vpr_blockArray,
                                       &this->netList_ );
    }
 
@@ -421,7 +420,6 @@ bool TCH_PreRoutedHandler_c::IsMemberPreRoutePath(
       }
    }
 
-// ???
    if( !isMember )
    {
       if( pfromRouteNode->GetVPR_Type( ) == IPIN )
@@ -542,7 +540,7 @@ bool TCH_PreRoutedHandler_c::AddNetRoutePath_(
          ok = this->ShowDuplicateRoutePathWarning_( pszNetName,
                                                     pszSrcInstName, pszSrcPortName,
                                                     pszSinkInstName, pszSinkPortName );
-	 if( !ok )
+         if( !ok )
             break;
       }
    }
@@ -854,14 +852,12 @@ void TCH_PreRoutedHandler_c::UpdateNetListRoutePaths_(
       const t_rr_node*     vpr_rrNodeArray,
             int            vpr_rrNodeCount,
             t_grid_tile**  vpr_gridArray,
-      const t_block*       vpr_blockArray,
             TCH_NetList_t* pnetList ) const
 {
    // Make a sorted "rr_graph" node list based on VPR's "rr_graph" nodes
    TCH_VPR_GraphNodeList_t vpr_graphNodeList;
    this->LoadVPR_GraphNodeList_( vpr_rrNodeArray, vpr_rrNodeCount,
-                                 vpr_gridArray, vpr_blockArray,
-                                 &vpr_graphNodeList );
+                                 vpr_gridArray, &vpr_graphNodeList );
 
    // Iterate local net list to update route path's "rr_graph" node indices
    for( size_t i = 0; i < pnetList->GetLength( ); ++i )
@@ -966,7 +962,6 @@ void TCH_PreRoutedHandler_c::LoadVPR_GraphNodeList_(
       const t_rr_node*               vpr_rrNodeArray,
             int                      vpr_rrNodeCount,
             t_grid_tile**            vpr_gridArray,
-      const t_block*                 vpr_blockArray,
             TCH_VPR_GraphNodeList_t* pvpr_graphNodeList ) const
 {
    pvpr_graphNodeList->Clear( );
