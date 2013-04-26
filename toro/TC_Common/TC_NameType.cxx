@@ -184,9 +184,9 @@ void TC_NameType_c::ExtractString(
          *psrNameType += this->srName_;
          *psrNameType += "\"";
 
-	 if( this->type_ != TC_TYPE_UNDEFINED )
-	 {
-   	    string srType;
+         if( this->type_ != TC_TYPE_UNDEFINED )
+         {
+            string srType;
             TC_ExtractStringTypeMode( this->type_, &srType );
 
             *psrNameType += " ";
