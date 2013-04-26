@@ -4,7 +4,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -79,6 +79,7 @@ using namespace std;
 #token HIER       "[Hh][Ii][Ee][Rr]{[Aa][Rr][Cc][Hh][Yy]}"
 #token PACK       "[Pp][Aa][Cc][Kk]{[Ii][Nn][Gg]}"
 #token PLACE      "[Pp][Ll][Aa][Cc][Ee][Mm][Ee][Nn][Tt]"
+#token ORIENT     "[Oo][Rr][Ii][Ee][Nn][Tt]"
 #token TRACK      "[Tt][Rr][Aa][Cc][Kk]"
 #token CHANNEL    "[Cc][Hh][Aa][Nn][Nn][Ee][Ll]"
 #token SEGMENT    "[Ss][Ee][Gg][Mm][Ee][Nn][Tt]"
@@ -86,6 +87,11 @@ using namespace std;
 #token LENGTH     "[Ll][Ee][Nn][Gg][Tt][Hh]"
 #token RELATIVE   "[Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee]"
 #token REGION     "[Rr][Ee][Gg][Ii][Oo][Nn]"
+
+#token X          "[Xx]"
+#token Y          "[Yy]"
+#token Z          "[Zz]"
+#token SLICE      "[Ss][Ll][Ii][Cc][Ee]"
 
 #token GROUTE     "[Gg]{[Ll][Oo][Bb][Aa][Ll][_]}[Rr][Oo][Uu][Tt][Ee]"
 #token ROUTE      "[Rr][Oo][Uu][Tt][Ee]"
@@ -145,7 +151,8 @@ start
                    &pcircuitDesign_->portNameList ]
       |  instList[ &pcircuitDesign_->instList,
                    &pcircuitDesign_->instNameList ]
-      |  netList[ &pcircuitDesign_->netList ]
+      |  netList[ &pcircuitDesign_->netList,
+                  &pcircuitDesign_->netOrderList ]
       )
    )*
    "</" CIRCUIT ">"
@@ -161,6 +168,7 @@ blockList[ TPO_InstList_t* pblockList ]
       string srCellName;
       string srPlaceFabricName;
       TPO_StatusMode_t placeStatus = TPO_STATUS_UNDEFINED;
+      TGO_Point_c placeOrigin;
 
       TPO_HierMapList_t hierMapList_;
       TPO_RelativeList_t relativeList_;
@@ -185,9 +193,26 @@ blockList[ TPO_InstList_t* pblockList ]
       (  PACK hierMapList[ &hierMapList_ ] "</" PACK ">"
       |  REGION ">" regionList[ &regionList_ ] "</" REGION ">"
       |  RELATIVE ">" relativeList[ &relativeList_ ] "</" RELATIVE ">"
-      |  PLACE { NAME { EQUAL } } stringText[ &srPlaceFabricName ]
+      |  PLACE 
          <<
-            inst.SetPlaceFabricName( srPlaceFabricName );
+            srPlaceFabricName = "";
+            placeOrigin.Set( INT_MIN, INT_MIN, 0 );
+         >>
+         (  NAME { EQUAL } stringText[ &srPlaceFabricName ]
+         |  X { EQUAL } intNum[ &placeOrigin.x ]
+         |  Y { EQUAL } intNum[ &placeOrigin.y ]
+         |  Z { EQUAL } intNum[ &placeOrigin.z ]
+         |  SLICE { EQUAL } intNum[ &placeOrigin.z ]
+         )*
+         <<
+            if( srPlaceFabricName.length( ))
+            {
+               inst.SetPlaceFabricName( srPlaceFabricName );
+            }
+            if( placeOrigin.IsValid( ))
+            {
+               inst.SetPlaceOrigin( placeOrigin );
+            }
          >>
          "/>"
       )
@@ -218,6 +243,7 @@ portList[ TPO_PortList_t* pportList,
       string srCellName;
       string srPlaceFabricName;
       TPO_StatusMode_t placeStatus = TPO_STATUS_UNDEFINED;
+      TGO_Point_c placeOrigin;
    >>
    ( PORT | IO )
    { NAME { EQUAL } } stringText[ &srName ]
@@ -247,7 +273,24 @@ portList[ TPO_PortList_t* pportList,
          >>
       |  PLACE stringText[ &srPlaceFabricName ]
          <<
-            port.SetPlaceFabricName( srPlaceFabricName );
+            srPlaceFabricName = "";
+            placeOrigin.Set( INT_MIN, INT_MIN, 0 );
+         >>
+         (  NAME { EQUAL } stringText[ &srPlaceFabricName ]
+         |  X { EQUAL } intNum[ &placeOrigin.x ]
+         |  Y { EQUAL } intNum[ &placeOrigin.y ]
+         |  Z { EQUAL } intNum[ &placeOrigin.z ]
+         |  SLICE { EQUAL } intNum[ &placeOrigin.z ]
+         )*
+         <<
+            if( srPlaceFabricName.length( ))
+            {
+               port.SetPlaceFabricName( srPlaceFabricName );
+            }
+            if( placeOrigin.IsValid( ))
+            {
+               port.SetPlaceOrigin( placeOrigin );
+            }
          >>
       )
       "/>"
@@ -310,7 +353,8 @@ instList[ TPO_InstList_t* pinstList,
    ;
 
 //===========================================================================//
-netList[ TNO_NetList_c* pnetList ]
+netList[ TNO_NetList_c* pnetList,
+         TNO_NameList_t* pnetOrderList ]
    :
    <<
       TNO_Net_c net;
@@ -358,6 +402,7 @@ netList[ TNO_NetList_c* pnetList ]
          net.AddRouteList( routeList_ );
 
          pnetList->Add( net );
+         pnetOrderList->Add( net.GetName( ));
       }
    >>
    ;
@@ -525,18 +570,21 @@ segmentDef[ TNO_Segment_c* psegment ]
    :
    <<
       string srName;
+      TGS_OrientMode_t orient = TGS_ORIENT_UNDEFINED;
       TGS_Region_c channel;
       unsigned int track = 0;
 
       psegment->Clear( );
    >>
    (  NAME { EQUAL } stringText[ &srName ]
+   |  ORIENT { EQUAL } orientMode[ &orient ]
    |  TRACK { EQUAL } uintNum[ &track ]
    )*
    ">"
    "<" CHANNEL ">" regionDef[ &channel ] "</" CHANNEL ">"
    << 
       psegment->SetName( srName );
+      psegment->SetOrient( orient );
       psegment->SetChannel( channel );
       psegment->SetTrack( track );
    >>
@@ -708,6 +756,36 @@ sideMode[ TC_SideMode_t* pside ]
          this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
                                          this->srFileName_,
                                          ": Invalid side, expected \"left\", \"right\", \"lower\", or \"upper\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+orientMode[ TGS_OrientMode_t* porient ]
+   :
+   <<
+      string srOrient;
+   >>
+   stringText[ &srOrient ]
+   <<
+      if(( TC_stricmp( srOrient.data( ), "horz" ) == 0 ) ||
+         ( TC_stricmp( srOrient.data( ), "horizontal" ) == 0 ))
+      {
+         *porient = TGS_ORIENT_HORIZONTAL;
+      }
+      else if(( TC_stricmp( srOrient.data( ), "vert" ) == 0 ) ||
+              ( TC_stricmp( srOrient.data( ), "vertical" ) == 0 ))
+      {
+         *porient = TGS_ORIENT_VERTICAL;
+      }
+      else
+      {
+         *porient = TGS_ORIENT_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid orient, expected \"horz\", or \"vert\"" );
          this->consumeUntilToken( END_OF_FILE );
       }
    >>
@@ -972,6 +1050,21 @@ expNum[ double* pdouble ]
    |  negIntVal:NEG_INT
       <<
          *pdouble = atof( negIntVal->getText( ));
+      >>
+   ;
+
+//===========================================================================//
+intNum[ int* pint ]
+   :
+      OPEN_QUOTE
+      qintVal:STRING
+      <<
+         *pint = static_cast< int >( atol( qintVal->getText( )));
+      >>
+      CLOSE_QUOTE
+   |  intVal:POS_INT
+      <<
+         *pint = static_cast< int >( atol( intVal->getText( )));
       >>
    ;
 
