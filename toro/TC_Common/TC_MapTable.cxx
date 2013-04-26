@@ -10,6 +10,8 @@
 //           - Add
 //           - FindMapSideList
 //           - FindSideList
+//           - IsLegal
+//           - IsValid
 //
 //           Public methods include:
 //           - FindMapSideList_
@@ -152,7 +154,7 @@ void TC_MapTable_c::Print(
    {
       const TC_SideList_t& sideList = *mapSideList[i];
       if( !sideList.IsValid( ))
-	 continue;
+         continue;
 
       TC_SideIndex_c sideIndex( side, i );
       string srSideIndex;
@@ -260,7 +262,7 @@ bool TC_MapTable_c::Add(
       const TC_SideIndex_c& sideIndex = *sideList[i];
       ok = this->Add( side, index, sideIndex );
       if( !ok )
-	 break;
+         break;
    }
    return( ok );
 }
@@ -276,7 +278,7 @@ bool TC_MapTable_c::Add(
    {
       const TC_SideList_t& sideList = *mapSideList[i];
       if( !sideList.IsValid( ))
-	 continue;
+         continue;
 
       TC_SideList_t* psideList = this->FindSideList_( side, i );
       if( psideList )
@@ -342,6 +344,58 @@ const TC_SideList_t* TC_MapTable_c::FindSideList(
 }
 
 //===========================================================================//
+// Method         : IsLegal
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 08/15/12 jeffr : Original
+//===========================================================================//
+bool TC_MapTable_c::IsLegal( 
+      void ) const
+{
+   return( this->IsLegal( this->leftSideList_ ) ||
+           this->IsLegal( this->rightSideList_ ) ||
+           this->IsLegal( this->lowerSideList_ ) ||
+           this->IsLegal( this->upperSideList_ ) ?
+           true : false );
+}
+
+//===========================================================================//
+bool TC_MapTable_c::IsLegal( 
+      const TC_MapSideList_t& mapSideList ) const
+{
+   bool isLegal = false;
+
+   for( size_t i = 0; i < mapSideList.GetLength( ); ++i )
+   {
+      const TC_SideList_t& sideList = *mapSideList[i];
+      if( sideList.IsValid( ))
+      {
+         isLegal = true;
+         break;
+      }
+   }
+   return( isLegal );
+}
+
+//===========================================================================//
+// Method         : IsValid
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 08/15/12 jeffr : Original
+//===========================================================================//
+bool TC_MapTable_c::IsValid( 
+      void ) const
+{
+   return( this->leftSideList_.IsValid( ) ||
+           this->rightSideList_.IsValid( ) ||
+           this->lowerSideList_.IsValid( ) ||
+           this->upperSideList_.IsValid( ) ?
+           true : false );
+}
+
+//===========================================================================//
 // Method         : FindMapSideList_
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
@@ -376,5 +430,18 @@ TC_SideList_t* TC_MapTable_c::FindSideList_(
       size_t        index )
 {
    TC_MapSideList_t* pmapSideList = this->FindMapSideList_( side );
+
+   if( pmapSideList && ( pmapSideList->GetLength( ) <= index ))
+   {
+      size_t length = pmapSideList->GetLength( );
+      size_t width = index + 1;
+      pmapSideList->SetCapacity( width );
+
+      for( size_t i = length; i < width; ++i )
+      {
+         TC_SideList_t sideList;
+         pmapSideList->Insert( i, sideList );
+      }
+   }
    return( pmapSideList ? ( *pmapSideList )[index] : 0 );
 }
