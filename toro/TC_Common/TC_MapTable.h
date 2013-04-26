@@ -1,9 +1,6 @@
 //===========================================================================//
 // Purpose : Declaration and inline definitions for a TC_MapTable class.
 //
-//           Inline methods include:
-//           - IsValid
-//
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
@@ -87,6 +84,9 @@ public:
    const TC_MapSideList_t* FindMapSideList( TC_SideMode_t side ) const;
    const TC_SideList_t* FindSideList( TC_SideMode_t side, size_t index ) const;
 
+   bool IsLegal( void ) const;
+   bool IsLegal( const TC_MapSideList_t& mapSideList ) const;
+
    bool IsValid( void ) const;
 
 private:
@@ -101,22 +101,5 @@ private:
    TC_MapSideList_t lowerSideList_;
    TC_MapSideList_t upperSideList_;
 };
-
-//===========================================================================//
-// Purpose        : Class inline definition(s)
-// Author         : Jeff Rudolph
-//---------------------------------------------------------------------------//
-// Version history
-// 08/15/12 jeffr : Original
-//===========================================================================//
-inline bool TC_MapTable_c::IsValid( 
-      void ) const
-{
-   return( this->leftSideList_.IsValid( ) ||
-           this->rightSideList_.IsValid( ) ||
-           this->lowerSideList_.IsValid( ) ||
-           this->upperSideList_.IsValid( ) ?
-           true : false );
-}
 
 #endif
