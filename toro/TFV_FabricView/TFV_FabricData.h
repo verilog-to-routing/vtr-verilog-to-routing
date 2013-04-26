@@ -2,7 +2,7 @@
 // Purpose : Declaration and inline definitions for a TFV_FabricData class.
 //
 //           Inline methods include:
-//           - SetDataType, SetName, SetMasterName
+//           - SetDataType, SetName, SetMasterName, SetOrigin
 //           - SetTrackIndex, SetTrackHorzCount, SetTrackVertCount
 //           - SetSliceCount, SetSliceCapacity
 //           - SetTiming
@@ -10,7 +10,7 @@
 //           - AddMap
 //           - AddPin
 //           - AddConnection
-//           - GetDataType, GetName, GetMasterName
+//           - GetDataType, GetName, GetMasterName, GetOrigin
 //           - GetTrackIndex, GetTrackHorzCount, GetTrackVertCount
 //           - GetSliceCount, GetSliceCapacity
 //           - GetTiming
@@ -48,6 +48,8 @@ using namespace std;
 #include "TC_SideIndex.h"
 #include "TC_MapTable.h"
 
+#include "TGO_Point.h"
+
 #include "TFV_Typedefs.h"
 #include "TFV_FabricPin.h"
 
@@ -79,6 +81,7 @@ public:
    void SetName( const char* pszName );
    void SetMasterName( const string& srMasterName );
    void SetMasterName( const char* pszMasterName );
+   void SetOrigin( const TGO_Point_c& origin );
    void SetTrackIndex( unsigned int index );
    void SetTrackHorzCount( unsigned int horzCount );
    void SetTrackVertCount( unsigned int vertCount );
@@ -103,6 +106,7 @@ public:
    TFV_DataType_t GetDataType( void ) const;
    const char* GetName( void ) const;
    const char* GetMasterName( void ) const;
+   const TGO_Point_c& GetOrigin( void ) const;
 
    unsigned int GetTrackIndex( void ) const;
    unsigned int GetTrackHorzCount( void ) const;
@@ -130,7 +134,7 @@ public:
                           const TFV_FabricPin_c& pin ) const;
    TGS_Point_c CalcPoint( const TGS_Region_c& region,
                           TC_SideMode_t side,
-                          double offset = 0.0,
+                          double delta = 0.0,
                           double width = 0.0 ) const;
 
    bool IsValid( void ) const;
@@ -142,6 +146,8 @@ private:
 
    string srName_;               // Define fabric data name
    string srMasterName_;         // Optional fabric master 
+                                 // (specifically for PB, IO, and SB objects)
+   TGO_Point_c origin_;          // Define fabric origin point
                                  // (specifically for PB, IO, and SB objects)
 
    TFV_FabricPinList_t pinList_; // Fabric data pin list
@@ -226,6 +232,13 @@ inline void TFV_FabricData_c::SetMasterName(
       const char* pszMasterName )
 {
    this->srMasterName_ = TIO_PSZ_STR( pszMasterName );
+}
+
+//===========================================================================//
+inline void TFV_FabricData_c::SetOrigin(
+      const TGO_Point_c& origin )
+{
+   this->origin_ = origin;
 }
 
 //===========================================================================//
@@ -348,6 +361,13 @@ inline const char* TFV_FabricData_c::GetMasterName(
       void ) const
 {
    return( TIO_SR_STR( this->srMasterName_ ));
+}
+
+//===========================================================================//
+inline const TGO_Point_c& TFV_FabricData_c::GetOrigin(
+      void ) const
+{
+   return( this->origin_ );
 }
 
 //===========================================================================//
