@@ -184,9 +184,9 @@ void TC_NameLength_c::ExtractString(
          *psrNameLength += this->srName_;
          *psrNameLength += "\"";
 
-	 if( this->length_ != UINT_MAX )
-	 {
-   	    char szLength[TIO_FORMAT_STRING_LEN_VALUE];
+         if( this->length_ != UINT_MAX )
+         {
+            char szLength[TIO_FORMAT_STRING_LEN_VALUE];
             sprintf( szLength, "%d", this->length_ );
 
             *psrNameLength += " ";
