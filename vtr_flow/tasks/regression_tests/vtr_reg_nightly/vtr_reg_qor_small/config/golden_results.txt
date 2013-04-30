@@ -1,12 +1,12 @@
 arch	circuit	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error
-k6_frac_N10_mem32K_40nm.xml	bgm.v	success	124	25.2478	168.15	1601.24	5865.91	74.73	38531	38046	21183	2972	257	32	0	11	
-k6_frac_N10_mem32K_40nm.xml	blob_merge.v	success	74	10.4978	17.46	62.55	331.65	5.24	6790	6890	3025	546	36	100	0	0	
-k6_frac_N10_mem32K_40nm.xml	boundtop.v	success	60	6.62122	6.43	33.85	20.48	1.61	5032	5224	2182	233	275	192	1	0	
-k6_frac_N10_mem32K_40nm.xml	ch_intrinsics.v	success	48	3.84741	0.75	3.73	2.11	0.16	765	895	430	37	99	130	1	0	
-k6_frac_N10_mem32K_40nm.xml	diffeq1.v	success	56	21.9646	0.69	5.21	20.14	1.29	1004	941	717	37	162	96	0	5	
-k6_frac_N10_mem32K_40nm.xml	diffeq2.v	success	50	16.9129	0.52	3.31	14.49	1.21	649	585	464	28	66	96	0	5	
-k6_frac_N10_mem32K_40nm.xml	mkDelayWorker32B.v	success	80	7.21837	20.01	100.11	2464.39	25.98	9933	10486	5260	447	511	553	43	0	
-k6_frac_N10_mem32K_40nm.xml	mkSMAdapter4B.v	success	62	5.73874	5.25	21.34	49.32	1.58	3308	3513	1607	167	195	205	5	0	
-k6_frac_N10_mem32K_40nm.xml	raygentop.v	success	74	5.19662	7.09	26.55	33.94	2.43	4037	4153	1954	174	239	305	1	7	
-k6_frac_N10_mem32K_40nm.xml	sha.v	success	50	13.363	10.39	15.29	32.09	1.03	3226	3262	1288	210	38	36	0	0	
-k6_frac_N10_mem32K_40nm.xml	stereovision0.v	success	58	4.2319	32.88	151.18	238.16	4.77	25022	25219	7935	903	157	197	0	0	
+k6_frac_N10_mem32K_40nm.xml	bgm.v	success	122	26.291	165.7	224.46	10026.8	91.25	38531	38046	21183	2972	257	32	0	11	
+k6_frac_N10_mem32K_40nm.xml	blob_merge.v	success	78	10.2267	19.94	21.03	420.63	6.02	6790	6890	3025	546	36	100	0	0	
+k6_frac_N10_mem32K_40nm.xml	boundtop.v	success	62	6.46134	6.79	10.15	40.07	2.25	5032	5224	2182	233	275	192	1	0	
+k6_frac_N10_mem32K_40nm.xml	ch_intrinsics.v	success	50	3.87124	0.79	0.93	1.95	0.22	765	895	430	37	99	130	1	0	
+k6_frac_N10_mem32K_40nm.xml	diffeq1.v	success	56	22.1202	0.81	1.73	40.72	1.88	1004	941	717	37	162	96	0	5	
+k6_frac_N10_mem32K_40nm.xml	diffeq2.v	success	54	17.0418	0.61	1.37	24.74	1.83	649	585	464	28	66	96	0	5	
+k6_frac_N10_mem32K_40nm.xml	mkDelayWorker32B.v	success	82	6.99219	22.34	27.69	3446.15	38.02	9933	10486	5260	447	511	553	43	0	
+k6_frac_N10_mem32K_40nm.xml	mkSMAdapter4B.v	success	62	5.46879	6.06	6.73	103.46	2.33	3308	3513	1607	167	195	205	5	0	
+k6_frac_N10_mem32K_40nm.xml	raygentop.v	success	70	5.1121	7.89	8.03	50.36	4.22	4037	4153	1954	174	239	305	1	7	
+k6_frac_N10_mem32K_40nm.xml	sha.v	success	50	13.5952	11.65	5.75	53.5	1.56	3226	3262	1288	210	38	36	0	0	
+k6_frac_N10_mem32K_40nm.xml	stereovision0.v	success	58	4.63405	41.04	53.72	363.39	6.28	25022	25219	7935	903	157	197	0	0	
