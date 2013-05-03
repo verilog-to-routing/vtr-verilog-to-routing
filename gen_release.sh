@@ -49,6 +49,8 @@ cp -r libarchfpga/include vtr_release/libarchfpga
 cp libarchfpga/*.xml vtr_release/libarchfpga
 cp libarchfpga/Makefile vtr_release/libarchfpga
 cp libarchfpga/*.c vtr_release/libarchfpga
+cp libarchfpga/libarchfpga.vcxproj vtr_release/libarchfpga
+cp libarchfpga/libarchfpga.vcxproj.filters vtr_release/libarchfpga
 
 echo "Build regtest"
 cp -r vtr_flow vtr_release/vtr_flow
@@ -77,8 +79,8 @@ cp vpr/VPR_User_Manual_7.0.pdf vtr_release/vpr
 echo "Finishing Build"
 cp README.release.txt vtr_release/README.txt
 cp Makefile vtr_release/
-cp run_reg_test.pl vtr_release/
-cp run_quick_test.pl vtr_release/
+cp -p run_reg_test.pl vtr_release/
+cp -p run_quick_test.pl vtr_release/
 
 
 
