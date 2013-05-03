@@ -47,7 +47,7 @@ $(EXE): $(OBJS) Makefile $(ABC_LIB_PATH)
 	$(CC) $(OBJS) $(CFLAGS) $(ABC_HEADERS) $(ABC_LIB_PATH) $(LIBS) -o $(EXE)
 	
 clean:
-	rm -f *.o *.exe $(TARGET)
+	rm -f *.o *.exe $(TARGET) $(EXE)
 	
 %.o: %.c
 	$(CC) -c $< $(CFLAGS) -o $@ $(ABC_HEADERS) $(DEFINES) $(LIBS)
