@@ -21,4 +21,17 @@ in the same directory as the Makefile
 You don't need to use the latest and greatest versions of each tool.  At the end of the day, what's important is that the directory structure must match the release directory structure.
 
 
- 
+##############################################################################
+# Contributors (Please keep this up-to-date so that we can copy-paste into other locations)
+##############################################################################
+
+Professors: Kenneth Kent, Peter Jamieson, Jason Anderson, Vaughn Betz, Jonathan Rose
+
+Graduate Students: Jason Luu, Jeffrey Goeders, Chi Wai Yu, Andrew Somerville, 
+Ian Kuon, Alexander Marquardt, Andy Ye, Wei Mark Fang, Tim Liu
+
+Summer Students: Opal Densmore, Ted Campbell, Cong Wang, Peter Milankov, Scott Whitty, Michael Wainberg,
+Suya Liu, Miad Nasr, Nooruddin Ahmed, Thien Yu
+
+Companies: Altera Corporation, Texas Instruments
+
