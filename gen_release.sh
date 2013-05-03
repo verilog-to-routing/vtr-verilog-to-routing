@@ -90,9 +90,6 @@ rm -rf vtr_release/*/*/*/*/.svn
 rm -rf vtr_release/*/*/*/*/*/.svn
 rm -rf vtr_release/*/*/*/*/*/*/.svn
 
-# Remove autogen files
-rm vtr_release/vpr/VPR.ncb
-
 echo "Create tarball"
 tar -cf vtr_release.tar vtr_release
 gzip vtr_release.tar
