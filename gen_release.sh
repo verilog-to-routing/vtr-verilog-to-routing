@@ -13,6 +13,7 @@ mkdir vtr_release/ODIN_II/OBJ
 mkdir vtr_release/abc_with_bb_support
 mkdir vtr_release/libarchfpga
 mkdir vtr_release/pcre
+mkdir vtr_release/ace2
 mkdir vtr_release/printhandler
 mkdir vtr_release/quick_test
 mkdir vtr_release/vpr
@@ -40,6 +41,9 @@ rm -rf vtr_release/printhandler/Debug
 echo "Build pcre"
 cp -r pcre vtr_release/pcre
 rm -rf vtr_release/pcre/Debug
+
+echo "Build ace2"
+cp -r ace2 vtr_release/ace2
 
 echo "Build libarchfpga"
 cp -r libarchfpga/arch vtr_release/libarchfpga
@@ -72,7 +76,7 @@ cp vpr/sample_arch.xml vtr_release/vpr
 cp vpr/VPR_User_Manual_6.0.pdf vtr_release/vpr
 
 echo "Finishing Build"
-cp README.txt vtr_release/
+cp README.release.txt vtr_release/README.txt
 cp Makefile vtr_release/
 
 echo "Remove .svn files"

@@ -129,7 +129,7 @@ Please support us by registering as a user of VTR here: http://www.eecg.utoronto
 # License
 ##############################################################################
 
-Copyright (c) 2012 
+Copyright (c) 2013
 Jason Luu, Jeffrey Goeders, Chi Wai Yu, Opal Densmore, Andrew Somerville, 
 Kenneth Kent, Peter Jamieson, Jason Anderson, Ian Kuon, Alexander Marquardt, 
 Andy Ye, Ted Campbell, Wei Mark Fang, Vaughn Betz, Jonathan Rose
