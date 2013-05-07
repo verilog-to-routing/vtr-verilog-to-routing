@@ -253,7 +253,7 @@ static int find_fanin_rr_node(t_pb *cur_pb, enum PORTS type, int rr_node_index) 
 static void print_primitive(FILE *fpout, int iblk) {
 	t_pb *pb;
 	int clb_index;
-	int i, j, node_index;
+	int i, j, k, node_index;
 	int in_port_index, out_port_index, clock_port_index;
 	struct s_linked_vptr *truth_table;
 	const t_pb_type *pb_type;
@@ -314,14 +314,30 @@ static void print_primitive(FILE *fpout, int iblk) {
 			for (i = 0; i < pb_type->num_ports; i++) {
 				if (pb_type->ports[i].type == IN_PORT
 						&& pb_type->ports[i].is_clock == FALSE) {
+					/* This is a LUT
+					   LUTs receive special handling because a LUT has logically equivalent inputs.
+					   The intra-logic block router may have taken advantage of logical equivalence so we need to unscramble the inputs when we output the LUT logic.
+					*/
 					for (j = 0; j < pb_type->ports[i].num_pins; j++) {
 						if (logical_block[iblk].input_nets[in_port_index][j] != OPEN) {
-							node_index =
-									pb->pb_graph_node->input_pins[in_port_index][j].pin_count_in_cluster;
-							fprintf(fpout, "clb_%d_rr_node_%d ", clb_index,
-									find_fanin_rr_node(pb,
-											pb_type->ports[i].type,
-											node_index));
+							for (k = 0; k < pb_type->ports[i].num_pins; k++) {								
+								node_index = pb->pb_graph_node->input_pins[in_port_index][k].pin_count_in_cluster;
+								if(rr_node[node_index].net_num != OPEN) {
+									if(rr_node[node_index].net_num == logical_block[iblk].input_nets[in_port_index][j]) {
+										fprintf(fpout, "clb_%d_rr_node_%d ", clb_index,
+										find_fanin_rr_node(pb,
+												pb_type->ports[i].type,
+												node_index));
+										break;
+									}
+								}
+							}
+							if(k == pb_type->ports[i].num_pins) {
+								/* Failed to find LUT input, a netlist error has occurred */
+								vpr_printf(TIO_MESSAGE_ERROR, "LUT %s missing input %s post packing.  This is a VPR internal error, report to vpr@eecg.utoronto.ca\n",
+									logical_block[iblk].name, vpack_net[logical_block[iblk].input_nets[in_port_index][j]].name);
+								exit(1);
+							}
 						}
 					}
 					in_port_index++;

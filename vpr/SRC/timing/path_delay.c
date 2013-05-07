@@ -3598,18 +3598,18 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 			for (i = 0;
 					i < logical_block[iblk].pb->pb_graph_node->num_input_pins[0];
 					i++) {
-				if (irr_graph[logical_block[iblk].pb->pb_graph_node->input_pins[0][i].pin_count_in_cluster].net_num
-						!= OPEN) {
-					fprintf(fpout, "tnode_%d ",
-							get_tnode_index(irr_graph[logical_block[iblk].pb->pb_graph_node->input_pins[0][i].pin_count_in_cluster].tnode));
-				} else {
-					if (i > 0
-							&& i
-									< logical_block[iblk].pb->pb_graph_node->num_input_pins[0]
-											- 1) {
-						assert(
-								irr_graph[logical_block[iblk].pb->pb_graph_node->input_pins[0][i + 1].pin_count_in_cluster].net_num == OPEN);
+				if(logical_block[iblk].input_nets[0][i] != OPEN) {
+					for (j = 0; j < logical_block[iblk].pb->pb_graph_node->num_input_pins[0]; j++) {
+						if (irr_graph[logical_block[iblk].pb->pb_graph_node->input_pins[0][j].pin_count_in_cluster].net_num
+							!= OPEN) {
+							if (irr_graph[logical_block[iblk].pb->pb_graph_node->input_pins[0][j].pin_count_in_cluster].net_num == logical_block[iblk].input_nets[0][i]) {
+								fprintf(fpout, "tnode_%d ",
+								get_tnode_index(irr_graph[logical_block[iblk].pb->pb_graph_node->input_pins[0][j].pin_count_in_cluster].tnode));
+								break;
+							}
+						}
 					}
+					assert(j < logical_block[iblk].pb->pb_graph_node->num_input_pins[0]);
 				}
 			}
 			assert(
