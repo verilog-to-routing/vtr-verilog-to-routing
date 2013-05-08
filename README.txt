@@ -1,24 +1,24 @@
-This is the development trunk for the Verilog-to-Routing project.  Unlike the nicely packaged release that we create, you are working with code in a constant state of flux.  You should expect that the tools are not always stable and that more work is needed to get the flow to run.
+This is the development trunk for the Verilog-to-Routing project.  Unlike the 
+nicely packaged release that we create, you are working with code in a constant 
+state of flux.  You should expect that the tools are not always stable and that 
+more work is needed to get the flow to run.
 
-The VTR framework consists of 5 major parts: Odin II, ABC, libarchfpga, vpr, and vtr_flow.  When we release VTR, these projects are packaged together with scripts that make these parts talk to each other.  You download VPR and vtr_flow on this site.  You can download the most recent version of Odin II and libarchfpga here: (http://code.google.com/p/odin-ii/).  The most recent version of abc here: (https://bitbucket.org/alanmi/abc/src)
+For new developers, please do the tutorial in tutorial/NewDeveloperTutorial.txt.  You
+will be directed back here once you ramp up.
 
-You need to organize the directory structure such that the Odin II and ABC folders are in the same directory as vpr and vtr_flow as follows:
+Our work in VTR follows a classic svn workflow.  The trunk is supposed to be the 
+most current stable version of the project.  Developers checkout a local copy of the code from the 
+trunk at the start of development then do regular svn updates to keep in sync 
+with the trunk.  When a developer has a tested, working change to put back into 
+the trunk, he/she performs an "svn commit" operation.  Unstable code should
+remain in the developer's local copy.
 
-odin-ii/ODIN_II/ODIN_II goes to ODIN_II
-odin-ii/ODIN_II/libarchfpga_6 goes to libarchfpga
-abc goes to abc_with_bb_support
+We do regular testing of the trunk using an automatic regression testing framework.  You
+can see the state of the trunk here: http://canucks.eecg.toronto.edu:8080/waterfall
 
-So at the end, you should see:
+IMPORTANT:  Outside of special circumstance, a broken build must be fixed at top priority.  
+You break the build if your commit breaks any of the automated regression tests.
 
-abc_with_bb_support
-ODIN_II
-libarchfpga
-vtr_flow
-vpr
-
-in the same directory as the Makefile
-
-You don't need to use the latest and greatest versions of each tool.  At the end of the day, what's important is that the directory structure must match the release directory structure.
 
 
 ##############################################################################
