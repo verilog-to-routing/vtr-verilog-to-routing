@@ -77,7 +77,8 @@ my $lut_size                = -1;
 my $vpr_cluster_seed_type   = "";
 my $tech_file               = "";
 my $do_power                = 0;
-my $check_equivalent = "off";
+my $check_equivalent		= "off";
+my $gen_postsynthesis_netlist 	= "off";
 my $seed					= 1;
 my $min_hard_adder_size		= 1;
 
@@ -120,6 +121,9 @@ while ( $token = shift(@ARGV) ) {
 	}
 	elsif ( $token eq "-check_equivalent" ) {
 		$check_equivalent = "on";
+	}
+	elsif ( $token eq "-gen_postsynthesis_netlist" ) {
+		$gen_postsynthesis_netlist = "on";
 	}
 	elsif ( $token eq "-seed" ) {
 		$seed = shift(@ARGV);
@@ -495,6 +499,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 					"--cluster_seed_type",   "$vpr_cluster_seed_type",
 					"--max_router_iterations", "100",
 					"--nodisp",              @vpr_power_args,
+					"--gen_postsynthesis_netlist", "$gen_postsynthesis_netlist",
 					"--sdc_file",			 "$sdc_file_path"
 				);
 			}
@@ -511,6 +516,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"--route_chan_width",         "$min_chan_width",
 			"--nodisp",                   "--cluster_seed_type",
 			"$vpr_cluster_seed_type",     @vpr_power_args,
+			"--gen_postsynthesis_netlist", "$gen_postsynthesis_netlist",
 			"--sdc_file",				  "$sdc_file_path"
 		);
 	}
