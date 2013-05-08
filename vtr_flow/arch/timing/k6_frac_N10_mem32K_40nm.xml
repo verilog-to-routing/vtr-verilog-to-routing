@@ -38,17 +38,17 @@
   take the R and C data from the ITRS roadmap.  
 
  For the general purpose logic block, we assume that the area and delays of the Stratix IV 
-  crossbar is close enough to the crossbar modelled here.  We use 33 inputs and 20 feedback lines in 
+  crossbar is close enough to the crossbar modelled here.  We use 40 inputs and 20 feedback lines in 
   the cluster and a full crossbar, leading to 53:1 multiplexers in front of each BLE input.
   Stratix IV uses 52 inputs and 20 feedback lines, but only a half-populated crossbar, leading to 
   36:1 multiplexers.  We require 60 such multiplexers, while Stratix IV requires 88 for its more
   complex fracturable BLEs + the extra control signals. We justify this rough approximation as follows: 
-  The Stratix IV crossbar has more inputs (72 vs. 53) and 
+  The Stratix IV crossbar has more inputs (72 vs. 60) and 
   outputs (88 vs. 60) than our full crossbar which should increase its area and delay, but the 
-  Stratix IV crossbar is also 50% sparse (each mux is 36:1 instead of 53:1) which should reduce its 
-  area and delay.  The total number of crossbar switch points is very similar between the two 
-  architectures (3160 for SIV and 3180 for the academic architecture below), so we can use the area 
-  & delay of the Stratix IV crossbar as a good approximation of our crossbar.
+  Stratix IV crossbar is also 50% sparse (each mux is 36:1 instead of 60:1) which should reduce its 
+  area and delay.  The total number of crossbar switch points is roughly similar between the two 
+  architectures (3160 for SIV and 3600 for the academic architecture below), so we use the area 
+  & delay of the Stratix IV crossbar as a rough approximation of our crossbar.
 
   For LUTs, we include LUT 
   delays measured from Stratix IV which is dependant on the input used (ie. some 
@@ -252,7 +252,7 @@
 
     <!-- Define general purpose logic block (CLB) begin -->
     <pb_type name="clb">
-      <input name="I" num_pins="33" equivalent="true"/>
+      <input name="I" num_pins="40" equivalent="true"/>
       <output name="O" num_pins="20" equivalent="false"/>
       <clock name="clk" num_pins="1"/>
 

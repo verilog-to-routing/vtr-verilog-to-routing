@@ -156,7 +156,7 @@
 
     <!-- Define general purpose logic block (CLB) begin -->
     <pb_type name="clb">
-      <input name="I" num_pins="33" equivalent="true"/>
+      <input name="I" num_pins="40" equivalent="true"/>
       <output name="O" num_pins="20" equivalent="false"/>
       <clock name="clk" num_pins="1"/>
 
