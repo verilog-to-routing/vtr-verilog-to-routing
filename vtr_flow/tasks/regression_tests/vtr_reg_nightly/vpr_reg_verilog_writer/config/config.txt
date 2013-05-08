@@ -36,7 +36,7 @@ circuit_list_add=sha.latren.blif
 circuit_list_add=spla.blif
 
 # Add architectures to list to sweep
-arch_list_add=sample_arch.xml
+arch_list_add=k6_N10_40nm.xml
 
 
 # Parse info and how to parse
