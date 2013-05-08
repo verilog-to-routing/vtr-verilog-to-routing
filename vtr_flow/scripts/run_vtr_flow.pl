@@ -542,6 +542,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			system "rm -f ${temp_dir}*.net";
 			system "rm -f ${temp_dir}*.place";
 			system "rm -f ${temp_dir}*.route";
+			system "rm -f ${temp_dir}*.sdf";
+			system "rm -f ${temp_dir}*.v";
 			if ($do_power) {
 				system "rm -f $ace_output_act_path";
 			}
