@@ -1,0 +1,29 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/titan_blif
+
+# Path to directory of architectures to use
+archs_dir=arch/titan
+
+# Add circuits to list to sweep
+circuit_list_add=sudoku_check_stratixiv_arch_simple.blif
+circuit_list_add=leon2_stratixiv_arch_simple.blif
+circuit_list_add=radar20_stratixiv_arch_simple.blif
+circuit_list_add=wb_conmax_stratixiv_arch_simple.blif
+
+
+# Add architectures to list to sweep
+arch_list_add=stratixiv_arch.simple.xml
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+script_params=-starting_stage vpr -no_timing -vpr_route_chan_width 300
+
