@@ -2035,7 +2035,7 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 			sizeof(t_mode));
 
 	/* First mode, route_through */
-	lut_pb_type->modes[0].name = my_strdup(lut_pb_type->name);
+	lut_pb_type->modes[0].name = my_strdup("wire");
 	lut_pb_type->modes[0].parent_pb_type = lut_pb_type;
 	lut_pb_type->modes[0].index = 0;
 	lut_pb_type->modes[0].num_pb_type_children = 0;
