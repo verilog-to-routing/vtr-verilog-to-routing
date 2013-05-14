@@ -8,6 +8,8 @@ rm -rf vtr_release.tar.gz
 
 echo "Make new vtr_release directory"
 mkdir vtr_release
+mkdir vtr_release/doc
+mkdir vtr_release/doc/power
 mkdir vtr_release/ODIN_II
 mkdir vtr_release/ODIN_II/OBJ
 mkdir vtr_release/abc_with_bb_support
@@ -20,6 +22,9 @@ mkdir vtr_release/vpr
 
 echo "Clean builds"
 make clean
+
+echo "Build docs"
+cp doc/power/power_manual.pdf vtr_release/doc/power
 
 echo "Build ODIN II"
 cp ODIN_II/*.txt vtr_release/ODIN_II
