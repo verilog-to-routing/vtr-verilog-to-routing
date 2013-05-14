@@ -57,9 +57,12 @@ Task #4 - Use VTR
 
   1.  Create your own custom Verilog file.  Create your own custom architecture 
   file using one of the existing architecture files as a template.  Use VTR to 
-  map that circuit that you created to that architecture that you created. Hint:  
-  You will want to read the documentation on the VTR project located at 
-  https://code.google.com/p/vtr-verilog-to-routing/
+  map that circuit that you created to that architecture that you created. The VTR
+  documentation, to be found at https://code.google.com/p/vtr-verilog-to-routing/
+  will prove useful. You may also wish to look at the following links for descriptions
+  of the language used inside the architecture files:
+  - http://www.eecg.utoronto.ca/~jluu/publications/luu_vpr_fpga2011.pdf
+  - http://www.eecg.utoronto.ca/vpr/utfal_ex1.html
 
   2.  Perform a simple architecture experiment.  Run an experiment that varies 
   Fc_in from 0.01 to 1.00 on the benchmarks ch_intrinsics, or1200, and sha.  Use 
