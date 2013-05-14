@@ -25,6 +25,7 @@ make clean
 
 echo "Build docs"
 cp doc/power/power_manual.pdf vtr_release/doc/power
+cp vpr/VPR_User_Manual_7.0.pdf vtr_release/doc
 
 echo "Build ODIN II"
 cp ODIN_II/*.txt vtr_release/ODIN_II
