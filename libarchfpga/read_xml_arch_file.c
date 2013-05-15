@@ -1076,7 +1076,7 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 			} else {
 				wire_defined = TRUE;
 				port->port_power->wire_type = POWER_WIRE_TYPE_C;
-				port->port_power->wire.C = atof(prop);
+				port->port_power->wire.C = (float) atof(prop);
 			}
 		}
 
@@ -1098,7 +1098,7 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 			} else {
 				wire_defined = TRUE;
 				port->port_power->wire_type = POWER_WIRE_TYPE_ABSOLUTE_LENGTH;
-				port->port_power->wire.absolute_length = atof(prop);
+				port->port_power->wire.absolute_length = (float) atof(prop);
 			}
 		}
 
@@ -1117,7 +1117,7 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 			} else {
 				wire_defined = TRUE;
 				port->port_power->wire_type = POWER_WIRE_TYPE_RELATIVE_LENGTH;
-				port->port_power->wire.relative_length = atof(prop);
+				port->port_power->wire.relative_length = (float) atof(prop);
 			}
 		}
 
@@ -1133,7 +1133,7 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 				port->port_power->buffer_type = POWER_BUFFER_TYPE_AUTO;
 			} else {
 				port->port_power->buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
-				port->port_power->buffer_size = atof(prop);
+				port->port_power->buffer_size = (float) atof(prop);
 			}
 		}
 	}
@@ -3495,6 +3495,7 @@ e_power_estimation_method power_method_inherited(
 		return POWER_METHOD_AUTO_SIZES;
 	default:
 		assert(0);
+      return POWER_METHOD_UNDEFINED;  // Should never get here, but avoids a compiler warning.
 	}
 }
 
