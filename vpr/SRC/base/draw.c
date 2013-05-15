@@ -203,7 +203,7 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 	update_message(msg);
 	drawscreen();
 	if (priority >= gr_automode) {
-		event_loop(highlight_blocks, drawscreen);
+		event_loop(highlight_blocks, NULL, NULL, drawscreen);
 	} else {
 		flushinput();
 	}
