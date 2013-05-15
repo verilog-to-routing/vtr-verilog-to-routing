@@ -242,6 +242,7 @@
   <ItemGroup>
     <ClInclude Include="SRC\base\check_netlist.h" />
     <ClInclude Include="SRC\base\draw.h" />
+    <ClInclude Include="SRC\base\easygl_constants.h" />
     <ClInclude Include="SRC\base\globals.h" />
     <ClInclude Include="SRC\base\globals_declare.h" />
     <ClInclude Include="SRC\base\graphics.h" />
@@ -273,7 +274,6 @@
     <ClInclude Include="SRC\timing\net_delay.h" />
     <ClInclude Include="SRC\timing\path_delay.h" />
     <ClInclude Include="SRC\timing\path_delay2.h" />
-    <ClInclude Include="SRC\timing\path_length.h" />
     <ClInclude Include="SRC\route\check_route.h" />
     <ClInclude Include="SRC\route\check_rr_graph.h" />
     <ClInclude Include="SRC\route\route_breadth_first.h" />

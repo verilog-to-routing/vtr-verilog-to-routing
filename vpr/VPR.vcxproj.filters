@@ -317,9 +317,6 @@
     <ClInclude Include="SRC\timing\path_delay2.h">
       <Filter>Header Files\timing</Filter>
     </ClInclude>
-    <ClInclude Include="SRC\timing\path_length.h">
-      <Filter>Header Files\timing</Filter>
-    </ClInclude>
     <ClInclude Include="SRC\route\check_route.h">
       <Filter>Header Files\route</Filter>
     </ClInclude>
@@ -463,6 +460,9 @@
     </ClInclude>
     <ClInclude Include="SRC\power\PowerSpicedComponent.h">
       <Filter>Header Files\power</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\easygl_constants.h">
+      <Filter>Header Files\base</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
