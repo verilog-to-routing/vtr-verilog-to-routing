@@ -385,7 +385,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_vpack_net(int inet, int ipin) {
 	}
 
 	assert(port != NULL);
-	return get_pb_graph_node_pin_from_model_port_pin(port, ipin, logical_block[ilogical_block].pb->pb_graph_node);
+	return get_pb_graph_node_pin_from_model_port_pin(port, vpack_net[inet].node_block_pin[ipin], logical_block[ilogical_block].pb->pb_graph_node);
 }
 
 t_pb_graph_pin* get_pb_graph_node_pin_from_clb_net(int inet, int ipin) {
