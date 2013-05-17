@@ -766,10 +766,7 @@ static void force_setfontsize (int pointsize)
 	currentfontsize = pointsize;
 	
 	if (gl_state.disp_type == SCREEN) {
-		if (!font_is_loaded[pointsize]) {
 			load_font (pointsize);
-			font_is_loaded[pointsize] = true;
-		}
 #ifdef X11
 		XSetFont(display, current_gc, font_info[pointsize]->fid); 
 #else /* Win32 */
@@ -1112,7 +1109,6 @@ init_graphics (const char *window_name, int cindex)
 	
    /* specify font for menus.  */
    load_font(menu_font_size);
-   font_is_loaded[menu_font_size] = true;
    XSetFont(display, gc_menus, font_info[menu_font_size]->fid);
 	
    /* Set drawing defaults for user-drawable area.  Use whatever the *
@@ -1187,7 +1183,6 @@ init_graphics (const char *window_name, int cindex)
       CREATE_ERROR();
 
    load_font (currentfontsize);
-   font_is_loaded[currentfontsize] = true;
    hGraphicsFont = CreateFontIndirect(font_info[currentfontsize]);
    if (!hGraphicsFont)
       CREATE_ERROR();
@@ -2779,6 +2774,9 @@ load_font(int pointsize)
       return;
    }
 
+   	if (font_is_loaded[pointsize])  // Nothing to do.
+		return;
+
 #ifdef X11
    #define NUM_FONT_TYPES 3
    char fontname[NUM_FONT_TYPES][BUFSIZE];
@@ -2832,6 +2830,8 @@ load_font(int pointsize)
    lf->lfPitchAndFamily = VARIABLE_PITCH | FF_SWISS;
    strcpy(lf->lfFaceName, "Arial");	 
 #endif
+
+   font_is_loaded[pointsize] = true;
 }
 
 

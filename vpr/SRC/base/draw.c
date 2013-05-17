@@ -405,17 +405,26 @@ void free_draw_structs(void) {
 	 * For safety, set all the array pointers to NULL in case any data
 	 * structure gets freed twice.													 */
 
-	free(tile_x);  tile_x = NULL;
-	free(tile_y);  tile_y = NULL;
+	free(tile_x);  
+	tile_x = NULL;
+	free(tile_y);  
+	tile_y = NULL;
 
-	free(net_color);  	net_color = NULL;
-	free(block_color);  block_color = NULL;
+	free(net_color);  	
+	net_color = NULL;
+	free(block_color);  
+	block_color = NULL;
 
-	free(x_rr_node_left);  	x_rr_node_left = NULL;
-	free(x_rr_node_right);  x_rr_node_right = NULL;
-	free(y_rr_node_top);  	y_rr_node_top = NULL;
-	free(y_rr_node_bottom); y_rr_node_bottom = NULL;
-	free(rr_node_color);	rr_node_color = NULL;
+	free(x_rr_node_left);  	
+	x_rr_node_left = NULL;
+	free(x_rr_node_right);  
+	x_rr_node_right = NULL;
+	free(y_rr_node_top);  	
+	y_rr_node_top = NULL;
+	free(y_rr_node_bottom); 
+	y_rr_node_bottom = NULL;
+	free(rr_node_color);	
+	rr_node_color = NULL;
 }
 
 void init_draw_coords(float width_val) {
