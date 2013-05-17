@@ -456,6 +456,7 @@ void vpr_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 	/* Close down X Display */
 	if (vpr_setup.ShowGraphics)
 		close_graphics();
+		free_draw_structs();
 }
 
 /* Free architecture data structures */
