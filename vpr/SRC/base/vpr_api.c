@@ -127,8 +127,7 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO,
 			"\t[--alpha_t <float>] [--inner_num <float>] [--seed <int>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--place_cost_exp <float>]\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"\t[--place_chan_width <int>] \n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--place_chan_width <int>] \n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--fix_pins random | <file.pads>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--enable_timing_computations on | off]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--block_dist <int>]\n");
@@ -554,6 +553,10 @@ void free_arch(t_arch* Arch) {
 	free(Arch->model_library[3].outputs);
 	free(Arch->model_library);
 
+	if (Arch->clocks) {
+		free(Arch->clocks->clock_inf);
+	}
+
 	free_complex_block_types();
 	free_chunk_memory_trace();
 }
@@ -571,6 +574,8 @@ void free_options(t_options *options) {
 		free(options->PlaceFile);
 	if (options->PowerFile)
 		free(options->PowerFile);
+	if (options->CmosTechFile)
+		free(options->CmosTechFile);
 	if (options->RouteFile)
 		free(options->RouteFile);
 	if (options->out_file_prefix)
@@ -666,7 +671,7 @@ static void free_pb_type(t_pb_type *pb_type) {
 				free(pb_type->modes[i].interconnect[j].annotations[k].value);
 			}
 			free(pb_type->modes[i].interconnect[j].annotations);
-			if(pb_type->modes[i].interconnect[j].interconnect_power)
+			if (pb_type->modes[i].interconnect[j].interconnect_power)
 				free(pb_type->modes[i].interconnect[j].interconnect_power);
 		}
 		if (pb_type->modes[i].interconnect)
@@ -697,7 +702,7 @@ static void free_pb_type(t_pb_type *pb_type) {
 		free(pb_type->annotations);
 	}
 
-	if(pb_type->pb_type_power) {
+	if (pb_type->pb_type_power) {
 		free(pb_type->pb_type_power);
 	}
 
@@ -758,7 +763,7 @@ void free_circuit() {
 	blif_circuit_name = NULL;
 
 	p_io_removed = circuit_p_io_removed;
-	while(p_io_removed != NULL) {
+	while (p_io_removed != NULL) {
 		circuit_p_io_removed = p_io_removed->next;
 		free(p_io_removed->data_vptr);
 		free(p_io_removed);

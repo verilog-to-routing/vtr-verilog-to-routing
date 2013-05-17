@@ -220,7 +220,7 @@ void power_usage_lut(t_power_usage * power_usage, int lut_size,
 	int SRAMCounter;
 	int num_SRAM_bits;
 
-	boolean level_restorer_this_level;
+	boolean level_restorer_this_level = FALSE;
 	boolean level_restorer_last_level;
 
 	power_zero_usage(power_usage);

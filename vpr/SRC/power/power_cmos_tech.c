@@ -374,6 +374,7 @@ static void process_tech_xml_load_transistor_info(ezxml_t parent) {
 
 	/* Get transistor type: NMOS or PMOS */
 	prop = FindProperty(parent, "type", TRUE);
+	trans_inf = NULL;
 	if (strcmp(prop, "nmos") == 0) {
 		trans_inf = &g_power_tech->NMOS_inf;
 	} else if (strcmp(prop, "pmos") == 0) {
@@ -462,6 +463,7 @@ boolean power_find_transistor_info(t_transistor_size_inf ** lower,
 	key.size = size;
 
 	/* Find the appropriate global transistor records */
+	trans_info = NULL;
 	if (type == NMOS) {
 		trans_info = &g_power_tech->NMOS_inf;
 	} else if (type == PMOS) {

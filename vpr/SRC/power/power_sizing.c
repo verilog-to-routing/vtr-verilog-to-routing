@@ -150,7 +150,7 @@ static double power_count_transistors_mux(t_mux_arch * mux_arch) {
 
 	transistor_cnt += power_count_transistors_mux_node(mux_arch->mux_graph_head,
 			mux_arch->transistor_sizes);
-
+	free(max_inputs);
 	return transistor_cnt;
 }
 

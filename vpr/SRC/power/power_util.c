@@ -323,8 +323,8 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
 
 	/* Find out if the truth table provides the ON-set or OFF-set */
 	str_loc = strtok(NULL, " \t");
+	on_set = TRUE;
 	if (str_loc[0] == '1') {
-		on_set = TRUE;
 	} else if (str_loc[0] == '0') {
 		on_set = FALSE;
 	} else {
@@ -591,5 +591,8 @@ boolean power_method_is_recursive(e_power_estimation_method method) {
 	default:
 		assert(0);
 	}
+
+	// to get rid of warning
+	return FALSE;
 }
 

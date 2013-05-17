@@ -689,9 +689,13 @@ static void ProcessPb_TypePowerPinToggle(ezxml_t parent, t_pb_type * pb_type) {
 				"energy_per_toggle", TRUE, 0.);
 
 		/* Get scaled by factor */
+		boolean reverse_scaled = FALSE;
 		prop = FindProperty(cur, "scaled_by_static_prob", FALSE);
 		if (!prop) {
 			prop = FindProperty(cur, "scaled_by_static_prob_n", FALSE);
+			if (prop) {
+				reverse_scaled = TRUE;
+			}
 		}
 
 		if (prop) {
@@ -704,6 +708,7 @@ static void ProcessPb_TypePowerPinToggle(ezxml_t parent, t_pb_type * pb_type) {
 				return;
 			}
 			port->port_power->scaled_by_port_pin_idx = high;
+			port->port_power->reverse_scaled = reverse_scaled;
 		}
 		ezxml_set_attr(cur, "scaled_by_static_prob", NULL);
 		ezxml_set_attr(cur, "scaled_by_static_prob_n", NULL);
@@ -2612,6 +2617,7 @@ void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 			t_clock_arch * clocks_fake = (t_clock_arch*) my_calloc(1,
 					sizeof(t_clock_arch));
 			ProcessClocks(Next, clocks_fake);
+			free(clocks_fake->clock_inf);
 			free(clocks_fake);
 		}
 		FreeNode(Next);

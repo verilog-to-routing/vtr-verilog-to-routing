@@ -215,8 +215,8 @@ void power_usage_local_pin_toggle(t_power_usage * power_usage, t_pb * pb,
 
 	/* Divide by 2 because density is switches/cycle, but a toggle is 2 switches */
 	power_usage->dynamic += scale_factor
-			* pin->port->port_power->energy_per_toggle * pin_dens(pb, pin)
-			/ 2.0 / g_solution_inf.T_crit;
+			* pin->port->port_power->energy_per_toggle * pin_dens(pb, pin) / 2.0
+			/ g_solution_inf.T_crit;
 }
 
 void power_usage_local_pin_buffer_and_wire(t_power_usage * power_usage,
@@ -895,6 +895,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 			assert(node_power->in_dens);
 			assert(node_power->in_prob);
 
+			wire_length = 0;
 			if (node->type == CHANX) {
 				wire_length = node->xhigh - node->xlow + 1;
 			} else if (node->type == CHANY) {
@@ -938,6 +939,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 				buffer_size = 0.;
 				break;
 			default:
+				buffer_size = 0.;
 				assert(0);
 				break;
 			}
@@ -1238,7 +1240,8 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 							node->switches[edge_idx];
 				} else {
 					assert(
-							rr_node_power[node->edges[edge_idx]].driver_switch_type == node->switches[edge_idx]);
+							rr_node_power[node->edges[edge_idx]].driver_switch_type
+									== node->switches[edge_idx]);
 				}
 			}
 		}
@@ -1712,25 +1715,22 @@ e_power_ret_code power_total(float * run_time_s, t_vpr_setup vpr_setup,
 	}
 
 	/* Calculate Power */
-	if (1) {
+	/* Routing */
+	power_usage_routing(&sub_power_usage, routing_arch, arch->Segments);
+	power_add_usage(&total_power, &sub_power_usage);
+	power_component_add_usage(&sub_power_usage, POWER_COMPONENT_ROUTING);
 
-		/* Routing */
-		power_usage_routing(&sub_power_usage, routing_arch, arch->Segments);
-		power_add_usage(&total_power, &sub_power_usage);
-		power_component_add_usage(&sub_power_usage, POWER_COMPONENT_ROUTING);
+	/* Clock  */
+	power_usage_clock(&sub_power_usage, arch->clocks);
+	power_add_usage(&total_power, &sub_power_usage);
+	power_component_add_usage(&sub_power_usage, POWER_COMPONENT_CLOCK);
 
-		/* Clock  */
-		power_usage_clock(&sub_power_usage, arch->clocks);
-		power_add_usage(&total_power, &sub_power_usage);
-		power_component_add_usage(&sub_power_usage, POWER_COMPONENT_CLOCK);
+	/* CLBs */
+	power_usage_blocks(&clb_power_usage);
+	power_add_usage(&total_power, &clb_power_usage);
+	power_component_add_usage(&clb_power_usage, POWER_COMPONENT_PB);
 
-		/* CLBs */
-		power_usage_blocks(&clb_power_usage);
-		power_add_usage(&total_power, &clb_power_usage);
-		power_component_add_usage(&clb_power_usage, POWER_COMPONENT_PB);
-
-		power_component_add_usage(&total_power, POWER_COMPONENT_TOTAL);
-	}
+	power_component_add_usage(&total_power, POWER_COMPONENT_TOTAL);
 
 	power_print_title(g_power_output->out, "Summary");
 	power_print_summary(g_power_output->out, vpr_setup);
@@ -1748,10 +1748,9 @@ e_power_ret_code power_total(float * run_time_s, t_vpr_setup vpr_setup,
 	power_print_title(g_power_output->out, "Power Breakdown by PB");
 	power_print_breakdown_pb(g_power_output->out);
 
-	if (0) {
-		power_print_title(g_power_output->out, "Spice Comparison");
-		power_print_spice_comparison();
-	}
+	//power_print_title(g_power_output->out, "Spice Comparison");
+	//power_print_spice_comparison();
+
 
 	t_end = clock();
 
