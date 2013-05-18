@@ -842,6 +842,7 @@ void sdf_LUT_delay_printing(FILE *SDF , t_pb *pb)
   int record = 0;
 
   fixed_name = fix_name(pb->name);
+  pin_count = OPEN;
 
   for(j=0 ; j < pb->pb_graph_node->num_input_pins[0] ; j++)/*Assuming that LUTs have a single input port*/
   {
