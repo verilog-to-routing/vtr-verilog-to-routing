@@ -166,6 +166,8 @@ void place_and_route(enum e_operation operation,
 
 			sprintf(msg, "Routing succeeded with a channel width factor of %d.\n\n",
 					width_fac);
+
+
 		}
 
 		init_draw_coords(max_pins_per_clb);
@@ -179,6 +181,11 @@ void place_and_route(enum e_operation operation,
 				print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH),
 						models);
 			}
+
+			if(GetPostSynthesisOption())
+			  {
+			    verilog_writer();
+			  }
 
 			free_timing_graph(slacks);
 
@@ -202,10 +209,6 @@ void place_and_route(enum e_operation operation,
 	free_port_pin_from_blk_pin();
 	free_blk_pin_from_port_pin();
 
-	if(GetPostSynthesisOption())
-		{
-			verilog_writer();
-		}
 	end = clock();
 #ifdef CLOCKS_PER_SEC
 	vpr_printf(TIO_MESSAGE_INFO, "Routing took %g seconds.\n", (float) (end - begin) / CLOCKS_PER_SEC);
@@ -534,6 +537,12 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_FLOW_TIMING_GRAPH)) {
 			print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH), models);
 		}
+		
+		if(GetPostSynthesisOption())
+		  {
+		    verilog_writer();
+		  }
+
 		free_timing_graph(slacks);
 		free_net_delay(net_delay, &net_delay_ch);
 	}

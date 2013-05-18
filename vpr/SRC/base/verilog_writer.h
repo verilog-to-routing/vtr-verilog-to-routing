@@ -105,25 +105,6 @@ pb_list *traverse_clb(t_pb *pb, pb_list *prim_list);
         or contain other primitives.*/
 conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_list *list);
 
-
-/*The find_connected_primitives_uphill function will return a linked list of all the primitives that connect to a particular primitive
-  block_num: the block number of the complex block that the primitive resides in.
-  pb: A pointer to the t_pb data structure that represents the primitive (not the complex block).
-  list: A head pointer to the start of a linked list. This function will populate the linked list. The linked list can be empty (i.e list=NULL)
-  or contain other primitives.*/
-conn_list *find_connected_primitives_uphill(int block_num , t_pb *pb, conn_list *list);
-
-
-/*The get_reachable_pins_uphill function traverses throught the rr_node hierarchy in the vpr representation of the design.
-  This function is used by find_connected_primitives_uphill.*/
-conn_list *get_reachable_pins_uphill(t_rr_node *local_rr_node , int block_num , t_pb_graph_pin *load_pin , t_pb *load_pb , int try_edge , float delay , conn_list *list);
-
-
-/*The get_reachable_pins_downhill function traverses throught the rr_node hierarchy in the vpr representation of the design.
-  This function is used by find_connected_primitives_downhill.*/
-conn_list *get_reachable_pins_downhill(t_rr_node *node , t_rr_node *local_rr_node , int block_num , t_pb_graph_pin *driver_pin ,t_pb *driver_pb , float delay , conn_list *list , float **net_delay);
-
-
 /*The function insert_to_linked_list inserts a new primitive to the pb_list type linked list pointed by "list".*/
 pb_list *insert_to_linked_list(t_pb *pb_new , pb_list *list);
 
@@ -141,9 +122,6 @@ pb_list *free_linked_list(pb_list *list);
 
 /*The free_linked_list_conn function frees the memory used by the conn_list type linked list pointed to by "list"*/
 conn_list *free_linked_list_conn(conn_list *list);
-
-/*The find_connections_in_other_clb function is used by get_reachable_pins_downhill when a connected primitive is in another complex block.*/
-conn_list *find_connections_in_other_clb(int block_num , int net_num , t_pb_graph_pin *driver_pin ,t_pb *driver_pb , float delay , conn_list *list , float **net_delay);
 
 /*The function instantiate_top_level_module instantiates the top level verilog module of the post-synthesized circuit and the list of inputs and outputs to that module*/
 void instantiate_top_level_module(FILE *Verilog);
@@ -190,6 +168,9 @@ void sdf_DFF_delay_printing(FILE *SDF , t_pb *pb);
 
 /*This function instantiates the SdF cell that contains the delay information of a Multiplier*/
 void SDF_Mult_delay_printing(FILE *SDF , t_pb *pb);
+
+/*This function instantiates the SdF cell that contains the delay information of a Adder*/
+void SDF_Adder_delay_printing(FILE *SDF , t_pb *pb);
 
 /*Finds and returns the name of the clock signal int he circuit*/
 char *find_clock_name(void);

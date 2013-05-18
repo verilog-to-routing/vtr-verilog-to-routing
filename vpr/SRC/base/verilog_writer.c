@@ -2,9 +2,7 @@
 
 /***********************************************************************************************************
 
-Author: Miad Nasr 
-
-August 30, 2012
+Author: Miad Nasr;  August 30, 2012
 
 The code in this file generates the Verilog and SDF files for the post-synthesized circuit. The Verilog file 
 can be used to perform functional simulation and the SDF file enables timing simulation of the post-synthesized circuit.
@@ -253,10 +251,11 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
 	{
 
 	  fixed_name = fix_name(current->pb->name);
+
 	  if(!strcmp(logical_block[current->pb->logical_block].model->name,"names"))/*if this primitive is a lut*/
 	    {
 	      inputs_to_lut = find_number_of_inputs(current->pb);
-	      assert(inputs_to_lut == 4 || inputs_to_lut == 6);/*currently the primitives.v file only contains the verilog description for 4LUTs and 6LUTs*/
+	      assert((inputs_to_lut >= 3) && (inputs_to_lut <= 7));/*currently the primitives.v file only contains the verilog description for 4LUTs and 6LUTs*/
 	      truth_table=load_truth_table(inputs_to_lut,current->pb);/*load_truth_table will find the truth table corresponding to this lut, and store it in "truth_table"*/
 
 	      /*instantiating the 6 input lut module and passing the truth table as parameter*/
@@ -275,11 +274,11 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
 			{
 			  if(place_comma)/*need this flag check to properly place the commas*/
 			    {
-			      fprintf(fp , " , %s_input_%d_%d" , fixed_name , k , h);
+			      fprintf(fp , " , %s_input_%d_%d" , fixed_name , k , j); // j was h
 			    }
 			  else
 			    {
-			      fprintf(fp , "%s_input_%d_%d" , fixed_name , k , h);
+			      fprintf(fp , "%s_input_%d_%d" , fixed_name , k , j); // j was h
 			      place_comma=1;
 			    }
 			  j++;
@@ -289,7 +288,7 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
 	      while(j<inputs_to_lut)/*if (after writing all the inputs to the lut module) there are still some                                                                               
 				      inputs unused (i.e.  not all the inputs to the lut are used) place a logic zero instead*/
 		{
-		  if(place_comma)
+		  if(place_comma && j)
 		    {
 		      j++;
 		      fprintf(fp , " , 1'b0");
@@ -314,18 +313,24 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
 	    {
 	      char *fixed_clock_name;
 	      fixed_clock_name = fix_name(clock_name);
-	      fprintf(fp , "\nD_Flip_Flop %s(%s_output_0_0 , %s_input_0_0 , 1'b1 , 1'b1 , %s_output_0_0 );\n",fixed_name,fixed_clock_name,fixed_name,fixed_name);
+	      fprintf(fp , "\nD_Flip_Flop DFF_%s(%s_output_0_0 , %s_input_0_0 , 1'b1 , 1'b1 , %s_output_0_0 );\n",fixed_name,fixed_clock_name,fixed_name,fixed_name);
 	      instantiate_interconnect(fp , i , current->pb , SDF);
 	      sdf_DFF_delay_printing(SDF , current->pb);
 	      free(fixed_clock_name);
 	    }
-	  else if(!strcmp(logical_block[current->pb->logical_block].model->name,"multiply"))/*If this primitive is a multiplier*/
+	  else if(!strcmp(logical_block[current->pb->logical_block].model->name,"multiply") || 
+		  !strcmp(logical_block[current->pb->logical_block].model->name,"adder")) /*If this primitive is a multiplier or an adder */
 	    {
-	      int num_inputs = logical_block[current->pb->logical_block].pb->pb_graph_node->num_input_pins[0];/*what are the dimentions of this multiplier? 9x9 , 18x18 ,....*/
+	      /** multipliers and adders are handled quite similarly **/
+
+	      int mult = !strcmp(logical_block[current->pb->logical_block].model->name,"multiply");
+	      int num_inputs = logical_block[current->pb->logical_block].pb->pb_graph_node->num_input_pins[0];/*what is the data width*/
 	      int i_port , i_pin ;	      
 	      place_comma = 0;
-	      fprintf(fp , "\nmult #(%d)%s(" , num_inputs , fixed_name);/*Passing the dimention of the multiplier as a verilog parameter*/
-	      
+	      if (mult)
+		fprintf(fp , "\nmult #(%d)%s(" , num_inputs , fixed_name); 
+	      else
+		fprintf(fp , "\nripple_adder #(%d)%s(" , num_inputs , fixed_name); 
 	
 	      /*Traversing through all the input ports of this multiplier*/
 	      for(i_port=0 ; i_port<logical_block[current->pb->logical_block].pb->pb_graph_node->num_input_ports ; i_port++)
@@ -389,7 +394,10 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
 		}
 	      fprintf(fp , ");\n\n");
 	      instantiate_interconnect(fp , i , current->pb , SDF);
-	      SDF_Mult_delay_printing(SDF , current->pb);
+	      if (mult)
+		SDF_Mult_delay_printing(SDF, current->pb);
+	      else
+		SDF_Adder_delay_printing(SDF, current->pb);
 	    }
 	  else if(!strcmp(logical_block[current->pb->logical_block].model->name,"single_port_ram")){/*If this primitive is a single port RAM block*/
 	    
@@ -558,7 +566,7 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
 	  else if(strcmp(logical_block[current->pb->logical_block].model->name,"input") && strcmp(logical_block[current->pb->logical_block].model->name,"output"))
 	    /*If this primitive is anything else, but an input or an output*/
 	    {
-	      printf("Failed to generate post-synthesized verilog and sdf files. Primitive %s is unknown.\n\nAcceptable primitives are: LUTs, Flip Flops, IOs, and  Multiplier blocks.\n\nTo generate the post synthesized verilog and SDF files successfully, you must append the verilog code for the %s to the primitives.v file, and contact the VPR developers team on the website: http://code.google.com/p/vtr-verilog-to-routing/ to update the VPR source code to handle the new primitive. \n",logical_block[current->pb->logical_block].model->name , logical_block[current->pb->logical_block].model->name);
+	      printf("Failed to generate post-synthesized verilog and sdf files. Primitive %s is unknown.\n\nAcceptable primitives are: LUTs, Flip Flops, IOs, Adders, Rams, and Multiplier blocks.\n\nTo generate the post synthesized verilog and SDF files successfully, you must append the verilog code for the %s to the primitives.v file, and contact the VPR developers team on the website: http://code.google.com/p/vtr-verilog-to-routing/ to update the VPR source code to handle the new primitive. \n",logical_block[current->pb->logical_block].model->name , logical_block[current->pb->logical_block].model->name);
 	      exit(1);
 	    }
 	  free(fixed_name);
@@ -597,8 +605,16 @@ char *load_truth_table(int inputs , t_pb *pb)
   assert(possible_row);
   assert(tt);
  
-
-  tt_row_blif =  (char *)logical_block[pb->logical_block].truth_table->data_vptr;
+  if (logical_block[pb->logical_block].truth_table) { // ??? janders ???? how can you have a LUT without a truth table???
+    tt_row_blif =  (char *)logical_block[pb->logical_block].truth_table->data_vptr;
+  }
+  else { // must be producing a GROUND
+    for (i = 0; i < possibles; i++)
+      tt[i] = '0';
+    tt[possibles] = '\0';
+    free(possible_row);
+    return tt;
+  }
   set_to = tt_row_blif[strlen(tt_row_blif)-1];
 
   /*filling the truth table with the state that is opposite to the output state in the blif truth table*/
@@ -763,7 +779,7 @@ void interconnect_printing(FILE *fp , conn_list *downhill)
               port_number_in = i;
             }
         }     
-      fprintf(fp , "interconnect routinng_segment_%s_output_%d_%d_to_%s_input_%d_%d( %s_output_%d_%d , %s_input_%d_%d );\n",
+      fprintf(fp , "interconnect routing_segment_%s_output_%d_%d_to_%s_input_%d_%d( %s_output_%d_%d , %s_input_%d_%d );\n",
               fixed_name1 , port_number_in/*connections->driver_pin->port->port_index_by_type*/ , connections->driver_pin->pin_number,
               fixed_name2 , port_number_out , connections->load_pin->pin_number,
               fixed_name1 , port_number_in/*connections->driver_pin->port->port_index_by_type*/ , connections->driver_pin->pin_number,
@@ -803,7 +819,7 @@ void SDF_interconnect_delay_printing(FILE *SDF , conn_list *downhill)
       internal_delay = internal_delay + 0.5;              /*Rounding the delay to the nearset picosecond*/
       del = (int)internal_delay;
 
-      fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"interconnect\")\n\t(INSTANCE inst/routinng_segment_%s_output_%d_%d_to_%s_input_%d_%d)\n" ,
+      fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"interconnect\")\n\t(INSTANCE inst/routing_segment_%s_output_%d_%d_to_%s_input_%d_%d)\n" ,
               fixed_name1 , current->driver_pin->port->port_index_by_type , current->driver_pin->pin_number,
               fixed_name2 , port_number_out/*current->load_pin->port->port_index_by_type*/ , current->load_pin->pin_number);
       fprintf(SDF , "\t\t(DELAY\n\t\t(ABSOLUTE\n\t\t\t(IOPATH datain dataout (%d:%d:%d)(%d:%d:%d))\n\t\t)\n\t\t)\n\t)\n" ,
@@ -822,24 +838,41 @@ void sdf_LUT_delay_printing(FILE *SDF , t_pb *pb)
   int j,pin_count;
   float internal_delay;
   int del;
+  int logical_block_index = pb->logical_block;
+  int record = 0;
 
   fixed_name = fix_name(pb->name);
-  fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"LUT_%d\")\n\t(INSTANCE inst/lut_%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" , find_number_of_inputs(pb) , fixed_name);
 
-  for(j=0 ; j<pb->pb_graph_node->num_input_pins[0] ; j++)/*Assuming that LUTs have a single input port*/
-    {
-      if(pb->rr_graph[pb->pb_graph_node->input_pins[0][j].pin_count_in_cluster].net_num != OPEN) /*Is this LUT pin used?*/
-        {
-          pin_count = pb->pb_graph_node->input_pins[0][j].pin_count_in_cluster;
-	  assert(pb->rr_graph[pin_count].tnode);
+  for(j=0 ; j < pb->pb_graph_node->num_input_pins[0] ; j++)/*Assuming that LUTs have a single input port*/
+  {
+     if (logical_block[logical_block_index].input_nets[0][j] != OPEN) 
+      {
+	  
+	  int q;
+	  for (q = 0; q < pb->pb_graph_node->num_input_pins[0]; q++)
+	  {
+	    pin_count = pb->pb_graph_node->input_pins[0][q].pin_count_in_cluster;
+	    if (logical_block[logical_block_index].pb->rr_graph[pin_count].net_num == logical_block[logical_block_index].input_nets[0][j])
+	      break;
+	  }
+	  
+	  assert(q != pb->pb_graph_node->num_input_pins[0]);
+
           internal_delay = pb->rr_graph[pin_count].tnode->out_edges->Tdel;
           internal_delay = internal_delay * 1000000000000.00;/*converting the delay from seconds to picoseconds*/
           internal_delay = internal_delay + 0.5;             /*Rounding the delay to the nearset picosecond*/
           del = (int)internal_delay;
+
+	  if (!record) { // print the SDF record header
+	    fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"LUT_%d\")\n\t(INSTANCE inst/lut_%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" , find_number_of_inputs(pb) , fixed_name);
+	    record = 1;
+	  }
+
           fprintf(SDF , "\t\t\t(IOPATH inter%d/datain inter%d/dataout (%d:%d:%d)(%d:%d:%d))\n" , j , j , del , del , del , del , del , del);
         }
     }
-  fprintf(SDF , "\t\t)\n\t\t)\n\t)\n");
+  if (record) 
+    fprintf(SDF , "\t\t)\n\t\t)\n\t)\n");
   free(fixed_name);
 }
 
@@ -851,13 +884,11 @@ void sdf_DFF_delay_printing(FILE *SDF , t_pb *pb)
   int del,pin_count;
 
   fixed_name = fix_name(pb->name);
-  fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"D_Flip_Flop\")\n\t(INSTANCE inst/%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" , fixed_name);
+  fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"D_Flip_Flop\")\n\t(INSTANCE inst/DFF_%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" , fixed_name);
 
-  pin_count = pb->pb_graph_node->input_pins[0][0].pin_count_in_cluster;
+  pin_count = pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster; // the Q output of the FF (which has only a single output port and pin)
   assert(pb->rr_graph[pin_count].tnode);
-  internal_delay = pb->rr_graph[pin_count].tnode->out_edges[1].Tdel + pb->rr_graph[pin_count].tnode->out_edges[0].Tdel;/*The correct clock to Q delay for flip flops are stored in the second element of out_edges*/
-  internal_delay = internal_delay * 1000000000000.00;/*converting the delay from seconds to picoseconds*/
-  internal_delay = internal_delay + 0.5;             /*Rounding the delay to the nearset picosecond*/
+  internal_delay = pb->rr_graph[pin_count].tnode->T_arr * 1.0E12 + 0.5;
   del = (int)internal_delay;
 
   fprintf(SDF , "\t\t\t(IOPATH (posedge clock) Q (%d:%d:%d)(%d:%d:%d))\n" , del , del , del , del , del , del);
@@ -887,7 +918,7 @@ void SDF_Mult_delay_printing(FILE *SDF , t_pb *pb)
   pin_count = pb->pb_graph_node->input_pins[1][0].pin_count_in_cluster;
   assert(pb->rr_graph[pin_count].tnode);
   internal_delay = pb->rr_graph[pin_count].tnode->out_edges->Tdel;
-  internal_delay = internal_delay * 1000000000000.00;/*converting the delay from seconds to picoseconds*/
+  internal_delay = internal_delay * 1.0E12;/*converting the delay from seconds to picoseconds*/
   internal_delay = internal_delay + 0.5;             /*Rounding the delay to the nearset picosecond*/
   del = (int)internal_delay;
   fprintf(SDF , "\t\t\t(IOPATH delay2/A delay2/B (%d:%d:%d)(%d:%d:%d))\n" , del , del , del , del , del , del);
@@ -897,23 +928,68 @@ void SDF_Mult_delay_printing(FILE *SDF , t_pb *pb)
   
 }
 
+void SDF_Adder_delay_printing(FILE *SDF , t_pb *pb)
+{
+  int i, j, k;
+  int total_input_ports = pb->pb_graph_node->num_input_ports;
+  int pin_count;
+  char *fixed_name;
+  int record = 0;
+  
+  fixed_name = fix_name(pb->name);
+
+  for (i = 0; i < total_input_ports; i++) {
+
+    for (j = 0; j < pb->pb_graph_node->num_input_pins[i]; j++) {
+
+      pin_count = pb->pb_graph_node->input_pins[i][j].pin_count_in_cluster;
+      
+      t_tnode* tNodeInput = pb->rr_graph[pin_count].tnode; // source pin of timing arc
+
+      if (!tNodeInput)
+	continue; // no timing information on pin
+      
+      for (k = 0; k < tNodeInput->num_edges; k++) {   
+
+	t_tnode tNodeOutput = tnode[tNodeInput->out_edges[k].to_node]; // dest pin of timing arc
+	int del = tNodeInput->out_edges[k].Tdel * 1.0E12 + 0.5;
+
+	if (!record) { // print the SDF record header
+	  fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"ripple_adder\")\n\t(INSTANCE inst/%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" ,  fixed_name);
+	  record = 1;
+	}
+
+	fprintf(SDF , "\t\t\t(IOPATH %s %s (%d:%d:%d)(%d:%d:%d))\n" , tNodeInput->pb_graph_pin->port->name, 
+		tNodeOutput.pb_graph_pin->port->name,
+		del , del , del , del , del , del);
+
+      }
+      j =  pb->pb_graph_node->num_input_pins[i]; // skip to the next port -- JANDERS to fix
+      // what we really want to do here is find the max delay between any pin of the input port, to any pin of the output port
+    }
+  }
+
+  if (record)
+    fprintf(SDF , "\t\t)\n\t\t)\n\t)\n");
+  free(fixed_name);
+}
+
+
 void SDF_ram_single_port_delay_printing(FILE *SDF , t_pb *pb)
 {
-  int num_inputs;
+  //  int num_inputs;
   char *fixed_name;
   int pin_count;
   float internal_delay;
   int del;
 
-  num_inputs = pb->pb_graph_node->num_input_pins[0];
+  //  num_inputs = pb->pb_graph_node->num_input_pins[0];
   fixed_name = fix_name(pb->name);
   fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"single_port_ram\")\n\t(INSTANCE inst/%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" ,  fixed_name);
-  
-  pin_count = pb->pb_graph_node->input_pins[0][0].pin_count_in_cluster;
+
+  pin_count = pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster; // an output pin of the RAM
   assert(pb->rr_graph[pin_count].tnode);
-  internal_delay = pb->rr_graph[pin_count].tnode->out_edges[num_inputs+1].Tdel;
-  internal_delay = internal_delay * 1000000000000.00;/*converting the delay from seconds to picoseconds*/
-  internal_delay = internal_delay + 0.5;             /*Rounding the delay to the nearset picosecond*/
+  internal_delay = pb->rr_graph[pin_count].tnode->T_arr * 1.0E12 + 0.5;
   del = (int)internal_delay;
 
   fprintf(SDF , "\t\t\t(IOPATH (posedge clock) out (%d:%d:%d)(%d:%d:%d))" , del , del , del , del , del , del);
@@ -925,21 +1001,19 @@ void SDF_ram_single_port_delay_printing(FILE *SDF , t_pb *pb)
 
 void SDF_ram_dual_port_delay_printing(FILE *SDF , t_pb *pb)
 {
-  int num_inputs;
+  //  int num_inputs;
   char *fixed_name;
   int pin_count;
   float internal_delay;
   int del;
 
-  num_inputs = pb->pb_graph_node->num_input_pins[0];
+  //  num_inputs = pb->pb_graph_node->num_input_pins[0];
   fixed_name = fix_name(pb->name);
   fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"dual_port_ram\")\n\t(INSTANCE inst/%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" ,  fixed_name);
 
-  pin_count = pb->pb_graph_node->input_pins[0][0].pin_count_in_cluster;
+  pin_count = pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster; // an output pin of the RAM
   assert(pb->rr_graph[pin_count].tnode);
-  internal_delay = pb->rr_graph[pin_count].tnode->out_edges[14].Tdel;
-  internal_delay = internal_delay * 1000000000000.00;/*converting the delay from seconds to picoseconds*/
-  internal_delay = internal_delay + 0.5;             /*Rounding the delay to the nearset picosecond*/
+  internal_delay = pb->rr_graph[pin_count].tnode->T_arr * 1.0E12 + 0.5;
   del = (int)internal_delay;
 
   fprintf(SDF , "\t\t\t(IOPATH (posedge clock) out1 (%d:%d:%d)(%d:%d:%d))" , del , del , del , del , del , del);
@@ -1007,64 +1081,71 @@ pb_list *traverse_clb(t_pb *pb , pb_list *prim_list)
 
 conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_list*list)
 {
-  int i,j,k,h;
+  int i,j,k,q;
   int total_output_pins;
   int pin_number , port_number_out=-1 ,  pin_number_out , starting_block , next_block , vpck_net , pin_count;
   float delay , start_delay , end_delay;
  
-  t_model_ports *temp;
   char *temp_port_name = (char *)malloc(1000 * sizeof(char));
   int total_output_ports = pb->pb_graph_node->num_output_ports; 
+  int model_port_index;
+
   assert(temp_port_name);
 
   /*iterates through all output pins of the primitive "pb", and finds the other primitive and pin they connect to*/
   for(i=0 ; i < total_output_ports ; i++)
-    {
+  {
       total_output_pins = pb->pb_graph_node->num_output_pins[i];
       for(j=0 ; j < total_output_pins ; j++)
-        {	  
+      {	  
+	  
+	  model_port_index =  pb->pb_graph_node->output_pins[i][j].port->model_port->index;
+
           pin_number = pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster;  /*pin count of the output pin*/
           starting_block = pb->logical_block;  /*logical block index for the source primitive*/
-	  vpck_net = logical_block[starting_block].output_nets[i][j]; /*The index for the vpack_net struct corresponding to this source to sink(s) connections*/
-	 
-	  if(pb->rr_graph[pin_number].net_num != OPEN) /* If this output pin is used*/
-	    {                                                   /*Then we will use the logical_block netlist method for finding the connectivity and timing information*/
-	      if(vpck_net != OPEN)
-		{
-		  for(k=1 ; k<vpack_net[vpck_net].num_sinks+1 ; k++)/*traversing through all the sink primitives that the source primitive connects to*/
-		    {
-		      next_block = vpack_net[vpck_net].node_block[k];/*next_blk holds the logical block index for the primitive that the source primitive connects to*/
-		      
-		      /*must do these two for loops to find the correct port number based on the t_model data structure*/		  
-		      for(temp=logical_block[next_block].pb->pb_graph_node->pb_type->model->inputs ; temp!=NULL ; temp=temp->next) /*t_model contains architectural port number*/
-			{
-			  if(temp->index == vpack_net[vpck_net].node_block_port[k] && !temp->is_clock)
-			    {
-			      strcpy(temp_port_name ,temp->name);/*If this is the right architectural port then copy the port name*/
-			      break;
-			    }
-			}
-		      for(h=0 ; h< logical_block[next_block].pb->pb_graph_node->num_input_ports ; h++)/*Now match the copied port name with the right pb_graph port*/
-			{
-			  if(!strcmp(temp_port_name , logical_block[next_block].pb->pb_graph_node->input_pins[h][0].port->name))
-			    {
-			      port_number_out = h;/*correct port number*/
-			      break;
-			    }
-			}
 
-		 
-		      pin_number_out = vpack_net[vpck_net].node_block_pin[k];  /*The pin number that the output pin connects to*/
+	  vpck_net = logical_block[starting_block].output_nets[model_port_index][j]; /*The index for the vpack_net struct corresponding to this source to sink(s) connections*/
+	 
+	  if (pb->rr_graph[pin_number].net_num != OPEN) /* If this output pin is used*/
+	  { /*Then we will use the logical_block netlist method for finding the connectivity and timing information*/
+	      if(vpck_net != OPEN)
+	      {
+
+		  for(k=1 ; k<vpack_net[vpck_net].num_sinks+1 ; k++)/*traversing through all the sink primitives that the source primitive connects to*/
+		  {
+		      next_block = vpack_net[vpck_net].node_block[k];/*next_blk holds the logical block index for the primitive that the source primitive connects to*/
+
+		      // we now need to map between the port on the logical block to the port on the physical block
+		      t_pb_graph_pin* iPin = get_pb_graph_node_pin_from_vpack_net(vpck_net, k);
+		      port_number_out = iPin->port->index;
+
+		      // because of possible pin swaps, we need to find the physical on load block that
+		      // has the correct attached net
+		      for (q = 0; q <  logical_block[next_block].pb->pb_graph_node->num_input_pins[port_number_out]; q++) 
+		      {
+			int physical_pin_pos = logical_block[next_block].pb->pb_graph_node->input_pins[port_number_out][q].pin_count_in_cluster;
+			if (logical_block[next_block].pb->rr_graph[physical_pin_pos].net_num == vpck_net)
+			  break;
+		      }
 		      
+		      assert(q != logical_block[next_block].pb->pb_graph_node->num_input_pins[port_number_out]);
+
+		      pin_number_out = q;
+
 		      assert(port_number_out != -1);
 		      
+		      int unswapped_pin_number =  vpack_net[vpck_net].node_block_pin[k];
+
 		      pin_count = logical_block[next_block].pb->pb_graph_node->input_pins[port_number_out][pin_number_out].pin_count_in_cluster;/*pin count for the sink pin*/
 		      assert(logical_block[next_block].pb->rr_graph[pin_count].tnode);
 		      
 		      start_delay = pb->rr_graph[pin_number].tnode->T_arr; /*The arrival time of the source pin*/		
 		      end_delay = logical_block[next_block].pb->rr_graph[pin_count].tnode->T_arr;/*The arrival time of the sink pin*/
 		      delay = end_delay - start_delay;   /*The difference of start and end arrival times is the delay for going from the source to sink pin*/		
-		      list=insert_to_linked_list_conn(pb , logical_block[next_block].pb , &pb->pb_graph_node->output_pins[i][j] , &logical_block[next_block].pb->pb_graph_node->input_pins[port_number_out][pin_number_out] , delay , list);/*Insert this sink primitive in the linked list pointer to by "list"*/
+		      list=insert_to_linked_list_conn(pb , logical_block[next_block].pb , 
+						      &pb->pb_graph_node->output_pins[i][j] , 
+						      &logical_block[next_block].pb->pb_graph_node->input_pins[port_number_out][unswapped_pin_number] ,
+						      delay , list);/*Insert this sink primitive in the linked list pointer to by "list"*/
 		      
 		    }
 		}
@@ -1159,212 +1240,3 @@ conn_list *free_linked_list_conn(conn_list *list)
   return(list);
 }
 
-/*-------------------------------------------------------------------*/
-/*THE FUNCTIONS BELLOW ARE NOT USED BY THE VERILOG WRITER. 
-THEY ARE NEVER CALLED BY ANY OF THE FUNCTIONS LISTED ABOVE.
-THEY ARE INCLUDED IN THIS FILE JUST FOR POTENTIAL USE IN THE FUTURE.*/
-/*------------------------------------------------------------------*/
-static inline int get_tnode_index(t_tnode * node);
-
-/*This utility function is not used in the verilog writer but just keeping it here, for potential use.*/
-/*The find_connected_primitives_uphill function will return a linked list of all the primitives that connect to a particular primitive
-  block_num: the block number of the complex block that the primitive resides in.
-  pb: A pointer to the t_pb data structure that represents the primitive (not the complex block).
-  list: A head pointer to the start of a linked list. This function will populate the linked list. The linked list can be empty (i.e list=NULL)
-  or contain other primitives.*/
-conn_list *find_connected_primitives_uphill(int block_num , t_pb *pb , conn_list *list)
-{
-  int i,j;
-  int total_input_ports = pb->pb_graph_node->num_input_ports;
-  int total_input_pins;
-  int pin_number;
-
-  /*iterates through all input pins of the primitive "pb", and finds the other primitive that connect to them*/
-  for(i=0 ; i < total_input_ports ; i++)
-    {
-      total_input_pins = pb->pb_graph_node->num_input_pins[i];
-      for(j=0 ; j < total_input_pins ; j++)
-        {
-          pin_number = pb->pb_graph_node->input_pins[i][j].pin_count_in_cluster;
-          if(pb->rr_graph[pin_number].net_num != OPEN)  /*check if this pin is used (i.e.checking if there is a driver attached to this pin)*/
-            {
-              float delay=0;
-              /*get_reachable_pins_uphill wil find all the primitive that drives this pin*/
-              list = get_reachable_pins_uphill(pb->rr_graph , block_num , &pb->pb_graph_node->input_pins[i][j] , pb , pin_number , delay , list);
-            }
-        }
-    }
-  return(list);
-}
-
-/*The get_reachable_pins_uphill function traverses throught the rr_node hierarchy in the vpr representation of the design.
-  This function is used by find_connected_primitives_uphill. (Never called)*/
-
-conn_list *get_reachable_pins_uphill(t_rr_node *local_rr_node , int block_num , t_pb_graph_pin *load_pin , t_pb *load_pb , int next_node , float delay , conn_list *list)
-{
-  int net_num=0;
-  int next_block_num = -1;
-  int it_is_an_io=0;
-  pb_list *temp_store = NULL;
-  pb_list *current = NULL;
-
-  /*traversing through the rr_graph hierarchy backwards until there is no previous node (i.e. either have hit a clb border or a primitive)*/
-  while(local_rr_node[next_node].prev_node != OPEN)/*If I have not yet hit a clb border or a primitive, continue going uphill*/
-    {
-      assert(local_rr_node[next_node].tnode);
-      delay += local_rr_node[next_node].tnode->out_edges->Tdel;
-      next_node = local_rr_node[next_node].prev_node;
-      if(local_rr_node[next_node].prev_node == OPEN)  /*If I have hit a clb border or primitive*/
-        {
-          if(local_rr_node[next_node].pb_graph_pin->parent_node->parent_pb_graph_node == NULL) /*If I have hit a clb border (not a primitive)*/
-            {
-              net_num = block[block_num].nets[local_rr_node[next_node].pb_graph_pin->pin_count_in_cluster];/*get the net number for that pin on the clb*/
-              next_block_num = clb_net[net_num].node_block[0];/*Which block that pin is connected (The first element in the node_block array corresponds to the driver block and              
-								the rest are the sinks)*/
-	      if(strcmp(block[next_block_num].pb->pb_graph_node->pb_type->name,"io"))/*If the clb that I hit is not an IO block,                                                              
-										       then continue the traversal in the driver block*/
-                {
-                  local_rr_node = block[next_block_num].pb->rr_graph;
-                  next_node = clb_net[net_num].node_block_pin[0];
-                }
-              else{  /*If the clb I hit was an IO block , then I wont traverse any furthur. I will find the io primitive in the code outside of the while loop*/
-                it_is_an_io=1;
-              }
-              block_num=next_block_num;
-            }
-        }
-    }
-  temp_store = traverse_clb(block[next_block_num].pb , temp_store);/*store all the primitives in the block in temp_store => explain why havee to do this*/
-  for(current=temp_store ; current!=NULL ; current=current->next)/*traverse through all the found primitives until it matched the one we reached after traversal*/
-    {
-      if(current->pb->pb_graph_node == local_rr_node[next_node].pb_graph_pin->parent_node)/*If we had reached a primitive then this check works*/
-        {
-	  list = insert_to_linked_list_conn(current->pb , load_pb , &current->pb->pb_graph_node->output_pins[0][0] , load_pin , delay , list);
-          break;
-        }
-      else if(it_is_an_io && !strcmp(current->pb->name,clb_net[net_num].name))/*If we had reached a IO block then this check works*/
-	{
-          list = insert_to_linked_list_conn(current->pb , load_pb , &current->pb->pb_graph_node->output_pins[0][0] , load_pin , delay , list);
-          break;
-	}
-    }
-  temp_store = free_linked_list(temp_store);
-  return(list);
-}
-
-/*The get_reachable_pins_downhill function traverses throught the rr_node hierarchy in the vpr representation of the design.
-  This function is used by find_connected_primitives_downhill. (Never called, because I switched to the logical_block traversal, and now I am just keeping this for potential use)*/
-
-conn_list *get_reachable_pins_downhill(t_rr_node *node , t_rr_node *local_rr_node , int block_num , t_pb_graph_pin *driver_pin , t_pb *driver_pb , float delay , conn_list *list , float **net_delay)
-{
-  int i,net_num=0,inode;
-  pb_list *current;
-  pb_list *check_primitives = NULL;
-
-  if(node->num_edges == 0)/*If the node that I reached does not connect to anything (i.e. I have either reached a clb border or a primitive)*/
-    {
-
-      /*this is a primitive or the clb border*/
-      if(node->pb_graph_pin->parent_node->parent_pb_graph_node == NULL)/*If I have reached a clb border (not a primitive)*/
-        {
-          for(i=0 ; i<num_nets ; i++) /*This was the most reliable way to get the net_num, although not efficient*/
-            {
-              if(!strcmp(clb_net[i].name,driver_pb->name))
-                {
-                  net_num=i;
-                  break;
-                }
-            }
-	  list = find_connections_in_other_clb(block_num , net_num , driver_pin , driver_pb , delay , list , net_delay);/*goes to the other block and starts traversing it*/
-        }
-      else{ /*If I have reached a primitive*/
-
-        check_primitives = traverse_clb(block[block_num].pb , check_primitives);/*find all the primitives in this block and store them in check_primitives*/
-
-        for(current=check_primitives ; current != NULL ; current=current->next)
-          {
-            if(current->pb->pb_graph_node == node->pb_graph_pin->parent_node)/*If I have found the primitive that I hit during traversal, then store it in the LL*/
-              {
-              
-              
-                list=insert_to_linked_list_conn(driver_pb , current->pb , driver_pin , node->pb_graph_pin , delay , list);
-                break;
-              }
-          }
-        if(current == NULL)/*Just incase*/
-          {
-            printf("WARNING: prim with pb_type (%s)  not found in block %d. post-synthesized files will not be correct.\n" , node->pb_graph_pin->parent_node->pb_type->name , block_num);
-          }
-        /*If cuurent == NULL print  warning.*/
-        check_primitives = free_linked_list(check_primitives);
-      }
-      return(list);
-    }
-  else{/*This node connects to other nodes*/
-
-
-    for(i=0 ; i<node->num_edges ; i++)/*go through all the edges this node connects to*/
-      {
-        int possible_connection = node->edges[i];
-        if(local_rr_node[possible_connection].prev_node == node->pb_graph_pin->pin_count_in_cluster)/*If the next node's previous node is the one that I am in*/
-          {
-	    /*continuing the traversal in the next node*/
-
-            if(local_rr_node[possible_connection].num_edges == 0 && local_rr_node[possible_connection].pb_graph_pin->parent_node->parent_pb_graph_node != NULL)
-              /*If the next node a primitive, don't get delay information*/
-              {
-                list=get_reachable_pins_downhill(&local_rr_node[possible_connection] , local_rr_node , block_num , driver_pin , driver_pb , delay , list , net_delay);
-              }/*Write short function?*/
-	    else{
-	      assert(local_rr_node[possible_connection].tnode);
-	      for(inode=0 ; inode<node->tnode->num_edges ; inode++)/*traverse through all the tnode edges*/
-		{
-		  if(get_tnode_index(local_rr_node[possible_connection].tnode) == node->tnode->out_edges[inode].to_node)/*If this tnode edge is the one I will go to then take the delay*/
-		    {
-		      list=get_reachable_pins_downhill(&local_rr_node[possible_connection] , local_rr_node , block_num , driver_pin , driver_pb , delay + node->tnode->out_edges[inode].Tdel , list , net_delay);
-		      break;
-		    }
-		}
-	    }
-          }
-      }
-  }
-  return(list);
-}
-
-/*The find_connections_in_other_clb function is used by get_reachable_pins_downhill when a connected primitive is in another complex block. (never called,switched to logical_block traversal)*/
-conn_list *find_connections_in_other_clb(int block_num , int net_num , t_pb_graph_pin *driver_pin ,t_pb *driver_pb, float delay , conn_list *list , float** net_delay)
-{
-  int i;
-  int blk_num;
-  int prt_num;
-  int pin_nbr;
-  int pin_count;
-  
-
-  for(i=1 ; i<=clb_net[net_num].num_sinks ; i++)/*iterating through all the sinks of this net*/
-    {
-      prt_num=0;
-      
-      blk_num = clb_net[net_num].node_block[i];/*get the block number for the sink*/
-      
-      if(!strcmp(block[blk_num].pb->pb_graph_node->pb_type->name,"io"))/*weird!! something not right with some s_net node_block_pin data member*/
-	{
-	  
-	  pin_nbr=0;
-	}
-      else{
-	pin_nbr = clb_net[net_num].node_block_pin[i];
-      }
-      pin_count = block[blk_num].pb->pb_graph_node->input_pins[prt_num][pin_nbr].pin_count_in_cluster;/*which pin in the sink block should i continue traversing*/
-      list = get_reachable_pins_downhill(&block[blk_num].pb->rr_graph[pin_count] , block[blk_num].pb->rr_graph , blk_num , driver_pin ,driver_pb , delay + net_delay[net_num][i] , list , net_delay);
-    }
-  
-  return(list);
-}
-
-static inline int get_tnode_index(t_tnode * node) {
-  /* Returns the index of pointer_to_tnode in the array tnode [0..num_tnodes - 1]                                                                                                       
-     using pointer arithmetic. */
-  return node - tnode;
-}
