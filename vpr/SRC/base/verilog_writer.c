@@ -1082,7 +1082,7 @@ pb_list *traverse_clb(t_pb *pb , pb_list *prim_list)
 
 conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_list*list)
 {
-  int i,j,k,q;
+  int i,j,k,q,r;
   int total_output_pins;
   int pin_number , port_number_out=-1 ,  pin_number_out , starting_block , next_block , vpck_net , pin_count;
   float delay , start_delay , end_delay;
@@ -1116,6 +1116,8 @@ conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_li
 		  {
 		      next_block = vpack_net[vpck_net].node_block[k];/*next_blk holds the logical block index for the primitive that the source primitive connects to*/
 
+#if 0
+
 		      // we now need to map between the port on the logical block to the port on the physical block
 		      t_pb_graph_pin* iPin = get_pb_graph_node_pin_from_vpack_net(vpck_net, k);
 		      port_number_out = iPin->port->index;
@@ -1132,8 +1134,24 @@ conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_li
 		      assert(q != logical_block[next_block].pb->pb_graph_node->num_input_pins[port_number_out]);
 
 		      pin_number_out = q;
+#endif
+
+		      port_number_out = pin_number_out = -1;
+
+		      for (r = 0; r < logical_block[next_block].pb->pb_graph_node->num_input_ports; r++) {
+			 for (q = 0; q < logical_block[next_block].pb->pb_graph_node->num_input_pins[r]; q++) {
+			   int physical_pin_pos = logical_block[next_block].pb->pb_graph_node->input_pins[r][q].pin_count_in_cluster;
+			   if (logical_block[next_block].pb->rr_graph[physical_pin_pos].net_num == vpck_net) {
+			     port_number_out = r;
+			     pin_number_out = q;
+			     r = logical_block[next_block].pb->pb_graph_node->num_input_ports;
+			     break;
+			   }
+			 }
+		      }
 
 		      assert(port_number_out != -1);
+		      assert(pin_number_out != -1);
 		      
 		      int unswapped_pin_number =  vpack_net[vpck_net].node_block_pin[k];
 
