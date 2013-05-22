@@ -85,9 +85,9 @@ cp vpr/VPR_User_Manual_7.0.pdf vtr_release/vpr
 echo "Finishing Build"
 cp README.release.txt vtr_release/README.txt
 cp Makefile vtr_release/
-cp -p run_reg_test.pl vtr_release/
-cp -p run_quick_test.pl vtr_release/
-
+cp run_reg_test.pl vtr_release/
+cp run_quick_test.pl vtr_release/
+chmod u+x vtr_release/*.pl
 
 
 echo "Remove .svn files"
