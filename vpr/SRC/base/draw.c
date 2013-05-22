@@ -1658,28 +1658,40 @@ static int get_track_num(int inode, int **chanx_track, int **chany_track) {
 	}
 }
 
+
+/* If an rr_node has been clicked on, it will be highlighted in MAGENTA.
+ * If so, and toggle nets is selected, highlight the whole net in that colour.
+ * There is a problem in net highlighting though -- VB TODO -- fix it.
+ */
 static void highlight_nets(char *message) {
 	int inet;
 	struct s_trace *tptr;
 
 	for (inet = 0; inet < num_nets; inet++) {
 		for (tptr = trace_head[inet]; tptr != NULL; tptr = tptr->next) {
-			if (rr_node_color[tptr->index] != BLACK) {
+			if (rr_node_color[tptr->index] == MAGENTA) {
 				net_color[inet] = rr_node_color[tptr->index];
-				sprintf(message, "%s  ||  Net:%d %d", message, inet,
-						trace_head[inet]->index);
+				sprintf(message, "%s  ||  Net: %d (%s)", message, inet,
+						clb_net[inet].name);
 				break;
 			}
 		}
 	}
+
 	update_message(message);
 }
 
+
+/* This routine is called when the routing resource graph is shown, and someone 
+ * clicks outside a block. That click might represent a click on a wire -- we call
+ * this routine to determine which wire (if any) was clicked on.  If a wire was
+ * clicked upon, we highlight it in Magenta, and its fanout in red. 
+ */
 static void highlight_rr_nodes(float x, float y) {
 	int inode;
-	int hit = 0;
+	int hit_node = OPEN;  // i.e. -1, no node selected.
 	char message[250] = "";
-	int edge;
+	int iedge;
 
 	if (draw_rr_toggle == DRAW_NO_RR && !show_nets) {
 		update_message(default_message);
@@ -1687,39 +1699,51 @@ static void highlight_rr_nodes(float x, float y) {
 		return;
 	}
 
+   const float tolerance = 0;  // x_rr_node_left etc. already have a tolerance (line_fuz).
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		if (x >= x_rr_node_left[inode] && x <= x_rr_node_right[inode]
-				&& y >= y_rr_node_bottom[inode] && y <= y_rr_node_top[inode]) {
-			t_rr_type rr_type = rr_node[inode].type;
-			int xlow = rr_node[inode].xlow;
-			int xhigh = rr_node[inode].xhigh;
-			int ylow = rr_node[inode].ylow;
-			int yhigh = rr_node[inode].yhigh;
-			int ptc_num = rr_node[inode].ptc_num;
-			rr_node_color[inode] = MAGENTA;
-			sprintf(message, "%s%s %d: %s (%d,%d) -> (%d,%d) track: %d",
-					message, (hit ? "   |   " : ""), inode, name_type[rr_type],
-					xlow, ylow, xhigh, yhigh, ptc_num);
-
-#ifdef DEBUG
-			print_rr_node(stdout, rr_node, inode);
-#endif
-			for (edge = 0; edge < rr_node[inode].num_edges; edge++) {
-				if (rr_node_color[rr_node[inode].edges[edge]] == BLACK
-						&& rr_node[rr_node[inode].edges[edge]].capacity
-								> rr_node[rr_node[inode].edges[edge]].occ)
-					rr_node_color[rr_node[inode].edges[edge]] = GREEN;
-				else if (rr_node_color[rr_node[inode].edges[edge]] == BLACK
-						&& rr_node[rr_node[inode].edges[edge]].capacity
-								== rr_node[rr_node[inode].edges[edge]].occ)
-					rr_node_color[rr_node[inode].edges[edge]] = BLUE;
-
-			}
-			hit = 1;
+		if ( x >= x_rr_node_left[inode] - tolerance &&
+           x <= x_rr_node_right[inode] + tolerance &&
+		     y >= y_rr_node_bottom[inode] - tolerance && 
+           y <= y_rr_node_top[inode] + tolerance) {
+			hit_node = inode;
+         break;
 		}
 	}
 
-	if (!hit) {
+   if (hit_node != OPEN) {
+      t_rr_type rr_type = rr_node[inode].type;
+		int xlow = rr_node[inode].xlow;
+		int xhigh = rr_node[inode].xhigh;
+		int ylow = rr_node[inode].ylow;
+		int yhigh = rr_node[inode].yhigh;
+		int ptc_num = rr_node[inode].ptc_num;
+		rr_node_color[inode] = MAGENTA;
+      sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) track: %d, %d edges, occ: %d, capacity: %d",
+				inode, name_type[rr_type],
+            xlow, ylow, xhigh, yhigh, ptc_num, 
+            rr_node[inode].num_edges, rr_node[inode].occ, rr_node[inode].capacity);
+
+#ifdef DEBUG
+		print_rr_node(stdout, rr_node, inode);
+#endif
+      /* Highlight the fanout nodes in red. */
+		for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
+         int fanout_node = rr_node[inode].edges[iedge];
+			rr_node_color[fanout_node] = RED;
+      }
+
+      /* Highlight the nodes that can fanin to this node in blue. */
+      for (inode = 0; inode < num_rr_nodes; inode++) {
+			for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
+            int fanout_node = rr_node[inode].edges[iedge];
+            if (fanout_node == hit_node) 
+				   rr_node_color[inode] = BLUE;   
+            // May change to a different colour if this is confusing, as input pins are already blue.
+         }
+      }
+   }
+
+	if (hit_node == OPEN) {
 		update_message(default_message);
 		drawscreen();
 		return;
@@ -1729,6 +1753,7 @@ static void highlight_rr_nodes(float x, float y) {
 		highlight_nets(message);
 	} else
 		update_message(message);
+
 	drawscreen();
 }
 
@@ -1834,8 +1859,9 @@ static void highlight_blocks(float x, float y) {
 	drawscreen(); /* Need to erase screen. */
 }
 
+
 static void deselect_all(void) {
-	/* Sets the color of all clbs and nets to the default.  */
+	/* Sets the color of all clbs, nets and rr_nodes to the default.  */
 
 	int i;
 
