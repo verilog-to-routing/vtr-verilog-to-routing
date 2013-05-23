@@ -57,7 +57,7 @@ typedef struct {
 * on or off using the set_mouse_move_input () and set_keypress_input ()
 * functions (default for both: off).
 */
-void event_loop (void (*act_on_mousebutton) (float x, float y),
+void event_loop (void (*act_on_mousebutton) (float x, float y, t_event_buttonPressed button_info),
 			void (*act_on_mousemove) (float x, float y),
 			void (*act_on_keypress) (char key_pressed),
 			void (*drawscreen) (void));  

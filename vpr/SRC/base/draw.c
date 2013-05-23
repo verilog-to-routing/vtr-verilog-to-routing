@@ -109,7 +109,7 @@ static void drawnets(void);
 static void drawroute(enum e_draw_net_type draw_net_type);
 static void draw_congestion(void);
 
-static void highlight_blocks(float x, float y);
+static void highlight_blocks(float x, float y, t_event_buttonPressed button_info);
 static void get_block_center(int bnum, float *x, float *y);
 static void deselect_all(void);
 
@@ -1757,7 +1757,7 @@ static void highlight_rr_nodes(float x, float y) {
 	drawscreen();
 }
 
-static void highlight_blocks(float x, float y) {
+static void highlight_blocks(float x, float y, t_event_buttonPressed button_info) {
 
 	/* This routine is called when the user clicks in the graphics area. *
 	 * It determines if a clb was clicked on.  If one was, it is         *

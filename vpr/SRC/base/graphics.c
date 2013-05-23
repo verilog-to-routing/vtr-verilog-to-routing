@@ -144,6 +144,7 @@
 
 #define TRUE 1
 #define FALSE 0
+#define VERBOSE
 
 #include <math.h>
 #include <stdlib.h>
@@ -1349,7 +1350,7 @@ update_ps_transform (void)
 * (toplevel) area, the act_on_mousebutton routine passed in is called.      
 */
 void 
-event_loop (void (*act_on_mousebutton)(float x, float y), 
+event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed button_info),
 			void (*act_on_mousemove)(float x, float y), 
 			void (*act_on_keypress)(char key_pressed),
 			void (*drawscreen) (void)) 
@@ -1370,7 +1371,7 @@ event_loop (void (*act_on_mousebutton)(float x, float y),
 #ifdef VERBOSE 
 			printf("Got an expose event.\n");
 			printf("Count is: %d.\n",report.xexpose.count);
-			printf("Window ID is: %d.\n",report.xexpose.window);
+			printf("Window ID is: %ld.\n",report.xexpose.window);
 #endif
 			if (report.xexpose.count != 0)
 				break;
@@ -1395,12 +1396,36 @@ event_loop (void (*act_on_mousebutton)(float x, float y),
 		case ButtonPress:
 #ifdef VERBOSE 
 			printf("Got a buttonpress.\n");
-			printf("Window ID is: %d.\n",report.xbutton.window);
+			printf("Window ID is: %ld.\n",report.xbutton.window);
+			printf("Button pressed is: %d.\n(left click is 1; right click is 3; scroll wheel click is 2; "
+					"scroll wheel forward rotate is 4; scroll wheel backward is 5.)\n",report.xbutton.button);
+			printf("Mask is: %d.\n",report.xbutton.state);
 #endif
 			if (report.xbutton.window == toplevel) {
 				x = XTOWORLD(report.xbutton.x);
 				y = YTOWORLD(report.xbutton.y); 
-				act_on_mousebutton (x, y);
+
+				t_event_buttonPressed button_info; /* Pass information about the button press to act_on_mousebutton */
+				button_info.state = report.xbutton.state;
+				button_info.button = report.xbutton.button;
+
+				switch (report.xbutton.button) {
+				case Button1:  /* Left mouse click; calls highlight_blocks() */
+					act_on_mousebutton (x, y, button_info);
+					break;
+				case Button2:  /* Scroll wheel pressed; screen does zoom_fit */
+					zoom_fit(drawscreen);
+					break;
+				case Button3:  /* Right mouse click; calls highlight_blocks() */
+					act_on_mousebutton (x, y, button_info);
+					break;
+				case Button4:  /* Scroll wheel rotated forward; screen does zoom_in */
+					zoom_in(drawscreen);
+					break;
+				case Button5:  /* Scroll wheel rotated backward; screen does zoom_out */
+					zoom_out(drawscreen);
+					break;
+				}
 			} 
 			else {  /* A menu button was pressed. */
 				bnum = which_button(report.xbutton.window);
@@ -2277,7 +2302,7 @@ adjustwin (void (*drawscreen) (void))
 #ifdef VERBOSE 
 			printf("Got an expose event.\n");
 			printf("Count is: %d.\n",report.xexpose.count);
-			printf("Window ID is: %d.\n",report.xexpose.window);
+			printf("Window ID is: %ld.\n",report.xexpose.window);
 #endif
 			if (report.xexpose.count != 0)
 				break;
@@ -2304,7 +2329,7 @@ adjustwin (void (*drawscreen) (void))
 		case ButtonPress:
 #ifdef VERBOSE 
 			printf("Got a buttonpress.\n");
-			printf("Window ID is: %d.\n",report.xbutton.window);
+			printf("Window ID is: %ld.\n",report.xbutton.window);
 			printf("Location (%d, %d).\n", report.xbutton.x,
 				report.xbutton.y);
 #endif

@@ -3,7 +3,7 @@
 #  Run a regression test on the batch system                             #
 #   - runs the regression tests given as input parameters                #
 # 	- parses and checks results upon completion							 #
-#   - tests can be found in <vtr_flow_path>/tasks/regression_tests/      #
+#   - tests can be found in <vtr_flow>/tasks/regression_tests/      #
 #                                                                        #
 #  Usage:                                                                #
 #  <While in the top-level directory>                                    #

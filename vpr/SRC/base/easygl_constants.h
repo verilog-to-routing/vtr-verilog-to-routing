@@ -14,4 +14,9 @@ typedef struct {
 	float y;
 } t_point; /* Used in calls to fillpoly */
 
+typedef struct {
+	unsigned int state;  /* mask of all buttons and modifier keys */
+	unsigned int button; /* button pressed */
+} t_event_buttonPressed;   /* Used to pass information from event_loop when a mouse button or modifier key is pressed */
+
 #endif // EASYGL_CONSTANTS_H
