@@ -144,7 +144,6 @@
 
 #define TRUE 1
 #define FALSE 0
-#define VERBOSE
 
 #include <math.h>
 #include <stdlib.h>
@@ -475,7 +474,7 @@ static LRESULT CALLBACK MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 // does things this way, but it is what makes saving these function pointers
 // necessary.  VB.
 
-static void (*mouseclick_ptr)(float x, float y);
+static void (*mouseclick_ptr)(float x, float y, t_event_buttonPressed button_info);
 static void (*mousemove_ptr)(float x, float y);
 static void (*keypress_ptr)(char entered_char);
 static void (*drawscreen_ptr)(void);
@@ -3396,7 +3395,8 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		
 	case WM_LBUTTONDOWN:
 		if (!windowAdjustFlag) {  
-			mouseclick_ptr(XTOWORLD(LOWORD(lParam)), YTOWORLD(HIWORD(lParam)));
+			t_event_buttonPressed button_info;
+			mouseclick_ptr(XTOWORLD(LOWORD(lParam)), YTOWORLD(HIWORD(lParam)), button_info);
 		} 
       else {
          // Special handling for the "Window" command, which takes multiple clicks. 
