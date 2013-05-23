@@ -382,9 +382,4 @@ void OdinInterface::setEdge(int i ){
     }
 }
 
-netlist_t* OdinInterface::getNetlist()
-{
-    return verilog_netlist;
-}
-
 

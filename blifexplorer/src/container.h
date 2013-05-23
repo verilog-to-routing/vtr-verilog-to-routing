@@ -41,7 +41,6 @@ public:
     LogicUnit * addUnit(QString name,LogicUnit::UnitType type, QPointF position, nnode_t* odinRef);
     void addConnection(QString start, QString end);
     bool addConnectionHash(QString start, QString end);
-    bool addConnectionHashByRef(LogicUnit* parent, LogicUnit* kid);
     void arrangeContainer();
     void deleteModule(QString name);
     void clearContainer();
@@ -65,7 +64,6 @@ public:
     QString extractModuleFromName(QString name);
 private:
     Wire* getConnectionBetween(QString nodeName, QString kidName);
-    LogicUnit* addNodeFromReference(nnode_t* odinNode);
     void computeLayers();
     void spreadLayers();
     void computeLayersHash();
@@ -78,7 +76,6 @@ private:
     int createLatches();
     int createConnections();
     int getNodeListFromOdin();
-    int getAndCopyOdinGraph();
     void conectNodeToLogicUnit(nnode_t *node, QString name);
     void startOdin();
     bool parentsDone(LogicUnit* unit, QHash<QString,LogicUnit*> donehashlist);
@@ -87,8 +84,6 @@ private:
     void copySimCyclesIntoNodes();
     void assignToModule(QString actName);
     void assignNodeToModule(QString nodeName, QString moduleName);
-    int  processClocks();
-    int createConnectionInGraphCopy(LogicUnit* parent, LogicUnit* kid, int kidOutputPin);
 
 
     QString myFilename;
@@ -106,7 +101,6 @@ private:
     QHash<QString, LogicUnit *> completeNodes;
     int simOffset, maxSimStep, actSimStep;
     QList<LogicUnit*> clocks;
-    QQueue<nnode_t *> nodequeue;
 
     };
 
