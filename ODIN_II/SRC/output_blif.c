@@ -657,9 +657,15 @@ void define_ff(nnode_t *node, FILE *out)
 	oassert(node->num_output_pins == 1);
 	oassert(node->num_input_pins == 2);
 
+	/* The default latch value is unknown, represented by 3 in a BLIF file */
+	int initial_value = 3;
+	if(node->has_initial_value){
+		initial_value = node->initial_value;
+	}
+	
 	/* input, output, clock */
 	if (global_args.high_level_block != NULL)
-		fprintf(out, ".latch %s^^%i-%i %s^^%i-%i re %s^^%i-%i 0", node->input_pins[0]->net->driver_pin->node->name, node->input_pins[0]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[0]->net->driver_pin->node->related_ast_node->high_number, node->name, node->related_ast_node->far_tag, node->related_ast_node->high_number, node->input_pins[1]->net->driver_pin->node->name, node->input_pins[1]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[1]->net->driver_pin->node->related_ast_node->high_number);
+		fprintf(out, ".latch %s^^%i-%i %s^^%i-%i re %s^^%i-%i %d", node->input_pins[0]->net->driver_pin->node->name, node->input_pins[0]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[0]->net->driver_pin->node->related_ast_node->high_number, node->name, node->related_ast_node->far_tag, node->related_ast_node->high_number, node->input_pins[1]->net->driver_pin->node->name, node->input_pins[1]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[1]->net->driver_pin->node->related_ast_node->high_number, initial_value);
 	else
 	{
 		if (node->input_pins[0]->net->driver_pin->name == NULL)
@@ -668,9 +674,9 @@ void define_ff(nnode_t *node, FILE *out)
 			fprintf(out, ".latch %s %s re ", node->input_pins[0]->net->driver_pin->name, node->name);
 
 		if (node->input_pins[1]->net->driver_pin->name == NULL)
-			fprintf(out, "%s 0\n", node->input_pins[1]->net->driver_pin->node->name);
+			fprintf(out, "%s %d\n", node->input_pins[1]->net->driver_pin->node->name, initial_value);
 		else
-			fprintf(out, "%s 0\n", node->input_pins[1]->net->driver_pin->name);
+			fprintf(out, "%s %d\n", node->input_pins[1]->net->driver_pin->name, initial_value);
 				
 	}
 	fprintf(out, "\n");

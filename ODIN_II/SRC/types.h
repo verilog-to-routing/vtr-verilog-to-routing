@@ -339,6 +339,8 @@ struct ast_node_t_t
 			short is_wire;
 			short is_reg;
 			short is_integer;
+			short is_initialized; // should the variable be initialized with some value?
+			long long initial_value;
 		} variable;
 		struct
 		{
@@ -434,8 +436,10 @@ struct nnode_t_t
 	// For simulation
 	int in_queue; // Flag used by the simulator to avoid double queueing.
 	npin_t **undriven_pins; // These pins have been found by the simulator to have no driver.
-	int  num_undriven_pins;
-	int ratio;//clock ration for clock nodes
+	int num_undriven_pins;
+	int ratio; //clock ratio for clock nodes
+	signed char has_initial_value; // initial value assigned?
+	signed char initial_value; // initial net value
 };
 
 struct npin_t_t
@@ -477,6 +481,8 @@ struct nnet_t_t
 	// For simulation
 	signed char values[SIM_WAVE_LENGTH];  // Stores the values of all connected pins.
 	int cycle;                            // Stores the cycle of all connected pins.
+	signed char has_initial_value; // initial value assigned?
+	signed char initial_value; // initial net value
 	//////////////////////
 };
 

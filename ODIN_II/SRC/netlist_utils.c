@@ -32,6 +32,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_util.h"
 #include "util.h"
 
+
 global_args_t global_args;
 /*---------------------------------------------------------------------------------------------
  * (function: allocate_nnode)
@@ -80,6 +81,10 @@ nnode_t* allocate_nnode() {
 	new_node->num_undriven_pins = 0;
 
 	new_node->ratio = 1;
+	
+	new_node->has_initial_value = FALSE;
+	new_node->initial_value = 0;
+	
 
 	return new_node;
 }
@@ -292,6 +297,9 @@ nnet_t* allocate_nnet()
 
 	new_net->net_data = NULL;
 	new_net->unique_net_data_id = -1;
+	
+	new_net->has_initial_value = FALSE;
+	new_net->initial_value = 0;
 
 	return new_net;
 }
@@ -432,6 +440,10 @@ void combine_nets(nnet_t *output_net, nnet_t* input_net, netlist_t *netlist)
 	join_nets(input_net, output_net);
 	/* mark that this is combined */
 	input_net->combined = TRUE;
+	
+	/* Need to keep the initial value data when we combine the nets */
+	input_net->has_initial_value = output_net->has_initial_value;
+	input_net->initial_value = output_net->initial_value;
 	
 	/* special cases for global nets */
 	if (output_net == netlist->zero_net) 

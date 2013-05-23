@@ -1272,8 +1272,15 @@ void update_pin_value(npin_t *pin, signed char value, int cycle)
  */
 signed char get_pin_value(npin_t *pin, int cycle)
 {
-	if (!pin->values || cycle < 0)
+	if (!pin->values || cycle < 0){
+		/* If the pin's node has an initial value, then use it. 
+		   Otherwise use the global initial value 
+		   Need to make sure pin->node isn't NULL (e.g. for a dummy node) */
+		if(pin->node && pin->node->has_initial_value) {
+			return pin->node->initial_value;
+		}
 		return global_args.sim_initial_value;
+	}
 	return pin->values[get_values_offset(cycle)];
 }
 
@@ -1357,8 +1364,15 @@ void initialize_pin(npin_t *pin)
 	}
 
 	int i;
-	for (i = 0; i < SIM_WAVE_LENGTH; i++)
-		pin->values[i] = global_args.sim_initial_value;
+	for (i = 0; i < SIM_WAVE_LENGTH; i++){
+		/* If the pin's node has an initial value, then use it. 
+		   Otherwise use the global initial value 
+		   Need to make sure pin->node isn't NULL (e.g. for a dummy node) */
+		if(pin->node && pin->node->has_initial_value)
+			pin->values[i] = pin->node->initial_value;
+		else 
+			pin->values[i] = global_args.sim_initial_value;
+	}
 
 	set_pin_cycle(pin, -1);
 }
@@ -2783,8 +2797,9 @@ void write_vector_to_file(lines_t *l, FILE *file, int cycle)
 			{
 				signed char value = get_line_pin_value(line, j, cycle);
 
-				if (value > 1)
+				if (value > 1){
 					error_message(SIMULATION_ERROR, 0, -1, "Invalid logic value of %d read from line %s.", value, line->name);
+					}
 
 				if (value < 0)
 				{

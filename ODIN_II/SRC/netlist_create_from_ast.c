@@ -96,6 +96,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 void connect_hard_block_and_alias(ast_node_t* module_instance, char *instance_name_prefix, int outport_size);
 void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_instance, char *instance_name_prefix);
 void create_symbol_table_for_module(ast_node_t* module_items, char *module_name);
+int check_for_initial_reg_value(ast_node_t* var_declare, long long *value);
 
 signal_list_t *concatenate_signal_lists(signal_list_t **signal_lists, int num_signal_lists);
 
@@ -1015,6 +1016,13 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		/* store the data which is an idx here */
 		output_nets_sc->data[sc_spot] = (void*)new_net;
 		new_net->name = temp_string;
+		
+		/* Check if this net should have an initial value */
+		if(var_declare->types.variable.is_initialized){
+			new_net->has_initial_value = TRUE;
+			/* Initial net value should only be either 1 or 0 */
+			new_net->initial_value = var_declare->types.variable.initial_value ? 1 : 0;
+		}
 	}	
 	else if (var_declare->children[3] == NULL)
 	{
@@ -1023,6 +1031,14 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		/* FOR array driver  since sport 3 and 4 are NULL */
 		oassert((node_max->type == NUMBERS) && (node_min->type == NUMBERS));
+		
+		/* Check if this array driver should have an initial value */
+		long long initial_value = 0;
+		if(var_declare->types.variable.is_initialized){
+			initial_value = var_declare->types.variable.initial_value;
+		}
+		
+		
 		/* This register declaration is a range as opposed to a single bit so we need to define each element */
 		/* assume digit 1 is largest */
 		for (i = node_min->types.number.value; i <= node_max->types.number.value; i++)
@@ -1042,6 +1058,15 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 			/* store the data which is an idx here */
 			output_nets_sc->data[sc_spot] = (void*)new_net;
 			new_net->name = temp_string;
+			
+			/* Assign initial value to this net if it exists */
+			if(var_declare->types.variable.is_initialized){
+				new_net->has_initial_value = TRUE;
+				/* Grab LSB */
+				new_net->initial_value = initial_value & 0x01;
+				/* Shift out lowest bit */
+				initial_value >>= 1;
+			}
 		}
 	}
 	/* Implicit memory */
@@ -1255,12 +1280,26 @@ void create_symbol_table_for_module(ast_node_t* module_items, char *module_name)
 						{
 							/* copy all the reg and wire info over */
 							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_output = TRUE;
+							
+							/* check for an initial value and copy it over if found */
+							long long initial_value;
+							if(check_for_initial_reg_value(var_declare, &initial_value)){
+								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
+								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
+							}
 						}
 						else if ((var_declare->types.variable.is_reg) || (var_declare->types.variable.is_wire))
 						{
 							/* copy the output status over */
 							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_wire = var_declare->types.variable.is_wire;
 							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_reg = var_declare->types.variable.is_reg;
+							
+							/* check for an initial value and copy it over if found */
+							long long initial_value;
+							if(check_for_initial_reg_value(var_declare, &initial_value)){
+								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
+								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
+							}
 						}
 						else
 						{
@@ -1276,6 +1315,13 @@ void create_symbol_table_for_module(ast_node_t* module_items, char *module_name)
 						local_symbol_table = (ast_node_t **)realloc(local_symbol_table, sizeof(ast_node_t*)*(num_local_symbol_table+1));
 						local_symbol_table[num_local_symbol_table] = (void *)var_declare;
 						num_local_symbol_table ++;
+						
+						/* check for an initial value and store it if found */
+						long long initial_value;
+						if(check_for_initial_reg_value(var_declare, &initial_value)){
+							var_declare->types.variable.is_initialized = TRUE;
+							var_declare->types.variable.initial_value = initial_value;
+						}
 					}
 					free(temp_string);
 				}
@@ -1286,6 +1332,23 @@ void create_symbol_table_for_module(ast_node_t* module_items, char *module_name)
 	{
 		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "Empty module\n");
 	}
+}
+
+/*--------------------------------------------------------------------------
+ * (function: check_for_initial_reg_value)
+ * 	This function looks at a VAR_DECLARE AST node and checks to see
+ *  if the register declaration includes an initial value.
+ *  Returns the initial value in *value if one is found.
+ *  Added by Conor
+ *-------------------------------------------------------------------------*/
+int check_for_initial_reg_value(ast_node_t* var_declare, long long *value){
+	oassert(var_declare->type == VAR_DECLARE);
+	// Initial value is always the last child, if one exists
+	if(var_declare->children[5] != NULL){
+		*value = var_declare->children[5]->types.number.value;
+		return TRUE;
+	}
+	return FALSE;
 }
 
 #ifdef VPR6
@@ -1600,7 +1663,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 	long sc_spot_input_new;
 
 	char *module_instance_name = module_instance->children[0]->types.identifier;
-
+	
 	/* lookup the node of the module associated with this instantiated module */
 	if ((sc_spot = sc_lookup_string(module_names_to_idx, module_instance_name)) == -1)
 	{
@@ -1817,6 +1880,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 							module_instance->children[1]->children[0]->types.identifier, name_of_module_instance_of_input, -1);
 					free(name_of_module_instance_of_input);
 				}
+				
 
 				/* check if the instantiation pin exists. */
 				if ((sc_spot_output = sc_lookup_string(output_nets_sc, alias_name)) == -1)
@@ -1825,9 +1889,26 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 							"This output (%s) must exist...must be an error\n", alias_name);
 				}
 				
+
+				
+				
+				
 				/* can already be there */
 				sc_spot_input_new = sc_add_string(output_nets_sc, full_name);
-
+				
+				/* Copy over the initial value data from the net alias to the corresponding 
+				   flip-flop node if one exists. This is necessary if an initial value is 
+				   assigned on a higher-level module since the flip-flop node will have
+				   already been instantiated without any initial value. */
+				nnet_t *output_net = (nnet_t*)output_nets_sc->data[sc_spot_output];
+				nnet_t *input_new_net = (nnet_t*)output_nets_sc->data[sc_spot_input_new];
+				if(output_net->driver_pin && output_net->driver_pin->node){
+					if(output_net->driver_pin->node->type == FF_NODE && input_new_net->has_initial_value){
+						output_net->driver_pin->node->has_initial_value = input_new_net->has_initial_value;
+						output_net->driver_pin->node->initial_value = input_new_net->initial_value;
+					}
+				}
+				
 				/* add this alias for the net */
 				output_nets_sc->data[sc_spot_input_new] = output_nets_sc->data[sc_spot_output];
 
@@ -2305,15 +2386,23 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			/* HERE create the ff node and hookup everything */
 			nnode_t *ff_node = allocate_nnode();
 			ff_node->related_ast_node = always_node;
-
+		
 			ff_node->type = FF_NODE;
 			/* create the unique name for this gate */
 			ff_node->name = node_name(ff_node, instance_name_prefix);
+			
+			/* Copy over the initial value information from the net */
+			ff_node->has_initial_value = net->has_initial_value;
+			ff_node->initial_value = net->initial_value;
+			
+			
 			/* allocate the pins needed */
 			allocate_more_input_pins(ff_node, 2);
 			add_input_port_information(ff_node, 1);
 			allocate_more_output_pins(ff_node, 1);
 			add_output_port_information(ff_node, 1);
+			
+			
 
 			/* add the clock to the flip_flop */
 			/* add a fanout pin */

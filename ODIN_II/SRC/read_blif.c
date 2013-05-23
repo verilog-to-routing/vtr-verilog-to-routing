@@ -358,6 +358,20 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	nnode_t *new_node = allocate_nnode();
 	new_node->related_ast_node = NULL;
 	new_node->type = FF_NODE;
+	
+	/* Read in the initial value of the latch.
+	   Possible values from a blif file are:
+	   0: LOW
+	   1: HIGH
+	   2: DON'T CARE
+	   3: UNKNOWN
+	  
+	   2 and 3 are treated in the same way */
+	int initial_value = atoi(names[4]);
+	if(initial_value == 0 || initial_value == 1){
+		new_node->initial_value = initial_value;
+		new_node->has_initial_value = TRUE;
+	}
 
 	/* allocate the output pin (there is always one output pin) */
 	allocate_more_output_pins(new_node, 1);
