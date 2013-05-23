@@ -13,6 +13,7 @@ mkdir vtr_release/doc/power
 mkdir vtr_release/ODIN_II
 mkdir vtr_release/ODIN_II/OBJ
 mkdir vtr_release/abc_with_bb_support
+mkdir vtr_release/blifexplorer
 mkdir vtr_release/libarchfpga
 mkdir vtr_release/pcre
 mkdir vtr_release/ace2
@@ -34,6 +35,9 @@ cp -r ODIN_II/SRC vtr_release/ODIN_II
 cp -r ODIN_II/REGRESSION_TESTS vtr_release/ODIN_II
 cp -r ODIN_II/FULL_REGRESSION_TESTS vtr_release/ODIN_II
 cp -r ODIN_II/USEFUL_TOOLS vtr_release/ODIN_II
+
+echo "Build ODIN II blif explorer"
+cp -r blifexplorer/* vtr_release/blifexplorer
 
 echo "Build ABC"
 cp -r abc_with_bb_support/* vtr_release/abc_with_bb_support
