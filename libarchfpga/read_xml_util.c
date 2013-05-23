@@ -61,8 +61,8 @@ void CheckElement(INP ezxml_t Node, INP const char *Name) {
 	if (0 != strcmp(Node->name, Name)) {
 		vpr_printf(TIO_MESSAGE_ERROR,
 		"[LINE %d] Element '%s' within element '%s' does match expected "
-		"element type of '%s'\n", Node->line, Node->name, Node->parent->name,
-				Name);
+		"element type of '%s'\n", Node->line, Node->name,
+		(Node->parent->name ? Node->parent->name : Node->name) ,Name);
 		exit(1);
 	}
 }
