@@ -3395,7 +3395,16 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		
 	case WM_LBUTTONDOWN:
 		if (!windowAdjustFlag) {  
+			//t_event_buttonPressed is used as a structure for storing information when X11
+			//is defined. It is meaningless for Win32. However, because the function pointer 
+			//"mouseclick_ptr" is assigned to "act_on_mousebutton" in event_loop(), and 
+			//"act_on_mousebutton()" takes "t_event_buttonPressed button_info" as a parameter,
+			//"mouseclick_ptr()" here has to take a meaningless parameter in order for program
+			//to successfully compile.
 			t_event_buttonPressed button_info;
+			button_info.state = 0;
+			button_info.button = 0;
+
 			mouseclick_ptr(XTOWORLD(LOWORD(lParam)), YTOWORLD(HIWORD(lParam)), button_info);
 		} 
       else {
@@ -3470,7 +3479,18 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			update_win(adjustx, adjusty, invalidate_screen);
 		}
 		return 0;
-	
+
+	case WM_MBUTTONDOWN:
+		zoom_fit(drawscreen_ptr);
+		return 0;
+
+	/*case WM_MOUSEHWHEEL:
+		if (HIWORD(lParam) > 0)
+			zoom_in(drawscreen_ptr);
+		else
+			zoom_out(drawscreen_ptr);
+		return 0;
+	*/
 	case WM_MOUSEMOVE:
 		if(windowAdjustFlag == 1) {
 			return 0;
