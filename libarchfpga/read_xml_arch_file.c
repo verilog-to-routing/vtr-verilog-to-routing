@@ -3748,11 +3748,8 @@ static void PrintArchInfo(INP FILE * Echo, struct s_arch *arch) {
 	//13 is hard coded because format of %e is always 1.123456e+12
 	//It always consists of 10 alphanumeric digits, a decimal
 	//and a sign
-	char *float_to_Str;
-	float_to_Str = (char *) my_calloc(13,sizeof(char));
-
 	for(i = 0; i < arch->num_switches; i++){
-		sprintf(float_to_Str,"%e",arch->Switches[i].power_buffer_size);
+
 		if(arch->Switches[i].buffered){
 			fprintf(Echo, "\tSwitch[%d]: name %s type mux/buffer\n", i + 1,arch->Switches[i].name);
 		}
@@ -3763,8 +3760,12 @@ static void PrintArchInfo(INP FILE * Echo, struct s_arch *arch) {
 						arch->Switches[i].Cout);
 		fprintf(Echo, "\t\t\t\tTdel %e buf_size %e mux_trans_size %e\n",arch->Switches[i].Tdel,
 						arch->Switches[i].buf_size,arch->Switches[i].mux_trans_size);
-		fprintf(Echo, "\t\t\t\tpower_buffer_size %s\n",
-					(arch->Switches[i].power_buffer_type==POWER_BUFFER_TYPE_AUTO?"auto":float_to_Str));
+		if(arch->Switches[i].power_buffer_type==POWER_BUFFER_TYPE_AUTO){
+			fprintf(Echo, "\t\t\t\tpower_buffer_size auto\n");
+		}
+		else{
+			fprintf(Echo, "\t\t\t\tpower_buffer_size %e\n",arch->Switches[i].power_buffer_size);
+		}
 	}
 	
 	fprintf(Echo, "*************************************************\n\n");
@@ -3856,7 +3857,6 @@ static void PrintArchInfo(INP FILE * Echo, struct s_arch *arch) {
 	}
 	
 	fprintf(Echo, "*************************************************\n\n");
-	free(float_to_Str);
 }
 static void ProcessPower( INOUTP ezxml_t parent,
 		INOUTP t_power_arch * power_arch, INP t_type_descriptor * Types,
