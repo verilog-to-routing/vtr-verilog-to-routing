@@ -3226,6 +3226,34 @@ MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (get_keypress_input)
 		     keypress_ptr((char) wParam);
 		return 0;
+
+		// Controls graphics: does zoom in or zoom out depending on direction of mousewheel scrolling.
+		// Only works when this piece of code is put here for the parent window. Will not work if put in
+		// GraphicsWND.
+	case WM_MOUSEWHEEL:
+		// zDelta indicates the distance which the mouse wheel is rotated. 
+		// The value for zDelta is a multiple of WHEEL_DELTA, which is 120.
+		// WHEEL_DELTA is the value for scrolling the mouse wheel by one increment.
+		short zDelta;
+		zDelta = GET_WHEEL_DELTA_WPARAM(wParam); 
+
+		// roll_detent captures how many increments the mouse wheel has been scrolled by.
+		int roll_detent;
+		roll_detent = zDelta/WHEEL_DELTA;
+		// roll_detent will be negative if wheel was roatated backward, toward the user.
+		if (roll_detent <0)
+			roll_detent *= -1;
+
+		int i;
+		for (i=0; i<roll_detent; i++) {
+			// Positive value for zDelta indicates that the wheel was rotated forward, which
+			// will trigger zoom_in. Otherwise, zoom_out is called.
+			if (zDelta > 0)
+				zoom_in(drawscreen_ptr);
+			else
+				zoom_out(drawscreen_ptr);
+		}
+		return 0;
 	}
 	
 	return DefWindowProc(hwnd, message, wParam, lParam);
@@ -3483,14 +3511,7 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_MBUTTONDOWN:
 		zoom_fit(drawscreen_ptr);
 		return 0;
-
-	/*case WM_MOUSEHWHEEL:
-		if (HIWORD(lParam) > 0)
-			zoom_in(drawscreen_ptr);
-		else
-			zoom_out(drawscreen_ptr);
-		return 0;
-	*/
+	
 	case WM_MOUSEMOVE:
 		if(windowAdjustFlag == 1) {
 			return 0;
