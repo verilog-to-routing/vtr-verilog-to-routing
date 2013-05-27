@@ -3978,7 +3978,7 @@ int findfontsize(float ymax) {
 
 #include "graphics.h"
 
-void event_loop (void (*act_on_mousebutton) (float x, float y),
+void event_loop (void (*act_on_mousebutton) (float x, float y, t_event_buttonPressed button_info),
 				 void (*act_on_mousemove) (float x, float y),
 				 void (*act_on_keypress) (char key_pressed),
                  void (*drawscreen) (void)) { }
