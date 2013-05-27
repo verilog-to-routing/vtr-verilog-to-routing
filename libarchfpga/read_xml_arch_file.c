@@ -687,6 +687,7 @@ static void ProcessPb_TypePowerPinToggle(ezxml_t parent, t_pb_type * pb_type) {
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"Duplicate pin-toggle energy for port '%s'", port->name);
 		}
+		port->port_power->pin_toggle_initialized = TRUE;
 		ezxml_set_attr(cur, "name", NULL);
 
 		/* Get energy per toggle */
@@ -1088,6 +1089,7 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 				port->port_power->wire_type = POWER_WIRE_TYPE_C;
 				port->port_power->wire.C = (float) atof(prop);
 			}
+			ezxml_set_attr(cur, "wire_capacitance", NULL);
 		}
 
 		/* Wire absolute length provided */
@@ -1110,6 +1112,7 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 				port->port_power->wire_type = POWER_WIRE_TYPE_ABSOLUTE_LENGTH;
 				port->port_power->wire.absolute_length = (float) atof(prop);
 			}
+			ezxml_set_attr(cur, "wire_length", NULL);
 		}
 
 		/* Wire relative length provided */
@@ -1129,6 +1132,7 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 				port->port_power->wire_type = POWER_WIRE_TYPE_RELATIVE_LENGTH;
 				port->port_power->wire.relative_length = (float) atof(prop);
 			}
+			ezxml_set_attr(cur, "wire_relative_length", NULL);
 		}
 
 		/* Buffer Size */
@@ -1145,7 +1149,10 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 				port->port_power->buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
 				port->port_power->buffer_size = (float) atof(prop);
 			}
+			ezxml_set_attr(cur, "buffer_size", NULL);
 		}
+
+		FreeNode(cur);
 	}
 }
 
