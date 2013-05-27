@@ -2,6 +2,7 @@
 #include <string.h>
 #include <algorithm>
 #include <math.h>
+#include <sys/time.h>
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
@@ -11,6 +12,8 @@
 #include <assert.h>
 #include "read_xml_arch_file.h"
 #include "util.h"
+
+//#define TIME_DRAWSCREEN
 
 #ifdef DEBUG
 #include "rr_graph.h"
@@ -211,12 +214,35 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 
 static void drawscreen() {
 
+#ifdef TIME_DRAWSCREEN
+	/* This can be used to test how long it takes for the redrawing routing to finish   *
+	 * updating the screen for a given input which would cause the screen to be redrawn.*/
+	struct timeval begin;
+	gettimeofday(&begin,NULL);  /* get start time */
+
+	unsigned long begin_time;
+	begin_time = begin.tv_sec * 1000000 + begin.tv_usec;
+#endif
+
 	/* This is the screen redrawing routine that event_loop assumes exists.  *
 	 * It erases whatever is on screen, then calls redraw_screen to redraw   *
 	 * it.                                                                   */
 
 	clearscreen();
 	redraw_screen();
+
+#ifdef TIME_DRAWSCREEN
+	struct timeval end;
+	gettimeofday(&end,NULL);  /* get end time */
+
+	unsigned long end_time;
+	end_time = end.tv_sec * 1000000 + end.tv_usec;
+
+	unsigned long time_diff_microsec;
+	time_diff_microsec = end_time - begin_time;
+
+	printf("Drawscreen took %ld microseconds\n", time_diff_microsec);
+#endif
 }
 
 static void redraw_screen() {
