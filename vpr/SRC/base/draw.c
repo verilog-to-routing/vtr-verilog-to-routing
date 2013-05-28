@@ -121,8 +121,9 @@ static void draw_rr_edges(int from_node);
 static void draw_rr_pin(int inode, enum color_types color);
 static void draw_rr_chanx(int inode, int itrack);
 static void draw_rr_chany(int inode, int itrack);
-static void get_rr_pin_draw_coords(int inode, int iside, int ioff, float *xcen,
-		float *ycen);
+static void get_rr_pin_draw_coords(int inode, int iside, 
+		int width_offset, int height_offset, 
+		float *xcen, float *ycen);
 static void draw_pin_to_chan_edge(int pin_node, int chan_node);
 static void draw_pin_to_pin(int opin, int ipin);
 static void draw_x(float x, float y, float size);
@@ -526,7 +527,7 @@ static void drawplace(void) {
 	for (i = 0; i <= (nx + 1); i++) {
 		for (j = 0; j <= (ny + 1); j++) {
 			/* Only the first block of a group should control drawing */
-			if (grid[i][j].offset > 0)
+			if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0)
 				continue;
 
 			/* Don't draw corners */
@@ -601,7 +602,7 @@ static void drawplace(void) {
 				}
 
 				/* Draw text for block type so that user knows what block */
-				if (grid[i][j].offset == 0) {
+				if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
 					if (i > 0 && i <= nx && j > 0 && j <= ny) {
 						drawtext((x1 + x2) / 2.0, y1 + (tile_width / 4.0),
 								grid[i][j].type->name, tile_width);
@@ -1405,7 +1406,7 @@ static void draw_rr_pin(int inode, enum color_types color) {
 	 * than one side of a clb.  Also note that this routine can change the     *
 	 * current color to BLACK.                                                 */
 
-	int ipin, i, j, iside, ioff;
+	int ipin, i, j, iside;
 	float xcen, ycen;
 	char str[BUFSIZE];
 	t_type_ptr type;
@@ -1414,15 +1415,15 @@ static void draw_rr_pin(int inode, enum color_types color) {
 	j = rr_node[inode].ylow;
 	ipin = rr_node[inode].ptc_num;
 	type = grid[i][j].type;
-	ioff = grid[i][j].offset;
+	int width_offset = grid[i][j].width_offset;
+	int height_offset = grid[i][j].height_offset;
 
 	setcolor(color);
 	/* TODO: This is where we can hide fringe physical pins and also identify globals (hide, color, show) */
 	for (iside = 0; iside < 4; iside++) {
-		if (type->pinloc[grid[i][j].offset][iside][ipin]) { /* Pin exists on this side. */
-			get_rr_pin_draw_coords(inode, iside, ioff, &xcen, &ycen);
-			fillrect(xcen - pin_size, ycen - pin_size, xcen + pin_size,
-					ycen + pin_size);
+		if (type->pinloc[grid[i][j].width_offset][grid[i][j].height_offset][iside][ipin]) { /* Pin exists on this side. */
+			get_rr_pin_draw_coords(inode, iside, width_offset, height_offset, &xcen, &ycen);
+			fillrect(xcen - pin_size, ycen - pin_size, xcen + pin_size, ycen + pin_size);
 			sprintf(str, "%d", ipin);
 			setcolor(BLACK);
 			drawtext(xcen, ycen, str, 2 * pin_size);
@@ -1431,8 +1432,9 @@ static void draw_rr_pin(int inode, enum color_types color) {
 	}
 }
 
-static void get_rr_pin_draw_coords(int inode, int iside, int ioff, float *xcen,
-		float *ycen) {
+static void get_rr_pin_draw_coords(int inode, int iside, 
+		int width_offset, int height_offset, 
+		float *xcen, float *ycen) {
 
 	/* Returns the coordinates at which the center of this pin should be drawn. *
 	 * inode gives the node number, and iside gives the side of the clb or pad  *
@@ -1442,8 +1444,8 @@ static void get_rr_pin_draw_coords(int inode, int iside, int ioff, float *xcen,
 	float offset, xc, yc, step;
 	t_type_ptr type;
 
-	i = rr_node[inode].xlow;
-	j = rr_node[inode].ylow + ioff; /* Need correct tile of block */
+	i = rr_node[inode].xlow + width_offset;
+	j = rr_node[inode].ylow + height_offset;
 
 	xc = tile_x[i];
 	yc = tile_y[j];
@@ -1808,7 +1810,7 @@ static void highlight_blocks(float x, float y, t_event_buttonPressed button_info
 		if (x <= tile_x[i] + tile_width) {
 			if (x >= tile_x[i]) {
 				for (j = 0; j <= (ny + 1) && !hit; j++) {
-					if (grid[i][j].offset != 0)
+					if (grid[i][j].width_offset != 0 || grid[i][j].height_offset != 0)
 						continue;
 					type = grid[i][j].type;
 					if (y <= tile_y[j + type->height - 1] + tile_width) {
@@ -1949,7 +1951,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 	/* TODO: Fix this for global routing, currently for detailed only */
 
 	t_rr_type chan_type;
-	int grid_x, grid_y, pin_num, chan_xlow, chan_ylow, ioff, height;
+	int grid_x, grid_y, pin_num, chan_xlow, chan_ylow;
 	float x1, x2, y1, y2;
 	int start, end, i;
 	int itrack;
@@ -1967,12 +1969,17 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 	itrack = rr_node[chan_node].ptc_num;
 	type = grid[grid_x][grid_y].type;
 
-	ioff = grid[grid_x][grid_y].offset;
 	/* large block begins at primary tile (offset == 0) */
-	grid_y = grid_y - ioff;
-	height = grid[grid_x][grid_y].type->height;
+	int width_offset = grid[grid_x][grid_y].width_offset;
+	int height_offset = grid[grid_x][grid_y].height_offset;
+	grid_x = grid_x - width_offset;
+	grid_y = grid_y - height_offset;
+
+	int width = grid[grid_x][grid_y].type->width;
+	int height = grid[grid_x][grid_y].type->height;
 	chan_ylow = rr_node[chan_node].ylow;
 	chan_xlow = rr_node[chan_node].xlow;
+
 	start = -1;
 	end = -1;
 
@@ -1996,18 +2003,20 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 
 		if ((grid_y + height - 1) == chan_ylow) {
 			iside = TOP;
-			ioff = height - 1;
+			width_offset = width - 1;
+			height_offset = height - 1;
 			draw_pin_off = pin_size;
 		} else {
 			assert((grid_y - 1) == chan_ylow);
 
 			iside = BOTTOM;
-			ioff = 0;
+			width_offset = 0;
+			height_offset = 0;
 			draw_pin_off = -pin_size;
 		}
-		assert(grid[grid_x][grid_y].type->pinloc[ioff][iside][pin_num]);
+		assert(grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
 
-		get_rr_pin_draw_coords(pin_node, iside, ioff, &x1, &y1);
+		get_rr_pin_draw_coords(pin_node, iside, width_offset, height_offset, &x1, &y1);
 		y1 += draw_pin_off;
 
 		y2 = tile_y[rr_node[chan_node].ylow] + tile_width + 1. + itrack;
@@ -2046,20 +2055,20 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 			draw_pin_off = -pin_size;
 		}
 		for (i = start; i <= end; i++) {
-			ioff = i - grid_y;
-			assert(ioff >= 0 && ioff < type->height);
+			height_offset = i - grid_y;
+			assert(height_offset >= 0 && height_offset < type->height);
 			/* Once we find the location, break out, this will leave ioff pointing
 			 * to the correct offset.  If an offset is not found, the assertion after
 			 * this will fail.  With the correct routing graph, the assertion will not
 			 * be triggered.  This also takes care of connecting a wire once to multiple
 			 * physical pins on the same side. */
-			if (grid[grid_x][grid_y].type->pinloc[ioff][iside][pin_num]) {
+			if (grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]) {
 				break;
 			}
 		}
-		assert(grid[grid_x][grid_y].type->pinloc[ioff][iside][pin_num]);
+		assert(grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
 
-		get_rr_pin_draw_coords(pin_node, iside, ioff, &x1, &y1);
+		get_rr_pin_draw_coords(pin_node, iside, width_offset, height_offset, &x1, &y1);
 		x1 += draw_pin_off;
 
 		x2 = tile_x[chan_xlow] + tile_width + 1 + itrack;
@@ -2093,7 +2102,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	/* This routine draws an edge from the opin rr node to the ipin rr node */
 	int opin_grid_x, opin_grid_y, opin_pin_num, opin;
 	int ipin_grid_x, ipin_grid_y, ipin_pin_num, ipin;
-	int ofs, pin_ofs;
+	int width_offset, height_offset;
 	boolean found;
 	float x1, x2, y1, y2;
 	float xend, yend;
@@ -2104,53 +2113,64 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	assert(rr_node[ipin_node].type == IPIN);
 	iside = (enum e_side)0;
 	x1 = y1 = x2 = y2 = 0;
-	pin_ofs = 0;
+	width_offset = 0;
+	height_offset = 0;
 	pin_side = TOP;
 
 	/* get opin coordinate */
 	opin_grid_x = rr_node[opin_node].xlow;
 	opin_grid_y = rr_node[opin_node].ylow;
-	opin_grid_y = opin_grid_y - grid[opin_grid_x][opin_grid_y].offset;
+	opin_grid_x = opin_grid_x - grid[opin_grid_x][opin_grid_y].width_offset;
+	opin_grid_y = opin_grid_y - grid[opin_grid_x][opin_grid_y].height_offset;
+
 	opin = rr_node[opin_node].ptc_num;
 	opin_pin_num = rr_node[opin_node].ptc_num;
 	type = grid[opin_grid_x][opin_grid_y].type;
 	
 	found = FALSE;
-	for (ofs = 0; ofs < type->height && !found; ++ofs) {
-		for (iside = (enum e_side)0; iside < 4 && !found; iside = (enum e_side)(iside + 1)) {
-			/* Find first location of pin */
-			if (1 == type->pinloc[ofs][iside][opin]) {
-				pin_ofs = ofs;
-				pin_side = iside;
-				found = TRUE;
+	for (int width = 0; width < type->width && !found; ++width) {
+		for (int height = 0; height < type->height && !found; ++height) {
+			for (iside = (enum e_side)0; iside < 4 && !found; iside = (enum e_side)(iside + 1)) {
+				/* Find first location of pin */
+				if (1 == type->pinloc[width][height][iside][opin]) {
+					width_offset = width;
+					height_offset = height;
+					pin_side = iside;
+					found = TRUE;
+				}
 			}
 		}
 	}
 	assert(found);
-	get_rr_pin_draw_coords(opin_node, pin_side, pin_ofs, &x1, &y1);
-	
+	get_rr_pin_draw_coords(opin_node, pin_side, width_offset, height_offset, &x1, &y1);
 
 	/* get ipin coordinate */
 	ipin_grid_x = rr_node[ipin_node].xlow;
 	ipin_grid_y = rr_node[ipin_node].ylow;
-	ipin_grid_y = ipin_grid_y - grid[ipin_grid_x][ipin_grid_y].offset;
+	ipin_grid_x = ipin_grid_x - grid[ipin_grid_x][ipin_grid_y].width_offset;
+	ipin_grid_y = ipin_grid_y - grid[ipin_grid_x][ipin_grid_y].height_offset;
+
 	ipin = rr_node[ipin_node].ptc_num;
 	ipin_pin_num = rr_node[ipin_node].ptc_num;
 	type = grid[ipin_grid_x][ipin_grid_y].type;
 	
 	found = FALSE;
-	for (ofs = 0; ofs < type->height && !found; ++ofs) {
-		for (iside = (enum e_side)0; iside < 4 && !found; iside = (enum e_side)(iside + 1)) {
-			/* Find first location of pin */
-			if (1 == type->pinloc[ofs][iside][ipin]) {
-				pin_ofs = ofs;
-				pin_side = iside;
-				found = TRUE;
+	for (int width = 0; width < type->width && !found; ++width) {
+		for (int height = 0; height < type->height && !found; ++height) {
+			for (iside = (enum e_side)0; iside < 4 && !found; iside = (enum e_side)(iside + 1)) {
+				/* Find first location of pin */
+				if (1 == type->pinloc[width][height][iside][ipin]) {
+					width_offset = width;
+					height_offset = height;
+					pin_side = iside;
+					found = TRUE;
+				}
 			}
 		}
 	}
 	assert(found);
-	get_rr_pin_draw_coords(ipin_node, pin_side, pin_ofs, &x2, &y2);
+	get_rr_pin_draw_coords(ipin_node, pin_side, width_offset, height_offset, &x2, &y2);
+
 	drawline(x1, y1, x2, y2);	
 	xend = x2 + (x1 - x2) / 10.;
 	yend = y2 + (y1 - y2) / 10.;
