@@ -586,7 +586,7 @@ void free_options(t_options *options) {
 }
 
 static void free_complex_block_types(void) {
-	int i, j, k, m;
+	int i, j;
 
 	free_all_pb_graph_nodes();
 
@@ -595,35 +595,43 @@ static void free_complex_block_types(void) {
 			continue;
 		}
 		free(type_descriptors[i].name);
-		for (j = 0; j < type_descriptors[i].height; j++) {
-			for (k = 0; k < 4; k++) {
-				for (m = 0;
-						m < type_descriptors[i].num_pin_loc_assignments[j][k];
-						m++) {
-					if (type_descriptors[i].pin_loc_assignments[j][k][m])
-						free(type_descriptors[i].pin_loc_assignments[j][k][m]);
+		for (int width = 0; width < type_descriptors[i].width; ++width) {
+			for (int height = 0; height < type_descriptors[i].height; ++height) {
+				for (int side = 0; side < 4; ++side) {
+					for (int pin = 0; pin < type_descriptors[i].num_pin_loc_assignments[width][height][side]; ++pin) {
+						if (type_descriptors[i].pin_loc_assignments[width][height][side][pin])
+							free(type_descriptors[i].pin_loc_assignments[width][height][side][pin]);
+					}
+					free(type_descriptors[i].pinloc[width][height][side]);
+					free(type_descriptors[i].pin_loc_assignments[width][height][side]);
 				}
-				free(type_descriptors[i].pinloc[j][k]);
-				free(type_descriptors[i].pin_loc_assignments[j][k]);
+				free(type_descriptors[i].pinloc[width][height]);
+				free(type_descriptors[i].pin_loc_assignments[width][height]);
+				free(type_descriptors[i].num_pin_loc_assignments[width][height]);
 			}
-			free(type_descriptors[i].pinloc[j]);
-			free(type_descriptors[i].pin_loc_assignments[j]);
-			free(type_descriptors[i].num_pin_loc_assignments[j]);
-		}
-		for (j = 0; j < type_descriptors[i].num_class; j++) {
-			free(type_descriptors[i].class_inf[j].pinlist);
+			free(type_descriptors[i].pinloc[width]);
+			free(type_descriptors[i].pin_loc_assignments[width]);
+			free(type_descriptors[i].num_pin_loc_assignments[width]);
 		}
 		free(type_descriptors[i].pinloc);
 		free(type_descriptors[i].pin_loc_assignments);
 		free(type_descriptors[i].num_pin_loc_assignments);
+
+		free(type_descriptors[i].pin_width);
 		free(type_descriptors[i].pin_height);
+
+		for (j = 0; j < type_descriptors[i].num_class; j++) {
+			free(type_descriptors[i].class_inf[j].pinlist);
+		}
 		free(type_descriptors[i].class_inf);
 		free(type_descriptors[i].is_global_pin);
 		free(type_descriptors[i].pin_class);
 		free(type_descriptors[i].grid_loc_def);
+
 		free(type_descriptors[i].is_Fc_frac);
 		free(type_descriptors[i].is_Fc_full_flex);
 		free(type_descriptors[i].Fc);
+
 		free_pb_type(type_descriptors[i].pb_type);
 		free(type_descriptors[i].pb_type);
 	}
@@ -968,8 +976,7 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 				inet = vpack_to_clb_net_mapping[ivpack_net];
 				if (inet != OPEN) {
 					for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
-						pb_graph_pin = get_pb_graph_node_pin_from_clb_net(inet,
-								ipin);
+						pb_graph_pin = get_pb_graph_node_pin_from_clb_net(inet, ipin);
 						new_trace = (t_trace*) my_calloc(1, sizeof(t_trace));
 						new_trace->iblock = clb_net[inet].node_block[ipin];
 						new_trace->index = pb_graph_pin->pin_count_in_cluster;
@@ -1000,9 +1007,9 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 							current = current->next;
 							gridx = rr_node[new_trace->index].xlow;
 							gridy = rr_node[new_trace->index].ylow;
-							gridy = gridy - grid[gridx][gridy].offset;
-							new_trace = (t_trace*) my_calloc(1,
-									sizeof(t_trace));
+							gridx = gridx - grid[gridx][gridy].width_offset;
+							gridy = gridy - grid[gridx][gridy].height_offset;
+							new_trace = (t_trace*) my_calloc(1, sizeof(t_trace));
 							new_trace->iblock =
 									grid[gridx][gridy].blocks[rr_node[inter_cb_trace->index].z];
 							new_trace->index =
@@ -1011,8 +1018,7 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 							new_trace->num_siblings = 0;
 							new_trace->next = NULL;
 							current->next = new_trace;
-							current = expand_routing_trace(new_trace,
-									ivpack_net);
+							current = expand_routing_trace(new_trace, ivpack_net);
 						} else {
 							current = current->next;
 						}
@@ -1099,8 +1105,7 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 
 				case IPIN:
 				case OPIN:
-					if (grid[rr_node[inode].xlow][rr_node[inode].ylow].type
-							== IO_TYPE) {
+					if (grid[rr_node[inode].xlow][rr_node[inode].ylow].type == IO_TYPE) {
 						fprintf(fp, " Pad: ");
 					} else { /* IO Pad. */
 						fprintf(fp, " Pin: ");
@@ -1114,8 +1119,7 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 
 				case SOURCE:
 				case SINK:
-					if (grid[rr_node[inode].xlow][rr_node[inode].ylow].type
-							== IO_TYPE) {
+					if (grid[rr_node[inode].xlow][rr_node[inode].ylow].type == IO_TYPE) {
 						fprintf(fp, " Pad: ");
 					} else { /* IO Pad. */
 						fprintf(fp, " Class: ");
@@ -1166,7 +1170,8 @@ void resync_post_route_netlist() {
 			if (rr_node[trace->index].type == OPIN && j == 0) {
 				gridx = rr_node[trace->index].xlow;
 				gridy = rr_node[trace->index].ylow;
-				gridy = gridy - grid[gridx][gridy].offset;
+				gridx = gridx - grid[gridx][gridy].width_offset;
+				gridy = gridy - grid[gridx][gridy].height_offset;
 				iblock = grid[gridx][gridy].blocks[rr_node[trace->index].z];
 				assert(clb_net[i].node_block[j] == iblock);
 				clb_net[i].node_block_pin[j] = rr_node[trace->index].ptc_num;
@@ -1175,7 +1180,8 @@ void resync_post_route_netlist() {
 			} else if (rr_node[trace->index].type == IPIN) {
 				gridx = rr_node[trace->index].xlow;
 				gridy = rr_node[trace->index].ylow;
-				gridy = gridy - grid[gridx][gridy].offset;
+				gridx = gridx - grid[gridx][gridy].width_offset;
+				gridy = gridy - grid[gridx][gridy].height_offset;
 				iblock = grid[gridx][gridy].blocks[rr_node[trace->index].z];
 				clb_net[i].node_block[j] = iblock;
 				clb_net[i].node_block_pin[j] = rr_node[trace->index].ptc_num;
@@ -1271,14 +1277,10 @@ static void clay_lut_input_rebalancing(int iblock, t_pb *pb) {
 				lut_wrapper = lut->parent_pb_graph_node;
 
 				/* Ensure that this is actually a LUT */
-				assert(
-						lut->num_input_ports == 1 && lut_wrapper->num_input_ports == 1);
-				assert(
-						lut->num_input_pins[0] == lut_wrapper->num_input_pins[0]);
-				assert(
-						lut->num_output_ports == 1 && lut_wrapper->num_output_ports == 1);
-				assert(
-						lut->num_output_pins[0] == 1 && lut_wrapper->num_output_pins[0] == 1);
+				assert(lut->num_input_ports == 1 && lut_wrapper->num_input_ports == 1);
+				assert(lut->num_input_pins[0] == lut_wrapper->num_input_pins[0]);
+				assert(lut->num_output_ports == 1 && lut_wrapper->num_output_ports == 1);
+				assert(lut->num_output_pins[0] == 1 && lut_wrapper->num_output_pins[0] == 1);
 
 				lut_size = lut->num_input_pins[0];
 				for (i = 0; i < lut_size; i++) {
@@ -1290,27 +1292,18 @@ static void clay_lut_input_rebalancing(int iblock, t_pb *pb) {
 				for (i = 0; i < lut_size; i++) {
 					input = lut_pin_remap[i];
 					if (input != OPEN) {
-						snode =
-								lut_wrapper->input_pins[0][i].pin_count_in_cluster;
+						snode =	lut_wrapper->input_pins[0][i].pin_count_in_cluster;
 						assert(local_rr_graph[snode].num_edges == 0);
 						local_rr_graph[snode].num_edges = 1;
-						local_rr_graph[snode].edges = (int*) my_malloc(
-								sizeof(int));
-						local_rr_graph[snode].edges[0] =
-								lut->input_pins[0][input].pin_count_in_cluster;
+						local_rr_graph[snode].edges = (int*) my_malloc(sizeof(int));
+						local_rr_graph[snode].edges[0] = lut->input_pins[0][input].pin_count_in_cluster;
 					}
 				}
 			}
 		} else if (pb->child_pbs != NULL) {
-			for (i = 0;
-					i
-							< pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children;
-					i++) {
+			for (i = 0; i < pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children; i++) {
 				if (pb->child_pbs[i] != NULL) {
-					for (j = 0;
-							j
-									< pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i].num_pb;
-							j++) {
+					for (j = 0; j < pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
 						clay_lut_input_rebalancing(iblock,
 								&pb->child_pbs[i][j]);
 					}
@@ -1353,8 +1346,7 @@ static void clay_reload_ble_locations(int iblock) {
 	/* determine new location for BLEs that route out of cluster */
 	for (i = 0; i < pb_type->modes[mode].pb_type_children[0].num_pb; i++) {
 		if (block[iblock].pb->child_pbs[0][i].name != NULL) {
-			ivpack_net =
-					local_rr_graph[pb_graph_node->child_pb_graph_nodes[mode][0][i].output_pins[0][0].pin_count_in_cluster].net_num;
+			ivpack_net = local_rr_graph[pb_graph_node->child_pb_graph_nodes[mode][0][i].output_pins[0][0].pin_count_in_cluster].net_num;
 			inet = vpack_to_clb_net_mapping[ivpack_net];
 			if (inet != OPEN) {
 				ipin = OPEN;
@@ -1406,8 +1398,7 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
 		return;
 	}
 
-	assert(
-			strcmp(pb->pb_graph_node->pb_type->name, pb_graph_node->pb_type->name) == 0);
+	assert(strcmp(pb->pb_graph_node->pb_type->name, pb_graph_node->pb_type->name) == 0);
 
 	pb->pb_graph_node = pb_graph_node;
 	if (pb->child_pbs != NULL) {
