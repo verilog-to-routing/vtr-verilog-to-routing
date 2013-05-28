@@ -18,15 +18,9 @@ static void check_pass_transistors(int from_node);
 
 /************************ Subroutine definitions ****************************/
 
-void check_rr_graph(INP t_graph_type graph_type, INP t_type_ptr types,
-		INP int L_nx, INP int L_ny, INP int nodes_per_chan, INP int Fs,
-		INP int num_seg_types, INP int num_switches,
-		INP t_segment_inf * segment_inf, INP int global_route_switch,
-		INP int delayless_switch, INP int wire_to_ipin_switch,
-		t_seg_details * seg_details, int **Fc_in, int **Fc_out,
-		int *****opin_to_track_map, int *****ipin_to_track_map,
-		t_ivec **** track_to_ipin_lookup, t_ivec *** switch_block_conn,
-		boolean * perturb_ipins) {
+void check_rr_graph(INP t_graph_type graph_type, 
+		INP int L_nx, INP int L_ny,
+		INP int num_switches, INP int **Fc_in) {
 
 	int *num_edges_from_current_to_node; /* [0..num_rr_nodes-1] */
 	int *total_edges_to_node; /* [0..num_rr_nodes-1] */
