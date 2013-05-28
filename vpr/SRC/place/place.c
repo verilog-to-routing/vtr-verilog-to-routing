@@ -1572,7 +1572,8 @@ static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int 
 			*x_to = min_x + x_rel;
 			y_rel = my_irand(std::max(0, max_y - min_y));
 			*y_to = min_y + y_rel;
-			*y_to = (*y_to) - grid[*x_to][*y_to].offset; /* align it */
+			*x_to = (*x_to) - grid[*x_to][*y_to].width_offset; /* align it */
+			*y_to = (*y_to) - grid[*x_to][*y_to].height_offset; /* align it */
 		}
 		
 		if((x_from == *x_to) && (y_from == *y_to)) {
@@ -2517,7 +2518,7 @@ static void alloc_legal_placements() {
 			grid[i][j].usage = 0;
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
 				grid[i][j].blocks[k] = EMPTY;
-				if (grid[i][j].offset == 0) {
+				if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
 					num_legal_pos[grid[i][j].type->index]++;
 				}
 			}
@@ -2538,7 +2539,7 @@ static void load_legal_placements() {
 	for (i = 0; i <= nx + 1; i++) {
 		for (j = 0; j <= ny + 1; j++) {
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
-				if (grid[i][j].offset == 0) {
+				if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
 					itype = grid[i][j].type->index;
 					legal_pos[itype][index[itype]].x = i;
 					legal_pos[itype][index[itype]].y = j;
