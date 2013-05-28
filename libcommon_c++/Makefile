@@ -1,5 +1,5 @@
 ################################   MAKEFILE OPTIONS     ####################################
-# Build the printhandler library
+# Build the common C++ library
 
 export BUILD_TYPE = release
 # can be debug or release - this option gets inherited by the library libarchfpga 
@@ -14,10 +14,10 @@ OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O3
 
 CC = $(COMPILER)
 LIB_DIR = -L.
-LIB = -lm -lprinthandler
+LIB = -lm -lcommon_c++
 SRC_DIR = SRC
 OBJ_DIR = OBJ
-OTHER_DIR = -ISRC/TC_Common -ISRC/TIO_InputOutputHandlers -ISRC/acl -I../pcre/SRC
+OTHER_DIR = -ISRC/TC_Common -ISRC/TIO_InputOutputHandlers -ISRC/acl -I../libcommon_c/pcre/SRC
 
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 
@@ -33,23 +33,17 @@ else                              # DEBUG build
   FLAGS := $(FLAGS) $(DEBUG_FLAGS)
 endif
 
-EXE = printhandlerdemo
-
 OBJ = $(patsubst $(SRC_DIR)/%.cxx, $(OBJ_DIR)/%.o,$(wildcard $(SRC_DIR)/*.cxx $(SRC_DIR)/*/*.cxx))
 OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
 
-$(EXE): $(OBJ) Makefile libprinthandler.a
-	$(CC) $(FLAGS) OBJ/main.o -o $(EXE) $(LIB_DIR) $(LIB)
-
-
-libprinthandler.a: $(OBJ) Makefile ../pcre/libpcre.a
-	@ cp ../pcre/libpcre.a $@
+libcommon_c++.a: $(OBJ) Makefile ../libcommon_c/pcre/libpcre.a
+	@ cp ../libcommon_c/pcre/libpcre.a $@
 	@ ar rcs $@ $(OBJ)
 	@ ar d $@ main.o
 
-../pcre/libpcre.a:
-	cd ../pcre && make
+../libcommon_c/pcre/libpcre.a:
+	cd ../libcommon_c/pcre && make
 
 # Enable a second round of expansion so that we may include
 # the target directory as a prerequisite of the object file.
@@ -69,7 +63,7 @@ $(OBJ_DIRS):
 -include $(DEP)
 
 clean:
-	rm -f $(EXE) $(OBJ) $(DEP) libprinthandler.a
+	rm -f $(OBJ) $(DEP) libcommon_c++.a
 
 clean_coverage: clean
 	rm -rf ./usr
@@ -83,5 +77,3 @@ ctags:
 
 # This is using Target-specific variable values. See: http://www.gnu.org/software/make/manual/make.html#Target_002dspecific
 coverage: FLAGS = $(DEBUG_FLAGS) $(INC_FLAGS) -pedantic  -D EZXML_NOMMAP -fprofile-arcs -ftest-coverage -lgcov
-coverage: $(EXE)
-	./coverage_reset.sh
