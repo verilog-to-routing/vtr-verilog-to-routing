@@ -301,8 +301,9 @@ static void load_simplified_device(void) {
 				grid[i][j].type = FILL_TYPE;
 			}
 			grid[i][j].blocks = (int*)my_malloc(
-					grid[i][j].type->capacity * sizeof(int));
-			grid[i][j].offset = 0;
+			grid[i][j].type->capacity * sizeof(int));
+			grid[i][j].width_offset = 0;
+			grid[i][j].height_offset = 0;
 		}
 	}
 }
