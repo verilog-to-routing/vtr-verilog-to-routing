@@ -1,4 +1,3 @@
-
 #include <assert.h>
 #include <stdio.h>
 #include <math.h>
@@ -44,9 +43,9 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 	area = 0;
 	for (i = 1; i <= nx; i++) {
 		for (j = 1; j <= ny; j++) {
-			if (grid[i][j].offset == 0) {
+			if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
 				if (grid[i][j].type->area == UNDEFINED) {
-					area += grid_logic_tile_area * grid[i][j].type->height;
+					area += grid_logic_tile_area * grid[i][j].type->width * grid[i][j].type->height;
 				} else {
 					area += grid[i][j].type->area;
 				}
@@ -60,7 +59,7 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 	for (i = 0; i < num_blocks; i++) {
 		if (block[i].type != IO_TYPE) {
 			if (block[i].type->area == UNDEFINED) {
-				used_area += grid_logic_tile_area * block[i].type->height;
+				used_area += grid_logic_tile_area * block[i].type->width * block[i].type->height;
 			} else {
 				used_area += block[i].type->area;
 			}
