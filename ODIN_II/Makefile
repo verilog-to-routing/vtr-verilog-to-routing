@@ -16,7 +16,7 @@ DEBUG_FLAGS = -g -DYYERROR_VERBOSE
 # Use this value of OPT_FLAGS to simulate in parallel (requires GCC >= 4.2)
 #OPT_FLAGS = -O2 -fopenmp 
 
-INC_FLAGS =  -I../libarchfpga/include -I../printhandler/SRC/TIO_InputOutputHandlers
+INC_FLAGS =  -I../libarchfpga/include -I../libcommon_c++/SRC/TIO_InputOutputHandlers
 LIB = -L../libarchfpga -larchfpga -lm -ldl
 C_DIRECTIVE = -DVPR6 -DUSING_BISON
 
