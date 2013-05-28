@@ -93,6 +93,8 @@ void ***alloc_matrix3(int nrmin, int nrmax, int ncmin, int ncmax,
 		int ndmin, int ndmax, size_t elsize);
 void ****alloc_matrix4(int nrmin, int nrmax, int ncmin, int ncmax,
 		int ndmin, int ndmax, int nemin, int nemax, size_t elsize);
+void *****alloc_matrix5(int nrmin, int nrmax, int ncmin, int ncmax,
+		int ndmin, int ndmax, int nemin, int nemax, int nfmin, int nfmax, size_t elsize);
 
 void free_matrix(void *vptr, int nrmin, int nrmax, int ncmin,
 		size_t elsize);
@@ -100,6 +102,8 @@ void free_matrix3(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
 		int ndmin, size_t elsize);
 void free_matrix4(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
 		int ndmin, int ndmax, int nemin, size_t elsize);
+void free_matrix5(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
+		int ndmin, int ndmax, int nemin, int nemax, int nfmin, size_t elsize);
 
 void print_int_matrix3(int ***vptr, int nrmin, int nrmax, int ncmin,
 		int ncmax, int ndmin, int ndmax, char *file);
