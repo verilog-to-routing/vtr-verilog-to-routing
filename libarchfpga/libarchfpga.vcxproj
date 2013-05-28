@@ -54,7 +54,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <CompileAsManaged>
       </CompileAsManaged>
-      <AdditionalIncludeDirectories>include;../printhandler/SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;../libcommon_c++/SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
@@ -72,10 +72,10 @@
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <AdditionalIncludeDirectories>include;../printhandler/SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;../libcommon_c++/SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
       <CompileAsManaged>false</CompileAsManaged>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>include;../printhandler/SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;../libcommon_c++/SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -104,7 +104,7 @@
     <ClCompile Include="util.c" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\printhandler\printhandler.vcxproj">
+    <ProjectReference Include="..\libcommon_c++\printhandler.vcxproj">
       <Project>{a5092a9c-6dfd-4dec-9951-51606f5eaf3b}</Project>
     </ProjectReference>
   </ItemGroup>
