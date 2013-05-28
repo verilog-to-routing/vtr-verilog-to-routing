@@ -16,7 +16,7 @@ AR = ar
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 DEBUG_FLAGS = -g
 OPT_FLAGS = -O3
-INC_FLAGS = -Iinclude -I../printhandler/SRC/TIO_InputOutputHandlers
+INC_FLAGS = -Iinclude -I../libcommon_c++/SRC/TIO_InputOutputHandlers
 LIB_FLAGS = rcs
 
 EXE = read_arch
@@ -39,15 +39,15 @@ $(EXE): main.o libarchfpga.a
 	$(CC) main.o -o $(EXE) $(INC_FLAGS) -L. -lm -larchfpga
  
 
-libarchfpga.a: $(OBJS) ../pcre/libpcre.a ../printhandler/libprinthandler.a
-	 cp ../printhandler/libprinthandler.a $@
+libarchfpga.a: $(OBJS) ../libcommon_c/pcre/libpcre.a ../libcommon_c++/libcommon_c++.a
+	 cp ../libcommon_c++/libcommon_c++.a $@
 	 ar rcs $@ $(OBJS)
 
-../pcre/libpcre.a:
-	@ cd ../pcre && make
+../libcommon_c/pcre/libpcre.a:
+	@ cd ../libcommon_c/pcre && make
 
-../printhandler/libprinthandler.a:
-	@ cd ../printhandler && make
+../libcommon_c++/libcommon_c++.a:
+	@ cd ../libcommon_c++ && make
 
 %.o: %.c
 	$(CC) $(FLAGS) -c $< -o $@ 
