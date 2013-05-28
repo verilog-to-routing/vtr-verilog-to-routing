@@ -33,9 +33,14 @@ else                              # DEBUG build
   FLAGS := $(FLAGS) $(DEBUG_FLAGS)
 endif
 
+EXE = printhandlerdemo
+
 OBJ = $(patsubst $(SRC_DIR)/%.cxx, $(OBJ_DIR)/%.o,$(wildcard $(SRC_DIR)/*.cxx $(SRC_DIR)/*/*.cxx))
 OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
+
+$(EXE): $(OBJ) Makefile libcommon_c++.a
+	$(CC) $(FLAGS) OBJ/main.o -o $(EXE) $(LIB_DIR) $(LIB)
 
 libcommon_c++.a: $(OBJ) Makefile ../libcommon_c/pcre/libpcre.a
 	@ cp ../libcommon_c/pcre/libpcre.a $@
@@ -63,7 +68,7 @@ $(OBJ_DIRS):
 -include $(DEP)
 
 clean:
-	rm -f $(OBJ) $(DEP) libcommon_c++.a
+	rm -f $(EXE) $(OBJ) $(DEP) libcommon_c++.a
 
 clean_coverage: clean
 	rm -rf ./usr
@@ -77,3 +82,5 @@ ctags:
 
 # This is using Target-specific variable values. See: http://www.gnu.org/software/make/manual/make.html#Target_002dspecific
 coverage: FLAGS = $(DEBUG_FLAGS) $(INC_FLAGS) -pedantic  -D EZXML_NOMMAP -fprofile-arcs -ftest-coverage -lgcov
+coverage: $(EXE)
+	./coverage_reset.sh
