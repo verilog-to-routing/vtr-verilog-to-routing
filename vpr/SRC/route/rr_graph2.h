@@ -59,11 +59,10 @@ boolean is_sbox(INP int chan,
 		INP t_seg_details * seg_details,
 		INP enum e_directionality directionality);
 
-int get_bidir_opin_connections(INP int i,
-		INP int j,
+int get_bidir_opin_connections(INP int i, INP int j,
 		INP int ipin,
 		INP struct s_linked_edge **edge_list,
-		INP int *****opin_to_track_map,
+		INP int ******opin_to_track_map,
 		INP int Fc,
 		INP boolean * L_rr_edge_done,
 		INP t_ivec *** L_rr_node_indices,
@@ -82,9 +81,9 @@ int get_unidir_opin_connections(INP int chan,
 		INP t_ivec *** L_rr_node_indices,
 		OUTP boolean * Fc_clipped);
 
-int get_track_to_ipins(int seg, int chan, int track,
+int get_track_to_pins(int seg, int chan, int track,
 		t_linked_edge ** edge_list_ptr, t_ivec *** L_rr_node_indices,
-		struct s_ivec ****track_to_ipin_lookup, t_seg_details * seg_details,
+		struct s_ivec *****track_to_pin_lookup, t_seg_details * seg_details,
 		enum e_rr_type chan_type, int chan_length, int wire_to_ipin_switch,
 		enum e_directionality directionality);
 
@@ -98,7 +97,7 @@ int get_track_to_tracks(INP int from_chan,
 		INP int nodes_per_chan,
 		INP int *opin_mux_size,
 		INP int Fs_per_side,
-		INP short *****sblock_pattern,
+		INP short ******sblock_pattern,
 		INOUTP struct s_linked_edge **edge_list,
 		INP t_seg_details * seg_details,
 		INP enum e_directionality directionality,
@@ -106,17 +105,15 @@ int get_track_to_tracks(INP int from_chan,
 		INOUTP boolean * L_rr_edge_done,
 		INP struct s_ivec ***switch_block_conn);
 
-short *****alloc_sblock_pattern_lookup(INP int L_nx,
-		INP int L_ny,
+short ******alloc_sblock_pattern_lookup(INP int L_nx, INP int L_ny,
 		INP int nodes_per_chan);
-void free_sblock_pattern_lookup(INOUTP short *****sblock_pattern);
-void load_sblock_pattern_lookup(INP int i,
-		INP int j,
+void free_sblock_pattern_lookup(INOUTP short ******sblock_pattern);
+void load_sblock_pattern_lookup(INP int i, INP int j,
 		INP int nodes_per_chan,
 		INP t_seg_details * seg_details,
 		INP int Fs,
 		INP enum e_switch_block_type switch_block_type,
-		INOUTP short *****sblock_pattern);
+		INOUTP short ******sblock_pattern);
 
 #endif
 
