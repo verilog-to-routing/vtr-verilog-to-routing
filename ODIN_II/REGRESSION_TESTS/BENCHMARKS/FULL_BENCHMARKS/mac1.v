@@ -1608,7 +1608,8 @@ module DW01_add2 (A,B,CI,SUM,CO);
 
   output [width-1 : 0] SUM;
   output CO;
-  input [width-1 : 0] A,B;
+  input [width-1 : 0] A;
+  input [width-1 : 0] B;
   input CI;
 
   wire [width-1 : 0] SUM;
@@ -1629,7 +1630,8 @@ module DW01_add1 (A,B,CI,SUM,CO);
 
   output [width-1 : 0] SUM;
   output CO;
-  input [width-1 : 0] A,B;
+  input [width-1 : 0] A;
+  input [width-1 : 0] B;
   input CI;
 
   wire [width-1 : 0] SUM;
