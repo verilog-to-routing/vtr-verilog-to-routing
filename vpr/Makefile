@@ -32,7 +32,7 @@ WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi 
 
 DEBUG_FLAGS = -g 
 OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
-INC_FLAGS = -I../libarchfpga/include -I/opt/X11/include
+INC_FLAGS = -I../libarchfpga/include
 
 FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -D EZXML_NOMMAP -D_POSIX_C_SOURCE
 
@@ -55,6 +55,7 @@ ifneq (,$(findstring true, $(ENABLE_GRAPHICS)))
   # is located elsewhere, change it here.
   ifneq (,$(findstring true, $(MAC_OS)))
     LIB_DIR := $(LIB_DIR) -L/usr/X11/lib
+	INC_FLAGS := $(INC_FLAGS) -I/opt/X11/include
   else  
     LIB_DIR := $(LIB_DIR) -L/usr/lib/X11
     PACKAGEINSTALL := if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep libx11-dev -c >>/dev/null; then sudo apt-get install libx11-dev; fi; fi
