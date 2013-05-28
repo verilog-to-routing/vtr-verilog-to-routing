@@ -15,6 +15,10 @@
 #include "SetupGrid.h"
 #include "read_xml_arch_file.h"
 
+static void alloc_and_load_num_instances_type(
+		t_grid_tile** L_grid, int L_nx, int L_ny,
+		int* L_num_instances_type, int L_num_types);
+
 static void CheckGrid(void);
 static t_type_ptr find_type_col(INP int x);
 
@@ -48,14 +52,9 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 		}
 	}
 
-	for (i = 0; i < num_types; i++) {
-		num_instances_type[i] = 0;
-	}
-
 	/* Nothing goes in the corners. */
 	grid[0][0].type = grid[nx + 1][0].type = EMPTY_TYPE;
 	grid[0][ny + 1].type = grid[nx + 1][ny + 1].type = EMPTY_TYPE;
-	num_instances_type[EMPTY_TYPE->index] = 4;
 
 	for (i = 1; i <= nx; i++) {
 		grid[i][0].blocks = (int *) my_malloc(sizeof(int) * IO_TYPE->capacity);
@@ -84,31 +83,40 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 		}
 	}
 
-	num_instances_type[IO_TYPE->index] = 2 * IO_TYPE->capacity * (nx + ny);
-
 	for (i = 1; i <= nx; i++) { /* Interior (LUT) cells */
 		type = find_type_col(i);
 		for (j = 1; j <= ny; j++) {
-			grid[i][j].type = type;
-			grid[i][j].offset = (j - 1) % type->height;
-			if (j + grid[i][j].type->height - 1 - grid[i][j].offset > ny) {
+
+			if (grid[i][j].type == EMPTY_TYPE)
+				continue;
+
+			if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0)
+				continue;
+
+			if (i + type->width - 1 <= nx && j + type->height - 1 <= ny) {
+				for (int i_offset = 0; i_offset < type->width; ++i_offset) {
+					for (int j_offset = 0; j_offset < type->height; ++j_offset) {
+						grid[i+i_offset][j+j_offset].type = type;
+						grid[i+i_offset][j+j_offset].width_offset = i_offset;
+						grid[i+i_offset][j+j_offset].height_offset = j_offset;
+						grid[i+i_offset][j+j_offset].blocks = (int *) my_malloc(sizeof(int) * type->capacity);
+						grid[i+i_offset][j+j_offset].blocks[0] = EMPTY;
+						for (int k = 0; k < type->capacity; ++k) {
+							grid[i+i_offset][j+j_offset].blocks[k] = EMPTY;
+						}
+					}
+				}
+			} else {
 				grid[i][j].type = EMPTY_TYPE;
-				grid[i][j].offset = 0;
-			}
-
-			if (type->capacity > 1) {
-				vpr_printf(TIO_MESSAGE_ERROR, "in FillArch(), expected core blocks to have capacity <= 1 but (%d, %d) has type '%s' and capacity %d.\n", 
-						i, j, grid[i][j].type->name, grid[i][j].type->capacity);
-				exit(1);
-			}
-
-			grid[i][j].blocks = (int *) my_malloc(sizeof(int));
-			grid[i][j].blocks[0] = EMPTY;
-			if (grid[i][j].offset == 0) {
-				num_instances_type[grid[i][j].type->index]++;
+				grid[i][j].blocks = (int *) my_malloc(sizeof(int));
+				grid[i][j].blocks[0] = EMPTY;
 			}
 		}
 	}
+
+	// And, refresh (ie. reset and update) the "num_instances_type" array
+	// (while also forcing any remaining INVALID blocks to EMPTY_TYPE)
+	alloc_and_load_num_instances_type(grid, nx, ny,	num_instances_type, num_types);
 
 	CheckGrid();
 
@@ -127,7 +135,8 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 #endif
 }
 
-void freeGrid() {
+void freeGrid(void) {
+
 	int i, j;
 	if (grid == NULL) {
 		return;
@@ -142,7 +151,59 @@ void freeGrid() {
 	grid = NULL;
 }
 
-static void CheckGrid() {
+//===========================================================================//
+static void alloc_and_load_num_instances_type(
+		t_grid_tile** L_grid, int L_nx, int L_ny,
+		int* L_num_instances_type, int L_num_types) {
+
+	for (int i = 0; i < L_num_types; ++i) {
+		L_num_instances_type[i] = 0;
+	}
+
+	for (int x = 0; x <= (L_nx + 1); ++x) {
+		for (int y = 0; y <= (L_ny + 1); ++y) {
+
+			if (!L_grid[x][y].type)
+				continue;
+
+			bool isValid = false;
+			for (int z = 0; z < L_grid[x][y].type->capacity; ++z) {
+
+				if (L_grid[x][y].blocks[z] == INVALID) {
+					L_grid[x][y].blocks[z] = EMPTY;
+				} else {
+					isValid = true;
+				}
+			}
+			if (!isValid) {
+				L_grid[x][y].type = EMPTY_TYPE;
+				L_grid[x][y].width_offset = 0;
+				L_grid[x][y].height_offset = 0;
+			}
+
+			if (L_grid[x][y].width_offset > 0 || L_grid[x][y].height_offset > 0) {
+				continue;
+			}
+
+			if (L_grid[x][y].type == EMPTY_TYPE) {
+				++L_num_instances_type[EMPTY_TYPE->index];
+				continue;
+			}
+
+			for (int z = 0; z < L_grid[x][y].type->capacity; ++z) {
+
+				if (L_grid[x][y].type == IO_TYPE) {
+					++L_num_instances_type[IO_TYPE->index];
+				} else {
+					++L_num_instances_type[L_grid[x][y].type->index];
+				}
+			}
+		}
+	}
+}
+
+static void CheckGrid(void) {
+
 	int i, j;
 
 	/* Check grid is valid */
@@ -158,9 +219,14 @@ static void CheckGrid() {
 				exit(1);
 			}
 
-			if ((grid[i][j].offset < 0)
-					|| (grid[i][j].offset >= grid[i][j].type->height)) {
-				vpr_printf(TIO_MESSAGE_ERROR, "grid[%d][%d] has invalid offset (%d).\n", i, j, grid[i][j].offset);
+			if ((grid[i][j].width_offset < 0)
+					|| (grid[i][j].width_offset >= grid[i][j].type->width)) {
+				vpr_printf(TIO_MESSAGE_ERROR, "grid[%d][%d] has invalid width offset (%d).\n", i, j, grid[i][j].width_offset);
+				exit(1);
+			}
+			if ((grid[i][j].height_offset < 0)
+					|| (grid[i][j].height_offset >= grid[i][j].type->height)) {
+				vpr_printf(TIO_MESSAGE_ERROR, "grid[%d][%d] has invalid height offset (%d).\n", i, j, grid[i][j].height_offset);
 				exit(1);
 			}
 
@@ -174,6 +240,7 @@ static void CheckGrid() {
 }
 
 static t_type_ptr find_type_col(INP int x) {
+
 	int i, j;
 	int start, repeat;
 	float rel;
