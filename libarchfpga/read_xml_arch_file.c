@@ -151,26 +151,31 @@ static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 	ezxml_set_attr(Locations, "pattern", NULL);
 
 	/* Alloc and clear pin locations */
-	Type->pinloc = (int ***) my_malloc(Type->height * sizeof(int **));
+	Type->pin_width = (int *) my_calloc(Type->num_pins, sizeof(int));
 	Type->pin_height = (int *) my_calloc(Type->num_pins, sizeof(int));
-	for (i = 0; i < Type->height; ++i) {
-		Type->pinloc[i] = (int **) my_malloc(4 * sizeof(int *));
-		for (j = 0; j < 4; ++j) {
-			Type->pinloc[i][j] = (int *) my_malloc(
-					Type->num_pins * sizeof(int));
-			for (k = 0; k < Type->num_pins; ++k) {
-				Type->pinloc[i][j][k] = 0;
+	Type->pinloc = (int ****) my_malloc(Type->width * sizeof(int **));
+	for (int width = 0; width < Type->width; ++width) {
+		Type->pinloc[width] = (int ***) my_malloc(Type->height * sizeof(int *));
+		for (int height = 0; height < Type->height; ++height) {
+			Type->pinloc[width][height] = (int **) my_malloc(4 * sizeof(int *));
+			for (int side = 0; side < 4; ++side) {
+				Type->pinloc[width][height][side] = (int *) my_malloc(Type->num_pins * sizeof(int));
+				for (int pin = 0; pin < Type->num_pins; ++pin) {
+					Type->pinloc[width][height][side][pin] = 0;
+				}
 			}
 		}
 	}
 
-	Type->pin_loc_assignments = (char****) my_malloc(
-			Type->height * sizeof(char***));
-	Type->num_pin_loc_assignments = (int**) my_malloc(
-			Type->height * sizeof(int*));
-	for (i = 0; i < Type->height; i++) {
-		Type->pin_loc_assignments[i] = (char***) my_calloc(4, sizeof(char**));
-		Type->num_pin_loc_assignments[i] = (int*) my_calloc(4, sizeof(int));
+	Type->pin_loc_assignments = (char *****) my_malloc(Type->width * sizeof(char ****));
+	Type->num_pin_loc_assignments = (int ***) my_malloc(Type->width * sizeof(int **));
+	for (int width = 0; width < Type->width; ++width) {
+		Type->pin_loc_assignments[width] = (char ****) my_calloc(Type->height, sizeof(char ***));
+		Type->num_pin_loc_assignments[width] = (int **) my_calloc(Type->height, sizeof(int *));
+		for (int height = 0; height < Type->height; ++height) {
+			Type->pin_loc_assignments[width][height] = (char ***) my_calloc(4, sizeof(char **));
+			Type->num_pin_loc_assignments[width][height] = (int *) my_calloc(4, sizeof(int));
+		}
 	}
 
 	/* Load the pin locations */
@@ -179,33 +184,30 @@ static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 		while (Cur) {
 			CheckElement(Cur, "loc");
 
-			/* Get offset */
-			i = GetIntProperty(Cur, "offset", FALSE, 0);
-			if ((i < 0) || (i >= Type->height)) {
+			/* Get offset (ie. height) */
+			int height = GetIntProperty(Cur, "offset", FALSE, 0);
+			if ((height < 0) || (height >= Type->height)) {
 				vpr_printf(TIO_MESSAGE_ERROR,
 						"[LINE %d] %d is an invalid offset for type '%s'.\n",
-						Cur->line, i, Type->name);
+						Cur->line, height, Type->name);
 				exit(1);
 			}
 
 			/* Get side */
+			int side;
 			Prop = FindProperty(Cur, "side", TRUE);
 			if (0 == strcmp(Prop, "left")) {
-				j = LEFT;
+				side = LEFT;
 			}
-
 			else if (0 == strcmp(Prop, "top")) {
-				j = TOP;
+				side = TOP;
 			}
-
 			else if (0 == strcmp(Prop, "right")) {
-				j = RIGHT;
+				side = RIGHT;
 			}
-
 			else if (0 == strcmp(Prop, "bottom")) {
-				j = BOTTOM;
+				side = BOTTOM;
 			}
-
 			else {
 				vpr_printf(TIO_MESSAGE_ERROR,
 						"[LINE %d] '%s' is not a valid side.\n", Cur->line,
@@ -215,14 +217,14 @@ static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 			ezxml_set_attr(Cur, "side", NULL);
 
 			/* Check location is on perimeter */
-			if ((TOP == j) && (i != (Type->height - 1))) {
+			if ((TOP == side) && (height != (Type->height - 1))) {
 				vpr_printf(TIO_MESSAGE_ERROR,
 						"[LINE %d] Locations are only allowed on large block "
 								"perimeter. 'top' side should be at offset %d only.\n",
 						Cur->line, (Type->height - 1));
 				exit(1);
 			}
-			if ((BOTTOM == j) && (i != 0)) {
+			if ((BOTTOM == side) && (height != 0)) {
 				vpr_printf(TIO_MESSAGE_ERROR,
 						"[LINE %d] Locations are only allowed on large block "
 								"perimeter. 'bottom' side should be at offset 0 only.\n",
@@ -232,15 +234,14 @@ static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 
 			/* Go through lists of pins */
 			CountTokensInString(Cur->txt, &Count, &Len);
-			Type->num_pin_loc_assignments[i][j] = Count;
+			Type->num_pin_loc_assignments[0][height][side] = Count;
 			if (Count > 0) {
 				Tokens = GetNodeTokens(Cur);
 				CurTokens = Tokens;
-				Type->pin_loc_assignments[i][j] = (char**) my_calloc(Count,
-						sizeof(char*));
-				for (k = 0; k < Count; k++) {
+				Type->pin_loc_assignments[0][height][side] = (char**) my_calloc(Count, sizeof(char*));
+				for (int pin = 0; pin < Count; ++pin) {
 					/* Store location assignment */
-					Type->pin_loc_assignments[i][j][k] = my_strdup(*CurTokens);
+					Type->pin_loc_assignments[0][height][side][pin] = my_strdup(*CurTokens);
 
 					/* Advance through list of pins in this location */
 					++CurTokens;
@@ -802,8 +803,7 @@ static void ProcessPb_TypePowerEstMethod(ezxml_t Parent, t_pb_type * pb_type) {
 
 	if (!prop) {
 		/* default method is auto-size */
-		pb_type->pb_type_power->estimation_method = power_method_inherited(
-				parent_power_method);
+		pb_type->pb_type_power->estimation_method = power_method_inherited(parent_power_method);
 	} else if (strcmp(prop, "auto-size") == 0) {
 		pb_type->pb_type_power->estimation_method = POWER_METHOD_AUTO_SIZES;
 	} else if (strcmp(prop, "specify-size") == 0) {
@@ -889,8 +889,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 	pb_type->num_ports = num_ports;
 
 	/* Initialize Power Structure */
-	pb_type->pb_type_power = (t_pb_type_power*) my_calloc(1,
-			sizeof(t_pb_type_power));
+	pb_type->pb_type_power = (t_pb_type_power*) my_calloc(1, sizeof(t_pb_type_power));
 	ProcessPb_TypePowerEstMethod(Parent, pb_type);
 
 	/* process ports */
@@ -934,8 +933,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 			assert(pb_type->ports[i].is_clock == FALSE);
 			pb_type->num_output_pins += pb_type->ports[i].num_pins;
 		} else {
-			assert(
-					pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT);
+			assert(pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT);
 			pb_type->num_clock_pins += pb_type->ports[i].num_pins;
 		}
 	}
@@ -1588,11 +1586,9 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 						if (ovr_val != Type->Fc[iport_pin + curr_pin]
 									|| Type->is_Fc_full_flex[iport_pin
 											+ curr_pin]
-											!= (ovr_type == FC_FULL) ? TRUE :
-							FALSE
+											!= (ovr_type == FC_FULL) ? TRUE : FALSE
 									|| Type->is_Fc_frac[iport_pin + curr_pin]
-											!= (ovr_type == FC_FRAC) ?
-									TRUE : FALSE) {
+											!= (ovr_type == FC_FRAC) ? TRUE : FALSE) {
 							Type->Fc[iport_pin + curr_pin] = ovr_val;
 							Type->is_Fc_full_flex[iport_pin + curr_pin] =
 									(ovr_type == FC_FULL) ? TRUE : FALSE;
@@ -1651,6 +1647,7 @@ static void ProcessComplexBlockProps(ezxml_t Node, t_type_descriptor * Type) {
 
 	/* Load properties */
 	Type->capacity = GetIntProperty(Node, "capacity", FALSE, 1); /* TODO: Any block with capacity > 1 that is not I/O has not been tested, must test */
+	Type->width = GetIntProperty(Node, "width", FALSE, 1);
 	Type->height = GetIntProperty(Node, "height", FALSE, 1);
 	Type->area = GetFloatProperty(Node, "area", FALSE, UNDEFINED);
 
@@ -1923,6 +1920,7 @@ static void SetupEmptyType(void) {
 	type = &cb_type_descriptors[EMPTY_TYPE->index];
 	type->name = "<EMPTY>";
 	type->num_pins = 0;
+	type->width = 1;
 	type->height = 1;
 	type->capacity = 0;
 	type->num_drivers = 0;
@@ -3353,8 +3351,8 @@ void EchoArch(INP const char *EchoFile, INP const t_type_descriptor * Types,
 	for (i = 0; i < NumTypes; ++i) {
 		fprintf(Echo, "Type: \"%s\"\n", Types[i].name);
 		fprintf(Echo, "\tcapacity: %d\n", Types[i].capacity);
+		fprintf(Echo, "\twidth: %d\n", Types[i].width);
 		fprintf(Echo, "\theight: %d\n", Types[i].height);
-
 		for (j = 0; j < Types[i].num_pins; j++) {
 			fprintf(Echo, "\tis_Fc_frac: \n");
 			fprintf(Echo, "\t\tPin number %d: %s\n", j,
