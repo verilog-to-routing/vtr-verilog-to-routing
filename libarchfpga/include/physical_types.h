@@ -592,6 +592,7 @@ struct s_pb_type_power {
  num_pins: Number of pins for the block
  capacity: Number of blocks of this type that can occupy one grid tile.
  This is primarily used for IO pads.
+ width: Width of large block in grid tiles
  height: Height of large block in grid tiles
  pinloc: Is set to 1 if a given pin exists on a certain position of a block.
  num_class: Number of logically-equivalent pin classes
@@ -615,12 +616,14 @@ struct s_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 	int num_pins;
 	int capacity;
 
+	int width;
 	int height;
 
-	int ***pinloc; /* [0..height-1][0..3][0..num_pins-1] */
+	int ****pinloc; /* [0..width-1][0..height-1][0..3][0..num_pins-1] */
+	int *pin_width; /* [0..num_pins-1] */
 	int *pin_height; /* [0..num_pins-1] */
-	int **num_pin_loc_assignments; /* [0..height-1][0..3] */
-	char ****pin_loc_assignments; /* [0..height-1][0..3][0..num_tokens-1][0..string_name] */
+	int ***num_pin_loc_assignments; /* [0..width-1][0..height-1][0..3] */
+	char *****pin_loc_assignments; /* [0..width-1][0..height-1][0..3][0..num_tokens-1][0..string_name] */
 	enum e_pin_location_distr pin_location_distribution;
 
 	int num_class;
