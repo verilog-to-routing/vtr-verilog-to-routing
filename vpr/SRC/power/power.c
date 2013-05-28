@@ -599,7 +599,7 @@ static void power_usage_blocks(t_power_usage * power_usage) {
 		for (y = 0; y < ny + 2; y++) {
 			type_idx = grid[x][y].type->index;
 
-			if ((grid[x][y].offset != 0) || (grid[x][y].type == EMPTY_TYPE)) {
+			if ((grid[x][y].width_offset != 0) || (grid[x][y].height_offset != 0) || (grid[x][y].type == EMPTY_TYPE)) {
 				continue;
 			}
 
