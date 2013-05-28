@@ -1,3 +1,5 @@
+// JR - Added support for s_grid_tile's new "width_offset" and "height_offset" members. This update enables support for variable height and width blocks (previously, "offset" was applied to variable height blocks only).
+
 #include <assert.h>
 #include <string.h>
 #include "util.h"
@@ -74,6 +76,7 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
  * print tabs given number of tabs to file
  */
 void print_tabs(FILE * fpout, int num_tab) {
+
 	int i;
 	for (i = 0; i < num_tab; i++) {
 		fprintf(fpout, "\t");
@@ -84,6 +87,7 @@ void print_tabs(FILE * fpout, int num_tab) {
 void sync_grid_to_blocks(INP int L_num_blocks,
 		INP const struct s_block block_list[], INP int L_nx, INP int L_ny,
 		INOUTP struct s_grid_tile **L_grid) {
+
 	int i, j, k;
 
 	/* Reset usage and allocate blocks list if needed */
@@ -130,17 +134,20 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 			exit(1);
 		}
 
-		if (L_grid[block[i].x][block[i].y].offset != 0) {
+		if (L_grid[block[i].x][block[i].y].width_offset != 0 || L_grid[block[i].x][block[i].y].height_offset != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Large block not aligned in placment for block %d at (%d, %d, %d).",
 					i, block[i].x, block[i].y, block[i].z);
 			exit(1);
 		}
 
 		/* Set the block */
-		for (j = 0; j < block[i].type->height; j++) {
-			L_grid[block[i].x][block[i].y + j].blocks[block[i].z] = i;
-			L_grid[block[i].x][block[i].y + j].usage++;
-			assert(L_grid[block[i].x][block[i].y + j].offset == j);
+		for (int width = 0; width < block[i].type->width; ++width) {
+			for (int height = 0; height < block[i].type->height; ++height) {
+				L_grid[block[i].x + width][block[i].y + height].blocks[block[i].z] = i;
+				L_grid[block[i].x + width][block[i].y + height].usage++;
+				assert(L_grid[block[i].x + width][block[i].y + height].width_offset == width);
+				assert(L_grid[block[i].x + width][block[i].y + height].height_offset == height);
+			}
 		}
 	}
 }
@@ -159,8 +166,10 @@ boolean is_opin(int ipin, t_type_ptr type) {
 		return (FALSE);
 }
 
-void get_class_range_for_block(INP int iblk, OUTP int *class_low,
+void get_class_range_for_block(INP int iblk, 
+		OUTP int *class_low,
 		OUTP int *class_high) {
+
 	/* Assumes that the placement has been done so each block has a set of pins allocated to it */
 	t_type_ptr type;
 
@@ -171,6 +180,7 @@ void get_class_range_for_block(INP int iblk, OUTP int *class_low,
 }
 
 int get_max_primitives_in_pb_type(t_pb_type *pb_type) {
+
 	int i, j;
 	int max_size, temp_size;
 	if (pb_type->modes == 0) {
@@ -194,6 +204,7 @@ int get_max_primitives_in_pb_type(t_pb_type *pb_type) {
 
 /* finds maximum number of nets that can be contained in pb_type, this is bounded by the number of driving pins */
 int get_max_nets_in_pb_type(const t_pb_type *pb_type) {
+
 	int i, j;
 	int max_nets, temp_nets;
 	if (pb_type->modes == 0) {
@@ -220,6 +231,7 @@ int get_max_nets_in_pb_type(const t_pb_type *pb_type) {
 }
 
 int get_max_depth_of_pb_type(t_pb_type *pb_type) {
+
 	int i, j;
 	int max_depth, temp_depth;
 	max_depth = pb_type->depth;
@@ -239,6 +251,7 @@ int get_max_depth_of_pb_type(t_pb_type *pb_type) {
  * given a primitive type and a logical block, is the mapping legal
  */
 boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type) {
+
 	t_model_ports *port;
 	int i, j;
 	boolean second_pass;
@@ -260,13 +273,11 @@ boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type) {
 			if (cur_pb_type->ports[i].model_port == port) {
 				for (j = cur_pb_type->ports[i].num_pins; j < port->size; j++) {
 					if (port->dir == IN_PORT && !port->is_clock) {
-						if (logical_block[iblk].input_nets[port->index][j]
-								!= OPEN) {
+						if (logical_block[iblk].input_nets[port->index][j] != OPEN) {
 							return FALSE;
 						}
 					} else if (port->dir == OUT_PORT) {
-						if (logical_block[iblk].output_nets[port->index][j]
-								!= OPEN) {
+						if (logical_block[iblk].output_nets[port->index][j] != OPEN) {
 							return FALSE;
 						}
 					} else {
@@ -341,6 +352,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(t_model_ports *model_p
 }
 
 t_pb_graph_pin* get_pb_graph_node_pin_from_vpack_net(int inet, int ipin) {
+
 	int ilogical_block;
 	t_model_ports *port;
 
@@ -389,6 +401,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_vpack_net(int inet, int ipin) {
 }
 
 t_pb_graph_pin* get_pb_graph_node_pin_from_clb_net(int inet, int ipin) {
+
 	int iblock, target_pin;
 	t_pb_graph_node *pb_graph_node;
 
@@ -401,6 +414,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_clb_net(int inet, int ipin) {
 }
 
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(int iblock, int ipin) {
+
 	int i, count;
 	const t_pb_type *pb_type;
 	t_pb_graph_node *pb_graph_node;
@@ -450,6 +464,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(int iblock, int ipin) {
  For now, assume primitives that have a lot of pins are scarcer than those without so use primitives with less pins before those with more
  */
 float compute_primitive_base_cost(INP t_pb_graph_node *primitive) {
+
 	return (primitive->pb_type->num_input_pins
 			+ primitive->pb_type->num_output_pins
 			+ primitive->pb_type->num_clock_pins);
@@ -506,6 +521,7 @@ int num_ext_inputs_logical_block(int iblk) {
 
 
 void free_cb(t_pb *pb) {
+
 	const t_pb_type * pb_type;
 	int i, total_nodes;
 
@@ -527,6 +543,7 @@ void free_cb(t_pb *pb) {
 }
 
 void free_pb(t_pb *pb) {
+
 	const t_pb_type * pb_type;
 	int i, j, mode;
 	struct s_linked_vptr *revalid_molecule;
@@ -536,12 +553,8 @@ void free_pb(t_pb *pb) {
 
 	if (pb_type->blif_model == NULL) {
 		mode = pb->mode;
-		for (i = 0;
-				i < pb_type->modes[mode].num_pb_type_children
-						&& pb->child_pbs != NULL; i++) {
-			for (j = 0;
-					j < pb_type->modes[mode].pb_type_children[i].num_pb
-							&& pb->child_pbs[i] != NULL; j++) {
+		for (i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != NULL; i++) {
+			for (j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb	&& pb->child_pbs[i] != NULL; j++) {
 				if (pb->child_pbs[i][j].name != NULL || pb->child_pbs[i][j].child_pbs != NULL) {
 					free_pb(&pb->child_pbs[i][j]);
 				}
@@ -612,6 +625,7 @@ void free_pb(t_pb *pb) {
 }
 
 void free_pb_stats(t_pb *pb) {
+
 	int i;
 	t_pb_graph_node *pb_graph_node = pb->pb_graph_node;
 
@@ -1151,5 +1165,4 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
 	/* Returns the pointer to the 2D arrays by reference. */
 	*idirect_from_blk_pin = temp_idirect_from_blk_pin;
 	*direct_type_from_blk_pin = temp_direct_type_from_blk_pin;
-
 }
