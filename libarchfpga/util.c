@@ -31,8 +31,7 @@ int limit_value(int cur, int max, const char *name) {
 
 /* An alternate for strncpy since strncpy doesn't work as most
  * people would expect. This ensures null termination */
-char *
-my_strncpy(char *dest, const char *src, size_t size) {
+char *my_strncpy(char *dest, const char *src, size_t size) {
 	/* Find string's length */
 	size_t len = strlen(src);
 
@@ -50,8 +49,7 @@ my_strncpy(char *dest, const char *src, size_t size) {
 }
 
 /* Uses global var 'out_file_prefix' */
-FILE *
-my_fopen(const char *fname, const char *flag, int prompt) {
+FILE *my_fopen(const char *fname, const char *flag, int prompt) {
 	FILE *fp;
 	int Len;
 	char *new_fname = NULL;
@@ -97,8 +95,7 @@ my_fopen(const char *fname, const char *flag, int prompt) {
 	return (fp);
 }
 
-char *
-my_strdup(const char *str) {
+char *my_strdup(const char *str) {
 	int Len;
 	char *Dst;
 
@@ -128,8 +125,7 @@ int my_atoi(const char *str) {
 	return (atoi(str));
 }
 
-void *
-my_calloc(size_t nelem, size_t size) {
+void *my_calloc(size_t nelem, size_t size) {
 	void *ret;
 	if (nelem == 0) {
 		return NULL ;
@@ -143,8 +139,7 @@ my_calloc(size_t nelem, size_t size) {
 	return (ret);
 }
 
-void *
-my_malloc(size_t size) {
+void *my_malloc(size_t size) {
 	void *ret;
 	if (size == 0) {
 		return NULL ;
@@ -159,8 +154,7 @@ my_malloc(size_t size) {
 	return (ret);
 }
 
-void *
-my_realloc(void *ptr, size_t size) {
+void *my_realloc(void *ptr, size_t size) {
 	void *ret;
 
 	if (size <= 0) {
@@ -180,8 +174,7 @@ my_realloc(void *ptr, size_t size) {
 	return (ret);
 }
 
-void *
-my_chunk_malloc(size_t size, t_chunk *chunk_info) {
+void *my_chunk_malloc(size_t size, t_chunk *chunk_info) {
 
 	/* This routine should be used for allocating fairly small data             *
 	 * structures where memory-efficiency is crucial.  This routine allocates   *
@@ -286,8 +279,7 @@ void free_chunk_memory(t_chunk *chunk_info) {
 	chunk_info->next_mem_loc_ptr = NULL;
 }
 
-struct s_linked_vptr *
-insert_in_vptr_list(struct s_linked_vptr *head, void *vptr_to_add) {
+struct s_linked_vptr *insert_in_vptr_list(struct s_linked_vptr *head, void *vptr_to_add) {
 
 	/* Inserts a new element at the head of a linked list of void pointers. *
 	 * Returns the new head of the list.                                    */
@@ -304,8 +296,7 @@ insert_in_vptr_list(struct s_linked_vptr *head, void *vptr_to_add) {
 
 /* Deletes the element at the head of a linked list of void pointers. *
  * Returns the new head of the list.                                    */
-struct s_linked_vptr *
-delete_in_vptr_list(struct s_linked_vptr *head) {
+struct s_linked_vptr *delete_in_vptr_list(struct s_linked_vptr *head) {
 	struct s_linked_vptr *linked_vptr;
 
 	if (head == NULL )
@@ -315,8 +306,7 @@ delete_in_vptr_list(struct s_linked_vptr *head) {
 	return linked_vptr; /* New head of the list */
 }
 
-t_linked_int *
-insert_in_int_list(t_linked_int * head, int data,
+t_linked_int *insert_in_int_list(t_linked_int * head, int data,
 		t_linked_int ** free_list_head_ptr) {
 
 	/* Inserts a new element at the head of a linked list of integers.  Returns  *
@@ -408,8 +398,7 @@ void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 	*list_head_ptr = NULL;
 }
 
-char *
-my_fgets(char *buf, int max_size, FILE * fp) {
+char *my_fgets(char *buf, int max_size, FILE * fp) {
 	/* Get an input line, update the line number and cut off *
 	 * any comment part.  A \ at the end of a line with no   *
 	 * comment part (#) means continue. my_fgets should give * 
@@ -468,8 +457,7 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 	exit(1);
 }
 
-char *
-my_strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {
+char *my_strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {
 
 	/* Get next token, and wrap to next line if \ at end of line.    *
 	 * There is a bit of a "gotcha" in strtok.  It does not make a   *
@@ -547,8 +535,7 @@ void free_ivec_matrix3(struct s_ivec ***ivec_matrix3, int nrmin, int nrmax,
 			sizeof(struct s_ivec));
 }
 
-void **
-alloc_matrix(int nrmin, int nrmax, int ncmin, int ncmax, size_t elsize) {
+void **alloc_matrix(int nrmin, int nrmax, int ncmin, int ncmax, size_t elsize) {
 
 	/* allocates an generic matrix with nrmax-nrmin + 1 rows and ncmax - *
 	 * ncmin + 1 columns, with each element of size elsize. i.e.         *
@@ -567,22 +554,7 @@ alloc_matrix(int nrmin, int nrmax, int ncmin, int ncmax, size_t elsize) {
 	return ((void **) cptr);
 }
 
-/* NB:  need to make the pointer type void * instead of void ** to allow   *
- * any pointer to be passed in without a cast.                             */
-
-void free_matrix(void *vptr, int nrmin, int nrmax, int ncmin, size_t elsize) {
-	int i;
-	char **cptr;
-
-	cptr = (char **) vptr;
-
-	for (i = nrmin; i <= nrmax; i++)
-		free(cptr[i] + ncmin * elsize / sizeof(char));
-	free(cptr + nrmin);
-}
-
-void ***
-alloc_matrix3(int nrmin, int nrmax, int ncmin, int ncmax, int ndmin, int ndmax,
+void ***alloc_matrix3(int nrmin, int nrmax, int ncmin, int ncmax, int ndmin, int ndmax,
 		size_t elsize) {
 
 	/* allocates a 3D generic matrix with nrmax-nrmin + 1 rows, ncmax -  *
@@ -607,8 +579,7 @@ alloc_matrix3(int nrmin, int nrmax, int ncmin, int ncmax, int ndmin, int ndmax,
 	return ((void ***) cptr);
 }
 
-void ****
-alloc_matrix4(int nrmin, int nrmax, int ncmin, int ncmax, int ndmin, int ndmax,
+void ****alloc_matrix4(int nrmin, int nrmax, int ncmin, int ncmax, int ndmin, int ndmax,
 		int nemin, int nemax, size_t elsize) {
 
 	/* allocates a 3D generic matrix with nrmax-nrmin + 1 rows, ncmax -  *
@@ -617,26 +588,29 @@ alloc_matrix4(int nrmin, int nrmax, int ncmin, int ncmax, int ndmin, int ndmax,
 	 * [nrmin..nrmax][ncmin..ncmax][ndmin..ndmax].  Simply cast the      *
 	 *  returned array pointer to the proper type.                       */
 
-	int i, j, k;
+	int i;
 	char ****cptr;
 
 	cptr = (char ****) my_malloc((nrmax - nrmin + 1) * sizeof(char ***));
 	cptr -= nrmin;
 	for (i = nrmin; i <= nrmax; i++) {
-		cptr[i] = (char ***) my_malloc((ncmax - ncmin + 1) * sizeof(char **));
-		cptr[i] -= ncmin;
-		for (j = ncmin; j <= ncmax; j++) {
-			cptr[i][j] = (char **) my_malloc(
-					(ndmax - ndmin + 1) * sizeof(char *));
-			cptr[i][j] -= ndmin;
-			for (k = ndmin; k <= ndmax; k++) {
-				cptr[i][j][k] = (char *) my_malloc(
-						(nemax - nemin + 1) * elsize);
-				cptr[i][j][k] -= nemin * elsize / sizeof(char); /* sizeof(char) = 1) */
-			}
-		}
+		cptr[i] = (char ***) alloc_matrix3 (ncmin, ncmax, ndmin, ndmax, nemin, nemax, elsize);
 	}
 	return ((void ****) cptr);
+}
+
+void *****alloc_matrix5(int nrmin, int nrmax, int ncmin, int ncmax, int ndmin, int ndmax,
+		int nemin, int nemax, int nfmin, int nfmax, size_t elsize) {
+
+	int i;
+	char *****cptr;
+
+	cptr = (char *****) my_malloc((nrmax - nrmin + 1) * sizeof(char ***));
+	cptr -= nrmin;
+	for (i = nrmin; i <= nrmax; i++) {
+		cptr[i] = (char ****) alloc_matrix4 (ncmin, ncmax, ndmin, ndmax, nemin, nemax, nfmin, nfmax, elsize);
+	}
+	return ((void *****) cptr);
 }
 
 void print_int_matrix3(int ***vptr, int nrmin, int nrmax, int ncmin, int ncmax,
@@ -660,6 +634,20 @@ void print_int_matrix3(int ***vptr, int nrmin, int nrmax, int ncmin, int ncmax,
 	fclose(outfile);
 }
 
+/* NB:  need to make the pointer type void * instead of void ** to allow   *
+ * any pointer to be passed in without a cast.                             */
+
+void free_matrix(void *vptr, int nrmin, int nrmax, int ncmin, size_t elsize) {
+	int i;
+	char **cptr;
+
+	cptr = (char **) vptr;
+
+	for (i = nrmin; i <= nrmax; i++)
+		free(cptr[i] + ncmin * elsize / sizeof(char));
+	free(cptr + nrmin);
+}
+
 void free_matrix3(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
 		int ndmin, size_t elsize) {
 	int i, j;
@@ -677,18 +665,26 @@ void free_matrix3(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
 
 void free_matrix4(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
 		int ndmin, int ndmax, int nemin, size_t elsize) {
-	int i, j, k;
+	int i;
 	char ****cptr;
 
 	cptr = (char ****) vptr;
 
 	for (i = nrmin; i <= nrmax; i++) {
-		for (j = ncmin; j <= ncmax; j++) {
-			for (k = ndmin; k <= ndmax; k++)
-				free(cptr[i][j][k] + nemin * elsize / sizeof(char));
-			free(cptr[i][j] + ndmin * elsize / sizeof(char));
-		}
-		free(cptr[i] + ncmin);
+		free_matrix3 (cptr[i], ncmin, ncmax, ndmin, ndmax, nemin, elsize);
+	}
+	free(cptr + nrmin);
+}
+
+void free_matrix5(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
+		int ndmin, int ndmax, int nemin, int nemax, int nfmin, size_t elsize) {
+	int i;
+	char ****cptr;
+
+	cptr = (char ****) vptr;
+
+	for (i = nrmin; i <= nrmax; i++) {
+		free_matrix4 (cptr[i], ncmin, ncmax, ndmin, ndmax, nemin, nemax, nfmin, elsize);
 	}
 	free(cptr + nrmin);
 }
@@ -783,6 +779,5 @@ int ipow(int base, int exp) {
 		exp >>= 1;
 		base *= base;
 	}
-
 	return result;
 }
