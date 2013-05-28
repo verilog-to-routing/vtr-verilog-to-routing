@@ -14,9 +14,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libarchfpga", "..\libarchfp
 		{A5092A9C-6DFD-4DEC-9951-51606F5EAF3B} = {A5092A9C-6DFD-4DEC-9951-51606F5EAF3B}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pcre", "..\pcre\pcre.vcxproj", "{F15A8901-660A-4FFE-890E-74CCC94E862A}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pcre", "..\libcommon_c\pcre\pcre.vcxproj", "{F15A8901-660A-4FFE-890E-74CCC94E862A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "printhandler", "..\printhandler\printhandler.vcxproj", "{A5092A9C-6DFD-4DEC-9951-51606F5EAF3B}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "printhandler", "..\libcommon_c++\printhandler.vcxproj", "{A5092A9C-6DFD-4DEC-9951-51606F5EAF3B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F15A8901-660A-4FFE-890E-74CCC94E862A} = {F15A8901-660A-4FFE-890E-74CCC94E862A}
 	EndProjectSection
