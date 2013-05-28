@@ -62,7 +62,7 @@
     <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_Typedefs.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\pcre\pcre.vcxproj">
+    <ProjectReference Include="..\libcommon_c\pcre\pcre.vcxproj">
       <Project>{f15a8901-660a-4ffe-890e-74ccc94e862a}</Project>
     </ProjectReference>
   </ItemGroup>
@@ -97,7 +97,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../pcre/SRC;SRC/TC_Common;SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../libcommon_c/pcre/SRC;SRC/TC_Common;SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PreprocessorDefinitions>WIN32;_MBCS;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -112,7 +112,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>../pcre/SRC;SRC/TC_Common;SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../libcommon_c/pcre/SRC;SRC/TC_Common;SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
