@@ -87,6 +87,7 @@ typedef size_t bitfield;
 #define FIRST_ITER_WIRELENTH_LIMIT 0.85 /* If used wirelength exceeds this value in first iteration of routing, do not route */
 
 #define EMPTY -1
+#define INVALID -2
 
 /*******************************************************************************
  * Packing specific data types and constants
@@ -503,13 +504,15 @@ typedef struct s_net {
 
 /* s_grid_tile is the minimum tile of the fpga                         
  * type:  Pointer to type descriptor, NULL for illegal, IO_TYPE for io 
- * offset: Number of grid tiles above the bottom location of a block 
+ * width_offset: Number of grid tiles reserved based on width (right) of a block
+ * height_offset: Number of grid tiles reserved based on height (top) of a block
  * usage: Number of blocks used in this grid tile
  * blocks[]: Array of logical blocks placed in a physical position, EMPTY means
  no block at that index */
 typedef struct s_grid_tile {
 	t_type_ptr type;
-	int offset;
+	int width_offset;
+	int height_offset;
 	int usage;
 	int *blocks;
 } t_grid_tile;
