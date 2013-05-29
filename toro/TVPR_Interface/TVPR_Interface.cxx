@@ -32,9 +32,10 @@
 #include "TIO_StringText.h"
 #include "TIO_PrintHandler.h"
 
+#include "TFH_FabricGridHandler.h"
+#include "TFH_FabricChannelHandler.h"
 #include "TFH_FabricSwitchBoxHandler.h"
 #include "TFH_FabricConnectionBlockHandler.h"
-#include "TFH_FabricChannelHandler.h"
 #include "TCH_RelativePlaceHandler.h"
 #include "TCH_PrePlacedHandler.h"
 #include "TCH_PreRoutedHandler.h"
@@ -65,6 +66,14 @@ TVPR_Interface_c::TVPR_Interface_c(
 
    pinstance_ = 0;
 
+   // Initialize grid handler 'singleton' prior to placement
+   // (in order to handle fabric grid overrides, if any)
+   TFH_FabricGridHandler_c::NewInstance( );
+
+   // Initialize channel widths handler 'singleton' prior to placement
+   // (in order to handle fabric channel width overrides, if any)
+   TFH_FabricChannelHandler_c::NewInstance( );
+
    // Initialize switch box handler 'singleton' prior to routing
    // (in order to handle fabric switch box overrides, if any)
    TFH_FabricSwitchBoxHandler_c::NewInstance( );
@@ -72,10 +81,6 @@ TVPR_Interface_c::TVPR_Interface_c(
    // Initialize connection block handler 'singleton' prior to routing
    // (in order to handle fabric connection block overrides, if any)
    TFH_FabricConnectionBlockHandler_c::NewInstance( );
-
-   // Initialize channel widths handler 'singleton' prior to placement
-   // (in order to handle fabric channel width overrides, if any)
-   TFH_FabricChannelHandler_c::NewInstance( );
 
    // Initialize relative placement handler 'singleton' prior to placement
    // (in order to handle relative placement constraints, if any)
@@ -106,11 +111,13 @@ TVPR_Interface_c::~TVPR_Interface_c(
 
    TCH_RelativePlaceHandler_c::DeleteInstance( );
 
-   TFH_FabricChannelHandler_c::DeleteInstance( );
-
    TFH_FabricConnectionBlockHandler_c::DeleteInstance( );
 
    TFH_FabricSwitchBoxHandler_c::DeleteInstance( );
+
+   TFH_FabricChannelHandler_c::DeleteInstance( );
+
+   TFH_FabricGridHandler_c::DeleteInstance( );
 
    this->Close( );
 }
