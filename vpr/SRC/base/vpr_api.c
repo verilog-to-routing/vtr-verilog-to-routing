@@ -58,7 +58,7 @@ static t_trace *alloc_and_load_final_routing_trace();
 static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net);
 static void print_complete_net_trace(t_trace* trace, const char *file_name);
 static void resync_post_route_netlist();
-static void clay_logical_equivalence_handling(const t_arch *arch);
+static boolean clay_logical_equivalence_handling(const t_arch *arch);
 static void clay_lut_input_rebalancing(int iblock, t_pb *pb);
 static void clay_reload_ble_locations(int iblock);
 static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
@@ -73,92 +73,67 @@ void vpr_print_title(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "Version: Version " VPR_VERSION "\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Compiled: " __DATE__ ".\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Original VPR by V. Betz.\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"Timing-driven placement enhancements by A. Marquardt.\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"Single-drivers enhancements by Andy Ye with additions by.\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Timing-driven placement enhancements by A. Marquardt.\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Single-drivers enhancements by Andy Ye with additions by.\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Mark Fang, Jason Luu, Ted Campbell\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"Heterogeneous stucture support by Jason Luu and Ted Campbell.\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"T-VPack clustering integration by Jason Luu.\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Heterogeneous stucture support by Jason Luu and Ted Campbell.\n");
+	vpr_printf(TIO_MESSAGE_INFO, "T-VPack clustering integration by Jason Luu.\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Area-driven AAPack added by Jason Luu.\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"This is free open source code under MIT license.\n");
+	vpr_printf(TIO_MESSAGE_INFO, "This is free open source code under MIT license.\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 
 }
 
 /* Display help screen */
 void vpr_print_usage(void) {
-	vpr_printf(TIO_MESSAGE_INFO,
-			"Usage:  vpr fpga_architecture.xml circuit_name [Options ...]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Usage:  vpr fpga_architecture.xml circuit_name [Options ...]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"General Options:  [--nodisp] [--auto <int>] [--pack]\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"\t[--place] [--route] [--timing_analyze_only_with_net_delay <float>]\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"\t[--blif_file <string>][--net_file <string>][--place_file <string>]\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"\t[--route_file <string>][--sdc_file <string>][--echo_file on | off]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "General Options:  [--nodisp] [--auto <int>] [--pack]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--place] [--route] [--timing_analyze_only_with_net_delay <float>]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--blif_file <string>][--net_file <string>][--place_file <string>]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--route_file <string>][--sdc_file <string>][--echo_file on | off]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Packer Options:\n");
-	/*    vpr_printf(TIO_MESSAGE_INFO, "\t[-global_clocks on|off]\n");
-	 vpr_printf(TIO_MESSAGE_INFO, "\t[-hill_climbing on|off]\n");
-	 vpr_printf(TIO_MESSAGE_INFO, "\t[-sweep_hanging_nets_and_inputs on|off]\n"); */
+	/* vpr_printf(TIO_MESSAGE_INFO, "\t[-global_clocks on|off]\n"); */
+	/* vpr_printf(TIO_MESSAGE_INFO, "\t[-hill_climbing on|off]\n"); */
+	/* vpr_printf(TIO_MESSAGE_INFO, "\t[-sweep_hanging_nets_and_inputs on|off]\n"); */
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--timing_driven_clustering on|off]\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"\t[--cluster_seed_type timing|max_inputs] [--alpha_clustering <float>] [--beta_clustering <float>]\n");
-	/*    vpr_printf(TIO_MESSAGE_INFO, "\t[-recompute_timing_after <int>] [-cluster_block_delay <float>]\n"); */
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--cluster_seed_type timing|max_inputs] [--alpha_clustering <float>] [--beta_clustering <float>]\n");
+	/* vpr_printf(TIO_MESSAGE_INFO, "\t[-recompute_timing_after <int>] [-cluster_block_delay <float>]\n"); */
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--allow_unrelated_clustering on|off]\n");
-	/*    vpr_printf(TIO_MESSAGE_INFO, "\t[-allow_early_exit on|off]\n"); 
-	 vpr_printf(TIO_MESSAGE_INFO, "\t[-intra_cluster_net_delay <float>] \n");
-	 vpr_printf(TIO_MESSAGE_INFO, "\t[-inter_cluster_net_delay <float>] \n"); */
-	vpr_printf(TIO_MESSAGE_INFO,
-			"\t[--connection_driven_clustering on|off] \n");
+	/* vpr_printf(TIO_MESSAGE_INFO, "\t[-allow_early_exit on|off]\n"); */
+	/* vpr_printf(TIO_MESSAGE_INFO, "\t[-intra_cluster_net_delay <float>] \n"); */
+	/* vpr_printf(TIO_MESSAGE_INFO, "\t[-inter_cluster_net_delay <float>] \n"); */
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--connection_driven_clustering on|off] \n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Placer Options:\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"\t[--place_algorithm bounding_box | net_timing_driven | path_timing_driven]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--place_algorithm bounding_box | net_timing_driven | path_timing_driven]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--init_t <float>] [--exit_t <float>]\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"\t[--alpha_t <float>] [--inner_num <float>] [--seed <int>]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--alpha_t <float>] [--inner_num <float>] [--seed <int>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--place_cost_exp <float>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--place_chan_width <int>] \n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--fix_pins random | <file.pads>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--enable_timing_computations on | off]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--block_dist <int>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"Placement Options Valid Only for Timing-Driven Placement:\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Placement Options Valid Only for Timing-Driven Placement:\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--timing_tradeoff <float>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--recompute_crit_iter <int>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--inner_loop_recompute_divider <int>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--td_place_exp_first <float>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--td_place_exp_last <float>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"Router Options:  [-max_router_iterations <int>] [-bb_factor <int>]\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"\t[--initial_pres_fac <float>] [--pres_fac_mult <float>]\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"\t[--acc_fac <float>] [--first_iter_pres_fac <float>]\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"\t[--bend_cost <float>] [--route_type global | detailed]\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"\t[--verify_binary_search] [--route_chan_width <int>]\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"\t[--router_algorithm breadth_first | timing_driven]\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"\t[--base_cost_type intrinsic_delay | delay_normalized | demand_only]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Router Options:  [-max_router_iterations <int>] [-bb_factor <int>]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--initial_pres_fac <float>] [--pres_fac_mult <float>]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--acc_fac <float>] [--first_iter_pres_fac <float>]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--bend_cost <float>] [--route_type global | detailed]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--verify_binary_search] [--route_chan_width <int>] [--route_chan_trim on | off]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--router_algorithm breadth_first | timing_driven]\n");
+	vpr_printf(TIO_MESSAGE_INFO,  "\t[--base_cost_type intrinsic_delay | delay_normalized | demand_only]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"Routing options valid only for timing-driven routing:\n");
-	vpr_printf(TIO_MESSAGE_INFO,
-			"\t[--astar_fac <float>] [--max_criticality <float>]\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Routing options valid only for timing-driven routing:\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t[--astar_fac <float>] [--max_criticality <float>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t[--criticality_exp <float>]\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 }
@@ -374,6 +349,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 		vpr_printf(TIO_MESSAGE_INFO, "\n");
 		chan_width_x = (int *) my_malloc((ny + 1) * sizeof(int));
 		chan_width_y = (int *) my_malloc((nx + 1) * sizeof(int));
+		chan_width_max = 0;
 
 		free(num_blocks_type);
 		free(num_instances_type);
@@ -434,7 +410,8 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 	fflush(stdout);
 }
 
-void vpr_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch arch) {
+boolean vpr_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch arch) {
+
 	/* Startup X graphics */
 	set_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
 			vpr_setup.RouterOpts.route_type);
@@ -444,19 +421,20 @@ void vpr_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 	}
 
 	/* Do placement and routing */
-	place_and_route(vpr_setup.Operation, vpr_setup.PlacerOpts,
+	boolean success = place_and_route(vpr_setup.Operation, vpr_setup.PlacerOpts,
 			vpr_setup.FileNameOpts.PlaceFile, vpr_setup.FileNameOpts.NetFile,
 			vpr_setup.FileNameOpts.ArchFile, vpr_setup.FileNameOpts.RouteFile,
 			vpr_setup.AnnealSched, vpr_setup.RouterOpts, vpr_setup.RoutingArch,
 			vpr_setup.Segments, vpr_setup.Timing, arch.Chans, arch.models,
 			arch.Directs, arch.num_directs);
-
 	fflush(stdout);
 
 	/* Close down X Display */
 	if (vpr_setup.ShowGraphics)
 		close_graphics();
-		free_draw_structs();
+	free_draw_structs();
+
+	return(success);
 }
 
 /* Free architecture data structures */
@@ -471,6 +449,7 @@ void free_arch(t_arch* Arch) {
 	chan_width_x = NULL;
 	free(chan_width_y);
 	chan_width_y = NULL;
+	chan_width_max = 0;
 
 	for (i = 0; i < Arch->num_switches; i++) {
 		if (Arch->Switches->name != NULL) {
@@ -883,19 +862,21 @@ char *vpr_get_output_file_name(enum e_output_files ename) {
 /* Returns a trace array [0..num_logical_nets-1] with the final routing of the circuit from the logical_block netlist, index of the trace array corresponds to the index of a vpack_net */
 t_trace* vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture(
 		INP const t_arch *arch) {
-	t_trace *trace;
+
+	t_trace *trace = 0;
 
 	/* Map post-routed traces to clb_nets and block */
 	resync_post_route_netlist();
 
 	/* Resolve logically equivalent inputs */
-	clay_logical_equivalence_handling(arch);
+	boolean success = clay_logical_equivalence_handling(arch);
+	if(success) {
 
-	/* Finalize traceback */
-	trace = alloc_and_load_final_routing_trace();
-	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_COMPLETE_NET_TRACE)) {
-		print_complete_net_trace(trace,
-				getEchoFileName(E_ECHO_COMPLETE_NET_TRACE));
+		/* Finalize traceback */
+		trace = alloc_and_load_final_routing_trace();
+		if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_COMPLETE_NET_TRACE)) {
+			print_complete_net_trace(trace,	getEchoFileName(E_ECHO_COMPLETE_NET_TRACE));
+		}
 	}
 	return trace;
 }
@@ -1060,24 +1041,20 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 }
 
 static void print_complete_net_trace(t_trace* trace, const char *file_name) {
-	FILE *fp;
-	int iblock, inode, iprev_block;
-	t_trace *current;
-	t_rr_node *local_rr_graph;
-	const char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN", "CHANX",
-			"CHANY", "INTRA_CLUSTER_EDGE" };
-	int i;
 
-	fp = my_fopen(file_name, "w", 0);
+	const char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY", "INTRA_CLUSTER_EDGE" };
 
-	for (i = 0; i < num_logical_nets; i++) {
-		current = &trace[i];
-		iprev_block = OPEN;
+	FILE *fp = my_fopen(file_name, "w", 0);
 
+	for (int i = 0; i < num_logical_nets; ++i) {
 		fprintf(fp, "Net %s (%d)\n\n", vpack_net[i].name, i);
+
+		int iprev_block = OPEN;
+
+		t_trace *current = &trace[i];
 		while (current != NULL) {
-			iblock = current->iblock;
-			inode = current->index;
+			int iblock = current->iblock;
+			int inode = current->index;
 			if (iblock != OPEN) {
 				if (iprev_block != iblock) {
 					iprev_block = iblock;
@@ -1085,8 +1062,8 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 							block[iblock].name, iblock, block[iblock].x,
 							block[iblock].y, block[iblock].z);
 				}
-				local_rr_graph = block[iblock].pb->rr_graph;
-				fprintf(fp, "\tNode:\t%d\t%s[%d].%s[%d]", inode,
+				t_rr_node *local_rr_graph = block[iblock].pb->rr_graph;
+				fprintf(fp, "Node:\t%d\t%s[%d].%s[%d]", 
 						local_rr_graph[inode].pb_graph_pin->parent_node->pb_type->name,
 						local_rr_graph[inode].pb_graph_pin->parent_node->placement_index,
 						local_rr_graph[inode].pb_graph_pin->port->name,
@@ -1098,8 +1075,7 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 
 				if ((rr_node[inode].xlow != rr_node[inode].xhigh)
 						|| (rr_node[inode].ylow != rr_node[inode].yhigh))
-					fprintf(fp, "to (%d,%d) ", rr_node[inode].xhigh,
-							rr_node[inode].yhigh);
+					fprintf(fp, "to (%d,%d) ", rr_node[inode].xhigh, rr_node[inode].yhigh);
 
 				switch (rr_node[inode].type) {
 
@@ -1139,10 +1115,10 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 
 				/* Uncomment line below if you're debugging and want to see the switch types *
 				 * used in the routing.                                                      */
-				/*          fprintf (fp, "Switch: %d", tptr->iswitch);    */
-
-				fprintf(fp, "\n");
+				/* fprintf (fp, "Switch: %d", tptr->iswitch); */
 			}
+			fprintf(fp, "\n");
+
 			current = current->next;
 		}
 		fprintf(fp, "\n");
@@ -1151,38 +1127,40 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 }
 
 void resync_post_route_netlist() {
-	int i, j, iblock;
-	int gridx, gridy;
-	t_trace *trace;
-	for (i = 0; i < num_blocks; i++) {
-		for (j = 0; j < block[i].type->num_pins; j++) {
+
+	for (int i = 0; i < num_blocks; ++i) {
+		for (int j = 0; j < block[i].type->num_pins; ++j) {
 			if (block[i].nets[j] != OPEN
 					&& clb_net[block[i].nets[j]].is_global == FALSE)
 				block[i].nets[j] = OPEN;
 		}
 	}
-	for (i = 0; i < num_nets; i++) {
+	for (int i = 0; i < num_nets; ++i) {
 		if (clb_net[i].is_global == TRUE)
 			continue;
-		j = 0;
-		trace = trace_head[i];
+
+		int j = 0;
+
+		t_trace *trace = (trace_head ? trace_head[i] : 0);
 		while (trace != NULL) {
 			if (rr_node[trace->index].type == OPIN && j == 0) {
-				gridx = rr_node[trace->index].xlow;
-				gridy = rr_node[trace->index].ylow;
+				int gridx = rr_node[trace->index].xlow;
+				int gridy = rr_node[trace->index].ylow;
 				gridx = gridx - grid[gridx][gridy].width_offset;
 				gridy = gridy - grid[gridx][gridy].height_offset;
-				iblock = grid[gridx][gridy].blocks[rr_node[trace->index].z];
+
+				int iblock = grid[gridx][gridy].blocks[rr_node[trace->index].z];
 				assert(clb_net[i].node_block[j] == iblock);
 				clb_net[i].node_block_pin[j] = rr_node[trace->index].ptc_num;
 				block[iblock].nets[rr_node[trace->index].ptc_num] = i;
 				j++;
 			} else if (rr_node[trace->index].type == IPIN) {
-				gridx = rr_node[trace->index].xlow;
-				gridy = rr_node[trace->index].ylow;
+				int gridx = rr_node[trace->index].xlow;
+				int gridy = rr_node[trace->index].ylow;
 				gridx = gridx - grid[gridx][gridy].width_offset;
 				gridy = gridy - grid[gridx][gridy].height_offset;
-				iblock = grid[gridx][gridy].blocks[rr_node[trace->index].z];
+
+				int iblock = grid[gridx][gridy].blocks[rr_node[trace->index].z];
 				clb_net[i].node_block[j] = iblock;
 				clb_net[i].node_block_pin[j] = rr_node[trace->index].ptc_num;
 				block[iblock].nets[rr_node[trace->index].ptc_num] = i;
@@ -1190,26 +1168,24 @@ void resync_post_route_netlist() {
 			}
 			trace = trace->next;
 		}
-		assert(j == clb_net[i].num_sinks + 1);
 	}
 }
 
-static void clay_logical_equivalence_handling(const t_arch *arch) {
-	t_trace **saved_ext_rr_trace_head, **saved_ext_rr_trace_tail;
-	t_rr_node *saved_ext_rr_node;
-	int num_ext_rr_node, num_ext_nets;
-	int i, j;
+static boolean clay_logical_equivalence_handling(const t_arch *arch) {
 
-	for (i = 0; i < num_blocks; i++) {
+	boolean success = FALSE;
+
+	for (int i = 0; i < num_blocks; ++i) {
 		clay_reload_ble_locations(i);
 	}
 
 	/* Resolve logically equivalent inputs */
-	saved_ext_rr_trace_head = trace_head;
-	saved_ext_rr_trace_tail = trace_tail;
-	saved_ext_rr_node = rr_node;
-	num_ext_rr_node = num_rr_nodes;
-	num_ext_nets = num_nets;
+	t_trace **saved_ext_rr_trace_head = trace_head;
+	t_trace **saved_ext_rr_trace_tail = trace_tail;
+	t_rr_node *saved_ext_rr_node = rr_node;
+	int num_ext_rr_node = num_rr_nodes;
+	int num_ext_nets = num_nets;
+
 	num_rr_nodes = 0;
 	rr_node = NULL;
 	trace_head = NULL;
@@ -1217,30 +1193,32 @@ static void clay_logical_equivalence_handling(const t_arch *arch) {
 	free_rr_graph(); /* free all data structures associated with rr_graph */
 
 	alloc_and_load_cluster_legality_checker();
-	for (i = 0; i < num_blocks; i++) {
-		/* Regenerate rr_graph (note, can be more runtime efficient but this allows for more code reuse)
-		 */
+	for (int i = 0; i < num_blocks; ++i) {
+
+		/* Regenerate rr_graph (note, can be more runtime efficient but this allows for more code reuse) */
 		rr_node = block[i].pb->rr_graph;
 		num_rr_nodes = block[i].pb->pb_graph_node->total_pb_pins;
 		free_legalizer_for_cluster(&block[i], TRUE);
 		alloc_and_load_legalizer_for_cluster(&block[i], i, arch);
 		reload_intra_cluster_nets(block[i].pb);
 		reload_ext_net_rr_terminal_cluster();
-		force_post_place_route_cb_input_pins(i);
+		success = force_post_place_route_cb_input_pins(i);
+		if(!success)
+			break;
+
 #ifdef HACK_LUT_PIN_SWAPPING
 		/* Resolve rebalancing of LUT inputs */
 		clay_lut_input_rebalancing(i, block[i].pb);
 #endif
 
 		/* reset rr_graph */
-		for (j = 0; j < num_rr_nodes; j++) {
+		for (int j = 0; j < num_rr_nodes; ++j) {
 			rr_node[j].occ = 0;
 			rr_node[j].prev_edge = OPEN;
 			rr_node[j].prev_node = OPEN;
 		}
 		if (try_breadth_first_route_cluster() == FALSE) {
-			vpr_printf(TIO_MESSAGE_ERROR,
-					"Failed to resync post routed solution with clustered netlist.\n");
+			vpr_printf(TIO_MESSAGE_ERROR, "Failed to resync post routed solution with clustered netlist.\n");
 			vpr_printf(TIO_MESSAGE_ERROR, "Cannot recover from error.\n");
 			exit(1);
 		}
@@ -1255,6 +1233,8 @@ static void clay_logical_equivalence_handling(const t_arch *arch) {
 	rr_node = saved_ext_rr_node;
 	num_rr_nodes = num_ext_rr_node;
 	num_nets = num_ext_nets;
+
+	return(success);
 }
 
 /* Force router to use the LUT inputs designated by the timing engine post the LUT input rebalancing optimization */
@@ -1317,22 +1297,15 @@ static void clay_lut_input_rebalancing(int iblock, t_pb *pb) {
  Assumes classical cluster with full crossbar and BLEs, each BLE is a single LUT+FF pair
  */
 static void clay_reload_ble_locations(int iblock) {
-	int i, mode, ipin, new_loc;
-	t_pb_graph_node *pb_graph_node;
-	t_pb_graph_pin *pb_graph_pin;
-	const t_pb_type *pb_type;
-	t_trace *trace;
-	t_rr_node *local_rr_graph;
-	int inet, ivpack_net;
 
 	if (block[iblock].type == IO_TYPE) {
 		return;
 	}
 
-	pb_graph_node = block[iblock].pb->pb_graph_node;
-	pb_type = pb_graph_node->pb_type;
-	mode = block[iblock].pb->mode;
-	local_rr_graph = block[iblock].pb->rr_graph;
+	t_pb_graph_node *pb_graph_node = block[iblock].pb->pb_graph_node;
+	const t_pb_type *pb_type = pb_graph_node->pb_type;
+	int mode = block[iblock].pb->mode;
+	t_rr_node *local_rr_graph = block[iblock].pb->rr_graph;
 
 	assert(block[iblock].pb->mode == 0);
 	assert(pb_type->modes[mode].num_pb_type_children == 1);
@@ -1340,17 +1313,16 @@ static void clay_reload_ble_locations(int iblock) {
 
 	t_pb** temp;
 	temp = (t_pb**) my_calloc(1, sizeof(t_pb*));
-	temp[0] = (t_pb*) my_calloc(pb_type->modes[mode].pb_type_children[0].num_pb,
-			sizeof(t_pb));
+	temp[0] = (t_pb*) my_calloc(pb_type->modes[mode].pb_type_children[0].num_pb, sizeof(t_pb));
 
 	/* determine new location for BLEs that route out of cluster */
-	for (i = 0; i < pb_type->modes[mode].pb_type_children[0].num_pb; i++) {
+	for (int i = 0; i < pb_type->modes[mode].pb_type_children[0].num_pb; ++i) {
 		if (block[iblock].pb->child_pbs[0][i].name != NULL) {
-			ivpack_net = local_rr_graph[pb_graph_node->child_pb_graph_nodes[mode][0][i].output_pins[0][0].pin_count_in_cluster].net_num;
-			inet = vpack_to_clb_net_mapping[ivpack_net];
+			int ivpack_net = local_rr_graph[pb_graph_node->child_pb_graph_nodes[mode][0][i].output_pins[0][0].pin_count_in_cluster].net_num;
+			int inet = vpack_to_clb_net_mapping[ivpack_net];
 			if (inet != OPEN) {
-				ipin = OPEN;
-				trace = trace_head[inet];
+				int ipin = OPEN;
+				t_trace *trace = (trace_head ? trace_head[inet] : 0);
 				while (trace) {
 					if (rr_node[trace->index].type == OPIN) {
 						ipin = rr_node[trace->index].ptc_num;
@@ -1359,9 +1331,9 @@ static void clay_reload_ble_locations(int iblock) {
 					trace = trace->next;
 				}
 				assert(ipin);
-				pb_graph_pin = get_pb_graph_node_pin_from_block_pin(iblock,
-						ipin);
-				new_loc = pb_graph_pin->pin_number;
+
+				t_pb_graph_pin *pb_graph_pin = get_pb_graph_node_pin_from_block_pin(iblock, ipin);
+				int new_loc = pb_graph_pin->pin_number;
 				assert(temp[0][new_loc].name == NULL);
 				temp[0][new_loc] = block[iblock].pb->child_pbs[0][i];
 			}
@@ -1369,12 +1341,11 @@ static void clay_reload_ble_locations(int iblock) {
 	}
 
 	/* determine new location for BLEs that do not route out of cluster */
-	new_loc = 0;
-	for (i = 0; i < pb_type->modes[mode].pb_type_children[0].num_pb; i++) {
+	int new_loc = 0;
+	for (int i = 0; i < pb_type->modes[mode].pb_type_children[0].num_pb; ++i) {
 		if (block[iblock].pb->child_pbs[0][i].name != NULL) {
-			ivpack_net =
-					local_rr_graph[pb_graph_node->child_pb_graph_nodes[mode][0][i].output_pins[0][0].pin_count_in_cluster].net_num;
-			inet = vpack_to_clb_net_mapping[ivpack_net];
+			int ivpack_net = local_rr_graph[pb_graph_node->child_pb_graph_nodes[mode][0][i].output_pins[0][0].pin_count_in_cluster].net_num;
+			int inet = vpack_to_clb_net_mapping[ivpack_net];
 			if (inet == OPEN) {
 				while (temp[0][new_loc].name != NULL) {
 					new_loc++;
@@ -1386,13 +1357,11 @@ static void clay_reload_ble_locations(int iblock) {
 
 	free(block[iblock].pb->child_pbs);
 	block[iblock].pb->child_pbs = temp;
-	resync_pb_graph_nodes_in_pb(block[iblock].pb->pb_graph_node,
-			block[iblock].pb);
+	resync_pb_graph_nodes_in_pb(block[iblock].pb->pb_graph_node, block[iblock].pb);
 }
 
 static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
 		t_pb *pb) {
-	int i, j;
 
 	if (pb->name == NULL) {
 		return;
@@ -1402,14 +1371,9 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
 
 	pb->pb_graph_node = pb_graph_node;
 	if (pb->child_pbs != NULL) {
-		for (i = 0;
-				i < pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children;
-				i++) {
+		for (int i = 0; i < pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children; ++i) {
 			if (pb->child_pbs[i] != NULL) {
-				for (j = 0;
-						j
-								< pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i].num_pb;
-						j++) {
+				for (int j = 0; j < pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i].num_pb; ++j) {
 					resync_pb_graph_nodes_in_pb(
 							&pb_graph_node->child_pb_graph_nodes[pb->mode][i][j],
 							&pb->child_pbs[i][j]);
