@@ -51,6 +51,25 @@ void TCH_ExtractStringStatusMode(
 }
 
 //===========================================================================//
+void TCH_ExtractStringStatusMode(
+      TCH_RouteStatusMode_t mode,
+      string*               psrMode )
+{
+   if( psrMode )
+   {
+      *psrMode = "";
+
+      switch( mode )
+      {
+      case TCH_ROUTE_STATUS_FLOAT:  *psrMode = "float";  break;
+      case TCH_ROUTE_STATUS_FIXED:  *psrMode = "fixed";  break;
+      case TCH_ROUTE_STATUS_ROUTED: *psrMode = "routed"; break;
+      default:                      *psrMode = "?";      break;
+      }
+   }
+}
+
+//===========================================================================//
 // Function       : TCH_ExtractStringVPR_Type
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
