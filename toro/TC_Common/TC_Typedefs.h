@@ -124,17 +124,20 @@ typedef enum TC_DataMode_e TC_DataMode_t;
 
 enum TC_SideMode_e
 {
-   TC_SIDE_UNDEFINED = 0,
-   TC_SIDE_LEFT,
-   TC_SIDE_RIGHT,
-   TC_SIDE_LOWER,
-   TC_SIDE_UPPER,
-   TC_SIDE_BOTTOM,
-   TC_SIDE_TOP,
-   TC_SIDE_PREV,
-   TC_SIDE_NEXT
+   TC_SIDE_UNDEFINED = 0x00,
+   TC_SIDE_NONE      = 0x00,
+   TC_SIDE_LEFT      = 0x01,
+   TC_SIDE_RIGHT     = 0x02,
+   TC_SIDE_LOWER     = 0x04,
+   TC_SIDE_UPPER     = 0x08,
+   TC_SIDE_ANY       = TC_SIDE_LEFT + TC_SIDE_RIGHT + TC_SIDE_LOWER + TC_SIDE_UPPER,
+   TC_SIDE_BOTTOM    = 0x10,
+   TC_SIDE_TOP       = 0x20,
+   TC_SIDE_PREV      = 0x40,
+   TC_SIDE_NEXT      = 0x80
 };
 typedef TC_SideMode_e TC_SideMode_t;
+typedef TC_SideMode_e TC_SideMask_t;
 
 enum TC_TypeMode_e
 {
