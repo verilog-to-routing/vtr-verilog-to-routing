@@ -41,6 +41,7 @@ public:
                        TOS_RouteAbstractMode_t abstractMode,
                        unsigned int windowSize,
                        unsigned int channelWidth,
+                       bool channelTrimEmpty,
                        unsigned int maxIterations,
                        double histCongestionFactor,
                        double initCongestionFactor,
@@ -65,6 +66,7 @@ public:
 
    unsigned int windowSize;        // PathFinder routing constraints
    unsigned int channelWidth;      // "
+   bool channelTrimEmpty;          // "
    unsigned int maxIterations;     // "
    double histCongestionFactor;    // "
    double initCongestionFactor;    // "
