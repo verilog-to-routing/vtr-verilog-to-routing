@@ -451,6 +451,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return Args;
 	case OT_ROUTE_CHAN_WIDTH:
 		return ReadInt(Args, &Options->RouteChanWidth);
+	case OT_ROUTE_CHAN_TRIM:
+		return ReadOnOff(Args, &Options->RouteChanTrim);
 	case OT_ROUTER_ALGORITHM:
 		return ReadRouterAlgorithm(Args, &Options->RouterAlgorithm);
 	case OT_BASE_COST_TYPE:
@@ -677,6 +679,9 @@ static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id)
 			break;
 		case OT_ROUTE_CHAN_WIDTH:
 			dest->RouteChanWidth = src->RouteChanWidth;
+			break;
+		case OT_ROUTE_CHAN_TRIM:
+			dest->RouteChanTrim = src->RouteChanTrim;
 			break;
 		case OT_ROUTER_ALGORITHM:
 			dest->RouterAlgorithm = src->RouterAlgorithm;
