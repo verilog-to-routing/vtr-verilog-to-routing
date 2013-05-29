@@ -137,7 +137,7 @@ private:
                                 // (see the TC_TypeMode_t enumeration)
    unsigned int routable_ : 1;  // True => net is routable
                                 // False => otherwise
-   unsigned int status_   : 2;  // Defines status (eg. OPEN|GROUTED|ROUTED)
+   unsigned int status_   : 3;  // Defines status (eg. OPEN|GROUTED|ROUTED)
                                 // (see the TNO_StatusMode_t enumeration)
    unsigned int index_    : 16; // Defines index (optional)
 
