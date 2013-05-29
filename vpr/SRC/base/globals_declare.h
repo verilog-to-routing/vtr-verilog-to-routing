@@ -9,6 +9,8 @@ int nx, ny;
 
 /* chan_width_x is the x-directed channel; i.e. between rows */
 int *chan_width_x, *chan_width_y; /* numerical form */
+int chan_width_max;
+
 struct s_grid_tile **grid;
 
 /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
