@@ -21,6 +21,9 @@ void free_rr_node_indices(INP t_ivec *** L_rr_node_indices);
 int get_rr_node_index(int x, int y, t_rr_type rr_type, int ptc,
 		t_ivec *** L_rr_node_indices);
 
+int find_average_rr_node_index(int L_nx, int L_ny, t_rr_type rr_type, int ptc,
+		t_ivec *** L_rr_node_indices);
+
 void free_seg_details(t_seg_details * seg_details, int nodes_per_chan);
 
 t_seg_details *alloc_and_load_seg_details(INOUTP int *nodes_per_chan,
