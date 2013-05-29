@@ -177,6 +177,8 @@ static void init_parse(int doall) {
 			vpack_net[i].node_block = NULL;
 			vpack_net[i].node_block_port = NULL;
 			vpack_net[i].node_block_pin = NULL;
+			vpack_net[i].is_routed = FALSE;
+			vpack_net[i].is_fixed = FALSE;
 			vpack_net[i].is_global = FALSE;
 		}
 
