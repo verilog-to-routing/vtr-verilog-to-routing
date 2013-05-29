@@ -1,3 +1,5 @@
+// JR - Added 'chan_width_max' global variable to supplement the existing 'chan_width_x' and 'chan_width_y' global variables. This new global is used to support non-uniform x|y channel widths.
+
 /* 
  Global variables 
 
@@ -96,6 +98,7 @@ extern int *vpack_to_clb_net_mapping; /* [0..num_vpack_nets - 1] */
 
 /* chan_width_x is the x-directed channel; i.e. between rows */
 extern int *chan_width_x, *chan_width_y; /* numerical form */
+extern int chan_width_max;
 
 /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
 extern struct s_trace **trace_head, **trace_tail;
