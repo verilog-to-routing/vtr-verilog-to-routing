@@ -523,6 +523,14 @@ void TGO_Region_c::ApplyUnion(
 }
 
 //===========================================================================//
+void TGO_Region_c::ApplyUnion( 
+      const TGO_Point_c& point )
+{
+   TGO_Region_c region( point, point );
+   this->ApplyUnion( region );
+}
+
+//===========================================================================//
 // Method         : ApplyIntersect
 // Purpose        : Set this region's dimensions to the intersection of the 
 //                  given region or regions.
