@@ -87,6 +87,7 @@ using namespace std;
 
 #token ORIGIN     "[Oo][Rr][Ii][Gg][Ii][Nn]"
 #token REGION     "[Rr][Ee][Gg][Ii][Oo][Nn]"
+#token POLYGON    "[Pp][Oo][Ll][Yy][Gg][Oo][Nn]"
 #token LINE       "[Ll][Ii][Nn][Ee]"
 #token ORIENT     "[Oo][Rr][Ii][Ee][Nn][Tt]"
 
@@ -162,7 +163,10 @@ start
 configDef[ TFM_Config_c* pconfig ]
    :
    CONFIG ">"
-   (  "<" REGION ">" regionDef[ &pconfig->fabricRegion ] "</" REGION ">"
+   (  "<" 
+      (  REGION ">" regionDef[ &pconfig->fabricRegion ] "</" REGION ">"
+      |  POLYGON ">" polygonDef[ &pconfig->ioPolygon ] "</" POLYGON ">"
+      )
    )*
    "</" CONFIG ">"
    ;
@@ -439,6 +443,18 @@ pointDef[ TGO_Point_c* ppoint ]
    :
    intNum[ &ppoint->x ]
    intNum[ &ppoint->y ]
+   <<
+      ppoint->z = 0;
+   >>
+   ;
+
+//===========================================================================//
+lineDef[ TGS_Line_c* pline ]
+   :
+   floatNum[ &pline->x1 ]
+   floatNum[ &pline->y1 ]
+   floatNum[ &pline->x2 ]
+   floatNum[ &pline->y2 ]
    ;
 
 //===========================================================================//
@@ -451,12 +467,42 @@ regionDef[ TGS_Region_c* pregion ]
    ;
 
 //===========================================================================//
-lineDef[ TGS_Line_c* pline ]
+polygonDef[ TGO_Polygon_c* ppolygon ]
    :
-   floatNum[ &pline->x1 ]
-   floatNum[ &pline->y1 ]
-   floatNum[ &pline->x2 ]
-   floatNum[ &pline->y2 ]
+   <<
+      TGS_Point_c point;
+      ppolygon->Reset( );
+   >>
+   (  floatNum[ &point.x ] 
+      floatNum[ &point.y ]
+      <<
+         ppolygon->Add( static_cast< int >( point.x ), 
+                        static_cast< int >( point.y ));
+      >>
+   )+
+   <<
+      TGO_Point_c pointA, pointB;
+      if( !ppolygon->IsOrthogonal( &pointA, &pointB ))
+      {
+         pointA.z = pointB.z = INT_MIN;
+
+         string srPointA, srPointB;
+         pointA.ExtractString( &srPointA );
+         pointB.ExtractString( &srPointB );
+
+         string srMsg = ": Invalid polygon, see non-orthogonal points ";
+         srMsg += "(";
+         srMsg += srPointA;
+         srMsg += ") and (";
+         srMsg += srPointB;
+         srMsg += ")";
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         srMsg.data( ));
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
    ;
 
 //===========================================================================//
