@@ -13,6 +13,7 @@
 //           - GenerateSegmentPlane_
 //           - GenerateConnectionPlane_
 //           - PokeFabricView_
+//           - PokeGridConfig_
 //           - PokeGridBlocks_
 //           - PokeSwitchBoxes_
 //           - PokeConnectionBlocks_
@@ -89,6 +90,7 @@ using namespace std;
 
 #include "TNO_StringUtils.h"
 
+#include "TFH_FabricGridHandler.h"
 #include "TFH_FabricBlockHandler.h"
 #include "TFH_FabricSwitchBoxHandler.h"
 #include "TFH_FabricConnectionBlockHandler.h"
@@ -213,7 +215,7 @@ bool TVPR_FabricModel_c::GenerateFabricView_(
    pfabricView->Clear( );
 
    if( fabricModel.IsValid( ) &&
-       fabricModel.config.fabricRegion.IsValid( ))
+       fabricModel.config.IsValid( ))
    {
       const string& srName = fabricModel.srName;
       const TFM_Config_c& config = fabricModel.config;
@@ -223,7 +225,17 @@ bool TVPR_FabricModel_c::GenerateFabricView_(
       const TFM_ChannelList_t& channelList = fabricModel.channelList;
       const TFM_SegmentList_t& segmentList = fabricModel.segmentList;
 
-      pfabricView->Init( TIO_SR_STR( srName ), config.fabricRegion );
+      TGS_Region_c fabricRegion = config.fabricRegion;
+      if( !fabricRegion.IsValid( ))
+      {
+         const TGO_Region_c& ioRegion = config.ioPolygon.GetRegion( );
+         fabricRegion.Set( static_cast< double >( ioRegion.x1 ) - 1.0, 
+                           static_cast< double >( ioRegion.y1 ) - 1.0, 
+                           static_cast< double >( ioRegion.x2 ) + 1.0, 
+                           static_cast< double >( ioRegion.y2 ) + 1.0 );
+      }
+      const TGO_Polygon_c* pfabricPolygon = &config.ioPolygon;
+      pfabricView->Init( TIO_SR_STR( srName ), fabricRegion, pfabricPolygon );
 
       this->GenerateBlockPlane_( physicalBlockList, pfabricView );
       this->GenerateBlockPlane_( inputOutputList, pfabricView );
@@ -432,18 +444,8 @@ bool TVPR_FabricModel_c::PokeFabricView_(
 {
    bool ok = true;
 
-   // Get fabric view's region and apply inverse (see "PeekFabricView_")
-   TGS_Region_c gridRegion = fabricView.GetRegion( );
-   if( gridRegion.IsValid( ))
-   {
-      gridRegion.ApplyScale( -1.0 );
-      TGS_IntDims_t vpr_gridDims( static_cast< int >( gridRegion.GetDx( )) + 1,
-                                  static_cast< int >( gridRegion.GetDy( )) + 1 );
-
-      pvpr_architecture->clb_grid.IsAuto = static_cast< boolean >( false );
-      pvpr_architecture->clb_grid.W = vpr_gridDims.dx - 2;
-      pvpr_architecture->clb_grid.H = vpr_gridDims.dy - 2;
-   }
+   this->PokeGridConfig_( fabricModel, fabricView,
+                          pvpr_architecture );
 
    if( ok && overrideBlocks )
    {
@@ -483,6 +485,49 @@ bool TVPR_FabricModel_c::PokeFabricView_(
 // WIP ??? Need to poke rest of fabric view data directly into VPR structures...
 
    return( ok );
+}
+
+//===========================================================================//
+// Method         : PokeGridConfig_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 01/15/13 jeffr : Original
+//===========================================================================//
+void TVPR_FabricModel_c::PokeGridConfig_(
+      const TFM_FabricModel_c& fabricModel,
+      const TFV_FabricView_c&  fabricView,
+            t_arch*            pvpr_architecture ) const
+{
+   // Get fabric view's region and apply inverse (see "PeekFabricView_")
+   if( fabricView.GetRegion( ).IsValid( ))
+   {
+      TGS_Region_c gridRegion = fabricView.GetRegion( );
+
+      gridRegion.ApplyScale( -1.0 );
+      TGS_IntDims_t vpr_gridDims( static_cast< int >( gridRegion.GetDx( )) + 1,
+                                  static_cast< int >( gridRegion.GetDy( )) + 1 );
+
+      pvpr_architecture->clb_grid.IsAuto = static_cast< boolean >( false );
+      pvpr_architecture->clb_grid.W = vpr_gridDims.dx - 2;
+      pvpr_architecture->clb_grid.H = vpr_gridDims.dy - 2;
+   }
+
+   // Get fabric view's polygon, if any, and apply IO ring structure
+   if( fabricModel.config.ioPolygon.IsValid( ))
+   {
+      const TGO_Polygon_c& gridPolygon = fabricModel.config.ioPolygon;
+      const TGO_Region_c& gridRegion = gridPolygon.GetRegion( );
+      TGS_IntDims_t vpr_gridDims( gridRegion.GetDx( ) + 1,
+                                  gridRegion.GetDy( ) + 1 );
+
+      pvpr_architecture->clb_grid.IsAuto = static_cast< boolean >( false );
+      pvpr_architecture->clb_grid.W = vpr_gridDims.dx - 2;
+      pvpr_architecture->clb_grid.H = vpr_gridDims.dy - 2;
+
+      TFH_FabricGridHandler_c& fabricGridHandler = TFH_FabricGridHandler_c::GetInstance( );
+      fabricGridHandler.SetPolygon( gridPolygon );
+   }
 }
 
 //===========================================================================//
@@ -693,17 +738,19 @@ bool TVPR_FabricModel_c::PeekFabricView_(
 
    string srFabricName;
    TGS_Region_c fabricRegion;
+   TGO_Polygon_c ioPolygon;
    if( pfabricView->IsValid( ))
    {
       srFabricName = ( pfabricView->GetName( ) ? pfabricView->GetName( ) : "" );
       fabricRegion = pfabricView->GetRegion( );
+      ioPolygon = pfabricView->GetPolygon( );
    }
 
    TGS_Region_c gridRegion( 0.0, 0.0, vpr_gridDims.dx - 1, vpr_gridDims.dy - 1 );
    gridRegion.ApplyScale( 1.0 );
    fabricRegion.ApplyUnion( gridRegion );
 
-   ok = pfabricView->Init( srFabricName, fabricRegion );
+   ok = pfabricView->Init( srFabricName, fabricRegion, &ioPolygon );
    if( ok && 
       vpr_gridArray && vpr_rrNodeArray )
    {
@@ -779,12 +826,37 @@ void TVPR_FabricModel_c::PeekInputOutputs_(
                                      sliceCount, sliceCapacity,
                                      pfabricView );
 
-         TC_SideMode_t onlySide = TC_SIDE_UNDEFINED;
-         onlySide = ( x == 0 ? TC_SIDE_RIGHT : onlySide );
-         onlySide = ( x == vpr_gridDims.dx - 1 ? TC_SIDE_LEFT : onlySide );
-         onlySide = ( y == 0 ? TC_SIDE_UPPER : onlySide );
-         onlySide = ( y == vpr_gridDims.dy - 1 ? TC_SIDE_LOWER : onlySide );
-         this->UpdatePinList_( ioRegion, onlySide, TFV_DATA_INPUT_OUTPUT, 
+         int sideMask = TC_SIDE_NONE;
+         sideMask |= ( x == 0 ? TC_SIDE_RIGHT : sideMask );
+         sideMask |= ( x == vpr_gridDims.dx - 1 ? TC_SIDE_LEFT : sideMask );
+         sideMask |= ( y == 0 ? TC_SIDE_UPPER : sideMask );
+         sideMask |= ( y == vpr_gridDims.dy - 1 ? TC_SIDE_LOWER : sideMask );
+
+         if(( x > 0 ) && 
+            ( vpr_gridArray[x-1][y].type != IO_TYPE ) && 
+            ( vpr_gridArray[x-1][y].type != EMPTY_TYPE ))
+         {
+            sideMask |= TC_SIDE_LEFT;
+         }
+         if(( x < vpr_gridDims.dx - 1 ) &&
+            ( vpr_gridArray[x+1][y].type != IO_TYPE ) && 
+            ( vpr_gridArray[x+1][y].type != EMPTY_TYPE ))
+         {
+            sideMask |= TC_SIDE_RIGHT;
+         }
+         if(( y > 0 ) && 
+            ( vpr_gridArray[x][y-1].type != IO_TYPE ) && 
+            ( vpr_gridArray[x][y-1].type != EMPTY_TYPE ))
+         {
+            sideMask |= TC_SIDE_LOWER;
+         }
+         if(( y < vpr_gridDims.dy - 1 ) &&
+            ( vpr_gridArray[x][y+1].type != IO_TYPE ) && 
+            ( vpr_gridArray[x][y+1].type != EMPTY_TYPE ))
+         {
+            sideMask |= TC_SIDE_UPPER;
+         }
+         this->UpdatePinList_( ioRegion, sideMask, TFV_DATA_INPUT_OUTPUT, 
                                vpr_type, pfabricView );
       }
    }
@@ -871,8 +943,12 @@ void TVPR_FabricModel_c::PeekPhysicalBlocks_(
                                      sliceCount, sliceCapacity, 
                                      pfabricView );
 
-         TC_SideMode_t onlySide = TC_SIDE_UNDEFINED;
-         this->UpdatePinList_( pbRegion, onlySide, TFV_DATA_PHYSICAL_BLOCK, 
+         int sideMask = TC_SIDE_NONE;
+         sideMask |= ( x > 0 ? TC_SIDE_LEFT : sideMask );
+         sideMask |= ( x < vpr_gridDims.dx - 1 ? TC_SIDE_RIGHT : sideMask );
+         sideMask |= ( y > 0 ? TC_SIDE_LOWER : sideMask );
+         sideMask |= ( y < vpr_gridDims.dy - 1 ? TC_SIDE_UPPER : sideMask );
+         this->UpdatePinList_( pbRegion, sideMask, TFV_DATA_PHYSICAL_BLOCK, 
                                vpr_type, pfabricView );
       }
    }
@@ -1025,6 +1101,7 @@ void TVPR_FabricModel_c::ExtractFabricView_(
       pfabricModel->srName = TIO_PSZ_STR( fabricView.GetName( ));
 
       pfabricModel->config.fabricRegion = fabricView.GetRegion( );
+      pfabricModel->config.ioPolygon = fabricView.GetPolygon( );
 
       const TFV_FabricPlane_c& ioPlane = *fabricView.FindFabricPlane( TFV_LAYER_INPUT_OUTPUT );
       this->ExtractBlockPlane_( ioPlane, &pfabricModel->inputOutputList );
@@ -1279,7 +1356,7 @@ void TVPR_FabricModel_c::AddBlockMapTable_(
 //===========================================================================//
 void TVPR_FabricModel_c::UpdatePinList_(
       const TGS_Region_c&     region,
-            TC_SideMode_t     onlySide,
+            int               sideMask,
             TFV_DataType_t    dataType,
       const t_type_descriptor vpr_type,
             TFV_FabricView_c* pfabricView ) const
@@ -1289,14 +1366,14 @@ void TVPR_FabricModel_c::UpdatePinList_(
    TFV_FabricData_c* pfabricData = 0;
    if( pfabricView->Find( layer, region, &pfabricData ))
    {
-      this->UpdatePinList_( region, onlySide, vpr_type, pfabricData );
+      this->UpdatePinList_( region, sideMask, vpr_type, pfabricData );
    }
 }
 
 //===========================================================================//
 void TVPR_FabricModel_c::UpdatePinList_(
       const TGS_Region_c&     region,
-            TC_SideMode_t     onlySide,
+            int               sideMask,
       const t_type_descriptor vpr_type,
             TFV_FabricData_c* pfabricData ) const
 {
@@ -1331,10 +1408,10 @@ void TVPR_FabricModel_c::UpdatePinList_(
 
       for( int sideIndex = 0; sideIndex < 4; ++sideIndex ) 
       {
-         if( onlySide != TC_SIDE_UNDEFINED ) 
+         if( sideMask != TC_SIDE_ANY )
          {
             TC_SideMode_t pinSide = FindPinSide_( sideIndex );
-            if( onlySide != pinSide )
+            if( !( sideMask & pinSide ))
                continue;
          }
 
