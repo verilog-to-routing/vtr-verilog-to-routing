@@ -14,7 +14,7 @@ typedef struct s_fmap_cell {
 	struct s_fmap_cell *next;
 } t_fmap_cell;
 
-void place_and_route(enum e_operation operation,
+boolean place_and_route(enum e_operation operation,
 		struct s_placer_opts placer_opts, char *place_file, char *net_file,
 		char *arch_file, char *route_file,
 		struct s_annealing_sched annealing_sched,
