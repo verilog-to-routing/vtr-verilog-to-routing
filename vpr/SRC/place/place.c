@@ -1193,15 +1193,13 @@ static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {
 	 * Returns abort_swap. */
 
 	int imacro, imember;
-	int x_swap_offset, y_swap_offset, z_swap_offset, x_from, y_from, z_from, b_to;
-	int curr_b_from, curr_x_from, curr_y_from, curr_z_from, curr_b_to, curr_x_to, curr_y_to, curr_z_to;
+	int x_swap_offset, y_swap_offset, z_swap_offset, x_from, y_from, z_from;
+	int curr_b_from, curr_x_from, curr_y_from, curr_z_from, curr_x_to, curr_y_to, curr_z_to;
 	int abort_swap = FALSE;
 	
 	x_from = block[b_from].x;
 	y_from = block[b_from].y;
 	z_from = block[b_from].z;
-
-	b_to = grid[x_to][y_to].blocks[z_to];
 
 	get_imacro_from_iblk(&imacro, b_from, pl_macros, num_pl_macros);
 	if ( imacro != -1) {
@@ -1230,7 +1228,6 @@ static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {
 			if (curr_x_to < 1 || curr_x_to > nx || curr_y_to < 1 || curr_y_to > ny || curr_z_to < 0) {
 				abort_swap = TRUE;
 			} else {
-				curr_b_to = grid[curr_x_to][curr_y_to].blocks[curr_z_to];
 				abort_swap = setup_blocks_affected(curr_b_from, curr_x_to, curr_y_to, curr_z_to);
 			}
 
