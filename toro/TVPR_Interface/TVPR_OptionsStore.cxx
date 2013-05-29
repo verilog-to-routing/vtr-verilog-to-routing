@@ -395,6 +395,11 @@ bool TVPR_OptionsStore_c::Export(
          pvpr_options->RouteChanWidth = routeOptions.channelWidth;
          pvpr_options->Count[OT_ROUTE_CHAN_WIDTH] += 1;
       }
+      if( routeOptions.channelTrimEmpty || !routeOptions.channelTrimEmpty )
+      {
+         pvpr_options->RouteChanTrim = static_cast< boolean >( routeOptions.channelTrimEmpty );
+         pvpr_options->Count[OT_ROUTE_CHAN_TRIM] += 1;
+      }
       if( routeOptions.maxIterations > 0 )
       {
          pvpr_options->max_router_iterations = routeOptions.maxIterations;
