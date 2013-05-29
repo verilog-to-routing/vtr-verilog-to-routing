@@ -10,6 +10,7 @@
 //           - Set, Reset
 //           - FindOrient
 //           - FindDistance
+//           - CrossProduct
 //           - IsOrthogonal
 //           - IsHorizontal, IsVertical
 //           - IsValid
@@ -316,6 +317,45 @@ double TGO_Point_c::FindDistance(
       }
    }
    return( distance );
+}
+
+//===========================================================================//
+// Method         : CrossProduct
+// Purpose        : Find and return the "cross-product" based on this 
+//                  point and the given two points.  The cross-product is 
+//                  computed as "(p1-p0)x(p2-p0)".  This method returns
+//                  a positive value when point 'Point1' is clockwise with
+//                  respect to 'Point2'.  This method returns a negative
+//                  value when point 'Point1' is counterclockwise with
+//                  respect to 'Point2'.
+// Reference      : Algorithms by Cormen, Leiserson, Rivest, pp. 887-888.
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/20/12 jeffr : Original
+//===========================================================================//
+int TGO_Point_c::CrossProduct( 
+      const TGO_Point_c& point1, 
+      const TGO_Point_c& point2 ) const
+{
+   int x0 = this->x;
+   int y0 = this->y;
+   int x1 = point1.x;
+   int y1 = point1.y;
+   int x2 = point2.x;
+   int y2 = point2.y;
+   int r = (( x2 - x0 ) * ( y1 - y0 )) - (( x1 - x0 ) * ( y2 - y0 ));
+
+   int crossProduct = 0;
+   if( r > 0 )
+   {
+      crossProduct = 1;
+   }
+   else if( r < 0 )
+   {
+      crossProduct = -1;
+   }
+   return( crossProduct );
 }
 
 //===========================================================================//
