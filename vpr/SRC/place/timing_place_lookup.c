@@ -217,6 +217,8 @@ static void alloc_net(void) {
 		/* FIXME: We *really* shouldn't be allocating write-once copies */
 		len = strlen("TEMP_NET");
 		clb_net[i].name = (char *) my_malloc((len + 1) * sizeof(char));
+		clb_net[i].is_routed = FALSE;
+		clb_net[i].is_fixed = FALSE;
 		clb_net[i].is_global = FALSE;
 		strcpy(clb_net[NET_USED].name, "TEMP_NET");
 
@@ -335,6 +337,9 @@ static void reset_placement(void) {
 		for (j = 0; j <= ny + 1; j++) {
 			grid[i][j].usage = 0;
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
+				if (grid[i][j].blocks[k] != INVALID) {
+					grid[i][j].blocks[k] = EMPTY;
+				}
 				grid[i][j].blocks[k] = EMPTY;
 			}
 		}
@@ -448,12 +453,13 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 	}
 
 	build_rr_graph(graph_type, num_types, dummy_type_descriptors, nx, ny, grid,
-			chan_width_x[0], NULL, det_routing_arch.switch_block_type,
+			chan_width_max, NULL, det_routing_arch.switch_block_type,
 			det_routing_arch.Fs, det_routing_arch.num_segment,
 			det_routing_arch.num_switch, segment_inf,
 			det_routing_arch.global_route_switch,
 			det_routing_arch.delayless_switch, timing_inf,
-			det_routing_arch.wire_to_ipin_switch, router_opts.base_cost_type,
+			det_routing_arch.wire_to_ipin_switch,
+			router_opts.base_cost_type, router_opts.empty_channel_trim,
 			NULL, 0, TRUE, /* do not send in direct connections because we care about general placement timing instead of special pin placement timing */
 			&warnings);
 
