@@ -39,6 +39,12 @@ boolean try_breadth_first_route(struct s_router_opts router_opts,
 
 	for (itry = 1; itry <= router_opts.max_router_iterations; itry++) {
 
+		/* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
+		for (inet = 0; inet < num_nets; inet++) {
+			clb_net[inet].is_routed = FALSE;
+			clb_net[inet].is_fixed = FALSE;
+		}
+
 		for (inet = 0; inet < num_nets; inet++) {
 			if (clb_net[inet].is_global == FALSE) { /* Skip global nets. */
 
