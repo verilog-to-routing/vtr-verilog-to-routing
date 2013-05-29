@@ -44,6 +44,14 @@ void check_rr_graph(INP t_graph_type graph_type,
 			sizeof(char));
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
+
+		/* Ignore any uninitialized rr_graph nodes */
+		if ((rr_node[inode].type == SOURCE) 
+				&& (rr_node[inode].xlow == 0) && (rr_node[inode].ylow == 0)
+				&& (rr_node[inode].xhigh == 0) && (rr_node[inode].yhigh == 0)) {
+			continue;
+		}
+
 		rr_type = rr_node[inode].type;
 		num_edges = rr_node[inode].num_edges;
 
@@ -148,11 +156,13 @@ void check_rr_graph(INP t_graph_type graph_type,
 						|| rr_node[inode].type == CHANY);
 
 				if (!is_chain && !is_fringe && !is_wire) {
-					vpr_printf(TIO_MESSAGE_ERROR, "in check_rr_graph: node %d has no fanin.\n", inode);
-					exit(1);
+					vpr_printf(TIO_MESSAGE_ERROR, 
+						"in check_rr_graph: node %d has no fanin.\n", inode);
 				} else if (!is_chain && !is_fringe_warning_sent) {
-					vpr_printf(TIO_MESSAGE_WARNING, "in check_rr_graph: fringe node %d has no fanin.\n", inode);
-					vpr_printf(TIO_MESSAGE_WARNING, "\tThis is possible on the fringe for low Fc_out, N, and certain Lengths\n");
+					vpr_printf(TIO_MESSAGE_WARNING, 
+						"in check_rr_graph: fringe node %d has no fanin.\n"
+						"%sThis is possible on a fringe node based on low Fc_out, N, and certain lengths.\n",
+						inode, TIO_PREFIX_WARNING_SPACE);
 					is_fringe_warning_sent = TRUE;
 				}
 			}
@@ -162,7 +172,6 @@ void check_rr_graph(INP t_graph_type graph_type,
 			if (total_edges_to_node[inode] != 0) {
 				vpr_printf(TIO_MESSAGE_ERROR, "in check_rr_graph: SOURCE node %d has a fanin of %d, expected 0.\n",
 						inode, total_edges_to_node[inode]);
-				exit(1);
 			}
 		}
 	}
@@ -244,7 +253,7 @@ void check_node(int inode, enum e_route_type route_type) {
 					inode, rr_type, xlow, ylow);
 			exit(1);
 		}
-		if (xlow != xhigh || ylow != (yhigh - type->height + 1)) {
+		if (xlow != (xhigh - type->width + 1) || ylow != (yhigh - type->height + 1)) {
 			vpr_printf(TIO_MESSAGE_ERROR, "in check_node: node %d (type %d) has endpoints (%d,%d) and (%d,%d)\n", 
 					inode, rr_type, xlow, ylow, xhigh, yhigh);
 			exit(1);
@@ -349,7 +358,7 @@ void check_node(int inode, enum e_route_type route_type) {
 
 	case CHANX:
 		if (route_type == DETAILED) {
-			nodes_per_chan = chan_width_x[ylow];
+			nodes_per_chan = chan_width_max;
 			tracks_per_node = 1;
 		} else {
 			nodes_per_chan = 1;
@@ -372,6 +381,7 @@ void check_node(int inode, enum e_route_type route_type) {
 	case CHANY:
 		if (route_type == DETAILED) {
 			nodes_per_chan = chan_width_y[xlow];
+			nodes_per_chan = chan_width_max;
 			tracks_per_node = 1;
 		} else {
 			nodes_per_chan = 1;
