@@ -488,6 +488,8 @@ enum e_pad_loc_type {
  *          which each net terminal connects. 
  * node_block_pin: [0..num_sinks]. Contains the index of the pin (on a block) to 
  *          which each net terminal connects. 
+ * is_routed: not routed (has been pre-routed)
+ * is_fixed: not routed (has been pre-routed)
  * is_global: not routed
  * is_const_gen: constant generator (does not affect timing) */
 typedef struct s_net {
@@ -496,6 +498,8 @@ typedef struct s_net {
 	int *node_block;
 	int *node_block_port;
 	int *node_block_pin;
+	boolean is_routed;
+	boolean is_fixed;
 	boolean is_global;
 	boolean is_const_gen;
 	float probability;
@@ -694,6 +698,7 @@ struct s_router_opts {
 	int bb_factor;
 	enum e_route_type route_type;
 	int fixed_channel_width;
+	boolean empty_channel_trim;
 	enum e_router_algorithm router_algorithm;
 	enum e_base_cost_type base_cost_type;
 	float astar_fac;
@@ -916,7 +921,7 @@ typedef struct s_rr_node {
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
  * to store algorithm-specific data should be stored in one of the           *
- * parallel rr_node_?? structures.                                           *
+ * parallel rr_node_? structures.                                            *
  *                                                                           *
  * xlow, xhigh, ylow, yhigh:  Integer coordinates (see route.c for           *
  *       coordinate system) of the ends of this routing resource.            *
