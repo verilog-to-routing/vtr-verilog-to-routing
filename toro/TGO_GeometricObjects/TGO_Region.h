@@ -97,6 +97,7 @@ public:
    void ApplyUnion( const TGO_Region_c& regionA, 
                     const TGO_Region_c& regionB );
    void ApplyUnion( const TGO_Region_c& region );
+   void ApplyUnion( const TGO_Point_c& point );
    void ApplyIntersect( const TGO_Region_c& regionA, 
                         const TGO_Region_c& regionB );
    void ApplyIntersect( const TGO_Region_c& region );
