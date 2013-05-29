@@ -149,13 +149,13 @@ void get_length_and_bends_stats(void) {
 
 	av_length = (float) total_length / (float) (num_nets - num_global_nets);
 	vpr_printf(TIO_MESSAGE_INFO, "Number of routed nets (nonglobal): %d\n", num_nets - num_global_nets);
-	vpr_printf(TIO_MESSAGE_INFO, "Wirelength results (in units of 1 clb segments)...\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Wire length results (in units of 1 clb segments)...\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\tTotal wirelength: %d, average net length: %#g\n", total_length, av_length);
 	vpr_printf(TIO_MESSAGE_INFO, "\tMaximum net length: %d\n", max_length);
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 
 	av_segments = (float) total_segments / (float) (num_nets - num_global_nets);
-	vpr_printf(TIO_MESSAGE_INFO, "Wirelength results in terms of physical segments...\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Wire length results in terms of physical segments...\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\tTotal wiring segments used: %d, average wire segments per net: %#g\n", total_segments, av_segments);
 	vpr_printf(TIO_MESSAGE_INFO, "\tMaximum segments used by a net: %d\n", max_segments);
 	vpr_printf(TIO_MESSAGE_INFO, "\tTotal local nets with reserved CLB opins: %d\n", num_clb_opins_reserved);
@@ -165,8 +165,6 @@ static void get_channel_occupancy_stats(void) {
 
 	/* Determines how many tracks are used in each channel.                    */
 
-	int i, j, max_occ, total_x, total_y;
-	float av_occ;
 	int **chanx_occ; /* [1..nx][0..ny] */
 	int **chany_occ; /* [0..nx][1..ny] */
 
@@ -175,39 +173,38 @@ static void get_channel_occupancy_stats(void) {
 	load_channel_occupancies(chanx_occ, chany_occ);
 
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "X - Directed channels: j\tmax occ\tav_occ\t\tcapacity\n");
+	vpr_printf(TIO_MESSAGE_INFO, "X - Directed channels: j max occ ave occ capacity\n");
+	vpr_printf(TIO_MESSAGE_INFO, "                      -- ------- ------- --------\n");
 
-	total_x = 0;
-
-	for (j = 0; j <= ny; j++) {
+	int total_x = 0;
+	for (int j = 0; j <= ny; ++j) {
 		total_x += chan_width_x[j];
-		av_occ = 0.;
-		max_occ = -1;
+		float ave_occ = 0.0;
+		int max_occ = -1;
 
-		for (i = 1; i <= nx; i++) {
+		for (int i = 1; i <= nx; ++i) {
 			max_occ = std::max(chanx_occ[i][j], max_occ);
-			av_occ += chanx_occ[i][j];
+			ave_occ += chanx_occ[i][j];
 		}
-		av_occ /= nx;
-		vpr_printf(TIO_MESSAGE_INFO, "%d\t%d\t%-#9g\t%d\n", j, max_occ, av_occ, chan_width_x[j]);
+		ave_occ /= nx;
+		vpr_printf(TIO_MESSAGE_INFO, "                      %2d %7d %7.4f %8d\n", j, max_occ, ave_occ, chan_width_x[j]);
 	}
 
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Y - Directed channels: i\tmax occ\tav_occ\t\tcapacity\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Y - Directed channels: i max occ ave occ capacity\n");
+	vpr_printf(TIO_MESSAGE_INFO, "                      -- ------- ------- --------\n");
 
-	total_y = 0;
-
-	for (i = 0; i <= nx; i++) {
+	int total_y = 0;
+	for (int i = 0; i <= nx; ++i) {
 		total_y += chan_width_y[i];
-		av_occ = 0.;
-		max_occ = -1;
+		float ave_occ = 0.0;
+		int max_occ = -1;
 
-		for (j = 1; j <= ny; j++) {
+		for (int j = 1; j <= ny; ++j) {
 			max_occ = std::max(chany_occ[i][j], max_occ);
-			av_occ += chany_occ[i][j];
+			ave_occ += chany_occ[i][j];
 		}
-		av_occ /= ny;
-		vpr_printf(TIO_MESSAGE_INFO, "%d\t%d\t%-#9g\t%d\n", i, max_occ, av_occ, chan_width_y[i]);
+		ave_occ /= ny;
+		vpr_printf(TIO_MESSAGE_INFO, "                      %2d %7d %7.4f %8d\n", i, max_occ, ave_occ, chan_width_y[i]);
 	}
 
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
@@ -408,7 +405,7 @@ void print_wirelen_prob_dist(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Number of 2-pin nets: ;%g;\n", norm_fac);
 	vpr_printf(TIO_MESSAGE_INFO, "Expected value of 2-pin net length (R): ;%g;\n", av_length);
-	vpr_printf(TIO_MESSAGE_INFO, "Total wire length: ;%g;\n", norm_fac * av_length);
+	vpr_printf(TIO_MESSAGE_INFO, "Total wirelength: ;%g;\n", norm_fac * av_length);
 
 	free(prob_dist);
 }
