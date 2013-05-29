@@ -109,9 +109,7 @@ int get_simple_switch_block_track(INP enum e_side from_side,
 	/* This routine returns the track number to which the from_track should     *
 	 * connect.  It supports three simple, Fs = 3, switch blocks.               */
 
-	int to_track;
-
-	to_track = SBOX_ERROR; /* Can check to see if it's not set later. */
+	int to_track = SBOX_ERROR; /* Can check to see if it's not set later. */
 
 	if (switch_block_type == SUBSET) { /* NB:  Global routing uses SUBSET too */
 		to_track = from_track;
@@ -218,11 +216,10 @@ int get_simple_switch_block_track(INP enum e_side from_side,
 	/* UDSD Modification by WMF End */
 
 	if (to_track == SBOX_ERROR) {
-		vpr_printf(TIO_MESSAGE_ERROR, "in get_simple_switch_block_track.\n");
-		vpr_printf(TIO_MESSAGE_ERROR, "\tUnexpected connection from_side: %d to_side: %d switch_block_type: %d.\n",
-				from_side, to_side, switch_block_type);
-		exit(1);
+		vpr_printf(TIO_MESSAGE_ERROR, 
+			"in get_simple_switch_block_track.\n"
+			"%sUnexpected connection from_side %d to_side %d, switch_block_type %d.\n",
+			TIO_PREFIX_ERROR_SPACE, from_side, to_side, switch_block_type);
 	}
-
 	return (to_track);
 }
