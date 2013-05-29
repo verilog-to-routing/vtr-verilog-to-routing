@@ -73,6 +73,9 @@ public:
 
    double FindDistance( const TGO_Point_c& refPoint ) const;
 
+   int CrossProduct( const TGO_Point_c& point1, 
+                     const TGO_Point_c& point2 ) const;
+
    bool IsLeft( const TGO_Point_c& point ) const;
    bool IsRight( const TGO_Point_c& point ) const;
    bool IsLower( const TGO_Point_c& point ) const;
