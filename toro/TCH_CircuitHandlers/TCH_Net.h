@@ -3,9 +3,11 @@
 //
 //           Inline methods include:
 //           - SetName
+//           - SetStatus
 //           - SetVPR_NetIndex
 //           - SetLegal
 //           - GetName
+//           - GetStatus
 //           - GetVPR_NetIndex
 //           - GetRoutePathList
 //           - AddRoutePath
@@ -53,8 +55,10 @@ public:
 
    TCH_Net_c( void );
    TCH_Net_c( const string& srName,
+              TCH_RouteStatusMode_t status = TCH_ROUTE_STATUS_UNDEFINED,
               int vpr_netIndex = -1 );
    TCH_Net_c( const char* pszName,
+              TCH_RouteStatusMode_t status = TCH_ROUTE_STATUS_UNDEFINED,
               int vpr_netIndex = -1 );
    TCH_Net_c( const TCH_Net_c& net );
    ~TCH_Net_c( void );
@@ -67,10 +71,12 @@ public:
 
    void SetName( const string& srName );
    void SetName( const char* pszName );
+   void SetStatus( TCH_RouteStatusMode_t status );
    void SetVPR_NetIndex( int vpr_netIndex );
    void SetLegal( bool isLegal );
 
    const char* GetName( void ) const;
+   TCH_RouteStatusMode_t GetStatus( void ) const;
    int GetVPR_NetIndex( void ) const;
 
    const TCH_RoutePathList_t* GetRoutePathList( void ) const;
@@ -87,6 +93,7 @@ public:
 private:
 
    string srName_;  // Defines a Toro/VPR net name
+   TCH_RouteStatusMode_t status_; // Status asso. with this pre-routed net
 
    class TCH_VPR_c
    {
@@ -129,6 +136,13 @@ inline void TCH_Net_c::SetName(
 }
 
 //===========================================================================//
+inline void TCH_Net_c::SetStatus(
+      TCH_RouteStatusMode_t status )
+{
+   this->status_ = status;
+}
+
+//===========================================================================//
 inline void TCH_Net_c::SetVPR_NetIndex(
       int vpr_netIndex )
 {
@@ -147,6 +161,13 @@ inline const char* TCH_Net_c::GetName(
       void ) const
 {
    return( TIO_SR_STR( this->srName_ ));
+}
+
+//===========================================================================//
+inline TCH_RouteStatusMode_t TCH_Net_c::GetStatus( 
+      void ) const
+{
+   return( this->status_ );
 }
 
 //===========================================================================//
