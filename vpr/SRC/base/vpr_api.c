@@ -1064,6 +1064,7 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 				}
 				t_rr_node *local_rr_graph = block[iblock].pb->rr_graph;
 				fprintf(fp, "Node:\t%d\t%s[%d].%s[%d]", 
+						inode,
 						local_rr_graph[inode].pb_graph_pin->parent_node->pb_type->name,
 						local_rr_graph[inode].pb_graph_pin->parent_node->placement_index,
 						local_rr_graph[inode].pb_graph_pin->port->name,
