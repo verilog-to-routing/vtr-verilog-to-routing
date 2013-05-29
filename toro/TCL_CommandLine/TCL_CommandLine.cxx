@@ -619,6 +619,25 @@ bool TCL_CommandLine_c::Parse(
          if( ok )
             prouteOptions->channelWidth = atoi( *argv );
       }
+      else if( TC_stricmp( *argv, "-route_chan_trim" ) == 0 )
+      { 
+         argc = ok ? argc - 1 : 1;
+         ok = *++argv ? true : false;   
+         if( ok )
+         {
+            bool enabled;
+            if( this->ParseBool_( *argv, &enabled ))
+            {
+               prouteOptions->channelTrimEmpty = enabled;
+            }
+            else
+            {
+               printHandler.Error( "Invalid argument '%s'!\n", *argv );
+               argc = 0;
+               ok = false;
+            }
+         }
+      }
       else if( TC_stricmp( *argv, "-max_router_iterations" ) == 0 )
       { 
          argc = ok ? argc - 1 : 1;
