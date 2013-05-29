@@ -1281,11 +1281,11 @@ bool TGS_Line_c::IsParallel(
 {
    bool isParallel = false;
 
-   double thisDx = this->x1 - this->x2;
-   double thisDy = this->y1 - this->y2;
+   double thisDx = fabs( this->x1 - this->x2 );
+   double thisDy = fabs( this->y1 - this->y2 );
 
-   double lineDx = line.x1 - line.x2;
-   double lineDy = line.y1 - line.y2;
+   double lineDx = fabs( line.x1 - line.x2 );
+   double lineDy = fabs( line.y1 - line.y2 );
 
    if( TCTF_IsNZE( thisDy ) && TCTF_IsNZE( lineDy ))
    {
