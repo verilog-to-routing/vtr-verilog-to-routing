@@ -1,3 +1,7 @@
+// JR - Added 'chan_width_max' global variable to supplement the existing 'chan_width_x' and 'chan_width_y' global variables. This new global is used to support non-uniform x|y channel widths. This touched the build_rr_graph() function parameter list, as well as the init_chan() function processing.
+
+// JR - Extended t_router_opts structure to support 'empty_channel_trim' member. This member is used to enable/disable the new fabric channel trim feature that is available via the Toro front-end.
+
 #include <math.h>
 #include <stdio.h>
 #include <assert.h>
@@ -238,8 +242,7 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 	if (router_opts.route_type == GLOBAL) {
 		graph_type = GRAPH_GLOBAL;
 	} else {
-		graph_type = (
-				det_routing_arch.directionality == BI_DIRECTIONAL ?
+		graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ?
 						GRAPH_BIDIR : GRAPH_UNIDIR);
 	}
 
@@ -256,12 +259,13 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 
 	build_rr_graph(graph_type, num_types, type_descriptors, nx, ny, grid,
-			chan_width_x[0], NULL, det_routing_arch.switch_block_type,
+			chan_width_max, NULL, det_routing_arch.switch_block_type,
 			det_routing_arch.Fs, det_routing_arch.num_segment,
 			det_routing_arch.num_switch, segment_inf,
 			det_routing_arch.global_route_switch,
 			det_routing_arch.delayless_switch, timing_inf,
-			det_routing_arch.wire_to_ipin_switch, router_opts.base_cost_type,
+			det_routing_arch.wire_to_ipin_switch, 
+			router_opts.base_cost_type, router_opts.empty_channel_trim,
 			directs, num_directs, FALSE,
 			&tmp);
 
@@ -280,11 +284,11 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 	init_route_structs(router_opts.bb_factor);
 
 	if (router_opts.router_algorithm == BREADTH_FIRST) {
-		vpr_printf(TIO_MESSAGE_INFO, "Confirming Router Algorithm: BREADTH_FIRST.\n");
+		vpr_printf(TIO_MESSAGE_INFO, "Confirming router algorithm: BREADTH_FIRST.\n");
 		success = try_breadth_first_route(router_opts, clb_opins_used_locally,
 				width_fac);
 	} else { /* TIMING_DRIVEN route */
-		vpr_printf(TIO_MESSAGE_INFO, "Confirming Router Algorithm: TIMING_DRIVEN.\n");
+		vpr_printf(TIO_MESSAGE_INFO, "Confirming router algorithm: TIMING_DRIVEN.\n");
 		assert(router_opts.route_type != GLOBAL);
 		success = try_timing_driven_route(router_opts, net_delay, slacks,
 			clb_opins_used_locally,timing_inf.timing_analysis_enabled);
@@ -343,9 +347,9 @@ void pathfinder_update_one_cost(struct s_trace *route_segment_start,
 		 * node.                                                                    */
 
 		if (occ < capacity) {
-			rr_node_route_inf[inode].pres_cost = 1.;
+			rr_node_route_inf[inode].pres_cost = 1.0;
 		} else {
-			rr_node_route_inf[inode].pres_cost = 1.
+			rr_node_route_inf[inode].pres_cost = 1.0
 					+ (occ + 1 - capacity) * pres_fac;
 		}
 
@@ -378,7 +382,7 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 
 		if (occ > capacity) {
 			rr_node_route_inf[inode].acc_cost += (occ - capacity) * acc_fac;
-			rr_node_route_inf[inode].pres_cost = 1.
+			rr_node_route_inf[inode].pres_cost = 1.0
 					+ (occ + 1 - capacity) * pres_fac;
 		}
 
@@ -386,7 +390,7 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 		 * in pres_fac could have made it necessary to recompute the cost anyway.  */
 
 		else if (occ == capacity) {
-			rr_node_route_inf[inode].pres_cost = 1. + pres_fac;
+			rr_node_route_inf[inode].pres_cost = 1.0 + pres_fac;
 		}
 	}
 }
@@ -793,8 +797,8 @@ void alloc_and_load_rr_node_route_structs(void) {
 	for (inode = 0; inode < num_rr_nodes; inode++) {
 		rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
 		rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
-		rr_node_route_inf[inode].pres_cost = 1.;
-		rr_node_route_inf[inode].acc_cost = 1.;
+		rr_node_route_inf[inode].pres_cost = 1.0;
+		rr_node_route_inf[inode].acc_cost = 1.0;
 		rr_node_route_inf[inode].path_cost = HUGE_POSITIVE_FLOAT;
 		rr_node_route_inf[inode].target_flag = 0;
 	}
@@ -812,8 +816,8 @@ void reset_rr_node_route_structs(void) {
 	for (inode = 0; inode < num_rr_nodes; inode++) {
 		rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
 		rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
-		rr_node_route_inf[inode].pres_cost = 1.;
-		rr_node_route_inf[inode].acc_cost = 1.;
+		rr_node_route_inf[inode].pres_cost = 1.0;
+		rr_node_route_inf[inode].acc_cost = 1.0;
 		rr_node_route_inf[inode].path_cost = HUGE_POSITIVE_FLOAT;
 		rr_node_route_inf[inode].target_flag = 0;
 	}
@@ -1270,10 +1274,9 @@ static void adjust_one_rr_occ_and_pcost(int inode, int add_or_sub,
 	rr_node[inode].occ = occ;
 
 	if (occ < capacity) {
-		rr_node_route_inf[inode].pres_cost = 1.;
+		rr_node_route_inf[inode].pres_cost = 1.0;
 	} else {
-		rr_node_route_inf[inode].pres_cost = 1.
-				+ (occ + 1 - capacity) * pres_fac;
+		rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
 	}
 }
 
