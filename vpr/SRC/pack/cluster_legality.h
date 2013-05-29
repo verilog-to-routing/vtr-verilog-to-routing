@@ -29,7 +29,7 @@ void alloc_and_load_rr_graph_for_pb_graph_node(INP t_pb_graph_node *pb_graph_nod
 
 /* Power user options */
 void reload_ext_net_rr_terminal_cluster(void);
-void force_post_place_route_cb_input_pins(int iblock);
+boolean force_post_place_route_cb_input_pins(int iblock);
 void setup_intracluster_routing_for_logical_block(INP int iblock,
 		INP t_pb_graph_node *primitive);
 
