@@ -23,6 +23,8 @@
 #ifndef TIO_PRINT_HANDLER_EXTERN_H
 #define TIO_PRINT_HANDLER_EXTERN_H
 
+#include "TIO_Typedefs.h"
+
 /*---------------------------------------------------------------------------*
  * Define typedefs
  *---------------------------------------------------------------------------*/
