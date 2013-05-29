@@ -927,6 +927,47 @@ int get_rr_node_index(int x, int y, t_rr_type rr_type, int ptc,
 	return lookup.list[ptc];
 }
 
+int find_average_rr_node_index(int L_nx, int L_ny, t_rr_type rr_type, int ptc,
+		t_ivec *** L_rr_node_indices) {
+
+	/* Find and return the index to a rr_node that is located at the "center" *
+	 * of the current grid array, if possible.  In the event the "center" of  *
+	 * the grid array is an EMPTY or IO node, then retry alterate locations.  *
+	 * Worst case, this function will simply return the 1st non-EMPTY and     *
+	 * non-IO node.                                                           */
+
+	int inode = get_rr_node_index((L_nx + 1) / 2, (L_ny + 1) / 2, 
+				rr_type, ptc, L_rr_node_indices);
+
+	if (inode == -1) {
+		inode = get_rr_node_index((L_nx + 1) / 4, (L_ny + 1) / 4, 
+					rr_type, ptc, L_rr_node_indices);
+	}
+	if (inode == -1) {
+		inode = get_rr_node_index((L_nx + 1) / 4 * 3, (L_ny + 1) / 4 * 3, 
+					rr_type, ptc, L_rr_node_indices);
+	}
+	if (inode == -1) {
+		for (int x = 0; x <= L_nx; ++x) {
+			for (int y = 0; y <= L_ny; ++y) {
+
+				if (grid[x][y].type == EMPTY_TYPE)
+					continue;
+				if (grid[x][y].type == IO_TYPE)
+					continue;
+
+				inode = get_rr_node_index(x, y,
+							rr_type, ptc, L_rr_node_indices);
+				if (inode != -1)
+					break;
+			}
+			if (inode != -1)
+				break;
+		}
+	}
+	return (inode);
+}
+
 int get_track_to_pins(int seg, int chan, int track,
 		t_linked_edge ** edge_list_ptr, t_ivec *** L_rr_node_indices,
 		struct s_ivec *****track_to_pin_lookup, t_seg_details * seg_details,
