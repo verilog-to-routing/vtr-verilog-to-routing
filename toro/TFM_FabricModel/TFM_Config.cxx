@@ -6,6 +6,7 @@
 //           - operator=
 //           - operator==, operator!=
 //           - Print
+//           - IsValid
 //
 //===========================================================================//
 
@@ -49,7 +50,8 @@ TFM_Config_c::TFM_Config_c(
 TFM_Config_c::TFM_Config_c( 
       const TFM_Config_c& config )
       :
-      fabricRegion( config.fabricRegion )
+      fabricRegion( config.fabricRegion ),
+      ioPolygon( config.ioPolygon )
 {
 } 
 
@@ -78,6 +80,7 @@ TFM_Config_c& TFM_Config_c::operator=(
    if( &config != this )
    {
       this->fabricRegion = config.fabricRegion;
+      this->ioPolygon = config.ioPolygon;
    }
    return( *this );
 }
@@ -92,7 +95,8 @@ TFM_Config_c& TFM_Config_c::operator=(
 bool TFM_Config_c::operator==( 
       const TFM_Config_c& config ) const
 {
-   return(( this->fabricRegion == config.fabricRegion ) ?
+   return(( this->fabricRegion == config.fabricRegion ) &&
+          ( this->ioPolygon == config.ioPolygon ) ?
           true : false );
 }
 
@@ -122,17 +126,44 @@ void TFM_Config_c::Print(
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   if( this->fabricRegion.IsValid( ))
+   if( this->fabricRegion.IsValid( ) ||
+       this->ioPolygon.IsValid( ))
    {
       printHandler.Write( pfile, spaceLen, "<config>\n" );
       spaceLen += 3;
 
-      string srFabricRegion;
-      this->fabricRegion.ExtractString( &srFabricRegion );
+      if( this->fabricRegion.IsValid( ))
+      {
+         string srFabricRegion;
+         this->fabricRegion.ExtractString( &srFabricRegion );
 
-      printHandler.Write( pfile, spaceLen, "<region> %s </region>\n", 
-                                           TIO_SR_STR( srFabricRegion ));
+         printHandler.Write( pfile, spaceLen, "<region> %s </region>\n", 
+                                              TIO_SR_STR( srFabricRegion ));
+      }
+      if( this->ioPolygon.IsValid( ))
+      {
+         string srIoPolygon;
+         this->ioPolygon.ExtractString( &srIoPolygon );
+
+         printHandler.Write( pfile, spaceLen, "<polygon> %s </polygon>\n", 
+                                              TIO_SR_STR( srIoPolygon ));
+      }
       spaceLen -= 3;
       printHandler.Write( pfile, spaceLen, "</config>\n" );
    }
+}
+
+//===========================================================================//
+// Method         : IsValid
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/20/12 jeffr : Original
+//===========================================================================//
+bool TFM_Config_c::IsValid( 
+      void ) const
+{
+   return( this->fabricRegion.IsValid( ) ||
+           this->ioPolygon.IsValid( ) ?
+           true : false );
 }
