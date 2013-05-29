@@ -1,7 +1,3 @@
-// JR - Improved the try_place() function's placement status message format (slightly thinner and better alignment).
-// JR - Improved code by consistent use of OPEN for nets and EMPTY for grid tiles (was mixing both OPEN and EMPTY for grid tiles)
-// JR - Removed hard exit(1) from try_place() function when new_timing_cost - old timing_cost is > ERROR_TOL
-
 /*#include <stdlib.h> */
 #include <stdio.h>
 #include <math.h>
