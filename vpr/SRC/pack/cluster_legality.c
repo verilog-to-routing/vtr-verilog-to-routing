@@ -56,8 +56,8 @@ static float rr_node_intrinsic_cost(int inode);
 /************************ Subroutine definitions ****************************/
 
 static boolean is_net_in_cluster(INP int inet) {
-	int i;
-	for (i = 0; i < num_nets_in_cluster; i++) {
+
+	for (int i = 0; i < num_nets_in_cluster; ++i) {
 		if (nets_in_cluster[i] == inet) {
 			return TRUE;
 		}
@@ -71,7 +71,7 @@ static void add_net_rr_terminal_cluster(int iblk_net,
 		t_pb_graph_node * primitive, int ilogical_block,
 		t_model_ports * model_port, int ipin) {
 	/* Ensure at most one external input/clock source and one external output sink for net */
-	int i, net_pin;
+	int net_pin;
 	t_port *prim_port;
 	const t_pb_type *pb_type;
 	boolean found;
@@ -89,7 +89,7 @@ static void add_net_rr_terminal_cluster(int iblk_net,
 
 	found = FALSE;
 	/* TODO: This is inelegant design, I should change the primitive ports in pb_type to be input, output, or clock instead of this lookup */
-	for (i = 0; i < pb_type->num_ports && !found; i++) {
+	for (int i = 0; i < pb_type->num_ports && !found; ++i) {
 		prim_port = &pb_type->ports[i];
 		if (pb_type->ports[i].model_port == model_port) {
 			found = TRUE;
@@ -110,7 +110,7 @@ static void add_net_rr_terminal_cluster(int iblk_net,
 	assert(ipin < prim_port->num_pins);
 	net_pin = OPEN;
 	if (prim_port->is_clock) {
-		for (i = 1; i <= vpack_net[iblk_net].num_sinks; i++) {
+		for (int i = 1; i <= vpack_net[iblk_net].num_sinks; ++i) {
 			if (vpack_net[iblk_net].node_block[i] == ilogical_block
 					&& vpack_net[iblk_net].node_block_port[i]
 							== model_port->index
@@ -123,7 +123,7 @@ static void add_net_rr_terminal_cluster(int iblk_net,
 		assert(rr_node[primitive->clock_pins[clock_port][ipin].pin_count_in_cluster].num_edges == 1);
 		net_rr_terminals[iblk_net][net_pin] = rr_node[primitive->clock_pins[clock_port][ipin].pin_count_in_cluster].edges[0];
 	} else if (prim_port->type == IN_PORT) {
-		for (i = 1; i <= vpack_net[iblk_net].num_sinks; i++) {
+		for (int i = 1; i <= vpack_net[iblk_net].num_sinks; ++i) {
 			if (vpack_net[iblk_net].node_block[i] == ilogical_block
 					&& vpack_net[iblk_net].node_block_port[i]
 							== model_port->index
@@ -136,7 +136,7 @@ static void add_net_rr_terminal_cluster(int iblk_net,
 		assert(rr_node[primitive->input_pins[input_port][ipin].pin_count_in_cluster].num_edges == 1);
 		net_rr_terminals[iblk_net][net_pin] = rr_node[primitive->input_pins[input_port][ipin].pin_count_in_cluster].edges[0];
 	} else if (prim_port->type == OUT_PORT) {
-		i = 0;
+		int i = 0;
 		if (vpack_net[iblk_net].node_block[i] == ilogical_block
 				&& vpack_net[iblk_net].node_block_port[i] == model_port->index
 				&& vpack_net[iblk_net].node_block_pin[i] == ipin) {
@@ -151,7 +151,7 @@ static void add_net_rr_terminal_cluster(int iblk_net,
 }
 
 void reload_ext_net_rr_terminal_cluster(void) {
-	int i, j, net_index;
+	int net_index;
 	boolean has_ext_sink, has_ext_source;
 	int curr_ext_output, curr_ext_input, curr_ext_clock;
 
@@ -159,7 +159,7 @@ void reload_ext_net_rr_terminal_cluster(void) {
 	curr_ext_output = ext_output_rr_node_index;
 	curr_ext_clock = ext_clock_rr_node_index;
 
-	for (i = 0; i < num_nets_in_cluster; i++) {
+	for (int i = 0; i < num_nets_in_cluster; ++i) {
 		net_index = nets_in_cluster[i];
 		has_ext_sink = FALSE;
 		has_ext_source = (boolean)
@@ -175,7 +175,7 @@ void reload_ext_net_rr_terminal_cluster(void) {
 				curr_ext_input++;
 			}
 		}
-		for (j = 1; j <= vpack_net[net_index].num_sinks; j++) {
+		for (int j = 1; j <= vpack_net[net_index].num_sinks; ++j) {
 			if (logical_block[vpack_net[net_index].node_block[j]].clb_index
 					!= curr_cluster_index) {
 				if (has_ext_sink || has_ext_source) {
@@ -237,13 +237,13 @@ void free_cluster_legality_checker(void) {
 void alloc_and_load_rr_graph_for_pb_graph_node(
 		INP t_pb_graph_node *pb_graph_node, INP const t_arch* arch, int mode) {
 
-	int i, j, k, index;
+	int index;
 	boolean is_primitive;
 
 	is_primitive = (boolean) (pb_graph_node->pb_type->num_modes == 0);
 
-	for (i = 0; i < pb_graph_node->num_input_ports; i++) {
-		for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
+	for (int i = 0; i < pb_graph_node->num_input_ports; ++i) {
+		for (int j = 0; j < pb_graph_node->num_input_pins[i]; ++j) {
 			index = pb_graph_node->input_pins[i][j].pin_count_in_cluster;
 			rr_node[index].pb_graph_pin = &pb_graph_node->input_pins[i][j];
 			rr_node[index].fan_in =
@@ -264,8 +264,7 @@ void alloc_and_load_rr_graph_for_pb_graph_node(
 			} else {
 				rr_node[index].capacity = 0;
 			}
-			for (k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges;
-					k++) {
+			for (int k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges; ++k) {
 				/* TODO: Intention was to do bus-based implementation here */
 				rr_node[index].edges[k] =
 						pb_graph_node->input_pins[i][j].output_edges[k]->output_pins[0]->pin_count_in_cluster;
@@ -308,8 +307,8 @@ void alloc_and_load_rr_graph_for_pb_graph_node(
 		}
 	}
 
-	for (i = 0; i < pb_graph_node->num_output_ports; i++) {
-		for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
+	for (int i = 0; i < pb_graph_node->num_output_ports; ++i) {
+		for (int j = 0; j < pb_graph_node->num_output_pins[i]; ++j) {
 			index = pb_graph_node->output_pins[i][j].pin_count_in_cluster;
 			rr_node[index].pb_graph_pin = &pb_graph_node->output_pins[i][j];
 			rr_node[index].fan_in =
@@ -330,8 +329,7 @@ void alloc_and_load_rr_graph_for_pb_graph_node(
 			} else {
 				rr_node[index].capacity = 0;
 			}
-			for (k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges;
-					k++) {
+			for (int k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges; ++k) {
 				/* TODO: Intention was to do bus-based implementation here */
 				rr_node[index].edges[k] =
 						pb_graph_node->output_pins[i][j].output_edges[k]->output_pins[0]->pin_count_in_cluster;
@@ -346,8 +344,8 @@ void alloc_and_load_rr_graph_for_pb_graph_node(
 		}
 	}
 
-	for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
-		for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
+	for (int i = 0; i < pb_graph_node->num_clock_ports; ++i) {
+		for (int j = 0; j < pb_graph_node->num_clock_pins[i]; ++j) {
 			index = pb_graph_node->clock_pins[i][j].pin_count_in_cluster;
 			rr_node[index].pb_graph_pin = &pb_graph_node->clock_pins[i][j];
 			rr_node[index].fan_in =
@@ -368,8 +366,7 @@ void alloc_and_load_rr_graph_for_pb_graph_node(
 			} else {
 				rr_node[index].capacity = 0;
 			}
-			for (k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges;
-					k++) {
+			for (int k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges; ++k) {
 				/* TODO: Intention was to do bus-based implementation here */
 				rr_node[index].edges[k] =
 						pb_graph_node->clock_pins[i][j].output_edges[k]->output_pins[0]->pin_count_in_cluster;
@@ -403,13 +400,9 @@ void alloc_and_load_rr_graph_for_pb_graph_node(
 		}
 	}
 
-	for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children;
-				j++) {
-			for (k = 0;
-					k
-							< pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb;
-					k++) {
+	for (int i = 0; i < pb_graph_node->pb_type->num_modes; ++i) {
+		for (int j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; ++j) {
+			for (int k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; ++k) {
 				alloc_and_load_rr_graph_for_pb_graph_node(
 						&pb_graph_node->child_pb_graph_nodes[i][j][k], arch, i);
 			}
@@ -432,7 +425,7 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 	 * 
 	 */
 	/* make each rr_node one correspond with pin and correspond with pin's index pin_count_in_cluster */
-	int i, j, k, m, index, pb_graph_rr_index;
+	int index, pb_graph_rr_index;
 	int count_pins;
 	t_pb_type * pb_type;
 	t_pb_graph_node *pb_graph_node;
@@ -461,7 +454,7 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 	max_ext_index = pb_type->num_input_pins + pb_type->num_output_pins
 			+ pb_type->num_clock_pins + pb_graph_node->total_pb_pins;
 
-	for (i = 0; i < pb_type->num_input_pins; i++) {
+	for (int i = 0; i < pb_type->num_input_pins; ++i) {
 		index = i + pb_graph_node->total_pb_pins;
 		rr_node[index].type = SOURCE;
 		rr_node[index].fan_in = 0;
@@ -475,7 +468,7 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 		rr_node[index].capacity = 1;
 	}
 
-	for (i = 0; i < pb_type->num_output_pins; i++) {
+	for (int i = 0; i < pb_type->num_output_pins; ++i) {
 		index = i + pb_type->num_input_pins + pb_graph_node->total_pb_pins;
 		rr_node[index].type = SINK;
 		rr_node[index].fan_in = pb_type->num_output_pins;
@@ -485,7 +478,7 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 		rr_node[index].capacity = 1;
 	}
 
-	for (i = 0; i < pb_type->num_clock_pins; i++) {
+	for (int i = 0; i < pb_type->num_clock_pins; ++i) {
 		index = i + pb_type->num_input_pins + pb_type->num_output_pins
 				+ pb_graph_node->total_pb_pins;
 		rr_node[index].type = SOURCE;
@@ -501,11 +494,11 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 	}
 
 	ipin = 0;
-	for (i = 0; i < pb_graph_node->num_input_ports; i++) {
-		for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
+	for (int i = 0; i < pb_graph_node->num_input_ports; ++i) {
+		for (int j = 0; j < pb_graph_node->num_input_pins[i]; ++j) {
 			pb_graph_rr_index =
 					pb_graph_node->input_pins[i][j].pin_count_in_cluster;
-			for (k = 0; k < pb_type->num_input_pins; k++) {
+			for (int k = 0; k < pb_type->num_input_pins; ++k) {
 				index = k + pb_graph_node->total_pb_pins;
 				rr_node[index].edges[ipin] = pb_graph_rr_index;
 				rr_node[index].switches[ipin] = arch->num_switches - 1;
@@ -516,8 +509,8 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 	}
 
 	/* Must attach output pins to input pins because if a connection cannot fit using intra-cluster routing, it can also use external routing */
-	for (i = 0; i < pb_graph_node->num_output_ports; i++) {
-		for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
+	for (int i = 0; i < pb_graph_node->num_output_ports; ++i) {
+		for (int j = 0; j < pb_graph_node->num_output_pins[i]; ++j) {
 			count_pins = pb_graph_node->output_pins[i][j].num_output_edges
 					+ pb_type->num_output_pins + pb_type->num_input_pins;
 			pb_graph_rr_index =
@@ -530,8 +523,8 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 					(count_pins) * sizeof(int));
 
 			ipin = 0;
-			for (k = 0; k < pb_graph_node->num_input_ports; k++) {
-				for (m = 0; m < pb_graph_node->num_input_pins[k]; m++) {
+			for (int k = 0; k < pb_graph_node->num_input_ports; ++k) {
+				for (int m = 0; m < pb_graph_node->num_input_pins[k]; ++m) {
 					index =
 							pb_graph_node->input_pins[k][m].pin_count_in_cluster;
 					rr_node[pb_graph_rr_index].edges[ipin
@@ -543,7 +536,7 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 					ipin++;
 				}
 			}
-			for (k = 0; k < pb_type->num_output_pins; k++) {
+			for (int k = 0; k < pb_type->num_output_pins; ++k) {
 				index = k + pb_type->num_input_pins
 						+ pb_graph_node->total_pb_pins;
 				rr_node[pb_graph_rr_index].edges[k + pb_type->num_input_pins
@@ -561,9 +554,9 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 	}
 
 	ipin = 0;
-	for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
-		for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-			for (k = 0; k < pb_type->num_clock_pins; k++) {
+	for (int i = 0; i < pb_graph_node->num_clock_ports; ++i) {
+		for (int j = 0; j < pb_graph_node->num_clock_pins[i]; ++j) {
+			for (int k = 0; k < pb_type->num_clock_pins; ++k) {
 				index = k + pb_type->num_input_pins + pb_type->num_output_pins
 						+ pb_graph_node->total_pb_pins;
 				pb_graph_rr_index =
@@ -581,11 +574,10 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 }
 
 void free_legalizer_for_cluster(INP t_block* clb, boolean free_local_rr_graph) {
-	int i;
 
 	free_rr_node_route_structs();
 	if(free_local_rr_graph == TRUE) {
-		for (i = 0; i < num_rr_nodes; i++) {
+		for (int i = 0; i < num_rr_nodes; ++i) {
 			if (clb->pb->rr_graph[i].edges != NULL) {
 				free(clb->pb->rr_graph[i].edges);
 			}
@@ -598,8 +590,8 @@ void free_legalizer_for_cluster(INP t_block* clb, boolean free_local_rr_graph) {
 }
 
 void reset_legalizer_for_cluster(t_block *clb) {
-	int i;
-	for (i = 0; i < num_nets_in_cluster; i++) {
+
+	for (int i = 0; i < num_nets_in_cluster; ++i) {
 		free_traceback(nets_in_cluster[i]);
 		trace_head[nets_in_cluster[i]] = best_routing[nets_in_cluster[i]];
 		free_traceback(nets_in_cluster[i]);
@@ -694,7 +686,7 @@ static boolean breadth_first_route_net_cluster(int inet) {
 	 * lack of potential paths, rather than congestion), it returns FALSE, as    *
 	 * routing is impossible on this architecture.  Otherwise it returns TRUE.   */
 
-	int i, inode, prev_node, remaining_connections_to_sink;
+	int inode, prev_node, remaining_connections_to_sink;
 	float pcost, new_pcost;
 	struct s_heap *current;
 	struct s_trace *tptr;
@@ -707,7 +699,7 @@ static boolean breadth_first_route_net_cluster(int inet) {
 	tptr = NULL;
 	remaining_connections_to_sink = 0;
 
-	for (i = 1; i <= vpack_net[inet].num_sinks; i++) { /* Need n-1 wires to connect n pins */
+	for (int i = 1; i <= vpack_net[inet].num_sinks; ++i) { /* Need n-1 wires to connect n pins */
 
 		/* Do not connect open terminals */
 		if (net_rr_terminals[inet][i] == OPEN)
@@ -932,9 +924,8 @@ void setup_intracluster_routing_for_molecule(INP t_pack_molecule *molecule,
 	/* Allocates and loads the net_rr_terminals data structure.  For each net   *
 	 * it stores the rr_node index of the SOURCE of the net and all the SINKs   *
 	 * of the net.  [0..num_logical_nets-1][0..num_pins-1].   */
-	int i;
 
-	for (i = 0; i < get_array_size_of_molecule(molecule); i++) {
+	for (int i = 0; i < get_array_size_of_molecule(molecule); ++i) {
 		if (molecule->logical_block_ptrs[i] != NULL) {
 			setup_intracluster_routing_for_logical_block(
 					molecule->logical_block_ptrs[i]->index, primitive_list[i]);
@@ -1018,13 +1009,13 @@ void save_and_reset_routing_cluster(void) {
 	 * routing elements.  Also, the routing path costs and net_rr_terminals is stripped from the
 	 * existing rr_graph so that the saved routing does not affect the graph */
 
-	int inet, i, j;
+	int inet;
 	struct s_trace *tempptr;
 	saved_num_nets_in_cluster = num_nets_in_cluster;
 
-	for (i = 0; i < num_nets_in_cluster; i++) {
+	for (int i = 0; i < num_nets_in_cluster; ++i) {
 		inet = nets_in_cluster[i];
-		for (j = 0; j <= vpack_net[inet].num_sinks; j++) {
+		for (int j = 0; j <= vpack_net[inet].num_sinks; ++j) {
 			saved_net_rr_terminals[inet][j] = net_rr_terminals[inet][j];
 		}
 
@@ -1054,9 +1045,9 @@ void restore_routing_cluster(void) {
 	 * update_traceback.  If you need trace_tail restored, modify this        *
 	 * routine.  Also restores the locally used opin data.                    */
 
-	int inet, i, j;
+	int inet;
 
-	for (i = 0; i < num_nets_in_cluster; i++) {
+	for (int i = 0; i < num_nets_in_cluster; ++i) {
 		inet = nets_in_cluster[i];
 
 		pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
@@ -1069,7 +1060,7 @@ void restore_routing_cluster(void) {
 		best_routing[inet] = NULL; /* No stored routing. */
 
 		/* restore net terminals */
-		for (j = 0; j <= vpack_net[inet].num_sinks; j++) {
+		for (int j = 0; j <= vpack_net[inet].num_sinks; ++j) {
 			net_rr_terminals[inet][j] = saved_net_rr_terminals[inet][j];
 		}
 
@@ -1089,15 +1080,15 @@ void save_cluster_solution(void) {
 	 * net is added to the routing.  The size of pres_fac determines how severly *
 	 * oversubscribed rr_nodes are penalized.                                    */
 
-	int i, j, net_index;
+	int net_index;
 	struct s_trace *tptr, *prev;
 	int inode;
-	for (i = 0; i < max_ext_index; i++) {
+	for (int i = 0; i < max_ext_index; ++i) {
 		rr_node[i].net_num = OPEN;
 		rr_node[i].prev_edge = OPEN;
 		rr_node[i].prev_node = OPEN;
 	}
-	for (i = 0; i < num_nets_in_cluster; i++) {
+	for (int i = 0; i < num_nets_in_cluster; ++i) {
 		prev = NULL;
 		net_index = nets_in_cluster[i];
 		tptr = trace_head[net_index];
@@ -1109,13 +1100,12 @@ void save_cluster_solution(void) {
 			rr_node[inode].net_num = net_index;
 			if (prev != NULL) {
 				rr_node[inode].prev_node = prev->index;
-				for (j = 0; j < rr_node[prev->index].num_edges; j++) {
+				for (int j = 0; j < rr_node[prev->index].num_edges; ++j) {
 					if (rr_node[prev->index].edges[j] == inode) {
 						rr_node[inode].prev_edge = j;
 						break;
 					}
 				}
-				assert(j != rr_node[prev->index].num_edges);
 			} else {
 				rr_node[inode].prev_node = OPEN;
 				rr_node[inode].prev_edge = OPEN;
@@ -1147,55 +1137,32 @@ static float rr_node_intrinsic_cost(int inode) {
 
 /* turns on mode for a pb by setting capacity of its rr_nodes to 1 */
 void set_pb_graph_mode(t_pb_graph_node *pb_graph_node, int mode, int isOn) {
-	int i, j, index;
+
+	int index;
 	int i_pb_type, i_pb_inst;
 	const t_pb_type *pb_type;
 
 	pb_type = pb_graph_node->pb_type;
 	for (i_pb_type = 0; i_pb_type < pb_type->modes[mode].num_pb_type_children;
 			i_pb_type++) {
-		for (i_pb_inst = 0;
-				i_pb_inst
-						< pb_type->modes[mode].pb_type_children[i_pb_type].num_pb;
-				i_pb_inst++) {
-			for (i = 0;
-					i
-							< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_input_ports;
-					i++) {
-				for (j = 0;
-						j
-								< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_input_pins[i];
-						j++) {
-					index =
-							pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].input_pins[i][j].pin_count_in_cluster;
+		for (i_pb_inst = 0; i_pb_inst < pb_type->modes[mode].pb_type_children[i_pb_type].num_pb; i_pb_inst++) {
+			for (int i = 0; i < pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_input_ports; ++i) {
+				for (int j = 0;	j < pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_input_pins[i]; ++j) {
+					index = pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].input_pins[i][j].pin_count_in_cluster;
 					rr_node[index].capacity = isOn;
 				}
 			}
 
-			for (i = 0;
-					i
-							< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_output_ports;
-					i++) {
-				for (j = 0;
-						j
-								< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_output_pins[i];
-						j++) {
-					index =
-							pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].output_pins[i][j].pin_count_in_cluster;
+			for (int i = 0; i < pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_output_ports; ++i) {
+				for (int j = 0; j < pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_output_pins[i]; ++j) {
+					index = pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].output_pins[i][j].pin_count_in_cluster;
 					rr_node[index].capacity = isOn;
 				}
 			}
 
-			for (i = 0;
-					i
-							< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_clock_ports;
-					i++) {
-				for (j = 0;
-						j
-								< pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_clock_pins[i];
-						j++) {
-					index =
-							pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].clock_pins[i][j].pin_count_in_cluster;
+			for (int i = 0; i < pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_clock_ports; ++i) {
+				for (int j = 0; j < pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].num_clock_pins[i]; ++j) {
+					index = pb_graph_node->child_pb_graph_nodes[mode][i_pb_type][i_pb_inst].clock_pins[i][j].pin_count_in_cluster;
 					rr_node[index].capacity = isOn;
 				}
 			}
@@ -1204,27 +1171,22 @@ void set_pb_graph_mode(t_pb_graph_node *pb_graph_node, int mode, int isOn) {
 }
 
 /* If this is done post place and route, use the cb pins determined by place-and-route rather than letting the legalizer freely determine */
-void force_post_place_route_cb_input_pins(int iblock) {
-	int i, j, k, ipin, net_index, ext_net;
-	int pin_offset;
-	boolean has_ext_source, success;
-	int curr_ext_output, curr_ext_input, curr_ext_clock;
-	t_pb_graph_node *pb_graph_node;
+boolean force_post_place_route_cb_input_pins(int iblock) {
 
-	pb_graph_node = block[iblock].pb->pb_graph_node;
-	pin_offset = block[iblock].z * (pb_graph_node->pb_type->num_input_pins + pb_graph_node->pb_type->num_output_pins + pb_graph_node->pb_type->num_clock_pins);
+	boolean success = TRUE;
 
-	curr_ext_input = ext_input_rr_node_index;
-	curr_ext_output = ext_output_rr_node_index;
-	curr_ext_clock = ext_clock_rr_node_index;
+	t_pb_graph_node *pb_graph_node = block[iblock].pb->pb_graph_node;
+	int pin_offset = block[iblock].z * (pb_graph_node->pb_type->num_input_pins + pb_graph_node->pb_type->num_output_pins + pb_graph_node->pb_type->num_clock_pins);
 
-	for (i = 0; i < num_nets_in_cluster; i++) {
-		net_index = nets_in_cluster[i];
-		has_ext_source = (boolean)
-				(logical_block[vpack_net[net_index].node_block[0]].clb_index
-						!= curr_cluster_index);
+	int curr_ext_input = ext_input_rr_node_index;
+	int curr_ext_clock = ext_clock_rr_node_index;
+
+	for (int i = 0; i < num_nets_in_cluster; ++i) {
+		int net_index = nets_in_cluster[i];
+		boolean has_ext_source = (boolean)
+			(logical_block[vpack_net[net_index].node_block[0]].clb_index != curr_cluster_index);
 		if(has_ext_source) {
-			ext_net = vpack_to_clb_net_mapping[net_index];
+			int ext_net = vpack_to_clb_net_mapping[net_index];
 			assert(ext_net != OPEN);
 			if (vpack_net[net_index].is_global) {
 				free(rr_node[curr_ext_clock].edges);
@@ -1232,10 +1194,10 @@ void force_post_place_route_cb_input_pins(int iblock) {
 				rr_node[curr_ext_clock].num_edges = 0;
 				
 				success = FALSE;
-				ipin = 0;
+				int ipin = 0;
 				/* force intra-cluster net to use pins from ext route */
-				for(j = 0; j < pb_graph_node->num_clock_ports; j++) {
-					for(k = 0; k < pb_graph_node->num_clock_pins[j]; k++) {
+				for (int j = 0; j < pb_graph_node->num_clock_ports; ++j) {
+					for (int k = 0; k < pb_graph_node->num_clock_pins[j]; ++k) {
 						if(ext_net == block[iblock].nets[ipin + pb_graph_node->pb_type->num_input_pins + pb_graph_node->pb_type->num_output_pins + pin_offset]) {
 							success = TRUE;
 							rr_node[curr_ext_clock].num_edges++;
@@ -1245,7 +1207,8 @@ void force_post_place_route_cb_input_pins(int iblock) {
 						ipin++;
 					}
 				}
-				assert(success);
+				if(!success)
+					break;
 				curr_ext_clock++;
 			} else {
 				free(rr_node[curr_ext_input].edges);
@@ -1253,10 +1216,10 @@ void force_post_place_route_cb_input_pins(int iblock) {
 				rr_node[curr_ext_input].num_edges = 0;
 				
 				success = FALSE;
-				ipin = 0;
+				int ipin = 0;
 				/* force intra-cluster net to use pins from ext route */
-				for(j = 0; j < pb_graph_node->num_input_ports; j++) {
-					for(k = 0; k < pb_graph_node->num_input_pins[j]; k++) {
+				for (int j = 0; j < pb_graph_node->num_input_ports; ++j) {
+					for (int k = 0; k < pb_graph_node->num_input_pins[j]; ++k) {
 						if(ext_net == block[iblock].nets[ipin + pin_offset]) {
 							success = TRUE;
 							rr_node[curr_ext_input].num_edges++;
@@ -1267,9 +1230,11 @@ void force_post_place_route_cb_input_pins(int iblock) {
 					}
 				}
 				curr_ext_input++;
-				assert(success);
+				if(!success)
+					break;
 			}			
 		}
 	}
+	return(success);
 }
 
