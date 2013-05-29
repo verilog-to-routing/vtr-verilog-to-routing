@@ -575,7 +575,7 @@ static void drawplace(void) {
 				bnum = grid[i][j].blocks[k];
 
 				/* Draw background */
-				if (bnum != EMPTY) {
+				if (bnum != EMPTY && bnum != INVALID) {
 					setcolor(block_color[bnum]);
 					fillrect(x1, y1, x2, y2);
 				} else {
@@ -596,7 +596,7 @@ static void drawplace(void) {
 				drawrect(x1, y1, x2, y2);
 
 				/* Draw text if the space has parts of the netlist */
-				if (bnum != EMPTY) {
+				if (bnum != EMPTY && bnum != INVALID) {
 					drawtext((x1 + x2) / 2.0, (y1 + y2) / 2.0, block[bnum].name,
 							tile_width);
 				}
@@ -1705,7 +1705,6 @@ static void highlight_nets(char *message) {
 			}
 		}
 	}
-
 	update_message(message);
 }
 
