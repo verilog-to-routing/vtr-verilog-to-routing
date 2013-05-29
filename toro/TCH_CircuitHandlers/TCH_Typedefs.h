@@ -92,7 +92,6 @@ typedef TCT_SortedNameDynamicVector_c< TCH_PrePlacedBlock_c > TCH_PrePlacedBlock
 
 enum TCH_PlaceStatusMode_e
 {
-
    TCH_PLACE_STATUS_UNDEFINED = 0,
    TCH_PLACE_STATUS_FLOAT,
    TCH_PLACE_STATUS_FIXED,
@@ -124,6 +123,15 @@ class TCH_VPR_GraphToRoute_c; // Forward declaration for subsequent class typede
 typedef TCT_SortedVector_c< TCH_VPR_GraphToRoute_c > TCH_VPR_GraphToRouteMap_t;
 
 #define TCH_ROUTE_NODE_INDEX_INVALID SIZE_MAX
+
+enum TCH_RouteStatusMode_e
+{
+   TCH_ROUTE_STATUS_UNDEFINED = 0,
+   TCH_ROUTE_STATUS_FLOAT,
+   TCH_ROUTE_STATUS_FIXED,
+   TCH_ROUTE_STATUS_ROUTED
+};
+typedef enum TCH_RouteStatusMode_e TCH_RouteStatusMode_t;
 
 enum TCH_RouteOrderMode_e 
 { 
