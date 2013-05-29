@@ -1,3 +1,7 @@
+// JR - Improved the try_place() function's placement status message format (slightly thinner and better alignment).
+// JR - Improved code by consistent use of OPEN for nets and EMPTY for grid tiles (was mixing both OPEN and EMPTY for grid tiles)
+// JR - Removed hard exit(1) from try_place() function when new_timing_cost - old timing_cost is > ERROR_TOL
+
 /*#include <stdlib.h> */
 #include <stdio.h>
 #include <math.h>
@@ -515,16 +519,16 @@ void try_place(struct s_placer_opts placer_opts,
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 
 #ifndef SPEC
-	vpr_printf(TIO_MESSAGE_INFO, "%9s %9s %11s %11s %11s %11s %8s %8s %7s %7s %7s %9s %7s\n",
-			"---------", "---------", "-----------", "-----------", "-----------", "-----------", 
-			"--------", "--------", "-------", "-------", "-------", "---------", "-------");
-	vpr_printf(TIO_MESSAGE_INFO, "%9s %9s %11s %11s %11s %11s %8s %8s %7s %7s %7s %9s %7s\n",
+	vpr_printf(TIO_MESSAGE_INFO, "%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %6s %9s %6s\n",
+			"-------", "-------", "----------", "----------", "----------", "----------", 
+			"-------", "-------", "-------", "-------", "------", "---------", "------");
+	vpr_printf(TIO_MESSAGE_INFO, "%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %6s %9s %6s\n",
 			"T", "Cost", "Av BB Cost", "Av TD Cost", "Av Tot Del",
 			"P to P Del", "d_max", "Ac Rate", "Std Dev", "R limit", "Exp",
 			"Tot Moves", "Alpha");
-	vpr_printf(TIO_MESSAGE_INFO, "%9s %9s %11s %11s %11s %11s %8s %8s %7s %7s %7s %9s %7s\n",
-			"---------", "---------", "-----------", "-----------", "-----------", "-----------", 
-			"--------", "--------", "-------", "-------", "-------", "---------", "-------");
+	vpr_printf(TIO_MESSAGE_INFO, "%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %6s %9s %6s\n",
+			"-------", "-------", "----------", "----------", "----------", "----------", 
+			"-------", "-------", "-------", "-------", "------", "---------", "------");
 #endif
 
 	sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g  Delay Cost: %g \t Channel Factor: %d", 
@@ -665,14 +669,12 @@ void try_place(struct s_placer_opts placer_opts,
 							== PATH_TIMING_DRIVEN_PLACE) {
 				comp_td_costs(&new_timing_cost, &new_delay_cost);
 				if (fabs(new_timing_cost - timing_cost) > timing_cost * ERROR_TOL) {
-					vpr_printf(TIO_MESSAGE_ERROR, "in try_place: new_timing_cost = %g, old timing_cost = %g\n",
-							new_timing_cost, timing_cost);
-					exit(1);
+					vpr_printf(TIO_MESSAGE_ERROR, "in try_place: new_timing_cost = %g, old timing_cost = %g, ERROR_TOL = %g\n",
+							new_timing_cost, timing_cost, ERROR_TOL);
 				}
 				if (fabs(new_delay_cost - delay_cost) > delay_cost * ERROR_TOL) {
-					vpr_printf(TIO_MESSAGE_ERROR, "in try_place: new_delay_cost = %g, old delay_cost = %g\n",
-							new_delay_cost, delay_cost);
-					exit(1);
+					vpr_printf(TIO_MESSAGE_ERROR, "in try_place: new_delay_cost = %g, old delay_cost = %g, ERROR_TOL = %g\n",
+							new_delay_cost, delay_cost, ERROR_TOL);
 				}
 				timing_cost = new_timing_cost;
 			}
@@ -703,7 +705,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 #ifndef SPEC
 		critical_path_delay = get_critical_path_delay();
-		vpr_printf(TIO_MESSAGE_INFO, "%9.5f %9.5g %11.6g %11.6g %11.6g %11.6g %8.4f %8.4f %7.4f %7.4f %7.4f %9d %7.4f\n",
+		vpr_printf(TIO_MESSAGE_INFO, "%7.5f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
 				oldt, av_cost, av_bb_cost, av_timing_cost, av_delay_cost, place_delay_value, 
 				critical_path_delay, success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
 #endif
@@ -834,7 +836,7 @@ void try_place(struct s_placer_opts placer_opts,
 	std_dev = get_std_dev(success_sum, sum_of_squares, av_cost);
 
 #ifndef SPEC
-	vpr_printf(TIO_MESSAGE_INFO, "%9.5f %9.5g %11.6g %11.6g %11.6g %11.6g %8s %8.4f %7.4f %7.4f %7.4f %9d\n",
+	vpr_printf(TIO_MESSAGE_INFO, "%7.5f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7s %7.4f %7.4f %7.4f %6.3f %9d\n",
 			t, av_cost, av_bb_cost, av_timing_cost, av_delay_cost, place_delay_value, 
 			" ", success_rat, std_dev, rlim, crit_exponent, tot_iter);
 #endif
@@ -1555,7 +1557,7 @@ static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int 
 		is_legal = TRUE;
 
 		/* Limit the number of tries when searching for an alternative position */
-		if(num_tries >= 2 * std::min(active_area / type->height, num_legal_pos[block_index]) + 10) {
+		if(num_tries >= 2 * std::min(active_area / (type->width * type->height), num_legal_pos[block_index]) + 10) {
 			/* Tried randomly searching for a suitable position */
 			return FALSE;
 		} else {
@@ -1906,7 +1908,7 @@ static float comp_bb_cost(enum cost_methods method) {
 
 	if (method == CHECK) {
 		vpr_printf(TIO_MESSAGE_INFO, "\n");
-		vpr_printf(TIO_MESSAGE_INFO, "BB estimate of min-dist (placement) wirelength: %.0f\n", expected_wirelength);
+		vpr_printf(TIO_MESSAGE_INFO, "BB estimate of min-dist (placement) wire length: %.0f\n", expected_wirelength);
 	}
 	return (cost);
 }
@@ -2583,7 +2585,7 @@ static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z)
 		// still within the chip's dimemsion and the member_z is allowed at that location on the grid
 		if (member_x <= nx+1 && member_y <= ny+1
 				&& grid[member_x][member_y].type->index == itype
-				&& grid[member_x][member_y].blocks[member_z] == OPEN) {
+				&& grid[member_x][member_y].blocks[member_z] == EMPTY) {
 			// Can still accomodate blocks here, check the next position
 			continue;
 		} else {
@@ -2609,7 +2611,7 @@ static int try_place_macro(int itype, int ichoice, int imacro, int * free_locati
 	z = legal_pos[itype][ichoice].z;
 			
 	// If that location is occupied, do nothing.
-	if (grid[x][y].blocks[z] != OPEN) {
+	if (grid[x][y].blocks[z] != EMPTY) {
 		return (macro_placed);
 	} 
 	
@@ -2748,8 +2750,8 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			y = legal_pos[itype][ichoice].y;
 			z = legal_pos[itype][ichoice].z;
 
-			// Make sure that the position is OPEN before placing the block down
-			assert (grid[x][y].blocks[z] == OPEN);
+			// Make sure that the position is EMPTY before placing the block down
+			assert (grid[x][y].blocks[z] == EMPTY);
 
 			grid[x][y].blocks[z] = iblk;
 			grid[x][y].usage++;
@@ -2798,7 +2800,9 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 			grid[i][j].usage = 0;
 			itype = grid[i][j].type->index;
 			for (k = 0; k < type_descriptors[itype].capacity; k++) {
-				grid[i][j].blocks[k] = OPEN;
+				if (grid[i][j].blocks[k] != INVALID) {
+					grid[i][j].blocks[k] = EMPTY;
+				}
 			}
 		}
 	}
@@ -2821,7 +2825,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 			z = legal_pos[itype][ichoice].z;
 			
 			// Check if that location is occupied.  If it is, remove from legal_pos
-			if (grid[x][y].blocks[z] != OPEN) {
+			if (grid[x][y].blocks[z] != EMPTY && grid[x][y].blocks[z] != INVALID) {
 				legal_pos[itype][ichoice] = legal_pos[itype][free_locations[itype] - 1];
 				free_locations[itype]--;
 
@@ -3004,7 +3008,7 @@ static void check_place(float bb_cost, float timing_cost,
 			usage_check = 0;
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
 				bnum = grid[i][j].blocks[k];
-				if (EMPTY == bnum)
+				if (EMPTY == bnum || INVALID == bnum)
 					continue;
 
 				if (block[bnum].type != grid[i][j].type) {
