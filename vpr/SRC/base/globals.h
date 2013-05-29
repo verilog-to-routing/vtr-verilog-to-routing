@@ -1,5 +1,3 @@
-// JR - Added 'chan_width_max' global variable to supplement the existing 'chan_width_x' and 'chan_width_y' global variables. This new global is used to support non-uniform x|y channel widths.
-
 /* 
  Global variables 
 
