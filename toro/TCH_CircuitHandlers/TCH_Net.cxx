@@ -30,6 +30,7 @@
 
 #include "TIO_PrintHandler.h"
 
+#include "TCH_StringUtils.h"
 #include "TCH_Net.h"
 
 //===========================================================================//
@@ -43,6 +44,7 @@ TCH_Net_c::TCH_Net_c(
       void )
       :
       srName_( "" ),
+      status_( TCH_ROUTE_STATUS_UNDEFINED ),
       routePathList_( TCH_ROUTE_PATH_LIST_DEF_CAPACITY ),
       isLegal_( false )
 {
@@ -51,10 +53,12 @@ TCH_Net_c::TCH_Net_c(
 
 //===========================================================================//
 TCH_Net_c::TCH_Net_c( 
-      const string& srName,
-            int     vpr_netIndex )
+      const string&               srName,
+            TCH_RouteStatusMode_t status,
+            int                   vpr_netIndex )
       :
       srName_( srName ),
+      status_( status ),
       routePathList_( TCH_ROUTE_PATH_LIST_DEF_CAPACITY ),
       isLegal_( false )
 {
@@ -63,10 +67,12 @@ TCH_Net_c::TCH_Net_c(
 
 //===========================================================================//
 TCH_Net_c::TCH_Net_c( 
-      const char* pszName,
-            int   vpr_netIndex )
+      const char*                 pszName,
+            TCH_RouteStatusMode_t status,
+            int                   vpr_netIndex )
       :
       srName_( TIO_PSZ_STR( pszName )),
+      status_( status ),
       routePathList_( TCH_ROUTE_PATH_LIST_DEF_CAPACITY ),
       isLegal_( false )
 {
@@ -78,6 +84,7 @@ TCH_Net_c::TCH_Net_c(
       const TCH_Net_c& net )
       :
       srName_( net.srName_ ),
+      status_( net.status_ ),
       routePathList_( net.routePathList_ ),
       isLegal_( net.isLegal_ )
 {
@@ -109,6 +116,7 @@ TCH_Net_c& TCH_Net_c::operator=(
    if( &net != this )
    {
       this->srName_ = net.srName_;
+      this->status_ = net.status_;
       this->vpr_.netIndex = net.vpr_.netIndex;
       this->routePathList_ = net.routePathList_;
       this->isLegal_ = net.isLegal_;
@@ -127,6 +135,7 @@ bool TCH_Net_c::operator==(
       const TCH_Net_c& net ) const
 {
    return(( this->srName_ == net.srName_ ) &&
+          ( this->status_ == net.status_ ) &&
           ( this->vpr_.netIndex == net.vpr_.netIndex ) &&
           ( this->routePathList_ == net.routePathList_ ) &&
           ( this->isLegal_ == net.isLegal_ ) ?
@@ -162,6 +171,12 @@ void TCH_Net_c::Print(
    printHandler.Write( pfile, spaceLen, "<net" );
    printHandler.Write( pfile, 0, " isLegal=%s", TIO_BOOL_VAL( this->isLegal_ ));
    printHandler.Write( pfile, 0, " name=\"%s\"", TIO_SR_STR( this->srName_ ));
+   if( this->status_ != TCH_ROUTE_STATUS_UNDEFINED )
+   {
+      string srStatus;
+      TCH_ExtractStringStatusMode( this->status_, &srStatus );
+      printHandler.Write( pfile, 0, " status=%s", TIO_SR_STR( srStatus ));
+   }
    printHandler.Write( pfile, 0, " <vpr" );
    printHandler.Write( pfile, 0, " netIndex=%d", this->vpr_.netIndex );
    printHandler.Write( pfile, 0, ">" );
