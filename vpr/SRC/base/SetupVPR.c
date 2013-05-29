@@ -1,3 +1,5 @@
+// JR - Extended to support OT_ROUTE_CHAN_TRIM routing option. This option is used to enable/disable the new fabric channel trim feature that is available via the Toro front-end.
+
 #include <assert.h>
 #include <string.h>
 #include "util.h"
@@ -395,6 +397,11 @@ static void SetupRouterOpts(INP t_options Options, INP boolean TimingEnabled,
 	RouterOpts->fixed_channel_width = NO_FIXED_CHANNEL_WIDTH; /* DEFAULT */
 	if (Options.Count[OT_ROUTE_CHAN_WIDTH]) {
 		RouterOpts->fixed_channel_width = Options.RouteChanWidth;
+	}
+
+	RouterOpts->empty_channel_trim = TRUE; /* DEFAULT */
+	if (Options.Count[OT_ROUTE_CHAN_TRIM]) {
+		RouterOpts->empty_channel_trim = Options.RouteChanTrim;
 	}
 
 	/* Depends on RouterOpts->router_algorithm */
