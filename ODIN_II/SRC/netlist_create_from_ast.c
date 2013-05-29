@@ -1691,7 +1691,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 		ast_node_t *module_var_node = module_list->children[i]->children[0];
 		// MODULE_CONNECT_LIST(child[i])->MODULE_CONNECT(child[1]) // child[0] is for aliasing
 		ast_node_t *module_instance_var_node = module_instance_list->children[i]->children[1];
-
+		
 		if ( 
 			   // skip inputs on pass 1
 			   ((PASS == INSTANTIATE_DRIVERS) && (module_list->children[i]->children[0]->types.variable.is_input))
@@ -1729,9 +1729,9 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 			printf("Unhandled implicit memory in connect_module_instantiation_and_alias\n");
 			oassert(FALSE);
 		}
-		
 		for (j = 0; j < port_size; j++)
 		{
+			
 			if (module_list->children[i]->children[0]->types.variable.is_input)
 			{
 				/* IF - this spot in the module list is an input, then we need to find it in the
@@ -1776,7 +1776,10 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 
 					free(name_of_module_instance_of_input);
 				}
+				
 
+				
+				
 				/* search for the old_input name */
 				if ((sc_spot_input_old = sc_lookup_string(input_nets_sc, alias_name)) == -1)
                 {
@@ -1784,9 +1787,20 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 					error_message(NETLIST_ERROR, module_instance->line_number, module_instance->file_number,
 							"This module port %s is unused in module %s", alias_name, module_node->children[0]->types.identifier);
 				}
-
+				
+				/* CMM - Check if this pin should be driven by the top level VCC or GND drivers	*/
+				if (strstr(full_name, "ONE_VCC_CNS") != NULL)
+				{
+					join_nets(verilog_netlist->one_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+					input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->one_net;
+				}
+				else if (strstr(full_name, "ZERO_GND_ZERO") != NULL)
+				{
+					join_nets(verilog_netlist->zero_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+					input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->zero_net;
+				}
 				/* check if the instantiation pin exists. */
-				if ((sc_spot_output = sc_lookup_string(output_nets_sc, full_name)) == -1)
+				else if ((sc_spot_output = sc_lookup_string(output_nets_sc, full_name)) == -1)
 				{
 					/* IF - no driver, then assume that it needs to be aliased to move up as an input */
 					if ((sc_spot_input_new = sc_lookup_string(input_nets_sc, full_name)) == -1)

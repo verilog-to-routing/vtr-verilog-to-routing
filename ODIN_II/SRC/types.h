@@ -440,6 +440,8 @@ struct nnode_t_t
 	int ratio; //clock ratio for clock nodes
 	signed char has_initial_value; // initial value assigned?
 	signed char initial_value; // initial net value
+	
+	long blif_explorer_id;
 };
 
 struct npin_t_t

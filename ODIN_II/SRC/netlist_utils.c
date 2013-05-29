@@ -38,9 +38,11 @@ global_args_t global_args;
  * (function: allocate_nnode)
  *-------------------------------------------------------------------------------------------*/
 nnode_t* allocate_nnode() {
+	static long blif_explorer_id = 0;
 	nnode_t *new_node;
 
 	new_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	new_node->blif_explorer_id = blif_explorer_id++;
 	
 	new_node->name = NULL;
 	new_node->type = NO_OP;
