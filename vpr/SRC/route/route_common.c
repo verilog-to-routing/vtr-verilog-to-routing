@@ -1,7 +1,3 @@
-// JR - Added 'chan_width_max' global variable to supplement the existing 'chan_width_x' and 'chan_width_y' global variables. This new global is used to support non-uniform x|y channel widths. This touched the build_rr_graph() function parameter list, as well as the init_chan() function processing.
-
-// JR - Extended t_router_opts structure to support 'empty_channel_trim' member. This member is used to enable/disable the new fabric channel trim feature that is available via the Toro front-end.
-
 #include <math.h>
 #include <stdio.h>
 #include <assert.h>
