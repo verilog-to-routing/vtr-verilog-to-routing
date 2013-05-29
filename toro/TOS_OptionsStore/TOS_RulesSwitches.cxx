@@ -176,6 +176,7 @@ void TOS_RulesSwitches_c::Init(
    this->routeOptions.abstractMode = TOS_ROUTE_ABSTRACT_DETAILED;
    this->routeOptions.windowSize = 3;
    this->routeOptions.channelWidth = 0;
+   this->routeOptions.channelTrimEmpty = true;
    this->routeOptions.maxIterations = 50;
    this->routeOptions.histCongestionFactor = 1.0;
    this->routeOptions.initCongestionFactor = 0.5;
