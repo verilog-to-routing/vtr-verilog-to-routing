@@ -45,6 +45,7 @@ void TNO_ExtractStringStatusMode(
       switch( mode )
       {
       case TNO_STATUS_OPEN:    *psrMode = "open";    break;
+      case TNO_STATUS_FIXED:   *psrMode = "fixed";   break;
       case TNO_STATUS_GROUTED: *psrMode = "grouted"; break;
       case TNO_STATUS_ROUTED:  *psrMode = "routed";  break;
       default:                 *psrMode = "*";       break;
