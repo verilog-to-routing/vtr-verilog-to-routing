@@ -136,7 +136,8 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
 		}
 		/* End node is CHANX or CHANY */
-		else if (from_rr_type == OPIN) {
+		else if (from_rr_type == OPIN
+				&& (to_rr_type == CHANX || to_rr_type == CHANY)) {
 
 			for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
 				switch_index = rr_node[inode].switches[iedge];
