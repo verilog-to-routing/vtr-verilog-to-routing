@@ -133,7 +133,7 @@
 
 
 #ifndef PLACE_MACRO_H
-#define PALCE_MACRO_H
+#define PLACE_MACRO_H
 
 /* These are the placement macro structure. 
  * It is in the form of array of structs instead of
