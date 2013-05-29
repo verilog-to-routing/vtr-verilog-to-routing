@@ -1394,7 +1394,6 @@ void print_timing_graph(const char *fname) {
 	t_tedge *tedge;
 	e_tnode_type itype;
 	const char *tnode_type_names[] = {  "TN_INPAD_SOURCE", "TN_INPAD_OPIN", "TN_OUTPAD_IPIN",
-
 			"TN_OUTPAD_SINK", "TN_CB_IPIN", "TN_CB_OPIN", "TN_INTERMEDIATE_NODE",
 			"TN_PRIMITIVE_IPIN", "TN_PRIMITIVE_OPIN", "TN_FF_IPIN", "TN_FF_OPIN", "TN_FF_SINK",
 			"TN_FF_SOURCE", "TN_FF_CLOCK", "TN_CONSTANT_GEN_SOURCE" };
@@ -1422,7 +1421,7 @@ void print_timing_graph(const char *fname) {
 		if (itype == TN_FF_CLOCK || itype == TN_FF_SOURCE || itype == TN_FF_SINK) {
 			fprintf(fp, "%d\t%.3e\t\t", tnode[inode].clock_domain, tnode[inode].clock_delay);
 		} else if (itype == TN_INPAD_SOURCE) {
-			fprintf(fp, "%d\t\t%.3e\t", tnode[inode].clock_domain, tnode[inode].out_edges[0].Tdel);
+			fprintf(fp, "%d\t\t%.3e\t", tnode[inode].clock_domain, tnode[inode].out_edges ? tnode[inode].out_edges[0].Tdel : -1);
 		} else if (itype == TN_OUTPAD_SINK) {
 			assert(tnode[inode-1].type == TN_OUTPAD_IPIN); /* Outpad ipins should be one prior in the tnode array */
 			fprintf(fp, "%d\t\t%.3e\t", tnode[inode].clock_domain, tnode[inode-1].out_edges[0].Tdel);
@@ -1458,7 +1457,8 @@ void print_timing_graph(const char *fname) {
 	for (i = 0; i < num_nets; i++)
 		fprintf(fp, "%4d\t%6d\n", i, f_net_to_driver_tnode[i]);
 
-	if (g_sdc->num_constrained_clocks == 1) {
+	if (g_sdc && g_sdc->num_constrained_clocks == 1) {
+
 		/* Arrival and required times, and forward and backward weights, will be meaningless for multiclock
 		designs, since the values currently on the graph will only correspond to the most recent traversal. */
 		fprintf(fp, "\n\nNode #\t\tT_arr\t\tT_req"
