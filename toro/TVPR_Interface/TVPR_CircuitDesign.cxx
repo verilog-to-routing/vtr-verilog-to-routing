@@ -2177,7 +2177,9 @@ void TVPR_CircuitDesign_c::ExtractNetListRoutes_(
             this->ExtractNetRoutes_( vpr_blockArray, vpr_rrNodeArray,
                                      pvpr_traceList, &routeList );
 
-            pnet->SetStatus( TNO_STATUS_ROUTED );
+            TNO_StatusMode_t routeStatus = ( vpr_net.is_fixed ? 
+                                             TNO_STATUS_FIXED : TNO_STATUS_ROUTED );
+            pnet->SetStatus( routeStatus );
             pnet->AddRouteList( routeList );
          }
       }
