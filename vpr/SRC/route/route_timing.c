@@ -1,5 +1,3 @@
-// JR - Added support for s_net's 'is_routed' and 'is_fixed' members. These new structure members are used to support pre-routes.
-
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
