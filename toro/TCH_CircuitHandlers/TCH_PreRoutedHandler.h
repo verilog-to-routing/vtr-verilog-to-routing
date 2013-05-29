@@ -78,6 +78,9 @@ public:
 
    bool ValidatePreRoutes( void );
 
+   bool IsLegalPreRouteNet( const char* pszNetName,
+                            int routeIteration ) const;
+
    bool IsMemberPreRouteNet( const char* pszNetName,
                              int vpr_rrSrcIndex,
                              int vpr_rrSinkIndex ) const;
