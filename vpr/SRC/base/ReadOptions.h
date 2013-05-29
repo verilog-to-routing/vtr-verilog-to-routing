@@ -1,3 +1,5 @@
+// JR - Extended to support OT_ROUTE_CHAN_TRIM routing option. This option is used to enable/disable the new fabric channel trim feature that is available via the Toro front-end.
+
 #ifndef READOPTIONS_H
 #define READOPTIONS_H
 
@@ -76,6 +78,7 @@ struct s_options {
 	float bend_cost;
 	enum e_route_type RouteType;
 	int RouteChanWidth;
+	boolean RouteChanTrim;
 	enum e_router_algorithm RouterAlgorithm;
 	enum e_base_cost_type base_cost_type;
 
