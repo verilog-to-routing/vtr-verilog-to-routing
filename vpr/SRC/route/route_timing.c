@@ -1,3 +1,5 @@
+// JR - Added support for s_net's 'is_routed' and 'is_fixed' members. These new structure members are used to support pre-routes.
+
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
@@ -102,6 +104,12 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		begin = clock();
 		vpr_printf(TIO_MESSAGE_INFO, "\n");
 		vpr_printf(TIO_MESSAGE_INFO, "Routing iteration: %d\n", itry);
+
+		/* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
+		for (inet = 0; inet < num_nets; inet++) {
+			clb_net[inet].is_routed = FALSE;
+			clb_net[inet].is_fixed = FALSE;
+		}
 
 		for (i = 0; i < num_nets; i++) {
 			inet = net_index[i];
