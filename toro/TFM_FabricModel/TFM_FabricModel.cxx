@@ -198,6 +198,7 @@ void TFM_FabricModel_c::Clear(
    this->srName = "";
 
    this->config.fabricRegion.Reset( );
+   this->config.ioPolygon.Reset( );
 
    this->physicalBlockList.Clear( );
    this->inputOutputList.Clear( );
@@ -236,7 +237,7 @@ TFV_FabricView_c* TFM_FabricModel_c::GetFabricView(
 bool TFM_FabricModel_c::IsValid(
       void ) const
 {
-   return(( this->config.IsValid( ) &&
+   return(( this->config.IsValid( ) ||
           ( this->physicalBlockList.IsValid( ) ||
             this->inputOutputList.IsValid( ) ||
             this->switchBoxList.IsValid( ) ||
