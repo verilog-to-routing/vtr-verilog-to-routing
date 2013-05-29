@@ -44,7 +44,7 @@ void free_pb_data(t_pb *pb);
 
 /************************* Subroutine Definitions ****************************/
 
-void place_and_route(enum e_operation operation,
+boolean place_and_route(enum e_operation operation,
 		struct s_placer_opts placer_opts, char *place_file, char *net_file,
 		char *arch_file, char *route_file,
 		struct s_annealing_sched annealing_sched,
@@ -56,21 +56,16 @@ void place_and_route(enum e_operation operation,
 
 	/* This routine controls the overall placement and routing of a circuit. */
 	char msg[BUFSIZE];
-	int width_fac, i;
-	boolean success, Fc_clipped;
-	float **net_delay = NULL;
-	t_slack * slacks = NULL;
+
+	boolean success = FALSE;
 	t_chunk net_delay_ch = {NULL, 0, NULL};
 
 	/*struct s_linked_vptr *net_delay_chunk_list_head;*/
 	t_ivec **clb_opins_used_locally = NULL; /* [0..num_blocks-1][0..num_class-1] */
-	int max_pins_per_clb;
 	clock_t begin, end;
 
-	Fc_clipped = FALSE;
-
-	max_pins_per_clb = 0;
-	for (i = 0; i < num_types; i++) {
+	int max_pins_per_clb = 0;
+	for (int i = 0; i < num_types; ++i) {
 		if (type_descriptors[i].num_pins > max_pins_per_clb) {
 			max_pins_per_clb = type_descriptors[i].num_pins;
 		}
@@ -81,8 +76,7 @@ void place_and_route(enum e_operation operation,
 		read_place(place_file, net_file, arch_file, nx, ny, num_blocks, block);
 		sync_grid_to_blocks(num_blocks, block, nx, ny, grid);
 	} else {
-		assert(
-				(PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
+		assert((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
 		begin = clock();
 		try_place(placer_opts, annealing_sched, chan_width_dist, router_opts,
 				det_routing_arch, segment_inf, timing_inf, directs, num_directs);
@@ -100,9 +94,9 @@ void place_and_route(enum e_operation operation,
 	fflush(stdout);
 
 	if (!router_opts.doRouting)
-		return;
+		return(TRUE);
 
-	width_fac = router_opts.fixed_channel_width;
+	int width_fac = router_opts.fixed_channel_width;
 
 	/* If channel width not fixed, use binary search to find min W */
 	if (NO_FIXED_CHANNEL_WIDTH == width_fac) {
@@ -111,11 +105,13 @@ void place_and_route(enum e_operation operation,
 				router_opts.verify_binary_search, annealing_sched, router_opts,
 				det_routing_arch, segment_inf, timing_inf, chan_width_dist,
 				models, directs, num_directs);
+		success = (g_solution_inf.channel_width > 0 ? TRUE : FALSE);
 	} else {
 		g_solution_inf.channel_width = width_fac;
 		if (det_routing_arch.directionality == UNI_DIRECTIONAL) {
 			if (width_fac % 2 != 0) {
-				vpr_printf(TIO_MESSAGE_ERROR, "in pack_place_and_route.c: Given odd chan width (%d) for udsd architecture.\n",
+				vpr_printf(TIO_MESSAGE_ERROR, 
+						"in pack_place_and_route.c: Given odd chan width (%d) for udsd architecture.\n",
 						width_fac);
 				exit(1);
 			}
@@ -126,10 +122,10 @@ void place_and_route(enum e_operation operation,
 
 		clb_opins_used_locally = alloc_route_structs();
 
-		slacks = alloc_and_load_timing_graph(timing_inf);
-		net_delay = alloc_net_delay(&net_delay_ch, clb_net,
-					num_nets);
+		t_slack *slacks = alloc_and_load_timing_graph(timing_inf);
+		float **net_delay = alloc_net_delay(&net_delay_ch, clb_net, num_nets);
 
+		boolean Fc_clipped = FALSE;
 		success = try_route(width_fac, router_opts, det_routing_arch,
 				segment_inf, timing_inf, net_delay, slacks, chan_width_dist,
 				clb_opins_used_locally, &Fc_clipped, directs, num_directs);
@@ -139,8 +135,7 @@ void place_and_route(enum e_operation operation,
 		}
 
 		if (success == FALSE) {
-			vpr_printf(TIO_MESSAGE_INFO, "Circuit is unrouteable with a channel width factor of %d.\n", width_fac);
-			vpr_printf(TIO_MESSAGE_INFO, "\n");
+			vpr_printf(TIO_MESSAGE_INFO, "Circuit is unroutable with a channel width factor of %d.\n", width_fac);
 			sprintf(msg, "Routing failed with a channel width factor of %d. ILLEGAL routing shown.", width_fac);
 		}
 
@@ -149,7 +144,6 @@ void place_and_route(enum e_operation operation,
 			get_serial_num();
 
 			vpr_printf(TIO_MESSAGE_INFO, "Circuit successfully routed with a channel width factor of %d.\n", width_fac);
-			vpr_printf(TIO_MESSAGE_INFO, "\n");
 
 			routing_stats(router_opts.full_stats, router_opts.route_type,
 					det_routing_arch.num_switch, segment_inf,
@@ -164,28 +158,23 @@ void place_and_route(enum e_operation operation,
 				print_sink_delays(getEchoFileName(E_ECHO_ROUTING_SINK_DELAYS));
 			}
 
-			sprintf(msg, "Routing succeeded with a channel width factor of %d.\n\n",
-					width_fac);
-
-
+			sprintf(msg, "Routing succeeded with a channel width factor of %d.\n\n", width_fac);
 		}
 
 		init_draw_coords(max_pins_per_clb);
 		update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled);
 		
-
 		if (timing_inf.timing_analysis_enabled) {
 			assert(slacks->slack);
 
 			if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_FLOW_TIMING_GRAPH)) {
-				print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH),
-						models);
+				print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH), models);
 			}
 
 			if(GetPostSynthesisOption())
-			  {
-			    verilog_writer();
-			  }
+			{
+				verilog_writer();
+			}
 
 			free_timing_graph(slacks);
 
@@ -197,7 +186,7 @@ void place_and_route(enum e_operation operation,
 	}
 
 	if (clb_opins_used_locally != NULL) {
-		for (i = 0; i < num_blocks; i++) {
+		for (int i = 0; i < num_blocks; ++i) {
 			free_ivec_vector(clb_opins_used_locally[i], 0,
 					block[i].type->num_class - 1);
 		}
@@ -224,6 +213,8 @@ void place_and_route(enum e_operation operation,
 		free(g_trace_free_head);
 	if (g_linked_f_pointer_free_head)
 		free(g_linked_f_pointer_free_head);*/
+
+	return(success);
 }
 
 static int binary_search_place_and_route(struct s_placer_opts placer_opts,
@@ -498,12 +489,13 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	free_rr_graph();
 
 	build_rr_graph(graph_type, num_types, type_descriptors, nx, ny, grid,
-			chan_width_x[0], NULL, det_routing_arch.switch_block_type,
+			chan_width_max, NULL, det_routing_arch.switch_block_type,
 			det_routing_arch.Fs, det_routing_arch.num_segment,
 			det_routing_arch.num_switch, segment_inf,
 			det_routing_arch.global_route_switch,
 			det_routing_arch.delayless_switch, timing_inf,
-			det_routing_arch.wire_to_ipin_switch, router_opts.base_cost_type,
+			det_routing_arch.wire_to_ipin_switch, 
+			router_opts.base_cost_type, router_opts.empty_channel_trim,
 			directs, num_directs, FALSE,
 			&warnings);
 
@@ -568,17 +560,13 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 	 * tracks wide.  The channel distributions read from the architecture  *
 	 * file are scaled by cfactor.                                         */
 
-	float x, separation, chan_width_io;
-	int nio, i;
-	t_chan chan_x_dist, chan_y_dist;
-
-	chan_width_io = chan_width_dist.chan_width_io;
-	chan_x_dist = chan_width_dist.chan_x_dist;
-	chan_y_dist = chan_width_dist.chan_y_dist;
+	float chan_width_io = chan_width_dist.chan_width_io;
+	t_chan chan_x_dist = chan_width_dist.chan_x_dist;
+	t_chan chan_y_dist = chan_width_dist.chan_y_dist;
 
 	/* io channel widths */
 
-	nio = (int) floor(cfactor * chan_width_io + 0.5);
+	int nio = (int) floor(cfactor * chan_width_io + 0.5);
 	if (nio == 0)
 		nio = 1; /* No zero width channels */
 
@@ -586,45 +574,50 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 	chan_width_y[0] = chan_width_y[nx] = nio;
 
 	if (ny > 1) {
-		separation = 1. / (ny - 2.); /* Norm. distance between two channels. */
-		x = 0.; /* This avoids div by zero if ny = 2. */
-		chan_width_x[1] = (int) floor(
-				cfactor * comp_width(&chan_x_dist, x, separation) + 0.5);
+		float separation = 1.0 / (ny - 2.0); /* Norm. distance between two channels. */
+		float y = 0.0; /* This avoids div by zero if ny = 2. */
+		chan_width_x[1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
 
 		/* No zero width channels */
 		chan_width_x[1] = std::max(chan_width_x[1], 1);
 
-		for (i = 1; i < ny - 1; i++) {
-			x = (float) i / ((float) (ny - 2.));
-			chan_width_x[i + 1] = (int) floor(
-					cfactor * comp_width(&chan_x_dist, x, separation) + 0.5);
+		for (int i = 1; i < ny - 1; ++i) {
+			y = (float) i / ((float) (ny - 2.0));
+			chan_width_x[i + 1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
 			chan_width_x[i + 1] = std::max(chan_width_x[i + 1], 1);
 		}
 	}
 
 	if (nx > 1) {
-		separation = 1. / (nx - 2.); /* Norm. distance between two channels. */
-		x = 0.; /* Avoids div by zero if nx = 2. */
-		chan_width_y[1] = (int) floor(
-				cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
+		float separation = 1.0 / (nx - 2.0); /* Norm. distance between two channels. */
+		float x = 0.0; /* Avoids div by zero if nx = 2. */
+		chan_width_y[1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
 
 		chan_width_y[1] = std::max(chan_width_y[1], 1);
 
-		for (i = 1; i < nx - 1; i++) {
-			x = (float) i / ((float) (nx - 2.));
-			chan_width_y[i + 1] = (int) floor(
-					cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
+		for (int i = 1; i < nx - 1; ++i) {
+			x = (float) i / ((float) (nx - 2.0));
+			chan_width_y[i + 1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
 			chan_width_y[i + 1] = std::max(chan_width_y[i + 1], 1);
 		}
 	}
+
+	chan_width_max = 0;
+	for (int i = 0; i <= ny ; ++i) {
+		chan_width_max = std::max(chan_width_max,chan_width_x[i]);
+	}
+	for (int i = 0; i <= nx ; ++i) {
+		chan_width_max = std::max(chan_width_max,chan_width_y[i]);
+	}
+
 #ifdef VERBOSE
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 	vpr_printf(TIO_MESSAGE_INFO, "chan_width_x:\n");
-	for (i = 0; i <= ny; i++)
+	for (int i = 0; i <= ny ; ++i) {
 		vpr_printf(TIO_MESSAGE_INFO, "%d  ", chan_width_x[i]);
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 	vpr_printf(TIO_MESSAGE_INFO, "chan_width_y:\n");
-	for (i = 0; i <= nx; i++)
+	for (int i = 0; i <= nx ; ++i) {
 		vpr_printf(TIO_MESSAGE_INFO, "%d  ", chan_width_y[i]);
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 #endif
