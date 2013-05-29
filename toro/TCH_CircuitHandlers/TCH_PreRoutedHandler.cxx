@@ -9,6 +9,7 @@
 //           - GetNetNameList
 //           - GetNetList
 //           - ValidatePreRoutes
+//           - IsLegalPreRouteNet
 //           - IsMemberPreRouteNet
 //           - IsMemberPreRoutePath
 //           - IsValid
@@ -309,6 +310,35 @@ bool TCH_PreRoutedHandler_c::ValidatePreRoutes(
 }
 
 //===========================================================================//
+// Method         : IsLegalPreRouteNet
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 04/26/13 jeffr : Original
+//===========================================================================//
+bool TCH_PreRoutedHandler_c::IsLegalPreRouteNet(
+      const char* pszNetName,
+            int   routeIteration ) const
+{
+   bool isLegal = false;
+
+   const TCH_Net_c* pnet = this->FindNet_( pszNetName );
+   if( pnet && pnet->IsLegal( ))
+   {
+      TCH_RouteStatusMode_t status = pnet->GetStatus( );
+      if(( status == TCH_ROUTE_STATUS_FIXED ) && ( routeIteration ))
+      {
+         isLegal = true;
+      }
+      if(( status == TCH_ROUTE_STATUS_ROUTED ) && ( routeIteration == 1 ))
+      {
+         isLegal = true;
+      }
+   }
+   return( isLegal );
+}
+
+//===========================================================================//
 // Method         : IsMemberPreRouteNet
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
@@ -473,7 +503,17 @@ void TCH_PreRoutedHandler_c::InitNetList_(
       TCH_NetName_t netName( pszNetName, pnetList->GetLength( ));
       pnetNameList->Add( netName );
 
-      TCH_Net_c net( pszNetName );
+      const TNO_Net_c* pnet = netList.Find( pszNetName );
+      TNO_StatusMode_t routeStatus = pnet->GetStatus( );
+      TCH_RouteStatusMode_t status = TCH_ROUTE_STATUS_UNDEFINED;
+      switch( routeStatus )
+      {
+      case TNO_STATUS_FLOAT:  status = TCH_ROUTE_STATUS_FLOAT;  break;
+      case TNO_STATUS_FIXED:  status = TCH_ROUTE_STATUS_FIXED;  break;
+      case TNO_STATUS_ROUTED: status = TCH_ROUTE_STATUS_ROUTED; break;
+      default:                                                  break;
+      }
+      TCH_Net_c net( pszNetName, status );
       pnetList->Add( net );
    }
 }
