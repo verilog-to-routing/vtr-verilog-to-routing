@@ -185,6 +185,7 @@ void TOS_PlaceOptions_c::Print(
    printHandler.Write( pfile, spaceLen, "PLACE_SLACK_INIT_WEIGHT    = %0.*f\n", precision, this->slackInitWeight );
    printHandler.Write( pfile, spaceLen, "PLACE_SLACK_FINAL_WEIGHT   = %0.*f\n", precision, this->slackFinalWeight );
 
+   printHandler.Write( pfile, spaceLen, "\n" );
    printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_ENABLE      = %s\n", TIO_BOOL_STR( this->relativePlace.enable ));
    printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_ROTATE      = %s\n", TIO_BOOL_STR( this->relativePlace.rotateEnable ));
    printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_INIT_PLACE  = %u\n", this->relativePlace.maxPlaceRetryCt );
