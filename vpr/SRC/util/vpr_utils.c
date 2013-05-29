@@ -1,5 +1,3 @@
-// JR - Added support for s_grid_tile's new "width_offset" and "height_offset" members. This update enables support for variable height and width blocks (previously, "offset" was applied to variable height blocks only).
-
 #include <assert.h>
 #include <string.h>
 #include "util.h"
@@ -102,7 +100,7 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 
 					/* Set them as unconnected */
 					for (k = 0; k < L_grid[i][j].type->capacity; ++k) {
-						L_grid[i][j].blocks[k] = OPEN;
+						L_grid[i][j].blocks[k] = EMPTY;
 					}
 				}
 			}
@@ -112,7 +110,8 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 	/* Go through each block */
 	for (i = 0; i < L_num_blocks; ++i) {
 		/* Check range of block coords */
-		if (block[i].x < 0 || block[i].x > (L_nx + 1) || block[i].y < 0
+		if (block[i].x < 0 || block[i].y < 0
+				|| (block[i].x + block[i].type->width - 1) > (L_nx + 1)
 				|| (block[i].y + block[i].type->height - 1) > (L_ny + 1)
 				|| block[i].z < 0 || block[i].z > (block[i].type->capacity)) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Block %d is at invalid location (%d, %d, %d).\n", 
@@ -128,7 +127,8 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 		}
 
 		/* Check already in use */
-		if (OPEN != L_grid[block[i].x][block[i].y].blocks[block[i].z]) {
+		if ((EMPTY != L_grid[block[i].x][block[i].y].blocks[block[i].z])
+				&& (INVALID != L_grid[block[i].x][block[i].y].blocks[block[i].z])) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Location (%d, %d, %d) is used more than once.\n", 
 					block[i].x, block[i].y, block[i].z);
 			exit(1);
@@ -596,7 +596,7 @@ void free_pb(t_pb *pb) {
 			free(pb->lut_pin_remap);
 		}
 		pb->lut_pin_remap = NULL;
-		if (pb->logical_block != OPEN && logical_block != NULL) {
+		if (pb->logical_block != EMPTY && pb->logical_block != INVALID && logical_block != NULL) {
 			logical_block[pb->logical_block].clb_index = NO_CLUSTER;
 			logical_block[pb->logical_block].pb = NULL;
 			/* If any molecules were marked invalid because of this logic block getting packed, mark them valid */
