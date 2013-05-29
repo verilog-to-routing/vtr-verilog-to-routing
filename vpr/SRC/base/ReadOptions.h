@@ -1,5 +1,3 @@
-// JR - Extended to support OT_ROUTE_CHAN_TRIM routing option. This option is used to enable/disable the new fabric channel trim feature that is available via the Toro front-end.
-
 #ifndef READOPTIONS_H
 #define READOPTIONS_H
 
