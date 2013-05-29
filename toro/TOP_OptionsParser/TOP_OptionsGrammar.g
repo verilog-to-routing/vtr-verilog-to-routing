@@ -176,6 +176,7 @@ using namespace std;
 #token ROUTE_TIMING_MAX_CRIT     "[Rr][Oo][Uu][Tt][Ee][_][Tt][Ii][Mm][Ii][Nn][Gg][_][Mm][Aa][Xx][_][Cc][Rr][Ii][Tt]{[Ii][Cc][Aa][Ll][Ii][Tt][Yy]}"
 #token ROUTE_TIMING_SLACK_CRIT   "[Rr][Oo][Uu][Tt][Ee][_]{[Tt][Ii][Mm][Ii][Nn][Gg][_]}[Ss][Ll][Aa][Cc][Kk][_][Cc][Rr][Ii][Tt]{[Ii][Cc][Aa][Ll][Ii][Tt][Yy]}"
 
+#token ROUTE_CHANNEL_TRIM        "[Rr][Oo][Uu][Tt][Ee][_][Cc][Hh][Aa][Nn][Nn][Ee][Ll][_][Tt][Rr][Ii][Mm]{[_][Ee][Mm][Pp][Tt][Yy]}"
 #token ROUTE_PREROUTED_ENABLE    "[Rr][Oo][Uu][Tt][Ee][_][Pp][Rr][Ee]{[_]}[Rr][Oo][Uu][Tt][Ee]{[Dd]|[Ss]}[_][Ee][Nn][Aa][Bb][Ll][Ee]"
 #token ROUTE_PREROUTED_ORDER     "[Rr][Oo][Uu][Tt][Ee][_][Pp][Rr][Ee]{[_]}[Rr][Oo][Uu][Tt][Ee]{[Dd]|[Ss]}[_][Oo][Rr][Dd][Ee][Rr]"
 
@@ -544,6 +545,7 @@ routeOptions
    |  ROUTE_TIMING_MAX_CRIT { EQUAL } floatNum[ &prouteOptions_->timingMaxCriticality ]
    |  ROUTE_TIMING_SLACK_CRIT { EQUAL } floatNum[ &prouteOptions_->slackCriticality ]
 
+   |  ROUTE_CHANNEL_TRIM { EQUAL } boolType[ &prouteOptions_->channelTrimEmpty ]
    |  ROUTE_PREROUTED_ENABLE { EQUAL } boolType[ &prouteOptions_->preRouted.enable ]
    |  ROUTE_PREROUTED_ORDER { EQUAL } routeOrderMode[ &prouteOptions_->preRouted.orderMode ]
    <<
