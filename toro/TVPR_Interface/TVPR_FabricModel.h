@@ -84,6 +84,9 @@ private:
                          bool overrideSwitchBoxes,
                          bool overrideConnectionBlocks,
                          bool overrideChannels ) const;
+   void PokeGridConfig_( const TFM_FabricModel_c& fabricModel,
+                         const TFV_FabricView_c& fabricView,
+                         t_arch* pvpr_architecture ) const;
    bool PokeGridBlocks_( const TFM_BlockList_t& blockList,
                          const t_type_descriptor* vpr_physicalBlockArray, 
                          int vpr_physicalBlockCount ) const;
@@ -140,12 +143,12 @@ private:
                            TFV_FabricData_c* pfabricData ) const;
 
    void UpdatePinList_( const TGS_Region_c& region,
-                        TC_SideMode_t onlySide,
+                        int sideMask,
                         TFV_DataType_t dataType,
                         const t_type_descriptor vpr_type,
                         TFV_FabricView_c* pfabricView ) const;
    void UpdatePinList_( const TGS_Region_c& region,
-                        TC_SideMode_t onlySide,
+                        int sideMask,
                         const t_type_descriptor vpr_type,
                         TFV_FabricData_c* pfabricData ) const;
 
