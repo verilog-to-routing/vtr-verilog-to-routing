@@ -548,6 +548,8 @@ static struct s_net *alloc_and_init_netlist_from_hash(INP int ncount,
 				curr_net->count * sizeof(int));
 		nlist[curr_net->index].node_block_pin = (int *)my_malloc(
 				curr_net->count * sizeof(int));
+		nlist[curr_net->index].is_routed = FALSE;
+		nlist[curr_net->index].is_fixed = FALSE;
 		nlist[curr_net->index].is_global = FALSE;
 		for (i = 0; i < curr_net->count; i++) {
 			nlist[curr_net->index].node_block[i] = OPEN;
