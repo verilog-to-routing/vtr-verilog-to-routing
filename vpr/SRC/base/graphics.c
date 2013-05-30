@@ -202,6 +202,11 @@ using namespace std;
 #define MAXPIXEL 15000   
 #define MINPIXEL -15000 
 
+// VERBOSE is very helpful for developing event handling features. Outputs
+// useful information when user interacts with the graphic interface.
+// Uncomment the line below to turn on VERBOSE.
+//#define VERBOSE
+
 #endif /* X11 Preprocessor Directives */
 
 
@@ -316,7 +321,9 @@ static int num_buttons = 0;                  /* Number of menu buttons */
 static int display_width, display_height;  /* screen size */
 static int top_width, top_height;      /* window size */
 static float xleft, xright, ytop, ybot;         /* world coordinates */
-static float saved_xleft, saved_xright, saved_ytop, saved_ybot; 
+static float saved_xleft, saved_xright, saved_ytop, saved_ybot;
+static int previous_x, previous_y;		/* for panning */
+static bool panning_enabled = false;
 
 static float ps_left, ps_right, ps_top, ps_bot; /* Figure boundaries for *
 * PostScript output, in PostScript coordinates.  */
@@ -367,6 +374,8 @@ static void translate_up (void (*drawscreen) (void));
 static void translate_left (void (*drawscreen) (void)); 
 static void translate_right (void (*drawscreen) (void)); 
 static void translate_down (void (*drawscreen) (void)); 
+static void panning (int x, int y, void (*drawscreen) (void));
+static void panning_enable (int report_xbutton_x, int report_xbutton_y);
 static void zoom_in (void (*drawscreen) (void));
 static void zoom_out (void (*drawscreen) (void));
 static void zoom_fit (void (*drawscreen) (void));
@@ -1404,19 +1413,34 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 				x = XTOWORLD(report.xbutton.x);
 				y = YTOWORLD(report.xbutton.y); 
 
-				t_event_buttonPressed button_info; /* Pass information about the button press to act_on_mousebutton */
-				button_info.state = report.xbutton.state;
+				t_event_buttonPressed button_info; /* Pass information about the button press to client program */
+				//get_buttonPressed_info(report.xbutton.button, report.xbutton.state, &button_info);
 				button_info.button = report.xbutton.button;
 
+				if (report.xbutton.state & 1) {
+					button_info.shift_pressed = true;
+#ifdef VERBOSE
+					printf("Shift is pressed at button press.\n");
+#endif
+				}
+				else
+					button_info.shift_pressed = false;
+				if (report.xbutton.state & 4) {
+					button_info.ctrl_pressed = true;
+#ifdef VERBOSE
+					printf("Ctrl is pressed at button press.\n");
+#endif
+				}
+				else
+					button_info.ctrl_pressed = false;
+
 				switch (report.xbutton.button) {
-				case Button1:  /* Left mouse click; calls highlight_blocks() */
+				case Button1:  /* Left mouse click; pass back to client program */
+				case Button3:  /* Right mouse click; pass back to client program */
 					act_on_mousebutton (x, y, button_info);
 					break;
-				case Button2:  /* Scroll wheel pressed; screen does zoom_fit */
-					zoom_fit(drawscreen);
-					break;
-				case Button3:  /* Right mouse click; calls highlight_blocks() */
-					act_on_mousebutton (x, y, button_info);
+				case Button2:  /* Scroll wheel pressed; enable or disable panning */
+					panning_enable(report.xbutton.x, report.xbutton.y);
 					break;
 				case Button4:  /* Scroll wheel rotated forward; screen does zoom_in */
 					zoom_in(drawscreen);
@@ -1454,8 +1478,12 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 #endif
 			if (get_mouse_move_input &&
 			    report.xmotion.x <= top_width-MWIDTH &&
-			    report.xmotion.y <= top_height-T_AREA_HEIGHT)
-				act_on_mousemove(XTOWORLD(report.xmotion.x), YTOWORLD(report.xmotion.y));
+			    report.xmotion.y <= top_height-T_AREA_HEIGHT) {
+				if (panning_enabled)
+					panning(report.xmotion.x, report.xmotion.y, drawscreen);
+				else
+					act_on_mousemove(XTOWORLD(report.xmotion.x), YTOWORLD(report.xmotion.y));
+			}
 			break;
 		case KeyPress:
 #ifdef VERBOSE 
@@ -2250,6 +2278,49 @@ translate_right (void (*drawscreen) (void))
 	xright += xstep; 
 	update_transform();         
 	drawscreen();
+}
+
+
+/* Panning is enabled by a click of mouse wheel (or middle mouse button) */
+static void
+panning (int x, int y, void (*drawscreen) (void))
+{
+	float xstep, ystep;
+
+	xstep = x - previous_x;
+	ystep = y - previous_y;
+	ytop += ystep;
+	ybot += ystep;
+	xleft -= xstep;
+	xright -= xstep;
+	update_transform();
+	drawscreen();
+
+	previous_x = x;
+	previous_y = y;
+}
+
+
+/* Turn panning_enabled variable on or off */
+static void
+panning_enable (int report_xbutton_x, int report_xbutton_y)
+{
+	bool mouse_move_enable;
+
+	if (panning_enabled) {
+		panning_enabled = false;
+
+		mouse_move_enable = false;
+		set_mouse_move_input(mouse_move_enable);
+	}
+	else {
+		previous_x = report_xbutton_x;
+		previous_y = report_xbutton_y;
+		panning_enabled = true;
+
+		mouse_move_enable = true;
+		set_mouse_move_input(mouse_move_enable);
+	}
 }
 
 

@@ -2,7 +2,6 @@
 #include <string.h>
 #include <algorithm>
 #include <math.h>
-//#include <sys/time.h>
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
@@ -13,7 +12,13 @@
 #include "read_xml_arch_file.h"
 #include "util.h"
 
-//#define TIME_DRAWSCREEN
+#ifdef WIN32 /* For runtime tracking in WIN32. But sys/time.h only exists in Linux.*/
+#include <time.h>
+#else /* For X11. The clock() function in time.h does not output correct time difference *
+	   * in Linux, so use gettimeofday() in sys/time.h for accurate runtime tracking.    */
+#include <sys/time.h>
+#endif
+//#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
 #ifdef DEBUG
 #include "rr_graph.h"
@@ -218,11 +223,19 @@ static void drawscreen() {
 #ifdef TIME_DRAWSCREEN
 	/* This can be used to test how long it takes for the redrawing routing to finish   *
 	 * updating the screen for a given input which would cause the screen to be redrawn.*/
+
+#ifdef WIN32
+	clock_t drawscreen_begin,drawscreen_end;
+	drawscreen_begin = clock();
+
+#else /* For X11. The clock() function in time.h does not output correct time difference *
+       * in Linux, so use gettimeofday() in sys/time.h for accurate runtime tracking. */
 	struct timeval begin;
 	gettimeofday(&begin,NULL);  /* get start time */
 
 	unsigned long begin_time;
 	begin_time = begin.tv_sec * 1000000 + begin.tv_usec;
+#endif
 #endif
 
 	/* This is the screen redrawing routine that event_loop assumes exists.  *
@@ -233,6 +246,17 @@ static void drawscreen() {
 	redraw_screen();
 
 #ifdef TIME_DRAWSCREEN
+
+#ifdef WIN32
+	drawscreen_end = clock();
+
+	#ifdef CLOCKS_PER_SEC /* This macro has to do with the version of compiler being used */
+		printf("Drawscreen took %f seconds.\n", (float)(drawscreen_end - drawscreen_begin) / CLOCKS_PER_SEC);
+	#else
+		printf("Drawscreen took %f seconds.\n", (float)(drawscreen_end - drawscreen_begin) / CLK_PER_SEC);
+	#endif
+
+#else /* X11 */
 	struct timeval end;
 	gettimeofday(&end,NULL);  /* get end time */
 
@@ -243,7 +267,8 @@ static void drawscreen() {
 	time_diff_microsec = end_time - begin_time;
 
 	printf("Drawscreen took %ld microseconds\n", time_diff_microsec);
-#endif
+#endif /* WIN32 */
+#endif /* TIME_DRAWSCREEN */
 }
 
 static void redraw_screen() {
