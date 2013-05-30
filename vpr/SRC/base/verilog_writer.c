@@ -1,3 +1,4 @@
+
 #include "verilog_writer.h"
 
 /***********************************************************************************************************
@@ -469,7 +470,7 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
 		fprintf(fp , "}");/*End concatination*/
 	      }
 	    fixed_clock_name = fix_name(clock_name);/*Must also instantiate the clock signal to the RAM block*/
-	    fprintf(fp , ", %s_input_0_0" , fixed_clock_name);
+	    fprintf(fp , ", %s_output_0_0" , fixed_clock_name);
 	    fprintf(fp , ");\n\n");
 	    free(fixed_clock_name);
 	    instantiate_interconnect(fp , i , current->pb , SDF);
@@ -555,8 +556,8 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
                   }
                 fprintf(fp , "}");
               }
-            fixed_clock_name = fix_name(clock_name);/*Must also instantiate the */
-            fprintf(fp , ", %s_input_0_0" , fixed_clock_name);
+            fixed_clock_name = fix_name(clock_name);/*Must also instantiate the clock */
+            fprintf(fp , ", %s_output_0_0" , fixed_clock_name);
             fprintf(fp , ");\n\n");
             free(fixed_clock_name);
             instantiate_interconnect(fp , i , current->pb , SDF);
@@ -779,6 +780,8 @@ void interconnect_printing(FILE *fp , conn_list *downhill)
               port_number_in = i;
             }
         }     
+      assert(port_number_out >= 0 && port_number_in >= 0);
+
       fprintf(fp , "interconnect routing_segment_%s_output_%d_%d_to_%s_input_%d_%d( %s_output_%d_%d , %s_input_%d_%d );\n",
               fixed_name1 , port_number_in/*connections->driver_pin->port->port_index_by_type*/ , connections->driver_pin->pin_number,
               fixed_name2 , port_number_out , connections->load_pin->pin_number,
@@ -793,35 +796,40 @@ void interconnect_printing(FILE *fp , conn_list *downhill)
 /*This funciton will instantiate the SDF cell that contains the delay information of the Verilog interconnect modules*/
 void SDF_interconnect_delay_printing(FILE *SDF , conn_list *downhill)
 {
-  conn_list *current;
+  conn_list *connections;
   char *fixed_name1;
   char *fixed_name2;
   float internal_delay;
   int del;
-  
-  
-  int port_number_out=-1,i;
+  int port_number_out=-1,port_number_in=-1,i;  
 
-  for(current=downhill ; current!=NULL ; current=current->next)
+   for(connections=downhill ; connections!=NULL ; connections=connections->next)/*traverse through all the connected primitives and instantiate a routing interconect module*/
     {
-      for(i=0 ; i<current->load_pin->parent_node->num_input_ports ; i++)
+      fixed_name1 = fix_name(connections->driver_pb->name);
+      fixed_name2 = fix_name(connections->load_pb->name);
+
+      for(i=0 ; i<connections->load_pin->parent_node->num_input_ports ; i++)
+	{
+	  if(!strcmp(connections->load_pin->parent_node->input_pins[i][0].port->name,connections->load_pin->port->name))
+	    {
+	      port_number_out = i;
+	    }
+	}
+      for(i=0 ; i<connections->driver_pin->parent_node->num_output_ports ; i++)
         {
-          if(!strcmp(current->load_pin->parent_node->input_pins[i][0].port->name,current->load_pin->port->name))
+          if(!strcmp(connections->driver_pin->parent_node->output_pins[i][0].port->name,connections->driver_pin->port->name))
             {
-              port_number_out = i;
+              port_number_in = i;
             }
-        }
-    
-      fixed_name1 = fix_name(current->driver_pb->name);
-      fixed_name2 = fix_name(current->load_pb->name);
-      internal_delay = current->driver_to_load_delay;
+        }     
+      internal_delay = connections->driver_to_load_delay;
       internal_delay = internal_delay * 1000000000000.00; /*converting the delay from seconds to picoseconds*/
       internal_delay = internal_delay + 0.5;              /*Rounding the delay to the nearset picosecond*/
       del = (int)internal_delay;
 
       fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"interconnect\")\n\t(INSTANCE inst/routing_segment_%s_output_%d_%d_to_%s_input_%d_%d)\n" ,
-              fixed_name1 , current->driver_pin->port->port_index_by_type , current->driver_pin->pin_number,
-              fixed_name2 , port_number_out/*current->load_pin->port->port_index_by_type*/ , current->load_pin->pin_number);
+	      fixed_name1 , port_number_in/*connections->driver_pin->port->port_index_by_type*/ , connections->driver_pin->pin_number,
+              fixed_name2 , port_number_out , connections->load_pin->pin_number);
       fprintf(SDF , "\t\t(DELAY\n\t\t(ABSOLUTE\n\t\t\t(IOPATH datain dataout (%d:%d:%d)(%d:%d:%d))\n\t\t)\n\t\t)\n\t)\n" ,
               del , del , del , del , del , del);
 
@@ -842,7 +850,6 @@ void sdf_LUT_delay_printing(FILE *SDF , t_pb *pb)
   int record = 0;
 
   fixed_name = fix_name(pb->name);
-  pin_count = OPEN;
 
   for(j=0 ; j < pb->pb_graph_node->num_input_pins[0] ; j++)/*Assuming that LUTs have a single input port*/
   {
@@ -850,6 +857,7 @@ void sdf_LUT_delay_printing(FILE *SDF , t_pb *pb)
       {
 	  
 	  int q;
+	  pin_count = OPEN;
 	  for (q = 0; q < pb->pb_graph_node->num_input_pins[0]; q++)
 	  {
 	    pin_count = pb->pb_graph_node->input_pins[0][q].pin_count_in_cluster;
@@ -1028,16 +1036,20 @@ char *find_clock_name(void)
 {
   int j;
   char *clock_in_the_design=NULL;
+  int clocks = 0;
   for(j=0 ; j<num_nets ; j++)/*Doing this to find the clock name in the design and storing it in clock_,*/
     {
       if(clb_net[j].is_global == TRUE)
 	{
 	  clock_in_the_design = clb_net[j].name;
-	  break;
-	
+	  clocks++;
 	}
     }
-  
+  if (clocks > 1) {
+    printf("The post-layout netlist generator presently handles single-clock designs only.  Your design contains %d clocks. \n"
+	   "Future VTR releases may support post-layout netlist generation for multi-clock designs.\n", clocks);
+    exit(1);
+  }
   return(clock_in_the_design);
 }
 /*The traverse_clb function returns a linked list of all the primitives inside a complex block.                                                                                   
