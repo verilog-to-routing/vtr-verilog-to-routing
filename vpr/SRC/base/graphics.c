@@ -3501,7 +3501,8 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			//"mouseclick_ptr()" here has to take a meaningless parameter in order for program
 			//to successfully compile.
 			t_event_buttonPressed button_info;
-			button_info.state = 0;
+			button_info.shift_pressed = false;
+			button_info.ctrl_pressed = false;
 			button_info.button = 0;
 
 			mouseclick_ptr(XTOWORLD(LOWORD(lParam)), YTOWORLD(HIWORD(lParam)), button_info);
