@@ -1,0 +1,2 @@
+arch	circuit	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error
+k4_n4_v7_bidir.xml	ch_intrinsics.v	success	22	18.0071	0.62	2.15	15.13	1.46	1618	1748	787	267	99	130	-1	-1	ERROR(1): check_all_tracks_reach_pins: Track 20 does not connect to any CLB OPINs.
