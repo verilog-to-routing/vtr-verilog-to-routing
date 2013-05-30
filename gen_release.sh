@@ -30,11 +30,13 @@ cp vpr/VPR_User_Manual_7.0.pdf vtr_release/doc
 
 echo "Build ODIN II"
 cp ODIN_II/*.txt vtr_release/ODIN_II
+cp ODIN_II/*.sh vtr_release/ODIN_II
 cp -r ODIN_II/Makefile vtr_release/ODIN_II
 cp -r ODIN_II/SRC vtr_release/ODIN_II
 cp -r ODIN_II/REGRESSION_TESTS vtr_release/ODIN_II
 cp -r ODIN_II/FULL_REGRESSION_TESTS vtr_release/ODIN_II
 cp -r ODIN_II/USEFUL_TOOLS vtr_release/ODIN_II
+chmod u+x vtr_release/ODIN_II/*.sh
 
 echo "Build ODIN II blif explorer"
 cp -r blifexplorer/* vtr_release/blifexplorer
