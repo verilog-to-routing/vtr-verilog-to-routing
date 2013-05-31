@@ -1,3 +1,6 @@
+// JR - Extended place_and_route() function to return a success boolean.
+// JR - Extended init_chan() function with 'chan_override_max' to support variable channel widths
+
 #define INFINITE -1
 #define NOT_FOUND 0
 
@@ -23,4 +26,4 @@ boolean place_and_route(enum e_operation operation,
 		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
 		struct s_model *models, t_direct_inf *directs, int num_directs);
 
-void init_chan(int cfactor, t_chan_width_dist chan_width_dist);
+void init_chan(int cfactor, int* chan_override_max, t_chan_width_dist chan_width_dist);
