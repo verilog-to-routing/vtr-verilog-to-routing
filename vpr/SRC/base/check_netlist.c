@@ -120,8 +120,9 @@ static int check_connections_to_global_clb_pins(int inet) {
 
 		node_block_pin = clb_net[inet].node_block_pin[ipin];
 
+		boolean is_global_net = static_cast<boolean>(clb_net[inet].is_global);
 		if (block[iblk].type->is_global_pin[node_block_pin]
-				!= clb_net[inet].is_global && block[iblk].type != IO_TYPE) {
+				!= is_global_net && block[iblk].type != IO_TYPE) {
 
 			/* Allow a CLB output pin to drive a global net (warning only). */
 
