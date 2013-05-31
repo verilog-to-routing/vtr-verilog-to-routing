@@ -421,7 +421,7 @@ static void setup_chan_width(struct s_router_opts router_opts,
 	else
 		width_fac = router_opts.fixed_channel_width;
 
-	init_chan(width_fac, chan_width_dist);
+	init_chan(width_fac, 0, chan_width_dist);
 }
 
 /**************************************/
@@ -530,29 +530,27 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 		int sink_x_loc, int sink_y_loc, struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf) {
+
 	/*places blocks at the specified locations, and routes a net between them */
 	/*returns the delay of this net */
 
-	float pres_fac, net_delay_value;
-
-	int source_z_loc, sink_z_loc;
-
 	/* Only one block per tile */
-	source_z_loc = 0;
-	sink_z_loc = 0;
+	int source_z_loc = 0;
+	int sink_z_loc = 0;
 
-	net_delay_value = IMPOSSIBLE; /*set to known value for debug purposes */
+	float net_delay_value = IMPOSSIBLE; /*set to known value for debug purposes */
 
 	assign_locations(source_type, source_x_loc, source_y_loc, source_z_loc,
 			sink_type, sink_x_loc, sink_y_loc, sink_z_loc);
 
 	load_net_rr_terminals(rr_node_indices);
 
-	pres_fac = 0; /* ignore congestion */
+	int itry = 1;
+	float pres_fac = 0.0; /* ignore congestion */
 
 	/* Route this net with a dummy criticality of 0 by calling 
 	timing_driven_route_net with slacks set to NULL. */
-	timing_driven_route_net(NET_USED, pres_fac,
+	timing_driven_route_net(NET_USED, itry, pres_fac,
 			router_opts.max_criticality, router_opts.criticality_exp,
 			router_opts.astar_fac, router_opts.bend_cost, 
 			pin_criticality, sink_order, rt_node_of_sink, 
