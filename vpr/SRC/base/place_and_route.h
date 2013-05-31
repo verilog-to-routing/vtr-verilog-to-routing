@@ -1,6 +1,3 @@
-// JR - Extended place_and_route() function to return a success boolean.
-// JR - Extended init_chan() function with 'chan_override_max' to support variable channel widths
-
 #define INFINITE -1
 #define NOT_FOUND 0
 
