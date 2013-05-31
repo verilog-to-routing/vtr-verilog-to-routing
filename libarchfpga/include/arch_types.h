@@ -1,3 +1,5 @@
+// JR - 7.0.3
+
 /*
  Data types describing the FPGA architecture.
 
@@ -13,7 +15,7 @@
 #include "cad_types.h"
 
 /* Constant describing architecture library version number */
-#define VPR_VERSION "7.1"
+#define VPR_VERSION "7.0.3"
 
 /* Input file parsing. */
 #define TOKENS " \t\n"
