@@ -156,8 +156,11 @@ void read_user_pad_loc(char *pad_loc_file) {
 	for (i = 0; i <= nx + 1; i++) {
 		for (j = 0; j <= ny + 1; j++) {
 			if (grid[i][j].type == IO_TYPE) {
-				for (k = 0; k < IO_TYPE->capacity; k++)
-					grid[i][j].blocks[k] = OPEN; /* Flag for err. check */
+				for (k = 0; k < IO_TYPE->capacity; k++) {
+					if (grid[i][j].blocks[k] != INVALID) {
+						grid[i][j].blocks[k] = EMPTY; /* Flag for err. check */
+					}
+				}
 			}
 		}
 	}
@@ -226,7 +229,7 @@ void read_user_pad_loc(char *pad_loc_file) {
 
 		block[bnum].x = i; /* Will be reloaded by initial_placement anyway. */
 		block[bnum].y = j; /* I need to set .x only as a done flag.         */
-		block[bnum].isFixed = TRUE;
+		block[bnum].is_fixed = TRUE;
 
 		if (grid[i][j].type != IO_TYPE) {
 			vpr_printf(TIO_MESSAGE_ERROR, "Attempt to place IO block %s at illegal location (%d, %d).\n", 
