@@ -1,5 +1,3 @@
-// JR - 7.0.3
-
 /*
  Data types describing the FPGA architecture.
 
