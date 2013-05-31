@@ -1202,8 +1202,7 @@ static enum e_block_pack_status try_pack_molecule(
 			
 			for (i = 0; i < molecule_size && block_pack_status == BLK_PASSED;
 					i++) {
-				assert(
-						(primitives_list[i] == NULL) == (molecule->logical_block_ptrs[i] == NULL));
+				assert((primitives_list[i] == NULL) == (molecule->logical_block_ptrs[i] == NULL));
 				failed_location = i + 1;
 				if (molecule->logical_block_ptrs[i] != NULL) {
 					if(molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain && i == molecule->pack_pattern->root_block->block_id) {
@@ -1365,8 +1364,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 			break;
 		}
 	}
-	assert(
-			i < parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children);
+	assert(i < parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children);
 	pb = &parent_pb->child_pbs[i][pb_graph_node->placement_index];
 	*parent = pb; /* this pb is parent of it's child that called this function */
 	assert(pb->pb_graph_node == pb_graph_node);
@@ -1378,8 +1376,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 	is_primitive = (boolean) (pb_type->num_modes == 0);
 
 	if (is_primitive) {
-		assert(
-				pb->logical_block == OPEN && logical_block[ilogical_block].pb == NULL && logical_block[ilogical_block].clb_index == NO_CLUSTER);
+		assert(pb->logical_block == OPEN && logical_block[ilogical_block].pb == NULL && logical_block[ilogical_block].clb_index == NO_CLUSTER);
 		/* try pack to location */
 		pb->name = my_strdup(logical_block[ilogical_block].name);
 		pb->logical_block = ilogical_block;
@@ -1905,6 +1902,9 @@ static void start_new_cluster(
 	new_cluster->y = UNDEFINED;
 	new_cluster->z = UNDEFINED;
 
+#ifdef TORO_REGION_PLACEMENT_ENABLE
+	new_cluster->placement_region_list = molecule->logical_block_ptrs[molecule->root]->placement_region_list;
+#endif
 	success = FALSE;
 
 	while (!success) {
@@ -1924,9 +1924,7 @@ static void start_new_cluster(
 
 				alloc_and_load_legalizer_for_cluster(new_cluster, clb_index,
 						arch);
-				for (j = 0;
-						j < new_cluster->type->pb_graph_head->pb_type->num_modes
-								&& !success; j++) {
+				for (j = 0; j < new_cluster->type->pb_graph_head->pb_type->num_modes && !success; j++) {
 					new_cluster->pb->mode = j;
 					reset_cluster_placement_stats(&cluster_placement_stats[i]);
 					set_mode_cluster_placement_stats(
@@ -2023,12 +2021,9 @@ static t_pack_molecule *get_highest_gain_molecule(
 						molecule = (t_pack_molecule *) cur->data_vptr;
 						if (molecule->valid) {
 							success = TRUE;
-							for (j = 0;
-									j < get_array_size_of_molecule(molecule);
-									j++) {
+							for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 								if (molecule->logical_block_ptrs[j] != NULL) {
-									assert(
-											molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
+									assert(molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
 									if (!exists_free_primitive_for_logical_block(
 											cluster_placement_stats_ptr,
 											iblk)) { /* TODO: debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
@@ -2054,12 +2049,9 @@ static t_pack_molecule *get_highest_gain_molecule(
 						molecule = (t_pack_molecule *) cur->data_vptr;
 						if (molecule->valid) {
 							success = TRUE;
-							for (j = 0;
-									j < get_array_size_of_molecule(molecule);
-									j++) {
+							for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 								if (molecule->logical_block_ptrs[j] != NULL) {
-									assert(
-											molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
+									assert(molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
 									if (!exists_free_primitive_for_logical_block(
 											cluster_placement_stats_ptr,
 											iblk)) {
@@ -2092,12 +2084,9 @@ static t_pack_molecule *get_highest_gain_molecule(
 					molecule = (t_pack_molecule *) cur->data_vptr;
 					if (molecule->valid) {
 						success = TRUE;
-						for (j = 0;
-								j < get_array_size_of_molecule(molecule);
-								j++) {
+						for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 							if (molecule->logical_block_ptrs[j] != NULL) {
-								assert(
-										molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
+								assert(molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
 								if (!exists_free_primitive_for_logical_block(
 										cluster_placement_stats_ptr,
 										iblk)) { /* TODO: debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
@@ -2202,8 +2191,7 @@ static void alloc_and_load_cluster_info(INP int num_clb, INOUTP t_block *clb) {
 					iclass = clb[i_clb].type->pin_class[ipin];
 					assert(clb[i_clb].type->class_inf[iclass].type == RECEIVER);
 					assert(clb[i_clb].type->is_global_pin[ipin] == pb->pb_graph_node->input_pins[inport][j].port->is_non_clock_global);
-					node_index =
-							pb->pb_graph_node->input_pins[inport][j].pin_count_in_cluster;
+					node_index = pb->pb_graph_node->input_pins[inport][j].pin_count_in_cluster;
 					clb[i_clb].nets[ipin] = rr_node[node_index].net_num;
 					ipin++;
 				}
@@ -2212,21 +2200,18 @@ static void alloc_and_load_cluster_info(INP int num_clb, INOUTP t_block *clb) {
 				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
 					iclass = clb[i_clb].type->pin_class[ipin];
 					assert(clb[i_clb].type->class_inf[iclass].type == DRIVER);
-					node_index =
-							pb->pb_graph_node->output_pins[outport][j].pin_count_in_cluster;
+					node_index = pb->pb_graph_node->output_pins[outport][j].pin_count_in_cluster;
 					clb[i_clb].nets[ipin] = rr_node[node_index].net_num;
 					ipin++;
 				}
 				outport++;
 			} else {
-				assert(
-						pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT);
+				assert(pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT);
 				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
 					iclass = clb[i_clb].type->pin_class[ipin];
 					assert(clb[i_clb].type->class_inf[iclass].type == RECEIVER);
 					assert(clb[i_clb].type->is_global_pin[ipin]);
-					node_index =
-							pb->pb_graph_node->clock_pins[clockport][j].pin_count_in_cluster;
+					node_index = pb->pb_graph_node->clock_pins[clockport][j].pin_count_in_cluster;
 					clb[i_clb].nets[ipin] = rr_node[node_index].net_num;
 					ipin++;
 				}
@@ -2309,8 +2294,7 @@ static void check_cluster_logical_blocks(t_pb *pb, boolean *blocks_checked) {
 	} else {
 		/* this is a container pb, all container pbs must contain children */
 		for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
-			for (j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb;
-					j++) {
+			for (j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
 				if (pb->child_pbs[i] != NULL) {
 					if (pb->child_pbs[i][j].name != NULL) {
 						has_child = TRUE;
@@ -2383,14 +2367,10 @@ static float get_molecule_gain(t_pack_molecule *molecule, std::map<int, float> &
 				while (cur != NULL) {
 					if (cur->is_clock != TRUE) {
 						for (ipin = 0; ipin < cur->size; ipin++) {
-							inet =
-									molecule->logical_block_ptrs[i]->input_nets[iport][ipin];
+							inet = molecule->logical_block_ptrs[i]->input_nets[iport][ipin];
 							if (inet != OPEN) {
 								num_introduced_inputs_of_indirectly_related_block++;
-								for (iblk = 0;
-										iblk
-												< get_array_size_of_molecule(
-														molecule); iblk++) {
+								for (iblk = 0; iblk < get_array_size_of_molecule(molecule); iblk++) {
 									if (molecule->logical_block_ptrs[iblk]
 											!= NULL
 											&& vpack_net[inet].node_block[0]
@@ -2445,10 +2425,7 @@ static void try_update_lookahead_pins_used(t_pb *cur_pb) {
 			for (i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children;
 					i++) {
 				if (cur_pb->child_pbs[i] != NULL) {
-					for (j = 0;
-							j
-									< pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb;
-							j++) {
+					for (j = 0; j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
 						try_update_lookahead_pins_used(
 								&cur_pb->child_pbs[i][j]);
 					}
@@ -2472,33 +2449,21 @@ static void reset_lookahead_pins_used(t_pb *cur_pb) {
 
 	if (pb_type->num_modes > 0 && cur_pb->name != NULL) {
 		for (i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
-			for (j = 0;
-					j
-							< cur_pb->pb_graph_node->input_pin_class_size[i]
-									* AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST;
-					j++) {
+			for (j = 0; j < cur_pb->pb_graph_node->input_pin_class_size[i] * AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST; j++) {
 				cur_pb->pb_stats->lookahead_input_pins_used[i][j] = OPEN;
 			}
 		}
 
 		for (i = 0; i < cur_pb->pb_graph_node->num_output_pin_class; i++) {
-			for (j = 0;
-					j
-							< cur_pb->pb_graph_node->output_pin_class_size[i]
-									* AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST;
-					j++) {
+			for (j = 0; j < cur_pb->pb_graph_node->output_pin_class_size[i] * AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST; j++) {
 				cur_pb->pb_stats->lookahead_output_pins_used[i][j] = OPEN;
 			}
 		}
 
 		if (cur_pb->child_pbs != NULL) {
-			for (i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children;
-					i++) {
+			for (i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
 				if (cur_pb->child_pbs[i] != NULL) {
-					for (j = 0;
-							j
-									< pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb;
-							j++) {
+					for (j = 0; j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
 						reset_lookahead_pins_used(&cur_pb->child_pbs[i][j]);
 					}
 				}
@@ -2621,11 +2586,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 					check_pb = check_pb->parent_pb;
 				}
 				if (check_pb != NULL) {
-					for (i = 0;
-							skip == FALSE
-									&& i
-											< output_pb_graph_pin->num_connectable_primtive_input_pins[depth];
-							i++) {
+					for (i = 0; skip == FALSE && i < output_pb_graph_pin->num_connectable_primtive_input_pins[depth]; i++) {
 						if (pb_graph_pin
 								== output_pb_graph_pin->list_of_connectable_input_pin_ptrs[depth][i]) {
 							skip = TRUE;
@@ -2638,11 +2599,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 			if (!skip) {
 				/* Check if already in pin class, if yes, skip */
 				skip = FALSE;
-				for (i = 0;
-						i
-								< cur_pb->pb_graph_node->input_pin_class_size[pin_class]
-										* AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST;
-						i++) {
+				for (i = 0; i < cur_pb->pb_graph_node->input_pin_class_size[pin_class] * AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST; i++) {
 					if (cur_pb->pb_stats->lookahead_input_pins_used[pin_class][i]
 							== inet) {
 						skip = TRUE;
@@ -2650,11 +2607,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 				}
 				if (!skip) {
 					/* Net must take up a slot */
-					for (i = 0;
-							i
-									< cur_pb->pb_graph_node->input_pin_class_size[pin_class]
-											* AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST;
-							i++) {
+					for (i = 0; i < cur_pb->pb_graph_node->input_pin_class_size[pin_class] * AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST; i++) {
 						if (cur_pb->pb_stats->lookahead_input_pins_used[pin_class][i]
 								== OPEN) {
 							cur_pb->pb_stats->lookahead_input_pins_used[pin_class][i] =
@@ -2688,10 +2641,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 				if (i == vpack_net[inet].num_sinks + 1) {
 					count = 0;
 					/* TODO: I should cache the absorbed outputs, once net is absorbed, net is forever absorbed, no point in rechecking every time */
-					for (i = 0;
-							i
-									< pb_graph_pin->num_connectable_primtive_input_pins[depth];
-							i++) {
+					for (i = 0; i < pb_graph_pin->num_connectable_primtive_input_pins[depth]; i++) {
 						if (get_net_corresponding_to_pb_graph_pin(cur_pb,
 								pb_graph_pin->list_of_connectable_input_pin_ptrs[depth][i])
 								== inet) {
@@ -2706,13 +2656,8 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 
 			if (!skip) {
 				/* This output must exit this cluster */
-				for (i = 0;
-						i
-								< cur_pb->pb_graph_node->output_pin_class_size[pin_class]
-										* AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST;
-						i++) {
-					assert(
-							cur_pb->pb_stats->lookahead_output_pins_used[pin_class][i] != inet);
+				for (i = 0; i < cur_pb->pb_graph_node->output_pin_class_size[pin_class] * AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST; i++) {
+					assert(cur_pb->pb_stats->lookahead_output_pins_used[pin_class][i] != inet);
 					if (cur_pb->pb_stats->lookahead_output_pins_used[pin_class][i]
 							== OPEN) {
 						cur_pb->pb_stats->lookahead_output_pins_used[pin_class][i] =
@@ -2737,14 +2682,9 @@ static boolean check_lookahead_pins_used(t_pb *cur_pb) {
 	success = TRUE;
 
 	if (pb_type->num_modes > 0 && cur_pb->name != NULL) {
-		for (i = 0; i < cur_pb->pb_graph_node->num_input_pin_class && success;
-				i++) {
+		for (i = 0; i < cur_pb->pb_graph_node->num_input_pin_class && success; i++) {
 			ipin = 0;
-			for (j = 0;
-					j
-							< cur_pb->pb_graph_node->input_pin_class_size[i]
-									* AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST;
-					j++) {
+			for (j = 0; j < cur_pb->pb_graph_node->input_pin_class_size[i] * AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST; j++) {
 				if (cur_pb->pb_stats->lookahead_input_pins_used[i][j] != OPEN) {
 					ipin++;
 				}
@@ -2757,11 +2697,7 @@ static boolean check_lookahead_pins_used(t_pb *cur_pb) {
 		for (i = 0; i < cur_pb->pb_graph_node->num_output_pin_class && success;
 				i++) {
 			ipin = 0;
-			for (j = 0;
-					j
-							< cur_pb->pb_graph_node->output_pin_class_size[i]
-									* AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST;
-					j++) {
+			for (j = 0; j < cur_pb->pb_graph_node->output_pin_class_size[i] * AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST; j++) {
 				if (cur_pb->pb_stats->lookahead_output_pins_used[i][j] != OPEN) {
 					ipin++;
 				}
@@ -2772,17 +2708,9 @@ static boolean check_lookahead_pins_used(t_pb *cur_pb) {
 		}
 
 		if (success && cur_pb->child_pbs != NULL) {
-			for (i = 0;
-					success
-							&& i
-									< pb_type->modes[cur_pb->mode].num_pb_type_children;
-					i++) {
+			for (i = 0; success && i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
 				if (cur_pb->child_pbs[i] != NULL) {
-					for (j = 0;
-							success
-									&& j
-											< pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb;
-							j++) {
+					for (j = 0; success && j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
 						success = check_lookahead_pins_used(
 								&cur_pb->child_pbs[i][j]);
 					}
@@ -2802,11 +2730,7 @@ static void commit_lookahead_pins_used(t_pb *cur_pb) {
 	if (pb_type->num_modes > 0 && cur_pb->name != NULL) {
 		for (i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
 			ipin = 0;
-			for (j = 0;
-					j
-							< cur_pb->pb_graph_node->input_pin_class_size[i]
-									* AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST;
-					j++) {
+			for (j = 0; j < cur_pb->pb_graph_node->input_pin_class_size[i] * AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST; j++) {
 				if (cur_pb->pb_stats->lookahead_input_pins_used[i][j] != OPEN) {
 					cur_pb->pb_stats->input_pins_used[i][ipin] =
 							cur_pb->pb_stats->lookahead_input_pins_used[i][j];
@@ -2818,11 +2742,7 @@ static void commit_lookahead_pins_used(t_pb *cur_pb) {
 
 		for (i = 0; i < cur_pb->pb_graph_node->num_output_pin_class; i++) {
 			ipin = 0;
-			for (j = 0;
-					j
-							< cur_pb->pb_graph_node->output_pin_class_size[i]
-									* AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST;
-					j++) {
+			for (j = 0; j < cur_pb->pb_graph_node->output_pin_class_size[i] * AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC + AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST; j++) {
 				if (cur_pb->pb_stats->lookahead_output_pins_used[i][j] != OPEN) {
 					cur_pb->pb_stats->output_pins_used[i][ipin] =
 							cur_pb->pb_stats->lookahead_output_pins_used[i][j];
@@ -2836,10 +2756,7 @@ static void commit_lookahead_pins_used(t_pb *cur_pb) {
 			for (i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children;
 					i++) {
 				if (cur_pb->child_pbs[i] != NULL) {
-					for (j = 0;
-							j
-									< pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb;
-							j++) {
+					for (j = 0; j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
 						commit_lookahead_pins_used(&cur_pb->child_pbs[i][j]);
 					}
 				}
@@ -2869,17 +2786,13 @@ static int get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 			if (cur_pb->mode != pb_graph_node->pb_type->parent_mode->index) {
 				return OPEN;
 			}
-			for (i = 0;
-					i
-							< cur_pb->pb_graph_node->pb_type->modes[cur_pb->mode].num_pb_type_children;
-					i++) {
+			for (i = 0; i < cur_pb->pb_graph_node->pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
 				if (pb_graph_node
 						== &cur_pb->pb_graph_node->child_pb_graph_nodes[cur_pb->mode][i][pb_graph_node->placement_index]) {
 					break;
 				}
 			}
-			assert(
-					i < cur_pb->pb_graph_node->pb_type->modes[cur_pb->mode].num_pb_type_children);
+			assert(i < cur_pb->pb_graph_node->pb_type->modes[cur_pb->mode].num_pb_type_children);
 			return get_net_corresponding_to_pb_graph_pin(
 					&cur_pb->child_pbs[i][pb_graph_node->placement_index],
 					pb_graph_pin);
