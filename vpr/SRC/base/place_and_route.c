@@ -42,6 +42,16 @@ void post_place_sync(INP int L_num_blocks,
 
 void free_pb_data(t_pb *pb);
 
+#ifdef TORO_FABRIC_CHANNEL_OVERRIDE
+//===========================================================================//
+#include "TFH_FabricChannelHandler.h"
+
+static bool init_chan_override(int* chan_override_max);
+static bool init_chan_override_widths(TFH_SelectChannelMode_t selectChannel, 
+		int nxny, int* chan_width_xy, int* chan_override_max);
+//===========================================================================//
+#endif
+
 /************************* Subroutine Definitions ****************************/
 
 boolean place_and_route(enum e_operation operation,
@@ -475,7 +485,8 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	/* End binary search verification. */
 	/* Restore the best placement (if necessary), the best routing, and  *
 	 * * the best channel widths for final drawing and statistics output.  */
-	init_chan(final, chan_width_dist);
+	init_chan(final, &router_opts.fixed_channel_width, chan_width_dist);
+
 #if 0
 	if (placer_opts.place_freq == PLACE_ALWAYS)
 	{
@@ -553,7 +564,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 }
 
-void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
+void init_chan(int cfactor, int* chan_override_max, t_chan_width_dist chan_width_dist) {
 
 	/* Assigns widths to channels (in tracks).  Minimum one track          * 
 	 * per channel.  io channels are io_rat * maximum in interior          * 
@@ -575,7 +586,7 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 
 	if (ny > 1) {
 		float separation = 1.0 / (ny - 2.0); /* Norm. distance between two channels. */
-		float y = 0.0; /* This avoids div by zero if ny = 2. */
+		float y = 0.0; /* This avoids div by zero if ny = 2.0 */
 		chan_width_x[1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
 
 		/* No zero width channels */
@@ -590,7 +601,7 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 
 	if (nx > 1) {
 		float separation = 1.0 / (nx - 2.0); /* Norm. distance between two channels. */
-		float x = 0.0; /* Avoids div by zero if nx = 2. */
+		float x = 0.0; /* Avoids div by zero if nx = 2.0 */
 		chan_width_y[1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
 
 		chan_width_y[1] = std::max(chan_width_y[1], 1);
@@ -601,6 +612,12 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 			chan_width_y[i + 1] = std::max(chan_width_y[i + 1], 1);
 		}
 	}
+
+#ifdef TORO_FABRIC_CHANNEL_OVERRIDE
+	if (chan_override_max) {
+		init_chan_override(chan_override_max);
+	}
+#endif
 
 	chan_width_max = 0;
 	for (int i = 0; i <= ny ; ++i) {
@@ -623,6 +640,63 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 #endif
 
 }
+
+#ifdef TORO_FABRIC_CHANNEL_OVERRIDE
+//===========================================================================//
+static bool init_chan_override(int* chan_override_max) {
+
+	/* Overrrides architecture-based channel widths based on optional fabric model channel widths. */
+	bool ok = true;
+
+	TFH_FabricChannelHandler_c& fabricChannelHandler = TFH_FabricChannelHandler_c::GetInstance();
+	if (fabricChannelHandler.IsValid()) {
+
+		vpr_printf(TIO_MESSAGE_INFO, "Overriding architecture channels based on fabric channel widths...\n");
+
+		// Override channel widths by x and y orientations
+		*chan_override_max = 0;
+		if (ok)
+			ok = init_chan_override_widths( TFH_SELECT_CHANNEL_X, ny, chan_width_x, chan_override_max);
+		if (ok)
+			ok = init_chan_override_widths( TFH_SELECT_CHANNEL_Y, nx, chan_width_y, chan_override_max);
+	}
+	return (ok);
+}
+
+//===========================================================================//
+static bool init_chan_override_widths(TFH_SelectChannelMode_t selectChannel, 
+					int nxny, int* chan_width_xy, int* chan_override_max) {
+	bool ok = true;
+
+	TFH_FabricChannelHandler_c& fabricChannelHandler = TFH_FabricChannelHandler_c::GetInstance();
+	if (fabricChannelHandler.IsValid()) {
+
+		for (size_t i = 0; i < fabricChannelHandler.GetLength(selectChannel); ++i) {
+
+			const TFH_ChannelWidth_t& channelWidth = *fabricChannelHandler.At(selectChannel, i);
+			int index = channelWidth.GetIndex( );
+			int count = channelWidth.GetCount( );
+
+			// Ignore any fabric channel widths beyond VPR's current grid size
+			if (index > nxny )
+				break;
+
+			if (chan_width_xy[index] != count) {
+
+				ok = vpr_printf(TIO_MESSAGE_WARNING, 
+					"Replacing architecture %s channel[%d] width %d with fabric channel width %d.\n",
+					selectChannel == TFH_SELECT_CHANNEL_X ? "x" : "y",
+					index, chan_width_xy[index], count);
+
+				chan_width_xy[index] = count;
+				*chan_override_max = max(*chan_override_max, count);
+			}
+		}
+	}
+	return (ok);
+}
+//===========================================================================//
+#endif
 
 static float comp_width(t_chan * chan, float x, float separation) {
 
