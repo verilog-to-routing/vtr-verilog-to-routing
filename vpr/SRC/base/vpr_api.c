@@ -72,8 +72,13 @@ void vpr_print_title(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "VPR FPGA Placement and Routing.\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Version: Version " VPR_VERSION "\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Compiled: " __DATE__ ".\n");
-	vpr_printf(TIO_MESSAGE_INFO, "University of Toronto\n");
-	vpr_printf(TIO_MESSAGE_INFO, "vpr@eecg.utoronto.ca\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Original VPR by V. Betz.\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Timing-driven placement enhancements by A. Marquardt.\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Single-drivers enhancements by Andy Ye with additions by.\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Mark Fang, Jason Luu, Ted Campbell\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Heterogeneous stucture support by Jason Luu and Ted Campbell.\n");
+	vpr_printf(TIO_MESSAGE_INFO, "T-VPack clustering integration by Jason Luu.\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Area-driven AAPack added by Jason Luu.\n");
 	vpr_printf(TIO_MESSAGE_INFO, "This is free open source code under MIT license.\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 
