@@ -26,7 +26,6 @@
  Each top-level pb stores the entire routing resource graph (rr_graph).  The traceback information is included in this rr_graph so if you needed to determine connectivity down to the wire level, this is the data structure that you would traverse.
  The rr_graph is generated based on the pb_graph_node netlist of that pb.  Each pb_graph_node has a member variable called pin_count that serves as the index for the rr_node (in retrospect, I should have used rr_node_index instead of pin_count for the member variable to be more descriptive).  
  This makes it easy to identify which rr_node corresponds to which pb_graph_pin.  Additional sources and sinks are generated at the inputs and outputs of the complex logic block to match with what has already been packed into the cluster.
- 
 
  */
 
@@ -35,6 +34,13 @@
 
 #include "arch_types.h"
 #include <map>
+
+#ifdef TORO_REGION_PLACEMENT_ENABLE
+//===========================================================================//
+#include "TGO_Typedefs.h"
+#include "TGO_Region.h"
+//===========================================================================//
+#endif
 
 /*******************************************************************************
  * Global data types and constants
@@ -228,6 +234,11 @@ typedef struct s_logical_block {
 	struct s_linked_vptr *packed_molecules; /* List of t_pack_molecules that this logical block is a part of */
 
 	t_pb_graph_node *expected_lowest_cost_primitive; /* predicted ideal primitive to use for this logical block */
+
+#ifdef TORO_REGION_PLACEMENT_ENABLE
+	TGO_RegionList_t placement_region_list; // Optional placement regions
+#endif
+
 } t_logical_block;
 
 enum e_pack_pattern_molecule_type {
@@ -498,10 +509,10 @@ typedef struct s_net {
 	int *node_block;
 	int *node_block_port;
 	int *node_block_pin;
-	boolean is_routed;
-	boolean is_fixed;
-	boolean is_global;
-	boolean is_const_gen;
+	unsigned int is_routed : 1;
+	unsigned int is_fixed : 1;
+	unsigned int is_global : 1;
+	unsigned int is_const_gen : 1;
 	float probability;
 	float density;
 } t_net;
@@ -541,6 +552,46 @@ struct s_place_region {
 	float cost;
 };
 
+/* Stores the information of the move for a block that is       *
+ * moved during placement                                       *
+ * block_num: the index of the moved block                      *
+ * xold: the x_coord that the block is moved from               *
+ * xnew: the x_coord that the block is moved to                 *
+ * yold: the y_coord that the block is moved from               *
+ * xnew: the x_coord that the block is moved to                 *
+ */
+typedef struct s_pl_moved_block {
+	int block_num;
+	int xold;
+	int xnew;
+	int yold;
+	int ynew;
+	int zold;
+	int znew;
+	int swapped_to_was_empty;
+	int swapped_from_is_empty;
+} t_pl_moved_block;
+
+/* Stores the list of blocks to be moved in a swap during       *
+ * placement.                                                   *
+ * num_moved_blocks: total number of blocks moved when          *
+ *                   swapping two blocks.                       *
+ * moved blocks: a list of moved blocks data structure with     *
+ *               information on the move.                       *
+ *               [0...num_moved_blocks-1]                       *
+ */
+typedef struct s_pl_blocks_to_be_moved {
+	int num_moved_blocks;
+	t_pl_moved_block * moved_blocks;
+} t_pl_blocks_to_be_moved;
+
+/* legal positions for type */
+typedef struct s_legal_pos {
+	int x;
+	int y;
+	int z;
+} t_legal_pos;
+
 /*
  Represents a clustered logic block of a user circuit that fits into one unit of space in an FPGA grid block
  name: identifier for this block
@@ -550,7 +601,7 @@ struct s_place_region {
  y: y-coordinate
  z: occupancy coordinate
  pb: Physical block representing the clustering of this CLB
- isFixed: TRUE if this block's position is fixed by the user and shouldn't be moved during annealing
+ is_fixed: TRUE if this block's position is fixed by the user and shouldn't be moved during annealing
  */
 struct s_block {
 	char *name;
@@ -562,8 +613,11 @@ struct s_block {
 
 	t_pb *pb;
 
-	boolean isFixed;
+	unsigned int is_fixed : 1;
 
+#ifdef TORO_REGION_PLACEMENT_ENABLE
+	TGO_RegionList_t placement_region_list; // Optional placement regions
+#endif
 };
 typedef struct s_block t_block;
 
@@ -812,6 +866,8 @@ typedef struct s_seg_details {
 	enum e_drivers drivers; /* UDSD by AY */
 	int group_start;
 	int group_size;
+	int seg_start;
+	int seg_end;
 	int index;
 	float Cmetal_per_m; /* Used for power */
 } t_seg_details;
@@ -834,6 +890,10 @@ typedef struct s_seg_details {
  * (UDSD by AY) drivers: How do signals driving a routing track connect to  *
  *                       the track?                                         *
  * index: index of the segment type used for this track.                    */
+
+typedef struct s_seg_details** t_chan_details;
+
+/* Defines a 2-D array of t_seg_details data structures (one per channel)   */
 
 struct s_linked_f_pointer {
 	struct s_linked_f_pointer *next;
@@ -1046,4 +1106,3 @@ typedef struct s_vpr_setup {
 } t_vpr_setup;
 
 #endif
-
