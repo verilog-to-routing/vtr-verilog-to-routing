@@ -25,9 +25,15 @@
 static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 		INOUTP t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping, INP struct s_hash **vpack_net_hash);
 
-static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
+#ifdef TORO_REGION_PLACEMENT_ENABLE
+//===========================================================================//
+static void processRegions(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index);
+//===========================================================================//
+#endif
+
+static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, INOUTP t_pb* pb,
 		INOUTP t_rr_node *rr_graph, INOUTP t_pb **rr_node_to_pb_mapping, INOUTP int *num_primitives, 
-		INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash, INP int cb_index);
+		INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash);
 
 static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 		INP int index, INOUTP int *num_primitives, INP const t_arch *arch, INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash);
@@ -297,7 +303,10 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 		exit(1);
 	}
 
-	processPb(Parent, cb[index].pb, cb[index].pb->rr_graph, cb[index].pb->rr_node_to_pb_mapping, num_primitives, vpack_net_hash, logical_block_hash, index);
+	processPb(Parent, cb, index, 
+			cb[index].pb, cb[index].pb->rr_graph, 
+			cb[index].pb->rr_node_to_pb_mapping, num_primitives, 
+			vpack_net_hash, logical_block_hash);
 
 	cb[index].nets = (int *)my_malloc(cb[index].type->num_pins * sizeof(int));
 	for (i = 0; i < cb[index].type->num_pins; i++) {
@@ -330,9 +339,9 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
  * vpack_net_hash - hashtable of original blif net names and indices
  * logical_block_hash - hashtable of original blif atom names and indices
  */
-static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
+static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, INOUTP t_pb* pb,
 		INOUTP t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping, INOUTP int *num_primitives, 
-		INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash, INP int cb_index) {
+		INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash) {
 	ezxml_t Cur, Prev, lookahead;
 	const char *Prop;
 	const char *instance_type;
@@ -353,6 +362,14 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 	processPorts(Cur, pb, rr_graph, rr_node_to_pb_mapping, vpack_net_hash);
 	FreeNode(Cur);
 
+#ifdef TORO_REGION_PLACEMENT_ENABLE
+	Cur = FindElement(Parent, "regions", FALSE);
+	if(Cur) {
+		processRegions(Cur, cb, index);
+		FreeNode(Cur);
+	}
+#endif
+
 	pb_type = pb->pb_graph_node->pb_type;
 	if (pb_type->num_modes == 0) {
 		/* LUT specific optimizations */
@@ -372,7 +389,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 		pb->logical_block = temp_hash->index;
 		assert(logical_block[temp_hash->index].pb == NULL);
 		logical_block[temp_hash->index].pb = pb;
-		logical_block[temp_hash->index].clb_index = cb_index;
+		logical_block[temp_hash->index].clb_index = index;
 		(*num_primitives)++;
 	} else {
 		/* process children of child if exists */
@@ -408,11 +425,8 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 
 				found = FALSE;
 				pb_index = OPEN;
-				for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children;
-						i++) {
-					if (strcmp(
-							pb_type->modes[pb->mode].pb_type_children[i].name,
-							tokens[0].data) == 0) {
+				for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
+					if (strcmp(pb_type->modes[pb->mode].pb_type_children[i].name, tokens[0].data) == 0) {
 						if (my_atoi(tokens[2].data)
 								>= pb_type->modes[pb->mode].pb_type_children[i].num_pb) {
 							vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Instance number exceeds # of pb available for instance %s in %s.\n",
@@ -452,20 +466,14 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 					}
 					pb->child_pbs[i][pb_index].mode = 0;
 					found = FALSE;
-					for (j = 0;
-							j
-									< pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes;
-							j++) {
-						if (strcmp(Prop,
-								pb->child_pbs[i][pb_index].pb_graph_node->pb_type->modes[j].name)
+					for (j = 0; j < pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes; j++) {
+						if (strcmp(Prop, pb->child_pbs[i][pb_index].pb_graph_node->pb_type->modes[j].name)
 								== 0) {
 							pb->child_pbs[i][pb_index].mode = j;
 							found = TRUE;
 						}
 					}
-					if (!found
-							&& pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes
-									!= 0) {
+					if (!found && pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes != 0) {
 						vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Unknown mode %s for cb %s #%d.\n",
 								Cur->line, Prop, pb->child_pbs[i][pb_index].name, pb_index);
 						exit(1);
@@ -473,7 +481,10 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 					pb->child_pbs[i][pb_index].parent_pb = pb;
 					pb->child_pbs[i][pb_index].rr_graph = pb->rr_graph;
 
-					processPb(Cur, &pb->child_pbs[i][pb_index], rr_graph, rr_node_to_pb_mapping, num_primitives, vpack_net_hash, logical_block_hash, cb_index);
+					processPb(Cur, cb, index,
+							&pb->child_pbs[i][pb_index], rr_graph, 
+							rr_node_to_pb_mapping, num_primitives, 
+							vpack_net_hash, logical_block_hash);
 				} else {
 					/* physical block has no used primitives but it may have used routing */
 					pb->child_pbs[i][pb_index].name = NULL;
@@ -487,27 +498,23 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 						}
 						pb->child_pbs[i][pb_index].mode = 0;
 						found = FALSE;
-						for (j = 0;
-								j
-										< pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes;
-								j++) {
-							if (strcmp(Prop,
-									pb->child_pbs[i][pb_index].pb_graph_node->pb_type->modes[j].name)
-									== 0) {
+						for (j = 0; j < pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes; j++) {
+							if (strcmp(Prop, pb->child_pbs[i][pb_index].pb_graph_node->pb_type->modes[j].name) == 0) {
 								pb->child_pbs[i][pb_index].mode = j;
 								found = TRUE;
 							}
 						}
-						if (!found
-								&& pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes
-										!= 0) {
+						if (!found && pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes != 0) {
 							vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Unknown mode %s for cb %s #%d.\n",
 									Cur->line, Prop, pb->child_pbs[i][pb_index].name, pb_index);
 							exit(1);
 						}
 						pb->child_pbs[i][pb_index].parent_pb = pb;
 						pb->child_pbs[i][pb_index].rr_graph = pb->rr_graph;
-						processPb(Cur, &pb->child_pbs[i][pb_index], rr_graph, rr_node_to_pb_mapping, num_primitives, vpack_net_hash, logical_block_hash, cb_index);
+						processPb(Cur, cb, index, 
+								&pb->child_pbs[i][pb_index], rr_graph, 
+								rr_node_to_pb_mapping, num_primitives, 
+								vpack_net_hash, logical_block_hash);
 					}
 				}
 				Prev = Cur;
@@ -803,6 +810,36 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 	}
 }
 
+#ifdef TORO_REGION_PLACEMENT_ENABLE
+//===========================================================================//
+static void processRegions(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index) {
+
+	ezxml_t Cur = Parent->child;
+	while (Cur) {
+		if (0 == strcmp(Cur->name, "region")) {
+			CheckElement(Cur, "region");
+
+			TGO_Region_c placement_region;
+			placement_region.x1 = GetIntProperty(Cur, "x1", TRUE, 0);
+			placement_region.y1 = GetIntProperty(Cur, "y1", TRUE, 0);
+			placement_region.x2 = GetIntProperty(Cur, "x2", TRUE, 0);
+			placement_region.y2 = GetIntProperty(Cur, "y2", TRUE, 0);
+
+			ezxml_set_attr(Cur, "x1", NULL );
+			ezxml_set_attr(Cur, "y1", NULL );
+			ezxml_set_attr(Cur, "x2", NULL );
+			ezxml_set_attr(Cur, "y2", NULL );
+	
+			cb[index].placement_region_list.Add(placement_region);
+		}
+		ezxml_t Prev = Cur;
+		Cur = Cur->next;
+		FreeNode(Prev);
+	}
+}
+//===========================================================================//
+#endif
+
 /**  
  * This function updates the nets list and the connections between that list and the complex block
  */
@@ -939,7 +976,8 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 	/* Error check global and non global signals */
 	for (i = 0; i < *ext_ncount; i++) {
 		for (j = 1; j <= (*ext_nets)[i].num_sinks; j++) {
-			if (block_list[(*ext_nets)[i].node_block[j]].type->is_global_pin[(*ext_nets)[i].node_block_pin[j]] != (*ext_nets)[i].is_global) {
+			boolean is_global_net = static_cast<boolean>((*ext_nets)[i].is_global);
+			if (block_list[(*ext_nets)[i].node_block[j]].type->is_global_pin[(*ext_nets)[i].node_block_pin[j]] != is_global_net) {
 				vpr_printf(TIO_MESSAGE_ERROR, "Netlist attempts to connect net %s to both global and non-global pins.\n", 
 						(*ext_nets)[i].name);
 				exit(1);
