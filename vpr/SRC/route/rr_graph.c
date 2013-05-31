@@ -366,6 +366,11 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 			for (j = 0; j <= L_ny; j++) {
 				load_sblock_pattern_lookup(i, j, nodes_per_chan, seg_details,
 						Fs, sb_type, unidir_sb_pattern);
+
+#ifdef TORO_FABRIC_SWITCHBOX_OVERRIDE
+				override_sblock_pattern_lookup(i, j, nodes_per_chan, 
+						unidir_sb_pattern);
+#endif
 			}
 		}
 	}
@@ -740,6 +745,10 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 			}
 		}
 	}
+
+#ifdef TORO_FABRIC_CONNECTIONBLOCK_OVERRIDE
+	override_cblock_edge_lists(num_rr_nodes, rr_node);
+#endif
 	free(opin_mux_size);
 }
 
@@ -771,7 +780,7 @@ static void build_bidir_rr_opins(INP int i, INP int j,
 			for (int width = 0; width < type->width; ++width) {
 				for (int height = 0; height < type->height; ++height) {
 					num_edges += get_bidir_opin_connections(i + width, j + height, pin_index,
-							&edge_list, opin_to_track_map, Fc[i], L_rr_edge_done,
+							&edge_list, opin_to_track_map, Fc[pin_index], L_rr_edge_done,
 							L_rr_node_indices, seg_details);
 				}
 			}
