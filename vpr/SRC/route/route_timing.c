@@ -15,6 +15,21 @@
 #include "stats.h"
 #include "ReadOptions.h"
 
+#ifdef TORO_PREROUTED_ROUTING_ENABLE
+//===========================================================================//
+#include "TCH_PreRoutedHandler.h"
+//===========================================================================//
+#endif
+
+#ifdef TORO_PREROUTED_ROUTING_ENABLE
+//===========================================================================//
+static bool timing_driven_order_prerouted_first(int try_count, 
+		struct s_router_opts router_opts, float pres_fac, 
+		float* pin_criticality, int* sink_order, 
+		t_rt_node** rt_node_of_sink, float** net_delay, t_slack* slacks);
+//===========================================================================//
+#endif
+
 /******************** Subroutines local to route_timing.c ********************/
 
 static int get_max_pins_per_net(void);
@@ -22,7 +37,8 @@ static int get_max_pins_per_net(void);
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 		float target_criticality, float astar_fac);
 
-static void timing_driven_expand_neighbours(struct s_heap *current, int inet,
+static void timing_driven_expand_neighbours(struct s_heap *current, 
+		int inet, int itry,
 		float bend_cost, float criticality_fac, int target_node,
 		float astar_fac, int highfanout_rlim);
 
@@ -109,26 +125,21 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			clb_net[inet].is_fixed = FALSE;
 		}
 
+#ifdef TORO_PREROUTED_ROUTING_ENABLE
+		timing_driven_order_prerouted_first(itry, router_opts, pres_fac, 
+				pin_criticality, sink_order, 
+				rt_node_of_sink, net_delay, slacks);
+#endif
+
 		for (i = 0; i < num_nets; i++) {
 			inet = net_index[i];
-			if (clb_net[inet].is_global == FALSE) { /* Skip global nets. */
-
-				is_routable = timing_driven_route_net(inet, pres_fac,
-					router_opts.max_criticality,
-					router_opts.criticality_exp, router_opts.astar_fac,
-					router_opts.bend_cost, pin_criticality,
-					sink_order, rt_node_of_sink, net_delay[inet], slacks);
-
-				/* Impossible to route? (disconnected rr_graph) */
-
-				if (!is_routable) {
-					vpr_printf(TIO_MESSAGE_INFO, "Routing failed.\n");
-					free_timing_driven_route_structs(pin_criticality,
-							sink_order, rt_node_of_sink);
-					free(net_index);
-					free(sinks);
-					return (FALSE);
-				}
+			is_routable = try_timing_driven_route_net(inet, itry, pres_fac,
+					router_opts, pin_criticality, sink_order, 
+					rt_node_of_sink, net_delay, slacks);
+			if (!is_routable) {
+				free(net_index);
+				free(sinks);
+				return (FALSE);
 			}
 		}
 
@@ -256,6 +267,42 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	return (FALSE);
 }
 
+boolean try_timing_driven_route_net(int inet, int itry, float pres_fac, 
+		struct s_router_opts router_opts,
+		float* pin_criticality, int* sink_order,
+		t_rt_node** rt_node_of_sink, float** net_delay, t_slack* slacks) {
+
+	boolean is_routed = FALSE;
+
+	if (clb_net[inet].is_fixed) { /* Skip pre-routed nets. */
+
+		is_routed = TRUE;
+
+	} else if (clb_net[inet].is_global) { /* Skip global nets. */
+
+		is_routed = TRUE;
+
+	} else {
+
+		is_routed = timing_driven_route_net(inet, itry, pres_fac,
+				router_opts.max_criticality, router_opts.criticality_exp, 
+				router_opts.astar_fac, router_opts.bend_cost, 
+				pin_criticality, sink_order, 
+				rt_node_of_sink, net_delay[inet], slacks);
+
+		/* Impossible to route? (disconnected rr_graph) */
+		if (is_routed) {
+			clb_net[inet].is_routed = TRUE;
+			vpack_net[clb_to_vpack_net_mapping[inet]].is_routed = TRUE;
+		} else {
+			vpr_printf(TIO_MESSAGE_INFO, "Routing failed.\n");
+			free_timing_driven_route_structs(pin_criticality,
+					sink_order, rt_node_of_sink);
+		}
+	}
+	return (is_routed);
+}
+
 void alloc_timing_driven_route_structs(float **pin_criticality_ptr,
 		int **sink_order_ptr, t_rt_node *** rt_node_of_sink_ptr) {
 
@@ -310,7 +357,7 @@ static int get_max_pins_per_net(void) {
 	return (max_pins_per_net);
 }
 
-boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
+boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_criticality,
 		float criticality_exp, float astar_fac, float bend_cost,
 		float *pin_criticality, int *sink_order,
 		t_rt_node ** rt_node_of_sink, float *net_delay, t_slack * slacks) {
@@ -434,7 +481,7 @@ boolean timing_driven_route_net(int inet, float pres_fac, float max_criticality,
 				if (old_tcost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
 					add_to_mod_list(&rr_node_route_inf[inode].path_cost);
 
-				timing_driven_expand_neighbours(current, inet, bend_cost,
+				timing_driven_expand_neighbours(current, inet, itry, bend_cost,
 						target_criticality, target_node, astar_fac,
 						highfanout_rlim);
 			}
@@ -514,7 +561,8 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 	}
 }
 
-static void timing_driven_expand_neighbours(struct s_heap *current, int inet,
+static void timing_driven_expand_neighbours(struct s_heap *current, 
+		int inet, int itry,
 		float bend_cost, float criticality_fac, int target_node,
 		float astar_fac, int highfanout_rlim) {
 
@@ -543,6 +591,14 @@ static void timing_driven_expand_neighbours(struct s_heap *current, int inet,
 				|| rr_node[to_node].yhigh < route_bb[inet].ymin
 				|| rr_node[to_node].ylow > route_bb[inet].ymax)
 			continue; /* Node is outside (expanded) bounding box. */
+
+#ifdef TORO_PREROUTED_ROUTING_ENABLE
+		int src_node = net_rr_terminals[inet][0];
+		int sink_node = target_node;
+		int from_node = inode;
+		if (restrict_prerouted_path(inet, itry, src_node, sink_node, from_node, to_node))
+			continue;
+#endif
 
 		if (clb_net[inet].num_sinks >= HIGH_FANOUT_NET_LIM) {
 			if (rr_node[to_node].xhigh < target_x - highfanout_rlim
@@ -591,10 +647,9 @@ static void timing_driven_expand_neighbours(struct s_heap *current, int inet,
 				new_back_pcost += bend_cost;
 		}
 
-		new_tot_cost = new_back_pcost
-				+ astar_fac
-						* get_timing_driven_expected_cost(to_node, target_node,
-								criticality_fac, new_R_upstream);
+		float expected_cost = get_timing_driven_expected_cost(to_node, target_node,
+				criticality_fac, new_R_upstream);
+		new_tot_cost = new_back_pcost + astar_fac * expected_cost;
 
 		node_to_heap(to_node, new_tot_cost, inode, iconn, new_back_pcost,
 				new_R_upstream);
@@ -905,3 +960,62 @@ static void timing_driven_check_net_delays(float **net_delay) {
 	free_net_delay(net_delay_check, &list_head_net_delay_check_ch);
 	vpr_printf(TIO_MESSAGE_INFO, "Completed net delay value cross check successfully.\n");
 }
+
+#ifdef TORO_PREROUTED_ROUTING_ENABLE
+//===========================================================================//
+static bool timing_driven_order_prerouted_first(
+		int try_count, 
+		struct s_router_opts router_opts, 
+		float pres_fac,
+		float* pin_criticality,	int* sink_order,
+		t_rt_node** rt_node_of_sink, 
+		float** net_delay, t_slack* slacks ) {
+
+	bool ok= TRUE;
+
+	// Verify at least one pre-routed constraint has been defined
+	TCH_PreRoutedHandler_c& preRoutedHandler = TCH_PreRoutedHandler_c::GetInstance();
+	if (preRoutedHandler.IsValid() &&
+		(preRoutedHandler.GetOrderMode() == TCH_ROUTE_ORDER_FIRST)) {
+
+		const TCH_NetList_t& tch_netList = preRoutedHandler.GetNetList();
+		for (size_t i = 0; i < tch_netList.GetLength(); ++i )
+		{
+			const TCH_Net_c& tch_net = *tch_netList[i];
+
+			if (tch_net.GetStatus() == TCH_ROUTE_STATUS_FLOAT)
+				continue;
+
+			if ((tch_net.GetStatus() == TCH_ROUTE_STATUS_ROUTED) && (try_count > 1))
+				continue;
+
+			int inet = tch_net.GetVPR_NetIndex();
+			vpr_printf(TIO_MESSAGE_INFO, "  Prerouting net %s...\n", clb_net[inet].name);
+
+			// Call existing VPR route code based on the given VPR net index
+			// (Note: this code will auto pre-route based on Toro callback handler)
+			bool is_routable = try_timing_driven_route_net(inet, try_count, pres_fac,
+								router_opts, 
+								pin_criticality, sink_order, 
+								rt_node_of_sink, 
+								net_delay, slacks);
+			if (!is_routable) {
+				ok = false;
+				break;
+			}
+
+			// Force net's "is_routed" or "is_fixed" state to TRUE 
+			// (ie. indicate that net has been pre-routed)
+			if (tch_net.GetStatus() == TCH_ROUTE_STATUS_ROUTED) {
+				clb_net[inet].is_routed = TRUE;
+				vpack_net[clb_to_vpack_net_mapping[inet]].is_routed = TRUE;
+			} else if (tch_net.GetStatus() == TCH_ROUTE_STATUS_FIXED) {
+				clb_net[inet].is_fixed = TRUE;
+				vpack_net[clb_to_vpack_net_mapping[inet]].is_fixed = TRUE;
+			}
+		}
+	}
+	return (ok);
+}
+//===========================================================================//
+#endif
