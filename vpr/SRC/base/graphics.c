@@ -145,6 +145,11 @@
 #define TRUE 1
 #define FALSE 0
 
+// VERBOSE is very helpful for developing event handling features. Outputs
+// useful information when user interacts with the graphic interface.
+// Uncomment the line below to turn on VERBOSE.
+// #define VERBOSE
+
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -202,11 +207,6 @@ using namespace std;
 #define MAXPIXEL 15000   
 #define MINPIXEL -15000 
 
-// VERBOSE is very helpful for developing event handling features. Outputs
-// useful information when user interacts with the graphic interface.
-// Uncomment the line below to turn on VERBOSE.
-//#define VERBOSE
-
 #endif /* X11 Preprocessor Directives */
 
 
@@ -217,6 +217,7 @@ using namespace std;
 #pragma warning(disable : 4996)   // Turn off annoying warnings about strcmp.
 
 #include <windows.h>
+#include <WindowsX.h>
 
 // Lines below are for displaying errors in a message box on windows.
 #define SELECT_ERROR() { char msg[BUFSIZE]; sprintf (msg, "Error %i: Couldn't select graphics object on line %d of graphics.c\n", GetLastError(), __LINE__); MessageBox(NULL, msg, NULL, MB_OK); exit(-1); }
@@ -385,6 +386,7 @@ static void proceed (void (*drawscreen) (void));
 static void quit (void (*drawscreen) (void)); 
 static void map_button (int bnum); 
 static void unmap_button (int bnum); 
+static void handle_button_info (t_event_buttonPressed *button_info, int buttonNumber, int Xbutton_state);
 
 #ifdef X11
 
@@ -881,6 +883,37 @@ static void unmap_button (int bnum)
 			DRAW_ERROR();
 #endif
 	}
+}
+
+
+/* For buttonNumber: pass 1 for left click, 3 for right click, 2 for scroll wheel click,		*
+ * 4 for scroll wheel forward rotate, and 5 for scroll wheel backward rotate. We follow this	*
+ * convention in order to be consistent for both X11 and WIN32.									*/
+static void handle_button_info (t_event_buttonPressed *button_info, int buttonNumber, int Xbutton_state)
+{
+#ifdef X11
+	button_info->button = buttonNumber;
+
+	if (xbutton_state & 1) {
+		button_info->shift_pressed = true;
+#ifdef VERBOSE
+		printf("Shift is pressed at button press.\n");
+#endif
+	}
+	else
+		button_info->shift_pressed = false;
+	if (xbutton_state & 4) {
+		button_info->ctrl_pressed = true;
+#ifdef VERBOSE
+		printf("Ctrl is pressed at button press.\n");
+#endif
+	}
+	else
+		button_info->ctrl_pressed = false;
+
+#else	/* WIN32 */
+	button_info->button = buttonNumber;
+#endif
 }
 
 
@@ -1413,30 +1446,16 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 				x = XTOWORLD(report.xbutton.x);
 				y = YTOWORLD(report.xbutton.y); 
 
-				t_event_buttonPressed button_info; /* Pass information about the button press to client program */
-				//get_buttonPressed_info(report.xbutton.button, report.xbutton.state, &button_info);
-				button_info.button = report.xbutton.button;
-
-				if (report.xbutton.state & 1) {
-					button_info.shift_pressed = true;
-#ifdef VERBOSE
-					printf("Shift is pressed at button press.\n");
-#endif
-				}
-				else
-					button_info.shift_pressed = false;
-				if (report.xbutton.state & 4) {
-					button_info.ctrl_pressed = true;
-#ifdef VERBOSE
-					printf("Ctrl is pressed at button press.\n");
-#endif
-				}
-				else
-					button_info.ctrl_pressed = false;
+				t_event_buttonPressed button_info; 
+				/* t_event_buttonPressed is used as a structure for storing information about a		*
+				 * button press event. This information can be passed back to and used by a client  *
+				 * program.																			*/
+				handle_button_info(&button_info, report.xbutton.button, report.xbutton.state);
 
 				switch (report.xbutton.button) {
 				case Button1:  /* Left mouse click; pass back to client program */
 				case Button3:  /* Right mouse click; pass back to client program */
+					/* Pass information about the button press to client program */
 					act_on_mousebutton (x, y, button_info);
 					break;
 				case Button2:  /* Scroll wheel pressed; enable or disable panning */
@@ -3299,8 +3318,8 @@ MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		return 0;
 
 		// Controls graphics: does zoom in or zoom out depending on direction of mousewheel scrolling.
-		// Only works when this piece of code is put here for the parent window. Will not work if put in
-		// GraphicsWND.
+		// Only the window with the input focus will receive this message. In our case, the top-level 
+		// window has the input focus, thus the code will not work if put in GraphicsWND.
 	case WM_MOUSEWHEEL:
 		// zDelta indicates the distance which the mouse wheel is rotated. 
 		// The value for zDelta is a multiple of WHEEL_DELTA, which is 120.
@@ -3494,16 +3513,16 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		
 	case WM_LBUTTONDOWN:
 		if (!windowAdjustFlag) {  
-			//t_event_buttonPressed is used as a structure for storing information when X11
-			//is defined. It is meaningless for Win32. However, because the function pointer 
-			//"mouseclick_ptr" is assigned to "act_on_mousebutton" in event_loop(), and 
-			//"act_on_mousebutton()" takes "t_event_buttonPressed button_info" as a parameter,
-			//"mouseclick_ptr()" here has to take a meaningless parameter in order for program
-			//to successfully compile.
+			// t_event_buttonPressed is used as a structure for storing information about a 
+			// button press event. This information can be passed back to and used by a client 
+			// program.
 			t_event_buttonPressed button_info;
-			button_info.shift_pressed = false;
-			button_info.ctrl_pressed = false;
-			button_info.button = 0;
+			// The third argument to handle_button_info, Xbutton_state, is for X11. It does not exist
+			// in WIN32, so just pass 0 because the function takes an integer type argument.
+			// For buttonNumber: pass 1 for left click, 3 for right click, 2 for scroll wheel click, 
+			// 4 for scroll wheel forward rotate, and 5 for scroll wheel backward rotate. We follow this 
+			// convention in order to be consistent for both X11 and WIN32.
+			handle_button_info(&button_info, 1, 0);
 
 			mouseclick_ptr(XTOWORLD(LOWORD(lParam)), YTOWORLD(HIWORD(lParam)), button_info);
 		} 
@@ -3579,12 +3598,25 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			update_win(adjustx, adjusty, invalidate_screen);
 		}
 		return 0;
-
+	
+	// If the mouse device has a scroll wheel, then this is a click of the wheel.
+	// Enable or disable panning with click of the mouse wheel.
 	case WM_MBUTTONDOWN:
-		zoom_fit(drawscreen_ptr);
+		// get x- and y- coordinates of the cursor. Do not use LOWORD or HIWORD macros 
+		// to extract the coordinates because these macros can return incorrect results
+		// on systems with multiple monitors.
+		int xPos, yPos;
+		xPos = GET_X_LPARAM(lParam);
+		yPos = GET_Y_LPARAM(lParam);
+
+		panning_enable(xPos, yPos);
 		return 0;
 	
 	case WM_MOUSEMOVE:
+#ifdef VERBOSE
+		printf("Got a MotionNotify Event.\n");
+		printf("x: %d    y: %d\n",GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+#endif
 		if(windowAdjustFlag == 1) {
 			return 0;
 		}
@@ -3614,9 +3646,20 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			
 			return 0;
 		}
-		else if (get_mouse_move_input)
-			mousemove_ptr(XTOWORLD(LOWORD(lParam)), YTOWORLD(HIWORD(lParam)));
+		else if (get_mouse_move_input) {
+			if (panning_enabled) {
+				// get x- and y- coordinates of the cursor. Do not use LOWORD or HIWORD macros 
+				// to extract the coordinates because these macros can return incorrect results
+				// on systems with multiple monitors.
+				int xPos, yPos;
+				xPos = GET_X_LPARAM(lParam);
+				yPos = GET_Y_LPARAM(lParam);
 
+				panning(xPos, yPos, drawscreen_ptr);
+			}
+			else
+				mousemove_ptr(XTOWORLD(LOWORD(lParam)), YTOWORLD(HIWORD(lParam)));
+		}
 		return 0;
 	}
 	
