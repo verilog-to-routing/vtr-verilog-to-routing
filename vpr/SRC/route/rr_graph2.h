@@ -1,3 +1,10 @@
+// JR - Added support for user-defined switchboxes using the Toro front-end. See #ifdef TORO_FABRIC_SWITCHBOX_OVERRIDE.
+// JR - Added support for user-defined connection blocks using the Toro front-end. See #ifdef TORO_FABRIC_CONNECTIONBLOCK_OVERRIDE.
+
+// JR - Extended dump_seg_details() function to improve code reuse.
+// JR - Added new dump_chan_details() function for diagnostic purpores.
+// JR - Added new dump_sblock_pattern() function for diagnostic purpores.
+
 #ifndef RR_GRAPH2_H
 #define RR_GRAPH2_H
 
@@ -34,9 +41,6 @@ t_seg_details *alloc_and_load_seg_details(INOUTP int *nodes_per_chan,
 		INP boolean is_global_graph,
 		INP enum e_directionality
 		directionality);
-
-void dump_seg_details(t_seg_details * seg_details, int nodes_per_chan,
-		const char *fname);
 
 int get_seg_start(INP t_seg_details * seg_details,
 		INP int itrack,
@@ -117,6 +121,65 @@ void load_sblock_pattern_lookup(INP int i, INP int j,
 		INP int Fs,
 		INP enum e_switch_block_type switch_block_type,
 		INOUTP short ******sblock_pattern);
+
+void dump_seg_details(
+		const t_seg_details* seg_details,
+		int nodes_per_chan,
+		const char *fname);
+void dump_seg_details(
+		const t_seg_details* seg_details,
+		int nodes_per_chan,
+		FILE* fp);
+void dump_chan_details(
+		const t_chan_details* chan_details_x,
+		const t_chan_details* chan_details_y,
+		int nodes_per_chan,
+		INP int L_nx, int INP L_ny,
+		const char *fname);
+void dump_sblock_pattern(
+		INP short ******sblock_pattern,
+		int nodes_per_chan,
+		INP int L_nx, int INP L_ny,
+		const char *fname);
+
+#ifdef TORO_FABRIC_SWITCHBOX_OVERRIDE
+//===========================================================================//
+#include "TFH_FabricSwitchBoxHandler.h"
+
+void override_sblock_pattern_lookup(
+		INP int x, INP int y,
+		INP int nodes_per_chan,
+		INOUTP short ******sblock_pattern);
+void override_sblock_pattern_lookup_side(
+		INP int x, INP int y,
+		INP const TC_MapTable_c& mapTable,
+		INP TC_SideMode_t sideMode,
+		INP int nodes_per_chan,
+		INOUTP short ******sblock_pattern);
+void override_sblock_pattern_set_side_track(
+		INP int x, INP int y,
+		INP int from_side, INP int from_track,
+		INP const TC_SideList_t& sideList,
+		INP int nodes_per_chan,
+		INOUTP short ******sblock_pattern);
+void override_sblock_pattern_reset_side_track(
+		INP int x, INP int y,
+		INP int from_side, INP int from_track,
+		INOUTP short ******sblock_pattern);
+int override_sblock_pattern_map_side_mode(
+		INP TC_SideMode_t sideMode);
+//===========================================================================//
+#endif
+
+#ifdef TORO_FABRIC_CONNECTIONBLOCK_OVERRIDE
+//===========================================================================//
+#include "TFH_FabricConnectionBlockHandler.h"
+
+void override_cblock_edge_lists(
+		int num_rr_nodes, 
+		t_rr_node * rr_node );
+//===========================================================================//
+#endif
 
 #endif
 
