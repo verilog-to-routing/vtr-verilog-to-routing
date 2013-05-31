@@ -10,6 +10,9 @@
 ENABLE_GRAPHICS = false
 # can be true or false
 
+setenv ENABLE_TORO = false
+# can be true or false
+
 export BUILD_TYPE = release
 # can be debug or release - this option gets inherited by the library libarchfpga 
 # by default, though libarchfpga's build type can be set independently in libarchfpga's Makefile.
@@ -26,6 +29,7 @@ LIB_DIR = -L.
 LIB = -lm -lvpr
 SRC_DIR = SRC
 OBJ_DIR = OBJ
+# JR OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/route -ISRC/power -I../printhandler/SRC/TIO_InputOutputHandlers
 OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/route -ISRC/power -I../libcommon_c++/SRC/TIO_InputOutputHandlers
 
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
@@ -34,7 +38,7 @@ DEBUG_FLAGS = -g
 OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
 INC_FLAGS = -I../libarchfpga/include
 
-FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -D EZXML_NOMMAP -D_POSIX_C_SOURCE 
+FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -D EZXML_NOMMAP -D_POSIX_C_SOURCE
 
 UNAME := $(shell uname)
 # determine build env
@@ -55,7 +59,6 @@ ifneq (,$(findstring true, $(ENABLE_GRAPHICS)))
   # is located elsewhere, change it here.
   ifneq (,$(findstring true, $(MAC_OS)))
     LIB_DIR := $(LIB_DIR) -L/usr/X11/lib
-	INC_FLAGS := $(INC_FLAGS) -I/opt/X11/include
   else  
     LIB_DIR := $(LIB_DIR) -L/usr/lib/X11
     PACKAGEINSTALL := if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep libx11-dev -c >>/dev/null; then sudo apt-get install libx11-dev; fi; fi
@@ -64,6 +67,32 @@ ifneq (,$(findstring true, $(ENABLE_GRAPHICS)))
   LIB := $(LIB) -lX11
 else
   FLAGS := $(FLAGS) -DNO_GRAPHICS
+endif
+
+ifneq (,$(findstring true, $(ENABLE_TORO)))
+  FLAGS := $(FLAGS) \
+	-D TORO_FABRIC_GRID_OVERRIDE  \
+	-D TORO_FABRIC_BLOCK_OVERRIDE  \
+	-D TORO_FABRIC_SWITCHBOX_OVERRIDE  \
+	-D TORO_FABRIC_CONNECTIONBLOCK_OVERRIDE  \
+	-D TORO_FABRIC_CHANNEL_OVERRIDE  \
+	-D TORO_REGION_PLACEMENT_ENABLE  \
+	-D TORO_RELATIVE_PLACEMENT_ENABLE  \
+	-D TORO_PREPLACED_PLACEMENT_ENABLE  \
+	-D TORO_PREROUTED_ROUTING_ENABLE
+  OTHER_DIR := $(OTHER_DIR) \
+	-I../libcommon_c++/SRC/TFH_FabricHandlers \
+	-I../libcommon_c++/SRC/TCH_CircuitHandlers \
+	-I../libcommon_c++/SRC/TCH_PrePlacedHandler \
+	-I../libcommon_c++/SRC/TCH_PreRoutedHandler \
+	-I../libcommon_c++/SRC/TNO_NetObjects \
+	-I../libcommon_c++/SRC/TPO_PhysicalObjects \
+	-I../libcommon_c++/SRC/TLO_LogicalObjects \
+	-I../libcommon_c++/SRC/TGS_GeometricShapes \
+	-I../libcommon_c++/SRC/TGO_GeometricObjects \
+	-I../libcommon_c++/SRC/TIO_InputOutputHandlers \
+	-I../libcommon_c++/SRC/TC_Common \
+	-I../libcommon_c/pcre/SRC
 endif
 
 EXE = vpr
