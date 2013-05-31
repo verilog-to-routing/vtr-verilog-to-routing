@@ -19,6 +19,18 @@
 #include "vpr_utils.h"
 #include "place_macro.h"
 
+#ifdef TORO_RELATIVE_PLACEMENT_ENABLE
+//===========================================================================//
+#include "TCH_RelativePlaceHandler.h"
+//===========================================================================//
+#endif
+
+#ifdef TORO_PREPLACED_PLACEMENT_ENABLE
+//===========================================================================//
+#include "TCH_PrePlacedHandler.h"
+//===========================================================================//
+#endif
+
 /************** Types and defines local to place.c ***************************/
 
 /* Cut off for incremental bounding box updates.                          *
@@ -67,51 +79,19 @@ which avoids multiplying by a gigantic inverse_prev_timing_cost when auto-normal
 The exact value of this cost has relatively little impact, but should not be
 large enough to be on the order of timing costs for normal constraints. */
 
-/********************** Data Sturcture Definition ***************************/
-/* Stores the information of the move for a block that is       *
- * moved during placement                                       *
- * block_num: the index of the moved block                      *
- * xold: the x_coord that the block is moved from               *
- * xnew: the x_coord that the block is moved to                 *
- * yold: the y_coord that the block is moved from               *
- * xnew: the x_coord that the block is moved to                 *
- */
-typedef struct s_pl_moved_block {
-	int block_num;
-	int xold;
-	int xnew;
-	int yold;
-	int ynew;
-	int zold;
-	int znew;
-	int swapped_to_empty;
-}t_pl_moved_block;
-
-/* Stores the list of blocks to be moved in a swap during       *
- * placement.                                                   *
- * num_moved_blocks: total number of blocks moved when          *
- *                   swapping two blocks.                       *
- * moved blocks: a list of moved blocks data structure with     *
- *               information on the move.                       *
- *               [0...num_moved_blocks-1]                       *
- */
-typedef struct s_pl_blocks_to_be_moved {
-	int num_moved_blocks;
-	t_pl_moved_block * moved_blocks;
-}t_pl_blocks_to_be_moved;
-
+#ifdef TORO_REGION_PLACEMENT_ENABLE
+//===========================================================================//
+// Define maximum number of attempts while trying to find a valid random
+// placement position. This limit is applied during the initial placement
+// step and again when swapping placements during annealing steps.
+#define TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS 500
+//===========================================================================//
+#endif
 
 /********************** Variables local to place.c ***************************/
 
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
 static float *net_cost = NULL, *temp_net_cost = NULL; /* [0..num_nets-1] */
-
-/* legal positions for type */
-typedef struct s_legal_pos {
-	int x;
-	int y;
-	int z;
-}t_legal_pos;
 
 static t_legal_pos **legal_pos = NULL; /* [0..num_types-1][0..type_tsize - 1] */
 static int *num_legal_pos = NULL; /* [0..num_legal_pos-1] */
@@ -286,7 +266,9 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum);
 
 static enum swap_result assess_swap(float delta_c, float t);
 
-static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int *x_to, int *y_to);
+static boolean find_to(int iblk_from, int x_from, int y_from, 
+		t_type_ptr type, float rlim, 
+		int *x_to, int *y_to, int *z_to);
 
 static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new);
 
@@ -304,6 +286,35 @@ static double get_net_wirelength_estimate(int inet, struct s_bb *bbptr);
 
 static void free_try_swap_arrays(void);
 
+#ifdef TORO_REGION_PLACEMENT_ENABLE
+//===========================================================================//
+static boolean placement_region_pos_is_valid(
+		const t_block* pblock_array, int block_index, 
+		int x, int y);
+//===========================================================================//
+#endif
+
+#ifdef TORO_RELATIVE_PLACEMENT_ENABLE
+//===========================================================================//
+static bool initial_placement_relative_macros(
+		int* free_locations);
+static bool apply_placement_relative_macros(
+		int x_from, int y_from, int z_from,
+		int x_to, int y_to, int z_to);
+static bool iterate_placement_relative_macros(
+		int x_from, int y_from, int z_from, 
+		int x_to, int y_to, int z_to,
+		t_pl_blocks_to_be_moved& vpr_blocksAffected);
+//===========================================================================//
+#endif
+
+#ifdef TORO_PREPLACED_PLACEMENT_ENABLE
+//===========================================================================//
+#include "TCH_PrePlacedHandler.h"
+static bool initial_placement_preplaced_blocks(
+		int* free_locations);
+//===========================================================================//
+#endif
 
 /*****************************************************************************/
 /* RESEARCH TODO: Bounding Box and rlim need to be redone for heterogeneous to prevent a QoR penalty */
@@ -396,7 +407,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 	width_fac = placer_opts.place_chan_width;
 
-	init_chan(width_fac, chan_width_dist);
+	init_chan(width_fac, &router_opts.fixed_channel_width, chan_width_dist);
 
 	alloc_and_load_placement_structs(
 			placer_opts.place_cost_exp,
@@ -1137,10 +1148,11 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
 		blocks_affected.moved_blocks[imoved_blk].ynew = y_to;
 		blocks_affected.moved_blocks[imoved_blk].zold = z_from;
 		blocks_affected.moved_blocks[imoved_blk].znew = z_to;
-		blocks_affected.moved_blocks[imoved_blk].swapped_to_empty = TRUE;
+		blocks_affected.moved_blocks[imoved_blk].swapped_to_was_empty = TRUE;
+		blocks_affected.moved_blocks[imoved_blk].swapped_from_is_empty = TRUE;
 		blocks_affected.num_moved_blocks ++;
 				
-	} else {
+	} else if (b_to != INVALID ) {
 
 		// Does not allow a swap with a macro yet
 		get_imacro_from_iblk(&imacro, b_to, pl_macros, num_pl_macros);
@@ -1167,7 +1179,8 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
 		blocks_affected.moved_blocks[imoved_blk].ynew = y_to;
 		blocks_affected.moved_blocks[imoved_blk].zold = z_from;
 		blocks_affected.moved_blocks[imoved_blk].znew = z_to;
-		blocks_affected.moved_blocks[imoved_blk].swapped_to_empty = FALSE;
+		blocks_affected.moved_blocks[imoved_blk].swapped_to_was_empty = FALSE;
+		blocks_affected.moved_blocks[imoved_blk].swapped_from_is_empty = FALSE;
 		blocks_affected.num_moved_blocks ++;
 				
 		imoved_blk = blocks_affected.num_moved_blocks;
@@ -1178,7 +1191,8 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
 		blocks_affected.moved_blocks[imoved_blk].ynew = y_from;
 		blocks_affected.moved_blocks[imoved_blk].zold = z_to;
 		blocks_affected.moved_blocks[imoved_blk].znew = z_from;
-		blocks_affected.moved_blocks[imoved_blk].swapped_to_empty = FALSE;
+		blocks_affected.moved_blocks[imoved_blk].swapped_to_was_empty = FALSE;
+		blocks_affected.moved_blocks[imoved_blk].swapped_from_is_empty = FALSE;
 		blocks_affected.num_moved_blocks ++;
 
 	} // Finish swapping the blocks and setting up blocks_affected
@@ -1233,6 +1247,15 @@ static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {
 
 		} // Finish going through all the blocks in the macro
 
+#ifdef TORO_RELATIVE_PLACEMENT_ENABLE
+	} else if (apply_placement_relative_macros(x_from,y_from,z_from,x_to,y_to,z_to)) {
+
+		// Iterate based on relative placement macro constraints, if any
+		bool ok = iterate_placement_relative_macros(x_from,y_from,z_from,x_to,y_to,z_to,
+				blocks_affected);
+		abort_swap = (!ok ? TRUE : FALSE);
+#endif
+
 	} else { 
 		
 		// This is not a macro - I could use the from and to info from before
@@ -1283,7 +1306,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	 * but this shouldn't cause any significant slowdown and won't be *
 	 * broken if I ever change the parser so that the pins aren't     *
 	 * necessarily at the start of the block list.                    */
-	while (block[b_from].isFixed == TRUE) {
+	while (block[b_from].is_fixed == TRUE) {
 		b_from = my_irand(num_blocks - 1);
 	}
 
@@ -1291,14 +1314,8 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	y_from = block[b_from].y;
 	z_from = block[b_from].z;
 
-	if (!find_to(x_from, y_from, block[b_from].type, rlim, &x_to,
-			&y_to))
+	if (!find_to(b_from, x_from, y_from, block[b_from].type, rlim, &x_to, &y_to, &z_to))
 		return REJECTED;
-
-	z_to = 0;
-	if (grid[x_to][y_to].type->capacity > 1) {
-		z_to = my_irand(grid[x_to][y_to].type->capacity - 1);
-	}
 
 	/* Make the switch in order to make computing the new bounding *
 	 * box simpler.  If the cost increase is too high, switch them *
@@ -1344,9 +1361,9 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 				} else {
 					update_bb(inet, &ts_bb_coord_new[inet],
 							&ts_bb_edge_new[inet], 
-							blocks_affected.moved_blocks[iblk].xold, 
+							blocks_affected.moved_blocks[iblk].xold + block[bnum].type->pin_width[iblk_pin],
 							blocks_affected.moved_blocks[iblk].yold + block[bnum].type->pin_height[iblk_pin],
-							blocks_affected.moved_blocks[iblk].xnew, 
+							blocks_affected.moved_blocks[iblk].xnew + block[bnum].type->pin_width[iblk_pin],
 							blocks_affected.moved_blocks[iblk].ynew + block[bnum].type->pin_height[iblk_pin]);
 				}
 			}
@@ -1423,10 +1440,12 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 
 				grid[x_to][y_to].blocks[z_to] = b_from;
 
-				if (blocks_affected.moved_blocks[iblk].swapped_to_empty == TRUE) {
+				if (blocks_affected.moved_blocks[iblk].swapped_to_was_empty == TRUE) {
 					grid[x_to][y_to].usage++;
+				}
+				if (blocks_affected.moved_blocks[iblk].swapped_from_is_empty == TRUE) {
 					grid[x_from][y_from].usage--;
-					grid[x_from][y_from].blocks[z_from] = -1;
+					grid[x_from][y_from].blocks[z_from] = EMPTY;
 				}
 			
 			} // Finish updating clb for all blocks
@@ -1512,7 +1531,9 @@ static int find_affected_nets(int *nets_to_update) {
 	return num_affected_nets;
 }
 
-static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int *x_to, int *y_to) {
+static boolean find_to(int iblk_from, int x_from, int y_from, 
+		t_type_ptr type, float rlim, 
+		int *x_to, int *y_to, int *z_to) {
 
 	/* Returns the point to which I want to swap, properly range limited. 
 	 * rlim must always be between 1 and nx (inclusive) for this routine  
@@ -1556,20 +1577,66 @@ static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int 
 		} else {
 			num_tries++;
 		}
-		if(nx / 4 < rlx || 
-			ny / 4 < rly ||
-			num_legal_pos[block_index] < active_area) {
+
+#ifdef TORO_REGION_PLACEMENT_ENABLE
+		for (size_t i = 0; i < TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS; ++i) {
+
+			*z_to = 0;
+			if (nx / 4 < rlx || ny / 4 < rly || num_legal_pos[block_index] < active_area) {
+				ipos = my_irand(num_legal_pos[block_index] - 1);
+				*x_to = legal_pos[block_index][ipos].x;
+				*y_to = legal_pos[block_index][ipos].y;
+				*z_to = legal_pos[block_index][ipos].z;
+			} else {
+				x_rel = my_irand(max(0, max_x - min_x));
+				y_rel = my_irand(max(0, max_y - min_y));
+				*x_to = min_x + x_rel;
+				*y_to = min_y + y_rel;
+				*x_to = (*x_to) - grid[*x_to][*y_to].width_offset; /* align it */
+				*y_to = (*y_to) - grid[*x_to][*y_to].height_offset; /* align it */
+			}
+
+			// Validate placement region positions (based on optional placement regions)
+			if (!grid[*x_to][*y_to].blocks) {
+				break;
+			}
+
+			int iblk_to = grid[*x_to][*y_to].blocks[*z_to];
+			if (placement_region_pos_is_valid(block, iblk_from, *x_to, *y_to) &&
+			   placement_region_pos_is_valid(block, iblk_to, x_from, y_from)) {
+				break;
+			}
+
+			// Handle case where we will exceed the max number of random place attempts
+			if (i == TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS - 1) {
+
+				const char* from_name = block[iblk_from].name;
+				const char* to_name = (iblk_to >= 0 ? block[iblk_to].name : "");
+
+				vpr_printf(TIO_MESSAGE_WARNING, 
+					"Failed to find swap candidate after %u tries using block region list.\n"
+					"%sSwapping block %s at (%d,%d) with block %s%sat (%d,%d) based on last random placement.\n",
+					TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS,
+					TIO_PREFIX_WARNING_SPACE,
+					from_name, x_from, y_from,
+					to_name, (iblk_to >= 0 ? " " : ""), *x_to, *y_to);
+			}
+		}
+#else
+		*z_to = 0;
+		if(nx / 4 < rlx || ny / 4 < rly || num_legal_pos[block_index] < active_area) {
 			ipos = my_irand(num_legal_pos[block_index] - 1);
 			*x_to = legal_pos[block_index][ipos].x;
 			*y_to = legal_pos[block_index][ipos].y;
 		} else {
 			x_rel = my_irand(std::max(0, max_x - min_x));
-			*x_to = min_x + x_rel;
 			y_rel = my_irand(std::max(0, max_y - min_y));
+			*x_to = min_x + x_rel;
 			*y_to = min_y + y_rel;
 			*x_to = (*x_to) - grid[*x_to][*y_to].width_offset; /* align it */
 			*y_to = (*y_to) - grid[*x_to][*y_to].height_offset; /* align it */
 		}
+#endif
 		
 		if((x_from == *x_to) && (y_from == *y_to)) {
 			is_legal = FALSE;
@@ -1577,6 +1644,16 @@ static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int 
 			is_legal = FALSE;
 		} else if(grid[*x_to][*y_to].type != grid[x_from][y_from].type) {
 			is_legal = FALSE;
+		} else {
+			/* Find z_to and test to validate that the "to" block is *not* fixed */
+			*z_to = 0;
+			if (grid[*x_to][*y_to].type->capacity > 1) {
+				*z_to = my_irand(grid[*x_to][*y_to].type->capacity - 1);
+			}
+			int b_to = grid[*x_to][*y_to].blocks[*z_to];
+			if (block[b_to].is_fixed == TRUE) {
+				is_legal = FALSE;
+			}
 		}
 
 		assert(*x_to >= 0 && *x_to <= nx + 1);
@@ -2091,7 +2168,7 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 	bnum = clb_net[inet].node_block[0];
 	pnum = clb_net[inet].node_block_pin[0];
 
-	x = block[bnum].x;
+	x = block[bnum].x + block[bnum].type->pin_width[pnum];
 	y = block[bnum].y + block[bnum].type->pin_height[pnum];
 
 	x = std::max(std::min(x, nx), 1);
@@ -2109,7 +2186,7 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 	for (ipin = 1; ipin < n_pins; ipin++) {
 		bnum = clb_net[inet].node_block[ipin];
 		pnum = clb_net[inet].node_block_pin[ipin];
-		x = block[bnum].x;
+		x = block[bnum].x + block[bnum].type->pin_width[pnum];
 		y = block[bnum].y + block[bnum].type->pin_height[pnum];
 
 		/* Code below counts IO blocks as being within the 1..nx, 1..ny clb array. *
@@ -2245,8 +2322,8 @@ static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new) {
 
 	bnum = clb_net[inet].node_block[0];
 	pnum = clb_net[inet].node_block_pin[0];
-	x = block[bnum].x;
-	y =	block[bnum].y + block[bnum].type->pin_height[pnum];
+	x = block[bnum].x + block[bnum].type->pin_width[pnum];
+	y = block[bnum].y + block[bnum].type->pin_height[pnum];
 	
 	xmin = x;
 	ymin = y;
@@ -2256,8 +2333,8 @@ static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new) {
 	for (k = 1; k < (clb_net[inet].num_sinks + 1); k++) {
 		bnum = clb_net[inet].node_block[k];
 		pnum = clb_net[inet].node_block_pin[k];
-		x = block[bnum].x;
-		y =	block[bnum].y + block[bnum].type->pin_height[pnum];
+		x = block[bnum].x + block[bnum].type->pin_width[pnum];
+		y = block[bnum].y + block[bnum].type->pin_height[pnum];
 
 		if (x < xmin) {
 			xmin = x;
@@ -2512,9 +2589,11 @@ static void alloc_legal_placements() {
 		for (j = 0; j <= ny + 1; j++) {
 			grid[i][j].usage = 0;
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
-				grid[i][j].blocks[k] = EMPTY;
-				if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
-					num_legal_pos[grid[i][j].type->index]++;
+				if (grid[i][j].blocks[k] != INVALID) {
+					grid[i][j].blocks[k] = EMPTY;
+					if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
+						num_legal_pos[grid[i][j].type->index]++;
+					}
 				}
 			}
 		}
@@ -2534,6 +2613,9 @@ static void load_legal_placements() {
 	for (i = 0; i <= nx + 1; i++) {
 		for (j = 0; j <= ny + 1; j++) {
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
+				if (grid[i][j].blocks[k] == INVALID) {
+					continue;
+				}
 				if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
 					itype = grid[i][j].type->index;
 					legal_pos[itype][index[itype]].x = i;
@@ -2717,7 +2799,7 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 
-		if (block[iblk].x != -1) {
+		if (block[iblk].x != EMPTY) {
 			// block placed.
 			continue;
 		}
@@ -2738,10 +2820,35 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 				exit(1);
 			}
 
+#ifdef TORO_REGION_PLACEMENT_ENABLE
+			for (size_t i = 0; i < TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS; ++i) {
+
+				ichoice = my_irand(free_locations[itype] - 1);
+				x = legal_pos[itype][ichoice].x;
+				y = legal_pos[itype][ichoice].y;
+				z = legal_pos[itype][ichoice].z;
+
+				// Validate random position (based on optional placement regions)
+				if (placement_region_pos_is_valid(block, iblk, x, y))
+					break;
+
+				// Handle case where we will exceed the max number of random place attempts
+				if (i == TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS - 1) {
+
+					vpr_printf(TIO_MESSAGE_WARNING, 
+						"Failed to find initial placement after %u tries using block region list.\n"
+						"%sIntializing block %s to (%d,%d) based on last random placement.\n",
+						TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS,
+						TIO_PREFIX_WARNING_SPACE,
+						block[iblk].name, x, y);
+				}
+			}
+#else
 			ichoice = my_irand(free_locations[itype] - 1);
 			x = legal_pos[itype][ichoice].x;
 			y = legal_pos[itype][ichoice].y;
 			z = legal_pos[itype][ichoice].z;
+#endif
 
 			// Make sure that the position is EMPTY before placing the block down
 			assert (grid[x][y].blocks[z] == EMPTY);
@@ -2809,6 +2916,14 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 
 	initial_placement_pl_macros(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, free_locations);
 	
+#ifdef TORO_RELATIVE_PLACEMENT_ENABLE
+	initial_placement_relative_macros(free_locations);
+#endif
+
+#ifdef TORO_PREPLACED_PLACEMENT_ENABLE
+	initial_placement_preplaced_blocks(free_locations);
+#endif
+
 	// All the macros are placed, update the legal_pos[][] array
 	for (itype = 0; itype < num_types; itype++) {
 		assert (free_locations[itype] >= 0);
@@ -3120,3 +3235,124 @@ static void free_try_swap_arrays(void) {
 	}
 }
 
+#ifdef TORO_REGION_PLACEMENT_ENABLE
+//===========================================================================//
+static boolean placement_region_pos_is_valid(
+		const t_block* pblock_array,
+		      int      block_index,
+		      int      x,
+		      int      y) {  
+
+	// Returns TRUE if the given placement region position is valid.  
+	// By default, position coordinates are assumed valid unless an
+	// optional placement region list is defined.  If a placement region 
+	// list is defined, then the position coordinates are validated
+	// based on the list of one or more acceptable placement regions.
+
+	boolean is_valid = TRUE;
+
+	const t_block* pblock = 0;
+	if (block_index != EMPTY && block_index != INVALID) {
+		pblock = &pblock_array[block_index];
+	}
+	if (pblock && pblock->placement_region_list.IsValid()) {
+
+		is_valid = FALSE;
+
+		TGO_Point_c point(x, y);
+		for (size_t i = 0; i < pblock->placement_region_list.GetLength( ); ++i) {
+			const TGO_Region_c& placement_region = *pblock->placement_region_list[i];
+			if (placement_region.IsWithin(point)) {
+				is_valid = TRUE;
+				break;
+			}
+		}
+	}
+	return(is_valid);
+}
+//===========================================================================//
+#endif
+
+#ifdef TORO_RELATIVE_PLACEMENT_ENABLE
+//===========================================================================//
+static bool initial_placement_relative_macros(
+		int* free_locations) {
+
+	bool ok = true;
+
+	// Verify at least one relative placement constraint has been defined
+	TCH_RelativePlaceHandler_c& relativePlaceHandler = TCH_RelativePlaceHandler_c::GetInstance();
+	if (relativePlaceHandler.IsValid()) {
+
+		// Init relative placement handler based on current grid array
+		ok = relativePlaceHandler.InitialPlace(grid, nx, ny, 
+							block, num_blocks, 
+							type_descriptors, num_types, 
+							free_locations, legal_pos);
+	}
+	return(ok);
+}
+
+//===========================================================================//
+static bool apply_placement_relative_macros(
+		int x_from, int y_from, int z_from,
+		int x_to, int y_to, int z_to) {
+
+	bool ok = false;
+
+	// Verify at least one relative placement constraint has been defined
+	const TCH_RelativePlaceHandler_c& relativePlaceHandler = TCH_RelativePlaceHandler_c::GetInstance();
+	if (relativePlaceHandler.IsValid()) {
+
+		// Return TRUE if given grid coordinates are swap candidates
+		if (relativePlaceHandler.IsCandidate(x_from, y_from, z_from, 
+							x_to, y_to, z_to)) {
+			ok = true;
+		}
+	}
+	return(ok);
+}
+
+//===========================================================================//
+static bool iterate_placement_relative_macros(
+		int x_from, int y_from, int z_from,
+		int x_to, int y_to, int z_to,
+		t_pl_blocks_to_be_moved& vpr_blocksAffected) {
+
+	bool ok = true;
+
+	// Verify at least one relative placement constraint has been defined
+	TCH_RelativePlaceHandler_c& relativePlaceHandler = TCH_RelativePlaceHandler_c::GetInstance();
+	if (relativePlaceHandler.IsValid()) {
+
+		// Iterate relative placement handler based on grid coordinates
+		ok = relativePlaceHandler.Place(x_from, y_from, z_from, 
+						x_to, y_to, z_to,
+						vpr_blocksAffected);
+	}
+	return(ok);
+}
+//===========================================================================//
+#endif
+
+#ifdef TORO_PREPLACED_PLACEMENT_ENABLE
+//===========================================================================//
+static bool initial_placement_preplaced_blocks(
+		int* free_locations) {
+
+	bool ok = true;
+
+	// Verify at least one pre-placed constraint has been defined
+	TCH_PrePlacedHandler_c& prePlacedHandler = TCH_PrePlacedHandler_c::GetInstance();
+	if (prePlacedHandler.IsValid()) {
+
+		// Apply pre-placement handler based on any pre-placed blocks
+		ok = prePlacedHandler.InitialPlace(grid, nx, ny, 
+							block, num_blocks, 
+							type_descriptors, num_types, 
+							free_locations, legal_pos);
+	}
+	return (ok);
+}
+//===========================================================================//
+#endif
