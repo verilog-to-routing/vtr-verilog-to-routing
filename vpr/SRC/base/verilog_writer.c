@@ -1039,7 +1039,8 @@ char *find_clock_name(void)
   int clocks = 0;
   for(j=0 ; j<num_nets ; j++)/*Doing this to find the clock name in the design and storing it in clock_,*/
     {
-      if(clb_net[j].is_global == TRUE)
+      /* TODO fix this Hack: Currently detect if a clb_net is a clock using global and not vcc/gnd, need better way */
+      if(clb_net[j].is_global == TRUE && strcmp(clb_net[j].name, "gnd") != 0 && strcmp(clb_net[j].name, "vcc") != 0)
 	{
 	  clock_in_the_design = clb_net[j].name;
 	  clocks++;
