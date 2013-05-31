@@ -385,8 +385,7 @@ static void postscript (void (*drawscreen) (void));
 static void proceed (void (*drawscreen) (void));
 static void quit (void (*drawscreen) (void)); 
 static void map_button (int bnum); 
-static void unmap_button (int bnum); 
-static void handle_button_info (t_event_buttonPressed *button_info, int buttonNumber, int Xbutton_state);
+static void unmap_button (int bnum);
 
 #ifdef X11
 
@@ -416,6 +415,8 @@ static int which_button (Window win);
 
 static void turn_on_off (int pressed);
 static void drawmenu(void);
+
+static void handle_button_info (t_event_buttonPressed *button_info, int buttonNumber, int Xbutton_state);
 
 #endif /* X11 Declarations */
 
@@ -494,6 +495,8 @@ static void invalidate_screen();
 
 static void reset_win32_state ();
 static void win32_drain_message_queue ();
+
+static void handle_button_info (t_event_buttonPressed *button_info, UINT message, WPARAM wParam);
 
 void drawtoscreen();
 void displaybuffer();
@@ -883,37 +886,6 @@ static void unmap_button (int bnum)
 			DRAW_ERROR();
 #endif
 	}
-}
-
-
-/* For buttonNumber: pass 1 for left click, 3 for right click, 2 for scroll wheel click,		*
- * 4 for scroll wheel forward rotate, and 5 for scroll wheel backward rotate. We follow this	*
- * convention in order to be consistent for both X11 and WIN32.									*/
-static void handle_button_info (t_event_buttonPressed *button_info, int buttonNumber, int Xbutton_state)
-{
-#ifdef X11
-	button_info->button = buttonNumber;
-
-	if (xbutton_state & 1) {
-		button_info->shift_pressed = true;
-#ifdef VERBOSE
-		printf("Shift is pressed at button press.\n");
-#endif
-	}
-	else
-		button_info->shift_pressed = false;
-	if (xbutton_state & 4) {
-		button_info->ctrl_pressed = true;
-#ifdef VERBOSE
-		printf("Ctrl is pressed at button press.\n");
-#endif
-	}
-	else
-		button_info->ctrl_pressed = false;
-
-#else	/* WIN32 */
-	button_info->button = buttonNumber;
-#endif
 }
 
 
@@ -1451,6 +1423,12 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 				 * button press event. This information can be passed back to and used by a client  *
 				 * program.																			*/
 				handle_button_info(&button_info, report.xbutton.button, report.xbutton.state);
+#ifdef VERBOSE
+			if (button_info.shift_pressed == true)
+				printf("Shift is pressed at button press.\n");
+			if (button_info.ctrl_pressed == true)
+				printf("Ctrl is pressed at button press.\n");
+#endif
 
 				switch (report.xbutton.button) {
 				case Button1:  /* Left mouse click; pass back to client program */
@@ -3253,6 +3231,23 @@ static void drawmenu(void)
 	}
 }
 
+
+static void handle_button_info (t_event_buttonPressed *button_info, int buttonNumber, int Xbutton_state)
+{
+
+	button_info->button = buttonNumber;
+
+	if (xbutton_state & 1) 
+		button_info->shift_pressed = true;
+	else
+		button_info->shift_pressed = false;
+
+	if (xbutton_state & 4) 
+		button_info->ctrl_pressed = true;
+	else
+		button_info->ctrl_pressed = false;
+}
+
 #endif /* X-Windows Specific Definitions */
 
 
@@ -3513,16 +3508,19 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		
 	case WM_LBUTTONDOWN:
 		if (!windowAdjustFlag) {  
-			// t_event_buttonPressed is used as a structure for storing information about a 
+			// t_event_buttonPressed is used as a structure for storing information about a mouse
 			// button press event. This information can be passed back to and used by a client 
 			// program.
 			t_event_buttonPressed button_info;
-			// The third argument to handle_button_info, Xbutton_state, is for X11. It does not exist
-			// in WIN32, so just pass 0 because the function takes an integer type argument.
-			// For buttonNumber: pass 1 for left click, 3 for right click, 2 for scroll wheel click, 
-			// 4 for scroll wheel forward rotate, and 5 for scroll wheel backward rotate. We follow this 
-			// convention in order to be consistent for both X11 and WIN32.
-			handle_button_info(&button_info, 1, 0);
+			handle_button_info(&button_info, message, wParam);
+#ifdef VERBOSE
+			printf("Button pressed is: %d.\n(left click is 1; right click is 3; scroll wheel click is 2; "
+					"scroll wheel forward rotate is 4; scroll wheel backward is 5.)\n",button_info.button);
+			if (button_info.shift_pressed == true)
+				printf("Shift is pressed at button press.\n");
+			if (button_info.ctrl_pressed == true)
+				printf("Ctrl is pressed at button press.\n");
+#endif
 
 			mouseclick_ptr(XTOWORLD(LOWORD(lParam)), YTOWORLD(HIWORD(lParam)), button_info);
 		} 
@@ -3865,6 +3863,49 @@ void win32_drain_message_queue () {
          printf ("Got the quit message.\n");
       }
    } 
+}
+
+
+void handle_button_info (t_event_buttonPressed *button_info, UINT message, WPARAM wParam)
+{
+	/* The parameter "wParam" is an unsigned int. In this case, it contains information indicating *
+	 * whether various virtual keys (ie. modifier keys) are held during a mouse button press       *
+	 * event.																					   */
+	if (wParam & MK_SHIFT) 
+		button_info->shift_pressed = true;
+	else
+		button_info->shift_pressed = false;
+	
+	if (wParam & MK_CONTROL) 
+		button_info->ctrl_pressed = true;
+	else
+		button_info->ctrl_pressed = false;
+	
+	/* Parameter "message" indicates what button is pressed: pass 1 for left click, 3 for right click, *
+	 * 2 for scroll wheel click, 4 for scroll wheel forward rotate, and 5 for scroll wheel backward    *
+	 * rotate. We follow this convention in order to be consistent for both X11 and WIN32.   MW.       */
+	switch (message)
+	{
+		case (WM_LBUTTONDOWN):
+			button_info->button = 1;
+			return;
+		case (WM_RBUTTONDOWN):
+			button_info->button = 3;
+			return;
+		case (WM_MBUTTONDOWN):
+			button_info->button = 2;
+			return;
+		case (WM_MOUSEWHEEL):
+			short zDelta;
+			zDelta = GET_WHEEL_DELTA_WPARAM(wParam); 
+			// Positive value for zDelta indicates that the wheel was rotated forward, away from user, 
+			// and negative value indicates wheel rotated backward.
+			if (zDelta > 0)
+				button_info->button = 4;
+			else
+				button_info->button = 5;
+			return;
+	}	
 }
 
 

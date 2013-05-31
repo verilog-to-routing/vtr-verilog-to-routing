@@ -21,7 +21,7 @@
 	   * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
 #include <sys/time.h>
 #endif
-#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
+//#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
 #ifdef DEBUG
 #include "rr_graph.h"
