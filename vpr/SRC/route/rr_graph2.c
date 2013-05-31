@@ -1,3 +1,14 @@
+// JR - Added new find_average_rr_node_index() helper function. This function is used to find a representative node within the grid. By default, this is the center-most node. However, this function handles cases where the grid is partially depopulated and the center-most node does not exist.
+
+// JR - Added support for user-defined switchboxes using the Toro front-end. See #ifdef TORO_FABRIC_SWITCHBOX_OVERRIDE.
+// JR - Added support for user-defined connection blocks using the Toro front-end. See #ifdef TORO_FABRIC_CONNECTIONBLOCK_OVERRIDE.
+
+// JR - Modified the label_wire_muxes_for_balance() function, removing the hard exit when opin muxes are not balanced (in order to support user-defined switchboxes)
+
+// JR - Extended dump_seg_details() function to improve code reuse.
+// JR - Added new dump_chan_details() function for diagnostic purpores.
+// JR - Added new dump_sblock_pattern() function for diagnostic purpores.
+
 #include <stdio.h>
 #include <assert.h>
 #include "util.h"
@@ -368,49 +379,6 @@ void free_seg_details(t_seg_details * seg_details, int nodes_per_chan) {
 	free(seg_details);
 }
 
-/* Dumps out an array of seg_details structures to file fname.  Used only   *
- * for debugging.                                                           */
-void dump_seg_details(t_seg_details * seg_details, int nodes_per_chan,
-		const char *fname) {
-
-	FILE *fp;
-	int i, j;
-	const char *drivers_names[] = { "multi_buffered", "single" };
-	const char *direction_names[] = { "inc_direction", "dec_direction",
-			"bi_direction" };
-
-	fp = my_fopen(fname, "w", 0);
-
-	for (i = 0; i < nodes_per_chan; i++) {
-		fprintf(fp, "Track: %d.\n", i);
-		fprintf(fp, "Length: %d,  Start: %d,  Long line: %d  "
-				"wire_switch: %d  opin_switch: %d.\n", seg_details[i].length,
-				seg_details[i].start, seg_details[i].longline,
-				seg_details[i].wire_switch, seg_details[i].opin_switch);
-
-		fprintf(fp, "Rmetal: %g  Cmetal: %g\n", seg_details[i].Rmetal,
-				seg_details[i].Cmetal);
-
-		fprintf(fp, "Direction: %s  Drivers: %s\n",
-				direction_names[seg_details[i].direction],
-				drivers_names[seg_details[i].drivers]);
-
-		fprintf(fp, "cb list:  ");
-		for (j = 0; j < seg_details[i].length; j++)
-			fprintf(fp, "%d ", seg_details[i].cb[j]);
-		fprintf(fp, "\n");
-
-		fprintf(fp, "sb list: ");
-		for (j = 0; j <= seg_details[i].length; j++)
-			fprintf(fp, "%d ", seg_details[i].sb[j]);
-		fprintf(fp, "\n");
-
-		fprintf(fp, "\n");
-	}
-
-	fclose(fp);
-}
-
 /* Returns the segment number at which the segment this track lies on        *
  * started.                                                                  */
 int get_seg_start(INP t_seg_details * seg_details, INP int itrack,
@@ -657,6 +625,146 @@ boolean is_cbox(INP int chan, INP int seg, INP int track,
 	}
 
 	return seg_details[track].cb[ofs];
+}
+
+/* Dumps out an array of seg_details structures to file fname.  Used only   *
+ * for debugging.                                                           */
+void dump_seg_details(
+		const t_seg_details* seg_details, 
+		int nodes_per_chan, 
+		const char *fname) {
+
+	FILE *fp = my_fopen(fname, "w", 0);
+	if (fp) {
+		dump_seg_details(seg_details, nodes_per_chan, fp);
+	}
+	fclose(fp);
+}
+
+void dump_seg_details(
+		const t_seg_details* seg_details,
+		int nodes_per_chan,
+		FILE* fp) {
+
+	const char *drivers_names[] = { "multi_buffered", "single" };
+	const char *direction_names[] = { "inc_direction", "dec_direction", "bi_direction" };
+
+	for (int i = 0; i < nodes_per_chan; i++) {
+
+		fprintf(fp, "track: %d\n", i);
+		fprintf(fp, "length: %d  start: %d",
+				seg_details[i].length, seg_details[i].start);
+
+		if (seg_details[i].length > 0) {
+			if (seg_details[i].seg_start >= 0 && seg_details[i].seg_end >= 0) {
+				fprintf(fp, " [%d,%d]",
+						seg_details[i].seg_start, seg_details[i].seg_end);
+			}
+			fprintf(fp, "  longline: %d  wire_switch: %d  opin_switch: %d", 
+					seg_details[i].longline,
+					seg_details[i].wire_switch, seg_details[i].opin_switch);
+		}
+		fprintf(fp, "\n"); 
+
+		fprintf(fp, "Rmetal: %g  Cmetal: %g\n", 
+				seg_details[i].Rmetal, seg_details[i].Cmetal);
+
+		fprintf(fp, "direction: %s  drivers: %s\n",
+				direction_names[seg_details[i].direction],
+				drivers_names[seg_details[i].drivers]);
+
+		fprintf(fp, "cb list:  ");
+		for (int j = 0; j < seg_details[i].length; j++)
+			fprintf(fp, "%d ", seg_details[i].cb[j]);
+		fprintf(fp, "\n");
+
+		fprintf(fp, "sb list: ");
+		for (int j = 0; j <= seg_details[i].length; j++)
+			fprintf(fp, "%d ", seg_details[i].sb[j]);
+		fprintf(fp, "\n");
+
+		fprintf(fp, "\n");
+	}
+}
+
+/* Dumps out a 2D array of chan_details structures to file fname.  Used     *
+ * only for debugging.                                                      */
+void dump_chan_details(
+		const t_chan_details* pa_chan_details_x,
+		const t_chan_details* pa_chan_details_y,
+		int nodes_per_chan,
+		INP int L_nx, int INP L_ny,
+		const char *fname) {
+
+	FILE *fp = my_fopen(fname, "w", 0);
+	if (fp) {
+		for (int y = 0; y <= L_ny; ++y) {
+			for (int x = 0; x <= L_nx; ++x) {
+
+				fprintf(fp, "========================\n");
+				fprintf(fp, "chan_details_x: [%d][%d]\n", x, y);
+				fprintf(fp, "========================\n");
+
+				const t_seg_details* seg_details = pa_chan_details_x[x][y];
+				dump_seg_details(seg_details, nodes_per_chan, fp);
+			}
+		}
+		for (int x = 0; x <= L_nx; ++x) {
+			for (int y = 0; y <= L_ny; ++y) {
+
+				fprintf(fp, "========================\n");
+				fprintf(fp, "chan_details_y: [%d][%d]\n", x, y);
+				fprintf(fp, "========================\n");
+
+				const t_seg_details* seg_details = pa_chan_details_y[x][y];
+				dump_seg_details(seg_details, nodes_per_chan, fp);
+			}
+		}
+	}
+	fclose(fp);
+}
+
+/* Dumps out an array of seg_details structures to file fname.  Used only   *
+ * for debugging.                                                           */
+void dump_seg_details(t_seg_details * seg_details, int nodes_per_chan,
+		const char *fname) {
+
+	FILE *fp;
+	int i, j;
+	const char *drivers_names[] = { "multi_buffered", "single" };
+	const char *direction_names[] = { "inc_direction", "dec_direction",
+			"bi_direction" };
+
+	fp = my_fopen(fname, "w", 0);
+
+	for (i = 0; i < nodes_per_chan; i++) {
+		fprintf(fp, "Track: %d.\n", i);
+		fprintf(fp, "Length: %d,  Start: %d,  Long line: %d  "
+				"wire_switch: %d  opin_switch: %d.\n", seg_details[i].length,
+				seg_details[i].start, seg_details[i].longline,
+				seg_details[i].wire_switch, seg_details[i].opin_switch);
+
+		fprintf(fp, "Rmetal: %g  Cmetal: %g\n", seg_details[i].Rmetal,
+				seg_details[i].Cmetal);
+
+		fprintf(fp, "Direction: %s  Drivers: %s\n",
+				direction_names[seg_details[i].direction],
+				drivers_names[seg_details[i].drivers]);
+
+		fprintf(fp, "cb list:  ");
+		for (j = 0; j < seg_details[i].length; j++)
+			fprintf(fp, "%d ", seg_details[i].cb[j]);
+		fprintf(fp, "\n");
+
+		fprintf(fp, "sb list: ");
+		for (j = 0; j <= seg_details[i].length; j++)
+			fprintf(fp, "%d ", seg_details[i].sb[j]);
+		fprintf(fp, "\n");
+
+		fprintf(fp, "\n");
+	}
+
+	fclose(fp);
 }
 
 static void load_chan_rr_indices(INP int nodes_per_chan, INP int chan_len,
@@ -1835,6 +1943,152 @@ void load_sblock_pattern_lookup(INP int i, INP int j, INP int nodes_per_chan,
 	}
 }
 
+#ifdef TORO_FABRIC_SWITCHBOX_OVERRIDE
+//===========================================================================//
+void override_sblock_pattern_lookup(
+		INP int x, INP int y,
+		INP int nodes_per_chan,
+		INOUTP short ******sblock_pattern) {
+
+	// Verify at least one override switchbox constraint has been defined
+	const TFH_FabricSwitchBoxHandler_c& fabricSwitchBoxHandler = TFH_FabricSwitchBoxHandler_c::GetInstance();
+	if (fabricSwitchBoxHandler.IsValid()) {
+
+		const TFH_SwitchBoxList_t& switchBoxList = fabricSwitchBoxHandler.GetSwitchBoxList();
+
+		TFH_SwitchBox_c switchBox(x, y);
+		if (switchBoxList.IsMember(switchBox)) {
+
+			vpr_printf(TIO_MESSAGE_INFO, "Overriding architecture switchbox[%d][%d] based on fabric switchbox...\n", x, y);
+
+			// Found existing override switchbox, now fetch and apply mapping
+			size_t i = switchBoxList.FindIndex(switchBox);
+			const TFH_SwitchBox_c* pswitchBox = switchBoxList[i];
+			const TC_MapTable_c& mapTable = pswitchBox->GetMapTable();
+
+			override_sblock_pattern_lookup_side(x, y, mapTable, TC_SIDE_LEFT,
+					nodes_per_chan, sblock_pattern);
+			override_sblock_pattern_lookup_side(x, y, mapTable, TC_SIDE_RIGHT,
+					nodes_per_chan, sblock_pattern);
+			override_sblock_pattern_lookup_side(x, y, mapTable, TC_SIDE_LOWER,
+					nodes_per_chan, sblock_pattern);
+			override_sblock_pattern_lookup_side(x, y, mapTable, TC_SIDE_UPPER,
+					nodes_per_chan, sblock_pattern);
+		}
+	}
+}
+
+//===========================================================================//
+void override_sblock_pattern_lookup_side(
+		INP int x, INP int y,
+		INP const TC_MapTable_c& mapTable,
+		INP TC_SideMode_t sideMode,
+		INP int nodes_per_chan,
+		INOUTP short ******sblock_pattern) {
+
+	// Override the given sblock_pattern multi-dimensional array, 
+	// updating it based on the given Toro map table and side mode
+
+	const TC_MapSideList_t& mapSideList = *mapTable.FindMapSideList(sideMode);
+	for (size_t i = 0; i < mapSideList.GetLength(); ++i) {
+
+		const TC_SideList_t& sideList = *mapSideList[i];
+		if (!sideList.IsValid())
+			continue;
+
+		int from_side = override_sblock_pattern_map_side_mode( sideMode );
+		int from_track = static_cast<int>(i);
+
+		override_sblock_pattern_set_side_track(x, y, from_side, from_track, sideList, 
+				nodes_per_chan, sblock_pattern);
+	}
+}
+
+//===========================================================================//
+void override_sblock_pattern_set_side_track(
+		INP int x, INP int y,
+		INP int from_side, INP int from_track,
+		INP const TC_SideList_t& sideList,
+		INP int nodes_per_chan,
+		INOUTP short ******sblock_pattern) {
+
+	// Override the given sblock_pattern multi-dimension array, 
+	// updating (ie. setting) from_side/from_track and to_side/to_track values 
+	// based on the given Toro map side list
+
+	// Reset any existing to_side/to_track values based on from_side/from_track
+	override_sblock_pattern_reset_side_track(x, y, from_side, from_track, 
+			sblock_pattern);
+
+	// Iterate given to_side/to_track pairs and update switchbox pattern map
+	for (size_t i = 0; i < sideList.GetLength(); ++i) {
+
+		TC_SideMode_t sideMode = sideList[i]->GetSide();
+		int to_side = override_sblock_pattern_map_side_mode( sideMode );
+		int to_track = static_cast<int>(sideList[i]->GetIndex());
+		if (to_track >= nodes_per_chan)
+			continue;
+
+		sblock_pattern[x][y][from_side][to_side][from_track][1] = to_track;
+	}
+}
+
+//===========================================================================//
+void override_sblock_pattern_reset_side_track(
+		INP int x, INP int y,
+		INP int from_side, INP int from_track,
+		INOUTP short ******sblock_pattern) {
+
+	// Override the given sblock_pattern multi-dimensional array, 
+	// clearing (ie. resetting) any existing to_side/to_track values 
+	// based on the given from_type/from_track
+	for (int to_side = 0; to_side < 4; ++to_side) {
+
+		sblock_pattern[x][y][from_side][to_side][from_track][0] = UN_SET;
+		sblock_pattern[x][y][from_side][to_side][from_track][1] = UN_SET;
+	}
+}
+
+//===========================================================================//
+int override_sblock_pattern_map_side_mode(
+		INP TC_SideMode_t sideMode) {
+
+	int side = -1;
+
+	switch(sideMode) {
+	case TC_SIDE_LEFT:  side = LEFT;   break;
+	case TC_SIDE_RIGHT: side = RIGHT;  break;
+	case TC_SIDE_LOWER: side = BOTTOM; break;
+	case TC_SIDE_UPPER: side = TOP;    break;
+	default:                           break;
+	}
+	return (side);
+}
+//===========================================================================//
+#endif
+
+#ifdef TORO_FABRIC_CONNECTIONBLOCK_OVERRIDE
+//===========================================================================//
+void override_cblock_edge_lists(
+		int L_num_rr_nodes, 
+		t_rr_node * L_rr_node ) {
+
+	// Verify at least one override connection block constraint has been defined
+	TFH_FabricConnectionBlockHandler_c& fabricConnectionBlockHandler = TFH_FabricConnectionBlockHandler_c::GetInstance();
+	if (fabricConnectionBlockHandler.IsValid()) {
+
+		const TFH_ConnectionBlockList_t& connectionBlockList = fabricConnectionBlockHandler.GetConnectionBlockList();
+		if (connectionBlockList.IsValid()) {
+
+			vpr_printf(TIO_MESSAGE_INFO, "Overriding architecture connection blocks based on fabric connection blocks...\n");
+
+			fabricConnectionBlockHandler.UpdateGraphConnections(static_cast<void*>(L_rr_node), L_num_rr_nodes);
+		}
+	}
+}
+//===========================================================================//
+#endif
+
 static int *
 label_wire_muxes_for_balance(INP int chan_num, INP int seg_num,
 		INP t_seg_details * seg_details, INP int max_len,
@@ -1900,9 +2154,9 @@ label_wire_muxes_for_balance(INP int chan_num, INP int seg_num,
 	}
 	if (max_opin_mux_size > (min_opin_mux_size + 1)) {
 		vpr_printf(TIO_MESSAGE_ERROR, "opin muxes are not balanced!\n");
-		vpr_printf(TIO_MESSAGE_ERROR, "max_opin_mux_size %d min_opin_mux_size %d chan_type %d x %d y %d\n",
+		vpr_printf(TIO_MESSAGE_INFO, "%smax_opin_mux_size %d min_opin_mux_size %d chan_type %d x %d y %d\n",
+				TIO_PREFIX_ERROR_SPACE,
 				max_opin_mux_size, min_opin_mux_size, chan_type, x, y);
-		exit(1);
 	}
 
 	/* Create a new list that we will move the muxes with 'holes' to the start of list. */
