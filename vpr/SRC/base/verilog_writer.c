@@ -598,7 +598,7 @@ char *load_truth_table(int inputs , t_pb *pb)
   int tries,shift,which_row,i,j;
   int possibles = 1 << inputs;
   char *tt_row_blif;
-  char *possible_row = (char *)malloc(inputs * sizeof(char));
+  char *possible_row = (char *)malloc(inputs+1 * sizeof(char));
   char *tt = (char *)malloc((possibles+1) * sizeof(char));
   struct s_linked_vptr *current;
   int number_of_used_inputs_to_lut;
