@@ -265,7 +265,7 @@ static void alloc_block(void) {
 
 /**************************************/
 static void load_simplified_device(void) {
-	int i, j;
+	int i, j, k;
 
 	/* Backup original globals */
 	EMPTY_TYPE_BACKUP = EMPTY_TYPE;
@@ -302,10 +302,12 @@ static void load_simplified_device(void) {
 			} else {
 				grid[i][j].type = FILL_TYPE;
 			}
-			grid[i][j].blocks = (int*)my_malloc(
-			grid[i][j].type->capacity * sizeof(int));
 			grid[i][j].width_offset = 0;
 			grid[i][j].height_offset = 0;
+			grid[i][j].blocks = (int*)my_malloc(grid[i][j].type->capacity * sizeof(int));
+			for (k = 0; k < grid[i][j].type->capacity; k++) {
+				grid[i][j].blocks[k] = EMPTY;
+			}
 		}
 	}
 }
@@ -340,7 +342,6 @@ static void reset_placement(void) {
 				if (grid[i][j].blocks[k] != INVALID) {
 					grid[i][j].blocks[k] = EMPTY;
 				}
-				grid[i][j].blocks[k] = EMPTY;
 			}
 		}
 	}
