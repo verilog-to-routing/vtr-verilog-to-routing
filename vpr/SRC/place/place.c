@@ -1651,7 +1651,7 @@ static boolean find_to(int iblk_from, int x_from, int y_from,
 				*z_to = my_irand(grid[*x_to][*y_to].type->capacity - 1);
 			}
 			int b_to = grid[*x_to][*y_to].blocks[*z_to];
-			if (block[b_to].is_fixed == TRUE) {
+			if ((b_to != EMPTY) && (block[b_to].is_fixed == TRUE)) {
 				is_legal = FALSE;
 			}
 		}
