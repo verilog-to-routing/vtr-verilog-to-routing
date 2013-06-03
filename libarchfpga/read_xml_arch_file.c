@@ -21,17 +21,21 @@
  *                                                                                  *
  * Because of how the XML tree traversal works, we free everything when we're       *
  * done reading an architecture file to make sure that there isn't some part        *
- * of the architecture file that got missed.                                        *
+ * of the architecture file that got missed. 
  */
 
 #include <string.h>
 #include <assert.h>
+#include <map>
+#include <string>
 #include "util.h"
 #include "arch_types.h"
 #include "ReadLine.h"
 #include "ezxml.h"
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
+
+using namespace std;
 
 enum Fc_type {
 	FC_ABS, FC_FRAC, FC_FULL
@@ -111,7 +115,7 @@ static void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 
 static void PrintPb_types_rec(INP FILE * Echo, INP const t_pb_type * pb_type,
 		int level);
-/*Added May,2013 Daniel Chen - Dump architecture info after ezxml parse*/
+/*Added May,2013 Daniel Chen - Help EchoArch to dump arch info after loading stage*/
 static void PrintPb_types_recPower(INP FILE * Echo, INP const t_pb_type * pb_type,
 		const char* tabs);
 static void PrintArchInfo(INP FILE * Echo, struct s_arch *arch) ;
@@ -837,6 +841,12 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 	const char *Prop;
 	ezxml_t Cur, Prev;
 	char* class_name;
+	/* STL maps for checking various duplicate names */
+	map<string , int> pb_port_names;
+	map<string , int> mode_names;
+	pair<map<string,int>::iterator,bool> ret_pb_ports;
+	pair<map<string,int>::iterator,bool> ret_mode_names;
+	int num_inputs, num_outputs, num_clocks;
 
 	pb_type->parent_mode = mode;
 	if (mode != NULL && mode->parent_pb_type != NULL) {
@@ -881,13 +891,67 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 	}
 
 	assert(pb_type->num_pb > 0);
-	num_ports = 0;
-	num_ports += CountChildren(Parent, "input", 0);
-	num_ports += CountChildren(Parent, "output", 0);
-	num_ports += CountChildren(Parent, "clock", 0);
+	num_ports = num_inputs = num_outputs = num_clocks = 0;
+	num_inputs = CountChildren(Parent, "input", 0);
+	num_outputs = CountChildren(Parent, "output", 0);
+	num_clocks = CountChildren(Parent, "clock", 0);
+	num_ports = num_inputs + num_outputs + num_clocks;
 	pb_type->ports = (t_port*) my_calloc(num_ports, sizeof(t_port));
 	pb_type->num_ports = num_ports;
 
+	/* Check if port tags are grouped, may be improved */
+	/* This has to be done before loading (NOT during or post loading) because ezxml 
+		nodes are destroyed right after they are read */
+	for (i = 0; i < 3; i++) {
+		if (i == 0) {
+			Cur = FindFirstElement(Parent, "input", FALSE);
+			for(j = 1 ; j < num_inputs; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "input")){
+							vpr_printf(TIO_MESSAGE_ERROR,
+								"[LINE %d] Ports of type 'input' must be grouped together\n", 
+								(Cur->next->line?Cur->next->line:Cur->line));
+								//Cur->next should not be NULL, the condition operator
+								//Prevents potential segfaults in the case of NULL
+							exit(1);
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+		} else if (i == 1) {
+			Cur = FindFirstElement(Parent, "output", FALSE);
+			for(j = 1 ; j < num_outputs; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "output")){
+							vpr_printf(TIO_MESSAGE_ERROR,
+								"[LINE %d] Ports of type 'output' must be grouped together\n", 
+								(Cur->next->line?Cur->next->line:Cur->line));
+							exit(1);
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+		} else {
+			Cur = FindFirstElement(Parent, "clock", FALSE);
+			for(j = 1 ; j < num_clocks; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "clock")){
+							vpr_printf(TIO_MESSAGE_ERROR,
+								"[LINE %d] Ports of type 'clock' must be grouped together\n", 
+								(Cur->next->line?Cur->next->line:Cur->line));
+							exit(1);
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+		}
+	}
 	/* Initialize Power Structure */
 	pb_type->pb_type_power = (t_pb_type_power*) my_calloc(1, sizeof(t_pb_type_power));
 	ProcessPb_TypePowerEstMethod(Parent, pb_type);
@@ -912,6 +976,15 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 			pb_type->ports[j].index = j;
 			pb_type->ports[j].port_index_by_type = k;
 
+			//Check port name duplicates
+			ret_pb_ports = pb_port_names.insert(pair<string,int>(pb_type->ports[j].name,0));
+			if(!ret_pb_ports.second){
+				vpr_printf(TIO_MESSAGE_ERROR,
+						"[LINE %d] Duplicate port names in pb_type '%s': port '%s'\n", 
+						Cur->line, pb_type->name, pb_type->ports[j].name);
+				exit(1);
+			}
+
 			/* get next iteration */
 			Prev = Cur;
 			Cur = Cur->next;
@@ -920,6 +993,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 			FreeNode(Prev);
 		}
 	}
+
 	assert(j == num_ports);
 
 	/* Count stats on the number of each type of pin */
@@ -1036,6 +1110,15 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 					if (default_leakage_mode) {
 						pb_type->pb_type_power->leakage_default_mode = i;
 					}
+
+					ret_mode_names = mode_names.insert(pair<string,int>(pb_type->modes[i].name,0));
+					if(!ret_mode_names.second){
+						vpr_printf(TIO_MESSAGE_ERROR,
+							"[LINE%d] Duplicate mode name: '%s' in pb_type '%s'.\n", Cur->line,
+							pb_type->modes[i].name, pb_type->name);
+						exit(1);
+					}
+		
 
 					/* get next iteration */
 					Prev = Cur;
@@ -1203,6 +1286,8 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 	const char *Prop;
 	ezxml_t Cur, Prev;
 	ezxml_t Cur2, Prev2;
+	map<string , int> interc_names;
+	pair<map<string,int>::iterator,bool> ret_interc_names;
 
 	num_interconnect += CountChildren(Parent, "complete", 0);
 	num_interconnect += CountChildren(Parent, "direct", 0);
@@ -1247,6 +1332,14 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 			Prop = FindProperty(Cur, "name", TRUE);
 			mode->interconnect[i].name = my_strdup(Prop);
 			ezxml_set_attr(Cur, "name", NULL);
+
+			ret_interc_names = interc_names.insert(pair<string,int>(mode->interconnect[i].name,0));
+			if(!ret_interc_names.second){
+				vpr_printf(TIO_MESSAGE_ERROR,
+						"[LINE%d] Duplicate interconnect name: '%s' in mode: '%s'.\n", Cur->line,
+						mode->interconnect[i].name, mode->name);
+				exit(1);
+			}
 
 			/* Process delay and capacitance annotations */
 			num_annotations = 0;
@@ -1313,6 +1406,8 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode,
 	int i;
 	const char *Prop;
 	ezxml_t Cur, Prev;
+	map<string , int> pb_type_names;
+	pair<map<string,int>::iterator,bool> ret_pb_types;
 
 	if (0 == strcmp(Parent->name, "pb_type")) {
 		/* implied mode */
@@ -1333,6 +1428,14 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode,
 		while (Cur != NULL) {
 			if (0 == strcmp(Cur->name, "pb_type")) {
 				ProcessPb_Type(Cur, &mode->pb_type_children[i], mode);
+
+				ret_pb_types = pb_type_names.insert(pair<string,int>(mode->pb_type_children[i].name,0));
+				if(!ret_pb_types.second){
+					vpr_printf(TIO_MESSAGE_ERROR,
+						"[LINE%d] Duplicate pb_type name: '%s' in mode: '%s'.\n", Cur->line,
+						mode->pb_type_children[i].name , mode->name);
+					exit(1);
+				}
 
 				/* get next iteration */
 				Prev = Cur;
@@ -1671,6 +1774,11 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 	t_model *temp;
 	t_model_ports *tp;
 	int L_index;
+	/* std::maps for checking duplicates */
+	map<string , int> model_name_map;
+	map<string , int> model_port_map;
+	pair<map<string,int>::iterator,bool> ret_map_name;
+	pair<map<string,int>::iterator,bool> ret_map_port;
 
 	L_index = NUM_MODELS_IN_LIBRARY;
 
@@ -1687,6 +1795,15 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 		temp->pb_types = NULL;
 		temp->index = L_index;
 		L_index++;
+
+		/* Try insert new model, check if already exist at the same time */
+		ret_map_name = model_name_map.insert(pair<string,int>(temp->name,0));
+		if(!ret_map_name.second){
+			vpr_printf(TIO_MESSAGE_ERROR,
+						"[LINE%d] Duplicate model name: '%s'.\n", child->line,
+						temp->name);
+			exit(1);
+		}
 
 		/* Process the inputs */
 		p = ezxml_child(child, "input_ports");
@@ -1720,6 +1837,16 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 							"[LINE %d] Signal cannot be both a clock and a non-clock signal simultaneously\n",
 							p->line);
 				}
+
+				/* Try insert new port, check if already exist at the same time */
+				ret_map_port = model_port_map.insert(pair<string,int>(tp->name,0));
+				if(!ret_map_port.second){
+					vpr_printf(TIO_MESSAGE_ERROR,
+						"[LINE%d] Duplicate model input port name: '%s'.\n", p->line,
+						tp->name);
+					exit(1);
+				}
+
 				temp->inputs = tp;
 				junk = p;
 				p = ezxml_next(p);
@@ -1752,6 +1879,16 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 				tp->min_size = -1; /* determined later by pb_types */
 				tp->next = temp->outputs;
 				tp->dir = OUT_PORT;
+
+				/* Try insert new output port, check if already exist at the same time */
+				ret_map_port = model_port_map.insert(pair<string,int>(tp->name,0));
+				if(!ret_map_port.second){
+					vpr_printf(TIO_MESSAGE_ERROR,
+						"[LINE%d] Duplicate model output port name: '%s'.\n", p->line,
+						tp->name);
+					exit(1);
+				}
+
 				temp->outputs = tp;
 				junk = p;
 				p = ezxml_next(p);
@@ -1765,14 +1902,16 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 		}
 		FreeNode(junkp);
 
-		/* Find the next model */
+		/* Clear port map for next model */
+		model_port_map.clear();
+		/* Push new model onto model stack */
 		temp->next = arch->models;
 		arch->models = temp;
+		/* Find next model */
 		junk = child;
 		child = ezxml_next(child);
 		FreeNode(junk);
 	}
-
 	return;
 }
 
@@ -2429,7 +2568,8 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 	ezxml_t Cur;
 	t_type_descriptor * Type;
 	int i;
-
+	map<string , int> pb_type_descriptors;
+	pair<map<string,int>::iterator,bool> ret_pb_type_descriptors;
 	/* Alloc the type list. Need one additional t_type_desctiptors:
 	 * 1: empty psuedo-type
 	 */
@@ -2459,6 +2599,15 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 
 		/* Parses the properties fields of the type */
 		ProcessComplexBlockProps(CurType, Type);
+
+		
+		ret_pb_type_descriptors = pb_type_descriptors.insert(pair<string,int>(Type->name,0));
+		if(!ret_pb_type_descriptors.second){
+			vpr_printf(TIO_MESSAGE_ERROR,
+						"[LINE%d] Duplicate pb_type descriptor name: '%s'.\n", CurType->line,
+						Type->name);
+			exit(1);
+		}
 
 		/* Load pb_type info */
 		Type->pb_type = (t_pb_type*) my_malloc(sizeof(t_pb_type));
@@ -3490,15 +3639,9 @@ static void PrintPb_types_recPower(INP FILE * Echo, INP const t_pb_type * pb_typ
 		}
 		
 		fprintf(Echo, "%s\tpower method: specify-size\n", tabs);
-
-		/*
-			Not if this power method is supported right now..
-		*/
-
-		/********************************************************************************
 		for (i = 0; i < pb_type->num_ports; i++) {
-			Print all the power information on each port, only if available,
-				will not print if value is 0 or NULL
+			//Print all the power information on each port, only if available,
+				//will not print if value is 0 or NULL
 			if(pb_type->ports[i].port_power->buffer_type||
 				pb_type->ports[i].port_power->wire_type||
 				pb_type->pb_type_power->absolute_power_per_instance.leakage||
@@ -3558,7 +3701,6 @@ static void PrintPb_types_recPower(INP FILE * Echo, INP const t_pb_type * pb_typ
 			if(pb_type->pb_type_power->absolute_power_per_instance.dynamic)
 				fprintf(Echo, "%s\t\tdynamic power_per_instance: %e \n", tabs,
 				pb_type->pb_type_power->absolute_power_per_instance.dynamic);
-		******************************************************************************/
 		break;
 	case POWER_METHOD_TOGGLE_PINS:
 		if(pb_type->parent_mode){
