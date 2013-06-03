@@ -3237,12 +3237,12 @@ static void handle_button_info (t_event_buttonPressed *button_info, int buttonNu
 
 	button_info->button = buttonNumber;
 
-	if (xbutton_state & 1) 
+	if (Xbutton_state & 1)
 		button_info->shift_pressed = true;
 	else
 		button_info->shift_pressed = false;
 
-	if (xbutton_state & 4) 
+	if (Xbutton_state & 4)
 		button_info->ctrl_pressed = true;
 	else
 		button_info->ctrl_pressed = false;
