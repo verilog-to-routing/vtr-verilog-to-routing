@@ -1,5 +1,3 @@
-// JR - Enhanced alloc_and_load_num_instances_type() function to intialize the grid tile block array to EMPTY for all IO blocks.
-
 /*
  Author: Jason Luu
  Date: October 8, 2008
