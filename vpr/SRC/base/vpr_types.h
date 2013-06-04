@@ -752,7 +752,8 @@ struct s_router_opts {
 	int bb_factor;
 	enum e_route_type route_type;
 	int fixed_channel_width;
-	boolean empty_channel_trim;
+	boolean trim_empty_channels;
+	boolean trim_obs_channels;
 	enum e_router_algorithm router_algorithm;
 	enum e_base_cost_type base_cost_type;
 	float astar_fac;
