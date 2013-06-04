@@ -1,3 +1,5 @@
+// JR - Extended SetupRouterOptions() function to support new 'RouterOpts->trim_obs_channels' member
+
 #include <assert.h>
 #include <string.h>
 #include "util.h"
@@ -397,9 +399,13 @@ static void SetupRouterOpts(INP t_options Options, INP boolean TimingEnabled,
 		RouterOpts->fixed_channel_width = Options.RouteChanWidth;
 	}
 
-	RouterOpts->empty_channel_trim = TRUE; /* DEFAULT */
-	if (Options.Count[OT_ROUTE_CHAN_TRIM]) {
-		RouterOpts->empty_channel_trim = Options.RouteChanTrim;
+	RouterOpts->trim_empty_channels = FALSE; /* DEFAULT */
+	if (Options.Count[OT_TRIM_EMPTY_CHAN]) {
+		RouterOpts->trim_empty_channels = Options.TrimEmptyChan;
+	}
+	RouterOpts->trim_obs_channels = FALSE; /* DEFAULT */
+	if (Options.Count[OT_TRIM_OBS_CHAN]) {
+		RouterOpts->trim_obs_channels = Options.TrimObsChan;
 	}
 
 	/* Depends on RouterOpts->router_algorithm */
