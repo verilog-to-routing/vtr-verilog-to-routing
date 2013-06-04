@@ -24,7 +24,7 @@ struct s_options {
 	float constant_net_delay;
 	boolean TimingAnalysis;
 	boolean CreateEchoFile;
-  boolean Generate_Post_Synthesis_Netlist;
+	boolean Generate_Post_Synthesis_Netlist;
 	/* Clustering options */
 	boolean global_clocks;
 	int cluster_size;
@@ -76,7 +76,8 @@ struct s_options {
 	float bend_cost;
 	enum e_route_type RouteType;
 	int RouteChanWidth;
-	boolean RouteChanTrim;
+	boolean TrimEmptyChan;
+	boolean TrimObsChan;
 	enum e_router_algorithm RouterAlgorithm;
 	enum e_base_cost_type base_cost_type;
 
@@ -131,6 +132,8 @@ enum e_echo_files {
 	E_ECHO_CRITICALITY,
 	E_ECHO_COMPLETE_NET_TRACE,
 	E_ECHO_SEG_DETAILS,
+	E_ECHO_CHAN_DETAILS,
+	E_ECHO_SBLOCK_PATTERN,
 	E_ECHO_END_TOKEN
 };
 
