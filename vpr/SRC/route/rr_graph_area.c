@@ -152,6 +152,13 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 				to_node = rr_node[from_node].edges[iedge];
 				to_rr_type = rr_node[to_node].type;
 
+				/* Ignore any uninitialized rr_graph nodes */
+				if ((rr_node[to_node].type == SOURCE) 
+						&& (rr_node[to_node].xlow == 0) && (rr_node[to_node].ylow == 0)
+						&& (rr_node[to_node].xhigh == 0) && (rr_node[to_node].yhigh == 0)) {
+					continue;
+				}
+
 				switch (to_rr_type) {
 
 				case CHANX:
@@ -363,6 +370,13 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 
 				to_node = rr_node[from_node].edges[iedge];
 				to_rr_type = rr_node[to_node].type;
+
+				/* Ignore any uninitialized rr_graph nodes */
+				if ((rr_node[to_node].type == SOURCE) 
+						&& (rr_node[to_node].xlow == 0) && (rr_node[to_node].ylow == 0)
+						&& (rr_node[to_node].xhigh == 0) && (rr_node[to_node].yhigh == 0)) {
+					continue;
+				}
 
 				switch (to_rr_type) {
 
