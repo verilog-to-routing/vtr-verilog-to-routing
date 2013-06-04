@@ -52,7 +52,8 @@ static t_chunk rr_mem_ch = {NULL, 0, NULL};
 /* Status of current chunk being dished out by calls to my_chunk_malloc.   */
 
 /********************* Subroutines local to this module. *******************/
-static int *****alloc_and_load_pin_to_track_map(INP enum e_pin_type pin_type,
+static int *****alloc_and_load_pin_to_track_map(
+		INP enum e_pin_type pin_type,
 		INP int nodes_per_chan, INP int *Fc, INP t_type_ptr Type,
 		INP boolean perturb_switch_pattern,
 		INP enum e_directionality directionality);
@@ -62,29 +63,36 @@ static struct s_ivec ****alloc_and_load_track_to_pin_lookup(
 		INP int width, INP int height,
 		INP int num_pins, INP int nodes_per_chan);
 
-static void build_bidir_rr_opins(INP int i, INP int j,
+static void build_bidir_rr_opins(
+		INP int i, INP int j,
 		INOUTP t_rr_node * L_rr_node, INP t_ivec *** L_rr_node_indices,
 		INP int ******opin_to_track_map, INP int **Fc_out,
 		INP boolean * L_rr_edge_done, INP t_seg_details * seg_details,
 		INP struct s_grid_tile **L_grid, INP int delayless_switch,
 		INP t_direct_inf *directs, INP int num_directs, INP t_clb_to_clb_directs *clb_to_clb_directs);
 
-static void build_unidir_rr_opins(INP int i, INP int j,
+static void build_unidir_rr_opins(
+		INP int i, INP int j,
 		INP struct s_grid_tile **L_grid, INP int **Fc_out,
-		INP int nodes_per_chan, INP t_seg_details * seg_details,
+		INP int nodes_per_chan, 
+		INP t_chan_details * chan_details_x, INP t_chan_details * chan_details_y, 
 		INOUTP int **Fc_xofs, INOUTP int **Fc_yofs,
 		INOUTP t_rr_node * L_rr_node, INOUTP boolean * L_rr_edge_done,
 		OUTP boolean * Fc_clipped, INP t_ivec *** L_rr_node_indices, INP int delayless_switch,
 		INP t_direct_inf *directs, INP int num_directs, INP t_clb_to_clb_directs *clb_to_clb_directs);
 
-static int get_opin_direct_connecions(int x, int y, int opin, 
+static int get_opin_direct_connecions(
+		int x, int y, int opin, 
 		INOUTP t_linked_edge ** edge_list_ptr, INP t_ivec *** L_rr_node_indices, 
 		INP int delayless_switch, INP t_direct_inf *directs, INP int num_directs, 
 		INP t_clb_to_clb_directs *clb_to_clb_directs);
 
-static void alloc_and_load_rr_graph(INP int num_nodes,
+static void alloc_and_load_rr_graph(
+		INP int num_nodes,
 		INP t_rr_node * L_rr_node, INP int num_seg_types,
-		INP t_seg_details * seg_details, INP boolean * L_rr_edge_done,
+		INP t_seg_details * seg_details, 
+		INP t_chan_details * chan_details_x, INP t_chan_details * chan_details_y, 
+		INP boolean * L_rr_edge_done,
 		INP struct s_ivec *****track_to_pin_lookup,
 		INP int ******opin_to_track_map, INP struct s_ivec ***switch_block_conn,
 		INP struct s_grid_tile **L_grid, INP int L_nx, INP int L_ny, INP int Fs,
@@ -92,55 +100,69 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 		INP int **Fc_yofs, INP t_ivec *** L_rr_node_indices,
 		INP int nodes_per_chan, INP enum e_switch_block_type sb_type,
 		INP int delayless_switch, INP enum e_directionality directionality,
-		INP int wire_to_ipin_switch, OUTP boolean * Fc_clipped, INP t_direct_inf *directs, INP int num_directs, INP t_clb_to_clb_directs *clb_to_clb_directs);
+		INP int wire_to_ipin_switch, OUTP boolean * Fc_clipped, 
+		INP t_direct_inf *directs, INP int num_directs, INP t_clb_to_clb_directs *clb_to_clb_directs);
 
-static void load_uniform_switch_pattern(INP t_type_ptr type,
+static void load_uniform_switch_pattern(
+		INP t_type_ptr type,
 		INOUTP int *****tracks_connected_to_pin, INP int num_phys_pins,
 		INP int *pin_num_ordering, INP int *side_ordering,
 		INP int *width_ordering, INP int *height_ordering, INP int nodes_per_chan, INP int Fc,
 		INP enum e_directionality directionality);
 
-static void load_perturbed_switch_pattern(INP t_type_ptr type,
+static void load_perturbed_switch_pattern(
+		INP t_type_ptr type,
 		INOUTP int *****tracks_connected_to_pin, INP int num_phys_pins,
 		INP int *pin_num_ordering, INP int *side_ordering,
 		INP int *width_ordering, INP int *height_ordering, INP int nodes_per_chan, INP int Fc,
 		INP enum e_directionality directionality);
 
-static void check_all_tracks_reach_pins(t_type_ptr type,
+#ifdef ENABLE_CHECK_ALL_TRACKS
+static void check_all_tracks_reach_pins(
+		t_type_ptr type,
 		int *****tracks_connected_to_pin, int nodes_per_chan, int Fc,
 		enum e_pin_type ipin_or_opin);
+#endif
 
-static boolean *alloc_and_load_perturb_ipins(INP int nodes_per_chan,
+static boolean *alloc_and_load_perturb_ipins(
+		INP int nodes_per_chan,
 		INP int L_num_types, INP int **Fc_in, INP int **Fc_out,
 		INP enum e_directionality directionality);
 
-static void build_rr_sinks_sources(INP int i, INP int j,
+static void build_rr_sinks_sources(
+		INP int i, INP int j,
 		INP t_rr_node * L_rr_node, INP t_ivec *** L_rr_node_indices,
 		INP int delayless_switch, INP struct s_grid_tile **L_grid);
 
-static void build_rr_xchan(INP int i, INP int j,
+static void build_rr_xchan(
+		INP int i, INP int j,
 		INP struct s_ivec *****track_to_pin_lookup,
 		INP struct s_ivec ***switch_block_conn, INP int cost_index_offset,
-		INP int nodes_per_chan, INP int *opin_mux_size,
+		INP int nodes_per_chan, INP int tracks_per_chan, INP int *opin_mux_size,
 		INP short ******sblock_pattern, INP int Fs_per_side,
-		INP t_seg_details * seg_details, INP t_ivec *** L_rr_node_indices,
+		INP t_chan_details * chan_details_x, INP t_chan_details * chan_details_y, 
+		INP t_ivec *** L_rr_node_indices,
 		INP boolean * L_rr_edge_done, INOUTP t_rr_node * L_rr_node,
 		INP int wire_to_ipin_switch, INP enum e_directionality directionality);
 
-static void build_rr_ychan(INP int i, INP int j,
+static void build_rr_ychan(
+		INP int i, INP int j,
 		INP struct s_ivec *****track_to_pin_lookup,
 		INP struct s_ivec ***switch_block_conn, INP int cost_index_offset,
-		INP int nodes_per_chan, INP int *opin_mux_size,
+		INP int nodes_per_chan, INP int tracks_per_chan, INP int *opin_mux_size,
 		INP short ******sblock_pattern, INP int Fs_per_side,
-		INP t_seg_details * seg_details, INP t_ivec *** L_rr_node_indices,
+		INP t_chan_details * chan_details_y, INP t_chan_details * chan_details_x, 
+		INP t_ivec *** L_rr_node_indices,
 		INP boolean * L_rr_edge_done, INOUTP t_rr_node * L_rr_node,
 		INP int wire_to_ipin_switch, INP enum e_directionality directionality);
 
-static void rr_graph_externals(t_timing_inf timing_inf,
+static void rr_graph_externals(
+		t_timing_inf timing_inf,
 		t_segment_inf * segment_inf, int num_seg_types, int nodes_per_chan,
 		int wire_to_ipin_switch, enum e_base_cost_type base_cost_type);
 
-void alloc_and_load_edges_and_switches(INP t_rr_node * L_rr_node, INP int inode,
+void alloc_and_load_edges_and_switches(
+		INP t_rr_node * L_rr_node, INP int inode,
 		INP int num_edges, INP boolean * L_rr_edge_done,
 		INP t_linked_edge * edge_list_head);
 
@@ -151,7 +173,8 @@ static void alloc_and_load_rr_clb_source(t_ivec *** L_rr_node_indices);
 static t_clb_to_clb_directs *alloc_and_load_clb_to_clb_directs(INP t_direct_inf *directs, INP int num_directs);
 
 #if 0
-static void load_uniform_opin_switch_pattern_paired(INP int *Fc_out,
+static void load_uniform_opin_switch_pattern_paired(
+		INP int *Fc_out,
 		INP int num_pins,
 		INP int *pins_in_chan_seg,
 		INP int num_wire_inc_muxes,
@@ -159,15 +182,14 @@ static void load_uniform_opin_switch_pattern_paired(INP int *Fc_out,
 		INP int *wire_inc_muxes,
 		INP int *wire_dec_muxes,
 		INOUTP t_rr_node * L_rr_node,
-		INOUTP boolean *
-		L_rr_edge_done,
-		INP t_seg_details *
-		seg_details,
+		INOUTP boolean * L_rr_edge_done,
+		INP t_seg_details * seg_details,
 		OUTP boolean * Fc_clipped);
 #endif
 void watch_edges(int inode, t_linked_edge * edge_list_head);
 #if MUX_SIZE_DIST_DISPLAY
-static void view_mux_size_distribution(t_ivec *** L_rr_node_indices,
+static void view_mux_size_distribution(
+		t_ivec *** L_rr_node_indices,
 		int nodes_per_chan,
 		t_seg_details * seg_details_x,
 		t_seg_details * seg_details_y);
@@ -175,24 +197,29 @@ static void print_distribution(FILE * fptr,
 		t_mux_size_distribution * distr_struct);
 #endif
 
-static void free_type_pin_to_track_map(int ******ipin_to_track_map,
+static void free_type_pin_to_track_map(
+		int ******ipin_to_track_map,
 		t_type_ptr types);
 
-static void free_type_track_to_pin_map(struct s_ivec *****track_to_pin_map,
+static void free_type_track_to_pin_map(
+		struct s_ivec *****track_to_pin_map,
 		t_type_ptr types, int nodes_per_chan);
 
 static t_seg_details *alloc_and_load_global_route_seg_details(
-		INP int nodes_per_chan, INP int global_route_switch);
+		INP int nodes_per_chan, INP int global_route_switch,
+		OUTP int * num_seg_details = 0);
 
 /* UDSD Modifications by WMF End */
 
-static int **alloc_and_load_actual_fc(INP int L_num_types, INP t_type_ptr types,
+static int **alloc_and_load_actual_fc(
+		INP int L_num_types, INP t_type_ptr types,
 		INP int nodes_per_chan, INP boolean is_Fc_out,
 		INP enum e_directionality directionality, OUTP boolean * Fc_clipped, INP boolean ignore_Fc_0);
 
 /******************* Subroutine definitions *******************************/
 
-void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
+void build_rr_graph(
+		INP t_graph_type graph_type, INP int L_num_types,
 		INP t_type_ptr types, INP int L_nx, INP int L_ny,
 		INP struct s_grid_tile **L_grid, INP int chan_width,
 		INP struct s_chan_width_dist *chan_capacity_inf,
@@ -202,13 +229,19 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 		INP int global_route_switch, INP int delayless_switch,
 		INP t_timing_inf timing_inf, INP int wire_to_ipin_switch,
 		INP enum e_base_cost_type base_cost_type, 
-		INP boolean empty_channel_trim,
+		INP boolean trim_empty_channels,
+		INP boolean trim_obs_channels,
 		INP t_direct_inf *directs, INP int num_directs, 
 		INP boolean ignore_Fc_0, OUTP int *Warnings) {
 
 	/* Temp structures used to build graph */
 	int nodes_per_chan, i, j;
+
+	int num_seg_details = 0;
 	t_seg_details *seg_details = NULL;
+	t_chan_details *chan_details_x = NULL;
+	t_chan_details *chan_details_y = NULL;
+
 	int **Fc_in = NULL; /* [0..num_types-1][0..num_pins-1] */
 	int **Fc_out = NULL; /* [0..num_types-1][0..num_pins-1] */
 
@@ -264,24 +297,36 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 	if (is_global_graph) {
 		/* Sets up a single unit length segment type for global routing. */
 		seg_details = alloc_and_load_global_route_seg_details(nodes_per_chan,
-				global_route_switch);
+				global_route_switch, 
+				&num_seg_details);
 	} else {
 		/* Setup segments including distrubuting tracks and staggering.
 		 * If use_full_seg_groups is specified, nodes_per_chan may be 
 		 * changed. Warning should be singled to caller if this happens. */
 		seg_details = alloc_and_load_seg_details(&nodes_per_chan,
 				std::max(L_nx, L_ny), num_seg_types, segment_inf,
-				use_full_seg_groups, is_global_graph, directionality);
+				use_full_seg_groups, is_global_graph, directionality,
+				&num_seg_details);
 		if ((is_global_graph ? 1 : chan_width) != nodes_per_chan) {
 			*Warnings |= RR_GRAPH_WARN_CHAN_WIDTH_CHANGED;
 		}
 		if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_SEG_DETAILS)) {
 			dump_seg_details(seg_details, nodes_per_chan, 
-				getEchoFileName(E_ECHO_SEG_DETAILS));
+					getEchoFileName(E_ECHO_SEG_DETAILS));
 		} else
 			;
 	}
 	/* END SEG_DETAILS */
+
+	/* START CHAN_DETAILS */
+	alloc_and_load_chan_details(L_nx, L_ny, nodes_per_chan, 
+			trim_empty_channels, trim_obs_channels,
+			num_seg_details, seg_details,
+			&chan_details_x, &chan_details_y);
+
+	dump_chan_details( chan_details_x, chan_details_y, nodes_per_chan, nx, ny,
+			getEchoFileName(E_ECHO_CHAN_DETAILS));
+	/* END CHAN_DETAILS */
 
 	/* START FC */
 	/* Determine the actual value of Fc */
@@ -331,7 +376,7 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 	/* Alloc node lookups, count nodes, alloc rr nodes */
 	num_rr_nodes = 0;
 	rr_node_indices = alloc_and_load_rr_node_indices(nodes_per_chan, L_nx, L_ny,
-			&num_rr_nodes, seg_details);
+			&num_rr_nodes, chan_details_x, chan_details_y);
 	rr_node = (t_rr_node *) my_malloc(sizeof(t_rr_node) * num_rr_nodes);
 	memset(rr_node, 0, sizeof(t_rr_node) * num_rr_nodes);
 	L_rr_edge_done = (boolean *) my_malloc(sizeof(boolean) * num_rr_nodes);
@@ -364,15 +409,17 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 				nodes_per_chan);
 		for (i = 0; i <= L_nx; i++) {
 			for (j = 0; j <= L_ny; j++) {
-				load_sblock_pattern_lookup(i, j, nodes_per_chan, seg_details,
+				load_sblock_pattern_lookup(i, j, nodes_per_chan, 
+						chan_details_x, chan_details_y,
 						Fs, sb_type, unidir_sb_pattern);
-
 #ifdef TORO_FABRIC_SWITCHBOX_OVERRIDE
 				override_sblock_pattern_lookup(i, j, nodes_per_chan, 
 						unidir_sb_pattern);
 #endif
 			}
 		}
+		dump_sblock_pattern( unidir_sb_pattern, nodes_per_chan, L_nx, L_ny,
+				getEchoFileName(E_ECHO_SBLOCK_PATTERN));
 	}
 	/* END SB LOOKUP */
 
@@ -408,11 +455,13 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 		rr_node[i].num_opin_drivers = 0;
 	}
 
-	alloc_and_load_rr_graph(num_rr_nodes, rr_node, num_seg_types, seg_details,
+	alloc_and_load_rr_graph(num_rr_nodes, rr_node, num_seg_types, 
+			seg_details, chan_details_x, chan_details_y,
 			L_rr_edge_done, track_to_pin_lookup, opin_to_track_map,
 			switch_block_conn, L_grid, L_nx, L_ny, Fs, unidir_sb_pattern,
 			Fc_out, Fc_xofs, Fc_yofs, rr_node_indices, nodes_per_chan, sb_type,
-			delayless_switch, directionality, wire_to_ipin_switch, &Fc_clipped, directs, num_directs, clb_to_clb_directs);
+			delayless_switch, directionality, wire_to_ipin_switch, &Fc_clipped, 
+			directs, num_directs, clb_to_clb_directs);
 
 #ifdef MUX_SIZE_DIST_DISPLAY
 	if (UNI_DIRECTIONAL == directionality)
@@ -443,6 +492,11 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 	if (seg_details) {
 		free_seg_details(seg_details, nodes_per_chan);
 		seg_details = NULL;
+	}
+	if (chan_details_x || chan_details_y) {
+		free_chan_details(chan_details_x, chan_details_y, nodes_per_chan, L_nx, L_ny);
+		chan_details_x = NULL;
+		chan_details_y = NULL;
 	}
 	if (Fc_in) {
 		free_matrix(Fc_in,0, L_num_types, 0, sizeof(int));
@@ -541,32 +595,37 @@ static boolean *alloc_and_load_perturb_ipins(INP int nodes_per_chan, INP int L_n
 }
 
 static t_seg_details *alloc_and_load_global_route_seg_details(INP int nodes_per_chan,
-		INP int global_route_switch) {
-
-	t_seg_details *result = NULL;
+		INP int global_route_switch,
+		OUTP int * num_seg_details) {
 
 	assert(nodes_per_chan == 1);
-	result = (t_seg_details *) my_malloc(sizeof(t_seg_details));
 
-	result->index = 0;
-	result->length = 1;
-	result->wire_switch = global_route_switch;
-	result->opin_switch = global_route_switch;
-	result->longline = FALSE;
-	result->direction = BI_DIRECTION;
-	result->Cmetal = 0.0;
-	result->Rmetal = 0.0;
-	result->start = 1;
-	result->drivers = MULTI_BUFFERED;
-	result->cb = (boolean *) my_malloc(sizeof(boolean) * 1);
-	result->cb[0] = TRUE;
-	result->sb = (boolean *) my_malloc(sizeof(boolean) * 2);
-	result->sb[0] = TRUE;
-	result->sb[1] = TRUE;
-	result->group_size = 1;
-	result->group_start = 0;
+	t_seg_details *seg_details = (t_seg_details *) my_malloc(sizeof(t_seg_details));
 
-	return result;
+	seg_details->index = 0;
+	seg_details->length = 1;
+	seg_details->wire_switch = global_route_switch;
+	seg_details->opin_switch = global_route_switch;
+	seg_details->longline = FALSE;
+	seg_details->direction = BI_DIRECTION;
+	seg_details->Cmetal = 0.0;
+	seg_details->Rmetal = 0.0;
+	seg_details->start = 1;
+	seg_details->drivers = MULTI_BUFFERED;
+	seg_details->cb = (boolean *) my_malloc(sizeof(boolean) * 1);
+	seg_details->cb[0] = TRUE;
+	seg_details->sb = (boolean *) my_malloc(sizeof(boolean) * 2);
+	seg_details->sb[0] = TRUE;
+	seg_details->sb[1] = TRUE;
+	seg_details->group_size = 1;
+	seg_details->group_start = 0;
+	seg_details->seg_start = -1;
+	seg_details->seg_end = -1;
+
+	if (num_seg_details) {
+		*num_seg_details = 1;
+	}
+	return seg_details;
 }
 
 /* Calculates the actual Fc values for the given nodes_per_chan value */
@@ -673,7 +732,9 @@ static void free_type_track_to_pin_map(struct s_ivec***** track_to_pin_map,
  * appropriate values.  Everything up to this was just a prelude!      */
 static void alloc_and_load_rr_graph(INP int num_nodes,
 		INP t_rr_node * L_rr_node, INP int num_seg_types,
-		INP t_seg_details * seg_details, INP boolean * L_rr_edge_done,
+		INP t_seg_details * seg_details, 
+		INP t_chan_details * chan_details_x, INP t_chan_details * chan_details_y, 
+		INP boolean * L_rr_edge_done,
 		INP struct s_ivec *****track_to_pin_lookup,
 		INP int ******opin_to_track_map, INP struct s_ivec ***switch_block_conn,
 		INP struct s_grid_tile **L_grid, INP int L_nx, INP int L_ny, INP int Fs,
@@ -708,10 +769,10 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 				assert(UNI_DIRECTIONAL == directionality);
 				boolean clipped;
 				build_unidir_rr_opins(i, j, L_grid, Fc_out, nodes_per_chan,
-						seg_details, Fc_xofs, Fc_yofs, L_rr_node,
+						chan_details_x, chan_details_y, Fc_xofs, Fc_yofs, L_rr_node,
 						L_rr_edge_done, &clipped, L_rr_node_indices, delayless_switch,
 						directs, num_directs, clb_to_clb_directs);
-				if (clipped) {
+ 				if (clipped) {
 					*Fc_clipped = TRUE;
 				}
 			}
@@ -731,15 +792,17 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 		for (int j = 0; j <= L_ny; ++j) {
 			if (i > 0) {
 				build_rr_xchan(i, j, track_to_pin_lookup, switch_block_conn,
-						CHANX_COST_INDEX_START, nodes_per_chan, 
-						opin_mux_size, sblock_pattern, Fs / 3, seg_details, 
+						CHANX_COST_INDEX_START, 
+						nodes_per_chan, chan_width_x[j], opin_mux_size,
+						sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
 						L_rr_node_indices, L_rr_edge_done, L_rr_node, 
 						wire_to_ipin_switch, directionality);
 			}
 			if (j > 0) {
 				build_rr_ychan(i, j, track_to_pin_lookup, switch_block_conn,
-						CHANX_COST_INDEX_START + num_seg_types, nodes_per_chan,
-						opin_mux_size, sblock_pattern, Fs / 3, seg_details,
+						CHANX_COST_INDEX_START + num_seg_types, 
+						nodes_per_chan, chan_width_y[i], opin_mux_size,
+						sblock_pattern, Fs / 3, chan_details_y, chan_details_x,
 						L_rr_node_indices, L_rr_edge_done, L_rr_node,
 						wire_to_ipin_switch, directionality);
 			}
@@ -935,41 +998,31 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 	/* Loads IPIN, SINK, SOURCE, and OPIN. 
 	 * Loads IPINP to SINK edges, and SOURCE to OPINP edges */
 
-	int ipin, iclass, inode, pin_num, to_node, num_edges;
-	int num_class, num_pins;
-	t_type_ptr type;
-	struct s_class *class_inf;
-	int *pin_class;
-	const t_pb_graph_node *pb_graph_node;
-	int iport, ipb_pin, iporttype, z;
-
 	/* Since we share nodes within a large block, only 
 	 * start tile can initialize sinks, sources, and pins */
 	if (L_grid[i][j].width_offset > 0 || L_grid[i][j].height_offset > 0)
 		return;
 
-	type = L_grid[i][j].type;
-	num_class = type->num_class;
-	class_inf = type->class_inf;
-	num_pins = type->num_pins;
-	pin_class = type->pin_class;
-	z = 0;
+	t_type_ptr type = L_grid[i][j].type;
+	int num_class = type->num_class;
+	struct s_class *class_inf = type->class_inf;
+	int num_pins = type->num_pins;
+	int *pin_class = type->pin_class;
 
-	/* SINKS and SOURCE to OPINP edges */
-	for (iclass = 0; iclass < num_class; iclass++) {
+	/* SINKS and SOURCE to OPIN edges */
+	for (int iclass = 0; iclass < num_class; ++iclass) {
+		int inode = 0;
 		if (class_inf[iclass].type == DRIVER) { /* SOURCE */
 			inode = get_rr_node_index(i, j, SOURCE, iclass, L_rr_node_indices);
 
-			num_edges = class_inf[iclass].num_pins;
+			int num_edges = class_inf[iclass].num_pins;
 			L_rr_node[inode].num_edges = num_edges;
 			L_rr_node[inode].edges = (int *) my_malloc(num_edges * sizeof(int));
-			L_rr_node[inode].switches = (short *) my_malloc(
-					num_edges * sizeof(short));
+			L_rr_node[inode].switches = (short *) my_malloc(num_edges * sizeof(short));
 
-			for (ipin = 0; ipin < class_inf[iclass].num_pins; ipin++) {
-				pin_num = class_inf[iclass].pinlist[ipin];
-				to_node = get_rr_node_index(i, j, OPIN, pin_num,
-						L_rr_node_indices);
+			for (int ipin = 0; ipin < class_inf[iclass].num_pins; ++ipin) {
+				int pin_num = class_inf[iclass].pinlist[ipin];
+				int to_node = get_rr_node_index(i, j, OPIN, pin_num, L_rr_node_indices);
 				L_rr_node[inode].edges[ipin] = to_node;
 				L_rr_node[inode].switches[ipin] = delayless_switch;
 
@@ -1011,20 +1064,25 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 		L_rr_node[inode].drivers = (enum e_drivers)OPEN;
 	}
 
-	iporttype = iport = ipb_pin = 0;
+	int ipb_pin = 0;
+	int opb_pin = 0;
+	int iport = 0;
+	int oport = 0;
+	int iporttype = 0;
 
-	pb_graph_node = type->pb_graph_head;
+	const t_pb_graph_node *pb_graph_node = type->pb_graph_head;
 	if(pb_graph_node != NULL && pb_graph_node->num_input_ports == 0) {
 		iporttype = 1;
 	}
 	/* Connect IPINS to SINKS and dummy for OPINS */
-	for (ipin = 0; ipin < num_pins; ipin++) {
-		iclass = pin_class[ipin];
-		z = ipin / (type->pb_type->num_clock_pins + type->pb_type->num_output_pins + type->pb_type->num_input_pins);
+	for (int ipin = 0; ipin < num_pins; ++ipin) {
+		int inode = 0;;
+		int iclass = pin_class[ipin];
+		int z = ipin / (type->pb_type->num_clock_pins + type->pb_type->num_output_pins + type->pb_type->num_input_pins);
 
 		if (class_inf[iclass].type == RECEIVER) {
 			inode = get_rr_node_index(i, j, IPIN, ipin, L_rr_node_indices);
-			to_node = get_rr_node_index(i, j, SINK, iclass, L_rr_node_indices);
+			int to_node = get_rr_node_index(i, j, SINK, iclass, L_rr_node_indices);
 
 			L_rr_node[inode].num_edges = 1;
 			L_rr_node[inode].edges = (int *) my_malloc(sizeof(int));
@@ -1057,6 +1115,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 			} else {
 				assert(iporttype == 1);
 				L_rr_node[inode].pb_graph_pin = &pb_graph_node->clock_pins[iport][ipb_pin];
+				ipb_pin++;
 				if(ipb_pin >= pb_graph_node->num_clock_pins[iport]) {
 					iport++;
 					ipb_pin = 0;
@@ -1071,31 +1130,22 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 			}
 		} else {
 			assert(class_inf[iclass].type == DRIVER);
-
 			inode = get_rr_node_index(i, j, OPIN, ipin, L_rr_node_indices);
 			
 			/* Add in information so that I can identify which cluster pin this rr_node connects to later */
 			L_rr_node[inode].z = z;
-			
 			L_rr_node[inode].num_edges = 0;
 			L_rr_node[inode].edges = NULL;
-
 			L_rr_node[inode].switches = NULL;
-
 			L_rr_node[inode].cost_index = OPIN_COST_INDEX;
 			L_rr_node[inode].type = OPIN;
 			
-			L_rr_node[inode].pb_graph_pin = &pb_graph_node->output_pins[iport][ipb_pin];
-			if(ipb_pin >= pb_graph_node->num_output_pins[iport]) {
-				iport++;
-				ipb_pin = 0;
-				if(iport >= pb_graph_node->num_output_ports) {
-					iport = 0;
-					if(pb_graph_node->num_input_ports == 0) {
-						iporttype = 1;
-					} else {
-						iporttype = 0;
-					}
+			L_rr_node[inode].pb_graph_pin = &pb_graph_node->output_pins[oport][opb_pin];
+			if(opb_pin >= pb_graph_node->num_output_pins[oport]) {
+				oport++;
+				opb_pin = 0;
+				if(oport >= pb_graph_node->num_output_ports) {
+					oport = 0;
 				}
 			}
 		}
@@ -1118,14 +1168,21 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 static void build_rr_xchan(INP int i, INP int j,
 		INP struct s_ivec *****track_to_pin_lookup,
 		INP struct s_ivec ***switch_block_conn, INP int cost_index_offset,
-		INP int nodes_per_chan, INP int *opin_mux_size,
+		INP int nodes_per_chan, INP int tracks_per_chan, INP int *opin_mux_size,
 		INP short ******sblock_pattern, INP int Fs_per_side,
-		INP t_seg_details * seg_details, INP t_ivec *** L_rr_node_indices,
+		INP t_chan_details * chan_details_x, INP t_chan_details * chan_details_y,
+		INP t_ivec *** L_rr_node_indices,
 		INOUTP boolean * L_rr_edge_done, INOUTP t_rr_node * L_rr_node,
 		INP int wire_to_ipin_switch, INP enum e_directionality directionality) {
 
+	t_seg_details * seg_details = chan_details_x[i][j];
+
 	/* Loads up all the routing resource nodes in the x-directed channel segments starting at (i,j). */
-	for (int track = 0; track < nodes_per_chan; ++track) {
+	for (int track = 0; track < tracks_per_chan; ++track) {
+
+		if (seg_details[track].length == 0)
+			continue;
+
 		int start = get_seg_start(seg_details, track, j, i);
 		int end = get_seg_end(seg_details, track, start, j, nx);
 
@@ -1141,32 +1198,52 @@ static void build_rr_xchan(INP int i, INP int j,
 				wire_to_ipin_switch, directionality);
 
 		if (j > 0) {
-			num_edges += get_track_to_tracks(j, start, track, CHANX, j, CHANY,
-					nx, nodes_per_chan, opin_mux_size, Fs_per_side,
-					sblock_pattern, &edge_list, seg_details, directionality,
-					L_rr_node_indices, L_rr_edge_done, switch_block_conn);
+			t_seg_details * from_seg_details = chan_details_x[start][j];
+			t_seg_details * to_seg_details = chan_details_y[start][j];
+			if (to_seg_details->length > 0) {
+				num_edges += get_track_to_tracks(j, start, track, CHANX, j, CHANY,
+						nx, nodes_per_chan, opin_mux_size, Fs_per_side,
+						sblock_pattern, &edge_list, 
+						from_seg_details, to_seg_details, chan_details_y, 
+						directionality,	L_rr_node_indices, L_rr_edge_done,
+						 switch_block_conn);
+			}
 		}
-
 		if (j < ny) {
-			num_edges += get_track_to_tracks(j, start, track, CHANX, j + 1,
-					CHANY, nx, nodes_per_chan, opin_mux_size, Fs_per_side,
-					sblock_pattern, &edge_list, seg_details, directionality,
-					L_rr_node_indices, L_rr_edge_done, switch_block_conn);
+			t_seg_details * from_seg_details = chan_details_x[start][j];
+			t_seg_details * to_seg_details = chan_details_y[start][j+1];
+			if (to_seg_details->length > 0) {
+				num_edges += get_track_to_tracks(j, start, track, CHANX, j + 1,
+						CHANY, nx, nodes_per_chan, opin_mux_size, Fs_per_side,
+						sblock_pattern, &edge_list, 
+						from_seg_details, to_seg_details, chan_details_y, 
+						directionality,	L_rr_node_indices, L_rr_edge_done, 
+						switch_block_conn);
+			}
 		}
-
 		if (start > 1) {
-			num_edges += get_track_to_tracks(j, start, track, CHANX,
-					start - 1, CHANX, nx, nodes_per_chan, opin_mux_size,
-					Fs_per_side, sblock_pattern, &edge_list, seg_details,
-					directionality, L_rr_node_indices, L_rr_edge_done,
-					switch_block_conn);
+			t_seg_details * from_seg_details = chan_details_x[start][j];
+			t_seg_details * to_seg_details = chan_details_x[start-1][j];
+			if (to_seg_details->length > 0) {
+				num_edges += get_track_to_tracks(j, start, track, CHANX,
+						start - 1, CHANX, nx, nodes_per_chan, opin_mux_size,
+						Fs_per_side, sblock_pattern, &edge_list, 
+						from_seg_details, to_seg_details, chan_details_x,
+						directionality, L_rr_node_indices, L_rr_edge_done,
+						switch_block_conn);
+			}
 		}
-
 		if (end < nx) {
-			num_edges += get_track_to_tracks(j, start, track, CHANX, end + 1,
-					CHANX, nx, nodes_per_chan, opin_mux_size, Fs_per_side,
-					sblock_pattern, &edge_list, seg_details, directionality,
-					L_rr_node_indices, L_rr_edge_done, switch_block_conn);
+			t_seg_details * from_seg_details = chan_details_x[start][j];
+			t_seg_details * to_seg_details = chan_details_x[end+1][j];
+			if (to_seg_details->length > 0) {
+				num_edges += get_track_to_tracks(j, start, track, CHANX, end + 1,
+						CHANX, nx, nodes_per_chan, opin_mux_size, Fs_per_side,
+						sblock_pattern, &edge_list, 
+						from_seg_details, to_seg_details, chan_details_x, 
+						directionality,	L_rr_node_indices, L_rr_edge_done, 
+						switch_block_conn);
+			}
 		}
 
 		int node = get_rr_node_index(i, j, CHANX, track, L_rr_node_indices);
@@ -1181,8 +1258,7 @@ static void build_rr_xchan(INP int i, INP int j,
 
 		/* Edge arrays have now been built up.  Do everything else.  */
 		L_rr_node[node].cost_index = cost_index_offset + seg_details[track].index;
-		L_rr_node[node].occ = 0;
-
+		L_rr_node[node].occ = ( track < tracks_per_chan ? 0 : 1 );
 		L_rr_node[node].capacity = 1; /* GLOBAL routing handled elsewhere */
 
 		L_rr_node[node].xlow = start;
@@ -1204,14 +1280,21 @@ static void build_rr_xchan(INP int i, INP int j,
 static void build_rr_ychan(INP int i, INP int j,
 		INP struct s_ivec *****track_to_pin_lookup,
 		INP struct s_ivec ***switch_block_conn, INP int cost_index_offset,
-		INP int nodes_per_chan, INP int *opin_mux_size,
+		INP int nodes_per_chan, INP int tracks_per_chan, INP int *opin_mux_size,
 		INP short ******sblock_pattern, INP int Fs_per_side,
-		INP t_seg_details * seg_details, INP t_ivec *** L_rr_node_indices,
+		INP t_chan_details * chan_details_y, INP t_chan_details * chan_details_x,
+		INP t_ivec *** L_rr_node_indices,
 		INP boolean * L_rr_edge_done, INOUTP t_rr_node * L_rr_node,
 		INP int wire_to_ipin_switch, INP enum e_directionality directionality) {
 
+	t_seg_details * seg_details = chan_details_y[i][j];
+
 	/* Loads up all the routing resource nodes in the y-directed channel segments starting at (i,j). */
-	for (int track = 0; track < nodes_per_chan; ++track) {
+	for (int track = 0; track < tracks_per_chan; ++track) {
+
+		if (seg_details[track].length == 0)
+			continue;
+
 		int start = get_seg_start(seg_details, track, i, j);
 		int end = get_seg_end(seg_details, track, start, i, ny);
 
@@ -1227,32 +1310,52 @@ static void build_rr_ychan(INP int i, INP int j,
 				wire_to_ipin_switch, directionality);
 
 		if (i > 0) {
-			num_edges += get_track_to_tracks(i, start, track, CHANY, i, CHANX,
-					ny, nodes_per_chan, opin_mux_size, Fs_per_side,
-					sblock_pattern, &edge_list, seg_details, directionality,
-					L_rr_node_indices, L_rr_edge_done, switch_block_conn);
+			t_seg_details * from_seg_details = chan_details_y[i][start];
+			t_seg_details * to_seg_details = chan_details_x[i][start];
+			if (to_seg_details->length > 0) {
+				num_edges += get_track_to_tracks(i, start, track, CHANY, i, CHANX,
+						ny, nodes_per_chan, opin_mux_size, Fs_per_side,
+						sblock_pattern, &edge_list, 
+						from_seg_details, to_seg_details, chan_details_x, 
+						directionality, L_rr_node_indices, L_rr_edge_done,
+						switch_block_conn);
+			}
 		}
-
 		if (i < nx) {
-			num_edges += get_track_to_tracks(i, start, track, CHANY, i + 1,
-					CHANX, ny, nodes_per_chan, opin_mux_size, Fs_per_side,
-					sblock_pattern, &edge_list, seg_details, directionality,
-					L_rr_node_indices, L_rr_edge_done, switch_block_conn);
+			t_seg_details * from_seg_details = chan_details_y[i][start];
+			t_seg_details * to_seg_details = chan_details_x[i+1][start];
+			if (to_seg_details->length > 0) {
+				num_edges += get_track_to_tracks(i, start, track, CHANY, i + 1,
+						CHANX, ny, nodes_per_chan, opin_mux_size, Fs_per_side,
+						sblock_pattern, &edge_list, 
+						from_seg_details, to_seg_details, chan_details_x, 
+						directionality, L_rr_node_indices, L_rr_edge_done,
+						switch_block_conn);
+			}
 		}
-
 		if (start > 1) {
-			num_edges += get_track_to_tracks(i, start, track, CHANY,
-					start - 1, CHANY, ny, nodes_per_chan, opin_mux_size,
-					Fs_per_side, sblock_pattern, &edge_list, seg_details,
-					directionality, L_rr_node_indices, L_rr_edge_done,
-					switch_block_conn);
+			t_seg_details * from_seg_details = chan_details_y[i][start];
+			t_seg_details * to_seg_details = chan_details_y[i][start-1];
+			if (to_seg_details->length > 0) {
+				num_edges += get_track_to_tracks(i, start, track, CHANY,
+						start - 1, CHANY, ny, nodes_per_chan, opin_mux_size,
+						Fs_per_side, sblock_pattern, &edge_list, 
+						from_seg_details, to_seg_details, chan_details_y,
+						directionality, L_rr_node_indices, L_rr_edge_done,
+						switch_block_conn);
+			}
 		}
-
 		if (end < ny) {
-			num_edges += get_track_to_tracks(i, start, track, CHANY, end + 1,
-					CHANY, ny, nodes_per_chan, opin_mux_size, Fs_per_side,
-					sblock_pattern, &edge_list, seg_details, directionality,
-					L_rr_node_indices, L_rr_edge_done, switch_block_conn);
+			t_seg_details * from_seg_details = chan_details_y[i][start];
+			t_seg_details * to_seg_details = chan_details_y[i][end+1];
+			if (to_seg_details->length > 0) {
+				num_edges += get_track_to_tracks(i, start, track, CHANY, end + 1,
+						CHANY, ny, nodes_per_chan, opin_mux_size, Fs_per_side,
+						sblock_pattern, &edge_list, 
+						from_seg_details, to_seg_details, chan_details_y, 
+						directionality, L_rr_node_indices, L_rr_edge_done,
+						switch_block_conn);
+			}
 		}
 
 		int node = get_rr_node_index(i, j, CHANY, track, L_rr_node_indices);
@@ -1267,8 +1370,7 @@ static void build_rr_ychan(INP int i, INP int j,
 
 		/* Edge arrays have now been built up.  Do everything else.  */
 		L_rr_node[node].cost_index = cost_index_offset + seg_details[track].index;
-		L_rr_node[node].occ = 0;
-
+		L_rr_node[node].occ = ( track < tracks_per_chan ? 0 : 1 );
 		L_rr_node[node].capacity = 1; /* GLOBAL routing handled elsewhere */
 
 		L_rr_node[node].xlow = i;
@@ -1518,8 +1620,11 @@ static int *****alloc_and_load_pin_to_track_map(INP enum e_pin_type pin_type,
 				num_phys_pins, pin_num_ordering, side_ordering, width_ordering, height_ordering,
 				nodes_per_chan, max_Fc, directionality);
 	}
+
+#ifdef ENABLE_CHECK_ALL_TRACKS
 	check_all_tracks_reach_pins(Type, tracks_connected_to_pin, nodes_per_chan,
 			max_Fc, pin_type);
+#endif
 
 	/* Free all temporary storage. */
 	free_matrix3(num_dir, 0, Type->width - 1, 0, Type->height - 1, 0, sizeof(int));
@@ -1659,6 +1764,7 @@ static void load_perturbed_switch_pattern(INP t_type_ptr type,
 	} /* End for all physical pins. */
 }
 
+#ifdef ENABLE_CHECK_ALL_TRACKS
 static void check_all_tracks_reach_pins(t_type_ptr type,
 		int *****tracks_connected_to_pin, int nodes_per_chan, int Fc,
 		enum e_pin_type ipin_or_opin) {
@@ -1692,6 +1798,7 @@ static void check_all_tracks_reach_pins(t_type_ptr type,
 	}
 	free(num_conns_to_track);
 }
+#endif
 
 /* Allocates and loads the track to ipin lookup for each physical grid type. This
  * is the same information as the ipin_to_track map but accessed in a different way. */
@@ -1793,12 +1900,9 @@ static struct s_ivec ****alloc_and_load_track_to_pin_lookup(
  * only for debugging.                                                    */
 void dump_rr_graph(INP const char *file_name) {
 
-	int inode;
-	FILE *fp;
+	FILE *fp = my_fopen(file_name, "w", 0);
 
-	fp = my_fopen(file_name, "w", 0);
-
-	for (inode = 0; inode < num_rr_nodes; inode++) {
+	for (int inode = 0; inode < num_rr_nodes; ++inode) {
 		print_rr_node(fp, rr_node, inode);
 		fprintf(fp, "\n");
 	}
@@ -1806,7 +1910,7 @@ void dump_rr_graph(INP const char *file_name) {
 #if 0
 	fprintf(fp, "\n\n%d rr_indexed_data entries.\n\n", num_rr_indexed_data);
 
-	for (index = 0; index < num_rr_indexed_data; index++)
+	for (int index = 0; index < num_rr_indexed_data; ++index)
 	{
 		print_rr_indexed_data(fp, index);
 		fprintf(fp, "\n");
@@ -1819,16 +1923,11 @@ void dump_rr_graph(INP const char *file_name) {
 /* Prints all the data about node inode to file fp.                    */
 void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 
-	static const char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN",
-			"CHANX", "CHANY", "INTRA_CLUSTER_EDGE" };
-	static const char *direction_name[] = { "OPEN", "INC_DIRECTION",
-			"DEC_DIRECTION", "BI_DIRECTION" };
+	static const char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY", "INTRA_CLUSTER_EDGE" };
+	static const char *direction_name[] = { "OPEN", "INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION" };
 	static const char *drivers_name[] = { "OPEN", "MULTI_BUFFER", "SINGLE" };
 
-	t_rr_type rr_type;
-	int iconn;
-
-	rr_type = L_rr_node[inode].type;
+	t_rr_type rr_type = L_rr_node[inode].type;
 
 	/* Make sure we don't overrun const arrays */
 	assert((int)rr_type < (int)(sizeof(name_type) / sizeof(char *)));
@@ -1838,25 +1937,29 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 	fprintf(fp, "Node: %d %s ", inode, name_type[rr_type]);
 	if ((L_rr_node[inode].xlow == L_rr_node[inode].xhigh)
 			&& (L_rr_node[inode].ylow == L_rr_node[inode].yhigh)) {
-		fprintf(fp, "(%d, %d) ", L_rr_node[inode].xlow, L_rr_node[inode].ylow);
+		fprintf(fp, "(%d, %d) ", 
+				L_rr_node[inode].xlow, L_rr_node[inode].ylow);
 	} else {
-		fprintf(fp, "(%d, %d) to (%d, %d) ", L_rr_node[inode].xlow,
-				L_rr_node[inode].ylow, L_rr_node[inode].xhigh,
-				L_rr_node[inode].yhigh);
+		fprintf(fp, "(%d, %d) to (%d, %d) ", 
+				L_rr_node[inode].xlow, L_rr_node[inode].ylow, 
+				L_rr_node[inode].xhigh, L_rr_node[inode].yhigh);
 	}
 	fprintf(fp, "Ptc_num: %d ", L_rr_node[inode].ptc_num);
-	fprintf(fp, "Direction: %s ",
-			direction_name[L_rr_node[inode].direction + 1]);
+	fprintf(fp, "Direction: %s ", direction_name[L_rr_node[inode].direction + 1]);
 	fprintf(fp, "Drivers: %s ", drivers_name[L_rr_node[inode].drivers + 1]);
 	fprintf(fp, "\n");
 
+	if( rr_type == IPIN || rr_type == OPIN)
+	{
+		fprintf(fp, "name %s\n", L_rr_node[inode].pb_graph_pin->port->name);
+	}
 	fprintf(fp, "%d edge(s):", L_rr_node[inode].num_edges);
-	for (iconn = 0; iconn < L_rr_node[inode].num_edges; iconn++)
+	for (int iconn = 0; iconn < L_rr_node[inode].num_edges; ++iconn)
 		fprintf(fp, " %d", L_rr_node[inode].edges[iconn]);
 	fprintf(fp, "\n");
 
 	fprintf(fp, "Switch types:");
-	for (iconn = 0; iconn < L_rr_node[inode].num_edges; iconn++)
+	for (int iconn = 0; iconn < L_rr_node[inode].num_edges; ++iconn)
 		fprintf(fp, " %d", L_rr_node[inode].switches[iconn]);
 	fprintf(fp, "\n");
 
@@ -1873,11 +1976,9 @@ void print_rr_indexed_data(FILE * fp, int index) {
 
 	fprintf(fp, "Index: %d\n", index);
 
-	fprintf(fp, "ortho_cost_index: %d  ",
-			rr_indexed_data[index].ortho_cost_index);
+	fprintf(fp, "ortho_cost_index: %d  ", rr_indexed_data[index].ortho_cost_index);
 	fprintf(fp, "base_cost: %g  ", rr_indexed_data[index].saved_base_cost);
-	fprintf(fp, "saved_base_cost: %g\n",
-			rr_indexed_data[index].saved_base_cost);
+	fprintf(fp, "saved_base_cost: %g\n", rr_indexed_data[index].saved_base_cost);
 
 	fprintf(fp, "Seg_index: %d  ", rr_indexed_data[index].seg_index);
 	fprintf(fp, "inv_length: %g\n", rr_indexed_data[index].inv_length);
@@ -1889,7 +1990,8 @@ void print_rr_indexed_data(FILE * fp, int index) {
 
 static void build_unidir_rr_opins(INP int i, INP int j,
 		INP struct s_grid_tile **L_grid, INP int **Fc_out,
-		INP int nodes_per_chan, INP t_seg_details * seg_details,
+		INP int nodes_per_chan, 
+		INP t_chan_details * chan_details_x, INP t_chan_details * chan_details_y,
 		INOUTP int **Fc_xofs, INOUTP int **Fc_yofs,
 		INOUTP t_rr_node * L_rr_node, INOUTP boolean * L_rr_edge_done,
 		OUTP boolean * Fc_clipped, INP t_ivec *** L_rr_node_indices, INP int delayless_switch,
@@ -1975,6 +2077,8 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 						continue;
 					}
 
+					t_seg_details * seg_details = (chan_type == CHANX ? 
+							chan_details_x[seg][chan] : chan_details_y[chan][seg]);
 					if (seg_details[0].length == 0)
 						continue;
 
@@ -2256,38 +2360,24 @@ static void view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 				assert(nodes_per_chan > 0);
 				for (itrack = 0; itrack < nodes_per_chan; itrack++)
 				{
-					start =
-					get_seg_start(seg_details, itrack,
-							seg_num, chan_num);
-					end =
-					get_seg_end(seg_details, itrack,
-							start, chan_num, max_len);
+					start = get_seg_start(seg_details, itrack, seg_num, chan_num);
+					end = get_seg_end(seg_details, itrack, start, chan_num, max_len);
 
-					if ((seg_details[itrack].direction ==
-									direction) && (((start == seg_num)
-											&& (direction ==
-													INC_DIRECTION))
-									|| ((end == seg_num)
-											&& (direction ==
-													DEC_DIRECTION))))
+					if ((seg_details[itrack].direction == direction) 
+							&& (((start == seg_num) && (direction == INC_DIRECTION))
+								|| ((end == seg_num) && (direction == DEC_DIRECTION))))
 					{ /* mux found */
 						num_muxes++;
 						if (side == LEFT || side == RIGHT)
 						{ /* CHANX */
-							inode =
-							get_rr_node_index
-							(seg_num, chan_num,
-									CHANX, itrack,
-									L_rr_node_indices);
+							inode =	get_rr_node_index(seg_num, chan_num,
+									CHANX, itrack, L_rr_node_indices);
 						}
 						else
 						{
 							assert((side == TOP) || (side == BOTTOM)); /* CHANY */
-							inode =
-							get_rr_node_index
-							(chan_num, seg_num,
-									CHANY, itrack,
-									L_rr_node_indices);
+							inode =	get_rr_node_index(chan_num, seg_num,
+									CHANY, itrack, L_rr_node_indices);
 						}
 
 						new_mux = (t_mux *)
@@ -2303,45 +2393,36 @@ static void view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 						if (sblock_mux_list_head == NULL)
 						{
 							/* first entry */
-							sblock_mux_list_head =
-							new_mux;
+							sblock_mux_list_head = new_mux;
 						}
 						else if (sblock_mux_list_head->
 								size < new_mux->size)
 						{
 							/* insert before head */
-							new_mux->next =
-							sblock_mux_list_head;
-							sblock_mux_list_head =
-							new_mux;
+							new_mux->next = sblock_mux_list_head;
+							sblock_mux_list_head = new_mux;
 						}
 						else
 						{
 							/* insert after head */
-							current =
-							sblock_mux_list_head;
+							current = sblock_mux_list_head;
 							next = current->next;
 
 							while ((next != NULL)
-									&& (next->size >
-											new_mux->size))
+									&& (next->size > new_mux->size))
 							{
 								current = next;
-								next =
-								current->next;
+								next = current->next;
 							}
 
 							if (next == NULL)
 							{
-								current->next =
-								new_mux;
+								current->next = new_mux;
 							}
 							else
 							{
-								new_mux->next =
-								current->next;
-								current->next =
-								new_mux;
+								new_mux->next = current->next;
+								current->next = new_mux;
 							}
 						}
 						/* end of insert in linked list */
@@ -2364,13 +2445,12 @@ static void view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 			while (current != NULL)
 			{
 				if (max_value < current->size)
-				max_value = current->size;
+					max_value = current->size;
 				if (min_value > current->size)
-				min_value = current->size;
+					min_value = current->size;
 
 #ifdef ENABLE_DUMP
-				fprintf(dump_file_per_sblock, "%d ",
-						current->size);
+				fprintf(dump_file_per_sblock, "%d ", current->size);
 				fprintf(dump_file, "%d\n", current->size);
 #endif /* ENABLE_DUMP */
 
@@ -2378,8 +2458,7 @@ static void view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 			}
 
 #ifdef ENABLE_DUMP
-			fprintf(dump_file_per_sblock, "}\n\tmax: %d\tmin:%d",
-					max_value, min_value);
+			fprintf(dump_file_per_sblock, "}\n\tmax: %d\tmin:%d", max_value, min_value);
 #endif /* ENABLE_DUMP */
 
 			range = max_value - min_value;
@@ -2445,8 +2524,7 @@ static void view_mux_size_distribution(t_ivec *** L_rr_node_indices,
 
 				while (current != NULL)
 				{
-					if (current->size >
-							distr_current->max_index)
+					if (current->size > distr_current->max_index)
 					{
 						/* needs to realloc to expand the distribution array to hold the new large-valued data */
 						distr_current->distr = my_realloc(distr_current->distr,
