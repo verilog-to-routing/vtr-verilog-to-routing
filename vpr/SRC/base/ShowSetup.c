@@ -208,7 +208,8 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 			vpr_printf(TIO_MESSAGE_INFO, "%d\n", RouterOpts.fixed_channel_width);
 		}
 
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.empty_channel_trim: %s\n", (RouterOpts.empty_channel_trim ? "TRUE" : "FALSE"));
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.trim_empty_chan: %s\n", (RouterOpts.trim_empty_channels ? "TRUE" : "FALSE"));
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.trim_obs_chan: %s\n", (RouterOpts.trim_obs_channels ? "TRUE" : "FALSE"));
 		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.acc_fac: %f\n", RouterOpts.acc_fac);
 		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.bb_factor: %d\n", RouterOpts.bb_factor);
 		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.bend_cost: %f\n", RouterOpts.bend_cost);
@@ -262,7 +263,8 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 			vpr_printf(TIO_MESSAGE_INFO, "%d\n", RouterOpts.fixed_channel_width);
 		}
 
-		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.empty_channel_trim: %s\n", (RouterOpts.empty_channel_trim ? "TRUE" : "FALSE"));
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.trim_empty_chan: %s\n", (RouterOpts.trim_empty_channels ? "TRUE" : "FALSE"));
+		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.trim_obs_chan: %s\n", (RouterOpts.trim_obs_channels ? "TRUE" : "FALSE"));
 		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.acc_fac: %f\n", RouterOpts.acc_fac);
 		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.bb_factor: %d\n", RouterOpts.bb_factor);
 		vpr_printf(TIO_MESSAGE_INFO, "RouterOpts.bend_cost: %f\n", RouterOpts.bend_cost);
