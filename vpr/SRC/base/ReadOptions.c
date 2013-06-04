@@ -166,6 +166,8 @@ void alloc_and_load_echo_file_info() {
 	setEchoFileName(E_ECHO_CRITICALITY, "criticality.echo");
 	setEchoFileName(E_ECHO_COMPLETE_NET_TRACE, "complete_net_trace.echo");
 	setEchoFileName(E_ECHO_SEG_DETAILS, "seg_details.txt");
+	setEchoFileName(E_ECHO_CHAN_DETAILS, "chan_details.txt");
+	setEchoFileName(E_ECHO_SBLOCK_PATTERN, "sblock_pattern.txt");
 }
 
 void free_echo_file_info() {
@@ -451,8 +453,10 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return Args;
 	case OT_ROUTE_CHAN_WIDTH:
 		return ReadInt(Args, &Options->RouteChanWidth);
-	case OT_ROUTE_CHAN_TRIM:
-		return ReadOnOff(Args, &Options->RouteChanTrim);
+	case OT_TRIM_EMPTY_CHAN:
+		return ReadOnOff(Args, &Options->TrimEmptyChan);
+	case OT_TRIM_OBS_CHAN:
+		return ReadOnOff(Args, &Options->TrimObsChan);
 	case OT_ROUTER_ALGORITHM:
 		return ReadRouterAlgorithm(Args, &Options->RouterAlgorithm);
 	case OT_BASE_COST_TYPE:
@@ -680,8 +684,11 @@ static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id)
 		case OT_ROUTE_CHAN_WIDTH:
 			dest->RouteChanWidth = src->RouteChanWidth;
 			break;
-		case OT_ROUTE_CHAN_TRIM:
-			dest->RouteChanTrim = src->RouteChanTrim;
+		case OT_TRIM_EMPTY_CHAN:
+			dest->TrimEmptyChan = src->TrimEmptyChan;
+			break;
+		case OT_TRIM_OBS_CHAN:
+			dest->TrimObsChan = src->TrimObsChan;
 			break;
 		case OT_ROUTER_ALGORITHM:
 			dest->RouterAlgorithm = src->RouterAlgorithm;
