@@ -1,3 +1,5 @@
+// JR - Enhanced alloc_and_load_num_instances_type() function to intialize the grid tile block array to EMPTY for all IO blocks.
+
 /*
  Author: Jason Luu
  Date: October 8, 2008
@@ -83,12 +85,11 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 	grid[0][ny + 1].type = grid[nx + 1][ny + 1].type = EMPTY_TYPE;
 
 	for (i = 1; i <= nx; i++) {
-		grid[i][0].blocks = (int *) my_malloc(sizeof(int) * IO_TYPE->capacity);
 		grid[i][0].type = IO_TYPE;
-
-		grid[i][ny + 1].blocks = (int *) my_malloc(
-				sizeof(int) * IO_TYPE->capacity);
 		grid[i][ny + 1].type = IO_TYPE;
+
+		grid[i][0].blocks = (int *) my_malloc(sizeof(int) * IO_TYPE->capacity);
+		grid[i][ny + 1].blocks = (int *) my_malloc(sizeof(int) * IO_TYPE->capacity);
 
 		for (j = 0; j < IO_TYPE->capacity; j++) {
 			grid[i][0].blocks[j] = EMPTY;
@@ -97,12 +98,12 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 	}
 
 	for (i = 1; i <= ny; i++) {
-		grid[0][i].blocks = (int *) my_malloc(sizeof(int) * IO_TYPE->capacity);
 		grid[0][i].type = IO_TYPE;
-
-		grid[nx + 1][i].blocks = (int *) my_malloc(
-				sizeof(int) * IO_TYPE->capacity);
 		grid[nx + 1][i].type = IO_TYPE;
+
+		grid[0][i].blocks = (int *) my_malloc(sizeof(int) * IO_TYPE->capacity);
+		grid[nx + 1][i].blocks = (int *) my_malloc(sizeof(int) * IO_TYPE->capacity);
+
 		for (j = 0; j < IO_TYPE->capacity; j++) {
 			grid[0][i].blocks[j] = EMPTY;
 			grid[nx + 1][i].blocks[j] = EMPTY;
