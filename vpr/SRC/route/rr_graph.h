@@ -18,7 +18,8 @@ enum {
 	RR_GRAPH_WARN_CHAN_WIDTH_CHANGED = 0x02
 };
 
-void build_rr_graph(INP t_graph_type graph_type, 
+void build_rr_graph(
+		INP t_graph_type graph_type, 
 		INP int L_num_types,
 		INP t_type_ptr types, 
 		INP int L_nx, 
@@ -36,7 +37,8 @@ void build_rr_graph(INP t_graph_type graph_type,
 		INP t_timing_inf timing_inf, 
 		INP int wire_to_ipin_switch,
 		INP enum e_base_cost_type base_cost_type, 
-		INP boolean empty_channel_trim,
+		INP boolean trim_empty_channels,
+		INP boolean trim_obs_channels,
 		INP t_direct_inf *directs, 
 		INP int num_directs,
 		INP boolean ignore_Fc_0,
