@@ -460,7 +460,9 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 			det_routing_arch.global_route_switch,
 			det_routing_arch.delayless_switch, timing_inf,
 			det_routing_arch.wire_to_ipin_switch,
-			router_opts.base_cost_type, router_opts.empty_channel_trim,
+			router_opts.base_cost_type,
+			router_opts.trim_empty_channels,
+			router_opts.trim_obs_channels,
 			NULL, 0, TRUE, /* do not send in direct connections because we care about general placement timing instead of special pin placement timing */
 			&warnings);
 
