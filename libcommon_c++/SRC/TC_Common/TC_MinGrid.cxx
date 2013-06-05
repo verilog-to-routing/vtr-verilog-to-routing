@@ -15,8 +15,25 @@
 //
 //===========================================================================//
 
-#include "limits.h"
-#include "math.h"
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
+#include <climits>
+#include <cmath>
+using namespace std;
 
 #include "TCT_Generic.h"
 
@@ -79,10 +96,10 @@ void TC_MinGrid_c::NewInstance(
 void TC_MinGrid_c::DeleteInstance( 
       void )
 {
-   if ( pinstance_ != NULL )
+   if( pinstance_ )
    {
       delete pinstance_;
-      pinstance_ = NULL;
+      pinstance_ = 0;
    }
 }
 
@@ -96,7 +113,7 @@ void TC_MinGrid_c::DeleteInstance(
 TC_MinGrid_c& TC_MinGrid_c::GetInstance( 
       void )
 {
-   if ( !pinstance_ )
+   if( !pinstance_ )
    {
       NewInstance( );
    }
@@ -114,7 +131,7 @@ void TC_MinGrid_c::SetGrid(
       double grid )
 {
    this->grid_ = grid;
-   if ( this->grid_ > TC_FLT_EPSILON )
+   if( this->grid_ > TC_FLT_EPSILON )
    {
       // Compute database units (integer) based on min grid value
       double units = ( 1.0 / this->grid_ ) + TC_FLT_EPSILON;
@@ -122,11 +139,11 @@ void TC_MinGrid_c::SetGrid(
 
       // Compute format precision (integer) based on min grid value
       double precision = 10.0;
-      while ( precision <= 1000000.0 + TC_FLT_EPSILON )
+      while( precision <= 1000000.0 + TC_FLT_EPSILON )
       {
          double f = this->grid_ * precision;
          double c = ceil( f - TC_FLT_EPSILON );
-         if ( fabs( c - f ) < TC_FLT_EPSILON )
+         if( fabs( c - f ) < TC_FLT_EPSILON )
             break;
 
          precision *= 10.0;
@@ -136,7 +153,7 @@ void TC_MinGrid_c::SetGrid(
 
       // Compute database magnitude (integer) based on precision value
       this->magnitude_ = 1;
-      for ( unsigned int n = 1; n <= this->precision_; ++n )  
+      for( unsigned int n = 1; n <= this->precision_; ++n )  
       {
          this->magnitude_ *= 10;
       }
@@ -202,11 +219,11 @@ int TC_MinGrid_c::FloatToInt(
       double f ) const
 {
    int i;
-   if ( f < static_cast< double >( INT_MIN ) - TC_FLT_EPSILON )
+   if( f < static_cast< double >( INT_MIN ) - TC_FLT_EPSILON )
    {
       i = INT_MIN;
    } 
-   else if ( f > static_cast< double >( INT_MAX ) - TC_FLT_EPSILON )
+   else if( f > static_cast< double >( INT_MAX ) - TC_FLT_EPSILON )
    {
       i = INT_MAX;
    } 
@@ -228,11 +245,11 @@ unsigned int TC_MinGrid_c::FloatToUnsignedInt(
       double f ) const
 {
    unsigned int ui;
-   if ( f < static_cast< double >( 0 ) - TC_FLT_EPSILON )
+   if( f < static_cast< double >( 0 ) - TC_FLT_EPSILON )
    {
       ui = UINT_MAX;
    } 
-   else if ( f > static_cast< double >( UINT_MAX ) - TC_FLT_EPSILON )
+   else if( f > static_cast< double >( UINT_MAX ) - TC_FLT_EPSILON )
    {
       ui = UINT_MAX;
    } 
@@ -254,11 +271,11 @@ long int TC_MinGrid_c::FloatToLongInt(
       double f ) const
 {
    long int li;
-   if ( f < static_cast< double >( LONG_MIN ) - TC_FLT_EPSILON )
+   if( f < static_cast< double >( LONG_MIN ) - TC_FLT_EPSILON )
    {
       li = LONG_MIN;
    } 
-   else if ( f > static_cast< double >( LONG_MAX ) - TC_FLT_EPSILON )
+   else if( f > static_cast< double >( LONG_MAX ) - TC_FLT_EPSILON )
    {
       li = LONG_MAX;
    } 
@@ -282,23 +299,23 @@ double TC_MinGrid_c::SnapToGrid(
    int i = this->FloatToInt( f );
 
    double fdelta = 0.0;
-   if (( i == INT_MIN ) || ( i == INT_MAX ))
+   if(( i == INT_MIN ) || ( i == INT_MAX ))
    {
       double fmin = static_cast< double >( INT_MIN );
       double fmax = static_cast< double >( INT_MAX );
-      if ( TCTF_IsGT( f, fmin ) && TCTF_IsLT( f, fmax ))
+      if( TCTF_IsGT( f, fmin ) && TCTF_IsLT( f, fmax ))
       {
-	 fdelta = floor( f );
+         fdelta = floor( f );
          i = this->FloatToInt( f - fdelta );
       }
    }
 
    double fprime = 0.0;
-   if ( i == INT_MIN )
+   if( i == INT_MIN )
    {
       fprime = static_cast< double >( INT_MIN );
    }
-   else if ( i == INT_MAX )
+   else if( i == INT_MAX )
    {
       fprime = static_cast< double >( INT_MAX );
    }
@@ -337,7 +354,7 @@ bool TC_MinGrid_c::IsOnGrid(
 {
    double fprime = this->SnapToGrid( f );
 
-   if ( pf )
+   if( pf )
    {
       *pf = fprime;
    }
