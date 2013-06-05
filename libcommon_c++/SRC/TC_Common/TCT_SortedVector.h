@@ -28,21 +28,37 @@
 //
 //===========================================================================//
 
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
 #ifndef TCT_SORTED_VECTOR_H
 #define TCT_SORTED_VECTOR_H
 
-#include <stdio.h>
-
+#include <cstdio>
+#include <cstring>
+#include <string>
 #include <vector>
 #include <iterator>
 #include <algorithm>
-
-#include <string>
 using namespace std;
 
 #include "TIO_Typedefs.h"
 
 #include "TC_Typedefs.h"
+#include "TC_MinGrid.h"
 #include "TCT_Generic.h"
 
 //===========================================================================//
@@ -83,10 +99,10 @@ public:
 
    size_t GetLength( void ) const;
 
-   void Add( const T& data );
-   void Add( const TCT_SortedVector_c< T >& sortedVector );
+   T* Add( const T& data );
+   T* Add( const TCT_SortedVector_c< T >& sortedVector );
 
-   void Replace( const T& data );
+   T* Replace( const T& data );
 
    void Delete( const T& data );
 
@@ -213,13 +229,13 @@ template< class T > bool TCT_SortedVector_c< T >::operator==(
 {
    bool isEqual = this->GetLength( ) == sortedVector.GetLength( ) ? 
                   true : false;
-   if ( isEqual )
+   if( isEqual )
    {
-      for ( size_t i = 0; i < this->GetLength( ); ++i )
+      for( size_t i = 0; i < this->GetLength( ); ++i )
       {
          isEqual = *this->operator[]( i ) == *sortedVector.operator[]( i ) ?
                    true : false;
-         if ( !isEqual )
+         if( !isEqual )
             break;
       }
    }
@@ -251,11 +267,11 @@ template< class T > T* TCT_SortedVector_c< T >::operator[](
 {
    T* pdata = 0;
 
-   if ( index < this->GetLength( ))
+   if( index < this->GetLength( ))
    {
-      if ( !isSorted_ )
+      if( !isSorted_ )
       {
-	this->Sort_( );
+         this->Sort_( );
       }
       pdata = &this->vector_.operator[]( index );
    }
@@ -298,10 +314,10 @@ template< class T > void TCT_SortedVector_c< T >::Print(
       FILE*  pfile,
       size_t spaceLen ) const
 {
-   for ( size_t i = 0; i < this->GetLength( ); ++i )
+   for( size_t i = 0; i < this->GetLength( ); ++i )
    {
       const T& data = *this->operator[]( i );
-      if ( data.IsValid( ))  
+      if( data.IsValid( ))  
       {
          data.Print( pfile, spaceLen );
       }
@@ -321,17 +337,16 @@ template<class T> void TCT_SortedVector_c< T >::ExtractString(
       size_t        precision,
       size_t        maxLen ) const
 {
-   if ( psrData )
+   if( psrData )
    {
       *psrData = "";
 
-      if ( precision == SIZE_MAX )
+      if( precision == SIZE_MAX )
       {
-         TC_MinGrid_c& minGrid = TC_MinGrid_c::GetInstance( );
-         precision = minGrid.GetPrecision( );
+         precision = TC_MinGrid_c::GetInstance( ).GetPrecision( );
       }
 
-      for ( size_t i = 0; i < this->GetLength( ); ++i )
+      for( size_t i = 0; i < this->GetLength( ); ++i )
       {
          int iDataValue;
          unsigned int uiDataValue;
@@ -342,11 +357,11 @@ template<class T> void TCT_SortedVector_c< T >::ExtractString(
          double eDataValue;
          string srDataValue;
 
-         char szDataString[ TIO_FORMAT_STRING_LEN_DATA ];
+         char szDataString[TIO_FORMAT_STRING_LEN_DATA];
          memset( szDataString, 0, sizeof( szDataString ));
 
          switch( mode )
-	 {
+         {
          case TC_DATA_INT:
             iDataValue = *reinterpret_cast< int* >( this->operator[]( i ));
             sprintf( szDataString, "%d", iDataValue );
@@ -390,13 +405,13 @@ template<class T> void TCT_SortedVector_c< T >::ExtractString(
          case TC_DATA_UNDEFINED:
             sprintf( szDataString, "?" );
             break;
-	 }
+         }
 
-	 size_t lenDataString = TCT_Max( strlen( szDataString ), strlen( "..." ));
-         if ( psrData->length( ) + lenDataString >= maxLen )
-	 {
-	    *psrData += "...";
-	    break;
+         size_t lenDataString = TCT_Max( strlen( szDataString ), strlen( "..." ));
+         if( psrData->length( ) + lenDataString >= maxLen )
+         {
+            *psrData += "...";
+            break;
          }
 
          *psrData += szDataString;
@@ -412,23 +427,29 @@ template<class T> void TCT_SortedVector_c< T >::ExtractString(
 // Version history
 // 05/15/12 jeffr : Original
 //===========================================================================//
-template< class T > void TCT_SortedVector_c< T >::Add( 
+template< class T > T* TCT_SortedVector_c< T >::Add( 
       const T& data )
 {
    this->vector_.push_back( data );
 
    this->isSorted_ = false;
+
+   size_t i = this->GetLength( ) - 1;
+   return( &this->vector_.operator[]( i ));
 }
 
 //===========================================================================//
-template< class T > void TCT_SortedVector_c< T >::Add( 
+template< class T > T* TCT_SortedVector_c< T >::Add( 
       const TCT_SortedVector_c< T >& sortedVector )
 {
-   for ( size_t i = 0; i < sortedVector.GetLength( ); ++i )
+   for( size_t i = 0; i < sortedVector.GetLength( ); ++i )
    {
       const T& data = *sortedVector.operator[]( i );
       this->Add( data );
    }
+
+   size_t i = this->GetLength( ) - 1;
+   return( &this->vector_.operator[]( i ));
 }
 
 //===========================================================================//
@@ -438,11 +459,11 @@ template< class T > void TCT_SortedVector_c< T >::Add(
 // Version history
 // 05/15/12 jeffr : Original
 //===========================================================================//
-template< class T > void TCT_SortedVector_c< T >::Replace( 
+template< class T > T* TCT_SortedVector_c< T >::Replace( 
       const T& data )
 {
    this->Delete( data );
-   this->Add( data );
+   return( this->Add( data ));
 }
 
 //===========================================================================//
@@ -455,14 +476,14 @@ template< class T > void TCT_SortedVector_c< T >::Replace(
 template< class T > void TCT_SortedVector_c< T >::Delete( 
       const T& data )
 {
-   if ( !this->isSorted_ )
+   if( !this->isSorted_ )
    {
       this->Sort_( );
    }
 
    typename std::vector< T >::iterator begin = this->vector_.begin( );
    typename std::vector< T >::iterator end = this->vector_.end( );
-   if ( std::binary_search( begin, end, data ))
+   if( std::binary_search( begin, end, data ))
    {
       typename std::vector< T >::iterator iter = std::lower_bound( begin, end, data );
 
@@ -499,7 +520,7 @@ template< class T > bool TCT_SortedVector_c< T >::Find(
 {
    bool found = false;
 
-   if ( !this->isSorted_ )
+   if( !this->isSorted_ )
    {
       this->Sort_( );
    }
@@ -520,21 +541,21 @@ template< class T > size_t TCT_SortedVector_c< T >::FindIndex(
 {
    size_t index = string::npos;
 
-   if ( !this->isSorted_ )
+   if( !this->isSorted_ )
    {
       this->Sort_( );
    }
 
    typename std::vector< T >::const_iterator begin = this->vector_.begin( );
    typename std::vector< T >::const_iterator end = this->vector_.end( );
-   if ( std::binary_search( begin, end, data ))
+   if( std::binary_search( begin, end, data ))
    {
       typename std::vector< T >::const_iterator iter = std::lower_bound( begin, end, data );
 
       index = 0;
-      #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 )
+      #if defined( SUN8 ) || defined( SUN10 )
          std::distance( begin, iter, index );
-      #elif defined( LINUX24_64 )
+      #elif defined( LINUX_X86_64 ) || defined( LINUX_I686 )
          index = std::distance( begin, iter );
       #else
          index = std::distance( begin, iter );
@@ -553,7 +574,7 @@ template< class T > size_t TCT_SortedVector_c< T >::FindIndex(
 template< class T > bool TCT_SortedVector_c< T >::IsMember(
       const T& data ) const
 {
-   if ( !this->isSorted_ )
+   if( !this->isSorted_ )
    {
       this->Sort_( );
    }
@@ -575,11 +596,11 @@ template< class T > bool TCT_SortedVector_c< T >::Search_(
 
    typename std::vector< T >::const_iterator begin = this->vector_.begin( );
    typename std::vector< T >::const_iterator end = this->vector_.end( );
-   if ( std::binary_search( begin, end, data ))
+   if( std::binary_search( begin, end, data ))
    {
       found = true;
 
-      if ( pdata )
+      if( pdata )
       {
          typename std::vector< T >::const_iterator iter = std::lower_bound( begin, end, data );
 
@@ -599,7 +620,7 @@ template< class T > bool TCT_SortedVector_c< T >::Search_(
 template< class T > void TCT_SortedVector_c< T >::Sort_(
       void ) const
 {
-   if ( !this->isSorted_ )
+   if( !this->isSorted_ )
    {
       TCT_SortedVector_c* psortedVector = 0;
       psortedVector = const_cast< TCT_SortedVector_c* >( this );
