@@ -310,11 +310,11 @@ void build_rr_graph(
 		if ((is_global_graph ? 1 : chan_width) != nodes_per_chan) {
 			*Warnings |= RR_GRAPH_WARN_CHAN_WIDTH_CHANGED;
 		}
+
 		if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_SEG_DETAILS)) {
 			dump_seg_details(seg_details, nodes_per_chan, 
 					getEchoFileName(E_ECHO_SEG_DETAILS));
-		} else
-			;
+		}
 	}
 	/* END SEG_DETAILS */
 
@@ -324,8 +324,10 @@ void build_rr_graph(
 			num_seg_details, seg_details,
 			&chan_details_x, &chan_details_y);
 
-	dump_chan_details( chan_details_x, chan_details_y, nodes_per_chan, nx, ny,
-			getEchoFileName(E_ECHO_CHAN_DETAILS));
+	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CHAN_DETAILS)) {
+		dump_chan_details( chan_details_x, chan_details_y, nodes_per_chan, nx, ny,
+				getEchoFileName(E_ECHO_CHAN_DETAILS));
+	}
 	/* END CHAN_DETAILS */
 
 	/* START FC */
@@ -418,8 +420,11 @@ void build_rr_graph(
 #endif
 			}
 		}
-		dump_sblock_pattern( unidir_sb_pattern, nodes_per_chan, L_nx, L_ny,
-				getEchoFileName(E_ECHO_SBLOCK_PATTERN));
+
+		if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_SBLOCK_PATTERN)) {
+			dump_sblock_pattern( unidir_sb_pattern, nodes_per_chan, L_nx, L_ny,
+					getEchoFileName(E_ECHO_SBLOCK_PATTERN));
+		}
 	}
 	/* END SB LOOKUP */
 
