@@ -10,13 +10,30 @@
 //
 //===========================================================================//
 
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
 #ifndef TC_NAME_H
 #define TC_NAME_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
+
+#include "TIO_Typedefs.h"
 
 #include "TC_Typedefs.h"
 
@@ -77,7 +94,7 @@ private:
 inline TC_Name_c::TC_Name_c( 
       const char* pszName )
       :
-      srName_( pszName ? pszName : "" ),
+      srName_( TIO_PSZ_STR( pszName )),
       value_( 0 )
 {
 }
@@ -96,7 +113,7 @@ inline TC_Name_c::TC_Name_c(
       const char*  pszName,
             int    value )
       :
-      srName_( pszName ? pszName : "" ),
+      srName_( TIO_PSZ_STR( pszName )),
       value_( value )
 {
 }
@@ -130,7 +147,7 @@ inline TC_Name_c::~TC_Name_c(
 inline void TC_Name_c::SetName( 
       const char* pszName )
 {
-   this->srName_ = ( pszName ? pszName : "" );
+   this->srName_ = TIO_PSZ_STR( pszName );
 }
 
 //===========================================================================//
