@@ -225,11 +225,17 @@ using namespace std;
 #define CREATE_ERROR() { char msg[BUFSIZE]; sprintf (msg, "Error %i: Couldn't create graphics object on line %d of graphics.c\n", GetLastError(), __LINE__); MessageBox(NULL, msg, NULL, MB_OK); exit(-1); }
 #define DRAW_ERROR()   { char msg[BUFSIZE]; sprintf (msg, "Error %i: Couldn't draw graphics object on line %d of graphics.c\n", GetLastError(), __LINE__); MessageBox(NULL, msg, NULL, MB_OK); exit(-1); }
 
-/* Avoid funny clipping problems under windows that I suspect are caused by round-off 
- * in the Win32 libraries.
+/* Paul Leventis had this set to -2000 to +2000 to avoid funny clipping problems
+ * on Windows. But in current Windows versions I see no problems with larger
+ * MAXPIXEL and MINPIXEL values. Using bigger values has an advantage in that 
+ * I clip the endpoints of lines (one at a time) to these pixel limits, so
+ * diagonal lines can change slope when you're very zoomed in, and the effect 
+ * occurs sooner the smaller these MAXPIXEL and MINPIXEL values are. 
+ * Bigger numbers may be OK.  Can we just delete these clips now?
+ * VB, June 2013.
  */
-#define MAXPIXEL 3000
-#define MINPIXEL -3000
+#define MAXPIXEL 50000
+#define MINPIXEL -50000
 
 #define DEGTORAD(x) ((x)/180.*PI)
 #define FONTMAG 1.3
@@ -1923,10 +1929,12 @@ fillellipticarc (float xc, float yc, float radx, float rady, float startang,
 	}
 }
 
+
 void 
 fillarc (float xc, float yc, float rad, float startang, float angextent) {
 	fillellipticarc(xc, yc, rad, rad, startang, angextent);
 }
+
 
 void 
 fillpoly (t_point *points, int npoints) 
@@ -1966,8 +1974,8 @@ fillpoly (t_point *points, int npoints)
 	
 	if (gl_state.disp_type == SCREEN) {
 		for (i=0;i<npoints;i++) {
-			transpoints[i].x = (short) xcoord (points[i].x);
-			transpoints[i].y = (short) ycoord (points[i].y);
+			transpoints[i].x = (long) xcoord (points[i].x);
+			transpoints[i].y = (long) ycoord (points[i].y);
 		}
 #ifdef X11
 		XFillPolygon(display, toplevel, current_gc, transpoints, npoints, Complex,
