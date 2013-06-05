@@ -8,8 +8,25 @@
 //           - Print
 //           - ExtractString
 //           - Set
+//           - Clear
 //
 //===========================================================================//
+
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
 
 #include "TIO_PrintHandler.h"
 
@@ -45,7 +62,7 @@ TC_NameType_c::TC_NameType_c(
       const char*         pszName,
             TC_TypeMode_t type )
       :
-      srName_( pszName ? pszName : "" ),
+      srName_( TIO_PSZ_STR( pszName )),
       type_( type )
 {
 } 
@@ -81,7 +98,7 @@ TC_NameType_c::~TC_NameType_c(
 TC_NameType_c& TC_NameType_c::operator=( 
       const TC_NameType_c& nameType )
 {
-   if ( &nameType != this )
+   if( &nameType != this )
    {
       this->srName_ = nameType.srName_;
       this->type_ = nameType.type_;
@@ -159,15 +176,17 @@ void TC_NameType_c::Print(
 void TC_NameType_c::ExtractString( 
       string* psrNameType ) const
 {
-   if ( psrNameType )
+   if( psrNameType )
    {
-      if ( this->IsValid( ))
+      if( this->IsValid( ))
       {
-         *psrNameType = this->srName_;
+         *psrNameType = "\"";
+         *psrNameType += this->srName_;
+         *psrNameType += "\"";
 
-	 if ( this->type_ != TC_TYPE_UNDEFINED )
-	 {
-   	    string srType;
+         if( this->type_ != TC_TYPE_UNDEFINED )
+         {
+            string srType;
             TC_ExtractStringTypeMode( this->type_, &srType );
 
             *psrNameType += " ";
@@ -201,6 +220,20 @@ void TC_NameType_c::Set(
       const char*         pszName,
             TC_TypeMode_t type )
 {
-   this->srName_ = ( pszName ? pszName : "" );
+   this->srName_ = TIO_PSZ_STR( pszName );
    this->type_ = type;
+} 
+
+//===========================================================================//
+// Method         : Clear
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 05/15/12 jeffr : Original
+//===========================================================================//
+void TC_NameType_c::Clear( 
+      void )
+{
+   this->srName_ = "";
+   this->type_ = TC_TYPE_UNDEFINED;
 } 
