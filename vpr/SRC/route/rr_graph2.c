@@ -623,8 +623,9 @@ void free_chan_details(
 			free_seg_details(p_seg_details, nodes_per_chan);
 		}
 	}
-	free(pa_chan_details_x);
-	free(pa_chan_details_y);
+
+	free_matrix(pa_chan_details_x,0, L_nx, 0, sizeof(t_chan_details));
+	free_matrix(pa_chan_details_y,0, L_nx, 0, sizeof(t_chan_details));
 }
 
 /* Returns the segment number at which the segment this track lies on        *
