@@ -12,6 +12,22 @@
 //
 //===========================================================================//
 
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
 #include "TIO_PrintHandler.h"
 
 #include "TC_StringUtils.h"
@@ -67,7 +83,7 @@ TC_Bit_c::~TC_Bit_c(
 TC_Bit_c& TC_Bit_c::operator=( 
       const TC_Bit_c& bit )
 {
-   if ( &bit != this )
+   if( &bit != this )
    {
       this->value_ = bit.value_;
    }
@@ -129,7 +145,7 @@ void TC_Bit_c::Print(
 void TC_Bit_c::ExtractString( 
       string* psrValue ) const
 {
-   if ( psrValue )
+   if( psrValue )
    {
       *psrValue = "";
 
