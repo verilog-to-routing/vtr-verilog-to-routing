@@ -16,20 +16,34 @@
 //
 //===========================================================================//
 
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
 #ifndef TCT_REGEXP_ITER_H
 #define TCT_REGEXP_ITER_H
 
-#include <stdio.h>
-#include <limits.h>
-
+#include <cstdio>
+#include <climits>
 #include <string>
 using namespace std;
-
-#include "RegExp.h"
 
 #include "TIO_PrintHandler.h"
 
 #include "TC_Typedefs.h"
+#include "TC_RegExp.h"
 
 // Define a default invalid index value
 #define TCT_REGEXP_INDEX_INVALID SIZE_MAX
@@ -46,15 +60,15 @@ template< class T > class TCT_RegExpIter_c
 public:
 
    TCT_RegExpIter_c( void );
-   TCT_RegExpIter_c( const char* pszRegExp, 
-                     const T& matchList );
    TCT_RegExpIter_c( const string& srRegExp, 
+                     const T& matchList );
+   TCT_RegExpIter_c( const char* pszRegExp, 
                      const T& matchList );
    ~TCT_RegExpIter_c( void );
 
-   bool Init( const char* pszRegExp, 
-              const T& matchList );
    bool Init( const string& srRegExp, 
+              const T& matchList );
+   bool Init( const char* pszRegExp, 
               const T& matchList );
 
    size_t Next( void );
@@ -64,8 +78,8 @@ public:
 
 private:
 
-   RegExp* pregExp_;             // Ptr to object for RE pattern matching
-   string* psrRegExp_;           // Ptr to simple RE pattern string
+   TC_RegExp* pregExp_;          // Ptr to object for RE pattern matching
+   string*    psrRegExp_;        // Ptr to simple RE pattern string
 
    T* pmatchList_;               // Ptr to a match list for pattern matching
 
@@ -96,21 +110,6 @@ template< class T > inline TCT_RegExpIter_c< T >::TCT_RegExpIter_c(
 
 //===========================================================================//
 template< class T > inline TCT_RegExpIter_c< T >::TCT_RegExpIter_c( 
-      const char* pszRegExp, 
-      const T&    matchList )
-      :
-      pregExp_( 0 ),
-      psrRegExp_( 0 ),
-      pmatchList_( 0 ),
-      matchIndex_( TCT_REGEXP_INDEX_INVALID ),
-      nextIndex_( 0 ),
-      isValid_( false )
-{
-   this->Init( pszRegExp, matchList );
-}
-
-//===========================================================================//
-template< class T > inline TCT_RegExpIter_c< T >::TCT_RegExpIter_c( 
       const string& srRegExp, 
       const T&      matchList )
       :
@@ -122,6 +121,21 @@ template< class T > inline TCT_RegExpIter_c< T >::TCT_RegExpIter_c(
       isValid_( false )
 {
    this->Init( srRegExp, matchList );
+}
+
+//===========================================================================//
+template< class T > inline TCT_RegExpIter_c< T >::TCT_RegExpIter_c( 
+      const char* pszRegExp, 
+      const T&    matchList )
+      :
+      pregExp_( 0 ),
+      psrRegExp_( 0 ),
+      pmatchList_( 0 ),
+      matchIndex_( TCT_REGEXP_INDEX_INVALID ),
+      nextIndex_( 0 ),
+      isValid_( false )
+{
+   this->Init( pszRegExp, matchList );
 }
 
 //===========================================================================//
@@ -157,16 +171,6 @@ template< class T > inline bool TCT_RegExpIter_c< T >::IsValid(
 // 05/01/12 jeffr : Original
 //===========================================================================//
 template< class T > bool TCT_RegExpIter_c< T >::Init( 
-      const char* pszRegExp, 
-      const T&    matchList )
-{
-   string srRegExp( pszRegExp ? pszRegExp : "" );
-
-   return( this->Init( srRegExp, matchList ));
-}
-
-//===========================================================================//
-template< class T > bool TCT_RegExpIter_c< T >::Init( 
       const string& srRegExp, 
       const T&      matchList )
 {
@@ -186,10 +190,10 @@ template< class T > bool TCT_RegExpIter_c< T >::Init(
    // Make regular expression object or simple string, whichever is needed   
    string srRegExp_( srRegExp );
    const char* pszSpecialChars = "^.?[]+*$";
-   if ( srRegExp_.find_first_of( pszSpecialChars ) != string::npos )
+   if( srRegExp_.find_first_of( pszSpecialChars ) != string::npos )
    {
       size_t escape = srRegExp_.find( '\\' );
-      while (( escape != string::npos ) &&
+      while(( escape != string::npos ) &&
             ( escape < srRegExp_.length( ) - 1 ))
       {
          srRegExp_.replace( escape, 2, "" );   
@@ -197,18 +201,18 @@ template< class T > bool TCT_RegExpIter_c< T >::Init(
       }
    }
 
-   if ( srRegExp_.find_first_of( pszSpecialChars ) != string::npos )
+   if( srRegExp_.find_first_of( pszSpecialChars ) != string::npos )
    {
       // Regular expression string may require 'pattern-matching'
-      this->pregExp_ = new TC_NOTHROW RegExp( srRegExp.data( ));
+      this->pregExp_ = new TC_NOTHROW TC_RegExp( srRegExp.data( ));
 
       TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
       ok = printHandler.IsValidNew( this->pregExp_,
-                                    sizeof( RegExp ),
+                                    sizeof( TC_RegExp ),
                                    "TCT_RegExpIter_c< T >::Init" );
-      if ( ok )
+      if( ok )
       {
-         if ( !this->pregExp_->IsValidRE( ) )
+         if( !this->pregExp_->IsValid( ))
          {
             printHandler.Error( "Invalid regular expression '%s', pattern is illegal!\n",
                                 TIO_SR_STR( srRegExp ));
@@ -235,6 +239,16 @@ template< class T > bool TCT_RegExpIter_c< T >::Init(
 }
 
 //===========================================================================//
+template< class T > bool TCT_RegExpIter_c< T >::Init( 
+      const char* pszRegExp, 
+      const T&    matchList )
+{
+   string srRegExp( TIO_PSZ_STR( pszRegExp ));
+
+   return( this->Init( srRegExp, matchList ));
+}
+
+//===========================================================================//
 // Method         : Next
 // Purpose        : Apply the current regular expression to the current 
 //                  match list, returning an index to the next element in
@@ -247,17 +261,17 @@ template< class T > bool TCT_RegExpIter_c< T >::Init(
 template< class T > size_t TCT_RegExpIter_c< T >::Next( 
       void )
 {
-   if ( this->pregExp_ )
+   if( this->pregExp_ )
    {
       // Using 'complex' pattern matching (ie. with special characters)
       this->matchIndex_ = TCT_REGEXP_INDEX_INVALID;
-      while (( this->matchIndex_ == TCT_REGEXP_INDEX_INVALID ) &&
+      while(( this->matchIndex_ == TCT_REGEXP_INDEX_INVALID ) &&
             ( this->nextIndex_ <= this->pmatchList_->GetLength( ) - 1 ))
       {
          // Get next string, then apply the current regular expression 
          size_t nextIndex = this->nextIndex_;
          const char* pszNextString = this->pmatchList_->FindName( nextIndex );
-         string srNextString( pszNextString ? pszNextString : "" );
+         string srNextString( TIO_PSZ_STR( pszNextString ));
 
          size_t matchStart  = 0;
          size_t matchLength = 0;
@@ -266,20 +280,20 @@ template< class T > size_t TCT_RegExpIter_c< T >::Next(
                                              &matchStart,
                                              &matchLength );
 
-         if ( match && ( srNextString.length( ) == matchLength ))
+         if( match && ( srNextString.length( ) == matchLength ))
          {
             this->matchIndex_ = this->nextIndex_;
          }
          ++this->nextIndex_;
       }
 
-      if ( this->matchIndex_ == TCT_REGEXP_INDEX_INVALID )
+      if( this->matchIndex_ == TCT_REGEXP_INDEX_INVALID )
       {
          delete this->psrRegExp_;
          this->psrRegExp_ = 0;
       }
    }
-   else if ( this->psrRegExp_ )
+   else if( this->psrRegExp_ )
    {
       // Using 'simple' pattern matching (ie. no special characters)
       const string& srRegExp = *this->psrRegExp_;
