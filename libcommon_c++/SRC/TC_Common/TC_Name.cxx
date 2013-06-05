@@ -9,6 +9,22 @@
 //
 //===========================================================================//
 
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
 #include "TIO_PrintHandler.h"
 
 #include "TC_StringUtils.h"
@@ -24,7 +40,7 @@
 TC_Name_c& TC_Name_c::operator=( 
       const TC_Name_c& name )
 {
-   if ( &name != this )
+   if( &name != this )
    {
       this->srName_ = name.srName_;
       this->value_ = name.value_;
@@ -104,9 +120,9 @@ void TC_Name_c::Print(
 void TC_Name_c::ExtractString( 
       string* psrName ) const
 {
-   if ( psrName )
+   if( psrName )
    {
-      if ( this->IsValid( ))
+      if( this->IsValid( ))
       {
          *psrName = this->srName_;
       }
