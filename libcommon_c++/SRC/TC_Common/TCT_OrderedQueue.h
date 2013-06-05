@@ -22,16 +22,32 @@
 //
 //===========================================================================//
 
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
 #ifndef TCT_ORDERED_QUEUE_H
 #define TCT_ORDERED_QUEUE_H
 
-#include <stdio.h>
-
+#include <cstdio>
+#include <climits>
+#include <cstring>
+#include <string>
 #include <deque>
 #include <iterator>
 #include <algorithm>
-
-#include <string>
 using namespace std;
 
 #include "TIO_Typedefs.h"
@@ -154,15 +170,15 @@ template< class T > bool TCT_OrderedQueue_c< T >::operator==(
 {
    bool isEqual = false;
 
-   if (( this->GetLength( ) > 0 ) &&
+   if(( this->GetLength( ) > 0 ) &&
       ( orderedQueue.GetLength( ) > 0 ) &&
       ( this->GetLength( ) == orderedQueue.GetLength( )))
    {
-      for ( size_t i = 0; i < this->GetLength( ); ++i )
+      for( size_t i = 0; i < this->GetLength( ); ++i )
       {
          const T& thisData = *const_cast< TCT_OrderedQueue_c< T >* >( this )->operator[]( i );
          const T& listData = *const_cast< TCT_OrderedQueue_c< T >& >( orderedQueue ).operator[]( i );
-         if ( thisData == listData )
+         if( thisData == listData )
          {
             isEqual = true;
             continue;
@@ -174,7 +190,7 @@ template< class T > bool TCT_OrderedQueue_c< T >::operator==(
          }
       }
    }
-   else if (( this->GetLength( ) == 0 ) &&
+   else if(( this->GetLength( ) == 0 ) &&
            ( orderedQueue.GetLength( ) == 0 ))
    {
       isEqual = true;
@@ -206,7 +222,7 @@ template< class T > T* TCT_OrderedQueue_c< T >::operator[](
       size_t index )
 {
    T* pdata = 0;
-   if ( index < this->GetLength( ))
+   if( index < this->GetLength( ))
    {
       pdata = &this->list_.operator[]( index );
    }
@@ -218,7 +234,7 @@ template< class T > T* TCT_OrderedQueue_c< T >::operator[](
       size_t index ) const
 {
    T* pdata = 0;
-   if ( index < this->GetLength( ))
+   if( index < this->GetLength( ))
    {
       pdata = const_cast< TCT_OrderedQueue_c< T >* >( this )->operator[]( index );
    }
@@ -236,10 +252,10 @@ template< class T > void TCT_OrderedQueue_c< T >::Print(
       FILE*  pfile,
       size_t spaceLen ) const
 {
-   for ( size_t i = 0; i < this->GetLength( ); ++i )
+   for( size_t i = 0; i < this->GetLength( ); ++i )
    {
       const T& data = *this->operator[]( i );
-      if ( data.IsValid( ))  
+      if( data.IsValid( ))  
       {
          data.Print( pfile, spaceLen );
       }
@@ -256,20 +272,20 @@ template< class T > void TCT_OrderedQueue_c< T >::Print(
 template<class T> void TCT_OrderedQueue_c< T >::ExtractString(
       string* psrData ) const
 {
-   if ( psrData )
+   if( psrData )
    {
       *psrData = "";
 
-      for ( size_t i = 0; i < this->GetLength( ); ++i )
+      for( size_t i = 0; i < this->GetLength( ); ++i )
       {
          const T& data = *this->operator[]( i );
-         if ( data.IsValid( ))
+         if( data.IsValid( ))
          {
             string srData;
-	    data.ExtractString( &srData );
+            data.ExtractString( &srData );
 
             *psrData += srData;
-	    *psrData += ( i + 1 == this->GetLength( ) ? "" : " " );
+            *psrData += ( i + 1 == this->GetLength( ) ? "" : " " );
          }
       }
    }
@@ -281,17 +297,16 @@ template<class T> void TCT_OrderedQueue_c< T >::ExtractString(
       string*       psrData,
       size_t        precision ) const
 {
-   if ( psrData )
+   if( psrData )
    {
       *psrData = "";
 
-      if ( precision == SIZE_MAX )
+      if( precision == SIZE_MAX )
       {
-         TC_MinGrid_c& minGrid = TC_MinGrid_c::GetInstance( );
-         precision = minGrid.GetPrecision( );
+         precision = TC_MinGrid_c::GetInstance( ).GetPrecision( );
       }
 
-      for ( size_t i = 0; i < this->GetLength( ); ++i )
+      for( size_t i = 0; i < this->GetLength( ); ++i )
       {
          int iDataValue;
          unsigned int uiDataValue;
@@ -302,11 +317,11 @@ template<class T> void TCT_OrderedQueue_c< T >::ExtractString(
          double eDataValue;
          string srDataValue;
 
-         char szDataString[ TIO_FORMAT_STRING_LEN_DATA ];
+         char szDataString[TIO_FORMAT_STRING_LEN_DATA];
          memset( szDataString, 0, sizeof( szDataString ));
 
          switch( mode )
-	 {
+         {
          case TC_DATA_INT:
             iDataValue = *reinterpret_cast< int* >( this->operator[]( i ));
             sprintf( szDataString, "%d", iDataValue );
@@ -350,7 +365,7 @@ template<class T> void TCT_OrderedQueue_c< T >::ExtractString(
          case TC_DATA_UNDEFINED:
             sprintf( szDataString, "?" );
             break;
-	 }
+         }
 
          *psrData += szDataString;
          *psrData += ( i < this->GetLength( ) - 1 ? " " : "" );
@@ -384,7 +399,7 @@ template< class T > void TCT_OrderedQueue_c< T >::Delete(
    typename std::deque< T >::iterator begin = this->list_.begin( );
    typename std::deque< T >::iterator end = this->list_.end( );
    typename std::deque< T >::iterator iter = std::find( begin, end, data );
-   if ( iter != end )
+   if( iter != end )
    {
       this->list_.erase( iter );
    }
@@ -418,12 +433,12 @@ template< class T > size_t TCT_OrderedQueue_c< T >::FindIndex(
    typename std::deque< T >::const_iterator begin = this->list_.begin( );
    typename std::deque< T >::const_iterator end = this->list_.end( );
    typename std::deque< T >::const_iterator iter = std::find( begin, end, data );
-   if ( iter != end )
+   if( iter != end )
    {
       index = 0;
-      #if defined( SUN8 ) || defined( SUN10 ) || defined( LINUX24 )
+      #if defined( SUN8 ) || defined( SUN10 )
          std::distance( begin, iter, index );
-      #elif defined( LINUX24_64 )
+      #elif defined( LINUX_X86_64 ) || defined( LINUX_I686 )
          index = std::distance( begin, iter );
       #else
          index = std::distance( begin, iter );
@@ -461,11 +476,11 @@ template< class T > bool TCT_OrderedQueue_c< T >::Search_(
    typename std::deque< T >::const_iterator begin = this->list_.begin( );
    typename std::deque< T >::const_iterator end = this->list_.end( );
    typename std::deque< T >::const_iterator iter = std::find( begin, end, data );
-   if ( iter != end )
+   if( iter != end )
    {
       found = true;
 
-      if ( pdata )
+      if( pdata )
       {
          *pdata = *iter;
       }
