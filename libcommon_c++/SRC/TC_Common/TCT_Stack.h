@@ -16,12 +16,28 @@
 //
 //===========================================================================//
 
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
 #ifndef TCT_STACK_H
 #define TCT_STACK_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <deque>
+using namespace std;
 
 //===========================================================================//
 // Class declaration
@@ -152,15 +168,15 @@ template< class T > bool TCT_Stack_c< T >::operator==(
 {
    bool isEqual = false;
 
-   if (( this->GetLength( ) > 0 ) &&
+   if(( this->GetLength( ) > 0 ) &&
       ( stack.GetLength( ) > 0 ) &&
       ( this->GetLength( ) == stack.GetLength( )))
    {
-      for ( size_t i = 0; i < this->GetLength( ); ++i )
+      for( size_t i = 0; i < this->GetLength( ); ++i )
       {
          const T& thisData = *this->operator[]( i );
          const T& stackData = *stack.operator[]( i );
-         if ( thisData == stackData )
+         if( thisData == stackData )
          {
             isEqual = true;
             continue;
@@ -199,7 +215,7 @@ template< class T > T* TCT_Stack_c< T >::operator[](
       size_t index )
 {
    T* pdata = 0;
-   if ( index < this->GetLength( ))
+   if( index < this->GetLength( ))
    {
       pdata = &this->stack_.operator[]( index );
    }
@@ -211,7 +227,7 @@ template< class T > T* TCT_Stack_c< T >::operator[](
       size_t index ) const
 {
    T* pdata = 0;
-   if ( index < this->GetLength( ))
+   if( index < this->GetLength( ))
    {
       pdata = const_cast< TCT_Stack_c< T >* >( this )->operator[]( index );
    }
@@ -229,10 +245,10 @@ template< class T > void TCT_Stack_c< T >::Print(
       FILE*  pfile,
       size_t spaceLen ) const
 {
-   for ( size_t i = 0; i < this->GetLength( ); ++i )
+   for( size_t i = 0; i < this->GetLength( ); ++i )
    {
       const T& data = *this->operator[]( i );
-      if ( data.IsValid( ))  
+      if( data.IsValid( ))  
       {
          data.Print( pfile, spaceLen );
       }
@@ -264,7 +280,7 @@ template< class T > bool TCT_Stack_c< T >::Pop(
 {
    size_t len = this->GetLength( );
 
-   if ( pdata && len )
+   if( pdata && len )
    {
       *pdata = this->stack_.back( );
       this->stack_.pop_back( );
@@ -285,7 +301,7 @@ template< class T > T* TCT_Stack_c< T >::Peek(
    T* pdata = 0;
 
    size_t len = this->GetLength( );
-   if ( len )
+   if( len )
    {
       *pdata = this->stack_.back( );
    }
@@ -299,7 +315,7 @@ template< class T > T* TCT_Stack_c< T >::Peek(
    T* pdata = 0;
 
    size_t len = this->GetLength( );
-   if ( len && count < len )
+   if( len && count < len )
    {
       pdata = this->operator[]( len - count - 1 );
    }
