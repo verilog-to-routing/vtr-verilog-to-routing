@@ -12,14 +12,36 @@
 //           - TC_AddStringPostfix
 //           - TC_stricmp
 //           - TC_strnicmp
+//           - TC_strdup
 //
 //===========================================================================//
 
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
+#include <cstdio>
+#include <climits>
+#include <ctime>
+#include <cstring>
+#include <string>
+using namespace std;
 
 #include "TCT_Generic.h"
+
+#include "TIO_Typedefs.h"
 
 #include "TC_StringUtils.h"
 
@@ -49,26 +71,26 @@ int TC_CompareStrings(
    int i = 0;
 
    // Loop until all characters in alphanumeric strings have been compared
-   while ( pszStringA && pszStringB )
+   while( pszStringA && pszStringB )
    {
-      if ( *pszStringA <= '9' && *pszStringA >= '1' && 
+      if( *pszStringA <= '9' && *pszStringA >= '1' && 
           *pszStringB <= '9' && *pszStringB >= '1' )
       {
          // Handle special case when comparing digits from alphanumeric strings
          // (by design, 'atol( )' reads until 1st non-digit character is found)
          long lA = atol( pszStringA );
          long lB = atol( pszStringB );
-         if (( lA != LONG_MAX ) && ( lB != LONG_MAX ))
+         if(( lA != LONG_MAX ) && ( lB != LONG_MAX ))
          {
             long l = lA - lB;
-            if ( l == 0 )
+            if( l == 0 )
             {
                // Skip past digits when digits within alphanumeric strings match
-               while ( *pszStringA <= '9' && *pszStringA >= '0' )
+               while( *pszStringA <= '9' && *pszStringA >= '0' )
                {
                   ++pszStringA;
                }
-               while ( *pszStringB <= '9' && *pszStringB >= '0' )
+               while( *pszStringB <= '9' && *pszStringB >= '0' )
                {
                   ++pszStringB;
                }
@@ -76,14 +98,14 @@ int TC_CompareStrings(
             else
             {
                // Detected mis-compare between given alphanumeric strings
-    	       i = ( l > 0 ? 1 : -1 );
+               i = ( l > 0 ? 1 : -1 );
                break;
             }
          }
          else
          {
             i = *pszStringA - *pszStringB;
-            if ( i == 0 )
+            if( i == 0 )
             {
                // Skip past digits when digits within alphanumeric strings match
                ++pszStringA;
@@ -101,19 +123,19 @@ int TC_CompareStrings(
       {
          // Handle case when comparing non-digits from alphanumeric strings
          i = *pszStringA - *pszStringB;
-         if ( i == 0 )
+         if( i == 0 )
          {
             // Continue iterating characters in given alphanumeric strings
-            if ( *pszStringA && *pszStringB )
+            if( *pszStringA && *pszStringB )
             {
                ++pszStringA;
                ++pszStringB;
             }
-            else if ( *pszStringA )
+            else if( *pszStringA )
             {
                ++pszStringA;
             }
-            else if ( *pszStringB )
+            else if( *pszStringB )
             {
                ++pszStringB;
             }
@@ -169,7 +191,7 @@ bool TC_FormatStringCentered(
             char*  pszCentered,
             size_t lenCentered )
 {
-   if ( pszString && pszCentered )
+   if( pszString && pszCentered )
    {
       memset( pszCentered, 0, lenCentered );
 
@@ -179,12 +201,12 @@ bool TC_FormatStringCentered(
       size_t lenEndSpc = ( lenRefer - lenString + 1 ) > 0 ?
                          ( lenRefer - lenString + 1 ) / 2 : 0;
 
-      if ( lenCentered >= lenString + lenBeginSpc + lenEndSpc + 1 )
+      if( lenCentered >= lenString + lenBeginSpc + lenEndSpc + 1 )
       {
          sprintf( pszCentered, "%*s%s%*s", 
-                  (int)lenBeginSpc, lenBeginSpc > 0 ? " " : "",
+                  static_cast< int >( lenBeginSpc ), lenBeginSpc > 0 ? " " : "",
                   pszString,
-                  (int)lenEndSpc, lenEndSpc > 0 ? " " : "" );
+                  static_cast< int >( lenEndSpc ), lenEndSpc > 0 ? " " : "" );
       }
    }
    return( pszCentered && *pszCentered ? true : false );
@@ -204,9 +226,9 @@ bool TC_FormatStringFilled(
       char*  pszFilled,
       size_t lenFilled )
 {
-   if ( pszFilled )
+   if( pszFilled )
    {
-      memset( pszFilled, 0, lenFilled + 1);
+      memset( pszFilled, 0, lenFilled + 1 );
       memset( pszFilled, cFill, lenFilled );
    }
    return( pszFilled && *pszFilled ? true : false );
@@ -227,7 +249,7 @@ bool TC_FormatStringDateTimeStamp(
       const char*  pszPrefix,
       const char*  pszPostfix )
 {
-   if ( pszDateTimeStamp )
+   if( pszDateTimeStamp )
    {
       memset( pszDateTimeStamp, 0, lenDateTimeStamp );
 
@@ -238,17 +260,17 @@ bool TC_FormatStringDateTimeStamp(
       size_t lenPrefix = pszPrefix ? strlen( pszPrefix ) : 0;
       size_t lenPostfix = pszPostfix ? strlen( pszPostfix ) : 0;
 
-      if ( lenDateTimeStamp >= 17 + lenPrefix + lenPostfix + 1 )
+      if( lenDateTimeStamp >= 17 + lenPrefix + lenPostfix + 1 )
       {
-         sprintf( pszDateTimeStamp, "%s%2d/%2d/%2d %2d:%2d:%2d%s", 
-                  (pszPrefix == NULL) ? pszPrefix : "",
+         sprintf( pszDateTimeStamp, "%s%2.2d/%2.2d/%2.2d %2.2d:%2.2d:%2.2d%s", 
+                  TIO_PSZ_STR( pszPrefix ),
                   localTime->tm_mon + 1, 
                   localTime->tm_mday, 
                   localTime->tm_year % 100, 
                   localTime->tm_hour, 
                   localTime->tm_min, 
                   localTime->tm_sec,
-                  (pszPostfix == NULL) ? pszPostfix : "" );
+                  TIO_PSZ_STR( pszPostfix ));
       }
    }
    return( pszDateTimeStamp && *pszDateTimeStamp ? true : false );
@@ -265,7 +287,7 @@ void TC_ExtractStringSideMode(
       TC_SideMode_t sideMode,
       string*       psrSideMode )
 {
-   if ( psrSideMode )
+   if( psrSideMode )
    {
       *psrSideMode = "";
 
@@ -298,7 +320,7 @@ void TC_ExtractStringTypeMode(
       TC_TypeMode_t typeMode,
       string*       psrTypeMode )
 {
-   if ( psrTypeMode )
+   if( psrTypeMode )
    {
       *psrTypeMode = "";
 
@@ -308,8 +330,8 @@ void TC_ExtractStringTypeMode(
       case TC_TYPE_OUTPUT: *psrTypeMode = "output"; break;
       case TC_TYPE_SIGNAL: *psrTypeMode = "signal"; break;
       case TC_TYPE_CLOCK:  *psrTypeMode = "clock";  break;
-      case TC_TYPE_RESET:  *psrTypeMode = "reset";  break;
       case TC_TYPE_POWER:  *psrTypeMode = "power";  break;
+      case TC_TYPE_GLOBAL: *psrTypeMode = "global"; break;
       default:             *psrTypeMode = "?";      break;
       }
    }
@@ -327,7 +349,7 @@ bool TC_AddStringPrefix(
             char* pszString,
       const char* pszPrefix )
 {
-   if ( pszString && pszPrefix )
+   if( pszString && pszPrefix )
    {
       size_t lenString = strlen( pszString );
       size_t lenPrefix = strlen( pszPrefix );
@@ -350,7 +372,7 @@ bool TC_AddStringPostfix(
             char* pszString,
       const char* pszPostfix )
 {
-   if ( pszString && pszPostfix )
+   if( pszString && pszPostfix )
    {
       size_t lenString = strlen( pszString );
       size_t lenPostfix = strlen( pszPostfix );
@@ -372,15 +394,26 @@ int TC_stricmp(
       const char* pszStringA, 
       const char* pszStringB )
 {
-   while (( pszStringA && *pszStringA ) && 
+   while(( pszStringA && *pszStringA ) && 
          ( pszStringB && *pszStringB ) && 
-	 ( toupper( *pszStringA ) == toupper( *pszStringB )))
+         ( toupper( *pszStringA ) == toupper( *pszStringB )))
    {
-      pszStringA++;
-      pszStringB++;
+      ++pszStringA;
+      ++pszStringB;
    }
    return(( !pszStringA && !pszStringA ) ? 0 : ( *pszStringA - *pszStringB ));
 } 
+
+//===========================================================================//
+int TC_strnicmp( 
+      const string& srStringA, 
+      const string& srStringB )
+{
+   const char* pszStringA = srStringA.data( );
+   const char* pszStringB = srStringB.data( );
+   
+   return( TC_stricmp( pszStringA, pszStringB ));
+}
 
 //===========================================================================//
 // Function       : TC_strnicmp
@@ -394,13 +427,13 @@ int TC_strnicmp(
       const char* pszStringB,
             int   i )
 {
-   while (( pszStringA && *pszStringA ) && 
+   while(( pszStringA && *pszStringA ) && 
          ( pszStringB && *pszStringB ) && 
-	 ( toupper( *pszStringA ) == toupper( *pszStringB )) &&
+         ( toupper( *pszStringA ) == toupper( *pszStringB )) &&
          ( i ))
    {
-      pszStringA++;
-      pszStringB++;
+      ++pszStringA;
+      ++pszStringB;
       --i;
    }
 
@@ -409,3 +442,49 @@ int TC_strnicmp(
 
    return(( !pszStringA && !pszStringA ) ? 0 : ( *pszStringA - *pszStringB ));
 } 
+
+//===========================================================================//
+int TC_strnicmp( 
+      const string& srStringA, 
+      const string& srStringB,
+            int     i )
+{
+   const char* pszStringA = srStringA.data( );
+   const char* pszStringB = srStringB.data( );
+   
+   return( TC_strnicmp( pszStringA, pszStringB, i ));
+}
+
+//===========================================================================//
+// Function       : TC_strdup
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 07/10/12 jeffr : Original
+//===========================================================================//
+char* TC_strdup(
+      const char* pszString )
+{
+   char* pszDupString = 0;
+
+   if( pszString )
+   {
+      size_t lenString = strlen( pszString );
+
+      pszDupString = static_cast< char* >( malloc( lenString + 1 ));
+      if( pszDupString )
+      {
+         memcpy( pszDupString, pszString, lenString + 1 );
+      }
+   }
+   return( pszDupString );
+}
+
+//===========================================================================//
+char* TC_strdup(
+      const string& srString )
+{
+   const char* pszString = srString.data( );
+   
+   return( TC_strdup( pszString ));
+}
