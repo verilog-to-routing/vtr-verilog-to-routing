@@ -6,16 +6,30 @@
 //           - GetName (required for TCT_SortedNameDynamicVector_c class)
 //           - GetCompare (required for TCT_BSearch and TCT_QSort classes)
 //           - GetType
-//           - Set
 //           - IsValid
 //
 //===========================================================================//
 
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
 #ifndef TC_NAME_TYPE_H
 #define TC_NAME_TYPE_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 using namespace std;
 
@@ -34,9 +48,9 @@ public:
 
    TC_NameType_c( void );
    TC_NameType_c( const string& srName,
-   	          TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+                  TC_TypeMode_t type = TC_TYPE_UNDEFINED );
    TC_NameType_c( const char* pszName,
-	          TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+                  TC_TypeMode_t type = TC_TYPE_UNDEFINED );
    TC_NameType_c( const TC_NameType_c& nameType );
    ~TC_NameType_c( void );
 
@@ -57,9 +71,10 @@ public:
    TC_TypeMode_t GetType( void ) const;
 
    void Set( const string& srName,
-	     TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+             TC_TypeMode_t type = TC_TYPE_UNDEFINED );
    void Set( const char* pszName,
-	     TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+             TC_TypeMode_t type = TC_TYPE_UNDEFINED );
+   void Clear( void );
 
    bool IsValid( void ) const;
 
@@ -87,7 +102,7 @@ inline void TC_NameType_c::SetName(
 inline void TC_NameType_c::SetName( 
       const char* pszName )
 {
-   this->srName_ = ( pszName ? pszName : "" );
+   this->srName_ = TIO_PSZ_STR( pszName );
 }
 
 //===========================================================================//
