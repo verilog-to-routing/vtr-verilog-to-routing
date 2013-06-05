@@ -15,11 +15,28 @@
 //
 //===========================================================================//
 
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
 #ifndef TCT_GENERIC_H
 #define TCT_GENERIC_H
 
-#include <stdio.h>
-#include <math.h>
+#include <cstdio>
+#include <cmath>
+using namespace std;
 
 #if defined( SUN8 ) || defined( SUN10 )
    #include <time.h>
@@ -97,15 +114,13 @@ template< class T > inline bool TCTF_IsEQ( T n, T o )
 {
    double f = static_cast< double >( n );
    double g = static_cast< double >( o );
-   return( fabs( f - g ) <= TC_FLT_EPSILON ? true : false );
+   return( fabs( f - g ) <= TC_FLT_EPSILON * TCT_Max( abs( f ), abs( g )) ? true : false );
 } 
 
 //===========================================================================//
 template< class T > inline bool TCTF_IsNEQ( T n, T o )
 {
-   double f = static_cast< double >( n );
-   double g = static_cast< double >( o );
-   return( fabs( f - g ) > TC_FLT_EPSILON ? true : false );
+   return( TCTF_IsEQ( n, o ) ? false : true );
 } 
 
 //===========================================================================//
@@ -113,7 +128,7 @@ template< class T > inline bool TCTF_IsLE( T n, T o )
 {
    double f = static_cast< double >( n );
    double g = static_cast< double >( o );
-   return( f <= ( g + TC_FLT_EPSILON ) ? true : false );
+   return( f <= g + TC_FLT_EPSILON * TCT_Max( abs( f ), abs( g )) ? true : false );
 } 
 
 //===========================================================================//
@@ -121,37 +136,32 @@ template< class T > inline bool TCTF_IsLT( T n, T o )
 {
    double f = static_cast< double >( n );
    double g = static_cast< double >( o );
-   return( f < ( g - TC_FLT_EPSILON ) ? true : false );
+   return( f < g - TC_FLT_EPSILON * TCT_Max( abs( f ), abs( g )) ? true : false );
 } 
 
 //===========================================================================//
 template< class T > inline bool TCTF_IsGE( T n, T o )
 {
-   double f = static_cast< double >( n );
-   double g = static_cast< double >( o );
-   return( f >= ( g - TC_FLT_EPSILON ) ? true : false );
+   return( TCTF_IsLT( n, o ) ? false : true );
 } 
 
 //===========================================================================//
 template< class T > inline bool TCTF_IsGT( T n, T o )
 {
-   double f = static_cast< double >( n );
-   double g = static_cast< double >( o );
-   return( f > ( g + TC_FLT_EPSILON ) ? true : false );
+   return( TCTF_IsLE( n, o ) ? false : true );
 } 
 
 //===========================================================================//
 template< class T > inline bool TCTF_IsZE( T n )
 {
    double f = static_cast< double >( n );
-   return( fabs( f ) <= TC_FLT_EPSILON ? true : false );
+   return( TCTF_IsEQ( f, 0.0 ) ? true : false );
 } 
 
 //===========================================================================//
 template< class T > inline bool TCTF_IsNZE( T n )
 {
-   double f = static_cast< double >( n );
-   return( fabs( f ) > TC_FLT_EPSILON ? true : false );
+   return( TCTF_IsZE( n ) ? false : true );
 }
 
 //===========================================================================//
@@ -164,7 +174,7 @@ template< class T > inline bool TCTF_IsNZE( T n )
 template< class T > T TCT_Rand( T i, T j, T units )
 {
    // Check units to prevent divide by zero error
-   if ( TCTF_IsZE( static_cast< double >( units )))
+   if( TCTF_IsZE( static_cast< double >( units )))
    {
       units = static_cast< T >( 1 );
    }
@@ -231,7 +241,7 @@ template< class T > T TCT_FloatToUnit(
    double units = static_cast< double >( dbUnits > 1 ? dbUnits : 1 );
    double epsilon = ( val >= -1.0E-4 ? 1.0E-4 : -1.0E-4 );
    T unit = static_cast< T >(( val + epsilon ) * units );
-   if ( punit )
+   if( punit )
    {
       *punit = unit;
    }
@@ -252,7 +262,7 @@ template< class T > double TCT_UnitToFloat(
 {
    double units = static_cast< double >( dbUnits > 1 ? dbUnits : 1 );
    double val = static_cast< double >( unit ) / units;
-   if ( pval )
+   if( pval )
    {
       *pval = val;
    }
