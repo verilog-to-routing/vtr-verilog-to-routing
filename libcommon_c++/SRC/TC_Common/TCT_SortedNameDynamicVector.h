@@ -42,12 +42,28 @@
 //
 //===========================================================================//
 
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
 #ifndef TCT_SORTED_NAME_DYNAMIC_VECTOR_H
 #define TCT_SORTED_NAME_DYNAMIC_VECTOR_H
 
-#include <stdio.h>
-#include <limits.h>
-
+#include <cstdio>
+#include <climits>
+#include <cstring>
 #include <string>
 using namespace std;
 
@@ -360,7 +376,7 @@ template< class T > inline bool TCT_SortedNameDynamicVector_c< T >::IsValid(
 template< class T > TCT_SortedNameDynamicVector_c< T >& TCT_SortedNameDynamicVector_c< T >::operator=( 
       const TCT_SortedNameDynamicVector_c< T >& sortedNameDynamicVector )
 {
-   if ( &sortedNameDynamicVector != this )
+   if( &sortedNameDynamicVector != this )
    {
       TCT_DynamicVector_c< T >::operator=( sortedNameDynamicVector );
       this->isSorted_ = sortedNameDynamicVector.isSorted_;
@@ -381,13 +397,13 @@ template< class T > bool TCT_SortedNameDynamicVector_c< T >::operator==(
 {
    bool isEqual = this->GetLength( ) == sortedNameDynamicVector.GetLength( ) ? 
                   true : false;
-   if ( isEqual )
+   if( isEqual )
    {
-      for ( size_t i = 0; i < this->GetLength( ); ++i )
+      for( size_t i = 0; i < this->GetLength( ); ++i )
       {
          isEqual = *this->operator[]( i ) == *sortedNameDynamicVector.operator[]( i ) ?
                    true : false;
-         if ( !isEqual )
+         if( !isEqual )
             break;
       }
    }
@@ -418,7 +434,7 @@ template< class T > void TCT_SortedNameDynamicVector_c< T >::Print(
       FILE*  pfile,
       size_t spaceLen ) const
 {
-   for ( size_t i = 0; i < this->GetLength( ); ++i )
+   for( size_t i = 0; i < this->GetLength( ); ++i )
    {
       const T& data = *this->operator[]( i );
       data.Print( pfile, spaceLen );
@@ -515,25 +531,18 @@ template< class T > bool TCT_SortedNameDynamicVector_c< T >::Uniquify(
 {
    bool ok = true;
 
-   bool uniquify = ( isShowWarningEnabled || isShowErrorEnabled ? true : false );
-   if ( uniquify )
-   {
-      TCT_NameList_c< TC_Name_c > duplicateNameList;
-      this->isSorted_ = this->Sort_( uniquify, &duplicateNameList );
+   bool uniquify = true;
+   TCT_NameList_c< TC_Name_c > duplicateNameList;
+   this->isSorted_ = this->Sort_( uniquify, &duplicateNameList );
 
-      if ( duplicateNameList.IsValid( ))
-      {
-         ok = this->ShowMessageDuplicateNameList_( duplicateNameList,
-                                                   isShowWarningEnabled,
-                                                   isShowErrorEnabled,
-                                                   pszShowElemType,
-                                                   pszShowElemName,
-                                                   pszShowDataType );
-      }
-   }
-   else
+   if( duplicateNameList.IsValid( ))
    {
-      this->isSorted_ = this->Sort_( );
+      ok = this->ShowMessageDuplicateNameList_( duplicateNameList,
+                                                isShowWarningEnabled,
+                                                isShowErrorEnabled,
+                                                pszShowElemType,
+                                                pszShowElemName,
+                                                pszShowDataType );
    }
    return( ok );
 }
@@ -558,24 +567,24 @@ template< class T > bool TCT_SortedNameDynamicVector_c< T >::ApplyRegExp(
    bool ok = true;
 
    // Iterate for each name element in list, apply regular expression matching
-   for ( size_t i = 0; i < nameList.GetLength( ); ++i )
+   for( size_t i = 0; i < nameList.GetLength( ); ++i )
    {
       const string& srRegExpName = ( nameList.FindName( i ));
 
       TCT_RegExpIter_c< TCT_SortedNameDynamicVector_c< T > > thisRegExpIter;
       ok = thisRegExpIter.Init( srRegExpName, *this );
-      if ( !ok )
+      if( !ok )
          break;
 
-      if ( this->IsValid( ) && 
+      if( this->IsValid( ) && 
           thisRegExpIter.HasRegExp( ))
       {
          // Iterate over given list and add matching name elements
          size_t matchCount = 0;  
-         while ( matchCount < SIZE_MAX )
-	 {
+         while( matchCount < SIZE_MAX )
+         {
             size_t matchIndex = thisRegExpIter.Next( );
-            if ( matchIndex == SIZE_MAX )
+            if( matchIndex == SIZE_MAX )
                break;
             
             // Found next matching name element in the test list
@@ -587,29 +596,29 @@ template< class T > bool TCT_SortedNameDynamicVector_c< T >::ApplyRegExp(
             pnameList->Add( pszMatchName );
          }
 
-         if ( matchCount == 0 )
-	 {
+         if( matchCount == 0 )
+         {
             ok = this->ShowMessageInvalidRegExpName_( srRegExpName, 
                                                       isShowWarningEnabled,
                                                       isShowErrorEnabled,
                                                       pszShowRegExpType );
-            if ( !ok )
+            if( !ok )
               break;
          }
       }
       else 
       {
-         if ( this->IsMember( srRegExpName ))
-	 {
+         if( this->IsMember( srRegExpName ))
+         {
             pnameList->Add( srRegExpName );
-	 }
+         }
          else
-	 {
+         {
             ok = this->ShowMessageMissingRegExpName_( srRegExpName, 
                                                       isShowWarningEnabled,
                                                       isShowErrorEnabled,
                                                       pszShowRegExpType );
-            if ( !ok )
+            if( !ok )
               break;
          }
       }
@@ -630,9 +639,9 @@ template< class T > bool TCT_SortedNameDynamicVector_c< T >::ApplyRegExp(
 
    bool ok = this->ApplyRegExp( nameList, 
                                 pnameList,
-				isShowWarningEnabled,
-				isShowErrorEnabled,
-				pszShowRegExpType );
+                                isShowWarningEnabled,
+                                isShowErrorEnabled,
+                                pszShowRegExpType );
    return( ok );
 }
 
@@ -680,7 +689,7 @@ template< class T > T* TCT_SortedNameDynamicVector_c< T >::Add_(
    // Add new data element to end of vector and expand vector, if needed
    // (assumes we will eventually sort vector prior to 1st vector access)
    T* pdata = TCT_DynamicVector_c< T >::Add( data );
-   if ( pdata )
+   if( pdata )
    {
       // Clear internal cached pointer to 'most-recent' search data
       this->pdataMR_ = 0;
@@ -691,7 +700,7 @@ template< class T > T* TCT_SortedNameDynamicVector_c< T >::Add_(
       // Sort vector after 'n' add operations to delete redundant entries
       // (this helps to shrink overall vector size memory allocation)
       size_t addCount = TCT_DynamicVector_c< T >::addCount_;
-      if (( addCount % ( 1000 * TCT_DynamicVector_c< T >::reallocLen_ )) == 0 )
+      if(( addCount % ( 1000 * TCT_DynamicVector_c< T >::reallocLen_ )) == 0 )
       {
          this->isSorted_ = this->Sort_( );
          pdata = this->Find_( data );
@@ -713,7 +722,7 @@ template< class T > void TCT_SortedNameDynamicVector_c< T >::Delete_(
       const T& data )
 {
    size_t i = this->FindIndex_( data );
-   if ( i < SIZE_MAX )
+   if( i < SIZE_MAX )
    {
       TCT_DynamicVector_c< T >::Delete( i );
 
@@ -754,7 +763,7 @@ template< class T > T* TCT_SortedNameDynamicVector_c< T >::Find_(
       const T& data ) const
 {
    // Test if dynamic vector has been modified since last time it was sorted
-   if ( !this->isSorted_ )
+   if( !this->isSorted_ )
    {
       // Sort after casting away const'ness (in order to keep 'Find_' const)
       // (this cast may be removed if compiler supports "mutable" keyword)
@@ -786,7 +795,7 @@ template< class T > size_t TCT_SortedNameDynamicVector_c< T >::FindIndex_(
 
    // Search for dynamic vector data element using given data element
    const T* pdata = this->Find_( data );
-   if ( pdata )
+   if( pdata )
    {
       // Use pointer math to compute actual index into dynamic vector
       const T* padata = TCT_DynamicVector_c< T >::padata_;
@@ -814,26 +823,26 @@ template< class T > T* TCT_SortedNameDynamicVector_c< T >::Search_(
    T* pdata = 0;
 
    // Given a sorted vector, do a binary search based on given data
-   if ( TCT_DynamicVector_c< T >::curLen_ > 0 )
+   if( TCT_DynamicVector_c< T >::curLen_ > 0 )
    {
-      if ( this->pdataMR_ )
+      if( this->pdataMR_ )
       {
-	 // Attempt to use pointer to cached 'most-recent search data
-	 const T& dataMR = *this->pdataMR_;
+         // Attempt to use pointer to cached 'most-recent search data
+         const T& dataMR = *this->pdataMR_;
          int i = TCT_BSearchCompare( &dataMR, &data, 
                                      TC_CompareStrings );
          pdata = ( i == 0 ? this->pdataMR_ : 0 );
       }
 
-      if ( !pdata )
+      if( !pdata )
       {
-	 // Hi-Ho, Hi-Ho... its off to (binary-search) work we go...
+         // Hi-Ho, Hi-Ho... its off to (binary-search) work we go...
          pdata = TCT_BSearch( data, 
                               TCT_DynamicVector_c< T >::padata_, 
                               TCT_DynamicVector_c< T >::curLen_,
                               TC_CompareStrings );
 
-	 // Don't forget to update pointer to cached 'most-recent search data
+         // Don't forget to update pointer to cached 'most-recent search data
          // (this cast may be removed if compiler supports "mutable" keyword)
          TCT_SortedNameDynamicVector_c* psortedNameDynamicVector = 0;
          psortedNameDynamicVector = const_cast< TCT_SortedNameDynamicVector_c* >( this );
@@ -860,20 +869,20 @@ template< class T > bool TCT_SortedNameDynamicVector_c< T >::Sort_(
    bool ok = true;
 
    // Assume dynamic vector has been modified since last sort, re-sort now
-   if ( TCT_DynamicVector_c< T >::curLen_ > 0 )
+   if( TCT_DynamicVector_c< T >::curLen_ > 0 )
    {
       TCT_QSort( TCT_DynamicVector_c< T >::padata_, 
                  TCT_DynamicVector_c< T >::curLen_,
                  TC_CompareStrings );
 
-      if ( uniquify )
+      if( uniquify )
       {
          // Dynamic vector may have duplicate data elements (per 'name' field),
          // scan vector and tag duplicate data elements for subsequent deletion
          size_t tagCount = this->SortTagDuplicates_( pduplicateNameList );
 
          // Re-sort dynamic vector again, if necessary 
-         if ( tagCount > 0 )
+         if( tagCount > 0 )
          {
             // Sort again to move any tagged duplicate data to end of vector
             TCT_QSort( TCT_DynamicVector_c< T >::padata_, 
@@ -906,7 +915,7 @@ template< class T > bool TCT_SortedNameDynamicVector_c< T >::Sort_(
 template< class T > size_t TCT_SortedNameDynamicVector_c< T >::SortTagDuplicates_( 
       TCT_NameList_c< TC_Name_c >* pduplicateNameList )
 {
-   if ( pduplicateNameList )
+   if( pduplicateNameList )
    {
       pduplicateNameList->Clear( );
       pduplicateNameList->SetCapacity( this->GetLength( ));
@@ -915,18 +924,18 @@ template< class T > size_t TCT_SortedNameDynamicVector_c< T >::SortTagDuplicates
    size_t tagCount = 0;
 
    size_t i, j;
-   for ( i = 0; i < TCT_DynamicVector_c< T >::curLen_; ++i )
+   for( i = 0; i < TCT_DynamicVector_c< T >::curLen_; ++i )
    {
       const char* pszName_i = this->operator[]( i )->GetName( );
 
       bool foundDuplicate = false;
-      for ( j = i + 1; j < TCT_DynamicVector_c< T >::curLen_; ++j )
+      for( j = i + 1; j < TCT_DynamicVector_c< T >::curLen_; ++j )
       {
          const char* pszName_j = this->operator[]( j )->GetName( );
-         if ( pszName_i && pszName_j &&
+         if( pszName_i && pszName_j &&
              strcmp( pszName_i, pszName_j ) == 0 )
          {
-	    foundDuplicate = true;
+            foundDuplicate = true;
 
             // Tag this duplicate name w/special prefix, then update count
             this->operator[]( j )->SetName( "~" );
@@ -937,7 +946,7 @@ template< class T > size_t TCT_SortedNameDynamicVector_c< T >::SortTagDuplicates
             break;
          }
       }
-      if ( foundDuplicate && pduplicateNameList )
+      if( foundDuplicate && pduplicateNameList )
       {
          pduplicateNameList->Add( pszName_i );
       } 
@@ -964,19 +973,19 @@ template< class T > bool TCT_SortedNameDynamicVector_c< T >::ShowMessageDuplicat
    TIO_PrintHandler_c& messageHandler = TIO_PrintHandler_c::GetInstance( );
 
    string srShowDataMessage = "";
-   if ( pszShowDataType )
+   if( pszShowDataType )
    {
       srShowDataMessage += pszShowDataType;
       srShowDataMessage += " ";
    }
 
    string srShowElemMessage = "";
-   if ( pszShowElemType )
+   if( pszShowElemType )
    {
       srShowElemMessage += " from ";
       srShowElemMessage += pszShowElemType;
    }
-   if ( pszShowElemName )
+   if( pszShowElemName )
    {
       srShowElemMessage += " ";
       srShowElemMessage += "\"";
@@ -984,32 +993,32 @@ template< class T > bool TCT_SortedNameDynamicVector_c< T >::ShowMessageDuplicat
       srShowElemMessage += "\"";
    }
 
-   if ( isShowWarningEnabled )
+   if( isShowWarningEnabled )
    {
       messageHandler.Warning( "Found and discarded duplicate %sname%s%s\n",
                               TIO_SR_STR( srShowDataMessage ),
                               duplicateNameList.GetLength( ) > 1 ? "s" : "",
                               TIO_SR_STR( srShowElemMessage ));
 
-      for ( size_t i = 0 ; i < duplicateNameList.GetLength( ); ++i )
+      for( size_t i = 0 ; i < duplicateNameList.GetLength( ); ++i )
       {
          messageHandler.Write( "%sDuplicate name: %s\n",
                                TIO_PREFIX_WARNING_SPACE,
-                               TIO_PSZ_STR( duplicateNameList[ i ]->GetName( )));
+                               TIO_PSZ_STR( duplicateNameList[i]->GetName( )));
       }
    }
-   else if ( isShowErrorEnabled )
+   else if( isShowErrorEnabled )
    {
       messageHandler.Error( "Found and discarded duplicate %sname%s%s\n",
                               TIO_SR_STR( srShowDataMessage ),
                               duplicateNameList.GetLength( ) > 1 ? "s" : "",
                               TIO_SR_STR( srShowElemMessage ));
 
-      for ( size_t i = 0 ; i < duplicateNameList.GetLength( ); ++i )
+      for( size_t i = 0 ; i < duplicateNameList.GetLength( ); ++i )
       {
          messageHandler.Write( "%sDuplicate name: %s\n",
                                TIO_PREFIX_ERROR_SPACE,
-                               TIO_PSZ_STR( duplicateNameList[ i ]->GetName( )));
+                               TIO_PSZ_STR( duplicateNameList[i]->GetName( )));
       }
    }
    return( messageHandler.IsWithinMaxCount( ));
@@ -1030,13 +1039,13 @@ template< class T > bool TCT_SortedNameDynamicVector_c< T >::ShowMessageInvalidR
 {
    TIO_PrintHandler_c& messageHandler = TIO_PrintHandler_c::GetInstance( );
 
-   if ( isShowWarningEnabled )
+   if( isShowWarningEnabled )
    {
       messageHandler.Warning( "Invalid name '%s', no pattern match found in %s list.\n",
                               TIO_SR_STR( srRegExpName ),
                               TIO_PSZ_STR( pszShowRegExpType ));
    }
-   else if ( isShowErrorEnabled )
+   else if( isShowErrorEnabled )
    {
       messageHandler.Error( "Invalid name '%s', no pattern match found in %s list.\n",
                             TIO_SR_STR( srRegExpName ),
@@ -1060,13 +1069,13 @@ template< class T > bool TCT_SortedNameDynamicVector_c< T >::ShowMessageMissingR
 {
    TIO_PrintHandler_c& messageHandler = TIO_PrintHandler_c::GetInstance( );
 
-   if ( isShowWarningEnabled )
+   if( isShowWarningEnabled )
    {
       messageHandler.Warning( "Missing name '%s', no match found in %s list.\n",
                               TIO_SR_STR( srRegExpName ),
                               TIO_PSZ_STR( pszShowRegExpType ));
    }
-   else if ( isShowErrorEnabled )
+   else if( isShowErrorEnabled )
    {
       messageHandler.Error( "Missing name '%s', no match found in %s list.\n",
                             TIO_SR_STR( srRegExpName ),
