@@ -32,10 +32,27 @@
 //
 //===========================================================================//
 
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
 #ifndef TCT_DYNAMIC_VECTOR_H
 #define TCT_DYNAMIC_VECTOR_H
 
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
 
 #include "TIO_PrintHandler.h"
 
@@ -266,7 +283,7 @@ template< class T > TCT_DynamicVector_c< T >::~TCT_DynamicVector_c(
 template< class T > TCT_DynamicVector_c< T >& TCT_DynamicVector_c< T >::operator=( 
       const TCT_DynamicVector_c& dynamicVector )
 {
-   if ( &dynamicVector != this )
+   if( &dynamicVector != this )
    {
       this->Init_( dynamicVector );
    }
@@ -285,13 +302,13 @@ template< class T > bool TCT_DynamicVector_c< T >::operator==(
 {
    bool isEqual = this->GetLength( ) == dynamicVector.GetLength( ) ? 
                   true : false;
-   if ( isEqual )
+   if( isEqual )
    {
-      for ( size_t i = 0; i < this->GetLength( ); ++i )
+      for( size_t i = 0; i < this->GetLength( ); ++i )
       {
          isEqual = *this->operator[]( i ) == *dynamicVector.operator[]( i ) ?
                    true : false;
-         if ( !isEqual )
+         if( !isEqual )
             break;
       }
    }
@@ -348,7 +365,7 @@ template< class T > void TCT_DynamicVector_c< T >::Print(
                        this->allocLen_, this->reallocLen_,
                        this->addCount_, this->deleteCount_ );
 
-   for ( size_t i = 0; i < this->GetLength( ); ++i )
+   for( size_t i = 0; i < this->GetLength( ); ++i )
    {
       const T& data = *this->operator[]( i );
       data.Print( pfile, spaceLen );
@@ -397,20 +414,20 @@ template< class T > bool TCT_DynamicVector_c< T >::Init_(
    this->curLen_ = dynamicVector.curLen_;
    this->maxLen_ = dynamicVector.maxLen_;
 
-   if ( this->maxLen_ > 0 )
+   if( this->maxLen_ > 0 )
    {
-      this->padata_ = new TC_NOTHROW T[ this->maxLen_ ];
+      this->padata_ = new TC_NOTHROW T[this->maxLen_];
 
       TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
       ok = printHandler.IsValidNew( this->padata_,
                                     sizeof( T ) * this->maxLen_,
                                     "TCT_DynamicVector_c< T >::Init_" );
-      if ( ok )
+      if( ok )
       {
-         for ( size_t i = 0; i < this->maxLen_; ++i )
+         for( size_t i = 0; i < this->maxLen_; ++i )
          {
- 	    // Need to copy each element into the newly allocated list
-	    // (using 'deep' copy, instead of a faster 'shallow' memcpy)
+            // Need to copy each element into the newly allocated list
+            // (using 'deep' copy, instead of a faster 'shallow' memcpy)
             *( this->padata_ + i ) = *( dynamicVector.padata_ + i );
          }
       }
@@ -432,14 +449,14 @@ template< class T > bool TCT_DynamicVector_c< T >::Set_(
 {
    bool ok = true;
 
-   while ( i >= this->curLen_ )
+   while( i >= this->curLen_ )
    {
       ok = this->Expand_( );
-      if ( !ok )
+      if( !ok )
          break;
    }
 
-   if ( ok )
+   if( ok )
    {
       *( this->padata_ + i ) = data;
    }
@@ -461,7 +478,7 @@ template< class T > T* TCT_DynamicVector_c< T >::Add_(
    T* pdata = 0;
 
    // Expand dynamic vector to accommodate new data element, if needed
-   if ( this->Expand_( ))
+   if( this->Expand_( ))
    {
       // Add new data element to end of vector
       pdata = this->operator[]( this->curLen_ );
@@ -489,12 +506,12 @@ template< class T > T* TCT_DynamicVector_c< T >::Add_(
 template< class T > void TCT_DynamicVector_c< T >::Delete_( 
       size_t i )
 {
-   if ( i < this->curLen_ )
+   if( i < this->curLen_ )
    {
       // Delete existing data element by shifting subsequent data elements
-      while ( i < this->curLen_ - 1 )
+      while( i < this->curLen_ - 1 )
       {
- 	 // Need to copy each element into the newly allocated list
+         // Need to copy each element into the newly allocated list
          // (using 'deep' copy, instead of a faster 'shallow' memcpy)
          *( this->padata_ + i ) = *( this->padata_ + i + 1 );
 
@@ -547,7 +564,7 @@ template< class T > bool TCT_DynamicVector_c< T >::Expand_(
    bool ok = true;
 
    // Test if current length requires expanding dynamic vector max length
-   if ( this->curLen_ >= this->maxLen_ )
+   if( this->curLen_ >= this->maxLen_ )
    {
       // Increase max length based on either alloc or realloc length
       size_t incLen = ( this->maxLen_ == 0 ? 
@@ -555,18 +572,18 @@ template< class T > bool TCT_DynamicVector_c< T >::Expand_(
       this->maxLen_ += incLen;
 
       // Make local copy of current vector, then allocate and copy new vector
-      T* padata = new TC_NOTHROW T[ this->maxLen_ ];
+      T* padata = new TC_NOTHROW T[this->maxLen_];
 
       TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
       ok = printHandler.IsValidNew( padata,
                                     sizeof( T ) * this->maxLen_,
                                     "TCT_DynamicVector_c< T >::Expand_" );
-      if ( ok )
+      if( ok )
       {
-         for ( size_t i = 0; i < this->curLen_; ++i )
+         for( size_t i = 0; i < this->curLen_; ++i )
          {
- 	    // Need to copy each element into the newly allocated list
-	    // (using 'deep' copy, instead of a faster 'shallow' memcpy)
+            // Need to copy each element into the newly allocated list
+            // (using 'deep' copy, instead of a faster 'shallow' memcpy)
             *( padata + i ) = *( this->padata_ + i );
          }
       }
@@ -597,26 +614,26 @@ template< class T > bool TCT_DynamicVector_c< T >::Shrink_(
    bool ok = true;
 
    // Test if dynamic vector length can be constracted based on current length
-   if (( this->maxLen_ > 0 ) &&
+   if(( this->maxLen_ > 0 ) &&
       ( this->curLen_ <= ( this->maxLen_ - this->reallocLen_ )))
    {
       // Ready to deallocate a portion of dynamic vector
       this->maxLen_ = ( this->curLen_ / this->reallocLen_ ) + 1;
       this->maxLen_ = ( this->curLen_ ? this->maxLen_ : 0 );
       this->maxLen_ *= this->reallocLen_;
-      if ( this->maxLen_ != 0 )
+      if( this->maxLen_ != 0 )
       {
-         T* padata = new TC_NOTHROW T[ this->maxLen_ ];
+         T* padata = new TC_NOTHROW T[this->maxLen_];
  
          TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
          ok = printHandler.IsValidNew( padata,
                                        sizeof( T ) * this->maxLen_,
                                        "TCT_DynamicVector_c< T >::Shrink_" );
-         if ( ok )
+         if( ok )
          {
- 	    // Need to copy each element into the newly allocated list
-	    // (using 'deep' copy, instead of a faster 'shallow' memcpy)
-            for ( size_t i = 0; i < this->maxLen_; ++i )
+            // Need to copy each element into the newly allocated list
+            // (using 'deep' copy, instead of a faster 'shallow' memcpy)
+            for( size_t i = 0; i < this->maxLen_; ++i )
             {
                *( padata + i ) = *( this->padata_ + i );
             }
