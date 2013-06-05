@@ -6,17 +6,31 @@
 //           - GetName (required for TCT_SortedNameDynamicVector_c class)
 //           - GetCompare (required for TCT_BSearch and TCT_QSort classes)
 //           - GetLength
-//           - Set
 //           - IsValid
 //
 //===========================================================================//
 
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
 #ifndef TC_NAME_LENGTH_H
 #define TC_NAME_LENGTH_H
 
-#include <stdio.h>
-#include <limits.h>
-
+#include <cstdio>
+#include <climits>
 #include <string>
 using namespace std;
 
@@ -33,9 +47,9 @@ public:
 
    TC_NameLength_c( void );
    TC_NameLength_c( const string& srName,
-   	            unsigned int length = UINT_MAX );
+                    unsigned int length = UINT_MAX );
    TC_NameLength_c( const char* pszName,
-   	            unsigned int length = UINT_MAX );
+                    unsigned int length = UINT_MAX );
    TC_NameLength_c( const TC_NameLength_c& nameLength );
    ~TC_NameLength_c( void );
 
@@ -59,6 +73,7 @@ public:
              unsigned int length = UINT_MAX );
    void Set( const char* pszName,
              unsigned int length = UINT_MAX );
+   void Clear( void );
 
    bool IsValid( void ) const;
 
@@ -85,7 +100,7 @@ inline void TC_NameLength_c::SetName(
 inline void TC_NameLength_c::SetName( 
       const char* pszName )
 {
-   this->srName_ = ( pszName ? pszName : "" );
+   this->srName_ = TIO_PSZ_STR( pszName );
 }
 
 //===========================================================================//
