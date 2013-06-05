@@ -1,5 +1,5 @@
 ################################   MAKEFILE OPTIONS     ####################################
-# Build the common C++ library
+# Build the external objects library
 
 export BUILD_TYPE = release
 # can be debug or release - this option gets inherited by the library libarchfpga 
@@ -17,9 +17,9 @@ LIB_DIR = -L.
 LIB = -lm -lcommon_c++
 SRC_DIR = SRC
 OBJ_DIR = OBJ
-OTHER_DIR = -ISRC/TC_Common -ISRC/TIO_InputOutputHandlers -ISRC/acl -I../libcommon_c/pcre/SRC
+OTHER_DIR = -ISRC/TC_Common -ISRC/TIO_InputOutputHandlers -ISRC/TGO_GeometricObjects -ISRC/TGS_GeometricShapes -ISRC/TLO_LogicalObjects -ISRC/TPO_PhysicalObjects -ISRC/TNO_NetObjects -ISRC/TFH_FabricHandlers -ISRC/TCH_CircuitHandlers -I../vpr/SRC/base -I../vpr/SRC/util -I../libarchfpga/include -I../libcommon_c/pcre/SRC
 
-WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
+WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -Wno-strict-aliasing -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 
 DEBUG_FLAGS = -g
 OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
@@ -41,6 +41,7 @@ DEP := $(OBJ:.o=.d)
 
 $(EXE): $(OBJ) Makefile libcommon_c++.a
 	$(CC) $(FLAGS) OBJ/main.o -o $(EXE) $(LIB_DIR) $(LIB)
+
 
 libcommon_c++.a: $(OBJ) Makefile ../libcommon_c/pcre/libpcre.a
 	@ cp ../libcommon_c/pcre/libpcre.a $@
