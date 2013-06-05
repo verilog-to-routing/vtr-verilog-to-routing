@@ -3,18 +3,31 @@
 //
 //           Inline methods include:
 //           - GetSide, GetIndex
-//           - Set
 //           - IsValid
 //
 //===========================================================================//
 
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
 #ifndef TC_SIDE_INDEX_H
 #define TC_SIDE_INDEX_H
 
-#include <stdio.h>
-#include <limits.h>
-
-#include <string>
+#include <cstdio>
+#include <climits>
 using namespace std;
 
 #include "TC_Typedefs.h"
@@ -32,23 +45,26 @@ public:
 
    TC_SideIndex_c( void );
    TC_SideIndex_c( TC_SideMode_t side,
- 	           size_t index = SIZE_MAX );
+                   size_t index = SIZE_MAX );
    TC_SideIndex_c( const TC_SideIndex_c& sideIndex );
    ~TC_SideIndex_c( void );
 
    TC_SideIndex_c& operator=( const TC_SideIndex_c& sideIndex );
+   bool operator<( const TC_SideIndex_c& sideIndex ) const;
    bool operator==( const TC_SideIndex_c& sideIndex ) const;
    bool operator!=( const TC_SideIndex_c& sideIndex ) const;
 
    void Print( FILE* pfile = stdout, size_t spaceLen = 0 ) const;
 
-   void ExtractString( string* psrSideIndex ) const;
+   void ExtractString( string* psrSideIndex,
+                       size_t sideLength = 0 ) const;
 
    TC_SideMode_t GetSide( void ) const;
    size_t GetIndex( void ) const;
 
    void Set( TC_SideMode_t side,
              size_t index = SIZE_MAX );
+   void Clear( void );
 
    bool IsValid( void ) const;
 
