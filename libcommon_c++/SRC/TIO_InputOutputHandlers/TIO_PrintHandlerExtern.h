@@ -5,7 +5,7 @@
  *===========================================================================*/
 
 /*---------------------------------------------------------------------------*
- * Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) *
+ * Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      *
  *                                                                           *
  * This program is free software; you can redistribute it and/or modify it   *
  * under the terms of the GNU General Public License as published by the     *
@@ -23,6 +23,7 @@
 #ifndef TIO_PRINT_HANDLER_EXTERN_H
 #define TIO_PRINT_HANDLER_EXTERN_H
 
+// ???
 #include "TIO_Typedefs.h"
 
 /*---------------------------------------------------------------------------*
