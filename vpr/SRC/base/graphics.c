@@ -1594,6 +1594,8 @@ drawline (float x1, float y1, float x2, float y2)
 	HPEN hOldPen;
 #endif
 	
+	/* Pre-clipping has been tested on both Windows and Linux, and it was found to be useful *
+	 * for speeding up drawscreen() runtime.												 */
 	if (rect_off_screen(x1,y1,x2,y2))
 		return;
 	
