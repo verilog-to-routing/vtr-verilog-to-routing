@@ -6,6 +6,22 @@
 // 05/01/12 jeffr : Original
 //===========================================================================//
 
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
 #ifndef TC_TYPEDEFS_H
 #define TC_TYPEDEFS_H
 
@@ -17,7 +33,9 @@
 // Define float constants as needed
 //---------------------------------------------------------------------------//
 
-#include <float.h>
+#include <cfloat>
+using namespace std;
+
 #define TC_FLT_EPSILON ( static_cast< double >( FLT_RADIX * FLT_EPSILON ))
 #define TC_FLT_MIN ( static_cast< double >( -1.0 * FLT_MAX + ( FLT_RADIX * FLT_EPSILON )))
 #define TC_FLT_MAX ( static_cast< double >( 1.0 * FLT_MAX - ( FLT_RADIX * FLT_EPSILON )))
@@ -26,21 +44,30 @@
 // Define limit constants as needed
 //---------------------------------------------------------------------------//
 
-#if defined( LINUX24 )
+#if defined( LINUX_I686 )
+   #include <stdint.h>
+   #ifndef SIZE_MAX
+      #define SIZE_MAX UINT_MAX
+   #endif
+#elif defined( LINUX_X86_64 )
+   #include <stdint.h>
+   #ifndef SIZE_MAX
+      #define SIZE_MAX ULONG_MAX
+   #endif
+#elif defined( SUN8 )
+   #ifndef SIZE_MAX
+      #define SIZE_MAX UINT_MAX
+   #endif
+#else
    #include <stdint.h>
    #ifndef SIZE_MAX
       #define SIZE_MAX UINT_MAX
    #endif
 #endif
 
-#if defined( LINUX24_64 )
-   #include <stdint.h>
-   #ifndef SIZE_MAX
-      #define SIZE_MAX ULONG_MAX
-   #endif
-#endif
+#include <cstdlib>
+using namespace std;
 
-#include <stdlib.h>
 #ifdef RAND_MAX
    #define TC_RAND_MAX RAND_MAX
 #else
@@ -51,7 +78,9 @@
 // Define math constants as needed
 //---------------------------------------------------------------------------//
 
-#include <math.h>
+#include <cmath>
+using namespace std;
+
 #ifndef M_SQRT2
    #define M_SQRT2 1.41421356237309504880
 #endif
@@ -60,6 +89,9 @@
 //---------------------------------------------------------------------------//
 // Define 'nothrow' keyword if not currently available (ie, make NOP for new) 
 //---------------------------------------------------------------------------//
+
+#include <new>
+using namespace std;
 
 #define TC_NOTHROW (std::nothrow) // Set 'nothrow' behavior for default
 
@@ -90,19 +122,36 @@ enum TC_DataMode_e
 };
 typedef enum TC_DataMode_e TC_DataMode_t;
 
+// ??? enum TC_SideMode_e
+// ??? {
+// ???    TC_SIDE_UNDEFINED = 0,
+// ???    TC_SIDE_LEFT,
+// ???    TC_SIDE_RIGHT,
+// ???    TC_SIDE_LOWER,
+// ???    TC_SIDE_UPPER,
+// ???    TC_SIDE_BOTTOM,
+// ???    TC_SIDE_TOP,
+// ???    TC_SIDE_PREV,
+// ???    TC_SIDE_NEXT
+// ??? };
+// ??? typedef TC_SideMode_e TC_SideMode_t;
+
 enum TC_SideMode_e
 {
-   TC_SIDE_UNDEFINED = 0,
-   TC_SIDE_LEFT,
-   TC_SIDE_RIGHT,
-   TC_SIDE_LOWER,
-   TC_SIDE_UPPER,
-   TC_SIDE_BOTTOM,
-   TC_SIDE_TOP,
-   TC_SIDE_PREV,
-   TC_SIDE_NEXT
+   TC_SIDE_UNDEFINED = 0x00,
+   TC_SIDE_NONE      = 0x00,
+   TC_SIDE_LEFT      = 0x01,
+   TC_SIDE_RIGHT     = 0x02,
+   TC_SIDE_LOWER     = 0x04,
+   TC_SIDE_UPPER     = 0x08,
+   TC_SIDE_ANY       = TC_SIDE_LEFT + TC_SIDE_RIGHT + TC_SIDE_LOWER + TC_SIDE_UPPER,
+   TC_SIDE_BOTTOM    = 0x10,
+   TC_SIDE_TOP       = 0x20,
+   TC_SIDE_PREV      = 0x40,
+   TC_SIDE_NEXT      = 0x80
 };
 typedef TC_SideMode_e TC_SideMode_t;
+typedef TC_SideMode_e TC_SideMask_t;
 
 enum TC_TypeMode_e
 {
@@ -111,19 +160,10 @@ enum TC_TypeMode_e
    TC_TYPE_OUTPUT,
    TC_TYPE_SIGNAL,
    TC_TYPE_CLOCK,
-   TC_TYPE_RESET,
-   TC_TYPE_POWER
+   TC_TYPE_POWER,
+   TC_TYPE_GLOBAL
 };
 typedef enum TC_TypeMode_e TC_TypeMode_t;
-
-//---------------------------------------------------------------------------//
-// Define common dims constants as needed
-//---------------------------------------------------------------------------//
-
-#include "TCT_Dims.h"
-
-typedef TCT_Dims_c< unsigned int > TC_UIntDims_t;
-typedef TCT_Dims_c< double > TC_FloatDims_t;
 
 //---------------------------------------------------------------------------//
 // Define common list constants as needed
