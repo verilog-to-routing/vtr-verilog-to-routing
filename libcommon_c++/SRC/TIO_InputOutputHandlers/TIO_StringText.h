@@ -3,6 +3,22 @@
 //
 //===========================================================================//
 
+//---------------------------------------------------------------------------//
+// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+//                                                                           //
+// This program is free software; you can redistribute it and/or modify it   //
+// under the terms of the GNU General Public License as published by the     //
+// Free Software Foundation; version 3 of the License, or any later version. //
+//                                                                           //
+// This program is distributed in the hope that it will be useful, but       //
+// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
+// for more details.                                                         //
+//                                                                           //
+// You should have received a copy of the GNU General Public License along   //
+// with this program; if not, see <http://www.gnu.org/licenses>.             //
+//---------------------------------------------------------------------------//
+
 #ifndef TIO_STRING_TEXT_H
 #define TIO_STRING_TEXT_H
 
@@ -10,8 +26,8 @@
 // Define text used to format and display various program version strings
 //---------------------------------------------------------------------------//
 
-#define TIO_SZ_PROGRAM_MAJOR "0"
-#define TIO_SZ_PROGRAM_MINOR "A15"
+#define TIO_SZ_PROGRAM_MAJOR "1"
+#define TIO_SZ_PROGRAM_MINOR "102"
 #define TIO_SZ_PROGRAM_PATCH "0"
 
 #if defined( SUN8 )
@@ -55,14 +71,14 @@
 #define TIO_SZ_VPR_PROGRAM_TITLE  "VPR - The Next Generation"
 #define TIO_SZ_VPR_BINARY_NAME    "vpr"
 #define TIO_SZ_VPR_SOURCE_NAME    "VPR"
-#define TIO_SZ_VPR_COPYRIGHT      "This is free open source code under MIT license."
+#define TIO_SZ_VPR_COPYRIGHT      "This is free open source code under the MIT license."
 #define TIO_SZ_VPR_PREFIX         "[vpr] "
 
 #define TIO_SZ_TORO_PROGRAM_NAME  "Toro"
 #define TIO_SZ_TORO_PROGRAM_TITLE "Toro - A VPR Front-End"
 #define TIO_SZ_TORO_BINARY_NAME   "toro"
 #define TIO_SZ_TORO_SOURCE_NAME   "TORO"
-#define TIO_SZ_TORO_COPYRIGHT     "(c) Copyright 2012 Texas Instruments"
+#define TIO_SZ_TORO_COPYRIGHT     "(c) Copyright 2012 Texas Instruments (under GNU GPL)"
 
 //---------------------------------------------------------------------------//
 // Define strings used to display brief help summary
@@ -82,7 +98,7 @@
    "       +f[abric]       <file>    Output fabric file\n" \
    "       +c[ircuit]      <file>    Output circuit file\n" \
    "       +l[og]          <file>    Output log file name\n" \
-   "       -e[xecute]      ( pack + place + route ) | all | none"
+   "       -e[xecute]      ( pack + place + route ) | all | none\n"
 
 //---------------------------------------------------------------------------//
 // Define strings used for default file descriptions and extensions
