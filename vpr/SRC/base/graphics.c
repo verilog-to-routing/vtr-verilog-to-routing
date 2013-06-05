@@ -148,7 +148,7 @@
 // VERBOSE is very helpful for developing event handling features. Outputs
 // useful information when user interacts with the graphic interface.
 // Uncomment the line below to turn on VERBOSE.
-// #define VERBOSE
+//#define VERBOSE
 
 #include <math.h>
 #include <stdlib.h>
@@ -166,9 +166,10 @@ using namespace std;
 #define XPOST(worldx) (((worldx)-xleft)*ps_xmult + ps_left)
 #define YPOST(worldy) (((worldy)-ybot)*ps_ymult + ps_bot)
 
-/* Macros to convert from X Windows Internal Coordinates to my  *
-* World Coordinates.  (This macro is used only rarely, so       *
-* the divides don't hurt speed).                               */
+/* Macros to convert from Screen (pixel) Coordinates to the world coordinates
+ * used by the client program. (This macro is used only rarely, so       
+ * the divides don't hurt speed).                               
+ */
 #define XTOWORLD(x) (((float) x)*xdiv + xleft)
 #define YTOWORLD(y) (((float) y)*ydiv + ytop)
 
@@ -542,8 +543,9 @@ static void *my_realloc(void *memblk, int ibytes) {
 }
 
 
-/* Translates from my internal coordinates to real-world coordinates  *
-* in the x direction.  Add 0.5 at end for extra half-pixel accuracy. */
+/* Translates from world (client program) coordinates to screen coordinates
+ * (pixels) in the x direction.  Add 0.5 at end for extra half-pixel accuracy. 
+ */
 static int xcoord (float worldx) 
 {
 	int winx;
@@ -567,8 +569,9 @@ static int xcoord (float worldx)
 }
 
 
-/* Translates from my internal coordinates to real-world coordinates  *
-* in the y direction.  Add 0.5 at end for extra half-pixel accuracy. */
+/* Translates from world (client program) coordinates to screen coordinates
+ * (pixels) in the y direction.  Add 0.5 at end for extra half-pixel accuracy. 
+ */
 static int ycoord (float worldy) 
 {
 	int winy;
@@ -1292,8 +1295,8 @@ static void reset_common_state () {
 static void 
 update_transform (void) 
 {
-/* Set up the factors for transforming from the user world to X Windows *
-	* coordinates.                                                         */
+/* Set up the factors for transforming from the user world to X/Win32 screen
+ * (pixel) coordinates.                                                         */
 	
 	float mult, y1, y2, x1, x2;
 	
@@ -2292,14 +2295,15 @@ translate_right (void (*drawscreen) (void))
 static void
 panning (int x, int y, void (*drawscreen) (void))
 {
-	float xstep, ystep;
+	float x_change_world, y_change_world;
 
-	xstep = x - previous_x;
-	ystep = y - previous_y;
-	ytop += ystep;
-	ybot += ystep;
-	xleft -= xstep;
-	xright -= xstep;
+   x_change_world = XTOWORLD (x) - XTOWORLD (previous_x);
+   y_change_world = YTOWORLD (y) - YTOWORLD (previous_y);
+   xleft -= x_change_world;
+   xright -= x_change_world;
+   ybot -= y_change_world;
+   ytop -= y_change_world;
+
 	update_transform();
 	drawscreen();
 
@@ -2331,6 +2335,9 @@ panning_enable (int report_xbutton_x, int report_xbutton_y)
 }
 
 
+// Updates the graphics transformation so that the graphics drawn within the
+// box (in pixels) defined by x[0],y[0] to x[1],y[1] will be scaled to fill
+// the whole window area.
 static void 
 update_win (int x[2], int y[2], void (*drawscreen)(void)) 
 {
