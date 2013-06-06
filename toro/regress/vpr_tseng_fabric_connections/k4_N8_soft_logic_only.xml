@@ -1,0 +1,143 @@
+  <architecture>
+  
+  <models> </models>
+
+  <layout auto="1.0"/>
+
+		<device>
+			<sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000" ipin_mux_trans_size="1.222260"/>
+			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="7.247000e-11"/>
+			<area grid_logic_tile_area="14813.392"/>
+			<chan_width_distr>
+				<io width="1.000000"/>
+				<x distr="uniform" peak="1.000000"/>
+				<y distr="uniform" peak="1.000000"/>
+			</chan_width_distr>
+			<switch_block type="wilton" fs="3"/>
+		</device>
+		<switchlist>
+			<switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="6.837e-11" mux_trans_size="2.630740" buf_size="27.645901"/>
+		</switchlist>
+		<segmentlist>
+			<segment freq="1.000000" length="4" type="unidir" Rmetal="0.000000" Cmetal="0.000000e+00">
+			<mux name="0"/>
+			<sb type="pattern">1 1 1 1 1</sb>
+			<cb type="pattern">1 1 1 1</cb>
+			</segment>
+		</segmentlist>
+
+		<complexblocklist>
+      <pb_type name="io" capacity="8">
+        <input name="outpad" num_pins="1"/>
+        <output name="inpad" num_pins="1"/>
+        <clock name="clock" num_pins="1"/>
+
+        <mode name="inpad">
+          <pb_type name="inpad" blif_model=".input" num_pb="1">
+            <output name="inpad" num_pins="1"/>
+          </pb_type>
+          <interconnect>
+            <direct name="inpad" input="inpad.inpad" output="io.inpad">
+            <delay_constant max="4.243e-11" in_port="inpad.inpad" out_port="io.inpad"/>
+            </direct>
+          </interconnect>
+      
+        </mode>
+        <mode name="outpad">
+          <pb_type name="outpad" blif_model=".output" num_pb="1">
+            <input name="outpad" num_pins="1"/>
+          </pb_type>
+          <interconnect>
+            <direct name="outpad" input="io.outpad" output="outpad.outpad">
+            <delay_constant max="1.394e-11" in_port="io.outpad" out_port="outpad.outpad"/>
+            </direct>
+          </interconnect>
+        </mode>
+
+        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
+
+        <pinlocations pattern="custom">
+          <loc side="left">io.outpad io.inpad io.clock</loc>
+          <loc side="top">io.outpad io.inpad io.clock</loc>
+          <loc side="right">io.outpad io.inpad io.clock</loc>
+          <loc side="bottom">io.outpad io.inpad io.clock</loc>
+        </pinlocations>
+
+        <gridlocations>
+          <loc type="perimeter" priority="10"/>
+        </gridlocations>
+
+      </pb_type>
+
+
+      <pb_type name="clb">
+        <input name="I" num_pins="18" equivalent="true"/>
+        <output name="O" num_pins="8" equivalent="false"/>
+        <clock name="clk" num_pins="1"/>
+
+        <pb_type name="ble" num_pb="8">
+          <input name="in" num_pins="4"/>
+             <output name="out" num_pins="1"/>
+             <clock name="clk" num_pins="1"/>
+             <pb_type name="soft_logic" num_pb="1">
+               <input name="in" num_pins="4"/>
+               <output name="out" num_pins="1"/>
+                <mode name="n1_lut6">
+                  <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut">
+                    <input name="in" num_pins="4" port_class="lut_in"/>
+                    <output name="out" num_pins="1" port_class="lut_out"/>
+
+                    <delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
+                      2.690e-10
+                      2.690e-10
+                      2.690e-10
+                      2.690e-10
+                    </delay_matrix>
+                  </pb_type>
+                  <interconnect>
+                    <direct name="direct1" input="soft_logic.in[3:0]" output="lut6[0:0].in[3:0]"/>
+                    <direct name="direct2" input="lut6[0:0].out" output="soft_logic.out[0:0]">
+                        <pack_pattern name="ble" in_port="lut6[0:0].out" out_port="soft_logic.out[0:0]"/>
+                    </direct>
+                  </interconnect>
+                </mode>
+             </pb_type>
+          <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+            <input name="D" num_pins="1" port_class="D"/>
+            <output name="Q" num_pins="1" port_class="Q"/>
+            <clock name="clk" num_pins="1" port_class="clock"/>
+            <T_setup value="2.448e-10" port="ff.D" clock="clk"/>
+            <T_clock_to_Q max="7.732e-11" port="ff.Q" clock="clk"/>
+          </pb_type>
+          <interconnect>
+            <direct name="direct1" input="ble.in" output="soft_logic.in"/>
+            <direct name="direct2" input="soft_logic.out" output="ff.D">
+               <pack_pattern name="ble" in_port="soft_logic.out" out_port="ff.D"/>
+            </direct>
+            <direct name="direct4" input="ble.clk" output="ff.clk"/>
+            <mux name="mux1" input="ff.Q soft_logic.out" output="ble.out"/>
+           </interconnect>
+        </pb_type>
+        <interconnect>
+          <complete name="crossbar" input="clb.I ble[7:0].out" output="ble[7:0].in">
+            <delay_constant max="8.044000e-11" in_port="clb.I" out_port="ble[7:0].in" />
+            <delay_constant max="7.354000e-11" in_port="ble[7:0].out" out_port="ble[7:0].in" />
+          </complete>
+          <complete name="clks" input="clb.clk" output="ble[7:0].clk">
+          </complete>
+          <direct name="clbouts" input="ble[7:0].out" output="clb.O">
+          </direct>
+        </interconnect>
+
+        
+        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
+
+        <pinlocations pattern="spread"/>
+        <gridlocations>
+          <loc type="fill" priority="1"/>
+        </gridlocations>
+      </pb_type>
+
+    </complexblocklist>
+
+  </architecture>

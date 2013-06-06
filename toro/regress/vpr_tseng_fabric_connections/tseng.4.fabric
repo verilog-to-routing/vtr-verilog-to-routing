@@ -1,0 +1,37 @@
+<fabric name="">
+
+   <io name="io[0][1]" master="io">
+      <origin> 0 1 </origin>
+
+      <pin name="outpad[0]" type="input" side="right" offset="0" delta="0.025" width="0.002" slice="0">
+         <cb> 0 1 0 0 1 1 0 0 0 0 0 0 0 0 1 0 1 1 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="right" offset="1" delta="0.031" width="0.002" slice="0">
+         <cb> 1 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" type="input" side="right" offset="12" delta="0.275" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="right" offset="13" delta="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+   </io>
+   
+   <pb name="pb[1][1]" master="clb">
+      <origin> 1 1 </origin>
+
+      <pin name="I[3]" type="input" side="left" offset="3" delta="0.232" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="I[7]" type="input" side="left" offset="7" delta="0.238" width="0.002" slice="0">
+         <cb> 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="I[12]" type="input" side="upper" offset="12" delta="0.250" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 1 1 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="I[16]" type="input" side="upper" offset="16" delta="0.256" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 </cb>
+      </pin>
+   </pb>
+
+</fabric>
