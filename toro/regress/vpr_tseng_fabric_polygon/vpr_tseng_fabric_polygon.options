@@ -1,0 +1,23 @@
+input_file_xml    "k4_N8_soft_logic_only.xml"
+input_file_blif   "tseng.4.blif"
+input_file_fabric "tseng.4.fabric"
+
+output_enable_options yes
+output_enable_xml     yes
+output_enable_blif    yes
+output_enable_arch    yes
+output_enable_fabric  yes
+output_enable_circuit yes
+output_enable_laff    yes
+
+output_file_xml     "*.toro.xml"
+output_file_blif    "*.toro.blif"
+output_file_arch    "*.toro.arch"
+output_file_fabric  "*.toro.fabric"
+output_file_circuit "*.toro.circuit"
+
+format_min_grid 0.001
+// format_time_stamps yes
+
+halt_max_warnings -1
+halt_max_errors   -1
