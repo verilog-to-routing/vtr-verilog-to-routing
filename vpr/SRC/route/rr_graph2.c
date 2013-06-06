@@ -1847,10 +1847,13 @@ static int get_unidir_track_to_chan_seg(
 	for (i = 0; i < Fs_per_side; ++i) {
 
 		/* Use the balanced labeling for passing and fringe wires */
-		if (to_mux != UN_SET || to_track == UN_SET) {
-			to_track = mux_labels[(to_mux + i) % num_labels];
-			sblock_pattern[sb_x][sb_y][from_side][to_side][from_track][1] = to_track;
-		}
+
+		if (to_mux == UN_SET)
+			continue;
+
+		to_track = mux_labels[(to_mux + i) % num_labels];
+		sblock_pattern[sb_x][sb_y][from_side][to_side][from_track][1] = to_track;
+
 		to_node = get_rr_node_index(to_x, to_y, to_type, to_track, L_rr_node_indices);
 		if (L_rr_edge_done[to_node])
 			continue;
