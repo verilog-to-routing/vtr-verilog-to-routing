@@ -34,7 +34,7 @@ CFLAGS = $(CFLAGS$(ISM)) \
 	-I. \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
-	-I../../libpcre/SRC
+	-I../../libcommon_c/pcre/SRC
 
 ######################################################################
 # Linker options
@@ -82,6 +82,7 @@ OBJSlinux_x86_64 = linux_x86_64/TOS_OptionsStore.o \
                     linux_x86_64/TOS_OutputOptions.o \
                     linux_x86_64/TOS_MessageOptions.o \
                     linux_x86_64/TOS_ExecuteOptions.o \
+                    linux_x86_64/TOS_FabricOptions.o \
                     linux_x86_64/TOS_PackOptions.o \
                     linux_x86_64/TOS_PlaceOptions.o \
                     linux_x86_64/TOS_RouteOptions.o \
@@ -93,6 +94,7 @@ OBJSlinux_i686 = linux_i686/TOS_OptionsStore.o \
                     linux_i686/TOS_OutputOptions.o \
                     linux_i686/TOS_MessageOptions.o \
                     linux_i686/TOS_ExecuteOptions.o \
+                    linux_i686/TOS_FabricOptions.o \
                     linux_i686/TOS_PackOptions.o \
                     linux_i686/TOS_PlaceOptions.o \
                     linux_i686/TOS_RouteOptions.o \
@@ -104,6 +106,7 @@ OBJSsun8 = sun8/TOS_OptionsStore.o \
            sun8/TOS_OutputOptions.o \
            sun8/TOS_MessageOptions.o \
            sun8/TOS_ExecuteOptions.o \
+           sun8/TOS_FabricOptions.o \
            sun8/TOS_PackOptions.o \
            sun8/TOS_PlaceOptions.o \
            sun8/TOS_RouteOptions.o \
