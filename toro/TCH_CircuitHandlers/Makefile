@@ -31,8 +31,6 @@ CFLAGSlinux_x86_64 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_X86
 CFLAGSlinux_i686 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_I686
 CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
 CFLAGS = $(CFLAGS$(ISM)) \
-	-DTORO_FABRIC_GRID_VALID_ENABLE \
-	-DTORO_FABRIC_CHANNEL_WIDTHS_ENABLE \
 	-DTORO_REGION_PLACEMENT_ENABLE \
 	-DTORO_RELATIVE_PLACEMENT_ENABLE \
 	-DTORO_PREPLACED_PLACEMENT_ENABLE \
@@ -45,7 +43,7 @@ CFLAGS = $(CFLAGS$(ISM)) \
 	-I../TGO_GeometricObjects \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
-	-I../../libpcre/SRC \
+	-I../../libcommon_c/pcre/SRC \
 	-I../../vpr/SRC/base -I../../vpr/SRC/util -I../../libarchfpga/include
 
 ######################################################################
