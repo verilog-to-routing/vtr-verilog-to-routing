@@ -1,0 +1,3 @@
+#!/bin/csh -f
+
+../regress_this simple_toro_arch_circuit
