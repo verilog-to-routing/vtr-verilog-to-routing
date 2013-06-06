@@ -31,5 +31,4 @@ display_warning_reject ".*get_heap_head.*" // Ignore select route_common warning
 
 fabric_blocks_override_enable yes
 
-// ??? 
-// route_channel_width 50
+route_channel_width 44
