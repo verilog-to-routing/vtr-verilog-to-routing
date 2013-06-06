@@ -31,11 +31,14 @@ CFLAGSlinux_x86_64 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_X86
 CFLAGSlinux_i686 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_I686
 CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
 CFLAGS = $(CFLAGS$(ISM)) \
+	-DTORO_FABRIC_GRID_VALID_ENABLE \
 	-DTORO_FABRIC_CHANNEL_WIDTHS_ENABLE \
 	-I. \
 	-I../TGO_GeometricObjects \
 	-I../TIO_InputOutputHandlers \
-	-I../TC_Common
+	-I../TC_Common \
+	-I../../libcommon_c/pcre/SRC \
+	-I../../vpr/SRC/base -I../../vpr/SRC/util -I../../libarchfpga/include
 
 ######################################################################
 # Linker options
@@ -65,17 +68,35 @@ LIBSOlinux_i686 = ../linux_i686/$(PROG).$(SOL)
 LIBSOsun8 = ../sun8/$(PROG).$(SOL)
 LIBSO = $(LIBSO$(ISM))
 
-OBJSlinux_x86_64 = linux_x86_64/TFH_FabricChannelHandler.o \
-                   linux_x86_64/TFH_FabricGridHandler.o \
-                   linux_x86_64/TFH_BlockGrid.o \
+OBJSlinux_x86_64 = linux_x86_64/TFH_FabricGridHandler.o \
+                   linux_x86_64/TFH_FabricBlockHandler.o \
+                   linux_x86_64/TFH_FabricSwitchBoxHandler.o \
+                   linux_x86_64/TFH_FabricConnectionBlockHandler.o \
+                   linux_x86_64/TFH_FabricChannelHandler.o \
+                   linux_x86_64/TFH_GridBlock.o \
+                   linux_x86_64/TFH_SwitchBox.o \
+                   linux_x86_64/TFH_ConnectionBlock.o \
+                   linux_x86_64/TFH_ConnectionMap.o \
                    linux_x86_64/TFH_StringUtils.o
-OBJSlinux_i686 = linux_i686/TFH_FabricChannelHandler.o \
-                 linux_i686/TFH_FabricGridHandler.o \
-                 linux_i686/TFH_BlockGrid.o \
+OBJSlinux_i686 = linux_i686/TFH_FabricGridHandler.o \
+                 linux_i686/TFH_FabricBlockHandler.o \
+                 linux_i686/TFH_FabricSwitchBoxHandler.o \
+                 linux_i686/TFH_FabricConnectionBlockHandler.o \
+                 linux_i686/TFH_FabricChannelHandler.o \
+                 linux_i686/TFH_GridBlock.o \
+                 linux_i686/TFH_SwitchBox.o \
+                 linux_i686/TFH_ConnectionBlock.o \
+                 linux_i686/TFH_ConnectionMap.o \
                  linux_i686/TFH_StringUtils.o
-OBJSsun8 = sun8/TFH_FabricChannelHandler.o \
-           sun8/TFH_FabricGridHandler.o \
-           sun8/TFH_BlockGrid.o \
+OBJSsun8 = sun8/TFH_FabricGridHandler.o \
+           sun8/TFH_FabricBlockHandler.o \
+           sun8/TFH_FabricSwitchBoxHandler.o \
+           sun8/TFH_FabricConnectionBlockHandler.o \
+           sun8/TFH_FabricChannelHandler.o \
+           sun8/TFH_GridBlock.o \
+           sun8/TFH_SwitchBox.o \
+           sun8/TFH_ConnectionBlock.o \
+           sun8/TFH_ConnectionMap.o \
            sun8/TFH_StringUtils.o
 OBJECTS = $(OBJS$(ISM))
 
