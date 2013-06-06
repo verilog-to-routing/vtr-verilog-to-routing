@@ -1,0 +1,2938 @@
+<!-- _______________________________________________________________ -->
+<!--                     Toro - A VPR Front-End                      -->
+<!--   (c) Copyright 2012-2013 Texas Instruments (under GNU GPL)     -->
+<!-- _______________________________________________________________ -->
+<!--                          Fabric Model                           -->
+<!-- _______________________________________________________________ -->
+<fabric name="">
+
+   <config>
+      <region> -1.00 -1.00 20.00 20.00 </region>
+   </config>
+   
+   <pb name="pb[1][1]" master="clb"> <region> 0.75 0.75 1.25 1.25 </region> </pb>
+   <pb name="pb[1][2]" master="clb"> <region> 0.75 1.75 1.25 2.25 </region> </pb>
+   <pb name="pb[1][3]" master="clb"> <region> 0.75 2.75 1.25 3.25 </region> </pb>
+   <pb name="pb[1][4]" master="clb"> <region> 0.75 3.75 1.25 4.25 </region> </pb>
+   <pb name="pb[1][5]" master="clb"> <region> 0.75 4.75 1.25 5.25 </region> </pb>
+   <pb name="pb[1][6]" master="clb"> <region> 0.75 5.75 1.25 6.25 </region> </pb>
+   <pb name="pb[1][7]" master="clb"> <region> 0.75 6.75 1.25 7.25 </region> </pb>
+   <pb name="pb[1][8]" master="clb"> <region> 0.75 7.75 1.25 8.25 </region> </pb>
+   <pb name="pb[1][9]" master="clb"> <region> 0.75 8.75 1.25 9.25 </region> </pb>
+   <pb name="pb[1][10]" master="clb"> <region> 0.75 9.75 1.25 10.25 </region> </pb>
+   <pb name="pb[1][11]" master="clb"> <region> 0.75 10.75 1.25 11.25 </region> </pb>
+   <pb name="pb[1][12]" master="clb"> <region> 0.75 11.75 1.25 12.25 </region> </pb>
+   <pb name="pb[1][13]" master="clb"> <region> 0.75 12.75 1.25 13.25 </region> </pb>
+   <pb name="pb[1][14]" master="clb"> <region> 0.75 13.75 1.25 14.25 </region> </pb>
+   <pb name="pb[1][15]" master="clb"> <region> 0.75 14.75 1.25 15.25 </region> </pb>
+   <pb name="pb[1][16]" master="clb"> <region> 0.75 15.75 1.25 16.25 </region> </pb>
+
+   <pb name="pb[2][1]" master="clb"> <region> 1.75 0.75 2.25 1.25 </region> </pb>
+   <pb name="pb[2][2]" master="clb"> <region> 1.75 1.75 2.25 2.25 </region> </pb>
+
+   <pb name="pb[2][3]" master="clb_2x2"> <region> 1.75 2.75 3.25 4.25 </region> </pb>
+   <pb name="pb[2][5]" master="clb_2x2"> <region> 1.75 4.75 3.25 6.25 </region> </pb>
+
+   <pb name="pb[2][7]" master="clb"> <region> 1.75 6.75 2.25 7.25 </region> </pb>
+   <pb name="pb[2][8]" master="clb"> <region> 1.75 7.75 2.25 8.25 </region> </pb>
+   <pb name="pb[2][9]" master="clb"> <region> 1.75 8.75 2.25 9.25 </region> </pb>
+   <pb name="pb[2][10]" master="clb"> <region> 1.75 9.75 2.25 10.25 </region> </pb>
+   <pb name="pb[2][11]" master="clb"> <region> 1.75 10.75 2.25 11.25 </region> </pb>
+   <pb name="pb[2][12]" master="clb"> <region> 1.75 11.75 2.25 12.25 </region> </pb>
+   <pb name="pb[2][13]" master="clb"> <region> 1.75 12.75 2.25 13.25 </region> </pb>
+   <pb name="pb[2][14]" master="clb"> <region> 1.75 13.75 2.25 14.25 </region> </pb>
+   <pb name="pb[2][15]" master="clb"> <region> 1.75 14.75 2.25 15.25 </region> </pb>
+   <pb name="pb[2][16]" master="clb"> <region> 1.75 15.75 2.25 16.25 </region> </pb>
+
+   <pb name="pb[3][1]" master="clb"> <region> 2.75 0.75 3.25 1.25 </region> </pb>
+   <pb name="pb[3][2]" master="clb"> <region> 2.75 1.75 3.25 2.25 </region> </pb>
+
+   <pb name="pb[3][7]" master="clb"> <region> 2.75 6.75 3.25 7.25 </region> </pb>
+   <pb name="pb[3][8]" master="clb"> <region> 2.75 7.75 3.25 8.25 </region> </pb>
+   <pb name="pb[3][9]" master="clb"> <region> 2.75 8.75 3.25 9.25 </region> </pb>
+   <pb name="pb[3][10]" master="clb"> <region> 2.75 9.75 3.25 10.25 </region> </pb>
+   <pb name="pb[3][12]" master="clb"> <region> 2.75 11.75 3.25 12.25 </region> </pb>
+   <pb name="pb[3][13]" master="clb"> <region> 2.75 12.75 3.25 13.25 </region> </pb>
+   <pb name="pb[3][14]" master="clb"> <region> 2.75 13.75 3.25 14.25 </region> </pb>
+   <pb name="pb[3][15]" master="clb"> <region> 2.75 14.75 3.25 15.25 </region> </pb>
+   <pb name="pb[3][16]" master="clb"> <region> 2.75 15.75 3.25 16.25 </region> </pb>
+
+   <pb name="pb[4][1]" master="clb"> <region> 3.75 0.75 4.25 1.25 </region> </pb>
+   <pb name="pb[4][2]" master="clb"> <region> 3.75 1.75 4.25 2.25 </region> </pb>
+   <pb name="pb[4][3]" master="clb"> <region> 3.75 2.75 4.25 3.25 </region> </pb>
+   <pb name="pb[4][4]" master="clb"> <region> 3.75 3.75 4.25 4.25 </region> </pb>
+   <pb name="pb[4][5]" master="clb"> <region> 3.75 4.75 4.25 5.25 </region> </pb>
+   <pb name="pb[4][6]" master="clb"> <region> 3.75 5.75 4.25 6.25 </region> </pb>
+   <pb name="pb[4][7]" master="clb"> <region> 3.75 6.75 4.25 7.25 </region> </pb>
+   <pb name="pb[4][8]" master="clb"> <region> 3.75 7.75 4.25 8.25 </region> </pb>
+   <pb name="pb[4][9]" master="clb"> <region> 3.75 8.75 4.25 9.25 </region> </pb>
+   <pb name="pb[4][10]" master="clb"> <region> 3.75 9.75 4.25 10.25 </region> </pb>
+   <pb name="pb[4][11]" master="clb"> <region> 3.75 10.75 4.25 11.25 </region> </pb>
+   <pb name="pb[4][12]" master="clb"> <region> 3.75 11.75 4.25 12.25 </region> </pb>
+   <pb name="pb[4][13]" master="clb"> <region> 3.75 12.75 4.25 13.25 </region> </pb>
+   <pb name="pb[4][14]" master="clb"> <region> 3.75 13.75 4.25 14.25 </region> </pb>
+   <pb name="pb[4][15]" master="clb"> <region> 3.75 14.75 4.25 15.25 </region> </pb>
+   <pb name="pb[4][16]" master="clb"> <region> 3.75 15.75 4.25 16.25 </region> </pb>
+
+   <pb name="pb[5][1]" master="clb"> <region> 4.75 0.75 5.25 1.25 </region> </pb>
+   <pb name="pb[5][2]" master="clb"> <region> 4.75 1.75 5.25 2.25 </region> </pb>
+   <pb name="pb[5][3]" master="clb"> <region> 4.75 2.75 5.25 3.25 </region> </pb>
+   <pb name="pb[5][4]" master="clb"> <region> 4.75 3.75 5.25 4.25 </region> </pb>
+   <pb name="pb[5][5]" master="clb"> <region> 4.75 4.75 5.25 5.25 </region> </pb>
+   <pb name="pb[5][6]" master="clb"> <region> 4.75 5.75 5.25 6.25 </region> </pb>
+   <pb name="pb[5][7]" master="clb"> <region> 4.75 6.75 5.25 7.25 </region> </pb>
+   <pb name="pb[5][8]" master="clb"> <region> 4.75 7.75 5.25 8.25 </region> </pb>
+   <pb name="pb[5][9]" master="clb"> <region> 4.75 8.75 5.25 9.25 </region> </pb>
+   <pb name="pb[5][10]" master="clb"> <region> 4.75 9.75 5.25 10.25 </region> </pb>
+   <pb name="pb[5][11]" master="clb"> <region> 4.75 10.75 5.25 11.25 </region> </pb>
+   <pb name="pb[5][12]" master="clb"> <region> 4.75 11.75 5.25 12.25 </region> </pb>
+   <pb name="pb[5][13]" master="clb"> <region> 4.75 12.75 5.25 13.25 </region> </pb>
+   <pb name="pb[5][14]" master="clb"> <region> 4.75 13.75 5.25 14.25 </region> </pb>
+   <pb name="pb[5][15]" master="clb"> <region> 4.75 14.75 5.25 15.25 </region> </pb>
+   <pb name="pb[5][16]" master="clb"> <region> 4.75 15.75 5.25 16.25 </region> </pb>
+
+   <pb name="pb[6][1]" master="clb"> <region> 5.75 0.75 6.25 1.25 </region> </pb>
+   <pb name="pb[6][2]" master="clb"> <region> 5.75 1.75 6.25 2.25 </region> </pb>
+   <pb name="pb[6][3]" master="clb"> <region> 5.75 2.75 6.25 3.25 </region> </pb>
+   <pb name="pb[6][4]" master="clb"> <region> 5.75 3.75 6.25 4.25 </region> </pb>
+
+   <pb name="pb[6][5]" master="clb_3x1"> <region> 5.75 4.75 8.25 5.25 </region> </pb>
+   <pb name="pb[6][6]" master="clb_3x1"> <region> 5.75 5.75 8.25 6.25 </region> </pb>
+
+   <pb name="pb[6][15]" master="clb_3x1"> <region> 5.75 14.75 8.25 15.25 </region> </pb>
+   <pb name="pb[6][16]" master="clb_3x1"> <region> 5.75 15.75 8.25 16.25 </region> </pb>
+
+   <pb name="pb[6][7]" master="clb"> <region> 5.75 6.75 6.25 7.25 </region> </pb>
+   <pb name="pb[6][8]" master="clb"> <region> 5.75 7.75 6.25 8.25 </region> </pb>
+   <pb name="pb[6][9]" master="clb"> <region> 5.75 8.75 6.25 9.25 </region> </pb>
+   <pb name="pb[6][10]" master="clb"> <region> 5.75 9.75 6.25 10.25 </region> </pb>
+   <pb name="pb[6][11]" master="clb"> <region> 5.75 10.75 6.25 11.25 </region> </pb>
+   <pb name="pb[6][12]" master="clb"> <region> 5.75 11.75 6.25 12.25 </region> </pb>
+   <pb name="pb[6][13]" master="clb"> <region> 5.75 12.75 6.25 13.25 </region> </pb>
+   <pb name="pb[6][14]" master="clb"> <region> 5.75 13.75 6.25 14.25 </region> </pb>
+
+   <pb name="pb[7][1]" master="clb"> <region> 6.75 0.75 7.25 1.25 </region> </pb>
+   <pb name="pb[7][2]" master="clb"> <region> 6.75 1.75 7.25 2.25 </region> </pb>
+   <pb name="pb[7][3]" master="clb"> <region> 6.75 2.75 7.25 3.25 </region> </pb>
+   <pb name="pb[7][4]" master="clb"> <region> 6.75 3.75 7.25 4.25 </region> </pb>
+
+   <pb name="pb[7][7]" master="clb"> <region> 6.75 6.75 7.25 7.25 </region> </pb>
+   <pb name="pb[7][8]" master="clb"> <region> 6.75 7.75 7.25 8.25 </region> </pb>
+   <pb name="pb[7][9]" master="clb"> <region> 6.75 8.75 7.25 9.25 </region> </pb>
+   <pb name="pb[7][10]" master="clb"> <region> 6.75 9.75 7.25 10.25 </region> </pb>
+   <pb name="pb[7][11]" master="clb"> <region> 6.75 10.75 7.25 11.25 </region> </pb>
+   <pb name="pb[7][12]" master="clb"> <region> 6.75 11.75 7.25 12.25 </region> </pb>
+   <pb name="pb[7][13]" master="clb"> <region> 6.75 12.75 7.25 13.25 </region> </pb>
+   <pb name="pb[7][14]" master="clb"> <region> 6.75 13.75 7.25 14.25 </region> </pb>
+
+   <pb name="pb[8][1]" master="clb"> <region> 7.75 0.75 8.25 1.25 </region> </pb>
+   <pb name="pb[8][2]" master="clb"> <region> 7.75 1.75 8.25 2.25 </region> </pb>
+   <pb name="pb[8][3]" master="clb"> <region> 7.75 2.75 8.25 3.25 </region> </pb>
+   <pb name="pb[8][4]" master="clb"> <region> 7.75 3.75 8.25 4.25 </region> </pb>
+
+   <pb name="pb[8][7]" master="clb"> <region> 7.75 6.75 8.25 7.25 </region> </pb>
+   <pb name="pb[8][8]" master="clb"> <region> 7.75 7.75 8.25 8.25 </region> </pb>
+   <pb name="pb[8][9]" master="clb"> <region> 7.75 8.75 8.25 9.25 </region> </pb>
+   <pb name="pb[8][10]" master="clb"> <region> 7.75 9.75 8.25 10.25 </region> </pb>
+   <pb name="pb[8][11]" master="clb"> <region> 7.75 10.75 8.25 11.25 </region> </pb>
+   <pb name="pb[8][12]" master="clb"> <region> 7.75 11.75 8.25 12.25 </region> </pb>
+   <pb name="pb[8][13]" master="clb"> <region> 7.75 12.75 8.25 13.25 </region> </pb>
+   <pb name="pb[8][14]" master="clb"> <region> 7.75 13.75 8.25 14.25 </region> </pb>
+
+   <pb name="pb[9][1]" master="clb"> <region> 8.75 0.75 9.25 1.25 </region> </pb>
+   <pb name="pb[9][2]" master="clb"> <region> 8.75 1.75 9.25 2.25 </region> </pb>
+   <pb name="pb[9][3]" master="clb"> <region> 8.75 2.75 9.25 3.25 </region> </pb>
+   <pb name="pb[9][4]" master="clb"> <region> 8.75 3.75 9.25 4.25 </region> </pb>
+   <pb name="pb[9][5]" master="clb"> <region> 8.75 4.75 9.25 5.25 </region> </pb>
+   <pb name="pb[9][6]" master="clb"> <region> 8.75 5.75 9.25 6.25 </region> </pb>
+   <pb name="pb[9][7]" master="clb"> <region> 8.75 6.75 9.25 7.25 </region> </pb>
+   <pb name="pb[9][8]" master="clb"> <region> 8.75 7.75 9.25 8.25 </region> </pb>
+   <pb name="pb[9][9]" master="clb"> <region> 8.75 8.75 9.25 9.25 </region> </pb>
+   <pb name="pb[9][10]" master="clb"> <region> 8.75 9.75 9.25 10.25 </region> </pb>
+   <pb name="pb[9][11]" master="clb"> <region> 8.75 10.75 9.25 11.25 </region> </pb>
+   <pb name="pb[9][12]" master="clb"> <region> 8.75 11.75 9.25 12.25 </region> </pb>
+   <pb name="pb[9][13]" master="clb"> <region> 8.75 12.75 9.25 13.25 </region> </pb>
+   <pb name="pb[9][14]" master="clb"> <region> 8.75 13.75 9.25 14.25 </region> </pb>
+   <pb name="pb[9][15]" master="clb"> <region> 8.75 14.75 9.25 15.25 </region> </pb>
+   <pb name="pb[9][16]" master="clb"> <region> 8.75 15.75 9.25 16.25 </region> </pb>
+
+   <pb name="pb[10][1]" master="clb"> <region> 9.75 0.75 10.25 1.25 </region> </pb>
+   <pb name="pb[10][2]" master="clb"> <region> 9.75 1.75 10.25 2.25 </region> </pb>
+   <pb name="pb[10][3]" master="clb"> <region> 9.75 2.75 10.25 3.25 </region> </pb>
+   <pb name="pb[10][4]" master="clb"> <region> 9.75 3.75 10.25 4.25 </region> </pb>
+   <pb name="pb[10][5]" master="clb"> <region> 9.75 4.75 10.25 5.25 </region> </pb>
+   <pb name="pb[10][6]" master="clb"> <region> 9.75 5.75 10.25 6.25 </region> </pb>
+   <pb name="pb[10][7]" master="clb"> <region> 9.75 6.75 10.25 7.25 </region> </pb>
+   <pb name="pb[10][8]" master="clb"> <region> 9.75 7.75 10.25 8.25 </region> </pb>
+   <pb name="pb[10][9]" master="clb"> <region> 9.75 8.75 10.25 9.25 </region> </pb>
+   <pb name="pb[10][10]" master="clb"> <region> 9.75 9.75 10.25 10.25 </region> </pb>
+   <pb name="pb[10][11]" master="clb"> <region> 9.75 10.75 10.25 11.25 </region> </pb>
+   <pb name="pb[10][12]" master="clb"> <region> 9.75 11.75 10.25 12.25 </region> </pb>
+   <pb name="pb[10][13]" master="clb"> <region> 9.75 12.75 10.25 13.25 </region> </pb>
+   <pb name="pb[10][14]" master="clb"> <region> 9.75 13.75 10.25 14.25 </region> </pb>
+   <pb name="pb[10][15]" master="clb"> <region> 9.75 14.75 10.25 15.25 </region> </pb>
+   <pb name="pb[10][16]" master="clb"> <region> 9.75 15.75 10.25 16.25 </region> </pb>
+
+   <pb name="pb[11][1]" master="clb"> <region> 10.75 0.75 11.25 1.25 </region> </pb>
+   <pb name="pb[11][2]" master="clb"> <region> 10.75 1.75 11.25 2.25 </region> </pb>
+   <pb name="pb[11][3]" master="clb"> <region> 10.75 2.75 11.25 3.25 </region> </pb>
+   <pb name="pb[11][4]" master="clb"> <region> 10.75 3.75 11.25 4.25 </region> </pb>
+   <pb name="pb[11][5]" master="clb"> <region> 10.75 4.75 11.25 5.25 </region> </pb>
+   <pb name="pb[11][6]" master="clb"> <region> 10.75 5.75 11.25 6.25 </region> </pb>
+   <pb name="pb[11][7]" master="clb"> <region> 10.75 6.75 11.25 7.25 </region> </pb>
+   <pb name="pb[11][8]" master="clb"> <region> 10.75 7.75 11.25 8.25 </region> </pb>
+   <pb name="pb[11][9]" master="clb"> <region> 10.75 8.75 11.25 9.25 </region> </pb>
+   <pb name="pb[11][10]" master="clb"> <region> 10.75 9.75 11.25 10.25 </region> </pb>
+   <pb name="pb[11][11]" master="clb"> <region> 10.75 10.75 11.25 11.25 </region> </pb>
+   <pb name="pb[11][12]" master="clb"> <region> 10.75 11.75 11.25 12.25 </region> </pb>
+
+   <pb name="pb[11][13]" master="clb_2x2"> <region> 10.75 12.75 11.25 14.25 </region> </pb>
+   <pb name="pb[11][15]" master="clb_2x2"> <region> 10.75 14.75 11.25 16.25 </region> </pb>
+
+   <pb name="pb[12][1]" master="clb"> <region> 11.75 0.75 12.25 1.25 </region> </pb>
+   <pb name="pb[12][2]" master="clb"> <region> 11.75 1.75 12.25 2.25 </region> </pb>
+   <pb name="pb[12][3]" master="clb"> <region> 11.75 2.75 12.25 3.25 </region> </pb>
+   <pb name="pb[12][4]" master="clb"> <region> 11.75 3.75 12.25 4.25 </region> </pb>
+   <pb name="pb[12][5]" master="clb"> <region> 11.75 4.75 12.25 5.25 </region> </pb>
+   <pb name="pb[12][6]" master="clb"> <region> 11.75 5.75 12.25 6.25 </region> </pb>
+   <pb name="pb[12][7]" master="clb"> <region> 11.75 6.75 12.25 7.25 </region> </pb>
+   <pb name="pb[12][8]" master="clb"> <region> 11.75 7.75 12.25 8.25 </region> </pb>
+   <pb name="pb[12][9]" master="clb"> <region> 11.75 8.75 12.25 9.25 </region> </pb>
+   <pb name="pb[12][10]" master="clb"> <region> 11.75 9.75 12.25 10.25 </region> </pb>
+   <pb name="pb[12][11]" master="clb"> <region> 11.75 10.75 12.25 11.25 </region> </pb>
+   <pb name="pb[12][12]" master="clb"> <region> 11.75 11.75 12.25 12.25 </region> </pb>
+
+   <pb name="pb[13][1]" master="clb"> <region> 12.75 0.75 13.25 1.25 </region> </pb>
+   <pb name="pb[13][2]" master="clb"> <region> 12.75 1.75 13.25 2.25 </region> </pb>
+   <pb name="pb[13][3]" master="clb"> <region> 12.75 2.75 13.25 3.25 </region> </pb>
+   <pb name="pb[13][4]" master="clb"> <region> 12.75 3.75 13.25 4.25 </region> </pb>
+   <pb name="pb[13][5]" master="clb"> <region> 12.75 4.75 13.25 5.25 </region> </pb>
+
+   <pb name="pb[13][6]" master="clb_2x2"> <region> 12.75 5.75 14.25 7.25 </region> </pb>
+   <pb name="pb[13][8]" master="clb_2x2"> <region> 12.75 7.75 14.25 9.25 </region> </pb>
+
+   <pb name="pb[13][10]" master="clb"> <region> 12.75 9.75 13.25 10.25 </region> </pb>
+   <pb name="pb[13][11]" master="clb"> <region> 12.75 10.75 13.25 11.25 </region> </pb>
+   <pb name="pb[13][12]" master="clb"> <region> 12.75 11.75 13.25 12.25 </region> </pb>
+   <pb name="pb[13][13]" master="clb"> <region> 12.75 12.75 13.25 13.25 </region> </pb>
+   <pb name="pb[13][14]" master="clb"> <region> 12.75 13.75 13.25 14.25 </region> </pb>
+   <pb name="pb[13][15]" master="clb"> <region> 12.75 14.75 13.25 15.25 </region> </pb>
+   <pb name="pb[13][16]" master="clb"> <region> 12.75 15.75 13.25 16.25 </region> </pb>
+
+   <pb name="pb[14][1]" master="clb"> <region> 13.75 0.75 14.25 1.25 </region> </pb>
+   <pb name="pb[14][2]" master="clb"> <region> 13.75 1.75 14.25 2.25 </region> </pb>
+   <pb name="pb[14][3]" master="clb"> <region> 13.75 2.75 14.25 3.25 </region> </pb>
+   <pb name="pb[14][4]" master="clb"> <region> 13.75 3.75 14.25 4.25 </region> </pb>
+   <pb name="pb[14][5]" master="clb"> <region> 13.75 4.75 14.25 5.25 </region> </pb>
+
+   <pb name="pb[14][10]" master="clb"> <region> 13.75 9.75 14.25 10.25 </region> </pb>
+   <pb name="pb[14][11]" master="clb"> <region> 13.75 10.75 14.25 11.25 </region> </pb>
+   <pb name="pb[14][12]" master="clb"> <region> 13.75 11.75 14.25 12.25 </region> </pb>
+   <pb name="pb[14][13]" master="clb"> <region> 13.75 12.75 14.25 13.25 </region> </pb>
+   <pb name="pb[14][14]" master="clb"> <region> 13.75 13.75 14.25 14.25 </region> </pb>
+   <pb name="pb[14][15]" master="clb"> <region> 13.75 14.75 14.25 15.25 </region> </pb>
+   <pb name="pb[14][16]" master="clb"> <region> 13.75 15.75 14.25 16.25 </region> </pb>
+
+   <pb name="pb[15][1]" master="clb_3x1"> <region> 14.75 0.75 17.25 1.25 </region> </pb>
+   <pb name="pb[15][2]" master="clb_3x1"> <region> 14.75 1.75 17.25 2.25 </region> </pb>
+   <pb name="pb[15][3]" master="clb_3x1"> <region> 14.75 2.75 17.25 3.25 </region> </pb>
+   <pb name="pb[15][4]" master="clb_3x1"> <region> 14.75 3.75 17.25 4.25 </region> </pb>
+   <pb name="pb[15][5]" master="clb_3x1"> <region> 14.75 4.75 17.25 5.25 </region> </pb>
+   <pb name="pb[15][6]" master="clb_3x1"> <region> 14.75 5.75 17.25 6.25 </region> </pb>
+   <pb name="pb[15][7]" master="clb_3x1"> <region> 14.75 6.75 17.25 7.25 </region> </pb>
+   <pb name="pb[15][8]" master="clb_3x1"> <region> 14.75 7.75 17.25 8.25 </region> </pb>
+   <pb name="pb[15][9]" master="clb_3x1"> <region> 14.75 8.75 17.25 9.25 </region> </pb>
+   <pb name="pb[15][10]" master="clb_3x1"> <region> 14.75 9.75 17.25 10.25 </region> </pb>
+   <pb name="pb[15][11]" master="clb_3x1"> <region> 14.75 10.75 17.25 11.25 </region> </pb>
+   <pb name="pb[15][12]" master="clb_3x1"> <region> 14.75 11.75 17.25 12.25 </region> </pb>
+   <pb name="pb[15][13]" master="clb_3x1"> <region> 14.75 12.75 17.25 13.25 </region> </pb>
+   <pb name="pb[15][14]" master="clb_3x1"> <region> 14.75 13.75 17.25 14.25 </region> </pb>
+   <pb name="pb[15][15]" master="clb_3x1"> <region> 14.75 14.75 17.25 15.25 </region> </pb>
+   <pb name="pb[15][16]" master="clb_3x1"> <region> 14.75 15.75 17.25 16.25 </region> </pb>
+
+   <pb name="pb[18][1]" master="clb"> <region> 17.75 0.75 18.25 1.25 </region> </pb>
+   <pb name="pb[18][2]" master="clb"> <region> 17.75 1.75 18.25 2.25 </region> </pb>
+   <pb name="pb[18][3]" master="clb"> <region> 17.75 2.75 18.25 3.25 </region> </pb>
+   <pb name="pb[18][4]" master="clb"> <region> 17.75 3.75 18.25 4.25 </region> </pb>
+   <pb name="pb[18][5]" master="clb"> <region> 17.75 4.75 18.25 5.25 </region> </pb>
+   <pb name="pb[18][6]" master="clb"> <region> 17.75 5.75 18.25 6.25 </region> </pb>
+   <pb name="pb[18][7]" master="clb"> <region> 17.75 6.75 18.25 7.25 </region> </pb>
+   <pb name="pb[18][8]" master="clb"> <region> 17.75 7.75 18.25 8.25 </region> </pb>
+   <pb name="pb[18][9]" master="clb"> <region> 17.75 8.75 18.25 9.25 </region> </pb>
+   <pb name="pb[18][10]" master="clb"> <region> 17.75 9.75 18.25 10.25 </region> </pb>
+   <pb name="pb[18][11]" master="clb"> <region> 17.75 10.75 18.25 11.25 </region> </pb>
+   <pb name="pb[18][12]" master="clb"> <region> 17.75 11.75 18.25 12.25 </region> </pb>
+   <pb name="pb[18][13]" master="clb"> <region> 17.75 12.75 18.25 13.25 </region> </pb>
+   <pb name="pb[18][14]" master="clb"> <region> 17.75 13.75 18.25 14.25 </region> </pb>
+   <pb name="pb[18][15]" master="clb"> <region> 17.75 14.75 18.25 15.25 </region> </pb>
+   <pb name="pb[18][16]" master="clb"> <region> 17.75 15.75 18.25 16.25 </region> </pb>
+   
+   <pb name="pb[1][17]" master="clb_3x1"> <region> 0.75 16.75 3.25 17.25 </region> </pb>
+   <pb name="pb[1][18]" master="clb_3x1"> <region> 0.75 17.75 3.25 18.25 </region> </pb>
+   <pb name="pb[4][17]" master="clb_3x1"> <region> 3.75 16.75 6.25 17.25 </region> </pb>
+   <pb name="pb[4][18]" master="clb_3x1"> <region> 3.75 17.75 6.25 18.25 </region> </pb>
+   <pb name="pb[7][17]" master="clb_3x1"> <region> 6.75 16.75 9.25 17.25 </region> </pb>
+   <pb name="pb[7][18]" master="clb_3x1"> <region> 6.75 17.75 9.25 18.25 </region> </pb>
+   <pb name="pb[10][17]" master="clb_3x1"> <region> 9.75 16.75 12.25 17.25 </region> </pb>
+   <pb name="pb[10][18]" master="clb_3x1"> <region> 9.75 17.75 12.25 18.25 </region> </pb>
+   <pb name="pb[13][17]" master="clb_3x1"> <region> 12.75 16.75 15.25 17.25 </region> </pb>
+   <pb name="pb[13][18]" master="clb_3x1"> <region> 12.75 17.75 15.25 18.25 </region> </pb>
+   <pb name="pb[16][17]" master="clb_3x1"> <region> 15.75 16.75 18.25 17.25 </region> </pb>
+   <pb name="pb[16][18]" master="clb_3x1"> <region> 15.75 17.75 18.25 18.25 </region> </pb>
+
+   <io name="io[0][7]" master="io">
+      <region> -0.25 6.75 0.25 7.25 </region>
+      <pin name="outpad[0]" type="input" side="right" offset="0" delta="0.025" width="0.002" slice="0">
+         <cb> 0 0 0 0 1 1 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="right" offset="1" delta="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 1 0 0 1 0 0 0 0 1 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" type="input" side="right" offset="3" delta="0.087" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="right" offset="4" delta="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 0 0 0 1 0 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" type="input" side="right" offset="6" delta="0.150" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="right" offset="7" delta="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 1 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" type="input" side="right" offset="9" delta="0.212" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="right" offset="10" delta="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 0 0 0 1 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" type="input" side="right" offset="12" delta="0.275" width="0.002" slice="4">
+         <cb> 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="right" offset="13" delta="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 0 0 0 1 0 0 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" type="input" side="right" offset="15" delta="0.337" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="right" offset="16" delta="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 1 0 0 1 0 0 0 0 1 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" type="input" side="right" offset="18" delta="0.400" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 1 1 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="right" offset="19" delta="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 0 0 0 1 0 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" type="input" side="right" offset="21" delta="0.462" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 1 1 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="right" offset="22" delta="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 1 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[0][8]" master="io"> <region> -0.25 7.75 0.25 8.25 </region>
+      <pin name="outpad[0]" side="right" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.087" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.212" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.337" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.462" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[0][9]" master="io"> <region> -0.25 8.75 0.25 9.25 </region>
+      <pin name="outpad[0]" side="right" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.088" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.213" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.338" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.463" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[0][10]" master="io"> <region> -0.25 9.75 0.25 10.25 </region>
+      <pin name="outpad[0]" side="right" offset="0.025" width="0.002" slice="0">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.088" width="0.002" slice="1">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.150" width="0.002" slice="2">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.213" width="0.002" slice="3">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.275" width="0.002" slice="4">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.338" width="0.002" slice="5">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.400" width="0.002" slice="6">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.463" width="0.002" slice="7">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[0][11]" master="io"> <region> -0.25 10.75 0.25 11.25 </region>
+      <pin name="outpad[0]" side="right" offset="0.025" width="0.002" slice="0">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.088" width="0.002" slice="1">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.150" width="0.002" slice="2">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.213" width="0.002" slice="3">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.275" width="0.002" slice="4">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.338" width="0.002" slice="5">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.400" width="0.002" slice="6">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.463" width="0.002" slice="7">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[0][12]" master="io"> <region> -0.25 11.75 0.25 12.25 </region>
+      <pin name="outpad[0]" side="right" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.088" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.213" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.338" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.463" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[0][13]" master="io"> <region> -0.25 12.75 0.25 13.25 </region>
+      <pin name="outpad[0]" side="right" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.088" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.213" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.338" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.463" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[0][14]" master="io"> <region> -0.25 13.75 0.25 14.25 </region>
+      <pin name="outpad[0]" side="right" offset="0.025" width="0.002" slice="0">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.088" width="0.002" slice="1">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.150" width="0.002" slice="2">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.213" width="0.002" slice="3">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.275" width="0.002" slice="4">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.338" width="0.002" slice="5">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.400" width="0.002" slice="6">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.463" width="0.002" slice="7">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[0][15]" master="io"> <region> -0.25 14.75 0.25 15.25 </region>
+      <pin name="outpad[0]" side="right" offset="0.025" width="0.002" slice="0">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.088" width="0.002" slice="1">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.150" width="0.002" slice="2">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.213" width="0.002" slice="3">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.275" width="0.002" slice="4">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.338" width="0.002" slice="5">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.400" width="0.002" slice="6">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.463" width="0.002" slice="7">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[0][16]" master="io"> <region> -0.25 15.75 0.25 16.25 </region>
+      <pin name="outpad[0]" side="right" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.088" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.213" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.338" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.463" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[0][17]" master="io"> <region> -0.25 16.75 0.25 17.25 </region>
+      <pin name="outpad[0]" side="right" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.087" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.212" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.337" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.462" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[0][18]" master="io"> <region> -0.25 17.75 0.25 18.25 </region>
+      <pin name="outpad[0]" side="right" offset="0.025" width="0.002" slice="0">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.031" width="0.002" slice="0">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.087" width="0.002" slice="1">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.093" width="0.002" slice="1">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.150" width="0.002" slice="2">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.156" width="0.002" slice="2">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.212" width="0.002" slice="3">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.218" width="0.002" slice="3">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.275" width="0.002" slice="4">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.281" width="0.002" slice="4">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.337" width="0.002" slice="5">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.343" width="0.002" slice="5">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.400" width="0.002" slice="6">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.406" width="0.002" slice="6">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="right" offset="0.462" width="0.002" slice="7">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="right" offset="0.468" width="0.002" slice="7">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[1][0]" master="io"> <region> 0.75 -0.25 1.25 0.25 </region>
+      <pin name="outpad[0]" side="upper" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.031" width="0.002" slice="0">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.088" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.094" width="0.002" slice="1">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.156" width="0.002" slice="2">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.213" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.219" width="0.002" slice="3">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.281" width="0.002" slice="4">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.338" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.344" width="0.002" slice="5">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.406" width="0.002" slice="6">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.463" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.469" width="0.002" slice="7">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[1][19]" master="io"> <region> 0.75 18.75 1.25 19.25 </region>
+      <pin name="outpad[0]" side="lower" offset="0.025" width="0.002" slice="0">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.031" width="0.002" slice="0">
+         <cb> 1 1 1 1 1 1 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.088" width="0.002" slice="1">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.094" width="0.002" slice="1">
+         <cb> 1 1 1 1 1 1 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.150" width="0.002" slice="2">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.156" width="0.002" slice="2">
+         <cb> 1 1 1 1 1 1 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.213" width="0.002" slice="3">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.219" width="0.002" slice="3">
+         <cb> 1 1 1 1 1 1 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.275" width="0.002" slice="4">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.281" width="0.002" slice="4">
+         <cb> 1 1 1 1 1 1 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.338" width="0.002" slice="5">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.344" width="0.002" slice="5">
+         <cb> 1 1 1 1 1 1 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.400" width="0.002" slice="6">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.406" width="0.002" slice="6">
+         <cb> 1 1 1 1 1 1 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.463" width="0.002" slice="7">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.469" width="0.002" slice="7">
+         <cb> 1 1 1 1 1 1 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[2][0]" master="io"> <region> 1.75 -0.25 2.25 0.25 </region>
+      <pin name="outpad[0]" side="upper" offset="0.025" width="0.002" slice="0">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.087" width="0.002" slice="1">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.150" width="0.002" slice="2">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.212" width="0.002" slice="3">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.275" width="0.002" slice="4">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.337" width="0.002" slice="5">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.400" width="0.002" slice="6">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.462" width="0.002" slice="7">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[2][19]" master="io"> <region> 1.75 18.75 2.25 19.25 </region>
+      <pin name="outpad[0]" side="lower" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.087" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.212" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.337" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.462" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[3][0]" master="io"> <region> 2.75 -0.25 3.25 0.25 </region>
+      <pin name="outpad[0]" side="upper" offset="0.025" width="0.002" slice="0">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.088" width="0.002" slice="1">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.150" width="0.002" slice="2">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.213" width="0.002" slice="3">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.275" width="0.002" slice="4">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.338" width="0.002" slice="5">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.400" width="0.002" slice="6">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.463" width="0.002" slice="7">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[3][19]" master="io"> <region> 2.75 18.75 3.25 19.25 </region>
+      <pin name="outpad[0]" side="lower" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.088" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.213" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.338" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.463" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[4][0]" master="io"> <region> 3.75 -0.25 4.25 0.25 </region>
+      <pin name="outpad[0]" side="upper" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.088" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.213" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.338" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.463" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[4][19]" master="io"> <region> 3.75 18.75 4.25 19.25 </region>
+      <pin name="outpad[0]" side="lower" offset="0.025" width="0.002" slice="0">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.088" width="0.002" slice="1">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.150" width="0.002" slice="2">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.213" width="0.002" slice="3">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.275" width="0.002" slice="4">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.338" width="0.002" slice="5">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.400" width="0.002" slice="6">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.463" width="0.002" slice="7">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[5][0]" master="io"> <region> 4.75 -0.25 5.25 0.25 </region>
+      <pin name="outpad[0]" side="upper" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.087" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.212" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.337" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.462" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[5][19]" master="io"> <region> 4.75 18.75 5.25 19.25 </region>
+      <pin name="outpad[0]" side="lower" offset="0.025" width="0.002" slice="0">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.087" width="0.002" slice="1">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.150" width="0.002" slice="2">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.212" width="0.002" slice="3">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.275" width="0.002" slice="4">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.337" width="0.002" slice="5">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.400" width="0.002" slice="6">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.462" width="0.002" slice="7">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[6][0]" master="io"> <region> 5.75 -0.25 6.25 0.25 </region>
+      <pin name="outpad[0]" side="upper" offset="0.025" width="0.002" slice="0">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.087" width="0.002" slice="1">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.150" width="0.002" slice="2">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.212" width="0.002" slice="3">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.275" width="0.002" slice="4">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.337" width="0.002" slice="5">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.400" width="0.002" slice="6">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.462" width="0.002" slice="7">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[6][19]" master="io"> <region> 5.75 18.75 6.25 19.25 </region>
+      <pin name="outpad[0]" side="lower" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.087" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.212" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.337" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.462" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[7][0]" master="io"> <region> 6.75 -0.25 7.25 0.25 </region>
+      <pin name="outpad[0]" side="upper" offset="0.025" width="0.002" slice="0">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.087" width="0.002" slice="1">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.150" width="0.002" slice="2">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.212" width="0.002" slice="3">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.275" width="0.002" slice="4">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.337" width="0.002" slice="5">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.400" width="0.002" slice="6">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.462" width="0.002" slice="7">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[7][19]" master="io"> <region> 6.75 18.75 7.25 19.25 </region>
+      <pin name="outpad[0]" side="lower" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.087" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.212" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.337" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.462" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[8][0]" master="io"> <region> 7.75 -0.25 8.25 0.25 </region>
+      <pin name="outpad[0]" side="upper" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.087" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.212" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.337" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.462" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[8][19]" master="io"> <region> 7.75 18.75 8.25 19.25 </region>
+      <pin name="outpad[0]" side="lower" offset="0.025" width="0.002" slice="0">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.087" width="0.002" slice="1">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.150" width="0.002" slice="2">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.212" width="0.002" slice="3">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.275" width="0.002" slice="4">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.337" width="0.002" slice="5">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.400" width="0.002" slice="6">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.462" width="0.002" slice="7">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[13][0]" master="io"> <region> 12.75 -0.25 13.25 0.25 </region>
+      <pin name="outpad[0]" side="upper" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.088" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.213" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.338" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.463" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[13][19]" master="io"> <region> 12.75 18.75 13.25 19.25 </region>
+      <pin name="outpad[0]" side="lower" offset="0.025" width="0.002" slice="0">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.088" width="0.002" slice="1">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.150" width="0.002" slice="2">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.213" width="0.002" slice="3">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.275" width="0.002" slice="4">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.338" width="0.002" slice="5">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.400" width="0.002" slice="6">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.463" width="0.002" slice="7">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[14][0]" master="io"> <region> 13.75 -0.25 14.25 0.25 </region>
+      <pin name="outpad[0]" side="upper" offset="0.025" width="0.002" slice="0">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.088" width="0.002" slice="1">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.150" width="0.002" slice="2">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.213" width="0.002" slice="3">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.275" width="0.002" slice="4">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.338" width="0.002" slice="5">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.400" width="0.002" slice="6">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.463" width="0.002" slice="7">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[14][19]" master="io"> <region> 13.75 18.75 14.25 19.25 </region>
+      <pin name="outpad[0]" side="lower" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.088" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.213" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.338" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.463" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[15][0]" master="io"> <region> 14.75 -0.25 15.25 0.25 </region>
+      <pin name="outpad[0]" side="upper" offset="0.025" width="0.002" slice="0">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.088" width="0.002" slice="1">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.150" width="0.002" slice="2">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.213" width="0.002" slice="3">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.275" width="0.002" slice="4">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.338" width="0.002" slice="5">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.400" width="0.002" slice="6">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.463" width="0.002" slice="7">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[15][19]" master="io"> <region> 14.75 18.75 15.25 19.25 </region>
+      <pin name="outpad[0]" side="lower" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.088" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.213" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.338" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.463" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[16][0]" master="io"> <region> 15.75 -0.25 16.25 0.25 </region>
+      <pin name="outpad[0]" side="upper" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.088" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.213" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.338" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.463" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[16][19]" master="io"> <region> 15.75 18.75 16.25 19.25 </region>
+      <pin name="outpad[0]" side="lower" offset="0.025" width="0.002" slice="0">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.088" width="0.002" slice="1">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.150" width="0.002" slice="2">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.213" width="0.002" slice="3">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.275" width="0.002" slice="4">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.338" width="0.002" slice="5">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.400" width="0.002" slice="6">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.463" width="0.002" slice="7">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[17][0]" master="io"> <region> 16.75 -0.25 17.25 0.25 </region>
+      <pin name="outpad[0]" side="upper" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.087" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.212" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.337" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.462" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[17][19]" master="io"> <region> 16.75 18.75 17.25 19.25 </region>
+      <pin name="outpad[0]" side="lower" offset="0.025" width="0.002" slice="0">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.087" width="0.002" slice="1">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.150" width="0.002" slice="2">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.212" width="0.002" slice="3">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.275" width="0.002" slice="4">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.337" width="0.002" slice="5">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.400" width="0.002" slice="6">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.462" width="0.002" slice="7">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[18][0]" master="io"> <region> 17.75 -0.25 18.25 0.25 </region>
+      <pin name="outpad[0]" side="upper" offset="0.025" width="0.002" slice="0">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.031" width="0.002" slice="0">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.087" width="0.002" slice="1">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.093" width="0.002" slice="1">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.150" width="0.002" slice="2">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.156" width="0.002" slice="2">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.212" width="0.002" slice="3">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.218" width="0.002" slice="3">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.275" width="0.002" slice="4">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.281" width="0.002" slice="4">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.337" width="0.002" slice="5">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.343" width="0.002" slice="5">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.400" width="0.002" slice="6">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.406" width="0.002" slice="6">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="upper" offset="0.462" width="0.002" slice="7">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="upper" offset="0.468" width="0.002" slice="7">
+         <cb> 1 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[18][19]" master="io"> <region> 17.75 18.75 18.25 19.25 </region>
+      <pin name="outpad[0]" side="lower" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.031" width="0.002" slice="0">
+         <cb> 1 1 1 1 1 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.087" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.093" width="0.002" slice="1">
+         <cb> 1 1 1 1 1 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.156" width="0.002" slice="2">
+         <cb> 1 1 1 1 1 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.212" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.218" width="0.002" slice="3">
+         <cb> 1 1 1 1 1 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.281" width="0.002" slice="4">
+         <cb> 1 1 1 1 1 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.337" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.343" width="0.002" slice="5">
+         <cb> 1 1 1 1 1 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.406" width="0.002" slice="6">
+         <cb> 1 1 1 1 1 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="lower" offset="0.462" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="lower" offset="0.468" width="0.002" slice="7">
+         <cb> 1 1 1 1 1 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[19][7]" master="io"> <region> 18.75 6.75 19.25 7.25 </region>
+      <pin name="outpad[0]" side="left" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.087" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.212" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.337" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.462" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[19][8]" master="io"> <region> 18.75 7.75 19.25 8.25 </region>
+      <pin name="outpad[0]" side="left" offset="0.025" width="0.002" slice="0">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.087" width="0.002" slice="1">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.150" width="0.002" slice="2">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.212" width="0.002" slice="3">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.275" width="0.002" slice="4">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.337" width="0.002" slice="5">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.400" width="0.002" slice="6">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.462" width="0.002" slice="7">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[19][9]" master="io"> <region> 18.75 8.75 19.25 9.25 </region>
+      <pin name="outpad[0]" side="left" offset="0.025" width="0.002" slice="0">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.088" width="0.002" slice="1">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.150" width="0.002" slice="2">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.213" width="0.002" slice="3">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.275" width="0.002" slice="4">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.338" width="0.002" slice="5">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.400" width="0.002" slice="6">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.463" width="0.002" slice="7">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[19][10]" master="io"> <region> 18.75 9.75 19.25 10.25 </region>
+      <pin name="outpad[0]" side="left" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.088" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.213" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.338" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.463" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[19][11]" master="io"> <region> 18.75 10.75 19.25 11.25 </region>
+      <pin name="outpad[0]" side="left" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.088" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.213" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.338" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.463" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[19][12]" master="io"> <region> 18.75 11.75 19.25 12.25 </region>
+      <pin name="outpad[0]" side="left" offset="0.025" width="0.002" slice="0">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.088" width="0.002" slice="1">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.150" width="0.002" slice="2">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.213" width="0.002" slice="3">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.275" width="0.002" slice="4">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.338" width="0.002" slice="5">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.400" width="0.002" slice="6">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.463" width="0.002" slice="7">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[19][13]" master="io"> <region> 18.75 12.75 19.25 13.25 </region>
+      <pin name="outpad[0]" side="left" offset="0.025" width="0.002" slice="0">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.088" width="0.002" slice="1">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.150" width="0.002" slice="2">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.213" width="0.002" slice="3">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.275" width="0.002" slice="4">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.338" width="0.002" slice="5">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.400" width="0.002" slice="6">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.463" width="0.002" slice="7">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[19][14]" master="io"> <region> 18.75 13.75 19.25 14.25 </region>
+      <pin name="outpad[0]" side="left" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.088" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.213" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.338" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.463" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 1 1 1 1 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[19][15]" master="io"> <region> 18.75 14.75 19.25 15.25 </region>
+      <pin name="outpad[0]" side="left" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.088" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.213" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.338" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.463" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[19][16]" master="io"> <region> 18.75 15.75 19.25 16.25 </region>
+      <pin name="outpad[0]" side="left" offset="0.025" width="0.002" slice="0">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.088" width="0.002" slice="1">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.094" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.150" width="0.002" slice="2">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.213" width="0.002" slice="3">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.219" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.275" width="0.002" slice="4">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.338" width="0.002" slice="5">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.344" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.400" width="0.002" slice="6">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.463" width="0.002" slice="7">
+         <cb> 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.469" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 0 0 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[19][17]" master="io"> <region> 18.75 16.75 19.25 17.25 </region>
+      <pin name="outpad[0]" side="left" offset="0.025" width="0.002" slice="0">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.031" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.087" width="0.002" slice="1">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.093" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.150" width="0.002" slice="2">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.156" width="0.002" slice="2">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.212" width="0.002" slice="3">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.218" width="0.002" slice="3">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.275" width="0.002" slice="4">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.281" width="0.002" slice="4">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.337" width="0.002" slice="5">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.343" width="0.002" slice="5">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.400" width="0.002" slice="6">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.406" width="0.002" slice="6">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.462" width="0.002" slice="7">
+         <cb> 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.468" width="0.002" slice="7">
+         <cb> 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+   <io name="io[19][18]" master="io"> <region> 18.75 17.75 19.25 18.25 </region>
+      <pin name="outpad[0]" side="left" offset="0.025" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.031" width="0.002" slice="0">
+         <cb> 1 1 1 1 1 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.087" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.093" width="0.002" slice="1">
+         <cb> 1 1 1 1 1 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.150" width="0.002" slice="2">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.156" width="0.002" slice="2">
+         <cb> 1 1 1 1 1 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.212" width="0.002" slice="3">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.218" width="0.002" slice="3">
+         <cb> 1 1 1 1 1 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.275" width="0.002" slice="4">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.281" width="0.002" slice="4">
+         <cb> 1 1 1 1 1 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.337" width="0.002" slice="5">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.343" width="0.002" slice="5">
+         <cb> 1 1 1 1 1 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.400" width="0.002" slice="6">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.406" width="0.002" slice="6">
+         <cb> 1 1 1 1 1 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" side="left" offset="0.462" width="0.002" slice="7">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" side="left" offset="0.468" width="0.002" slice="7">
+         <cb> 1 1 1 1 1 1 0 0 1 0 1 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 1 </cb>
+      </pin>
+      <slice count="8" capacity="3"/>
+   </io>
+
+</fabric>
+<!-- _______________________________________________________________ -->
