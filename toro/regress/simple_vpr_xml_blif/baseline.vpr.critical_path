@@ -1,0 +1,58 @@
+Node: 32  TN_INPAD_SOURCE Block #2 (top.in_data_1)
+Pin: inpad.inpad[0] pb (top.in_data_1)T_arr: 0  T_req: -2.32243e-09  Tdel: 0
+Internal Net: #2 (top.in_data_1).  Pins on net: 2.
+
+Node: 31  TN_INPAD_OPIN Block #2 (top.in_data_1)
+Pin: inpad.inpad[0] pb (top.in_data_1)
+T_arr: 0  T_req: -2.32243e-09  Tdel: 4.243e-11
+Internal Net: #2 (top.in_data_1).  Pins on net: 2.
+
+Node: 30  TN_CB_OPIN Block #2 (top.in_data_1)
+Pin: io.inpad[0] pb (top.in_data_1)
+T_arr: 4.243e-11  T_req: -2.28e-09  Tdel: 6.1943e-10
+External-to-Block Net: #3 (top.in_data_1).  Pins on net: 2.
+
+Node: 15  TN_CB_IPIN Block #1 (top.out_addr_1)
+Pin: clb.I[0] pb (top.out_addr_1)
+T_arr: 6.6186e-10  T_req: -1.66057e-09  Tdel: 1.04e-09
+Internal Net: #2 (top.in_data_1).  Pins on net: 2.
+
+Node: 18  TN_INTERMEDIATE_NODE Block #1 (top.out_addr_1)
+Pin: ble.in[0] pb (top.out_addr_1)
+T_arr: 1.70186e-09  T_req: -6.2057e-10  Tdel: 0
+Internal Net: #2 (top.in_data_1).  Pins on net: 2.
+
+Node: 21  TN_INTERMEDIATE_NODE Block #1 (top.out_addr_1)
+Pin: lut0.in[0] pb (n1)
+T_arr: 1.70186e-09  T_req: -6.2057e-10  Tdel: 0
+Internal Net: #2 (top.in_data_1).  Pins on net: 2.
+
+Node: 23  TN_PRIMITIVE_IPIN Block #1 (top.out_addr_1)
+Pin: lut.in[0] pb (n1)
+T_arr: 1.70186e-09  T_req: -6.2057e-10  Tdel: 6.63e-10
+Internal Net: #2 (top.in_data_1).  Pins on net: 2.
+
+Node: 24  TN_PRIMITIVE_OPIN Block #1 (top.out_addr_1)
+Pin: lut.out[0] pb (n1)
+T_arr: 2.36486e-09  T_req: 4.243e-11  Tdel: 0
+Internal Net: #6 (n1).  Pins on net: 2.
+
+Node: 22  TN_INTERMEDIATE_NODE Block #1 (top.out_addr_1)
+Pin: lut0.out[0] pb (n1)
+T_arr: 2.36486e-09  T_req: 4.243e-11  Tdel: 0
+Internal Net: #6 (n1).  Pins on net: 2.
+
+Node: 25  TN_FF_IPIN Block #1 (top.out_addr_1)
+Pin: ff0.D[0] pb (top.out_addr_1)
+T_arr: 2.36486e-09  T_req: 4.243e-11  Tdel: 0
+Internal Net: #6 (n1).  Pins on net: 2.
+
+Node: 26  TN_FF_SINK Block #1 (top.out_addr_1)
+Pin: ff0.D[0] pb (top.out_addr_1)
+T_arr: 2.36486e-09  T_req: 4.243e-11  
+Internal Net: #6 (n1).  Pins on net: 2.
+
+
+Tnodes on critical path: 11  Non-global nets on critical path: 1.
+Global nets on critical path: 0.
+Total logic delay: 1.74543e-09 (s)  Total net delay: 6.1943e-10 (s)

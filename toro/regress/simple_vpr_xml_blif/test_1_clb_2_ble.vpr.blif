@@ -1,0 +1,14 @@
+.model or1200_flat
+
+.inputs top.clk top.clk_2 top.in_data_0 top.in_data_1
+
+.outputs top.out_addr_0 top.out_addr_1
+
+.latch      n0 top.out_addr_0  re top.clk 0
+.latch      n1 top.out_addr_1  re top.clk 0
+
+.names top.in_data_0 n0
+.names top.in_data_1 n1
+
+.end
+

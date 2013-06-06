@@ -1,0 +1,3 @@
+#!/bin/csh -f
+
+../clean_this simple_vpr_xml_blif

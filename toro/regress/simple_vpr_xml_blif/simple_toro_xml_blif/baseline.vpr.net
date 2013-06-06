@@ -1,0 +1,221 @@
+<block name="simple_toro_xml_blif.vpr.net" instance="FPGA_packed_netlist[0]">
+	<inputs>
+		top.clk top.in_data_0 top.in_data_1 
+	</inputs>
+
+	<outputs>
+		out:top.out_addr_0 out:top.out_addr_1 
+	</outputs>
+
+	<clocks>
+		top.clk 
+	</clocks>
+
+	<block name="top.out_addr_0" instance="clb[0]" mode="clb">
+		<inputs>
+			<port name="I">top.in_data_0 </port>
+		</inputs>
+		<outputs>
+			<port name="O">ble[0].out[0]->clbouts  </port>
+		</outputs>
+		<clocks>
+			<port name="clk">top.clk </port>
+		</clocks>
+		<block name="top.out_addr_0" instance="ble[0]" mode="ble">
+			<inputs>
+				<port name="in">clb.I[0]->crossbar  </port>
+			</inputs>
+			<outputs>
+				<port name="out">ff0[0].Q[0]->ble_out_mux  </port>
+			</outputs>
+			<clocks>
+				<port name="clk">clb.clk[0]->clks  </port>
+			</clocks>
+			<block name="n0" instance="lut0[0]" mode="lut0">
+				<inputs>
+					<port name="in">ble.in[0]->ble_lut0  </port>
+				</inputs>
+				<outputs>
+					<port name="out">lut[0].out[0]->direct:lut0  </port>
+				</outputs>
+				<clocks>
+				</clocks>
+				<block name="n0" instance="lut[0]">
+					<inputs>
+						<port name="in">lut0.in[0]->complete:lut0  </port>
+					</inputs>
+					<outputs>
+						<port name="out">n0 </port>
+					</outputs>
+					<clocks>
+					</clocks>
+				</block>
+			</block>
+			<block name="top.out_addr_0" instance="ff0[0]">
+				<inputs>
+					<port name="D">lut0[0].out[0]->lut0_ff0  </port>
+				</inputs>
+				<outputs>
+					<port name="Q">top.out_addr_0 </port>
+				</outputs>
+				<clocks>
+					<port name="clk">ble.clk[0]->ble_clk  </port>
+				</clocks>
+			</block>
+		</block>
+	</block>
+	<block name="top.out_addr_1" instance="clb[1]" mode="clb">
+		<inputs>
+			<port name="I">top.in_data_1 </port>
+		</inputs>
+		<outputs>
+			<port name="O">ble[0].out[0]->clbouts  </port>
+		</outputs>
+		<clocks>
+			<port name="clk">top.clk </port>
+		</clocks>
+		<block name="top.out_addr_1" instance="ble[0]" mode="ble">
+			<inputs>
+				<port name="in">clb.I[0]->crossbar  </port>
+			</inputs>
+			<outputs>
+				<port name="out">ff0[0].Q[0]->ble_out_mux  </port>
+			</outputs>
+			<clocks>
+				<port name="clk">clb.clk[0]->clks  </port>
+			</clocks>
+			<block name="n1" instance="lut0[0]" mode="lut0">
+				<inputs>
+					<port name="in">ble.in[0]->ble_lut0  </port>
+				</inputs>
+				<outputs>
+					<port name="out">lut[0].out[0]->direct:lut0  </port>
+				</outputs>
+				<clocks>
+				</clocks>
+				<block name="n1" instance="lut[0]">
+					<inputs>
+						<port name="in">lut0.in[0]->complete:lut0  </port>
+					</inputs>
+					<outputs>
+						<port name="out">n1 </port>
+					</outputs>
+					<clocks>
+					</clocks>
+				</block>
+			</block>
+			<block name="top.out_addr_1" instance="ff0[0]">
+				<inputs>
+					<port name="D">lut0[0].out[0]->lut0_ff0  </port>
+				</inputs>
+				<outputs>
+					<port name="Q">top.out_addr_1 </port>
+				</outputs>
+				<clocks>
+					<port name="clk">ble.clk[0]->ble_clk  </port>
+				</clocks>
+			</block>
+		</block>
+	</block>
+	<block name="top.in_data_1" instance="io[2]" mode="inpad">
+		<inputs>
+			<port name="outpad">open </port>
+		</inputs>
+		<outputs>
+			<port name="inpad">inpad[0].inpad[0]->inpad  </port>
+		</outputs>
+		<clocks>
+			<port name="clock">open </port>
+		</clocks>
+		<block name="top.in_data_1" instance="inpad[0]">
+			<inputs>
+			</inputs>
+			<outputs>
+				<port name="inpad">top.in_data_1 </port>
+			</outputs>
+			<clocks>
+			</clocks>
+		</block>
+	</block>
+	<block name="top.in_data_0" instance="io[3]" mode="inpad">
+		<inputs>
+			<port name="outpad">open </port>
+		</inputs>
+		<outputs>
+			<port name="inpad">inpad[0].inpad[0]->inpad  </port>
+		</outputs>
+		<clocks>
+			<port name="clock">open </port>
+		</clocks>
+		<block name="top.in_data_0" instance="inpad[0]">
+			<inputs>
+			</inputs>
+			<outputs>
+				<port name="inpad">top.in_data_0 </port>
+			</outputs>
+			<clocks>
+			</clocks>
+		</block>
+	</block>
+	<block name="out:top.out_addr_1" instance="io[4]" mode="outpad">
+		<inputs>
+			<port name="outpad">top.out_addr_1 </port>
+		</inputs>
+		<outputs>
+			<port name="inpad">open </port>
+		</outputs>
+		<clocks>
+			<port name="clock">open </port>
+		</clocks>
+		<block name="out:top.out_addr_1" instance="outpad[0]">
+			<inputs>
+				<port name="outpad">io.outpad[0]->outpad  </port>
+			</inputs>
+			<outputs>
+			</outputs>
+			<clocks>
+			</clocks>
+		</block>
+	</block>
+	<block name="out:top.out_addr_0" instance="io[5]" mode="outpad">
+		<inputs>
+			<port name="outpad">top.out_addr_0 </port>
+		</inputs>
+		<outputs>
+			<port name="inpad">open </port>
+		</outputs>
+		<clocks>
+			<port name="clock">open </port>
+		</clocks>
+		<block name="out:top.out_addr_0" instance="outpad[0]">
+			<inputs>
+				<port name="outpad">io.outpad[0]->outpad  </port>
+			</inputs>
+			<outputs>
+			</outputs>
+			<clocks>
+			</clocks>
+		</block>
+	</block>
+	<block name="top.clk" instance="io[6]" mode="inpad">
+		<inputs>
+			<port name="outpad">open </port>
+		</inputs>
+		<outputs>
+			<port name="inpad">inpad[0].inpad[0]->inpad  </port>
+		</outputs>
+		<clocks>
+			<port name="clock">open </port>
+		</clocks>
+		<block name="top.clk" instance="inpad[0]">
+			<inputs>
+			</inputs>
+			<outputs>
+				<port name="inpad">top.clk </port>
+			</outputs>
+			<clocks>
+			</clocks>
+		</block>
+	</block>
+</block>
+

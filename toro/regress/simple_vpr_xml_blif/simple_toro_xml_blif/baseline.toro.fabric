@@ -1,0 +1,411 @@
+<!-- _______________________________________________________________ -->
+<!--                     Toro - A VPR Front-End                      -->
+<!--   (c) Copyright 2012-2013 Texas Instruments (under GNU GPL)     -->
+<!-- _______________________________________________________________ -->
+<!--                          Fabric Model                           -->
+<!-- _______________________________________________________________ -->
+<fabric name="">
+
+   <config>
+      <region> -1.000 -1.000 4.000 4.000 </region>
+   </config>
+   
+   <io name="io[0][1]" master="io">
+      <origin> 0 1 </origin>
+      <region> -0.250 0.750 0.250 1.250 </region>
+      <pin name="outpad[0]" type="input" side="right" offset="0" delta="0.119" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="right" offset="1" delta="0.125" width="0.002" slice="0">
+         <cb> 1 0 0 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" type="input" side="right" offset="3" delta="0.369" width="0.002" slice="1">
+         <cb> 0 0 0 0 1 1 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="right" offset="4" delta="0.375" width="0.002" slice="1">
+         <cb> 0 0 1 1 0 0 0 0 </cb>
+      </pin>
+      <slice count="2" capacity="3"/>
+   </io>
+   <io name="io[0][2]" master="io">
+      <origin> 0 2 </origin>
+      <region> -0.250 1.750 0.250 2.250 </region>
+      <pin name="outpad[0]" type="input" side="right" offset="0" delta="0.119" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 1 1 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="right" offset="1" delta="0.125" width="0.002" slice="0">
+         <cb> 0 1 1 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" type="input" side="right" offset="3" delta="0.369" width="0.002" slice="1">
+         <cb> 0 0 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="right" offset="4" delta="0.375" width="0.002" slice="1">
+         <cb> 0 0 1 1 0 0 0 0 </cb>
+      </pin>
+      <slice count="2" capacity="3"/>
+   </io>
+   <io name="io[1][0]" master="io">
+      <origin> 1 0 </origin>
+      <region> 0.750 -0.250 1.250 0.250 </region>
+      <pin name="outpad[0]" type="input" side="upper" offset="0" delta="0.119" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="upper" offset="1" delta="0.125" width="0.002" slice="0">
+         <cb> 1 0 0 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" type="input" side="upper" offset="3" delta="0.369" width="0.002" slice="1">
+         <cb> 0 0 0 0 1 1 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="upper" offset="4" delta="0.375" width="0.002" slice="1">
+         <cb> 0 0 1 1 0 0 0 0 </cb>
+      </pin>
+      <slice count="2" capacity="3"/>
+   </io>
+   <io name="io[1][3]" master="io">
+      <origin> 1 3 </origin>
+      <region> 0.750 2.750 1.250 3.250 </region>
+      <pin name="outpad[0]" type="input" side="lower" offset="0" delta="0.119" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 1 1 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="lower" offset="1" delta="0.125" width="0.002" slice="0">
+         <cb> 1 0 0 0 0 0 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" type="input" side="lower" offset="3" delta="0.369" width="0.002" slice="1">
+         <cb> 0 0 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="lower" offset="4" delta="0.375" width="0.002" slice="1">
+         <cb> 0 0 1 0 0 0 0 1 </cb>
+      </pin>
+      <slice count="2" capacity="3"/>
+   </io>
+   <io name="io[2][0]" master="io">
+      <origin> 2 0 </origin>
+      <region> 1.750 -0.250 2.250 0.250 </region>
+      <pin name="outpad[0]" type="input" side="upper" offset="0" delta="0.119" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 1 1 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="upper" offset="1" delta="0.125" width="0.002" slice="0">
+         <cb> 0 1 1 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="outpad[0]" type="input" side="upper" offset="3" delta="0.369" width="0.002" slice="1">
+         <cb> 0 0 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="upper" offset="4" delta="0.375" width="0.002" slice="1">
+         <cb> 0 0 1 1 0 0 0 0 </cb>
+      </pin>
+      <slice count="2" capacity="3"/>
+   </io>
+   <io name="io[2][3]" master="io">
+      <origin> 2 3 </origin>
+      <region> 1.750 2.750 2.250 3.250 </region>
+      <pin name="outpad[0]" type="input" side="lower" offset="0" delta="0.119" width="0.002" slice="0">
+         <cb> 0 0 0 0 1 1 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="lower" offset="1" delta="0.125" width="0.002" slice="0">
+         <cb> 0 1 0 0 0 0 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" type="input" side="lower" offset="3" delta="0.369" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="lower" offset="4" delta="0.375" width="0.002" slice="1">
+         <cb> 0 0 0 1 0 0 1 0 </cb>
+      </pin>
+      <slice count="2" capacity="3"/>
+   </io>
+   <io name="io[3][1]" master="io">
+      <origin> 3 1 </origin>
+      <region> 2.750 0.750 3.250 1.250 </region>
+      <pin name="outpad[0]" type="input" side="left" offset="0" delta="0.119" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 1 1 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="left" offset="1" delta="0.125" width="0.002" slice="0">
+         <cb> 0 0 1 0 0 0 0 1 </cb>
+      </pin>
+      <pin name="outpad[0]" type="input" side="left" offset="3" delta="0.369" width="0.002" slice="1">
+         <cb> 0 0 1 1 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="left" offset="4" delta="0.375" width="0.002" slice="1">
+         <cb> 0 0 0 0 1 0 0 1 </cb>
+      </pin>
+      <slice count="2" capacity="3"/>
+   </io>
+   <io name="io[3][2]" master="io">
+      <origin> 3 2 </origin>
+      <region> 2.750 1.750 3.250 2.250 </region>
+      <pin name="outpad[0]" type="input" side="left" offset="0" delta="0.119" width="0.002" slice="0">
+         <cb> 0 0 0 0 1 1 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="left" offset="1" delta="0.125" width="0.002" slice="0">
+         <cb> 0 0 0 1 0 0 1 0 </cb>
+      </pin>
+      <pin name="outpad[0]" type="input" side="left" offset="3" delta="0.369" width="0.002" slice="1">
+         <cb> 1 1 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="inpad[0]" type="output" side="left" offset="4" delta="0.375" width="0.002" slice="1">
+         <cb> 0 0 0 0 0 1 1 0 </cb>
+      </pin>
+      <slice count="2" capacity="3"/>
+   </io>
+   
+   <pb name="pb[1][1]" master="clb">
+      <origin> 1 1 </origin>
+      <region> 0.750 0.750 1.250 1.250 </region>
+      <pin name="O[0]" type="output" side="right" offset="1" delta="0.250" width="0.002" slice="0">
+         <cb> 1 0 0 0 0 1 0 0 </cb>
+      </pin>
+      <pin name="I[0]" type="input" side="upper" offset="0" delta="0.250" width="0.002" slice="0">
+         <cb> 0 0 0 0 0 0 1 1 </cb>
+      </pin>
+   </pb>
+   <pb name="pb[1][2]" master="clb">
+      <origin> 1 2 </origin>
+      <region> 0.750 1.750 1.250 2.250 </region>
+      <pin name="O[0]" type="output" side="right" offset="1" delta="0.250" width="0.002" slice="0">
+         <cb> 0 1 0 0 1 0 0 0 </cb>
+      </pin>
+      <pin name="I[0]" type="input" side="upper" offset="0" delta="0.250" width="0.002" slice="0">
+         <cb> 0 0 0 0 1 1 0 0 </cb>
+      </pin>
+   </pb>
+   <pb name="pb[2][1]" master="clb">
+      <origin> 2 1 </origin>
+      <region> 1.750 0.750 2.250 1.250 </region>
+      <pin name="O[0]" type="output" side="right" offset="1" delta="0.250" width="0.002" slice="0">
+         <cb> 1 0 0 0 0 0 0 1 </cb>
+      </pin>
+      <pin name="I[0]" type="input" side="upper" offset="0" delta="0.250" width="0.002" slice="0">
+         <cb> 0 0 0 0 1 1 0 0 </cb>
+      </pin>
+   </pb>
+   <pb name="pb[2][2]" master="clb">
+      <origin> 2 2 </origin>
+      <region> 1.750 1.750 2.250 2.250 </region>
+      <pin name="O[0]" type="output" side="right" offset="1" delta="0.250" width="0.002" slice="0">
+         <cb> 0 1 0 0 0 0 1 0 </cb>
+      </pin>
+      <pin name="I[0]" type="input" side="upper" offset="0" delta="0.250" width="0.002" slice="0">
+         <cb> 0 0 1 1 0 0 0 0 </cb>
+      </pin>
+   </pb>
+   
+   <sb name="sb[0][0]">
+      <origin> 0 0 </origin>
+      <region> 0.492 0.492 0.508 0.508 </region>
+      <mapping>
+         right 1 upper 6
+         right 3 upper 0
+         right 5 upper 2
+         right 7 upper 4
+         upper 1 right 2
+         upper 3 right 4
+         upper 5 right 6
+         upper 7 right 0
+      </mapping>
+   </sb>
+   <sb name="sb[0][1]">
+      <origin> 0 1 </origin>
+      <region> 0.492 1.492 0.508 1.508 </region>
+      <mapping>
+         right 1 lower 3 upper 2
+         right 3 lower 3 upper 2
+         right 5 lower 3 upper 2
+         right 7 lower 3 upper 2
+         lower 0 right 0
+         lower 2 right 2 upper 2
+         lower 4 right 4
+         lower 6 right 6
+         upper 1 right 0
+         upper 3 right 2 lower 3
+         upper 5 right 4
+         upper 7 right 6
+      </mapping>
+   </sb>
+   <sb name="sb[0][2]">
+      <origin> 0 2 </origin>
+      <region> 0.492 2.492 0.508 2.508 </region>
+      <mapping>
+         right 1 lower 5
+         right 3 lower 3
+         right 5 lower 1
+         right 7 lower 7
+         lower 0 right 4
+         lower 2 right 2
+         lower 4 right 0
+         lower 6 right 6
+      </mapping>
+   </sb>
+   <sb name="sb[1][0]">
+      <origin> 1 0 </origin>
+      <region> 1.492 0.492 1.508 0.508 </region>
+      <mapping>
+         left 0 upper 4
+         left 2 right 2 upper 6
+         left 4 upper 0
+         left 6 upper 2
+         right 1 upper 4
+         right 3 left 3 upper 6
+         right 5 upper 0
+         right 7 upper 2
+         upper 1 left 3 right 2
+         upper 3 left 3 right 2
+         upper 5 left 3 right 2
+         upper 7 left 3 right 2
+      </mapping>
+   </sb>
+   <sb name="sb[1][1]">
+      <origin> 1 1 </origin>
+      <region> 1.492 1.492 1.508 1.508 </region>
+      <mapping>
+         left 0 lower 5 upper 4
+         left 2 lower 5 upper 4
+         left 4 right 4 lower 5 upper 4
+         left 6 lower 5 upper 4
+         right 1 lower 5 upper 4
+         right 3 lower 5 upper 4
+         right 5 left 5 lower 5 upper 4
+         right 7 lower 5 upper 4
+         lower 0 left 5 right 4
+         lower 2 left 5 right 4
+         lower 4 left 5 right 4 upper 4
+         lower 6 left 5 right 4
+         upper 1 left 5 right 4
+         upper 3 left 5 right 4
+         upper 5 left 5 right 4 lower 5
+         upper 7 left 5 right 4
+      </mapping>
+   </sb>
+   <sb name="sb[1][2]">
+      <origin> 1 2 </origin>
+      <region> 1.492 2.492 1.508 2.508 </region>
+      <mapping>
+         left 0 lower 1
+         left 2 lower 3
+         left 4 lower 5
+         left 6 right 6 lower 7
+         right 1 lower 1
+         right 3 lower 3
+         right 5 lower 5
+         right 7 left 7 lower 7
+         lower 0 left 7 right 6
+         lower 2 left 7 right 6
+         lower 4 left 7 right 6
+         lower 6 left 7 right 6
+      </mapping>
+   </sb>
+   <sb name="sb[2][0]">
+      <origin> 2 0 </origin>
+      <region> 2.492 0.492 2.508 0.508 </region>
+      <mapping>
+         left 0 upper 0
+         left 2 upper 6
+         left 4 upper 4
+         left 6 upper 2
+         upper 1 left 1
+         upper 3 left 7
+         upper 5 left 5
+         upper 7 left 3
+      </mapping>
+   </sb>
+   <sb name="sb[2][1]">
+      <origin> 2 1 </origin>
+      <region> 2.492 1.492 2.508 1.508 </region>
+      <mapping>
+         left 0 lower 7 upper 6
+         left 2 lower 7 upper 6
+         left 4 lower 7 upper 6
+         left 6 lower 7 upper 6
+         lower 0 left 1
+         lower 2 left 3
+         lower 4 left 5
+         lower 6 left 7 upper 6
+         upper 1 left 1
+         upper 3 left 3
+         upper 5 left 5
+         upper 7 left 7 lower 7
+      </mapping>
+   </sb>
+   <sb name="sb[2][2]">
+      <origin> 2 2 </origin>
+      <region> 2.492 2.492 2.508 2.508 </region>
+      <mapping>
+         left 0 lower 7
+         left 2 lower 1
+         left 4 lower 3
+         left 6 lower 5
+         lower 0 left 3
+         lower 2 left 5
+         lower 4 left 7
+         lower 6 left 1
+      </mapping>
+   </sb>
+   
+   <channel name="ch[0]" orient="horz" index="0" count="8"> <region> 0.508 0.492 2.492 0.508 </region> </channel>
+   <channel name="ch[1]" orient="horz" index="1" count="8"> <region> 0.508 1.492 2.492 1.508 </region> </channel>
+   <channel name="ch[2]" orient="horz" index="2" count="8"> <region> 0.508 2.492 2.492 2.508 </region> </channel>
+   <channel name="cv[0]" orient="vert" index="0" count="8"> <region> 0.492 0.508 0.508 2.492 </region> </channel>
+   <channel name="cv[1]" orient="vert" index="1" count="8"> <region> 1.492 0.508 1.508 2.492 </region> </channel>
+   <channel name="cv[2]" orient="vert" index="2" count="8"> <region> 2.492 0.508 2.508 2.492 </region> </channel>
+   
+   <segment name="sh[0].0" index="0" width="0.001"> <line> 0.508 0.492 2.492 0.492 </line> </segment>
+   <segment name="sh[0].1" index="1" width="0.001"> <line> 0.508 0.494 2.492 0.494 </line> </segment>
+   <segment name="sh[0].2" index="2" width="0.001"> <line> 0.508 0.496 1.492 0.496 </line> </segment>
+   <segment name="sh[0].2" index="2" width="0.001"> <line> 1.508 0.496 2.492 0.496 </line> </segment>
+   <segment name="sh[0].3" index="3" width="0.001"> <line> 0.508 0.498 1.492 0.498 </line> </segment>
+   <segment name="sh[0].3" index="3" width="0.001"> <line> 1.508 0.498 2.492 0.498 </line> </segment>
+   <segment name="sh[0].4" index="4" width="0.001"> <line> 0.508 0.500 2.492 0.500 </line> </segment>
+   <segment name="sh[0].5" index="5" width="0.001"> <line> 0.508 0.502 2.492 0.502 </line> </segment>
+   <segment name="sh[0].6" index="6" width="0.001"> <line> 0.508 0.504 2.492 0.504 </line> </segment>
+   <segment name="sh[0].7" index="7" width="0.001"> <line> 0.508 0.506 2.492 0.506 </line> </segment>
+   <segment name="sh[1].0" index="0" width="0.001"> <line> 0.508 1.493 2.492 1.493 </line> </segment>
+   <segment name="sh[1].1" index="1" width="0.001"> <line> 0.508 1.494 2.492 1.494 </line> </segment>
+   <segment name="sh[1].2" index="2" width="0.001"> <line> 0.508 1.497 2.492 1.497 </line> </segment>
+   <segment name="sh[1].3" index="3" width="0.001"> <line> 0.508 1.498 2.492 1.498 </line> </segment>
+   <segment name="sh[1].4" index="4" width="0.001"> <line> 1.508 1.500 2.492 1.500 </line> </segment>
+   <segment name="sh[1].4" index="4" width="0.001"> <line> 0.508 1.500 1.492 1.500 </line> </segment>
+   <segment name="sh[1].5" index="5" width="0.001"> <line> 0.508 1.502 1.492 1.502 </line> </segment>
+   <segment name="sh[1].5" index="5" width="0.001"> <line> 1.508 1.502 2.492 1.502 </line> </segment>
+   <segment name="sh[1].6" index="6" width="0.001"> <line> 0.508 1.504 2.492 1.504 </line> </segment>
+   <segment name="sh[1].7" index="7" width="0.001"> <line> 0.508 1.506 2.492 1.506 </line> </segment>
+   <segment name="sh[2].0" index="0" width="0.001"> <line> 0.508 2.492 2.492 2.492 </line> </segment>
+   <segment name="sh[2].1" index="1" width="0.001"> <line> 0.508 2.494 2.492 2.494 </line> </segment>
+   <segment name="sh[2].2" index="2" width="0.001"> <line> 0.508 2.497 2.492 2.497 </line> </segment>
+   <segment name="sh[2].3" index="3" width="0.001"> <line> 0.508 2.498 2.492 2.498 </line> </segment>
+   <segment name="sh[2].4" index="4" width="0.001"> <line> 0.508 2.500 2.492 2.500 </line> </segment>
+   <segment name="sh[2].5" index="5" width="0.001"> <line> 0.508 2.502 2.492 2.502 </line> </segment>
+   <segment name="sh[2].6" index="6" width="0.001"> <line> 0.508 2.505 1.492 2.505 </line> </segment>
+   <segment name="sh[2].6" index="6" width="0.001"> <line> 1.508 2.505 2.492 2.505 </line> </segment>
+   <segment name="sh[2].7" index="7" width="0.001"> <line> 1.508 2.506 2.492 2.506 </line> </segment>
+   <segment name="sh[2].7" index="7" width="0.001"> <line> 0.508 2.506 1.492 2.506 </line> </segment>
+   <segment name="sv[0].0" index="0" width="0.001"> <line> 0.492 0.508 0.492 2.492 </line> </segment>
+   <segment name="sv[0].1" index="1" width="0.001"> <line> 0.494 0.508 0.494 2.492 </line> </segment>
+   <segment name="sv[0].2" index="2" width="0.001"> <line> 0.496 0.508 0.496 1.492 </line> </segment>
+   <segment name="sv[0].2" index="2" width="0.001"> <line> 0.496 1.508 0.496 2.492 </line> </segment>
+   <segment name="sv[0].3" index="3" width="0.001"> <line> 0.498 0.508 0.498 1.492 </line> </segment>
+   <segment name="sv[0].3" index="3" width="0.001"> <line> 0.498 1.508 0.498 2.492 </line> </segment>
+   <segment name="sv[0].4" index="4" width="0.001"> <line> 0.500 0.508 0.500 2.492 </line> </segment>
+   <segment name="sv[0].5" index="5" width="0.001"> <line> 0.502 0.508 0.502 2.492 </line> </segment>
+   <segment name="sv[0].6" index="6" width="0.001"> <line> 0.504 0.508 0.504 2.492 </line> </segment>
+   <segment name="sv[0].7" index="7" width="0.001"> <line> 0.506 0.508 0.506 2.492 </line> </segment>
+   <segment name="sv[1].0" index="0" width="0.001"> <line> 1.493 0.508 1.493 2.492 </line> </segment>
+   <segment name="sv[1].1" index="1" width="0.001"> <line> 1.494 0.508 1.494 2.492 </line> </segment>
+   <segment name="sv[1].2" index="2" width="0.001"> <line> 1.497 0.508 1.497 2.492 </line> </segment>
+   <segment name="sv[1].3" index="3" width="0.001"> <line> 1.498 0.508 1.498 2.492 </line> </segment>
+   <segment name="sv[1].4" index="4" width="0.001"> <line> 1.500 0.508 1.500 1.492 </line> </segment>
+   <segment name="sv[1].4" index="4" width="0.001"> <line> 1.500 1.508 1.500 2.492 </line> </segment>
+   <segment name="sv[1].5" index="5" width="0.001"> <line> 1.502 0.508 1.502 1.492 </line> </segment>
+   <segment name="sv[1].5" index="5" width="0.001"> <line> 1.502 1.508 1.502 2.492 </line> </segment>
+   <segment name="sv[1].6" index="6" width="0.001"> <line> 1.504 0.508 1.504 2.492 </line> </segment>
+   <segment name="sv[1].7" index="7" width="0.001"> <line> 1.506 0.508 1.506 2.492 </line> </segment>
+   <segment name="sv[2].0" index="0" width="0.001"> <line> 2.492 0.508 2.492 2.492 </line> </segment>
+   <segment name="sv[2].1" index="1" width="0.001"> <line> 2.494 0.508 2.494 2.492 </line> </segment>
+   <segment name="sv[2].2" index="2" width="0.001"> <line> 2.497 0.508 2.497 2.492 </line> </segment>
+   <segment name="sv[2].3" index="3" width="0.001"> <line> 2.498 0.508 2.498 2.492 </line> </segment>
+   <segment name="sv[2].4" index="4" width="0.001"> <line> 2.500 0.508 2.500 2.492 </line> </segment>
+   <segment name="sv[2].5" index="5" width="0.001"> <line> 2.502 0.508 2.502 2.492 </line> </segment>
+   <segment name="sv[2].6" index="6" width="0.001"> <line> 2.505 0.508 2.505 1.492 </line> </segment>
+   <segment name="sv[2].6" index="6" width="0.001"> <line> 2.505 1.508 2.505 2.492 </line> </segment>
+   <segment name="sv[2].7" index="7" width="0.001"> <line> 2.506 0.508 2.506 1.492 </line> </segment>
+   <segment name="sv[2].7" index="7" width="0.001"> <line> 2.506 1.508 2.506 2.492 </line> </segment>
+   
+</fabric>
+<!-- _______________________________________________________________ -->

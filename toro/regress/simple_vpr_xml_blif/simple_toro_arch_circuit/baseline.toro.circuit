@@ -1,0 +1,188 @@
+<!-- _______________________________________________________________ -->
+<!--                     Toro - A VPR Front-End                      -->
+<!--   (c) Copyright 2012-2013 Texas Instruments (under GNU GPL)     -->
+<!-- _______________________________________________________________ -->
+<!--                         Circuit Design                          -->
+<!-- _______________________________________________________________ -->
+<circuit name="or1200_flat">
+   
+   <block name="top.in_data_1" master="io" status="placed">
+      <placement name="fabric[0][1].0" x="0" y="1" z="0"/>
+   </block>
+   <block name="top.in_data_0" master="io" status="placed">
+      <placement name="fabric[0][2].0" x="0" y="2" z="0"/>
+   </block>
+   <block name="out:top.out_addr_1" master="io" status="placed">
+      <placement name="fabric[1][0].0" x="1" y="0" z="0"/>
+   </block>
+   <block name="out:top.out_addr_0" master="io" status="placed">
+      <placement name="fabric[1][3].0" x="1" y="3" z="0"/>
+   </block>
+   <block name="top.clk" master="io" status="placed">
+      <placement name="fabric[0][1].1" x="0" y="1" z="1"/>
+   </block>
+   <block name="top.out_addr_0" master="clb" status="placed">
+      <pack name="n0">
+         <hier> "clb[0]" "ble[0]" "lut0[0]" "lut[0]" </hier>
+      </pack>
+      <pack name="top.out_addr_0">
+         <hier> "clb[0]" "ble[0]" "ff0[0]" </hier>
+      </pack>
+      <placement name="fabric[1][2]" x="1" y="2" z="0"/>
+   </block>
+   <block name="top.out_addr_1" master="clb" status="placed">
+      <pack name="n1">
+         <hier> "clb[1]" "ble[0]" "lut0[0]" "lut[0]" </hier>
+      </pack>
+      <pack name="top.out_addr_1">
+         <hier> "clb[1]" "ble[0]" "ff0[0]" </hier>
+      </pack>
+      <placement name="fabric[1][1]" x="1" y="1" z="0"/>
+   </block>
+   
+   <port name="top.clk" master=".input">
+      <pin name="top.clk" type="output"/>
+   </port>
+   <port name="top.clk_2" master=".input">
+      <pin name="top.clk_2" type="output"/>
+   </port>
+   <port name="top.in_data_0" master=".input">
+      <pin name="top.in_data_0" type="output"/>
+   </port>
+   <port name="top.in_data_1" master=".input">
+      <pin name="top.in_data_1" type="output"/>
+   </port>
+   <port name="top.out_addr_0" master=".output">
+      <pin name="top.out_addr_0" type="input"/>
+   </port>
+   <port name="top.out_addr_1" master=".output">
+      <pin name="top.out_addr_1" type="input"/>
+   </port>
+   
+   <inst name="top.out_addr_0" master=".latch">
+      <clock type="re" state="0"/>
+      <pin name="n0" type="input"/>
+      <pin name="top.out_addr_0" type="output"/>
+      <pin name="top.clk" type="clock"/>
+   </inst>
+   <inst name="top.out_addr_1" master=".latch">
+      <clock type="re" state="0"/>
+      <pin name="n1" type="input"/>
+      <pin name="top.out_addr_1" type="output"/>
+      <pin name="top.clk" type="clock"/>
+   </inst>
+   <inst name="n0" master=".names">
+      <pin name="top.in_data_0" type="input"/>
+      <pin name="n0" type="output"/>
+   </inst>
+   <inst name="n1" master=".names">
+      <pin name="top.in_data_1" type="input"/>
+      <pin name="n1" type="output"/>
+   </inst>
+   
+   <net name="n0" status="routed">
+      <pin inst="n0" pin="out" type="output"/>
+      <pin inst="top.out_addr_0" pin="D" type="input"/>
+      <route>
+         <pin inst="top.out_addr_0" port="lut0[0]" pin="out[0]"/>
+         <pin inst="top.out_addr_0" port="ff0[0]" pin="D[0]"/>
+      </route>
+   </net>
+   <net name="n1" status="routed">
+      <pin inst="n1" pin="out" type="output"/>
+      <pin inst="top.out_addr_1" pin="D" type="input"/>
+      <route>
+         <pin inst="top.out_addr_1" port="lut0[0]" pin="out[0]"/>
+         <pin inst="top.out_addr_1" port="ff0[0]" pin="D[0]"/>
+      </route>
+   </net>
+   <net name="top.clk" routable="false">
+      <pin inst="top.clk" pin="inpad" type="output"/>
+      <pin inst="top.out_addr_0" pin="clk" type="clock"/>
+      <pin inst="top.out_addr_1" pin="clk" type="clock"/>
+   </net>
+   <net name="top.in_data_0" status="routed">
+      <pin inst="top.in_data_0" pin="inpad" type="output"/>
+      <pin inst="n0" pin="in" type="input"/>
+      <route>
+         <pin inst="top.in_data_0" port="io[0]" pin="inpad[1]"/>
+         <segment name="sv[0].1" orient="vert" track="1"> <channel> 0.000 1.000 0.000 2.000 </channel> </segment>
+         <sb name="sb[0][1]"> <sides> upper 1 right 0 </sides> </sb>
+         <segment name="sh[1].0" orient="horz" track="0"> <channel> 1.000 1.000 2.000 1.000 </channel> </segment>
+         <sb name="sb[1][1]"> <sides> left 0 lower 5 </sides> </sb>
+         <segment name="sv[1].5" orient="vert" track="5"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[1][0]"> <sides> upper 5 left 3 </sides> </sb>
+         <segment name="sh[0].3" orient="horz" track="3"> <channel> 1.000 0.000 1.000 0.000 </channel> </segment>
+         <sb name="sb[0][0]"> <sides> right 3 upper 0 </sides> </sb>
+         <segment name="sv[0].0" orient="vert" track="0"> <channel> 0.000 1.000 0.000 2.000 </channel> </segment>
+         <sb name="sb[0][2]"> <sides> lower 0 right 4 </sides> </sb>
+         <segment name="sh[2].4" orient="horz" track="4"> <channel> 1.000 2.000 2.000 2.000 </channel> </segment>
+         <pin inst="top.out_addr_0" port="clb[0]" pin="I[0]"/>
+         <pin inst="top.out_addr_0" port="ble[0]" pin="in[0]"/>
+         <pin inst="top.out_addr_0" port="lut0[0]" pin="in[0]"/>
+         <pin inst="top.out_addr_0" port="lut[0]" pin="in[0]"/>
+      </route>
+   </net>
+   <net name="top.in_data_1" status="routed">
+      <pin inst="top.in_data_1" pin="inpad" type="output"/>
+      <pin inst="n1" pin="in" type="input"/>
+      <route>
+         <pin inst="top.in_data_1" port="io[0]" pin="inpad[1]"/>
+         <segment name="sv[0].3" orient="vert" track="3"> <channel> 0.000 1.000 0.000 1.000 </channel> </segment>
+         <sb name="sb[0][0]"> <sides> upper 3 right 4 </sides> </sb>
+         <segment name="sh[0].4" orient="horz" track="4"> <channel> 1.000 0.000 2.000 0.000 </channel> </segment>
+         <sb name="sb[2][0]"> <sides> left 4 upper 4 </sides> </sb>
+         <segment name="sv[2].4" orient="vert" track="4"> <channel> 2.000 1.000 2.000 2.000 </channel> </segment>
+         <sb name="sb[2][2]"> <sides> lower 4 left 7 </sides> </sb>
+         <segment name="sh[2].7" orient="horz" track="7"> <channel> 2.000 2.000 2.000 2.000 </channel> </segment>
+         <sb name="sb[1][2]"> <sides> right 7 lower 7 </sides> </sb>
+         <segment name="sv[1].7" orient="vert" track="7"> <channel> 1.000 1.000 1.000 2.000 </channel> </segment>
+         <sb name="sb[1][0]"> <sides> upper 7 right 2 </sides> </sb>
+         <segment name="sh[0].2" orient="horz" track="2"> <channel> 2.000 0.000 2.000 0.000 </channel> </segment>
+         <sb name="sb[2][0]"> <sides> left 2 upper 6 </sides> </sb>
+         <segment name="sv[2].6" orient="vert" track="6"> <channel> 2.000 1.000 2.000 1.000 </channel> </segment>
+         <sb name="sb[2][1]"> <sides> lower 6 left 7 </sides> </sb>
+         <segment name="sh[1].7" orient="horz" track="7"> <channel> 1.000 1.000 2.000 1.000 </channel> </segment>
+         <pin inst="top.out_addr_1" port="clb[0]" pin="I[0]"/>
+         <pin inst="top.out_addr_1" port="ble[0]" pin="in[0]"/>
+         <pin inst="top.out_addr_1" port="lut0[0]" pin="in[0]"/>
+         <pin inst="top.out_addr_1" port="lut[0]" pin="in[0]"/>
+      </route>
+   </net>
+   <net name="top.out_addr_0" status="routed">
+      <pin inst="top.out_addr_0" pin="Q" type="output"/>
+      <pin inst="out:top.out_addr_0" pin="outpad" type="input"/>
+      <route>
+         <pin inst="top.out_addr_0" port="ble[0]" pin="out[0]"/>
+         <pin inst="top.out_addr_0" port="clb[0]" pin="O[0]"/>
+         <segment name="sv[1].4" orient="vert" track="4"> <channel> 1.000 2.000 1.000 2.000 </channel> </segment>
+         <sb name="sb[1][2]"> <sides> lower 4 left 7 </sides> </sb>
+         <segment name="sh[2].7" orient="horz" track="7"> <channel> 1.000 2.000 1.000 2.000 </channel> </segment>
+         <pin inst="out:top.out_addr_0" port="io[0]" pin="outpad[0]"/>
+         <pin inst="out:top.out_addr_0" port="outpad[0]" pin="outpad[0]"/>
+      </route>
+   </net>
+   <net name="top.out_addr_1" status="routed">
+      <pin inst="top.out_addr_1" pin="Q" type="output"/>
+      <pin inst="out:top.out_addr_1" pin="outpad" type="input"/>
+      <route>
+         <pin inst="top.out_addr_1" port="ble[0]" pin="out[0]"/>
+         <pin inst="top.out_addr_1" port="clb[0]" pin="O[0]"/>
+         <segment name="sv[1].0" orient="vert" track="0"> <channel> 1.000 1.000 1.000 2.000 </channel> </segment>
+         <sb name="sb[1][1]"> <sides> lower 0 left 5 </sides> </sb>
+         <segment name="sh[1].5" orient="horz" track="5"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[0][1]"> <sides> right 5 upper 2 </sides> </sb>
+         <segment name="sv[0].2" orient="vert" track="2"> <channel> 0.000 2.000 0.000 2.000 </channel> </segment>
+         <sb name="sb[0][2]"> <sides> lower 2 right 2 </sides> </sb>
+         <segment name="sh[2].2" orient="horz" track="2"> <channel> 1.000 2.000 2.000 2.000 </channel> </segment>
+         <sb name="sb[2][2]"> <sides> left 2 lower 1 </sides> </sb>
+         <segment name="sv[2].1" orient="vert" track="1"> <channel> 2.000 1.000 2.000 2.000 </channel> </segment>
+         <sb name="sb[2][0]"> <sides> upper 1 left 1 </sides> </sb>
+         <segment name="sh[0].1" orient="horz" track="1"> <channel> 1.000 0.000 2.000 0.000 </channel> </segment>
+         <pin inst="out:top.out_addr_1" port="io[0]" pin="outpad[0]"/>
+         <pin inst="out:top.out_addr_1" port="outpad[0]" pin="outpad[0]"/>
+      </route>
+   </net>
+
+</circuit>
+<!-- _______________________________________________________________ -->
