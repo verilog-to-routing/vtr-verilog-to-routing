@@ -1,0 +1,3 @@
+#!/bin/csh -f
+
+../baseline_this ti_cic_filter_top

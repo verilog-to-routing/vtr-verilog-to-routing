@@ -1,0 +1,138 @@
+  <architecture>
+  
+  <!-- ODIN II specific config -->
+  <models>
+  </models>
+  <!-- add mult/SRAM here as needed -->
+  <!-- ODIN II specific config ends -->
+ 
+  <!-- Physical descriptions begin  --> 
+  <layout width="11" height="11"/>
+		<device>
+			<sizing R_minW_nmos="31.3e3" R_minW_pmos="50.6e3" ipin_mux_trans_size="2"/>
+            <!-- MUX4_F1 input cap; delay through cbox (MUX12 + BUF8) -->
+			<timing C_ipin_cblock="0.64e-15" T_ipin_cblock="744e-12"/>
+			<area grid_logic_tile_area="0.0"/>
+			<chan_width_distr>
+				<io width="1.000000"/>
+				<x distr="uniform" peak="1.000000"/>
+				<y distr="uniform" peak="1.000000"/>
+			</chan_width_distr>
+			<switch_block type="wilton" fs="3"/>
+		</device>
+		<switchlist>
+			<switch type="mux" name="0" R="1.000000" Cin="0.93e-15" Cout="0e-15" Tdel="650e-12" mux_trans_size="2" buf_size="23.4"/>
+		</switchlist>
+		<segmentlist>
+			<segment freq="1.000000" length="4" type="unidir" Rmetal="6" Cmetal="12e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 1 1 1 1</sb>
+			<cb type="pattern">1 1 1 1</cb>
+			</segment>
+		</segmentlist>
+		<complexblocklist>
+      <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
+      <pb_type name="io" capacity="16">
+        <input name="outpad" num_pins="1" equivalent="false"/>
+        <output name="inpad" num_pins="1"/>
+        <clock name="clock" num_pins="1"/>
+
+        <!-- IOs can operate as either inputs or outputs -->
+        <mode name="inpad">
+          <pb_type name="inpad" blif_model=".input" num_pb="1">
+            <output name="inpad" num_pins="1"/>
+          </pb_type>
+          <interconnect>
+            <direct name="inpad" input="inpad.inpad" output="io.inpad"/>
+          </interconnect>
+      
+        </mode>
+        <mode name="outpad">
+          <pb_type name="outpad" blif_model=".output" num_pb="1">
+            <input name="outpad" num_pins="1"/>
+          </pb_type>
+          <interconnect>
+            <direct name="outpad" input="io.outpad" output="outpad.outpad"/>
+          </interconnect>
+        </mode>
+
+        <fc_in type="frac">0.15</fc_in>
+        <fc_out type="frac">0.125</fc_out>
+
+        <pinlocations pattern="custom">
+          <loc side="left">io.outpad io.inpad io.clock</loc>
+          <loc side="top">io.outpad io.inpad io.clock</loc>
+          <loc side="right">io.outpad io.inpad io.clock</loc>
+          <loc side="bottom">io.outpad io.inpad io.clock</loc>
+        </pinlocations>
+
+        <gridlocations>
+          <loc type="perimeter" priority="10"/>
+        </gridlocations>
+      </pb_type>
+
+      <!-- PERL BEGIN CLUSTER -->
+      <!-- classic cluster with I inputs, N luts, N outputs, fully populated crossbar -->
+      <!-- I = K*0.425*(N+1) -->
+      <pb_type name="clb" area="1">
+          <input name="I" num_pins="28" equivalent="true"/>
+          <output name="O" num_pins="12"  equivalent="true"/>
+          <clock name="clk" num_pins="1"/>
+          <!--simple BLE with 1 LUT and 1 FF (not fracturable) -->
+          <pb_type name="ble" num_pb="12">
+             <input name="in" num_pins="5"/>
+             <output name="out" num_pins="1"/>
+             <clock name="clk" num_pins="1"/>
+              <!-- Contents of simple BLE: one LUT and one FF -->
+              <pb_type name="lut5" blif_model=".names" num_pb="1" class="lut">
+                <input name="in" num_pins="5" port_class="lut_in"/>
+                <output name="out" num_pins="1" port_class="lut_out"/>
+                <delay_matrix type="max" in_port="lut5.in" out_port="lut5.out">
+                    836e-12
+                    836e-12
+                    478e-12
+                    478e-12
+                    173e-12
+                </delay_matrix>
+              </pb_type>
+              <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+                <input name="D" num_pins="1" port_class="D"/>
+                <output name="Q" num_pins="1" port_class="Q"/>
+                <clock name="clk" num_pins="1" port_class="clock"/>
+                <T_setup value="-215e-12" port="ff.D" clock="clk"/>
+                <T_clock_to_Q max="193e-12" port="ff.Q" clock="clk"/>
+              </pb_type>
+            <!-- Contents of simple BLE: one LUT and one FF -->
+            <interconnect>
+              <!-- Two ff, make ff available to only corresponding luts -->
+              <direct name="direct1" input="ble.in" output="lut5.in"/>
+              <direct name="direct2" input="lut5.out" output="ff.D"/>
+              <direct name="direct3" input="ble.clk" output="ff.clk"/>
+              <mux name="mux1" input="ff.Q lut5.out" output="ble.out">
+                <delay_constant max="263e-12" in_port="ff.Q" out_port="ble.out"/>
+                <delay_constant max="263e-12" in_port="lut5.out" out_port="ble.out"/>
+              </mux>
+             </interconnect>
+          </pb_type> <!-- end of BLE -->
+
+          <interconnect>
+            <complete name="complete1" input="clb.I ble[11:0].out" output="ble[11:0].in">
+                <delay_constant max="1040e-12" in_port="clb.I" out_port="ble[11:0].in"/>
+                <delay_constant max="1040e-12" in_port="ble[11:0].out" out_port="ble[11:0].in"/>
+            </complete>                
+            <complete name="complete2" input="clb.clk" output="ble[11:0].clk"/>
+            <direct name="direct1" input="ble[11:0].out" output="clb.O"/>
+          </interconnect>
+        <fc_in type="frac">0.150000</fc_in>
+        <fc_out type="frac">0.125000</fc_out>
+        <pinlocations pattern="spread"/>
+        <gridlocations>
+          <loc type="fill" priority="1"/>
+        </gridlocations>
+      </pb_type> <!-- end of cluster -->
+
+      <!-- PERL END CLUSTER -->
+
+    <!-- SRAM and multiplier specification can be inserted here -->        
+    </complexblocklist>
+  </architecture>
