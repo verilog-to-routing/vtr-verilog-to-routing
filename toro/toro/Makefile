@@ -65,7 +65,7 @@ CFLAGS = $(CFLAGS$(ISM)) \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
 	-I../../libpccts/pcctsGeneric -I../../libpccts/h \
-	-I../../libpcre/SRC \
+	-I../../libcommon_c/pcre/SRC \
 	-I../../vpr/SRC/base -I../../vpr/SRC/util -I../../libarchfpga/include
 
 ######################################################################
@@ -118,9 +118,9 @@ LINKLIBS = -L../$(ISM) \
 	-lh \
 	-lvpr
 
-SYSLIBSlinux_x86_64 = -L../../libpcre/$(ISM) -lpcre
-SYSLIBSlinux_i686 = -L../../libpcre/$(ISM) -lpcre
-SYSLIBSsun8 = -L../../libpcre/$(ISM) -lpcre -Bdynamic -lresolv
+SYSLIBSlinux_x86_64 = -L../../libcommon_c/pcre/$(ISM) -lpcre
+SYSLIBSlinux_i686 = -L../../libcommon_c/pcre/$(ISM) -lpcre
+SYSLIBSsun8 = -L../../libcommon_c/pcre/$(ISM) -lpcre -Bdynamic -lresolv
 SYSLIBS = $(SYSLIBS$(ISM))
 LIBDEFS = ../$(ISM)/libTM_Master.a \
 	../$(ISM)/libTI_Input.a \
