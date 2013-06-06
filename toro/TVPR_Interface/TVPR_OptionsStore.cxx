@@ -395,10 +395,15 @@ bool TVPR_OptionsStore_c::Export(
          pvpr_options->RouteChanWidth = routeOptions.channelWidth;
          pvpr_options->Count[OT_ROUTE_CHAN_WIDTH] += 1;
       }
-      if( routeOptions.channelTrimEmpty || !routeOptions.channelTrimEmpty )
+      if( routeOptions.trimEmptyChannels || !routeOptions.trimEmptyChannels )
       {
-         pvpr_options->RouteChanTrim = static_cast< boolean >( routeOptions.channelTrimEmpty );
-         pvpr_options->Count[OT_ROUTE_CHAN_TRIM] += 1;
+         pvpr_options->TrimEmptyChan = static_cast< boolean >( routeOptions.trimEmptyChannels );
+         pvpr_options->Count[OT_TRIM_EMPTY_CHAN] += 1;
+      }
+      if( routeOptions.trimObsChannels || !routeOptions.trimObsChannels )
+      {
+         pvpr_options->TrimObsChan = static_cast< boolean >( routeOptions.trimObsChannels );
+         pvpr_options->Count[OT_TRIM_OBS_CHAN] += 1;
       }
       if( routeOptions.maxIterations > 0 )
       {
