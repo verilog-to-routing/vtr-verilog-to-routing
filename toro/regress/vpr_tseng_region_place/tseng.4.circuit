@@ -1,0 +1,33 @@
+// Example region placement constraints
+// Based on array size: 12 x 12 logic blocks
+
+<circuit "top" >
+
+   <block name = "pv1_0_0_" master = "clb" >   <region> 1 1 10 1 </region>   </block>
+   <block name = "pv1_1_1_" master = "clb" >   <region> 1 1 10 1 </region>   </block>
+   <block name = "pv1_2_2_" master = "clb" >   <region> 1 1 10 1 </region>   </block>
+   <block name = "pv1_3_3_" master = "clb" >   <region> 1 1 10 1 </region>   </block>
+   <block name = "pv1_4_4_" master = "clb" >   <region> 1 1 10 1 </region>   </block>
+   <block name = "pv1_5_5_" master = "clb" >   <region> 1 1 10 1 </region>   </block>
+   <block name = "pv1_6_6_" master = "clb" >   <region> 1 1 10 1 </region>   </block>
+   <block name = "pv1_7_7_" master = "clb" >   <region> 1 1 10 1 </region>   </block>
+
+   <block name = "pv2_0_0_" master = "clb" >   <region> 1 2 3 4 </region>   </block>
+   <block name = "pv2_1_1_" master = "clb" >   <region> 1 2 3 4 </region>   </block>
+   <block name = "pv2_2_2_" master = "clb" >   <region> 1 2 3 4 </region>   </block>
+   <block name = "pv2_3_3_" master = "clb" >   <region> 1 2 3 4 </region>   </block>
+   <block name = "pv2_4_4_" master = "clb" >   <region> 1 2 3 4 </region>   </block>
+   <block name = "pv2_5_5_" master = "clb" >   <region> 1 2 3 4 </region>   </block>
+   <block name = "pv2_6_6_" master = "clb" >   <region> 1 2 3 4 </region>   </block>
+   <block name = "pv2_7_7_" master = "clb" >   <region> 1 2 3 4 </region>   </block>
+
+   <block name = "pv4_0_0_" master = "clb" >   <region> 8 8 10 10 </region>   </block>
+   <block name = "pv4_1_1_" master = "clb" >   <region> 8 8 10 10 </region>   </block>
+   <block name = "pv4_2_2_" master = "clb" >   <region> 8 8 10 10 </region>   </block>
+   <block name = "pv4_3_3_" master = "clb" >   <region> 8 8 10 10 </region>   </block>
+   <block name = "pv4_4_4_" master = "clb" >   <region> 8 8 10 10 </region>   </block>
+   <block name = "pv4_5_5_" master = "clb" >   <region> 8 8 10 10 </region>   </block>
+   <block name = "pv4_6_6_" master = "clb" >   <region> 8 8 10 10 </region>   </block>
+   <block name = "pv4_7_7_" master = "clb" >   <region> 8 8 10 10 </region>   </block>
+
+</circuit>
