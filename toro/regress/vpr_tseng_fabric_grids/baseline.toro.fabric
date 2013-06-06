@@ -15659,23 +15659,6 @@
          left 8 lower 29 upper 20
          left 10 lower 37 upper 12
          left 12 lower 45 upper 4
-         left 14 upper 0
-         left 16 upper 0
-         left 18 upper 0
-         left 20 upper 0
-         left 22 upper 0
-         left 24 upper 0
-         left 26 upper 0
-         left 28 upper 0
-         left 30 upper 0
-         left 32 upper 0
-         left 34 upper 0
-         left 36 upper 0
-         left 38 upper 0
-         left 40 upper 0
-         left 42 upper 0
-         left 44 upper 0
-         left 46 upper 0
          lower 0 left 21
          lower 2 left 23
          lower 4 left 3 upper 4
@@ -17837,23 +17820,6 @@
          lower 8 left 45 right 4
          lower 10 left 5 right 44
          lower 12 left 13 right 36
-         lower 14 right 0
-         lower 16 right 0
-         lower 18 right 0
-         lower 20 right 0
-         lower 22 right 0
-         lower 24 right 0
-         lower 26 right 0
-         lower 28 right 0
-         lower 30 right 0
-         lower 32 right 0
-         lower 34 right 0
-         lower 36 right 0
-         lower 38 right 0
-         lower 40 right 0
-         lower 42 right 0
-         lower 44 right 0
-         lower 46 right 0
       </mapping>
    </sb>
    <sb name="sb[6][8]">
@@ -17915,23 +17881,6 @@
          upper 9 left 21 right 44
          upper 11 left 13 right 4
          upper 13 left 5 right 12
-         upper 15 right 0
-         upper 17 right 0
-         upper 19 right 0
-         upper 21 right 0
-         upper 23 right 0
-         upper 25 right 0
-         upper 27 right 0
-         upper 29 right 0
-         upper 31 right 0
-         upper 33 right 0
-         upper 35 right 0
-         upper 37 right 0
-         upper 39 right 0
-         upper 41 right 0
-         upper 43 right 0
-         upper 45 right 0
-         upper 47 right 0
       </mapping>
    </sb>
    <sb name="sb[6][9]">
@@ -19997,23 +19946,6 @@
          right 9 lower 5 upper 28
          right 11 lower 45 upper 36
          right 13 lower 37 upper 44
-         right 15 upper 0
-         right 17 upper 0
-         right 19 upper 0
-         right 21 upper 0
-         right 23 upper 0
-         right 25 upper 0
-         right 27 upper 0
-         right 29 upper 0
-         right 31 upper 0
-         right 33 upper 0
-         right 35 upper 0
-         right 37 upper 0
-         right 39 upper 0
-         right 41 upper 0
-         right 43 upper 0
-         right 45 upper 0
-         right 47 upper 0
          lower 0 right 4
          lower 2 right 10
          lower 4 right 44 upper 4
