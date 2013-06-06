@@ -1,0 +1,20 @@
+// Example relative placement constraints
+// Based on array size: 12 x 12 logic blocks
+
+<circuit name="top">
+   
+   <block name="n_n3184" master="clb"> <relative> right "n_n3466" </relative> </block>
+   <block name="n_n3466" master="clb"> <relative> right "n_n3229" </relative> </block>
+   <block name="n_n3229" master="clb"> <relative> right "n_n3016" </relative> </block>
+   <block name="n_n3016" master="clb"> </block>
+
+   <block name="n_n3519" master="clb"> <relative> upper "[2264]" </relative> </block>
+   <block name="[2264]" master="clb"> </block>
+
+   <block name="n_n4267" master="clb"> <relative> upper "[907]" </relative> </block>
+   <block name="[907]" master="clb"> </block>
+
+   <block name="n_n3725" master="clb"> <relative> upper "n_n4011" </relative> </block>
+   <block name="n_n4011" master="clb"> </block>
+
+</circuit>
