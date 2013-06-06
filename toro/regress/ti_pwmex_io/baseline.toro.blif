@@ -1,0 +1,847 @@
+#______________________________________________________________________#
+#                        Toro - A VPR Front-End                        #
+#      (c) Copyright 2012-2013 Texas Instruments (under GNU GPL)       #
+#______________________________________________________________________#
+#                     Circuit Design (VPR's BLIF)                      #
+#______________________________________________________________________#
+.model pwmex_io
+.inputs CLK62_5 reset_n TermCnt0~15 TermCnt0~14 TermCnt0~13 TermCnt0~12 TermCnt0~11 TermCnt0~10 TermCnt0~9 TermCnt0~8 TermCnt0~7 TermCnt0~6 TermCnt0~5 TermCnt0~4 TermCnt0~3 TermCnt0~2 TermCnt0~1 TermCnt0~0 count_val0~31 count_val0~30 count_val0~29 count_val0~28 count_val0~27 count_val0~26 count_val0~25 count_val0~24 count_val0~23 count_val0~22 count_val0~21 count_val0~20 count_val0~19 count_val0~18 count_val0~17 count_val0~16 count_val0~15 count_val0~14 count_val0~13 count_val0~12 count_val0~11 count_val0~10 count_val0~9 count_val0~8 count_val0~7 count_val0~6 count_val0~5 count_val0~4 count_val0~3 count_val0~2 count_val0~1 count_val0~0 count_pulse0~1 count_pulse0~0 Dutymsb0~15 Dutymsb0~14 Dutymsb0~13 Dutymsb0~12 Dutymsb0~11 Dutymsb0~10 Dutymsb0~9 Dutymsb0~8 Dutymsb0~7 Dutymsb0~6 Dutymsb0~5 Dutymsb0~4 Dutymsb0~3 Dutymsb0~2 Dutymsb0~1 Dutymsb0~0 Dutylsb0~3 Dutylsb0~2 Dutylsb0~1 Dutylsb0~0 useDb0 DbCfg0~3 DbCfg0~2 DbCfg0~1 DbCfg0~0 reDlyCnt0~9 reDlyCnt0~8 reDlyCnt0~7 reDlyCnt0~6 reDlyCnt0~5 reDlyCnt0~4 reDlyCnt0~3 reDlyCnt0~2 reDlyCnt0~1 reDlyCnt0~0 feDlyCnt0~9 feDlyCnt0~8 feDlyCnt0~7 feDlyCnt0~6 feDlyCnt0~5 feDlyCnt0~4 feDlyCnt0~3 feDlyCnt0~2 feDlyCnt0~1 feDlyCnt0~0 tripCfg0~1 tripCfg0~0 tripIn0 Tielow0 TermCnt1~15 TermCnt1~14 TermCnt1~13 TermCnt1~12 TermCnt1~11 TermCnt1~10 TermCnt1~9 TermCnt1~8 TermCnt1~7 TermCnt1~6 TermCnt1~5 TermCnt1~4 TermCnt1~3 TermCnt1~2 TermCnt1~1 TermCnt1~0 count_val1~31 count_val1~30 count_val1~29 count_val1~28 count_val1~27 count_val1~26 count_val1~25 count_val1~24 count_val1~23 count_val1~22 count_val1~21 count_val1~20 count_val1~19 count_val1~18 count_val1~17 count_val1~16 count_val1~15 count_val1~14 count_val1~13 count_val1~12 count_val1~11 count_val1~10 count_val1~9 count_val1~8 count_val1~7 count_val1~6 count_val1~5 count_val1~4 count_val1~3 count_val1~2 count_val1~1 count_val1~0 count_pulse1~1 count_pulse1~0 Dutymsb1~15 Dutymsb1~14 Dutymsb1~13 Dutymsb1~12 Dutymsb1~11 Dutymsb1~10 Dutymsb1~9 Dutymsb1~8 Dutymsb1~7 Dutymsb1~6 Dutymsb1~5 Dutymsb1~4 Dutymsb1~3 Dutymsb1~2 Dutymsb1~1 Dutymsb1~0 Dutylsb1~3 Dutylsb1~2 Dutylsb1~1 Dutylsb1~0 useDb1 DbCfg1~3 DbCfg1~2 DbCfg1~1 DbCfg1~0 reDlyCnt1~9 reDlyCnt1~8 reDlyCnt1~7 reDlyCnt1~6 reDlyCnt1~5 reDlyCnt1~4 reDlyCnt1~3 reDlyCnt1~2 reDlyCnt1~1 reDlyCnt1~0 feDlyCnt1~9 feDlyCnt1~8 feDlyCnt1~7 feDlyCnt1~6 feDlyCnt1~5 feDlyCnt1~4 feDlyCnt1~3 feDlyCnt1~2 feDlyCnt1~1 feDlyCnt1~0 tripCfg1~1 tripCfg1~0 tripIn1 Tielow1 TermCnt2~15 TermCnt2~14 TermCnt2~13 TermCnt2~12 TermCnt2~11 TermCnt2~10 TermCnt2~9 TermCnt2~8 TermCnt2~7 TermCnt2~6 TermCnt2~5 TermCnt2~4 TermCnt2~3 TermCnt2~2 TermCnt2~1 TermCnt2~0 count_val2~31 count_val2~30 count_val2~29 count_val2~28 count_val2~27 count_val2~26 count_val2~25 count_val2~24 count_val2~23 count_val2~22 count_val2~21 count_val2~20 count_val2~19 count_val2~18 count_val2~17 count_val2~16 count_val2~15 count_val2~14 count_val2~13 count_val2~12 count_val2~11 count_val2~10 count_val2~9 count_val2~8 count_val2~7 count_val2~6 count_val2~5 count_val2~4 count_val2~3 count_val2~2 count_val2~1 count_val2~0 count_pulse2~1 count_pulse2~0 Dutymsb2~15 Dutymsb2~14 Dutymsb2~13 Dutymsb2~12 Dutymsb2~11 Dutymsb2~10 Dutymsb2~9 Dutymsb2~8 Dutymsb2~7 Dutymsb2~6 Dutymsb2~5 Dutymsb2~4 Dutymsb2~3 Dutymsb2~2 Dutymsb2~1 Dutymsb2~0 Dutylsb2~3 Dutylsb2~2 Dutylsb2~1 Dutylsb2~0 useDb2 DbCfg2~3 DbCfg2~2 DbCfg2~1 DbCfg2~0 reDlyCnt2~9 reDlyCnt2~8 reDlyCnt2~7 reDlyCnt2~6 reDlyCnt2~5 reDlyCnt2~4 reDlyCnt2~3 reDlyCnt2~2 reDlyCnt2~1 reDlyCnt2~0 feDlyCnt2~9 feDlyCnt2~8 feDlyCnt2~7 feDlyCnt2~6 feDlyCnt2~5 feDlyCnt2~4 feDlyCnt2~3 feDlyCnt2~2 feDlyCnt2~1 feDlyCnt2~0 tripCfg2~1 tripCfg2~0 tripIn2 Tielow2 TermCnt3~15 TermCnt3~14 TermCnt3~13 TermCnt3~12 TermCnt3~11 TermCnt3~10 TermCnt3~9 TermCnt3~8 TermCnt3~7 TermCnt3~6 TermCnt3~5 TermCnt3~4 TermCnt3~3 TermCnt3~2 TermCnt3~1 TermCnt3~0 count_val3~31 count_val3~30 count_val3~29 count_val3~28 count_val3~27 count_val3~26 count_val3~25 count_val3~24 count_val3~23 count_val3~22 count_val3~21 count_val3~20 count_val3~19 count_val3~18 count_val3~17 count_val3~16 count_val3~15 count_val3~14 count_val3~13 count_val3~12 count_val3~11 count_val3~10 count_val3~9 count_val3~8 count_val3~7 count_val3~6 count_val3~5 count_val3~4 count_val3~3 count_val3~2 count_val3~1 count_val3~0 count_pulse3~1 count_pulse3~0 Dutymsb3~15 Dutymsb3~14 Dutymsb3~13 Dutymsb3~12 Dutymsb3~11 Dutymsb3~10 Dutymsb3~9 Dutymsb3~8 Dutymsb3~7 Dutymsb3~6 Dutymsb3~5 Dutymsb3~4 Dutymsb3~3 Dutymsb3~2 Dutymsb3~1 Dutymsb3~0 Dutylsb3~3 Dutylsb3~2 Dutylsb3~1 Dutylsb3~0 useDb3 DbCfg3~3 DbCfg3~2 DbCfg3~1 DbCfg3~0 reDlyCnt3~9 reDlyCnt3~8 reDlyCnt3~7 reDlyCnt3~6 reDlyCnt3~5 reDlyCnt3~4 reDlyCnt3~3 reDlyCnt3~2 reDlyCnt3~1 reDlyCnt3~0 feDlyCnt3~9 feDlyCnt3~8 feDlyCnt3~7 feDlyCnt3~6 feDlyCnt3~5 feDlyCnt3~4 feDlyCnt3~3 feDlyCnt3~2 feDlyCnt3~1 feDlyCnt3~0 tripCfg3~1 tripCfg3~0 tripIn3 Tielow3
+.outputs count_en0~1 count_clr0~1 count_cmp0~15 count_cmp0~14 count_cmp0~13 count_cmp0~12 count_cmp0~11 count_cmp0~10 count_cmp0~9 count_cmp0~8 count_cmp0~7 count_cmp0~6 count_cmp0~5 count_cmp0~4 count_cmp0~3 count_cmp0~2 count_cmp0~1 count_cmp0~0 DPWM0 DPWMOutA0 DPWMOutB0 count_en1~1 count_clr1~1 count_cmp1~15 count_cmp1~14 count_cmp1~13 count_cmp1~12 count_cmp1~11 count_cmp1~10 count_cmp1~9 count_cmp1~8 count_cmp1~7 count_cmp1~6 count_cmp1~5 count_cmp1~4 count_cmp1~3 count_cmp1~2 count_cmp1~1 count_cmp1~0 DPWM1 DPWMOutA1 DPWMOutB1 count_en2~1 count_clr2~1 count_cmp2~15 count_cmp2~14 count_cmp2~13 count_cmp2~12 count_cmp2~11 count_cmp2~10 count_cmp2~9 count_cmp2~8 count_cmp2~7 count_cmp2~6 count_cmp2~5 count_cmp2~4 count_cmp2~3 count_cmp2~2 count_cmp2~1 count_cmp2~0 DPWM2 DPWMOutA2 DPWMOutB2 count_en3~1 count_clr3~1 count_cmp3~15 count_cmp3~14 count_cmp3~13 count_cmp3~12 count_cmp3~11 count_cmp3~10 count_cmp3~9 count_cmp3~8 count_cmp3~7 count_cmp3~6 count_cmp3~5 count_cmp3~4 count_cmp3~3 count_cmp3~2 count_cmp3~1 count_cmp3~0 DPWM3 DPWMOutA3 DPWMOutB3
+.latch n1165 U_PWM0_DPWMOutLatch re CLK62_5 0
+.latch n1152 U_PWM0_DbcFSM_last~0 re CLK62_5 0
+.latch n1156 U_PWM0_DbcFSM_last~1 re CLK62_5 0
+.latch n1143 U_PWM0_DbcFSM~0 re CLK62_5 0
+.latch n1138 U_PWM0_DbcFSM~1 re CLK62_5 0
+.latch n1170 U_PWM0_FEDly re CLK62_5 0
+.latch n1148 U_PWM0_REDly re CLK62_5 0
+.latch n1160 U_PWM0_S1 re CLK62_5 0
+.latch n1133 U_PWM0_tripActive re CLK62_5 0
+.latch n1291 U_PWM1_DPWMOutLatch re CLK62_5 0
+.latch n1278 U_PWM1_DbcFSM_last~0 re CLK62_5 0
+.latch n1282 U_PWM1_DbcFSM_last~1 re CLK62_5 0
+.latch n1269 U_PWM1_DbcFSM~0 re CLK62_5 0
+.latch n1264 U_PWM1_DbcFSM~1 re CLK62_5 0
+.latch n1296 U_PWM1_FEDly re CLK62_5 0
+.latch n1274 U_PWM1_REDly re CLK62_5 0
+.latch n1286 U_PWM1_S1 re CLK62_5 0
+.latch n1259 U_PWM1_tripActive re CLK62_5 0
+.latch n1249 U_PWM2_DPWMOutLatch re CLK62_5 0
+.latch n1236 U_PWM2_DbcFSM_last~0 re CLK62_5 0
+.latch n1240 U_PWM2_DbcFSM_last~1 re CLK62_5 0
+.latch n1227 U_PWM2_DbcFSM~0 re CLK62_5 0
+.latch n1222 U_PWM2_DbcFSM~1 re CLK62_5 0
+.latch n1254 U_PWM2_FEDly re CLK62_5 0
+.latch n1232 U_PWM2_REDly re CLK62_5 0
+.latch n1244 U_PWM2_S1 re CLK62_5 0
+.latch n1217 U_PWM2_tripActive re CLK62_5 0
+.latch n1207 U_PWM3_DPWMOutLatch re CLK62_5 0
+.latch n1194 U_PWM3_DbcFSM_last~0 re CLK62_5 0
+.latch n1198 U_PWM3_DbcFSM_last~1 re CLK62_5 0
+.latch n1185 U_PWM3_DbcFSM~0 re CLK62_5 0
+.latch n1180 U_PWM3_DbcFSM~1 re CLK62_5 0
+.latch n1212 U_PWM3_FEDly re CLK62_5 0
+.latch n1190 U_PWM3_REDly re CLK62_5 0
+.latch n1202 U_PWM3_S1 re CLK62_5 0
+.latch n1175 U_PWM3_tripActive re CLK62_5 0
+.names n678 n680 n681 U_PWM0_DPWMOutLatch DPWM0
+111- 0
+---0 0
+.names n690 n692 n693 U_PWM1_DPWMOutLatch DPWM1
+111- 0
+---0 0
+.names n702 n704 n705 U_PWM2_DPWMOutLatch DPWM2
+111- 0
+---0 0
+.names n714 n716 n717 U_PWM3_DPWMOutLatch DPWM3
+111- 0
+---0 0
+.names DPWM0 n683 n684 DbCfg0~1 tripCfg0~1 DPWMOutA0
+100-- 1
+-001- 1
+-1--1 1
+.names DPWM1 n695 n696 DbCfg1~1 tripCfg1~1 DPWMOutA1
+100-- 1
+-001- 1
+-1--1 1
+.names DPWM2 n707 n708 DbCfg2~1 tripCfg2~1 DPWMOutA2
+100-- 1
+-001- 1
+-1--1 1
+.names DPWM3 n719 n720 DbCfg3~1 tripCfg3~1 DPWMOutA3
+100-- 1
+-001- 1
+-1--1 1
+.names DPWM0 n683 n686 DbCfg0~0 tripCfg0~1 DPWMOutB0
+100-- 1
+-001- 1
+-1--1 1
+.names DPWM1 n695 n698 DbCfg1~0 tripCfg1~1 DPWMOutB1
+100-- 1
+-001- 1
+-1--1 1
+.names DPWM2 n707 n710 DbCfg2~0 tripCfg2~1 DPWMOutB2
+100-- 1
+-001- 1
+-1--1 1
+.names DPWM3 n719 n722 DbCfg3~0 tripCfg3~1 DPWMOutB3
+100-- 1
+-001- 1
+-1--1 1
+.names U_PWM0_DbcFSM~1 U_PWM0_DbcFSM~0 U_PWM0_DbcFSM_last~0 U_PWM0_DbcFSM_last~1 count_clr0~1
+0001 1
+0010 1
+.names U_PWM1_DbcFSM~1 U_PWM1_DbcFSM~0 U_PWM1_DbcFSM_last~0 U_PWM1_DbcFSM_last~1 count_clr1~1
+0001 1
+0010 1
+.names U_PWM2_DbcFSM~1 U_PWM2_DbcFSM~0 U_PWM2_DbcFSM_last~0 U_PWM2_DbcFSM_last~1 count_clr2~1
+0001 1
+0010 1
+.names U_PWM3_DbcFSM~1 U_PWM3_DbcFSM~0 U_PWM3_DbcFSM_last~0 U_PWM3_DbcFSM_last~1 count_clr3~1
+0001 1
+0010 1
+.names TermCnt0~0 count_cmp0~0
+1 1
+.names TermCnt0~1 count_cmp0~1
+1 1
+.names TermCnt0~10 count_cmp0~10
+1 1
+.names TermCnt0~11 count_cmp0~11
+1 1
+.names TermCnt0~12 count_cmp0~12
+1 1
+.names TermCnt0~13 count_cmp0~13
+1 1
+.names TermCnt0~14 count_cmp0~14
+1 1
+.names TermCnt0~15 count_cmp0~15
+1 1
+.names TermCnt0~2 count_cmp0~2
+1 1
+.names TermCnt0~3 count_cmp0~3
+1 1
+.names TermCnt0~4 count_cmp0~4
+1 1
+.names TermCnt0~5 count_cmp0~5
+1 1
+.names TermCnt0~6 count_cmp0~6
+1 1
+.names TermCnt0~7 count_cmp0~7
+1 1
+.names TermCnt0~8 count_cmp0~8
+1 1
+.names TermCnt0~9 count_cmp0~9
+1 1
+.names TermCnt1~0 count_cmp1~0
+1 1
+.names TermCnt1~1 count_cmp1~1
+1 1
+.names TermCnt1~10 count_cmp1~10
+1 1
+.names TermCnt1~11 count_cmp1~11
+1 1
+.names TermCnt1~12 count_cmp1~12
+1 1
+.names TermCnt1~13 count_cmp1~13
+1 1
+.names TermCnt1~14 count_cmp1~14
+1 1
+.names TermCnt1~15 count_cmp1~15
+1 1
+.names TermCnt1~2 count_cmp1~2
+1 1
+.names TermCnt1~3 count_cmp1~3
+1 1
+.names TermCnt1~4 count_cmp1~4
+1 1
+.names TermCnt1~5 count_cmp1~5
+1 1
+.names TermCnt1~6 count_cmp1~6
+1 1
+.names TermCnt1~7 count_cmp1~7
+1 1
+.names TermCnt1~8 count_cmp1~8
+1 1
+.names TermCnt1~9 count_cmp1~9
+1 1
+.names TermCnt2~0 count_cmp2~0
+1 1
+.names TermCnt2~1 count_cmp2~1
+1 1
+.names TermCnt2~10 count_cmp2~10
+1 1
+.names TermCnt2~11 count_cmp2~11
+1 1
+.names TermCnt2~12 count_cmp2~12
+1 1
+.names TermCnt2~13 count_cmp2~13
+1 1
+.names TermCnt2~14 count_cmp2~14
+1 1
+.names TermCnt2~15 count_cmp2~15
+1 1
+.names TermCnt2~2 count_cmp2~2
+1 1
+.names TermCnt2~3 count_cmp2~3
+1 1
+.names TermCnt2~4 count_cmp2~4
+1 1
+.names TermCnt2~5 count_cmp2~5
+1 1
+.names TermCnt2~6 count_cmp2~6
+1 1
+.names TermCnt2~7 count_cmp2~7
+1 1
+.names TermCnt2~8 count_cmp2~8
+1 1
+.names TermCnt2~9 count_cmp2~9
+1 1
+.names TermCnt3~0 count_cmp3~0
+1 1
+.names TermCnt3~1 count_cmp3~1
+1 1
+.names TermCnt3~10 count_cmp3~10
+1 1
+.names TermCnt3~11 count_cmp3~11
+1 1
+.names TermCnt3~12 count_cmp3~12
+1 1
+.names TermCnt3~13 count_cmp3~13
+1 1
+.names TermCnt3~14 count_cmp3~14
+1 1
+.names TermCnt3~15 count_cmp3~15
+1 1
+.names TermCnt3~2 count_cmp3~2
+1 1
+.names TermCnt3~3 count_cmp3~3
+1 1
+.names TermCnt3~4 count_cmp3~4
+1 1
+.names TermCnt3~5 count_cmp3~5
+1 1
+.names TermCnt3~6 count_cmp3~6
+1 1
+.names TermCnt3~7 count_cmp3~7
+1 1
+.names TermCnt3~8 count_cmp3~8
+1 1
+.names TermCnt3~9 count_cmp3~9
+1 1
+.names U_PWM0_DbcFSM~1 U_PWM0_DbcFSM~0 count_en0~1
+01 1
+10 1
+.names U_PWM1_DbcFSM~1 U_PWM1_DbcFSM~0 count_en1~1
+01 1
+10 1
+.names U_PWM2_DbcFSM~1 U_PWM2_DbcFSM~0 count_en2~1
+01 1
+10 1
+.names U_PWM3_DbcFSM~1 U_PWM3_DbcFSM~0 count_en3~1
+01 1
+10 1
+.names count_pulse0~0 tripIn0 U_PWM0_tripActive n1133
+0-1 1
+-1- 1
+.names n725 n737 n747 useDb0 U_PWM0_DbcFSM~1 n1138
+1-1-- 1
+-0--1 1
+---01 1
+.names n749 count_pulse0~0 useDb0 U_PWM0_DbcFSM~1 U_PWM0_DbcFSM~0 n1143
+0---1 1
+-1100 1
+--0-1 1
+---11 1
+.names n725 n749 U_PWM0_DbcFSM~1 U_PWM0_DbcFSM~0 U_PWM0_REDly n1148
+0---1 1
+-101- 1
+.names U_PWM0_DbcFSM~0 n1152
+1 1
+.names U_PWM0_DbcFSM~1 n1156
+1 1
+.names count_pulse0~0 n1160
+1 1
+.names n725 U_PWM0_S1 U_PWM0_DPWMOutLatch n1165
+0-1 1
+-1- 1
+.names n737 U_PWM0_DbcFSM~1 U_PWM0_S1 U_PWM0_FEDly n1170
+110- 0
+--00 0
+.names count_pulse3~0 tripIn3 U_PWM3_tripActive n1175
+0-1 1
+-1- 1
+.names n760 n772 n782 useDb3 U_PWM3_DbcFSM~1 n1180
+1-1-- 1
+-0--1 1
+---01 1
+.names n784 count_pulse3~0 useDb3 U_PWM3_DbcFSM~1 U_PWM3_DbcFSM~0 n1185
+0---1 1
+-1100 1
+--0-1 1
+---11 1
+.names n760 n784 U_PWM3_DbcFSM~1 U_PWM3_DbcFSM~0 U_PWM3_REDly n1190
+0---1 1
+-101- 1
+.names U_PWM3_DbcFSM~0 n1194
+1 1
+.names U_PWM3_DbcFSM~1 n1198
+1 1
+.names count_pulse3~0 n1202
+1 1
+.names n760 U_PWM3_S1 U_PWM3_DPWMOutLatch n1207
+0-1 1
+-1- 1
+.names n772 U_PWM3_DbcFSM~1 U_PWM3_S1 U_PWM3_FEDly n1212
+110- 0
+--00 0
+.names count_pulse2~0 tripIn2 U_PWM2_tripActive n1217
+0-1 1
+-1- 1
+.names n795 n807 n817 useDb2 U_PWM2_DbcFSM~1 n1222
+1-1-- 1
+-0--1 1
+---01 1
+.names n819 count_pulse2~0 useDb2 U_PWM2_DbcFSM~1 U_PWM2_DbcFSM~0 n1227
+0---1 1
+-1100 1
+--0-1 1
+---11 1
+.names n795 n819 U_PWM2_DbcFSM~1 U_PWM2_DbcFSM~0 U_PWM2_REDly n1232
+0---1 1
+-101- 1
+.names U_PWM2_DbcFSM~0 n1236
+1 1
+.names U_PWM2_DbcFSM~1 n1240
+1 1
+.names count_pulse2~0 n1244
+1 1
+.names n795 U_PWM2_S1 U_PWM2_DPWMOutLatch n1249
+0-1 1
+-1- 1
+.names n807 U_PWM2_DbcFSM~1 U_PWM2_S1 U_PWM2_FEDly n1254
+110- 0
+--00 0
+.names count_pulse1~0 tripIn1 U_PWM1_tripActive n1259
+0-1 1
+-1- 1
+.names n830 n842 n852 useDb1 U_PWM1_DbcFSM~1 n1264
+1-1-- 1
+-0--1 1
+---01 1
+.names n854 count_pulse1~0 useDb1 U_PWM1_DbcFSM~1 U_PWM1_DbcFSM~0 n1269
+0---1 1
+-1100 1
+--0-1 1
+---11 1
+.names n830 n854 U_PWM1_DbcFSM~1 U_PWM1_DbcFSM~0 U_PWM1_REDly n1274
+0---1 1
+-101- 1
+.names U_PWM1_DbcFSM~0 n1278
+1 1
+.names U_PWM1_DbcFSM~1 n1282
+1 1
+.names count_pulse1~0 n1286
+1 1
+.names n830 U_PWM1_S1 U_PWM1_DPWMOutLatch n1291
+0-1 1
+-1- 1
+.names n842 U_PWM1_DbcFSM~1 U_PWM1_S1 U_PWM1_FEDly n1296
+110- 0
+--00 0
+.names n679 Dutymsb0~14 Dutymsb0~11 Dutymsb0~8 Dutymsb0~4 n678
+10000 1
+.names Dutymsb0~13 Dutymsb0~7 Dutymsb0~5 Dutymsb0~1 n679
+0000 1
+.names Dutymsb0~12 Dutymsb0~10 Dutymsb0~9 Dutymsb0~6 n680
+0000 1
+.names Dutymsb0~15 Dutymsb0~3 Dutymsb0~2 Dutymsb0~0 n681
+0000 1
+.names tripCfg0~0 U_PWM0_tripActive n683
+11 1
+.names DbCfg0~2 DbCfg0~1 U_PWM0_REDly n684
+010 1
+111 1
+.names DbCfg0~3 DbCfg0~0 U_PWM0_FEDly n686
+010 1
+111 1
+.names n691 Dutymsb1~14 Dutymsb1~11 Dutymsb1~8 Dutymsb1~4 n690
+10000 1
+.names Dutymsb1~13 Dutymsb1~7 Dutymsb1~5 Dutymsb1~1 n691
+0000 1
+.names Dutymsb1~12 Dutymsb1~10 Dutymsb1~9 Dutymsb1~6 n692
+0000 1
+.names Dutymsb1~15 Dutymsb1~3 Dutymsb1~2 Dutymsb1~0 n693
+0000 1
+.names tripCfg1~0 U_PWM1_tripActive n695
+11 1
+.names DbCfg1~2 DbCfg1~1 U_PWM1_REDly n696
+010 1
+111 1
+.names DbCfg1~3 DbCfg1~0 U_PWM1_FEDly n698
+010 1
+111 1
+.names n703 Dutymsb2~14 Dutymsb2~11 Dutymsb2~8 Dutymsb2~4 n702
+10000 1
+.names Dutymsb2~13 Dutymsb2~7 Dutymsb2~5 Dutymsb2~1 n703
+0000 1
+.names Dutymsb2~12 Dutymsb2~10 Dutymsb2~9 Dutymsb2~6 n704
+0000 1
+.names Dutymsb2~15 Dutymsb2~3 Dutymsb2~2 Dutymsb2~0 n705
+0000 1
+.names tripCfg2~0 U_PWM2_tripActive n707
+11 1
+.names DbCfg2~2 DbCfg2~1 U_PWM2_REDly n708
+010 1
+111 1
+.names DbCfg2~3 DbCfg2~0 U_PWM2_FEDly n710
+010 1
+111 1
+.names n715 Dutymsb3~14 Dutymsb3~11 Dutymsb3~8 Dutymsb3~4 n714
+10000 1
+.names Dutymsb3~13 Dutymsb3~7 Dutymsb3~5 Dutymsb3~1 n715
+0000 1
+.names Dutymsb3~12 Dutymsb3~10 Dutymsb3~9 Dutymsb3~6 n716
+0000 1
+.names Dutymsb3~15 Dutymsb3~3 Dutymsb3~2 Dutymsb3~0 n717
+0000 1
+.names tripCfg3~0 U_PWM3_tripActive n719
+11 1
+.names DbCfg3~2 DbCfg3~1 U_PWM3_REDly n720
+010 1
+111 1
+.names DbCfg3~3 DbCfg3~0 U_PWM3_FEDly n722
+010 1
+111 1
+.names n726 n730 n732 n734 n736 n725
+11111 1
+.names n727 n728 n729 count_val0~14 Dutymsb0~14 n726
+11100 1
+11111 1
+.names count_val0~13 Dutymsb0~13 n727
+00 1
+11 1
+.names count_val0~9 count_val0~2 Dutymsb0~9 Dutymsb0~2 n728
+0-1- 0
+-1-0 0
+.names count_val0~9 count_val0~4 Dutymsb0~9 Dutymsb0~4 n729
+1-0- 0
+-0-1 0
+.names n731 count_val0~6 count_val0~2 Dutymsb0~6 Dutymsb0~2 n730
+0010- 1
+00-00 1
+0111- 1
+01-10 1
+.names count_val0~4 Dutymsb0~4 n731
+10 1
+.names n733 count_val0~7 count_val0~3 Dutymsb0~7 Dutymsb0~3 n732
+10000 1
+10101 1
+11010 1
+11111 1
+.names count_val0~11 count_val0~0 Dutymsb0~11 Dutymsb0~0 n733
+0000 1
+0101 1
+1010 1
+1111 1
+.names n735 count_val0~12 count_val0~5 Dutymsb0~12 Dutymsb0~5 n734
+10000 1
+10101 1
+11010 1
+11111 1
+.names count_val0~8 count_val0~1 Dutymsb0~8 Dutymsb0~1 n735
+0000 1
+0101 1
+1010 1
+1111 1
+.names count_val0~15 count_val0~10 Dutymsb0~15 Dutymsb0~10 n736
+0000 1
+0101 1
+1010 1
+1111 1
+.names n738 n740 n742 n746 n737
+1111 1
+.names n739 count_val0~24 count_val0~16 feDlyCnt0~8 feDlyCnt0~0 n738
+00000 1
+00101 1
+01010 1
+01111 1
+.names count_val0~22 feDlyCnt0~6 n739
+01 1
+10 1
+.names n741 count_val0~25 count_val0~19 feDlyCnt0~9 feDlyCnt0~3 n740
+0010- 1
+00-00 1
+0111- 1
+01-10 1
+.names count_val0~17 feDlyCnt0~1 n741
+01 1
+.names n743 n744 n745 count_val0~19 feDlyCnt0~3 n742
+1110- 1
+111-1 1
+.names count_val0~20 count_val0~17 feDlyCnt0~4 feDlyCnt0~1 n743
+1-0- 0
+-1-0 0
+.names count_val0~18 feDlyCnt0~2 n744
+00 1
+11 1
+.names count_val0~21 count_val0~20 feDlyCnt0~5 feDlyCnt0~4 n745
+0-1- 0
+-0-1 0
+.names count_val0~23 count_val0~21 feDlyCnt0~7 feDlyCnt0~5 U_PWM0_DbcFSM~0 n746
+000-0 1
+0-010 1
+101-0 1
+1-110 1
+.names count_pulse0~0 useDb0 U_PWM0_DbcFSM~1 U_PWM0_DbcFSM~0 n747
+0100 1
+.names n750 n752 n754 count_val0~19 reDlyCnt0~3 n749
+11100 1
+11111 1
+.names n751 count_val0~23 count_val0~21 reDlyCnt0~7 reDlyCnt0~5 n750
+10000 1
+10101 1
+11010 1
+11111 1
+.names count_val0~20 count_val0~18 reDlyCnt0~4 reDlyCnt0~2 n751
+0000 1
+0101 1
+1010 1
+1111 1
+.names n753 count_val0~22 count_val0~17 reDlyCnt0~6 reDlyCnt0~1 n752
+10000 1
+10101 1
+11010 1
+11111 1
+.names count_val0~25 count_val0~24 reDlyCnt0~9 reDlyCnt0~8 n753
+0000 1
+0101 1
+1010 1
+1111 1
+.names count_val0~16 reDlyCnt0~0 n754
+00 1
+11 1
+.names n761 n765 n767 n769 n771 n760
+11111 1
+.names n762 n763 n764 count_val3~14 Dutymsb3~14 n761
+11100 1
+11111 1
+.names count_val3~13 Dutymsb3~13 n762
+00 1
+11 1
+.names count_val3~9 count_val3~2 Dutymsb3~9 Dutymsb3~2 n763
+0-1- 0
+-1-0 0
+.names count_val3~9 count_val3~4 Dutymsb3~9 Dutymsb3~4 n764
+1-0- 0
+-0-1 0
+.names n766 count_val3~6 count_val3~2 Dutymsb3~6 Dutymsb3~2 n765
+0010- 1
+00-00 1
+0111- 1
+01-10 1
+.names count_val3~4 Dutymsb3~4 n766
+10 1
+.names n768 count_val3~7 count_val3~3 Dutymsb3~7 Dutymsb3~3 n767
+10000 1
+10101 1
+11010 1
+11111 1
+.names count_val3~11 count_val3~0 Dutymsb3~11 Dutymsb3~0 n768
+0000 1
+0101 1
+1010 1
+1111 1
+.names n770 count_val3~12 count_val3~5 Dutymsb3~12 Dutymsb3~5 n769
+10000 1
+10101 1
+11010 1
+11111 1
+.names count_val3~8 count_val3~1 Dutymsb3~8 Dutymsb3~1 n770
+0000 1
+0101 1
+1010 1
+1111 1
+.names count_val3~15 count_val3~10 Dutymsb3~15 Dutymsb3~10 n771
+0000 1
+0101 1
+1010 1
+1111 1
+.names n773 n775 n777 n781 n772
+1111 1
+.names n774 count_val3~24 count_val3~16 feDlyCnt3~8 feDlyCnt3~0 n773
+00000 1
+00101 1
+01010 1
+01111 1
+.names count_val3~22 feDlyCnt3~6 n774
+01 1
+10 1
+.names n776 count_val3~25 count_val3~19 feDlyCnt3~9 feDlyCnt3~3 n775
+0010- 1
+00-00 1
+0111- 1
+01-10 1
+.names count_val3~17 feDlyCnt3~1 n776
+01 1
+.names n778 n779 n780 count_val3~19 feDlyCnt3~3 n777
+1110- 1
+111-1 1
+.names count_val3~20 count_val3~17 feDlyCnt3~4 feDlyCnt3~1 n778
+1-0- 0
+-1-0 0
+.names count_val3~18 feDlyCnt3~2 n779
+00 1
+11 1
+.names count_val3~21 count_val3~20 feDlyCnt3~5 feDlyCnt3~4 n780
+0-1- 0
+-0-1 0
+.names count_val3~23 count_val3~21 feDlyCnt3~7 feDlyCnt3~5 U_PWM3_DbcFSM~0 n781
+000-0 1
+0-010 1
+101-0 1
+1-110 1
+.names count_pulse3~0 useDb3 U_PWM3_DbcFSM~1 U_PWM3_DbcFSM~0 n782
+0100 1
+.names n785 n787 n789 count_val3~19 reDlyCnt3~3 n784
+11100 1
+11111 1
+.names n786 count_val3~23 count_val3~21 reDlyCnt3~7 reDlyCnt3~5 n785
+10000 1
+10101 1
+11010 1
+11111 1
+.names count_val3~20 count_val3~18 reDlyCnt3~4 reDlyCnt3~2 n786
+0000 1
+0101 1
+1010 1
+1111 1
+.names n788 count_val3~22 count_val3~17 reDlyCnt3~6 reDlyCnt3~1 n787
+10000 1
+10101 1
+11010 1
+11111 1
+.names count_val3~25 count_val3~24 reDlyCnt3~9 reDlyCnt3~8 n788
+0000 1
+0101 1
+1010 1
+1111 1
+.names count_val3~16 reDlyCnt3~0 n789
+00 1
+11 1
+.names n796 n800 n802 n804 n806 n795
+11111 1
+.names n797 n798 n799 count_val2~14 Dutymsb2~14 n796
+11100 1
+11111 1
+.names count_val2~13 Dutymsb2~13 n797
+00 1
+11 1
+.names count_val2~9 count_val2~2 Dutymsb2~9 Dutymsb2~2 n798
+0-1- 0
+-1-0 0
+.names count_val2~9 count_val2~4 Dutymsb2~9 Dutymsb2~4 n799
+1-0- 0
+-0-1 0
+.names n801 count_val2~6 count_val2~2 Dutymsb2~6 Dutymsb2~2 n800
+0010- 1
+00-00 1
+0111- 1
+01-10 1
+.names count_val2~4 Dutymsb2~4 n801
+10 1
+.names n803 count_val2~7 count_val2~3 Dutymsb2~7 Dutymsb2~3 n802
+10000 1
+10101 1
+11010 1
+11111 1
+.names count_val2~11 count_val2~0 Dutymsb2~11 Dutymsb2~0 n803
+0000 1
+0101 1
+1010 1
+1111 1
+.names n805 count_val2~12 count_val2~5 Dutymsb2~12 Dutymsb2~5 n804
+10000 1
+10101 1
+11010 1
+11111 1
+.names count_val2~8 count_val2~1 Dutymsb2~8 Dutymsb2~1 n805
+0000 1
+0101 1
+1010 1
+1111 1
+.names count_val2~15 count_val2~10 Dutymsb2~15 Dutymsb2~10 n806
+0000 1
+0101 1
+1010 1
+1111 1
+.names n808 n810 n812 n816 n807
+1111 1
+.names n809 count_val2~24 count_val2~16 feDlyCnt2~8 feDlyCnt2~0 n808
+00000 1
+00101 1
+01010 1
+01111 1
+.names count_val2~22 feDlyCnt2~6 n809
+01 1
+10 1
+.names n811 count_val2~25 count_val2~19 feDlyCnt2~9 feDlyCnt2~3 n810
+0010- 1
+00-00 1
+0111- 1
+01-10 1
+.names count_val2~17 feDlyCnt2~1 n811
+01 1
+.names n813 n814 n815 count_val2~19 feDlyCnt2~3 n812
+1110- 1
+111-1 1
+.names count_val2~20 count_val2~17 feDlyCnt2~4 feDlyCnt2~1 n813
+1-0- 0
+-1-0 0
+.names count_val2~18 feDlyCnt2~2 n814
+00 1
+11 1
+.names count_val2~21 count_val2~20 feDlyCnt2~5 feDlyCnt2~4 n815
+0-1- 0
+-0-1 0
+.names count_val2~23 count_val2~21 feDlyCnt2~7 feDlyCnt2~5 U_PWM2_DbcFSM~0 n816
+000-0 1
+0-010 1
+101-0 1
+1-110 1
+.names count_pulse2~0 useDb2 U_PWM2_DbcFSM~1 U_PWM2_DbcFSM~0 n817
+0100 1
+.names n820 n822 n824 count_val2~19 reDlyCnt2~3 n819
+11100 1
+11111 1
+.names n821 count_val2~23 count_val2~21 reDlyCnt2~7 reDlyCnt2~5 n820
+10000 1
+10101 1
+11010 1
+11111 1
+.names count_val2~20 count_val2~18 reDlyCnt2~4 reDlyCnt2~2 n821
+0000 1
+0101 1
+1010 1
+1111 1
+.names n823 count_val2~22 count_val2~17 reDlyCnt2~6 reDlyCnt2~1 n822
+10000 1
+10101 1
+11010 1
+11111 1
+.names count_val2~25 count_val2~24 reDlyCnt2~9 reDlyCnt2~8 n823
+0000 1
+0101 1
+1010 1
+1111 1
+.names count_val2~16 reDlyCnt2~0 n824
+00 1
+11 1
+.names n831 n835 n837 n839 n841 n830
+11111 1
+.names n832 n833 n834 count_val1~14 Dutymsb1~14 n831
+11100 1
+11111 1
+.names count_val1~13 Dutymsb1~13 n832
+00 1
+11 1
+.names count_val1~9 count_val1~2 Dutymsb1~9 Dutymsb1~2 n833
+0-1- 0
+-1-0 0
+.names count_val1~9 count_val1~4 Dutymsb1~9 Dutymsb1~4 n834
+1-0- 0
+-0-1 0
+.names n836 count_val1~6 count_val1~2 Dutymsb1~6 Dutymsb1~2 n835
+0010- 1
+00-00 1
+0111- 1
+01-10 1
+.names count_val1~4 Dutymsb1~4 n836
+10 1
+.names n838 count_val1~7 count_val1~3 Dutymsb1~7 Dutymsb1~3 n837
+10000 1
+10101 1
+11010 1
+11111 1
+.names count_val1~11 count_val1~0 Dutymsb1~11 Dutymsb1~0 n838
+0000 1
+0101 1
+1010 1
+1111 1
+.names n840 count_val1~12 count_val1~5 Dutymsb1~12 Dutymsb1~5 n839
+10000 1
+10101 1
+11010 1
+11111 1
+.names count_val1~8 count_val1~1 Dutymsb1~8 Dutymsb1~1 n840
+0000 1
+0101 1
+1010 1
+1111 1
+.names count_val1~15 count_val1~10 Dutymsb1~15 Dutymsb1~10 n841
+0000 1
+0101 1
+1010 1
+1111 1
+.names n843 n845 n847 n851 n842
+1111 1
+.names n844 count_val1~24 count_val1~16 feDlyCnt1~8 feDlyCnt1~0 n843
+00000 1
+00101 1
+01010 1
+01111 1
+.names count_val1~22 feDlyCnt1~6 n844
+01 1
+10 1
+.names n846 count_val1~25 count_val1~19 feDlyCnt1~9 feDlyCnt1~3 n845
+0010- 1
+00-00 1
+0111- 1
+01-10 1
+.names count_val1~17 feDlyCnt1~1 n846
+01 1
+.names n848 n849 n850 count_val1~19 feDlyCnt1~3 n847
+1110- 1
+111-1 1
+.names count_val1~20 count_val1~17 feDlyCnt1~4 feDlyCnt1~1 n848
+1-0- 0
+-1-0 0
+.names count_val1~18 feDlyCnt1~2 n849
+00 1
+11 1
+.names count_val1~21 count_val1~20 feDlyCnt1~5 feDlyCnt1~4 n850
+0-1- 0
+-0-1 0
+.names count_val1~23 count_val1~21 feDlyCnt1~7 feDlyCnt1~5 U_PWM1_DbcFSM~0 n851
+000-0 1
+0-010 1
+101-0 1
+1-110 1
+.names count_pulse1~0 useDb1 U_PWM1_DbcFSM~1 U_PWM1_DbcFSM~0 n852
+0100 1
+.names n855 n857 n859 count_val1~19 reDlyCnt1~3 n854
+11100 1
+11111 1
+.names n856 count_val1~23 count_val1~21 reDlyCnt1~7 reDlyCnt1~5 n855
+10000 1
+10101 1
+11010 1
+11111 1
+.names count_val1~20 count_val1~18 reDlyCnt1~4 reDlyCnt1~2 n856
+0000 1
+0101 1
+1010 1
+1111 1
+.names n858 count_val1~22 count_val1~17 reDlyCnt1~6 reDlyCnt1~1 n857
+10000 1
+10101 1
+11010 1
+11111 1
+.names count_val1~25 count_val1~24 reDlyCnt1~9 reDlyCnt1~8 n858
+0000 1
+0101 1
+1010 1
+1111 1
+.names count_val1~16 reDlyCnt1~0 n859
+00 1
+11 1
+.end
+#______________________________________________________________________#

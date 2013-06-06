@@ -1,0 +1,162 @@
+Node: 3927  TN_INPAD_SOURCE Block #130 (Dutymsb0~1)
+Pin: inpad.inpad[0] pb (Dutymsb0~1)T_arr: 0  T_req: -1.489e-08  Tdel: 0
+Internal Net: #58 (Dutymsb0~1).  Pins on net: 3.
+
+Node: 3926  TN_INPAD_OPIN Block #130 (Dutymsb0~1)
+Pin: inpad.inpad[0] pb (Dutymsb0~1)
+T_arr: 0  T_req: -1.489e-08  Tdel: 0
+Internal Net: #58 (Dutymsb0~1).  Pins on net: 3.
+
+Node: 3925  TN_CB_OPIN Block #130 (Dutymsb0~1)
+Pin: io.inpad[0] pb (Dutymsb0~1)
+T_arr: 0  T_req: -1.489e-08  Tdel: 3.34623e-09
+External-to-Block Net: #213 (Dutymsb0~1).  Pins on net: 3.
+
+Node: 1629  TN_CB_IPIN Block #7 (U_PWM0_DPWMOutLatch)
+Pin: clb.I[8] pb (U_PWM0_DPWMOutLatch)
+T_arr: 3.34623e-09  T_req: -1.15438e-08  Tdel: 1.04e-09
+Internal Net: #58 (Dutymsb0~1).  Pins on net: 3.
+
+Node: 1777  TN_INTERMEDIATE_NODE Block #7 (U_PWM0_DPWMOutLatch)
+Pin: ble.in[3] pb (n679)
+T_arr: 4.38623e-09  T_req: -1.05038e-08  Tdel: 0
+Internal Net: #58 (Dutymsb0~1).  Pins on net: 3.
+
+Node: 1782  TN_INTERMEDIATE_NODE Block #7 (U_PWM0_DPWMOutLatch)
+Pin: lut5.in[3] pb (n679)
+T_arr: 4.38623e-09  T_req: -1.05038e-08  Tdel: 0
+Internal Net: #58 (Dutymsb0~1).  Pins on net: 3.
+
+Node: 1787  TN_PRIMITIVE_IPIN Block #7 (U_PWM0_DPWMOutLatch)
+Pin: lut.in[3] pb (n679)
+T_arr: 4.38623e-09  T_req: -1.05038e-08  Tdel: 4.78e-10
+Internal Net: #58 (Dutymsb0~1).  Pins on net: 3.
+
+Node: 1788  TN_PRIMITIVE_OPIN Block #7 (U_PWM0_DPWMOutLatch)
+Pin: lut.out[0] pb (n679)
+T_arr: 4.86423e-09  T_req: -1.00258e-08  Tdel: 0
+Internal Net: #469 (n679).  Pins on net: 2.
+
+Node: 1783  TN_INTERMEDIATE_NODE Block #7 (U_PWM0_DPWMOutLatch)
+Pin: lut5.out[0] pb (n679)
+T_arr: 4.86423e-09  T_req: -1.00258e-08  Tdel: 2.63e-10
+Internal Net: #469 (n679).  Pins on net: 2.
+
+Node: 1778  TN_INTERMEDIATE_NODE Block #7 (U_PWM0_DPWMOutLatch)
+Pin: ble.out[0] pb (n679)
+T_arr: 5.12722e-09  T_req: -9.76279e-09  Tdel: 1.04e-09
+Internal Net: #469 (n679).  Pins on net: 2.
+
+Node: 1789  TN_INTERMEDIATE_NODE Block #7 (U_PWM0_DPWMOutLatch)
+Pin: ble.in[0] pb (n678)
+T_arr: 6.16722e-09  T_req: -8.72279e-09  Tdel: 0
+Internal Net: #469 (n679).  Pins on net: 2.
+
+Node: 1795  TN_INTERMEDIATE_NODE Block #7 (U_PWM0_DPWMOutLatch)
+Pin: lut5.in[0] pb (n678)
+T_arr: 6.16722e-09  T_req: -8.72279e-09  Tdel: 0
+Internal Net: #469 (n679).  Pins on net: 2.
+
+Node: 1801  TN_PRIMITIVE_IPIN Block #7 (U_PWM0_DPWMOutLatch)
+Pin: lut.in[0] pb (n678)
+T_arr: 6.16722e-09  T_req: -8.72279e-09  Tdel: 8.36e-10
+Internal Net: #469 (n679).  Pins on net: 2.
+
+Node: 1806  TN_PRIMITIVE_OPIN Block #7 (U_PWM0_DPWMOutLatch)
+Pin: lut.out[0] pb (n678)
+T_arr: 7.00323e-09  T_req: -7.88679e-09  Tdel: 0
+Internal Net: #429 (n678).  Pins on net: 2.
+
+Node: 1800  TN_INTERMEDIATE_NODE Block #7 (U_PWM0_DPWMOutLatch)
+Pin: lut5.out[0] pb (n678)
+T_arr: 7.00323e-09  T_req: -7.88679e-09  Tdel: 2.63e-10
+Internal Net: #429 (n678).  Pins on net: 2.
+
+Node: 1794  TN_INTERMEDIATE_NODE Block #7 (U_PWM0_DPWMOutLatch)
+Pin: ble.out[0] pb (n678)
+T_arr: 7.26622e-09  T_req: -7.62379e-09  Tdel: 1.04e-09
+Internal Net: #429 (n678).  Pins on net: 2.
+
+Node: 1808  TN_INTERMEDIATE_NODE Block #7 (U_PWM0_DPWMOutLatch)
+Pin: ble.in[1] pb (DPWM0)
+T_arr: 8.30623e-09  T_req: -6.58379e-09  Tdel: 0
+Internal Net: #429 (n678).  Pins on net: 2.
+
+Node: 1813  TN_INTERMEDIATE_NODE Block #7 (U_PWM0_DPWMOutLatch)
+Pin: lut5.in[1] pb (DPWM0)
+T_arr: 8.30623e-09  T_req: -6.58379e-09  Tdel: 0
+Internal Net: #429 (n678).  Pins on net: 2.
+
+Node: 1818  TN_PRIMITIVE_IPIN Block #7 (U_PWM0_DPWMOutLatch)
+Pin: lut.in[1] pb (DPWM0)
+T_arr: 8.30623e-09  T_req: -6.58379e-09  Tdel: 8.36e-10
+Internal Net: #429 (n678).  Pins on net: 2.
+
+Node: 1821  TN_PRIMITIVE_OPIN Block #7 (U_PWM0_DPWMOutLatch)
+Pin: lut.out[0] pb (DPWM0)
+T_arr: 9.14222e-09  T_req: -5.74779e-09  Tdel: 0
+Internal Net: #351 (DPWM0).  Pins on net: 4.
+
+Node: 1816  TN_INTERMEDIATE_NODE Block #7 (U_PWM0_DPWMOutLatch)
+Pin: lut5.out[0] pb (DPWM0)
+T_arr: 9.14222e-09  T_req: -5.74779e-09  Tdel: 2.63e-10
+Internal Net: #351 (DPWM0).  Pins on net: 4.
+
+Node: 1811  TN_INTERMEDIATE_NODE Block #7 (U_PWM0_DPWMOutLatch)
+Pin: ble.out[0] pb (DPWM0)
+T_arr: 9.40523e-09  T_req: -5.48479e-09  Tdel: 1.04e-09
+Internal Net: #351 (DPWM0).  Pins on net: 4.
+
+Node: 1756  TN_INTERMEDIATE_NODE Block #7 (U_PWM0_DPWMOutLatch)
+Pin: ble.in[0] pb (DPWMOutB0)
+T_arr: 1.04452e-08  T_req: -4.44479e-09  Tdel: 0
+Internal Net: #351 (DPWM0).  Pins on net: 4.
+
+Node: 1762  TN_INTERMEDIATE_NODE Block #7 (U_PWM0_DPWMOutLatch)
+Pin: lut5.in[0] pb (DPWMOutB0)
+T_arr: 1.04452e-08  T_req: -4.44479e-09  Tdel: 0
+Internal Net: #351 (DPWM0).  Pins on net: 4.
+
+Node: 1768  TN_PRIMITIVE_IPIN Block #7 (U_PWM0_DPWMOutLatch)
+Pin: lut.in[0] pb (DPWMOutB0)
+T_arr: 1.04452e-08  T_req: -4.44479e-09  Tdel: 8.36e-10
+Internal Net: #351 (DPWM0).  Pins on net: 4.
+
+Node: 1773  TN_PRIMITIVE_OPIN Block #7 (U_PWM0_DPWMOutLatch)
+Pin: lut.out[0] pb (DPWMOutB0)
+T_arr: 1.12812e-08  T_req: -3.60879e-09  Tdel: 0
+Internal Net: #353 (DPWMOutB0).  Pins on net: 2.
+
+Node: 1767  TN_INTERMEDIATE_NODE Block #7 (U_PWM0_DPWMOutLatch)
+Pin: lut5.out[0] pb (DPWMOutB0)
+T_arr: 1.12812e-08  T_req: -3.60879e-09  Tdel: 2.63e-10
+Internal Net: #353 (DPWMOutB0).  Pins on net: 2.
+
+Node: 1761  TN_INTERMEDIATE_NODE Block #7 (U_PWM0_DPWMOutLatch)
+Pin: ble.out[0] pb (DPWMOutB0)
+T_arr: 1.15442e-08  T_req: -3.34579e-09  Tdel: 0
+Internal Net: #353 (DPWMOutB0).  Pins on net: 2.
+
+Node: 1648  TN_CB_OPIN Block #7 (U_PWM0_DPWMOutLatch)
+Pin: clb.O[7] pb (U_PWM0_DPWMOutLatch)
+T_arr: 1.15442e-08  T_req: -3.34579e-09  Tdel: 3.34579e-09
+External-to-Block Net: #227 (DPWMOutB0).  Pins on net: 2.
+
+Node: 3504  TN_CB_IPIN Block #76 (out:DPWMOutB0)
+Pin: io.outpad[0] pb (out:DPWMOutB0)
+T_arr: 1.489e-08  T_req: 0  Tdel: 0
+Internal Net: #353 (DPWMOutB0).  Pins on net: 2.
+
+Node: 3505  TN_OUTPAD_IPIN Block #76 (out:DPWMOutB0)
+Pin: outpad.outpad[0] pb (out:DPWMOutB0)
+T_arr: 1.489e-08  T_req: 0  Tdel: 0
+Internal Net: #353 (DPWMOutB0).  Pins on net: 2.
+
+Node: 3506  TN_OUTPAD_SINK Block #76 (out:DPWMOutB0)
+Pin: outpad.outpad[0] pb (out:DPWMOutB0)T_arr: 1.489e-08  T_req: 0  
+Internal Net: #353 (DPWMOutB0).  Pins on net: 2.
+
+
+Tnodes on critical path: 32  Non-global nets on critical path: 2.
+Global nets on critical path: 0.
+Total logic delay: 8.198e-09 (s)  Total net delay: 6.69202e-09 (s)
