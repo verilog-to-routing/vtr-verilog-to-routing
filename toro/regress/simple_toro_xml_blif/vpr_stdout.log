@@ -1,0 +1,22 @@
+________________________________________________________________________
+                       VPR - The Next Generation                        
+                     Version 0.A30.0 (Linux X86/64)                     
+          This is free open source code under the MIT license.          
+________________________________________________________________________
+
+VPR FPGA Placement and Routing.
+Version: Version 6.1 Internal Release
+Compiled: Dec 28 2012.
+Original VPR by V. Betz.
+Timing-driven placement enhancements by A. Marquardt.
+Single-drivers enhancements by Andy Ye with additions by.
+Mark Fang, Jason Luu, Ted Campbell
+Heterogeneous stucture support by Jason Luu and Ted Campbell.
+T-VPack clustering integration by Jason Luu.
+Area-driven AAPack added by Jason Luu.
+This is free open source code under MIT license.
+
+Architecture file: simple_vpr_xml_blif.toro.xml
+Circuit name: simple_vpr_xml_blif.toro.blif
+
+ERROR(1): [LINE 45] 'upper' is not a valid side.

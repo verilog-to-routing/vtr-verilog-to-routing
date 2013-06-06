@@ -1,0 +1,135 @@
+<!-- _______________________________________________________________ -->
+<!--                     Toro - A VPR Front-End                      -->
+<!--   (c) Copyright 2012-2013 Texas Instruments (under GNU GPL)     -->
+<!-- _______________________________________________________________ -->
+<!--                       Architecture Spec                         -->
+<!-- _______________________________________________________________ -->
+<architecture name="">
+   
+   <config>
+      <size mode="auto" ratio="1.000"/>
+      <est min_width_nmos_res="6065.520" min_width_pmos_res="18138.500" mux_trans_in_pin_size="1.222" grid_logic_tile_area="14813.392"/>
+      <sb model="wilton" fs="3"/>
+      <cb cap_in="0.0000e+00" delay_in="7.2470e-11"/>
+   </config>
+   
+   <io name="io" capacity="2" fc_in="0.100" fc_out="0.100">
+      <modes> "inpad" "outpad" </modes>
+      <pin name="outpad" type="input" count="1"/>
+      <pin name="inpad" type="output" count="1"/>
+      <pin name="clock" type="clock" count="1"/>
+      <pin_assign pattern="custom" side="left">
+         <pins> "io.outpad" "io.inpad" "io.clock" </pins>
+      </pin_assign>
+      <pin_assign pattern="custom" side="upper">
+         <pins> "io.outpad" "io.inpad" "io.clock" </pins>
+      </pin_assign>
+      <pin_assign pattern="custom" side="right">
+         <pins> "io.outpad" "io.inpad" "io.clock" </pins>
+      </pin_assign>
+      <pin_assign pattern="custom" side="lower">
+         <pins> "io.outpad" "io.inpad" "io.clock" </pins>
+      </pin_assign>
+      <grid_assign mode="perimeter" priority="10"/>
+   </io>
+   <pb name="inpad" count="1" cell=".input">
+      <pin name="inpad" type="output" count="1"/>
+   </pb>
+   <pb name="outpad" count="1" cell=".output">
+      <pin name="outpad" type="input" count="1"/>
+   </pb>
+   <model name="inpad">
+      <pb name="inpad"/>
+      <interconnect name="inpad" type="direct">
+         <input name="inpad.inpad"/>
+         <output name="io.inpad"/>
+         <timing mode="delay" input="inpad.inpad" output="io.inpad" max_value="4.2430e-11"/>
+      </interconnect>
+   </model>
+   <model name="outpad">
+      <pb name="outpad"/>
+      <interconnect name="outpad" type="direct">
+         <input name="io.outpad"/>
+         <output name="outpad.outpad"/>
+         <timing mode="delay" input="io.outpad" output="outpad.outpad" max_value="1.3940e-11"/>
+      </interconnect>
+   </model>
+   <pb name="clb" fc_in="0.100" fc_out="0.100">
+      <mode> "clb" </mode>
+      <pin name="I" type="input" count="1" equivalence="true"/>
+      <pin name="O" type="output" count="1" equivalence="true"/>
+      <pin name="clk" type="clock" count="1"/>
+      <pin_assign pattern="spread"/>
+      <grid_assign mode="fill" priority="1"/>
+   </pb>
+   <pb name="ble" count="1">
+      <mode> "ble" </mode>
+      <pin name="in" type="input" count="1"/>
+      <pin name="out" type="output" count="1"/>
+      <pin name="clk" type="clock" count="1"/>
+   </pb>
+   <pb name="lut0" count="1" cell=".names" class="lut">
+      <pin name="in" type="input" count="1" class="lut_in"/>
+      <pin name="out" type="output" count="1" class="lut_out"/>
+      <timing mode="delay_matrix" input="lut0.in" output="lut0.out"
+          max_matrix=6.63000e-10
+      />
+   </pb>
+   <pb name="ff0" count="1" cell=".latch" class="flipflop">
+      <pin name="D" type="input" count="1" class="D"/>
+      <pin name="Q" type="output" count="1" class="Q"/>
+      <pin name="clk" type="clock" count="1" class="clock"/>
+   </pb>
+   <model name="ble">
+      <pb name="lut0"/>
+      <pb name="ff0"/>
+      <interconnect name="ble_lut0" type="complete">
+         <input name="ble.in"/>
+         <output name="lut0.in"/>
+      </interconnect>
+      <interconnect name="lut0_ff0" type="direct">
+         <input name="lut0.out"/>
+         <output name="ff0.D"/>
+      </interconnect>
+      <interconnect name="ble_clk" type="direct">
+         <input name="ble.clk"/>
+         <output name="ff0.clk"/>
+      </interconnect>
+      <interconnect name="ble_out_mux" type="mux">
+         <input name="ff0.Q lut0.out"/>
+         <output name="ble.out"/>
+         <timing mode="delay" input="ff0.Q" output="ble.out" max_value="2.6300e-10"/>
+         <timing mode="delay" input="lut0.out" output="ble.out" max_value="2.6300e-10"/>
+      </interconnect>
+   </model>
+   <model name="clb">
+      <pb name="ble"/>
+      <interconnect name="crossbar" type="complete">
+         <input name="clb.I"/>
+         <output name="ble.in"/>
+         <timing mode="delay" input="clb.I" output="ble.in" max_value="1.0400e-09"/>
+      </interconnect>
+      <interconnect name="clks" type="complete">
+         <input name="clb.clk"/>
+         <output name="ble.clk"/>
+      </interconnect>
+      <interconnect name="clbouts" type="complete">
+         <input name="ble.out"/>
+         <output name="clb.O"/>
+      </interconnect>
+   </model>
+   
+   <switchbox name="0" type="mux" fs="0">
+      <timing
+         delay="6.8370e-11"
+      />
+   </switchbox>
+   
+   <segment length="4" type="unidir" freq="1.000">
+      <sb type="pattern"> 1 1 1 1 1 </sb>
+      <cb type="pattern"> 1 1 1 1 </cb>
+      <mux name="0"/>
+   </segment>
+   
+</architecture>
+<!-- _______________________________________________________________ -->

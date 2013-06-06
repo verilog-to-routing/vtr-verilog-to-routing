@@ -1,0 +1,12 @@
+Netlist file: simple_toro_xml_blif.vpr.net   Architecture file: simple_vpr_xml_blif.toro.xml
+Array size: 2 x 2 logic blocks
+
+#block name	x	y	subblk	block number
+#----------	--	--	------	------------
+top.out_addr_0	1	2	0	#0
+top.out_addr_1	1	1	0	#1
+top.in_data_1	0	1	0	#2
+top.in_data_0	0	2	0	#3
+out:top.out_addr_1	1	0	0	#4
+out:top.out_addr_0	1	3	0	#5
+top.clk		0	1	1	#6
