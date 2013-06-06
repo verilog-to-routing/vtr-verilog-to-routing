@@ -1,0 +1,64 @@
+#!/bin/csh -f
+
+echo "==> cd vpr_b1_small ; clean ; cd .."
+cd vpr_b1_small ; clean ; cd ..
+
+echo "==> cd vpr_tseng ; clean ; cd .."
+cd vpr_tseng ; clean ; cd ..
+
+echo "==> cd vpr_tseng_fabric_grids ; clean ; cd .."
+cd vpr_tseng_fabric_grids ; clean ; cd ..
+
+echo "==> cd vpr_tseng_fabric_blocks ; clean ; cd .."
+cd vpr_tseng_fabric_blocks ; clean ; cd ..
+
+echo "==> cd vpr_tseng_fabric_channels ; clean ; cd .."
+cd vpr_tseng_fabric_channels ; clean ; cd ..
+
+echo "==> cd vpr_tseng_fabric_switchboxes ; clean ; cd .."
+cd vpr_tseng_fabric_switchboxes ; clean ; cd ..
+
+echo "==> cd vpr_tseng_fabric_connections ; clean ; cd .."
+cd vpr_tseng_fabric_connections ; clean ; cd ..
+
+echo "==> cd vpr_tseng_fabric_polygon ; clean ; cd .."
+cd vpr_tseng_fabric_polygon ; clean ; cd ..
+
+echo "==> cd vpr_tseng_region_place ; clean ; cd .."
+cd vpr_tseng_region_place ; clean ; cd ..
+
+echo "==> cd vpr_tseng_relative_place ; clean ; cd .."
+cd vpr_tseng_relative_place ; clean ; cd ..
+
+echo "==> cd vpr_tseng_preplaced ; clean ; cd .."
+cd vpr_tseng_preplaced ; clean ; cd ..
+
+echo "==> cd vpr_tseng_prerouted ; clean ; cd .."
+cd vpr_tseng_prerouted ; clean ; cd ..
+
+echo "==> cd ti_pwmex_io ; clean ; cd .."
+cd ti_pwmex_io ; clean ; cd ..
+
+echo "==> cd ti_cic_filter_top ; clean ; cd .."
+cd ti_cic_filter_top ; clean ; cd ..
+
+echo "==> cd ti_cic_filter_top_v2 ; clean ; cd .."
+cd ti_cic_filter_top_v2 ; clean ; cd ..
+
+echo "==> cd simple_vpr_xml_blif ; clean ; cd .."
+cd simple_vpr_xml_blif ; clean ; cd ..
+
+echo "==> cd simple_toro_xml_blif ; clean ; cd .."
+cd simple_toro_xml_blif ; clean ; cd ..
+
+echo "==> cd simple_toro_arch_circuit ; clean ; cd .."
+cd simple_toro_arch_circuit ; clean ; cd ..
+
+echo "==> cd icss_vpr_xml_blif ; clean ; cd .."
+cd icss_vpr_xml_blif ; clean ; cd ..
+
+echo "==> cd icss_toro_xml_blif ; clean ; cd .."
+cd icss_toro_xml_blif ; clean ; cd ..
+
+echo "==> cd icss_toro_arch_circuit ; clean ; cd .."
+cd icss_toro_arch_circuit ; clean ; cd ..

@@ -1,0 +1,53 @@
+#!/bin/csh -f 
+
+echo "==> /vobs/cpp/warpcore/toro/bin.$ISM/toro $1.options"
+/vobs/cpp/warpcore/toro/bin.$ISM/toro $1.options
+
+echo "==> egrep -v "/13" $1.log | egrep -v "Version" | egrep -v "Owner" | egrep -v "seconds" > $1.toro.tmp"
+egrep -v "/13" $1.toro.log | egrep -v "Version" | egrep -v "Owner" | egrep -v "seconds" > $1.toro.tmp
+mv $1.toro.tmp $1.toro.log
+
+echo "==> egrep -v "/13" | egrep -v "Version" > $1.toro.snoitpo"
+egrep -v "/13" $1.toro.snoitpo | egrep -v "Version" > $1.toro.tmp
+mv $1.toro.tmp $1.toro.snoitpo
+
+echo "==> egrep -v "/13" | egrep -v "Version" > $1.toro.xml"
+egrep -v "/13" $1.toro.xml | egrep -v "Version" > $1.toro.tmp
+mv $1.toro.tmp $1.toro.xml
+
+echo "==> egrep -v "/13" | egrep -v "Version" > $1.toro.blif"
+egrep -v "/13" $1.toro.blif | egrep -v "Version" > $1.toro.tmp
+mv $1.toro.tmp $1.toro.blif
+
+echo "==> egrep -v "/13" | egrep -v "Version" > $1.toro.arch"
+egrep -v "/13" $1.toro.arch | egrep -v "Version" > $1.toro.tmp
+mv $1.toro.tmp $1.toro.arch
+
+echo "==> egrep -v "/13" | egrep -v "Version" > $1.toro.fabric"
+egrep -v "/13" $1.toro.fabric | egrep -v "Version" > $1.toro.tmp
+mv $1.toro.tmp $1.toro.fabric
+
+echo "==> egrep -v "/13" | egrep -v "Version" > $1.toro.circuit"
+egrep -v "/13" $1.toro.circuit | egrep -v "Version" > $1.toro.tmp
+mv $1.toro.tmp $1.toro.circuit
+
+echo "==> diff $1.*.* baseline.*.* > diff.*"
+
+diff $1.toro.log          baseline.toro.log          > diff.toro.log
+diff $1.toro.snoitpo      baseline.toro.snoitpo      > diff.toro.snoitpo
+diff $1.toro.xml          baseline.toro.xml          > diff.toro.xml
+diff $1.toro.blif         baseline.toro.blif         > diff.toro.blif
+diff $1.toro.arch         baseline.toro.arch         > diff.toro.arch
+diff $1.toro.fabric       baseline.toro.fabric       > diff.toro.fabric
+diff $1.toro.circuit      baseline.toro.circuit      > diff.toro.circuit
+diff $1.toro.laff         baseline.toro.laff         > diff.toro.laff
+
+diff $1.vpr.net           baseline.vpr.net           > diff.vpr.net
+diff $1.vpr.place         baseline.vpr.place         > diff.vpr.place
+diff $1.vpr.route         baseline.vpr.route         > diff.vpr.route
+diff $1.vpr.slack         baseline.vpr.slack         > diff.vpr.slack
+diff $1.vpr.criticality   baseline.vpr.criticality   > diff.vpr.criticality
+diff $1.vpr.critical_path baseline.vpr.critical_path > diff.vpr.critical_path
+
+echo "==> ls -ltr diff.*.*"
+ls -ltr diff.*.*

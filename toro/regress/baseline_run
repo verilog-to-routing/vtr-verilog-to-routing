@@ -1,0 +1,64 @@
+#!/bin/csh -f
+
+echo "==> cd vpr_b1_small ; baseline ; cd .."
+cd vpr_b1_small ; baseline ; cd ..
+
+echo "==> cd vpr_tseng ; baseline ; cd .."
+cd vpr_tseng ; baseline ; cd ..
+
+echo "==> cd vpr_tseng_fabric_grids ; baseline ; cd .."
+cd vpr_tseng_fabric_grids ; baseline ; cd ..
+
+echo "==> cd vpr_tseng_fabric_blocks ; baseline ; cd .."
+cd vpr_tseng_fabric_blocks ; baseline ; cd ..
+
+echo "==> cd vpr_tseng_fabric_channels ; baseline ; cd .."
+cd vpr_tseng_fabric_channels ; baseline ; cd ..
+
+echo "==> cd vpr_tseng_fabric_switchboxes ; baseline ; cd .."
+cd vpr_tseng_fabric_switchboxes ; baseline ; cd ..
+
+echo "==> cd vpr_tseng_fabric_connections ; baseline ; cd .."
+cd vpr_tseng_fabric_connections ; baseline ; cd ..
+
+echo "==> cd vpr_tseng_fabric_polygon ; baseline ; cd .."
+cd vpr_tseng_fabric_polygon ; baseline ; cd ..
+
+echo "==> cd vpr_tseng_region_place ; baseline ; cd .."
+cd vpr_tseng_region_place ; baseline ; cd ..
+
+echo "==> cd vpr_tseng_relative_place ; baseline ; cd .."
+cd vpr_tseng_relative_place ; baseline ; cd ..
+
+echo "==> cd vpr_tseng_preplaced ; baseline ; cd .."
+cd vpr_tseng_preplaced ; baseline ; cd ..
+
+echo "==> cd vpr_tseng_prerouted ; baseline ; cd .."
+cd vpr_tseng_prerouted ; baseline ; cd ..
+
+echo "==> cd ti_pwmex_io ; baseline ; cd .."
+cd ti_pwmex_io ; baseline ; cd ..
+
+echo "==> cd ti_cic_filter_top ; baseline ; cd .."
+cd ti_cic_filter_top ; baseline ; cd ..
+
+echo "==> cd ti_cic_filter_top_v2 ; baseline ; cd .."
+cd ti_cic_filter_top_v2 ; baseline ; cd ..
+
+echo "==> cd simple_vpr_xml_blif ; baseline ; cd .."
+cd simple_vpr_xml_blif ; baseline ; cd ..
+
+echo "==> cd simple_toro_xml_blif ; baseline ; cd .."
+cd simple_toro_xml_blif ; baseline ; cd ..
+
+echo "==> cd simple_toro_arch_circuit ; baseline ; cd .."
+cd simple_toro_arch_circuit ; baseline ; cd ..
+
+echo "==> cd icss_vpr_xml_blif ; baseline ; cd .."
+cd icss_vpr_xml_blif ; baseline ; cd ..
+
+echo "==> cd icss_toro_xml_blif ; baseline ; cd .."
+cd icss_toro_xml_blif ; baseline ; cd ..
+
+echo "==> cd icss_toro_arch_circuit ; baseline ; cd .."
+cd icss_toro_arch_circuit ; baseline ; cd ..

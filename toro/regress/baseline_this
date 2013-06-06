@@ -1,0 +1,22 @@
+#!/bin/csh -f
+
+echo "==> cp $1.*.* baseline.*.*"
+
+cp $1.vpr.net           baseline.vpr.net
+cp $1.vpr.place         baseline.vpr.place
+cp $1.vpr.route         baseline.vpr.route
+cp $1.vpr.slack         baseline.vpr.slack
+cp $1.vpr.criticality   baseline.vpr.criticality
+cp $1.vpr.critical_path baseline.vpr.critical_path
+
+cp $1.toro.log          baseline.toro.log
+cp $1.toro.snoitpo      baseline.toro.snoitpo
+cp $1.toro.xml          baseline.toro.xml
+cp $1.toro.blif         baseline.toro.blif
+cp $1.toro.arch         baseline.toro.arch
+cp $1.toro.fabric       baseline.toro.fabric
+cp $1.toro.circuit      baseline.toro.circuit
+cp $1.toro.laff         baseline.toro.laff
+
+echo "==> ls -ltr baseline.*.*"
+ls -ltr baseline.*.*

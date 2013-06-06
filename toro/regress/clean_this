@@ -1,0 +1,33 @@
+#!/bin/csh -f
+
+echo "==> rm $1.toro.*"
+rm $1.toro.log
+rm $1.toro.snoitpo
+rm $1.toro.xml
+rm $1.toro.blif
+rm $1.toro.arch
+rm $1.toro.fabric
+rm $1.toro.circuit
+rm $1.toro.laff
+rm $1.vpr.net
+rm $1.vpr.place
+rm $1.vpr.route
+rm $1.vpr.slack
+rm $1.vpr.criticality
+rm $1.vpr.critical_path
+
+echo "==> rm diff.*.*"
+rm diff.toro.log
+rm diff.toro.snoitpo
+rm diff.toro.xml
+rm diff.toro.blif
+rm diff.toro.arch
+rm diff.toro.fabric
+rm diff.toro.circuit
+rm diff.toro.laff
+rm diff.vpr.net
+rm diff.vpr.place
+rm diff.vpr.route
+rm diff.vpr.slack
+rm diff.vpr.criticality
+rm diff.vpr.critical_path

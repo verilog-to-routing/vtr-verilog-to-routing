@@ -1,0 +1,70 @@
+#!/bin/csh -f
+
+echo "==> cd vpr_b1_small ; regress ; cd .."
+cd vpr_b1_small ; regress ; cd ..
+
+echo "==> cd vpr_tseng ; regress ; cd .."
+cd vpr_tseng ; regress ; cd ..
+
+echo "==> cd vpr_tseng_fabric_grids ; regress ; cd .."
+cd vpr_tseng_fabric_grids ; regress ; cd ..
+
+echo "==> cd vpr_tseng_fabric_blocks ; regress ; cd .."
+cd vpr_tseng_fabric_blocks ; regress ; cd ..
+
+echo "==> cd vpr_tseng_fabric_channels ; regress ; cd .."
+cd vpr_tseng_fabric_channels ; regress ; cd ..
+
+echo "==> cd vpr_tseng_fabric_switchboxes ; regress ; cd .."
+cd vpr_tseng_fabric_switchboxes ; regress ; cd ..
+
+echo "==> cd vpr_tseng_fabric_connections ; regress ; cd .."
+cd vpr_tseng_fabric_connections ; regress ; cd ..
+
+echo "==> cd vpr_tseng_fabric_polygon ; regress ; cd .."
+cd vpr_tseng_fabric_polygon ; regress ; cd ..
+
+echo "==> cd vpr_tseng_region_place ; regress ; cd .."
+cd vpr_tseng_region_place ; regress ; cd ..
+
+echo "==> cd vpr_tseng_relative_place ; regress ; cd .."
+cd vpr_tseng_relative_place ; regress ; cd ..
+
+echo "==> cd vpr_tseng_preplaced ; regress ; cd .."
+cd vpr_tseng_preplaced ; regress ; cd ..
+
+echo "==> cd vpr_tseng_prerouted ; regress ; cd .."
+cd vpr_tseng_prerouted ; regress ; cd ..
+
+echo "==> cd ti_pwmex_io ; regress ; cd .."
+cd ti_pwmex_io ; regress ; cd ..
+
+echo "==> cd ti_cic_filter_top ; regress ; cd .."
+cd ti_cic_filter_top ; regress ; cd ..
+
+echo "==> cd ti_cic_filter_top_v2 ; regress ; cd .."
+cd ti_cic_filter_top_v2 ; regress ; cd ..
+
+echo "==> cd simple_vpr_xml_blif ; regress ; cd .."
+cd simple_vpr_xml_blif ; regress ; cd ..
+
+echo "==> cd simple_toro_xml_blif ; regress ; cd .."
+cd simple_toro_xml_blif ; regress ; cd ..
+
+echo "==> cd simple_toro_arch_circuit ; regress ; cd .."
+cd simple_toro_arch_circuit ; regress ; cd ..
+
+echo "==> cd icss_vpr_xml_blif ; regress ; cd .."
+cd icss_vpr_xml_blif ; regress ; cd ..
+
+echo "==> cd icss_toro_xml_blif ; regress ; cd .."
+cd icss_toro_xml_blif ; regress ; cd ..
+
+echo "==> cd icss_toro_arch_circuit ; regress ; cd .."
+cd icss_toro_arch_circuit ; regress ; cd ..
+
+echo "==> ls -ltr */diff.*.*"
+ls -ltr */diff.*.* 
+
+echo "==> ls -ltr */diff.*.* | grep -v " 0 ""
+ls -ltr */diff.*.* | grep -v " 0 "
