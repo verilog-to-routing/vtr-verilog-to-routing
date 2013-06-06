@@ -1,0 +1,3 @@
+#!/bin/csh -f
+
+../regress_this ti_cic_filter_top_v2
