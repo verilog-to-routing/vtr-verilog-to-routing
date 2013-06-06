@@ -1,0 +1,716 @@
+<circuit name="top">
+   
+   <net name="tin_pv1_0_0_" status="routed">
+      <pin inst="tin_pv1_0_0_" pin="inpad" type="output"/>
+      <pin inst="pv1_0_0_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv1_0_0_" port="io[2]" pin="inpad[1]"/>
+         <segment name="sv[0].41" orient="vert" track="41"> <channel> 0.000 1.000 0.000 4.000 </channel> </segment>
+         <pin inst="n_n4317" port="clb[0]" pin="I[15]"/>
+         <pin inst="n_n4317" port="ble[0]" pin="in[0]"/>
+         <pin inst="n_n4317" port="soft_logic[0]" pin="in[0]"/>
+         <pin inst="n_n4317" port="lut6[0]" pin="in[0]"/>
+         <pin inst="n_n4317" port="lut[0]" pin="in[0]"/>
+      </route>
+   </net>
+   <net name="tin_pv1_1_1_" status="routed">
+      <pin inst="tin_pv1_1_1_" pin="inpad" type="output"/>
+      <pin inst="pv1_1_1_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv1_1_1_" port="io[4]" pin="inpad[1]"/>
+         <segment name="sv[12].12" orient="vert" track="12"> <channel> 12.000 7.000 12.000 10.000 </channel> </segment>
+         <sb name="sb[12][7]"> <sides> lower 12 left 33 </sides> </sb>
+         <segment name="sh[7].33" orient="horz" track="33"> <channel> 10.000 7.000 12.000 7.000 </channel> </segment>
+         <pin inst="n_n3106" port="clb[0]" pin="I[16]"/>
+         <pin inst="n_n3106" port="ble[1]" pin="in[1]"/>
+         <pin inst="n_n3106" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3106" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3106" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv1_2_2_" status="routed">
+      <pin inst="tin_pv1_2_2_" pin="inpad" type="output"/>
+      <pin inst="pv1_2_2_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv1_2_2_" port="io[7]" pin="inpad[1]"/>
+         <segment name="sv[12].11" orient="vert" track="11"> <channel> 12.000 2.000 12.000 5.000 </channel> </segment>
+         <sb name="sb[12][1]"> <sides> upper 11 left 29 </sides> </sb>
+         <segment name="sh[1].29" orient="horz" track="29"> <channel> 10.000 1.000 12.000 1.000 </channel> </segment>
+         <sb name="sb[9][1]"> <sides> right 29 upper 20 </sides> </sb>
+         <segment name="sv[9].20" orient="vert" track="20"> <channel> 9.000 2.000 9.000 5.000 </channel> </segment>
+         <pin inst="n_n3983" port="clb[0]" pin="I[15]"/>
+         <pin inst="n_n3983" port="ble[4]" pin="in[1]"/>
+         <pin inst="n_n3983" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3983" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3983" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv1_3_3_" status="routed">
+      <pin inst="tin_pv1_3_3_" pin="inpad" type="output"/>
+      <pin inst="pv1_3_3_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv1_3_3_" port="io[5]" pin="inpad[1]"/>
+         <segment name="sv[0].35" orient="vert" track="35"> <channel> 0.000 2.000 0.000 5.000 </channel> </segment>
+         <sb name="sb[0][4]"> <sides> upper 35 right 14 </sides> </sb>
+         <segment name="sh[4].14" orient="horz" track="14"> <channel> 1.000 4.000 3.000 4.000 </channel> </segment>
+         <pin inst="[2047]" port="clb[0]" pin="I[14]"/>
+         <pin inst="[2047]" port="ble[4]" pin="in[2]"/>
+         <pin inst="[2047]" port="soft_logic[0]" pin="in[2]"/>
+         <pin inst="[2047]" port="lut6[0]" pin="in[2]"/>
+         <pin inst="[2047]" port="lut[0]" pin="in[2]"/>
+      </route>
+   </net>
+   <net name="tin_pv1_4_4_" status="routed">
+      <pin inst="tin_pv1_4_4_" pin="inpad" type="output"/>
+      <pin inst="pv1_4_4_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv1_4_4_" port="io[6]" pin="inpad[1]"/>
+         <segment name="sh[0].14" orient="horz" track="14"> <channel> 4.000 0.000 7.000 0.000 </channel> </segment>
+         <pin inst="n_n3343" port="clb[0]" pin="I[2]"/>
+         <pin inst="n_n3343" port="ble[0]" pin="in[0]"/>
+         <pin inst="n_n3343" port="soft_logic[0]" pin="in[0]"/>
+         <pin inst="n_n3343" port="lut6[0]" pin="in[0]"/>
+         <pin inst="n_n3343" port="lut[0]" pin="in[0]"/>
+      </route>
+   </net>
+   <net name="tin_pv1_5_5_" status="routed">
+      <pin inst="tin_pv1_5_5_" pin="inpad" type="output"/>
+      <pin inst="pv1_5_5_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv1_5_5_" port="io[3]" pin="inpad[1]"/>
+         <segment name="sh[0].8" orient="horz" track="8"> <channel> 9.000 0.000 12.000 0.000 </channel> </segment>
+         <sb name="sb[9][0]"> <sides> left 8 upper 24 </sides> </sb>
+         <segment name="sv[9].24" orient="vert" track="24"> <channel> 9.000 1.000 9.000 3.000 </channel> </segment>
+         <sb name="sb[9][3]"> <sides> lower 24 upper 24 </sides> </sb>
+         <segment name="sv[9].24" orient="vert" track="24"> <channel> 9.000 4.000 9.000 7.000 </channel> </segment>
+         <pin inst="[1904]" port="clb[0]" pin="I[5]"/>
+         <pin inst="[1904]" port="ble[4]" pin="in[2]"/>
+         <pin inst="[1904]" port="soft_logic[0]" pin="in[2]"/>
+         <pin inst="[1904]" port="lut6[0]" pin="in[2]"/>
+         <pin inst="[1904]" port="lut[0]" pin="in[2]"/>
+      </route>
+   </net>
+   <net name="tin_pv1_6_6_" status="routed">
+      <pin inst="tin_pv1_6_6_" pin="inpad" type="output"/>
+      <pin inst="pv1_6_6_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv1_6_6_" port="io[4]" pin="inpad[1]"/>
+         <segment name="sv[12].8" orient="vert" track="8"> <channel> 12.000 9.000 12.000 12.000 </channel> </segment>
+         <sb name="sb[12][11]"> <sides> lower 8 left 27 </sides> </sb>
+         <segment name="sh[11].27" orient="horz" track="27"> <channel> 11.000 11.000 12.000 11.000 </channel> </segment>
+         <sb name="sb[10][11]"> <sides> right 27 lower 11 </sides> </sb>
+         <segment name="sv[10].11" orient="vert" track="11"> <channel> 10.000 8.000 10.000 11.000 </channel> </segment>
+         <pin inst="n_n3508" port="clb[0]" pin="I[5]"/>
+         <pin inst="n_n3508" port="ble[5]" pin="in[2]"/>
+         <pin inst="n_n3508" port="soft_logic[0]" pin="in[2]"/>
+         <pin inst="n_n3508" port="lut6[0]" pin="in[2]"/>
+         <pin inst="n_n3508" port="lut[0]" pin="in[2]"/>
+      </route>
+   </net>
+   <net name="tin_pv1_7_7_" status="routed">
+      <pin inst="tin_pv1_7_7_" pin="inpad" type="output"/>
+      <pin inst="pv1_7_7_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv1_7_7_" port="io[2]" pin="inpad[1]"/>
+         <segment name="sv[0].32" orient="vert" track="32"> <channel> 0.000 5.000 0.000 8.000 </channel> </segment>
+         <sb name="sb[0][7]"> <sides> lower 32 right 12 </sides> </sb>
+         <segment name="sh[7].12" orient="horz" track="12"> <channel> 1.000 7.000 3.000 7.000 </channel> </segment>
+         <sb name="sb[3][7]"> <sides> left 12 lower 5 </sides> </sb>
+         <segment name="sv[3].5" orient="vert" track="5"> <channel> 3.000 4.000 3.000 7.000 </channel> </segment>
+         <pin inst="[6312]" port="clb[0]" pin="I[3]"/>
+         <pin inst="[6312]" port="ble[2]" pin="in[2]"/>
+         <pin inst="[6312]" port="soft_logic[0]" pin="in[2]"/>
+         <pin inst="[6312]" port="lut6[0]" pin="in[2]"/>
+         <pin inst="[6312]" port="lut[0]" pin="in[2]"/>
+      </route>
+   </net>
+   <net name="tin_pv2_0_0_" status="routed">
+      <pin inst="tin_pv2_0_0_" pin="inpad" type="output"/>
+      <pin inst="pv2_0_0_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv2_0_0_" port="io[2]" pin="inpad[1]"/>
+         <segment name="sh[0].33" orient="horz" track="33"> <channel> 1.000 0.000 4.000 0.000 </channel> </segment>
+         <sb name="sb[2][0]"> <sides> right 33 upper 12 </sides> </sb>
+         <segment name="sv[2].12" orient="vert" track="12"> <channel> 2.000 1.000 2.000 4.000 </channel> </segment>
+         <sb name="sb[2][4]"> <sides> lower 12 right 28 </sides> </sb>
+         <segment name="sh[4].28" orient="horz" track="28"> <channel> 3.000 4.000 6.000 4.000 </channel> </segment>
+         <pin inst="n_n3538" port="clb[0]" pin="I[4]"/>
+         <pin inst="n_n3538" port="ble[5]" pin="in[2]"/>
+         <pin inst="n_n3538" port="soft_logic[0]" pin="in[2]"/>
+         <pin inst="n_n3538" port="lut6[0]" pin="in[2]"/>
+         <pin inst="n_n3538" port="lut[0]" pin="in[2]"/>
+      </route>
+   </net>
+   <net name="tin_pv2_1_1_" status="routed">
+      <pin inst="tin_pv2_1_1_" pin="inpad" type="output"/>
+      <pin inst="pv2_1_1_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv2_1_1_" port="io[3]" pin="inpad[1]"/>
+         <segment name="sv[12].45" orient="vert" track="45"> <channel> 12.000 3.000 12.000 6.000 </channel> </segment>
+         <pin inst="n_n4370" port="clb[0]" pin="I[17]"/>
+         <pin inst="n_n4370" port="ble[2]" pin="in[0]"/>
+         <pin inst="n_n4370" port="soft_logic[0]" pin="in[0]"/>
+         <pin inst="n_n4370" port="lut6[0]" pin="in[0]"/>
+         <pin inst="n_n4370" port="lut[0]" pin="in[0]"/>
+      </route>
+   </net>
+   <net name="tin_pv2_2_2_" status="routed">
+      <pin inst="tin_pv2_2_2_" pin="inpad" type="output"/>
+      <pin inst="pv2_2_2_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv2_2_2_" port="io[2]" pin="inpad[1]"/>
+         <segment name="sh[0].42" orient="horz" track="42"> <channel> 6.000 0.000 9.000 0.000 </channel> </segment>
+         <pin inst="n_n3200" port="clb[0]" pin="I[14]"/>
+         <pin inst="n_n3200" port="ble[5]" pin="in[1]"/>
+         <pin inst="n_n3200" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3200" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3200" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv2_3_3_" status="routed">
+      <pin inst="tin_pv2_3_3_" pin="inpad" type="output"/>
+      <pin inst="pv2_3_3_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv2_3_3_" port="io[0]" pin="inpad[1]"/>
+         <segment name="sh[0].8" orient="horz" track="8"> <channel> 5.000 0.000 8.000 0.000 </channel> </segment>
+         <sb name="sb[5][0]"> <sides> left 8 upper 24 </sides> </sb>
+         <segment name="sv[5].24" orient="vert" track="24"> <channel> 5.000 1.000 5.000 3.000 </channel> </segment>
+         <pin inst="n_n3058" port="clb[0]" pin="I[9]"/>
+         <pin inst="n_n3058" port="ble[2]" pin="in[1]"/>
+         <pin inst="n_n3058" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3058" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3058" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv2_4_4_" status="routed">
+      <pin inst="tin_pv2_4_4_" pin="inpad" type="output"/>
+      <pin inst="pv2_4_4_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv2_4_4_" port="io[7]" pin="inpad[1]"/>
+         <segment name="sh[0].22" orient="horz" track="22"> <channel> 8.000 0.000 11.000 0.000 </channel> </segment>
+         <sb name="sb[11][0]"> <sides> left 22 upper 44 </sides> </sb>
+         <segment name="sv[11].44" orient="vert" track="44"> <channel> 11.000 1.000 11.000 3.000 </channel> </segment>
+         <sb name="sb[11][3]"> <sides> lower 44 left 5 </sides> </sb>
+         <segment name="sh[3].5" orient="horz" track="5"> <channel> 8.000 3.000 11.000 3.000 </channel> </segment>
+         <pin inst="n_n3010" port="clb[0]" pin="I[2]"/>
+         <pin inst="n_n3010" port="ble[5]" pin="in[2]"/>
+         <pin inst="n_n3010" port="soft_logic[0]" pin="in[2]"/>
+         <pin inst="n_n3010" port="lut6[0]" pin="in[2]"/>
+         <pin inst="n_n3010" port="lut[0]" pin="in[2]"/>
+      </route>
+   </net>
+   <net name="tin_pv2_5_5_" status="routed">
+      <pin inst="tin_pv2_5_5_" pin="inpad" type="output"/>
+      <pin inst="pv2_5_5_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv2_5_5_" port="io[2]" pin="inpad[1]"/>
+         <segment name="sh[0].32" orient="horz" track="32"> <channel> 5.000 0.000 8.000 0.000 </channel> </segment>
+         <sb name="sb[6][0]"> <sides> left 32 upper 12 </sides> </sb>
+         <segment name="sv[6].12" orient="vert" track="12"> <channel> 6.000 1.000 6.000 4.000 </channel> </segment>
+         <sb name="sb[6][4]"> <sides> lower 12 left 21 </sides> </sb>
+         <segment name="sh[4].21" orient="horz" track="21"> <channel> 3.000 4.000 6.000 4.000 </channel> </segment>
+         <pin inst="[1901]" port="clb[0]" pin="I[12]"/>
+         <pin inst="[1901]" port="ble[4]" pin="in[2]"/>
+         <pin inst="[1901]" port="soft_logic[0]" pin="in[2]"/>
+         <pin inst="[1901]" port="lut6[0]" pin="in[2]"/>
+         <pin inst="[1901]" port="lut[0]" pin="in[2]"/>
+      </route>
+   </net>
+   <net name="tin_pv2_6_6_" status="routed">
+      <pin inst="tin_pv2_6_6_" pin="inpad" type="output"/>
+      <pin inst="pv2_6_6_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv2_6_6_" port="io[2]" pin="inpad[1]"/>
+         <segment name="sh[12].22" orient="horz" track="22"> <channel> 8.000 12.000 11.000 12.000 </channel> </segment>
+         <sb name="sb[11][12]"> <sides> left 22 lower 47 </sides> </sb>
+         <segment name="sv[11].47" orient="vert" track="47"> <channel> 11.000 9.000 11.000 12.000 </channel> </segment>
+         <sb name="sb[11][8]"> <sides> upper 47 left 15 </sides> </sb>
+         <segment name="sh[8].15" orient="horz" track="15"> <channel> 8.000 8.000 11.000 8.000 </channel> </segment>
+         <pin inst="n_n4121" port="clb[0]" pin="I[2]"/>
+         <pin inst="n_n4121" port="ble[1]" pin="in[1]"/>
+         <pin inst="n_n4121" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n4121" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n4121" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv2_7_7_" status="routed">
+      <pin inst="tin_pv2_7_7_" pin="inpad" type="output"/>
+      <pin inst="pv2_7_7_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv2_7_7_" port="io[2]" pin="inpad[1]"/>
+         <segment name="sv[12].24" orient="vert" track="24"> <channel> 12.000 5.000 12.000 8.000 </channel> </segment>
+         <pin inst="n_n3077" port="clb[0]" pin="I[1]"/>
+         <pin inst="n_n3077" port="ble[2]" pin="in[1]"/>
+         <pin inst="n_n3077" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3077" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3077" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv4_0_0_" status="routed">
+      <pin inst="tin_pv4_0_0_" pin="inpad" type="output"/>
+      <pin inst="pv4_0_0_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv4_0_0_" port="io[0]" pin="inpad[1]"/>
+         <segment name="sv[12].41" orient="vert" track="41"> <channel> 12.000 1.000 12.000 4.000 </channel> </segment>
+         <pin inst="n_n3515" port="clb[0]" pin="I[17]"/>
+         <pin inst="n_n3515" port="ble[5]" pin="in[1]"/>
+         <pin inst="n_n3515" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3515" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3515" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv4_1_1_" status="routed">
+      <pin inst="tin_pv4_1_1_" pin="inpad" type="output"/>
+      <pin inst="pv4_1_1_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv4_1_1_" port="io[7]" pin="inpad[1]"/>
+         <segment name="sv[0].30" orient="vert" track="30"> <channel> 0.000 4.000 0.000 7.000 </channel> </segment>
+         <sb name="sb[0][4]"> <sides> lower 30 right 8 </sides> </sb>
+         <segment name="sh[4].8" orient="horz" track="8"> <channel> 1.000 4.000 4.000 4.000 </channel> </segment>
+         <pin inst="n_n3721" port="clb[0]" pin="I[16]"/>
+         <pin inst="n_n3721" port="ble[5]" pin="in[1]"/>
+         <pin inst="n_n3721" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3721" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3721" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv4_2_2_" status="routed">
+      <pin inst="tin_pv4_2_2_" pin="inpad" type="output"/>
+      <pin inst="pv4_2_2_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv4_2_2_" port="io[4]" pin="inpad[1]"/>
+         <segment name="sv[12].10" orient="vert" track="10"> <channel> 12.000 6.000 12.000 9.000 </channel> </segment>
+         <pin inst="n_n4370" port="clb[0]" pin="I[1]"/>
+         <pin inst="n_n4370" port="ble[5]" pin="in[1]"/>
+         <pin inst="n_n4370" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n4370" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n4370" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv4_3_3_" status="routed">
+      <pin inst="tin_pv4_3_3_" pin="inpad" type="output"/>
+      <pin inst="pv4_3_3_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv4_3_3_" port="io[3]" pin="inpad[1]"/>
+         <segment name="sh[12].35" orient="horz" track="35"> <channel> 6.000 12.000 9.000 12.000 </channel> </segment>
+         <sb name="sb[8][12]"> <sides> right 35 lower 17 </sides> </sb>
+         <segment name="sv[8].17" orient="vert" track="17"> <channel> 8.000 9.000 8.000 12.000 </channel> </segment>
+         <pin inst="n_n4307" port="clb[0]" pin="I[11]"/>
+         <pin inst="n_n4307" port="ble[5]" pin="in[1]"/>
+         <pin inst="n_n4307" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n4307" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n4307" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv4_4_4_" status="routed">
+      <pin inst="tin_pv4_4_4_" pin="inpad" type="output"/>
+      <pin inst="pv4_4_4_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv4_4_4_" port="io[5]" pin="inpad[1]"/>
+         <segment name="sv[12].21" orient="vert" track="21"> <channel> 12.000 3.000 12.000 6.000 </channel> </segment>
+         <sb name="sb[12][5]"> <sides> upper 21 left 45 </sides> </sb>
+         <segment name="sh[5].45" orient="horz" track="45"> <channel> 10.000 5.000 12.000 5.000 </channel> </segment>
+         <pin inst="n_n3727" port="clb[0]" pin="I[10]"/>
+         <pin inst="n_n3727" port="ble[0]" pin="in[0]"/>
+         <pin inst="n_n3727" port="soft_logic[0]" pin="in[0]"/>
+         <pin inst="n_n3727" port="lut6[0]" pin="in[0]"/>
+         <pin inst="n_n3727" port="lut[0]" pin="in[0]"/>
+      </route>
+   </net>
+   <net name="tin_pv4_5_5_" status="routed">
+      <pin inst="tin_pv4_5_5_" pin="inpad" type="output"/>
+      <pin inst="pv4_5_5_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv4_5_5_" port="io[6]" pin="inpad[1]"/>
+         <segment name="sv[12].37" orient="vert" track="37"> <channel> 12.000 3.000 12.000 6.000 </channel> </segment>
+         <sb name="sb[12][2]"> <sides> upper 37 left 21 </sides> </sb>
+         <segment name="sh[2].21" orient="horz" track="21"> <channel> 9.000 2.000 12.000 2.000 </channel> </segment>
+         <sb name="sb[9][2]"> <sides> right 21 upper 22 </sides> </sb>
+         <segment name="sv[9].22" orient="vert" track="22"> <channel> 9.000 3.000 9.000 6.000 </channel> </segment>
+         <pin inst="n_n3732" port="clb[0]" pin="I[9]"/>
+         <pin inst="n_n3732" port="ble[5]" pin="in[1]"/>
+         <pin inst="n_n3732" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3732" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3732" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv4_6_6_" status="routed">
+      <pin inst="tin_pv4_6_6_" pin="inpad" type="output"/>
+      <pin inst="pv4_6_6_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv4_6_6_" port="io[1]" pin="inpad[1]"/>
+         <segment name="sv[12].6" orient="vert" track="6"> <channel> 12.000 8.000 12.000 11.000 </channel> </segment>
+         <sb name="sb[12][8]"> <sides> lower 6 left 19 </sides> </sb>
+         <segment name="sh[8].19" orient="horz" track="19"> <channel> 10.000 8.000 12.000 8.000 </channel> </segment>
+         <pin inst="n_n3049" port="clb[0]" pin="I[12]"/>
+         <pin inst="n_n3049" port="ble[5]" pin="in[2]"/>
+         <pin inst="n_n3049" port="soft_logic[0]" pin="in[2]"/>
+         <pin inst="n_n3049" port="lut6[0]" pin="in[2]"/>
+         <pin inst="n_n3049" port="lut[0]" pin="in[2]"/>
+      </route>
+   </net>
+   <net name="tin_pv4_7_7_" status="routed">
+      <pin inst="tin_pv4_7_7_" pin="inpad" type="output"/>
+      <pin inst="pv4_7_7_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv4_7_7_" port="io[3]" pin="inpad[1]"/>
+         <segment name="sv[12].46" orient="vert" track="46"> <channel> 12.000 8.000 12.000 11.000 </channel> </segment>
+         <sb name="sb[12][8]"> <sides> lower 46 left 43 </sides> </sb>
+         <segment name="sh[8].43" orient="horz" track="43"> <channel> 10.000 8.000 12.000 8.000 </channel> </segment>
+         <pin inst="n_n4081" port="clb[0]" pin="I[16]"/>
+         <pin inst="n_n4081" port="ble[5]" pin="in[2]"/>
+         <pin inst="n_n4081" port="soft_logic[0]" pin="in[2]"/>
+         <pin inst="n_n4081" port="lut6[0]" pin="in[2]"/>
+         <pin inst="n_n4081" port="lut[0]" pin="in[2]"/>
+      </route>
+   </net>
+   <net name="tin_pv6_0_0_" status="routed">
+      <pin inst="tin_pv6_0_0_" pin="inpad" type="output"/>
+      <pin inst="pv6_0_0_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv6_0_0_" port="io[5]" pin="inpad[1]"/>
+         <segment name="sh[0].23" orient="horz" track="23"> <channel> 12.000 0.000 12.000 0.000 </channel> </segment>
+         <pin inst="n_n3392" port="clb[0]" pin="I[14]"/>
+         <pin inst="n_n3392" port="ble[2]" pin="in[1]"/>
+         <pin inst="n_n3392" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3392" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3392" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv6_1_1_" status="routed">
+      <pin inst="tin_pv6_1_1_" pin="inpad" type="output"/>
+      <pin inst="pv6_1_1_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv6_1_1_" port="io[4]" pin="inpad[1]"/>
+         <segment name="sv[12].9" orient="vert" track="9"> <channel> 12.000 1.000 12.000 4.000 </channel> </segment>
+         <sb name="sb[12][3]"> <sides> upper 9 left 27 </sides> </sb>
+         <segment name="sh[3].27" orient="horz" track="27"> <channel> 11.000 3.000 12.000 3.000 </channel> </segment>
+         <pin inst="n_n3701" port="clb[0]" pin="I[6]"/>
+         <pin inst="n_n3701" port="ble[5]" pin="in[2]"/>
+         <pin inst="n_n3701" port="soft_logic[0]" pin="in[2]"/>
+         <pin inst="n_n3701" port="lut6[0]" pin="in[2]"/>
+         <pin inst="n_n3701" port="lut[0]" pin="in[2]"/>
+      </route>
+   </net>
+   <net name="tin_pv6_2_2_" status="routed">
+      <pin inst="tin_pv6_2_2_" pin="inpad" type="output"/>
+      <pin inst="pv6_2_2_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv6_2_2_" port="io[2]" pin="inpad[1]"/>
+         <segment name="sv[12].31" orient="vert" track="31"> <channel> 12.000 1.000 12.000 3.000 </channel> </segment>
+         <pin inst="n_n3530" port="clb[0]" pin="I[5]"/>
+         <pin inst="n_n3530" port="ble[5]" pin="in[2]"/>
+         <pin inst="n_n3530" port="soft_logic[0]" pin="in[2]"/>
+         <pin inst="n_n3530" port="lut6[0]" pin="in[2]"/>
+         <pin inst="n_n3530" port="lut[0]" pin="in[2]"/>
+      </route>
+   </net>
+   <net name="tin_pv6_3_3_" status="routed">
+      <pin inst="tin_pv6_3_3_" pin="inpad" type="output"/>
+      <pin inst="pv6_3_3_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv6_3_3_" port="io[4]" pin="inpad[1]"/>
+         <segment name="sv[12].5" orient="vert" track="5"> <channel> 12.000 1.000 12.000 2.000 </channel> </segment>
+         <pin inst="n_n3374" port="clb[0]" pin="I[9]"/>
+         <pin inst="n_n3374" port="ble[5]" pin="in[2]"/>
+         <pin inst="n_n3374" port="soft_logic[0]" pin="in[2]"/>
+         <pin inst="n_n3374" port="lut6[0]" pin="in[2]"/>
+         <pin inst="n_n3374" port="lut[0]" pin="in[2]"/>
+      </route>
+   </net>
+   <net name="tin_pv6_4_4_" status="routed">
+      <pin inst="tin_pv6_4_4_" pin="inpad" type="output"/>
+      <pin inst="pv6_4_4_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv6_4_4_" port="io[3]" pin="inpad[1]"/>
+         <segment name="sv[12].47" orient="vert" track="47"> <channel> 12.000 1.000 12.000 3.000 </channel> </segment>
+         <sb name="sb[12][1]"> <sides> upper 47 left 43 </sides> </sb>
+         <segment name="sh[1].43" orient="horz" track="43"> <channel> 9.000 1.000 12.000 1.000 </channel> </segment>
+         <sb name="sb[10][1]"> <sides> right 43 upper 38 </sides> </sb>
+         <segment name="sv[10].38" orient="vert" track="38"> <channel> 10.000 2.000 10.000 5.000 </channel> </segment>
+         <pin inst="n_n3033" port="clb[0]" pin="I[3]"/>
+         <pin inst="n_n3033" port="ble[5]" pin="in[2]"/>
+         <pin inst="n_n3033" port="soft_logic[0]" pin="in[2]"/>
+         <pin inst="n_n3033" port="lut6[0]" pin="in[2]"/>
+         <pin inst="n_n3033" port="lut[0]" pin="in[2]"/>
+      </route>
+   </net>
+   <net name="tin_pv6_5_5_" status="routed">
+      <pin inst="tin_pv6_5_5_" pin="inpad" type="output"/>
+      <pin inst="pv6_5_5_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv6_5_5_" port="io[3]" pin="inpad[1]"/>
+         <segment name="sh[0].14" orient="horz" track="14"> <channel> 8.000 0.000 11.000 0.000 </channel> </segment>
+         <pin inst="n_n3904" port="clb[0]" pin="I[2]"/>
+         <pin inst="n_n3904" port="ble[2]" pin="in[1]"/>
+         <pin inst="n_n3904" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3904" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3904" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv6_6_6_" status="routed">
+      <pin inst="tin_pv6_6_6_" pin="inpad" type="output"/>
+      <pin inst="pv6_6_6_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv6_6_6_" port="io[1]" pin="inpad[1]"/>
+         <segment name="sh[0].30" orient="horz" track="30"> <channel> 4.000 0.000 7.000 0.000 </channel> </segment>
+         <sb name="sb[4][0]"> <sides> left 30 upper 8 </sides> </sb>
+         <segment name="sv[4].8" orient="vert" track="8"> <channel> 4.000 1.000 4.000 4.000 </channel> </segment>
+         <pin inst="n_n3435" port="clb[0]" pin="I[1]"/>
+         <pin inst="n_n3435" port="ble[0]" pin="in[0]"/>
+         <pin inst="n_n3435" port="soft_logic[0]" pin="in[0]"/>
+         <pin inst="n_n3435" port="lut6[0]" pin="in[0]"/>
+         <pin inst="n_n3435" port="lut[0]" pin="in[0]"/>
+      </route>
+   </net>
+   <net name="tin_pv6_7_7_" status="routed">
+      <pin inst="tin_pv6_7_7_" pin="inpad" type="output"/>
+      <pin inst="pv6_7_7_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv6_7_7_" port="io[1]" pin="inpad[1]"/>
+         <segment name="sv[12].1" orient="vert" track="1"> <channel> 12.000 1.000 12.000 4.000 </channel> </segment>
+         <pin inst="n_n3515" port="clb[0]" pin="I[9]"/>
+         <pin inst="n_n3515" port="ble[2]" pin="in[1]"/>
+         <pin inst="n_n3515" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3515" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3515" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv10_0_0_" status="routed">
+      <pin inst="tin_pv10_0_0_" pin="inpad" type="output"/>
+      <pin inst="pv10_0_0_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv10_0_0_" port="io[4]" pin="inpad[1]"/>
+         <segment name="sh[12].0" orient="horz" track="0"> <channel> 9.000 12.000 12.000 12.000 </channel> </segment>
+         <sb name="sb[11][12]"> <sides> left 0 lower 1 </sides> </sb>
+         <segment name="sv[11].1" orient="vert" track="1"> <channel> 11.000 10.000 11.000 12.000 </channel> </segment>
+         <sb name="sb[11][9]"> <sides> upper 1 left 1 </sides> </sb>
+         <segment name="sh[9].1" orient="horz" track="1"> <channel> 8.000 9.000 11.000 9.000 </channel> </segment>
+         <pin inst="n_n3755" port="clb[0]" pin="I[4]"/>
+         <pin inst="n_n3755" port="ble[5]" pin="in[1]"/>
+         <pin inst="n_n3755" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3755" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3755" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv10_1_1_" status="routed">
+      <pin inst="tin_pv10_1_1_" pin="inpad" type="output"/>
+      <pin inst="pv10_1_1_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv10_1_1_" port="io[4]" pin="inpad[1]"/>
+         <segment name="sv[0].26" orient="vert" track="26"> <channel> 0.000 6.000 0.000 9.000 </channel> </segment>
+         <sb name="sb[0][6]"> <sides> lower 26 right 2 </sides> </sb>
+         <segment name="sh[6].2" orient="horz" track="2"> <channel> 1.000 6.000 3.000 6.000 </channel> </segment>
+         <pin inst="[1780]" port="clb[0]" pin="I[0]"/>
+         <pin inst="[1780]" port="ble[1]" pin="in[1]"/>
+         <pin inst="[1780]" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="[1780]" port="lut6[0]" pin="in[1]"/>
+         <pin inst="[1780]" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv10_2_2_" status="routed">
+      <pin inst="tin_pv10_2_2_" pin="inpad" type="output"/>
+      <pin inst="pv10_2_2_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv10_2_2_" port="io[1]" pin="inpad[1]"/>
+         <segment name="sv[0].24" orient="vert" track="24"> <channel> 0.000 9.000 0.000 12.000 </channel> </segment>
+         <sb name="sb[0][9]"> <sides> lower 24 right 0 </sides> </sb>
+         <segment name="sh[9].0" orient="horz" track="0"> <channel> 1.000 9.000 3.000 9.000 </channel> </segment>
+         <pin inst="n_n3547" port="clb[0]" pin="I[8]"/>
+         <pin inst="n_n3547" port="ble[5]" pin="in[1]"/>
+         <pin inst="n_n3547" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3547" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3547" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv10_3_3_" status="routed">
+      <pin inst="tin_pv10_3_3_" pin="inpad" type="output"/>
+      <pin inst="pv10_3_3_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv10_3_3_" port="io[5]" pin="inpad[1]"/>
+         <segment name="sh[12].30" orient="horz" track="30"> <channel> 8.000 12.000 11.000 12.000 </channel> </segment>
+         <pin inst="n_n3523" port="clb[0]" pin="I[8]"/>
+         <pin inst="n_n3523" port="ble[2]" pin="in[1]"/>
+         <pin inst="n_n3523" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3523" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3523" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv10_4_4_" status="routed">
+      <pin inst="tin_pv10_4_4_" pin="inpad" type="output"/>
+      <pin inst="pv10_4_4_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv10_4_4_" port="io[3]" pin="inpad[1]"/>
+         <segment name="sv[0].13" orient="vert" track="13"> <channel> 0.000 7.000 0.000 10.000 </channel> </segment>
+         <pin inst="n_n4134" port="clb[0]" pin="I[3]"/>
+         <pin inst="n_n4134" port="ble[5]" pin="in[1]"/>
+         <pin inst="n_n4134" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n4134" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n4134" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv10_5_5_" status="routed">
+      <pin inst="tin_pv10_5_5_" pin="inpad" type="output"/>
+      <pin inst="pv10_5_5_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv10_5_5_" port="io[2]" pin="inpad[1]"/>
+         <segment name="sv[0].41" orient="vert" track="41"> <channel> 0.000 5.000 0.000 8.000 </channel> </segment>
+         <pin inst="n_n3068" port="clb[0]" pin="I[15]"/>
+         <pin inst="n_n3068" port="ble[2]" pin="in[1]"/>
+         <pin inst="n_n3068" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3068" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3068" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv10_6_6_" status="routed">
+      <pin inst="tin_pv10_6_6_" pin="inpad" type="output"/>
+      <pin inst="pv10_6_6_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv10_6_6_" port="io[3]" pin="inpad[1]"/>
+         <segment name="sv[12].32" orient="vert" track="32"> <channel> 12.000 9.000 12.000 12.000 </channel> </segment>
+         <sb name="sb[12][9]"> <sides> lower 32 left 15 </sides> </sb>
+         <segment name="sh[9].15" orient="horz" track="15"> <channel> 11.000 9.000 12.000 9.000 </channel> </segment>
+         <pin inst="n_n3031" port="clb[0]" pin="I[0]"/>
+         <pin inst="n_n3031" port="ble[5]" pin="in[2]"/>
+         <pin inst="n_n3031" port="soft_logic[0]" pin="in[2]"/>
+         <pin inst="n_n3031" port="lut6[0]" pin="in[2]"/>
+         <pin inst="n_n3031" port="lut[0]" pin="in[2]"/>
+      </route>
+   </net>
+   <net name="tin_pv10_7_7_" status="routed">
+      <pin inst="tin_pv10_7_7_" pin="inpad" type="output"/>
+      <pin inst="pv10_7_7_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv10_7_7_" port="io[4]" pin="inpad[1]"/>
+         <segment name="sh[12].2" orient="horz" track="2"> <channel> 10.000 12.000 12.000 12.000 </channel> </segment>
+         <sb name="sb[10][12]"> <sides> left 2 lower 7 </sides> </sb>
+         <segment name="sv[10].7" orient="vert" track="7"> <channel> 10.000 10.000 10.000 12.000 </channel> </segment>
+         <pin inst="n_n4359" port="clb[0]" pin="I[9]"/>
+         <pin inst="n_n4359" port="ble[5]" pin="in[2]"/>
+         <pin inst="n_n4359" port="soft_logic[0]" pin="in[2]"/>
+         <pin inst="n_n4359" port="lut6[0]" pin="in[2]"/>
+         <pin inst="n_n4359" port="lut[0]" pin="in[2]"/>
+      </route>
+   </net>
+   <net name="tin_pv11_0_0_" status="routed">
+      <pin inst="tin_pv11_0_0_" pin="inpad" type="output"/>
+      <pin inst="pv11_0_0_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv11_0_0_" port="io[6]" pin="inpad[1]"/>
+         <segment name="sh[12].40" orient="horz" track="40"> <channel> 5.000 12.000 8.000 12.000 </channel> </segment>
+         <pin inst="n_n3735" port="clb[0]" pin="I[8]"/>
+         <pin inst="n_n3735" port="ble[2]" pin="in[1]"/>
+         <pin inst="n_n3735" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3735" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3735" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv11_1_1_" status="routed">
+      <pin inst="tin_pv11_1_1_" pin="inpad" type="output"/>
+      <pin inst="pv11_1_1_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv11_1_1_" port="io[1]" pin="inpad[1]"/>
+         <segment name="sv[0].23" orient="vert" track="23"> <channel> 0.000 4.000 0.000 7.000 </channel> </segment>
+         <sb name="sb[0][6]"> <sides> upper 23 right 44 </sides> </sb>
+         <segment name="sh[6].44" orient="horz" track="44"> <channel> 1.000 6.000 4.000 6.000 </channel> </segment>
+         <pin inst="n_n4140" port="clb[0]" pin="I[14]"/>
+         <pin inst="n_n4140" port="ble[5]" pin="in[1]"/>
+         <pin inst="n_n4140" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n4140" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n4140" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv11_2_2_" status="routed">
+      <pin inst="tin_pv11_2_2_" pin="inpad" type="output"/>
+      <pin inst="pv11_2_2_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv11_2_2_" port="io[5]" pin="inpad[1]"/>
+         <segment name="sh[12].24" orient="horz" track="24"> <channel> 9.000 12.000 12.000 12.000 </channel> </segment>
+         <sb name="sb[9][12]"> <sides> left 24 lower 3 </sides> </sb>
+         <segment name="sv[9].3" orient="vert" track="3"> <channel> 9.000 9.000 9.000 12.000 </channel> </segment>
+         <pin inst="n_n4307" port="clb[0]" pin="I[9]"/>
+         <pin inst="n_n4307" port="ble[2]" pin="in[1]"/>
+         <pin inst="n_n4307" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n4307" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n4307" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv11_3_3_" status="routed">
+      <pin inst="tin_pv11_3_3_" pin="inpad" type="output"/>
+      <pin inst="pv11_3_3_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv11_3_3_" port="io[6]" pin="inpad[1]"/>
+         <segment name="sv[0].15" orient="vert" track="15"> <channel> 0.000 4.000 0.000 7.000 </channel> </segment>
+         <sb name="sb[0][6]"> <sides> upper 15 right 32 </sides> </sb>
+         <segment name="sh[6].32" orient="horz" track="32"> <channel> 1.000 6.000 2.000 6.000 </channel> </segment>
+         <sb name="sb[1][6]"> <sides> left 32 upper 6 </sides> </sb>
+         <segment name="sv[1].6" orient="vert" track="6"> <channel> 1.000 7.000 1.000 10.000 </channel> </segment>
+         <pin inst="n_n3582" port="clb[0]" pin="I[7]"/>
+         <pin inst="n_n3582" port="ble[5]" pin="in[1]"/>
+         <pin inst="n_n3582" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3582" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3582" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv11_4_4_" status="routed">
+      <pin inst="tin_pv11_4_4_" pin="inpad" type="output"/>
+      <pin inst="pv11_4_4_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv11_4_4_" port="io[4]" pin="inpad[1]"/>
+         <segment name="sv[0].29" orient="vert" track="29"> <channel> 0.000 7.000 0.000 10.000 </channel> </segment>
+         <pin inst="n_n4134" port="clb[0]" pin="I[11]"/>
+         <pin inst="n_n4134" port="ble[2]" pin="in[1]"/>
+         <pin inst="n_n4134" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n4134" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n4134" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv11_5_5_" status="routed">
+      <pin inst="tin_pv11_5_5_" pin="inpad" type="output"/>
+      <pin inst="pv11_5_5_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv11_5_5_" port="io[2]" pin="inpad[1]"/>
+         <segment name="sv[0].42" orient="vert" track="42"> <channel> 0.000 6.000 0.000 9.000 </channel> </segment>
+         <sb name="sb[0][6]"> <sides> lower 42 right 34 </sides> </sb>
+         <segment name="sh[6].34" orient="horz" track="34"> <channel> 1.000 6.000 3.000 6.000 </channel> </segment>
+         <pin inst="[1903]" port="clb[0]" pin="I[16]"/>
+         <pin inst="[1903]" port="ble[3]" pin="in[1]"/>
+         <pin inst="[1903]" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="[1903]" port="lut6[0]" pin="in[1]"/>
+         <pin inst="[1903]" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv11_6_6_" status="routed">
+      <pin inst="tin_pv11_6_6_" pin="inpad" type="output"/>
+      <pin inst="pv11_6_6_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv11_6_6_" port="io[1]" pin="inpad[1]"/>
+         <segment name="sh[12].6" orient="horz" track="6"> <channel> 4.000 12.000 7.000 12.000 </channel> </segment>
+         <sb name="sb[4][12]"> <sides> left 6 lower 19 </sides> </sb>
+         <segment name="sv[4].19" orient="vert" track="19"> <channel> 4.000 10.000 4.000 12.000 </channel> </segment>
+         <sb name="sb[4][9]"> <sides> upper 19 lower 19 </sides> </sb>
+         <segment name="sv[4].19" orient="vert" track="19"> <channel> 4.000 6.000 4.000 9.000 </channel> </segment>
+         <pin inst="n_n4276" port="clb[0]" pin="I[17]"/>
+         <pin inst="n_n4276" port="ble[5]" pin="in[1]"/>
+         <pin inst="n_n4276" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n4276" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n4276" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="tin_pv11_7_7_" status="routed">
+      <pin inst="tin_pv11_7_7_" pin="inpad" type="output"/>
+      <pin inst="pv11_7_7_" pin="in" type="input"/>
+      <route>
+         <pin inst="tin_pv11_7_7_" port="io[7]" pin="inpad[1]"/>
+         <segment name="sv[0].30" orient="vert" track="30"> <channel> 0.000 8.000 0.000 11.000 </channel> </segment>
+         <sb name="sb[0][8]"> <sides> lower 30 right 8 </sides> </sb>
+         <segment name="sh[8].8" orient="horz" track="8"> <channel> 1.000 8.000 4.000 8.000 </channel> </segment>
+         <pin inst="n_n3375" port="clb[0]" pin="I[0]"/>
+         <pin inst="n_n3375" port="ble[4]" pin="in[1]"/>
+         <pin inst="n_n3375" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="n_n3375" port="lut6[0]" pin="in[1]"/>
+         <pin inst="n_n3375" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+
+</circuit>
