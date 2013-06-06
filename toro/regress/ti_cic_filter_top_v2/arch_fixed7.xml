@@ -56,8 +56,6 @@
           </interconnect>
         </mode>
 
-<!-- ???        <fc_in type="frac">0.15</fc_in>    -->
-<!-- ???        <fc_out type="frac">0.125</fc_out> -->
         <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.125"/>
 
         <!-- IOs go on the periphery of the FPGA, for consistency,  -->
@@ -127,8 +125,6 @@
             <complete name="complete2" input="clb.clk" output="ble[11:0].clk"/>
             <direct name="direct1" input="ble[11:0].out" output="clb.O"/>
           </interconnect>
-<!-- ???        <fc_in type="frac">0.15</fc_in>    -->
-<!-- ???        <fc_out type="frac">0.125</fc_out> -->
         <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.125"/>
 
         <pinlocations pattern="spread"/>
