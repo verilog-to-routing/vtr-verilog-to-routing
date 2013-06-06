@@ -1,0 +1,3 @@
+#!/bin/csh -f
+
+../baseline_this icss_toro_arch_circuit
