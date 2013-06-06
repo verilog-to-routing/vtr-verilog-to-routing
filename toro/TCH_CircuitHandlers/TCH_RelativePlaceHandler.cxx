@@ -1214,7 +1214,7 @@ bool TCH_RelativePlaceHandler_c::InitialPlaceMacroIsLegal_(
    TCH_RotateMaskHash_t* protateMaskHash = const_cast< TCH_RotateMaskHash_t* >( &this->initialPlaceMacroCoords_ );
 
    TCH_RotateMaskKey_c rotateMaskKey( origin, relativeNodeIndex );
-   TCH_RotateMaskValue_c* protateMaskValue;
+   TCH_RotateMaskValue_c* protateMaskValue = 0;
    if( protateMaskHash->Find( rotateMaskKey, &protateMaskValue ) &&
        !protateMaskValue->GetBit( rotate ))
    {
