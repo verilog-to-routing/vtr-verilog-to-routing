@@ -1,0 +1,1667 @@
+________________________________________________________________________
+                         Toro - A VPR Front-End                         
+       (c) Copyright 2012-2013 Texas Instruments (under GNU GPL)        
+________________________________________________________________________
+Command is '/vobs/cpp/warpcore/toro/bin.linux_x86_64/toro vpr_tseng.options'.
+Pre-processing...
+Reading xml file 'k4_N8_soft_logic_only.xml'...
+Reading blif file 'tseng.4.blif'...
+Validating architecture file ...
+Validating circuit file 'top'...
+Processing...
+Opening VPR interface...
+Exporting architecture spec to VPR...
+[vpr] Building complex block graph.
+[vpr] WARNING(1): io[0].clock[0] unconnected pin in architecture.
+[vpr] Swept away 0 nets with no fanout.
+[vpr] Removed 0 LUT buffers.
+[vpr] BLIF circuit stats:
+[vpr] 	0 LUTs of size 0
+[vpr] 	0 LUTs of size 1
+[vpr] 	132 LUTs of size 2
+[vpr] 	283 LUTs of size 3
+[vpr] 	631 LUTs of size 4
+[vpr] 	52 of type input
+[vpr] 	122 of type output
+[vpr] 	385 of type latch
+[vpr] 	1046 of type names
+Executing VPR interface...
+[vpr] Initialize packing.
+[vpr] Begin packing 'tseng.4.blif'.
+[vpr] 
+[vpr] After removing unused inputs...
+[vpr] 	total blocks: 1605, total nets: 1483, total inputs: 52, total outputs: 122
+[vpr] Begin prepacking.
+[vpr] Finish prepacking.
+[vpr] Using inter-cluster delay: 8.3684e-10
+[vpr] 
+[vpr] SDC file 'vpr_tseng.vpr.sdc' blank or not found.
+[vpr] 
+[vpr] Defaulting to: constrain all 0 inputs and 0 outputs on the netlist clock.
+[vpr] Optimize this clock to run as fast as possible.
+[vpr] Not enough resources expand FPGA size to x = 2 y = 2.
+[vpr] Complex block 0: cb.n_n3184, type: clb
+[vpr] 	...........
+[vpr] Passed route at end.
+[vpr] Complex block 1: cb.n_n3466, type: clb
+[vpr] 	..........
+[vpr] Passed route at end.
+[vpr] Complex block 2: cb.n_n3229, type: clb
+[vpr] 	..............
+[vpr] Passed route at end.
+[vpr] Complex block 3: cb.n_n3016, type: clb
+[vpr] 	............
+[vpr] Passed route at end.
+[vpr] Not enough resources expand FPGA size to x = 3 y = 3.
+[vpr] Complex block 4: cb.n_n3519, type: clb
+[vpr] 	.........
+[vpr] Passed route at end.
+[vpr] Complex block 5: cb.[2264], type: clb
+[vpr] 	..............
+[vpr] Passed route at end.
+[vpr] Complex block 6: cb.n_n3755, type: clb
+[vpr] 	...............
+[vpr] Passed route at end.
+[vpr] Complex block 7: cb.n_n3015, type: clb
+[vpr] 	..............
+[vpr] Passed route at end.
+[vpr] Complex block 8: cb.[907], type: clb
+[vpr] 	...........
+[vpr] Passed route at end.
+[vpr] Not enough resources expand FPGA size to x = 4 y = 4.
+[vpr] Complex block 9: cb.n_n4267, type: clb
+[vpr] 	.............
+[vpr] Passed route at end.
+[vpr] Complex block 10: cb.n_n3292, type: clb
+[vpr] 	.............
+[vpr] Passed route at end.
+[vpr] Complex block 11: cb.n_n3725, type: clb
+[vpr] 	...........
+[vpr] Passed route at end.
+[vpr] Complex block 12: cb.n_n3592, type: clb
+[vpr] 	..............
+[vpr] Passed route at end.
+[vpr] Complex block 13: cb.n_n3235, type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 14: cb.n_n3987, type: clb
+[vpr] 	..........
+[vpr] Passed route at end.
+[vpr] Complex block 15: cb.n_n3913, type: clb
+[vpr] 	.........
+[vpr] Passed route at end.
+[vpr] Not enough resources expand FPGA size to x = 5 y = 5.
+[vpr] Complex block 16: cb.n_n3444, type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 17: cb.n_n132, type: clb
+[vpr] 	............
+[vpr] Passed route at end.
+[vpr] Complex block 18: cb.n_n3817, type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 19: cb.n_n128, type: clb
+[vpr] 	...............................................
+[vpr] Passed route at end.
+[vpr] Complex block 20: cb.n_n3813, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 21: cb.n_n4011, type: clb
+[vpr] 	.........
+[vpr] Passed route at end.
+[vpr] Complex block 22: cb.[1580], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 23: cb.nak3_17, type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 24: cb.[6374], type: clb
+[vpr] 	...........
+[vpr] Passed route at end.
+[vpr] Not enough resources expand FPGA size to x = 6 y = 6.
+[vpr] Complex block 25: cb.[936], type: clb
+[vpr] 	...................................
+[vpr] Passed route at end.
+[vpr] Complex block 26: cb.[1492], type: clb
+[vpr] 	............................................
+[vpr] Passed route at end.
+[vpr] Complex block 27: cb.n_n4228, type: clb
+[vpr] 	...........
+[vpr] Passed route at end.
+[vpr] Complex block 28: cb.n_n3375, type: clb
+[vpr] 	.........
+[vpr] Passed route at end.
+[vpr] Complex block 29: cb.n_n3582, type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 30: cb.n_n4276, type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 31: cb.n_n4140, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 32: cb.n_n3526, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 33: cb.[1898], type: clb
+[vpr] 	.................
+[vpr] Passed route at end.
+[vpr] Complex block 34: cb.n_n3049, type: clb
+[vpr] 	..........
+[vpr] Passed route at end.
+[vpr] Complex block 35: cb.n_n4367, type: clb
+[vpr] 	............
+[vpr] Passed route at end.
+[vpr] Not enough resources expand FPGA size to x = 7 y = 7.
+[vpr] Complex block 36: cb.[6275], type: clb
+[vpr] 	.........
+[vpr] Passed route at end.
+[vpr] Complex block 37: cb.n_n3701, type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 38: cb.n_n3530, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 39: cb.n_n3374, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 40: cb.n_n3033, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 41: cb.n_n4094, type: clb
+[vpr] 	..........
+[vpr] Passed route at end.
+[vpr] Complex block 42: cb.n_n4121, type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 43: cb.n_n3459, type: clb
+[vpr] 	...............
+[vpr] Passed route at end.
+[vpr] Complex block 44: cb.[6295], type: clb
+[vpr] 	.............
+[vpr] Passed route at end.
+[vpr] Complex block 45: cb.n_n3981, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 46: cb.[2174], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 47: cb.n_n3399, type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 48: cb.n_n4081, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Not enough resources expand FPGA size to x = 8 y = 8.
+[vpr] Complex block 49: cb.n_n3538, type: clb
+[vpr] 	.........
+[vpr] Passed route at end.
+[vpr] Complex block 50: cb.[2183], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 51: cb.[1901], type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 52: cb.[2190], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 53: cb.[2191], type: clb
+[vpr] 	.........
+[vpr] Passed route at end.
+[vpr] Complex block 54: cb.n_n3289, type: clb
+[vpr] 	.........
+[vpr] Passed route at end.
+[vpr] Complex block 55: cb.n_n3552, type: clb
+[vpr] 	.........
+[vpr] Passed route at end.
+[vpr] Complex block 56: cb.n_n3308, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 57: cb.n_n3058, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 58: cb.n_n3147, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 59: cb.n_n3110, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 60: cb.n_n3031, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 61: cb.[2047], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 62: cb.n_n3010, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 63: cb.n_n3236, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Not enough resources expand FPGA size to x = 9 y = 9.
+[vpr] Complex block 64: cb.n_n3166, type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 65: cb.[6312], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 66: cb.[1903], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 67: cb.[1905], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 68: cb.[1904], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 69: cb.n_n4359, type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 70: cb.n_n4046, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 71: cb.n_n3579, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 72: cb.n_n3296, type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 73: cb.n_n3680, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 74: cb.n_n3693, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 75: cb.n_n3309, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 76: cb.n_n3500, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 77: cb.[1633], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 78: cb.n_n3406, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 79: cb.[6366], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 80: cb.n_n3508, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 81: cb.preset, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Not enough resources expand FPGA size to x = 10 y = 10.
+[vpr] Complex block 82: cb.n_n3791, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 83: cb.[1773], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 84: cb.[1780], type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 85: cb.[1402], type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 86: cb.[1173], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 87: cb.preset_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 88: cb.tin_pready_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 89: cb.n_n4234, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 90: cb.n_n4300, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 91: cb.n_n3134, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 92: cb.n_n3677, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 93: cb.n_n3068, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 94: cb.n_n3430, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 95: cb.n_n3392, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 96: cb.n_n3732, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 97: cb.n_n4317, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 98: cb.n_n3106, type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 99: cb.n_n3077, type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 100: cb.n_n3343, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 101: cb.n_n3011, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 102: cb.n_n3329, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Not enough resources expand FPGA size to x = 11 y = 11.
+[vpr] Complex block 103: cb.n_n4307, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 104: cb.n_n3721, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 105: cb.n_n3762, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 106: cb.n_n3096, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 107: cb.n_n3547, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 108: cb.n_n3200, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 109: cb.n_n3727, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 110: cb.n_n3523, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 111: cb.n_n4134, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 112: cb.n_n3088, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 113: cb.n_n3515, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 114: cb.n_n3881, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 115: cb.n_n3711, type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Complex block 116: cb.n_n3269, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 117: cb.n_n4370, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 118: cb.n_n3435, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 119: cb.n_n3629, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 120: cb.n_n3402, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 121: cb.n_n3735, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 122: cb.n_n3686, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 123: cb.n_n3983, type: clb
+[vpr] 	........
+[vpr] Passed route at end.
+[vpr] Not enough resources expand FPGA size to x = 12 y = 12.
+[vpr] Complex block 124: cb.n_n3127, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 125: cb.n_n3904, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 126: cb.n_n3318, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 127: cb.n_n3275, type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 128: cb.[1021], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 129: cb.[1283], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 130: cb.[6325], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 131: cb.[2166], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 132: cb.[2162], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 133: cb.[1707], type: clb
+[vpr] 	.......
+[vpr] Passed route at end.
+[vpr] Complex block 134: cb.tin_pv1_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 135: cb.tin_pv2_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 136: cb.tin_pv6_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 137: cb.tin_pv1_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 138: cb.tin_pv11_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 139: cb.tin_pv4_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 140: cb.tin_pv1_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 141: cb.tin_pv6_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 142: cb.tin_pv1_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 143: cb.tin_pv2_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 144: cb.tin_pv10_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 145: cb.tin_pv4_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 146: cb.tin_pv11_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 147: cb.tin_pv6_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 148: cb.tin_pv1_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 149: cb.tin_pv10_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 150: cb.tin_pv4_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 151: cb.tin_pv2_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 152: cb.tin_pv2_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 153: cb.tin_pv1_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 154: cb.tin_pv6_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 155: cb.tin_pv11_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 156: cb.tin_pv2_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 157: cb.tin_pv10_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 158: cb.tin_pv6_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 159: cb.tin_pv4_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 160: cb.tin_pv6_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 161: cb.tin_pv11_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 162: cb.tin_pv10_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 163: cb.tin_pv1_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 164: cb.tin_pv11_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 165: cb.tin_pv11_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 166: cb.tin_pv10_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 167: cb.tin_pv2_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 168: cb.tin_pv10_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 169: cb.tin_pv6_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 170: cb.tin_pv4_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 171: cb.tin_pv1_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 172: cb.tin_pv10_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 173: cb.tin_pv2_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 174: cb.tin_pv4_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 175: cb.tin_pv6_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 176: cb.tin_pv11_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 177: cb.tin_pv10_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 178: cb.tin_pv4_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 179: cb.tin_pv4_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 180: cb.tin_pv2_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 181: cb.tin_pv11_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 182: cb.out:pv14_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 183: cb.out:pv2_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 184: cb.out:pv14_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 185: cb.out:pv6_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 186: cb.out:pv3_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 187: cb.out:pv2_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 188: cb.out:pv7_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 189: cb.out:pv4_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 190: cb.out:pv8_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 191: cb.out:pv1_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 192: cb.out:pv6_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 193: cb.out:pv11_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 194: cb.out:pv5_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 195: cb.out:pv9_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 196: cb.out:pv13_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 197: cb.out:pv2_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 198: cb.out:pv6_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 199: cb.out:pv15_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 200: cb.out:pv3_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 201: cb.out:pv7_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 202: cb.out:pv4_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 203: cb.out:pv8_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 204: cb.out:pv3_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 205: cb.out:pv7_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 206: cb.out:pv1_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 207: cb.out:pv5_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 208: cb.out:pv9_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 209: cb.out:pv2_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 210: cb.out:pv6_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 211: cb.out:pv3_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 212: cb.out:pv7_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 213: cb.out:pv4_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 214: cb.out:pv10_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 215: cb.out:pv8_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 216: cb.out:pv1_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 217: cb.out:pv5_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 218: cb.out:pv9_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 219: cb.out:pv2_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 220: cb.out:pv6_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 221: cb.out:pv11_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 222: cb.out:pv3_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 223: cb.out:pv12_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 224: cb.out:pv14_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 225: cb.out:pv7_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 226: cb.out:pv10_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 227: cb.out:pready_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 228: cb.out:pv4_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 229: cb.out:pv8_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 230: cb.out:pv11_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 231: cb.out:pv13_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 232: cb.out:pv1_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 233: cb.out:pv4_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 234: cb.out:pv5_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 235: cb.out:pv8_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 236: cb.out:pv11_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 237: cb.out:pv9_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 238: cb.out:pv13_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 239: cb.out:pv15_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 240: cb.out:pv1_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 241: cb.out:pv12_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 242: cb.out:pv5_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 243: cb.out:pv10_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 244: cb.out:pv9_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 245: cb.out:pv10_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 246: cb.out:pv12_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 247: cb.out:pv14_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 248: cb.out:pv2_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 249: cb.out:pv2_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 250: cb.out:pv6_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 251: cb.out:pv13_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 252: cb.out:pv11_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 253: cb.out:pv11_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 254: cb.out:pv13_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 255: cb.out:pv6_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 256: cb.out:pv15_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 257: cb.out:pv3_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 258: cb.out:pv15_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 259: cb.out:pv7_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 260: cb.out:pv10_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 261: cb.out:pv3_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 262: cb.out:pv12_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 263: cb.out:pv14_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 264: cb.out:pv4_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 265: cb.out:pv10_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 266: cb.out:pv8_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 267: cb.out:pv7_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 268: cb.out:pv11_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 269: cb.out:pv13_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 270: cb.out:pv12_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 271: cb.out:pv15_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 272: cb.out:pv1_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 273: cb.out:pv14_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 274: cb.out:pv5_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 275: cb.out:pv9_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 276: cb.out:pv8_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 277: cb.out:pv12_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 278: cb.out:pv10_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 279: cb.out:pv4_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 280: cb.out:pv14_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 281: cb.out:pv11_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 282: cb.out:pv13_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 283: cb.out:pv12_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 284: cb.out:pv2_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 285: cb.out:pv10_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 286: cb.out:pv1_2_2_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 287: cb.out:pv6_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 288: cb.out:pv9_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 289: cb.out:pv13_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 290: cb.out:pv15_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 291: cb.out:pv3_4_4_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 292: cb.out:pv7_3_3_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 293: cb.out:pv15_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 294: cb.out:pv12_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 295: cb.out:pv14_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 296: cb.out:pv4_0_0_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 297: cb.out:pv8_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 298: cb.out:pv15_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 299: cb.out:pv1_7_7_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 300: cb.out:pv5_6_6_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 301: cb.out:pv9_5_5_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 302: cb.out:pv5_1_1_, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 303: cb.pv14_3_3_, type: clb
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 304: cb.out:pdn, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] Complex block 305: cb.pclk, type: io
+[vpr] 	
+[vpr] Passed route at end.
+[vpr] 	<EMPTY>: # blocks: 0, average # input + clock pins used: 0, average # output pins used: 0
+[vpr] 	io: # blocks: 174, average # input + clock pins used: 0.701149, average # output pins used: 0.298851
+[vpr] 	clb: # blocks: 132, average # input + clock pins used: 12.1364, average # output pins used: 4.20455
+[vpr] Absorbed logical nets 876 out of 1483 nets, 607 nets not absorbed.
+[vpr] 
+[vpr] Netlist conversion complete.
+[vpr] 
+[vpr] Packing completed.
+[vpr] Begin parsing packed FPGA netlist file.
+[vpr] Finished parsing packed FPGA netlist file.
+[vpr] Netlist generated from file 'vpr_tseng.vpr.net'.
+[vpr] 
+[vpr] Netlist num_nets: 607
+[vpr] Netlist num_blocks: 306
+[vpr] Netlist <EMPTY> blocks: 0.
+[vpr] Netlist clb blocks: 132.
+[vpr] Netlist inputs pins: 52
+[vpr] Netlist output pins: 122
+[vpr] 
+[vpr] Auto-sizing FPGA at x = 17 y = 17
+[vpr] Auto-sizing FPGA at x = 9 y = 9
+[vpr] Auto-sizing FPGA at x = 13 y = 13
+[vpr] Auto-sizing FPGA at x = 11 y = 11
+[vpr] Auto-sizing FPGA at x = 12 y = 12
+[vpr] Auto-sizing FPGA at x = 11 y = 11
+[vpr] FPGA auto-sized to x = 12 y = 12
+[vpr] The circuit will be mapped into a 12 x 12 array of clbs.
+[vpr] 
+[vpr] Resource usage...
+[vpr] 	Netlist      0	blocks of type: <EMPTY>
+[vpr] 	Architecture 4	blocks of type: <EMPTY>
+[vpr] 	Netlist      174	blocks of type: io
+[vpr] 	Architecture 384	blocks of type: io
+[vpr] 	Netlist      132	blocks of type: clb
+[vpr] 	Architecture 144	blocks of type: clb
+[vpr] 
+[vpr] 
+[vpr] There are 1603 point to point connections in this circuit.
+[vpr] 
+[vpr] Initial placement cost: 1.0226 bb_cost: 89.2724 td_cost: 1.63887e-07 delay_cost: 4.64033e-07
+[vpr] 
+[vpr] ------- ------- ---------- ---------- ---------- ---------- ------- ------- ------- ------- ------ --------- ------
+[vpr]       T    Cost Av BB Cost Av TD Cost Av Tot Del P to P Del   d_max Ac Rate Std Dev R limit    Exp Tot Moves  Alpha
+[vpr] ------- ------- ---------- ---------- ---------- ---------- ------- ------- ------- ------- ------ --------- ------
+[vpr] 0.11463 0.97482    87.1944 1.5101e-07 4.571e-07  2.8948e-10  7.7560  0.9956  0.0150 13.0000  1.000     20616  0.500
+[vpr] 0.05732 0.98467    87.0862 1.5137e-07 4.5761e-07 2.8752e-10  7.8244  0.9902  0.0153 13.0000  1.000     41232  0.500
+[vpr] 0.02866 0.98559    86.5493 1.543e-07  4.5546e-07 2.847e-10   7.4825  0.9811  0.0143 13.0000  1.000     61848  0.500
+[vpr] 0.01433 0.97675    85.9211 1.533e-07  4.5386e-07 2.8427e-10  7.5509  0.9601  0.0134 13.0000  1.000     82464  0.500
+[vpr] 0.00716 0.99456    84.7264 1.5764e-07 4.5024e-07 2.8125e-10  7.0723  0.9237  0.0130 13.0000  1.000    103080  0.900
+[vpr] 0.00645 0.99746    84.2735 1.507e-07  4.4843e-07 2.792e-10   7.3458  0.9133  0.0150 13.0000  1.000    123696  0.900
+[vpr] 0.00580 0.99335    83.9195 1.521e-07  4.481e-07  2.8082e-10  7.2774  0.9027  0.0149 13.0000  1.000    144312  0.900
+[vpr] 0.00522 0.99185    83.5781 1.5629e-07 4.4739e-07 2.8078e-10  7.0723  0.8935  0.0146 13.0000  1.000    164928  0.900
+[vpr] 0.00470 0.96723    83.2924 1.5458e-07 4.4525e-07 2.8423e-10  7.1407  0.8804  0.0118 13.0000  1.000    185544  0.900
+[vpr] 0.00423 0.98318    82.3552 1.53e-07   4.4328e-07 2.7609e-10  7.0723  0.8625  0.0152 13.0000  1.000    206160  0.900
+[vpr] 0.00381 0.97355    82.0295 1.4855e-07 4.42e-07   2.792e-10   7.3458  0.8569  0.0153 13.0000  1.000    226776  0.900
+[vpr] 0.00343 0.99564    80.9577 1.5086e-07 4.3924e-07 2.7387e-10  7.0723  0.8310  0.0140 13.0000  1.000    247392  0.900
+[vpr] 0.00308 0.99446    80.5055 1.4931e-07 4.37e-07   2.7468e-10  7.0723  0.8166  0.0120 13.0000  1.000    268008  0.900
+[vpr] 0.00278 0.99717    79.0886 1.4705e-07 4.3317e-07 2.7174e-10  7.1407  0.7858  0.0143 13.0000  1.000    288624  0.950
+[vpr] 0.00264 0.98533    79.2630 1.5232e-07 4.337e-07  2.7331e-10  6.7988  0.7865  0.0177 13.0000  1.000    309240  0.950
+[vpr] 0.00251 0.99575    78.3194 1.4918e-07 4.3098e-07 2.6913e-10  6.9356  0.7664  0.0157 13.0000  1.000    329856  0.950
+[vpr] 0.00238 0.99010    78.1602 1.4765e-07 4.3095e-07 2.6849e-10  6.9356  0.7627  0.0176 13.0000  1.000    350472  0.950
+[vpr] 0.00226 0.98998    76.5767 1.4998e-07 4.2529e-07 2.6517e-10  6.6511  0.7349  0.0198 13.0000  1.000    371088  0.950
+[vpr] 0.00215 1.00961    75.3661 1.457e-07  4.2314e-07 2.6363e-10  6.8672  0.7164  0.0158 13.0000  1.000    391704  0.950
+[vpr] 0.00204 0.99894    75.1879 1.4173e-07 4.2197e-07 2.6171e-10  7.0039  0.7052  0.0178 13.0000  1.000    412320  0.950
+[vpr] 0.00194 1.01017    75.0130 1.4273e-07 4.2209e-07 2.6018e-10  6.9356  0.6986  0.0184 13.0000  1.000    432936  0.950
+[vpr] 0.00184 1.01153    74.0045 1.4415e-07 4.1948e-07 2.6009e-10  6.7304  0.6839  0.0149 13.0000  1.000    453552  0.950
+[vpr] 0.00175 0.98859    73.9529 1.4235e-07 4.1814e-07 2.5856e-10  6.9355  0.6804  0.0106 13.0000  1.000    474168  0.950
+[vpr] 0.00166 0.98941    72.1341 1.4247e-07 4.1338e-07 2.5924e-10  6.7304  0.6551  0.0163 13.0000  1.000    494784  0.950
+[vpr] 0.00158 1.03464    71.8377 1.4021e-07 4.1078e-07 2.5139e-10  6.6621  0.6336  0.0172 13.0000  1.000    515400  0.950
+[vpr] 0.00150 0.98036    70.0516 1.4109e-07 4.0596e-07 2.5561e-10  6.5937  0.6290  0.0150 13.0000  1.000    536016  0.950
+[vpr] 0.00142 0.99746    68.9587 1.351e-07  4.061e-07  2.5318e-10  6.8672  0.6056  0.0104 13.0000  1.000    556632  0.950
+[vpr] 0.00135 0.99446    68.8355 1.395e-07  4.032e-07  2.5382e-10  6.5937  0.5983  0.0081 13.0000  1.000    577248  0.950
+[vpr] 0.00129 0.99229    68.0805 1.3137e-07 4.0245e-07 2.4841e-10  7.0039  0.5875  0.0112 13.0000  1.000    597864  0.950
+[vpr] 0.00122 0.97933    66.2549 1.3472e-07 3.9659e-07 2.5024e-10  6.7304  0.5661  0.0104 13.0000  1.000    618480  0.950
+[vpr] 0.00116 1.00358    65.9995 1.3427e-07 3.9841e-07 2.4597e-10  6.6621  0.5533  0.0119 13.0000  1.000    639096  0.950
+[vpr] 0.00110 0.99099    64.7191 1.3185e-07 3.9385e-07 2.4585e-10  6.7304  0.5282  0.0100 13.0000  1.000    659712  0.950
+[vpr] 0.00105 0.98040    65.2624 1.3374e-07 3.948e-07  2.4747e-10  6.6621  0.5193  0.0124 13.0000  1.000    680328  0.950
+[vpr] 0.00100 1.00321    64.1243 1.3411e-07 3.9281e-07 2.438e-10   6.5937  0.5005  0.0091 13.0000  1.000    700944  0.950
+[vpr] 0.00095 0.99332    62.5011 1.3201e-07 3.8816e-07 2.438e-10   6.6621  0.4970  0.0133 13.0000  1.000    721560  0.950
+[vpr] 0.00090 1.00037    61.6668 1.3328e-07 3.865e-07  2.4009e-10  6.4570  0.4764  0.0084 13.0000  1.000    742176  0.950
+[vpr] 0.00085 0.99349    61.8878 1.3008e-07 3.854e-07  2.4214e-10  6.6621  0.4660  0.0106 13.0000  1.000    762792  0.950
+[vpr] 0.00081 1.00307    60.7483 1.3136e-07 3.8433e-07 2.3791e-10  6.5253  0.4509  0.0100 13.0000  1.000    783408  0.950
+[vpr] 0.00077 0.98490    60.0143 1.3107e-07 3.8253e-07 2.4111e-10  6.4570  0.4380  0.0087 13.0000  1.000    804024  0.950
+[vpr] 0.00073 0.97752    58.7823 1.2795e-07 3.7897e-07 2.3979e-10  6.4570  0.4472  0.0102 12.9735  1.015    824640  0.950
+[vpr] 0.00069 0.99371    59.0080 1.3197e-07 3.7901e-07 2.3736e-10  6.3202  0.4208  0.0077 13.0000  1.000    845256  0.950
+[vpr] 0.00066 0.97285    57.5973 1.1072e-07 3.7431e-07 2.3574e-10  6.5937  0.4200  0.0097 12.7509  1.145    865872  0.950
+[vpr] 0.00063 0.99014    57.5337 1.0005e-07 3.7515e-07 2.3339e-10  6.3886  0.4049  0.0105 12.4954  1.294    886488  0.950
+[vpr] 0.00060 0.99442    56.2828 8.2193e-08 3.7281e-07 2.3275e-10  6.3886  0.3991  0.0053 12.0572  1.550    907104  0.950
+[vpr] 0.00057 0.98996    54.6338 6.8908e-08 3.7136e-07 2.3182e-10  6.3886  0.3899  0.0057 11.5636  1.838    927720  0.950
+[vpr] 0.00054 0.99706    55.5579 5.7158e-08 3.7187e-07 2.3135e-10  6.3202  0.4012  0.0054 10.9847  2.176    948336  0.950
+[vpr] 0.00051 0.99187    55.4139 4.8615e-08 3.716e-07  2.2896e-10  6.3886  0.3875  0.0056 10.5584  2.424    968952  0.950
+[vpr] 0.00049 0.99197    54.8543 4.3931e-08 3.7208e-07 2.3088e-10  6.3202  0.3890  0.0079 10.0042  2.748    989568  0.950
+[vpr] 0.00046 1.00590    53.6946 3.9692e-08 3.7144e-07 2.2994e-10  6.3202  0.3834  0.0060  9.4942  3.045   1010184  0.950
+[vpr] 0.00044 1.00099    53.6523 3.6385e-08 3.7622e-07 2.3275e-10  6.3202  0.3985  0.0044  8.9572  3.358   1030800  0.950
+[vpr] 0.00042 0.98349    53.0680 3.3874e-08 3.7491e-07 2.371e-10   6.3202  0.3942  0.0101  8.5853  3.575   1051416  0.950
+[vpr] 0.00040 0.98517    52.2666 3.2172e-08 3.688e-07  2.3122e-10  6.2519  0.3811  0.0067  8.1917  3.805   1072032  0.950
+[vpr] 0.00038 0.99605    51.3566 2.9679e-08 3.6623e-07 2.3002e-10  6.2519  0.3839  0.0051  7.7093  4.086   1092648  0.950
+[vpr] 0.00036 0.99287    51.2537 2.8079e-08 3.6831e-07 2.2921e-10  6.2305  0.3722  0.0048  7.2770  4.338   1113264  0.950
+[vpr] 0.00034 0.99459    51.2055 2.6785e-08 3.6914e-07 2.2909e-10  6.2305  0.3956  0.0053  6.7836  4.626   1133880  0.950
+[vpr] 0.00032 1.00276    50.3365 2.572e-08  3.6616e-07 2.2921e-10  6.2989  0.3753  0.0035  6.4825  4.802   1154496  0.950
+[vpr] 0.00031 0.99637    49.8037 2.4532e-08 3.6596e-07 2.2717e-10  6.2989  0.3667  0.0033  6.0630  5.047   1175112  0.950
+[vpr] 0.00029 0.99850    49.3371 2.2898e-08 3.6632e-07 2.2712e-10  6.3886  0.3851  0.0042  5.6186  5.306   1195728  0.950
+[vpr] 0.00028 0.99390    49.2837 2.2928e-08 3.6701e-07 2.3075e-10  6.3202  0.3803  0.0034  5.3101  5.486   1216344  0.950
+[vpr] 0.00026 0.99313    48.0902 2.2363e-08 3.6355e-07 2.2947e-10  6.2989  0.3903  0.0047  4.9933  5.671   1236960  0.950
+[vpr] 0.00025 0.99730    48.2053 2.1959e-08 3.6435e-07 2.258e-10   6.2989  0.3884  0.0034  4.7452  5.815   1257576  0.950
+[vpr] 0.00024 0.99399    47.6071 2.1448e-08 3.6407e-07 2.2653e-10  6.2989  0.3750  0.0029  4.5006  5.958   1278192  0.950
+[vpr] 0.00022 0.99173    46.5500 2.1051e-08 3.6216e-07 2.2896e-10  6.2989  0.3574  0.0050  4.2082  6.129   1298808  0.950
+[vpr] 0.00021 0.99965    46.4698 2.0445e-08 3.6198e-07 2.2508e-10  6.2989  0.3907  0.0034  3.8606  6.331   1319424  0.950
+[vpr] 0.00020 0.99654    46.1913 2.0181e-08 3.6274e-07 2.2623e-10  6.2989  0.3767  0.0025  3.6702  6.442   1340040  0.950
+[vpr] 0.00019 0.99786    46.1792 1.9821e-08 3.6365e-07 2.2734e-10  6.2989  0.3633  0.0025  3.4380  6.578   1360656  0.950
+[vpr] 0.00018 0.99644    45.8215 1.9527e-08 3.6191e-07 2.2747e-10  6.2989  0.3565  0.0032  3.1743  6.732   1381272  0.950
+[vpr] 0.00017 0.99401    45.1273 1.9143e-08 3.6075e-07 2.2422e-10  6.2989  0.3940  0.0028  2.9093  6.886   1401888  0.950
+[vpr] 0.00017 0.99598    45.1188 1.8996e-08 3.6062e-07 2.2665e-10  6.2989  0.3842  0.0024  2.7756  6.964   1422504  0.950
+[vpr] 0.00016 0.99896    44.8697 1.8761e-08 3.6204e-07 2.2337e-10  6.3202  0.3692  0.0014  2.6206  7.055   1443120  0.950
+[vpr] 0.00015 1.00037    44.5456 1.8583e-08 3.6233e-07 2.2478e-10  6.2989  0.3637  0.0015  2.4350  7.163   1463736  0.950
+[vpr] 0.00014 0.99967    44.4067 1.8256e-08 3.6071e-07 2.2486e-10  6.2989  0.3540  0.0024  2.2493  7.271   1484352  0.950
+[vpr] 0.00013 0.99659    44.1821 1.8195e-08 3.605e-07  2.2282e-10  6.2989  0.3300  0.0014  2.0560  7.384   1504968  0.950
+[vpr] 0.00013 0.99706    43.9083 1.7777e-08 3.6134e-07 2.2576e-10  6.2989  0.3906  0.0019  1.8299  7.516   1525584  0.950
+[vpr] 0.00012 0.99998    43.9373 1.7818e-08 3.6113e-07 2.2606e-10  6.2989  0.3897  0.0017  1.7394  7.569   1546200  0.950
+[vpr] 0.00012 0.99840    44.0073 1.7629e-08 3.5932e-07 2.2601e-10  6.2989  0.3800  0.0015  1.6519  7.620   1566816  0.950
+[vpr] 0.00011 0.99681    43.7413 1.7639e-08 3.5969e-07 2.2337e-10  6.2989  0.3688  0.0018  1.5529  7.677   1587432  0.950
+[vpr] 0.00010 1.00005    43.4063 1.7425e-08 3.5901e-07 2.2299e-10  6.2989  0.3402  0.0016  1.4423  7.742   1608048  0.950
+[vpr] 0.00010 1.00074    43.2325 1.7406e-08 3.5953e-07 2.229e-10   6.2989  0.3289  0.0013  1.2983  7.826   1628664  0.950
+[vpr] 0.00009 0.99885    43.1375 1.7261e-08 3.585e-07  2.229e-10   6.2989  0.3167  0.0009  1.1541  7.910   1649280  0.950
+[vpr] 0.00009 0.99670    42.9948 1.7096e-08 3.5861e-07 2.2486e-10  6.2989  0.2940  0.0011  1.0118  7.993   1669896  0.950
+[vpr] 0.00008 0.99858    42.9094 1.7101e-08 3.5972e-07 2.2461e-10  6.2989  0.2883  0.0010  1.0000  8.000   1690512  0.950
+[vpr] 0.00008 0.99688    42.7586 1.7101e-08 3.5894e-07 2.2367e-10  6.2989  0.2675  0.0015  1.0000  8.000   1711128  0.950
+[vpr] 0.00008 0.99899    42.6241 1.7099e-08 3.5952e-07 2.2597e-10  6.2989  0.2552  0.0012  1.0000  8.000   1731744  0.950
+[vpr] 0.00007 0.99958    42.5558 1.7107e-08 3.5843e-07 2.2196e-10  6.2989  0.2360  0.0009  1.0000  8.000   1752360  0.950
+[vpr] 0.00007 1.00044    42.5716 1.71e-08   3.5846e-07 2.232e-10   6.2989  0.2269  0.0012  1.0000  8.000   1772976  0.950
+[vpr] 0.00007 0.99874    42.4448 1.7104e-08 3.582e-07  2.2512e-10  6.2989  0.2114  0.0008  1.0000  8.000   1793592  0.950
+[vpr] 0.00006 0.99848    42.2955 1.7096e-08 3.5857e-07 2.2243e-10  6.2989  0.1997  0.0009  1.0000  8.000   1814208  0.950
+[vpr] 0.00006 0.99775    42.3037 1.6986e-08 3.5888e-07 2.255e-10   6.2989  0.1919  0.0007  1.0000  8.000   1834824  0.950
+[vpr] 0.00006 0.99988    42.2228 1.7092e-08 3.6049e-07 2.2452e-10  6.2989  0.1713  0.0007  1.0000  8.000   1855440  0.950
+[vpr] 0.00005 0.99926    42.1191 1.7091e-08 3.5984e-07 2.2533e-10  6.2989  0.1634  0.0008  1.0000  8.000   1876056  0.950
+[vpr] 0.00005 1.00010    42.0641 1.7091e-08 3.6057e-07 2.2542e-10  6.2989  0.1494  0.0005  1.0000  8.000   1896672  0.800
+[vpr] 0.00004 0.99715    41.9083 1.6997e-08 3.5925e-07 2.241e-10   6.2989  0.0994  0.0007  1.0000  8.000   1917288  0.800
+[vpr] 0.00003 0.99892    41.7816 1.6998e-08 3.5872e-07 2.2264e-10  6.2989  0.0708  0.0004  1.0000  8.000   1937904  0.800
+[vpr] 0.00003 0.99948    41.7119 1.6999e-08 3.5802e-07 2.2482e-10  6.2989  0.0486  0.0003  1.0000  8.000   1958520  0.800
+[vpr] 0.00002 0.99971    41.6558 1.6999e-08 3.5809e-07 2.2175e-10  6.2989  0.0351  0.0002  1.0000  8.000   1979136  0.800
+[vpr] 0.00002 0.99991    41.6435 1.6999e-08 3.5703e-07 2.229e-10   6.2989  0.0285  0.0000  1.0000  8.000   1999752  0.800
+[vpr] 0.00001 1.00000    41.6401 1.6999e-08 3.576e-07  2.2333e-10  6.2989  0.0302  0.0000  1.0000  8.000   2020368  0.800
+[vpr] 0.00001 1.00000    41.6401 1.6999e-08 3.5876e-07 2.2154e-10  6.2989  0.0324  0.0000  1.0000  8.000   2040984  0.800
+[vpr] 0.00001 0.99999    41.6400 1.6999e-08 3.5707e-07 2.2444e-10  6.2989  0.0287  0.0000  1.0000  8.000   2061600  0.800
+[vpr] 0.00000 0.99999    41.6398 1.6999e-08 3.5605e-07 2.2435e-10          0.0150  0.0000  1.0000  8.000   2082216
+[vpr] 
+[vpr] BB estimate of min-dist (placement) wire length: 4153
+[vpr] bb_cost recomputed from scratch: 41.6398
+[vpr] timing_cost recomputed from scratch: 1.69994e-08
+[vpr] delay_cost recomputed from scratch: 3.55806e-07
+[vpr] 
+[vpr] Completed placement consistency check successfully.
+[vpr] 
+[vpr] Swaps called: 2082522
+[vpr] 
+[vpr] Placement estimated critical path delay: 6.29891 ns
+[vpr] Placement cost: 0.999985, bb_cost: 41.6398, td_cost: 1.69994e-08, delay_cost: 3.55806e-07
+[vpr] Placement total # of swap attempts: 2082522
+[vpr] 	Swap reject rate: 0
+[vpr] 	Swap accept rate: 0
+[vpr] 	Swap abort rate: 0
+[vpr] Using low: -1, high: -1, current: 28
+[vpr] Confirming router algorithm: TIMING_DRIVEN.
+[vpr] 
+[vpr] Routing iteration: 1
+[vpr] Wire length after first iteration 8004, total available wire length 8736, ratio 0.916209
+[vpr] Wire length usage ratio exceeds limit of 0.85, fail routing.
+[vpr] Using low: 28, high: -1, current: 56
+[vpr] Confirming router algorithm: TIMING_DRIVEN.
+[vpr] 
+[vpr] Routing iteration: 1
+[vpr] Wire length after first iteration 7334, total available wire length 17472, ratio 0.419757
+[vpr] Critical path: 6.29891 ns
+[vpr] 
+[vpr] Routing iteration: 2
+[vpr] Critical path: 6.29891 ns
+[vpr] 
+[vpr] Routing iteration: 3
+[vpr] Critical path: 6.29891 ns
+[vpr] 
+[vpr] Routing iteration: 4
+[vpr] Critical path: 6.29891 ns
+[vpr] 
+[vpr] Routing iteration: 5
+[vpr] Critical path: 6.29891 ns
+[vpr] 
+[vpr] Routing iteration: 6
+[vpr] Critical path: 6.29891 ns
+[vpr] 
+[vpr] Routing iteration: 7
+[vpr] Critical path: 6.29891 ns
+[vpr] 
+[vpr] Routing iteration: 8
+[vpr] Critical path: 6.29891 ns
+[vpr] 
+[vpr] Routing iteration: 9
+[vpr] Critical path: 6.29891 ns
+[vpr] 
+[vpr] Routing iteration: 10
+[vpr] Critical path: 6.29891 ns
+[vpr] 
+[vpr] Routing iteration: 11
+[vpr] Critical path: 6.29891 ns
+[vpr] 
+[vpr] Routing iteration: 12
+[vpr] Critical path: 6.29891 ns
+[vpr] 
+[vpr] Routing iteration: 13
+[vpr] Critical path: 6.29891 ns
+[vpr] 
+[vpr] Routing iteration: 14
+[vpr] Critical path: 6.29891 ns
+[vpr] 
+[vpr] Routing iteration: 15
+[vpr] Successfully routed after 15 routing iterations.
+[vpr] Completed net delay value cross check successfully.
+[vpr] Using low: 28, high: 56, current: 42
+[vpr] Confirming router algorithm: TIMING_DRIVEN.
+[vpr] 
+[vpr] Routing iteration: 1
+[vpr] Wire length after first iteration 7548, total available wire length 13104, ratio 0.576007
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 2
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 3
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 4
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 5
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 6
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 7
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 8
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 9
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 10
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 11
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 12
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 13
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 14
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 15
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 16
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 17
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 18
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 19
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 20
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 21
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 22
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 23
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 24
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 25
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 26
+[vpr] Critical path: 6.32022 ns
+[vpr] 
+[vpr] Routing iteration: 27
+[vpr] Successfully routed after 27 routing iterations.
+[vpr] Completed net delay value cross check successfully.
+[vpr] Using low: 28, high: 42, current: 36
+[vpr] Confirming router algorithm: TIMING_DRIVEN.
+[vpr] 
+[vpr] Routing iteration: 1
+[vpr] Wire length after first iteration 7362, total available wire length 11232, ratio 0.655449
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 2
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 3
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 4
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 5
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 6
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 7
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 8
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 9
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 10
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 11
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 12
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 13
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 14
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 15
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 16
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 17
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 18
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 19
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 20
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 21
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 22
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 23
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 24
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 25
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 26
+[vpr] Critical path: 6.45696 ns
+[vpr] 
+[vpr] Routing iteration: 27
+[vpr] Critical path: 6.50402 ns
+[vpr] 
+[vpr] Routing iteration: 28
+[vpr] Critical path: 6.65107 ns
+[vpr] 
+[vpr] Routing iteration: 29
+[vpr] Critical path: 6.50402 ns
+[vpr] 
+[vpr] Routing iteration: 30
+[vpr] Critical path: 6.50402 ns
+[vpr] 
+[vpr] Routing iteration: 31
+[vpr] Critical path: 6.50402 ns
+[vpr] 
+[vpr] Routing iteration: 32
+[vpr] Critical path: 6.57239 ns
+[vpr] 
+[vpr] Routing iteration: 33
+[vpr] Critical path: 6.57239 ns
+[vpr] 
+[vpr] Routing iteration: 34
+[vpr] Critical path: 6.57239 ns
+[vpr] 
+[vpr] Routing iteration: 35
+[vpr] Critical path: 6.57239 ns
+[vpr] 
+[vpr] Routing iteration: 36
+[vpr] Critical path: 6.57239 ns
+[vpr] 
+[vpr] Routing iteration: 37
+[vpr] Critical path: 6.57239 ns
+[vpr] 
+[vpr] Routing iteration: 38
+[vpr] Critical path: 6.57239 ns
+[vpr] 
+[vpr] Routing iteration: 39
+[vpr] Critical path: 6.66207 ns
+[vpr] 
+[vpr] Routing iteration: 40
+[vpr] Critical path: 6.86718 ns
+[vpr] 
+[vpr] Routing iteration: 41
+[vpr] Critical path: 6.79881 ns
+[vpr] 
+[vpr] Routing iteration: 42
+[vpr] Critical path: 6.79881 ns
+[vpr] 
+[vpr] Routing iteration: 43
+[vpr] Critical path: 6.79881 ns
+[vpr] 
+[vpr] Routing iteration: 44
+[vpr] Critical path: 6.73044 ns
+[vpr] 
+[vpr] Routing iteration: 45
+[vpr] Critical path: 6.66207 ns
+[vpr] 
+[vpr] Routing iteration: 46
+[vpr] Critical path: 6.72975 ns
+[vpr] 
+[vpr] Routing iteration: 47
+[vpr] Critical path: 6.98261 ns
+[vpr] 
+[vpr] Routing iteration: 48
+[vpr] Critical path: 6.72975 ns
+[vpr] 
+[vpr] Routing iteration: 49
+[vpr] Critical path: 6.72975 ns
+[vpr] 
+[vpr] Routing iteration: 50
+[vpr] Critical path: 6.91424 ns
+[vpr] Routing failed.
+[vpr] Using low: 36, high: 42, current: 40
+[vpr] Confirming router algorithm: TIMING_DRIVEN.
+[vpr] 
+[vpr] Routing iteration: 1
+[vpr] Wire length after first iteration 7666, total available wire length 12480, ratio 0.614263
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 2
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 3
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 4
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 5
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 6
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 7
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 8
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 9
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 10
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 11
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 12
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 13
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 14
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 15
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 16
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 17
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 18
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 19
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 20
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 21
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 22
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 23
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 24
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 25
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 26
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 27
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 28
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 29
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 30
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 31
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 32
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 33
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 34
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 35
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 36
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 37
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 38
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 39
+[vpr] Critical path: 6.43496 ns
+[vpr] 
+[vpr] Routing iteration: 40
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 41
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 42
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 43
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 44
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 45
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 46
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 47
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 48
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 49
+[vpr] Critical path: 6.38859 ns
+[vpr] 
+[vpr] Routing iteration: 50
+[vpr] Critical path: 6.38859 ns
+[vpr] Routing failed.
+[vpr] 
+[vpr] Checking to ensure routing is legal...
+[vpr] Completed routing consistency check successfully.
+[vpr] 
+[vpr] Serial number (magic cookie) for the routing is: -614991521
+[vpr] Best routing used a channel width factor of 42.
+[vpr] 
+[vpr] Average number of bends per net: 3.02970  Maximum # of bends: 94
+[vpr] 
+[vpr] Number of routed nets (nonglobal): 606
+[vpr] Wire length results (in units of 1 clb segments)...
+[vpr] 	Total wirelength: 9700, average net length: 16.0066
+[vpr] 	Maximum net length: 368
+[vpr] 
+[vpr] Wire length results in terms of physical segments...
+[vpr] 	Total wiring segments used: 2744, average wire segments per net: 4.52805
+[vpr] 	Maximum segments used by a net: 109
+[vpr] 	Total local nets with reserved CLB opins: 0
+[vpr] 
+[vpr] X - Directed channels: j max occ ave occ capacity
+[vpr]                       -- ------- ------- --------
+[vpr]                        0      31 23.4167       42
+[vpr]                        1      30 21.7500       42
+[vpr]                        2      38 29.0000       42
+[vpr]                        3      36 29.3333       42
+[vpr]                        4      37 30.7500       42
+[vpr]                        5      40 32.5000       42
+[vpr]                        6      40 33.1667       42
+[vpr]                        7      40 34.8333       42
+[vpr]                        8      41 34.2500       42
+[vpr]                        9      41 35.0833       42
+[vpr]                       10      41 32.9167       42
+[vpr]                       11      38 29.7500       42
+[vpr]                       12      40 34.0833       42
+[vpr] Y - Directed channels: i max occ ave occ capacity
+[vpr]                       -- ------- ------- --------
+[vpr]                        0      41 33.2500       42
+[vpr]                        1      39 30.2500       42
+[vpr]                        2      41 32.6667       42
+[vpr]                        3      41 33.4167       42
+[vpr]                        4      39 33.4167       42
+[vpr]                        5      40 32.6667       42
+[vpr]                        6      41 33.3333       42
+[vpr]                        7      41 33.0833       42
+[vpr]                        8      38 31.0000       42
+[vpr]                        9      38 31.0000       42
+[vpr]                       10      37 29.4167       42
+[vpr]                       11      37 27.5000       42
+[vpr]                       12      37 26.5000       42
+[vpr] 
+[vpr] Total tracks in x-direction: 546, in y-direction: 546
+[vpr] 
+[vpr] Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...
+[vpr] 	Total logic block area (Warning, need to add pitch of routing to blocks with height > 3): 2.13313e+06
+[vpr] 	Total used logic block area: 1.95537e+06
+[vpr] 
+[vpr] Routing area (in minimum width transistor areas)...
+[vpr] 	Total routing area: 648480., per logic tile: 4503.33
+[vpr] 
+[vpr] Segment usage by type (index):
+[vpr] Segment type       Fractional utilization
+[vpr] ------------       ----------------------
+[vpr]        0                  0.671
+[vpr] 
+[vpr] Segment usage by length:
+[vpr] Segment length       Fractional utilization
+[vpr] --------------       ----------------------
+[vpr]         4                   0.671
+[vpr] 
+[vpr] Nets on critical path: 10 normal, 0 global.
+[vpr] Total logic delay: 4.5016e-09 (s), total net delay: 1.81862e-09 (s)
+[vpr] Final critical path: 6.32022 ns
+[vpr] f_max: 158.222 MHz
+[vpr] 
+[vpr] Least slack in design: -6.32022 ns
+[vpr] 
+Closing VPR interface...
+Importing fabric model from VPR...
+Importing circuit design from VPR...
+Post-processing...
+Writing options file 'vpr_tseng.toro.snoitpo'...
+Writing xml file 'vpr_tseng.toro.xml'...
+Writing blif file 'vpr_tseng.toro.blif'...
+Writing architecture file 'vpr_tseng.toro.arch'...
+Writing fabric file 'vpr_tseng.toro.fabric'...
+Writing circuit file 'vpr_tseng.toro.circuit'...
+Writing laff file 'vpr_tseng.toro.laff'...
+Exiting...
