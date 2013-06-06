@@ -33,7 +33,7 @@ CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
 CFLAGS = $(CFLAGS$(ISM)) \
 	-I. \
 	-I../TIO_InputOutputHandlers \
-	-I../../libpcre/SRC
+	-I../../libcommon_c/pcre/SRC
 
 ######################################################################
 # Linker options
