@@ -31,7 +31,12 @@ CFLAGSlinux_x86_64 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_X86
 CFLAGSlinux_i686 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_I686
 CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
 CFLAGS = $(CFLAGS$(ISM)) \
-	-DPLACEMENT_REGIONS_ENABLE \
+	-DTORO_FABRIC_GRID_VALID_ENABLE \
+	-DTORO_FABRIC_CHANNEL_WIDTHS_ENABLE \
+	-DTORO_REGION_PLACEMENT_ENABLE \
+	-DTORO_RELATIVE_PLACEMENT_ENABLE \
+	-DTORO_PREPLACED_PLACEMENT_ENABLE \
+	-DTORO_PREROUTED_ROUTE_ENABLE \
 	-DPLACEMENT_RELATIVE_ENABLE \
 	-I. \
 	-I../TRP_RelativePlace \
@@ -40,7 +45,9 @@ CFLAGS = $(CFLAGS$(ISM)) \
 	-I../TAS_ArchitectureSpec \
 	-I../TFM_FabricModel \
 	-I../TFV_FabricView \
+	-I../TFH_FabricHandlers \
 	-I../TCD_CircuitDesign \
+	-I../TCH_CircuitHandlers \
 	-I../TLO_LogicalObjects \
 	-I../TPO_PhysicalObjects \
 	-I../TNO_NetObjects \
@@ -49,7 +56,7 @@ CFLAGS = $(CFLAGS$(ISM)) \
 	-I../TGS_GeometricShapes \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
-	-I../../libpcre/SRC \
+	-I../../libcommon_c/pcre/SRC \
 	-I../../vpr/SRC/base -I../../vpr/SRC/util -I../../libarchfpga/include
 
 ######################################################################
@@ -172,8 +179,14 @@ $(OBJECTS): $(ISM)/%.o:%.cxx
 ../$(ISM)/libTFV_FabricView.a:
 	cd ../TFV_FabricView ; $(MAKE) $(BUILD_TARGET)
 
+../$(ISM)/libTFH_FabricHandlers.a:
+	cd ../TFH_FabricHandlers ; $(MAKE) $(BUILD_TARGET)
+
 ../$(ISM)/libTCD_CircuitDesign.a:
 	cd ../TCD_CircuitDesign ; $(MAKE) $(BUILD_TARGET)
+
+../$(ISM)/libTCH_CircuitHandlers.a:
+	cd ../TCH_CircuitHandlers ; $(MAKE) $(BUILD_TARGET)
 
 ../$(ISM)/libTLO_LogicalObjects.a:
 	cd ../TLO_LogicalObjects ; $(MAKE) $(BUILD_TARGET)
