@@ -1,0 +1,161 @@
+<!-- _______________________________________________________________ -->
+<!-- Test case: swiveled sb[0][0] right (2x) and upper (2x)          -->
+<!-- Test case: swiveled sb[1][1] left (2x) and lower (2x)           -->
+<!-- _______________________________________________________________ -->
+
+<fabric name="">
+   
+   <sb name="sb[0][0]">
+      <origin> 0 0 </origin>
+      <region> 0.456 0.456 0.544 0.544 </region>
+      <mapping>
+         right 1 upper 0
+         right 3 upper 42
+         right 5 upper 4
+         right 7 upper 2
+
+         right 9 upper 6
+         right 11 upper 8
+         right 13 upper 10
+         right 15 upper 12
+         right 17 upper 14
+         right 19 upper 16
+         right 21 upper 18
+         right 23 upper 20
+         right 25 upper 22
+         right 27 upper 24
+         right 29 upper 26
+         right 31 upper 28
+         right 33 upper 30
+         right 35 upper 32
+         right 37 upper 34
+         right 39 upper 36
+         right 41 upper 38
+         right 43 upper 40
+
+         upper 1 right 4
+         upper 3 right 2
+         upper 5 right 8
+         upper 7 right 6
+
+         upper 9 right 10
+         upper 11 right 12
+         upper 13 right 14
+         upper 15 right 16
+         upper 17 right 18
+         upper 19 right 20
+         upper 21 right 22
+         upper 23 right 24
+         upper 25 right 26
+         upper 27 right 28
+         upper 29 right 30
+         upper 31 right 32
+         upper 33 right 34
+         upper 35 right 36
+         upper 37 right 38
+         upper 39 right 40
+         upper 41 right 42
+         upper 43 right 0
+      </mapping>
+   </sb>
+
+   <sb name="sb[1][1]">
+      <origin> 1 1 </origin>
+      <region> 1.456 1.456 1.544 1.544 </region>
+      <mapping>
+         left 0 lower 13 upper 20
+         left 2 lower 5 upper 28
+         left 4 right 4 lower 37 upper 36
+         left 6 lower 21 upper 4
+
+         left 8 lower 29 upper 4
+         left 10 lower 37 upper 12
+         left 12 right 12 lower 5 upper 36
+         left 14 lower 5 upper 20
+         left 16 lower 13 upper 28
+         left 18 lower 21 upper 36
+         left 20 right 20 lower 13 upper 28
+         left 22 lower 29 upper 4
+         left 24 lower 37 upper 12
+         left 26 lower 5 upper 20
+         left 28 right 28 lower 21 upper 20
+         left 30 lower 13 upper 28
+         left 32 lower 21 upper 36
+         left 34 lower 29 upper 4
+         left 36 right 36 lower 29 upper 12
+         left 38 lower 37 upper 12
+         left 40 lower 5 upper 20
+         left 42 lower 13 upper 28
+         right 1 lower 21 upper 4
+         right 3 lower 29 upper 12
+         right 5 left 5 lower 29 upper 36
+         right 7 lower 37 upper 20
+         right 9 lower 5 upper 28
+         right 11 lower 13 upper 36
+         right 13 left 13 lower 21 upper 4
+         right 15 lower 21 upper 4
+         right 17 lower 29 upper 12
+         right 19 lower 37 upper 20
+         right 21 left 21 lower 13 upper 12
+         right 23 lower 5 upper 28
+         right 25 lower 13 upper 36
+         right 27 lower 21 upper 4
+         right 29 left 29 lower 5 upper 20
+         right 31 lower 29 upper 12
+         right 33 lower 37 upper 20
+         right 35 lower 5 upper 28
+         right 37 left 37 lower 37 upper 28
+         right 39 lower 13 upper 36
+         right 41 lower 21 upper 4
+         right 43 lower 29 upper 12
+
+         lower 0 left 29 right 4
+         lower 2 left 21 right 12
+         lower 4 left 13 right 20 upper 4
+         lower 6 left 37 right 28
+
+         lower 8 left 5 right 28
+         lower 10 left 13 right 36
+         lower 12 left 21 right 20 upper 12
+         lower 14 left 21 right 4
+         lower 16 left 29 right 12
+         lower 18 left 37 right 20
+         lower 20 left 29 right 12 upper 20
+         lower 22 left 5 right 28
+         lower 24 left 13 right 36
+         lower 26 left 21 right 4
+         lower 28 left 37 right 4 upper 28
+         lower 30 left 29 right 12
+         lower 32 left 37 right 20
+         lower 34 left 5 right 28
+         lower 36 left 5 right 36 upper 36
+         lower 38 left 13 right 36
+         lower 40 left 21 right 4
+         lower 42 left 29 right 12
+         upper 1 left 5 right 20
+         upper 3 left 13 right 28
+         upper 5 left 5 right 12 lower 5
+         upper 7 left 21 right 36
+         upper 9 left 29 right 4
+         upper 11 left 37 right 12
+         upper 13 left 37 right 20 lower 13
+         upper 15 left 5 right 20
+         upper 17 left 13 right 28
+         upper 19 left 21 right 36
+         upper 21 left 29 right 28 lower 21
+         upper 23 left 29 right 4
+         upper 25 left 37 right 12
+         upper 27 left 5 right 20
+         upper 29 left 21 right 36 lower 29
+         upper 31 left 13 right 28
+         upper 33 left 21 right 36
+         upper 35 left 29 right 4
+         upper 37 left 13 right 4 lower 37
+         upper 39 left 37 right 12
+         upper 41 left 5 right 20
+         upper 43 left 13 right 28
+      </mapping>
+   </sb>
+
+</fabric>
+<!-- _______________________________________________________________ -->
