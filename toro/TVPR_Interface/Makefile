@@ -37,9 +37,7 @@ CFLAGS = $(CFLAGS$(ISM)) \
 	-DTORO_RELATIVE_PLACEMENT_ENABLE \
 	-DTORO_PREPLACED_PLACEMENT_ENABLE \
 	-DTORO_PREROUTED_ROUTE_ENABLE \
-	-DPLACEMENT_RELATIVE_ENABLE \
 	-I. \
-	-I../TRP_RelativePlace \
 	-I../TOS_OptionsStore \
 	-I../TFS_FloorplanStore \
 	-I../TAS_ArchitectureSpec \
@@ -160,9 +158,6 @@ $(OBJECTS): $(ISM)/%.o:%.cxx
 ######################################################################
 # Library rules
 ######################################################################
-
-../$(ISM)/libTRP_RelativePlace.a:
-	cd ../TRP_RelativePlace ; $(MAKE) $(BUILD_TARGET)
 
 ../$(ISM)/libTOS_OptionsStore.a:
 	cd ../TOS_OptionsStore ; $(MAKE) $(BUILD_TARGET)
