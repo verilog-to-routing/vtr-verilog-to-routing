@@ -1,0 +1,35 @@
+<fabric name="">
+
+   <config>
+      <region> -1.000 -1.000 14.000 14.000 </region>
+   </config>
+   
+   <channel name="ch[0]"  orient="horz" index="0"  count="44"> <region> 0.544 0.456 12.456 0.544 </region> </channel>
+   <channel name="ch[1]"  orient="horz" index="1"  count="34"> <region> 0.544 1.456 12.456 1.544 </region> </channel>
+   <channel name="ch[2]"  orient="horz" index="2"  count="48"> <region> 0.544 2.456 12.456 2.544 </region> </channel>
+   <channel name="ch[3]"  orient="horz" index="3"  count="40"> <region> 0.544 3.456 12.456 3.544 </region> </channel>
+   <channel name="ch[4]"  orient="horz" index="4"  count="50"> <region> 0.544 4.456 12.456 4.544 </region> </channel>
+   <channel name="ch[5]"  orient="horz" index="5"  count="42"> <region> 0.544 5.456 12.456 5.544 </region> </channel>
+   <channel name="ch[6]"  orient="horz" index="6"  count="50"> <region> 0.544 6.456 12.456 6.544 </region> </channel>
+   <channel name="ch[7]"  orient="horz" index="7"  count="42"> <region> 0.544 7.456 12.456 7.544 </region> </channel>
+   <channel name="ch[8]"  orient="horz" index="8"  count="50"> <region> 0.544 8.456 12.456 8.544 </region> </channel>
+   <channel name="ch[9]"  orient="horz" index="9"  count="40"> <region> 0.544 9.456 12.456 9.544 </region> </channel>
+   <channel name="ch[10]" orient="horz" index="10" count="48"> <region> 0.544 10.456 12.456 10.544 </region> </channel>
+   <channel name="ch[11]" orient="horz" index="11" count="34"> <region> 0.544 11.456 12.456 11.544 </region> </channel>
+   <channel name="ch[12]" orient="horz" index="12" count="44"> <region> 0.544 12.456 12.456 12.544 </region> </channel>
+
+   <channel name="cv[0]"  orient="vert" index="0"  count="44"> <region> 0.456 0.544 0.544 12.456 </region> </channel>
+   <channel name="cv[1]"  orient="vert" index="1"  count="34"> <region> 1.456 0.544 1.544 12.456 </region> </channel>
+   <channel name="cv[2]"  orient="vert" index="2"  count="48"> <region> 2.456 0.544 2.544 12.456 </region> </channel>
+   <channel name="cv[3]"  orient="vert" index="3"  count="40"> <region> 3.456 0.544 3.544 12.456 </region> </channel>
+   <channel name="cv[4]"  orient="vert" index="4"  count="50"> <region> 4.456 0.544 4.544 12.456 </region> </channel>
+   <channel name="cv[5]"  orient="vert" index="5"  count="42"> <region> 5.456 0.544 5.544 12.456 </region> </channel>
+   <channel name="cv[6]"  orient="vert" index="6"  count="50"> <region> 6.456 0.544 6.544 12.456 </region> </channel>
+   <channel name="cv[7]"  orient="vert" index="7"  count="42"> <region> 7.456 0.544 7.544 12.456 </region> </channel>
+   <channel name="cv[8]"  orient="vert" index="8"  count="50"> <region> 8.456 0.544 8.544 12.456 </region> </channel>
+   <channel name="cv[9]"  orient="vert" index="9"  count="40"> <region> 9.456 0.544 9.544 12.456 </region> </channel>
+   <channel name="cv[10]" orient="vert" index="10" count="48"> <region> 10.456 0.544 10.544 12.456 </region> </channel>
+   <channel name="cv[11]" orient="vert" index="11" count="34"> <region> 11.456 0.544 11.544 12.456 </region> </channel>
+   <channel name="cv[12]" orient="vert" index="12" count="44"> <region> 12.456 0.544 12.544 12.456 </region> </channel>
+   
+</fabric>

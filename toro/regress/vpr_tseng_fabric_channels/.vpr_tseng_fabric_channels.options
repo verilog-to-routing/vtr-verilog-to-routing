@@ -1,0 +1,37 @@
+# 1 "vpr_tseng_fabric_channels.options"
+# 1 "<built-in>"
+# 1 "<command line>"
+# 1 "vpr_tseng_fabric_channels.options"
+input_file_xml "k4_N8_soft_logic_only.xml"
+input_file_blif "tseng.4.blif"
+input_file_fabric "tseng.4.fabric"
+
+output_enable_options yes
+output_enable_xml yes
+output_enable_blif yes
+output_enable_arch yes
+output_enable_fabric yes
+output_enable_circuit yes
+output_enable_laff yes
+
+output_file_xml "*.toro.xml"
+output_file_blif "*.toro.blif"
+output_file_arch "*.toro.arch"
+output_file_fabric "*.toro.fabric"
+output_file_circuit "*.toro.circuit"
+
+// output_email_address "jrudolph@ti.com"
+
+format_min_grid 0.001
+// format_time_stamps yes
+
+halt_max_warnings -1
+halt_max_errors -1
+
+// trace_vpr_show_setup yes
+// trace_vpr_echo_file yes
+
+display_warning_reject ".*check_rr_graph.*" // Ignore select check_rr_graph warnings
+display_error_reject ".*check_rr_graph.*" // Ignore select check_rr_graph errors
+
+fabric_channels_enable yes
