@@ -1,0 +1,40 @@
+// Example pre-placed constraints (both "fixed" and "placed" status)
+// Based on array size: 12 x 12 logic blocks
+
+<circuit name="top">
+
+   <block name="tin_pready_0_0_" master="io" status="fixed"> <placement x="0" y="5" z="1"/> </block>
+   <block name="out:pready_0_0_" master="io" status="fixed"> <placement x="0" y="6" z="2"/> </block>
+   <block name="out:pdn" master="io" status="fixed">         <placement x="0" y="7" z="3"/> </block>
+
+   <block name="preset" master="io" status="placed">         <placement x="13" y="2" z="4"/> </block>
+   <block name="preset_0_0_" master="io" status="placed">    <placement x="13" y="2" z="5"/> </block>
+   <block name="pclk" master="io" status="placed">           <placement x="13" y="2" z="6"/> </block>
+
+   <block name="n_n3184" master="clb" status="fixed">  <placement x="1" y="1"/> </block>
+   <block name="n_n3466" master="clb" status="fixed">  <placement x="1" y="2"/> </block>
+   <block name="n_n3229" master="clb" status="fixed">  <placement x="1" y="3"/> </block>
+   <block name="n_n3016" master="clb" status="fixed">  <placement x="1" y="4"/> </block>
+   <block name="n_n3519" master="clb" status="fixed">  <placement x="1" y="5"/> </block>
+   <block name="n_n4228" master="clb" status="fixed">  <placement x="1" y="6"/> </block>
+   <block name="n_n3735" master="clb" status="fixed">  <placement x="1" y="7"/> </block>
+   <block name="n_n4046" master="clb" status="fixed">  <placement x="1" y="8"/> </block>
+   <block name="n_n3292" master="clb" status="fixed">  <placement x="1" y="9"/> </block>
+   <block name="n_n3725" master="clb" status="fixed">  <placement x="1" y="10"/> </block>
+   <block name="n_n3592" master="clb" status="fixed">  <placement x="1" y="11"/> </block>
+   <block name="n_n3235" master="clb" status="fixed">  <placement x="1" y="12"/> </block>
+
+   <block name="n_n3987" master="clb" status="placed">  <placement x="12" y="1"/> </block>
+   <block name="n_n3913" master="clb" status="placed">  <placement x="12" y="2"/> </block>
+   <block name="n_n3813" master="clb" status="placed">  <placement x="12" y="3"/> </block>
+   <block name="n_n4011" master="clb" status="placed">  <placement x="12" y="4"/> </block>
+   <block name="n_n3538" master="clb" status="placed">  <placement x="12" y="5"/> </block>
+   <block name="n_n3068" master="clb" status="placed">  <placement x="12" y="6"/> </block>
+   <block name="n_n3791" master="clb" status="placed">  <placement x="12" y="7"/> </block>
+   <block name="n_n3147" master="clb" status="placed">  <placement x="12" y="8"/> </block>
+   <block name="n_n3881" master="clb" status="placed">  <placement x="12" y="9"/> </block>
+   <block name="n_n3817" master="clb" status="placed">  <placement x="12" y="10"/> </block>
+   <block name="n_n3981" master="clb" status="placed">  <placement x="12" y="11"/> </block>
+   <block name="n_n3515" master="clb" status="placed">  <placement x="12" y="12"/> </block>
+   
+</circuit>

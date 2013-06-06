@@ -1,0 +1,3 @@
+#!/bin/csh -f
+
+../regress_this vpr_tseng_preplaced
