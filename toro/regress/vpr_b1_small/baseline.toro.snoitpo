@@ -1,0 +1,160 @@
+//____________________________________________________________________//
+//                       Toro - A VPR Front-End                       //
+//     (c) Copyright 2012-2013 Texas Instruments (under GNU GPL)      //
+//____________________________________________________________________//
+//                          Program Options                           //
+//____________________________________________________________________//
+
+//--------------------------------------------------------------------//
+//                           Input Options                            //
+//--------------------------------------------------------------------//
+
+INPUT_FILE_XML             = "k4_N8_soft_logic_only.xml"
+INPUT_FILE_BLIF            = "b1.blif"
+INPUT_FILE_ARCH            = "vpr_b1_small.toro.arch"
+INPUT_FILE_FABRIC          = "vpr_b1_small.toro.fabric"
+INPUT_FILE_CIRCUIT         = "vpr_b1_small.toro.circuit"
+INPUT_ENABLE_ARCH          = TRUE
+INPUT_ENABLE_BLIF          = TRUE
+INPUT_ENABLE_ARCH          = FALSE
+INPUT_ENABLE_FABRIC        = FALSE
+INPUT_ENABLE_CIRCUIT       = FALSE
+
+//--------------------------------------------------------------------//
+//                           Output Options                           //
+//--------------------------------------------------------------------//
+
+OUTPUT_FILE_LOG            = "vpr_b1_small.toro.log"
+OUTPUT_FILE_OPTIONS        = "vpr_b1_small.toro.snoitpo"
+OUTPUT_FILE_XML            = "vpr_b1_small.toro.xml"
+OUTPUT_FILE_BLIF           = "vpr_b1_small.toro.blif"
+OUTPUT_FILE_ARCH           = "vpr_b1_small.toro.arch"
+OUTPUT_FILE_FABRIC         = "vpr_b1_small.toro.fabric"
+OUTPUT_FILE_CIRCUIT        = "vpr_b1_small.toro.circuit"
+OUTPUT_FILE_RC_DELAYS      = ""
+OUTPUT_FILE_LAFF           = "vpr_b1_small.toro.laff"
+OUTPUT_EMAIL_METRICS       = ""
+OUTPUT_ENABLE_LOG          = TRUE
+OUTPUT_ENABLE_OPTIONS      = TRUE
+OUTPUT_ENABLE_XML          = TRUE
+OUTPUT_ENABLE_BLIF         = TRUE
+OUTPUT_ENABLE_ARCH         = TRUE
+OUTPUT_ENABLE_FABRIC       = TRUE
+OUTPUT_ENABLE_CIRCUIT      = TRUE
+OUTPUT_ENABLE_RC_DELAYS    = FALSE
+OUTPUT_ENABLE_LAFF         = TRUE
+OUTPUT_LAFF_MODE           = ALL 
+OUTPUT_RC_DELAY_MODE       = ELMORE
+OUTPUT_RC_DELAY_SORT       = BY_NETS
+OUTPUT_RC_DELAY_NETS       = { }
+OUTPUT_RC_DELAY_BLOCKS     = { }
+// OUTPUT_RC_DELAY_MAX_LEN = *
+
+//--------------------------------------------------------------------//
+//                          Message Options                           //
+//--------------------------------------------------------------------//
+
+FORMAT_MIN_GRID            = 0.001
+FORMAT_TIME_STAMPS         = FALSE
+// DISPLAY_INFO_ACCEPT     = ""
+// DISPLAY_INFO_REJECT     = ""
+// DISPLAY_WARNING_ACCEPT  = ""
+// DISPLAY_WARNING_REJECT  = ""
+// DISPLAY_ERROR_ACCEPT    = ""
+// DISPLAY_ERROR_REJECT    = ""
+// DISPLAY_TRACE_ACCEPT    = ""
+// DISPLAY_TRACE_REJECT    = ""
+TRACE_READ_OPTIONS         = FALSE
+TRACE_READ_XML             = FALSE
+TRACE_READ_BLIF            = FALSE
+TRACE_READ_ARCHITECTURE    = FALSE
+TRACE_READ_FABRIC          = FALSE
+TRACE_READ_CIRCUIT         = FALSE
+TRACE_VPR_SHOW_SETUP       = FALSE
+TRACE_VPR_ECHO_FILE        = FALSE
+
+//--------------------------------------------------------------------//
+//                          Execute Options                           //
+//--------------------------------------------------------------------//
+
+HALT_MAX_WARNINGS          = -1
+HALT_MAX_ERRORS            = -1
+EXECUTE_MODE               = { ALL }
+
+//--------------------------------------------------------------------//
+//                           Fabric Options                           //
+//--------------------------------------------------------------------//
+
+FABRIC_BLOCK_ENABLE        = FALSE
+FABRIC_SB_ENABLE           = FALSE
+FABRIC_CB_ENABLE           = FALSE
+FABRIC_CHANNEL_ENABLE      = FALSE
+
+//--------------------------------------------------------------------//
+//                            Pack Options                            //
+//--------------------------------------------------------------------//
+
+PACK_ALGORITHM             = AAPACK
+PACK_AAPACK_CLUSTER_NETS   = MIN_CONNECTIONS
+PACK_AAPACK_AREA_WEIGHT    = 0.750
+PACK_AAPACK_NETS_WEIGHT    = 0.900
+PACK_AAPACK_AFFINITY       = ANY
+PACK_BLOCK_SIZE            = 1
+PACK_LUT_SIZE              = 4
+PACK_COST_MODE             = TIMING_DRIVEN
+
+//--------------------------------------------------------------------//
+//                           Place Options                            //
+//--------------------------------------------------------------------//
+
+PLACE_ALGORITHM            = ANNEALING
+PLACE_CHANNEL_WIDTH        = 100
+PLACE_RANDOM_SEED          = 1
+PLACE_TEMP_INIT            = 0.000
+PLACE_TEMP_INIT_FACTOR     = 20.000
+PLACE_TEMP_INIT_EPSILON    = 20.000
+PLACE_TEMP_EXIT            = 0.000
+PLACE_TEMP_EXIT_FACTOR     = 0.005
+PLACE_TEMP_EXIT_EPSILON    = 0.005
+PLACE_TEMP_REDUCE          = 0.000
+PLACE_TEMP_REDUCE_FACTOR   = 0.440
+PLACE_TEMP_INNER_NUM       = 10.000
+PLACE_SEARCH_LIMIT         = 0.440
+PLACE_COST_MODE            = PATH_TIMING_DRIVEN
+PLACE_TIMING_COST_FACTOR   = 0.500
+PLACE_TIMING_UPDATE_INT    = 1
+PLACE_TIMING_UPDATE_COUNT  = 0
+PLACE_SLACK_INIT_WEIGHT    = 1.000
+PLACE_SLACK_FINAL_WEIGHT   = 8.000
+
+PLACE_RELATIVE_ENABLE      = FALSE
+PLACE_RELATIVE_ROTATE      = TRUE
+PLACE_RELATIVE_INIT_PLACE  = 3
+PLACE_RELATIVE_INIT_MACRO  = 10
+PLACE_PREPLACED_ENABLE     = FALSE
+
+//--------------------------------------------------------------------//
+//                           Route Options                            //
+//--------------------------------------------------------------------//
+
+ROUTE_ALGORITHM            = PATHFINDER
+ROUTE_TYPE                 = DETAILED
+ROUTE_WINDOW_SIZE          = 3
+ROUTE_CHANNEL_WIDTH        = 0
+ROUTE_MAX_ITERATIONS       = 50
+ROUTE_CONG_HIST_FACTOR     = 1.000
+ROUTE_CONG_INIT_FACTOR     = 0.500
+ROUTE_CONG_PRESENT_FACTOR  = 1.300
+ROUTE_BEND_COST_FACTOR     = 0.000
+ROUTE_RESOURCE_COST_MODE   = DELAY_NORMALIZED
+ROUTE_COST_MODE            = TIMING_DRIVEN
+ROUTE_TIMING_ASTAR_FACTOR  = 1.200
+ROUTE_TIMING_MAX_CRIT      = 0.990
+ROUTE_TIMING_SLACK_CRIT    = 1.000
+
+ROUTE_TRIM_EMPTY_CHANNELS  = TRUE
+ROUTE_TRIM_OBS_CHANNELS    = TRUE
+ROUTE_PREROUTED_ENABLE     = FALSE
+ROUTE_PREROUTED_ORDER      = FIRST
+
+//____________________________________________________________________//

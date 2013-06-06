@@ -1,0 +1,100 @@
+Array size: 1 x 1 logic blocks.
+
+Routing:
+
+Net 0 (pf)
+
+Node:	104	SOURCE (1,1)  Class: 8  
+Node:	131	  OPIN (1,1)  Pin: 25  
+Node:	315	 CHANY (1,1)  Track: 2  
+Node:	262	 CHANX (1,1)  Track: 5  
+Node:	166	  IPIN (1,2)  Pad: 9  
+Node:	142	  SINK (1,2)  Pad: 9  
+
+
+Net 1 (pb)
+
+Node:	58	SOURCE (1,0)  Pad: 10  
+Node:	82	  OPIN (1,0)  Pad: 10  
+Node:	236	 CHANX (1,0)  Track: 7  
+Node:	116	  IPIN (1,1)  Pin: 10  
+Node:	96	  SINK (1,1)  Class: 0  
+
+
+Net 2 (pc)
+
+Node:	185	SOURCE (2,1)  Pad: 4  
+Node:	209	  OPIN (2,1)  Pad: 4  
+Node:	320	 CHANY (1,1)  Track: 7  
+Node:	107	  IPIN (1,1)  Pin: 1  
+Node:	96	  SINK (1,1)  Class: 0  
+Node:	320	 CHANY (1,1)  Track: 7  
+Node:	252	 CHANX (1,0)  Track: 23  
+Node:	305	 CHANY (0,1)  Track: 20  
+Node:	261	 CHANX (1,1)  Track: 4  
+Node:	316	 CHANY (1,1)  Track: 3  
+Node:	256	 CHANX (1,0)  Track: 27  
+Node:	309	 CHANY (0,1)  Track: 24  
+Node:	257	 CHANX (1,1)  Track: 0  
+Node:	340	 CHANY (1,1)  Track: 27  
+Node:	223	  IPIN (2,1)  Pad: 18  
+Node:	199	  SINK (2,1)  Pad: 18  
+
+
+Net 3 (pa)
+
+Node:	152	SOURCE (1,2)  Pad: 19  
+Node:	176	  OPIN (1,2)  Pad: 19  
+Node:	274	 CHANX (1,1)  Track: 17  
+Node:	294	 CHANY (0,1)  Track: 9  
+Node:	117	  IPIN (1,1)  Pin: 11  
+Node:	96	  SINK (1,1)  Class: 0  
+
+
+Net 4 (pg)
+
+Node:	102	SOURCE (1,1)  Class: 6  
+Node:	129	  OPIN (1,1)  Pin: 23  
+Node:	304	 CHANY (0,1)  Track: 19  
+Node:	249	 CHANX (1,0)  Track: 20  
+Node:	321	 CHANY (1,1)  Track: 8  
+Node:	268	 CHANX (1,1)  Track: 11  
+Node:	300	 CHANY (0,1)  Track: 15  
+Node:	245	 CHANX (1,0)  Track: 16  
+Node:	325	 CHANY (1,1)  Track: 12  
+Node:	272	 CHANX (1,1)  Track: 15  
+Node:	296	 CHANY (0,1)  Track: 11  
+Node:	241	 CHANX (1,0)  Track: 12  
+Node:	329	 CHANY (1,1)  Track: 16  
+Node:	276	 CHANX (1,1)  Track: 19  
+Node:	292	 CHANY (0,1)  Track: 7  
+Node:	237	 CHANX (1,0)  Track: 8  
+Node:	333	 CHANY (1,1)  Track: 20  
+Node:	280	 CHANX (1,1)  Track: 23  
+Node:	288	 CHANY (0,1)  Track: 3  
+Node:	233	 CHANX (1,0)  Track: 4  
+Node:	337	 CHANY (1,1)  Track: 24  
+Node:	284	 CHANX (1,1)  Track: 27  
+Node:	312	 CHANY (0,1)  Track: 27  
+Node:	229	 CHANX (1,0)  Track: 0  
+Node:	75	  IPIN (1,0)  Pad: 3  
+Node:	51	  SINK (1,0)  Pad: 3  
+
+
+Net 5 (pe)
+
+Node:	103	SOURCE (1,1)  Class: 7  
+Node:	130	  OPIN (1,1)  Pin: 24  
+Node:	259	 CHANX (1,1)  Track: 2  
+Node:	314	 CHANY (1,1)  Track: 1  
+Node:	230	 CHANX (1,0)  Track: 1  
+Node:	311	 CHANY (0,1)  Track: 26  
+Node:	283	 CHANX (1,1)  Track: 26  
+Node:	338	 CHANY (1,1)  Track: 25  
+Node:	234	 CHANX (1,0)  Track: 5  
+Node:	287	 CHANY (0,1)  Track: 2  
+Node:	279	 CHANX (1,1)  Track: 22  
+Node:	334	 CHANY (1,1)  Track: 21  
+Node:	238	 CHANX (1,0)  Track: 9  
+Node:	87	  IPIN (1,0)  Pad: 15  
+Node:	63	  SINK (1,0)  Pad: 15  

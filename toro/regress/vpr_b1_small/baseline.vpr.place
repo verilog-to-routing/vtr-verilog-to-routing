@@ -1,0 +1,13 @@
+Netlist file: vpr_b1_small.vpr.net   Architecture file: k4_N8_soft_logic_only.xml
+Array size: 1 x 1 logic blocks
+
+#block name	x	y	subblk	block number
+#----------	--	--	------	------------
+out:pf		1	2	3	#0
+pf		1	1	0	#1
+out:pe		1	0	5	#2
+pc		2	1	1	#3
+pa		1	2	6	#4
+pb		1	0	3	#5
+out:pg		1	0	1	#6
+out:pd		2	1	6	#7

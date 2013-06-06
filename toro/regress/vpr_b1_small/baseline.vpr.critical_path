@@ -1,0 +1,82 @@
+Node: 50  TN_INPAD_SOURCE Block #3 (pc)
+Pin: inpad.inpad[0] pb (pc)T_arr: 0  T_req: -2.12326e-09  Tdel: 0
+Internal Net: #2 (pc).  Pins on net: 4.
+
+Node: 49  TN_INPAD_OPIN Block #3 (pc)
+Pin: inpad.inpad[0] pb (pc)
+T_arr: 0  T_req: -2.12326e-09  Tdel: 4.243e-11
+Internal Net: #2 (pc).  Pins on net: 4.
+
+Node: 48  TN_CB_OPIN Block #3 (pc)
+Pin: io.inpad[0] pb (pc)
+T_arr: 4.243e-11  T_req: -2.08083e-09  Tdel: 1.4084e-10
+External-to-Block Net: #2 (pc).  Pins on net: 3.
+
+Node: 4  TN_CB_IPIN Block #1 (pf)
+Pin: clb.I[7] pb (pf)
+T_arr: 1.8327e-10  T_req: -1.93999e-09  Tdel: 8.044e-11
+Internal Net: #2 (pc).  Pins on net: 4.
+
+Node: 9  TN_INTERMEDIATE_NODE Block #1 (pf)
+Pin: ble.in[0] pb (pg)
+T_arr: 2.6371e-10  T_req: -1.85955e-09  Tdel: 0
+Internal Net: #2 (pc).  Pins on net: 4.
+
+Node: 11  TN_INTERMEDIATE_NODE Block #1 (pf)
+Pin: soft_logic.in[0] pb (pg)
+T_arr: 2.6371e-10  T_req: -1.85955e-09  Tdel: 0
+Internal Net: #2 (pc).  Pins on net: 4.
+
+Node: 13  TN_INTERMEDIATE_NODE Block #1 (pf)
+Pin: lut6.in[0] pb (pg)
+T_arr: 2.6371e-10  T_req: -1.85955e-09  Tdel: 0
+Internal Net: #2 (pc).  Pins on net: 4.
+
+Node: 15  TN_PRIMITIVE_IPIN Block #1 (pf)
+Pin: lut.in[0] pb (pg)
+T_arr: 2.6371e-10  T_req: -1.85955e-09  Tdel: 2.69e-10
+Internal Net: #2 (pc).  Pins on net: 4.
+
+Node: 16  TN_PRIMITIVE_OPIN Block #1 (pf)
+Pin: lut.out[0] pb (pg)
+T_arr: 5.3271e-10  T_req: -1.59055e-09  Tdel: 0
+Internal Net: #5 (pg).  Pins on net: 2.
+
+Node: 14  TN_INTERMEDIATE_NODE Block #1 (pf)
+Pin: lut6.out[0] pb (pg)
+T_arr: 5.3271e-10  T_req: -1.59055e-09  Tdel: 0
+Internal Net: #5 (pg).  Pins on net: 2.
+
+Node: 12  TN_INTERMEDIATE_NODE Block #1 (pf)
+Pin: soft_logic.out[0] pb (pg)
+T_arr: 5.3271e-10  T_req: -1.59055e-09  Tdel: 0
+Internal Net: #5 (pg).  Pins on net: 2.
+
+Node: 10  TN_INTERMEDIATE_NODE Block #1 (pf)
+Pin: ble.out[0] pb (pg)
+T_arr: 5.3271e-10  T_req: -1.59055e-09  Tdel: 0
+Internal Net: #5 (pg).  Pins on net: 2.
+
+Node: 6  TN_CB_OPIN Block #1 (pf)
+Pin: clb.O[5] pb (pf)
+T_arr: 5.3271e-10  T_req: -1.59055e-09  Tdel: 1.57661e-09
+External-to-Block Net: #4 (pg).  Pins on net: 2.
+
+Node: 57  TN_CB_IPIN Block #6 (out:pg)
+Pin: io.outpad[0] pb (out:pg)
+T_arr: 2.10932e-09  T_req: -1.394e-11  Tdel: 1.394e-11
+Internal Net: #5 (pg).  Pins on net: 2.
+
+Node: 58  TN_OUTPAD_IPIN Block #6 (out:pg)
+Pin: outpad.outpad[0] pb (out:pg)
+T_arr: 2.12326e-09  T_req: 0  Tdel: 0
+Internal Net: #5 (pg).  Pins on net: 2.
+
+Node: 59  TN_OUTPAD_SINK Block #6 (out:pg)
+Pin: outpad.outpad[0] pb (out:pg)T_arr: 2.12326e-09  T_req: 0  
+Internal Net: #5 (pg).  Pins on net: 2.
+
+
+Tnodes on critical path: 16  Non-global nets on critical path: 2.
+Global nets on critical path: 0.
+Total logic delay: 4.0581e-10 (s)  Total net delay: 1.71745e-09 (s)

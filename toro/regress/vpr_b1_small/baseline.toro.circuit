@@ -1,0 +1,290 @@
+<!-- _______________________________________________________________ -->
+<!--                     Toro - A VPR Front-End                      -->
+<!--   (c) Copyright 2012-2013 Texas Instruments (under GNU GPL)     -->
+<!-- _______________________________________________________________ -->
+<!--                         Circuit Design                          -->
+<!-- _______________________________________________________________ -->
+<circuit name="top">
+   
+   <block name="out:pf" master="io" status="placed">
+      <placement name="fabric[1][2].3" x="1" y="2" z="3"/>
+   </block>
+   <block name="out:pe" master="io" status="placed">
+      <placement name="fabric[1][0].5" x="1" y="0" z="5"/>
+   </block>
+   <block name="pc" master="io" status="placed">
+      <placement name="fabric[2][1].1" x="2" y="1" z="1"/>
+   </block>
+   <block name="pa" master="io" status="placed">
+      <placement name="fabric[1][2].6" x="1" y="2" z="6"/>
+   </block>
+   <block name="pb" master="io" status="placed">
+      <placement name="fabric[1][0].3" x="1" y="0" z="3"/>
+   </block>
+   <block name="out:pg" master="io" status="placed">
+      <placement name="fabric[1][0].1" x="1" y="0" z="1"/>
+   </block>
+   <block name="out:pd" master="io" status="placed">
+      <placement name="fabric[2][1].6" x="2" y="1" z="6"/>
+   </block>
+   <block name="pf" master="clb" status="placed">
+      <pack name="pg">
+         <hier> "clb[1]" "ble[5]" "soft_logic[0]" "lut6[0]" "lut[0]" </hier>
+      </pack>
+      <pack name="pe">
+         <hier> "clb[1]" "ble[6]" "soft_logic[0]" "lut6[0]" "lut[0]" </hier>
+      </pack>
+      <pack name="pf">
+         <hier> "clb[1]" "ble[7]" "soft_logic[0]" "lut6[0]" "lut[0]" </hier>
+      </pack>
+      <placement name="fabric[1][1]" x="1" y="1" z="0"/>
+   </block>
+   
+   <port name="pa" source=".input">
+      <pin name="pa" type="output"/>
+   </port>
+   <port name="pb" source=".input">
+      <pin name="pb" type="output"/>
+   </port>
+   <port name="pc" source=".input">
+      <pin name="pc" type="output"/>
+   </port>
+   <port name="pd" source=".output">
+      <pin name="pd" type="input"/>
+   </port>
+   <port name="pe" source=".output">
+      <pin name="pe" type="input"/>
+   </port>
+   <port name="pf" source=".output">
+      <pin name="pf" type="input"/>
+   </port>
+   <port name="pg" source=".output">
+      <pin name="pg" type="input"/>
+   </port>
+   
+   <inst name="pe" source=".names">
+      <pin name="pa" type="input"/>
+      <pin name="pb" type="input"/>
+      <pin name="pe" type="output"/>
+   </inst>
+   <inst name="pf" source=".names">
+      <pin name="pa" type="input"/>
+      <pin name="pb" type="input"/>
+      <pin name="pc" type="input"/>
+      <pin name="pf" type="output"/>
+   </inst>
+   <inst name="pg" source=".names">
+      <pin name="pc" type="input"/>
+      <pin name="pg" type="output"/>
+   </inst>
+   <inst name="pd" source=".names">
+      <pin name="pc" type="input"/>
+      <pin name="pd" type="output"/>
+   </inst>
+   
+   <net name="pa" status="routed">
+      <pin inst="pa" pin="inpad" type="output"/>
+      <pin inst="pe" pin="in" type="input"/>
+      <pin inst="pf" pin="in" type="input"/>
+      <route>
+         <pin inst="pa" port="io[6]" pin="inpad[1]"/>
+         <segment name="sh[1].17" orient="horz" track="17"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[0][1]"> <sides> right 17 lower 9 </sides> </sb>
+         <segment name="sv[0].9" orient="vert" track="9"> <channel> 0.000 1.000 0.000 1.000 </channel> </segment>
+         <pin inst="pf" port="clb[0]" pin="I[11]"/>
+         <pin inst="pf" port="ble[6]" pin="in[0]"/>
+         <pin inst="pf" port="soft_logic[0]" pin="in[0]"/>
+         <pin inst="pf" port="lut6[0]" pin="in[0]"/>
+         <pin inst="pf" port="lut[0]" pin="in[0]"/>
+      </route>
+      <route>
+         <pin inst="pa" port="io[6]" pin="inpad[1]"/>
+         <segment name="sh[1].17" orient="horz" track="17"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[0][1]"> <sides> right 17 lower 9 </sides> </sb>
+         <segment name="sv[0].9" orient="vert" track="9"> <channel> 0.000 1.000 0.000 1.000 </channel> </segment>
+         <pin inst="pf" port="clb[0]" pin="I[11]"/>
+         <pin inst="pf" port="ble[7]" pin="in[1]"/>
+         <pin inst="pf" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="pf" port="lut6[0]" pin="in[1]"/>
+         <pin inst="pf" port="lut[0]" pin="in[1]"/>
+      </route>
+   </net>
+   <net name="pb" status="routed">
+      <pin inst="pb" pin="inpad" type="output"/>
+      <pin inst="pe" pin="in" type="input"/>
+      <pin inst="pf" pin="in" type="input"/>
+      <route>
+         <pin inst="pb" port="io[3]" pin="inpad[1]"/>
+         <segment name="sh[0].7" orient="horz" track="7"> <channel> 1.000 0.000 1.000 0.000 </channel> </segment>
+         <pin inst="pf" port="clb[0]" pin="I[10]"/>
+         <pin inst="pf" port="ble[6]" pin="in[1]"/>
+         <pin inst="pf" port="soft_logic[0]" pin="in[1]"/>
+         <pin inst="pf" port="lut6[0]" pin="in[1]"/>
+         <pin inst="pf" port="lut[0]" pin="in[1]"/>
+      </route>
+      <route>
+         <pin inst="pb" port="io[3]" pin="inpad[1]"/>
+         <segment name="sh[0].7" orient="horz" track="7"> <channel> 1.000 0.000 1.000 0.000 </channel> </segment>
+         <pin inst="pf" port="clb[0]" pin="I[10]"/>
+         <pin inst="pf" port="ble[7]" pin="in[2]"/>
+         <pin inst="pf" port="soft_logic[0]" pin="in[2]"/>
+         <pin inst="pf" port="lut6[0]" pin="in[2]"/>
+         <pin inst="pf" port="lut[0]" pin="in[2]"/>
+      </route>
+   </net>
+   <net name="pc" status="routed">
+      <pin inst="pc" pin="inpad" type="output"/>
+      <pin inst="out:pd" pin="outpad" type="input"/>
+      <pin inst="pf" pin="in" type="input"/>
+      <pin inst="pg" pin="in" type="input"/>
+      <route>
+         <pin inst="pc" port="io[1]" pin="inpad[1]"/>
+         <segment name="sv[1].7" orient="vert" track="7"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <pin inst="pf" port="clb[0]" pin="I[1]"/>
+         <pin inst="pf" port="ble[5]" pin="in[0]"/>
+         <pin inst="pf" port="soft_logic[0]" pin="in[0]"/>
+         <pin inst="pf" port="lut6[0]" pin="in[0]"/>
+         <pin inst="pf" port="lut[0]" pin="in[0]"/>
+      </route>
+      <route>
+         <pin inst="pc" port="io[1]" pin="inpad[1]"/>
+         <segment name="sv[1].7" orient="vert" track="7"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <pin inst="pf" port="clb[0]" pin="I[1]"/>
+         <pin inst="pf" port="ble[7]" pin="in[0]"/>
+         <pin inst="pf" port="soft_logic[0]" pin="in[0]"/>
+         <pin inst="pf" port="lut6[0]" pin="in[0]"/>
+         <pin inst="pf" port="lut[0]" pin="in[0]"/>
+      </route>
+      <route>
+         <pin inst="pc" port="io[1]" pin="inpad[1]"/>
+         <segment name="sv[1].7" orient="vert" track="7"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[1][0]"> <sides> upper 7 left 23 </sides> </sb>
+         <segment name="sh[0].23" orient="horz" track="23"> <channel> 1.000 0.000 1.000 0.000 </channel> </segment>
+         <sb name="sb[0][0]"> <sides> right 23 upper 20 </sides> </sb>
+         <segment name="sv[0].20" orient="vert" track="20"> <channel> 0.000 1.000 0.000 1.000 </channel> </segment>
+         <sb name="sb[0][1]"> <sides> lower 20 right 4 </sides> </sb>
+         <segment name="sh[1].4" orient="horz" track="4"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[1][1]"> <sides> left 4 lower 3 </sides> </sb>
+         <segment name="sv[1].3" orient="vert" track="3"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[1][0]"> <sides> upper 3 left 27 </sides> </sb>
+         <segment name="sh[0].27" orient="horz" track="27"> <channel> 1.000 0.000 1.000 0.000 </channel> </segment>
+         <sb name="sb[0][0]"> <sides> right 27 upper 24 </sides> </sb>
+         <segment name="sv[0].24" orient="vert" track="24"> <channel> 0.000 1.000 0.000 1.000 </channel> </segment>
+         <sb name="sb[0][1]"> <sides> lower 24 right 0 </sides> </sb>
+         <segment name="sh[1].0" orient="horz" track="0"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[1][1]"> <sides> left 0 lower 27 </sides> </sb>
+         <segment name="sv[1].27" orient="vert" track="27"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <pin inst="out:pd" port="io[6]" pin="outpad[0]"/>
+         <pin inst="out:pd" port="outpad[0]" pin="outpad[0]"/>
+      </route>
+   </net>
+   <net name="pd">
+      <pin inst="pd" pin="out" type="output"/>
+      <pin inst="pd" pin="outpad" type="input"/>
+   </net>
+   <net name="pe" status="routed">
+      <pin inst="pe" pin="out" type="output"/>
+      <pin inst="out:pe" pin="outpad" type="input"/>
+      <route>
+         <pin inst="pf" port="lut6[0]" pin="out[0]"/>
+         <pin inst="pf" port="soft_logic[0]" pin="out[0]"/>
+         <pin inst="pf" port="ble[6]" pin="out[0]"/>
+         <pin inst="pf" port="clb[0]" pin="O[6]"/>
+         <segment name="sh[1].2" orient="horz" track="2"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[1][1]"> <sides> left 2 lower 1 </sides> </sb>
+         <segment name="sv[1].1" orient="vert" track="1"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[1][0]"> <sides> upper 1 left 1 </sides> </sb>
+         <segment name="sh[0].1" orient="horz" track="1"> <channel> 1.000 0.000 1.000 0.000 </channel> </segment>
+         <sb name="sb[0][0]"> <sides> right 1 upper 26 </sides> </sb>
+         <segment name="sv[0].26" orient="vert" track="26"> <channel> 0.000 1.000 0.000 1.000 </channel> </segment>
+         <sb name="sb[0][1]"> <sides> lower 26 right 26 </sides> </sb>
+         <segment name="sh[1].26" orient="horz" track="26"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[1][1]"> <sides> left 26 lower 25 </sides> </sb>
+         <segment name="sv[1].25" orient="vert" track="25"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[1][0]"> <sides> upper 25 left 5 </sides> </sb>
+         <segment name="sh[0].5" orient="horz" track="5"> <channel> 1.000 0.000 1.000 0.000 </channel> </segment>
+         <sb name="sb[0][0]"> <sides> right 5 upper 2 </sides> </sb>
+         <segment name="sv[0].2" orient="vert" track="2"> <channel> 0.000 1.000 0.000 1.000 </channel> </segment>
+         <sb name="sb[0][1]"> <sides> lower 2 right 22 </sides> </sb>
+         <segment name="sh[1].22" orient="horz" track="22"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[1][1]"> <sides> left 22 lower 21 </sides> </sb>
+         <segment name="sv[1].21" orient="vert" track="21"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[1][0]"> <sides> upper 21 left 9 </sides> </sb>
+         <segment name="sh[0].9" orient="horz" track="9"> <channel> 1.000 0.000 1.000 0.000 </channel> </segment>
+         <pin inst="out:pe" port="io[5]" pin="outpad[0]"/>
+         <pin inst="out:pe" port="outpad[0]" pin="outpad[0]"/>
+      </route>
+   </net>
+   <net name="pf" status="routed">
+      <pin inst="pf" pin="out" type="output"/>
+      <pin inst="out:pf" pin="outpad" type="input"/>
+      <route>
+         <pin inst="pf" port="lut6[0]" pin="out[0]"/>
+         <pin inst="pf" port="soft_logic[0]" pin="out[0]"/>
+         <pin inst="pf" port="ble[7]" pin="out[0]"/>
+         <pin inst="pf" port="clb[0]" pin="O[7]"/>
+         <segment name="sv[1].2" orient="vert" track="2"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[1][1]"> <sides> lower 2 left 5 </sides> </sb>
+         <segment name="sh[1].5" orient="horz" track="5"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <pin inst="out:pf" port="io[3]" pin="outpad[0]"/>
+         <pin inst="out:pf" port="outpad[0]" pin="outpad[0]"/>
+      </route>
+   </net>
+   <net name="pg" status="routed">
+      <pin inst="pg" pin="out" type="output"/>
+      <pin inst="out:pg" pin="outpad" type="input"/>
+      <route>
+         <pin inst="pf" port="lut6[0]" pin="out[0]"/>
+         <pin inst="pf" port="soft_logic[0]" pin="out[0]"/>
+         <pin inst="pf" port="ble[5]" pin="out[0]"/>
+         <pin inst="pf" port="clb[0]" pin="O[5]"/>
+         <segment name="sv[0].19" orient="vert" track="19"> <channel> 0.000 1.000 0.000 1.000 </channel> </segment>
+         <sb name="sb[0][0]"> <sides> upper 19 right 20 </sides> </sb>
+         <segment name="sh[0].20" orient="horz" track="20"> <channel> 1.000 0.000 1.000 0.000 </channel> </segment>
+         <sb name="sb[1][0]"> <sides> left 20 upper 8 </sides> </sb>
+         <segment name="sv[1].8" orient="vert" track="8"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[1][1]"> <sides> lower 8 left 11 </sides> </sb>
+         <segment name="sh[1].11" orient="horz" track="11"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[0][1]"> <sides> right 11 lower 15 </sides> </sb>
+         <segment name="sv[0].15" orient="vert" track="15"> <channel> 0.000 1.000 0.000 1.000 </channel> </segment>
+         <sb name="sb[0][0]"> <sides> upper 15 right 16 </sides> </sb>
+         <segment name="sh[0].16" orient="horz" track="16"> <channel> 1.000 0.000 1.000 0.000 </channel> </segment>
+         <sb name="sb[1][0]"> <sides> left 16 upper 12 </sides> </sb>
+         <segment name="sv[1].12" orient="vert" track="12"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[1][1]"> <sides> lower 12 left 15 </sides> </sb>
+         <segment name="sh[1].15" orient="horz" track="15"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[0][1]"> <sides> right 15 lower 11 </sides> </sb>
+         <segment name="sv[0].11" orient="vert" track="11"> <channel> 0.000 1.000 0.000 1.000 </channel> </segment>
+         <sb name="sb[0][0]"> <sides> upper 11 right 12 </sides> </sb>
+         <segment name="sh[0].12" orient="horz" track="12"> <channel> 1.000 0.000 1.000 0.000 </channel> </segment>
+         <sb name="sb[1][0]"> <sides> left 12 upper 16 </sides> </sb>
+         <segment name="sv[1].16" orient="vert" track="16"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[1][1]"> <sides> lower 16 left 19 </sides> </sb>
+         <segment name="sh[1].19" orient="horz" track="19"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[0][1]"> <sides> right 19 lower 7 </sides> </sb>
+         <segment name="sv[0].7" orient="vert" track="7"> <channel> 0.000 1.000 0.000 1.000 </channel> </segment>
+         <sb name="sb[0][0]"> <sides> upper 7 right 8 </sides> </sb>
+         <segment name="sh[0].8" orient="horz" track="8"> <channel> 1.000 0.000 1.000 0.000 </channel> </segment>
+         <sb name="sb[1][0]"> <sides> left 8 upper 20 </sides> </sb>
+         <segment name="sv[1].20" orient="vert" track="20"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[1][1]"> <sides> lower 20 left 23 </sides> </sb>
+         <segment name="sh[1].23" orient="horz" track="23"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[0][1]"> <sides> right 23 lower 3 </sides> </sb>
+         <segment name="sv[0].3" orient="vert" track="3"> <channel> 0.000 1.000 0.000 1.000 </channel> </segment>
+         <sb name="sb[0][0]"> <sides> upper 3 right 4 </sides> </sb>
+         <segment name="sh[0].4" orient="horz" track="4"> <channel> 1.000 0.000 1.000 0.000 </channel> </segment>
+         <sb name="sb[1][0]"> <sides> left 4 upper 24 </sides> </sb>
+         <segment name="sv[1].24" orient="vert" track="24"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[1][1]"> <sides> lower 24 left 27 </sides> </sb>
+         <segment name="sh[1].27" orient="horz" track="27"> <channel> 1.000 1.000 1.000 1.000 </channel> </segment>
+         <sb name="sb[0][1]"> <sides> right 27 lower 27 </sides> </sb>
+         <segment name="sv[0].27" orient="vert" track="27"> <channel> 0.000 1.000 0.000 1.000 </channel> </segment>
+         <sb name="sb[0][0]"> <sides> upper 27 right 0 </sides> </sb>
+         <segment name="sh[0].0" orient="horz" track="0"> <channel> 1.000 0.000 1.000 0.000 </channel> </segment>
+         <pin inst="out:pg" port="io[1]" pin="outpad[0]"/>
+         <pin inst="out:pg" port="outpad[0]" pin="outpad[0]"/>
+      </route>
+   </net>
+
+</circuit>
+<!-- _______________________________________________________________ -->
