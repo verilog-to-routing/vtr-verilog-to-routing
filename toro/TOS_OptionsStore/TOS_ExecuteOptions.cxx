@@ -84,8 +84,6 @@ void TOS_ExecuteOptions_c::Print(
    string srToolMask;
    TOS_ExtractStringExecuteToolMask( this->toolMask, &srToolMask );
 
-// ???   printHandler.Write( pfile, spaceLen, "HALT_MAX_WARNINGS          = %lu\n", this->maxWarningCount );
-// ???   printHandler.Write( pfile, spaceLen, "HALT_MAX_ERRORS            = %lu\n", this->maxErrorCount );
    printHandler.Write( pfile, spaceLen, "HALT_MAX_WARNINGS          = %ld\n", static_cast<long>( this->maxWarningCount ));
    printHandler.Write( pfile, spaceLen, "HALT_MAX_ERRORS            = %ld\n", static_cast<long>( this->maxErrorCount ));
 
