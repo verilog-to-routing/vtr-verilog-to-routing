@@ -1327,7 +1327,7 @@ void TVPR_CircuitDesign_c::PeekInputOutput_(
       srPlaceFabricName = szPlaceFabricName;
    }
 
-   TPO_StatusMode_t placeStatus = ( vpr_block.isFixed ? 
+   TPO_StatusMode_t placeStatus = ( vpr_block.is_fixed ? 
                                     TPO_STATUS_FIXED : TPO_STATUS_PLACED );
 
    TGO_Point_c placeOrigin( vpr_block.x, vpr_block.y, vpr_block.z );
@@ -1438,7 +1438,7 @@ void TVPR_CircuitDesign_c::PeekPhysicalBlock_(
                               blockIndex, &packHierMapList );
    }
 
-   TPO_StatusMode_t placeStatus = ( vpr_block.isFixed ? 
+   TPO_StatusMode_t placeStatus = ( vpr_block.is_fixed ? 
                                     TPO_STATUS_FIXED : TPO_STATUS_PLACED );
 
    TGO_Point_c placeOrigin( vpr_block.x, vpr_block.y );
