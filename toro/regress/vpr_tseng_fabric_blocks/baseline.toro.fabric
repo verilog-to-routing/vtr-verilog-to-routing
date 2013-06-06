@@ -20609,15 +20609,6 @@
          left 20 lower 39 upper 24
          left 22 lower 41 upper 16
          left 24 lower 43 upper 8
-         left 26 upper 0
-         left 28 upper 0
-         left 30 upper 0
-         left 32 upper 0
-         left 34 upper 0
-         left 36 upper 0
-         left 38 upper 0
-         left 40 upper 0
-         left 42 upper 0
          lower 0 left 35
          lower 2 left 39
          lower 6 left 41
@@ -20763,15 +20754,6 @@
          left 20 lower 39 upper 20
          left 22 lower 41 upper 12
          left 24 lower 43 upper 4
-         left 26 upper 0
-         left 28 upper 0
-         left 30 upper 0
-         left 32 upper 0
-         left 34 upper 0
-         left 36 upper 0
-         left 38 upper 0
-         left 40 upper 0
-         left 42 upper 0
          lower 0 left 35
          lower 2 left 39
          lower 4 left 3 upper 4
@@ -21758,16 +21740,6 @@
          lower 18 left 43 right 10
          lower 20 left 11 right 42
          lower 22 left 19 right 40
-         lower 24 right 0
-         lower 26 right 0
-         lower 28 right 0
-         lower 30 right 0
-         lower 32 right 0
-         lower 34 right 0
-         lower 36 right 0
-         lower 38 right 0
-         lower 40 right 0
-         lower 42 right 0
       </mapping>
    </sb>
    <sb name="sb[1][17]">
@@ -22025,15 +21997,6 @@
          lower 20 left 43 right 8
          lower 22 left 9 right 42
          lower 24 left 17 right 40
-         lower 26 right 0
-         lower 28 right 0
-         lower 30 right 0
-         lower 32 right 0
-         lower 34 right 0
-         lower 36 right 0
-         lower 38 right 0
-         lower 40 right 0
-         lower 42 right 0
       </mapping>
    </sb>
    <sb name="sb[2][4]">
@@ -22117,15 +22080,6 @@
          upper 21 left 25 right 42
          upper 23 left 17 right 8
          upper 25 left 9 right 16
-         upper 27 right 0
-         upper 29 right 0
-         upper 31 right 0
-         upper 33 right 0
-         upper 35 right 0
-         upper 37 right 0
-         upper 39 right 0
-         upper 41 right 0
-         upper 43 right 0
       </mapping>
    </sb>
    <sb name="sb[2][7]">
@@ -22873,15 +22827,6 @@
          lower 20 left 43 right 4
          lower 22 left 5 right 42
          lower 24 left 13 right 40
-         lower 26 right 0
-         lower 28 right 0
-         lower 30 right 0
-         lower 32 right 0
-         lower 34 right 0
-         lower 36 right 0
-         lower 38 right 0
-         lower 40 right 0
-         lower 42 right 0
       </mapping>
    </sb>
    <sb name="sb[2][17]">
@@ -23193,15 +23138,6 @@
          right 21 lower 5 upper 38
          right 23 lower 43 upper 40
          right 25 lower 41 upper 42
-         right 27 upper 0
-         right 29 upper 0
-         right 31 upper 0
-         right 33 upper 0
-         right 35 upper 0
-         right 37 upper 0
-         right 39 upper 0
-         right 41 upper 0
-         right 43 upper 0
          lower 0 right 4
          lower 2 right 10
          lower 4 right 40 upper 4
@@ -23345,15 +23281,6 @@
          right 21 lower 9 upper 38
          right 23 lower 43 upper 40
          right 25 lower 41 upper 42
-         right 27 upper 0
-         right 29 upper 0
-         right 31 upper 0
-         right 33 upper 0
-         right 35 upper 0
-         right 37 upper 0
-         right 39 upper 0
-         right 41 upper 0
-         right 43 upper 0
          lower 0 right 4
          lower 2 right 10
          lower 6 right 16
@@ -25811,15 +25738,6 @@
          lower 20 left 43 right 8
          lower 22 left 9 right 42
          lower 24 left 17 right 40
-         lower 26 right 0
-         lower 28 right 0
-         lower 30 right 0
-         lower 32 right 0
-         lower 34 right 0
-         lower 36 right 0
-         lower 38 right 0
-         lower 40 right 0
-         lower 42 right 0
       </mapping>
    </sb>
    <sb name="sb[4][17]">
@@ -27236,16 +27154,6 @@
          lower 18 left 43 right 10
          lower 20 left 11 right 42
          lower 22 left 19 right 40
-         lower 24 right 0
-         lower 26 right 0
-         lower 28 right 0
-         lower 30 right 0
-         lower 32 right 0
-         lower 34 right 0
-         lower 36 right 0
-         lower 38 right 0
-         lower 40 right 0
-         lower 42 right 0
       </mapping>
    </sb>
    <sb name="sb[5][17]">
@@ -27679,15 +27587,6 @@
          lower 20 left 43 right 4
          lower 22 left 5 right 42
          lower 24 left 13 right 40
-         lower 26 right 0
-         lower 28 right 0
-         lower 30 right 0
-         lower 32 right 0
-         lower 34 right 0
-         lower 36 right 0
-         lower 38 right 0
-         lower 40 right 0
-         lower 42 right 0
       </mapping>
    </sb>
    <sb name="sb[6][5]">
@@ -27775,15 +27674,6 @@
          upper 21 left 25 right 42
          upper 23 left 17 right 8
          upper 25 left 9 right 16
-         upper 27 right 0
-         upper 29 right 0
-         upper 31 right 0
-         upper 33 right 0
-         upper 35 right 0
-         upper 37 right 0
-         upper 39 right 0
-         upper 41 right 0
-         upper 43 right 0
       </mapping>
    </sb>
    <sb name="sb[6][7]">
@@ -28423,15 +28313,6 @@
          lower 20 left 43 right 8
          lower 22 left 9 right 42
          lower 24 left 17 right 40
-         lower 26 right 0
-         lower 28 right 0
-         lower 30 right 0
-         lower 32 right 0
-         lower 34 right 0
-         lower 36 right 0
-         lower 38 right 0
-         lower 40 right 0
-         lower 42 right 0
       </mapping>
    </sb>
    <sb name="sb[6][15]">
@@ -28507,15 +28388,6 @@
          upper 21 left 21 right 42
          upper 23 left 13 right 4
          upper 25 left 5 right 12
-         upper 27 right 0
-         upper 29 right 0
-         upper 31 right 0
-         upper 33 right 0
-         upper 35 right 0
-         upper 37 right 0
-         upper 39 right 0
-         upper 41 right 0
-         upper 43 right 0
       </mapping>
    </sb>
    <sb name="sb[6][17]">
@@ -29027,15 +28899,6 @@
          lower 20 left 43 right 6
          lower 22 left 7 right 42
          lower 24 left 15 right 40
-         lower 26 right 0
-         lower 28 right 0
-         lower 30 right 0
-         lower 32 right 0
-         lower 34 right 0
-         lower 36 right 0
-         lower 38 right 0
-         lower 40 right 0
-         lower 42 right 0
       </mapping>
    </sb>
    <sb name="sb[7][5]">
@@ -29122,16 +28985,6 @@
          upper 19 left 27 right 42
          upper 21 left 19 right 10
          upper 23 left 11 right 18
-         upper 25 right 0
-         upper 27 right 0
-         upper 29 right 0
-         upper 31 right 0
-         upper 33 right 0
-         upper 35 right 0
-         upper 37 right 0
-         upper 39 right 0
-         upper 41 right 0
-         upper 43 right 0
       </mapping>
    </sb>
    <sb name="sb[7][7]">
@@ -29770,16 +29623,6 @@
          lower 18 left 43 right 10
          lower 20 left 11 right 42
          lower 22 left 19 right 40
-         lower 24 right 0
-         lower 26 right 0
-         lower 28 right 0
-         lower 30 right 0
-         lower 32 right 0
-         lower 34 right 0
-         lower 36 right 0
-         lower 38 right 0
-         lower 40 right 0
-         lower 42 right 0
       </mapping>
    </sb>
    <sb name="sb[7][15]">
@@ -31251,15 +31094,6 @@
          lower 20 left 43 right 8
          lower 22 left 9 right 42
          lower 24 left 17 right 40
-         lower 26 right 0
-         lower 28 right 0
-         lower 30 right 0
-         lower 32 right 0
-         lower 34 right 0
-         lower 36 right 0
-         lower 38 right 0
-         lower 40 right 0
-         lower 42 right 0
       </mapping>
    </sb>
    <sb name="sb[8][17]">
@@ -33907,15 +33741,6 @@
          left 20 lower 39 upper 22
          left 22 lower 41 upper 14
          left 24 lower 43 upper 6
-         left 26 upper 0
-         left 28 upper 0
-         left 30 upper 0
-         left 32 upper 0
-         left 34 upper 0
-         left 36 upper 0
-         left 38 upper 0
-         left 40 upper 0
-         left 42 upper 0
          lower 0 left 39
          lower 2 left 41
          lower 4 left 3
@@ -34054,16 +33879,6 @@
          left 16 lower 37 upper 28
          left 20 lower 41 upper 18
          left 22 lower 43 upper 10
-         left 24 upper 0
-         left 26 upper 0
-         left 28 upper 0
-         left 30 upper 0
-         left 32 upper 0
-         left 34 upper 0
-         left 36 upper 0
-         left 38 upper 0
-         left 40 upper 0
-         left 42 upper 0
          lower 0 left 39
          lower 2 left 41
          lower 4 left 3
@@ -34159,15 +33974,6 @@
          lower 20 left 43
          lower 22 left 5 right 42
          lower 24 left 13
-         lower 26 right 0
-         lower 28 right 0
-         lower 30 right 0
-         lower 32 right 0
-         lower 34 right 0
-         lower 36 right 0
-         lower 38 right 0
-         lower 40 right 0
-         lower 42 right 0
       </mapping>
    </sb>
    <sb name="sb[10][17]">
@@ -35265,15 +35071,6 @@
          lower 20 left 43 right 6
          lower 22 left 7 right 42
          lower 24 left 15 right 40
-         lower 26 right 0
-         lower 28 right 0
-         lower 30 right 0
-         lower 32 right 0
-         lower 34 right 0
-         lower 36 right 0
-         lower 38 right 0
-         lower 40 right 0
-         lower 42 right 0
       </mapping>
    </sb>
    <sb name="sb[11][14]">
@@ -35889,15 +35686,6 @@
          left 20 lower 39 upper 20
          left 22 lower 41 upper 12
          left 24 lower 43 upper 4
-         left 26 upper 0
-         left 28 upper 0
-         left 30 upper 0
-         left 32 upper 0
-         left 34 upper 0
-         left 36 upper 0
-         left 38 upper 0
-         left 40 upper 0
-         left 42 upper 0
          lower 0 left 35
          lower 2 left 39
          lower 4 left 3 upper 4
@@ -36041,15 +35829,6 @@
          left 20 lower 39 upper 24
          left 22 lower 41 upper 16
          left 24 lower 43 upper 8
-         left 26 upper 0
-         left 28 upper 0
-         left 30 upper 0
-         left 32 upper 0
-         left 34 upper 0
-         left 36 upper 0
-         left 38 upper 0
-         left 40 upper 0
-         left 42 upper 0
          lower 0 left 35
          lower 2 left 39
          lower 6 left 41
@@ -36438,16 +36217,6 @@
          right 19 lower 11 upper 38
          right 21 lower 43 upper 40
          right 23 lower 41 upper 42
-         right 25 upper 0
-         right 27 upper 0
-         right 29 upper 0
-         right 31 upper 0
-         right 33 upper 0
-         right 35 upper 0
-         right 37 upper 0
-         right 39 upper 0
-         right 41 upper 0
-         right 43 upper 0
          lower 0 right 4
          lower 2 right 10
          lower 4 right 16
@@ -36587,15 +36356,6 @@
          right 21 lower 7 upper 38
          right 23 lower 43 upper 40
          right 25 lower 41 upper 42
-         right 27 upper 0
-         right 29 upper 0
-         right 31 upper 0
-         right 33 upper 0
-         right 35 upper 0
-         right 37 upper 0
-         right 39 upper 0
-         right 41 upper 0
-         right 43 upper 0
          lower 0 right 4
          lower 2 right 10
          lower 4 right 16
@@ -37301,15 +37061,6 @@
          lower 20 left 43 right 4
          lower 22 left 5 right 42
          lower 24 left 13 right 40
-         lower 26 right 0
-         lower 28 right 0
-         lower 30 right 0
-         lower 32 right 0
-         lower 34 right 0
-         lower 36 right 0
-         lower 38 right 0
-         lower 40 right 0
-         lower 42 right 0
       </mapping>
    </sb>
    <sb name="sb[13][7]">
@@ -37397,15 +37148,6 @@
          upper 21 left 21 right 42
          upper 23 left 13 right 4
          upper 25 left 5 right 12
-         upper 27 right 0
-         upper 29 right 0
-         upper 31 right 0
-         upper 33 right 0
-         upper 35 right 0
-         upper 37 right 0
-         upper 39 right 0
-         upper 41 right 0
-         upper 43 right 0
       </mapping>
    </sb>
    <sb name="sb[13][10]">
@@ -37962,16 +37704,6 @@
          lower 18 left 43 right 10
          lower 20 left 11 right 42
          lower 22 left 19 right 40
-         lower 24 right 0
-         lower 26 right 0
-         lower 28 right 0
-         lower 30 right 0
-         lower 32 right 0
-         lower 34 right 0
-         lower 36 right 0
-         lower 38 right 0
-         lower 40 right 0
-         lower 42 right 0
       </mapping>
    </sb>
    <sb name="sb[13][17]">
@@ -39313,15 +39045,6 @@
          lower 20 left 43 right 4
          lower 22 left 5 right 42
          lower 24 left 13 right 40
-         lower 26 right 0
-         lower 28 right 0
-         lower 30 right 0
-         lower 32 right 0
-         lower 34 right 0
-         lower 36 right 0
-         lower 38 right 0
-         lower 40 right 0
-         lower 42 right 0
       </mapping>
    </sb>
    <sb name="sb[14][17]">
@@ -39903,15 +39626,6 @@
          upper 21 left 23 right 42
          upper 23 left 15 right 6
          upper 25 left 7 right 14
-         upper 27 right 0
-         upper 29 right 0
-         upper 31 right 0
-         upper 33 right 0
-         upper 35 right 0
-         upper 37 right 0
-         upper 39 right 0
-         upper 41 right 0
-         upper 43 right 0
       </mapping>
    </sb>
    <sb name="sb[15][17]">
@@ -41874,16 +41588,6 @@
          lower 18 left 43 right 10
          lower 20 left 11 right 42
          lower 22 left 19 right 40
-         lower 24 right 0
-         lower 26 right 0
-         lower 28 right 0
-         lower 30 right 0
-         lower 32 right 0
-         lower 34 right 0
-         lower 36 right 0
-         lower 38 right 0
-         lower 40 right 0
-         lower 42 right 0
       </mapping>
    </sb>
    <sb name="sb[17][17]">
