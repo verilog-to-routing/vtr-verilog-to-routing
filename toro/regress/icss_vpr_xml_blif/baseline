@@ -1,0 +1,3 @@
+#!/bin/csh -f
+
+../baseline_this icss_vpr_xml_blif
