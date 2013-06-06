@@ -395,8 +395,8 @@ void TCH_VPR_Data_c::Set(
    this->vpr_blockArray[blockIndex].y = y;
    this->vpr_blockArray[blockIndex].z = z;
 
-   this->vpr_blockArray[blockIndex].isFixed = ( blockStatus == TCH_PLACE_STATUS_FIXED ? 
-                                                TRUE : FALSE );
+   this->vpr_blockArray[blockIndex].is_fixed = ( blockStatus == TCH_PLACE_STATUS_FIXED ? 
+                                                 TRUE : FALSE );
 }
 
 //===========================================================================//
