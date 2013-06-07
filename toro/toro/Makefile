@@ -28,9 +28,13 @@ PICsun8 = -G -KPIC
 PIC = $(PIC$(ISM))
 
 CFLAGSlinux_x86_64 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_X86_64
-CFLAGSlinux_i686 = -Wall -Wpointer-arith -Wcast-qual -static -fPIC -DLINUX_I686
+CFLAGSlinux_i686 = -Wall -Wpointer-arith -Wcast-qual -Wno-strict-aliasing -static -fPIC -DLINUX_I686
 CFLAGSsun8 = +w -xarch=v9 -library=iostream,Cstd -DLP64 -DSUN8
 CFLAGS = $(CFLAGS$(ISM)) \
+	-DTORO_FABRIC_GRID_VALID_ENABLE \
+	-DTORO_FABRIC_CHANNEL_WIDTHS_ENABLE \
+	-DTORO_REGION_PLACEMENT_ENABLE \
+	-DTORO_RELATIVE_PLACEMENT_ENABLE \
 	-I. \
 	-I../TM_Master \
 	-I../TI_Input \
