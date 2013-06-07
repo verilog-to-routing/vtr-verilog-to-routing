@@ -3,8 +3,8 @@
 echo "==> /vobs/cpp/warpcore/toro/bin.$ISM/toro $1.options"
 /vobs/cpp/warpcore/toro/bin.$ISM/toro $1.options
 
-echo "==> egrep -v "/13" $1.log | egrep -v "Version" | egrep -v "Owner" | egrep -v "seconds" > $1.toro.tmp"
-egrep -v "/13" $1.toro.log | egrep -v "Version" | egrep -v "Owner" | egrep -v "seconds" > $1.toro.tmp
+echo "==> egrep -v "/13" $1.log | egrep -v "Version" | egrep -v "Owner" | egrep -v " sec" > $1.toro.tmp"
+egrep -v "/13" $1.toro.log | egrep -v "Version" | egrep -v "Owner" | egrep -v " sec" > $1.toro.tmp
 mv $1.toro.tmp $1.toro.log
 
 echo "==> egrep -v "/13" | egrep -v "Version" > $1.toro.snoitpo"
