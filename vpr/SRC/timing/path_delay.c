@@ -1,3 +1,5 @@
+// JR - Modifieid print_timing_stats() function, tweaked message format slightly.
+
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
@@ -3104,17 +3106,18 @@ void print_timing_stats(void) {
 
 	if (pb_max_internal_delay != UNDEFINED && pb_max_internal_delay > critical_path_delay) {
 		critical_path_delay = pb_max_internal_delay;
-		vpr_printf(TIO_MESSAGE_INFO, "Final critical path: %g ns\n", 1e9 * critical_path_delay);
-		vpr_printf(TIO_MESSAGE_INFO, "\t(capped by fmax of block type %s)\n", pbtype_max_internal_delay->name);
+		vpr_printf(TIO_MESSAGE_INFO, "Final critical path: %g ns", 1e9 * critical_path_delay);
+		vpr_printf(TIO_MESSAGE_DIRECT, " (capped by fmax of block type %s)", pbtype_max_internal_delay->name);
 		
 	} else {
-		vpr_printf(TIO_MESSAGE_INFO, "Final critical path: %g ns\n", 1e9 * critical_path_delay);
+		vpr_printf(TIO_MESSAGE_INFO, "Final critical path: %g ns", 1e9 * critical_path_delay);
 	}
 
 	if (g_sdc->num_constrained_clocks <= 1) {
 		/* Although critical path delay is always well-defined, it doesn't make sense to talk about fmax for multi-clock circuits */
-		vpr_printf(TIO_MESSAGE_INFO, "f_max: %g MHz\n", 1e-6 / critical_path_delay);
+		vpr_printf(TIO_MESSAGE_DIRECT, ", f_max: %g MHz", 1e-6 / critical_path_delay);
 	}
+	vpr_printf(TIO_MESSAGE_DIRECT, "\n");
 	
 	/* Also print the least slack in the design */
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
