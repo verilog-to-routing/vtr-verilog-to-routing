@@ -320,6 +320,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	while (final == -1) {
 
+		vpr_printf(TIO_MESSAGE_INFO, "\n");
 		vpr_printf(TIO_MESSAGE_INFO, "Using low: %d, high: %d, current: %d\n", low, high, current);
 		fflush(stdout);
 
