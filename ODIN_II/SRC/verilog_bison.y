@@ -103,7 +103,7 @@ int yywrap()
 %nonassoc vELSE
 
 %type <node> source_text items define module list_of_module_items module_item 
-%type <node> parameter_declaration input_declaration output_declaration 
+%type <node> parameter_declaration input_declaration output_declaration defparam_declaration
 %type <node> inout_declaration variable_list variable net_declaration 
 %type <node> continuous_assign gate_declaration gate_instance 
 %type <node> module_instantiation module_instance list_of_module_connections 
@@ -155,12 +155,17 @@ module_item: parameter_declaration						{$$ = $1;}
 	| gate_declaration							{$$ = $1;}
 	| module_instantiation							{$$ = $1;}
 	| always								{$$ = $1;}
+	| defparam_declaration					{$$ = $1;}
 	;
 
 // 2 Declarations	{$$ = NULL;}
 parameter_declaration: vPARAMETER variable_list ';'				{$$ = markAndProcessSymbolListWith(PARAMETER, $2);}
 	;
+	
+defparam_declaration: vDEFPARAM variable_list ';'               {$$ = newDefparam(MODULE_PARAMETER_LIST, $2, yylineno);}
+	;
 
+					
 input_declaration: vINPUT variable_list ';'					{$$ = markAndProcessSymbolListWith(INPUT, $2);}
 	;
 
@@ -176,6 +181,7 @@ net_declaration: vWIRE variable_list ';'					{$$ = markAndProcessSymbolListWith(
 	;
 
 variable_list: variable_list ',' variable					{$$ = newList_entry($1, $3);}
+	| variable_list '.' variable					{$$ = newList_entry($1, $3);}    //Only for parameter
 	| variable								{$$ = newList(VAR_DECLARE_LIST, $1);}
 	;
 

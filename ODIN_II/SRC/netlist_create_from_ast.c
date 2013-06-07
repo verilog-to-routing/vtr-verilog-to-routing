@@ -142,13 +142,13 @@ void look_for_clocks(netlist_t *netlist);
 void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t *module_items, char *module_name)
 {
 	/* with the top module we need to visit the entire ast tree */
-	int i, j;
+	int i, j, k;
 	char *temp_string;
 	long sc_spot;
 	oassert(module_items->type == MODULE_ITEMS);
-	int parameter_idx;
+	int parameter_num = 0;
+	int parameter_count = 0;
 	STRING_CACHE *local_param_table_sc;
-	parameter_idx = 0;
 
 	sc_spot = sc_add_string(global_param_table_sc, module_name);
 	if (global_param_table_sc->data[sc_spot] != NULL) 
@@ -159,16 +159,16 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 	/* search for VAR_DECLARE_LISTS */
 	if (module_items->num_children > 0)
 	{
-		for (i = 0; i < module_items->num_children; i++)
+		for(i = 0; i < module_items->num_children; i++)
 		{
-			if (module_items->children[i]->type == VAR_DECLARE_LIST)
+			if(module_items->children[i]->type == VAR_DECLARE_LIST)
 			{
-				/* go through the vars in this declare list */
-				for (j = 0; j < module_items->children[i]->num_children; j++)
-				{	
+				/* go through the vars in this declare list, resolves the missing identifiers node */
+				for(j = 0; j < module_items->children[i]->num_children; j++)
+				{
 					ast_node_t *var_declare = module_items->children[i]->children[j];
 
-					if (	(var_declare->types.variable.is_input) ||
+					if ((var_declare->types.variable.is_input) ||
 						(var_declare->types.variable.is_output) ||
 						(var_declare->types.variable.is_reg) ||
 						(var_declare->types.variable.is_wire)) continue;
@@ -176,37 +176,122 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 					oassert(module_items->children[i]->children[j]->type == VAR_DECLARE);
 					oassert(var_declare->types.variable.is_parameter);
 
+					parameter_num++;
 					/* make the string to add to the string cache */
 					temp_string = make_full_ref_name(NULL, NULL, NULL, var_declare->children[0]->types.identifier, -1);
 
 					if (var_declare->types.variable.is_parameter)
 					{
-						if (parent_parameter_list)
-						{
-							// Ensure that there are no more parameters in this module than 
-							// there are specified in the parent parameter list
-							if (parameter_idx < parent_parameter_list->num_children)
-							{
-								// Use parent-specified parameter value instead of default
-								// This node looks identical to the default node below, 
-								// as far as get_name_of_pins() is concerned
-								var_declare = parent_parameter_list->children[parameter_idx];
-							}
-							else
-								warning_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number, 
-									"There are more parameters (>%d) in %s than there are specified in the module instantiation (%d)!", 
-									parameter_idx, module_name, parent_parameter_list->num_children);
-							parameter_idx++;
-						}
 						ast_node_t *node = resolve_node(module_name, var_declare->children[5]);
 						oassert(node->type == NUMBERS);
-						//fprintf(stderr, "Parameter instance found: %s:%s = %d\n", module_name, temp_string, node->types.number.value);
 						sc_spot = sc_add_string(local_param_table_sc, temp_string);
 						local_param_table_sc->data[sc_spot] = (void *)node;
 					}
 					free(temp_string);
 				}
 			}
+		}
+
+		if(parent_parameter_list)
+		{
+			// defparam before calling instance
+			for(i = 0; i < parent_parameter_list->num_children; i ++)
+			{
+				if(parent_parameter_list->children[i]->children[0] && parent_parameter_list->children[i]->shared_node == FALSE)
+				{
+					ast_node_t *var_declare = parent_parameter_list->children[i];
+					ast_node_t *node = resolve_node(module_name, var_declare->children[5]);
+					oassert(node->type == NUMBERS);
+					sc_spot = sc_add_string(local_param_table_sc, var_declare->children[0]->types.identifier);
+					local_param_table_sc->data[sc_spot] = (void *)node;
+				}
+			}
+
+			for(i = 0; i < parent_parameter_list->num_children; i ++)
+			{
+				//using defparam to override parameter, after calling instance
+				if(parent_parameter_list->children[i]->children[0])
+				{
+					if(parent_parameter_list->children[i]->shared_node == TRUE)
+					{
+						ast_node_t *var_declare = parent_parameter_list->children[i];
+						ast_node_t *node = resolve_node(module_name, var_declare->children[5]);
+						oassert(node->type == NUMBERS);
+						sc_spot = sc_add_string(local_param_table_sc, var_declare->children[0]->types.identifier);
+						local_param_table_sc->data[sc_spot] = (void *)node;
+					}
+				}
+				else
+				{
+					parameter_count++;
+					int parameter_idx = 0;
+					for(k = 0; k < module_items->num_children; k++)
+					{
+						/* go through the vars in this declare list, resolves the missing identifiers node */
+						if(module_items->children[k]->type == VAR_DECLARE_LIST)
+						{
+							for(j = 0; j < module_items->children[k]->num_children; j++)
+							{
+								ast_node_t *var_declare = module_items->children[k]->children[j];
+
+								if ((var_declare->types.variable.is_input) ||
+									(var_declare->types.variable.is_output) ||
+									(var_declare->types.variable.is_reg) ||
+									(var_declare->types.variable.is_wire)) continue;
+
+								oassert(module_items->children[k]->children[j]->type == VAR_DECLARE);
+								oassert(var_declare->types.variable.is_parameter);
+
+								parameter_idx++;
+
+								/* make the string to add to the string cache */
+								temp_string = make_full_ref_name(NULL, NULL, NULL, var_declare->children[0]->types.identifier, -1);
+
+								if (var_declare->types.variable.is_parameter)
+								{
+									//parameter_num++;
+									if(parameter_idx == parameter_count)
+									{
+										var_declare = parent_parameter_list->children[i];
+										ast_node_t *node = resolve_node(module_name, var_declare->children[5]);
+										oassert(node->type == NUMBERS);
+										sc_spot = sc_add_string(local_param_table_sc, temp_string);
+										local_param_table_sc->data[sc_spot] = (void *)node;
+									}
+									else
+									{
+										ast_node_t *node = resolve_node(module_name, var_declare->children[5]);
+										oassert(node->type == NUMBERS);
+										sc_spot = sc_add_string(local_param_table_sc, temp_string);
+										local_param_table_sc->data[sc_spot] = (void *)node;
+									}
+								}
+								free(temp_string);
+							}
+						}
+					}
+					if(parameter_idx == 0)
+					{
+						error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
+								"There is no parameters in %s !",
+								 module_name);
+					}
+				}
+			}
+
+		}
+
+		if(parameter_count > parameter_num && parameter_count > 0)
+		{
+			error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
+					"There are less parameters (%d) in %s than there are specified in the module instantiation (%d)!",
+					parameter_num, module_name, parameter_count);
+		}
+		else if(parameter_count < parameter_num && parameter_count > 0)
+		{
+			warning_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
+					"There are more parameters (>%d) in %s than there are specified in the module instantiation (%d)!",
+					parameter_count, module_name, parameter_num);
 		}
 	}
 }
@@ -249,7 +334,9 @@ void create_netlist()
 			ast_node_t *symbol_node = newSymbolNode(module_param_name, module->line_number);
 			ast_node_t* new_node = create_node_w_type(MODULE, module->line_number, module->file_number);
 			allocate_children_to_node(new_node, 3, symbol_node, module->children[1], module->children[2]);
+			module->types.module.is_instantiated = TRUE;
 			new_node->types.module.index = i;
+			new_node->types.module.is_instantiated = TRUE;
 			// and to the module_names_to_idx for parameterised name
 			module_names_to_idx->data[sc_spot] = new_node;
 			ast_modules[i] = new_node;
@@ -381,7 +468,51 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 	else
 	{
 		/* ELSE - we need to visit all the children before */
-		int i;
+		int i, j;
+		//check for defparam
+		for(i = 0; i <current_module->num_children; i++)
+		{
+			if(current_module->children[i]->type == MODULE_ITEMS)
+			{
+				for(j = 0; j < current_module->children[i]->num_children; j++)
+				{
+					if(current_module->children[i]->children[j]->type == MODULE_PARAMETER)
+					{
+						int k;
+						int flag = 0;
+						for(k = 0; k < current_module->types.module.size_module_instantiations; k++)
+						{
+							if(current_module->types.module.module_instantiations_instance[k]->children[1])
+							{
+								ast_node_t *module_instance = current_module->types.module.module_instantiations_instance[k]->children[1];
+								if(strcmp(module_instance->children[0]->types.identifier, current_module->children[i]->children[j]->types.identifier) == 0)
+								{
+
+									if(module_instance->children[2])
+									{
+										move_ast_node(current_module->children[i], module_instance->children[2], current_module->children[i]->children[j]);
+									}
+									else
+									{
+										ast_node_t* new_node = create_node_w_type(MODULE_PARAMETER_LIST, module_instance->line_number, current_parse_file);
+										module_instance->children[2] = new_node;
+										move_ast_node(current_module->children[i], module_instance->children[2], current_module->children[i]->children[j]);
+									}
+									flag = 1;
+									break;
+								}
+							}
+						}
+						if(flag == 0)
+						{
+							error_message(NETLIST_ERROR, current_module->line_number, current_module->file_number,
+									"Can't find module name %s\n", current_module->children[i]->children[j]->types.identifier);
+						}
+					}
+				}
+			}
+		}
+
 		for (i = 0; i < current_module->types.module.size_module_instantiations; i++)
 		{
 			/* make the stringed up module instance name - instance name is
@@ -2348,8 +2479,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			}
 	
 			
-			if (
-				(((temp_net->num_fanout_pins == 1) && (temp_net->fanout_pins[0]->node == NULL)) || (temp_net->num_fanout_pins == 0))
+			if ((((temp_net->num_fanout_pins == 1) && (temp_net->fanout_pins[0]->node == NULL)) || (temp_net->num_fanout_pins == 0))
 				&& (local_clock_found == TRUE))
 			{
 				error_message(NETLIST_ERROR, always_node->line_number, always_node->file_number,

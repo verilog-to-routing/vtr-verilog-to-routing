@@ -912,3 +912,54 @@ char *make_module_param_name(ast_node_t *module_param_list, char *module_name)
 	return module_param_name;
 }
 
+
+/*---------------------------------------------------------------------------------------------
+ * (function: calculate)
+ * Calculate binary operations
+ *-------------------------------------------------------------------------------------------*/
+long calculate(long operand0, long operand1, short type)
+{
+	long result = 0;
+	switch(type){
+		case ADD:
+			result = operand0 + operand1;
+			break;
+		case MINUS:
+			result = operand0 - operand1;
+			break;
+		case MULTIPLY:
+			result = operand0 * operand1;
+			break;
+		case DIVIDE:
+			result = operand0 / operand1;
+			break;
+		default:
+			break;
+	}
+	return result;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: move_ast_node)
+ * move node from src to dest
+ *-------------------------------------------------------------------------------------------*/
+void move_ast_node(ast_node_t *src, ast_node_t *dest, ast_node_t *node)
+{
+	int i, j;
+	int number;
+	number = src->num_children;
+	for(i = 0; i < number; i++)
+	{
+		if(src->children[i]->unique_count == node->unique_count)
+		{
+			number = number - 1;
+			src->num_children = number;
+			for(j = i; j < number; j++)
+			{
+				src->children[j] = src->children[j + 1];
+			}
+		}
+	}
+	add_child_to_node(dest, node);
+}
+

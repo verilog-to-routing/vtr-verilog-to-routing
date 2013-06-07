@@ -57,10 +57,11 @@ ast_node_t *newVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *exp
 ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number);
 void next_module();
 void newConstant(char *id, char *number, int line_number);
-void newDefparam(char *inst, char *param, char *val, int line_number);
+ast_node_t *newDefparam(ids id, ast_node_t *val, int line_number);
 
 void next_parsed_verilog_file(ast_node_t *file_items_list);
 
 /* VISUALIZATION */
 void graphVizOutputAst(char* path, ast_node_t *top);
 void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *from, int from_num);
+long calculate_operation(ast_node_t *node);
