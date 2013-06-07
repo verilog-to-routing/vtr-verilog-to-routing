@@ -1472,7 +1472,10 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 					logical_block[i].name);
 		}
 	}
-	vpr_printf(TIO_MESSAGE_INFO, "%d unconnected blocks in input netlist.\n", count_unconn_blocks);
+
+	if (count_unconn_blocks > 0) {
+		vpr_printf(TIO_MESSAGE_INFO, "%d unconnected blocks in input netlist.\n", count_unconn_blocks);
+	}
 		
 	if (error != 0) {
 		vpr_printf(TIO_MESSAGE_ERROR,
