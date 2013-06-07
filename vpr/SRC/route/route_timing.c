@@ -1,5 +1,3 @@
-// JR - Modified try_timing_driven_route() function status messages. Replaced verbose 3-line routing status (iteration, time, delay) with a single row format. The revised message format is similar to place status messages.
-
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
