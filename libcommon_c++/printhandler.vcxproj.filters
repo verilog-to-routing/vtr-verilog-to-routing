@@ -72,6 +72,24 @@
     <ClCompile Include="SRC\TC_Common\RegExp.cxx">
       <Filter>Source Files\TC_Common</Filter>
     </ClCompile>
+    <ClCompile Include="SRC\TC_Common\TC_IndexCount.cxx">
+      <Filter>Source Files\TC_Common</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TC_Common\TC_RegExp.cxx">
+      <Filter>Source Files\TC_Common</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TC_Common\TC_MapTable.cxx">
+      <Filter>Source Files\TC_Common</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TC_Common\TC_MemoryUtils.cxx">
+      <Filter>Source Files\TC_Common</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TC_Common\TC_NameFile.cxx">
+      <Filter>Source Files\TC_Common</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TC_Common\TC_NameIndex.cxx">
+      <Filter>Source Files\TC_Common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SRC\TC_Common\TC_Bit.h">
@@ -168,6 +186,33 @@
       <Filter>Header Files\TIO_InputOutputHandlers</Filter>
     </ClInclude>
     <ClInclude Include="SRC\TC_Common\RegExp.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TC_IndexCount.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TCT_RangeOrderedVector.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TC_MapTable.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TC_MemoryUtils.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TC_NameFile.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TC_NameIndex.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TC_RegExp.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TCT_Hash.h">
+      <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TCT_Range.h">
       <Filter>Header Files\TC_Common</Filter>
     </ClInclude>
   </ItemGroup>
