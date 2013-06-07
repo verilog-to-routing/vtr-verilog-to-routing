@@ -235,8 +235,14 @@ using namespace std;
  * Bigger numbers may be OK.  Can we just delete these clips now?
  * VB, June 2013.
  */
-#define MAXPIXEL 50000
-#define MINPIXEL -50000
+/* I have increased MAXPIXEL and MINPIXEL to these values so the diagonal lines 
+ * do not change slope when zoomed way in. I have also tested to make sure the 
+ * graphics do not behave funny. However, adding one more digit to these values 
+ * will not be safe.
+ * MW, June 2013.
+ */
+#define MAXPIXEL 21474836
+#define MINPIXEL -21474836
 
 #define DEGTORAD(x) ((x)/180.*PI)
 #define FONTMAG 1.3
@@ -382,8 +388,9 @@ static void translate_up (void (*drawscreen) (void));
 static void translate_left (void (*drawscreen) (void)); 
 static void translate_right (void (*drawscreen) (void)); 
 static void translate_down (void (*drawscreen) (void)); 
-static void panning (int x, int y, void (*drawscreen) (void));
-static void panning_enable (int report_xbutton_x, int report_xbutton_y);
+static void panning_execute (int x, int y, void (*drawscreen) (void));
+static void panning_on (int report_xbutton_x, int report_xbutton_y);
+static void panning_off (void);
 static void zoom_in (void (*drawscreen) (void));
 static void zoom_out (void (*drawscreen) (void));
 static void zoom_fit (void (*drawscreen) (void));
@@ -1446,7 +1453,7 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 					act_on_mousebutton (x, y, button_info);
 					break;
 				case Button2:  /* Scroll wheel pressed; enable or disable panning */
-					panning_enable(report.xbutton.x, report.xbutton.y);
+					panning_on(report.xbutton.x, report.xbutton.y);
 					break;
 				case Button4:  /* Scroll wheel rotated forward; screen does zoom_in */
 					zoom_in(drawscreen);
@@ -1482,14 +1489,12 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 			printf("Got a MotionNotify Event.\n");
 			printf("x: %d    y: %d\n",report.xmotion.x,report.xmotion.y);
 #endif
-			if (get_mouse_move_input &&
+			if (panning_enabled)
+				panning_execute(report.xmotion.x, report.xmotion.y, drawscreen);
+			else if (get_mouse_move_input &&
 			    report.xmotion.x <= top_width-MWIDTH &&
-			    report.xmotion.y <= top_height-T_AREA_HEIGHT) {
-				if (panning_enabled)
-					panning(report.xmotion.x, report.xmotion.y, drawscreen);
-				else
-					act_on_mousemove(XTOWORLD(report.xmotion.x), YTOWORLD(report.xmotion.y));
-			}
+			    report.xmotion.y <= top_height-T_AREA_HEIGHT) 
+				act_on_mousemove(XTOWORLD(report.xmotion.x), YTOWORLD(report.xmotion.y));
 			break;
 		case KeyPress:
 #ifdef VERBOSE 
@@ -2291,9 +2296,11 @@ translate_right (void (*drawscreen) (void))
 }
 
 
-/* Panning is enabled by a click of mouse wheel (or middle mouse button) */
+/* Panning is enabled by pressing and holding down mouse wheel 
+ * (or middle mouse button) 
+ */
 static void
-panning (int x, int y, void (*drawscreen) (void))
+panning_execute (int x, int y, void (*drawscreen) (void))
 {
 	float x_change_world, y_change_world;
 
@@ -2312,26 +2319,30 @@ panning (int x, int y, void (*drawscreen) (void))
 }
 
 
-/* Turn panning_enabled variable on or off */
+/* Turn panning_enabled on */
 static void
-panning_enable (int report_xbutton_x, int report_xbutton_y)
+panning_on (int report_xbutton_x, int report_xbutton_y)
 {
-	bool mouse_move_enable;
-
-	if (panning_enabled) {
-		panning_enabled = false;
-
-		mouse_move_enable = false;
-		set_mouse_move_input(mouse_move_enable);
-	}
-	else {
 		previous_x = report_xbutton_x;
 		previous_y = report_xbutton_y;
 		panning_enabled = true;
+		
+		/* Windows function specifically designed for mouse click and drag. 
+		 * This function sends all mouse message to hGraphicsWnd, even if 
+		 * the cursor is outside the client program's top-level window.
+		 */
+		SetCapture(hGraphicsWnd); 
+}
 
-		mouse_move_enable = true;
-		set_mouse_move_input(mouse_move_enable);
-	}
+
+/* Turn panning_enabled off */
+static void
+panning_off (void)
+{
+		panning_enabled = false;
+
+		/* Stops the mouse capturing started by SetCapture(). */
+		ReleaseCapture();
 }
 
 
@@ -3615,7 +3626,7 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		return 0;
 	
 	// If the mouse device has a scroll wheel, then this is a click of the wheel.
-	// Enable or disable panning with click of the mouse wheel.
+	// Enable panning by holding down the mouse wheel and drag.
 	case WM_MBUTTONDOWN:
 		// get x- and y- coordinates of the cursor. Do not use LOWORD or HIWORD macros 
 		// to extract the coordinates because these macros can return incorrect results
@@ -3624,7 +3635,12 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		xPos = GET_X_LPARAM(lParam);
 		yPos = GET_Y_LPARAM(lParam);
 
-		panning_enable(xPos, yPos);
+		panning_on(xPos, yPos);
+		return 0;
+	
+	// Release the middle mouse button (mouse wheel) to stop panning
+	case WM_MBUTTONUP:
+		panning_off();
 		return 0;
 	
 	case WM_MOUSEMOVE:
@@ -3661,8 +3677,7 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			
 			return 0;
 		}
-		else if (get_mouse_move_input) {
-			if (panning_enabled) {
+		else if (panning_enabled) {
 				// get x- and y- coordinates of the cursor. Do not use LOWORD or HIWORD macros 
 				// to extract the coordinates because these macros can return incorrect results
 				// on systems with multiple monitors.
@@ -3670,11 +3685,10 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				xPos = GET_X_LPARAM(lParam);
 				yPos = GET_Y_LPARAM(lParam);
 
-				panning(xPos, yPos, drawscreen_ptr);
-			}
-			else
+				panning_execute(xPos, yPos, drawscreen_ptr);
+		} 
+		else if (get_mouse_move_input) 
 				mousemove_ptr(XTOWORLD(LOWORD(lParam)), YTOWORLD(HIWORD(lParam)));
-		}
 		return 0;
 	}
 	
