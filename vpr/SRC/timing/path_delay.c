@@ -1,5 +1,3 @@
-// JR - Modifieid print_timing_stats() function, tweaked message format slightly.
-
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
