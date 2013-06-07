@@ -1,3 +1,5 @@
+// JR - Modified get_segment_usage_stats() function, tweaked message formats slightly.
+
 #include <stdio.h>
 #include "util.h"
 #include "vpr_types.h"
@@ -57,26 +59,24 @@ void get_segment_usage_stats(int num_segment, t_segment_inf * segment_inf) {
 	}
 
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Segment usage by type (index):\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Segment type       Fractional utilization\n");
-	vpr_printf(TIO_MESSAGE_INFO, "------------       ----------------------\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Segment usage by type (index): type utilization\n");
+	vpr_printf(TIO_MESSAGE_INFO, "                               ---- -----------\n");
 
 	for (seg_type = 0; seg_type < num_segment; seg_type++) {
 		if (seg_cap_by_type[seg_type] != 0) {
 			utilization = (float) seg_occ_by_type[seg_type] / (float) seg_cap_by_type[seg_type];
-			vpr_printf(TIO_MESSAGE_INFO, "%8d                  %5.3g\n", seg_type, utilization);
+			vpr_printf(TIO_MESSAGE_INFO, "                               %4d %11.3g\n", seg_type, utilization);
 		}
 	}
 
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Segment usage by length:\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Segment length       Fractional utilization\n");
-	vpr_printf(TIO_MESSAGE_INFO, "--------------       ----------------------\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Segment usage by length: length utilization\n");
+	vpr_printf(TIO_MESSAGE_INFO, "                         ------ -----------\n");
 
 	for (length = 1; length <= max_segment_length; length++) {
 		if (seg_cap_by_length[length] != 0) {
 			utilization = (float) seg_occ_by_length[length] / (float) seg_cap_by_length[length];
-			vpr_printf(TIO_MESSAGE_INFO, "%9d                   %5.3g\n", length, utilization);
+			vpr_printf(TIO_MESSAGE_INFO, "                         %6d %11.3g\n", length, utilization);
 		}
 	}
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
