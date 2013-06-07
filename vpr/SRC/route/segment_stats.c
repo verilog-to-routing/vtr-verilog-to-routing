@@ -1,5 +1,3 @@
-// JR - Modified get_segment_usage_stats() function, tweaked message formats slightly.
-
 #include <stdio.h>
 #include "util.h"
 #include "vpr_types.h"
