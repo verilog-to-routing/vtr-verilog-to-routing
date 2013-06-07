@@ -389,7 +389,7 @@ static void translate_left (void (*drawscreen) (void));
 static void translate_right (void (*drawscreen) (void)); 
 static void translate_down (void (*drawscreen) (void)); 
 static void panning_execute (int x, int y, void (*drawscreen) (void));
-static void panning_on (int report_xbutton_x, int report_xbutton_y);
+static void panning_on (int start_x, int start_y);
 static void panning_off (void);
 static void zoom_in (void (*drawscreen) (void));
 static void zoom_out (void (*drawscreen) (void));
@@ -1125,7 +1125,8 @@ init_graphics (const char *window_name, int cindex)
       XSetWindowColormap (display, toplevel, private_cmap);
 	
    XSelectInput (display, toplevel, ExposureMask | StructureNotifyMask |
-                    ButtonPressMask | PointerMotionMask | KeyPressMask);
+                    ButtonPressMask | ButtonReleaseMask | PointerMotionMask |
+                    KeyPressMask);
 	
    /* Create default Graphics Contexts.  valuemask = 0 -> use defaults. */
    current_gc = gc = XCreateGC(display, toplevel, valuemask, &values);
@@ -1452,7 +1453,7 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 					/* Pass information about the button press to client program */
 					act_on_mousebutton (x, y, button_info);
 					break;
-				case Button2:  /* Scroll wheel pressed; enable or disable panning */
+				case Button2:  /* Scroll wheel pressed; start panning */
 					panning_on(report.xbutton.x, report.xbutton.y);
 					break;
 				case Button4:  /* Scroll wheel rotated forward; screen does zoom_in */
@@ -1484,6 +1485,19 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 				}
 			}
 			break;
+		case ButtonRelease:
+#ifdef VERBOSE
+			printf("Got a buttonrelease.\n");
+			printf("Window ID is: %ld.\n",report.xbutton.window);
+			printf("Button released is: %d.\n(left click is 1; right click is 3; scroll wheel click is 2; "
+					"scroll wheel forward rotate is 4; scroll wheel backward is 5.)\n",report.xbutton.button);
+			printf("Mask is: %d.\n",report.xbutton.state);
+#endif
+			switch (report.xbutton.button) {
+			case Button2:  /* Scroll wheel released; stop panning */
+				panning_off();
+				break;
+			}
 		case MotionNotify:
 #ifdef VERBOSE 
 			printf("Got a MotionNotify Event.\n");
@@ -2321,17 +2335,11 @@ panning_execute (int x, int y, void (*drawscreen) (void))
 
 /* Turn panning_enabled on */
 static void
-panning_on (int report_xbutton_x, int report_xbutton_y)
+panning_on (int start_x, int start_y)
 {
-		previous_x = report_xbutton_x;
-		previous_y = report_xbutton_y;
+		previous_x = start_x;
+		previous_y = start_y;
 		panning_enabled = true;
-		
-		/* Windows function specifically designed for mouse click and drag. 
-		 * This function sends all mouse message to hGraphicsWnd, even if 
-		 * the cursor is outside the client program's top-level window.
-		 */
-		SetCapture(hGraphicsWnd); 
 }
 
 
@@ -2340,9 +2348,6 @@ static void
 panning_off (void)
 {
 		panning_enabled = false;
-
-		/* Stops the mouse capturing started by SetCapture(). */
-		ReleaseCapture();
 }
 
 
@@ -3635,12 +3640,23 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		xPos = GET_X_LPARAM(lParam);
 		yPos = GET_Y_LPARAM(lParam);
 
+		// turn on panning_enabled
 		panning_on(xPos, yPos);
+
+		/* Windows function specifically designed for mouse click and drag.
+		 * This function sends all mouse message to hGraphicsWnd, even if
+		 * the cursor is outside the client program's top-level window.
+		 */
+		SetCapture(hGraphicsWnd);
 		return 0;
 	
 	// Release the middle mouse button (mouse wheel) to stop panning
 	case WM_MBUTTONUP:
+		// turn off panning_enabled
 		panning_off();
+
+		/* Stops the mouse capturing started by SetCapture(). */
+		ReleaseCapture();
 		return 0;
 	
 	case WM_MOUSEMOVE:

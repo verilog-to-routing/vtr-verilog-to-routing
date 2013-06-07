@@ -7,7 +7,7 @@
 
 # Please note that a Mac can run the graphics if the X11 library is installed. 
 
-ENABLE_GRAPHICS = false
+ENABLE_GRAPHICS = true
 # can be true or false
 
 setenv ENABLE_TORO = false
