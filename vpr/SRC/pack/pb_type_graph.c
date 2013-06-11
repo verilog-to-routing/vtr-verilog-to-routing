@@ -1120,6 +1120,7 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 	/* parse pb */
 	found = FALSE;
 	if (0 == strcmp(pb_graph_parent_node->pb_type->name, tokens[*token_index].data)) {
+		//Parent pb_type
 		pb_node_array = pb_graph_parent_node;
 		max_pb_node_array = 1;
 		pb_msb = pb_lsb = 0;
@@ -1128,27 +1129,27 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 		if (tokens[*token_index].type == TOKEN_OPEN_SQUARE_BRACKET) {
 			(*token_index)++;
 			if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
-				return FALSE;
+				return FALSE; //clb[abc
 			}
-			pb_msb = my_atoi(tokens[*token_index].data);
+			pb_msb = my_atoi(tokens[*token_index].data); 
 			(*token_index)++;
 			if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
 				if (!checkTokenType(tokens[*token_index],
 						TOKEN_CLOSE_SQUARE_BRACKET)) {
-					return FALSE;
+					return FALSE; //clb[9abc
 				}
 				pb_lsb = pb_msb;
 				(*token_index)++;
 			} else {
 				(*token_index)++;
 				if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
-					return FALSE;
+					return FALSE; //clb[9:abc
 				}
 				pb_lsb = my_atoi(tokens[*token_index].data);
 				(*token_index)++;
 				if (!checkTokenType(tokens[*token_index],
 						TOKEN_CLOSE_SQUARE_BRACKET)) {
-					return FALSE;
+					return FALSE; //clb[9:0abc
 				}
 				(*token_index)++;
 			}
@@ -1164,6 +1165,7 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 			pb_lsb = pb_msb = 0; /* Internal representation of parent is always 0 */
 		}
 	} else {
+		//Children pb_types
 		if (mode == NULL ) {
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"[LINE %d] pb_graph_parent_node %s failed\n", line_num,
@@ -1205,11 +1207,19 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 						}
 						(*token_index)++;
 					}
+					/* Check range of children pb */
+					if (pb_lsb < 0 || pb_lsb >= max_pb_node_array ||
+						pb_msb < 0 || pb_msb >= max_pb_node_array) {
+						vpr_printf(TIO_MESSAGE_ERROR,
+							"[LINE %d] mode '%s' -> pb '%s' [%d,%d] out of range [%d,%d]\n", line_num, mode->name,
+							mode->pb_type_children[i].name, pb_msb, pb_lsb, max_pb_node_array - 1, 0);
+						exit(1);
+					}
 				} else {
 					pb_msb = pb_node_array[0].pb_type->num_pb - 1;
 					pb_lsb = 0;
 				}
-				break;
+				break; //found pb_type_children, no need to keep traversing
 			}
 		}
 	}
@@ -1224,17 +1234,25 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 	found = FALSE;
 
 	if (!checkTokenType(tokens[*token_index], TOKEN_DOT)) {
-		return FALSE;
+		return FALSE; //clb[9:0]123
 	}
 	(*token_index)++;
 	if (!checkTokenType(tokens[*token_index], TOKEN_STRING)) {
-		return FALSE;
+		return FALSE; //clb[9:0].123
 	}
 
 	/* parse ports and port pins of pb */
 	port_name = tokens[*token_index].data;
-
 	(*token_index)++;
+
+	if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb],
+				0) == NULL) {
+		vpr_printf(TIO_MESSAGE_ERROR,
+			"[LINE %d] Failed to find port name %s\n", line_num, port_name);
+		exit(1);
+	}
+
+	
 	if (tokens[*token_index].type == TOKEN_OPEN_SQUARE_BRACKET) {
 		(*token_index)++;
 		if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
@@ -1263,19 +1281,7 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 			(*token_index)++;
 		}
 	} else {
-		if (pb_lsb < 0 || pb_lsb >= max_pb_node_array) {
-			vpr_printf(TIO_MESSAGE_ERROR,
-					"[LINE %d] pb %d out of range [%d,%d]\n", line_num, pb_lsb,
-					max_pb_node_array - 1, 0);
-			exit(1);
-		}
-		if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb],
-				0) == NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR,
-					"[LINE %d] failed to find port name %s\n", line_num,
-					port_name);
-			exit(1);
-		}
+
 		iport =
 				get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb], 0)->port;
 		pin_msb = iport->num_pins - 1;
@@ -1301,16 +1307,10 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 
 	ipb = pb_lsb;
 
-	while (ipb != pb_msb + add_or_subtract_pin) {
+	while (ipb != pb_msb + add_or_subtract_pb) {
 		ipin = pin_lsb;
 		j = 0;
 		while (ipin != pin_msb + add_or_subtract_pin) {
-			if (ipb < 0 || ipb >= max_pb_node_array) {
-				vpr_printf(TIO_MESSAGE_ERROR,
-						"[LINE %d] pb %d out of range [%d,%d]\n", line_num, ipb,
-						max_pb_node_array - 1, 0);
-				exit(1);
-			}
 			(*pb_graph_pins)[i * (abs(pin_msb - pin_lsb) + 1) + j] =
 					get_pb_graph_pin_from_name(port_name, &pb_node_array[ipb],
 							ipin);
@@ -1318,7 +1318,7 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 				vpr_printf(TIO_MESSAGE_ERROR,
 						"[LINE %d] Pin %s.%s[%d] cannot be found\n", line_num,
 						pb_node_array[ipb].pb_type->name, port_name, ipin);
-				exit(1);
+				return FALSE;
 			}
 			iport =
 					(*pb_graph_pins)[i * (abs(pin_msb - pin_lsb) + 1) + j]->port;

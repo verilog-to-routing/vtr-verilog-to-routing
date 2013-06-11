@@ -459,7 +459,7 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 	annotation->num_value_prop_pairs = i;
 	annotation->prop = (int*) my_calloc(i, sizeof(int));
 	annotation->value = (char**) my_calloc(i, sizeof(char *));
-
+	annotation->line_num = Parent->line;
 	/* Todo: This is slow, I should use a case lookup */
 	i = 0;
 	if (0 == strcmp(Parent->name, "delay_constant")) {
@@ -479,7 +479,6 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 			ezxml_set_attr(Parent, "min", NULL);
 			i++;
 		}
-		annotation->line_num = Parent->line;
 		Prop = FindProperty(Parent, "in_port", TRUE);
 		annotation->input_pins = my_strdup(Prop);
 		ezxml_set_attr(Parent, "in_port", NULL);
