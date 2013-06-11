@@ -332,7 +332,7 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
 	boolean found;
 
 	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
-		if (logical_block[iblock].type == VPACK_LATCH) {
+		if (logical_block[iblock].clock_net != OPEN) {
 			clock_net = logical_block[iblock].clock_net;
 			assert(clock_net != OPEN);
 			name = logical_block[clock_net].name;
@@ -377,7 +377,7 @@ static void count_netlist_clocks_as_constrained_clocks(void) {
 	g_sdc->num_constrained_clocks = 0;
 	
 	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
-		if (logical_block[iblock].type == VPACK_LATCH) {
+		if (logical_block[iblock].clock_net != OPEN) {
 			clock_net = logical_block[iblock].clock_net;
 			assert(clock_net != OPEN);
 			name = logical_block[clock_net].name;

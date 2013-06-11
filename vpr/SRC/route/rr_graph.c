@@ -2864,7 +2864,7 @@ static boolean get_perturb_opins(INP t_type_ptr type, INP int *Fc_out, INP int n
 	*  case.								*/
 
 	/* get an upper bound on the number of prime factors of num_wire_types	*/
-	max_primes = floor(log2(num_wire_types));
+	max_primes = floor(log((float)num_wire_types)/log((float)2));
 	prime_factors = (int *) my_malloc((max_primes+1) * sizeof(int));
 	for (i = 0; i < max_primes; i++){
 		prime_factors[i] = 0;
@@ -2874,7 +2874,7 @@ static boolean get_perturb_opins(INP t_type_ptr type, INP int *Fc_out, INP int n
 	num = num_wire_types; 
 	factor = 2;
 	num_factors = 0;
-	while ( pow(factor, 2) <= num ){
+	while ( pow((float)factor, 2) <= num ){
 		if ( num % factor == 0 ){
 			num /= factor;
 			if ( factor != prime_factors[num_factors] ){

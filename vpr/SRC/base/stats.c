@@ -453,7 +453,7 @@ int count_netlist_clocks(void) {
 	char ** clock_names = NULL;
 
 	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
-		if (logical_block[iblock].type == VPACK_LATCH) {
+		if (logical_block[iblock].clock_net != OPEN) {
 			clock_net = logical_block[iblock].clock_net;
 			assert(clock_net != OPEN);
 			name = logical_block[clock_net].name;
