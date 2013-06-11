@@ -117,6 +117,9 @@ static void load_perturbed_switch_pattern(
 		INP int *width_ordering, INP int *height_ordering, INP int nodes_per_chan, INP int Fc,
 		INP enum e_directionality directionality);
 
+static boolean get_perturb_opins(INP t_type_ptr type, INP int *Fc_out, INP int nodes_per_chan, 
+		INP int num_segments, INP t_segment_inf *segment_inf);
+
 #ifdef ENABLE_CHECK_ALL_TRACKS
 static void check_all_tracks_reach_pins(
 		t_type_ptr type,
@@ -259,6 +262,8 @@ void build_rr_graph(
 	int **Fc_xofs = NULL; /* [0..ny-1][0..nx-1] */
 	int **Fc_yofs = NULL; /* [0..nx-1][0..ny-1] */
 	t_clb_to_clb_directs *clb_to_clb_directs;
+
+	boolean perturb_opins = FALSE;
 
 	rr_node_indices = NULL;
 	rr_node = NULL;
@@ -447,9 +452,12 @@ void build_rr_graph(
 	if (BI_DIRECTIONAL == directionality) {
 		opin_to_track_map = (int ******) my_malloc(sizeof(int *****) * L_num_types);
 		for (i = 0; i < L_num_types; ++i) {
+			perturb_opins = get_perturb_opins(&types[i], Fc_out[i], nodes_per_chan,
+				num_seg_types, segment_inf);
+
 			opin_to_track_map[i] = alloc_and_load_pin_to_track_map(DRIVER,
-				nodes_per_chan, Fc_out[i], &types[i], FALSE, directionality);
-		}
+				nodes_per_chan, Fc_out[i], &types[i], perturb_opins, directionality);
+		} 
 	}
 	/* END OPINP MAP */
 
@@ -2805,5 +2813,99 @@ static int get_opin_direct_connecions(int x, int y, int opin,
 	return new_edges;
 }
 
+
+/* Determines whether the output pins of the specified block type should be perturbed.	*
+*  This is to prevent pathological cases where the output pin connections are		*
+*  spaced such that the connection pattern always skips some types of wire (w.r.t.	*
+*  starting points)									*/
+static boolean get_perturb_opins(INP t_type_ptr type, INP int *Fc_out, INP int nodes_per_chan, 
+		INP int num_segments, INP t_segment_inf *segment_inf){
+	
+	int i, Fc_max, iclass, num_wire_types;
+	int num, max_primes, factor, num_factors;
+	int *prime_factors;
+	float step_size = 0;
+	float n = 0;
+	float threshold = 0.07;
+	boolean perturb_opins = FALSE;
+
+	i = Fc_max = iclass = 0;
+	
+	if (num_segments > 1){
+		/* Segments of one length are grouped together in the channel.	*
+		*  In the future we can determine if any of these segments will	*
+		*  encounter the pathological step size case, and determine if	*
+		*  we need to perturb based on the segment's frequency (if 	*
+		*  frequency is small we should not perturb - testing has found	*
+		*  that perturbing a channel when unnecessary increases needed	*
+		*  W to achieve the same delay); but for now we just return.	*/
+		return perturb_opins;
+	} else {
+		/* There are as many wire start points as the value of L */
+		num_wire_types = segment_inf[0].length;
+	}
+	
+	/* get Fc_max */
+	for (i = 0; i < type->num_pins; ++i) {
+		iclass = type->pin_class[i];
+		if (Fc_out[i] > Fc_max && type->class_inf[iclass].type == DRIVER) {
+			Fc_max = Fc_out[i];
+		}
+	}
+	/* Nothing to perturb if Fc=0; no need to perturb if Fc = 1 */
+	if (Fc_max == 0 || Fc_max == nodes_per_chan){
+		return perturb_opins;
+	}
+
+	/* Pathological cases occur when the step size, W/Fc, is a multiple of	*
+	*  the number of wire starting points, L. Specifically, when the step 	*
+	*  size is a multiple of a prime factor of L, the connection pattern	*
+	*  will always skip some wires. Thus, we perturb pins if we detect this	*
+	*  case.								*/
+
+	/* get an upper bound on the number of prime factors of num_wire_types	*/
+	max_primes = floor(log2(num_wire_types));
+	prime_factors = (int *) my_malloc((max_primes+1) * sizeof(int));
+	for (i = 0; i < max_primes; i++){
+		prime_factors[i] = 0;
+	}
+	
+	/* Find the prime factors of num_wire_types */
+	num = num_wire_types; 
+	factor = 2;
+	num_factors = 0;
+	while ( pow(factor, 2) <= num ){
+		if ( num % factor == 0 ){
+			num /= factor;
+			if ( factor != prime_factors[num_factors] ){
+				prime_factors[num_factors] = factor;
+				num_factors++;
+			}
+		} else {
+			factor++;
+		}
+	}
+	prime_factors[num_factors++] = num_wire_types;	/* covers cases when num_wire_types is prime */
+
+	/* Now see if step size is an approximate multiple of one of the factors. A 	*
+	*  threshold is used because step size may not be an integer.			*/
+	step_size = (float)nodes_per_chan / Fc_max;
+	for (i = 0; i < num_factors; i++){
+		if ( nint(step_size) < prime_factors[i] ){
+			perturb_opins = FALSE;
+			break;
+		}
+	
+		n = step_size / prime_factors[i]; 
+		n = n - (float)nint(n);			/* fractinal part */	
+		if ( fabs(n) < threshold ){
+			perturb_opins = TRUE;
+		} else {
+			perturb_opins = FALSE;
+		}
+	}
+
+	return perturb_opins;
+}
 
 
