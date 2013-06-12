@@ -42,14 +42,6 @@ typedef struct s_clb_to_clb_directs {
 	int to_clb_pin_end_index;
 } t_clb_to_clb_directs;
 
-/* Contains statistics on a connection block's diversity 
-*  pin_homogeniety: measure of how non-diverse a pin's connection to wires is
-*  wire_homogeniety: measure of how non-diverse the connections across the wires are */ 
-typedef struct s_conn_block_homogeneity {
-	float pin_homogeneity;
-	float wire_homogeneity;
-} t_conn_block_homogeneity;
-
 /* UDSD Modifications by WMF End */
 
 /******************* Variables local to this module. ***********************/
@@ -124,10 +116,6 @@ static void load_perturbed_switch_pattern(
 		INP int *pin_num_ordering, INP int *side_ordering,
 		INP int *width_ordering, INP int *height_ordering, INP int nodes_per_chan, INP int Fc,
 		INP enum e_directionality directionality);
-
-static t_conn_block_homogeneity get_conn_block_homogeneity(INP t_type_ptr block_type, 
-		INP int *****tracks_connected_to_pin, INP e_pin_type pin_type, 
-		INP int *Fc_array, INP int nodes_per_chan, INP int num_wire_classes);
 
 static boolean get_perturb_opins(INP t_type_ptr type, INP int *Fc_out, INP int nodes_per_chan, 
 		INP int num_segments, INP t_segment_inf *segment_inf);
@@ -275,7 +263,6 @@ void build_rr_graph(
 	int **Fc_yofs = NULL; /* [0..nx-1][0..ny-1] */
 	t_clb_to_clb_directs *clb_to_clb_directs;
 
-	t_conn_block_homogeneity conn_block_homogeneity;
 	boolean perturb_opins = FALSE;
 
 	rr_node_indices = NULL;
@@ -2824,131 +2811,6 @@ static int get_opin_direct_connecions(int x, int y, int opin,
 	}
 	*edge_list_ptr = edge_list_head;
 	return new_edges;
-}
-
-
-/* Gets the connection block homogeneity according to the pin<->wire connections
-*  specified in tracks_connected_to_pin. Only done for the pin_type specified. */
-static t_conn_block_homogeneity get_conn_block_homogeneity(INP t_type_ptr block_type, 
-		INP int *****tracks_connected_to_pin, INP e_pin_type pin_type, 
-		INP int *Fc_array, INP int nodes_per_chan, INP int num_wire_classes){
-	
-	/* can not have diversity for open pins */
-	assert(OPEN != pin_type);	
-	
-	int i, width, height, side, j, pin, track, Fc, iclass, num_pin_type_pins;
-	float mean;
-	t_conn_block_homogeneity conn_block_homogeneity;
-	
-	int **pin_averages;				/*[0..num_pins][0..num_wire_classes-1]*/
-	float *std_dev_pin;				/* [0..num_pins] */
-	int **wire_conns;				/* [0..3][0..nodes_per_chan-1] */
-	float *std_dev_track;				/* [0..3] */
-
-	i = width = height = side = j = pin = track = Fc = iclass = num_pin_type_pins = 0;
-	mean = 0;
-	conn_block_homogeneity.pin_homogeneity = 0;
-	conn_block_homogeneity.wire_homogeneity = 0;
-	
-	pin_averages = (int **) alloc_matrix(0, block_type->num_pins - 1, 0, num_wire_classes - 1, sizeof(int));
-	std_dev_pin = (float *) my_malloc(sizeof(float) * block_type->num_pins);
-	wire_conns = (int **) alloc_matrix(0, 3, 0, nodes_per_chan - 1, sizeof(int));
-	std_dev_track = (float *) my_malloc(sizeof(float) * 4);
-
-	/* Find max Fc */
-	for (pin = 0; pin < block_type->num_pins; ++pin) {
-		iclass = block_type->pin_class[pin];
-		if (Fc_array[i] > Fc && block_type->class_inf[iclass].type == pin_type) {
-			Fc = Fc_array[pin];
-		}
-	}
-	if (Fc == 0){
-		return conn_block_homogeneity;
-	}
-
-	/* initialize variables */
-	for (pin = 0; pin < block_type->num_pins; pin++){
-		for (i = 0; i < num_wire_classes; i++){
-			pin_averages[pin][i] = 0;
-		}
-	}
-	for (side = 0; side < 4; side++){
-		for (i = 0; i < nodes_per_chan; i++){
-			wire_conns[side][i] = 0;
-		}
-	}	
-
-
-	/* Count the number of times each pin connects to each wire class 
-	*  Also count the number of times each wire is used on each side */ 
-	for (pin = 0; pin < block_type->num_pins; pin++){
-		/* only doing pin_type pins */
-		if (block_type->class_inf[block_type->pin_class[pin]].type != pin_type){
-			continue;
-		}
-		
-		/* over each height unit */
-		for (height = 0; height < block_type->height; height++){
-			/*  over each width unit */
-			for (width = 0; width < block_type->width; width++){
-				/* over each side */
-				for (side = 0; side < 4; side++){
-					i = 0;
-					track = tracks_connected_to_pin[pin][width][height][side][i];
-					while (OPEN != track){
-						assert(nodes_per_chan > track);
-						/* find the number of times the pin connects to each wire class */
-						pin_averages[pin][track % num_wire_classes]++;
-						/* find the number of times a connection is made with each wire/side */
-						wire_conns[side][track]++; 
-						i++;
-						if (i >= Fc){
-							num_pin_type_pins++;
-							break;
-						}
-						track = tracks_connected_to_pin[pin][width][height][side][i];
-					}
-				}
-			}
-		} 
-	}
-	/* determine the homogeneity of each pin. Get std deviation over 
-	*  each pin, then take arithmetic avg over all pins */
-	mean = (float)Fc / (float)num_wire_classes;
-	for (pin = 0; pin < block_type->num_pins; pin++){
-		/* only doing pin_type pins */
-		if (block_type->class_inf[block_type->pin_class[pin]].type != pin_type){
-			continue;
-		}
-		
-		std_dev_pin[pin] = 0;
-		for (i = 0; i < num_wire_classes; i++){
-			std_dev_pin[pin] += pow(((float)pin_averages[pin][i] - mean), 2);
-		}
-		std_dev_pin[pin] /= (float)(num_wire_classes - 1);
-		conn_block_homogeneity.pin_homogeneity += sqrt(std_dev_pin[pin]);
-	}
-	conn_block_homogeneity.pin_homogeneity /= (float)(num_pin_type_pins);
-	/* determine the homogeniety of each wire. Get std deviation over each side
-	*  then take arithmetic avg over all sides */
-	/* TODO: we assumed pins divide equally into 4 sides; may not be the case */
-	mean = (float)(num_pin_type_pins / 4) * (float)Fc / (float)nodes_per_chan;
-	for (side = 0; side < 4; side++){
-		std_dev_track[side] = 0;
-		for (track = 0; track < nodes_per_chan; track++){
-			std_dev_track[side] += pow((float)(wire_conns[side][track] - mean), 2); 	
-		}
-		std_dev_track[side] /= (float)(nodes_per_chan - 1);
-		conn_block_homogeneity.wire_homogeneity += sqrt(std_dev_track[side]);
-	}
-	conn_block_homogeneity.wire_homogeneity /= 4;
-
-	free_matrix(pin_averages, 0, block_type->num_pins - 1, 0, sizeof(int));
-	free(std_dev_pin);
-	free_matrix(wire_conns, 0, 3, 0, sizeof(int));
-	free(std_dev_track);
-	
-	return conn_block_homogeneity;
 }
 
 
