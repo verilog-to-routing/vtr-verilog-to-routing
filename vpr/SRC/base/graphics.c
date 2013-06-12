@@ -696,7 +696,7 @@ void setcolor (int cindex)
  * string name passed in.  Slower, but maybe more convenient for simple 
  * client code.
  */
-void setcolor (string cname) {
+void setcolor_by_name (string cname) {
    int icolor = -1;
    for (int i = 0; i < NUM_COLOR; i++) {
       if (cname == ps_cnames[i]) {

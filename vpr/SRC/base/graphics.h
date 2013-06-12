@@ -129,7 +129,7 @@ void clearscreen (void);
 void setcolor (int cindex);
 
 /* Set the color with a string instead of an enumerated constant */
-void setcolor (string cname);
+void setcolor_by_name (string cname);
 
 /* Get the current color */
 int getcolor(void);
