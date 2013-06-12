@@ -205,8 +205,8 @@ using namespace std;
 
 // Really large pixel values cna make some X11 implementations draw crazy things
 // (internal overflow in the X11 library).  Use these constants to clip. 
-#define MAXPIXEL 15000
-#define MINPIXEL -15000
+#define MAXPIXEL 21474836
+#define MINPIXEL -21474836
 
 #endif /* X11 Preprocessor Directives */
 
@@ -3454,19 +3454,20 @@ MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (roll_detent <0)
 			roll_detent *= -1;
 
-		// get x- and y- coordinates of the cursor. Do not use LOWORD or HIWORD macros
-		// to extract the coordinates because these macros can return incorrect results
-		// on systems with multiple monitors.
-		int xPos, yPos;
-		xPos = GET_X_LPARAM(lParam);
-		yPos = GET_Y_LPARAM(lParam);
+		// get x- and y- coordinates of the cursor. WM_MOUSEWHEEL receives coordinates of
+		// the cursor relative to the upper-left corner of the screen instead of the client
+		// program. Therefore, call ScreenToClient() to convert.
+		POINT mousePos;
+		mousePos.x = GET_X_LPARAM(lparam);
+		mousePos.y = GET_Y_LPARAM(lparam);
+		ScreenToClient(hMainWnd, &mousePos);
 
 		int i;
 		for (i=0; i<roll_detent; i++) {
 			// Positive value for zDelta indicates that the wheel was rotated forward, which
 			// will trigger zoom_in. Otherwise, zoom_out is called.
 			if (zDelta > 0)
-				zoom_in_with_cursor(XSCRN2WORLD(xPos), YSCRN2WORLD(yPos), drawscreen_ptr);
+				zoom_in_with_cursor(XSCRN2WORLD(mousePos.x), YSCRN2WORLD(mousePos.y), drawscreen_ptr);
 			else
 				zoom_out_with_cursor(XSCRN2WORLD(xPos), YSCRN2WORLD(yPos), drawscreen_ptr);
 		}
