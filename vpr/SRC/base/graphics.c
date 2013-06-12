@@ -163,15 +163,15 @@ using namespace std;
 #if defined(X11) || defined(WIN32)
 
 /* Macros for translation from world to PostScript coordinates */
-#define XPOST(worldx) (((worldx)-xleft)*ps_xmult + ps_left)
-#define YPOST(worldy) (((worldy)-ybot)*ps_ymult + ps_bot)
+#define XPOST(worldx) (((worldx)-trans_coord.xleft)*trans_coord.ps_xmult + trans_coord.ps_left)
+#define YPOST(worldy) (((worldy)-trans_coord.ybot)*trans_coord.ps_ymult + trans_coord.ps_bot)
 
 /* Macros to convert from Screen (pixel) Coordinates to the world coordinates
  * used by the client program. (This macro is used only rarely, so       
  * the divides don't hurt speed).                               
  */
-#define XTOWORLD(x) (((float) x)*xdiv + xleft)
-#define YTOWORLD(y) (((float) y)*ydiv + ytop)
+#define XSCRN2WORLD(x) (((float) x)*trans_coord.xdiv + trans_coord.xleft)
+#define YSCRN2WORLD(y) (((float) y)*trans_coord.ydiv + trans_coord.ytop)
 
 #ifndef max
 #define max(a,b) (((a) > (b))? (a) : (b))
@@ -205,8 +205,8 @@ using namespace std;
 
 // Really large pixel values cna make some X11 implementations draw crazy things
 // (internal overflow in the X11 library).  Use these constants to clip. 
-#define MAXPIXEL 15000   
-#define MINPIXEL -15000 
+#define MAXPIXEL 15000
+#define MINPIXEL -15000
 
 #endif /* X11 Preprocessor Directives */
 
@@ -318,6 +318,44 @@ typedef struct {
 } t_gl_state;
 
 
+/* Structure used to store coordinate information used for
+ * graphic transformations.
+ * top_width and top_height: window size
+ * saved_xleft, saved_xright, saved_ytop, and saved_ybot: initial user (world)
+ * 														coordinates
+ * xleft, xright, ytop, and ybot: boundaries of the graphic child window in world
+ * 									coordinates
+ * ps_left, ps_right, ps_top, and ps_bot: figure boundaries for PostScript output, in
+ * 											PostScript coordinates
+ * ps_xmult and ps_ymult: transformation for PostScript (number of PostScript
+ * 							coordinates per world coordinate)
+ * xmult and ymult: transformation factors (number of window coordinates per world
+ * 					coordinate)
+ * xdiv and ydiv: transformation factors (number of world coordinates per window
+ * 					coordinate)
+ */
+typedef struct {
+   int top_width, top_height;
+   float saved_xleft, saved_xright, saved_ytop, saved_ybot;
+   float xleft, xright, ytop, ybot;
+   float ps_left, ps_right, ps_top, ps_bot;
+   float ps_xmult, ps_ymult;
+   float xmult, ymult;
+   float xdiv, ydiv;
+} t_transform_coordinates;
+
+
+/* Structure used to store state variables used for panning.
+ * previous_x and previous_y: (in window (pixel) coordinates,) last location of
+ * 								the cursor before new motion
+ * panning_enabled: whether panning is activated or de-activated
+ */
+typedef struct {
+	int previous_x, previous_y;
+	bool panning_enabled;
+} t_panning_state;
+
+
 /*********************************************************************
  *        File scope variables.  TODO: group in structs              *
  *********************************************************************/
@@ -333,17 +371,12 @@ static t_button *button = NULL;                 /* [0..num_buttons-1] */
 static int num_buttons = 0;                  /* Number of menu buttons */
 
 static int display_width, display_height;  /* screen size */
-static int top_width, top_height;      /* window size */
-static float xleft, xright, ytop, ybot;         /* world coordinates */
-static float saved_xleft, saved_xright, saved_ytop, saved_ybot;
-static int previous_x, previous_y;		/* for panning */
-static bool panning_enabled = false;
 
-static float ps_left, ps_right, ps_top, ps_bot; /* Figure boundaries for *
-* PostScript output, in PostScript coordinates.  */
-static float ps_xmult, ps_ymult;     /* Transformation for PostScript. */
-static float xmult, ymult;                  /* Transformation factors */
-static float xdiv, ydiv;
+// Contains all coordinates useful for graphics transformation
+static t_transform_coordinates trans_coord;
+
+// Initialize panning_enabled to false, so panning is not activated
+static t_panning_state pan_state = {0, 0, false};
 
 static int currentcolor;
 static int currentlinestyle;
@@ -393,6 +426,8 @@ static void panning_on (int start_x, int start_y);
 static void panning_off (void);
 static void zoom_in (void (*drawscreen) (void));
 static void zoom_out (void (*drawscreen) (void));
+static void zoom_in_with_cursor (float x, float y, void (*drawscreen) (void));
+static void zoom_out_with_cursor (float x, float y, void (*drawscreen) (void));
 static void zoom_fit (void (*drawscreen) (void));
 static void adjustwin (void (*drawscreen) (void)); 
 static void postscript (void (*drawscreen) (void));
@@ -430,7 +465,10 @@ static int which_button (Window win);
 static void turn_on_off (int pressed);
 static void drawmenu(void);
 
-static void handle_button_info (t_event_buttonPressed *button_info, int buttonNumber, int Xbutton_state);
+static void handle_expose (XEvent report, void (*drawscreen) (void));
+static void handle_configure_notify (XEvent report);
+static void handle_button_info (t_event_buttonPressed *button_info,
+								int buttonNumber, int Xbutton_state);
 
 #endif /* X11 Declarations */
 
@@ -557,7 +595,7 @@ static int xcoord (float worldx)
 {
 	int winx;
 	
-	winx = (int) ((worldx-xleft)*xmult + 0.5);
+	winx = (int) ((worldx-trans_coord.xleft)*trans_coord.xmult + 0.5);
 	
 	/* Avoids overflow in the  Window routines.  This will allow horizontal *
 	* and vertical lines to be drawn correctly regardless of zooming, but   *
@@ -583,7 +621,7 @@ static int ycoord (float worldy)
 {
 	int winy;
 	
-	winy = (int) ((worldy-ytop)*ymult + 0.5);
+	winy = (int) ((worldy-trans_coord.ytop)*trans_coord.ymult + 0.5);
 	
 	/* Avoid overflow in the X/Win32 Window routines. */
 	winy = max (winy, MINPIXEL);
@@ -1078,8 +1116,8 @@ init_graphics (const char *window_name, int cindex)
    x = 0;
    y = 0;
 	
-   top_width = 2 * display_width / 3;
-   top_height = 4 * display_height / 5;
+   trans_coord.top_width = 2 * display_width / 3;
+   trans_coord.top_height = 4 * display_height / 5;
    
    cmap = DefaultColormap(display, screen_num);
    private_cmap = None;
@@ -1118,8 +1156,8 @@ init_graphics (const char *window_name, int cindex)
    }  // End setting up colours
 	
    toplevel = XCreateSimpleWindow(display,RootWindow(display,screen_num),
-              x, y, top_width, top_height, border_width, colors[BLACK],
-              colors[cindex]);  
+              	  x, y, trans_coord.top_width, trans_coord.top_height,
+              	  border_width, colors[BLACK], colors[cindex]);
 
    if (private_cmap != None) 
       XSetWindowColormap (display, toplevel, private_cmap);
@@ -1195,8 +1233,8 @@ init_graphics (const char *window_name, int cindex)
    display_height = GetSystemMetrics( SM_CYSCREEN );
    if (!(display_height))
       CREATE_ERROR();
-   top_width = 2*display_width/3;
-   top_height = 4*display_height/5;
+   trans_coord.top_width = 2*display_width/3;
+   trans_coord.top_height = 4*display_height/5;
 	
    /* Grab the Application name */
    wsprintf(szAppName, TEXT(window_name));
@@ -1264,8 +1302,8 @@ init_graphics (const char *window_name, int cindex)
       DRAW_ERROR();
 	
    hMainWnd = CreateWindow(szAppName, TEXT(window_name),
-                 WS_OVERLAPPEDWINDOW, x, y, top_width, top_height,
-                 NULL, NULL, hInstance, NULL);
+                 WS_OVERLAPPEDWINDOW, x, y, trans_coord.top_width,
+                 trans_coord.top_height, NULL, NULL, hInstance, NULL);
 	
    if(!hMainWnd)
       DRAW_ERROR();
@@ -1306,32 +1344,36 @@ update_transform (void)
 /* Set up the factors for transforming from the user world to X/Win32 screen
  * (pixel) coordinates.                                                         */
 	
-	float mult, y1, y2, x1, x2;
+	float mult, diff, y1, y2, x1, x2;
 	
 	/* X Window coordinates go from (0,0) to (width-1,height-1) */
-	xmult = (top_width - 1 - MWIDTH) / (xright - xleft);
-	ymult = (top_height - 1 - T_AREA_HEIGHT)/ (ybot - ytop);
+	diff = trans_coord.xright - trans_coord.xleft;
+	trans_coord.xmult = (trans_coord.top_width - 1 - MWIDTH) / diff;
+	diff = trans_coord.ybot - trans_coord.ytop;
+	trans_coord.ymult = (trans_coord.top_height - 1 - T_AREA_HEIGHT) / diff;
 
 	/* Need to use same scaling factor to preserve aspect ratio */
-	if (fabs(xmult) <= fabs(ymult)) {
-		mult = (float)(fabs(ymult/xmult));
-		y1 = ytop - (ybot-ytop)*(mult-1)/2;
-		y2 = ybot + (ybot-ytop)*(mult-1)/2;
-		ytop = y1;
-		ybot = y2;
+	if (fabs(trans_coord.xmult) <= fabs(trans_coord.ymult)) {
+		mult = (float)(fabs(trans_coord.ymult/trans_coord.xmult));
+		y1 = trans_coord.ytop - (trans_coord.ybot-trans_coord.ytop)*(mult-1)/2;
+		y2 = trans_coord.ybot + (trans_coord.ybot-trans_coord.ytop)*(mult-1)/2;
+		trans_coord.ytop = y1;
+		trans_coord.ybot = y2;
 	}
 	else {
-		mult = (float)(fabs(xmult/ymult));
-		x1 = xleft - (xright-xleft)*(mult-1)/2;
-		x2 = xright + (xright-xleft)*(mult-1)/2;
-		xleft = x1;
-		xright = x2;
+		mult = (float)(fabs(trans_coord.xmult/trans_coord.ymult));
+		x1 = trans_coord.xleft - (trans_coord.xright-trans_coord.xleft)*(mult-1)/2;
+		x2 = trans_coord.xright + (trans_coord.xright-trans_coord.xleft)*(mult-1)/2;
+		trans_coord.xleft = x1;
+		trans_coord.xright = x2;
 	}
-	xmult = (top_width - 1 - MWIDTH) / (xright - xleft);
-	ymult = (top_height - 1 - T_AREA_HEIGHT)/ (ybot - ytop);
+	diff = trans_coord.xright - trans_coord.xleft;
+	trans_coord.xmult = (trans_coord.top_width - 1 - MWIDTH) / diff;
+	diff = trans_coord.ybot - trans_coord.ytop;
+	trans_coord.ymult = (trans_coord.top_height - 1 - T_AREA_HEIGHT) / diff;
 
-	xdiv = 1/xmult;
-	ydiv = 1/ymult;
+	trans_coord.xdiv = 1/trans_coord.xmult;
+	trans_coord.ydiv = 1/trans_coord.ymult;
 }
 
 
@@ -1345,31 +1387,37 @@ update_ps_transform (void)
 * I'm leaving a minimum of half an inch (36 units) of border around    *
 	* each edge.                                                           */
 	
-	float ps_width, ps_height;
+	float mult, ps_width, ps_height;
 	
 	ps_width = 540.;    /* 72 * 7.5 */
 	ps_height = 720.;   /* 72 * 10  */
 	
-	ps_xmult = ps_width / (xright - xleft);
-	ps_ymult = ps_height / (ytop - ybot);
+	trans_coord.ps_xmult = ps_width / (trans_coord.xright - trans_coord.xleft);
+	trans_coord.ps_ymult = ps_height / (trans_coord.ytop - trans_coord.ybot);
 	/* Need to use same scaling factor to preserve aspect ratio.   *
 	* I show exactly as much on paper as the screen window shows, *
 	* or the user specifies.                                      */
-	if (fabs(ps_xmult) <= fabs(ps_ymult)) {  
-		ps_left = 36.;
-		ps_right = (float)(36. + ps_width);
-		ps_bot = (float)(396. - fabs(ps_xmult * (ytop - ybot))/2);
-		ps_top = (float)(396. + fabs(ps_xmult * (ytop - ybot))/2);
+	if (fabs(trans_coord.ps_xmult) <= fabs(trans_coord.ps_ymult)) {
+		trans_coord.ps_left = 36.;
+		trans_coord.ps_right = (float)(36. + ps_width);
+		mult = fabs(trans_coord.ps_xmult * (trans_coord.ytop - trans_coord.ybot));
+		trans_coord.ps_bot = (float)(396. - mult/2);
+		mult = fabs(trans_coord.ps_xmult * (trans_coord.ytop - trans_coord.ybot));
+		trans_coord.ps_top = (float)(396. + mult/2);
 		/* Maintain aspect ratio but watch signs */
-		ps_ymult = (ps_xmult*ps_ymult < 0) ? -ps_xmult : ps_xmult;
+		trans_coord.ps_ymult = (trans_coord.ps_xmult*trans_coord.ps_ymult < 0) ?
+									-trans_coord.ps_xmult : trans_coord.ps_xmult;
 	}
 	else {  
-		ps_bot = 36.;
-		ps_top = (float)(36. + ps_height);
-		ps_left = (float)(306. - fabs(ps_ymult * (xright - xleft))/2);
-		ps_right = (float)(306. + fabs(ps_ymult * (xright - xleft))/2);
+		trans_coord.ps_bot = 36.;
+		trans_coord.ps_top = (float)(36. + ps_height);
+		mult = fabs(trans_coord.ps_ymult * (trans_coord.xright - trans_coord.xleft));
+		trans_coord.ps_left = (float)(306. - mult/2);
+		mult = fabs(trans_coord.ps_ymult * (trans_coord.xright - trans_coord.xleft));
+		trans_coord.ps_right = (float)(306. + mult/2);
 		/* Maintain aspect ratio but watch signs */
-		ps_xmult = (ps_xmult*ps_ymult < 0) ? -ps_ymult : ps_ymult;
+		trans_coord.ps_xmult = (trans_coord.ps_xmult*trans_coord.ps_ymult < 0) ?
+									-trans_coord.ps_ymult : trans_coord.ps_ymult;
 	}
 }
 
@@ -1398,30 +1446,12 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 		XNextEvent (display, &report);
 		switch (report.type) {  
 		case Expose:
-#ifdef VERBOSE 
-			printf("Got an expose event.\n");
-			printf("Count is: %d.\n",report.xexpose.count);
-			printf("Window ID is: %ld.\n",report.xexpose.window);
-#endif
 			if (report.xexpose.count != 0)
 				break;
-			if (report.xexpose.window == menu)
-				drawmenu(); 
-			else if (report.xexpose.window == toplevel)
-				drawscreen();
-			else if (report.xexpose.window == textarea)
-				draw_message();
+			handle_expose(report, drawscreen);
 			break;
 		case ConfigureNotify:
-			top_width = report.xconfigure.width;
-			top_height = report.xconfigure.height;
-			update_transform();
-			drawmenu();
-			draw_message();
-#ifdef VERBOSE 
-			printf("Got a ConfigureNotify.\n");
-			printf("New width: %d  New height: %d.\n",top_width,top_height);
-#endif
+			handle_configure_notify(report);
 			break; 
 		case ButtonPress:
 #ifdef VERBOSE 
@@ -1432,8 +1462,8 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 			printf("Mask is: %d.\n",report.xbutton.state);
 #endif
 			if (report.xbutton.window == toplevel) {
-				x = XTOWORLD(report.xbutton.x);
-				y = YTOWORLD(report.xbutton.y); 
+				x = XSCRN2WORLD(report.xbutton.x);
+				y = YSCRN2WORLD(report.xbutton.y);
 
 				t_event_buttonPressed button_info; 
 				/* t_event_buttonPressed is used as a structure for storing information about a		*
@@ -1457,10 +1487,10 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 					panning_on(report.xbutton.x, report.xbutton.y);
 					break;
 				case Button4:  /* Scroll wheel rotated forward; screen does zoom_in */
-					zoom_in(drawscreen);
+					zoom_in_with_cursor(x, y, drawscreen);
 					break;
 				case Button5:  /* Scroll wheel rotated backward; screen does zoom_out */
-					zoom_out(drawscreen);
+					zoom_out_with_cursor(x, y, drawscreen);
 					break;
 				}
 			} 
@@ -1503,12 +1533,12 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 			printf("Got a MotionNotify Event.\n");
 			printf("x: %d    y: %d\n",report.xmotion.x,report.xmotion.y);
 #endif
-			if (panning_enabled)
+			if (pan_state.panning_enabled)
 				panning_execute(report.xmotion.x, report.xmotion.y, drawscreen);
 			else if (get_mouse_move_input &&
-			    report.xmotion.x <= top_width-MWIDTH &&
-			    report.xmotion.y <= top_height-T_AREA_HEIGHT) 
-				act_on_mousemove(XTOWORLD(report.xmotion.x), YTOWORLD(report.xmotion.y));
+			    report.xmotion.x <= trans_coord.top_width-MWIDTH &&
+			    report.xmotion.y <= trans_coord.top_height-T_AREA_HEIGHT)
+				act_on_mousemove(XSCRN2WORLD(report.xmotion.x), YSCRN2WORLD(report.xmotion.y));
 			break;
 		case KeyPress:
 #ifdef VERBOSE 
@@ -1566,7 +1596,8 @@ clearscreen (void)
 #else /* Win32 */
       savecolor = currentcolor;
       setcolor(gl_state.background_cindex);
-      fillrect (xleft, ytop, xright, ybot);
+      fillrect (trans_coord.xleft, trans_coord.ytop,
+    		  	  trans_coord.xright, trans_coord.ybot);
       setcolor(savecolor);
 #endif
    }
@@ -1593,19 +1624,19 @@ rect_off_screen (float x1, float y1, float x2, float y2)
 	
 	float xmin, xmax, ymin, ymax;
 	
-	xmin = min (xleft, xright);
+	xmin = min (trans_coord.xleft, trans_coord.xright);
 	if (x1 < xmin && x2 < xmin) 
 		return (1);
 	
-	xmax = max (xleft, xright);
+	xmax = max (trans_coord.xleft, trans_coord.xright);
 	if (x1 > xmax && x2 > xmax)
 		return (1);
 	
-	ymin = min (ytop, ybot);
+	ymin = min (trans_coord.ytop, trans_coord.ybot);
 	if (y1 < ymin && y2 < ymin)
 		return (1);
 	
-	ymax = max (ytop, ybot);
+	ymax = max (trans_coord.ytop, trans_coord.ybot);
 	if (y1 > ymax && y2 > ymax)
 		return (1);
 	
@@ -1818,26 +1849,26 @@ drawellipticarc (float xc, float yc, float radx, float rady, float startang, flo
 	startang = angnorm (startang);
 	
 	if (gl_state.disp_type == SCREEN) {
-		xl = (int) (xcoord(xc) - fabs(xmult*radx));
-		yt = (int) (ycoord(yc) - fabs(ymult*rady));
-		width = (unsigned int) (2*fabs(xmult*radx));
-		height = (unsigned int) (2*fabs(ymult*rady));
+		xl = (int) (xcoord(xc) - fabs(trans_coord.xmult*radx));
+		yt = (int) (ycoord(yc) - fabs(trans_coord.ymult*rady));
+		width = (unsigned int) (2*fabs(trans_coord.xmult*radx));
+		height = (unsigned int) (2*fabs(trans_coord.ymult*rady));
 #ifdef X11
 		XDrawArc (display, toplevel, current_gc, xl, yt, width, height,
 			(int) (startang*64), (int) (angextent*64));
 #else  // Win32
 		/* set arc direction */
 		if (angextent > 0) {
-			p1 = (int)(xcoord(xc) + fabs(xmult*radx)*cos(DEGTORAD(startang)));
-			p2 = (int)(ycoord(yc) - fabs(ymult*rady)*sin(DEGTORAD(startang)));
-			p3 = (int)(xcoord(xc) + fabs(xmult*radx)*cos(DEGTORAD(startang+angextent-.001)));
-			p4 = (int)(ycoord(yc) - fabs(ymult*rady)*sin(DEGTORAD(startang+angextent-.001)));
+			p1 = (int)(xcoord(xc) + fabs(trans_coord.xmult*radx)*cos(DEGTORAD(startang)));
+			p2 = (int)(ycoord(yc) - fabs(trans_coord.ymult*rady)*sin(DEGTORAD(startang)));
+			p3 = (int)(xcoord(xc) + fabs(trans_coord.xmult*radx)*cos(DEGTORAD(startang+angextent-.001)));
+			p4 = (int)(ycoord(yc) - fabs(trans_coord.ymult*rady)*sin(DEGTORAD(startang+angextent-.001)));
 		}
 		else {
-			p1 = (int)(xcoord(xc) + fabs(xmult*radx)*cos(DEGTORAD(startang+angextent+.001)));
-			p2 = (int)(ycoord(yc) - fabs(ymult*rady)*sin(DEGTORAD(startang+angextent+.001)));
-			p3 = (int)(xcoord(xc) + fabs(xmult*radx)*cos(DEGTORAD(startang)));
-			p4 = (int)(ycoord(yc) - fabs(ymult*rady)*sin(DEGTORAD(startang)));
+			p1 = (int)(xcoord(xc) + fabs(trans_coord.xmult*radx)*cos(DEGTORAD(startang+angextent+.001)));
+			p2 = (int)(ycoord(yc) - fabs(trans_coord.ymult*rady)*sin(DEGTORAD(startang+angextent+.001)));
+			p3 = (int)(xcoord(xc) + fabs(trans_coord.xmult*radx)*cos(DEGTORAD(startang)));
+			p4 = (int)(ycoord(yc) - fabs(trans_coord.ymult*rady)*sin(DEGTORAD(startang)));
 		}
 		
 		hOldPen = (HPEN)SelectObject(hGraphicsDC, hGraphicsPen);
@@ -1852,10 +1883,11 @@ drawellipticarc (float xc, float yc, float radx, float rady, float startang, flo
 	else {
 		fprintf(ps, "gsave\n");
 		fprintf(ps, "%.2f %.2f translate\n", XPOST(xc), YPOST(yc));
-		fprintf(ps, "%.2f 1 scale\n", fabs(radx*ps_xmult)/fabs(rady*ps_ymult));
+		fprintf(ps, "%.2f 1 scale\n",
+					fabs(radx*trans_coord.ps_xmult)/fabs(rady*trans_coord.ps_ymult));
 		fprintf(ps, "0 0 %.2f %.2f %.2f %s\n", /*XPOST(xc)*/ 
-			/*YPOST(yc)*/ fabs(rady*ps_xmult), startang, startang+angextent, 
-			(angextent < 0) ? "drawarcn" : "drawarc") ;
+					/*YPOST(yc)*/ fabs(rady*trans_coord.ps_xmult), startang,
+					startang+angextent,	(angextent < 0) ? "drawarcn" : "drawarc") ;
 		fprintf(ps, "grestore\n");
 	}
 }
@@ -1900,26 +1932,26 @@ fillellipticarc (float xc, float yc, float radx, float rady, float startang,
 	startang = angnorm (startang);
 	
 	if (gl_state.disp_type == SCREEN) {
-		xl = (int) (xcoord(xc) - fabs(xmult*radx));
-		yt = (int) (ycoord(yc) - fabs(ymult*rady));
-		width = (unsigned int) (2*fabs(xmult*radx));
-		height = (unsigned int) (2*fabs(ymult*rady));
+		xl = (int) (xcoord(xc) - fabs(trans_coord.xmult*radx));
+		yt = (int) (ycoord(yc) - fabs(trans_coord.ymult*rady));
+		width = (unsigned int) (2*fabs(trans_coord.xmult*radx));
+		height = (unsigned int) (2*fabs(trans_coord.ymult*rady));
 #ifdef X11
 		XFillArc (display, toplevel, current_gc, xl, yt, width, height,
 			(int) (startang*64), (int) (angextent*64));
 #else  // Win32
 		/* set pie direction */
 		if (angextent > 0) {
-			p1 = (int)(xcoord(xc) + fabs(xmult*radx)*cos(DEGTORAD(startang)));
-			p2 = (int)(ycoord(yc) - fabs(ymult*rady)*sin(DEGTORAD(startang)));
-			p3 = (int)(xcoord(xc) + fabs(xmult*radx)*cos(DEGTORAD(startang+angextent-.001)));
-			p4 = (int)(ycoord(yc) - fabs(ymult*rady)*sin(DEGTORAD(startang+angextent-.001)));
+			p1 = (int)(xcoord(xc) + fabs(trans_coord.xmult*radx)*cos(DEGTORAD(startang)));
+			p2 = (int)(ycoord(yc) - fabs(trans_coord.ymult*rady)*sin(DEGTORAD(startang)));
+			p3 = (int)(xcoord(xc) + fabs(trans_coord.xmult*radx)*cos(DEGTORAD(startang+angextent-.001)));
+			p4 = (int)(ycoord(yc) - fabs(trans_coord.ymult*rady)*sin(DEGTORAD(startang+angextent-.001)));
 		}
 		else {
-			p1 = (int)(xcoord(xc) + fabs(xmult*radx)*cos(DEGTORAD(startang+angextent+.001)));
-			p2 = (int)(ycoord(yc) - fabs(ymult*rady)*sin(DEGTORAD(startang+angextent+.001)));
-			p3 = (int)(xcoord(xc) + fabs(xmult*radx)*cos(DEGTORAD(startang)));
-			p4 = (int)(ycoord(yc) - fabs(ymult*rady)*sin(DEGTORAD(startang)));
+			p1 = (int)(xcoord(xc) + fabs(trans_coord.xmult*radx)*cos(DEGTORAD(startang+angextent+.001)));
+			p2 = (int)(ycoord(yc) - fabs(trans_coord.ymult*rady)*sin(DEGTORAD(startang+angextent+.001)));
+			p3 = (int)(xcoord(xc) + fabs(trans_coord.xmult*radx)*cos(DEGTORAD(startang)));
+			p4 = (int)(ycoord(yc) - fabs(trans_coord.ymult*rady)*sin(DEGTORAD(startang)));
 		}
 	
 		hOldPen = (HPEN)SelectObject(hGraphicsDC, GetStockObject(NULL_PEN));
@@ -1943,10 +1975,11 @@ fillellipticarc (float xc, float yc, float radx, float rady, float startang,
 	else {
 		fprintf(ps, "gsave\n");
 		fprintf(ps, "%.2f %.2f translate\n", XPOST(xc), YPOST(yc));
-		fprintf(ps, "%.2f 1 scale\n", fabs(radx*ps_xmult)/fabs(rady*ps_ymult));
+		fprintf(ps, "%.2f 1 scale\n",
+					fabs(radx*trans_coord.ps_xmult)/fabs(rady*trans_coord.ps_ymult));
 		fprintf(ps, "%.2f %.2f %.2f 0 0 %s\n", /*XPOST(xc)*/ 
-			/*YPOST(yc)*/ fabs(rady*ps_xmult), startang, startang+angextent, 
-			(angextent < 0) ? "fillarcn" : "fillarc") ;
+					/*YPOST(yc)*/ fabs(rady*trans_coord.ps_xmult), startang,
+					startang+angextent, (angextent < 0) ? "fillarcn" : "fillarc") ;
 		fprintf(ps, "grestore\n");
 	}
 }
@@ -2059,7 +2092,7 @@ drawtext (float xc, float yc, const char *text, float boundx)
 	font_ascent = textmetric.tmAscent;
 	font_descent = textmetric.tmDescent;
 #endif	
-	if (width > fabs(boundx*xmult)) {
+	if (width > fabs(boundx*trans_coord.xmult)) {
 #ifdef WIN32
 		if(!SelectObject(hGraphicsDC, hOldFont))
 			SELECT_ERROR();
@@ -2067,10 +2100,10 @@ drawtext (float xc, float yc, const char *text, float boundx)
 		return; /* Don't draw if it won't fit */
 	}
 	
-	xw_off = (int)(width/(2.*xmult));      /* NB:  sign doesn't matter. */
+	xw_off = (int)(width/(2.*trans_coord.xmult));      /* NB:  sign doesn't matter. */
 	
 	/* NB:  2 * descent makes this slightly conservative but simplifies code. */
-	yw_off = (int)((font_ascent + 2 * font_descent)/(2.*ymult)); 
+	yw_off = (int)((font_ascent + 2 * font_descent)/(2.*trans_coord.ymult));
 	
 	/* Note:  text can be clipped when a little bit of it would be visible *
 	* right now.  Perhaps X doesn't return extremely accurate width and   *
@@ -2120,15 +2153,18 @@ init_world (float x1, float y1, float x2, float y2)
 {
 	/* Sets the coordinate system the user wants to draw into.          */
 	
-	xleft = x1;
-	xright = x2;
-	ytop = y1;
-	ybot = y2;
+	trans_coord.xleft = x1;
+	trans_coord.xright = x2;
+	trans_coord.ytop = y1;
+	trans_coord.ybot = y2;
 	
-	saved_xleft = xleft;     /* Save initial world coordinates to allow full */
-	saved_xright = xright;   /* view button to zoom all the way out.         */
-	saved_ytop = ytop;
-	saved_ybot = ybot;
+	/* Save initial world coordinates to allow full view button
+	 * to zoom all the way out.
+	 */
+	trans_coord.saved_xleft = trans_coord.xleft;
+	trans_coord.saved_xright = trans_coord.xright;
+	trans_coord.saved_ytop = trans_coord.ytop;
+	trans_coord.saved_ybot = trans_coord.ybot;
 	
 	if (gl_state.disp_type == SCREEN) {
 		update_transform();
@@ -2155,13 +2191,16 @@ draw_message (void)
 		len = strlen (statusMessage);
 		width = XTextWidth(font_info[menu_font_size], statusMessage, len);
 		XSetForeground(display, gc_menus,colors[WHITE]);
-		XDrawRectangle(display, textarea, gc_menus, 0, 0, top_width - MWIDTH, T_AREA_HEIGHT);
+		XDrawRectangle(display, textarea, gc_menus, 0, 0,
+						trans_coord.top_width - MWIDTH, T_AREA_HEIGHT);
 		XSetForeground(display, gc_menus,colors[BLACK]);
-		XDrawLine(display, textarea, gc_menus, 0, T_AREA_HEIGHT-1, top_width-MWIDTH, T_AREA_HEIGHT-1);
-		XDrawLine(display, textarea, gc_menus, top_width-MWIDTH-1, 0, top_width-MWIDTH-1, T_AREA_HEIGHT-1);
+		XDrawLine(display, textarea, gc_menus, 0, T_AREA_HEIGHT-1,
+					trans_coord.top_width-MWIDTH, T_AREA_HEIGHT-1);
+		XDrawLine(display, textarea, gc_menus, trans_coord.top_width-MWIDTH-1,
+					0, trans_coord.top_width-MWIDTH-1, T_AREA_HEIGHT-1);
 		
 		XDrawString(display, textarea, gc_menus, 
-			(top_width - MWIDTH - width)/2, 
+			(trans_coord.top_width - MWIDTH - width)/2,
 			T_AREA_HEIGHT/2 + (font_info[menu_font_size]->ascent - 
 			font_info[menu_font_size]->descent)/2, statusMessage, len);
 #else
@@ -2180,9 +2219,9 @@ draw_message (void)
 		setcolor (BLACK);
 		savefontsize = currentfontsize;
 		setfontsize (menu_font_size - 2);  /* Smaller OK on paper */
-		ylow = ps_bot - 8; 
-		fprintf(ps,"(%s) %.2f %.2f censhow\n",statusMessage,(ps_left+ps_right)/2.,
-			ylow);
+		ylow = trans_coord.ps_bot - 8;
+		fprintf(ps,"(%s) %.2f %.2f censhow\n",statusMessage,
+					(trans_coord.ps_left+trans_coord.ps_right)/2., ylow);
 		setcolor (savecolor);
 		setfontsize (savefontsize);
 	}
@@ -2202,37 +2241,72 @@ update_message (const char *msg)
 }
 
 
-/* Zooms in by a factor of 1.666. */
+/* Zooms in by a factor of 1.666,
+ * with center of graphics area as focus. */
 static void 
 zoom_in (void (*drawscreen) (void)) 
 {
 	float xdiff, ydiff;
 	
-	xdiff = xright - xleft; 
-	ydiff = ybot - ytop;
-	xleft += xdiff/5;
-	xright -= xdiff/5;
-	ytop += ydiff/5;
-	ybot -= ydiff/5;
+	xdiff = trans_coord.xright - trans_coord.xleft;
+	ydiff = trans_coord.ybot - trans_coord.ytop;
+	trans_coord.xleft += xdiff/5;
+	trans_coord.xright -= xdiff/5;
+	trans_coord.ytop += ydiff/5;
+	trans_coord.ybot -= ydiff/5;
 	
 	update_transform ();
 	drawscreen();
 }
 
 
-/* Zooms out by a factor of 1.666. */
+/* Zooms out by a factor of 1.666,
+ * with center of graphics area as focus.
+ */
 static void 
 zoom_out (void (*drawscreen) (void)) 
 {
 	float xdiff, ydiff;
 	
-	xdiff = xright - xleft; 
-	ydiff = ybot - ytop;
-	xleft -= xdiff/3;
-	xright += xdiff/3;
-	ytop -= ydiff/3;
-	ybot += ydiff/3;
+	xdiff = trans_coord.xright - trans_coord.xleft;
+	ydiff = trans_coord.ybot - trans_coord.ytop;
+	trans_coord.xleft -= xdiff/3;
+	trans_coord.xright += xdiff/3;
+	trans_coord.ytop -= ydiff/3;
+	trans_coord.ybot += ydiff/3;
 	
+	update_transform ();
+	drawscreen();
+}
+
+
+/* Zooms in by a factor of 1.666,
+ * except with cursor as the focus.
+ */
+static void
+zoom_in_with_cursor (float x, float y, void (*drawscreen) (void))
+{
+	trans_coord.xleft += (x-trans_coord.xleft)/5*2;
+	trans_coord.xright -= (trans_coord.xright-x)/5*2;
+	trans_coord.ytop += (y-trans_coord.ytop)/5*2;
+	trans_coord.ybot -= (trans_coord.ybot -y)/5*2;
+
+	update_transform ();
+	drawscreen();
+}
+
+
+/* Zooms out by a factor of 1.666,
+ * except with cursor as the focus.
+ */
+static void
+zoom_out_with_cursor (float x, float y, void (*drawscreen) (void))
+{
+	trans_coord.xleft -= (x-trans_coord.xleft)/3*2;
+	trans_coord.xright += (trans_coord.xright-x)/3*2;
+	trans_coord.ytop -= (y-trans_coord.ytop)/3*2;
+	trans_coord.ybot += (trans_coord.ybot -y)/3*2;
+
 	update_transform ();
 	drawscreen();
 }
@@ -2243,10 +2317,10 @@ zoom_out (void (*drawscreen) (void))
 static void 
 zoom_fit (void (*drawscreen) (void)) 
 {
-	xleft = saved_xleft;
-	xright = saved_xright;
-	ytop = saved_ytop;
-	ybot = saved_ybot;
+	trans_coord.xleft = trans_coord.saved_xleft;
+	trans_coord.xright = trans_coord.saved_xright;
+	trans_coord.ytop = trans_coord.saved_ytop;
+	trans_coord.ybot = trans_coord.saved_ybot;
 	
 	update_transform ();
 	drawscreen();
@@ -2259,9 +2333,9 @@ translate_up (void (*drawscreen) (void))
 {
 	float ystep;
 	
-	ystep = (ybot - ytop)/2;
-	ytop -= ystep;
-	ybot -= ystep;
+	ystep = (trans_coord.ybot - trans_coord.ytop)/2;
+	trans_coord.ytop -= ystep;
+	trans_coord.ybot -= ystep;
 	update_transform();         
 	drawscreen();
 }
@@ -2273,9 +2347,9 @@ translate_down (void (*drawscreen) (void))
 {
 	float ystep;
 	
-	ystep = (ybot - ytop)/2;
-	ytop += ystep;
-	ybot += ystep;
+	ystep = (trans_coord.ybot - trans_coord.ytop)/2;
+	trans_coord.ytop += ystep;
+	trans_coord.ybot += ystep;
 	update_transform();         
 	drawscreen();
 }
@@ -2288,9 +2362,9 @@ translate_left (void (*drawscreen) (void))
 	
 	float xstep;
 	
-	xstep = (xright - xleft)/2;
-	xleft -= xstep;
-	xright -= xstep; 
+	xstep = (trans_coord.xright - trans_coord.xleft)/2;
+	trans_coord.xleft -= xstep;
+	trans_coord.xright -= xstep;
 	update_transform();         
 	drawscreen();
 }
@@ -2302,9 +2376,9 @@ translate_right (void (*drawscreen) (void))
 {
 	float xstep;
 	
-	xstep = (xright - xleft)/2;
-	xleft += xstep;
-	xright += xstep; 
+	xstep = (trans_coord.xright - trans_coord.xleft)/2;
+	trans_coord.xleft += xstep;
+	trans_coord.xright += xstep;
 	update_transform();         
 	drawscreen();
 }
@@ -2318,18 +2392,18 @@ panning_execute (int x, int y, void (*drawscreen) (void))
 {
 	float x_change_world, y_change_world;
 
-   x_change_world = XTOWORLD (x) - XTOWORLD (previous_x);
-   y_change_world = YTOWORLD (y) - YTOWORLD (previous_y);
-   xleft -= x_change_world;
-   xright -= x_change_world;
-   ybot -= y_change_world;
-   ytop -= y_change_world;
+   x_change_world = XSCRN2WORLD (x) - XSCRN2WORLD (pan_state.previous_x);
+   y_change_world = YSCRN2WORLD (y) - YSCRN2WORLD (pan_state.previous_y);
+   trans_coord.xleft -= x_change_world;
+   trans_coord.xright -= x_change_world;
+   trans_coord.ybot -= y_change_world;
+   trans_coord.ytop -= y_change_world;
 
 	update_transform();
 	drawscreen();
 
-	previous_x = x;
-	previous_y = y;
+	pan_state.previous_x = x;
+	pan_state.previous_y = y;
 }
 
 
@@ -2337,9 +2411,9 @@ panning_execute (int x, int y, void (*drawscreen) (void))
 static void
 panning_on (int start_x, int start_y)
 {
-		previous_x = start_x;
-		previous_y = start_y;
-		panning_enabled = true;
+		pan_state.previous_x = start_x;
+		pan_state.previous_y = start_y;
+		pan_state.panning_enabled = true;
 }
 
 
@@ -2347,7 +2421,7 @@ panning_on (int start_x, int start_y)
 static void
 panning_off (void)
 {
-		panning_enabled = false;
+		pan_state.panning_enabled = false;
 }
 
 
@@ -2359,23 +2433,23 @@ update_win (int x[2], int y[2], void (*drawscreen)(void))
 {
 	float x1, x2, y1, y2;
 	
-	x[0] = min(x[0],top_width-MWIDTH);  /* Can't go under menu */
-	x[1] = min(x[1],top_width-MWIDTH);
-	y[0] = min(y[0],top_height-T_AREA_HEIGHT); /* Can't go under text area */
-	y[1] = min(y[1],top_height-T_AREA_HEIGHT);
+	x[0] = min(x[0],trans_coord.top_width-MWIDTH);  /* Can't go under menu */
+	x[1] = min(x[1],trans_coord.top_width-MWIDTH);
+	y[0] = min(y[0],trans_coord.top_height-T_AREA_HEIGHT); /* Can't go under text area */
+	y[1] = min(y[1],trans_coord.top_height-T_AREA_HEIGHT);
 	
 	if ((x[0] == x[1]) || (y[0] == y[1])) {
 		printf("Illegal (zero area) window.  Window unchanged.\n");
 		return;
 	}
-	x1 = XTOWORLD(min(x[0],x[1]));
-	x2 = XTOWORLD(max(x[0],x[1]));
-	y1 = YTOWORLD(min(y[0],y[1]));
-	y2 = YTOWORLD(max(y[0],y[1]));
-	xleft = x1;
-	xright = x2;
-	ytop = y1;
-	ybot = y2;
+	x1 = XSCRN2WORLD(min(x[0],x[1]));
+	x2 = XSCRN2WORLD(max(x[0],x[1]));
+	y1 = YSCRN2WORLD(min(y[0],y[1]));
+	y2 = YSCRN2WORLD(max(y[0],y[1]));
+	trans_coord.xleft = x1;
+	trans_coord.xright = x2;
+	trans_coord.ytop = y1;
+	trans_coord.ybot = y2;
 	update_transform();
 	drawscreen();
 }
@@ -2399,32 +2473,15 @@ adjustwin (void (*drawscreen) (void))
 		XNextEvent (display, &report);
 		switch (report.type) {
 		case Expose:
-#ifdef VERBOSE 
-			printf("Got an expose event.\n");
-			printf("Count is: %d.\n",report.xexpose.count);
-			printf("Window ID is: %ld.\n",report.xexpose.window);
-#endif
 			if (report.xexpose.count != 0)
 				break;
-			if (report.xexpose.window == menu)
-				drawmenu(); 
-			else if (report.xexpose.window == toplevel) {
-				drawscreen();
+			handle_expose(report, drawscreen);
+			if (report.xexpose.window == toplevel) {
 				xold = -1;   /* No rubber band on screen */
 			}
-			else if (report.xexpose.window == textarea)
-				draw_message();
 			break;
 		case ConfigureNotify:
-			top_width = report.xconfigure.width;
-			top_height = report.xconfigure.height;
-			update_transform();
-			drawmenu();
-			draw_message();
-#ifdef VERBOSE 
-			printf("Got a ConfigureNotify.\n");
-			printf("New width: %d  New height: %d.\n",top_width,top_height);
-#endif
+			handle_configure_notify(report);
 			break;
 		case ButtonPress:
 #ifdef VERBOSE 
@@ -2459,7 +2516,7 @@ adjustwin (void (*drawscreen) (void))
 					set_draw_mode(DRAW_NORMAL);
 				}
 				/* Don't allow user to window under menu region */
-				xold = min(report.xmotion.x,top_width-1-MWIDTH); 
+				xold = min(report.xmotion.x,trans_coord.top_width-1-MWIDTH);
 				yold = report.xmotion.y;
 				set_draw_mode(DRAW_XOR);
 
@@ -2618,7 +2675,8 @@ int init_postscript (const char *fname)
 	update_ps_transform();
 	/* Bottom margin is at ps_bot - 15. to leave room for the on-screen message. */
 	fprintf(ps,"%%%%HiResBoundingBox: %.2f %.2f %.2f %.2f\n",
-		ps_left, ps_bot - 15., ps_right, ps_top); 
+				trans_coord.ps_left, trans_coord.ps_bot - 15.,
+				trans_coord.ps_right, trans_coord.ps_top);
 	fprintf(ps,"%%%%EndComments\n");
 	
 	fprintf(ps,"/censhow   %%draw a centered string\n");
@@ -2717,7 +2775,8 @@ int init_postscript (const char *fname)
 	draw_message ();
 	
 	/* Set clipping on page. */
-	fprintf(ps,"%.2f %.2f %.2f %.2f rect ",ps_left, ps_bot,ps_right,ps_top);
+	fprintf(ps,"%.2f %.2f %.2f %.2f rect ",trans_coord.ps_left, trans_coord.ps_bot,
+				trans_coord.ps_right, trans_coord.ps_top);
 	fprintf(ps,"clip newpath\n\n");
 	
 	return (1);
@@ -2760,9 +2819,8 @@ build_default_menu (void)
 	unsigned long valuemask;
 	XSetWindowAttributes menu_attributes;
 	
-	menu = XCreateSimpleWindow(display,toplevel,
-		top_width-MWIDTH, 0, MWIDTH, display_height, 0,
-		colors[BLACK], colors[LIGHTGREY]); 
+	menu = XCreateSimpleWindow(display,toplevel, trans_coord.top_width-MWIDTH, 0,
+				MWIDTH, display_height, 0, colors[BLACK], colors[LIGHTGREY]);
 	menu_attributes.event_mask = ExposureMask;
 	/* Ignore button presses on the menu background. */
 	menu_attributes.do_not_propagate_mask = ButtonPressMask;
@@ -2966,16 +3024,16 @@ load_font(int pointsize)
  * that object (mainwnd) from this structure.
  */
 void report_structure(t_report *report) {
-	report->xmult = xmult;
-	report->ymult = ymult;
-	report->xleft = xleft;
-	report->xright = xright;
-	report->ytop = ytop;
-	report->ybot = ybot;
-	report->ps_xmult = ps_xmult;
-	report->ps_ymult = ps_ymult;
-	report->top_width = top_width;
-	report->top_height = top_height;
+	report->xmult = trans_coord.xmult;
+	report->ymult = trans_coord.ymult;
+	report->xleft = trans_coord.xleft;
+	report->xright = trans_coord.xright;
+	report->ytop = trans_coord.ytop;
+	report->ybot = trans_coord.ybot;
+	report->ps_xmult = trans_coord.ps_xmult;
+	report->ps_ymult = trans_coord.ps_ymult;
+	report->top_width = trans_coord.top_width;
+	report->top_height = trans_coord.top_height;
 }
 
 
@@ -3069,9 +3127,9 @@ static void build_textarea (void)
 	XSetWindowAttributes menu_attributes;
 	unsigned long valuemask;
 	
-	textarea = XCreateSimpleWindow(display,toplevel,
-		0, top_height-T_AREA_HEIGHT, display_width-MWIDTH, T_AREA_HEIGHT, 0,
-		colors[BLACK], colors[LIGHTGREY]); 
+	textarea = XCreateSimpleWindow(display,toplevel, 0,
+			   	   trans_coord.top_height-T_AREA_HEIGHT, display_width-MWIDTH,
+			   	   T_AREA_HEIGHT, 0, colors[BLACK], colors[LIGHTGREY]);
 	menu_attributes.event_mask = ExposureMask;
 	/* ButtonPresses in this area are ignored. */
 	menu_attributes.do_not_propagate_mask = ButtonPressMask;
@@ -3254,14 +3312,45 @@ static void drawmenu(void)
 
 	XClearWindow (display, menu);
 	XSetForeground(display, gc_menus,colors[WHITE]);
-	XDrawRectangle(display, menu, gc_menus, 0, 0, MWIDTH, top_height);
+	XDrawRectangle(display, menu, gc_menus, 0, 0, MWIDTH, trans_coord.top_height);
 	XSetForeground(display, gc_menus,colors[BLACK]);
-	XDrawLine(display, menu, gc_menus, 0, top_height-1, MWIDTH, top_height-1);
-	XDrawLine(display, menu, gc_menus, MWIDTH-1, top_height, MWIDTH-1, 0);
+	XDrawLine(display, menu, gc_menus, 0, trans_coord.top_height-1, MWIDTH,
+				trans_coord.top_height-1);
+	XDrawLine(display, menu, gc_menus, MWIDTH-1, trans_coord.top_height, MWIDTH-1, 0);
 	
 	for (i=0;i<num_buttons;i++)  {
 		drawbut(i);
 	}
+}
+
+
+static void handle_expose(XEvent report, void (*drawscreen) (void))
+{
+#ifdef VERBOSE
+	printf("Got an expose event.\n");
+	printf("Count is: %d.\n",report.xexpose.count);
+	printf("Window ID is: %ld.\n",report.xexpose.window);
+#endif
+	if (report.xexpose.window == menu)
+		drawmenu();
+	else if (report.xexpose.window == toplevel)
+		drawscreen();
+	else if (report.xexpose.window == textarea)
+		draw_message();
+}
+
+
+static void handle_configure_notify(XEvent report)
+{
+	trans_coord.top_width = report.xconfigure.width;
+	trans_coord.top_height = report.xconfigure.height;
+	update_transform();
+	drawmenu();
+	draw_message();
+#ifdef VERBOSE
+	printf("Got a ConfigureNotify.\n");
+	printf("New width: %d  New height: %d.\n",trans_coord.top_width,trans_coord.top_height);
+#endif
 }
 
 
@@ -3309,17 +3398,20 @@ MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		
 	case WM_SIZE:
 		/* Window has been resized.  Save the new client dimensions */
-		top_width = LOWORD (lParam);
-		top_height = HIWORD (lParam);
+		trans_coord.top_width = LOWORD (lParam);
+		trans_coord.top_height = HIWORD (lParam);
 		
 		/* Resize the children windows */
-		if(!MoveWindow(hGraphicsWnd, 1, 1, top_width - MWIDTH - 1, top_height - T_AREA_HEIGHT - 1, TRUE))
+		if(!MoveWindow(hGraphicsWnd, 1, 1, trans_coord.top_width - MWIDTH - 1,
+								trans_coord.top_height - T_AREA_HEIGHT - 1, TRUE))
 			DRAW_ERROR();
 //		if (drawscreen_ptr)
 //			zoom_fit(drawscreen_ptr);
-		if(!MoveWindow(hStatusWnd, 0, top_height - T_AREA_HEIGHT, top_width - MWIDTH, T_AREA_HEIGHT, TRUE))
+		if(!MoveWindow(hStatusWnd, 0, trans_coord.top_height - T_AREA_HEIGHT,
+								trans_coord.top_width - MWIDTH, T_AREA_HEIGHT, TRUE))
 			DRAW_ERROR();
-		if(!MoveWindow(hButtonsWnd, top_width - MWIDTH, 0, MWIDTH, top_height, TRUE))
+		if(!MoveWindow(hButtonsWnd, trans_coord.top_width - MWIDTH, 0, MWIDTH,
+								trans_coord.top_height, TRUE))
 			DRAW_ERROR();
 		
 		return 0;
@@ -3362,14 +3454,21 @@ MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (roll_detent <0)
 			roll_detent *= -1;
 
+		// get x- and y- coordinates of the cursor. Do not use LOWORD or HIWORD macros
+		// to extract the coordinates because these macros can return incorrect results
+		// on systems with multiple monitors.
+		int xPos, yPos;
+		xPos = GET_X_LPARAM(lParam);
+		yPos = GET_Y_LPARAM(lParam);
+
 		int i;
 		for (i=0; i<roll_detent; i++) {
 			// Positive value for zDelta indicates that the wheel was rotated forward, which
 			// will trigger zoom_in. Otherwise, zoom_out is called.
 			if (zDelta > 0)
-				zoom_in(drawscreen_ptr);
+				zoom_in_with_cursor(XSCRN2WORLD(xPos), YSCRN2WORLD(yPos), drawscreen_ptr);
 			else
-				zoom_out(drawscreen_ptr);
+				zoom_out_with_cursor(XSCRN2WORLD(xPos), YSCRN2WORLD(yPos), drawscreen_ptr);
 		}
 		return 0;
 	}
@@ -3468,9 +3567,9 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (InEventLoop) {
 			if(!GetUpdateRect(hwnd, &updateRect, FALSE)) {
 				updateRect.left = 0;
-				updateRect.right = top_width;
+				updateRect.right = trans_coord.top_width;
 				updateRect.top = 0;
-				updateRect.bottom = top_height;
+				updateRect.bottom = trans_coord.top_height;
 			}
 			
 			if(windowAdjustFlag > 1) {
@@ -3555,7 +3654,7 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				printf("Ctrl is pressed at button press.\n");
 #endif
 
-			mouseclick_ptr(XTOWORLD(LOWORD(lParam)), YTOWORLD(HIWORD(lParam)), button_info);
+			mouseclick_ptr(XSCRN2WORLD(LOWORD(lParam)), YSCRN2WORLD(HIWORD(lParam)), button_info);
 		} 
       else {
          // Special handling for the "Window" command, which takes multiple clicks. 
@@ -3693,7 +3792,7 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			
 			return 0;
 		}
-		else if (panning_enabled) {
+		else if (pan_state.panning_enabled) {
 				// get x- and y- coordinates of the cursor. Do not use LOWORD or HIWORD macros 
 				// to extract the coordinates because these macros can return incorrect results
 				// on systems with multiple monitors.
@@ -3704,7 +3803,7 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				panning_execute(xPos, yPos, drawscreen_ptr);
 		} 
 		else if (get_mouse_move_input) 
-				mousemove_ptr(XTOWORLD(LOWORD(lParam)), YTOWORLD(HIWORD(lParam)));
+				mousemove_ptr(XSCRN2WORLD(LOWORD(lParam)), YSCRN2WORLD(HIWORD(lParam)));
 		return 0;
 	}
 	
@@ -3967,9 +4066,10 @@ void drawtoscreen(void) {
 
 
 void displaybuffer(void) {
-    if (!BitBlt(hForegroundDC, xcoord(xleft), ycoord(ytop), 
-		xcoord(xright)-xcoord(xleft), ycoord(ybot)-ycoord(ytop), hBackgroundDC,//hAllObjtestDC,
-		0, 0, SRCCOPY))
+    if (!BitBlt(hForegroundDC, xcoord(trans_coord.xleft),
+    	ycoord(trans_coord.ytop), xcoord(trans_coord.xright)-xcoord(trans_coord.xleft),
+    	ycoord(trans_coord.ybot)-ycoord(trans_coord.ytop), hBackgroundDC,/*hAllObjtestDC,*/
+    	0, 0, SRCCOPY))
 		DRAW_ERROR();
 }
 
@@ -4089,7 +4189,8 @@ void object_start(int all) {
 	else
 		hGraphicsDC = hObjtestDC;
 	setcolor(WHITE);
-	fillrect (xleft, ytop, xright, ybot);
+	fillrect (trans_coord.xleft, trans_coord.ytop,
+				trans_coord.xright, trans_coord.ybot);
 	setcolor(BLACK);
 }
 
@@ -4130,7 +4231,7 @@ static int check_fontsize(int pointsize,
 
 	if (!GetTextMetrics(hGraphicsDC, &textmetric))
 		DRAW_ERROR();
-	height = (textmetric.tmAscent + 2 * textmetric.tmDescent) / ymult;
+	height = (textmetric.tmAscent + 2 * textmetric.tmDescent) / trans_coord.ymult;
 
 	if (height >= ymax * 0.9) {
 		if (height <= ymax)
