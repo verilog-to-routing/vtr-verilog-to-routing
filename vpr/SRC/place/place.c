@@ -542,6 +542,8 @@ void try_place(struct s_placer_opts placer_opts,
 		cost, bb_cost, timing_cost, delay_cost, width_fac);
 	update_screen(MAJOR, msg, PLACEMENT, FALSE);
 
+
+	/* Outer loop of the simmulated annealing begins */
 	while (exit_crit(t, cost, annealing_sched) == 0) {
 
 		if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
@@ -590,14 +592,14 @@ void try_place(struct s_placer_opts placer_opts,
 
 		inner_crit_iter_count = 1;
 
+		/* Inner loop begins */
 		for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
 			swap_result = try_swap(t, &cost, &bb_cost, &timing_cost, rlim,
-					old_region_occ_x,
-					old_region_occ_y, 
+					old_region_occ_x, old_region_occ_y, 
 					placer_opts.place_algorithm, placer_opts.timing_tradeoff,
 					inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost);
-			if (swap_result == ACCEPTED) {
 
+			if (swap_result == ACCEPTED) {
 				/* Move was accepted.  Update statistics that are useful for the annealing schedule. */
 				success_sum++;
 				av_cost += cost;
@@ -614,8 +616,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 
 			if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
-					|| placer_opts.place_algorithm
-							== PATH_TIMING_DRIVEN_PLACE) {
+				|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 
 				/* Do we want to re-timing analyze the circuit to get updated slack and criticality values? 
 				 * We do this only once in a while, since it is expensive.
@@ -655,6 +656,7 @@ void try_place(struct s_placer_opts placer_opts,
 				exit(1);
 #endif
 		}
+		/* Inner loop ends */
 
 		/* Lines below prevent too much round-off error from accumulating *
 		 * in the cost over many iterations.  This round-off can lead to  *
@@ -735,6 +737,7 @@ void try_place(struct s_placer_opts placer_opts,
 		}
 #endif
 	}
+	/* Outer loop of the simmulated annealing ends */
 
 	t = 0; /* freeze out */
 	av_cost = 0.;
@@ -776,6 +779,8 @@ void try_place(struct s_placer_opts placer_opts,
 
 	inner_crit_iter_count = 1;
 
+	/* Run inner loop again with temperature = 0 so as to accept only swaps
+	 * which reduce the cost of the placement */
 	for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
 		swap_result = try_swap(t, &cost, &bb_cost, &timing_cost, rlim,
 				old_region_occ_x, old_region_occ_y,
@@ -791,8 +796,7 @@ void try_place(struct s_placer_opts placer_opts,
 			sum_of_squares += cost * cost;
 
 			if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
-					|| placer_opts.place_algorithm
-							== PATH_TIMING_DRIVEN_PLACE) {
+				|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 
 				if (inner_crit_iter_count >= inner_recompute_limit
 						&& inner_iter != move_lim - 1) {
