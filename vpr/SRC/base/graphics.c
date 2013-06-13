@@ -205,8 +205,8 @@ using namespace std;
 
 // Really large pixel values cna make some X11 implementations draw crazy things
 // (internal overflow in the X11 library).  Use these constants to clip. 
-#define MAXPIXEL 21474836
-#define MINPIXEL -21474836
+//#define MAXPIXEL 21474836
+//#define MINPIXEL -21474836
 
 #endif /* X11 Preprocessor Directives */
 
@@ -596,7 +596,8 @@ static int xcoord (float worldx)
 	int winx;
 	
 	winx = (int) ((worldx-trans_coord.xleft)*trans_coord.xmult + 0.5);
-	
+
+#ifdef Win32
 	/* Avoids overflow in the  Window routines.  This will allow horizontal *
 	* and vertical lines to be drawn correctly regardless of zooming, but   *
 	* will cause diagonal lines that go way off screen to change their      *
@@ -606,10 +607,11 @@ static int xcoord (float worldx)
 	* coding, and means that coordinates will be clipped twice, even though *
 	* this "Super Zoom" problem won't occur unless users zoom way in on     * 
 	* the graphics.                                                         */ 
-	
+
 	winx = max (winx, MINPIXEL);
 	winx = min (winx, MAXPIXEL);
-	
+#endif
+
 	return (winx);
 }
 
@@ -622,11 +624,13 @@ static int ycoord (float worldy)
 	int winy;
 	
 	winy = (int) ((worldy-trans_coord.ytop)*trans_coord.ymult + 0.5);
-	
+
+#ifdef Win32
 	/* Avoid overflow in the X/Win32 Window routines. */
 	winy = max (winy, MINPIXEL);
 	winy = min (winy, MAXPIXEL);
-	
+#endif
+
 	return (winy);
 }
 
