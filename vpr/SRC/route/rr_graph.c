@@ -2901,6 +2901,7 @@ static boolean get_perturb_opins(INP t_type_ptr type, INP int *Fc_out, INP int n
 		n = n - (float)nint(n);			/* fractinal part */	
 		if ( fabs(n) < threshold ){
 			perturb_opins = TRUE;
+			break;
 		} else {
 			perturb_opins = FALSE;
 		}
