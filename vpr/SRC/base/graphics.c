@@ -3462,8 +3462,8 @@ MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// the cursor relative to the upper-left corner of the screen instead of the client
 		// program. Therefore, call ScreenToClient() to convert.
 		POINT mousePos;
-		mousePos.x = GET_X_LPARAM(lparam);
-		mousePos.y = GET_Y_LPARAM(lparam);
+		mousePos.x = GET_X_LPARAM(lParam);
+		mousePos.y = GET_Y_LPARAM(lParam);
 		ScreenToClient(hMainWnd, &mousePos);
 
 		int i;
@@ -3473,7 +3473,7 @@ MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if (zDelta > 0)
 				zoom_in_with_cursor(XSCRN2WORLD(mousePos.x), YSCRN2WORLD(mousePos.y), drawscreen_ptr);
 			else
-				zoom_out_with_cursor(XSCRN2WORLD(xPos), YSCRN2WORLD(yPos), drawscreen_ptr);
+				zoom_out_with_cursor(XSCRN2WORLD(mousePos.x), YSCRN2WORLD(mousePos.y), drawscreen_ptr);
 		}
 		return 0;
 	}
