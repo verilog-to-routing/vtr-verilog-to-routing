@@ -188,6 +188,9 @@ using namespace std;
 
 #define BUTTON_TEXT_LEN	100
 #define BUFSIZE			1000
+
+#define ZOOM_IN_FACTOR  5	/* Each zoom in is by a factor of 1.666 */
+#define ZOOM_OUT_FACTOR 3	/* Zoom out factor of 1.666 */
 #endif
 
 /*********************************************
@@ -548,6 +551,7 @@ static void invalidate_screen();
 static void reset_win32_state ();
 static void win32_drain_message_queue ();
 
+static void handle_mousewheel_zooming_win32(WPARAM wParam, LPARAM lParam);
 static void handle_button_info (t_event_buttonPressed *button_info, UINT message, WPARAM wParam);
 
 void drawtoscreen();
@@ -2254,10 +2258,10 @@ zoom_in (void (*drawscreen) (void))
 	
 	xdiff = trans_coord.xright - trans_coord.xleft;
 	ydiff = trans_coord.ybot - trans_coord.ytop;
-	trans_coord.xleft += xdiff/5;
-	trans_coord.xright -= xdiff/5;
-	trans_coord.ytop += ydiff/5;
-	trans_coord.ybot -= ydiff/5;
+	trans_coord.xleft += xdiff/ZOOM_IN_FACTOR;
+	trans_coord.xright -= xdiff/ZOOM_IN_FACTOR;
+	trans_coord.ytop += ydiff/ZOOM_IN_FACTOR;
+	trans_coord.ybot -= ydiff/ZOOM_IN_FACTOR;
 	
 	update_transform ();
 	drawscreen();
@@ -2274,10 +2278,10 @@ zoom_out (void (*drawscreen) (void))
 	
 	xdiff = trans_coord.xright - trans_coord.xleft;
 	ydiff = trans_coord.ybot - trans_coord.ytop;
-	trans_coord.xleft -= xdiff/3;
-	trans_coord.xright += xdiff/3;
-	trans_coord.ytop -= ydiff/3;
-	trans_coord.ybot += ydiff/3;
+	trans_coord.xleft -= xdiff/ZOOM_OUT_FACTOR;
+	trans_coord.xright += xdiff/ZOOM_OUT_FACTOR;
+	trans_coord.ytop -= ydiff/ZOOM_OUT_FACTOR;
+	trans_coord.ybot += ydiff/ZOOM_OUT_FACTOR;
 	
 	update_transform ();
 	drawscreen();
@@ -2290,10 +2294,12 @@ zoom_out (void (*drawscreen) (void))
 static void
 zoom_in_with_cursor (float x, float y, void (*drawscreen) (void))
 {
-	trans_coord.xleft += (x-trans_coord.xleft)/5*2;
-	trans_coord.xright -= (trans_coord.xright-x)/5*2;
-	trans_coord.ytop += (y-trans_coord.ytop)/5*2;
-	trans_coord.ybot -= (trans_coord.ybot -y)/5*2;
+	//Multiply by 2 to make xright - xleft = 0.6 of the 
+	//original distance 
+	trans_coord.xleft += (x-trans_coord.xleft)/ZOOM_IN_FACTOR*2;
+	trans_coord.xright -= (trans_coord.xright-x)/ZOOM_IN_FACTOR*2;
+	trans_coord.ytop += (y-trans_coord.ytop)/ZOOM_IN_FACTOR*2;
+	trans_coord.ybot -= (trans_coord.ybot -y)/ZOOM_IN_FACTOR*2;
 
 	update_transform ();
 	drawscreen();
@@ -2306,10 +2312,12 @@ zoom_in_with_cursor (float x, float y, void (*drawscreen) (void))
 static void
 zoom_out_with_cursor (float x, float y, void (*drawscreen) (void))
 {
-	trans_coord.xleft -= (x-trans_coord.xleft)/3*2;
-	trans_coord.xright += (trans_coord.xright-x)/3*2;
-	trans_coord.ytop -= (y-trans_coord.ytop)/3*2;
-	trans_coord.ybot += (trans_coord.ybot -y)/3*2;
+	//Multiply by 2 to restore the original xright - xleft
+	//distance
+	trans_coord.xleft -= (x-trans_coord.xleft)/ZOOM_OUT_FACTOR*2;
+	trans_coord.xright += (trans_coord.xright-x)/ZOOM_OUT_FACTOR*2;
+	trans_coord.ytop -= (y-trans_coord.ytop)/ZOOM_OUT_FACTOR*2;
+	trans_coord.ybot += (trans_coord.ybot -y)/ZOOM_OUT_FACTOR*2;
 
 	update_transform ();
 	drawscreen();
@@ -3445,36 +3453,7 @@ MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// Only the window with the input focus will receive this message. In our case, the top-level 
 		// window has the input focus, thus the code will not work if put in GraphicsWND.
 	case WM_MOUSEWHEEL:
-		// zDelta indicates the distance which the mouse wheel is rotated. 
-		// The value for zDelta is a multiple of WHEEL_DELTA, which is 120.
-		// WHEEL_DELTA is the value for scrolling the mouse wheel by one increment.
-		short zDelta;
-		zDelta = GET_WHEEL_DELTA_WPARAM(wParam); 
-
-		// roll_detent captures how many increments the mouse wheel has been scrolled by.
-		int roll_detent;
-		roll_detent = zDelta/WHEEL_DELTA;
-		// roll_detent will be negative if wheel was roatated backward, toward the user.
-		if (roll_detent <0)
-			roll_detent *= -1;
-
-		// get x- and y- coordinates of the cursor. WM_MOUSEWHEEL receives coordinates of
-		// the cursor relative to the upper-left corner of the screen instead of the client
-		// program. Therefore, call ScreenToClient() to convert.
-		POINT mousePos;
-		mousePos.x = GET_X_LPARAM(lParam);
-		mousePos.y = GET_Y_LPARAM(lParam);
-		ScreenToClient(hMainWnd, &mousePos);
-
-		int i;
-		for (i=0; i<roll_detent; i++) {
-			// Positive value for zDelta indicates that the wheel was rotated forward, which
-			// will trigger zoom_in. Otherwise, zoom_out is called.
-			if (zDelta > 0)
-				zoom_in_with_cursor(XSCRN2WORLD(mousePos.x), YSCRN2WORLD(mousePos.y), drawscreen_ptr);
-			else
-				zoom_out_with_cursor(XSCRN2WORLD(mousePos.x), YSCRN2WORLD(mousePos.y), drawscreen_ptr);
-		}
+		handle_mousewheel_zooming_win32(wParam, lParam);
 		return 0;
 	}
 	
@@ -4014,6 +3993,41 @@ void win32_drain_message_queue () {
          printf ("Got the quit message.\n");
       }
    } 
+}
+
+
+void handle_mousewheel_zooming_win32(WPARAM wParam, LPARAM lParam) 
+{
+	// zDelta indicates the distance which the mouse wheel is rotated. 
+	// The value for zDelta is a multiple of WHEEL_DELTA, which is 120.
+	// WHEEL_DELTA is the value for scrolling the mouse wheel by one increment.
+	short zDelta;
+	zDelta = GET_WHEEL_DELTA_WPARAM(wParam); 
+
+	// roll_detent captures how many increments the mouse wheel has been scrolled by.
+	int roll_detent;
+	roll_detent = zDelta/WHEEL_DELTA;
+	// roll_detent will be negative if wheel was roatated backward, toward the user.
+	if (roll_detent <0)
+		roll_detent *= -1;
+
+	// get x- and y- coordinates of the cursor. WM_MOUSEWHEEL receives coordinates of
+	// the cursor relative to the upper-left corner of the screen instead of the client
+	// program. Therefore, call ScreenToClient() to convert.
+	POINT mousePos;
+	mousePos.x = GET_X_LPARAM(lParam);
+	mousePos.y = GET_Y_LPARAM(lParam);
+	ScreenToClient(hMainWnd, &mousePos);
+
+	int i;
+	for (i=0; i<roll_detent; i++) {
+		// Positive value for zDelta indicates that the wheel was rotated forward, which
+		// will trigger zoom_in. Otherwise, zoom_out is called.
+		if (zDelta > 0)
+			zoom_in_with_cursor(XSCRN2WORLD(mousePos.x), YSCRN2WORLD(mousePos.y), drawscreen_ptr);
+		else
+			zoom_out_with_cursor(XSCRN2WORLD(mousePos.x), YSCRN2WORLD(mousePos.y), drawscreen_ptr);
+	}
 }
 
 
