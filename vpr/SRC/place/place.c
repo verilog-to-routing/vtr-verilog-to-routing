@@ -73,6 +73,14 @@ enum swap_result {
 	REJECTED, ACCEPTED, ABORTED
 };
 
+struct s_placer_statistics {
+	double av_cost, av_bb_cost, av_timing_cost,
+	       sum_of_squares, av_delay_cost;
+	int success_sum;
+};
+
+typedef struct s_placer_statistics t_placer_statistics;
+
 #define MAX_INV_TIMING_COST 1.e9
 /* Stops inverse timing cost from going to infinity with very lax timing constraints, 
 which avoids multiplying by a gigantic inverse_prev_timing_cost when auto-normalizing. 
@@ -337,12 +345,13 @@ void try_place(struct s_placer_opts placer_opts,
 		oldt, **old_region_occ_x, **old_region_occ_y, **net_delay = NULL, crit_exponent,
 		first_rlim, final_rlim, inverse_delta_rlim, critical_path_delay = UNDEFINED,
 		**remember_net_delay_original_ptr; /*used to free net_delay if it is re-assigned */
-	double av_cost, av_bb_cost, av_timing_cost, av_delay_cost, sum_of_squares, std_dev;
+	double std_dev;
 	int total_swap_attempts;
 	float reject_rate;
 	float accept_rate;
 	float abort_rate;
 	char msg[BUFSIZE];
+	t_placer_statistics stats;
 	t_slack * slacks = NULL;
 
 	/* Allocated here because it goes into timing critical code where each memory allocation is expensive */
@@ -493,9 +502,8 @@ void try_place(struct s_placer_opts placer_opts,
 	move_lim = (int) (annealing_sched.inner_num * pow(num_blocks, 1.3333));
 
 	if (placer_opts.inner_loop_recompute_divider != 0)
-		inner_recompute_limit = (int) (0.5
-				+ (float) move_lim
-						/ (float) placer_opts.inner_loop_recompute_divider);
+		inner_recompute_limit = (int) 
+			(0.5 + (float) move_lim	/ (float) placer_opts.inner_loop_recompute_divider);
 	else
 		/*don't do an inner recompute */
 		inner_recompute_limit = move_lim + 1;
@@ -514,11 +522,11 @@ void try_place(struct s_placer_opts placer_opts,
 	final_rlim = 1;
 	inverse_delta_rlim = 1 / (first_rlim - final_rlim);
 
-	t = starting_t(&cost, &bb_cost, &timing_cost,
-			old_region_occ_x, old_region_occ_y,
+	t = starting_t(&cost, &bb_cost, &timing_cost, old_region_occ_x, old_region_occ_y,
 			annealing_sched, move_lim, rlim,
 			placer_opts.place_algorithm, placer_opts.timing_tradeoff,
 			inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost);
+
 	tot_iter = 0;
 	moves_since_cost_recompute = 0;
 	vpr_printf(TIO_MESSAGE_INFO, "Initial placement cost: %g bb_cost: %g td_cost: %g delay_cost: %g\n",
@@ -551,12 +559,12 @@ void try_place(struct s_placer_opts placer_opts,
 			cost = 1;
 		}
 
-		av_cost = 0.;
-		av_bb_cost = 0.;
-		av_delay_cost = 0.;
-		av_timing_cost = 0.;
-		sum_of_squares = 0.;
-		success_sum = 0;
+		stats.av_cost = 0.;
+		stats.av_bb_cost = 0.;
+		stats.av_delay_cost = 0.;
+		stats.av_timing_cost = 0.;
+		stats.sum_of_squares = 0.;
+		stats.success_sum = 0;
 
 		if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
 				|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
@@ -601,12 +609,12 @@ void try_place(struct s_placer_opts placer_opts,
 
 			if (swap_result == ACCEPTED) {
 				/* Move was accepted.  Update statistics that are useful for the annealing schedule. */
-				success_sum++;
-				av_cost += cost;
-				av_bb_cost += bb_cost;
-				av_timing_cost += timing_cost;
-				av_delay_cost += delay_cost;
-				sum_of_squares += cost * cost;
+				stats.success_sum++;
+				stats.av_cost += cost;
+				stats.av_bb_cost += bb_cost;
+				stats.av_timing_cost += timing_cost;
+				stats.av_delay_cost += delay_cost;
+				stats.sum_of_squares += cost * cost;
 				num_swap_accepted++;
 			} else if (swap_result == ABORTED) {
 				num_swap_aborted++;
@@ -695,19 +703,19 @@ void try_place(struct s_placer_opts placer_opts,
 		}
 
 		tot_iter += move_lim;
-		success_rat = ((float) success_sum) / move_lim;
-		if (success_sum == 0) {
-			av_cost = cost;
-			av_bb_cost = bb_cost;
-			av_timing_cost = timing_cost;
-			av_delay_cost = delay_cost;
+		success_rat = ((float) stats.success_sum) / move_lim;
+		if (stats.success_sum == 0) {
+			stats.av_cost = cost;
+			stats.av_bb_cost = bb_cost;
+			stats.av_timing_cost = timing_cost;
+			stats.av_delay_cost = delay_cost;
 		} else {
-			av_cost /= success_sum;
-			av_bb_cost /= success_sum;
-			av_timing_cost /= success_sum;
-			av_delay_cost /= success_sum;
+			stats.av_cost /= success_sum;
+			stats.av_bb_cost /= success_sum;
+			stats.av_timing_cost /= success_sum;
+			stats.av_delay_cost /= success_sum;
 		}
-		std_dev = get_std_dev(success_sum, sum_of_squares, av_cost);
+		std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
 
 		oldt = t; /* for finding and printing alpha. */
 		update_t(&t, std_dev, rlim, success_rat, annealing_sched);
@@ -715,7 +723,7 @@ void try_place(struct s_placer_opts placer_opts,
 #ifndef SPEC
 		critical_path_delay = get_critical_path_delay();
 		vpr_printf(TIO_MESSAGE_INFO, "%7.5f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
-				oldt, av_cost, av_bb_cost, av_timing_cost, av_delay_cost, place_delay_value, 
+				oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, stats.av_delay_cost, place_delay_value, 
 				critical_path_delay, success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
 #endif
 
@@ -727,8 +735,7 @@ void try_place(struct s_placer_opts placer_opts,
 		if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
 				|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 			crit_exponent = (1 - (rlim - final_rlim) * inverse_delta_rlim)
-					* (placer_opts.td_place_exp_last
-							- placer_opts.td_place_exp_first)
+					* (placer_opts.td_place_exp_last - placer_opts.td_place_exp_first)
 					+ placer_opts.td_place_exp_first;
 		}
 #ifdef VERBOSE
@@ -740,12 +747,12 @@ void try_place(struct s_placer_opts placer_opts,
 	/* Outer loop of the simmulated annealing ends */
 
 	t = 0; /* freeze out */
-	av_cost = 0.;
-	av_bb_cost = 0.;
-	av_timing_cost = 0.;
-	sum_of_squares = 0.;
-	av_delay_cost = 0.;
-	success_sum = 0;
+	stats.av_cost = 0.;
+	stats.av_bb_cost = 0.;
+	stats.av_timing_cost = 0.;
+	stats.sum_of_squares = 0.;
+	stats.av_delay_cost = 0.;
+	stats.success_sum = 0;
 
 	if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
 			|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
@@ -760,8 +767,7 @@ void try_place(struct s_placer_opts placer_opts,
 			place_delay_value = delay_cost / num_connections;
 
 			if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE)
-				load_constant_net_delay(net_delay, place_delay_value, clb_net,
-						num_nets);
+				load_constant_net_delay(net_delay, place_delay_value, clb_net, num_nets);
 
 			load_timing_graph_net_delays(net_delay);
 			do_timing_analysis(slacks, FALSE, FALSE, FALSE);
@@ -788,12 +794,12 @@ void try_place(struct s_placer_opts placer_opts,
 				inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost);
 		
 		if (swap_result == ACCEPTED) {
-			success_sum++;
-			av_cost += cost;
-			av_bb_cost += bb_cost;
-			av_delay_cost += delay_cost;
-			av_timing_cost += timing_cost;
-			sum_of_squares += cost * cost;
+			stats.success_sum++;
+			stats.av_cost += cost;
+			stats.av_bb_cost += bb_cost;
+			stats.av_delay_cost += delay_cost;
+			stats.av_timing_cost += timing_cost;
+			stats.sum_of_squares += cost * cost;
 
 			if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
 				|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
@@ -831,32 +837,30 @@ void try_place(struct s_placer_opts placer_opts,
 #endif
 	}
 	tot_iter += move_lim;
-	success_rat = ((float) success_sum) / move_lim;
-	if (success_sum == 0) {
-		av_cost = cost;
-		av_bb_cost = bb_cost;
-		av_delay_cost = delay_cost;
-		av_timing_cost = timing_cost;
+	success_rat = ((float) stats.success_sum) / move_lim;
+	if (stats.success_sum == 0) {
+		stats.av_cost = cost;
+		stats.av_bb_cost = bb_cost;
+		stats.av_delay_cost = delay_cost;
+		stats.av_timing_cost = timing_cost;
 	} else {
-		av_cost /= success_sum;
-		av_bb_cost /= success_sum;
-		av_delay_cost /= success_sum;
-		av_timing_cost /= success_sum;
+		stats.av_cost /= stats.success_sum;
+		stats.av_bb_cost /= stats.success_sum;
+		stats.av_delay_cost /= stats.success_sum;
+		stats.av_timing_cost /= stats.success_sum;
 	}
 
-	std_dev = get_std_dev(success_sum, sum_of_squares, av_cost);
+	std_dev = get_std_dev(success_sum, stats.sum_of_squares, stats.av_cost);
 
 #ifndef SPEC
 	vpr_printf(TIO_MESSAGE_INFO, "%7.5f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7s %7.4f %7.4f %7.4f %6.3f %9d\n",
-			t, av_cost, av_bb_cost, av_timing_cost, av_delay_cost, place_delay_value, 
+			t, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, stats.av_delay_cost, place_delay_value, 
 			" ", success_rat, std_dev, rlim, crit_exponent, tot_iter);
 #endif
 
 	// TODO:  
 	// 1. print a message about number of aborted moves.
 	// 2. add some subroutine hierarchy!  Too big!
-	// 3. put statistics counters (av_cost, success_sum, etc.) in a struct so a 
-	// pointer to it can be passed around. 
 
 #ifdef VERBOSE
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_END_CLB_PLACEMENT)) {
