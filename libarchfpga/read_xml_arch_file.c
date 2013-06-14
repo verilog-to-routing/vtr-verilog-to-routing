@@ -680,16 +680,18 @@ static void ProcessPb_TypePowerPinToggle(ezxml_t parent, t_pb_type * pb_type) {
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"Could not find port '%s' needed for energy per toggle.",
 					prop);
-			return;
+			exit(1);
 		}
 		if (high != port->num_pins - 1 || low != 0) {
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"Pin-toggle does not support pin indices (%s)", prop);
+			exit(1);
 		}
 
 		if (port->port_power->pin_toggle_initialized) {
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"Duplicate pin-toggle energy for port '%s'", port->name);
+			exit(1);
 		}
 		port->port_power->pin_toggle_initialized = TRUE;
 		ezxml_set_attr(cur, "name", NULL);
@@ -715,7 +717,7 @@ static void ProcessPb_TypePowerPinToggle(ezxml_t parent, t_pb_type * pb_type) {
 				vpr_printf(TIO_MESSAGE_ERROR,
 						"Pin-toggle 'scaled_by_static_prob' must be a single pin (%s)",
 						prop);
-				return;
+				exit(1);
 			}
 			port->port_power->scaled_by_port_pin_idx = high;
 			port->port_power->reverse_scaled = reverse_scaled;
@@ -825,6 +827,7 @@ static void ProcessPb_TypePowerEstMethod(ezxml_t Parent, t_pb_type * pb_type) {
 		vpr_printf(TIO_MESSAGE_ERROR,
 				"Invalid power estimation method for pb_type '%s'",
 				pb_type->name);
+		exit(1);
 	}
 
 	if (prop) {
@@ -981,7 +984,11 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 				vpr_printf(TIO_MESSAGE_ERROR,
 						"[LINE %d] Duplicate port names in pb_type '%s': port '%s'\n", 
 						Cur->line, pb_type->name, pb_type->ports[j].name);
-				exit(1);
+				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
+							Cur->line, NULL);
+				sprintf(vpr_error->message, 
+					"[LINE %d] Duplicate port names in pb_type '%s': port '%s'\n");
+				throw vpr_error;
 			}
 
 			/* get next iteration */
@@ -1164,6 +1171,7 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 				vpr_printf(TIO_MESSAGE_ERROR,
 						"Wire capacitance defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
 						port->name, port->parent_pb_type->name);
+				exit(1);
 			} else {
 				wire_defined = TRUE;
 				port->port_power->wire_type = POWER_WIRE_TYPE_C;
@@ -1180,10 +1188,12 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 				vpr_printf(TIO_MESSAGE_ERROR,
 						"Wire length defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
 						port->name, port->parent_pb_type->name);
+				exit(1);
 			} else if (wire_defined) {
 				vpr_printf(TIO_MESSAGE_ERROR,
 						"Multiple wire properties defined for port '%s', pb_type '%s'.",
 						port->name, port->parent_pb_type->name);
+				exit(1);
 			} else if (strcmp(prop, "auto") == 0) {
 				wire_defined = TRUE;
 				port->port_power->wire_type = POWER_WIRE_TYPE_AUTO;
@@ -1203,10 +1213,12 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 				vpr_printf(TIO_MESSAGE_ERROR,
 						"Wire relative length defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
 						port->name, port->parent_pb_type->name);
+				exit(1);
 			} else if (wire_defined) {
 				vpr_printf(TIO_MESSAGE_ERROR,
 						"Multiple wire properties defined for port '%s', pb_type '%s'.",
 						port->name, port->parent_pb_type->name);
+				exit(1);
 			} else {
 				wire_defined = TRUE;
 				port->port_power->wire_type = POWER_WIRE_TYPE_RELATIVE_LENGTH;
@@ -1223,6 +1235,7 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 				vpr_printf(TIO_MESSAGE_ERROR,
 						"Buffer size defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
 						port->name, port->parent_pb_type->name);
+				exit(1);
 			} else if (strcmp(prop, "auto") == 0) {
 				port->port_power->buffer_type = POWER_BUFFER_TYPE_AUTO;
 			} else {
@@ -1269,6 +1282,7 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port,
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"[LINE %d] Port %s cannot be both a clock and a non-clock simultaneously\n",
 					Parent->line, Parent->name);
+			exit(1);
 		}
 	} else {
 		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Unknown port type %s",
@@ -1807,11 +1821,12 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 		/* Process the inputs */
 		p = ezxml_child(child, "input_ports");
 		junkp = p;
-		if (p == NULL)
+		if (p == NULL){
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"Required input ports not found for element '%s'.\n",
 					temp->name);
-
+			exit(1);
+		}
 		p = ezxml_child(p, "port");
 		if (p != NULL) {
 			while (p != NULL) {
@@ -1835,6 +1850,7 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 					vpr_printf(TIO_MESSAGE_ERROR,
 							"[LINE %d] Signal cannot be both a clock and a non-clock signal simultaneously\n",
 							p->line);
+					exit(1);
 				}
 
 				/* Try insert new port, check if already exist at the same time */
@@ -1856,6 +1872,7 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"Required input ports not found for element '%s'.\n",
 					temp->name);
+			exit(1);
 		}
 		FreeNode(junkp);
 
@@ -1866,6 +1883,7 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"Required output ports not found for element '%s'.\n",
 					temp->name);
+			exit(1);
 
 		p = ezxml_child(p, "port");
 		if (p != NULL) {
@@ -1898,7 +1916,9 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"Required output ports not found for element '%s'.\n",
 					temp->name);
+			exit(1);
 		}
+
 		FreeNode(junkp);
 
 		/* Clear port map for next model */
@@ -1938,6 +1958,7 @@ static void ProcessLayout(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 		if (arch->clb_grid.IsAuto == FALSE) {
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"Auto-sizing, width and height cannot be specified\n");
+			exit(1);
 		}
 		arch->clb_grid.Aspect = (float) atof(Prop);
 		ezxml_set_attr(Node, "auto", NULL);
@@ -1945,6 +1966,7 @@ static void ProcessLayout(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"Grid aspect ratio is less than or equal to zero %g\n",
 					arch->clb_grid.Aspect);
+			exit(1);
 		}
 	}
 }
@@ -2991,7 +3013,6 @@ static void ProcessCB_SB(INOUTP ezxml_t Node, INOUTP boolean * list,
 				if (i >= len) {
 					vpr_printf(TIO_MESSAGE_ERROR,
 							"[LINE %d] CB or SB depopulation is too long. It "
-
 									"should be (length) symbols for CBs and (length+1) "
 									"symbols for SBs.\n", Node->line);
 					exit(1);
@@ -3316,6 +3337,7 @@ static void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"Unknown blif model %s in pb_type %s\n",
 					pb_type->blif_model, pb_type->name);
+			exit(1);
 		}
 
 		/* There are two sets of models to consider, the standard library of models and the user defined models */
