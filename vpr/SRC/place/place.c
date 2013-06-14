@@ -300,6 +300,13 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
 	float * inverse_prev_bb_cost, float ** net_delay);
 
+static void placement_inner_loop(float t, float rlim, struct s_placer_opts placer_opts,
+	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
+	int num_connections, t_slack * slacks, float crit_exponent, int inner_recompute_limit,
+	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
+	float ** old_region_occ_x, float ** old_region_occ_y, float * delay_cost,
+	float * place_delay_value, float ** net_delay);
+
 #ifdef TORO_REGION_PLACEMENT_ENABLE
 //===========================================================================//
 static boolean placement_region_pos_is_valid(
@@ -343,9 +350,8 @@ void try_place(struct s_placer_opts placer_opts,
 	 * width should be taken to when calculating costs.  This allows a       *
 	 * greater bias for anisotropic architectures.                           */
 
-	int tot_iter, inner_iter, move_lim, moves_since_cost_recompute, width_fac,
-		num_connections, inet, ipin, outer_crit_iter_count, inner_crit_iter_count,
-		inner_recompute_limit, swap_result;
+	int tot_iter, move_lim, moves_since_cost_recompute, width_fac, num_connections, inet,
+		ipin, outer_crit_iter_count, inner_recompute_limit;
 	float t, success_rat, rlim, cost, timing_cost, bb_cost, new_bb_cost, new_timing_cost,
 		delay_cost, new_delay_cost, place_delay_value, inverse_prev_bb_cost, inverse_prev_timing_cost,
 		oldt, **old_region_occ_x, **old_region_occ_y, **net_delay = NULL, crit_exponent,
@@ -565,84 +571,14 @@ void try_place(struct s_placer_opts placer_opts,
 			cost = 1;
 		}
 
-		stats.av_cost = 0.;
-		stats.av_bb_cost = 0.;
-		stats.av_delay_cost = 0.;
-		stats.av_timing_cost = 0.;
-		stats.sum_of_squares = 0.;
-		stats.success_sum = 0;
-
 		outer_loop_recompute_criticalities(placer_opts, num_connections, slacks,
 			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
 			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost, net_delay);
 
-		inner_crit_iter_count = 1;
-
-		/* Inner loop begins */
-		for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
-			swap_result = try_swap(t, &cost, &bb_cost, &timing_cost, rlim,
-					old_region_occ_x, old_region_occ_y, 
-					placer_opts.place_algorithm, placer_opts.timing_tradeoff,
-					inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost);
-
-			if (swap_result == ACCEPTED) {
-				/* Move was accepted.  Update statistics that are useful for the annealing schedule. */
-				stats.success_sum++;
-				stats.av_cost += cost;
-				stats.av_bb_cost += bb_cost;
-				stats.av_timing_cost += timing_cost;
-				stats.av_delay_cost += delay_cost;
-				stats.sum_of_squares += cost * cost;
-				num_swap_accepted++;
-			} else if (swap_result == ABORTED) {
-				num_swap_aborted++;
-			} else { // swap_result == REJECTED
-				num_swap_rejected++;
-			}
-
-
-			if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
-				|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-
-				/* Do we want to re-timing analyze the circuit to get updated slack and criticality values? 
-				 * We do this only once in a while, since it is expensive.
-				 */
-				if (inner_crit_iter_count >= inner_recompute_limit
-						&& inner_iter != move_lim - 1) { /*on last iteration don't recompute */
-
-					inner_crit_iter_count = 0;
-#ifdef VERBOSE
-					vpr_printf(TIO_MESSAGE_TRACE, "Inner loop recompute criticalities\n");
-#endif
-					if (placer_opts.place_algorithm
-							== NET_TIMING_DRIVEN_PLACE) {
-					    /* Use a constant delay per connection as the delay estimate, rather than
-						 * estimating based on the current placement.  Not a great idea, but not the 
-						 * default.
-						 */
-						place_delay_value = delay_cost / num_connections;
-						load_constant_net_delay(net_delay, place_delay_value,
-								clb_net, num_nets);
-					}
-
-					/* Using the delays in net_delay, do a timing analysis to update slacks and
-					 * criticalities; then update the timing cost since it will change.
-					 */
-					load_timing_graph_net_delays(net_delay);
-					do_timing_analysis(slacks, FALSE, FALSE, FALSE);
-					load_criticalities(slacks, crit_exponent);
-					comp_td_costs(&timing_cost, &delay_cost);
-				}
-				inner_crit_iter_count++;
-			}
-#ifdef VERBOSE
-			vpr_printf(TIO_MESSAGE_TRACE, "t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d dmax = %g\n",
-					t, cost, bb_cost, timing_cost, inner_iter, delay_cost);
-			if (fabs(bb_cost - comp_bb_cost(CHECK)) > bb_cost * ERROR_TOL)
-				exit(1);
-#endif
-		}
-		/* Inner loop ends */
+		placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
+			move_lim, num_connections, slacks, crit_exponent, inner_recompute_limit, &stats, 
+			&cost, &bb_cost, &timing_cost, old_region_occ_x, old_region_occ_y, &delay_cost,
+			&place_delay_value, net_delay);
 
 		/* Lines below prevent too much round-off error from accumulating *
 		 * in the cost over many iterations.  This round-off can lead to  *
@@ -724,71 +660,20 @@ void try_place(struct s_placer_opts placer_opts,
 	}
 	/* Outer loop of the simmulated annealing ends */
 
-	t = 0; /* freeze out */
-	stats.av_cost = 0.;
-	stats.av_bb_cost = 0.;
-	stats.av_timing_cost = 0.;
-	stats.sum_of_squares = 0.;
-	stats.av_delay_cost = 0.;
-	stats.success_sum = 0;
 
 	outer_loop_recompute_criticalities(placer_opts, num_connections, slacks,
 			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
 			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost, net_delay);
 
-	inner_crit_iter_count = 1;
+	t = 0; /* freeze out */
 
 	/* Run inner loop again with temperature = 0 so as to accept only swaps
 	 * which reduce the cost of the placement */
-	for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
-		swap_result = try_swap(t, &cost, &bb_cost, &timing_cost, rlim,
-				old_region_occ_x, old_region_occ_y,
-				placer_opts.place_algorithm, placer_opts.timing_tradeoff,
-				inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost);
-		
-		if (swap_result == ACCEPTED) {
-			stats.success_sum++;
-			stats.av_cost += cost;
-			stats.av_bb_cost += bb_cost;
-			stats.av_delay_cost += delay_cost;
-			stats.av_timing_cost += timing_cost;
-			stats.sum_of_squares += cost * cost;
+	placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
+			move_lim, num_connections, slacks, crit_exponent, inner_recompute_limit, &stats, 
+			&cost, &bb_cost, &timing_cost, old_region_occ_x, old_region_occ_y, &delay_cost,
+			&place_delay_value, net_delay);
 
-			if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
-				|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-
-				if (inner_crit_iter_count >= inner_recompute_limit
-						&& inner_iter != move_lim - 1) {
-
-					inner_crit_iter_count = 0;
-#ifdef VERBOSE
-					vpr_printf(TIO_MESSAGE_TRACE, "Inner loop recompute criticalities\n");
-#endif
-					if (placer_opts.place_algorithm
-							== NET_TIMING_DRIVEN_PLACE) {
-						place_delay_value = delay_cost / num_connections;
-						load_constant_net_delay(net_delay, place_delay_value,
-								clb_net, num_nets);
-					}
-
-					load_timing_graph_net_delays(net_delay);
-					do_timing_analysis(slacks, FALSE, FALSE, FALSE);
-					load_criticalities(slacks, crit_exponent);
-					comp_td_costs(&timing_cost, &delay_cost);
-				}
-				inner_crit_iter_count++;
-			}
-			num_swap_accepted++;
-		} else if (swap_result == ABORTED) {
-			num_swap_aborted++;
-		} else {
-			num_swap_rejected++;
-		}
-
-#ifdef VERBOSE
-		vpr_printf(TIO_MESSAGE_INFO, "t = %g, cost = %g, move = %d\n", t, cost, tot_iter);
-#endif
-	}
 	tot_iter += move_lim;
 	success_rat = ((float) stats.success_sum) / move_lim;
 	if (stats.success_sum == 0) {
@@ -897,21 +782,12 @@ void try_place(struct s_placer_opts placer_opts,
 	free_try_swap_arrays();
 }
 
+/* Function to recompute the criticalities before the inner loop of the annealing */
 static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 	int num_connections, t_slack * slacks, float crit_exponent, float bb_cost,
 	float * place_delay_value, float * timing_cost, float * delay_cost,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
 	float * inverse_prev_bb_cost, float ** net_delay) {
-
-	/*
-	 * Not changed:
-	 * placer_opts, num_connections, clb_net, net_delay, slacks, crit_exponent,
-	 * bb_cost
-	 *
-	 * Changed:
-	 * place_delay_value, timing_cost, delay_cost, outer_crit_iter_count, inverse_prev_bb_cost,
-	 * inverse_prev_timing_cost
-	 * */
 
 	if (placer_opts.place_algorithm != NET_TIMING_DRIVEN_PLACE
 			&& placer_opts.place_algorithm != PATH_TIMING_DRIVEN_PLACE)
@@ -946,6 +822,92 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 	*inverse_prev_bb_cost = 1 / bb_cost;
 	/*Prevent inverse timing cost from going to infinity */
 	*inverse_prev_timing_cost = std::min(1 / (*timing_cost), (float)MAX_INV_TIMING_COST);
+}
+
+/* Function which contains the inner loop of the simulated annealing */
+static void placement_inner_loop(float t, float rlim, struct s_placer_opts placer_opts,
+	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
+	int num_connections, t_slack * slacks, float crit_exponent, int inner_recompute_limit,
+	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
+	float ** old_region_occ_x, float ** old_region_occ_y, float * delay_cost,
+	float * place_delay_value, float ** net_delay) {
+
+	int inner_crit_iter_count, inner_iter;
+	int swap_result;
+
+	stats->av_cost = 0.;
+	stats->av_bb_cost = 0.;
+	stats->av_delay_cost = 0.;
+	stats->av_timing_cost = 0.;
+	stats->sum_of_squares = 0.;
+	stats->success_sum = 0;
+
+	inner_crit_iter_count = 1;
+
+	/* Inner loop begins */
+	for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
+		swap_result = try_swap(t, cost, bb_cost, timing_cost, rlim,
+				old_region_occ_x, old_region_occ_y, 
+				placer_opts.place_algorithm, placer_opts.timing_tradeoff,
+				inverse_prev_bb_cost, inverse_prev_timing_cost, delay_cost);
+
+		if (swap_result == ACCEPTED) {
+			/* Move was accepted.  Update statistics that are useful for the annealing schedule. */
+			stats->success_sum++;
+			stats->av_cost += *cost;
+			stats->av_bb_cost += *bb_cost;
+			stats->av_timing_cost += *timing_cost;
+			stats->av_delay_cost += *delay_cost;
+			stats->sum_of_squares += (*cost) * (*cost);
+			num_swap_accepted++;
+		} else if (swap_result == ABORTED) {
+			num_swap_aborted++;
+		} else { // swap_result == REJECTED
+			num_swap_rejected++;
+		}
+
+
+		if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
+				|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+
+			/* Do we want to re-timing analyze the circuit to get updated slack and criticality values? 
+			 * We do this only once in a while, since it is expensive.
+			 */
+			if (inner_crit_iter_count >= inner_recompute_limit
+					&& inner_iter != move_lim - 1) { /*on last iteration don't recompute */
+
+				inner_crit_iter_count = 0;
+#ifdef VERBOSE
+				vpr_printf(TIO_MESSAGE_TRACE, "Inner loop recompute criticalities\n");
+#endif
+				if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE) {
+					/* Use a constant delay per connection as the delay estimate, rather than
+					 * estimating based on the current placement.  Not a great idea, but not the 
+					 * default.
+					 */
+					(*place_delay_value) = (*delay_cost) / num_connections;
+					load_constant_net_delay(net_delay, *place_delay_value,
+							clb_net, num_nets);
+				}
+
+				/* Using the delays in net_delay, do a timing analysis to update slacks and
+				 * criticalities; then update the timing cost since it will change.
+				 */
+				load_timing_graph_net_delays(net_delay);
+				do_timing_analysis(slacks, FALSE, FALSE, FALSE);
+				load_criticalities(slacks, crit_exponent);
+				comp_td_costs(timing_cost, delay_cost);
+			}
+			inner_crit_iter_count++;
+		}
+#ifdef VERBOSE
+		vpr_printf(TIO_MESSAGE_TRACE, "t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d dmax = %g\n",
+				t, *cost, *bb_cost, *timing_cost, inner_iter, *delay_cost);
+		if (fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL)
+			exit(1);
+#endif
+	}
+	/* Inner loop ends */
 }
 
 static int count_connections() {
