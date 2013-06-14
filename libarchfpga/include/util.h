@@ -26,6 +26,13 @@ typedef int boolean;
 #define ERRTAG "ERROR:\t"
 #define WARNTAG "WARNING:\t"
 
+enum e_vpr_error {
+	VPR_ERROR_UNKNOWN = 0, 
+	VPR_ERROR_ARCH,
+	VPR_ERROR_PACK,
+	VPR_ERROR_PLACE,
+	VPR_ERROR_ROUTE
+};
 
 int limit_value(int cur, int max, const char *name);
 
@@ -63,6 +70,16 @@ typedef struct s_chunk {
 	char *next_mem_loc_ptr;/* pointer to the first available (free) *
 				* byte in the current chunk		*/
 } t_chunk;
+
+/* This structure is thrown back to highest level of VPR flow if an *
+ * internal VPR or user input error occurs. */
+
+typedef struct s_vpr_error {
+	char* message;
+	char* file_name;
+	int line_num;
+	enum e_vpr_error type;
+} t_vpr_error;
 
 #ifdef __cplusplus 
 extern "C" {
@@ -146,5 +163,8 @@ extern messagelogger vpr_printf;
 /*********************** Math operations *************************************/
 int ipow(int base, int exp);
 
+/*********************** Error-related ***************************************/
+void Print_VPR_Error(t_vpr_error* vpr_error, char* arch_filename);
+t_vpr_error* alloc_and_load_vpr_error(enum e_vpr_error type, int line, char* file_name);
 #endif
 

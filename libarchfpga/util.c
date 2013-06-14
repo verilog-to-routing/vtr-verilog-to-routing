@@ -781,3 +781,62 @@ int ipow(int base, int exp) {
 	}
 	return result;
 }
+
+void Print_VPR_Error(t_vpr_error* vpr_error, char* arch_filename){
+	if(!arch_filename){
+		/* VPR failed before arch's filename is read in*/
+		vpr_printf(TIO_MESSAGE_ERROR, "\nType: Unknown\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		return;
+	}
+
+	switch(vpr_error->type){
+	case VPR_ERROR_UNKNOWN:
+		vpr_printf(TIO_MESSAGE_ERROR, "\nType: Unknown\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		break;
+	case VPR_ERROR_ARCH:
+		vpr_printf(TIO_MESSAGE_ERROR, "\nType: Architecture File\nFile: %s\nLine: %d\nMessage: %s\n", 
+		arch_filename, vpr_error->line_num, vpr_error->message);
+		break;
+	case VPR_ERROR_PACK:
+		vpr_printf(TIO_MESSAGE_ERROR, "\nType: Packing\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		break;
+	case VPR_ERROR_PLACE:
+		vpr_printf(TIO_MESSAGE_ERROR, "\nType: Placement\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		break;
+	case VPR_ERROR_ROUTE:
+		vpr_printf(TIO_MESSAGE_ERROR, "\nType: Routing\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		break;
+	default:
+		vpr_printf(TIO_MESSAGE_ERROR, "\nError in vpr_error loading\n");
+		break;
+	}
+}
+
+/* Allocate and load partial data into t_vpr_error structure */
+/* Note: can also set breakpoint in this function to view callstack prior *
+ * to VPR failure														  */
+t_vpr_error* alloc_and_load_vpr_error(enum e_vpr_error type, int line, char* file_name){
+	t_vpr_error* vpr_error;
+
+	vpr_error = (t_vpr_error*)my_calloc(1, sizeof(t_vpr_error));
+	vpr_error->file_name = (char*)my_calloc(1000, sizeof(char));
+	vpr_error->message = (char*)my_calloc(1000, sizeof(char));
+
+	if(type == VPR_ERROR_ARCH){
+		/* Will use architecture filename later in Print_VPR_Error instead of source filename */
+		sprintf(vpr_error->file_name, "<architecture filename>"); 
+	}
+	else{
+		sprintf(vpr_error->file_name, file_name);
+	}
+	vpr_error->line_num = line;
+	vpr_error->type = type;
+
+	return vpr_error;
+
+}
