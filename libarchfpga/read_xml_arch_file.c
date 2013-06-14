@@ -2748,7 +2748,7 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
  * handles type information */
 void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 		OUTP struct s_arch *arch, OUTP t_type_descriptor ** Types,
-		OUTP int *NumTypes) throw(){
+		OUTP int *NumTypes){
 	ezxml_t Cur, Next;
 	const char *Prop;
 	boolean power_reqd;
