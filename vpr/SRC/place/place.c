@@ -294,6 +294,11 @@ static double get_net_wirelength_estimate(int inet, struct s_bb *bbptr);
 
 static void free_try_swap_arrays(void);
 
+/*static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
+	int num_connections, t_slack * slacks, float crit_exponent, bb_cost,
+	place_delay_value, timing_cost, delay_cost, outer_crit_iter_count,
+	inverse_prev_timing_cost, inverse_prev_bb_cost);*/
+
 #ifdef TORO_REGION_PLACEMENT_ENABLE
 //===========================================================================//
 static boolean placement_region_pos_is_valid(
@@ -337,7 +342,7 @@ void try_place(struct s_placer_opts placer_opts,
 	 * width should be taken to when calculating costs.  This allows a       *
 	 * greater bias for anisotropic architectures.                           */
 
-	int tot_iter, inner_iter, success_sum, move_lim, moves_since_cost_recompute, width_fac,
+	int tot_iter, inner_iter, move_lim, moves_since_cost_recompute, width_fac,
 		num_connections, inet, ipin, outer_crit_iter_count, inner_crit_iter_count,
 		inner_recompute_limit, swap_result;
 	float t, success_rat, rlim, cost, timing_cost, bb_cost, new_bb_cost, new_timing_cost,
@@ -566,6 +571,23 @@ void try_place(struct s_placer_opts placer_opts,
 		stats.sum_of_squares = 0.;
 		stats.success_sum = 0;
 
+		/* Variables used:
+		 * placer_opts, outer_crit_iter_count, placer_delay_value,
+		 * delay_cost, num_connections, net_delay, clb_net,
+		 * slacks, crit_exponent, timing_cost, inverse_prev_bb_cost,
+		 * bb_cost, inverse_prev_timing_cost 
+		 * */
+
+		/*
+		 * Not changed:
+		 * placer_opts, num_connections, clb_net, net_delay, slacks, crit_exponent,
+		 * bb_cost
+		 *
+		 * Changed:
+		 * place_delay_value, timing_cost, delay_cost, outer_crit_iter_count, inverse_prev_bb_cost,
+		 * inverse_prev_timing_cost
+		 * */
+
 		if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
 				|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 
@@ -710,10 +732,10 @@ void try_place(struct s_placer_opts placer_opts,
 			stats.av_timing_cost = timing_cost;
 			stats.av_delay_cost = delay_cost;
 		} else {
-			stats.av_cost /= success_sum;
-			stats.av_bb_cost /= success_sum;
-			stats.av_timing_cost /= success_sum;
-			stats.av_delay_cost /= success_sum;
+			stats.av_cost /= stats.success_sum;
+			stats.av_bb_cost /= stats.success_sum;
+			stats.av_timing_cost /= stats.success_sum;
+			stats.av_delay_cost /= stats.success_sum;
 		}
 		std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
 
@@ -850,7 +872,7 @@ void try_place(struct s_placer_opts placer_opts,
 		stats.av_timing_cost /= stats.success_sum;
 	}
 
-	std_dev = get_std_dev(success_sum, stats.sum_of_squares, stats.av_cost);
+	std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
 
 #ifndef SPEC
 	vpr_printf(TIO_MESSAGE_INFO, "%7.5f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7s %7.4f %7.4f %7.4f %6.3f %9d\n",
