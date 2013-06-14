@@ -783,13 +783,7 @@ int ipow(int base, int exp) {
 }
 
 void Print_VPR_Error(t_vpr_error* vpr_error, char* arch_filename){
-	if(!arch_filename){
-		/* VPR failed before arch's filename is read in*/
-		vpr_printf(TIO_MESSAGE_ERROR, "\nType: Unknown\nFile: %s\nLine: %d\nMessage: %s\n", 
-		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
-		return;
-	}
-
+	
 	switch(vpr_error->type){
 	case VPR_ERROR_UNKNOWN:
 		vpr_printf(TIO_MESSAGE_ERROR, "\nType: Unknown\nFile: %s\nLine: %d\nMessage: %s\n", 

@@ -1141,7 +1141,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 						t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
 							Cur->line, NULL);
 						sprintf(vpr_error->message, 
-							"[LINE%d] Duplicate mode name: '%s' in pb_type '%s'.\n", pb_type->modes[i].name, pb_type->name);
+							"Duplicate mode name: '%s' in pb_type '%s'.\n", pb_type->modes[i].name, pb_type->name);
 						throw vpr_error;
 					}
 		
@@ -1767,7 +1767,7 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
 							Child->line, NULL);
 				sprintf(vpr_error->message, 
-					"The port \"%s\" cannot be found.\n");
+					"The port \"%s\" cannot be found.\n",Prop);
 				throw vpr_error;
 			}
 
@@ -2748,7 +2748,7 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
  * handles type information */
 void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 		OUTP struct s_arch *arch, OUTP t_type_descriptor ** Types,
-		OUTP int *NumTypes) throw(...){
+		OUTP int *NumTypes) throw(){
 	ezxml_t Cur, Next;
 	const char *Prop;
 	boolean power_reqd;
