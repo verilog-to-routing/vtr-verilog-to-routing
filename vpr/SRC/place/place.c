@@ -294,10 +294,11 @@ static double get_net_wirelength_estimate(int inet, struct s_bb *bbptr);
 
 static void free_try_swap_arrays(void);
 
-/*static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
-	int num_connections, t_slack * slacks, float crit_exponent, bb_cost,
-	place_delay_value, timing_cost, delay_cost, outer_crit_iter_count,
-	inverse_prev_timing_cost, inverse_prev_bb_cost);*/
+static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
+	int num_connections, t_slack * slacks, float crit_exponent, float bb_cost,
+	float * place_delay_value, float * timing_cost, float * delay_cost,
+	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
+	float * inverse_prev_bb_cost, float ** net_delay);
 
 #ifdef TORO_REGION_PLACEMENT_ENABLE
 //===========================================================================//
@@ -571,54 +572,9 @@ void try_place(struct s_placer_opts placer_opts,
 		stats.sum_of_squares = 0.;
 		stats.success_sum = 0;
 
-		/* Variables used:
-		 * placer_opts, outer_crit_iter_count, placer_delay_value,
-		 * delay_cost, num_connections, net_delay, clb_net,
-		 * slacks, crit_exponent, timing_cost, inverse_prev_bb_cost,
-		 * bb_cost, inverse_prev_timing_cost 
-		 * */
-
-		/*
-		 * Not changed:
-		 * placer_opts, num_connections, clb_net, net_delay, slacks, crit_exponent,
-		 * bb_cost
-		 *
-		 * Changed:
-		 * place_delay_value, timing_cost, delay_cost, outer_crit_iter_count, inverse_prev_bb_cost,
-		 * inverse_prev_timing_cost
-		 * */
-
-		if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
-				|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-
-			if (outer_crit_iter_count >= placer_opts.recompute_crit_iter
-					|| placer_opts.inner_loop_recompute_divider != 0) {
-#ifdef VERBOSE
-				vpr_printf(TIO_MESSAGE_INFO, "Outer loop recompute criticalities\n");
-#endif
-				place_delay_value = delay_cost / num_connections;
-
-				if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE)
-					load_constant_net_delay(net_delay, place_delay_value,
-							clb_net, num_nets);
-				/*note, for path_based, the net delay is not updated since it is current,
-				 *because it accesses point_to_point_delay array */
-
-				load_timing_graph_net_delays(net_delay);
-				do_timing_analysis(slacks, FALSE, FALSE, FALSE);
-				load_criticalities(slacks, crit_exponent);
-				/*recompute costs from scratch, based on new criticalities */
-				comp_td_costs(&timing_cost, &delay_cost);
-				outer_crit_iter_count = 0;
-			}
-			outer_crit_iter_count++;
-
-			/*at each temperature change we update these values to be used     */
-			/*for normalizing the tradeoff between timing and wirelength (bb)  */
-			inverse_prev_bb_cost = 1 / bb_cost;
-			/*Prevent inverse timing cost from going to infinity */
-			inverse_prev_timing_cost = std::min(1 / timing_cost, (float)MAX_INV_TIMING_COST);
-		}
+		outer_loop_recompute_criticalities(placer_opts, num_connections, slacks,
+			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
+			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost, net_delay);
 
 		inner_crit_iter_count = 1;
 
@@ -776,34 +732,9 @@ void try_place(struct s_placer_opts placer_opts,
 	stats.av_delay_cost = 0.;
 	stats.success_sum = 0;
 
-	if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
-			|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-		/*at each temperature change we update these values to be used     */
-		/*for normalizing the tradeoff between timing and wirelength (bb)  */
-		if (outer_crit_iter_count >= placer_opts.recompute_crit_iter
-				|| placer_opts.inner_loop_recompute_divider != 0) {
-
-#ifdef VERBOSE
-			vpr_printf(TIO_MESSAGE_INFO, "Outer loop recompute criticalities\n");
-#endif
-			place_delay_value = delay_cost / num_connections;
-
-			if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE)
-				load_constant_net_delay(net_delay, place_delay_value, clb_net, num_nets);
-
-			load_timing_graph_net_delays(net_delay);
-			do_timing_analysis(slacks, FALSE, FALSE, FALSE);
-			load_criticalities(slacks, crit_exponent);
-			/*recompute criticaliies */
-			comp_td_costs(&timing_cost, &delay_cost);
-			outer_crit_iter_count = 0;
-		}
-		outer_crit_iter_count++;
-
-		inverse_prev_bb_cost = 1 / (bb_cost);
-		/*Prevent inverse timing cost from going to infinity */		
-		inverse_prev_timing_cost = std::min(1 / timing_cost, (float)MAX_INV_TIMING_COST);
-	}
+	outer_loop_recompute_criticalities(placer_opts, num_connections, slacks,
+			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
+			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost, net_delay);
 
 	inner_crit_iter_count = 1;
 
@@ -964,6 +895,57 @@ void try_place(struct s_placer_opts placer_opts,
 	}
 
 	free_try_swap_arrays();
+}
+
+static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
+	int num_connections, t_slack * slacks, float crit_exponent, float bb_cost,
+	float * place_delay_value, float * timing_cost, float * delay_cost,
+	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
+	float * inverse_prev_bb_cost, float ** net_delay) {
+
+	/*
+	 * Not changed:
+	 * placer_opts, num_connections, clb_net, net_delay, slacks, crit_exponent,
+	 * bb_cost
+	 *
+	 * Changed:
+	 * place_delay_value, timing_cost, delay_cost, outer_crit_iter_count, inverse_prev_bb_cost,
+	 * inverse_prev_timing_cost
+	 * */
+
+	if (placer_opts.place_algorithm != NET_TIMING_DRIVEN_PLACE
+			&& placer_opts.place_algorithm != PATH_TIMING_DRIVEN_PLACE)
+		return;
+
+	/*at each temperature change we update these values to be used     */
+	/*for normalizing the tradeoff between timing and wirelength (bb)  */
+	if (*outer_crit_iter_count >= placer_opts.recompute_crit_iter
+			|| placer_opts.inner_loop_recompute_divider != 0) {
+#ifdef VERBOSE
+		vpr_printf(TIO_MESSAGE_INFO, "Outer loop recompute criticalities\n");
+#endif
+		*place_delay_value = (*delay_cost) / num_connections;
+
+		if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE)
+			load_constant_net_delay(net_delay, *place_delay_value,
+					clb_net, num_nets);
+		/*note, for path_based, the net delay is not updated since it is current,
+		 *because it accesses point_to_point_delay array */
+
+		load_timing_graph_net_delays(net_delay);
+		do_timing_analysis(slacks, FALSE, FALSE, FALSE);
+		load_criticalities(slacks, crit_exponent);
+		/*recompute costs from scratch, based on new criticalities */
+		comp_td_costs(timing_cost, delay_cost);
+		*outer_crit_iter_count = 0;
+	}
+	(*outer_crit_iter_count)++;
+
+	/*at each temperature change we update these values to be used     */
+	/*for normalizing the tradeoff between timing and wirelength (bb)  */
+	*inverse_prev_bb_cost = 1 / bb_cost;
+	/*Prevent inverse timing cost from going to infinity */
+	*inverse_prev_timing_cost = std::min(1 / (*timing_cost), (float)MAX_INV_TIMING_COST);
 }
 
 static int count_connections() {
