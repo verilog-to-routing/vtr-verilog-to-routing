@@ -2257,9 +2257,12 @@ static void load_uniform_opin_switch_pattern_paired(INP int *Fc_out,
 
 		if (num_edges < 1)
 		{
-			vpr_printf(TIO_MESSAGE_ERROR, "opin %d at (%d,%d) does not connect to any tracks.\n", 
-					L_rr_node[from_node].ptc_num, L_rr_node[from_node].xlow, L_rr_node[from_node].ylow);
-			exit(1);
+			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
+				__LINE__, __FILE__);
+			sprintf(vpr_error->message,
+				"opin %d at (%d,%d) does not connect to any tracks.\n", 
+				L_rr_node[from_node].ptc_num, L_rr_node[from_node].xlow, L_rr_node[from_node].ylow);
+			throw vpr_error;
 		}
 
 		alloc_and_load_edges_and_switches(L_rr_node, from_node, num_edges,
@@ -2734,8 +2737,11 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(INP t_direct_inf
 		get_blk_pin_from_port_pin(clb_to_clb_directs[i].to_clb_type->index, j, end_pin_index, &clb_to_clb_directs[i].to_clb_pin_end_index);
 
 		if(abs(clb_to_clb_directs[i].from_clb_pin_start_index - clb_to_clb_directs[i].from_clb_pin_end_index) != abs(clb_to_clb_directs[i].to_clb_pin_start_index - clb_to_clb_directs[i].to_clb_pin_end_index)) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Range mismatch from %s to %s.\n", directs[i].line, directs[i].from_pin, directs[i].to_pin);
-				exit(1);
+			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
+				directs[i].line, NULL);
+			sprintf(vpr_error->message,
+				"Range mismatch from %s to %s.\n", directs[i].from_pin, directs[i].to_pin);
+			throw vpr_error;
 		}
 
 		free(pb_type_name);

@@ -176,10 +176,13 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 						 * instead I will fail if there are conflicting Couts */
 						if (Couts_to_add[to_node]
 								!= switch_inf[switch_index].Cout) {
-							vpr_printf(TIO_MESSAGE_ERROR, "A single driver resource (%i) is driven by different Cout's (%e!=%e)\n",
+							t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
+								__LINE__, __FILE__);
+							sprintf(vpr_error->message,
+								"A single driver resource (%i) is driven by different Cout's (%e!=%e)\n",
 									to_node, Couts_to_add[to_node],
 									switch_inf[switch_index].Cout);
-							exit(1);
+							throw vpr_error;
 						}
 					}
 					Couts_to_add[to_node] = switch_inf[switch_index].Cout;

@@ -73,9 +73,12 @@ int seg_index_of_sblock(int from_node, int to_node) {
 				return (rr_node[to_node].xhigh);
 			}
 		} else {
-			vpr_printf(TIO_MESSAGE_ERROR, "in seg_index_of_sblock: to_node %d is of type %d.\n",
+			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
+				__LINE__, __FILE__);
+			sprintf(vpr_error->message,
+				"in seg_index_of_sblock: to_node %d is of type %d.\n",
 					to_node, to_rr_type);
-			exit(1);
+			throw vpr_error;
 		}
 	}
 	/* End from_rr_type is CHANX */
@@ -89,15 +92,21 @@ int seg_index_of_sblock(int from_node, int to_node) {
 				return (rr_node[to_node].yhigh);
 			}
 		} else {
-			vpr_printf(TIO_MESSAGE_ERROR, "in seg_index_of_sblock: to_node %d is of type %d.\n",
+			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
+				__LINE__, __FILE__);
+			sprintf(vpr_error->message,
+				 "in seg_index_of_sblock: to_node %d is of type %d.\n",
 					to_node, to_rr_type);
-			exit(1);
+			throw vpr_error;
 		}
 	}
 	/* End from_rr_type is CHANY */
 	else {
-		vpr_printf(TIO_MESSAGE_ERROR, "in seg_index_of_sblock: from_node %d is of type %d.\n",
+		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
+			__LINE__, __FILE__);
+		sprintf(vpr_error->message,
+			"in seg_index_of_sblock: from_node %d is of type %d.\n",
 				from_node, from_rr_type);
-		exit(1);
+		throw vpr_error;
 	}
 }

@@ -1406,9 +1406,13 @@ int get_rr_node_index(
 		break;
 
 	default:
-		vpr_printf(TIO_MESSAGE_ERROR, "Bad rr_node passed to get_rr_node_index.\n");
-		vpr_printf(TIO_MESSAGE_ERROR, "Request for type=%d ptc=%d at (%d, %d).\n", rr_type, ptc, x, y);
-		exit(1);
+		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
+			__LINE__, __FILE__);
+		sprintf(vpr_error->message,
+			 "Bad rr_node passed to get_rr_node_index.\n"
+			 "Request for type=%d ptc=%d at (%d, %d).\n",
+			 rr_type, ptc, x, y);
+		throw vpr_error;
 	}
 #endif
 
@@ -2529,8 +2533,11 @@ static int *label_wire_muxes_for_balance(
 		x = chan_num;
 		y = seg_num;
 	} else {
-		vpr_printf(TIO_MESSAGE_ERROR, "Bad channel type (%d).\n", chan_type);
-		exit(1);
+		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
+			__LINE__, __FILE__);
+		sprintf(vpr_error->message,
+			"Bad channel type (%d).\n", chan_type);
+		throw vpr_error;
 	}
 
 	/* Generate the normal labels list as the baseline. */
@@ -2717,6 +2724,9 @@ static int find_label_of_track(
 		}
 	}
 
-	vpr_printf(TIO_MESSAGE_ERROR, "Expected mux not found.\n");
-	exit(1);
+	t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
+		__LINE__, __FILE__);
+	sprintf(vpr_error->message,
+		"Expected mux not found.\n");
+	throw vpr_error;
 }
