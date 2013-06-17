@@ -826,7 +826,7 @@ t_vpr_error* alloc_and_load_vpr_error(enum e_vpr_error type, int line, char* fil
 		sprintf(vpr_error->file_name, "<architecture filename>"); 
 	}
 	else{
-		sprintf(vpr_error->file_name, file_name);
+		sprintf(vpr_error->file_name, "%s", file_name);
 	}
 	vpr_error->line_num = line;
 	vpr_error->type = type;

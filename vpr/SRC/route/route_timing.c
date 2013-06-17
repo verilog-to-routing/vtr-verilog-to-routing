@@ -217,8 +217,10 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 				times_exceeded_threshold++;
 			if (itry >= 20 && overused_ratio > overused_threshold)
 				times_exceeded_threshold++;
-			if (times_exceeded_threshold >= EXCEEDED_OVERUSED_COUNT_LIMIT)
-				vpr_printf(TIO_MESSAGE_INFO, "The routing should be stopped, overused ratio exceeded the threshold.\n");
+			if (times_exceeded_threshold >= EXCEEDED_OVERUSED_COUNT_LIMIT){
+				vpr_printf(TIO_MESSAGE_INFO, "Routing aborted, the ratio of overused nodes is above the threshold.\n");
+				return (FALSE);
+			}
 		}
 
 
