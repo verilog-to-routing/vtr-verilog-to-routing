@@ -55,6 +55,8 @@ static void timing_driven_check_net_delays(float **net_delay);
 static int mark_node_expansion_by_bin(int inet, int target_node,
 		t_rt_node * rt_node);
 
+static double get_overused_ratio();
+
 /************************ Subroutine definitions *****************************/
 
 boolean try_timing_driven_route(struct s_router_opts router_opts,
@@ -83,6 +85,12 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	   optimize timing, and to 0 when timing analysis is off to optimize routability. */
 
 	float init_timing_criticality_val = (timing_analysis_enabled ? 1.0 : 0.0);
+
+	/* Variables used to do the optimization of the routing, aborting visibly
+	 * impossible Ws */
+	double overused_ratio;
+	double overused_threshold = 0.015;
+	int times_exceeded_threshold = 0;
 
 	for (int inet = 0; inet < num_nets; ++inet) {
 		if (clb_net[inet].is_global == FALSE) {
@@ -186,6 +194,34 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		   going longer, trying to improve timing.  Think about this some. */
 
 		boolean success = feasible_routing();
+
+		/* Verification to check the ratio of overused nodes, depending on the configuration
+		 * may abort the routing if the ratio is too high. */
+		overused_ratio = get_overused_ratio();
+#ifdef DEBUG
+		vpr_printf(TIO_MESSAGE_INFO, "Overused ratio: %.6f\n", overused_ratio);
+#endif
+		/* Andre Pereira: The check splits the inverval in 3 intervals ([6,10), [10,20), [20,40)
+		 * The values before 6 are not considered, as the behaviour is not interesting
+		 * The threshold used is 4x, 2x, 1x overused_threshold, for each interval,
+		 * respectively.
+		 * The routing must exceed the threshold EXCEEDED_OVERUSED_COUNT_LIMIT (4, but might change)
+		 * times in order to abort the routing */
+		/* TODO: Add different configurations for the threshold: disabled, moderate, agressive */
+		if (itry > 5){
+			/* Using double comparisons here, but just for inequality and they are coarse,
+			 * I don't think tolerance needs to be used */
+			if (itry < 10 && overused_ratio >= 4.0*overused_threshold)
+				times_exceeded_threshold++;
+			if (itry >= 10 && itry < 20 && overused_ratio >= 2.0*overused_threshold)
+				times_exceeded_threshold++;
+			if (itry >= 20 && overused_ratio > overused_threshold)
+				times_exceeded_threshold++;
+			if (times_exceeded_threshold >= EXCEEDED_OVERUSED_COUNT_LIMIT)
+				vpr_printf(TIO_MESSAGE_INFO, "The routing should be stopped, overused ratio exceeded the threshold.\n");
+		}
+
+
 		if (success) {
 
 			if (timing_analysis_enabled) {
@@ -314,6 +350,18 @@ void alloc_timing_driven_route_structs(float **pin_criticality_ptr,
 	*rt_node_of_sink_ptr = rt_node_of_sink - 1;
 
 	alloc_route_tree_timing_structs();
+}
+
+/* This function gets ratio of overused nodes (overused_nodes / num_rr_nodes) */
+static double get_overused_ratio(){
+	double overused_nodes = 0.0;
+	int inode;
+	for(inode = 0; inode < num_rr_nodes; inode++){
+		if(rr_node[inode].occ > rr_node[inode].capacity)
+			overused_nodes += 1.0;
+	}
+	overused_nodes /= (double)num_rr_nodes;
+	return overused_nodes;
 }
 
 void free_timing_driven_route_structs(float *pin_criticality, int *sink_order,

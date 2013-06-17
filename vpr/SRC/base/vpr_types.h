@@ -92,6 +92,8 @@ typedef size_t bitfield;
 
 #define FIRST_ITER_WIRELENTH_LIMIT 0.85 /* If used wirelength exceeds this value in first iteration of routing, do not route */
 
+#define EXCEEDED_OVERUSED_COUNT_LIMIT 4 /* The number of times the overused ratio has to exceed the threshold before the routing is aborted */
+
 #define EMPTY -1
 #define INVALID -2
 
