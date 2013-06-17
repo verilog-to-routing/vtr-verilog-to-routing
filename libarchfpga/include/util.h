@@ -26,12 +26,14 @@ typedef int boolean;
 #define ERRTAG "ERROR:\t"
 #define WARNTAG "WARNING:\t"
 
+
 enum e_vpr_error {
 	VPR_ERROR_UNKNOWN = 0, 
 	VPR_ERROR_ARCH,
 	VPR_ERROR_PACK,
 	VPR_ERROR_PLACE,
-	VPR_ERROR_ROUTE
+	VPR_ERROR_ROUTE,
+	VPR_ERROR_OTHER
 };
 
 int limit_value(int cur, int max, const char *name);

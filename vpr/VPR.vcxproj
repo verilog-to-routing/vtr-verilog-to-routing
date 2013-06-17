@@ -93,6 +93,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <DisableSpecificWarnings>4100; 4244; 4305;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <CompileAs>CompileAsCpp</CompileAs>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

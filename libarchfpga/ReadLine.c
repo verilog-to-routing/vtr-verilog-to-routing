@@ -60,8 +60,11 @@ ReadLineTokens(INOUTP FILE * InFile, INOUTP int *LineNum) {
 			if (feof(InFile)) {
 				return NULL; /* Return NULL on EOF */
 			} else {
-				vpr_printf(TIO_MESSAGE_ERROR, "Unexpected error reading file\n");
-				exit(1);
+				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_UNKNOWN, 
+					__LINE__, __FILE__);
+				sprintf(vpr_error->message,
+					"Unexpected error reading file\n");
+				throw vpr_error;
 			}
 		}
 		++(*LineNum);
@@ -86,9 +89,11 @@ ReadLineTokens(INOUTP FILE * InFile, INOUTP int *LineNum) {
 				if (feof(InFile)) {
 					return NULL; /* Return NULL on EOF */
 				} else {
-					vpr_printf(TIO_MESSAGE_ERROR,
-					"Unexpected error reading file\n");
-					exit(1);
+					t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_UNKNOWN, 
+						__LINE__, __FILE__);
+					sprintf(vpr_error->message,
+						"Unexpected error reading file\n");
+					throw vpr_error;
 				}
 			}
 			++(*LineNum);

@@ -17,20 +17,22 @@ ezxml_t FindElement(INP ezxml_t Parent, INP const char *Name,
 
 	/* Error out if node isn't found but they required it */
 	if (Required) {
-		if (NULL == Cur) {
-			vpr_printf(TIO_MESSAGE_ERROR,
-			"[LINE %d] Element '%s' not found within element '%s'.\n",
-					Parent->line, Name, Parent->name);
-			exit(1);
+		if (NULL == Cur) {			
+			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
+					Parent->line, NULL);
+			sprintf(vpr_error->message,
+				"Element '%s' not found within element '%s'.\n", Name, Parent->name);
+			throw vpr_error;
 		}
 	}
 
 	/* Look at next tag with same name and error out if exists */
-	if (Cur != NULL && Cur->next) {
-		vpr_printf(
-				TIO_MESSAGE_ERROR, "[LINE %d] Element '%s' found twice within element '%s'.\n",
-				Parent->line, Name, Parent->name);
-		exit(1);
+if (Cur != NULL && Cur->next) 		{
+		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
+					Parent->line , NULL);
+		sprintf(vpr_error->message,
+			"Element '%s' found twice within element '%s'.\n", Name, Parent->name);
+		throw vpr_error;
 	}
 	return Cur;
 }
@@ -44,11 +46,12 @@ ezxml_t FindFirstElement(INP ezxml_t Parent, INP const char *Name,
 
 	/* Error out if node isn't found but they required it */
 	if (Required) {
-		if (NULL == Cur) {
-			vpr_printf(TIO_MESSAGE_ERROR,
-			"[LINE %d] Element '%s' not found within element '%s'.\n",
-					Parent->line, Name, Parent->name);
-			exit(1);
+		if (NULL == Cur) {			
+			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
+					Parent->line, NULL);
+			sprintf(vpr_error->message,
+				"Element '%s' not found within element '%s'.\n", Name, Parent->name);
+			throw vpr_error;
 		}
 	}
 
@@ -58,12 +61,13 @@ ezxml_t FindFirstElement(INP ezxml_t Parent, INP const char *Name,
 /* Checks the node is an element with name equal to one given */
 void CheckElement(INP ezxml_t Node, INP const char *Name) {
 	assert(Node != NULL && Name != NULL);
-	if (0 != strcmp(Node->name, Name)) {
-		vpr_printf(TIO_MESSAGE_ERROR,
-		"[LINE %d] Element '%s' within element '%s' does match expected "
-		"element type of '%s'\n", Node->line, Node->name,
-		(Node->parent->name ? Node->parent->name : Node->name) ,Name);
-		exit(1);
+	if (0 != strcmp(Node->name, Name)) {		
+		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
+					Node->line, NULL);
+		sprintf(vpr_error->message,
+			"Element '%s' within element '%s' does match expected element type of '%s'\n", Node->name, 
+			(Node->parent ? (Node->parent->name ? Node->parent->name : Node->name) : "ROOT_TAG") ,Name);
+		throw vpr_error;
 	}
 }
 
@@ -75,30 +79,35 @@ void FreeNode(INOUTP ezxml_t Node) {
 	char *Txt;
 
 	/* Shouldn't have unprocessed properties */
-	if (Node->attr[0]) {
-		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Node '%s' has invalid property %s=\"%s\".\n",
-				Node->line, Node->name, Node->attr[0], Node->attr[1]);
-		exit(1);
+	if (Node->attr[0]) {		
+		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
+					 Node->line, NULL);
+		sprintf(vpr_error->message,
+			    "Node '%s' has invalid property %s=\"%s\".\n", Node->name, Node->attr[0], Node->attr[1]);
+		throw vpr_error;
 	}
 
 	/* Shouldn't have non-whitespace text */
 	Txt = Node->txt;
 	while (*Txt) {
-		if (!IsWhitespace(*Txt)) {
-			vpr_printf(TIO_MESSAGE_ERROR,
-			"[LINE %d] Node '%s' has unexpected text '%s' within it.\n",
-					Node->line, Node->name, Node->txt);
-			exit(1);
+		if (!IsWhitespace(*Txt)) {			
+			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
+					Node->line, NULL);
+			sprintf(vpr_error->message,
+			"Node '%s' has unexpected text '%s' within it.\n", Node->name, Node->txt);
+			throw vpr_error;
 		}
 		++Txt;
 	}
 
 	/* We shouldn't have child items left */
 	Cur = Node->child;
-	if (Cur) {
-		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Node '%s' has invalid child node '%s'.\n",
-				Node->line, Node->name, Cur->name);
-		exit(1);
+	if (Cur) {		
+		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
+					Node->line, NULL);
+		sprintf(vpr_error->message,
+			    "Node '%s' has invalid child node '%s'.\n", Node->name, Cur->name);
+		throw vpr_error;
 	}
 
 	/* Now actually unlink and free the node */
@@ -124,11 +133,12 @@ FindProperty(INP ezxml_t Parent, INP const char *Name, INP boolean Required) {
 
 	Res = ezxml_attr(Parent, Name);
 	if (Required) {
-		if (NULL == Res) {
-			vpr_printf(TIO_MESSAGE_ERROR,
-			"[Line %d] Required property '%s' not found for element '%s'.\n",
-					Parent->line, Name, Parent->name);
-			exit(1);
+		if (NULL == Res) {			
+			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
+					Parent->line, NULL);
+			sprintf(vpr_error->message,
+				"Required property '%s' not found for element '%s'.\n", Name, Parent->name);
+			throw vpr_error;
 		}
 	}
 	return Res;
@@ -326,11 +336,12 @@ extern boolean GetBooleanProperty(INP ezxml_t Parent, INP char *Name,
 		} else if ((strcmp(Prop, "true") == 0) || (strcmp(Prop, "TRUE") == 0)
 				|| (strcmp(Prop, "True") == 0)) {
 			property_value = TRUE;
-		} else {
-			vpr_printf(
-					TIO_MESSAGE_ERROR, "[LINE %d] Unknown value %s for boolean attribute %s in %s",
-					Parent->line, Prop, Name, Parent->name);
-			exit(1);
+		} else {			
+			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
+					 Parent->line, NULL);
+			sprintf(vpr_error->message,
+				"Unknown value %s for boolean attribute %s in %s", Prop, Name, Parent->name);
+			throw vpr_error;
 		}
 		ezxml_set_attr(Parent, Name, NULL);
 	}
@@ -366,10 +377,12 @@ extern int CountChildren(INP ezxml_t Node, INP const char *Name,
 		}
 	}
 	/* Error if no occurances found */
-	if (Count < min_count) {
-		vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Expected node '%s' to have %d "
-		"child elements, but none found.\n", Node->line, Node->name, min_count);
-		exit(1);
+	if (Count < min_count) {		
+		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
+					Node->line, NULL);
+		sprintf(vpr_error->message,
+			"Expected node '%s' to have %d child elements, but none found.\n", Node->name, min_count);
+		throw vpr_error;
 	}
 	return Count;
 }
