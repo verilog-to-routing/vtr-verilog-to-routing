@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "util.h"
 #include "vpr_types.h"
 #include "rr_graph_sbox.h"
