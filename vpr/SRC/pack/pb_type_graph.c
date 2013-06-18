@@ -5,9 +5,9 @@
  * pb_types modes within a pb_type
  */
 
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
+using namespace std;
 
 #include "util.h"
 #include "token.h"
