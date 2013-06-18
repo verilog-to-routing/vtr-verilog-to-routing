@@ -1,7 +1,8 @@
-#include <stdio.h>
-#include <math.h>
-#include <time.h>
-#include <assert.h>
+#include <cstdio>
+#include <ctime>
+#include <cmath>
+using namespace std;
+
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -90,6 +91,14 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	 * impossible Ws */
 	double overused_ratio;
 	double overused_threshold = 0.015;
+
+	//double num_used_pins = 0.0;
+	//for(int iblk = 0; iblk < num_blocks; iblk++){
+	//	for(int ipin = 0; ipin < block[iblk].type->num_pins; ipin++)
+	//		if(block[iblk].nets[ipin] != OPEN)
+	//			num_used_pins++;
+	//}
+	//vpr_printf(TIO_MESSAGE_INFO, "Number of used pins: %d\nNumber of rr nodes: %d\n", (int)(num_used_pins+0.1), num_rr_nodes);
 
 	int times_exceeded_threshold = 0;
 
@@ -199,6 +208,10 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		/* Verification to check the ratio of overused nodes, depending on the configuration
 		 * may abort the routing if the ratio is too high. */
 		overused_ratio = get_overused_ratio();
+		vpr_printf(TIO_MESSAGE_INFO, "Overused ratio: %.6f\n", overused_ratio);
+		//double overused_pins = overused_ratio * (double)num_rr_nodes;
+		//overused_pins /= num_used_pins;
+		//vpr_printf(TIO_MESSAGE_INFO, "Overused pins ratio: %.6f\n", overused_pins);
 		/* Andre Pereira: The check splits the inverval in 3 intervals ([6,10), [10,20), [20,40)
 		 * The values before 6 are not considered, as the behaviour is not interesting
 		 * The threshold used is 4x, 2x, 1x overused_threshold, for each interval,
@@ -252,7 +265,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			pres_fac *= router_opts.pres_fac_mult;
 
 			/* Avoid overflow for high iteration counts, even if acc_cost is big */
-			pres_fac = std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
+			pres_fac = min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
 
 			pathfinder_update_cost(pres_fac, router_opts.acc_fac);
 		}
@@ -387,7 +400,7 @@ static int get_max_pins_per_net(void) {
 	max_pins_per_net = 0;
 	for (inet = 0; inet < num_nets; inet++) {
 		if (clb_net[inet].is_global == FALSE) {
-			max_pins_per_net = std::max(max_pins_per_net,
+			max_pins_per_net = max(max_pins_per_net,
 					(clb_net[inet].num_sinks + 1));
 		}
 	}
@@ -439,13 +452,13 @@ boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_cr
 			else becomes a bit less critical. This effect becomes more pronounced if
 			max_criticality is set lower. */
 			assert(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
-			pin_criticality[ipin] = std::max(pin_criticality[ipin] - (1.0 - max_criticality), 0.0);
+			pin_criticality[ipin] = max(pin_criticality[ipin] - (1.0 - max_criticality), 0.0);
 
 			/* Take pin criticality to some power (1 by default). */
 			pin_criticality[ipin] = pow(pin_criticality[ipin], criticality_exp);
 			
 			/* Cut off pin criticality at max_criticality. */
-			pin_criticality[ipin] = std::min(pin_criticality[ipin], max_criticality);
+			pin_criticality[ipin] = min(pin_criticality[ipin], max_criticality);
 		}
 	}
 
@@ -896,7 +909,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	rlim = (int)(ceil(sqrt((float) area / (float) clb_net[inet].num_sinks)));
 	if (rt_node == NULL || rt_node->u.child_list == NULL) {
 		/* If unknown traceback, set radius of bin to be size of chip */
-		rlim = std::max(nx + 2, ny + 2);
+		rlim = max(nx + 2, ny + 2);
 		return rlim;
 	}
 
@@ -921,7 +934,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		}
 
 		if (success == FALSE) {
-			if (rlim > std::max(nx + 2, ny + 2)) {
+			if (rlim > max(nx + 2, ny + 2)) {
 				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
 					__LINE__, __FILE__);
 				sprintf(vpr_error->message,
