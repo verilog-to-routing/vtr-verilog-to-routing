@@ -94,14 +94,6 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	double overused_ratio;
 	double overused_threshold = 0.015;
 
-	//double num_used_pins = 0.0;
-	//for(int iblk = 0; iblk < num_blocks; iblk++){
-	//	for(int ipin = 0; ipin < block[iblk].type->num_pins; ipin++)
-	//		if(block[iblk].nets[ipin] != OPEN)
-	//			num_used_pins++;
-	//}
-	//vpr_printf(TIO_MESSAGE_INFO, "Number of used pins: %d\nNumber of rr nodes: %d\n", (int)(num_used_pins+0.1), num_rr_nodes);
-
 	int times_exceeded_threshold = 0;
 
 	for (int inet = 0; inet < num_nets; ++inet) {
@@ -210,10 +202,6 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		/* Verification to check the ratio of overused nodes, depending on the configuration
 		 * may abort the routing if the ratio is too high. */
 		overused_ratio = get_overused_ratio();
-		vpr_printf(TIO_MESSAGE_INFO, "Overused ratio: %.6f\n", overused_ratio);
-		//double overused_pins = overused_ratio * (double)num_rr_nodes;
-		//overused_pins /= num_used_pins;
-		//vpr_printf(TIO_MESSAGE_INFO, "Overused pins ratio: %.6f\n", overused_pins);
 		/* Andre Pereira: The check splits the inverval in 3 intervals ([6,10), [10,20), [20,40)
 		 * The values before 6 are not considered, as the behaviour is not interesting
 		 * The threshold used is 4x, 2x, 1x overused_threshold, for each interval,
