@@ -1,6 +1,7 @@
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
+#include <cstdio>
+#include <cstring>
+using namespace std;
+
 #include "util.h"
 #include "hash.h"
 #include "vpr_types.h"
