@@ -1,17 +1,18 @@
-#include <stdio.h>
-#include <math.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
+#include <cmath>
+using namespace std;
+
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
-#include "route_common.h"
 #include "place_and_route.h"
+#include "route_common.h"
 #include "route_tree_timing.h"
 #include "route_timing.h"
-#include "timing_place_lookup.h"
-#include "rr_graph.h"
 #include "route_export.h"
-#include <assert.h>
+#include "rr_graph.h"
+#include "timing_place_lookup.h"
 #include "read_xml_arch_file.h"
 
 /*this file contains routines that generate the array containing*/
@@ -246,7 +247,7 @@ static void alloc_block(void) {
 
 	max_pins = 0;
 	for (i = 0; i < NUM_TYPES_USED; i++) {
-		max_pins = std::max(max_pins, type_descriptors[i].num_pins);
+		max_pins = max(max_pins, type_descriptors[i].num_pins);
 	}
 
 	block = (struct s_block *) my_malloc(num_blocks * sizeof(struct s_block));
@@ -412,7 +413,7 @@ static void setup_chan_width(struct s_router_opts router_opts,
 
 	max_pins_per_clb = 0;
 	for (i = 0; i < num_types; i++) {
-		max_pins_per_clb = std::max(max_pins_per_clb, type_descriptors[i].num_pins);
+		max_pins_per_clb = max(max_pins_per_clb, type_descriptors[i].num_pins);
 	}
 
 	if (router_opts.fixed_channel_width == NO_FIXED_CHANNEL_WIDTH)
