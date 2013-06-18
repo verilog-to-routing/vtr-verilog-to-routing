@@ -5,9 +5,10 @@
  * Read a circuit netlist in XML format and populate the netlist data structures for VPR
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
+#include <cstdio>
+#include <cstring>
+using namespace std;
+
 #include "util.h"
 #include "hash.h"
 #include "vpr_types.h"
