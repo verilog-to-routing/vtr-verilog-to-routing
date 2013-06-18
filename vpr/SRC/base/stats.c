@@ -1,7 +1,8 @@
-#include <assert.h>
-#include <stdio.h>
-#include <math.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
+#include <cmath>
+using namespace std;
+
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -128,13 +129,13 @@ void get_length_and_bends_stats(void) {
 			get_num_bends_and_length(inet, &bends, &length, &segments);
 
 			total_bends += bends;
-			max_bends = std::max(bends, max_bends);
+			max_bends = max(bends, max_bends);
 
 			total_length += length;
-			max_length = std::max(length, max_length);
+			max_length = max(length, max_length);
 
 			total_segments += segments;
-			max_segments = std::max(segments, max_segments);
+			max_segments = max(segments, max_segments);
 		} else if (clb_net[inet].is_global) {
 			num_global_nets++;
 		} else {
@@ -183,7 +184,7 @@ static void get_channel_occupancy_stats(void) {
 		int max_occ = -1;
 
 		for (int i = 1; i <= nx; ++i) {
-			max_occ = std::max(chanx_occ[i][j], max_occ);
+			max_occ = max(chanx_occ[i][j], max_occ);
 			ave_occ += chanx_occ[i][j];
 		}
 		ave_occ /= nx;
@@ -200,7 +201,7 @@ static void get_channel_occupancy_stats(void) {
 		int max_occ = -1;
 
 		for (int j = 1; j <= ny; ++j) {
-			max_occ = std::max(chany_occ[i][j], max_occ);
+			max_occ = max(chany_occ[i][j], max_occ);
 			ave_occ += chany_occ[i][j];
 		}
 		ave_occ /= ny;
