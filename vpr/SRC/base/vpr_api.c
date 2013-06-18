@@ -7,10 +7,10 @@
  June 21, 2012
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
-#include <time.h>
+#include <cstdio>
+#include <cstring>
+#include <ctime>
+using namespace std;
 
 #include "util.h"
 #include "vpr_types.h"
