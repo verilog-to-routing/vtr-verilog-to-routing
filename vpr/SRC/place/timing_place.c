@@ -1,5 +1,7 @@
-#include <stdio.h>
-#include <math.h>
+#include <cstdio>
+#include <cmath>
+using namespace std;
+
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
