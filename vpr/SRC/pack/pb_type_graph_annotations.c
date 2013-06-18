@@ -2,10 +2,10 @@
  April 15, 2011
  Loads statistical information (min/max delays, power) onto the pb_graph.  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+using namespace std;
 
 #include "util.h"
 #include "arch_types.h"
