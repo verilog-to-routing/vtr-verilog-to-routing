@@ -1,6 +1,7 @@
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
+using namespace std;
+
 #include "read_xml_arch_file.h"
 #include "util.h"
 #include "vpr_types.h"
