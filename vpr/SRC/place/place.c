@@ -1,7 +1,7 @@
-/*#include <stdlib.h> */
-#include <stdio.h>
-#include <math.h>
-#include <assert.h>
+#include <cstdio>
+#include <cmath>
+using namespace std;
+
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -528,7 +528,7 @@ void try_place(struct s_placer_opts placer_opts,
 	if (move_lim <= 0)
 		move_lim = 1;
 
-	rlim = (float) std::max(nx + 1, ny + 1);
+	rlim = (float) max(nx + 1, ny + 1);
 
 	first_rlim = rlim; /*used in timing-driven placement for exponent computation */
 	final_rlim = 1;
@@ -821,7 +821,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 	/*for normalizing the tradeoff between timing and wirelength (bb)  */
 	*inverse_prev_bb_cost = 1 / bb_cost;
 	/*Prevent inverse timing cost from going to infinity */
-	*inverse_prev_timing_cost = std::min(1 / (*timing_cost), (float)MAX_INV_TIMING_COST);
+	*inverse_prev_timing_cost = min(1 / (*timing_cost), (float)MAX_INV_TIMING_COST);
 }
 
 /* Function which contains the inner loop of the simulated annealing */
@@ -957,9 +957,9 @@ static void update_rlim(float *rlim, float success_rat) {
 	float upper_lim;
 
 	*rlim = (*rlim) * (1. - 0.44 + success_rat);
-	upper_lim = std::max(nx + 1, ny + 1);
-	*rlim = std::min(*rlim, upper_lim);
-	*rlim = std::max(*rlim, (float)1.);
+	upper_lim = max(nx + 1, ny + 1);
+	*rlim = min(*rlim, upper_lim);
+	*rlim = max(*rlim, (float)1.);
 }
 
 /* Update the temperature according to the annealing schedule selected. */
@@ -1041,7 +1041,7 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 	if (annealing_sched.type == USER_SCHED)
 		return (annealing_sched.init_t);
 
-	move_lim = std::min(max_moves, num_blocks);
+	move_lim = min(max_moves, num_blocks);
 
 	num_accepted = 0;
 	av = 0.;
@@ -1522,14 +1522,14 @@ static boolean find_to(int iblk_from, int x_from, int y_from,
 
 	assert(type == grid[x_from][y_from].type);
 
-	rlx = (int)std::min((float)nx + 1, rlim); 
-	rly = (int)std::min((float)ny + 1, rlim); /* Added rly for aspect_ratio != 1 case. */
+	rlx = (int)min((float)nx + 1, rlim); 
+	rly = (int)min((float)ny + 1, rlim); /* Added rly for aspect_ratio != 1 case. */
 	active_area = 4 * rlx * rly;
 
-	min_x = std::max(0, x_from - rlx);
-	max_x = std::min(nx + 1, x_from + rlx);
-	min_y = std::max(0, y_from - rly);
-	max_y = std::min(ny + 1, y_from + rly);
+	min_x = max(0, x_from - rlx);
+	max_x = min(nx + 1, x_from + rlx);
+	min_y = max(0, y_from - rly);
+	max_y = min(ny + 1, y_from + rly);
 
 #ifdef DEBUG
 	if (rlx < 1 || rlx > nx + 1) {
@@ -1545,7 +1545,7 @@ static boolean find_to(int iblk_from, int x_from, int y_from,
 		is_legal = TRUE;
 
 		/* Limit the number of tries when searching for an alternative position */
-		if(num_tries >= 2 * std::min(active_area / (type->width * type->height), num_legal_pos[block_index]) + 10) {
+		if(num_tries >= 2 * min(active_area / (type->width * type->height), num_legal_pos[block_index]) + 10) {
 			/* Tried randomly searching for a suitable position */
 			return FALSE;
 		} else {
@@ -1603,8 +1603,8 @@ static boolean find_to(int iblk_from, int x_from, int y_from,
 			*x_to = legal_pos[block_index][ipos].x;
 			*y_to = legal_pos[block_index][ipos].y;
 		} else {
-			x_rel = my_irand(std::max(0, max_x - min_x));
-			y_rel = my_irand(std::max(0, max_y - min_y));
+			x_rel = my_irand(max(0, max_x - min_x));
+			y_rel = my_irand(max(0, max_y - min_y));
 			*x_to = min_x + x_rel;
 			*y_to = min_y + y_rel;
 			*x_to = (*x_to) - grid[*x_to][*y_to].width_offset; /* align it */
@@ -2034,7 +2034,7 @@ static void alloc_and_load_placement_structs(
 
 	max_pins_per_clb = 0;
 	for (i = 0; i < num_types; i++) {
-		max_pins_per_clb = std::max(max_pins_per_clb, type_descriptors[i].num_pins);
+		max_pins_per_clb = max(max_pins_per_clb, type_descriptors[i].num_pins);
 	}
 
 	if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
@@ -2145,8 +2145,8 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 	x = block[bnum].x + block[bnum].type->pin_width[pnum];
 	y = block[bnum].y + block[bnum].type->pin_height[pnum];
 
-	x = std::max(std::min(x, nx), 1);
-	y = std::max(std::min(y, ny), 1);
+	x = max(min(x, nx), 1);
+	y = max(min(y, ny), 1);
 
 	xmin = x;
 	ymin = y;
@@ -2170,8 +2170,8 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 		 * the which channels are included within the bounding box, and it         *
 		 * simplifies the code a lot.                                              */
 
-		x = std::max(std::min(x, nx), 1);
-		y = std::max(std::min(y, ny), 1);
+		x = max(min(x, nx), 1);
+		y = max(min(y, ny), 1);
 
 		if (x == xmin) {
 			xmin_edge++;
@@ -2330,10 +2330,10 @@ static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new) {
 	 * clip to 1 in both directions as well (since minimum channel index *
 	 * is 0).  See route.c for a channel diagram.                        */
 
-	bb_coord_new->xmin = std::max(std::min(xmin, nx), 1);
-	bb_coord_new->ymin = std::max(std::min(ymin, ny), 1);
-	bb_coord_new->xmax = std::max(std::min(xmax, nx), 1);
-	bb_coord_new->ymax = std::max(std::min(ymax, ny), 1);
+	bb_coord_new->xmin = max(min(xmin, nx), 1);
+	bb_coord_new->ymin = max(min(ymin, ny), 1);
+	bb_coord_new->xmax = max(min(xmax, nx), 1);
+	bb_coord_new->ymax = max(min(ymax, ny), 1);
 }
 
 static void update_bb(int inet, struct s_bb *bb_coord_new,
@@ -2354,10 +2354,10 @@ static void update_bb(int inet, struct s_bb *bb_coord_new,
 	
 	struct s_bb *curr_bb_edge, *curr_bb_coord;
 		
-	xnew = std::max(std::min(xnew, nx), 1);
-	ynew = std::max(std::min(ynew, ny), 1);
-	xold = std::max(std::min(xold, nx), 1);
-	yold = std::max(std::min(yold, ny), 1);
+	xnew = max(min(xnew, nx), 1);
+	ynew = max(min(ynew, ny), 1);
+	xold = max(min(xold, nx), 1);
+	yold = max(min(yold, ny), 1);
 
 	/* Check if the net had been updated before. */
 	if (bb_updated_before[inet] == GOT_FROM_SCRATCH)
