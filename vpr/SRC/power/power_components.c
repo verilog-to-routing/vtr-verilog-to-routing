@@ -21,8 +21,8 @@
  */
 
 /************************* INCLUDES *********************************/
-#include <string.h>
-#include <assert.h>
+#include <cstring>
+using namespace std;
 
 #include "power_components.h"
 #include "power_lowlevel.h"
