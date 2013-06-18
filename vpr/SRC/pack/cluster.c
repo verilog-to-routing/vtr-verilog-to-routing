@@ -4,11 +4,11 @@
  * June 8, 2011
  */
 
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <map>
+using namespace std;
 
 #include "util.h"
 #include "vpr_types.h"
@@ -120,7 +120,7 @@ static void check_for_duplicate_inputs ();
 static boolean is_logical_blk_in_pb(int iblk, t_pb *pb);
 
 static void add_molecule_to_pb_stats_candidates(t_pack_molecule *molecule,
-		std::map<int, float> &gain, t_pb *pb);
+		map<int, float> &gain, t_pb *pb);
 
 static void alloc_and_init_clustering(boolean global_clocks, float alpha,
 		float beta, int max_cluster_size, int max_molecule_inputs,
@@ -220,7 +220,7 @@ static void check_cluster_logical_blocks(t_pb *pb, boolean *blocks_checked);
 
 static t_pack_molecule* get_most_critical_seed_molecule(int * indexofcrit);
 
-static float get_molecule_gain(t_pack_molecule *molecule, std::map<int, float> &blk_gain);
+static float get_molecule_gain(t_pack_molecule *molecule, map<int, float> &blk_gain);
 static int compare_molecule_gain(const void *a, const void *b);
 static int get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 		t_pb_graph_pin *pb_graph_pin);
@@ -662,7 +662,7 @@ static boolean is_logical_blk_in_pb(int iblk, t_pb *pb) {
 
 /* Add blk to list of feasible blocks sorted according to gain */
 static void add_molecule_to_pb_stats_candidates(t_pack_molecule *molecule,
-		std::map<int, float> &gain, t_pb *pb) {
+		map<int, float> &gain, t_pb *pb) {
 	int i, j;
 
 	for (i = 0; i < pb->pb_stats->num_feasible_blocks; i++) {
@@ -2347,7 +2347,7 @@ static t_pack_molecule* get_most_critical_seed_molecule(int * indexofcrit) {
  gain is equal to total_block_gain + molecule_base_gain*some_factor - introduced_input_nets_of_unrelated_blocks_pulled_in_by_molecule*some_other_factor
 
  */
-static float get_molecule_gain(t_pack_molecule *molecule, std::map<int, float> &blk_gain) {
+static float get_molecule_gain(t_pack_molecule *molecule, map<int, float> &blk_gain) {
 	float gain;
 	int i, ipin, iport, inet, iblk;
 	int num_introduced_inputs_of_indirectly_related_block;
