@@ -18,10 +18,7 @@
 
  Author: Jason Luu
  Date: May 16, 2012
-
-
  */
-#include <assert.h>
 
 #include "read_xml_arch_file.h"
 #include "util.h"
