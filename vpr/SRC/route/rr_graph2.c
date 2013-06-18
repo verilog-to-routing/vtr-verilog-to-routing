@@ -1,5 +1,6 @@
-#include <stdio.h>
-#include <assert.h>
+#include <cstdio>
+using namespace std;
+
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -249,7 +250,7 @@ t_seg_details *alloc_and_load_seg_details(
 			 * * twisting of wires. */
 			seg_details[cur_track].group_start = group_start;
 			seg_details[cur_track].group_size = 
-					std::min(ntracks + first_track - group_start, length * fac);
+					min(ntracks + first_track - group_start, length * fac);
 			assert(0 == seg_details[cur_track].group_size % fac);
 			if (0 == seg_details[cur_track].group_size) {
 				seg_details[cur_track].group_size = length * fac;
@@ -818,7 +819,7 @@ int get_unidir_opin_connections(
 	/* Clip Fc to the number of muxes. */
 	if (((Fc / 2) > num_inc_muxes) || ((Fc / 2) > num_dec_muxes)) {
 		*Fc_clipped = TRUE;
-		Fc = 2 * std::min(num_inc_muxes, num_dec_muxes);
+		Fc = 2 * min(num_inc_muxes, num_dec_muxes);
 	}
 
 	/* Assign tracks to meet Fc demand */
@@ -1946,8 +1947,8 @@ static void get_switch_type(
 
 	/* Take the larger pass trans if there are two */
 	if (forward_pass_trans && backward_pass_trans) {
-		min_switch = std::min(to_node_switch, from_node_switch);
-		max_switch = std::max(to_node_switch, from_node_switch);
+		min_switch = min(to_node_switch, from_node_switch);
+		max_switch = max(to_node_switch, from_node_switch);
 
 		/* Take the smaller index unless the other 
 		 * pass_trans is bigger (smaller R). */
