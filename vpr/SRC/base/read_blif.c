@@ -1,7 +1,8 @@
-#include <string.h>
-#include <stdio.h>
-#include <time.h>
-#include "assert.h"
+#include <cstdio>
+#include <cstring>
+#include <ctime>
+using namespace std;
+
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
