@@ -1,7 +1,8 @@
 /* TODO: Consider deleting this file altogether.  Many netlist checks now done during parsing.  Also, the checks here are too strict.  For example, we may actually want to allow mixing of local/global signals */
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
+using namespace std;
 
 #include "util.h"
 #include "vpr_types.h"
