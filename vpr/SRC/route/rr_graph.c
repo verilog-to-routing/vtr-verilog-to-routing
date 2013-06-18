@@ -1,18 +1,19 @@
-#include <stdio.h>
-#include <math.h>
-#include <assert.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
+#include <cmath>
+using namespace std;
+
 #include "util.h"
 #include "vpr_types.h"
+#include "vpr_utils.h"
 #include "globals.h"
 #include "rr_graph_util.h"
 #include "rr_graph.h"
 #include "rr_graph2.h"
 #include "rr_graph_sbox.h"
-#include "check_rr_graph.h"
 #include "rr_graph_timing_params.h"
 #include "rr_graph_indexed_data.h"
-#include "vpr_utils.h"
+#include "check_rr_graph.h"
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
 
@@ -308,7 +309,7 @@ void build_rr_graph(
 		 * If use_full_seg_groups is specified, nodes_per_chan may be 
 		 * changed. Warning should be singled to caller if this happens. */
 		seg_details = alloc_and_load_seg_details(&nodes_per_chan,
-				std::max(L_nx, L_ny), num_seg_types, segment_inf,
+				max(L_nx, L_ny), num_seg_types, segment_inf,
 				use_full_seg_groups, is_global_graph, directionality,
 				&num_seg_details);
 		if ((is_global_graph ? 1 : chan_width) != nodes_per_chan) {
@@ -689,7 +690,7 @@ static int **alloc_and_load_actual_fc(INP int L_num_types, INP t_type_ptr types,
 					Result[i][j] = nodes_per_chan;
 				}
 
-				Result[i][j] = std::max(Result[i][j], fac);
+				Result[i][j] = max(Result[i][j], fac);
 				if (Result[i][j] > nodes_per_chan) {
 					*Fc_clipped = TRUE;
 					Result[i][j] = nodes_per_chan;
@@ -1702,7 +1703,7 @@ static void load_uniform_switch_pattern(INP t_type_ptr type,
 			int itrack = ((int) ftrack) * group_size;
 
 			/* Catch possible floating point round error */
-			itrack = std::min(itrack, nodes_per_chan - group_size);
+			itrack = min(itrack, nodes_per_chan - group_size);
 
 			/* Assign the group of tracks for the Fc pattern */
 			for (int k = 0; k < group_size; ++k) {
