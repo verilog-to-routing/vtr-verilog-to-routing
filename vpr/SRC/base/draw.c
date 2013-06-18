@@ -4,6 +4,8 @@
 #include <algorithm>
 using namespace std;
 
+#include <assert.h>
+
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
