@@ -1,7 +1,6 @@
-// JR - Extended SetupRouterOptions() function to support new 'RouterOpts->trim_obs_channels' member
+#include <cstring>
+using namespace std;
 
-#include <assert.h>
-#include <string.h>
 #include "util.h"
 #include "vpr_types.h"
 #include "OptionTokens.h"
