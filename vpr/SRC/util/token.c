@@ -4,8 +4,10 @@
  * Tokenizer
  */
 
-#include <string.h>
-#include <assert.h>
+#include <cstring>
+#include <cassert>
+using namespace std;
+
 #include "util.h"
 #include "token.h"
 #include "ezxml.h"
