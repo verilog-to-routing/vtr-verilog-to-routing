@@ -8,6 +8,8 @@
 #include <cassert>
 using namespace std;
 
+#include <assert.h>
+
 #include "util.h"
 #include "token.h"
 #include "ezxml.h"
