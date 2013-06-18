@@ -1,14 +1,15 @@
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
+#include <cmath>
 #include <algorithm>
-#include <math.h>
+using namespace std;
+
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
 #include "graphics.h"
 #include "path_delay.h"
 #include "draw.h"
-#include <assert.h>
 #include "read_xml_arch_file.h"
 #include "util.h"
 
@@ -517,7 +518,7 @@ void init_draw_coords(float width_val) {
 	tile_width = width_val;
 	pin_size = 0.3;
 	for (i = 0; i < num_types; ++i) {
-		pin_size = std::min(pin_size,
+		pin_size = min(pin_size,
 				(tile_width / (4.0F * type_descriptors[i].num_pins)));
 	}
 
@@ -2023,8 +2024,8 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 			}
 		}
 
-		start = std::max(start, grid_x);
-		end = std::min(end, grid_x); /* Width is 1 always */
+		start = max(start, grid_x);
+		end = min(end, grid_x); /* Width is 1 always */
 		assert(end >= start);
 		/* Make sure we are nearby */
 
@@ -2068,8 +2069,8 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 			}
 		}
 
-		start = std::max(start, grid_y);
-		end = std::min(end, (grid_y + height - 1)); /* Width is 1 always */
+		start = max(start, grid_y);
+		end = min(end, (grid_y + height - 1)); /* Width is 1 always */
 		assert(end >= start);
 		/* Make sure we are nearby */
 
