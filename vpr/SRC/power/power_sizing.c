@@ -21,8 +21,8 @@
  */
 
 /************************* INCLUDES *********************************/
-#include <assert.h>
-#include <string.h>
+#include <cstring>
+using namespace std;
 
 #include "power_sizing.h"
 #include "power.h"
@@ -77,7 +77,7 @@ static double power_count_transistors_connectionbox(void) {
 			* (g_power_commonly_used->NMOS_1X_C_d
 					/ g_power_commonly_used->INV_1X_C_in)
 			/ g_power_arch->logical_effort_factor;
-	buffer_size = std::max(1.0F, buffer_size);
+	buffer_size = max(1.0F, buffer_size);
 	transistor_cnt += g_solution_inf.channel_width
 			* power_count_transistors_buffer(buffer_size);
 
@@ -161,7 +161,7 @@ static double power_count_transistors_mux(t_mux_arch * mux_arch) {
 static void power_mux_node_max_inputs(t_mux_node * mux_node,
 		float * max_inputs) {
 
-	max_inputs[mux_node->level] = std::max(max_inputs[mux_node->level],
+	max_inputs[mux_node->level] = max(max_inputs[mux_node->level],
 			static_cast<float>(mux_node->num_inputs));
 
 	if (mux_node->level != 0) {
@@ -318,7 +318,7 @@ static double power_count_transistors_pb_node(t_pb_graph_node * pb_node) {
 							&mode->interconnect[interc]);
 				}
 			}
-			tc_interc_max = std::max(tc_interc_max, tc_interc);
+			tc_interc_max = max(tc_interc_max, tc_interc);
 
 			/* Count Child PB Types */
 			for (child = 0; child < mode->num_pb_type_children; child++) {
@@ -331,7 +331,7 @@ static double power_count_transistors_pb_node(t_pb_graph_node * pb_node) {
 				}
 			}
 
-			tc_children_max = std::max(tc_children_max, tc_children);
+			tc_children_max = max(tc_children_max, tc_children);
 		}
 	}
 
@@ -741,8 +741,8 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 
 		/* Find worst-case between modes*/
 		for (i = 0; i < this_pb_type->num_modes; i++) {
-			fanout = std::max(fanout, fanout_per_mode[i]);
-			wirelength_out = std::max(wirelength_out,
+			fanout = max(fanout, fanout_per_mode[i]);
+			wirelength_out = max(wirelength_out,
 					wirelength_out_per_mode[i]);
 		}
 		if (wirelength_out != 0) {
