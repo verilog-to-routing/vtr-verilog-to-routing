@@ -10,11 +10,10 @@
  3.  globals.h - Defines the global variables used by VPR.
  */
 
-
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
-#include <time.h>
+#include <cstdio>
+#include <cstring>
+#include <ctime>
+using namespace std;
 
 #include "vpr_api.h"
 
