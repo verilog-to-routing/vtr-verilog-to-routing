@@ -23,8 +23,8 @@
  */
 
 /************************* INCLUDES *********************************/
-#include <assert.h>
-#include <string.h>
+#include <cstring>
+using namespace std;
 
 #include "power_cmos_tech.h"
 #include "power.h"
