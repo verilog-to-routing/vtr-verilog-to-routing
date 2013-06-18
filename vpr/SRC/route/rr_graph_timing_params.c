@@ -1,4 +1,3 @@
-#include <assert.h>
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -32,7 +31,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	boolean buffered;
 	float *Couts_to_add; /* UDSD */
 
-	maxlen = std::max(nx, ny) + 1;
+	maxlen = max(nx, ny) + 1;
 	cblock_counted = (boolean *) my_calloc(maxlen, sizeof(boolean));
 	buffer_Cin = (float *) my_calloc(maxlen, sizeof(float));
 
@@ -84,7 +83,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 							rr_node[to_node].C += Cout;
 						}
 						isblock = seg_index_of_sblock(inode, to_node);
-						buffer_Cin[isblock] = std::max(buffer_Cin[isblock], Cin);
+						buffer_Cin[isblock] = max(buffer_Cin[isblock], Cin);
 					}
 
 				}
