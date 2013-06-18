@@ -1,5 +1,6 @@
-#include <assert.h>
-#include <string.h>
+#include <cstring>
+using namespace std;
+
 #include "util.h"
 #include "vpr_types.h"
 #include "physical_types.h"
@@ -670,7 +671,7 @@ int ** alloc_and_load_net_pin_index() {
 
 	/* Compute required size. */
 	for (itype = 0; itype < num_types; itype++)
-		max_pins_per_clb = std::max(max_pins_per_clb, type_descriptors[itype].num_pins);
+		max_pins_per_clb = max(max_pins_per_clb, type_descriptors[itype].num_pins);
 	
 	/* Allocate for maximum size. */
 	temp_net_pin_index = (int **) alloc_matrix(0, num_blocks - 1, 0,
