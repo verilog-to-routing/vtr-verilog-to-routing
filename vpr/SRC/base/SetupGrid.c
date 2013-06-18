@@ -6,9 +6,10 @@
 
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cstdio>
+#include <cstring>
+using namespace std;
+
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
