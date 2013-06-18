@@ -1,6 +1,6 @@
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
+using namespace std;
 
 #include "util.h"
 #include "physical_types.h"
@@ -666,7 +666,7 @@ boolean try_breadth_first_route_cluster(void) {
 		else
 			pres_fac *= router_opts.pres_fac_mult;
 
-		pres_fac = std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
+		pres_fac = min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
 
 		pathfinder_update_cost(pres_fac, router_opts.acc_fac);
 	}
