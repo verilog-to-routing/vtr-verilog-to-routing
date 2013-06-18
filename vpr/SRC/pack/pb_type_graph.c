@@ -9,6 +9,8 @@
 #include <cstring>
 using namespace std;
 
+#include <assert.h>
+
 #include "util.h"
 #include "token.h"
 #include "arch_types.h"

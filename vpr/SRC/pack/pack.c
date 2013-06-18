@@ -2,6 +2,8 @@
 #include <cstring>
 using namespace std;
 
+#include <assert.h>
+
 #include "read_xml_arch_file.h"
 #include "util.h"
 #include "vpr_types.h"

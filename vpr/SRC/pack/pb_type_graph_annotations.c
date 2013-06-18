@@ -7,6 +7,8 @@
 #include <cstring>
 using namespace std;
 
+#include <assert.h>
+
 #include "util.h"
 #include "arch_types.h"
 #include "vpr_types.h"

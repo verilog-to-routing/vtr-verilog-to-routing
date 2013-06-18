@@ -10,6 +10,8 @@
 #include <cstring>
 using namespace std;
 
+#include <assert.h>
+
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
