@@ -1,5 +1,6 @@
-#include <assert.h>
-#include <stdio.h>
+#include <cstdio>
+using namespace std;
+
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -62,7 +63,7 @@ void check_route(enum e_route_type route_type, int num_switch,
 
 	max_pins = 0;
 	for (inet = 0; inet < num_nets; inet++)
-		max_pins = std::max(max_pins, (clb_net[inet].num_sinks + 1));
+		max_pins = max(max_pins, (clb_net[inet].num_sinks + 1));
 
 	pin_done = (boolean *) my_malloc(max_pins * sizeof(boolean));
 
