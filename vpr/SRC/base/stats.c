@@ -311,8 +311,7 @@ void get_num_bends_and_length(int inet, int *bends_ptr, int *len_ptr,
 			length += 1 + rr_node[inode].xhigh - rr_node[inode].xlow
 					+ rr_node[inode].yhigh - rr_node[inode].ylow;
 
-			if (curr_type != prev_type
-					&& (prev_type == CHANX || prev_type == CHANY))
+			if (curr_type != prev_type && (prev_type == CHANX || prev_type == CHANY))
 				bends++;
 		}
 

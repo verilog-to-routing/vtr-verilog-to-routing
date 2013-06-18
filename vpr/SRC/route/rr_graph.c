@@ -302,8 +302,7 @@ void build_rr_graph(
 	if (is_global_graph) {
 		/* Sets up a single unit length segment type for global routing. */
 		seg_details = alloc_and_load_global_route_seg_details(nodes_per_chan,
-				global_route_switch, 
-				&num_seg_details);
+				global_route_switch, &num_seg_details);
 	} else {
 		/* Setup segments including distrubuting tracks and staggering.
 		 * If use_full_seg_groups is specified, nodes_per_chan may be 
