@@ -9,6 +9,8 @@
 #include <cstring>
 using namespace std;
 
+#include <assert.h>
+
 #include "util.h"
 #include "hash.h"
 #include "vpr_types.h"
