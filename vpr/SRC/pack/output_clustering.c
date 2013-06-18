@@ -3,10 +3,11 @@
  Print complex block information to a file
  */
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+using namespace std;
+
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
