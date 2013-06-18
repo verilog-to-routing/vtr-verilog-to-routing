@@ -24,6 +24,8 @@
 #include <cstring>
 using namespace std;
 
+#include <assert.h>
+
 #include "power_sizing.h"
 #include "power.h"
 #include "globals.h"

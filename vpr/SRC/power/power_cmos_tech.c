@@ -26,6 +26,8 @@
 #include <cstring>
 using namespace std;
 
+#include <assert.h>
+
 #include "power_cmos_tech.h"
 #include "power.h"
 #include "power_util.h"

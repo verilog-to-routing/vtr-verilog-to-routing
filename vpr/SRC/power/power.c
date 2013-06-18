@@ -20,8 +20,6 @@
  */
 
 /************************* INCLUDES *********************************/
-#include <ctype.h>
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -29,6 +27,9 @@
 #include <ctime>
 #include <cmath>
 using namespace std;
+
+#include <ctype.h>
+#include <assert.h>
 
 #include "power.h"
 #include "power_components.h"

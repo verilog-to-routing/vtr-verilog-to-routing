@@ -23,6 +23,8 @@
 #include <cstring>
 using namespace std;
 
+#include <assert.h>
+
 #include "power_util.h"
 #include "globals.h"
 

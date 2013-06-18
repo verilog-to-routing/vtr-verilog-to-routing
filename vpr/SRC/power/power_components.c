@@ -24,6 +24,8 @@
 #include <cstring>
 using namespace std;
 
+#include <assert.h>
+
 #include "power_components.h"
 #include "power_lowlevel.h"
 #include "power_util.h"

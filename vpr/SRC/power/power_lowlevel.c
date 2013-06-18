@@ -21,6 +21,8 @@
  */
 
 /************************* INCLUDES *********************************/
+#include <assert.h>
+
 #include "power_lowlevel.h"
 #include "power_util.h"
 #include "power_cmos_tech.h"
