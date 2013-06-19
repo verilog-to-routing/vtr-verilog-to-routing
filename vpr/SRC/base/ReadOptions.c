@@ -267,7 +267,7 @@ void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
 			Args = ProcessOption(Args, Options);
 		} else if (NULL == Options->ArchFile) {
 			Options->ArchFile = my_strdup(*Args);
-			vpr_printf(TIO_MESSAGE_INFO, "Architecture file: %s\n", Options->ArchFile);
+			vpr_printf_info("Architecture file: %s\n", Options->ArchFile);
 			++Args;
 		} else if (NULL == Options->CircuitName) {
 			Options->CircuitName = my_strdup(*Args);
@@ -276,8 +276,8 @@ void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
 			if (offset > 0 && !strcmp(Options->CircuitName + offset, ".blif")) {
 				Options->CircuitName[offset] = '\0';
 			}
-			vpr_printf(TIO_MESSAGE_INFO, "Circuit name: %s.blif\n", Options->CircuitName);
-			vpr_printf(TIO_MESSAGE_INFO, "\n");
+			vpr_printf_info("Circuit name: %s.blif\n", Options->CircuitName);
+			vpr_printf_info("\n");
 			++Args;
 		} else {
 			/* Not an option and arch and net already specified so fail */
@@ -482,7 +482,7 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadString(Args, &Options->CmosTechFile);
 
 	default:
-		vpr_printf(TIO_MESSAGE_ERROR, "Unexpected option '%s' on command line.\n", *PrevArgs);
+		vpr_printf_error(__FILE__, __LINE__, "Unexpected option '%s' on command line.\n", *PrevArgs);
 		exit(1);
 	}
 }
@@ -761,9 +761,9 @@ ReadToken(INP char **Args, OUTP enum e_OptionArgToken *Token) {
 /* Called for parse errors. Spits out a message and then exits program. */
 static void Error(INP const char *Token) {
 	if (Token) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Unexpected token '%s' on command line.\n", Token);
+		vpr_printf_error(__FILE__, __LINE__, "Unexpected token '%s' on command line.\n", Token);
 	} else {
-		vpr_printf(TIO_MESSAGE_ERROR, "Missing token at end of command line.\n");
+		vpr_printf_error(__FILE__, __LINE__, "Missing token at end of command line.\n");
 	}
 	exit(1);
 }

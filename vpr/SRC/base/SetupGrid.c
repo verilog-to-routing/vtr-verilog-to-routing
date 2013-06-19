@@ -64,8 +64,8 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 	/* To remove this limitation, change ylow etc. in t_rr_node to        *
 	 * * be ints instead.  Used shorts to save memory.                      */
 	if ((nx > 32766) || (ny > 32766)) {
-		vpr_printf(TIO_MESSAGE_ERROR, "nx and ny must be less than 32767, since the router uses shorts (16-bit) to store coordinates.\n");
-		vpr_printf(TIO_MESSAGE_ERROR, "nx: %d, ny: %d\n", nx, ny);
+		vpr_printf_error(__FILE__, __LINE__, "nx and ny must be less than 32767, since the router uses shorts (16-bit) to store coordinates.\n");
+		vpr_printf_error(__FILE__, __LINE__, "nx: %d, ny: %d\n", nx, ny);
 		exit(1);
 	}
 
@@ -228,7 +228,7 @@ static t_type_ptr alloc_and_load_block_override_type(
 	const TFH_FabricBlockHandler_c& fabricBlockHandler = TFH_FabricBlockHandler_c::GetInstance();
 	if (fabricBlockHandler.IsValid()) {
 
-		vpr_printf(TIO_MESSAGE_INFO, "Overriding architecture block[%d][%d] based on fabric %s block...\n", x, y, type->name);
+		vpr_printf_info("Overriding architecture block[%d][%d] based on fabric %s block...\n", x, y, type->name);
 
 		// Search for override type based on given block grid list
 		const TFH_GridBlockList_t& gridBlockList = fabricBlockHandler.GetGridBlockList( );
@@ -401,29 +401,29 @@ static void CheckGrid(void) {
 	for (i = 0; i <= (nx + 1); ++i) {
 		for (j = 0; j <= (ny + 1); ++j) {
 			if (NULL == grid[i][j].type) {
-				vpr_printf(TIO_MESSAGE_ERROR, "grid[%d][%d] has no type.\n", i, j);
+				vpr_printf_error(__FILE__, __LINE__, "grid[%d][%d] has no type.\n", i, j);
 				exit(1);
 			}
 
 			if (grid[i][j].usage != 0) {
-				vpr_printf(TIO_MESSAGE_ERROR, "grid[%d][%d] has non-zero usage (%d) before netlist load.\n", i, j, grid[i][j].usage);
+				vpr_printf_error(__FILE__, __LINE__, "grid[%d][%d] has non-zero usage (%d) before netlist load.\n", i, j, grid[i][j].usage);
 				exit(1);
 			}
 
 			if ((grid[i][j].width_offset < 0)
 					|| (grid[i][j].width_offset >= grid[i][j].type->width)) {
-				vpr_printf(TIO_MESSAGE_ERROR, "grid[%d][%d] has invalid width offset (%d).\n", i, j, grid[i][j].width_offset);
+				vpr_printf_error(__FILE__, __LINE__, "grid[%d][%d] has invalid width offset (%d).\n", i, j, grid[i][j].width_offset);
 				exit(1);
 			}
 			if ((grid[i][j].height_offset < 0)
 					|| (grid[i][j].height_offset >= grid[i][j].type->height)) {
-				vpr_printf(TIO_MESSAGE_ERROR, "grid[%d][%d] has invalid height offset (%d).\n", i, j, grid[i][j].height_offset);
+				vpr_printf_error(__FILE__, __LINE__, "grid[%d][%d] has invalid height offset (%d).\n", i, j, grid[i][j].height_offset);
 				exit(1);
 			}
 
 			if ((NULL == grid[i][j].blocks)
 					&& (grid[i][j].type->capacity > 0)) {
-				vpr_printf(TIO_MESSAGE_ERROR, "grid[%d][%d] has no block list allocated.\n", i, j);
+				vpr_printf_error(__FILE__, __LINE__, "grid[%d][%d] has no block list allocated.\n", i, j);
 				exit(1);
 			}
 		}

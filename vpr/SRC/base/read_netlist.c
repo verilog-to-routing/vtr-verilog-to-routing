@@ -95,25 +95,27 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	int num_primitives = 0;
 
 	/* Parse the file */
-	vpr_printf(TIO_MESSAGE_INFO, "Begin parsing packed FPGA netlist file.\n");
+	vpr_printf_info("Begin parsing packed FPGA netlist file.\n");
 	Top = ezxml_parse_file(net_file);
 	if (NULL == Top) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Unable to load netlist file '%s'.\n", net_file);
+		vpr_printf_error(__FILE__, __LINE__, 
+				"Unable to load netlist file '%s'.\n", net_file);
 		exit(1);
 	}
-	vpr_printf(TIO_MESSAGE_INFO, "Finished parsing packed FPGA netlist file.\n");
+	vpr_printf_info("Finished parsing packed FPGA netlist file.\n");
 
 	/* Root node should be block */
 	CheckElement(Top, "block");
 
 	/* Check top-level netlist attributes */
 	Prop = FindProperty(Top, "name", TRUE);
-	vpr_printf(TIO_MESSAGE_INFO, "Netlist generated from file '%s'.\n", Prop);
+	vpr_printf_info("Netlist generated from file '%s'.\n", Prop);
 	ezxml_set_attr(Top, "name", NULL);
 
 	Prop = FindProperty(Top, "instance", TRUE);
 	if (strcmp(Prop, "FPGA_packed_netlist[0]") != 0) {
-		vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Expected instance to be \"FPGA_packed_netlist[0]\", found %s.",
+		vpr_printf_error(__FILE__, __LINE__, 
+				"[Line %d] Expected instance to be \"FPGA_packed_netlist[0]\", found %s.",
 				Top->line, Prop);
 		exit(1);
 	}
@@ -177,7 +179,8 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	/* Error check */
 	for (i = 0; i < num_logical_blocks; i++) {
 		if (logical_block[i].pb == NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR, ".blif file and .net file do not match, .net file missing atom %s.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+				".blif file and .net file do not match, .net file missing atom %s.\n", 
 				logical_block[i].name);
 			exit(1);
 		}
@@ -258,7 +261,8 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 			|| tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
 			|| tokens[2].type != TOKEN_INT
 			|| tokens[3].type != TOKEN_CLOSE_SQUARE_BRACKET) {
-		vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Unknown syntax for instance %s in %s. Expected pb_type[instance_number].\n",
+		vpr_printf_error(__FILE__, __LINE__, 
+				"[Line %d] Unknown syntax for instance %s in %s. Expected pb_type[instance_number].\n",
 				Parent->line, Prop, Parent->name);
 		exit(1);
 	}
@@ -273,7 +277,8 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 		}
 	}
 	if (!found) {
-		vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Unknown cb type %s for cb %s #%d.\n",
+		vpr_printf_error(__FILE__, __LINE__, 
+				"[Line %d] Unknown cb type %s for cb %s #%d.\n",
 				Parent->line, Prop, cb[index].name, index);
 		exit(1);
 	}
@@ -301,7 +306,8 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 		}
 	}
 	if (!found) {
-		vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Unknown mode %s for cb %s #%d.\n", 
+		vpr_printf_error(__FILE__, __LINE__, 
+				"[Line %d] Unknown mode %s for cb %s #%d.\n", 
 				Parent->line, Prop, cb[index].name, index);
 		exit(1);
 	}
@@ -326,11 +332,11 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 #if 0
 	/* print local nets */
 	for (i = 0; i < cb[index].pb->num_local_nets; i++) {
-		vpr_printf(TIO_MESSAGE_INFO, "local net %s: ", cb[index].pb->name);
+		vpr_printf_info("local net %s: ", cb[index].pb->name);
 		for (j = 0; j <= cb[index].pb->local_nets[i].num_sinks; j++) {
-			vpr_printf(TIO_MESSAGE_INFO, "%d ", cb[index].pb->local_nets[i].node_block[j]);
+			vpr_printf_info("%d ", cb[index].pb->local_nets[i].node_block[j]);
 		}
-		vpr_printf(TIO_MESSAGE_INFO, "\n");
+		vpr_printf_info("\n");
 	}
 #endif
 }
@@ -386,7 +392,9 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, 
 		}
 		temp_hash = get_hash_entry(logical_block_hash, pb->name);
 		if (temp_hash == NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR, ".net file and .blif file do not match, encountered unknown primitive %s in .net file.\n", pb->name);
+			vpr_printf_error(__FILE__, __LINE__, 
+					".net file and .blif file do not match, encountered unknown primitive %s in .net file.\n", 
+					pb->name);
 			exit(1);
 		}
 		pb->logical_block = temp_hash->index;
@@ -421,7 +429,8 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, 
 						|| tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
 						|| tokens[2].type != TOKEN_INT
 						|| tokens[3].type != TOKEN_CLOSE_SQUARE_BRACKET) {
-					vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Unknown syntax for instance %s in %s. Expected pb_type[instance_number].\n",
+					vpr_printf_error(__FILE__, __LINE__, 
+							"[Line %d] Unknown syntax for instance %s in %s. Expected pb_type[instance_number].\n",
 							Cur->line, instance_type, Cur->name);
 					exit(1);
 				}
@@ -432,13 +441,15 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, 
 					if (strcmp(pb_type->modes[pb->mode].pb_type_children[i].name, tokens[0].data) == 0) {
 						if (my_atoi(tokens[2].data)
 								>= pb_type->modes[pb->mode].pb_type_children[i].num_pb) {
-							vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Instance number exceeds # of pb available for instance %s in %s.\n",
+							vpr_printf_error(__FILE__, __LINE__, 
+									"[Line %d] Instance number exceeds # of pb available for instance %s in %s.\n",
 									Cur->line, instance_type, Cur->name);
 							exit(1);
 						}
 						pb_index = my_atoi(tokens[2].data);
 						if (pb->child_pbs[i][pb_index].pb_graph_node != NULL) {
-							vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] node is used by two different blocks %s and %s.\n",
+							vpr_printf_error(__FILE__, __LINE__, 
+									"[Line %d] node is used by two different blocks %s and %s.\n",
 									Cur->line, instance_type,
 									pb->child_pbs[i][pb_index].name);
 							exit(1);
@@ -450,7 +461,8 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, 
 					}
 				}
 				if (!found) {
-					vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Unknown pb type %s.\n", 
+					vpr_printf_error(__FILE__, __LINE__, 
+							"[Line %d] Unknown pb type %s.\n", 
 							Cur->line, instance_type);
 					exit(1);
 				}
@@ -477,7 +489,8 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, 
 						}
 					}
 					if (!found && pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes != 0) {
-						vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Unknown mode %s for cb %s #%d.\n",
+						vpr_printf_error(__FILE__, __LINE__, 
+								"[Line %d] Unknown mode %s for cb %s #%d.\n",
 								Cur->line, Prop, pb->child_pbs[i][pb_index].name, pb_index);
 						exit(1);
 					}
@@ -508,7 +521,8 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, 
 							}
 						}
 						if (!found && pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes != 0) {
-							vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Unknown mode %s for cb %s #%d.\n",
+							vpr_printf_error(__FILE__, __LINE__, 
+									"[Line %d] Unknown mode %s for cb %s #%d.\n",
 									Cur->line, Prop, pb->child_pbs[i][pb_index].name, pb_index);
 							exit(1);
 						}
@@ -636,7 +650,8 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 				}
 			}
 			if (!found) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Unknown port %s for pb %s[%d].\n",
+				vpr_printf_error(__FILE__, __LINE__, 
+						"[Line %d] Unknown port %s for pb %s[%d].\n",
 						Cur->line, Prop, pb->pb_graph_node->pb_type->name,
 						pb->pb_graph_node->placement_index);
 				exit(1);
@@ -646,7 +661,8 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 			num_tokens = CountTokens(pins);
 			if (0 == strcmp(Parent->name, "inputs")) {
 				if (num_tokens != pb->pb_graph_node->num_input_pins[in_port]) {
-					vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Incorrect # pins %d found for port %s for pb %s[%d].\n",
+					vpr_printf_error(__FILE__, __LINE__, 
+							"[Line %d] Incorrect # pins %d found for port %s for pb %s[%d].\n",
 							Cur->line, num_tokens, Prop,
 							pb->pb_graph_node->pb_type->name,
 							pb->pb_graph_node->placement_index);
@@ -655,7 +671,8 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 			} else if (0 == strcmp(Parent->name, "outputs")) {
 				if (num_tokens
 						!= pb->pb_graph_node->num_output_pins[out_port]) {
-					vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Incorrect # pins %d found for port %s for pb %s[%d].\n",
+					vpr_printf_error(__FILE__, __LINE__, 
+							"[Line %d] Incorrect # pins %d found for port %s for pb %s[%d].\n",
 							Cur->line, num_tokens, Prop,
 							pb->pb_graph_node->pb_type->name,
 							pb->pb_graph_node->placement_index);
@@ -664,7 +681,8 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 			} else {
 				if (num_tokens
 						!= pb->pb_graph_node->num_clock_pins[clock_port]) {
-					vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Incorrect # pins %d found for port %s for pb %s[%d].\n",
+					vpr_printf_error(__FILE__, __LINE__, 
+							"[Line %d] Incorrect # pins %d found for port %s for pb %s[%d].\n",
 							Cur->line, num_tokens, Prop,
 							pb->pb_graph_node->pb_type->name,
 							pb->pb_graph_node->placement_index);
@@ -685,7 +703,9 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 						if (strcmp(pins[i], "open") != 0) {
 							temp_hash = get_hash_entry(vpack_net_hash, pins[i]);
 							if (temp_hash == NULL) {
-								vpr_printf(TIO_MESSAGE_ERROR, ".blif and .net do not match, unknown net %s found in .net file.\n.", pins[i]);
+								vpr_printf_error(__FILE__, __LINE__, 
+										".blif and .net do not match, unknown net %s found in .net file.\n.", 
+										pins[i]);
 							}
 							rr_graph[rr_node_index].net_num = temp_hash->index;							
 						}						
@@ -732,7 +752,8 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 						free(pin_node);
 						free(num_ptrs);
 						if (!found) {
-							vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Unknown interconnect %s connecting to pin %s.\n",
+							vpr_printf_error(__FILE__, __LINE__, 
+									"[Line %d] Unknown interconnect %s connecting to pin %s.\n",
 									Cur->line, interconnect_name, port_name);
 							exit(1);
 						}
@@ -749,7 +770,9 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 						if (strcmp(pins[i], "open") != 0) {
 							temp_hash = get_hash_entry(vpack_net_hash, pins[i]);
 							if (temp_hash == NULL) {
-								vpr_printf(TIO_MESSAGE_ERROR, ".blif and .net do not match, unknown net %s found in .net file.\n", pins[i]);
+								vpr_printf_error(__FILE__, __LINE__, 
+										".blif and .net do not match, unknown net %s found in .net file.\n", 
+										pins[i]);
 							}
 							rr_graph[rr_node_index].net_num = temp_hash->index;							
 						}
@@ -792,7 +815,8 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 						free(pin_node);
 						free(num_ptrs);
 						if (!found) {
-							vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Unknown interconnect %s connecting to pin %s.\n",
+							vpr_printf_error(__FILE__, __LINE__, 
+									"[Line %d] Unknown interconnect %s connecting to pin %s.\n",
 									Cur->line, interconnect_name, port_name);
 							exit(1);
 						}
@@ -957,8 +981,9 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 						== block_list[i].type->class_inf[block_list[i].type->pin_class[j]].type) {
 					count[netnum]++;
 					if(count[netnum] > (*ext_nets)[netnum].num_sinks) {
-						vpr_printf(TIO_MESSAGE_ERROR, "net %s #%d inconsistency, expected %d terminals but encountered %d terminals, it is likely net terminal is disconnected in netlist file.\n", 
-							(*ext_nets)[netnum].name, netnum, count[netnum], (*ext_nets)[netnum].num_sinks);
+						vpr_printf_error(__FILE__, __LINE__, 
+								"net %s #%d inconsistency, expected %d terminals but encountered %d terminals, it is likely net terminal is disconnected in netlist file.\n", 
+								(*ext_nets)[netnum].name, netnum, count[netnum], (*ext_nets)[netnum].num_sinks);
 						exit(1);
 					}
 					
@@ -981,7 +1006,8 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 		for (j = 1; j <= (*ext_nets)[i].num_sinks; j++) {
 			boolean is_global_net = static_cast<boolean>((*ext_nets)[i].is_global);
 			if (block_list[(*ext_nets)[i].node_block[j]].type->is_global_pin[(*ext_nets)[i].node_block_pin[j]] != is_global_net) {
-				vpr_printf(TIO_MESSAGE_ERROR, "Netlist attempts to connect net %s to both global and non-global pins.\n", 
+				vpr_printf_error(__FILE__, __LINE__, 
+						"Netlist attempts to connect net %s to both global and non-global pins.\n", 
 						(*ext_nets)[i].name);
 				exit(1);
 			}
@@ -1329,7 +1355,7 @@ static void mark_constant_generators_rec(INP t_pb *pb, INP t_rr_node *rr_graph,
 			}
 		}
 		if (const_gen == TRUE) {
-			vpr_printf(TIO_MESSAGE_INFO, "%s is a constant generator.\n", pb->name);
+			vpr_printf_info("%s is a constant generator.\n", pb->name);
 			for (i = 0; i < pb->pb_graph_node->num_output_ports; i++) {
 				for (j = 0; j < pb->pb_graph_node->num_output_pins[i]; j++) {
 					if (rr_graph[pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster].net_num

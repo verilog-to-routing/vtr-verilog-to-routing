@@ -41,7 +41,7 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 	get_length_and_bends_stats();
 	get_channel_occupancy_stats();
 
-	vpr_printf(TIO_MESSAGE_INFO, "Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
+	vpr_printf_info("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
 
 	area = 0;
 	for (i = 1; i <= nx; i++) {
@@ -56,7 +56,7 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 		}
 	}
 	/* Todo: need to add pitch of routing to blocks with height > 3 */
-	vpr_printf(TIO_MESSAGE_INFO, "\tTotal logic block area (Warning, need to add pitch of routing to blocks with height > 3): %g\n", area);
+	vpr_printf_info("\tTotal logic block area (Warning, need to add pitch of routing to blocks with height > 3): %g\n", area);
 
 	used_area = 0;
 	for (i = 0; i < num_blocks; i++) {
@@ -68,7 +68,7 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 			}
 		}
 	}
-	vpr_printf(TIO_MESSAGE_INFO, "\tTotal used logic block area: %g\n", used_area);
+	vpr_printf_info("\tTotal used logic block area: %g\n", used_area);
 
 	if (route_type == DETAILED) {
 		count_routing_transistors(directionality, num_switch, segment_inf,
@@ -146,22 +146,22 @@ void get_length_and_bends_stats(void) {
 	}
 
 	av_bends = (float) total_bends / (float) (num_nets - num_global_nets);
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Average number of bends per net: %#g  Maximum # of bends: %d\n", av_bends, max_bends);
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
+	vpr_printf_info("\n");
+	vpr_printf_info("Average number of bends per net: %#g  Maximum # of bends: %d\n", av_bends, max_bends);
+	vpr_printf_info("\n");
 
 	av_length = (float) total_length / (float) (num_nets - num_global_nets);
-	vpr_printf(TIO_MESSAGE_INFO, "Number of routed nets (nonglobal): %d\n", num_nets - num_global_nets);
-	vpr_printf(TIO_MESSAGE_INFO, "Wire length results (in units of 1 clb segments)...\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\tTotal wirelength: %d, average net length: %#g\n", total_length, av_length);
-	vpr_printf(TIO_MESSAGE_INFO, "\tMaximum net length: %d\n", max_length);
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
+	vpr_printf_info("Number of routed nets (nonglobal): %d\n", num_nets - num_global_nets);
+	vpr_printf_info("Wire length results (in units of 1 clb segments)...\n");
+	vpr_printf_info("\tTotal wirelength: %d, average net length: %#g\n", total_length, av_length);
+	vpr_printf_info("\tMaximum net length: %d\n", max_length);
+	vpr_printf_info("\n");
 
 	av_segments = (float) total_segments / (float) (num_nets - num_global_nets);
-	vpr_printf(TIO_MESSAGE_INFO, "Wire length results in terms of physical segments...\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\tTotal wiring segments used: %d, average wire segments per net: %#g\n", total_segments, av_segments);
-	vpr_printf(TIO_MESSAGE_INFO, "\tMaximum segments used by a net: %d\n", max_segments);
-	vpr_printf(TIO_MESSAGE_INFO, "\tTotal local nets with reserved CLB opins: %d\n", num_clb_opins_reserved);
+	vpr_printf_info("Wire length results in terms of physical segments...\n");
+	vpr_printf_info("\tTotal wiring segments used: %d, average wire segments per net: %#g\n", total_segments, av_segments);
+	vpr_printf_info("\tMaximum segments used by a net: %d\n", max_segments);
+	vpr_printf_info("\tTotal local nets with reserved CLB opins: %d\n", num_clb_opins_reserved);
 }
 
 static void get_channel_occupancy_stats(void) {
@@ -175,9 +175,9 @@ static void get_channel_occupancy_stats(void) {
 	chany_occ = (int **) alloc_matrix(0, nx, 1, ny, sizeof(int));
 	load_channel_occupancies(chanx_occ, chany_occ);
 
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "X - Directed channels: j max occ ave occ capacity\n");
-	vpr_printf(TIO_MESSAGE_INFO, "                      -- ------- ------- --------\n");
+	vpr_printf_info("\n");
+	vpr_printf_info("X - Directed channels: j max occ ave occ capacity\n");
+	vpr_printf_info("                      -- ------- ------- --------\n");
 
 	int total_x = 0;
 	for (int j = 0; j <= ny; ++j) {
@@ -190,11 +190,11 @@ static void get_channel_occupancy_stats(void) {
 			ave_occ += chanx_occ[i][j];
 		}
 		ave_occ /= nx;
-		vpr_printf(TIO_MESSAGE_INFO, "                      %2d %7d %7.4f %8d\n", j, max_occ, ave_occ, chan_width_x[j]);
+		vpr_printf_info("                      %2d %7d %7.4f %8d\n", j, max_occ, ave_occ, chan_width_x[j]);
 	}
 
-	vpr_printf(TIO_MESSAGE_INFO, "Y - Directed channels: i max occ ave occ capacity\n");
-	vpr_printf(TIO_MESSAGE_INFO, "                      -- ------- ------- --------\n");
+	vpr_printf_info("Y - Directed channels: i max occ ave occ capacity\n");
+	vpr_printf_info("                      -- ------- ------- --------\n");
 
 	int total_y = 0;
 	for (int i = 0; i <= nx; ++i) {
@@ -207,12 +207,12 @@ static void get_channel_occupancy_stats(void) {
 			ave_occ += chany_occ[i][j];
 		}
 		ave_occ /= ny;
-		vpr_printf(TIO_MESSAGE_INFO, "                      %2d %7d %7.4f %8d\n", i, max_occ, ave_occ, chan_width_y[i]);
+		vpr_printf_info("                      %2d %7d %7.4f %8d\n", i, max_occ, ave_occ, chan_width_y[i]);
 	}
 
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Total tracks in x-direction: %d, in y-direction: %d\n", total_x, total_y);
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
+	vpr_printf_info("\n");
+	vpr_printf_info("Total tracks in x-direction: %d, in y-direction: %d\n", total_x, total_y);
+	vpr_printf_info("\n");
 
 	free_matrix(chanx_occ, 1, nx, 0, sizeof(int));
 	free_matrix(chany_occ, 0, nx, 1, sizeof(int));
@@ -289,7 +289,8 @@ void get_num_bends_and_length(int inet, int *bends_ptr, int *len_ptr,
 
 	prevptr = trace_head[inet]; /* Should always be SOURCE. */
 	if (prevptr == NULL) {
-		vpr_printf(TIO_MESSAGE_ERROR, "in get_num_bends_and_length: net #%d has no traceback.\n", inet);
+		vpr_printf_error(__FILE__, __LINE__,
+				"in get_num_bends_and_length: net #%d has no traceback.\n", inet);
 		exit(1);
 	}
 	inode = prevptr->index;
@@ -356,9 +357,10 @@ void print_wirelen_prob_dist(void) {
 			index = (int) two_point_length;
 			if (index >= prob_dist_size) {
 
-				vpr_printf(TIO_MESSAGE_WARNING, "index (%d) to prob_dist exceeds its allocated size (%d).\n",
+				vpr_printf_warning(__FILE__, __LINE__,
+						"Index (%d) to prob_dist exceeds its allocated size (%d).\n",
 						index, prob_dist_size);
-				vpr_printf(TIO_MESSAGE_INFO, "Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
+				vpr_printf_info("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
 				incr = index - prob_dist_size + 2;
 				prob_dist_size += incr;
 				prob_dist = (float *)my_realloc(prob_dist,
@@ -372,9 +374,10 @@ void print_wirelen_prob_dist(void) {
 			index++;
 			if (index >= prob_dist_size) {
 
-				vpr_printf(TIO_MESSAGE_WARNING, "Warning: index (%d) to prob_dist exceeds its allocated size (%d).\n",
+				vpr_printf_warning(__FILE__, __LINE__,
+						"Index (%d) to prob_dist exceeds its allocated size (%d).\n",
 						index, prob_dist_size);
-				vpr_printf(TIO_MESSAGE_INFO, "Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
+				vpr_printf_info("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
 				incr = index - prob_dist_size + 2;
 				prob_dist_size += incr;
 				prob_dist = (float *)my_realloc(prob_dist,
@@ -391,23 +394,23 @@ void print_wirelen_prob_dist(void) {
 
 	/* Normalize so total probability is 1 and print out. */
 
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Probability distribution of 2-pin net lengths:\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Length    p(Lenth)\n");
+	vpr_printf_info("\n");
+	vpr_printf_info("Probability distribution of 2-pin net lengths:\n");
+	vpr_printf_info("\n");
+	vpr_printf_info("Length    p(Lenth)\n");
 
 	av_length = 0;
 
 	for (index = 0; index < prob_dist_size; index++) {
 		prob_dist[index] /= norm_fac;
-		vpr_printf(TIO_MESSAGE_INFO, "%6d  %10.6f\n", index, prob_dist[index]);
+		vpr_printf_info("%6d  %10.6f\n", index, prob_dist[index]);
 		av_length += prob_dist[index] * index;
 	}
 
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Number of 2-pin nets: ;%g;\n", norm_fac);
-	vpr_printf(TIO_MESSAGE_INFO, "Expected value of 2-pin net length (R): ;%g;\n", av_length);
-	vpr_printf(TIO_MESSAGE_INFO, "Total wirelength: ;%g;\n", norm_fac * av_length);
+	vpr_printf_info("\n");
+	vpr_printf_info("Number of 2-pin nets: ;%g;\n", norm_fac);
+	vpr_printf_info("Expected value of 2-pin net length (R): ;%g;\n", av_length);
+	vpr_printf_info("Total wirelength: ;%g;\n", norm_fac * av_length);
 
 	free(prob_dist);
 }
@@ -441,7 +444,7 @@ void print_lambda(void) {
 	}
 
 	lambda = (float) num_inputs_used / (float) num_blocks;
-	vpr_printf(TIO_MESSAGE_INFO, "Average lambda (input pins used per clb) is: %g\n", lambda);
+	vpr_printf_info("Average lambda (input pins used per clb) is: %g\n", lambda);
 }
 
 int count_netlist_clocks(void) {

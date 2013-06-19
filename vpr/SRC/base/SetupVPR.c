@@ -217,7 +217,7 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	}
 	my_srandom(PlacerOpts->seed);
 
-	vpr_printf(TIO_MESSAGE_INFO, "Building complex block graph.\n");
+	vpr_printf_info("Building complex block graph.\n");
 	alloc_and_load_all_pb_graphs(PowerOpts->do_power);
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PB_GRAPH)) {
@@ -478,8 +478,7 @@ static void SetupAnnealSched(INP t_options Options,
 		AnnealSched->alpha_t = Options.PlaceAlphaT;
 	}
 	if (AnnealSched->alpha_t >= 1 || AnnealSched->alpha_t <= 0) {
-		vpr_printf(TIO_MESSAGE_ERROR,
-				"alpha_t must be between 0 and 1 exclusive.\n");
+		vpr_printf_error(__FILE__, __LINE__, "alpha_t must be between 0 and 1 exclusive.\n");
 		exit(1);
 	}
 	AnnealSched->exit_t = 0.01; /* DEFAULT */
@@ -487,7 +486,7 @@ static void SetupAnnealSched(INP t_options Options,
 		AnnealSched->exit_t = Options.PlaceExitT;
 	}
 	if (AnnealSched->exit_t <= 0) {
-		vpr_printf(TIO_MESSAGE_ERROR, "exit_t must be greater than 0.\n");
+		vpr_printf_error(__FILE__, __LINE__, "exit_t must be greater than 0.\n");
 		exit(1);
 	}
 	AnnealSched->init_t = 100.0; /* DEFAULT */
@@ -495,12 +494,11 @@ static void SetupAnnealSched(INP t_options Options,
 		AnnealSched->init_t = Options.PlaceInitT;
 	}
 	if (AnnealSched->init_t <= 0) {
-		vpr_printf(TIO_MESSAGE_ERROR, "init_t must be greater than 0.\n");
+		vpr_printf_error(__FILE__, __LINE__, "init_t must be greater than 0.\n");
 		exit(1);
 	}
 	if (AnnealSched->init_t < AnnealSched->exit_t) {
-		vpr_printf(TIO_MESSAGE_ERROR,
-				"init_t must be greater or equal to than exit_t.\n");
+		vpr_printf_error(__FILE__, __LINE__, "init_t must be greater or equal to than exit_t.\n");
 		exit(1);
 	}
 	AnnealSched->inner_num = 1.0; /* DEFAULT */
@@ -508,7 +506,7 @@ static void SetupAnnealSched(INP t_options Options,
 		AnnealSched->inner_num = Options.PlaceInnerNum;
 	}
 	if (AnnealSched->inner_num <= 0) {
-		vpr_printf(TIO_MESSAGE_ERROR, "init_t must be greater than 0.\n");
+		vpr_printf_error(__FILE__, __LINE__, "init_t must be greater than 0.\n");
 		exit(1);
 	}
 	AnnealSched->type = AUTO_SCHED; /* DEFAULT */

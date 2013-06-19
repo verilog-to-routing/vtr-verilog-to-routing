@@ -33,13 +33,15 @@ static void CheckSwitches(INP t_arch Arch, INP boolean TimingEnabled) {
 			 * pass transistoron the output.  
 			 * Hence largest R = 2 * largest_transistor_R. */
 			if (CurSwitch->R > 2 * Arch.R_minW_nmos) {
-				vpr_printf(TIO_MESSAGE_ERROR, "Switch %s R value (%g) is greater than 2 * R_minW_nmos (%g).\n", 
+				vpr_printf_error(__FILE__, __LINE__, 
+						"Switch %s R value (%g) is greater than 2 * R_minW_nmos (%g).\n", 
 						CurSwitch->name, CurSwitch->R, (2 * Arch.R_minW_nmos));
 				exit(1);
 			}
 		} else { /* Pass transistor switch */
 			if (CurSwitch->R > Arch.R_minW_nmos) {
-				vpr_printf(TIO_MESSAGE_ERROR, "Switch %s R value (%g) is greater than R_minW_nmos (%g).\n", 
+				vpr_printf_error(__FILE__, __LINE__, 
+						"Switch %s R value (%g) is greater than R_minW_nmos (%g).\n", 
 						CurSwitch->name, CurSwitch->R, Arch.R_minW_nmos);
 				exit(1);
 			}
@@ -55,7 +57,8 @@ static void CheckSegments(INP t_arch Arch) {
 	for (i = 0; i < Arch.num_segments; i++) {
 		if (CurSeg[i].directionality == UNI_DIRECTIONAL
 				&& CurSeg[i].longline == TRUE) {
-			vpr_printf(TIO_MESSAGE_ERROR, "Long lines not supported for unidirectional architectures.\n");
+			vpr_printf_error(__FILE__, __LINE__, 
+					"Long lines not supported for unidirectional architectures.\n");
 			exit(1);
 		}
 	}

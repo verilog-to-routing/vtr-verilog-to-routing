@@ -70,74 +70,75 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
 
 /* Display general VPR information */
 void vpr_print_title(void) {
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "VPR FPGA Placement and Routing.\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Version: Version " VPR_VERSION "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Compiled: " __DATE__ ".\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Original VPR by V. Betz.\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Timing-driven placement enhancements by A. Marquardt.\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Single-drivers enhancements by Andy Ye with additions by.\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Mark Fang, Jason Luu, Ted Campbell\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Heterogeneous stucture support by Jason Luu and Ted Campbell.\n");
-	vpr_printf(TIO_MESSAGE_INFO, "T-VPack clustering integration by Jason Luu.\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Area-driven AAPack added by Jason Luu.\n");
-	vpr_printf(TIO_MESSAGE_INFO, "This is free open source code under MIT license.\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
+// ???
+	vpr_printf_info("\n");
+	vpr_printf_info("VPR FPGA Placement and Routing.\n");
+	vpr_printf_info("Version: Version " VPR_VERSION "\n");
+	vpr_printf_info("Compiled: " __DATE__ ".\n");
+	vpr_printf_info("Original VPR by V. Betz.\n");
+	vpr_printf_info("Timing-driven placement enhancements by A. Marquardt.\n");
+	vpr_printf_info("Single-drivers enhancements by Andy Ye with additions by.\n");
+	vpr_printf_info("Mark Fang, Jason Luu, Ted Campbell\n");
+	vpr_printf_info("Heterogeneous stucture support by Jason Luu and Ted Campbell.\n");
+	vpr_printf_info("T-VPack clustering integration by Jason Luu.\n");
+	vpr_printf_info("Area-driven AAPack added by Jason Luu.\n");
+	vpr_printf_info("This is free open source code under MIT license.\n");
+	vpr_printf_info("\n");
 
 }
 
 /* Display help screen */
 void vpr_print_usage(void) {
-	vpr_printf(TIO_MESSAGE_INFO, "Usage:  vpr fpga_architecture.xml circuit_name [Options ...]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "General Options:  [--nodisp] [--auto <int>] [--pack]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--place] [--route] [--timing_analyze_only_with_net_delay <float>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--blif_file <string>][--net_file <string>][--place_file <string>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--route_file <string>][--sdc_file <string>][--echo_file on | off]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Packer Options:\n");
-	/* vpr_printf(TIO_MESSAGE_INFO, "\t[-global_clocks on|off]\n"); */
-	/* vpr_printf(TIO_MESSAGE_INFO, "\t[-hill_climbing on|off]\n"); */
-	/* vpr_printf(TIO_MESSAGE_INFO, "\t[-sweep_hanging_nets_and_inputs on|off]\n"); */
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--timing_driven_clustering on|off]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--cluster_seed_type timing|max_inputs] [--alpha_clustering <float>] [--beta_clustering <float>]\n");
-	/* vpr_printf(TIO_MESSAGE_INFO, "\t[-recompute_timing_after <int>] [-cluster_block_delay <float>]\n"); */
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--allow_unrelated_clustering on|off]\n");
-	/* vpr_printf(TIO_MESSAGE_INFO, "\t[-allow_early_exit on|off]\n"); */
-	/* vpr_printf(TIO_MESSAGE_INFO, "\t[-intra_cluster_net_delay <float>] \n"); */
-	/* vpr_printf(TIO_MESSAGE_INFO, "\t[-inter_cluster_net_delay <float>] \n"); */
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--connection_driven_clustering on|off] \n");
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Placer Options:\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--place_algorithm bounding_box | net_timing_driven | path_timing_driven]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--init_t <float>] [--exit_t <float>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--alpha_t <float>] [--inner_num <float>] [--seed <int>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--place_cost_exp <float>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--place_chan_width <int>] \n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--fix_pins random | <file.pads>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--enable_timing_computations on | off]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--block_dist <int>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Placement Options Valid Only for Timing-Driven Placement:\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--timing_tradeoff <float>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--recompute_crit_iter <int>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--inner_loop_recompute_divider <int>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--td_place_exp_first <float>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--td_place_exp_last <float>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Router Options:  [-max_router_iterations <int>] [-bb_factor <int>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--initial_pres_fac <float>] [--pres_fac_mult <float>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--acc_fac <float>] [--first_iter_pres_fac <float>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--bend_cost <float>] [--route_type global | detailed]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--verify_binary_search] [--route_chan_width <int>] [--route_chan_trim on | off]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--router_algorithm breadth_first | timing_driven]\n");
-	vpr_printf(TIO_MESSAGE_INFO,  "\t[--base_cost_type intrinsic_delay | delay_normalized | demand_only]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Routing options valid only for timing-driven routing:\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--astar_fac <float>] [--max_criticality <float>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t[--criticality_exp <float>]\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
+	vpr_printf_info("Usage:  vpr fpga_architecture.xml circuit_name [Options ...]\n");
+	vpr_printf_info("\n");
+	vpr_printf_info("General Options:  [--nodisp] [--auto <int>] [--pack]\n");
+	vpr_printf_info("\t[--place] [--route] [--timing_analyze_only_with_net_delay <float>]\n");
+	vpr_printf_info("\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
+	vpr_printf_info("\t[--blif_file <string>][--net_file <string>][--place_file <string>]\n");
+	vpr_printf_info("\t[--route_file <string>][--sdc_file <string>][--echo_file on | off]\n");
+	vpr_printf_info("\n");
+	vpr_printf_info("Packer Options:\n");
+	/* vpr_printf_info("\t[-global_clocks on|off]\n"); */
+	/* vpr_printf_info("\t[-hill_climbing on|off]\n"); */
+	/* vpr_printf_info("\t[-sweep_hanging_nets_and_inputs on|off]\n"); */
+	vpr_printf_info("\t[--timing_driven_clustering on|off]\n");
+	vpr_printf_info("\t[--cluster_seed_type timing|max_inputs] [--alpha_clustering <float>] [--beta_clustering <float>]\n");
+	/* vpr_printf_info("\t[-recompute_timing_after <int>] [-cluster_block_delay <float>]\n"); */
+	vpr_printf_info("\t[--allow_unrelated_clustering on|off]\n");
+	/* vpr_printf_info("\t[-allow_early_exit on|off]\n"); */
+	/* vpr_printf_info("\t[-intra_cluster_net_delay <float>] \n"); */
+	/* vpr_printf_info("\t[-inter_cluster_net_delay <float>] \n"); */
+	vpr_printf_info("\t[--connection_driven_clustering on|off] \n");
+	vpr_printf_info("\n");
+	vpr_printf_info("Placer Options:\n");
+	vpr_printf_info("\t[--place_algorithm bounding_box | net_timing_driven | path_timing_driven]\n");
+	vpr_printf_info("\t[--init_t <float>] [--exit_t <float>]\n");
+	vpr_printf_info("\t[--alpha_t <float>] [--inner_num <float>] [--seed <int>]\n");
+	vpr_printf_info("\t[--place_cost_exp <float>]\n");
+	vpr_printf_info("\t[--place_chan_width <int>] \n");
+	vpr_printf_info("\t[--fix_pins random | <file.pads>]\n");
+	vpr_printf_info("\t[--enable_timing_computations on | off]\n");
+	vpr_printf_info("\t[--block_dist <int>]\n");
+	vpr_printf_info("\n");
+	vpr_printf_info("Placement Options Valid Only for Timing-Driven Placement:\n");
+	vpr_printf_info("\t[--timing_tradeoff <float>]\n");
+	vpr_printf_info("\t[--recompute_crit_iter <int>]\n");
+	vpr_printf_info("\t[--inner_loop_recompute_divider <int>]\n");
+	vpr_printf_info("\t[--td_place_exp_first <float>]\n");
+	vpr_printf_info("\t[--td_place_exp_last <float>]\n");
+	vpr_printf_info("\n");
+	vpr_printf_info("Router Options:  [-max_router_iterations <int>] [-bb_factor <int>]\n");
+	vpr_printf_info("\t[--initial_pres_fac <float>] [--pres_fac_mult <float>]\n");
+	vpr_printf_info("\t[--acc_fac <float>] [--first_iter_pres_fac <float>]\n");
+	vpr_printf_info("\t[--bend_cost <float>] [--route_type global | detailed]\n");
+	vpr_printf_info("\t[--verify_binary_search] [--route_chan_width <int>] [--route_chan_trim on | off]\n");
+	vpr_printf_info("\t[--router_algorithm breadth_first | timing_driven]\n");
+	vpr_printf_info(  "\t[--base_cost_type intrinsic_delay | delay_normalized | demand_only]\n");
+	vpr_printf_info("\n");
+	vpr_printf_info("Routing options valid only for timing-driven routing:\n");
+	vpr_printf_info("\t[--astar_fac <float>] [--max_criticality <float>]\n");
+	vpr_printf_info("\t[--criticality_exp <float>]\n");
+	vpr_printf_info("\n");
 }
 
 /* Initialize VPR 
@@ -150,6 +151,9 @@ void vpr_init(INP int argc, INP char **argv, OUTP t_options *options,
 		OUTP t_vpr_setup *vpr_setup, OUTP t_arch *arch) {
 	char* pszLogFileName = "vpr_stdout.log";
 	unsigned char enableTimeStamps = 1;
+// ???	unsigned char enableFileLines = 1;
+	unsigned char enableFileLines = 0;
+// ???
 	unsigned long maxWarningCount = 100000;
 	unsigned long maxErrorCount = 1000;
 
@@ -160,7 +164,7 @@ void vpr_init(INP int argc, INP char **argv, OUTP t_options *options,
 	}
 	if (has_printhandler_pre_vpr == FALSE) {
 		PrintHandlerNew(pszLogFileName);
-		PrintHandlerInit(enableTimeStamps, maxWarningCount, maxErrorCount);
+		PrintHandlerInit(enableTimeStamps, enableFileLines, maxWarningCount, maxErrorCount);
 	}
 
 	/* Print title message */
@@ -265,8 +269,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 					ny = nint(current / Arch.clb_grid.Aspect);
 				}
 #if DEBUG
-				vpr_printf(TIO_MESSAGE_INFO,
-						"Auto-sizing FPGA at x = %d y = %d\n", nx, ny);
+				vpr_printf_info("Auto-sizing FPGA at x = %d y = %d\n", nx, ny);
 #endif
 				alloc_and_load_grid(num_instances_type);
 				freeGrid();
@@ -286,7 +289,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 					if (high == -1) {
 						current = current * 2;
 						if (current > MAX_SHORT) {
-							vpr_printf(TIO_MESSAGE_ERROR,
+							vpr_printf_error(__FILE__, __LINE__,
 									"FPGA required is too large for current architecture settings.\n");
 							exit(1);
 						}
@@ -310,17 +313,14 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 				ny = nint(current / Arch.clb_grid.Aspect);
 			}
 			alloc_and_load_grid(num_instances_type);
-			vpr_printf(TIO_MESSAGE_INFO, "FPGA auto-sized to x = %d y = %d\n",
-					nx, ny);
+			vpr_printf_info("FPGA auto-sized to x = %d y = %d\n", nx, ny);
 		} else {
 			nx = Arch.clb_grid.W;
 			ny = Arch.clb_grid.H;
 			alloc_and_load_grid(num_instances_type);
 		}
 
-		vpr_printf(TIO_MESSAGE_INFO,
-				"The circuit will be mapped into a %d x %d array of clbs.\n",
-				nx, ny);
+		vpr_printf_info("The circuit will be mapped into a %d x %d array of clbs.\n", nx, ny);
 
 		/* Test if netlist fits in grid */
 		fit = TRUE;
@@ -331,24 +331,22 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 			}
 		}
 		if (!fit) {
-			vpr_printf(TIO_MESSAGE_ERROR,
+			vpr_printf_error(__FILE__, __LINE__,
 					"Not enough physical locations for type %s, number of blocks is %d but number of locations is %d.\n",
 					type_descriptors[i].name, num_blocks_type[i],
 					num_instances_type[i]);
 			exit(1);
 		}
 
-		vpr_printf(TIO_MESSAGE_INFO, "\n");
-		vpr_printf(TIO_MESSAGE_INFO, "Resource usage...\n");
+		vpr_printf_info("\n");
+		vpr_printf_info("Resource usage...\n");
 		for (i = 0; i < num_types; i++) {
-			vpr_printf(TIO_MESSAGE_INFO,
-					"\tNetlist      %d\tblocks of type: %s\n",
+			vpr_printf_info("\tNetlist      %d\tblocks of type: %s\n",
 					num_blocks_type[i], type_descriptors[i].name);
-			vpr_printf(TIO_MESSAGE_INFO,
-					"\tArchitecture %d\tblocks of type: %s\n",
+			vpr_printf_info("\tArchitecture %d\tblocks of type: %s\n",
 					num_instances_type[i], type_descriptors[i].name);
 		}
-		vpr_printf(TIO_MESSAGE_INFO, "\n");
+		vpr_printf_info("\n");
 		chan_width_x = (int *) my_malloc((ny + 1) * sizeof(int));
 		chan_width_y = (int *) my_malloc((nx + 1) * sizeof(int));
 		chan_width_max = 0;
@@ -366,7 +364,7 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 			opin_switch_del, wire_switch_del, wtoi_switch_del, Rmetal, Cmetal,
 			first_wire_seg_delay, second_wire_seg_delay;
 	begin = clock();
-	vpr_printf(TIO_MESSAGE_INFO, "Initialize packing.\n");
+	vpr_printf_info("Initialize packing.\n");
 
 	/* If needed, estimate inter-cluster delay. Assume the average routing hop goes out of 
 	 a block through an opin switch to a length-4 wire, then through a wire switch to another
@@ -403,11 +401,10 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 			vpr_setup.library_models, vpr_setup.Timing, inter_cluster_delay);
 	end = clock();
 #ifdef CLOCKS_PER_SEC
-	vpr_printf(TIO_MESSAGE_INFO, "Packing took %g seconds.\n",
-			(float) (end - begin) / CLOCKS_PER_SEC);
-	vpr_printf(TIO_MESSAGE_INFO, "Packing completed.\n");
+	vpr_printf_info("Packing took %g seconds.\n", (float) (end - begin) / CLOCKS_PER_SEC);
+	vpr_printf_info("Packing completed.\n");
 #else
-	vpr_printf(TIO_MESSAGE_INFO, "Packing took %g seconds.\n", (float)(end - begin) / CLK_PER_SEC);
+	vpr_printf_info("Packing took %g seconds.\n", (float)(end - begin) / CLK_PER_SEC);
 #endif
 	fflush(stdout);
 }
@@ -1106,7 +1103,7 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 					break;
 
 				default:
-					vpr_printf(TIO_MESSAGE_ERROR,
+					vpr_printf_error(__FILE__, __LINE__,
 							"in print_route: Unexpected traceback element type: %d (%s).\n",
 							rr_node[inode].type,
 							name_type[rr_node[inode].type]);
@@ -1221,8 +1218,10 @@ static boolean clay_logical_equivalence_handling(const t_arch *arch) {
 			rr_node[j].prev_node = OPEN;
 		}
 		if (try_breadth_first_route_cluster() == FALSE) {
-			vpr_printf(TIO_MESSAGE_ERROR, "Failed to resync post routed solution with clustered netlist.\n");
-			vpr_printf(TIO_MESSAGE_ERROR, "Cannot recover from error.\n");
+			vpr_printf_error(__FILE__, __LINE__, 
+					"Failed to resync post routed solution with clustered netlist.\n");
+			vpr_printf_error(__FILE__, __LINE__, 
+					"Cannot recover from error.\n");
 			exit(1);
 		}
 		save_cluster_solution();
@@ -1401,22 +1400,23 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 	g_solution_inf.T_crit = get_critical_path_delay() / 1e9;
 	assert(g_solution_inf.T_crit > 0.);
 
-	vpr_printf(TIO_MESSAGE_INFO, "\n\nPower Estimation:\n");
-	vpr_printf(TIO_MESSAGE_INFO, "-----------------\n");
+	vpr_printf_info("\n\nPower Estimation:\n");
+	vpr_printf_info("-----------------\n");
 
-	vpr_printf(TIO_MESSAGE_INFO, "Initializing power module\n");
+	vpr_printf_info("Initializing power module\n");
 
 	/* Initialize the power module */
 	power_error = power_init(vpr_setup.FileNameOpts.PowerFile,
 			vpr_setup.FileNameOpts.CmosTechFile, &Arch, &vpr_setup.RoutingArch);
 	if (power_error) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Power initialization failed.\n");
+		vpr_printf_error(__FILE__, __LINE__, 
+				"Power initialization failed.\n");
 	}
 
 	if (!power_error) {
 		float power_runtime_s;
 
-		vpr_printf(TIO_MESSAGE_INFO, "Running power estimation\n");
+		vpr_printf_info("Running power estimation\n");
 
 		/* Run power estimation */
 		power_ret_code = power_total(&power_runtime_s, vpr_setup, &Arch,
@@ -1424,26 +1424,26 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 
 		/* Check for errors/warnings */
 		if (power_ret_code == POWER_RET_CODE_ERRORS) {
-			vpr_printf(TIO_MESSAGE_ERROR,
+			vpr_printf_error(__FILE__, __LINE__,
 					"Power estimation failed. See power output for error details.\n");
 		} else if (power_ret_code == POWER_RET_CODE_WARNINGS) {
-			vpr_printf(TIO_MESSAGE_WARNING,
+			vpr_printf_warning(__FILE__, __LINE__,
 					"Power estimation completed with warnings. See power output for more details.\n");
 		} else if (power_ret_code == POWER_RET_CODE_SUCCESS) {
 		}
-		vpr_printf(TIO_MESSAGE_INFO, "Power estimation took %g seconds\n",
-				power_runtime_s);
+		vpr_printf_info("Power estimation took %g seconds\n", power_runtime_s);
 	}
 
 	/* Uninitialize power module */
 	if (!power_error) {
-		vpr_printf(TIO_MESSAGE_INFO, "Uninitializing power module\n");
+		vpr_printf_info("Uninitializing power module\n");
 		power_error = power_uninit();
 		if (power_error) {
-			vpr_printf(TIO_MESSAGE_ERROR, "Power uninitialization failed.\n");
+			vpr_printf_error(__FILE__, __LINE__, 
+					"Power uninitialization failed.\n");
 		} else {
 
 		}
 	}
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
+	vpr_printf_info("\n");
 }
