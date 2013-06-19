@@ -257,7 +257,7 @@ void TCH_VPR_Data_c::Init(
    free( this->pvpr_freeLocationArray_ );
    this->pvpr_freeLocationArray_ = static_cast< int* >( TC_calloc( this->vpr_typeCount, sizeof(int)));
 
-   for( int typeIndex = 0; typeIndex <= this->vpr_typeCount; ++typeIndex )
+   for( int typeIndex = 0; typeIndex < this->vpr_typeCount; ++typeIndex )
    {
       this->pvpr_freeLocationArray_[typeIndex] = this->vpr_freeLocationArray[typeIndex];
    }
@@ -435,12 +435,12 @@ void TCH_VPR_Data_c::Reset(
       this->vpr_blockArray[blockIndex].z = EMPTY;
    }
 
-   for( int typeIndex = 0; typeIndex <= this->vpr_typeCount; ++typeIndex )
+   for( int typeIndex = 0; typeIndex < this->vpr_typeCount; ++typeIndex )
    {
       this->vpr_freeLocationArray[typeIndex] = this->pvpr_freeLocationArray_[typeIndex];
    }
 
-   for( int typeIndex = 0; typeIndex <= this->vpr_typeCount; ++typeIndex )
+   for( int typeIndex = 0; typeIndex < this->vpr_typeCount; ++typeIndex )
    { 
       for( int freeIndex = 0; freeIndex < this->vpr_freeLocationArray[typeIndex]; ++freeIndex )
       {
