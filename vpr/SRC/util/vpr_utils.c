@@ -117,14 +117,16 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 				|| (block[i].x + block[i].type->width - 1) > (L_nx + 1)
 				|| (block[i].y + block[i].type->height - 1) > (L_ny + 1)
 				|| block[i].z < 0 || block[i].z > (block[i].type->capacity)) {
-			vpr_printf(TIO_MESSAGE_ERROR, "Block %d is at invalid location (%d, %d, %d).\n", 
+			vpr_printf_error(__FILE__, __LINE__,
+					"Block %d is at invalid location (%d, %d, %d).\n", 
 					i, block[i].x, block[i].y, block[i].z);
 			exit(1);
 		}
 
 		/* Check types match */
 		if (block[i].type != L_grid[block[i].x][block[i].y].type) {
-			vpr_printf(TIO_MESSAGE_ERROR, "A block is in a grid location (%d x %d) with a conflicting type.\n", 
+			vpr_printf_error(__FILE__, __LINE__,
+					"A block is in a grid location (%d x %d) with a conflicting type.\n", 
 					block[i].x, block[i].y);
 			exit(1);
 		}
@@ -132,13 +134,15 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 		/* Check already in use */
 		if ((EMPTY != L_grid[block[i].x][block[i].y].blocks[block[i].z])
 				&& (INVALID != L_grid[block[i].x][block[i].y].blocks[block[i].z])) {
-			vpr_printf(TIO_MESSAGE_ERROR, "Location (%d, %d, %d) is used more than once.\n", 
+			vpr_printf_error(__FILE__, __LINE__,
+					"Location (%d, %d, %d) is used more than once.\n", 
 					block[i].x, block[i].y, block[i].z);
 			exit(1);
 		}
 
 		if (L_grid[block[i].x][block[i].y].width_offset != 0 || L_grid[block[i].x][block[i].y].height_offset != 0) {
-			vpr_printf(TIO_MESSAGE_ERROR, "Large block not aligned in placment for block %d at (%d, %d, %d).",
+			vpr_printf_error(__FILE__, __LINE__,
+					"Large block not aligned in placment for block %d at (%d, %d, %d).",
 					i, block[i].x, block[i].y, block[i].z);
 			exit(1);
 		}
@@ -961,11 +965,11 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 
 		match_count = sscanf(source_string, "%s %s", pb_type_name, port_name);
 		if (match_count != 2){
-			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Invalid pin - %s, "
-					"name should be in the format \"pb_type_name\".\"port_name\" or "
-					"\"pb_type_name\".\"port_name [end_pin_index:start_pin_index]\". "
-					" The end_pin_index and start_pin_index can be the same.\n", line,
-					src_string);
+			vpr_printf_error(__FILE__, __LINE__,
+					"[LINE %d] Invalid pin - %s, name should be in the format "
+					"\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name [end_pin_index:start_pin_index]\". "
+					"The end_pin_index and start_pin_index can be the same.\n", 
+					line, src_string);
 			exit(1);
 		}
 	} else {
@@ -980,23 +984,25 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 								pb_type_name, port_name, 
 								end_pin_index, start_pin_index);
 		if (match_count != 4){
-			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Invalid pin - %s, "
-					"name should be in the format \"pb_type_name\".\"port_name\" or "
-					"\"pb_type_name\".\"port_name [end_pin_index:start_pin_index]\". "
-					" The end_pin_index and start_pin_index can be the same.\n", line,
-					src_string);
+			vpr_printf_error(__FILE__, __LINE__,
+					"[LINE %d] Invalid pin - %s, name should be in the format "
+					"\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name [end_pin_index:start_pin_index]\". "
+					"The end_pin_index and start_pin_index can be the same.\n", 
+					line, src_string);
 			exit(1);
 		}
 		if (*end_pin_index < 0 || *start_pin_index < 0) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Invalid pin - %s, "
-					"the pin_index [end_pin_index:start_pin_index] should not "
-					"be a negative value.\n", line, src_string);
+			vpr_printf_error(__FILE__, __LINE__,
+					"[LINE %d] Invalid pin - %s, the pin_index in "
+					"[end_pin_index:start_pin_index] should not be a negative value.\n", 
+					line, src_string);
 			exit(1);
 		}
 		if ( *end_pin_index < *start_pin_index) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Invalid from_pin - %s, "
-					"the end_pin_index in [end_pin_index:start_pin_index] should "
-					"not be less than start_pin_index.\n", line, src_string);
+			vpr_printf_error(__FILE__, __LINE__,
+					"[LINE %d] Invalid from_pin - %s, the end_pin_index in "
+					"[end_pin_index:start_pin_index] should not be less than start_pin_index.\n", 
+					line, src_string);
 			exit(1);
 		}
 	}
@@ -1022,9 +1028,9 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
 							
 			// Check whether the pins are marked, errors out if so
 			if (direct_type_from_blk_pin[itype][iblk_pin] != OPEN) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Invalid pin - %s, "
-					"this pin is in more than one direct connection.\n", line, 
-					src_string);
+				vpr_printf_error(__FILE__, __LINE__,
+						"[LINE %d] Invalid pin - %s, this pin is in more than one direct connection.\n", 
+						line, src_string);
 				exit(1);
 			} else {
 				direct_type_from_blk_pin[itype][iblk_pin] = direct_type;
@@ -1060,10 +1066,11 @@ static void mark_direct_of_ports (int idirect, int direct_type, char * pb_type_n
 
 					// Check whether the end_pin_index is valid
 					if (end_pin_index > num_port_pins) {
-						vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Invalid pin - %s, "
-								"the end_pin_index in [end_pin_index:start_pin_index] should "
-								"be less than the num_port_pins %d.\n", line,
-								src_string, num_port_pins);
+						vpr_printf_error(__FILE__, __LINE__,
+								"[LINE %d] Invalid pin - %s, the end_pin_index in "
+								"[end_pin_index:start_pin_index] should "
+								"be less than the num_port_pins %d.\n", 
+								line, src_string, num_port_pins);
 						exit(1);
 					}
 
