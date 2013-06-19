@@ -96,6 +96,7 @@ using namespace std;
 
 #token FORMAT_MIN_GRID         "[Ff][Oo][Rr][Mm][Aa][Tt][_][Mm][Ii][Nn][_][Gg][Rr][Ii][Dd]"
 #token FORMAT_TIME_STAMPS      "[Ff][Oo][Rr][Mm][Aa][Tt][_][Tt][Ii][Mm][Ee][_][Ss][Tt][Aa][Mm][Pp][Ss]"
+#token FORMAT_FILE_LINES       "[Ff][Oo][Rr][Mm][Aa][Tt][_][Ff][Ii][Ll][Ee][_][Ll][Ii][Nn][Ee]{[Ss]}"
 #token DISPLAY_INFO_ACCEPT     "{[Dd][Ii][Ss][Pp][Ll][Aa][Yy][_]}[Ii][Nn][Ff][Oo]{[_][Aa][Cc][Cc][Ee][Pp][Tt]}"
 #token DISPLAY_INFO_REJECT     "{[Dd][Ii][Ss][Pp][Ll][Aa][Yy][_]}[Ii][Nn][Ff][Oo][_][Rr][Ee][Jj][Ee][Cc][Tt]"
 #token DISPLAY_WARNING_ACCEPT  "{[Dd][Ii][Ss][Pp][Ll][Aa][Yy][_]}[Ww][Aa][Rr][Nn][Ii][Nn][Gg]{[Ss]}{[_][Aa][Cc][Cc][Ee][Pp][Tt]}"
@@ -398,6 +399,7 @@ messageOptions
    >>
       FORMAT_MIN_GRID { EQUAL } floatNum[ &pmessageOptions_->minGridPrecision ]
    |  FORMAT_TIME_STAMPS { EQUAL } boolType[ &pmessageOptions_->timeStampsEnable ]
+   |  FORMAT_FILE_LINES { EQUAL } boolType[ &pmessageOptions_->fileLinesEnable ]
 
    |  DISPLAY_INFO_ACCEPT { EQUAL } displayNameList[ &pmessageOptions_->info.acceptList ]
    |  DISPLAY_INFO_REJECT { EQUAL } displayNameList[ &pmessageOptions_->info.rejectList ]
