@@ -157,7 +157,6 @@ TFH_GridBlock_c& TFH_GridBlock_c::operator=(
 bool TFH_GridBlock_c::operator<( 
       const TFH_GridBlock_c& gridBlock ) const
 {
-// ???   return( this->vpr_gridPoint_.operator<( gridBlock.vpr_gridPoint_ ));
    bool isLessThan = false;
 
    if( this->vpr_gridPoint_.x < gridBlock.vpr_gridPoint_.x )
