@@ -134,15 +134,15 @@ void read_sdc(t_timing_inf timing_inf) {
 	use default behaviour of cutting paths between domains and optimizing each clock separately */
 
 	if (!timing_inf.timing_analysis_enabled) {
-		vpr_printf(TIO_MESSAGE_INFO, "\n");
-		vpr_printf(TIO_MESSAGE_INFO, "Timing analysis off; using default timing constraints.\n");
+		vpr_printf_info("\n");
+		vpr_printf_info("Timing analysis off; using default timing constraints.\n");
 		use_default_timing_constraints();
 		return;
 	}
 	
 	if ((sdc = fopen(timing_inf.SDCFile, "r")) == NULL) {
-		vpr_printf(TIO_MESSAGE_INFO, "\n");
-		vpr_printf(TIO_MESSAGE_INFO, "SDC file '%s' blank or not found.\n", timing_inf.SDCFile);
+		vpr_printf_info("\n");
+		vpr_printf_info("SDC file '%s' blank or not found.\n", timing_inf.SDCFile);
 		use_default_timing_constraints();
 		return;
 	}
@@ -163,8 +163,8 @@ void read_sdc(t_timing_inf timing_inf) {
 		}
 	}
 	if (!found) { /* blank file or only comments found */
-		vpr_printf(TIO_MESSAGE_INFO, "\n");
-		vpr_printf(TIO_MESSAGE_INFO, "SDC file '%s' blank or not found.\n", timing_inf.SDCFile);
+		vpr_printf_info("\n");
+		vpr_printf_info("SDC file '%s' blank or not found.\n", timing_inf.SDCFile);
 		use_default_timing_constraints();
 		free(netlist_clocks);
 		free(netlist_ios);
@@ -176,7 +176,8 @@ void read_sdc(t_timing_inf timing_inf) {
 	/* Make sure that all virtual clocks referenced in g_sdc->constrained_inputs and g_sdc->constrained_outputs have been constrained. */
 	for (iinput = 0; iinput < g_sdc->num_constrained_inputs; iinput++) {
 		if ((find_constrained_clock(g_sdc->constrained_inputs[iinput].clock_name)) == -1) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] Input %s is associated with an unconstrained clock %s.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] Input %s is associated with an unconstrained clock %s.\n", 
 					g_sdc->constrained_inputs[iinput].file_line_number,
 					g_sdc->constrained_inputs[iinput].name, 
 					g_sdc->constrained_inputs[iinput].clock_name);
@@ -186,7 +187,8 @@ void read_sdc(t_timing_inf timing_inf) {
 
 	for (ioutput = 0; ioutput < g_sdc->num_constrained_outputs; ioutput++) {
 		if ((find_constrained_clock(g_sdc->constrained_outputs[ioutput].clock_name)) == -1) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] Output %s is associated with an unconstrained clock %s.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] Output %s is associated with an unconstrained clock %s.\n", 
 					g_sdc->constrained_inputs[iinput].file_line_number,
 					g_sdc->constrained_outputs[ioutput].name, 
 					g_sdc->constrained_outputs[ioutput].clock_name);
@@ -198,7 +200,8 @@ void read_sdc(t_timing_inf timing_inf) {
 	for (icc = 0; icc < g_sdc->num_cc_constraints; icc++) {
 		for (isource = 0; isource < g_sdc->cc_constraints[icc].num_source; isource++) {
 			if ((find_constrained_clock(g_sdc->cc_constraints[icc].source_list[isource])) == -1) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] Token %s is not a constrained clock.\n", 
+				vpr_printf_error(__FILE__, __LINE__, 
+						"[SDC line %d] Token %s is not a constrained clock.\n", 
 						g_sdc->cc_constraints[icc].file_line_number,
 						g_sdc->cc_constraints[icc].source_list[isource]);
 				exit(1);
@@ -206,7 +209,8 @@ void read_sdc(t_timing_inf timing_inf) {
 		}
 		for (isink = 0; isink < g_sdc->cc_constraints[icc].num_sink; isink++) {
 			if ((find_constrained_clock(g_sdc->cc_constraints[icc].sink_list[isink])) == -1) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] Token %s is not a constrained clock.\n",
+				vpr_printf_error(__FILE__, __LINE__,
+						"[SDC line %d] Token %s is not a constrained clock.\n",
 						g_sdc->cc_constraints[icc].file_line_number, 
 						g_sdc->cc_constraints[icc].sink_list[isink]);
 				exit(1);
@@ -242,12 +246,12 @@ void read_sdc(t_timing_inf timing_inf) {
 		}
 	}
 
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "SDC file '%s' parsed successfully.\n",
-				 timing_inf.SDCFile ); 
-	vpr_printf(TIO_MESSAGE_INFO, "%d clocks (including virtual clocks), %d inputs and %d outputs were constrained.\n", 
-				 g_sdc->num_constrained_clocks, g_sdc->num_constrained_inputs, g_sdc->num_constrained_outputs);
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
+	vpr_printf_info("\n");
+	vpr_printf_info("SDC file '%s' parsed successfully.\n",
+			 timing_inf.SDCFile ); 
+	vpr_printf_info("%d clocks (including virtual clocks), %d inputs and %d outputs were constrained.\n", 
+			 g_sdc->num_constrained_clocks, g_sdc->num_constrained_inputs, g_sdc->num_constrained_outputs);
+	vpr_printf_info("\n");
 	
 	/* Since all the information we need is stored in g_sdc->domain_constraint, g_sdc->constrained_clocks, 
 	and constrained_ios, free other data structures used in this routine */
@@ -278,15 +282,15 @@ static void use_default_timing_constraints(void) {
 			g_sdc->constrained_clocks[0].name = my_strdup("virtual_io_clock");
 			g_sdc->constrained_clocks[0].is_netlist_clock = FALSE;
 
-			vpr_printf(TIO_MESSAGE_INFO, "\n");
-			vpr_printf(TIO_MESSAGE_INFO, "Defaulting to: constrain all %d inputs and %d outputs on a virtual external clock.\n", 
+			vpr_printf_info("\n");
+			vpr_printf_info("Defaulting to: constrain all %d inputs and %d outputs on a virtual external clock.\n", 
 					g_sdc->num_constrained_inputs, g_sdc->num_constrained_outputs);
-			vpr_printf(TIO_MESSAGE_INFO, "Optimize this virtual clock to run as fast as possible.\n");
+			vpr_printf_info("Optimize this virtual clock to run as fast as possible.\n");
 		} else {
-			vpr_printf(TIO_MESSAGE_INFO, "\n");
-			vpr_printf(TIO_MESSAGE_INFO, "Defaulting to: constrain all %d inputs and %d outputs on the netlist clock.\n", 
+			vpr_printf_info("\n");
+			vpr_printf_info("Defaulting to: constrain all %d inputs and %d outputs on the netlist clock.\n", 
 					g_sdc->num_constrained_inputs, g_sdc->num_constrained_outputs);
-			vpr_printf(TIO_MESSAGE_INFO, "Optimize this clock to run as fast as possible.\n");
+			vpr_printf_info("Optimize this clock to run as fast as possible.\n");
 		}
 		
 		/* Constrain all I/Os on the single constrained clock (whether real or virtual), with I/O delay 0. */
@@ -317,11 +321,11 @@ static void use_default_timing_constraints(void) {
 			}
 		}
 		
-		vpr_printf(TIO_MESSAGE_INFO, "\n");
-		vpr_printf(TIO_MESSAGE_INFO, "Defaulting to: constrain all %d inputs and %d outputs on a virtual external clock;\n",
+		vpr_printf_info("\n");
+		vpr_printf_info("Defaulting to: constrain all %d inputs and %d outputs on a virtual external clock;\n",
 				g_sdc->num_constrained_inputs, g_sdc->num_constrained_outputs);
-		vpr_printf(TIO_MESSAGE_INFO, "\tcut paths between netlist clock domains; and\n");
-		vpr_printf(TIO_MESSAGE_INFO, "\toptimize all clocks to run as fast as possible.\n");
+		vpr_printf_info("\tcut paths between netlist clock domains; and\n");
+		vpr_printf_info("\toptimize all clocks to run as fast as possible.\n");
 	}
 }
 
@@ -478,21 +482,24 @@ static boolean get_sdc_tok(char * buf) {
 
 		/* make sure clock has -period specified */
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-period") != 0) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] Create_clock must be directly followed by '-period'.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] Create_clock must be directly followed by '-period'.\n", 
 					file_line_number);
 			exit(1);
 		}
 				
 		/* Check if the token following -period is actually a number. */
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] A number must follow '-period'.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] A number must follow '-period'.\n", 
 					file_line_number);
 			exit(1);
 		}
 		clock_period = (float) strtod(ptr, NULL);
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] Clock(s) not specified.\n",
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] Clock(s) not specified.\n",
 					file_line_number);
 			exit(1);
 		}
@@ -501,20 +508,23 @@ static boolean get_sdc_tok(char * buf) {
 			/* Get the first float, which is the rising edge, and the second, which is the falling edge. */
 			
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] First token following '-waveform' should be rising edge, but is not a number.\n",
+				vpr_printf_error(__FILE__, __LINE__,
+						"[SDC line %d] First token following '-waveform' should be rising edge, but is not a number.\n",
 						file_line_number);
 			}
 			rising_edge = (float) strtod(ptr, NULL);
 
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] Second token following '-waveform' should be falling edge, but is not a number.\n",
+				vpr_printf_error(__FILE__, __LINE__, 
+						"[SDC line %d] Second token following '-waveform' should be falling edge, but is not a number.\n",
 						file_line_number);
 				exit(1);
 			}
 			falling_edge = (float) strtod(ptr, NULL);
 
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] Clock(s) not specified.\n", 
+				vpr_printf_error(__FILE__, __LINE__, 
+						"[SDC line %d] Clock(s) not specified.\n", 
 						file_line_number);
 				exit(1);
 			} /* We need this extra call to my_strtok to advance the ptr to the right spot. */
@@ -532,7 +542,8 @@ static boolean get_sdc_tok(char * buf) {
 
 			/* Get the virtual clock name */
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] Virtual clock name not specified.\n", 
+				vpr_printf_error(__FILE__, __LINE__, 
+						"[SDC line %d] Virtual clock name not specified.\n", 
 						file_line_number);
 				exit(1);
 			} /* We need this extra call to my_strtok to advance the ptr to the right spot. */
@@ -554,7 +565,8 @@ static boolean get_sdc_tok(char * buf) {
 
 			/* The next token should be NULL.  If so, return; if not, print an error message and exit. */
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) != NULL) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] More than one virtual clock name is specified after '-name'.\n", 
+				vpr_printf_error(__FILE__, __LINE__, 
+						"[SDC line %d] More than one virtual clock name is specified after '-name'.\n", 
 						file_line_number);
 				exit(1);
 			}
@@ -592,9 +604,11 @@ static boolean get_sdc_tok(char * buf) {
 				}
 
 				if (!found) {
-					vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] Clock name or regular expression does not correspond to any nets.\n", 
+					vpr_printf_error(__FILE__, __LINE__, 
+							"[SDC line %d] Clock name or regular expression does not correspond to any nets.\n", 
 							file_line_number);
-					vpr_printf(TIO_MESSAGE_ERROR, "If you'd like to create a virtual clock, use the '-name' keyword.\n");
+					vpr_printf_error(__FILE__, __LINE__, 
+							"If you'd like to create a virtual clock, use the '-name' keyword.\n");
 					exit(1);
 				}
 			} while ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) != NULL); /* Advance to the next token (or the end of the line). */
@@ -602,7 +616,8 @@ static boolean get_sdc_tok(char * buf) {
 	
 		/* Warn if the clock has non-50% duty cycle. */
 		if (fabs(rising_edge - falling_edge) - clock_period/2.0 > EPSILON) {
-			vpr_printf(TIO_MESSAGE_WARNING, "Clock %s does not have 50%% duty cycle.\n", 
+			vpr_printf_warning(__FILE__, __LINE__, 
+					"Clock %s does not have 50%% duty cycle.\n", 
 					sdc_clocks[g_sdc->num_constrained_clocks - 1].name);
 		}
 
@@ -612,13 +627,15 @@ static boolean get_sdc_tok(char * buf) {
 		/* Syntax: set_clock_groups -exclusive -group {<clock list or regexes>} -group {<clock list or regexes>} [-group {<clock list or regexes>} ...] */
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-exclusive") != 0) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_clock_groups must be directly followed by '-exclusive'.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] set_clock_groups must be directly followed by '-exclusive'.\n", 
 					file_line_number);
 			exit(1);
 		}
 		
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-group") != 0) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_clock_groups '-exclusive' must be followed by lists of clock names or regular expressions each starting with the '-group' command.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] set_clock_groups '-exclusive' must be followed by lists of clock names or regular expressions each starting with the '-group' command.\n", 
 					file_line_number);
 			exit(1);
 		}
@@ -661,7 +678,8 @@ static boolean get_sdc_tok(char * buf) {
 		} while (ptr);
 
 	if (num_exclusive_groups < 2) {
-		vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] At least two '-group' commands required.", 
+		vpr_printf_error(__FILE__, __LINE__, 
+				"[SDC line %d] At least two '-group' commands required.", 
 				file_line_number); 
 		exit(1);
 	}
@@ -697,7 +715,8 @@ static boolean get_sdc_tok(char * buf) {
 		/* Syntax: set_false_path -from <clock list or regexes> -to <clock list or regexes> */
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-from") != 0 || (ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_false_path must be directly followed by '-from <clock/flip-flop_list>'.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] set_false_path must be directly followed by '-from <clock/flip-flop_list>'.\n", 
 					file_line_number);
 			exit(1);
 		}
@@ -705,7 +724,8 @@ static boolean get_sdc_tok(char * buf) {
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_from = TRUE;
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_false_path must be directly followed by '-from <clock/flip-flop_list>'.\n", 
+				vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] set_false_path must be directly followed by '-from <clock/flip-flop_list>'.\n", 
 					file_line_number);
 				exit(1);
 			}
@@ -718,22 +738,25 @@ static boolean get_sdc_tok(char * buf) {
 
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) { 
 				/* We hit the end of the line before finding a -to. */
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_false_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
-					file_line_number);
+				vpr_printf_error(__FILE__, __LINE__, 
+						"[SDC line %d] set_false_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
+						file_line_number);
 				exit(1);
 			}
 		} while (strcmp(ptr, "-to") != 0);
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_false_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
-				file_line_number);
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] set_false_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
+					file_line_number);
 		}
 
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_to = TRUE;
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_false_path must be directly followed by '-from <clock/flip-flop_list>'.\n", 
-					file_line_number);
+				vpr_printf_error(__FILE__, __LINE__, 
+						"[SDC line %d] set_false_path must be directly followed by '-from <clock/flip-flop_list>'.\n", 
+						file_line_number);
 				exit(1);
 			}
 		}
@@ -762,14 +785,16 @@ static boolean get_sdc_tok(char * buf) {
 
 		/* check if the token following set_max_delay is actually a number*/
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] Token following set_max_delay should be a delay value, but is not a number.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] Token following set_max_delay should be a delay value, but is not a number.\n", 
 					file_line_number);
 			exit(1);
 		}
 		max_delay = (float) strtod(ptr, NULL);
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-from") != 0 || (ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_max_delay requires '-from <clock/flip-flop_list>' after max_delay.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] set_max_delay requires '-from <clock/flip-flop_list>' after max_delay.\n", 
 					file_line_number);
 			exit(1);
 		}
@@ -777,7 +802,8 @@ static boolean get_sdc_tok(char * buf) {
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_from = TRUE;
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_max_delay requires '-from <clock/flip-flop_list>' after max_delay.\n", 
+				vpr_printf_error(__FILE__, __LINE__, 
+						"[SDC line %d] set_max_delay requires '-from <clock/flip-flop_list>' after max_delay.\n", 
 						file_line_number);
 				exit(1);
 			}
@@ -790,21 +816,24 @@ static boolean get_sdc_tok(char * buf) {
 
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) { 
 				/* We hit the end of the line before finding a -to. */
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_max_delay requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
+				vpr_printf_error(__FILE__, __LINE__, 
+						"[SDC line %d] set_max_delay requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
 						file_line_number);
 				exit(1);
 			}
 		} while (strcmp(ptr, "-to") != 0);
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_max_delay requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] set_max_delay requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
 					file_line_number);
 		}
 
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_to = TRUE;
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_max_delay requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
+				vpr_printf_error(__FILE__, __LINE__, 
+						"[SDC line %d] set_max_delay requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
 						file_line_number);
 				exit(1);
 			}
@@ -834,13 +863,15 @@ static boolean get_sdc_tok(char * buf) {
 
 		/* check if the token following set_max_delay is actually a number*/
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-setup") != 0) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_multicycle_path must be directly followed by '-setup'.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] set_multicycle_path must be directly followed by '-setup'.\n", 
 					file_line_number);
 			exit(1);
 		}
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-from") != 0 || (ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_multicycle_path requires '-from <clock/flip-flop_list>' after '-setup'.\n",
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] set_multicycle_path requires '-from <clock/flip-flop_list>' after '-setup'.\n",
 					file_line_number);
 			exit(1);
 		}
@@ -848,7 +879,8 @@ static boolean get_sdc_tok(char * buf) {
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_from = TRUE;
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_multicycle_path '-setup' must be followed by '-from <clock/flip-flop_list>'.\n",
+				vpr_printf_error(__FILE__, __LINE__, 
+						"[SDC line %d] set_multicycle_path '-setup' must be followed by '-from <clock/flip-flop_list>'.\n",
 						file_line_number);
 				exit(1);
 			}
@@ -861,21 +893,24 @@ static boolean get_sdc_tok(char * buf) {
 
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) { 
 				/* We hit the end of the line before finding a -to. */
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_multicycle_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
+				vpr_printf_error(__FILE__, __LINE__, 
+						"[SDC line %d] set_multicycle_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
 						file_line_number);
 				exit(1);
 			}
 		} while (strcmp(ptr, "-to") != 0);
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_multicycle_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
+			vpr_printf_error(__FILE__, __LINE__,
+					"[SDC line %d] set_multicycle_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
 					file_line_number);
 		}
 
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_to = TRUE;
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_multicycle_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
+				vpr_printf_error(__FILE__, __LINE__, 
+						"[SDC line %d] set_multicycle_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
 						file_line_number);
 				exit(1);
 			}
@@ -889,7 +924,8 @@ static boolean get_sdc_tok(char * buf) {
 
 		if (!ptr) {
 			/* We hit the end of the line before finding a number. */
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_multicycle_path requires num_multicycles after '-to <clock/flip-flop_list>'.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] set_multicycle_path requires num_multicycles after '-to <clock/flip-flop_list>'.\n", 
 					file_line_number);
 			exit(1);
 		}
@@ -914,7 +950,8 @@ static boolean get_sdc_tok(char * buf) {
 		set the input delay (from the external device to the FPGA) to max_delay. */
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-clock") != 0 || (ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_input_delay must be directly followed by '-clock <virtual or netlist clock name>'.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] set_input_delay must be directly followed by '-clock <virtual or netlist clock name>'.\n", 
 					file_line_number);
 			exit(1);
 		}
@@ -928,21 +965,24 @@ static boolean get_sdc_tok(char * buf) {
 		}
 	
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-max") != 0) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_input_delay '-clock <virtual or netlist clock name>' must be directly followed by '-max <maximum_input_delay>'.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] set_input_delay '-clock <virtual or netlist clock name>' must be directly followed by '-max <maximum_input_delay>'.\n", 
 					file_line_number);
 			exit(1);
 		}
 
 		/* check if the token following -max is actually a number*/
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] Token following '-max' should be a delay value, but is not a number.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] Token following '-max' should be a delay value, but is not a number.\n", 
 					file_line_number);
 			exit(1);
 		}
 		max_delay = (float) strtod(ptr, NULL);
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "get_ports") != 0) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_input_delay requires a [get_ports {...}] command following '-max <max_input_delay>'.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] set_input_delay requires a [get_ports {...}] command following '-max <max_input_delay>'.\n", 
 					file_line_number);
 			exit(1);
 		}
@@ -976,7 +1016,8 @@ static boolean get_sdc_tok(char * buf) {
 			}
 
 			if (!found) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] Output name or regular expression \"%s\" does not correspond to any nets.\n", 
+				vpr_printf_error(__FILE__, __LINE__, 
+						"[SDC line %d] Output name or regular expression \"%s\" does not correspond to any nets.\n", 
 						file_line_number, ptr);
 				exit(1);
 			}
@@ -989,7 +1030,8 @@ static boolean get_sdc_tok(char * buf) {
 		set the output delay (from the external device to the FPGA) to max_delay. */
 
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-clock") != 0 || (ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_output_delay must be directly followed by '-clock <virtual or netlist clock name>'.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] set_output_delay must be directly followed by '-clock <virtual or netlist clock name>'.\n", 
 					file_line_number);
 			exit(1);
 		}
@@ -1003,21 +1045,24 @@ static boolean get_sdc_tok(char * buf) {
 		}
 	
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-max") != 0) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_output_delay -clock <virtual or netlist clock name> must be directly followed by '-max <maximum_output_delay>'.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] set_output_delay -clock <virtual or netlist clock name> must be directly followed by '-max <maximum_output_delay>'.\n", 
 					file_line_number);
 			exit(1);
 		}
 
 		/* check if the token following -max is actually a number*/
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] Token following '-max' should be a delay value, but is not a number.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] Token following '-max' should be a delay value, but is not a number.\n", 
 					file_line_number);
 			exit(1);
 		}
 		max_delay = (float) strtod(ptr, NULL);
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "get_ports") != 0) {
-			vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] set_output_delay requires a [get_ports {...}] command following '-max <max_output_delay>'.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"[SDC line %d] set_output_delay requires a [get_ports {...}] command following '-max <max_output_delay>'.\n", 
 					file_line_number);
 			exit(1);
 		}
@@ -1051,14 +1096,16 @@ static boolean get_sdc_tok(char * buf) {
 			}
 
 			if (!found) {
-				vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] Output name or regular expression \"%s\" does not correspond to any nets.\n", 
+				vpr_printf_error(__FILE__, __LINE__, 
+						"[SDC line %d] Output name or regular expression \"%s\" does not correspond to any nets.\n", 
 						file_line_number, ptr);
 				exit(1);
 			}
 		}
 
 	} else {
-		vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] Incorrect or unsupported syntax near start of line.\n", 
+		vpr_printf_error(__FILE__, __LINE__,
+	 			"[SDC line %d] Incorrect or unsupported syntax near start of line.\n", 
 				file_line_number);
 		exit(1);
 	}
@@ -1274,7 +1321,8 @@ static boolean regex_match (char * string, char * regular_expression) {
 	else if (strcmp(error, "No match") == 0) 
 		return FALSE;
 	else {
-		vpr_printf(TIO_MESSAGE_ERROR, "[SDC line %d] Error matching regular expression \"%s\".\n", 
+		vpr_printf_error(__FILE__, __LINE__, 
+				"[SDC line %d] Error matching regular expression \"%s\".\n", 
 				file_line_number, regular_expression);
 		exit(1);
 	}

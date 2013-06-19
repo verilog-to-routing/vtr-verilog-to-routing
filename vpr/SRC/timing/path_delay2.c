@@ -47,8 +47,10 @@ alloc_and_load_tnode_fanin_and_check_edges(int *num_sinks_ptr) {
 			for (iedge = 0; iedge < num_edges; iedge++) {
 				to_node = tedge[iedge].to_node;
 				if (to_node < 0 || to_node >= num_tnodes) {
-					vpr_printf(TIO_MESSAGE_ERROR, "in alloc_and_load_tnode_fanin_and_check_edges:\n");
-					vpr_printf(TIO_MESSAGE_ERROR, "\ttnode #%d edge #%d goes to illegal node #%d.\n",
+					vpr_printf_error(__FILE__, __LINE__, 
+							"in alloc_and_load_tnode_fanin_and_check_edges:\n");
+					vpr_printf_error(__FILE__, __LINE__, 
+							"\ttnode #%d edge #%d goes to illegal node #%d.\n",
 							inode, iedge, to_node);
 					error++;
 				}
@@ -62,8 +64,10 @@ alloc_and_load_tnode_fanin_and_check_edges(int *num_sinks_ptr) {
 		}
 
 		else {
-			vpr_printf(TIO_MESSAGE_ERROR, "in alloc_and_load_tnode_fanin_and_check_edges:\n");
-			vpr_printf(TIO_MESSAGE_ERROR, "\ttnode #%d has %d edges.\n", 
+			vpr_printf_error(__FILE__, __LINE__, 
+					"in alloc_and_load_tnode_fanin_and_check_edges:\n");
+			vpr_printf_error(__FILE__, __LINE__, 
+					"\ttnode #%d has %d edges.\n", 
 					inode, num_edges);
 			error++;
 		}
@@ -71,7 +75,8 @@ alloc_and_load_tnode_fanin_and_check_edges(int *num_sinks_ptr) {
 	}
 
 	if (error != 0) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Found %d Errors in the timing graph. Aborting.\n", error);
+		vpr_printf_error(__FILE__, __LINE__, 
+				"Found %d Errors in the timing graph. Aborting.\n", error);
 		exit(1);
 	}
 
@@ -180,9 +185,10 @@ void check_timing_graph(int num_sinks) {
 		num_tnodes_check += tnodes_at_level[ilevel].nelem;
 
 	if (num_tnodes_check != num_tnodes) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Error in check_timing_graph: %d tnodes appear in the tnode level structure. Expected %d.\n", 
+		vpr_printf_error(__FILE__, __LINE__, 
+				"Error in check_timing_graph: %d tnodes appear in the tnode level structure. Expected %d.\n", 
 				num_tnodes_check, num_tnodes);
-		vpr_printf(TIO_MESSAGE_INFO, "Check the netlist for combinational cycles.\n");
+		vpr_printf_info("Check the netlist for combinational cycles.\n");
 		if (num_tnodes > num_tnodes_check) {
 			show_combinational_cycle_candidates();
 		}
@@ -192,7 +198,8 @@ void check_timing_graph(int num_sinks) {
 	 black boxes match # of sinks/sources*/
 
 	if (error != 0) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Found %d Errors in the timing graph. Aborting.\n", error);
+		vpr_printf_error(__FILE__, __LINE__, 
+				"Found %d Errors in the timing graph. Aborting.\n", error);
 		exit(1);
 	}
 }
@@ -277,14 +284,17 @@ static void show_combinational_cycle_candidates() {
 		}
 	}
 
-	vpr_printf(TIO_MESSAGE_INFO, "\tProblematic nodes:\n");
+	vpr_printf_info("\tProblematic nodes:\n");
 	for (i = 0; i < num_tnodes; i++) {
 		if (found_tnode[i] == FALSE) {
-			vpr_printf(TIO_MESSAGE_INFO, "\t\ttnode %d ", i);
+			vpr_printf_info("\t\ttnode %d ", i);
 			if (tnode[i].pb_graph_pin == NULL) {
-				vpr_printf(TIO_MESSAGE_INFO, "block %s port %d pin %d\n", logical_block[tnode[i].block].name, tnode[i].prepacked_data->model_port, tnode[i].prepacked_data->model_pin);
+				vpr_printf_info("block %s port %d pin %d\n", 
+						logical_block[tnode[i].block].name, 
+						tnode[i].prepacked_data->model_port, 
+						tnode[i].prepacked_data->model_pin);
 			} else {
-				vpr_printf(TIO_MESSAGE_INFO, "\n");
+				vpr_printf_info("\n");
 			}
 		}
 	}
