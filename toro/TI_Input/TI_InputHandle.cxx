@@ -69,6 +69,7 @@ void TI_Input_c::HandleOptionsStore_(
    MinGrid.SetGrid( messageOptions.minGridPrecision );
 
    printHandler.SetTimeStampsEnabled( messageOptions.timeStampsEnable );
+   printHandler.SetFileLinesEnabled( messageOptions.fileLinesEnable );
 
    for( size_t i = 0; i < messageOptions.info.acceptList.GetLength( ); ++i )
    {
