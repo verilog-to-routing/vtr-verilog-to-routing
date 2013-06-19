@@ -172,20 +172,20 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 					total_wirelength += wirelength;
 				}
 			}
-			vpr_printf(TIO_MESSAGE_INFO, "Wire length after first iteration %d, total available wire length %d, ratio %g\n",
+			vpr_printf_info("Wire length after first iteration %d, total available wire length %d, ratio %g\n",
 					total_wirelength, available_wirelength,
 					(float) (total_wirelength) / (float) (available_wirelength));
 			if ((float) (total_wirelength) / (float) (available_wirelength)> FIRST_ITER_WIRELENTH_LIMIT) {
-				vpr_printf(TIO_MESSAGE_INFO, "Wire length usage ratio exceeds limit of %g, fail routing.\n",
+				vpr_printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
 						FIRST_ITER_WIRELENTH_LIMIT);
 				free_timing_driven_route_structs(pin_criticality, sink_order, rt_node_of_sink);
 				free(net_index);
 				free(sinks);
 				return FALSE;
 			}
-			vpr_printf(TIO_MESSAGE_INFO, "--------- ---------- -----------\n");
-			vpr_printf(TIO_MESSAGE_INFO, "Iteration       Time   Crit Path\n");
-			vpr_printf(TIO_MESSAGE_INFO, "--------- ---------- -----------\n");
+			vpr_printf_info("--------- ---------- -----------\n");
+			vpr_printf_info("Iteration       Time   Crit Path\n");
+			vpr_printf_info("--------- ---------- -----------\n");
 		}
 
 		/* Make sure any CLB OPINs used up by subblocks being hooked directly
@@ -202,6 +202,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		/* Verification to check the ratio of overused nodes, depending on the configuration
 		 * may abort the routing if the ratio is too high. */
 		overused_ratio = get_overused_ratio();
+
 		/* Andre Pereira: The check splits the inverval in 3 intervals ([6,10), [10,20), [20,40)
 		 * The values before 6 are not considered, as the behaviour is not interesting
 		 * The threshold used is 4x, 2x, 1x overused_threshold, for each interval,
@@ -219,7 +220,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			if (itry >= 20 && overused_ratio > overused_threshold)
 				times_exceeded_threshold++;
 			if (times_exceeded_threshold >= EXCEEDED_OVERUSED_COUNT_LIMIT){
-				vpr_printf(TIO_MESSAGE_INFO, "Routing aborted, the ratio of overused nodes is above the threshold.\n");
+				vpr_printf_info("Routing aborted, the ratio of overused nodes is above the threshold.\n");
 				free_timing_driven_route_structs(pin_criticality, sink_order, rt_node_of_sink);
 				free(net_index);
 				free(sinks);
@@ -232,13 +233,13 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 
 			if (timing_analysis_enabled) {
 				float critical_path_delay = get_critical_path_delay();
-				vpr_printf(TIO_MESSAGE_INFO, "%9d %6.2f sec %8.5f ns\n", itry, time, critical_path_delay);
-				vpr_printf(TIO_MESSAGE_INFO, "Critical path: %g ns\n", critical_path_delay);
+				vpr_printf_info("%9d %6.2f sec %8.5f ns\n", itry, time, critical_path_delay);
+				vpr_printf_info("Critical path: %g ns\n", critical_path_delay);
 			} else {
-				vpr_printf(TIO_MESSAGE_INFO, "%9d %6.2f sec\n", itry, time);
+				vpr_printf_info("%9d %6.2f sec\n", itry, time);
 			}
 
-			vpr_printf(TIO_MESSAGE_INFO, "Successfully routed after %d routing iterations.\n", itry);
+			vpr_printf_info("Successfully routed after %d routing iterations.\n", itry);
 			free_timing_driven_route_structs(pin_criticality, sink_order, rt_node_of_sink);
 #ifdef DEBUG
 			timing_driven_check_net_delays(net_delay);
@@ -289,14 +290,14 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		
 		if (timing_analysis_enabled) {
 			float critical_path_delay = get_critical_path_delay();
-			vpr_printf(TIO_MESSAGE_INFO, "%9d %6.2f sec %8.5f ns\n", itry, time, critical_path_delay);
+			vpr_printf_info("%9d %6.2f sec %8.5f ns\n", itry, time, critical_path_delay);
 		} else {
-			vpr_printf(TIO_MESSAGE_INFO, "%9d %6.2f sec\n", itry, time);
+			vpr_printf_info("%9d %6.2f sec\n", itry, time);
 		}
 		fflush(stdout);
 	}
 
-	vpr_printf(TIO_MESSAGE_INFO, "Routing failed.\n");
+	vpr_printf_info("Routing failed.\n");
 	free_timing_driven_route_structs(pin_criticality, sink_order, rt_node_of_sink);
 	free(net_index);
 	free(sinks);
@@ -331,7 +332,7 @@ boolean try_timing_driven_route_net(int inet, int itry, float pres_fac,
 			clb_net[inet].is_routed = TRUE;
 			vpack_net[clb_to_vpack_net_mapping[inet]].is_routed = TRUE;
 		} else {
-			vpr_printf(TIO_MESSAGE_INFO, "Routing failed.\n");
+			vpr_printf_info("Routing failed.\n");
 			free_timing_driven_route_structs(pin_criticality,
 					sink_order, rt_node_of_sink);
 		}
@@ -485,7 +486,7 @@ boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_cr
 		current = get_heap_head();
 
 		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
-			vpr_printf(TIO_MESSAGE_INFO, "Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
+			vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
 					   inet, clb_net[inet].name, itarget);
 			reset_path_costs();
 			free_route_tree(rt_root);
@@ -531,7 +532,7 @@ boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_cr
 			current = get_heap_head();
 
 			if (current == NULL) { /* Impossible routing.  No path for net. */
-				vpr_printf(TIO_MESSAGE_INFO, "Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
+				vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
 						 inet, clb_net[inet].name, itarget);
 				reset_path_costs();
 				free_route_tree(rt_root);
@@ -1005,7 +1006,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
 	}
 
 	free_net_delay(net_delay_check, &list_head_net_delay_check_ch);
-	vpr_printf(TIO_MESSAGE_INFO, "Completed net delay value cross check successfully.\n");
+	vpr_printf_info("Completed net delay value cross check successfully.\n");
 }
 
 #ifdef TORO_PREROUTED_ROUTING_ENABLE
@@ -1037,7 +1038,7 @@ static bool timing_driven_order_prerouted_first(
 				continue;
 
 			int inet = tch_net.GetVPR_NetIndex();
-			vpr_printf(TIO_MESSAGE_INFO, "  Prerouting net %s...\n", clb_net[inet].name);
+			vpr_printf_info("  Prerouting net %s...\n", clb_net[inet].name);
 
 			// Call existing VPR route code based on the given VPR net index
 			// (Note: this code will auto pre-route based on Toro callback handler)
