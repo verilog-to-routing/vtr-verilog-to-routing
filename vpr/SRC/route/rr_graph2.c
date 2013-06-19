@@ -2724,4 +2724,6 @@ static int find_label_of_track(
 
 	vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 		"Expected mux not found.\n");
+		
+	return OPEN;//Should not reach here once thrown
 }

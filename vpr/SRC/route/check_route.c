@@ -454,8 +454,9 @@ static boolean check_adjacent(int from_node, int to_node) {
 	else if (num_adj == 0)
 		return (FALSE);
 	
-			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
-				"in check_adjacent: num_adj = %d. Expected 0 or 1.\n", num_adj);
+	vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
+		"in check_adjacent: num_adj = %d. Expected 0 or 1.\n", num_adj);
+	return FALSE; //Should not reach here once thrown
 }
 
 static int chanx_chany_adjacent(int chanx_node, int chany_node) {

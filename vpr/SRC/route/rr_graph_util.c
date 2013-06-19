@@ -76,6 +76,7 @@ int seg_index_of_sblock(int from_node, int to_node) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in seg_index_of_sblock: to_node %d is of type %d.\n",
 					to_node, to_rr_type);
+			return OPEN; //Should not reach here once thrown
 		}
 	}
 	/* End from_rr_type is CHANX */
@@ -92,6 +93,7 @@ int seg_index_of_sblock(int from_node, int to_node) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				 "in seg_index_of_sblock: to_node %d is of type %d.\n",
 					to_node, to_rr_type);
+			return OPEN; //Should not reach here once thrown
 		}
 	}
 	/* End from_rr_type is CHANY */
@@ -99,5 +101,6 @@ int seg_index_of_sblock(int from_node, int to_node) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 			"in seg_index_of_sblock: from_node %d is of type %d.\n",
 				from_node, from_rr_type);
+		return OPEN; //Should not reach here once thrown
 	}
 }
