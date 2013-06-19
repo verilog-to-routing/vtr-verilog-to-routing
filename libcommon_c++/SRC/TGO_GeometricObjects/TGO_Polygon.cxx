@@ -117,6 +117,7 @@ TGO_Polygon_c& TGO_Polygon_c::operator=(
    if( &polygon != this )
    {
       this->pointList_ = polygon.pointList_;
+      this->region_ = polygon.region_;
    }
    return( *this );
 }
@@ -233,17 +234,6 @@ void TGO_Polygon_c::Set(
 {
    this->pointList_.SetCapacity( pointList.GetLength( ) + 1 );
    this->Add( pointList );
-// ???
-// ???   size_t len = this->pointList_.GetLength( );
-// ???   if( len >= 2 )
-// ???   {
-// ???      const TGO_Point_c& firstPoint = *this->pointList_[ 0 ];
-// ???      const TGO_Point_c& lastPoint = *this->pointList_[ len - 1 ];
-// ???      if( firstPoint != lastPoint )
-// ???      {
-// ???         this->Add( firstPoint );
-// ???      }
-// ???   }
 }
 
 //===========================================================================//
@@ -275,6 +265,7 @@ void TGO_Polygon_c::Reset(
       void )
 {
    this->pointList_.Clear( );
+   this->region_.Reset( );
 }
 
 //===========================================================================//
@@ -642,7 +633,6 @@ bool TGO_Polygon_c::IsWithin(
    for( size_t i = 0; i < pointList.GetLength( ); ++i )
    {
       const TGO_Point_c& point = *pointList[i];
-// ???      if( !this->IsWithin( point ) && !this->IsEdge( point ))
       if( !this->IsWithin( point ))
       {
          isWithin = false;
@@ -656,7 +646,6 @@ bool TGO_Polygon_c::IsWithin(
 bool TGO_Polygon_c::IsWithin( 
       const TGO_Point_c& point ) const
 {
-// ???
    bool isWithin = false;
 
    int c = 0;
@@ -680,9 +669,8 @@ bool TGO_Polygon_c::IsWithin(
          }
       }
    }
-   isWithin = ( c ? true : false );
 
-// ???
+   isWithin = ( c ? true : false );
    if( isWithin )
    {
       isWithin = ( !this->IsEdge( point ) ? true : false );
@@ -768,7 +756,6 @@ bool TGO_Polygon_c::IsIntersecting(
 bool TGO_Polygon_c::IsCorner( 
       const TGO_Point_c& point ) const
 {
-// ???
    bool isCorner = false;
 
    TGO_Line_c edge;
@@ -814,7 +801,6 @@ bool TGO_Polygon_c::IsCorner(
 bool TGO_Polygon_c::IsConvexCorner( 
       const TGO_Point_c& point ) const
 {
-// ???
    bool isConvexCorner = false;
 
    if( this->IsCorner( point ))
@@ -836,9 +822,9 @@ bool TGO_Polygon_c::IsConvexCorner(
       region.ApplyIntersect( edgeRegion );
 
       // Test for 1x1 region is within polygon area (convex) or not (concave)
-      if( this->IsWithin( region.x1, region.y1 ) &&
-          this->IsWithin( region.x1, region.y2 ) &&
-          this->IsWithin( region.x2, region.y2 ) &&
+      if( this->IsWithin( region.x1, region.y1 ) ||
+          this->IsWithin( region.x1, region.y2 ) ||
+          this->IsWithin( region.x2, region.y2 ) ||
           this->IsWithin( region.x2, region.y1 ))
       {
          isConvexCorner = true;
@@ -866,7 +852,6 @@ bool TGO_Polygon_c::IsConvexCorner(
 bool TGO_Polygon_c::IsConcaveCorner( 
       const TGO_Point_c& point ) const
 {
-// ???
    bool isConcaveCorner = false;
 
    if( this->IsCorner( point ) &&
@@ -901,7 +886,6 @@ bool TGO_Polygon_c::IsOrthogonal(
       TGO_Point_c* ppointA, 
       TGO_Point_c* ppointB ) const 
 {
-// ???
    bool isOrthogonal = true;
 
    size_t len = this->pointList_.GetLength( );
@@ -956,7 +940,6 @@ bool TGO_Polygon_c::IsRectilinear(
    {
       const TGO_Point_c& point = *this->pointList_[i];
 
-// ???
       if(( !leftEdge.IsWithin( point )) &&
          ( !rightEdge.IsWithin( point )) &&
          ( !bottomEdge.IsWithin( point )) &&
