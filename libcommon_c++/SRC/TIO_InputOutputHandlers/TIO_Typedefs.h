@@ -4,7 +4,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -138,6 +138,7 @@ enum TIO_FormatLengths_e              // Lengths used for formatted output
    TIO_FORMAT_STRING_LEN_VALUE     = 16,    // Format: bool/int/uint/float
    TIO_FORMAT_STRING_LEN_DATA      = 256,   // Format: int/uint/long/float/string
    TIO_FORMAT_STRING_LEN_DATE_TIME = 80,    // Format: [mm/dd/yy hh:mm:ss]
+   TIO_FORMAT_STRING_LEN_FILE_LINE = 80,    // Format: [file:line]
    TIO_FORMAT_STRING_LEN_HEAD_FOOT = 80     // Format: file header|footer
 };
 
