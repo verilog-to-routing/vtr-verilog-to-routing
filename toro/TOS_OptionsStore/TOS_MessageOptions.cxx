@@ -41,7 +41,8 @@ TOS_MessageOptions_c::TOS_MessageOptions_c(
       void )
       :
       minGridPrecision( 0.001 ),
-      timeStampsEnable( false )
+      timeStampsEnable( false ),
+      fileLinesEnable( false )
 {
    this->info.acceptList.SetCapacity( TOS_DISPLAY_INFO_LIST_DEF_CAPACITY );
    this->info.rejectList.SetCapacity( TOS_DISPLAY_INFO_LIST_DEF_CAPACITY );
@@ -71,6 +72,7 @@ TOS_MessageOptions_c::TOS_MessageOptions_c(
 TOS_MessageOptions_c::TOS_MessageOptions_c( 
             double                 minGridPrecision_,
             bool                   timeStampsEnable_,
+            bool                   fileLinesEnable_,
       const TOS_DisplayNameList_t& infoAcceptList,
       const TOS_DisplayNameList_t& infoRejectList,
       const TOS_DisplayNameList_t& warningAcceptList,
@@ -81,7 +83,8 @@ TOS_MessageOptions_c::TOS_MessageOptions_c(
       const TOS_DisplayNameList_t& traceRejectList )
       :
       minGridPrecision( minGridPrecision_ ),
-      timeStampsEnable( timeStampsEnable_ )
+      timeStampsEnable( timeStampsEnable_ ),
+      fileLinesEnable( fileLinesEnable_ )
 {
    this->info.acceptList = infoAcceptList;
    this->info.rejectList = infoRejectList;
@@ -137,6 +140,7 @@ void TOS_MessageOptions_c::Print(
 
    printHandler.Write( pfile, spaceLen, "FORMAT_MIN_GRID            = %0.*f\n", precision, this->minGridPrecision );
    printHandler.Write( pfile, spaceLen, "FORMAT_TIME_STAMPS         = %s\n", TIO_BOOL_STR( this->timeStampsEnable ));
+   printHandler.Write( pfile, spaceLen, "FORMAT_FILE_LINES          = %s\n", TIO_BOOL_STR( this->fileLinesEnable ));
 
    if( this->info.acceptList.GetLength( ))
    {
