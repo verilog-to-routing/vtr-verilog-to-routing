@@ -70,7 +70,7 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
 
 /* Display general VPR information */
 void vpr_print_title(void) {
-// ???
+
 	vpr_printf_info("\n");
 	vpr_printf_info("VPR FPGA Placement and Routing.\n");
 	vpr_printf_info("Version: Version " VPR_VERSION "\n");
@@ -151,9 +151,8 @@ void vpr_init(INP int argc, INP char **argv, OUTP t_options *options,
 		OUTP t_vpr_setup *vpr_setup, OUTP t_arch *arch) {
 	char* pszLogFileName = "vpr_stdout.log";
 	unsigned char enableTimeStamps = 1;
-// ???	unsigned char enableFileLines = 1;
-	unsigned char enableFileLines = 0;
-// ???
+	unsigned char enableFileLines = 1;
+
 	unsigned long maxWarningCount = 100000;
 	unsigned long maxErrorCount = 1000;
 
