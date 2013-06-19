@@ -35,7 +35,8 @@ static void print_string(const char *str_ptr, int *column, FILE * fpout) {
 
 	len = strlen(str_ptr);
 	if (len + 3 > LINELENGTH) {
-		vpr_printf(TIO_MESSAGE_ERROR, "in print_string: String %s is too long for desired maximum line length.\n", str_ptr);
+		vpr_printf_error(__FILE__, __LINE__,
+				"in print_string: String %s is too long for desired maximum line length.\n", str_ptr);
 		exit(1);
 	}
 
@@ -245,7 +246,7 @@ static int find_fanin_rr_node(t_pb *cur_pb, enum PORTS type, int rr_node_index) 
 	}
 
 	/* TODO: Once I find a way to output routing in empty blocks then code should never reach here, for now, return OPEN */
-	vpr_printf(TIO_MESSAGE_INFO, "Use hack in blif dumper (do properly later): connecting net %s #%d for pb %s type %s\n",
+	vpr_printf_info("Use hack in blif dumper (do properly later): connecting net %s #%d for pb %s type %s\n",
 			vpack_net[net_num].name, net_num, cur_pb->name,
 			cur_pb->pb_graph_node->pb_type->name);
 
@@ -337,7 +338,8 @@ static void print_primitive(FILE *fpout, int iblk) {
 							}
 							if(k == pb_type->ports[i].num_pins) {
 								/* Failed to find LUT input, a netlist error has occurred */
-								vpr_printf(TIO_MESSAGE_ERROR, "LUT %s missing input %s post packing.  This is a VPR internal error, report to vpr@eecg.utoronto.ca\n",
+								vpr_printf_error(__FILE__, __LINE__,
+									"LUT %s missing input %s post packing. This is a VPR internal error, report to vpr@eecg.utoronto.ca\n",
 									logical_block[iblk].name, vpack_net[logical_block[iblk].input_nets[in_port_index][j]].name);
 								exit(1);
 							}
@@ -363,7 +365,9 @@ static void print_primitive(FILE *fpout, int iblk) {
 				truth_table = truth_table->next;
 			}
 		} else {
-			vpr_printf(TIO_MESSAGE_WARNING, "TODO: Implement blif dumper for subckt %s model %s", logical_block[iblk].name, logical_block[iblk].model->name);
+			vpr_printf_warning(__FILE__, __LINE__,
+					"TODO: Implement blif dumper for subckt %s model %s", 
+					logical_block[iblk].name, logical_block[iblk].model->name);
 		}
 	}
 }

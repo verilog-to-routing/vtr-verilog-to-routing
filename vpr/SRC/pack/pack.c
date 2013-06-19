@@ -30,7 +30,7 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 	t_pack_molecule *list_of_pack_molecules, * cur_pack_molecule;
 	int num_pack_molecules;
 
-	vpr_printf(TIO_MESSAGE_INFO, "Begin packing '%s'.\n", packer_opts->blif_file_name);
+	vpr_printf_info("Begin packing '%s'.\n", packer_opts->blif_file_name);
 
 	/* determine number of models in the architecture */
 	num_models = 0;
@@ -48,22 +48,22 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 
 	is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
 	
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "After removing unused inputs...\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\ttotal blocks: %d, total nets: %d, total inputs: %d, total outputs: %d\n",
+	vpr_printf_info("\n");
+	vpr_printf_info("After removing unused inputs...\n");
+	vpr_printf_info("\ttotal blocks: %d, total nets: %d, total inputs: %d, total outputs: %d\n",
 			num_logical_blocks, num_logical_nets, num_p_inputs, num_p_outputs);
 
-	vpr_printf(TIO_MESSAGE_INFO, "Begin prepacking.\n");
+	vpr_printf_info("Begin prepacking.\n");
 	list_of_packing_patterns = alloc_and_load_pack_patterns(
 			&num_packing_patterns);
 	list_of_pack_molecules = alloc_and_load_pack_molecules(
 			list_of_packing_patterns, num_packing_patterns,
 			&num_pack_molecules);
-	vpr_printf(TIO_MESSAGE_INFO, "Finish prepacking.\n");
+	vpr_printf_info("Finish prepacking.\n");
 
 	if(packer_opts->auto_compute_inter_cluster_net_delay) {
 		packer_opts->inter_cluster_net_delay = interc_delay;
-		vpr_printf(TIO_MESSAGE_INFO, "Using inter-cluster delay: %g\n", packer_opts->inter_cluster_net_delay);
+		vpr_printf_info("Using inter-cluster delay: %g\n", packer_opts->inter_cluster_net_delay);
 	}
 
 	/* Uncomment line below if you want a dump of compressed netlist. */
@@ -84,7 +84,8 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 				packer_opts->allow_early_exit, packer_opts->connection_driven,
 				packer_opts->packer_algorithm, timing_inf);
 	} else {
-		vpr_printf(TIO_MESSAGE_ERROR, "Skip clustering no longer supported.\n");
+		vpr_printf_error(__FILE__, __LINE__, 
+				"Skip clustering no longer supported.\n");
 		exit(1);
 	}
 
@@ -102,9 +103,9 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 		list_of_pack_molecules = cur_pack_molecule;
 	}
 
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Netlist conversion complete.\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
+	vpr_printf_info("\n");
+	vpr_printf_info("Netlist conversion complete.\n");
+	vpr_printf_info("\n");
 }
 
 float get_switch_info(short switch_index, float &Tdel_switch, float &R_switch, float &Cout_switch) {
@@ -159,7 +160,8 @@ boolean *alloc_and_load_is_clock(boolean global_clocks) {
 	 * locally generated clocks.                                             */
 
 	if (num_clocks > 1 && global_clocks) {
-		vpr_printf(TIO_MESSAGE_WARNING, "Circuit contains %d clocks. All clocks will be marked global.\n", num_clocks);
+		vpr_printf_warning(__FILE__, __LINE__, 
+				"Circuit contains %d clocks. All clocks will be marked global.\n", num_clocks);
 	}
 
 	return (is_clock);

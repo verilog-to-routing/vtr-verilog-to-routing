@@ -113,7 +113,7 @@ void alloc_and_load_all_pb_graphs(boolean load_power_structures) {
 
 	errors = check_pb_graph();
 	if (errors > 0) {
-		vpr_printf(TIO_MESSAGE_ERROR, "in pb graph");
+		vpr_printf_error(__FILE__, __LINE__, "in pb graph");
 		exit(1);
 	}
 	for (i = 0; i < num_types; i++) {
