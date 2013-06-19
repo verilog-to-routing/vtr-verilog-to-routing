@@ -794,25 +794,25 @@ t_vpr_error* alloc_and_load_vpr_error(enum e_vpr_error type, unsigned int line, 
 }
 
 void vpr_throw(enum e_vpr_error type,
-	const char* psz_file_name,
-	unsigned int line_num,
-	const char* psz_message,
-	...){
+		const char* psz_file_name,
+		unsigned int line_num,
+		const char* psz_message,
+		...) {
 
 	t_vpr_error* vpr_error = alloc_and_load_vpr_error(type,
               line_num, const_cast<char*>(psz_file_name));
 
-    // Make a variable argument list
-    va_list va_args;
+	// Make a variable argument list
+	va_list va_args;
 
-    // Initialize variable argument list
-    va_start( va_args, psz_message );
+	// Initialize variable argument list
+	va_start( va_args, psz_message );
 
-    // Extract and format based on variable argument list
-    vsprintf(vpr_error->message, psz_message, va_args );
+	// Extract and format based on variable argument list
+	vsprintf(vpr_error->message, psz_message, va_args );
 
-    // Reset variable argument list
-    va_end( va_args );
+	// Reset variable argument list
+	va_end( va_args );
 
-    throw vpr_error;
+	throw vpr_error;
 }

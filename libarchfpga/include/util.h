@@ -187,4 +187,6 @@ int ipow(int base, int exp);
 /*********************** Error-related ***************************************/
 void Print_VPR_Error(t_vpr_error* vpr_error, char* arch_filename);
 t_vpr_error* alloc_and_load_vpr_error(enum e_vpr_error type, int line, char* file_name);
+void vpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, ...);
+
 #endif
