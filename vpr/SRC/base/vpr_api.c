@@ -1446,3 +1446,46 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 	}
 	vpr_printf_info("\n");
 }
+
+void vpr_print_error(t_vpr_error* vpr_error){
+	switch(vpr_error->type){ 	
+	case VPR_ERROR_UNKNOWN:
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nType: Unknown\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		break;
+	case VPR_ERROR_ARCH:
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nType: Architecture File\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		break;
+	case VPR_ERROR_PACK:
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nType: Packing\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		break;
+	case VPR_ERROR_PLACE:
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nType: Placement\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		break;
+	case VPR_ERROR_ROUTE:
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nType: Routing\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		break;
+	case VPR_ERROR_TIMING:
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nType: Other\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+	case VPR_ERROR_OTHER:
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nType: Other\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		break;
+	default:
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nError in vpr_error loading\n");
+		break;
+	}
+}

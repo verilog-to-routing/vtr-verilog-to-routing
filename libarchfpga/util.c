@@ -88,11 +88,8 @@ FILE *my_fopen(const char *fname, const char *flag, int prompt) {
 	}
 
 	if (NULL == (fp = fopen(fname, flag))) {
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_UNKNOWN, 
-				__LINE__, __FILE__);
-		sprintf(vpr_error->message,
-			"Error opening file %s for %s access: %s.\n", fname, flag, strerror(errno));
-		throw vpr_error;
+		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+			"Error opening file %s for %s access: %s.\n", fname, flag, strerror(errno));		
 	}
 
 	if (new_fname)
@@ -123,11 +120,8 @@ int my_atoi(const char *str) {
 
 	if (str[0] < '0' || str[0] > '9') {
 		if (!(str[0] == '-' && str[1] >= '0' && str[1] <= '9')) {
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_UNKNOWN, 
-				__LINE__, __FILE__);
-			sprintf(vpr_error->message,
-				"expected number instead of '%s'.\n", str);
-			throw vpr_error;
+			vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+				"expected number instead of '%s'.\n", str);			
 		}
 	}
 	return (atoi(str));
@@ -140,11 +134,8 @@ void *my_calloc(size_t nelem, size_t size) {
 	}
 
 	if ((ret = calloc(nelem, size)) == NULL ) {
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_UNKNOWN, 
-					__LINE__, __FILE__);
-			sprintf(vpr_error->message,
-				"Error:  Unable to calloc memory.  Aborting.\n");
-			throw vpr_error;
+		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+				"Error:  Unable to calloc memory.  Aborting.\n");			
 	}
 	return (ret);
 }
@@ -156,11 +147,8 @@ void *my_malloc(size_t size) {
 	}
 
 	if ((ret = malloc(size)) == NULL ) {
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_UNKNOWN, 
-			__LINE__, __FILE__);
-		sprintf(vpr_error->message,
-			"Error:  Unable to malloc memory.  Aborting.\n");
-		throw vpr_error;
+		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+			"Error:  Unable to malloc memory.  Aborting.\n");		
 	}
 	return (ret);
 }
@@ -182,11 +170,8 @@ void *my_realloc(void *ptr, size_t size) {
 			vpr_printf_error(__FILE__, __LINE__,
 					"my_realloc: ptr == NULL. Aborting.\n");
 		}
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_UNKNOWN, 
-					__LINE__, __FILE__);
-				sprintf(vpr_error->message,
-					"Unable to realloc memory. Aborting. ptr=%p, Size=%d.\n", ptr, (int) size);
-				throw vpr_error;
+			vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+					"Unable to realloc memory. Aborting. ptr=%p, Size=%d.\n", ptr, (int) size);				
 	}
 	return (ret);
 }
@@ -380,13 +365,10 @@ void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 		ivec->list = NULL;
 
 		if (list_head != NULL ) {
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_UNKNOWN, 
-				__LINE__, __FILE__);
-			sprintf(vpr_error->message,
+			vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
 				"alloc_ivector_and_copy_int_list: Copied %d elements, "
 						"but list at %p contains more.\n", num_items,
-				(void *) list_head);
-			throw vpr_error;
+				(void *) list_head);			
 		}
 		return;
 	}
@@ -404,13 +386,10 @@ void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 	list[num_items - 1] = linked_int->data;
 
 	if (linked_int->next != NULL ) {
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_UNKNOWN, 
-			__LINE__, __FILE__);
-		sprintf(vpr_error->message,
+		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
 			"Error in alloc_ivector_and_copy_int_list:\n Copied %d elements, "
 			"but list at %p contains more.\n", num_items,
-				(void *) list_head);
-		throw vpr_error;
+				(void *) list_head);		
 	}
 
 	linked_int->next = *free_list_head_ptr;
@@ -469,13 +448,10 @@ char *my_fgets(char *buf, int max_size, FILE * fp) {
 	}
 
 	/* Buffer is full but line has not terminated, so error */
-	t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_UNKNOWN, 
-		__LINE__, __FILE__);
-	sprintf(vpr_error->message,
+	vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
 		"Error on line %d -- line is too long for input buffer.\n"
 		"All lines must be at most %d characters long.\n",
-			file_line_number, BUFSIZE - 2);
-	throw vpr_error;
+			file_line_number, BUFSIZE - 2);	
 }
 
 char *my_strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {
@@ -741,11 +717,8 @@ int my_irand(int imax) {
 			/* Due to random floating point rounding, sometimes above calculation gives number greater than ival by 1 */
 			ival = imax;
 		} else {
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_UNKNOWN, 
-				__LINE__, __FILE__);
-			sprintf(vpr_error->message,
-				"Bad value in my_irand, imax = %d  ival = %d\n", imax, ival);
-			throw vpr_error;
+			vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+				"Bad value in my_irand, imax = %d  ival = %d\n", imax, ival);			
 		}
 	}
 #endif
@@ -766,11 +739,8 @@ float my_frand(void) {
 
 #ifdef CHECK_RAND
 	if ((fval < 0) || (fval > 1.)) {
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_UNKNOWN, 
-			__LINE__, __FILE__);
-		sprintf(vpr_error->message,
-			"Bad value in my_frand, fval = %g\n", fval);
-		throw vpr_error;
+		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+			"Bad value in my_frand, fval = %g\n", fval);		
 	}
 #endif
 
@@ -806,66 +776,43 @@ int ipow(int base, int exp) {
 	return result;
 }
 
-void Print_VPR_Error(t_vpr_error* vpr_error, char* arch_filename){
-	
-	switch(vpr_error->type){
-	case VPR_ERROR_UNKNOWN:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nType: Unknown\nFile: %s\nLine: %d\nMessage: %s\n", 
-		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
-		break;
-	case VPR_ERROR_ARCH:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nType: Architecture File\nFile: %s\nLine: %d\nMessage: %s\n", 
-		arch_filename, vpr_error->line_num, vpr_error->message);
-		break;
-	case VPR_ERROR_PACK:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nType: Packing\nFile: %s\nLine: %d\nMessage: %s\n", 
-		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
-		break;
-	case VPR_ERROR_PLACE:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nType: Placement\nFile: %s\nLine: %d\nMessage: %s\n", 
-		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
-		break;
-	case VPR_ERROR_ROUTE:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nType: Routing\nFile: %s\nLine: %d\nMessage: %s\n", 
-		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
-		break;
-	case VPR_ERROR_OTHER:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nType: Other\nFile: %s\nLine: %d\nMessage: %s\n", 
-		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
-		break;
-	default:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nError in vpr_error loading\n");
-		break;
-	}
-}
-
 /* Allocate and load partial data into t_vpr_error structure */
 /* Note: can also set breakpoint in this function to view callstack prior *
  * to VPR failure														  */
-t_vpr_error* alloc_and_load_vpr_error(enum e_vpr_error type, int line, char* file_name){
+t_vpr_error* alloc_and_load_vpr_error(enum e_vpr_error type, unsigned int line, char* file_name){
 	t_vpr_error* vpr_error;
 
 	vpr_error = (t_vpr_error*)my_calloc(1, sizeof(t_vpr_error));
 	vpr_error->file_name = (char*)my_calloc(1000, sizeof(char));
 	vpr_error->message = (char*)my_calloc(1000, sizeof(char));
 
-	if(type == VPR_ERROR_ARCH){
-		/* Will use architecture filename later in Print_VPR_Error instead of source filename */
-		sprintf(vpr_error->file_name, "'architecture filename'"); 
-	}
-	else{
-		sprintf(vpr_error->file_name, "%s", file_name);
-	}
+	sprintf(vpr_error->file_name, file_name);
 	vpr_error->line_num = line;
 	vpr_error->type = type;
 
 	return vpr_error;
+}
 
+void vpr_throw(enum e_vpr_error type,
+	const char* psz_file_name,
+	unsigned int line_num,
+	const char* psz_message,
+	...){
+
+	t_vpr_error* vpr_error = alloc_and_load_vpr_error(type,
+              line_num, const_cast<char*>(psz_file_name));
+
+    // Make a variable argument list
+    va_list va_args;
+
+    // Initialize variable argument list
+    va_start( va_args, psz_message );
+
+    // Extract and format based on variable argument list
+    vsprintf(vpr_error->message, psz_message, va_args );
+
+    // Reset variable argument list
+    va_end( va_args );
+
+    throw vpr_error;
 }

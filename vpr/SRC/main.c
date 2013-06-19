@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
 		vpr_free_all(Arch, Options, vpr_setup);
 	}
 	catch(t_vpr_error* vpr_error){
-		Print_VPR_Error(vpr_error, Options.ArchFile);
+		vpr_print_error(vpr_error);
 	}
 	
 

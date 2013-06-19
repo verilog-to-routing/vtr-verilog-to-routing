@@ -41,6 +41,10 @@ enum Fc_type {
 	FC_ABS, FC_FRAC, FC_FULL
 };
 
+/* This gives access to the architecture file name to 
+	all architecture-parser functions       */
+static const char* arch_file_name = NULL;
+
 /* This identifies the t_type_ptr of an IO block */
 static t_type_ptr IO_TYPE = NULL;
 
@@ -147,11 +151,8 @@ static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 	} else if (strcmp(Prop, "custom") == 0) {
 		Type->pin_location_distribution = E_CUSTOM_PIN_DISTR;
 	} else {		
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Locations->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Locations->line, 
 					"%s is an invalid pin location pattern.\n", Prop);
-				throw vpr_error;
 	}
 	ezxml_set_attr(Locations, "pattern", NULL);
 
@@ -192,11 +193,8 @@ static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 			/* Get offset (ie. height) */
 			int height = GetIntProperty(Cur, "offset", FALSE, 0);
 			if ((height < 0) || (height >= Type->height)) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Cur->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
 					"'%d' is an invalid offset for type '%s'.\n", height, Type->name);
-				throw vpr_error;
 			}
 
 			/* Get side */
@@ -215,28 +213,19 @@ static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 				side = BOTTOM;
 			}
 			else {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Cur->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
 					"'%s' is not a valid side.\n", Prop);
-				throw vpr_error;
 			}
 			ezxml_set_attr(Cur, "side", NULL);
 
 			/* Check location is on perimeter */
 			if ((TOP == side) && (height != (Type->height - 1))) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Cur->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
 					"Locations are only allowed on large block perimeter. 'top' side should be at offset %d only.\n", (Type->height - 1));
-				throw vpr_error;
 			}
 			if ((BOTTOM == side) && (height != 0)) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Cur->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
 					"Locations are only allowed on large block perimeter. 'bottom' side should be at offset 0 only.\n");
-				throw vpr_error;
 			}
 
 			/* Go through lists of pins */
@@ -352,22 +341,16 @@ static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {
 		if (Prop) {
 			if (strcmp(Prop, "perimeter") == 0) {
 				if (Type->num_grid_loc_def != 1) {					
-					t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-								Cur->line, NULL);
-					sprintf(vpr_error->message, 
+					vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
 						"Another loc specified for perimeter.\n");
-					throw vpr_error;
 				}
 				Type->grid_loc_def[i].grid_loc_type = BOUNDARY;
 				assert(IO_TYPE == Type);
 				/* IO goes to boundary */
 			} else if (strcmp(Prop, "fill") == 0) {
 				if (Type->num_grid_loc_def != 1 || FILL_TYPE != NULL) {					
-					t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-								Cur->line, NULL);
-					sprintf(vpr_error->message, 
+					vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
 						"Another loc specified for fill.\n");
-					throw vpr_error;
 				}
 				Type->grid_loc_def[i].grid_loc_type = FILL;
 				FILL_TYPE = Type;
@@ -376,31 +359,22 @@ static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {
 			} else if (strcmp(Prop, "rel") == 0) {
 				Type->grid_loc_def[i].grid_loc_type = COL_REL;
 			} else {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Cur->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
 					"Unknown grid location type '%s' for type '%s'.\n", Prop, Type->name);
-				throw vpr_error;
 			}
 			ezxml_set_attr(Cur, "type", NULL);
 		}
 		Prop = FindProperty(Cur, "start", FALSE);
 		if (Type->grid_loc_def[i].grid_loc_type == COL_REPEAT) {
 			if (Prop == NULL) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Cur->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
 					"grid location property 'start' must be specified for grid location type 'col'.\n");
-				throw vpr_error;
 			}
 			Type->grid_loc_def[i].start_col = my_atoi(Prop);
 			ezxml_set_attr(Cur, "start", NULL);
 		} else if (Prop != NULL) {			
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Cur->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
 					"grid location property 'start' valid for grid location type 'col' only.\n");
-				throw vpr_error;
 		}
 		Prop = FindProperty(Cur, "repeat", FALSE);
 		if (Type->grid_loc_def[i].grid_loc_type == COL_REPEAT) {
@@ -409,29 +383,20 @@ static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {
 				ezxml_set_attr(Cur, "repeat", NULL);
 			}
 		} else if (Prop != NULL) {			
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Cur->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
 					"Grid location property 'repeat' valid for grid location type 'col' only.\n");
-				throw vpr_error;
 		}
 		Prop = FindProperty(Cur, "pos", FALSE);
 		if (Type->grid_loc_def[i].grid_loc_type == COL_REL) {
 			if (Prop == NULL) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Cur->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
 					"Grid location property 'pos' must be specified for grid location type 'rel'.\n");
-				throw vpr_error;
 			}
 			Type->grid_loc_def[i].col_rel = (float) atof(Prop);
 			ezxml_set_attr(Cur, "pos", NULL);
 		} else if (Prop != NULL) {			
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Cur->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
 					"Grid location property 'pos' valid for grid location type 'rel' only.\n");
-				throw vpr_error;
 		}
 
 		Type->grid_loc_def[i].priority = GetIntProperty(Cur, "priority", FALSE,
@@ -617,11 +582,8 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		annotation->output_pins = my_strdup(Prop);
 		ezxml_set_attr(Parent, "out_port", NULL);
 	} else {		
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					Parent->line, NULL);
-		sprintf(vpr_error->message, 
+		vpr_throw(VPR_ERROR_ARCH, arch_file_name, Parent->line, 
 			"Unknown port type %s in %s in %s", Parent->name, Parent->parent->name, Parent->parent->parent->name);
-		throw vpr_error;
 	}
 	assert(i == annotation->num_value_prop_pairs);
 }
@@ -688,26 +650,17 @@ static void ProcessPb_TypePowerPinToggle(ezxml_t parent, t_pb_type * pb_type) {
 
 		port = findPortByName(prop, pb_type, &high, &low);
 		if (!port) {			
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-						cur->line, NULL);
-			sprintf(vpr_error->message, 
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, cur->line, 
 				"Could not find port '%s' needed for energy per toggle.", prop);
-			throw vpr_error;
 		}
 		if (high != port->num_pins - 1 || low != 0) {			
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-						cur->line, NULL);
-			sprintf(vpr_error->message, 
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, cur->line, 
 				"Pin-toggle does not support pin indices (%s)", prop);
-			throw vpr_error;
 		}
 
 		if (port->port_power->pin_toggle_initialized) {			
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-						cur->line, NULL);
-			sprintf(vpr_error->message, 
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, cur->line, 
 				"Duplicate pin-toggle energy for port '%s'", port->name);
-			throw vpr_error;
 		}
 		port->port_power->pin_toggle_initialized = TRUE;
 		ezxml_set_attr(cur, "name", NULL);
@@ -730,11 +683,8 @@ static void ProcessPb_TypePowerPinToggle(ezxml_t parent, t_pb_type * pb_type) {
 			port->port_power->scaled_by_port = findPortByName(prop, pb_type,
 					&high, &low);
 			if (high != low) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							cur->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, cur->line, 
 					"Pin-toggle 'scaled_by_static_prob' must be a single pin (%s)", prop);
-				throw vpr_error;
 			}
 			port->port_power->scaled_by_port_pin_idx = high;
 			port->port_power->reverse_scaled = reverse_scaled;
@@ -841,11 +791,8 @@ static void ProcessPb_TypePowerEstMethod(ezxml_t Parent, t_pb_type * pb_type) {
 	} else if (strcmp(prop, "sum-of-children") == 0) {
 		pb_type->pb_type_power->estimation_method = POWER_METHOD_SUM_OF_CHILDREN;
 	} else {		
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					cur->line, NULL);
-		sprintf(vpr_error->message, 
+		vpr_throw(VPR_ERROR_ARCH, arch_file_name, cur->line, 
 			"Invalid power estimation method for pb_type '%s'", pb_type->name);
-		throw vpr_error;
 	}
 
 	if (prop) {
@@ -896,11 +843,8 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 		} else if (0 == strcmp(class_name, "memory")) {
 			pb_type->class_type = MEMORY_CLASS;
 		} else {			
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-						Parent->line, NULL);
-			sprintf(vpr_error->message, 
-				"Unknown class %s in pb_type %s\n", class_name, pb_type->name);
-			throw vpr_error;
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, Parent->line,
+				"Unknown class '%s' in pb_type '%s'\n", class_name, pb_type->name);
 		}
 		free(class_name);
 	}
@@ -932,11 +876,8 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 						if(strcmp(Cur->ordered->name, "input")){							
 								//Cur->next should not be NULL, the condition operator
 								//Prevents potential segfaults in the case of NULL
-							t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-									 (Cur->next->line?Cur->next->line:Cur->line), NULL);
-							sprintf(vpr_error->message, 
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
 								"Ports of type 'input' must be grouped together\n");
-							throw vpr_error;
 						}
 						Cur = Cur->ordered;	
 					}	
@@ -948,11 +889,8 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 				if(Cur){
 					if(Cur->ordered){
 						if(strcmp(Cur->ordered->name, "output")){							
-							t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-									(Cur->next->line?Cur->next->line:Cur->line), NULL);
-							sprintf(vpr_error->message, 
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
 								"Ports of type 'output' must be grouped together\n");
-							throw vpr_error;
 						}
 						Cur = Cur->ordered;	
 					}	
@@ -964,11 +902,8 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 				if(Cur){
 					if(Cur->ordered){
 						if(strcmp(Cur->ordered->name, "clock")){							
-							t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-								(Cur->next->line?Cur->next->line:Cur->line), NULL);
-							sprintf(vpr_error->message, 
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
 								"Ports of type 'clock' must be grouped together\n");
-							throw vpr_error;
 						}
 						Cur = Cur->ordered;	
 					}	
@@ -1003,11 +938,8 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 			//Check port name duplicates
 			ret_pb_ports = pb_port_names.insert(pair<string,int>(pb_type->ports[j].name,0));
 			if(!ret_pb_ports.second){				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Cur->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
 					"Duplicate port names in pb_type '%s': port '%s'\n", pb_type->name, pb_type->ports[j].name);
-				throw vpr_error;
 			}
 
 			/* get next iteration */
@@ -1138,11 +1070,8 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 
 					ret_mode_names = mode_names.insert(pair<string,int>(pb_type->modes[i].name,0));
 					if(!ret_mode_names.second){						
-						t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Cur->line, NULL);
-						sprintf(vpr_error->message, 
+						vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
 							"Duplicate mode name: '%s' in pb_type '%s'.\n", pb_type->modes[i].name, pb_type->name);
-						throw vpr_error;
 					}
 		
 
@@ -1188,11 +1117,9 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 		if (prop) {
 			if (!(power_method == POWER_METHOD_AUTO_SIZES
 					|| power_method == POWER_METHOD_SPECIFY_SIZES)) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							cur->line, NULL);
-				sprintf(vpr_error->message, 
-					"Wire capacitance defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.", port->name, port->parent_pb_type->name);
-				throw vpr_error;
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, cur->line, 
+					"Wire capacitance defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.", 
+					port->name, port->parent_pb_type->name);
 			} else {
 				wire_defined = TRUE;
 				port->port_power->wire_type = POWER_WIRE_TYPE_C;
@@ -1206,17 +1133,13 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 		if (prop) {
 			if (!(power_method == POWER_METHOD_AUTO_SIZES
 					|| power_method == POWER_METHOD_SPECIFY_SIZES)) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							cur->line, NULL);
-				sprintf(vpr_error->message, 
-					"Wire length defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.", port->name, port->parent_pb_type->name);
-				throw vpr_error;
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, cur->line, 
+					"Wire length defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.", 
+					port->name, port->parent_pb_type->name);
 			} else if (wire_defined) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							cur->line, NULL);
-				sprintf(vpr_error->message, 
-					"Multiple wire properties defined for port '%s', pb_type '%s'.", port->name, port->parent_pb_type->name);
-				throw vpr_error;
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, cur->line, 
+					"Multiple wire properties defined for port '%s', pb_type '%s'.", 
+					port->name, port->parent_pb_type->name);
 			} else if (strcmp(prop, "auto") == 0) {
 				wire_defined = TRUE;
 				port->port_power->wire_type = POWER_WIRE_TYPE_AUTO;
@@ -1233,17 +1156,12 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 		if (prop) {
 			if (!(power_method == POWER_METHOD_AUTO_SIZES
 					|| power_method == POWER_METHOD_SPECIFY_SIZES)) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							cur->line, NULL);
-				sprintf(vpr_error->message, 
-					"Wire relative length defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.", port->name, port->parent_pb_type->name);
-				throw vpr_error;
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, cur->line, 
+					"Wire relative length defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.", 
+					port->name, port->parent_pb_type->name);
 			} else if (wire_defined) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							cur->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, cur->line, 
 					"Multiple wire properties defined for port '%s', pb_type '%s'.", port->name, port->parent_pb_type->name);
-				throw vpr_error;
 			} else {
 				wire_defined = TRUE;
 				port->port_power->wire_type = POWER_WIRE_TYPE_RELATIVE_LENGTH;
@@ -1257,11 +1175,9 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 		if (prop) {
 			if (!(power_method == POWER_METHOD_AUTO_SIZES
 					|| power_method == POWER_METHOD_SPECIFY_SIZES)) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							cur->line, NULL);
-				sprintf(vpr_error->message, 
-					"Buffer size defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.", port->name, port->parent_pb_type->name);
-				throw vpr_error;
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, cur->line, 
+					"Buffer size defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.", 
+					port->name, port->parent_pb_type->name);
 			} else if (strcmp(prop, "auto") == 0) {
 				port->port_power->buffer_type = POWER_BUFFER_TYPE_AUTO;
 			} else {
@@ -1306,18 +1222,12 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port,
 		port->is_clock = TRUE;
 		if (port->is_non_clock_global == TRUE) {
 			
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 		
-				Parent->line, NULL);
-			sprintf(vpr_error->message, 
-					"Port %s cannot be both a clock and a non-clock simultaneously\n", Parent->name);	
-			throw vpr_error;
+			vpr_throw(VPR_ERROR_ARCH, 		arch_file_name, Parent->line, 
+				"Port %s cannot be both a clock and a non-clock simultaneously\n", Parent->name);	
 		}
 	} else {		
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					Parent->line, NULL);
-		sprintf(vpr_error->message, 
+		vpr_throw(VPR_ERROR_ARCH, arch_file_name, Parent->line, 
 			"Unknown port type %s", Parent->name);
-		throw vpr_error;
 	}
 
 	ProcessPb_TypePort_Power(Parent, port, power_method);
@@ -1378,11 +1288,8 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 
 			ret_interc_names = interc_names.insert(pair<string,int>(mode->interconnect[i].name,0));
 			if(!ret_interc_names.second){				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Cur->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
 					"[LINE%d] Duplicate interconnect name: '%s' in mode: '%s'.\n", Cur->line, mode->interconnect[i].name, mode->name);
-				throw vpr_error;
 			}
 
 			/* Process delay and capacitance annotations */
@@ -1475,11 +1382,9 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode,
 
 				ret_pb_types = pb_type_names.insert(pair<string,int>(mode->pb_type_children[i].name,0));
 				if(!ret_pb_types.second){					
-					t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Cur->line, NULL);
-					sprintf(vpr_error->message, 
-						"[LINE%d] Duplicate pb_type name: '%s' in mode: '%s'.\n", Cur->line, mode->pb_type_children[i].name , mode->name);
-					throw vpr_error;
+					vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
+						"[LINE%d] Duplicate pb_type name: '%s' in mode: '%s'.\n", 
+						Cur->line, mode->pb_type_children[i].name , mode->name);
 				}
 
 				/* get next iteration */
@@ -1532,11 +1437,8 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 		} else if (0 == strcmp(Prop, "full")) {
 			def_type_in = FC_FULL;
 		} else {			
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Node->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, 
 					"Invalid type '%s' for Fc. Only abs, frac and full are allowed.\n", Prop);
-				throw vpr_error;
 		}
 		switch (def_type_in) {
 		case FC_FULL:
@@ -1565,11 +1467,8 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 		} else if (0 == strcmp(Prop, "full")) {
 			def_type_out = FC_FULL;
 	} else 		{	
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Node->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, 
 					"Invalid type '%s' for Fc. Only abs, frac and full are allowed.\n", Prop);
-				throw vpr_error;
 		}
 		switch (def_type_out) {
 		case FC_FULL:
@@ -1616,11 +1515,8 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 		/* Get all the properties of the child first */
 		Prop = FindProperty(Child, "name", TRUE);
 		if (Prop == NULL) {			
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Child->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Child->line, 
 					"Pin child with no name is not allowed.\n");
-				throw vpr_error;
 		}
 		ezxml_set_attr(Child, "name", NULL);
 
@@ -1633,11 +1529,8 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 			} else if (0 == strcmp(Prop2, "full")) {
 				ovr_type = FC_FULL;
 			} else {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Child->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Child->line, 
 					"Invalid type '%s' for Fc. Only abs, frac and full are allowed.\n", Prop2);
-				throw vpr_error;
 			}
 			switch (ovr_type) {
 			case FC_FULL:
@@ -1647,11 +1540,8 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 			case FC_FRAC:
 				Prop2 = FindProperty(Child, "fc_val", TRUE);
 				if (Prop2 == NULL) {					
-					t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Child->line, NULL);
-					sprintf(vpr_error->message, 
+					vpr_throw(VPR_ERROR_ARCH, arch_file_name, Child->line, 
 						"Pin child with no fc_val specified is not allowed.\n");
-					throw vpr_error;
 				}
 				ovr_val = (float) atof(Prop2);
 				ezxml_set_attr(Child, "fc_val", NULL);
@@ -1678,25 +1568,17 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 				Prop = port_name;
 				if (match_count != 3
 						|| (match_count != 1 && port_name == NULL)) {					
-					t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-								Child->line, NULL);
-					sprintf(vpr_error->message, 
-						"Invalid name for pin child, name should be in the format \"port_name\" or \"port_name [end_pin_index:start_pin_index]\",  The end_pin_index and start_pin_index can be the same.\n");
-					throw vpr_error;
+					vpr_throw(VPR_ERROR_ARCH, arch_file_name, Child->line, 
+						"Invalid name for pin child, name should be in the format \"port_name\" or \"port_name [end_pin_index:start_pin_index]\","
+						"The end_pin_index and start_pin_index can be the same.\n");
 				}
 				if (end_pin_index < 0 || start_pin_index < 0) {					
-					t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Child->line, NULL);
-					sprintf(vpr_error->message, 
+					vpr_throw(VPR_ERROR_ARCH, arch_file_name, Child->line, 
 						"The pin_index should not be a negative value.\n");
-					throw vpr_error;
 				}
 				if (end_pin_index < start_pin_index) {					
-					t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Child->line, NULL);
-					sprintf(vpr_error->message, 
+					vpr_throw(VPR_ERROR_ARCH, arch_file_name, Child->line, 
 						"The end_pin_index should be not be less than start_pin_index.\n");
-					throw vpr_error;
 				}
 			}
 
@@ -1712,10 +1594,9 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 					 * here. The indices are inclusive. */
 					port_found = TRUE;
 					if (end_pin_index > Type->pb_type->ports[iport].num_pins) {						
-						t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Child->line, NULL);	
-						sprintf(vpr_error->message, "The end_pin_index for this port: %d cannot be greater than the number of pins in this port: %d.\n",end_pin_index, Type->pb_type->ports[iport].num_pins);
-						throw vpr_error;
+						vpr_throw(VPR_ERROR_ARCH, arch_file_name, Child->line, 
+							"The end_pin_index for this port: %d cannot be greater than the number of pins in this port: %d.\n", 
+							end_pin_index, Type->pb_type->ports[iport].num_pins);
 					}
 
 					// The pin indices is not specified - override whole port.
@@ -1748,11 +1629,8 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 
 						} else {
 							
-							t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-								Child->line, NULL);
-							sprintf(vpr_error->message, 
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, Child->line, 
 								"Multiple Fc override detected!\n");
-							throw vpr_error;
 						}
 					}
 
@@ -1764,21 +1642,15 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 
 			/* The override pin child is not in any of the ports in pb_type. */
 			if (port_found == FALSE) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Child->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Child->line, 
 					"The port \"%s\" cannot be found.\n",Prop);
-				throw vpr_error;
 			}
 
 			/* End of case where fc_type of pin_child is specified. */
 		} else {
 			/* fc_type of pin_child is not specified. Error out. */			
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-						Child->line, NULL);
-			sprintf(vpr_error->message, 
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, Child->line, 
 				"Pin child with no fc_type specified is not allowed.\n");
-			throw vpr_error;
 		}
 
 		/* Find next child and frees up the current child. */
@@ -1806,11 +1678,8 @@ static void ProcessComplexBlockProps(ezxml_t Node, t_type_descriptor * Type) {
 	Type->area = GetFloatProperty(Node, "area", FALSE, UNDEFINED);
 
 	if (atof(Prop) < 0) {		
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					Node->line, NULL);
-		sprintf(vpr_error->message, 
+		vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, 
 			"Area for type %s must be non-negative\n", Type->name);
-		throw vpr_error;
 	}
 }
 
@@ -1851,22 +1720,16 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 		/* Try insert new model, check if already exist at the same time */
 		ret_map_name = model_name_map.insert(pair<string,int>(temp->name,0));
 		if(!ret_map_name.second){			
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-						child->line, NULL);
-			sprintf(vpr_error->message, 
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, child->line, 
 				"[LINE%d] Duplicate model name: '%s'.\n", child->line, temp->name);
-			throw vpr_error;
 		}
 
 		/* Process the inputs */
 		p = ezxml_child(child, "input_ports");
 		junkp = p;
 		if (p == NULL){			
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-						child->line, NULL);
-			sprintf(vpr_error->message, 
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, child->line, 
 				"Required input ports not found for element '%s'.\n", temp->name);
-			throw vpr_error;
 		}
 		p = ezxml_child(p, "port");
 		if (p != NULL) {
@@ -1888,21 +1751,15 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 				}
 				ezxml_set_attr(p, "is_clock", NULL);
 				if (tp->is_clock == TRUE && tp->is_non_clock_global == TRUE) {					
-					t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							p->line, NULL);
-					sprintf(vpr_error->message, 
+					vpr_throw(VPR_ERROR_ARCH, arch_file_name, p->line, 
 						"Signal cannot be both a clock and a non-clock signal simultaneously\n");
-					throw vpr_error;
 				}
 
 				/* Try insert new port, check if already exist at the same time */
 				ret_map_port = model_port_map.insert(pair<string,int>(tp->name,0));
 				if(!ret_map_port.second){					
-					t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							p->line, NULL);
-					sprintf(vpr_error->message, 
+					vpr_throw(VPR_ERROR_ARCH, arch_file_name, p->line, 
 						"[LINE%d] Duplicate model input port name: '%s'.\n", p->line, tp->name);
-					throw vpr_error;
 				}
 
 				temp->inputs = tp;
@@ -1912,11 +1769,8 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 			}
 		} else /* No input ports? */
 		{			
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-						child->line, NULL);
-			sprintf(vpr_error->message, 
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, child->line, 
 				"Required input ports not found for element '%s'.\n", temp->name);
-			throw vpr_error;
 		}
 		FreeNode(junkp);
 
@@ -1924,11 +1778,8 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 		p = ezxml_child(child, "output_ports");
 		junkp = p;
 		if (p == NULL)	{		
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-						child->line, NULL);
-			sprintf(vpr_error->message, 
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, child->line, 
 				"Required output ports not found for element '%s'.\n", temp->name);
-			throw vpr_error;
 		}
 		p = ezxml_child(p, "port");
 		if (p != NULL) {
@@ -1945,11 +1796,8 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 				/* Try insert new output port, check if already exist at the same time */
 				ret_map_port = model_port_map.insert(pair<string,int>(tp->name,0));
 				if(!ret_map_port.second){					
-					t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							p->line, NULL);
-					sprintf(vpr_error->message, 
+					vpr_throw(VPR_ERROR_ARCH, arch_file_name, p->line, 
 						"[LINE%d] Duplicate model output port name: '%s'.\n", p->line, tp->name);
-					throw vpr_error;
 				}
 
 				temp->outputs = tp;
@@ -1959,11 +1807,8 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 			}
 		} else /* No output ports? */
 		{			
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-						child->line, NULL);
-			sprintf(vpr_error->message, 
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, child->line, 
 				"Required output ports not found for element '%s'.\n", temp->name);
-			throw vpr_error;
 		}
 
 		FreeNode(junkp);
@@ -2003,20 +1848,14 @@ static void ProcessLayout(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 	Prop = FindProperty(Node, "auto", arch->clb_grid.IsAuto);
 	if (Prop != NULL) {
 		if (arch->clb_grid.IsAuto == FALSE) {			
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-						Node->line, NULL);
-			sprintf(vpr_error->message, 
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, 
 				"Auto-sizing, width and height cannot be specified\n");
-			throw vpr_error;
 		}
 		arch->clb_grid.Aspect = (float) atof(Prop);
 		ezxml_set_attr(Node, "auto", NULL);
 		if (arch->clb_grid.Aspect <= 0) {			
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-						Node->line, NULL);
-			sprintf(vpr_error->message, 
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, 
 				"Grid aspect ratio is less than or equal to zero %g\n", arch->clb_grid.Aspect);
-			throw vpr_error;
 		}
 	}
 }
@@ -2063,11 +1902,8 @@ static void ProcessDevice(INOUTP ezxml_t Node, OUTP struct s_arch *arch,
 	} else if (strcmp(Prop, "subset") == 0) {
 		arch->SBType = SUBSET;
 	} else {		
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					Cur->line, NULL);
-		sprintf(vpr_error->message, 
+		vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
 			"Unknown property %s for switch block type x\n", Prop);
-		throw vpr_error;
 	}
 	ezxml_set_attr(Cur, "type", NULL);
 
@@ -2114,11 +1950,8 @@ static void ProcessChanWidthDistrDir(INOUTP ezxml_t Node, OUTP t_chan * chan) {
 		hasXpeak = hasDc = TRUE;
 		chan->type = DELTA;
 	} else {		
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					Node->line, NULL);
-		sprintf(vpr_error->message, 
+		vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, 
 			"Unknown property %s for chan_width_distr x\n", Prop);
-		throw vpr_error;
 	}
 	ezxml_set_attr(Node, "distr", NULL);
 	chan->peak = GetFloatProperty(Node, "peak", TRUE, UNDEFINED);
@@ -2459,11 +2292,8 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 			if (num_pb == OPEN) {
 				num_pb = mem_pb_type->ports[i].num_pins;
 			} else if (num_pb != mem_pb_type->ports[i].num_pins) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							0, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, 0, 
 					"memory %s has inconsistent number of data bits %d and %d\n", mem_pb_type->name, num_pb, mem_pb_type->ports[i].num_pins);
-				throw vpr_error;
 			}
 		}
 	}
@@ -2676,11 +2506,8 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 		
 		ret_pb_type_descriptors = pb_type_descriptors.insert(pair<string,int>(Type->name,0));
 		if(!ret_pb_type_descriptors.second){			
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-						CurType->line, NULL);
-			sprintf(vpr_error->message, 
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, CurType->line, 
 				"[LINE%d] Duplicate pb_type descriptor name: '%s'.\n", CurType->line, Type->name);
-			throw vpr_error;
 		}
 
 		/* Load pb_type info */
@@ -2688,11 +2515,8 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 		Type->pb_type->name = my_strdup(Type->name);
 		if (i == IO_TYPE_INDEX) {
 			if (strcmp(Type->name, "io") != 0) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							CurType->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, CurType->line, 
 					"First complex block must be named \"io\" and define the inputs and outputs for the FPGA");
-				throw vpr_error;
 			}
 		}
 		ProcessPb_Type(CurType, Type->pb_type, NULL);
@@ -2736,11 +2560,8 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 
 	}
 	if (FILL_TYPE == NULL) {		
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					0, NULL);
-		sprintf(vpr_error->message, 
+		vpr_throw(VPR_ERROR_ARCH, arch_file_name, 0, 
 			"grid location type 'fill' must be specified.\n");
-		throw vpr_error;
 	}
 }
 
@@ -2753,14 +2574,12 @@ void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 	const char *Prop;
 	boolean power_reqd;
 
+	arch_file_name = ArchFile;
 	/* Parse the file */
 	Cur = ezxml_parse_file(ArchFile);
 	if (NULL == Cur) {		
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					0, NULL);
-		sprintf(vpr_error->message,
-			"Unable to load architecture file '%s'.\n", ArchFile);
-		throw vpr_error;
+		vpr_throw(VPR_ERROR_ARCH, ArchFile, 0, 
+		"Unable to find/load architecture file '%s'.\n", ArchFile);
 	}
 
 	/* Root node should be architecture */
@@ -2935,11 +2754,8 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 		}
 
 		else {			
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					Node->line, NULL);
-			sprintf(vpr_error->message, 
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, 
 				"Invalid switch type '%s'.\n", tmp);
-			throw vpr_error;
 		}
 		ezxml_set_attr(Node, "type", NULL);
 
@@ -2955,11 +2771,8 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 				}
 			}
 			if (j >= NumSwitches) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							SubElem->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, SubElem->line, 
 					"'%s' is not a valid mux name.\n", tmp);
-				throw vpr_error;
 			}
 			ezxml_set_attr(SubElem, "name", NULL);
 			FreeNode(SubElem);
@@ -2983,11 +2796,8 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 				}
 			}
 			if (j >= NumSwitches) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							SubElem->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, SubElem->line, 
 					"'%s' is not a valid wire_switch name.\n", tmp);
-				throw vpr_error;
 			}
 			(*Segs)[i].wire_switch = j;
 			ezxml_set_attr(SubElem, "name", NULL);
@@ -3002,11 +2812,8 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 				}
 			}
 			if (j >= NumSwitches) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							SubElem->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, SubElem->line, 
 					"'%s' is not a valid opin_switch name.\n", tmp);
-				throw vpr_error;
 			}
 			(*Segs)[i].opin_switch = j;
 			ezxml_set_attr(SubElem, "name", NULL);
@@ -3062,11 +2869,8 @@ static void ProcessCB_SB(INOUTP ezxml_t Node, INOUTP boolean * list,
 			case 'T':
 			case '1':
 				if (i >= len) {					
-					t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-								Node->line, NULL);
-					sprintf(vpr_error->message, 
+					vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, 
 						"CB or SB depopulation is too long. It should be (length) symbols for CBs and (length+1) symbols for SBs.\n");
-					throw vpr_error;
 				}
 				list[i] = TRUE;
 				++i;
@@ -3074,30 +2878,21 @@ static void ProcessCB_SB(INOUTP ezxml_t Node, INOUTP boolean * list,
 			case 'F':
 			case '0':
 				if (i >= len) {					
-					t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-								Node->line, NULL);
-					sprintf(vpr_error->message, 
+					vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, 
 						"CB or SB depopulation is too long. It should be (length) symbols for CBs and (length+1) symbols for SBs.\n");
-					throw vpr_error;
 				}
 				list[i] = FALSE;
 				++i;
 				break;
 			default:				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Node->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, 
 					"Invalid character %c in CB or SB depopulation list.\n", *tmp);
-				throw vpr_error;
 			}
 			++tmp;
 		}
 		if (i < len) {			
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-						Node->line, NULL);
-			sprintf(vpr_error->message, 
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, 
 				"CB or SB depopulation is too short. It should be (length) symbols for CBs and (length+1) symbols for SBs.\n");
-			throw vpr_error;
 		}
 
 		/* Free content string */
@@ -3105,11 +2900,8 @@ static void ProcessCB_SB(INOUTP ezxml_t Node, INOUTP boolean * list,
 	}
 
 	else {		
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					Node->line, NULL);
-		sprintf(vpr_error->message, 
+		vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, 
 			"'%s' is not a valid type for specifying cb and sb depopulation.\n", tmp);
-		throw vpr_error;
 	}
 	ezxml_set_attr(Node, "type", NULL);
 }
@@ -3146,11 +2938,8 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 		/* Check for switch name collisions */
 		for (j = 0; j < i; ++j) {
 			if (0 == strcmp((*Switches)[j].name, switch_name)) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Node->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, 
 					"Two switches with the same name '%s' were found.\n", switch_name);
-				throw vpr_error;
 			}
 		}
 		(*Switches)[i].name = my_strdup(switch_name);
@@ -3171,11 +2960,8 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 		}
 
 		else {			
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Node->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, 
 					"Invalid switch type '%s'.\n", type_name);
-				throw vpr_error;
 		}
 		ezxml_set_attr(Node, "type", NULL);
 		(*Switches)[i].R = GetFloatProperty(Node, "R", timing_enabled, 0);
@@ -3231,11 +3017,8 @@ static void ProcessDirects(INOUTP ezxml_t Parent, OUTP t_direct_inf **Directs,
 		/* Check for direct name collisions */
 		for (j = 0; j < i; ++j) {
 			if (0 == strcmp((*Directs)[j].name, direct_name)) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Node->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, 
 					"Two directs with the same name '%s' were found.\n", direct_name);
-				throw vpr_error;
 			}
 		}
 		(*Directs)[i].name = my_strdup(direct_name);
@@ -3247,11 +3030,8 @@ static void ProcessDirects(INOUTP ezxml_t Parent, OUTP t_direct_inf **Directs,
 
 		/* Check that to_pin and the from_pin are not the same */
 		if (0 == strcmp(to_pin_name, from_pin_name)) {			
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Node->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, 
 					"The source pin and sink pin are the same: %s.\n", to_pin_name);
-				throw vpr_error;
 		}
 		(*Directs)[i].from_pin = my_strdup(from_pin_name);
 		(*Directs)[i].to_pin = my_strdup(to_pin_name);
@@ -3267,11 +3047,8 @@ static void ProcessDirects(INOUTP ezxml_t Parent, OUTP t_direct_inf **Directs,
 
 		/* Check that the direct chain connection is not zero in both direction */
 		if ((*Directs)[i].x_offset == 0 && (*Directs)[i].y_offset == 0) {			
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							Node->line, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, 
 					"The x_offset and y_offset are both zero, this is a length 0 direct chain connection.\n");
-				throw vpr_error;
 		}
 
 		(*Directs)[i].line = Node->line;
@@ -3403,11 +3180,8 @@ static void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 		if (blif_model_name) {
 			blif_model_name++; /* get character after the '.' or ' ' */
 		} else {			
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							0, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, 0, 
 					"Unknown blif model %s in pb_type %s\n", pb_type->blif_model, pb_type->name);
-				throw vpr_error;
 		}
 
 		/* There are two sets of models to consider, the standard library of models and the user defined models */
@@ -3432,11 +3206,8 @@ static void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 			cur_model = cur_model->next;
 		}
 		if (found != TRUE) {			
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							0, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, 0, 
 					"No matching model for pb_type %s\n", pb_type->blif_model);
-				throw vpr_error;
 		}
 
 		pb_type->model = model_match_prim;
@@ -3483,11 +3254,8 @@ static void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 				model_port = model_port->next;
 			}
 			if (found != TRUE) {				
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							0, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, 0, 
 					"No matching model port for port %s in pb_type %s\n", pb_type->ports[p].name, pb_type->name);
-				throw vpr_error;
 			}
 		}
 	} else {
@@ -3507,11 +3275,8 @@ static void UpdateAndCheckModels(INOUTP struct s_arch *arch) {
 	cur_model = arch->models;
 	while (cur_model) {
 		if (cur_model->pb_types == NULL) {			
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							0, NULL);
-				sprintf(vpr_error->message, 
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, 0, 
 					"No pb_type found for model %s\n", cur_model->name);
-				throw vpr_error;
 		}
 		port = cur_model->inputs;
 		i = 0;
@@ -4201,5 +3966,9 @@ e_power_estimation_method power_method_inherited(
 		assert(0);
       return POWER_METHOD_UNDEFINED;  // Should never get here, but avoids a compiler warning.
 	}
+}
+/* Used by functions in read_xml_util.c to gain access to arch filename */
+const char* get_arch_file_name(){
+	return arch_file_name;
 }
 

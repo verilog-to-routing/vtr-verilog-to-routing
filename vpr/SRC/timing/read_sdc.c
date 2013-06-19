@@ -95,6 +95,8 @@ char ** netlist_clocks; /* [0..num_netlist_clocks - 1] array of names of clocks 
 int num_netlist_ios = 0; /* number of clocks in netlist */
 char ** netlist_ios; /* [0..num_netlist_clocks - 1] array of names of ios in netlist */
 
+static const char* sdc_file_name = "<default>.sdc"; /* Name of SDC file */
+
 /***************** Subroutines local to this module *************************/
 
 static void alloc_and_load_netlist_clocks_and_ios(void);
@@ -148,6 +150,8 @@ void read_sdc(t_timing_inf timing_inf) {
 	}
 	
 	/* Now we have an SDC file. */
+
+	sdc_file_name = timing_inf.SDCFile;
 
 	/* Count how many clocks and I/Os are in the netlist. 
 	Store the names of each clock and each I/O in netlist_clocks and netlist_ios. 
@@ -1385,4 +1389,8 @@ static void free_clock_constraint(t_clock *& clock_array, int num_clocks) {
 	}
 	free(clock_array);
 	clock_array = NULL;
+}
+
+const char * get_sdc_file_name(){
+	return sdc_file_name;
 }

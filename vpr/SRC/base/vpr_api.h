@@ -98,4 +98,7 @@ char *vpr_get_output_file_name(enum e_output_files ename);
 t_trace* vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture(
 		INP const t_arch *arch);
 
+/* Prints user/internal errors for VPR */
+void vpr_print_error(t_vpr_error* vpr_error);
+
 #endif
