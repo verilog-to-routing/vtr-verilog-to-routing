@@ -46,7 +46,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -119,6 +119,7 @@ TIO_PrintHandler_c::TIO_PrintHandler_c(
    this->counts_.isMaxErrorEnabled = true;
 
    this->formats_.timeStampsEnabled = false;
+   this->formats_.fileLinesEnabled = false;
    this->formats_.srPrefix = "";
 
    pinstance_ = 0;
@@ -304,7 +305,37 @@ bool TIO_PrintHandler_c::Warning(
 
 //===========================================================================//
 bool TIO_PrintHandler_c::Warning(
+      const char*        pszFileName,
+            unsigned int lineNum,
+      const char*        pszText,
+      ... )
+{
+   va_list vaArgs;                      // Make a variable argument list
+   va_start( vaArgs, pszText );         // Initialize variable argument list
+         
+   bool isValid = this->Warning( TIO_PRINT_WARNING, pszFileName, lineNum, pszText, vaArgs );
+
+   va_end( vaArgs );                    // Reset variable argument list
+
+   return( isValid );
+}
+
+//===========================================================================//
+bool TIO_PrintHandler_c::Warning(
             TIO_PrintMode_t mode,
+      const char*           pszText,
+            va_list         vaArgs )
+{
+   const char* pszFileName = 0;
+   unsigned int lineNum = 0;
+   return( this->Warning( mode, pszFileName, lineNum, pszText, vaArgs ));
+}
+
+//===========================================================================//
+bool TIO_PrintHandler_c::Warning(
+            TIO_PrintMode_t mode,
+      const char*           pszFileName,
+            unsigned int    lineNum,
       const char*           pszText,
             va_list         vaArgs )
 {
@@ -353,7 +384,7 @@ bool TIO_PrintHandler_c::Warning(
 
    if( mode != TIO_PRINT_UNDEFINED )
    {
-      this->WriteMessage_( mode, pszText, vaArgs );
+      this->WriteMessage_( mode, pszText, vaArgs, pszFileName, lineNum );
 
       if( mode == TIO_PRINT_ERROR )
       {
@@ -395,7 +426,37 @@ bool TIO_PrintHandler_c::Error(
 
 //===========================================================================//
 bool TIO_PrintHandler_c::Error(
+      const char*        pszFileName,
+            unsigned int lineNum,
+      const char*        pszText,
+      ... )
+{
+   va_list vaArgs;                      // Make a variable argument list
+   va_start( vaArgs, pszText );         // Initialize variable argument list
+         
+   bool isValid = this->Error( TIO_PRINT_ERROR, pszFileName, lineNum, pszText, vaArgs );
+
+   va_end( vaArgs );                    // Reset variable argument list
+
+   return( isValid );
+}
+
+//===========================================================================//
+bool TIO_PrintHandler_c::Error(
             TIO_PrintMode_t mode,
+      const char*           pszText,
+            va_list         vaArgs )
+{
+   const char* pszFileName = 0;
+   unsigned int lineNum = 0;
+   return( this->Error( mode, pszFileName, lineNum, pszText, vaArgs ));
+}
+
+//===========================================================================//
+bool TIO_PrintHandler_c::Error(
+            TIO_PrintMode_t mode,
+      const char*           pszFileName,
+            unsigned int    lineNum,
       const char*           pszText,
             va_list         vaArgs )
 {
@@ -444,7 +505,7 @@ bool TIO_PrintHandler_c::Error(
 
    if( mode != TIO_PRINT_UNDEFINED )
    {
-      this->WriteMessage_( mode, pszText, vaArgs );
+      this->WriteMessage_( mode, pszText, vaArgs, pszFileName, lineNum );
 
       if( mode == TIO_PRINT_ERROR )
       {
@@ -620,8 +681,10 @@ bool TIO_PrintHandler_c::Internal(
       const char*           pszText,
             va_list         vaArgs )
 {
-   this->WriteMessage_( mode, pszText, vaArgs, pszSource );
-
+   const char* pszFileName = 0;
+   unsigned int lineNum = 0;
+   this->WriteMessage_( mode, pszText, vaArgs, 
+                        pszFileName, lineNum, pszSource );
    return( false );
 }
 
@@ -1379,12 +1442,15 @@ bool TIO_PrintHandler_c::IsValidNew(
 //---------------------------------------------------------------------------//
 // Version history
 // 05/01/12 jeffr : Original
+// 06/18/13 jeffr : Added support for optional 'pszFileName' and 'lineNum'
 //===========================================================================//
 bool TIO_PrintHandler_c::WriteMessage_( 
-            TIO_PrintMode_t mode,       // Defines print severity level mode
-      const char*           pszText,    // Ptr to message text string 
-            va_list         vaArgs,     // Define optional variable arguments
-      const char*           pszSource ) // Ptr to optional source string
+            TIO_PrintMode_t mode,        // Defines print severity level mode
+      const char*           pszText,     // Ptr to message text string 
+            va_list         vaArgs,      // Define optional variable arguments
+      const char*           pszFileName, // Ptr to optional file name
+            unsigned int    lineNum,     // Define optional line number
+      const char*           pszSource )  // Ptr to optional source string
 {
    static char szMessage[TIO_FORMAT_STRING_LEN_MAX];
 
@@ -1394,7 +1460,7 @@ bool TIO_PrintHandler_c::WriteMessage_(
    // Write message to zero or more enabled output streams
    if( isValid )
    {
-      this->OutputMessage_( mode, szMessage, pszSource );
+      this->OutputMessage_( mode, szMessage, pszFileName, lineNum, pszSource );
    }
    return( isValid );
 }
@@ -1429,10 +1495,13 @@ bool TIO_PrintHandler_c::FormatMessage_(
 //---------------------------------------------------------------------------//
 // Version history
 // 05/01/12 jeffr : Original
+// 06/18/13 jeffr : Added support for optional 'pszFileName' and 'lineNum'
 //===========================================================================//
 bool TIO_PrintHandler_c::PrefixMessage_(
             TIO_PrintMode_t mode,        // Defines print severity level mode
       const char*           pszText,     // Ptr to message text string 
+      const char*           pszFileName, // Ptr to optional file name
+            unsigned int    lineNum,     // Define optional line number
       const char*           pszSource,   // Ptr to optional source string
             char*           pszMessage ) // Ptr to returned message string
 {
@@ -1467,12 +1536,34 @@ bool TIO_PrintHandler_c::PrefixMessage_(
 
       case TIO_PRINT_WARNING:
 
-         sprintf( pszMessage, "%sWARNING(%lu): %s", pszPrefix, warningCount, pszText );
+         if( this->formats_.fileLinesEnabled && pszFileName && *pszFileName )
+         {
+            static char szFileLine[TIO_FORMAT_STRING_LEN_FILE_LINE];
+            size_t lenFileLine = sizeof( szFileLine );
+            TC_FormatStringFileNameLineNum( szFileLine, lenFileLine, pszFileName, lineNum, " [", "]" );
+
+            sprintf( pszMessage, "%sWARNING(%lu)%s: %s", pszPrefix, warningCount, szFileLine, pszText );
+         }
+         else
+         {
+            sprintf( pszMessage, "%sWARNING(%lu): %s", pszPrefix, warningCount, pszText );
+         }
          break;
 
       case TIO_PRINT_ERROR:
 
-         sprintf( pszMessage, "%sERROR(%lu): %s", pszPrefix, errorCount, pszText );
+         if( this->formats_.fileLinesEnabled && pszFileName && *pszFileName )
+         {
+            static char szFileLine[TIO_FORMAT_STRING_LEN_FILE_LINE];
+            size_t lenFileLine = sizeof( szFileLine );
+            TC_FormatStringFileNameLineNum( szFileLine, lenFileLine, pszFileName, lineNum, " [", "]" );
+
+            sprintf( pszMessage, "%sERROR(%lu)%s: %s", pszPrefix, errorCount, szFileLine, pszText );
+         }
+         else
+         {
+            sprintf( pszMessage, "%sERROR(%lu): %s", pszPrefix, errorCount, pszText );
+         }
          break;
 
       case TIO_PRINT_FATAL:
@@ -1498,7 +1589,7 @@ bool TIO_PrintHandler_c::PrefixMessage_(
 
       case TIO_PRINT_INTERNAL:
 
-	 sprintf( pszMessage, "INTERNAL(%lu) @ %s\n"
+         sprintf( pszMessage, "INTERNAL(%lu) @ %s\n"
                               "            %s", internalCount, pszSource, pszText );
          break;
 
@@ -1527,37 +1618,44 @@ bool TIO_PrintHandler_c::PrefixMessage_(
 //---------------------------------------------------------------------------//
 // Version history
 // 05/01/12 jeffr : Original
+// 06/18/13 jeffr : Added support for optional 'pszFileName' and 'lineNum'
 //===========================================================================//
 void TIO_PrintHandler_c::OutputMessage_( 
-            TIO_PrintMode_t mode,       // Defines print severity level mode
-      const char*           pszText,    // Ptr to message text string 
-      const char*           pszSource ) // Ptr to optional source string
+            TIO_PrintMode_t mode,        // Defines print severity level mode
+      const char*           pszText,     // Ptr to message text string 
+      const char*           pszFileName, // Ptr to optional file name
+            unsigned int    lineNum,     // Define optional line number
+      const char*           pszSource )  // Ptr to optional source string
 {
    static char szMessage[TIO_FORMAT_STRING_LEN_MAX];
    
    // Format and print message based on enabled output options
    if( this->outputs_.stdioOutput.IsEnabled( ))
    {
-      this->PrefixMessage_( mode, pszText, pszSource, szMessage );
+      this->PrefixMessage_( mode, pszText, 
+                            pszFileName, lineNum, pszSource, szMessage );
       this->outputs_.stdioOutput.Write( szMessage );
       this->outputs_.stdioOutput.Flush( );
    }
 
    if( this->outputs_.customOutput.IsEnabled( ))
    {
-      this->outputs_.customOutput.Write( mode, pszText, pszSource );
+      this->outputs_.customOutput.Write( mode, pszText, 
+                                         pszSource );
    }
 
    if( this->outputs_.logFileOutput.IsEnabled( ))
    {
-      this->PrefixMessage_( mode, pszText, pszSource, szMessage );
+      this->PrefixMessage_( mode, pszText, 
+                            pszFileName, lineNum, pszSource, szMessage );
       this->outputs_.logFileOutput.Write( szMessage );
       this->outputs_.logFileOutput.Flush( );
    }
 
    if( this->outputs_.userFileOutput.IsEnabled( ))
    {
-      this->PrefixMessage_( mode, pszText, pszSource, szMessage );
+      this->PrefixMessage_( mode, pszText, 
+                            pszFileName, lineNum, pszSource, szMessage );
       this->outputs_.userFileOutput.Write( szMessage );
    }
 } 
