@@ -124,7 +124,6 @@ typedef TCT_SortedVector_c< TCH_VPR_GraphToRoute_c > TCH_VPR_GraphToRouteMap_t;
 
 #define TCH_ROUTE_NODE_INDEX_INVALID SIZE_MAX
 
-// ???
 enum TCH_RouteStatusMode_e
 {
    TCH_ROUTE_STATUS_UNDEFINED = 0,
