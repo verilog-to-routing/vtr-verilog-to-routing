@@ -320,7 +320,6 @@ bool TCH_PreRoutedHandler_c::IsLegalPreRouteNet(
       const char* pszNetName,
             int   routeIteration ) const
 {
-// ???
    bool isLegal = false;
 
    const TCH_Net_c* pnet = this->FindNet_( pszNetName );
@@ -504,7 +503,6 @@ void TCH_PreRoutedHandler_c::InitNetList_(
       TCH_NetName_t netName( pszNetName, pnetList->GetLength( ));
       pnetNameList->Add( netName );
 
-// ???
       const TNO_Net_c* pnet = netList.Find( pszNetName );
       TNO_StatusMode_t routeStatus = pnet->GetStatus( );
       TCH_RouteStatusMode_t status = TCH_ROUTE_STATUS_UNDEFINED;
@@ -515,10 +513,6 @@ void TCH_PreRoutedHandler_c::InitNetList_(
       case TNO_STATUS_ROUTED: status = TCH_ROUTE_STATUS_ROUTED; break;
       default:                                                  break;
       }
-      if(( status != TCH_ROUTE_STATUS_FIXED ) && ( status != TCH_ROUTE_STATUS_ROUTED ))
-         continue;
-
-// ???      TCH_Net_c net( pszNetName );
       TCH_Net_c net( pszNetName, status );
       pnetList->Add( net );
    }
