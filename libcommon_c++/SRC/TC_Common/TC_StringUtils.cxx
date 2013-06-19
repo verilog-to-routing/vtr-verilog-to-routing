@@ -6,6 +6,7 @@
 //           - TC_FormatStringCentered
 //           - TC_FormatStringFilled
 //           - TC_FormatStringDateTimeStamp
+//           - TC_FormatStringFileNameLineNum
 //           - TC_ExtractStringSideMode
 //           - TC_ExtractStringTypeMode
 //           - TC_AddStringPrefix
@@ -274,6 +275,45 @@ bool TC_FormatStringDateTimeStamp(
       }
    }
    return( pszDateTimeStamp && *pszDateTimeStamp ? true : false );
+}
+
+//===========================================================================//
+// Function       : TC_FormatStringFileNameLineNum
+// Purpose        : Format and return a file name/line number string with
+//                  optional prefix/postfix strings.
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 06/18/13 jeffr : Original
+//===========================================================================//
+bool TC_FormatStringFileNameLineNum(
+            char*        pszFileNameLineNum,
+            size_t       lenFileNameLineNum,
+      const char*        pszFileName,
+            unsigned int lineNum,
+      const char*        pszPrefix,
+      const char*        pszPostfix )
+{
+   if( pszFileNameLineNum )
+   {
+      memset( pszFileNameLineNum, 0, lenFileNameLineNum );
+
+      size_t lenPrefix = strlen( pszPrefix );
+      size_t lenPostfix = strlen( pszPostfix );
+      size_t lenFileName = lenFileNameLineNum - lenPrefix - lenPostfix - 4;
+      size_t lenLineNum = 5;
+
+      if( lenFileNameLineNum >= lenPrefix + lenFileName + lenLineNum + lenPostfix )
+      {
+         sprintf( pszFileNameLineNum, "%s%.*s:%d%s", 
+                  TIO_PSZ_STR( pszPrefix ),
+                  static_cast<int>( lenFileName ), 
+                  TIO_PSZ_STR( pszFileName ),
+                  lineNum,
+                  TIO_PSZ_STR( pszPostfix ));
+      }
+   }
+   return( pszFileNameLineNum && *pszFileNameLineNum ? true : false );
 }
 
 //===========================================================================//
