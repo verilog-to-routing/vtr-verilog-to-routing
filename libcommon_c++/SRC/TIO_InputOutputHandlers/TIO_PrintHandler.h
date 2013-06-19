@@ -4,6 +4,7 @@
 //
 //           Inline methods include:
 //           - SetTimeStampsEnabled
+//           - SetFileLinesEnabled
 //           - SetPrefix
 //           - ClearPrefix
 //           - SetMaxErrorCount
@@ -34,7 +35,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -81,11 +82,25 @@ public:
               const char* pszText, va_list vaArgs );
 
    bool Warning( const char* pszText, ... );
+   bool Warning( const char* pszFileName,
+                 unsigned int lineNum,
+                 const char* pszText, ... );
    bool Warning( TIO_PrintMode_t mode, 
+                 const char* pszText, va_list vaArgs );
+   bool Warning( TIO_PrintMode_t mode, 
+                 const char* pszFileName,
+                 unsigned int lineNum,
                  const char* pszText, va_list vaArgs );
 
    bool Error( const char* pszText, ... );
+   bool Error( const char* pszFileName,
+               unsigned int lineNum,
+               const char* pszText, ... );
    bool Error( TIO_PrintMode_t mode, 
+               const char* pszText, va_list vaArgs );
+   bool Error( TIO_PrintMode_t mode, 
+               const char* pszFileName,
+               unsigned int lineNum,
                const char* pszText, va_list vaArgs );
 
    bool Fatal( const char* pszText, ... );
@@ -137,6 +152,7 @@ public:
                            TIO_FileOpenMode_t fileOpenMode = TIO_FILE_OPEN_WRITE );
 
    void SetTimeStampsEnabled( bool timeStampsEnable );
+   void SetFileLinesEnabled( bool fileLinesEnable );
 
    void SetPrefix( const char* pszPrefix );
    void SetPrefix( const string& srPrefix );
@@ -204,16 +220,22 @@ private:
    bool WriteMessage_( TIO_PrintMode_t mode, 
                        const char* pszText,
                        va_list vaArgs,
+                       const char* pszFileName = 0,
+                       unsigned int lineNum = 0,
                        const char* pszSource = 0 );
    bool FormatMessage_( const char* pszText,
                         va_list vaArgs,
                         char* pszMessage );
    bool PrefixMessage_( TIO_PrintMode_t mode, 
                         const char* pszText,
+                        const char* pszFileName,
+                        unsigned int lineNum,
                         const char* pszSource,
                         char* pszMessage );
    void OutputMessage_( TIO_PrintMode_t mode,
                         const char* pszText,
+                        const char* pszFileName = 0,
+                        unsigned int lineNum = 0,
                         const char* pszSource = 0 );
 
    void ApplySystemCommand_( const char* pszCommand,
@@ -274,6 +296,7 @@ private:
    public:
 
       bool   timeStampsEnabled;           // Enable print message time stamps
+      bool   fileLinesEnabled;            // Enable print message file & lines
       string srPrefix;                    // Define print message prefix
 
    } formats_;
@@ -302,6 +325,13 @@ inline void TIO_PrintHandler_c::SetTimeStampsEnabled(
       bool timeStampsEnabled )
 {
    this->formats_.timeStampsEnabled = timeStampsEnabled;
+}
+
+//===========================================================================//
+inline void TIO_PrintHandler_c::SetFileLinesEnabled(
+      bool fileLinesEnabled )
+{
+   this->formats_.fileLinesEnabled = fileLinesEnabled;
 }
 
 //===========================================================================//
