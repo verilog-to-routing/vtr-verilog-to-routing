@@ -926,11 +926,8 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 
 		if (success == FALSE) {
 			if (rlim > max(nx + 2, ny + 2)) {
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
-					__LINE__, __FILE__);
-				sprintf(vpr_error->message,
+				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 					 "VPR internal error, net %s has paths that are not found in traceback.\n", clb_net[inet].name);
-				throw vpr_error;
 			}
 			/* if sink not in bin, increase bin size until fit */
 			rlim *= 2;
@@ -983,23 +980,17 @@ static void timing_driven_check_net_delays(float **net_delay) {
 		for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
 			if (net_delay_check[inet][ipin] == 0.) { /* Should be only GLOBAL nets */
 				if (fabs(net_delay[inet][ipin]) > ERROR_TOL) {
-					t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
-						__LINE__, __FILE__);
-					sprintf(vpr_error->message,
+					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 						"in timing_driven_check_net_delays: net %d pin %d.\n"
 						"\tIncremental calc. net_delay is %g, but from scratch net delay is %g.\n",
 						inet, ipin, net_delay[inet][ipin], net_delay_check[inet][ipin]);
-					throw vpr_error;
 				}
 			} else {
 				if (fabs(1.0 - net_delay[inet][ipin] / net_delay_check[inet][ipin]) > ERROR_TOL) {
-					t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
-						__LINE__, __FILE__);
-					sprintf(vpr_error->message,
+					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 						"in timing_driven_check_net_delays: net %d pin %d.\n"
 						"\tIncremental calc. net_delay is %g, but from scratch net delay is %g.\n",
 						inet, ipin, net_delay[inet][ipin], net_delay_check[inet][ipin]);
-					throw vpr_error;
 				}
 			}
 		}

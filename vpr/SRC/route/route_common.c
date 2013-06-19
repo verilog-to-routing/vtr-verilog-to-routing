@@ -414,19 +414,13 @@ void init_route_structs(int bb_factor) {
 	 * really were.                                                           */
 
 	if (rr_modified_head != NULL) {
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
-			__LINE__, __FILE__);
-		sprintf(vpr_error->message,
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 			"in init_route_structs. List of modified rr nodes is not empty.\n");
-		throw vpr_error;
 	}
 
 	if (heap_tail != 1) {
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
-			__LINE__, __FILE__);
-		sprintf(vpr_error->message,
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 			"in init_route_structs. Heap is not empty.\n");
-		throw vpr_error;
 	}
 }
 
@@ -459,12 +453,9 @@ update_traceback(struct s_heap *hptr, int inet) {
 #ifdef DEBUG
 	rr_type = rr_node[inode].type;
 	if (rr_type != SINK) {
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
-			__LINE__, __FILE__);
-		sprintf(vpr_error->message,
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 			"in update_traceback. Expected type = SINK (%d).\n"
 			"\tGot type = %d while tracing back net %d.\n", SINK, rr_type, inet);
-		throw vpr_error;
 	}
 #endif
 
@@ -800,11 +791,8 @@ void alloc_and_load_rr_node_route_structs(void) {
 	int inode;
 
 	if (rr_node_route_inf != NULL) {
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
-			__LINE__, __FILE__);			
-		sprintf(vpr_error->message,
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 			"in alloc_and_load_rr_node_route_structs: old rr_node_route_inf array exists.\n");
-		throw vpr_error;
 	}
 
 	rr_node_route_inf = (t_rr_node_route_inf *) my_malloc(num_rr_nodes * sizeof(t_rr_node_route_inf));
@@ -1168,11 +1156,8 @@ void print_route(char *route_file) {
 						break;
 
 					default:
-						t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
-							__LINE__, __FILE__);
-						sprintf(vpr_error->message,
+						vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 							"in print_route: Unexpected traceback element type: %d (%s).\n", rr_type, name_type[rr_type]);
-						throw vpr_error;
 						break;
 					}
 

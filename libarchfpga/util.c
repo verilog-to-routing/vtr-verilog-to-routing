@@ -452,6 +452,7 @@ char *my_fgets(char *buf, int max_size, FILE * fp) {
 		"Error on line %d -- line is too long for input buffer.\n"
 		"All lines must be at most %d characters long.\n",
 			file_line_number, BUFSIZE - 2);	
+	return NULL;
 }
 
 char *my_strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {

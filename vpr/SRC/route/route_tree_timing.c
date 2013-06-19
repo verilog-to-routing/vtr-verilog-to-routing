@@ -58,11 +58,8 @@ void alloc_route_tree_timing_structs(void) {
 
 	if (rr_node_to_rt_node != NULL || rt_node_free_list != NULL
 			|| rt_node_free_list != NULL) {
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
-				__LINE__, __FILE__);
-			sprintf(vpr_error->message,
+			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in alloc_route_tree_timing_structs: old structures already exist.\n");
-			throw vpr_error;
 	}
 
 	rr_node_to_rt_node = (t_rt_node **) my_malloc(
@@ -234,12 +231,9 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 
 #ifdef DEBUG
 	if (rr_node[inode].type != SINK) {
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
-			__LINE__, __FILE__);
-		sprintf(vpr_error->message,
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 			"in add_path_to_route_tree. Expected type = SINK (%d).\n"
 			"Got type = %d.",  SINK, rr_node[inode].type);
-		throw vpr_error;
 	}
 #endif
 
@@ -378,11 +372,8 @@ static void load_new_path_R_upstream(t_rt_node * start_of_new_path_rt_node) {
 
 #ifdef DEBUG
 		if (linked_rt_edge->next != NULL) {
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
-				__LINE__, __FILE__);
-			sprintf(vpr_error->message,
+			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in load_new_path_R_upstream: new routing addition is a tree (not a path).\n");
-			throw vpr_error;
 		}
 #endif
 

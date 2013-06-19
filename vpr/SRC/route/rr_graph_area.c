@@ -201,13 +201,10 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 					break;
 
 				default:
-					t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
-						__LINE__, __FILE__);
-					sprintf(vpr_error->message,
+					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 						"in count_routing_transistors:\n"
 						 "\tUnexpected connection from node %d (type %d) to node %d (type %d).\n",
 						from_node, from_rr_type, to_node, to_rr_type);
-					throw vpr_error;
 					break;
 
 				} /* End switch on to_rr_type. */
@@ -402,13 +399,10 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 					break;
 
 				default:
-					t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ROUTE, 
-						__LINE__, __FILE__);
-					sprintf(vpr_error->message,
+					vpr_throw(VPR_ERROR_ROUTE,  __FILE__, __LINE__,
 						"in count_routing_transistors:\n"
 						"\tUnexpected connection from node %d (type %d) to node %d (type %d).\n", 
 						from_node, from_rr_type, to_node, to_rr_type);
-					throw vpr_error;
 					break;
 
 				} /* End switch on to_rr_type. */

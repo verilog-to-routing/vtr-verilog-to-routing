@@ -21,6 +21,7 @@ using namespace std;
 #include "pb_type_graph_annotations.h"
 #include "cluster_feasibility_filter.h"
 #include "power.h"
+#include "read_xml_arch_file.h"
 
 /* variable global to this section that indexes each pb graph pin within a cluster */
 static int pin_count_in_cluster;
@@ -706,14 +707,11 @@ static void alloc_and_load_mode_interconnect(
 			break;
 
 		default:
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					mode->interconnect[i].line_num, NULL);
-			sprintf(vpr_error->message,
+			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), mode->interconnect[i].line_num, 
 					"Unknown interconnect %d for mode %s in pb_type %s, input %s, output %s\n",
 					mode->interconnect[i].type, mode->name, 
 					pb_graph_parent_node->pb_type->name,mode->interconnect[i].input_string,
 					mode->interconnect[i].output_string);
-			throw vpr_error;
 		}
 		for (j = 0; j < num_input_pb_graph_node_sets; j++) {
 			free(input_pb_graph_node_pins[j]);
@@ -755,21 +753,15 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(INP int line_num,
 		assert(tokens[i].type != TOKEN_NULL);
 		if (tokens[i].type == TOKEN_OPEN_SQUIG_BRACKET) {
 			if (in_squig_bracket) {
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					line_num, NULL);
-				sprintf(vpr_error->message,
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 					"{ inside { in port %s\n", port_string);
-				throw vpr_error;
 			}
 			in_squig_bracket = TRUE;
 		} else if (tokens[i].type == TOKEN_CLOSE_SQUIG_BRACKET) {
 			if (!in_squig_bracket) {
 				(*num_sets)++;
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					line_num, NULL);
-				sprintf(vpr_error->message,
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 					"No matching '{' for '}' in port %s\n", port_string);
-				throw vpr_error;
 			}
 			in_squig_bracket = FALSE;
 		} else if (tokens[i].type == TOKEN_DOT) {
@@ -781,11 +773,8 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(INP int line_num,
 
 	if (in_squig_bracket) {
 		(*num_sets)++;
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-			line_num, NULL);
-		sprintf(vpr_error->message,
+		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 			"No matching '{' for '}' in port %s\n", port_string);
-		throw vpr_error;
 	}
 
 	pb_graph_pins = (t_pb_graph_pin***) my_calloc(*num_sets,
@@ -797,28 +786,19 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(INP int line_num,
 		assert(tokens[i].type != TOKEN_NULL);
 		if (tokens[i].type == TOKEN_OPEN_SQUIG_BRACKET) {
 			if (in_squig_bracket) {
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					line_num, NULL);
-				sprintf(vpr_error->message,
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 					"{ inside { in port %s\n", port_string);
-				throw vpr_error;
 			}
 			in_squig_bracket = TRUE;
 		} else if (tokens[i].type == TOKEN_CLOSE_SQUIG_BRACKET) {
 			if ((*num_ptrs)[curr_set] == 0) {
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					line_num, NULL);
-				sprintf(vpr_error->message,
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 					"No data contained in {} in port %s\n", port_string);
-				throw vpr_error;
 			}
 			if (!in_squig_bracket) {
 				curr_set++;
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					line_num, NULL);
-				sprintf(vpr_error->message,
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 					"No matching '{' for '}' in port %s\n", port_string);
-				throw vpr_error;
 			}
 			in_squig_bracket = FALSE;
 		} else if (tokens[i].type == TOKEN_STRING) {
@@ -829,11 +809,8 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(INP int line_num,
 					&((*num_ptrs)[curr_set]), &pb_graph_pins[curr_set]);
 
 			if (!success) {
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					line_num, NULL);
-				sprintf(vpr_error->message,
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 					"Syntax error processing port string %s\n", port_string);
-				throw vpr_error;
 			}
 
 			if (!in_squig_bracket) {
@@ -951,18 +928,12 @@ static void alloc_and_load_direct_interc_edges(
 
 	/* Allocate memory for edges */
 	if (!(num_input_sets == 1 && num_output_sets == 1)) {
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-			interconnect->line_num, NULL);
-		sprintf(vpr_error->message,
+		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num, 
 			"Direct interconnect allows connections from one set of pins to one other set\n");
-		throw vpr_error;
 	}
 	if (!(num_input_ptrs[0] == num_output_ptrs[0])) {
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-			interconnect->line_num, NULL);
-		sprintf(vpr_error->message,
+		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num, 
 			"Direct interconnect must use an equal number of pins\n");
-		throw vpr_error;
 	}
 
 	edges = (t_pb_graph_edge*) my_calloc(num_input_ptrs[0],
@@ -1024,11 +995,8 @@ static void alloc_and_load_mux_interc_edges( INP t_interconnect * interconnect,
 
 	/* Allocate memory for edges, and reallocate more memory for pins connecting to those edges */
 	if (num_output_sets != 1) {
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-			interconnect->line_num, NULL);
-		sprintf(vpr_error->message,
+		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num, 
 			"Mux must have one output\n");
-		throw vpr_error;
 	}
 
 	edges = (t_pb_graph_edge*) my_calloc(num_input_sets, sizeof(t_pb_graph_edge));
@@ -1062,11 +1030,8 @@ static void alloc_and_load_mux_interc_edges( INP t_interconnect * interconnect,
 	/* Load connections between pins and record these updates in the edges */
 	for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
 		if (num_output_ptrs[0] != num_input_ptrs[i_inset]) {
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-				interconnect->line_num, NULL);
-			sprintf(vpr_error->message,
+			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num, 
 				"# of pins for a particular data line of a mux must equal number of pins at output of mux\n");
-			throw vpr_error;
 		}
 		edges[i_inset].input_pins = (t_pb_graph_pin**) my_calloc(
 				num_output_ptrs[0], sizeof(t_pb_graph_pin *));
@@ -1086,11 +1051,8 @@ static void alloc_and_load_mux_interc_edges( INP t_interconnect * interconnect,
 			edges[i_inset].output_pins[i_inpin] = output_pb_graph_node_pin_ptrs[0][i_inpin];
 
 			if (i_inpin != 0) {
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					interconnect->line_num, NULL);
-				sprintf(vpr_error->message,
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num, 
 					"Bus-based mux not yet supported, will consider for future work\n");
-				throw vpr_error;
 			}
 			edges[i_inset].interconnect = interconnect;
 			edges[i_inset].driver_set = i_inset;
@@ -1172,20 +1134,14 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 			/* Check to make sure indices from user match internal data structures for the indices of the parent */
 			if ((pb_lsb != pb_msb)
 					&& (pb_lsb != pb_graph_parent_node->placement_index)) {
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					line_num, NULL);
-				sprintf(vpr_error->message,
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 					"Incorrect placement index for %s, expected index %d\n", tokens[0].data,
 						pb_graph_parent_node->placement_index);
-				throw vpr_error;
 			}
 
 			if ((pb_lsb != pb_msb)) {
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					line_num, NULL);
-				sprintf(vpr_error->message,
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 					"Cannot specify range for a parent pb: '%s'\n", tokens[0].data);
-				throw vpr_error;
 			}
 
 			pb_lsb = pb_msb = 0; /* Internal representation of parent is always 0 */
@@ -1193,11 +1149,8 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 	} else {
 		//Children pb_types
 		if (mode == NULL ) {
-			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					line_num, NULL);
-			sprintf(vpr_error->message,
+			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 				"pb_graph_parent_node %s failed\n", pb_graph_parent_node->pb_type->name);
-			throw vpr_error;
 		}
 		for (i = 0; i < mode->num_pb_type_children; i++) {
 			assert(&mode->pb_type_children[i] == pb_graph_children_nodes[i][0].pb_type);
@@ -1237,12 +1190,9 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 					/* Check range of children pb */
 					if (pb_lsb < 0 || pb_lsb >= max_pb_node_array ||
 						pb_msb < 0 || pb_msb >= max_pb_node_array) {
-						t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-							line_num, NULL);
-						sprintf(vpr_error->message,
+						vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 							"Mode '%s' -> pb '%s' [%d,%d] out of range [%d,%d]\n", mode->name,
 							mode->pb_type_children[i].name, pb_msb, pb_lsb, max_pb_node_array - 1, 0);
-						throw vpr_error;
 					}
 				} else {
 					pb_msb = pb_node_array[0].pb_type->num_pb - 1;
@@ -1254,12 +1204,9 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 	}
 
 	if (!found) {
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-			line_num, NULL);
-		sprintf(vpr_error->message,
+		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 			"Unknown pb_type name %s, not defined in namespace of mode %s\n", 
 			tokens[*token_index].data, mode->name);
-		throw vpr_error;
 	}
 
 	found = FALSE;
@@ -1278,11 +1225,8 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 
 	if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb],
 				0) == NULL) {
-		t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-			line_num, NULL);
-		sprintf(vpr_error->message,
+		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 			"Failed to find port name %s\n", port_name);
-		throw vpr_error;
 	}
 
 	
@@ -1348,12 +1292,9 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 					get_pb_graph_pin_from_name(port_name, &pb_node_array[ipb],
 							ipin);
 			if ((*pb_graph_pins)[i * (abs(pin_msb - pin_lsb) + 1) + j] == NULL ) {
-				t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-					line_num, NULL);
-				sprintf(vpr_error->message,
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 					"Pin %s.%s[%d] cannot be found\n",
 						pb_node_array[ipb].pb_type->name, port_name, ipin);
-				throw vpr_error;
 			}
 			iport =
 					(*pb_graph_pins)[i * (abs(pin_msb - pin_lsb) + 1) + j]->port;
@@ -1366,37 +1307,25 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 				if (pb_node_array == pb_graph_parent_node) {
 					if (is_input_to_interc) {
 						if (iport->type != IN_PORT) {
-							t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-								line_num, NULL);
-							sprintf(vpr_error->message,
+							vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 								"Input to interconnect from parent is not an input or clock pin\n");
-							throw vpr_error;
 						}
 					} else {
 						if (iport->type != OUT_PORT) {
-							t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-								line_num, NULL);
-							sprintf(vpr_error->message,
+							vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 								"Output from interconnect from parent is not an input or clock pin\n");
-							throw vpr_error;
 						}
 					}
 				} else {
 					if (is_input_to_interc) {
 						if (iport->type != OUT_PORT) {
-							t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-								line_num, NULL);
-							sprintf(vpr_error->message,
+							vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 								"output from interconnect from parent is not an input or clock pin\n");
-							throw vpr_error;
 						}
 					} else {
 						if (iport->type != IN_PORT) {
-							t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_ARCH, 
-								line_num, NULL);
-							sprintf(vpr_error->message,
+							vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 								"Input to interconnect from parent is not an input or clock pin\n");
-							throw vpr_error;
 						}
 					}
 				}
