@@ -78,9 +78,6 @@ using namespace std;
 // Define math constants as needed
 //---------------------------------------------------------------------------//
 
-#include <cmath>
-using namespace std;
-
 #ifndef M_SQRT2
    #define M_SQRT2 1.41421356237309504880
 #endif
