@@ -2769,7 +2769,7 @@ void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 	Prop = FindProperty(Cur, "version", FALSE);
 	if (Prop != NULL) {
 		if (atof(Prop) > atof(VPR_VERSION)) {
-			vpr_printf(TIO_MESSAGE_WARNING,
+			vpr_printf_warning(__FILE__, __LINE__,
 					"This architecture version is for VPR %f while your current VPR version is " VPR_VERSION ", compatability issues may arise\n",
 					atof(Prop));
 		}

@@ -14,7 +14,12 @@
 
 int file_line_number; /* file in line number being parsed */
 char *out_file_prefix = NULL;
-messagelogger vpr_printf = PrintHandlerMessage;
+vpr_PrintHandlerMessage vpr_printf = PrintHandlerMessage;
+vpr_PrintHandlerInfo vpr_printf_info = PrintHandlerInfo;
+vpr_PrintHandlerWarning vpr_printf_warning = PrintHandlerWarning;
+vpr_PrintHandlerError vpr_printf_error = PrintHandlerError;
+vpr_PrintHandlerTrace vpr_printf_trace = PrintHandlerTrace;
+vpr_PrintHandlerDirect vpr_printf_direct = PrintHandlerDirect;
 
 static int cont; /* line continued? */
 
@@ -22,7 +27,7 @@ static int cont; /* line continued? */
  * is emitted. */
 int limit_value(int cur, int max, const char *name) {
 	if (cur > max) {
-		vpr_printf(TIO_MESSAGE_WARNING,
+		vpr_printf_warning(__FILE__, __LINE__,
 				"%s is being limited from [%d] to [%d]\n", name, cur, max);
 		return max;
 	}
@@ -74,7 +79,7 @@ FILE *my_fopen(const char *fname, const char *flag, int prompt) {
 			;
 
 		while (check_num_of_entered_values != 1) {
-			vpr_printf(TIO_MESSAGE_ERROR,
+			vpr_printf_error(__FILE__, __LINE__,
 					"Was expecting one file name to be entered, with no spaces. You have entered %d parameters. Please try again: \n",
 					check_num_of_entered_values);
 			check_num_of_entered_values = scanf("%s", prompt_filename);
@@ -164,15 +169,17 @@ void *my_realloc(void *ptr, size_t size) {
 	void *ret;
 
 	if (size <= 0) {
-		vpr_printf(TIO_MESSAGE_WARNING, "reallocating of size <= 0.\n");
+		vpr_printf_warning(__FILE__, __LINE__,
+				"reallocating of size <= 0.\n");
 	}
 
 	ret = realloc(ptr, size);
 	if (NULL == ret) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Unable to realloc memory. Aborting. "
+		vpr_printf_error(__FILE__, __LINE__,
+				"Unable to realloc memory. Aborting. "
 				"ptr=%p, Size=%d.\n", ptr, (int) size);
 		if (ptr == NULL ) {
-			vpr_printf(TIO_MESSAGE_ERROR,
+			vpr_printf_error(__FILE__, __LINE__,
 					"my_realloc: ptr == NULL. Aborting.\n");
 		}
 			t_vpr_error* vpr_error = alloc_and_load_vpr_error(VPR_ERROR_UNKNOWN, 
@@ -223,8 +230,7 @@ void *my_chunk_malloc(size_t size, t_chunk *chunk_info) {
 			/* When debugging, uncomment the code below to see if memory allocation size */
 			/* makes sense */
 			/*#ifdef DEBUG
-			 vpr_printf("NB:  my_chunk_malloc got a request for %d bytes.\n",
-			 size);
+			 vpr_printf("NB: my_chunk_malloc got a request for %d bytes.\n", size);
 			 vpr_printf("You should consider using my_malloc for such big requests.\n");
 			 #endif */
 
@@ -804,31 +810,38 @@ void Print_VPR_Error(t_vpr_error* vpr_error, char* arch_filename){
 	
 	switch(vpr_error->type){
 	case VPR_ERROR_UNKNOWN:
-		vpr_printf(TIO_MESSAGE_ERROR, "\nType: Unknown\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nType: Unknown\nFile: %s\nLine: %d\nMessage: %s\n", 
 		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
 		break;
 	case VPR_ERROR_ARCH:
-		vpr_printf(TIO_MESSAGE_ERROR, "\nType: Architecture File\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nType: Architecture File\nFile: %s\nLine: %d\nMessage: %s\n", 
 		arch_filename, vpr_error->line_num, vpr_error->message);
 		break;
 	case VPR_ERROR_PACK:
-		vpr_printf(TIO_MESSAGE_ERROR, "\nType: Packing\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nType: Packing\nFile: %s\nLine: %d\nMessage: %s\n", 
 		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
 		break;
 	case VPR_ERROR_PLACE:
-		vpr_printf(TIO_MESSAGE_ERROR, "\nType: Placement\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nType: Placement\nFile: %s\nLine: %d\nMessage: %s\n", 
 		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
 		break;
 	case VPR_ERROR_ROUTE:
-		vpr_printf(TIO_MESSAGE_ERROR, "\nType: Routing\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nType: Routing\nFile: %s\nLine: %d\nMessage: %s\n", 
 		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
 		break;
 	case VPR_ERROR_OTHER:
-		vpr_printf(TIO_MESSAGE_ERROR, "\nType: Other\nFile: %s\nLine: %d\nMessage: %s\n", 
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nType: Other\nFile: %s\nLine: %d\nMessage: %s\n", 
 		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
 		break;
 	default:
-		vpr_printf(TIO_MESSAGE_ERROR, "\nError in vpr_error loading\n");
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nError in vpr_error loading\n");
 		break;
 	}
 }

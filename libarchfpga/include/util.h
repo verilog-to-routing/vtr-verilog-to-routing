@@ -153,10 +153,28 @@ void my_srandom(int seed);
 int my_irand(int imax);
 float my_frand(void);
 
-typedef unsigned char (*messagelogger)( TIO_MessageMode_t messageMode,
-                                   char* pszMessage,
-                                   ... );
-extern messagelogger vpr_printf;
+typedef unsigned char (*vpr_PrintHandlerMessage)( 
+		TIO_MessageMode_t messageMode,
+		const char* pszMessage, ... );
+typedef void (*vpr_PrintHandlerInfo)( 
+		const char* pszMessage, ... );
+typedef unsigned char (*vpr_PrintHandlerWarning)( 
+		const char* pszFileName, unsigned int lineNum,
+		const char* pszMessage,	... );
+typedef unsigned char (*vpr_PrintHandlerError)( 
+		const char* pszFileName, unsigned int lineNum,
+		const char* pszMessage,	... );
+typedef void (*vpr_PrintHandlerTrace)( 
+		const char* pszMessage,	... );
+typedef void (*vpr_PrintHandlerDirect)( 
+		const char* pszMessage,	... );
+
+extern vpr_PrintHandlerMessage vpr_printf_xxx;
+extern vpr_PrintHandlerInfo vpr_printf_info;
+extern vpr_PrintHandlerWarning vpr_printf_warning;
+extern vpr_PrintHandlerError vpr_printf_error;
+extern vpr_PrintHandlerTrace vpr_printf_trace;
+extern vpr_PrintHandlerDirect vpr_printf_direct;
 
 #ifdef __cplusplus 
 }
