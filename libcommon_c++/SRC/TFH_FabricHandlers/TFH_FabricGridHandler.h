@@ -27,7 +27,6 @@
 #include <cstdio>
 using namespace std;
 
-// ??? #include "TFH_Typedefs.h"
 #include "TGO_Polygon.h"
 
 //===========================================================================//
