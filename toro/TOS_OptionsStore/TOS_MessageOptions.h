@@ -42,6 +42,7 @@ public:
    TOS_MessageOptions_c( void );
    TOS_MessageOptions_c( double minGridPrecision,
                          bool timeStampsEnable,
+                         bool fileLinesEnable,
                          const TOS_DisplayNameList_t& infoAcceptList,
                          const TOS_DisplayNameList_t& infoRejectList,
                          const TOS_DisplayNameList_t& warningAcceptList,
@@ -58,6 +59,7 @@ public:
 
    double minGridPrecision; // Define min (manufacturing) grid precision (for messages)
    bool   timeStampsEnable; // Enable prefix time stamp on messages
+   bool   fileLinesEnable;  // Enable prefix file name and line number on messages
 
    class TOS_MessageInfo_c
    {
