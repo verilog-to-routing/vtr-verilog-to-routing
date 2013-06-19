@@ -1127,10 +1127,10 @@ void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, t_ivec *** L_r
 		for (int j = 0; j <= L_ny; ++j) {
 			t_ivec rr_node_index = L_rr_node_indices[rr_type][i][j];
 
-			vpr_printf(TIO_MESSAGE_INFO, "rr_node_indices[%s][%d][%d] =", psz_rr_type, i, j);
+			vpr_printf_info("rr_node_indices[%s][%d][%d] =", psz_rr_type, i, j);
 			for (int k = 0; k < rr_node_index.nelem; ++k)
-				vpr_printf(TIO_MESSAGE_INFO, " %d", rr_node_index.list[k]);
-			vpr_printf(TIO_MESSAGE_INFO, "\n");
+				vpr_printf_info(" %d", rr_node_index.list[k]);
+			vpr_printf_info("\n");
 		}
 	}
 }
@@ -2364,7 +2364,7 @@ void override_sblock_pattern_lookup(
 		TFH_SwitchBox_c switchBox(x, y);
 		if (switchBoxList.IsMember(switchBox)) {
 
-			vpr_printf(TIO_MESSAGE_INFO, "Overriding architecture switchbox[%d][%d] based on fabric switchbox...\n", x, y);
+			vpr_printf_info("Overriding architecture switchbox[%d][%d] based on fabric switchbox...\n", x, y);
 
 			// Found existing override switchbox, now fetch and apply mapping
 			size_t i = switchBoxList.FindIndex(switchBox);
@@ -2485,7 +2485,7 @@ void override_cblock_edge_lists(
 		const TFH_ConnectionBlockList_t& connectionBlockList = fabricConnectionBlockHandler.GetConnectionBlockList();
 		if (connectionBlockList.IsValid()) {
 
-			vpr_printf(TIO_MESSAGE_INFO, "Overriding architecture connection blocks based on fabric connection blocks...\n");
+			vpr_printf_info("Overriding architecture connection blocks based on fabric connection blocks...\n");
 
 			fabricConnectionBlockHandler.UpdateGraphConnections(static_cast<void*>(L_rr_node), L_num_rr_nodes);
 		}
@@ -2561,8 +2561,9 @@ static int *label_wire_muxes_for_balance(
 		}
 	}
 	if (max_opin_mux_size > (min_opin_mux_size + 1)) {
-		vpr_printf(TIO_MESSAGE_ERROR, "opin muxes are not balanced!\n");
-		vpr_printf(TIO_MESSAGE_INFO, "%smax_opin_mux_size %d min_opin_mux_size %d chan_type %d x %d y %d\n",
+		vpr_printf_error(__FILE__, __LINE__, 
+				"opin muxes are not balanced!\n");
+		vpr_printf_info("%smax_opin_mux_size %d min_opin_mux_size %d chan_type %d x %d y %d\n",
 				TIO_PREFIX_ERROR_SPACE,
 				max_opin_mux_size, min_opin_mux_size, chan_type, x, y);
 	}

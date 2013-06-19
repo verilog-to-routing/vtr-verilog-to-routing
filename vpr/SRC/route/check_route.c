@@ -42,8 +42,8 @@ void check_route(enum e_route_type route_type, int num_switch,
 	struct s_trace *tptr;
 	boolean * pin_done;
 
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Checking to ensure routing is legal...\n");
+	vpr_printf_info("\n");
+	vpr_printf_info("Checking to ensure routing is legal...\n");
 
 	/* Recompute the occupancy from scratch and check for overuse of routing *
 	 * resources.  This was already checked in order to determine that this  *
@@ -174,8 +174,8 @@ void check_route(enum e_route_type route_type, int num_switch,
 
 	free(pin_done);
 	free(connected_to_route);
-	vpr_printf(TIO_MESSAGE_INFO, "Completed routing consistency check successfully.\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\n");
+	vpr_printf_info("Completed routing consistency check successfully.\n");
+	vpr_printf_info("\n");
 }
 
 static void check_sink(int inode, int inet, boolean * pin_done) {

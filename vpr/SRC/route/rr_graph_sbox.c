@@ -217,7 +217,7 @@ int get_simple_switch_block_track(INP enum e_side from_side,
 	/* UDSD Modification by WMF End */
 
 	if (to_track == SBOX_ERROR) {
-		vpr_printf(TIO_MESSAGE_ERROR, 
+		vpr_printf_error(__FILE__, __LINE__,
 			"in get_simple_switch_block_track.\n"
 			"%sUnexpected connection from_side %d to_side %d, switch_block_type %d.\n",
 			TIO_PREFIX_ERROR_SPACE, from_side, to_side, switch_block_type);

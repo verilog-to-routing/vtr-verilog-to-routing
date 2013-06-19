@@ -217,7 +217,7 @@ void get_serial_num(void) {
 			tptr = tptr->next;
 		}
 	}
-	vpr_printf(TIO_MESSAGE_INFO, "Serial number (magic cookie) for the routing is: %d\n", serial_num);
+	vpr_printf_info("Serial number (magic cookie) for the routing is: %d\n", serial_num);
 }
 
 boolean try_route(int width_fac, struct s_router_opts router_opts,
@@ -266,9 +266,9 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 
 	clock_t end = clock();
 #ifdef CLOCKS_PER_SEC
-	vpr_printf(TIO_MESSAGE_INFO, "Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
+	vpr_printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 #else
-	vpr_printf(TIO_MESSAGE_INFO, "Build rr_graph took %g seconds.\n", (float)(end - begin) / CLK_PER_SEC);
+	vpr_printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLK_PER_SEC);
 #endif
 
 	boolean success = TRUE;
@@ -284,11 +284,11 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 	init_route_structs(router_opts.bb_factor);
 
 	if (router_opts.router_algorithm == BREADTH_FIRST) {
-		vpr_printf(TIO_MESSAGE_INFO, "Confirming router algorithm: BREADTH_FIRST.\n");
+		vpr_printf_info("Confirming router algorithm: BREADTH_FIRST.\n");
 		success = try_breadth_first_route(router_opts, clb_opins_used_locally,
 				width_fac);
 	} else { /* TIMING_DRIVEN route */
-		vpr_printf(TIO_MESSAGE_INFO, "Confirming router algorithm: TIMING_DRIVEN.\n");
+		vpr_printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
 		assert(router_opts.route_type != GLOBAL);
 		success = try_timing_driven_route(router_opts, net_delay, slacks,
 			clb_opins_used_locally,timing_inf.timing_analysis_enabled);
@@ -970,8 +970,8 @@ get_heap_head(void) {
 
 	do {
 		if (heap_tail == 1) { /* Empty heap. */
-			vpr_printf(TIO_MESSAGE_WARNING, "Empty heap occurred in get_heap_head.\n");
-			vpr_printf(TIO_MESSAGE_WARNING, "Some blocks are impossible to connect in this architecture.\n");
+			vpr_printf_warning(__FILE__, __LINE__, "Empty heap occurred in get_heap_head.\n");
+			vpr_printf_warning(__FILE__, __LINE__, "Some blocks are impossible to connect in this architecture.\n");
 			return (NULL);
 		}
 
@@ -1314,7 +1314,7 @@ bool validate_prerouted_nets(
 	TCH_PreRoutedHandler_c& preRoutedHandler = TCH_PreRoutedHandler_c::GetInstance();
 	if (preRoutedHandler.IsValid()) {
 
-		vpr_printf(TIO_MESSAGE_INFO, "Validating preroutes using mode: %s.\n",
+		vpr_printf_info("Validating preroutes using mode: %s.\n",
 			preRoutedHandler.GetOrderMode() == TCH_ROUTE_ORDER_FIRST ? "FIRST" : "AUTO");
 
 		// Initialize pre-routing handler based on local data structures
