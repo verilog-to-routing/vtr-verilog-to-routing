@@ -78,9 +78,6 @@ using namespace std;
 // Define math constants as needed
 //---------------------------------------------------------------------------//
 
-#include <cmath>
-using namespace std;
-
 #ifndef M_SQRT2
    #define M_SQRT2 1.41421356237309504880
 #endif
@@ -121,20 +118,6 @@ enum TC_DataMode_e
    TC_DATA_STRING
 };
 typedef enum TC_DataMode_e TC_DataMode_t;
-
-// ??? enum TC_SideMode_e
-// ??? {
-// ???    TC_SIDE_UNDEFINED = 0,
-// ???    TC_SIDE_LEFT,
-// ???    TC_SIDE_RIGHT,
-// ???    TC_SIDE_LOWER,
-// ???    TC_SIDE_UPPER,
-// ???    TC_SIDE_BOTTOM,
-// ???    TC_SIDE_TOP,
-// ???    TC_SIDE_PREV,
-// ???    TC_SIDE_NEXT
-// ??? };
-// ??? typedef TC_SideMode_e TC_SideMode_t;
 
 enum TC_SideMode_e
 {
