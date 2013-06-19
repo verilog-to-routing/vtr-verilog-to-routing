@@ -55,12 +55,10 @@ public:
 
    TCH_Net_c( void );
    TCH_Net_c( const string& srName,
-              TCH_RouteStatusMode_t status,
-// ???              TCH_RouteStatusMode_t status = TCH_ROUTE_STATUS_UNDEFINED,
+              TCH_RouteStatusMode_t status = TCH_ROUTE_STATUS_UNDEFINED,
               int vpr_netIndex = -1 );
    TCH_Net_c( const char* pszName,
-              TCH_RouteStatusMode_t status,
-// ???              TCH_RouteStatusMode_t status = TCH_ROUTE_STATUS_UNDEFINED,
+              TCH_RouteStatusMode_t status = TCH_ROUTE_STATUS_UNDEFINED,
               int vpr_netIndex = -1 );
    TCH_Net_c( const TCH_Net_c& net );
    ~TCH_Net_c( void );
