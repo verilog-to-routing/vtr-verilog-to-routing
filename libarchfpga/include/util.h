@@ -33,10 +33,9 @@ enum e_vpr_error {
 	VPR_ERROR_PACK,
 	VPR_ERROR_PLACE,
 	VPR_ERROR_ROUTE,
-	VPR_ERROR_TIMING,
-	VPR_ERROR_SDC,
 	VPR_ERROR_OTHER
 };
+typedef enum e_vpr_error t_vpr_error_type;
 
 int limit_value(int cur, int max, const char *name);
 
@@ -81,7 +80,7 @@ typedef struct s_chunk {
 typedef struct s_vpr_error {
 	char* message;
 	char* file_name;
-	unsigned int line_num;
+	int line_num;
 	enum e_vpr_error type;
 } t_vpr_error;
 
@@ -178,19 +177,14 @@ extern vpr_PrintHandlerError vpr_printf_error;
 extern vpr_PrintHandlerTrace vpr_printf_trace;
 extern vpr_PrintHandlerDirect vpr_printf_direct;
 
-/*********************** Math operations *************************************/
-int ipow(int base, int exp);
-
-/*********************** VPR_error-related ***************************************/
-t_vpr_error* alloc_and_load_vpr_error(enum e_vpr_error type, unsigned int line, char* file_name);
-void vpr_throw(enum e_vpr_error type,
-	const char* psz_file_name,
-	unsigned int line_num,
-	const char* psz_message,
-	...);
-
 #ifdef __cplusplus 
 }
 #endif
-#endif
 
+/*********************** Math operations *************************************/
+int ipow(int base, int exp);
+
+/*********************** Error-related ***************************************/
+void Print_VPR_Error(t_vpr_error* vpr_error, char* arch_filename);
+t_vpr_error* alloc_and_load_vpr_error(enum e_vpr_error type, int line, char* file_name);
+#endif
