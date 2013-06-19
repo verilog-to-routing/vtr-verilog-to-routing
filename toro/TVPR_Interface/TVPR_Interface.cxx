@@ -11,6 +11,9 @@
 //           Protected methods include:
 //           - TIO_PrintHandler_c, ~TIO_PrintHandler_c
 //
+//           Private methods include:
+//           - ShowInternalError_
+//
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
@@ -176,6 +179,7 @@ TVPR_Interface_c& TVPR_Interface_c::GetInstance(
 //---------------------------------------------------------------------------//
 // Version history
 // 07/10/12 jeffr : Original
+// 06/19/13 jeffr : Added try/catch block to detect VPR abort conditions
 //===========================================================================//
 bool TVPR_Interface_c::Apply(
       const TOS_OptionsStore_c&     optionsStore,
@@ -187,25 +191,32 @@ bool TVPR_Interface_c::Apply(
 
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   if( ok )
+   try
    {
-      printHandler.Info( "Opening VPR interface...\n" );
-      ok = this->Open( optionsStore,
-                       architectureSpec,
-                       *pfabricModel,
-                       *pcircuitDesign );
-   }
-   if( ok )
-   {
-      printHandler.Info( "Executing VPR interface...\n" );
-      ok = this->Execute( optionsStore,
+      if( ok )
+      {
+         printHandler.Info( "Opening VPR interface...\n" );
+         ok = this->Open( optionsStore,
+                          architectureSpec,
+                          *pfabricModel,
                           *pcircuitDesign );
+      }
+      if( ok )
+      {
+         printHandler.Info( "Executing VPR interface...\n" );
+         ok = this->Execute( optionsStore,
+                             *pcircuitDesign );
+      }
+      if( ok )
+      {
+         printHandler.Info( "Closing VPR interface...\n" );
+         this->Close( pfabricModel,
+                      pcircuitDesign );
+      }
    }
-   if( ok )
+   catch( t_vpr_error* vpr_error )
    {
-      printHandler.Info( "Closing VPR interface...\n" );
-      this->Close( pfabricModel,
-                   pcircuitDesign );
+      ok = this->ShowInternalError_( vpr_error );
    }
    return( ok );
 }
@@ -485,4 +496,47 @@ bool TVPR_Interface_c::Close(
       this->isAlive_ = false;
    }
    return( this->isAlive_ );
+}
+
+//===========================================================================//
+// Method         : ShowInternalError_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 06/19/13 jeffr : Original
+//===========================================================================//
+bool TVPR_Interface_c::ShowInternalError_(
+      t_vpr_error* vpr_error ) const
+{
+   const char* pszErrorType = "?";
+   switch( vpr_error->type )
+   {
+   case VPR_ERROR_UNKNOWN: pszErrorType = "UNKNOWN"; break;
+   case VPR_ERROR_ARCH:    pszErrorType = "ARCH";    break;
+   case VPR_ERROR_PACK:    pszErrorType = "PACK";    break;
+   case VPR_ERROR_PLACE:   pszErrorType = "PLACE";   break;
+   case VPR_ERROR_ROUTE:   pszErrorType = "ROUTE";   break;
+   case VPR_ERROR_OTHER:   pszErrorType = "OTHER";   break;
+   default:                                          break;
+   }
+   const char* pszErrorMessage = vpr_error->message;
+   const char* pszFileName = vpr_error->file_name;
+   unsigned int lineNum = vpr_error->line_num;
+
+   TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
+   bool ok = printHandler.Fatal( "Terminating execution due to unexpected abort received from VPR.\n" );
+
+   if( pszFileName && *pszFileName )
+   {
+      printHandler.Error( "[%s:%d] %s", 
+                          pszFileName, lineNum, 
+                          TIO_PSZ_STR( pszErrorMessage ));
+   }
+   else
+   {
+      printHandler.Error( "[%s] %s", 
+                          TIO_PSZ_STR( pszErrorType ),
+                          TIO_PSZ_STR( pszErrorMessage ));
+   }
+   return( ok );
 }
