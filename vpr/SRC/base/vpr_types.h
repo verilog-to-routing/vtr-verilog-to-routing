@@ -93,10 +93,14 @@ typedef size_t bitfield;
 
 #define FIRST_ITER_WIRELENTH_LIMIT 0.85 /* If used wirelength exceeds this value in first iteration of routing, do not route */
 
-#define EXCEEDED_OVERUSED_COUNT_LIMIT 4 /* The number of times the overused ratio has to exceed the threshold before the routing is aborted */
-
 #define EMPTY -1
 #define INVALID -2
+
+/* Andre Pereira: Constants used at the routing failure predictor */
+#define EXCEEDED_OVERUSED_COUNT_LIMIT 4 /* The number of times the overused ratio has to exceed the threshold before the routing is aborted */
+#define ROUTING_PREDICTOR_SAFE 0.015
+#define ROUTING_PREDICTOR_AGGRESSIVE 0.010
+#define ROUTING_PREDICTOR_OFF 1.100 /* Values can never get past 1.0, so 1.1 is unachievable */
 
 /*******************************************************************************
  * Packing specific data types and constants
@@ -752,6 +756,9 @@ enum e_router_algorithm {
 enum e_base_cost_type {
 	INTRINSIC_DELAY, DELAY_NORMALIZED, DEMAND_ONLY
 };
+enum e_routing_failure_predictor {
+	OFF, SAFE, AGGRESSIVE
+};
 
 #define NO_FIXED_CHANNEL_WIDTH -1
 
@@ -776,6 +783,7 @@ struct s_router_opts {
 	boolean verify_binary_search;
 	boolean full_stats;
 	boolean doRouting;
+	enum e_routing_failure_predictor routing_failure_predictor;
 };
 
 /* All the parameters controlling the router's operation are in this        *
@@ -817,7 +825,10 @@ struct s_router_opts {
  *                  will ever have (i.e. clip criticality to this number).  *
  * criticality_exp: Set criticality to (path_length(sink) / longest_path) ^ *
  *                  criticality_exp (then clip to max_criticality).         
- * doRouting: True if routing is supposed to be done, FALSE otherwise */
+ * doRouting: True if routing is supposed to be done, FALSE otherwise	    *
+ * routing_failure_predictor: sets the configuration to be used by the	    *
+ * routing failure predictor, how aggressive the threshold used to judge
+ * and abort routings deemed unroutable */
 
 typedef struct s_det_routing_arch t_det_routing_arch;
 struct s_det_routing_arch {

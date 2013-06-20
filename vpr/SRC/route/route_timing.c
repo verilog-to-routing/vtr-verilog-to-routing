@@ -92,7 +92,12 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	/* Variables used to do the optimization of the routing, aborting visibly
 	 * impossible Ws */
 	double overused_ratio;
-	double overused_threshold = 0.015;
+	/* Threshold defined according to command line argument --routing_failure_predictor */
+	double overused_threshold = ROUTING_PREDICTOR_SAFE; /* Default */
+	if(router_opts.routing_failure_predictor == AGGRESSIVE)
+		overused_threshold = ROUTING_PREDICTOR_AGGRESSIVE;
+	if(router_opts.routing_failure_predictor == OFF)
+		overused_threshold = ROUTING_PREDICTOR_OFF;
 
 	int times_exceeded_threshold = 0;
 

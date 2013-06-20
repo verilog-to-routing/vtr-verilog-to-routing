@@ -138,6 +138,7 @@ void vpr_print_usage(void) {
 	vpr_printf_info("Routing options valid only for timing-driven routing:\n");
 	vpr_printf_info("\t[--astar_fac <float>] [--max_criticality <float>]\n");
 	vpr_printf_info("\t[--criticality_exp <float>]\n");
+	vpr_printf_info("\t[--routing_failure_predictor safe | aggressive | off]\n");
 	vpr_printf_info("\n");
 }
 

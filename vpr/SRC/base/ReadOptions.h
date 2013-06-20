@@ -85,6 +85,7 @@ struct s_options {
 	float astar_fac;
 	float criticality_exp;
 	float max_criticality;
+	enum e_routing_failure_predictor routing_failure_predictor;
 
 	/* State and metadata about various settings */
 	int Count[OT_BASE_UNKNOWN];

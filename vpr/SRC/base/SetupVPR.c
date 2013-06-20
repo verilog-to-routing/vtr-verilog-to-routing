@@ -469,6 +469,12 @@ static void SetupRouterOpts(INP t_options Options, INP boolean TimingEnabled,
 			RouterOpts->doRouting = TRUE;
 	}
 
+	/* Andre: Default value for the predictor is SAFE */
+	RouterOpts->routing_failure_predictor = SAFE;
+	if (Options.Count[OT_ROUTING_FAILURE_PREDICTOR]) {
+		RouterOpts->routing_failure_predictor = Options.routing_failure_predictor;
+	}
+
 }
 
 static void SetupAnnealSched(INP t_options Options,

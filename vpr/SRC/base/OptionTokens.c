@@ -76,6 +76,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "power_output_file", OT_POWER_OUT_FILE }, /* Output file for power results */
 		{ "power", OT_POWER }, /* Run power estimation? */
 		{ "tech_properties", OT_CMOS_TECH_BEHAVIOR_FILE }, /* Technology properties */
+		{ "routing_failure_predictor", OT_ROUTING_FAILURE_PREDICTOR }, /* Routing failure predictor */
 		{ NULL, OT_BASE_UNKNOWN } /* End of list marker */
 };
 
@@ -99,5 +100,7 @@ struct s_TokenPair OptionArgTokenList[] = {
 		{ "greedy", OT_GREEDY }, 
 		{ "lp", OT_LP }, 
 		{ "brute_force", OT_BRUTE_FORCE },
+		{ "safe", OT_ROUTING_FAILURE_SAFE },
+		{ "aggressive", OT_ROUTING_FAILURE_AGGRESSIVE },
 		{ NULL, OT_BASE_UNKNOWN } /* End of list marker */
 };

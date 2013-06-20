@@ -76,6 +76,7 @@ enum e_OptionBaseToken {
 	OT_ACTIVITY_FILE,
 	OT_POWER_OUT_FILE,
 	OT_CMOS_TECH_BEHAVIOR_FILE,
+	OT_ROUTING_FAILURE_PREDICTOR,
 	OT_BASE_UNKNOWN /* Must be last since used for counting enum items */
 };
 
@@ -99,6 +100,8 @@ enum e_OptionArgToken {
 	OT_GREEDY,
 	OT_LP,
 	OT_BRUTE_FORCE,
+	OT_ROUTING_FAILURE_SAFE,
+	OT_ROUTING_FAILURE_AGGRESSIVE,
 	OT_ARG_UNKNOWN /* Must be last since used for counting enum items */
 };
 

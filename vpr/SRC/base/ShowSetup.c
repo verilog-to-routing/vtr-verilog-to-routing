@@ -224,6 +224,12 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 			vpr_printf_info("RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
 			vpr_printf_info("RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
 		}
+		if (RouterOpts.routing_failure_predictor == SAFE)
+			vpr_printf_info("RouterOpts.routing_failure_predictor = SAFE\n");
+		else if (RouterOpts.routing_failure_predictor == AGGRESSIVE)
+			vpr_printf_info("RouterOpts.routing_failure_predictor = AGGRESSIVE\n");
+		else if (RouterOpts.routing_failure_predictor == OFF)
+			vpr_printf_info("RouterOpts.routing_failure_predictor = OFF\n");
 	} else {
 		assert(GLOBAL == RouterOpts.route_type);
 
