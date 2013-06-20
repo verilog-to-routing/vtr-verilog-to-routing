@@ -46,6 +46,7 @@
  * Global data types and constants
  ******************************************************************************/
 typedef struct s_power_opts t_power_opts;
+typedef struct s_net_power t_net_power;
 
 #ifndef SPEC
 #define DEBUG 1			/* Echoes input & checks error conditions */
@@ -492,6 +493,17 @@ enum e_pad_loc_type {
 	FREE, RANDOM, USER
 };
 
+/* Power data for t_net structure */
+struct s_net_power {
+	/* Signal probability - long term probability that signal is logic-high*/
+	float probability;
+
+	/* Transistion density - average # of transitions per clock cycle
+	 * For example, a clock would have density = 2
+	 */
+	float density;
+};
+
 /* name:  ASCII net name for informative annotations in the output.          *
  * num_sinks:  Number of sinks on this net.                                  *
  * node_block: [0..num_sinks]. Contains the blocks to which the nodes of this 
@@ -515,8 +527,8 @@ typedef struct s_net {
 	unsigned int is_fixed : 1;
 	unsigned int is_global : 1;
 	unsigned int is_const_gen : 1;
-	float probability;
-	float density;
+
+	t_net_power * net_power;
 } t_net;
 
 /* s_grid_tile is the minimum tile of the fpga                         

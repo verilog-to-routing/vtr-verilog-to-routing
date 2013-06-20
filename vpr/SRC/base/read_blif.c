@@ -88,9 +88,9 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 	clock_t begin, end;
 
 	blif = fopen(blif_file, "r");
-	if (blif == NULL ) {
-		vpr_printf_error(__FILE__, __LINE__, 
-				"Failed to open blif file '%s'.\n", blif_file);
+	if (blif == NULL) {
+		vpr_printf_error(__FILE__, __LINE__, "Failed to open blif file '%s'.\n",
+				blif_file);
 		exit(1);
 	}
 	load_default_models(library_models, &inpad_model, &outpad_model,
@@ -104,10 +104,10 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 
 		end = clock();
 #ifdef CLOCKS_PER_SEC
-		vpr_printf_info("Loop for doall = %d, init_parse took %g seconds.\n", doall,
-				(float) (end - begin) / CLOCKS_PER_SEC);
+		vpr_printf_info("Loop for doall = %d, init_parse took %g seconds.\n",
+				doall, (float) (end - begin) / CLOCKS_PER_SEC);
 #else
-		vpr_printf_info("Loop for doall = %d, init_parse took %g seconds.\n", doall, 
+		vpr_printf_info("Loop for doall = %d, init_parse took %g seconds.\n", doall,
 				(float)(end - begin) / CLK_PER_SEC);
 #endif
 
@@ -116,7 +116,7 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 		done = FALSE;
 		add_truth_table = FALSE;
 		model_lines = 0;
-		while (my_fgets(buffer, BUFSIZE, blif) != NULL ) {
+		while (my_fgets(buffer, BUFSIZE, blif) != NULL) {
 			get_blif_tok(buffer, doall, &done, &add_truth_table, inpad_model,
 					outpad_model, logic_model, latch_model, user_models);
 		}
@@ -124,10 +124,10 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 
 		end = clock();
 #ifdef CLOCKS_PER_SEC
-		vpr_printf_info("Loop for doall = %d took %g seconds.\n",
-				doall, (float) (end - begin) / CLOCKS_PER_SEC);
+		vpr_printf_info("Loop for doall = %d took %g seconds.\n", doall,
+				(float) (end - begin) / CLOCKS_PER_SEC);
 #else
-		vpr_printf_info("Loop for doall = %d took %g seconds.\n", doall, 
+		vpr_printf_info("Loop for doall = %d took %g seconds.\n", doall,
 				(float)(end - begin) / CLK_PER_SEC);
 #endif
 
@@ -192,7 +192,7 @@ static void init_parse(int doall) {
 
 		for (i = 0; i < HASHSIZE; i++) {
 			h_ptr = blif_hash[i];
-			while (h_ptr != NULL ) {
+			while (h_ptr != NULL) {
 				vpack_net[h_ptr->index].node_block = (int *) my_malloc(
 						h_ptr->count * sizeof(int));
 				vpack_net[h_ptr->index].node_block_port = (int *) my_malloc(
@@ -244,7 +244,7 @@ static void get_blif_tok(char *buffer, int doall, boolean *done,
 	struct s_linked_vptr *data;
 
 	ptr = my_strtok(buffer, TOKENS, blif, buffer);
-	if (ptr == NULL )
+	if (ptr == NULL)
 		return;
 
 	if (*add_truth_table) {
@@ -292,17 +292,17 @@ static void get_blif_tok(char *buffer, int doall, boolean *done,
 		*add_truth_table = FALSE;
 		ptr = my_strtok(NULL, TOKENS, blif, buffer);
 		if (doall) {
-			if (ptr != NULL ) {
-				if(model != NULL) {
+			if (ptr != NULL) {
+				if (model != NULL) {
 					free(model);
 				}
 				model = (char *) my_malloc((strlen(ptr) + 1) * sizeof(char));
 				strcpy(model, ptr);
-				if (blif_circuit_name == NULL ) {
+				if (blif_circuit_name == NULL) {
 					blif_circuit_name = my_strdup(model);
 				}
 			} else {
-				if(model != NULL) {
+				if (model != NULL) {
 					free(model);
 				}
 				model = (char *) my_malloc(sizeof(char));
@@ -365,7 +365,7 @@ void dum_parse(char *buf) {
 
 	/* Continue parsing to the end of this (possibly continued) line. */
 
-	while (my_strtok(NULL, TOKENS, blif, buf) != NULL )
+	while (my_strtok(NULL, TOKENS, blif, buf) != NULL)
 		;
 }
 
@@ -386,7 +386,7 @@ static boolean add_lut(int doall, t_model *logic_model) {
 
 	/* Count # nets connecting */
 	i = 0;
-	while ((ptr = my_strtok(NULL, TOKENS, blif, buf)) != NULL ) {
+	while ((ptr = my_strtok(NULL, TOKENS, blif, buf)) != NULL) {
 		if (i > logic_model->inputs->size) {
 			vpr_printf_error(__FILE__, __LINE__,
 					"[LINE %d] .names %s ... %s has a LUT size that exceeds the maximum LUT size (%d) of the architecture.\n",
@@ -477,16 +477,16 @@ static void add_latch(int doall, INP t_model *latch_model) {
 
 	for (i = 0; i < 6; i++) {
 		ptr = my_strtok(NULL, TOKENS, blif, buf);
-		if (ptr == NULL )
+		if (ptr == NULL)
 			break;
 		strcpy(saved_names[i], ptr);
 	}
 
 	if (i != 5) {
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_printf_error(__FILE__, __LINE__,
 				".latch does not have 5 parameters.\n");
-		vpr_printf_error(__FILE__, __LINE__, 
-				"Check netlist, line %d.\n", file_line_number);
+		vpr_printf_error(__FILE__, __LINE__, "Check netlist, line %d.\n",
+				file_line_number);
 		exit(1);
 	}
 
@@ -603,13 +603,13 @@ static void add_subckt(int doall, t_model *user_models) {
 		/* get the matching model to this subckt */
 
 		cur_model = user_models;
-		while (cur_model != NULL ) {
+		while (cur_model != NULL) {
 			if (strcmp(cur_model->name, subckt_name) == 0) {
 				break;
 			}
 			cur_model = cur_model->next;
 		}
-		if (cur_model == NULL ) {
+		if (cur_model == NULL) {
 			vpr_printf_error(__FILE__, __LINE__,
 					"Did not find matching model to subckt %s.\n", subckt_name);
 			exit(-1);
@@ -689,7 +689,7 @@ static void add_subckt(int doall, t_model *user_models) {
 			/* determine the port name and the pin_number of the subckt */
 			port_name = my_strdup(subckt_signal_name[i]);
 			pin_number = strrchr(port_name, '[');
-			if (pin_number == NULL ) {
+			if (pin_number == NULL) {
 				pin_number = "0"; /* default to 0 */
 			} else {
 				/* The pin numbering is port_name[pin_number] so need to go one to the right of [ then NULL out ] */
@@ -713,7 +713,8 @@ static void add_subckt(int doall, t_model *user_models) {
 					found_subckt_signal = TRUE;
 					if (port->is_clock) {
 						assert(
-								logical_block[num_logical_blocks-1].clock_net == OPEN);
+								logical_block[num_logical_blocks - 1].clock_net
+										== OPEN);
 						assert(my_atoi(pin_number) == 0);
 						logical_block[num_logical_blocks - 1].clock_net =
 								add_vpack_net(circuit_signal_name[i], RECEIVER,
@@ -745,7 +746,7 @@ static void add_subckt(int doall, t_model *user_models) {
 							DRIVER, num_logical_blocks - 1, port->index,
 							my_atoi(pin_number), FALSE, doall);
 					if (subckt_logical_block_name == NULL
-							&& circuit_signal_name[i] != NULL ) {
+							&& circuit_signal_name[i] != NULL) {
 						subckt_logical_block_name = circuit_signal_name[i];
 					}
 					output_net_count++;
@@ -754,13 +755,13 @@ static void add_subckt(int doall, t_model *user_models) {
 			}
 
 			/* record the name to be first output net parsed */
-			if(logical_block[num_logical_blocks - 1].name == NULL) {
+			if (logical_block[num_logical_blocks - 1].name == NULL) {
 				logical_block[num_logical_blocks - 1].name = my_strdup(
 						subckt_logical_block_name);
 			}
 
 			if (!found_subckt_signal) {
-				vpr_printf_error(__FILE__, __LINE__, 
+				vpr_printf_error(__FILE__, __LINE__,
 						"Unknown subckt port %s.\n", subckt_signal_name[i]);
 				exit(1);
 			}
@@ -797,7 +798,7 @@ static void io_line(int in_or_out, int doall, t_model *io_model) {
 	while (iparse < MAX_ATOM_PARSE) {
 		iparse++;
 		ptr = my_strtok(NULL, TOKENS, blif, buf2);
-		if (ptr == NULL )
+		if (ptr == NULL)
 			return;
 		num_logical_blocks++;
 
@@ -872,7 +873,7 @@ static void check_and_count_models(int doall, const char* model_name,
 			}
 			user_model = user_model->next;
 		}
-		if (user_model == NULL ) {
+		if (user_model == NULL) {
 			vpr_printf_error(__FILE__, __LINE__,
 					"No corresponding model %s in architecture description.\n",
 					model_name);
@@ -918,7 +919,7 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 	h_ptr = blif_hash[index];
 	prev_ptr = h_ptr;
 
-	while (h_ptr != NULL ) {
+	while (h_ptr != NULL) {
 		if (strcmp(h_ptr->name, ptr) == 0) { /* Net already in hash table */
 			nindex = h_ptr->index;
 
@@ -972,7 +973,7 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 
 	num_logical_nets++;
 	h_ptr = (struct s_hash *) my_malloc(sizeof(struct s_hash));
-	if (prev_ptr == NULL ) {
+	if (prev_ptr == NULL) {
 		blif_hash[index] = h_ptr;
 	} else {
 		prev_ptr->next = h_ptr;
@@ -1018,7 +1019,7 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 	num_absorbable_latch = 0;
 	for (i = 0; i < num_logical_blocks; i++) {
 		if (logical_block[i].model == logic_model) {
-			if (logic_model == NULL )
+			if (logic_model == NULL)
 				continue;
 			for (j = 0; j < logic_model->inputs[0].size; j++) {
 				if (logical_block[i].input_nets[0][j] == OPEN) {
@@ -1027,7 +1028,7 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 			}
 			lut_distribution[j]++;
 		} else if (logical_block[i].model == latch_model) {
-			if (latch_model == NULL )
+			if (latch_model == NULL)
 				continue;
 			inet = logical_block[i].input_nets[0][0];
 			if (vpack_net[inet].num_sinks == 1
@@ -1039,9 +1040,12 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 	}
 
 	vpr_printf_info("Input netlist file: '%s', model: %s\n", blif_file, model);
-	vpr_printf_info("Primary inputs: %d, primary outputs: %d\n", num_p_inputs, num_p_outputs);
-	vpr_printf_info("LUTs: %d, latches: %d, subckts: %d\n", num_luts, num_latches, num_subckts);
-	vpr_printf_info("# standard absorbable latches: %d\n", num_absorbable_latch);
+	vpr_printf_info("Primary inputs: %d, primary outputs: %d\n", num_p_inputs,
+			num_p_outputs);
+	vpr_printf_info("LUTs: %d, latches: %d, subckts: %d\n", num_luts,
+			num_latches, num_subckts);
+	vpr_printf_info("# standard absorbable latches: %d\n",
+			num_absorbable_latch);
 	vpr_printf_info("\t");
 	for (i = 0; i < logic_model->inputs[0].size + 1; i++) {
 		if (i > 0)
@@ -1049,12 +1053,14 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 		vpr_printf_direct("LUT size %d = %d", i, lut_distribution[i]);
 	}
 	vpr_printf_direct("\n");
-	vpr_printf_info("Total blocks: %d, total nets: %d\n", num_logical_blocks, num_logical_nets);
+	vpr_printf_info("Total blocks: %d, total nets: %d\n", num_logical_blocks,
+			num_logical_nets);
 
 	fp = my_fopen(echo_file, "w", 0);
 
 	fprintf(fp, "Input netlist file: '%s', model: %s\n", blif_file, model);
-	fprintf(fp, "num_p_inputs: %d, num_p_outputs: %d, num_luts: %d, num_latches: %d\n",
+	fprintf(fp,
+			"num_p_inputs: %d, num_p_outputs: %d, num_luts: %d, num_latches: %d\n",
 			num_p_inputs, num_p_outputs, num_luts, num_latches);
 	fprintf(fp, "num_logical_blocks: %d, num_logical_nets: %d\n",
 			num_logical_blocks, num_logical_nets);
@@ -1169,30 +1175,30 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 	removed_nets = 0;
 
 	if (ilines != explicit_vpack_models) {
-		vpr_printf_error(__FILE__, __LINE__, 
-				"Found %d .inputs lines; expected %d.\n",
-				ilines, explicit_vpack_models);
+		vpr_printf_error(__FILE__, __LINE__,
+				"Found %d .inputs lines; expected %d.\n", ilines,
+				explicit_vpack_models);
 		error++;
 	}
 
 	if (olines != explicit_vpack_models) {
-		vpr_printf_error(__FILE__, __LINE__, 
-				"Found %d .outputs lines; expected %d.\n",
-				olines, explicit_vpack_models);
+		vpr_printf_error(__FILE__, __LINE__,
+				"Found %d .outputs lines; expected %d.\n", olines,
+				explicit_vpack_models);
 		error++;
 	}
 
 	if (model_lines != explicit_vpack_models) {
-		vpr_printf_error(__FILE__, __LINE__, 
-				"Found %d .model lines; expected %d.\n",
-				model_lines, num_blif_models + 1);
+		vpr_printf_error(__FILE__, __LINE__,
+				"Found %d .model lines; expected %d.\n", model_lines,
+				num_blif_models + 1);
 		error++;
 	}
 
 	if (endlines != explicit_vpack_models) {
-		vpr_printf_error(__FILE__, __LINE__, 
-				"Found %d .end lines; expected %d.\n",
-				endlines, explicit_vpack_models);
+		vpr_printf_error(__FILE__, __LINE__,
+				"Found %d .end lines; expected %d.\n", endlines,
+				explicit_vpack_models);
 		error++;
 	}
 	for (i = 0; i < num_logical_nets; i++) {
@@ -1289,7 +1295,7 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 			}
 		}
 	}
-	vpr_printf_info("Swept away %d nets with no fanout.\n",	removed_nets);
+	vpr_printf_info("Swept away %d nets with no fanout.\n", removed_nets);
 	count_unconn_blocks = 0;
 	for (i = 0; i < num_logical_blocks; i++) {
 		/* This block has no output and is not an output pad so it has no use, hence we remove it */
@@ -1302,7 +1308,8 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 					&& (logical_block[i].type == VPACK_INPAD)) {
 				logical_block[i].type = VPACK_EMPTY;
 				vpr_printf_info("Removing input.\n");
-				p_io_removed = (struct s_linked_vptr*) my_malloc(sizeof(struct s_linked_vptr));
+				p_io_removed = (struct s_linked_vptr*) my_malloc(
+						sizeof(struct s_linked_vptr));
 				p_io_removed->data_vptr = my_strdup(logical_block[i].name);
 				p_io_removed->next = circuit_p_io_removed;
 				circuit_p_io_removed = p_io_removed;
@@ -1473,9 +1480,10 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 	}
 
 	if (count_unconn_blocks > 0) {
-		vpr_printf_info("%d unconnected blocks in input netlist.\n", count_unconn_blocks);
+		vpr_printf_info("%d unconnected blocks in input netlist.\n",
+				count_unconn_blocks);
 	}
-		
+
 	if (error != 0) {
 		vpr_printf_error(__FILE__, __LINE__,
 				"Found %d fatal errors in the input netlist.\n", error);
@@ -1492,7 +1500,7 @@ static void free_parse(void) {
 
 	for (i = 0; i < HASHSIZE; i++) {
 		h_ptr = blif_hash[i];
-		while (h_ptr != NULL ) {
+		while (h_ptr != NULL) {
 			free((void *) h_ptr->name);
 			temp_ptr = h_ptr->next;
 			free((void *) h_ptr);
@@ -1563,7 +1571,8 @@ static void absorb_buffer_luts(void) {
 								vpack_net[out_net].node_block_pin[1];
 
 						assert(
-								logical_block[out_blk].input_nets[vpack_net[out_net].node_block_port[1]][vpack_net[out_net].node_block_pin[1]] == out_net);
+								logical_block[out_blk].input_nets[vpack_net[out_net].node_block_port[1]][vpack_net[out_net].node_block_pin[1]]
+										== out_net);
 						logical_block[out_blk].input_nets[vpack_net[out_net].node_block_port[1]][vpack_net[out_net].node_block_pin[1]] =
 								in_net;
 
@@ -1663,7 +1672,8 @@ static void compress_netlist(void) {
 					for (ipin = 0; ipin < port->size; ipin++) {
 						if (port->is_clock) {
 							assert(
-									port->size == 1 && port->index == 0 && ipin == 0);
+									port->size == 1 && port->index == 0
+											&& ipin == 0);
 							if (logical_block[index].clock_net == OPEN)
 								continue;
 							logical_block[index].clock_net =
@@ -1727,7 +1737,7 @@ static void compress_netlist(void) {
 				if (logical_block[iblk].output_nets)
 					free(logical_block[iblk].output_nets);
 				tvptr = logical_block[iblk].truth_table;
-				while (tvptr != NULL ) {
+				while (tvptr != NULL) {
 					if (tvptr->data_vptr)
 						free(tvptr->data_vptr);
 					next = tvptr->next;
@@ -1737,7 +1747,8 @@ static void compress_netlist(void) {
 			}
 		}
 
-		vpr_printf_info("Sweeped away %d nodes.\n", num_logical_blocks - new_num_blocks);
+		vpr_printf_info("Sweeped away %d nodes.\n",
+				num_logical_blocks - new_num_blocks);
 
 		num_logical_blocks = new_num_blocks;
 		logical_block = (struct s_logical_block *) my_realloc(logical_block,
@@ -1767,7 +1778,8 @@ static void compress_netlist(void) {
  */
 void read_and_process_blif(char *blif_file,
 		boolean sweep_hanging_nets_and_inputs, t_model *user_models,
-		t_model *library_models, boolean read_activity_file, char * activity_file) {
+		t_model *library_models, boolean read_activity_file,
+		char * activity_file) {
 
 	/* begin parsing blif input file */
 	read_blif(blif_file, sweep_hanging_nets_and_inputs, user_models,
@@ -1778,7 +1790,7 @@ void read_and_process_blif(char *blif_file,
 	 for (i = 0; i < num_logical_blocks; i++) {
 	 if (logical_block[i].model->num_inputs > max_subblock_inputs) {
 	 vpr_printf_error(__FILE__, __LINE__, 
-			"logical_block %s of model %s has %d inputs but architecture only supports subblocks up to %d inputs.\n",
+	 "logical_block %s of model %s has %d inputs but architecture only supports subblocks up to %d inputs.\n",
 	 logical_block[i].name, logical_block[i].model->name, logical_block[i].model->num_inputs, max_subblock_inputs);
 	 exit(1);
 	 }
@@ -1893,7 +1905,8 @@ static void show_blif_stats(t_model *user_models, t_model *library_models) {
 		vpr_printf_info("\t%d LUTs of size %d\n", num_lut_of_size[i], i);
 	}
 	for (i = 0; i < num_model_stats; i++) {
-		vpr_printf_info("\t%d of type %s\n", model_stats[i].count, model_stats[i].model->name);
+		vpr_printf_info("\t%d of type %s\n", model_stats[i].count,
+				model_stats[i].model->name);
 	}
 
 	free(model_stats);
@@ -1917,19 +1930,22 @@ static void read_activity(char * activity_file) {
 	}
 
 	for (net_idx = 0; net_idx < num_logical_nets; net_idx++) {
-		vpack_net[net_idx].probability = -1.0;
-		vpack_net[net_idx].density = -1.0;
+		if (!vpack_net[net_idx].net_power) {
+			vpack_net[net_idx].net_power = new t_net_power;
+		}
+		vpack_net[net_idx].net_power->probability = -1.0;
+		vpack_net[net_idx].net_power->density = -1.0;
 	}
 
 	act_file_hdl = my_fopen(activity_file, "r", FALSE);
-	if (act_file_hdl == NULL ) {
+	if (act_file_hdl == NULL) {
 		printf("Error: could not open activity file: %s\n", activity_file);
 		exit(-1);
 	}
 
 	fail = FALSE;
 	ptr = my_fgets(buf, BUFSIZE, act_file_hdl);
-	while (ptr != NULL ) {
+	while (ptr != NULL) {
 		word1 = strtok(buf, TOKENS);
 		word2 = strtok(NULL, TOKENS);
 		word3 = strtok(NULL, TOKENS);
@@ -1942,8 +1958,9 @@ static void read_activity(char * activity_file) {
 
 	/* Make sure all nets have an activity value */
 	for (net_idx = 0; net_idx < num_logical_nets; net_idx++) {
-		if (vpack_net[net_idx].probability < 0.0
-				|| vpack_net[net_idx].density < 0.0) {
+		if (!vpack_net[net_idx].net_power
+				|| vpack_net[net_idx].net_power->probability < 0.0
+				|| vpack_net[net_idx].net_power->density < 0.0) {
 			printf("Error: Activity file does not contain signal %s\n",
 					vpack_net[net_idx].name);
 			fail = TRUE;
@@ -1962,11 +1979,11 @@ bool add_activity_to_net(char * net_name, float probability, float density) {
 	hash_idx = hash_value(net_name);
 	h_ptr = blif_hash[hash_idx];
 
-	while (h_ptr != NULL ) {
+	while (h_ptr != NULL) {
 		if (strcmp(h_ptr->name, net_name) == 0) {
 			net_idx = h_ptr->index;
-			vpack_net[net_idx].probability = probability;
-			vpack_net[net_idx].density = density;
+			vpack_net[net_idx].net_power->probability = probability;
+			vpack_net[net_idx].net_power->density = density;
 			return false;
 		}
 		h_ptr = h_ptr->next;

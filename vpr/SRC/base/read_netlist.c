@@ -1439,6 +1439,9 @@ void free_logical_nets(void) {
 		free(vpack_net[inet].node_block);
 		free(vpack_net[inet].node_block_port);
 		free(vpack_net[inet].node_block_pin);
+		if (vpack_net[inet].net_power) {
+			delete vpack_net[inet].net_power;
+		}
 	}
 	free(vpack_net);
 	vpack_net = NULL;

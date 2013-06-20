@@ -601,7 +601,9 @@ static void power_usage_blocks(t_power_usage * power_usage) {
 		for (y = 0; y < ny + 2; y++) {
 			type_idx = grid[x][y].type->index;
 
-			if ((grid[x][y].width_offset != 0) || (grid[x][y].height_offset != 0) || (grid[x][y].type == EMPTY_TYPE)) {
+			if ((grid[x][y].width_offset != 0)
+					|| (grid[x][y].height_offset != 0)
+					|| (grid[x][y].type == EMPTY_TYPE)) {
 				continue;
 			}
 
@@ -609,7 +611,8 @@ static void power_usage_blocks(t_power_usage * power_usage) {
 				t_pb * pb = NULL;
 				t_power_usage pb_power;
 
-				if (grid[x][y].blocks[z] != EMPTY && grid[x][y].blocks[z] != INVALID) {
+				if (grid[x][y].blocks[z] != EMPTY
+						&& grid[x][y].blocks[z] != INVALID) {
 					pb = block[grid[x][y].blocks[z]].pb;
 				}
 
@@ -933,7 +936,8 @@ static void power_usage_routing(t_power_usage * power_usage,
 						switch_inf[node_power->driver_switch_type].Cout);
 				break;
 			case POWER_BUFFER_TYPE_ABSOLUTE_SIZE:
-				buffer_size = switch_inf[node_power->driver_switch_type].power_buffer_size;
+				buffer_size =
+						switch_inf[node_power->driver_switch_type].power_buffer_size;
 				buffer_size = max(buffer_size, 1.0F);
 				break;
 			case POWER_BUFFER_TYPE_NONE:
@@ -1154,10 +1158,13 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 
 	/* Copy probability/density values to new netlist */
 	for (net_idx = 0; net_idx < num_nets; net_idx++) {
-		clb_net[net_idx].probability =
-				vpack_net[clb_to_vpack_net_mapping[net_idx]].probability;
-		clb_net[net_idx].density =
-				vpack_net[clb_to_vpack_net_mapping[net_idx]].density;
+		if (!clb_net[net_idx].net_power) {
+			clb_net[net_idx].net_power = new t_net_power;
+		}
+		clb_net[net_idx].net_power->probability =
+				vpack_net[clb_to_vpack_net_mapping[net_idx]].net_power->probability;
+		clb_net[net_idx].net_power->density =
+				vpack_net[clb_to_vpack_net_mapping[net_idx]].net_power->density;
 	}
 
 	/* Initialize RR Graph Structures */
@@ -1204,8 +1211,7 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 			}
 			max_seg_to_IPIN_fanout = max(max_seg_to_IPIN_fanout,
 					fanout_to_IPIN);
-			max_seg_to_seg_fanout = max(max_seg_to_seg_fanout,
-					fanout_to_seg);
+			max_seg_to_seg_fanout = max(max_seg_to_seg_fanout, fanout_to_seg);
 			max_fanin = max(max_fanin, static_cast<int>(node->fan_in));
 
 			node_power->in_dens = (float*) my_calloc(node->fan_in,
@@ -1751,7 +1757,6 @@ e_power_ret_code power_total(float * run_time_s, t_vpr_setup vpr_setup,
 
 	//power_print_title(g_power_output->out, "Spice Comparison");
 	//power_print_spice_comparison();
-
 
 	t_end = clock();
 
