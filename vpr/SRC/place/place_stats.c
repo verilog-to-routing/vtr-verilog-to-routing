@@ -66,10 +66,9 @@ print_relative_pos_distr(void)
 
 				if (!(min_del <= (len / 2)))
 				{
-					vpr_printf_error(__FILE__, __LINE__,
+					vpr_printf_error(VPR_ERROR_PLACE, __FILE__, __LINE__,
 							"Error calculating relative location min_del = %d, len = %d\n",
 							min_del, len);
-					exit(1);
 				}
 				else
 				{

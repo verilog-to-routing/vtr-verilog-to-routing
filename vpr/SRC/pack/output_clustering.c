@@ -40,9 +40,8 @@ static void print_string(const char *str_ptr, int *column, int num_tabs, FILE * 
 
 	len = strlen(str_ptr);
 	if (len + 3 > LINELENGTH) {
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, 
 				"in print_string: String %s is too long for desired maximum line length.\n", str_ptr);
-		exit(1);
 	}
 
 	if (*column + len + 2 > LINELENGTH) {
@@ -591,10 +590,9 @@ void output_clustering(t_block *clb, int num_clusters, boolean global_clocks,
 			break;
 
 		case VPACK_EMPTY:
-			vpr_printf_error(__FILE__, __LINE__, 
+			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, 
 					"in output_netlist: logical_block %d is VPACK_EMPTY.\n",
 					bnum);
-			exit(1);
 			break;
 
 		default:

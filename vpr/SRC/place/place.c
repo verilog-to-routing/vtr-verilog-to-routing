@@ -591,10 +591,9 @@ void try_place(struct s_placer_opts placer_opts,
 		if (moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
 			new_bb_cost = recompute_bb_cost();
 			if (fabs(new_bb_cost - bb_cost) > bb_cost * ERROR_TOL) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
 						"in try_place: new_bb_cost = %g, old bb_cost = %g\n", 
 						new_bb_cost, bb_cost);
-				exit(1);
 			}
 			bb_cost = new_bb_cost;
 
@@ -603,12 +602,12 @@ void try_place(struct s_placer_opts placer_opts,
 							== PATH_TIMING_DRIVEN_PLACE) {
 				comp_td_costs(&new_timing_cost, &new_delay_cost);
 				if (fabs(new_timing_cost - timing_cost) > timing_cost * ERROR_TOL) {
-					vpr_printf_error(__FILE__, __LINE__,
+					vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
 							"in try_place: new_timing_cost = %g, old timing_cost = %g, ERROR_TOL = %g\n",
 							new_timing_cost, timing_cost, ERROR_TOL);
 				}
 				if (fabs(new_delay_cost - delay_cost) > delay_cost * ERROR_TOL) {
-					vpr_printf_error(__FILE__, __LINE__,
+					vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
 							"in try_place: new_delay_cost = %g, old delay_cost = %g, ERROR_TOL = %g\n",
 							new_delay_cost, delay_cost, ERROR_TOL);
 				}
@@ -909,7 +908,8 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 		vpr_printf_trace("t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d dmax = %g\n",
 				t, *cost, *bb_cost, *timing_cost, inner_iter, *delay_cost);
 		if (fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL)
-			exit(1);
+			vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+				"fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL");
 #endif
 	}
 	/* Inner loop ends */
@@ -1539,8 +1539,7 @@ static boolean find_to(int iblk_from, int x_from, int y_from,
 
 #ifdef DEBUG
 	if (rlx < 1 || rlx > nx + 1) {
-		vpr_printf_error(__FILE__, __LINE__,"in find_to: rlx = %d\n", rlx);
-		exit(1);
+		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,"in find_to: rlx = %d\n", rlx);
 	}
 #endif
 
@@ -1642,8 +1641,7 @@ static boolean find_to(int iblk_from, int x_from, int y_from,
 
 #ifdef DEBUG
 	if (*x_to < 0 || *x_to > nx + 1 || *y_to < 0 || *y_to > ny + 1) {
-		vpr_printf_error(__FILE__, __LINE__,"in routine find_to: (x_to,y_to) = (%d,%d)\n", *x_to, *y_to);
-		exit(1);
+		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,"in routine find_to: (x_to,y_to) = (%d,%d)\n", *x_to, *y_to);
 	}
 #endif
 	assert(type == grid[*x_to][*y_to].type);
@@ -1741,12 +1739,10 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 			delay_source_to_sink = delta_clb_to_clb[delta_x][delta_y];
 	}
 	if (delay_source_to_sink < 0) {
-		vpr_printf_error(__FILE__, __LINE__,
-				"in comp_td_point_to_point_delay: Bad delay_source_to_sink value delta(%d, %d) delay of %g\n",
+		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+				"in comp_td_point_to_point_delay: Bad delay_source_to_sink value delta(%d, %d) delay of %g\n"
+				"in comp_td_point_to_point_delay: Delay is less than 0\n",
 				delta_x, delta_y, delay_source_to_sink);
-		vpr_printf_error(__FILE__, __LINE__,
-				"in comp_td_point_to_point_delay: Delay is less than 0\n");
-		exit(1);
 	}
 
 	return (delay_source_to_sink);
@@ -2720,13 +2716,11 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 		iblk = pl_macros[imacro].members[0].blk_index;
 		itype = block[iblk].type->index;
 		if (free_locations[itype] < pl_macros[imacro].num_blocks) {
-			vpr_printf_error(__FILE__, __LINE__,
-					"Initial placement failed.\n");
-			vpr_printf_error(__FILE__, __LINE__,
-					"Could not place macro length %d with head block %s (#%d); not enough free locations of type %s (#%d).\n", 
+			vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+					"Initial placement failed.\n"
+					"Could not place macro length %d with head block %s (#%d); not enough free locations of type %s (#%d).\n"
+					"VPR cannot auto-size for your circuit, please resize the FPGA manually.\n", 
 					pl_macros[imacro].num_blocks, block[iblk].name, iblk, type_descriptors[itype].name, itype);
-			vpr_printf_info("VPR cannot auto-size for your circuit, please resize the FPGA manually.\n");
-			exit(1);
 		}
 
 		// Try to place the macro first, if can be placed - place them, otherwise try again
@@ -2759,13 +2753,11 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 			// If macro could not be placed after exhaustive placement, error out
 			if (macro_placed == FALSE) {
 				// Error out
-				vpr_printf_error(__FILE__, __LINE__,
-						"Initial placement failed.\n");
-				vpr_printf_error(__FILE__, __LINE__,
-						"Could not place macro length %d with head block %s (#%d); not enough free locations of type %s (#%d).\n", 
+				vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+						"Initial placement failed.\n"
+						"Could not place macro length %d with head block %s (#%d); not enough free locations of type %s (#%d).\n"
+						"Please manually size the FPGA because VPR can't do this yet.\n", 
 						pl_macros[imacro].num_blocks, block[iblk].name, iblk, type_descriptors[itype].name, itype);
-				vpr_printf_info("Please manually size the FPGA because VPR can't do this yet.\n");
-				exit(1);
 			}
 
 		} else {
@@ -2801,12 +2793,10 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			 */
 			itype = block[iblk].type->index;
 			if (free_locations[itype] <= 0) {
-				vpr_printf_error(__FILE__, __LINE__,
-						"Initial placement failed.\n");
-				vpr_printf_error(__FILE__, __LINE__, 
+				vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__, 
+						"Initial placement failed.\n"
 						"Could not place block %s (#%d); no free locations of type %s (#%d).\n", 
 						block[iblk].name, iblk, type_descriptors[itype].name, itype);
-				exit(1);
 			}
 
 #ifdef TORO_REGION_PLACEMENT_ENABLE
@@ -3190,11 +3180,9 @@ static void check_place(float bb_cost, float timing_cost,
 		print_relative_pos_distr(void);
 #endif
 	} else {
-		vpr_printf_info("\n");
-		vpr_printf_error(__FILE__, __LINE__,
-				"Completed placement consistency check, %d errors found.\n", error);
-		vpr_printf_info("Aborting program.\n");
-		exit(1);
+		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+				"\nCompleted placement consistency check, %d errors found.\n"
+				"Aborting program.\n", error);
 	}
 
 }

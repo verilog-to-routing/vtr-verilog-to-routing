@@ -35,9 +35,8 @@ static void print_string(const char *str_ptr, int *column, FILE * fpout) {
 
 	len = strlen(str_ptr);
 	if (len + 3 > LINELENGTH) {
-		vpr_printf_error(__FILE__, __LINE__,
+		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 				"in print_string: String %s is too long for desired maximum line length.\n", str_ptr);
-		exit(1);
 	}
 
 	if (*column + len + 2 > LINELENGTH) {
@@ -338,10 +337,9 @@ static void print_primitive(FILE *fpout, int iblk) {
 							}
 							if(k == pb_type->ports[i].num_pins) {
 								/* Failed to find LUT input, a netlist error has occurred */
-								vpr_printf_error(__FILE__, __LINE__,
+								vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 									"LUT %s missing input %s post packing. This is a VPR internal error, report to vpr@eecg.utoronto.ca\n",
 									logical_block[iblk].name, vpack_net[logical_block[iblk].input_nets[in_port_index][j]].name);
-								exit(1);
 							}
 						}
 					}

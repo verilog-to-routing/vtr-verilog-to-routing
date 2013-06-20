@@ -84,9 +84,8 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 				packer_opts->allow_early_exit, packer_opts->connection_driven,
 				packer_opts->packer_algorithm, timing_inf);
 	} else {
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, 
 				"Skip clustering no longer supported.\n");
-		exit(1);
 	}
 
 	free(is_clock);

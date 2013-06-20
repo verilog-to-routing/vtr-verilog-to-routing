@@ -635,14 +635,11 @@ static void check_clocks(boolean *is_clock) {
 					inet = logical_block[iblk].input_nets[port->index][ipin];
 					if (inet != OPEN) {
 						if (is_clock[inet]) {
-							vpr_printf_error(__FILE__, __LINE__,
-									"Error in check_clocks.\n");
-							vpr_printf_error(__FILE__, __LINE__,
-									"Net %d (%s) is a clock, but also connects to a logic block input on logical_block %d (%s).\n",
+							vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
+									"Error in check_clocks.\n"
+									"Net %d (%s) is a clock, but also connects to a logic block input on logical_block %d (%s).\n"
+									"This would break the current clustering implementation and is electrically questionable, so clustering has been aborted.\n",
 									inet, vpack_net[inet].name, iblk, logical_block[iblk].name);
-							vpr_printf_error(__FILE__, __LINE__,
-									"This would break the current clustering implementation and is electrically questionable, so clustering has been aborted.\n");
-							exit(1);
 						}
 					}
 				}
@@ -1952,19 +1949,18 @@ static void start_new_cluster(
 			}
 		}
 		if (count == num_types - 1) {
-			vpr_printf_error(__FILE__, __LINE__,
-					"Can not find any logic block that can implement molecule.\n");
 			if (molecule->type == MOLECULE_FORCED_PACK) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
+						"Can not find any logic block that can implement molecule.\n"
 						"\tPattern %s %s\n", 
 						molecule->pack_pattern->name,
 						molecule->logical_block_ptrs[molecule->root]->name);
 			} else {
-				vpr_printf_error(__FILE__, __LINE__,
+				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
+						"Can not find any logic block that can implement molecule.\n"
 						"\tAtom %s\n",
 						molecule->logical_block_ptrs[molecule->root]->name);
 			}
-			exit(1);
 		}
 
 		/* Expand FPGA size and recalculate number of available cluster types*/
@@ -1979,10 +1975,9 @@ static void start_new_cluster(
 			vpr_printf_info("Not enough resources expand FPGA size to x = %d y = %d.\n",
 					nx, ny);
 			if ((nx > MAX_SHORT) || (ny > MAX_SHORT)) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 						"Circuit cannot pack into architecture, architecture size (nx = %d, ny = %d) exceeds packer range.\n",
 						nx, ny);
-				exit(1);
 			}
 			alloc_and_load_grid(num_instances_type);
 			freeGrid();
@@ -2010,9 +2005,8 @@ static t_pack_molecule *get_highest_gain_molecule(
 	molecule = NULL;
 
 	if (gain_mode == HILL_CLIMBING) {
-		vpr_printf_error(__FILE__, __LINE__,
+		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 				"Hill climbing not supported yet, error out.\n");
-		exit(1);
 	}
 
 	if (cur_pb->pb_stats->num_feasible_blocks == NOT_VALID) {
@@ -2245,10 +2239,9 @@ static void check_clustering(int num_clb, t_block *clb, boolean *is_clock) {
 	 */
 	for (i = 0; i < num_blocks; i++) {
 		if (logical_block[i].pb->logical_block != i) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 					"pb %s does not contain logical block %s but logical block %s #%d links to pb.\n",
 					logical_block[i].pb->name, logical_block[i].name, logical_block[i].name, i);
-			exit(1);
 		}
 		cur_pb = logical_block[i].pb;
 		assert(strcmp(cur_pb->name, logical_block[i].name) == 0);
@@ -2257,10 +2250,9 @@ static void check_clustering(int num_clb, t_block *clb, boolean *is_clock) {
 			assert(cur_pb->name);
 		}
 		if (cur_pb != clb[num_clb].pb) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 					"CLB %s does not match CLB contained by pb %s.\n",
 					cur_pb->name, logical_block[i].pb->name);
-			exit(1);
 		}
 	}
 
@@ -2271,10 +2263,9 @@ static void check_clustering(int num_clb, t_block *clb, boolean *is_clock) {
 
 	for (i = 0; i < num_logical_blocks; i++) {
 		if (blocks_checked[i] == FALSE) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 					"Logical block %s #%d not found in any cluster.\n",
 					logical_block[i].name, i);
-			exit(1);
 		}
 	}
 
@@ -2293,17 +2284,15 @@ static void check_cluster_logical_blocks(t_pb *pb, boolean *blocks_checked) {
 		/* primitive */
 		if (pb->logical_block != OPEN) {
 			if (blocks_checked[pb->logical_block] != FALSE) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 						"pb %s contains logical block %s #%d but logical block is already contained in another pb.\n",
 						pb->name, logical_block[pb->logical_block].name, pb->logical_block);
-				exit(1);
 			}
 			blocks_checked[pb->logical_block] = TRUE;
 			if (pb != logical_block[pb->logical_block].pb) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 						"pb %s contains logical block %s #%d but logical block does not link to pb.\n",
 						pb->name, logical_block[pb->logical_block].name, pb->logical_block);
-				exit(1);
 			}
 		}
 	} else {

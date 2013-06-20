@@ -703,7 +703,7 @@ static void backward_expand_pack_pattern_from_edge(
 				destination_block->connections = pack_pattern_connection;
 
 				if (source_block == destination_block) {
-					vpr_printf_error(__FILE__, __LINE__, 
+					vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, 
 							"Invalid packing pattern defined. Source and destination block are the same (%s).\n",
 							source_block->pb_type->name);
 				}
