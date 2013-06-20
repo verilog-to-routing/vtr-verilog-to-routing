@@ -601,7 +601,7 @@ static int xcoord (float worldx)
 	
 	winx = (int) ((worldx-trans_coord.xleft)*trans_coord.xmult + 0.5);
 
-#ifdef Win32
+#ifdef WIN32
 	/* Avoids overflow in the  Window routines.  This will allow horizontal *
 	* and vertical lines to be drawn correctly regardless of zooming, but   *
 	* will cause diagonal lines that go way off screen to change their      *
@@ -629,7 +629,7 @@ static int ycoord (float worldy)
 	
 	winy = (int) ((worldy-trans_coord.ytop)*trans_coord.ymult + 0.5);
 
-#ifdef Win32
+#ifdef WIN32
 	/* Avoid overflow in the X/Win32 Window routines. */
 	winy = max (winy, MINPIXEL);
 	winy = min (winy, MAXPIXEL);
