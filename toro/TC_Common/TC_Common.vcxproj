@@ -27,6 +27,7 @@
     <ClInclude Include="TCT_SortedVector.h" />
     <ClInclude Include="TCT_Stack.h" />
     <ClInclude Include="TC_Bit.h" />
+    <ClInclude Include="TC_IndexCount.h" />
     <ClInclude Include="TC_MapTable.h" />
     <ClInclude Include="TC_MemoryUtils.h" />
     <ClInclude Include="TC_MinGrid.h" />
@@ -43,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TC_Bit.cxx" />
+    <ClCompile Include="TC_IndexCount.cxx" />
     <ClCompile Include="TC_MapTable.cxx" />
     <ClCompile Include="TC_MemoryUtils.cxx" />
     <ClCompile Include="TC_MinGrid.cxx" />
@@ -84,7 +86,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VCInstallDir)include;..\TIO_InputOutputHandlers;..\..\pcre\SRC;$(IncludePath)</IncludePath>
+    <IncludePath>$(VCInstallDir)include;..\TIO_InputOutputHandlers;..\..\libcommon_c\pcre\SRC</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
