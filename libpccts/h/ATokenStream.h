@@ -24,10 +24,13 @@
  * Terence Parr
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1989-1995
+ * 1989-2000
  */
+
 #ifndef ATOKENSTREAM_H_GATE
 #define ATOKENSTREAM_H_GATE
+
+#include "pcctscfg.h"
 
 /* This is really a behavior or protocol; it merely indicates the behavior
  * required of the input and output of an ANTLRTokenBuffer.  You could
@@ -38,11 +41,11 @@
 
 class ANTLRParser;							// MR1
 
-class ANTLRTokenStream {
+class DllExportPCCTS ANTLRTokenStream {
 public:
-        virtual _ANTLRTokenPtr getToken() = 0;
-	virtual ANTLRParser * setParser(ANTLRParser *) {return NULL;}; // MR1
-	virtual ANTLRParser * getParser() { return NULL; };		// MR1
+    virtual _ANTLRTokenPtr getToken() = 0;
+	virtual ANTLRParser * setParser(ANTLRParser * /*p MR23*/) {return 0; };   // MR12
+	virtual ANTLRParser * getParser() { return 0; };		        // MR12
 };
 
 #endif

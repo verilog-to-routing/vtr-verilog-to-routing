@@ -26,13 +26,13 @@
  * Terence Parr
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1989-1995
+ * 1989-2000
  */
 
 #ifndef ZZDLGDEF_H
 #define ZZDLGDEF_H
 
-#include "config.h"
+#include "pcctscfg.h"
 
 #ifndef zzchar_t
 #ifdef ZZWCHAR_T
@@ -44,7 +44,11 @@
 
 struct zzdlg_state {
 	FILE *stream;
+#ifdef __USE_PROTOS
+	int (*func_ptr)(void);
+#else
 	int (*func_ptr)();
+#endif
 	zzchar_t *str;
 	int auto_num;
 	int add_erase;
@@ -86,7 +90,7 @@ extern void	zzmore(void);	/* keep zzlextext, look for another token */
 extern void	zzmode(int k);	/* switch to automaton 'k' */
 extern void	zzrdstream(FILE *);/* what stream to read from */
 extern void	zzclose_stream(void);/* close the current input stream */
-extern void	zzrdfunc(int (*)());/* what function to get char from */
+extern void	zzrdfunc(int (*)(void));/* what function to get char from */
 extern void zzrdstr( zzchar_t * );
 extern void	zzgettok(void);	/* get next token */
 extern void	zzreplchar(zzchar_t c);/* replace last recognized reg. expr. with
@@ -97,7 +101,7 @@ extern void zzsave_dlg_state(struct zzdlg_state *);
 extern void zzrestore_dlg_state(struct zzdlg_state *);
 extern int zzerr_in(void);
 extern void	zzerrstd(const char *);
-extern void zzerraction();
+extern void zzerraction(void);
 
 #else
 

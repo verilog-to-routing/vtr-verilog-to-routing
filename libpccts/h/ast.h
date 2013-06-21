@@ -26,7 +26,7 @@
  * Terence Parr
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1989-1995
+ * 1989-2000
  */
 
 #ifndef ZZAST_H
@@ -64,8 +64,8 @@ typedef struct _ast {
 
 
 /* N o d e  a c c e s s  m a c r o s */
-#define zzchild(t)		(((t)==NULL)?NULL:(t->down))
-#define zzsibling(t)	(((t)==NULL)?NULL:(t->right))
+#define zzchild(t)		(((t)==NULL)? (AST *) NULL:(t->down))   /* MR19 */
+#define zzsibling(t)	(((t)==NULL)? (AST *) NULL:(t->right))  /* MR19 */
 
 
 /* define global variables needed by #i stack */
@@ -86,13 +86,20 @@ typedef struct _ast {
 extern int zzast_sp;
 extern AST *zzastStack[];
 
-#ifdef __STDC__
+/* MR26 */
+
+#ifdef PCCTS_USE_STDARG
+AST *zztmake(AST *, ...);
+#else
+AST *zztmake();
+#endif
+
+#ifdef __USE_PROTOS
 void zzlink(AST **, AST **, AST **);
 void zzsubchild(AST **, AST **, AST **);
 void zzsubroot(AST **, AST **, AST **);
-void zzpre_ast(AST *, void (*)(), void (*)(), void (*)());
+void zzpre_ast(AST *, void (*)(AST *), void (*)(AST *), void (*)(AST *));
 void zzfree_ast(AST *);
-AST *zztmake(AST *, ...);
 AST *zzdup_ast(AST *);
 void zztfree(AST *);
 void zzdouble_link(AST *, AST *, AST *);
@@ -106,7 +113,6 @@ void zzsubchild();
 void zzsubroot();
 void zzpre_ast();
 void zzfree_ast();
-AST *zztmake();
 AST *zzdup_ast();
 void zztfree();
 void zzdouble_link();

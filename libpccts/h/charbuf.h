@@ -24,13 +24,15 @@
  * Terence Parr
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1989-1995
+ * 1989-2000
  */
 
 #ifndef ZZCHARBUF_H
 #define ZZCHARBUF_H
 
-#include <string.h>
+#include "pcctscfg.h"
+
+#include "pccts_string.h"
 
 #ifndef D_TextSize
 #define D_TextSize	30
