@@ -14,7 +14,8 @@
     <ClInclude Include="TNO_InstPin.h" />
     <ClInclude Include="TNO_Net.h" />
     <ClInclude Include="TNO_NetList.h" />
-    <ClInclude Include="TNO_Route.h" />
+    <ClInclude Include="TNO_Node.h" />
+    <ClInclude Include="TNO_Segment.h" />
     <ClInclude Include="TNO_StringUtils.h" />
     <ClInclude Include="TNO_SwitchBox.h" />
     <ClInclude Include="TNO_Typedefs.h" />
@@ -23,7 +24,8 @@
     <ClCompile Include="TNO_InstPin.cxx" />
     <ClCompile Include="TNO_Net.cxx" />
     <ClCompile Include="TNO_NetList.cxx" />
-    <ClCompile Include="TNO_Route.cxx" />
+    <ClCompile Include="TNO_Node.cxx" />
+    <ClCompile Include="TNO_Segment.cxx" />
     <ClCompile Include="TNO_StringUtils.cxx" />
     <ClCompile Include="TNO_SwitchBox.cxx" />
   </ItemGroup>
@@ -55,7 +57,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VCInstallDir)include;..\TGS_GeometricShapes;..\TIO_InputOutputHandlers;..\TC_Common;..\..\pcre\SRC;$(IncludePath)</IncludePath>
+    <IncludePath>$(VCInstallDir)include;..\TGS_GeometricShapes;..\TIO_InputOutputHandlers;..\TC_Common;..\..\libcommon_c\pcre\SRC</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
