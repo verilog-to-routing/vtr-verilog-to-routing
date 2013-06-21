@@ -38,7 +38,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VCInstallDir)include;..\TCD_CircuitDesign;..\TLO_LogicalObjects;..\TPO_PhysicalObjects;..\TNO_NetObjects;..\TGS_GeometricShapes;..\TIO_InputOutputHandlers;..\TC_Common;..\..\pcre\SRC;..\..\pccts\pcctsGeneric;..\..\pccts\h;$(IncludePath)</IncludePath>
+    <IncludePath>$(VCInstallDir)include;..\TCD_CircuitDesign;..\TLO_LogicalObjects;..\TPO_PhysicalObjects;..\TNO_NetObjects;..\TGS_GeometricShapes;..\TGO_GeometricObjects;..\TIO_InputOutputHandlers;..\TC_Common;..\..\libcommon_c\pcre\SRC;..\..\libpccts\pcctsGeneric;..\..\libpccts\h</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -53,7 +53,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>..\..\pccts\bin\Antlr.exe -CC -gh TCP_CircuitGrammar.g &amp;&amp; ..\..\pccts\bin\Dlg.exe -CC -cl TCP_CircuitScanner_c parser.dlg</Command>
+      <Command>..\..\libpccts\bin\Antlr.exe -CC -gh TCP_CircuitGrammar.g &amp;&amp; ..\..\libpccts\bin\Dlg.exe -CC -cl TCP_CircuitScanner_c parser.dlg</Command>
     </PreBuildEvent>
     <Lib>
       <OutputFile>$(OutDir)\$(TargetName)$(TargetExt)</OutputFile>
@@ -76,8 +76,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\stdpccts.h" />
-    <ClInclude Include="..\tokens.h" />
     <ClInclude Include="TCP_CircuitFile.h" />
     <ClInclude Include="TCP_CircuitGrammar.h" />
     <ClInclude Include="TCP_CircuitHandler.h" />
