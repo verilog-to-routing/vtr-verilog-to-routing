@@ -51,7 +51,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VCInstallDir)include;..\TLO_LogicalObjects;..\TGS_GeometricShapes;..\TIO_InputOutputHandlers;..\TC_Common;..\..\pcre\SRC;$(IncludePath)</IncludePath>
+    <IncludePath>$(VCInstallDir)include;..\TLO_LogicalObjects;..\TGS_GeometricShapes;..\TGO_GeometricObjects;..\TIO_InputOutputHandlers;..\TC_Common;..\..\libcommon_c\pcre\SRC</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
