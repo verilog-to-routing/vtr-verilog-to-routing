@@ -1454,65 +1454,52 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 }
 
 void vpr_print_error(t_vpr_error* vpr_error){
+
+	/* Determine the type of error */
+	char* error_type = (char *)my_calloc(1000, sizeof(char));
 	switch(vpr_error->type){
 	case VPR_ERROR_UNKNOWN:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nType: Unknown\nFile: %s\nLine: %d\nMessage: %s\n",
-		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		strcpy(error_type, "Unknown");
 		break;
 	case VPR_ERROR_ARCH:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nType: Architecture File\nFile: %s\nLine: %d\nMessage: %s\n",
-		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		strcpy(error_type, "Architecture file");
 		break;
 	case VPR_ERROR_PACK:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nType: Packing\nFile: %s\nLine: %d\nMessage: %s\n",
-		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		strcpy(error_type, "Packing");
 		break;
 	case VPR_ERROR_PLACE:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nType: Placement\nFile: %s\nLine: %d\nMessage: %s\n",
-		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		strcpy(error_type, "Placement");
 		break;
 	case VPR_ERROR_ROUTE:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nType: Routing\nFile: %s\nLine: %d\nMessage: %s\n",
-		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		strcpy(error_type, "Routing");
 		break;
 	case VPR_ERROR_TIMING:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nType: Other\nFile: %s\nLine: %d\nMessage: %s\n",
-		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		strcpy(error_type, "Timing");
 		break;
 	case VPR_ERROR_SDC:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nType: SDC File\nFile: %s\nLine: %d\nMessage: %s\n",
-		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		strcpy(error_type, "SDC file");
 		break;
 	case VPR_ERROR_NET_F:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nType: Netlist File \nFile\nFile: %s\nLine: %d\nMessage: %s\n",
-		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		strcpy(error_type, "Netlist file");
 		break;
 	case VPR_ERROR_BLIF_F:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nType: Blif File\nFile: %s\nLine: %d\nMessage: %s\n",
-		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		strcpy(error_type, "Blif file");
 		break;
 	case VPR_ERROR_PLACE_F:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nType: Placement File\nFile: %s\nLine: %d\nMessage: %s\n",
-		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		strcpy(error_type, "Placement file");
 		break;
 	case VPR_ERROR_OTHER:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nType: Other\nFile: %s\nLine: %d\nMessage: %s\n",
-		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		strcpy(error_type, "Other");
 		break;
 	default:
-		vpr_printf_error(__FILE__, __LINE__,
-				"\nError in vpr_error loading\n");
+		strcpy(error_type, "");
 		break;
 	}
+			
+	vpr_printf_error(__FILE__, __LINE__,
+		"\nType: %s\nFile: %s\nLine: %d\nMessage: %s\n",
+		error_type, vpr_error->file_name, vpr_error->line_num, 
+		vpr_error->message);
+	
+	free (error_type);
 }
