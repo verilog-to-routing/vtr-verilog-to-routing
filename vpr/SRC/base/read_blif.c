@@ -89,9 +89,8 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 
 	blif = fopen(blif_file, "r");
 	if (blif == NULL) {
-		vpr_printf_error(__FILE__, __LINE__, "Failed to open blif file '%s'.\n",
+		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__, "Failed to open blif file '%s'.\n",
 				blif_file);
-		exit(1);
 	}
 	load_default_models(library_models, &inpad_model, &outpad_model,
 			&logic_model, &latch_model);
@@ -263,9 +262,8 @@ static void get_blif_tok(char *buffer, int doall, boolean *done,
 					logical_block[num_logical_blocks - 1].truth_table = data;
 					ptr = fn;
 				} else {
-					vpr_printf_error(__FILE__, __LINE__,
+					vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 							"Unknown truth table data %s %s.\n", fn, ptr);
-					exit(1);
 				}
 			} else {
 				data->next = logical_block[num_logical_blocks - 1].truth_table;
@@ -388,11 +386,9 @@ static boolean add_lut(int doall, t_model *logic_model) {
 	i = 0;
 	while ((ptr = my_strtok(NULL, TOKENS, blif, buf)) != NULL) {
 		if (i > logic_model->inputs->size) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 					"[LINE %d] .names %s ... %s has a LUT size that exceeds the maximum LUT size (%d) of the architecture.\n",
-					file_line_number, saved_names[0], ptr,
-					logic_model->inputs->size);
-			exit(1);
+					file_line_number, saved_names[0], ptr, logic_model->inputs->size);
 		}
 		strcpy(saved_names[i], ptr);
 		i++;
@@ -417,10 +413,9 @@ static boolean add_lut(int doall, t_model *logic_model) {
 	logical_block[num_logical_blocks - 1].model = logic_model;
 
 	if (output_net_index > logic_model->inputs->size) {
-		vpr_printf_error(__FILE__, __LINE__,
+		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 				"LUT size of %d in .blif file is too big for FPGA which has a maximum LUT size of %d.\n",
 				output_net_index, logic_model->inputs->size);
-		exit(1);
 	}
 	assert(logic_model->inputs->next == NULL);
 	assert(logic_model->outputs->next == NULL);
@@ -483,11 +478,10 @@ static void add_latch(int doall, INP t_model *latch_model) {
 	}
 
 	if (i != 5) {
-		vpr_printf_error(__FILE__, __LINE__,
-				".latch does not have 5 parameters.\n");
-		vpr_printf_error(__FILE__, __LINE__, "Check netlist, line %d.\n",
+		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
+				".latch does not have 5 parameters.\n"
+				"Check netlist, line %d.\n",
 				file_line_number);
-		exit(1);
 	}
 
 	if (!doall) { /* If only a counting pass ... */
@@ -561,10 +555,9 @@ static void add_subckt(int doall, t_model *user_models) {
 		if (ptr == NULL && toggle == 0)
 			break;
 		else if (ptr == NULL && toggle == 1) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 					"subckt %s formed incorrectly with signal=signal at %s.\n",
 					subckt_name, buf);
-			exit(-1);
 		} else if (toggle == 0) {
 			/* ELSE - parse in one or the other */
 			/* allocate a new spot for both the circuit_signal name and the subckt_signal name */
@@ -610,9 +603,8 @@ static void add_subckt(int doall, t_model *user_models) {
 			cur_model = cur_model->next;
 		}
 		if (cur_model == NULL) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 					"Did not find matching model to subckt %s.\n", subckt_name);
-			exit(-1);
 		}
 
 		/* IF - do all then we need to allocate a string to hold all the subckt info */
@@ -706,7 +698,7 @@ static void add_subckt(int doall, t_model *user_models) {
 			while (port) {
 				if (strcmp(port_name, port->name) == 0) {
 					if (found_subckt_signal) {
-						vpr_printf_error(__FILE__, __LINE__,
+						vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 								"Two instances of %s subckt signal found in subckt %s.\n",
 								subckt_signal_name[i], subckt_name);
 					}
@@ -736,7 +728,7 @@ static void add_subckt(int doall, t_model *user_models) {
 			while (port) {
 				if (strcmp(port_name, port->name) == 0) {
 					if (found_subckt_signal) {
-						vpr_printf_error(__FILE__, __LINE__,
+						vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 								"Two instances of %s subckt signal found in subckt %s.\n",
 								subckt_signal_name[i], subckt_name);
 					}
@@ -761,9 +753,8 @@ static void add_subckt(int doall, t_model *user_models) {
 			}
 
 			if (!found_subckt_signal) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 						"Unknown subckt port %s.\n", subckt_signal_name[i]);
-				exit(1);
 			}
 			free(port_name);
 		}
@@ -860,9 +851,8 @@ static void check_and_count_models(int doall, const char* model_name,
 	if (doall) {
 		/* get start position to do two passes on model */
 		if (fgetpos(blif, &start_pos) != 0) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 					"in file pointer read - read_blif.c\n");
-			exit(-1);
 		}
 
 		/* get corresponding architecture model */
@@ -874,10 +864,9 @@ static void check_and_count_models(int doall, const char* model_name,
 			user_model = user_model->next;
 		}
 		if (user_model == NULL) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 					"No corresponding model %s in architecture description.\n",
 					model_name);
-			exit(1);
 		}
 
 		/* check ports */
@@ -898,9 +887,8 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 	int index, j, nindex;
 
 	if (strcmp(ptr, "open") == 0) {
-		vpr_printf_error(__FILE__, __LINE__,
+		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 				"net name \"open\" is a reserved keyword in VPR.");
-		exit(1);
 	}
 
 	if (strcmp(ptr, "unconn") == 0) {
@@ -934,7 +922,7 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 			} else {
 				vpack_net[nindex].num_sinks++;
 				if ((num_driver[nindex] < 0) || (num_driver[nindex] > 1)) {
-					vpr_printf_error(__FILE__, __LINE__,
+					vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 							"Number of drivers for net #%d (%s) has %d drivers.\n",
 							nindex, ptr, num_driver[index]);
 				}
@@ -944,10 +932,9 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 				 * should always be zero or 1 unless the netlist is bad.   */
 				if ((vpack_net[nindex].num_sinks - num_driver[nindex])
 						>= temp_num_pins[nindex]) {
-					vpr_printf_error(__FILE__, __LINE__,
+					vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 							"Net #%d (%s) has no driver and will cause memory corruption.\n",
 							nindex, ptr);
-					exit(1);
 				}
 			}
 			vpack_net[nindex].node_block[j] = bnum;
@@ -963,10 +950,9 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 	/* Net was not in the hash table. */
 
 	if (doall == 1) {
-		vpr_printf_error(__FILE__, __LINE__,
+		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 				"in add_vpack_net: The second (load) pass could not find vpack_net %s in the symbol table.\n",
 				ptr);
-		exit(1);
 	}
 
 	/* Add the vpack_net (only counting pass will add nets to symbol table). */
@@ -1473,7 +1459,7 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 				}
 			}
 		} else {
-			vpr_printf_error(__FILE__, __LINE__,
+			vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 					"Unknown type for logical_block #%d %s.\n", i,
 					logical_block[i].name);
 		}
@@ -1485,9 +1471,8 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 	}
 
 	if (error != 0) {
-		vpr_printf_error(__FILE__, __LINE__,
+		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 				"Found %d fatal errors in the input netlist.\n", error);
-		exit(1);
 	}
 }
 
@@ -1792,7 +1777,6 @@ void read_and_process_blif(char *blif_file,
 	 vpr_printf_error(__FILE__, __LINE__, 
 	 "logical_block %s of model %s has %d inputs but architecture only supports subblocks up to %d inputs.\n",
 	 logical_block[i].name, logical_block[i].model->name, logical_block[i].model->num_inputs, max_subblock_inputs);
-	 exit(1);
 	 }
 	 }
 	 */
@@ -1925,8 +1909,8 @@ static void read_activity(char * activity_file) {
 	FILE * act_file_hdl;
 
 	if (num_logical_nets == 0) {
-		printf("Error reading activity file.  Must read netlist first\n");
-		exit(-1);
+		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
+			"Error reading activity file.  Must read netlist first\n");
 	}
 
 	for (net_idx = 0; net_idx < num_logical_nets; net_idx++) {
@@ -1939,8 +1923,8 @@ static void read_activity(char * activity_file) {
 
 	act_file_hdl = my_fopen(activity_file, "r", FALSE);
 	if (act_file_hdl == NULL) {
-		printf("Error: could not open activity file: %s\n", activity_file);
-		exit(-1);
+		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
+			"Error: could not open activity file: %s\n", activity_file);
 	}
 
 	fail = FALSE;
@@ -1961,14 +1945,11 @@ static void read_activity(char * activity_file) {
 		if (!vpack_net[net_idx].net_power
 				|| vpack_net[net_idx].net_power->probability < 0.0
 				|| vpack_net[net_idx].net_power->density < 0.0) {
-			printf("Error: Activity file does not contain signal %s\n",
+			vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
+					"Error: Activity file does not contain signal %s\n",
 					vpack_net[net_idx].name);
 			fail = TRUE;
 		}
-	}
-
-	if (fail) {
-		exit(-1);
 	}
 }
 

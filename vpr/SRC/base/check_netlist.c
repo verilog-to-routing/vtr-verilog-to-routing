@@ -78,18 +78,16 @@ void check_netlist() {
 		error += check_clb_internal_nets(i);
 		error += check_subblocks(i);
 		if (error >= ERROR_THRESHOLD) {
-			vpr_printf_error(__FILE__, __LINE__, 
+			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 					"Too many errors in netlist, exiting.\n");
-			exit(1);
 		}
 	}
 
 	error += check_for_duplicated_names();
 
 	if (error != 0) {
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 				"Found %d fatal Errors in the input netlist.\n", error);
-		exit(1);
 	}
 
 	/* HACK: Jason Luu January 17, 2011 Do not route common constants gnd and vcc

@@ -567,8 +567,13 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
 	  else if(strcmp(logical_block[current->pb->logical_block].model->name,"input") && strcmp(logical_block[current->pb->logical_block].model->name,"output"))
 	    /*If this primitive is anything else, but an input or an output*/
 	    {
-	      printf("Failed to generate post-synthesized verilog and sdf files. Primitive %s is unknown.\n\nAcceptable primitives are: LUTs, Flip Flops, IOs, Adders, Rams, and Multiplier blocks.\n\nTo generate the post synthesized verilog and SDF files successfully, you must append the verilog code for the %s to the primitives.v file, and contact the VPR developers team on the website: http://code.google.com/p/vtr-verilog-to-routing/ to update the VPR source code to handle the new primitive. \n",logical_block[current->pb->logical_block].model->name , logical_block[current->pb->logical_block].model->name);
-	      exit(1);
+			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+				"Failed to generate post-synthesized verilog and sdf files. Primitive %s is unknown.\n"
+				"\nAcceptable primitives are: LUTs, Flip Flops, IOs, Adders, Rams, and Multiplier blocks.\n"
+				"\nTo generate the post synthesized verilog and SDF files successfully, you must append the "
+				"verilog code for the %s to the primitives.v file, and contact the VPR developers team on "
+				"the website: http://code.google.com/p/vtr-verilog-to-routing/ to update the VPR source code to handle the new primitive. \n", 
+				logical_block[current->pb->logical_block].model->name , logical_block[current->pb->logical_block].model->name);
 	    }
 	  free(fixed_name);
 	}
@@ -1047,9 +1052,9 @@ char *find_clock_name(void)
 	}
     }
   if (clocks > 1) {
-    printf("The post-layout netlist generator presently handles single-clock designs only.  Your design contains %d clocks. \n"
-	   "Future VTR releases may support post-layout netlist generation for multi-clock designs.\n", clocks);
-    exit(1);
+    vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+		"The post-layout netlist generator presently handles single-clock designs only.  Your design contains %d clocks. \n"
+		"Future VTR releases may support post-layout netlist generation for multi-clock designs.\n", clocks);
   }
   return(clock_in_the_design);
 }

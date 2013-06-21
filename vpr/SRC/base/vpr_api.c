@@ -173,7 +173,8 @@ void vpr_init(INP int argc, INP char **argv, OUTP t_options *options,
 	/* Print usage message if no args */
 	if (argc < 3) {
 		vpr_print_usage();
-		exit(1);
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+			"Missing arguments, see above and try again!\n");
 	}
 
 	memset(options, 0, sizeof(t_options));
@@ -1483,6 +1484,27 @@ void vpr_print_error(t_vpr_error* vpr_error){
 		vpr_printf_error(__FILE__, __LINE__,
 				"\nType: Other\nFile: %s\nLine: %d\nMessage: %s\n",
 		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		break;
+	case VPR_ERROR_SDC:
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nType: SDC File\nFile: %s\nLine: %d\nMessage: %s\n",
+		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		break;
+	case VPR_ERROR_NET_F:
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nType: Netlist File \nFile\nFile: %s\nLine: %d\nMessage: %s\n",
+		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		break;
+	case VPR_ERROR_BLIF_F:
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nType: Blif File\nFile: %s\nLine: %d\nMessage: %s\n",
+		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		break;
+	case VPR_ERROR_PLACE_F:
+		vpr_printf_error(__FILE__, __LINE__,
+				"\nType: Placement File\nFile: %s\nLine: %d\nMessage: %s\n",
+		vpr_error->file_name, vpr_error->line_num, vpr_error->message);
+		break;
 	case VPR_ERROR_OTHER:
 		vpr_printf_error(__FILE__, __LINE__,
 				"\nType: Other\nFile: %s\nLine: %d\nMessage: %s\n",

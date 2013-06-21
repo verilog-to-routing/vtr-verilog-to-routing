@@ -50,22 +50,19 @@ void read_place(INP const char *place_file, INP const char *arch_file,
 		};
 	}
 	if (error) {
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
 				"'%s' - Bad filename specification line in placement file.\n", 
 				place_file);
-		exit(1);
 	}
 	if (0 != strcmp(tokens[2], arch_file)) {
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
 				"'%s' - Architecture file that generated placement (%s) does not match current architecture file (%s).\n", 
 				place_file, tokens[2], arch_file);
-		exit(1);
 	}
 	if (0 != strcmp(tokens[5], net_file)) {
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
 				"'%s' - Netlist file that generated placement (%s) does not match current netlist file (%s).\n", 
 				place_file, tokens[5], net_file);
-		exit(1);
 	}
 	free(*tokens);
 	free(tokens);
@@ -93,15 +90,13 @@ void read_place(INP const char *place_file, INP const char *arch_file,
 		};
 	}
 	if (error) {
-		vpr_printf_error(__FILE__, __LINE__, "'%s' - Bad FPGA size specification line in placement file.\n",
+		vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, "'%s' - Bad FPGA size specification line in placement file.\n",
 				place_file);
-		exit(1);
 	}
 	if ((my_atoi(tokens[2]) != L_nx) || (my_atoi(tokens[4]) != L_ny)) {
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
 				"'%s' - Current FPGA size (%d x %d) is different from size when placement generated (%d x %d).\n", 
 				place_file, L_nx, L_ny, my_atoi(tokens[2]), my_atoi(tokens[4]));
-		exit(1);
 	}
 	free(*tokens);
 	free(tokens);
@@ -119,10 +114,8 @@ void read_place(INP const char *place_file, INP const char *arch_file,
 
 		/* Error if invalid block */
 		if (NULL == cur_blk) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"'%s':%d - Block in placement file does not exist in netlist.\n", 
-					place_file, line);
-			exit(1);
+			vpr_throw(VPR_ERROR_PLACE_F, place_file, line, 
+					"Block in placement file does not exist in netlist.\n");
 		}
 
 		/* Set pad coords */
@@ -187,33 +180,29 @@ void read_user_pad_loc(char *pad_loc_file) {
 
 		ptr = my_strtok(NULL, TOKENS, fp, buf);
 		if (ptr == NULL) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[Line %d] Incomplete.\n", file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, file_line_number, 
+					"Incomplete.\n");
 		}
 		sscanf(ptr, "%d", &xtmp);
 
 		ptr = my_strtok(NULL, TOKENS, fp, buf);
 		if (ptr == NULL) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[Line %d] Incomplete.\n", file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, file_line_number, 
+					"Incomplete.\n");
 		}
 		sscanf(ptr, "%d", &ytmp);
 
 		ptr = my_strtok(NULL, TOKENS, fp, buf);
 		if (ptr == NULL) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[Line %d] Incomplete.\n", file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, file_line_number, 
+					"Incomplete.\n");
 		}
 		sscanf(ptr, "%d", &k);
 
 		ptr = my_strtok(NULL, TOKENS, fp, buf);
 		if (ptr != NULL) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[Line %d] Extra characters at end of line.\n", file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, file_line_number, 
+					"Extra characters at end of line.\n");
 		}
 
 		h_ptr = get_hash_entry(hash_table, bname);
@@ -228,15 +217,13 @@ void read_user_pad_loc(char *pad_loc_file) {
 		j = ytmp;
 
 		if (block[bnum].x != OPEN) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[Line %d] Block %s is listed twice in pad file.\n", file_line_number, bname);
-			exit(1);
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, file_line_number, 
+					"Block %s is listed twice in pad file.\n", bname);
 		}
 
 		if (i < 0 || i > nx + 1 || j < 0 || j > ny + 1) {
-			vpr_printf_error(__FILE__, __LINE__, 
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
 					"Block #%d (%s) location, (%d,%d) is out of range.\n", bnum, bname, i, j);
-			exit(1);
 		}
 
 		block[bnum].x = i; /* Will be reloaded by initial_placement anyway. */
@@ -244,15 +231,13 @@ void read_user_pad_loc(char *pad_loc_file) {
 		block[bnum].is_fixed = TRUE;
 
 		if (grid[i][j].type != IO_TYPE) {
-			vpr_printf_error(__FILE__, __LINE__, 
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
 					"Attempt to place IO block %s at illegal location (%d, %d).\n", bname, i, j);
-			exit(1);
 		}
 
 		if (k >= IO_TYPE->capacity || k < 0) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[Line %d] Block %s subblock number (%d) is out of range.\n", file_line_number, bname, k);
-			exit(1);
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, file_line_number, 
+					"Block %s subblock number (%d) is out of range.\n", bname, k);
 		}
 		grid[i][j].blocks[k] = bnum;
 		grid[i][j].usage++;
@@ -262,9 +247,8 @@ void read_user_pad_loc(char *pad_loc_file) {
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 		if (block[iblk].type == IO_TYPE && block[iblk].x == OPEN) {
-			vpr_printf_error(__FILE__, __LINE__, 
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
 					"IO block %s location was not specified in the pad file.\n", block[iblk].name);
-			exit(1);
 		}
 	}
 

@@ -34,6 +34,10 @@ enum e_vpr_error {
 	VPR_ERROR_PLACE,
 	VPR_ERROR_ROUTE,
 	VPR_ERROR_TIMING,
+	VPR_ERROR_SDC,
+	VPR_ERROR_NET_F,
+	VPR_ERROR_PLACE_F,
+	VPR_ERROR_BLIF_F,
 	VPR_ERROR_OTHER
 };
 typedef enum e_vpr_error t_vpr_error_type;

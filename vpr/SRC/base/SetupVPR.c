@@ -484,36 +484,31 @@ static void SetupAnnealSched(INP t_options Options,
 		AnnealSched->alpha_t = Options.PlaceAlphaT;
 	}
 	if (AnnealSched->alpha_t >= 1 || AnnealSched->alpha_t <= 0) {
-		vpr_printf_error(__FILE__, __LINE__, "alpha_t must be between 0 and 1 exclusive.\n");
-		exit(1);
+		vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, "alpha_t must be between 0 and 1 exclusive.\n");
 	}
 	AnnealSched->exit_t = 0.01; /* DEFAULT */
 	if (Options.Count[OT_EXIT_T]) {
 		AnnealSched->exit_t = Options.PlaceExitT;
 	}
 	if (AnnealSched->exit_t <= 0) {
-		vpr_printf_error(__FILE__, __LINE__, "exit_t must be greater than 0.\n");
-		exit(1);
+		vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, "exit_t must be greater than 0.\n");
 	}
 	AnnealSched->init_t = 100.0; /* DEFAULT */
 	if (Options.Count[OT_INIT_T]) {
 		AnnealSched->init_t = Options.PlaceInitT;
 	}
 	if (AnnealSched->init_t <= 0) {
-		vpr_printf_error(__FILE__, __LINE__, "init_t must be greater than 0.\n");
-		exit(1);
+		vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, "init_t must be greater than 0.\n");
 	}
 	if (AnnealSched->init_t < AnnealSched->exit_t) {
-		vpr_printf_error(__FILE__, __LINE__, "init_t must be greater or equal to than exit_t.\n");
-		exit(1);
+		vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, "init_t must be greater or equal to than exit_t.\n");
 	}
 	AnnealSched->inner_num = 1.0; /* DEFAULT */
 	if (Options.Count[OT_INNER_NUM]) {
 		AnnealSched->inner_num = Options.PlaceInnerNum;
 	}
 	if (AnnealSched->inner_num <= 0) {
-		vpr_printf_error(__FILE__, __LINE__, "init_t must be greater than 0.\n");
-		exit(1);
+		vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, "init_t must be greater than 0.\n");
 	}
 	AnnealSched->type = AUTO_SCHED; /* DEFAULT */
 	if ((Options.Count[OT_ALPHA_T]) || (Options.Count[OT_EXIT_T])

@@ -95,7 +95,7 @@ char ** netlist_clocks; /* [0..num_netlist_clocks - 1] array of names of clocks 
 int num_netlist_ios = 0; /* number of clocks in netlist */
 char ** netlist_ios; /* [0..num_netlist_clocks - 1] array of names of ios in netlist */
 
-static const char* sdc_file_name = "<default>.sdc"; /* Name of SDC file */
+static const char* sdc_file_name = "<default_SDC>.sdc"; /* Name of SDC file */
 
 /***************** Subroutines local to this module *************************/
 
@@ -151,8 +151,6 @@ void read_sdc(t_timing_inf timing_inf) {
 	
 	/* Now we have an SDC file. */
 
-	sdc_file_name = timing_inf.SDCFile;
-
 	/* Count how many clocks and I/Os are in the netlist. 
 	Store the names of each clock and each I/O in netlist_clocks and netlist_ios. 
 	The only purpose of these two lists is to compare clock names in the SDC file against them.
@@ -175,28 +173,27 @@ void read_sdc(t_timing_inf timing_inf) {
 		return;
 	}
 	
+	/* Save name of SDC file for error outputs */
+	sdc_file_name = timing_inf.SDCFile;
+	
 	fclose(sdc);
 
 	/* Make sure that all virtual clocks referenced in g_sdc->constrained_inputs and g_sdc->constrained_outputs have been constrained. */
 	for (iinput = 0; iinput < g_sdc->num_constrained_inputs; iinput++) {
 		if ((find_constrained_clock(g_sdc->constrained_inputs[iinput].clock_name)) == -1) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] Input %s is associated with an unconstrained clock %s.\n", 
-					g_sdc->constrained_inputs[iinput].file_line_number,
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, g_sdc->constrained_inputs[iinput].file_line_number, 
+					"Input %s is associated with an unconstrained clock %s.\n", 
 					g_sdc->constrained_inputs[iinput].name, 
 					g_sdc->constrained_inputs[iinput].clock_name);
-			exit(1);
 		}
 	}
 
 	for (ioutput = 0; ioutput < g_sdc->num_constrained_outputs; ioutput++) {
 		if ((find_constrained_clock(g_sdc->constrained_outputs[ioutput].clock_name)) == -1) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] Output %s is associated with an unconstrained clock %s.\n", 
-					g_sdc->constrained_inputs[iinput].file_line_number,
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, g_sdc->constrained_inputs[iinput].file_line_number,
+					"Output %s is associated with an unconstrained clock %s.\n", 
 					g_sdc->constrained_outputs[ioutput].name, 
 					g_sdc->constrained_outputs[ioutput].clock_name);
-			exit(1);
 		}
 	}
 
@@ -204,20 +201,16 @@ void read_sdc(t_timing_inf timing_inf) {
 	for (icc = 0; icc < g_sdc->num_cc_constraints; icc++) {
 		for (isource = 0; isource < g_sdc->cc_constraints[icc].num_source; isource++) {
 			if ((find_constrained_clock(g_sdc->cc_constraints[icc].source_list[isource])) == -1) {
-				vpr_printf_error(__FILE__, __LINE__, 
-						"[SDC line %d] Token %s is not a constrained clock.\n", 
-						g_sdc->cc_constraints[icc].file_line_number,
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, g_sdc->cc_constraints[icc].file_line_number,
+						"Token %s is not a constrained clock.\n", 
 						g_sdc->cc_constraints[icc].source_list[isource]);
-				exit(1);
 			}
 		}
 		for (isink = 0; isink < g_sdc->cc_constraints[icc].num_sink; isink++) {
 			if ((find_constrained_clock(g_sdc->cc_constraints[icc].sink_list[isink])) == -1) {
-				vpr_printf_error(__FILE__, __LINE__,
-						"[SDC line %d] Token %s is not a constrained clock.\n",
-						g_sdc->cc_constraints[icc].file_line_number, 
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, g_sdc->cc_constraints[icc].file_line_number, 
+						"Token %s is not a constrained clock.\n",
 						g_sdc->cc_constraints[icc].sink_list[isink]);
-				exit(1);
 			}
 		}
 	}
@@ -486,51 +479,46 @@ static boolean get_sdc_tok(char * buf) {
 
 		/* make sure clock has -period specified */
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-period") != 0) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] Create_clock must be directly followed by '-period'.\n", 
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"Create_clock must be directly followed by '-period'.\n");
+			return FALSE;
 		}
 				
 		/* Check if the token following -period is actually a number. */
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] A number must follow '-period'.\n", 
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"A number must follow '-period'.\n");
+			return FALSE;
 		}
 		clock_period = (float) strtod(ptr, NULL);
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] Clock(s) not specified.\n",
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"Clock(s) not specified.\n");
+			return FALSE;
 		}
 		if (strcmp(ptr, "-waveform") == 0) {
 			
 			/* Get the first float, which is the rising edge, and the second, which is the falling edge. */
 			
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
-				vpr_printf_error(__FILE__, __LINE__,
-						"[SDC line %d] First token following '-waveform' should be rising edge, but is not a number.\n",
-						file_line_number);
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number,
+						"First token following '-waveform' should be rising edge, but is not a number.\n");
+				return FALSE;
 			}
 			rising_edge = (float) strtod(ptr, NULL);
 
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
-				vpr_printf_error(__FILE__, __LINE__, 
-						"[SDC line %d] Second token following '-waveform' should be falling edge, but is not a number.\n",
-						file_line_number);
-				exit(1);
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+						"Second token following '-waveform' should be falling edge, but is not a number.\n");
+				return FALSE;
 			}
 			falling_edge = (float) strtod(ptr, NULL);
 
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-				vpr_printf_error(__FILE__, __LINE__, 
-						"[SDC line %d] Clock(s) not specified.\n", 
-						file_line_number);
-				exit(1);
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+						"Clock(s) not specified.\n");
+				return FALSE;
 			} /* We need this extra call to my_strtok to advance the ptr to the right spot. */
 
 		} else {
@@ -546,10 +534,9 @@ static boolean get_sdc_tok(char * buf) {
 
 			/* Get the virtual clock name */
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-				vpr_printf_error(__FILE__, __LINE__, 
-						"[SDC line %d] Virtual clock name not specified.\n", 
-						file_line_number);
-				exit(1);
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+						"Virtual clock name not specified.\n");
+				return FALSE;
 			} /* We need this extra call to my_strtok to advance the ptr to the right spot. */
 
 			/* We've found a new clock! */
@@ -569,10 +556,9 @@ static boolean get_sdc_tok(char * buf) {
 
 			/* The next token should be NULL.  If so, return; if not, print an error message and exit. */
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) != NULL) {
-				vpr_printf_error(__FILE__, __LINE__, 
-						"[SDC line %d] More than one virtual clock name is specified after '-name'.\n", 
-						file_line_number);
-				exit(1);
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+						"More than one virtual clock name is specified after '-name'.\n");
+				return FALSE;
 			}
 
 		} else {
@@ -608,12 +594,10 @@ static boolean get_sdc_tok(char * buf) {
 				}
 
 				if (!found) {
-					vpr_printf_error(__FILE__, __LINE__, 
-							"[SDC line %d] Clock name or regular expression does not correspond to any nets.\n", 
-							file_line_number);
-					vpr_printf_error(__FILE__, __LINE__, 
+					vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+							"Clock name or regular expression does not correspond to any nets.\n"
 							"If you'd like to create a virtual clock, use the '-name' keyword.\n");
-					exit(1);
+					return FALSE;
 				}
 			} while ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) != NULL); /* Advance to the next token (or the end of the line). */
 		}
@@ -623,6 +607,7 @@ static boolean get_sdc_tok(char * buf) {
 			vpr_printf_warning(__FILE__, __LINE__, 
 					"Clock %s does not have 50%% duty cycle.\n", 
 					sdc_clocks[g_sdc->num_constrained_clocks - 1].name);
+			return FALSE;
 		}
 
 		return TRUE; 
@@ -631,17 +616,15 @@ static boolean get_sdc_tok(char * buf) {
 		/* Syntax: set_clock_groups -exclusive -group {<clock list or regexes>} -group {<clock list or regexes>} [-group {<clock list or regexes>} ...] */
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-exclusive") != 0) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] set_clock_groups must be directly followed by '-exclusive'.\n", 
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"set_clock_groups must be directly followed by '-exclusive'.\n");
+			return FALSE;
 		}
 		
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-group") != 0) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] set_clock_groups '-exclusive' must be followed by lists of clock names or regular expressions each starting with the '-group' command.\n", 
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"set_clock_groups '-exclusive' must be followed by lists of clock names or regular expressions each starting with the '-group' command.\n");
+			return FALSE;
 		}
 
 		/* Parse through to the end of the line. All that should be left on this line are a bunch of 
@@ -682,10 +665,9 @@ static boolean get_sdc_tok(char * buf) {
 		} while (ptr);
 
 	if (num_exclusive_groups < 2) {
-		vpr_printf_error(__FILE__, __LINE__, 
-				"[SDC line %d] At least two '-group' commands required.", 
-				file_line_number); 
-		exit(1);
+		vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+				"At least two '-group' commands required."); 
+		return FALSE;
 	}
 
 	/* Finally, create two DO_NOT_ANALYSE override constraints for each pair of entries
@@ -719,19 +701,17 @@ static boolean get_sdc_tok(char * buf) {
 		/* Syntax: set_false_path -from <clock list or regexes> -to <clock list or regexes> */
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-from") != 0 || (ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] set_false_path must be directly followed by '-from <clock/flip-flop_list>'.\n", 
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"set_false_path must be directly followed by '-from <clock/flip-flop_list>'.\n");
+			return FALSE;
 		}
 
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_from = TRUE;
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-				vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] set_false_path must be directly followed by '-from <clock/flip-flop_list>'.\n", 
-					file_line_number);
-				exit(1);
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"set_false_path must be directly followed by '-from <clock/flip-flop_list>'.\n");
+				return FALSE;
 			}
 		}
 
@@ -742,26 +722,24 @@ static boolean get_sdc_tok(char * buf) {
 
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) { 
 				/* We hit the end of the line before finding a -to. */
-				vpr_printf_error(__FILE__, __LINE__, 
-						"[SDC line %d] set_false_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
-						file_line_number);
-				exit(1);
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+						"set_false_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n");
+				return FALSE;
 			}
 		} while (strcmp(ptr, "-to") != 0);
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] set_false_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
-					file_line_number);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"set_false_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n");
+			return FALSE;
 		}
 
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_to = TRUE;
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-				vpr_printf_error(__FILE__, __LINE__, 
-						"[SDC line %d] set_false_path must be directly followed by '-from <clock/flip-flop_list>'.\n", 
-						file_line_number);
-				exit(1);
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+						"set_false_path must be directly followed by '-from <clock/flip-flop_list>'.\n");
+				return FALSE;
 			}
 		}
 
@@ -789,27 +767,24 @@ static boolean get_sdc_tok(char * buf) {
 
 		/* check if the token following set_max_delay is actually a number*/
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] Token following set_max_delay should be a delay value, but is not a number.\n", 
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"Token following set_max_delay should be a delay value, but is not a number.\n");
+			return FALSE;
 		}
 		max_delay = (float) strtod(ptr, NULL);
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-from") != 0 || (ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] set_max_delay requires '-from <clock/flip-flop_list>' after max_delay.\n", 
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"set_max_delay requires '-from <clock/flip-flop_list>' after max_delay.\n");
+			return FALSE;
 		}
 
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_from = TRUE;
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-				vpr_printf_error(__FILE__, __LINE__, 
-						"[SDC line %d] set_max_delay requires '-from <clock/flip-flop_list>' after max_delay.\n", 
-						file_line_number);
-				exit(1);
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+						"set_max_delay requires '-from <clock/flip-flop_list>' after max_delay.\n");
+				return FALSE;
 			}
 		}
 
@@ -820,26 +795,24 @@ static boolean get_sdc_tok(char * buf) {
 
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) { 
 				/* We hit the end of the line before finding a -to. */
-				vpr_printf_error(__FILE__, __LINE__, 
-						"[SDC line %d] set_max_delay requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
-						file_line_number);
-				exit(1);
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+						"set_max_delay requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n");
+				return FALSE;
 			}
 		} while (strcmp(ptr, "-to") != 0);
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] set_max_delay requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
-					file_line_number);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"set_max_delay requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n");
+			return FALSE;
 		}
 
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_to = TRUE;
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-				vpr_printf_error(__FILE__, __LINE__, 
-						"[SDC line %d] set_max_delay requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
-						file_line_number);
-				exit(1);
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+						"set_max_delay requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n");
+				return FALSE;
 			}
 		}
 
@@ -867,26 +840,23 @@ static boolean get_sdc_tok(char * buf) {
 
 		/* check if the token following set_max_delay is actually a number*/
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-setup") != 0) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] set_multicycle_path must be directly followed by '-setup'.\n", 
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"set_multicycle_path must be directly followed by '-setup'.\n");
+			return FALSE;
 		}
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-from") != 0 || (ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] set_multicycle_path requires '-from <clock/flip-flop_list>' after '-setup'.\n",
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"set_multicycle_path requires '-from <clock/flip-flop_list>' after '-setup'.\n");
+			return FALSE;
 		}
 
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_from = TRUE;
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-				vpr_printf_error(__FILE__, __LINE__, 
-						"[SDC line %d] set_multicycle_path '-setup' must be followed by '-from <clock/flip-flop_list>'.\n",
-						file_line_number);
-				exit(1);
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+						"set_multicycle_path '-setup' must be followed by '-from <clock/flip-flop_list>'.\n");
+				return FALSE;
 			}
 		}
 
@@ -897,26 +867,24 @@ static boolean get_sdc_tok(char * buf) {
 
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) { 
 				/* We hit the end of the line before finding a -to. */
-				vpr_printf_error(__FILE__, __LINE__, 
-						"[SDC line %d] set_multicycle_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
-						file_line_number);
-				exit(1);
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+						"set_multicycle_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n");
+				return FALSE;
 			}
 		} while (strcmp(ptr, "-to") != 0);
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf_error(__FILE__, __LINE__,
-					"[SDC line %d] set_multicycle_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
-					file_line_number);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number,
+					"set_multicycle_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n");
+			return FALSE;
 		}
 
 		if (strcmp(ptr, "get_clocks") == 0) {
 			domain_level_to = TRUE;
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-				vpr_printf_error(__FILE__, __LINE__, 
-						"[SDC line %d] set_multicycle_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n", 
-						file_line_number);
-				exit(1);
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+						"set_multicycle_path requires '-to <clock/flip-flop_list>' after '-from <clock/flip-flop_list>'.\n");
+				return FALSE;
 			}
 		}
 
@@ -928,10 +896,9 @@ static boolean get_sdc_tok(char * buf) {
 
 		if (!ptr) {
 			/* We hit the end of the line before finding a number. */
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] set_multicycle_path requires num_multicycles after '-to <clock/flip-flop_list>'.\n", 
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"set_multicycle_path requires num_multicycles after '-to <clock/flip-flop_list>'.\n");
+			return FALSE;
 		}
 
 		num_multicycles = (int) strtod(ptr, NULL);
@@ -954,10 +921,9 @@ static boolean get_sdc_tok(char * buf) {
 		set the input delay (from the external device to the FPGA) to max_delay. */
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-clock") != 0 || (ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] set_input_delay must be directly followed by '-clock <virtual or netlist clock name>'.\n", 
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"set_input_delay must be directly followed by '-clock <virtual or netlist clock name>'.\n");
+			return FALSE;
 		}
 
 		if (num_netlist_clocks == 1 && strcmp(ptr, "*") == 0) {
@@ -969,26 +935,23 @@ static boolean get_sdc_tok(char * buf) {
 		}
 	
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-max") != 0) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] set_input_delay '-clock <virtual or netlist clock name>' must be directly followed by '-max <maximum_input_delay>'.\n", 
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"set_input_delay '-clock <virtual or netlist clock name>' must be directly followed by '-max <maximum_input_delay>'.\n");
+			return FALSE;
 		}
 
 		/* check if the token following -max is actually a number*/
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] Token following '-max' should be a delay value, but is not a number.\n", 
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"Token following '-max' should be a delay value, but is not a number.\n");
+			return FALSE;
 		}
 		max_delay = (float) strtod(ptr, NULL);
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "get_ports") != 0) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] set_input_delay requires a [get_ports {...}] command following '-max <max_input_delay>'.\n", 
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"set_input_delay requires a [get_ports {...}] command following '-max <max_input_delay>'.\n");
+			return FALSE;
 		}
 
 		/* Parse through to the end of the line.  Add each regular expression match we find to the list of 
@@ -1020,10 +983,9 @@ static boolean get_sdc_tok(char * buf) {
 			}
 
 			if (!found) {
-				vpr_printf_error(__FILE__, __LINE__, 
-						"[SDC line %d] Output name or regular expression \"%s\" does not correspond to any nets.\n", 
-						file_line_number, ptr);
-				exit(1);
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+						"Output name or regular expression \"%s\" does not correspond to any nets.\n", ptr);
+				return FALSE;
 			}
 		}
 
@@ -1034,10 +996,9 @@ static boolean get_sdc_tok(char * buf) {
 		set the output delay (from the external device to the FPGA) to max_delay. */
 
 			if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-clock") != 0 || (ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] set_output_delay must be directly followed by '-clock <virtual or netlist clock name>'.\n", 
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"set_output_delay must be directly followed by '-clock <virtual or netlist clock name>'.\n");
+			return FALSE;
 		}
 
 		if (num_netlist_clocks == 1 && strcmp(ptr, "*") == 0) {
@@ -1049,26 +1010,23 @@ static boolean get_sdc_tok(char * buf) {
 		}
 	
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "-max") != 0) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] set_output_delay -clock <virtual or netlist clock name> must be directly followed by '-max <maximum_output_delay>'.\n", 
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"set_output_delay -clock <virtual or netlist clock name> must be directly followed by '-max <maximum_output_delay>'.\n");
+			return FALSE;
 		}
 
 		/* check if the token following -max is actually a number*/
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || !is_number(ptr)) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] Token following '-max' should be a delay value, but is not a number.\n", 
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"Token following '-max' should be a delay value, but is not a number.\n");
+			return FALSE;
 		}
 		max_delay = (float) strtod(ptr, NULL);
 
 		if ((ptr = my_strtok(NULL, SDC_TOKENS, sdc, buf)) == NULL || strcmp(ptr, "get_ports") != 0) {
-			vpr_printf_error(__FILE__, __LINE__, 
-					"[SDC line %d] set_output_delay requires a [get_ports {...}] command following '-max <max_output_delay>'.\n", 
-					file_line_number);
-			exit(1);
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+					"set_output_delay requires a [get_ports {...}] command following '-max <max_output_delay>'.\n");
+			return FALSE;
 		}
 
 		/* Parse through to the end of the line.  Add each regular expression match we find to the list of 
@@ -1100,18 +1058,16 @@ static boolean get_sdc_tok(char * buf) {
 			}
 
 			if (!found) {
-				vpr_printf_error(__FILE__, __LINE__, 
-						"[SDC line %d] Output name or regular expression \"%s\" does not correspond to any nets.\n", 
-						file_line_number, ptr);
-				exit(1);
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+						"Output name or regular expression \"%s\" does not correspond to any nets.\n", ptr);
+				return FALSE;
 			}
 		}
 
 	} else {
-		vpr_printf_error(__FILE__, __LINE__,
-	 			"[SDC line %d] Incorrect or unsupported syntax near start of line.\n", 
-				file_line_number);
-		exit(1);
+		vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number,
+	 			"Incorrect or unsupported syntax near start of line.\n");
+		return FALSE;
 	}
 }
 
@@ -1325,10 +1281,9 @@ static boolean regex_match (char * string, char * regular_expression) {
 	else if (strcmp(error, "No match") == 0) 
 		return FALSE;
 	else {
-		vpr_printf_error(__FILE__, __LINE__, 
-				"[SDC line %d] Error matching regular expression \"%s\".\n", 
-				file_line_number, regular_expression);
-		exit(1);
+		vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+				"Error matching regular expression \"%s\".\n", regular_expression);
+		return FALSE;
 	}
 }
 

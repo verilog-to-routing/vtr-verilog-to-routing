@@ -75,9 +75,8 @@ alloc_and_load_tnode_fanin_and_check_edges(int *num_sinks_ptr) {
 	}
 
 	if (error != 0) {
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, 
 				"Found %d Errors in the timing graph. Aborting.\n", error);
-		exit(1);
 	}
 
 	*num_sinks_ptr = num_sinks;
@@ -198,9 +197,8 @@ void check_timing_graph(int num_sinks) {
 	 black boxes match # of sinks/sources*/
 
 	if (error != 0) {
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, 
 				"Found %d Errors in the timing graph. Aborting.\n", error);
-		exit(1);
 	}
 }
 

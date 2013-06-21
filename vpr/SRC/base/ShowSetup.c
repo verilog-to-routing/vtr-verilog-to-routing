@@ -106,8 +106,8 @@ static void ShowRoutingArch(INP struct s_det_routing_arch RoutingArch) {
 		vpr_printf_info("UNI_DIRECTIONAL\n");
 		break;
 	default:
-		vpr_printf_info("<Unknown>\n");
-		exit(1);
+		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "<Unknown>\n");
+		break;
 	}
 
 	vpr_printf_info("RoutingArch.switch_block_type: ");
@@ -183,8 +183,7 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 			vpr_printf_info("NO_TIMING\n");
 			break;
 		default:
-			vpr_printf_info("<Unknown>\n");
-			exit(1);
+			vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "<Unknown>\n");
 		}
 
 		vpr_printf_info("RouterOpts.base_cost_type: ");
@@ -351,8 +350,7 @@ static void ShowPlacerOpts(INP t_options Options,
 			vpr_printf_info("USER '%s'\n", PlacerOpts.pad_loc_file);
 			break;
 		default:
-			vpr_printf_info("Unknown I/O pad location type\n");
-			exit(1);
+			vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "Unknown I/O pad location type\n");
 		}
 
 		vpr_printf_info("PlacerOpts.place_cost_exp: %f\n", PlacerOpts.place_cost_exp);
@@ -396,8 +394,7 @@ static void ShowPackerOpts(INP struct s_packer_opts PackerOpts) {
 		vpr_printf_info("MAX_INPUTS\n");
 		break;
 	default:
-		vpr_printf_info("Unknown packer cluster_seed_type\n");
-		exit(1);
+		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "Unknown packer cluster_seed_type\n");
 	}
 	vpr_printf_info("PackerOpts.connection_driven: %s", (PackerOpts.connection_driven ? "TRUE\n" : "FALSE\n"));
 	vpr_printf_info("PackerOpts.global_clocks: %s", (PackerOpts.global_clocks ? "TRUE\n" : "FALSE\n"));

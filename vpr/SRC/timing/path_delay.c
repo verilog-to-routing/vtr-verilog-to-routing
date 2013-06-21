@@ -255,9 +255,8 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	boolean do_process_constraints = FALSE;
 
 	if (tedge_ch.chunk_ptr_head != NULL) {
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, 
 				"in alloc_and_load_timing_graph: An old timing graph still exists.\n");
-		exit(1);
 	}
 	num_timing_nets = num_nets;
 	timing_nets = clb_net;
@@ -306,9 +305,8 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 	boolean do_process_constraints = FALSE;
 	
 	if (tedge_ch.chunk_ptr_head != NULL) {
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
 				"in alloc_and_load_timing_graph: An old timing graph still exists.\n");
-		exit(1);
 	}
 
 	num_timing_nets = num_logical_nets;
@@ -396,9 +394,8 @@ void free_timing_graph(t_slack * slacks) {
 	int inode;
 
 	if (tedge_ch.chunk_ptr_head == NULL) {
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
 				"in free_timing_graph: No timing graph to free.\n");
-		exit(1);
 	}
 
 	free_chunk_memory(&tedge_ch);
@@ -2067,25 +2064,21 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	
 			if (ilevel == 0) {
 				if (!(tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_FF_SOURCE || tnode[inode].type == TN_CONSTANT_GEN_SOURCE)) {
-					vpr_printf_error(__FILE__, __LINE__, 
-							"Timing graph started on unexpected node %s.%s[%d].\n",
+					vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
+							"Timing graph started on unexpected node %s.%s[%d].\n"
+							"This is a VPR internal error, contact VPR development team.\n",
 							tnode[inode].pb_graph_pin->parent_node->pb_type->name, 
 							tnode[inode].pb_graph_pin->port->name, 
 							tnode[inode].pb_graph_pin->pin_number);
-					vpr_printf_error(__FILE__, __LINE__, 
-							"This is a VPR internal error, contact VPR development team.\n"); 
-					exit(1);
 				}
 			} else {
 				if ((tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_FF_SOURCE || tnode[inode].type == TN_CONSTANT_GEN_SOURCE)) {
-					vpr_printf_error(__FILE__, __LINE__, 
-							"Timing graph discovered unexpected edge to node %s.%s[%d].\n",
+					vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
+							"Timing graph discovered unexpected edge to node %s.%s[%d].\n"
+							"This is a VPR internal error, contact VPR development team.\n",
 							tnode[inode].pb_graph_pin->parent_node->pb_type->name, 
 							tnode[inode].pb_graph_pin->port->name, 
 							tnode[inode].pb_graph_pin->pin_number);
-					vpr_printf_error(__FILE__, __LINE__, 
-							"This is a VPR internal error, contact VPR development team.\n"); 
-					exit(1);
 				}
 			}
 	

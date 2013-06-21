@@ -817,9 +817,8 @@ void draw_rr(void) {
 			break;
 
 		default:
-			vpr_printf_error(__FILE__, __LINE__, 
+			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 					"in draw_rr: Unexpected rr_node type: %d.\n", rr_node[inode].type);
-			exit(1);
 		}
 	}
 
@@ -1040,10 +1039,9 @@ static void draw_rr_edges(int inode) {
 				draw_pin_to_pin(inode, to_node);
 				break;
 			default:
-				vpr_printf_error(__FILE__, __LINE__, 
+				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 						"in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
 						inode, from_type, to_node, to_type);
-				exit(1);
 				break;
 			}
 			break;
@@ -1092,10 +1090,9 @@ static void draw_rr_edges(int inode) {
 				break;
 
 			default:
-				vpr_printf_error(__FILE__, __LINE__, 
+				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 						"in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
 						inode, from_type, to_node, to_type);
-				exit(1);
 				break;
 			}
 			break;
@@ -1144,19 +1141,17 @@ static void draw_rr_edges(int inode) {
 				break;
 
 			default:
-				vpr_printf_error(__FILE__, __LINE__, 
+				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 						"in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
 						inode, from_type, to_node, to_type);
-				exit(1);
 				break;
 			}
 			break;
 
 		default: /* from_type */
-			vpr_printf_error(__FILE__, __LINE__, 
+			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 					"draw_rr_edges called with node %d of type %d.\n", 
 					inode, from_type);
-			exit(1);
 			break;
 		}
 	} /* End of for each edge loop */
@@ -1518,9 +1513,8 @@ static void get_rr_pin_draw_coords(int inode, int iside,
 		break;
 
 	default:
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 				"in get_rr_pin_draw_coords: Unexpected iside %d.\n", iside);
-		exit(1);
 		break;
 	}
 
@@ -1634,10 +1628,9 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 					break;
 
 				default:
-					vpr_printf_error(__FILE__, __LINE__, 
+					vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 							"in drawroute: Unexpected connection from an rr_node of type %d to one of type %d.\n",
 							prev_type, rr_type);
-					exit(1);
 				}
 
 				break;
@@ -1671,10 +1664,9 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 					break;
 
 				default:
-					vpr_printf_error(__FILE__, __LINE__, 
+					vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 							"in drawroute: Unexpected connection from an rr_node of type %d to one of type %d.\n",
 							prev_type, rr_type);
-					exit(1);
 				}
 
 				break;
@@ -1720,9 +1712,9 @@ static int get_track_num(int inode, int **chanx_track, int **chany_track) {
 		return (chany_track[i][j]);
 
 	default:
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 				"in get_track_num: Unexpected node type %d for node %d.\n", rr_type, inode);
-		exit(1);
+		return OPEN;
 	}
 }
 
@@ -2122,9 +2114,8 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 		break;
 
 	default:
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 				"in draw_pin_to_chan_edge: Invalid channel node %d.\n", chan_node);
-		exit(1);
 	}
 
 	drawline(x1, y1, x2, y2);

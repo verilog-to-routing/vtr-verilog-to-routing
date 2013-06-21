@@ -486,8 +486,9 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadString(Args, &Options->CmosTechFile);
 
 	default:
-		vpr_printf_error(__FILE__, __LINE__, "Unexpected option '%s' on command line.\n", *PrevArgs);
-		exit(1);
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+			"Unexpected option '%s' on command line.\n", *PrevArgs);
+		return NULL;
 	}
 }
 
@@ -765,11 +766,12 @@ ReadToken(INP char **Args, OUTP enum e_OptionArgToken *Token) {
 /* Called for parse errors. Spits out a message and then exits program. */
 static void Error(INP const char *Token) {
 	if (Token) {
-		vpr_printf_error(__FILE__, __LINE__, "Unexpected token '%s' on command line.\n", Token);
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+		"Unexpected token '%s' on command line.\n", Token);
 	} else {
-		vpr_printf_error(__FILE__, __LINE__, "Missing token at end of command line.\n");
+		vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, 
+		"Missing token at end of command line.\n");
 	}
-	exit(1);
 }
 
 static char **

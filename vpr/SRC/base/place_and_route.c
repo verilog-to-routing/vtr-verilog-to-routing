@@ -122,10 +122,9 @@ boolean place_and_route(enum e_operation operation,
 		g_solution_inf.channel_width = width_fac;
 		if (det_routing_arch.directionality == UNI_DIRECTIONAL) {
 			if (width_fac % 2 != 0) {
-				vpr_printf_error(__FILE__, __LINE__, 
+				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 						"in pack_place_and_route.c: Given odd chan width (%d) for udsd architecture.\n",
 						width_fac);
-				exit(1);
 			}
 		}
 		/* Other constraints can be left to rr_graph to check since this is one pass routing */
@@ -303,18 +302,16 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	/* Constraints must be checked to not break rr_graph generator */
 	if (det_routing_arch.directionality == UNI_DIRECTIONAL) {
 		if (current % 2 != 0) {
-			vpr_printf_error(__FILE__, __LINE__, 
+			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 					"in pack_place_and_route.c: Tried odd chan width (%d) for udsd architecture.\n",
 					current);
-			exit(1);
 		}
 	}
 
 	else {
 		if (det_routing_arch.Fs % 3) {
-			vpr_printf_error(__FILE__, __LINE__, 
+			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 					"Fs must be three in bidirectional mode.\n");
-			exit(1);
 		}
 	}
 
@@ -334,17 +331,15 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		 * going to overflow.                                                */
 		if (router_opts.fixed_channel_width != NO_FIXED_CHANNEL_WIDTH) {
 			if (current > router_opts.fixed_channel_width * 4) {
-				vpr_printf_error(__FILE__, __LINE__, 
-						"This circuit appears to be unroutable with the current router options. Last failed at %d.\n", low);
-				vpr_printf_info("Aborting routing procedure.\n");
-				exit(1);
+				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
+						"This circuit appears to be unroutable with the current router options. Last failed at %d.\n"
+						"Aborting routing procedure.\n", low);
 			}
 		} else {
 			if (current > 1000) {
-				vpr_printf_error(__FILE__, __LINE__, 
-						"This circuit requires a channel width above 1000, probably is not going to route.\n");
-				vpr_printf_info("Aborting routing procedure.\n");
-				exit(1);
+				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
+						"This circuit requires a channel width above 1000, probably is not going to route.\n"
+						"Aborting routing procedure.\n");
 			}
 		}
 
@@ -423,9 +418,8 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 					if (low < router_opts.fixed_channel_width + 30) {
 						current = low + 5 * udsd_multiplier;
 					} else {
-						vpr_printf_error(__FILE__, __LINE__, 
+						vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 								"Aborting: Wneed = f(Fs) search found exceedingly large Wneed (at least %d).\n", low);
-						exit(1);
 					}
 				} else {
 					current = low * 2; /* Haven't found upper bound yet */
@@ -753,9 +747,8 @@ static float comp_width(t_chan * chan, float x, float separation) {
 		break;
 
 	default:
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in comp_width: Unknown channel type %d.\n", chan->type);
-		exit(1);
 		break;
 	}
 

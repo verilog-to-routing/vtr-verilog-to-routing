@@ -289,9 +289,8 @@ void get_num_bends_and_length(int inet, int *bends_ptr, int *len_ptr,
 
 	prevptr = trace_head[inet]; /* Should always be SOURCE. */
 	if (prevptr == NULL) {
-		vpr_printf_error(__FILE__, __LINE__,
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
 				"in get_num_bends_and_length: net #%d has no traceback.\n", inet);
-		exit(1);
 	}
 	inode = prevptr->index;
 	prev_type = rr_node[inode].type;
