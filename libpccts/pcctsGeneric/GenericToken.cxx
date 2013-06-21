@@ -77,7 +77,8 @@ GenericToken & GenericToken::operator = ( const GenericToken& from ) {
 
 //  create new copy of text - not just another reference to existing text
 
-void GenericToken::setText( ANTLRChar* s ) {
+// ??? void GenericToken::setText( ANTLRChar* s ) {
+void GenericToken::setText( const ANTLRChar* s ) {
 
    if ( pText != 0 ) {
       delete [] pText;
