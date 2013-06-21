@@ -73,7 +73,7 @@
     <PreBuildEvent>
       <Message>
       </Message>
-      <Command>..\..\libpccts\bin\Antlr.exe -CC -gh TOP_OptionsGrammar.g &amp;&amp; ..\..\libpccts\bin\Dlg.exe -CC -cl TOP_OptionsScanner_c parser.dlg</Command>
+      <Command>..\..\libpccts\bin.win32\Antlr.exe -CC -gh TOP_OptionsGrammar.g &amp;&amp; ..\..\libpccts\bin.win32\Dlg.exe -CC -cl TOP_OptionsScanner_c parser.dlg</Command>
     </PreBuildEvent>
     <Lib>
       <OutputFile>$(OutDir)\$(TargetName)$(TargetExt)</OutputFile>
