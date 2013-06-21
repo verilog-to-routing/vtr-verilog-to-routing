@@ -15,13 +15,16 @@
     <ClInclude Include="TVPR_CircuitDesign.h" />
     <ClInclude Include="TVPR_EchoTypeStore.h" />
     <ClInclude Include="TVPR_FabricModel.h" />
+    <ClInclude Include="TVPR_IndexCount.h" />
     <ClInclude Include="TVPR_Interface.h" />
     <ClInclude Include="TVPR_OptionsStore.h" />
+    <ClInclude Include="TVPR_Typedefs.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TVPR_ArchitectureSpec.cxx" />
     <ClCompile Include="TVPR_CircuitDesign.cxx" />
     <ClCompile Include="TVPR_FabricModel.cxx" />
+    <ClCompile Include="TVPR_IndexCount.cxx" />
     <ClCompile Include="TVPR_Interface.cxx" />
     <ClCompile Include="TVPR_OptionsStore.cxx" />
   </ItemGroup>
@@ -53,14 +56,14 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VCInstallDir)include;..\TOS_OptionsStore;..\TFS_FloorplanStore;..\TAS_ArchitectureSpec;..\TFM_FabricModel;..\TFV_FabricView;..\TCD_CircuitDesign;..\TLO_LogicalObjects;..\TPO_PhysicalObjects;..\TNO_NetObjects;..\TTP_TilePlaneObjects;..\TGS_GeometricShapes;..\TIO_InputOutputHandlers;..\TC_Common;..\..\pcre\SRC;..\..\vpr\SRC\base;..\..\VPR\SRC\util;..\..\libarchfpga\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(VCInstallDir)include;..\TOS_OptionsStore;..\TFS_FloorplanStore;..\TAS_ArchitectureSpec;..\TFH_FabricHandlers;..\TFM_FabricModel;..\TFV_FabricView;..\TCH_CircuitHandlers;..\TCD_CircuitDesign;..\TLO_LogicalObjects;..\TPO_PhysicalObjects;..\TNO_NetObjects;..\TTP_TilePlaneObjects;..\TGS_GeometricShapes;..\TGO_GeometricObjects;..\TIO_InputOutputHandlers;..\TC_Common;..\..\libcommon_c\pcre\SRC;..\..\vpr\SRC\base;..\..\VPR\SRC\util;..\..\libarchfpga\include</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;TORO_FABRIC_GRID_VALID_ENABLE;TORO_FABRIC_CHANNEL_WIDTHS_ENABLE;TORO_REGION_PLACEMENT_ENABLE;TORO_RELATIVE_PLACEMENT_ENABLE;TORO_PREPLACED_PLACEMENT_ENABLE;TORO_PREROUTED_ROUTE_ENABLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
