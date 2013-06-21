@@ -41,8 +41,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VCInstallDir)include;..\TM_Master;..\TCL_CommandLine;..\TOS_OptionsStore;..\TIO_InputOutputHandlers;..\TC_Common;..\..\pcre\SRC;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VCInstallDir)lib;.\Debug;..\..\pcre\Debug;..\..\pccts\h;..\..\pccts\pcctsGeneric;..\..\libarchfpga;..\..\vpr;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(VCInstallDir)include;..\TM_Master;..\TCL_CommandLine;..\TOS_OptionsStore;..\TIO_InputOutputHandlers;..\TC_Common;..\..\libcommon_c\pcre\SRC</IncludePath>
+    <LibraryPath>$(VCInstallDir)lib;.\Debug;..\..\libpccts\h\Debug;..\..\libpccts\pcctsGeneric\Debug;..\..\libarchfpga\Debug;..\..\vpr\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -52,13 +52,13 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;TORO_FABRIC_GRID_VALID_ENABLE;TORO_FABRIC_CHANNEL_WIDTHS_ENABLE;TORO_REGION_PLACEMENT_ENABLE;TORO_RELATIVE_PLACEMENT_ENABLE;TORO_PREPLACED_PLACEMENT_ENABLE;TORO_PREROUTED_ROUTE_ENABLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>TM_Master.lib;TI_Input.lib;TP_Process.lib;TO_Output.lib;TVPR_Interface.lib;TCL_CommandLine.lib;TOP_OptionsParser.lib;TAP_ArchitectureParser.lib;TAXP_ArchitectureXmlParser.lib;TFP_FabricParser.lib;TCP_CircuitParser.lib;TCBP_CircuitBlifParser.lib;TOS_OptionsStore.lib;TFS_FloorplanStore.lib;TAS_ArchitectureSpec.lib;TFM_FabricModel.lib;TFV_FabricView.lib;TCD_CircuitDesign.lib;TLO_LogicalObjects.lib;TPO_PhysicalObjects.lib;TNO_NetObjects.lib;TTP_TilePlaneObjects.lib;TGS_GeometricShapes.lib;TIO_InputOutputHandlers.lib;TC_Common.lib;pcre.lib;pccts_h.lib;pccts_generic.lib;libarchfpga.lib;libvpr.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libpcre.lib;TM_Master.lib;TI_Input.lib;TP_Process.lib;TO_Output.lib;TVPR_Interface.lib;TCL_CommandLine.lib;TOP_OptionsParser.lib;TAP_ArchitectureParser.lib;TAXP_ArchitectureXmlParser.lib;TFP_FabricParser.lib;TCP_CircuitParser.lib;TCBP_CircuitBlifParser.lib;TOS_OptionsStore.lib;TFS_FloorplanStore.lib;TAS_ArchitectureSpec.lib;TFM_FabricModel.lib;TFV_FabricView.lib;TFH_FabricHandlers.lib;TCD_CircuitDesign.lib;TCH_CircuitHandlers.lib;TLO_LogicalObjects.lib;TPO_PhysicalObjects.lib;TNO_NetObjects.lib;TTP_TilePlaneObjects.lib;TGS_GeometricShapes.lib;TGO_GeometricObjects.lib;TIO_InputOutputHandlers.lib;TC_Common.lib;pccts_h.lib;pccts_generic.lib;libarchfpga.lib;libvpr.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
