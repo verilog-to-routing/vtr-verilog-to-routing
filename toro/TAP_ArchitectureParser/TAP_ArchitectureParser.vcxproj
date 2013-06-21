@@ -71,7 +71,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>..\..\libpccts\bin\Antlr.exe -CC -gh TAP_ArchitectureGrammar.g &amp;&amp; ..\..\libpccts\bin\Dlg.exe -CC -cl TAP_ArchitectureScanner_c parser.dlg</Command>
+      <Command>..\..\libpccts\bin.win32\Antlr.exe -CC -gh TAP_ArchitectureGrammar.g &amp;&amp; ..\..\libpccts\bin.win32\Dlg.exe -CC -cl TAP_ArchitectureScanner_c parser.dlg</Command>
     </PreBuildEvent>
     <Lib>
       <OutputFile>$(OutDir)\$(TargetName)$(TargetExt)</OutputFile>
