@@ -11,8 +11,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\stdpccts.h" />
-    <ClInclude Include="..\tokens.h" />
     <ClInclude Include="TAXP_ArchitectureXmlFile.h" />
     <ClInclude Include="TAXP_ArchitectureXmlGrammar.h" />
     <ClInclude Include="TAXP_ArchitectureXmlHandler.h" />
@@ -58,7 +56,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VCInstallDir)include;..\TAS_ArchitectureSpec;..\TLO_LogicalObjects;..\TPO_PhysicalObjects;..\TGS_GeometricShapes;..\TIO_InputOutputHandlers;..\TC_Common;..\..\pcre\SRC;..\..\pccts\pcctsGeneric;..\..\pccts\h;$(IncludePath)</IncludePath>
+    <IncludePath>$(VCInstallDir)include;..\TAS_ArchitectureSpec;..\TLO_LogicalObjects;..\TPO_PhysicalObjects;..\TGS_GeometricShapes;..\TIO_InputOutputHandlers;..\TC_Common;..\..\libcommon_c\pcre\SRC;..\..\libpccts\pcctsGeneric;..\..\libpccts\h</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -73,7 +71,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>..\..\pccts\bin\Antlr.exe -CC -gh TAXP_ArchitectureXmlGrammar.g &amp;&amp; ..\..\pccts\bin\Dlg.exe -CC -cl TAXP_ArchitectureXmlScanner_c parser.dlg</Command>
+      <Command>..\..\libpccts\bin\Antlr.exe -CC -gh TAXP_ArchitectureXmlGrammar.g &amp;&amp; ..\..\libpccts\bin\Dlg.exe -CC -cl TAXP_ArchitectureXmlScanner_c parser.dlg</Command>
     </PreBuildEvent>
     <Lib>
       <OutputFile>$(OutDir)\$(TargetName)$(TargetExt)</OutputFile>
