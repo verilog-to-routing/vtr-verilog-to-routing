@@ -110,11 +110,6 @@
     <ClCompile Include="read_xml_util.c" />
     <ClCompile Include="util.c" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\libcommon_c++\printhandler.vcxproj">
-      <Project>{a5092a9c-6dfd-4dec-9951-51606f5eaf3b}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
