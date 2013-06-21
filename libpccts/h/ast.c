@@ -18,16 +18,19 @@
  * addition, we ask that this header remain intact in our source code.
  * As long as these guidelines are kept, we expect to continue enhancing
  * this system and expect to make other tools available as they are
- * completed.
+ * completed. 
  *
  * ANTLR 1.33
  * Terence Parr
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1989-1995
+ * 1989-2000
  */
-#ifdef __STDC__
-#include <stdarg.h>
+
+#include "pcctscfg.h"
+
+#ifdef PCCTS_USE_STDARG
+#include "pccts_stdarg.h"
 #else
 #include <varargs.h>
 #endif
@@ -35,8 +38,9 @@
 /* ensure that tree manipulation variables are current after a rule
  * reference
  */
+
 void
-#ifdef __STDC__
+#ifdef __USE_PROTOS
 zzlink(AST **_root, AST **_sibling, AST **_tail)
 #else
 zzlink(_root, _sibling, _tail)
@@ -51,7 +55,7 @@ AST **_root, **_sibling, **_tail;
 }
 
 AST *
-#ifdef __STDC__
+#ifdef __USE_PROTOS
 zzastnew(void)
 #else
 zzastnew()
@@ -64,7 +68,7 @@ zzastnew()
 
 /* add a child node to the current sibling list */
 void
-#ifdef __STDC__
+#ifdef __USE_PROTOS
 zzsubchild(AST **_root, AST **_sibling, AST **_tail)
 #else
 zzsubchild(_root, _sibling, _tail)
@@ -95,7 +99,7 @@ AST **_root, **_sibling, **_tail;
  * exists, make the newly-created node the root of the current root.
  */
 void
-#ifdef __STDC__
+#ifdef __USE_PROTOS
 zzsubroot(AST **_root, AST **_sibling, AST **_tail)
 #else
 zzsubroot(_root, _sibling, _tail)
@@ -135,7 +139,7 @@ AST **_root, **_sibling, **_tail;
  *
  */
 void
-#ifdef __STDC__
+#ifdef __USE_PROTOS
 zzpre_ast(
 	  AST *tree,
 	  void (*func)(AST *),   /* apply this to each tree node */
@@ -160,18 +164,76 @@ void (*func)(),   /* apply this to each tree node */
 }
 
 /* free all AST nodes in tree; apply func to each before freeing */
+
+#if 0
+////void
+////#ifdef __USE_PROTOS
+////zzfree_ast(AST *tree)
+////#else
+////zzfree_ast(tree)
+////AST *tree;
+////#endif
+////{
+////	if ( tree == NULL ) return;
+////	zzfree_ast( tree->down );
+////	zzfree_ast( tree->right );
+////	zztfree( tree );
+////}
+#endif
+
+/*
+   MR19 Optimize freeing of the following structure to limit recursion
+   SAKAI Kiyotaka (ksakai@isr.co.jp)
+*/
+
+/*
+         NULL o
+             / \
+           NULL o
+               / \
+            NULL NULL
+*/
+
+/*
+   MR21 Another refinement to replace recursion with iteration
+   NAKAJIMA Mutsuki (muc@isr.co.jp).
+*/
+
 void
-#ifdef __STDC__
+#ifdef __USE_PROTOS
 zzfree_ast(AST *tree)
 #else
 zzfree_ast(tree)
 AST *tree;
 #endif
 {
-	if ( tree == NULL ) return;
-	zzfree_ast( tree->down );
-	zzfree_ast( tree->right );
-	zztfree( tree );
+
+    AST *otree;
+
+    if (tree == NULL) return;
+
+    while (tree->down == NULL || tree->right == NULL) {
+
+        if (tree->down == NULL && tree->right == NULL) {
+            zztfree(tree);
+            return;
+        }
+
+        otree = tree;
+        if (tree->down == NULL) {
+            tree = tree->right;
+        } else {
+            tree = tree->down;
+        }
+        zztfree( otree );
+    }
+
+    while (tree != NULL) {
+        zzfree_ast(tree->down);
+        otree = tree;
+        tree = otree->right;
+        zztfree(otree);
+    }
 }
 
 /* build a tree (root child1 child2 ... NULL)
@@ -185,7 +247,7 @@ AST *tree;
  * Requires at least two parameters with the last one being NULL.  If
  * both are NULL, return NULL.
  */
-#ifdef __STDC__
+#ifdef PCCTS_USE_STDARG
 AST *zztmake(AST *rt, ...)
 #else
 AST *zztmake(va_alist)
@@ -193,10 +255,10 @@ va_dcl
 #endif
 {
 	va_list ap;
-	register AST *child, *sibling=NULL, *tail, *w;
+	register AST *child, *sibling=NULL, *tail=NULL /* MR20 */, *w;
 	AST *root;
 
-#ifdef __STDC__
+#ifdef PCCTS_USE_STDARG
 	va_start(ap, rt);
 	root = rt;
 #else
@@ -222,7 +284,7 @@ va_dcl
 
 /* tree duplicate */
 AST *
-#ifdef __STDC__
+#ifdef __USE_PROTOS
 zzdup_ast(AST *t)
 #else
 zzdup_ast(t)
@@ -248,7 +310,7 @@ AST *t;
 }
 
 void
-#ifdef __STDC__
+#ifdef __USE_PROTOS
 zztfree(AST *t)
 #else
 zztfree(t)
@@ -267,7 +329,7 @@ AST *t;
  * Initial call is double_link(your_tree, NULL, NULL).
  */
 void
-#ifdef __STDC__
+#ifdef __USE_PROTOS
 zzdouble_link(AST *t, AST *left, AST *up)
 #else
 zzdouble_link(t, left, up)

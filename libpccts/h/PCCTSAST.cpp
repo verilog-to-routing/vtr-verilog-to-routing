@@ -25,19 +25,25 @@
  * Terence Parr
  * Parr Research Corporation
  * AHPCRC, University of Minnesota
- * 1992-1995
+ * 1992-2000
  */
 
 #define ANTLR_SUPPORT_CODE
 
+#include "pcctscfg.h"
+
 #include "PCCTSAST.h"
-#include <stdarg.h>
+#include "pccts_stdarg.h"
+
+PCCTS_NAMESPACE_STD
+
 #include <ctype.h>
+
 //#include "SList.h"
 
                /* String Scanning/Parsing Stuff */
 
-char *PCCTS_AST::scan_token_tbl[] = {
+const char *PCCTS_AST::scan_token_tbl[] = {     /* MR20 const */
 	"invalid",	/*	0 */
 	"LPAREN",	/*	1 */
 	"RPAREN",	/*	2 */
@@ -65,10 +71,10 @@ addChild(PCCTS_AST *t)
 void PCCTS_AST::
 lisp(FILE *f)
 {
-	if ( down() != NULL ) fprintf(f," (");
+	if ( down() != NULL ) /* MR23 */ printMessage(f," (");
 	lisp_action(f);
 	if ( down()!=NULL ) down()->lisp(f);
-	if ( down() != NULL ) fprintf(f," )");
+	if ( down() != NULL ) /* MR23 */ printMessage(f," )");
 	if ( right()!=NULL ) right()->lisp(f);
 }
 
@@ -89,7 +95,7 @@ PCCTS_AST *PCCTS_AST::
 make(PCCTS_AST *rt, ...)
 {
 	va_list ap;
-	register PCCTS_AST *child, *sibling=NULL, *tail, *w;
+	register PCCTS_AST *child, *sibling=NULL, *tail=NULL /*MR23*/, *w;
 	PCCTS_AST *root;
 
 	va_start(ap, rt);
@@ -139,9 +145,10 @@ PCCTS_AST *PCCTS_AST::
 ast_find_all(PCCTS_AST *u, PCCTS_AST **cursor)
 {
 	PCCTS_AST *sib;
-	static PCCTS_AST *template_stack[MaxTreeStackDepth];
-	static int tsp = MaxTreeStackDepth;
-	static int nesting = 0;
+	/*** static ***/ PCCTS_AST *template_stack[MaxTreeStackDepth];  /* MR23 Remove "static" */
+	/*** static ***/ int tsp = MaxTreeStackDepth;                   /* MR23 Remove "static" */
+
+////static int nesting = 0;                                         /* MR23 Not referenced */
 
 	if ( *cursor == NULL ) return NULL;
 	if ( *cursor!=this ) sib = *cursor;
@@ -223,7 +230,7 @@ match_partial(PCCTS_AST *t, PCCTS_AST *u)
 	PCCTS_AST *sib;
 
 	if ( u==NULL ) return 1;
-	if ( t==NULL ) if ( u!=NULL ) return 0; else return 1;
+	if ( t==NULL ) return 0; /* MR23 removed unreachable code */
 
 	for (sib=t; sib!=NULL&&u!=NULL; sib=sib->right(), u=u->right())
 	{
@@ -234,6 +241,10 @@ match_partial(PCCTS_AST *t, PCCTS_AST *u)
 	return 1;
 }
 
+#ifdef _MSC_VER  // MR23
+//Turn off "unreachable code" warning
+#pragma warning(disable : 4702)
+#endif
 /* Walk the template tree 't' (matching against 'this'), filling in the
  * 'labels' array, and setting 'n' according to how many labels were matched.
  */
@@ -259,12 +270,21 @@ scanmatch(ScanAST *t, PCCTS_AST **labels[], int *n)
 		/* match what's below if something there and current node is not wildcard */
 		if ( sib->down()!=NULL && sib->type()!=0 )
 		{
-			if ( sib->down()==NULL ) if ( u->down()!=NULL ) return 0; else return 1;
+			if ( sib->down()==NULL ) 
+			{
+				if ( u->down()!=NULL ) 
+					return 0; 
+				else 
+					return 1;
+			}
 			if ( !u->down()->scanmatch(sib->down(), labels, n) ) return 0;
 		}
 	}
 	return 1;
 }
+#ifdef _MSC_VER  // MR23
+#pragma warning(default : 4702)
+#endif
 
 void PCCTS_AST::
 insert_after(PCCTS_AST *b)
@@ -377,11 +397,20 @@ sibling_index(int i)
 /* Assume this is a root node of a tree--
  * duplicate that node and what's below; ignore siblings of root node.
  */
+
+// MR9 23-Sep-97 RJV
+// MR9
+// MR9 RJV: Original version only duplicated the node and down elements.
+// MR9      Made copies of the pointers to sibling.
+// MR9      Changed call "down()->deepCopy()" to "down()->deepCopyBushy()"
+// MR9
+
 PCCTS_AST *PCCTS_AST::
 deepCopy()
 {
 	PCCTS_AST *u = this->shallowCopy();
-	if ( down()!=NULL ) u->setDown(down()->deepCopy());
+	if ( down()!=NULL ) u->setDown(down()->deepCopyBushy());
+    u->setRight(NULL);
 	return u;
 }
 
@@ -391,8 +420,8 @@ deepCopyBushy()
 {
 	PCCTS_AST *u = this->shallowCopy();
 	/* copy the rest of the tree */
-	if ( down()!=NULL ) u->setDown(down()->deepCopy());
-	if ( right()!=NULL ) u->setRight(right()->deepCopy());
+	if ( down()!=NULL ) u->setDown(down()->deepCopyBushy());
+	if ( right()!=NULL ) u->setRight(right()->deepCopyBushy());
 	return u;
 }
 
@@ -475,10 +504,8 @@ new_scanast(int tok)
 //
 //  7-Apr-97 133MR1
 //
-    if ( p == NULL ) {							// MR1
-	        fprintf(stderr, "out of mem\n");			// MR1
-        	exit(PCCTS_EXIT_FAILURE);				// MR1
-    };									// MR1
+    if ( p == NULL )
+        panic("out of memory\n");			// MR23
 	p->_token = tok;
 	return p;
 }
@@ -514,7 +541,7 @@ stringparser_match(StringParser *parser, int token)
 ScanAST *PCCTS_AST::
 stringparser_parse_tree(StringParser *parser)
 {
-	ScanAST *t=NULL, *root, *child, *last;
+	ScanAST *t=NULL, *root, *child, *last=NULL /*MR23*/;
 
 	if ( parser->token != __POUND )
 	{
@@ -540,7 +567,7 @@ stringparser_parse_tree(StringParser *parser)
 ScanAST *PCCTS_AST::
 stringparser_parse_element(StringParser *parser)
 {
-	static char ebuf[100];
+	char ebuf[100];
 	int label = 0;
 
 	if ( parser->token == __POUND )
@@ -608,14 +635,14 @@ int PCCTS_AST::
 stringscan_gettok(StringLexer *scanner)
 {
 	char *index = &scanner->text[0];
-	static char ebuf[100];
+	char ebuf[100]; /* MR23 Remove static */
 
 	while ( isspace(scanner->c) ) { stringscan_advance(scanner); }
 	if ( isdigit(scanner->c) )
 	{
 		int tok = __INT;
 		while ( isdigit(scanner->c) ) {
-			*index++ = scanner->c;
+			*index++ = (char) /* static_cast<char> */ (scanner->c);     // MR23
 			stringscan_advance(scanner);
 		}
 		*index = '\0';
@@ -638,10 +665,20 @@ stringscan_gettok(StringLexer *scanner)
 	return __StringScanEOF;	// never reached
 }
 
-char *PCCTS_AST::
+const char *PCCTS_AST:: /* MR20 const */
 scan_token_str(int t)
 {
 	if ( VALID_SCAN_TOKEN(t) ) return scan_token_tbl[t];
 	else if ( t==__StringScanEOF ) return "<end-of-string>";
 	else return "<invalid-token>";
+}
+
+//MR23
+int PCCTS_AST::printMessage(FILE* pFile, const char* pFormat, ...)
+{
+	va_list marker;
+	va_start( marker, pFormat );
+  	int iRet = vfprintf(pFile, pFormat, marker);
+	va_end( marker );
+	return iRet;
 }

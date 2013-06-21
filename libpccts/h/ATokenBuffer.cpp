@@ -1,4 +1,4 @@
-/* ANTLRTokenBuffer.C
+/* ANTLRTokenBuffer.cpp
  *
  * SOFTWARE RIGHTS
  *
@@ -24,7 +24,7 @@
  * Terence Parr
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1989-1995
+ * 1989-2000
  */
 
 typedef int ANTLRTokenType;	// fool AToken.h into compiling
@@ -33,8 +33,11 @@ class ANTLRParser;					/* MR1 */
 
 #define ANTLR_SUPPORT_CODE
 
-#include "config.h"
+#include "pcctscfg.h"
+
 #include ATOKENBUFFER_H
+#include APARSER_H		// MR23
+
 typedef ANTLRAbstractToken *_ANTLRTokenPtr;
 
 #if defined(DBG_TBUF)||defined(DBG_TBUF_MARK_REW)
@@ -42,16 +45,16 @@ static unsigned char test[1000];
 #endif
 
 #ifdef DBG_REFCOUNTTOKEN
-int ANTLRCommonToken::ctor = 0;
-int ANTLRCommonToken::dtor = 0;
+int ANTLRRefCountToken::ctor = 0; /* MR23 */
+int ANTLRRefCountToken::dtor = 0; /* MR23 */
 #endif
 
 ANTLRTokenBuffer::
-ANTLRTokenBuffer(ANTLRTokenStream *_input, int _k, int _cs)
+ANTLRTokenBuffer(ANTLRTokenStream *_input, int _k, int _chunk_size_formal) /* MR14 */
 {
 	this->input = _input;
 	this->k = _k;
-	buffer_size = chunk_size = _cs;
+	buffer_size = chunk_size = _chunk_size_formal;
 	buffer = (_ANTLRTokenPtr *)
 			 calloc(chunk_size+1,sizeof(_ANTLRTokenPtr ));
 	if ( buffer == NULL ) {
@@ -64,7 +67,7 @@ ANTLRTokenBuffer(ANTLRTokenStream *_input, int _k, int _cs)
 	next = &buffer[0];
 	num_markers = 0;
 	end_of_buffer = &buffer[buffer_size-1];
-	threshold = &buffer[(int)(buffer_size*(1.0/2.0))];
+	threshold = &buffer[(int)(buffer_size/2)];	// MR23 - Used to be 1.0/2.0 !
 	_deleteTokens = 1; 	// assume we delete tokens
 	parser=NULL;				// MR5 - uninitialized reference
 }
@@ -83,7 +86,7 @@ ANTLRTokenBuffer::
 			(*z)->deref();
 //			z->deref();
 #ifdef DBG_REFCOUNTTOKEN
-					fprintf(stderr, "##########dtor: deleting token '%s' (ref %d)\n",
+					/* MR23 */ printMessage(stderr, "##########dtor: deleting token '%s' (ref %d)\n",
 							((ANTLRCommonToken *)*z)->getText(), (*z)->nref());
 #endif
 			if ( (*z)->nref()==0 )
@@ -97,7 +100,8 @@ ANTLRTokenBuffer::
 }
 
 #if defined(DBG_TBUF)||defined(DBG_TBUF_MARK_REW)
-#include <stdio.h>
+#include "pccts_stdio.h"
+PCCTS_NAMESPACE_STD
 #endif
 
 _ANTLRTokenPtr ANTLRTokenBuffer::
@@ -114,7 +118,7 @@ getToken()
 		if( next > threshold )
 		{
 #ifdef DBG_TBUF
-fprintf(stderr,"getToken: next > threshold (high water is %d)\n", threshold-buffer);
+/* MR23 */ printMessage(stderr,"getToken: next > threshold (high water is %d)\n", threshold-buffer);
 #endif
 			makeRoom();
 		}
@@ -123,7 +127,7 @@ fprintf(stderr,"getToken: next > threshold (high water is %d)\n", threshold-buff
 		if ( next > end_of_buffer )
 		{
 #ifdef DBG_TBUF
-fprintf(stderr,"getToken: next > end_of_buffer (size is %d)\n", buffer_size);
+/* MR23 */ printMessage(stderr,"getToken: next > end_of_buffer (size is %d)\n", buffer_size);
 #endif
 			extendBuffer();
 		}
@@ -140,7 +144,7 @@ void ANTLRTokenBuffer::
 rewind(int pos)
 {
 #if defined(DBG_TBUF)||defined(DBG_TBUF_MARK_REW)
-	fprintf(stderr, "rewind(%d)[nm=%d,from=%d,%d.n=%d]\n", pos, num_markers, tp-buffer,pos,test[pos]);
+	/* MR23 */ printMessage(stderr, "rewind(%d)[nm=%d,from=%d,%d.n=%d]\n", pos, num_markers, tp-buffer,pos,test[pos]);
 	test[pos]--;
 #endif
 	tp = &buffer[pos];
@@ -156,7 +160,7 @@ mark()
 {
 #if defined(DBG_TBUF)||defined(DBG_TBUF_MARK_REW)
 	test[tp-buffer]++;
-	fprintf(stderr,"mark(%d)[nm=%d,%d.n=%d]\n",tp-buffer,num_markers+1,tp-buffer,test[tp-buffer]);
+	/* MR23 */ printMessage(stderr,"mark(%d)[nm=%d,%d.n=%d]\n",tp-buffer,num_markers+1,tp-buffer,test[tp-buffer]);
 #endif
 	num_markers++;
 	return tp - buffer;
@@ -182,7 +186,7 @@ bufferedToken(int n)
 	int how_many_more_i_need = (tp > last) ? n : n-(last-tp)-1;
 	// Make sure that at least n tokens are available in the buffer
 #ifdef DBG_TBUF
-	fprintf(stderr, "bufferedToken(%d)\n", n);
+	/* MR23 */ printMessage(stderr, "bufferedToken(%d)\n", n);
 #endif
 	for (int i=1; i<=how_many_more_i_need; i++)
 	{
@@ -210,26 +214,26 @@ void ANTLRTokenBuffer::
 makeRoom()
 {
 #ifdef DBG_TBUF
-	fprintf(stderr, "in makeRoom.................\n");
-	fprintf(stderr, "num_markers==%d\n", num_markers);
+	/* MR23 */ printMessage(stderr, "in makeRoom.................\n");
+	/* MR23 */ printMessage(stderr, "num_markers==%d\n", num_markers);
 #endif
 /*
 	if ( num_markers == 0 )
 	{
 */
 #ifdef DBG_TBUF
-		fprintf(stderr, "moving lookahead and resetting next\n");
+		/* MR23 */ printMessage(stderr, "moving lookahead and resetting next\n");
 
 		_ANTLRTokenPtr *r;
-		fprintf(stderr, "tbuf = [");
+		/* MR23 */ printMessage(stderr, "tbuf = [");
 		for (r=buffer; r<=last; r++)
 		{
-			if ( *r==NULL ) fprintf(stderr, " xxx");
-			else fprintf(stderr, " '%s'", ((ANTLRCommonToken *)*r)->getText());
+			if ( *r==NULL ) /* MR23 */ printMessage(stderr, " xxx");
+			else /* MR23 */ printMessage(stderr, " '%s'", ((ANTLRCommonToken *)*r)->getText());
 		}
-		fprintf(stderr, " ]\n");
+		/* MR23 */ printMessage(stderr, " ]\n");
 
-		fprintf(stderr,
+		/* MR23 */ printMessage(stderr,
 		"before: tp=%d, last=%d, next=%d, threshold=%d\n",tp-buffer,last-buffer,next-buffer,threshold-buffer);
 #endif
 
@@ -242,7 +246,7 @@ makeRoom()
 				(*z)->deref();
 //				z->deref();
 #ifdef DBG_REFCOUNTTOKEN
-					fprintf(stderr, "##########makeRoom: deleting token '%s' (ref %d)\n",
+					/* MR23 */ printMessage(stderr, "##########makeRoom: deleting token '%s' (ref %d)\n",
 							((ANTLRCommonToken *)*z)->getText(), (*z)->nref());
 #endif
 				if ( (*z)->nref()==0 )
@@ -257,24 +261,24 @@ makeRoom()
 		_ANTLRTokenPtr *p = buffer, *q = last-(k-1)+1;
 //		ANTLRAbstractToken **p = buffer, **q = end_of_buffer-(k-1)+1;
 #ifdef DBG_TBUF
-		fprintf(stderr, "lookahead buffer = [");
+		/* MR23 */ printMessage(stderr, "lookahead buffer = [");
 #endif
 		for (int i=1; i<=(k-1); i++)
 		{
 			*p++ = *q++;
 #ifdef DBG_TBUF
-			fprintf(stderr,
+			/* MR23 */ printMessage(stderr,
 			" '%s'", ((ANTLRCommonToken *)buffer[i-1])->getText());
 #endif
 		}
 #ifdef DBG_TBUF
-		fprintf(stderr, " ]\n");
+		/* MR23 */ printMessage(stderr, " ]\n");
 #endif
 		next = &buffer[k-1];
 		tp = &buffer[k-1];	// tp points to what will be filled in next
 		last = tp-1;
 #ifdef DBG_TBUF
-		fprintf(stderr,
+		/* MR23 */ printMessage(stderr,
 		"after: tp=%d, last=%d, next=%d\n",
 		tp-buffer, last-buffer, next-buffer);
 #endif
@@ -298,7 +302,7 @@ extendBuffer()
 {
 	int save_last = last-buffer, save_tp = tp-buffer, save_next = next-buffer;
 #ifdef DBG_TBUF
-	fprintf(stderr, "extending physical buffer\n");
+	/* MR23 */ printMessage(stderr, "extending physical buffer\n");
 #endif
 	buffer_size += chunk_size;
 	buffer = (_ANTLRTokenPtr *)
@@ -328,14 +332,43 @@ setParser(ANTLRParser *p) {					// MR1
   parser=p;							// MR1
   input->setParser(p);						// MR1
   return old;							// MR1
-};								// MR1
+}								// MR1
 								// MR1
 ANTLRParser * ANTLRTokenBuffer::				// MR1
 getParser() {							// MR1
   return parser;						// MR1
-};								// MR1
+}								// MR1
+
+void ANTLRTokenBuffer::panic(const char *msg) // MR23
+{ 
+	if (parser)				//MR23
+		parser->panic(msg);	//MR23
+	else					//MR23
+		exit(PCCTS_EXIT_FAILURE); 
+} 
+
+//MR23
+int ANTLRTokenBuffer::printMessage(FILE* pFile, const char* pFormat, ...)
+{
+	va_list marker;
+	va_start( marker, pFormat );
+
+	int iRet = 0;
+	if (parser)
+		parser->printMessageV(pFile, pFormat, marker);
+	else
+  		iRet = vfprintf(pFile, pFormat, marker);
+
+	va_end( marker );
+	return iRet;
+}
 
 /* to avoid having to link in another file just for the smart token ptr
  * stuff, we include it here.  Ugh.
+ *
+ * MR23 This causes nothing but problems for IDEs.
+ *      Change from .cpp to .h
+ *
  */
-#include ATOKPTR_C
+
+#include ATOKPTR_IMPL_H
