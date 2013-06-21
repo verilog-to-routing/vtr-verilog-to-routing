@@ -13,6 +13,7 @@
   <ItemGroup>
     <ClInclude Include="TOS_ControlSwitches.h" />
     <ClInclude Include="TOS_ExecuteOptions.h" />
+    <ClInclude Include="TOS_FabricOptions.h" />
     <ClInclude Include="TOS_InputOptions.h" />
     <ClInclude Include="TOS_MessageOptions.h" />
     <ClInclude Include="TOS_OptionsStore.h" />
@@ -27,6 +28,7 @@
   <ItemGroup>
     <ClCompile Include="TOS_ControlSwitches.cxx" />
     <ClCompile Include="TOS_ExecuteOptions.cxx" />
+    <ClCompile Include="TOS_FabricOptions.cxx" />
     <ClCompile Include="TOS_InputOptions.cxx" />
     <ClCompile Include="TOS_MessageOptions.cxx" />
     <ClCompile Include="TOS_OptionsStore.cxx" />
@@ -65,7 +67,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VCInstallDir)include;..\TIO_InputOutputHandlers;..\TC_Common;..\..\pcre\SRC;$(IncludePath)</IncludePath>
+    <IncludePath>$(VCInstallDir)include;..\TIO_InputOutputHandlers;..\TC_Common;..\..\libcommon_c\pcre\SRC</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
