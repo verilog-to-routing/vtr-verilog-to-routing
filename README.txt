@@ -9,6 +9,13 @@
 
 		August 23, 2011
 
+  Updated By:	K. E Murray
+        MASC with Professor Vaughn Betz
+		The Edward S. Rogers Sr. Department of Electrical and Computer Engineering
+		University of Toronto
+
+		May 10, 2013
+
 	This project was developed under a Linux environment.
 
 --------------------------------------
@@ -241,6 +248,8 @@ Architecture file containing the constinuent primitives of the circuit [e.g. ../
 
 VII. VQM GENERATION
 ------------------------
+    NOTE: If using VQM2BLIF as part of Titan, see scripts/titan_flow.py and scripts/q2_flow.tcl as
+          they automate this process.  This section is maintained for referrence.
 
 	This method uses a Linux Shell environment to generate a VQM file using Quartus II. Other methods, 
 such as using a Windows environment or the Quartus II GUI, are not covered here.
@@ -358,3 +367,6 @@ XI. CONTACT
 
 Scott Whitty
 scott.whitty@utoronto.ca
+
+Kevin E. Murray
+kmurray@eecg.utoronto.ca
