@@ -2116,6 +2116,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 	default:
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 				"in draw_pin_to_chan_edge: Invalid channel node %d.\n", chan_node);
+		x1 = x2 = y1 = y2 = OPEN; //Prevents compiler error of variable uninitialized.  
 	}
 
 	drawline(x1, y1, x2, y2);

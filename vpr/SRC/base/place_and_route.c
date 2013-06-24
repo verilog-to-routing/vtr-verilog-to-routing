@@ -749,6 +749,7 @@ static float comp_width(t_chan * chan, float x, float separation) {
 	default:
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in comp_width: Unknown channel type %d.\n", chan->type);
+		val = OPEN;
 		break;
 	}
 

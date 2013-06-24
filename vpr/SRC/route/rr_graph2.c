@@ -2535,6 +2535,8 @@ static int *label_wire_muxes_for_balance(
 	} else {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 			"Bad channel type (%d).\n", chan_type);
+		x = OPEN;
+		y = OPEN;
 	}
 
 	/* Generate the normal labels list as the baseline. */
