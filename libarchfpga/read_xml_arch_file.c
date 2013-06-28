@@ -40,7 +40,6 @@ using namespace std;
 enum Fc_type {
 	FC_ABS, FC_FRAC, FC_FULL
 };
-
 /* This gives access to the architecture file name to 
 	all architecture-parser functions       */
 static const char* arch_file_name = NULL;
@@ -129,6 +128,17 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 		e_power_estimation_method power_method);
 e_power_estimation_method power_method_inherited(
 		e_power_estimation_method parent_power_method);
+
+static void CheckXMLTagOrder_PORTS(ezxml_t Cur, ezxml_t Parent,
+		int num_inputs, int num_outputs, int num_clocks);
+static void CheckXMLTagOrder_INTERC(ezxml_t Cur, ezxml_t Parent,
+		int num_complete, int num_direct, int num_mux);
+static void CheckXMLTagOrder_INTERC_ANNOT(ezxml_t Cur, ezxml_t Parent,
+	int num_delay_constant, int num_delay_matrix, int num_C_constant, 
+	int num_C_matrix, int num_pack_pattern);
+static void CheckXMLTagOrder_PB_ANNOT(ezxml_t Cur, ezxml_t Parent,
+	int num_delay_constant, int num_delay_matrix, int num_C_constant, 
+	int num_C_matrix, int num_T_setup, int num_T_cq, int num_T_hold);
 
 /* Sets up the pinloc map and pin classes for the type. Unlinks the loc nodes
  * from the XML tree.
@@ -806,7 +816,8 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 		t_mode * mode) {
 	int num_ports, i, j, k, num_annotations;
 	const char *Prop;
-	ezxml_t Cur, Prev;
+	ezxml_t Cur = NULL;
+	ezxml_t Prev = NULL;
 	char* class_name;
 	/* STL maps for checking various duplicate names */
 	map<string , int> pb_port_names;
@@ -814,6 +825,8 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 	pair<map<string,int>::iterator,bool> ret_pb_ports;
 	pair<map<string,int>::iterator,bool> ret_mode_names;
 	int num_inputs, num_outputs, num_clocks;
+	int num_delay_constant, num_delay_matrix, num_C_constant,
+		num_C_matrix, num_T_setup, num_T_cq, num_T_hold;
 
 	pb_type->parent_mode = mode;
 	if (mode != NULL && mode->parent_pb_type != NULL) {
@@ -864,53 +877,8 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 	pb_type->ports = (t_port*) my_calloc(num_ports, sizeof(t_port));
 	pb_type->num_ports = num_ports;
 
-	/* Check if port tags are grouped, may be improved */
-	/* This has to be done before loading (NOT during or post loading) because ezxml 
-		nodes are destroyed right after they are read */
-	for (i = 0; i < 3; i++) {
-		if (i == 0) {
-			Cur = FindFirstElement(Parent, "input", FALSE);
-			for(j = 1 ; j < num_inputs; j++){
-				if(Cur){
-					if(Cur->ordered){
-						if(strcmp(Cur->ordered->name, "input")){							
-								//Cur->next should not be NULL, the condition operator
-								//Prevents potential segfaults in the case of NULL
-							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
-								"Ports of type 'input' must be grouped together\n");
-						}
-						Cur = Cur->ordered;	
-					}	
-				}
-			}
-		} else if (i == 1) {
-			Cur = FindFirstElement(Parent, "output", FALSE);
-			for(j = 1 ; j < num_outputs; j++){
-				if(Cur){
-					if(Cur->ordered){
-						if(strcmp(Cur->ordered->name, "output")){							
-							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
-								"Ports of type 'output' must be grouped together\n");
-						}
-						Cur = Cur->ordered;	
-					}	
-				}
-			}
-		} else {
-			Cur = FindFirstElement(Parent, "clock", FALSE);
-			for(j = 1 ; j < num_clocks; j++){
-				if(Cur){
-					if(Cur->ordered){
-						if(strcmp(Cur->ordered->name, "clock")){							
-							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
-								"Ports of type 'clock' must be grouped together\n");
-						}
-						Cur = Cur->ordered;	
-					}	
-				}
-			}
-		}
-	}
+	CheckXMLTagOrder_PORTS(Cur, Parent, num_inputs, num_outputs, num_clocks);
+
 	/* Initialize Power Structure */
 	pb_type->pb_type_power = (t_pb_type_power*) my_calloc(1, sizeof(t_pb_type_power));
 	ProcessPb_TypePowerEstMethod(Parent, pb_type);
@@ -985,13 +953,19 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 	if (pb_type->blif_model != NULL) {
 		/* Process delay and capacitance annotations */
 		num_annotations = 0;
-		num_annotations += CountChildren(Parent, "delay_constant", 0);
-		num_annotations += CountChildren(Parent, "delay_matrix", 0);
-		num_annotations += CountChildren(Parent, "C_constant", 0);
-		num_annotations += CountChildren(Parent, "C_matrix", 0);
-		num_annotations += CountChildren(Parent, "T_setup", 0);
-		num_annotations += CountChildren(Parent, "T_clock_to_Q", 0);
-		num_annotations += CountChildren(Parent, "T_hold", 0);
+		num_delay_constant = CountChildren(Parent, "delay_constant", 0);
+		num_delay_matrix = CountChildren(Parent, "delay_matrix", 0);
+		num_C_constant = CountChildren(Parent, "C_constant", 0);
+		num_C_matrix = CountChildren(Parent, "C_matrix", 0);
+		num_T_setup = CountChildren(Parent, "T_setup", 0);
+		num_T_cq = CountChildren(Parent, "T_clock_to_Q", 0);
+		num_T_hold = CountChildren(Parent, "T_hold", 0);
+		num_annotations = num_delay_constant + num_delay_matrix + 
+					num_C_constant + num_C_matrix + num_T_setup +
+					num_T_cq + num_T_hold;
+
+		CheckXMLTagOrder_PB_ANNOT(Cur, Parent, num_delay_constant, num_delay_matrix, 
+			num_C_constant, num_C_matrix, num_T_setup, num_T_cq, num_T_hold);
 
 		pb_type->annotations = (t_pin_to_pin_annotation*) my_calloc(
 				num_annotations, sizeof(t_pin_to_pin_annotation));
@@ -1235,16 +1209,25 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port,
 
 static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 	int num_interconnect = 0;
+	int num_complete, num_direct, num_mux;
 	int i, j, k, L_index, num_annotations;
+	int num_delay_constant, num_delay_matrix, num_C_constant, 
+		num_C_matrix, num_pack_pattern;
 	const char *Prop;
 	ezxml_t Cur, Prev;
 	ezxml_t Cur2, Prev2;
+	Cur = Cur2 = Prev = Prev2 = NULL;
+
 	map<string , int> interc_names;
 	pair<map<string,int>::iterator,bool> ret_interc_names;
 
-	num_interconnect += CountChildren(Parent, "complete", 0);
-	num_interconnect += CountChildren(Parent, "direct", 0);
-	num_interconnect += CountChildren(Parent, "mux", 0);
+	num_complete = num_direct = num_mux = 0;
+	num_complete = CountChildren(Parent, "complete", 0);
+	num_direct = CountChildren(Parent, "direct", 0);
+	num_mux = CountChildren(Parent, "mux", 0);
+	num_interconnect = num_complete + num_direct + num_mux;
+
+	CheckXMLTagOrder_INTERC(Cur, Parent, num_complete, num_direct, num_mux);
 
 	mode->num_interconnect = num_interconnect;
 	mode->interconnect = (t_interconnect*) my_calloc(num_interconnect,
@@ -1294,11 +1277,17 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 
 			/* Process delay and capacitance annotations */
 			num_annotations = 0;
-			num_annotations += CountChildren(Cur, "delay_constant", 0);
-			num_annotations += CountChildren(Cur, "delay_matrix", 0);
-			num_annotations += CountChildren(Cur, "C_constant", 0);
-			num_annotations += CountChildren(Cur, "C_matrix", 0);
-			num_annotations += CountChildren(Cur, "pack_pattern", 0);
+			num_delay_constant = CountChildren(Cur, "delay_constant", 0);
+			num_delay_matrix = CountChildren(Cur, "delay_matrix", 0);
+			num_C_constant = CountChildren(Cur, "C_constant", 0);
+			num_C_matrix = CountChildren(Cur, "C_matrix", 0);
+			num_pack_pattern = CountChildren(Cur, "pack_pattern", 0);
+			num_annotations = num_delay_constant + num_delay_matrix + num_C_constant +
+								num_C_matrix + num_pack_pattern;
+
+			CheckXMLTagOrder_INTERC_ANNOT(Cur2, Cur, num_delay_constant, 
+						num_delay_matrix, num_C_constant, num_C_matrix, 
+						num_pack_pattern);
 
 			mode->interconnect[i].annotations =
 					(t_pin_to_pin_annotation*) my_calloc(num_annotations,
@@ -3967,6 +3956,308 @@ e_power_estimation_method power_method_inherited(
       return POWER_METHOD_UNDEFINED;  // Should never get here, but avoids a compiler warning.
 	}
 }
+
+static void CheckXMLTagOrder_PORTS(ezxml_t Cur, ezxml_t Parent, 
+		int num_inputs, int num_outputs, int num_clocks){
+	/* Check if port tags are grouped, may be improved */
+	/* This has to be done before loading (NOT during or post loading) because ezxml 
+		nodes are destroyed right after they are read */
+
+	int i, j;
+	i = j = 0;
+	for (i = 0; i < 3; i++) {
+		if (i == 0) {
+			Cur = FindFirstElement(Parent, "input", FALSE);
+			for(j = 1 ; j < num_inputs; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "input")){							
+								//Cur->next should not be NULL, the condition operator
+								//Prevents potential segfaults in the case of NULL
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"Ports of type 'input' must be grouped together\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+		} else if (i == 1) {
+			Cur = FindFirstElement(Parent, "output", FALSE);
+			for(j = 1 ; j < num_outputs; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "output")){							
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"Ports of type 'output' must be grouped together\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+		} else {
+			Cur = FindFirstElement(Parent, "clock", FALSE);
+			for(j = 1 ; j < num_clocks; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "clock")){							
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"Ports of type 'clock' must be grouped together\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+		}
+	}
+}
+
+static void CheckXMLTagOrder_INTERC(ezxml_t Cur, ezxml_t Parent,
+		int num_complete, int num_direct, int num_mux){
+	
+	int i, j;
+	i = j = 0;
+	for (i = 0; i < 3; i++) {
+		if (i == 0) {
+			Cur = FindFirstElement(Parent, "complete", FALSE);
+			for(j = 1 ; j < num_complete; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "complete")){							
+								//Cur->next should not be NULL, the condition operator
+								//Prevents potential segfaults in the case of NULL
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"Interconnects of type 'complete' must be specified right after/before each other\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+		} else if (i == 1) {
+			Cur = FindFirstElement(Parent, "direct", FALSE);
+			for(j = 1 ; j < num_direct; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "direct")){							
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"Interconnects of type 'direct' must be specified right after/before each other\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+		} else {
+			Cur = FindFirstElement(Parent, "mux", FALSE);
+			for(j = 1 ; j < num_mux; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "mux")){							
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"Interconnects of type 'mux' must be specified right after/before each other\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+		}
+	}
+}
+
+static void CheckXMLTagOrder_INTERC_ANNOT(ezxml_t Cur, ezxml_t Parent,
+	int num_delay_constant, int num_delay_matrix, int num_C_constant, 
+	int num_C_matrix, int num_pack_pattern){
+
+	int i, j;
+	i = j = 0;
+	for (i = 0; i < 5; i++) {
+		switch(i){
+		case 0:
+			Cur = FindFirstElement(Parent, "delay_constant", FALSE);
+			for(j = 1 ; j < num_delay_constant; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "delay_constant")){							
+								//Cur->next should not be NULL, the condition operator
+								//Prevents potential segfaults in the case of NULL
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"Interconnect annotation of type 'delay_constant' must be specified right after/before each other\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+			break;
+		case 1:
+			Cur = FindFirstElement(Parent, "delay_matrix", FALSE);
+			for(j = 1 ; j < num_delay_matrix; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "delay_matrix")){							
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"Interconnect annotation of type 'delay_matrix' must be specified right after/before each other\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+			break;
+		case 2:
+			Cur = FindFirstElement(Parent, "C_constant", FALSE);
+			for(j = 1 ; j < num_C_constant; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "C_constant")){							
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"Interconnect annotation of type 'C_constant' must be specified right after/before each other\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+			break;
+		case 3:
+			Cur = FindFirstElement(Parent, "C_matrix", FALSE);
+			for(j = 1 ; j < num_C_matrix; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "C_matrix")){							
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"Interconnect annotation of type 'C_matrix' must be specified right after/before each other\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+			break;
+		case 4:
+			Cur = FindFirstElement(Parent, "pack_pattern", FALSE);
+			for(j = 1 ; j < num_pack_pattern; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "pack_pattern")){							
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"Interconnect annotation of type 'pack_pattern' must be specified right after/before each other\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+			break;
+		}
+	}
+}
+
+static void CheckXMLTagOrder_PB_ANNOT(ezxml_t Cur, ezxml_t Parent,
+	int num_delay_constant, int num_delay_matrix, int num_C_constant, 
+	int num_C_matrix, int num_T_setup, int num_T_cq, int num_T_hold){
+
+	int i, j;
+	i = j = 0;
+	for (i = 0; i < 7; i++) {
+		switch (i){
+		case 0: 
+			Cur = FindFirstElement(Parent, "delay_constant", FALSE);
+			for(j = 1 ; j < num_delay_constant; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "delay_constant")){							
+								//Cur->next should not be NULL, the condition operator
+								//Prevents potential segfaults in the case of NULL
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"PB annotation of type 'delay_constant' must be specified right after/before each other\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+			break;
+		case 1:
+			Cur = FindFirstElement(Parent, "delay_matrix", FALSE);
+			for(j = 1 ; j < num_delay_matrix; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "delay_matrix")){							
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"PB annotation of type 'delay_matrix' must be specified right after/before each other\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+			break;
+		case 2:
+			Cur = FindFirstElement(Parent, "C_constant", FALSE);
+			for(j = 1 ; j < num_C_constant; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "C_constant")){							
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"PB annotation of type 'C_constant' must be specified right after/before each other\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+			break;
+		case 3:
+			Cur = FindFirstElement(Parent, "C_matrix", FALSE);
+			for(j = 1 ; j < num_C_matrix; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "C_matrix")){							
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"PB annotation of type 'C_matrix' must be specified right after/before each other\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+			break;
+		case 4:
+			Cur = FindFirstElement(Parent, "T_setup", FALSE);
+			for(j = 1 ; j < num_T_setup; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "T_setup")){							
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"PB annotation of type 'T_setup' must be specified right after/before each other\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+			break;
+		case 5:
+			Cur = FindFirstElement(Parent, "T_cq", FALSE);
+			for(j = 1 ; j < num_T_cq; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "T_cq")){							
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"PB annotation of type 'T_cq' must be specified right after/before each other\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+			break;
+		case 6:
+			Cur = FindFirstElement(Parent, "T_hold", FALSE);
+			for(j = 1 ; j < num_T_hold; j++){
+				if(Cur){
+					if(Cur->ordered){
+						if(strcmp(Cur->ordered->name, "T_hold")){							
+							vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
+								"PB annotation of type 'T_hold' must be specified right after/before each other\n");
+						}
+						Cur = Cur->ordered;	
+					}	
+				}
+			}
+			break;
+		}
+	}
+}
+
 /* Used by functions in read_xml_util.c to gain access to arch filename */
 const char* get_arch_file_name(){
 	return arch_file_name;
