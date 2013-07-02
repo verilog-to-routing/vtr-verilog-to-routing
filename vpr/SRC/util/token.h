@@ -33,5 +33,8 @@ boolean checkTokenType(INP t_token token, OUTP enum e_token_type token_type);
 
 void my_atof_2D(INOUTP float **matrix, INP int max_i, INP int max_j, INP char *instring);
 
+bool check_my_atof_2D(INP int max_i, INP int max_j,
+		INP char *instring, OUTP int* num_entries);
+
 #endif
 

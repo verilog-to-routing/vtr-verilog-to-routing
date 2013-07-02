@@ -3996,8 +3996,8 @@ static void CheckXMLTagOrder(enum XML_tag_order_check_type type,
 					if(strcmp(Cur->ordered->name, tag_names[type][i])){							
 						vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
 							"XML tags of type '%s' must be specified right after/before each other\n", tag_names[type][i]);
-								//Cur->next should not be NULL, the condition operator
-								//Prevents potential segfaults in the case of NULL
+							//Cur->next should not be NULL, the condition operator
+							//Prevents potential segfaults in the case of NULL
 					}
 					Cur = Cur->ordered;	
 				}	

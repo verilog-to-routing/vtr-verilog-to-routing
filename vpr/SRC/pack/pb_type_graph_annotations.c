@@ -17,6 +17,7 @@ using namespace std;
 #include "pb_type_graph.h"
 #include "token.h"
 #include "pb_type_graph_annotations.h"
+#include "read_xml_arch_file.h"
 
 static void load_pack_pattern_annotations(INP int line_num, INOUTP t_pb_graph_node *pb_graph_node,
 		INP int mode, INP char *annot_in_pins, INP char *annot_out_pins,
@@ -199,6 +200,7 @@ static void load_critical_path_annotations(INP int line_num,
 
 	int count, prior_offset;
 	int num_inputs, num_outputs;
+	int num_entries_in_matrix;
 
 	in_port = out_port = NULL;
 	num_out_sets = num_in_sets = 0;
@@ -266,6 +268,11 @@ static void load_critical_path_annotations(INP int line_num,
 	}
 
 	if (input_format == E_ANNOT_PIN_TO_PIN_MATRIX) {
+		if(!check_my_atof_2D(num_inputs, num_outputs, value, &num_entries_in_matrix)){
+			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
+					"Number of entries in matrix (%d) does not match number of pin-to-pin"
+					"connections (%d).", num_entries_in_matrix, num_inputs * num_outputs);
+		}
 		my_atof_2D(delay_matrix, num_inputs, num_outputs, value);
 	} else {
 		assert(input_format == E_ANNOT_PIN_TO_PIN_CONSTANT);

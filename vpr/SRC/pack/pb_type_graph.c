@@ -645,7 +645,8 @@ static void alloc_and_load_mode_interconnect(
 	int i, j;
 	int *num_input_pb_graph_node_pins, *num_output_pb_graph_node_pins; /* number of pins in a set [0..num_sets-1] */
 	int num_input_pb_graph_node_sets, num_output_pb_graph_node_sets;
-	t_pb_graph_pin *** input_pb_graph_node_pins, ***output_pb_graph_node_pins;
+	/* Points to pins specified in the port string, later used to insert edges */
+	t_pb_graph_pin *** input_pb_graph_node_pins, ***output_pb_graph_node_pins; /* [0..num_sets_in_port - 1][0..num_ptrs - 1] */
 
 	if (load_power_structures) {
 		assert(pb_graph_parent_node->interconnect_pins[mode->index] == NULL);
