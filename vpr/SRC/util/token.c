@@ -138,8 +138,6 @@ void my_atof_2D(INOUTP float **matrix, INP int max_i, INP int max_j,
 		INP char *instring) {
 	int i, j;
 	char *cur, *cur2, *copy, *final;
-	bool in_str;
-	int entry_count;
 
 	copy = my_strdup(instring);
 	final = copy;
