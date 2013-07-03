@@ -41,9 +41,6 @@ enum Fc_type {
 	FC_ABS, FC_FRAC, FC_FULL
 };
 
-enum XML_tag_order_check_type{
-	PORTS, INTERC, INTERC_ANNOT, PB_ANNOT
-};
 /* This gives access to the architecture file name to 
 	all architecture-parser functions       */
 static const char* arch_file_name = NULL;
@@ -130,8 +127,7 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 		e_power_estimation_method power_method);
 e_power_estimation_method power_method_inherited(
 		e_power_estimation_method parent_power_method);
-static void CheckXMLTagOrder(enum XML_tag_order_check_type type, 
-	ezxml_t Parent, ...);
+static void CheckXMLTagOrder(ezxml_t Parent);
 
 /* Sets up the pinloc map and pin classes for the type. Unlinks the loc nodes
  * from the XML tree.
@@ -870,7 +866,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 	pb_type->ports = (t_port*) my_calloc(num_ports, sizeof(t_port));
 	pb_type->num_ports = num_ports;
 
-	CheckXMLTagOrder(PORTS, Parent, num_inputs, num_outputs, num_clocks);
+	CheckXMLTagOrder(Parent);
 
 	/* Initialize Power Structure */
 	pb_type->pb_type_power = (t_pb_type_power*) my_calloc(1, sizeof(t_pb_type_power));
@@ -957,8 +953,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 					num_C_constant + num_C_matrix + num_T_setup +
 					num_T_cq + num_T_hold;
 
-		CheckXMLTagOrder(PB_ANNOT, Parent, num_delay_constant, num_delay_matrix, 
-			num_C_constant, num_C_matrix, num_T_setup, num_T_cq, num_T_hold);
+		CheckXMLTagOrder(Parent);
 
 		pb_type->annotations = (t_pin_to_pin_annotation*) my_calloc(
 				num_annotations, sizeof(t_pin_to_pin_annotation));
@@ -970,7 +965,8 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 			if (i == 0) {
 				Cur = FindFirstElement(Parent, "delay_constant", FALSE);
 			} else if (i == 1) {
-				Cur = FindFirstElement(Parent, "delay_matrix", FALSE);
+				Cur = FindFirstElement(Parent, "delay_matrix", 
+										(pb_type->class_type == LUT_CLASS) ? TRUE : FALSE);
 			} else if (i == 2) {
 				Cur = FindFirstElement(Parent, "C_constant", FALSE);
 			} else if (i == 3) {
@@ -1220,7 +1216,7 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 	num_mux = CountChildren(Parent, "mux", 0);
 	num_interconnect = num_complete + num_direct + num_mux;
 
-	CheckXMLTagOrder(INTERC, Parent, num_complete, num_direct, num_mux);
+	CheckXMLTagOrder(Parent);
 
 	mode->num_interconnect = num_interconnect;
 	mode->interconnect = (t_interconnect*) my_calloc(num_interconnect,
@@ -1278,9 +1274,7 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 			num_annotations = num_delay_constant + num_delay_matrix + num_C_constant +
 								num_C_matrix + num_pack_pattern;
 
-			CheckXMLTagOrder(INTERC_ANNOT, Cur, num_delay_constant, 
-						num_delay_matrix, num_C_constant, num_C_matrix, 
-						num_pack_pattern);
+			CheckXMLTagOrder(Cur);
 
 			mode->interconnect[i].annotations =
 					(t_pin_to_pin_annotation*) my_calloc(num_annotations,
@@ -3950,61 +3944,40 @@ e_power_estimation_method power_method_inherited(
 	}
 }
 
-/* Date:June 28th, 2013									*
- * Author: Daniel Chen									*
- * Purpose: Checks for correctly grouped XML tag		*
- *	       ordering, vpr_throws if incorrect			*/
-static void CheckXMLTagOrder(enum XML_tag_order_check_type type, 
-	ezxml_t Parent, ...){
+/* Date:June 28th, 2013								*
+ * Author: Daniel Chen								*
+ * Purpose: Checks for correctly grouped XML tag	*
+ *	       ordering, vpr_throws if incorrect		*
+ * Note: Used this because there is a				*
+ *			bug in ezxml_cut in the ezxml library	*
+ *			which seg faults with incorrectly		*
+ *			grouped tags							*/
+static void CheckXMLTagOrder(ezxml_t Parent){
 	
-	int i, j, num_args, num_tags;
-	ezxml_t Cur = NULL;
-	i = j = num_tags = 0;
-	//4 types of order checks, max(num_args) is 7
-	const char* tag_names[4][7] = {
-		{"input","output","clock", "", "", "", ""},/* PORTS */
-		{"complete", "direct", "mux", "", "", "", ""}, /* INTERC */
-		{"delay_constant","delay_matrix", "C_constant", "C_matrix","pack_pattern","",""},/* INTERC_ANNOT*/
-		{"delay_constant","delay_matrix", "C_constant", "C_matrix","T_setup", "T_clock_to_Q","T_hold"}/* PB_ANNOT */
-	};
+	int i, num_tags;
+	ezxml_t Cur, Temp;
+	char* tag_name;
+	i = num_tags = 0;
 
-	switch(type){
-	case PORTS:
-	case INTERC:
-		num_args = 3;
-		break;
-	case INTERC_ANNOT:
-		num_args = 5;
-		break;
-	case PB_ANNOT:
-		num_args = 7;
-		break;
-	default:
-		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
-				"Invalid type of tag for ordering checks\n");
-		break;
-	}
+	/* Start with first subtag */
+	Cur = Parent->child;
 
-	va_list args;
-	va_start(args, Parent);
-	for(i = 0; i < num_args; i++){
-		num_tags = va_arg(args, int);
-		Cur = FindFirstElement(Parent, tag_names[type][i], FALSE);
-		for(j = 1 ; j < num_tags; j++){
-			if(Cur){
-				if(Cur->ordered){
-					if(strcmp(Cur->ordered->name, tag_names[type][i])){							
-						vpr_throw(VPR_ERROR_ARCH, arch_file_name, (Cur->next->line?Cur->next->line:Cur->line), 
-							"XML tags of type '%s' must be specified right after/before each other\n", tag_names[type][i]);
-							//Cur->next should not be NULL, the condition operator
-							//Prevents potential segfaults in the case of NULL
-					}
-					Cur = Cur->ordered;	
-				}	
+	while(Cur){
+		tag_name = my_strdup(Cur->name);
+		num_tags = CountChildren(Parent, tag_name, 0);
+		Temp = Cur->ordered;
+		for(i = 1 ; i < num_tags; i++){ //Check the next num_tags-1 tags see if grouped
+			if(Temp){
+				if(strcmp(Temp->name, tag_name)){							
+					vpr_throw(VPR_ERROR_ARCH, arch_file_name, Temp->line, 
+						"XML tags of type '%s' must be specified right after/before each other\n", tag_name);
+				}
+				Temp = Temp->ordered;	
 			}
 		}
+		Cur = Cur->sibling; // Go to next tag with a different name on the same level 
+		free(tag_name); // Free the copied tag name
 	}
-	va_end(args);
 }
 
 /* Used by functions outside read_xml_util.c to gain access to arch filename */
