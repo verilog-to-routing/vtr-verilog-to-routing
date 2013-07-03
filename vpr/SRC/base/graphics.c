@@ -96,7 +96,7 @@
 * - Added Win32 support.  Should work under Windows98/95/NT 4.0/NT 5.0.    *
 * - Added a check to deselect_all to determine whether the screen needs to *
 * be updated or not.  Should elminate flicker from mouse clicks            *
-* - Added invalidate_screen() call to graphics.c that in turn calls        *
+* - Added win32_invalidate_screen() call to graphics.c that in turn calls  *
 *   update_screen, so this function was made non-static and added to the   *
 *   header file.  This is due to differences in the structure of Win32     *
 *   windowing apps.                                                        *
@@ -142,13 +142,10 @@
  * Common Preprocessor Directives *
  **********************************/
 
-#define TRUE 1
-#define FALSE 0
-
 // VERBOSE is very helpful for developing event handling features. Outputs
 // useful information when user interacts with the graphic interface.
 // Uncomment the line below to turn on VERBOSE.
-//#define VERBOSE
+#define VERBOSE
 
 #include <math.h>
 #include <stdlib.h>
@@ -156,31 +153,15 @@
 #include <string.h>
 #include <string>
 #include <iostream>
+#include <algorithm>
 #include "graphics.h"
 using namespace std;
 
 
 #if defined(X11) || defined(WIN32)
 
-/* Macros for translation from world to PostScript coordinates */
-#define XPOST(worldx) (((worldx)-trans_coord.xleft)*trans_coord.ps_xmult + trans_coord.ps_left)
-#define YPOST(worldy) (((worldy)-trans_coord.ybot)*trans_coord.ps_ymult + trans_coord.ps_bot)
-
-/* Macros to convert from Screen (pixel) Coordinates to the world coordinates
- * used by the client program. (This macro is used only rarely, so       
- * the divides don't hurt speed).                               
- */
-#define XSCRN2WORLD(x) (((float) x)*trans_coord.xdiv + trans_coord.xleft)
-#define YSCRN2WORLD(y) (((float) y)*trans_coord.ydiv + trans_coord.ytop)
-
-#ifndef max
-#define max(a,b) (((a) > (b))? (a) : (b))
-#endif
-#ifndef min
-#define min(a,b) ((a) > (b)? (b) : (a))
-#endif
-
-#define MWIDTH			104 /* width of menu window */
+#define MWIDTH			104 /* Width of menu window */
+#define MENU_FONT_SIZE  12  /* Font for menus and dialog boxes. */
 #define T_AREA_HEIGHT	24  /* Height of text window */
 #define MAX_FONT_SIZE	24  /* Largest point size of text.   */
                             // Some computers only have up to 24 point 
@@ -189,14 +170,14 @@ using namespace std;
 #define BUTTON_TEXT_LEN	100
 #define BUFSIZE			1000
 
-#define ZOOM_IN_FACTOR  5	/* Each zoom in is by a factor of 1.666 */
-#define ZOOM_OUT_FACTOR 3	/* Zoom out factor of 1.666 */
+#define ZOOM_FACTOR  1.6667 /* For zooming on the graphics */
 #endif
+
+#ifdef X11
 
 /*********************************************
 * X-Windows Specific Preprocessor Directives *
 *********************************************/
-#ifdef X11
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -206,54 +187,42 @@ using namespace std;
 /* Uncomment the line below if your X11 header files don't define XPointer */
 /* typedef char *XPointer;                                                 */
 
-// Really large pixel values cna make some X11 implementations draw crazy things
-// (internal overflow in the X11 library).  Use these constants to clip. 
-//#define MAXPIXEL 21474836
-//#define MINPIXEL -21474836
-
 #endif /* X11 Preprocessor Directives */
 
+#ifdef WIN32
 
 /*************************************************************
  * Microsoft Windows (WIN32) Specific Preprocessor Directives *
  *************************************************************/
-#ifdef WIN32
+
 #pragma warning(disable : 4996)   // Turn off annoying warnings about strcmp.
 
 #include <windows.h>
 #include <WindowsX.h>
 
-// Lines below are for displaying errors in a message box on windows.
-#define SELECT_ERROR() { char msg[BUFSIZE]; sprintf (msg, "Error %i: Couldn't select graphics object on line %d of graphics.c\n", GetLastError(), __LINE__); MessageBox(NULL, msg, NULL, MB_OK); exit(-1); }
-#define DELETE_ERROR() { char msg[BUFSIZE]; sprintf (msg, "Error %i: Couldn't delete graphics object on line %d of graphics.c\n", GetLastError(), __LINE__); MessageBox(NULL, msg, NULL, MB_OK); exit(-1); }
-#define CREATE_ERROR() { char msg[BUFSIZE]; sprintf (msg, "Error %i: Couldn't create graphics object on line %d of graphics.c\n", GetLastError(), __LINE__); MessageBox(NULL, msg, NULL, MB_OK); exit(-1); }
-#define DRAW_ERROR()   { char msg[BUFSIZE]; sprintf (msg, "Error %i: Couldn't draw graphics object on line %d of graphics.c\n", GetLastError(), __LINE__); MessageBox(NULL, msg, NULL, MB_OK); exit(-1); }
-
-/* Paul Leventis had this set to -2000 to +2000 to avoid funny clipping problems
- * on Windows. But in current Windows versions I see no problems with larger
- * MAXPIXEL and MINPIXEL values. Using bigger values has an advantage in that 
- * I clip the endpoints of lines (one at a time) to these pixel limits, so
- * diagonal lines can change slope when you're very zoomed in, and the effect 
- * occurs sooner the smaller these MAXPIXEL and MINPIXEL values are. 
- * Bigger numbers may be OK.  Can we just delete these clips now?
- * VB, June 2013.
- */
-/* I have increased MAXPIXEL and MINPIXEL to these values so the diagonal lines 
- * do not change slope when zoomed way in. I have also tested to make sure the 
- * graphics do not behave funny. However, adding one more digit to these values 
- * will not be safe.
+/* Using large values of pixel limits in order to preserve the slope of diagonal 
+ * lines when their endpoints are clipped (one at a time) to these pixel limits.
+ * However, if these values are too large, then Windows will not draw the lines
+ * when zoomed way in. I have increased MAXPIXEL and MINPIXEL to these values so
+ * the diagonal lines do not change slope when zoomed way in. Also, I have tested 
+ * to make sure these values are safe. Adding one more digit to these values 
+ * may cause problems when zoomed way in. 
+ * As a last note, specifying these values does not affect line clipping in X11. 
+ * The most probable reason is that X11 does line clipping automatically.
  * MW, June 2013.
  */
 #define MAXPIXEL 21474836
 #define MINPIXEL -21474836
 
+/* Windows work in degrees, where as X11 and PostScript both work in radians.
+ * Thus, a conversion is needed for Windows. 
+ */
 #define DEGTORAD(x) ((x)/180.*PI)
-#define FONTMAG 1.3
 #endif /* Win32 preprocessor Directives */
 
 
 /*************************************************************
- * Common Type Definitions                                   *
+ * Common Structure Definitions                              *
  *************************************************************/
 
 /* Used to define where the output of drawscreen (graphics primitives in the user-controlled
@@ -307,44 +276,75 @@ typedef struct {
 } t_button;
 
 
+/* Structure used to store all the buttons created in the menu region.
+ * button: array of pointers to all the buttons created [0..num_buttons-1]
+ * num_buttons: number of menu buttons created
+ */
+typedef struct {
+   t_button *button;             
+   int num_buttons;        
+} t_button_state;
+
+
 /* Structure used to store overall graphics state variables.
- * TODO: Gradually move more file scope variables in here.
  * initialized:  true if the graphics window & state have been 
  *      created and initialized, false otherwise.
  * disp_type: Selects SCREEN or POSTSCRIPT 
  * background_cindex: index of the window (or page for PS) background colour
+ * currentcolor: current color in the graphics context
+ * currentlinestyle: current linestyle in the graphics context
+ * currentlinewidth: current linewidth in the graphics context
+ * currentfontsize: current font size in the graphics context
+ * current_draw_mode: select DRAW_NORMAL (for overwrite) or DRAW_XOR (for rubber-banding)
+ * ps: for PostScript output
+ * ProceedPressed: whether the Proceed button has been pressed
+ * statusMessage: user message to display
+ * font_is_loaded: whether a specified font size is loaded
+ * get_keypress_input: whether keypresses are sent back to callback functions
+ * get_mouse_move_input: whether mouse movements are sent back to callback functions
  */
 typedef struct {
    bool initialized;
-   int disp_type;
+   t_display_type disp_type;
    int background_cindex;
+   int currentcolor;
+   int currentlinestyle;
+   int currentlinewidth;
+   int currentfontsize;
+   e_draw_mode current_draw_mode;
+   FILE *ps;
+   bool ProceedPressed;
+   char statusMessage[BUFSIZE];
+   bool font_is_loaded[MAX_FONT_SIZE + 1];
+   bool get_keypress_input, get_mouse_move_input;
 } t_gl_state;
 
 
 /* Structure used to store coordinate information used for
  * graphic transformations.
- * top_width and top_height: window size
- * saved_xleft, saved_xright, saved_ytop, and saved_ybot: initial user (world)
- * 														coordinates
+ * display_width and display_height: entire screen size
+ * top_width and top_height: application window size in pixels
+ * init_xleft, init_xright, init_ytop, and init_ybot: initial world	coordinates
  * xleft, xright, ytop, and ybot: boundaries of the graphic child window in world
  * 									coordinates
- * ps_left, ps_right, ps_top, and ps_bot: figure boundaries for PostScript output, in
- * 											PostScript coordinates
- * ps_xmult and ps_ymult: transformation for PostScript (number of PostScript
- * 							coordinates per world coordinate)
- * xmult and ymult: transformation factors (number of window coordinates per world
- * 					coordinate)
- * xdiv and ydiv: transformation factors (number of world coordinates per window
- * 					coordinate)
+ * ps_left, ps_right, ps_top, and ps_bot: figure boundaries for PostScript output, 
+ *											in PostScript coordinates
+ * ps_xmult and ps_ymult: world to PostScript transformation factors (number of 
+ *							PostScript coordinates per world coordinate)
+ * wtos_xmult and wtos_ymult: world to screen transformation factors (number of 
+ *								screen pixels per world coordinate)
+ * stow_xmult and stow_ymult: screen to world transformation factors (number of 
+ *								world coordinates per screen pixel)
  */
 typedef struct {
+   int display_width, display_height;
    int top_width, top_height;
-   float saved_xleft, saved_xright, saved_ytop, saved_ybot;
+   float init_xleft, init_xright, init_ytop, init_ybot;
    float xleft, xright, ytop, ybot;
    float ps_left, ps_right, ps_top, ps_bot;
    float ps_xmult, ps_ymult;
-   float xmult, ymult;
-   float xdiv, ydiv;
+   float wtos_xmult, wtos_ymult;
+   float stow_xmult, stow_ymult;
 } t_transform_coordinates;
 
 
@@ -354,13 +354,74 @@ typedef struct {
  * panning_enabled: whether panning is activated or de-activated
  */
 typedef struct {
-	int previous_x, previous_y;
-	bool panning_enabled;
+   int previous_x, previous_y;
+   bool panning_enabled;
 } t_panning_state;
+
+#ifdef X11
+
+/*************************************************************
+ * X11 Structure Definitions                                 *
+ *************************************************************/
+
+/* Structure used to store X Windows state variables.
+ * display: Structure containing information needed to communicate with Xlib.
+ * screen_num: Value the Xlib server uses to identify every connected screen.
+ * colors: Color indices paased back from X Windows.
+ * private_cmap: "None" unless a private cmap was allocated.
+ * toplevel, menu, textarea: Toplevel window and 2 child windows.
+ * gc, gcxor, gc_menus, current_gc: Graphic contexts.
+ * font_info: Data for each font size.
+ */
+typedef struct {
+   Display *display; 
+   int screen_num; 
+   int colors[NUM_COLOR];
+   Colormap private_cmap; 
+   Window toplevel, menu, textarea; 
+   GC gc, gcxor, gc_menus, current_gc; 
+   XFontStruct *font_info[MAX_FONT_SIZE+1]; 
+} t_x11_state;
+
+#endif
+
+#ifdef WIN32
+
+/*************************************************************
+ * WIN32 Structure Definitions                               *
+ *************************************************************/
+
+/* Structure used to store Win32 state variables.
+ * InEventLoop: Whether in event_loop(); used to indicate if part of the application window need 
+ *              to be redrawn when system makes request by sending WM_PAINT message in the 
+ *				GraphicsWND callback function.
+ * windowAdjustFlag, adjustButton, adjustRect, updateRect: These are used for the "Window" 
+ *				graphics button. They keep track of whether we're entering the window rectangle 
+ *				to zoom to, etc.
+ * hMainWnd, hGraphicsWnd, hButtonsWnd, hStatusWnd: Handles to the top level window and 
+ *				3 subwindows.
+ * hGraphicsDC: Handle to the graphics device context.
+ * hGraphicsPen, hGraphicsBrush, hGrayBrush, hGraphicsFont: Handles to Windows GDI objects used
+ *				for drawing.
+ * font_info: Data for each font size.
+ */
+typedef struct {
+   bool InEventLoop;
+   int windowAdjustFlag, adjustButton;
+   RECT adjustRect, updateRect;
+   HWND hMainWnd, hGraphicsWnd, hButtonsWnd, hStatusWnd;
+   HDC hGraphicsDC;
+   HPEN hGraphicsPen;
+   HBRUSH hGraphicsBrush, hGrayBrush;
+   HFONT hGraphicsFont;
+   LOGFONT *font_info[MAX_FONT_SIZE+1];
+} t_win32_state;
+
+#endif
 
 
 /*********************************************************************
- *        File scope variables.  TODO: group in structs              *
+ *        File scope variables.              *
  *********************************************************************/
 
 // Need to initialize graphics_loaded to false, since checking it is 
@@ -368,12 +429,8 @@ typedef struct {
 // window.
 static t_gl_state gl_state = {false, SCREEN, 0};
 
-static const int menu_font_size = 12;   /* Font for menus and dialog boxes. */
-
-static t_button *button = NULL;                 /* [0..num_buttons-1] */
-static int num_buttons = 0;                  /* Number of menu buttons */
-
-static int display_width, display_height;  /* screen size */
+// Stores all the menu buttons created
+static t_button_state button_state = {NULL, 0};
 
 // Contains all coordinates useful for graphics transformation
 static t_transform_coordinates trans_coord;
@@ -381,25 +438,48 @@ static t_transform_coordinates trans_coord;
 // Initialize panning_enabled to false, so panning is not activated
 static t_panning_state pan_state = {0, 0, false};
 
-static int currentcolor;
-static int currentlinestyle;
-static int currentlinewidth;
-static int currentfontsize;
-static e_draw_mode current_draw_mode;
-
-/* For PostScript output */
-static FILE *ps;
-
-static int ProceedPressed;
-
-static char statusMessage[BUFSIZE] = ""; /* User message to display */
-
-static bool font_is_loaded[MAX_FONT_SIZE + 1];
-static bool get_keypress_input, get_mouse_move_input;
+// Color references 
 static const char *ps_cnames[NUM_COLOR] = {"white", "black", "grey55", "grey75",
 		"blue", "green", "yellow", "cyan", "red", "darkgreen", "magenta",
 		"bisque", "lightblue", "thistle", "plum", "khaki", "coral",
 		"turquoise", "mediumpurple", "darkslateblue", "darkkhaki"};
+
+#ifdef X11
+
+/*************************************************
+*     X-Windows Specific File-scope Variables    *
+**************************************************/
+
+// Stores all state variables for X Windows
+t_x11_state x11_state;
+
+#endif /* X11 file scope variables */
+
+#ifdef WIN32
+
+/*****************************************************
+ *  Microsoft Windows (Win32) File Scope Variables   * 
+ *****************************************************/
+
+/* Linestyle references for Win32. */
+static const int win32_line_styles[2] = { PS_SOLID, PS_DASH };
+
+/* Color references for Win32. Colors have to be specified by RGB values for Win32. */
+static const COLORREF win32_colors[NUM_COLOR] = { RGB(255, 255, 255),
+RGB(0, 0, 0), RGB(128, 128, 128), RGB(192, 192, 192), RGB(0, 0, 255),
+RGB(0, 255, 0), RGB(255, 255, 0), RGB(0, 255, 255), RGB(255, 0, 0), RGB(0, 128, 0),
+RGB(255, 0, 255), RGB(255, 228, 196), RGB(173, 216, 230), RGB(216, 191, 216), RGB(221, 160, 221),
+RGB(240, 230, 140), RGB(255, 127, 80), RGB(64, 224, 208), RGB(147, 112, 219), RGB(72, 61, 139),
+RGB(189, 183, 107)};
+
+/* Name of each window */
+static TCHAR szAppName[256], szGraphicsName[] = TEXT("VPR Graphics"), 
+			 szStatusName[] = TEXT("VPR Status"), szButtonsName[] = TEXT("VPR Buttons");
+
+/* Stores all state variables for Win32 */
+static t_win32_state win32_state = {false, 0, -1};
+
+#endif /* WIN32 file scope variables */
 
 
 /*********************************************
@@ -408,8 +488,18 @@ static const char *ps_cnames[NUM_COLOR] = {"white", "black", "grey55", "grey75",
 
 static void *my_malloc(int ibytes);
 static void *my_realloc(void *memblk, int ibytes);
-static int xcoord (float worldx);
-static int ycoord (float worldy);
+
+/* translation from screen coordinates to the world coordinates *
+ * used by the client program.									*/
+static float xscrn_to_world(int x);
+static float yscrn_to_world(int y); 
+/* translation from world to screen coordinates */
+static int xworld_to_scrn (float worldx);
+static int yworld_to_scrn (float worldy);
+/* translation from world to PostScript coordinates */
+static float xworld_to_post(float worldx); 
+static float yworld_to_post(float worldy);
+
 static void force_setcolor(int cindex);
 static void force_setlinestyle(int linestyle);
 static void force_setlinewidth(int linewidth);
@@ -441,85 +531,27 @@ static void unmap_button (int bnum);
 
 #ifdef X11
 
-/*************************************************
-*     X-Windows Specific File-scope Variables    *
-**************************************************/
-static Display *display;
-static int screen_num;
-static GC gc, gcxor, gc_menus, current_gc;
-static XFontStruct *font_info[MAX_FONT_SIZE+1]; /* Data for each size */
-static Window toplevel, menu, textarea;  /* various windows */
-static Colormap private_cmap; /* "None" unless a private cmap was allocated. */
-
-/* Color indices passed back from X Windows. */
-static int colors[NUM_COLOR];
-
-
 /****************************************************
 *     X-Windows Specific Subroutine Declarations    *
 *****************************************************/
 
-static Bool test_if_exposed (Display *disp, XEvent *event_ptr, 
+static Bool x11_test_if_exposed (Display *disp, XEvent *event_ptr, 
 							 XPointer dummy);
-static void build_textarea (void);
-static void drawbut (int bnum);
-static int which_button (Window win);
+static void x11_build_textarea (void);
+static void x11_drawbut (int bnum);
+static int x11_which_button (Window win);
 
-static void turn_on_off (int pressed);
-static void drawmenu(void);
+static void x11_turn_on_off (int pressed);
+static void x11_drawmenu(void);
 
-static void handle_expose (XEvent report, void (*drawscreen) (void));
-static void handle_configure_notify (XEvent report);
-static void handle_button_info (t_event_buttonPressed *button_info,
+static void x11_handle_expose (XEvent report, void (*drawscreen) (void));
+static void x11_handle_configure_notify (XEvent report);
+static void x11_handle_button_info (t_event_buttonPressed *button_info,
 								int buttonNumber, int Xbutton_state);
 
 #endif /* X11 Declarations */
 
-
-
 #ifdef WIN32
-
-/*****************************************************
- *  Microsoft Windows (Win32) File Scope Variables   * 
- *****************************************************/
-static const int win32_line_styles[2] = { PS_SOLID, PS_DASH };
-
-static const COLORREF win32_colors[NUM_COLOR] = { RGB(255, 255, 255),
-RGB(0, 0, 0), RGB(128, 128, 128), RGB(192, 192, 192), RGB(0, 0, 255),
-RGB(0, 255, 0), RGB(255, 255, 0), RGB(0, 255, 255), RGB(255, 0, 0), RGB(0, 128, 0),
-RGB(255, 0, 255), RGB(255, 228, 196), RGB(173, 216, 230), RGB(216, 191, 216), RGB(221, 160, 221),
-RGB(240, 230, 140), RGB(255, 127, 80), RGB(64, 224, 208), RGB(147, 112, 219), RGB(72, 61, 139),
-RGB(189, 183, 107)};
-
-static TCHAR szAppName[256], 
-szGraphicsName[] = TEXT("VPR Graphics"), 
-szStatusName[] = TEXT("VPR Status"),
-szButtonsName[] = TEXT("VPR Buttons");
-static HPEN hGraphicsPen;
-static HBRUSH hGraphicsBrush, hGrayBrush;
-static HDC hGraphicsDC, hForegroundDC, hBackgroundDC,
-hCurrentDC, /* WC : double-buffer */
-hObjtestDC, hAllObjtestDC; /* object test */
-
-/* WC */
-static HFONT hGraphicsFont;
-static LOGFONT *font_info[MAX_FONT_SIZE+1]; /* Data for each size */
-
-/* Handles to the top level window and 3 subwindows. */
-static HWND hMainWnd, hGraphicsWnd, hButtonsWnd, hStatusWnd;
-
-static int cxClient, cyClient;
-
-/* These are used for the "Window" graphics button. They keep track of whether we're entering
- * the window rectangle to zoom to, etc.
- */
-static int windowAdjustFlag = 0, adjustButton = -1;
-static RECT adjustRect, updateRect;
-
-static boolean InEventLoop = FALSE;
-
-//static HBITMAP buttonImages[4];
-
 
 /*******************************************************************
  *    Win32-specific subroutine declarations                       *
@@ -540,25 +572,42 @@ static LRESULT CALLBACK MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 // from windows (GraphicsWND, below).  I can't figure out why windows 
 // does things this way, but it is what makes saving these function pointers
 // necessary.  VB.
-
 static void (*mouseclick_ptr)(float x, float y, t_event_buttonPressed button_info);
 static void (*mousemove_ptr)(float x, float y);
 static void (*keypress_ptr)(char entered_char);
 static void (*drawscreen_ptr)(void);
 
-static void invalidate_screen();  
+// Helper functions for GraphicsWND callback function
+static void win32_GraphicsWND_handle_WM_PAINT(HWND hwnd, PAINTSTRUCT &ps, HPEN &hDotPen, 
+											  RECT &oldAdjustRect);
+static void win32_GraphicsWND_handle_WM_LRBUTTONDOWN(UINT message, WPARAM wParam, LPARAM lParam, 
+													 int &X, int &Y, RECT &oldAdjustRect);
+static void win32_GraphicsWND_handle_WM_MBUTTONDOWN(HWND hwnd, UINT message, WPARAM wParam, 
+													 LPARAM lParam);
+static void win32_GraphicsWND_handle_WM_MOUSEMOVE(LPARAM lParam, int &X, int &Y, 
+											      RECT &oldAdjustRect);
 
-static void reset_win32_state ();
+// Functions for displaying errors in a message box on windows.
+static void SELECT_ERROR(); 
+static void DELETE_ERROR(); 
+static void CREATE_ERROR();
+static void DRAW_ERROR();  
+
+static void win32_invalidate_screen();  
+
+static void win32_reset_state ();
 static void win32_drain_message_queue ();
 
-static void handle_mousewheel_zooming_win32(WPARAM wParam, LPARAM lParam);
-static void handle_button_info (t_event_buttonPressed *button_info, UINT message, WPARAM wParam);
+static void win32_handle_mousewheel_zooming(WPARAM wParam, LPARAM lParam);
+static void win32_handle_button_info (t_event_buttonPressed &button_info, UINT message, 
+									  WPARAM wParam);
 
-void drawtoscreen();
-void displaybuffer();
+void win32_drawtoscreen();
+void win32_displaybuffer();
 
 
 #endif /* Win32 Declarations */
+
 
 /*********************************************************
  *          Common Subroutine Definitions                *
@@ -592,14 +641,36 @@ static void *my_realloc(void *memblk, int ibytes) {
 }
 
 
+/* translation from screen coordinates to the world coordinates *
+ * in the x direction.											*/
+static float xscrn_to_world(int x)
+{
+	float world_coord_x;
+	world_coord_x = ((float) x)*trans_coord.stow_xmult + trans_coord.xleft;
+
+	return world_coord_x;
+}
+
+
+/* translation from screen coordinates to the world coordinates *
+ * in the y direction.											*/
+static float yscrn_to_world(int y)
+{
+	float world_coord_y;
+	world_coord_y = ((float) y)*trans_coord.stow_ymult + trans_coord.ytop;
+
+	return world_coord_y;
+}
+
+
 /* Translates from world (client program) coordinates to screen coordinates
  * (pixels) in the x direction.  Add 0.5 at end for extra half-pixel accuracy. 
  */
-static int xcoord (float worldx) 
+static int xworld_to_scrn (float worldx) 
 {
 	int winx;
 	
-	winx = (int) ((worldx-trans_coord.xleft)*trans_coord.xmult + 0.5);
+	winx = (int) ((worldx-trans_coord.xleft)*trans_coord.wtos_xmult + 0.5);
 
 #ifdef WIN32
 	/* Avoids overflow in the  Window routines.  This will allow horizontal *
@@ -623,11 +694,11 @@ static int xcoord (float worldx)
 /* Translates from world (client program) coordinates to screen coordinates
  * (pixels) in the y direction.  Add 0.5 at end for extra half-pixel accuracy. 
  */
-static int ycoord (float worldy) 
+static int yworld_to_scrn (float worldy) 
 {
 	int winy;
 	
-	winy = (int) ((worldy-trans_coord.ytop)*trans_coord.ymult + 0.5);
+	winy = (int) ((worldy-trans_coord.ytop)*trans_coord.wtos_ymult + 0.5);
 
 #ifdef WIN32
 	/* Avoid overflow in the X/Win32 Window routines. */
@@ -639,54 +710,71 @@ static int ycoord (float worldy)
 }
 
 
-#ifdef WIN32 
-static void invalidate_screen(void)
+/* translation from world to PostScript coordinates in the x direction */
+static float xworld_to_post(float worldx)
 {
-/* Tells the graphics engine to redraw the graphics display since information has changed */
+	float ps_coord_x;
+	ps_coord_x = ((worldx)-trans_coord.xleft)*trans_coord.ps_xmult + trans_coord.ps_left;
 
-	if(!InvalidateRect(hGraphicsWnd, NULL, FALSE))
-		DRAW_ERROR();
-	if(!UpdateWindow(hGraphicsWnd))
-		DRAW_ERROR();
+	return ps_coord_x;
 }
-#endif
+
+
+/* translation from world to PostScript coordinates in the y direction */
+static float yworld_to_post(float worldy)
+{
+	float ps_coord_y;
+	ps_coord_y = ((worldy)-trans_coord.ybot)*trans_coord.ps_ymult + trans_coord.ps_bot;
+
+	return ps_coord_y;
+}
+
 
 /* Sets the current graphics context colour to cindex, regardless of whether we think it is 
  * needed or not. 
  */
 static void force_setcolor (int cindex) 
 {
-	currentcolor = cindex;
+	gl_state.currentcolor = cindex;
 
 	if (gl_state.disp_type == SCREEN) {
 #ifdef X11
-		XSetForeground (display, current_gc, colors[cindex]);
+		XSetForeground (x11_state.display, x11_state.current_gc, x11_state.colors[cindex]);
 #else /* Win32 */
-		int win_linestyle;
+		int win_linestyle, linewidth;
 		LOGBRUSH lb;
 		lb.lbStyle = BS_SOLID;
 		lb.lbColor = win32_colors[cindex];
 		lb.lbHatch = (LONG)NULL;
-		win_linestyle = win32_line_styles[currentlinestyle];
-
-		if(!DeleteObject(hGraphicsPen))
-			DELETE_ERROR();
-
-		int linewidth = max (currentlinewidth, 1);  // Win32 won't draw 0 width dashed lines.
-		hGraphicsPen = ExtCreatePen(PS_GEOMETRIC | win_linestyle |
-			PS_ENDCAP_FLAT, linewidth, &lb, (LONG)NULL, NULL);
-		if(!hGraphicsPen)
-			CREATE_ERROR();
+		win_linestyle = win32_line_styles[gl_state.currentlinestyle];
+		linewidth = max (gl_state.currentlinewidth, 1);  // Win32 won't draw 0 width dashed lines.
 		
-		if(!DeleteObject(hGraphicsBrush)) 
-			DELETE_ERROR();
-		hGraphicsBrush = CreateSolidBrush(win32_colors[currentcolor]);
-		if(!hGraphicsBrush)
+		/* Delete previously used pen */
+		if(!DeleteObject(win32_state.hGraphicsPen))  
+			DELETE_ERROR(); 
+		/* Create a new pen */
+		win32_state.hGraphicsPen = ExtCreatePen(PS_GEOMETRIC | win_linestyle |
+			PS_ENDCAP_FLAT, linewidth, &lb, (LONG)NULL, NULL);  
+		if(!win32_state.hGraphicsPen)
 			CREATE_ERROR();
+		/* Select created pen into specified device context */
+		if(!SelectObject(win32_state.hGraphicsDC, win32_state.hGraphicsPen))
+			SELECT_ERROR();	
+
+		/* Delete previously used brush */
+		if(!DeleteObject(win32_state.hGraphicsBrush)) 
+			DELETE_ERROR();
+		/* Create a new brush */
+		win32_state.hGraphicsBrush = CreateSolidBrush(win32_colors[gl_state.currentcolor]);
+		if(!win32_state.hGraphicsBrush)
+			CREATE_ERROR();
+		/* Select created brush into specified device context */
+		if(!SelectObject(win32_state.hGraphicsDC, win32_state.hGraphicsBrush))
+			SELECT_ERROR();
 #endif
 	}
 	else {
-		fprintf (ps,"%s\n", ps_cnames[cindex]);
+		fprintf (gl_state.ps,"%s\n", ps_cnames[cindex]);
 	}
 }
 
@@ -694,7 +782,7 @@ static void force_setcolor (int cindex)
 /* Sets the current graphics context colour to cindex if it differs from the old colour */
 void setcolor (int cindex) 
 {
-	if (currentcolor != cindex) 
+	if (gl_state.currentcolor != cindex) 
 		force_setcolor (cindex);
    
 }
@@ -721,7 +809,7 @@ void setcolor_by_name (string cname) {
 }
 
 int getcolor() {
-	return currentcolor;
+	return gl_state.currentcolor;
 }
 
 /* Sets the current linestyle to linestyle in the graphics context.
@@ -729,36 +817,42 @@ int getcolor() {
  */
 static void force_setlinestyle (int linestyle) 
 {
-   currentlinestyle = linestyle;
+   gl_state.currentlinestyle = linestyle;
 	
 	if (gl_state.disp_type == SCREEN) {
 
 #ifdef X11
 		static int x_vals[2] = {LineSolid, LineOnOffDash};
-		XSetLineAttributes (display, current_gc, currentlinewidth, x_vals[linestyle],
-			CapButt, JoinMiter);
+		XSetLineAttributes (x11_state.display, x11_state.current_gc, gl_state.currentlinewidth, 
+							x_vals[linestyle], CapButt, JoinMiter);
 #else  // Win32
 		LOGBRUSH lb;
 		lb.lbStyle = BS_SOLID;
-		lb.lbColor = win32_colors[currentcolor];
+		lb.lbColor = win32_colors[gl_state.currentcolor];
 		lb.lbHatch = (LONG)NULL;
 		int win_linestyle = win32_line_styles[linestyle];
-		
-		if(!DeleteObject(hGraphicsPen))
+		/* Win32 won't draw 0 width dashed lines. */
+		int linewidth = max (gl_state.currentlinewidth, 1); 
+
+		/* Delete previously used pen */
+		if(!DeleteObject(win32_state.hGraphicsPen))
 			DELETE_ERROR();
-		int linewidth = max (currentlinewidth, 1);  // Win32 won't draw 0 width dashed lines.
-		hGraphicsPen = ExtCreatePen(PS_GEOMETRIC | win_linestyle |
+		/* Create a new pen */
+		win32_state.hGraphicsPen = ExtCreatePen(PS_GEOMETRIC | win_linestyle |
 			PS_ENDCAP_FLAT, linewidth, &lb, (LONG)NULL, NULL);
-		if(!hGraphicsPen)
+		if(!win32_state.hGraphicsPen)
 			CREATE_ERROR();
+		/* Select created pen into specified device context */
+		if(!SelectObject(win32_state.hGraphicsDC, win32_state.hGraphicsPen))
+			SELECT_ERROR();	
 #endif
 	}
 
 	else {  
 		if (linestyle == SOLID) 
-		   fprintf (ps,"linesolid\n");
+		   fprintf (gl_state.ps,"linesolid\n");
 		else if (linestyle == DASHED)
-			fprintf (ps, "linedashed\n");
+			fprintf (gl_state.ps, "linedashed\n");
 		else {
 			printf ("Error: invalid linestyle: %d\n", linestyle);
 			exit (1);
@@ -772,7 +866,7 @@ static void force_setlinestyle (int linestyle)
  */
 void setlinestyle (int linestyle) 
 {
-	if (linestyle != currentlinestyle) 
+	if (linestyle != gl_state.currentlinestyle) 
 		force_setlinestyle (linestyle);
 }
 
@@ -782,34 +876,40 @@ void setlinestyle (int linestyle)
  */
 static void force_setlinewidth (int linewidth) 
 {	
-	currentlinewidth = linewidth;
+	gl_state.currentlinewidth = linewidth;
 	
 	if (gl_state.disp_type == SCREEN) {
 
 #ifdef X11
 		static int x_vals[2] = {LineSolid, LineOnOffDash};
-		XSetLineAttributes (display, current_gc, linewidth, x_vals[currentlinestyle],
-			CapButt, JoinMiter);
+		XSetLineAttributes (x11_state.display, x11_state.current_gc, linewidth, 
+							x_vals[gl_state.currentlinestyle], CapButt, JoinMiter);
 #else /* Win32 */
 		LOGBRUSH lb;
 		lb.lbStyle = BS_SOLID;
-		lb.lbColor = win32_colors[currentcolor];
+		lb.lbColor = win32_colors[gl_state.currentcolor];
 		lb.lbHatch = (LONG)NULL;
-		int win_linestyle = win32_line_styles[currentlinestyle];
+		int win_linestyle = win32_line_styles[gl_state.currentlinestyle];
 
-		if(!DeleteObject(hGraphicsPen)) 
-			DELETE_ERROR();
 		if (linewidth == 0) 
 			linewidth = 1;  // Win32 won't draw dashed 0 width lines.
-		hGraphicsPen = ExtCreatePen(PS_GEOMETRIC | win_linestyle |
+		
+		/* Delete previously used pen */
+		if(!DeleteObject(win32_state.hGraphicsPen)) 
+			DELETE_ERROR();
+		/* Create a new pen */
+		win32_state.hGraphicsPen = ExtCreatePen(PS_GEOMETRIC | win_linestyle |
 			PS_ENDCAP_FLAT, linewidth, &lb, (LONG)NULL, NULL);
-		if(!hGraphicsPen)
+		if(!win32_state.hGraphicsPen)
 			CREATE_ERROR();
+		/* Select created pen into specified device context */
+		if(!SelectObject(win32_state.hGraphicsDC, win32_state.hGraphicsPen))
+			SELECT_ERROR();	
 #endif
 	}
 
 	else {
-		fprintf(ps,"%d setlinewidth\n", linewidth);
+		fprintf(gl_state.ps,"%d setlinewidth\n", linewidth);
 	}
 }
 
@@ -818,7 +918,7 @@ static void force_setlinewidth (int linewidth)
  */
 void setlinewidth (int linewidth) 
 {
-	if (linewidth != currentlinewidth)
+	if (linewidth != gl_state.currentlinewidth)
 		force_setlinewidth (linewidth);
 }
 
@@ -833,25 +933,26 @@ static void force_setfontsize (int pointsize)
 	
 	if (pointsize < 1) 
 		pointsize = 1;
-#ifdef WIN32
-	pointsize = (int)((float)pointsize * FONTMAG);
-#endif
+
 	if (pointsize > MAX_FONT_SIZE) 
 		pointsize = MAX_FONT_SIZE;
 	
-	currentfontsize = pointsize;
+	gl_state.currentfontsize = pointsize;
 	
 	if (gl_state.disp_type == SCREEN) {
 			load_font (pointsize);
 #ifdef X11
-		XSetFont(display, current_gc, font_info[pointsize]->fid); 
+		XSetFont(x11_state.display, x11_state.current_gc, x11_state.font_info[pointsize]->fid); 
 #else /* Win32 */
-		if(!DeleteObject(hGraphicsFont))
+		/* Delete previously used font */
+		if(!DeleteObject(win32_state.hGraphicsFont))
 			DELETE_ERROR();
-		hGraphicsFont = CreateFontIndirect(font_info[pointsize]);
-		if(!hGraphicsFont)
+		/* Create a new font */
+		win32_state.hGraphicsFont = CreateFontIndirect(win32_state.font_info[pointsize]);
+		if(!win32_state.hGraphicsFont)
 			CREATE_ERROR();
-      		if(!SelectObject(hGraphicsDC, hGraphicsFont) )
+		/* Select created font into specified device context */
+      	if(!SelectObject(win32_state.hGraphicsDC, win32_state.hGraphicsFont) )
 		   SELECT_ERROR();
 
 #endif
@@ -859,7 +960,7 @@ static void force_setfontsize (int pointsize)
 	
 	else {
 		/* PostScript:  set up font and centering function */
-		fprintf(ps,"%d setfontsize\n",pointsize);
+		fprintf(gl_state.ps,"%d setfontsize\n",pointsize);
 	} 
 }
 
@@ -872,7 +973,7 @@ static void force_setfontsize (int pointsize)
 void setfontsize (int pointsize) 
 {
 	
-	if (pointsize != currentfontsize) 
+	if (pointsize != gl_state.currentfontsize) 
 		force_setfontsize (pointsize);
 }
 
@@ -886,10 +987,10 @@ static void setpoly (int bnum, int xc, int yc, int r, float theta)
 {
 	int i;
 	
-	button[bnum].type = BUTTON_POLY;
+	button_state.button[bnum].type = BUTTON_POLY;
 	for (i=0;i<3;i++) {
-		button[bnum].poly[i][0] = (int) (xc + r*cos(theta) + 0.5);
-		button[bnum].poly[i][1] = (int) (yc + r*sin(theta) + 0.5);
+		button_state.button[bnum].poly[i][0] = (int) (xc + r*cos(theta) + 0.5);
+		button_state.button[bnum].poly[i][1] = (int) (yc + r*sin(theta) + 0.5);
 		theta += (float)(2*PI/3);
 	}
 }
@@ -899,34 +1000,45 @@ static void setpoly (int bnum, int xc, int yc, int r, float theta)
 /* Maps a button onto the screen and set it up for input, etc.        */
 static void map_button (int bnum) 
 {
-	button[bnum].ispressed = 0;
+	button_state.button[bnum].ispressed = 0;
 
-	if (button[bnum].type != BUTTON_SEPARATOR) {
+	if (button_state.button[bnum].type != BUTTON_SEPARATOR) {
 #ifdef X11
-		button[bnum].win = XCreateSimpleWindow(display,menu,
-			button[bnum].xleft, button[bnum].ytop, button[bnum].width, 
-			button[bnum].height, 0, colors[WHITE], colors[LIGHTGREY]); 
-		XMapWindow (display, button[bnum].win);
-		XSelectInput (display, button[bnum].win, ButtonPressMask);
+		button_state.button[bnum].win = XCreateSimpleWindow(x11_state.display,x11_state.menu,
+															button_state.button[bnum].xleft, 
+															button_state.button[bnum].ytop, 
+															button_state.button[bnum].width, 
+															button_state.button[bnum].height, 0, 
+															x11_state.colors[WHITE], 
+															x11_state.colors[LIGHTGREY]); 
+		XMapWindow (x11_state.display, button_state.button[bnum].win);
+		XSelectInput (x11_state.display, button_state.button[bnum].win, ButtonPressMask);
 #else
-		button[bnum].hwnd = CreateWindow( TEXT("button"), TEXT(button[bnum].text),
-			WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, button[bnum].xleft, button[bnum].ytop,
-			button[bnum].width, button[bnum].height, hButtonsWnd, (HMENU)(200+bnum), 
-			(HINSTANCE) GetWindowLong(hMainWnd, GWL_HINSTANCE), NULL);
-		if(!InvalidateRect(hButtonsWnd, NULL, TRUE))
+		button_state.button[bnum].hwnd = CreateWindow(TEXT("button"), 
+													  TEXT(button_state.button[bnum].text),
+													  WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 
+													  button_state.button[bnum].xleft, 
+													  button_state.button[bnum].ytop,
+													  button_state.button[bnum].width, 
+													  button_state.button[bnum].height, 
+													  win32_state.hButtonsWnd, (HMENU)(200+bnum), 
+													  (HINSTANCE) GetWindowLong(win32_state.hMainWnd, 
+																				GWL_HINSTANCE), 
+													  NULL);
+		if(!InvalidateRect(win32_state.hButtonsWnd, NULL, TRUE))
 			DRAW_ERROR();
-		if(!UpdateWindow(hButtonsWnd))
+		if(!UpdateWindow(win32_state.hButtonsWnd))
 			DRAW_ERROR();
 #endif
 	}
 	else {   // Separator, not a button.
 #ifdef X11
-		button[bnum].win = -1;
+		button_state.button[bnum].win = -1;
 #else // WIN32
-		button[bnum].hwnd = NULL;
-		if(!InvalidateRect(hButtonsWnd, NULL, TRUE))
+		button_state.button[bnum].hwnd = NULL;
+		if(!InvalidateRect(win32_state.hButtonsWnd, NULL, TRUE))
 			DRAW_ERROR();
-		if(!UpdateWindow(hButtonsWnd))
+		if(!UpdateWindow(win32_state.hButtonsWnd))
 			DRAW_ERROR();
 #endif
 	}
@@ -936,15 +1048,15 @@ static void map_button (int bnum)
 static void unmap_button (int bnum) 
 {
 	/* Unmaps (removes) a button from the screen.        */
-	if (button[bnum].type != BUTTON_SEPARATOR) {
+	if (button_state.button[bnum].type != BUTTON_SEPARATOR) {
 #ifdef X11
-		XUnmapWindow (display, button[bnum].win);
+		XUnmapWindow (x11_state.display, button_state.button[bnum].win);
 #else
-		if(!DestroyWindow(button[bnum].hwnd))
+		if(!DestroyWindow(button_state.button[bnum].hwnd))
 			DRAW_ERROR();
-		if(!InvalidateRect(hButtonsWnd, NULL, TRUE))
+		if(!InvalidateRect(win32_state.hButtonsWnd, NULL, TRUE))
 			DRAW_ERROR();
-		if(!UpdateWindow(hButtonsWnd))
+		if(!UpdateWindow(win32_state.hButtonsWnd))
 			DRAW_ERROR();
 #endif
 	}
@@ -968,9 +1080,9 @@ void create_button (const char *prev_button_text , const char *button_text,
 	
 	bnum = -1;
       
-	for (i=0; i < num_buttons;i++) {
-		if (button[i].type == BUTTON_TEXT && 
-			strcmp (button[i].text, prev_button_text) == 0) {
+	for (i=0; i < button_state.num_buttons;i++) {
+		if (button_state.button[i].type == BUTTON_TEXT && 
+			strcmp (button_state.button[i].text, prev_button_text) == 0) {
 			bnum = i + 1;
 			break;
 		}
@@ -982,7 +1094,8 @@ void create_button (const char *prev_button_text , const char *button_text,
 		exit (1);
 	}
 	
-	button = (t_button *) my_realloc (button, (num_buttons+1) * sizeof (t_button));
+	button_state.button = (t_button *) my_realloc (button_state.button, 
+												   (button_state.num_buttons+1) * sizeof (t_button));
 	/* NB:  Requirement that you specify the button that this button goes under *
 	* guarantees that button[num_buttons-2] exists and is a text button.       */
 	
@@ -994,33 +1107,34 @@ void create_button (const char *prev_button_text , const char *button_text,
 	else
 		bheight = 26;
 
-	for (i=num_buttons;i>bnum;i--) {
-		button[i].xleft = button[i-1].xleft;
-		button[i].ytop = button[i-1].ytop + bheight + space;
-		button[i].height = button[i-1].height;
-		button[i].width = button[i-1].width;
-		button[i].type = button[i-1].type;
-		strcpy (button[i].text, button[i-1].text);
-		button[i].fcn = button[i-1].fcn;
-		button[i].ispressed = button[i-1].ispressed;
-		button[i].enabled = button[i-1].enabled;
+	for (i=button_state.num_buttons;i>bnum;i--) {
+		button_state.button[i].xleft = button_state.button[i-1].xleft;
+		button_state.button[i].ytop = button_state.button[i-1].ytop + bheight + space;
+		button_state.button[i].height = button_state.button[i-1].height;
+		button_state.button[i].width = button_state.button[i-1].width;
+		button_state.button[i].type = button_state.button[i-1].type;
+		strcpy (button_state.button[i].text, button_state.button[i-1].text);
+		button_state.button[i].fcn = button_state.button[i-1].fcn;
+		button_state.button[i].ispressed = button_state.button[i-1].ispressed;
+		button_state.button[i].enabled = button_state.button[i-1].enabled;
 		unmap_button (i-1);
 	}
 
 	i = bnum;
-	button[i].xleft = 6;
-	button[i].ytop = button[i-1].ytop + button[i-1].height + space;
-	button[i].height = bheight;
-	button[i].width = 90;
-	button[i].type = button_type;
-	strncpy (button[i].text, button_text, BUTTON_TEXT_LEN);
-	button[i].fcn = button_func;
-	button[i].ispressed = false;
-	button[i].enabled = true;
+	button_state.button[i].xleft = 6;
+	button_state.button[i].ytop = button_state.button[i-1].ytop + button_state.button[i-1].height 
+									+ space;
+	button_state.button[i].height = bheight;
+	button_state.button[i].width = 90;
+	button_state.button[i].type = button_type;
+	strncpy (button_state.button[i].text, button_text, BUTTON_TEXT_LEN);
+	button_state.button[i].fcn = button_func;
+	button_state.button[i].ispressed = false;
+	button_state.button[i].enabled = true;
 
-	num_buttons++;
+	button_state.num_buttons++;
 
-	for (i = 0; i<num_buttons;i++) 
+	for (i = 0; i<button_state.num_buttons;i++) 
 		map_button (i);
 }
 
@@ -1033,9 +1147,9 @@ destroy_button (const char *button_text)
 	
 	bnum = -1;
 	space = 8;
-	for (i = 0; i < num_buttons; i++) {
-		if (button[i].type == BUTTON_TEXT && 
-			strcmp (button[i].text, button_text) == 0) {
+	for (i = 0; i < button_state.num_buttons; i++) {
+		if (button_state.button[i].type == BUTTON_TEXT && 
+			strcmp (button_state.button[i].text, button_text) == 0) {
 			bnum = i;
 			break;
 		}
@@ -1047,27 +1161,28 @@ destroy_button (const char *button_text)
 		exit (1);
 	}
 
-	bheight = button[bnum].height;
+	bheight = button_state.button[bnum].height;
 
-	for (i=bnum+1;i<num_buttons;i++) {
-		button[i-1].xleft = button[i].xleft;
-		button[i-1].ytop = button[i].ytop - bheight - space;
-		button[i-1].height = button[i].height;
-		button[i-1].width = button[i].width;
-		button[i-1].type = button[i].type;
-		strcpy (button[i-1].text, button[i].text);
-		button[i-1].fcn = button[i].fcn;
-		button[i-1].ispressed = button[i].ispressed;
-		button[i-1].enabled = button[i].enabled;
+	for (i=bnum+1;i<button_state.num_buttons;i++) {
+		button_state.button[i-1].xleft = button_state.button[i].xleft;
+		button_state.button[i-1].ytop = button_state.button[i].ytop - bheight - space;
+		button_state.button[i-1].height = button_state.button[i].height;
+		button_state.button[i-1].width = button_state.button[i].width;
+		button_state.button[i-1].type = button_state.button[i].type;
+		strcpy (button_state.button[i-1].text, button_state.button[i].text);
+		button_state.button[i-1].fcn = button_state.button[i].fcn;
+		button_state.button[i-1].ispressed = button_state.button[i].ispressed;
+		button_state.button[i-1].enabled = button_state.button[i].enabled;
 		unmap_button (i);
 	}
 	unmap_button(bnum);
 
-	button = (t_button *) my_realloc (button, (num_buttons-1) * sizeof (t_button));
+	button_state.button = (t_button *) my_realloc (button_state.button, 
+												   (button_state.num_buttons-1) * sizeof (t_button));
 
-	num_buttons--;
+	button_state.num_buttons--;
 
-	for (i=bnum; i<num_buttons;i++) 
+	for (i=bnum; i<button_state.num_buttons;i++) 
 		map_button (i);
 }
 
@@ -1083,7 +1198,7 @@ init_graphics (const char *window_name, int cindex)
 
    reset_common_state ();
 #ifdef WIN32
-   reset_win32_state ();
+   win32_reset_state ();
 #endif
 
    gl_state.disp_type = SCREEN;
@@ -1109,7 +1224,7 @@ init_graphics (const char *window_name, int cindex)
    XEvent event;
 
    /* connect to X server */
-   if ( (display=XOpenDisplay(display_name)) == NULL )
+   if ( (x11_state.display=XOpenDisplay(display_name)) == NULL )
    {
       fprintf( stderr, "Cannot connect to X server %s\n",
    		XDisplayName(display_name));
@@ -1117,37 +1232,37 @@ init_graphics (const char *window_name, int cindex)
    }
 	
    /* get screen size from display structure macro */
-   screen_num = DefaultScreen(display);
-   display_width = DisplayWidth(display, screen_num);
-   display_height = DisplayHeight(display, screen_num);
+   x11_state.screen_num = DefaultScreen(x11_state.display);
+   trans_coord.display_width = DisplayWidth(x11_state.display, x11_state.screen_num);
+   trans_coord.display_height = DisplayHeight(x11_state.display, x11_state.screen_num);
    
    x = 0;
    y = 0;
 	
-   trans_coord.top_width = 2 * display_width / 3;
-   trans_coord.top_height = 4 * display_height / 5;
+   trans_coord.top_width = 2 * trans_coord.display_width / 3;
+   trans_coord.top_height = 4 * trans_coord.display_height / 5;
    
-   cmap = DefaultColormap(display, screen_num);
-   private_cmap = None;
+   cmap = DefaultColormap(x11_state.display, x11_state.screen_num);
+   x11_state.private_cmap = None;
 	
    for (int i=0;i<NUM_COLOR;i++) {
-      if (!XParseColor(display,cmap,cnames[i],&exact_def)) {
+      if (!XParseColor(x11_state.display,cmap,cnames[i],&exact_def)) {
          fprintf(stderr, "Color name %s not in database", cnames[i]);
          exit(-1);
       }
-      if (!XAllocColor(display, cmap, &exact_def)) {
+      if (!XAllocColor(x11_state.display, cmap, &exact_def)) {
          fprintf(stderr, "Couldn't allocate color %s.\n",cnames[i]); 
    		
-         if (private_cmap == None) {
+         if (x11_state.private_cmap == None) {
             fprintf(stderr, "Will try to allocate a private colourmap.\n");
             fprintf(stderr, "Colours will only display correctly when your "
                             "cursor is in the graphics window.\n"
                             "Exit other colour applications and rerun this "
                             "program if you don't like that.\n\n");
 				
-            private_cmap = XCopyColormapAndFree (display, cmap);
-            cmap = private_cmap;
-            if (!XAllocColor (display, cmap, &exact_def)) {
+            x11_state.private_cmap = XCopyColormapAndFree (x11_state.display, cmap);
+            cmap = x11_state.private_cmap;
+            if (!XAllocColor (x11_state.display, cmap, &exact_def)) {
                fprintf (stderr, "Couldn't allocate color %s as private.\n",
                                  cnames[i]);
                exit (1);
@@ -1160,40 +1275,43 @@ init_graphics (const char *window_name, int cindex)
             exit (1);
          }
       }
-      colors[i] = exact_def.pixel;
+      x11_state.colors[i] = exact_def.pixel;
    }  // End setting up colours
 	
-   toplevel = XCreateSimpleWindow(display,RootWindow(display,screen_num),
-              	  x, y, trans_coord.top_width, trans_coord.top_height,
-              	  border_width, colors[BLACK], colors[cindex]);
+   x11_state.toplevel = XCreateSimpleWindow(x11_state.display,
+											RootWindow(x11_state.display,x11_state.screen_num),
+              								x, y, trans_coord.top_width, trans_coord.top_height,
+              								border_width, x11_state.colors[BLACK], 
+											x11_state.colors[cindex]);
 
-   if (private_cmap != None) 
-      XSetWindowColormap (display, toplevel, private_cmap);
+   if (x11_state.private_cmap != None) 
+      XSetWindowColormap (x11_state.display, x11_state.toplevel, x11_state.private_cmap);
 	
-   XSelectInput (display, toplevel, ExposureMask | StructureNotifyMask |
+   XSelectInput (x11_state.display, x11_state.toplevel, ExposureMask | StructureNotifyMask |
                     ButtonPressMask | ButtonReleaseMask | PointerMotionMask |
                     KeyPressMask);
 	
    /* Create default Graphics Contexts.  valuemask = 0 -> use defaults. */
-   current_gc = gc = XCreateGC(display, toplevel, valuemask, &values);
-   gc_menus = XCreateGC(display, toplevel, valuemask, &values);
+   x11_state.current_gc = x11_state.gc = XCreateGC(x11_state.display, x11_state.toplevel, 
+												   valuemask, &values);
+   x11_state.gc_menus = XCreateGC(x11_state.display, x11_state.toplevel, valuemask, &values);
 	
    /* Create XOR graphics context for Rubber Banding */
    values.function = GXxor;   
-   values.foreground = colors[cindex];
-   gcxor = XCreateGC(display, toplevel, (GCFunction | GCForeground),
+   values.foreground = x11_state.colors[cindex];
+   x11_state.gcxor = XCreateGC(x11_state.display, x11_state.toplevel, (GCFunction | GCForeground),
                      &values);
 	
    /* specify font for menus.  */
-   load_font(menu_font_size);
-   XSetFont(display, gc_menus, font_info[menu_font_size]->fid);
+   load_font(MENU_FONT_SIZE);
+   XSetFont(x11_state.display, x11_state.gc_menus, x11_state.font_info[MENU_FONT_SIZE]->fid);
 	
    /* Set drawing defaults for user-drawable area.  Use whatever the *
    * initial values of the current stuff was set to.                */
-   force_setfontsize(currentfontsize);
-   force_setcolor (currentcolor);
-   force_setlinestyle (currentlinestyle);
-   force_setlinewidth (currentlinewidth);
+   force_setfontsize(gl_state.currentfontsize);
+   force_setcolor (gl_state.currentcolor);
+   force_setlinestyle (gl_state.currentlinestyle);
+   force_setlinewidth (gl_state.currentlinewidth);
 	
    // Need a non-const name to pass to XStringListTo... 
    // (even though X11 won't change it).
@@ -1203,16 +1321,16 @@ init_graphics (const char *window_name, int cindex)
    free (window_name_copy);
    window_name_copy = NULL;
 
-   XSetWMName (display, toplevel, &windowName);
-   /* XSetWMIconName (display, toplevel, &windowName); */
+   XSetWMName (x11_state.display, x11_state.toplevel, &windowName);
+   /* XSetWMIconName (x11_state.display, x11_state.toplevel, &windowName); */
 	
    /* XStringListToTextProperty copies the window_name string into            *
     * windowName.value.  Free this memory now.                                */
 	
    free (windowName.value);  
 	
-   XMapWindow (display, toplevel);
-   build_textarea ();
+   XMapWindow (x11_state.display, x11_state.toplevel);
+   x11_build_textarea ();
    build_default_menu ();
 	
    /* The following is completely unnecessary if the user is using the       *
@@ -1221,7 +1339,7 @@ init_graphics (const char *window_name, int cindex)
     * the top-level window up and running.  Thus the user can start drawing  *
     * into this window immediately, and there's no danger of the window not  *
     * being ready and output being lost.                                     */
-   XPeekIfEvent (display, &event, test_if_exposed, NULL); 
+   XPeekIfEvent (x11_state.display, &event, x11_test_if_exposed, NULL); 
 	
 #else /* WIN32 */
    WNDCLASS wndclass;
@@ -1229,39 +1347,39 @@ init_graphics (const char *window_name, int cindex)
    int x, y;
    LOGBRUSH lb;
    lb.lbStyle = BS_SOLID;
-   lb.lbColor = win32_colors[currentcolor];
+   lb.lbColor = win32_colors[gl_state.currentcolor];
    lb.lbHatch = (LONG)NULL;
    x = 0;
    y = 0;
 	
    /* get screen size from display structure macro */
-   display_width = GetSystemMetrics( SM_CXSCREEN );
-   if (!(display_width))
+   trans_coord.display_width = GetSystemMetrics( SM_CXSCREEN );
+   if (!(trans_coord.display_width))
       CREATE_ERROR();
-   display_height = GetSystemMetrics( SM_CYSCREEN );
-   if (!(display_height))
+   trans_coord.display_height = GetSystemMetrics( SM_CYSCREEN );
+   if (!(trans_coord.display_height))
       CREATE_ERROR();
-   trans_coord.top_width = 2*display_width/3;
-   trans_coord.top_height = 4*display_height/5;
+   trans_coord.top_width = 2*trans_coord.display_width/3;
+   trans_coord.top_height = 4*trans_coord.display_height/5;
 	
    /* Grab the Application name */
    wsprintf(szAppName, TEXT(window_name));
 	
-   //hGraphicsPen = CreatePen(win32_line_styles[SOLID], 1, win32_colors[BLACK]);
-   hGraphicsPen = ExtCreatePen(PS_GEOMETRIC | win32_line_styles[currentlinestyle] |
-                  PS_ENDCAP_FLAT, 1, &lb, (LONG)NULL, NULL);
-   if(!hGraphicsPen)
+   //win32_state.hGraphicsPen = CreatePen(win32_line_styles[SOLID], 1, win32_colors[BLACK]);
+   win32_state.hGraphicsPen = ExtCreatePen(PS_GEOMETRIC | win32_line_styles[gl_state.currentlinestyle] 
+										    | PS_ENDCAP_FLAT, 1, &lb, (LONG)NULL, NULL);
+   if(!win32_state.hGraphicsPen)
       CREATE_ERROR();
-   hGraphicsBrush = CreateSolidBrush(win32_colors[DARKGREY]); 
-   if(!hGraphicsBrush)
+   win32_state.hGraphicsBrush = CreateSolidBrush(win32_colors[DARKGREY]); 
+   if(!win32_state.hGraphicsBrush)
       CREATE_ERROR();
-   hGrayBrush = CreateSolidBrush(win32_colors[LIGHTGREY]);
-   if(!hGrayBrush)
+   win32_state.hGrayBrush = CreateSolidBrush(win32_colors[LIGHTGREY]);
+   if(!win32_state.hGrayBrush)
       CREATE_ERROR();
 
-   load_font (currentfontsize);
-   hGraphicsFont = CreateFontIndirect(font_info[currentfontsize]);
-   if (!hGraphicsFont)
+   load_font (gl_state.currentfontsize);
+   win32_state.hGraphicsFont = CreateFontIndirect(win32_state.font_info[gl_state.currentfontsize]);
+   if (!win32_state.hGraphicsFont)
       CREATE_ERROR();
 	
    /* Register the Main Window class */
@@ -1295,7 +1413,7 @@ init_graphics (const char *window_name, int cindex)
    wndclass.lpfnWndProc = StatusWND;
    wndclass.hIcon = NULL;
    wndclass.lpszClassName = szStatusName;
-   wndclass.hbrBackground = hGrayBrush;
+   wndclass.hbrBackground = win32_state.hGrayBrush;
    
    if(!RegisterClass(&wndclass))
       DRAW_ERROR();
@@ -1304,25 +1422,25 @@ init_graphics (const char *window_name, int cindex)
    wndclass.lpfnWndProc = ButtonsWND;
    wndclass.hIcon = NULL;
    wndclass.lpszClassName = szButtonsName;
-   wndclass.hbrBackground = hGrayBrush;
+   wndclass.hbrBackground = win32_state.hGrayBrush;
 	
    if (!RegisterClass(&wndclass))
       DRAW_ERROR();
 	
-   hMainWnd = CreateWindow(szAppName, TEXT(window_name),
+   win32_state.hMainWnd = CreateWindow(szAppName, TEXT(window_name),
                  WS_OVERLAPPEDWINDOW, x, y, trans_coord.top_width,
                  trans_coord.top_height, NULL, NULL, hInstance, NULL);
 	
-   if(!hMainWnd)
+   if(!win32_state.hMainWnd)
       DRAW_ERROR();
 	
    /* Set drawing defaults for user-drawable area.  Use whatever the *
     * initial values of the current stuff was set to.                */
 	
-   if (ShowWindow(hMainWnd, SW_SHOWNORMAL))
+   if (ShowWindow(win32_state.hMainWnd, SW_SHOWNORMAL))
       DRAW_ERROR();
    build_default_menu();
-   if (!UpdateWindow(hMainWnd))
+   if (!UpdateWindow(win32_state.hMainWnd))
       DRAW_ERROR();
    win32_drain_message_queue ();
 #endif
@@ -1331,18 +1449,18 @@ init_graphics (const char *window_name, int cindex)
 
 
 static void reset_common_state () {
-   currentcolor = BLACK;
-   currentlinestyle = SOLID;
-   currentlinewidth = 0;
-   currentfontsize = 12;
-   current_draw_mode = DRAW_NORMAL;
+   gl_state.currentcolor = BLACK;
+   gl_state.currentlinestyle = SOLID;
+   gl_state.currentlinewidth = 0;
+   gl_state.currentfontsize = 12;
+   gl_state.current_draw_mode = DRAW_NORMAL;
 
    for (int i=0;i<=MAX_FONT_SIZE;i++) 
-      font_is_loaded[i] = false;     /* No fonts loaded yet. */
+      gl_state.font_is_loaded[i] = false;     /* No fonts loaded yet. */
 
-   ProceedPressed = false;
-   get_keypress_input = false;
-   get_mouse_move_input = false;
+   gl_state.ProceedPressed = false;
+   gl_state.get_keypress_input = false;
+   gl_state.get_mouse_move_input = false;
 }
 
 
@@ -1356,32 +1474,32 @@ update_transform (void)
 	
 	/* X Window coordinates go from (0,0) to (width-1,height-1) */
 	diff = trans_coord.xright - trans_coord.xleft;
-	trans_coord.xmult = (trans_coord.top_width - 1 - MWIDTH) / diff;
+	trans_coord.wtos_xmult = (trans_coord.top_width - 1 - MWIDTH) / diff;
 	diff = trans_coord.ybot - trans_coord.ytop;
-	trans_coord.ymult = (trans_coord.top_height - 1 - T_AREA_HEIGHT) / diff;
+	trans_coord.wtos_ymult = (trans_coord.top_height - 1 - T_AREA_HEIGHT) / diff;
 
 	/* Need to use same scaling factor to preserve aspect ratio */
-	if (fabs(trans_coord.xmult) <= fabs(trans_coord.ymult)) {
-		mult = (float)(fabs(trans_coord.ymult/trans_coord.xmult));
+	if (fabs(trans_coord.wtos_xmult) <= fabs(trans_coord.wtos_ymult)) {
+		mult = (float)(fabs(trans_coord.wtos_ymult/trans_coord.wtos_xmult));
 		y1 = trans_coord.ytop - (trans_coord.ybot-trans_coord.ytop)*(mult-1)/2;
 		y2 = trans_coord.ybot + (trans_coord.ybot-trans_coord.ytop)*(mult-1)/2;
 		trans_coord.ytop = y1;
 		trans_coord.ybot = y2;
 	}
 	else {
-		mult = (float)(fabs(trans_coord.xmult/trans_coord.ymult));
+		mult = (float)(fabs(trans_coord.wtos_xmult/trans_coord.wtos_ymult));
 		x1 = trans_coord.xleft - (trans_coord.xright-trans_coord.xleft)*(mult-1)/2;
 		x2 = trans_coord.xright + (trans_coord.xright-trans_coord.xleft)*(mult-1)/2;
 		trans_coord.xleft = x1;
 		trans_coord.xright = x2;
 	}
 	diff = trans_coord.xright - trans_coord.xleft;
-	trans_coord.xmult = (trans_coord.top_width - 1 - MWIDTH) / diff;
+	trans_coord.wtos_xmult = (trans_coord.top_width - 1 - MWIDTH) / diff;
 	diff = trans_coord.ybot - trans_coord.ytop;
-	trans_coord.ymult = (trans_coord.top_height - 1 - T_AREA_HEIGHT) / diff;
+	trans_coord.wtos_ymult = (trans_coord.top_height - 1 - T_AREA_HEIGHT) / diff;
 
-	trans_coord.xdiv = 1/trans_coord.xmult;
-	trans_coord.ydiv = 1/trans_coord.ymult;
+	trans_coord.stow_xmult = 1/trans_coord.wtos_xmult;
+	trans_coord.stow_ymult = 1/trans_coord.wtos_ymult;
 }
 
 
@@ -1449,35 +1567,36 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 #define OFF 1
 #define ON 0
 	
-	turn_on_off (ON);
+	x11_turn_on_off (ON);
 	while (1) {
-		XNextEvent (display, &report);
+		XNextEvent (x11_state.display, &report);
 		switch (report.type) {  
 		case Expose:
 			if (report.xexpose.count != 0)
 				break;
-			handle_expose(report, drawscreen);
+			x11_handle_expose(report, drawscreen);
 			break;
 		case ConfigureNotify:
-			handle_configure_notify(report);
+			x11_handle_configure_notify(report);
 			break; 
 		case ButtonPress:
 #ifdef VERBOSE 
 			printf("Got a buttonpress.\n");
 			printf("Window ID is: %ld.\n",report.xbutton.window);
-			printf("Button pressed is: %d.\n(left click is 1; right click is 3; scroll wheel click is 2; "
-					"scroll wheel forward rotate is 4; scroll wheel backward is 5.)\n",report.xbutton.button);
+			printf("Button pressed is: %d.\n(left click is 1; right click is 3; "
+					"scroll wheel click is 2; scroll wheel forward rotate is 4; "
+					"scroll wheel backward is 5.)\n",report.xbutton.button);
 			printf("Mask is: %d.\n",report.xbutton.state);
 #endif
-			if (report.xbutton.window == toplevel) {
-				x = XSCRN2WORLD(report.xbutton.x);
-				y = YSCRN2WORLD(report.xbutton.y);
+			if (report.xbutton.window == x11_state.toplevel) {
+				x = xscrn_to_world(report.xbutton.x);
+				y = yscrn_to_world(report.xbutton.y);
 
 				t_event_buttonPressed button_info; 
-				/* t_event_buttonPressed is used as a structure for storing information about a		*
-				 * button press event. This information can be passed back to and used by a client  *
-				 * program.																			*/
-				handle_button_info(&button_info, report.xbutton.button, report.xbutton.state);
+				/* t_event_buttonPressed is used as a structure for storing information about a	   *
+				 * button press event. This information can be passed back to and used by a client *
+				 * program.																		   */
+				x11_handle_button_info(&button_info, report.xbutton.button, report.xbutton.state);
 #ifdef VERBOSE
 			if (button_info.shift_pressed == true)
 				printf("Shift is pressed at button press.\n");
@@ -1503,19 +1622,19 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 				}
 			} 
 			else {  /* A menu button was pressed. */
-				bnum = which_button(report.xbutton.window);
+				bnum = x11_which_button(report.xbutton.window);
 #ifdef VERBOSE 
 				printf("Button number is %d\n",bnum);
 #endif
-				if (button[bnum].enabled) {
-					button[bnum].ispressed = 1;
-					drawbut(bnum);
-					XFlush(display);  /* Flash the button */
-					button[bnum].fcn (drawscreen);
-					button[bnum].ispressed = 0;
-					drawbut(bnum);
-					if (button[bnum].fcn == proceed) {
-						turn_on_off(OFF);
+				if (button_state.button[bnum].enabled) {
+					button_state.button[bnum].ispressed = 1;
+					x11_drawbut(bnum);
+					XFlush(x11_state.display);  /* Flash the button */
+					button_state.button[bnum].fcn (drawscreen);
+					button_state.button[bnum].ispressed = 0;
+					x11_drawbut(bnum);
+					if (button_state.button[bnum].fcn == proceed) {
+						x11_turn_on_off(OFF);
 						flushinput ();
 						return;  /* Rather clumsy way of returning *
 						* control to the simulator       */
@@ -1527,8 +1646,9 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 #ifdef VERBOSE
 			printf("Got a buttonrelease.\n");
 			printf("Window ID is: %ld.\n",report.xbutton.window);
-			printf("Button released is: %d.\n(left click is 1; right click is 3; scroll wheel click is 2; "
-					"scroll wheel forward rotate is 4; scroll wheel backward is 5.)\n",report.xbutton.button);
+			printf("Button released is: %d.\n(left click is 1; right click is 3; "
+					"scroll wheel click is 2; scroll wheel forward rotate is 4; "
+					"scroll wheel backward is 5.)\n",report.xbutton.button);
 			printf("Mask is: %d.\n",report.xbutton.state);
 #endif
 			switch (report.xbutton.button) {
@@ -1543,16 +1663,16 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 #endif
 			if (pan_state.panning_enabled)
 				panning_execute(report.xmotion.x, report.xmotion.y, drawscreen);
-			else if (get_mouse_move_input &&
+			else if (gl_state.get_mouse_move_input &&
 			    report.xmotion.x <= trans_coord.top_width-MWIDTH &&
 			    report.xmotion.y <= trans_coord.top_height-T_AREA_HEIGHT)
-				act_on_mousemove(XSCRN2WORLD(report.xmotion.x), YSCRN2WORLD(report.xmotion.y));
+				act_on_mousemove(xscrn_to_world(report.xmotion.x), yscrn_to_world(report.xmotion.y));
 			break;
 		case KeyPress:
 #ifdef VERBOSE 
 			printf("Got a KeyPress Event.\n");
 #endif
-			if (get_keypress_input)
+			if (gl_state.get_keypress_input)
 			{
 			     char      keyb_buffer[20];
 			     XComposeStatus composestatus;
@@ -1578,19 +1698,19 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 	mousemove_ptr = act_on_mousemove;
 	keypress_ptr = act_on_keypress;
 	drawscreen_ptr = drawscreen;
-	ProceedPressed = FALSE;
-	InEventLoop = TRUE;
+	gl_state.ProceedPressed = false;
+	win32_state.InEventLoop = true;
 	
-	invalidate_screen();
+	win32_invalidate_screen();
 	
-	while(!ProceedPressed && GetMessage(&msg, NULL, 0, 0)) {
+	while(!gl_state.ProceedPressed && GetMessage(&msg, NULL, 0, 0)) {
 		//TranslateMessage(&msg);
 		if (msg.message == WM_CHAR) { // only the top window can get keyboard events
-			msg.hwnd = hMainWnd;
+			msg.hwnd = win32_state.hMainWnd;
 		}
 		DispatchMessage(&msg);
 	}
-	InEventLoop = FALSE;
+	win32_state.InEventLoop = false;
 #endif
 }
 
@@ -1600,9 +1720,9 @@ clearscreen (void)
    int savecolor;
    if (gl_state.disp_type == SCREEN) {
 #ifdef X11
-      XClearWindow (display, toplevel);
+      XClearWindow (x11_state.display, x11_state.toplevel);
 #else /* Win32 */
-      savecolor = currentcolor;
+      savecolor = gl_state.currentcolor;
       setcolor(gl_state.background_cindex);
       fillrect (trans_coord.xleft, trans_coord.ytop,
     		  	  trans_coord.xright, trans_coord.ybot);
@@ -1613,9 +1733,9 @@ clearscreen (void)
      /* erases current page.  Don't use erasepage, since this will erase *
       * everything, (even stuff outside the clipping path) causing       *
       * problems if this picture is incorporated into a larger document. */
-      savecolor = currentcolor;
+      savecolor = gl_state.currentcolor;
       setcolor (gl_state.background_cindex);
-      fprintf(ps,"clippath fill\n\n");
+      fprintf(gl_state.ps,"clippath fill\n\n");
       setcolor (savecolor);
    }
 }
@@ -1655,11 +1775,7 @@ void
 drawline (float x1, float y1, float x2, float y2) 
 {
 /* Draw a line from (x1,y1) to (x2,y2) in the user-drawable area. *
-	* Coordinates are in world (user) space.                         */
-	
-#ifdef WIN32
-	HPEN hOldPen;
-#endif
+ * Coordinates are in world (user) space.                         */
 	
 	/* Pre-clipping has been tested on both Windows and Linux, and it was found to be useful *
 	 * for speeding up drawscreen() runtime.												 */
@@ -1669,28 +1785,24 @@ drawline (float x1, float y1, float x2, float y2)
 	if (gl_state.disp_type == SCREEN) {
 #ifdef X11
 		/* Xlib.h prototype has x2 and y1 mixed up. */ 
-		XDrawLine(display, toplevel, current_gc, xcoord(x1), ycoord(y1), xcoord(x2), ycoord(y2));
+		XDrawLine(x11_state.display, x11_state.toplevel, x11_state.current_gc, xworld_to_scrn(x1), 
+				  yworld_to_scrn(y1), xworld_to_scrn(x2), yworld_to_scrn(y2));
 #else /* Win32 */
-		hOldPen = (HPEN)SelectObject(hGraphicsDC, hGraphicsPen);
-		if(!(hOldPen))
-			SELECT_ERROR();
-		if (!BeginPath(hGraphicsDC))
+		if (!BeginPath(win32_state.hGraphicsDC))
 			DRAW_ERROR();
-		if(!MoveToEx (hGraphicsDC, xcoord(x1), ycoord(y1), NULL))
+		if(!MoveToEx (win32_state.hGraphicsDC, xworld_to_scrn(x1), yworld_to_scrn(y1), NULL))
 			DRAW_ERROR();
-		if(!LineTo (hGraphicsDC, xcoord(x2), ycoord(y2)))
+		if(!LineTo (win32_state.hGraphicsDC, xworld_to_scrn(x2), yworld_to_scrn(y2)))
 			DRAW_ERROR();
-		if (!EndPath(hGraphicsDC))
+		if (!EndPath(win32_state.hGraphicsDC))
 			DRAW_ERROR();
-		if (!StrokePath(hGraphicsDC))
+		if (!StrokePath(win32_state.hGraphicsDC))
 			DRAW_ERROR();
-		if(!SelectObject(hGraphicsDC, hOldPen))
-			SELECT_ERROR();
 #endif
 	}
 	else {
-		fprintf(ps,"%.2f %.2f %.2f %.2f drawline\n",XPOST(x1),YPOST(y1),
-			XPOST(x2),YPOST(y2));
+		fprintf(gl_state.ps,"%.2f %.2f %.2f %.2f drawline\n",xworld_to_post(x1),yworld_to_post(y1),
+			xworld_to_post(x2),yworld_to_post(y2));
 	}
 }
 
@@ -1699,29 +1811,26 @@ void
 drawrect (float x1, float y1, float x2, float y2) 
 {
 	int xw1, yw1, xw2, yw2;
-#ifdef WIN32
-	HPEN hOldPen;
-	HBRUSH hOldBrush;
-#else
-	unsigned int width, height;
-	int xl, yt;
-#endif
 	
 	if (rect_off_screen(x1,y1,x2,y2))
 		return;
 	
 	if (gl_state.disp_type == SCREEN) { 
 		/* translate to X Windows calling convention. */
-		xw1 = xcoord(x1);
-		xw2 = xcoord(x2);
-		yw1 = ycoord(y1);
-		yw2 = ycoord(y2); 
+		xw1 = xworld_to_scrn(x1);
+		xw2 = xworld_to_scrn(x2);
+		yw1 = yworld_to_scrn(y1);
+		yw2 = yworld_to_scrn(y2); 
 #ifdef X11
+		unsigned int width, height;
+		int xl, yt;
+
 		xl = min(xw1,xw2);
 		yt = min(yw1,yw2);
 		width = abs (xw1-xw2);
 		height = abs (yw1-yw2);
-		XDrawRectangle(display, toplevel, current_gc, xl, yt, width, height);
+		XDrawRectangle(x11_state.display, x11_state.toplevel, 
+					   x11_state.current_gc, xl, yt, width, height);
 #else /* Win32 */
 		if(xw1 > xw2) {
 			int temp = xw1;
@@ -1734,24 +1843,29 @@ drawrect (float x1, float y1, float x2, float y2)
 			yw2 = temp;
 		}
 		
-		hOldPen = (HPEN)SelectObject(hGraphicsDC, hGraphicsPen);
-		if(!(hOldPen))
-			SELECT_ERROR();
-		hOldBrush = (HBRUSH)SelectObject(hGraphicsDC, GetStockObject(NULL_BRUSH));
+		HBRUSH hOldBrush;
+
+		/* NULL_BRUSH is a Windows stock object which does not fill any space. Thus, a  *
+		 * rectangle can be drawn by outlining it with the current pen and not filling  *
+		 * it since NULL_BRUSH is used. Another alternative to drawing a rectangle is   *
+		 * to draw four lines individually.												*/
+		hOldBrush = (HBRUSH)SelectObject(win32_state.hGraphicsDC, GetStockObject(NULL_BRUSH));
 		if(!(hOldBrush))
 			SELECT_ERROR();
-		if(!Rectangle(hGraphicsDC, xw1, yw1, xw2, yw2))
+
+		if(!Rectangle(win32_state.hGraphicsDC, xw1, yw1, xw2, yw2))
 			DRAW_ERROR();
-		if(!SelectObject(hGraphicsDC, hOldPen))
-			SELECT_ERROR();
-		if(!SelectObject(hGraphicsDC, hOldBrush))
+
+		/* Need to restore the previous brush into the specified device context after   *
+		 * the rectangle is drawn.													    */
+		if(!SelectObject(win32_state.hGraphicsDC, hOldBrush))
 			SELECT_ERROR();
 #endif
 		
 	}
 	else {
-		fprintf(ps,"%.2f %.2f %.2f %.2f drawrect\n",XPOST(x1),YPOST(y1),
-			XPOST(x2),YPOST(y2));
+		fprintf(gl_state.ps,"%.2f %.2f %.2f %.2f drawrect\n",xworld_to_post(x1),yworld_to_post(y1),
+			xworld_to_post(x2),yworld_to_post(y2));
 	}
 }
 
@@ -1761,29 +1875,26 @@ void
 fillrect (float x1, float y1, float x2, float y2) 
 {
 	int xw1, yw1, xw2, yw2;
-#ifdef WIN32
-	HPEN hOldPen;
-	HBRUSH hOldBrush;
-#else
-	unsigned int width, height;
-	int xl, yt;
-#endif
 	
 	if (rect_off_screen(x1,y1,x2,y2))
 		return;
 	
 	if (gl_state.disp_type == SCREEN) {
 		/* translate to X Windows calling convention. */
-		xw1 = xcoord(x1);
-		xw2 = xcoord(x2);
-		yw1 = ycoord(y1);
-		yw2 = ycoord(y2); 
+		xw1 = xworld_to_scrn(x1);
+		xw2 = xworld_to_scrn(x2);
+		yw1 = yworld_to_scrn(y1);
+		yw2 = yworld_to_scrn(y2); 
 #ifdef X11
+		unsigned int width, height;
+		int xl, yt;
+
 		xl = min(xw1,xw2);
 		yt = min(yw1,yw2);
 		width = abs (xw1-xw2);
 		height = abs (yw1-yw2);
-		XFillRectangle(display, toplevel, current_gc, xl, yt, width, height);
+		XFillRectangle(x11_state.display, x11_state.toplevel, 
+					   x11_state.current_gc, xl, yt, width, height);
 #else /* Win32 */
 		if(xw1 > xw2) {
 			int temp = xw1;
@@ -1796,23 +1907,13 @@ fillrect (float x1, float y1, float x2, float y2)
 			yw2 = temp;
 		}
 		
-		hOldPen = (HPEN)SelectObject(hGraphicsDC, hGraphicsPen);
-		if(!(hOldPen))
-			SELECT_ERROR();	
-		hOldBrush = (HBRUSH)SelectObject(hGraphicsDC, hGraphicsBrush);
-		if(!(hOldBrush))
-			SELECT_ERROR();
-		if(!Rectangle(hGraphicsDC, xw1, yw1, xw2, yw2))
+		if(!Rectangle(win32_state.hGraphicsDC, xw1, yw1, xw2, yw2))
 			DRAW_ERROR();
-		if(!SelectObject(hGraphicsDC, hOldPen))
-			SELECT_ERROR();
-		if(!SelectObject(hGraphicsDC, hOldBrush))
-			SELECT_ERROR();
 #endif
 	}
 	else {
-		fprintf(ps,"%.2f %.2f %.2f %.2f fillrect\n",XPOST(x1),YPOST(y1),
-			XPOST(x2),YPOST(y2));
+		fprintf(gl_state.ps,"%.2f %.2f %.2f %.2f fillrect\n",xworld_to_post(x1),
+			yworld_to_post(y1),xworld_to_post(x2),yworld_to_post(y2));
 	}
 }
 
@@ -1838,65 +1939,62 @@ drawellipticarc (float xc, float yc, float radx, float rady, float startang, flo
 {
 	int xl, yt;
 	unsigned int width, height;
-#ifdef WIN32
-	HPEN hOldPen;
-        int p1, p2, p3, p4;
-#endif
 	
 	/* Conservative (but fast) clip test -- check containing rectangle of *
-	* an ellipse.                                                         */
+	 * an ellipse.                                                         */
 	
 	if (rect_off_screen (xc-radx,yc-rady,xc+radx,yc+rady))
 		return;
 	
-		/* X Windows has trouble with very large angles. (Over 360).    *
-	* Do following to prevent its inaccurate (overflow?) problems. */
+	/* X Windows has trouble with very large angles. (Over 360).    *
+	 * Do following to prevent its inaccurate (overflow?) problems. */
 	if (fabs(angextent) > 360.) 
 		angextent = 360.;
 	
 	startang = angnorm (startang);
 	
 	if (gl_state.disp_type == SCREEN) {
-		xl = (int) (xcoord(xc) - fabs(trans_coord.xmult*radx));
-		yt = (int) (ycoord(yc) - fabs(trans_coord.ymult*rady));
-		width = (unsigned int) (2*fabs(trans_coord.xmult*radx));
-		height = (unsigned int) (2*fabs(trans_coord.ymult*rady));
+		xl = (int) (xworld_to_scrn(xc) - fabs(trans_coord.wtos_xmult*radx));
+		yt = (int) (yworld_to_scrn(yc) - fabs(trans_coord.wtos_ymult*rady));
+		width = (unsigned int) (2*fabs(trans_coord.wtos_xmult*radx));
+		height = (unsigned int) (2*fabs(trans_coord.wtos_ymult*rady));
 #ifdef X11
-		XDrawArc (display, toplevel, current_gc, xl, yt, width, height,
+		XDrawArc (x11_state.display, x11_state.toplevel, x11_state.current_gc, xl, yt, width, height,
 			(int) (startang*64), (int) (angextent*64));
 #else  // Win32
+        int p1, p2, p3, p4;
+
 		/* set arc direction */
 		if (angextent > 0) {
-			p1 = (int)(xcoord(xc) + fabs(trans_coord.xmult*radx)*cos(DEGTORAD(startang)));
-			p2 = (int)(ycoord(yc) - fabs(trans_coord.ymult*rady)*sin(DEGTORAD(startang)));
-			p3 = (int)(xcoord(xc) + fabs(trans_coord.xmult*radx)*cos(DEGTORAD(startang+angextent-.001)));
-			p4 = (int)(ycoord(yc) - fabs(trans_coord.ymult*rady)*sin(DEGTORAD(startang+angextent-.001)));
+			float startang_rad = DEGTORAD(startang);
+			float endtang_rad = DEGTORAD(startang+angextent-.001);
+			p1 = (int)(xworld_to_scrn(xc) + fabs(trans_coord.wtos_xmult*radx)*cos(startang_rad));
+			p2 = (int)(yworld_to_scrn(yc) - fabs(trans_coord.wtos_ymult*rady)*sin(startang_rad));
+			p3 = (int)(xworld_to_scrn(xc) + fabs(trans_coord.wtos_xmult*radx)*cos(endtang_rad));
+			p4 = (int)(yworld_to_scrn(yc) - fabs(trans_coord.wtos_ymult*rady)*sin(endtang_rad));
 		}
 		else {
-			p1 = (int)(xcoord(xc) + fabs(trans_coord.xmult*radx)*cos(DEGTORAD(startang+angextent+.001)));
-			p2 = (int)(ycoord(yc) - fabs(trans_coord.ymult*rady)*sin(DEGTORAD(startang+angextent+.001)));
-			p3 = (int)(xcoord(xc) + fabs(trans_coord.xmult*radx)*cos(DEGTORAD(startang)));
-			p4 = (int)(ycoord(yc) - fabs(trans_coord.ymult*rady)*sin(DEGTORAD(startang)));
+			float startang_rad = DEGTORAD(startang+angextent+.001);
+			float endtang_rad = DEGTORAD(startang);
+			p1 = (int)(xworld_to_scrn(xc) + fabs(trans_coord.wtos_xmult*radx)*cos(startang_rad));
+			p2 = (int)(yworld_to_scrn(yc) - fabs(trans_coord.wtos_ymult*rady)*sin(startang_rad));
+			p3 = (int)(xworld_to_scrn(xc) + fabs(trans_coord.wtos_xmult*radx)*cos(endtang_rad));
+			p4 = (int)(yworld_to_scrn(yc) - fabs(trans_coord.wtos_ymult*rady)*sin(endtang_rad));
 		}
 		
-		hOldPen = (HPEN)SelectObject(hGraphicsDC, hGraphicsPen);
-		if(!(hOldPen))
-			SELECT_ERROR();		
-		if(!Arc(hGraphicsDC, xl, yt, xl+width, yt+height, p1, p2, p3, p4))
+		if(!Arc(win32_state.hGraphicsDC, xl, yt, xl+width, yt+height, p1, p2, p3, p4))
 			DRAW_ERROR();
-		if(!SelectObject(hGraphicsDC, hOldPen))
-			SELECT_ERROR();
 #endif
 	}
 	else {
-		fprintf(ps, "gsave\n");
-		fprintf(ps, "%.2f %.2f translate\n", XPOST(xc), YPOST(yc));
-		fprintf(ps, "%.2f 1 scale\n",
+		fprintf(gl_state.ps, "gsave\n");
+		fprintf(gl_state.ps, "%.2f %.2f translate\n", xworld_to_post(xc), yworld_to_post(yc));
+		fprintf(gl_state.ps, "%.2f 1 scale\n",
 					fabs(radx*trans_coord.ps_xmult)/fabs(rady*trans_coord.ps_ymult));
-		fprintf(ps, "0 0 %.2f %.2f %.2f %s\n", /*XPOST(xc)*/ 
-					/*YPOST(yc)*/ fabs(rady*trans_coord.ps_xmult), startang,
+		fprintf(gl_state.ps, "0 0 %.2f %.2f %.2f %s\n", /*xworld_to_post(xc)*/ 
+					/*yworld_to_post(yc)*/ fabs(rady*trans_coord.ps_xmult), startang,
 					startang+angextent,	(angextent < 0) ? "drawarcn" : "drawarc") ;
-		fprintf(ps, "grestore\n");
+		fprintf(gl_state.ps, "grestore\n");
 	}
 }
 
@@ -1919,20 +2017,15 @@ fillellipticarc (float xc, float yc, float radx, float rady, float startang,
 {
 	int xl, yt;
 	unsigned int width, height;
-#ifdef WIN32
-	HPEN hOldPen;
-	HBRUSH hOldBrush;
-   int p1, p2, p3, p4;
-#endif
 	
 	/* Conservative (but fast) clip test -- check containing rectangle of *
-	* a circle.                                                          */
+	 * a circle.                                                          */
 	
 	if (rect_off_screen (xc-radx,yc-rady,xc+radx,yc+rady))
 		return;
 	
-		/* X Windows has trouble with very large angles. (Over 360).    *
-	* Do following to prevent its inaccurate (overflow?) problems. */
+    /* X Windows has trouble with very large angles. (Over 360).    *
+	 * Do following to prevent its inaccurate (overflow?) problems. */
 	
 	if (fabs(angextent) > 360.) 
 		angextent = 360.;
@@ -1940,55 +2033,61 @@ fillellipticarc (float xc, float yc, float radx, float rady, float startang,
 	startang = angnorm (startang);
 	
 	if (gl_state.disp_type == SCREEN) {
-		xl = (int) (xcoord(xc) - fabs(trans_coord.xmult*radx));
-		yt = (int) (ycoord(yc) - fabs(trans_coord.ymult*rady));
-		width = (unsigned int) (2*fabs(trans_coord.xmult*radx));
-		height = (unsigned int) (2*fabs(trans_coord.ymult*rady));
+		xl = (int) (xworld_to_scrn(xc) - fabs(trans_coord.wtos_xmult*radx));
+		yt = (int) (yworld_to_scrn(yc) - fabs(trans_coord.wtos_ymult*rady));
+		width = (unsigned int) (2*fabs(trans_coord.wtos_xmult*radx));
+		height = (unsigned int) (2*fabs(trans_coord.wtos_ymult*rady));
 #ifdef X11
-		XFillArc (display, toplevel, current_gc, xl, yt, width, height,
+		XFillArc (x11_state.display, x11_state.toplevel, x11_state.current_gc, xl, yt, width, height,
 			(int) (startang*64), (int) (angextent*64));
 #else  // Win32
+		HPEN hOldPen;
+		int p1, p2, p3, p4;
+
 		/* set pie direction */
 		if (angextent > 0) {
-			p1 = (int)(xcoord(xc) + fabs(trans_coord.xmult*radx)*cos(DEGTORAD(startang)));
-			p2 = (int)(ycoord(yc) - fabs(trans_coord.ymult*rady)*sin(DEGTORAD(startang)));
-			p3 = (int)(xcoord(xc) + fabs(trans_coord.xmult*radx)*cos(DEGTORAD(startang+angextent-.001)));
-			p4 = (int)(ycoord(yc) - fabs(trans_coord.ymult*rady)*sin(DEGTORAD(startang+angextent-.001)));
+			float startang_rad = DEGTORAD(startang);
+			float endtang_rad = DEGTORAD(startang+angextent-.001);
+			p1 = (int)(xworld_to_scrn(xc) + fabs(trans_coord.wtos_xmult*radx)*cos(startang_rad));
+			p2 = (int)(yworld_to_scrn(yc) - fabs(trans_coord.wtos_ymult*rady)*sin(startang_rad));
+			p3 = (int)(xworld_to_scrn(xc) + fabs(trans_coord.wtos_xmult*radx)*cos(endtang_rad));
+			p4 = (int)(yworld_to_scrn(yc) - fabs(trans_coord.wtos_ymult*rady)*sin(endtang_rad));
 		}
 		else {
-			p1 = (int)(xcoord(xc) + fabs(trans_coord.xmult*radx)*cos(DEGTORAD(startang+angextent+.001)));
-			p2 = (int)(ycoord(yc) - fabs(trans_coord.ymult*rady)*sin(DEGTORAD(startang+angextent+.001)));
-			p3 = (int)(xcoord(xc) + fabs(trans_coord.xmult*radx)*cos(DEGTORAD(startang)));
-			p4 = (int)(ycoord(yc) - fabs(trans_coord.ymult*rady)*sin(DEGTORAD(startang)));
+			float startang_rad = DEGTORAD(startang+angextent+.001);
+			float endtang_rad = DEGTORAD(startang);
+			p1 = (int)(xworld_to_scrn(xc) + fabs(trans_coord.wtos_xmult*radx)*cos(startang_rad));
+			p2 = (int)(yworld_to_scrn(yc) - fabs(trans_coord.wtos_ymult*rady)*sin(startang_rad));
+			p3 = (int)(xworld_to_scrn(xc) + fabs(trans_coord.wtos_xmult*radx)*cos(endtang_rad));
+			p4 = (int)(yworld_to_scrn(yc) - fabs(trans_coord.wtos_ymult*rady)*sin(endtang_rad));
 		}
 	
-		hOldPen = (HPEN)SelectObject(hGraphicsDC, GetStockObject(NULL_PEN));
+		/* NULL_PEN is a Windows stock object which does not draw anything. Set current *
+		 * pen to NULL_PEN in order to fill the arc without drawing the outline.        */
+		hOldPen = (HPEN)SelectObject(win32_state.hGraphicsDC, GetStockObject(NULL_PEN));
 		if(!(hOldPen))
 			SELECT_ERROR();
-		hOldBrush = (HBRUSH)SelectObject(hGraphicsDC, hGraphicsBrush);
-		if(!(hOldBrush))
-			SELECT_ERROR();
-// Win32 API says a zero return value indicates an error, but it seems to always
-// return zero.  Don't check for an error on Pie.
-      Pie(hGraphicsDC, xl, yt, xl+width, yt+height, p1, p2, p3, p4);
-
-//		if(!Pie(hGraphicsDC, xl, yt, xl+width, yt+height, p1, p2, p3, p4));
-//			DRAW_ERROR();
-		if(!SelectObject(hGraphicsDC, hOldPen))
-			SELECT_ERROR();
-		if(!SelectObject(hGraphicsDC, hOldBrush))
+		
+		// Win32 API says a zero return value indicates an error, but it seems to always
+		// return zero.  Don't check for an error on Pie.
+        Pie(win32_state.hGraphicsDC, xl, yt, xl+width, yt+height, p1, p2, p3, p4);
+		//if(!Pie(win32_state.hGraphicsDC, xl, yt, xl+width, yt+height, p1, p2, p3, p4));
+			//DRAW_ERROR();
+		
+		/* Need to restore the original pen into the device context after filling. */
+		if(!SelectObject(win32_state.hGraphicsDC, hOldPen))
 			SELECT_ERROR();
 #endif
 	}
 	else {
-		fprintf(ps, "gsave\n");
-		fprintf(ps, "%.2f %.2f translate\n", XPOST(xc), YPOST(yc));
-		fprintf(ps, "%.2f 1 scale\n",
+		fprintf(gl_state.ps, "gsave\n");
+		fprintf(gl_state.ps, "%.2f %.2f translate\n", xworld_to_post(xc), yworld_to_post(yc));
+		fprintf(gl_state.ps, "%.2f 1 scale\n",
 					fabs(radx*trans_coord.ps_xmult)/fabs(rady*trans_coord.ps_ymult));
-		fprintf(ps, "%.2f %.2f %.2f 0 0 %s\n", /*XPOST(xc)*/ 
-					/*YPOST(yc)*/ fabs(rady*trans_coord.ps_xmult), startang,
+		fprintf(gl_state.ps, "%.2f %.2f %.2f 0 0 %s\n", /*xworld_to_post(xc)*/ 
+					/*yworld_to_post(yc)*/ fabs(rady*trans_coord.ps_xmult), startang,
 					startang+angextent, (angextent < 0) ? "fillarcn" : "fillarc") ;
-		fprintf(ps, "grestore\n");
+		fprintf(gl_state.ps, "grestore\n");
 	}
 }
 
@@ -2006,8 +2105,6 @@ fillpoly (t_point *points, int npoints)
 	XPoint transpoints[MAXPTS];
 #else
 	POINT transpoints[MAXPTS];
-	HPEN hOldPen;
-	HBRUSH hOldBrush;
 #endif
 	int i;
 	float xmin, ymin, xmax, ymax;
@@ -2020,7 +2117,7 @@ fillpoly (t_point *points, int npoints)
 	}
 	
 	/* Conservative (but fast) clip test -- check containing rectangle of *
-	* polygon.                                                           */
+	 * polygon.                                                           */
 	
 	xmin = xmax = points[0].x;
 	ymin = ymax = points[0].y;
@@ -2037,34 +2134,36 @@ fillpoly (t_point *points, int npoints)
 	
 	if (gl_state.disp_type == SCREEN) {
 		for (i=0;i<npoints;i++) {
-			transpoints[i].x = (long) xcoord (points[i].x);
-			transpoints[i].y = (long) ycoord (points[i].y);
+			transpoints[i].x = (long) xworld_to_scrn (points[i].x);
+			transpoints[i].y = (long) yworld_to_scrn (points[i].y);
 		}
 #ifdef X11
-		XFillPolygon(display, toplevel, current_gc, transpoints, npoints, Complex,
-			CoordModeOrigin);
+		XFillPolygon(x11_state.display, x11_state.toplevel, x11_state.current_gc, 
+					 transpoints, npoints, Complex, CoordModeOrigin);
 #else
-		hOldPen = (HPEN)SelectObject(hGraphicsDC, GetStockObject(NULL_PEN));
+		HPEN hOldPen;
+		/* NULL_PEN is a Windows stock object which does not draw anything. Set current *
+		 * pen to NULL_PEN in order to fill polygon without drawing its outline.        */
+		hOldPen = (HPEN)SelectObject(win32_state.hGraphicsDC, GetStockObject(NULL_PEN));
 		if(!(hOldPen))
 			SELECT_ERROR();
-		hOldBrush = (HBRUSH)SelectObject(hGraphicsDC, hGraphicsBrush);
-		if(!(hOldBrush))
-			SELECT_ERROR();
-		if(!Polygon (hGraphicsDC, transpoints, npoints))
+		
+		if(!Polygon (win32_state.hGraphicsDC, transpoints, npoints))
 			DRAW_ERROR();
-		if(!SelectObject(hGraphicsDC, hOldPen))
-			SELECT_ERROR();
-		if(!SelectObject(hGraphicsDC, hOldBrush))
+
+		/* Need to restore the original pen into the device context after drawing. */
+		if(!SelectObject(win32_state.hGraphicsDC, hOldPen))
 			SELECT_ERROR();
 #endif
 	}
 	else {
-		fprintf(ps,"\n");
+		fprintf(gl_state.ps,"\n");
 		
 		for (i=npoints-1;i>=0;i--) 
-			fprintf (ps, "%.2f %.2f\n", XPOST(points[i].x), YPOST(points[i].y));
+			fprintf (gl_state.ps, "%.2f %.2f\n", xworld_to_post(points[i].x), 
+					 yworld_to_post(points[i].y));
 		
-		fprintf (ps, "%d fillpoly\n", npoints);
+		fprintf (gl_state.ps, "%d fillpoly\n", npoints);
 	}
 }
 
@@ -2077,70 +2176,57 @@ drawtext (float xc, float yc, const char *text, float boundx)
 	
 #ifdef X11
 	len = strlen(text);
-	width = XTextWidth(font_info[currentfontsize], text, len);
-	font_ascent = font_info[currentfontsize]->ascent;
-	font_descent = font_info[currentfontsize]->descent;
+	width = XTextWidth(x11_state.font_info[gl_state.currentfontsize], text, len);
+	font_ascent = x11_state.font_info[gl_state.currentfontsize]->ascent;
+	font_descent = x11_state.font_info[gl_state.currentfontsize]->descent;
 #else /* WC : WIN32 */
-	HFONT hOldFont;
 	SIZE textsize;
 	TEXTMETRIC textmetric;
 	
-	hOldFont = (HFONT)SelectObject(hGraphicsDC, hGraphicsFont);
-	if(!(hOldFont))
-		SELECT_ERROR();
-	if(SetTextColor(hGraphicsDC, win32_colors[currentcolor]) == CLR_INVALID)
+	if(SetTextColor(win32_state.hGraphicsDC, win32_colors[gl_state.currentcolor]) == CLR_INVALID)
 		DRAW_ERROR();
 	
 	len = strlen(text);
-	if (!GetTextExtentPoint32(hGraphicsDC, text, len, &textsize))
+	if (!GetTextExtentPoint32(win32_state.hGraphicsDC, text, len, &textsize))
 		DRAW_ERROR();
 	width = textsize.cx;
-	if (!GetTextMetrics(hGraphicsDC, &textmetric))
+	if (!GetTextMetrics(win32_state.hGraphicsDC, &textmetric))
 		DRAW_ERROR();
 	font_ascent = textmetric.tmAscent;
 	font_descent = textmetric.tmDescent;
 #endif	
-	if (width > fabs(boundx*trans_coord.xmult)) {
-#ifdef WIN32
-		if(!SelectObject(hGraphicsDC, hOldFont))
-			SELECT_ERROR();
-#endif
-		return; /* Don't draw if it won't fit */
-	}
 	
-	xw_off = (int)(width/(2.*trans_coord.xmult));      /* NB:  sign doesn't matter. */
+	if (width > fabs(boundx*trans_coord.wtos_xmult)) 
+		return; /* Don't draw if it won't fit */
+	
+	xw_off = (int)(width/(2.*trans_coord.wtos_xmult));      /* NB:  sign doesn't matter. */
 	
 	/* NB:  2 * descent makes this slightly conservative but simplifies code. */
-	yw_off = (int)((font_ascent + 2 * font_descent)/(2.*trans_coord.ymult));
+	yw_off = (int)((font_ascent + 2 * font_descent)/(2.*trans_coord.wtos_ymult));
 	
 	/* Note:  text can be clipped when a little bit of it would be visible *
 	* right now.  Perhaps X doesn't return extremely accurate width and   *
 	* ascent values, etc?  Could remove this completely by multiplying    *
 	* xw_off and yw_off by, 1.2 or 1.5.                                   */
-	if (rect_off_screen(xc-xw_off, yc-yw_off, xc+xw_off, yc+yw_off)) {
-#ifdef WIN32
-		if(!SelectObject(hGraphicsDC, hOldFont))
-			SELECT_ERROR();
-#endif
+	if (rect_off_screen(xc-xw_off, yc-yw_off, xc+xw_off, yc+yw_off)) 
 		return;
-	}
 	
 	if (gl_state.disp_type == SCREEN) {
 #ifdef X11
-		XDrawString(display, toplevel, current_gc, xcoord(xc)-width/2, ycoord(yc) + 
-			(font_info[currentfontsize]->ascent - font_info[currentfontsize]->descent)/2,
-			text, len);
+		XDrawString(x11_state.display, x11_state.toplevel, x11_state.current_gc, 
+					xworld_to_scrn(xc)-width/2, 
+					yworld_to_scrn(yc)+(x11_state.font_info[gl_state.currentfontsize]->ascent 
+										 -x11_state.font_info[gl_state.currentfontsize]->descent)/2,
+					text, len);
 #else /* Win32 */
-		SetBkMode(hGraphicsDC, TRANSPARENT); 
-		if(!TextOut (hGraphicsDC, xcoord(xc)-width/2, ycoord(yc) - (font_ascent + font_descent)/2, 
-			text, len))
+		SetBkMode(win32_state.hGraphicsDC, TRANSPARENT); 
+		if(!TextOut (win32_state.hGraphicsDC, xworld_to_scrn(xc)-width/2, 
+						yworld_to_scrn(yc) - (font_ascent + font_descent)/2, text, len))
 			DRAW_ERROR();
-		if(!SelectObject(hGraphicsDC, hOldFont))
-			SELECT_ERROR();
 #endif
 	}
 	else {
-		fprintf(ps,"(%s) %.2f %.2f censhow\n",text,XPOST(xc),YPOST(yc));
+		fprintf(gl_state.ps,"(%s) %.2f %.2f censhow\n",text,xworld_to_post(xc),yworld_to_post(yc));
 	}
 }
 
@@ -2151,7 +2237,7 @@ flushinput (void)
 	if (gl_state.disp_type != SCREEN) 
 		return;
 #ifdef X11
-	XFlush(display);
+	XFlush(x11_state.display);
 #endif
 }
 
@@ -2169,10 +2255,10 @@ init_world (float x1, float y1, float x2, float y2)
 	/* Save initial world coordinates to allow full view button
 	 * to zoom all the way out.
 	 */
-	trans_coord.saved_xleft = trans_coord.xleft;
-	trans_coord.saved_xright = trans_coord.xright;
-	trans_coord.saved_ytop = trans_coord.ytop;
-	trans_coord.saved_ybot = trans_coord.ybot;
+	trans_coord.init_xleft = trans_coord.xleft;
+	trans_coord.init_xright = trans_coord.xright;
+	trans_coord.init_ytop = trans_coord.ytop;
+	trans_coord.init_ybot = trans_coord.ybot;
 	
 	if (gl_state.disp_type == SCREEN) {
 		update_transform();
@@ -2195,26 +2281,27 @@ draw_message (void)
 	
 	if (gl_state.disp_type == SCREEN) {
 #ifdef X11
-		XClearWindow (display, textarea);
-		len = strlen (statusMessage);
-		width = XTextWidth(font_info[menu_font_size], statusMessage, len);
-		XSetForeground(display, gc_menus,colors[WHITE]);
-		XDrawRectangle(display, textarea, gc_menus, 0, 0,
+		XClearWindow (x11_state.display, x11_state.textarea);
+		len = strlen (gl_state.statusMessage);
+		width = XTextWidth(x11_state.font_info[MENU_FONT_SIZE], gl_state.statusMessage, len);
+		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[WHITE]);
+		XDrawRectangle(x11_state.display, x11_state.textarea, x11_state.gc_menus, 0, 0,
 						trans_coord.top_width - MWIDTH, T_AREA_HEIGHT);
-		XSetForeground(display, gc_menus,colors[BLACK]);
-		XDrawLine(display, textarea, gc_menus, 0, T_AREA_HEIGHT-1,
+		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[BLACK]);
+		XDrawLine(x11_state.display, x11_state.textarea, x11_state.gc_menus, 0, T_AREA_HEIGHT-1,
 					trans_coord.top_width-MWIDTH, T_AREA_HEIGHT-1);
-		XDrawLine(display, textarea, gc_menus, trans_coord.top_width-MWIDTH-1,
-					0, trans_coord.top_width-MWIDTH-1, T_AREA_HEIGHT-1);
+		XDrawLine(x11_state.display, x11_state.textarea, x11_state.gc_menus, 
+				  trans_coord.top_width-MWIDTH-1, 0, trans_coord.top_width-MWIDTH-1, 
+				  T_AREA_HEIGHT-1);
 		
-		XDrawString(display, textarea, gc_menus, 
+		XDrawString(x11_state.display, x11_state.textarea, x11_state.gc_menus, 
 			(trans_coord.top_width - MWIDTH - width)/2,
-			T_AREA_HEIGHT/2 + (font_info[menu_font_size]->ascent - 
-			font_info[menu_font_size]->descent)/2, statusMessage, len);
+			T_AREA_HEIGHT/2 + (x11_state.font_info[MENU_FONT_SIZE]->ascent - 
+			x11_state.font_info[MENU_FONT_SIZE]->descent)/2, gl_state.statusMessage, len);
 #else
-		if(!InvalidateRect(hStatusWnd, NULL, TRUE))
+		if(!InvalidateRect(win32_state.hStatusWnd, NULL, TRUE))
 			DRAW_ERROR();
-		if(!UpdateWindow(hStatusWnd))
+		if(!UpdateWindow(win32_state.hStatusWnd))
 			DRAW_ERROR();
 #endif
 	}
@@ -2223,12 +2310,12 @@ draw_message (void)
 	/* Draw the message in the bottom margin.  Printer's generally can't  *
 		* print on the bottom 1/4" (area with y < 18 in PostScript coords.)  */
 		
-		savecolor = currentcolor;
+		savecolor = gl_state.currentcolor;
 		setcolor (BLACK);
-		savefontsize = currentfontsize;
-		setfontsize (menu_font_size - 2);  /* Smaller OK on paper */
+		savefontsize = gl_state.currentfontsize;
+		setfontsize (MENU_FONT_SIZE - 2);  /* Smaller OK on paper */
 		ylow = trans_coord.ps_bot - 8;
-		fprintf(ps,"(%s) %.2f %.2f censhow\n",statusMessage,
+		fprintf(gl_state.ps,"(%s) %.2f %.2f censhow\n",gl_state.statusMessage,
 					(trans_coord.ps_left+trans_coord.ps_right)/2., ylow);
 		setcolor (savecolor);
 		setfontsize (savefontsize);
@@ -2240,11 +2327,11 @@ draw_message (void)
 void 
 update_message (const char *msg) 
 {
-	strncpy (statusMessage, msg, BUFSIZE);
+	strncpy (gl_state.statusMessage, msg, BUFSIZE);
 	draw_message ();
 #ifdef X11
 // Make this appear immediately.  Win32 does that automaticaly.
-        XFlush (display);  
+        XFlush (x11_state.display);  
 #endif // X11
 }
 
@@ -2254,14 +2341,19 @@ update_message (const char *msg)
 static void 
 zoom_in (void (*drawscreen) (void)) 
 {
-	float xdiff, ydiff;
+	float xcen, xlen, ycen, ylen;
 	
-	xdiff = trans_coord.xright - trans_coord.xleft;
-	ydiff = trans_coord.ybot - trans_coord.ytop;
-	trans_coord.xleft += xdiff/ZOOM_IN_FACTOR;
-	trans_coord.xright -= xdiff/ZOOM_IN_FACTOR;
-	trans_coord.ytop += ydiff/ZOOM_IN_FACTOR;
-	trans_coord.ybot -= ydiff/ZOOM_IN_FACTOR;
+	xcen = (trans_coord.xright + trans_coord.xleft)/2;
+	xlen = (trans_coord.xright - trans_coord.xleft)/ZOOM_FACTOR;
+	ycen = (trans_coord.ybot + trans_coord.ytop)/2;
+	ylen = (trans_coord.ybot - trans_coord.ytop)/ZOOM_FACTOR;
+
+	//make xright - xleft = 0.6 of the original distance 
+	trans_coord.xleft = xcen - xlen/2;
+	trans_coord.xright = xcen + xlen/2;
+	//make ybot - ytop = 0.6 of the original distance
+	trans_coord.ytop = ycen - ylen/2;
+	trans_coord.ybot = ycen + ylen/2;
 	
 	update_transform ();
 	drawscreen();
@@ -2274,14 +2366,18 @@ zoom_in (void (*drawscreen) (void))
 static void 
 zoom_out (void (*drawscreen) (void)) 
 {
-	float xdiff, ydiff;
+	float xcen, xlen, ycen, ylen;
 	
-	xdiff = trans_coord.xright - trans_coord.xleft;
-	ydiff = trans_coord.ybot - trans_coord.ytop;
-	trans_coord.xleft -= xdiff/ZOOM_OUT_FACTOR;
-	trans_coord.xright += xdiff/ZOOM_OUT_FACTOR;
-	trans_coord.ytop -= ydiff/ZOOM_OUT_FACTOR;
-	trans_coord.ybot += ydiff/ZOOM_OUT_FACTOR;
+	xcen = (trans_coord.xright + trans_coord.xleft)/2;
+	xlen = (trans_coord.xright - trans_coord.xleft)*ZOOM_FACTOR;
+	ycen = (trans_coord.ybot + trans_coord.ytop)/2;
+	ylen = (trans_coord.ybot - trans_coord.ytop)*ZOOM_FACTOR;
+
+	//restore the original distances before previous zoom in
+	trans_coord.xleft = xcen - xlen/2;
+	trans_coord.xright = xcen + xlen/2;
+	trans_coord.ytop = ycen - ylen/2;
+	trans_coord.ybot = ycen + ylen/2;
 	
 	update_transform ();
 	drawscreen();
@@ -2294,12 +2390,12 @@ zoom_out (void (*drawscreen) (void))
 static void
 zoom_in_with_cursor (float x, float y, void (*drawscreen) (void))
 {
-	//Multiply by 2 to make xright - xleft = 0.6 of the 
-	//original distance 
-	trans_coord.xleft += (x-trans_coord.xleft)/ZOOM_IN_FACTOR*2;
-	trans_coord.xright -= (trans_coord.xright-x)/ZOOM_IN_FACTOR*2;
-	trans_coord.ytop += (y-trans_coord.ytop)/ZOOM_IN_FACTOR*2;
-	trans_coord.ybot -= (trans_coord.ybot -y)/ZOOM_IN_FACTOR*2;
+	//make xright - xleft = 0.6 of the original distance 
+	trans_coord.xleft = x - (x-trans_coord.xleft)/ZOOM_FACTOR;
+	trans_coord.xright = x + (trans_coord.xright-x)/ZOOM_FACTOR;
+	//make ybot - ytop = 0.6 of the original distance
+	trans_coord.ytop = y - (y-trans_coord.ytop)/ZOOM_FACTOR;
+	trans_coord.ybot = y + (trans_coord.ybot -y)/ZOOM_FACTOR;
 
 	update_transform ();
 	drawscreen();
@@ -2312,12 +2408,11 @@ zoom_in_with_cursor (float x, float y, void (*drawscreen) (void))
 static void
 zoom_out_with_cursor (float x, float y, void (*drawscreen) (void))
 {
-	//Multiply by 2 to restore the original xright - xleft
-	//distance
-	trans_coord.xleft -= (x-trans_coord.xleft)/ZOOM_OUT_FACTOR*2;
-	trans_coord.xright += (trans_coord.xright-x)/ZOOM_OUT_FACTOR*2;
-	trans_coord.ytop -= (y-trans_coord.ytop)/ZOOM_OUT_FACTOR*2;
-	trans_coord.ybot += (trans_coord.ybot -y)/ZOOM_OUT_FACTOR*2;
+	//restore the original distances before previous zoom in
+	trans_coord.xleft = x - (x-trans_coord.xleft)*ZOOM_FACTOR;
+	trans_coord.xright = x + (trans_coord.xright-x)*ZOOM_FACTOR;
+	trans_coord.ytop = y - (y-trans_coord.ytop)*ZOOM_FACTOR;
+	trans_coord.ybot = y + (trans_coord.ybot -y)*ZOOM_FACTOR;
 
 	update_transform ();
 	drawscreen();
@@ -2329,10 +2424,10 @@ zoom_out_with_cursor (float x, float y, void (*drawscreen) (void))
 static void 
 zoom_fit (void (*drawscreen) (void)) 
 {
-	trans_coord.xleft = trans_coord.saved_xleft;
-	trans_coord.xright = trans_coord.saved_xright;
-	trans_coord.ytop = trans_coord.saved_ytop;
-	trans_coord.ybot = trans_coord.saved_ybot;
+	trans_coord.xleft = trans_coord.init_xleft;
+	trans_coord.xright = trans_coord.init_xright;
+	trans_coord.ytop = trans_coord.init_ytop;
+	trans_coord.ybot = trans_coord.init_ybot;
 	
 	update_transform ();
 	drawscreen();
@@ -2404,8 +2499,8 @@ panning_execute (int x, int y, void (*drawscreen) (void))
 {
 	float x_change_world, y_change_world;
 
-   x_change_world = XSCRN2WORLD (x) - XSCRN2WORLD (pan_state.previous_x);
-   y_change_world = YSCRN2WORLD (y) - YSCRN2WORLD (pan_state.previous_y);
+   x_change_world = xscrn_to_world (x) - xscrn_to_world (pan_state.previous_x);
+   y_change_world = yscrn_to_world (y) - yscrn_to_world (pan_state.previous_y);
    trans_coord.xleft -= x_change_world;
    trans_coord.xright -= x_change_world;
    trans_coord.ybot -= y_change_world;
@@ -2454,10 +2549,10 @@ update_win (int x[2], int y[2], void (*drawscreen)(void))
 		printf("Illegal (zero area) window.  Window unchanged.\n");
 		return;
 	}
-	x1 = XSCRN2WORLD(min(x[0],x[1]));
-	x2 = XSCRN2WORLD(max(x[0],x[1]));
-	y1 = YSCRN2WORLD(min(y[0],y[1]));
-	y2 = YSCRN2WORLD(max(y[0],y[1]));
+	x1 = xscrn_to_world(min(x[0],x[1]));
+	x2 = xscrn_to_world(max(x[0],x[1]));
+	y1 = yscrn_to_world(min(y[0],y[1]));
+	y2 = yscrn_to_world(max(y[0],y[1]));
 	trans_coord.xleft = x1;
 	trans_coord.xright = x2;
 	trans_coord.ytop = y1;
@@ -2482,18 +2577,18 @@ adjustwin (void (*drawscreen) (void))
 	yold = -1;    /* Don't need to init yold, but stops compiler warning. */
 	
 	while (corner<2) {
-		XNextEvent (display, &report);
+		XNextEvent (x11_state.display, &report);
 		switch (report.type) {
 		case Expose:
 			if (report.xexpose.count != 0)
 				break;
-			handle_expose(report, drawscreen);
-			if (report.xexpose.window == toplevel) {
+			x11_handle_expose(report, drawscreen);
+			if (report.xexpose.window == x11_state.toplevel) {
 				xold = -1;   /* No rubber band on screen */
 			}
 			break;
 		case ConfigureNotify:
-			handle_configure_notify(report);
+			x11_handle_configure_notify(report);
 			break;
 		case ButtonPress:
 #ifdef VERBOSE 
@@ -2502,11 +2597,11 @@ adjustwin (void (*drawscreen) (void))
 			printf("Location (%d, %d).\n", report.xbutton.x,
 				report.xbutton.y);
 #endif
-			if (report.xbutton.window != toplevel) break;
+			if (report.xbutton.window != x11_state.toplevel) break;
 			x[corner] = report.xbutton.x;
 			y[corner] = report.xbutton.y; 
 			if (corner == 0) {
-			/*	XSelectInput (display, toplevel, ExposureMask | 
+			/*	XSelectInput (x11_state.display, x11_state.toplevel, ExposureMask | 
 					StructureNotifyMask | ButtonPressMask | PointerMotionMask); */
 			}
 			else {
@@ -2523,8 +2618,8 @@ adjustwin (void (*drawscreen) (void))
 				if (xold >= 0) {  /* xold set -ve before we draw first box */
                                         // Erase prior box.
 					set_draw_mode(DRAW_XOR);
-					XDrawRectangle(display,toplevel,gcxor,min(x[0],xold),
-						min(y[0],yold),abs(x[0]-xold),abs(y[0]-yold));
+					XDrawRectangle(x11_state.display,x11_state.toplevel, x11_state.gcxor,
+								   min(x[0],xold), min(y[0],yold), abs(x[0]-xold), abs(y[0]-yold));
 					set_draw_mode(DRAW_NORMAL);
 				}
 				/* Don't allow user to window under menu region */
@@ -2541,21 +2636,21 @@ adjustwin (void (*drawscreen) (void))
 				force_setcolor(gl_state.background_cindex);
 
                                 // Draw rubber band box.
-				XDrawRectangle(display,toplevel,gcxor,min(x[0],xold),
+				XDrawRectangle(x11_state.display,x11_state.toplevel,x11_state.gcxor,min(x[0],xold),
 					min(y[0],yold),abs(x[0]-xold),abs(y[0]-yold));
 				set_draw_mode(DRAW_NORMAL);
 			}
 			break;
 		}
 	}
-	/* XSelectInput (display, toplevel, ExposureMask | StructureNotifyMask
+	/* XSelectInput (x11_state.display, x11_state.toplevel, ExposureMask | StructureNotifyMask
 		| ButtonPressMask); */
 #else /* Win32 */
 	/* Implemented as WM_LB... events */
 	
 	/* Begin window adjust */
-	if (!windowAdjustFlag) {
-		windowAdjustFlag = 1;
+	if (!win32_state.windowAdjustFlag) {
+		win32_state.windowAdjustFlag = 1;
 	} 
 #endif
 }
@@ -2584,7 +2679,7 @@ postscript (void (*drawscreen) (void))
 	else {
 		printf ("Error initializing for postscript output.\n");
 #ifdef WIN32
-		MessageBox(hMainWnd, "Error initializing postscript output.", NULL, MB_OK);
+		MessageBox(win32_state.hMainWnd, "Error initializing postscript output.", NULL, MB_OK);
 #endif
 	}
 }
@@ -2593,7 +2688,7 @@ postscript (void (*drawscreen) (void))
 static void 
 proceed (void (*drawscreen) (void)) 
 {
-	ProceedPressed = TRUE;
+	gl_state.ProceedPressed = true;
 }
 
 
@@ -2615,29 +2710,29 @@ close_graphics (void)
 #ifdef X11
 	int i;
 	for (i=0;i<=MAX_FONT_SIZE;i++) {
-		if (font_is_loaded[i])
-			XFreeFont(display,font_info[i]);
+		if (gl_state.font_is_loaded[i])
+			XFreeFont(x11_state.display,x11_state.font_info[i]);
 	}
 	
-	XFreeGC(display,gc);
-	XFreeGC(display,gcxor);
-	XFreeGC(display,gc_menus);
+	XFreeGC(x11_state.display,x11_state.gc);
+	XFreeGC(x11_state.display,x11_state.gcxor);
+	XFreeGC(x11_state.display,x11_state.gc_menus);
 	
-	if (private_cmap != None) 
-		XFreeColormap (display, private_cmap);
+	if (x11_state.private_cmap != None) 
+		XFreeColormap (x11_state.display, x11_state.private_cmap);
 	
-	XCloseDisplay(display);
+	XCloseDisplay(x11_state.display);
 #else /* Win32 */
 	int i;
    // Free the font data structure for each loaded font.
    for (i = 0; i <= MAX_FONT_SIZE; i++) {
-      if (font_is_loaded[i]) {
-         free (font_info[i]);
+      if (gl_state.font_is_loaded[i]) {
+         free (win32_state.font_info[i]);
       }
    }
 
    // Destroy the window
-	if(!DestroyWindow(hMainWnd))
+	if(!DestroyWindow(win32_state.hMainWnd))
 		DRAW_ERROR();
 
    // free the window class (type information held by MS Windows) 
@@ -2654,12 +2749,16 @@ close_graphics (void)
       DRAW_ERROR();
 #endif
 
-	free(button);
-   button = NULL;
+   free(button_state.button);
+   button_state.button = NULL;
 
    for (i = 0; i <= MAX_FONT_SIZE; i++) {
-      font_is_loaded[i] = false;
-      font_info[i] = NULL;
+      gl_state.font_is_loaded[i] = false;
+#ifdef X11
+	  x11_state.font_info[i] = NULL;
+#else /* Win32 */
+      win32_state.font_info[i] = NULL;
+#endif
    }
    gl_state.initialized = false;
 }
@@ -2671,8 +2770,8 @@ close_graphics (void)
 int init_postscript (const char *fname) 
 {
 	
-	ps = fopen (fname,"w");
-	if (ps == NULL) {
+	gl_state.ps = fopen (fname,"w");
+	if (gl_state.ps == NULL) {
 		printf("Error: could not open %s for PostScript output.\n",fname);
 		printf("Drawing to screen instead.\n");
 		return (0);
@@ -2680,116 +2779,116 @@ int init_postscript (const char *fname)
 	gl_state.disp_type = POSTSCRIPT;  /* Graphics go to postscript file now. */
 	
 	/* Header for minimal conformance with the Adobe structuring convention */
-	fprintf(ps,"%%!PS-Adobe-1.0\n");
-	fprintf(ps,"%%%%DocumentFonts: Helvetica\n");
-	fprintf(ps,"%%%%Pages: 1\n");
+	fprintf(gl_state.ps,"%%!PS-Adobe-1.0\n");
+	fprintf(gl_state.ps,"%%%%DocumentFonts: Helvetica\n");
+	fprintf(gl_state.ps,"%%%%Pages: 1\n");
 	/* Set up postscript transformation macros and page boundaries */
 	update_ps_transform();
 	/* Bottom margin is at ps_bot - 15. to leave room for the on-screen message. */
-	fprintf(ps,"%%%%HiResBoundingBox: %.2f %.2f %.2f %.2f\n",
+	fprintf(gl_state.ps,"%%%%HiResBoundingBox: %.2f %.2f %.2f %.2f\n",
 				trans_coord.ps_left, trans_coord.ps_bot - 15.,
 				trans_coord.ps_right, trans_coord.ps_top);
-	fprintf(ps,"%%%%EndComments\n");
+	fprintf(gl_state.ps,"%%%%EndComments\n");
 	
-	fprintf(ps,"/censhow   %%draw a centered string\n");
-	fprintf(ps," { moveto               %% move to proper spot\n");
-	fprintf(ps,"   dup stringwidth pop  %% get x length of string\n");
-	fprintf(ps,"   -2 div               %% Proper left start\n");
-	fprintf(ps,"   yoff rmoveto         %% Move left that much and down half font height\n");
-	fprintf(ps,"   show newpath } def   %% show the string\n\n"); 
+	fprintf(gl_state.ps,"/censhow   %%draw a centered string\n");
+	fprintf(gl_state.ps," { moveto               %% move to proper spot\n");
+	fprintf(gl_state.ps,"   dup stringwidth pop  %% get x length of string\n");
+	fprintf(gl_state.ps,"   -2 div               %% Proper left start\n");
+	fprintf(gl_state.ps,"   yoff rmoveto         %% Move left that much and down half font height\n");
+	fprintf(gl_state.ps,"   show newpath } def   %% show the string\n\n"); 
 	
-	fprintf(ps,"/setfontsize     %% set font to desired size and compute "
+	fprintf(gl_state.ps,"/setfontsize     %% set font to desired size and compute "
 		"centering yoff\n");
-	fprintf(ps," { /Helvetica findfont\n");
-	fprintf(ps,"   8 scalefont\n");
-	fprintf(ps,"   setfont         %% Font size set ...\n\n");
-	fprintf(ps,"   0 0 moveto      %% Get vertical centering offset\n");
-	fprintf(ps,"   (Xg) true charpath\n");
-	fprintf(ps,"   flattenpath pathbbox\n");
-	fprintf(ps,"   /ascent exch def pop -1 mul /descent exch def pop\n");
-	fprintf(ps,"   newpath\n");
-	fprintf(ps,"   descent ascent sub 2 div /yoff exch def } def\n\n");
+	fprintf(gl_state.ps," { /Helvetica findfont\n");
+	fprintf(gl_state.ps,"   exch scalefont\n");
+	fprintf(gl_state.ps,"   setfont         %% Font size set ...\n\n");
+	fprintf(gl_state.ps,"   0 0 moveto      %% Get vertical centering offset\n");
+	fprintf(gl_state.ps,"   (Xg) true charpath\n");
+	fprintf(gl_state.ps,"   flattenpath pathbbox\n");
+	fprintf(gl_state.ps,"   /ascent exch def pop -1 mul /descent exch def pop\n");
+	fprintf(gl_state.ps,"   newpath\n");
+	fprintf(gl_state.ps,"   descent ascent sub 2 div /yoff exch def } def\n\n");
 	
-	fprintf(ps,"%% Next two lines for debugging only.\n");
-	fprintf(ps,"/str 20 string def\n");
-	fprintf(ps,"/pnum {str cvs print (  ) print} def\n");
+	fprintf(gl_state.ps,"%% Next two lines for debugging only.\n");
+	fprintf(gl_state.ps,"/str 20 string def\n");
+	fprintf(gl_state.ps,"/pnum {str cvs print (  ) print} def\n");
 	
-	fprintf(ps,"/drawline      %% draw a line from (x2,y2) to (x1,y1)\n");
-	fprintf(ps," { moveto lineto stroke } def\n\n");
+	fprintf(gl_state.ps,"/drawline      %% draw a line from (x2,y2) to (x1,y1)\n");
+	fprintf(gl_state.ps," { moveto lineto stroke } def\n\n");
 	
-	fprintf(ps,"/rect          %% outline a rectangle \n");
-	fprintf(ps," { /y2 exch def /x2 exch def /y1 exch def /x1 exch def\n");
-	fprintf(ps,"   x1 y1 moveto\n");
-	fprintf(ps,"   x2 y1 lineto\n");
-	fprintf(ps,"   x2 y2 lineto\n");
-	fprintf(ps,"   x1 y2 lineto\n");
-	fprintf(ps,"   closepath } def\n\n");
+	fprintf(gl_state.ps,"/rect          %% outline a rectangle \n");
+	fprintf(gl_state.ps," { /y2 exch def /x2 exch def /y1 exch def /x1 exch def\n");
+	fprintf(gl_state.ps,"   x1 y1 moveto\n");
+	fprintf(gl_state.ps,"   x2 y1 lineto\n");
+	fprintf(gl_state.ps,"   x2 y2 lineto\n");
+	fprintf(gl_state.ps,"   x1 y2 lineto\n");
+	fprintf(gl_state.ps,"   closepath } def\n\n");
 	
-	fprintf(ps,"/drawrect      %% draw outline of a rectanagle\n");
-	fprintf(ps," { rect stroke } def\n\n");
+	fprintf(gl_state.ps,"/drawrect      %% draw outline of a rectanagle\n");
+	fprintf(gl_state.ps," { rect stroke } def\n\n");
 	
-	fprintf(ps,"/fillrect      %% fill in a rectanagle\n");
-	fprintf(ps," { rect fill } def\n\n");
+	fprintf(gl_state.ps,"/fillrect      %% fill in a rectanagle\n");
+	fprintf(gl_state.ps," { rect fill } def\n\n");
 	
-	fprintf (ps,"/drawarc { arc stroke } def           %% draw an arc\n");
-	fprintf (ps,"/drawarcn { arcn stroke } def "
+	fprintf (gl_state.ps,"/drawarc { arc stroke } def           %% draw an arc\n");
+	fprintf (gl_state.ps,"/drawarcn { arcn stroke } def "
 		"        %% draw an arc in the opposite direction\n\n");
 	
-	fprintf (ps,"%%Fill a counterclockwise or clockwise arc sector, "
+	fprintf (gl_state.ps,"%%Fill a counterclockwise or clockwise arc sector, "
 		"respectively.\n");
-	fprintf (ps,"/fillarc { moveto currentpoint 5 2 roll arc closepath fill } "
+	fprintf (gl_state.ps,"/fillarc { moveto currentpoint 5 2 roll arc closepath fill } "
 		"def\n");
-	fprintf (ps,"/fillarcn { moveto currentpoint 5 2 roll arcn closepath fill } "
+	fprintf (gl_state.ps,"/fillarcn { moveto currentpoint 5 2 roll arcn closepath fill } "
 		"def\n\n");
 	
-	fprintf (ps,"/fillpoly { 3 1 roll moveto         %% move to first point\n"
+	fprintf (gl_state.ps,"/fillpoly { 3 1 roll moveto         %% move to first point\n"
 		"   2 exch 1 exch {pop lineto} for   %% line to all other points\n"
 		"   closepath fill } def\n\n");
 	
 	
-	fprintf(ps,"%%Color Definitions:\n");
-	fprintf(ps,"/white { 1 setgray } def\n");
-	fprintf(ps,"/black { 0 setgray } def\n");
-	fprintf(ps,"/grey55 { .55 setgray } def\n");
-	fprintf(ps,"/grey75 { .75 setgray } def\n");
-	fprintf(ps,"/blue { 0 0 1 setrgbcolor } def\n");
-	fprintf(ps,"/green { 0 1 0 setrgbcolor } def\n");
-	fprintf(ps,"/yellow { 1 1 0 setrgbcolor } def\n");
-	fprintf(ps,"/cyan { 0 1 1 setrgbcolor } def\n");
-	fprintf(ps,"/red { 1 0 0 setrgbcolor } def\n");
-	fprintf(ps,"/darkgreen { 0 0.5 0 setrgbcolor } def\n");
-	fprintf(ps,"/magenta { 1 0 1 setrgbcolor } def\n");
-	fprintf(ps,"/bisque { 1 0.89 0.77 setrgbcolor } def\n");
-	fprintf(ps,"/lightblue { 0.68 0.85 0.9 setrgbcolor } def\n");
-	fprintf(ps,"/thistle { 0.85 0.75 0.85 setrgbcolor } def\n");
-	fprintf(ps,"/plum { 0.87 0.63 0.87 setrgbcolor } def\n");
-	fprintf(ps,"/khaki { 0.94 0.9 0.55 setrgbcolor } def\n");
-	fprintf(ps,"/coral { 1 0.5 0.31 setrgbcolor } def\n");
-	fprintf(ps,"/turquoise { 0.25 0.88 0.82 setrgbcolor } def\n");
-	fprintf(ps,"/mediumpurple { 0.58 0.44 0.86 setrgbcolor } def\n");
-	fprintf(ps,"/darkslateblue { 0.28 0.24 0.55 setrgbcolor } def\n");
-	fprintf(ps,"/darkkhaki { 0.74 0.72 0.42 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"%%Color Definitions:\n");
+	fprintf(gl_state.ps,"/white { 1 setgray } def\n");
+	fprintf(gl_state.ps,"/black { 0 setgray } def\n");
+	fprintf(gl_state.ps,"/grey55 { .55 setgray } def\n");
+	fprintf(gl_state.ps,"/grey75 { .75 setgray } def\n");
+	fprintf(gl_state.ps,"/blue { 0 0 1 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/green { 0 1 0 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/yellow { 1 1 0 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/cyan { 0 1 1 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/red { 1 0 0 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/darkgreen { 0 0.5 0 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/magenta { 1 0 1 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/bisque { 1 0.89 0.77 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/lightblue { 0.68 0.85 0.9 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/thistle { 0.85 0.75 0.85 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/plum { 0.87 0.63 0.87 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/khaki { 0.94 0.9 0.55 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/coral { 1 0.5 0.31 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/turquoise { 0.25 0.88 0.82 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/mediumpurple { 0.58 0.44 0.86 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/darkslateblue { 0.28 0.24 0.55 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/darkkhaki { 0.74 0.72 0.42 setrgbcolor } def\n");
 	
-	fprintf(ps,"\n%%Solid and dashed line definitions:\n");
-	fprintf(ps,"/linesolid {[] 0 setdash} def\n");
-	fprintf(ps,"/linedashed {[3 3] 0 setdash} def\n");
+	fprintf(gl_state.ps,"\n%%Solid and dashed line definitions:\n");
+	fprintf(gl_state.ps,"/linesolid {[] 0 setdash} def\n");
+	fprintf(gl_state.ps,"/linedashed {[3 3] 0 setdash} def\n");
 	
-	fprintf(ps,"\n%%%%EndProlog\n");
-	fprintf(ps,"%%%%Page: 1 1\n\n");
+	fprintf(gl_state.ps,"\n%%%%EndProlog\n");
+	fprintf(gl_state.ps,"%%%%Page: 1 1\n\n");
 	
 	/* Set up PostScript graphics state to match current one. */
-	force_setcolor (currentcolor);
-	force_setlinestyle (currentlinestyle);
-	force_setlinewidth (currentlinewidth);
-	force_setfontsize (currentfontsize); 
+	force_setcolor (gl_state.currentcolor);
+	force_setlinestyle (gl_state.currentlinestyle);
+	force_setlinewidth (gl_state.currentlinewidth);
+	force_setfontsize (gl_state.currentfontsize); 
 	
 	/* Draw this in the bottom margin -- must do before the clippath is set */
 	draw_message ();
 	
 	/* Set clipping on page. */
-	fprintf(ps,"%.2f %.2f %.2f %.2f rect ",trans_coord.ps_left, trans_coord.ps_bot,
+	fprintf(gl_state.ps,"%.2f %.2f %.2f %.2f rect ",trans_coord.ps_left, trans_coord.ps_bot,
 				trans_coord.ps_right, trans_coord.ps_top);
-	fprintf(ps,"clip newpath\n\n");
+	fprintf(gl_state.ps,"clip newpath\n\n");
 	
 	return (1);
 }
@@ -2798,9 +2897,9 @@ int init_postscript (const char *fname)
 void close_postscript (void) 
 {
 		
-	fprintf(ps,"showpage\n");
-	fprintf(ps,"\n%%%%Trailer\n");
-	fclose (ps);
+	fprintf(gl_state.ps,"showpage\n");
+	fprintf(gl_state.ps,"\n%%%%Trailer\n");
+	fclose (gl_state.ps);
 	gl_state.disp_type = SCREEN;
 	update_transform();   /* Ensure screen world reflects any changes      *
 	* made while printing.                          */
@@ -2812,10 +2911,10 @@ void close_postscript (void)
    * subsequent drawing commands work properly.
    */
 	
-	force_setcolor (currentcolor);
-	force_setlinestyle (currentlinestyle);
-	force_setlinewidth (currentlinewidth);
-	force_setfontsize (currentfontsize); 
+	force_setcolor (gl_state.currentcolor);
+	force_setlinestyle (gl_state.currentlinestyle);
+	force_setlinewidth (gl_state.currentlinewidth);
+	force_setfontsize (gl_state.currentfontsize); 
 }
 
 
@@ -2831,19 +2930,21 @@ build_default_menu (void)
 	unsigned long valuemask;
 	XSetWindowAttributes menu_attributes;
 	
-	menu = XCreateSimpleWindow(display,toplevel, trans_coord.top_width-MWIDTH, 0,
-				MWIDTH, display_height, 0, colors[BLACK], colors[LIGHTGREY]);
+	x11_state.menu = XCreateSimpleWindow(x11_state.display,x11_state.toplevel, 
+										 trans_coord.top_width-MWIDTH, 0, MWIDTH, 
+										 trans_coord.display_height, 0, x11_state.colors[BLACK], 
+										 x11_state.colors[LIGHTGREY]);
 	menu_attributes.event_mask = ExposureMask;
 	/* Ignore button presses on the menu background. */
 	menu_attributes.do_not_propagate_mask = ButtonPressMask;
 	/* Keep menu on top right */
 	menu_attributes.win_gravity = NorthEastGravity; 
 	valuemask = CWWinGravity | CWEventMask | CWDontPropagate;
-	XChangeWindowAttributes(display, menu, valuemask, &menu_attributes);
-	XMapWindow (display, menu);
+	XChangeWindowAttributes(x11_state.display, x11_state.menu, valuemask, &menu_attributes);
+	XMapWindow (x11_state.display, x11_state.menu);
 #endif
 	
-	button = (t_button *) my_malloc (NUM_STANDARD_BUTTONS * sizeof (t_button));
+	button_state.button = (t_button *) my_malloc (NUM_STANDARD_BUTTONS * sizeof (t_button));
 	
 	/* Now do the arrow buttons */
 	bwid = 28;
@@ -2851,55 +2952,55 @@ build_default_menu (void)
 	y1 = 10;
 	xcen = 51;
 	x1 = xcen - bwid/2; 
-	button[0].xleft = x1;
-	button[0].ytop = y1;
+	button_state.button[0].xleft = x1;
+	button_state.button[0].ytop = y1;
 #ifdef X11
 	setpoly (0, bwid/2, bwid/2, bwid/3, -PI/2.); /* Up */
 #else
-	button[0].type = BUTTON_TEXT;
-	strcpy(button[0].text, "U");
+	button_state.button[0].type = BUTTON_TEXT;
+	strcpy(button_state.button[0].text, "U");
 #endif
-	button[0].fcn = translate_up;
+	button_state.button[0].fcn = translate_up;
 	
 	y1 += bwid + space;
 	x1 = xcen - 3*bwid/2 - space;
-	button[1].xleft = x1;
-	button[1].ytop = y1;
+	button_state.button[1].xleft = x1;
+	button_state.button[1].ytop = y1;
 #ifdef X11
 	setpoly (1, bwid/2, bwid/2, bwid/3, PI);  /* Left */
 #else
-	button[1].type = BUTTON_TEXT;
-	strcpy(button[1].text, "L");
+	button_state.button[1].type = BUTTON_TEXT;
+	strcpy(button_state.button[1].text, "L");
 #endif
-	button[1].fcn = translate_left;
+	button_state.button[1].fcn = translate_left;
 	
 	x1 = xcen + bwid/2 + space;
-	button[2].xleft = x1;
-	button[2].ytop = y1;
+	button_state.button[2].xleft = x1;
+	button_state.button[2].ytop = y1;
 #ifdef X11
 	setpoly (2, bwid/2, bwid/2, bwid/3, 0);  /* Right */
 #else
-	button[2].type = BUTTON_TEXT;
-	strcpy(button[2].text, "R");
+	button_state.button[2].type = BUTTON_TEXT;
+	strcpy(button_state.button[2].text, "R");
 #endif
-	button[2].fcn = translate_right;
+	button_state.button[2].fcn = translate_right;
 	
 	y1 += bwid + space;
 	x1 = xcen - bwid/2;
-	button[3].xleft = x1;
-	button[3].ytop = y1;
+	button_state.button[3].xleft = x1;
+	button_state.button[3].ytop = y1;
 #ifdef X11
 	setpoly (3, bwid/2, bwid/2, bwid/3, +PI/2.);  /* Down */
 #else
-	button[3].type = BUTTON_TEXT;
-	strcpy(button[3].text, "D");
+	button_state.button[3].type = BUTTON_TEXT;
+	strcpy(button_state.button[3].text, "D");
 #endif
-	button[3].fcn = translate_down;
+	button_state.button[3].fcn = translate_down;
 	
 	for (i = 0; i < NUM_ARROW_BUTTONS; i++) {
-		button[i].width = bwid;
-		button[i].height = bwid;
-		button[i].enabled = 1;
+		button_state.button[i].width = bwid;
+		button_state.button[i].height = bwid;
+		button_state.button[i].enabled = 1;
 	} 
 	
 	/* Rectangular buttons */
@@ -2910,49 +3011,49 @@ build_default_menu (void)
 	bheight = 26;
 	x1 = xcen - bwid/2;
 	for (i = NUM_ARROW_BUTTONS; i < NUM_STANDARD_BUTTONS; i++) {
-		button[i].xleft = x1;
-		button[i].ytop = y1;
-		button[i].type = BUTTON_TEXT;
-		button[i].width = bwid;
-		button[i].enabled = 1;
+		button_state.button[i].xleft = x1;
+		button_state.button[i].ytop = y1;
+		button_state.button[i].type = BUTTON_TEXT;
+		button_state.button[i].width = bwid;
+		button_state.button[i].enabled = 1;
 		if (i != SEPARATOR_BUTTON_INDEX) {
-			button[i].height = bheight;
+			button_state.button[i].height = bheight;
 			y1 += bheight + space;
 		}
 		else {
-			button[i].height = 2;
-			button[i].type = BUTTON_SEPARATOR;
+			button_state.button[i].height = 2;
+			button_state.button[i].type = BUTTON_SEPARATOR;
 			y1 += 2 + space;
 		}
 	}
 	
-	strcpy (button[4].text,"Zoom In");
-	strcpy (button[5].text,"Zoom Out");
-	strcpy (button[6].text,"Zoom Fit");
-	strcpy (button[7].text,"Window");
-	strcpy (button[8].text,"---1");
-	strcpy (button[9].text,"PostScript");
-	strcpy (button[10].text,"Proceed");
-	strcpy (button[11].text,"Exit");
+	strcpy (button_state.button[4].text,"Zoom In");
+	strcpy (button_state.button[5].text,"Zoom Out");
+	strcpy (button_state.button[6].text,"Zoom Fit");
+	strcpy (button_state.button[7].text,"Window");
+	strcpy (button_state.button[8].text,"---1");
+	strcpy (button_state.button[9].text,"PostScript");
+	strcpy (button_state.button[10].text,"Proceed");
+	strcpy (button_state.button[11].text,"Exit");
 	
-	button[4].fcn = zoom_in;
-	button[5].fcn = zoom_out;
-	button[6].fcn = zoom_fit;
-	button[7].fcn = adjustwin;  // see 'adjustButton' below in WIN32 section
-	button[8].fcn = NULL;
-	button[9].fcn = postscript;
-	button[10].fcn = proceed;
-	button[11].fcn = quit;
+	button_state.button[4].fcn = zoom_in;
+	button_state.button[5].fcn = zoom_out;
+	button_state.button[6].fcn = zoom_fit;
+	button_state.button[7].fcn = adjustwin;  // see 'adjustButton' below in WIN32 section
+	button_state.button[8].fcn = NULL;
+	button_state.button[9].fcn = postscript;
+	button_state.button[10].fcn = proceed;
+	button_state.button[11].fcn = quit;
 	
 	for (i = 0; i < NUM_STANDARD_BUTTONS; i++) 
 		map_button (i);
-	num_buttons = NUM_STANDARD_BUTTONS;
+	button_state.num_buttons = NUM_STANDARD_BUTTONS;
 
 #ifdef WIN32
-	adjustButton = 7;
-	if(!InvalidateRect(hButtonsWnd, NULL, TRUE))
+	win32_state.adjustButton = 7;
+	if(!InvalidateRect(win32_state.hButtonsWnd, NULL, TRUE))
 		DRAW_ERROR();
-	if(!UpdateWindow(hButtonsWnd))
+	if(!UpdateWindow(win32_state.hButtonsWnd))
 		DRAW_ERROR();
 #endif
 }
@@ -2969,7 +3070,7 @@ load_font(int pointsize)
       return;
    }
 
-   	if (font_is_loaded[pointsize])  // Nothing to do.
+   	if (gl_state.font_is_loaded[pointsize])  // Nothing to do.
 		return;
 
 #ifdef X11
@@ -2996,7 +3097,8 @@ load_font(int pointsize)
                fontname[ifont]);
 #endif
        /* Load font and get font information structure. */
-      if ((font_info[pointsize] = XLoadQueryFont(display,fontname[ifont])) == NULL) {
+      x11_state.font_info[pointsize] = XLoadQueryFont(x11_state.display,fontname[ifont]);
+      if (x11_state.font_info[pointsize] == NULL) {
 #ifdef VERBOSE
          fprintf( stderr, "Cannot open font %s\n", fontname[ifont]);
 #endif
@@ -3014,9 +3116,14 @@ load_font(int pointsize)
       exit (1);
    }
 #else /* WIN32 */
-   LOGFONT *lf = font_info[pointsize] = (LOGFONT*)my_malloc(sizeof(LOGFONT));
+   LOGFONT *lf = win32_state.font_info[pointsize] = (LOGFONT*)my_malloc(sizeof(LOGFONT));
    ZeroMemory(lf, sizeof(LOGFONT));
-   lf->lfHeight = pointsize;
+   /* lfHeight specifies the desired height of characters in logical units. *
+    * A positive value of lfHeight will request a font that is appropriate  *
+	* for a line spacing of lfHeight. On the other hand, setting lfHeight   *
+	* to a negative value will obtain a font height that is compatible with *
+	* the desired pointsize.												*/
+   lf->lfHeight = -pointsize; 
    lf->lfWeight = FW_NORMAL;
    lf->lfCharSet = ANSI_CHARSET;
    lf->lfOutPrecision = OUT_DEFAULT_PRECIS;
@@ -3026,7 +3133,7 @@ load_font(int pointsize)
    strcpy(lf->lfFaceName, "Arial");	 
 #endif
 
-   font_is_loaded[pointsize] = true;
+   gl_state.font_is_loaded[pointsize] = true;
 }
 
 
@@ -3036,8 +3143,8 @@ load_font(int pointsize)
  * that object (mainwnd) from this structure.
  */
 void report_structure(t_report *report) {
-	report->xmult = trans_coord.xmult;
-	report->ymult = trans_coord.ymult;
+	report->xmult = trans_coord.wtos_xmult;
+	report->ymult = trans_coord.wtos_ymult;
 	report->xleft = trans_coord.xleft;
 	report->xright = trans_coord.xright;
 	report->ytop = trans_coord.ytop;
@@ -3050,24 +3157,24 @@ void report_structure(t_report *report) {
 
 
 void set_mouse_move_input (bool enable) {
-	get_mouse_move_input = enable;
+	gl_state.get_mouse_move_input = enable;
 }
 
 
 void set_keypress_input (bool enable) {
-	get_keypress_input = enable;
+	gl_state.get_keypress_input = enable;
 }
 
 
 void enable_or_disable_button (int ibutton, bool enabled) {
 
-   if (button[ibutton].type != BUTTON_SEPARATOR) {
-      button[ibutton].enabled = enabled;
+   if (button_state.button[ibutton].type != BUTTON_SEPARATOR) {
+      button_state.button[ibutton].enabled = enabled;
 #ifdef WIN32
-      EnableWindow(button[ibutton].hwnd, button[ibutton].enabled);
+      EnableWindow(button_state.button[ibutton].hwnd, button_state.button[ibutton].enabled);
 #else  // X11
-      drawbut(ibutton);
-      XFlush(display);
+      x11_drawbut(ibutton);
+      XFlush(x11_state.display);
 #endif
    }
 }
@@ -3080,21 +3187,21 @@ void set_draw_mode (enum e_draw_mode draw_mode) {
 
    if (draw_mode == DRAW_NORMAL) {
 #ifdef X11
-      current_gc = gc;
+      x11_state.current_gc = x11_state.gc;
 #else
-      if (!SetROP2(hGraphicsDC, R2_COPYPEN))
+      if (!SetROP2(win32_state.hGraphicsDC, R2_COPYPEN))
          SELECT_ERROR();
 #endif
    }
    else {  // DRAW_XOR
 #ifdef X11
-      current_gc = gcxor;
+      x11_state.current_gc = x11_state.gcxor;
 #else
-      if (!SetROP2(hGraphicsDC, R2_XORPEN))
+      if (!SetROP2(win32_state.hGraphicsDC, R2_XORPEN))
          SELECT_ERROR();
 #endif
    }
-   current_draw_mode = draw_mode;
+   gl_state.current_draw_mode = draw_mode;
 }
 
 
@@ -3107,25 +3214,23 @@ void change_button_text(const char *button_name, const char *new_button_text) {
 	
 	bnum = -1;
 	
-	for (i=4;i<num_buttons;i++) {
-		if (button[i].type == BUTTON_TEXT && 
-			strcmp (button[i].text, button_name) == 0) {
+	for (i=4;i<button_state.num_buttons;i++) {
+		if (button_state.button[i].type == BUTTON_TEXT && 
+			strcmp (button_state.button[i].text, button_name) == 0) {
 			bnum = i;
 			break;
 		}
 	}
 
 	if (bnum != -1) {
-		strncpy (button[i].text, new_button_text, BUTTON_TEXT_LEN);
+		strncpy (button_state.button[i].text, new_button_text, BUTTON_TEXT_LEN);
 #ifdef X11
-		drawbut (i);
+		x11_drawbut (i);
 #else // Win32
-		SetWindowText(button[bnum].hwnd, new_button_text);
+		SetWindowText(button_state.button[bnum].hwnd, new_button_text);
 #endif
 	}
 }
-
-
 
 
 /**********************************
@@ -3134,33 +3239,30 @@ void change_button_text(const char *button_name, const char *new_button_text) {
 #ifdef X11
 
 /* Creates a small window at the top of the graphics area for text messages */
-static void build_textarea (void) 
+static void x11_build_textarea (void) 
 {
 	XSetWindowAttributes menu_attributes;
 	unsigned long valuemask;
 	
-	textarea = XCreateSimpleWindow(display,toplevel, 0,
-			   	   trans_coord.top_height-T_AREA_HEIGHT, display_width-MWIDTH,
-			   	   T_AREA_HEIGHT, 0, colors[BLACK], colors[LIGHTGREY]);
+	x11_state.textarea = XCreateSimpleWindow(x11_state.display,x11_state.toplevel, 0,
+			   	   trans_coord.top_height-T_AREA_HEIGHT, trans_coord.display_width-MWIDTH,
+			   	   T_AREA_HEIGHT, 0, x11_state.colors[BLACK], x11_state.colors[LIGHTGREY]);
 	menu_attributes.event_mask = ExposureMask;
 	/* ButtonPresses in this area are ignored. */
 	menu_attributes.do_not_propagate_mask = ButtonPressMask;
 	/* Keep text area on bottom left */
 	menu_attributes.win_gravity = SouthWestGravity; 
 	valuemask = CWWinGravity | CWEventMask | CWDontPropagate;
-	XChangeWindowAttributes(display, textarea, valuemask, &menu_attributes);
-	XMapWindow (display, textarea);
+	XChangeWindowAttributes(x11_state.display, x11_state.textarea, valuemask, &menu_attributes);
+	XMapWindow (x11_state.display, x11_state.textarea);
 }
 
 
-
-static Bool test_if_exposed (Display *disp, XEvent *event_ptr, XPointer dummy) 
+static Bool x11_test_if_exposed (Display *disp, XEvent *event_ptr, XPointer dummy) 
 /* Returns True if the event passed in is an exposure event.   Note that 
  * the bool type returned by this function is defined in Xlib.h.         
  */
 {
-	
-	
 	if (event_ptr->type == Expose) {
 		return (True);
 	}
@@ -3171,20 +3273,20 @@ static Bool test_if_exposed (Display *disp, XEvent *event_ptr, XPointer dummy)
 
 static void menutext(Window win, int xc, int yc, const char *text) 
 {
-	
 	/* draws text center at xc, yc -- used only by menu drawing stuff */
 	
 	int len, width; 
 	
 	len = strlen(text);
-	width = XTextWidth(font_info[menu_font_size], text, len);
-	XDrawString(display, win, gc_menus, xc-width/2, yc + 
-		(font_info[menu_font_size]->ascent - font_info[menu_font_size]->descent)/2,
-		text, len);
+	width = XTextWidth(x11_state.font_info[MENU_FONT_SIZE], text, len);
+	XDrawString(x11_state.display, win, x11_state.gc_menus, xc-width/2, 
+				yc + (x11_state.font_info[MENU_FONT_SIZE]->ascent 
+					   - x11_state.font_info[MENU_FONT_SIZE]->descent)/2,
+				text, len);
 }
 
 
-static void drawbut (int bnum) 
+static void x11_drawbut (int bnum) 
 {
 	
 	/* Draws button bnum in either its pressed or unpressed state.    */
@@ -3192,29 +3294,29 @@ static void drawbut (int bnum)
 	int width, height, thick, i, ispressed;
 	XPoint mypoly[6];
 
-	width = button[bnum].width;
-	height = button[bnum].height;
+	width = button_state.button[bnum].width;
+	height = button_state.button[bnum].height;
 
-	if (button[bnum].type == BUTTON_SEPARATOR) {
+	if (button_state.button[bnum].type == BUTTON_SEPARATOR) {
 		int x,y;
 
-		x = button[bnum].xleft;
-		y = button[bnum].ytop;
-		XSetForeground(display, gc_menus,colors[WHITE]);
-		XDrawLine(display, menu, gc_menus, x, y+1, x+width, y+1);
-		XSetForeground(display, gc_menus,colors[BLACK]);
-		XDrawLine(display, menu, gc_menus, x, y, x+width, y);
+		x = button_state.button[bnum].xleft;
+		y = button_state.button[bnum].ytop;
+		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[WHITE]);
+		XDrawLine(x11_state.display, x11_state.menu, x11_state.gc_menus, x, y+1, x+width, y+1);
+		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[BLACK]);
+		XDrawLine(x11_state.display, x11_state.menu, x11_state.gc_menus, x, y, x+width, y);
 		return;
 	}
 
-	ispressed = button[bnum].ispressed;
+	ispressed = button_state.button[bnum].ispressed;
 	thick = 2;
 	/* Draw top and left edges of 3D box. */
 	if (ispressed) {
-		XSetForeground(display, gc_menus,colors[BLACK]);
+		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[BLACK]);
 	}
 	else {
-		XSetForeground(display, gc_menus,colors[WHITE]);
+		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[WHITE]);
 	}
 	
 	/* Note:  X Windows doesn't appear to draw the bottom pixel of *
@@ -3232,15 +3334,15 @@ static void drawbut (int bnum)
 	mypoly[4].y = thick;
 	mypoly[5].x = thick;
 	mypoly[5].y = height-thick;
-	XFillPolygon(display,button[bnum].win,gc_menus,mypoly,6,Convex,
+	XFillPolygon(x11_state.display,button_state.button[bnum].win,x11_state.gc_menus,mypoly,6,Convex,
 		CoordModeOrigin);
 	
 	/* Draw bottom and right edges of 3D box. */
 	if (ispressed) {
-		XSetForeground(display, gc_menus,colors[WHITE]);
+		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[WHITE]);
 	}
 	else {
-		XSetForeground(display, gc_menus,colors[BLACK]);
+		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[BLACK]);
 	} 
 	mypoly[0].x = 0;
 	mypoly[0].y = height;
@@ -3254,50 +3356,50 @@ static void drawbut (int bnum)
 	mypoly[4].y = height-thick;
 	mypoly[5].x = thick;
 	mypoly[5].y = height-thick;
-	XFillPolygon(display,button[bnum].win,gc_menus,mypoly,6,Convex,
+	XFillPolygon(x11_state.display,button_state.button[bnum].win,x11_state.gc_menus,mypoly,6,Convex,
 		CoordModeOrigin);
 	
 	/* Draw background */
 	if (ispressed) {
-		XSetForeground(display, gc_menus,colors[DARKGREY]);
+		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[DARKGREY]);
 	}
 	else {
-		XSetForeground(display, gc_menus,colors[LIGHTGREY]);
+		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[LIGHTGREY]);
 	}
 	
 	/* Give x,y of top corner and width and height */
-	XFillRectangle (display,button[bnum].win,gc_menus,thick,thick,
+	XFillRectangle (x11_state.display,button_state.button[bnum].win,x11_state.gc_menus,thick,thick,
 		width-2*thick, height-2*thick);
 	
 	/* Draw polygon, if there is one */
-	if (button[bnum].type == BUTTON_POLY) {
+	if (button_state.button[bnum].type == BUTTON_POLY) {
 		for (i=0;i<3;i++) {
-			mypoly[i].x = button[bnum].poly[i][0];
-			mypoly[i].y = button[bnum].poly[i][1];
+			mypoly[i].x = button_state.button[bnum].poly[i][0];
+			mypoly[i].y = button_state.button[bnum].poly[i][1];
 		}
-		XSetForeground(display, gc_menus,colors[BLACK]);
-		XFillPolygon(display,button[bnum].win,gc_menus,mypoly,3,Convex,
-			CoordModeOrigin);
+		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[BLACK]);
+		XFillPolygon(x11_state.display,button_state.button[bnum].win,
+					 x11_state.gc_menus,mypoly,3,Convex,CoordModeOrigin);
 	}
 	
 	/* Draw text, if there is any */
-	if (button[bnum].type == BUTTON_TEXT) {
-		if (button[bnum].enabled)
-			XSetForeground(display, gc_menus,colors[BLACK]);
+	if (button_state.button[bnum].type == BUTTON_TEXT) {
+		if (button_state.button[bnum].enabled)
+			XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[BLACK]);
 		else
-			XSetForeground(display, gc_menus,colors[DARKGREY]);
-		menutext(button[bnum].win,button[bnum].width/2,
-			button[bnum].height/2,button[bnum].text);
+			XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[DARKGREY]);
+		menutext(button_state.button[bnum].win,button_state.button[bnum].width/2,
+			button_state.button[bnum].height/2,button_state.button[bnum].text);
 	}
 }
 
 
-static int which_button (Window win) 
+static int x11_which_button (Window win) 
 {
 	int i;
 	
-	for (i=0;i<num_buttons;i++) {
-		if (button[i].win == win)
+	for (i=0;i<button_state.num_buttons;i++) {
+		if (button_state.button[i].win == win)
 			return(i);
 	}
 	printf("Error:  Unknown button ID in which_button.\n");
@@ -3305,59 +3407,61 @@ static int which_button (Window win)
 }
 
 
-static void turn_on_off (int pressed) {
+static void x11_turn_on_off (int pressed) {
 /* Shows when the menu is active or inactive by colouring the 
  * buttons.                                                   
  */
 	int i;
 	
-	for (i=0;i<num_buttons;i++) {
-		button[i].ispressed = pressed;
-		drawbut(i);
+	for (i=0;i<button_state.num_buttons;i++) {
+		button_state.button[i].ispressed = pressed;
+		x11_drawbut(i);
 	}
 }
 
 
-static void drawmenu(void) 
+static void x11_drawmenu(void) 
 {
 	int i;
 
-	XClearWindow (display, menu);
-	XSetForeground(display, gc_menus,colors[WHITE]);
-	XDrawRectangle(display, menu, gc_menus, 0, 0, MWIDTH, trans_coord.top_height);
-	XSetForeground(display, gc_menus,colors[BLACK]);
-	XDrawLine(display, menu, gc_menus, 0, trans_coord.top_height-1, MWIDTH,
-				trans_coord.top_height-1);
-	XDrawLine(display, menu, gc_menus, MWIDTH-1, trans_coord.top_height, MWIDTH-1, 0);
+	XClearWindow (x11_state.display, x11_state.menu);
+	XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[WHITE]);
+	XDrawRectangle(x11_state.display, x11_state.menu, x11_state.gc_menus, 0, 0, MWIDTH, 
+				   trans_coord.top_height);
+	XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[BLACK]);
+	XDrawLine(x11_state.display, x11_state.menu, x11_state.gc_menus, 0, trans_coord.top_height-1, 
+			  MWIDTH, trans_coord.top_height-1);
+	XDrawLine(x11_state.display, x11_state.menu, x11_state.gc_menus, MWIDTH-1, 
+			  trans_coord.top_height, MWIDTH-1, 0);
 	
-	for (i=0;i<num_buttons;i++)  {
-		drawbut(i);
+	for (i=0;i<button_state.num_buttons;i++)  {
+		x11_drawbut(i);
 	}
 }
 
 
-static void handle_expose(XEvent report, void (*drawscreen) (void))
+static void x11_handle_expose(XEvent report, void (*drawscreen) (void))
 {
 #ifdef VERBOSE
 	printf("Got an expose event.\n");
 	printf("Count is: %d.\n",report.xexpose.count);
 	printf("Window ID is: %ld.\n",report.xexpose.window);
 #endif
-	if (report.xexpose.window == menu)
-		drawmenu();
-	else if (report.xexpose.window == toplevel)
+	if (report.xexpose.window == x11_state.menu)
+		x11_drawmenu();
+	else if (report.xexpose.window == x11_state.toplevel)
 		drawscreen();
-	else if (report.xexpose.window == textarea)
+	else if (report.xexpose.window == x11_state.textarea)
 		draw_message();
 }
 
 
-static void handle_configure_notify(XEvent report)
+static void x11_handle_configure_notify(XEvent report)
 {
 	trans_coord.top_width = report.xconfigure.width;
 	trans_coord.top_height = report.xconfigure.height;
 	update_transform();
-	drawmenu();
+	x11_drawmenu();
 	draw_message();
 #ifdef VERBOSE
 	printf("Got a ConfigureNotify.\n");
@@ -3366,7 +3470,8 @@ static void handle_configure_notify(XEvent report)
 }
 
 
-static void handle_button_info (t_event_buttonPressed *button_info, int buttonNumber, int Xbutton_state)
+static void x11_handle_button_info (t_event_buttonPressed *button_info, 
+										int buttonNumber, int Xbutton_state)
 {
 
 	button_info->button = buttonNumber;
@@ -3385,7 +3490,6 @@ static void handle_button_info (t_event_buttonPressed *button_info, int buttonNu
 #endif /* X-Windows Specific Definitions */
 
 
-
 /*************************************************
 * Microsoft Windows (WIN32) Specific Definitions *
 *************************************************/
@@ -3398,63 +3502,68 @@ MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	
 	switch(message)
 	{
+		case WM_CREATE:
+			win32_state.hStatusWnd = CreateWindow(szStatusName, NULL, WS_CHILDWINDOW | WS_VISIBLE,
+				0, 0, 0, 0, hwnd, (HMENU) 102, (HINSTANCE) GetWindowLong(hwnd, GWL_HINSTANCE), NULL);
+			win32_state.hButtonsWnd = CreateWindow(szButtonsName, NULL, WS_CHILDWINDOW | WS_VISIBLE,
+				0, 0, 0, 0, hwnd, (HMENU) 103, (HINSTANCE) GetWindowLong(hwnd, GWL_HINSTANCE), NULL);
+			win32_state.hGraphicsWnd = CreateWindow(szGraphicsName, NULL, WS_CHILDWINDOW | WS_VISIBLE,
+				0, 0, 0, 0, hwnd, (HMENU) 101, (HINSTANCE) GetWindowLong(hwnd, GWL_HINSTANCE), NULL);
+			return 0;
 		
-	case WM_CREATE:
-		hStatusWnd = CreateWindow(szStatusName, NULL, WS_CHILDWINDOW | WS_VISIBLE,
-			0, 0, 0, 0, hwnd, (HMENU) 102, (HINSTANCE) GetWindowLong(hwnd, GWL_HINSTANCE), NULL);
-		hButtonsWnd = CreateWindow(szButtonsName, NULL, WS_CHILDWINDOW | WS_VISIBLE,
-			0, 0, 0, 0, hwnd, (HMENU) 103, (HINSTANCE) GetWindowLong(hwnd, GWL_HINSTANCE), NULL);
-		hGraphicsWnd = CreateWindow(szGraphicsName, NULL, WS_CHILDWINDOW | WS_VISIBLE,
-			0, 0, 0, 0, hwnd, (HMENU) 101, (HINSTANCE) GetWindowLong(hwnd, GWL_HINSTANCE), NULL);
-		return 0;
+		case WM_SIZE:
+			/* Window has been resized.  Save the new client dimensions */
+			trans_coord.top_width = LOWORD (lParam);
+			trans_coord.top_height = HIWORD (lParam);
 		
-	case WM_SIZE:
-		/* Window has been resized.  Save the new client dimensions */
-		trans_coord.top_width = LOWORD (lParam);
-		trans_coord.top_height = HIWORD (lParam);
+			/* Resize the children windows */
+			if(!MoveWindow(win32_state.hGraphicsWnd, 1, 1, trans_coord.top_width - MWIDTH - 1,
+							trans_coord.top_height - T_AREA_HEIGHT - 1, TRUE))
+				DRAW_ERROR();
+			//if (drawscreen_ptr)
+			//zoom_fit(drawscreen_ptr);
+			if(!MoveWindow(win32_state.hStatusWnd, 0, trans_coord.top_height - T_AREA_HEIGHT,
+							trans_coord.top_width - MWIDTH, T_AREA_HEIGHT, TRUE))
+				DRAW_ERROR();
+			if(!MoveWindow(win32_state.hButtonsWnd, trans_coord.top_width - MWIDTH, 0, MWIDTH,
+							trans_coord.top_height, TRUE))
+				DRAW_ERROR();
 		
-		/* Resize the children windows */
-		if(!MoveWindow(hGraphicsWnd, 1, 1, trans_coord.top_width - MWIDTH - 1,
-								trans_coord.top_height - T_AREA_HEIGHT - 1, TRUE))
-			DRAW_ERROR();
-//		if (drawscreen_ptr)
-//			zoom_fit(drawscreen_ptr);
-		if(!MoveWindow(hStatusWnd, 0, trans_coord.top_height - T_AREA_HEIGHT,
-								trans_coord.top_width - MWIDTH, T_AREA_HEIGHT, TRUE))
-			DRAW_ERROR();
-		if(!MoveWindow(hButtonsWnd, trans_coord.top_width - MWIDTH, 0, MWIDTH,
-								trans_coord.top_height, TRUE))
-			DRAW_ERROR();
-		
-		return 0;
+			return 0;
 		
 		// WC : added to solve window resizing problem
-	case WM_GETMINMAXINFO:
-		// set the MINMAXINFO structure pointer 
-		lpMinMaxInfo = (MINMAXINFO FAR *) lParam;
-		lpMinMaxInfo->ptMinTrackSize.x = display_width / 2;
-		lpMinMaxInfo->ptMinTrackSize.y = display_height / 2;
+		case WM_GETMINMAXINFO:
+			// set the MINMAXINFO structure pointer 
+			lpMinMaxInfo = (MINMAXINFO FAR *) lParam;
+			lpMinMaxInfo->ptMinTrackSize.x = trans_coord.display_width / 2;
+			lpMinMaxInfo->ptMinTrackSize.y = trans_coord.display_height / 2;
 		
-		return 0;
+			return 0;
 		
 		
-	case WM_DESTROY:
-		if(!DeleteObject(hGrayBrush))
-			DELETE_ERROR();
-		PostQuitMessage(0);
-		return 0;
+		case WM_DESTROY:
+			if(!DeleteObject(win32_state.hGrayBrush))
+				DELETE_ERROR();
+			PostQuitMessage(0);
+			return 0;
 	
-	case WM_KEYDOWN:
-		if (get_keypress_input)
-		     keypress_ptr((char) wParam);
-		return 0;
+		case WM_KEYDOWN:
+			if (gl_state.get_keypress_input)
+				 keypress_ptr((char) wParam);
+			return 0;
 
 		// Controls graphics: does zoom in or zoom out depending on direction of mousewheel scrolling.
 		// Only the window with the input focus will receive this message. In our case, the top-level 
 		// window has the input focus, thus the code will not work if put in GraphicsWND.
-	case WM_MOUSEWHEEL:
-		handle_mousewheel_zooming_win32(wParam, lParam);
-		return 0;
+		case WM_MOUSEWHEEL:
+			// t_event_buttonPressed is used as a structure for storing information about a mouse
+			// button press event. This information can be passed back to and used by a client 
+			// program.
+			t_event_buttonPressed button_info;
+			win32_handle_button_info(button_info, message, wParam);
+
+			win32_handle_mousewheel_zooming(wParam, lParam);
+			return 0;
 	}
 	
 	return DefWindowProc(hwnd, message, wParam, lParam);
@@ -3469,253 +3578,283 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	PAINTSTRUCT ps;
 	static RECT oldAdjustRect;
 	static HPEN hDotPen = 0;
-	static HBITMAP hbmBuffer = 0, hbmObjtest, hbmAllObjtest;
 	static int X, Y, i;
 	
 	switch(message)
 	{
-	case WM_CREATE:
+		case WM_CREATE:
 		
-		/* Get the text metrics once upon creation (system font cannot change) */
-		hCurrentDC = hGraphicsDC = hForegroundDC = GetDC (hwnd);
-		if(!hGraphicsDC)
-			DRAW_ERROR();
-		
-		hBackgroundDC = CreateCompatibleDC(hForegroundDC);
-		if (!hBackgroundDC)
-			CREATE_ERROR();
-		if (!SetMapMode(hBackgroundDC, MM_TEXT))
-			CREATE_ERROR();
-		hbmBuffer = CreateCompatibleBitmap(hForegroundDC, display_width, display_height);
-		if (!(hbmBuffer))
-			CREATE_ERROR();
-		if (!SelectObject(hBackgroundDC, hbmBuffer))
-			SELECT_ERROR();
+			/* Get the text metrics once upon creation (system font cannot change) */
+			win32_state.hGraphicsDC = GetDC (hwnd);
+			if(!win32_state.hGraphicsDC)
+				DRAW_ERROR();
 
-		// monochrome bitmap
-		hObjtestDC = CreateCompatibleDC(hForegroundDC);
-		if (!hObjtestDC)
-			CREATE_ERROR();
-		if (!SetMapMode(hObjtestDC, MM_TEXT))
-			CREATE_ERROR();
-		hbmObjtest = CreateCompatibleBitmap(hObjtestDC, display_width, display_height);
-		if (!(hbmObjtest))
-			CREATE_ERROR();
-		if (!SelectObject(hObjtestDC, hbmObjtest))
-			SELECT_ERROR();
-
-		// monochrome bitmap
-		hAllObjtestDC = CreateCompatibleDC(hForegroundDC);
-		if (!hObjtestDC)
-			CREATE_ERROR();
-		if (!SetMapMode(hAllObjtestDC, MM_TEXT))
-			CREATE_ERROR();
-		hbmAllObjtest = CreateCompatibleBitmap(hAllObjtestDC, display_width, display_height);
-		if (!(hbmAllObjtest))
-			CREATE_ERROR();
-		if (!SelectObject(hAllObjtestDC, hbmAllObjtest))
-			SELECT_ERROR();
-
-		//if(!GetTextMetrics (hGraphicsDC, &tm))
-		//	DRAW_ERROR();
-		if(!SetBkMode(hGraphicsDC, TRANSPARENT))
-			DRAW_ERROR();
+			//if(!GetTextMetrics (win32_state.hGraphicsDC, &tm))
+			//	DRAW_ERROR();
+			if(!SetBkMode(win32_state.hGraphicsDC, TRANSPARENT))
+				DRAW_ERROR();
 		
-		/* Setup the pens, etc */
-		currentlinestyle = SOLID;
-		currentcolor = BLACK;
-		currentlinewidth = 1;
+			/* Setup the pens, etc */
+			gl_state.currentlinestyle = SOLID;
+			gl_state.currentcolor = BLACK;
+			gl_state.currentlinewidth = 1;
 		
-		/*
-		if(!ReleaseDC (hwnd, hGraphicsDC))
+			/*
+			if(!ReleaseDC (hwnd, win32_state.hGraphicsDC))
+				DRAW_ERROR();
+		
+			  win32_state.hGraphicsDC = 0;
+			*/		
+			gl_state.currentfontsize = 12;
+			return 0;
+		
+			case WM_PAINT:
+			win32_GraphicsWND_handle_WM_PAINT(hwnd, ps, hDotPen, oldAdjustRect);
+			return 0;
+		
+			case WM_SIZE:
+			/* Window has been resized.  New client area dimensions can be retrieved from
+			 * lParam using LOWORD() and HIWORD() macros. 
+			 */
+
+			update_transform();
+			return 0;
+		
+		case WM_DESTROY:
+			if(!DeleteObject(win32_state.hGraphicsPen))
+				DELETE_ERROR();
+			if(!DeleteObject(win32_state.hGraphicsBrush))
+				DELETE_ERROR();
+			if(!DeleteObject(win32_state.hGraphicsFont))
+				DELETE_ERROR();
+			PostQuitMessage(0);
+			return 0;
+	
+		// left click and right click have the same functionality
+		case WM_LBUTTONDOWN:
+		case WM_RBUTTONDOWN:
+			win32_GraphicsWND_handle_WM_LRBUTTONDOWN(message, wParam, lParam, X, Y, oldAdjustRect);
+			return 0;
+	
+		// If the mouse device has a scroll wheel, then this is a click of the wheel.
+		// Enable panning by holding down the mouse wheel and drag.
+		case WM_MBUTTONDOWN: 	
+			win32_GraphicsWND_handle_WM_MBUTTONDOWN(hwnd, message, wParam, lParam);
+			return 0;
+	
+		// Release the middle mouse button (mouse wheel) to stop panning
+		case WM_MBUTTONUP:
+			// turn off panning_enabled
+			panning_off();
+
+			/* Stops the mouse capturing started by SetCapture(). */
+			ReleaseCapture();
+			return 0;
+	
+		case WM_MOUSEMOVE:
+			win32_GraphicsWND_handle_WM_MOUSEMOVE(lParam, X, Y, oldAdjustRect);
+			return 0;
+	}
+	
+	return DefWindowProc(hwnd, message, wParam, lParam);
+}
+
+ 
+static void 
+win32_GraphicsWND_handle_WM_PAINT(HWND hwnd, PAINTSTRUCT &ps, HPEN &hDotPen, RECT &oldAdjustRect)
+{
+	// was in xor mode, but got a general redraw.
+    // switch to normal drawing so we repaint properly.
+	if (gl_state.current_draw_mode == DRAW_XOR) {
+		set_draw_mode(DRAW_NORMAL);
+		win32_invalidate_screen();
+		return;
+	}
+	BeginPaint(hwnd, &ps);
+	if(!win32_state.hGraphicsDC)
 		DRAW_ERROR();
 		
-		  hGraphicsDC = 0;
-		*/		currentfontsize = 12;
-		return 0;
-		
-	case WM_PAINT:
-		// was in xor mode, but got a general redraw.
-                // switch to normal drawing so we repaint properly.
-		if (current_draw_mode == DRAW_XOR) {
-			set_draw_mode(DRAW_NORMAL);
-			invalidate_screen();
-			return 0;
+	if (win32_state.InEventLoop) {
+		if(!GetUpdateRect(hwnd, &win32_state.updateRect, FALSE)) {
+			win32_state.updateRect.left = 0;
+			win32_state.updateRect.right = trans_coord.top_width;
+			win32_state.updateRect.top = 0;
+			win32_state.updateRect.bottom = trans_coord.top_height;
 		}
-		hCurrentDC = hGraphicsDC;
-		drawtoscreen();
-		/*hGraphicsDC =*/ BeginPaint(hwnd, &ps);
-		if(!hGraphicsDC)
-			DRAW_ERROR();
-		
-		if (InEventLoop) {
-			if(!GetUpdateRect(hwnd, &updateRect, FALSE)) {
-				updateRect.left = 0;
-				updateRect.right = trans_coord.top_width;
-				updateRect.top = 0;
-				updateRect.bottom = trans_coord.top_height;
-			}
 			
-			if(windowAdjustFlag > 1) {
-				hDotPen = CreatePen(PS_DASH, 1, win32_colors[gl_state.background_cindex]);
-				if(!hDotPen)
-					CREATE_ERROR();
-				if (!SetROP2(hGraphicsDC, R2_XORPEN))
-					SELECT_ERROR();
-				if(!SelectObject(hGraphicsDC, GetStockObject(NULL_BRUSH)))
-					SELECT_ERROR();
-				if(!SelectObject(hGraphicsDC, hDotPen))
-					SELECT_ERROR();
-				if(!Rectangle(hGraphicsDC, oldAdjustRect.left, oldAdjustRect.top, 
-					oldAdjustRect.right, oldAdjustRect.bottom))
+		// if program was still executing the "Window" command
+		if(win32_state.windowAdjustFlag > 1) {
+			/* ps.rcPaint specifies the screen coordinates of the window's client area 
+			 * in which drawing is requested. This information is used to indicate that 
+			 * the application window has been minimized and then restored. If so, need 
+			 * to redraw the screen before drawing new rubber band.
+			 */
+			if (ps.rcPaint.right == (trans_coord.top_width-MWIDTH-1)
+				 && ps.rcPaint.bottom == (trans_coord.top_height-T_AREA_HEIGHT-1)) 
+				drawscreen_ptr();
+
+			// Create pen for rubber band drawing
+			hDotPen = CreatePen(PS_DASH, 1, win32_colors[gl_state.background_cindex]);
+			if(!hDotPen)
+				CREATE_ERROR();
+			if (!SetROP2(win32_state.hGraphicsDC, R2_XORPEN))
+				SELECT_ERROR();
+			if(!SelectObject(win32_state.hGraphicsDC, GetStockObject(NULL_BRUSH)))
+				SELECT_ERROR();
+			if(!SelectObject(win32_state.hGraphicsDC, hDotPen))
+				SELECT_ERROR();
+
+			// Don't need to erase old rubber band if the window has been minimized and
+			// restored, because previous drawings were invalidated when the window was 
+			// minimized.
+			if (ps.rcPaint.right != (trans_coord.top_width-MWIDTH-1)
+				 || ps.rcPaint.bottom != (trans_coord.top_height-T_AREA_HEIGHT-1))
+			{
+				// Erase old rubber band before drawing a new one
+				if(!Rectangle(win32_state.hGraphicsDC, oldAdjustRect.left, oldAdjustRect.top, 
+							  oldAdjustRect.right, oldAdjustRect.bottom))
 					DRAW_ERROR();
-				if(!Rectangle(hGraphicsDC, adjustRect.left, adjustRect.top, adjustRect.right,
-					adjustRect.bottom))
-					DRAW_ERROR();
-				oldAdjustRect = adjustRect;
-				if (!SetROP2(hGraphicsDC, R2_COPYPEN))
-					SELECT_ERROR();
-				if(!SelectObject(hGraphicsDC, GetStockObject(NULL_PEN)))
-					SELECT_ERROR();
-				if(!DeleteObject(hDotPen))
-					DELETE_ERROR();
 			}
-			else
-				drawscreen_ptr();		
+
+			// Draw new rubber band
+			if(!Rectangle(win32_state.hGraphicsDC, win32_state.adjustRect.left, 
+						  win32_state.adjustRect.top, win32_state.adjustRect.right,
+				          win32_state.adjustRect.bottom))
+				DRAW_ERROR();
+
+			oldAdjustRect = win32_state.adjustRect;
+			if (!SetROP2(win32_state.hGraphicsDC, R2_COPYPEN))
+				SELECT_ERROR();
+			if(!SelectObject(win32_state.hGraphicsDC, GetStockObject(NULL_PEN)))
+				SELECT_ERROR();
+			if(!DeleteObject(hDotPen))
+				DELETE_ERROR();
 		}
-		EndPaint(hwnd, &ps);
-		hGraphicsDC = hCurrentDC;
-		
-		/* Crash hard if called at wrong time */
-		/*		hGraphicsDC = NULL;*/
-		return 0;
-		
-	case WM_SIZE:
-		/* Window has been resized.  Save the new client dimensions */
-		cxClient = LOWORD (lParam);
-		cyClient = HIWORD (lParam);
-		update_transform();
+		else 
+			drawscreen_ptr();		
+	}
+	EndPaint(hwnd, &ps);
+	
+	/* Crash hard if called at wrong time */
+	/* win32_state.hGraphicsDC = NULL;*/
+}
 
-		return 0;
-		
-	case WM_DESTROY:
-		if(!DeleteObject(hGraphicsPen))
-			DELETE_ERROR();
-		if(!DeleteObject(hGraphicsBrush))
-			DELETE_ERROR();
-		if(!DeleteObject(hGraphicsFont))
-			DELETE_ERROR();
-		if (!DeleteObject(hbmBuffer))
-			DELETE_ERROR();
-		if (!DeleteObject(hbmObjtest))
-			DELETE_ERROR();
-		if (!DeleteObject(hbmAllObjtest))
-			DELETE_ERROR();
-		if(!DeleteDC(hBackgroundDC))
-			DELETE_ERROR();
-		if(!DeleteDC(hObjtestDC))
-			DELETE_ERROR();
-		if(!DeleteDC(hAllObjtestDC))
-			DELETE_ERROR();
-		if(!ReleaseDC(hwnd, hForegroundDC))
-			DELETE_ERROR();
-		PostQuitMessage(0);
-		return 0;
-		
-	case WM_LBUTTONDOWN:
-		if (!windowAdjustFlag) {  
-			// t_event_buttonPressed is used as a structure for storing information about a mouse
-			// button press event. This information can be passed back to and used by a client 
-			// program.
-			t_event_buttonPressed button_info;
-			handle_button_info(&button_info, message, wParam);
-#ifdef VERBOSE
-			printf("Button pressed is: %d.\n(left click is 1; right click is 3; scroll wheel click is 2; "
-					"scroll wheel forward rotate is 4; scroll wheel backward is 5.)\n",button_info.button);
-			if (button_info.shift_pressed == true)
-				printf("Shift is pressed at button press.\n");
-			if (button_info.ctrl_pressed == true)
-				printf("Ctrl is pressed at button press.\n");
-#endif
 
-			mouseclick_ptr(XSCRN2WORLD(LOWORD(lParam)), YSCRN2WORLD(HIWORD(lParam)), button_info);
-		} 
-      else {
-         // Special handling for the "Window" command, which takes multiple clicks. 
-         // First you push the button, then you click for one corner, then you click for the other
-         // corner.
-			if(windowAdjustFlag == 1) {
-				windowAdjustFlag ++;
-				X = adjustRect.left = adjustRect.right = LOWORD(lParam);
-				Y = adjustRect.top = adjustRect.bottom = HIWORD(lParam);
-				oldAdjustRect = adjustRect;
-			}
-         else {
-				int i;
-				int adjustx[2], adjusty[2];
-				
-				windowAdjustFlag = 0;
-				button[adjustButton].ispressed = 0;
-				SendMessage(button[adjustButton].hwnd, BM_SETSTATE, 0, 0);
-							
-				for (i=0; i<num_buttons; i++) {
-					if (button[i].type != BUTTON_SEPARATOR && button[i].enabled) {
-						if(!EnableWindow (button[i].hwnd, TRUE))
-							DRAW_ERROR();
-					}
-				}
-				adjustx[0] = adjustRect.left;
-				adjustx[1] = adjustRect.right;
-				adjusty[0] = adjustRect.top;
-				adjusty[1] = adjustRect.bottom;
-				
-				update_win(adjustx, adjusty, invalidate_screen);
-			}
+static void win32_GraphicsWND_handle_WM_LRBUTTONDOWN(UINT message, WPARAM wParam, LPARAM lParam, 
+													 int &X, int &Y, RECT &oldAdjustRect)
+{
+	// t_event_buttonPressed is used as a structure for storing information about a mouse
+	// button press event. This information can be passed back to and used by a client 
+	// program.
+	t_event_buttonPressed button_info;
+	win32_handle_button_info(button_info, message, wParam);
+
+	if (!win32_state.windowAdjustFlag) {  
+		// Call function in client program
+		mouseclick_ptr(xscrn_to_world(LOWORD(lParam)), yscrn_to_world(HIWORD(lParam)),
+					   button_info);
+	} 
+	else {
+		// Special handling for the "Window" command, which takes multiple clicks. 
+        // First you push the button, then you click for one corner, then you click for the other
+        // corner.
+		if(win32_state.windowAdjustFlag == 1) {
+			win32_state.windowAdjustFlag ++;
+			X = win32_state.adjustRect.left = win32_state.adjustRect.right = LOWORD(lParam);
+			Y = win32_state.adjustRect.top = win32_state.adjustRect.bottom = HIWORD(lParam);
+			oldAdjustRect = win32_state.adjustRect;
 		}
-		return 0;
-
-	// right click : a quick way to zoom in
-	case WM_RBUTTONDOWN:
-		if (!windowAdjustFlag) {
-			// first disable some buttons
-			//adjustButton = LOWORD(wParam) - 200;
-			button[adjustButton].ispressed = 1;
-			for (i=0; i<num_buttons; i++) {
-				EnableWindow(button[i].hwnd, FALSE);
-				SendMessage(button[i].hwnd, BM_SETSTATE, button[i].ispressed, 0);
-			}
-
-			windowAdjustFlag = 2;
-			X = adjustRect.left = adjustRect.right = LOWORD(lParam);
-			Y = adjustRect.top = adjustRect.bottom = HIWORD(lParam);
-			oldAdjustRect = adjustRect;
-		} 
-      else {
+		else {
 			int i;
 			int adjustx[2], adjusty[2];
-				
-			windowAdjustFlag = 0;
-			button[adjustButton].ispressed = 0;
-			SendMessage(button[adjustButton].hwnd, BM_SETSTATE, 0, 0);
+			
+			win32_state.windowAdjustFlag = 0;
+			button_state.button[win32_state.adjustButton].ispressed = 0;
+			SendMessage(button_state.button[win32_state.adjustButton].hwnd, BM_SETSTATE, 0, 0);
 							
-			for (i=0; i<num_buttons; i++) {
-				if (button[i].type != BUTTON_SEPARATOR && button[i].enabled) {
-					if(!EnableWindow (button[i].hwnd, TRUE))
+			for (i=0; i<button_state.num_buttons; i++) {
+				if (button_state.button[i].type != BUTTON_SEPARATOR
+					 && button_state.button[i].enabled) 
+				{
+					if(!EnableWindow (button_state.button[i].hwnd, TRUE))
 						DRAW_ERROR();
 				}
 			}
-			adjustx[0] = adjustRect.left;
-			adjustx[1] = adjustRect.right;
-			adjusty[0] = adjustRect.top;
-			adjusty[1] = adjustRect.bottom;
+			adjustx[0] = win32_state.adjustRect.left;
+			adjustx[1] = win32_state.adjustRect.right;
+			adjusty[0] = win32_state.adjustRect.top;
+			adjusty[1] = win32_state.adjustRect.bottom;
 				
-			update_win(adjustx, adjusty, invalidate_screen);
+			update_win(adjustx, adjusty, win32_invalidate_screen);
 		}
-		return 0;
-	
-	// If the mouse device has a scroll wheel, then this is a click of the wheel.
-	// Enable panning by holding down the mouse wheel and drag.
-	case WM_MBUTTONDOWN:
+	}
+}
+
+
+static void 
+win32_GraphicsWND_handle_WM_MBUTTONDOWN(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	// t_event_buttonPressed is used as a structure for storing information about a mouse
+	// button press event. This information can be passed back to and used by a client 
+	// program.
+	t_event_buttonPressed button_info;
+	win32_handle_button_info(button_info, message, wParam);
+		
+	// get x- and y- coordinates of the cursor. Do not use LOWORD or HIWORD macros 
+	// to extract the coordinates because these macros can return incorrect results
+	// on systems with multiple monitors.
+	int xPos, yPos;
+	xPos = GET_X_LPARAM(lParam);
+	yPos = GET_Y_LPARAM(lParam);
+
+	// turn on panning_enabled
+	panning_on(xPos, yPos);
+
+	/* Windows function specifically designed for mouse click and drag.
+	 * This function sends all mouse message to hGraphicsWnd, even if
+	 * the cursor is outside the client program's top-level window.
+	 */
+	SetCapture(hwnd);
+}
+
+
+static void 
+win32_GraphicsWND_handle_WM_MOUSEMOVE(LPARAM lParam, int &X, int &Y, RECT &oldAdjustRect)
+{
+#ifdef VERBOSE
+	printf("Got a MotionNotify Event.\n");
+	printf("x: %d    y: %d\n",GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+#endif
+	if(win32_state.windowAdjustFlag == 1) {
+		return;
+	}
+	else if (win32_state.windowAdjustFlag >= 2) {
+		if ( X > LOWORD(lParam)) {
+			win32_state.adjustRect.left = LOWORD(lParam);
+			win32_state.adjustRect.right = X;
+		}
+		else {
+			win32_state.adjustRect.left = X;
+			win32_state.adjustRect.right = LOWORD(lParam);
+		}
+		if ( Y > HIWORD(lParam)) {
+			win32_state.adjustRect.top = HIWORD(lParam);
+			win32_state.adjustRect.bottom = Y;
+		}
+		else {
+			win32_state.adjustRect.top = Y;
+			win32_state.adjustRect.bottom = HIWORD(lParam);
+		}
+		if(!InvalidateRect(win32_state.hGraphicsWnd, &oldAdjustRect, FALSE))
+			DRAW_ERROR();
+		if(!InvalidateRect(win32_state.hGraphicsWnd, &win32_state.adjustRect, FALSE))
+			DRAW_ERROR();
+		if(!UpdateWindow(win32_state.hGraphicsWnd))
+			DRAW_ERROR();
+			
+		return;
+	}
+	else if (pan_state.panning_enabled) {
 		// get x- and y- coordinates of the cursor. Do not use LOWORD or HIWORD macros 
 		// to extract the coordinates because these macros can return incorrect results
 		// on systems with multiple monitors.
@@ -3723,75 +3862,11 @@ GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		xPos = GET_X_LPARAM(lParam);
 		yPos = GET_Y_LPARAM(lParam);
 
-		// turn on panning_enabled
-		panning_on(xPos, yPos);
-
-		/* Windows function specifically designed for mouse click and drag.
-		 * This function sends all mouse message to hGraphicsWnd, even if
-		 * the cursor is outside the client program's top-level window.
-		 */
-		SetCapture(hGraphicsWnd);
-		return 0;
-	
-	// Release the middle mouse button (mouse wheel) to stop panning
-	case WM_MBUTTONUP:
-		// turn off panning_enabled
-		panning_off();
-
-		/* Stops the mouse capturing started by SetCapture(). */
-		ReleaseCapture();
-		return 0;
-	
-	case WM_MOUSEMOVE:
-#ifdef VERBOSE
-		printf("Got a MotionNotify Event.\n");
-		printf("x: %d    y: %d\n",GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-#endif
-		if(windowAdjustFlag == 1) {
-			return 0;
-		}
- else if (windowAdjustFlag >= 2) {
-			if ( X > LOWORD(lParam)) {
-				adjustRect.left = LOWORD(lParam);
-				adjustRect.right = X;
-			}
-			else {
-				adjustRect.left = X;
-				adjustRect.right = LOWORD(lParam);
-			}
-			if ( Y > HIWORD(lParam)) {
-				adjustRect.top = HIWORD(lParam);
-				adjustRect.bottom = Y;
-			}
-			else {
-				adjustRect.top = Y;
-				adjustRect.bottom = HIWORD(lParam);
-			}
-			if(!InvalidateRect(hGraphicsWnd, &oldAdjustRect, FALSE))
-				DRAW_ERROR();
-			if(!InvalidateRect(hGraphicsWnd, &adjustRect, FALSE))
-				DRAW_ERROR();
-			if(!UpdateWindow(hGraphicsWnd))
-				DRAW_ERROR();
-			
-			return 0;
-		}
-		else if (pan_state.panning_enabled) {
-				// get x- and y- coordinates of the cursor. Do not use LOWORD or HIWORD macros 
-				// to extract the coordinates because these macros can return incorrect results
-				// on systems with multiple monitors.
-				int xPos, yPos;
-				xPos = GET_X_LPARAM(lParam);
-				yPos = GET_Y_LPARAM(lParam);
-
-				panning_execute(xPos, yPos, drawscreen_ptr);
-		} 
-		else if (get_mouse_move_input) 
-				mousemove_ptr(XSCRN2WORLD(LOWORD(lParam)), YSCRN2WORLD(HIWORD(lParam)));
-		return 0;
+		panning_execute(xPos, yPos, drawscreen_ptr);
+	} 
+	else if (gl_state.get_mouse_move_input) { 
+		mousemove_ptr(xscrn_to_world(LOWORD(lParam)), yscrn_to_world(HIWORD(lParam)));
 	}
-	
-	return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
 
@@ -3804,52 +3879,53 @@ StatusWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	
 	switch(message)
 	{
-	case WM_CREATE:
-		hdc = GetDC(hwnd);
-		if(!hdc)
-			DRAW_ERROR();
-		if(!SetBkMode(hdc, TRANSPARENT))
-			DRAW_ERROR();
-		if(!ReleaseDC(hwnd, hdc))
-			DRAW_ERROR();
-		return 0;
+		case WM_CREATE:
+			hdc = GetDC(hwnd);
+			if(!hdc)
+				DRAW_ERROR();
+			if(!SetBkMode(hdc, TRANSPARENT))
+				DRAW_ERROR();
+			if(!ReleaseDC(hwnd, hdc))
+				DRAW_ERROR();
+			return 0;
 		
-	case WM_PAINT:
-		hdc = BeginPaint(hwnd, &ps);
-		if(!hdc)
-			DRAW_ERROR();
+		case WM_PAINT:
+			hdc = BeginPaint(hwnd, &ps);
+			if(!hdc)
+				DRAW_ERROR();
 		
-		if(!GetClientRect(hwnd, &rect))
-			DRAW_ERROR();
+			if(!GetClientRect(hwnd, &rect))
+				DRAW_ERROR();
 		
-		if(!SelectObject(hdc, GetStockObject(NULL_BRUSH)))
-			SELECT_ERROR();
-		if(!SelectObject(hdc, GetStockObject(WHITE_PEN)))
-			SELECT_ERROR();
-		if(!Rectangle(hdc, rect.left, rect.top, rect.right, rect.bottom))
-			DRAW_ERROR();
-		if(!SelectObject(hdc, GetStockObject(BLACK_PEN)))
-			SELECT_ERROR();
-		if(!MoveToEx(hdc, rect.left, rect.bottom-1, NULL))
-			DRAW_ERROR();
-		if(!LineTo(hdc, rect.right-1, rect.bottom-1))
-			DRAW_ERROR();
-		if(!LineTo(hdc, rect.right-1, rect.top))
-			DRAW_ERROR();
+			if(!SelectObject(hdc, GetStockObject(NULL_BRUSH)))
+				SELECT_ERROR();
+			if(!SelectObject(hdc, GetStockObject(WHITE_PEN)))
+				SELECT_ERROR();
+			if(!Rectangle(hdc, rect.left, rect.top, rect.right, rect.bottom))
+				DRAW_ERROR();
+			if(!SelectObject(hdc, GetStockObject(BLACK_PEN)))
+				SELECT_ERROR();
+			if(!MoveToEx(hdc, rect.left, rect.bottom-1, NULL))
+				DRAW_ERROR();
+			if(!LineTo(hdc, rect.right-1, rect.bottom-1))
+				DRAW_ERROR();
+			if(!LineTo(hdc, rect.right-1, rect.top))
+				DRAW_ERROR();
 
-		if(!DrawText(hdc, TEXT(statusMessage), -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE))
-			DRAW_ERROR();
+			if(!DrawText(hdc, TEXT(gl_state.statusMessage), -1, &rect, 
+						 DT_CENTER | DT_VCENTER | DT_SINGLELINE))
+				DRAW_ERROR();
 		
-		if(!EndPaint(hwnd, &ps))
-			DRAW_ERROR();
-		return 0;
+			if(!EndPaint(hwnd, &ps))
+				DRAW_ERROR();
+			return 0;
 		
-	case WM_SIZE:
-		return 0;
+		case WM_SIZE:
+			return 0;
 		
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		return 0;
+		case WM_DESTROY:
+			PostQuitMessage(0);
+			return 0;
 	}
 	
 	return DefWindowProc(hwnd, message, wParam, lParam);
@@ -3867,128 +3943,178 @@ ButtonsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	
 	switch(message)
 	{
-	case WM_COMMAND:
-		if (!windowAdjustFlag) {
-			button[LOWORD(wParam) - 200].fcn(invalidate_screen);
-			if (windowAdjustFlag) {
-				adjustButton = LOWORD(wParam) - 200;
-				button[adjustButton].ispressed = 1;
-				for (i=0; i<num_buttons; i++) {
-					EnableWindow(button[i].hwnd, FALSE);
-					SendMessage(button[i].hwnd, BM_SETSTATE, button[i].ispressed, 0);
+		case WM_COMMAND:
+			if (!win32_state.windowAdjustFlag) {
+				button_state.button[LOWORD(wParam) - 200].fcn(win32_invalidate_screen);
+				if (win32_state.windowAdjustFlag) {
+					win32_state.adjustButton = LOWORD(wParam) - 200;
+					button_state.button[win32_state.adjustButton].ispressed = 1;
+					for (i=0; i<button_state.num_buttons; i++) {
+						EnableWindow(button_state.button[i].hwnd, FALSE);
+						SendMessage(button_state.button[i].hwnd, BM_SETSTATE, 
+									button_state.button[i].ispressed, 0);
+					}
 				}
 			}
-		}
-		SetFocus(hMainWnd);
-		return 0;
+			SetFocus(win32_state.hMainWnd);
+			return 0;
 		
-	case WM_CREATE:
-		hdc = GetDC(hwnd);
-		if(!hdc)
-			DRAW_ERROR();
-		hBrush = CreateSolidBrush(win32_colors[LIGHTGREY]);
-		if(!hBrush)
-			CREATE_ERROR();
-		if(!SelectObject(hdc, hBrush))
-			SELECT_ERROR();
-		if(!SetBkMode(hdc, TRANSPARENT))
-			DRAW_ERROR();
-		if(!ReleaseDC(hwnd, hdc))
-			DRAW_ERROR();
+		case WM_CREATE:
+			hdc = GetDC(hwnd);
+			if(!hdc)
+				DRAW_ERROR();
+			hBrush = CreateSolidBrush(win32_colors[LIGHTGREY]);
+			if(!hBrush)
+				CREATE_ERROR();
+			if(!SelectObject(hdc, hBrush))
+				SELECT_ERROR();
+			if(!SetBkMode(hdc, TRANSPARENT))
+				DRAW_ERROR();
+			if(!ReleaseDC(hwnd, hdc))
+				DRAW_ERROR();
 		
-		return 0;
+			return 0;
 		
-	case WM_PAINT:
-		hdc = BeginPaint(hwnd, &ps);
-		if(!hdc)
-			DRAW_ERROR();
+		case WM_PAINT:
+			hdc = BeginPaint(hwnd, &ps);
+			if(!hdc)
+				DRAW_ERROR();
 		
-		if(!GetClientRect(hwnd, &rect))
-			DRAW_ERROR();
+			if(!GetClientRect(hwnd, &rect))
+				DRAW_ERROR();
 		
-		if(!SelectObject(hdc, GetStockObject(NULL_BRUSH)))
-			SELECT_ERROR();
-		if(!SelectObject(hdc, GetStockObject(WHITE_PEN)))
-			SELECT_ERROR();
-		if(!Rectangle(hdc, rect.left, rect.top, rect.right, rect.bottom))
-			DRAW_ERROR();
-		if(!SelectObject(hdc, GetStockObject(BLACK_PEN)))
-			SELECT_ERROR();
-		if(!MoveToEx(hdc, rect.left, rect.bottom-1, NULL))
-			DRAW_ERROR();
-		if(!LineTo(hdc, rect.right-1, rect.bottom-1))
-			DRAW_ERROR();
-		if(!LineTo(hdc, rect.right-1, rect.top))
-			DRAW_ERROR();
+			if(!SelectObject(hdc, GetStockObject(NULL_BRUSH)))
+				SELECT_ERROR();
+			if(!SelectObject(hdc, GetStockObject(WHITE_PEN)))
+				SELECT_ERROR();
+			if(!Rectangle(hdc, rect.left, rect.top, rect.right, rect.bottom))
+				DRAW_ERROR();
+			if(!SelectObject(hdc, GetStockObject(BLACK_PEN)))
+				SELECT_ERROR();
+			if(!MoveToEx(hdc, rect.left, rect.bottom-1, NULL))
+				DRAW_ERROR();
+			if(!LineTo(hdc, rect.right-1, rect.bottom-1))
+				DRAW_ERROR();
+			if(!LineTo(hdc, rect.right-1, rect.top))
+				DRAW_ERROR();
 
-		for (i=0; i < num_buttons; i++) {
-			if(button[i].type == BUTTON_SEPARATOR) {
-				int x, y, w;
+			for (i=0; i < button_state.num_buttons; i++) {
+				if(button_state.button[i].type == BUTTON_SEPARATOR) {
+					int x, y, w;
 
-				x = button[i].xleft;
-				y = button[i].ytop;
-				w = button[i].width;
+					x = button_state.button[i].xleft;
+					y = button_state.button[i].ytop;
+					w = button_state.button[i].width;
 
-				if(!MoveToEx (hdc, x, y, NULL))
-					DRAW_ERROR();
-				if(!LineTo (hdc, x + w, y))
-					DRAW_ERROR();			
-				if(!SelectObject(hdc, GetStockObject(WHITE_PEN)))
-					SELECT_ERROR();
-				if(!MoveToEx (hdc, x, y+1, NULL))
-					DRAW_ERROR();
-				if(!LineTo (hdc, x + w, y+1))
-					DRAW_ERROR();			
-				if(!SelectObject(hdc, GetStockObject(BLACK_PEN)))
-					SELECT_ERROR();
+					if(!MoveToEx (hdc, x, y, NULL))
+						DRAW_ERROR();
+					if(!LineTo (hdc, x + w, y))
+						DRAW_ERROR();			
+					if(!SelectObject(hdc, GetStockObject(WHITE_PEN)))
+						SELECT_ERROR();
+					if(!MoveToEx (hdc, x, y+1, NULL))
+						DRAW_ERROR();
+					if(!LineTo (hdc, x + w, y+1))
+						DRAW_ERROR();			
+					if(!SelectObject(hdc, GetStockObject(BLACK_PEN)))
+						SELECT_ERROR();
+				}
 			}
-		}
-		if(!EndPaint(hwnd, &ps))
-			DRAW_ERROR();
-		return 0;
+			if(!EndPaint(hwnd, &ps))
+				DRAW_ERROR();
+			return 0;
 		
-	case WM_DESTROY:
-		for (i=0; i<num_buttons; i++) {
+		case WM_DESTROY:
+			for (i=0; i<button_state.num_buttons; i++) {
+			}
+			if(!DeleteObject(hBrush))
+				DELETE_ERROR();
+			PostQuitMessage(0);
+			return 0;
 		}
-		if(!DeleteObject(hBrush))
-			DELETE_ERROR();
-		PostQuitMessage(0);
-		return 0;
-	}
 	
 	return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
 
-void reset_win32_state () {
+static void SELECT_ERROR()
+{ 
+	char msg[BUFSIZE];
+	sprintf (msg, "Error %i: Couldn't select graphics object on line %d of graphics.c\n", 
+			 GetLastError(), __LINE__); 
+
+	MessageBox(NULL, msg, NULL, MB_OK); 
+	exit(-1); 
+}
+
+
+static void DELETE_ERROR()
+{ 
+	char msg[BUFSIZE]; 
+	sprintf (msg, "Error %i: Couldn't delete graphics object on line %d of graphics.c\n", 
+			 GetLastError(), __LINE__); 
+	
+	MessageBox(NULL, msg, NULL, MB_OK); 
+	exit(-1); 
+}
+
+
+static void CREATE_ERROR() 
+{ 
+	char msg[BUFSIZE]; 
+	sprintf (msg, "Error %i: Couldn't create graphics object on line %d of graphics.c\n", 
+			 GetLastError(), __LINE__); 
+	
+	MessageBox(NULL, msg, NULL, MB_OK); 
+	exit(-1); 
+}
+
+
+static void DRAW_ERROR()
+{ 
+	char msg[BUFSIZE]; 
+	sprintf (msg, "Error %i: Couldn't draw graphics object on line %d of graphics.c\n", 
+			 GetLastError(), __LINE__); 
+
+	MessageBox(NULL, msg, NULL, MB_OK); 
+	exit(-1); 
+}
+
+
+static void win32_invalidate_screen(void)
+{
+/* Tells the graphics engine to redraw the graphics display since information has changed */
+
+	if(!InvalidateRect(win32_state.hGraphicsWnd, NULL, FALSE))
+		DRAW_ERROR();
+	if(!UpdateWindow(win32_state.hGraphicsWnd))
+		DRAW_ERROR();
+}
+
+
+static void win32_reset_state () {
    // Not sure exactly what needs to be reset to NULL etc. 
    // Resetting everthing to be safe.
-   hGraphicsPen = 0;
-   hGraphicsBrush = 0;
-   hGrayBrush = 0;
-   hGraphicsDC = 0;
-   hForegroundDC = 0;
-   hBackgroundDC = 0;
-   hCurrentDC = 0, /* WC : double-buffer */
-   hObjtestDC = 0;
-   hAllObjtestDC = 0; /* object test */
-
-   hGraphicsFont = 0;
+   win32_state.hGraphicsPen = 0;
+   win32_state.hGraphicsBrush = 0;
+   win32_state.hGrayBrush = 0;
+   win32_state.hGraphicsDC = 0;
+   win32_state.hGraphicsFont = 0;
 
    /* These are used for the "Window" graphics button. They keep track of whether we're entering
     * the window rectangle to zoom to, etc.
     */
-   windowAdjustFlag = 0;
-   adjustButton = -1;
-   InEventLoop = FALSE;
+   win32_state.windowAdjustFlag = 0;
+   win32_state.adjustButton = -1;
+   win32_state.InEventLoop = false;
 }
 
 
-void win32_drain_message_queue () {
+static void win32_drain_message_queue () {
    // Drain the message queue, so we don't have a quit message lying around
    // that will stop us from re-opening a window later if desired.
    MSG msg; 
-   while (PeekMessage(&msg, hMainWnd,  0, 0, PM_REMOVE)) { 
+   while (PeekMessage(&msg, win32_state.hMainWnd,  0, 0, PM_REMOVE)) { 
       if (msg.message == WM_QUIT) {
          printf ("Got the quit message.\n");
       }
@@ -3996,7 +4122,7 @@ void win32_drain_message_queue () {
 }
 
 
-void handle_mousewheel_zooming_win32(WPARAM wParam, LPARAM lParam) 
+static void win32_handle_mousewheel_zooming(WPARAM wParam, LPARAM lParam) 
 {
 	// zDelta indicates the distance which the mouse wheel is rotated. 
 	// The value for zDelta is a multiple of WHEEL_DELTA, which is 120.
@@ -4017,79 +4143,75 @@ void handle_mousewheel_zooming_win32(WPARAM wParam, LPARAM lParam)
 	POINT mousePos;
 	mousePos.x = GET_X_LPARAM(lParam);
 	mousePos.y = GET_Y_LPARAM(lParam);
-	ScreenToClient(hMainWnd, &mousePos);
+	ScreenToClient(win32_state.hMainWnd, &mousePos);
 
 	int i;
 	for (i=0; i<roll_detent; i++) {
 		// Positive value for zDelta indicates that the wheel was rotated forward, which
 		// will trigger zoom_in. Otherwise, zoom_out is called.
 		if (zDelta > 0)
-			zoom_in_with_cursor(XSCRN2WORLD(mousePos.x), YSCRN2WORLD(mousePos.y), drawscreen_ptr);
+			zoom_in_with_cursor(xscrn_to_world(mousePos.x), yscrn_to_world(mousePos.y), 
+									drawscreen_ptr);
 		else
-			zoom_out_with_cursor(XSCRN2WORLD(mousePos.x), YSCRN2WORLD(mousePos.y), drawscreen_ptr);
+			zoom_out_with_cursor(xscrn_to_world(mousePos.x), yscrn_to_world(mousePos.y), 
+									drawscreen_ptr);
 	}
 }
 
 
-void handle_button_info (t_event_buttonPressed *button_info, UINT message, WPARAM wParam)
+static void win32_handle_button_info (t_event_buttonPressed &button_info, 
+										UINT message, WPARAM wParam)
 {
 	/* The parameter "wParam" is an unsigned int. In this case, it contains information indicating *
 	 * whether various virtual keys (ie. modifier keys) are held during a mouse button press       *
 	 * event.																					   */
 	if (wParam & MK_SHIFT) 
-		button_info->shift_pressed = true;
+		button_info.shift_pressed = true;
 	else
-		button_info->shift_pressed = false;
+		button_info.shift_pressed = false;
 	
 	if (wParam & MK_CONTROL) 
-		button_info->ctrl_pressed = true;
+		button_info.ctrl_pressed = true;
 	else
-		button_info->ctrl_pressed = false;
+		button_info.ctrl_pressed = false;
 	
-	/* Parameter "message" indicates what button is pressed: pass 1 for left click, 3 for right click, *
-	 * 2 for scroll wheel click, 4 for scroll wheel forward rotate, and 5 for scroll wheel backward    *
-	 * rotate. We follow this convention in order to be consistent for both X11 and WIN32.   MW.       */
+	/* Parameter "message" indicates what button is pressed: pass 1 for left click, 
+	 * 3 for right click, 2 for scroll wheel click, 4 for scroll wheel forward rotate, 
+	 * and 5 for scroll wheel backward rotate. 
+	 * We follow this convention in order to be consistent for both X11 and WIN32.         
+	 */
 	switch (message)
 	{
 		case (WM_LBUTTONDOWN):
-			button_info->button = 1;
-			return;
+			button_info.button = 1;
+			break;
 		case (WM_RBUTTONDOWN):
-			button_info->button = 3;
-			return;
+			button_info.button = 3;
+			break;
 		case (WM_MBUTTONDOWN):
-			button_info->button = 2;
-			return;
+			button_info.button = 2;
+			break;
 		case (WM_MOUSEWHEEL):
 			short zDelta;
 			zDelta = GET_WHEEL_DELTA_WPARAM(wParam); 
-			// Positive value for zDelta indicates that the wheel was rotated forward, away from user, 
-			// and negative value indicates wheel rotated backward.
+			// Positive value for zDelta indicates that the wheel was rotated forward, 
+			// away from user, and negative value indicates wheel rotated backward.
 			if (zDelta > 0)
-				button_info->button = 4;
+				button_info.button = 4;
 			else
-				button_info->button = 5;
-			return;
+				button_info.button = 5;
+			break;
 	}	
-}
 
-
-void drawtobuffer(void) {
-	hGraphicsDC = hBackgroundDC;
-}
-
-
-void drawtoscreen(void) {
-	hGraphicsDC = hForegroundDC;
-}
-
-
-void displaybuffer(void) {
-    if (!BitBlt(hForegroundDC, xcoord(trans_coord.xleft),
-    	ycoord(trans_coord.ytop), xcoord(trans_coord.xright)-xcoord(trans_coord.xleft),
-    	ycoord(trans_coord.ybot)-ycoord(trans_coord.ytop), hBackgroundDC,/*hAllObjtestDC,*/
-    	0, 0, SRCCOPY))
-		DRAW_ERROR();
+#ifdef VERBOSE
+	printf("Button pressed is: %d.\n(left click is 1; right click is 3; "
+			"scroll wheel click is 2; scroll wheel forward rotate is 4; "
+			"scroll wheel backward is 5.)\n",button_info.button);
+	if (button_info.shift_pressed == true)
+		printf("Shift is pressed at button press.\n");
+	if (button_info.ctrl_pressed == true)
+		printf("Ctrl is pressed at button press.\n");
+#endif
 }
 
 
@@ -4098,8 +4220,6 @@ static void _drawcurve(t_point *points, int npoints, int fill) {
  * Must have 3I+1 points, since each Beizer curve needs 3 points and we also 
  * need an initial starting point 
  */
-	HPEN hOldPen;
-	HBRUSH hOldBrush;
 	float xmin, ymin, xmax, ymax;
 	int i;
 	
@@ -4127,49 +4247,42 @@ static void _drawcurve(t_point *points, int npoints, int fill) {
 		/* implement X11 version here */
 #else /* Win32 */
 		// create POINT array
+		HPEN hOldPen;
 		POINT pts[MAXPTS];
 		int i;
 
 		for (i = 0; i < npoints; i++) {
-			pts[i].x = xcoord(points[i].x);
-			pts[i].y = ycoord(points[i].y);
+			pts[i].x = xworld_to_scrn(points[i].x);
+			pts[i].y = yworld_to_scrn(points[i].y);
 		}
-
-		if (!fill) {
-			hOldPen = (HPEN)SelectObject(hGraphicsDC, hGraphicsPen);
-			if(!(hOldPen))
-				SELECT_ERROR();
-		}
-		else {
-			hOldPen = (HPEN)SelectObject(hGraphicsDC, GetStockObject(NULL_PEN));
-			if(!(hOldPen))
-				SELECT_ERROR();
-			hOldBrush = (HBRUSH)SelectObject(hGraphicsDC, hGraphicsBrush);
-			if(!(hOldBrush))
-				SELECT_ERROR();
-		}
-
-		if (!BeginPath(hGraphicsDC))
-			DRAW_ERROR();
-		if(!PolyBezier(hGraphicsDC, pts, npoints))
-			DRAW_ERROR();
-		if (!EndPath(hGraphicsDC))
-			DRAW_ERROR();
-
-		if (!fill) {
-			if (!StrokePath(hGraphicsDC))
-				DRAW_ERROR();
-		}
-		else {
-			if (!FillPath(hGraphicsDC))
-				DRAW_ERROR();
-		}
-
-		if(!SelectObject(hGraphicsDC, hOldPen))
-			SELECT_ERROR();
 
 		if (fill) {
-			if(!SelectObject(hGraphicsDC, hOldBrush))
+			/* NULL_PEN is a Windows stock object which does not draw anything. Set current *
+		     * pen to NULL_PEN in order to fill the curve without drawing the outline.      */
+			hOldPen = (HPEN)SelectObject(win32_state.hGraphicsDC, GetStockObject(NULL_PEN));
+			if(!(hOldPen))
+				SELECT_ERROR();
+		}
+
+		if (!BeginPath(win32_state.hGraphicsDC))
+			DRAW_ERROR();
+		if(!PolyBezier(win32_state.hGraphicsDC, pts, npoints))
+			DRAW_ERROR();
+		if (!EndPath(win32_state.hGraphicsDC))
+			DRAW_ERROR();
+
+		if (!fill) {
+			if (!StrokePath(win32_state.hGraphicsDC))
+				DRAW_ERROR();
+		}
+		else {
+			if (!FillPath(win32_state.hGraphicsDC))
+				DRAW_ERROR();
+		}
+
+		if (fill) {
+			/* Need to restore the original pen into the device context after filling. */
+			if(!SelectObject(win32_state.hGraphicsDC, hOldPen))
 				SELECT_ERROR();
 		}
 #endif
@@ -4177,118 +4290,31 @@ static void _drawcurve(t_point *points, int npoints, int fill) {
 	else {
 		int i;
 
-		fprintf(ps, "newpath\n");
-		fprintf(ps, "%.2f %.2f moveto\n", XPOST(points[0].x), YPOST(points[0].y));
+		fprintf(gl_state.ps, "newpath\n");
+		fprintf(gl_state.ps, "%.2f %.2f moveto\n", xworld_to_post(points[0].x), 
+				yworld_to_post(points[0].y));
 		for (i = 1; i < npoints; i+= 3)
-			fprintf(ps,"%.2f %.2f %.2f %.2f %.2f %.2f curveto\n", XPOST(points[i].x), YPOST(points[i].y),
-			XPOST(points[i+1].x), YPOST(points[i+1].y), XPOST(points[i+2].x), YPOST(points[i+2].y));
+			fprintf(gl_state.ps,"%.2f %.2f %.2f %.2f %.2f %.2f curveto\n", 
+					xworld_to_post(points[i].x), yworld_to_post(points[i].y), 
+					xworld_to_post(points[i+1].x), yworld_to_post(points[i+1].y), 
+					xworld_to_post(points[i+2].x), yworld_to_post(points[i+2].y));
 		if (!fill)
-			fprintf(ps, "stroke\n");
+			fprintf(gl_state.ps, "stroke\n");
 		else
-			fprintf(ps, "fill\n");
+			fprintf(gl_state.ps, "fill\n");
 	}
 }
 
 
-void drawcurve(t_point *points,
+void win32_drawcurve(t_point *points,
 			   int npoints) {
 	_drawcurve(points, npoints, 0);
 }
 
 
-void fillcurve(t_point *points,
+void win32_fillcurve(t_point *points,
 			   int npoints) {
 	_drawcurve(points, npoints, 1);
-}
-
-
-void object_start(int all) {
-	if (all)
-		hGraphicsDC = hAllObjtestDC;
-	else
-		hGraphicsDC = hObjtestDC;
-	setcolor(WHITE);
-	fillrect (trans_coord.xleft, trans_coord.ytop,
-				trans_coord.xright, trans_coord.ybot);
-	setcolor(BLACK);
-}
-
-
-void object_end() {
-	hGraphicsDC = hCurrentDC; 
-
-}
-
-
-int pt_on_object(int all, float x, float y) {
-	COLORREF c;
-
-	if (all)
-		c = GetPixel(hAllObjtestDC, xcoord(x), ycoord(y));
-	else
-		c = GetPixel(hObjtestDC, xcoord(x), ycoord(y));
-
-//	printf("c = %x\n", c);
-
-	return c == win32_colors[BLACK];
-}
-
-static int check_fontsize(int pointsize,
-						  float ymax) {
-	// return 0 if matches, 1 if font too big, -1 if font too small
-	// a font matches if it's height is 90-100% of ymax tall
-	float height;
-	TEXTMETRIC textmetric;
-	HFONT hOldFont;
-	int ret;
-
-	setfontsize(pointsize);
-	
-	hOldFont = (HFONT)SelectObject(hGraphicsDC, hGraphicsFont);
-	if(!(hOldFont))
-		SELECT_ERROR();
-
-	if (!GetTextMetrics(hGraphicsDC, &textmetric))
-		DRAW_ERROR();
-	height = (textmetric.tmAscent + 2 * textmetric.tmDescent) / trans_coord.ymult;
-
-	if (height >= ymax * 0.9) {
-		if (height <= ymax)
-			ret = 0;
-		else
-			ret = 1;
-	}
-	else
-		ret = -1;
-
-	if(!SelectObject(hGraphicsDC, hOldFont))
-		SELECT_ERROR();
-
-	return ret;
-}
-
-int findfontsize(float ymax) {
-// find the correct point size which will fit in the specified ymax as the max 
-// height of the font, using a binary search 
-	int bot = 1;
-	int top = MAX_FONT_SIZE;
-	int mid, check;
-
-	while (bot <= top) {
-		mid = (bot+top)/2;
-
-		check = check_fontsize(mid, ymax);
-		if (!(check))
-			return mid;
-		else if (check > 0) // too big
-			top = mid - 1;
-		else // too small
-			bot = mid + 1;
-	}
-	if (bot > MAX_FONT_SIZE)
-		return MAX_FONT_SIZE;
-
-	return -1; // can't fit
 }
 
 #endif /******** Win32 Specific Definitions ********************/
@@ -4323,11 +4349,13 @@ void fillrect (float x1, float y1, float x2, float y2) { }
 void fillpoly (t_point *points, int npoints) { }
 void drawarc (float xcen, float ycen, float rad, float startang,
 			  float angextent) { }
-void drawellipticarc (float xc, float yc, float radx, float rady, float startang, float angextent) { }
+void drawellipticarc (float xc, float yc, float radx, float rady, 
+					  float startang, float angextent) { }
 
 void fillarc (float xcen, float ycen, float rad, float startang,
 			  float angextent) { }
-void fillellipticarc (float xc, float yc, float radx, float rady, float startang, float angextent) { }
+void fillellipticarc (float xc, float yc, float radx, float rady, 
+					  float startang, float angextent) { }
 
 void drawtext (float xc, float yc, const char *text, float boundx) { }
 void clearscreen (void) { }
@@ -4356,23 +4384,9 @@ void enable_or_disable_button(int ibutton, bool enabled) { }
 void change_button_text(const char *button_text, const char *new_button_text) { }
 
 #ifdef WIN32
-void drawtobuffer(void) { }
+void win32_drawcurve(t_point *points, int npoints) { }
 
-void drawtoscreen(void) { }
-
-void displaybuffer(void) { }
-
-void drawcurve(t_point *points, int npoints) { }
-
-void fillcurve(t_point *points, int npoints) { }
-
-void object_start(int all) { }
-
-void object_end() { }
-
-int pt_on_object(float x, float y) { }
-
-int findfontsize(float ymax) { }
+void win32_fillcurve(t_point *points, int npoints) { }
 
 
 #endif  // WIN32 (subset of commands)

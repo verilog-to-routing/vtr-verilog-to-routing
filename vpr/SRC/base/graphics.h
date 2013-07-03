@@ -223,16 +223,11 @@ void report_structure(t_report*);
  * X11 as well, and probably delete anything else.
  */
 
-/* Added by William to provide double buffering in Windows */
-void drawtobuffer(void);
-void drawtoscreen(void);
-void displaybuffer(void);
-void drawcurve(t_point *points, int npoints);
-void fillcurve(t_point *points, int npoints);
-void object_start(int all);
-void object_end();
-int pt_on_object(int all, float x, float y);
-int findfontsize(float ymax);
+/* MW: Draw beizer curve. Currently not used, but saving for possible use
+ * in the future.                            
+ */
+void win32_drawcurve(t_point *points, int npoints);
+void win32_fillcurve(t_point *points, int npoints);
 
 #endif // WIN32
 
