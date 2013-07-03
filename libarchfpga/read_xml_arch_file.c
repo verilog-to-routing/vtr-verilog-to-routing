@@ -1260,7 +1260,7 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 			ret_interc_names = interc_names.insert(pair<string,int>(mode->interconnect[i].name,0));
 			if(!ret_interc_names.second){				
 				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
-					"[LINE%d] Duplicate interconnect name: '%s' in mode: '%s'.\n", Cur->line, mode->interconnect[i].name, mode->name);
+					"Duplicate interconnect name: '%s' in mode: '%s'.\n", mode->interconnect[i].name, mode->name);
 			}
 
 			/* Process delay and capacitance annotations */
@@ -1358,8 +1358,7 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode,
 				ret_pb_types = pb_type_names.insert(pair<string,int>(mode->pb_type_children[i].name,0));
 				if(!ret_pb_types.second){					
 					vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line, 
-						"[LINE%d] Duplicate pb_type name: '%s' in mode: '%s'.\n", 
-						Cur->line, mode->pb_type_children[i].name , mode->name);
+						"Duplicate pb_type name: '%s' in mode: '%s'.\n", mode->pb_type_children[i].name , mode->name);
 				}
 
 				/* get next iteration */
@@ -1696,7 +1695,7 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 		ret_map_name = model_name_map.insert(pair<string,int>(temp->name,0));
 		if(!ret_map_name.second){			
 			vpr_throw(VPR_ERROR_ARCH, arch_file_name, child->line, 
-				"[LINE%d] Duplicate model name: '%s'.\n", child->line, temp->name);
+				"Duplicate model name: '%s'.\n", temp->name);
 		}
 
 		/* Process the inputs */
@@ -1734,7 +1733,7 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 				ret_map_port = model_port_map.insert(pair<string,int>(tp->name,0));
 				if(!ret_map_port.second){					
 					vpr_throw(VPR_ERROR_ARCH, arch_file_name, p->line, 
-						"[LINE%d] Duplicate model input port name: '%s'.\n", p->line, tp->name);
+						"Duplicate model input port name: '%s'.\n", tp->name);
 				}
 
 				temp->inputs = tp;
@@ -1772,7 +1771,7 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 				ret_map_port = model_port_map.insert(pair<string,int>(tp->name,0));
 				if(!ret_map_port.second){					
 					vpr_throw(VPR_ERROR_ARCH, arch_file_name, p->line, 
-						"[LINE%d] Duplicate model output port name: '%s'.\n", p->line, tp->name);
+						"Duplicate model output port name: '%s'.\n", tp->name);
 				}
 
 				temp->outputs = tp;
@@ -2482,7 +2481,7 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 		ret_pb_type_descriptors = pb_type_descriptors.insert(pair<string,int>(Type->name,0));
 		if(!ret_pb_type_descriptors.second){			
 			vpr_throw(VPR_ERROR_ARCH, arch_file_name, CurType->line, 
-				"[LINE%d] Duplicate pb_type descriptor name: '%s'.\n", CurType->line, Type->name);
+				"Duplicate pb_type descriptor name: '%s'.\n", Type->name);
 		}
 
 		/* Load pb_type info */
