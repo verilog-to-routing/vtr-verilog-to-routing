@@ -813,7 +813,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 	map<string , int> mode_names;
 	pair<map<string,int>::iterator,bool> ret_pb_ports;
 	pair<map<string,int>::iterator,bool> ret_mode_names;
-	int num_inputs, num_outputs, num_clocks;
+	int num_in_ports, num_out_ports, num_clock_ports;
 	int num_delay_constant, num_delay_matrix, num_C_constant,
 		num_C_matrix, num_T_setup, num_T_cq, num_T_hold;
 
@@ -858,14 +858,26 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 	}
 
 	assert(pb_type->num_pb > 0);
-	num_ports = num_inputs = num_outputs = num_clocks = 0;
-	num_inputs = CountChildren(Parent, "input", 0);
-	num_outputs = CountChildren(Parent, "output", 0);
-	num_clocks = CountChildren(Parent, "clock", 0);
-	num_ports = num_inputs + num_outputs + num_clocks;
+	num_ports = num_in_ports = num_out_ports = num_clock_ports = 0;
+	num_in_ports = CountChildren(Parent, "input", 0);
+	num_out_ports = CountChildren(Parent, "output", 0);
+	num_clock_ports = CountChildren(Parent, "clock", 0);
+	num_ports = num_in_ports + num_out_ports + num_clock_ports;
 	pb_type->ports = (t_port*) my_calloc(num_ports, sizeof(t_port));
 	pb_type->num_ports = num_ports;
 
+	/* Enforce VPR's definition of LUT/FF by checking number of ports */
+	if(pb_type->class_type == LUT_CLASS || pb_type->class_type == LATCH_CLASS){
+		if(num_in_ports != 1 || num_out_ports != 1){
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, Parent->line,
+				"%s primitives must contain exactly one input port and one output port."
+				"Found '%d' input port(s) and '%d' output port(s) for '%s'", 
+				(pb_type->class_type == LUT_CLASS) ? "LUT" : "Latch",
+				num_in_ports, num_out_ports, pb_type->name);
+		}
+	}
+
+	/* Check the XML tag ordering of pb_type */
 	CheckXMLTagOrder(Parent);
 
 	/* Initialize Power Structure */
@@ -886,11 +898,12 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 			Cur = FindFirstElement(Parent, "clock", FALSE);
 		}
 		while (Cur != NULL) {
-			ProcessPb_TypePort(Cur, &pb_type->ports[j],
-					pb_type->pb_type_power->estimation_method);
 			pb_type->ports[j].parent_pb_type = pb_type;
 			pb_type->ports[j].index = j;
 			pb_type->ports[j].port_index_by_type = k;
+			ProcessPb_TypePort(Cur, &pb_type->ports[j],
+					pb_type->pb_type_power->estimation_method);
+			
 
 			//Check port name duplicates
 			ret_pb_ports = pb_port_names.insert(pair<string,int>(pb_type->ports[j].name,0));
@@ -1182,8 +1195,7 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port,
 	} else if (0 == strcmp(Parent->name, "clock")) {
 		port->type = IN_PORT;
 		port->is_clock = TRUE;
-		if (port->is_non_clock_global == TRUE) {
-			
+		if (port->is_non_clock_global == TRUE) {		
 			vpr_throw(VPR_ERROR_ARCH, 		arch_file_name, Parent->line, 
 				"Port %s cannot be both a clock and a non-clock simultaneously\n", Parent->name);	
 		}
