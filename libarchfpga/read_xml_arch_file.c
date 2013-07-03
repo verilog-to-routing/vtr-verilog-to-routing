@@ -965,8 +965,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 			if (i == 0) {
 				Cur = FindFirstElement(Parent, "delay_constant", FALSE);
 			} else if (i == 1) {
-				Cur = FindFirstElement(Parent, "delay_matrix", 
-										(pb_type->class_type == LUT_CLASS) ? TRUE : FALSE);
+				Cur = FindFirstElement(Parent, "delay_matrix", FALSE);
 			} else if (i == 2) {
 				Cur = FindFirstElement(Parent, "C_constant", FALSE);
 			} else if (i == 3) {
