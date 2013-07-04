@@ -1189,15 +1189,80 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port,
 	if (0 == strcmp(Parent->name, "input")) {
 		port->type = IN_PORT;
 		port->is_clock = FALSE;
+
+		/* Check LUT/FF port class is lut_in/D */
+		if(port->parent_pb_type->class_type == LUT_CLASS){
+			if((!port->port_class) || strcmp("lut_in", port->port_class)){
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Parent->line,
+					"Inputs to LUT primitives must have a port class named "
+					"as \"lut_in\".");
+			}
+		}
+		else if(port->parent_pb_type->class_type == LATCH_CLASS){
+			if((!port->port_class) || strcmp("D", port->port_class)){
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Parent->line,
+					"Input to flipflop primitives must have a port class named "
+					"as \"D\".");
+			}
+			/* Only allow one input pin for FF's */
+			if(port->num_pins != 1){
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Parent->line,
+					"Input port of flipflop primitives must have exactly one pin. "
+					"Found %d.", port->num_pins);
+			}
+		}
+
 	} else if (0 == strcmp(Parent->name, "output")) {
 		port->type = OUT_PORT;
 		port->is_clock = FALSE;
+
+		/* Check LUT/FF port class is lut_out/Q */
+		if(port->parent_pb_type->class_type == LUT_CLASS){
+			if((!port->port_class) || strcmp("lut_out", port->port_class)){
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Parent->line,
+					"Output to LUT primitives must have a port class named "
+					"as \"lut_in\".");
+			}
+			/* Only allow one output pin for LUT's */
+			if(port->num_pins != 1){
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Parent->line,
+					"Output port of LUT primitives must have exactly one pin. "
+					"Found %d.", port->num_pins);
+			}
+		}
+		else if(port->parent_pb_type->class_type == LATCH_CLASS){
+			if((!port->port_class) || strcmp("Q", port->port_class)){
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Parent->line,
+					"Output to flipflop primitives must have a port class named "
+					"as \"D\".");
+			}
+			/* Only allow one output pin for FF's */
+			if(port->num_pins != 1){
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Parent->line,
+					"Output port of flipflop primitives must have exactly one pin. "
+					"Found %d.", port->num_pins);
+			}
+		}
 	} else if (0 == strcmp(Parent->name, "clock")) {
 		port->type = IN_PORT;
 		port->is_clock = TRUE;
 		if (port->is_non_clock_global == TRUE) {		
 			vpr_throw(VPR_ERROR_ARCH, 		arch_file_name, Parent->line, 
 				"Port %s cannot be both a clock and a non-clock simultaneously\n", Parent->name);	
+		}
+
+		if(port->parent_pb_type->class_type == LATCH_CLASS){
+			if((!port->port_class) || strcmp("clock", port->port_class)){
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Parent->line,
+					"Clock to flipflop primitives must have a port class named "
+					"as \"clock\".");
+			}
+			/* Only allow one output pin for FF's */
+			if(port->num_pins != 1){
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Parent->line,
+					"Clock port of flipflop primitives must have exactly one pin. "
+					"Found %d.", port->num_pins);
+			}
 		}
 	} else {		
 		vpr_throw(VPR_ERROR_ARCH, arch_file_name, Parent->line, 
