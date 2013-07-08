@@ -1,10 +1,7 @@
-#include <cstring>
-#include <climits>
-#include <cmath>
-using namespace std;
-
-#include <assert.h>
-
+#include <stdio.h>
+#include <string.h>
+#include <limits.h>
+#include <math.h>
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -12,6 +9,7 @@ using namespace std;
 #include "path_delay2.h"
 #include "net_delay.h"
 #include "vpr_utils.h"
+#include <assert.h>
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
 #include "read_sdc.h"
@@ -255,8 +253,8 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	boolean do_process_constraints = FALSE;
 
 	if (tedge_ch.chunk_ptr_head != NULL) {
-		vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, 
-				"in alloc_and_load_timing_graph: An old timing graph still exists.\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "in alloc_and_load_timing_graph: An old timing graph still exists.\n");
+		exit(1);
 	}
 	num_timing_nets = num_nets;
 	timing_nets = clb_net;
@@ -305,8 +303,8 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 	boolean do_process_constraints = FALSE;
 	
 	if (tedge_ch.chunk_ptr_head != NULL) {
-		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
-				"in alloc_and_load_timing_graph: An old timing graph still exists.\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "in alloc_and_load_timing_graph: An old timing graph still exists.\n");
+		exit(1);
 	}
 
 	num_timing_nets = num_logical_nets;
@@ -394,8 +392,8 @@ void free_timing_graph(t_slack * slacks) {
 	int inode;
 
 	if (tedge_ch.chunk_ptr_head == NULL) {
-		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
-				"in free_timing_graph: No timing graph to free.\n");
+		vpr_printf(TIO_MESSAGE_ERROR, "in free_timing_graph: No timing graph to free.\n");
+		exit(1);
 	}
 
 	free_chunk_memory(&tedge_ch);
@@ -465,8 +463,8 @@ void print_slack(float ** slack, boolean slack_is_normalized, const char *fname)
 		for (iedge = 0; iedge < num_edges; iedge++) { 
 			slk = slack[inet][iedge + 1];
 			if (slk < HUGE_POSITIVE_FLOAT - 1) { /* if slack was analysed */
-				max_slack = max(max_slack, slk);
-				min_slack = min(min_slack, slk);
+				max_slack = std::max(max_slack, slk);
+				min_slack = std::min(min_slack, slk);
 				total_slack += slk;
 				if (slk < NEGATIVE_EPSILON) { 
 					total_negative_slack -= slk; /* By convention, we'll have total_negative_slack be a positive number. */
@@ -510,7 +508,7 @@ void print_slack(float ** slack, boolean slack_is_normalized, const char *fname)
 				slk = slack[inet][iedge + 1];
 				if (slk < HUGE_POSITIVE_FLOAT - 1) {
 					/* We have to watch out for the special case where slack = max_slack, in which case ibucket = NUM_BUCKETS and we go out of bounds of the array. */
-					ibucket = min(NUM_BUCKETS - 1, (int) ((slk - min_slack)/bucket_size));
+					ibucket = std::min(NUM_BUCKETS - 1, (int) ((slk - min_slack)/bucket_size));
 					assert(ibucket >= 0 && ibucket < NUM_BUCKETS);
 					slacks_in_bucket[ibucket]++;
 				}
@@ -621,8 +619,8 @@ static void print_global_criticality_stats(FILE * fp, float ** criticality, cons
 		num_edges = timing_nets[inet].num_sinks;
 		for (iedge = 0; iedge < num_edges; iedge++) { 
 			crit = criticality[inet][iedge + 1];
-			max_criticality = max(max_criticality, crit);
-			min_criticality = min(min_criticality, crit);
+			max_criticality = std::max(max_criticality, crit);
+			min_criticality = std::min(min_criticality, crit);
 			total_criticality += crit;
 		}
 	}
@@ -648,7 +646,7 @@ static void print_global_criticality_stats(FILE * fp, float ** criticality, cons
 			for (iedge = 0; iedge < num_edges; iedge++) { 
 				crit = criticality[inet][iedge + 1];
 				/* We have to watch out for the special case where criticality = max_criticality, in which case ibucket = NUM_BUCKETS and we go out of bounds of the array. */
-				ibucket = min(NUM_BUCKETS - 1, (int) ((crit - min_criticality)/bucket_size));
+				ibucket = std::min(NUM_BUCKETS - 1, (int) ((crit - min_criticality)/bucket_size));
 				assert(ibucket >= 0 && ibucket < NUM_BUCKETS);
 				criticalities_in_bucket[ibucket]++;
 			}
@@ -980,15 +978,13 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 		case TN_FF_CLOCK:
 			break;
 		default:
-			vpr_printf_error(__FILE__, __LINE__, 
-					"Consistency check failed: Unknown tnode type %d.\n", tnode[i].type);
+			vpr_printf(TIO_MESSAGE_ERROR, "Consistency check failed: Unknown tnode type %d.\n", tnode[i].type);
 			assert(0);
 			break;
 		}
 	}
 	if(num_dangling_pins > 0) {
-		vpr_printf_warning(__FILE__, __LINE__, 
-				"Unconnected logic in design, number of dangling tnodes = %d\n", num_dangling_pins);
+		vpr_printf(TIO_MESSAGE_WARNING, "Unconnected logic in design, number of dangling tnodes = %d\n", num_dangling_pins);
 	}
 }
 
@@ -1287,8 +1283,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 		case TN_FF_CLOCK:
 			break;
 		default:
-			vpr_printf_error(__FILE__, __LINE__, 
-					"Consistency check failed: Unknown tnode type %d.\n", tnode[i].type);
+			vpr_printf(TIO_MESSAGE_ERROR, "Consistency check failed: Unknown tnode type %d.\n", tnode[i].type);
 			assert(0);
 			break;
 		}
@@ -1399,6 +1394,7 @@ void print_timing_graph(const char *fname) {
 	t_tedge *tedge;
 	e_tnode_type itype;
 	const char *tnode_type_names[] = {  "TN_INPAD_SOURCE", "TN_INPAD_OPIN", "TN_OUTPAD_IPIN",
+
 			"TN_OUTPAD_SINK", "TN_CB_IPIN", "TN_CB_OPIN", "TN_INTERMEDIATE_NODE",
 			"TN_PRIMITIVE_IPIN", "TN_PRIMITIVE_OPIN", "TN_FF_IPIN", "TN_FF_OPIN", "TN_FF_SINK",
 			"TN_FF_SOURCE", "TN_FF_CLOCK", "TN_CONSTANT_GEN_SOURCE" };
@@ -1426,7 +1422,7 @@ void print_timing_graph(const char *fname) {
 		if (itype == TN_FF_CLOCK || itype == TN_FF_SOURCE || itype == TN_FF_SINK) {
 			fprintf(fp, "%d\t%.3e\t\t", tnode[inode].clock_domain, tnode[inode].clock_delay);
 		} else if (itype == TN_INPAD_SOURCE) {
-			fprintf(fp, "%d\t\t%.3e\t", tnode[inode].clock_domain, tnode[inode].out_edges ? tnode[inode].out_edges[0].Tdel : -1);
+			fprintf(fp, "%d\t\t%.3e\t", tnode[inode].clock_domain, tnode[inode].out_edges[0].Tdel);
 		} else if (itype == TN_OUTPAD_SINK) {
 			assert(tnode[inode-1].type == TN_OUTPAD_IPIN); /* Outpad ipins should be one prior in the tnode array */
 			fprintf(fp, "%d\t\t%.3e\t", tnode[inode].clock_domain, tnode[inode-1].out_edges[0].Tdel);
@@ -1462,8 +1458,7 @@ void print_timing_graph(const char *fname) {
 	for (i = 0; i < num_nets; i++)
 		fprintf(fp, "%4d\t%6d\n", i, f_net_to_driver_tnode[i]);
 
-	if (g_sdc && g_sdc->num_constrained_clocks == 1) {
-
+	if (g_sdc->num_constrained_clocks == 1) {
 		/* Arrival and required times, and forward and backward weights, will be meaningless for multiclock
 		designs, since the values currently on the graph will only correspond to the most recent traversal. */
 		fprintf(fp, "\n\nNode #\t\tT_arr\t\tT_req"
@@ -1816,7 +1811,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 
 #if SLACK_DEFINITION == 'S'
 				/* Set criticality_denom_global to the max of criticality_denom over all traversals. */
-				criticality_denom_global = max(criticality_denom_global, criticality_denom);
+				criticality_denom_global = std::max(criticality_denom_global, criticality_denom);
 #endif
 			}
 		}
@@ -1829,7 +1824,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 	for (inet = 0; inet < num_timing_nets; inet++) {
 		num_edges = timing_nets[inet].num_sinks;
 		for (iedge = 0; iedge < num_edges; iedge++) {
-			max_path_criticality = max(max_path_criticality, slacks->path_criticality[inet][iedge + 1]);
+			max_path_criticality = std::max(max_path_criticality, slacks->path_criticality[inet][iedge + 1]);
 		}
 	}
 
@@ -1848,7 +1843,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 		/* Find the smallest slack in the design. */
 		for (i = 0; i < g_sdc->num_constrained_clocks; i++) {
 			for (j = 0; j < g_sdc->num_constrained_clocks; j++) {
-				smallest_slack_in_design = min(smallest_slack_in_design, f_timing_stats->least_slack[i][j]);
+				smallest_slack_in_design = std::min(smallest_slack_in_design, f_timing_stats->least_slack[i][j]);
 			}
 		}
 
@@ -2046,7 +2041,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				/* Since we updated the destination node (to_node), change the max arrival  
 				time for the forward traversal if to_node's arrival time is greater than 
 				the existing maximum. */
-				max_Tarr = max(max_Tarr, tnode[to_node].T_arr);	
+				max_Tarr = std::max(max_Tarr, tnode[to_node].T_arr);	
 			}
 		}
 	}
@@ -2064,21 +2059,21 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	
 			if (ilevel == 0) {
 				if (!(tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_FF_SOURCE || tnode[inode].type == TN_CONSTANT_GEN_SOURCE)) {
-					vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
-							"Timing graph started on unexpected node %s.%s[%d].\n"
-							"This is a VPR internal error, contact VPR development team.\n",
+					vpr_printf(TIO_MESSAGE_ERROR, "Timing graph started on unexpected node %s.%s[%d].\n",
 							tnode[inode].pb_graph_pin->parent_node->pb_type->name, 
 							tnode[inode].pb_graph_pin->port->name, 
 							tnode[inode].pb_graph_pin->pin_number);
+					vpr_printf(TIO_MESSAGE_ERROR, "This is a VPR internal error, contact VPR development team.\n"); 
+					exit(1);
 				}
 			} else {
 				if ((tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_FF_SOURCE || tnode[inode].type == TN_CONSTANT_GEN_SOURCE)) {
-					vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
-							"Timing graph discovered unexpected edge to node %s.%s[%d].\n"
-							"This is a VPR internal error, contact VPR development team.\n",
+					vpr_printf(TIO_MESSAGE_ERROR, "Timing graph discovered unexpected edge to node %s.%s[%d].\n",
 							tnode[inode].pb_graph_pin->parent_node->pb_type->name, 
 							tnode[inode].pb_graph_pin->port->name, 
 							tnode[inode].pb_graph_pin->pin_number);
+					vpr_printf(TIO_MESSAGE_ERROR, "This is a VPR internal error, contact VPR development team.\n"); 
+					exit(1);
 				}
 			}
 	
@@ -2095,11 +2090,10 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	
 				if (!(tnode[inode].type == TN_OUTPAD_SINK || tnode[inode].type == TN_FF_SINK)) {
 					if(is_prepacked) {
-						vpr_printf_warning(__FILE__, __LINE__, 
-								"Pin on block %s.%s[%d] not used\n", 
-								logical_block[tnode[inode].block].name, 
-								tnode[inode].prepacked_data->model_port_ptr->name, 
-								tnode[inode].prepacked_data->model_pin);
+						vpr_printf(TIO_MESSAGE_WARNING, "Pin on block %s.%s[%d] not used\n", 
+													logical_block[tnode[inode].block].name, 
+													tnode[inode].prepacked_data->model_port_ptr->name, 
+													tnode[inode].prepacked_data->model_pin);
 					}
 					num_dangling_nodes++;
 					/* Note: Still need to do standard traversals with dangling pins so that algorithm runs properly, but T_arr and T_Req to values such that it dangling nodes do not affect actual timing values */
@@ -2145,9 +2139,9 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				slacks are computed (that's what human designers care about), not the relaxed ones. */	
 	
 				if (is_final_analysis) {
-					tnode[inode].T_req = constraint + tnode[inode].clock_delay;
+					tnode[inode].T_req =     constraint + tnode[inode].clock_delay;
 				} else {
-					tnode[inode].T_req = max(constraint + tnode[inode].clock_delay, max_Tarr);
+					tnode[inode].T_req = std::max(constraint + tnode[inode].clock_delay, max_Tarr);
 				}
 #else					
 				/* Don't do the relaxation and always set T_req equal to the "real" required time. */
@@ -2165,7 +2159,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				datapath delay. */
 
 				f_timing_stats->cpd[source_clock_domain][sink_clock_domain] = 
-					max(f_timing_stats->cpd[source_clock_domain][sink_clock_domain], 
+					std::max(f_timing_stats->cpd[source_clock_domain][sink_clock_domain], 
 					   (tnode[inode].T_arr - tnode[inode].clock_delay)); 
 
 #ifndef PATH_COUNTING
@@ -2214,7 +2208,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 					to_node = tedge[iedge].to_node;
 					Tdel = tedge[iedge].Tdel;
 					T_req = tnode[to_node].T_req;
-					tnode[inode].T_req = min(tnode[inode].T_req, T_req - Tdel);
+					tnode[inode].T_req = std::min(tnode[inode].T_req, T_req - Tdel);
 					
 					/* Update least slack per constraint. This is NOT the same as the minimum slack we will
 					calculate on this traversal for post-packed netlists, which only count inter-cluster 
@@ -2222,7 +2216,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 					all paths go through one of these edges. */
 					if (tnode[to_node].num_edges == 0 && tnode[to_node].clock_domain == sink_clock_domain) {
 						f_timing_stats->least_slack[source_clock_domain][sink_clock_domain] = 
-							min(f_timing_stats->least_slack[source_clock_domain][sink_clock_domain],
+							std::min(f_timing_stats->least_slack[source_clock_domain][sink_clock_domain],
 							   (T_req - Tdel - tnode[inode].T_arr)); 
 					}
 				}
@@ -2262,13 +2256,12 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	}
 
 	if(num_dangling_nodes > 0 && (is_final_analysis || is_prepacked)) {
-		vpr_printf_warning(__FILE__, __LINE__, 
-				"%d unused pins \n",  num_dangling_nodes);
+		vpr_printf(TIO_MESSAGE_WARNING, "%d unused pins \n",  num_dangling_nodes);
 	}
 
 	/* The criticality denominator is the maximum of the max 
 	arrival time and the constraint for this domain pair. */
-	return max(max_Tarr, g_sdc->domain_constraint[source_clock_domain][sink_clock_domain]);
+	return std::max(max_Tarr, g_sdc->domain_constraint[source_clock_domain][sink_clock_domain]);
 }
 #ifdef PATH_COUNTING
 static void do_path_counting(float criticality_denom) {
@@ -2512,10 +2505,10 @@ void print_critical_path(const char *fname) {
 	fprintf(fp, "Total logic delay: %g (s)  Total net delay: %g (s)\n",
 			total_logic_delay, total_net_delay);
 
-	vpr_printf_info("Nets on critical path: %d normal, %d global.\n",
+	vpr_printf(TIO_MESSAGE_INFO, "Nets on critical path: %d normal, %d global.\n",
 			non_global_nets_on_crit_path, global_nets_on_crit_path);
 
-	vpr_printf_info("Total logic delay: %g (s), total net delay: %g (s)\n",
+	vpr_printf(TIO_MESSAGE_INFO, "Total logic delay: %g (s), total net delay: %g (s)\n",
 			total_logic_delay, total_net_delay);
 
 	/* Make sure total_logic_delay and total_net_delay add 
@@ -2697,11 +2690,11 @@ static void update_normalized_costs(float criticality_denom, long max_critical_i
 	for (inode = 0; inode < num_tnodes; inode++) {
 		/* Only calculate for tnodes which have valid arrival and required times. */
 		if (has_valid_T_arr(inode) && has_valid_T_req(inode)) {
-			tnode[inode].prepacked_data->normalized_slack = min(tnode[inode].prepacked_data->normalized_slack, 
+			tnode[inode].prepacked_data->normalized_slack = std::min(tnode[inode].prepacked_data->normalized_slack, 
 				(tnode[inode].T_req - tnode[inode].T_arr)/criticality_denom);
-			tnode[inode].prepacked_data->normalized_T_arr = max(tnode[inode].prepacked_data->normalized_T_arr, 
+			tnode[inode].prepacked_data->normalized_T_arr = std::max(tnode[inode].prepacked_data->normalized_T_arr, 
 				tnode[inode].T_arr/criticality_denom);
-			tnode[inode].prepacked_data->normalized_total_critical_paths = max(tnode[inode].prepacked_data->normalized_total_critical_paths, 
+			tnode[inode].prepacked_data->normalized_total_critical_paths = std::max(tnode[inode].prepacked_data->normalized_total_critical_paths, 
 					((float) tnode[inode].prepacked_data->num_critical_input_paths + tnode[inode].prepacked_data->num_critical_output_paths) /
 							 ((float) max_critical_input_paths + max_critical_output_paths));
 		}
@@ -2722,7 +2715,7 @@ static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel,
 	float min_delay, highest_T_arr, balanced_T_arr;
 
 	/* Normal case for determining arrival time */
-	tnode[to_node].T_arr = max(tnode[to_node].T_arr, tnode[from_node].T_arr + Tdel);
+	tnode[to_node].T_arr = std::max(tnode[to_node].T_arr, tnode[from_node].T_arr + Tdel);
 
 	/* Do LUT input rebalancing for LUTs */
 	if (do_lut_input_balancing && tnode[to_node].type == TN_PRIMITIVE_OPIN && tnode[to_node].pb_graph_pin != NULL) {
@@ -3094,7 +3087,7 @@ void print_timing_stats(void) {
 	int source_clock_domain, sink_clock_domain, clock_domain, fanout, total_fanout = 0, 
 		num_netlist_clocks_with_intra_domain_paths = 0;
 	float geomean_period = 1., least_slack_in_design = HUGE_POSITIVE_FLOAT, critical_path_delay = UNDEFINED;
-	double fanout_weighted_geomean_period = 1.;
+	double fanout_weighted_geomean_period = 0.;
 	boolean found;
 
 	/* Find critical path delay. If the pb_max_internal_delay is greater than this, it becomes
@@ -3111,39 +3104,38 @@ void print_timing_stats(void) {
 
 	if (pb_max_internal_delay != UNDEFINED && pb_max_internal_delay > critical_path_delay) {
 		critical_path_delay = pb_max_internal_delay;
-		vpr_printf_info("Final critical path: %g ns", 1e9 * critical_path_delay);
-		vpr_printf_direct(" (capped by fmax of block type %s)", pbtype_max_internal_delay->name);
+		vpr_printf(TIO_MESSAGE_INFO, "Final critical path: %g ns\n", 1e9 * critical_path_delay);
+		vpr_printf(TIO_MESSAGE_INFO, "\t(capped by fmax of block type %s)\n", pbtype_max_internal_delay->name);
 		
 	} else {
-		vpr_printf_info("Final critical path: %g ns", 1e9 * critical_path_delay);
+		vpr_printf(TIO_MESSAGE_INFO, "Final critical path: %g ns\n", 1e9 * critical_path_delay);
 	}
 
 	if (g_sdc->num_constrained_clocks <= 1) {
 		/* Although critical path delay is always well-defined, it doesn't make sense to talk about fmax for multi-clock circuits */
-		vpr_printf_direct(", f_max: %g MHz", 1e-6 / critical_path_delay);
+		vpr_printf(TIO_MESSAGE_INFO, "f_max: %g MHz\n", 1e-6 / critical_path_delay);
 	}
-	vpr_printf_direct("\n");
 	
 	/* Also print the least slack in the design */
-	vpr_printf_info("\n");
-	vpr_printf_info("Least slack in design: %g ns\n", 1e9 * least_slack_in_design);
-	vpr_printf_info("\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Least slack in design: %g ns\n", 1e9 * least_slack_in_design);
+	vpr_printf(TIO_MESSAGE_INFO, "\n");
 
 	if (g_sdc->num_constrained_clocks > 1) { /* Multiple-clock design */
 
 		/* Print minimum possible clock period to meet each constraint. Convert to nanoseconds. */
 
-		vpr_printf_info("Minimum possible clock period to meet each constraint (including skew effects):\n");
+		vpr_printf(TIO_MESSAGE_INFO, "Minimum possible clock period to meet each constraint (including skew effects):\n");
 		for (source_clock_domain = 0; source_clock_domain < g_sdc->num_constrained_clocks; source_clock_domain++) {
 			/* Print the intra-domain constraint if it was analysed. */
 			if (g_sdc->domain_constraint[source_clock_domain][source_clock_domain] > NEGATIVE_EPSILON) { 
-				vpr_printf_info("%s to %s: %g ns (%g MHz)\n", 
+				vpr_printf(TIO_MESSAGE_INFO, "%s to %s: %g ns (%g MHz)\n", 
 						g_sdc->constrained_clocks[source_clock_domain].name,
 						g_sdc->constrained_clocks[source_clock_domain].name, 
 						1e9 * f_timing_stats->cpd[source_clock_domain][source_clock_domain],
 						1e-6 / f_timing_stats->cpd[source_clock_domain][source_clock_domain]);
 			} else {
-				vpr_printf_info("%s to %s: --\n", 
+				vpr_printf(TIO_MESSAGE_INFO, "%s to %s: --\n", 
 						g_sdc->constrained_clocks[source_clock_domain].name,
 						g_sdc->constrained_clocks[source_clock_domain].name);
 			}
@@ -3153,13 +3145,13 @@ void print_timing_stats(void) {
 				if (source_clock_domain == sink_clock_domain) continue; /* already done that */
 				if (g_sdc->domain_constraint[source_clock_domain][sink_clock_domain] > NEGATIVE_EPSILON) { 
 					/* If this domain pair was analysed */
-					vpr_printf_info("\t%s to %s: %g ns (%g MHz)\n", 
+					vpr_printf(TIO_MESSAGE_INFO, "\t%s to %s: %g ns (%g MHz)\n", 
 							g_sdc->constrained_clocks[source_clock_domain].name,
 							g_sdc->constrained_clocks[sink_clock_domain].name, 
 							1e9 * f_timing_stats->cpd[source_clock_domain][sink_clock_domain],
 							1e-6 / f_timing_stats->cpd[source_clock_domain][sink_clock_domain]);
 				} else {
-					vpr_printf_info("\t%s to %s: --\n", 
+					vpr_printf(TIO_MESSAGE_INFO, "\t%s to %s: --\n", 
 							g_sdc->constrained_clocks[source_clock_domain].name,
 							g_sdc->constrained_clocks[sink_clock_domain].name);
 				}
@@ -3168,17 +3160,17 @@ void print_timing_stats(void) {
 
 		/* Print least slack per constraint. */
 
-		vpr_printf_info("\n");
-		vpr_printf_info("Least slack per constraint:\n");
+		vpr_printf(TIO_MESSAGE_INFO, "\n");
+		vpr_printf(TIO_MESSAGE_INFO, "Least slack per constraint:\n");
 		for (source_clock_domain = 0; source_clock_domain < g_sdc->num_constrained_clocks; source_clock_domain++) {
 			/* Print the intra-domain slack if valid. */
 			if (f_timing_stats->least_slack[source_clock_domain][source_clock_domain] < HUGE_POSITIVE_FLOAT - 1) {
-				vpr_printf_info("%s to %s: %g ns\n", 
+				vpr_printf(TIO_MESSAGE_INFO, "%s to %s: %g ns\n", 
 						g_sdc->constrained_clocks[source_clock_domain].name, 
 						g_sdc->constrained_clocks[source_clock_domain].name, 
 						1e9 * f_timing_stats->least_slack[source_clock_domain][source_clock_domain]);
 			} else {
-				vpr_printf_info("%s to %s: --\n", 
+				vpr_printf(TIO_MESSAGE_INFO, "%s to %s: --\n", 
 						g_sdc->constrained_clocks[source_clock_domain].name,
 						g_sdc->constrained_clocks[source_clock_domain].name);
 			}
@@ -3187,12 +3179,12 @@ void print_timing_stats(void) {
 				if (source_clock_domain == sink_clock_domain) continue; /* already done that */
 				if (f_timing_stats->least_slack[source_clock_domain][sink_clock_domain] < HUGE_POSITIVE_FLOAT - 1) {
 					/* If this domain pair was analysed and has a valid slack */
-					vpr_printf_info("\t%s to %s: %g ns\n", 
+					vpr_printf(TIO_MESSAGE_INFO, "\t%s to %s: %g ns\n", 
 							g_sdc->constrained_clocks[source_clock_domain].name,
 							g_sdc->constrained_clocks[sink_clock_domain].name, 
 							1e9 * f_timing_stats->least_slack[source_clock_domain][sink_clock_domain]);
 				} else {
-					vpr_printf_info("\t%s to %s: --\n", 
+					vpr_printf(TIO_MESSAGE_INFO, "\t%s to %s: --\n", 
 							g_sdc->constrained_clocks[source_clock_domain].name,
 							g_sdc->constrained_clocks[sink_clock_domain].name);
 				}
@@ -3200,13 +3192,16 @@ void print_timing_stats(void) {
 		}
 	
 		/* Calculate geometric mean f_max (fanout-weighted and unweighted) from the diagonal (intra-domain) entries of critical_path_delay, 
-		excluding domains without intra-domain paths (for which the timing constraint is DO_NOT_ANALYSE) and virtual clocks. */
+		excluding domains without intra-domain paths (for which the timing constraint is DO_NOT_ANALYSE) and virtual clocks. 
+		The conventional method of calculating weighted geomean would require taking the critical path delay (on the order of 10^-8) to the power
+		of the fanout (on the order of 10^3), resulting in 0 as calculated by the computer. Therefore, we bring the calculation to the logarithmic
+		domain to prevent such extremities. The results are mathematically equivalent.*/
 		found = FALSE;
 		for (clock_domain = 0; clock_domain < g_sdc->num_constrained_clocks; clock_domain++) {
 			if (g_sdc->domain_constraint[clock_domain][clock_domain] > NEGATIVE_EPSILON && g_sdc->constrained_clocks[clock_domain].is_netlist_clock) {
 				geomean_period *= f_timing_stats->cpd[clock_domain][clock_domain];
 				fanout = g_sdc->constrained_clocks[clock_domain].fanout;
-				fanout_weighted_geomean_period *= pow((double) f_timing_stats->cpd[clock_domain][clock_domain], fanout);
+				fanout_weighted_geomean_period += log((double) f_timing_stats->cpd[clock_domain][clock_domain])*(double)fanout;
 				total_fanout += fanout;
 				num_netlist_clocks_with_intra_domain_paths++;
 				found = TRUE;
@@ -3214,16 +3209,16 @@ void print_timing_stats(void) {
 		}
 		if (found) { /* Only print these if we found at least one clock domain with intra-domain paths. */
 			geomean_period = pow(geomean_period, (float) 1/num_netlist_clocks_with_intra_domain_paths);
-			fanout_weighted_geomean_period = pow(fanout_weighted_geomean_period, (double) 1/total_fanout);
+			fanout_weighted_geomean_period = exp(fanout_weighted_geomean_period/total_fanout);
 			/* Convert to MHz */
-			vpr_printf_info("\n");
-			vpr_printf_info("Geometric mean intra-domain period: %g ns (%g MHz)\n", 
+			vpr_printf(TIO_MESSAGE_INFO, "\n");
+			vpr_printf(TIO_MESSAGE_INFO, "Geometric mean intra-domain period: %g ns (%g MHz)\n", 
 					1e9 * geomean_period, 1e-6 / geomean_period);
-			vpr_printf_info("Fanout-weighted geomean intra-domain period: %g ns (%g MHz)\n", 
+			vpr_printf(TIO_MESSAGE_INFO, "Fanout-weighted geomean intra-domain period: %g ns (%g MHz)\n", 
 					1e9 * fanout_weighted_geomean_period, 1e-6 / fanout_weighted_geomean_period);
 		}
 
-		vpr_printf_info("\n");
+		vpr_printf(TIO_MESSAGE_INFO, "\n");
 	}
 }
 
@@ -3258,7 +3253,7 @@ static void print_timing_constraint_info(const char *fname) {
 	for (sink_clock_domain = 0; sink_clock_domain < g_sdc->num_constrained_clocks; sink_clock_domain++) {
 		fprintf(fp, "%s", g_sdc->constrained_clocks[sink_clock_domain].name);
 		/* Minimum column width of 8 */
-		print_spaces(fp, max(8 - clock_name_length[sink_clock_domain], 4));
+		print_spaces(fp, std::max(8 - clock_name_length[sink_clock_domain], 4));
 	}
 	fprintf(fp, "\n");
 
@@ -3268,7 +3263,7 @@ static void print_timing_constraint_info(const char *fname) {
 		for (sink_clock_domain = 0; sink_clock_domain < g_sdc->num_constrained_clocks; sink_clock_domain++) {
 			fprintf(fp, "%5.2f", g_sdc->domain_constraint[source_clock_domain][sink_clock_domain]);
 			/* Minimum column width of 8 */
-			print_spaces(fp, max(clock_name_length[sink_clock_domain] - 1, 3));
+			print_spaces(fp, std::max(clock_name_length[sink_clock_domain] - 1, 3));
 		}
 		fprintf(fp, "\n");
 	}
