@@ -3094,7 +3094,7 @@ void print_timing_stats(void) {
 	int source_clock_domain, sink_clock_domain, clock_domain, fanout, total_fanout = 0, 
 		num_netlist_clocks_with_intra_domain_paths = 0;
 	float geomean_period = 1., least_slack_in_design = HUGE_POSITIVE_FLOAT, critical_path_delay = UNDEFINED;
-	double fanout_weighted_geomean_period = 1.;
+	double fanout_weighted_geomean_period = 0.;
 	boolean found;
 
 	/* Find critical path delay. If the pb_max_internal_delay is greater than this, it becomes
@@ -3206,7 +3206,7 @@ void print_timing_stats(void) {
 			if (g_sdc->domain_constraint[clock_domain][clock_domain] > NEGATIVE_EPSILON && g_sdc->constrained_clocks[clock_domain].is_netlist_clock) {
 				geomean_period *= f_timing_stats->cpd[clock_domain][clock_domain];
 				fanout = g_sdc->constrained_clocks[clock_domain].fanout;
-				fanout_weighted_geomean_period *= pow((double) f_timing_stats->cpd[clock_domain][clock_domain], fanout);
+				fanout_weighted_geomean_period += log((double) f_timing_stats->cpd[clock_domain][clock_domain])*(double)fanout;
 				total_fanout += fanout;
 				num_netlist_clocks_with_intra_domain_paths++;
 				found = TRUE;
@@ -3214,7 +3214,7 @@ void print_timing_stats(void) {
 		}
 		if (found) { /* Only print these if we found at least one clock domain with intra-domain paths. */
 			geomean_period = pow(geomean_period, (float) 1/num_netlist_clocks_with_intra_domain_paths);
-			fanout_weighted_geomean_period = pow(fanout_weighted_geomean_period, (double) 1/total_fanout);
+			fanout_weighted_geomean_period = exp(fanout_weighted_geomean_period/total_fanout);
 			/* Convert to MHz */
 			vpr_printf_info("\n");
 			vpr_printf_info("Geometric mean intra-domain period: %g ns (%g MHz)\n", 
