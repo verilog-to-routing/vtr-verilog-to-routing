@@ -1394,7 +1394,6 @@ void print_timing_graph(const char *fname) {
 	t_tedge *tedge;
 	e_tnode_type itype;
 	const char *tnode_type_names[] = {  "TN_INPAD_SOURCE", "TN_INPAD_OPIN", "TN_OUTPAD_IPIN",
-
 			"TN_OUTPAD_SINK", "TN_CB_IPIN", "TN_CB_OPIN", "TN_INTERMEDIATE_NODE",
 			"TN_PRIMITIVE_IPIN", "TN_PRIMITIVE_OPIN", "TN_FF_IPIN", "TN_FF_OPIN", "TN_FF_SINK",
 			"TN_FF_SOURCE", "TN_FF_CLOCK", "TN_CONSTANT_GEN_SOURCE" };
@@ -1422,7 +1421,7 @@ void print_timing_graph(const char *fname) {
 		if (itype == TN_FF_CLOCK || itype == TN_FF_SOURCE || itype == TN_FF_SINK) {
 			fprintf(fp, "%d\t%.3e\t\t", tnode[inode].clock_domain, tnode[inode].clock_delay);
 		} else if (itype == TN_INPAD_SOURCE) {
-			fprintf(fp, "%d\t\t%.3e\t", tnode[inode].clock_domain, tnode[inode].out_edges[0].Tdel);
+			fprintf(fp, "%d\t\t%.3e\t", tnode[inode].clock_domain, tnode[inode].out_edges ? tnode[inode].out_edges[0].Tdel : -1);
 		} else if (itype == TN_OUTPAD_SINK) {
 			assert(tnode[inode-1].type == TN_OUTPAD_IPIN); /* Outpad ipins should be one prior in the tnode array */
 			fprintf(fp, "%d\t\t%.3e\t", tnode[inode].clock_domain, tnode[inode-1].out_edges[0].Tdel);
@@ -1458,7 +1457,8 @@ void print_timing_graph(const char *fname) {
 	for (i = 0; i < num_nets; i++)
 		fprintf(fp, "%4d\t%6d\n", i, f_net_to_driver_tnode[i]);
 
-	if (g_sdc->num_constrained_clocks == 1) {
+	if (g_sdc && g_sdc->num_constrained_clocks == 1) {
+
 		/* Arrival and required times, and forward and backward weights, will be meaningless for multiclock
 		designs, since the values currently on the graph will only correspond to the most recent traversal. */
 		fprintf(fp, "\n\nNode #\t\tT_arr\t\tT_req"
@@ -3087,7 +3087,7 @@ void print_timing_stats(void) {
 	int source_clock_domain, sink_clock_domain, clock_domain, fanout, total_fanout = 0, 
 		num_netlist_clocks_with_intra_domain_paths = 0;
 	float geomean_period = 1., least_slack_in_design = HUGE_POSITIVE_FLOAT, critical_path_delay = UNDEFINED;
-	double fanout_weighted_geomean_period = 0.;
+	double fanout_weighted_geomean_period = 1.;
 	boolean found;
 
 	/* Find critical path delay. If the pb_max_internal_delay is greater than this, it becomes
@@ -3192,16 +3192,13 @@ void print_timing_stats(void) {
 		}
 	
 		/* Calculate geometric mean f_max (fanout-weighted and unweighted) from the diagonal (intra-domain) entries of critical_path_delay, 
-		excluding domains without intra-domain paths (for which the timing constraint is DO_NOT_ANALYSE) and virtual clocks. 
-		The conventional method of calculating weighted geomean would require taking the critical path delay (on the order of 10^-8) to the power
-		of the fanout (on the order of 10^3), resulting in 0 as calculated by the computer. Therefore, we bring the calculation to the logarithmic
-		domain to prevent such extremities. The results are mathematically equivalent.*/
+		excluding domains without intra-domain paths (for which the timing constraint is DO_NOT_ANALYSE) and virtual clocks. */
 		found = FALSE;
 		for (clock_domain = 0; clock_domain < g_sdc->num_constrained_clocks; clock_domain++) {
 			if (g_sdc->domain_constraint[clock_domain][clock_domain] > NEGATIVE_EPSILON && g_sdc->constrained_clocks[clock_domain].is_netlist_clock) {
 				geomean_period *= f_timing_stats->cpd[clock_domain][clock_domain];
 				fanout = g_sdc->constrained_clocks[clock_domain].fanout;
-				fanout_weighted_geomean_period += log((double) f_timing_stats->cpd[clock_domain][clock_domain])*(double)fanout;
+				fanout_weighted_geomean_period *= pow((double) f_timing_stats->cpd[clock_domain][clock_domain], fanout);
 				total_fanout += fanout;
 				num_netlist_clocks_with_intra_domain_paths++;
 				found = TRUE;
@@ -3209,7 +3206,7 @@ void print_timing_stats(void) {
 		}
 		if (found) { /* Only print these if we found at least one clock domain with intra-domain paths. */
 			geomean_period = pow(geomean_period, (float) 1/num_netlist_clocks_with_intra_domain_paths);
-			fanout_weighted_geomean_period = exp(fanout_weighted_geomean_period/total_fanout);
+			fanout_weighted_geomean_period = pow(fanout_weighted_geomean_period, (double) 1/total_fanout);
 			/* Convert to MHz */
 			vpr_printf(TIO_MESSAGE_INFO, "\n");
 			vpr_printf(TIO_MESSAGE_INFO, "Geometric mean intra-domain period: %g ns (%g MHz)\n", 
