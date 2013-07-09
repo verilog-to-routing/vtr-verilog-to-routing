@@ -246,7 +246,6 @@
     <ClInclude Include="SRC\base\draw.h" />
     <ClInclude Include="SRC\base\easygl_constants.h" />
     <ClInclude Include="SRC\base\globals.h" />
-    <ClInclude Include="SRC\base\globals_declare.h" />
     <ClInclude Include="SRC\base\graphics.h" />
     <ClInclude Include="SRC\base\OptionTokens.h" />
     <ClInclude Include="SRC\base\place_and_route.h" />

@@ -272,9 +272,6 @@
     <ClInclude Include="SRC\base\globals.h">
       <Filter>Header Files\base</Filter>
     </ClInclude>
-    <ClInclude Include="SRC\base\globals_declare.h">
-      <Filter>Header Files\base</Filter>
-    </ClInclude>
     <ClInclude Include="SRC\base\graphics.h">
       <Filter>Header Files\base</Filter>
     </ClInclude>
