@@ -1061,6 +1061,8 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 		assert(i == pb_type->num_modes);
 	}
 
+	pb_port_names.clear();
+	mode_names.clear();
 	ProcessPb_TypePower(Parent, pb_type);
 
 }
@@ -1401,6 +1403,7 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 		}
 	}
 
+	interc_names.clear();
 	assert(i == num_interconnect);
 }
 
@@ -1452,9 +1455,13 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode,
 	/* Allocate power structure */
 	mode->mode_power = (t_mode_power*) my_calloc(1, sizeof(t_mode_power));
 
+	/* Clear STL map used for duplicate checks */
+	pb_type_names.clear();
+
 	Cur = FindElement(Parent, "interconnect", TRUE);
 	ProcessInterconnect(Cur, mode);
 	FreeNode(Cur);
+
 }
 
 /* Takes in the node ptr for the 'fc_in' and 'fc_out' elements and initializes
@@ -1874,6 +1881,8 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 		child = ezxml_next(child);
 		FreeNode(junk);
 	}
+	model_port_map.clear();
+	model_name_map.clear();
 	return;
 }
 
@@ -2614,6 +2623,7 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 		vpr_throw(VPR_ERROR_ARCH, arch_file_name, 0, 
 			"grid location type 'fill' must be specified.\n");
 	}
+	pb_type_descriptors.clear();
 }
 
 /* Loads the given architecture file. Currently only

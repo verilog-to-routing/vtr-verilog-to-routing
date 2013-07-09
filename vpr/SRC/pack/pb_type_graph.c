@@ -33,6 +33,8 @@ static struct s_linked_vptr *num_edges_head;
  */
 
 static int check_pb_graph(void);
+//static void check_pb_graph_open_pins(const INP t_pb_graph_node *pb_graph_node);
+static void check_repeated_edges(void);
 static void alloc_and_load_pb_graph(INOUTP t_pb_graph_node *pb_graph_node,
 		INP t_pb_graph_node *parent_pb_graph_node, INP t_pb_type *pb_type,
 		INP int index, boolean load_power_structures);
@@ -86,6 +88,9 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins * interc_pins,
 		t_pb_graph_pin *** output_pins, int num_output_sets,
 		int * num_output_pins);
 
+static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
+				const struct s_pb_graph_edge_comparator & edge2);
+
 /**
  * Allocate memory into types and load the pb graph with interconnect edges 
  */
@@ -117,6 +122,7 @@ void alloc_and_load_all_pb_graphs(boolean load_power_structures) {
 		vpr_printf_error(__FILE__, __LINE__, "in pb graph");
 		exit(1);
 	}
+
 	for (i = 0; i < num_types; i++) {
 		if (type_descriptors[i].pb_type) {
 			load_pb_graph_pin_to_pin_annotations(
@@ -162,24 +168,6 @@ void echo_pb_graph(char * filename) {
 	}
 
 	fclose(fp);
-}
-
-/**
- * check pb_type graph and return the number of errors
- */
-static int check_pb_graph(void) {
-
-	int num_errors;
-	/* TODO: Error checks to do 
-	 1.  All pin and edge connections are bidirectional and match each other
-	 2.  All pb_type names are unique in a namespace
-	 3.  All ports are unique in a pb_type
-	 4.  Number of pb of a pb_type in graph is the same as requested number
-	 5.  All pins are connected to edges
-	 */
-	num_errors = 0;
-
-	return num_errors;
 }
 
 static void alloc_and_load_pb_graph(INOUTP t_pb_graph_node *pb_graph_node,
@@ -1631,3 +1619,162 @@ static void echo_pb_pins(INP t_pb_graph_pin **pb_graph_pins, INP int num_ports,
 	}
 }
 
+/**
+ * check pb_type graph and return the number of errors
+ */
+static int check_pb_graph(void) {
+
+	int num_errors;
+	/* TODO: Error checks to do 
+	 1.  All pin and edge connections are bidirectional and match each other
+	 2.  All pb_type names are unique in a namespace
+	 3.  All ports are unique in a pb_type
+	 4.  Number of pb of a pb_type in graph is the same as requested number
+	 5.  All pins are connected to edges
+	 */
+
+	//for (i = 0; i < num_types; i++) {
+	//	if (type_descriptors[i].pb_graph_head)
+	//		check_pb_graph_open_pins(type_descriptors[i].pb_graph_head);
+	//}
+
+	check_repeated_edges();
+	num_errors = 0;
+
+	return num_errors;
+}
+
+//static void check_pb_graph_open_pins(const INP t_pb_graph_node *pb_graph_node){
+//	
+//	int i, j, k;
+//	t_pb_graph_pin *pin_pointer; /* [0..num_input_ports-1] [0..num_port_pins-1]*/
+//
+//	for(i = 0; i < pb_graph_node->num_input_ports; i++){
+//		for(j = 0; j < pb_graph_node->num_input_pins[i]; j++){
+//			pin_pointer = &pb_graph_node->input_pins[i][j];
+//			if((pb_graph_node->parent_pb_graph_node == NULL && pin_pointer->num_output_edges == 0) ||
+//				(pb_graph_node->pb_type->num_modes == 0 && pin_pointer->num_input_edges == 0) ||
+//				(pb_graph_node->parent_pb_graph_node && pb_graph_node->pb_type->num_modes && 
+//				 (pin_pointer->num_output_edges == 0 || pin_pointer->num_input_edges == 0))){
+//					vpr_printf_warning(__FILE__, __LINE__,
+//						"PB '%s'/Port '%s'/Pin %d may have no connections\n",
+//						pb_graph_node->pb_type->name, 
+//						pin_pointer->port->name, 
+//						pin_pointer->pin_number);
+//			}
+//		}
+//	}
+//	for(i = 0; i < pb_graph_node->num_output_ports; i ++){
+//		for(j = 0; j < pb_graph_node->num_output_pins[i]; j++){
+//			pin_pointer = &pb_graph_node->output_pins[i][j];
+//			if((pb_graph_node->parent_pb_graph_node == NULL && pin_pointer->num_input_edges == 0) ||
+//				(pb_graph_node->pb_type->num_modes == 0 && pin_pointer->num_output_edges == 0) ||
+//				(pb_graph_node->parent_pb_graph_node && pb_graph_node->pb_type->num_modes && 
+//				 (pin_pointer->num_output_edges == 0 || pin_pointer->num_input_edges == 0))){
+//					vpr_printf_warning(__FILE__, __LINE__,
+//						"PB '%s'/Port '%s'/Pin %d may have no connections\n",
+//						pb_graph_node->pb_type->name, 
+//						pin_pointer->port->name, 
+//						pin_pointer->pin_number);
+//			}
+//		}
+//	}
+//	for(i = 0; i < pb_graph_node->num_clock_ports; i ++){
+//		for(j = 0; j < pb_graph_node->num_clock_pins[i]; j++){
+//			pin_pointer = &pb_graph_node->clock_pins[i][j];
+//			if((pb_graph_node->parent_pb_graph_node == NULL && pin_pointer->num_output_edges == 0) ||
+//				(pb_graph_node->pb_type->num_modes == 0 && pin_pointer->num_input_edges == 0) ||
+//				(pb_graph_node->parent_pb_graph_node && pb_graph_node->pb_type->num_modes && 
+//				 (pin_pointer->num_output_edges == 0 || pin_pointer->num_input_edges == 0))){
+//					vpr_printf_warning(__FILE__, __LINE__,
+//						"PB '%s'/Port '%s'/Pin %d may have no connections\n",
+//						pb_graph_node->pb_type->name, 
+//						pin_pointer->port->name, 
+//						pin_pointer->pin_number);
+//			}
+//		}
+//	}
+//
+//	for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
+//		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
+//			for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
+//				check_pb_graph_open_pins(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
+//			}
+//		}
+//	}
+//}
+
+
+/* Date:July 9th, 2013								*
+ * Author: Daniel Chen								*
+ * Purpose: Checks for repeated edges in the pb		*
+ *			 type graph								*/
+
+static void check_repeated_edges(void){
+
+	t_linked_vptr* cur_edges_set;
+	t_linked_vptr*	cur_edges_set_num;
+	t_pb_graph_edge* cur_edge;
+	int i, j, k, num_edges_in_set;
+	t_pb_graph_edge_comparator edges_info;
+	map<t_pb_graph_edge_comparator, int> edges_map;
+	pair<map<t_pb_graph_edge_comparator,int>::iterator,bool> ret_edges_map;
+
+	cur_edges_set = edges_head;
+	cur_edges_set_num = num_edges_head;
+
+	while(cur_edges_set && cur_edges_set_num){
+		num_edges_in_set = (int)cur_edges_set_num->data_vptr;
+		for(i = 0; i < num_edges_in_set; i++){
+			cur_edge = &((t_pb_graph_edge*)cur_edges_set->data_vptr)[i];
+			for(j = 0; j < cur_edge->num_input_pins; j++){
+				for(k = 0; k < cur_edge->num_output_pins; k++){
+					edges_info.parent_edge = cur_edge;
+					edges_info.input_pin = cur_edge->input_pins[j];
+					edges_info.output_pin = cur_edge->output_pins[k];
+					edges_info.input_pin_id_in_cluster = cur_edge->input_pins[j]->pin_count_in_cluster;
+					edges_info.output_pin_id_in_cluster = cur_edge->output_pins[k]->pin_count_in_cluster;
+					ret_edges_map = edges_map.insert(pair<t_pb_graph_edge_comparator, int>(edges_info,0));
+					if(!ret_edges_map.second){
+						vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), cur_edge->interconnect->line_num, 
+							"Duplicate edges detected between: \n" 
+							"%s[%d].%s[%d]--->%s[%d].%s[%d](Line %d) \n"
+							"%s[%d].%s[%d]--->%s[%d].%s[%d](Line %d).\n",
+							ret_edges_map.first->first.input_pin->parent_node->pb_type->name, 
+							ret_edges_map.first->first.input_pin->parent_node->placement_index,
+							ret_edges_map.first->first.input_pin->port->name, 
+							ret_edges_map.first->first.input_pin->pin_number,
+							ret_edges_map.first->first.output_pin->parent_node->pb_type->name,
+							ret_edges_map.first->first.output_pin->parent_node->placement_index,
+							ret_edges_map.first->first.output_pin->port->name, 
+							ret_edges_map.first->first.output_pin->pin_number,
+							ret_edges_map.first->first.parent_edge->interconnect->line_num,
+							cur_edge->input_pins[j]->parent_node->pb_type->name, 
+							cur_edge->input_pins[j]->parent_node->placement_index,
+							cur_edge->input_pins[j]->port->name, 
+							cur_edge->input_pins[j]->pin_number,
+							cur_edge->output_pins[k]->parent_node->pb_type->name, 
+							cur_edge->output_pins[k]->parent_node->placement_index,
+							cur_edge->output_pins[k]->port->name, 
+							cur_edge->output_pins[k]->pin_number,
+							cur_edge->interconnect->line_num);
+					}
+				}
+			}
+		}
+		cur_edges_set = cur_edges_set->next;
+		cur_edges_set_num = cur_edges_set_num->next;
+	}
+	edges_map.clear();
+}
+
+/* Date:July 9th, 2013												*
+ * Author: Daniel Chen												*
+ * Purpose: Less-than operator for t_pb_graph_edge_comparator,		*
+ *			 used for comparing key types in edges_map that			*
+ *			 checks for repeated edges in the graph					*/
+static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
+				const struct s_pb_graph_edge_comparator & edge2){
+	return (edge1.input_pin_id_in_cluster < edge2.input_pin_id_in_cluster) || 
+		(edge1.output_pin_id_in_cluster < edge2.output_pin_id_in_cluster);
+}
