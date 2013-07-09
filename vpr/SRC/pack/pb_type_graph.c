@@ -1724,7 +1724,7 @@ static void check_repeated_edges(void){
 	cur_edges_set_num = num_edges_head;
 
 	while(cur_edges_set && cur_edges_set_num){
-		num_edges_in_set = (int)cur_edges_set_num->data_vptr;
+		num_edges_in_set = (long)cur_edges_set_num->data_vptr;
 		for(i = 0; i < num_edges_in_set; i++){
 			cur_edge = &((t_pb_graph_edge*)cur_edges_set->data_vptr)[i];
 			for(j = 0; j < cur_edge->num_input_pins; j++){
