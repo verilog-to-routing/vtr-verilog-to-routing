@@ -56,7 +56,7 @@ char *my_strncpy(char *dest, const char *src, size_t size) {
 /* Uses global var 'out_file_prefix' */
 FILE *my_fopen(const char *fname, const char *flag, int prompt) {
 	FILE *fp;
-	int Len;
+	size_t Len;
 	char *new_fname = NULL;
 	char prompt_filename[256];
 
@@ -99,7 +99,7 @@ FILE *my_fopen(const char *fname, const char *flag, int prompt) {
 }
 
 char *my_strdup(const char *str) {
-	int Len;
+	size_t Len;
 	char *Dst;
 
 	if (str == NULL ) {

@@ -94,21 +94,21 @@ void vpr_print_usage(void) {
 	vpr_printf_info("General Options:  [--nodisp] [--auto <int>] [--pack]\n");
 	vpr_printf_info("\t[--place] [--route] [--timing_analyze_only_with_net_delay <float>]\n");
 	vpr_printf_info("\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
-	vpr_printf_info("\t[--blif_file <string>][--net_file <string>][--place_file <string>]\n");
-	vpr_printf_info("\t[--route_file <string>][--sdc_file <string>][--echo_file on | off]\n");
+	vpr_printf_info("\t[--blif_file <string>] [--net_file <string>] [--place_file <string>]\n");
+	vpr_printf_info("\t[--route_file <string>] [--sdc_file <string>] [--echo_file on | off]\n");
 	vpr_printf_info("\n");
 	vpr_printf_info("Packer Options:\n");
-	/* vpr_printf_info("\t[-global_clocks on|off]\n"); */
-	/* vpr_printf_info("\t[-hill_climbing on|off]\n"); */
-	/* vpr_printf_info("\t[-sweep_hanging_nets_and_inputs on|off]\n"); */
-	vpr_printf_info("\t[--timing_driven_clustering on|off]\n");
+	/* vpr_printf_info("\t[-global_clocks on | off]\n"); */
+	/* vpr_printf_info("\t[-hill_climbing on | off]\n"); */
+	/* vpr_printf_info("\t[-sweep_hanging_nets_and_inputs on | off]\n"); */
+	vpr_printf_info("\t[--timing_driven_clustering on | off]\n");
 	vpr_printf_info("\t[--cluster_seed_type timing|max_inputs] [--alpha_clustering <float>] [--beta_clustering <float>]\n");
 	/* vpr_printf_info("\t[-recompute_timing_after <int>] [-cluster_block_delay <float>]\n"); */
-	vpr_printf_info("\t[--allow_unrelated_clustering on|off]\n");
-	/* vpr_printf_info("\t[-allow_early_exit on|off]\n"); */
+	vpr_printf_info("\t[--allow_unrelated_clustering on | off]\n");
+	/* vpr_printf_info("\t[-allow_early_exit on | off]\n"); */
 	/* vpr_printf_info("\t[-intra_cluster_net_delay <float>] \n"); */
 	/* vpr_printf_info("\t[-inter_cluster_net_delay <float>] \n"); */
-	vpr_printf_info("\t[--connection_driven_clustering on|off] \n");
+	vpr_printf_info("\t[--connection_driven_clustering on | off] \n");
 	vpr_printf_info("\n");
 	vpr_printf_info("Placer Options:\n");
 	vpr_printf_info("\t[--place_algorithm bounding_box | net_timing_driven | path_timing_driven]\n");
@@ -133,7 +133,7 @@ void vpr_print_usage(void) {
 	vpr_printf_info("\t[--bend_cost <float>] [--route_type global | detailed]\n");
 	vpr_printf_info("\t[--verify_binary_search] [--route_chan_width <int>] [--route_chan_trim on | off]\n");
 	vpr_printf_info("\t[--router_algorithm breadth_first | timing_driven]\n");
-	vpr_printf_info(  "\t[--base_cost_type intrinsic_delay | delay_normalized | demand_only]\n");
+	vpr_printf_info("\t[--base_cost_type intrinsic_delay | delay_normalized | demand_only]\n");
 	vpr_printf_info("\n");
 	vpr_printf_info("Routing options valid only for timing-driven routing:\n");
 	vpr_printf_info("\t[--astar_fac <float>] [--max_criticality <float>]\n");
