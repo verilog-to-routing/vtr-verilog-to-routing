@@ -86,6 +86,11 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins * interc_pins,
 		t_pb_graph_pin *** output_pins, int num_output_sets,
 		int * num_output_pins);
 
+static void check_repeated_edges_at_pb_node(INP const t_pb_graph_node* pb_graph_node);
+static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin);
+static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
+				const struct s_pb_graph_edge_comparator & edge2);
+
 /**
  * Allocate memory into types and load the pb graph with interconnect edges 
  */
@@ -169,7 +174,7 @@ void echo_pb_graph(char * filename) {
  */
 static int check_pb_graph(void) {
 
-	int num_errors;
+	int i, num_errors;
 	/* TODO: Error checks to do 
 	 1.  All pin and edge connections are bidirectional and match each other
 	 2.  All pb_type names are unique in a namespace
@@ -178,7 +183,11 @@ static int check_pb_graph(void) {
 	 5.  All pins are connected to edges
 	 */
 	num_errors = 0;
-
+	for (i = 0; i < num_types; i++) {
+		if(type_descriptors[i].pb_type){
+			check_repeated_edges_at_pb_node(type_descriptors[i].pb_graph_head);
+		}
+	}
 	return num_errors;
 }
 
@@ -1631,3 +1640,104 @@ static void echo_pb_pins(INP t_pb_graph_pin **pb_graph_pins, INP int num_ports,
 	}
 }
 
+/* Date:July 10th, 2013												
+ * Author: Daniel Chen											
+ * Purpose: This subroutine traverses through all the pins within
+ *			 a single pb_graph node and checks for repeated edges connected	
+ *			 to the pins. It is then recursively invoked to traverse through 
+ *			 the entire pb_graph.
+ */
+
+static void check_repeated_edges_at_pb_node(INP const t_pb_graph_node* pb_graph_node){
+	
+	int i, j, k;
+
+	for(i = 0; i < pb_graph_node->num_input_ports; i++){
+		for(j = 0; j < pb_graph_node->num_input_pins[i]; j++){
+			check_repeated_edges_at_pb_pin(&pb_graph_node->input_pins[i][j]);
+		}
+	}
+
+	for(i = 0; i < pb_graph_node->num_output_ports; i++){
+		for(j = 0; j < pb_graph_node->num_output_pins[i]; j++){
+			check_repeated_edges_at_pb_pin(&pb_graph_node->output_pins[i][j]);
+		}
+	}
+
+	for(i = 0; i < pb_graph_node->num_clock_ports; i++){
+		for(j = 0; j < pb_graph_node->num_clock_pins[i]; j++){
+			check_repeated_edges_at_pb_pin(&pb_graph_node->clock_pins[i][j]);
+		}
+	}
+
+	for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
+		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
+			for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
+				check_repeated_edges_at_pb_node(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
+			}
+		}
+	}
+}
+
+/* Date:July 10th, 2013												
+ * Author: Daniel Chen											
+ * Purpose: This subroutine traverses through all the edges associated
+ *			 with a single pb_graph_pin and checks for repeated edges connected	
+ *			 to it. Note: This only checks for incoming edges at a pin, since
+ *			 all edges must land on a pin, by traversing all the incoming 
+ *			 edges of all the pins, all edges are checked exactly once.
+ */
+static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin){
+
+	int m, n;
+	t_pb_graph_edge * cur_edge;
+	t_pb_graph_edge_comparator edges_info;
+	map<t_pb_graph_edge_comparator, int> edges_map;
+	pair<map<t_pb_graph_edge_comparator,int>::iterator,bool> ret_edges_map;
+
+	// First check the incoming edges into cur_pin
+	for(m = 0; m < cur_pin->num_input_edges; m++){
+		cur_edge = cur_pin->input_edges[m];
+		for(n = 0; n < cur_edge->num_input_pins; n++){
+			// Populate the edge_comparator struct and attempt to insert it into STL map
+			edges_info.parent_edge = cur_edge;
+			edges_info.input_pin = cur_edge->input_pins[n];
+			edges_info.output_pin = cur_pin;
+			edges_info.input_pin_id_in_cluster = cur_edge->input_pins[n]->pin_count_in_cluster;
+			edges_info.output_pin_id_in_cluster = cur_pin->pin_count_in_cluster;
+			ret_edges_map = edges_map.insert(pair<t_pb_graph_edge_comparator, int>(edges_info,0));
+			if(!ret_edges_map.second){
+				// Print out the connection that already exists in the map and then the new one 
+				// we are trying to insert into the map.
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), cur_edge->interconnect->line_num, 
+					"Duplicate edges detected between: \n" 
+					"%s[%d].%s[%d]--->%s[%d].%s[%d] \n"
+					"Found edges on line %d and %d.\n",
+					ret_edges_map.first->first.input_pin->parent_node->pb_type->name, 
+					ret_edges_map.first->first.input_pin->parent_node->placement_index,
+					ret_edges_map.first->first.input_pin->port->name, 
+					ret_edges_map.first->first.input_pin->pin_number,
+					ret_edges_map.first->first.output_pin->parent_node->pb_type->name,
+					ret_edges_map.first->first.output_pin->parent_node->placement_index,
+					ret_edges_map.first->first.output_pin->port->name, 
+					ret_edges_map.first->first.output_pin->pin_number,
+					ret_edges_map.first->first.parent_edge->interconnect->line_num,
+					cur_edge->interconnect->line_num);
+			}
+		}
+	}
+
+	edges_map.clear();
+}
+
+/* Date:July 9th, 2013												
+ * Author: Daniel Chen											
+ * Purpose: Less-than operator for t_pb_graph_edge_comparator,	
+ *			 used for comparing key types in edges_map that		
+ *			 checks for repeated edges in the pb_graph		
+ */
+static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
+				const struct s_pb_graph_edge_comparator & edge2){
+	return (edge1.input_pin_id_in_cluster < edge2.input_pin_id_in_cluster) || 
+		(edge1.output_pin_id_in_cluster < edge2.output_pin_id_in_cluster);
+}

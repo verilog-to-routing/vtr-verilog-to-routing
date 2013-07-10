@@ -1,6 +1,14 @@
 #ifndef PB_TYPE_GRAPH_H
 #define PB_TYPE_GRAPH_H
 
+typedef struct s_pb_graph_edge_comparator{
+	int input_pin_id_in_cluster;
+	int output_pin_id_in_cluster;
+	s_pb_graph_pin* input_pin;
+	s_pb_graph_pin* output_pin;
+	s_pb_graph_edge* parent_edge;
+}t_pb_graph_edge_comparator;
+
 void alloc_and_load_all_pb_graphs(boolean load_power_structures);
 void echo_pb_graph(char * filename);
 void free_all_pb_graph_nodes(void);
