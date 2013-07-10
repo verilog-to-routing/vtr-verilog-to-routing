@@ -73,7 +73,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port,
 		e_power_estimation_method power_method);
 static void ProcessPinToPinAnnotations(ezxml_t parent,
-		t_pin_to_pin_annotation *annotation);
+		t_pin_to_pin_annotation *annotation, t_pb_type * parent_pb_type);
 static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode);
 static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode,
 		boolean * default_leakage_mode);
@@ -128,6 +128,8 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 e_power_estimation_method power_method_inherited(
 		e_power_estimation_method parent_power_method);
 static void CheckXMLTagOrder(ezxml_t Parent);
+static void ff_primtives_annotation_clock_match(t_pin_to_pin_annotation *annotation, 
+	t_pb_type * parent_pb_type);
 
 /* Sets up the pinloc map and pin classes for the type. Unlinks the loc nodes
  * from the XML tree.
@@ -409,9 +411,10 @@ static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {
 }
 
 static void ProcessPinToPinAnnotations(ezxml_t Parent,
-		t_pin_to_pin_annotation *annotation) {
+		t_pin_to_pin_annotation *annotation, t_pb_type * parent_pb_type) {
 	int i = 0;
 	const char *Prop;
+	ezxml_t Temp = NULL;
 
 	if (FindProperty(Parent, "max", FALSE)) {
 		i++;
@@ -526,6 +529,9 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		Prop = FindProperty(Parent, "clock", TRUE);
 		annotation->clock = my_strdup(Prop);
 		ezxml_set_attr(Parent, "clock", NULL);
+
+		ff_primtives_annotation_clock_match(annotation, parent_pb_type);
+
 	} else if (0 == strcmp(Parent->name, "T_clock_to_Q")) {
 		annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
@@ -550,6 +556,9 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		Prop = FindProperty(Parent, "clock", TRUE);
 		annotation->clock = my_strdup(Prop);
 		ezxml_set_attr(Parent, "clock", NULL);
+
+		ff_primtives_annotation_clock_match(annotation, parent_pb_type);
+
 	} else if (0 == strcmp(Parent->name, "T_hold")) {
 		annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
@@ -565,6 +574,9 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		Prop = FindProperty(Parent, "clock", TRUE);
 		annotation->clock = my_strdup(Prop);
 		ezxml_set_attr(Parent, "clock", NULL);
+
+		ff_primtives_annotation_clock_match(annotation, parent_pb_type);
+
 	} else if (0 == strcmp(Parent->name, "pack_pattern")) {
 		annotation->type = E_ANNOT_PIN_TO_PIN_PACK_PATTERN;
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
@@ -991,7 +1003,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 				Cur = FindFirstElement(Parent, "T_hold", FALSE);
 			}
 			while (Cur != NULL) {
-				ProcessPinToPinAnnotations(Cur, &pb_type->annotations[j]);
+				ProcessPinToPinAnnotations(Cur, &pb_type->annotations[j], pb_type);
 
 				/* get next iteration */
 				Prev = Cur;
@@ -1192,7 +1204,7 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port,
 		port->type = IN_PORT;
 		port->is_clock = FALSE;
 
-		/* Check LUT/FF port class is lut_in/D */
+		/* Check if LUT/FF port class is lut_in/D */
 		if(port->parent_pb_type->class_type == LUT_CLASS){
 			if((!port->port_class) || strcmp("lut_in", port->port_class)){
 				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Parent->line,
@@ -1218,7 +1230,7 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port,
 		port->type = OUT_PORT;
 		port->is_clock = FALSE;
 
-		/* Check LUT/FF port class is lut_out/Q */
+		/* Check if LUT/FF port class is lut_out/Q */
 		if(port->parent_pb_type->class_type == LUT_CLASS){
 			if((!port->port_class) || strcmp("lut_out", port->port_class)){
 				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Parent->line,
@@ -1375,7 +1387,7 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 				}
 				while (Cur2 != NULL) {
 					ProcessPinToPinAnnotations(Cur2,
-							&(mode->interconnect[i].annotations[k]));
+							&(mode->interconnect[i].annotations[k]), NULL);
 
 					/* get next iteration */
 					Prev2 = Cur2;
@@ -4029,14 +4041,15 @@ e_power_estimation_method power_method_inherited(
 	}
 }
 
-/* Date:June 28th, 2013								*
- * Author: Daniel Chen								*
- * Purpose: Checks for correctly grouped XML tag	*
- *	       ordering, vpr_throws if incorrect		*
- * Note: Used this because there is a				*
- *			bug in ezxml_cut in the ezxml library	*
- *			which seg faults with incorrectly		*
- *			grouped tags							*/
+/* Date:June 28th, 2013								
+ * Author: Daniel Chen								
+ * Purpose: Checks for correctly grouped XML tag	
+ *	       ordering, vpr_throws if incorrect		
+ * Note: Used this because there is a				
+ *			bug in ezxml_cut in the ezxml library	
+ *			which seg faults with incorrectly	
+ *			grouped tags		
+ */
 static void CheckXMLTagOrder(ezxml_t Parent){
 	
 	int i, num_tags;
@@ -4063,6 +4076,42 @@ static void CheckXMLTagOrder(ezxml_t Parent){
 		Cur = Cur->sibling; // Go to next tag with a different name on the same level 
 		free(tag_name); // Free the copied tag name
 	}
+}
+
+/* Date:July 10th, 2013								
+ * Author: Daniel Chen								
+ * Purpose: Attempts to match a clock_name specified in an 
+ *			annotation (Tsetup, Thold, Tc_to_q) with the
+ *			clock_name specified in a flipflop.	Only applies
+ *			to flipflop primitives.
+ */
+static void ff_primtives_annotation_clock_match(t_pin_to_pin_annotation *annotation, 
+	t_pb_type * parent_pb_type){
+
+	int i_port;
+	bool clock_valid = FALSE;  //Determine if annotation's clock is same as primtive's clock
+
+	if(!parent_pb_type || !annotation) {
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+			"Annotation_clock check encouters invalid annotation or primitive.\n");
+	}
+
+	for(i_port = 0; i_port < parent_pb_type->num_ports; i_port++){
+		if(parent_pb_type->ports[i_port].is_clock){
+			if(strcmp(parent_pb_type->ports[i_port].name, 
+				annotation->clock) == 0){
+				clock_valid = TRUE;
+				break;
+			}
+		}
+	}
+
+	if(!clock_valid){
+		vpr_throw(VPR_ERROR_ARCH, arch_file_name, annotation->line_num,
+			"Clock '%s' does not match any clock defined in pb_type '%s'.\n", 
+			annotation->clock, parent_pb_type->name);
+	}
+
 }
 
 /* Used by functions outside read_xml_util.c to gain access to arch filename */
