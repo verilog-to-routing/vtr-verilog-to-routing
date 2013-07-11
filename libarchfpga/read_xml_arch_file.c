@@ -414,7 +414,6 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		t_pin_to_pin_annotation *annotation, t_pb_type * parent_pb_type) {
 	int i = 0;
 	const char *Prop;
-	ezxml_t Temp = NULL;
 
 	if (FindProperty(Parent, "max", FALSE)) {
 		i++;
