@@ -983,6 +983,7 @@ typedef struct s_rr_node {
 	short fan_in;
 	short num_edges;
 	t_rr_type type;
+	const char *rr_get_type_string(); /* Retrieve rr_type as a string */
 	int *edges;
 	short *switches;
 

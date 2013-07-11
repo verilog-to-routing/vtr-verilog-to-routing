@@ -1100,8 +1100,6 @@ void print_route(char *route_file) {
 	int inet, inode, ipin, bnum, ilow, jlow, node_block_pin, iclass;
 	t_rr_type rr_type;
 	struct s_trace *tptr;
-	const char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY",
-			"INTRA_CLUSTER_EDGE" };
 	FILE *fp;
 
 	fp = fopen(route_file, "w");
@@ -1123,7 +1121,8 @@ void print_route(char *route_file) {
 					ilow = rr_node[inode].xlow;
 					jlow = rr_node[inode].ylow;
 
-					fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode, name_type[rr_type], ilow, jlow);
+					fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode, 
+							rr_node[inode].rr_get_type_string(), ilow, jlow);
 
 					if ((ilow != rr_node[inode].xhigh)
 							|| (jlow != rr_node[inode].yhigh))
@@ -1157,7 +1156,8 @@ void print_route(char *route_file) {
 
 					default:
 						vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
-							"in print_route: Unexpected traceback element type: %d (%s).\n", rr_type, name_type[rr_type]);
+								  "in print_route: Unexpected traceback element type: %d (%s).\n", 
+								  rr_type, rr_node[inode].rr_get_type_string());
 						break;
 					}
 

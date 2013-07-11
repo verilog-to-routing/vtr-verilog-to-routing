@@ -49,10 +49,27 @@ typedef struct s_clb_to_clb_directs {
 
 /******************* Variables local to this module. ***********************/
 
+/* Create an array of strings which maps to an enumeration (t_rr_type)  *
+ * defined in vpr_types.h, so a routing resource name can be identified *
+ * by its index in the array. To retrieve desired rr-type name, call    *
+ * member function rr_get_type_string() of the structure s_rr_node.     */
+static const char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN", "CHANX", 
+							"CHANY", "INTRA_CLUSTER_EDGE" };
+
 /* Used to free "chunked" memory.  If NULL, no rr_graph exists right now.  */
 static t_chunk rr_mem_ch = {NULL, 0, NULL};
 
 /* Status of current chunk being dished out by calls to my_chunk_malloc.   */
+
+/******************* Subroutines exported by rr_graph.c ********************/
+
+/* Member function of "struct s_rr_node" used to retrieve a routing *
+ * resource type string by its index, which is defined by           *
+ * "t_rr_type type".												*/
+const char *s_rr_node::rr_get_type_string()
+{
+	return name_type[type];
+}
 
 /********************* Subroutines local to this module. *******************/
 static int *****alloc_and_load_pin_to_track_map(
@@ -1939,18 +1956,16 @@ void dump_rr_graph(INP const char *file_name) {
 /* Prints all the data about node inode to file fp.                    */
 void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 
-	static const char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY", "INTRA_CLUSTER_EDGE" };
 	static const char *direction_name[] = { "OPEN", "INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION" };
 	static const char *drivers_name[] = { "OPEN", "MULTI_BUFFER", "SINGLE" };
 
 	t_rr_type rr_type = L_rr_node[inode].type;
 
 	/* Make sure we don't overrun const arrays */
-	assert((int)rr_type < (int)(sizeof(name_type) / sizeof(char *)));
 	assert((L_rr_node[inode].direction + 1) < (int)(sizeof(direction_name) / sizeof(char *)));
 	assert((L_rr_node[inode].drivers + 1) < (int)(sizeof(drivers_name) / sizeof(char *)));
 
-	fprintf(fp, "Node: %d %s ", inode, name_type[rr_type]);
+	fprintf(fp, "Node: %d %s ", inode, L_rr_node[inode].rr_get_type_string());
 	if ((L_rr_node[inode].xlow == L_rr_node[inode].xhigh)
 			&& (L_rr_node[inode].ylow == L_rr_node[inode].yhigh)) {
 		fprintf(fp, "(%d, %d) ", 

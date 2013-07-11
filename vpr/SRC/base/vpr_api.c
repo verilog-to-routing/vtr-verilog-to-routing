@@ -1046,8 +1046,6 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 
 static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 
-	const char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY", "INTRA_CLUSTER_EDGE" };
-
 	FILE *fp = my_fopen(file_name, "w", 0);
 
 	for (int i = 0; i < num_logical_nets; ++i) {
@@ -1075,7 +1073,7 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 						local_rr_graph[inode].pb_graph_pin->pin_number);
 			} else {
 				fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode,
-						name_type[(int) rr_node[inode].type],
+						rr_node[inode].rr_get_type_string(),
 						rr_node[inode].xlow, rr_node[inode].ylow);
 
 				if ((rr_node[inode].xlow != rr_node[inode].xhigh)
@@ -1111,7 +1109,7 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 					vpr_printf_error(__FILE__, __LINE__,
 							"in print_route: Unexpected traceback element type: %d (%s).\n",
 							rr_node[inode].type,
-							name_type[rr_node[inode].type]);
+							rr_node[inode].rr_get_type_string());
 					exit(1);
 					break;
 				}
