@@ -124,6 +124,8 @@ public:
 
    TAS_ConnectionFc_c fcIn;  // Defines connection box flexibility 
    TAS_ConnectionFc_c fcOut; // (ie. #of wires in channel connected to output pin)
+   TAS_ConnectionFcList_t fcPinList;
+                             // Optional list of connect box pin overrides
 
    TAS_ModeNameList_t modeNameList;   
                              // Defines physical block's internal mode list
@@ -177,7 +179,8 @@ private:
       TAS_INTERCONNECT_LIST_DEF_CAPACITY = 64,
       TAS_PORT_LIST_DEF_CAPACITY = 64,
       TAS_PIN_ASSIGN_LIST_DEF_CAPACITY = 1,
-      TAS_GRID_ASSIGN_LIST_DEF_CAPACITY = 1
+      TAS_GRID_ASSIGN_LIST_DEF_CAPACITY = 1,
+      TAS_FC_PIN_LIST_DEF_CAPACITY = 1
    };
 };
 
