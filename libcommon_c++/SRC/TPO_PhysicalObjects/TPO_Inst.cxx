@@ -403,20 +403,39 @@ void TPO_Inst_c::Print(
       printHandler.Write( pfile, 0, "/>\n" );
    }
 
+   for( size_t i = 0; i < this->place_.relativeList.GetLength( ); ++i )
+   {
+      const TPO_Relative_c& relative = *this->place_.relativeList[i];
+
+      printHandler.Write( pfile, spaceLen, "<relative name=\"%s\"", 
+                                           TIO_PSZ_STR( relative.GetName( )));
+      if( relative.GetSide( ) != TC_SIDE_UNDEFINED )
+      {
+         string srSide;
+         TC_ExtractStringSideMode( this->place_.relativeList[i]->GetSide( ), &srSide );
+         printHandler.Write( pfile, 0, " side=\"%s\"",
+                                       TIO_SR_STR( srSide ));
+      }
+      if(( relative.GetDx( ) != INT_MAX ) && 
+         ( relative.GetDy( ) != INT_MAX ))
+      {
+         printHandler.Write( pfile, 0, " dx=\"%d\" dy=\"%d\"",
+                                       relative.GetDx( ),
+                                       relative.GetDy( ));
+      }
+      if( relative.GetRotateEnable( ))
+      {
+         printHandler.Write( pfile, 0, " rotate=\"true\"" );
+      }
+      printHandler.Write( pfile, 0, "/>\n" );
+   }
+
    for( size_t i = 0; i < this->place_.regionList.GetLength( ); ++i )
    {
       string srRegion;
       this->place_.regionList[i]->ExtractString( &srRegion );
       printHandler.Write( pfile, spaceLen, "<region> %s </region>\n", 
                                            TIO_SR_STR( srRegion ));
-   }
-
-   for( size_t i = 0; i < this->place_.relativeList.GetLength( ); ++i )
-   {
-      string srRelative;
-      this->place_.relativeList[i]->ExtractString( &srRelative );
-      printHandler.Write( pfile, spaceLen, "<relative> %s </relative>\n", 
-                                           TIO_SR_STR( srRelative ));
    }
 
    spaceLen -= 3;
