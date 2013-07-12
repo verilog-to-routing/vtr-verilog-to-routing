@@ -29,7 +29,6 @@ using namespace std;
 #include "stdpccts.h"
 #include "GenericTokenBuffer.h"
 
-#include "TC_SideName.h"
 #include "TC_StringUtils.h"
 
 #include "TCD_CircuitDesign.h"
@@ -76,6 +75,7 @@ using namespace std;
 #token STATE      "[Ss][Tt][Aa][Tt][Ee]"
 #token ROUTABLE   "[Rr][Oo][Uu][Tt][Aa][Bb][Ll][Ee]"
 #token STATUS     "[Ss][Tt][Aa][Tt][Uu][Ss]"
+#token ROTATE     "[Rr][Oo][Tt][Aa][Tt]{[Aa][Bb][Ll]}[Ee]"
 #token HIER       "[Hh][Ii][Ee][Rr]{[Aa][Rr][Cc][Hh][Yy]}"
 #token PACK       "[Pp][Aa][Cc][Kk]{[Ii][Nn][Gg]}"
 #token PLACE      "[Pp][Ll][Aa][Cc][Ee][Mm][Ee][Nn][Tt]"
@@ -83,15 +83,18 @@ using namespace std;
 #token TRACK      "[Tt][Rr][Aa][Cc][Kk]"
 #token CHANNEL    "[Cc][Hh][Aa][Nn][Nn][Ee][Ll]"
 #token SEGMENT    "[Ss][Ee][Gg][Mm][Ee][Nn][Tt]"
-#token SIDES      "[Ss][Ii][Dd][Ee]{[Ss]}"
+#token SIDE       "[Ss][Ii][Dd][Ee]{[Ss]}"
 #token LENGTH     "[Ll][Ee][Nn][Gg][Tt][Hh]"
 #token RELATIVE   "[Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee]"
 #token REGION     "[Rr][Ee][Gg][Ii][Oo][Nn]"
 
+#token SLICE      "[Ss][Ll][Ii][Cc][Ee]"
 #token X          "[Xx]"
 #token Y          "[Yy]"
 #token Z          "[Zz]"
-#token SLICE      "[Ss][Ll][Ii][Cc][Ee]"
+#token DX         "[Dd][Xx]"
+#token DY         "[Dd][Yy]"
+#token DZ         "[Dd][Zz]"
 
 #token GROUTE     "[Gg]{[Ll][Oo][Bb][Aa][Ll][_]}[Rr][Oo][Uu][Tt][Ee]"
 #token ROUTE      "[Rr][Oo][Uu][Tt][Ee]"
@@ -191,8 +194,6 @@ blockList[ TPO_InstList_t* pblockList ]
    ">"
    (  "<" 
       (  PACK hierMapList[ &hierMapList_ ] "</" PACK ">"
-      |  REGION ">" regionList[ &regionList_ ] "</" REGION ">"
-      |  RELATIVE ">" relativeList[ &relativeList_ ] "</" RELATIVE ">"
       |  PLACE 
          <<
             srPlaceFabricName = "";
@@ -215,6 +216,8 @@ blockList[ TPO_InstList_t* pblockList ]
             }
          >>
          "/>"
+      |  RELATIVE relativeList[ &relativeList_ ] "/>"
+      |  REGION ">" regionList[ &regionList_ ] "</" REGION ">"
       )
    )*
    "</" ( BLOCK | PB ) ">"
@@ -557,7 +560,7 @@ switchBoxDef[ TNO_SwitchBox_c* pswitchBox ]
    >>
    NAME { EQUAL } stringText[ &srName ]
    ">"
-   "<" SIDES ">" sideIndex[ &sideIndex_ ] sideIndex[ &sideIndex_ ] "</" SIDES ">"
+   "<" SIDE ">" sideIndex[ &sideIndex_ ] sideIndex[ &sideIndex_ ] "</" SIDE ">"
    <<
       pswitchBox->SetName( srName );
       pswitchBox->SetInput( sideIndex_ );
@@ -628,15 +631,30 @@ hierMapList[ TPO_HierMapList_t* phierMapList ]
 relativeList[ TPO_RelativeList_t* prelativeList ]
    :
    <<
-      TPO_Relative_t relative;
+      TPO_Relative_c relative;
 
       TC_SideMode_t side = TC_SIDE_UNDEFINED;
+      int dx = INT_MAX;
+      int dy = INT_MAX;
       string srName;
+      bool rotate = false;
    >>
-   sideMode[ &side ]
-   stringText[ &srName ]
+   (  NAME { EQUAL } stringText[ &srName ]
+   |  SIDE { EQUAL } sideMode[ &side ]
+   |  DX { EQUAL } intNum[ &dx ]
+   |  DY { EQUAL } intNum[ &dy ]
+   |  ROTATE { EQUAL } boolType[ &rotate ]
+   )*
    << 
-      relative.Set( side, srName );
+      if( dx == INT_MAX && dy != INT_MAX )
+      {
+         dx = 0;
+      }
+      if( dx != INT_MAX && dy == INT_MAX )
+      {
+         dy = 0;
+      }
+      relative.Set( side, dx, dy, rotate, srName );
       prelativeList->Add( relative );
    >>
    ;
@@ -1098,11 +1116,13 @@ boolType[ bool* pbool ]
       qboolVal:STRING
       <<
          pszBool = qboolVal->getText( );
-         if( TC_stricmp( pszBool, "true" ) == 0 )
+         if(( TC_stricmp( pszBool, "true" ) == 0 ) ||
+            ( TC_stricmp( pszBool, "on" ) == 0 ))
          {
             *pbool = true;
          }
-         else if( TC_stricmp( pszBool, "false" ) == 0 )
+         else if(( TC_stricmp( pszBool, "false" ) == 0 ) ||
+                 ( TC_stricmp( pszBool, "off" ) == 0 ))
          {
             *pbool = false;
          }
