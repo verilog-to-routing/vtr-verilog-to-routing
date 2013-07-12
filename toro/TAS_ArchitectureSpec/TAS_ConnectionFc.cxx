@@ -58,6 +58,7 @@ TAS_ConnectionFc_c::TAS_ConnectionFc_c(
       type( connectionFc.type ),
       percent( connectionFc.percent ),
       absolute( connectionFc.absolute ),
+      srName( connectionFc.srName ),
       dir_( connectionFc.dir_ )
 {
 }
@@ -89,6 +90,7 @@ TAS_ConnectionFc_c& TAS_ConnectionFc_c::operator=(
       this->type = connectionFc.type;
       this->percent = connectionFc.percent;
       this->absolute = connectionFc.absolute;
+      this->srName = connectionFc.srName;
       this->dir_ = connectionFc.dir_;
    }
    return( *this );
@@ -107,6 +109,7 @@ bool TAS_ConnectionFc_c::operator==(
    return(( this->type == connectionFc.type ) &&
           ( TCTF_IsEQ( this->percent, connectionFc.percent )) &&
           ( this->absolute == connectionFc.absolute ) &&
+	  ( this->srName == connectionFc.srName ) &&
           ( this->dir_ == connectionFc.dir_ ) ?
           true : false );
 }
@@ -146,6 +149,12 @@ void TAS_ConnectionFc_c::Print(
    case TC_TYPE_INPUT:  pszFc = "fc_in";  break;
    case TC_TYPE_OUTPUT: pszFc = "fc_out"; break;
    default:             pszFc = "fc";     break;
+   }
+
+   if( this->srName.length( ))
+   {
+      printHandler.Write( pfile, spaceLen, "name=\"%s\" ", 
+                                           TIO_SR_STR( this->srName ));
    }
 
    if( this->type == TAS_CONNECTION_BOX_FRACTION )
@@ -196,35 +205,45 @@ void TAS_ConnectionFc_c::PrintXML(
    const char* pszFc = "";
    switch( this->dir_ )
    {
-   case TC_TYPE_INPUT:  pszFc = "fc_in";  break;
-   case TC_TYPE_OUTPUT: pszFc = "fc_out"; break;
-   default:             pszFc = "fc";     break;
+   case TC_TYPE_INPUT:  pszFc = "default_in";  break;
+   case TC_TYPE_OUTPUT: pszFc = "default_out"; break;
+   default:             pszFc = "fc";          break;
    }
 
-   string srFcInType;
-   TAS_ExtractStringConnectionBoxType( this->type, &srFcInType );
+   string srFcType;
+   TAS_ExtractStringConnectionBoxType( this->type, &srFcType );
+
+   if( this->srName.length( ))
+   {
+      printHandler.Write( pfile, spaceLen, "<pin name=\"%s\" ",
+                                           TIO_SR_STR( this->srName ));
+   }
 
    if( this->type == TAS_CONNECTION_BOX_FRACTION )
    {
-      printHandler.Write( pfile, spaceLen, "<%s type=\"%s\">\"%0.*f\"</%s>\n",
-                                           TIO_PSZ_STR( pszFc ),
-                                           TIO_SR_STR( srFcInType ),
-                                           precision, this->percent,
-                                           TIO_PSZ_STR( pszFc ));
+      printHandler.Write( pfile, 0, "%s_type=\"%s\" %s_val=\"%0.*f\"",
+                                    TIO_PSZ_STR( pszFc ),
+                                    TIO_SR_STR( srFcType ),
+                                    TIO_PSZ_STR( pszFc ),
+                                    precision, this->percent );
    }
    else if( this->type == TAS_CONNECTION_BOX_ABSOLUTE )
    {
-      printHandler.Write( pfile, spaceLen, "<%s type=\"%s\">\"%u\"</%s>\n",
-                                           TIO_PSZ_STR( pszFc ),
-                                           TIO_SR_STR( srFcInType ),
-                                           this->absolute,
-                                           TIO_PSZ_STR( pszFc ));
+      printHandler.Write( pfile, 0, "%s_type=\"%s\" %s_val=\"%u\"",
+                                    TIO_PSZ_STR( pszFc ),
+                                    TIO_SR_STR( srFcType ),
+                                    TIO_PSZ_STR( pszFc ),
+                                    this->absolute );
    }
    else if( this->type == TAS_CONNECTION_BOX_FULL )
    {
-      printHandler.Write( pfile, spaceLen, "<%s type=\"%s\"></%s>\n",
-                                           TIO_PSZ_STR( pszFc ),
-                                           TIO_SR_STR( srFcInType ),
-                                           TIO_PSZ_STR( pszFc ));
+      printHandler.Write( pfile, 0, "%s_type=\"%s\"",
+                                    TIO_PSZ_STR( pszFc ),
+                                    TIO_SR_STR( srFcType ));
+   }
+
+   if( this->srName.length( ))
+   {
+      printHandler.Write( pfile, 0, "/>\n" );
    }
 }
