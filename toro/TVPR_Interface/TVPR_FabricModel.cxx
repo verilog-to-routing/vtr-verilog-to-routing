@@ -85,10 +85,9 @@
 using namespace std;
 
 #include "TC_NameIndex.h"
+#include "TC_StringUtils.h"
 
 #include "TIO_PrintHandler.h"
-
-#include "TNO_StringUtils.h"
 
 #include "TFH_FabricGridHandler.h"
 #include "TFH_FabricBlockHandler.h"
@@ -2310,7 +2309,7 @@ void TVPR_FabricModel_c::FindPinName_(
          const char* pszName = pvpr_pb_graph_pin->port->name;
  
          size_t index = pvpr_pb_graph_pin->pin_number;
-         TNO_FormatNameIndex( pszName, index, psrPinName );
+         TC_FormatStringNameIndex( pszName, index, psrPinName );
       }
    }
 }
