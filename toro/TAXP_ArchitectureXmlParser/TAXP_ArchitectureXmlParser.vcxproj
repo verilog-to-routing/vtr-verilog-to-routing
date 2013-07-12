@@ -56,7 +56,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VCInstallDir)include;..\TAS_ArchitectureSpec;..\TLO_LogicalObjects;..\TPO_PhysicalObjects;..\TGS_GeometricShapes;..\TIO_InputOutputHandlers;..\TC_Common;..\..\libcommon_c\pcre\SRC;..\..\libpccts\pcctsGeneric;..\..\libpccts\h</IncludePath>
+    <IncludePath>$(VCInstallDir)include;..\TAS_ArchitectureSpec;..\TLO_LogicalObjects;..\TPO_PhysicalObjects;..\TGO_GeometricObjects;..\TGS_GeometricShapes;..\TIO_InputOutputHandlers;..\TC_Common;..\..\libcommon_c\pcre\SRC;..\..\libpccts\pcctsGeneric;..\..\libpccts\h</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

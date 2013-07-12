@@ -63,7 +63,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VCInstallDir)include;..\TTP_TilePlaneObjects;..\TGS_GeometricShapes;..\TGO_GeometricObjects;..\TIO_InputOutputHandlers;..\TC_Common;..\..\vpr\SRC\base;..\..\vpr\SRC\util;..\..\libarchfpga\include;..\..\libcommon_c\pcre\SRC</IncludePath>
+    <IncludePath>$(VCInstallDir)include;..\TTP_TilePlaneObjects;..\TGS_GeometricShapes;..\TGO_GeometricObjects;..\TIO_InputOutputHandlers;..\TC_Common;..\..\vpr\SRC\base;..\..\vpr\SRC\util;..\..\vpr\SRC\place;..\..\libarchfpga\include;..\..\libcommon_c\pcre\SRC</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

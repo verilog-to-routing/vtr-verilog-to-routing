@@ -56,7 +56,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VCInstallDir)include;..\TOS_OptionsStore;..\TFS_FloorplanStore;..\TAS_ArchitectureSpec;..\TFH_FabricHandlers;..\TFM_FabricModel;..\TFV_FabricView;..\TCH_CircuitHandlers;..\TCD_CircuitDesign;..\TLO_LogicalObjects;..\TPO_PhysicalObjects;..\TNO_NetObjects;..\TTP_TilePlaneObjects;..\TGS_GeometricShapes;..\TGO_GeometricObjects;..\TIO_InputOutputHandlers;..\TC_Common;..\..\libcommon_c\pcre\SRC;..\..\vpr\SRC\base;..\..\VPR\SRC\util;..\..\libarchfpga\include</IncludePath>
+    <IncludePath>$(VCInstallDir)include;..\TOS_OptionsStore;..\TFS_FloorplanStore;..\TAS_ArchitectureSpec;..\TFH_FabricHandlers;..\TFM_FabricModel;..\TFV_FabricView;..\TCH_CircuitHandlers;..\TCD_CircuitDesign;..\TLO_LogicalObjects;..\TPO_PhysicalObjects;..\TNO_NetObjects;..\TTP_TilePlaneObjects;..\TGS_GeometricShapes;..\TGO_GeometricObjects;..\TIO_InputOutputHandlers;..\TC_Common;..\..\libcommon_c\pcre\SRC;..\..\vpr\SRC\base;..\..\VPR\SRC\util;..\..\VPR\SRC\place;..\..\libarchfpga\include</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

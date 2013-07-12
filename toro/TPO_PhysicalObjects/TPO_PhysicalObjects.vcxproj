@@ -14,6 +14,7 @@
     <ClInclude Include="TPO_HierMap.h" />
     <ClInclude Include="TPO_Inst.h" />
     <ClInclude Include="TPO_PinMap.h" />
+    <ClInclude Include="TPO_Relative.h" />
     <ClInclude Include="TPO_StringUtils.h" />
     <ClInclude Include="TPO_Typedefs.h" />
   </ItemGroup>
@@ -21,6 +22,7 @@
     <ClCompile Include="TPO_HierMap.cxx" />
     <ClCompile Include="TPO_Inst.cxx" />
     <ClCompile Include="TPO_PinMap.cxx" />
+    <ClCompile Include="TPO_Relative.cxx" />
     <ClCompile Include="TPO_StringUtils.cxx" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

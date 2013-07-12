@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TAS_ArchitectureSpec.h" />
+    <ClInclude Include="TAS_CarryChain.h" />
     <ClInclude Include="TAS_Cell.h" />
     <ClInclude Include="TAS_ChannelWidth.h" />
     <ClInclude Include="TAS_Config.h" />
@@ -30,6 +31,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TAS_ArchitectureSpec.cxx" />
+    <ClCompile Include="TAS_CarryChain.cxx" />
     <ClCompile Include="TAS_Cell.cxx" />
     <ClCompile Include="TAS_ChannelWidth.cxx" />
     <ClCompile Include="TAS_Config.cxx" />
@@ -73,7 +75,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VCInstallDir)include;..\TLO_LogicalObjects;..\TPO_PhysicalObjects;..\TGS_GeometricShapes;..\TIO_InputOutputHandlers;..\TC_Common;..\..\libcommon_c\pcre\SRC;</IncludePath>
+    <IncludePath>$(VCInstallDir)include;..\TLO_LogicalObjects;..\TPO_PhysicalObjects;..\TGO_GeometricObjects;..\TGS_GeometricShapes;..\TIO_InputOutputHandlers;..\TC_Common;..\..\libcommon_c\pcre\SRC</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

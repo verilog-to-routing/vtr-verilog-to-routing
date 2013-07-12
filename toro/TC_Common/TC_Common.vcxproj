@@ -27,6 +27,7 @@
     <ClInclude Include="TCT_SortedVector.h" />
     <ClInclude Include="TCT_Stack.h" />
     <ClInclude Include="TC_Bit.h" />
+    <ClInclude Include="TC_Index.h" />
     <ClInclude Include="TC_IndexCount.h" />
     <ClInclude Include="TC_MapTable.h" />
     <ClInclude Include="TC_MemoryUtils.h" />
@@ -44,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TC_Bit.cxx" />
+    <ClCompile Include="TC_Index.cxx" />
     <ClCompile Include="TC_IndexCount.cxx" />
     <ClCompile Include="TC_MapTable.cxx" />
     <ClCompile Include="TC_MemoryUtils.cxx" />
