@@ -33,7 +33,6 @@
 #include "TIO_PrintHandler.h"
 
 #include "TNO_Typedefs.h"
-#include "TNO_StringUtils.h"
 #include "TNO_InstPin.h"
 
 //===========================================================================//
@@ -273,8 +272,8 @@ void TNO_InstPin_c::ExtractString(
          if( this->srPortName_.length( ))
          {
             string srPortNameIndex;
-            TNO_FormatNameIndex( this->srPortName_, this->portIndex_, 
-                                 &srPortNameIndex );
+            TC_FormatStringNameIndex( this->srPortName_, this->portIndex_, 
+                                      &srPortNameIndex );
 
             *psrInstPin += psrInstPin->length( ) ? " " : "";
             *psrInstPin += "port=\"";
@@ -284,8 +283,8 @@ void TNO_InstPin_c::ExtractString(
          if( this->srPinName_.length( ))
          {
             string srPinNameIndex;
-            TNO_FormatNameIndex( this->srPinName_, this->pinIndex_, 
-                                 &srPinNameIndex );
+            TC_FormatStringNameIndex( this->srPinName_, this->pinIndex_, 
+                                      &srPinNameIndex );
 
             *psrInstPin += psrInstPin->length( ) ? " " : "";
             *psrInstPin += "pin=\"";
@@ -355,16 +354,16 @@ void TNO_InstPin_c::Set(
    if( pszPortName ) 
    {
       string srPortNameIndex;
-      TNO_FormatNameIndex( this->srPortName_, this->portIndex_, 
-                           &srPortNameIndex );
+      TC_FormatStringNameIndex( this->srPortName_, this->portIndex_, 
+                                &srPortNameIndex );
       this->srName_ += "|";
       this->srName_ += srPortNameIndex;
    }
    if( pszPinName ) 
    {
       string srPinNameIndex;
-      TNO_FormatNameIndex( this->srPinName_, this->pinIndex_, 
-                           &srPinNameIndex );
+      TC_FormatStringNameIndex( this->srPinName_, this->pinIndex_, 
+                                &srPinNameIndex );
       this->srName_ += "|";
       this->srName_ += srPinNameIndex;
    }
@@ -396,8 +395,8 @@ void TNO_InstPin_c::Set(
    size_t portIndex = TNO_PORT_INDEX_INVALID;
    size_t pinIndex = TNO_PIN_INDEX_INVALID;
 
-   TNO_ParseNameIndex( pszPortName, &srPortName, &portIndex );
-   TNO_ParseNameIndex( pszPinName, &srPinName, &pinIndex );
+   TC_ParseStringNameIndex( pszPortName, &srPortName, &portIndex );
+   TC_ParseStringNameIndex( pszPinName, &srPinName, &pinIndex );
 
    pszPortName = ( srPortName.length( ) ? srPortName.data( ) : 0 );
    pszPinName = ( srPinName.length( ) ? srPinName.data( ) : 0 );
