@@ -32,6 +32,7 @@ using namespace std;
 #include "TAS_PhysicalBlock.h"
 #include "TAS_SwitchBox.h"
 #include "TAS_Segment.h"
+#include "TAS_CarryChain.h"
 #include "TAS_Cell.h"
 
 //===========================================================================//
@@ -110,6 +111,7 @@ public:
    TAS_ModeList_t          modeList;
    TAS_SwitchBoxList_t     switchBoxList;
    TAS_SegmentList_t       segmentList;
+   TAS_CarryChainList_t    carryChainList;
    TAS_CellList_t          cellList;
 
    class TAS_ArchitectureSpecSorted_c
@@ -129,6 +131,7 @@ private:
       TAS_MODE_LIST_DEF_CAPACITY           = 8,
       TAS_SWITCH_BOX_LIST_DEF_CAPACITY     = 8,
       TAS_SEGMENT_LIST_DEF_CAPACITY        = 64,
+      TAS_CARRY_CHAIN_LIST_DEF_CAPACITY    = 1,
       TAS_CELL_LIST_DEF_CAPACITY           = 16
    };
 };
