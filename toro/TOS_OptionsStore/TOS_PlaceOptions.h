@@ -58,6 +58,7 @@ public:
                        double slackFinalWeight,
                        bool relativePlace_enable_,
                        bool relativePlace_rotateEnable_,
+                       bool relativePlace_carryChainEnable_,
                        unsigned int relativePlace_maxPlaceRetryCt_,
                        unsigned int relativePlace_maxMacroRetryCt_,
                        bool prePlaced_enable_ );
@@ -97,6 +98,8 @@ public:
 
       bool         enable;         // Enables applying relative placement constraints, if any
       bool         rotateEnable;   // Enables relative placement rotate & mirror transforms
+      bool         carryChainEnable;
+                                   // Enables relative placement carry chain override 
       unsigned int maxPlaceRetryCt;// Defines initial relative placement retry count
                                    // (default = 3)
       unsigned int maxMacroRetryCt;// Defines initial relative macro retry count
