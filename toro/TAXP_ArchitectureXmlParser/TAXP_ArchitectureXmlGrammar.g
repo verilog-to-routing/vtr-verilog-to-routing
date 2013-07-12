@@ -63,18 +63,25 @@ using namespace std;
 #token LAYOUT           "[Ll][Aa][Yy][Oo][Uu][Tt]"
 #token DEVICE           "[Dd][Ee][Vv][Ii][Cc][Ee]"
 #token MODELS           "[Mm][Oo][Dd][Ee][Ll][Ss]"
-#token SEGMENTLIST      "[Ss][Ee][Gg][Mm][Ee][Nn][Tt][Ll][Ii][Ss][Tt]"
-#token SWITCHLIST       "[Ss][Ww][Ii][Tt][Cc][Hh][Ll][Ii][Ss][Tt]"
 #token COMPLEXBLOCKLIST "[Cc][Oo][Mm][Pp][Ll][Ee][Xx][Bb][Ll][Oo][Cc][Kk][Ll][Ii][Ss][Tt]"
+#token SWITCHLIST       "[Ss][Ww][Ii][Tt][Cc][Hh][Ll][Ii][Ss][Tt]"
+#token SEGMENTLIST      "[Ss][Ee][Gg][Mm][Ee][Nn][Tt][Ll][Ii][Ss][Tt]"
+#token DIRECTLIST       "[Dd][Ii][Rr][Ee][Cc][Tt][Ll][Ii][Ss][Tt]"
 
 #token MODEL            "[Mm][Oo][Dd][Ee][Ll]"
-#token SEGMENT          "[Ss][Ee][Gg][Mm][Ee][Nn][Tt]"
 #token SWITCH           "[Ss][Ww][Ii][Tt][Cc][Hh]"
+#token SEGMENT          "[Ss][Ee][Gg][Mm][Ee][Nn][Tt]"
 #token PB_TYPE          "[Pp][Bb][_][Tt][Yy][Pp][Ee]"
 
 #token NAME             "[Nn][Aa][Mm][Ee]"
 #token TYPE             "[Tt][Yy][Pp][Ee]"
 #token FS               "[Ff][Ss]"
+
+#token FROM_PIN         "[Ff][Rr][Oo][Mm][_][Pp][Ii][Nn]"
+#token TO_PIN           "[Tt][Oo][_][Pp][Ii][Nn]"
+#token X_OFFSET         "[Xx][_][Oo][Ff][Ff][Ss][Ee][Tt]"
+#token Y_OFFSET         "[Yy][_][Oo][Ff][Ff][Ss][Ee][Tt]"
+#token Z_OFFSET         "[Zz][_][Oo][Ff][Ff][Ss][Ee][Tt]"
 
 #token NUM_PB           "[Nn][Uu][Mm][_][Pp][Bb]"
 #token CLASS            "[Cc][Ll][Aa][Ss][Ss]"
@@ -125,13 +132,16 @@ using namespace std;
 #token INPUT_PORTS      "[Ii][Nn][Pp][Uu][Tt][_][Pp][Oo][Rr][Tt][Ss]"
 #token OUTPUT_PORTS     "[Oo][Uu][Tt][Pp][Uu][Tt][_][Pp][Oo][Rr][Tt][Ss]"
 #token PORT             "[Pp][Oo][Rr][Tt]"
+#token PIN              "[Pp][Ii][Nn]"
 #token IS_CLOCK         "[Ii][Ss][_][Cc][Ll][Oo][Cc][Kk]"
 
 #token INTERCONNECT     "[Ii][Nn][Tt][Ee][Rr][Cc][Oo][Nn][Nn][Ee][Cc][Tt]"
 
+#token FC               "[Ff][Cc]"
 #token FC_IN            "[Ff][Cc][_][Ii][Nn]"
 #token FC_OUT           "[Ff][Cc][_][Oo][Uu][Tt]"
-#token FC               "[Ff][Cc]"
+#token FC_TYPE          "[Ff][Cc][_][Tt][Yy][Pp][Ee]"
+#token FC_VAL           "[Ff][Cc][_][Vv][Aa][Ll]"
 
 #token DEFAULT_IN_TYPE  "[Dd][Ee][Ff][Aa][Uu][Ll][Tt][_][Ii][Nn][_][Tt][Yy][Pp][Ee]"
 #token DEFAULT_IN_VAL   "[Dd][Ee][Ff][Aa][Uu][Ll][Tt][_][Ii][Nn][_][Vv][Aa][Ll]"
@@ -238,6 +248,7 @@ start
       |  cellList[ &this->parchitectureSpec_->cellList ]
       |  switchBoxList[ &this->parchitectureSpec_->switchBoxList ]
       |  segmentList[ &this->parchitectureSpec_->segmentList ]
+      |  directList[ &this->parchitectureSpec_->carryChainList ]
       )
    )* 
    "</" ARCHITECTURE ">"
@@ -415,6 +426,41 @@ segmentDef[ TAS_SegmentList_t* psegmentList ]
    ;
 
 //===========================================================================//
+directList[ TAS_CarryChainList_t* pcarryChainList ]
+   : 
+   DIRECTLIST ">"
+   (  directDef[ pcarryChainList ]
+   )*
+   "</" DIRECTLIST ">"
+   ;
+
+//===========================================================================//
+directDef[ TAS_CarryChainList_t* pcarryChainList ]
+   : 
+   << 
+      TAS_CarryChain_c carryChain;
+      carryChain.offset.dx = 0;
+      carryChain.offset.dy = 0;
+      carryChain.offset.dz = 0;
+   >>
+   "<" DIRECT 
+   (  NAME EQUAL stringText[ &carryChain.srName ]
+   |  FROM_PIN EQUAL stringText[ &carryChain.srFromPinName ]
+   |  TO_PIN EQUAL stringText[ &carryChain.srToPinName ]
+   |  X_OFFSET EQUAL intNum[ &carryChain.offset.dx ]
+   |  Y_OFFSET EQUAL intNum[ &carryChain.offset.dy ]
+   |  Z_OFFSET EQUAL intNum[ &carryChain.offset.dz ]
+   )*
+   "/>"
+   <<
+      if( carryChain.IsValid( ))
+      {
+         pcarryChainList->Add( carryChain );
+      }
+   >>
+   ;
+
+//===========================================================================//
 complexBlockList[ TAS_PhysicalBlockList_t* pphysicalBlockList ]
    : 
    COMPLEXBLOCKLIST ">"
@@ -452,7 +498,8 @@ pbtypeDef[ TAS_PhysicalBlockList_t* pphysicalBlockList ]
    ">"
    (  "<"
       (  fcDef[ &physicalBlock.fcIn,
-                &physicalBlock.fcOut ]
+                &physicalBlock.fcOut,
+                &physicalBlock.fcPinList ]
       |  modeDef[ &physicalBlock.modeList ]
       |  pbtypeList[ &physicalBlock.physicalBlockList ]
       |  interconnectList[ &physicalBlock.interconnectList ] 
@@ -566,46 +613,68 @@ outputPortList[ TLO_PortList_t* pportList ]
 
 //===========================================================================//
 fcDef[ TAS_ConnectionFc_c* pfcIn,
-       TAS_ConnectionFc_c* pfcOut ]
+       TAS_ConnectionFc_c* pfcOut,
+       TAS_ConnectionFcList_t* pfcPinList ]
    :
    <<
-      double floatInValue = 0.0;
-      double floatOutValue = 0.0;
-      unsigned int uintInValue = 0;
-      unsigned int uintOutValue = 0;
+      double floatValue = 0.0;
+      unsigned int uintValue = 0;
+
+      TAS_ConnectionFc_c fcPin;
    >>
    (  FC_IN TYPE EQUAL connectionBoxInType[ &pfcIn->type ] ">"
-      { floatNum[ &floatInValue ] } 
+      { floatNum[ &floatValue ] } 
       "</" FC_IN ">"
       <<
-         uintInValue = static_cast< unsigned int >( floatInValue + TC_FLT_EPSILON );
-         pfcIn->percent = ( pfcIn->type == TAS_CONNECTION_BOX_FRACTION ? floatInValue : 0.0 );
-         pfcIn->absolute = ( pfcIn->type == TAS_CONNECTION_BOX_ABSOLUTE ? uintInValue : 0 );
+         uintValue = static_cast< unsigned int >( floatValue + TC_FLT_EPSILON );
+         pfcIn->percent = ( pfcIn->type == TAS_CONNECTION_BOX_FRACTION ? floatValue : 0.0 );
+         pfcIn->absolute = ( pfcIn->type == TAS_CONNECTION_BOX_ABSOLUTE ? uintValue : 0 );
       >>
    |  FC_OUT TYPE EQUAL connectionBoxOutType[ &pfcOut->type ] ">"
-      { floatNum[ &floatOutValue ] } 
+      { floatNum[ &floatValue ] } 
       "</" FC_OUT ">"
       <<
-         uintOutValue = static_cast< unsigned int >( floatOutValue + TC_FLT_EPSILON );
-         pfcOut->percent = ( pfcOut->type == TAS_CONNECTION_BOX_FRACTION ? floatOutValue : 0.0 );
-         pfcOut->absolute = ( pfcOut->type == TAS_CONNECTION_BOX_ABSOLUTE ? uintOutValue : 0 );
+         uintValue = static_cast< unsigned int >( floatValue + TC_FLT_EPSILON );
+         pfcOut->percent = ( pfcOut->type == TAS_CONNECTION_BOX_FRACTION ? floatValue : 0.0 );
+         pfcOut->absolute = ( pfcOut->type == TAS_CONNECTION_BOX_ABSOLUTE ? uintValue : 0 );
       >>
    |  FC
       DEFAULT_IN_TYPE EQUAL connectionBoxInType[ &pfcIn->type ]
-      { DEFAULT_IN_VAL EQUAL floatNum[ &floatInValue ] }
+      { DEFAULT_IN_VAL EQUAL floatNum[ &floatValue ] }
       <<
-         uintInValue = static_cast< unsigned int >( floatInValue + TC_FLT_EPSILON );
-         pfcIn->percent = ( pfcIn->type == TAS_CONNECTION_BOX_FRACTION ? floatInValue : 0.0 );
-         pfcIn->absolute = ( pfcIn->type == TAS_CONNECTION_BOX_ABSOLUTE ? uintInValue : 0 );
+         uintValue = static_cast< unsigned int >( floatValue + TC_FLT_EPSILON );
+         pfcIn->percent = ( pfcIn->type == TAS_CONNECTION_BOX_FRACTION ? floatValue : 0.0 );
+         pfcIn->absolute = ( pfcIn->type == TAS_CONNECTION_BOX_ABSOLUTE ? uintValue : 0 );
       >>
       DEFAULT_OUT_TYPE EQUAL connectionBoxInType[ &pfcOut->type ]
-      { DEFAULT_OUT_VAL EQUAL floatNum[ &floatOutValue ] }
+      { DEFAULT_OUT_VAL EQUAL floatNum[ &floatValue ] }
       <<
-         uintOutValue = static_cast< unsigned int >( floatOutValue + TC_FLT_EPSILON );
-         pfcOut->percent = ( pfcOut->type == TAS_CONNECTION_BOX_FRACTION ? floatOutValue : 0.0 );
-         pfcOut->absolute = ( pfcOut->type == TAS_CONNECTION_BOX_ABSOLUTE ? uintOutValue : 0 );
+         uintValue = static_cast< unsigned int >( floatValue + TC_FLT_EPSILON );
+         pfcOut->percent = ( pfcOut->type == TAS_CONNECTION_BOX_FRACTION ? floatValue : 0.0 );
+         pfcOut->absolute = ( pfcOut->type == TAS_CONNECTION_BOX_ABSOLUTE ? uintValue : 0 );
       >>
-      "/>"
+      (  "/>"
+      |  ">"
+         (  "<"
+            <<
+               fcPin.srName = "";
+               fcPin.type = TAS_CONNECTION_BOX_UNDEFINED;
+               fcPin.percent = 0.0;
+               fcPin.absolute = 0;
+            >>
+            PIN NAME EQUAL stringText[ &fcPin.srName ]
+            FC_TYPE EQUAL connectionBoxInType[ &fcPin.type ]
+            { FC_VAL EQUAL floatNum[ &floatValue ] }
+            <<
+               uintValue = static_cast< unsigned int >( floatValue + TC_FLT_EPSILON );
+               fcPin.percent = ( fcPin.type == TAS_CONNECTION_BOX_FRACTION ? floatValue : 0.0 );
+               fcPin.absolute = ( fcPin.type == TAS_CONNECTION_BOX_ABSOLUTE ? uintValue : 0 );
+               pfcPinList->Add( fcPin );
+            >>
+            "/>"
+         )+
+         "</" FC ">"
+      )
    )
    ;
 
@@ -1510,11 +1579,13 @@ boolType[ bool* pbool ]
       qboolVal:STRING
       <<
          pszBool = qboolVal->getText( );
-         if( TC_stricmp( pszBool, "true" ) == 0 )
+         if(( TC_stricmp( pszBool, "true" ) == 0 ) ||
+            ( TC_stricmp( pszBool, "on" ) == 0 ))
          {
             *pbool = true;
          }
-         else if( TC_stricmp( pszBool, "false" ) == 0 )
+         else if(( TC_stricmp( pszBool, "false" ) == 0 ) ||
+                 ( TC_stricmp( pszBool, "off" ) == 0 ))
          {
             *pbool = false;
          }
