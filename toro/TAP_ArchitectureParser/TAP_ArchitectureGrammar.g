@@ -68,6 +68,7 @@ using namespace std;
 #token SB               "[Ss]{[Ww][Ii][Tt][Cc][Hh]}[Bb]{[Oo][Xx]{[Ee][Ss]}}"
 #token CB               "[Cc]{[Oo][Nn][Nn][Ee][Cc][Tt][Ii][Oo][Nn]}[Bb]{[Oo][Xx]{[Ee][Ss]}}"
 #token SEGMENT          "[Ss][Ee][Gg][Mm][Ee][Nn][Tt]{[Ss]}"
+#token DIRECT           "[Dd][Ii][Rr][Ee][Cc]{[Ss]}"
 #token MODEL            "[Mm][Oo][Dd][Ee]{[Ll]}{[Ss]}"
 #token CELL             "[Cc][Ee][Ll][Ll]{[Ss]}"
 #token PIN              "[Pp][Ii][Nn]{[Ss]}"
@@ -76,6 +77,12 @@ using namespace std;
 #token TYPE             "[Tt][Yy][Pp][Ee]"
 #token CLASS            "[Cc][Ll][Aa][Ss][Ss]"
 #token FS               "[Ff][Ss]"
+
+#token FROM_PIN         "[Ff][Rr][Oo][Mm][_][Pp][Ii][Nn]"
+#token TO_PIN           "[Tt][Oo][_][Pp][Ii][Nn]"
+#token X_OFFSET         "[Xx][_][Oo][Ff][Ff][Ss][Ee][Tt]"
+#token Y_OFFSET         "[Yy][_][Oo][Ff][Ff][Ss][Ee][Tt]"
+#token Z_OFFSET         "[Zz][_][Oo][Ff][Ff][Ss][Ee][Tt]"
 
 #token INTERCONNECT     "[Ii][Nn][Tt][Ee][Rr][Cc][Oo][Nn][Nn][Ee][Cc][Tt]"
 
@@ -202,6 +209,7 @@ start
       |  modeList[ &this->parchitectureSpec_->modeList ]
       |  switchBoxList[ &this->parchitectureSpec_->switchBoxList ]
       |  segmentList[ &this->parchitectureSpec_->segmentList ]
+      |  directList[ &this->parchitectureSpec_->carryChainList ]
       |  cellList[ &this->parchitectureSpec_->cellList ]
       )
    )* 
@@ -471,6 +479,41 @@ segmentList[ TAS_SegmentList_t* psegmentList ]
       if( segment.IsValid( ))
       {
          psegmentList->Add( segment );
+      }
+   >>
+   ;
+
+//===========================================================================//
+directList[ TAS_CarryChainList_t* pcarryChainList ]
+   : 
+   DIRECTLIST ">"
+   (  directDef[ pcarryChainList ]
+   )*
+   "</" DIRECTLIST ">"
+   ;
+
+//===========================================================================//
+directDef[ TAS_CarryChainList_t* pcarryChainList ]
+   : 
+   << 
+      TAS_CarryChain_c carryChain;
+      carryChain.offset.dx = 0;
+      carryChain.offset.dy = 0;
+      carryChain.offset.dz = 0;
+   >>
+   "<" DIRECT 
+   (  NAME EQUAL stringText[ &carryChain.srName ]
+   |  FROM_PIN EQUAL stringText[ &carryChain.srFromPinName ]
+   |  TO_PIN EQUAL stringText[ &carryChain.srToPinName ]
+   |  X_OFFSET EQUAL intNum[ &carryChain.offset.dx ]
+   |  Y_OFFSET EQUAL intNum[ &carryChain.offset.dy ]
+   |  Z_OFFSET EQUAL intNum[ &carryChain.offset.dz ]
+   )*
+   "/>"
+   <<
+      if( carryChain.IsValid( ))
+      {
+         pcarryChainList->Add( carryChain );
       }
    >>
    ;
@@ -1470,11 +1513,13 @@ boolType[ bool* pbool ]
       qboolVal:STRING
       <<
          pszBool = qboolVal->getText( );
-         if( TC_stricmp( pszBool, "true" ) == 0 )
+         if(( TC_stricmp( pszBool, "true" ) == 0 ) ||
+            ( TC_stricmp( pszBool, "on" ) == 0 ))
          {
             *pbool = true;
          }
-         else if( TC_stricmp( pszBool, "false" ) == 0 )
+         else if(( TC_stricmp( pszBool, "false" ) == 0 ) ||
+                 ( TC_stricmp( pszBool, "off" ) == 0 ))
          {
             *pbool = false;
          }
