@@ -157,6 +157,7 @@ using namespace std;
 
 #token PLACE_RELATIVE_ENABLE     "[Pp][Ll][Aa][Cc][Ee][_][Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee][_][Ee][Nn][Aa][Bb][Ll][Ee]"
 #token PLACE_RELATIVE_ROTATE     "[Pp][Ll][Aa][Cc][Ee][_][Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee][_][Rr][Oo][Tt][Aa][Tt][Ee]{[_][Ee][Nn][Aa][Bb][Ll][Ee]}"
+#token PLACE_RELATIVE_CARRY      "[Pp][Ll][Aa][Cc][Ee][_][Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee][_][Cc][Aa][Rr][Rr][Yy]{[_]}[Cc][Hh][Aa][Ii][Nn]{[Ss]}{[_][Ee][Nn][Aa][Bb][Ll][Ee]}"
 #token PLACE_RELATIVE_INIT_PLACE "[Pp][Ll][Aa][Cc][Ee][_][Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee][_][Ii][Nn][Ii][Tt]{[Ii][Aa][Ll]}[_][Pp][Ll][Aa][Cc][Ee]{[_][Rr][Ee][Tt][Rr][Yy]}"
 #token PLACE_RELATIVE_INIT_MACRO "[Pp][Ll][Aa][Cc][Ee][_][Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee][_][Ii][Nn][Ii][Tt]{[Ii][Aa][Ll]}[_][Mm][Aa][Cc][Rr][Oo]{[_][Rr][Ee][Tt][Rr][Yy]}"
 
@@ -514,6 +515,7 @@ placeOptions
 
    |  PLACE_RELATIVE_ENABLE { EQUAL } boolType[ &pplaceOptions_->relativePlace.enable ]
    |  PLACE_RELATIVE_ROTATE { EQUAL } boolType[ &pplaceOptions_->relativePlace.rotateEnable ]
+   |  PLACE_RELATIVE_CARRY { EQUAL } boolType[ &pplaceOptions_->relativePlace.carryChainEnable ]
    |  PLACE_RELATIVE_INIT_PLACE { EQUAL } uintNum[ &pplaceOptions_->relativePlace.maxPlaceRetryCt ]
    |  PLACE_RELATIVE_INIT_MACRO { EQUAL } uintNum[ &pplaceOptions_->relativePlace.maxMacroRetryCt ]
 
