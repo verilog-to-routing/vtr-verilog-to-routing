@@ -1015,22 +1015,22 @@ Executing VPR interface...
 [vpr] ------- ------- ---------- ---------- ---------- ---------- ------- ------- ------- ------- ------ --------- ------
 [vpr] 0.20863 0.99286    87.2577 1.6461e-07 4.7098e-07 2.9076e-10  7.2090  0.9968  0.0153 13.0000  1.000     20616  0.500
 [vpr] 0.10432 1.00927    87.2527 1.5566e-07 4.7108e-07 2.9191e-10  7.6876  0.9952  0.0155 13.0000  1.000     41232  0.500
-[vpr] 0.05216 0.99445    86.9683 1.6226e-07 4.6979e-07 2.9148e-10  7.2774  0.9884  0.0138 13.0000  1.000     61848  0.500
+[vpr] 0.05216 0.99445    86.9682 1.6226e-07 4.6979e-07 2.9148e-10  7.2774  0.9884  0.0138 13.0000  1.000     61848  0.500
 [vpr] 0.02608 1.00006    86.5442 1.6918e-07 4.6943e-07 2.9379e-10  6.9356  0.9784  0.0142 13.0000  1.000     82464  0.500
 [vpr] 0.01304 0.99312    85.8322 1.5837e-07 4.666e-07  2.917e-10   7.4825  0.9556  0.0152 13.0000  1.000    103080  0.900
-[vpr] 0.01174 1.01139    85.8625 1.631e-07  4.6712e-07 2.9259e-10  7.2090  0.9531  0.0140 13.0000  1.000    123696  0.900
+[vpr] 0.01174 1.01139    85.8624 1.631e-07  4.6712e-07 2.9259e-10  7.2090  0.9531  0.0140 13.0000  1.000    123696  0.900
 [vpr] 0.01056 0.99072    85.4661 1.607e-07  4.6503e-07 2.9481e-10  7.2774  0.9484  0.0142 13.0000  1.000    144312  0.900
 [vpr] 0.00951 0.99096    85.1676 1.5822e-07 4.6467e-07 2.9148e-10  7.3458  0.9402  0.0157 13.0000  1.000    164928  0.900
 [vpr] 0.00856 1.00590    84.9967 1.549e-07  4.647e-07  2.8786e-10  7.5509  0.9311  0.0146 13.0000  1.000    185544  0.900
 [vpr] 0.00770 0.98392    85.0027 1.5531e-07 4.6327e-07 2.9067e-10  7.5509  0.9288  0.0147 13.0000  1.000    206160  0.900
-[vpr] 0.00693 1.00127    84.5853 1.5481e-07 4.6278e-07 2.9042e-10  7.5509  0.9204  0.0149 13.0000  1.000    226776  0.900
+[vpr] 0.00693 1.00127    84.5852 1.5481e-07 4.6278e-07 2.9042e-10  7.5509  0.9204  0.0149 13.0000  1.000    226776  0.900
 [vpr] 0.00624 1.01399    84.2074 1.4943e-07 4.6105e-07 2.8146e-10  7.6876  0.9063  0.0151 13.0000  1.000    247392  0.900
 [vpr] 0.00561 0.98964    83.7487 1.5569e-07 4.6073e-07 2.9063e-10  7.4825  0.8967  0.0166 13.0000  1.000    268008  0.900
-[vpr] 0.00505 1.01395    82.9610 1.5081e-07 4.5876e-07 2.7975e-10  7.4825  0.8849  0.0141 13.0000  1.000    288624  0.900
+[vpr] 0.00505 1.01395    82.9611 1.5081e-07 4.5876e-07 2.7975e-10  7.4825  0.8849  0.0141 13.0000  1.000    288624  0.900
 [vpr] 0.00455 0.98158    82.8149 1.5225e-07 4.5831e-07 2.8786e-10  7.4715  0.8754  0.0142 13.0000  1.000    309240  0.900
 [vpr] 0.00409 0.98540    82.4765 1.5404e-07 4.5778e-07 2.8551e-10  7.2774  0.8677  0.0148 13.0000  1.000    329856  0.900
 [vpr] 0.00368 0.98714    81.6657 1.5206e-07 4.5347e-07 2.8074e-10  7.2774  0.8450  0.0135 13.0000  1.000    350472  0.900
-[vpr] 0.00331 0.98003    81.1450 1.5506e-07 4.5278e-07 2.8824e-10  7.2090  0.8296  0.0162 13.0000  1.000    371088  0.900
+[vpr] 0.00331 0.98003    81.1449 1.5506e-07 4.5278e-07 2.8824e-10  7.2090  0.8296  0.0162 13.0000  1.000    371088  0.900
 [vpr] 0.00298 0.97042    80.1815 1.5775e-07 4.5011e-07 2.85e-10    7.0039  0.8086  0.0155 13.0000  1.000    391704  0.900
 [vpr] 0.00268 0.97847    79.5404 1.5047e-07 4.4819e-07 2.8278e-10  7.2774  0.7890  0.0176 13.0000  1.000    412320  0.950
 [vpr] 0.00255 0.98733    79.2358 1.5229e-07 4.4573e-07 2.7984e-10  7.0723  0.7744  0.0146 13.0000  1.000    432936  0.950
@@ -1084,60 +1084,186 @@ Executing VPR interface...
 [vpr] 0.00022 1.00057    47.0570 2.2617e-08 3.7981e-07 2.3749e-10  6.1835  0.3489  0.0024  4.1102  6.186   1422504  0.950
 [vpr] 0.00021 0.99564    46.6853 2.2099e-08 3.7966e-07 2.354e-10   6.1835  0.3921  0.0030  3.7358  6.404   1443120  0.950
 [vpr] 0.00020 0.99787    46.3348 2.1846e-08 3.7703e-07 2.3599e-10  6.1835  0.3755  0.0021  3.5567  6.509   1463736  0.950
-[vpr] 0.00019 0.99295    45.8632 2.1474e-08 3.7918e-07 2.3651e-10  6.1835  0.3631  0.0029  3.3273  6.642   1484352  0.950
-[vpr] 0.00018 0.99930    45.8980 2.1105e-08 3.7857e-07 2.3548e-10  6.1835  0.3552  0.0037  3.0715  6.792   1504968  0.950
-[vpr] 0.00017 0.99989    45.7006 2.0788e-08 3.7818e-07 2.3565e-10  6.1835  0.3959  0.0022  2.8110  6.944   1525584  0.950
-[vpr] 0.00016 1.00253    45.4419 2.0646e-08 3.7781e-07 2.3356e-10  6.1835  0.3821  0.0018  2.6871  7.016   1546200  0.950
-[vpr] 0.00015 1.00162    45.2793 2.0467e-08 3.7737e-07 2.3531e-10  6.1835  0.3784  0.0016  2.5316  7.107   1566816  0.950
-[vpr] 0.00014 0.99820    44.9955 2.0313e-08 3.7848e-07 2.3442e-10  6.1835  0.3571  0.0019  2.3756  7.198   1587432  0.950
-[vpr] 0.00014 0.99623    44.8094 2.0068e-08 3.7859e-07 2.3493e-10  6.1835  0.3427  0.0020  2.1787  7.312   1608048  0.950
-[vpr] 0.00013 0.99552    44.6683 1.9837e-08 3.7849e-07 2.3527e-10  6.1835  0.4153  0.0015  1.9667  7.436   1628664  0.950
-[vpr] 0.00012 0.99983    44.4710 1.9697e-08 3.7783e-07 2.3685e-10  6.1835  0.3862  0.0015  1.9180  7.464   1649280  0.950
-[vpr] 0.00012 0.99551    44.1445 1.9743e-08 3.7865e-07 2.3553e-10  6.1835  0.3776  0.0019  1.8149  7.525   1669896  0.950
-[vpr] 0.00011 0.99605    43.8492 1.9474e-08 3.8037e-07 2.3416e-10  6.1835  0.3669  0.0011  1.7016  7.591   1690512  0.950
-[vpr] 0.00011 0.99826    43.7623 1.9346e-08 3.7996e-07 2.3907e-10  6.1835  0.3496  0.0015  1.5772  7.663   1711128  0.950
-[vpr] 0.00010 0.99717    43.6888 1.8912e-08 3.7732e-07 2.3749e-10  6.1835  0.3441  0.0015  1.4346  7.746   1731744  0.950
-[vpr] 0.00010 0.99814    43.4543 1.8815e-08 3.769e-07  2.3638e-10  6.1835  0.3237  0.0018  1.2970  7.827   1752360  0.950
-[vpr] 0.00009 0.99887    43.1345 1.9026e-08 3.777e-07  2.3621e-10  6.1835  0.3005  0.0010  1.1462  7.915   1772976  0.950
-[vpr] 0.00009 1.00051    43.0063 1.8886e-08 3.7839e-07 2.342e-10   6.1835  0.2882  0.0012  1.0000  8.000   1793592  0.950
-[vpr] 0.00008 0.99809    43.0454 1.8837e-08 3.7977e-07 2.3608e-10  6.1835  0.2785  0.0010  1.0000  8.000   1814208  0.950
-[vpr] 0.00008 1.00119    42.9584 1.8881e-08 3.7748e-07 2.3557e-10  6.1835  0.2553  0.0010  1.0000  8.000   1834824  0.950
-[vpr] 0.00007 0.99860    42.7878 1.8886e-08 3.7944e-07 2.3523e-10  6.1835  0.2436  0.0010  1.0000  8.000   1855440  0.950
-[vpr] 0.00007 0.99932    42.7979 1.8888e-08 3.7921e-07 2.3693e-10  6.1835  0.2293  0.0008  1.0000  8.000   1876056  0.950
-[vpr] 0.00007 0.99920    42.6379 1.8784e-08 3.7869e-07 2.374e-10   6.1835  0.2146  0.0009  1.0000  8.000   1896672  0.950
-[vpr] 0.00006 0.99902    42.5619 1.8792e-08 3.7922e-07 2.339e-10   6.1835  0.2004  0.0009  1.0000  8.000   1917288  0.950
-[vpr] 0.00006 0.99950    42.5578 1.8742e-08 3.7913e-07 2.3484e-10  6.1835  0.1874  0.0008  1.0000  8.000   1937904  0.950
-[vpr] 0.00006 0.99980    42.4813 1.8788e-08 3.7863e-07 2.3548e-10  6.1835  0.1664  0.0008  1.0000  8.000   1958520  0.950
-[vpr] 0.00005 0.99950    42.2945 1.8896e-08 3.7915e-07 2.3446e-10  6.1835  0.1498  0.0008  1.0000  8.000   1979136  0.800
-[vpr] 0.00004 0.99981    42.1704 1.8794e-08 3.7935e-07 2.3625e-10  6.1835  0.1191  0.0007  1.0000  8.000   1999752  0.800
-[vpr] 0.00003 0.99716    42.0085 1.8797e-08 3.7745e-07 2.3762e-10  6.1835  0.0816  0.0007  1.0000  8.000   2020368  0.800
-[vpr] 0.00003 0.99971    41.9078 1.8797e-08 3.795e-07  2.3548e-10  6.1835  0.0527  0.0002  1.0000  8.000   2040984  0.800
-[vpr] 0.00002 0.99979    41.8749 1.8797e-08 3.7787e-07 2.3791e-10  6.1835  0.0405  0.0002  1.0000  8.000   2061600  0.800
-[vpr] 0.00002 0.99987    41.8560 1.8797e-08 3.777e-07  2.3553e-10  6.1835  0.0345  0.0001  1.0000  8.000   2082216  0.800
-[vpr] 0.00001 1.00002    41.8524 1.8797e-08 3.7924e-07 2.3753e-10  6.1835  0.0350  0.0000  1.0000  8.000   2102832  0.800
-[vpr] 0.00001 1.00000    41.8502 1.8797e-08 3.8043e-07 2.3463e-10  6.1835  0.0317  0.0000  1.0000  8.000   2123448  0.800
-[vpr] 0.00001 1.00000    41.8502 1.8797e-08 3.7858e-07 2.3834e-10  6.1835  0.0341  0.0000  1.0000  8.000   2144064  0.800
-[vpr] 0.00000 0.99999    41.8502 1.8797e-08 3.7741e-07 2.3847e-10          0.0169  0.0000  1.0000  8.000   2164680
+[vpr] 0.00019 0.99450    46.0084 2.1473e-08 3.7866e-07 2.3651e-10  6.1835  0.3671  0.0027  3.3273  6.642   1484352  0.950
+[vpr] 0.00018 0.99554    45.7356 2.1188e-08 3.7663e-07 2.3463e-10  6.1835  0.3543  0.0037  3.0847  6.784   1504968  0.950
+[vpr] 0.00017 0.99848    45.4145 2.0776e-08 3.7824e-07 2.3386e-10  6.1835  0.3923  0.0023  2.8203  6.938   1525584  0.950
+[vpr] 0.00016 0.99691    45.3406 2.0562e-08 3.7936e-07 2.3732e-10  6.1835  0.3847  0.0021  2.6857  7.017   1546200  0.950
+[vpr] 0.00015 0.99692    45.2235 2.0464e-08 3.7663e-07 2.3621e-10  6.1835  0.3774  0.0026  2.5373  7.103   1566816  0.950
+[vpr] 0.00014 0.99536    44.9972 2.0262e-08 3.8e-07    2.3471e-10  6.1835  0.3698  0.0022  2.3785  7.196   1587432  0.950
+[vpr] 0.00014 0.99553    44.8567 2.0015e-08 3.7843e-07 2.3817e-10  6.1835  0.3524  0.0018  2.2116  7.293   1608048  0.950
+[vpr] 0.00013 0.99385    44.6691 1.9897e-08 3.797e-07  2.3518e-10  6.1835  0.3396  0.0035  2.0178  7.406   1628664  0.950
+[vpr] 0.00012 0.99755    44.2608 1.9677e-08 3.7779e-07 2.3676e-10  6.1835  0.3885  0.0013  1.8152  7.524   1649280  0.950
+[vpr] 0.00012 0.99644    44.1009 1.9573e-08 3.7523e-07 2.3608e-10  6.1835  0.3764  0.0027  1.7217  7.579   1669896  0.950
+[vpr] 0.00011 1.00186    44.0524 1.9454e-08 3.7688e-07 2.3595e-10  6.1835  0.3658  0.0014  1.6122  7.643   1690512  0.950
+[vpr] 0.00011 0.99832    43.9769 1.9328e-08 3.771e-07  2.3463e-10  6.1835  0.3493  0.0014  1.4926  7.713   1711128  0.950
+[vpr] 0.00010 0.99961    43.7352 1.9183e-08 3.7797e-07 2.3642e-10  6.1835  0.3394  0.0017  1.3573  7.792   1731744  0.950
+[vpr] 0.00010 1.00041    43.5783 1.904e-08  3.7521e-07 2.3591e-10  6.1835  0.3204  0.0012  1.2207  7.871   1752360  0.950
+[vpr] 0.00009 0.99632    43.3709 1.8899e-08 3.7825e-07 2.3284e-10  6.1835  0.3058  0.0015  1.0747  7.956   1772976  0.950
+[vpr] 0.00009 0.99932    43.1335 1.8841e-08 3.7785e-07 2.3676e-10  6.1835  0.2887  0.0009  1.0000  8.000   1793592  0.950
+[vpr] 0.00008 1.00000    43.0812 1.8862e-08 3.7839e-07 2.357e-10   6.1835  0.2805  0.0012  1.0000  8.000   1814208  0.950
+[vpr] 0.00008 1.00098    43.1069 1.8863e-08 3.7783e-07 2.3744e-10  6.1835  0.2699  0.0012  1.0000  8.000   1834824  0.950
+[vpr] 0.00007 0.99516    42.9891 1.8855e-08 3.7773e-07 2.3655e-10  6.1835  0.2522  0.0018  1.0000  8.000   1855440  0.950
+[vpr] 0.00007 0.99701    42.8884 1.8855e-08 3.7734e-07 2.3309e-10  6.1835  0.2370  0.0011  1.0000  8.000   1876056  0.950
+[vpr] 0.00007 0.99908    42.7374 1.8854e-08 3.7761e-07 2.3706e-10  6.1835  0.2185  0.0008  1.0000  8.000   1896672  0.950
+[vpr] 0.00006 1.00112    42.6572 1.8856e-08 3.7776e-07 2.3625e-10  6.1835  0.2050  0.0007  1.0000  8.000   1917288  0.950
+[vpr] 0.00006 1.00034    42.6132 1.8854e-08 3.782e-07  2.3651e-10  6.1835  0.1908  0.0008  1.0000  8.000   1937904  0.950
+[vpr] 0.00006 0.99868    42.5292 1.8856e-08 3.7781e-07 2.3676e-10  6.1835  0.1725  0.0008  1.0000  8.000   1958520  0.950
+[vpr] 0.00005 0.99962    42.3931 1.8854e-08 3.7825e-07 2.3621e-10  6.1835  0.1532  0.0008  1.0000  8.000   1979136  0.950
+[vpr] 0.00005 1.00046    42.4068 1.8855e-08 3.7801e-07 2.3672e-10  6.1835  0.1520  0.0007  1.0000  8.000   1999752  0.950
+[vpr] 0.00005 1.00002    42.3537 1.8856e-08 3.7763e-07 2.3548e-10  6.1835  0.1398  0.0008  1.0000  8.000   2020368  0.800
+[vpr] 0.00004 0.99826    42.2199 1.8856e-08 3.7754e-07 2.3454e-10  6.1835  0.1005  0.0005  1.0000  8.000   2040984  0.800
+[vpr] 0.00003 0.99905    42.0969 1.8855e-08 3.7698e-07 2.3518e-10  6.1835  0.0663  0.0003  1.0000  8.000   2061600  0.800
+[vpr] 0.00003 0.99987    42.0600 1.8855e-08 3.7687e-07 2.3629e-10  6.1835  0.0540  0.0002  1.0000  8.000   2082216  0.800
+[vpr] 0.00002 0.99995    42.0402 1.8855e-08 3.7705e-07 2.3433e-10  6.1835  0.0455  0.0001  1.0000  8.000   2102832  0.800
+[vpr] 0.00002 1.00003    42.0269 1.8855e-08 3.7682e-07 2.3416e-10  6.1835  0.0378  0.0000  1.0000  8.000   2123448  0.800
+[vpr] 0.00001 1.00000    42.0250 1.8855e-08 3.774e-07  2.3399e-10  6.1835  0.0398  0.0000  1.0000  8.000   2144064  0.800
+[vpr] 0.00001 1.00000    42.0247 1.8855e-08 3.7755e-07 2.342e-10   6.1835  0.0402  0.0000  1.0000  8.000   2164680  0.800
+[vpr] 0.00001 1.00000    42.0247 1.8855e-08 3.7908e-07 2.3655e-10  6.1835  0.0380  0.0000  1.0000  8.000   2185296  0.800
+[vpr] 0.00000 1.00000    42.0247 1.8855e-08 3.7584e-07 2.3501e-10          0.0124  0.0000  1.0000  8.000   2205912
 [vpr] 
-[vpr] BB estimate of min-dist (placement) wire length: 4174
-[vpr] bb_cost recomputed from scratch: 41.8502
-[vpr] timing_cost recomputed from scratch: 1.87968e-08
-[vpr] delay_cost recomputed from scratch: 3.76932e-07
+[vpr] BB estimate of min-dist (placement) wire length: 4192
+[vpr] bb_cost recomputed from scratch: 42.0247
+[vpr] timing_cost recomputed from scratch: 1.88548e-08
+[vpr] delay_cost recomputed from scratch: 3.7577e-07
 [vpr] 
 [vpr] Completed placement consistency check successfully.
 [vpr] 
-[vpr] Swaps called: 2164986
+[vpr] Swaps called: 2206218
 [vpr] 
 [vpr] Placement estimated critical path delay: 6.18348 ns
-[vpr] Placement cost: 0.999992, bb_cost: 41.8502, td_cost: 1.87968e-08, delay_cost: 3.76932e-07
-[vpr] Placement total # of swap attempts: 2164986
+[vpr] Placement cost: 0.999996, bb_cost: 42.0247, td_cost: 1.88548e-08, delay_cost: 3.7577e-07
+[vpr] Placement total # of swap attempts: 2206218
 [vpr] 	Swap reject rate: 0
 [vpr] 	Swap accept rate: 0
 [vpr] 	Swap abort rate: 0
 [vpr] Validating preroutes using mode: FIRST.
+[vpr] WARNING(2): Ignoring pre-route for net "tin_pv1_0_0_" from source "tin_pv1_0_0_|io[2]|inpad[1]" to sink "n_n4317|clb[0]|I[15]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 133 to 10013).
+[vpr] WARNING(3): Ignoring pre-route for net "tin_pv1_0_0_" from source "tin_pv1_0_0_|io[2]|inpad[1]" to sink "n_n4317|clb[0]|I[15]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 10013 to 723).
+[vpr] WARNING(4): Ignoring pre-route for net "tin_pv1_1_1_" from source "tin_pv1_1_1_|io[4]|inpad[1]" to sink "n_n3106|clb[0]|I[16]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 9045 to 6812).
+[vpr] WARNING(5): Ignoring pre-route for net "tin_pv1_2_2_" from source "tin_pv1_2_2_|io[7]|inpad[1]" to sink "n_n3983|clb[0]|I[15]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7246 to 12183).
+[vpr] WARNING(6): Ignoring pre-route for net "tin_pv1_3_3_" from source "tin_pv1_3_3_|io[5]|inpad[1]" to sink "[2047]|clb[0]|I[14]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 217 to 10029).
+[vpr] WARNING(7): Ignoring pre-route for net "tin_pv1_4_4_" from source "tin_pv1_4_4_|io[6]|inpad[1]" to sink "n_n3343|clb[0]|I[2]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 1702 to 7706).
+[vpr] WARNING(8): Ignoring pre-route for net "tin_pv1_4_4_" from source "tin_pv1_4_4_|io[6]|inpad[1]" to sink "n_n3343|clb[0]|I[2]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7706 to 1716).
+[vpr] WARNING(9): Ignoring pre-route for net "tin_pv1_5_5_" from source "tin_pv1_5_5_|io[3]|inpad[1]" to sink "[1904]|clb[0]|I[5]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7336 to 7766).
+[vpr] WARNING(10): Ignoring pre-route for net "tin_pv1_5_5_" from source "tin_pv1_5_5_|io[3]|inpad[1]" to sink "[1904]|clb[0]|I[5]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 11670 to 5144).
+[vpr] WARNING(11): Ignoring pre-route for net "tin_pv1_6_6_" from source "tin_pv1_6_6_|io[4]|inpad[1]" to sink "n_n3508|clb[0]|I[5]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 5434 to 12266).
+[vpr] WARNING(12): Ignoring pre-route for net "tin_pv1_6_6_" from source "tin_pv1_6_6_|io[4]|inpad[1]" to sink "n_n3508|clb[0]|I[5]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 11895 to 5329).
+[vpr] WARNING(13): Ignoring pre-route for net "tin_pv1_7_7_" from source "tin_pv1_7_7_|io[2]|inpad[1]" to sink "[6312]|clb[0]|I[3]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 265 to 10064).
+[vpr] WARNING(14): Ignoring pre-route for net "tin_pv1_7_7_" from source "tin_pv1_7_7_|io[2]|inpad[1]" to sink "[6312]|clb[0]|I[3]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 10585 to 1902).
+[vpr] WARNING(15): Ignoring pre-route for net "tin_pv2_0_0_" from source "tin_pv2_0_0_|io[2]|inpad[1]" to sink "n_n3538|clb[0]|I[4]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 187 to 7665).
+[vpr] WARNING(16): Ignoring pre-route for net "tin_pv2_1_1_" from source "tin_pv2_1_1_|io[3]|inpad[1]" to sink "n_n4370|clb[0]|I[17]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7288 to 12203).
+[vpr] WARNING(17): Ignoring pre-route for net "tin_pv2_1_1_" from source "tin_pv2_1_1_|io[3]|inpad[1]" to sink "n_n4370|clb[0]|I[17]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 12203 to 6739).
+[vpr] WARNING(18): Ignoring pre-route for net "tin_pv2_3_3_" from source "tin_pv2_3_3_|io[0]|inpad[1]" to sink "n_n3058|clb[0]|I[9]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 2782 to 7718).
+[vpr] WARNING(19): Ignoring pre-route for net "tin_pv2_3_3_" from source "tin_pv2_3_3_|io[0]|inpad[1]" to sink "n_n3058|clb[0]|I[9]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 10896 to 2914).
+[vpr] WARNING(20): Ignoring pre-route for net "tin_pv2_4_4_" from source "tin_pv2_4_4_|io[7]|inpad[1]" to sink "n_n3010|clb[0]|I[2]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 4924 to 7756).
+[vpr] WARNING(21): Ignoring pre-route for net "tin_pv2_4_4_" from source "tin_pv2_4_4_|io[7]|inpad[1]" to sink "n_n3010|clb[0]|I[2]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 8293 to 5067).
+[vpr] WARNING(22): Ignoring pre-route for net "tin_pv2_5_5_" from source "tin_pv2_5_5_|io[2]|inpad[1]" to sink "[1901]|clb[0]|I[12]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7291 to 7724).
+[vpr] WARNING(23): Ignoring pre-route for net "tin_pv2_5_5_" from source "tin_pv2_5_5_|io[2]|inpad[1]" to sink "[1901]|clb[0]|I[12]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 8417 to 5114).
+[vpr] WARNING(24): Ignoring pre-route for net "tin_pv2_6_6_" from source "tin_pv2_6_6_|io[2]|inpad[1]" to sink "n_n4121|clb[0]|I[2]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7471 to 9916).
+[vpr] WARNING(25): Ignoring pre-route for net "tin_pv2_7_7_" from source "tin_pv2_7_7_|io[2]|inpad[1]" to sink "n_n3077|clb[0]|I[1]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7339 to 12222).
+[vpr] WARNING(26): Ignoring pre-route for net "tin_pv2_7_7_" from source "tin_pv2_7_7_|io[2]|inpad[1]" to sink "n_n3077|clb[0]|I[1]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 12222 to 6760).
+[vpr] WARNING(27): Ignoring pre-route for net "tin_pv4_0_0_" from source "tin_pv4_0_0_|io[0]|inpad[1]" to sink "n_n3515|clb[0]|I[17]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7231 to 12173).
+[vpr] WARNING(28): Ignoring pre-route for net "tin_pv4_0_0_" from source "tin_pv4_0_0_|io[0]|inpad[1]" to sink "n_n3515|clb[0]|I[17]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 12173 to 6162).
+[vpr] WARNING(29): Ignoring pre-route for net "tin_pv4_1_1_" from source "tin_pv4_1_1_|io[7]|inpad[1]" to sink "n_n3721|clb[0]|I[16]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 178 to 10050).
+[vpr] WARNING(30): Ignoring pre-route for net "tin_pv4_2_2_" from source "tin_pv4_2_2_|io[4]|inpad[1]" to sink "n_n4370|clb[0]|I[1]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7273 to 12230).
+[vpr] WARNING(31): Ignoring pre-route for net "tin_pv4_2_2_" from source "tin_pv4_2_2_|io[4]|inpad[1]" to sink "n_n4370|clb[0]|I[1]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 12230 to 6723).
+[vpr] WARNING(32): Ignoring pre-route for net "tin_pv4_3_3_" from source "tin_pv4_3_3_|io[3]|inpad[1]" to sink "n_n4307|clb[0]|I[11]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 4891 to 9897).
+[vpr] WARNING(33): Ignoring pre-route for net "tin_pv4_4_4_" from source "tin_pv4_4_4_|io[5]|inpad[1]" to sink "n_n3727|clb[0]|I[10]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7375 to 12197).
+[vpr] WARNING(34): Ignoring pre-route for net "tin_pv4_4_4_" from source "tin_pv4_4_4_|io[5]|inpad[1]" to sink "n_n3727|clb[0]|I[10]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 8687 to 6266).
+[vpr] WARNING(35): Ignoring pre-route for net "tin_pv4_5_5_" from source "tin_pv4_5_5_|io[6]|inpad[1]" to sink "n_n3732|clb[0]|I[9]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7342 to 12201).
+[vpr] WARNING(36): Ignoring pre-route for net "tin_pv4_5_5_" from source "tin_pv4_5_5_|io[6]|inpad[1]" to sink "n_n3732|clb[0]|I[9]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 11656 to 5688).
+[vpr] WARNING(37): Ignoring pre-route for net "tin_pv4_6_6_" from source "tin_pv4_6_6_|io[1]|inpad[1]" to sink "n_n3049|clb[0]|I[12]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7423 to 12252).
+[vpr] WARNING(38): Ignoring pre-route for net "tin_pv6_0_0_" from source "tin_pv6_0_0_|io[5]|inpad[1]" to sink "n_n3392|clb[0]|I[14]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7102 to 7805).
+[vpr] WARNING(39): Ignoring pre-route for net "tin_pv6_1_1_" from source "tin_pv6_1_1_|io[4]|inpad[1]" to sink "n_n3701|clb[0]|I[6]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7198 to 12141).
+[vpr] WARNING(40): Ignoring pre-route for net "tin_pv6_1_1_" from source "tin_pv6_1_1_|io[4]|inpad[1]" to sink "n_n3701|clb[0]|I[6]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 8335 to 6114).
+[vpr] WARNING(41): Ignoring pre-route for net "tin_pv6_2_2_" from source "tin_pv6_2_2_|io[2]|inpad[1]" to sink "n_n3530|clb[0]|I[5]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7180 to 12163).
+[vpr] WARNING(42): Ignoring pre-route for net "tin_pv6_3_3_" from source "tin_pv6_3_3_|io[4]|inpad[1]" to sink "n_n3374|clb[0]|I[9]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7144 to 12137).
+[vpr] WARNING(43): Ignoring pre-route for net "tin_pv6_4_4_" from source "tin_pv6_4_4_|io[3]|inpad[1]" to sink "n_n3033|clb[0]|I[3]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 6004 to 12179).
+[vpr] WARNING(44): Ignoring pre-route for net "tin_pv6_4_4_" from source "tin_pv6_4_4_|io[3]|inpad[1]" to sink "n_n3033|clb[0]|I[3]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 11828 to 6074).
+[vpr] WARNING(45): Ignoring pre-route for net "tin_pv6_5_5_" from source "tin_pv6_5_5_|io[3]|inpad[1]" to sink "n_n3904|clb[0]|I[2]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 3844 to 7754).
+[vpr] WARNING(46): Ignoring pre-route for net "tin_pv6_5_5_" from source "tin_pv6_5_5_|io[3]|inpad[1]" to sink "n_n3904|clb[0]|I[2]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7754 to 3876).
+[vpr] WARNING(47): Ignoring pre-route for net "tin_pv6_6_6_" from source "tin_pv6_6_6_|io[1]|inpad[1]" to sink "n_n3435|clb[0]|I[1]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 2773 to 7710).
+[vpr] WARNING(48): Ignoring pre-route for net "tin_pv6_6_6_" from source "tin_pv6_6_6_|io[1]|inpad[1]" to sink "n_n3435|clb[0]|I[1]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 10700 to 2832).
+[vpr] WARNING(49): Ignoring pre-route for net "tin_pv6_7_7_" from source "tin_pv6_7_7_|io[1]|inpad[1]" to sink "n_n3515|clb[0]|I[9]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 7225 to 12133).
+[vpr] WARNING(50): Ignoring pre-route for net "tin_pv6_7_7_" from source "tin_pv6_7_7_|io[1]|inpad[1]" to sink "n_n3515|clb[0]|I[9]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 12133 to 6154).
+[vpr] WARNING(51): Ignoring pre-route for net "tin_pv10_0_0_" from source "tin_pv10_0_0_|io[4]|inpad[1]" to sink "n_n3755|clb[0]|I[4]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 5419 to 9924).
+[vpr] WARNING(52): Ignoring pre-route for net "tin_pv10_1_1_" from source "tin_pv10_1_1_|io[4]|inpad[1]" to sink "[1780]|clb[0]|I[0]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 223 to 10074).
+[vpr] WARNING(53): Ignoring pre-route for net "tin_pv10_1_1_" from source "tin_pv10_1_1_|io[4]|inpad[1]" to sink "[1780]|clb[0]|I[0]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 8714 to 782).
+[vpr] WARNING(54): Ignoring pre-route for net "tin_pv10_3_3_" from source "tin_pv10_3_3_|io[5]|inpad[1]" to sink "n_n3523|clb[0]|I[8]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 4885 to 9918).
+[vpr] WARNING(55): Ignoring pre-route for net "tin_pv10_4_4_" from source "tin_pv10_4_4_|io[3]|inpad[1]" to sink "n_n4134|clb[0]|I[3]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 460 to 10083).
+[vpr] WARNING(56): Ignoring pre-route for net "tin_pv10_5_5_" from source "tin_pv10_5_5_|io[2]|inpad[1]" to sink "n_n3068|clb[0]|I[15]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 382 to 10067).
+[vpr] WARNING(57): Ignoring pre-route for net "tin_pv10_6_6_" from source "tin_pv10_6_6_|io[3]|inpad[1]" to sink "n_n3031|clb[0]|I[0]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 9411 to 5790).
+[vpr] WARNING(58): Ignoring pre-route for net "tin_pv10_7_7_" from source "tin_pv10_7_7_|io[4]|inpad[1]" to sink "n_n4359|clb[0]|I[9]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 5953 to 9936).
+[vpr] WARNING(59): Ignoring pre-route for net "tin_pv11_2_2_" from source "tin_pv11_2_2_|io[5]|inpad[1]" to sink "n_n4307|clb[0]|I[9]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 5416 to 9930).
+[vpr] WARNING(60): Ignoring pre-route for net "tin_pv11_3_3_" from source "tin_pv11_3_3_|io[6]|inpad[1]" to sink "n_n3582|clb[0]|I[7]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 334 to 10047).
+[vpr] WARNING(61): Ignoring pre-route for net "tin_pv11_5_5_" from source "tin_pv11_5_5_|io[2]|inpad[1]" to sink "[1903]|clb[0]|I[16]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 286 to 10078).
+[vpr] WARNING(62): Ignoring pre-route for net "tin_pv11_5_5_" from source "tin_pv11_5_5_|io[2]|inpad[1]" to sink "[1903]|clb[0]|I[16]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 8746 to 1375).
+[vpr] WARNING(63): Ignoring pre-route for net "tin_pv11_6_6_" from source "tin_pv11_6_6_|io[1]|inpad[1]" to sink "n_n4276|clb[0]|I[17]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 316 to 9864).
+[vpr] WARNING(64): Ignoring pre-route for net "tin_pv11_7_7_" from source "tin_pv11_7_7_|io[7]|inpad[1]" to sink "n_n3375|clb[0]|I[0]".
+[vpr]             Route path is not legal based on VPR's "rr_graph" (from 370 to 10098).
 [vpr] Confirming router algorithm: TIMING_DRIVEN.
-[vpr] 
-[vpr] Routing iteration: 1
 [vpr]   Prerouting net tin_pv1_0_0_...
 [vpr]   Prerouting net tin_pv1_1_1_...
 [vpr]   Prerouting net tin_pv1_2_2_...
@@ -1186,106 +1312,62 @@ Executing VPR interface...
 [vpr]   Prerouting net tin_pv11_5_5_...
 [vpr]   Prerouting net tin_pv11_6_6_...
 [vpr]   Prerouting net tin_pv11_7_7_...
-[vpr] Wire length after first iteration 7527, total available wire length 14976, ratio 0.502604
+[vpr] Wire length after first iteration 7479, total available wire length 14976, ratio 0.499399
+[vpr] --------- ---------- -----------
+[vpr] Iteration       Time   Crit Path
+[vpr] --------- ---------- -----------
 [vpr] Critical path: 6.36728 ns
-[vpr] 
-[vpr] Routing iteration: 2
-[vpr] Critical path: 6.36728 ns
-[vpr] 
-[vpr] Routing iteration: 3
-[vpr] Critical path: 6.36728 ns
-[vpr] 
-[vpr] Routing iteration: 4
-[vpr] Critical path: 6.36728 ns
-[vpr] 
-[vpr] Routing iteration: 5
-[vpr] Critical path: 6.36728 ns
-[vpr] 
-[vpr] Routing iteration: 6
-[vpr] Critical path: 6.36728 ns
-[vpr] 
-[vpr] Routing iteration: 7
-[vpr] Critical path: 6.36728 ns
-[vpr] 
-[vpr] Routing iteration: 8
-[vpr] Critical path: 6.36728 ns
-[vpr] 
-[vpr] Routing iteration: 9
-[vpr] Critical path: 6.36728 ns
-[vpr] 
-[vpr] Routing iteration: 10
-[vpr] Critical path: 6.36728 ns
-[vpr] 
-[vpr] Routing iteration: 11
-[vpr] Critical path: 6.36728 ns
-[vpr] 
-[vpr] Routing iteration: 12
-[vpr] Critical path: 6.36728 ns
-[vpr] 
-[vpr] Routing iteration: 13
-[vpr] Critical path: 6.36728 ns
-[vpr] 
-[vpr] Routing iteration: 14
-[vpr] Critical path: 6.36728 ns
-[vpr] 
-[vpr] Routing iteration: 15
-[vpr] Critical path: 6.36728 ns
-[vpr] 
-[vpr] Routing iteration: 16
-[vpr] Critical path: 6.36728 ns
-[vpr] 
-[vpr] Routing iteration: 17
-[vpr] Successfully routed after 17 routing iterations.
+[vpr] Successfully routed after 19 routing iterations.
 [vpr] Completed net delay value cross check successfully.
 [vpr] 
 [vpr] Checking to ensure routing is legal...
 [vpr] Completed routing consistency check successfully.
 [vpr] 
-[vpr] Serial number (magic cookie) for the routing is: -613821028
+[vpr] Serial number (magic cookie) for the routing is: -610036388
 [vpr] Circuit successfully routed with a channel width factor of 48.
 [vpr] 
-[vpr] Average number of bends per net: 2.57921  Maximum # of bends: 50
+[vpr] Average number of bends per net: 2.58251  Maximum # of bends: 61
 [vpr] 
 [vpr] Number of routed nets (nonglobal): 606
 [vpr] Wire length results (in units of 1 clb segments)...
-[vpr] 	Total wirelength: 8920, average net length: 14.7195
-[vpr] 	Maximum net length: 226
+[vpr] 	Total wirelength: 8908, average net length: 14.6997
+[vpr] 	Maximum net length: 248
 [vpr] 
 [vpr] Wire length results in terms of physical segments...
-[vpr] 	Total wiring segments used: 2481, average wire segments per net: 4.09406
-[vpr] 	Maximum segments used by a net: 66
+[vpr] 	Total wiring segments used: 2471, average wire segments per net: 4.07756
+[vpr] 	Maximum segments used by a net: 75
 [vpr] 	Total local nets with reserved CLB opins: 0
 [vpr] 
 [vpr] X - Directed channels: j max occ ave occ capacity
 [vpr]                       -- ------- ------- --------
-[vpr]                        0      34 22.3333       48
-[vpr]                        1      30 18.3333       48
-[vpr]                        2      35 24.7500       48
-[vpr]                        3      36 27.5000       48
-[vpr]                        4      41 30.4167       48
-[vpr]                        5      42 32.5000       48
-[vpr]                        6      44 34.2500       48
-[vpr]                        7      44 31.1667       48
-[vpr]                        8      41 31.3333       48
-[vpr]                        9      44 33.3333       48
-[vpr]                       10      43 29.0833       48
-[vpr]                       11      42 25.1667       48
-[vpr]                       12      40 27.4167       48
+[vpr]                        0      29 18.5000       48
+[vpr]                        1      33 20.5000       48
+[vpr]                        2      32 22.6667       48
+[vpr]                        3      35 25.7500       48
+[vpr]                        4      39 31.0000       48
+[vpr]                        5      44 32.5833       48
+[vpr]                        6      42 33.5000       48
+[vpr]                        7      44 35.0833       48
+[vpr]                        8      46 33.9167       48
+[vpr]                        9      43 31.0000       48
+[vpr]                       10      44 30.3333       48
+[vpr]                       11      43 27.7500       48
+[vpr]                       12      33 25.1667       48
 [vpr] Y - Directed channels: i max occ ave occ capacity
 [vpr]                       -- ------- ------- --------
-[vpr]                        0      36 21.1667       48
-[vpr]                        1      35 26.0833       48
-[vpr]                        2      36 28.0000       48
-[vpr]                        3      42 32.0833       48
-[vpr]                        4      42 32.6667       48
-[vpr]                        5      42 31.7500       48
-[vpr]                        6      42 34.5000       48
-[vpr]                        7      42 34.2500       48
-[vpr]                        8      40 31.8333       48
-[vpr]                        9      39 30.5833       48
-[vpr]                       10      36 27.4167       48
-[vpr]                       11      27 21.3333       48
-[vpr]                       12      32 24.0833       48
+[vpr]                        0      34 22.6667       48
+[vpr]                        1      35 22.8333       48
+[vpr]                        2      36 26.0000       48
+[vpr]                        3      43 30.8333       48
+[vpr]                        4      41 32.8333       48
+[vpr]                        5      45 34.5833       48
+[vpr]                        6      40 32.9167       48
+[vpr]                        7      43 33.9167       48
+[vpr]                        8      40 32.5833       48
+[vpr]                        9      43 31.9167       48
+[vpr]                       10      36 26.2500       48
+[vpr]                       11      31 21.6667       48
+[vpr]                       12      39 25.5833       48
 [vpr] 
 [vpr] Total tracks in x-direction: 624, in y-direction: 624
 [vpr] 
@@ -1296,20 +1378,17 @@ Executing VPR interface...
 [vpr] Routing area (in minimum width transistor areas)...
 [vpr] 	Total routing area: 744417., per logic tile: 5169.56
 [vpr] 
-[vpr] Segment usage by type (index):
-[vpr] Segment type       Fractional utilization
-[vpr] ------------       ----------------------
-[vpr]        0                   0.53
+[vpr] Segment usage by type (index): type utilization
+[vpr]                                ---- -----------
+[vpr]                                   0       0.528
 [vpr] 
-[vpr] Segment usage by length:
-[vpr] Segment length       Fractional utilization
-[vpr] --------------       ----------------------
-[vpr]         4                    0.53
+[vpr] Segment usage by length: length utilization
+[vpr]                          ------ -----------
+[vpr]                               4       0.528
 [vpr] 
 [vpr] Nets on critical path: 8 normal, 0 global.
 [vpr] Total logic delay: 4.83034e-09 (s), total net delay: 1.53694e-09 (s)
-[vpr] Final critical path: 6.36728 ns
-[vpr] f_max: 157.053 MHz
+[vpr] Final critical path: 6.36728 ns, f_max: 157.053 MHz
 [vpr] 
 [vpr] Least slack in design: -6.36728 ns
 [vpr] 
