@@ -66,7 +66,8 @@ CFLAGS = $(CFLAGS$(ISM)) \
 	-I../TC_Common \
 	-I../../libpccts/pcctsGeneric -I../../libpccts/h \
 	-I../../libcommon_c/pcre/SRC \
-	-I../../vpr/SRC/base -I../../vpr/SRC/util -I../../libarchfpga/include
+	-I../../vpr/SRC/base -I../../vpr/SRC/util -I../../vpr/SRC/place \
+	-I../../libarchfpga/include
 
 ######################################################################
 # Program files
@@ -165,8 +166,8 @@ Optimized:
 Debug:
 	make $(EXE) BUILD_TARGET=Debug
 clean:
-	rm -rf $(ISM)/*
-	rm -f $(ANTLRGEN) $(DLGGEN)
+	make $(EXE) BUILD_TARGET=clean
+	rm -f $(EXE) $(ISM)/*.o
 
 .cxx.o:;
 .cxx.a:;
