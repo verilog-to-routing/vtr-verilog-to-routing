@@ -66,6 +66,7 @@ TAS_ArchitectureSpec_c::TAS_ArchitectureSpec_c(
       modeList( TAS_MODE_LIST_DEF_CAPACITY ),
       switchBoxList( TAS_SWITCH_BOX_LIST_DEF_CAPACITY ),
       segmentList( TAS_SEGMENT_LIST_DEF_CAPACITY ),
+      carryChainList( TAS_CARRY_CHAIN_LIST_DEF_CAPACITY ),
       cellList( TAS_CELL_LIST_DEF_CAPACITY )
 {
    this->sorted.physicalBlockList.SetCapacity( TAS_PHYSICAL_BLOCK_LIST_DEF_CAPACITY );
@@ -83,6 +84,7 @@ TAS_ArchitectureSpec_c::TAS_ArchitectureSpec_c(
       modeList( architectureSpec.modeList ),
       switchBoxList( architectureSpec.switchBoxList ),
       segmentList( architectureSpec.segmentList ),
+      carryChainList( architectureSpec.carryChainList ),
       cellList( architectureSpec.cellList )
 {
    this->sorted.physicalBlockList = architectureSpec.sorted.physicalBlockList;
@@ -120,6 +122,7 @@ TAS_ArchitectureSpec_c& TAS_ArchitectureSpec_c::operator=(
       this->modeList = architectureSpec.modeList;
       this->switchBoxList = architectureSpec.switchBoxList;
       this->segmentList = architectureSpec.segmentList;
+      this->carryChainList = architectureSpec.carryChainList;
       this->cellList = architectureSpec.cellList;
       this->sorted.physicalBlockList = architectureSpec.sorted.physicalBlockList;
       this->sorted.modeList = architectureSpec.sorted.modeList;
@@ -144,6 +147,7 @@ bool TAS_ArchitectureSpec_c::operator==(
           ( this->modeList == architectureSpec.modeList ) &&
           ( this->switchBoxList == architectureSpec.switchBoxList ) &&
           ( this->segmentList == architectureSpec.segmentList ) &&
+          ( this->carryChainList == architectureSpec.carryChainList ) &&
           ( this->cellList == architectureSpec.cellList ) ?
           true : false );
 }
@@ -167,6 +171,7 @@ bool TAS_ArchitectureSpec_c::operator!=(
 //---------------------------------------------------------------------------//
 // Version history
 // 05/15/12 jeffr : Original
+// 07/10/13 jeffr : Added support for processing carry chain list
 //===========================================================================//
 void TAS_ArchitectureSpec_c::Print( 
       FILE*  pfile,
@@ -221,6 +226,12 @@ void TAS_ArchitectureSpec_c::Print(
    {
       printHandler.Write( pfile, spaceLen, "\n" );
       this->segmentList.Print( pfile, spaceLen );
+   }
+
+   if( this->carryChainList.IsValid( ))
+   {
+      printHandler.Write( pfile, spaceLen, "\n" );
+      this->carryChainList.Print( pfile, spaceLen );
    }
 
    if( this->cellList.IsValid( ))
@@ -306,6 +317,15 @@ void TAS_ArchitectureSpec_c::PrintXML(
          this->segmentList[i]->PrintXML( pfile, spaceLen + 3 );
       }
       printHandler.Write( pfile, spaceLen, "</segmentlist>\n" );
+   }
+   if( this->carryChainList.IsValid( ))
+   {
+      printHandler.Write( pfile, spaceLen, "<carrychainlist>\n" );
+      for( size_t i = 0; i < this->carryChainList.GetLength( ); ++i )
+      {
+         this->carryChainList[i]->PrintXML( pfile, spaceLen + 3 );
+      }
+      printHandler.Write( pfile, spaceLen, "</carrychainlist>\n" );
    }
 
    spaceLen -= 3;
@@ -431,6 +451,7 @@ bool TAS_ArchitectureSpec_c::IsValid(
           ( this->modeList.IsValid( )) ||
           ( this->switchBoxList.IsValid( )) ||
           ( this->segmentList.IsValid( )) ||
+          ( this->carryChainList.IsValid( )) ||
           ( this->cellList.IsValid( )) ?
           true : false );
 }
