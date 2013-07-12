@@ -59,6 +59,7 @@ CFLAGS = $(CFLAGS$(ISM)) $(PCCTSINC)\
 	-I../TAS_ArchitectureSpec \
 	-I../TLO_LogicalObjects \
 	-I../TPO_PhysicalObjects \
+	-I../TGO_GeometricObjects \
 	-I../TGS_GeometricShapes \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
@@ -127,7 +128,7 @@ Debug:
 Gprof:
 	make $(EXE) CFLAGS="-pg -g -DDEBUG $(CFLAGS)" BUILD_TARGET=Debug
 clean:
-	rm -rf $(ISM)/*
+	rm -f $(EXE) $(ISM)/*.o
 	rm -f $(ANTLRGEN) $(DLGGEN)
 
 .cxx.o:;
@@ -183,6 +184,9 @@ $(OBJECTS): $(ISM)/%.o:%.cxx
 
 ../$(ISM)/libTPO_PhysicalObjects.a:
 	cd ../TPO_PhysicalObjects ; $(MAKE) $(BUILD_TARGET)
+
+../$(ISM)/libTGO_GeometricObjects.a:
+	cd ../TGO_GeometricObjects ; $(MAKE) $(BUILD_TARGET)
 
 ../$(ISM)/libTGS_GeometricShapes.a:
 	cd ../TGS_GeometricShapes ; $(MAKE) $(BUILD_TARGET)
