@@ -12,6 +12,8 @@
 //           - Set
 //           - Clear
 //           - Reset
+//           - ForceRelativeLinks
+//           - HasRelativeLink
 //
 //           Private methods include:
 //           - AddNode_
@@ -53,7 +55,8 @@
 TCH_RelativeMacro_c::TCH_RelativeMacro_c( 
       void )
       :
-      relativeNodeList_( TCH_RELATIVE_NODE_LIST_DEF_CAPACITY )
+      relativeNodeList_( TCH_RELATIVE_NODE_LIST_DEF_CAPACITY ),
+      rotateEnabled_( false )
 {
 } 
 
@@ -61,7 +64,8 @@ TCH_RelativeMacro_c::TCH_RelativeMacro_c(
 TCH_RelativeMacro_c::TCH_RelativeMacro_c( 
       const TCH_RelativeMacro_c& relativeMacro )
       :
-      relativeNodeList_( relativeMacro.relativeNodeList_ )
+      relativeNodeList_( relativeMacro.relativeNodeList_ ),
+      rotateEnabled_( false )
 {
 } 
 
@@ -90,6 +94,7 @@ TCH_RelativeMacro_c& TCH_RelativeMacro_c::operator=(
    if( &relativeMacro != this )
    {
       this->relativeNodeList_ = relativeMacro.relativeNodeList_;
+      this->rotateEnabled_ = relativeMacro.rotateEnabled_;
    }
    return( *this );
 }
@@ -104,7 +109,8 @@ TCH_RelativeMacro_c& TCH_RelativeMacro_c::operator=(
 bool TCH_RelativeMacro_c::operator==( 
       const TCH_RelativeMacro_c& relativeMacro ) const
 {
-   return(( this->relativeNodeList_ == relativeMacro.relativeNodeList_ ) ?
+   return(( this->relativeNodeList_ == relativeMacro.relativeNodeList_ ) &&
+          ( this->rotateEnabled_ == relativeMacro.rotateEnabled_ ) ?
           true : false );
 }
 
@@ -152,6 +158,9 @@ void TCH_RelativeMacro_c::Print(
    {
       TCH_RelativeNode_c* prelativeNode = this->relativeNodeList_[i];
       prelativeNode->Print( pfile, spaceLen + 3 );
+
+      printHandler.Write( pfile, 0, " rotate_enabled=%s", 
+                                    TIO_BOOL_STR( this->rotateEnabled_ ));
    }
    printHandler.Write( pfile, spaceLen, "</macro>\n" );
 } 
@@ -161,21 +170,21 @@ void TCH_RelativeMacro_c::Print(
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
-// 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Original
 //===========================================================================//
 void TCH_RelativeMacro_c::Add(
-      const char*         pszFromBlockName,
-      const char*         pszToBlockName,
-            TC_SideMode_t side,
-            size_t*       pfromNodeIndex,
-            size_t*       ptoNodeIndex )
+      const char*          pszFromBlockName,
+      const char*          pszToBlockName,
+      const TGO_IntDims_t& fromToLink,
+            size_t*        pfromNodeIndex,
+            size_t*        ptoNodeIndex )
 {
    // Add two new nodes to relative macro node list
    size_t fromNodeIndex = this->AddNode_( pszFromBlockName );
    size_t toNodeIndex = this->AddNode_( pszToBlockName );
 
-   // Link new nodes via neighbor indices based on relative side and anti-side
-   this->LinkNodes_( fromNodeIndex, toNodeIndex, side );
+   // Link new nodes via relative indices based on relative link offsets
+   this->LinkNodes_( fromNodeIndex, toNodeIndex, fromToLink );
 
    if( pfromNodeIndex )
    {
@@ -189,18 +198,18 @@ void TCH_RelativeMacro_c::Add(
 
 //===========================================================================//
 void TCH_RelativeMacro_c::Add(
-            size_t        fromNodeIndex,
-      const char*         pszToBlockName,
-            TC_SideMode_t side,
-            size_t*       ptoNodeIndex )
+            size_t         fromNodeIndex,
+      const char*          pszToBlockName,
+      const TGO_IntDims_t& fromToLink,
+            size_t*        ptoNodeIndex )
 {
    if( fromNodeIndex < this->relativeNodeList_.GetLength( ))
    {
       // Add new node to relative macro node list
       size_t toNodeIndex = this->AddNode_( pszToBlockName );
 
-      // Link new nodes via neighbor indices based on relative side and anti-side
-      this->LinkNodes_( fromNodeIndex, toNodeIndex, side );
+      // Link new nodes via relative indices based on relative link offsets
+      this->LinkNodes_( fromNodeIndex, toNodeIndex, fromToLink );
 
       if( ptoNodeIndex )
       {
@@ -211,15 +220,15 @@ void TCH_RelativeMacro_c::Add(
 
 //===========================================================================//
 void TCH_RelativeMacro_c::Add(
-      size_t        fromNodeIndex,
-      size_t        toNodeIndex,
-      TC_SideMode_t side )
+            size_t         fromNodeIndex,
+            size_t         toNodeIndex,
+      const TGO_IntDims_t& fromToLink )
 {
    if( fromNodeIndex < this->relativeNodeList_.GetLength( ) &&
        toNodeIndex < this->relativeNodeList_.GetLength( ))
    {
-      // Link new nodes via neighbor indices based on relative side and anti-side
-      this->LinkNodes_( fromNodeIndex, toNodeIndex, side );
+      // Link new nodes via relative indices based on relative link offsets
+      this->LinkNodes_( fromNodeIndex, toNodeIndex, fromToLink );
    }
 }
 
@@ -251,6 +260,52 @@ TCH_RelativeNode_c* TCH_RelativeMacro_c::Find(
 }
 
 //===========================================================================//
+TCH_RelativeNode_c* TCH_RelativeMacro_c::Find( 
+            size_t         fromNodeIndex,
+      const TGO_IntDims_t& fromToLink ) const
+{
+   TCH_RelativeNode_c* ptoNode = 0;
+   TCH_RelativeNode_c* pfromNode = this->relativeNodeList_[fromNodeIndex];
+   if( pfromNode )
+   {
+      ptoNode = this->Find( *pfromNode, fromToLink );
+   }
+   return( ptoNode );
+}
+
+//===========================================================================//
+TCH_RelativeNode_c* TCH_RelativeMacro_c::Find( 
+      const TCH_RelativeNode_c& fromNode,
+      const TGO_IntDims_t&      fromToLink ) const
+{
+   TCH_RelativeNode_c* ptoNode = 0;
+
+   TGO_Point_c fromRelativePoint = fromNode.GetRelativePoint( );
+   fromRelativePoint.Set( fromRelativePoint.x + fromToLink.dx,
+			  fromRelativePoint.y + fromToLink.dy );
+
+   for( size_t i = 0; i < this->relativeNodeList_.GetLength( ); ++i )
+   {
+      const TCH_RelativeNode_c& toNode = *this->relativeNodeList_[i];
+      const TGO_Point_c& toRelativePoint = toNode.GetRelativePoint( );
+      if( fromRelativePoint == toRelativePoint )
+      {
+         ptoNode = this->relativeNodeList_[i];
+         break;
+      }
+   }
+   return( ptoNode );
+}
+
+//===========================================================================//
+TCH_RelativeNode_c* TCH_RelativeMacro_c::Find( 
+      const TCH_RelativeNode_c& fromNode ) const
+{
+   TGO_IntDims_t fromToLink( 0, 0 );
+   return( this->Find( fromNode, fromToLink ));
+}
+
+//===========================================================================//
 // Method         : Set
 // Description    : Sets placement coordinates for all nodes in a relative
 //                  macro based on the given origin point and rotate mode.
@@ -270,76 +325,22 @@ void TCH_RelativeMacro_c::Set(
    {
       prelativeNode->SetVPR_GridPoint( origin );
 
-      // Next, use recursion to set all neighbors based on cumulative translate 
-      if( prelativeNode->HasSideIndex( TC_SIDE_LEFT ))
+      // Iterate for all relative links to update origin points per rotate
+      const TGO_Point_c& relativePoint = prelativeNode->GetRelativePoint( );
+      const TCH_RelativeLinkList_t& relativeLinkList = prelativeNode->GetRelativeLinkList( );
+      for( size_t i = 0; i < relativeLinkList.GetLength( ); ++i )
       {
-         size_t neighborNodeIndex = prelativeNode->GetSideIndex( TC_SIDE_LEFT );
-         TGO_IntDims_t translate( -1, 0, 0 );
-         this->Set( neighborNodeIndex, origin, rotate, translate );
-      }
-      if( prelativeNode->HasSideIndex( TC_SIDE_RIGHT ))
-      {
-         size_t neighborNodeIndex = prelativeNode->GetSideIndex( TC_SIDE_RIGHT );
-         TGO_IntDims_t translate( 1, 0, 0 );
-         this->Set( neighborNodeIndex, origin, rotate, translate );
-      }
-      if( prelativeNode->HasSideIndex( TC_SIDE_LOWER ))
-      {
-         size_t neighborNodeIndex = prelativeNode->GetSideIndex( TC_SIDE_LOWER );
-         TGO_IntDims_t translate( 0, -1, 0 );
-         this->Set( neighborNodeIndex, origin, rotate, translate );
-      }
-      if( prelativeNode->HasSideIndex( TC_SIDE_UPPER ))
-      {
-         size_t neighborNodeIndex = prelativeNode->GetSideIndex( TC_SIDE_UPPER );
-         TGO_IntDims_t translate( 0, 1, 0 );
-         this->Set( neighborNodeIndex, origin, rotate, translate );
-      }
-   }
-}
+         size_t nodeIndex = relativeLinkList[i]->GetIndex( );
+         TCH_RelativeNode_c* pneighborNode = this->relativeNodeList_[nodeIndex];
+         const TGO_Point_c& neighborPoint = pneighborNode->GetRelativePoint( );
 
-//===========================================================================//
-void TCH_RelativeMacro_c::Set(
-            size_t           relativeNodeIndex,
-      const TGO_Point_c&     origin,
-            TGO_RotateMode_t rotate,
-      const TGO_IntDims_t&   translate )
-{
-   // Start by setting given relative node based on the given origin point
-   TCH_RelativeNode_c* prelativeNode = Find( relativeNodeIndex );
-   if( prelativeNode &&
-       !prelativeNode->GetVPR_GridPoint( ).IsValid( ))
-   {
-      // Next, define transform, then apply recursively to all relative neighbors
-      TGO_Transform_c transform( origin, rotate, translate );
+         TGO_IntDims_t translate( neighborPoint.x - relativePoint.x,
+                                  neighborPoint.y - relativePoint.y, 0 );
+         TGO_Transform_c transform( origin, rotate, translate );
 
-      TGO_Point_c gridPoint;
-      transform.Apply( origin, &gridPoint );
-      prelativeNode->SetVPR_GridPoint( gridPoint );
-
-      if( prelativeNode->HasSideIndex( TC_SIDE_LEFT ))
-      {
-         size_t neighborNodeIndex = prelativeNode->GetSideIndex( TC_SIDE_LEFT );
-         TGO_IntDims_t translate_( translate.dx - 1, translate.dy, translate.dz );
-         this->Set( neighborNodeIndex, origin, rotate, translate_ );
-      }
-      if( prelativeNode->HasSideIndex( TC_SIDE_RIGHT ))
-      {
-         size_t neighborNodeIndex = prelativeNode->GetSideIndex( TC_SIDE_RIGHT );
-         TGO_IntDims_t translate_( translate.dx + 1, translate.dy, translate.dz );
-         this->Set( neighborNodeIndex, origin, rotate, translate_ );
-      }
-      if( prelativeNode->HasSideIndex( TC_SIDE_LOWER ))
-      {
-         size_t neighborNodeIndex = prelativeNode->GetSideIndex( TC_SIDE_LOWER );
-         TGO_IntDims_t translate_( translate.dx, translate.dy - 1, translate.dz );
-         this->Set( neighborNodeIndex, origin, rotate, translate_ );
-      }
-      if( prelativeNode->HasSideIndex( TC_SIDE_UPPER ))
-      {
-         size_t neighborNodeIndex = prelativeNode->GetSideIndex( TC_SIDE_UPPER );
-         TGO_IntDims_t translate_( translate.dx, translate.dy + 1, translate.dz );
-         this->Set( neighborNodeIndex, origin, rotate, translate_ );
+         TGO_Point_c gridPoint;
+         transform.Apply( origin, &gridPoint );
+         pneighborNode->SetVPR_GridPoint( gridPoint );
       }
    }
 }
@@ -380,6 +381,66 @@ void TCH_RelativeMacro_c::Reset(
 }
 
 //===========================================================================//
+// Method         : ForceRelativeLinks
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 06/25/13 jeffr : Original
+//===========================================================================//
+void TCH_RelativeMacro_c::ForceRelativeLinks(
+      const TCH_RelativeNode_c& fromNode,
+      const TCH_RelativeNode_c& toNode,
+      const TGO_IntDims_t&      fromToLink )
+{
+   const TGO_Point_c& fromPoint = fromNode.GetRelativePoint( );
+   const TGO_Point_c& toPoint = toNode.GetRelativePoint( );
+   this->ForceRelativeLinks( fromPoint, toPoint, fromToLink );
+}
+
+//===========================================================================//
+void TCH_RelativeMacro_c::ForceRelativeLinks(
+      const TGO_Point_c&   fromPoint,
+      const TGO_Point_c&   toPoint,
+      const TGO_IntDims_t& fromToLink )
+{
+   TGO_IntDims_t forceLink( fromPoint.x - toPoint.x + fromToLink.dx,
+                            fromPoint.y - toPoint.y + fromToLink.dy );
+
+   for( size_t i = 0; i < this->relativeNodeList_.GetLength( ); ++i )
+   {
+      TCH_RelativeNode_c* prelativeNode = this->relativeNodeList_[i];
+      TGO_Point_c relativePoint = prelativeNode->GetRelativePoint( );
+      relativePoint.Set( relativePoint.x + forceLink.dx,
+                         relativePoint.y + forceLink.dy );
+      prelativeNode->SetRelativePoint( relativePoint );
+   }
+}
+
+//===========================================================================//
+// Method         : HasRelativeLink
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 06/25/13 jeffr : Original
+//===========================================================================//
+bool TCH_RelativeMacro_c::HasRelativeLink(
+            size_t         fromNodeIndex,
+      const TGO_IntDims_t& fromToLink ) const
+{
+   const TCH_RelativeNode_c* ptoNode = this->Find( fromNodeIndex, fromToLink );
+   return( ptoNode ? true : false );
+}
+
+//===========================================================================//
+bool TCH_RelativeMacro_c::HasRelativeLink(
+      const TCH_RelativeNode_c& fromNode,
+      const TGO_IntDims_t&      fromToLink ) const
+{
+   const TCH_RelativeNode_c* ptoNode = this->Find( fromNode, fromToLink );
+   return( ptoNode ? true : false );
+}
+
+//===========================================================================//
 // Method         : AddNode_
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
@@ -404,37 +465,44 @@ size_t TCH_RelativeMacro_c::AddNode_(
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
-// 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Original
 //===========================================================================//
 void TCH_RelativeMacro_c::LinkNodes_(
-      size_t        fromNodeIndex,
-      size_t        toNodeIndex,
-      TC_SideMode_t side ) const
+            size_t         fromNodeIndex,
+            size_t         toNodeIndex,
+      const TGO_IntDims_t& fromToLink ) const
 {
    // Find nodes based on given node indices
    TCH_RelativeNode_c* pfromNode = this->relativeNodeList_[fromNodeIndex];
    TCH_RelativeNode_c* ptoNode = this->relativeNodeList_[toNodeIndex];
 
-   // Link nodes via neighbor indices based on relative side and anti-side
-   switch( side )
+   // Set/update from/to nodes based on new/existing relative link offsets
+   if( !pfromNode->HasRelativePoint( ))
    {
-   case TC_SIDE_LEFT:
-      pfromNode->SetSideIndex( TC_SIDE_LEFT, toNodeIndex );
-      ptoNode->SetSideIndex( TC_SIDE_RIGHT, fromNodeIndex );
-      break;
-   case TC_SIDE_RIGHT:
-      pfromNode->SetSideIndex( TC_SIDE_RIGHT, toNodeIndex );
-      ptoNode->SetSideIndex( TC_SIDE_LEFT, fromNodeIndex );
-      break;
-   case TC_SIDE_LOWER:
-      pfromNode->SetSideIndex( TC_SIDE_LOWER, toNodeIndex );
-      ptoNode->SetSideIndex( TC_SIDE_UPPER, fromNodeIndex );
-      break;
-   case TC_SIDE_UPPER:
-      pfromNode->SetSideIndex( TC_SIDE_UPPER, toNodeIndex );
-      ptoNode->SetSideIndex( TC_SIDE_LOWER, fromNodeIndex );
-      break;
-   default:
-      break;
+      TGO_Point_c fromRelativePoint( 0, 0 );
+      pfromNode->SetRelativePoint( fromRelativePoint );
+   }
+   const TGO_Point_c& fromRelativePoint = pfromNode->GetRelativePoint( );
+   TGO_Point_c toRelativePoint( fromRelativePoint.x + fromToLink.dx,
+                                fromRelativePoint.y + fromToLink.dy );
+   ptoNode->SetRelativePoint( toRelativePoint );
+
+   for( size_t i = 0; i < this->relativeNodeList_.GetLength( ); ++i )
+   {
+      TCH_RelativeNode_c* prelativeNode = this->relativeNodeList_[i];
+      if( prelativeNode == ptoNode )
+         continue;
+
+      pfromNode = prelativeNode;
+      fromNodeIndex = i;
+
+      if( !pfromNode->HasRelativeLink( toNodeIndex ))
+      {
+         pfromNode->AddRelativeLink( toNodeIndex );
+      }
+      if( !ptoNode->HasRelativeLink( fromNodeIndex ))
+      {
+         ptoNode->AddRelativeLink( fromNodeIndex );
+      }
    }
 }
