@@ -21,8 +21,7 @@
    </models>
    <complexblocklist>
       <pb_type name="io" capacity="16" >
-         <fc_in type="frac">"0.150"</fc_in>
-         <fc_out type="frac">"0.125"</fc_out>
+         <fc default_in_type="frac" default_in_val="0.150" default_out_type="frac" default_out_val="0.125"/>
          <mode name="inpad">
             <pb_type name="inpad" blif_model=".input" num_pb="1" >
                <output name="inpad" num_pins="1"/>
@@ -53,8 +52,7 @@
          </gridlocations>
       </pb_type>
       <pb_type name="clb" >
-         <fc_in type="frac">"0.150"</fc_in>
-         <fc_out type="frac">"0.125"</fc_out>
+         <fc default_in_type="frac" default_in_val="0.150" default_out_type="frac" default_out_val="0.125"/>
          <pb_type name="ble" num_pb="12" >
             <pb_type name="lut5" blif_model=".names" num_pb="1" class="lut" >
                <input name="in" num_pins="5" port_class="lut_in"/>
