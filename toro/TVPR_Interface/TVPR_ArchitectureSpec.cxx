@@ -14,6 +14,7 @@
 //           - PokePhysicalBlock_
 //           - PokeSwitchBoxList_
 //           - PokeSegmentList_
+//           - PokeCarryChainList_
 //           - PokePbType_
 //           - PokePbTypeChild_
 //           - PokePbTypeLutClass_
@@ -23,6 +24,8 @@
 //           - PokeInterconnectList_
 //           - PokeInterconnect_
 //           - PokeFc_
+//           - PokeFcPinList_
+//           - PokeFcPin_
 //           - PokePinAssignList_
 //           - PokeGridAssignList_
 //           - PokePortList_
@@ -64,6 +67,7 @@
 #include <string>
 using namespace std;
 
+#include "TC_StringUtils.h"
 #include "TC_MemoryUtils.h"
 
 #include "TVPR_ArchitectureSpec.h"
@@ -100,6 +104,7 @@ TVPR_ArchitectureSpec_c::~TVPR_ArchitectureSpec_c(
 //---------------------------------------------------------------------------//
 // Version history
 // 07/10/12 jeffr : Original
+// 07/10/13 jeffr : Added support for "PokeCarryChainList_()" method
 //===========================================================================//
 bool TVPR_ArchitectureSpec_c::Export(
       const TAS_ArchitectureSpec_c& architectureSpec,
@@ -115,6 +120,7 @@ bool TVPR_ArchitectureSpec_c::Export(
    const TAS_PhysicalBlockList_t& physicalBlockList = architectureSpec.physicalBlockList;
    const TAS_SwitchBoxList_t& switchBoxList = architectureSpec.switchBoxList;
    const TAS_SegmentList_t& segmentList = architectureSpec.segmentList;
+   const TAS_CarryChainList_t& carryChainList = architectureSpec.carryChainList;
 
    this->PokeLayout_( config, 
                       pvpr_architecture );
@@ -128,9 +134,9 @@ bool TVPR_ArchitectureSpec_c::Export(
    }
    if( ok )
    {
-      this->PokePhysicalBlockList_( physicalBlockList,
-                                    pvpr_physicalBlockArray,
-                                    pvpr_physicalBlockCount );
+      ok = this->PokePhysicalBlockList_( physicalBlockList,
+                                         pvpr_physicalBlockArray,
+                                         pvpr_physicalBlockCount );
    }
    if( ok )
    {
@@ -147,6 +153,12 @@ bool TVPR_ArchitectureSpec_c::Export(
                                    pvpr_architecture->Switches,
                                    pvpr_architecture->num_switches,
                                    isTimingEnabled );
+   }
+   if( ok )
+   {
+      ok = this->PokeCarryChainList_( carryChainList, 
+                                      &pvpr_architecture->Directs,
+                                      &pvpr_architecture->num_directs );
    }
 
    if( ok )
@@ -308,6 +320,8 @@ void TVPR_ArchitectureSpec_c::PokeModelLists_(
 //---------------------------------------------------------------------------//
 // Version history
 // 07/10/12 jeffr : Original
+// 07/10/13 jeffr : Fixed code to properly initialize the model 'index' field
+//                  (was defaulting to '0', which failed for memory subckts)
 //===========================================================================//
 void TVPR_ArchitectureSpec_c::PokeModel_(
       const TAS_Cell_c& cell,
@@ -317,66 +331,78 @@ void TVPR_ArchitectureSpec_c::PokeModel_(
 
    const TLO_PortList_t& portList = cell.GetPortList( );
 
-   size_t inputCount = 0;
-   size_t outputCount = 0;
+   size_t inputTotal = 0;
+   size_t outputTotal = 0;
    for( size_t j = 0; j < portList.GetLength( ); ++j )
    {
       const TLO_Port_c& port = *portList[j];
-      inputCount += (( port.GetType( ) == TC_TYPE_INPUT ) ? 1 : 0 );
-      inputCount += (( port.GetType( ) == TC_TYPE_CLOCK ) ? 1 : 0 );
-      outputCount += (( port.GetType( ) == TC_TYPE_OUTPUT ) ? 1 : 0 );
+      inputTotal += (( port.GetType( ) == TC_TYPE_INPUT ) ? 1 : 0 );
+      inputTotal += (( port.GetType( ) == TC_TYPE_CLOCK ) ? 1 : 0 );
+      outputTotal += (( port.GetType( ) == TC_TYPE_OUTPUT ) ? 1 : 0 );
    }
 
-   pvpr_model->inputs = static_cast< t_model_ports* >( TC_calloc( inputCount, sizeof( t_model_ports )));
-   pvpr_model->outputs = static_cast< t_model_ports* >( TC_calloc( outputCount, sizeof( t_model_ports )));
+   pvpr_model->inputs = static_cast< t_model_ports* >( TC_calloc( inputTotal, sizeof( t_model_ports )));
+   pvpr_model->outputs = static_cast< t_model_ports* >( TC_calloc( outputTotal, sizeof( t_model_ports )));
 
+   size_t inputCount = 0;   
    size_t inputIndex = 0;   
+   size_t clockIndex = 0;   
    for( size_t j = 0; j < portList.GetLength( ); ++j )
    {
       const TLO_Port_c& port = *portList[j];
       if(( port.GetType( ) == TC_TYPE_INPUT ) || ( port.GetType( ) == TC_TYPE_CLOCK ))
       {
-         t_model_ports* pvpr_modelPort = &( pvpr_model->inputs[inputIndex] );
-         ++inputIndex;
+         t_model_ports* pvpr_modelPort = &( pvpr_model->inputs[inputCount] );
+         ++inputCount;
 
          pvpr_modelPort->name = TC_strdup( port.GetName( ));
          pvpr_modelPort->dir = IN_PORT;
          pvpr_modelPort->size = ( cell.GetSource( ) == TLO_CELL_SOURCE_STANDARD ? 1 : -1 );
          pvpr_modelPort->min_size = ( cell.GetSource( ) == TLO_CELL_SOURCE_STANDARD ? 1 : -1 );
-         if( port.GetType( ) == TC_TYPE_CLOCK )
+
+         if( port.GetType( ) == TC_TYPE_INPUT )
          {
-            pvpr_modelPort->is_clock = static_cast< boolean >( true );
+            pvpr_modelPort->index = inputIndex;
+            ++inputIndex;
+
+            pvpr_modelPort->is_clock = static_cast< boolean >( false );
          }
          else
          {
-            pvpr_modelPort->is_clock = static_cast< boolean >( false );
+            pvpr_modelPort->index = clockIndex;
+            ++clockIndex;
+
+            pvpr_modelPort->is_clock = static_cast< boolean >( true );
          }
          pvpr_modelPort->is_non_clock_global = static_cast< boolean >( false );
 
-         if( inputIndex < inputCount )
+         if( inputCount < inputTotal )
          {
-            pvpr_modelPort->next = &( pvpr_model->inputs[inputIndex] );
+            pvpr_modelPort->next = &( pvpr_model->inputs[inputCount] );
          }
       }
    }
 
-   size_t outputIndex = 0;   
+   size_t outputCount = 0;   
+   size_t outputIndex = 0;
    for( size_t j = 0; j < portList.GetLength( ); ++j )
    {
       const TLO_Port_c& port = *portList[j];
       if( port.GetType( ) == TC_TYPE_OUTPUT )
       {
-         t_model_ports* pvpr_modelPort = &( pvpr_model->outputs[outputIndex] );
-         ++outputIndex;
+         t_model_ports* pvpr_modelPort = &( pvpr_model->outputs[outputCount] );
+         ++outputCount;
 
          pvpr_modelPort->name = TC_strdup( port.GetName( ));
          pvpr_modelPort->dir = OUT_PORT;
          pvpr_modelPort->size = ( cell.GetSource( ) == TLO_CELL_SOURCE_STANDARD ? 1 : -1 );
          pvpr_modelPort->min_size = ( cell.GetSource( ) == TLO_CELL_SOURCE_STANDARD ? 1 : -1 );
+         pvpr_modelPort->index = outputIndex;
+         ++outputIndex;
 
-         if( outputIndex < outputCount )
+         if( outputCount < outputTotal )
          {
-            pvpr_modelPort->next = &( pvpr_model->outputs[outputIndex] );
+            pvpr_modelPort->next = &( pvpr_model->outputs[outputCount] );
          }
       }
    }
@@ -389,11 +415,13 @@ void TVPR_ArchitectureSpec_c::PokeModel_(
 // Version history
 // 07/10/12 jeffr : Original
 //===========================================================================//
-void TVPR_ArchitectureSpec_c::PokePhysicalBlockList_(
+bool TVPR_ArchitectureSpec_c::PokePhysicalBlockList_(
       const TAS_PhysicalBlockList_t& physicalBlockList,
             t_type_descriptor**      pvpr_physicalBlockArray, 
             int*                     pvpr_physicalBlockCount ) const
 {
+   bool ok = true;
+
    // [VPR] Alloc the physical block type list (with extra t_type_desctiptors for empty pseudo-type)
    *pvpr_physicalBlockCount = static_cast< int >( physicalBlockList.GetLength( )) + 1;
    *pvpr_physicalBlockArray = static_cast< t_type_descriptor* >( TC_calloc( *pvpr_physicalBlockCount, sizeof( t_type_descriptor )));
@@ -418,8 +446,11 @@ void TVPR_ArchitectureSpec_c::PokePhysicalBlockList_(
       pvpr_physicalBlock->index = index;
       ++index;
 
-      this->PokePhysicalBlock_( physicalBlock, pvpr_physicalBlock );
+      ok = this->PokePhysicalBlock_( physicalBlock, pvpr_physicalBlock );
+      if( !ok )
+         break;
    }
+   return( ok );
 }
 
 //===========================================================================//
@@ -429,10 +460,12 @@ void TVPR_ArchitectureSpec_c::PokePhysicalBlockList_(
 // Version history
 // 07/10/12 jeffr : Original
 //===========================================================================//
-void TVPR_ArchitectureSpec_c::PokePhysicalBlock_(
+bool TVPR_ArchitectureSpec_c::PokePhysicalBlock_(
       const TAS_PhysicalBlock_c& physicalBlock,
             t_type_descriptor*   pvpr_physicalBlock ) const
 {
+   bool ok = true;
+
    pvpr_physicalBlock->name = TC_strdup( physicalBlock.srName.data( ));
    pvpr_physicalBlock->width = (( physicalBlock.width > 0 ) ? physicalBlock.width : 1 );
    pvpr_physicalBlock->height = (( physicalBlock.height > 0 ) ? physicalBlock.height : 1 );
@@ -462,8 +495,9 @@ void TVPR_ArchitectureSpec_c::PokePhysicalBlock_(
                               pvpr_physicalBlock );
 
    // [VPR] Poke Fc
-   this->PokeFc_( physicalBlock, 
-                  pvpr_physicalBlock );
+   ok = this->PokeFc_( physicalBlock, 
+                       pvpr_physicalBlock );
+   return( ok );
 }
 
 //===========================================================================//
@@ -651,6 +685,48 @@ bool TVPR_ArchitectureSpec_c::PokeSegmentList_(
 }
 
 //===========================================================================//
+// Method         : PokeCarryChainList_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 07/10/13 jeffr : Original
+//===========================================================================//
+bool TVPR_ArchitectureSpec_c::PokeCarryChainList_(
+      const TAS_CarryChainList_t& carryChainList,
+            t_direct_inf**        pvpr_directArray, 
+            int*                  pvpr_directCount ) const
+{
+   bool ok = true;
+
+   *pvpr_directArray = 0;
+   *pvpr_directCount = static_cast< int >( carryChainList.GetLength( ));
+
+   if( ok && ( *pvpr_directCount > 0 ))
+   {
+      *pvpr_directArray = static_cast< t_direct_inf* >( TC_calloc( *pvpr_directCount, sizeof( t_direct_inf )));
+      ok = ( pvpr_directArray ? true : false );
+   }
+
+   if( ok && ( *pvpr_directCount > 0 ))
+   {
+      for( size_t i = 0; i < carryChainList.GetLength( ); ++i )
+      {
+         const TAS_CarryChain_c& carryChain = *carryChainList[i];
+
+         ( *pvpr_directArray )[i].name = TC_strdup( carryChain.srName );
+
+         ( *pvpr_directArray )[i].from_pin = TC_strdup( carryChain.srFromPinName );
+         ( *pvpr_directArray )[i].to_pin = TC_strdup( carryChain.srToPinName );
+
+         ( *pvpr_directArray )[i].x_offset = carryChain.offset.dx;
+         ( *pvpr_directArray )[i].y_offset = carryChain.offset.dy;
+         ( *pvpr_directArray )[i].z_offset = carryChain.offset.dz;
+      }
+   }
+   return( ok );
+}
+
+//===========================================================================//
 // Method         : PokePbType_
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
@@ -812,6 +888,8 @@ void TVPR_ArchitectureSpec_c::PokePbTypeChild_(
 //---------------------------------------------------------------------------//
 // Version history
 // 07/10/12 jeffr : Original
+// 07/10/13 jeffr : Fixed code to properly initialize first interconnect type
+//                  (was using COMPLETE_INTERC, now using DIRECT_INTERC)
 //===========================================================================//
 void TVPR_ArchitectureSpec_c::PokePbTypeLutClass_(
       t_pb_type* pvpr_pb_type ) const
@@ -827,7 +905,7 @@ void TVPR_ArchitectureSpec_c::PokePbTypeLutClass_(
    pvpr_pb_type->modes = static_cast< t_mode* >( TC_calloc( pvpr_pb_type->num_modes, sizeof( t_mode )));
 
    // [VPR] First mode, route_through
-   pvpr_pb_type->modes[0].name = TC_strdup( pvpr_pb_type->name );
+   pvpr_pb_type->modes[0].name = TC_strdup( "wire" );
    pvpr_pb_type->modes[0].parent_pb_type = pvpr_pb_type;
    pvpr_pb_type->modes[0].index = 0;
    pvpr_pb_type->modes[0].num_pb_type_children = 0;
@@ -905,11 +983,11 @@ void TVPR_ArchitectureSpec_c::PokePbTypeLutClass_(
    pvpr_pb_type->modes[1].interconnect = static_cast< t_interconnect* >( TC_calloc( 2, sizeof( t_interconnect )));
 
    pvpr_interconnect0 = &pvpr_pb_type->modes[1].interconnect[0];
-   pvpr_interconnect0->type = COMPLETE_INTERC;
+   pvpr_interconnect0->type = DIRECT_INTERC;
    pvpr_interconnect0->name = static_cast< char* >( TC_calloc( strlen( pvpr_pb_type->name ) + 10, sizeof( char )));
    pvpr_interconnect0->input_string = static_cast< char* >( TC_calloc( strlen( pvpr_pb_type->name ) + strlen( pinPort->name ) + 2, sizeof( char )));
    pvpr_interconnect0->output_string = static_cast< char* >( TC_calloc( srLutName.length( ) + strlen( pinPort->name ) + 2, sizeof( char )));
-   sprintf( pvpr_interconnect0->name, "complete:%s", pvpr_pb_type->name );
+   sprintf( pvpr_interconnect0->name, "direct:%s", pvpr_pb_type->name );
    sprintf( pvpr_interconnect0->input_string, "%s.%s", pvpr_pb_type->name, pinPort->name );
    sprintf( pvpr_interconnect0->output_string, "%s.%s", srLutName.data( ), pinPort->name );
 
@@ -1220,11 +1298,14 @@ void TVPR_ArchitectureSpec_c::PokeInterconnect_(
 //---------------------------------------------------------------------------//
 // Version history
 // 07/10/12 jeffr : Original
+// 07/10/13 jeffr : Added support for "PokeFcPinList_()" method
 //===========================================================================//
-void TVPR_ArchitectureSpec_c::PokeFc_( 
+bool TVPR_ArchitectureSpec_c::PokeFc_( 
       const TAS_PhysicalBlock_c& physicalBlock,
             t_type_descriptor*   pvpr_physicalBlock ) const
 {
+   bool ok = true;
+
    TAS_ConnectionBoxType_t fcInType = physicalBlock.fcIn.type;
    float fcInVal = -1.0;
    switch( fcInType )
@@ -1288,6 +1369,115 @@ void TVPR_ArchitectureSpec_c::PokeFc_(
          pvpr_physicalBlock->is_Fc_frac[i] = static_cast< boolean >( false );
       }
    }
+
+   if( physicalBlock.fcPinList.IsValid( ))
+   {
+      ok = this->PokeFcPinList_( physicalBlock.fcPinList, 
+                                 pvpr_physicalBlock );
+   }
+   return( ok );
+}
+
+//===========================================================================//
+// Method         : PokeFcPinList_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 07/10/13 jeffr : Original
+//===========================================================================//
+bool TVPR_ArchitectureSpec_c::PokeFcPinList_( 
+      const TAS_ConnectionFcList_t& fcPinList,
+            t_type_descriptor*      pvpr_physicalBlock ) const
+{
+   bool ok = true;
+
+   // Override any pin-specific fc constraints
+   for( size_t i = 0; i < fcPinList.GetLength( ); ++i )
+   {
+      const TAS_ConnectionFc_c& fcPin = *fcPinList[i];
+      ok = this->PokeFcPin_( fcPin, pvpr_physicalBlock );
+      if( !ok )
+         break;
+   }
+   return( ok );
+}
+
+//===========================================================================//
+// Method         : PokeFcPin_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 07/10/13 jeffr : Original
+//===========================================================================//
+bool TVPR_ArchitectureSpec_c::PokeFcPin_( 
+      const TAS_ConnectionFc_c& fcPin,
+            t_type_descriptor*  pvpr_physicalBlock ) const
+{
+   bool ok = true;
+
+   // Extract pin-specific fc port name and indices (optional), type and value
+   string srPortName;
+   size_t pinIndex_i, pinIndex_j;
+   TC_ParseStringNameIndices( fcPin.srName, &srPortName, &pinIndex_i, &pinIndex_j );
+
+   TAS_ConnectionBoxType_t fcType = fcPin.type;
+   float fcVal = 0.0;
+   if( fcType == TAS_CONNECTION_BOX_FRACTION )
+   {
+      fcVal = fcPin.percent;
+   }
+   if( fcType == TAS_CONNECTION_BOX_ABSOLUTE )
+   {
+      fcVal = fcPin.absolute;
+   }
+
+   // Find child pin (if possible) in VPR's physical block (ie. t_type_descriptor)
+   bool foundPort = false;
+   int pinIndex = 0;
+
+   for( int i = 0; i < pvpr_physicalBlock->pb_type->num_ports; ++i ) 
+   {
+      if( strcmp( srPortName.data( ), pvpr_physicalBlock->pb_type->ports[i].name ) == 0 ) 
+      {
+         int pinOffset_i = 0;
+         int pinOffset_j = pvpr_physicalBlock->pb_type->ports[i].num_pins - 1;
+
+         if(( pinIndex_i != SIZE_MAX ) && ( pinIndex_j != SIZE_MAX ))
+         {
+            pinOffset_i = TCT_Min( pinIndex_i, pinIndex_j );
+            pinOffset_j = TCT_Max( pinIndex_i, pinIndex_j );
+            pinOffset_j = TCT_Min( pinOffset_j, pvpr_physicalBlock->pb_type->ports[i].num_pins - 1 );
+         }
+
+         for( int pinOffset = pinOffset_i; pinOffset <= pinOffset_j; ++pinOffset ) 
+         {
+            int j = pinIndex + pinOffset;
+            pvpr_physicalBlock->Fc[j] = fcVal;
+            pvpr_physicalBlock->is_Fc_full_flex[j] = fcType == TAS_CONNECTION_BOX_FULL ? 
+                                                     static_cast< boolean >( true ) : static_cast< boolean >( false );
+            pvpr_physicalBlock->is_Fc_frac[j] = fcType == TAS_CONNECTION_BOX_FRACTION ? 
+                                                static_cast< boolean >( true ) : static_cast< boolean >( false );
+         }
+         foundPort = true;
+         break;
+      } 
+      else 
+      {
+         // Advance pin index if no matching pin name
+         pinIndex += pvpr_physicalBlock->pb_type->ports[i].num_pins;
+      }
+   }
+
+   if( !foundPort ) 
+   {
+      TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
+      ok = printHandler.Error( "Invalid architecture model pb_type fc override detected!\n"
+                               "%sPin name \"%s\" not found in physical block \"%s\".\n",
+                               TIO_PREFIX_ERROR_SPACE,
+                               TIO_SR_STR( srPortName ),
+                               TIO_PSZ_STR( pvpr_physicalBlock->name ));
+   }
+   return( ok );
 }
 
 //===========================================================================//
