@@ -65,6 +65,7 @@ TOS_PlaceOptions_c::TOS_PlaceOptions_c(
 {
    this->relativePlace.enable = false;
    this->relativePlace.rotateEnable = false;
+   this->relativePlace.carryChainEnable = false;
    this->relativePlace.maxPlaceRetryCt = 0;
    this->relativePlace.maxMacroRetryCt = 0;
 
@@ -94,6 +95,7 @@ TOS_PlaceOptions_c::TOS_PlaceOptions_c(
       double                   slackFinalWeight_,
       bool                     relativePlace_enable_,
       bool                     relativePlace_rotateEnable_,
+      bool                     relativePlace_carryChainEnable_,
       unsigned int             relativePlace_maxPlaceRetryCt_,
       unsigned int             relativePlace_maxMacroRetryCt_,
       bool                     prePlaced_enable_ )
@@ -121,6 +123,7 @@ TOS_PlaceOptions_c::TOS_PlaceOptions_c(
 {
    this->relativePlace.enable = relativePlace_enable_;
    this->relativePlace.rotateEnable = relativePlace_rotateEnable_;
+   this->relativePlace.carryChainEnable = relativePlace_carryChainEnable_;
    this->relativePlace.maxPlaceRetryCt = relativePlace_maxPlaceRetryCt_;
    this->relativePlace.maxMacroRetryCt = relativePlace_maxMacroRetryCt_;
 
@@ -188,6 +191,7 @@ void TOS_PlaceOptions_c::Print(
    printHandler.Write( pfile, spaceLen, "\n" );
    printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_ENABLE      = %s\n", TIO_BOOL_STR( this->relativePlace.enable ));
    printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_ROTATE      = %s\n", TIO_BOOL_STR( this->relativePlace.rotateEnable ));
+   printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_CARRY_CHAIN = %s\n", TIO_BOOL_STR( this->relativePlace.carryChainEnable ));
    printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_INIT_PLACE  = %u\n", this->relativePlace.maxPlaceRetryCt );
    printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_INIT_MACRO  = %u\n", this->relativePlace.maxMacroRetryCt );
 
