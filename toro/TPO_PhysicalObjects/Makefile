@@ -81,14 +81,17 @@ LIBSO = $(LIBSO$(ISM))
 OBJSlinux_x86_64 = linux_x86_64/TPO_Inst.o \
                     linux_x86_64/TPO_PinMap.o \
                     linux_x86_64/TPO_HierMap.o \
+                    linux_x86_64/TPO_Relative.o \
                     linux_x86_64/TPO_StringUtils.o
 OBJSlinux_i686 = linux_i686/TPO_Inst.o \
                     linux_i686/TPO_PinMap.o \
                     linux_i686/TPO_HierMap.o \
+                    linux_i686/TPO_Relative.o \
                     linux_i686/TPO_StringUtils.o
 OBJSsun8 = sun8/TPO_Inst.o \
            sun8/TPO_PinMap.o \
            sun8/TPO_HierMap.o \
+           sun8/TPO_Relative.o \
            sun8/TPO_StringUtils.o
 OBJECTS = $(OBJS$(ISM))
 
@@ -107,7 +110,7 @@ Debug:
 Gprof:
 	make $(EXE) CFLAGS="-pg -g -DDEBUG $(CFLAGS)" BUILD_TARGET=Debug
 clean:
-	rm -rf $(ISM)/*
+	rm -f $(EXE) $(ISM)/*.o
 
 .cxx.o:;
 .cxx.a:;
