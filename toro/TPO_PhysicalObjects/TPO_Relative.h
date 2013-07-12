@@ -30,6 +30,7 @@
 #define TPO_RELATIVE_H
 
 #include <cstdio>
+#include <climits>
 #include <string>
 using namespace std;
 
