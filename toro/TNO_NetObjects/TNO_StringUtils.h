@@ -37,17 +37,4 @@ using namespace std;
 void TNO_ExtractStringStatusMode( TNO_StatusMode_t mode, string* psrMode );
 void TNO_ExtractStringNodeType( TNO_NodeType_t type, string* psrType );
 
-void TNO_FormatNameIndex( const char* pszName, 
-                          size_t index,
-                          string* psrNameIndex );
-void TNO_FormatNameIndex( const string& srName,
-                          size_t index,
-                          string* psrNameIndex );
-
-void TNO_ParseNameIndex( const char* pszNameIndex,
-                         string* psrName,
-                         size_t* pindex );
-void TNO_ParseNameIndex( const string& srNameIndex,
-                         string* psrName,
-                         size_t* pindex );
 #endif 
