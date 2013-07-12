@@ -62,6 +62,9 @@ typedef TCT_SortedNameDynamicVector_c< TAS_Mode_c > TAS_ModeSortedList_t;
 class TAS_Interconnect_c; // Forward declaration for subsequent class typedefs
 typedef TCT_OrderedVector_c< TAS_Interconnect_c > TAS_InterconnectList_t;
 
+class TAS_ConnectionFc_c; // Forward declaration for subsequent class typedefs
+typedef TCT_OrderedVector_c< TAS_ConnectionFc_c > TAS_ConnectionFcList_t;
+
 class TAS_PinAssign_c; // Forward declaration for subsequent class typedefs
 typedef TCT_OrderedVector_c< TAS_PinAssign_c > TAS_PinAssignList_t;
 
@@ -205,6 +208,13 @@ typedef enum TAS_SegmentDirType_e TAS_SegmentDirType_t;
 
 class TC_Bit_c; // Forward declaration for subsequent class typedefs
 typedef TCT_OrderedQueue_c< TC_Bit_c > TAS_BitPattern_t;
+
+//---------------------------------------------------------------------------//
+// Define carry chain constants and typedefs
+//---------------------------------------------------------------------------//
+
+class TAS_CarryChain_c; // Forward declaration for subsequent class typedefs
+typedef TCT_OrderedVector_c< TAS_CarryChain_c > TAS_CarryChainList_t;
 
 //---------------------------------------------------------------------------//
 // Define config constants and typedefs
