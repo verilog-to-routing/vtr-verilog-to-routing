@@ -168,6 +168,7 @@ void TOS_RulesSwitches_c::Init(
    this->placeOptions.slackFinalWeight = 8.0;
    this->placeOptions.relativePlace.enable = false;
    this->placeOptions.relativePlace.rotateEnable = true;
+   this->placeOptions.relativePlace.carryChainEnable = false;
    this->placeOptions.relativePlace.maxPlaceRetryCt = TOS_PLACE_RELATIVE_INITIAL_PLACE_RETRY;
    this->placeOptions.relativePlace.maxMacroRetryCt = TOS_PLACE_RELATIVE_INITIAL_MACRO_RETRY;
    this->placeOptions.prePlaced.enable = false;
