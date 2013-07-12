@@ -1424,11 +1424,11 @@ bool TVPR_ArchitectureSpec_c::PokeFcPin_(
    float fcVal = 0.0;
    if( fcType == TAS_CONNECTION_BOX_FRACTION )
    {
-      fcVal = fcPin.percent;
+      fcVal = static_cast< float >( fcPin.percent );
    }
    if( fcType == TAS_CONNECTION_BOX_ABSOLUTE )
    {
-      fcVal = fcPin.absolute;
+      fcVal = static_cast< float >( fcPin.absolute );
    }
 
    // Find child pin (if possible) in VPR's physical block (ie. t_type_descriptor)
