@@ -51,6 +51,7 @@ TAS_PhysicalBlock_c::TAS_PhysicalBlock_c(
       numPB( 0 ),
       modelType( TAS_PHYSICAL_BLOCK_MODEL_UNDEFINED ),
       classType( TAS_CLASS_UNDEFINED ),
+      fcPinList( TAS_FC_PIN_LIST_DEF_CAPACITY ),
       modeNameList( TAS_MODE_NAME_LIST_DEF_CAPACITY ),
       modeList( TAS_MODE_LIST_DEF_CAPACITY ),
       physicalBlockList( TAS_PHYSICAL_BLOCK_LIST_DEF_CAPACITY ),
@@ -83,6 +84,7 @@ TAS_PhysicalBlock_c::TAS_PhysicalBlock_c(
       numPB( 0 ),
       modelType( TAS_PHYSICAL_BLOCK_MODEL_UNDEFINED ),
       classType( TAS_CLASS_UNDEFINED ),
+      fcPinList( TAS_FC_PIN_LIST_DEF_CAPACITY ),
       modeNameList( TAS_MODE_NAME_LIST_DEF_CAPACITY ),
       modeList( TAS_MODE_LIST_DEF_CAPACITY ),
       physicalBlockList( TAS_PHYSICAL_BLOCK_LIST_DEF_CAPACITY ),
@@ -115,6 +117,7 @@ TAS_PhysicalBlock_c::TAS_PhysicalBlock_c(
       numPB( 0 ),
       modelType( TAS_PHYSICAL_BLOCK_MODEL_UNDEFINED ),
       classType( TAS_CLASS_UNDEFINED ),
+      fcPinList( TAS_FC_PIN_LIST_DEF_CAPACITY ),
       modeNameList( TAS_MODE_NAME_LIST_DEF_CAPACITY ),
       modeList( TAS_MODE_LIST_DEF_CAPACITY ),
       physicalBlockList( TAS_PHYSICAL_BLOCK_LIST_DEF_CAPACITY ),
@@ -150,6 +153,7 @@ TAS_PhysicalBlock_c::TAS_PhysicalBlock_c(
       classType( physicalBlock.classType ),
       fcIn( physicalBlock.fcIn ),
       fcOut( physicalBlock.fcOut ),
+      fcPinList( physicalBlock.fcPinList ),
       modeNameList( physicalBlock.modeNameList ),
       modeList( physicalBlock.modeList ),
       physicalBlockList( physicalBlock.physicalBlockList ),
@@ -206,6 +210,7 @@ TAS_PhysicalBlock_c& TAS_PhysicalBlock_c::operator=(
       this->classType = physicalBlock.classType;
       this->fcIn = physicalBlock.fcIn;
       this->fcOut = physicalBlock.fcOut;
+      this->fcPinList = physicalBlock.fcPinList;
       this->modeNameList = physicalBlock.modeNameList;
       this->modeList = physicalBlock.modeList;
       this->physicalBlockList = physicalBlock.physicalBlockList;
@@ -491,8 +496,39 @@ void TAS_PhysicalBlock_c::PrintXML(
    printHandler.Write( pfile, 0, ">\n" );
    spaceLen += 3;
 
-   this->fcIn.PrintXML( pfile, spaceLen );
-   this->fcOut.PrintXML( pfile, spaceLen );
+   if( this->fcIn.IsValid( ) || this->fcOut.IsValid( ))
+   {
+      printHandler.Write( pfile, spaceLen, "<fc " );
+
+      if( this->fcIn.IsValid( ) && this->fcOut.IsValid( ))
+      {
+         this->fcIn.PrintXML( pfile, 0 );
+         printHandler.Write( pfile, 0, " " );
+         this->fcOut.PrintXML( pfile, 0 );
+      }
+      else if( this->fcIn.IsValid( ))
+      {
+         this->fcIn.PrintXML( pfile, 0 );
+      }
+      else if( this->fcOut.IsValid( ))
+      {
+         this->fcOut.PrintXML( pfile, 0 );
+      }
+
+      if( this->fcPinList.IsValid( ))
+      {
+         printHandler.Write( pfile, 0, ">\n" );
+         for( size_t i = 0; i < this->fcPinList.GetLength( ); ++i )
+         {
+            this->fcPinList[i]->PrintXML( pfile, spaceLen + 3 );
+         }
+         printHandler.Write( pfile, spaceLen, "</fc>\n" );
+      }
+      else
+      {
+         printHandler.Write( pfile, 0, "/>\n" );
+      }
+   }
 
    if( this->modeNameList.IsValid( ))
    {
