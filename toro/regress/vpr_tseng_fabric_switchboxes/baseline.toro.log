@@ -1020,13 +1020,13 @@ Executing VPR interface...
 [vpr] ------- ------- ---------- ---------- ---------- ---------- ------- ------- ------- ------- ------ --------- ------
 [vpr] 0.19647 1.00961    87.2245 1.6945e-07 4.7851e-07 2.9238e-10  7.0039  0.9973  0.0156 13.0000  1.000     20616  0.500
 [vpr] 0.09824 0.97640    87.4869 1.625e-07  4.7819e-07 3.0202e-10  7.5509  0.9945  0.0154 13.0000  1.000     41232  0.500
-[vpr] 0.04912 0.99863    86.9443 1.5503e-07 4.7495e-07 2.9656e-10  7.8244  0.9874  0.0151 13.0000  1.000     61848  0.500
+[vpr] 0.04912 0.99863    86.9444 1.5503e-07 4.7495e-07 2.9656e-10  7.8244  0.9874  0.0151 13.0000  1.000     61848  0.500
 [vpr] 0.02456 1.01321    86.5542 1.6265e-07 4.7613e-07 2.9238e-10  7.4141  0.9777  0.0159 13.0000  1.000     82464  0.500
 [vpr] 0.01228 0.99249    85.8680 1.5966e-07 4.7245e-07 2.9285e-10  7.4825  0.9558  0.0149 13.0000  1.000    103080  0.900
 [vpr] 0.01105 1.00125    85.3755 1.525e-07  4.7049e-07 2.9238e-10  7.7560  0.9497  0.0152 13.0000  1.000    123696  0.900
 [vpr] 0.00995 1.01980    85.4173 1.5598e-07 4.7037e-07 2.8594e-10  7.5509  0.9436  0.0141 13.0000  1.000    144312  0.900
-[vpr] 0.00895 1.00163    85.0607 1.6398e-07 4.7061e-07 2.9285e-10  7.0723  0.9336  0.0147 13.0000  1.000    164928  0.900
-[vpr] 0.00806 0.99811    84.7249 1.599e-07  4.6798e-07 2.9242e-10  7.2774  0.9283  0.0160 13.0000  1.000    185544  0.900
+[vpr] 0.00895 1.00163    85.0608 1.6398e-07 4.7061e-07 2.9285e-10  7.0723  0.9336  0.0147 13.0000  1.000    164928  0.900
+[vpr] 0.00806 0.99812    84.7249 1.599e-07  4.6798e-07 2.9242e-10  7.2774  0.9283  0.0160 13.0000  1.000    185544  0.900
 [vpr] 0.00725 0.99086    84.5766 1.5268e-07 4.6776e-07 2.9345e-10  7.7560  0.9238  0.0171 13.0000  1.000    206160  0.900
 [vpr] 0.00653 0.98416    84.2964 1.629e-07  4.6745e-07 2.9225e-10  7.0613  0.9148  0.0151 13.0000  1.000    226776  0.900
 [vpr] 0.00587 0.98646    83.6746 1.5864e-07 4.6465e-07 2.8931e-10  7.3458  0.8986  0.0152 13.0000  1.000    247392  0.900
@@ -1035,7 +1035,7 @@ Executing VPR interface...
 [vpr] 0.00428 0.97804    82.0736 1.5497e-07 4.6073e-07 2.8824e-10  7.3458  0.8631  0.0145 13.0000  1.000    309240  0.900
 [vpr] 0.00385 0.99725    81.6301 1.5755e-07 4.5865e-07 2.7984e-10  7.0613  0.8489  0.0139 13.0000  1.000    329856  0.900
 [vpr] 0.00347 0.99663    80.8592 1.4467e-07 4.5588e-07 2.888e-10   7.8817  0.8200  0.0161 13.0000  1.000    350472  0.900
-[vpr] 0.00312 0.98392    80.9738 1.5433e-07 4.5572e-07 2.8555e-10  7.2664  0.8198  0.0152 13.0000  1.000    371088  0.900
+[vpr] 0.00312 0.98392    80.9739 1.5433e-07 4.5572e-07 2.8555e-10  7.2664  0.8198  0.0152 13.0000  1.000    371088  0.900
 [vpr] 0.00281 0.97006    79.1797 1.5255e-07 4.5145e-07 2.8666e-10  7.1407  0.7903  0.0162 13.0000  1.000    391704  0.950
 [vpr] 0.00267 0.97583    79.0852 1.5631e-07 4.506e-07  2.8265e-10  6.9356  0.7874  0.0134 13.0000  1.000    412320  0.950
 [vpr] 0.00254 1.02155    78.3978 1.6177e-07 4.4854e-07 2.7745e-10  6.5937  0.7644  0.0151 13.0000  1.000    432936  0.950
@@ -1045,7 +1045,7 @@ Executing VPR interface...
 [vpr] 0.00207 0.97155    77.1815 1.446e-07  4.4434e-07 2.798e-10   7.4141  0.7344  0.0139 13.0000  1.000    515400  0.950
 [vpr] 0.00196 0.95656    75.3083 1.4977e-07 4.3831e-07 2.7911e-10  7.0039  0.7172  0.0181 13.0000  1.000    536016  0.950
 [vpr] 0.00186 0.99347    74.0284 1.43e-07   4.3324e-07 2.6824e-10  7.0723  0.6848  0.0194 13.0000  1.000    556632  0.950
-[vpr] 0.00177 0.99816    74.0864 1.4482e-07 4.3624e-07 2.702e-10   7.1407  0.6811  0.0171 13.0000  1.000    577248  0.950
+[vpr] 0.00177 0.99815    74.0864 1.4482e-07 4.3624e-07 2.702e-10   7.1407  0.6811  0.0171 13.0000  1.000    577248  0.950
 [vpr] 0.00168 1.00002    72.7922 1.4439e-07 4.3175e-07 2.7101e-10  7.0039  0.6536  0.0196 13.0000  1.000    597864  0.950
 [vpr] 0.00160 0.99353    71.8080 1.4426e-07 4.2815e-07 2.6687e-10  6.8672  0.6453  0.0113 13.0000  1.000    618480  0.950
 [vpr] 0.00152 0.98243    69.8806 1.4096e-07 4.2265e-07 2.6743e-10  7.0039  0.6272  0.0134 13.0000  1.000    639096  0.950
@@ -1145,171 +1145,62 @@ Executing VPR interface...
 [vpr] WARNING(3): in check_rr_graph: fringe node 7674 has no fanin.
             This is possible on a fringe node based on low Fc_out, N, and certain lengths.
 [vpr] Confirming router algorithm: TIMING_DRIVEN.
-[vpr] 
-[vpr] Routing iteration: 1
-[vpr] Wire length after first iteration 7830, total available wire length 13728, ratio 0.570367
+[vpr] Wire length after first iteration 7824, total available wire length 13728, ratio 0.56993
+[vpr] --------- ---------- -----------
+[vpr] Iteration       Time   Crit Path
+[vpr] --------- ---------- -----------
 [vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 2
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 3
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 4
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 5
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 6
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 7
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 8
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 9
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 10
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 11
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 12
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 13
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 14
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 15
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 16
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 17
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 18
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 19
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 20
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 21
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 22
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 23
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 24
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 25
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 26
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 27
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 28
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 29
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 30
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 31
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 32
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 33
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 34
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 35
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 36
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 37
-[vpr] Critical path: 6.45696 ns
-[vpr] 
-[vpr] Routing iteration: 38
-[vpr] Successfully routed after 38 routing iterations.
+[vpr] Successfully routed after 25 routing iterations.
 [vpr] Completed net delay value cross check successfully.
 [vpr] 
 [vpr] Checking to ensure routing is legal...
 [vpr] Completed routing consistency check successfully.
 [vpr] 
-[vpr] Serial number (magic cookie) for the routing is: -667158231
+[vpr] Serial number (magic cookie) for the routing is: -637200801
 [vpr] Circuit successfully routed with a channel width factor of 44.
 [vpr] 
-[vpr] Average number of bends per net: 3.18152  Maximum # of bends: 78
+[vpr] Average number of bends per net: 2.98185  Maximum # of bends: 81
 [vpr] 
 [vpr] Number of routed nets (nonglobal): 606
 [vpr] Wire length results (in units of 1 clb segments)...
-[vpr] 	Total wirelength: 10043, average net length: 16.5726
-[vpr] 	Maximum net length: 336
+[vpr] 	Total wirelength: 9567, average net length: 15.7871
+[vpr] 	Maximum net length: 343
 [vpr] 
 [vpr] Wire length results in terms of physical segments...
-[vpr] 	Total wiring segments used: 2845, average wire segments per net: 4.69472
-[vpr] 	Maximum segments used by a net: 94
+[vpr] 	Total wiring segments used: 2696, average wire segments per net: 4.44884
+[vpr] 	Maximum segments used by a net: 98
 [vpr] 	Total local nets with reserved CLB opins: 0
 [vpr] 
 [vpr] X - Directed channels: j max occ ave occ capacity
 [vpr]                       -- ------- ------- --------
-[vpr]                        0      33 21.5833       44
-[vpr]                        1      33 22.8333       44
-[vpr]                        2      36 28.5000       44
-[vpr]                        3      40 32.7500       44
-[vpr]                        4      40 31.3333       44
-[vpr]                        5      42 34.9167       44
-[vpr]                        6      41 32.1667       44
-[vpr]                        7      42 33.6667       44
-[vpr]                        8      43 35.8333       44
-[vpr]                        9      42 34.4167       44
-[vpr]                       10      43 34.6667       44
-[vpr]                       11      42 33.0833       44
-[vpr]                       12      42 35.1667       44
+[vpr]                        0      28 19.2500       44
+[vpr]                        1      29 18.5000       44
+[vpr]                        2      34 26.6667       44
+[vpr]                        3      39 28.4167       44
+[vpr]                        4      40 31.7500       44
+[vpr]                        5      40 33.7500       44
+[vpr]                        6      40 30.7500       44
+[vpr]                        7      43 35.0833       44
+[vpr]                        8      43 35.5000       44
+[vpr]                        9      44 35.3333       44
+[vpr]                       10      42 34.6667       44
+[vpr]                       11      39 30.0833       44
+[vpr]                       12      38 31.8333       44
 [vpr] Y - Directed channels: i max occ ave occ capacity
 [vpr]                       -- ------- ------- --------
-[vpr]                        0      36 29.6667       44
-[vpr]                        1      38 27.3333       44
-[vpr]                        2      40 30.1667       44
-[vpr]                        3      42 32.4167       44
-[vpr]                        4      41 32.2500       44
-[vpr]                        5      41 31.6667       44
-[vpr]                        6      42 34.4167       44
-[vpr]                        7      40 33.2500       44
-[vpr]                        8      44 37.2500       44
-[vpr]                        9      44 36.5000       44
-[vpr]                       10      41 35.0000       44
-[vpr]                       11      39 32.7500       44
-[vpr]                       12      41 33.3333       44
+[vpr]                        0      39 28.6667       44
+[vpr]                        1      37 26.6667       44
+[vpr]                        2      38 26.5833       44
+[vpr]                        3      41 32.7500       44
+[vpr]                        4      42 31.5833       44
+[vpr]                        5      40 32.4167       44
+[vpr]                        6      41 32.6667       44
+[vpr]                        7      40 33.3333       44
+[vpr]                        8      39 34.3333       44
+[vpr]                        9      40 33.9167       44
+[vpr]                       10      40 33.0833       44
+[vpr]                       11      34 28.7500       44
+[vpr]                       12      40 30.9167       44
 [vpr] 
 [vpr] Total tracks in x-direction: 572, in y-direction: 572
 [vpr] 
@@ -1320,20 +1211,17 @@ Executing VPR interface...
 [vpr] Routing area (in minimum width transistor areas)...
 [vpr] 	Total routing area: 666613., per logic tile: 4629.26
 [vpr] 
-[vpr] Segment usage by type (index):
-[vpr] Segment type       Fractional utilization
-[vpr] ------------       ----------------------
-[vpr]        0                  0.663
+[vpr] Segment usage by type (index): type utilization
+[vpr]                                ---- -----------
+[vpr]                                   0       0.629
 [vpr] 
-[vpr] Segment usage by length:
-[vpr] Segment length       Fractional utilization
-[vpr] --------------       ----------------------
-[vpr]         4                   0.663
+[vpr] Segment usage by length: length utilization
+[vpr]                          ------ -----------
+[vpr]                               4       0.629
 [vpr] 
 [vpr] Nets on critical path: 10 normal, 0 global.
 [vpr] Total logic delay: 4.5016e-09 (s), total net delay: 1.95536e-09 (s)
-[vpr] Final critical path: 6.45696 ns
-[vpr] f_max: 154.872 MHz
+[vpr] Final critical path: 6.45696 ns, f_max: 154.872 MHz
 [vpr] 
 [vpr] Least slack in design: -6.45696 ns
 [vpr] 

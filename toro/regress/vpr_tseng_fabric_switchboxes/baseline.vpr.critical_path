@@ -18,8 +18,8 @@ Pin: clb.O[7] pb (n_n3229)
 T_arr: 1.1975e-10  T_req: -6.33721e-09  Tdel: 2.0921e-10
 External-to-Block Net: #57 (n_n4159).  Pins on net: 10.
 
-Node: 714  TN_CB_IPIN Block #4 (n_n3519)
-Pin: clb.I[7] pb (n_n3519)
+Node: 713  TN_CB_IPIN Block #4 (n_n3519)
+Pin: clb.I[4] pb (n_n3519)
 T_arr: 3.2896e-10  T_req: -6.128e-09  Tdel: 8.044e-11
 Internal Net: #772 (n_n4159).  Pins on net: 16.
 
@@ -66,10 +66,10 @@ Internal Net: #1318 (n_n4155).  Pins on net: 5.
 Node: 729  TN_CB_OPIN Block #4 (n_n3519)
 Pin: clb.O[6] pb (n_n3519)
 T_arr: 6.784e-10  T_req: -5.77856e-09  Tdel: 2.0921e-10
-External-to-Block Net: #60 (n_n4155).  Pins on net: 3.
+External-to-Block Net: #61 (n_n4155).  Pins on net: 3.
 
-Node: 543  TN_CB_IPIN Block #3 (n_n3016)
-Pin: clb.I[4] pb (n_n3016)
+Node: 546  TN_CB_IPIN Block #3 (n_n3016)
+Pin: clb.I[9] pb (n_n3016)
 T_arr: 8.8761e-10  T_req: -5.56935e-09  Tdel: 8.044e-11
 Internal Net: #1318 (n_n4155).  Pins on net: 5.
 
@@ -356,9 +356,9 @@ Internal Net: #1309 ([906]).  Pins on net: 3.
 Node: 908  TN_CB_OPIN Block #5 ([2264])
 Pin: clb.O[3] pb ([2264])
 T_arr: 3.74582e-09  T_req: -2.71114e-09  Tdel: 2.0921e-10
-External-to-Block Net: #32 ([906]).  Pins on net: 2.
+External-to-Block Net: #31 ([906]).  Pins on net: 2.
 
-Node: 196  TN_CB_IPIN Block #1 (n_n3466)
+Node: 195  TN_CB_IPIN Block #1 (n_n3466)
 Pin: clb.I[12] pb (n_n3466)
 T_arr: 3.95503e-09  T_req: -2.50193e-09  Tdel: 8.04401e-11
 Internal Net: #1309 ([906]).  Pins on net: 3.
