@@ -89,9 +89,8 @@ typedef enum TPO_StatusMode_e TPO_StatusMode_t;
 class TPO_HierMap_c; // Forward declaration for subsequent class typedefs
 typedef TCT_OrderedVector_c< TPO_HierMap_c > TPO_HierMapList_t;
 
-class TC_SideName_c; // Forward declaration for subsequent class typedefs
-typedef TC_SideName_c TPO_Relative_t;
-typedef TCT_SortedNameDynamicVector_c< TPO_Relative_t > TPO_RelativeList_t;
+class TPO_Relative_c; // Forward declaration for subsequent class typedefs
+typedef TCT_SortedNameDynamicVector_c< TPO_Relative_c > TPO_RelativeList_t;
 
 //---------------------------------------------------------------------------//
 // Define pin constants and typedefs
