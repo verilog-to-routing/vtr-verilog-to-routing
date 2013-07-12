@@ -5,6 +5,8 @@
 //           Inline methods include:
 //           - GetRelativeNodeList
 //           - GetLength
+//           - SetRotateEnabled
+//           - IsRotateEnabled
 //           - IsValid
 //
 //===========================================================================//
@@ -61,30 +63,46 @@ public:
 
    void Add( const char* pszFromBlockName,
              const char* pszToBlockName,
-             TC_SideMode_t side,
+             const TGO_IntDims_t& fromToLink,
              size_t* pfromNodeIndex = 0,
              size_t* ptoNodeIndex = 0 );
    void Add( size_t fromNodeIndex,
              const char* pszToBlockName,
-             TC_SideMode_t side,
+             const TGO_IntDims_t& fromToLink,
              size_t* ptoNodeIndex = 0 );
    void Add( size_t fromNodeIndex,
              size_t toNodeIndex,
-             TC_SideMode_t side );
+             const TGO_IntDims_t& fromToLink );
    void Add( const char* pszFromBlockName = 0,
              size_t* pfromNodeIndex = 0 );
 
    TCH_RelativeNode_c* Find( size_t relativeNodeIndex ) const;
+   TCH_RelativeNode_c* Find( size_t fromNodeIndex,
+                             const TGO_IntDims_t& fromToLink ) const;
+   TCH_RelativeNode_c* Find( const TCH_RelativeNode_c& fromNode,
+                             const TGO_IntDims_t& fromToLink ) const;
+   TCH_RelativeNode_c* Find( const TCH_RelativeNode_c& fromNode ) const;
 
    void Set( size_t relativeNodeIndex,
              const TGO_Point_c& origin,
              TGO_RotateMode_t rotate = TGO_ROTATE_UNDEFINED );
-   void Set( size_t relativeNodeIndex,
-             const TGO_Point_c& origin,
-             TGO_RotateMode_t rotate,
-             const TGO_IntDims_t& translate );
    void Clear( void );
    void Reset( void );
+
+   void ForceRelativeLinks( const TCH_RelativeNode_c& fromNode,
+			    const TCH_RelativeNode_c& toNode,
+                            const TGO_IntDims_t& fromToLink );
+   void ForceRelativeLinks( const TGO_Point_c& fromPoint,
+			    const TGO_Point_c& toPoint,
+                            const TGO_IntDims_t& fromToLink );
+
+   bool HasRelativeLink( size_t fromNodeIndex,
+                         const TGO_IntDims_t& fromToLink ) const;
+   bool HasRelativeLink( const TCH_RelativeNode_c& fromNode,
+                         const TGO_IntDims_t& fromToLink ) const;
+
+   void SetRotateEnabled( bool rotateEnabled );
+   bool IsRotateEnabled( void ) const;
 
    bool IsValid( void ) const;
 
@@ -93,10 +111,11 @@ private:
    size_t AddNode_( const char* pszBlockName );
    void LinkNodes_( size_t fromNodeIndex,
                     size_t toNodeIndex,
-                    TC_SideMode_t side ) const;
+		    const TGO_IntDims_t& fromToLink ) const;
 private:
 
    TCH_RelativeNodeList_t relativeNodeList_;
+   bool rotateEnabled_;
 
 private:
 
@@ -124,6 +143,20 @@ inline size_t TCH_RelativeMacro_c::GetLength(
       void ) const
 {
    return( this->relativeNodeList_.GetLength( ) );
+}
+
+//===========================================================================//
+inline void TCH_RelativeMacro_c::SetRotateEnabled( 
+      bool rotateEnabled )
+{
+   this->rotateEnabled_ = rotateEnabled;
+}
+
+//===========================================================================//
+inline bool TCH_RelativeMacro_c::IsRotateEnabled( 
+      void ) const
+{
+   return( this->rotateEnabled_ );
 }
 
 //===========================================================================//
