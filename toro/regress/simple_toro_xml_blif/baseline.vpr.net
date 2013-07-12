@@ -42,7 +42,7 @@
 				</clocks>
 				<block name="n0" instance="lut[0]">
 					<inputs>
-						<port name="in">lut0.in[0]->complete:lut0  </port>
+						<port name="in">lut0.in[0]->direct:lut0  </port>
 					</inputs>
 					<outputs>
 						<port name="out">n0 </port>
@@ -95,7 +95,7 @@
 				</clocks>
 				<block name="n1" instance="lut[0]">
 					<inputs>
-						<port name="in">lut0.in[0]->complete:lut0  </port>
+						<port name="in">lut0.in[0]->direct:lut0  </port>
 					</inputs>
 					<outputs>
 						<port name="out">n1 </port>
