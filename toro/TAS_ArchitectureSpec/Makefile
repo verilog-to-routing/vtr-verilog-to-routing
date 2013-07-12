@@ -34,6 +34,7 @@ CFLAGS = $(CFLAGS$(ISM)) \
 	-I. \
 	-I../TLO_LogicalObjects \
 	-I../TPO_PhysicalObjects \
+	-I../TGO_GeometricObjects \
 	-I../TGS_GeometricShapes \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
@@ -84,6 +85,7 @@ OBJSlinux_x86_64 = linux_x86_64/TAS_ArchitectureSpec.o \
                     linux_x86_64/TAS_Cell.o \
                     linux_x86_64/TAS_SwitchBox.o \
                     linux_x86_64/TAS_Segment.o \
+                    linux_x86_64/TAS_CarryChain.o \
                     linux_x86_64/TAS_Mode.o \
                     linux_x86_64/TAS_ConnectionFc.o \
                     linux_x86_64/TAS_Interconnect.o \
@@ -99,6 +101,7 @@ OBJSlinux_i686 = linux_i686/TAS_ArchitectureSpec.o \
                     linux_i686/TAS_Cell.o \
                     linux_i686/TAS_SwitchBox.o \
                     linux_i686/TAS_Segment.o \
+                    linux_i686/TAS_CarryChain.o \
                     linux_i686/TAS_Mode.o \
                     linux_i686/TAS_ConnectionFc.o \
                     linux_i686/TAS_Interconnect.o \
@@ -114,6 +117,7 @@ OBJSsun8 = sun8/TAS_ArchitectureSpec.o \
            sun8/TAS_Cell.o \
            sun8/TAS_SwitchBox.o \
            sun8/TAS_Segment.o \
+           sun8/TAS_CarryChain.o \
            sun8/TAS_Mode.o \
            sun8/TAS_ConnectionFc.o \
            sun8/TAS_Interconnect.o \
@@ -140,7 +144,7 @@ Debug:
 Gprof:
 	make $(EXE) CFLAGS="-pg -g -DDEBUG $(CFLAGS)" BUILD_TARGET=Debug
 clean:
-	rm -rf $(ISM)/*
+	rm -f $(EXE) $(ISM)/*.o
 
 .cxx.o:;
 .cxx.a:;
@@ -174,6 +178,9 @@ $(OBJECTS): $(ISM)/%.o:%.cxx
 
 ../$(ISM)/libTPO_PhysicalObjects.a:
 	cd ../TPO_PhysicalObjects ; $(MAKE) $(BUILD_TARGET)
+
+../$(ISM)/libTGO_GeometricObjects.a:
+	cd ../TGO_GeometricObjects ; $(MAKE) $(BUILD_TARGET)
 
 ../$(ISM)/libTGS_GeometricShapes.a:
 	cd ../TGS_GeometricShapes ; $(MAKE) $(BUILD_TARGET)
