@@ -408,6 +408,7 @@ bool TVPR_Interface_c::Execute(
          {
             TCH_RelativePlaceHandler_c& relativePlaceHandler = TCH_RelativePlaceHandler_c::GetInstance( );
             relativePlaceHandler.Configure( placeOptions.relativePlace.rotateEnable,
+                                            placeOptions.relativePlace.carryChainEnable,
                                             placeOptions.relativePlace.maxPlaceRetryCt,
                                             placeOptions.relativePlace.maxMacroRetryCt,
                                             circuitDesign.blockList );
