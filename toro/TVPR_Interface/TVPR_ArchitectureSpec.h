@@ -59,10 +59,10 @@ private:
                          t_arch* pvpr_architecture ) const;
    void PokeModel_( const TAS_Cell_c& cell,
                     t_model* pvpr_model ) const;
-   void PokePhysicalBlockList_( const TAS_PhysicalBlockList_t& physicalBlockList,
+   bool PokePhysicalBlockList_( const TAS_PhysicalBlockList_t& physicalBlockList,
                                 t_type_descriptor** pvpr_physicalBlockArray, 
                                 int* pvpr_physicalBlockCount ) const;
-   void PokePhysicalBlock_( const TAS_PhysicalBlock_c& physicalBlock,
+   bool PokePhysicalBlock_( const TAS_PhysicalBlock_c& physicalBlock,
                             t_type_descriptor* pvpr_physicalBlock ) const; 
    bool PokeSwitchBoxList_( const TAS_SwitchBoxList_t& switchBoxList,
                             t_switch_inf** pvpr_switchBoxArray, 
@@ -74,6 +74,9 @@ private:
                           const t_switch_inf* pvpr_switchBoxArray, 
                           int vpr_switchBoxCount,
                           bool isTimingEnabled ) const;
+   bool PokeCarryChainList_( const TAS_CarryChainList_t& carryChainList,
+                             t_direct_inf** pvpr_directArray, 
+                             int* pvpr_directCount ) const;
 
    void PokePbType_( const TAS_PhysicalBlock_c& physicalBlock,
                      const t_mode* pvpr_mode,
@@ -95,8 +98,13 @@ private:
    void PokeInterconnect_( const TAS_Interconnect_c& interconnect,
                            t_interconnect* pvpr_interconnect ) const;
 
-   void PokeFc_( const TAS_PhysicalBlock_c& physicalBlock,
+   bool PokeFc_( const TAS_PhysicalBlock_c& physicalBlock,
                  t_type_descriptor* pvpr_physicalBlock ) const;
+   bool PokeFcPinList_( const TAS_ConnectionFcList_t& fcPinList,
+                        t_type_descriptor* pvpr_physicalBlock ) const;
+   bool PokeFcPin_( const TAS_ConnectionFc_c& fcPin,
+                    t_type_descriptor* pvpr_physicalBlock ) const;
+
    void PokePinAssignList_( const TAS_PinAssignList_t& pinAssignList,
                             t_type_descriptor* pvpr_physicalBlock ) const;
    void PokeGridAssignList_( const TAS_GridAssignList_t& gridAssignList,
