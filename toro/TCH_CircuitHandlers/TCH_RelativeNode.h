@@ -6,9 +6,13 @@
 //           - SetBlockName
 //           - SetVPR_Type
 //           - SetVPR_GridPoint
+//           - SetRelativePoint
+//           - SetRelativeLinkList
 //           - GetBlockName
 //           - GetVPR_Type
 //           - GetVPR_GridPoint
+//           - GetRelativePoint
+//           - GetRelativeLinkList
 //           - IsValid
 //
 //===========================================================================//
@@ -48,7 +52,7 @@ using namespace std;
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
-// 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Original
 //===========================================================================//
 class TCH_RelativeNode_c
 {
@@ -73,15 +77,23 @@ public:
    void SetVPR_Type( const t_type_descriptor* vpr_type );
    void SetVPR_Type( t_type_descriptor* vpr_type );
    void SetVPR_GridPoint( const TGO_Point_c& vpr_gridPoint );
-   void SetSideIndex( TC_SideMode_t side,
-                      size_t relativeNodeIndex );
+   void SetRelativePoint( const TGO_Point_c& relativePoint );
+   void SetRelativeLinkList( const TCH_RelativeLinkList_t& relativeLinkList );
+
+   void AddRelativeLink( const TC_Index_c& relativeLinkIndex );
+   void AddRelativeLink( int linkIndex );
+   void AddRelativeLink( size_t linkIndex );
 
    const char* GetBlockName( void ) const;
    t_type_descriptor* GetVPR_Type( void ) const;
    const TGO_Point_c& GetVPR_GridPoint( void ) const;
-   size_t GetSideIndex( TC_SideMode_t side ) const;
+   const TGO_Point_c& GetRelativePoint( void ) const;
+   const TCH_RelativeLinkList_t& GetRelativeLinkList( void ) const;
 
-   bool HasSideIndex( TC_SideMode_t side ) const;
+   bool HasRelativePoint( void ) const;
+   bool HasRelativeLink( const TC_Index_c& relativeLinkIndex ) const;
+   bool HasRelativeLink( int linkIndex ) const;
+   bool HasRelativeLink( size_t linkIndex ) const;
 
    void Reset( void );
 
@@ -94,16 +106,15 @@ private:
 
    TGO_Point_c vpr_gridPoint_;   // VPR grid array coordinates
 
-   class TCH_RelativeNodeSides_c // Neighbor placement node indices
-   {
-   public:
+   TGO_Point_c relativePoint_;   // Relative placement node coordinate point
+   TCH_RelativeLinkList_t relativeLinkList_;
+                                 // Relative placement linked node indices
+private:
 
-      size_t left;
-      size_t right;
-      size_t lower;
-      size_t upper;
-
-   } sideIndex_;
+   enum TCH_DefCapacity_e 
+   { 
+      TCH_RELATIVE_LINK_LIST_DEF_CAPACITY = 2
+   };
 };
 
 //===========================================================================//
@@ -111,7 +122,7 @@ private:
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
-// 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Original
 //===========================================================================//
 inline void TCH_RelativeNode_c::SetBlockName( 
       const string& srBlockName )
@@ -148,6 +159,20 @@ inline void TCH_RelativeNode_c::SetVPR_GridPoint(
 } 
 
 //===========================================================================//
+inline void TCH_RelativeNode_c::SetRelativePoint( 
+      const TGO_Point_c& relativePoint )
+{
+   this->relativePoint_ = relativePoint;
+} 
+
+//===========================================================================//
+inline void TCH_RelativeNode_c::SetRelativeLinkList( 
+      const TCH_RelativeLinkList_t& relativeLinkList )
+{
+   this->relativeLinkList_ = relativeLinkList;
+} 
+
+//===========================================================================//
 inline const char* TCH_RelativeNode_c::GetBlockName( 
       void ) const
 {
@@ -166,6 +191,20 @@ inline const TGO_Point_c& TCH_RelativeNode_c::GetVPR_GridPoint(
       void ) const
 {
    return( this->vpr_gridPoint_ );
+}
+
+//===========================================================================//
+inline const TGO_Point_c& TCH_RelativeNode_c::GetRelativePoint( 
+      void ) const
+{
+   return( this->relativePoint_ );
+}
+
+//===========================================================================//
+inline const TCH_RelativeLinkList_t& TCH_RelativeNode_c::GetRelativeLinkList( 
+      void ) const
+{
+   return( this->relativeLinkList_ );
 }
 
 //===========================================================================//
