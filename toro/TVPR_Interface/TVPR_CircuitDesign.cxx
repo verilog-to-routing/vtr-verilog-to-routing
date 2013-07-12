@@ -80,13 +80,12 @@
 using namespace std;
 
 #include "TC_Typedefs.h"
+#include "TC_StringUtils.h"
 #include "TC_MemoryUtils.h"
 
 #include "TGS_ArrayGrid.h"
 
 #include "TGO_Region.h"
-
-#include "TNO_StringUtils.h"
 
 #include "TVPR_CircuitDesign.h"
 
@@ -687,7 +686,7 @@ void TVPR_CircuitDesign_c::PokeSubckt_(
       const char* pszInstPinName = pinMap.GetInstPinName( );
    
       size_t index; 
-      TNO_ParseNameIndex( pszCellPinName, 0, &index );
+      TC_ParseStringNameIndex( pszCellPinName, 0, &index );
       int cellPinIndex = static_cast< int >( index );
 
       const t_model_ports* pvpr_port = 0;
@@ -1354,7 +1353,7 @@ void TVPR_CircuitDesign_c::PeekInputOutput_(
       const TPO_RelativeList_t& placeRelativeList_ = inputOutput.GetPlaceRelativeList( );
       for( size_t i = 0; i < placeRelativeList_.GetLength( ); ++i )
       {
-         const TPO_Relative_t& placeRelative = *placeRelativeList_[i];
+         const TPO_Relative_c& placeRelative = *placeRelativeList_[i];
          placeRelativeList.Add( placeRelative );
       }
    }
@@ -1465,7 +1464,7 @@ void TVPR_CircuitDesign_c::PeekPhysicalBlock_(
       const TPO_RelativeList_t& placeRelativeList_ = physicalBlock.GetPlaceRelativeList( );
       for( size_t i = 0; i < placeRelativeList_.GetLength( ); ++i )
       {
-         const TPO_Relative_t& placeRelative = *placeRelativeList_[i];
+         const TPO_Relative_c& placeRelative = *placeRelativeList_[i];
          placeRelativeList.Add( placeRelative );
       }
    }
