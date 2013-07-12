@@ -48,7 +48,6 @@ using namespace std;
 
 #include "TC_Bit.h"
 #include "TC_NameType.h"
-#include "TC_SideName.h"
 
 #include "TGS_Typedefs.h"
 #include "TGS_Region.h"
@@ -62,6 +61,7 @@ using namespace std;
 #include "TPO_Typedefs.h"
 #include "TPO_PinMap.h"
 #include "TPO_HierMap.h"
+#include "TPO_Relative.h"
 
 //===========================================================================//
 // Purpose        : Class declaration
