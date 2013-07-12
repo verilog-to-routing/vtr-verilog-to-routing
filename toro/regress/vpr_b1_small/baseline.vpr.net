@@ -76,7 +76,7 @@
 					</clocks>
 					<block name="pg" instance="lut[0]">
 						<inputs>
-							<port name="in">lut6.in[0]->complete:lut6  open open open </port>
+							<port name="in">lut6.in[0]->direct:lut6  open open open </port>
 						</inputs>
 						<outputs>
 							<port name="out">pg </port>
@@ -118,7 +118,7 @@
 					</clocks>
 					<block name="pe" instance="lut[0]">
 						<inputs>
-							<port name="in">lut6.in[0]->complete:lut6  lut6.in[1]->complete:lut6  open open </port>
+							<port name="in">lut6.in[0]->direct:lut6  lut6.in[1]->direct:lut6  open open </port>
 						</inputs>
 						<outputs>
 							<port name="out">pe </port>
@@ -160,7 +160,7 @@
 					</clocks>
 					<block name="pf" instance="lut[0]">
 						<inputs>
-							<port name="in">lut6.in[0]->complete:lut6  lut6.in[1]->complete:lut6  lut6.in[2]->complete:lut6  open </port>
+							<port name="in">lut6.in[0]->direct:lut6  lut6.in[1]->direct:lut6  lut6.in[2]->direct:lut6  open </port>
 						</inputs>
 						<outputs>
 							<port name="out">pf </port>

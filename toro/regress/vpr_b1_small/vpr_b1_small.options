@@ -19,6 +19,7 @@ output_file_circuit "*.toro.circuit"
 
 format_min_grid 0.001
 // format_time_stamps yes
+// format_file_lines yes
 
 halt_max_warnings -1
 halt_max_errors   -1
