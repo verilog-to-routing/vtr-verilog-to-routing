@@ -1128,766 +1128,115 @@ Executing VPR interface...
 [vpr] 	Swap reject rate: 0
 [vpr] 	Swap accept rate: 0
 [vpr] 	Swap abort rate: 0
+[vpr] 
 [vpr] Using low: -1, high: -1, current: 28
 [vpr] Confirming router algorithm: TIMING_DRIVEN.
+[vpr] Wire length after first iteration 8590, total available wire length 12684, ratio 0.677231
+[vpr] --------- ---------- -----------
+[vpr] Iteration       Time   Crit Path
+[vpr] --------- ---------- -----------
+[vpr] Routing aborted, the ratio of overused nodes is above the threshold.
 [vpr] 
-[vpr] Routing iteration: 1
-[vpr] Wire length after first iteration 8589, total available wire length 12684, ratio 0.677152
-[vpr] Critical path: 6.50402 ns
-[vpr] 
-[vpr] Routing iteration: 2
-[vpr] Critical path: 6.50402 ns
-[vpr] 
-[vpr] Routing iteration: 3
-[vpr] Critical path: 6.50402 ns
-[vpr] 
-[vpr] Routing iteration: 4
-[vpr] Critical path: 6.50402 ns
-[vpr] 
-[vpr] Routing iteration: 5
-[vpr] Critical path: 6.50402 ns
-[vpr] 
-[vpr] Routing iteration: 6
-[vpr] Critical path: 6.50402 ns
-[vpr] 
-[vpr] Routing iteration: 7
-[vpr] Critical path: 6.50402 ns
-[vpr] 
-[vpr] Routing iteration: 8
-[vpr] Critical path: 6.50402 ns
-[vpr] 
-[vpr] Routing iteration: 9
-[vpr] Critical path: 6.50402 ns
-[vpr] 
-[vpr] Routing iteration: 10
-[vpr] Critical path: 6.50402 ns
-[vpr] 
-[vpr] Routing iteration: 11
-[vpr] Critical path: 6.50402 ns
-[vpr] 
-[vpr] Routing iteration: 12
-[vpr] Critical path: 6.50402 ns
-[vpr] 
-[vpr] Routing iteration: 13
-[vpr] Critical path: 6.50402 ns
-[vpr] 
-[vpr] Routing iteration: 14
-[vpr] Critical path: 6.50402 ns
-[vpr] 
-[vpr] Routing iteration: 15
-[vpr] Critical path: 6.50402 ns
-[vpr] 
-[vpr] Routing iteration: 16
-[vpr] Critical path: 6.50402 ns
-[vpr] 
-[vpr] Routing iteration: 17
-[vpr] Critical path: 6.50402 ns
-[vpr] 
-[vpr] Routing iteration: 18
-[vpr] Critical path: 6.52533 ns
-[vpr] 
-[vpr] Routing iteration: 19
-[vpr] Critical path: 6.51433 ns
-[vpr] 
-[vpr] Routing iteration: 20
-[vpr] Critical path: 6.57239 ns
-[vpr] 
-[vpr] Routing iteration: 21
-[vpr] Critical path: 6.57239 ns
-[vpr] 
-[vpr] Routing iteration: 22
-[vpr] Critical path: 6.57239 ns
-[vpr] 
-[vpr] Routing iteration: 23
-[vpr] Critical path: 6.5827 ns
-[vpr] 
-[vpr] Routing iteration: 24
-[vpr] Critical path: 6.5827 ns
-[vpr] 
-[vpr] Routing iteration: 25
-[vpr] Critical path: 6.65107 ns
-[vpr] 
-[vpr] Routing iteration: 26
-[vpr] Critical path: 6.5827 ns
-[vpr] 
-[vpr] Routing iteration: 27
-[vpr] Critical path: 6.5827 ns
-[vpr] 
-[vpr] Routing iteration: 28
-[vpr] Critical path: 6.5827 ns
-[vpr] 
-[vpr] Routing iteration: 29
-[vpr] Critical path: 6.77681 ns
-[vpr] 
-[vpr] Routing iteration: 30
-[vpr] Critical path: 6.98192 ns
-[vpr] 
-[vpr] Routing iteration: 31
-[vpr] Critical path: 6.90255 ns
-[vpr] 
-[vpr] Routing iteration: 32
-[vpr] Critical path: 6.97161 ns
-[vpr] 
-[vpr] Routing iteration: 33
-[vpr] Critical path: 6.91424 ns
-[vpr] 
-[vpr] Routing iteration: 34
-[vpr] Critical path: 7.12966 ns
-[vpr] 
-[vpr] Routing iteration: 35
-[vpr] Critical path: 6.91424 ns
-[vpr] 
-[vpr] Routing iteration: 36
-[vpr] Critical path: 7.06129 ns
-[vpr] 
-[vpr] Routing iteration: 37
-[vpr] Critical path: 7.09735 ns
-[vpr] 
-[vpr] Routing iteration: 38
-[vpr] Critical path: 7.43851 ns
-[vpr] 
-[vpr] Routing iteration: 39
-[vpr] Critical path: 7.10766 ns
-[vpr] 
-[vpr] Routing iteration: 40
-[vpr] Critical path: 7.38114 ns
-[vpr] 
-[vpr] Routing iteration: 41
-[vpr] Critical path: 7.2444 ns
-[vpr] 
-[vpr] Routing iteration: 42
-[vpr] Critical path: 7.4392 ns
-[vpr] 
-[vpr] Routing iteration: 43
-[vpr] Critical path: 7.37083 ns
-[vpr] 
-[vpr] Routing iteration: 44
-[vpr] Critical path: 7.38114 ns
-[vpr] 
-[vpr] Routing iteration: 45
-[vpr] Critical path: 7.2444 ns
-[vpr] 
-[vpr] Routing iteration: 46
-[vpr] Critical path: 7.17603 ns
-[vpr] 
-[vpr] Routing iteration: 47
-[vpr] Critical path: 7.12966 ns
-[vpr] 
-[vpr] Routing iteration: 48
-[vpr] Critical path: 7.46051 ns
-[vpr] 
-[vpr] Routing iteration: 49
-[vpr] Critical path: 7.11866 ns
-[vpr] 
-[vpr] Routing iteration: 50
-[vpr] Critical path: 7.31139 ns
-[vpr] Routing failed.
 [vpr] Using low: 28, high: -1, current: 56
 [vpr] Confirming router algorithm: TIMING_DRIVEN.
-[vpr] 
-[vpr] Routing iteration: 1
-[vpr] Wire length after first iteration 7858, total available wire length 25368, ratio 0.30976
+[vpr] Wire length after first iteration 7864, total available wire length 25368, ratio 0.309997
+[vpr] --------- ---------- -----------
+[vpr] Iteration       Time   Crit Path
+[vpr] --------- ---------- -----------
 [vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 2
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 3
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 4
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 5
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 6
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 7
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 8
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 9
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 10
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 11
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 12
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 13
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 14
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 15
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 16
-[vpr] Successfully routed after 16 routing iterations.
+[vpr] Successfully routed after 15 routing iterations.
 [vpr] Completed net delay value cross check successfully.
+[vpr] 
 [vpr] Using low: 28, high: 56, current: 42
 [vpr] Confirming router algorithm: TIMING_DRIVEN.
-[vpr] 
-[vpr] Routing iteration: 1
-[vpr] Wire length after first iteration 8140, total available wire length 19026, ratio 0.427836
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 2
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 3
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 4
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 5
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 6
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 7
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 8
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 9
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 10
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 11
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 12
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 13
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 14
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 15
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 16
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 17
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 18
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 19
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 20
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 21
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 22
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 23
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 24
-[vpr] Successfully routed after 24 routing iterations.
+[vpr] Wire length after first iteration 8138, total available wire length 19026, ratio 0.42773
+[vpr] --------- ---------- -----------
+[vpr] Iteration       Time   Crit Path
+[vpr] --------- ---------- -----------
+[vpr] Critical path: 6.63938 ns
+[vpr] Successfully routed after 32 routing iterations.
 [vpr] Completed net delay value cross check successfully.
+[vpr] 
 [vpr] Using low: 28, high: 42, current: 36
 [vpr] Confirming router algorithm: TIMING_DRIVEN.
-[vpr] 
-[vpr] Routing iteration: 1
-[vpr] Wire length after first iteration 7878, total available wire length 16308, ratio 0.483076
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 2
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 3
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 4
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 5
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 6
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 7
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 8
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 9
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 10
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 11
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 12
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 13
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 14
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 15
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 16
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 17
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 18
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 19
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 20
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 21
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 22
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 23
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 24
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 25
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 26
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 27
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 28
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 29
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 30
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 31
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 32
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 33
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 34
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 35
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 36
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 37
-[vpr] Successfully routed after 37 routing iterations.
+[vpr] Wire length after first iteration 7882, total available wire length 16308, ratio 0.483321
+[vpr] --------- ---------- -----------
+[vpr] Iteration       Time   Crit Path
+[vpr] --------- ---------- -----------
+[vpr] Critical path: 6.57239 ns
+[vpr] Successfully routed after 44 routing iterations.
 [vpr] Completed net delay value cross check successfully.
+[vpr] 
 [vpr] Using low: 28, high: 36, current: 32
 [vpr] Confirming router algorithm: TIMING_DRIVEN.
-[vpr] 
-[vpr] Routing iteration: 1
-[vpr] Wire length after first iteration 8530, total available wire length 14496, ratio 0.588438
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 2
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 3
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 4
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 5
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 6
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 7
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 8
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 9
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 10
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 11
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 12
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 13
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 14
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 15
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 16
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 17
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 18
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 19
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 20
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 21
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 22
-[vpr] Critical path: 6.36728 ns
-[vpr] 
-[vpr] Routing iteration: 23
-[vpr] Critical path: 6.44596 ns
-[vpr] 
-[vpr] Routing iteration: 24
-[vpr] Critical path: 6.32022 ns
-[vpr] 
-[vpr] Routing iteration: 25
-[vpr] Critical path: 6.37759 ns
-[vpr] 
-[vpr] Routing iteration: 26
-[vpr] Critical path: 6.44596 ns
-[vpr] 
-[vpr] Routing iteration: 27
-[vpr] Critical path: 6.44596 ns
-[vpr] 
-[vpr] Routing iteration: 28
-[vpr] Critical path: 6.44596 ns
-[vpr] 
-[vpr] Routing iteration: 29
-[vpr] Critical path: 6.5607 ns
-[vpr] 
-[vpr] Routing iteration: 30
-[vpr] Critical path: 6.51433 ns
-[vpr] 
-[vpr] Routing iteration: 31
-[vpr] Critical path: 6.78781 ns
-[vpr] 
-[vpr] Routing iteration: 32
-[vpr] Critical path: 6.52533 ns
-[vpr] 
-[vpr] Routing iteration: 33
-[vpr] Critical path: 6.52533 ns
-[vpr] 
-[vpr] Routing iteration: 34
-[vpr] Critical path: 6.56139 ns
-[vpr] 
-[vpr] Routing iteration: 35
-[vpr] Critical path: 6.69813 ns
-[vpr] 
-[vpr] Routing iteration: 36
-[vpr] Critical path: 6.85618 ns
-[vpr] 
-[vpr] Routing iteration: 37
-[vpr] Critical path: 6.85618 ns
-[vpr] 
-[vpr] Routing iteration: 38
-[vpr] Critical path: 7.12966 ns
-[vpr] 
-[vpr] Routing iteration: 39
-[vpr] Critical path: 7.67662 ns
-[vpr] 
-[vpr] Routing iteration: 40
-[vpr] Critical path: 7.67662 ns
-[vpr] 
-[vpr] Routing iteration: 41
-[vpr] Critical path: 7.33477 ns
-[vpr] 
-[vpr] Routing iteration: 42
-[vpr] Critical path: 7.33477 ns
-[vpr] 
-[vpr] Routing iteration: 43
-[vpr] Critical path: 7.47151 ns
-[vpr] 
-[vpr] Routing iteration: 44
-[vpr] Critical path: 7.40314 ns
-[vpr] 
-[vpr] Routing iteration: 45
-[vpr] Critical path: 7.60825 ns
-[vpr] 
-[vpr] Routing iteration: 46
-[vpr] Critical path: 7.84873 ns
-[vpr] 
-[vpr] Routing iteration: 47
-[vpr] Critical path: 7.51788 ns
-[vpr] 
-[vpr] Routing iteration: 48
-[vpr] Critical path: 8.53105 ns
-[vpr] 
-[vpr] Routing iteration: 49
-[vpr] Critical path: 7.53988 ns
-[vpr] 
-[vpr] Routing iteration: 50
-[vpr] Critical path: 7.40314 ns
+[vpr] Wire length after first iteration 8538, total available wire length 14496, ratio 0.58899
+[vpr] --------- ---------- -----------
+[vpr] Iteration       Time   Crit Path
+[vpr] --------- ---------- -----------
 [vpr] Routing failed.
+[vpr] 
 [vpr] Using low: 32, high: 36, current: 34
 [vpr] Confirming router algorithm: TIMING_DRIVEN.
-[vpr] 
-[vpr] Routing iteration: 1
-[vpr] Wire length after first iteration 7789, total available wire length 15402, ratio 0.505714
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 2
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 3
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 4
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 5
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 6
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 7
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 8
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 9
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 10
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 11
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 12
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 13
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 14
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 15
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 16
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 17
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 18
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 19
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 20
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 21
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 22
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 23
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 24
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 25
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 26
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 27
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 28
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 29
-[vpr] Critical path: 6.25185 ns
-[vpr] 
-[vpr] Routing iteration: 30
-[vpr] Critical path: 6.52533 ns
-[vpr] 
-[vpr] Routing iteration: 31
-[vpr] Critical path: 6.38859 ns
-[vpr] 
-[vpr] Routing iteration: 32
-[vpr] Critical path: 6.31953 ns
-[vpr] 
-[vpr] Routing iteration: 33
-[vpr] Critical path: 6.31953 ns
-[vpr] 
-[vpr] Routing iteration: 34
-[vpr] Critical path: 6.31953 ns
-[vpr] 
-[vpr] Routing iteration: 35
-[vpr] Critical path: 6.64007 ns
-[vpr] 
-[vpr] Routing iteration: 36
-[vpr] Critical path: 6.64007 ns
-[vpr] 
-[vpr] Routing iteration: 37
-[vpr] Critical path: 6.76581 ns
-[vpr] 
-[vpr] Routing iteration: 38
-[vpr] Critical path: 6.83418 ns
-[vpr] 
-[vpr] Routing iteration: 39
-[vpr] Critical path: 6.83418 ns
-[vpr] 
-[vpr] Routing iteration: 40
-[vpr] Critical path: 6.83418 ns
-[vpr] 
-[vpr] Routing iteration: 41
-[vpr] Critical path: 6.83418 ns
-[vpr] 
-[vpr] Routing iteration: 42
-[vpr] Critical path: 6.83418 ns
-[vpr] 
-[vpr] Routing iteration: 43
-[vpr] Critical path: 6.83418 ns
-[vpr] 
-[vpr] Routing iteration: 44
-[vpr] Critical path: 6.83418 ns
-[vpr] 
-[vpr] Routing iteration: 45
-[vpr] Critical path: 6.83418 ns
-[vpr] 
-[vpr] Routing iteration: 46
-[vpr] Critical path: 6.83418 ns
-[vpr] 
-[vpr] Routing iteration: 47
-[vpr] Critical path: 6.83418 ns
-[vpr] 
-[vpr] Routing iteration: 48
-[vpr] Critical path: 6.69744 ns
-[vpr] 
-[vpr] Routing iteration: 49
-[vpr] Critical path: 6.49233 ns
-[vpr] 
-[vpr] Routing iteration: 50
-[vpr] Critical path: 6.49233 ns
+[vpr] Wire length after first iteration 7794, total available wire length 15402, ratio 0.506038
+[vpr] --------- ---------- -----------
+[vpr] Iteration       Time   Crit Path
+[vpr] --------- ---------- -----------
 [vpr] Routing failed.
 [vpr] 
 [vpr] Checking to ensure routing is legal...
 [vpr] Completed routing consistency check successfully.
 [vpr] 
-[vpr] Serial number (magic cookie) for the routing is: -558889898
+[vpr] Serial number (magic cookie) for the routing is: -558124570
 [vpr] Best routing used a channel width factor of 36.
 [vpr] 
-[vpr] Average number of bends per net: 3.19307  Maximum # of bends: 78
+[vpr] Average number of bends per net: 3.06271  Maximum # of bends: 63
 [vpr] 
 [vpr] Number of routed nets (nonglobal): 606
 [vpr] Wire length results (in units of 1 clb segments)...
-[vpr] 	Total wirelength: 10754, average net length: 17.7459
-[vpr] 	Maximum net length: 368
+[vpr] 	Total wirelength: 10362, average net length: 17.0990
+[vpr] 	Maximum net length: 293
 [vpr] 
 [vpr] Wire length results in terms of physical segments...
-[vpr] 	Total wiring segments used: 2894, average wire segments per net: 4.77558
-[vpr] 	Maximum segments used by a net: 102
+[vpr] 	Total wiring segments used: 2778, average wire segments per net: 4.58416
+[vpr] 	Maximum segments used by a net: 79
 [vpr] 	Total local nets with reserved CLB opins: 0
 [vpr] 
 [vpr] X - Directed channels: j max occ ave occ capacity
 [vpr]                       -- ------- ------- --------
-[vpr]                        0      11  3.6000       36
-[vpr]                        1      11  4.6667       36
-[vpr]                        2      16  6.6667       36
-[vpr]                        3      33 21.7333       36
-[vpr]                        4      32 25.4000       36
-[vpr]                        5      33 27.4000       36
-[vpr]                        6      36 26.9333       36
-[vpr]                        7      35 27.9333       36
-[vpr]                        8      35 28.2000       36
-[vpr]                        9      35 29.4667       36
-[vpr]                       10      36 28.0000       36
-[vpr]                       11      36 28.1333       36
-[vpr]                       12      35 26.5333       36
-[vpr]                       13      36 24.2000       36
-[vpr]                       14      36 23.8000       36
-[vpr]                       15      36 24.2000       36
+[vpr]                        0      11  3.6667       36
+[vpr]                        1      11  4.2000       36
+[vpr]                        2      17  6.2667       36
+[vpr]                        3      32 20.9333       36
+[vpr]                        4      33 24.3333       36
+[vpr]                        5      34 27.6000       36
+[vpr]                        6      33 27.3333       36
+[vpr]                        7      34 26.4000       36
+[vpr]                        8      35 27.9333       36
+[vpr]                        9      35 27.4000       36
+[vpr]                       10      36 27.6667       36
+[vpr]                       11      36 27.2667       36
+[vpr]                       12      36 26.6667       36
+[vpr]                       13      34 23.4000       36
+[vpr]                       14      36 22.2667       36
+[vpr]                       15      34 21.2667       36
 [vpr] Y - Directed channels: i max occ ave occ capacity
 [vpr]                       -- ------- ------- --------
-[vpr]                        0      34 23.2000       36
-[vpr]                        1      31 21.3333       36
-[vpr]                        2      33 23.8000       36
-[vpr]                        3      36 27.2000       36
-[vpr]                        4      32 25.5333       36
-[vpr]                        5      35 29.6000       36
-[vpr]                        6      36 28.8667       36
-[vpr]                        7      35 27.8667       36
-[vpr]                        8      36 23.3333       36
-[vpr]                        9      35 23.2667       36
-[vpr]                       10      34 23.3333       36
-[vpr]                       11      34 24.6000       36
-[vpr]                       12      31 21.6667       36
-[vpr]                       13      25 17.6000       36
-[vpr]                       14      13  7.7333       36
-[vpr]                       15      22 11.1333       36
+[vpr]                        0      35 22.6667       36
+[vpr]                        1      30 19.8667       36
+[vpr]                        2      32 24.2000       36
+[vpr]                        3      35 25.7333       36
+[vpr]                        4      35 26.0000       36
+[vpr]                        5      35 28.6667       36
+[vpr]                        6      35 28.1333       36
+[vpr]                        7      35 27.9333       36
+[vpr]                        8      34 22.4000       36
+[vpr]                        9      32 21.0667       36
+[vpr]                       10      34 22.0000       36
+[vpr]                       11      33 22.6000       36
+[vpr]                       12      31 21.4000       36
+[vpr]                       13      23 14.0667       36
+[vpr]                       14      16  8.8000       36
+[vpr]                       15      20 10.6667       36
 [vpr] 
 [vpr] Total tracks in x-direction: 576, in y-direction: 576
 [vpr] 
@@ -1898,22 +1247,19 @@ Executing VPR interface...
 [vpr] Routing area (in minimum width transistor areas)...
 [vpr] 	Total routing area: 835290., per logic tile: 3712.40
 [vpr] 
-[vpr] Segment usage by type (index):
-[vpr] Segment type       Fractional utilization
-[vpr] ------------       ----------------------
-[vpr]        0                  0.577
+[vpr] Segment usage by type (index): type utilization
+[vpr]                                ---- -----------
+[vpr]                                   0       0.554
 [vpr] 
-[vpr] Segment usage by length:
-[vpr] Segment length       Fractional utilization
-[vpr] --------------       ----------------------
-[vpr]         4                   0.577
+[vpr] Segment usage by length: length utilization
+[vpr]                          ------ -----------
+[vpr]                               4       0.554
 [vpr] 
-[vpr] Nets on critical path: 10 normal, 0 global.
-[vpr] Total logic delay: 4.5016e-09 (s), total net delay: 1.81862e-09 (s)
-[vpr] Final critical path: 6.32022 ns
-[vpr] f_max: 158.222 MHz
+[vpr] Nets on critical path: 8 normal, 0 global.
+[vpr] Total logic delay: 4.83034e-09 (s), total net delay: 2.28901e-09 (s)
+[vpr] Final critical path: 7.11935 ns, f_max: 140.462 MHz
 [vpr] 
-[vpr] Least slack in design: -6.32022 ns
+[vpr] Least slack in design: -7.11935 ns
 [vpr] 
 Closing VPR interface...
 Importing fabric model from VPR...
