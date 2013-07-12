@@ -5,6 +5,8 @@
 //           - NewInstance, DeleteInstance, GetInstance, HasInstance
 //           - Configure
 //           - Set, Reset
+// ???
+//           - LoadCarryChains                         
 //           - InitialPlace
 //           - Place
 //           - IsCandidate
@@ -14,12 +16,12 @@
 //           - TCH_RelativePlaceHandler_c, ~TCH_RelativePlaceHandler_c
 //
 //           Private methods include:
-//           - AddSideConstraint_
-//           - NewSideConstraint_
-//           - MergeSideConstraints_
-//           - ExistingSideConstraint_
-//           - HasExistingSideConstraint_
-//           - IsAvailableSideConstraint_
+//           - AddLinkConstraint_
+//           - NewLinkConstraint_
+//           - MergeLinkConstraints_
+//           - ExistingLinkConstraint_
+//           - HasExistingLinkConstraint_
+//           - IsAvailableLinkConstraint_
 //           - ResetRelativeMacroList_
 //           - ResetRelativeBlockList_
 //           - InitialPlaceMacros_
@@ -45,7 +47,7 @@
 //           - FindRelativeMacro_
 //           - FindRelativeNode_
 //           - FindRelativeBlock_
-//           - DecideAntiSide_
+//           - DecideAntiLink_
 //           - ShowIllegalRelativeMacroWarning_
 //           - ShowMissingBlockNameError_
 //           - ShowInvalidConstraintError_
@@ -101,6 +103,7 @@ TCH_RelativePlaceHandler_c::TCH_RelativePlaceHandler_c(
       relativeBlockList_( TCH_RELATIVE_BLOCK_LIST_DEF_CAPACITY )
 {
    this->placeOptions_.rotateEnable = false;
+   this->placeOptions_.carryChainEnable = false;
    this->placeOptions_.maxPlaceRetryCt = 0;
    this->placeOptions_.maxMacroRetryCt = 0;
 
@@ -193,9 +196,12 @@ bool TCH_RelativePlaceHandler_c::HasInstance(
 //---------------------------------------------------------------------------//
 // Version history
 // 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Extended to support relative placement dx|dy constraints 
+// 07/08/13 jeffr : Extended to support relative placement enable per macro
 //===========================================================================//
 bool TCH_RelativePlaceHandler_c::Configure(
             bool   placeOptions_rotateEnable,        // See Toro's placement options
+            bool   placeOptions_carryChainEnable,    // "
             size_t placeOptions_maxPlaceRetryCt,     // "
             size_t placeOptions_maxMacroRetryCt,     // "
       const TPO_InstList_t&  toro_circuitBlockList ) // Defined by Toro's block list
@@ -204,6 +210,7 @@ bool TCH_RelativePlaceHandler_c::Configure(
 
    // Start by caching placement options and VPR data (for later reference)
    this->placeOptions_.rotateEnable = placeOptions_rotateEnable;
+   this->placeOptions_.carryChainEnable = placeOptions_carryChainEnable;
    this->placeOptions_.maxPlaceRetryCt = placeOptions_maxPlaceRetryCt;
    this->placeOptions_.maxMacroRetryCt = placeOptions_maxMacroRetryCt;
 
@@ -238,14 +245,38 @@ bool TCH_RelativePlaceHandler_c::Configure(
       const char* pszFromBlockName = toro_circuitBlock.GetName( );
       for( size_t j = 0; j < placeRelativeList.GetLength( ); ++j )
       {
-         const TPO_Relative_t& placeRelative = *placeRelativeList[j];
+         const TPO_Relative_c& placeRelative = *placeRelativeList[j];
 
          const char* pszToBlockName = placeRelative.GetName( );
          TC_SideMode_t side = placeRelative.GetSide( );
+         int dx = placeRelative.GetDx( );
+         int dy = placeRelative.GetDy( );
+
+         TGO_IntDims_t fromToLink( 0, 0 );
+         if( side != TC_SIDE_UNDEFINED )
+         {
+            switch( side )
+            {
+            case TC_SIDE_LEFT: fromToLink.Set( -1, 0 ); break;
+            case TC_SIDE_RIGHT: fromToLink.Set( 1, 0 ); break;
+            case TC_SIDE_LOWER: fromToLink.Set( 0, -1 ); break;
+            case TC_SIDE_UPPER: fromToLink.Set( 0, 1 ); break;
+            default: break;
+            }
+         }
+         if(( dx != INT_MAX ) && ( dy != INT_MAX ))
+         {
+            fromToLink.Set( fromToLink.dx + dx, fromToLink.dy + dy );
+         }
+
+         bool rotateMacroEnabled = ( this->placeOptions_.rotateEnable ||
+                                     placeRelative.GetRotateEnable( ) ? 
+                                     true : false );
 
          // Add a new relative placement side constraint
          // (by default, this also includes appropriate validation)
-         ok = this->AddSideConstraint_( pszFromBlockName, pszToBlockName, side );
+         ok = this->AddLinkConstraint_( pszFromBlockName, pszToBlockName, 
+                                        fromToLink, rotateMacroEnabled );
          if( !ok )
             break;
       }
@@ -307,6 +338,61 @@ bool TCH_RelativePlaceHandler_c::Reset(
       this->ResetRelativeMacroList_( this->relativeBlockList_,
                                      &this->relativeMacroList_ );
    }
+   return( ok );
+}
+
+//===========================================================================//
+// Method         : LoadCarryChains
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 01/15/13 jeffr : Original
+//===========================================================================//
+bool TCH_RelativePlaceHandler_c::LoadCarryChains(
+      const t_block*    vpr_blockArray,
+      const t_pl_macro* vpr_placeMacroArray,
+            int         vpr_placeMacroCount )
+{
+// ???
+   bool ok = true;
+
+// ???
+this->relativeMacroList_.Print( );
+   if( this->placeOptions_.carryChainEnable )
+   {
+      for( int i = 0; i < vpr_placeMacroCount; ++i ) 
+      {
+         if( vpr_placeMacroArray[i].num_blocks <= 1 )
+            continue;
+
+         int fromBlockIndex = vpr_placeMacroArray[i].members[0].blk_index;
+         const char* pszFromBlockName = vpr_blockArray[fromBlockIndex].name;
+
+         for( int j = 1; j < vpr_placeMacroArray[i].num_blocks; ++j ) 
+         {
+            int toBlockIndex = vpr_placeMacroArray[i].members[j].blk_index;
+            const char* pszToBlockName = vpr_blockArray[toBlockIndex].name;
+
+            int dx = vpr_placeMacroArray[i].members[j].x_offset;
+            int dy = vpr_placeMacroArray[i].members[j].y_offset;
+            int dz = vpr_placeMacroArray[i].members[j].z_offset;
+            TGO_IntDims_t fromToLink( dx, dy, dz );
+
+            // Add a new relative placement side constraint
+            // (by default, this also includes appropriate validation)
+            ok = this->AddLinkConstraint_( pszFromBlockName, pszToBlockName, 
+                                           fromToLink );
+// ???
+this->relativeMacroList_.Print( );
+            if( !ok )
+               break;
+         }
+         if( !ok )
+            break;
+      }
+   }
+// ???
+this->relativeMacroList_.Print( );
    return( ok );
 }
 
@@ -470,19 +556,21 @@ bool TCH_RelativePlaceHandler_c::IsValid(
 }
 
 //===========================================================================//
-// Method         : AddSideConstraint_
+// Method         : AddLinkConstraint_
 // Description    : Adds a new relative placement constraint based on the
-//                  given "from"|"to" names and side.
+//                  given "from"|"to" names and relative link offsets.
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
 // 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Migrated original side-based "AddSideConstraint_() method
 //===========================================================================//
-bool TCH_RelativePlaceHandler_c::AddSideConstraint_(
-      const char*         pszFromBlockName,
-      const char*         pszToBlockName,
-            TC_SideMode_t side,
-            size_t        relativeMacroIndex )
+bool TCH_RelativePlaceHandler_c::AddLinkConstraint_(
+      const char*          pszFromBlockName,
+      const char*          pszToBlockName,
+      const TGO_IntDims_t& fromToLink,
+            bool           rotateMacroEnabled,
+            size_t         relativeMacroIndex )
 {
    bool ok = true;
 
@@ -492,8 +580,8 @@ bool TCH_RelativePlaceHandler_c::AddSideConstraint_(
 
    if( pfromBlock && ptoBlock )
    {
-      ok = this->AddSideConstraint_( pfromBlock, ptoBlock, side,
-                                     relativeMacroIndex );
+      ok = this->AddLinkConstraint_( pfromBlock, ptoBlock, fromToLink,
+                                     rotateMacroEnabled, relativeMacroIndex );
    }
    else
    {
@@ -510,15 +598,17 @@ bool TCH_RelativePlaceHandler_c::AddSideConstraint_(
 }
 
 //===========================================================================//
-bool TCH_RelativePlaceHandler_c::AddSideConstraint_(
-      TCH_RelativeBlock_c* pfromBlock,
-      TCH_RelativeBlock_c* ptoBlock,
-      TC_SideMode_t        side,
-      size_t               relativeMacroIndex )
+bool TCH_RelativePlaceHandler_c::AddLinkConstraint_(
+            TCH_RelativeBlock_c* pfromBlock,
+            TCH_RelativeBlock_c* ptoBlock,
+      const TGO_IntDims_t&       fromToLink,
+            bool                 rotateMacroEnabled,
+            size_t               relativeMacroIndex )
 {
    bool ok = true;
 
-   TC_SideMode_t antiSide = this->DecideAntiSide_( side );
+   TGO_IntDims_t toFromLink;
+   this->DecideAntiLink_( fromToLink, &toFromLink );
 
    if( !pfromBlock->HasRelativeMacroIndex( ) && 
        !ptoBlock->HasRelativeMacroIndex( ))
@@ -526,19 +616,21 @@ bool TCH_RelativePlaceHandler_c::AddSideConstraint_(
       // No relative macros are currently asso. with either "from" or "to" block
 
       // Add new relative macro, along with asso. "from" and "to" relative nodes
-      this->NewSideConstraint_( pfromBlock, ptoBlock, side, relativeMacroIndex );
+      this->NewLinkConstraint_( pfromBlock, ptoBlock, fromToLink, 
+                                rotateMacroEnabled, relativeMacroIndex );
    }
    else if( pfromBlock->HasRelativeMacroIndex( ) &&
             !ptoBlock->HasRelativeMacroIndex( ))
    {
       // Update existing relative macro based on "from" block, add a "to" block
       string srFromBlockName, srToBlockName;
-      ok = this->ExistingSideConstraint_( *pfromBlock, ptoBlock, side,
+      ok = this->ExistingLinkConstraint_( *pfromBlock, ptoBlock, fromToLink,
+                                          rotateMacroEnabled,
                                           &srFromBlockName, &srToBlockName );
       if( !ok )
       {
-         // Side is already in use for the existing macro "from" node, report error
-         ok = this->ShowInvalidConstraintError_( *pfromBlock, *ptoBlock, side,
+         // Link is already in use for the existing macro "from" node, report error
+         ok = this->ShowInvalidConstraintError_( *pfromBlock, *ptoBlock, fromToLink,
                                                  srFromBlockName, srToBlockName );
       }
    }
@@ -547,12 +639,13 @@ bool TCH_RelativePlaceHandler_c::AddSideConstraint_(
    {
       // Update existing relative macro based on "to" block, add a "from" block
       string srToBlockName, srFromBlockName;
-      ok = this->ExistingSideConstraint_( *ptoBlock, pfromBlock, antiSide,
+      ok = this->ExistingLinkConstraint_( *ptoBlock, pfromBlock, toFromLink,
+                                          rotateMacroEnabled,
                                           &srToBlockName, &srFromBlockName );
       if( !ok )
       {
-         // Side is already in use for the existing macro "to" node, report error
-         ok = this->ShowInvalidConstraintError_( *ptoBlock, *pfromBlock, antiSide,
+         // Link is already in use for the existing macro "to" node, report error
+         ok = this->ShowInvalidConstraintError_( *ptoBlock, *pfromBlock, toFromLink,
                                                  srToBlockName, srFromBlockName );
       }
    }
@@ -563,16 +656,16 @@ bool TCH_RelativePlaceHandler_c::AddSideConstraint_(
       {
          // Same macro index => "from" and "to" blocks are from same relative macro
 
-         // Verify side constraint is "existing" wrt. "from" and "to" relative nodes
+         // Verify link constraint is "existing" wrt. "from" and "to" relative nodes
          string srFromBlockName, srToBlockName;
-         if( this->HasExistingSideConstraint_( *pfromBlock, *ptoBlock, side, 
+         if( this->HasExistingLinkConstraint_( *pfromBlock, *ptoBlock, fromToLink,
                                                &srFromBlockName, &srToBlockName ))
          {
             // Move along, nothing to see here (given relative constraint is redundant)
          }
          else
          {
-            ok = this->ShowInvalidConstraintError_( *pfromBlock, *ptoBlock, side,
+            ok = this->ShowInvalidConstraintError_( *pfromBlock, *ptoBlock, fromToLink,
                                                     srFromBlockName, srToBlockName );
          }
       }
@@ -580,28 +673,29 @@ bool TCH_RelativePlaceHandler_c::AddSideConstraint_(
       {
          // Diff macro index => "from" and "to" blocks are from different relative macros
 
-         // Verify side constraint is "available" wrt. "from" and "to" relative nodes
+         // Verify link constraint is "available" wrt. "from" and "to" relative nodes
          bool fromAvailable = true;
          bool toAvailable = true;
          string srFromBlockName, srToBlockName;
-         if( this->IsAvailableSideConstraint_( *pfromBlock, *ptoBlock, side,
+         if( this->IsAvailableLinkConstraint_( *pfromBlock, *ptoBlock, fromToLink,
                                                 &fromAvailable, &toAvailable,
                                                 &srFromBlockName, &srToBlockName ))
          {
-            // Merge the "from" and "to" relative macros based on common side constraint
-            ok = this->MergeSideConstraints_( pfromBlock, ptoBlock, side );
+            // Merge the "from" and "to" relative macros based on common link constraint
+            ok = this->MergeLinkConstraints_( pfromBlock, ptoBlock, fromToLink,
+                                              rotateMacroEnabled );
          }
          else
          {
             if( !fromAvailable )
             {
-               ok = this->ShowInvalidConstraintError_( *pfromBlock, *ptoBlock, antiSide,
-                                                       srFromBlockName, srToBlockName );
+               ok = this->ShowInvalidConstraintError_( *ptoBlock, *pfromBlock, toFromLink,
+                                                       srToBlockName, srFromBlockName );
             }
             if( !toAvailable )
             {
-               ok = this->ShowInvalidConstraintError_( *ptoBlock, *pfromBlock, antiSide,
-                                                       srToBlockName, srFromBlockName );
+               ok = this->ShowInvalidConstraintError_( *pfromBlock, *ptoBlock, fromToLink,
+                                                       srFromBlockName, srToBlockName );
             }
          }
       }
@@ -610,9 +704,9 @@ bool TCH_RelativePlaceHandler_c::AddSideConstraint_(
 }
 
 //===========================================================================//
-// Method         : NewSideConstraint_
+// Method         : NewLinkConstraint_
 // Description    : Add a new relative macro, along with the associated 
-//                  "from" and "to" relative nodes, based on the given side 
+//                  "from" and "to" relative nodes, based on the given link 
 //                  constraint.  
 //
 //                  Note: This method assumes no relative macros are already
@@ -622,12 +716,15 @@ bool TCH_RelativePlaceHandler_c::AddSideConstraint_(
 //---------------------------------------------------------------------------//
 // Version history
 // 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Migrated original side-based "NewSideConstraint_() method
+// 07/08/13 jeffr : Extended to support relative placement enable per macro
 //===========================================================================//
-void TCH_RelativePlaceHandler_c::NewSideConstraint_(
-      TCH_RelativeBlock_c* pfromBlock,
-      TCH_RelativeBlock_c* ptoBlock,
-      TC_SideMode_t        side,
-      size_t               relativeMacroIndex )
+void TCH_RelativePlaceHandler_c::NewLinkConstraint_(
+            TCH_RelativeBlock_c* pfromBlock,
+            TCH_RelativeBlock_c* ptoBlock,
+      const TGO_IntDims_t&       fromToLink,
+            bool                 rotateMacroEnabled,
+            size_t               relativeMacroIndex )
 {
    // First, add new relative macro (or use existing, per optional parameter)
    if( relativeMacroIndex == TCH_RELATIVE_MACRO_UNDEFINED )
@@ -639,13 +736,19 @@ void TCH_RelativePlaceHandler_c::NewSideConstraint_(
    }
    TCH_RelativeMacro_c* prelativeMacro = this->relativeMacroList_[relativeMacroIndex];
 
-   // Next, add new relative nodes based on given block names and side
+   // Next, add new relative nodes based on given block names and relative link
    const char* pszFromBlockName = pfromBlock->GetName( );
    const char* pszToBlockName = ptoBlock->GetName( );
    size_t fromNodeIndex = TCH_RELATIVE_NODE_UNDEFINED;
    size_t toNodeIndex = TCH_RELATIVE_NODE_UNDEFINED;
-   prelativeMacro->Add( pszFromBlockName, pszToBlockName, side,
+   prelativeMacro->Add( pszFromBlockName, pszToBlockName, fromToLink,
                         &fromNodeIndex, &toNodeIndex );
+
+   // And, update rotate enabled state, as needed
+   if( rotateMacroEnabled )
+   {
+      prelativeMacro->SetRotateEnabled( true );
+   }
 
    // Finally, update relative block macro and node indices
    pfromBlock->SetRelativeMacroIndex( relativeMacroIndex );
@@ -656,10 +759,10 @@ void TCH_RelativePlaceHandler_c::NewSideConstraint_(
 }
 
 //===========================================================================//
-void TCH_RelativePlaceHandler_c::NewSideConstraint_(
+void TCH_RelativePlaceHandler_c::NewLinkConstraint_(
       const TCH_RelativeBlock_c& fromBlock,
       const TCH_RelativeBlock_c& toBlock,
-            TC_SideMode_t        side )
+      const TGO_IntDims_t&       fromToLink )
 {
    size_t relativeMacroIndex = fromBlock.GetRelativeMacroIndex( );
    size_t fromNodeIndex = fromBlock.GetRelativeNodeIndex( );
@@ -668,93 +771,82 @@ void TCH_RelativePlaceHandler_c::NewSideConstraint_(
    // First, find existing relative macro
    TCH_RelativeMacro_c* prelativeMacro = this->relativeMacroList_[relativeMacroIndex];
 
-   // Next, add new relative nodes based on given block names and side
-   prelativeMacro->Add( fromNodeIndex, toNodeIndex, side );
+   // Next, add new relative nodes based on given block names and relative link
+   prelativeMacro->Add( fromNodeIndex, toNodeIndex, fromToLink );
 }
 
 //===========================================================================//
-// Method         : MergeSideConstraints_
+// Method         : MergeLinkConstraints_
 // Description    : Merge the "from" and "to" relative macros based on a 
-//                  common side constraint.
+//                  common link constraint.
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
 // 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Migrated original "MergeSideConstraints_() method
+// 07/08/13 jeffr : Extended to support relative placement enable per macro
 //===========================================================================//
-bool TCH_RelativePlaceHandler_c::MergeSideConstraints_(
-      TCH_RelativeBlock_c* pfromBlock,
-      TCH_RelativeBlock_c* ptoBlock,
-      TC_SideMode_t        side )
+bool TCH_RelativePlaceHandler_c::MergeLinkConstraints_(
+            TCH_RelativeBlock_c* pfromBlock,
+            TCH_RelativeBlock_c* ptoBlock,
+      const TGO_IntDims_t&       fromToLink,
+            bool                 rotateMacroEnabled )
 {
    bool ok = true;
 
    size_t fromMacroIndex = pfromBlock->GetRelativeMacroIndex( );
-   size_t toMacroIndex = ptoBlock->GetRelativeMacroIndex( );
+   size_t fromNodeIndex = pfromBlock->GetRelativeNodeIndex( );
+   const TCH_RelativeMacro_c& fromMacro = *this->relativeMacroList_[fromMacroIndex];
+   const TCH_RelativeNode_c& fromNode = *fromMacro.Find( fromNodeIndex );
+   TGO_Point_c fromPoint = fromNode.GetRelativePoint( );
 
-   TCH_RelativeMacro_c& toMacro = *this->relativeMacroList_[toMacroIndex];
+   size_t toMacroIndex = ptoBlock->GetRelativeMacroIndex( );
+   size_t toNodeIndex = ptoBlock->GetRelativeNodeIndex( );
+   TCH_RelativeMacro_c toMacro = *this->relativeMacroList_[toMacroIndex];
+   const TCH_RelativeNode_c& toNode = *toMacro.Find( toNodeIndex );
+   TGO_Point_c toPoint = toNode.GetRelativePoint( );
 
    // Start by clearing all block indices asso. with existing "to" relative macro 
    for( size_t i = 0; i < toMacro.GetLength( ); ++i )
    {
-      const TCH_RelativeNode_c& toNode = *toMacro[i];
+      const TCH_RelativeNode_c& toNode_ = *toMacro[i];
+      const char* pszToBlockName = toNode_.GetBlockName( );
 
-      const char* pszToBlockName = toNode.GetBlockName( );
       TCH_RelativeBlock_c* ptoBlock_ = this->relativeBlockList_.Find( pszToBlockName );
       ptoBlock_->Reset( );
    }
 
    // Then, iterate the "to" relative macro...
-   // Recursively add side constraints to existing "from" relative macro
+   // Recursively add link constraints to existing "from" relative macro
+   toMacro.ForceRelativeLinks( fromPoint, toPoint, fromToLink );
    for( size_t i = 0; i < toMacro.GetLength( ); ++i )
    {
-      const TCH_RelativeNode_c& toNode = *toMacro[i];
+      const TCH_RelativeNode_c& toNode_ = *toMacro[i];
+      const TGO_Point_c& toPoint_ = toNode_.GetRelativePoint( );
+      const char* pszToBlockName = toNode_.GetBlockName( );
 
-      // Apply merge to each possible node side
-      this->MergeSideConstraints_( fromMacroIndex, toMacro, toNode, TC_SIDE_LEFT );
-      this->MergeSideConstraints_( fromMacroIndex, toMacro, toNode, TC_SIDE_RIGHT );
-      this->MergeSideConstraints_( fromMacroIndex, toMacro, toNode, TC_SIDE_LOWER );
-      this->MergeSideConstraints_( fromMacroIndex, toMacro, toNode, TC_SIDE_UPPER );
+      TCH_RelativeBlock_c* ptoBlock_ = this->relativeBlockList_.Find( pszToBlockName );
+      TGO_IntDims_t fromToLink_( toPoint_.x - fromPoint.x,
+                                 toPoint_.y - fromPoint.y );
+
+      this->AddLinkConstraint_( pfromBlock, ptoBlock_, fromToLink_, 
+                                rotateMacroEnabled, fromMacroIndex );
    }
-
-   // And, add common "from->to" side constraint in existing "from" relative macro
-   this->NewSideConstraint_( *pfromBlock, *ptoBlock, side );
 
    // All done with the original "to" relative macro...
    // but need to leave an empty macro in the list to avoid having to 
    // re-index all existing relative block index references
-   toMacro.Clear( );
+   TCH_RelativeMacro_c* ptoMacro = this->relativeMacroList_[toMacroIndex];
+   ptoMacro->Clear( );
 
    return( ok );
 }
 
 //===========================================================================//
-bool TCH_RelativePlaceHandler_c::MergeSideConstraints_(
-            size_t               fromMacroIndex,
-      const TCH_RelativeMacro_c& toMacro,
-      const TCH_RelativeNode_c&  toNode,
-            TC_SideMode_t        side )
-{
-   bool ok = true;
-
-   if( toNode.HasSideIndex( side ))
-   {
-      const char* pszToBlockName = toNode.GetBlockName( );
-
-      size_t neighborNodeIndex = toNode.GetSideIndex( side );
-      const TCH_RelativeNode_c& neighborNode = *toMacro[neighborNodeIndex];
-      const char* pszNeighborBlockName = neighborNode.GetBlockName( );
-
-      ok = this->AddSideConstraint_( pszToBlockName, pszNeighborBlockName, side,
-                                     fromMacroIndex );
-   }
-   return( ok );
-}
-
-//===========================================================================//
-// Method         : ExistingSideConstraint_
+// Method         : ExistingLinkConstraint_
 // Description    : Update an existing relative macro and "from" relative 
 //                  node with a new "to" relative node, based on the given 
-//                  side constraint.
+//                  relative link constraint.
 //
 //                  Note: This method assumes a relative macro is currently 
 //                        associated with the "from" relative block.
@@ -762,11 +854,14 @@ bool TCH_RelativePlaceHandler_c::MergeSideConstraints_(
 //---------------------------------------------------------------------------//
 // Version history
 // 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Migrated original "ExistingSideConstraint_() method
+// 07/08/13 jeffr : Extended to support relative placement enable per macro
 //===========================================================================//
-bool TCH_RelativePlaceHandler_c::ExistingSideConstraint_(
+bool TCH_RelativePlaceHandler_c::ExistingLinkConstraint_(
       const TCH_RelativeBlock_c& fromBlock,
             TCH_RelativeBlock_c* ptoBlock,
-            TC_SideMode_t        side,
+      const TGO_IntDims_t&       fromToLink,
+            bool                 rotateMacroEnabled,
             string*              psrFromBlockName,
             string*              psrToBlockName )
 {
@@ -777,16 +872,21 @@ bool TCH_RelativePlaceHandler_c::ExistingSideConstraint_(
    size_t fromNodeIndex = fromBlock.GetRelativeNodeIndex( );
 
    TCH_RelativeMacro_c* prelativeMacro = this->relativeMacroList_[relativeMacroIndex];
-   const TCH_RelativeNode_c& fromNode = *prelativeMacro->Find( fromNodeIndex );
-
-   if( !fromNode.HasSideIndex( side ))
+   if( !prelativeMacro->HasRelativeLink( fromNodeIndex, fromToLink ))
    {
-      // Side is available on existing macro "from" node, now add a "to" node
+      // Relative link is available on existing macro "from" node, now add a "to" node
 
       // Add new "to" relative node
       const char* pszToBlockName = ptoBlock->GetName( );
       size_t toNodeIndex = TCH_RELATIVE_NODE_UNDEFINED;
-      prelativeMacro->Add( fromNodeIndex, pszToBlockName, side, &toNodeIndex );
+      prelativeMacro->Add( fromNodeIndex, pszToBlockName, fromToLink, 
+                           &toNodeIndex );
+
+      // And, update rotate enabled state, as needed
+      if( rotateMacroEnabled )
+      {
+         prelativeMacro->SetRotateEnabled( true );
+      }
 
       // And, update relative block macro and node indices
       ptoBlock->SetRelativeMacroIndex( relativeMacroIndex );
@@ -794,7 +894,7 @@ bool TCH_RelativePlaceHandler_c::ExistingSideConstraint_(
    }
    else
    {
-      // Side is already in use for existing macro "from" node, return error
+      // Relative link is already in use for existing macro "from" node, return error
       ok = false;
    }
 
@@ -804,28 +904,32 @@ bool TCH_RelativePlaceHandler_c::ExistingSideConstraint_(
    }
    if( psrToBlockName )
    {
-      size_t toNodeIndex = fromNode.GetSideIndex( side );
-      const TCH_RelativeNode_c* ptoNode = prelativeMacro->Find( toNodeIndex );
+      const TCH_RelativeNode_c& fromNode = *prelativeMacro->Find( fromNodeIndex );
+      const TCH_RelativeNode_c* ptoNode = prelativeMacro->Find( fromNode, fromToLink );
       *psrToBlockName = ( ptoNode ? ptoNode->GetBlockName( ) : "" );
    }
    return( ok );
 }
 
 //===========================================================================//
-// Method         : HasExistingSideConstraint_
+// Method         : HasExistingLinkConstraint_
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
 // 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Migrated original "HasExistingSideConstraint_() method
 //===========================================================================//
-bool TCH_RelativePlaceHandler_c::HasExistingSideConstraint_(
+bool TCH_RelativePlaceHandler_c::HasExistingLinkConstraint_(
       const TCH_RelativeBlock_c& fromBlock,
       const TCH_RelativeBlock_c& toBlock,
-            TC_SideMode_t        side,
+      const TGO_IntDims_t&       fromToLink,
             string*              psrFromBlockName,
             string*              psrToBlockName ) const
 {
    bool isExisting = false;
+
+   TGO_IntDims_t toFromLink;
+   this->DecideAntiLink_( fromToLink, &toFromLink );
 
    size_t fromMacroIndex = fromBlock.GetRelativeMacroIndex( );
    size_t fromNodeIndex = fromBlock.GetRelativeNodeIndex( );
@@ -842,26 +946,35 @@ bool TCH_RelativePlaceHandler_c::HasExistingSideConstraint_(
          const TCH_RelativeMacro_c& relativeMacro = *this->relativeMacroList_[fromMacroIndex];
          const TCH_RelativeNode_c& fromNode = *relativeMacro[fromNodeIndex];
          const TCH_RelativeNode_c& toNode = *relativeMacro[toNodeIndex];
-
-         TC_SideMode_t antiSide = this->DecideAntiSide_( side );
-         if(( fromNode.GetSideIndex( side ) == toNodeIndex ) &&
-            ( toNode.GetSideIndex( antiSide ) == fromNodeIndex ))
+         if(( fromNode.HasRelativeLink( toNodeIndex )) &&
+            ( toNode.HasRelativeLink( fromNodeIndex )))
          {
-            isExisting = true;
+            const TCH_RelativeNode_c* pfromNode = relativeMacro.Find( toNode, fromToLink );
+            const TCH_RelativeNode_c* ptoNode = relativeMacro.Find( fromNode, toFromLink );
+            if( pfromNode && ptoNode )
+            {
+               if((( *pfromNode == fromNode ) && ( *ptoNode == toNode )) ||
+                  (( *pfromNode == toNode ) && ( *ptoNode == fromNode )))
+               {
+                  isExisting = true;
+               }
+            }
          }
 
          if( psrFromBlockName )
          {
-            fromNodeIndex = ( toNode.HasSideIndex( side ) ? 
-                              toNode.GetSideIndex( side ) : fromNodeIndex );
-            const TCH_RelativeNode_c* pfromNode = relativeMacro[fromNodeIndex];
+            const TCH_RelativeNode_c* pfromNode = 0;
+            pfromNode = ( relativeMacro.HasRelativeLink( toNode, fromToLink ) ? 
+                          relativeMacro.Find( toNode, fromToLink ) :
+                          relativeMacro[fromNodeIndex] );
             *psrFromBlockName = ( pfromNode ? pfromNode->GetBlockName( ) : "" );
          }
          if( psrToBlockName )
          {
-            toNodeIndex = ( fromNode.HasSideIndex( antiSide ) ? 
-                            fromNode.GetSideIndex( antiSide ) : toNodeIndex );
-            const TCH_RelativeNode_c* ptoNode = relativeMacro[toNodeIndex];
+            const TCH_RelativeNode_c* ptoNode = 0;
+            ptoNode = ( relativeMacro.HasRelativeLink( fromNode, toFromLink ) ? 
+                        relativeMacro.Find( fromNode, toFromLink ) :
+                        relativeMacro[toNodeIndex] );
             *psrToBlockName = ( ptoNode ? ptoNode->GetBlockName( ) : "" );
          }
       }
@@ -870,16 +983,18 @@ bool TCH_RelativePlaceHandler_c::HasExistingSideConstraint_(
 }
 
 //===========================================================================//
-// Method         : IsAvailableSideConstraint_
+// Method         : IsAvailableLinkConstraint_
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
 // 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Migrated original "IsAvailableSideConstraint_() method
+// 07/08/13 jeffr : Extended to support relative placement enable per macro
 //===========================================================================//
-bool TCH_RelativePlaceHandler_c::IsAvailableSideConstraint_(
+bool TCH_RelativePlaceHandler_c::IsAvailableLinkConstraint_(
       const TCH_RelativeBlock_c& fromBlock,
       const TCH_RelativeBlock_c& toBlock,
-            TC_SideMode_t        side,
+      const TGO_IntDims_t&       fromToLink,
             bool*                pfromAvailable,
             bool*                ptoAvailable,
             string*              psrFromBlockName,
@@ -898,39 +1013,49 @@ bool TCH_RelativePlaceHandler_c::IsAvailableSideConstraint_(
    {
       if( fromMacroIndex != toMacroIndex )
       {
+         isAvailable = true;
+
          const TCH_RelativeMacro_c& fromMacro = *this->relativeMacroList_[fromMacroIndex];
-         const TCH_RelativeMacro_c& toMacro = *this->relativeMacroList_[toMacroIndex];
-
          const TCH_RelativeNode_c& fromNode = *fromMacro[fromNodeIndex];
-         const TCH_RelativeNode_c& toNode = *toMacro[toNodeIndex];
 
-         TC_SideMode_t antiSide = this->DecideAntiSide_( side );
-         if(( fromNode.GetSideIndex( side ) == TCH_RELATIVE_NODE_UNDEFINED ) &&
-            ( toNode.GetSideIndex( antiSide ) == TCH_RELATIVE_NODE_UNDEFINED ))
+         TCH_RelativeMacro_c toMacro = *this->relativeMacroList_[toMacroIndex];
+         const TCH_RelativeNode_c& toNode = *toMacro[toNodeIndex];
+         toMacro.ForceRelativeLinks( fromNode, toNode, fromToLink );
+
+         if( toMacro.IsRotateEnabled( ))
          {
-            isAvailable = true;
+            TCH_RelativeMacro_c* pfromMacro = this->relativeMacroList_[fromMacroIndex];
+            pfromMacro->SetRotateEnabled( true );
+         }
+
+         const TCH_RelativeNodeList_t& toNodeList = toMacro.GetRelativeNodeList( );
+         for( size_t i = 0; i < toNodeList.GetLength( ); ++i )
+         {
+            const TCH_RelativeNode_c& toNode_ = *toNodeList[i];
+            if( fromMacro.Find( toNode_ ))
+            {
+               toNodeIndex = i;
+               isAvailable = false;
+               break;
+            }
          }
 
          if( pfromAvailable )
          {
-            *pfromAvailable = ( fromNode.GetSideIndex( side ) == TCH_RELATIVE_NODE_UNDEFINED ? 
-                                true : false );
+            *pfromAvailable = true;
          }
          if( ptoAvailable )
          {
-            *ptoAvailable = ( toNode.GetSideIndex( side ) == TCH_RELATIVE_NODE_UNDEFINED ? 
-                              true : false );
+            *ptoAvailable = isAvailable;
          }
 
          if( psrFromBlockName )
          {
-            fromNodeIndex = toNode.GetSideIndex( antiSide );
             const TCH_RelativeNode_c* pfromNode = fromMacro.Find( fromNodeIndex );
             *psrFromBlockName = ( pfromNode ? pfromNode->GetBlockName( ) : "" );
          }
          if( psrToBlockName )
          {
-            toNodeIndex = fromNode.GetSideIndex( side );
             const TCH_RelativeNode_c* ptoNode = toMacro.Find( toNodeIndex );
             *psrToBlockName = ( ptoNode ? ptoNode->GetBlockName( ) : "" );
          }
@@ -1104,6 +1229,7 @@ bool TCH_RelativePlaceHandler_c::InitialPlaceMacros_(
 //---------------------------------------------------------------------------//
 // Version history
 // 01/15/13 jeffr : Original
+// 07/08/13 jeffr : Extended to support relative placement enable per macro
 //===========================================================================//
 bool TCH_RelativePlaceHandler_c::InitialPlaceMacroNodes_(
       TCH_RelativeMacro_c* prelativeMacro,
@@ -1124,7 +1250,7 @@ bool TCH_RelativePlaceHandler_c::InitialPlaceMacroNodes_(
    TGO_Point_c origin = this->FindRandomOriginPoint_( *prelativeMacro, 
                                                       relativeNodeIndex );
    // Select a random rotate mode (if enabled)
-   TGO_RotateMode_t rotate = this->FindRandomRotateMode_( );
+   TGO_RotateMode_t rotate = this->FindRandomRotateMode_( *prelativeMacro );
 
    // Test if we already tried this combination of node, origin, and rotate
    if( origin.IsValid( ) &&
@@ -1226,7 +1352,7 @@ bool TCH_RelativePlaceHandler_c::InitialPlaceMacroIsLegal_(
 
       if( !protateMaskHash->IsMember( rotateMaskKey ))
       {
-         TCH_RotateMaskValue_c rotateMaskValue( this->placeOptions_.rotateEnable );
+         TCH_RotateMaskValue_c rotateMaskValue( true );
 
          protateMaskHash->Add( rotateMaskKey, rotateMaskValue );
          protateMaskHash->Find( rotateMaskKey, &protateMaskValue );
@@ -1333,6 +1459,7 @@ void TCH_RelativePlaceHandler_c::PlaceResetMacros_(
 //---------------------------------------------------------------------------//
 // Version history
 // 01/15/13 jeffr : Original
+// 07/08/13 jeffr : Extended to support relative placement enable per macro
 //===========================================================================//
 bool TCH_RelativePlaceHandler_c::PlaceSwapMacros_(
       const TGO_Point_c&            fromPoint,
@@ -1345,11 +1472,11 @@ bool TCH_RelativePlaceHandler_c::PlaceSwapMacros_(
    bool foundPlaceSwap = false;
 
    // Iterate attempt to swap "from" => "to" based available (optional) rotation
-   this->PlaceMacroResetRotate_( TCH_PLACE_MACRO_ROTATE_TO );
+   this->PlaceMacroResetRotate_( TCH_PLACE_MACRO_ROTATE_TO, fromPoint );
    while( this->PlaceMacroIsValidRotate_( TCH_PLACE_MACRO_ROTATE_TO ))
    {
       // Select a random rotate mode (if enabled)
-      TGO_RotateMode_t toRotate = this->FindRandomRotateMode_( );
+      TGO_RotateMode_t toRotate = this->FindRandomRotateMode_( fromPoint );
 
       if( this->PlaceMacroIsLegalRotate_( TCH_PLACE_MACRO_ROTATE_TO, toRotate ))
       {
@@ -1361,11 +1488,11 @@ bool TCH_RelativePlaceHandler_c::PlaceSwapMacros_(
                                                 &fromToMoveList ))
          {
             // Iterate attempt to swap "to" => "from" based available rotation
-            this->PlaceMacroResetRotate_( TCH_PLACE_MACRO_ROTATE_FROM );
+            this->PlaceMacroResetRotate_( TCH_PLACE_MACRO_ROTATE_FROM, toPoint );
             while( this->PlaceMacroIsValidRotate_( TCH_PLACE_MACRO_ROTATE_FROM ))
             {
                // Select a random rotate mode (if enabled)
-               TGO_RotateMode_t fromRotate = this->FindRandomRotateMode_( );
+               TGO_RotateMode_t fromRotate = this->FindRandomRotateMode_( toPoint );
                if( this->PlaceMacroIsLegalRotate_( TCH_PLACE_MACRO_ROTATE_FROM, fromRotate ))
                {
                   toFromMoveList.Clear( );
@@ -1600,7 +1727,7 @@ bool TCH_RelativePlaceHandler_c::PlaceMacroIsAvailableCoord_(
 
       // If we arrive at this point, then we know that VPR's grid block must 
       // be a member of some other unrelated relative macro
-      isAvailable = FALSE;
+      isAvailable = false;
       break;
    }
 
@@ -1618,14 +1745,20 @@ bool TCH_RelativePlaceHandler_c::PlaceMacroIsAvailableCoord_(
 //---------------------------------------------------------------------------//
 // Version history
 // 01/15/13 jeffr : Original
+// 07/08/13 jeffr : Extended to support relative placement enable per macro
 //===========================================================================//
 void TCH_RelativePlaceHandler_c::PlaceMacroResetRotate_(
-      TCH_PlaceMacroRotateMode_t mode )
+            TCH_PlaceMacroRotateMode_t mode,
+      const TGO_Point_c&               point )
 {
    TCH_RotateMaskValue_c* protateMaskValue = ( mode == TCH_PLACE_MACRO_ROTATE_FROM ?
                                                &this->fromPlaceMacroRotate_ :
                                                &this->toPlaceMacroRotate_ );
-   protateMaskValue->Init( this->placeOptions_.rotateEnable );
+
+   const TCH_RelativeMacro_c* prelativeMacro = this->FindRelativeMacro_( point );
+   bool rotateEnabled = ( prelativeMacro ? prelativeMacro->IsRotateEnabled( ) : false );
+
+   protateMaskValue->Init( rotateEnabled );
 }
 
 //===========================================================================//
@@ -1767,15 +1900,30 @@ bool TCH_RelativePlaceHandler_c::PlaceMacroIsLegalMoveList_(
 //---------------------------------------------------------------------------//
 // Version history
 // 01/15/13 jeffr : Original
+// 07/08/13 jeffr : Extended to support relative placement enable per macro
 //===========================================================================//
 TGO_RotateMode_t TCH_RelativePlaceHandler_c::FindRandomRotateMode_(
-      void ) const
+      const TCH_RelativeMacro_c& relativeMacro ) const
 {
    // Select a random rotate mode (if enabled)
-   int rotate = ( this->placeOptions_.rotateEnable ? 
+   int rotate = ( relativeMacro.IsRotateEnabled( ) ?
                   TCT_Rand( 1, TGO_ROTATE_MAX - 1 ) : 
                   TGO_ROTATE_R0 );
    return( static_cast< TGO_RotateMode_t >( rotate ));
+}
+
+//===========================================================================//
+TGO_RotateMode_t TCH_RelativePlaceHandler_c::FindRandomRotateMode_(
+      const TGO_Point_c& point ) const
+{
+   TGO_RotateMode_t rotate = TGO_ROTATE_R0;
+
+   const TCH_RelativeMacro_c* prelativeMacro = this->FindRelativeMacro_( point );
+   if( prelativeMacro )
+   {
+      rotate = this->FindRandomRotateMode_( *prelativeMacro );
+   }
+   return( rotate );
 }
 
 //===========================================================================//
@@ -1894,7 +2042,9 @@ TGO_Point_c TCH_RelativePlaceHandler_c::FindRandomOriginPoint_(
       // Update VPR's 'free_locations' and 'legal_pos' structures to prevent
       // randomly finding same origin point again - IFF rotate not enabled
       // (for further reference, see VPR's initial_place_blocks() function)
-      if( !this->placeOptions_.rotateEnable )
+      size_t relativeMacroIndex = relativeBlock.GetRelativeMacroIndex( );
+      const TCH_RelativeMacro_c& relativeMacro = *this->relativeMacroList_[relativeMacroIndex];
+      if( !relativeMacro.IsRotateEnabled( ))
       {
          int lastIndex = vpr_freeLocationArray[typeIndex] - 1;
          if( lastIndex >= 0 )
@@ -2050,26 +2200,21 @@ const TCH_RelativeBlock_c* TCH_RelativePlaceHandler_c::FindRelativeBlock_(
 }
 
 //===========================================================================//
-// Method         : DecideAntiSide_
+// Method         : DecideAntiLink_
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
 // 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Migrated original side-based "DecideAntiLink_() method
 //===========================================================================//
-TC_SideMode_t TCH_RelativePlaceHandler_c::DecideAntiSide_(
-      TC_SideMode_t side ) const
+void TCH_RelativePlaceHandler_c::DecideAntiLink_(
+      const TGO_IntDims_t& relativeLink,
+            TGO_IntDims_t* pantiLink ) const
 {
-   TC_SideMode_t antiSide = TC_SIDE_UNDEFINED;
-
-   switch( side )
+   if( pantiLink )
    {
-   case TC_SIDE_LEFT:  antiSide = TC_SIDE_RIGHT; break;
-   case TC_SIDE_RIGHT: antiSide = TC_SIDE_LEFT;  break;
-   case TC_SIDE_LOWER: antiSide = TC_SIDE_UPPER; break;
-   case TC_SIDE_UPPER: antiSide = TC_SIDE_LOWER; break;
-   default:                                      break;
+      pantiLink->Set( -1 * relativeLink.dx, -1 * relativeLink.dy );
    }
-   return( antiSide );
 }
 
 //===========================================================================//
@@ -2130,30 +2275,30 @@ bool TCH_RelativePlaceHandler_c::ShowMissingBlockNameError_(
 bool TCH_RelativePlaceHandler_c::ShowInvalidConstraintError_(
       const TCH_RelativeBlock_c& fromBlock,
       const TCH_RelativeBlock_c& toBlock,
-            TC_SideMode_t        side,
+      const TGO_IntDims_t&       fromToLink,
       const string&              srExistingFromBlockName,
       const string&              srExistingToBlockName ) const
 {
    const char* pszFromBlockName = fromBlock.GetName( );
    const char* pszToBlockName = toBlock.GetName( );
 
-   string srSide;
-   TC_ExtractStringSideMode( side, &srSide );
+   string srFromToLink;
+   fromToLink.ExtractString( TC_DATA_INT, &srFromToLink );
 
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
    bool ok = printHandler.Error( "Invalid relative placement constraint!\n" );
    if( srExistingFromBlockName.length( ) &&
        srExistingToBlockName.length( ))
    {
-      printHandler.Info( "%sConstraint already exists between \"%s\" and \"%s\".\n",
+      printHandler.Info( "%sConstraint conflict exists between \"%s\" and \"%s\".\n",
                          TIO_PREFIX_ERROR_SPACE,
                          TIO_SR_STR( srExistingFromBlockName ),
                          TIO_SR_STR( srExistingToBlockName ));
    }
-   printHandler.Info( "%sIgnoring constraint from \"%s\" to \"%s\" on side '%s'.\n",
+   printHandler.Info( "%sIgnoring constraint from \"%s\" to \"%s\" based on [%s] relative placement'.\n",
                       TIO_PREFIX_ERROR_SPACE,
                       TIO_PSZ_STR( pszFromBlockName ),
                       TIO_PSZ_STR( pszToBlockName ),
-                      TIO_SR_STR( srSide ));
+                      TIO_SR_STR( srFromToLink ));
    return( ok );
 }
