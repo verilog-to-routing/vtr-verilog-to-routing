@@ -6,10 +6,10 @@
 //           - operator=
 //           - operator==, operator!=
 //           - Print
-//           - SetSideIndex
-//           - GetSideIndex
-//           - HasSideIndex
 //           - Reset
+//           - AddRelativeLink
+//           - HasRelativePoint
+//           - HasRelativeLink
 //
 //===========================================================================//
 
@@ -40,12 +40,13 @@
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
-// 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Original
 //===========================================================================//
 TCH_RelativeNode_c::TCH_RelativeNode_c( 
       void )
       :
-      vpr_type_( 0 )
+      vpr_type_( 0 ),
+      relativeLinkList_( TCH_RELATIVE_LINK_LIST_DEF_CAPACITY )
 {
    this->Reset( );
 } 
@@ -56,7 +57,8 @@ TCH_RelativeNode_c::TCH_RelativeNode_c(
             t_type_descriptor* vpr_type )
       :
       srBlockName_( srBlockName ),
-      vpr_type_( vpr_type )
+      vpr_type_( vpr_type ),
+      relativeLinkList_( TCH_RELATIVE_LINK_LIST_DEF_CAPACITY )
 {
    this->Reset( );
 } 
@@ -67,7 +69,8 @@ TCH_RelativeNode_c::TCH_RelativeNode_c(
             t_type_descriptor* vpr_type )
       :
       srBlockName_( TIO_PSZ_STR( pszName )),
-      vpr_type_( vpr_type )
+      vpr_type_( vpr_type ),
+      relativeLinkList_( TCH_RELATIVE_LINK_LIST_DEF_CAPACITY )
 {
    this->Reset( );
 } 
@@ -78,12 +81,10 @@ TCH_RelativeNode_c::TCH_RelativeNode_c(
       :
       srBlockName_( relativeNode.srBlockName_ ),
       vpr_type_( relativeNode.vpr_type_ ),
-      vpr_gridPoint_( relativeNode.vpr_gridPoint_ )
+      vpr_gridPoint_( relativeNode.vpr_gridPoint_ ),
+      relativePoint_( relativeNode.relativePoint_ ),
+      relativeLinkList_( relativeNode.relativeLinkList_ )
 {
-   this->sideIndex_.left = relativeNode.sideIndex_.left;
-   this->sideIndex_.right = relativeNode.sideIndex_.right;
-   this->sideIndex_.lower = relativeNode.sideIndex_.lower;
-   this->sideIndex_.upper = relativeNode.sideIndex_.upper;
 } 
 
 //===========================================================================//
@@ -91,7 +92,7 @@ TCH_RelativeNode_c::TCH_RelativeNode_c(
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
-// 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Original
 //===========================================================================//
 TCH_RelativeNode_c::~TCH_RelativeNode_c( 
       void )
@@ -103,7 +104,7 @@ TCH_RelativeNode_c::~TCH_RelativeNode_c(
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
-// 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Original
 //===========================================================================//
 TCH_RelativeNode_c& TCH_RelativeNode_c::operator=( 
       const TCH_RelativeNode_c& relativeNode )
@@ -113,10 +114,8 @@ TCH_RelativeNode_c& TCH_RelativeNode_c::operator=(
       this->srBlockName_ = relativeNode.srBlockName_;
       this->vpr_type_ = relativeNode.vpr_type_;
       this->vpr_gridPoint_ = relativeNode.vpr_gridPoint_;
-      this->sideIndex_.left = relativeNode.sideIndex_.left;
-      this->sideIndex_.right = relativeNode.sideIndex_.right;
-      this->sideIndex_.lower = relativeNode.sideIndex_.lower;
-      this->sideIndex_.upper = relativeNode.sideIndex_.upper;
+      this->relativePoint_ = relativeNode.relativePoint_;
+      this->relativeLinkList_ = relativeNode.relativeLinkList_;
    }
    return( *this );
 }
@@ -126,7 +125,7 @@ TCH_RelativeNode_c& TCH_RelativeNode_c::operator=(
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
-// 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Original
 //===========================================================================//
 bool TCH_RelativeNode_c::operator==( 
       const TCH_RelativeNode_c& relativeNode ) const
@@ -134,10 +133,8 @@ bool TCH_RelativeNode_c::operator==(
    return(( this->srBlockName_ == relativeNode.srBlockName_ ) &&
           ( this->vpr_type_ == relativeNode.vpr_type_ ) &&
           ( this->vpr_gridPoint_ == relativeNode.vpr_gridPoint_ ) &&
-          ( this->sideIndex_.left == relativeNode.sideIndex_.left ) &&
-          ( this->sideIndex_.right == relativeNode.sideIndex_.right ) &&
-          ( this->sideIndex_.lower == relativeNode.sideIndex_.lower ) &&
-          ( this->sideIndex_.upper == relativeNode.sideIndex_.upper ) ?
+          ( this->relativePoint_ == relativeNode.relativePoint_ ) &&
+          ( this->relativeLinkList_ == relativeNode.relativeLinkList_ ) ?
           true : false );
 }
 
@@ -146,7 +143,7 @@ bool TCH_RelativeNode_c::operator==(
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
-// 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Original
 //===========================================================================//
 bool TCH_RelativeNode_c::operator!=( 
       const TCH_RelativeNode_c& relativeNode ) const
@@ -159,7 +156,7 @@ bool TCH_RelativeNode_c::operator!=(
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
-// 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Original
 //===========================================================================//
 void TCH_RelativeNode_c::Print( 
       FILE*  pfile,
@@ -179,122 +176,19 @@ void TCH_RelativeNode_c::Print(
       this->vpr_gridPoint_.ExtractString( &srGridPoint );
       printHandler.Write( pfile, 0, " vpr_grid_point=(%s)", TIO_SR_STR( srGridPoint ));
    }
-   if(( this->sideIndex_.left != TCH_RELATIVE_NODE_UNDEFINED ) ||
-      ( this->sideIndex_.right != TCH_RELATIVE_NODE_UNDEFINED ) ||
-      ( this->sideIndex_.lower != TCH_RELATIVE_NODE_UNDEFINED ) ||
-      ( this->sideIndex_.upper != TCH_RELATIVE_NODE_UNDEFINED ))
+   if( this->relativePoint_.IsValid( ))
    {
-      printHandler.Write( pfile, 0, " side_index=(" );
-
-      if( this->sideIndex_.left != TCH_RELATIVE_NODE_UNDEFINED )
-         printHandler.Write( pfile, 0, "%u", this->sideIndex_.left );
-      else
-         printHandler.Write( pfile, 0, "-" );
-
-      printHandler.Write( pfile, 0, "," );
-
-      if( this->sideIndex_.right != TCH_RELATIVE_NODE_UNDEFINED )
-         printHandler.Write( pfile, 0, "%u", this->sideIndex_.right );
-      else
-         printHandler.Write( pfile, 0, "-" );
-
-      printHandler.Write( pfile, 0, "," );
-
-      if( this->sideIndex_.lower != TCH_RELATIVE_NODE_UNDEFINED )
-         printHandler.Write( pfile, 0, "%u", this->sideIndex_.lower );
-      else
-         printHandler.Write( pfile, 0, "-" );
-
-      printHandler.Write( pfile, 0, "," );
-
-      if( this->sideIndex_.upper != TCH_RELATIVE_NODE_UNDEFINED )
-         printHandler.Write( pfile, 0, "%u", this->sideIndex_.upper );
-      else
-         printHandler.Write( pfile, 0, "-" );
-
-      printHandler.Write( pfile, 0, ")" );
+      string srRelativePoint;
+      this->relativePoint_.ExtractString( &srRelativePoint );
+      printHandler.Write( pfile, 0, " relative_point=(%s)", TIO_SR_STR( srRelativePoint ));
+   }
+   if( this->relativeLinkList_.IsValid( ))
+   {
+      string srRelativeLinkList;
+      this->relativeLinkList_.ExtractString( &srRelativeLinkList );
+      printHandler.Write( pfile, 0, " relative_link_list=[%s]", TIO_SR_STR( srRelativeLinkList ));
    }
    printHandler.Write( pfile, 0, ">\n" );
-} 
-
-//===========================================================================//
-// Method         : SetSideIndex
-// Author         : Jeff Rudolph
-//---------------------------------------------------------------------------//
-// Version history
-// 01/15/13 jeffr : Original
-//===========================================================================//
-void TCH_RelativeNode_c::SetSideIndex(
-      TC_SideMode_t side,
-      size_t        relativeNodeIndex )
-{
-   switch( side )
-   {
-   case TC_SIDE_LEFT:  this->sideIndex_.left = relativeNodeIndex;  break;
-   case TC_SIDE_RIGHT: this->sideIndex_.right = relativeNodeIndex; break;
-   case TC_SIDE_LOWER: this->sideIndex_.lower = relativeNodeIndex; break;
-   case TC_SIDE_UPPER: this->sideIndex_.upper = relativeNodeIndex; break;
-   default:                                                        break;
-   }
-} 
-
-//===========================================================================//
-// Method         : GetSideIndex
-// Author         : Jeff Rudolph
-//---------------------------------------------------------------------------//
-// Version history
-// 01/15/13 jeffr : Original
-//===========================================================================//
-size_t TCH_RelativeNode_c::GetSideIndex(
-      TC_SideMode_t side ) const
-{
-   size_t relativeNodeIndex = TCH_RELATIVE_NODE_UNDEFINED;
-
-   switch( side )
-   {
-   case TC_SIDE_LEFT:  relativeNodeIndex = this->sideIndex_.left;  break;
-   case TC_SIDE_RIGHT: relativeNodeIndex = this->sideIndex_.right; break;
-   case TC_SIDE_LOWER: relativeNodeIndex = this->sideIndex_.lower; break;
-   case TC_SIDE_UPPER: relativeNodeIndex = this->sideIndex_.upper; break;
-   default:                                                        break;
-   }
-   return( relativeNodeIndex );
-} 
-
-//===========================================================================//
-// Method         : HasSideIndex
-// Author         : Jeff Rudolph
-//---------------------------------------------------------------------------//
-// Version history
-// 01/15/13 jeffr : Original
-//===========================================================================//
-bool TCH_RelativeNode_c::HasSideIndex(
-      TC_SideMode_t side ) const
-{
-   bool hasSideIndex = false; 
-
-   switch( side )
-   {
-   case TC_SIDE_LEFT: 
-      hasSideIndex = ( this->sideIndex_.left != TCH_RELATIVE_NODE_UNDEFINED ? 
-                       true : false );
-      break;
-   case TC_SIDE_RIGHT: 
-      hasSideIndex = ( this->sideIndex_.right != TCH_RELATIVE_NODE_UNDEFINED ? 
-                       true : false );
-      break;
-   case TC_SIDE_LOWER: 
-      hasSideIndex = ( this->sideIndex_.lower != TCH_RELATIVE_NODE_UNDEFINED ? 
-                       true : false );
-      break;
-   case TC_SIDE_UPPER: 
-      hasSideIndex = ( this->sideIndex_.upper != TCH_RELATIVE_NODE_UNDEFINED ? 
-                       true : false );
-      break;
-   default:
-      break;
-   }
-   return( hasSideIndex );
 } 
 
 //===========================================================================//
@@ -302,15 +196,84 @@ bool TCH_RelativeNode_c::HasSideIndex(
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
-// 01/15/13 jeffr : Original
+// 06/25/13 jeffr : Original
 //===========================================================================//
 void TCH_RelativeNode_c::Reset( 
       void )
 {
    this->vpr_gridPoint_.Reset( );
-
-   this->sideIndex_.left = TCH_RELATIVE_NODE_UNDEFINED;
-   this->sideIndex_.right = TCH_RELATIVE_NODE_UNDEFINED;
-   this->sideIndex_.lower = TCH_RELATIVE_NODE_UNDEFINED;
-   this->sideIndex_.upper = TCH_RELATIVE_NODE_UNDEFINED;
+   this->relativePoint_.Reset( );
+   this->relativeLinkList_.Clear( );
 } 
+
+
+//===========================================================================//
+// Method         : AddRelativeLink
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 06/25/13 jeffr : Original
+//===========================================================================//
+void TCH_RelativeNode_c::AddRelativeLink(
+      const TC_Index_c& relativeLinkIndex )
+{
+   this->relativeLinkList_.Add( relativeLinkIndex );
+}
+
+//===========================================================================//
+void TCH_RelativeNode_c::AddRelativeLink(
+      int linkIndex )
+{
+   TC_Index_c relativeLinkIndex( linkIndex );
+   this->AddRelativeLink( relativeLinkIndex );
+}
+
+//===========================================================================//
+void TCH_RelativeNode_c::AddRelativeLink(
+      size_t linkIndex )
+{
+   TC_Index_c relativeLinkIndex( static_cast< int >( linkIndex ));
+   this->AddRelativeLink( relativeLinkIndex );
+}
+
+//===========================================================================//
+// Method         : HasRelativePoint
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 06/25/13 jeffr : Original
+//===========================================================================//
+bool TCH_RelativeNode_c::HasRelativePoint(
+      void ) const
+{
+   return( this->relativePoint_.IsValid( ));
+}
+
+//===========================================================================//
+// Method         : HasRelativeLink
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 06/25/13 jeffr : Original
+//===========================================================================//
+bool TCH_RelativeNode_c::HasRelativeLink(
+      const TC_Index_c& relativeLinkIndex ) const
+{
+   return( this->relativeLinkList_.IsMember( relativeLinkIndex ));
+}
+
+//===========================================================================//
+bool TCH_RelativeNode_c::HasRelativeLink(
+      int linkIndex ) const
+{
+   TC_Index_c relativeLinkIndex( linkIndex );
+   return( this->HasRelativeLink( relativeLinkIndex ));
+}
+
+//===========================================================================//
+bool TCH_RelativeNode_c::HasRelativeLink(
+      size_t linkIndex ) const
+{
+   TC_Index_c relativeLinkIndex( static_cast< int >( linkIndex ));
+   return( this->HasRelativeLink( relativeLinkIndex ));
+}
