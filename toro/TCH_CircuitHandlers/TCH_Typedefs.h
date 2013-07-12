@@ -26,6 +26,7 @@
 #include "TCT_SortedVector.h"
 #include "TCT_SortedNameDynamicVector.h"
 #include "TCT_Hash.h"
+#include "TC_Index.h"
 
 //---------------------------------------------------------------------------//
 // Define relative place handler constants and typedefs
@@ -51,7 +52,9 @@ class TCH_RelativeMacro_c; // Forward declaration for subsequent class typedefs
 typedef TCT_OrderedVector_c< TCH_RelativeMacro_c > TCH_RelativeMacroList_t;
 
 #define TCH_RELATIVE_MACRO_UNDEFINED SIZE_MAX
- 
+
+typedef TCT_OrderedVector_c< TC_Index_c > TCH_RelativeLinkList_t;
+
 //---------------------------------------------------------------------------//
 // Define relative node constants and typedefs
 //---------------------------------------------------------------------------//
