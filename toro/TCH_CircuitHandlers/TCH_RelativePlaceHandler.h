@@ -56,6 +56,7 @@ public:
    static bool HasInstance( void );
 
    bool Configure( bool placeOptions_rotateEnable,
+                   bool placeOptions_carryChainEnable,
                    size_t placeOptions_maxPlaceRetryCt,
                    size_t placeOptions_maxMacroRetryCt,
                    const TPO_InstList_t& toro_circuitBlockList );
@@ -70,6 +71,10 @@ public:
              int* vpr_freeLocationArray,
              t_legal_pos** vpr_legalPosArray );
    bool Reset( void );
+
+   bool LoadCarryChains( const t_block* vpr_blockArray,
+                         const t_pl_macro* vpr_placeMacroArray,
+                         int vpr_placeMacroCount );
 
    bool InitialPlace( t_grid_tile** vpr_gridArray,
                       int vpr_nx,
@@ -102,45 +107,47 @@ protected:
 
 private:
 
-   bool AddSideConstraint_( const char* pszFromBlockName,
+   bool AddLinkConstraint_( const char* pszFromBlockName,
                             const char* pszToBlockName,
-                            TC_SideMode_t side,
+                            const TGO_IntDims_t& fromToLink,
+                            bool rotateMacroEnabled = false,
                             size_t relativeMacroIndex = TCH_RELATIVE_MACRO_UNDEFINED );
-   bool AddSideConstraint_( TCH_RelativeBlock_c* pfromBlock,
+   bool AddLinkConstraint_( TCH_RelativeBlock_c* pfromBlock,
                             TCH_RelativeBlock_c* ptoBlock,
-                            TC_SideMode_t side,
+                            const TGO_IntDims_t& fromToLink,
+                            bool rotateMacroEnabled = false,
                             size_t relativeMacroIndex = TCH_RELATIVE_MACRO_UNDEFINED );
 
-   void NewSideConstraint_( TCH_RelativeBlock_c* pfromBlock,
+   void NewLinkConstraint_( TCH_RelativeBlock_c* pfromBlock,
                             TCH_RelativeBlock_c* ptoBlock,
-                            TC_SideMode_t side,
+                            const TGO_IntDims_t& fromToLink,
+                            bool rotateMacroEnabled = false,
                             size_t relativeMacroIndex = TCH_RELATIVE_MACRO_UNDEFINED );
-   void NewSideConstraint_( const TCH_RelativeBlock_c& fromBlock,
+   void NewLinkConstraint_( const TCH_RelativeBlock_c& fromBlock,
                             const TCH_RelativeBlock_c& toBlock,
-                            TC_SideMode_t side );
+                            const TGO_IntDims_t& fromToLink );
 
-   bool MergeSideConstraints_( TCH_RelativeBlock_c* pfromBlock,
+   bool MergeLinkConstraints_( TCH_RelativeBlock_c* pfromBlock,
                                TCH_RelativeBlock_c* ptoBlock,
-                               TC_SideMode_t side );
-   bool MergeSideConstraints_( size_t fromMacroIndex,
-                               const TCH_RelativeMacro_c& toMacro,
-                               const TCH_RelativeNode_c& toNode,
-                               TC_SideMode_t side );
+                               const TGO_IntDims_t& fromToLink,
+                               bool rotateMacroEnabled = false );
 
-   bool ExistingSideConstraint_( const TCH_RelativeBlock_c& fromBlock,
+   bool ExistingLinkConstraint_( const TCH_RelativeBlock_c& fromBlock,
                                  TCH_RelativeBlock_c* ptoBlock,
-                                 TC_SideMode_t side,
+                                 const TGO_IntDims_t& fromToLink,
+                                 bool rotateMacroEnabled = false,
                                  string* psrFromBlockName = 0,
                                  string* psrToBlockName = 0 );
 
-   bool HasExistingSideConstraint_( const TCH_RelativeBlock_c& fromBlock,
+   bool HasExistingLinkConstraint_( const TCH_RelativeBlock_c& fromBlock,
                                     const TCH_RelativeBlock_c& toBlock,
-                                    TC_SideMode_t side,
+                                    const TGO_IntDims_t& fromToLink,
                                     string* psrFromBlockName = 0,
                                     string* psrToBlockName = 0 ) const;
-   bool IsAvailableSideConstraint_( const TCH_RelativeBlock_c& fromBlock,
+
+   bool IsAvailableLinkConstraint_( const TCH_RelativeBlock_c& fromBlock,
                                     const TCH_RelativeBlock_c& toBlock,
-                                    TC_SideMode_t side,
+                                    const TGO_IntDims_t& fromToLink,
                                     bool* pfromAvailable = 0,
                                     bool* ptoAvailable = 0,
                                     string* psrFromBlockName = 0,
@@ -185,7 +192,8 @@ private:
                                      TGO_RotateMode_t toRotate,
                                      TCH_RelativeMoveList_t* prelativeMoveList ) const;
 
-   void PlaceMacroResetRotate_( TCH_PlaceMacroRotateMode_t mode );
+   void PlaceMacroResetRotate_( TCH_PlaceMacroRotateMode_t mode,
+                                const TGO_Point_c& point );
    bool PlaceMacroIsLegalRotate_( TCH_PlaceMacroRotateMode_t mode,
                                   TGO_RotateMode_t rotate ) const;
    bool PlaceMacroIsValidRotate_( TCH_PlaceMacroRotateMode_t mode ) const;
@@ -194,7 +202,8 @@ private:
    bool PlaceMacroIsLegalMoveList_( const TCH_RelativeMoveList_t& fromToMoveList, 
                                     const TCH_RelativeMoveList_t& toFromMoveList ) const; 
 
-   TGO_RotateMode_t FindRandomRotateMode_( void ) const;
+   TGO_RotateMode_t FindRandomRotateMode_( const TCH_RelativeMacro_c& relativeMacro ) const;
+   TGO_RotateMode_t FindRandomRotateMode_( const TGO_Point_c& point ) const;
    TGO_Point_c FindRandomOriginPoint_( const TCH_RelativeMacro_c& relativeMacro,
                                        size_t relativeNodeIndex ) const;
    TGO_Point_c FindRandomOriginPoint_( const TCH_RelativeNode_c& relativeNode ) const;
@@ -207,7 +216,8 @@ private:
    TCH_RelativeNode_c* FindRelativeNode_( const TGO_Point_c& point ) const;
    const TCH_RelativeBlock_c* FindRelativeBlock_( const TGO_Point_c& point ) const;
 
-   TC_SideMode_t DecideAntiSide_( TC_SideMode_t side ) const;
+   void DecideAntiLink_( const TGO_IntDims_t& relativeLink,
+                         TGO_IntDims_t* pantiLink ) const;
 
    bool ShowIllegalRelativeMacroWarning_( const TCH_RelativeMacro_c& relativeMacro,
                                           size_t relativeNodeIndex,
@@ -216,7 +226,7 @@ private:
    bool ShowMissingBlockNameError_( const char* pszBlockName ) const;
    bool ShowInvalidConstraintError_( const TCH_RelativeBlock_c& fromBlock,
                                      const TCH_RelativeBlock_c& toBlock,
-                                     TC_SideMode_t side,
+                                     const TGO_IntDims_t& fromToLink,
                                      const string& srExistingFromBlockName,
                                      const string& srExistingToBlockName ) const;
 private:
@@ -225,6 +235,7 @@ private:
    {
    public:
       bool   rotateEnable;      // Local copies of Toro's relative place options
+      bool   carryChainEnable;  // "
       size_t maxPlaceRetryCt;   // "
       size_t maxMacroRetryCt;   // "
    } placeOptions_;
