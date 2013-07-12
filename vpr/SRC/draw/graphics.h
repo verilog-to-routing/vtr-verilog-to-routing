@@ -1,4 +1,3 @@
-//<<<<<<< .mine
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 #include <iostream>
@@ -21,6 +20,7 @@ using namespace std;
 * Enhanced version by William Chow (chow@eecg.utoronto.ca)
 * Minor updates by Guy Lemieux (lemieux@ece.ubc.ca)
 * More updates by Vaughn Betz to make win32 cleaner and more robust.
+* More updates and code cleanup by Long Yu Wang (longyu.wang@mail.utoronto.ca)
 */
 
 

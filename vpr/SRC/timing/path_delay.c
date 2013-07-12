@@ -83,7 +83,7 @@ match the clustered netlist (block).  You pass in the is_pre_packed flag to
 say which kind of netlist and timing graph you are working with.
                                                                                                                                            
 Every used (not OPEN) block pin becomes a timing node, both on primitive
-blocks and (if you’re building the timing graph that matches a clustered 
+blocks and (if you are building the timing graph that matches a clustered 
 netlist) on clustered blocks.  For the clustered (not pre_packed) timing
 graph, every used pin within a clustered (pb_type) block also becomes a timing
 node.  So a CLB that contains ALMs that contains LUTs will have nodes created 

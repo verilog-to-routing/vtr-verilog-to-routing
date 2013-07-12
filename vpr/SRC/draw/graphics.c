@@ -154,6 +154,27 @@
 *                                                                          *
 * Jan. 13, 1995:  Modified to incorporate PostScript Support.              */
 
+/**************************** Top-level summary ******************************
+This graphics package provides API for client program that wishes to implement 
+a graphical user interface. The client program will first call init_graphics()
+for initial setup, which includes opening up an application window, setting up
+the specified window_name and background colour, creating sublevel windows, 
+etc. Then the program will call a few more setup functions such as 
+init_world(), which sets up world coordinates, create_button(), which sets up
+menu buttons, and update_message(), which updates status bar message. After 
+all the setup, the program will call the main routine for the graphics,
+event_loop(), which will take control of the program until the "Proceed" 
+button is pressed. Event_loop() directly communicates with X11/Win32 to 
+receive event notifications, and it either calls other event-handling 
+functions in the graphics package or callbacks passed as function pointers 
+from the client program. The most important callback function which the 
+client should provide is drawscreen(). Whenever the graphics need to be 
+redrawn, drawscreen() will be called. There are a number drawing routines 
+which the client can use to update the graphic contexts (ie. setcolor, 
+setfontsize, setlinewidth, and setlinestyle) and draw simple shapes as
+desired. When the program is done executing the graphics, it should call
+close_graphics() to release all drawing structures and close the graphics.*/
+
 #ifndef NO_GRAPHICS  // Strip everything out and just put in stubs if NO_GRAPHICS defined
 
 /**********************************
@@ -1674,12 +1695,12 @@ drawellipticarc (float xc, float yc, float radx, float rady, float startang, flo
 		/* set arc direction */
 		float startang_rad, endang_rad;
 		if (angextent > 0) {
-			startang_rad = DEGTORAD(startang);
-			endang_rad = DEGTORAD(startang+angextent-.001);
+			startang_rad = (float) DEGTORAD(startang);
+			endang_rad = (float) DEGTORAD(startang+angextent-.001);
 		}
 		else {
-			startang_rad = DEGTORAD(startang+angextent+.001);
-			endang_rad = DEGTORAD(startang);
+			startang_rad = (float) DEGTORAD(startang+angextent+.001);
+			endang_rad = (float) DEGTORAD(startang);
 		}
 		p1 = (int)(xworld_to_scrn(xc) + fabs(trans_coord.wtos_xmult*radx)*cos(startang_rad));
 		p2 = (int)(yworld_to_scrn(yc) - fabs(trans_coord.wtos_ymult*rady)*sin(startang_rad));
@@ -1752,12 +1773,12 @@ fillellipticarc (float xc, float yc, float radx, float rady, float startang,
 		/* set pie direction */
 		float startang_rad, endang_rad;
 		if (angextent > 0) {
-			startang_rad = DEGTORAD(startang);
-			endang_rad = DEGTORAD(startang+angextent-.001);
+			startang_rad = (float) DEGTORAD(startang);
+			endang_rad = (float) DEGTORAD(startang+angextent-.001);
 		}
 		else {
-			startang_rad = DEGTORAD(startang+angextent+.001);
-			endang_rad = DEGTORAD(startang);
+			startang_rad = (float) DEGTORAD(startang+angextent+.001);
+			endang_rad = (float) DEGTORAD(startang);
 		}
 		p1 = (int)(xworld_to_scrn(xc) + fabs(trans_coord.wtos_xmult*radx)*cos(startang_rad));
 		p2 = (int)(yworld_to_scrn(yc) - fabs(trans_coord.wtos_ymult*rady)*sin(startang_rad));
@@ -2073,11 +2094,11 @@ static void
 handle_zoom_in (float x, float y, void (*drawscreen) (void))
 {
 	//make xright - xleft = 0.6 of the original distance 
-	trans_coord.xleft = x - (x-trans_coord.xleft)/ZOOM_FACTOR;
-	trans_coord.xright = x + (trans_coord.xright-x)/ZOOM_FACTOR;
+	trans_coord.xleft = x - (x-trans_coord.xleft)/(float) ZOOM_FACTOR;
+	trans_coord.xright = x + (trans_coord.xright-x)/(float) ZOOM_FACTOR;
 	//make ybot - ytop = 0.6 of the original distance
-	trans_coord.ytop = y - (y-trans_coord.ytop)/ZOOM_FACTOR;
-	trans_coord.ybot = y + (trans_coord.ybot -y)/ZOOM_FACTOR;
+	trans_coord.ytop = y - (y-trans_coord.ytop)/(float) ZOOM_FACTOR;
+	trans_coord.ybot = y + (trans_coord.ybot -y)/(float) ZOOM_FACTOR;
 
 	update_transform ();
 	drawscreen();
@@ -2089,10 +2110,10 @@ static void
 handle_zoom_out (float x, float y, void (*drawscreen) (void))
 {
 	//restore the original distances before previous zoom in
-	trans_coord.xleft = x - (x-trans_coord.xleft)*ZOOM_FACTOR;
-	trans_coord.xright = x + (trans_coord.xright-x)*ZOOM_FACTOR;
-	trans_coord.ytop = y - (y-trans_coord.ytop)*ZOOM_FACTOR;
-	trans_coord.ybot = y + (trans_coord.ybot -y)*ZOOM_FACTOR;
+	trans_coord.xleft = x - (x-trans_coord.xleft)*((float) ZOOM_FACTOR);
+	trans_coord.xright = x + (trans_coord.xright-x)*((float) ZOOM_FACTOR);
+	trans_coord.ytop = y - (y-trans_coord.ytop)*((float) ZOOM_FACTOR);
+	trans_coord.ybot = y + (trans_coord.ybot -y)*((float) ZOOM_FACTOR);
 
 	update_transform ();
 	drawscreen();
