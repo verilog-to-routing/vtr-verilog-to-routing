@@ -48,7 +48,6 @@ using namespace std;
 
 #include "TC_Bit.h"
 #include "TC_NameType.h"
-#include "TC_SideName.h"
 
 #include "TGS_Typedefs.h"
 #include "TGS_Region.h"
@@ -62,6 +61,7 @@ using namespace std;
 #include "TPO_Typedefs.h"
 #include "TPO_PinMap.h"
 #include "TPO_HierMap.h"
+#include "TPO_Relative.h"
 
 //===========================================================================//
 // Purpose        : Class declaration
@@ -78,35 +78,35 @@ public:
    TPO_Inst_c( const string& srName );
    TPO_Inst_c( const char* pszName );
    TPO_Inst_c( const string& srName,
-	       const string& srCellName,
-	       const TPO_PinList_t& pinList,
+               const string& srCellName,
+               const TPO_PinList_t& pinList,
                TPO_InstSource_t source,
                const TPO_LogicBitsList_t& logicBitsList );
    TPO_Inst_c( const char* pszName,
-	       const char* pszCellName,
-	       const TPO_PinList_t& pinList,
+               const char* pszCellName,
+               const TPO_PinList_t& pinList,
                TPO_InstSource_t source,
                const TPO_LogicBitsList_t& logicBitsList );
    TPO_Inst_c( const string& srName,
-	       const string& srCellName,
-	       const TPO_PinList_t& pinList,
+               const string& srCellName,
+               const TPO_PinList_t& pinList,
                TPO_InstSource_t source,
                TPO_LatchType_t clockType,
                TPO_LatchState_t initState );
    TPO_Inst_c( const char* pszName,
-	       const char* pszCellName,
-	       const TPO_PinList_t& pinList,
+               const char* pszCellName,
+               const TPO_PinList_t& pinList,
                TPO_InstSource_t source,
                TPO_LatchType_t clockType,
                TPO_LatchState_t initState );
    TPO_Inst_c( const string& srName,
-	       const string& srCellName,
+               const string& srCellName,
                TPO_InstSource_t source,
-	       const TPO_PinMapList_t& pinMapList );
+               const TPO_PinMapList_t& pinMapList );
    TPO_Inst_c( const char* pszName,
-	       const char* pszCellName,
+               const char* pszCellName,
                TPO_InstSource_t source,
-	       const TPO_PinMapList_t& pinMapList );
+               const TPO_PinMapList_t& pinMapList );
    TPO_Inst_c( const TPO_Inst_c& inst );
    ~TPO_Inst_c( void );
 
