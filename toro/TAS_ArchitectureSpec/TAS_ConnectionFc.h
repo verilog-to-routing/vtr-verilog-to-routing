@@ -72,6 +72,8 @@ public:
    unsigned int absolute; // Defines number of tracks that each pin connects
                           // Applies when connection box type = ABSOLUTE
 
+   string srName;         // Optional pin name (to override specific pins)
+
 private:
 
    TC_TypeMode_t dir_;    // Selects Fc_in vs. Fc_out mode
