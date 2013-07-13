@@ -1722,6 +1722,9 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 	t_pb *pb;
 
 #if SLACK_DEFINITION == 'S'
+	update_slack = (boolean)true;
+	/* Update slack values because we need these values to compute criticalities */
+
 	float smallest_slack_in_design = HUGE_POSITIVE_FLOAT;
 	/* Shift all slacks upwards by this number if it is negative. */
 
