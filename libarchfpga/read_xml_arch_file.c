@@ -3499,13 +3499,14 @@ static void PrintPb_types_rec(INP FILE * Echo, INP const t_pb_type * pb_type,
 						pb_type->modes[i].interconnect[j].annotations[k].value[0]);
 			}
 			//Print power info for interconnects
-			if(pb_type->modes[i].interconnect[j].interconnect_power->power_usage.dynamic||
-				pb_type->modes[i].interconnect[j].interconnect_power->power_usage.leakage){
-					fprintf(Echo, "%s\t\t\tpower %e %e\n", tabs,
-					pb_type->modes[i].interconnect[j].interconnect_power->power_usage.dynamic,
-					pb_type->modes[i].interconnect[j].interconnect_power->power_usage.leakage);
+			if(pb_type->modes[i].interconnect[j].interconnect_power) {
+				if(pb_type->modes[i].interconnect[j].interconnect_power->power_usage.dynamic||
+					pb_type->modes[i].interconnect[j].interconnect_power->power_usage.leakage) {
+						fprintf(Echo, "%s\t\t\tpower %e %e\n", tabs,
+						pb_type->modes[i].interconnect[j].interconnect_power->power_usage.dynamic,
+						pb_type->modes[i].interconnect[j].interconnect_power->power_usage.leakage);
+				}
 			}
-			
 		}
 	}
 	}
@@ -3528,10 +3529,12 @@ static void PrintPb_types_rec(INP FILE * Echo, INP const t_pb_type * pb_type,
 		}
 	}
 
-	PrintPb_types_recPower(Echo , pb_type , tabs);
-
+	if (pb_type->pb_type_power) {
+		PrintPb_types_recPower(Echo , pb_type , tabs);
+	}
 	free(tabs);
 }
+
 //Added May 2013 Daniel Chen, help dump arch info after loading from XML
 static void PrintPb_types_recPower(INP FILE * Echo, INP const t_pb_type * pb_type,
 		const char* tabs){
