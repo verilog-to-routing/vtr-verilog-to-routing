@@ -1004,6 +1004,9 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 			sizeof(int));
 	num_absorbable_latch = 0;
 	for (i = 0; i < num_logical_blocks; i++) {
+		if (!logical_block) 
+			continue;
+
 		if (logical_block[i].model == logic_model) {
 			if (logic_model == NULL)
 				continue;
@@ -1053,6 +1056,9 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 
 	fprintf(fp, "\nNet\tName\t\t#Pins\tDriver\tRecvs.\n");
 	for (i = 0; i < num_logical_nets; i++) {
+		if (!vpack_net)
+			continue;
+
 		fprintf(fp, "\n%d\t%s\t", i, vpack_net[i].name);
 		if (strlen(vpack_net[i].name) < 8)
 			fprintf(fp, "\t"); /* Name field is 16 chars wide */
@@ -1069,6 +1075,9 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 	fprintf(fp, "\t\tEMPTY = %d\n", VPACK_EMPTY);
 
 	for (i = 0; i < num_logical_blocks; i++) {
+		if (!logical_block) 
+			continue;
+
 		fprintf(fp, "\nblock %d %s ", i, logical_block[i].name);
 		fprintf(fp, "\ttype: %d ", logical_block[i].type);
 		fprintf(fp, "\tmodel name: %s\n", logical_block[i].model->name);
