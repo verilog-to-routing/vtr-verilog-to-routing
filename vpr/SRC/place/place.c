@@ -319,6 +319,8 @@ static boolean placement_region_pos_is_valid(
 
 #ifdef TORO_RELATIVE_PLACEMENT_ENABLE
 //===========================================================================//
+static bool alloc_and_load_carry_chain_relative_macros(
+		const t_pl_macro* vpr_placeMacroArray, int vpr_placeMacroCount);
 static bool initial_placement_relative_macros(
 		int* free_locations);
 static bool apply_placement_relative_macros(
@@ -2112,6 +2114,21 @@ static void alloc_and_load_placement_structs(
 	alloc_and_load_try_swap_structs();
 
 	num_pl_macros = alloc_and_load_placement_macros(directs, num_directs, &pl_macros);
+
+#ifdef TORO_RELATIVE_PLACEMENT_ENABLE
+	if( alloc_and_load_carry_chain_relative_macros(pl_macros, num_pl_macros)) {
+
+		/* Free the global list of carry chain macros */
+		/* (since they have now been transformed into Toro relative macros */
+		for (i = 0; i < num_pl_macros; ++i) {
+			free(pl_macros[i].members);
+			pl_macros[i].members = 0;
+		}
+		free(pl_macros);
+		pl_macros = 0;
+		num_pl_macros = 0;
+	}
+#endif
 }
 
 static void alloc_and_load_try_swap_structs() {
@@ -3263,6 +3280,23 @@ static boolean placement_region_pos_is_valid(
 #endif
 
 #ifdef TORO_RELATIVE_PLACEMENT_ENABLE
+//===========================================================================//
+static bool alloc_and_load_carry_chain_relative_macros(
+		const t_pl_macro* vpr_placeMacroArray, /* See place.c's global pl_macros */
+		int vpr_placeMacroCount) { /* See place.c's global num_pl_macros */
+	bool ok = false;
+
+	// Verify at least one relative placement constraint has been defined
+	TCH_RelativePlaceHandler_c& relativePlaceHandler = TCH_RelativePlaceHandler_c::GetInstance();
+	if (relativePlaceHandler.IsValid()) {
+
+		// Load relative placement handler based on current carry chains
+		ok = relativePlaceHandler.LoadCarryChains(block,
+				vpr_placeMacroArray, vpr_placeMacroCount);
+	}
+	return(ok);
+}
+
 //===========================================================================//
 static bool initial_placement_relative_macros(
 		int* free_locations) {
