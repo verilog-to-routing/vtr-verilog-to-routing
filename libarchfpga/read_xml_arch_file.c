@@ -2642,17 +2642,24 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 		OUTP struct s_arch *arch, OUTP t_type_descriptor ** Types,
 		OUTP int *NumTypes){
-	ezxml_t Cur, Next;
+	ezxml_t Cur = NULL, Next;
 	const char *Prop;
 	boolean power_reqd;
 
-	arch_file_name = ArchFile;
+	if(check_file_name_extension(ArchFile, ".xml") == FALSE){
+		vpr_printf_warning(__FILE__, __LINE__, 
+		"Architecture file '%s' may be in incorrect format. "
+		"Expecting .xml format for architecture files.\n", ArchFile);
+	}
+
 	/* Parse the file */
 	Cur = ezxml_parse_file(ArchFile);
 	if (NULL == Cur) {		
 		vpr_throw(VPR_ERROR_ARCH, ArchFile, 0, 
 		"Unable to find/load architecture file '%s'.\n", ArchFile);
 	}
+
+	arch_file_name = ArchFile;
 
 	/* Root node should be architecture */
 	CheckElement(Cur, "architecture");

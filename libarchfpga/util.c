@@ -777,6 +777,7 @@ int ipow(int base, int exp) {
 	return result;
 }
 
+/* Author: Daniel Chen */
 /* Allocate and load partial data into t_vpr_error structure */
 /* Note: can also set breakpoint in this function to view callstack prior *
  * to VPR failure														  */
@@ -794,6 +795,14 @@ t_vpr_error* alloc_and_load_vpr_error(enum e_vpr_error type, unsigned int line, 
 	return vpr_error;
 }
 
+/* Date:June 15th, 2013								
+ * Author: Daniel Chen								
+ * Purpose: Used to throw any internal VPR error or architecture
+ *			file error and output the appropriate file name,
+ *			line number, and the error message. Does not return
+ *			anything but throw an exception which will be caught
+ *			main.c.
+ */
 void vpr_throw(enum e_vpr_error type,
 		const char* psz_file_name,
 		unsigned int line_num,
@@ -816,4 +825,29 @@ void vpr_throw(enum e_vpr_error type,
 	va_end( va_args );
 
 	throw vpr_error;
+}
+
+/* Date:July 17th, 2013								
+ * Author: Daniel Chen								
+ * Purpose: Checks the file extension of an file to ensure 
+ *			correct file format. Returns TRUE if format is 
+ *			correct, and FALSE otherwise.
+ * Note:	This is probably a fragile check, but at least 
+ *			should prevent common problems such as swapping
+ *			architecture file and blif file on the VPR 
+ *			command line. 
+ */
+
+bool check_file_name_extension(INP const char* file_name, 
+								INP const char* file_extension){
+	const char* str;
+	int len_extension;
+
+	len_extension = strlen(file_extension);
+	str = strstr(file_name, file_extension);
+	if(str == NULL || (*(str + len_extension) != NULL)){
+		return FALSE;
+	}
+
+	return TRUE;
 }

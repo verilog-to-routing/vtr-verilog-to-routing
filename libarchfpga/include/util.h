@@ -154,6 +154,9 @@ FILE* my_fopen(const char *fname, const char *flag, int prompt);
 char *my_fgets(char *buf, int max_size, FILE * fp);
 boolean file_exists(const char * filename);
 
+bool check_file_name_extension(INP const char* file_name, 
+								INP const char* file_extension);
+
 /*********************** Portable random number generators *******************/
 void my_srandom(int seed);
 int my_irand(int imax);
