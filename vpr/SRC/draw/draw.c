@@ -24,7 +24,7 @@ using namespace std;
 	   * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
 #include <sys/time.h>
 #endif
-//#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
+#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
 #ifdef DEBUG
 #include "rr_graph.h"
@@ -113,11 +113,11 @@ static t_draw_state draw_state = {NO_PICTURE, FALSE, FALSE, FALSE, DRAW_NO_RR};
 static t_draw_coords draw_coords;
 
 static float line_fuz = 0.3;
-
+/*
 static float *x_rr_node_left = NULL;
 static float *x_rr_node_right = NULL;
 static float *y_rr_node_top = NULL;
-static float *y_rr_node_bottom = NULL;
+static float *y_rr_node_bottom = NULL;*/
 static enum color_types *rr_node_color = NULL;
 static int old_num_rr_nodes = 0;
 
@@ -462,10 +462,10 @@ void alloc_draw_structs(void) {
 	draw_state.block_color = (enum color_types *) my_malloc(
 								 num_blocks * sizeof(enum color_types));
 
-	x_rr_node_left = (float *) my_malloc(num_rr_nodes * sizeof(float));
+/*	x_rr_node_left = (float *) my_malloc(num_rr_nodes * sizeof(float));
 	x_rr_node_right = (float *) my_malloc(num_rr_nodes * sizeof(float));
 	y_rr_node_top = (float *) my_malloc(num_rr_nodes * sizeof(float));
-	y_rr_node_bottom = (float *) my_malloc(num_rr_nodes * sizeof(float));
+	y_rr_node_bottom = (float *) my_malloc(num_rr_nodes * sizeof(float));*/
 	rr_node_color = (enum color_types *) my_malloc(
 			num_rr_nodes * sizeof(enum color_types));
 
@@ -489,7 +489,7 @@ void free_draw_structs(void) {
 	draw_state.net_color = NULL;
 	free(draw_state.block_color);  
 	draw_state.block_color = NULL;
-
+/*
 	free(x_rr_node_left);  	
 	x_rr_node_left = NULL;
 	free(x_rr_node_right);  
@@ -497,7 +497,7 @@ void free_draw_structs(void) {
 	free(y_rr_node_top);  	
 	y_rr_node_top = NULL;
 	free(y_rr_node_bottom); 
-	y_rr_node_bottom = NULL;
+	y_rr_node_bottom = NULL;*/
 	free(rr_node_color);	
 	rr_node_color = NULL;
 }
@@ -515,21 +515,21 @@ void init_draw_coords(float width_val) {
 		return; /* -nodisp was selected. */
 
 	if (num_rr_nodes != old_num_rr_nodes) {
-		x_rr_node_left = (float *) my_realloc(x_rr_node_left,
+		/*x_rr_node_left = (float *) my_realloc(x_rr_node_left,
 				(num_rr_nodes) * sizeof(float));
 		x_rr_node_right = (float *) my_realloc(x_rr_node_right,
 				(num_rr_nodes) * sizeof(float));
 		y_rr_node_top = (float *) my_realloc(y_rr_node_top,
 				(num_rr_nodes) * sizeof(float));
 		y_rr_node_bottom = (float *) my_realloc(y_rr_node_bottom,
-				(num_rr_nodes) * sizeof(float));
+				(num_rr_nodes) * sizeof(float));*/
 		rr_node_color = (enum color_types *) my_realloc(rr_node_color,
 				(num_rr_nodes) * sizeof(enum color_types));
 		for (i = 0; i < num_rr_nodes; i++) {
-			x_rr_node_left[i] = -1;
+		/*	x_rr_node_left[i] = -1;
 			x_rr_node_right[i] = -1;
 			y_rr_node_top[i] = -1;
-			y_rr_node_bottom[i] = -1;
+			y_rr_node_bottom[i] = -1;*/
 			rr_node_color[i] = BLACK;
 		}
 	}
@@ -864,10 +864,10 @@ static void draw_rr_chanx(int inode, int itrack) {
 	x1 = draw_coords.tile_x[rr_node[inode].xlow];
 	x2 = draw_coords.tile_x[rr_node[inode].xhigh] + draw_coords.tile_width;
 	y = draw_coords.tile_y[rr_node[inode].ylow] + draw_coords.tile_width + 1.0 + itrack;
-	x_rr_node_left[inode] = x1;
+	/*x_rr_node_left[inode] = x1;
 	x_rr_node_right[inode] = x2;
 	y_rr_node_bottom[inode] = y - line_fuz;
-	y_rr_node_top[inode] = y + line_fuz;
+	y_rr_node_top[inode] = y + line_fuz;*/
 	if (rr_node_color[inode] != BLACK) {
 		savecolor = getcolor();
 		setcolor(rr_node_color[inode]);
@@ -946,10 +946,10 @@ static void draw_rr_chany(int inode, int itrack) {
 	x = draw_coords.tile_x[rr_node[inode].xlow] + draw_coords.tile_width + 1. + itrack;
 	y1 = draw_coords.tile_y[rr_node[inode].ylow];
 	y2 = draw_coords.tile_y[rr_node[inode].yhigh] + draw_coords.tile_width;
-	x_rr_node_left[inode] = x - line_fuz;
+/*	x_rr_node_left[inode] = x - line_fuz;
 	x_rr_node_right[inode] = x + line_fuz;
 	y_rr_node_bottom[inode] = y1;
-	y_rr_node_top[inode] = y2;
+	y_rr_node_top[inode] = y2;*/
 	if (rr_node_color[inode] != BLACK) {
 		savecolor = getcolor();
 		setcolor(rr_node_color[inode]);
@@ -1761,6 +1761,59 @@ static void highlight_nets(char *message) {
 }
 
 
+/* This is a helper function for highlight_rr_nodes(). It determines whether 
+ * a wire has been clicked on by computing a bounding box for that wire and
+ * checking if the mouse click hit inside its bounding box.
+ */
+static int check_rr_node_hit (float click_x, float click_y) {
+	int inode;
+	int hit_node = OPEN;
+	float rr_node_xleft = -1;
+	float rr_node_xright = -1;
+	float rr_node_ybottom = -1;
+	float rr_node_ytop = -1;
+	const float tolerance = 0.3;
+
+	for (inode = 0; inode < num_rr_nodes; inode++) {
+		switch (rr_node[inode].type) {
+			case CHANX:
+				rr_node_xleft = draw_coords.tile_x[rr_node[inode].xlow];
+		        rr_node_xright = draw_coords.tile_x[rr_node[inode].xhigh] 
+							        + draw_coords.tile_width;
+				rr_node_ybottom = draw_coords.tile_y[rr_node[inode].ylow] 
+									+ draw_coords.tile_width + (1. + rr_node[inode].ptc_num) 
+									- tolerance;
+				rr_node_ytop = draw_coords.tile_y[rr_node[inode].ylow] 
+									+ draw_coords.tile_width + (1. + rr_node[inode].ptc_num) 
+									+ tolerance;
+				break;
+			case CHANY:
+				rr_node_xleft = draw_coords.tile_x[rr_node[inode].xlow] 
+									+ draw_coords.tile_width + (1. + rr_node[inode].ptc_num) 
+									- tolerance;
+				rr_node_xright = draw_coords.tile_x[rr_node[inode].xlow] 
+									+ draw_coords.tile_width + (1. + rr_node[inode].ptc_num)
+									+ tolerance;
+				rr_node_ybottom = draw_coords.tile_y[rr_node[inode].ylow];
+				rr_node_ytop = draw_coords.tile_y[rr_node[inode].yhigh] 
+									+ draw_coords.tile_width;
+				break;
+			default:
+				break;
+		}
+
+		// Check if we clicked on this node
+		if (click_x >= rr_node_xleft && click_x <= rr_node_xright 
+			&& click_y >= rr_node_ybottom && click_y <= rr_node_ytop) 
+		{
+			hit_node = inode;
+			break;
+		}
+	}
+	return hit_node;
+}
+
+
 /* This routine is called when the routing resource graph is shown, and someone 
  * clicks outside a block. That click might represent a click on a wire -- we call
  * this routine to determine which wire (if any) was clicked on.  If a wire was
@@ -1778,35 +1831,26 @@ static void highlight_rr_nodes(float x, float y) {
 		return;
 	}
 
-   const float tolerance = 0;  // x_rr_node_left etc. already have a tolerance (line_fuz).
-	for (inode = 0; inode < num_rr_nodes; inode++) {
-		if ( x >= x_rr_node_left[inode] - tolerance &&
-           x <= x_rr_node_right[inode] + tolerance &&
-		     y >= y_rr_node_bottom[inode] - tolerance && 
-           y <= y_rr_node_top[inode] + tolerance) {
-			hit_node = inode;
-         break;
-		}
-	}
+	hit_node = check_rr_node_hit (x, y);
 
-   if (hit_node != OPEN) {
-		int xlow = rr_node[inode].xlow;
-		int xhigh = rr_node[inode].xhigh;
-		int ylow = rr_node[inode].ylow;
-		int yhigh = rr_node[inode].yhigh;
-		int ptc_num = rr_node[inode].ptc_num;
-		rr_node_color[inode] = MAGENTA;
+	if (hit_node != OPEN) {
+		int xlow = rr_node[hit_node].xlow;
+		int xhigh = rr_node[hit_node].xhigh;
+		int ylow = rr_node[hit_node].ylow;
+		int yhigh = rr_node[hit_node].yhigh;
+		int ptc_num = rr_node[hit_node].ptc_num;
+		rr_node_color[hit_node] = MAGENTA;
       sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) track: %d, %d edges, occ: %d, capacity: %d",
-				inode, rr_node[inode].rr_get_type_string(),
+				hit_node, rr_node[hit_node].rr_get_type_string(),
             xlow, ylow, xhigh, yhigh, ptc_num, 
-            rr_node[inode].num_edges, rr_node[inode].occ, rr_node[inode].capacity);
+            rr_node[hit_node].num_edges, rr_node[hit_node].occ, rr_node[hit_node].capacity);
 
 #ifdef DEBUG
-		print_rr_node(stdout, rr_node, inode);
+		print_rr_node(stdout, rr_node, hit_node);
 #endif
       /* Highlight the fanout nodes in red. */
-		for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
-         int fanout_node = rr_node[inode].edges[iedge];
+		for (iedge = 0; iedge < rr_node[hit_node].num_edges; iedge++) {
+         int fanout_node = rr_node[hit_node].edges[iedge];
 			rr_node_color[fanout_node] = RED;
       }
 
