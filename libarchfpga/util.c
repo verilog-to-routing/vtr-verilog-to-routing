@@ -845,7 +845,7 @@ bool check_file_name_extension(INP const char* file_name,
 
 	len_extension = strlen(file_extension);
 	str = strstr(file_name, file_extension);
-	if(str == NULL || (*(str + len_extension) != NULL)){
+	if(str == NULL || (*(str + len_extension) != '\0')){
 		return FALSE;
 	}
 
