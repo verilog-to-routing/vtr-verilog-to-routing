@@ -1105,3 +1105,17 @@ chain_information_t* allocate_chain_info()
 
 	return new_node;
 }
+
+void remove_fanout_pins_from_net(nnet_t *net, npin_t *pin, int id)
+{
+
+	int i, idx;
+	idx = pin->unique_id;
+	for (i = id; i < net->num_fanout_pins - 1; i++)
+	{
+		net->fanout_pins[i] = net->fanout_pins[i+1];
+		net->fanout_pins[i]->pin_net_idx = i;
+	}
+	net->fanout_pins[i] = NULL;
+	net->num_fanout_pins--;
+}

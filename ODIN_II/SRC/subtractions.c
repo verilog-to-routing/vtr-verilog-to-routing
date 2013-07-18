@@ -430,6 +430,9 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 		}
 		else
 			init_split_adder_for_sub(nodeo, node[i], a, sizea, b, sizeb, cin, cout, i, flag);
+
+		//store the processed hard adder node for optimization
+		processed_adder_list = insert_in_vptr_list(processed_adder_list, node[i]);
 	}
 
 	chain_information_t *adder_chain = allocate_chain_info();
@@ -445,7 +448,24 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 	if(flag == 1 && count == 1)
 	{
 		for(i = 0; i < b; i ++)
-			connect_nodes(not_node[i], 0, node[0], (lefta + i));
+		{
+			/* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
+			 * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
+			if(not_node[i]->input_pins[0]->net->driver_pin->node->type == GND_NODE)
+			{
+				connect_nodes(netlist->vcc_node, 0, node[0], (lefta + i));
+				remove_fanout_pins_from_net(not_node[i]->input_pins[0]->net, not_node[i]->input_pins[0], not_node[i]->input_pins[0]->pin_net_idx);
+				free_nnode(not_node[i]);
+			}
+			else if(not_node[i]->input_pins[0]->net->driver_pin->node->type == VCC_NODE)
+			{
+				connect_nodes(netlist->gnd_node, 0, node[0], (lefta + i));
+				remove_fanout_pins_from_net(not_node[i]->input_pins[0]->net, not_node[i]->input_pins[0], not_node[i]->input_pins[0]->pin_net_idx);
+				free_nnode(not_node[i]);
+			}
+			else
+				connect_nodes(not_node[i], 0, node[0], (lefta + i));
+		}
 	}
 	else
 	{
@@ -456,7 +476,24 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 			else
 				num = sizeb - 1;
 			for(i = 0; i < num; i++)
-				connect_nodes(not_node[i], 0, node[0], (sizea + i + 1));
+			{
+				/* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
+				 * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
+				if(not_node[i]->input_pins[0]->net->driver_pin->node->type == GND_NODE)
+				{
+					connect_nodes(netlist->vcc_node, 0, node[0], (sizea + i + 1));
+					remove_fanout_pins_from_net(not_node[i]->input_pins[0]->net, not_node[i]->input_pins[0], not_node[i]->input_pins[0]->pin_net_idx);
+					free_nnode(not_node[i]);
+				}
+				else if(not_node[i]->input_pins[0]->net->driver_pin->node->type == VCC_NODE)
+				{
+					connect_nodes(netlist->gnd_node, 0, node[0], (sizea + i + 1));
+					remove_fanout_pins_from_net(not_node[i]->input_pins[0]->net, not_node[i]->input_pins[0], not_node[i]->input_pins[0]->pin_net_idx);
+					free_nnode(not_node[i]);
+				}
+				else
+					connect_nodes(not_node[i], 0, node[0], (sizea + i + 1));
+			}
 		}
 
 		for(i = 1; i<count; i++)
@@ -469,9 +506,43 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 			for(j = 0; j < num; j++)
 			{
 				if(i == count - 1 && flag == 1)
-					connect_nodes(not_node[(i * sizeb + j - 1)], 0, node[i], (lefta + j));
+				{
+					/* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
+					 * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
+					if(not_node[(i * sizeb + j - 1)]->input_pins[0]->net->driver_pin->node->type == GND_NODE)
+					{
+						connect_nodes(netlist->vcc_node, 0, node[i], (lefta + j));
+						remove_fanout_pins_from_net(not_node[(i * sizeb + j - 1)]->input_pins[0]->net, not_node[(i * sizeb + j - 1)]->input_pins[0], not_node[(i * sizeb + j - 1)]->input_pins[0]->pin_net_idx);
+						free_nnode(not_node[(i * sizeb + j - 1)]);
+					}
+					else if(not_node[(i * sizeb + j - 1)]->input_pins[0]->net->driver_pin->node->type == VCC_NODE)
+					{
+						connect_nodes(netlist->gnd_node, 0, node[i], (lefta + j));
+						remove_fanout_pins_from_net(not_node[(i * sizeb + j - 1)]->input_pins[0]->net, not_node[(i * sizeb + j - 1)]->input_pins[0], not_node[(i * sizeb + j - 1)]->input_pins[0]->pin_net_idx);
+						free_nnode(not_node[(i * sizeb + j - 1)]);
+					}
+					else
+						connect_nodes(not_node[(i * sizeb + j - 1)], 0, node[i], (lefta + j));
+				}
 				else
-					connect_nodes(not_node[(i * sizeb + j - 1)], 0, node[i], (sizea + j));
+				{
+					/* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
+					 * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
+					if(not_node[(i * sizeb + j - 1)]->input_pins[0]->net->driver_pin->node->type == GND_NODE)
+					{
+						connect_nodes(netlist->vcc_node, 0, node[i], (sizea + j));
+						remove_fanout_pins_from_net(not_node[(i * sizeb + j - 1)]->input_pins[0]->net, not_node[(i * sizeb + j - 1)]->input_pins[0], not_node[(i * sizeb + j - 1)]->input_pins[0]->pin_net_idx);
+						free_nnode(not_node[(i * sizeb + j - 1)]);
+					}
+					else if(not_node[(i * sizeb + j - 1)]->input_pins[0]->net->driver_pin->node->type == VCC_NODE)
+					{
+						connect_nodes(netlist->gnd_node, 0, node[i], (sizea + j));
+						remove_fanout_pins_from_net(not_node[(i * sizeb + j - 1)]->input_pins[0]->net, not_node[(i * sizeb + j - 1)]->input_pins[0], not_node[(i * sizeb + j - 1)]->input_pins[0]->pin_net_idx);
+						free_nnode(not_node[(i * sizeb + j - 1)]);
+					}
+					else
+						connect_nodes(not_node[(i * sizeb + j - 1)], 0, node[i], (sizea + j));
+				}
 			}
 		}
 	}
@@ -647,6 +718,9 @@ void iterate_adders_for_sub(netlist_t *netlist)
 
 				split_adder_for_sub(node, a, b, sizea, sizeb, 1, 1, count, netlist);
 			}
+			// Store the node into processed_adder_list if the threshold is bigger than num
+			else
+				processed_adder_list = insert_in_vptr_list(processed_adder_list, node);
 		}
 	}
 
@@ -663,6 +737,8 @@ void clean_adders_for_sub()
 {
 	while (sub_list != NULL)
 		sub_list = delete_in_vptr_list(sub_list);
+	while (processed_adder_list != NULL)
+			processed_adder_list = delete_in_vptr_list(processed_adder_list);
 	return;
 }
 

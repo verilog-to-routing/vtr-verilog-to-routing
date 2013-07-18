@@ -64,3 +64,4 @@ int get_output_port_index_from_mapping(nnode_t *node, char *name);
 int get_input_pin_index_from_mapping(nnode_t *node, char *name);
 int get_input_port_index_from_mapping(nnode_t *node, char *name);
 chain_information_t* allocate_chain_info();
+void remove_fanout_pins_from_net(nnet_t *net, npin_t *pin, int id);

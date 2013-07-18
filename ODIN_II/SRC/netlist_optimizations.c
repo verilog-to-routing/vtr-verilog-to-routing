@@ -41,20 +41,21 @@ OTHER DEALINGS IN THE SOFTWARE.
 void netlist_optimizations_top(netlist_t *netlist)
 {
 	#ifdef VPR6
-	/* Perform a splitting of the multipliers for hard block mults */
-	iterate_multipliers(netlist);
-	clean_multipliers();
-
 	/* Perform a splitting of any hard block memories */
 	iterate_memories(netlist);
 	free_memory_lists();
 
-	/* Perform a splitting of the adders for hard block add */
+	/* Perform a splitting of the multipliers for hard block mults */
+	iterate_multipliers(netlist);
+	/* Perform a splitting of the adders for hard block adder */
 	iterate_adders(netlist);
-	clean_adders();
-
-	/* Perform a splitting of the adders for hard block sub */
+	/* Perform a splitting of the adders for hard block adder */
 	iterate_adders_for_sub(netlist);
+	/* Free the mult_list for splitting hard block mults */
+	clean_multipliers();
+	/* Free the add_list for splitting hard block adder */
+	clean_adders();
+	/* Free the sub_list and processed_adder_list for splitting hard block adder */
 	clean_adders_for_sub();
 	#endif
 }

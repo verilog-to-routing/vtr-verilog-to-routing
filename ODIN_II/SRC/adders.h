@@ -47,6 +47,7 @@ typedef struct {
 extern t_model *hard_adders;
 extern struct s_linked_vptr *add_list;
 extern struct s_linked_vptr *chain_list;
+extern struct s_linked_vptr *processed_adder_list;
 extern int total;
 extern int min_add;
 extern int min_threshold_adder;

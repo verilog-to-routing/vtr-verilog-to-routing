@@ -36,6 +36,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 t_model *hard_adders = NULL;
 struct s_linked_vptr *add_list = NULL;
+struct s_linked_vptr *processed_adder_list = NULL;
 struct s_linked_vptr *chain_list = NULL;
 int total = 0;
 int *adder = NULL;
@@ -743,6 +744,9 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 		}
 		else
 			init_split_adder(nodeo, node[i], a, sizea, b, sizeb, cin, cout, i, flag, netlist);
+
+		//store the processed hard adder node for optimization
+		processed_adder_list = insert_in_vptr_list(processed_adder_list, node[i]);
 	}
 
 	chain_information_t *adder_chain = allocate_chain_info();
@@ -941,6 +945,9 @@ void iterate_adders(netlist_t *netlist)
 
 			split_adder(node, a, b, sizea, sizeb, 1, 1, count, netlist);
 		}
+		// Store the node into processed_adder_list if the threshold is bigger than num
+		else
+			processed_adder_list = insert_in_vptr_list(processed_adder_list, node);
 	}
 	return;
 }
