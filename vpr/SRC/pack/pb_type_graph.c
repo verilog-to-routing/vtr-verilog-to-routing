@@ -90,8 +90,8 @@ static void check_repeated_edges_at_pb_node(INP const t_pb_graph_node* pb_graph_
 static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin);
 static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
 				const struct s_pb_graph_edge_comparator & edge2);
-//static void check_input_pins_equivalency(INP t_pb_graph_pin* cur_pin, 
-//	INP int i_pin, INOUTP map<t_pb_graph_edge_comparator, int>& edges_map);
+static void check_input_pins_equivalency(INP t_pb_graph_pin* cur_pin, 
+	INP int i_pin, INOUTP map<t_pb_graph_edge_comparator, int>& edges_map);
 
 /**
  * Allocate memory into types and load the pb graph with interconnect edges 
