@@ -838,7 +838,7 @@ void vpr_throw(enum e_vpr_error type,
  *			command line. 
  */
 
-bool check_file_name_extension(INP const char* file_name, 
+boolean check_file_name_extension(INP const char* file_name, 
 								INP const char* file_extension){
 	const char* str;
 	int len_extension;
