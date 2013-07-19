@@ -90,7 +90,7 @@ static void check_pb_node_rec(INP const t_pb_graph_node* pb_graph_node);
 static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin);
 static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
 				const struct s_pb_graph_edge_comparator & edge2);
-static boolean check_input_pins_equivalency(INP t_pb_graph_pin* cur_pin, 
+static boolean check_input_pins_equivalence(INP t_pb_graph_pin* cur_pin, 
 	INP int i_pin, INOUTP map<int, int>& edges_map, OUTP int* line_num);
 
 /**
@@ -1660,19 +1660,14 @@ static void check_pb_node_rec(INP const t_pb_graph_node* pb_graph_node){
 			check_repeated_edges_at_pb_pin(&pb_graph_node->input_pins[i][j]);
 			// Checks the equivalency of pins of an input port
 			if(pb_graph_node->input_pins[i][j].port->equivalent){
-				if(!check_input_pins_equivalency(&pb_graph_node->input_pins[i][j],
+				if(!check_input_pins_equivalence(&pb_graph_node->input_pins[i][j],
 					j, equivalent_pins_map, &line_num)){
 						vpr_printf_warning(__FILE__, __LINE__,
-							"[LINE %d] False logically-equivalent pin %s[%d].%s[%d].\n"
-							"Please check its connection with other pins of %s[%d].%s \n",
-							line_num,
-							pb_graph_node->pb_type->name,
+							"[LINE %d] False logically-equivalent pin %s[%d].%s[%d].\n",
+							line_num, pb_graph_node->pb_type->name,
 							pb_graph_node->placement_index,
 							pb_graph_node->input_pins[i][j].port->name,
-							pb_graph_node->input_pins[i][j].pin_number,
-							pb_graph_node->pb_type->name,
-							pb_graph_node->placement_index,
-							pb_graph_node->input_pins[i][j].port->name);
+							pb_graph_node->input_pins[i][j].pin_number);
 				}
 			}
 		}
@@ -1771,7 +1766,7 @@ static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
  *			pin of an logically-equivalent port, we use its outgoing edges
  *			to compare with the rest of the pins in the port. 
  */
-static boolean check_input_pins_equivalency(INP t_pb_graph_pin* cur_pin, 
+static boolean check_input_pins_equivalence(INP t_pb_graph_pin* cur_pin, 
 	INP int i_pin, INOUTP map<int, int>& equivalent_pins_map, OUTP int* line_num){
 
 	int i, j, edge_count;
