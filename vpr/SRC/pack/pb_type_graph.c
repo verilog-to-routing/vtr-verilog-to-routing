@@ -86,12 +86,12 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins * interc_pins,
 		t_pb_graph_pin *** output_pins, int num_output_sets,
 		int * num_output_pins);
 
-static void check_repeated_edges_at_pb_node(INP const t_pb_graph_node* pb_graph_node);
+static void check_pb_node_rec(INP const t_pb_graph_node* pb_graph_node);
 static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin);
 static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
 				const struct s_pb_graph_edge_comparator & edge2);
-//static void check_input_pins_equivalency(INP t_pb_graph_pin* cur_pin, 
-//	INP int i_pin, INOUTP map<t_pb_graph_edge_comparator, int>& edges_map);
+static boolean check_input_pins_equivalency(INP t_pb_graph_pin* cur_pin, 
+	INP int i_pin, INOUTP map<int, int>& edges_map, OUTP int* line_num);
 
 /**
  * Allocate memory into types and load the pb graph with interconnect edges 
@@ -187,7 +187,7 @@ static int check_pb_graph(void) {
 	num_errors = 0;
 	for (i = 0; i < num_types; i++) {
 		if(type_descriptors[i].pb_type){
-			check_repeated_edges_at_pb_node(type_descriptors[i].pb_graph_head);
+			check_pb_node_rec(type_descriptors[i].pb_graph_head);
 		}
 	}
 	return num_errors;
@@ -1644,28 +1644,39 @@ static void echo_pb_pins(INP t_pb_graph_pin **pb_graph_pins, INP int num_ports,
 
 /* Date:July 10th, 2013												
  * Author: Daniel Chen											
- * Purpose: This subroutine traverses through all the pins within
- *			 a single pb_graph node and checks for repeated edges connected	
- *			 to the pins. It is then recursively invoked to traverse through 
- *			 the entire pb_graph.
+ * Purpose: This subroutine traverses through all the pb_nodes within
+ *			the pb_graph and checks for various misspecified architectures,
+ *			such as repeated edges between two pins. 
  */
 
-static void check_repeated_edges_at_pb_node(INP const t_pb_graph_node* pb_graph_node){
+static void check_pb_node_rec(INP const t_pb_graph_node* pb_graph_node){
 	
 	int i, j, k;
-	/*bool check_input_pins_equivalence = FALSE;*/
-	map<t_pb_graph_edge_comparator, int> edges_map;
+	int line_num = 0;
+	map<int, int> equivalent_pins_map;
 
 	for(i = 0; i < pb_graph_node->num_input_ports; i++){
 		for(j = 0; j < pb_graph_node->num_input_pins[i]; j++){
 			check_repeated_edges_at_pb_pin(&pb_graph_node->input_pins[i][j]);
-			// Check the equivalency of pins of an input port
-			/*if(pb_graph_node->input_pins[i][j].port->equivalent){
-				check_input_pins_equivalency(&pb_graph_node->input_pins[i][j],
-					j, edges_map);
-			}*/
+			// Checks the equivalency of pins of an input port
+			if(pb_graph_node->input_pins[i][j].port->equivalent){
+				if(!check_input_pins_equivalency(&pb_graph_node->input_pins[i][j],
+					j, equivalent_pins_map, &line_num)){
+						vpr_printf_warning(__FILE__, __LINE__,
+							"[LINE %d] False logically-equivalent pin %s[%d].%s[%d].\n"
+							"Please check its connection with other pins of %s[%d].%s \n",
+							line_num,
+							pb_graph_node->pb_type->name,
+							pb_graph_node->placement_index,
+							pb_graph_node->input_pins[i][j].port->name,
+							pb_graph_node->input_pins[i][j].pin_number,
+							pb_graph_node->pb_type->name,
+							pb_graph_node->placement_index,
+							pb_graph_node->input_pins[i][j].port->name);
+				}
+			}
 		}
-		edges_map.clear();
+		equivalent_pins_map.clear();
 	}
 
 	for(i = 0; i < pb_graph_node->num_output_ports; i++){
@@ -1683,7 +1694,7 @@ static void check_repeated_edges_at_pb_node(INP const t_pb_graph_node* pb_graph_
 	for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
 		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
 			for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-				check_repeated_edges_at_pb_node(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
+				check_pb_node_rec(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
 			}
 		}
 	}
@@ -1752,43 +1763,52 @@ static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
 		(edge1.output_pin_id_in_cluster < edge2.output_pin_id_in_cluster);
 }
 
-//static void check_input_pins_equivalency(INP t_pb_graph_pin* cur_pin, 
-//	INP int i_pin, INOUTP map<t_pb_graph_edge_comparator, int>& edges_map){
-//
-//	int i, j, edge_count;
-//	t_pb_graph_edge* cur_edge; 
-//	t_pb_graph_edge_comparator edges_info;
-//	pair<map<t_pb_graph_edge_comparator,int>::iterator,bool> ret_edges_map;
-//
-//	edge_count = 0;
-//	for(i = 0; i < cur_pin->num_output_edges; i++){
-//		cur_edge = cur_pin->output_edges[i];
-//		for(j = 0; j < cur_edge->num_output_pins; j++){
-//			// Populate the edge_comparator struct and attempt to insert it into STL map
-//			edges_info.parent_edge = cur_edge;
-//			edges_info.input_pin = cur_pin;
-//			edges_info.output_pin = cur_edge->output_pins[j];
-//			edges_info.input_pin_id_in_cluster = cur_pin->pin_count_in_cluster;
-//			edges_info.output_pin_id_in_cluster = cur_edge->output_pins[j]->pin_count_in_cluster;
-//			ret_edges_map = edges_map.insert(pair<t_pb_graph_edge_comparator, int>(edges_info,0));
-//			if(i_pin != 0){
-//				if(ret_edges_map.second){
-//					//this edge is new, but supposed to be existing already
-//					vpr_printf_warning(__FILE__, __LINE__,
-//						"Found false input pins logic-equivalency. \n"
-//						"[LINE %d] Input pins %s[%d].%s[%d] and %s[%d].%s[0] are not logically equivalent.\n",
-//						cur_edge->interconnect->line_num,
-//						ret_edges_map.first->first.input_pin->parent_node->pb_type->name, 
-//						ret_edges_map.first->first.input_pin->parent_node->placement_index,
-//						ret_edges_map.first->first.input_pin->port->name, 
-//						ret_edges_map.first->first.input_pin->pin_number,
-//						ret_edges_map.first->first.input_pin->parent_node->pb_type->name, 
-//						ret_edges_map.first->first.input_pin->parent_node->placement_index,
-//						ret_edges_map.first->first.input_pin->port->name);
-//				}
-//			}
-//			edge_count ++;
-//		}
-//	}
-//}
+/* Date:July 19th, 2013												
+ * Author: Daniel Chen											
+ * Purpose: This subroutine ensures that an input port declared as 	
+ *			logically-equivalent have pins that connect to the exact (cannot
+ *			be a subset) same pins. i_pin == 0 indicates cur_pin is the first
+ *			pin of an logically-equivalent port, we use its outgoing edges
+ *			to compare with the rest of the pins in the port. 
+ */
+static boolean check_input_pins_equivalency(INP t_pb_graph_pin* cur_pin, 
+	INP int i_pin, INOUTP map<int, int>& equivalent_pins_map, OUTP int* line_num){
+
+	int i, j, edge_count;
+	t_pb_graph_edge* cur_edge; 
+	boolean pins_equivalent = TRUE;
+
+	if(i_pin == 0){
+		assert(equivalent_pins_map.empty());
+	}
+	edge_count = 0;
+	for(i = 0; i < cur_pin->num_output_edges; i++){
+		cur_edge = cur_pin->output_edges[i];
+		*line_num = cur_edge->interconnect->line_num;
+		for(j = 0; j < cur_edge->num_output_pins; j++){
+			if(i_pin == 0){
+				// First pin of an equivalent port, populate edges_map first
+				equivalent_pins_map.insert(pair<int, int>(cur_edge->output_pins[j]->pin_count_in_cluster,0));
+			}
+			else{
+				// Rest of the pins of an equivalent port, they should connect to the
+				// same set of pins
+				if(equivalent_pins_map.find(cur_edge->output_pins[j]->pin_count_in_cluster) == 
+					equivalent_pins_map.end()){
+					// Could not find the outpin that cur_pin connects to
+					pins_equivalent = FALSE;
+				}
+			}
+			edge_count ++;
+		}
+	}
+
+	if(edge_count != (int)equivalent_pins_map.size()){
+	// The number of outgoing edges for each pin of an logically-equivalent
+	// port should be exactly the same
+		pins_equivalent = FALSE;
+	}
+
+	return pins_equivalent;
+}
 
