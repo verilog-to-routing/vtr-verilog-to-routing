@@ -897,7 +897,7 @@ int getcolor() {
  */
 static void force_setlinestyle (int linestyle) 
 {
-   gl_state.currentlinestyle = linestyle;
+	gl_state.currentlinestyle = linestyle;
 	
 	if (gl_state.disp_type == SCREEN) {
 
@@ -1150,7 +1150,7 @@ void create_button (const char *prev_button_text , const char *button_text,
 					void (*button_func) (void (*drawscreen) (void))) 
 {
 	int i, bnum, space, bheight;
-   t_button_type button_type = BUTTON_TEXT;
+	t_button_type button_type = BUTTON_TEXT;
 	
 	space = 8;
 	
@@ -1182,7 +1182,7 @@ void create_button (const char *prev_button_text , const char *button_text,
    /* Special string to make a separator. */
 	if (!strncmp(button_text, "---", 3)) {
 		bheight = 2;
-	   button_type = BUTTON_SEPARATOR;
+		button_type = BUTTON_SEPARATOR;
 	}
 	else
 		bheight = 26;
@@ -2054,7 +2054,7 @@ update_message (const char *msg)
 	draw_message ();
 #ifdef X11
 // Make this appear immediately.  Win32 does that automaticaly.
-        XFlush (x11_state.display);  
+	XFlush (x11_state.display);  
 #endif // X11
 }
 
@@ -2200,12 +2200,12 @@ panning_execute (int x, int y, void (*drawscreen) (void))
 {
 	float x_change_world, y_change_world;
 
-   x_change_world = xscrn_to_world (x) - xscrn_to_world (pan_state.previous_x);
-   y_change_world = yscrn_to_world (y) - yscrn_to_world (pan_state.previous_y);
-   trans_coord.xleft -= x_change_world;
-   trans_coord.xright -= x_change_world;
-   trans_coord.ybot -= y_change_world;
-   trans_coord.ytop -= y_change_world;
+	x_change_world = xscrn_to_world (x) - xscrn_to_world (pan_state.previous_x);
+	y_change_world = yscrn_to_world (y) - yscrn_to_world (pan_state.previous_y);
+	trans_coord.xleft -= x_change_world;
+	trans_coord.xright -= x_change_world;
+	trans_coord.ybot -= y_change_world;
+	trans_coord.ytop -= y_change_world;
 
 	update_transform();
 	drawscreen();
@@ -2229,7 +2229,7 @@ panning_on (int start_x, int start_y)
 static void
 panning_off (void)
 {
-		pan_state.panning_enabled = false;
+	pan_state.panning_enabled = false;
 }
 
 
@@ -2371,8 +2371,7 @@ postscript (void (*drawscreen) (void))
 	printf("Writing postscript output to file %s\n", fname);
 	success = init_postscript (fname);
 	
-	if (success) {
-		
+	if (success) {	
 		drawscreen();
 		close_postscript ();
 		piccount++;
@@ -2470,7 +2469,6 @@ close_graphics (void)
 * not be opened, the routine returns 0; otherwise it returns 1. */
 int init_postscript (const char *fname) 
 {
-	
 	gl_state.ps = fopen (fname,"w");
 	if (gl_state.ps == NULL) {
 		printf("Error: could not open %s for PostScript output.\n",fname);
@@ -2606,11 +2604,11 @@ void close_postscript (void)
 	* made while printing.                          */
 	
 	/* Need to make sure that we really set up the graphics context.  
-	* The current font set indicates the last font used in a postscript call, 
-   * etc., *NOT* the font set in the X11 or Win32 graphics context.  Force the
-   * current font, colour etc. to be applied to the graphics context, so 
-   * subsequent drawing commands work properly.
-   */
+	 * The current font set indicates the last font used in a postscript call, 
+     * etc., *NOT* the font set in the X11 or Win32 graphics context.  Force the
+     * current font, colour etc. to be applied to the graphics context, so 
+     * subsequent drawing commands work properly.
+     */
 	
 	force_setcolor (gl_state.currentcolor);
 	force_setlinestyle (gl_state.currentlinestyle);
@@ -2624,7 +2622,7 @@ static void
 build_default_menu (void) 
 {
 	int i, xcen, x1, y1, bwid, bheight, space;
-   const int NUM_ARROW_BUTTONS = 4, NUM_STANDARD_BUTTONS = 12, SEPARATOR_BUTTON_INDEX = 8;
+	const int NUM_ARROW_BUTTONS = 4, NUM_STANDARD_BUTTONS = 12, SEPARATOR_BUTTON_INDEX = 8;
    	
 #ifdef X11
 	unsigned long valuemask;
@@ -2764,14 +2762,13 @@ build_default_menu (void)
 static void 
 load_font(int pointsize) 
 {
-
    if (pointsize > MAX_FONT_SIZE || pointsize < 1) {
       printf ("Error:  font size %d is out of valid range, 1 to %d.\n", 
               pointsize, MAX_FONT_SIZE);
       return;
    }
 
-   	if (gl_state.font_is_loaded[pointsize])  // Nothing to do.
+   if (gl_state.font_is_loaded[pointsize])  // Nothing to do.
 		return;
 
 #ifdef X11
@@ -2788,16 +2785,13 @@ load_font(int pointsize)
    sprintf(fontname[1], "lucidasans-%d", pointsize);
    sprintf(fontname[2],"-schumacher-clean-medium-r-*--*-%d0-*-*-*-*-*-*",
              pointsize);
-
-	
-
 	
    for (ifont = 0; ifont < NUM_FONT_TYPES; ifont++) {
 #ifdef VERBOSE
       printf ("Loading font: point size: %d, fontname: %s\n",pointsize, 
                fontname[ifont]);
 #endif
-       /* Load font and get font information structure. */
+      /* Load font and get font information structure. */
       x11_state.font_info[pointsize] = XLoadQueryFont(x11_state.display,fontname[ifont]);
       if (x11_state.font_info[pointsize] == NULL) {
 #ifdef VERBOSE
@@ -3051,8 +3045,8 @@ static void x11_init_graphics (const char *window_name, int cindex)
 	
    // Need a non-const name to pass to XStringListTo... 
    // (even though X11 won't change it).
-  char *window_name_copy = (char *) my_malloc (BUFSIZE * sizeof (char));
-  strncpy (window_name_copy, window_name, BUFSIZE);
+   char *window_name_copy = (char *) my_malloc (BUFSIZE * sizeof (char));
+   strncpy (window_name_copy, window_name, BUFSIZE);
    XStringListToTextProperty(&window_name_copy, 1, &windowName);
    free (window_name_copy);
    window_name_copy = NULL;

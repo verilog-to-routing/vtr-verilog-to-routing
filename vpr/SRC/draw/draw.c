@@ -24,7 +24,7 @@ using namespace std;
 	   * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
 #include <sys/time.h>
 #endif
-#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
+//#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
 #ifdef DEBUG
 #include "rr_graph.h"
@@ -72,6 +72,7 @@ enum e_edge_dir {
  *			  [0..num_nets-1]
  * block_color: color in which each block should be drawn.
  *			    [0..num_blocks-1]
+ * rr_node_color: stores the color of each routing resource.
  */
 typedef struct {
 	pic_type pic_on_screen;
@@ -84,6 +85,7 @@ typedef struct {
 	e_route_type draw_route_type;
 	char default_message[BUFSIZE];
 	color_types *net_color, *block_color;
+	color_types *rr_node_color;
 } t_draw_state;
 
 /* Structure used to store coordinates and size of grid
@@ -112,15 +114,6 @@ static t_draw_state draw_state = {NO_PICTURE, FALSE, FALSE, FALSE, DRAW_NO_RR};
  * corner.                                                                  */
 static t_draw_coords draw_coords;
 
-static float line_fuz = 0.3;
-/*
-static float *x_rr_node_left = NULL;
-static float *x_rr_node_right = NULL;
-static float *y_rr_node_top = NULL;
-static float *y_rr_node_bottom = NULL;*/
-static enum color_types *rr_node_color = NULL;
-static int old_num_rr_nodes = 0;
-
 /********************** Subroutines local to this module ********************/
 
 static void toggle_nets(void (*drawscreen)(void));
@@ -145,27 +138,25 @@ static void draw_rr_edges(int from_node);
 static void draw_rr_pin(int inode, enum color_types color);
 static void draw_rr_chanx(int inode, int itrack);
 static void draw_rr_chany(int inode, int itrack);
-static void get_rr_pin_draw_coords(int inode, int iside, 
-		int width_offset, int height_offset, 
-		float *xcen, float *ycen);
+static void get_rr_pin_draw_coords(int inode, int iside, int width_offset, 
+								   int height_offset, float *xcen, float *ycen);
 static void draw_pin_to_chan_edge(int pin_node, int chan_node);
 static void draw_pin_to_pin(int opin, int ipin);
 static void draw_x(float x, float y, float size);
 static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
-		int to_track, short switch_type);
+									 int to_track, short switch_type);
 static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
-		int to_track, short switch_type);
-static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
-		int chany_node, int chany_track, enum e_edge_dir edge_dir,
-		short switch_type);
+									 int to_track, short switch_type);
+static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_node, 
+									 int chany_track, enum e_edge_dir edge_dir,
+									 short switch_type);
 static int get_track_num(int inode, int **chanx_track, int **chany_track);
 static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y,
-		boolean buffered);
-static void draw_triangle_along_line(float xend, float yend, /* UDSD by AY */
-
-float x1, float x2, /* UDSD by AY */
-
-float y1, float y2); /* UDSD by AY */
+						   boolean buffered);
+static int draw_check_rr_node_hit (float click_x, float click_y);
+static void highlight_rr_nodes(float x, float y);
+static void draw_triangle_along_line(float xend, float yend, float x1, float x2,
+									 float y1, float y2);
 
 /********************** Subroutine definitions ******************************/
 
@@ -462,12 +453,10 @@ void alloc_draw_structs(void) {
 	draw_state.block_color = (enum color_types *) my_malloc(
 								 num_blocks * sizeof(enum color_types));
 
-/*	x_rr_node_left = (float *) my_malloc(num_rr_nodes * sizeof(float));
-	x_rr_node_right = (float *) my_malloc(num_rr_nodes * sizeof(float));
-	y_rr_node_top = (float *) my_malloc(num_rr_nodes * sizeof(float));
-	y_rr_node_bottom = (float *) my_malloc(num_rr_nodes * sizeof(float));*/
-	rr_node_color = (enum color_types *) my_malloc(
-			num_rr_nodes * sizeof(enum color_types));
+	/* Space is allocated for rr_node_color but not initialized because we do *
+	 * not yet know information about the routing resources.				  */
+	draw_state.rr_node_color = (enum color_types *) my_malloc(
+									num_rr_nodes * sizeof(enum color_types));
 
 	deselect_all(); /* Set initial colors */
 }
@@ -489,17 +478,9 @@ void free_draw_structs(void) {
 	draw_state.net_color = NULL;
 	free(draw_state.block_color);  
 	draw_state.block_color = NULL;
-/*
-	free(x_rr_node_left);  	
-	x_rr_node_left = NULL;
-	free(x_rr_node_right);  
-	x_rr_node_right = NULL;
-	free(y_rr_node_top);  	
-	y_rr_node_top = NULL;
-	free(y_rr_node_bottom); 
-	y_rr_node_bottom = NULL;*/
-	free(rr_node_color);	
-	rr_node_color = NULL;
+
+	free(draw_state.rr_node_color);	
+	draw_state.rr_node_color = NULL;
 }
 
 void init_draw_coords(float width_val) {
@@ -514,23 +495,13 @@ void init_draw_coords(float width_val) {
 	if (!draw_state.show_graphics)
 		return; /* -nodisp was selected. */
 
-	if (num_rr_nodes != old_num_rr_nodes) {
-		/*x_rr_node_left = (float *) my_realloc(x_rr_node_left,
-				(num_rr_nodes) * sizeof(float));
-		x_rr_node_right = (float *) my_realloc(x_rr_node_right,
-				(num_rr_nodes) * sizeof(float));
-		y_rr_node_top = (float *) my_realloc(y_rr_node_top,
-				(num_rr_nodes) * sizeof(float));
-		y_rr_node_bottom = (float *) my_realloc(y_rr_node_bottom,
-				(num_rr_nodes) * sizeof(float));*/
-		rr_node_color = (enum color_types *) my_realloc(rr_node_color,
-				(num_rr_nodes) * sizeof(enum color_types));
+	/* Each time routing is on screen, need to reallocate the color of each *
+	 * rr_node, as the number of rr_nodes may change.						*/
+	if (num_rr_nodes != 0) {
+		draw_state.rr_node_color = (enum color_types *) my_realloc(draw_state.rr_node_color,
+										(num_rr_nodes) * sizeof(enum color_types));
 		for (i = 0; i < num_rr_nodes; i++) {
-		/*	x_rr_node_left[i] = -1;
-			x_rr_node_right[i] = -1;
-			y_rr_node_top[i] = -1;
-			y_rr_node_bottom[i] = -1;*/
-			rr_node_color[i] = BLACK;
+			draw_state.rr_node_color[i] = BLACK;
 		}
 	}
 
@@ -864,13 +835,10 @@ static void draw_rr_chanx(int inode, int itrack) {
 	x1 = draw_coords.tile_x[rr_node[inode].xlow];
 	x2 = draw_coords.tile_x[rr_node[inode].xhigh] + draw_coords.tile_width;
 	y = draw_coords.tile_y[rr_node[inode].ylow] + draw_coords.tile_width + 1.0 + itrack;
-	/*x_rr_node_left[inode] = x1;
-	x_rr_node_right[inode] = x2;
-	y_rr_node_bottom[inode] = y - line_fuz;
-	y_rr_node_top[inode] = y + line_fuz;*/
-	if (rr_node_color[inode] != BLACK) {
+
+	if (draw_state.rr_node_color[inode] != BLACK) {
 		savecolor = getcolor();
-		setcolor(rr_node_color[inode]);
+		setcolor(draw_state.rr_node_color[inode]);
 		setlinewidth(3);
 		drawline(x1, y, x2, y);
 		setlinewidth(0);
@@ -946,13 +914,10 @@ static void draw_rr_chany(int inode, int itrack) {
 	x = draw_coords.tile_x[rr_node[inode].xlow] + draw_coords.tile_width + 1. + itrack;
 	y1 = draw_coords.tile_y[rr_node[inode].ylow];
 	y2 = draw_coords.tile_y[rr_node[inode].yhigh] + draw_coords.tile_width;
-/*	x_rr_node_left[inode] = x - line_fuz;
-	x_rr_node_right[inode] = x + line_fuz;
-	y_rr_node_bottom[inode] = y1;
-	y_rr_node_top[inode] = y2;*/
-	if (rr_node_color[inode] != BLACK) {
+
+	if (draw_state.rr_node_color[inode] != BLACK) {
 		savecolor = getcolor();
-		setcolor(rr_node_color[inode]);
+		setcolor(draw_state.rr_node_color[inode]);
 		setlinewidth(3);
 		drawline(x, y1, x, y2);
 		setlinewidth(0);
@@ -1749,8 +1714,8 @@ static void highlight_nets(char *message) {
 
 	for (inet = 0; inet < num_nets; inet++) {
 		for (tptr = trace_head[inet]; tptr != NULL; tptr = tptr->next) {
-			if (rr_node_color[tptr->index] == MAGENTA) {
-				draw_state.net_color[inet] = rr_node_color[tptr->index];
+			if (draw_state.rr_node_color[tptr->index] == MAGENTA) {
+				draw_state.net_color[inet] = draw_state.rr_node_color[tptr->index];
 				sprintf(message, "%s  ||  Net: %d (%s)", message, inet,
 						clb_net[inet].name);
 				break;
@@ -1765,7 +1730,7 @@ static void highlight_nets(char *message) {
  * a wire has been clicked on by computing a bounding box for that wire and
  * checking if the mouse click hit inside its bounding box.
  */
-static int check_rr_node_hit (float click_x, float click_y) {
+static int draw_check_rr_node_hit (float click_x, float click_y) {
 	int inode;
 	int hit_node = OPEN;
 	float rr_node_xleft = -1;
@@ -1831,7 +1796,7 @@ static void highlight_rr_nodes(float x, float y) {
 		return;
 	}
 
-	hit_node = check_rr_node_hit (x, y);
+	hit_node = draw_check_rr_node_hit (x, y);
 
 	if (hit_node != OPEN) {
 		int xlow = rr_node[hit_node].xlow;
@@ -1839,7 +1804,7 @@ static void highlight_rr_nodes(float x, float y) {
 		int ylow = rr_node[hit_node].ylow;
 		int yhigh = rr_node[hit_node].yhigh;
 		int ptc_num = rr_node[hit_node].ptc_num;
-		rr_node_color[hit_node] = MAGENTA;
+		draw_state.rr_node_color[hit_node] = MAGENTA;
       sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) track: %d, %d edges, occ: %d, capacity: %d",
 				hit_node, rr_node[hit_node].rr_get_type_string(),
             xlow, ylow, xhigh, yhigh, ptc_num, 
@@ -1851,7 +1816,7 @@ static void highlight_rr_nodes(float x, float y) {
       /* Highlight the fanout nodes in red. */
 		for (iedge = 0; iedge < rr_node[hit_node].num_edges; iedge++) {
          int fanout_node = rr_node[hit_node].edges[iedge];
-			rr_node_color[fanout_node] = RED;
+			draw_state.rr_node_color[fanout_node] = RED;
       }
 
       /* Highlight the nodes that can fanin to this node in blue. */
@@ -1859,7 +1824,7 @@ static void highlight_rr_nodes(float x, float y) {
 			for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
             int fanout_node = rr_node[inode].edges[iedge];
             if (fanout_node == hit_node) 
-				   rr_node_color[inode] = BLUE;   
+				   draw_state.rr_node_color[inode] = BLUE;   
             // May change to a different colour if this is confusing, as input pins are already blue.
          }
       }
@@ -2006,7 +1971,7 @@ static void deselect_all(void) {
 		draw_state.net_color[i] = BLACK;
 
 	for (i = 0; i < num_rr_nodes; i++)
-		rr_node_color[i] = BLACK;
+		draw_state.rr_node_color[i] = BLACK;
 }
 
 /* UDSD by AY Start */
