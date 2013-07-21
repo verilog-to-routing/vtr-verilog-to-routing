@@ -1702,7 +1702,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 
 	int i, j, source_clock_domain, sink_clock_domain, inode, inet, ipin;
 
-#if defined PATH_COUNTING || SLACK_DEFINITION == 'S'
+#if defined PATH_COUNTING || SLACK_DEFINITION == 'S' || SLACK_DEFINITION == 'T' || SLACK_DEFINITION == 'C' || SLACK_DEFINITION == 'D'
 	int iedge, num_edges;
 #endif
 
@@ -1721,7 +1721,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 	long max_critical_output_paths, max_critical_input_paths;
 	t_pb *pb;
 
-#if SLACK_DEFINITION == 'S'
+#if SLACK_DEFINITION == 'S' || SLACK_DEFINITION == 'T' || SLACK_DEFINITION == 'C' || SLACK_DEFINITION == 'D'
 	update_slack = (boolean)true;
 	/* Update slack values because we need these values to compute criticalities */
 
@@ -1817,7 +1817,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 				}
 #endif
 
-#if SLACK_DEFINITION == 'S'
+#if SLACK_DEFINITION == 'S' || SLACK_DEFINITION == 'T' || SLACK_DEFINITION == 'C' || SLACK_DEFINITION == 'D'
 				/* Set criticality_denom_global to the max of criticality_denom over all traversals. */
 				criticality_denom_global = max(criticality_denom_global, criticality_denom);
 #endif
@@ -1845,7 +1845,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 
 #endif
 
-#if SLACK_DEFINITION == 'S'
+#if SLACK_DEFINITION == 'S' || SLACK_DEFINITION == 'T' || SLACK_DEFINITION == 'C' || SLACK_DEFINITION == 'D'
 	if (!is_final_analysis) {
 
 		/* Find the smallest slack in the design. */
@@ -1855,17 +1855,27 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 			}
 		}
 
-		/* Increase all slacks by the value of the smallest slack in the design, if it's negative. */
+		/* Increase all slacks by the value of the smallest slack in the design, if it's negative.
+		Or clip all negative slacks to 0, based on how we choose to normalize slacks*/
 		if (smallest_slack_in_design < 0) {
 			for (inet = 0; inet < num_timing_nets; inet++) {
 				num_edges = timing_nets[inet].num_sinks;
 				for (iedge = 0; iedge < num_edges; iedge++) {
+
+#if SLACK_DEFINITION == 'C' || SLACK_DEFINITION == 'D'
+					/* Clip all negative slacks to 0*/
+					if (slacks->slack[inet][iedge+1] < 0)
+						slacks->slack[inet][iedge+1] = 0;
+#else
+
 					slacks->slack[inet][iedge + 1] -= smallest_slack_in_design; 
 					/* Remember, smallest_slack_in_design is negative, so we're INCREASING all the slacks. */
 					/* Note that if slack was equal to HUGE_POSITIVE_FLOAT, it will still be equal to more than this, 
 					so it will still be ignored when we calculate criticalities. */
+#endif
 				}
 			}
+		criticality_denom_global -= smallest_slack_in_design;
 		}
 	}
 
@@ -1875,6 +1885,13 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 		for (iedge = 0; iedge < num_edges; iedge++) {
 			if (slacks->slack[inet][iedge + 1] < HUGE_POSITIVE_FLOAT - 1) { /* if the slack is valid */
 				slacks->timing_criticality[inet][iedge + 1] = 1 - slacks->slack[inet][iedge + 1]/criticality_denom_global; 
+#if SLACK_DEFINITION == 'T' || SLACK_DEFINITION == 'D'	
+				/* We need to clip criticalities to 0 if negative because the criticality_denom_global is 
+				essentially max(Tarr), and slacks can get as high as the timing constraint specified in SDC 
+				file. When slack>criticality_denom_global, we end up with large negative timing_criticality	*/
+				if (slacks->timing_criticality[inet][iedge + 1] < 0)
+					slacks->timing_criticality[inet][iedge + 1] = 0;
+#endif
 			}
 			/* otherwise, criticality remains 0, as it was initialized */
 		}
@@ -2268,6 +2285,12 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 		vpr_printf_warning(__FILE__, __LINE__, 
 				"%d unused pins \n",  num_dangling_nodes);
 	}
+
+#if SLACK_DEFINITION == 'T' || SLACK_DEFINITION == 'D'
+	/*For testing purposes, we want the criticality denominator to be the 
+	maximum arrival time. */
+	return max_Tarr;
+#endif
 
 	/* The criticality denominator is the maximum of the max 
 	arrival time and the constraint for this domain pair. */
