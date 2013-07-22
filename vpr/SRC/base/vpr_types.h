@@ -134,52 +134,8 @@ struct s_rr_node;
 /* defined later, but need to declare here because it is used */
 struct s_pack_molecule;
 /* defined later, but need to declare here because it is used */
-
-/* Stores statistical information for pb such as cost information */
-typedef struct s_pb_stats {
-	/* Packing statistics */
-	std::map<int, float> gain; /* Attraction (inverse of cost) function */
-
-	std::map<int, float> timinggain; /* [0..num_logical_blocks-1]. The timing criticality score of this logical_block. 
-	 Determined by the most critical vpack_net between this logical_block and any logical_block in the current pb */
-	std::map<int, float> connectiongain; /* [0..num_logical_blocks-1] Weighted sum of connections to attraction function */
-	std::map<int, float> prevconnectiongainincr; /* [0..num_logical_blocks-1] Prev sum to weighted sum of connections to attraction function */
-	std::map<int, float> sharinggain; /* [0..num_logical_blocks-1]. How many nets on this logical_block are already in the pb under consideration */
-
-	/* [0..num_logical_blocks-1]. This is the gain used for hill-climbing. It stores*
-	 * the reduction in the number of pins that adding this logical_block to the the*
-	 * current pb will have. This reflects the fact that sometimes the *
-	 * addition of a logical_block to a pb may reduce the number of inputs     *
-	 * required if it shares inputs with all other BLEs and it's output is  *
-	 * used by all other child pbs in this parent pb.                               */
-	std::map<int, float> hillgain;
-
-	/* [0..num_marked_nets] and [0..num_marked_blocks] respectively.  List  *
-	 * the indices of the nets and blocks that have had their num_pins_of_  *
-	 * net_in_pb and gain entries altered.                             */
-	int *marked_nets, *marked_blocks;
-	int num_marked_nets, num_marked_blocks;
-	int num_child_blocks_in_pb;
-
-	int tie_break_high_fanout_net; /* If no marked candidate atoms, use this high fanout net to determine the next candidate atom */
-
-	/* [0..num_logical_nets-1].  How many pins of each vpack_net are contained in the *
-	 * currently open pb?                                          */
-	std::map<int, int> num_pins_of_net_in_pb;
-
-	/* Record of pins of class used TODO: Jason Luu: Should really be using hash table for this for speed, too lazy to write one now, performance isn't too bad since I'm at most iterating over the number of pins of a pb which is effectively a constant for reasonable architectures */
-	int **input_pins_used; /* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of input pins of this class that are used */
-	int **output_pins_used; /* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of output pins of this class that are used */
-
-	int **lookahead_input_pins_used; /* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of input pins of this class that are speculatively used */
-	int **lookahead_output_pins_used; /* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of output pins of this class that are speculatively used */
-
-	/* Array of feasible blocks to select from [0..max_array_size-1] 
-	 Sorted in ascending gain order so that the last block is the most desirable (this makes it easy to pop blocks off the list
-	 */
-	struct s_pack_molecule **feasible_blocks;
-	int num_feasible_blocks; /* [0..num_marked_models-1] */
-} t_pb_stats;
+struct s_pb_stats;
+/* defined later, but need to declare here because it is used */
 
 /* An FPGA complex block is represented by a hierarchy of physical blocks.  
  These include leaf physical blocks that a netlist block can map to (such as LUTs, flip-flops, memory slices, etc),

@@ -27,6 +27,7 @@ using namespace std;
 #include "vpr_utils.h"
 #include "cluster_placement.h"
 #include "ReadOptions.h"
+#include "pack_types.h"
 
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*/
 

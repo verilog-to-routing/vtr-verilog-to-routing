@@ -11,6 +11,7 @@ using namespace std;
 #include "cluster_placement.h"
 #include "place_macro.h"
 #include "string.h"
+#include "pack_types.h"
 
 
 /* This module contains subroutines that are used in several unrelated parts *
