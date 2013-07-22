@@ -467,5 +467,8 @@
     <ClInclude Include="SRC\draw\graphics.h">
       <Filter>Header Files\draw</Filter>
     </ClInclude>
+    <ClInclude Include="SRC\pack\pack_types.h">
+      <Filter>Header Files\pack</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
