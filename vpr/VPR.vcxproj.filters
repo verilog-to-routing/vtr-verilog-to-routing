@@ -267,6 +267,12 @@
     <ClCompile Include="SRC\draw\graphics.c">
       <Filter>Source Files\draw</Filter>
     </ClCompile>
+    <ClCompile Include="SRC\pack\cluster_router.c">
+      <Filter>Source Files\pack</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\pack\lb_rr_graph.c">
+      <Filter>Source Files\pack</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SRC\base\check_netlist.h">
@@ -468,6 +474,12 @@
       <Filter>Header Files\draw</Filter>
     </ClInclude>
     <ClInclude Include="SRC\pack\pack_types.h">
+      <Filter>Header Files\pack</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\pack\lb_rr_graph.h">
+      <Filter>Header Files\pack</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\pack\cluster_router.h">
       <Filter>Header Files\pack</Filter>
     </ClInclude>
   </ItemGroup>

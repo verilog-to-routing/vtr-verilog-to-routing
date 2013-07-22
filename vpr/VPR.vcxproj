@@ -195,6 +195,8 @@
     <ClCompile Include="SRC\base\stats.c" />
     <ClCompile Include="SRC\pack\cluster_feasibility_filter.c" />
     <ClCompile Include="SRC\pack\cluster_placement.c" />
+    <ClCompile Include="SRC\pack\cluster_router.c" />
+    <ClCompile Include="SRC\pack\lb_rr_graph.c" />
     <ClCompile Include="SRC\pack\prepack.c" />
     <ClCompile Include="SRC\place\place_macro.c" />
     <ClCompile Include="SRC\power\power.c" />
@@ -262,6 +264,8 @@
     <ClInclude Include="SRC\draw\graphics.h" />
     <ClInclude Include="SRC\pack\cluster_feasibility_filter.h" />
     <ClInclude Include="SRC\pack\cluster_placement.h" />
+    <ClInclude Include="SRC\pack\cluster_router.h" />
+    <ClInclude Include="SRC\pack\lb_rr_graph.h" />
     <ClInclude Include="SRC\pack\pack_types.h" />
     <ClInclude Include="SRC\pack\prepack.h" />
     <ClInclude Include="SRC\place\place_macro.h" />
