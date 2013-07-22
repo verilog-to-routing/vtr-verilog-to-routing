@@ -72,6 +72,12 @@ enum e_pb_type_class {
 	UNKNOWN_CLASS = 0, LUT_CLASS = 1, LATCH_CLASS = 2, MEMORY_CLASS = 3
 };
 
+/* Describes different types of intra-logic block routing resource nodes */
+enum e_lb_rr_type {
+	LB_SOURCE = 0, LB_SINK, LB_INTERMEDIATE, NUM_LB_RR_TYPES
+};
+
+
 /* Annotations for pin-to-pin connections */
 enum e_pin_to_pin_annotation_type {
 	E_ANNOT_PIN_TO_PIN_DELAY = 0,
@@ -527,6 +533,21 @@ struct s_pb_graph_node {
 	t_interconnect_pins ** interconnect_pins; /* [0..num_modes-1][0..num_interconnect_in_mode] */
 };
 
+/* Describes a routing resource node within a logic block type */
+typedef struct s_lb_type_rr_node {
+	short capacity;			/* Number of nets that can simultaneously use this node */
+	short *num_fanout;		/* [0..num_modes - 1] Mode dependant fanout */
+	enum e_lb_rr_type type;	/* Type of logic block resource node */	
+
+	int **fanout;					/* [0..num_modes - 1][0..num_fanout-1] index of fanout lb_rr_node */
+	float **fanout_intrinsic_cost;	/* [0..num_modes - 1][0..num_fanout-1] cost of fanout lb_rr_node */
+
+	struct s_pb_graph_pin *pb_graph_pin;	/* pb_graph_pin associated with this lb_rr_node if exists */
+	float pack_intrinsic_cost;		/* cost of this node */
+} t_lb_type_rr_node;
+
+
+
 struct s_pb_graph_node_power {
 	float transistor_cnt_pb_children; /* Total transistor size of this pb */
 	float transistor_cnt_interc; /* Total transistor size of the interconnect in this pb */
@@ -639,6 +660,7 @@ struct s_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 	/* Clustering info */
 	struct s_pb_type *pb_type;
 	t_pb_graph_node *pb_graph_head;
+	t_lb_type_rr_node *lb_type_rr_node;
 
 	/* Grid location info */
 	struct s_grid_loc_def *grid_loc_def; /* [0..num_def-1] */
