@@ -66,24 +66,6 @@ typedef struct s_pb_stats {
 * Intra-Logic Block Routing Data Structures
 ***************************************************************************/
 
-/* Describes different types of intra-logic block routing resource nodes */
-enum e_lb_rr_type {
-	LB_SOURCE = 0, LB_SINK, LB_INTERMEDIATE, NUM_LB_RR_TYPES
-};
-
-/* Describes a routing resource node within a logic block type */
-typedef struct s_lb_type_rr_node {
-	short capacity;			/* Number of nets that can simultaneously use this node */
-	short *num_fanout;		/* [0..num_modes - 1] Mode dependant fanout */
-	enum e_lb_rr_type type;	/* Type of logic block resource node */	
-
-	int **fanout;					/* [0..num_modes - 1][0..num_fanout-1] index of fanout lb_rr_node */
-	float **fanout_intrinsic_cost;	/* [0..num_modes - 1][0..num_fanout-1] cost of fanout lb_rr_node */
-
-	struct s_pb_graph_pin *pb_graph_pin;	/* pb_graph_pin associated with this lb_rr_node if exists */
-	float pack_intrinsic_cost;		/* cost of this node */
-} t_lb_type_rr_node;
-
 /* The routing traceback for a net */
 typedef struct s_lb_traceback {
 	int	net;				/* net using this node */
