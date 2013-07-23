@@ -10,7 +10,7 @@
 ENABLE_GRAPHICS = false
 # can be true or false
 
-setenv ENABLE_TORO = false
+setenv ENABLE_TORO = true
 # can be true or false
 
 export BUILD_TYPE = release

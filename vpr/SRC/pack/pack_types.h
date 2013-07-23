@@ -26,20 +26,6 @@ enum e_lb_rr_type {
 * Packing Algorithm Data Structures
 ***************************************************************************/
 
-/* Describes a routing resource node within a logic block type */
-typedef struct s_lb_type_rr_node {
-	short capacity;			/* Number of nets that can simultaneously use this node */
-	short *num_fanout;		/* [0..num_modes - 1] Mode dependant fanout */
-	enum e_lb_rr_type type;	/* Type of logic block resource node */	
-
-	int **fanout;					/* [0..num_modes - 1][0..num_fanout-1] index of fanout lb_rr_node */
-	float **fanout_intrinsic_cost;	/* [0..num_modes - 1][0..num_fanout-1] cost of fanout lb_rr_node */
-
-	struct s_pb_graph_pin *pb_graph_pin;	/* pb_graph_pin associated with this lb_rr_node if exists */
-	float pack_intrinsic_cost;		/* cost of this node */
-} t_lb_type_rr_node;
-
-
 /* Stores statistical information for a physical block such as costs and usages */
 typedef struct s_pb_stats {
 	/* Packing statistics */
@@ -92,6 +78,31 @@ typedef struct s_pb_stats {
 * Intra-Logic Block Routing Data Structures
 ***************************************************************************/
 
+
+/* Describes a routing resource node within a logic block type */
+typedef struct s_lb_type_rr_node {
+	short capacity;			/* Number of nets that can simultaneously use this node */
+	short *num_fanout;		/* [0..num_modes - 1] Mode dependant fanout */
+	enum e_lb_rr_type type;	/* Type of logic block resource node */	
+
+	int **fanout;					/* [0..num_modes - 1][0..num_fanout-1] index of fanout lb_rr_node */
+	float **fanout_intrinsic_cost;	/* [0..num_modes - 1][0..num_fanout-1] cost of fanout lb_rr_node */
+
+	struct s_pb_graph_pin *pb_graph_pin;	/* pb_graph_pin associated with this lb_rr_node if exists */
+	float pack_intrinsic_cost;		/* cost of this node */
+	
+	s_lb_type_rr_node() {
+		capacity = 0;
+		num_fanout = NULL;
+		type = NUM_LB_RR_TYPES;
+		fanout = NULL;
+		fanout_intrinsic_cost = NULL;
+		pb_graph_pin = NULL;
+		pack_intrinsic_cost = 0;
+	}
+} t_lb_type_rr_node;
+
+
 /* The routing traceback for a net */
 typedef struct s_lb_traceback {
 	int	net;				/* net using this node */
@@ -112,6 +123,18 @@ typedef struct s_lb_rr_node {
 	float historical_cost;	/* Historical cost of using this node */
 
 	t_lb_type_rr_node *lb_type_rr_node; /* corresponding lb_type_rr_node */
+
+
+	/* Default values */
+	s_lb_rr_node() {
+		occ = 0;
+		max_occ = 0;
+		mode = 0;
+		traceback = NULL;
+		current_cost = 0;		
+		historical_cost = 0;	
+		lb_type_rr_node = NULL; 
+	}
 } t_lb_rr_node;
 
 #endif
