@@ -8,7 +8,7 @@
 #ifndef LB_RR_GRAPH_H
 #define LB_RR_GRAPH_H
 
-void alloc_and_load_all_lb_type_rr_graph();
+t_lb_type_rr_node** alloc_and_load_all_lb_type_rr_graph();
 
 
 #endif
