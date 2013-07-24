@@ -35,6 +35,7 @@ using namespace std;
 
 #include "TAS_Typedefs.h"
 #include "TAS_ChannelWidth.h"
+#include "TAS_Clock.h"
 
 //===========================================================================//
 // Purpose        : Class declaration
@@ -42,6 +43,7 @@ using namespace std;
 //---------------------------------------------------------------------------//
 // Version history
 // 05/15/12 jeffr : Original
+// 07/17/13 jeffr : Added TAS_ConfigPower_c and TAS_ConfigClock_c support
 //===========================================================================//
 class TAS_Config_c
 {
@@ -140,6 +142,42 @@ public:
       } areaModel;
 
    } device;
+
+   class TAS_ConfigPower_c
+   {
+   public:
+
+      class TAS_ConfigPowerInterconnect_c
+      {
+      public:	
+         double capWire;        // Local interconnect wire C (farads) 
+         double factor;         // Local interconnect factor
+      } interconnect;
+
+      class TAS_ConfigPowerBuffers
+      {
+      public:
+         double logicalEffortFactor; 
+
+      } buffers;
+
+      class TAS_ConfigPowerSRAM
+      {
+      public:
+         double transistorsPerBit;
+
+      } sram;
+
+   } power;
+
+   TAS_ClockList_t clockList;   // Optional block clock list constants
+
+private:
+
+   enum TAS_DefCapacity_e 
+   { 
+      TAS_CLOCK_LIST_DEF_CAPACITY = 1
+   };
 };
 
 //===========================================================================//
