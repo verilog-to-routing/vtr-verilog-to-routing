@@ -45,15 +45,23 @@ public:
                 t_arch* pvpr_architecture,
                 t_type_descriptor** pvpr_physicalBlockArray,
                 int* pvpr_physicalBlockCount,
-                bool isTimingEnabled ) const;
+                bool isTimingEnabled,
+                bool isPowerEnabled,
+                bool isClocksEnabled ) const;
 
 private:
 
-   void PokeLayout_( const TAS_Config_c& config,
-                     t_arch* pvrpArchitecture ) const;
-   void PokeDevice_( const TAS_Config_c& config,
-                     t_arch* pvrpArchitecture,
-                     bool isTimingEnabled ) const;
+   void PokeConfigLayout_( const TAS_Config_c& config,
+                           t_arch* pvrpArchitecture ) const;
+   void PokeConfigDevice_( const TAS_Config_c& config,
+                           t_arch* pvrpArchitecture,
+                           bool isTimingEnabled ) const;
+   void PokeConfigPower_( const TAS_Config_c& config,
+                          t_arch* pvrpArchitecture,
+                          bool isPowerEnabled ) const;
+   void PokeConfigClocks_( const TAS_Config_c& config,
+                           t_arch* pvrpArchitecture,
+                           bool isClocksEnabled ) const;
 
    void PokeModelLists_( const TAS_CellList_t& cellList,
                          t_arch* pvpr_architecture ) const;
@@ -78,7 +86,7 @@ private:
                              t_direct_inf** pvpr_directArray, 
                              int* pvpr_directCount ) const;
 
-   void PokePbType_( const TAS_PhysicalBlock_c& physicalBlock,
+   bool PokePbType_( const TAS_PhysicalBlock_c& physicalBlock,
                      const t_mode* pvpr_mode,
                      t_pb_type* pvpr_pb_type ) const;
    void PokePbTypeChild_( const t_pb_type& pb_type,
@@ -87,9 +95,9 @@ private:
    void PokePbTypeLutClass_( t_pb_type* pvpr_pb_type ) const;
    void PokePbTypeMemoryClass_( t_pb_type* pvpr_pb_type ) const;
 
-   void PokeModeList_( const TAS_PhysicalBlock_c& physicalBlock,
+   bool PokeModeList_( const TAS_PhysicalBlock_c& physicalBlock,
                        t_pb_type* pvpr_pb_type ) const;
-   void PokeMode_( const string& srName,
+   bool PokeMode_( const string& srName,
                    const TAS_PhysicalBlockList_t& physicalBlockList,
                    const TAS_InterconnectList_t& interconnectList,
                    t_mode* pvpr_mode ) const;
@@ -110,16 +118,32 @@ private:
    void PokeGridAssignList_( const TAS_GridAssignList_t& gridAssignList,
                              t_type_descriptor* pvpr_physicalBlock ) const;
 
-   void PokePortList_( const TLO_PortList_t& portList,
+   void PokePortList_( const TAS_PhysicalBlock_c& physicalBlock,
                        t_pb_type* pvpr_pb_type ) const;
-   void PokePort_( const TLO_Port_c& port,
+   void PokePort_( const TAS_PhysicalBlock_c& physicalBlock,
+                   const TLO_Port_c& port,
+                   t_pb_type* pvpr_pb_type,
                    t_port* pvpr_port ) const;
+
+   void PokePortPower_( const TAS_PhysicalBlock_c& physicalBlock,
+                        const TLO_Power_c& power,
+                        t_pb_type* pvpr_pb_type,
+                        t_port_power* pvpr_port_power ) const;
 
    void PokeTimingDelayLists_( const TAS_TimingDelayLists_c& timingDelayLists,
                                t_pin_to_pin_annotation** pvpr_annotationArray,
                                int* pvpr_annotationCount ) const;
    void PokeTimingDelay_( const TAS_TimingDelay_c& timingDelay,
                           t_pin_to_pin_annotation* pvpr_annotation ) const;
+
+   bool PokePower_( const TAS_PhysicalBlock_c& physicalBlock,
+                    t_pb_type* pvpr_pb_type ) const;
+   bool PokePowerPortList_( const TAS_Power_c& power,
+                            const TLO_PortList_t& portList,
+                            t_pb_type* pvpr_pb_type ) const;
+   bool PokePowerPort_( const TLO_Port_c& port,
+                        const TLO_PortList_t& portList,
+                        t_pb_type* pvpr_pb_type ) const;
 
    bool InitModels_( const t_arch& vpr_architecture,
                      t_type_descriptor** pvpr_physicalBlockArray, 
@@ -142,6 +166,10 @@ private:
                                 size_t bitPatternLen,
                                 boolean** pvpr_patternArray,
                                 int* pvpr_patternLen ) const;
+
+   enum e_power_estimation_method FindPowerMethodMode_( TAS_PowerMethodMode_t mode,
+                                                        t_pb_type* pvpr_pb_type ) const;
+   enum e_power_estimation_method InheritPowerMethodMode_( enum e_power_estimation_method mode ) const;
 };
 
 #endif 
