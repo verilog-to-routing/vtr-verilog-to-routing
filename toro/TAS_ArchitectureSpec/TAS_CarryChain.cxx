@@ -148,17 +148,17 @@ void TAS_CarryChain_c::Print(
                                         TIO_SR_STR( this->srName ));
    if( this->srFromPinName.length( ))
    {
-      printHandler.Write( pfile, spaceLen, " from_pin=\"%s\"", 
+      printHandler.Write( pfile, 0, " from_pin=\"%s\"", 
                                            TIO_SR_STR( this->srFromPinName ));
    }
    if( this->srToPinName.length( ))
    {
-      printHandler.Write( pfile, spaceLen, " to_pin=\"%s\"", 
+      printHandler.Write( pfile, 0, " to_pin=\"%s\"", 
                                            TIO_SR_STR( this->srToPinName ));
    }
    if( this->offset.IsValid( ))
    {
-      printHandler.Write( pfile, spaceLen, " x_offset=\"%d\" y_offset=\"%d\" z_offset=\"%d\"", 
+      printHandler.Write( pfile, 0, " x_offset=\"%d\" y_offset=\"%d\" z_offset=\"%d\"", 
                                            this->offset.dx, this->offset.dy, this->offset.dz );
    }
    printHandler.Write( pfile, 0, "/>\n" );
@@ -186,7 +186,7 @@ void TAS_CarryChain_c::PrintXML(
       size_t spaceLen ) const
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
-   printHandler.Write( pfile, spaceLen, "<direct name=\"%s\" from_pin=\"%s\" to_pin=\"%s\" x_offset=\"%d\" y_offset=\"%d\" z_offset=\"%d\"/>", 
+   printHandler.Write( pfile, spaceLen, "<direct name=\"%s\" from_pin=\"%s\" to_pin=\"%s\" x_offset=\"%d\" y_offset=\"%d\" z_offset=\"%d\"/>\n", 
                                         TIO_SR_STR( this->srName ),
                                         TIO_SR_STR( this->srFromPinName ),
                                         TIO_SR_STR( this->srToPinName ),
