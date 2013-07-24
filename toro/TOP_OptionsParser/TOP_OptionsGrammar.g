@@ -119,6 +119,8 @@ using namespace std;
 #token HALT_MAX_WARNINGS       "[Hh][Aa][Ll][Tt][_][Mm][Aa][Xx][_][Ww][Aa][Rr][Nn][Ii][Nn][Gg]{[Ss]}"
 #token HALT_MAX_ERRORS         "[Hh][Aa][Ll][Tt][_][Mm][Aa][Xx][_][Ee][Rr][Rr][Oo][Rr]{[Ss]}"
 #token EXECUTE_MODE            "[Ee][Xx][Ee][Cc][Uu][Tt][Ee]{[_][Mm][Oo][Dd][Ee]{[Ss]}}"
+#token CLAY_RESYNC_VPR_NETS    "[Cc][Ll][Aa][Yy][_][Rr][Ee][Ss][Yy][Nn][Cc][_]{[Vv][Pp][Rr][_]}[Nn][Ee][Tt]{[Ss]}"
+#token CLAY_FREE_VPR_NETS      "[Cc][Ll][Aa][Yy][_][Ff][Rr][Ee][Ee][_]{[Vv][Pp][Rr][_]}[Nn][Ee][Tt]{[Ss]}"
 
 #token FABRIC_BLOCK_ENABLE       "[Ff][Aa][Bb][Rr][Ii][Cc][_]([Bb][Ll][Oo][Cc][Kk]|[Cc][Ll][Bb]){[Ss]}[_]{[Oo][Vv][Ee][Rr][Rr][Ii][Dd][Ee][_]}[Ee][Nn][Aa][Bb][Ll][Ee]"
 #token FABRIC_CHANNEL_ENABLE     "[Ff][Aa][Bb][Rr][Ii][Cc][_][Cc][Hh][Aa][Nn][Nn][Ee][Ll]{[Ss]}[_]{[Oo][Vv][Ee][Rr][Rr][Ii][Dd][Ee][_]}[Ee][Nn][Aa][Bb][Ll][Ee]"
@@ -134,6 +136,8 @@ using namespace std;
 #token PACK_BLOCK_SIZE           "[Pp][Aa][Cc][Kk][_](([Bb][Ll][Oo][Cc][Kk]|[Cc][Ll][Bb])[_][Ss][Ii][Zz][Ee]|[N])"
 #token PACK_LUT_SIZE             "[Pp][Aa][Cc][Kk][_]([Ll][Uu][Tt][_][Ss][Ii][Zz][Ee]|[K])"
 #token PACK_COST_MODE            "[Pp][Aa][Cc][Kk][_][Cc][Oo][Ss][Tt][_][Mm][Oo][Dd][Ee]"
+
+#token PACK_POWER_ENABLE         "[Pp][Aa][Cc][Kk][_][Pp][Oo][Ww][Ee][Rr][_][Ee][Nn][Aa][Bb][Ll][Ee]"
 
 #token PLACE_ALGORITHM           "[Pp][Ll][Aa][Cc][Ee][_][Aa][Ll][Gg][Oo][Rr][Ii][Tt][Hh][Mm]"
 #token PLACE_CHANNEL_WIDTH       "[Pp][Ll][Aa][Cc][Ee][_][Cc][Hh][Aa][Nn][Nn][Ee][Ll][_][Ww][Ii][Dd][Tt][Hh]"
@@ -442,6 +446,8 @@ executeOptions
    |  HALT_MAX_ERRORS { EQUAL } ulongNum[ &pexecuteOptions_->maxErrorCount ]
 
    |  EXECUTE_MODE { EQUAL } executeToolMask[ &pexecuteOptions_->toolMask ]
+   |  CLAY_RESYNC_VPR_NETS { EQUAL } boolType[ &pexecuteOptions_->tiClay.resyncNets ]
+   |  CLAY_FREE_VPR_NETS { EQUAL } boolType[ &pexecuteOptions_->tiClay.freeNets ]
    <<
       this->srActiveCmd_ = ( LT( 1 ) ? LT( 1 )->getText( ) : "" );
    >>
@@ -478,6 +484,8 @@ packOptions
    |  PACK_LUT_SIZE { EQUAL } uintNum[ &ppackOptions_->lutSize ]
 
    |  PACK_COST_MODE { EQUAL } packCostMode[ &ppackOptions_->costMode ]
+
+   |  PACK_POWER_ENABLE { EQUAL } boolType[ &ppackOptions_->power.enable ]
    <<
       this->srActiveCmd_ = ( LT( 1 ) ? LT( 1 )->getText( ) : "" );
    >>
