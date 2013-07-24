@@ -42,6 +42,8 @@ TOS_ExecuteOptions_c::TOS_ExecuteOptions_c(
       maxErrorCount( 0 ),
       toolMask( 0 )
 {
+   this->tiClay.resyncNets = true;
+   this->tiClay.freeNets = true;
 }
 
 //===========================================================================//
@@ -54,6 +56,8 @@ TOS_ExecuteOptions_c::TOS_ExecuteOptions_c(
       maxErrorCount( maxErrorCount_ ),
       toolMask( toolMask_ )
 {
+   this->tiClay.resyncNets = true;
+   this->tiClay.freeNets = true;
 }
 
 //===========================================================================//
@@ -87,5 +91,10 @@ void TOS_ExecuteOptions_c::Print(
    printHandler.Write( pfile, spaceLen, "HALT_MAX_WARNINGS          = %ld\n", static_cast<long>( this->maxWarningCount ));
    printHandler.Write( pfile, spaceLen, "HALT_MAX_ERRORS            = %ld\n", static_cast<long>( this->maxErrorCount ));
 
+   printHandler.Write( pfile, spaceLen, "\n" );
    printHandler.Write( pfile, spaceLen, "EXECUTE_MODE               = { %s}\n", TIO_SR_STR( srToolMask ));
+
+   printHandler.Write( pfile, spaceLen, "\n" );
+   printHandler.Write( pfile, spaceLen, "CLAY_RESYNC_VPR_NETS       = %s\n", TIO_BOOL_STR( this->tiClay.resyncNets ));
+   printHandler.Write( pfile, spaceLen, "CLAY_FREE_VPR_NETS         = %s\n", TIO_BOOL_STR( this->tiClay.freeNets ));
 }
