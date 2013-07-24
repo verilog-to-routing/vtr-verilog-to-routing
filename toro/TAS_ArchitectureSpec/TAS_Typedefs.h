@@ -217,6 +217,30 @@ class TAS_CarryChain_c; // Forward declaration for subsequent class typedefs
 typedef TCT_OrderedVector_c< TAS_CarryChain_c > TAS_CarryChainList_t;
 
 //---------------------------------------------------------------------------//
+// Define power constants and typedefs
+//---------------------------------------------------------------------------//
+
+enum TAS_PowerMethodMode_e
+{
+   TAS_POWER_METHOD_UNDEFINED = 0,
+   TAS_POWER_METHOD_IGNORE,
+   TAS_POWER_METHOD_SUM_OF_CHILDREN,
+   TAS_POWER_METHOD_AUTO_SIZES,
+   TAS_POWER_METHOD_SPECIFY_SIZES,
+   TAS_POWER_METHOD_PIN_TOGGLE,
+   TAS_POWER_METHOD_CAP_INTERNAL,
+   TAS_POWER_METHOD_ABSOLUTE
+};
+typedef TAS_PowerMethodMode_e TAS_PowerMethodMode_t;
+
+//---------------------------------------------------------------------------//
+// Define clock constants and typedefs
+//---------------------------------------------------------------------------//
+
+class TAS_Clock_c; // Forward declaration for subsequent class typedefs
+typedef TCT_OrderedVector_c< TAS_Clock_c > TAS_ClockList_t;
+
+//---------------------------------------------------------------------------//
 // Define config constants and typedefs
 //---------------------------------------------------------------------------//
 
