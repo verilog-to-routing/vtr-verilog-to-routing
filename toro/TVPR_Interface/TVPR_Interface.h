@@ -56,8 +56,10 @@ public:
               const TCD_CircuitDesign_c& circuitDesign );
    bool Execute( const TOS_OptionsStore_c& optionsStore,
                  const TCD_CircuitDesign_c& circuitDesign ) const;
-   bool Close( TFM_FabricModel_c* pfabricModel = 0,
-               TCD_CircuitDesign_c* pcircuitDesign = 0 );
+   bool Close( const TOS_OptionsStore_c& optionsStore,
+               TFM_FabricModel_c* pfabricModel,
+               TCD_CircuitDesign_c* pcircuitDesign );
+   bool Close( bool freeDataStructures = true );
 
 protected:
 
