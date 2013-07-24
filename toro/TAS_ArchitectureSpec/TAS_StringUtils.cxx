@@ -17,6 +17,7 @@
 //           - TAS_ExtractStringSegmentDirType
 //           - TAS_ExtractStringChannelUsageMode
 //           - TAS_ExtractStringChannelDistrMode
+//           - TAS_ExtractStringPowerMethodMode
 //
 //===========================================================================//
 
@@ -413,6 +414,35 @@ void TAS_ExtractStringChannelDistrMode(
       case TAS_CHANNEL_DISTR_PULSE:    *psrMode = "pulse";    break;
       case TAS_CHANNEL_DISTR_DELTA:    *psrMode = "delta";    break;
       default:                         *psrMode = "?";        break;
+      }
+   }
+}
+
+//===========================================================================//
+// Function       : TAS_ExtractStringPowerMethodMode
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 07/17/13 jeffr : Original
+//===========================================================================//
+void TAS_ExtractStringPowerMethodMode(
+      TAS_PowerMethodMode_t mode,
+      string*               psrMode )
+{
+   if( psrMode )
+   {
+      *psrMode = "";
+
+      switch( mode )
+      {
+      case TAS_POWER_METHOD_IGNORE:          *psrMode = "ignore";          break;
+      case TAS_POWER_METHOD_SUM_OF_CHILDREN: *psrMode = "sum-of-children"; break;
+      case TAS_POWER_METHOD_AUTO_SIZES:      *psrMode = "auto-sizes";      break;
+      case TAS_POWER_METHOD_SPECIFY_SIZES:   *psrMode = "specify-sizes";   break;
+      case TAS_POWER_METHOD_PIN_TOGGLE:      *psrMode = "pin-toggle";      break;
+      case TAS_POWER_METHOD_CAP_INTERNAL:    *psrMode = "cap-internal";    break;
+      case TAS_POWER_METHOD_ABSOLUTE:        *psrMode = "absolute";        break;
+      default:                               *psrMode = "?";               break;
       }
    }
 }
