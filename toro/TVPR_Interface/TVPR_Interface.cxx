@@ -210,7 +210,8 @@ bool TVPR_Interface_c::Apply(
       if( ok )
       {
          printHandler.Info( "Closing VPR interface...\n" );
-         this->Close( pfabricModel,
+         this->Close( optionsStore,
+                      pfabricModel,
                       pcircuitDesign );
       }
    }
@@ -261,12 +262,16 @@ bool TVPR_Interface_c::Open(
       printHandler.Info( "Exporting architecture spec to VPR...\n" );
 
       bool isTimingEnabled = ( this->vpr_.setup.TimingEnabled ? true : false );
+      bool isPowerEnabled = ( this->vpr_.options.Count[OT_POWER] ? true : false );
+      bool isClocksEnabled = isPowerEnabled;
       TVPR_ArchitectureSpec_c vpr_architectureSpec;
       ok = vpr_architectureSpec.Export( architectureSpec, 
                                         &this->vpr_.arch,
                                         &type_descriptors, // [VPR] global variable
                                         &num_types,        // [VPR] global variable
-                                        isTimingEnabled );
+                                        isTimingEnabled,
+                                        isPowerEnabled,
+                                        isClocksEnabled );
    }
    if( ok && fabricModel.IsValid( ))
    {
@@ -450,16 +455,26 @@ bool TVPR_Interface_c::Execute(
 //---------------------------------------------------------------------------//
 // Version history
 // 07/10/12 jeffr : Original
+// 07/23/13 jeffr : Added support for "tiClayResyncNets" & "tiClayFreeNets"
 //===========================================================================//
 bool TVPR_Interface_c::Close( 
-      TFM_FabricModel_c*   pfabricModel,
-      TCD_CircuitDesign_c* pcircuitDesign )
+      const TOS_OptionsStore_c&  optionsStore,
+            TFM_FabricModel_c*   pfabricModel,
+            TCD_CircuitDesign_c* pcircuitDesign )
 {
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
    if( this->isAlive_ )
    {
-      if( pfabricModel )
+      const TOS_OutputOptions_c& outputOptions = optionsStore.GetOutputOptions( );
+      bool fabricFileEnable = outputOptions.fabricFileEnable;
+      bool circuitFileEnable = outputOptions.circuitFileEnable;
+
+      const TOS_ExecuteOptions_c& executeOptions = optionsStore.GetExecuteOptions( );
+      bool tiClayResyncNets = executeOptions.tiClay.resyncNets;
+      bool tiClayFreeNets = executeOptions.tiClay.freeNets;
+
+      if( fabricFileEnable && pfabricModel )
       {
          printHandler.Info( "Importing fabric model from VPR...\n" );
 
@@ -472,7 +487,7 @@ bool TVPR_Interface_c::Close(
                                  chan_width_x, chan_width_y,
                                  pfabricModel );
       }
-      if( pcircuitDesign )
+      if( circuitFileEnable && pcircuitDesign )
       {
          printHandler.Info( "Importing circuit design from VPR...\n" );
 
@@ -484,14 +499,31 @@ bool TVPR_Interface_c::Close(
                                    block, num_blocks,
                                    logical_block, 
                                    rr_node,
-                                   pcircuitDesign );
+                                   pcircuitDesign,
+                                   tiClayResyncNets );
       }
 
+      this->Close( tiClayFreeNets );
+   }
+   return( this->isAlive_ );
+}
+
+//===========================================================================//
+bool TVPR_Interface_c::Close( 
+      bool freeDataStructures )
+{
+   TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
+
+   if( this->isAlive_ )
+   {
       printHandler.SetPrefix( TIO_SZ_VPR_PREFIX );
 
-      vpr_free_vpr_data_structures( this->vpr_.arch, 
-                                    this->vpr_.options, 
-                                    this->vpr_.setup );
+      if( freeDataStructures )
+      {
+         vpr_free_vpr_data_structures( this->vpr_.arch, 
+                                       this->vpr_.options, 
+                                       this->vpr_.setup );
+      }
       printHandler.ClearPrefix( );
 
       this->isAlive_ = false;
