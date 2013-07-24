@@ -24,6 +24,7 @@
 //---------------------------------------------------------------------------//
 
 #include "TC_MinGrid.h"
+#include "TCT_Generic.h"
 
 #include "TIO_PrintHandler.h"
 
@@ -145,24 +146,115 @@ void TOS_RouteOptions_c::Print(
    printHandler.Write( pfile, spaceLen, "ROUTE_ALGORITHM            = %s\n", TIO_SR_STR( srAlgorithmMode ));
    printHandler.Write( pfile, spaceLen, "ROUTE_TYPE                 = %s\n", TIO_SR_STR( srAbstractMode ));
 
-   printHandler.Write( pfile, spaceLen, "ROUTE_WINDOW_SIZE          = %u\n", this->windowSize );
-   printHandler.Write( pfile, spaceLen, "ROUTE_CHANNEL_WIDTH        = %u\n", this->channelWidth );
-   printHandler.Write( pfile, spaceLen, "ROUTE_MAX_ITERATIONS       = %u\n", this->maxIterations );
-   printHandler.Write( pfile, spaceLen, "ROUTE_CONG_HIST_FACTOR     = %0.*f\n", precision, this->histCongestionFactor );
-   printHandler.Write( pfile, spaceLen, "ROUTE_CONG_INIT_FACTOR     = %0.*f\n", precision, this->initCongestionFactor );
-   printHandler.Write( pfile, spaceLen, "ROUTE_CONG_PRESENT_FACTOR  = %0.*f\n", precision, this->presentCongestionFactor );
-   printHandler.Write( pfile, spaceLen, "ROUTE_BEND_COST_FACTOR     = %0.*f\n", precision, this->bendCostFactor );
-   printHandler.Write( pfile, spaceLen, "ROUTE_RESOURCE_COST_MODE   = %s\n", TIO_SR_STR( srResourceMode ));
+   if( this->windowSize > 0 )
+   {
+      printHandler.Write( pfile, spaceLen, "ROUTE_WINDOW_SIZE          = %u\n", this->windowSize );
+   }
+   else
+   {
+      printHandler.Write( pfile, spaceLen, "// ROUTE_WINDOW_SIZE\n" );
+   }
+   if( this->channelWidth > 0 )
+   {
+      printHandler.Write( pfile, spaceLen, "ROUTE_CHANNEL_WIDTH        = %u\n", this->channelWidth );
+   }
+   else
+   {
+      printHandler.Write( pfile, spaceLen, "// ROUTE_CHANNEL_WIDTH\n" );
+   }
+   if( this->maxIterations > 0 )
+   {
+      printHandler.Write( pfile, spaceLen, "ROUTE_MAX_ITERATIONS       = %u\n", this->maxIterations );
+   }
+   else
+   {
+      printHandler.Write( pfile, spaceLen, "// ROUTE_MAX_ITERATIONS\n" );
+   }
+   if( TCTF_IsGT( this->histCongestionFactor, 0.0 ))
+   {
+      printHandler.Write( pfile, spaceLen, "ROUTE_CONG_HIST_FACTOR     = %0.*f\n", precision, this->histCongestionFactor );
+   }
+   else
+   {
+      printHandler.Write( pfile, spaceLen, "// ROUTE_CONG_HIST_FACTOR\n" );
+   }
+   if( TCTF_IsGT( this->initCongestionFactor, 0.0 ))
+   {
+      printHandler.Write( pfile, spaceLen, "ROUTE_CONG_INIT_FACTOR     = %0.*f\n", precision, this->initCongestionFactor );
+   }
+   else
+   {
+      printHandler.Write( pfile, spaceLen, "// ROUTE_CONG_INIT_FACTOR\n" );
+   }
+   if( TCTF_IsGT( this->presentCongestionFactor, 0.0 ))
+   {
+      printHandler.Write( pfile, spaceLen, "ROUTE_CONG_PRESENT_FACTOR  = %0.*f\n", precision, this->presentCongestionFactor );
+   }
+   else
+   {
+      printHandler.Write( pfile, spaceLen, "// ROUTE_CONG_PRESENT_FACTOR\n" );
+   }
+   if( TCTF_IsGT( this->bendCostFactor, 0.0 ))
+   {
+      printHandler.Write( pfile, spaceLen, "ROUTE_BEND_COST_FACTOR     = %0.*f\n", precision, this->bendCostFactor );
+   }
+   else
+   {
+      printHandler.Write( pfile, spaceLen, "// ROUTE_BEND_COST_FACTOR\n" );
+   }
+   if( this->resourceMode != TOS_ROUTE_RESOURCE_UNDEFINED )
+   {
+      printHandler.Write( pfile, spaceLen, "ROUTE_RESOURCE_COST_MODE   = %s\n", TIO_SR_STR( srResourceMode ));
+   }
+   else
+   {
+      printHandler.Write( pfile, spaceLen, "// ROUTE_RESOURCE_COST_MODE\n" );
 
+   }
    printHandler.Write( pfile, spaceLen, "ROUTE_COST_MODE            = %s\n", TIO_SR_STR( srCostMode ));
 
-   printHandler.Write( pfile, spaceLen, "ROUTE_TIMING_ASTAR_FACTOR  = %0.*f\n", precision, this->timingAStarFactor );
-   printHandler.Write( pfile, spaceLen, "ROUTE_TIMING_MAX_CRIT      = %0.*f\n", precision, this->timingMaxCriticality );
-   printHandler.Write( pfile, spaceLen, "ROUTE_TIMING_SLACK_CRIT    = %0.*f\n", precision, this->slackCriticality );
+   if( TCTF_IsGT( this->timingAStarFactor, 0.0 ))
+   {
+      printHandler.Write( pfile, spaceLen, "ROUTE_TIMING_ASTAR_FACTOR  = %0.*f\n", precision, this->timingAStarFactor );
+   }
+   else
+   {
+      printHandler.Write( pfile, spaceLen, "// ROUTE_TIMING_ASTAR_FACTOR\n" );
+   }
+   if( TCTF_IsGT( this->timingMaxCriticality, 0.0 ))
+   {
+      printHandler.Write( pfile, spaceLen, "ROUTE_TIMING_MAX_CRIT      = %0.*f\n", precision, this->timingMaxCriticality );
+   }
+   else
+   {
+      printHandler.Write( pfile, spaceLen, "// ROUTE_TIMING_MAX_CRIT\n" );
+   }
+   if( TCTF_IsGT( this->slackCriticality, 0.0 ))
+   {
+      printHandler.Write( pfile, spaceLen, "ROUTE_TIMING_SLACK_CRIT    = %0.*f\n", precision, this->slackCriticality );
+   }
+   else
+   {
+      printHandler.Write( pfile, spaceLen, "// ROUTE_TIMING_SLACK_CRIT\n" );
+   }
 
    printHandler.Write( pfile, spaceLen, "\n" );
-   printHandler.Write( pfile, spaceLen, "ROUTE_TRIM_EMPTY_CHANNELS  = %s\n", TIO_BOOL_STR( this->trimEmptyChannels ));
-   printHandler.Write( pfile, spaceLen, "ROUTE_TRIM_OBS_CHANNELS    = %s\n", TIO_BOOL_STR( this->trimObsChannels ));
+   if( this->trimEmptyChannels )
+   {
+      printHandler.Write( pfile, spaceLen, "ROUTE_TRIM_EMPTY_CHANNELS  = %s\n", TIO_BOOL_STR( this->trimEmptyChannels ));
+   }
+   else
+   {
+      printHandler.Write( pfile, spaceLen, "// ROUTE_TRIM_EMPTY_CHANNELS\n" );
+   }
+   if( this->trimEmptyChannels )
+   {
+      printHandler.Write( pfile, spaceLen, "ROUTE_TRIM_OBS_CHANNELS    = %s\n", TIO_BOOL_STR( this->trimObsChannels ));
+   }
+   else
+   {
+      printHandler.Write( pfile, spaceLen, "// ROUTE_TRIM_OBS_CHANNELS\n" );
+   }
    printHandler.Write( pfile, spaceLen, "ROUTE_PREROUTED_ENABLE     = %s\n", TIO_BOOL_STR( this->preRouted.enable ));
    printHandler.Write( pfile, spaceLen, "ROUTE_PREROUTED_ORDER      = %s\n", TIO_SR_STR( srOrderMode ));
 }
