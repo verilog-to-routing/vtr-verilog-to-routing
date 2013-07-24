@@ -254,7 +254,7 @@ bool TVPR_OptionsStore_c::Export(
    }
    if( packOptions.affinityMode == TOS_PACK_AFFINITY_NONE )
    {
-      pvpr_options->allow_unrelated_clustering = static_cast< boolean >( true );
+      pvpr_options->allow_unrelated_clustering = static_cast< boolean >( false );
       pvpr_options->Count[OT_ALLOW_UNRELATED_CLUSTERING] += 1;
    }
 
@@ -266,6 +266,14 @@ bool TVPR_OptionsStore_c::Export(
    {
       pvpr_options->timing_driven = static_cast< boolean >( true );
       pvpr_options->Count[OT_TIMING_DRIVEN_CLUSTERING] += 1;
+   }
+
+   //------------------------------------------------------------------------//
+   // Pack options (power-related)
+   //------------------------------------------------------------------------//
+   if( packOptions.power.enable )
+   {
+      pvpr_options->Count[OT_POWER] += 1;
    }
 
    //------------------------------------------------------------------------//
@@ -395,12 +403,12 @@ bool TVPR_OptionsStore_c::Export(
          pvpr_options->RouteChanWidth = routeOptions.channelWidth;
          pvpr_options->Count[OT_ROUTE_CHAN_WIDTH] += 1;
       }
-      if( routeOptions.trimEmptyChannels || !routeOptions.trimEmptyChannels )
+      if( routeOptions.trimEmptyChannels )
       {
          pvpr_options->TrimEmptyChan = static_cast< boolean >( routeOptions.trimEmptyChannels );
          pvpr_options->Count[OT_TRIM_EMPTY_CHAN] += 1;
       }
-      if( routeOptions.trimObsChannels || !routeOptions.trimObsChannels )
+      if( routeOptions.trimObsChannels )
       {
          pvpr_options->TrimObsChan = static_cast< boolean >( routeOptions.trimObsChannels );
          pvpr_options->Count[OT_TRIM_OBS_CHAN] += 1;
