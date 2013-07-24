@@ -40,9 +40,12 @@
 //---------------------------------------------------------------------------//
 // Version history
 // 05/15/12 jeffr : Original
+// 07/17/13 jeffr : Added TAS_ConfigPower_c and TAS_ConfigClock_c support
 //===========================================================================//
 TAS_Config_c::TAS_Config_c( 
       void )
+      :
+      clockList( TAS_CLOCK_LIST_DEF_CAPACITY )
 {
    this->layout.sizeMode = TAS_ARRAY_SIZE_UNDEFINED;
    this->layout.autoSize.aspectRatio = 0.0;
@@ -59,11 +62,20 @@ TAS_Config_c::TAS_Config_c(
    this->device.areaModel.resMinWidthPMOS = 0.0;
    this->device.areaModel.sizeInputPinMux = 0.0;
    this->device.areaModel.areaGridTile = 0.0;
+
+   this->power.interconnect.capWire = 0.0;
+   this->power.interconnect.factor = 0.0;
+
+   this->power.buffers.logicalEffortFactor = 0.0;
+
+   this->power.sram.transistorsPerBit = 0.0;
 } 
 
 //===========================================================================//
 TAS_Config_c::TAS_Config_c( 
       const TAS_Config_c& config )
+      :
+      clockList( config.clockList )
 {
    this->layout.sizeMode = config.layout.sizeMode;
    this->layout.autoSize.aspectRatio = config.layout.autoSize.aspectRatio;
@@ -85,6 +97,13 @@ TAS_Config_c::TAS_Config_c(
    this->device.areaModel.resMinWidthPMOS = config.device.areaModel.resMinWidthPMOS;
    this->device.areaModel.sizeInputPinMux = config.device.areaModel.sizeInputPinMux;
    this->device.areaModel.areaGridTile = config.device.areaModel.areaGridTile;
+
+   this->power.interconnect.capWire = this->power.interconnect.capWire;
+   this->power.interconnect.factor = this->power.interconnect.factor;
+
+   this->power.buffers.logicalEffortFactor = this->power.buffers.logicalEffortFactor;
+
+   this->power.sram.transistorsPerBit = this->power.sram.transistorsPerBit;
 }
 
 //===========================================================================//
@@ -105,6 +124,7 @@ TAS_Config_c::~TAS_Config_c(
 //---------------------------------------------------------------------------//
 // Version history
 // 05/15/12 jeffr : Original
+// 07/17/13 jeffr : Added TAS_ConfigPower_c and TAS_ConfigClock_c support
 //===========================================================================//
 TAS_Config_c& TAS_Config_c::operator=( 
       const TAS_Config_c& config )
@@ -126,6 +146,11 @@ TAS_Config_c& TAS_Config_c::operator=(
       this->device.areaModel.resMinWidthPMOS = config.device.areaModel.resMinWidthPMOS;
       this->device.areaModel.sizeInputPinMux = config.device.areaModel.sizeInputPinMux;
       this->device.areaModel.areaGridTile = config.device.areaModel.areaGridTile;
+      this->power.interconnect.capWire = config.power.interconnect.capWire;
+      this->power.interconnect.factor = config.power.interconnect.factor;
+      this->power.buffers.logicalEffortFactor = config.power.buffers.logicalEffortFactor;
+      this->power.sram.transistorsPerBit = config.power.sram.transistorsPerBit;
+      this->clockList = config.clockList;
    }
    return( *this );
 }
@@ -136,6 +161,7 @@ TAS_Config_c& TAS_Config_c::operator=(
 //---------------------------------------------------------------------------//
 // Version history
 // 05/15/12 jeffr : Original
+// 07/17/13 jeffr : Added TAS_ConfigPower_c and TAS_ConfigClock_c support
 //===========================================================================//
 bool TAS_Config_c::operator==( 
       const TAS_Config_c& config ) const
@@ -154,7 +180,12 @@ bool TAS_Config_c::operator==(
           ( TCTF_IsEQ( this->device.areaModel.resMinWidthNMOS, config.device.areaModel.resMinWidthNMOS )) &&
           ( TCTF_IsEQ( this->device.areaModel.resMinWidthPMOS, config.device.areaModel.resMinWidthPMOS )) &&
           ( TCTF_IsEQ( this->device.areaModel.sizeInputPinMux, config.device.areaModel.sizeInputPinMux )) &&
-          ( TCTF_IsEQ( this->device.areaModel.areaGridTile, config.device.areaModel.areaGridTile )) ?
+          ( TCTF_IsEQ( this->device.areaModel.areaGridTile, config.device.areaModel.areaGridTile )) &&
+          ( TCTF_IsEQ( this->power.interconnect.capWire, config.power.interconnect.capWire )) &&
+          ( TCTF_IsEQ( this->power.interconnect.factor, config.power.interconnect.factor )) &&
+          ( TCTF_IsEQ( this->power.buffers.logicalEffortFactor, config.power.buffers.logicalEffortFactor )) &&
+          ( TCTF_IsEQ( this->power.sram.transistorsPerBit, config.power.sram.transistorsPerBit )) &&
+          ( this->clockList == config.clockList ) ?
           true : false );
 }
 
@@ -177,6 +208,7 @@ bool TAS_Config_c::operator!=(
 //---------------------------------------------------------------------------//
 // Version history
 // 05/15/12 jeffr : Original
+// 07/17/13 jeffr : Added TAS_ConfigPower_c and TAS_ConfigClock_c support
 //===========================================================================//
 void TAS_Config_c::Print( 
       FILE*  pfile,
@@ -269,6 +301,27 @@ void TAS_Config_c::Print(
       printHandler.Write( pfile, spaceLen, "<segments=\"%s\"/>\n", TIO_SR_STR( srSegmentDir ));
    }
 
+   if( TCTF_IsGT( this->power.interconnect.capWire, 0.0 ) ||
+       TCTF_IsGT( this->power.interconnect.factor, 0.0 ) ||
+       TCTF_IsGT( this->power.buffers.logicalEffortFactor, 0.0 ) ||
+       TCTF_IsGT( this->power.sram.transistorsPerBit, 0.0 ))
+   {
+      printHandler.Write( pfile, spaceLen, "<power>\n" );
+      spaceLen += 3;
+
+      printHandler.Write( pfile, spaceLen, "<interconnect C_wire=\"%0.*e\" factor=\"%0.*f\"/>\n",
+                                           precision + 1, this->power.interconnect.capWire,
+                                           precision, this->power.interconnect.factor );
+      printHandler.Write( pfile, spaceLen, "<buffers logical_effort_factor=\"%0.*f\"/>\n",
+                                           precision, this->power.buffers.logicalEffortFactor );
+      printHandler.Write( pfile, spaceLen, "<sram transistors_per_bit=\"%0.*f\"/>\n",
+                                           precision, this->power.sram.transistorsPerBit );
+      spaceLen -= 3;
+      printHandler.Write( pfile, spaceLen, "</power>\n" );
+   }
+
+   this->clockList.Print( pfile, spaceLen );
+
    spaceLen -= 3;
    printHandler.Write( pfile, spaceLen, "</config>\n" );
 }
@@ -279,6 +332,7 @@ void TAS_Config_c::Print(
 //---------------------------------------------------------------------------//
 // Version history
 // 05/15/12 jeffr : Original
+// 07/17/13 jeffr : Added TAS_ConfigPower_c and TAS_ConfigClock_c support
 //===========================================================================//
 void TAS_Config_c::PrintXML( 
       void ) const
@@ -338,4 +392,33 @@ void TAS_Config_c::PrintXML(
 
    spaceLen -= 3;
    printHandler.Write( pfile, spaceLen, "</device>\n" );
+
+   if( TCTF_IsGT( this->power.interconnect.capWire, 0.0 ) ||
+       TCTF_IsGT( this->power.interconnect.factor, 0.0 ) ||
+       TCTF_IsGT( this->power.buffers.logicalEffortFactor, 0.0 ) ||
+       TCTF_IsGT( this->power.sram.transistorsPerBit, 0.0 ))
+   {
+      printHandler.Write( pfile, spaceLen, "<power>\n" );
+      spaceLen += 3;
+
+      printHandler.Write( pfile, spaceLen, "<local_interconnect C_wire=\"%0.*e\" factor=\"%0.*f\"/>\n",
+                                           precision + 1, this->power.interconnect.capWire,
+                                           precision, this->power.interconnect.factor );
+      printHandler.Write( pfile, spaceLen, "<buffers logical_effort_factor=\"%0.*f\"/>\n",
+                                           precision, this->power.buffers.logicalEffortFactor );
+      printHandler.Write( pfile, spaceLen, "<sram transistors_per_bit=\"%0.*f\"/>\n",
+                                           precision, this->power.sram.transistorsPerBit );
+      spaceLen -= 3;
+      printHandler.Write( pfile, spaceLen, "</power>\n" );
+   }
+
+   if( this->clockList.IsValid( ))
+   {
+      printHandler.Write( pfile, spaceLen, "<clocks>\n" );
+      for( size_t i = 0; i < this->clockList.GetLength( ); ++i )
+      {
+         this->clockList[i]->PrintXML( pfile, spaceLen + 3 );
+      }
+      printHandler.Write( pfile, spaceLen, "</clocks>\n" );
+   }
 }
