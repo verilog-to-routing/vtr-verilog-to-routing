@@ -53,7 +53,7 @@ public:
                 int* pvpr_logicalBlockCount,
                 int* pvpr_primaryInputCount,
                 int* pvpr_primaryOutputCount,
-                bool deleteInvalidData ) const;
+                bool deleteInvalidData = true ) const;
    
    void Import( const t_arch* vpr_architecture,
                 t_net* vpr_netArray,
@@ -62,7 +62,8 @@ public:
                 int vpr_blockCount,
                 const t_logical_block* vpr_logicalBlockArray,
                 const t_rr_node* vpr_rrNodeArray,
-                TCD_CircuitDesign_c* pcircuitDesign ) const;
+                TCD_CircuitDesign_c* pcircuitDesign,
+                bool tiClayResyncNets = true ) const;
 
 private:
 
@@ -213,7 +214,8 @@ private:
                       int vpr_blockCount,
                       const t_logical_block* vpr_logicalBlockArray,
                       const t_rr_node* vpr_rrNodeArray,
-                      TNO_NetList_c* pnetList ) const;
+                      TNO_NetList_c* pnetList,
+                      bool tiClayResyncNets = true ) const;
 
    bool ValidateModelList_( const TLO_CellList_t& cellList,
                             const t_model* pvpr_customModels ) const;
@@ -221,7 +223,7 @@ private:
                              const TLO_CellList_t& cellList ) const;
    bool ValidateInstList_( TPO_InstList_t* pinstList,
                            const TLO_CellList_t& cellList,
-                           bool deleteInvalidInsts ) const;
+                           bool deleteInvalidInsts = true ) const;
    
    int AddVpackNet_( const char* pszNetName,
                      int pinType, 
@@ -272,7 +274,8 @@ private:
                                const t_block* vpr_blockArray,
                                int vpr_blockCount,
                                const t_rr_node* vpr_rrNodeArray,
-                               TNO_NetList_c* pnetList ) const;
+                               TNO_NetList_c* pnetList,
+                               bool tiClayResyncNets = true ) const;
    void ExtractNetRoutes_( const t_block* vpr_blockArray,
                            const t_rr_node* vpr_rrNodeArray,
                            t_trace* pvpr_traceList,
