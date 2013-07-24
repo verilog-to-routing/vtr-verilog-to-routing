@@ -27,7 +27,7 @@
 //---------------------------------------------------------------------------//
 
 #define TIO_SZ_PROGRAM_MAJOR "1"
-#define TIO_SZ_PROGRAM_MINOR "712"
+#define TIO_SZ_PROGRAM_MINOR "723"
 #define TIO_SZ_PROGRAM_PATCH "0"
 
 #if defined( SUN8 )
