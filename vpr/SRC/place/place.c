@@ -642,9 +642,22 @@ void try_place(struct s_placer_opts placer_opts,
 
 #ifndef SPEC
 		critical_path_delay = get_critical_path_delay();
-		vpr_printf_info("%7.5f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
-				oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, stats.av_delay_cost, place_delay_value, 
-				critical_path_delay, success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
+		if(oldt >= 100.0 - EPSILON) {
+			vpr_printf_info("%7.3f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
+					oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
+					stats.av_delay_cost, place_delay_value, critical_path_delay, 
+					success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
+		} else if(oldt >= 10.0 - EPSILON) {
+			vpr_printf_info("%7.4f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
+					oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
+					stats.av_delay_cost, place_delay_value, critical_path_delay, 
+					success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
+		} else {
+			vpr_printf_info("%7.5f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
+					oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
+					stats.av_delay_cost, place_delay_value, critical_path_delay, 
+					success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
+		}
 #endif
 
 		sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
