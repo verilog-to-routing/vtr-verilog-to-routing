@@ -24,6 +24,7 @@
 //---------------------------------------------------------------------------//
 
 #include "TC_MinGrid.h"
+#include "TCT_Generic.h"
 
 #include "TIO_PrintHandler.h"
 
@@ -50,6 +51,7 @@ TOS_PackOptions_c::TOS_PackOptions_c(
       costMode( TOS_PACK_COST_UNDEFINED ),
       fixedDelay( 0.0 )
 {
+   this->power.enable = false;
 }
 
 //===========================================================================//
@@ -61,7 +63,8 @@ TOS_PackOptions_c::TOS_PackOptions_c(
       TOS_PackAffinityMode_t    affinityMode_,
       unsigned int              blockSize_,
       unsigned int              lutSize_,
-      TOS_PackCostMode_t        costMode_ )
+      TOS_PackCostMode_t        costMode_,
+      bool                      power_enable_ )
       :
       algorithmMode( algorithmMode_ ),
       clusterNetsMode( clusterNetsMode_ ),
@@ -73,6 +76,7 @@ TOS_PackOptions_c::TOS_PackOptions_c(
       costMode( costMode_ ),
       fixedDelay( 0.0 )
 {
+   this->power.enable = power_enable_;
 }
 
 //===========================================================================//
@@ -110,11 +114,42 @@ void TOS_PackOptions_c::Print(
    TOS_ExtractStringPackCostMode( this->costMode, &srCostMode );
 
    printHandler.Write( pfile, spaceLen, "PACK_ALGORITHM             = %s\n", TIO_SR_STR( srAlgorithmMode ));
-   printHandler.Write( pfile, spaceLen, "PACK_AAPACK_CLUSTER_NETS   = %s\n", TIO_SR_STR( srClusterNetsMode ));
-   printHandler.Write( pfile, spaceLen, "PACK_AAPACK_AREA_WEIGHT    = %0.*f\n", precision, this->areaWeight );
-   printHandler.Write( pfile, spaceLen, "PACK_AAPACK_NETS_WEIGHT    = %0.*f\n", precision, this->netsWeight );
-   printHandler.Write( pfile, spaceLen, "PACK_AAPACK_AFFINITY       = %s\n", TIO_SR_STR( srAffinityMode ));
-   printHandler.Write( pfile, spaceLen, "PACK_BLOCK_SIZE            = %lu\n", this->blockSize );
-   printHandler.Write( pfile, spaceLen, "PACK_LUT_SIZE              = %lu\n", this->lutSize );
+   if( this->clusterNetsMode != TOS_PACK_CLUSTER_NETS_UNDEFINED )
+   {
+      printHandler.Write( pfile, spaceLen, "PACK_AAPACK_CLUSTER_NETS   = %s\n", TIO_SR_STR( srClusterNetsMode ));
+   }
+   else
+   {
+      printHandler.Write( pfile, spaceLen, "// PACK_AAPACK_CLUSTER_NETS\n" );
+   }
+   if( TCTF_IsGT( this->areaWeight, 0.0 ))
+   {
+      printHandler.Write( pfile, spaceLen, "PACK_AAPACK_AREA_WEIGHT    = %0.*f\n", precision, this->areaWeight );
+   }
+   else
+   {
+      printHandler.Write( pfile, spaceLen, "// PACK_AAPACK_AREA_WEIGHT\n" );
+   }
+   if( TCTF_IsGT( this->netsWeight, 0.0 ))
+   {
+      printHandler.Write( pfile, spaceLen, "PACK_AAPACK_NETS_WEIGHT    = %0.*f\n", precision, this->netsWeight );
+   }
+   else
+   {
+      printHandler.Write( pfile, spaceLen, "// PACK_AAPACK_NETS_WEIGHT\n" );
+   }
+   if( this->affinityMode != TOS_PACK_AFFINITY_UNDEFINED )
+   {
+      printHandler.Write( pfile, spaceLen, "PACK_AAPACK_AFFINITY       = %s\n", TIO_SR_STR( srAffinityMode ));
+   }
+   else
+   {
+      printHandler.Write( pfile, spaceLen, "// PACK_AAPACK_AFFINITY\n" );
+   }
+   // printHandler.Write( pfile, spaceLen, "PACK_BLOCK_SIZE            = %lu\n", this->blockSize );
+   // printHandler.Write( pfile, spaceLen, "PACK_LUT_SIZE              = %lu\n", this->lutSize );
    printHandler.Write( pfile, spaceLen, "PACK_COST_MODE             = %s\n", TIO_SR_STR( srCostMode ));
+
+   printHandler.Write( pfile, spaceLen, "\n" );
+   printHandler.Write( pfile, spaceLen, "PACK_POWER_ENABLE          = %s\n", TIO_BOOL_STR( this->power.enable ));
 }
