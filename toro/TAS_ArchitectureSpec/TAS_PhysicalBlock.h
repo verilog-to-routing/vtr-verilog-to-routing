@@ -51,6 +51,7 @@ using namespace std;
 #include "TAS_PinAssign.h"
 #include "TAS_GridAssign.h"
 #include "TAS_TimingDelayLists.h"
+#include "TAS_Power.h"
 
 //===========================================================================//
 // Purpose        : Class declaration
@@ -58,6 +59,7 @@ using namespace std;
 //---------------------------------------------------------------------------//
 // Version history
 // 05/15/12 jeffr : Original
+// 07/17/13 jeffr : Added TAS_Power_c member support
 //===========================================================================//
 class TAS_PhysicalBlock_c
 {
@@ -150,6 +152,8 @@ public:
    TAS_GridAssignList_t gridAssignList; 
                              // Defines block column assignments (optional)
                              // Applies to top-level blocks only
+
+   TAS_Power_c power;        // Optional block power constants
 
    class TAS_PhysicalBlockSorted_c
    {
