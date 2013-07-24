@@ -114,10 +114,6 @@ using namespace std;
 #token RMETAL           "[Rr][Mm][Ee][Tt][Aa][Ll]"
 #token CMETAL           "[Cc][Mm][Ee][Tt][Aa][Ll]"
 
-#token MUX              "[Mm][Uu][Xx]"
-#token WIRE_SWITCH      "[Ww][Ii][Rr][Ee][_][Ss][Ww][Ii][Tt][Cc][Hh]"
-#token OPIN_SWITCH      "[Oo][Pp][Ii][Nn][_][Ss][Ww][Ii][Tt][Cc][Hh]"
-
 #token R                "[Rr]"
 #token C                "[Cc]"
 #token CIN              "[Cc][Ii][Nn]"
@@ -125,6 +121,39 @@ using namespace std;
 #token TDEL             "[Tt][Dd][Ee][Ll]"
 #token BUF_SIZE         "[Bb][Uu][Ff][_][Ss][Ii][Zz][Ee]"
 #token MUX_TRANS_SIZE   "[Mm][Uu][Xx][_][Tt][Rr][Aa][Nn][Ss][_][Ss][Ii][Zz][Ee]"
+#token POWER_BUF_SIZE   "[Pp][Oo][Ww][Ee][Rr][_][Bb][Uu][Ff][_][Ss][Ii][Zz][Ee]"
+
+#token MUX              "[Mm][Uu][Xx]"
+#token WIRE_SWITCH      "[Ww][Ii][Rr][Ee][_][Ss][Ww][Ii][Tt][Cc][Hh]"
+#token OPIN_SWITCH      "[Oo][Pp][Ii][Nn][_][Ss][Ww][Ii][Tt][Cc][Hh]"
+
+#token POWER            "[Pp][Oo][Ww][Ee][Rr]"
+#token BUFFER           "[Bb][Uu][Ff][Ff][Ee][Rr]{[Ss]}"
+#token SRAM             "[Ss][Rr][Aa][Mm]"
+#token CAP_WIRE         "[Cc]{[Aa][Pp]}[_][Ww][Ii][Rr][Ee]"
+#token FACTOR           "[Ff][Aa][Cc][Tt][Oo][Rr]"
+#token LOGICAL_EFFORT   "[Ll][Oo][Gg][Ii][Cc][Aa][Ll][_][Ee][Ff][Ff][Oo][Rr][Tt]{[_][Ff][Aa][Cc][Tt][Oo][Rr]}"
+#token TRANS_PER_BIT    "[Tt][Rr][Aa][Nn][Ss]{[Ii][Ss][Tt][Oo][Rr][Ss]}[_][Pp][Ee][Rr][_][Bb][Ii][Tt]"
+
+#token CLOCKS           "[Cc][Ll][Oo][Cc][Kk][Ss]"
+#token BUFFER_SIZE      "[Bb][Uu][Ff][Ff][Ee][Rr][_][Ss][Ii][Zz][Ee]"
+
+#token METHOD           "[Mm][Ee][Tt][Hh][Oo][Dd]"
+#token STATIC_POWER     "[Ss][Tt][Aa][Tt][Ii][Cc][_][Pp][Oo][Ww][Ee][Rr]"
+#token DYNAMIC_POWER    "[Dd][Yy][Nn][Aa][Mm][Ii][Cc][_][Pp][Oo][Ww][Ee][Rr]"
+#token POWER_PER_INST   "[Pp][Oo][Ww][Ee][Rr][_][Pp][Ee][Rr][_][Ii][Nn][Ss][Tt]{[Aa][Nn][Cc][Ee]}"
+#token CAP_INTERNAL     "[Cc]{[Aa][Pp]}[_][Ii][Nn][Tt][Ee][Rr][Nn][Aa][Ll]"
+#token ENERGY_PER_TOGGLE
+                        "[Ee][Nn][Ee][Rr][Gg][Yy][_][Pp][Ee][Rr][_][Tt][Oo][Gg][Gg][Ll][Ee]"
+#token SCALED_BY_STATIC_PROB
+                        "[Ss][Cc][Aa][Ll][Ee][Dd][_][Bb][Yy][_][Ss][Tt][Aa][Tt][Ii][Cc][_][Pp][Rr][Oo][Bb]"
+#token SCALED_BY_STATIC_PROB_N
+                        "[Ss][Cc][Aa][Ll][Ee][Dd][_][Bb][Yy][_][Ss][Tt][Aa][Tt][Ii][Cc][_][Pp][Rr][Oo][Bb][_][Nn]"
+
+#token WIRE_CAP         "[Ww][Ii][Rr][Ee][_][Cc]{[Aa][Pp]{[Aa][Cc][Ii][Tt][Aa][Nn][Cc][Ee]}}"
+#token WIRE_REL_LENGTH  "[Ww][Ii][Rr][Ee][_][Rr][Ee][Ll]{[Aa][Tt][Ii][Vv][Ee]}[_][Ll][Ee][Nn][Gg][Tt][Hh]"
+#token WIRE_ABS_LENGTH  "[Ww][Ii][Rr][Ee][_]{[Aa][Bb][Ss]{[Oo][Ll][Uu][Tt][Ee]}[_]}[Ll][Ee][Nn][Gg][Tt][Hh]"
+#token BUFFER_ABS_SIZE  "[Bb][Uu][Ff][Ff][Ee][Rr][_]{[Aa][Bb][Ss]{[Oo][Ll][Uu][Tt][Ee]}[_]}[Ss][Ii][Zz][Ee]"
 
 #token X                "[Xx]"
 #token Y                "[Yy]"
@@ -135,7 +164,7 @@ using namespace std;
 #token PIN              "[Pp][Ii][Nn]"
 #token IS_CLOCK         "[Ii][Ss][_][Cc][Ll][Oo][Cc][Kk]"
 
-#token INTERCONNECT     "[Ii][Nn][Tt][Ee][Rr][Cc][Oo][Nn][Nn][Ee][Cc][Tt]"
+#token INTERCONNECT     "{[Ll][Oo][Cc][Aa][Ll][_]}[Ii][Nn][Tt][Ee][Rr][Cc][Oo][Nn][Nn][Ee][Cc][Tt]"
 
 #token FC               "[Ff][Cc]"
 #token FC_IN            "[Ff][Cc][_][Ii][Nn]"
@@ -242,8 +271,10 @@ start
    : 
    "<" ARCHITECTURE ">"
    (  "<"
-      (  layoutDef[ &this->parchitectureSpec_->config ]
-      |  deviceDef[ &this->parchitectureSpec_->config ]
+      (  configLayoutDef[ &this->parchitectureSpec_->config ]
+      |  configDeviceDef[ &this->parchitectureSpec_->config ]
+      |  configPowerDef[ &this->parchitectureSpec_->config ]
+      |  configClockList[ &this->parchitectureSpec_->config ]
       |  complexBlockList[ &this->parchitectureSpec_->physicalBlockList ]
       |  cellList[ &this->parchitectureSpec_->cellList ]
       |  switchBoxList[ &this->parchitectureSpec_->switchBoxList ]
@@ -256,7 +287,7 @@ start
    ;
 
 //===========================================================================//
-layoutDef[ TAS_Config_c* pconfig ]
+configLayoutDef[ TAS_Config_c* pconfig ]
    :
    LAYOUT
    {  AUTO EQUAL floatNum[ &pconfig->layout.autoSize.aspectRatio ]
@@ -273,7 +304,7 @@ layoutDef[ TAS_Config_c* pconfig ]
    ;
 
 //===========================================================================//
-deviceDef[ TAS_Config_c* pconfig ]
+configDeviceDef[ TAS_Config_c* pconfig ]
    :
    DEVICE ">"
    (  "<"
@@ -306,6 +337,54 @@ deviceDef[ TAS_Config_c* pconfig ]
       )
    )*
    "</" DEVICE ">"
+   ;
+
+//===========================================================================//
+configPowerDef[ TAS_Config_c* pconfig ]
+   :
+   POWER ">"
+   (  "<"
+      (  INTERCONNECT 
+         CAP_WIRE EQUAL expNum[ &pconfig->power.interconnect.capWire ]
+         { FACTOR EQUAL floatNum[ &pconfig->power.interconnect.factor ] }
+         "/>"
+      |  BUFFER 
+         LOGICAL_EFFORT EQUAL floatNum[ &pconfig->power.buffers.logicalEffortFactor ]
+         "/>"
+      |  SRAM 
+         TRANS_PER_BIT EQUAL floatNum[ &pconfig->power.sram.transistorsPerBit ]
+         "/>"
+      )
+   )*
+   "</" POWER ">"
+   ;
+
+//===========================================================================//
+configClockList[ TAS_Config_c* pconfig ]
+   :
+   CLOCKS ">"
+   (  configClockDef[ &pconfig->clockList ] )*
+   "</" CLOCKS ">"
+   ;
+
+//===========================================================================//
+configClockDef[ TAS_ClockList_t* pclockList ]
+   :
+   <<
+      TAS_Clock_c clock;
+   >>
+   "<" CLOCK
+   (  BUFFER_SIZE EQUAL autoBufferSize[ &clock.autoSize,
+                                        &clock.bufferSize ]
+   |  CAP_WIRE EQUAL expNum[ &clock.capWire ]
+   )*
+   "/>"
+   <<
+      if( clock.IsValid( ))
+      {
+         pclockList->Add( clock );
+      }
+   >>
    ;
 
 //===========================================================================//
@@ -375,6 +454,8 @@ switchBoxDef[ TAS_SwitchBoxList_t* pswitchBoxList ]
    |  TDEL EQUAL expNum[ &switchBox.timing.delay ]
    |  BUF_SIZE EQUAL floatNum[ &switchBox.area.buffer ]
    |  MUX_TRANS_SIZE EQUAL floatNum[ &switchBox.area.muxTransistor ]
+   |  POWER_BUF_SIZE EQUAL autoBufferSize[ &switchBox.power.autoSize,
+                                           &switchBox.power.bufferSize ]
    )*
    "/>"
    <<
@@ -508,6 +589,7 @@ pbtypeDef[ TAS_PhysicalBlockList_t* pphysicalBlockList ]
                         &physicalBlock.pinAssignList ] 
       |  gridAssignList[ &physicalBlock.gridAssignList ]
       |  timingDelayLists[ &physicalBlock.timingDelayLists ]  
+      |  powerDef[ &physicalBlock.power ]
       )
    )*
    <<
@@ -571,6 +653,7 @@ inputPortList[ TLO_PortList_t* pportList ]
       string srName;
       string srIsClock;
       TC_TypeMode_t type;
+      TLO_Power_c power;
    >>
    INPUT_PORTS ">"
    (  "<" PORT NAME EQUAL stringText[ &srName ]
@@ -585,9 +668,21 @@ inputPortList[ TLO_PortList_t* pportList ]
             }
          >>
       }
-      "/>"
+      <<
+         power.Clear( );
+      >>
+      (  ">" 
+         portPower[ &power ]
+         "</" PORT ">"
+      |
+        "/>"
+      )
       <<
          TLO_Port_c port( srName, type );
+         if( power.IsValid( ))
+         {
+            port.SetPower( power );
+         }
          pportList->Add( port );
       >>
    )*
@@ -599,16 +694,61 @@ outputPortList[ TLO_PortList_t* pportList ]
    :
    <<
       string srName;
+      TLO_Power_c power;
    >>
    OUTPUT_PORTS ">"
    (  "<" PORT NAME EQUAL stringText[ &srName ] 
-      "/>"
+      <<
+         power.Clear( );
+      >>
+      (  ">" 
+         portPower[ &power ]
+         "</" PORT ">"
+      |
+        "/>"
+      )
       <<
          TLO_Port_c port( srName, TC_TYPE_OUTPUT );
+         if( power.IsValid( ))
+         {
+            port.SetPower( power );
+         }
          pportList->Add( port );
       >>
    )*
    "</" OUTPUT_PORTS ">"
+   ;
+
+//===========================================================================//
+portPower[ TLO_Power_c* ppower ]
+   :
+   <<
+      double wireCap = 0.0;
+      double wireLength = 0.0;
+      double bufferSize = 0.0;
+
+      bool autoLength = false;
+      bool autoSize = false;
+   >>
+   "<" POWER
+   (  WIRE_CAP EQUAL floatNum[ &wireCap ]
+      <<
+         ppower->SetWire( TLO_POWER_TYPE_CAP, wireCap, 0.0, 0.0 );
+      >>
+   |  WIRE_REL_LENGTH EQUAL floatNum[ &wireLength ]
+      <<
+         ppower->SetWire( TLO_POWER_TYPE_RELATIVE_LENGTH, 0.0, wireLength, 0.0 );
+      >>
+   |  WIRE_ABS_LENGTH EQUAL autoWireLength[ &autoLength, &wireLength ]
+      <<
+         ppower->SetWire( TLO_POWER_TYPE_ABSOLUTE_LENGTH, 0.0, 0.0, wireLength );
+      >>
+   |  ( BUFFER_SIZE | BUFFER_ABS_SIZE ) EQUAL autoBufferSize[ &autoSize, &bufferSize ]
+      <<
+         ppower->SetBuffer( TLO_POWER_TYPE_ABSOLUTE_SIZE, bufferSize );
+      >>
+   )+
+   "/>"
    ;
 
 //===========================================================================//
@@ -981,8 +1121,8 @@ timingValueMatrixDef[ TAS_TimingValueMatrix_t* pvalueMatrix ]
       <<
          valueList.Add( value );
 
-         curTokenLine = LT( 0 )->getLine( );
-         nextTokenLine = LT( 1 )->getLine( );
+         curTokenLine = ( LT( 0 ) ? LT( 0 )->getLine( ) : 0 );
+         nextTokenLine = ( LT( 1 ) ? LT( 1 )->getLine( ) : 0 );
          if( curTokenLine != nextTokenLine )
          {
             valueTable.Add( valueList );
@@ -1013,6 +1153,67 @@ timingValueMatrixDef[ TAS_TimingValueMatrix_t* pvalueMatrix ]
          }
       }
    >>
+   ;
+
+//===========================================================================//
+powerDef[ TAS_Power_c* ppower ]
+   : 
+   <<
+      TLO_Port_c port;
+      string srName;
+
+      TLO_Power_c power;
+      double energyPerToggle;
+      bool scaledByStaticProb;
+      bool scaledByStaticProb_n;
+   >>
+   POWER
+   METHOD EQUAL powerMethodMode[ &ppower->estimateMethod ]
+   {  ">"
+      (  "<" 
+         (  STATIC_POWER 
+
+            (  POWER_PER_INST EQUAL floatNum[ &ppower->staticPower.absolute ]
+            )+
+            "/>"
+         |  DYNAMIC_POWER 
+            (  POWER_PER_INST EQUAL floatNum[ &ppower->dynamicPower.absolute ]
+            |  CAP_INTERNAL EQUAL floatNum[ &ppower->dynamicPower.capInternal ]
+            )+
+            "/>"
+         |  PORT
+            <<
+               port.Clear( );
+               srName = "";
+
+               power.Clear( );
+               energyPerToggle = 0.0;
+               scaledByStaticProb = false;
+               scaledByStaticProb_n = false;
+            >>
+            NAME EQUAL stringText[ &srName ]
+            ENERGY_PER_TOGGLE EQUAL floatNum[ &energyPerToggle ]
+            (  SCALED_BY_STATIC_PROB
+               <<
+                  scaledByStaticProb = true;
+               >>
+            |  SCALED_BY_STATIC_PROB_N
+               <<
+                  scaledByStaticProb_n = true;
+               >>
+            )*
+            <<
+               power.SetPinToggle( true, energyPerToggle, scaledByStaticProb, scaledByStaticProb_n );
+
+               port.SetName( srName );
+               port.SetPower( power );
+               ppower->portList.Add( port );
+            >>
+            "/>"
+         )
+      )+
+   }
+   ( "/>" | "</" POWER ">" )
    ;
 
 //===========================================================================//
@@ -1336,6 +1537,114 @@ gridAssignDistrMode[ TAS_GridAssignDistrMode_t* pdistrMode ]
          this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
                                          this->srFileName_,
                                          ": Invalid mode, expected \"col\", \"rel\", \"fill\", or \"perimeter\"" );
+         this->consumeUntilToken( END_OF_FILE );
+      }
+   >>
+   ;
+
+//===========================================================================//
+autoWireLength[ bool* pautoLength,
+                double* pwireLength ]
+   :
+   <<
+      *pautoLength = false;
+      *pwireLength = 0.0;
+
+      string srWireLength;
+   >>
+   stringText[ &srWireLength ]
+   <<
+      if( TC_stricmp( srWireLength.data( ), "auto" ) == 0 )
+      {
+         *pautoLength = true;
+      }
+      else
+      {
+         *pwireLength = atof( srWireLength.data( ));
+         if( TCTF_IsEQ( *pwireLength, 0.0 ))
+         {
+            this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                            this->srFileName_,
+                                            ": Invalid wire_length, expected \"auto\" or a floating point value" );
+            this->consumeUntilToken( END_OF_FILE );
+         }
+      }
+   >>
+   ;
+
+//===========================================================================//
+autoBufferSize[ bool* pautoSize,
+                double* pbufferSize ]
+   :
+   <<
+      *pautoSize = false;
+      *pbufferSize = 0.0;
+
+      string srBufferSize;
+   >>
+   stringText[ &srBufferSize ]
+   <<
+      if( TC_stricmp( srBufferSize.data( ), "auto" ) == 0 )
+      {
+         *pautoSize = true;
+      }
+      else
+      {
+         *pbufferSize = atof( srBufferSize.data( ));
+         if( TCTF_IsEQ( *pbufferSize, 0.0 ))
+         {
+            this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                            this->srFileName_,
+                                            ": Invalid buffer_size, expected \"auto\" or a floating point value" );
+            this->consumeUntilToken( END_OF_FILE );
+         }
+      }
+   >>
+   ;
+
+//===========================================================================//
+powerMethodMode[ TAS_PowerMethodMode_t* pmethodMode ]
+   :
+   <<
+      string srMethodMode;
+   >>
+   stringText[ &srMethodMode ]
+   <<
+      if( TC_stricmp( srMethodMode.data( ), "ignore" ) == 0 )
+      {
+         *pmethodMode = TAS_POWER_METHOD_IGNORE;
+      }
+      else if( TC_stricmp( srMethodMode.data( ), "sum-of-children" ) == 0 )
+      {
+         *pmethodMode = TAS_POWER_METHOD_SUM_OF_CHILDREN;
+      }
+      else if( TC_stricmp( srMethodMode.data( ), "auto-size" ) == 0 )
+      {
+         *pmethodMode = TAS_POWER_METHOD_AUTO_SIZES;
+      }
+      else if( TC_stricmp( srMethodMode.data( ), "specify-size" ) == 0 )
+      {
+         *pmethodMode = TAS_POWER_METHOD_SPECIFY_SIZES;
+      }
+      else if( TC_stricmp( srMethodMode.data( ), "pin-toggle" ) == 0 )
+      {
+         *pmethodMode = TAS_POWER_METHOD_PIN_TOGGLE;
+      }
+      else if( TC_stricmp( srMethodMode.data( ), "c-internal" ) == 0 )
+      {
+         *pmethodMode = TAS_POWER_METHOD_CAP_INTERNAL;
+      }
+      else if( TC_stricmp( srMethodMode.data( ), "absolute" ) == 0 )
+      {
+         *pmethodMode = TAS_POWER_METHOD_ABSOLUTE;
+      }
+      else
+      {
+         *pmethodMode = TAS_POWER_METHOD_UNDEFINED;
+
+         this->pinterface_->SyntaxError( LT( 0 )->getLine( ),
+                                         this->srFileName_,
+                                         ": Invalid mode, expected \"ignore\", \"sum-of-children\", \"auto-size\", \"specify-size\", \"pin-toggle\", \"c-internal\", or \"absolute\"" );
          this->consumeUntilToken( END_OF_FILE );
       }
    >>
