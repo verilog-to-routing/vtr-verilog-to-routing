@@ -97,7 +97,7 @@ enum e_pin_to_pin_pack_pattern_annotations {
 };
 
 /* Power Estimation type for a PB */
-typedef enum e_power_estimation_method {
+enum e_power_estimation_method {
 	POWER_METHOD_UNDEFINED = 0,
 	POWER_METHOD_IGNORE,			/* Ignore power of this PB, and all children PB */
 	POWER_METHOD_SUM_OF_CHILDREN,	/* Ignore power of this PB, but consider children */
