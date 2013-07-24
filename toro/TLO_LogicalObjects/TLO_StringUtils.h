@@ -34,7 +34,8 @@ using namespace std;
 // Version history
 // 05/15/12 jeffr : Original
 //===========================================================================//
-
-void TLO_ExtractStringCellSource( TLO_CellSource_t source, string* psrSource );
-
+void TLO_ExtractStringCellSource( TLO_CellSource_t cellSource, 
+                                  string* psrCellSource );
+void TLO_ExtractStringPowerType( TLO_PowerType_t powerType, 
+                                 string* psrPowerType );
 #endif
