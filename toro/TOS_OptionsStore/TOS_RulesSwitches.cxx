@@ -137,35 +137,36 @@ void TOS_RulesSwitches_c::Init(
    this->fabricOptions.channels.override = false;
 
    this->packOptions.algorithmMode = TOS_PACK_ALGORITHM_AAPACK;
-   this->packOptions.clusterNetsMode = TOS_PACK_CLUSTER_NETS_MIN_CONNECTIONS;
-   this->packOptions.areaWeight = 0.75;
-   this->packOptions.netsWeight = 0.9;
-   this->packOptions.affinityMode = TOS_PACK_AFFINITY_ANY;
+   this->packOptions.clusterNetsMode = TOS_PACK_CLUSTER_NETS_UNDEFINED; // VPR default = TOS_PACK_CLUSTER_NETS_MIN_CONNECTIONS
+   this->packOptions.areaWeight = 0.0;                                  // VPR default = 0.75
+   this->packOptions.netsWeight = 0.0;                                  // VPR default = 0.9
+   this->packOptions.affinityMode = TOS_PACK_AFFINITY_UNDEFINED;        // VPR default = TOS_PACK_AFFINITY_NONE
    this->packOptions.blockSize = 1;
    this->packOptions.lutSize = 4;
    this->packOptions.costMode = TOS_PACK_COST_TIMING_DRIVEN;
    this->packOptions.fixedDelay = 0.0;
+   this->packOptions.power.enable = false;
 
    this->placeOptions.algorithmMode = TOS_PLACE_ALGORITHM_ANNEALING;
-   this->placeOptions.channelWidth = 100;
-   this->placeOptions.randomSeed = 1;
-   this->placeOptions.initTemp = 0.0;
+   this->placeOptions.channelWidth = 0;                                 // VPR default = 100
+   this->placeOptions.randomSeed = 0;                                   // VPR default = 1
+   this->placeOptions.initTemp = 0.0;                                   // VPR default = 100.0
    this->placeOptions.initTempFactor = 20.0;
    this->placeOptions.initTempEpsilon = 20.0;
-   this->placeOptions.exitTemp = 0.0;
+   this->placeOptions.exitTemp = 0.0;                                   // VPR default = 0.01
    this->placeOptions.exitTempFactor = 0.005;
    this->placeOptions.exitTempEpsilon = 0.005;
-   this->placeOptions.reduceTemp = 0.0;
+   this->placeOptions.reduceTemp = 0.0;                                 // VPR default = 0.8
    this->placeOptions.reduceTempFactor = 0.44;
-   this->placeOptions.innerNum = 10.0;
-   this->placeOptions.searchLimit = 0.44;
+   this->placeOptions.innerNum = 0.0;                                   // VPR default = 1.0
+   this->placeOptions.searchLimit = 0.0;                                // VPR default = 0.44
    this->placeOptions.costMode = TOS_PLACE_COST_PATH_TIMING_DRIVEN;
    this->placeOptions.fixedDelay = 0.0;
-   this->placeOptions.timingCostFactor = 0.5;
-   this->placeOptions.timingUpdateInt = 1;
-   this->placeOptions.timingUpdateCount = 0;
-   this->placeOptions.slackInitWeight = 1.0;
-   this->placeOptions.slackFinalWeight = 8.0;
+   this->placeOptions.timingCostFactor = 0.0;                           // VPR default = 0.5
+   this->placeOptions.timingUpdateInt = 0;                              // VPR default = 1
+   this->placeOptions.timingUpdateCount = 0;                            // VPR default = 0
+   this->placeOptions.slackInitWeight = 0.0;                            // VPR default = 1.0
+   this->placeOptions.slackFinalWeight = 0.0;                           // VPR default = 8.0
    this->placeOptions.relativePlace.enable = false;
    this->placeOptions.relativePlace.rotateEnable = true;
    this->placeOptions.relativePlace.carryChainEnable = false;
@@ -175,21 +176,21 @@ void TOS_RulesSwitches_c::Init(
 
    this->routeOptions.algorithmMode = TOS_ROUTE_ALGORITHM_PATHFINDER;
    this->routeOptions.abstractMode = TOS_ROUTE_ABSTRACT_DETAILED;
-   this->routeOptions.windowSize = 3;
-   this->routeOptions.channelWidth = 0;
-   this->routeOptions.trimEmptyChannels = true;
-   this->routeOptions.trimObsChannels = true;
-   this->routeOptions.maxIterations = 50;
-   this->routeOptions.histCongestionFactor = 1.0;
-   this->routeOptions.initCongestionFactor = 0.5;
-   this->routeOptions.presentCongestionFactor = 1.3;
-   this->routeOptions.bendCostFactor = 0.0;
-   this->routeOptions.resourceMode = TOS_ROUTE_RESOURCE_DELAY_NORMALIZED;
+   this->routeOptions.windowSize = 0;                                   // VPR default = 3
+   this->routeOptions.channelWidth = 0;                                 // VPR default = 0
+   this->routeOptions.trimEmptyChannels = false;                        // VPR default = true
+   this->routeOptions.trimObsChannels = false;                          // VPR default = true
+   this->routeOptions.maxIterations = 0;                                // VPR default = 50
+   this->routeOptions.histCongestionFactor = 0.0;                       // VPR default = 1.0
+   this->routeOptions.initCongestionFactor = 0.0;                       // VPR default = 0.5
+   this->routeOptions.presentCongestionFactor = 0.0;                    // VPR default = 1.3
+   this->routeOptions.bendCostFactor = 0.0;                             // VPR default = 0.0
+   this->routeOptions.resourceMode = TOS_ROUTE_RESOURCE_UNDEFINED;      // VPR default = TOS_ROUTE_RESOURCE_DELAY_NORMALIZED
    this->routeOptions.costMode = TOS_ROUTE_COST_TIMING_DRIVEN;
    this->routeOptions.fixedDelay = 0.0;
-   this->routeOptions.timingMaxCriticality = 0.99;
-   this->routeOptions.slackCriticality = 1.0;
-   this->routeOptions.timingAStarFactor = 1.2;
+   this->routeOptions.timingMaxCriticality = 0.0;                       // VPR default = 0.99
+   this->routeOptions.slackCriticality = 0.0;                           // VPR default = 1.0
+   this->routeOptions.timingAStarFactor = 0.0;                          // VPR default = 1.2
 
    this->routeOptions.preRouted.enable = false;
    this->routeOptions.preRouted.orderMode = TOS_ROUTE_ORDER_FIRST;
