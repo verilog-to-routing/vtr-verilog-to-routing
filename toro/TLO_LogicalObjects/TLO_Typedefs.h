@@ -51,6 +51,26 @@ class TLO_Port_c; // Forward declaration for subsequent class typedefs
 typedef TCT_SortedNameDynamicVector_c< TLO_Port_c > TLO_PortList_t;
 
 //---------------------------------------------------------------------------//
+// Define power constants and typedefs
+//---------------------------------------------------------------------------//
+
+class TLO_Power_c; // Forward declaration for subsequent class typedefs
+typedef TCT_OrderedVector_c< TLO_Power_c > TLO_PowerList_t;
+
+enum TLO_PowerType_e
+{
+   TLO_POWER_TYPE_UNDEFINED = 0,
+   TLO_POWER_TYPE_IGNORED,
+   TLO_POWER_TYPE_NONE,
+   TLO_POWER_TYPE_AUTO,
+   TLO_POWER_TYPE_CAP,
+   TLO_POWER_TYPE_RELATIVE_LENGTH,
+   TLO_POWER_TYPE_ABSOLUTE_LENGTH,
+   TLO_POWER_TYPE_ABSOLUTE_SIZE
+};
+typedef TLO_PowerType_e TLO_PowerType_t;
+
+//---------------------------------------------------------------------------//
 // Define pin constants and typedefs
 //---------------------------------------------------------------------------//
 
