@@ -27,6 +27,7 @@
 //           - InitValidateSegment_
 //           - InitValidateCellList_
 //           - InitValidateCell_
+//           - FindPhysicalBlockHier_
 //           - HasPhysicalBlockUsage_
 //
 //===========================================================================//
@@ -320,12 +321,12 @@ void TAS_ArchitectureSpec_c::PrintXML(
    }
    if( this->carryChainList.IsValid( ))
    {
-      printHandler.Write( pfile, spaceLen, "<carrychainlist>\n" );
+      printHandler.Write( pfile, spaceLen, "<directlist>\n" );
       for( size_t i = 0; i < this->carryChainList.GetLength( ); ++i )
       {
          this->carryChainList[i]->PrintXML( pfile, spaceLen + 3 );
       }
-      printHandler.Write( pfile, spaceLen, "</carrychainlist>\n" );
+      printHandler.Write( pfile, spaceLen, "</directlist>\n" );
    }
 
    spaceLen -= 3;
@@ -526,14 +527,21 @@ bool TAS_ArchitectureSpec_c::InitDefaultsBlockHier_(
       {
          // Get 1st (ie. next) physical block and delete from list
          const TAS_PhysicalBlock_c& physicalBlock = *physicalBlockList_[0];
-         TAS_PhysicalBlock_c* pphysicalBlock = this->physicalBlockList.Add( physicalBlock );
 
+         TAS_PhysicalBlock_c* pphysicalBlock = 0;
+         if( !this->FindPhysicalBlockHier_( this->physicalBlockList, physicalBlock ))
+         {
+            pphysicalBlock = this->physicalBlockList.Add( physicalBlock );
+         }
          physicalBlockList_.Delete( 0 );
 
          // Recursively iterate to add mode and physical block hierarchy
-         ok = this->InitDefaultsBlockHier_( &physicalBlockList_, pphysicalBlock );
-         if( !ok ) 
-            break;
+         if( pphysicalBlock )
+         {
+            ok = this->InitDefaultsBlockHier_( &physicalBlockList_, pphysicalBlock );
+            if( !ok ) 
+               break;
+         }
       }
    }
    return( ok );
@@ -1308,6 +1316,49 @@ bool TAS_ArchitectureSpec_c::InitValidateCell_(
                                TIO_PSZ_STR( cell.GetName( )));
    }
    return( ok );
+}
+
+//===========================================================================//
+// Method         : FindPhysicalBlockHier_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 07/24/13 jeffr : Original
+//===========================================================================//
+TAS_PhysicalBlock_c* TAS_ArchitectureSpec_c::FindPhysicalBlockHier_( 
+      const TAS_PhysicalBlockList_t& physicalBlockList,
+      const TAS_PhysicalBlock_c&     physicalBlock ) const
+{
+   TAS_PhysicalBlock_c* pfoundBlock = 0;
+
+   for( size_t i = 0; i < physicalBlockList.GetLength( ); ++i )
+   {
+      TAS_PhysicalBlock_c* pphysicalBlock = physicalBlockList[i];
+      if( physicalBlock == *pphysicalBlock )
+      {
+         pfoundBlock = pphysicalBlock;
+         break;
+      }
+      else
+      {
+         for( size_t j = 0; j < pphysicalBlock->modeList.GetLength( ); ++j )
+         {
+            const TAS_Mode_c mode = *pphysicalBlock->modeList[j];
+            pfoundBlock = this->FindPhysicalBlockHier_( mode.physicalBlockList, 
+                                                        physicalBlock ); 
+            if( pfoundBlock )
+               break;
+         }
+         if( pfoundBlock )
+            break;
+
+         pfoundBlock = this->FindPhysicalBlockHier_( pphysicalBlock->physicalBlockList, 
+                                                     physicalBlock ); 
+         if( pfoundBlock )
+            break;
+      }
+   }
+   return( pfoundBlock );
 }
 
 //===========================================================================//
