@@ -6,8 +6,10 @@
 //           - Export
 //
 //           Private methods include:
-//           - PokeLayout_
-//           - PokeDevice_
+//           - PokeConfigLayout_
+//           - PokeConfigDevice_
+//           - PokeConfigPower_
+//           - PokeConfigClocks_
 //           - PokeModelLists_
 //           - PokeModel_
 //           - PokePhysicalBlockList_
@@ -32,6 +34,9 @@
 //           - PokePort_
 //           - PokeTimingDelayLists_
 //           - PokeTimingDelay_
+//           - PokePower_
+//           - PokePowerPortList_
+//           - PokePowerPort_
 //           - InitModels_
 //           - InitPbType_
 //           - ValidateModels_
@@ -44,7 +49,8 @@
 //           - FindSwitchBoxModelType_
 //           - FindSegmentDirType_
 //           - FindSegmentBitPattern_
-//           - FindChannelDistrMode_
+//           - FindPowerMethodMode_
+//           - InheritPowerMethodMode_
 //
 //===========================================================================//
 
@@ -105,13 +111,17 @@ TVPR_ArchitectureSpec_c::~TVPR_ArchitectureSpec_c(
 // Version history
 // 07/10/12 jeffr : Original
 // 07/10/13 jeffr : Added support for "PokeCarryChainList_()" method
+// 07/23/13 jeffr : Added support for "PokeConfigPower_()" method
+// 07/23/13 jeffr : Added support for "PokeConfigClock_()" method
 //===========================================================================//
 bool TVPR_ArchitectureSpec_c::Export(
       const TAS_ArchitectureSpec_c& architectureSpec,
             t_arch*                 pvpr_architecture,
             t_type_descriptor**     pvpr_physicalBlockArray,
             int*                    pvpr_physicalBlockCount,
-            bool                    isTimingEnabled ) const
+            bool                    isTimingEnabled,
+            bool                    isPowerEnabled,
+            bool                    isClocksEnabled ) const
 {
    bool ok = true;
 
@@ -122,11 +132,17 @@ bool TVPR_ArchitectureSpec_c::Export(
    const TAS_SegmentList_t& segmentList = architectureSpec.segmentList;
    const TAS_CarryChainList_t& carryChainList = architectureSpec.carryChainList;
 
-   this->PokeLayout_( config, 
-                      pvpr_architecture );
-   this->PokeDevice_( config, 
-                      pvpr_architecture, 
-                      isTimingEnabled );
+   this->PokeConfigLayout_( config, 
+                            pvpr_architecture );
+   this->PokeConfigDevice_( config, 
+                            pvpr_architecture, 
+                            isTimingEnabled );
+   this->PokeConfigPower_( config,
+                           pvpr_architecture,
+                           isPowerEnabled );
+   this->PokeConfigClocks_( config,
+                            pvpr_architecture,
+                            isClocksEnabled );
    if( ok )
    {
       this->PokeModelLists_( cellList, 
@@ -171,13 +187,13 @@ bool TVPR_ArchitectureSpec_c::Export(
 }
 
 //===========================================================================//
-// Method         : PokeLayout_
+// Method         : PokeConfigLayout_
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
 // 07/10/12 jeffr : Original
 //===========================================================================//
-void TVPR_ArchitectureSpec_c::PokeLayout_( 
+void TVPR_ArchitectureSpec_c::PokeConfigLayout_( 
       const TAS_Config_c& config,
             t_arch*       pvpr_architecture ) const
 {
@@ -201,13 +217,13 @@ void TVPR_ArchitectureSpec_c::PokeLayout_(
 }
 
 //===========================================================================//
-// Method         : PokeDevice_
+// Method         : PokeConfigDevice_
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
 // 07/10/12 jeffr : Original
 //===========================================================================//
-void TVPR_ArchitectureSpec_c::PokeDevice_( 
+void TVPR_ArchitectureSpec_c::PokeConfigDevice_( 
       const TAS_Config_c& config,
             t_arch*       pvpr_architecture,
             bool          isTimingEnabled ) const 
@@ -258,6 +274,88 @@ void TVPR_ArchitectureSpec_c::PokeDevice_(
       pvpr_architecture->Chans.chan_y_dist.xpeak = static_cast< float >( config.device.channelWidth.y.xpeak );
       pvpr_architecture->Chans.chan_y_dist.dc = static_cast< float >( config.device.channelWidth.y.dc );
       pvpr_architecture->Chans.chan_y_dist.width = static_cast< float >( config.device.channelWidth.y.width );
+   }
+}
+
+//===========================================================================//
+// Method         : PokeConfigPower_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 07/17/13 jeffr : Original
+//===========================================================================//
+void TVPR_ArchitectureSpec_c::PokeConfigPower_( 
+      const TAS_Config_c& config,
+            t_arch*       pvpr_architecture,
+            bool          isPowerEnabled ) const 
+{
+   if( isPowerEnabled )
+   {
+      pvpr_architecture->power = static_cast< t_power_arch* >( TC_calloc( 1, sizeof( t_power_arch )));
+   }
+
+   if( pvpr_architecture->power )
+   {
+      t_power_arch* pvpr_power = pvpr_architecture->power;
+
+      pvpr_power->C_wire_local = 0.0;
+      pvpr_power->local_interc_factor = 0.5;
+      if( TCTF_IsGT( config.power.interconnect.capWire, 0.0 ))
+      {
+         pvpr_power->C_wire_local = config.power.interconnect.capWire;
+         pvpr_power->local_interc_factor = config.power.interconnect.factor;
+      }
+
+      pvpr_power->logical_effort_factor = 4.0;
+      if( TCTF_IsGT( config.power.buffers.logicalEffortFactor, 0.0 ))
+      {
+         pvpr_power->logical_effort_factor = config.power.buffers.logicalEffortFactor;
+      }
+
+      pvpr_power->transistors_per_SRAM_bit = 6.0;
+      if( TCTF_IsGT( config.power.sram.transistorsPerBit, 0.0 ))
+      {
+         pvpr_power->transistors_per_SRAM_bit = config.power.sram.transistorsPerBit;
+      }
+   }
+}
+
+//===========================================================================//
+// Method         : PokeConfigClocks_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 07/17/13 jeffr : Original
+//===========================================================================//
+void TVPR_ArchitectureSpec_c::PokeConfigClocks_( 
+      const TAS_Config_c& config,
+            t_arch*       pvpr_architecture,
+            bool          isClocksEnabled ) const 
+{
+   if( isClocksEnabled )
+   {
+      pvpr_architecture->clocks = static_cast< t_clock_arch* >( TC_calloc( 1, sizeof( t_clock_arch )));
+   }
+
+   if( pvpr_architecture->clocks )
+   {
+      int clockLen = static_cast< int >( config.clockList.GetLength( ));
+      t_clock_network* clockList = 0;
+      if( clockLen )
+      {
+         clockList = static_cast< t_clock_network* >( TC_calloc( clockLen, sizeof( t_clock_network )));
+
+         for( int i = 0; i < clockLen; ++i ) 
+         {
+            const TAS_Clock_c& clock = *config.clockList[i];
+
+            clockList[i].autosize_buffer = static_cast< boolean >( clock.autoSize );
+            clockList[i].buffer_size = static_cast< float >( clock.bufferSize );
+            clockList[i].C_wire = static_cast< float >( clock.capWire );
+         }
+      }
+      pvpr_architecture->clocks->num_global_clocks = clockLen;
+      pvpr_architecture->clocks->clock_inf = clockList;
    }
 }
 
@@ -362,14 +460,14 @@ void TVPR_ArchitectureSpec_c::PokeModel_(
 
          if( port.GetType( ) == TC_TYPE_INPUT )
          {
-            pvpr_modelPort->index = inputIndex;
+            pvpr_modelPort->index = static_cast< int >( inputIndex );
             ++inputIndex;
 
             pvpr_modelPort->is_clock = static_cast< boolean >( false );
          }
          else
          {
-            pvpr_modelPort->index = clockIndex;
+            pvpr_modelPort->index = static_cast< int >( clockIndex );
             ++clockIndex;
 
             pvpr_modelPort->is_clock = static_cast< boolean >( true );
@@ -397,7 +495,7 @@ void TVPR_ArchitectureSpec_c::PokeModel_(
          pvpr_modelPort->dir = OUT_PORT;
          pvpr_modelPort->size = ( cell.GetSource( ) == TLO_CELL_SOURCE_STANDARD ? 1 : -1 );
          pvpr_modelPort->min_size = ( cell.GetSource( ) == TLO_CELL_SOURCE_STANDARD ? 1 : -1 );
-         pvpr_modelPort->index = outputIndex;
+         pvpr_modelPort->index = static_cast< int >( outputIndex );
          ++outputIndex;
 
          if( outputCount < outputTotal )
@@ -474,8 +572,7 @@ bool TVPR_ArchitectureSpec_c::PokePhysicalBlock_(
 
    // [VPR] Poke pb_type info
    pvpr_physicalBlock->pb_type = static_cast< t_pb_type* >( TC_calloc( 1, sizeof( t_pb_type )));
-   this->PokePbType_( physicalBlock, 0, 
-                      pvpr_physicalBlock->pb_type );
+   ok = this->PokePbType_( physicalBlock, 0, pvpr_physicalBlock->pb_type );
 
    pvpr_physicalBlock->pb_type->name = TC_strdup( pvpr_physicalBlock->name );
    pvpr_physicalBlock->num_pins = pvpr_physicalBlock->capacity *
@@ -489,14 +586,14 @@ bool TVPR_ArchitectureSpec_c::PokePhysicalBlock_(
 
    //  [VPR] Poke pin names and classes and locations
    pvpr_physicalBlock->pin_location_distribution = this->FindPinAssignPatternType_( physicalBlock.pinAssignPattern );
-   this->PokePinAssignList_( physicalBlock.pinAssignList, 
-                             pvpr_physicalBlock );
-   this->PokeGridAssignList_( physicalBlock.gridAssignList, 
-                              pvpr_physicalBlock );
+   this->PokePinAssignList_( physicalBlock.pinAssignList, pvpr_physicalBlock );
+   this->PokeGridAssignList_( physicalBlock.gridAssignList, pvpr_physicalBlock );
 
    // [VPR] Poke Fc
-   ok = this->PokeFc_( physicalBlock, 
-                       pvpr_physicalBlock );
+   if( ok )
+   {
+      ok = this->PokeFc_( physicalBlock, pvpr_physicalBlock );
+   }
    return( ok );
 }
 
@@ -567,6 +664,16 @@ bool TVPR_ArchitectureSpec_c::PokeSwitchBoxList_(
          if( isTimingEnabled )
          {
             ( *pvpr_switchBoxArray )[i].Tdel = static_cast< float >( switchBox.timing.delay );
+         }
+
+         if( switchBox.power.autoSize )
+         {
+            ( *pvpr_switchBoxArray )[i].power_buffer_type = POWER_BUFFER_TYPE_AUTO;
+         }
+         else if( TCTF_IsGT( switchBox.power.bufferSize, 0.0 ))
+         {
+            ( *pvpr_switchBoxArray )[i].power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
+            ( *pvpr_switchBoxArray )[i].power_buffer_size = static_cast< float >( switchBox.power.bufferSize );
          }
       }
    }
@@ -732,12 +839,15 @@ bool TVPR_ArchitectureSpec_c::PokeCarryChainList_(
 //---------------------------------------------------------------------------//
 // Version history
 // 07/10/12 jeffr : Original
+// 07/23/13 jeffr : Added support for calling "PokePower_()" method
 //===========================================================================//
-void TVPR_ArchitectureSpec_c::PokePbType_(
+bool TVPR_ArchitectureSpec_c::PokePbType_(
       const TAS_PhysicalBlock_c& physicalBlock,
       const t_mode*              pvpr_mode,
             t_pb_type*           pvpr_pb_type ) const
 {
+   bool ok = true;
+
    pvpr_pb_type->parent_mode = const_cast< t_mode* >( pvpr_mode );
    if( pvpr_mode && pvpr_mode->parent_pb_type ) 
    {
@@ -772,8 +882,11 @@ void TVPR_ArchitectureSpec_c::PokePbType_(
    }
    pvpr_pb_type->max_internal_delay = UNDEFINED;
 
+   pvpr_pb_type->pb_type_power = static_cast< t_pb_type_power* >( TC_calloc( 1, sizeof( t_pb_type_power )));
+   pvpr_pb_type->pb_type_power->estimation_method = this->FindPowerMethodMode_( physicalBlock.power.estimateMethod,
+                                                                                pvpr_pb_type );
    // [VPR] Process ports
-   this->PokePortList_( physicalBlock.portList, pvpr_pb_type );
+   this->PokePortList_( physicalBlock, pvpr_pb_type );
 
    // [VPR] Determine if this is a leaf or container pb_type
    if( pvpr_pb_type->blif_model ) 
@@ -800,8 +913,15 @@ void TVPR_ArchitectureSpec_c::PokePbType_(
    else 
    {
       // [VPR] Process modes
-      this->PokeModeList_( physicalBlock, pvpr_pb_type );
+      ok = this->PokeModeList_( physicalBlock, pvpr_pb_type );
    }
+
+   // [VPR] Process power (optional)
+   if( pvpr_pb_type->pb_type_power )
+   {
+      ok = this->PokePower_( physicalBlock, pvpr_pb_type );
+   }
+   return( ok );
 }
 
 //===========================================================================//
@@ -827,6 +947,10 @@ void TVPR_ArchitectureSpec_c::PokePbTypeChild_(
    pvpr_pb_type->num_input_pins = vpr_pb_type.num_input_pins;
    pvpr_pb_type->num_output_pins = vpr_pb_type.num_output_pins;
    pvpr_pb_type->num_pb = 1;
+
+   pvpr_pb_type->pb_type_power = static_cast< t_pb_type_power* >( TC_calloc( 1, sizeof( t_pb_type_power )));
+   pvpr_pb_type->pb_type_power->estimation_method = this->InheritPowerMethodMode_( vpr_pb_type.pb_type_power->estimation_method);
+
    pvpr_pb_type->num_ports = vpr_pb_type.num_ports;
    pvpr_pb_type->ports = static_cast< t_port* >( TC_calloc( pvpr_pb_type->num_ports, sizeof( t_port )));
    for( int i = 0; i < vpr_pb_type.num_ports; ++i ) 
@@ -837,6 +961,17 @@ void TVPR_ArchitectureSpec_c::PokePbTypeChild_(
       pvpr_pb_type->ports[i].num_pins = vpr_pb_type.ports[i].num_pins;
       pvpr_pb_type->ports[i].model_port = vpr_pb_type.ports[i].model_port;
       pvpr_pb_type->ports[i].port_class = TC_strdup( vpr_pb_type.ports[i].port_class );
+      pvpr_pb_type->ports[i].port_power = static_cast< t_port_power* >( TC_calloc( 1, sizeof( t_port_power )));
+      if( pvpr_pb_type->pb_type_power->estimation_method == POWER_METHOD_AUTO_SIZES )
+      {
+         pvpr_pb_type->ports[i].port_power->wire_type = POWER_WIRE_TYPE_AUTO;
+         pvpr_pb_type->ports[i].port_power->buffer_type = POWER_BUFFER_TYPE_AUTO;
+      } 
+      else if( pvpr_pb_type->pb_type_power->estimation_method == POWER_METHOD_SPECIFY_SIZES ) 
+      {
+         pvpr_pb_type->ports[i].port_power->wire_type = POWER_WIRE_TYPE_IGNORED;
+         pvpr_pb_type->ports[i].port_power->buffer_type = POWER_BUFFER_TYPE_NONE;
+      }
       pvpr_pb_type->ports[i].is_clock = vpr_pb_type.ports[i].is_clock;
    }
    pvpr_pb_type->max_internal_delay = vpr_pb_type.max_internal_delay;
@@ -903,11 +1038,14 @@ void TVPR_ArchitectureSpec_c::PokePbTypeLutClass_(
 
    pvpr_pb_type->num_modes = 2;
    pvpr_pb_type->modes = static_cast< t_mode* >( TC_calloc( pvpr_pb_type->num_modes, sizeof( t_mode )));
+   pvpr_pb_type->pb_type_power->leakage_default_mode = 1;
 
    // [VPR] First mode, route_through
    pvpr_pb_type->modes[0].name = TC_strdup( "wire" );
    pvpr_pb_type->modes[0].parent_pb_type = pvpr_pb_type;
    pvpr_pb_type->modes[0].index = 0;
+   pvpr_pb_type->modes[0].mode_power = static_cast< t_mode_power* >( TC_calloc( 1, sizeof( t_mode_power )));
+
    pvpr_pb_type->modes[0].num_pb_type_children = 0;
 
    pvpr_pb_type->modes[0].num_interconnect = 1;
@@ -921,6 +1059,10 @@ void TVPR_ArchitectureSpec_c::PokePbTypeLutClass_(
    sprintf( pvpr_interconnect0->name, "complete:%s", pvpr_pb_type->name );
    sprintf( pvpr_interconnect0->input_string, "%s.%s", pvpr_pb_type->name, pinPort->name );
    sprintf( pvpr_interconnect0->output_string, "%s.%s", pvpr_pb_type->name, poutPort->name );
+
+   pvpr_interconnect0->parent_mode_index = 0;
+   pvpr_interconnect0->parent_mode = &pvpr_pb_type->modes[0];
+   pvpr_interconnect0->interconnect_power = static_cast< t_interconnect_power* >( TC_calloc( 1, sizeof( t_interconnect_power )));
 
    pvpr_interconnect0->num_annotations = pvpr_pb_type->num_annotations;
    pvpr_interconnect0->annotations = static_cast< t_pin_to_pin_annotation* >( TC_calloc( pvpr_interconnect0->num_annotations, sizeof( t_pin_to_pin_annotation )));
@@ -947,6 +1089,8 @@ void TVPR_ArchitectureSpec_c::PokePbTypeLutClass_(
    pvpr_pb_type->modes[1].name = TC_strdup( pvpr_pb_type->name );
    pvpr_pb_type->modes[1].parent_pb_type = pvpr_pb_type;
    pvpr_pb_type->modes[1].index = 1;
+   pvpr_pb_type->modes[1].mode_power = static_cast< t_mode_power* >( TC_calloc( 1, sizeof( t_mode_power )));
+
    pvpr_pb_type->modes[1].num_pb_type_children = 1;
    pvpr_pb_type->modes[1].pb_type_children = static_cast< t_pb_type* >( TC_calloc( 1, sizeof( t_pb_type )));
    this->PokePbTypeChild_( *pvpr_pb_type, srLutName.data( ), 
@@ -973,6 +1117,7 @@ void TVPR_ArchitectureSpec_c::PokePbTypeLutClass_(
          free( pvpr_pb_type->annotations[i].clock );
       }
    }
+
    pvpr_pb_type->num_annotations = 0;
    free( pvpr_pb_type->annotations );
    pvpr_pb_type->annotations = 0;
@@ -990,6 +1135,11 @@ void TVPR_ArchitectureSpec_c::PokePbTypeLutClass_(
    sprintf( pvpr_interconnect0->name, "direct:%s", pvpr_pb_type->name );
    sprintf( pvpr_interconnect0->input_string, "%s.%s", pvpr_pb_type->name, pinPort->name );
    sprintf( pvpr_interconnect0->output_string, "%s.%s", srLutName.data( ), pinPort->name );
+   pvpr_interconnect0->infer_annotations = static_cast< boolean >( true );
+
+   pvpr_interconnect0->parent_mode_index = 1;
+   pvpr_interconnect0->parent_mode = &pvpr_pb_type->modes[1];
+   pvpr_interconnect0->interconnect_power = static_cast< t_interconnect_power* >( TC_calloc( 1, sizeof( t_interconnect_power )));
 
    t_interconnect* pvpr_interconnect1 = &pvpr_pb_type->modes[1].interconnect[1];
    pvpr_interconnect1->type = DIRECT_INTERC;
@@ -1000,6 +1150,10 @@ void TVPR_ArchitectureSpec_c::PokePbTypeLutClass_(
    sprintf( pvpr_interconnect1->input_string, "%s.%s", srLutName.data( ), poutPort->name );
    sprintf( pvpr_interconnect1->output_string, "%s.%s", pvpr_pb_type->name, poutPort->name );
    pvpr_interconnect1->infer_annotations = static_cast< boolean >( true );
+
+   pvpr_interconnect1->parent_mode_index = 1;
+   pvpr_interconnect1->parent_mode = &pvpr_pb_type->modes[1];
+   pvpr_interconnect1->interconnect_power = static_cast< t_interconnect_power* >( TC_calloc( 1, sizeof( t_interconnect_power )));
 
    free( pvpr_pb_type->blif_model );
    pvpr_pb_type->blif_model = 0;
@@ -1025,6 +1179,8 @@ void TVPR_ArchitectureSpec_c::PokePbTypeMemoryClass_(
    pvpr_mode->name = TC_strdup( srMemoryName );
    pvpr_mode->parent_pb_type = pvpr_pb_type;
    pvpr_mode->index = 0;
+
+   pvpr_mode->mode_power = static_cast< t_mode_power* >( TC_calloc( 1, sizeof( t_mode_power )));
 
    int num_pb = OPEN;
    for( int i = 0; i < pvpr_pb_type->num_ports; ++i ) 
@@ -1054,6 +1210,12 @@ void TVPR_ArchitectureSpec_c::PokePbTypeMemoryClass_(
 
    pvpr_mode->num_interconnect = pvpr_pb_type->num_ports * num_pb;
    pvpr_mode->interconnect = static_cast< t_interconnect* >( TC_calloc( pvpr_mode->num_interconnect, sizeof( t_interconnect )));
+
+   for( int i = 0; i < pvpr_mode->num_interconnect; ++i ) 
+   {
+      pvpr_mode->interconnect[i].parent_mode_index = 0;
+      pvpr_mode->interconnect[i].parent_mode = &pvpr_pb_type->modes[0];
+   }
 
    // [VPR] Process interconnect
    int index = 0;
@@ -1097,6 +1259,9 @@ void TVPR_ArchitectureSpec_c::PokePbTypeMemoryClass_(
             sprintf( pvpr_interconnect->input_string, "%s[%d:0].%s", srInputName.data( ), num_pb - 1, srInputPortName.data( ));
             sprintf( pvpr_interconnect->output_string, "%s.%s", srOutputName.data( ), srOutputPortName.data( ));
          }
+
+         pvpr_interconnect->interconnect_power = static_cast< t_interconnect_power* >( TC_calloc( 1, sizeof( t_interconnect_power )));
+
          ++index;
       } 
       else 
@@ -1123,6 +1288,9 @@ void TVPR_ArchitectureSpec_c::PokePbTypeMemoryClass_(
                sprintf( pvpr_interconnect->input_string, "%s[%d:%d].%s", srInputName.data( ), j, j, srInputPortName.data( ));
                sprintf( pvpr_interconnect->output_string, "%s.%s", srOutputName.data( ), srOutputPortName.data( ));
             }
+
+            pvpr_interconnect->interconnect_power = static_cast< t_interconnect_power* >( TC_calloc( 1, sizeof( t_interconnect_power )));
+
             ++index;
          }
       }
@@ -1137,10 +1305,12 @@ void TVPR_ArchitectureSpec_c::PokePbTypeMemoryClass_(
 // Version history
 // 07/10/12 jeffr : Original
 //===========================================================================//
-void TVPR_ArchitectureSpec_c::PokeModeList_(
+bool TVPR_ArchitectureSpec_c::PokeModeList_(
       const TAS_PhysicalBlock_c& physicalBlock,
             t_pb_type*           pvpr_pb_type ) const
 {
+   bool ok = true;
+
    // [VPR] Process modes
    if( physicalBlock.modeList.IsValid( ))
    {
@@ -1154,10 +1324,12 @@ void TVPR_ArchitectureSpec_c::PokeModeList_(
          pvpr_pb_type->modes[i].parent_pb_type = pvpr_pb_type;
          pvpr_pb_type->modes[i].index = static_cast< int >( i );
 
-         this->PokeMode_( modeList[i]->srName,
-                          modeList[i]->physicalBlockList,
-                          modeList[i]->interconnectList,
-                          &( pvpr_pb_type->modes[i] ));
+         ok = this->PokeMode_( modeList[i]->srName,
+                               modeList[i]->physicalBlockList,
+                               modeList[i]->interconnectList,
+                               &( pvpr_pb_type->modes[i] ));
+	 if( !ok )
+            break;
       }
    }
    else 
@@ -1169,11 +1341,15 @@ void TVPR_ArchitectureSpec_c::PokeModeList_(
       pvpr_pb_type->modes[0].parent_pb_type = pvpr_pb_type;
       pvpr_pb_type->modes[0].index = 0;
 
-      this->PokeMode_( physicalBlock.srName,
-                       physicalBlock.physicalBlockList,
-                       physicalBlock.interconnectList,
-                       &( pvpr_pb_type->modes[0] ));
+      ok = this->PokeMode_( physicalBlock.srName,
+                            physicalBlock.physicalBlockList,
+                            physicalBlock.interconnectList,
+                            &( pvpr_pb_type->modes[0] ));
    }
+
+   pvpr_pb_type->pb_type_power->leakage_default_mode = 0;
+
+   return( ok );
 }
 
 //===========================================================================//
@@ -1183,12 +1359,14 @@ void TVPR_ArchitectureSpec_c::PokeModeList_(
 // Version history
 // 07/10/12 jeffr : Original
 //===========================================================================//
-void TVPR_ArchitectureSpec_c::PokeMode_(
+bool TVPR_ArchitectureSpec_c::PokeMode_(
       const string&                  srName,
       const TAS_PhysicalBlockList_t& physicalBlockList,
       const TAS_InterconnectList_t&  interconnectList,
             t_mode*                  pvpr_mode ) const
 {
+   bool ok = true;
+
    pvpr_mode->name = TC_strdup( srName );
 
    if( physicalBlockList.IsValid( ))
@@ -1199,8 +1377,10 @@ void TVPR_ArchitectureSpec_c::PokeMode_(
       for( size_t i = 0; i < physicalBlockList.GetLength( ); ++i )
       {
          const TAS_PhysicalBlock_c& physicalBlock = *physicalBlockList[i];
-         this->PokePbType_( physicalBlock, pvpr_mode, 
-                            &pvpr_mode->pb_type_children[i] );
+         ok = this->PokePbType_( physicalBlock, pvpr_mode, 
+                                 &pvpr_mode->pb_type_children[i] );
+	 if( !ok )
+            break;
       }
    } 
    else 
@@ -1209,10 +1389,15 @@ void TVPR_ArchitectureSpec_c::PokeMode_(
       pvpr_mode->pb_type_children = 0;
    }
 
+   t_mode_power* pvpr_mode_power = 0;
+   pvpr_mode_power = static_cast< t_mode_power* >( TC_calloc( 1, sizeof( t_mode_power )));
+   pvpr_mode->mode_power = pvpr_mode_power;
+
    if( interconnectList.IsValid( ))
    {
       this->PokeInterconnectList_( interconnectList, pvpr_mode );
    }
+   return( ok );
 }
 
 //===========================================================================//
@@ -1289,6 +1474,12 @@ void TVPR_ArchitectureSpec_c::PokeInterconnect_(
    this->PokeTimingDelayLists_( interconnect.timingDelayLists,
                                 &pvpr_interconnect->annotations,
                                 &pvpr_interconnect->num_annotations );
+
+   t_interconnect_power* pvpr_interconnect_power = 0;
+   pvpr_interconnect_power = static_cast< t_interconnect_power* >( TC_calloc( 1, sizeof( t_interconnect_power )));
+   pvpr_interconnect_power->port_info_initialized = static_cast< boolean >( false );
+   pvpr_interconnect->interconnect_power = pvpr_interconnect_power;
+
    pvpr_interconnect->line_num = 0;
 }
 
@@ -1444,9 +1635,9 @@ bool TVPR_ArchitectureSpec_c::PokeFcPin_(
 
          if(( pinIndex_i != SIZE_MAX ) && ( pinIndex_j != SIZE_MAX ))
          {
-            pinOffset_i = TCT_Min( pinIndex_i, pinIndex_j );
-            pinOffset_j = TCT_Max( pinIndex_i, pinIndex_j );
-            pinOffset_j = TCT_Min( pinOffset_j, pvpr_physicalBlock->pb_type->ports[i].num_pins - 1 );
+            pinOffset_i = static_cast< int >( TCT_Min( pinIndex_i, pinIndex_j ));
+            pinOffset_j = static_cast< int >( TCT_Max( pinIndex_i, pinIndex_j ));
+            pinOffset_j = static_cast< int >( TCT_Min( pinOffset_j, pvpr_physicalBlock->pb_type->ports[i].num_pins - 1 ));
          }
 
          for( int pinOffset = pinOffset_i; pinOffset <= pinOffset_j; ++pinOffset ) 
@@ -1643,7 +1834,7 @@ void TVPR_ArchitectureSpec_c::PokePinAssignList_(
 }
 
 //===========================================================================//
-// Method         : PokeGridAssignList__
+// Method         : PokeGridAssignList_
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
@@ -1706,9 +1897,11 @@ void TVPR_ArchitectureSpec_c::PokeGridAssignList_(
 // 07/10/12 jeffr : Original
 //===========================================================================//
 void TVPR_ArchitectureSpec_c::PokePortList_(
-      const TLO_PortList_t& portList,
-            t_pb_type*      pvpr_pb_type ) const
+      const TAS_PhysicalBlock_c& physicalBlock,
+            t_pb_type*           pvpr_pb_type ) const
 {
+   const TLO_PortList_t& portList = physicalBlock.portList;
+
    pvpr_pb_type->num_ports = static_cast< int >( portList.GetLength( ));
    pvpr_pb_type->ports = static_cast< t_port* >( TC_calloc( pvpr_pb_type->num_ports, sizeof( t_port )));
    pvpr_pb_type->num_clock_pins = 0;
@@ -1722,7 +1915,8 @@ void TVPR_ArchitectureSpec_c::PokePortList_(
       if( port.GetType( ) != TC_TYPE_INPUT )
          continue;
 
-      this->PokePort_( port, &pvpr_pb_type->ports[index] );
+      this->PokePort_( physicalBlock, port, 
+                       pvpr_pb_type, &pvpr_pb_type->ports[index] );
       pvpr_pb_type->num_input_pins += pvpr_pb_type->ports[index].num_pins;
 
       pvpr_pb_type->ports[index].parent_pb_type = pvpr_pb_type;
@@ -1736,7 +1930,8 @@ void TVPR_ArchitectureSpec_c::PokePortList_(
       if( port.GetType( ) != TC_TYPE_OUTPUT )
          continue;
 
-      this->PokePort_( port, &pvpr_pb_type->ports[index] );
+      this->PokePort_( physicalBlock, port, 
+                       pvpr_pb_type, &pvpr_pb_type->ports[index] );
       pvpr_pb_type->num_output_pins += pvpr_pb_type->ports[index].num_pins;
 
       pvpr_pb_type->ports[index].parent_pb_type = pvpr_pb_type;
@@ -1750,7 +1945,8 @@ void TVPR_ArchitectureSpec_c::PokePortList_(
       if( port.GetType( ) != TC_TYPE_CLOCK )
          continue;
 
-      this->PokePort_( port, &pvpr_pb_type->ports[index] );
+      this->PokePort_( physicalBlock, port, 
+                       pvpr_pb_type, &pvpr_pb_type->ports[index] );
       pvpr_pb_type->num_clock_pins += pvpr_pb_type->ports[index].num_pins;
 
       pvpr_pb_type->ports[index].parent_pb_type = pvpr_pb_type;
@@ -1766,10 +1962,13 @@ void TVPR_ArchitectureSpec_c::PokePortList_(
 //---------------------------------------------------------------------------//
 // Version history
 // 07/10/12 jeffr : Original
+// 07/23/13 jeffr : Added support for calling "PokePortPower_()" method
 //===========================================================================//
 void TVPR_ArchitectureSpec_c::PokePort_(
-      const TLO_Port_c& port,
-            t_port*     pvpr_port ) const
+      const TAS_PhysicalBlock_c& physicalBlock,
+      const TLO_Port_c&          port,
+            t_pb_type*           pvpr_pb_type,
+            t_port*              pvpr_port ) const
 {
    pvpr_port->name = TC_strdup( port.GetName( ));
 
@@ -1794,6 +1993,113 @@ void TVPR_ArchitectureSpec_c::PokePort_(
    {
       pvpr_port->type = IN_PORT;
       pvpr_port->is_clock = static_cast< boolean >( true );
+   }
+
+   pvpr_port->port_power = static_cast< t_port_power* >( TC_calloc( 1, sizeof( t_port_power )));
+   const TLO_Power_c& portPower = port.GetPower( );
+   if( portPower.IsValid( ))
+   {
+      this->PokePortPower_( physicalBlock, portPower, 
+                            pvpr_pb_type, pvpr_port->port_power );
+   }
+}
+
+//===========================================================================//
+// Method         : PokePortPower_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 07/17/13 jeffr : Original
+//===========================================================================//
+void TVPR_ArchitectureSpec_c::PokePortPower_(
+      const TAS_PhysicalBlock_c& physicalBlock,
+      const TLO_Power_c&         portPower,
+            t_pb_type*           pvpr_pb_type,
+            t_port_power*        pvpr_port_power ) const
+{
+   // Initialize port power defaults
+   enum e_power_estimation_method powerMethod = POWER_METHOD_UNDEFINED;
+   powerMethod = this->FindPowerMethodMode_( physicalBlock.power.estimateMethod,
+                                             pvpr_pb_type );
+   if( powerMethod == POWER_METHOD_AUTO_SIZES )
+   {
+      pvpr_port_power->wire_type = POWER_WIRE_TYPE_AUTO;
+      pvpr_port_power->buffer_type = POWER_BUFFER_TYPE_AUTO;
+   } 
+   else if( powerMethod == POWER_METHOD_SPECIFY_SIZES ) 
+   {
+      pvpr_port_power->wire_type = POWER_WIRE_TYPE_IGNORED;
+      pvpr_port_power->buffer_type = POWER_BUFFER_TYPE_NONE;
+   }
+
+   TLO_PowerType_t wireType = TLO_POWER_TYPE_UNDEFINED;
+   double wireCap = 0.0;
+   double wireRelativeLength = 0.0;
+   double wireAbsoluteLength = 0.0;
+   portPower.GetWire( &wireType, &wireCap, &wireRelativeLength, &wireAbsoluteLength );
+
+   switch( wireType )
+   {
+   case TLO_POWER_TYPE_CAP:
+      // Process wire capacitance value
+      if(( powerMethod == POWER_METHOD_AUTO_SIZES ) ||
+         ( powerMethod == POWER_METHOD_SPECIFY_SIZES ))
+      {				
+         pvpr_port_power->wire_type = POWER_WIRE_TYPE_C;
+         pvpr_port_power->wire.C = static_cast< float >( wireCap );
+      }
+      break;
+
+   case TLO_POWER_TYPE_RELATIVE_LENGTH:
+      // Process wire relative length value
+      if(( powerMethod == POWER_METHOD_AUTO_SIZES ) ||
+         ( powerMethod == POWER_METHOD_SPECIFY_SIZES ))
+      {				
+         pvpr_port_power->wire_type = POWER_WIRE_TYPE_RELATIVE_LENGTH;
+         pvpr_port_power->wire.relative_length = static_cast< float >( wireRelativeLength );
+      }
+      break;
+
+   case TLO_POWER_TYPE_ABSOLUTE_LENGTH:
+      // Process wire absolute length value
+      if( TCTF_IsGT( wireAbsoluteLength, 0.0 ))
+      {
+         pvpr_port_power->wire_type = POWER_WIRE_TYPE_ABSOLUTE_LENGTH;
+         pvpr_port_power->wire.absolute_length = static_cast< float >( wireAbsoluteLength );
+      } 
+      else 
+      {
+         pvpr_port_power->wire_type = POWER_WIRE_TYPE_AUTO;
+         pvpr_port_power->wire.absolute_length = 0.0;
+      }
+      break;
+
+   default:
+      break;
+   }
+
+   TLO_PowerType_t bufferType = TLO_POWER_TYPE_UNDEFINED;
+   double bufferAbsoluteSize = 0.0;
+   portPower.GetBuffer( &bufferType, &bufferAbsoluteSize );
+
+   switch( bufferType )
+   {
+   case TLO_POWER_TYPE_ABSOLUTE_SIZE:
+      // Process buffer absolute size value
+      if( TCTF_IsGT( bufferAbsoluteSize, 0.0 ))
+      {
+         pvpr_port_power->buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
+         pvpr_port_power->buffer_size = static_cast< float >( bufferAbsoluteSize );
+      } 
+      else 
+      {
+         pvpr_port_power->buffer_type = POWER_BUFFER_TYPE_AUTO;
+         pvpr_port_power->buffer_size = 0.0;
+      }
+      break;
+   
+   default:
+      break;
    }
 }
 
@@ -2031,6 +2337,142 @@ void TVPR_ArchitectureSpec_c::PokeTimingDelay_(
    default:
       break;
    }
+}
+
+//===========================================================================//
+// Method         : PokePower_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 07/17/13 jeffr : Original
+//===========================================================================//
+bool TVPR_ArchitectureSpec_c::PokePower_(
+      const TAS_PhysicalBlock_c& physicalBlock,
+            t_pb_type*           pvpr_pb_type ) const
+{
+   bool ok = true;
+
+   const TAS_Power_c& power = physicalBlock.power;
+   const TLO_PortList_t& portList = physicalBlock.portList;
+
+   enum e_power_estimation_method powerMethod = POWER_METHOD_UNDEFINED;
+   powerMethod = this->FindPowerMethodMode_( power.estimateMethod, pvpr_pb_type );
+   pvpr_pb_type->pb_type_power->estimation_method = powerMethod;
+
+   switch( power.estimateMethod )
+   {
+   case TAS_POWER_METHOD_PIN_TOGGLE:
+
+      pvpr_pb_type->pb_type_power->absolute_power_per_instance.leakage = 
+         static_cast< float >( power.staticPower.absolute );
+
+      ok = this->PokePowerPortList_( power, portList, pvpr_pb_type );
+      break;
+
+   case TAS_POWER_METHOD_ABSOLUTE:
+
+      pvpr_pb_type->pb_type_power->absolute_power_per_instance.leakage = 
+         static_cast< float >( power.staticPower.absolute );
+      pvpr_pb_type->pb_type_power->absolute_power_per_instance.dynamic = 
+         static_cast< float >( power.dynamicPower.absolute );
+      break;
+
+   case TAS_POWER_METHOD_CAP_INTERNAL:
+
+      pvpr_pb_type->pb_type_power->absolute_power_per_instance.leakage = 
+         static_cast< float >( power.staticPower.absolute );
+      pvpr_pb_type->pb_type_power->C_internal = 
+         static_cast< float >( power.dynamicPower.capInternal );
+      break;
+
+   default:
+      break;
+   }
+   return( ok );
+}
+
+//===========================================================================//
+// Method         : PokePowerPortList_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 07/17/13 jeffr : Original
+//===========================================================================//
+bool TVPR_ArchitectureSpec_c::PokePowerPortList_(
+      const TAS_Power_c&    power,
+      const TLO_PortList_t& portList,
+            t_pb_type*      pvpr_pb_type ) const
+{
+   bool ok = true;
+
+   for( size_t i = 0; i < power.portList.GetLength( ); ++i )
+   {
+      const TLO_Port_c& port = *power.portList[i];
+      ok = this->PokePowerPort_( port, portList, pvpr_pb_type );
+      if( !ok )
+         break;
+   }
+   return( ok );
+}
+
+//===========================================================================//
+// Method         : PokePowerPort_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 07/17/13 jeffr : Original
+//===========================================================================//
+bool TVPR_ArchitectureSpec_c::PokePowerPort_(
+      const TLO_Port_c&     port,
+      const TLO_PortList_t& portList,
+            t_pb_type*      pvpr_pb_type ) const
+{
+   bool ok = true;
+
+   t_port* pvpr_port = 0;
+
+   const char* pszPortName = port.GetName( );
+   if( portList.Find( pszPortName ))
+   {
+      for( int i = 0; i < pvpr_pb_type->num_ports; ++i ) 
+      {
+         if( strcmp( pszPortName, pvpr_pb_type->ports[i].name ) == 0 ) 
+         {
+            pvpr_port = &pvpr_pb_type->ports[i];
+            break;
+         }
+      }
+   }
+
+   if( pvpr_port )
+   {
+      pvpr_port->port_power->scaled_by_port = pvpr_port;
+
+      string srPortName;
+      size_t pinIndex = 0;
+      TC_ParseStringNameIndex( pszPortName, &srPortName, &pinIndex );
+      pvpr_port->port_power->scaled_by_port_pin_idx = static_cast< int >( pinIndex );
+
+      bool initialized = false;
+      double energyPerToggle = 0.0;
+      bool scaledByStaticProb = false;
+      bool scaledByStaticProb_n = false;
+      port.GetPower( ).GetPinToggle( &initialized, &energyPerToggle, 
+                                     &scaledByStaticProb, &scaledByStaticProb_n );
+
+      pvpr_port->port_power->pin_toggle_initialized = static_cast< boolean >( initialized );
+      pvpr_port->port_power->energy_per_toggle = energyPerToggle;
+      pvpr_port->port_power->reverse_scaled = static_cast< boolean >( scaledByStaticProb_n );
+   }
+   else
+   {
+      TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
+      ok = printHandler.Error( "Invalid architecture model pb_type power detected!\n"
+                               "%sNo port found for pin toggle \"%s\".\n",
+                               TIO_PREFIX_ERROR_SPACE,
+                               TIO_PSZ_STR( pszPortName ));
+   }
+   return( ok );
 }
 
 //===========================================================================//
@@ -2456,4 +2898,70 @@ bool TVPR_ArchitectureSpec_c::FindSegmentBitPattern_(
       }
    }
    return( ok );
+}
+
+//===========================================================================//
+// Method         : FindPowerMethodMode_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 07/17/13 jeffr : Original
+//===========================================================================//
+enum e_power_estimation_method TVPR_ArchitectureSpec_c::FindPowerMethodMode_(
+      TAS_PowerMethodMode_t mode,
+      t_pb_type*            pvpr_pb_type ) const
+{
+   enum e_power_estimation_method mode_ = POWER_METHOD_UNDEFINED;
+
+   switch( mode )
+   {
+   case TAS_POWER_METHOD_IGNORE:          mode_ = POWER_METHOD_IGNORE;          break;
+   case TAS_POWER_METHOD_SUM_OF_CHILDREN: mode_ = POWER_METHOD_SUM_OF_CHILDREN; break;
+   case TAS_POWER_METHOD_AUTO_SIZES:      mode_ = POWER_METHOD_AUTO_SIZES;      break;
+   case TAS_POWER_METHOD_SPECIFY_SIZES:   mode_ = POWER_METHOD_SPECIFY_SIZES;   break;
+   case TAS_POWER_METHOD_PIN_TOGGLE:      mode_ = POWER_METHOD_TOGGLE_PINS;     break;
+   case TAS_POWER_METHOD_CAP_INTERNAL:    mode_ = POWER_METHOD_C_INTERNAL;      break;
+   case TAS_POWER_METHOD_ABSOLUTE:        mode_ = POWER_METHOD_ABSOLUTE;        break;
+   case TAS_POWER_METHOD_UNDEFINED:
+
+      if( pvpr_pb_type->parent_mode && 
+          pvpr_pb_type->parent_mode->parent_pb_type &&
+          pvpr_pb_type->parent_mode->parent_pb_type->pb_type_power ) 
+      {
+         mode_ = pvpr_pb_type->parent_mode->parent_pb_type->pb_type_power->estimation_method;
+      } 
+      else 
+      {
+         mode_ = POWER_METHOD_AUTO_SIZES;
+      }
+      mode_ = this->InheritPowerMethodMode_( mode_ );
+      break;
+   }
+   return( mode_ );
+}
+
+//===========================================================================//
+// Method         : InheritPowerMethodMode_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 07/17/13 jeffr : Original
+//===========================================================================//
+enum e_power_estimation_method TVPR_ArchitectureSpec_c::InheritPowerMethodMode_(
+      enum e_power_estimation_method mode ) const
+{
+   enum e_power_estimation_method mode_ = POWER_METHOD_UNDEFINED;
+
+   switch( mode )
+   {
+   case POWER_METHOD_IGNORE:
+   case POWER_METHOD_AUTO_SIZES:
+   case POWER_METHOD_SPECIFY_SIZES:
+   case POWER_METHOD_TOGGLE_PINS:     mode_ = mode;                    break;
+   case POWER_METHOD_C_INTERNAL:
+   case POWER_METHOD_ABSOLUTE:        mode_ = POWER_METHOD_IGNORE;     break;
+   case POWER_METHOD_SUM_OF_CHILDREN: mode_ = POWER_METHOD_AUTO_SIZES; break;
+   default:                                                            break;
+   }
+   return( mode_ );
 }
