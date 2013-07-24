@@ -114,6 +114,14 @@ public:
                              // Applies to UNIDECTIONAL segments only
    } area;
 
+   class TAS_SwitchBoxPower_c
+   {
+   public:
+
+      bool   autoSize;       // Switch power buffer type
+      double bufferSize;     // Switch power buffer size
+   } power;
+
 private:
 
    TGS_FloatDims_t dims_;    // Defines width/height dimensions (dx,dy)
