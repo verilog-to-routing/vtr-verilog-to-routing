@@ -75,11 +75,17 @@ LIBSOlinux_i686 = ../linux_i686/$(PROG).$(SOL)
 LIBSOsun8 = ../sun8/$(PROG).$(SOL)
 LIBSO = $(LIBSO$(ISM))
 
-OBJSlinux_x86_64 = linux_x86_64/TLO_Cell.o linux_x86_64/TLO_Port.o \
-                    linux_x86_64/TLO_StringUtils.o
-OBJSlinux_i686 = linux_i686/TLO_Cell.o linux_i686/TLO_Port.o \
-                    linux_i686/TLO_StringUtils.o
-OBJSsun8 = sun8/TLO_Cell.o sun8/TLO_Port.o \
+OBJSlinux_x86_64 = linux_x86_64/TLO_Cell.o \
+                   linux_x86_64/TLO_Port.o \
+                   linux_x86_64/TLO_Power.o \
+                   linux_x86_64/TLO_StringUtils.o
+OBJSlinux_i686 = linux_i686/TLO_Cell.o \
+                 linux_i686/TLO_Port.o \
+                 linux_i686/TLO_Power.o \
+                 linux_i686/TLO_StringUtils.o
+OBJSsun8 = sun8/TLO_Cell.o \
+           sun8/TLO_Port.o \
+           sun8/TLO_Power.o \
            sun8/TLO_StringUtils.o
 OBJECTS = $(OBJS$(ISM))
 
