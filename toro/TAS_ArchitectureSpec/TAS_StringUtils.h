@@ -58,4 +58,6 @@ void TAS_ExtractStringSegmentDirType( TAS_SegmentDirType_t type, string* psrType
 void TAS_ExtractStringChannelUsageMode( TAS_ChannelUsageMode_t mode, string* psrMode );
 void TAS_ExtractStringChannelDistrMode( TAS_ChannelDistrMode_t mode, string* psrMode );
 
+void TAS_ExtractStringPowerMethodMode( TAS_PowerMethodMode_t mode, string* psrMode );
+
 #endif
