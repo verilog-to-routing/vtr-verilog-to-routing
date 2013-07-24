@@ -206,6 +206,9 @@ void TOS_ControlSwitches_c::Init(
 
    this->executeOptions.toolMask = TOS_EXECUTE_TOOL_ALL;
 
+   this->executeOptions.tiClay.resyncNets = true;
+   this->executeOptions.tiClay.freeNets = true;
+
    this->srDefaultBaseName = "";
 } 
 
