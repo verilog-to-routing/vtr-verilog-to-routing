@@ -142,6 +142,7 @@ void TOS_MessageOptions_c::Print(
    printHandler.Write( pfile, spaceLen, "FORMAT_TIME_STAMPS         = %s\n", TIO_BOOL_STR( this->timeStampsEnable ));
    printHandler.Write( pfile, spaceLen, "FORMAT_FILE_LINES          = %s\n", TIO_BOOL_STR( this->fileLinesEnable ));
 
+   printHandler.Write( pfile, spaceLen, "\n" );
    if( this->info.acceptList.GetLength( ))
    {
       for( size_t i = 0; i < this->info.acceptList.GetLength( ); ++i )
