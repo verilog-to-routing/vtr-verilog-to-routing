@@ -97,6 +97,7 @@ char *vpr_get_output_file_name(enum e_output_files ename);
 
 /* resync netlists */
 t_trace* vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture(
+		INP boolean apply_logical_equivalence_handling,
 		INP const t_arch *arch);
 
 /* Prints user/internal errors for VPR */

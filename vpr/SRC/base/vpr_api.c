@@ -865,6 +865,7 @@ char *vpr_get_output_file_name(enum e_output_files ename) {
 /* logical equivalence scrambles the packed netlist indices with the actual indices, need to resync then re-output clustered netlist, this code assumes I'm dealing with a TI CLAY v1 architecture */
 /* Returns a trace array [0..num_logical_nets-1] with the final routing of the circuit from the logical_block netlist, index of the trace array corresponds to the index of a vpack_net */
 t_trace* vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture(
+		INP boolean apply_logical_equivalence_handling,
 		INP const t_arch *arch) {
 
 	t_trace *trace = 0;
@@ -873,7 +874,8 @@ t_trace* vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture(
 	resync_post_route_netlist();
 
 	/* Resolve logically equivalent inputs */
-	boolean success = clay_logical_equivalence_handling(arch);
+	boolean success = apply_logical_equivalence_handling ? 
+			clay_logical_equivalence_handling(arch) : TRUE;
 	if(success) {
 
 		/* Finalize traceback */
@@ -1039,7 +1041,6 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 				current = expand_routing_trace(new_trace, ivpack_net);
 			}
 		}
-		assert(success);
 	}
 	return current;
 }
