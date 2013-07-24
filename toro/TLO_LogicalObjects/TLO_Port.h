@@ -10,10 +10,12 @@
 //           - SetEquivalent
 //           - SetClass
 //           - SetCap, SetDelay
+//           - SetPower
 //           - GetType
 //           - GetCount
 //           - GetClass
 //           - GetCap, GetDelay
+//           - GetPower
 //           - IsEquivalent
 //           - IsValid
 //
@@ -44,12 +46,15 @@ using namespace std;
 
 #include "TC_Typedefs.h"
 
+#include "TLO_Power.h"
+
 //===========================================================================//
 // Purpose        : Class declaration
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
 // 05/15/12 jeffr : Original
+// 07/17/13 jeffr : Added TLO_Power_c member support
 //===========================================================================//
 class TLO_Port_c
 {
@@ -86,12 +91,14 @@ public:
    void SetClass( const char* pszClass );
    void SetCap( double cap );
    void SetDelay( double delay );
+   void SetPower( const TLO_Power_c& power );
 
    TC_TypeMode_t GetType( void ) const;
    size_t GetCount( void ) const;
    const char* GetClass( void ) const;
    double GetCap( void ) const;
    double GetDelay( void ) const;
+   const TLO_Power_c& GetPower( void ) const;
 
    void Clear( void );
    
@@ -111,6 +118,8 @@ private:
 
    double cap_;           // Port capacitance (fF)
    double delay_;         // Port delay (ps)
+
+   TLO_Power_c power_;    // Optional port power constants.
 };
 
 //===========================================================================//
@@ -197,6 +206,13 @@ inline void TLO_Port_c::SetDelay(
 }
 
 //===========================================================================//
+inline void TLO_Port_c::SetPower( 
+      const TLO_Power_c& power )
+{
+   this->power_ = power;
+}
+
+//===========================================================================//
 inline TC_TypeMode_t TLO_Port_c::GetType( 
       void ) const
 {
@@ -236,6 +252,13 @@ inline double TLO_Port_c::GetDelay(
       void ) const
 {
    return( this->delay_ );
+}
+
+//===========================================================================//
+inline const TLO_Power_c& TLO_Port_c::GetPower( 
+      void ) const
+{
+   return( this->power_ );
 }
 
 //===========================================================================//
