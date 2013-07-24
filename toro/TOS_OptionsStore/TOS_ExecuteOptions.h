@@ -51,6 +51,14 @@ public:
    unsigned long maxErrorCount;   // Max #of errors before (graceful) abort
 
    int toolMask;                  // Tool mode: none|pack|place|route|all
+
+   class TOS_ExecuteTI_Clay_c
+   {
+   public:
+
+      bool resyncNets;            // TI Clay-specific - disables net list resync
+      bool freeNets;              // TI Clay-specific - disables net list free
+   } tiClay;
 };
 
 #endif 
