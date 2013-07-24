@@ -195,10 +195,9 @@ void TAS_Cell_c::Print(
 
    if( TLO_Cell_c::GetPortList( ).IsValid( ))
    {
-      TLO_Cell_c::GetPortList( ).Print( pfile, spaceLen );
+      TLO_Cell_c::GetPortList( ).Print( pfile, spaceLen + 3 );
    }
 
-   spaceLen -= 3;
    printHandler.Write( pfile, spaceLen, "</cell>\n" );
 }
 
@@ -223,9 +222,12 @@ void TAS_Cell_c::PrintXML(
       FILE*  pfile,
       size_t spaceLen ) const
 {
+   TC_MinGrid_c& MinGrid = TC_MinGrid_c::GetInstance( );
+   unsigned int precision = MinGrid.GetPrecision( );
+
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   printHandler.Write( pfile, spaceLen, "<cell name=\"%s\">\n",
+   printHandler.Write( pfile, spaceLen, "<model name=\"%s\">\n",
                                         TIO_PSZ_STR( TLO_Cell_c::GetName( )));
    spaceLen += 3;
 
@@ -242,9 +244,66 @@ void TAS_Cell_c::PrintXML(
          if(( port.GetType( ) != TC_TYPE_INPUT ) && ( port.GetType( ) != TC_TYPE_CLOCK ))
             continue;
 
-         printHandler.Write( pfile, spaceLen, "<port name=\"%s\" is_clock=\"%s\"/>\n",
+         printHandler.Write( pfile, spaceLen, "<port name=\"%s\" is_clock=\"%s\"",
                                               TIO_PSZ_STR( port.GetName( )),
                                               port.GetType( ) == TC_TYPE_CLOCK ? "1" : "0" );
+
+         const TLO_Power_c& portPower = port.GetPower( );
+         if( portPower.IsValid( ))
+         {
+            TLO_PowerType_t wireType = TLO_POWER_TYPE_UNDEFINED;
+            double wireCap = 0.0;
+            double wireRelativeLength = 0.0;
+            double wireAbsoluteLength = 0.0;
+            portPower.GetWire( &wireType, &wireCap, &wireRelativeLength, &wireAbsoluteLength );
+
+            TLO_PowerType_t bufferType = TLO_POWER_TYPE_UNDEFINED;
+            double bufferAbsoluteSize = 0.0;
+            portPower.GetBuffer( &bufferType, &bufferAbsoluteSize );
+
+            printHandler.Write( pfile, 0, ">\n" );
+            printHandler.Write( pfile, spaceLen + 3, "<power" );
+            if( wireType == TLO_POWER_TYPE_CAP )
+            {
+               printHandler.Write( pfile, 0, " wire_capacitance=\"%0.*e\"",
+                                             precision + 1, wireCap );
+            }
+            else if( wireType == TLO_POWER_TYPE_RELATIVE_LENGTH )
+            {
+               printHandler.Write( pfile, 0, " wire_relative_length=\"%0.*f\"",
+                                             precision, wireRelativeLength );
+            }
+            else if( wireType == TLO_POWER_TYPE_ABSOLUTE_LENGTH )
+            {
+               if( TCTF_IsGT( wireAbsoluteLength, 0.0 ))
+               {
+                  printHandler.Write( pfile, 0, " wire_length=\"%0.*f\"",
+                                                precision, wireAbsoluteLength );
+               }
+               else
+               {
+                  printHandler.Write( pfile, 0, " wire_length=\"auto\"" );
+               }
+            }
+            if( bufferType == TLO_POWER_TYPE_ABSOLUTE_SIZE )
+            {
+               if( TCTF_IsGT( bufferAbsoluteSize, 0.0 ))
+               {
+                  printHandler.Write( pfile, 0, " buffer_size=\"%0.*f\"",
+                                                precision, bufferAbsoluteSize );
+               }
+               else
+               {
+                  printHandler.Write( pfile, 0, " buffer_size=\"auto\"" );
+               }
+            }
+            printHandler.Write( pfile, 0, "/>\n" );
+            printHandler.Write( pfile, spaceLen, "</port>\n" );
+         }
+         else
+         {
+            printHandler.Write( pfile, 0, "/>\n" );
+         }
       }
       spaceLen -= 3;
       printHandler.Write( pfile, spaceLen, "</input_ports>\n" );
@@ -269,5 +328,5 @@ void TAS_Cell_c::PrintXML(
       printHandler.Write( pfile, spaceLen, "</output_ports>\n" );
    }
    spaceLen -= 3;
-   printHandler.Write( pfile, spaceLen, "</cell>\n" );
+   printHandler.Write( pfile, spaceLen, "</model>\n" );
 }
