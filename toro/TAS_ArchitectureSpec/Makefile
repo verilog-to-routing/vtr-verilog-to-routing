@@ -94,6 +94,8 @@ OBJSlinux_x86_64 = linux_x86_64/TAS_ArchitectureSpec.o \
                     linux_x86_64/TAS_TimingDelay.o \
                     linux_x86_64/TAS_TimingDelayLists.o \
                     linux_x86_64/TAS_ChannelWidth.o \
+                    linux_x86_64/TAS_Power.o \
+                    linux_x86_64/TAS_Clock.o \
                     linux_x86_64/TAS_StringUtils.o
 OBJSlinux_i686 = linux_i686/TAS_ArchitectureSpec.o \
                     linux_i686/TAS_Config.o \
@@ -110,6 +112,8 @@ OBJSlinux_i686 = linux_i686/TAS_ArchitectureSpec.o \
                     linux_i686/TAS_TimingDelay.o \
                     linux_i686/TAS_TimingDelayLists.o \
                     linux_i686/TAS_ChannelWidth.o \
+                    linux_i686/TAS_Power.o \
+                    linux_i686/TAS_Clock.o \
                     linux_i686/TAS_StringUtils.o
 OBJSsun8 = sun8/TAS_ArchitectureSpec.o \
            sun8/TAS_Config.o \
@@ -126,6 +130,8 @@ OBJSsun8 = sun8/TAS_ArchitectureSpec.o \
            sun8/TAS_TimingDelay.o \
            sun8/TAS_TimingDelayLists.o \
            sun8/TAS_ChannelWidth.o \
+           sun8/TAS_Power.o \
+           sun8/TAS_Clock.o \
            sun8/TAS_StringUtils.o
 OBJECTS = $(OBJS$(ISM))
 
