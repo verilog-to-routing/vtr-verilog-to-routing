@@ -46,7 +46,8 @@ public:
                       TOS_PackAffinityMode_t affinityMode,
                       unsigned int blockSize,
                       unsigned int lutSize,
-                      TOS_PackCostMode_t costMode );
+                      TOS_PackCostMode_t costMode,
+                      bool power_enable_ );
    ~TOS_PackOptions_c( void );
 
    void Print( FILE* pfile = stdout, size_t spaceLen = 0 ) const;
@@ -65,6 +66,14 @@ public:
 
    TOS_PackCostMode_t costMode;   // Pack cost: routability-driven|timing-driven
    double             fixedDelay; // Overrides timing analysis net delays (VPR-specific option)
+
+   class TOS_Power_c
+   {
+   public:
+
+      bool enable;                // Enables applying packing power constraints, if any
+
+   } power;
 };
 
 #endif 
