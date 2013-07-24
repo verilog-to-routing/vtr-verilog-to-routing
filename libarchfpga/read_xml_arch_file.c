@@ -2282,6 +2282,11 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 	lut_pb_type->modes[1].pb_type_children[0].depth = lut_pb_type->depth + 1;
 	lut_pb_type->modes[1].pb_type_children[0].parent_mode =
 			&lut_pb_type->modes[1];
+	for(i = 0; i < lut_pb_type->modes[1].pb_type_children[0].num_ports; i++) {
+		if(lut_pb_type->modes[1].pb_type_children[0].ports[i].type == IN_PORT) {
+			lut_pb_type->modes[1].pb_type_children[0].ports[i].equivalent = TRUE;
+		}
+	}
 
 	/* Process interconnect */
 	lut_pb_type->modes[1].num_interconnect = 2;

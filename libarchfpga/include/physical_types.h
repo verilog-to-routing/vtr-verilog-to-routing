@@ -216,7 +216,7 @@ struct s_pb_type;
  * port_class: port belongs to recognized set of ports in class library
  * index: port index by index in array of parent pb_type
  * port_index_by_type index of port by type (index by input, output, or clock)
- * equivalence: 
+ * equivalence: Applies to logic block I/Os and to primitive inputs only
  */
 struct s_port {
 	char* name;
