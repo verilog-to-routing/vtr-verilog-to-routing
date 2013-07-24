@@ -189,6 +189,7 @@ bool TVPR_CircuitDesign_c::Export(
 //---------------------------------------------------------------------------//
 // Version history
 // 07/25/12 jeffr : Original
+// 07/23/13 jeffr : Added support for optional "tiClayResyncNets" parameter
 //===========================================================================//
 void TVPR_CircuitDesign_c::Import(
       const t_arch*              vpr_architecture,
@@ -198,7 +199,8 @@ void TVPR_CircuitDesign_c::Import(
             int                  vpr_blockCount,
       const t_logical_block*     vpr_logicalBlockArray,
       const t_rr_node*           vpr_rrNodeArray,
-            TCD_CircuitDesign_c* pcircuitDesign ) const
+            TCD_CircuitDesign_c* pcircuitDesign,
+            bool                 tiClayResyncNets ) const
 { 
    TPO_InstList_t blockList( pcircuitDesign->blockList );
    TPO_InstList_t* pblockList = &pcircuitDesign->blockList;
@@ -210,7 +212,8 @@ void TVPR_CircuitDesign_c::Import(
                        vpr_blockArray, vpr_blockCount,
                        vpr_logicalBlockArray,
                        vpr_rrNodeArray,
-                       pnetList );
+                       pnetList,
+                       tiClayResyncNets );
 
    this->PeekInputOutputList_( vpr_blockArray, vpr_blockCount,
                                blockList, pblockList );
@@ -1570,7 +1573,8 @@ void TVPR_CircuitDesign_c::PeekNetList_(
             int              vpr_blockCount,
       const t_logical_block* vpr_logicalBlockArray,
       const t_rr_node*       vpr_rrNodeArray,
-            TNO_NetList_c*   pnetList ) const
+            TNO_NetList_c*   pnetList,
+            bool             tiClayResyncNets ) const
 {
    // Initialize net list based on all nets defined in given VPR net list
    this->ExtractNetList_( vpr_netArray, vpr_netCount,
@@ -1589,7 +1593,8 @@ void TVPR_CircuitDesign_c::PeekNetList_(
                                 vpr_netArray, vpr_netCount,
                                 vpr_blockArray, vpr_blockCount,
                                 vpr_rrNodeArray,
-                                pnetList );
+                                pnetList,
+                                tiClayResyncNets );
 }
 
 //===========================================================================//
@@ -2138,6 +2143,7 @@ void TVPR_CircuitDesign_c::ExtractNetListInstPins_(
 //---------------------------------------------------------------------------//
 // Version history
 // 10/05/12 jeffr : Original
+// 07/23/13 jeffr : Added support for optional "tiClayResyncNets" parameter
 //===========================================================================//
 void TVPR_CircuitDesign_c::ExtractNetListRoutes_(
       const t_arch*          vpr_architecture,
@@ -2146,13 +2152,16 @@ void TVPR_CircuitDesign_c::ExtractNetListRoutes_(
       const t_block*         vpr_blockArray,
             int              vpr_blockCount,
       const t_rr_node*       vpr_rrNodeArray,
-            TNO_NetList_c*   pnetList ) const
+            TNO_NetList_c*   pnetList,
+            bool             tiClayResyncNets ) const
 {
    if( vpr_netCount && vpr_blockCount )
    {
       // Call VPR API's special TI-specific function to find all net trace lists
+      boolean applyLogicalEquivalence = static_cast< boolean >( tiClayResyncNets );
       t_trace* pvpr_traceArray = 0;
-      pvpr_traceArray = vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture( vpr_architecture );
+      pvpr_traceArray = vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture( applyLogicalEquivalence,
+                                                                                  vpr_architecture );
       if( pvpr_traceArray )
       {
          // Iterate for every net in the existing VPR net list...
