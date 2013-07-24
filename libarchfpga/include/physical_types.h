@@ -97,7 +97,7 @@ enum e_pin_to_pin_pack_pattern_annotations {
 };
 
 /* Power Estimation type for a PB */
-typedef enum {
+typedef enum e_power_estimation_method {
 	POWER_METHOD_UNDEFINED = 0,
 	POWER_METHOD_IGNORE,			/* Ignore power of this PB, and all children PB */
 	POWER_METHOD_SUM_OF_CHILDREN,	/* Ignore power of this PB, but consider children */
@@ -106,7 +106,8 @@ typedef enum {
 	POWER_METHOD_TOGGLE_PINS,		/* Dynamic: Energy per pin toggle, Static: Absolute */
 	POWER_METHOD_C_INTERNAL,		/* Dynamic: Equiv. Internal capacitance, Static: Absolute */
 	POWER_METHOD_ABSOLUTE			/* Dynamic: Aboslute, Static: Absolute */
-} e_power_estimation_method;
+};
+typedef enum e_power_estimation_method t_power_estimation_method;
 
 /*************************************************************************************************/
 /* FPGA grid layout data types                                                                   */
