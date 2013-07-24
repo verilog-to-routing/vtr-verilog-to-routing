@@ -41,6 +41,7 @@
 //---------------------------------------------------------------------------//
 // Version history
 // 05/15/12 jeffr : Original
+// 07/17/13 jeffr : Added TAS_Power_c member support
 //===========================================================================//
 TAS_PhysicalBlock_c::TAS_PhysicalBlock_c( 
       void )
@@ -162,7 +163,8 @@ TAS_PhysicalBlock_c::TAS_PhysicalBlock_c(
       timingDelayLists( physicalBlock.timingDelayLists ),
       pinAssignPattern( physicalBlock.pinAssignPattern ),
       pinAssignList( physicalBlock.pinAssignList ),
-      gridAssignList( physicalBlock.gridAssignList )
+      gridAssignList( physicalBlock.gridAssignList ),
+      power( physicalBlock.power )
 {
    this->sorted.modeList = physicalBlock.sorted.modeList;
    this->sorted.physicalBlockList =physicalBlock.sorted.physicalBlockList;
@@ -194,6 +196,7 @@ TAS_PhysicalBlock_c::~TAS_PhysicalBlock_c(
 //---------------------------------------------------------------------------//
 // Version history
 // 05/15/12 jeffr : Original
+// 07/17/13 jeffr : Added TAS_Power_c member support
 //===========================================================================//
 TAS_PhysicalBlock_c& TAS_PhysicalBlock_c::operator=( 
       const TAS_PhysicalBlock_c& physicalBlock )
@@ -220,6 +223,7 @@ TAS_PhysicalBlock_c& TAS_PhysicalBlock_c::operator=(
       this->pinAssignPattern = physicalBlock.pinAssignPattern;
       this->pinAssignList = physicalBlock.pinAssignList;
       this->gridAssignList = physicalBlock.gridAssignList;
+      this->power = physicalBlock.power;
       this->sorted.modeList = physicalBlock.sorted.modeList;
       this->sorted.physicalBlockList = physicalBlock.sorted.physicalBlockList;
       this->dims_ = physicalBlock.dims_;
@@ -263,6 +267,7 @@ bool TAS_PhysicalBlock_c::operator!=(
 //---------------------------------------------------------------------------//
 // Version history
 // 05/15/12 jeffr : Original
+// 07/17/13 jeffr : Added TAS_Power_c member support
 //===========================================================================//
 void TAS_PhysicalBlock_c::Print( 
       FILE*           pfile,
@@ -390,6 +395,11 @@ void TAS_PhysicalBlock_c::Print(
    }
    this->gridAssignList.Print( pfile, spaceLen );
 
+   if( this->power.IsValid( ))
+   {
+      this->power.Print( pfile, spaceLen );
+   }
+
    spaceLen -= 3;
    printHandler.Write( pfile, spaceLen, "</%s>\n", pszUsage );
 
@@ -438,6 +448,7 @@ void TAS_PhysicalBlock_c::Print(
 //---------------------------------------------------------------------------//
 // Version history
 // 05/15/12 jeffr : Original
+// 07/17/13 jeffr : Added TAS_Power_c member support
 //===========================================================================//
 void TAS_PhysicalBlock_c::PrintXML( 
       void ) const
@@ -453,6 +464,9 @@ void TAS_PhysicalBlock_c::PrintXML(
       FILE*  pfile,
       size_t spaceLen ) const
 {
+   TC_MinGrid_c& MinGrid = TC_MinGrid_c::GetInstance( );
+   unsigned int precision = MinGrid.GetPrecision( );
+
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
    printHandler.Write( pfile, spaceLen, "<pb_type name=\"%s\" ",
@@ -474,7 +488,11 @@ void TAS_PhysicalBlock_c::PrintXML(
    }
    if( this->srModelName.length( ))
    {
-      printHandler.Write( pfile, 0, "blif_model=\"%s\" ",
+      const char* pszClassType = (( this->classType == TAS_CLASS_SUBCKT ) ||
+                                  ( this->classType == TAS_CLASS_MEMORY ) ?
+                                  ".subckt " : "" );
+      printHandler.Write( pfile, 0, "blif_model=\"%s%s\" ",
+                                    TIO_PSZ_STR( pszClassType ),
                                     TIO_SR_STR( this->srModelName ));
    }
    if( this->numPB > 0 )
@@ -584,7 +602,63 @@ void TAS_PhysicalBlock_c::PrintXML(
          printHandler.Write( pfile, 0, " equivalent=\"%s\"",
                                        TIO_BOOL_VAL( port.IsEquivalent( )));
       }
-      printHandler.Write( pfile, 0, "/>\n" );
+
+      const TLO_Power_c& portPower = port.GetPower( );
+      if( portPower.IsValid( ))
+      {
+         TLO_PowerType_t wireType = TLO_POWER_TYPE_UNDEFINED;
+         double wireCap = 0.0;
+         double wireRelativeLength = 0.0;
+         double wireAbsoluteLength = 0.0;
+         portPower.GetWire( &wireType, &wireCap, &wireRelativeLength, &wireAbsoluteLength );
+
+         TLO_PowerType_t bufferType = TLO_POWER_TYPE_UNDEFINED;
+         double bufferAbsoluteSize = 0.0;
+         portPower.GetBuffer( &bufferType, &bufferAbsoluteSize );
+
+         printHandler.Write( pfile, 0, ">\n" );
+         printHandler.Write( pfile, spaceLen + 3, "<power" );
+         if( wireType == TLO_POWER_TYPE_CAP )
+         {
+            printHandler.Write( pfile, 0, " wire_capacitance=\"%0.*e\"",
+                                          precision + 1, wireCap );
+         }
+         else if( wireType == TLO_POWER_TYPE_RELATIVE_LENGTH )
+         {
+            printHandler.Write( pfile, 0, " wire_relative_length=\"%0.*f\"",
+                                          precision, wireRelativeLength );
+         }
+         else if( wireType == TLO_POWER_TYPE_ABSOLUTE_LENGTH )
+         {
+            if( TCTF_IsGT( wireAbsoluteLength, 0.0 ))
+            {
+               printHandler.Write( pfile, 0, " wire_length=\"%0.*f\"",
+                                             precision, wireAbsoluteLength );
+            }
+            else
+            {
+               printHandler.Write( pfile, 0, " wire_length=\"auto\"" );
+            }
+         }
+         if( bufferType == TLO_POWER_TYPE_ABSOLUTE_SIZE )
+         {
+            if( TCTF_IsGT( bufferAbsoluteSize, 0.0 ))
+            {
+               printHandler.Write( pfile, 0, " buffer_size=\"%0.*f\"",
+                                             precision, bufferAbsoluteSize );
+            }
+            else
+            {
+               printHandler.Write( pfile, 0, " buffer_size=\"auto\"" );
+            }
+         }
+         printHandler.Write( pfile, 0, "/>\n" );
+         printHandler.Write( pfile, spaceLen, "</port>\n" );
+      }
+      else
+      {
+         printHandler.Write( pfile, 0, "/>\n" );
+      }
    }
 
    this->timingDelayLists.PrintXML( pfile, spaceLen );
@@ -616,6 +690,11 @@ void TAS_PhysicalBlock_c::PrintXML(
          this->gridAssignList[i]->PrintXML( pfile, spaceLen + 3 );
       }
       printHandler.Write( pfile, spaceLen, "</gridlocations>\n" );
+   }
+
+   if( this->power.IsValid( ))
+   {
+      this->power.PrintXML( pfile, spaceLen );
    }
 
    spaceLen -= 3;
