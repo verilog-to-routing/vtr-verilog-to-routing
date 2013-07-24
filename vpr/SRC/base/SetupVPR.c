@@ -733,8 +733,10 @@ static void SetupPowerOpts(t_options Options, t_power_opts *power_opts,
 	}
 
 	if (power_opts->do_power) {
-		Arch->power = (t_power_arch*) my_malloc(sizeof(t_power_arch));
-		Arch->clocks = (t_clock_arch*) my_malloc(sizeof(t_clock_arch));
+		if (!Arch->power)
+			Arch->power = (t_power_arch*) my_malloc(sizeof(t_power_arch));
+		if (!Arch->clocks)
+			Arch->clocks = (t_clock_arch*) my_malloc(sizeof(t_clock_arch));
 		g_clock_arch = Arch->clocks;
 	} else {
 		Arch->power = NULL;
