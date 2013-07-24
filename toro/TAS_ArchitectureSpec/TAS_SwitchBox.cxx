@@ -56,6 +56,9 @@ TAS_SwitchBox_c::TAS_SwitchBox_c(
 
    this->area.buffer = 0.0;
    this->area.muxTransistor = 0.0;
+
+   this->power.autoSize = false;
+   this->power.bufferSize = 0.0;
 }
 
 //===========================================================================//
@@ -74,6 +77,9 @@ TAS_SwitchBox_c::TAS_SwitchBox_c(
 
    this->area.buffer = 0.0;
    this->area.muxTransistor = 0.0;
+
+   this->power.autoSize = false;
+   this->power.bufferSize = 0.0;
 }
 
 //===========================================================================//
@@ -92,6 +98,9 @@ TAS_SwitchBox_c::TAS_SwitchBox_c(
 
    this->area.buffer = 0.0;
    this->area.muxTransistor = 0.0;
+
+   this->power.autoSize = false;
+   this->power.bufferSize = 0.0;
 }
 
 //===========================================================================//
@@ -110,6 +119,9 @@ TAS_SwitchBox_c::TAS_SwitchBox_c(
 
    this->area.buffer = switchBox.area.buffer;
    this->area.muxTransistor = switchBox.area.muxTransistor;
+
+   this->power.autoSize = switchBox.power.autoSize;
+   this->power.bufferSize = switchBox.power.bufferSize;
 
    this->dims_ = switchBox.dims_;
    this->origin_ = switchBox.origin_;
@@ -151,6 +163,8 @@ TAS_SwitchBox_c& TAS_SwitchBox_c::operator=(
       this->timing.delay = switchBox.timing.delay;
       this->area.buffer = switchBox.area.buffer;
       this->area.muxTransistor = switchBox.area.muxTransistor;
+      this->power.autoSize = switchBox.power.autoSize;
+      this->power.bufferSize = switchBox.power.bufferSize;
       this->dims_ = switchBox.dims_;
       this->origin_ = switchBox.origin_;
       this->mapTable_ = switchBox.mapTable_;
@@ -281,6 +295,26 @@ void TAS_SwitchBox_c::Print(
       printHandler.Write( pfile, spaceLen, "/>\n" );
    }
 
+   if( this->power.autoSize ||
+       TCTF_IsGT( this->power.bufferSize, 0.0 ))
+   {
+      printHandler.Write( pfile, spaceLen, "<power\n" );
+      spaceLen += 3;
+
+      if( this->power.autoSize )
+      {
+         printHandler.Write( pfile, spaceLen, "auto_size=\"%s\"\n",
+                                              TIO_BOOL_VAL( this->power.autoSize )); 
+      }
+      else if( TCTF_IsGT( this->power.bufferSize, 0.0 ))
+      {
+         printHandler.Write( pfile, spaceLen, "buffer_size=\"%0.*f\"\n", 
+                                              precision, this->power.bufferSize );
+      }
+      spaceLen -= 3;
+      printHandler.Write( pfile, spaceLen, "/>\n" );
+   }
+
    if( this->mapTable_.IsValid( ))
    {
       printHandler.Write( pfile, spaceLen, "<mapping>\n" );
@@ -337,13 +371,26 @@ void TAS_SwitchBox_c::PrintXML(
    string srType;
    TAS_ExtractStringSwitchBoxType( this->type, &srType );
 
-   printHandler.Write( pfile, spaceLen, "<switch type=\"%s\" name=\"%s\" R=\"%0.*f\" Cin=\"%0.*e\" Cout=\"%0.*e\" Tdel=\"%0.*e\" buf_size=\"%0.*f\" mux_trans_size=\"%0.*f\"/>\n",
-                                        TIO_SR_STR( srType ),
-                                        TIO_SR_STR( this->srName ),
-                                        precision, this->timing.res,
-                                        precision + 1, this->timing.capInput,
-                                        precision + 1, this->timing.capOutput,
-                                        precision + 1, this->timing.delay,
-                                        precision, this->area.buffer,
-                                        precision, this->area.muxTransistor );
+   printHandler.Write( pfile, spaceLen, "<switch" );
+   printHandler.Write( pfile, 0, " type=\"%s\" name=\"%s\"",
+                                 TIO_SR_STR( srType ),
+                                 TIO_SR_STR( this->srName ));
+   printHandler.Write( pfile, 0, " R=\"%0.*f\" Cin=\"%0.*e\" Cout=\"%0.*e\" Tdel=\"%0.*e\"",
+                                 precision, this->timing.res,
+                                 precision + 1, this->timing.capInput,
+                                 precision + 1, this->timing.capOutput,
+                                 precision + 1, this->timing.delay );
+   printHandler.Write( pfile, 0, " buf_size=\"%0.*f\" mux_trans_size=\"%0.*f\"",
+                                 precision, this->area.buffer,
+                                 precision, this->area.muxTransistor );
+   if( this->power.autoSize )
+   {
+      printHandler.Write( pfile, 0, " power_buf_size=\"auto\"" );
+   }
+   else if( TCTF_IsGT( this->power.bufferSize, 0.0 ))
+   {
+      printHandler.Write( pfile, 0, " power_buf_size=\"%0.*f\"",
+                                    precision, this->power.bufferSize );
+   }
+   printHandler.Write( pfile, 0, "/>\n" );
 }
