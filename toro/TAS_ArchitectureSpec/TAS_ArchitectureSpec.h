@@ -100,6 +100,9 @@ private:
    bool InitValidateCellList_( const TAS_CellList_t& cellList ) const;
    bool InitValidateCell_( const TAS_Cell_c& cell ) const;
 
+   TAS_PhysicalBlock_c* FindPhysicalBlockHier_( const TAS_PhysicalBlockList_t& physicalBlockList,
+                                                      const TAS_PhysicalBlock_c& physicalBlock ) const;
+
    bool HasPhysicalBlockUsage_( void ) const;
 
 public:
