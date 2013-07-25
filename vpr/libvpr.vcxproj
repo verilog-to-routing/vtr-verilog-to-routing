@@ -12,10 +12,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SRC\base\check_netlist.h" />
-    <ClInclude Include="SRC\base\draw.h" />
     <ClInclude Include="SRC\base\globals.h" />
     <ClInclude Include="SRC\base\globals_declare.h" />
-    <ClInclude Include="SRC\base\graphics.h" />
     <ClInclude Include="SRC\base\OptionTokens.h" />
     <ClInclude Include="SRC\base\place_and_route.h" />
     <ClInclude Include="SRC\base\ReadOptions.h" />
@@ -29,6 +27,9 @@
     <ClInclude Include="SRC\base\verilog_writer.h" />
     <ClInclude Include="SRC\base\vpr_api.h" />
     <ClInclude Include="SRC\base\vpr_types.h" />
+    <ClInclude Include="SRC\draw\draw.h" />
+    <ClInclude Include="SRC\draw\easygl_constants.h" />
+    <ClInclude Include="SRC\draw\graphics.h" />
     <ClInclude Include="SRC\pack\cluster.h" />
     <ClInclude Include="SRC\pack\cluster_feasibility_filter.h" />
     <ClInclude Include="SRC\pack\cluster_legality.h" />
@@ -84,9 +85,7 @@
     <ClCompile Include="SRC\base\CheckOptions.c" />
     <ClCompile Include="SRC\base\CheckSetup.c" />
     <ClCompile Include="SRC\base\check_netlist.c" />
-    <ClCompile Include="SRC\base\draw.c" />
     <ClCompile Include="SRC\base\globals.c" />
-    <ClCompile Include="SRC\base\graphics.c" />
     <ClCompile Include="SRC\base\OptionTokens.c" />
     <ClCompile Include="SRC\base\place_and_route.c" />
     <ClCompile Include="SRC\base\ReadOptions.c" />
@@ -100,6 +99,8 @@
     <ClCompile Include="SRC\base\stats.c" />
     <ClCompile Include="SRC\base\verilog_writer.c" />
     <ClCompile Include="SRC\base\vpr_api.c" />
+    <ClCompile Include="SRC\draw\draw.c" />
+    <ClCompile Include="SRC\draw\graphics.c" />
     <ClCompile Include="SRC\pack\cluster.c" />
     <ClCompile Include="SRC\pack\cluster_feasibility_filter.c" />
     <ClCompile Include="SRC\pack\cluster_legality.c" />
@@ -171,7 +172,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VCInstallDir)include;..\vpr\SRC\base;..\vpr\SRC\util;..\vpr\SRC\pack;..\vpr\SRC\place;..\vpr\SRC\route;..\vpr\SRC\timing;..\vpr\SRC\power;..\libarchfpga\include;..\toro\TIO_InputOutputHandlers</IncludePath>
+    <IncludePath>$(VCInstallDir)include;..\vpr\SRC\base;..\vpr\SRC\util;..\vpr\SRC\pack;..\vpr\SRC\place;..\vpr\SRC\route;..\vpr\SRC\timing;..\vpr\SRC\power;..\vpr\SRC\draw;..\libarchfpga\include;..\toro\TIO_InputOutputHandlers</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
