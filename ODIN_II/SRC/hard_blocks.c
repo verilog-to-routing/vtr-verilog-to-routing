@@ -154,6 +154,13 @@ void define_hard_block(nnode_t *node, short type, FILE *out)
 	port = index = 0;
 	for (i = 0;  i < node->num_input_pins; i++)
 	{
+		/* Check that the input pin is driven */
+		if (node->input_pins[i]->net->driver_pin == NULL)
+		{
+			printf("Signal %s is not driven. Odin will terminate.\n", node->input_pins[i]->name);
+			exit(1);
+		}
+
 		if (node->input_port_sizes[port] == 1)
 			j = sprintf(buffer, " %s=%s", node->input_pins[i]->mapping, node->input_pins[i]->net->driver_pin->node->name);
 		else
