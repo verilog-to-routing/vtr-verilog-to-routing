@@ -1653,7 +1653,7 @@ static void check_pb_node_rec(INP const t_pb_graph_node* pb_graph_node){
 	
 	int i, j, k;
 	int line_num = 0;
-	map<int, int> equivalent_pins_map;
+	map<int, int> logic_equivalent_pins_map;
 
 	for(i = 0; i < pb_graph_node->num_input_ports; i++){
 		for(j = 0; j < pb_graph_node->num_input_pins[i]; j++){
@@ -1661,7 +1661,7 @@ static void check_pb_node_rec(INP const t_pb_graph_node* pb_graph_node){
 			// Checks the equivalency of pins of an input port
 			if(pb_graph_node->input_pins[i][j].port->equivalent){
 				if(!check_input_pins_equivalence(&pb_graph_node->input_pins[i][j],
-					j, equivalent_pins_map, &line_num)){
+					j, logic_equivalent_pins_map, &line_num)){
 						vpr_printf_warning(__FILE__, __LINE__,
 							"[LINE %d] False logically-equivalent pin %s[%d].%s[%d].\n",
 							line_num, pb_graph_node->pb_type->name,
@@ -1671,7 +1671,7 @@ static void check_pb_node_rec(INP const t_pb_graph_node* pb_graph_node){
 				}
 			}
 		}
-		equivalent_pins_map.clear();
+		logic_equivalent_pins_map.clear();
 	}
 
 	for(i = 0; i < pb_graph_node->num_output_ports; i++){
@@ -1767,14 +1767,14 @@ static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
  *			to compare with the rest of the pins in the port. 
  */
 static boolean check_input_pins_equivalence(INP t_pb_graph_pin* cur_pin, 
-	INP int i_pin, INOUTP map<int, int>& equivalent_pins_map, OUTP int* line_num){
+	INP int i_pin, INOUTP map<int, int>& logic_equivalent_pins_map, OUTP int* line_num){
 
 	int i, j, edge_count;
 	t_pb_graph_edge* cur_edge; 
 	boolean pins_equivalent = TRUE;
 
 	if(i_pin == 0){
-		assert(equivalent_pins_map.empty());
+		assert(logic_equivalent_pins_map.empty());
 	}
 	edge_count = 0;
 	for(i = 0; i < cur_pin->num_output_edges; i++){
@@ -1783,13 +1783,13 @@ static boolean check_input_pins_equivalence(INP t_pb_graph_pin* cur_pin,
 		for(j = 0; j < cur_edge->num_output_pins; j++){
 			if(i_pin == 0){
 				// First pin of an equivalent port, populate edges_map first
-				equivalent_pins_map.insert(pair<int, int>(cur_edge->output_pins[j]->pin_count_in_cluster,0));
+				logic_equivalent_pins_map.insert(pair<int, int>(cur_edge->output_pins[j]->pin_count_in_cluster,0));
 			}
 			else{
 				// Rest of the pins of an equivalent port, they should connect to the
 				// same set of pins
-				if(equivalent_pins_map.find(cur_edge->output_pins[j]->pin_count_in_cluster) == 
-					equivalent_pins_map.end()){
+				if(logic_equivalent_pins_map.find(cur_edge->output_pins[j]->pin_count_in_cluster) == 
+					logic_equivalent_pins_map.end()){
 					// Could not find the outpin that cur_pin connects to
 					pins_equivalent = FALSE;
 				}
@@ -1798,7 +1798,7 @@ static boolean check_input_pins_equivalence(INP t_pb_graph_pin* cur_pin,
 		}
 	}
 
-	if(edge_count != (int)equivalent_pins_map.size()){
+	if(edge_count != (int)logic_equivalent_pins_map.size()){
 	// The number of outgoing edges for each pin of an logically-equivalent
 	// port should be exactly the same
 		pins_equivalent = FALSE;
