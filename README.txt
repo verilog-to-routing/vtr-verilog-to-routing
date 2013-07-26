@@ -28,7 +28,7 @@ You break the build if your commit breaks any of the automated regression tests.
 Professors: Kenneth Kent, Peter Jamieson, Jason Anderson, Vaughn Betz, Jonathan Rose
 
 Graduate Students: Jason Luu, Jeffrey Goeders, Chi Wai Yu, Andrew Somerville, 
-Ian Kuon, Alexander Marquardt, Andy Ye, Wei Mark Fang, Tim Liu
+Ian Kuon, Alexander Marquardt, Andy Ye, Wei Mark Fang, Tim Liu, Charles Chiasson
 
 Summer Students: Opal Densmore, Ted Campbell, Cong Wang, Peter Milankov, Scott Whitty, Michael Wainberg,
 Suya Liu, Miad Nasr, Nooruddin Ahmed, Thien Yu
