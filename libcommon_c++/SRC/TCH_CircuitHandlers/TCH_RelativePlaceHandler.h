@@ -56,7 +56,6 @@ public:
    static bool HasInstance( void );
 
    bool Configure( bool placeOptions_rotateEnable,
-// ???
                    bool placeOptions_carryChainEnable,
                    size_t placeOptions_maxPlaceRetryCt,
                    size_t placeOptions_maxMacroRetryCt,
@@ -73,7 +72,6 @@ public:
              t_legal_pos** vpr_legalPosArray );
    bool Reset( void );
 
-// ???
    bool LoadCarryChains( const t_block* vpr_blockArray,
                          const t_pl_macro* vpr_placeMacroArray,
                          int vpr_placeMacroCount );
