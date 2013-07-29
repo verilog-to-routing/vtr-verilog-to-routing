@@ -58,6 +58,28 @@ bool TC_FormatStringFileNameLineNum( char* pszFileNameLineNum,
                                      const char* pszPrefix = 0,
                                      const char* pszPostfix = 0 );
 
+void TC_FormatStringNameIndex( const char* pszName, 
+                               size_t index,
+                               string* psrNameIndex );
+void TC_FormatStringNameIndex( const string& srName,
+                               size_t index,
+                               string* psrNameIndex );
+
+bool TC_ParseStringNameIndex( const char* pszNameIndex,
+                              string* psrName,
+                              size_t* pindex );
+bool TC_ParseStringNameIndex( const string& srNameIndex,
+                              string* psrName,
+                              size_t* pindex );
+bool TC_ParseStringNameIndices( const char* pszNameIndices,
+                                string* psrName,
+                                size_t* pindex_i,
+                                size_t* pindex_j );
+bool TC_ParseStringNameIndices( const string& srNameIndices,
+                                string* psrName,
+                                size_t* pindex_i,
+                                size_t* pindex_j );
+
 void TC_ExtractStringSideMode( TC_SideMode_t sideMode, string* psrSideMode );
 void TC_ExtractStringTypeMode( TC_TypeMode_t typeMode, string* psrTypeMode );
 
