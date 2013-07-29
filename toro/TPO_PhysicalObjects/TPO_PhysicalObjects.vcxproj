@@ -11,18 +11,22 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="TPO_HierMap.h" />
+    <ClInclude Include="TPO_HierInstMap.h" />
     <ClInclude Include="TPO_Inst.h" />
+    <ClInclude Include="TPO_InstHierMap.h" />
     <ClInclude Include="TPO_PinMap.h" />
-    <ClInclude Include="TPO_Relative.h" />
+    <ClInclude Include="TPO_PlaceRegions.h" />
+    <ClInclude Include="TPO_PlaceRelative.h" />
     <ClInclude Include="TPO_StringUtils.h" />
     <ClInclude Include="TPO_Typedefs.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="TPO_HierMap.cxx" />
+    <ClCompile Include="TPO_HierInstMap.cxx" />
     <ClCompile Include="TPO_Inst.cxx" />
+    <ClCompile Include="TPO_InstHierMap.cxx" />
     <ClCompile Include="TPO_PinMap.cxx" />
-    <ClCompile Include="TPO_Relative.cxx" />
+    <ClCompile Include="TPO_PlaceRegions.cxx" />
+    <ClCompile Include="TPO_PlaceRelative.cxx" />
     <ClCompile Include="TPO_StringUtils.cxx" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
