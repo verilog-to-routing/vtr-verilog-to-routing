@@ -167,9 +167,9 @@ private:
                                 boolean** pvpr_patternArray,
                                 int* pvpr_patternLen ) const;
 
-   enum e_power_estimation_method FindPowerMethodMode_( TAS_PowerMethodMode_t mode,
-                                                        t_pb_type* pvpr_pb_type ) const;
-   enum e_power_estimation_method InheritPowerMethodMode_( enum e_power_estimation_method mode ) const;
+   t_power_estimation_method FindPowerMethodMode_( TAS_PowerMethodMode_t mode,
+                                                   t_pb_type* pvpr_pb_type ) const;
+   t_power_estimation_method InheritPowerMethodMode_( t_power_estimation_method mode ) const;
 };
 
 #endif 
