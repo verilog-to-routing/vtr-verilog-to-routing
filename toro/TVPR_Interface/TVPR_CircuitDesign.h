@@ -198,15 +198,15 @@ private:
                             int blockIndex,
                             const TPO_InstList_t& physicalBlockList,
                             TPO_InstList_t* pphysicalBlockList ) const;
-   void PeekHierMapList_( const t_pb& vpr_pb,
-                          const t_logical_block* vpr_logicalBlockArray,
-                          int blockIndex,
-                          TPO_HierMapList_t* phierMapList ) const;
-   void PeekHierMapList_( const t_pb& vpr_pb,
-                          const t_logical_block* vpr_logicalBlockArray,
-                          int nodeIndex,
-                          TPO_NameList_t* phierNameList,
-                          TPO_HierMapList_t* phierMapList ) const;
+   void PeekPackHierMapList_( const t_pb& vpr_pb,
+                              const t_logical_block* vpr_logicalBlockArray,
+                              int blockIndex,
+                              TPO_InstHierMapList_t* ppackHierMapList ) const;
+   void PeekPackHierMapList_( const t_pb& vpr_pb,
+                              const t_logical_block* vpr_logicalBlockArray,
+                              int nodeIndex,
+                              TPO_NameList_t* phierNameList,
+                              TPO_InstHierMapList_t* ppackHierMapList ) const;
    void PeekNetList_( const t_arch* vpr_architecture,
                       const t_net* vpr_netArray,
                       int vpr_netCount,
