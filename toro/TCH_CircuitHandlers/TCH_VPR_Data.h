@@ -44,6 +44,10 @@ class TCH_VPR_Data_c
 public:
 
    TCH_VPR_Data_c( void );
+   TCH_VPR_Data_c( t_block* vpr_blockArray,
+                   int vpr_blockCount,
+                   const t_logical_block* vpr_logicalBlockArray,
+                   int vpr_logicalBlockCount );
    TCH_VPR_Data_c( t_grid_tile** vpr_gridArray,
                    int vpr_nx,
                    int vpr_ny,
@@ -69,6 +73,10 @@ public:
    bool operator==( const TCH_VPR_Data_c& vpr_data ) const;
    bool operator!=( const TCH_VPR_Data_c& vpr_data ) const;
 
+   void Init( t_block* vpr_blockArray,
+              int vpr_blockCount,
+              const t_logical_block* vpr_logicalBlockArray,
+              int vpr_logicalBlockCount );
    void Init( t_grid_tile** vpr_gridArray,
               int vpr_nx,
               int vpr_ny,
@@ -126,28 +134,30 @@ public:
 
 public:
 
-   t_grid_tile**      vpr_gridArray;      // Local pointer to VPR's grid array structure
-   int                vpr_nx;             // "
-   int                vpr_ny;             // "
+   t_grid_tile**      vpr_gridArray;        // Local pointer to VPR's grid array structure
+   int                vpr_nx;               // "
+   int                vpr_ny;               // "
 
-   t_block*           vpr_blockArray;     // Local pointers to VPR's block array structure
-   int                vpr_blockCount;     // "
-   t_type_descriptor* vpr_typeArray;      // "
-   int                vpr_typeCount;      // "
+   t_block*           vpr_blockArray;       // Local pointers to VPR's block array structure
+   int                vpr_blockCount;       // "
+   t_logical_block*   vpr_logicalBlockArray;// "
+   int                vpr_logicalBlockCount;// "
+   t_type_descriptor* vpr_typeArray;        // "
+   int                vpr_typeCount;        // "
 
-   t_net*        vpr_netArray;            // Local pointer to VPR's net array structure
-   int           vpr_netCount;            // "
+   t_net*        vpr_netArray;              // Local pointer to VPR's net array structure
+   int           vpr_netCount;              // "
 
-   t_rr_node*    vpr_rrNodeArray;         // Local pointer to VPR's "rr_graph" structure
-   int           vpr_rrNodeCount;         // "
+   t_rr_node*    vpr_rrNodeArray;           // Local pointer to VPR's "rr_graph" structure
+   int           vpr_rrNodeCount;           // "
 
-   int*          vpr_freeLocationArray;   // Local pointers to VPR's placement structures
-   t_legal_pos** vpr_legalPosArray;       // "
+   int*          vpr_freeLocationArray;     // Local pointers to VPR's placement structures
+   t_legal_pos** vpr_legalPosArray;         // "
 
 private:
 
-   int*          pvpr_freeLocationArray_; // Local copies of VPR's placement structures
-   t_legal_pos** pvpr_legalPosArray_;     // (used to restore original placement structures)
+   int*          pvpr_freeLocationArray_;   // Local copies of VPR's placement structures
+   t_legal_pos** pvpr_legalPosArray_;       // (used to restore original placement structures)
 };
 
 #endif
