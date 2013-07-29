@@ -237,14 +237,14 @@ bool TCH_RelativePlaceHandler_c::Configure(
    for( size_t i = 0; i < toro_circuitBlockList.GetLength( ); ++i )
    {
       const TPO_Inst_c& toro_circuitBlock = *toro_circuitBlockList[i];
-      const TPO_RelativeList_t& placeRelativeList = toro_circuitBlock.GetPlaceRelativeList( );
+      const TPO_PlaceRelativeList_t& placeRelativeList = toro_circuitBlock.GetPlaceRelativeList( );
       if( !placeRelativeList.IsValid( ))
          continue;
 
       const char* pszFromBlockName = toro_circuitBlock.GetName( );
       for( size_t j = 0; j < placeRelativeList.GetLength( ); ++j )
       {
-         const TPO_Relative_c& placeRelative = *placeRelativeList[j];
+         const TPO_PlaceRelative_c& placeRelative = *placeRelativeList[j];
 
          const char* pszToBlockName = placeRelative.GetName( );
          TC_SideMode_t side = placeRelative.GetSide( );
