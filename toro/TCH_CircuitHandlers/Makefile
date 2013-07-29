@@ -75,7 +75,8 @@ LIBSOlinux_i686 = ../linux_i686/$(PROG).$(SOL)
 LIBSOsun8 = ../sun8/$(PROG).$(SOL)
 LIBSO = $(LIBSO$(ISM))
 
-OBJSlinux_x86_64 = linux_x86_64/TCH_RelativePlaceHandler.o \
+OBJSlinux_x86_64 = linux_x86_64/TCH_RegionPlaceHandler.o \
+                   linux_x86_64/TCH_RelativePlaceHandler.o \
                    linux_x86_64/TCH_RelativeMacro.o \
                    linux_x86_64/TCH_RelativeNode.o \
                    linux_x86_64/TCH_RelativeBlock.o \
@@ -92,7 +93,8 @@ OBJSlinux_x86_64 = linux_x86_64/TCH_RelativePlaceHandler.o \
                    linux_x86_64/TCH_VPR_GraphToRoute.o \
                    linux_x86_64/TCH_VPR_Data.o \
                    linux_x86_64/TCH_StringUtils.o 
-OBJSlinux_i686 = linux_i686/TCH_RelativePlaceHandler.o \
+OBJSlinux_i686 = linux_i686/TCH_RegionPlaceHandler.o \
+                 linux_i686/TCH_RelativePlaceHandler.o \
                  linux_i686/TCH_RelativeMacro.o \
                  linux_i686/TCH_RelativeNode.o \
                  linux_i686/TCH_RelativeBlock.o \
@@ -109,7 +111,8 @@ OBJSlinux_i686 = linux_i686/TCH_RelativePlaceHandler.o \
                  linux_i686/TCH_VPR_GraphToRoute.o \
                  linux_i686/TCH_VPR_Data.o \
                  linux_i686/TCH_StringUtils.o 
-OBJSsun8 = sun8/TCH_RelativePlaceHandler.o \
+OBJSsun8 = sun8/TCH_RegionPlaceHandler.o \
+           sun8/TCH_RelativePlaceHandler.o \
            sun8/TCH_RelativeMacro.o \
            sun8/TCH_RelativeNode.o \
            sun8/TCH_RelativeBlock.o \
