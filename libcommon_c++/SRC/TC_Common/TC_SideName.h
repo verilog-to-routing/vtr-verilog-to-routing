@@ -5,7 +5,7 @@
 //           - SetName (required for TCT_SortedNameDynamicVector_c class)
 //           - GetName (required for TCT_SortedNameDynamicVector_c class)
 //           - GetCompare (required for TCT_BSearch and TCT_QSort classes)
-//           - GetSide, GetName
+//           - GetSide, GetDx, GetDy, GetName
 //           - IsValid
 //
 //===========================================================================//
@@ -51,8 +51,10 @@ public:
 
    TC_SideName_c( void );
    TC_SideName_c( TC_SideMode_t side,
+                  int dx, int dy,
                   const string& srName );
    TC_SideName_c( TC_SideMode_t side,
+                  int dx, int dy,
                   const char* pszName );
    TC_SideName_c( const TC_SideName_c& sideName );
    ~TC_SideName_c( void );
@@ -72,10 +74,14 @@ public:
    const char* GetCompare( void ) const;
 
    TC_SideMode_t GetSide( void ) const;
+   int GetDx( void ) const;
+   int GetDy( void ) const;
 
    void Set( TC_SideMode_t side,
+             int dx, int dy,
              const string& srName );
    void Set( TC_SideMode_t side,
+             int dx, int dy,
              const char* pszName );
    void Clear( void );
 
@@ -84,6 +90,8 @@ public:
 private:
 
    TC_SideMode_t side_;
+   int           dx_;
+   int           dy_;
    string        srName_;
 };
 
@@ -129,10 +137,26 @@ inline TC_SideMode_t TC_SideName_c::GetSide(
 }
 
 //===========================================================================//
+inline int TC_SideName_c::GetDx( 
+      void ) const
+{
+   return( this->dx_ );
+}
+
+//===========================================================================//
+inline int TC_SideName_c::GetDy( 
+      void ) const
+{
+   return( this->dy_ );
+}
+
+//===========================================================================//
 inline bool TC_SideName_c::IsValid( 
       void ) const
 {
-   return( this->side_ != TC_SIDE_UNDEFINED ? true : false );
+   return(( this->side_ != TC_SIDE_UNDEFINED ) || 
+          ( this->dx_ != INT_MAX && this->dy_ != INT_MAX ) ? 
+          true : false );
 }
 
 #endif
