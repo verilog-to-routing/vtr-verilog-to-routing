@@ -11,7 +11,7 @@
 //           - SetNamesLogicBitsList
 //           - SetLatchClockType, SetLatchInitState
 //           - SetSubcktPinMapList
-//           - SetPackHierMapList
+//           - SetPackInstHierMapList
 //           - SetPlaceFabricName
 //           - SetPlaceStatus, SetPlaceOrigin
 //           - SetPlaceRegionList, SetPlaceRelativeList
@@ -204,7 +204,7 @@ TPO_Inst_c::TPO_Inst_c(
 
    this->subckt_.pinMapList = inst.subckt_.pinMapList;
 
-   this->pack_.hierMapList = inst.pack_.hierMapList;
+   this->pack_.instHierMapList = inst.pack_.instHierMapList;
 
    this->place_.srFabricName = inst.place_.srFabricName;
    this->place_.status = inst.place_.status;
@@ -247,7 +247,7 @@ TPO_Inst_c& TPO_Inst_c::operator=(
       this->latch_.clockType = inst.latch_.clockType;
       this->latch_.initState = inst.latch_.initState;
       this->subckt_.pinMapList = inst.subckt_.pinMapList;
-      this->pack_.hierMapList = inst.pack_.hierMapList;
+      this->pack_.instHierMapList = inst.pack_.instHierMapList;
       this->place_.srFabricName = inst.place_.srFabricName;
       this->place_.status = inst.place_.status;
       this->place_.origin = inst.place_.origin;
@@ -379,9 +379,9 @@ void TPO_Inst_c::Print(
       }
    }
 
-   if( this->pack_.hierMapList.IsValid( ))
+   if( this->pack_.instHierMapList.IsValid( ))
    {
-      this->pack_.hierMapList.Print( pfile, spaceLen );
+      this->pack_.instHierMapList.Print( pfile, spaceLen );
    }
 
    if( this->place_.srFabricName.length( ) || 
@@ -405,7 +405,7 @@ void TPO_Inst_c::Print(
 
    for( size_t i = 0; i < this->place_.relativeList.GetLength( ); ++i )
    {
-      const TPO_Relative_c& relative = *this->place_.relativeList[i];
+      const TPO_PlaceRelative_c& relative = *this->place_.relativeList[i];
 
       printHandler.Write( pfile, spaceLen, "<relative name=\"%s\"", 
                                            TIO_PSZ_STR( relative.GetName( )));
@@ -615,16 +615,16 @@ void TPO_Inst_c::SetSubcktPinMapList(
 }
 
 //===========================================================================//
-// Method         : SetPackHierMapList
+// Method         : SetPackInstHierMapList
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
 // 05/15/12 jeffr : Original
 //===========================================================================//
-void TPO_Inst_c::SetPackHierMapList(
-      const TPO_HierMapList_t& hierMapList )
+void TPO_Inst_c::SetPackInstHierMapList(
+      const TPO_InstHierMapList_t& instHierMapList )
 {
-   this->pack_.hierMapList = hierMapList;
+   this->pack_.instHierMapList = instHierMapList;
 }
 
 //===========================================================================//
@@ -694,7 +694,7 @@ void TPO_Inst_c::SetPlaceRegionList(
 // 05/15/12 jeffr : Original
 //===========================================================================//
 void TPO_Inst_c::SetPlaceRelativeList(
-      const TPO_RelativeList_t& relativeList )
+      const TPO_PlaceRelativeList_t& relativeList )
 {
    this->place_.relativeList = relativeList;
 }
@@ -786,8 +786,8 @@ void TPO_Inst_c::Clear(
    this->subckt_.pinMapList.Clear( );
    this->subckt_.pinMapList.SetCapacity( TPO_PIN_MAP_LIST_DEF_CAPACITY );
 
-   this->pack_.hierMapList.Clear( );
-   this->pack_.hierMapList.SetCapacity( TPO_HIER_MAP_LIST_DEF_CAPACITY );
+   this->pack_.instHierMapList.Clear( );
+   this->pack_.instHierMapList.SetCapacity( TPO_INST_HIER_MAP_LIST_DEF_CAPACITY );
 
    this->place_.srFabricName = "";
    this->place_.status = TPO_STATUS_UNDEFINED;
