@@ -1,6 +1,9 @@
 ################################   MAKEFILE OPTIONS     ####################################
 # Build the external objects library
 
+setenv ENABLE_TORO = false
+# can be true or false
+
 export BUILD_TYPE = release
 # can be debug or release - this option gets inherited by the library libarchfpga 
 # by default, though libarchfpga's build type can be set independently in libarchfpga's Makefile.
@@ -31,6 +34,19 @@ ifneq (,$(findstring release, $(BUILD_TYPE)))
   FLAGS := $(FLAGS) $(OPT_FLAGS)
 else                              # DEBUG build
   FLAGS := $(FLAGS) $(DEBUG_FLAGS)
+endif
+
+ifneq (,$(findstring true, $(ENABLE_TORO)))
+  FLAGS := $(FLAGS) \
+	-D TORO_FABRIC_GRID_OVERRIDE  \
+	-D TORO_FABRIC_BLOCK_OVERRIDE  \
+	-D TORO_FABRIC_SWITCHBOX_OVERRIDE  \
+	-D TORO_FABRIC_CONNECTIONBLOCK_OVERRIDE  \
+	-D TORO_FABRIC_CHANNEL_OVERRIDE  \
+	-D TORO_REGION_PLACEMENT_ENABLE  \
+	-D TORO_RELATIVE_PLACEMENT_ENABLE  \
+	-D TORO_PREPLACED_PLACEMENT_ENABLE  \
+	-D TORO_PREROUTED_ROUTING_ENABLE
 endif
 
 EXE = printhandlerdemo
