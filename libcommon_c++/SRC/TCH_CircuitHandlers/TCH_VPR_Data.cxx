@@ -56,6 +56,8 @@ TCH_VPR_Data_c::TCH_VPR_Data_c(
       vpr_ny( 0 ),
       vpr_blockArray( 0 ),
       vpr_blockCount( 0 ),
+      vpr_logicalBlockArray( 0 ),
+      vpr_logicalBlockCount( 0 ),
       vpr_typeArray( 0 ),
       vpr_typeCount( 0 ),
       vpr_netArray( 0 ),
@@ -67,6 +69,35 @@ TCH_VPR_Data_c::TCH_VPR_Data_c(
       pvpr_freeLocationArray_( 0 ),
       pvpr_legalPosArray_( 0 )
 {
+}
+
+//===========================================================================//
+TCH_VPR_Data_c::TCH_VPR_Data_c( 
+            t_block*         vpr_blockArray_,
+            int              vpr_blockCount_,
+      const t_logical_block* vpr_logicalBlockArray_,
+            int              vpr_logicalBlockCount_ )
+      :
+      vpr_gridArray( 0 ),
+      vpr_nx( 0 ),
+      vpr_ny( 0 ),
+      vpr_blockArray( 0 ),
+      vpr_blockCount( 0 ),
+      vpr_logicalBlockArray( 0 ),
+      vpr_logicalBlockCount( 0 ),
+      vpr_typeArray( 0 ),
+      vpr_typeCount( 0 ),
+      vpr_netArray( 0 ),
+      vpr_netCount( 0 ),
+      vpr_rrNodeArray( 0 ),
+      vpr_rrNodeCount( 0 ),
+      vpr_freeLocationArray( 0 ),
+      vpr_legalPosArray( 0 ),
+      pvpr_freeLocationArray_( 0 ),
+      pvpr_legalPosArray_( 0 )
+{
+   this->Init( vpr_blockArray_, vpr_blockCount_,
+               vpr_logicalBlockArray_, vpr_logicalBlockCount_ );
 }
 
 //===========================================================================//
@@ -86,6 +117,8 @@ TCH_VPR_Data_c::TCH_VPR_Data_c(
       vpr_ny( 0 ),
       vpr_blockArray( 0 ),
       vpr_blockCount( 0 ),
+      vpr_logicalBlockArray( 0 ),
+      vpr_logicalBlockCount( 0 ),
       vpr_typeArray( 0 ),
       vpr_typeCount( 0 ),
       vpr_netArray( 0 ),
@@ -130,6 +163,8 @@ TCH_VPR_Data_c::TCH_VPR_Data_c(
       vpr_ny( 0 ),
       vpr_blockArray( 0 ),
       vpr_blockCount( 0 ),
+      vpr_logicalBlockArray( 0 ),
+      vpr_logicalBlockCount( 0 ),
       vpr_typeArray( 0 ),
       vpr_typeCount( 0 ),
       vpr_netArray( 0 ),
@@ -200,6 +235,8 @@ bool TCH_VPR_Data_c::operator==(
           ( this->vpr_ny == vpr_data.vpr_ny ) &&
           ( this->vpr_blockArray == vpr_data.vpr_blockArray ) &&
           ( this->vpr_blockCount == vpr_data.vpr_blockCount ) &&
+          ( this->vpr_logicalBlockArray == vpr_data.vpr_logicalBlockArray ) &&
+          ( this->vpr_logicalBlockCount == vpr_data.vpr_logicalBlockCount ) &&
           ( this->vpr_typeArray == vpr_data.vpr_typeArray ) &&
           ( this->vpr_typeCount == vpr_data.vpr_typeCount ) &&
           ( this->vpr_netArray == vpr_data.vpr_netArray ) &&
@@ -230,6 +267,19 @@ bool TCH_VPR_Data_c::operator!=(
 //---------------------------------------------------------------------------//
 // Version history
 // 01/15/13 jeffr : Original
+//===========================================================================//
+void TCH_VPR_Data_c::Init( 
+            t_block*         vpr_blockArray_,
+            int              vpr_blockCount_,
+      const t_logical_block* vpr_logicalBlockArray_,
+            int              vpr_logicalBlockCount_ )
+{
+   this->vpr_blockArray = vpr_blockArray_;
+   this->vpr_blockCount = vpr_blockCount_;
+   this->vpr_logicalBlockArray = const_cast< t_logical_block* >( vpr_logicalBlockArray_ );
+   this->vpr_logicalBlockCount = vpr_logicalBlockCount_;
+}
+
 //===========================================================================//
 void TCH_VPR_Data_c::Init( 
             t_grid_tile**      vpr_gridArray_,
@@ -365,6 +415,8 @@ void TCH_VPR_Data_c::Clear(
    this->vpr_typeArray = 0;
    this->vpr_blockCount = 0;
    this->vpr_blockArray = 0;
+   this->vpr_logicalBlockCount = 0;
+   this->vpr_logicalBlockArray = 0;
 
    this->vpr_ny = 0;
    this->vpr_nx = 0;
