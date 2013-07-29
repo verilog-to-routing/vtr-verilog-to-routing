@@ -10,17 +10,19 @@
 //           - SetEquivalent
 //           - SetClass
 //           - SetCap, SetDelay
+//           - SetPower
 //           - GetType
 //           - GetCount
 //           - GetClass
 //           - GetCap, GetDelay
+//           - GetPower
 //           - IsEquivalent
 //           - IsValid
 //
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -44,6 +46,8 @@ using namespace std;
 
 #include "TC_Typedefs.h"
 
+#include "TLO_Power.h"
+
 //===========================================================================//
 // Purpose        : Class declaration
 // Author         : Jeff Rudolph
@@ -57,11 +61,11 @@ public:
 
    TLO_Port_c( void );
    TLO_Port_c( const string& srName,
- 	       TC_TypeMode_t type = TC_TYPE_UNDEFINED,
+               TC_TypeMode_t type = TC_TYPE_UNDEFINED,
                size_t count = 0,
                bool isEquivalent = false );
    TLO_Port_c( const char* pszName,
-	       TC_TypeMode_t type = TC_TYPE_UNDEFINED,
+               TC_TypeMode_t type = TC_TYPE_UNDEFINED,
                size_t count = 0,
                bool isEquivalent = false );
    TLO_Port_c( const TLO_Port_c& port );
@@ -86,12 +90,14 @@ public:
    void SetClass( const char* pszClass );
    void SetCap( double cap );
    void SetDelay( double delay );
+   void SetPower( const TLO_Power_c& power );
 
    TC_TypeMode_t GetType( void ) const;
    size_t GetCount( void ) const;
    const char* GetClass( void ) const;
    double GetCap( void ) const;
    double GetDelay( void ) const;
+   const TLO_Power_c& GetPower( void ) const;
 
    void Clear( void );
    
@@ -111,6 +117,8 @@ private:
 
    double cap_;           // Port capacitance (fF)
    double delay_;         // Port delay (ps)
+
+   TLO_Power_c power_;    // Optional port power constants.
 };
 
 //===========================================================================//
@@ -197,6 +205,13 @@ inline void TLO_Port_c::SetDelay(
 }
 
 //===========================================================================//
+inline void TLO_Port_c::SetPower( 
+      const TLO_Power_c& power )
+{
+   this->power_ = power;
+}
+
+//===========================================================================//
 inline TC_TypeMode_t TLO_Port_c::GetType( 
       void ) const
 {
@@ -236,6 +251,13 @@ inline double TLO_Port_c::GetDelay(
       void ) const
 {
    return( this->delay_ );
+}
+
+//===========================================================================//
+inline const TLO_Power_c& TLO_Port_c::GetPower( 
+      void ) const
+{
+   return( this->power_ );
 }
 
 //===========================================================================//
