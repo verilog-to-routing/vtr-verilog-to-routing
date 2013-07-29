@@ -21,6 +21,12 @@ using namespace std;
 #include "vpr_utils.h"
 #include "place_macro.h"
 
+#ifdef TORO_REGION_PLACEMENT_ENABLE
+//===========================================================================//
+#include "TCH_RegionPlaceHandler.h"
+//===========================================================================//
+#endif
+
 #ifdef TORO_RELATIVE_PLACEMENT_ENABLE
 //===========================================================================//
 #include "TCH_RelativePlaceHandler.h"
@@ -311,6 +317,9 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 
 #ifdef TORO_REGION_PLACEMENT_ENABLE
 //===========================================================================//
+static void alloc_and_load_placement_region_lists(
+	t_block* pblock_array, int block_count,
+	const t_logical_block* plogical_block_array, int logical_block_count);
 static boolean placement_region_pos_is_valid(
 		const t_block* pblock_array, int block_index, 
 		int x, int y);
@@ -2128,6 +2137,11 @@ static void alloc_and_load_placement_structs(
 
 	num_pl_macros = alloc_and_load_placement_macros(directs, num_directs, &pl_macros);
 
+#ifdef TORO_REGION_PLACEMENT_ENABLE...
+	alloc_and_load_placement_region_lists(block, num_blocks,
+			logical_block, num_logical_blocks);
+#endif
+
 #ifdef TORO_RELATIVE_PLACEMENT_ENABLE
 	if( alloc_and_load_carry_chain_relative_macros(pl_macros, num_pl_macros)) {
 
@@ -3255,6 +3269,22 @@ static void free_try_swap_arrays(void) {
 }
 
 #ifdef TORO_REGION_PLACEMENT_ENABLE
+//===========================================================================//
+static void alloc_and_load_placement_region_lists(
+		      t_block*         pblock_array,
+		      int              block_count,
+		const t_logical_block* plogical_block_array,
+		      int              logical_block_count) {
+
+	// Verify at least one region placement constraint has been defined
+	TCH_RegionPlaceHandler_c& regionPlaceHandler = TCH_RegionPlaceHandler_c::GetInstance();
+	if (regionPlaceHandler.IsValid()) {
+
+		regionPlaceHandler.UpdatePlaceRegions(pblock_array,block_count,
+				plogical_block_array, logical_block_count);
+	}
+}
+
 //===========================================================================//
 static boolean placement_region_pos_is_valid(
 		const t_block* pblock_array,
