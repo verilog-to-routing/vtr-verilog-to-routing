@@ -118,11 +118,11 @@ public:
 
    const char* FindName( size_t index ) const;
 
-   bool ApplyRegExp( const TCT_NameList_c& nameList,
+   bool ApplyRegExp( const TCT_NameList_c< TC_Name_c >& nameList,
                      bool isShowWarningEnabled = false,
                      bool isShowErrorEnabled = false,
                      const char* pszShowRegExpType = "name" );
-   bool ApplyRegExp( TCT_NameList_c* pnameList,
+   bool ApplyRegExp( TCT_NameList_c< TC_Name_c >* pnameList,
                      bool isShowWarningEnabled = false,
                      bool isShowErrorEnabled = false,
                      const char* pszShowRegExpType = "name" );
@@ -586,10 +586,10 @@ template< class T > const char* TCT_NameList_c< T >::FindName(
 // 05/01/12 jeffr : Original
 //===========================================================================//
 template< class T > bool TCT_NameList_c< T >::ApplyRegExp( 
-      const TCT_NameList_c& nameList,
-            bool            isShowWarningEnabled,
-            bool            isShowErrorEnabled,
-      const char*           pszShowRegExpType )
+      const TCT_NameList_c< TC_Name_c >& nameList,
+            bool  isShowWarningEnabled,
+            bool  isShowErrorEnabled,
+      const char* pszShowRegExpType )
 {
    bool ok = true;
 
@@ -666,10 +666,10 @@ template< class T > bool TCT_NameList_c< T >::ApplyRegExp(
 // 05/01/12 jeffr : Original
 //===========================================================================//
 template< class T > bool TCT_NameList_c< T >::ApplyRegExp( 
-            TCT_NameList_c* pnameList,
-            bool            isShowWarningEnabled,
-            bool            isShowErrorEnabled,
-      const char*           pszShowRegExpType )
+            TCT_NameList_c< TC_Name_c >* pnameList,
+            bool  isShowWarningEnabled,
+            bool  isShowErrorEnabled,
+      const char* pszShowRegExpType )
 {
    bool ok = true;
 
@@ -700,7 +700,8 @@ template< class T > bool TCT_NameList_c< T >::ApplyRegExp(
 
             // Add next matching name element to the given name list
             const T& matchData = *this->operator[]( matchIndex );
-            pnameList->Add( matchData );
+            const char* pszName = matchData.GetName( );
+            pnameList->Add( pszName );
          }
 
          if( matchCount == 0 )
