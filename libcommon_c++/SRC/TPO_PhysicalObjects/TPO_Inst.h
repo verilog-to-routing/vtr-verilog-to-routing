@@ -12,7 +12,7 @@
 //           - GetNamesLogicBitsList
 //           - GetLatchClockType, GetLatchInitState
 //           - GetSubcktPinMapList
-//           - GetPackHierMapList
+//           - GetPackInstHierMapList
 //           - GetPlaceFabricName
 //           - GetPlaceStatus, GetPlaceOrigin
 //           - GetPlaceRegionList, GetPlaceRelativeList
@@ -60,8 +60,8 @@ using namespace std;
 
 #include "TPO_Typedefs.h"
 #include "TPO_PinMap.h"
-#include "TPO_HierMap.h"
-#include "TPO_Relative.h"
+#include "TPO_InstHierMap.h"
+#include "TPO_PlaceRelative.h"
 
 //===========================================================================//
 // Purpose        : Class declaration
@@ -134,13 +134,13 @@ public:
    TPO_LatchState_t GetLatchInitState( void ) const;
    const TPO_PinMapList_t& GetSubcktPinMapList( void ) const;
 
-   const TPO_HierMapList_t& GetPackHierMapList( void ) const;
+   const TPO_InstHierMapList_t& GetPackInstHierMapList( void ) const;
 
    const char* GetPlaceFabricName( void ) const;
    TPO_StatusMode_t GetPlaceStatus( void ) const;
    const TGO_Point_c& GetPlaceOrigin( void ) const;
    const TGS_RegionList_t& GetPlaceRegionList( void ) const;
-   const TPO_RelativeList_t& GetPlaceRelativeList( void ) const;
+   const TPO_PlaceRelativeList_t& GetPlaceRelativeList( void ) const;
    
    void SetCellName( const string& srCellName );
    void SetCellName( const char* pszCellName );
@@ -153,14 +153,14 @@ public:
    void SetLatchInitState( TPO_LatchState_t initState );
    void SetSubcktPinMapList( const TPO_PinMapList_t& pinMapList );
 
-   void SetPackHierMapList( const TPO_HierMapList_t& hierMapList );
+   void SetPackInstHierMapList( const TPO_InstHierMapList_t& instHierMapList );
 
    void SetPlaceFabricName( const string& srFabricName );
    void SetPlaceFabricName( const char* pszFabricName );
    void SetPlaceStatus( TPO_StatusMode_t status );
    void SetPlaceOrigin( const TGO_Point_c& origin );
    void SetPlaceRegionList( const TGS_RegionList_t& regionList );
-   void SetPlaceRelativeList( const TPO_RelativeList_t& relativeList );
+   void SetPlaceRelativeList( const TPO_PlaceRelativeList_t& relativeList );
 
    void AddPin( const TPO_Pin_t& pin );
 
@@ -218,7 +218,7 @@ private:
    {
    public:
 
-      TPO_HierMapList_t hierMapList;
+      TPO_InstHierMapList_t instHierMapList;
                                   // Defines packing (instance to PB architecture)
    } pack_;
 
@@ -230,7 +230,7 @@ private:
       TPO_StatusMode_t status;    // Defines placement status mode (optional)
       TGO_Point_c origin;         // Defines placement origin point (optional)
       TGS_RegionList_t regionList;// Defines placement region(s) (optional)
-      TPO_RelativeList_t relativeList;
+      TPO_PlaceRelativeList_t relativeList;
                                   // Defines placement relative(s) (optional)
    } place_;
 
@@ -241,7 +241,7 @@ private:
       TPO_PIN_LIST_DEF_CAPACITY = 64,
       TPO_LOGIC_BITS_LIST_DEF_CAPACITY = 8,
       TPO_PIN_MAP_LIST_DEF_CAPACITY = 64,
-      TPO_HIER_MAP_LIST_DEF_CAPACITY = 1,
+      TPO_INST_HIER_MAP_LIST_DEF_CAPACITY = 1,
       TPO_RELATIVE_LIST_DEF_CAPACITY = 1,
       TPO_REGION_LIST_DEF_CAPACITY = 1
    };
@@ -338,10 +338,10 @@ inline const TPO_PinMapList_t& TPO_Inst_c::GetSubcktPinMapList(
 }
 
 //===========================================================================//
-inline const TPO_HierMapList_t& TPO_Inst_c::GetPackHierMapList( 
+inline const TPO_InstHierMapList_t& TPO_Inst_c::GetPackInstHierMapList( 
       void ) const
 {
-   return( this->pack_.hierMapList );
+   return( this->pack_.instHierMapList );
 }
 
 //===========================================================================//
@@ -373,7 +373,7 @@ inline const TGS_RegionList_t& TPO_Inst_c::GetPlaceRegionList(
 }
 
 //===========================================================================//
-inline const TPO_RelativeList_t& TPO_Inst_c::GetPlaceRelativeList( 
+inline const TPO_PlaceRelativeList_t& TPO_Inst_c::GetPlaceRelativeList( 
       void ) const
 {
    return( this->place_.relativeList );
