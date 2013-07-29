@@ -5,7 +5,6 @@
 //           - NewInstance, DeleteInstance, GetInstance, HasInstance
 //           - Configure
 //           - Set, Reset
-// ???
 //           - LoadCarryChains                         
 //           - InitialPlace
 //           - Place
@@ -238,14 +237,14 @@ bool TCH_RelativePlaceHandler_c::Configure(
    for( size_t i = 0; i < toro_circuitBlockList.GetLength( ); ++i )
    {
       const TPO_Inst_c& toro_circuitBlock = *toro_circuitBlockList[i];
-      const TPO_RelativeList_t& placeRelativeList = toro_circuitBlock.GetPlaceRelativeList( );
+      const TPO_PlaceRelativeList_t& placeRelativeList = toro_circuitBlock.GetPlaceRelativeList( );
       if( !placeRelativeList.IsValid( ))
          continue;
 
       const char* pszFromBlockName = toro_circuitBlock.GetName( );
       for( size_t j = 0; j < placeRelativeList.GetLength( ); ++j )
       {
-         const TPO_Relative_c& placeRelative = *placeRelativeList[j];
+         const TPO_PlaceRelative_c& placeRelative = *placeRelativeList[j];
 
          const char* pszToBlockName = placeRelative.GetName( );
          TC_SideMode_t side = placeRelative.GetSide( );
@@ -353,13 +352,26 @@ bool TCH_RelativePlaceHandler_c::LoadCarryChains(
       const t_pl_macro* vpr_placeMacroArray,
             int         vpr_placeMacroCount )
 {
-// ???
    bool ok = true;
 
-// ???
-this->relativeMacroList_.Print( );
    if( this->placeOptions_.carryChainEnable )
    {
+      if( !this->relativeBlockList_.IsValid( ))
+      {
+         // Initialize the local relative block list based on VPR's macro list
+         for( int i = 0; i < vpr_placeMacroCount; ++i ) 
+         {
+            for( int j = 0; j < vpr_placeMacroArray[i].num_blocks; ++j ) 
+            {
+               int blockIndex = vpr_placeMacroArray[i].members[j].blk_index;
+               const char* pszBlockName = vpr_blockArray[blockIndex].name;
+
+               TCH_RelativeBlock_c relativeBlock( pszBlockName );
+               this->relativeBlockList_.Add( relativeBlock );
+            }
+         }
+      }
+
       for( int i = 0; i < vpr_placeMacroCount; ++i ) 
       {
          if( vpr_placeMacroArray[i].num_blocks <= 1 )
@@ -382,8 +394,6 @@ this->relativeMacroList_.Print( );
             // (by default, this also includes appropriate validation)
             ok = this->AddLinkConstraint_( pszFromBlockName, pszToBlockName, 
                                            fromToLink );
-// ???
-this->relativeMacroList_.Print( );
             if( !ok )
                break;
          }
@@ -391,8 +401,6 @@ this->relativeMacroList_.Print( );
             break;
       }
    }
-// ???
-this->relativeMacroList_.Print( );
    return( ok );
 }
 
@@ -552,7 +560,9 @@ bool TCH_RelativePlaceHandler_c::IsCandidate(
 bool TCH_RelativePlaceHandler_c::IsValid(
       void ) const
 {
-   return( this->relativeMacroList_.IsValid( ) ? true : false );
+   return( this->relativeMacroList_.IsValid( ) ||
+           this->placeOptions_.carryChainEnable ? 
+           true : false );
 }
 
 //===========================================================================//
