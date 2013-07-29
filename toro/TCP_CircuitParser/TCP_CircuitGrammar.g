@@ -65,6 +65,7 @@ using namespace std;
 #token INST       "[Ii][Nn][Ss][Tt]"
 #token CELL       "[Cc][Ee][Ll][Ll]"
 #token NAME       "[Nn][Aa][Mm][Ee]"
+#token NAMES       "[Nn][Aa][Mm][Ee][Ss]"
 #token MASTER     "[Mm][Aa][Ss][Tt][Ee][Rr]"
 #token SOURCE     "[Ss][Oo][Uu][Rr][Cc][Ee]"
 #token NET        "[Nn][Ee][Tt]"
@@ -78,7 +79,7 @@ using namespace std;
 #token ROTATE     "[Rr][Oo][Tt][Aa][Tt]{[Aa][Bb][Ll]}[Ee]"
 #token HIER       "[Hh][Ii][Ee][Rr]{[Aa][Rr][Cc][Hh][Yy]}"
 #token PACK       "[Pp][Aa][Cc][Kk]{[Ii][Nn][Gg]}"
-#token PLACE      "[Pp][Ll][Aa][Cc][Ee][Mm][Ee][Nn][Tt]"
+#token PLACE      "[Pp][Ll][Aa][Cc][Ee]{[Mm][Ee][Nn][Tt]}"
 #token ORIENT     "[Oo][Rr][Ii][Ee][Nn][Tt]"
 #token TRACK      "[Tt][Rr][Aa][Cc][Kk]"
 #token CHANNEL    "[Cc][Hh][Aa][Nn][Nn][Ee][Ll]"
@@ -156,6 +157,7 @@ start
                    &pcircuitDesign_->instNameList ]
       |  netList[ &pcircuitDesign_->netList,
                   &pcircuitDesign_->netOrderList ]
+      |  placeRegionsList[ &pcircuitDesign_->placeRegionsList ]
       )
    )*
    "</" CIRCUIT ">"
@@ -173,8 +175,8 @@ blockList[ TPO_InstList_t* pblockList ]
       TPO_StatusMode_t placeStatus = TPO_STATUS_UNDEFINED;
       TGO_Point_c placeOrigin;
 
-      TPO_HierMapList_t hierMapList_;
-      TPO_RelativeList_t relativeList_;
+      TPO_InstHierMapList_t hierMapList_;
+      TPO_PlaceRelativeList_t relativeList_;
       TGS_RegionList_t regionList_;
    >>
    ( BLOCK | PB )
@@ -224,7 +226,7 @@ blockList[ TPO_InstList_t* pblockList ]
    <<
       if( inst.IsValid( ))
       {
-         inst.SetPackHierMapList( hierMapList_ );
+         inst.SetPackInstHierMapList( hierMapList_ );
          inst.SetPlaceRelativeList( relativeList_ );
          inst.SetPlaceRegionList( regionList_ );
 
@@ -406,6 +408,54 @@ netList[ TNO_NetList_c* pnetList,
 
          pnetList->Add( net );
          pnetOrderList->Add( net.GetName( ));
+      }
+   >>
+   ;
+
+//===========================================================================//
+placeRegionsList[ TPO_PlaceRegionsList_t* pplaceRegionsList ]
+   :
+   <<
+      TPO_PlaceRegions_c placeRegions;
+
+      TGO_RegionList_t regionList;
+      TGO_Region_c region;
+
+      TPO_NameList_t nameList;
+      string srName;
+   >>
+   PLACE ">"
+   <<
+      regionList.Clear( );
+      nameList.Clear( );
+   >>
+   (  "<"
+      (  REGION ">" 
+         intNum[ &region.x1 ] 
+         intNum[ &region.y1 ]
+         intNum[ &region.x2 ]
+         intNum[ &region.y2 ]
+         "</" REGION ">"
+         <<
+            regionList.Add( region );
+         >>
+      |  ( NAME | NAMES ) ">" 
+         (  stringText[ &srName ]
+            <<
+               nameList.Add( srName );
+            >>
+         )+
+         "</" ( NAME | NAMES ) ">"
+      )
+   )*
+   "</" PLACE ">"
+   <<
+      if( regionList.IsValid( ) && nameList.IsValid( ))
+      {
+         placeRegions.SetRegionList( regionList );
+         placeRegions.SetNameList( nameList );
+
+         pplaceRegionsList->Add( placeRegions );
       }
    >>
    ;
@@ -594,10 +644,10 @@ segmentDef[ TNO_Segment_c* psegment ]
    ;
 
 //===========================================================================//
-hierMapList[ TPO_HierMapList_t* phierMapList ]
+hierMapList[ TPO_InstHierMapList_t* phierMapList ]
    :
    <<
-      TPO_HierMap_c hierMap;
+      TPO_InstHierMap_c hierMap;
 
       string srName;
       TPO_NameList_t hierNameList;
@@ -628,10 +678,10 @@ hierMapList[ TPO_HierMapList_t* phierMapList ]
    ;
 
 //===========================================================================//
-relativeList[ TPO_RelativeList_t* prelativeList ]
+relativeList[ TPO_PlaceRelativeList_t* prelativeList ]
    :
    <<
-      TPO_Relative_c relative;
+      TPO_PlaceRelative_c relative;
 
       TC_SideMode_t side = TC_SIDE_UNDEFINED;
       int dx = INT_MAX;
