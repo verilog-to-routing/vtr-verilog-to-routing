@@ -159,8 +159,8 @@ void TCH_RelativeMacro_c::Print(
       TCH_RelativeNode_c* prelativeNode = this->relativeNodeList_[i];
       prelativeNode->Print( pfile, spaceLen + 3 );
 
-      printHandler.Write( pfile, 0, " rotate_enabled=%s", 
-                                    TIO_BOOL_STR( this->rotateEnabled_ ));
+      // printHandler.Write( pfile, spaceLen + 6, "rotate_enabled=%s\n", 
+      //                                          TIO_BOOL_STR( this->rotateEnabled_ ));
    }
    printHandler.Write( pfile, spaceLen, "</macro>\n" );
 } 
