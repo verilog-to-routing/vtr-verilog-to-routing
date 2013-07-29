@@ -127,6 +127,7 @@ void TOS_RulesSwitches_c::Print(
 // 01/18/13 jeffr : Added support for placeOptions' prePlaced members
 // 02/21/13 jeffr : Added support for routeOptions' preRouted members
 // 04/24/13 jeffr : Added support for fabricOptions' SB and CB members
+// 07/23/13 jeffr : Added support for placeOptions' regionPlace members
 //===========================================================================//
 void TOS_RulesSwitches_c::Init(
       void )
@@ -167,6 +168,7 @@ void TOS_RulesSwitches_c::Init(
    this->placeOptions.timingUpdateCount = 0;                            // VPR default = 0
    this->placeOptions.slackInitWeight = 0.0;                            // VPR default = 1.0
    this->placeOptions.slackFinalWeight = 0.0;                           // VPR default = 8.0
+   this->placeOptions.regionPlace.enable = false;
    this->placeOptions.relativePlace.enable = false;
    this->placeOptions.relativePlace.rotateEnable = true;
    this->placeOptions.relativePlace.carryChainEnable = false;
