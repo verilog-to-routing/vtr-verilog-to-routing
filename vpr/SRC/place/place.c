@@ -2137,7 +2137,7 @@ static void alloc_and_load_placement_structs(
 
 	num_pl_macros = alloc_and_load_placement_macros(directs, num_directs, &pl_macros);
 
-#ifdef TORO_REGION_PLACEMENT_ENABLE...
+#ifdef TORO_REGION_PLACEMENT_ENABLE
 	alloc_and_load_placement_region_lists(block, num_blocks,
 			logical_block, num_logical_blocks);
 #endif
