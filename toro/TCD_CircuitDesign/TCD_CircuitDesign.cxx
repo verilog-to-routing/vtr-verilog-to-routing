@@ -58,7 +58,8 @@ TCD_CircuitDesign_c::TCD_CircuitDesign_c(
       cellList( TCD_CELL_LIST_DEF_CAPACITY ),
       netList( TCD_NET_LIST_DEF_CAPACITY ),
       netNameList( TCD_NET_NAME_LIST_DEF_CAPACITY ),
-      netOrderList( TCD_NET_ORDER_LIST_DEF_CAPACITY )
+      netOrderList( TCD_NET_ORDER_LIST_DEF_CAPACITY ),
+      placeRegionsList( TCD_PLACE_REGIONS_LIST_DEF_CAPACITY )
 {
 } 
 
@@ -75,7 +76,8 @@ TCD_CircuitDesign_c::TCD_CircuitDesign_c(
       cellList( circuitDesign.cellList ),
       netList( circuitDesign.netList ),
       netNameList( circuitDesign.netNameList ),
-      netOrderList( circuitDesign.netOrderList )
+      netOrderList( circuitDesign.netOrderList ),
+      placeRegionsList( circuitDesign.placeRegionsList )
 {
 } 
 
@@ -113,6 +115,7 @@ TCD_CircuitDesign_c& TCD_CircuitDesign_c::operator=(
       this->netList = circuitDesign.netList;
       this->netNameList = circuitDesign.netNameList;
       this->netOrderList = circuitDesign.netOrderList;
+      this->placeRegionsList = circuitDesign.placeRegionsList;
    }
    return( *this );
 }
@@ -136,7 +139,8 @@ bool TCD_CircuitDesign_c::operator==(
           ( this->cellList == circuitDesign.cellList ) &&
           ( this->netList == circuitDesign.netList ) &&
           ( this->netNameList == circuitDesign.netNameList ) &&
-          ( this->netOrderList == circuitDesign.netOrderList ) ?
+          ( this->netOrderList == circuitDesign.netOrderList ) &&
+          ( this->placeRegionsList == circuitDesign.placeRegionsList ) ?
           true : false );
 }
 
@@ -215,6 +219,14 @@ void TCD_CircuitDesign_c::Print(
       for( size_t i = 0; i < this->netList.GetLength( ); ++i )
       {
          this->netList[i]->Print( pfile, spaceLen );
+      }
+   }
+   if( this->placeRegionsList.IsValid( ))
+   {
+      printHandler.Write( pfile, spaceLen, "\n" );
+      for( size_t i = 0; i < this->placeRegionsList.GetLength( ); ++i )
+      {
+         this->placeRegionsList[i]->Print( pfile, spaceLen );
       }
    }
 
