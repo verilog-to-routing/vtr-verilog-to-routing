@@ -24,6 +24,7 @@
 
 #include "TCT_OrderedQueue.h"
 #include "TCT_OrderedVector.h"
+#include "TCT_SortedVector.h"
 #include "TCT_SortedNameDynamicVector.h"
 
 #include "TCT_NameList.h"
@@ -86,11 +87,19 @@ enum TPO_StatusMode_e
 };
 typedef enum TPO_StatusMode_e TPO_StatusMode_t;
 
-class TPO_HierMap_c; // Forward declaration for subsequent class typedefs
-typedef TCT_OrderedVector_c< TPO_HierMap_c > TPO_HierMapList_t;
+class TPO_HierInstMap_c; // Forward declaration for subsequent class typedefs
+typedef TCT_SortedVector_c< TPO_HierInstMap_c > TPO_HierInstMapList_t;
 
-class TPO_Relative_c; // Forward declaration for subsequent class typedefs
-typedef TCT_SortedNameDynamicVector_c< TPO_Relative_c > TPO_RelativeList_t;
+class TPO_InstHierMap_c; // Forward declaration for subsequent class typedefs
+typedef TCT_OrderedVector_c< TPO_InstHierMap_c > TPO_InstHierMapList_t;
+
+class TPO_PlaceRelative_c; // Forward declaration for subsequent class typedefs
+typedef TCT_SortedNameDynamicVector_c< TPO_PlaceRelative_c > TPO_PlaceRelativeList_t;
+
+class TPO_PlaceRegions_c; // Forward declaration for subsequent class typedefs
+typedef TCT_OrderedVector_c< TPO_PlaceRegions_c > TPO_PlaceRegionsList_t;
+
+#define TPO_INST_INDEX_INVALID SIZE_MAX
 
 //---------------------------------------------------------------------------//
 // Define pin constants and typedefs
