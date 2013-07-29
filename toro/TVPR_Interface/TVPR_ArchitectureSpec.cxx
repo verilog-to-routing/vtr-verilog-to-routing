@@ -2018,7 +2018,7 @@ void TVPR_ArchitectureSpec_c::PokePortPower_(
             t_port_power*        pvpr_port_power ) const
 {
    // Initialize port power defaults
-   enum e_power_estimation_method powerMethod = POWER_METHOD_UNDEFINED;
+   t_power_estimation_method powerMethod = POWER_METHOD_UNDEFINED;
    powerMethod = this->FindPowerMethodMode_( physicalBlock.power.estimateMethod,
                                              pvpr_pb_type );
    if( powerMethod == POWER_METHOD_AUTO_SIZES )
@@ -2355,7 +2355,7 @@ bool TVPR_ArchitectureSpec_c::PokePower_(
    const TAS_Power_c& power = physicalBlock.power;
    const TLO_PortList_t& portList = physicalBlock.portList;
 
-   enum e_power_estimation_method powerMethod = POWER_METHOD_UNDEFINED;
+   t_power_estimation_method powerMethod = POWER_METHOD_UNDEFINED;
    powerMethod = this->FindPowerMethodMode_( power.estimateMethod, pvpr_pb_type );
    pvpr_pb_type->pb_type_power->estimation_method = powerMethod;
 
@@ -2907,11 +2907,11 @@ bool TVPR_ArchitectureSpec_c::FindSegmentBitPattern_(
 // Version history
 // 07/17/13 jeffr : Original
 //===========================================================================//
-enum e_power_estimation_method TVPR_ArchitectureSpec_c::FindPowerMethodMode_(
+t_power_estimation_method TVPR_ArchitectureSpec_c::FindPowerMethodMode_(
       TAS_PowerMethodMode_t mode,
       t_pb_type*            pvpr_pb_type ) const
 {
-   enum e_power_estimation_method mode_ = POWER_METHOD_UNDEFINED;
+   t_power_estimation_method mode_ = POWER_METHOD_UNDEFINED;
 
    switch( mode )
    {
@@ -2947,10 +2947,10 @@ enum e_power_estimation_method TVPR_ArchitectureSpec_c::FindPowerMethodMode_(
 // Version history
 // 07/17/13 jeffr : Original
 //===========================================================================//
-enum e_power_estimation_method TVPR_ArchitectureSpec_c::InheritPowerMethodMode_(
-      enum e_power_estimation_method mode ) const
+t_power_estimation_method TVPR_ArchitectureSpec_c::InheritPowerMethodMode_(
+      t_power_estimation_method mode ) const
 {
-   enum e_power_estimation_method mode_ = POWER_METHOD_UNDEFINED;
+   t_power_estimation_method mode_ = POWER_METHOD_UNDEFINED;
 
    switch( mode )
    {
