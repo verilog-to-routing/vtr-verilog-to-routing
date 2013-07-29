@@ -35,6 +35,8 @@ using namespace std;
 
 #include "TC_Typedefs.h"
 
+#include "TIO_Typedefs.h"
+
 //===========================================================================//
 // Purpose        : Class declaration
 // Author         : Jeff Rudolph
