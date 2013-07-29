@@ -15,6 +15,7 @@
     <ClInclude Include="TCH_PrePlacedBlock.h" />
     <ClInclude Include="TCH_PrePlacedHandler.h" />
     <ClInclude Include="TCH_PreRoutedHandler.h" />
+    <ClInclude Include="TCH_RegionPlaceHandler.h" />
     <ClInclude Include="TCH_RelativeBlock.h" />
     <ClInclude Include="TCH_RelativeMacro.h" />
     <ClInclude Include="TCH_RelativeMove.h" />
@@ -35,6 +36,7 @@
     <ClCompile Include="TCH_PrePlacedBlock.cxx" />
     <ClCompile Include="TCH_PrePlacedHandler.cxx" />
     <ClCompile Include="TCH_PreRoutedHandler.cxx" />
+    <ClCompile Include="TCH_RegionPlaceHandler.cxx" />
     <ClCompile Include="TCH_RelativeBlock.cxx" />
     <ClCompile Include="TCH_RelativeMacro.cxx" />
     <ClCompile Include="TCH_RelativeMove.cxx" />
