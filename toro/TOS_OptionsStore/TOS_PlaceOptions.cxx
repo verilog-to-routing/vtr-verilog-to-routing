@@ -39,6 +39,7 @@
 // 05/01/12 jeffr : Original
 // 01/15/13 jeffr : Added support for relativePlace members
 // 01/18/13 jeffr : Added support for prePlaced members
+// 07/23/13 jeffr : Added support for regionPlace members
 //===========================================================================//
 TOS_PlaceOptions_c::TOS_PlaceOptions_c( 
       void )
@@ -64,6 +65,8 @@ TOS_PlaceOptions_c::TOS_PlaceOptions_c(
       slackInitWeight( 0.0 ),
       slackFinalWeight( 0.0 )
 {
+   this->regionPlace.enable = false;
+
    this->relativePlace.enable = false;
    this->relativePlace.rotateEnable = false;
    this->relativePlace.carryChainEnable = false;
@@ -94,6 +97,7 @@ TOS_PlaceOptions_c::TOS_PlaceOptions_c(
       unsigned int             timingUpdateCount_,
       double                   slackInitWeight_,
       double                   slackFinalWeight_,
+      bool                     regionPlace_enable_,
       bool                     relativePlace_enable_,
       bool                     relativePlace_rotateEnable_,
       bool                     relativePlace_carryChainEnable_,
@@ -122,6 +126,8 @@ TOS_PlaceOptions_c::TOS_PlaceOptions_c(
       slackInitWeight( slackInitWeight_ ),
       slackFinalWeight( slackFinalWeight_ )
 {
+   this->regionPlace.enable = regionPlace_enable_;
+
    this->relativePlace.enable = relativePlace_enable_;
    this->relativePlace.rotateEnable = relativePlace_rotateEnable_;
    this->relativePlace.carryChainEnable = relativePlace_carryChainEnable_;
@@ -151,6 +157,7 @@ TOS_PlaceOptions_c::~TOS_PlaceOptions_c(
 // 05/01/12 jeffr : Original
 // 01/15/13 jeffr : Added support for relativePlace members
 // 01/18/13 jeffr : Added support for prePlaced members
+// 07/23/13 jeffr : Added support for regionPlace members
 //===========================================================================//
 void TOS_PlaceOptions_c::Print( 
       FILE*  pfile,
@@ -279,6 +286,8 @@ void TOS_PlaceOptions_c::Print(
    }
 
    printHandler.Write( pfile, spaceLen, "\n" );
+   printHandler.Write( pfile, spaceLen, "PLACE_REGIONS_ENABLE       = %s\n", TIO_BOOL_STR( this->regionPlace.enable ));
+
    printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_ENABLE      = %s\n", TIO_BOOL_STR( this->relativePlace.enable ));
    printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_ROTATE      = %s\n", TIO_BOOL_STR( this->relativePlace.rotateEnable ));
    printHandler.Write( pfile, spaceLen, "PLACE_RELATIVE_CARRY_CHAIN = %s\n", TIO_BOOL_STR( this->relativePlace.carryChainEnable ));
