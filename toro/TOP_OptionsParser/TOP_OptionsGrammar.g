@@ -159,6 +159,8 @@ using namespace std;
 #token PLACE_SLACK_INIT_WEIGHT   "[Pp][Ll][Aa][Cc][Ee][_]{[Tt][Ii][Mm][Ii][Nn][Gg][_]}[Ss][Ll][Aa][Cc][Kk][_][Ii][Nn][Ii][Tt][_][Ww][Ee][Ii][Gg][Hh][Tt]"
 #token PLACE_SLACK_FINAL_WEIGHT  "[Pp][Ll][Aa][Cc][Ee][_]{[Tt][Ii][Mm][Ii][Nn][Gg][_]}[Ss][Ll][Aa][Cc][Kk][_][Ff][Ii][Nn][Aa][Ll][_][Ww][Ee][Ii][Gg][Hh][Tt]"
 
+#token PLACE_REGION_ENABLE       "[Pp][Ll][Aa][Cc][Ee][_][Rr][Ee][Gg][Ii][Oo][Nn]{[Ss]}_[Ee][Nn][Aa][Bb][Ll][Ee]"
+
 #token PLACE_RELATIVE_ENABLE     "[Pp][Ll][Aa][Cc][Ee][_][Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee][_][Ee][Nn][Aa][Bb][Ll][Ee]"
 #token PLACE_RELATIVE_ROTATE     "[Pp][Ll][Aa][Cc][Ee][_][Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee][_][Rr][Oo][Tt][Aa][Tt][Ee]{[_][Ee][Nn][Aa][Bb][Ll][Ee]}"
 #token PLACE_RELATIVE_CARRY      "[Pp][Ll][Aa][Cc][Ee][_][Rr][Ee][Ll][Aa][Tt][Ii][Vv][Ee][_][Cc][Aa][Rr][Rr][Yy]{[_]}[Cc][Hh][Aa][Ii][Nn]{[Ss]}{[_][Ee][Nn][Aa][Bb][Ll][Ee]}"
@@ -520,6 +522,8 @@ placeOptions
    |  PLACE_TIMING_UPDATE_COUNT { EQUAL } uintNum[ &pplaceOptions_->timingUpdateCount ]
    |  PLACE_SLACK_INIT_WEIGHT { EQUAL } floatNum[ &pplaceOptions_->slackInitWeight ]
    |  PLACE_SLACK_FINAL_WEIGHT { EQUAL } floatNum[ &pplaceOptions_->slackFinalWeight ]
+
+   |  PLACE_REGION_ENABLE { EQUAL } boolType[ &pplaceOptions_->regionPlace.enable ]
 
    |  PLACE_RELATIVE_ENABLE { EQUAL } boolType[ &pplaceOptions_->relativePlace.enable ]
    |  PLACE_RELATIVE_ROTATE { EQUAL } boolType[ &pplaceOptions_->relativePlace.rotateEnable ]
