@@ -43,16 +43,22 @@
 TC_SideName_c::TC_SideName_c( 
       void )
       :
-      side_( TC_SIDE_UNDEFINED )
+      side_( TC_SIDE_UNDEFINED ),
+      dx_( INT_MAX ),
+      dy_( INT_MAX )
 {
 } 
 
 //===========================================================================//
 TC_SideName_c::TC_SideName_c( 
             TC_SideMode_t side,
+            int           dx,
+            int           dy,
       const string&       srName )
       :
       side_( side ),
+      dx_( dx ),
+      dy_( dy ),
       srName_( srName )
 {
 } 
@@ -60,9 +66,13 @@ TC_SideName_c::TC_SideName_c(
 //===========================================================================//
 TC_SideName_c::TC_SideName_c( 
             TC_SideMode_t side,
+            int           dx,
+            int           dy,
       const char*         pszName )
       :
       side_( side ),
+      dx_( dx ),
+      dy_( dy ),
       srName_( TIO_PSZ_STR( pszName ))
 {
 } 
@@ -72,6 +82,8 @@ TC_SideName_c::TC_SideName_c(
       const TC_SideName_c& sideName )
       :
       side_( sideName.side_ ),
+      dx_( sideName.dx_ ),
+      dy_( sideName.dy_ ),
       srName_( sideName.srName_ )
 {
 } 
@@ -101,6 +113,8 @@ TC_SideName_c& TC_SideName_c::operator=(
    if( &sideName != this )
    {
       this->side_ = sideName.side_;
+      this->dx_ = sideName.dx_;
+      this->dy_ = sideName.dy_;
       this->srName_ = sideName.srName_;
    }
    return( *this );
@@ -124,8 +138,22 @@ bool TC_SideName_c::operator<(
    }
    else if( this->side_ == sideName.side_ )
    {
-      isLessThan = (( TC_CompareStrings( this->srName_, sideName.srName_ ) < 0 ) ? 
-                    true : false );
+      if( this->dx_ < sideName.dx_ )
+      {
+         isLessThan = true;
+      }
+      else if( this->dx_ == sideName.dx_ )
+      {
+         if( this->dy_ < sideName.dy_ )
+         {
+            isLessThan = true;
+         }
+         else if( this->dy_ == sideName.dy_ )
+         {
+            isLessThan = (( TC_CompareStrings( this->srName_, sideName.srName_ ) < 0 ) ? 
+                          true : false );
+         }
+      }
    }
    return( isLessThan );
 }
@@ -141,6 +169,8 @@ bool TC_SideName_c::operator==(
       const TC_SideName_c& sideName ) const
 {
    return(( this->side_ == sideName.side_ ) &&
+          ( this->dx_ == sideName.dx_ ) &&
+          ( this->dy_ == sideName.dy_ ) &&
           ( this->srName_ == sideName.srName_ ) ?
           true : false );
 }
@@ -190,14 +220,28 @@ void TC_SideName_c::ExtractString(
    {
       if( this->IsValid( ))
       {
-         string srSide;
-         TC_ExtractStringSideMode( this->side_, &srSide );
+         *psrSideName = "";
 
-         *psrSideName = srSide;
+         if( this->side_ != TC_SIDE_UNDEFINED )
+         {
+            string srSide;
+            TC_ExtractStringSideMode( this->side_, &srSide );
+            *psrSideName += srSide;
+         }
+
+         *psrSideName += psrSideName->length( ) ? " " : "";
+
+         if( this->dx_ != INT_MAX && this->dy_ != INT_MAX )
+         {
+            char szDxDy[TIO_FORMAT_STRING_LEN_DATA];
+            sprintf( szDxDy, "%d %d", this->dx_, this->dy_ );
+            *psrSideName += szDxDy;
+         }
+
+         *psrSideName += psrSideName->length( ) ? " " : "";
 
          if( this->srName_.length( ))
          {
-            *psrSideName += " ";
             *psrSideName += "\"";
             *psrSideName += this->srName_;
             *psrSideName += "\"";
@@ -219,18 +263,26 @@ void TC_SideName_c::ExtractString(
 //===========================================================================//
 void TC_SideName_c::Set( 
             TC_SideMode_t side,
+            int           dx,
+            int           dy,
       const string&       srName )
 {
    this->side_ = side;
+   this->dx_ = dx;
+   this->dy_ = dy;
    this->srName_ = srName;
 } 
 
 //===========================================================================//
 void TC_SideName_c::Set( 
             TC_SideMode_t side,
+            int           dx,
+            int           dy,
       const char*         pszName )
 {
    this->side_ = side;
+   this->dx_ = dx;
+   this->dy_ = dy;
    this->srName_ = TIO_PSZ_STR( pszName );
 } 
 
@@ -245,5 +297,7 @@ void TC_SideName_c::Clear(
       void )
 {
    this->side_ = TC_SIDE_UNDEFINED;
+   this->dx_ = INT_MAX;
+   this->dy_ = INT_MAX;
    this->srName_ = "";
 } 
