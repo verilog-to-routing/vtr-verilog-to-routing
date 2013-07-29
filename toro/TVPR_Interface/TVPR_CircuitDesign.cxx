@@ -29,7 +29,7 @@
 //           - PeekInputOutput_
 //           - PeekPhysicalBlockList_
 //           - PeekPhysicalBlock_
-//           - PeekHierMapList_
+//           - PeekPackHierMapList_
 //           - PeekNetList_
 //           - ValidateModelList_
 //           - ValidateSubcktList_
@@ -1349,14 +1349,14 @@ void TVPR_CircuitDesign_c::PeekInputOutput_(
       }
    }
 
-   TPO_RelativeList_t placeRelativeList; 
+   TPO_PlaceRelativeList_t placeRelativeList; 
    if( inputOutputList.IsMember( pszInstName ))
    {
       const TPO_Inst_c& inputOutput = *inputOutputList.Find( pszInstName );
-      const TPO_RelativeList_t& placeRelativeList_ = inputOutput.GetPlaceRelativeList( );
+      const TPO_PlaceRelativeList_t& placeRelativeList_ = inputOutput.GetPlaceRelativeList( );
       for( size_t i = 0; i < placeRelativeList_.GetLength( ); ++i )
       {
-         const TPO_Relative_c& placeRelative = *placeRelativeList_[i];
+         const TPO_PlaceRelative_c& placeRelative = *placeRelativeList_[i];
          placeRelativeList.Add( placeRelative );
       }
    }
@@ -1433,11 +1433,11 @@ void TVPR_CircuitDesign_c::PeekPhysicalBlock_(
       srPlaceFabricName = szPlaceFabricName;
    }
 
-   TPO_HierMapList_t packHierMapList;
+   TPO_InstHierMapList_t packHierMapList;
    if( vpr_block.pb )
    {
-      this->PeekHierMapList_( *vpr_block.pb, vpr_logicalBlockArray,
-                              blockIndex, &packHierMapList );
+      this->PeekPackHierMapList_( *vpr_block.pb, vpr_logicalBlockArray,
+                                  blockIndex, &packHierMapList );
    }
 
    TPO_StatusMode_t placeStatus = ( vpr_block.is_fixed ? 
@@ -1460,14 +1460,14 @@ void TVPR_CircuitDesign_c::PeekPhysicalBlock_(
       }
    }
 
-   TPO_RelativeList_t placeRelativeList; 
+   TPO_PlaceRelativeList_t placeRelativeList; 
    if( physicalBlockList.IsMember( pszInstName ))
    {
       const TPO_Inst_c& physicalBlock = *physicalBlockList.Find( pszInstName );
-      const TPO_RelativeList_t& placeRelativeList_ = physicalBlock.GetPlaceRelativeList( );
+      const TPO_PlaceRelativeList_t& placeRelativeList_ = physicalBlock.GetPlaceRelativeList( );
       for( size_t i = 0; i < placeRelativeList_.GetLength( ); ++i )
       {
-         const TPO_Relative_c& placeRelative = *placeRelativeList_[i];
+         const TPO_PlaceRelative_c& placeRelative = *placeRelativeList_[i];
          placeRelativeList.Add( placeRelative );
       }
    }
@@ -1476,7 +1476,7 @@ void TVPR_CircuitDesign_c::PeekPhysicalBlock_(
    {
       TPO_Inst_c physicalBlock( pszInstName );
       physicalBlock.SetCellName( pszCellName );
-      physicalBlock.SetPackHierMapList( packHierMapList );
+      physicalBlock.SetPackInstHierMapList( packHierMapList );
       physicalBlock.SetPlaceFabricName( srPlaceFabricName );
       physicalBlock.SetPlaceStatus( placeStatus );
       physicalBlock.SetPlaceOrigin( placeOrigin );
@@ -1488,31 +1488,31 @@ void TVPR_CircuitDesign_c::PeekPhysicalBlock_(
 }
 
 //===========================================================================//
-// Method         : PeekHierMapList_
+// Method         : PeekPackHierMapList_
 // Author         : Jeff Rudolph
 //---------------------------------------------------------------------------//
 // Version history
 // 07/25/12 jeffr : Original
 //===========================================================================//
-void TVPR_CircuitDesign_c::PeekHierMapList_(
-      const t_pb&              vpr_pb,
-      const t_logical_block*   vpr_logicalBlockArray,
-            int                nodeIndex,
-            TPO_HierMapList_t* phierMapList ) const
+void TVPR_CircuitDesign_c::PeekPackHierMapList_(
+      const t_pb&                  vpr_pb,
+      const t_logical_block*       vpr_logicalBlockArray,
+            int                    nodeIndex,
+            TPO_InstHierMapList_t* ppackHierMapList ) const
 {
    // Apply recursion to read physical block's hierarchical pack map list
    TPO_NameList_t hierNameList;
-   this->PeekHierMapList_( vpr_pb, vpr_logicalBlockArray,
-                           nodeIndex, &hierNameList, phierMapList );
+   this->PeekPackHierMapList_( vpr_pb, vpr_logicalBlockArray,
+                               nodeIndex, &hierNameList, ppackHierMapList );
 }
 
 //===========================================================================//
-void TVPR_CircuitDesign_c::PeekHierMapList_(
-      const t_pb&                vpr_pb,
-      const t_logical_block*     vpr_logicalBlockArray,
-              int                nodeIndex,
-              TPO_NameList_t*    phierNameList,
-              TPO_HierMapList_t* phierMapList ) const
+void TVPR_CircuitDesign_c::PeekPackHierMapList_(
+      const t_pb&                    vpr_pb,
+      const t_logical_block*         vpr_logicalBlockArray,
+              int                    nodeIndex,
+              TPO_NameList_t*        phierNameList,
+              TPO_InstHierMapList_t* ppackHierMapList ) const
 {
    if( vpr_pb.name )
    {
@@ -1537,8 +1537,8 @@ void TVPR_CircuitDesign_c::PeekHierMapList_(
                   TPO_NameList_t hierNameList( *phierNameList );
 
                   const t_pb& child_pb = vpr_pb.child_pbs[typeIndex][instIndex];
-                  this->PeekHierMapList_( child_pb, vpr_logicalBlockArray,
-                                          instIndex, &hierNameList, phierMapList );
+                  this->PeekPackHierMapList_( child_pb, vpr_logicalBlockArray,
+                                              instIndex, &hierNameList, ppackHierMapList );
                }
             }
          }
@@ -1552,8 +1552,8 @@ void TVPR_CircuitDesign_c::PeekHierMapList_(
          sprintf( szHierName, "%s[%d]", vpr_pb.pb_graph_node->pb_type->name, 0 );
          phierNameList->Add( szHierName );
 
-         TPO_HierMap_c hierMap( pszInstName, *phierNameList );
-         phierMapList->Add( hierMap );
+         TPO_InstHierMap_c packHierMap( pszInstName, *phierNameList );
+         ppackHierMapList->Add( packHierMap );
       }
    }
 }
