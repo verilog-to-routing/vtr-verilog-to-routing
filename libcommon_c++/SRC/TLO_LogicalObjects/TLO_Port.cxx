@@ -11,7 +11,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -95,7 +95,8 @@ TLO_Port_c::TLO_Port_c(
       isEquivalent_( port.isEquivalent_ ),
       srClass_( port.srClass_ ),
       cap_( port.cap_ ),
-      delay_( port.delay_ )
+      delay_( port.delay_ ),
+      power_( port.power_ )
 {
 } 
 
@@ -130,6 +131,7 @@ TLO_Port_c& TLO_Port_c::operator=(
       this->srClass_ = port.srClass_;
       this->cap_ = port.cap_;
       this->delay_ = port.delay_;
+      this->power_ = port.power_;
    }
    return( *this );
 }
@@ -209,17 +211,27 @@ void TLO_Port_c::Print(
                                     TIO_SR_STR( this->srClass_ ));
    }
 
-   if( TCTF_IsGT( this->cap_, 0.0 ) || TCTF_IsGT( this->delay_, 0.0 ))
+   if( TCTF_IsGT( this->cap_, 0.0 ) || 
+       TCTF_IsGT( this->delay_, 0.0 ) ||
+       this->power_.IsValid( ))
    {
       printHandler.Write( pfile, 0, ">\n" );
       spaceLen += 3;
 
-      TC_MinGrid_c& MinGrid = TC_MinGrid_c::GetInstance( );
-      unsigned int precision = MinGrid.GetPrecision( );
+      if( TCTF_IsGT( this->cap_, 0.0 ) || 
+          TCTF_IsGT( this->delay_, 0.0 ))
+      {
+         TC_MinGrid_c& MinGrid = TC_MinGrid_c::GetInstance( );
+         unsigned int precision = MinGrid.GetPrecision( );
 
-      printHandler.Write( pfile, spaceLen, "<timing cap_in=\"%0.*f\" delay_in=\"%0.*e\"/>\n", 
-                                           precision, this->cap_, 
-                                           precision + 1, this->delay_ );
+         printHandler.Write( pfile, spaceLen, "<timing cap_in=\"%0.*f\" delay_in=\"%0.*e\"/>\n", 
+                                              precision, this->cap_, 
+                                              precision + 1, this->delay_ );
+      }
+      if( this->power_.IsValid( ))
+      {
+	this->power_.Print( pfile, spaceLen );
+      }
       spaceLen -= 3;
       printHandler.Write( pfile, spaceLen, "</pin>\n" );
    }
@@ -246,4 +258,5 @@ void TLO_Port_c::Clear(
    this->srClass_ = "";
    this->cap_ = 0.0;
    this->delay_ = 0.0;
+   this->power_.Clear( );
 } 
