@@ -4,7 +4,7 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
 // This program is free software; you can redistribute it and/or modify it   //
 // under the terms of the GNU General Public License as published by the     //
@@ -34,7 +34,8 @@ using namespace std;
 // Version history
 // 05/15/12 jeffr : Original
 //===========================================================================//
-
-void TLO_ExtractStringCellSource( TLO_CellSource_t source, string* psrSource );
-
+void TLO_ExtractStringCellSource( TLO_CellSource_t cellSource, 
+                                  string* psrCellSource );
+void TLO_ExtractStringPowerType( TLO_PowerType_t powerType, 
+                                 string* psrPowerType );
 #endif
