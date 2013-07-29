@@ -39,6 +39,8 @@
 #include "TFH_FabricChannelHandler.h"
 #include "TFH_FabricSwitchBoxHandler.h"
 #include "TFH_FabricConnectionBlockHandler.h"
+
+#include "TCH_RegionPlaceHandler.h"
 #include "TCH_RelativePlaceHandler.h"
 #include "TCH_PrePlacedHandler.h"
 #include "TCH_PreRoutedHandler.h"
@@ -85,6 +87,10 @@ TVPR_Interface_c::TVPR_Interface_c(
    // (in order to handle fabric connection block overrides, if any)
    TFH_FabricConnectionBlockHandler_c::NewInstance( );
 
+   // Initialize region placement handler 'singleton' prior to placement
+   // (in order to handle region placement constraints, if any)
+   TCH_RegionPlaceHandler_c::NewInstance( );
+
    // Initialize relative placement handler 'singleton' prior to placement
    // (in order to handle relative placement constraints, if any)
    TCH_RelativePlaceHandler_c::NewInstance( );
@@ -113,6 +119,8 @@ TVPR_Interface_c::~TVPR_Interface_c(
    TCH_PrePlacedHandler_c::DeleteInstance( );
 
    TCH_RelativePlaceHandler_c::DeleteInstance( );
+
+   TCH_RegionPlaceHandler_c::DeleteInstance( );
 
    TFH_FabricConnectionBlockHandler_c::DeleteInstance( );
 
@@ -409,6 +417,12 @@ bool TVPR_Interface_c::Execute(
           this->vpr_.setup.RouterOpts.doRouting ) 
       {
          const TOS_PlaceOptions_c& placeOptions = optionsStore.GetPlaceOptions( );
+         if( placeOptions.regionPlace.enable )
+         {
+            TCH_RegionPlaceHandler_c& regionPlaceHandler = TCH_RegionPlaceHandler_c::GetInstance( );
+            regionPlaceHandler.Configure( circuitDesign.blockList,
+                                          circuitDesign.placeRegionsList );
+         }
          if( placeOptions.relativePlace.enable )
          {
             TCH_RelativePlaceHandler_c& relativePlaceHandler = TCH_RelativePlaceHandler_c::GetInstance( );
