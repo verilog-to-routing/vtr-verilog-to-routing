@@ -29,6 +29,7 @@ using namespace std;
 
 #include "TPO_Typedefs.h"
 #include "TPO_Inst.h"
+#include "TPO_PlaceRegions.h"
 
 #include "TLO_Typedefs.h"
 #include "TLO_Cell.h"
@@ -99,6 +100,9 @@ public:
    TNO_NameList_t netNameList;
    TNO_NameList_t netOrderList;
 
+   TPO_PlaceRegionsList_t placeRegionsList;
+                             // Optional design's region placement constrants
+
 private:
 
    enum TCD_DefCapacity_e 
@@ -111,7 +115,8 @@ private:
       TCD_CELL_LIST_DEF_CAPACITY = 64,
       TCD_NET_LIST_DEF_CAPACITY = 1024,
       TCD_NET_NAME_LIST_DEF_CAPACITY = 1024,
-      TCD_NET_ORDER_LIST_DEF_CAPACITY = 1024
+      TCD_NET_ORDER_LIST_DEF_CAPACITY = 1024,
+      TCD_PLACE_REGIONS_LIST_DEF_CAPACITY = 1
    };
 };
 
