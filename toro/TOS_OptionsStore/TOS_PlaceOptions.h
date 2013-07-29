@@ -56,6 +56,7 @@ public:
                        unsigned int timingUpdateCount,
                        double slackInitWeight,
                        double slackFinalWeight,
+                       bool regionPlace_enable_,
                        bool relativePlace_enable_,
                        bool relativePlace_rotateEnable_,
                        bool relativePlace_carryChainEnable_,
@@ -91,6 +92,14 @@ public:
    unsigned int timingUpdateCount; // "
    double       slackInitWeight;   // "
    double       slackFinalWeight;  // "
+
+   class TOS_RegionPlace_c
+   {
+   public:
+
+      bool         enable;         // Enables applying region placement constraints, if any
+
+   } regionPlace;
 
    class TOS_RelativePlace_c
    {
