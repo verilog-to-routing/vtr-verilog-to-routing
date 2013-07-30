@@ -26,4 +26,6 @@ halt_max_errors   -1
 
 fabric_connectionblock_enable yes
 
+place_temp_inner_num 10.0
+
 route_channel_width 44

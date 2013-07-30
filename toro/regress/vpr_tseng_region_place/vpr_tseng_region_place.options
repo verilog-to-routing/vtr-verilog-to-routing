@@ -26,3 +26,6 @@ halt_max_errors   -1
 
 // trace_vpr_show_setup yes
 // trace_vpr_echo_file yes
+
+place_regions_enable yes
+place_temp_inner_num 10.0

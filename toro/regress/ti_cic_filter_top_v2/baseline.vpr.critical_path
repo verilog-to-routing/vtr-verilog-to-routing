@@ -1,594 +1,578 @@
-Node: 3705  TN_FF_SOURCE Block #19 (n579)
-Pin: ff.Q[0] pb (sample_buffer~36)
-T_arr: 0  T_req: -5.10225e-08  Tdel: 1.93e-10
-Internal Net: #127 (sample_buffer~36).  Pins on net: 23.
+Node: 12775  TN_INPAD_SOURCE Block #64 (ble0_ban1)
+Pin: inpad.inpad[0] pb (ble0_ban1)T_arr: 0  T_req: -5.23594e-08  Tdel: 0
+Internal Net: #3 (ble0_ban1).  Pins on net: 337.
 
-Node: 3704  TN_FF_OPIN Block #19 (n579)
-Pin: ff.Q[0] pb (sample_buffer~36)
-T_arr: 1.93e-10  T_req: -5.08295e-08  Tdel: 2.63e-10
-Internal Net: #127 (sample_buffer~36).  Pins on net: 23.
+Node: 12774  TN_INPAD_OPIN Block #64 (ble0_ban1)
+Pin: inpad.inpad[0] pb (ble0_ban1)
+T_arr: 0  T_req: -5.23594e-08  Tdel: 0
+Internal Net: #3 (ble0_ban1).  Pins on net: 337.
 
-Node: 3698  TN_INTERMEDIATE_NODE Block #19 (n579)
-Pin: ble.out[0] pb (sample_buffer~36)
-T_arr: 4.56e-10  T_req: -5.05665e-08  Tdel: 0
-Internal Net: #127 (sample_buffer~36).  Pins on net: 23.
+Node: 12773  TN_CB_OPIN Block #64 (ble0_ban1)
+Pin: io.inpad[0] pb (ble0_ban1)
+T_arr: 0  T_req: -5.23594e-08  Tdel: 2.69612e-09
+External-to-Block Net: #112 (ble0_ban1).  Pins on net: 84.
 
-Node: 3675  TN_CB_OPIN Block #19 (n579)
-Pin: clb.O[1] pb (n579)
-T_arr: 4.56e-10  T_req: -5.05665e-08  Tdel: 2.04541e-09
-External-to-Block Net: #194 (sample_buffer~36).  Pins on net: 13.
+Node: 6257  TN_CB_IPIN Block #32 (n785)
+Pin: clb.I[6] pb (n785)
+T_arr: 2.69612e-09  T_req: -4.96632e-08  Tdel: 1.04e-09
+Internal Net: #3 (ble0_ban1).  Pins on net: 337.
 
-Node: 6048  TN_CB_IPIN Block #31 (n786)
-Pin: clb.I[1] pb (n786)
-T_arr: 2.50141e-09  T_req: -4.85211e-08  Tdel: 1.04e-09
-Internal Net: #127 (sample_buffer~36).  Pins on net: 23.
+Node: 6352  TN_INTERMEDIATE_NODE Block #32 (n785)
+Pin: ble.in[0] pb (n542)
+T_arr: 3.73612e-09  T_req: -4.86232e-08  Tdel: 0
+Internal Net: #3 (ble0_ban1).  Pins on net: 337.
 
-Node: 6195  TN_INTERMEDIATE_NODE Block #31 (n786)
-Pin: ble.in[1] pb (n469_1)
-T_arr: 3.54141e-09  T_req: -4.74811e-08  Tdel: 0
-Internal Net: #127 (sample_buffer~36).  Pins on net: 23.
+Node: 6357  TN_INTERMEDIATE_NODE Block #32 (n785)
+Pin: lut5.in[0] pb (n542)
+T_arr: 3.73612e-09  T_req: -4.86232e-08  Tdel: 0
+Internal Net: #3 (ble0_ban1).  Pins on net: 337.
 
-Node: 6200  TN_INTERMEDIATE_NODE Block #31 (n786)
-Pin: lut5.in[1] pb (n469_1)
-T_arr: 3.54141e-09  T_req: -4.74811e-08  Tdel: 0
-Internal Net: #127 (sample_buffer~36).  Pins on net: 23.
+Node: 6362  TN_PRIMITIVE_IPIN Block #32 (n785)
+Pin: lut.in[0] pb (n542)
+T_arr: 3.73612e-09  T_req: -4.86232e-08  Tdel: 8.36e-10
+Internal Net: #3 (ble0_ban1).  Pins on net: 337.
 
-Node: 6205  TN_PRIMITIVE_IPIN Block #31 (n786)
-Pin: lut.in[1] pb (n469_1)
-T_arr: 3.54141e-09  T_req: -4.74811e-08  Tdel: 8.36e-10
-Internal Net: #127 (sample_buffer~36).  Pins on net: 23.
+Node: 6366  TN_PRIMITIVE_OPIN Block #32 (n785)
+Pin: lut.out[0] pb (n542)
+T_arr: 4.57212e-09  T_req: -4.77872e-08  Tdel: 0
+Internal Net: #661 (n542).  Pins on net: 18.
 
-Node: 6208  TN_PRIMITIVE_OPIN Block #31 (n786)
-Pin: lut.out[0] pb (n469_1)
-T_arr: 4.37741e-09  T_req: -4.66451e-08  Tdel: 0
-Internal Net: #297 (n469_1).  Pins on net: 6.
+Node: 6361  TN_INTERMEDIATE_NODE Block #32 (n785)
+Pin: lut5.out[0] pb (n542)
+T_arr: 4.57212e-09  T_req: -4.77872e-08  Tdel: 2.63e-10
+Internal Net: #661 (n542).  Pins on net: 18.
 
-Node: 6203  TN_INTERMEDIATE_NODE Block #31 (n786)
-Pin: lut5.out[0] pb (n469_1)
-T_arr: 4.37741e-09  T_req: -4.66451e-08  Tdel: 2.63e-10
-Internal Net: #297 (n469_1).  Pins on net: 6.
+Node: 6356  TN_INTERMEDIATE_NODE Block #32 (n785)
+Pin: ble.out[0] pb (n542)
+T_arr: 4.83512e-09  T_req: -4.75242e-08  Tdel: 0
+Internal Net: #661 (n542).  Pins on net: 18.
 
-Node: 6198  TN_INTERMEDIATE_NODE Block #31 (n786)
-Pin: ble.out[0] pb (n469_1)
-T_arr: 4.64041e-09  T_req: -4.63821e-08  Tdel: 0
-Internal Net: #297 (n469_1).  Pins on net: 6.
+Node: 6272  TN_CB_OPIN Block #32 (n785)
+Pin: clb.O[6] pb (n785)
+T_arr: 4.83512e-09  T_req: -4.75242e-08  Tdel: 2.69582e-09
+External-to-Block Net: #494 (n542).  Pins on net: 11.
 
-Node: 6074  TN_CB_OPIN Block #31 (n786)
-Pin: clb.O[8] pb (n786)
-T_arr: 4.64041e-09  T_req: -4.63821e-08  Tdel: 2.04541e-09
-External-to-Block Net: #510 (n469_1).  Pins on net: 2.
+Node: 10716  TN_CB_IPIN Block #54 (n865)
+Pin: clb.I[7] pb (n865)
+T_arr: 7.53093e-09  T_req: -4.48284e-08  Tdel: 1.04e-09
+Internal Net: #661 (n542).  Pins on net: 18.
 
-Node: 8244  TN_CB_IPIN Block #42 (n903)
-Pin: clb.I[7] pb (n903)
-T_arr: 6.68582e-09  T_req: -4.43367e-08  Tdel: 1.04e-09
-Internal Net: #297 (n469_1).  Pins on net: 6.
+Node: 10884  TN_INTERMEDIATE_NODE Block #54 (n865)
+Pin: ble.in[0] pb (n865)
+T_arr: 8.57094e-09  T_req: -4.37884e-08  Tdel: 0
+Internal Net: #661 (n542).  Pins on net: 18.
 
-Node: 8421  TN_INTERMEDIATE_NODE Block #42 (n903)
-Pin: ble.in[0] pb (n903)
-T_arr: 7.72582e-09  T_req: -4.32967e-08  Tdel: 0
-Internal Net: #297 (n469_1).  Pins on net: 6.
+Node: 10889  TN_INTERMEDIATE_NODE Block #54 (n865)
+Pin: lut5.in[0] pb (n865)
+T_arr: 8.57094e-09  T_req: -4.37884e-08  Tdel: 0
+Internal Net: #661 (n542).  Pins on net: 18.
 
-Node: 8426  TN_INTERMEDIATE_NODE Block #42 (n903)
-Pin: lut5.in[0] pb (n903)
-T_arr: 7.72582e-09  T_req: -4.32967e-08  Tdel: 0
-Internal Net: #297 (n469_1).  Pins on net: 6.
+Node: 10894  TN_PRIMITIVE_IPIN Block #54 (n865)
+Pin: lut.in[0] pb (n865)
+T_arr: 8.57094e-09  T_req: -4.37884e-08  Tdel: 8.36e-10
+Internal Net: #661 (n542).  Pins on net: 18.
 
-Node: 8431  TN_PRIMITIVE_IPIN Block #42 (n903)
-Pin: lut.in[0] pb (n903)
-T_arr: 7.72582e-09  T_req: -4.32967e-08  Tdel: 8.36e-10
-Internal Net: #297 (n469_1).  Pins on net: 6.
+Node: 10898  TN_PRIMITIVE_OPIN Block #54 (n865)
+Pin: lut.out[0] pb (n865)
+T_arr: 9.40693e-09  T_req: -4.29524e-08  Tdel: 0
+Internal Net: #1268 (n865).  Pins on net: 3.
 
-Node: 8435  TN_PRIMITIVE_OPIN Block #42 (n903)
-Pin: lut.out[0] pb (n903)
-T_arr: 8.56182e-09  T_req: -4.24607e-08  Tdel: 0
-Internal Net: #367 (n903).  Pins on net: 4.
+Node: 10893  TN_INTERMEDIATE_NODE Block #54 (n865)
+Pin: lut5.out[0] pb (n865)
+T_arr: 9.40693e-09  T_req: -4.29524e-08  Tdel: 2.63e-10
+Internal Net: #1268 (n865).  Pins on net: 3.
 
-Node: 8430  TN_INTERMEDIATE_NODE Block #42 (n903)
-Pin: lut5.out[0] pb (n903)
-T_arr: 8.56182e-09  T_req: -4.24607e-08  Tdel: 2.63e-10
-Internal Net: #367 (n903).  Pins on net: 4.
+Node: 10888  TN_INTERMEDIATE_NODE Block #54 (n865)
+Pin: ble.out[0] pb (n865)
+T_arr: 9.66994e-09  T_req: -4.26894e-08  Tdel: 0
+Internal Net: #1268 (n865).  Pins on net: 3.
 
-Node: 8425  TN_INTERMEDIATE_NODE Block #42 (n903)
-Pin: ble.out[0] pb (n903)
-T_arr: 8.82482e-09  T_req: -4.21977e-08  Tdel: 0
-Internal Net: #367 (n903).  Pins on net: 4.
+Node: 10742  TN_CB_OPIN Block #54 (n865)
+Pin: clb.O[11] pb (n865)
+T_arr: 9.66994e-09  T_req: -4.26894e-08  Tdel: 3.34682e-09
+External-to-Block Net: #596 (n865).  Pins on net: 2.
 
-Node: 8260  TN_CB_OPIN Block #42 (n903)
-Pin: clb.O[11] pb (n903)
-T_arr: 8.82482e-09  T_req: -4.21977e-08  Tdel: 2.04511e-09
-External-to-Block Net: #408 (n903).  Pins on net: 3.
+Node: 8444  TN_CB_IPIN Block #43 (n901)
+Pin: clb.I[8] pb (n901)
+T_arr: 1.30168e-08  T_req: -3.93426e-08  Tdel: 1.04e-09
+Internal Net: #1268 (n865).  Pins on net: 3.
 
-Node: 4059  TN_CB_IPIN Block #21 (n1050)
-Pin: clb.I[25] pb (n1050)
-T_arr: 1.08699e-08  T_req: -4.01525e-08  Tdel: 1.04e-09
-Internal Net: #367 (n903).  Pins on net: 4.
+Node: 8531  TN_INTERMEDIATE_NODE Block #43 (n901)
+Pin: ble.in[2] pb (n889)
+T_arr: 1.40568e-08  T_req: -3.83026e-08  Tdel: 0
+Internal Net: #1268 (n865).  Pins on net: 3.
 
-Node: 4083  TN_INTERMEDIATE_NODE Block #21 (n1050)
-Pin: ble.in[1] pb (n900)
-T_arr: 1.19099e-08  T_req: -3.91125e-08  Tdel: 0
-Internal Net: #367 (n903).  Pins on net: 4.
+Node: 8537  TN_INTERMEDIATE_NODE Block #43 (n901)
+Pin: lut5.in[2] pb (n889)
+T_arr: 1.40568e-08  T_req: -3.83026e-08  Tdel: 0
+Internal Net: #1268 (n865).  Pins on net: 3.
 
-Node: 4087  TN_INTERMEDIATE_NODE Block #21 (n1050)
-Pin: lut5.in[1] pb (n900)
-T_arr: 1.19099e-08  T_req: -3.91125e-08  Tdel: 0
-Internal Net: #367 (n903).  Pins on net: 4.
+Node: 8543  TN_PRIMITIVE_IPIN Block #43 (n901)
+Pin: lut.in[2] pb (n889)
+T_arr: 1.40568e-08  T_req: -3.83026e-08  Tdel: 4.78e-10
+Internal Net: #1268 (n865).  Pins on net: 3.
 
-Node: 4091  TN_PRIMITIVE_IPIN Block #21 (n1050)
-Pin: lut.in[1] pb (n900)
-T_arr: 1.19099e-08  T_req: -3.91125e-08  Tdel: 8.36e-10
-Internal Net: #367 (n903).  Pins on net: 4.
+Node: 8546  TN_PRIMITIVE_OPIN Block #43 (n901)
+Pin: lut.out[0] pb (n889)
+T_arr: 1.45348e-08  T_req: -3.78246e-08  Tdel: 0
+Internal Net: #246 (n889).  Pins on net: 3.
 
-Node: 4093  TN_PRIMITIVE_OPIN Block #21 (n1050)
-Pin: lut.out[0] pb (n900)
-T_arr: 1.27459e-08  T_req: -3.82765e-08  Tdel: 0
-Internal Net: #312 (n900).  Pins on net: 4.
+Node: 8540  TN_INTERMEDIATE_NODE Block #43 (n901)
+Pin: lut5.out[0] pb (n889)
+T_arr: 1.45348e-08  T_req: -3.78246e-08  Tdel: 2.63e-10
+Internal Net: #246 (n889).  Pins on net: 3.
 
-Node: 4089  TN_INTERMEDIATE_NODE Block #21 (n1050)
-Pin: lut5.out[0] pb (n900)
-T_arr: 1.27459e-08  T_req: -3.82765e-08  Tdel: 2.63e-10
-Internal Net: #312 (n900).  Pins on net: 4.
+Node: 8534  TN_INTERMEDIATE_NODE Block #43 (n901)
+Pin: ble.out[0] pb (n889)
+T_arr: 1.47978e-08  T_req: -3.75616e-08  Tdel: 0
+Internal Net: #246 (n889).  Pins on net: 3.
 
-Node: 4085  TN_INTERMEDIATE_NODE Block #21 (n1050)
-Pin: ble.out[0] pb (n900)
-T_arr: 1.30089e-08  T_req: -3.80135e-08  Tdel: 0
-Internal Net: #312 (n900).  Pins on net: 4.
+Node: 8458  TN_CB_OPIN Block #43 (n901)
+Pin: clb.O[4] pb (n901)
+T_arr: 1.47978e-08  T_req: -3.75616e-08  Tdel: 1.3947e-09
+External-to-Block Net: #475 (n889).  Pins on net: 3.
 
-Node: 4062  TN_CB_OPIN Block #21 (n1050)
-Pin: clb.O[1] pb (n1050)
-T_arr: 1.30089e-08  T_req: -3.80135e-08  Tdel: 1.39471e-09
-External-to-Block Net: #411 (n900).  Pins on net: 2.
+Node: 5849  TN_CB_IPIN Block #30 (n986)
+Pin: clb.I[10] pb (n986)
+T_arr: 1.61925e-08  T_req: -3.61669e-08  Tdel: 1.04e-09
+Internal Net: #246 (n889).  Pins on net: 3.
 
-Node: 5855  TN_CB_IPIN Block #30 (n986)
-Pin: clb.I[17] pb (n986)
-T_arr: 1.44036e-08  T_req: -3.66188e-08  Tdel: 1.04e-09
-Internal Net: #312 (n900).  Pins on net: 4.
+Node: 5952  TN_INTERMEDIATE_NODE Block #30 (n986)
+Pin: ble.in[1] pb (n1007)
+T_arr: 1.72325e-08  T_req: -3.51269e-08  Tdel: 0
+Internal Net: #246 (n889).  Pins on net: 3.
 
-Node: 6005  TN_INTERMEDIATE_NODE Block #30 (n986)
-Pin: ble.in[0] pb (n899)
-T_arr: 1.54436e-08  T_req: -3.55788e-08  Tdel: 0
-Internal Net: #312 (n900).  Pins on net: 4.
+Node: 5956  TN_INTERMEDIATE_NODE Block #30 (n986)
+Pin: lut5.in[1] pb (n1007)
+T_arr: 1.72325e-08  T_req: -3.51269e-08  Tdel: 0
+Internal Net: #246 (n889).  Pins on net: 3.
 
-Node: 6009  TN_INTERMEDIATE_NODE Block #30 (n986)
-Pin: lut5.in[0] pb (n899)
-T_arr: 1.54436e-08  T_req: -3.55788e-08  Tdel: 0
-Internal Net: #312 (n900).  Pins on net: 4.
+Node: 5960  TN_PRIMITIVE_IPIN Block #30 (n986)
+Pin: lut.in[1] pb (n1007)
+T_arr: 1.72325e-08  T_req: -3.51269e-08  Tdel: 8.36e-10
+Internal Net: #246 (n889).  Pins on net: 3.
 
-Node: 6013  TN_PRIMITIVE_IPIN Block #30 (n986)
-Pin: lut.in[0] pb (n899)
-T_arr: 1.54436e-08  T_req: -3.55788e-08  Tdel: 8.36e-10
-Internal Net: #312 (n900).  Pins on net: 4.
+Node: 5962  TN_PRIMITIVE_OPIN Block #30 (n986)
+Pin: lut.out[0] pb (n1007)
+T_arr: 1.80685e-08  T_req: -3.42909e-08  Tdel: 0
+Internal Net: #238 (n1007).  Pins on net: 3.
 
-Node: 6016  TN_PRIMITIVE_OPIN Block #30 (n986)
-Pin: lut.out[0] pb (n899)
-T_arr: 1.62796e-08  T_req: -3.47428e-08  Tdel: 0
-Internal Net: #347 (n899).  Pins on net: 3.
+Node: 5958  TN_INTERMEDIATE_NODE Block #30 (n986)
+Pin: lut5.out[0] pb (n1007)
+T_arr: 1.80685e-08  T_req: -3.42909e-08  Tdel: 2.63e-10
+Internal Net: #238 (n1007).  Pins on net: 3.
 
-Node: 6012  TN_INTERMEDIATE_NODE Block #30 (n986)
-Pin: lut5.out[0] pb (n899)
-T_arr: 1.62796e-08  T_req: -3.47428e-08  Tdel: 2.63e-10
-Internal Net: #347 (n899).  Pins on net: 3.
+Node: 5954  TN_INTERMEDIATE_NODE Block #30 (n986)
+Pin: ble.out[0] pb (n1007)
+T_arr: 1.83315e-08  T_req: -3.40279e-08  Tdel: 1.04e-09
+Internal Net: #238 (n1007).  Pins on net: 3.
 
-Node: 6008  TN_INTERMEDIATE_NODE Block #30 (n986)
-Pin: ble.out[0] pb (n899)
-T_arr: 1.65426e-08  T_req: -3.44798e-08  Tdel: 0
-Internal Net: #347 (n899).  Pins on net: 3.
+Node: 5979  TN_INTERMEDIATE_NODE Block #30 (n986)
+Pin: ble.in[1] pb (n1005)
+T_arr: 1.93715e-08  T_req: -3.29879e-08  Tdel: 0
+Internal Net: #238 (n1007).  Pins on net: 3.
 
-Node: 5873  TN_CB_OPIN Block #30 (n986)
-Pin: clb.O[9] pb (n986)
-T_arr: 1.65426e-08  T_req: -3.44798e-08  Tdel: 1.3947e-09
-External-to-Block Net: #245 (n899).  Pins on net: 3.
+Node: 5985  TN_INTERMEDIATE_NODE Block #30 (n986)
+Pin: lut5.in[1] pb (n1005)
+T_arr: 1.93715e-08  T_req: -3.29879e-08  Tdel: 0
+Internal Net: #238 (n1007).  Pins on net: 3.
 
-Node: 2128  TN_CB_IPIN Block #11 (n426)
-Pin: clb.I[17] pb (n426)
-T_arr: 1.79373e-08  T_req: -3.30851e-08  Tdel: 1.04e-09
-Internal Net: #347 (n899).  Pins on net: 3.
+Node: 5991  TN_PRIMITIVE_IPIN Block #30 (n986)
+Pin: lut.in[1] pb (n1005)
+T_arr: 1.93715e-08  T_req: -3.29879e-08  Tdel: 8.36e-10
+Internal Net: #238 (n1007).  Pins on net: 3.
 
-Node: 2170  TN_INTERMEDIATE_NODE Block #11 (n426)
-Pin: ble.in[1] pb (n1051)
-T_arr: 1.89773e-08  T_req: -3.20451e-08  Tdel: 0
-Internal Net: #347 (n899).  Pins on net: 3.
+Node: 5995  TN_PRIMITIVE_OPIN Block #30 (n986)
+Pin: lut.out[0] pb (n1005)
+T_arr: 2.02075e-08  T_req: -3.21519e-08  Tdel: 0
+Internal Net: #230 (n1005).  Pins on net: 4.
 
-Node: 2175  TN_INTERMEDIATE_NODE Block #11 (n426)
-Pin: lut5.in[1] pb (n1051)
-T_arr: 1.89773e-08  T_req: -3.20451e-08  Tdel: 0
-Internal Net: #347 (n899).  Pins on net: 3.
+Node: 5989  TN_INTERMEDIATE_NODE Block #30 (n986)
+Pin: lut5.out[0] pb (n1005)
+T_arr: 2.02075e-08  T_req: -3.21519e-08  Tdel: 2.63e-10
+Internal Net: #230 (n1005).  Pins on net: 4.
 
-Node: 2180  TN_PRIMITIVE_IPIN Block #11 (n426)
-Pin: lut.in[1] pb (n1051)
-T_arr: 1.89773e-08  T_req: -3.20451e-08  Tdel: 8.36e-10
-Internal Net: #347 (n899).  Pins on net: 3.
+Node: 5983  TN_INTERMEDIATE_NODE Block #30 (n986)
+Pin: ble.out[0] pb (n1005)
+T_arr: 2.04705e-08  T_req: -3.18889e-08  Tdel: 0
+Internal Net: #230 (n1005).  Pins on net: 4.
 
-Node: 2183  TN_PRIMITIVE_OPIN Block #11 (n426)
-Pin: lut.out[0] pb (n1051)
-T_arr: 1.98133e-08  T_req: -3.12091e-08  Tdel: 0
-Internal Net: #342 (n1051).  Pins on net: 3.
+Node: 5871  TN_CB_OPIN Block #30 (n986)
+Pin: clb.O[7] pb (n986)
+T_arr: 2.04705e-08  T_req: -3.18889e-08  Tdel: 1.39419e-09
+External-to-Block Net: #459 (n1005).  Pins on net: 3.
 
-Node: 2178  TN_INTERMEDIATE_NODE Block #11 (n426)
-Pin: lut5.out[0] pb (n1051)
-T_arr: 1.98133e-08  T_req: -3.12091e-08  Tdel: 2.63e-10
-Internal Net: #342 (n1051).  Pins on net: 3.
+Node: 5032  TN_CB_IPIN Block #26 (n1042)
+Pin: clb.I[0] pb (n1042)
+T_arr: 2.18647e-08  T_req: -3.04947e-08  Tdel: 1.04e-09
+Internal Net: #230 (n1005).  Pins on net: 4.
 
-Node: 2173  TN_INTERMEDIATE_NODE Block #11 (n426)
-Pin: ble.out[0] pb (n1051)
-T_arr: 2.00763e-08  T_req: -3.09461e-08  Tdel: 0
-Internal Net: #342 (n1051).  Pins on net: 3.
+Node: 5074  TN_INTERMEDIATE_NODE Block #26 (n1042)
+Pin: ble.in[1] pb (n1066)
+T_arr: 2.29047e-08  T_req: -2.94547e-08  Tdel: 0
+Internal Net: #230 (n1005).  Pins on net: 4.
 
-Node: 2139  TN_CB_OPIN Block #11 (n426)
-Pin: clb.O[2] pb (n426)
-T_arr: 2.00763e-08  T_req: -3.09461e-08  Tdel: 2.04541e-09
-External-to-Block Net: #255 (n1051).  Pins on net: 2.
+Node: 5080  TN_INTERMEDIATE_NODE Block #26 (n1042)
+Pin: lut5.in[1] pb (n1066)
+T_arr: 2.29047e-08  T_req: -2.94547e-08  Tdel: 0
+Internal Net: #230 (n1005).  Pins on net: 4.
 
-Node: 4049  TN_CB_IPIN Block #21 (n1050)
-Pin: clb.I[7] pb (n1050)
-T_arr: 2.21218e-08  T_req: -2.89007e-08  Tdel: 1.04e-09
-Internal Net: #342 (n1051).  Pins on net: 3.
+Node: 5086  TN_PRIMITIVE_IPIN Block #26 (n1042)
+Pin: lut.in[1] pb (n1066)
+T_arr: 2.29047e-08  T_req: -2.94547e-08  Tdel: 8.36e-10
+Internal Net: #230 (n1005).  Pins on net: 4.
 
-Node: 4211  TN_INTERMEDIATE_NODE Block #21 (n1050)
-Pin: ble.in[0] pb (n1050)
-T_arr: 2.31618e-08  T_req: -2.78607e-08  Tdel: 0
-Internal Net: #342 (n1051).  Pins on net: 3.
+Node: 5090  TN_PRIMITIVE_OPIN Block #26 (n1042)
+Pin: lut.out[0] pb (n1066)
+T_arr: 2.37407e-08  T_req: -2.86187e-08  Tdel: 0
+Internal Net: #338 (n1066).  Pins on net: 2.
 
-Node: 4216  TN_INTERMEDIATE_NODE Block #21 (n1050)
-Pin: lut5.in[0] pb (n1050)
-T_arr: 2.31618e-08  T_req: -2.78607e-08  Tdel: 0
-Internal Net: #342 (n1051).  Pins on net: 3.
+Node: 5084  TN_INTERMEDIATE_NODE Block #26 (n1042)
+Pin: lut5.out[0] pb (n1066)
+T_arr: 2.37407e-08  T_req: -2.86187e-08  Tdel: 2.63e-10
+Internal Net: #338 (n1066).  Pins on net: 2.
 
-Node: 4221  TN_PRIMITIVE_IPIN Block #21 (n1050)
-Pin: lut.in[0] pb (n1050)
-T_arr: 2.31618e-08  T_req: -2.78607e-08  Tdel: 8.36e-10
-Internal Net: #342 (n1051).  Pins on net: 3.
+Node: 5078  TN_INTERMEDIATE_NODE Block #26 (n1042)
+Pin: ble.out[0] pb (n1066)
+T_arr: 2.40037e-08  T_req: -2.83557e-08  Tdel: 0
+Internal Net: #338 (n1066).  Pins on net: 2.
 
-Node: 4225  TN_PRIMITIVE_OPIN Block #21 (n1050)
-Pin: lut.out[0] pb (n1050)
-T_arr: 2.39978e-08  T_req: -2.70247e-08  Tdel: 0
-Internal Net: #337 (n1050).  Pins on net: 3.
+Node: 5057  TN_CB_OPIN Block #26 (n1042)
+Pin: clb.O[1] pb (n1042)
+T_arr: 2.40037e-08  T_req: -2.83557e-08  Tdel: 2.04541e-09
+External-to-Block Net: #25 (n1066).  Pins on net: 2.
 
-Node: 4220  TN_INTERMEDIATE_NODE Block #21 (n1050)
-Pin: lut5.out[0] pb (n1050)
-T_arr: 2.39978e-08  T_req: -2.70247e-08  Tdel: 2.63e-10
-Internal Net: #337 (n1050).  Pins on net: 3.
+Node: 190  TN_CB_IPIN Block #1 (n1047)
+Pin: clb.I[4] pb (n1047)
+T_arr: 2.60491e-08  T_req: -2.63103e-08  Tdel: 1.04e-09
+Internal Net: #338 (n1066).  Pins on net: 2.
 
-Node: 4215  TN_INTERMEDIATE_NODE Block #21 (n1050)
-Pin: ble.out[0] pb (n1050)
-T_arr: 2.42608e-08  T_req: -2.67617e-08  Tdel: 0
-Internal Net: #337 (n1050).  Pins on net: 3.
+Node: 338  TN_INTERMEDIATE_NODE Block #1 (n1047)
+Pin: ble.in[2] pb (n1048)
+T_arr: 2.70891e-08  T_req: -2.52703e-08  Tdel: 0
+Internal Net: #338 (n1066).  Pins on net: 2.
 
-Node: 4066  TN_CB_OPIN Block #21 (n1050)
-Pin: clb.O[11] pb (n1050)
-T_arr: 2.42608e-08  T_req: -2.67617e-08  Tdel: 1.39419e-09
-External-to-Block Net: #24 (n1050).  Pins on net: 3.
+Node: 342  TN_INTERMEDIATE_NODE Block #1 (n1047)
+Pin: lut5.in[2] pb (n1048)
+T_arr: 2.70891e-08  T_req: -2.52703e-08  Tdel: 0
+Internal Net: #338 (n1066).  Pins on net: 2.
 
-Node: 189  TN_CB_IPIN Block #1 (n1047)
-Pin: clb.I[3] pb (n1047)
-T_arr: 2.56549e-08  T_req: -2.53675e-08  Tdel: 1.04e-09
-Internal Net: #337 (n1050).  Pins on net: 3.
-
-Node: 337  TN_INTERMEDIATE_NODE Block #1 (n1047)
-Pin: ble.in[1] pb (n1048)
-T_arr: 2.66949e-08  T_req: -2.43275e-08  Tdel: 0
-Internal Net: #337 (n1050).  Pins on net: 3.
-
-Node: 341  TN_INTERMEDIATE_NODE Block #1 (n1047)
-Pin: lut5.in[1] pb (n1048)
-T_arr: 2.66949e-08  T_req: -2.43275e-08  Tdel: 0
-Internal Net: #337 (n1050).  Pins on net: 3.
-
-Node: 345  TN_PRIMITIVE_IPIN Block #1 (n1047)
-Pin: lut.in[1] pb (n1048)
-T_arr: 2.66949e-08  T_req: -2.43275e-08  Tdel: 8.36e-10
-Internal Net: #337 (n1050).  Pins on net: 3.
+Node: 346  TN_PRIMITIVE_IPIN Block #1 (n1047)
+Pin: lut.in[2] pb (n1048)
+T_arr: 2.70891e-08  T_req: -2.52703e-08  Tdel: 4.78e-10
+Internal Net: #338 (n1066).  Pins on net: 2.
 
 Node: 347  TN_PRIMITIVE_OPIN Block #1 (n1047)
 Pin: lut.out[0] pb (n1048)
-T_arr: 2.75309e-08  T_req: -2.34915e-08  Tdel: 0
+T_arr: 2.75671e-08  T_req: -2.47923e-08  Tdel: 0
 Internal Net: #331 (n1048).  Pins on net: 2.
 
 Node: 343  TN_INTERMEDIATE_NODE Block #1 (n1047)
 Pin: lut5.out[0] pb (n1048)
-T_arr: 2.75309e-08  T_req: -2.34915e-08  Tdel: 2.63e-10
+T_arr: 2.75671e-08  T_req: -2.47923e-08  Tdel: 2.63e-10
 Internal Net: #331 (n1048).  Pins on net: 2.
 
 Node: 339  TN_INTERMEDIATE_NODE Block #1 (n1047)
 Pin: ble.out[0] pb (n1048)
-T_arr: 2.77939e-08  T_req: -2.32285e-08  Tdel: 1.04e-09
+T_arr: 2.78301e-08  T_req: -2.45293e-08  Tdel: 1.04e-09
 Internal Net: #331 (n1048).  Pins on net: 2.
 
 Node: 357  TN_INTERMEDIATE_NODE Block #1 (n1047)
 Pin: ble.in[0] pb (n1047)
-T_arr: 2.88339e-08  T_req: -2.21885e-08  Tdel: 0
+T_arr: 2.88701e-08  T_req: -2.34893e-08  Tdel: 0
 Internal Net: #331 (n1048).  Pins on net: 2.
 
 Node: 363  TN_INTERMEDIATE_NODE Block #1 (n1047)
 Pin: lut5.in[0] pb (n1047)
-T_arr: 2.88339e-08  T_req: -2.21885e-08  Tdel: 0
+T_arr: 2.88701e-08  T_req: -2.34893e-08  Tdel: 0
 Internal Net: #331 (n1048).  Pins on net: 2.
 
 Node: 369  TN_PRIMITIVE_IPIN Block #1 (n1047)
 Pin: lut.in[0] pb (n1047)
-T_arr: 2.88339e-08  T_req: -2.21885e-08  Tdel: 8.36e-10
+T_arr: 2.88701e-08  T_req: -2.34893e-08  Tdel: 8.36e-10
 Internal Net: #331 (n1048).  Pins on net: 2.
 
 Node: 374  TN_PRIMITIVE_OPIN Block #1 (n1047)
 Pin: lut.out[0] pb (n1047)
-T_arr: 2.96699e-08  T_req: -2.13525e-08  Tdel: 0
+T_arr: 2.97061e-08  T_req: -2.26533e-08  Tdel: 0
 Internal Net: #326 (n1047).  Pins on net: 2.
 
 Node: 368  TN_INTERMEDIATE_NODE Block #1 (n1047)
 Pin: lut5.out[0] pb (n1047)
-T_arr: 2.96699e-08  T_req: -2.13525e-08  Tdel: 2.62999e-10
+T_arr: 2.97061e-08  T_req: -2.26533e-08  Tdel: 2.62999e-10
 Internal Net: #326 (n1047).  Pins on net: 2.
 
 Node: 362  TN_INTERMEDIATE_NODE Block #1 (n1047)
 Pin: ble.out[0] pb (n1047)
-T_arr: 2.99329e-08  T_req: -2.10895e-08  Tdel: 0
+T_arr: 2.99691e-08  T_req: -2.23903e-08  Tdel: 0
 Internal Net: #326 (n1047).  Pins on net: 2.
 
 Node: 209  TN_CB_OPIN Block #1 (n1047)
 Pin: clb.O[11] pb (n1047)
-T_arr: 2.99329e-08  T_req: -2.10895e-08  Tdel: 2.04541e-09
+T_arr: 2.99691e-08  T_req: -2.23903e-08  Tdel: 2.04541e-09
 External-to-Block Net: #12 (n1047).  Pins on net: 2.
 
 Node: 12  TN_CB_IPIN Block #0 (n875)
 Pin: clb.I[14] pb (n875)
-T_arr: 3.19784e-08  T_req: -1.90441e-08  Tdel: 1.04e-09
+T_arr: 3.20145e-08  T_req: -2.03449e-08  Tdel: 1.04e-09
 Internal Net: #326 (n1047).  Pins on net: 2.
 
 Node: 67  TN_INTERMEDIATE_NODE Block #0 (n875)
 Pin: ble.in[3] pb (n1045)
-T_arr: 3.30184e-08  T_req: -1.80041e-08  Tdel: 0
+T_arr: 3.30545e-08  T_req: -1.93049e-08  Tdel: 0
 Internal Net: #326 (n1047).  Pins on net: 2.
 
 Node: 73  TN_INTERMEDIATE_NODE Block #0 (n875)
 Pin: lut5.in[3] pb (n1045)
-T_arr: 3.30184e-08  T_req: -1.80041e-08  Tdel: 0
+T_arr: 3.30545e-08  T_req: -1.93049e-08  Tdel: 0
 Internal Net: #326 (n1047).  Pins on net: 2.
 
 Node: 79  TN_PRIMITIVE_IPIN Block #0 (n875)
 Pin: lut.in[3] pb (n1045)
-T_arr: 3.30184e-08  T_req: -1.80041e-08  Tdel: 4.78e-10
+T_arr: 3.30545e-08  T_req: -1.93049e-08  Tdel: 4.78e-10
 Internal Net: #326 (n1047).  Pins on net: 2.
 
 Node: 81  TN_PRIMITIVE_OPIN Block #0 (n875)
 Pin: lut.out[0] pb (n1045)
-T_arr: 3.34964e-08  T_req: -1.75261e-08  Tdel: 0
+T_arr: 3.35325e-08  T_req: -1.88269e-08  Tdel: 0
 Internal Net: #330 (n1045).  Pins on net: 2.
 
 Node: 75  TN_INTERMEDIATE_NODE Block #0 (n875)
 Pin: lut5.out[0] pb (n1045)
-T_arr: 3.34964e-08  T_req: -1.75261e-08  Tdel: 2.63e-10
+T_arr: 3.35325e-08  T_req: -1.88269e-08  Tdel: 2.63e-10
 Internal Net: #330 (n1045).  Pins on net: 2.
 
 Node: 69  TN_INTERMEDIATE_NODE Block #0 (n875)
 Pin: ble.out[0] pb (n1045)
-T_arr: 3.37594e-08  T_req: -1.72631e-08  Tdel: 1.04e-09
+T_arr: 3.37955e-08  T_req: -1.85639e-08  Tdel: 1.04e-09
 Internal Net: #330 (n1045).  Pins on net: 2.
 
 Node: 172  TN_INTERMEDIATE_NODE Block #0 (n875)
 Pin: ble.in[3] pb (n875)
-T_arr: 3.47994e-08  T_req: -1.62231e-08  Tdel: 0
+T_arr: 3.48355e-08  T_req: -1.75239e-08  Tdel: 0
 Internal Net: #330 (n1045).  Pins on net: 2.
 
 Node: 178  TN_INTERMEDIATE_NODE Block #0 (n875)
 Pin: lut5.in[3] pb (n875)
-T_arr: 3.47994e-08  T_req: -1.62231e-08  Tdel: 0
+T_arr: 3.48355e-08  T_req: -1.75239e-08  Tdel: 0
 Internal Net: #330 (n1045).  Pins on net: 2.
 
 Node: 184  TN_PRIMITIVE_IPIN Block #0 (n875)
 Pin: lut.in[3] pb (n875)
-T_arr: 3.47994e-08  T_req: -1.62231e-08  Tdel: 4.78e-10
+T_arr: 3.48355e-08  T_req: -1.75239e-08  Tdel: 4.78e-10
 Internal Net: #330 (n1045).  Pins on net: 2.
 
 Node: 186  TN_PRIMITIVE_OPIN Block #0 (n875)
 Pin: lut.out[0] pb (n875)
-T_arr: 3.52774e-08  T_req: -1.57451e-08  Tdel: 0
+T_arr: 3.53135e-08  T_req: -1.70459e-08  Tdel: 0
 Internal Net: #993 (n875).  Pins on net: 2.
 
 Node: 180  TN_INTERMEDIATE_NODE Block #0 (n875)
 Pin: lut5.out[0] pb (n875)
-T_arr: 3.52774e-08  T_req: -1.57451e-08  Tdel: 2.63e-10
+T_arr: 3.53135e-08  T_req: -1.70459e-08  Tdel: 2.63e-10
 Internal Net: #993 (n875).  Pins on net: 2.
 
 Node: 174  TN_INTERMEDIATE_NODE Block #0 (n875)
 Pin: ble.out[0] pb (n875)
-T_arr: 3.55404e-08  T_req: -1.54821e-08  Tdel: 1.04e-09
+T_arr: 3.55765e-08  T_req: -1.67829e-08  Tdel: 1.04e-09
 Internal Net: #993 (n875).  Pins on net: 2.
 
 Node: 151  TN_INTERMEDIATE_NODE Block #0 (n875)
 Pin: ble.in[0] pb (n417)
-T_arr: 3.65804e-08  T_req: -1.44421e-08  Tdel: 0
+T_arr: 3.66165e-08  T_req: -1.57429e-08  Tdel: 0
 Internal Net: #993 (n875).  Pins on net: 2.
 
 Node: 157  TN_INTERMEDIATE_NODE Block #0 (n875)
 Pin: lut5.in[0] pb (n417)
-T_arr: 3.65804e-08  T_req: -1.44421e-08  Tdel: 0
+T_arr: 3.66165e-08  T_req: -1.57429e-08  Tdel: 0
 Internal Net: #993 (n875).  Pins on net: 2.
 
 Node: 163  TN_PRIMITIVE_IPIN Block #0 (n875)
 Pin: lut.in[0] pb (n417)
-T_arr: 3.65804e-08  T_req: -1.44421e-08  Tdel: 8.36e-10
+T_arr: 3.66165e-08  T_req: -1.57429e-08  Tdel: 8.36e-10
 Internal Net: #993 (n875).  Pins on net: 2.
 
 Node: 168  TN_PRIMITIVE_OPIN Block #0 (n875)
 Pin: lut.out[0] pb (n417)
-T_arr: 3.74164e-08  T_req: -1.36061e-08  Tdel: 0
+T_arr: 3.74525e-08  T_req: -1.49069e-08  Tdel: 0
 Internal Net: #642 (n417).  Pins on net: 4.
 
 Node: 162  TN_INTERMEDIATE_NODE Block #0 (n875)
 Pin: lut5.out[0] pb (n417)
-T_arr: 3.74164e-08  T_req: -1.36061e-08  Tdel: 2.63e-10
+T_arr: 3.74525e-08  T_req: -1.49069e-08  Tdel: 2.63e-10
 Internal Net: #642 (n417).  Pins on net: 4.
 
 Node: 156  TN_INTERMEDIATE_NODE Block #0 (n875)
 Pin: ble.out[0] pb (n417)
-T_arr: 3.76794e-08  T_req: -1.33431e-08  Tdel: 0
+T_arr: 3.77155e-08  T_req: -1.46439e-08  Tdel: 0
 Internal Net: #642 (n417).  Pins on net: 4.
 
 Node: 21  TN_CB_OPIN Block #0 (n875)
 Pin: clb.O[10] pb (n875)
-T_arr: 3.76794e-08  T_req: -1.33431e-08  Tdel: 2.69612e-09
+T_arr: 3.77155e-08  T_req: -1.46439e-08  Tdel: 3.99688e-09
 External-to-Block Net: #21 (n417).  Pins on net: 3.
 
 Node: 388  TN_CB_IPIN Block #2 (n1252)
 Pin: clb.I[14] pb (n1252)
-T_arr: 4.03755e-08  T_req: -1.0647e-08  Tdel: 1.04e-09
+T_arr: 4.17124e-08  T_req: -1.0647e-08  Tdel: 1.04e-09
 Internal Net: #642 (n417).  Pins on net: 4.
 
 Node: 492  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: ble.in[0] pb (n1254)
-T_arr: 4.14155e-08  T_req: -9.607e-09  Tdel: 0
+T_arr: 4.27524e-08  T_req: -9.607e-09  Tdel: 0
 Internal Net: #642 (n417).  Pins on net: 4.
 
 Node: 498  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: lut5.in[0] pb (n1254)
-T_arr: 4.14155e-08  T_req: -9.607e-09  Tdel: 0
+T_arr: 4.27524e-08  T_req: -9.607e-09  Tdel: 0
 Internal Net: #642 (n417).  Pins on net: 4.
 
 Node: 504  TN_PRIMITIVE_IPIN Block #2 (n1252)
 Pin: lut.in[0] pb (n1254)
-T_arr: 4.14155e-08  T_req: -9.607e-09  Tdel: 8.36e-10
+T_arr: 4.27524e-08  T_req: -9.607e-09  Tdel: 8.36e-10
 Internal Net: #642 (n417).  Pins on net: 4.
 
 Node: 509  TN_PRIMITIVE_OPIN Block #2 (n1252)
 Pin: lut.out[0] pb (n1254)
-T_arr: 4.22515e-08  T_req: -8.771e-09  Tdel: 0
+T_arr: 4.35884e-08  T_req: -8.771e-09  Tdel: 0
 Internal Net: #725 (n1254).  Pins on net: 4.
 
 Node: 503  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: lut5.out[0] pb (n1254)
-T_arr: 4.22515e-08  T_req: -8.771e-09  Tdel: 2.63e-10
+T_arr: 4.35884e-08  T_req: -8.771e-09  Tdel: 2.63e-10
 Internal Net: #725 (n1254).  Pins on net: 4.
 
 Node: 497  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: ble.out[0] pb (n1254)
-T_arr: 4.25145e-08  T_req: -8.508e-09  Tdel: 1.04e-09
+T_arr: 4.38514e-08  T_req: -8.508e-09  Tdel: 1.04e-09
 Internal Net: #725 (n1254).  Pins on net: 4.
 
 Node: 510  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: ble.in[0] pb (n1253)
-T_arr: 4.35545e-08  T_req: -7.468e-09  Tdel: 0
+T_arr: 4.48914e-08  T_req: -7.468e-09  Tdel: 0
 Internal Net: #725 (n1254).  Pins on net: 4.
 
 Node: 516  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: lut5.in[0] pb (n1253)
-T_arr: 4.35545e-08  T_req: -7.468e-09  Tdel: 0
+T_arr: 4.48914e-08  T_req: -7.468e-09  Tdel: 0
 Internal Net: #725 (n1254).  Pins on net: 4.
 
 Node: 522  TN_PRIMITIVE_IPIN Block #2 (n1252)
 Pin: lut.in[0] pb (n1253)
-T_arr: 4.35545e-08  T_req: -7.468e-09  Tdel: 8.36e-10
+T_arr: 4.48914e-08  T_req: -7.468e-09  Tdel: 8.36e-10
 Internal Net: #725 (n1254).  Pins on net: 4.
 
 Node: 527  TN_PRIMITIVE_OPIN Block #2 (n1252)
 Pin: lut.out[0] pb (n1253)
-T_arr: 4.43905e-08  T_req: -6.632e-09  Tdel: 0
+T_arr: 4.57274e-08  T_req: -6.632e-09  Tdel: 0
 Internal Net: #720 (n1253).  Pins on net: 4.
 
 Node: 521  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: lut5.out[0] pb (n1253)
-T_arr: 4.43905e-08  T_req: -6.632e-09  Tdel: 2.63e-10
+T_arr: 4.57274e-08  T_req: -6.632e-09  Tdel: 2.63e-10
 Internal Net: #720 (n1253).  Pins on net: 4.
 
 Node: 515  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: ble.out[0] pb (n1253)
-T_arr: 4.46535e-08  T_req: -6.369e-09  Tdel: 1.04e-09
+T_arr: 4.59904e-08  T_req: -6.369e-09  Tdel: 1.04e-09
 Internal Net: #720 (n1253).  Pins on net: 4.
 
 Node: 606  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: ble.in[0] pb (n1252)
-T_arr: 4.56935e-08  T_req: -5.329e-09  Tdel: 0
+T_arr: 4.70304e-08  T_req: -5.329e-09  Tdel: 0
 Internal Net: #720 (n1253).  Pins on net: 4.
 
 Node: 612  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: lut5.in[0] pb (n1252)
-T_arr: 4.56935e-08  T_req: -5.329e-09  Tdel: 0
+T_arr: 4.70304e-08  T_req: -5.329e-09  Tdel: 0
 Internal Net: #720 (n1253).  Pins on net: 4.
 
 Node: 618  TN_PRIMITIVE_IPIN Block #2 (n1252)
 Pin: lut.in[0] pb (n1252)
-T_arr: 4.56935e-08  T_req: -5.329e-09  Tdel: 8.36e-10
+T_arr: 4.70304e-08  T_req: -5.329e-09  Tdel: 8.36e-10
 Internal Net: #720 (n1253).  Pins on net: 4.
 
 Node: 623  TN_PRIMITIVE_OPIN Block #2 (n1252)
 Pin: lut.out[0] pb (n1252)
-T_arr: 4.65295e-08  T_req: -4.493e-09  Tdel: 0
+T_arr: 4.78664e-08  T_req: -4.493e-09  Tdel: 0
 Internal Net: #714 (n1252).  Pins on net: 4.
 
 Node: 617  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: lut5.out[0] pb (n1252)
-T_arr: 4.65295e-08  T_req: -4.493e-09  Tdel: 2.63e-10
+T_arr: 4.78664e-08  T_req: -4.493e-09  Tdel: 2.63e-10
 Internal Net: #714 (n1252).  Pins on net: 4.
 
 Node: 611  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: ble.out[0] pb (n1252)
-T_arr: 4.67925e-08  T_req: -4.23e-09  Tdel: 1.04e-09
+T_arr: 4.81294e-08  T_req: -4.23e-09  Tdel: 1.04e-09
 Internal Net: #714 (n1252).  Pins on net: 4.
 
 Node: 552  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: ble.in[0] pb (n1251)
-T_arr: 4.78325e-08  T_req: -3.19e-09  Tdel: 0
+T_arr: 4.91694e-08  T_req: -3.19e-09  Tdel: 0
 Internal Net: #714 (n1252).  Pins on net: 4.
 
 Node: 558  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: lut5.in[0] pb (n1251)
-T_arr: 4.78325e-08  T_req: -3.19e-09  Tdel: 0
+T_arr: 4.91694e-08  T_req: -3.19e-09  Tdel: 0
 Internal Net: #714 (n1252).  Pins on net: 4.
 
 Node: 564  TN_PRIMITIVE_IPIN Block #2 (n1252)
 Pin: lut.in[0] pb (n1251)
-T_arr: 4.78325e-08  T_req: -3.19e-09  Tdel: 8.36e-10
+T_arr: 4.91694e-08  T_req: -3.19e-09  Tdel: 8.36e-10
 Internal Net: #714 (n1252).  Pins on net: 4.
 
 Node: 569  TN_PRIMITIVE_OPIN Block #2 (n1252)
 Pin: lut.out[0] pb (n1251)
-T_arr: 4.86685e-08  T_req: -2.354e-09  Tdel: 0
+T_arr: 5.00054e-08  T_req: -2.354e-09  Tdel: 0
 Internal Net: #719 (n1251).  Pins on net: 2.
 
 Node: 563  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: lut5.out[0] pb (n1251)
-T_arr: 4.86685e-08  T_req: -2.354e-09  Tdel: 2.63e-10
+T_arr: 5.00054e-08  T_req: -2.354e-09  Tdel: 2.63e-10
 Internal Net: #719 (n1251).  Pins on net: 2.
 
 Node: 557  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: ble.out[0] pb (n1251)
-T_arr: 4.89315e-08  T_req: -2.091e-09  Tdel: 1.04e-09
+T_arr: 5.02684e-08  T_req: -2.091e-09  Tdel: 1.04e-09
 Internal Net: #719 (n1251).  Pins on net: 2.
 
 Node: 529  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: ble.in[1] pb (n427)
-T_arr: 4.99715e-08  T_req: -1.051e-09  Tdel: 0
+T_arr: 5.13084e-08  T_req: -1.051e-09  Tdel: 0
 Internal Net: #719 (n1251).  Pins on net: 2.
 
 Node: 536  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: lut5.in[1] pb (n427)
-T_arr: 4.99715e-08  T_req: -1.051e-09  Tdel: 0
+T_arr: 5.13084e-08  T_req: -1.051e-09  Tdel: 0
 Internal Net: #719 (n1251).  Pins on net: 2.
 
 Node: 542  TN_PRIMITIVE_IPIN Block #2 (n1252)
 Pin: lut.in[1] pb (n427)
-T_arr: 4.99715e-08  T_req: -1.051e-09  Tdel: 8.36e-10
+T_arr: 5.13084e-08  T_req: -1.051e-09  Tdel: 8.36e-10
 Internal Net: #719 (n1251).  Pins on net: 2.
 
 Node: 546  TN_PRIMITIVE_OPIN Block #2 (n1252)
 Pin: lut.out[0] pb (n427)
-T_arr: 5.08075e-08  T_req: -2.15e-10  Tdel: 0
+T_arr: 5.21444e-08  T_req: -2.15e-10  Tdel: 0
 Internal Net: #30 (n427).  Pins on net: 2.
 
 Node: 540  TN_INTERMEDIATE_NODE Block #2 (n1252)
 Pin: lut5.out[0] pb (n427)
-T_arr: 5.08075e-08  T_req: -2.15e-10  Tdel: 0
+T_arr: 5.21444e-08  T_req: -2.15e-10  Tdel: 0
 Internal Net: #30 (n427).  Pins on net: 2.
 
 Node: 547  TN_FF_IPIN Block #2 (n1252)
 Pin: ff.D[0] pb (dout_8)
-T_arr: 5.08075e-08  T_req: -2.15e-10  Tdel: 2.15e-10
+T_arr: 5.21444e-08  T_req: -2.15e-10  Tdel: 2.15e-10
 Internal Net: #30 (n427).  Pins on net: 2.
 
 Node: 548  TN_FF_SINK Block #2 (n1252)
 Pin: ff.D[0] pb (dout_8)
-T_arr: 5.10225e-08  T_req: 0  
+T_arr: 5.23594e-08  T_req: 0  
 Internal Net: #30 (n427).  Pins on net: 2.
 
 
-Tnodes on critical path: 118  Non-global nets on critical path: 9.
+Tnodes on critical path: 115  Non-global nets on critical path: 8.
 Global nets on critical path: 0.
-Total logic delay: 3.3916e-08 (s)  Total net delay: 1.71065e-08 (s)
+Total logic delay: 3.2744e-08 (s)  Total net delay: 1.96154e-08 (s)
