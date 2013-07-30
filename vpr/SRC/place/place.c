@@ -224,11 +224,14 @@ static void free_legal_placements();
 
 static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z);
 
-static int try_place_macro(int itype, int ichoice, int imacro, int * free_locations);
+static int try_place_macro(int itype, int ipos, int imacro, int * free_locations);
 
 static void initial_placement_pl_macros(int macros_max_num_tries, int * free_locations);
 
-static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type pad_loc_type);
+static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type pad_loc_type, 
+		boolean apply_placement_regions = FALSE);
+static void initial_placement_location(int * free_locations, int iblk,
+		int *pipos, int *px, int *py, int *pz);
 
 static void initial_placement(enum e_pad_loc_type pad_loc_type,
 		char *pad_loc_file);
@@ -282,9 +285,12 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum);
 
 static enum swap_result assess_swap(float delta_c, float t);
 
-static boolean find_to(int iblk_from, int x_from, int y_from, 
-		t_type_ptr type, float rlim, 
-		int *x_to, int *y_to, int *z_to);
+static boolean find_to(t_type_ptr type, float rlim, 
+		int iblk_from, int x_from, int y_from, 
+		int *px_to, int *py_to, int *pz_to);
+static void find_to_location(t_type_ptr type, float rlim,
+		int iblk_from, int x_from, int y_from, 
+		int *px_to, int *py_to, int *pz_to);
 
 static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new);
 
@@ -1318,7 +1324,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	y_from = block[b_from].y;
 	z_from = block[b_from].z;
 
-	if (!find_to(b_from, x_from, y_from, block[b_from].type, rlim, &x_to, &y_to, &z_to))
+	if (!find_to(block[b_from].type, rlim, b_from, x_from, y_from, &x_to, &y_to, &z_to))
 		return REJECTED;
 
 	/* Make the switch in order to make computing the new bounding *
@@ -1535,20 +1541,20 @@ static int find_affected_nets(int *nets_to_update) {
 	return num_affected_nets;
 }
 
-static boolean find_to(int iblk_from, int x_from, int y_from, 
-		t_type_ptr type, float rlim, 
-		int *x_to, int *y_to, int *z_to) {
+static boolean find_to(t_type_ptr type, float rlim, 
+		int iblk_from, int x_from, int y_from, 
+		int *px_to, int *py_to, int *pz_to) {
 
 	/* Returns the point to which I want to swap, properly range limited. 
 	 * rlim must always be between 1 and nx (inclusive) for this routine  
 	 * to work.  Assumes that a column only contains blocks of the same type.
 	 */
 
-	int x_rel, y_rel, rlx, rly, min_x, max_x, min_y, max_y;
+	int rlx, rly, min_x, max_x, min_y, max_y;
 	int num_tries;
 	int active_area;
 	boolean is_legal;
-	int block_index, ipos;
+	int itype;
 
 	assert(type == grid[x_from][y_from].type);
 
@@ -1568,108 +1574,129 @@ static boolean find_to(int iblk_from, int x_from, int y_from,
 #endif
 
 	num_tries = 0;
-	block_index = type->index;
+	itype = type->index;
 
 	do { /* Until legal */
 		is_legal = TRUE;
 
 		/* Limit the number of tries when searching for an alternative position */
-		if(num_tries >= 2 * min(active_area / (type->width * type->height), num_legal_pos[block_index]) + 10) {
+		if(num_tries >= 2 * min(active_area / (type->width * type->height), num_legal_pos[itype]) + 10) {
 			/* Tried randomly searching for a suitable position */
 			return FALSE;
 		} else {
 			num_tries++;
 		}
 
-#ifdef TORO_REGION_PLACEMENT_ENABLE
-		for (size_t i = 0; i < TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS; ++i) {
-
-			*z_to = 0;
-			if (nx / 4 < rlx || ny / 4 < rly || num_legal_pos[block_index] < active_area) {
-				ipos = my_irand(num_legal_pos[block_index] - 1);
-				*x_to = legal_pos[block_index][ipos].x;
-				*y_to = legal_pos[block_index][ipos].y;
-				*z_to = legal_pos[block_index][ipos].z;
-			} else {
-				x_rel = my_irand(max(0, max_x - min_x));
-				y_rel = my_irand(max(0, max_y - min_y));
-				*x_to = min_x + x_rel;
-				*y_to = min_y + y_rel;
-				*x_to = (*x_to) - grid[*x_to][*y_to].width_offset; /* align it */
-				*y_to = (*y_to) - grid[*x_to][*y_to].height_offset; /* align it */
-			}
-
-			// Validate placement region positions (based on optional placement regions)
-			if (!grid[*x_to][*y_to].blocks) {
-				break;
-			}
-
-			int iblk_to = grid[*x_to][*y_to].blocks[*z_to];
-			if (placement_region_pos_is_valid(block, iblk_from, *x_to, *y_to) &&
-			   placement_region_pos_is_valid(block, iblk_to, x_from, y_from)) {
-				break;
-			}
-
-			// Handle case where we will exceed the max number of random place attempts
-			if (i == TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS - 1) {
-
-				const char* from_name = block[iblk_from].name;
-				const char* to_name = (iblk_to >= 0 ? block[iblk_to].name : "");
-
-				vpr_printf_warning(__FILE__, __LINE__, 
-					"Failed to find swap candidate after %u tries using block region list.\n"
-					"%sSwapping block %s at (%d,%d) with block %s%sat (%d,%d) based on last random placement.\n",
-					TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS,
-					TIO_PREFIX_WARNING_SPACE,
-					from_name, x_from, y_from,
-					to_name, (iblk_to >= 0 ? " " : ""), *x_to, *y_to);
-			}
-		}
-#else
-		*z_to = 0;
-		if(nx / 4 < rlx || ny / 4 < rly || num_legal_pos[block_index] < active_area) {
-			ipos = my_irand(num_legal_pos[block_index] - 1);
-			*x_to = legal_pos[block_index][ipos].x;
-			*y_to = legal_pos[block_index][ipos].y;
-		} else {
-			x_rel = my_irand(max(0, max_x - min_x));
-			y_rel = my_irand(max(0, max_y - min_y));
-			*x_to = min_x + x_rel;
-			*y_to = min_y + y_rel;
-			*x_to = (*x_to) - grid[*x_to][*y_to].width_offset; /* align it */
-			*y_to = (*y_to) - grid[*x_to][*y_to].height_offset; /* align it */
-		}
-#endif
+		find_to_location(type, rlim, iblk_from, x_from, y_from, 
+				px_to, py_to, pz_to);
 		
-		if((x_from == *x_to) && (y_from == *y_to)) {
+		if((x_from == *px_to) && (y_from == *py_to)) {
 			is_legal = FALSE;
-		} else if(*x_to > max_x || *x_to < min_x || *y_to > max_y || *y_to < min_y) {
+		} else if(*px_to > max_x || *px_to < min_x || *py_to > max_y || *py_to < min_y) {
 			is_legal = FALSE;
-		} else if(grid[*x_to][*y_to].type != grid[x_from][y_from].type) {
+		} else if(grid[*px_to][*py_to].type != grid[x_from][y_from].type) {
 			is_legal = FALSE;
 		} else {
 			/* Find z_to and test to validate that the "to" block is *not* fixed */
-			*z_to = 0;
-			if (grid[*x_to][*y_to].type->capacity > 1) {
-				*z_to = my_irand(grid[*x_to][*y_to].type->capacity - 1);
+			*pz_to = 0;
+			if (grid[*px_to][*py_to].type->capacity > 1) {
+				*pz_to = my_irand(grid[*px_to][*py_to].type->capacity - 1);
 			}
-			int b_to = grid[*x_to][*y_to].blocks[*z_to];
+			int b_to = grid[*px_to][*py_to].blocks[*pz_to];
 			if ((b_to != EMPTY) && (block[b_to].is_fixed == TRUE)) {
 				is_legal = FALSE;
 			}
 		}
 
-		assert(*x_to >= 0 && *x_to <= nx + 1);
-		assert(*y_to >= 0 && *y_to <= ny + 1);
+		assert(*px_to >= 0 && *px_to <= nx + 1);
+		assert(*py_to >= 0 && *py_to <= ny + 1);
 	} while (is_legal == FALSE);
 
 #ifdef DEBUG
-	if (*x_to < 0 || *x_to > nx + 1 || *y_to < 0 || *y_to > ny + 1) {
-		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,"in routine find_to: (x_to,y_to) = (%d,%d)\n", *x_to, *y_to);
+	if (*px_to < 0 || *px_to > nx + 1 || *py_to < 0 || *py_to > ny + 1) {
+		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,"in routine find_to: (x_to,y_to) = (%d,%d)\n", *px_to, *py_to);
 	}
 #endif
-	assert(type == grid[*x_to][*y_to].type);
+	assert(type == grid[*px_to][*py_to].type);
 	return TRUE;
+}
+
+static void find_to_location(t_type_ptr type, float rlim,
+		int iblk_from, int x_from, int y_from, 
+		int *px_to, int *py_to, int *pz_to) {
+
+	int itype = type->index;
+
+
+	int rlx = (int)min((float)nx + 1, rlim); 
+	int rly = (int)min((float)ny + 1, rlim); /* Added rly for aspect_ratio != 1 case. */
+	int active_area = 4 * rlx * rly;
+
+	int min_x = max(0, x_from - rlx);
+	int max_x = min(nx + 1, x_from + rlx);
+	int min_y = max(0, y_from - rly);
+	int max_y = min(ny + 1, y_from + rly);
+
+#ifdef TORO_REGION_PLACEMENT_ENABLE
+
+	for (size_t i = 0; i < TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS; ++i) {
+
+		*pz_to = 0;
+		if (nx / 4 < rlx || ny / 4 < rly || num_legal_pos[itype] < active_area) {
+			int ipos = my_irand(num_legal_pos[itype] - 1);
+			*px_to = legal_pos[itype][ipos].x;
+			*py_to = legal_pos[itype][ipos].y;
+			*pz_to = legal_pos[itype][ipos].z;
+		} else {
+			int x_rel = my_irand(max(0, max_x - min_x));
+			int y_rel = my_irand(max(0, max_y - min_y));
+			*px_to = min_x + x_rel;
+			*py_to = min_y + y_rel;
+			*px_to = (*px_to) - grid[*px_to][*py_to].width_offset; /* align it */
+			*py_to = (*py_to) - grid[*px_to][*py_to].height_offset; /* align it */
+		}
+
+		// Validate placement region positions (based on optional placement regions)
+		if (!grid[*px_to][*py_to].blocks) {
+			break;
+		}
+
+		int iblk_to = grid[*px_to][*py_to].blocks[*pz_to];
+		if (placement_region_pos_is_valid(block, iblk_from, *px_to, *py_to) &&
+		   placement_region_pos_is_valid(block, iblk_to, x_from, y_from)) {
+			break;
+		}
+
+		// Handle case where we will exceed the max number of random place attempts
+		if (i == TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS - 1) {
+
+			const char* from_name = block[iblk_from].name;
+			const char* to_name = (iblk_to >= 0 ? block[iblk_to].name : "");
+
+			vpr_printf_warning(__FILE__, __LINE__, 
+				"Failed to find swap candidate after %u tries using block region list.\n"
+				"%sSwapping block %s at (%d,%d) with block %s%sat (%d,%d) based on last random placement.\n",
+				TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS,
+				TIO_PREFIX_WARNING_SPACE,
+				from_name, x_from, y_from,
+				to_name, (iblk_to >= 0 ? " " : ""), *px_to, *py_to);
+		}
+	}
+#else
+	*pz_to = 0;
+	if (nx / 4 < rlx || ny / 4 < rly || num_legal_pos[itype] < active_area) {
+		int ipos = my_irand(num_legal_pos[itype] - 1);
+		*px_to = legal_pos[itype][ipos].x;
+		*py_to = legal_pos[itype][ipos].y;
+	} else {
+		int x_rel = my_irand(max(0, max_x - min_x));
+		int y_rel = my_irand(max(0, max_y - min_y));
+		*px_to = min_x + x_rel;
+		*py_to = min_y + y_rel;
+		*px_to = (*px_to) - grid[*px_to][*py_to].width_offset; /* align it */
+		*py_to = (*py_to) - grid[*px_to][*py_to].height_offset; /* align it */
+	}
+#endif
 }
 
 static enum swap_result assess_swap(float delta_c, float t) {
@@ -2697,16 +2724,16 @@ static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z)
 }
 
 
-static int try_place_macro(int itype, int ichoice, int imacro, int * free_locations){
+static int try_place_macro(int itype, int ipos, int imacro, int * free_locations){
 
 	int x, y, z, member_x, member_y, member_z, imember;
 
 	int macro_placed = FALSE;
 
 	// Choose a random position for the head
-	x = legal_pos[itype][ichoice].x;
-	y = legal_pos[itype][ichoice].y;
-	z = legal_pos[itype][ichoice].z;
+	x = legal_pos[itype][ipos].x;
+	y = legal_pos[itype][ipos].y;
+	z = legal_pos[itype][ipos].z;
 			
 	// If that location is occupied, do nothing.
 	if (grid[x][y].blocks[z] != EMPTY) {
@@ -2748,7 +2775,7 @@ static int try_place_macro(int itype, int ichoice, int imacro, int * free_locati
 static void initial_placement_pl_macros(int macros_max_num_tries, int * free_locations) {
 
 	int macro_placed;
-	int imacro, iblk, itype, itry, ichoice;
+	int imacro, iblk, itype, itry, ipos;
 
 	/* Macros are harder to place.  Do them first */
 	for (imacro = 0; imacro < num_pl_macros; imacro++) {
@@ -2771,10 +2798,10 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 		for (itry = 0; itry < macros_max_num_tries && macro_placed == FALSE; itry++) {
 			
 			// Choose a random position for the head
-			ichoice = my_irand(free_locations[itype] - 1);
+			ipos = my_irand(free_locations[itype] - 1);
 
 			// Try to place the macro
-			macro_placed = try_place_macro(itype, ichoice, imacro, free_locations);
+			macro_placed = try_place_macro(itype, ipos, imacro, free_locations);
 
 		} // Finished all tries
 		
@@ -2787,10 +2814,10 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 			// if there are no legal positions, error out
 
 			// Exhaustive placement of carry macros
-			for (ichoice = 0; ichoice < free_locations[itype] && macro_placed == FALSE; ichoice++) {
+			for (ipos = 0; ipos < free_locations[itype] && macro_placed == FALSE; ipos++) {
 
 				// Try to place the macro
-				macro_placed = try_place_macro(itype, ichoice, imacro, free_locations);
+				macro_placed = try_place_macro(itype, ipos, imacro, free_locations);
 
 			} // Exhausted all the legal placement position for this macro
 
@@ -2811,14 +2838,15 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 	} // Finish placing all the pl_macros successfully
 }
 
-static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type pad_loc_type) {
+static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type pad_loc_type,
+		boolean apply_placement_regions) {
 
 	/* Place blocks that are NOT a part of any macro.
 	 * We'll randomly place each block in the clustered netlist, one by one. 
 	 */
-
+	
 	int iblk, itype;
-	int ichoice, x, y, z;
+	int ipos, x, y, z;
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 
@@ -2826,6 +2854,13 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			// block placed.
 			continue;
 		}
+
+#ifdef TORO_REGION_PLACEMENT_ENABLE
+		if (apply_placement_regions && !block[iblk].placement_region_list.IsValid()) {
+			continue;
+		}
+#endif
+
 		/* Don't do IOs if the user specifies IOs; we'll read those locations later. */
 		if (!(block[iblk].type == IO_TYPE && pad_loc_type == USER)) {
 
@@ -2843,35 +2878,7 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 						block[iblk].name, iblk, type_descriptors[itype].name, itype);
 			}
 
-#ifdef TORO_REGION_PLACEMENT_ENABLE
-			for (size_t i = 0; i < TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS; ++i) {
-
-				ichoice = my_irand(free_locations[itype] - 1);
-				x = legal_pos[itype][ichoice].x;
-				y = legal_pos[itype][ichoice].y;
-				z = legal_pos[itype][ichoice].z;
-
-				// Validate random position (based on optional placement regions)
-				if (placement_region_pos_is_valid(block, iblk, x, y))
-					break;
-
-				// Handle case where we will exceed the max number of random place attempts
-				if (i == TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS - 1) {
-
-					vpr_printf_warning(__FILE__, __LINE__, 
-						"Failed to find initial placement after %u tries using block region list.\n"
-						"%sIntializing block %s to (%d,%d) based on last random placement.\n",
-						TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS,
-						TIO_PREFIX_WARNING_SPACE,
-						block[iblk].name, x, y);
-				}
-			}
-#else
-			ichoice = my_irand(free_locations[itype] - 1);
-			x = legal_pos[itype][ichoice].x;
-			y = legal_pos[itype][ichoice].y;
-			z = legal_pos[itype][ichoice].z;
-#endif
+			initial_placement_location(free_locations, iblk, &ipos, &x, &y, &z);
 
 			// Make sure that the position is EMPTY before placing the block down
 			assert (grid[x][y].blocks[z] == EMPTY);
@@ -2888,11 +2895,75 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 				* just move the last entry in legal_pos to the spot we just used and decrement the 
 				* count of free_locations.
 				*/
-			legal_pos[itype][ichoice] = legal_pos[itype][free_locations[itype] - 1]; /* overwrite used block position */
+			legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1]; /* overwrite used block position */
 			free_locations[itype]--;
 			
 		}
 	}
+}
+
+static void initial_placement_location(int * free_locations, int iblk,
+		int *pipos, int *px_to, int *py_to, int *pz_to) {
+
+	int itype = block[iblk].type->index;
+
+#ifdef TORO_REGION_PLACEMENT_ENABLE
+
+	for (size_t i = 0; i < TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS; ++i) {
+
+		*pipos = my_irand(free_locations[itype] - 1);
+		*px_to = legal_pos[itype][*pipos].x;
+		*py_to = legal_pos[itype][*pipos].y;
+		*pz_to = legal_pos[itype][*pipos].z;
+
+		// Validate random position (based on optional placement regions)
+		if (placement_region_pos_is_valid(block, iblk, *px_to, *py_to))
+			break;
+
+		// Handle case where we will exceed the max number of random place attempts
+		if (i == TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS - 1) {
+
+			vpr_printf_warning(__FILE__, __LINE__, 
+					"Failed to find initial placement for block \"%s\" after %u random tries.\n"
+					"%sIterating placement region grid until first legal placement found...\n",
+					block[iblk].name,
+					TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS,
+					TIO_PREFIX_WARNING_SPACE);
+
+			bool found = false;
+			for (int ipos = 0; ipos < free_locations[itype]; ++ipos) {
+				int x_to = legal_pos[itype][ipos].x;
+				int y_to = legal_pos[itype][ipos].y;
+				int z_to = legal_pos[itype][ipos].z;
+				if (placement_region_pos_is_valid(block, iblk, x_to, y_to)) {
+					*pipos = ipos;
+					*px_to = x_to;
+					*py_to = y_to;
+					*pz_to = z_to;
+					found = true;
+					break;
+				}
+			}
+
+			if (found) {
+				vpr_printf_warning(__FILE__, __LINE__, 
+						"Forcing block \"%s\" to initial placement location (%d,%d).\n",
+						block[iblk].name, *px_to, *py_to);
+			} else {
+				vpr_printf_warning(__FILE__, __LINE__, 
+						"Failed to find initial placement after exhaustive iteration.\n"
+						"%sForcing block \"%s\" to initial placement location (%d,%d) based most recent location.\n",
+						TIO_PREFIX_WARNING_SPACE,
+						block[iblk].name, *px_to, *py_to);
+			}
+		}
+	}
+#else
+	*pipos = my_irand(free_locations[itype] - 1);
+	*px_to = legal_pos[itype][*pipos].x;
+	*py_to = legal_pos[itype][*pipos].y;
+	*pz_to = legal_pos[itype][*pipos].z;
+#endif
 }
 
 static void initial_placement(enum e_pad_loc_type pad_loc_type,
@@ -2903,7 +2974,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	 * array that gives every legal value of (x,y,z) that can accomodate a block.
 	 * The number of such locations is given by num_legal_pos[itype].
 	 */
-	int i, j, k, iblk, itype, x, y, z, ichoice;
+	int i, j, k, iblk, itype, x, y, z, ipos;
 	int *free_locations; /* [0..num_types-1]. 
 						  * Stores how many locations there are for this type that *might* still be free.
 						  * That is, this stores the number of entries in legal_pos[itype] that are worth considering
@@ -2950,23 +3021,27 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	// All the macros are placed, update the legal_pos[][] array
 	for (itype = 0; itype < num_types; itype++) {
 		assert (free_locations[itype] >= 0);
-		for (ichoice = 0; ichoice < free_locations[itype]; ichoice++) {
-			x = legal_pos[itype][ichoice].x;
-			y = legal_pos[itype][ichoice].y;
-			z = legal_pos[itype][ichoice].z;
+		for (ipos = 0; ipos < free_locations[itype]; ipos++) {
+			x = legal_pos[itype][ipos].x;
+			y = legal_pos[itype][ipos].y;
+			z = legal_pos[itype][ipos].z;
 			
 			// Check if that location is occupied.  If it is, remove from legal_pos
 			if (grid[x][y].blocks[z] != EMPTY && grid[x][y].blocks[z] != INVALID) {
-				legal_pos[itype][ichoice] = legal_pos[itype][free_locations[itype] - 1];
+				legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1];
 				free_locations[itype]--;
 
 				// After the move, I need to check this particular entry again
-				ichoice--;
+				ipos--;
 				continue;
 			}
 		}
 	} // Finish updating the legal_pos[][] and free_locations[] array
 
+#ifdef TORO_REGION_PLACEMENT_ENABLE
+	boolean apply_placement_regions = TRUE;
+	initial_placement_blocks(free_locations, pad_loc_type, apply_placement_regions );
+#endif
 	initial_placement_blocks(free_locations, pad_loc_type);
 
 	if (pad_loc_type == USER) {
