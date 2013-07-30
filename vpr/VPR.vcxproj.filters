@@ -273,6 +273,9 @@
     <ClCompile Include="SRC\pack\lb_rr_graph.c">
       <Filter>Source Files\pack</Filter>
     </ClCompile>
+    <ClCompile Include="SRC\pack\pack_types.c">
+      <Filter>Source Files\pack</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SRC\base\check_netlist.h">
