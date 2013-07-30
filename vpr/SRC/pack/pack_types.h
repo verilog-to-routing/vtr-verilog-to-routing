@@ -20,6 +20,7 @@
 enum e_lb_rr_type {
 	LB_SOURCE = 0, LB_SINK, LB_INTERMEDIATE, NUM_LB_RR_TYPES
 };
+extern const char* lb_rr_type_str[];
 
 
 /**************************************************************************
@@ -90,6 +91,7 @@ typedef struct s_lb_type_rr_node {
 
 	struct s_pb_graph_pin *pb_graph_pin;	/* pb_graph_pin associated with this lb_rr_node if exists */
 	float pack_intrinsic_cost;		/* cost of this node */
+	int num_modes;	/* Cache number of modes available */
 	
 	s_lb_type_rr_node() {
 		capacity = 0;
@@ -99,6 +101,7 @@ typedef struct s_lb_type_rr_node {
 		fanout_intrinsic_cost = NULL;
 		pb_graph_pin = NULL;
 		pack_intrinsic_cost = 0;
+		num_modes = 0;
 	}
 } t_lb_type_rr_node;
 
@@ -114,7 +117,8 @@ typedef struct s_lb_traceback {
 /* Describes the status of a logic block routing resource node for a given logic block instance */
 typedef struct s_lb_rr_node {
 	int occ;				/* Number of nets currently using this lb_rr_node */
-	int max_occ;			/* Maximium number of nets allowed to use this lb_rr_node in any intermediate stage of routing, this value should be higher than capacity to allow hill-climbing */
+	int max_occ;			/* Maximium number of nets allowed to use this lb_rr_node in any intermediate stage of routing, 
+							this value should be higher than capacity to allow hill-climbing */
 	int mode;				/* Mode that this node is set to */
 
 	t_lb_traceback	*traceback;	/* [0..max_occ-1] traceback of nets that use this node */

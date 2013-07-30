@@ -1280,6 +1280,7 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 					}
 					if (L_check_net != i) {
 						vpr_printf_error(__FILE__, __LINE__,
+								"You have a signal that enters both clock ports and normal input ports.\n"
 								"Input net for block %s #%d is net %s #%d but connecting net is %s #%d.\n",
 								logical_block[iblk].name, iblk,
 								vpack_net[L_check_net].name, L_check_net,

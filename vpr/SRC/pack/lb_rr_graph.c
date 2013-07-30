@@ -33,11 +33,19 @@ using namespace std;
 #include "pack_types.h"
 #include "lb_rr_graph.h"
 
+/*****************************************************************************************
+* Internal functions declarations
+******************************************************************************************/
 static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type, 
 													 INOUTP vector<t_lb_type_rr_node> &lb_type_rr_node_graph);
 static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_graph_node *pb_graph_node,
 														INOUTP vector<t_lb_type_rr_node> &lb_type_rr_node_graph);
 static float get_cost_of_pb_edge(t_pb_graph_edge *edge);
+static void print_lb_type_rr_graph(FILE *fp, const vector<t_lb_type_rr_node> &lb_type_rr_graph);
+
+/*****************************************************************************************
+* Constructor/Destructor functions 
+******************************************************************************************/
 
 /* Populate each logic block type (type_descriptor) with a directed graph that respresents the interconnect within it.
 */
@@ -53,6 +61,53 @@ vector<t_lb_type_rr_node> *alloc_and_load_all_lb_type_rr_graph() {
 	return lb_type_rr_graphs;
 }
 
+/* Free routing resource graph for all logic block types */
+void free_all_lb_type_rr_graph(INOUTP vector<t_lb_type_rr_node> **lb_type_rr_graphs) {
+	/* jedit TODO */
+}
+
+
+/*****************************************************************************************
+* Accessor functions 
+******************************************************************************************/
+
+/* Return external source index for logic block type internal routing resource graph */
+int get_lb_type_rr_graph_ext_source_index(t_type_ptr lb_type) {
+	return lb_type->pb_graph_head->total_pb_pins;
+}
+
+/* Return external source index for logic block type internal routing resource graph */
+int get_lb_type_rr_graph_ext_sink_index(t_type_ptr lb_type) {
+	return lb_type->pb_graph_head->total_pb_pins + 1;
+}
+
+/*****************************************************************************************
+* Debug functions 
+******************************************************************************************/
+
+/* Output all logic block type pb graphs */
+/* jedit make this an echo file */
+void print_lb_type_rr_graphs(char *filename, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
+	FILE *fp;
+	fp = my_fopen(filename, "w", 0);
+
+	for(int itype = 0; itype < num_types; itype++) {
+		if(&type_descriptors[itype] != EMPTY_TYPE) {
+			fprintf(fp, "--------------------------------------------------------------\n");
+			fprintf(fp, "Intra-Logic Block Routing Resource For Type %s\n", type_descriptors[itype].name);
+			fprintf(fp, "--------------------------------------------------------------\n");
+			fprintf(fp, "\n");
+			print_lb_type_rr_graph(fp, lb_type_rr_graphs[itype]);
+		}
+	}
+
+	fclose(fp);
+}
+
+
+/******************************************************************************************
+* Internal functions
+******************************************************************************************/
 
 /* Given a logic block type, build its internal routing resource graph
    Each pb_graph_pin has a corresponding lb_type_rr_node that is indexed by the pin index of that pb_graph_pin
@@ -95,6 +150,7 @@ static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type,
 	lb_type_rr_node_graph[ext_source_index].fanout_intrinsic_cost = (float**)my_malloc(sizeof (float*));
 	lb_type_rr_node_graph[ext_source_index].fanout_intrinsic_cost[0] = (float*)my_malloc(lb_type_rr_node_graph[ext_source_index].num_fanout[0] * sizeof (float));
 	lb_type_rr_node_graph[ext_source_index].type = LB_SOURCE;
+	lb_type_rr_node_graph[ext_source_index].num_modes = 1;
 	
 	/* Connect external souce node to all input and clock pins of logic block type */
 	ifanout = 0;
@@ -121,14 +177,17 @@ static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type,
 	/* External sink node driven by all outputs exiting logic block type */
 	lb_type_rr_node_graph[ext_sink_index].capacity = pb_type->num_output_pins;
 	lb_type_rr_node_graph[ext_sink_index].num_fanout = (short*)my_malloc(sizeof (short));
-	lb_type_rr_node_graph[ext_sink_index].num_fanout[0] = 0; /* Teriminal node */
+	lb_type_rr_node_graph[ext_sink_index].num_fanout[0] = 1; /* Special case, logic block opin can connect to logic block ipin through external routing but at high cost */
+	lb_type_rr_node_graph[ext_sink_index].fanout = (int**)my_malloc(sizeof (int*));
+	lb_type_rr_node_graph[ext_sink_index].fanout[0] = (int*)my_malloc(sizeof (int));
+	lb_type_rr_node_graph[ext_sink_index].fanout[0][0] = ext_source_index;
+	lb_type_rr_node_graph[ext_sink_index].fanout_intrinsic_cost = (float**)my_malloc(sizeof (float*));
+	lb_type_rr_node_graph[ext_sink_index].fanout_intrinsic_cost[0] = (float*)my_malloc(sizeof (float));
+	lb_type_rr_node_graph[ext_sink_index].fanout_intrinsic_cost[0][0] = 10; /* Mark a higher cost for using external interconnect */
 	lb_type_rr_node_graph[ext_sink_index].type = LB_SINK;
+	lb_type_rr_node_graph[ext_sink_index].num_modes = 1;
 }
 
-/* Free routing resource graph for all logic block types */
-void free_all_lb_type_rr_graph(INOUTP vector<t_lb_type_rr_node> **lb_type_rr_graphs) {
-	/* jedit TODO */
-}
 
 /* Given a pb_graph_node, build the routing resource data for it.
    Each pb_graph_pin has a corresponding rr node.  This rr node is indexed by the pb_graph_pin pin index.
@@ -169,6 +228,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				lb_type_rr_node_graph[pin_index].fanout_intrinsic_cost[0] = (float*)my_malloc(sizeof (float));
 				lb_type_rr_node_graph[pin_index].fanout_intrinsic_cost[0][0] = 1;
 				lb_type_rr_node_graph[pin_index].type = LB_INTERMEDIATE;
+				lb_type_rr_node_graph[pin_index].num_modes = 1;
 
 				if(port_equivalent == TRUE && sink_index != OPEN) {
 					/* If port is equivalent and a sink for this port is already created, use that port */
@@ -183,7 +243,8 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 					}
 					new_sink.num_fanout = (short*)my_malloc(sizeof (short));
 					new_sink.num_fanout[0] = 0;
-					new_sink.type = LB_SINK;					
+					new_sink.type = LB_SINK;				
+					new_sink.num_modes = 1;
 					sink_index = lb_type_rr_node_graph.size();
 					lb_type_rr_node_graph.push_back(new_sink);					
 				}
@@ -199,6 +260,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				num_modes = parent_node->pb_type->num_modes;
 
 				/* alloc and load rr node info */
+				lb_type_rr_node_graph[pin_index].num_modes = num_modes;
 				lb_type_rr_node_graph[pin_index].capacity = 1;
 				lb_type_rr_node_graph[pin_index].num_fanout = (short*)my_calloc(num_modes, sizeof (short));
 				lb_type_rr_node_graph[pin_index].fanout = (int**)my_calloc(num_modes, sizeof (int*));
@@ -260,6 +322,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				lb_type_rr_node_graph[pin_index].fanout_intrinsic_cost[0] = (float*)my_malloc(sizeof (float));
 				lb_type_rr_node_graph[pin_index].fanout_intrinsic_cost[0][0] = 1;
 				lb_type_rr_node_graph[pin_index].type = LB_INTERMEDIATE;
+				lb_type_rr_node_graph[pin_index].num_modes = 1;
 
 				if(port_equivalent == TRUE && sink_index != OPEN) {
 					/* If port is equivalent and a sink for this port is already created, use that port */
@@ -275,6 +338,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 					new_sink.num_fanout = (short*)my_malloc(sizeof (short));
 					new_sink.num_fanout[0] = 0;
 					new_sink.type = LB_SINK;					
+					new_sink.num_modes = 1;
 					sink_index = lb_type_rr_node_graph.size();
 					lb_type_rr_node_graph.push_back(new_sink);					
 				}
@@ -301,6 +365,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				num_modes = pb_graph_node->pb_type->num_modes;
 
 				/* alloc and load rr node info */
+				lb_type_rr_node_graph[pin_index].num_modes = num_modes;
 				lb_type_rr_node_graph[pin_index].capacity = 1;
 				lb_type_rr_node_graph[pin_index].num_fanout = (short*)my_calloc(num_modes, sizeof (short));
 				lb_type_rr_node_graph[pin_index].fanout = (int**)my_calloc(num_modes, sizeof (int*));
@@ -352,6 +417,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 					num_modes = parent_node->pb_type->num_modes;
 
 					/* alloc and load rr node info */
+					lb_type_rr_node_graph[pin_index].num_modes = num_modes;
 					lb_type_rr_node_graph[pin_index].capacity = 1;
 					lb_type_rr_node_graph[pin_index].num_fanout = (short*)my_calloc(num_modes, sizeof (short));
 					lb_type_rr_node_graph[pin_index].fanout = (int**)my_calloc(num_modes, sizeof (int*));
@@ -402,6 +468,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				num_modes = pb_graph_node->pb_type->num_modes;
 
 				/* alloc and load rr node info */
+				lb_type_rr_node_graph[pin_index].num_modes = num_modes;
 				lb_type_rr_node_graph[pin_index].capacity = 1;
 				lb_type_rr_node_graph[pin_index].num_fanout = (short*)my_calloc(num_modes, sizeof (short));
 				lb_type_rr_node_graph[pin_index].fanout = (int**)my_calloc(num_modes, sizeof (int*));
@@ -444,24 +511,46 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 	}
 }
 
-/*****************************************************************************************
-* Accessor functions 
-******************************************************************************************/
-
-/* Return external source index for logic block type internal routing resource graph */
-int get_lb_type_rr_graph_ext_source_index(t_type_ptr lb_type) {
-	return lb_type->pb_graph_head->total_pb_pins;
-}
-
-/* Return external source index for logic block type internal routing resource graph */
-int get_lb_type_rr_graph_ext_sink_index(t_type_ptr lb_type) {
-	return lb_type->pb_graph_head->total_pb_pins + 1;
-}
-
+/* Determine intrinsic cost of an edge that joins two pb_graph_pins */
 static float get_cost_of_pb_edge(t_pb_graph_edge *edge) {
 	if(edge->delay_max < 0) {
 		return 1;
 	}
 	return 1 + sqrt(edge->delay_max) * 10000; /* jedit I need to better normalize delays, this has fidelity but poor normalization */
 }
+
+/* Print logic block type routing resource graph */
+static void print_lb_type_rr_graph(FILE *fp, const vector<t_lb_type_rr_node> &lb_type_rr_graph) {
+	for(unsigned int inode = 0; inode < lb_type_rr_graph.size(); inode++) {
+		fprintf(fp, "Node %d\n", inode);
+		if(lb_type_rr_graph[inode].pb_graph_pin != NULL) {
+			t_pb_graph_node *pb_graph_node = lb_type_rr_graph[inode].pb_graph_pin->parent_node;
+			fprintf(fp, "\t%s[%d].%s[%d]\n", pb_graph_node->pb_type->name,
+											 pb_graph_node->placement_index,
+											 lb_type_rr_graph[inode].pb_graph_pin->port->name,
+											 lb_type_rr_graph[inode].pb_graph_pin->pin_number
+				);
+		}
+		fprintf(fp, "\tType: %s\n", lb_rr_type_str[(int) lb_type_rr_graph[inode].type]);
+		fprintf(fp, "\tCapacity: %d\n", lb_type_rr_graph[inode].capacity);
+		fprintf(fp, "\tIntrinsic Cost: %g\n", lb_type_rr_graph[inode].pack_intrinsic_cost);
+		for(int imode = 0; imode < lb_type_rr_graph[inode].num_modes; imode++) {
+			fprintf(fp, "\tMode: %d   # Fanout: %d\n\t\t", lb_type_rr_graph[inode].num_modes, lb_type_rr_graph[inode].num_fanout[imode]);
+			int count = 0;
+			for(int iedge = 0; iedge < lb_type_rr_graph[inode].num_fanout[imode]; iedge++) {
+				if(count % 5 == 0) {
+					/* Formatting to prevent very long lines */
+					fprintf(fp, "\n");
+				}
+				count++;
+				fprintf(fp, "(%d, %g) ", lb_type_rr_graph[inode].fanout[imode][iedge], lb_type_rr_graph[inode].fanout_intrinsic_cost[imode][iedge]);
+			}
+			fprintf(fp, "\n");
+		}
+
+		fprintf(fp, "\n");
+	}
+}
+
+
 

@@ -8,13 +8,17 @@
 #ifndef LB_RR_GRAPH_H
 #define LB_RR_GRAPH_H
 
-vector <t_lb_type_rr_node> *alloc_and_load_all_lb_type_rr_graph();
+#include "pack_types.h"
 
+vector <t_lb_type_rr_node> *alloc_and_load_all_lb_type_rr_graph();
 void free_all_lb_type_rr_graph(INOUTP vector<t_lb_type_rr_node> **lb_type_rr_graphs);
 
 /* Accessor functions */
 int get_lb_type_rr_graph_ext_source_index(t_type_ptr lb_type);
 int get_lb_type_rr_graph_ext_sink_index(t_type_ptr lb_type);
+
+/* Debug functions */
+void print_lb_type_rr_graphs(char *filename, vector<t_lb_type_rr_node> *lb_type_rr_graphs);
 
 #endif
 

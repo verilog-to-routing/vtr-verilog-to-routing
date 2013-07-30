@@ -2,6 +2,7 @@
 using namespace std;
 
 #include <assert.h>
+#include <vector>
 
 #include "util.h"
 #include "vpr_types.h"
@@ -11,6 +12,7 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "SetupVPR.h"
 #include "pb_type_graph.h"
+#include "lb_rr_graph.h"
 #include "ReadOptions.h"
 
 static void SetupOperation(INP t_options Options,
@@ -219,6 +221,8 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 
 	vpr_printf_info("Building complex block graph.\n");
 	alloc_and_load_all_pb_graphs(PowerOpts->do_power);
+	//vector <t_lb_type_rr_node> *lb_type_rr_graphs = alloc_and_load_all_lb_type_rr_graph();
+	//print_lb_type_rr_graphs("jedit_lb_rr_graph.echo",lb_type_rr_graphs);
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PB_GRAPH)) {
 		echo_pb_graph(getEchoFileName(E_ECHO_PB_GRAPH));
