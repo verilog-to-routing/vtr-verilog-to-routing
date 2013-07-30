@@ -302,20 +302,20 @@ void TVPR_ArchitectureSpec_c::PokeConfigPower_(
       pvpr_power->local_interc_factor = 0.5;
       if( TCTF_IsGT( config.power.interconnect.capWire, 0.0 ))
       {
-         pvpr_power->C_wire_local = config.power.interconnect.capWire;
-         pvpr_power->local_interc_factor = config.power.interconnect.factor;
+         pvpr_power->C_wire_local = static_cast< float >( config.power.interconnect.capWire );
+         pvpr_power->local_interc_factor = static_cast< float >( config.power.interconnect.factor );
       }
 
       pvpr_power->logical_effort_factor = 4.0;
       if( TCTF_IsGT( config.power.buffers.logicalEffortFactor, 0.0 ))
       {
-         pvpr_power->logical_effort_factor = config.power.buffers.logicalEffortFactor;
+         pvpr_power->logical_effort_factor = static_cast< float >( config.power.buffers.logicalEffortFactor );
       }
 
       pvpr_power->transistors_per_SRAM_bit = 6.0;
       if( TCTF_IsGT( config.power.sram.transistorsPerBit, 0.0 ))
       {
-         pvpr_power->transistors_per_SRAM_bit = config.power.sram.transistorsPerBit;
+         pvpr_power->transistors_per_SRAM_bit = static_cast< float >( config.power.sram.transistorsPerBit );
       }
    }
 }
@@ -2461,7 +2461,7 @@ bool TVPR_ArchitectureSpec_c::PokePowerPort_(
                                      &scaledByStaticProb, &scaledByStaticProb_n );
 
       pvpr_port->port_power->pin_toggle_initialized = static_cast< boolean >( initialized );
-      pvpr_port->port_power->energy_per_toggle = energyPerToggle;
+      pvpr_port->port_power->energy_per_toggle = static_cast< float >( energyPerToggle );
       pvpr_port->port_power->reverse_scaled = static_cast< boolean >( scaledByStaticProb_n );
    }
    else
