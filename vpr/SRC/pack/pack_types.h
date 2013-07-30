@@ -79,43 +79,47 @@ typedef struct s_pb_stats {
 * Intra-Logic Block Routing Data Structures
 ***************************************************************************/
 
+/* Output edges of a t_lb_type_rr_node */
+struct t_lb_type_rr_node_edge {
+
+};
 
 /* Describes a routing resource node within a logic block type */
-typedef struct s_lb_type_rr_node {
+struct t_lb_type_rr_node {
 	short capacity;			/* Number of nets that can simultaneously use this node */
 	short *num_fanout;		/* [0..num_modes - 1] Mode dependant fanout */
 	enum e_lb_rr_type type;	/* Type of logic block resource node */	
 
-	int **fanout;					/* [0..num_modes - 1][0..num_fanout-1] index of fanout lb_rr_node */
-	float **fanout_intrinsic_cost;	/* [0..num_modes - 1][0..num_fanout-1] cost of fanout lb_rr_node */
+	int **outedges;						/* [0..num_modes - 1][0..num_fanout-1] index of fanout lb_rr_node */
+	float **outedges_intrinsic_cost;	/* [0..num_modes - 1][0..num_fanout-1] cost of fanout lb_rr_node */
 
-	struct s_pb_graph_pin *pb_graph_pin;	/* pb_graph_pin associated with this lb_rr_node if exists */
-	float pack_intrinsic_cost;		/* cost of this node */
-	int num_modes;	/* Cache number of modes available */
+	struct s_pb_graph_pin *pb_graph_pin;	/* pb_graph_pin associated with this lb_rr_node if exists, NULL otherwise */
+	float intrinsic_cost;					/* cost of this node */
+	int num_modes;	/* jedit DELETE Cache number of modes available */
 	
-	s_lb_type_rr_node() {
+	t_lb_type_rr_node() {
 		capacity = 0;
 		num_fanout = NULL;
 		type = NUM_LB_RR_TYPES;
-		fanout = NULL;
-		fanout_intrinsic_cost = NULL;
+		outedges = NULL;
+		outedges_intrinsic_cost = NULL;
 		pb_graph_pin = NULL;
-		pack_intrinsic_cost = 0;
+		intrinsic_cost = 0;
 		num_modes = 0;
 	}
-} t_lb_type_rr_node;
+};
 
 
 /* The routing traceback for a net */
-typedef struct s_lb_traceback {
-	int	net;				/* net using this node */
-	int prev_edge;			/* index of previous edge that drives current node */
+struct t_lb_traceback {
+	int	net;				/* net of flat, technology-mapped, netlist using this node */
 	int prev_lb_rr_node;	/* index of previous node that drives current node */
-} t_lb_traceback;
+	int prev_edge;			/* index of previous edge that drives current node */	
+};
 
 
 /* Describes the status of a logic block routing resource node for a given logic block instance */
-typedef struct s_lb_rr_node {
+struct t_lb_rr_node_stats {
 	int occ;				/* Number of nets currently using this lb_rr_node */
 	int max_occ;			/* Maximium number of nets allowed to use this lb_rr_node in any intermediate stage of routing, 
 							this value should be higher than capacity to allow hill-climbing */
@@ -130,7 +134,7 @@ typedef struct s_lb_rr_node {
 
 
 	/* Default values */
-	s_lb_rr_node() {
+	t_lb_rr_node_stats() {
 		occ = 0;
 		max_occ = 0;
 		mode = 0;
@@ -139,6 +143,6 @@ typedef struct s_lb_rr_node {
 		historical_cost = 0;	
 		lb_type_rr_node = NULL; 
 	}
-} t_lb_rr_node;
+};
 
 #endif
