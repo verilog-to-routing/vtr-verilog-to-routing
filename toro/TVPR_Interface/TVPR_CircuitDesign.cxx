@@ -1586,7 +1586,7 @@ void TVPR_CircuitDesign_c::PeekNetList_(
                                   pnetList );
 
    // Update net list based on any available net global routes
-// WIP ??? this->ExtractNetListGlobalRoutes_
+   // WIP - this->ExtractNetListGlobalRoutes_...
 
    // Update net list based on any available net routes
    this->ExtractNetListRoutes_( vpr_architecture,
