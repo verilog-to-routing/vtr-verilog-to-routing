@@ -19,7 +19,7 @@ typedef struct s_net_nodes{
 	int block_pin;
 
 	s_net_nodes(){
-		block = block_port = block_pin = (unsigned int)OPEN;
+		block = block_port = block_pin = 0;
 	}
 }t_net_nodes;
 
@@ -34,7 +34,7 @@ typedef struct s_vnet{
 
 	s_vnet(){
 		name = NULL;
-		is_routed = is_fixed = is_global = is_const_gen = (unsigned int)OPEN;
+		is_routed = is_fixed = is_global = is_const_gen = 0;
 		net_power = NULL;
 	}
 }t_vnet;
