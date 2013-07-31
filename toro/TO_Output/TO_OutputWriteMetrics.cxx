@@ -23,7 +23,7 @@ bool TO_Output_c::WriteMetricsFile_(
 {
    bool ok = true;
 
-// TBD ???
+// TBD - Still needed?
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
    printHandler.Warning( "Metrics file will be coming to a theater near you soon...\n" );
 
