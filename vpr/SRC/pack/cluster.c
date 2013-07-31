@@ -328,9 +328,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		hill_climbing_inputs_avail = NULL; /* if used, die hard */
 	}
 
-	/* TODO: make better estimate for nx and ny, was initializing nx = ny = 1 */
-	nx = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.W);
-	ny = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.H);
+	/* TODO: make better estimate for nx and ny */
+	nx = ny = 1;
 
 	check_clocks(is_clock);
 #if 0
@@ -436,6 +435,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		istart = get_seed_logical_molecule_with_most_ext_inputs(
 				max_molecule_inputs);
 	}
+
 
 	while (istart != NULL) {
 		is_cluster_legal = FALSE;
@@ -1908,13 +1908,8 @@ static void start_new_cluster(
 #ifdef TORO_REGION_PLACEMENT_ENABLE
 	new_cluster->placement_region_list = molecule->logical_block_ptrs[molecule->root]->placement_region_list;
 #endif
-
-	if ((nx > 1) && (ny > 1)) {
-		alloc_and_load_grid(num_instances_type);
-		freeGrid();
-	}
-
 	success = FALSE;
+
 	while (!success) {
 		count = 0;
 		for (i = 0; i < num_types; i++) {
@@ -1924,15 +1919,19 @@ static void start_new_cluster(
 					continue;
 				}
 				new_cluster->pb = (t_pb*)my_calloc(1, sizeof(t_pb));
-				new_cluster->pb->pb_graph_node = new_cluster->type->pb_graph_head;
-				alloc_and_load_pb_stats(new_cluster->pb, num_models, max_nets_in_pb_type);
+				new_cluster->pb->pb_graph_node =
+						new_cluster->type->pb_graph_head;
+				alloc_and_load_pb_stats(new_cluster->pb, num_models,
+						max_nets_in_pb_type);
 				new_cluster->pb->parent_pb = NULL;
 
-				alloc_and_load_legalizer_for_cluster(new_cluster, clb_index, arch);
+				alloc_and_load_legalizer_for_cluster(new_cluster, clb_index,
+						arch);
 				for (j = 0; j < new_cluster->type->pb_graph_head->pb_type->num_modes && !success; j++) {
 					new_cluster->pb->mode = j;
 					reset_cluster_placement_stats(&cluster_placement_stats[i]);
-					set_mode_cluster_placement_stats(new_cluster->pb->pb_graph_node, j);
+					set_mode_cluster_placement_stats(
+							new_cluster->pb->pb_graph_node, j);
 					success = (boolean) (BLK_PASSED
 							== try_pack_molecule(&cluster_placement_stats[i],
 									molecule, primitives_list, new_cluster->pb,
