@@ -35,7 +35,8 @@ static void alloc_and_load_block_override_ios(
 #include "TFH_FabricBlockHandler.h"
 
 static t_type_ptr alloc_and_load_block_override_type(
-		t_type_ptr type, int x, int y);
+		t_type_ptr type, int x, int y, 
+		bool showMessage);
 
 static void alloc_and_load_block_override_blocks(
 		t_grid_tile** vpr_grid, int vpr_nx, int vpr_ny);
@@ -53,9 +54,6 @@ static void alloc_and_load_num_instances_type(
 
 /* Create and fill FPGA architecture grid.         */
 void alloc_and_load_grid(INOUTP int *num_instances_type) {
-
-	int i, j;
-	t_type_ptr type;
 
 #ifdef SHOW_ARCH
 	FILE *dump;
@@ -75,76 +73,66 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 			sizeof(struct s_grid_tile));
 
 	/* Clear the full grid to have no type (NULL), no capacity, etc */
-	for (i = 0; i <= (nx + 1); ++i) {
-		for (j = 0; j <= (ny + 1); ++j) {
-			memset(&grid[i][j], 0, (sizeof(struct s_grid_tile)));
+	for (int x = 0; x <= (nx + 1); ++x) {
+		for (int y = 0; y <= (ny + 1); ++y) {
+			memset(&grid[x][y], 0, (sizeof(struct s_grid_tile)));
 		}
 	}
-
-	/* Nothing goes in the corners. */
-	grid[0][0].type = grid[nx + 1][0].type = EMPTY_TYPE;
-	grid[0][ny + 1].type = grid[nx + 1][ny + 1].type = EMPTY_TYPE;
-
-	for (i = 1; i <= nx; i++) {
-		grid[i][0].type = IO_TYPE;
-		grid[i][ny + 1].type = IO_TYPE;
-
-		grid[i][0].blocks = (int *) my_malloc(sizeof(int) * IO_TYPE->capacity);
-		grid[i][ny + 1].blocks = (int *) my_malloc(sizeof(int) * IO_TYPE->capacity);
-
-		for (j = 0; j < IO_TYPE->capacity; j++) {
-			grid[i][0].blocks[j] = EMPTY;
-			grid[i][ny + 1].blocks[j] = EMPTY;
-		}
-	}
-
-	for (i = 1; i <= ny; i++) {
-		grid[0][i].type = IO_TYPE;
-		grid[nx + 1][i].type = IO_TYPE;
-
-		grid[0][i].blocks = (int *) my_malloc(sizeof(int) * IO_TYPE->capacity);
-		grid[nx + 1][i].blocks = (int *) my_malloc(sizeof(int) * IO_TYPE->capacity);
-
-		for (j = 0; j < IO_TYPE->capacity; j++) {
-			grid[0][i].blocks[j] = EMPTY;
-			grid[nx + 1][i].blocks[j] = EMPTY;
-		}
-	}
-
-	for (i = 1; i <= nx; i++) { /* Interior (LUT) cells */
-		type = find_type_col(i);
-		for (j = 1; j <= ny; j++) {
-
-			if (grid[i][j].type == EMPTY_TYPE)
-				continue;
-
-			if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0)
-				continue;
 
 #ifdef TORO_FABRIC_BLOCK_OVERRIDE 
-			type = alloc_and_load_block_override_type(type, i, j);
+	bool showMessage = true;
 #endif
 
-			if (i + type->width - 1 <= nx && j + type->height - 1 <= ny) {
-				for (int i_offset = 0; i_offset < type->width; ++i_offset) {
-					for (int j_offset = 0; j_offset < type->height; ++j_offset) {
-						grid[i+i_offset][j+j_offset].type = type;
-						grid[i+i_offset][j+j_offset].width_offset = i_offset;
-						grid[i+i_offset][j+j_offset].height_offset = j_offset;
-						grid[i+i_offset][j+j_offset].blocks = (int *) my_malloc(sizeof(int) * type->capacity);
-						grid[i+i_offset][j+j_offset].blocks[0] = EMPTY;
-						for (int k = 0; k < type->capacity; ++k) {
-							grid[i+i_offset][j+j_offset].blocks[k] = EMPTY;
+	for (int x = 0; x <= nx + 1; ++x) {
+		for (int y = 0; y <= ny + 1; ++y) {
+
+			t_type_ptr type = 0;
+			if ((x == 0 && y == 0) || (x == 0 && y == ny + 1) || (x == nx + 1 && y == 0) || (x == nx + 1 && y == ny + 1)) {
+
+				// Assume corners are empty type (by default)
+				type = EMPTY_TYPE;
+
+			} else if (x == 0 || y == 0 || x == nx + 1 || y == ny + 1) {
+
+				// Assume edges are IO type (by default)
+				type = IO_TYPE;
+#ifdef TORO_FABRIC_BLOCK_OVERRIDE 
+				type = alloc_and_load_block_override_type(type, x, y, showMessage);
+				showMessage = false;
+#endif
+			} else {
+
+				if (grid[x][y].width_offset > 0 || grid[x][y].height_offset > 0)
+					continue;
+
+				// Assume core are not empty and not IO types (by default)
+				type = find_type_col(x);
+#ifdef TORO_FABRIC_BLOCK_OVERRIDE 
+				type = alloc_and_load_block_override_type(type, x, y, showMessage);
+				showMessage = false;
+#endif
+			}
+
+			if (x + type->width - 1 <= nx && y + type->height - 1 <= ny) {
+				for (int x_offset = 0; x_offset < type->width; ++x_offset) {
+					for (int y_offset = 0; y_offset < type->height; ++y_offset) {
+						grid[x+x_offset][y+y_offset].type = type;
+						grid[x+x_offset][y+y_offset].width_offset = x_offset;
+						grid[x+x_offset][y+y_offset].height_offset = y_offset;
+						grid[x+x_offset][y+y_offset].blocks = (int *) my_malloc(sizeof(int) * max(1,type->capacity));
+						for (int i = 0; i < max(1,type->capacity); ++i) {
+							grid[x+x_offset][y+y_offset].blocks[i] = EMPTY;
 						}
 					}
 				}
 			} else {
-				grid[i][j].type = EMPTY_TYPE;
-				grid[i][j].blocks = (int *) my_malloc(sizeof(int));
-				grid[i][j].blocks[0] = EMPTY;
+				grid[x][y].type = EMPTY_TYPE;
+				grid[x][y].blocks = (int *) my_malloc(sizeof(int));
+				grid[x][y].blocks[0] = EMPTY;
 			}
 		}
 	}
+
 
 #ifdef TORO_FABRIC_GRID_OVERRIDE 
 	alloc_and_load_block_override_ios(grid, nx, ny);
@@ -159,6 +147,14 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 	alloc_and_load_num_instances_type(grid, nx, ny,	num_instances_type, num_types);
 
 	CheckGrid();
+
+#if 0
+	for (int y = 0; y <= ny + 1; ++y) {
+		for (int x = 0; x <= nx + 1; ++x) {
+			vpr_printf_info("[%d][%d] %s\n", x, y, grid[x][y].type->name);
+		}
+	}
+#endif
 
 #ifdef SHOW_ARCH
 	/* DEBUG code */
@@ -223,12 +219,15 @@ static void alloc_and_load_block_override_ios(
 #ifdef TORO_FABRIC_BLOCK_OVERRIDE 
 //===========================================================================//
 static t_type_ptr alloc_and_load_block_override_type(
-		t_type_ptr type, int x, int y) {
+		t_type_ptr type, int x, int y,
+		bool showMessage) {
 
 	const TFH_FabricBlockHandler_c& fabricBlockHandler = TFH_FabricBlockHandler_c::GetInstance();
 	if (fabricBlockHandler.IsValid()) {
 
-		vpr_printf_info("Overriding architecture block[%d][%d] based on fabric %s block...\n", x, y, type->name);
+		if (showMessage) {
+			vpr_printf_info("Overriding architecture block(s) based on fabric %s block...\n", type->name);
+		}
 
 		// Search for override type based on given block grid list
 		const TFH_GridBlockList_t& gridBlockList = fabricBlockHandler.GetGridBlockList( );
