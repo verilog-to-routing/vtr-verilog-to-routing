@@ -81,7 +81,8 @@ typedef struct s_pb_stats {
 
 /* Output edges of a t_lb_type_rr_node */
 struct t_lb_type_rr_node_edge {
-
+	int node_index;
+	float intrinsic_cost;
 };
 
 /* Describes a routing resource node within a logic block type */
@@ -90,8 +91,7 @@ struct t_lb_type_rr_node {
 	short *num_fanout;		/* [0..num_modes - 1] Mode dependant fanout */
 	enum e_lb_rr_type type;	/* Type of logic block resource node */	
 
-	int **outedges;						/* [0..num_modes - 1][0..num_fanout-1] index of fanout lb_rr_node */
-	float **outedges_intrinsic_cost;	/* [0..num_modes - 1][0..num_fanout-1] cost of fanout lb_rr_node */
+	t_lb_type_rr_node_edge **outedges;						/* [0..num_modes - 1][0..num_fanout-1] index and cost of out edges */
 
 	struct s_pb_graph_pin *pb_graph_pin;	/* pb_graph_pin associated with this lb_rr_node if exists, NULL otherwise */
 	float intrinsic_cost;					/* cost of this node */
@@ -102,7 +102,6 @@ struct t_lb_type_rr_node {
 		num_fanout = NULL;
 		type = NUM_LB_RR_TYPES;
 		outedges = NULL;
-		outedges_intrinsic_cost = NULL;
 		pb_graph_pin = NULL;
 		intrinsic_cost = 0;
 		num_modes = 0;
