@@ -24,6 +24,7 @@ using namespace std;
 #include "cluster_legality.h"
 #include "token.h"
 #include "rr_graph.h"
+#include "netlist.h"
 
 
 static const char* netlist_file_name = NULL;
@@ -106,7 +107,7 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	}
 	vpr_printf_info("Finished parsing packed FPGA netlist file.\n");
 	
-	/* Save netlist file's name */
+	/* Save netlist file's name in file-scoped variable */
 	netlist_file_name = net_file;
 
 	/* Root node should be block */
@@ -225,6 +226,9 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	*block_list = blist;
 	*L_num_nets = ext_ncount;
 	*net_list = ext_nlist;
+
+	/*load_global_net_from_array(ext_nlist, ext_ncount, &g_cb);
+	echo_global_nlist_net(&g_cb);*/
 
 	free_hash_table(logical_block_hash);
 	free_hash_table(vpack_net_hash);

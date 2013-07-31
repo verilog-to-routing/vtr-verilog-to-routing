@@ -2,6 +2,7 @@
 
 #include "vpr_types.h"
 #include "globals.h"
+#include "netlist.h"
 
 
 /******** General global variables ********/
@@ -29,6 +30,9 @@ struct s_net *clb_net = NULL;
 
 int num_blocks = 0;
 struct s_block *block = NULL;
+
+t_netlist g_atom;
+t_netlist g_cb;
 
 int *clb_to_vpack_net_mapping = NULL; /* [0..num_clb_nets - 1] */
 int *vpack_to_clb_net_mapping = NULL; /* [0..num_vpack_nets - 1] */

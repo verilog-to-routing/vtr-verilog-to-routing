@@ -275,8 +275,10 @@
     </ClCompile>
     <ClCompile Include="SRC\pack\pack_types.c">
       <Filter>Source Files\pack</Filter>
-    </ClCompile>
-  </ItemGroup>
+    </ClCompile>    
+	<ClCompile Include="SRC\base\netlist.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>  </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SRC\base\check_netlist.h">
       <Filter>Header Files\base</Filter>
@@ -484,6 +486,9 @@
     </ClInclude>
     <ClInclude Include="SRC\pack\cluster_router.h">
       <Filter>Header Files\pack</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\netlist.h">
+      <Filter>Header Files\base</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

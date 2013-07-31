@@ -171,6 +171,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="SRC\base\globals.c" />
+    <ClCompile Include="SRC\base\netlist.c" />
     <ClCompile Include="SRC\base\read_settings.c" />
     <ClCompile Include="SRC\base\verilog_writer.c" />
     <ClCompile Include="SRC\base\vpr_api.c" />
@@ -247,6 +248,7 @@
   <ItemGroup>
     <ClInclude Include="SRC\base\check_netlist.h" />
     <ClInclude Include="SRC\base\globals.h" />
+    <ClInclude Include="SRC\base\netlist.h" />
     <ClInclude Include="SRC\base\OptionTokens.h" />
     <ClInclude Include="SRC\base\place_and_route.h" />
     <ClInclude Include="SRC\base\read_blif.h" />
