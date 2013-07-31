@@ -1327,6 +1327,13 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	if (!find_to(block[b_from].type, rlim, b_from, x_from, y_from, &x_to, &y_to, &z_to))
 		return REJECTED;
 
+#if 0
+	int b_to = grid[x_to][y_to].blocks[z_to];
+	vpr_printf_info( "swap [%d][%d][%d] %s \"%s\" <=> [%d][%d][%d] %s \"%s\"\n",
+		x_from, y_from, z_from, grid[x_from][y_from].type->name, b_from != -1 ? block[b_from].name : "",
+		x_to, y_to, z_to, grid[x_to][y_to].type->name, b_to != -1 ? block[b_to].name : "");
+#endif
+
 	/* Make the switch in order to make computing the new bounding *
 	 * box simpler.  If the cost increase is too high, switch them *
 	 * back.  (block data structures switched, clbs not switched   *
