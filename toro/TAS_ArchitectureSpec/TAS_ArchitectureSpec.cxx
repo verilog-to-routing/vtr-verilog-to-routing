@@ -939,10 +939,10 @@ bool TAS_ArchitectureSpec_c::InitValidatePhysicalBlock_(
       ok = this->InitValidateGridAssignList_( pphysicalBlock->gridAssignList );
    }
 
-// TBD ???  <delay_matrix type="max" in_port="string" out_port="string"/> matrix </delay>
-// TBD ???  // Validate: matrix (input) #of rows assumed
-// TBD ???  // Validate: matrix (input) #of rows == #of pins asso. with input port
-// TBD ???  // Validate: matrix (input) #of columns == #of pins asso. with output port
+   // TBD - <delay_matrix type="max" in_port="string" out_port="string"/> matrix </delay>
+   // TBD - // Validate: matrix (input) #of rows assumed
+   // TBD - // Validate: matrix (input) #of rows == #of pins asso. with input port
+   // TBD - // Validate: matrix (input) #of columns == #of pins asso. with output port
 
    return( ok );
 }
