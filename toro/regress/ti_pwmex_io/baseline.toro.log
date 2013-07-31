@@ -287,7 +287,6 @@ Executing VPR interface...
 [vpr] 
 [vpr] Defaulting to: constrain all 0 inputs and 0 outputs on the netlist clock.
 [vpr] Optimize this clock to run as fast as possible.
-[vpr] Not enough resources expand FPGA size to x = 2 y = 2.
 [vpr] Complex block 0: cb.U_PWM0_REDly, type: clb
 [vpr] 	...................................................
 [vpr] Passed route at end.
@@ -300,7 +299,6 @@ Executing VPR interface...
 [vpr] Complex block 3: cb.U_PWM3_REDly, type: clb
 [vpr] 	...................................................
 [vpr] Passed route at end.
-[vpr] Not enough resources expand FPGA size to x = 3 y = 3.
 [vpr] Complex block 4: cb.U_PWM3_DPWMOutLatch, type: clb
 [vpr] 	...................
 [vpr] Passed route at end.
@@ -316,7 +314,6 @@ Executing VPR interface...
 [vpr] Complex block 8: cb.n831, type: clb
 [vpr] 	..........
 [vpr] Passed route at end.
-[vpr] Not enough resources expand FPGA size to x = 4 y = 4.
 [vpr] Complex block 9: cb.n726, type: clb
 [vpr] 	..........
 [vpr] Passed route at end.
@@ -542,7 +539,6 @@ Executing VPR interface...
 [vpr] Complex block 83: cb.Dutymsb3~7, type: io
 [vpr] 	
 [vpr] Passed route at end.
-[vpr] Not enough resources expand FPGA size to x = 5 y = 5.
 [vpr] Complex block 84: cb.n734, type: clb
 [vpr] 	......
 [vpr] Passed route at end.
@@ -1305,7 +1301,6 @@ Executing VPR interface...
 [vpr] Complex block 337: cb.out:count_cmp3~15, type: io
 [vpr] 	
 [vpr] Passed route at end.
-[vpr] Not enough resources expand FPGA size to x = 6 y = 6.
 [vpr] Complex block 338: cb.out:count_cmp2~0, type: io
 [vpr] 	
 [vpr] Passed route at end.
@@ -1498,7 +1493,6 @@ Executing VPR interface...
 [vpr] Complex block 401: cb.TermCnt0~14, type: io
 [vpr] 	
 [vpr] Passed route at end.
-[vpr] Not enough resources expand FPGA size to x = 7 y = 7.
 [vpr] Complex block 402: cb.TermCnt2~0, type: io
 [vpr] 	
 [vpr] Passed route at end.

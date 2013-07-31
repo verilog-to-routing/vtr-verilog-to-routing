@@ -54,13 +54,13 @@
          <timing mode="delay" input="io.outpad" output="outpad.outpad" max_value="1.3940e-11"/>
       </interconnect>
    </model>
-   <pb name="clb" fc_in="0.150" fc_out="0.100">
-      <mode> "clb" </mode>
+   <pb name="clb_2x2" width="2" height="2" fc_in="0.150" fc_out="0.100">
+      <mode> "clb_2x2" </mode>
       <pin name="I" type="input" count="18" equivalence="true"/>
       <pin name="O" type="output" count="8"/>
       <pin name="clk" type="clock" count="1"/>
       <pin_assign pattern="spread"/>
-      <grid_assign mode="fill" priority="1"/>
+      <grid_assign mode="col" priority="10" multiple_start="2" multiple_repeat="9"/>
    </pb>
    <pb name="ble" count="8">
       <mode> "ble" </mode>
@@ -95,80 +95,6 @@
          <timing mode="pack_pattern" input="lut6[0:0].out" output="soft_logic.out[0:0]" name="ble"/>
       </interconnect>
    </model>
-   <pb name="ff" count="1" cell=".latch" class="flipflop">
-      <pin name="D" type="input" count="1" class="D"/>
-      <pin name="Q" type="output" count="1" class="Q"/>
-      <pin name="clk" type="clock" count="1" class="clock"/>
-      <timing mode="t_setup"input="ff.D" clock="clk" value="2.4480e-10"/>
-      <timing mode="clock_to_q" output="ff.Q" clock="clk" max_value="7.7320e-11"/>
-   </pb>
-   <model name="ble">
-      <pb name="soft_logic"/>
-      <pb name="ff"/>
-      <interconnect name="direct1" type="direct">
-         <input name="ble.in"/>
-         <output name="soft_logic.in"/>
-      </interconnect>
-      <interconnect name="direct2" type="direct">
-         <input name="soft_logic.out"/>
-         <output name="ff.D"/>
-         <timing mode="pack_pattern" input="soft_logic.out" output="ff.D" name="ble"/>
-      </interconnect>
-      <interconnect name="direct4" type="direct">
-         <input name="ble.clk"/>
-         <output name="ff.clk"/>
-      </interconnect>
-      <interconnect name="mux1" type="mux">
-         <input name="ff.Q soft_logic.out"/>
-         <output name="ble.out"/>
-      </interconnect>
-   </model>
-   <model name="clb">
-      <pb name="ble"/>
-      <interconnect name="crossbar" type="complete">
-         <input name="clb.I ble[7:0].out"/>
-         <output name="ble[7:0].in"/>
-         <timing mode="delay" input="clb.I" output="ble[7:0].in" max_value="8.0440e-11"/>
-         <timing mode="delay" input="ble[7:0].out" output="ble[7:0].in" max_value="7.3540e-11"/>
-      </interconnect>
-      <interconnect name="clks" type="complete">
-         <input name="clb.clk"/>
-         <output name="ble[7:0].clk"/>
-      </interconnect>
-      <interconnect name="clbouts" type="direct">
-         <input name="ble[7:0].out"/>
-         <output name="clb.O"/>
-      </interconnect>
-   </model>
-   <pb name="clb_2x2" width="2" height="2" fc_in="0.150" fc_out="0.100">
-      <mode> "clb_2x2" </mode>
-      <pin name="I" type="input" count="18" equivalence="true"/>
-      <pin name="O" type="output" count="8"/>
-      <pin name="clk" type="clock" count="1"/>
-      <pin_assign pattern="spread"/>
-      <grid_assign mode="col" priority="10" multiple_start="2" multiple_repeat="9"/>
-   </pb>
-   <pb name="ble" count="8">
-      <mode> "ble" </mode>
-      <pin name="in" type="input" count="4"/>
-      <pin name="out" type="output" count="1"/>
-      <pin name="clk" type="clock" count="1"/>
-   </pb>
-   <pb name="soft_logic" count="1">
-      <mode> "n1_lut6" </mode>
-      <pin name="in" type="input" count="4"/>
-      <pin name="out" type="output" count="1"/>
-   </pb>
-   <pb name="lut6" count="1" cell=".names" class="lut">
-      <pin name="in" type="input" count="4" class="lut_in"/>
-      <pin name="out" type="output" count="1" class="lut_out"/>
-      <timing mode="delay_matrix" input="lut6.in" output="lut6.out"
-          max_matrix=2.69000e-10
-                     2.69000e-10
-                     2.69000e-10
-                     2.69000e-10
-      />
-   </pb>
    <pb name="ff" count="1" cell=".latch" class="flipflop">
       <pin name="D" type="input" count="1" class="D"/>
       <pin name="Q" type="output" count="1" class="Q"/>
@@ -286,6 +212,80 @@
       <interconnect name="clb_3x1outs" type="direct">
          <input name="ble[7:0].out"/>
          <output name="clb_3x1.O"/>
+      </interconnect>
+   </model>
+   <pb name="clb" fc_in="0.150" fc_out="0.100">
+      <mode> "clb" </mode>
+      <pin name="I" type="input" count="18" equivalence="true"/>
+      <pin name="O" type="output" count="8"/>
+      <pin name="clk" type="clock" count="1"/>
+      <pin_assign pattern="spread"/>
+      <grid_assign mode="fill" priority="1"/>
+   </pb>
+   <pb name="ble" count="8">
+      <mode> "ble" </mode>
+      <pin name="in" type="input" count="4"/>
+      <pin name="out" type="output" count="1"/>
+      <pin name="clk" type="clock" count="1"/>
+   </pb>
+   <pb name="soft_logic" count="1">
+      <mode> "n1_lut6" </mode>
+      <pin name="in" type="input" count="4"/>
+      <pin name="out" type="output" count="1"/>
+   </pb>
+   <pb name="lut6" count="1" cell=".names" class="lut">
+      <pin name="in" type="input" count="4" class="lut_in"/>
+      <pin name="out" type="output" count="1" class="lut_out"/>
+      <timing mode="delay_matrix" input="lut6.in" output="lut6.out"
+          max_matrix=2.69000e-10
+                     2.69000e-10
+                     2.69000e-10
+                     2.69000e-10
+      />
+   </pb>
+   <pb name="ff" count="1" cell=".latch" class="flipflop">
+      <pin name="D" type="input" count="1" class="D"/>
+      <pin name="Q" type="output" count="1" class="Q"/>
+      <pin name="clk" type="clock" count="1" class="clock"/>
+      <timing mode="t_setup"input="ff.D" clock="clk" value="2.4480e-10"/>
+      <timing mode="clock_to_q" output="ff.Q" clock="clk" max_value="7.7320e-11"/>
+   </pb>
+   <model name="ble">
+      <pb name="soft_logic"/>
+      <pb name="ff"/>
+      <interconnect name="direct1" type="direct">
+         <input name="ble.in"/>
+         <output name="soft_logic.in"/>
+      </interconnect>
+      <interconnect name="direct2" type="direct">
+         <input name="soft_logic.out"/>
+         <output name="ff.D"/>
+         <timing mode="pack_pattern" input="soft_logic.out" output="ff.D" name="ble"/>
+      </interconnect>
+      <interconnect name="direct4" type="direct">
+         <input name="ble.clk"/>
+         <output name="ff.clk"/>
+      </interconnect>
+      <interconnect name="mux1" type="mux">
+         <input name="ff.Q soft_logic.out"/>
+         <output name="ble.out"/>
+      </interconnect>
+   </model>
+   <model name="clb">
+      <pb name="ble"/>
+      <interconnect name="crossbar" type="complete">
+         <input name="clb.I ble[7:0].out"/>
+         <output name="ble[7:0].in"/>
+         <timing mode="delay" input="clb.I" output="ble[7:0].in" max_value="8.0440e-11"/>
+         <timing mode="delay" input="ble[7:0].out" output="ble[7:0].in" max_value="7.3540e-11"/>
+      </interconnect>
+      <interconnect name="clks" type="complete">
+         <input name="clb.clk"/>
+         <output name="ble[7:0].clk"/>
+      </interconnect>
+      <interconnect name="clbouts" type="direct">
+         <input name="ble[7:0].out"/>
+         <output name="clb.O"/>
       </interconnect>
    </model>
    
