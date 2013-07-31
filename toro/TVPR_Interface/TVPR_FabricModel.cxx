@@ -481,7 +481,7 @@ bool TVPR_FabricModel_c::PokeFabricView_(
       this->PokeChannelWidths_( channelList );
    }
 
-// WIP ??? Need to poke rest of fabric view data directly into VPR structures...
+   // WIP - Need to poke rest of fabric view data directly into VPR structures...
 
    return( ok );
 }
@@ -535,6 +535,7 @@ void TVPR_FabricModel_c::PokeGridConfig_(
 //---------------------------------------------------------------------------//
 // Version history
 // 01/15/13 jeffr : Original
+// 07/30/13 jeffr : Fixed code to call "fabricBlockHandler.Add()" for IOs too
 //===========================================================================//
 bool TVPR_FabricModel_c::PokeGridBlocks_(
       const TFM_BlockList_t&   blockList,
@@ -603,6 +604,9 @@ bool TVPR_FabricModel_c::PokeGridBlocks_(
       }
       if( blockType == TFH_BLOCK_INPUT_OUTPUT )
       {
+         fabricBlockHandler.Add( vpr_gridPoint, vpr_typeIndex,
+                                 blockType, srBlockName, srMasterName );
+
          const TFM_PinList_t& pinList = block_.pinList;
          for( size_t j = 0; j < pinList.GetLength( ); ++j )
          {
@@ -918,12 +922,12 @@ void TVPR_FabricModel_c::PeekPhysicalBlocks_(
             // Using VPR's architecture height for multi-grid tall blocks
             pbRegion.y2 += vpr_type.height - 1;
          }
-// TBD ???         else if( vpr_type.size.IsValid( ))
-// TBD ???         {
-// TBD ???            // Using Toro's architecture size for non-uniform blocks
-// TBD ???            dx = vpr_type.size.width;
-// TBD ???            dy = vpr_type.size.height;
-// TBD ???         }
+         // TBD - else if( vpr_type.size.IsValid( ))
+         // TBD - {
+         // TBD -    // Using Toro's architecture size for non-uniform blocks
+         // TBD -    dx = vpr_type.size.width;
+         // TBD -    dy = vpr_type.size.height;
+         // TBD - }
          else if( maxPinCount > 1 )
          {
             // Using max pin count to estimate min size for all blocks
