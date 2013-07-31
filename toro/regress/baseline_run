@@ -12,6 +12,9 @@ cd vpr_tseng_fabric_grids ; baseline ; cd ..
 echo "==> cd vpr_tseng_fabric_blocks ; baseline ; cd .."
 cd vpr_tseng_fabric_blocks ; baseline ; cd ..
 
+echo "==> cd vpr_tseng_fabric_ios ; baseline ; cd .."
+cd vpr_tseng_fabric_ios ; baseline ; cd ..
+
 echo "==> cd vpr_tseng_fabric_channels ; baseline ; cd .."
 cd vpr_tseng_fabric_channels ; baseline ; cd ..
 

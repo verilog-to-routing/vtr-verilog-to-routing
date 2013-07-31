@@ -12,6 +12,9 @@ cd vpr_tseng_fabric_grids ; regress ; cd ..
 echo "==> cd vpr_tseng_fabric_blocks ; regress ; cd .."
 cd vpr_tseng_fabric_blocks ; regress ; cd ..
 
+echo "==> cd vpr_tseng_fabric_ios ; regress ; cd .."
+cd vpr_tseng_fabric_ios ; regress ; cd ..
+
 echo "==> cd vpr_tseng_fabric_channels ; regress ; cd .."
 cd vpr_tseng_fabric_channels ; regress ; cd ..
 

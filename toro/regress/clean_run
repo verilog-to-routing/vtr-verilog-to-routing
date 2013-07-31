@@ -12,6 +12,9 @@ cd vpr_tseng_fabric_grids ; clean ; cd ..
 echo "==> cd vpr_tseng_fabric_blocks ; clean ; cd .."
 cd vpr_tseng_fabric_blocks ; clean ; cd ..
 
+echo "==> cd vpr_tseng_fabric_ios ; clean ; cd .."
+cd vpr_tseng_fabric_ios ; clean ; cd ..
+
 echo "==> cd vpr_tseng_fabric_channels ; clean ; cd .."
 cd vpr_tseng_fabric_channels ; clean ; cd ..
 
