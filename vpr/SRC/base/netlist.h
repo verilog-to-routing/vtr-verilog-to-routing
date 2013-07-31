@@ -13,21 +13,17 @@
 #include <vector>
 using namespace std;
 
-typedef struct s_net_nodes t_net_nodes;
-typedef struct s_vnet t_vnet;
-typedef struct s_netlist t_netlist;
-
-struct s_net_nodes{
+typedef struct s_net_nodes{
 	int block;
 	int block_port;
 	int block_pin;
 
-	t_net_nodes(){
+	s_net_nodes(){
 		block = block_port = block_pin = (unsigned int)OPEN;
 	}
-};
+}t_net_nodes;
 
-struct s_vnet{
+typedef struct s_vnet{
 	char* name;
 	unsigned int is_routed    : 1;
 	unsigned int is_fixed     : 1;
@@ -36,18 +32,18 @@ struct s_vnet{
 	vector<t_net_nodes> nodes;
 	t_net_power * net_power;
 
-	t_vnet(){
+	s_vnet(){
 		name = NULL;
 		is_routed = is_fixed = is_global = is_const_gen = (unsigned int)OPEN;
 		net_power = NULL;
 	}
-};
+}t_vnet;
 
-struct s_netlist{
+typedef struct s_netlist{
 	//vector<t_blocks> blocks;
 	vector<t_vnet>  nets;
 
-};
+}t_netlist;
 
 void load_global_net_from_array(INP t_net* net_arr,
 	INP int num_net_arr, OUTP t_netlist* g_nlist);
