@@ -125,6 +125,12 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 						}
 					}
 				}
+			} else if (type == IO_TYPE ) {
+				grid[x][y].type = type;
+				grid[x][y].blocks = (int *) my_malloc(sizeof(int) * max(1,type->capacity));
+				for (int i = 0; i < max(1,type->capacity); ++i) {
+					grid[x][y].blocks[i] = EMPTY;
+				}
 			} else {
 				grid[x][y].type = EMPTY_TYPE;
 				grid[x][y].blocks = (int *) my_malloc(sizeof(int));
