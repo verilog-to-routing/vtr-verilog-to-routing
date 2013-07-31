@@ -397,10 +397,10 @@ bool TCD_CircuitDesign_c::InitValidate(
                                         this->cellList );
    }
 
-// TBD ???  Given: .latch <input> <output> [<type> <control>] [<init_val>]
-// TBD ???  can we validate input pin name exists in pin list (with matching type)?
-// TBD ???  can we validate output pin name exists in pin list (with matching type)?
-// TBD ???  can we validate clock pin name exists in pin list (with matching type)?
+   // TBD - Given: .latch <input> <output> [<type> <control>] [<init_val>]
+   // TBD - can we validate input pin name exists in pin list (with matching type)?
+   // TBD - can we validate output pin name exists in pin list (with matching type)?
+   // TBD - can we validate clock pin name exists in pin list (with matching type)?
 
    if( ok )
    {
