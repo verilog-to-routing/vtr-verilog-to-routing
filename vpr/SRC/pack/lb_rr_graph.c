@@ -81,6 +81,29 @@ int get_lb_type_rr_graph_ext_sink_index(t_type_ptr lb_type) {
 	return lb_type->pb_graph_head->total_pb_pins + 1;
 }
 
+/* Returns total number of modes that this lb_type_rr_node can take */
+int get_num_modes_of_lb_type_rr_node(const t_lb_type_rr_node &lb_type_rr_node) {
+	int num_modes = 1;
+	t_pb_graph_node *pb_graph_node;
+	t_pb_type *pb_type;
+	if(lb_type_rr_node.pb_graph_pin != NULL) {
+		if(lb_type_rr_node.pb_graph_pin->port->type == OUT_PORT) {
+			pb_graph_node = lb_type_rr_node.pb_graph_pin->parent_node->parent_pb_graph_node;
+			if (pb_graph_node == NULL) {
+				/* Top level logic block output pins connect to external routing */
+				num_modes = 1;
+			} else {
+				pb_type = pb_graph_node->pb_type;
+				num_modes = pb_type->num_modes;
+			}
+		} else {
+			pb_type = lb_type_rr_node.pb_graph_pin->parent_node->pb_type;
+			num_modes = pb_type->num_modes;
+		}
+	}
+	return num_modes;
+}
+
 /*****************************************************************************************
 * Debug functions 
 ******************************************************************************************/
@@ -148,7 +171,6 @@ static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type,
 	lb_type_rr_node_graph[ext_source_index].outedges = (t_lb_type_rr_node_edge**)my_calloc(1, sizeof(t_lb_type_rr_node_edge*));
 	lb_type_rr_node_graph[ext_source_index].outedges[0] = (t_lb_type_rr_node_edge*)my_calloc(lb_type_rr_node_graph[ext_source_index].num_fanout[0], sizeof (int));
 	lb_type_rr_node_graph[ext_source_index].type = LB_SOURCE;
-	lb_type_rr_node_graph[ext_source_index].num_modes = 1;
 	
 	/* Connect external souce node to all input and clock pins of logic block type */
 	ioutedges = 0;
@@ -181,7 +203,6 @@ static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type,
 	lb_type_rr_node_graph[ext_sink_index].outedges[0][0].node_index = ext_source_index;
 	lb_type_rr_node_graph[ext_sink_index].outedges[0][0].intrinsic_cost = 10; /* Mark a higher cost for using external interconnect */
 	lb_type_rr_node_graph[ext_sink_index].type = LB_SINK;
-	lb_type_rr_node_graph[ext_sink_index].num_modes = 1;
 }
 
 
@@ -222,7 +243,6 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				lb_type_rr_node_graph[pin_index].outedges[0] = (t_lb_type_rr_node_edge*)my_calloc(1, sizeof (t_lb_type_rr_node_edge));
 				lb_type_rr_node_graph[pin_index].outedges[0][0].intrinsic_cost = 1;
 				lb_type_rr_node_graph[pin_index].type = LB_INTERMEDIATE;
-				lb_type_rr_node_graph[pin_index].num_modes = 1;
 				lb_type_rr_node_graph[pin_index].pb_graph_pin = pb_pin;
 
 				if(port_equivalent != TRUE || sink_index == OPEN) {
@@ -236,7 +256,6 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 					new_sink.num_fanout = (short*)my_malloc(sizeof (short));
 					new_sink.num_fanout[0] = 0;
 					new_sink.type = LB_SINK;				
-					new_sink.num_modes = 1;
 					sink_index = lb_type_rr_node_graph.size();
 					lb_type_rr_node_graph.push_back(new_sink);					
 				}
@@ -253,7 +272,6 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				num_modes = parent_node->pb_type->num_modes;
 
 				/* alloc and load rr node info */
-				lb_type_rr_node_graph[pin_index].num_modes = num_modes;
 				lb_type_rr_node_graph[pin_index].capacity = 1;
 				lb_type_rr_node_graph[pin_index].num_fanout = (short*)my_calloc(num_modes, sizeof (short));
 				lb_type_rr_node_graph[pin_index].outedges = (t_lb_type_rr_node_edge**)my_calloc(num_modes, sizeof (t_lb_type_rr_node_edge*));
@@ -311,7 +329,6 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				lb_type_rr_node_graph[pin_index].outedges[0] = (t_lb_type_rr_node_edge*)my_malloc(sizeof (t_lb_type_rr_node_edge));
 				lb_type_rr_node_graph[pin_index].outedges[0][0].intrinsic_cost = 1;
 				lb_type_rr_node_graph[pin_index].type = LB_INTERMEDIATE;
-				lb_type_rr_node_graph[pin_index].num_modes = 1;
 				lb_type_rr_node_graph[pin_index].pb_graph_pin = pb_pin;
 
 				if(port_equivalent != TRUE || sink_index == OPEN) {
@@ -325,7 +342,6 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 					new_sink.num_fanout = (short*)my_malloc(sizeof (short));
 					new_sink.num_fanout[0] = 0;
 					new_sink.type = LB_SINK;					
-					new_sink.num_modes = 1;
 					sink_index = lb_type_rr_node_graph.size();
 					lb_type_rr_node_graph.push_back(new_sink);					
 				}
@@ -353,7 +369,6 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				num_modes = pb_graph_node->pb_type->num_modes;
 
 				/* alloc and load rr node info */
-				lb_type_rr_node_graph[pin_index].num_modes = num_modes;
 				lb_type_rr_node_graph[pin_index].capacity = 1;
 				lb_type_rr_node_graph[pin_index].num_fanout = (short*)my_calloc(num_modes, sizeof (short));
 				lb_type_rr_node_graph[pin_index].outedges = (t_lb_type_rr_node_edge**)my_calloc(num_modes, sizeof (t_lb_type_rr_node_edge*));
@@ -402,7 +417,6 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 					num_modes = parent_node->pb_type->num_modes;
 
 					/* alloc and load rr node info */
-					lb_type_rr_node_graph[pin_index].num_modes = num_modes;
 					lb_type_rr_node_graph[pin_index].capacity = 1;
 					lb_type_rr_node_graph[pin_index].num_fanout = (short*)my_calloc(num_modes, sizeof (short));
 					lb_type_rr_node_graph[pin_index].outedges = (t_lb_type_rr_node_edge**)my_calloc(num_modes, sizeof (t_lb_type_rr_node_edge*));
@@ -450,7 +464,6 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				num_modes = pb_graph_node->pb_type->num_modes;
 
 				/* alloc and load rr node info */
-				lb_type_rr_node_graph[pin_index].num_modes = num_modes;
 				lb_type_rr_node_graph[pin_index].capacity = 1;
 				lb_type_rr_node_graph[pin_index].num_fanout = (short*)my_calloc(num_modes, sizeof (short));
 				lb_type_rr_node_graph[pin_index].outedges = (t_lb_type_rr_node_edge**)my_calloc(num_modes, sizeof (t_lb_type_rr_node_edge*));
@@ -514,7 +527,7 @@ static void print_lb_type_rr_graph(FILE *fp, const vector<t_lb_type_rr_node> &lb
 		fprintf(fp, "\tType: %s\n", lb_rr_type_str[(int) lb_type_rr_graph[inode].type]);
 		fprintf(fp, "\tCapacity: %d\n", lb_type_rr_graph[inode].capacity);
 		fprintf(fp, "\tIntrinsic Cost: %g\n", lb_type_rr_graph[inode].intrinsic_cost);
-		for(int imode = 0; imode < lb_type_rr_graph[inode].num_modes; imode++) {
+		for(int imode = 0; imode < get_num_modes_of_lb_type_rr_node(lb_type_rr_graph[inode]); imode++) {
 			fprintf(fp, "\tMode: %d   # Outedges: %d\n\t\t", imode, lb_type_rr_graph[inode].num_fanout[imode]);
 			int count = 0;
 			for(int iedge = 0; iedge < lb_type_rr_graph[inode].num_fanout[imode]; iedge++) {
@@ -532,6 +545,7 @@ static void print_lb_type_rr_graph(FILE *fp, const vector<t_lb_type_rr_node> &lb
 		fprintf(fp, "\n");
 	}
 }
+
 
 
 

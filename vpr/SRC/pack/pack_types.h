@@ -95,7 +95,6 @@ struct t_lb_type_rr_node {
 
 	struct s_pb_graph_pin *pb_graph_pin;	/* pb_graph_pin associated with this lb_rr_node if exists, NULL otherwise */
 	float intrinsic_cost;					/* cost of this node */
-	int num_modes;	/* jedit DELETE Cache number of modes available */
 	
 	t_lb_type_rr_node() {
 		capacity = 0;
@@ -104,7 +103,6 @@ struct t_lb_type_rr_node {
 		outedges = NULL;
 		pb_graph_pin = NULL;
 		intrinsic_cost = 0;
-		num_modes = 0;
 	}
 };
 
