@@ -39,7 +39,7 @@ void load_global_net_from_array(INP t_net* net_arr,
 		g_nlist->nets[i].is_fixed = net_arr[i].is_fixed;
 		g_nlist->nets[i].is_global = net_arr[i].is_global;
 		g_nlist->nets[i].is_const_gen = net_arr[i].is_const_gen;
-		g_nlist->nets[i].net_power = net_arr[i].net_power;
+		//g_nlist->nets[i].net_power = new t_net_power(*net_arr[i].net_power);
 
 		assert(g_nlist->nets[i].nodes.empty());
 		g_nlist->nets[i].nodes.resize(net_arr[i].num_sinks + 1);
@@ -55,7 +55,7 @@ void load_global_net_from_array(INP t_net* net_arr,
 
 void echo_global_nlist_net(INP t_netlist* g_nlist){
 	vector<t_vnet>::iterator cur_net;
-	vector<t_net_nodes>::iterator cur_node;
+	vector<t_net_node>::iterator cur_node;
 
 	vpr_printf_info("********Dumping clb netlist info contained in vectors*******\n");
 
