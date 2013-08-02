@@ -2533,7 +2533,12 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 		
 			ff_node->type = FF_NODE;
 			/* create the unique name for this gate */
-			ff_node->name = node_name(ff_node, instance_name_prefix);
+			//ff_node->name = node_name(ff_node, instance_name_prefix);
+			/* Name the flipflop based on the name of its output pin */
+			char *ff_name = malloc(sizeof(char) * (strlen(pin->name) + strlen("_FF_NODE") + 1));
+			strcpy(ff_name, pin->name);
+			strcat(ff_name, "_FF_NODE");
+			ff_node->name = ff_name;
 			
 			/* Copy over the initial value information from the net */
 			ff_node->has_initial_value = net->has_initial_value;

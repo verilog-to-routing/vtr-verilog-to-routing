@@ -200,7 +200,8 @@ void output_blif(char *file_name, netlist_t *netlist)
 				if (!driver || !strcmp(driver,output))
 					driver = node->input_pins[0]->net->driver_pin->node->name;
 
-				fprintf(out, ".names %s %s\n1 1\n", driver, output);
+				/* Skip if the driver and output have the same name (i.e. the output of a flip-flop) */
+				if (strcmp(driver,output) != 0) fprintf(out, ".names %s %s\n1 1\n", driver, output);
 			}
 
 		}
@@ -657,8 +658,15 @@ void define_ff(nnode_t *node, FILE *out)
 	oassert(node->num_output_pins == 1);
 	oassert(node->num_input_pins == 2);
 
-	/* The default latch value is unknown, represented by 3 in a BLIF file */
+	/* By default, latches value are unknown, represented by 3 in a BLIF file 
+	and by -1 internally in ODIN */
 	int initial_value = 3;
+	
+	/* Check if the global argument for initial values is set to 0 or 1 instead */
+	if (global_args.sim_initial_value == 0) initial_value = 0;
+	else if (global_args.sim_initial_value == 1) initial_value = 1;
+	
+	/* Check for a specific initial value on this node */
 	if(node->has_initial_value){
 		initial_value = node->initial_value;
 	}
