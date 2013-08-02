@@ -2937,7 +2937,6 @@ static boolean get_perturb_opins(INP t_type_ptr type, INP int *Fc_out, INP int n
 			perturb_opins = FALSE;
 		}
 	}
-
 	free(prime_factors);
 
 	return perturb_opins;
