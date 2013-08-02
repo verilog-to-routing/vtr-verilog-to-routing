@@ -376,6 +376,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				lb_type_rr_node_graph[pin_index].capacity = 1;
 				lb_type_rr_node_graph[pin_index].num_fanout = (short*)my_calloc(num_modes, sizeof (short));
 				lb_type_rr_node_graph[pin_index].outedges = (t_lb_type_rr_node_edge**)my_calloc(num_modes, sizeof (t_lb_type_rr_node_edge*));
+				lb_type_rr_node_graph[pin_index].pb_graph_pin = pb_pin;
 				
 				/* Count number of mode-dependant out-going edges */
 				for(int iedge = 0; iedge < pb_pin->num_output_edges; iedge++) {
@@ -406,13 +407,6 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 					lb_type_rr_node_graph[pin_index].num_fanout[pmode]++;					
 				}
 
-				for(int imode = 0; imode < num_modes; imode++) {
-					printf("jedit pin_index %d pb_type %s fanout %d\n", pin_index, pb_type->name, lb_type_rr_node_graph[pin_index].num_fanout[imode]); /* reset to 0 so that we can reuse this variable to populate fanout stats */					
-					if(lb_type_rr_node_graph[pin_index].num_fanout[imode] > 0) {
-						printf("jedit %d\n", lb_type_rr_node_graph[pin_index].outedges[imode][0].node_index);
-					}
-				}
-
 				lb_type_rr_node_graph[pin_index].type = LB_INTERMEDIATE;	
 			}			
 		}
@@ -432,6 +426,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 					lb_type_rr_node_graph[pin_index].capacity = 1;
 					lb_type_rr_node_graph[pin_index].num_fanout = (short*)my_calloc(num_modes, sizeof (short));
 					lb_type_rr_node_graph[pin_index].outedges = (t_lb_type_rr_node_edge**)my_calloc(num_modes, sizeof (t_lb_type_rr_node_edge*));
+					lb_type_rr_node_graph[pin_index].pb_graph_pin = pb_pin;
 				
 					/* One edge to external sinks */
 					lb_type_rr_node_graph[pin_index].num_fanout[0] = 1;
@@ -458,6 +453,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 					lb_type_rr_node_graph[pin_index].capacity = 1;
 					lb_type_rr_node_graph[pin_index].num_fanout = (short*)my_calloc(num_modes, sizeof (short));
 					lb_type_rr_node_graph[pin_index].outedges = (t_lb_type_rr_node_edge**)my_calloc(num_modes, sizeof (t_lb_type_rr_node_edge*));
+					lb_type_rr_node_graph[pin_index].pb_graph_pin = pb_pin;
 				
 					/* Count number of mode-dependant out-going edges */
 					for(int iedge = 0; iedge < pb_pin->num_output_edges; iedge++) {
@@ -505,6 +501,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				lb_type_rr_node_graph[pin_index].capacity = 1;
 				lb_type_rr_node_graph[pin_index].num_fanout = (short*)my_calloc(num_modes, sizeof (short));
 				lb_type_rr_node_graph[pin_index].outedges = (t_lb_type_rr_node_edge**)my_calloc(num_modes, sizeof (t_lb_type_rr_node_edge*));
+				lb_type_rr_node_graph[pin_index].pb_graph_pin = pb_pin;
 				
 				/* Count number of mode-dependant out-going edges */
 				for(int iedge = 0; iedge < pb_pin->num_output_edges; iedge++) {
@@ -534,13 +531,6 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 					lb_type_rr_node_graph[pin_index].outedges[pmode][ioutedges].intrinsic_cost = 
 						get_cost_of_pb_edge(pb_pin->output_edges[iedge]);
 					lb_type_rr_node_graph[pin_index].num_fanout[pmode]++;					
-				}
-
-				for(int imode = 0; imode < num_modes; imode++) {
-					printf("jedit pin_index %d pb_type %s fanout %d\n", pin_index, pb_type->name, lb_type_rr_node_graph[pin_index].num_fanout[imode]); /* reset to 0 so that we can reuse this variable to populate fanout stats */					
-					if(lb_type_rr_node_graph[pin_index].num_fanout[imode] > 0) {
-						printf("jedit %d\n", lb_type_rr_node_graph[pin_index].outedges[imode][0].node_index);
-					}
 				}
 
 				lb_type_rr_node_graph[pin_index].type = LB_INTERMEDIATE;	
