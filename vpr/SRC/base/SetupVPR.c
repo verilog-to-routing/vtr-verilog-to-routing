@@ -221,8 +221,11 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 
 	vpr_printf_info("Building complex block graph.\n");
 	alloc_and_load_all_pb_graphs(PowerOpts->do_power);
-	//vector <t_lb_type_rr_node> *lb_type_rr_graphs = alloc_and_load_all_lb_type_rr_graph();
-	//print_lb_type_rr_graphs("jedit_lb_rr_graph.echo",lb_type_rr_graphs);
+	vector <t_lb_type_rr_node> *lb_type_rr_graphs = alloc_and_load_all_lb_type_rr_graph();
+	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_LB_TYPE_RR_GRAPH)) {
+		echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_PB_GRAPH),lb_type_rr_graphs);
+	}
+	free_all_lb_type_rr_graph(lb_type_rr_graphs);
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PB_GRAPH)) {
 		echo_pb_graph(getEchoFileName(E_ECHO_PB_GRAPH));

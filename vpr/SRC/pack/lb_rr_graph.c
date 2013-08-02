@@ -133,8 +133,7 @@ int get_num_modes_of_lb_type_rr_node(const t_lb_type_rr_node &lb_type_rr_node) {
 ******************************************************************************************/
 
 /* Output all logic block type pb graphs */
-/* jedit make this an echo file */
-void print_lb_type_rr_graphs(char *filename, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
+void echo_lb_type_rr_graphs(char *filename, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
 	FILE *fp;
 	fp = my_fopen(filename, "w", 0);
 

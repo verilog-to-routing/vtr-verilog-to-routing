@@ -143,6 +143,7 @@ void alloc_and_load_echo_file_info() {
 	setEchoFileName(E_ECHO_FINAL_PLACEMENT_CRITICALITY, "final_placement_criticality.echo");
 	setEchoFileName(E_ECHO_PLACEMENT_CRIT_PATH, "placement_crit_path.echo");
 	setEchoFileName(E_ECHO_PB_GRAPH, "pb_graph.echo");
+	setEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH, "lb_type_rr_graph.echo");
 	setEchoFileName(E_ECHO_ARCH, "arch.echo");
 	setEchoFileName(E_ECHO_PLACEMENT_CRITICAL_PATH, "placement_critical_path.echo");
 	setEchoFileName(E_ECHO_PLACEMENT_LOWER_BOUND_SINK_DELAYS, "placement_lower_bound_sink_delays.echo");

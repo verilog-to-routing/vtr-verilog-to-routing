@@ -19,7 +19,7 @@ int get_lb_type_rr_graph_ext_sink_index(t_type_ptr lb_type);
 int get_num_modes_of_lb_type_rr_node(const t_lb_type_rr_node &lb_type_rr_node);
 
 /* Debug functions */
-void print_lb_type_rr_graphs(char *filename, vector<t_lb_type_rr_node> *lb_type_rr_graphs);
+void echo_lb_type_rr_graphs(char *filename, vector<t_lb_type_rr_node> *lb_type_rr_graphs);
 
 #endif
 
