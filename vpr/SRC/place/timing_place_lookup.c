@@ -466,7 +466,9 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
-			NULL, 0, TRUE, /* do not send in direct connections because we care about general placement timing instead of special pin placement timing */
+			NULL, 0, 
+			TRUE, /* do not send in direct connections because we care about general placement timing instead of special pin placement timing */
+			TRUE, /* do not process any (optional) switchbox overrides */
 			&warnings);
 
 	alloc_and_load_rr_node_route_structs();
