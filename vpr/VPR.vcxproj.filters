@@ -275,10 +275,14 @@
     </ClCompile>
     <ClCompile Include="SRC\pack\pack_types.c">
       <Filter>Source Files\pack</Filter>
-    </ClCompile>    
-	<ClCompile Include="SRC\base\netlist.c">
+    </ClCompile>
+    <ClCompile Include="SRC\base\netlist.c">
       <Filter>Source Files\base</Filter>
-    </ClCompile>  </ItemGroup>
+    </ClCompile>
+    <ClCompile Include="SRC\pack\lb_type_rr_graph.c">
+      <Filter>Source Files\pack</Filter>
+    </ClCompile>
+  </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SRC\base\check_netlist.h">
       <Filter>Header Files\base</Filter>
@@ -489,6 +493,9 @@
     </ClInclude>
     <ClInclude Include="SRC\base\netlist.h">
       <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\pack\lb_type_rr_graph.h">
+      <Filter>Header Files\pack</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

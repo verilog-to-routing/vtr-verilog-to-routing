@@ -198,6 +198,7 @@
     <ClCompile Include="SRC\pack\cluster_placement.c" />
     <ClCompile Include="SRC\pack\cluster_router.c" />
     <ClCompile Include="SRC\pack\lb_rr_graph.c" />
+    <ClCompile Include="SRC\pack\lb_type_rr_graph.c" />
     <ClCompile Include="SRC\pack\pack_types.c" />
     <ClCompile Include="SRC\pack\prepack.c" />
     <ClCompile Include="SRC\place\place_macro.c" />
@@ -269,6 +270,7 @@
     <ClInclude Include="SRC\pack\cluster_placement.h" />
     <ClInclude Include="SRC\pack\cluster_router.h" />
     <ClInclude Include="SRC\pack\lb_rr_graph.h" />
+    <ClInclude Include="SRC\pack\lb_type_rr_graph.h" />
     <ClInclude Include="SRC\pack\pack_types.h" />
     <ClInclude Include="SRC\pack\prepack.h" />
     <ClInclude Include="SRC\place\place_macro.h" />
