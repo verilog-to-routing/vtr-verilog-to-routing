@@ -1855,8 +1855,12 @@ static int get_unidir_track_to_chan_seg(
 		if (to_mux == UN_SET)
 			continue;
 
-		to_track = mux_labels[(to_mux + i) % num_labels];
-		sblock_pattern[sb_x][sb_y][from_side][to_side][from_track][1] = to_track;
+		if (sblock_pattern[sb_x][sb_y][from_side][to_side][from_track][1] == UN_SET) {
+			to_track = mux_labels[(to_mux + i) % num_labels];
+			sblock_pattern[sb_x][sb_y][from_side][to_side][from_track][1] = to_track;
+		} else {
+			to_track = sblock_pattern[sb_x][sb_y][from_side][to_side][from_track][1];
+		}
 
 		to_node = get_rr_node_index(to_x, to_y, to_type, to_track, L_rr_node_indices);
 		if (L_rr_edge_done[to_node])
@@ -2446,7 +2450,6 @@ void override_sblock_pattern_reset_side_track(
 	// based on the given from_type/from_track
 	for (int to_side = 0; to_side < 4; ++to_side) {
 
-		sblock_pattern[x][y][from_side][to_side][from_track][0] = UN_SET;
 		sblock_pattern[x][y][from_side][to_side][from_track][1] = UN_SET;
 	}
 }
