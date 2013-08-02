@@ -367,7 +367,7 @@ void TFH_FabricConnectionBlockHandler_c::LoadConnectionMapList_(
       this->FindChannelOrigin_( vpr_blockOrigin, pinSide, 
                                 &vpr_channelOrigin, &channelOrient );
 
-      for( size_t j = 0; j < connectionPattern.GetLength(); ++j ) 
+      for( size_t j = 0; j < connectionPattern.GetLength( ); ++j ) 
       {
          const TC_Bit_c& connectionBit = *connectionPattern[j];
          if( !connectionBit.IsTrue( ))
@@ -472,6 +472,8 @@ bool TFH_FabricConnectionBlockHandler_c::OverrideGraphTracksToInputPins_(
 //---------------------------------------------------------------------------//
 // Version history
 // 04/24/13 jeffr : Original
+// 08/01/13 jeffr : Modified connection pattern list iteration, changing from
+//                  0..len to len..0, to make fabric output match fabric file
 //===========================================================================//
 bool TFH_FabricConnectionBlockHandler_c::ConnectGraphOutputPins_(
             void*                      vpr_rrNodeArray,
@@ -508,13 +510,13 @@ bool TFH_FabricConnectionBlockHandler_c::ConnectGraphOutputPins_(
                                    &vpr_channelOrigin, &channelOrient );
 
          const TFH_BitPattern_t& connectionPattern = pconnectionBlock->GetConnectionPattern( );
-         for( size_t j = 0; j < connectionPattern.GetLength(); ++j ) 
+         for( size_t j = connectionPattern.GetLength( ); j > 0; --j ) 
          {
-            const TC_Bit_c& connectionBit = *connectionPattern[j];
+            const TC_Bit_c& connectionBit = *connectionPattern[j-1];
             if( !connectionBit.IsTrue( ))
                continue;
 
-            int vpr_trackIndex = static_cast< int >( j );
+            int vpr_trackIndex = static_cast< int >( j-1 );
             TFH_ConnectionMap_c connectionMap( vpr_channelOrigin, channelOrient, vpr_trackIndex );
 
             size_t k = connectionMapList.FindIndex( connectionMap );
@@ -578,6 +580,8 @@ void TFH_FabricConnectionBlockHandler_c::DisconnectGraphOutputPins_(
 //---------------------------------------------------------------------------//
 // Version history
 // 04/24/13 jeffr : Original
+// 08/01/13 jeffr : Modified connection pattern list iteration, changing from
+//                  0..len to len..0, to make fabric output match fabric file
 //===========================================================================//
 bool TFH_FabricConnectionBlockHandler_c::ConnectGraphInputPins_(
             void*                      vpr_rrNodeArray,
@@ -614,13 +618,13 @@ bool TFH_FabricConnectionBlockHandler_c::ConnectGraphInputPins_(
                                    &vpr_channelOrigin, &channelOrient );
 
          const TFH_BitPattern_t& connectionPattern = pconnectionBlock->GetConnectionPattern( );
-         for( size_t j = 0; j < connectionPattern.GetLength(); ++j ) 
+         for( size_t j = connectionPattern.GetLength( ); j > 0; --j ) 
          {
-            const TC_Bit_c& connectionBit = *connectionPattern[j];
+            const TC_Bit_c& connectionBit = *connectionPattern[j-1];
             if( !connectionBit.IsTrue( ))
                continue;
 
-            int vpr_trackIndex = static_cast< int >( j );
+            int vpr_trackIndex = static_cast< int >( j-1 );
             TFH_ConnectionMap_c connectionMap( vpr_channelOrigin, channelOrient, vpr_trackIndex );
 
             size_t k = connectionMapList.FindIndex( connectionMap );
