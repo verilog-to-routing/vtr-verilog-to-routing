@@ -39,7 +39,8 @@ using namespace std;
 static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type, 
 													 INOUTP vector<t_lb_type_rr_node> &lb_type_rr_node_graph);
 static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_graph_node *pb_graph_node,
-														INOUTP vector<t_lb_type_rr_node> &lb_type_rr_node_graph);
+														INOUTP vector<t_lb_type_rr_node> &lb_type_rr_node_graph,
+														INP int ext_sink_index);
 static float get_cost_of_pb_edge(t_pb_graph_edge *edge);
 static void print_lb_type_rr_graph(FILE *fp, const vector<t_lb_type_rr_node> &lb_type_rr_graph);
 
@@ -156,8 +157,6 @@ static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type,
 	*/
 	lb_type_rr_node_graph.resize(pb_graph_head->total_pb_pins + 2);
 
-	alloc_and_load_lb_type_rr_graph_for_pb_graph_node(pb_graph_head, lb_type_rr_node_graph);
-
 	/* Define the external source and sink for the routing resource graph of the logic block type */
 	ext_source_index = pb_graph_head->total_pb_pins;
 	ext_sink_index = pb_graph_head->total_pb_pins + 1;
@@ -169,7 +168,9 @@ static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type,
 	lb_type_rr_node_graph[ext_source_index].num_fanout = (short*)my_malloc(sizeof (short));
 	lb_type_rr_node_graph[ext_source_index].num_fanout[0] = pb_type->num_input_pins + pb_type->num_clock_pins;
 	lb_type_rr_node_graph[ext_source_index].outedges = (t_lb_type_rr_node_edge**)my_calloc(1, sizeof(t_lb_type_rr_node_edge*));
-	lb_type_rr_node_graph[ext_source_index].outedges[0] = (t_lb_type_rr_node_edge*)my_calloc(lb_type_rr_node_graph[ext_source_index].num_fanout[0], sizeof (int));
+	if(lb_type_rr_node_graph[ext_source_index].num_fanout[0] > 0) {
+		lb_type_rr_node_graph[ext_source_index].outedges[0] = (t_lb_type_rr_node_edge*)my_calloc(lb_type_rr_node_graph[ext_source_index].num_fanout[0], sizeof (t_lb_type_rr_node_edge));
+	}
 	lb_type_rr_node_graph[ext_source_index].type = LB_SOURCE;
 	
 	/* Connect external souce node to all input and clock pins of logic block type */
@@ -203,6 +204,8 @@ static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type,
 	lb_type_rr_node_graph[ext_sink_index].outedges[0][0].node_index = ext_source_index;
 	lb_type_rr_node_graph[ext_sink_index].outedges[0][0].intrinsic_cost = 10; /* Mark a higher cost for using external interconnect */
 	lb_type_rr_node_graph[ext_sink_index].type = LB_SINK;
+
+	alloc_and_load_lb_type_rr_graph_for_pb_graph_node(pb_graph_head, lb_type_rr_node_graph, ext_sink_index);
 }
 
 
@@ -212,7 +215,8 @@ static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type,
    repeats this on all children of the pb_graph_node
 */
 static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_graph_node *pb_graph_node,
-													INOUTP vector<t_lb_type_rr_node> &lb_type_rr_node_graph) {
+													INOUTP vector<t_lb_type_rr_node> &lb_type_rr_node_graph,
+													INP int ext_sink_index) {
 	t_pb_type *pb_type;
 	int pin_index;
 	t_pb_graph_pin *pb_pin;
@@ -354,7 +358,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 			for(int ipb_type = 0; ipb_type < pb_type->modes[imode].num_pb_type_children; ipb_type++) {
 				for(int ipb = 0; ipb < pb_type->modes[imode].pb_type_children[ipb_type].num_pb; ipb++) {
 					alloc_and_load_lb_type_rr_graph_for_pb_graph_node(
-						&pb_graph_node->child_pb_graph_nodes[imode][ipb_type][ipb], lb_type_rr_node_graph);
+						&pb_graph_node->child_pb_graph_nodes[imode][ipb_type][ipb], lb_type_rr_node_graph, ext_sink_index);
 				}
 			}
 		}
@@ -402,13 +406,47 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 					lb_type_rr_node_graph[pin_index].num_fanout[pmode]++;					
 				}
 
+				for(int imode = 0; imode < num_modes; imode++) {
+					printf("jedit pin_index %d pb_type %s fanout %d\n", pin_index, pb_type->name, lb_type_rr_node_graph[pin_index].num_fanout[imode]); /* reset to 0 so that we can reuse this variable to populate fanout stats */					
+					if(lb_type_rr_node_graph[pin_index].num_fanout[imode] > 0) {
+						printf("jedit %d\n", lb_type_rr_node_graph[pin_index].outedges[imode][0].node_index);
+					}
+				}
+
 				lb_type_rr_node_graph[pin_index].type = LB_INTERMEDIATE;	
 			}			
 		}
 
 		/* alloc and load output pins that drive other output pins */
-		if(parent_node != NULL) {
+		if(parent_node == NULL) {
 			/* Top level output pins go to other CLBs, represented different */
+			for(int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
+				for(int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
+					/* load intermediate indices */
+					pb_pin = &pb_graph_node->output_pins[iport][ipin];
+					pin_index = pb_pin->pin_count_in_cluster;
+					num_modes = 1; /* One edge to external sinks */
+					lb_type_rr_node_graph[pin_index].type = LB_INTERMEDIATE;
+
+					/* alloc and load rr node info */
+					lb_type_rr_node_graph[pin_index].capacity = 1;
+					lb_type_rr_node_graph[pin_index].num_fanout = (short*)my_calloc(num_modes, sizeof (short));
+					lb_type_rr_node_graph[pin_index].outedges = (t_lb_type_rr_node_edge**)my_calloc(num_modes, sizeof (t_lb_type_rr_node_edge*));
+				
+					/* One edge to external sinks */
+					lb_type_rr_node_graph[pin_index].num_fanout[0] = 1;
+
+					/* Allocate space based on fanout */
+					lb_type_rr_node_graph[pin_index].outedges[0] = 
+							(t_lb_type_rr_node_edge*)my_calloc(lb_type_rr_node_graph[pin_index].num_fanout[0], sizeof (t_lb_type_rr_node_edge));
+					
+					/* Load one edge to external sinks */;
+					lb_type_rr_node_graph[pin_index].outedges[0][0].node_index = ext_sink_index;
+					lb_type_rr_node_graph[pin_index].outedges[0][0].intrinsic_cost = 1;										
+				}			
+			}
+		} else {
+			/* Subcluster output pins */
 			for(int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
 				for(int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
 					/* load intermediate indices */
@@ -498,6 +536,13 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 					lb_type_rr_node_graph[pin_index].num_fanout[pmode]++;					
 				}
 
+				for(int imode = 0; imode < num_modes; imode++) {
+					printf("jedit pin_index %d pb_type %s fanout %d\n", pin_index, pb_type->name, lb_type_rr_node_graph[pin_index].num_fanout[imode]); /* reset to 0 so that we can reuse this variable to populate fanout stats */					
+					if(lb_type_rr_node_graph[pin_index].num_fanout[imode] > 0) {
+						printf("jedit %d\n", lb_type_rr_node_graph[pin_index].outedges[imode][0].node_index);
+					}
+				}
+
 				lb_type_rr_node_graph[pin_index].type = LB_INTERMEDIATE;	
 			}
 		}
@@ -523,23 +568,26 @@ static void print_lb_type_rr_graph(FILE *fp, const vector<t_lb_type_rr_node> &lb
 											 lb_type_rr_graph[inode].pb_graph_pin->port->name,
 											 lb_type_rr_graph[inode].pb_graph_pin->pin_number
 				);
+
 		}
 		fprintf(fp, "\tType: %s\n", lb_rr_type_str[(int) lb_type_rr_graph[inode].type]);
 		fprintf(fp, "\tCapacity: %d\n", lb_type_rr_graph[inode].capacity);
 		fprintf(fp, "\tIntrinsic Cost: %g\n", lb_type_rr_graph[inode].intrinsic_cost);
 		for(int imode = 0; imode < get_num_modes_of_lb_type_rr_node(lb_type_rr_graph[inode]); imode++) {
-			fprintf(fp, "\tMode: %d   # Outedges: %d\n\t\t", imode, lb_type_rr_graph[inode].num_fanout[imode]);
-			int count = 0;
-			for(int iedge = 0; iedge < lb_type_rr_graph[inode].num_fanout[imode]; iedge++) {
-				if(count % 5 == 0) {
-					/* Formatting to prevent very long lines */
-					fprintf(fp, "\n");
+			if(lb_type_rr_graph[inode].num_fanout != NULL) {
+				fprintf(fp, "\tMode: %d   # Outedges: %d\n\t\t", imode, lb_type_rr_graph[inode].num_fanout[imode]);
+				int count = 0;
+				for(int iedge = 0; iedge < lb_type_rr_graph[inode].num_fanout[imode]; iedge++) {
+					if(count % 5 == 0) {
+						/* Formatting to prevent very long lines */
+						fprintf(fp, "\n");
+					}
+					count++;
+					fprintf(fp, "(%d, %g) ", lb_type_rr_graph[inode].outedges[imode][iedge].node_index, 
+						lb_type_rr_graph[inode].outedges[imode][iedge].intrinsic_cost);
 				}
-				count++;
-				fprintf(fp, "(%d, %g) ", lb_type_rr_graph[inode].outedges[imode][iedge].node_index, 
-					lb_type_rr_graph[inode].outedges[imode][iedge].intrinsic_cost);
+				fprintf(fp, "\n");
 			}
-			fprintf(fp, "\n");
 		}
 
 		fprintf(fp, "\n");
