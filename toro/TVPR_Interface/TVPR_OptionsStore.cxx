@@ -491,6 +491,7 @@ enum e_echo_files TVPR_OptionsStore_c::FindMessageEchoType_(
    {
       { E_ECHO_ARCH,                               "arch" },
       { E_ECHO_BLIF_INPUT,                         "blif_input" },
+      { E_ECHO_CHAN_DETAILS,                       "chan_details" },
       { E_ECHO_CLUSTERING_BLOCK_CRITICALITIES,     "clustering_block_criticalities" },
       { E_ECHO_CLUSTERING_TIMING_INFO,             "clustering_timing_info" },
       { E_ECHO_COMPLETE_NET_TRACE,                 "complete_net_trace" },
@@ -522,10 +523,11 @@ enum e_echo_files TVPR_OptionsStore_c::FindMessageEchoType_(
       { E_ECHO_PRE_PACKING_TIMING_GRAPH_AS_BLIF,   "pre_packing_timing_graph_as_blif" },
       { E_ECHO_ROUTING_SINK_DELAYS,                "routing_sink_delays" },
       { E_ECHO_RR_GRAPH,                           "rr_graph" },
+      { E_ECHO_SBLOCK_PATTERN,                     "sblock_pattern" },
+      { E_ECHO_SEG_DETAILS,                        "seg_details" },
       { E_ECHO_SLACK,                              "slack" },
       { E_ECHO_TIMING_CONSTRAINTS,                 "timing_constraints" },
-      { E_ECHO_TIMING_GRAPH,                       "timing_graph" },
-      { E_ECHO_SEG_DETAILS,                        "seg_details" }
+      { E_ECHO_TIMING_GRAPH,                       "timing_graph" }
    };
 
    enum e_echo_files echoType = E_ECHO_END_TOKEN;
