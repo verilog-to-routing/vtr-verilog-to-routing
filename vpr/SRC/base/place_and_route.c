@@ -513,7 +513,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
-			directs, num_directs, FALSE,
+			directs, num_directs, FALSE, FALSE,
 			&warnings);
 
 	restore_routing(best_routing, clb_opins_used_locally,
