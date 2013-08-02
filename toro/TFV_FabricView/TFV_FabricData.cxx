@@ -31,6 +31,7 @@
 #include "TIO_PrintHandler.h"
 
 #include "TC_Typedefs.h"
+#include "TC_StringUtils.h"
 #include "TCT_Generic.h"
 
 #include "TFV_StringUtils.h"
@@ -239,6 +240,7 @@ void TFV_FabricData_c::ExtractString(
       char szTrack[TIO_FORMAT_STRING_LEN_DATA];
       char szSlice[TIO_FORMAT_STRING_LEN_DATA];
       char szTiming[TIO_FORMAT_STRING_LEN_DATA];
+      char szConnection[TIO_FORMAT_STRING_LEN_DATA];
 
       switch( this->dataType_ )
       {
@@ -291,6 +293,20 @@ void TFV_FabricData_c::ExtractString(
          break;
 
       case TFV_DATA_CONNECTION_BOX:
+
+         for( size_t i = 0; i < this->connectionList_.GetLength( ); ++i )
+         {
+            const TFV_Connection_t& connection = *this->connectionList_[i];
+
+            string srSide;
+            TC_ExtractStringSideMode( connection.GetSide( ), &srSide );
+            size_t index = connection.GetIndex( );
+            sprintf( szConnection, "[%s %u]",
+                                   TIO_SR_STR( srSide ), 
+                                   static_cast< uint >( index ));
+            *psrData += " ";
+            *psrData += szConnection;
+         }
          break;
 
       case TFV_DATA_CHANNEL_HORZ:
