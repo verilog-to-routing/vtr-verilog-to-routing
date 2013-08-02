@@ -613,7 +613,7 @@ int TC_stricmp(
       ++pszStringA;
       ++pszStringB;
    }
-   return(( !pszStringA && !pszStringA ) ? 0 : ( *pszStringA - *pszStringB ));
+   return(( !pszStringA && !pszStringB ) ? 0 : ( *pszStringA - *pszStringB ));
 } 
 
 //===========================================================================//
@@ -652,7 +652,7 @@ int TC_strnicmp(
    pszStringA = ( i > 0 ? pszStringA : 0 );
    pszStringB = ( i > 0 ? pszStringB : 0 );
 
-   return(( !pszStringA && !pszStringA ) ? 0 : ( *pszStringA - *pszStringB ));
+   return(( !pszStringA && !pszStringB ) ? 0 : ( *pszStringA - *pszStringB ));
 } 
 
 //===========================================================================//
