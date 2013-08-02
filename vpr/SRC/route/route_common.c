@@ -261,7 +261,7 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 			router_opts.base_cost_type, 
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
-			directs, num_directs, FALSE,
+			directs, num_directs, FALSE, FALSE,
 			&warning_count);
 
 	clock_t end = clock();
