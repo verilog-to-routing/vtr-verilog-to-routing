@@ -121,7 +121,8 @@ static void alloc_and_load_rr_graph(
 		INP int nodes_per_chan, INP enum e_switch_block_type sb_type,
 		INP int delayless_switch, INP enum e_directionality directionality,
 		INP int wire_to_ipin_switch, OUTP boolean * Fc_clipped, 
-		INP t_direct_inf *directs, INP int num_directs, INP t_clb_to_clb_directs *clb_to_clb_directs);
+		INP t_direct_inf *directs, INP int num_directs, INP t_clb_to_clb_directs *clb_to_clb_directs,
+		INP boolean ignore_overrides);
 
 static void load_uniform_switch_pattern(
 		INP t_type_ptr type,
@@ -255,7 +256,8 @@ void build_rr_graph(
 		INP boolean trim_empty_channels,
 		INP boolean trim_obs_channels,
 		INP t_direct_inf *directs, INP int num_directs, 
-		INP boolean ignore_Fc_0, OUTP int *Warnings) {
+		INP boolean ignore_Fc_0, INP boolean ignore_overrides,
+		OUTP int *Warnings) {
 
 	/* Temp structures used to build graph */
 	int nodes_per_chan, i, j;
@@ -439,8 +441,12 @@ void build_rr_graph(
 						chan_details_x, chan_details_y,
 						Fs, sb_type, unidir_sb_pattern);
 #ifdef TORO_FABRIC_SWITCHBOX_OVERRIDE
-				override_sblock_pattern_lookup(i, j, nodes_per_chan, 
-						unidir_sb_pattern);
+				if (!ignore_overrides) {
+					override_sblock_pattern_lookup(i, j, nodes_per_chan, 
+							unidir_sb_pattern);
+}
+#else
+				ignore_overrides = FALSE; // Prevents compiler warning...
 #endif
 			}
 		}
@@ -493,7 +499,7 @@ void build_rr_graph(
 			switch_block_conn, L_grid, L_nx, L_ny, Fs, unidir_sb_pattern,
 			Fc_out, Fc_xofs, Fc_yofs, rr_node_indices, nodes_per_chan, sb_type,
 			delayless_switch, directionality, wire_to_ipin_switch, &Fc_clipped, 
-			directs, num_directs, clb_to_clb_directs);
+			directs, num_directs, clb_to_clb_directs, ignore_overrides);
 
 #ifdef MUX_SIZE_DIST_DISPLAY
 	if (UNI_DIRECTIONAL == directionality)
@@ -776,7 +782,8 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 		INP int delayless_switch, INP enum e_directionality directionality,
 		INP int wire_to_ipin_switch, OUTP boolean * Fc_clipped,
 		INP t_direct_inf *directs, INP int num_directs,
-		INP t_clb_to_clb_directs *clb_to_clb_directs) {
+		INP t_clb_to_clb_directs *clb_to_clb_directs,
+		INP boolean ignore_overrides) {
 
 	/* If Fc gets clipped, this will be flagged to true */
 	*Fc_clipped = FALSE;
@@ -842,8 +849,13 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 	}
 
 #ifdef TORO_FABRIC_CONNECTIONBLOCK_OVERRIDE
-	override_cblock_edge_lists(num_rr_nodes, rr_node);
+	if (!ignore_overrides) {
+		override_cblock_edge_lists(num_rr_nodes, rr_node);
+	}
+#else
+	ignore_overrides = FALSE; // Prevents compiler warning...
 #endif
+
 	free(opin_mux_size);
 }
 
@@ -1173,6 +1185,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 			L_rr_node[inode].type = OPIN;
 			
 			L_rr_node[inode].pb_graph_pin = &pb_graph_node->output_pins[oport][opb_pin];
+			opb_pin++;
 			if(opb_pin >= pb_graph_node->num_output_pins[oport]) {
 				oport++;
 				opb_pin = 0;
@@ -2929,5 +2942,3 @@ static boolean get_perturb_opins(INP t_type_ptr type, INP int *Fc_out, INP int n
 
 	return perturb_opins;
 }
-
-
