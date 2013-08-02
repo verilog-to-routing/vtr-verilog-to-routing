@@ -63,8 +63,28 @@ vector<t_lb_type_rr_node> *alloc_and_load_all_lb_type_rr_graph() {
 }
 
 /* Free routing resource graph for all logic block types */
-void free_all_lb_type_rr_graph(INOUTP vector<t_lb_type_rr_node> **lb_type_rr_graphs) {
-	/* jedit TODO */
+void free_all_lb_type_rr_graph(INOUTP vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
+	for(int itype = 0; itype < num_types; itype++) {
+		if(&type_descriptors[itype] != EMPTY_TYPE) {
+			int graph_size = lb_type_rr_graphs[itype].size();
+			for(int inode = 0; inode < graph_size; inode++) {				
+				t_lb_type_rr_node *node = &lb_type_rr_graphs[itype][inode];
+				int num_modes = get_num_modes_of_lb_type_rr_node(*node);	
+				if(node->outedges != NULL) {
+					for(int imode = 0; imode < num_modes; imode++) {
+						if(node->outedges[imode] != NULL) {
+							free(node->outedges[imode]);
+						}
+					}					
+					free(node->outedges);
+				}
+				if(node->num_fanout != NULL) {
+					free(node->num_fanout);
+				}
+			}
+		}
+	}
+	delete[] lb_type_rr_graphs;
 }
 
 
@@ -518,7 +538,6 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				for(int imode = 0; imode < num_modes; imode++) {
 					lb_type_rr_node_graph[pin_index].outedges[imode] = 
 						(t_lb_type_rr_node_edge*)my_calloc(lb_type_rr_node_graph[pin_index].num_fanout[imode], sizeof (t_lb_type_rr_node_edge));
-						(float*)my_calloc(lb_type_rr_node_graph[pin_index].num_fanout[imode], sizeof (float));
 					lb_type_rr_node_graph[pin_index].num_fanout[imode] = 0; /* reset to 0 so that we can reuse this variable to populate fanout stats */
 				}
 
