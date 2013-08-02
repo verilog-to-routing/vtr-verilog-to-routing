@@ -100,6 +100,9 @@ int get_num_modes_of_lb_type_rr_node(const t_lb_type_rr_node &lb_type_rr_node) {
 		} else {
 			pb_type = lb_type_rr_node.pb_graph_pin->parent_node->pb_type;
 			num_modes = pb_type->num_modes;
+			if(num_modes == 0) {
+				num_modes = 1; /* The rr graph is designed so that minimum number for a mode is 1 */
+			}
 		}
 	}
 	return num_modes;
