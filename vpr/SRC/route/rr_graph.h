@@ -42,6 +42,7 @@ void build_rr_graph(
 		INP t_direct_inf *directs, 
 		INP int num_directs,
 		INP boolean ignore_Fc_0,
+		INP boolean ignore_overrides,
 		OUTP int *Warnings);
 
 void free_rr_graph(void);
