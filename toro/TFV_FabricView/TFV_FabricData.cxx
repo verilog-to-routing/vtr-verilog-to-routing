@@ -303,7 +303,7 @@ void TFV_FabricData_c::ExtractString(
             size_t index = connection.GetIndex( );
             sprintf( szConnection, "[%s %u]",
                                    TIO_SR_STR( srSide ), 
-                                   static_cast< uint >( index ));
+                                   static_cast< unsigned int >( index ));
             *psrData += " ";
             *psrData += szConnection;
          }
