@@ -12,7 +12,7 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "SetupVPR.h"
 #include "pb_type_graph.h"
-#include "lb_rr_graph.h"
+#include "lb_type_rr_graph.h"
 #include "ReadOptions.h"
 
 static void SetupOperation(INP t_options Options,
