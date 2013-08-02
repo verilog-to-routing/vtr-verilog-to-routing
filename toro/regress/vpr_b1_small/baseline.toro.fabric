@@ -238,8 +238,12 @@
       <pin name="I[15]" type="input" side="left" offset="15" delta="0.250" width="0.002" slice="0">
          <cb> 0 0 0 0 0 0 0 0 0 0 1 1 0 0 </cb>
       </pin>
-      <pin name="O[1]" type="output" side="left" offset="19" delta="0.256" width="0.002" slice="0"/>
-      <pin name="O[5]" type="output" side="left" offset="23" delta="0.262" width="0.002" slice="0"/>
+      <pin name="O[1]" type="output" side="left" offset="19" delta="0.256" width="0.002" slice="0">
+         <cb> 0 0 1 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="O[5]" type="output" side="left" offset="23" delta="0.262" width="0.002" slice="0">
+         <cb> 0 0 0 0 1 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
       <pin name="I[1]" type="input" side="right" offset="1" delta="0.232" width="0.002" slice="0">
          <cb> 0 0 0 0 0 0 1 1 0 0 0 0 0 0 </cb>
       </pin>
@@ -255,8 +259,12 @@
       <pin name="I[17]" type="input" side="right" offset="17" delta="0.256" width="0.002" slice="0">
          <cb> 0 0 0 0 0 0 0 0 0 0 1 1 0 0 </cb>
       </pin>
-      <pin name="O[3]" type="output" side="right" offset="21" delta="0.262" width="0.002" slice="0"/>
-      <pin name="O[7]" type="output" side="right" offset="25" delta="0.268" width="0.002" slice="0"/>
+      <pin name="O[3]" type="output" side="right" offset="21" delta="0.262" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="O[7]" type="output" side="right" offset="25" delta="0.268" width="0.002" slice="0">
+         <cb> 0 0 1 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
       <pin name="I[2]" type="input" side="lower" offset="2" delta="0.232" width="0.002" slice="0">
          <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
       </pin>
@@ -270,9 +278,11 @@
          <cb> 0 0 0 0 0 0 0 0 0 0 1 1 0 0 </cb>
       </pin>
       <pin name="O[0]" type="output" side="lower" offset="18" delta="0.256" width="0.002" slice="0">
-         <cb> 0 0 1 1 1 1 0 0 0 0 0 0 0 0 </cb>
+         <cb> 0 0 1 1 0 0 0 0 0 0 0 0 0 0 </cb>
       </pin>
-      <pin name="O[4]" type="output" side="lower" offset="22" delta="0.262" width="0.002" slice="0"/>
+      <pin name="O[4]" type="output" side="lower" offset="22" delta="0.262" width="0.002" slice="0">
+         <cb> 0 0 0 0 1 1 0 0 0 0 0 0 0 0 </cb>
+      </pin>
       <pin name="I[0]" type="input" side="upper" offset="0" delta="0.232" width="0.002" slice="0">
          <cb> 0 0 0 0 0 0 1 1 0 0 0 0 0 0 </cb>
       </pin>
@@ -288,8 +298,12 @@
       <pin name="I[16]" type="input" side="upper" offset="16" delta="0.256" width="0.002" slice="0">
          <cb> 0 0 0 0 0 0 0 0 0 0 1 1 0 0 </cb>
       </pin>
-      <pin name="O[2]" type="output" side="upper" offset="20" delta="0.262" width="0.002" slice="0"/>
-      <pin name="O[6]" type="output" side="upper" offset="24" delta="0.268" width="0.002" slice="0"/>
+      <pin name="O[2]" type="output" side="upper" offset="20" delta="0.262" width="0.002" slice="0">
+         <cb> 1 1 0 0 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
+      <pin name="O[6]" type="output" side="upper" offset="24" delta="0.268" width="0.002" slice="0">
+         <cb> 0 0 1 1 0 0 0 0 0 0 0 0 0 0 </cb>
+      </pin>
    </pb>
    
    <sb name="sb[0][0]">

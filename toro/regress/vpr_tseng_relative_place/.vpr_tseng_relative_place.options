@@ -31,6 +31,8 @@ halt_max_errors -1
 // trace_vpr_show_setup yes
 // trace_vpr_echo_file yes
 
+place_temp_inner_num 10.0
+
 place_relative_enable true
 // place_relative_rotate_enable false
 // place_relative_init_place 10

@@ -34,5 +34,3 @@ display_warning_reject ".*check_rr_graph.*" // Ignore select check_rr_graph warn
 display_warning_reject ".*get_heap_head.*" // Ignore select route_common warnings
 
 fabric_blocks_override_enable yes
-
-route_channel_width 48
