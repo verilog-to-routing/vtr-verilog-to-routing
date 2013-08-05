@@ -1,12 +1,17 @@
 ################################   MAKEFILE OPTIONS     ####################################
 # Build the external objects library
 
-setenv ENABLE_TORO = false
-# can be true or false
+export ENABLE_TORO = false
+# for ksh/sh shells, use export ENABLE_TORO=false
+# for csh/tcsh shells, use setenv ENABLE_TORO false
+# valid values are true or false
 
 export BUILD_TYPE = release
-# can be debug or release - this option gets inherited by the library libarchfpga 
-# by default, though libarchfpga's build type can be set independently in libarchfpga's Makefile.
+# for ksh/sh shells, use export BUILD_TYPE = release
+# for csh/tcsh shells, use setenv BUILD_TYPE release
+# valid values are debug or release
+# this option gets inherited by the library libarchfpga 
+# by default, libarchfpga's build type can be set independently in libarchfpga's Makefile
 
 COMPILER = g++
 
