@@ -1039,15 +1039,16 @@ void SDF_ram_dual_port_delay_printing(FILE *SDF , t_pb *pb)
 
 char *find_clock_name(void)
 {
-  int j;
+  unsigned int j;
   char *clock_in_the_design=NULL;
   int clocks = 0;
-  for(j=0 ; j<num_nets ; j++)/*Doing this to find the clock name in the design and storing it in clock_,*/
+  for(j=0 ; j<g_clbs_nlist.net.size() ; j++)/*Doing this to find the clock name in the design and storing it in clock_,*/
     {
       /* TODO fix this Hack: Currently detect if a clb_net is a clock using global and not vcc/gnd, need better way */
-      if(clb_net[j].is_global == TRUE && strcmp(clb_net[j].name, "gnd") != 0 && strcmp(clb_net[j].name, "vcc") != 0)
+      if(g_clbs_nlist.net[j].is_global == TRUE && strcmp(g_clbs_nlist.net[j].name, "gnd") != 0 
+		  && strcmp(g_clbs_nlist.net[j].name, "vcc") != 0)
 	{
-	  clock_in_the_design = clb_net[j].name;
+	  clock_in_the_design = g_clbs_nlist.net[j].name;
 	  clocks++;
 	}
     }

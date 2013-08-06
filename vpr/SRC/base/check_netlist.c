@@ -17,13 +17,13 @@ using namespace std;
 
 /**************** Subroutines local to this module **************************/
 
-static int check_connections_to_global_clb_pins(int inet);
+static int check_connections_to_global_clb_pins(unsigned int inet);
 
 static int check_for_duplicated_names(void);
 
 static int check_clb_conn(int iblk, int num_conn);
 
-static int check_clb_internal_nets(int iblk);
+static int check_clb_internal_nets(unsigned int iblk);
 
 static int check_subblock_internal_nets(int iblk, int isub);
 
@@ -36,7 +36,8 @@ static int check_primitives(int iblk, int isub);
 /*********************** Subroutine definitions *****************************/
 
 void check_netlist() {
-	int i, error, num_conn;
+	unsigned int i;
+	int error, num_conn;
 	struct s_hash **net_hash_table, *h_net_ptr;
 
 	/* TODO: Remove the following the function calls after these functions have 
@@ -56,11 +57,11 @@ void check_netlist() {
 	error = 0;
 
 	/* Check that nets fanout and have a driver. */
-	for (i = 0; i < num_nets; i++) {
-		h_net_ptr = insert_in_hash_table(net_hash_table, clb_net[i].name, i);
+	for (i = 0; i < g_clbs_nlist.net.size(); i++) {
+		h_net_ptr = insert_in_hash_table(net_hash_table, g_clbs_nlist.net[i].name, i);
 		if (h_net_ptr->count != 1) {
 			vpr_printf_error(__FILE__, __LINE__, 
-					"Net %s has multiple drivers.\n", clb_net[i].name);
+					"Net %s has multiple drivers.\n", g_clbs_nlist.net[i].name);
 			error++;
 		}
 		error += check_connections_to_global_clb_pins(i);
@@ -93,24 +94,24 @@ void check_netlist() {
 	/* HACK: Jason Luu January 17, 2011 Do not route common constants gnd and vcc
 	 Todo: Need to make architecture driven.
 	 */
-	for (i = 0; i < num_nets; i++) {
-		if (strcmp(clb_net[i].name, "vcc") == 0) {
-			clb_net[i].is_global = TRUE;
-		} else if (strcmp(clb_net[i].name, "gnd") == 0) {
-			clb_net[i].is_global = TRUE;
+	for (i = 0; i < g_clbs_nlist.net.size(); i++) {
+		if (strcmp(g_clbs_nlist.net[i].name, "vcc") == 0) {
+			g_clbs_nlist.net[i].is_global = TRUE;
+		} else if (strcmp(g_clbs_nlist.net[i].name, "gnd") == 0) {
+			g_clbs_nlist.net[i].is_global = TRUE;
 		}
 	}
 }
 
-static int check_connections_to_global_clb_pins(int inet) {
+static int check_connections_to_global_clb_pins(unsigned int inet) {
 
 	/* Checks that a global net (inet) connects only to global CLB input pins  *
 	 * and that non-global nets never connects to a global CLB pin.  Either    *
 	 * global or non-global nets are allowed to connect to pads.               */
 
-	int ipin, num_pins, iblk, node_block_pin, error;
+	unsigned int ipin, num_pins, iblk, node_block_pin, error;
 
-	num_pins = (clb_net[inet].num_sinks + 1);
+	num_pins = (g_clbs_nlist.net[inet].nodes.size());
 	error = 0;
 
 	/* For now global signals can be driven by an I/O pad or any CLB output       *
@@ -119,32 +120,32 @@ static int check_connections_to_global_clb_pins(int inet) {
 	 * this warning.                                                              */
 
 	for (ipin = 0; ipin < num_pins; ipin++) {
-		iblk = clb_net[inet].node_block[ipin];
+		iblk = g_clbs_nlist.net[inet].nodes[ipin].block;
 
-		node_block_pin = clb_net[inet].node_block_pin[ipin];
+		node_block_pin = g_clbs_nlist.net[inet].nodes[ipin].block_pin;
 
-		boolean is_global_net = static_cast<boolean>(clb_net[inet].is_global);
+		boolean is_global_net = static_cast<boolean>(g_clbs_nlist.net[inet].is_global);
 		if (block[iblk].type->is_global_pin[node_block_pin]
 				!= is_global_net && block[iblk].type != IO_TYPE) {
 
 			/* Allow a CLB output pin to drive a global net (warning only). */
 
-			if (ipin == 0 && clb_net[inet].is_global) {
+			if (ipin == 0 && g_clbs_nlist.net[inet].is_global) {
 				vpr_printf_warning(__FILE__, __LINE__, 
 						"in check_connections_to_global_clb_pins:\n");
 				vpr_printf_warning(__FILE__, __LINE__, 
 						"\tnet #%d (%s) is driven by CLB output pin (#%d) on block #%d (%s).\n", 
-						inet, clb_net[inet].name, node_block_pin, iblk, block[iblk].name);
+						inet, g_clbs_nlist.net[inet].name, node_block_pin, iblk, block[iblk].name);
 			} else { /* Otherwise -> Error */
 				vpr_printf_error(__FILE__, __LINE__, 
 						"in check_connections_to_global_clb_pins:\n");
 				vpr_printf_error(__FILE__, __LINE__, 
 						"\tpin %d on net #%d (%s) connects to CLB input pin (#%d) on block #%d (%s).\n", 
-						ipin, inet, clb_net[inet].name, node_block_pin, iblk, block[iblk].name);
+						ipin, inet, g_clbs_nlist.net[inet].name, node_block_pin, iblk, block[iblk].name);
 				error++;
 			}
 
-			if (clb_net[inet].is_global)
+			if (g_clbs_nlist.net[inet].is_global)
 				vpr_printf_info("Net is global, but CLB pin is not.\n");
 			else
 				vpr_printf_info("CLB pin is global, but net is not.\n");
@@ -214,7 +215,7 @@ static int check_clb_conn(int iblk, int num_conn) {
 	return (error);
 }
 
-static int check_clb_internal_nets(int iblk) {
+static int check_clb_internal_nets(unsigned int iblk) {
 	/** TODO:
 	 * Check if the internal CLB nets makes sense and are connected properly 
 	 *  Consists of 3 main loops

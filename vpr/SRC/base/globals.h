@@ -84,8 +84,8 @@ extern struct s_net *vpack_net;
 extern struct s_logical_block *logical_block;
 extern struct s_subckt *subckt;
 
-extern t_netlist g_atom;
-extern t_netlist g_clb;
+extern t_netlist g_atoms_nlist;
+extern t_netlist g_clbs_nlist;
 
 /* primiary inputs removed from circuit */
 extern struct s_linked_vptr *circuit_p_io_removed;

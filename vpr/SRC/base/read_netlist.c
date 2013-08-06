@@ -227,8 +227,8 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	*L_num_nets = ext_ncount;
 	*net_list = ext_nlist;
 
-	load_global_net_from_array(ext_nlist, ext_ncount, &g_clb);
-	//echo_global_nlist_net(&g_clb);
+	load_global_net_from_array(ext_nlist, ext_ncount, &g_clbs_nlist);
+	//echo_global_nlist_net(&g_clbs_nlist);
 
 	free_hash_table(logical_block_hash);
 	free_hash_table(vpack_net_hash);
