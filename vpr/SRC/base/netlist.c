@@ -1,6 +1,6 @@
 /* 
- * This file contains subroutines used to populate vectors of data structures
- * that are used to store information about netlists.
+ * This file contains subroutines used to populate data structures
+ * that are used to store netlists information.
  *
  *
  *
@@ -70,18 +70,23 @@ void load_global_net_from_array(INP t_net* net_arr,
 }
 
 void echo_global_nlist_net(INP t_netlist* g_nlist){
-	vector<t_vnet>::iterator cur_net;
-	vector<t_net_node>::iterator cur_node;
+
+	unsigned int i, j;
 
 	vpr_printf_info("********Dumping clb netlist info contained in vectors*******\n");
 
-	for(cur_net = g_nlist->nets.begin(); cur_net != g_nlist->nets.end(); cur_net++){
-		vpr_printf_info("Net name %s\n", (*cur_net).name);
-		vpr_printf_info("Routed %d fixed %d global %d const_gen %d\n", 
-			(*cur_net).is_routed, (*cur_net).is_fixed ,(*cur_net).is_global, (*cur_net).is_const_gen);
-		for(cur_node = (*cur_net).nodes.begin(); cur_node != (*cur_net).nodes.end(); cur_node++){
-			vpr_printf_info("Block index %d port %d pin %d\n", 
-				(*cur_node).block, (*cur_node).block_port, (*cur_node).block_pin);
+	for(i = 0; i < g_nlist->nets.size(); i++){
+		vpr_printf_info("Net name %s %s\n", g_nlist->nets[i].name, clb_net[i].name);
+		vpr_printf_info("Routed %d %d \nfixed %d %d \nglobal %d %d const_gen %d %d\n", 
+			g_nlist->nets[i].is_routed, clb_net[i].is_routed,
+			g_nlist->nets[i].is_fixed , clb_net[i].is_fixed,
+			g_nlist->nets[i].is_global, clb_net[i].is_global,  
+			g_nlist->nets[i].is_const_gen, clb_net[i].is_const_gen);
+		for(j = 0; j < g_nlist->nets[i].nodes.size(); j++){
+			vpr_printf_info("Block index %d %d port %d %d pin %d %d \n", 
+				g_nlist->nets[i].nodes[j].block, clb_net[i].node_block[j],
+				g_nlist->nets[i].nodes[j].block_port, (clb_net[i].node_block_port ? clb_net[i].node_block_port[j] : 0), 
+				g_nlist->nets[i].nodes[j].block_pin, clb_net[i].node_block_pin[j]);
 		
 		}
 		vpr_printf_info("\n");

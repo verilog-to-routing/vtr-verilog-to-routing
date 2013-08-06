@@ -49,4 +49,5 @@ void load_global_net_from_array(INP t_net* net_arr,
 	INP int num_net_arr, OUTP t_netlist* g_nlist);
 
 void echo_global_nlist_net(INP t_netlist* g_nlist);
+
 #endif
