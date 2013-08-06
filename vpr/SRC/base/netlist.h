@@ -42,7 +42,7 @@ struct t_vnet{
 
 struct t_netlist{
 	//vector<t_blocks> blocks;
-	vector<t_vnet>  nets;
+	vector<t_vnet>  net;
 };
 
 void load_global_net_from_array(INP t_net* net_arr,
