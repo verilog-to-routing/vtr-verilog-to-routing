@@ -73,7 +73,7 @@ void check_netlist() {
 	free_hash_table(net_hash_table);
 
 	/* Check that each block makes sense. */
-	for (i = 0; i < num_blocks; i++) {
+	for (i = 0; i < (unsigned int)num_blocks; i++) {
 		num_conn = get_num_conn(i);
 		error += check_clb_conn(i, num_conn);
 		error += check_clb_internal_nets(i);

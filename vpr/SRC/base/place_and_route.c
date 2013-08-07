@@ -134,7 +134,7 @@ boolean place_and_route(enum e_operation operation,
 		clb_opins_used_locally = alloc_route_structs();
 
 		t_slack *slacks = alloc_and_load_timing_graph(timing_inf);
-		float **net_delay = alloc_net_delay(&net_delay_ch, clb_net, num_nets);
+		float **net_delay = alloc_net_delay(&net_delay_ch, clb_net, (int)g_clbs_nlist.net.size());
 
 		boolean Fc_clipped = FALSE;
 		success = try_route(width_fac, router_opts, det_routing_arch,
@@ -282,7 +282,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			&saved_clb_opins_used_locally);
 
 	slacks = alloc_and_load_timing_graph(timing_inf);
-	net_delay = alloc_net_delay(&net_delay_ch, clb_net, num_nets);
+	net_delay = alloc_net_delay(&net_delay_ch, clb_net, (int)g_clbs_nlist.net.size());
 
 	/* UDSD by AY Start */
 	if (det_routing_arch.directionality == BI_DIRECTIONAL)
