@@ -963,7 +963,7 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 				inet = vpack_to_clb_net_mapping[ivpack_net];
 				if (inet != OPEN) {
 					for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
-						pb_graph_pin = get_pb_graph_node_pin_from_clb_net(inet, ipin);
+						pb_graph_pin = get_pb_graph_node_pin_from_g_clbs_nlist_net(inet, ipin);
 						new_trace = (t_trace*) my_calloc(1, sizeof(t_trace));
 						new_trace->iblock = clb_net[inet].node_block[ipin];
 						new_trace->index = pb_graph_pin->pin_count_in_cluster;

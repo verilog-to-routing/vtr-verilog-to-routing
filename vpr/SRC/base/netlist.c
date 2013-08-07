@@ -69,24 +69,24 @@ void load_global_net_from_array(INP t_net* net_arr,
 	return;
 }
 
-void echo_global_nlist_net(INP t_netlist* g_nlist){
+void echo_global_nlist_net(INP t_netlist* g_nlist, t_net* net_arr){
 
 	unsigned int i, j;
 
 	vpr_printf_info("********Dumping clb netlist info contained in vectors*******\n");
 
 	for(i = 0; i < g_nlist->net.size(); i++){
-		vpr_printf_info("Net name %s %s\n", g_nlist->net[i].name, clb_net[i].name);
+		vpr_printf_info("Net name %s %s\n", g_nlist->net[i].name, net_arr[i].name);
 		vpr_printf_info("Routed %d %d \nfixed %d %d \nglobal %d %d const_gen %d %d\n", 
-			g_nlist->net[i].is_routed, clb_net[i].is_routed,
-			g_nlist->net[i].is_fixed , clb_net[i].is_fixed,
-			g_nlist->net[i].is_global, clb_net[i].is_global,  
-			g_nlist->net[i].is_const_gen, clb_net[i].is_const_gen);
+			g_nlist->net[i].is_routed, net_arr[i].is_routed,
+			g_nlist->net[i].is_fixed , net_arr[i].is_fixed,
+			g_nlist->net[i].is_global, net_arr[i].is_global,  
+			g_nlist->net[i].is_const_gen, net_arr[i].is_const_gen);
 		for(j = 0; j < g_nlist->net[i].nodes.size(); j++){
 			vpr_printf_info("Block index %d %d port %d %d pin %d %d \n", 
-				g_nlist->net[i].nodes[j].block, clb_net[i].node_block[j],
-				g_nlist->net[i].nodes[j].block_port, (clb_net[i].node_block_port ? clb_net[i].node_block_port[j] : 0), 
-				g_nlist->net[i].nodes[j].block_pin, clb_net[i].node_block_pin[j]);
+				g_nlist->net[i].nodes[j].block, net_arr[i].node_block[j],
+				g_nlist->net[i].nodes[j].block_port, (net_arr[i].node_block_port ? net_arr[i].node_block_port[j] : 0), 
+				g_nlist->net[i].nodes[j].block_pin, net_arr[i].node_block_pin[j]);
 		
 		}
 		vpr_printf_info("\n");

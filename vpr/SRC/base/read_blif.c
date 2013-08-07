@@ -140,6 +140,10 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 	fclose(blif);
 	check_net(sweep_hanging_nets_and_inputs);
 
+	//Added August 2013, Daniel Chen for loading flattened netlist into new data structures
+	load_global_net_from_array(vpack_net, num_logical_nets, &g_atoms_nlist);
+	//echo_global_nlist_net(&g_atoms_nlist, vpack_net);
+
 	/* Read activity file */
 	if (read_activity_file) {
 		read_activity(activity_file);
