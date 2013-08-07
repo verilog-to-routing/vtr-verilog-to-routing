@@ -511,8 +511,8 @@ static t_panning_state pan_state = {0, 0, false};
 
 // Color references 
 static const char *ps_cnames[NUM_COLOR] = {"white", "black", "grey55", "grey75",
-		"blue", "green", "yellow", "cyan", "red", "darkgreen", "magenta",
-		"bisque", "lightblue", "thistle", "plum", "khaki", "coral",
+		"blue", "green", "yellow", "cyan", "red", "pink", "lightpink", "darkgreen", 
+		"magenta", "bisque", "lightskyblue", "thistle", "plum", "khaki", "coral",
 		"turquoise", "mediumpurple", "darkslateblue", "darkkhaki"};
 
 #ifdef X11
@@ -538,10 +538,10 @@ static const int win32_line_styles[2] = { PS_SOLID, PS_DASH };
 /* Color references for Win32. Colors have to be specified by RGB values for Win32. */
 static const COLORREF win32_colors[NUM_COLOR] = { RGB(255, 255, 255),
 RGB(0, 0, 0), RGB(128, 128, 128), RGB(192, 192, 192), RGB(0, 0, 255),
-RGB(0, 255, 0), RGB(255, 255, 0), RGB(0, 255, 255), RGB(255, 0, 0), RGB(0, 128, 0),
-RGB(255, 0, 255), RGB(255, 228, 196), RGB(173, 216, 230), RGB(216, 191, 216), RGB(221, 160, 221),
-RGB(240, 230, 140), RGB(255, 127, 80), RGB(64, 224, 208), RGB(147, 112, 219), RGB(72, 61, 139),
-RGB(189, 183, 107)};
+RGB(0, 255, 0), RGB(255, 255, 0), RGB(0, 255, 255), RGB(255, 0, 0), RGB(255, 192, 203), 
+RGB(255, 182, 193), RGB(0, 128, 0), RGB(255, 0, 255), RGB(255, 228, 196), RGB(135, 206, 250), 
+RGB(216, 191, 216), RGB(221, 160, 221), RGB(240, 230, 140), RGB(255, 127, 80), 
+RGB(64, 224, 208), RGB(147, 112, 219), RGB(72, 61, 139), RGB(189, 183, 107)};
 
 /* Name of each window */
 static TCHAR szAppName[256], szGraphicsName[] = TEXT("VPR Graphics"), 
@@ -2554,10 +2554,12 @@ int init_postscript (const char *fname)
 	fprintf(gl_state.ps,"/yellow { 1 1 0 setrgbcolor } def\n");
 	fprintf(gl_state.ps,"/cyan { 0 1 1 setrgbcolor } def\n");
 	fprintf(gl_state.ps,"/red { 1 0 0 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/pink { 1 0.75 0.8 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/lightpink { 1 0.71 0.76 setrgbcolor } def\n");
 	fprintf(gl_state.ps,"/darkgreen { 0 0.5 0 setrgbcolor } def\n");
 	fprintf(gl_state.ps,"/magenta { 1 0 1 setrgbcolor } def\n");
 	fprintf(gl_state.ps,"/bisque { 1 0.89 0.77 setrgbcolor } def\n");
-	fprintf(gl_state.ps,"/lightblue { 0.68 0.85 0.9 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/lightskyblue { 0.53 0.81 0.98 setrgbcolor } def\n");
 	fprintf(gl_state.ps,"/thistle { 0.85 0.75 0.85 setrgbcolor } def\n");
 	fprintf(gl_state.ps,"/plum { 0.87 0.63 0.87 setrgbcolor } def\n");
 	fprintf(gl_state.ps,"/khaki { 0.94 0.9 0.55 setrgbcolor } def\n");
@@ -2943,8 +2945,8 @@ static void x11_init_graphics (const char *window_name, int cindex)
    
    /* X Windows' names for my colours. */
    const char *cnames[NUM_COLOR] = {"white", "black", "grey55", "grey75", "blue", 
-   	"green", "yellow", "cyan", "red", "RGBi:0.0/0.5/0.0", "magenta",
-   	"bisque", "lightblue", "thistle", "plum", "khaki", "coral",
+   	"green", "yellow", "cyan", "red", "pink", "lightpink", "RGBi:0.0/0.39/0.0", 
+	"magenta", "bisque", "lightskyblue", "thistle", "plum", "khaki", "coral",
 	"turquoise", "mediumpurple", "darkslateblue", "darkkhaki" };
 	
    XColor exact_def;
