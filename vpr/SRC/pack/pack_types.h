@@ -76,7 +76,7 @@ typedef struct s_pb_stats {
 
 
 /**************************************************************************
-* Intra-Logic Block Routing Data Structures
+* Intra-Logic Block Routing Data Structures (by type)
 ***************************************************************************/
 
 /* Output edges of a t_lb_type_rr_node */
@@ -107,38 +107,83 @@ struct t_lb_type_rr_node {
 };
 
 
-/* The routing traceback for a net */
+
+/**************************************************************************
+* Intra-Logic Block Routing Data Structures (by instance)
+***************************************************************************/
+
+/* A routing traceback data structure, provides a logic block instance specific trace lookup directly from the t_lb_type_rr_node array index 
+   After packing, routing info for each CLB will have an array of t_lb_traceback to store routing info within the CLB
+*/
 struct t_lb_traceback {
 	int	net;				/* net of flat, technology-mapped, netlist using this node */
 	int prev_lb_rr_node;	/* index of previous node that drives current node */
 	int prev_edge;			/* index of previous edge that drives current node */	
 };
 
+/**************************************************************************
+* Intra-Logic Block Router Data Structures
+***************************************************************************/
 
 /* Describes the status of a logic block routing resource node for a given logic block instance */
 struct t_lb_rr_node_stats {
-	int occ;				/* Number of nets currently using this lb_rr_node */
-	int max_occ;			/* Maximium number of nets allowed to use this lb_rr_node in any intermediate stage of routing, 
-							this value should be higher than capacity to allow hill-climbing */
-	int mode;				/* Mode that this node is set to */
-
-	t_lb_traceback	*traceback;	/* [0..max_occ-1] traceback of nets that use this node */
-
+	int occ;								/* Number of nets currently using this lb_rr_node */
+	vector<t_lb_traceback> tracebacks;		/* Nets that share this node in their routetree */
+	
+	t_pb *pb;								/* Physical block that this rr_node is controlled by */
+	
 	float current_cost;		/* Current cost of using this node */
 	float historical_cost;	/* Historical cost of using this node */
 
-	t_lb_type_rr_node *lb_type_rr_node; /* corresponding lb_type_rr_node */
-
-
-	/* Default values */
 	t_lb_rr_node_stats() {
 		occ = 0;
-		max_occ = 0;
-		mode = 0;
-		traceback = NULL;
-		current_cost = 0;		
-		historical_cost = 0;	
-		lb_type_rr_node = NULL; 
+		pb = NULL;
+		current_cost = 0;
+		historical_cost = 0;
+	}
+};
+
+/* 
+  Data structure forming the route tree of a net within one logic block.  
+  
+  A net is implemented using routing resource nodes.  The t_lb_trace data structure records one of the nodes used by the net and the connections
+  to other nodes
+*/
+struct t_lb_trace {
+	int	current_node;					/* current t_lb_type_rr_node used by net */
+	int num_fanout;						/* number of other nodes used by net that are directly driven by the current node*/
+	vector<t_lb_trace> next_nodes;		/* index of previous edge that drives current node */	
+};
+
+/* Represents a net used inside a logic block and the physical nodes used by the net */
+struct t_intra_lb_net {
+	int atom_net_index;					/* index of atomic net this intra_lb_net represents */
+	vector<int> terminals;				/* endpoints of the intra_lb_net, 0th position is the source, all others are sinks */
+	t_lb_trace *rt_tree;				/* Route tree head */
+	t_lb_trace *saved_rt_tree;			/* Saved route tree head */
+	
+	t_intra_lb_net() {
+		atom_net_index = OPEN;
+		rt_tree = NULL;
+		saved_rt_tree = NULL;
+	}
+};
+
+/* Stores all data needed by intra-logic block router */
+struct t_lb_router_data {
+	/* Physical Architecture Info */
+	vector<t_lb_type_rr_node> *lb_type_graph;	/* Pointer to physical intra-logic block type rr graph */
+	
+	/* Logical Netlist Info */
+	vector <t_intra_lb_net> *intra_lb_net;		/* Pointer to vector of intra logic block nets and their connections */
+
+	/* Logical-to-physical mapping info */
+	t_lb_rr_node_stats *lb_rr_node_stats;		/* [0..lb_type_graph->size()-1] Stats for each logic block instance */
+
+	t_lb_router_data() {
+		lb_type_graph = NULL;	
+		lb_rr_node_stats = NULL;	
+		intra_lb_net = NULL;
 	}
 };
 
