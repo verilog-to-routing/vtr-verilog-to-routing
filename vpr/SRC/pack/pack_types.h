@@ -9,6 +9,8 @@
 #define PACK_TYPES_H
 
 #include "arch_types.h"
+#include <map>
+#include <vector>
 
 
 /**************************************************************************

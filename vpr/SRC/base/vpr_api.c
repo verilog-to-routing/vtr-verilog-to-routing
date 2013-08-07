@@ -43,6 +43,8 @@ using namespace std;
 #include "vpr_api.h"
 #include "read_sdc.h"
 #include "power.h"
+#include "pack_types.h"
+#include "lb_type_rr_graph.h"
 
 /* Local subroutines */
 static void free_pb_type(t_pb_type *pb_type);
@@ -195,7 +197,7 @@ void vpr_init(INP int argc, INP char **argv, OUTP t_options *options,
 			arch, &vpr_setup->Operation, &vpr_setup->user_models,
 			&vpr_setup->library_models, &vpr_setup->PackerOpts,
 			&vpr_setup->PlacerOpts, &vpr_setup->AnnealSched,
-			&vpr_setup->RouterOpts, &vpr_setup->RoutingArch,
+			&vpr_setup->RouterOpts, &vpr_setup->RoutingArch, &vpr_setup->PackerRRGraph,
 			&vpr_setup->Segments, &vpr_setup->Timing, &vpr_setup->ShowGraphics,
 			&vpr_setup->GraphPause, &vpr_setup->PowerOpts);
 
@@ -771,6 +773,7 @@ void vpr_free_vpr_data_structures(INOUTP t_arch Arch, INOUTP t_options options,
 		vpr_setup.Timing.SDCFile = NULL;
 	}
 
+	free_all_lb_type_rr_graph(vpr_setup.PackerRRGraph);
 	free_options(&options);
 	free_circuit();
 	free_arch(&Arch);
@@ -812,12 +815,13 @@ void vpr_setup_vpr(INP t_options *Options, INP boolean TimingEnabled,
 		OUTP struct s_annealing_sched *AnnealSched,
 		OUTP struct s_router_opts *RouterOpts,
 		OUTP struct s_det_routing_arch *RoutingArch,
+		OUTP vector <t_lb_type_rr_node> **PackerRRGraph,
 		OUTP t_segment_inf ** Segments, OUTP t_timing_inf * Timing,
 		OUTP boolean * ShowGraphics, OUTP int *GraphPause,
 		t_power_opts * PowerOpts) {
 	SetupVPR(Options, TimingEnabled, readArchFile, FileNameOpts, Arch,
 			Operation, user_models, library_models, PackerOpts, PlacerOpts,
-			AnnealSched, RouterOpts, RoutingArch, Segments, Timing,
+			AnnealSched, RouterOpts, RoutingArch, PackerRRGraph, Segments, Timing,
 			ShowGraphics, GraphPause, PowerOpts);
 }
 /* Check inputs are reasonable */

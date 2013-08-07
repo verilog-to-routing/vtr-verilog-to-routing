@@ -33,7 +33,9 @@
 #define VPR_TYPES_H
 
 #include "arch_types.h"
+
 #include <map>
+#include <vector>
 
 #ifdef TORO_REGION_PLACEMENT_ENABLE
 //===========================================================================//
@@ -1068,6 +1070,8 @@ struct s_TokenPair {
 	int Enum;
 };
 
+struct t_lb_type_rr_node; /* Defined in pack_types.h */
+
 /* Store settings for VPR */
 typedef struct s_vpr_setup {
 	boolean TimingEnabled; /* Is VPR timing enabled */
@@ -1080,6 +1084,7 @@ typedef struct s_vpr_setup {
 	struct s_annealing_sched AnnealSched; /* Placement option annealing schedule */
 	struct s_router_opts RouterOpts; /* router options */
 	struct s_det_routing_arch RoutingArch; /* routing architecture */
+	std::vector <t_lb_type_rr_node> *PackerRRGraph;
 	t_segment_inf * Segments; /* wires in routing architecture */
 	t_timing_inf Timing; /* timing information */
 	float constant_net_delay; /* timing information when place and route not run */

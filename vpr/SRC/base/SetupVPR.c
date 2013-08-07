@@ -12,6 +12,7 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "SetupVPR.h"
 #include "pb_type_graph.h"
+#include "pack_types.h"
 #include "lb_type_rr_graph.h"
 #include "ReadOptions.h"
 
@@ -49,6 +50,7 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 		OUTP struct s_annealing_sched *AnnealSched,
 		OUTP struct s_router_opts *RouterOpts,
 		OUTP struct s_det_routing_arch *RoutingArch,
+		OUTP vector <t_lb_type_rr_node> **PackerRRGraphs,
 		OUTP t_segment_inf ** Segments, OUTP t_timing_inf * Timing,
 		OUTP boolean * ShowGraphics, OUTP int *GraphPause,
 		t_power_opts * PowerOpts) {
@@ -221,11 +223,10 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 
 	vpr_printf_info("Building complex block graph.\n");
 	alloc_and_load_all_pb_graphs(PowerOpts->do_power);
-	vector <t_lb_type_rr_node> *lb_type_rr_graphs = alloc_and_load_all_lb_type_rr_graph();
+	*PackerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_LB_TYPE_RR_GRAPH)) {
-		echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_PB_GRAPH),lb_type_rr_graphs);
+		echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_PB_GRAPH),*PackerRRGraphs);
 	}
-	free_all_lb_type_rr_graph(lb_type_rr_graphs);
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PB_GRAPH)) {
 		echo_pb_graph(getEchoFileName(E_ECHO_PB_GRAPH));
