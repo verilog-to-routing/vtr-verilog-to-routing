@@ -38,6 +38,9 @@ struct t_vnet{
 		net_power = NULL;
 	}
 
+	int num_sinks(){
+		return (int) (nodes.size() ? nodes.size() - 1 : 0);
+	}
 };
 
 struct t_netlist{

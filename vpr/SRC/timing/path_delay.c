@@ -156,6 +156,8 @@ static t_chunk tedge_ch = {NULL, 0, NULL};
 
 static struct s_net *timing_nets = NULL;
 
+static vector<t_vnet> *timing_vnets = NULL;
+
 static int num_timing_nets = 0;
 
 static t_timing_stats * f_timing_stats = NULL; /* Critical path delay and worst-case slack per constraint. */
@@ -258,8 +260,11 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 		vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, 
 				"in alloc_and_load_timing_graph: An old timing graph still exists.\n");
 	}
-	num_timing_nets = num_nets;
+
+	num_timing_nets = (int) g_clbs_nlist.net.size();
+	//num_timing_nets = num_nets;
 	timing_nets = clb_net;
+	timing_vnets = &g_clbs_nlist.net;
 
 	alloc_and_load_tnodes(timing_inf);
 
@@ -309,8 +314,10 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 				"in alloc_and_load_timing_graph: An old timing graph still exists.\n");
 	}
 
-	num_timing_nets = num_logical_nets;
+	num_timing_nets = (int) g_atoms_nlist.net.size();
+	//num_timing_nets = num_logical_nets;
 	timing_nets = vpack_net;
+	timing_vnets = &g_atoms_nlist.net;
 
 	alloc_and_load_tnodes_from_prepacked_netlist(block_delay,
 			inter_cluster_net_delay);
@@ -905,15 +912,15 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 			inet = vpack_to_clb_net_mapping[local_rr_graph[irr_node].net_num];
 			assert(inet != OPEN);
 			f_net_to_driver_tnode[inet] = i;
-			tnode[i].num_edges = clb_net[inet].num_sinks;
+			tnode[i].num_edges = g_clbs_nlist.net[inet].num_sinks();
 			tnode[i].out_edges = (t_tedge *) my_chunk_malloc(
-					clb_net[inet].num_sinks * sizeof(t_tedge),
+					g_clbs_nlist.net[inet].num_sinks()* sizeof(t_tedge),
 					&tedge_ch);
-			for (j = 1; j <= clb_net[inet].num_sinks; j++) {
-				dblock = clb_net[inet].node_block[j];
+			for (j = 1; j < (int) g_clbs_nlist.net[inet].nodes.size(); j++) {
+				dblock = g_clbs_nlist.net[inet].nodes[j].block;
 				normalization = block[dblock].type->num_pins
 						/ block[dblock].type->capacity;
-				normalized_pin = clb_net[inet].node_block_pin[j]
+				normalized_pin = g_clbs_nlist.net[inet].nodes[j].block_pin
 						% normalization;
 				d_rr_graph = block[dblock].pb->rr_graph;
 				dpin = OPEN;
