@@ -176,7 +176,9 @@
     <ClCompile Include="SRC\base\verilog_writer.c" />
     <ClCompile Include="SRC\base\vpr_api.c" />
     <ClCompile Include="SRC\draw\draw.c" />
+    <ClCompile Include="SRC\draw\draw_global.c" />
     <ClCompile Include="SRC\draw\graphics.c" />
+    <ClCompile Include="SRC\draw\intra_logic_block.c" />
     <ClCompile Include="SRC\main.c" />
     <ClCompile Include="SRC\base\check_netlist.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">SRC\util;SRC\timing;SRC\route;SRC\place;SRC\pack;SRC\base;..\libarchfpga\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -264,8 +266,10 @@
     <ClInclude Include="SRC\base\vpr_api.h" />
     <ClInclude Include="SRC\base\vpr_types.h" />
     <ClInclude Include="SRC\draw\draw.h" />
+    <ClInclude Include="SRC\draw\draw_global.h" />
     <ClInclude Include="SRC\draw\easygl_constants.h" />
     <ClInclude Include="SRC\draw\graphics.h" />
+    <ClInclude Include="SRC\draw\intra_logic_block.h" />
     <ClInclude Include="SRC\pack\cluster_feasibility_filter.h" />
     <ClInclude Include="SRC\pack\cluster_placement.h" />
     <ClInclude Include="SRC\pack\cluster_router.h" />

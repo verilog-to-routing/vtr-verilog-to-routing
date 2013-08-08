@@ -14,6 +14,8 @@ using namespace std;
 #include "draw.h"
 #include "read_xml_arch_file.h"
 #include "util.h"
+#include "draw_global.h"
+#include "intra_logic_block.h"
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
 			  * track CPU runtime.														   */
@@ -64,22 +66,6 @@ enum e_edge_dir {
 };
 /* Chanx to chany or vice versa? */
 
-/* Structure used to store coordinates and size of grid
- * tiles in the FPGA. 
- * tile_x: x-coordinate of the left and bottom corner
- *         of each grid_tile. (tile_x[0..nx+1])
- * tile_y: y-coordinate of the left and bottom corner
- *		   of each grid_tile. (tile_y[0..nx+1])
- * tile_width: Width (and height) of a grid_tile.
- *			   Set when init_draw_coords is called.
- * pin_size: The half-width or half-height of a pin.
- *			 Set when init_draw_coords is called.
- */
-typedef struct {
-	float *tile_x, *tile_y;
-	float tile_width, pin_size;
-} t_draw_coords;
-
 /* Structure which stores state information of a rr_node. Used
  * for controling the drawing each rr_node when ROUTING is on screen.
  * color: Color of the rr_node
@@ -119,6 +105,7 @@ typedef struct {
 	boolean show_nets;
 	e_draw_congestion show_congestion;
 	e_draw_rr_toggle draw_rr_toggle;
+	boolean show_blk_internal;
 	boolean show_graphics;
 	int gr_automode;
 	e_route_type draw_route_type;
@@ -140,12 +127,8 @@ typedef struct {
 /****************** Variables local to this module. *************************/
 
 /* Initializing some state variables for safety. */
-static t_draw_state draw_state = {NO_PICTURE, FALSE, DRAW_NO_CONGEST, DRAW_NO_RR};
-
-/* COORDINATE SYSTEM of grid_tiles goes from (0,0) at the lower left corner *
- * to (tile_x[nx+1]+tile_width, tile_y[ny+1]+tile_width) in the upper right *
- * corner.                                                                  */
-static t_draw_coords draw_coords;
+static t_draw_state draw_state = {NO_PICTURE, FALSE, DRAW_NO_CONGEST, DRAW_NO_RR,
+								  FALSE};
 
 /********************** Subroutines local to this module ********************/
 
@@ -153,6 +136,7 @@ static void toggle_nets(void (*drawscreen)(void));
 static void toggle_rr(void (*drawscreen)(void));
 static void toggle_congestion(void (*drawscreen)(void));
 static void highlight_crit_path(void (*drawscreen_ptr)(void));
+static void toggle_blk_internal(void (*drawscreen_ptr)(void));
 
 static void drawscreen(void);
 static void redraw_screen(void);
@@ -232,7 +216,10 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 
 			if (crit_path_button_enabled) {
 				create_button("Congestion", "Crit. Path", highlight_crit_path);
+				create_button("Crit. Path", "Blk Internal", toggle_blk_internal);
 			}
+			else
+				create_button("Congestion", "Blk Internal", toggle_blk_internal);
 		} 
 		else if (pic_on_screen_val == PLACEMENT && draw_state.pic_on_screen == ROUTING) {
 			destroy_button("Toggle RR");
@@ -241,6 +228,7 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 			if (crit_path_button_enabled) {
 				destroy_button("Crit. Path");
 			}
+			destroy_button("Blk Internal");
 		} 
 		else if (pic_on_screen_val == ROUTING
 				&& draw_state.pic_on_screen == NO_PICTURE) {
@@ -250,7 +238,10 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 
 			if (crit_path_button_enabled) {
 				create_button("Congestion", "Crit. Path", highlight_crit_path);
+				create_button("Crit. Path", "Blk Internal", toggle_blk_internal);
 			}
+			else
+				create_button("Congestion", "Blk Internal", toggle_blk_internal);
 		}
 	}
 	/* Save the main message. */
@@ -467,6 +458,12 @@ static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
 	free_int_list(&critical_path_head);
 
 	update_message(msg);
+	drawscreen_ptr();
+}
+
+
+static void toggle_blk_internal(void (*drawscreen_ptr)(void)) {
+	draw_state.show_blk_internal = (draw_state.show_blk_internal == FALSE) ? TRUE : FALSE;
 	drawscreen_ptr();
 }
 

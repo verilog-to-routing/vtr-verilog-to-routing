@@ -282,6 +282,12 @@
     <ClCompile Include="SRC\pack\lb_type_rr_graph.c">
       <Filter>Source Files\pack</Filter>
     </ClCompile>
+    <ClCompile Include="SRC\draw\intra_logic_block.c">
+      <Filter>Source Files\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\draw\draw_global.c">
+      <Filter>Source Files\draw</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SRC\base\check_netlist.h">
@@ -496,6 +502,12 @@
     </ClInclude>
     <ClInclude Include="SRC\pack\lb_type_rr_graph.h">
       <Filter>Header Files\pack</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\draw\draw_global.h">
+      <Filter>Header Files\draw</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\draw\intra_logic_block.h">
+      <Filter>Header Files\draw</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
