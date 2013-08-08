@@ -857,7 +857,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 					tnode[i].out_edges[count].to_node =
 							get_tnode_index(local_rr_graph[dnode].tnode);
 
-					if (g_atoms_nlist.net[local_rr_graph[irr_node].net_num].is_const_gen
+					if (vpack_net[local_rr_graph[irr_node].net_num].is_const_gen
 							== TRUE && tnode[i].type == TN_PRIMITIVE_OPIN) {
 						tnode[i].out_edges[count].Tdel = HUGE_NEGATIVE_FLOAT;
 						tnode[i].type = TN_CONSTANT_GEN_SOURCE;
@@ -1013,9 +1013,9 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 	int incr;
 	int count;
 
-	f_net_to_driver_tnode = (int*)my_malloc(g_atoms_nlist.net.size() * sizeof(int));
+	f_net_to_driver_tnode = (int*)my_malloc(num_logical_nets * sizeof(int));
 
-	for (i = 0; i < (int)g_atoms_nlist.net.size(); i++) {
+	for (i = 0; i < num_logical_nets; i++) {
 		f_net_to_driver_tnode[i] = OPEN;
 	}
 	
@@ -1092,7 +1092,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 			tnode[inode].type = TN_INPAD_OPIN;
 
 			tnode[inode].num_edges =
-					g_atoms_nlist.net[logical_block[i].output_nets[0][0]].num_sinks();
+					vpack_net[logical_block[i].output_nets[0][0]].num_sinks;
 			tnode[inode].out_edges = (t_tedge *) my_chunk_malloc(
 					tnode[inode].num_edges * sizeof(t_tedge),
 					&tedge_ch);
@@ -1141,7 +1141,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 								&tnode[inode];
 
 						tnode[inode].num_edges =
-								g_atoms_nlist.net[logical_block[i].output_nets[j][k]].num_sinks();
+								vpack_net[logical_block[i].output_nets[j][k]].num_sinks;
 						tnode[inode].out_edges = (t_tedge *) my_chunk_malloc(
 								tnode[inode].num_edges * sizeof(t_tedge),
 								&tedge_ch);
@@ -1263,26 +1263,26 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 					logical_block[tnode[i].block].output_nets[tnode[i].prepacked_data->model_port][tnode[i].prepacked_data->model_pin];
 			assert(inet != OPEN);
 
-			for (j = 1; j <= g_atoms_nlist.net[inet].num_sinks(); j++) {
-				if (g_atoms_nlist.net[inet].is_const_gen) {
+			for (j = 1; j <= vpack_net[inet].num_sinks; j++) {
+				if (vpack_net[inet].is_const_gen) {
 					tnode[i].out_edges[j - 1].Tdel = HUGE_NEGATIVE_FLOAT;
 					tnode[i].type = TN_CONSTANT_GEN_SOURCE;
 				} else {
 					tnode[i].out_edges[j - 1].Tdel = inter_cluster_net_delay;
 				}
-				if (g_atoms_nlist.net[inet].is_global) {
+				if (vpack_net[inet].is_global) {
 					assert(
-						logical_block[g_atoms_nlist.net[inet].nodes[j].block].clock_net == inet);
+							logical_block[vpack_net[inet].node_block[j]].clock_net == inet);
 					tnode[i].out_edges[j - 1].to_node =
-						get_tnode_index(logical_block[g_atoms_nlist.net[inet].nodes[j].block].clock_net_tnode);
+							get_tnode_index(logical_block[vpack_net[inet].node_block[j]].clock_net_tnode);
 				} else {
 					assert(
-						logical_block[g_atoms_nlist.net[inet].nodes[j].block].input_net_tnodes[g_atoms_nlist.net[inet].nodes[j].block_port][g_atoms_nlist.net[inet].nodes[j].block] != NULL);
+						logical_block[vpack_net[inet].node_block[j]].input_net_tnodes[vpack_net[inet].node_block_port[j]][vpack_net[inet].node_block_pin[j]] != NULL);
 					tnode[i].out_edges[j - 1].to_node =
-						get_tnode_index(logical_block[g_atoms_nlist.net[inet].nodes[j].block].input_net_tnodes[g_atoms_nlist.net[inet].nodes[j].block_port][g_atoms_nlist.net[inet].nodes[j].block_pin]);
+							get_tnode_index(logical_block[vpack_net[inet].node_block[j]].input_net_tnodes[vpack_net[inet].node_block_port[j]][vpack_net[inet].node_block_pin[j]]);
 				}
 			}
-			assert(tnode[i].num_edges == g_atoms_nlist.net[inet].num_sinks());
+			assert(tnode[i].num_edges == vpack_net[inet].num_sinks);
 			break;
 		case TN_PRIMITIVE_IPIN:
 		case TN_OUTPAD_IPIN:
@@ -1301,7 +1301,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 		}
 	}
 
-	for (i = 0; i < (int)g_atoms_nlist.net.size(); i++) {
+	for (i = 0; i < num_logical_nets; i++) {
 		assert(f_net_to_driver_tnode[i] != OPEN);
 	}
 }
@@ -1402,9 +1402,7 @@ void print_timing_graph(const char *fname) {
 	/* Prints the timing graph into a file. */
 
 	FILE *fp;
-	int inode, iedge, ilevel;
-	int i;
-	unsigned int m;
+	int inode, iedge, ilevel, i;
 	t_tedge *tedge;
 	e_tnode_type itype;
 	const char *tnode_type_names[] = {  "TN_INPAD_SOURCE", "TN_INPAD_OPIN", "TN_OUTPAD_IPIN",
@@ -1468,8 +1466,8 @@ void print_timing_graph(const char *fname) {
 	fprintf(fp, "\n");
 	fprintf(fp, "\n\nNet #\tNet_to_driver_tnode\n");
 
-	for (m = 0; m < g_clbs_nlist.net.size(); m++)
-		fprintf(fp, "%4d\t%6d\n", m, f_net_to_driver_tnode[m]);
+	for (i = 0; i < num_nets; i++)
+		fprintf(fp, "%4d\t%6d\n", i, f_net_to_driver_tnode[i]);
 
 	if (g_sdc && g_sdc->num_constrained_clocks == 1) {
 
@@ -3712,10 +3710,10 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 					if (logical_block[iblk].output_net_tnodes[i][j] != NULL) {
 						if (port->size > 1) {
 							fprintf(fpout, "\\\n%s[%d]=%s ", port->name, j,
-									g_atoms_nlist.net[logical_block[iblk].output_nets[i][j]].name);
+									vpack_net[logical_block[iblk].output_nets[i][j]].name);
 						} else {
 							fprintf(fpout, "\\\n%s=%s ", port->name,
-									g_atoms_nlist.net[logical_block[iblk].output_nets[i][j]].name);
+									vpack_net[logical_block[iblk].output_nets[i][j]].name);
 						}
 					} else {
 						if (port->size > 1) {
@@ -3755,7 +3753,7 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 				for (j = 0; j < port->size; j++) {
 					if (logical_block[iblk].output_net_tnodes[i][j] != NULL) {
 						fprintf(fpout, ".names %s tnode_%d\n",
-								g_atoms_nlist.net[logical_block[iblk].output_nets[i][j]].name,
+								vpack_net[logical_block[iblk].output_nets[i][j]].name,
 								get_tnode_index(logical_block[iblk].output_net_tnodes[i][j]));
 						fprintf(fpout, "1 1\n\n");
 					}
@@ -3800,14 +3798,14 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 							fprintf(fpout, "\\\n%s[%d]=%s ",
 									pb_graph_node->output_pins[i][j].port->name,
 									j,
-									g_atoms_nlist.net[irr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster].net_num].name);
+									vpack_net[irr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster].net_num].name);
 						} else {
 							char* port_name =
 									pb_graph_node->output_pins[i][j].port->name;
 							int pin_count =
 									pb_graph_node->output_pins[i][j].pin_count_in_cluster;
 							int node_index = irr_graph[pin_count].net_num;
-							char* node_name = g_atoms_nlist.net[node_index].name;
+							char* node_name = vpack_net[node_index].name;
 							fprintf(fpout, "\\\n%s=%s ", port_name, node_name);
 						}
 					} else {
@@ -3856,7 +3854,7 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 					if (irr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster].net_num
 							!= OPEN) {
 						fprintf(fpout, ".names %s tnode_%d\n",
-								g_atoms_nlist.net[irr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster].net_num].name,
+								vpack_net[irr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster].net_num].name,
 								get_tnode_index(irr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster].tnode));
 						fprintf(fpout, "1 1\n\n");
 					}
