@@ -6,10 +6,15 @@
 #       environment variable.  ISM is platform-specific and is used 
 #       to determine various build switches and directories.
 #
-#       This make file currently supports:
+#       This make file currently supports (csh/tcsh shells):
 #       - setenv ISM linux_x86_64
 #       - setenv ISM linux_i686
 #       - setenv ISM sun8
+#
+#       This make file currently supports (ksh/sh shells):
+#       - export ISM=linux_x86_64
+#       - export ISM=linux_i686
+#       - export ISM=sun8
 #
 ######################################################################
 
