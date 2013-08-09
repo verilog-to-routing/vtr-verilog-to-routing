@@ -1,5 +1,3 @@
-// ??? OUTP vector <t_lb_type_rr_node> **PackerRRGraph,
-
 /**
  General API for VPR
 
