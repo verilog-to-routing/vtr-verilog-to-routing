@@ -544,14 +544,14 @@ void init_draw_coords(float width_val) {
 	j = 0;
 	for (i = 0; i < (nx + 1); i++) {
 		draw_coords.tile_x[i] = (i * draw_coords.tile_width) + j;
-		j += chan_width_y[i] + 1; /* N wires need N+1 units of space */
+		j += chan_width.y_list[i] + 1; /* N wires need N+1 units of space */
 	}
 	draw_coords.tile_x[nx + 1] = ((nx + 1) * draw_coords.tile_width) + j;
 
 	j = 0;
 	for (i = 0; i < (ny + 1); ++i) {
 		draw_coords.tile_y[i] = (i * draw_coords.tile_width) + j;
-		j += chan_width_x[i] + 1;
+		j += chan_width.x_list[i] + 1;
 	}
 	draw_coords.tile_y[ny + 1] = ((ny + 1) * draw_coords.tile_width) + j;
 
