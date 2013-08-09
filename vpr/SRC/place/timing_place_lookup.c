@@ -451,13 +451,12 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 	if (router_opts.route_type == GLOBAL) {
 		graph_type = GRAPH_GLOBAL;
 	} else {
-		graph_type = (
-				det_routing_arch.directionality == BI_DIRECTIONAL ?
-						GRAPH_BIDIR : GRAPH_UNIDIR);
+		graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ?
+				GRAPH_BIDIR : GRAPH_UNIDIR);
 	}
 
 	build_rr_graph(graph_type, num_types, dummy_type_descriptors, nx, ny, grid,
-			chan_width_max, NULL, det_routing_arch.switch_block_type,
+			&chan_width, NULL, det_routing_arch.switch_block_type,
 			det_routing_arch.Fs, det_routing_arch.num_segment,
 			det_routing_arch.num_switch, segment_inf,
 			det_routing_arch.global_route_switch,
