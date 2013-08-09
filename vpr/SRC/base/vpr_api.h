@@ -1,3 +1,5 @@
+// ??? OUTP vector <t_lb_type_rr_node> **PackerRRGraph,
+
 /**
  General API for VPR
 
@@ -68,6 +70,7 @@ void vpr_setup_vpr(INP t_options *Options, INP boolean TimingEnabled,
 		OUTP struct s_annealing_sched *AnnealSched,
 		OUTP struct s_router_opts *RouterOpts,
 		OUTP struct s_det_routing_arch *RoutingArch,
+		OUTP vector <t_lb_type_rr_node> **PackerRRGraph,
 		OUTP t_segment_inf ** Segments, OUTP t_timing_inf * Timing,
 		OUTP boolean * ShowGraphics, OUTP int *GraphPause,
 		t_power_opts * PowerOpts);
