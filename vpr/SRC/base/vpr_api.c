@@ -350,9 +350,10 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 					num_instances_type[i], type_descriptors[i].name);
 		}
 		vpr_printf_info("\n");
-		chan_width_x = (int *) my_malloc((ny + 1) * sizeof(int));
-		chan_width_y = (int *) my_malloc((nx + 1) * sizeof(int));
-		chan_width_max = 0;
+		chan_width.x_max = chan_width.y_max = 0;
+		chan_width.x_min = chan_width.y_min = 0;
+		chan_width.x_list = (int *) my_malloc((ny + 1) * sizeof(int));
+		chan_width.y_list = (int *) my_malloc((nx + 1) * sizeof(int));
 
 		free(num_blocks_type);
 		free(num_instances_type);
@@ -447,11 +448,10 @@ void free_arch(t_arch* Arch) {
 	struct s_linked_vptr *vptr, *vptr_prev;
 
 	freeGrid();
-	free(chan_width_x);
-	chan_width_x = NULL;
-	free(chan_width_y);
-	chan_width_y = NULL;
-	chan_width_max = 0;
+	free(chan_width.x_list);
+	free(chan_width.y_list);
+	chan_width.x_list = chan_width.y_list = NULL;
+	chan_width.max = chan_width.x_max = chan_width.y_max = chan_width.x_min = chan_width.y_min = 0;
 
 	for (i = 0; i < Arch->num_switches; i++) {
 		if (Arch->Switches->name != NULL) {
@@ -1344,7 +1344,8 @@ static void clay_reload_ble_locations(int iblock) {
 
 				t_pb_graph_pin *pb_graph_pin = get_pb_graph_node_pin_from_block_pin(iblock, ipin);
 				int new_loc = pb_graph_pin->pin_number;
-				assert(temp[0][new_loc].name == NULL);
+				if (temp[0][new_loc].name)
+					continue;
 				temp[0][new_loc] = block[iblock].pb->child_pbs[0][i];
 			}
 		}
