@@ -81,7 +81,7 @@ void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom) {
 	pb_graph_node = pb->pb_graph_node;
 	pb_type = pb_graph_node->pb_type;	
 
-	//set_pb_modes(router_data, pb);
+	set_reset_pb_modes(router_data, pb, TRUE);
 }
 
 /* Remove pins of netlist atom from current routing drivers/targets */
@@ -94,11 +94,12 @@ void remove_atom_from_target(INOUTP t_lb_router_data *router_data, INP int iatom
 	pb_graph_node = pb->pb_graph_node;
 	pb_type = pb_graph_node->pb_type;		
 
-	//reset_pb_modes(router_data, pb);
+	set_reset_pb_modes(router_data, pb, FALSE);
 }
 
-/* Set mode of rr nodes to the pb used. */
-void set_pb_modes(INOUTP t_lb_router_data *router_data, INP t_pb *pb) {
+/* Set/Reset mode of rr nodes to the pb used.  If set == TRUE, then set all modes of the rr nodes affected by pb to the mode of the pb.
+   Set all modes related to pb to 0 otherwise */
+void set_reset_pb_modes(INOUTP t_lb_router_data *router_data, INP t_pb *pb, INP boolean set) {
 	t_pb_type *pb_type;
 	t_pb_graph_node *pb_graph_node;
 	int mode = pb->mode;
@@ -111,32 +112,29 @@ void set_pb_modes(INOUTP t_lb_router_data *router_data, INP t_pb *pb) {
 	for(int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
 			inode = pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
-			router_data->lb_rr_node_stats[inode].mode = mode;
+			router_data->lb_rr_node_stats[inode].mode = (set == TRUE) ? mode : 0;
 		}
 	}
-
 	for(int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
 			inode = pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
-			router_data->lb_rr_node_stats[inode].mode = mode;
+			router_data->lb_rr_node_stats[inode].mode = (set == TRUE) ? mode : 0;
 		}
 	}
 
 	/* Output pin modes are based on parent pb, so set children to have new mode */
-
-
-	
+	for(int ichild_type = 0; ichild_type < pb_type->modes[mode].num_pb_type_children; ichild_type++) {
+		for(int ichild = 0; ichild < pb_type->modes[mode].pb_type_children[ichild_type].num_pb; ichild++) {
+			t_pb_graph_node *child_pb_graph_node = &pb_graph_node->child_pb_graph_nodes[mode][ichild_type][ichild];
+			for(int iport = 0; iport < child_pb_graph_node->num_output_ports; iport++) {
+				for(int ipin = 0; ipin < child_pb_graph_node->num_output_pins[iport]; ipin++) {
+					inode = child_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
+					router_data->lb_rr_node_stats[inode].mode = (set == TRUE) ? mode : 0;
+				}
+			}
+		}
+	}
 }
-
-/* Mode of rr nodes corresponding to pb is reset */
-void reset_pb_modes(INOUTP t_lb_router_data *router_data, INP t_pb *pb) {
-	t_pb_type *pb_type;
-	t_pb_graph_node *pb_graph_node;
-
-	pb_graph_node = pb->pb_graph_node;
-	pb_type = pb_graph_node->pb_type;
-}
-
 
 /* Save current route solution 
    Requires that current route solution is correct

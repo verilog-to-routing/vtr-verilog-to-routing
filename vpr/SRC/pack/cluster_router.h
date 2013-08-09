@@ -14,8 +14,7 @@ void free_router_data(INOUTP t_lb_router_data *router_data);
 void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom_block);
 void remove_atom_from_target(INOUTP t_lb_router_data *router_data, INP int iatom_block);
 void save_current_route(INOUTP t_lb_router_data *router_data);
-void set_pb_modes(INOUTP t_lb_router_data *router_data, INP t_pb *pb);
-void reset_pb_modes(INOUTP t_lb_router_data *router_data, INP t_pb *pb);
+void set_reset_pb_modes(INOUTP t_lb_router_data *router_data, INP t_pb *pb, INP boolean set);
 void restore_previous_route(INOUTP t_lb_router_data *router_data);
 boolean try_route(INOUTP t_lb_router_data *router_data);
 
