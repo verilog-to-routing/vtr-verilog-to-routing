@@ -58,8 +58,9 @@ vector<t_lb_type_rr_node> *alloc_and_load_all_lb_type_rr_graph() {
 		if(&type_descriptors[i] != EMPTY_TYPE) {
 			 alloc_and_load_lb_type_rr_graph_for_type(&type_descriptors[i], lb_type_rr_graphs[i]);
 
-			 /* jedit todo: Now that the data is loaded, reallocate to the precise amount of memory needed to prevent insidious bugs */
-			 /* lb_type_rr_graphs[i].shrink_to_fit();  */
+			 /* Now that the data is loaded, reallocate to the precise amount of memory needed to prevent insidious bugs */
+			 /* I should be using shrinktofit() but as of 2013, C++ 11 is yet not well supported so I can't call this function in gcc */
+			 std::vector<t_lb_type_rr_node>(lb_type_rr_graphs[i]).swap(lb_type_rr_graphs[i]);
 		}
 	}
 	return lb_type_rr_graphs;

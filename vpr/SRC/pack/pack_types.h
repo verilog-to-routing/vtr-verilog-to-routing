@@ -132,14 +132,14 @@ struct t_lb_rr_node_stats {
 	int occ;								/* Number of nets currently using this lb_rr_node */
 	vector<t_lb_traceback> tracebacks;		/* Nets that share this node in their routetree */
 	
-	t_pb *pb;								/* Physical block that this rr_node is controlled by */
+	int mode;								/* Mode that this rr_node is set to */
 	
 	float current_cost;		/* Current cost of using this node */
 	float historical_cost;	/* Historical cost of using this node */
 
 	t_lb_rr_node_stats() {
 		occ = 0;
-		pb = NULL;
+		mode = 0;
 		current_cost = 0;
 		historical_cost = 0;
 	}
@@ -181,11 +181,13 @@ struct t_lb_router_data {
 
 	/* Logical-to-physical mapping info */
 	t_lb_rr_node_stats *lb_rr_node_stats;		/* [0..lb_type_graph->size()-1] Stats for each logic block instance */
+	boolean is_routed;							/* Stores whether or not the current logical-to-physical mapping has a routed solution */
 
 	t_lb_router_data() {
 		lb_type_graph = NULL;	
 		lb_rr_node_stats = NULL;	
 		intra_lb_net = NULL;
+		is_routed = FALSE;
 	}
 };
 
