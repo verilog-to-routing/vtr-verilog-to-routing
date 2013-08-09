@@ -77,13 +77,8 @@ void vpr_print_title(void) {
 	vpr_printf_info("VPR FPGA Placement and Routing.\n");
 	vpr_printf_info("Version: Version " VPR_VERSION "\n");
 	vpr_printf_info("Compiled: " __DATE__ ".\n");
-	vpr_printf_info("Original VPR by V. Betz.\n");
-	vpr_printf_info("Timing-driven placement enhancements by A. Marquardt.\n");
-	vpr_printf_info("Single-drivers enhancements by Andy Ye with additions by.\n");
-	vpr_printf_info("Mark Fang, Jason Luu, Ted Campbell\n");
-	vpr_printf_info("Heterogeneous stucture support by Jason Luu and Ted Campbell.\n");
-	vpr_printf_info("T-VPack clustering integration by Jason Luu.\n");
-	vpr_printf_info("Area-driven AAPack added by Jason Luu.\n");
+	vpr_printf_info("University of Toronto\n");
+	vpr_printf_info("vpr@eecg.utoronto.ca\n");
 	vpr_printf_info("This is free open source code under MIT license.\n");
 	vpr_printf_info("\n");
 
