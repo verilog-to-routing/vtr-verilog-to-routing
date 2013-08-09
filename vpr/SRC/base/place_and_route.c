@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <ctime>
+#include <climits>
 using namespace std;
 
 #include "util.h"
