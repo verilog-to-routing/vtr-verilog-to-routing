@@ -193,6 +193,8 @@ static float get_delay_normalization_fac(int nodes_per_chan,
 	for (itrack = 0; itrack < nodes_per_chan; itrack++) {
 		inode = find_average_rr_node_index(nx, ny, CHANX, itrack, 
 				L_rr_node_indices);
+		if (inode == -1)
+			continue;
 		cost_index = rr_node[inode].cost_index;
 		frac_num_seg = clb_dist * rr_indexed_data[cost_index].inv_length;
 		Tdel = frac_num_seg * rr_indexed_data[cost_index].T_linear
@@ -204,6 +206,8 @@ static float get_delay_normalization_fac(int nodes_per_chan,
 	for (itrack = 0; itrack < nodes_per_chan; itrack++) {
 		inode = find_average_rr_node_index(nx, ny, CHANY, itrack, 
 				L_rr_node_indices);
+		if (inode == -1)
+			continue;
 		cost_index = rr_node[inode].cost_index;
 		frac_num_seg = clb_dist * rr_indexed_data[cost_index].inv_length;
 		Tdel = frac_num_seg * rr_indexed_data[cost_index].T_linear
@@ -234,6 +238,8 @@ static float get_average_opin_delay(t_ivec *** L_rr_node_indices,
 			if (type_descriptors[itype].class_inf[iclass].type == DRIVER) { /* OPIN */
 				inode = find_average_rr_node_index(nx, ny, OPIN,
 						ipin, L_rr_node_indices);
+				if (inode == -1)
+					continue;
 				num_edges = rr_node[inode].num_edges;
 
 				for (iedge = 0; iedge < num_edges; iedge++) {
@@ -277,6 +283,8 @@ static void load_rr_indexed_data_T_values(int index_start,
 	for (itrack = 0; itrack < nodes_per_chan; itrack++) {
 		inode = find_average_rr_node_index(nx, ny, rr_type, itrack,
 				L_rr_node_indices);
+		if (inode == -1)
+			continue;
 		cost_index = rr_node[inode].cost_index;
 		num_nodes_of_index[cost_index]++;
 		C_total[cost_index] += rr_node[inode].C;
