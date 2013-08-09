@@ -613,6 +613,7 @@ struct s_file_name_opts {
 
 /* Options for packing
  * TODO: document each packing parameter         */
+
 enum e_packer_algorithm {
 	PACK_GREEDY, PACK_BRUTE_FORCE
 };
@@ -647,34 +648,13 @@ struct s_packer_opts {
  * num_blocks^4/3 to find the number of moves per temperature.  The       *
  * remaining information is used only for USER_SCHED, and have the        *
  * obvious meanings.                                                      */
+
 struct s_annealing_sched {
 	enum sched_type type;
 	float inner_num;
 	float init_t;
 	float alpha_t;
 	float exit_t;
-};
-
-enum e_place_algorithm {
-	BOUNDING_BOX_PLACE, NET_TIMING_DRIVEN_PLACE, PATH_TIMING_DRIVEN_PLACE
-};
-
-struct s_placer_opts {
-	enum e_place_algorithm place_algorithm;
-	float timing_tradeoff;
-	int block_dist;
-	float place_cost_exp;
-	int place_chan_width;
-	enum e_pad_loc_type pad_loc_type;
-	char *pad_loc_file;
-	enum pfreq place_freq;
-	int recompute_crit_iter;
-	boolean enable_timing_computations;
-	int inner_loop_recompute_divider;
-	float td_place_exp_first;
-	int seed;
-	float td_place_exp_last;
-	boolean doPlacement;
 };
 
 /* Various options for the placer.                                           *
@@ -705,43 +685,26 @@ struct s_placer_opts {
  * td_place_exp_last: value that the criticality exponent will be at the end *
  * doPlacement: TRUE if placement is supposed to be done in the CAD flow, FALSE otherwise */
 
-enum e_route_type {
-	GLOBAL, DETAILED
-};
-enum e_router_algorithm {
-	BREADTH_FIRST, TIMING_DRIVEN, NO_TIMING
-};
-enum e_base_cost_type {
-	INTRINSIC_DELAY, DELAY_NORMALIZED, DEMAND_ONLY
-};
-enum e_routing_failure_predictor {
-	OFF, SAFE, AGGRESSIVE
+enum e_place_algorithm {
+	BOUNDING_BOX_PLACE, NET_TIMING_DRIVEN_PLACE, PATH_TIMING_DRIVEN_PLACE
 };
 
-#define NO_FIXED_CHANNEL_WIDTH -1
-
-typedef struct s_router_opts t_router_opts;
-struct s_router_opts {
-	float first_iter_pres_fac;
-	float initial_pres_fac;
-	float pres_fac_mult;
-	float acc_fac;
-	float bend_cost;
-	int max_router_iterations;
-	int bb_factor;
-	enum e_route_type route_type;
-	int fixed_channel_width;
-	boolean trim_empty_channels;
-	boolean trim_obs_channels;
-	enum e_router_algorithm router_algorithm;
-	enum e_base_cost_type base_cost_type;
-	float astar_fac;
-	float max_criticality;
-	float criticality_exp;
-	boolean verify_binary_search;
-	boolean full_stats;
-	boolean doRouting;
-	enum e_routing_failure_predictor routing_failure_predictor;
+struct s_placer_opts {
+	enum e_place_algorithm place_algorithm;
+	float timing_tradeoff;
+	int block_dist;
+	float place_cost_exp;
+	int place_chan_width;
+	enum e_pad_loc_type pad_loc_type;
+	char *pad_loc_file;
+	enum pfreq place_freq;
+	int recompute_crit_iter;
+	boolean enable_timing_computations;
+	int inner_loop_recompute_divider;
+	float td_place_exp_first;
+	int seed;
+	float td_place_exp_last;
+	boolean doPlacement;
 };
 
 /* All the parameters controlling the router's operation are in this        *
@@ -788,18 +751,43 @@ struct s_router_opts {
  * routing failure predictor, how aggressive the threshold used to judge
  * and abort routings deemed unroutable */
 
-typedef struct s_det_routing_arch t_det_routing_arch;
-struct s_det_routing_arch {
-	enum e_directionality directionality; /* UDSD by AY */
-	int Fs;
-	enum e_switch_block_type switch_block_type;
-	int num_segment;
-	short num_switch;
-	short global_route_switch;
-	short delayless_switch;
-	short wire_to_ipin_switch;
-	float R_minW_nmos;
-	float R_minW_pmos;
+enum e_route_type {
+	GLOBAL, DETAILED
+};
+enum e_router_algorithm {
+	BREADTH_FIRST, TIMING_DRIVEN, NO_TIMING
+};
+enum e_base_cost_type {
+	INTRINSIC_DELAY, DELAY_NORMALIZED, DEMAND_ONLY
+};
+enum e_routing_failure_predictor {
+	OFF, SAFE, AGGRESSIVE
+};
+
+#define NO_FIXED_CHANNEL_WIDTH -1
+
+typedef struct s_router_opts t_router_opts;
+struct s_router_opts {
+	float first_iter_pres_fac;
+	float initial_pres_fac;
+	float pres_fac_mult;
+	float acc_fac;
+	float bend_cost;
+	int max_router_iterations;
+	int bb_factor;
+	enum e_route_type route_type;
+	int fixed_channel_width;
+	boolean trim_empty_channels;
+	boolean trim_obs_channels;
+	enum e_router_algorithm router_algorithm;
+	enum e_base_cost_type base_cost_type;
+	float astar_fac;
+	float max_criticality;
+	float criticality_exp;
+	boolean verify_binary_search;
+	boolean full_stats;
+	boolean doRouting;
+	enum e_routing_failure_predictor routing_failure_predictor;
 };
 
 /* Defines the detailed routing architecture of the FPGA.  Only important   *
@@ -825,15 +813,50 @@ struct s_det_routing_arch {
  *               Used only in the FPGA area model.                          *
  * R_minW_pmos:  Resistance (in Ohms) of a minimum width pmos transistor.   */
 
+typedef struct s_det_routing_arch t_det_routing_arch;
+struct s_det_routing_arch {
+	enum e_directionality directionality; /* UDSD by AY */
+	int Fs;
+	enum e_switch_block_type switch_block_type;
+	int num_segment;
+	short num_switch;
+	short global_route_switch;
+	short delayless_switch;
+	short wire_to_ipin_switch;
+	float R_minW_nmos;
+	float R_minW_pmos;
+};
+
+/* legacy routing drivers by Andy Ye (remove or integrate in future) */
+
 enum e_drivers {
 	MULTI_BUFFERED, SINGLE
 };
-/* legacy routing drivers by Andy Ye (remove or integrate in future) */
+
+/* UDSD by AY */
 
 enum e_direction {
 	INC_DIRECTION = 0, DEC_DIRECTION = 1, BI_DIRECTION = 2
 };
-/* UDSD by AY */
+
+/* Lists detailed information about segmentation.  [0 .. W-1].              *
+ * length:  length of segment.                                              *
+ * start:  index at which a segment starts in channel 0.                    *
+ * longline:  TRUE if this segment spans the entire channel.                *
+ * sb:  [0..length]:  TRUE for every channel intersection, relative to the  *
+ *      segment start, at which there is a switch box.                      *
+ * cb:  [0..length-1]:  TRUE for every logic block along the segment at     *
+ *      which there is a connection box.                                    *
+ * wire_switch:  Index of the switch type that connects other wires *to*    *
+ *               this segment.                                              *
+ * opin_switch:  Index of the switch type that connects output pins (OPINs) *
+ *               *to* this segment.                                         *
+ * Cmetal: Capacitance of a routing track, per unit logic block length.     *
+ * Rmetal: Resistance of a routing track, per unit logic block length.      *
+ * (UDSD by AY) direction: The direction of a routing track.                *
+ * (UDSD by AY) drivers: How do signals driving a routing track connect to  *
+ *                       the track?                                         *
+ * index: index of the segment type used for this track.                    */
 
 typedef struct s_seg_details {
 	int length;
@@ -856,44 +879,21 @@ typedef struct s_seg_details {
 	float Cmetal_per_m; /* Used for power */
 } t_seg_details;
 
-/* Lists detailed information about segmentation.  [0 .. W-1].              *
- * length:  length of segment.                                              *
- * start:  index at which a segment starts in channel 0.                    *
- * longline:  TRUE if this segment spans the entire channel.                *
- * sb:  [0..length]:  TRUE for every channel intersection, relative to the  *
- *      segment start, at which there is a switch box.                      *
- * cb:  [0..length-1]:  TRUE for every logic block along the segment at     *
- *      which there is a connection box.                                    *
- * wire_switch:  Index of the switch type that connects other wires *to*    *
- *               this segment.                                              *
- * opin_switch:  Index of the switch type that connects output pins (OPINs) *
- *               *to* this segment.                                         *
- * Cmetal: Capacitance of a routing track, per unit logic block length.     *
- * Rmetal: Resistance of a routing track, per unit logic block length.      *
- * (UDSD by AY) direction: The direction of a routing track.                *
- * (UDSD by AY) drivers: How do signals driving a routing track connect to  *
- *                       the track?                                         *
- * index: index of the segment type used for this track.                    */
+/* Defines a 2-D array of t_seg_details data structures (one per channel)   */
 
 typedef struct s_seg_details** t_chan_details;
 
-/* Defines a 2-D array of t_seg_details data structures (one per channel)   */
+/* A linked list of float pointers.  Used for keeping track of   *
+ * which pathcosts in the router have been changed.              */
 
 struct s_linked_f_pointer {
 	struct s_linked_f_pointer *next;
 	float *fptr;
 };
 
-/* A linked list of float pointers.  Used for keeping track of   *
- * which pathcosts in the router have been changed.              */
-
 /* Uncomment lines below to save some memory, at the cost of debugging ease. */
 /*enum e_rr_type {SOURCE, SINK, IPIN, OPIN, CHANX, CHANY}; */
 /* typedef short t_rr_type */
-
-typedef enum e_rr_type {
-	SOURCE = 0, SINK, IPIN, OPIN, CHANX, CHANY, INTRA_CLUSTER_EDGE, NUM_RR_TYPES
-} t_rr_type;
 
 /* Type of a routing resource node.  x-directed channel segment,   *
  * y-directed channel segment, input pin to a clb to pad, output   *
@@ -903,13 +903,9 @@ typedef enum e_rr_type {
  * SINK:    A dummy node that is a logical input within a block    *
  *          -- i.e. the gate that needs a signal.                  */
 
-typedef struct s_trace {
-	int index;
-	short iswitch;
-	int iblock;
-	int num_siblings;
-	struct s_trace *next;
-} t_trace;
+typedef enum e_rr_type {
+	SOURCE = 0, SINK, IPIN, OPIN, CHANX, CHANY, INTRA_CLUSTER_EDGE, NUM_RR_TYPES
+} t_rr_type;
 
 /* Basic element used to store the traceback (routing) of each net.        *
  * index:   Array index (ID) of this routing resource node.                *
@@ -925,44 +921,14 @@ typedef struct s_trace {
  *               single child, '+1' defines branch with 2 or more children.*
  * next:    Pointer to the next traceback element in this route.           */
 
-#define NO_PREVIOUS -1
+typedef struct s_trace {
+	int index;
+	short iswitch;
+	int iblock;
+	int num_siblings;
+	struct s_trace *next;
+} t_trace;
 
-typedef struct s_rr_node {
-	short xlow;
-	short xhigh;
-	short ylow;
-	short yhigh;
-
-	short ptc_num;
-
-	short cost_index;
-	short occ;
-	short capacity;
-	short fan_in;
-	short num_edges;
-	t_rr_type type;
-	const char *rr_get_type_string(); /* Retrieve rr_type as a string */
-	int *edges;
-	short *switches;
-
-	float R;
-	float C;
-
-	enum e_direction direction; /* UDSD by AY */
-	enum e_drivers drivers; /* UDSD by AY */
-	int num_wire_drivers; /* UDSD by WMF */
-	int num_opin_drivers; /* UDSD by WMF (could use "short") */
-
-	/* Used by clustering only (TODO, may wish to extend to regular router) */
-	int prev_node;
-	int prev_edge;
-	int net_num;
-	t_pb_graph_pin *pb_graph_pin;
-	t_tnode *tnode;
-	float pack_intrinsic_cost;
-
-	int z; /* For IPIN, source, and sink nodes, helps identify which location this rr_node belongs to */
-} t_rr_node;
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
  * to store algorithm-specific data should be stored in one of the           *
@@ -1008,23 +974,44 @@ typedef struct s_rr_node {
  *                       Otherwise the value contained in the field should   *
  *                       be ignored.                                         */
 
-typedef struct s_rr_indexed_data {
-	float base_cost;
-	float saved_base_cost;
-	int ortho_cost_index;
-	int seg_index;
-	float inv_length;
-	float T_linear;
-	float T_quadratic;
-	float C_load;
+#define NO_PREVIOUS -1
 
+typedef struct s_rr_node {
+	short xlow;
+	short xhigh;
+	short ylow;
+	short yhigh;
 
-	/* Power Estimation: Wire capacitance in (Farads * tiles / meter)
-	 * This is used to calculate capacitance of this segment, by
-	 * multiplying it by the length per tile (meters/tile).
-	 * This is only the wire capacitance, not including any switches */
-	float C_tile_per_m;
-} t_rr_indexed_data;
+	short ptc_num;
+
+	short cost_index;
+	short occ;
+	short capacity;
+	short fan_in;
+	short num_edges;
+	t_rr_type type;
+	const char *rr_get_type_string(); /* Retrieve rr_type as a string */
+	int *edges;
+	short *switches;
+
+	float R;
+	float C;
+
+	enum e_direction direction; /* UDSD by AY */
+	enum e_drivers drivers; /* UDSD by AY */
+	int num_wire_drivers; /* UDSD by WMF */
+	int num_opin_drivers; /* UDSD by WMF (could use "short") */
+
+	/* Used by clustering only (TODO, may wish to extend to regular router) */
+	int prev_node;
+	int prev_edge;
+	int net_num;
+	t_pb_graph_pin *pb_graph_pin;
+	t_tnode *tnode;
+	float pack_intrinsic_cost;
+
+	int z; /* For IPIN, source, and sink nodes, helps identify which location this rr_node belongs to */
+} t_rr_node;
 
 /* Data that is pointed to by the .cost_index member of t_rr_node.  It's     *
  * purpose is to store the base_cost so that it can be quickly changed       *
@@ -1048,6 +1035,24 @@ typedef struct s_rr_indexed_data {
  * C_load:  Load capacitance seen by the driver for each segment added to    *
  *          the chain driven by the driver.  0 for buffered segments.        */
 
+typedef struct s_rr_indexed_data {
+	float base_cost;
+	float saved_base_cost;
+	int ortho_cost_index;
+	int seg_index;
+	float inv_length;
+	float T_linear;
+	float T_quadratic;
+	float C_load;
+
+	/* Power Estimation: Wire capacitance in (Farads * tiles / meter)
+	 * This is used to calculate capacitance of this segment, by
+	 * multiplying it by the length per tile (meters/tile).
+	 * This is only the wire capacitance, not including any switches */
+	float C_tile_per_m;
+} t_rr_indexed_data;
+
+/* Index of the SOURCE, SINK, OPIN, IPIN, etc. member of rr_indexed_data.    */
 enum e_cost_indices {
 	SOURCE_COST_INDEX = 0,
 	SINK_COST_INDEX,
@@ -1056,13 +1061,21 @@ enum e_cost_indices {
 	CHANX_COST_INDEX_START
 };
 
-/* Gives the index of the SOURCE, SINK, OPIN, IPIN, etc. member of           *
- * rr_indexed_data.                                                          */
-
 /* Power estimation options */
 struct s_power_opts {
 	boolean do_power; /* Perform power estimation? */
 };
+
+/* Channel width data */
+typedef struct s_chan_width {
+	int max;
+	int x_max;
+	int y_max;
+	int x_min;
+	int y_min;
+	int *x_list;
+	int *y_list;
+} t_chan_width;
 
 /* Type to store our list of token to enum pairings */
 struct s_TokenPair {
