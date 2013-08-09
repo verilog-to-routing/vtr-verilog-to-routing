@@ -1,5 +1,4 @@
 input_file_xml  "k4_N8_soft_logic_only.xml"
-// ??? 
 input_file_fabric "tseng.4.fabric"
 input_file_blif "tseng.4.blif"
 
@@ -28,5 +27,4 @@ halt_max_errors   -1
 // trace_vpr_show_setup yes
 // trace_vpr_echo_file yes
 
-// ??? 
 fabric_block_enable yes

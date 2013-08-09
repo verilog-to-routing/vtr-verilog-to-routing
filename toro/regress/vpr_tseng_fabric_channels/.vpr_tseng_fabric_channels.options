@@ -36,4 +36,4 @@ display_error_reject ".*check_rr_graph.*" // Ignore select check_rr_graph errors
 
 fabric_channels_enable yes
 
-place_temp_inner_num 10.0
+route_channel_width 50

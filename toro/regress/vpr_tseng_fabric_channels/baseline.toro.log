@@ -989,480 +989,250 @@ Executing VPR interface...
 [vpr] 	Architecture 144	blocks of type: clb
 [vpr] 
 [vpr] Overriding architecture channels based on fabric channel widths...
-[vpr] WARNING(2): Replacing architecture x channel[0] width 100 with fabric channel width 44.
-[vpr] WARNING(3): Replacing architecture x channel[1] width 100 with fabric channel width 34.
-[vpr] WARNING(4): Replacing architecture x channel[2] width 100 with fabric channel width 48.
-[vpr] WARNING(5): Replacing architecture x channel[3] width 100 with fabric channel width 40.
+[vpr] WARNING(2): Replacing architecture x channel[0] width 100 with fabric channel width 50.
+[vpr] WARNING(3): Replacing architecture x channel[1] width 100 with fabric channel width 50.
+[vpr] WARNING(4): Replacing architecture x channel[2] width 100 with fabric channel width 50.
+[vpr] WARNING(5): Replacing architecture x channel[3] width 100 with fabric channel width 50.
 [vpr] WARNING(6): Replacing architecture x channel[4] width 100 with fabric channel width 50.
-[vpr] WARNING(7): Replacing architecture x channel[5] width 100 with fabric channel width 42.
+[vpr] WARNING(7): Replacing architecture x channel[5] width 100 with fabric channel width 50.
 [vpr] WARNING(8): Replacing architecture x channel[6] width 100 with fabric channel width 50.
-[vpr] WARNING(9): Replacing architecture x channel[7] width 100 with fabric channel width 42.
+[vpr] WARNING(9): Replacing architecture x channel[7] width 100 with fabric channel width 50.
 [vpr] WARNING(10): Replacing architecture x channel[8] width 100 with fabric channel width 50.
-[vpr] WARNING(11): Replacing architecture x channel[9] width 100 with fabric channel width 40.
-[vpr] WARNING(12): Replacing architecture x channel[10] width 100 with fabric channel width 48.
-[vpr] WARNING(13): Replacing architecture x channel[11] width 100 with fabric channel width 34.
-[vpr] WARNING(14): Replacing architecture x channel[12] width 100 with fabric channel width 44.
+[vpr] WARNING(11): Replacing architecture x channel[9] width 100 with fabric channel width 50.
+[vpr] WARNING(12): Replacing architecture x channel[10] width 100 with fabric channel width 50.
+[vpr] WARNING(13): Replacing architecture x channel[11] width 100 with fabric channel width 50.
+[vpr] WARNING(14): Replacing architecture x channel[12] width 100 with fabric channel width 50.
 [vpr] WARNING(15): Replacing architecture y channel[0] width 100 with fabric channel width 44.
-[vpr] WARNING(16): Replacing architecture y channel[1] width 100 with fabric channel width 34.
-[vpr] WARNING(17): Replacing architecture y channel[2] width 100 with fabric channel width 48.
-[vpr] WARNING(18): Replacing architecture y channel[3] width 100 with fabric channel width 40.
-[vpr] WARNING(19): Replacing architecture y channel[4] width 100 with fabric channel width 50.
-[vpr] WARNING(20): Replacing architecture y channel[5] width 100 with fabric channel width 42.
-[vpr] WARNING(21): Replacing architecture y channel[6] width 100 with fabric channel width 50.
-[vpr] WARNING(22): Replacing architecture y channel[7] width 100 with fabric channel width 42.
-[vpr] WARNING(23): Replacing architecture y channel[8] width 100 with fabric channel width 50.
-[vpr] WARNING(24): Replacing architecture y channel[9] width 100 with fabric channel width 40.
-[vpr] WARNING(25): Replacing architecture y channel[10] width 100 with fabric channel width 48.
-[vpr] WARNING(26): Replacing architecture y channel[11] width 100 with fabric channel width 34.
+[vpr] WARNING(16): Replacing architecture y channel[1] width 100 with fabric channel width 44.
+[vpr] WARNING(17): Replacing architecture y channel[2] width 100 with fabric channel width 44.
+[vpr] WARNING(18): Replacing architecture y channel[3] width 100 with fabric channel width 44.
+[vpr] WARNING(19): Replacing architecture y channel[4] width 100 with fabric channel width 44.
+[vpr] WARNING(20): Replacing architecture y channel[5] width 100 with fabric channel width 44.
+[vpr] WARNING(21): Replacing architecture y channel[6] width 100 with fabric channel width 44.
+[vpr] WARNING(22): Replacing architecture y channel[7] width 100 with fabric channel width 44.
+[vpr] WARNING(23): Replacing architecture y channel[8] width 100 with fabric channel width 44.
+[vpr] WARNING(24): Replacing architecture y channel[9] width 100 with fabric channel width 44.
+[vpr] WARNING(25): Replacing architecture y channel[10] width 100 with fabric channel width 44.
+[vpr] WARNING(26): Replacing architecture y channel[11] width 100 with fabric channel width 44.
 [vpr] WARNING(27): Replacing architecture y channel[12] width 100 with fabric channel width 44.
 [vpr] 
 [vpr] There are 1603 point to point connections in this circuit.
 [vpr] 
-[vpr] Initial placement cost: 1.02394 bb_cost: 202.487 td_cost: 1.64611e-07 delay_cost: 4.64102e-07
+[vpr] Initial placement cost: 1.00758 bb_cost: 184.923 td_cost: 1.6547e-07 delay_cost: 4.76614e-07
 [vpr] 
 [vpr] ------- ------- ---------- ---------- ---------- ---------- ------- ------- ------- ------- ------ --------- ------
 [vpr]       T    Cost Av BB Cost Av TD Cost Av Tot Del P to P Del   d_max Ac Rate Std Dev R limit    Exp Tot Moves  Alpha
 [vpr] ------- ------- ---------- ---------- ---------- ---------- ------- ------- ------- ------- ------ --------- ------
-[vpr] 0.21628 0.97583   198.6956 1.5167e-07 4.584e-07  2.8952e-10  7.6876  0.9970  0.0143 13.0000  1.000     20616  0.500
-[vpr] 0.10814 0.98003   198.4576 1.5237e-07 4.581e-07  2.8764e-10  7.7560  0.9953  0.0148 13.0000  1.000     41232  0.500
-[vpr] 0.05407 0.97393   197.3731 1.4831e-07 4.5671e-07 2.8483e-10  7.8927  0.9875  0.0130 13.0000  1.000     61848  0.500
-[vpr] 0.02704 0.96150   196.8213 1.5624e-07 4.5578e-07 2.8948e-10  7.4031  0.9805  0.0138 13.0000  1.000     82464  0.500
-[vpr] 0.01352 1.01091   195.1530 1.5404e-07 4.5272e-07 2.7899e-10  7.3458  0.9586  0.0167 13.0000  1.000    103080  0.900
-[vpr] 0.01217 0.99131   195.3684 1.5458e-07 4.5332e-07 2.844e-10   7.3458  0.9548  0.0149 13.0000  1.000    123696  0.900
-[vpr] 0.01095 0.98625   194.4425 1.5357e-07 4.5198e-07 2.8594e-10  7.4141  0.9505  0.0139 13.0000  1.000    144312  0.900
-[vpr] 0.00985 0.99503   194.3044 1.5317e-07 4.5286e-07 2.8577e-10  7.4825  0.9424  0.0144 13.0000  1.000    164928  0.900
-[vpr] 0.00887 0.98425   193.4874 1.6075e-07 4.5048e-07 2.8176e-10  6.9355  0.9350  0.0143 13.0000  1.000    185544  0.900
-[vpr] 0.00798 0.99796   193.1547 1.5591e-07 4.5064e-07 2.8095e-10  7.2090  0.9334  0.0125 13.0000  1.000    206160  0.900
-[vpr] 0.00718 1.02022   192.2743 1.5647e-07 4.5017e-07 2.7728e-10  7.1407  0.9183  0.0161 13.0000  1.000    226776  0.900
-[vpr] 0.00647 0.99613   191.0466 1.5223e-07 4.4864e-07 2.7928e-10  7.2664  0.9101  0.0147 13.0000  1.000    247392  0.900
-[vpr] 0.00582 0.97859   191.2754 1.5011e-07 4.494e-07  2.8594e-10  7.4825  0.9059  0.0148 13.0000  1.000    268008  0.900
-[vpr] 0.00524 0.97994   190.1175 1.5112e-07 4.4615e-07 2.7988e-10  7.4141  0.8977  0.0157 13.0000  1.000    288624  0.900
-[vpr] 0.00471 0.97372   189.2625 1.5353e-07 4.4489e-07 2.8351e-10  7.1980  0.8834  0.0125 13.0000  1.000    309240  0.900
-[vpr] 0.00424 0.98139   187.2665 1.4691e-07 4.4323e-07 2.76e-10    7.4141  0.8672  0.0154 13.0000  1.000    329856  0.900
-[vpr] 0.00382 0.99873   186.2657 1.4849e-07 4.4229e-07 2.7562e-10  7.2774  0.8543  0.0147 13.0000  1.000    350472  0.900
-[vpr] 0.00344 0.99208   185.0409 1.4792e-07 4.4068e-07 2.7114e-10  7.2090  0.8330  0.0131 13.0000  1.000    371088  0.900
-[vpr] 0.00309 0.97550   183.5003 1.47e-07   4.3785e-07 2.7656e-10  7.2774  0.8188  0.0134 13.0000  1.000    391704  0.900
-[vpr] 0.00278 0.97273   180.9222 1.465e-07  4.356e-07  2.7609e-10  7.2090  0.8032  0.0157 13.0000  1.000    412320  0.900
-[vpr] 0.00250 0.98413   177.6494 1.4194e-07 4.3141e-07 2.6918e-10  7.2774  0.7740  0.0161 13.0000  1.000    432936  0.950
-[vpr] 0.00238 0.96458   177.7393 1.4031e-07 4.3162e-07 2.757e-10   7.5509  0.7638  0.0177 13.0000  1.000    453552  0.950
-[vpr] 0.00226 0.99074   176.0499 1.482e-07  4.2927e-07 2.6828e-10  6.9356  0.7451  0.0164 13.0000  1.000    474168  0.950
-[vpr] 0.00215 1.00806   175.1915 1.4508e-07 4.2731e-07 2.6525e-10  6.9356  0.7374  0.0141 13.0000  1.000    494784  0.950
-[vpr] 0.00204 0.98444   171.1261 1.4668e-07 4.2242e-07 2.6483e-10  6.7304  0.7133  0.0158 13.0000  1.000    515400  0.950
-[vpr] 0.00194 1.00911   170.6550 1.4749e-07 4.216e-07  2.6193e-10  6.7304  0.7003  0.0222 13.0000  1.000    536016  0.950
-[vpr] 0.00184 0.96689   168.8723 1.4472e-07 4.1954e-07 2.6764e-10  6.7988  0.6897  0.0125 13.0000  1.000    556632  0.950
-[vpr] 0.00175 1.00271   168.1048 1.4392e-07 4.2029e-07 2.6086e-10  6.8672  0.6786  0.0153 13.0000  1.000    577248  0.950
-[vpr] 0.00166 0.97591   165.4349 1.4263e-07 4.1461e-07 2.5979e-10  6.7304  0.6693  0.0156 13.0000  1.000    597864  0.950
-[vpr] 0.00158 0.98473   164.7132 1.3726e-07 4.1442e-07 2.5937e-10  7.1407  0.6517  0.0148 13.0000  1.000    618480  0.950
-[vpr] 0.00150 0.99423   159.1614 1.391e-07  4.0669e-07 2.5331e-10  6.7304  0.6269  0.0164 13.0000  1.000    639096  0.950
-[vpr] 0.00142 1.01163   158.6841 1.346e-07  4.0544e-07 2.5114e-10  7.0039  0.6052  0.0120 13.0000  1.000    659712  0.950
-[vpr] 0.00135 1.00205   157.5448 1.407e-07  4.0565e-07 2.5463e-10  6.5937  0.6046  0.0155 13.0000  1.000    680328  0.950
-[vpr] 0.00129 0.98742   155.6710 1.3616e-07 4.0362e-07 2.5233e-10  6.8562  0.5939  0.0115 13.0000  1.000    700944  0.950
-[vpr] 0.00122 0.98873   150.8159 1.3242e-07 3.9785e-07 2.4947e-10  6.8672  0.5628  0.0100 13.0000  1.000    721560  0.950
-[vpr] 0.00116 1.00520   150.9183 1.3501e-07 3.9775e-07 2.4551e-10  6.6621  0.5574  0.0118 13.0000  1.000    742176  0.950
-[vpr] 0.00110 0.99601   150.0332 1.3718e-07 3.9655e-07 2.5105e-10  6.5937  0.5467  0.0098 13.0000  1.000    762792  0.950
-[vpr] 0.00105 0.99088   148.2711 1.2994e-07 3.9338e-07 2.4555e-10  6.8672  0.5237  0.0190 13.0000  1.000    783408  0.950
-[vpr] 0.00099 0.99929   143.4190 1.3215e-07 3.8986e-07 2.3979e-10  6.5253  0.5017  0.0099 13.0000  1.000    804024  0.950
-[vpr] 0.00095 0.99315   143.6706 1.34e-07   3.8932e-07 2.438e-10   6.5253  0.5069  0.0116 13.0000  1.000    824640  0.950
-[vpr] 0.00090 1.00120   140.7239 1.308e-07  3.8677e-07 2.4094e-10  6.6621  0.4790  0.0109 13.0000  1.000    845256  0.950
-[vpr] 0.00085 0.98408   141.0250 1.325e-07  3.8655e-07 2.4337e-10  6.5253  0.4742  0.0096 13.0000  1.000    865872  0.950
-[vpr] 0.00081 0.98305   139.2963 1.3028e-07 3.8463e-07 2.4346e-10  6.5937  0.4598  0.0086 13.0000  1.000    886488  0.950
-[vpr] 0.00077 0.99918   137.8374 1.3176e-07 3.8337e-07 2.3941e-10  6.4570  0.4407  0.0081 13.0000  1.000    907104  0.950
-[vpr] 0.00073 0.98658   134.8301 1.274e-07  3.796e-07  2.3988e-10  6.6511  0.4261  0.0102 13.0000  1.000    927720  0.950
-[vpr] 0.00069 0.99052   133.2448 1.148e-07  3.7694e-07 2.3638e-10  6.5937  0.4426  0.0073 12.8196  1.105    948336  0.950
-[vpr] 0.00066 1.00351   132.9203 1.2058e-07 3.7547e-07 2.3275e-10  6.3202  0.4142  0.0084 12.8526  1.086    968952  0.950
-[vpr] 0.00063 0.99184   130.6234 1.0142e-07 3.75e-07   2.3399e-10  6.3886  0.3982  0.0091 12.5215  1.279    989568  0.950
-[vpr] 0.00060 0.98747   130.7869 8.124e-08  3.7416e-07 2.3437e-10  6.3886  0.4179  0.0064 11.9979  1.585   1010184  0.950
-[vpr] 0.00057 0.99036   129.7481 7.4008e-08 3.7594e-07 2.3386e-10  6.3886  0.3993  0.0064 11.7325  1.739   1030800  0.950
-[vpr] 0.00054 1.00112   128.9314 6.1651e-08 3.7603e-07 2.3241e-10  6.3886  0.3818  0.0074 11.2550  2.018   1051416  0.950
-[vpr] 0.00051 0.98477   126.8583 5.1388e-08 3.7529e-07 2.354e-10   6.3886  0.3920  0.0095 10.5999  2.400   1072032  0.950
-[vpr] 0.00049 0.98262   126.8044 4.5302e-08 3.7823e-07 2.3783e-10  6.3202  0.3961  0.0068 10.0914  2.697   1092648  0.950
-[vpr] 0.00046 1.00030   124.2727 3.9993e-08 3.7496e-07 2.3369e-10  6.3202  0.3907  0.0052  9.6488  2.955   1113264  0.950
-[vpr] 0.00044 0.99602   122.1254 3.6777e-08 3.7456e-07 2.3463e-10  6.2519  0.3716  0.0047  9.1733  3.232   1133880  0.950
-[vpr] 0.00042 0.99718   122.1049 3.3767e-08 3.7433e-07 2.3408e-10  6.2519  0.3807  0.0073  8.5454  3.598   1154496  0.950
-[vpr] 0.00040 0.99659   120.0987 3.1612e-08 3.7455e-07 2.313e-10   6.2519  0.3681  0.0048  8.0389  3.894   1175112  0.950
-[vpr] 0.00038 0.99288   119.8217 2.9156e-08 3.7545e-07 2.351e-10   6.2519  0.3828  0.0058  7.4610  4.231   1195728  0.950
-[vpr] 0.00036 0.99720   117.3920 2.7232e-08 3.7173e-07 2.3096e-10  6.2519  0.3782  0.0044  7.0343  4.480   1216344  0.950
-[vpr] 0.00034 0.99303   116.5657 2.6049e-08 3.6954e-07 2.3352e-10  6.2519  0.3836  0.0080  6.5999  4.733   1236960  0.950
-[vpr] 0.00032 0.99871   118.0904 2.4977e-08 3.6968e-07 2.2981e-10  6.2519  0.3871  0.0053  6.2276  4.951   1257576  0.950
-[vpr] 0.00031 0.99794   114.8516 2.4136e-08 3.6849e-07 2.2768e-10  6.2519  0.3866  0.0051  5.8980  5.143   1278192  0.950
-[vpr] 0.00029 0.98935   114.1149 2.384e-08  3.6865e-07 2.3463e-10  6.2519  0.3826  0.0066  5.5830  5.327   1298808  0.950
-[vpr] 0.00028 0.99797   112.8770 2.277e-08  3.6394e-07 2.2717e-10  6.2519  0.3646  0.0029  5.2627  5.513   1319424  0.950
-[vpr] 0.00026 0.99568   111.7352 2.2263e-08 3.6427e-07 2.2755e-10  6.2519  0.3886  0.0047  4.8657  5.745   1340040  0.950
-[vpr] 0.00025 0.99409   108.9602 2.1863e-08 3.6568e-07 2.2597e-10  6.2519  0.3684  0.0043  4.6157  5.891   1360656  0.950
-[vpr] 0.00024 0.99691   108.6970 2.1536e-08 3.652e-07  2.2947e-10  6.2519  0.3602  0.0028  4.2850  6.084   1381272  0.950
-[vpr] 0.00022 0.99983   107.9370 2.0944e-08 3.6446e-07 2.2776e-10  6.2519  0.3911  0.0026  3.9429  6.283   1401888  0.950
-[vpr] 0.00021 0.99596   106.8808 2.0668e-08 3.6291e-07 2.2623e-10  6.2519  0.3727  0.0023  3.7499  6.396   1422504  0.950
-[vpr] 0.00020 0.99856   106.2314 2.0278e-08 3.6268e-07 2.2776e-10  6.2519  0.3654  0.0036  3.4976  6.543   1443120  0.950
-[vpr] 0.00019 1.00013   105.2076 1.9932e-08 3.6206e-07 2.2712e-10  6.2519  0.3575  0.0024  3.2369  6.695   1463736  0.950
-[vpr] 0.00018 0.99616   104.3517 1.9668e-08 3.6115e-07 2.2589e-10  6.2519  0.3974  0.0025  2.9700  6.851   1484352  0.950
-[vpr] 0.00017 0.99629   104.1183 1.9347e-08 3.6061e-07 2.2559e-10  6.2519  0.3786  0.0030  2.8433  6.925   1504968  0.950
-[vpr] 0.00017 0.99732   103.2132 1.9235e-08 3.6015e-07 2.2277e-10  6.2519  0.3689  0.0019  2.6687  7.027   1525584  0.950
-[vpr] 0.00016 0.99876   102.6253 1.8997e-08 3.62e-07   2.2725e-10  6.2519  0.3608  0.0019  2.4789  7.137   1546200  0.950
-[vpr] 0.00015 0.99494   102.0900 1.875e-08  3.5877e-07 2.2414e-10  6.2519  0.3479  0.0021  2.2827  7.252   1566816  0.950
-[vpr] 0.00014 0.99779   102.0915 1.8456e-08 3.61e-07   2.2405e-10  6.2519  0.3385  0.0023  2.0725  7.374   1587432  0.950
-[vpr] 0.00013 0.99846   101.0451 1.8245e-08 3.5869e-07 2.2597e-10  6.2519  0.3976  0.0018  1.8622  7.497   1608048  0.950
-[vpr] 0.00013 1.00204   101.1715 1.8131e-08 3.6001e-07 2.2226e-10  6.2519  0.3746  0.0018  1.7832  7.543   1628664  0.950
-[vpr] 0.00012 0.99459   100.6117 1.8032e-08 3.5772e-07 2.2461e-10  6.2519  0.3686  0.0030  1.6666  7.611   1649280  0.950
-[vpr] 0.00012 0.99765   100.2707 1.7869e-08 3.5842e-07 2.2482e-10  6.2519  0.3490  0.0013  1.5477  7.681   1669896  0.950
-[vpr] 0.00011 0.99932    99.8331 1.7756e-08 3.576e-07  2.2397e-10  6.2519  0.3331  0.0016  1.4069  7.763   1690512  0.950
-[vpr] 0.00010 0.99550    99.1600 1.7661e-08 3.5993e-07 2.2597e-10  6.2519  0.3215  0.0015  1.2566  7.850   1711128  0.950
-[vpr] 0.00010 0.99774    99.1764 1.7471e-08 3.5836e-07 2.2486e-10  6.2519  0.2978  0.0014  1.1077  7.937   1731744  0.950
-[vpr] 0.00009 1.00106    98.9508 1.7391e-08 3.5821e-07 2.2213e-10  6.2519  0.2890  0.0014  1.0000  8.000   1752360  0.950
-[vpr] 0.00009 0.99776    97.9810 1.743e-08  3.5745e-07 2.2324e-10  6.2519  0.2672  0.0013  1.0000  8.000   1772976  0.950
-[vpr] 0.00008 0.99953    98.1321 1.7375e-08 3.5719e-07 2.2435e-10  6.2519  0.2636  0.0012  1.0000  8.000   1793592  0.950
-[vpr] 0.00008 0.99692    97.6215 1.7391e-08 3.5923e-07 2.2503e-10  6.2519  0.2416  0.0009  1.0000  8.000   1814208  0.950
-[vpr] 0.00008 0.99824    97.7401 1.7334e-08 3.5812e-07 2.2371e-10  6.2519  0.2303  0.0008  1.0000  8.000   1834824  0.950
-[vpr] 0.00007 0.99966    97.7042 1.7337e-08 3.5705e-07 2.2371e-10  6.2519  0.2129  0.0011  1.0000  8.000   1855440  0.950
-[vpr] 0.00007 0.99731    97.2769 1.7331e-08 3.581e-07  2.2247e-10  6.2519  0.1931  0.0012  1.0000  8.000   1876056  0.950
-[vpr] 0.00007 1.00080    97.1432 1.7333e-08 3.5696e-07 2.2286e-10  6.2519  0.1800  0.0009  1.0000  8.000   1896672  0.950
-[vpr] 0.00006 0.99957    96.7411 1.7342e-08 3.5746e-07 2.2286e-10  6.2519  0.1640  0.0009  1.0000  8.000   1917288  0.950
-[vpr] 0.00006 0.99986    96.5904 1.7339e-08 3.5609e-07 2.238e-10   6.2519  0.1464  0.0008  1.0000  8.000   1937904  0.800
-[vpr] 0.00005 0.99839    96.0615 1.7367e-08 3.5739e-07 2.2243e-10  6.2519  0.1072  0.0005  1.0000  8.000   1958520  0.800
-[vpr] 0.00004 0.99780    95.8928 1.7351e-08 3.5696e-07 2.2341e-10  6.2519  0.0708  0.0007  1.0000  8.000   1979136  0.800
-[vpr] 0.00003 0.99899    95.6998 1.7336e-08 3.5751e-07 2.2252e-10  6.2519  0.0444  0.0004  1.0000  8.000   1999752  0.800
-[vpr] 0.00002 0.99944    95.5440 1.7337e-08 3.5576e-07 2.2282e-10  6.2519  0.0284  0.0003  1.0000  8.000   2020368  0.800
-[vpr] 0.00002 0.99970    95.4572 1.7347e-08 3.5608e-07 2.2388e-10  6.2519  0.0241  0.0001  1.0000  8.000   2040984  0.800
-[vpr] 0.00002 0.99990    95.4496 1.7347e-08 3.551e-07  2.209e-10   6.2519  0.0201  0.0000  1.0000  8.000   2061600  0.800
-[vpr] 0.00001 1.00001    95.4483 1.7347e-08 3.584e-07  2.2388e-10  6.2519  0.0198  0.0000  1.0000  8.000   2082216  0.800
-[vpr] 0.00001 1.00000    95.4473 1.7347e-08 3.5728e-07 2.2401e-10  6.2519  0.0211  0.0000  1.0000  8.000   2102832  0.800
-[vpr] 0.00000 1.00000    95.4470 1.7347e-08 3.5691e-07 2.2422e-10          0.0121  0.0000  1.0000  8.000   2123448
+[vpr] 0.10644 0.99509   186.3621 1.6345e-07 4.6711e-07 2.9733e-10  7.3458  0.9947  0.0114 13.0000  1.000      2061  0.500
+[vpr] 0.05322 0.99154   186.0110 1.5549e-07 4.6214e-07 2.9234e-10  7.6193  0.9918  0.0200 13.0000  1.000      4122  0.500
+[vpr] 0.02661 0.95809   185.8262 1.5197e-07 4.631e-07  2.9251e-10  7.6876  0.9801  0.0176 13.0000  1.000      6183  0.500
+[vpr] 0.01331 0.97792   181.6474 1.5839e-07 4.5578e-07 2.8969e-10  7.2090  0.9617  0.0134 13.0000  1.000      8244  0.500
+[vpr] 0.00665 0.96935   181.0138 1.5106e-07 4.5398e-07 2.8926e-10  7.5509  0.9243  0.0099 13.0000  1.000     10305  0.900
+[vpr] 0.00599 1.00475   179.4765 1.504e-07  4.5333e-07 2.7728e-10  7.4141  0.8884  0.0132 13.0000  1.000     12366  0.900
+[vpr] 0.00539 0.97791   177.6016 1.5696e-07 4.5246e-07 2.8888e-10  7.1407  0.8874  0.0179 13.0000  1.000     14427  0.900
+[vpr] 0.00485 0.96803   176.1109 1.4977e-07 4.5189e-07 2.8265e-10  7.4825  0.8889  0.0147 13.0000  1.000     16488  0.900
+[vpr] 0.00436 1.00020   174.7497 1.4912e-07 4.4815e-07 2.7907e-10  7.2774  0.8506  0.0171 13.0000  1.000     18549  0.900
+[vpr] 0.00393 0.97313   173.9029 1.471e-07  4.4504e-07 2.8137e-10  7.4825  0.8447  0.0195 13.0000  1.000     20610  0.900
+[vpr] 0.00354 1.01543   173.7092 1.5007e-07 4.4417e-07 2.7293e-10  7.1407  0.8409  0.0113 13.0000  1.000     22671  0.900
+[vpr] 0.00318 1.00592   170.0372 1.5117e-07 4.4071e-07 2.7139e-10  7.0039  0.8035  0.0159 13.0000  1.000     24732  0.900
+[vpr] 0.00286 0.97219   170.1319 1.4612e-07 4.4416e-07 2.7741e-10  7.4141  0.8016  0.0094 13.0000  1.000     26793  0.900
+[vpr] 0.00258 0.98802   168.7162 1.4647e-07 4.3736e-07 2.7724e-10  7.0723  0.7826  0.0074 13.0000  1.000     28854  0.950
+[vpr] 0.00245 0.99571   170.0617 1.4784e-07 4.3925e-07 2.7604e-10  7.2090  0.7836  0.0064 13.0000  1.000     30915  0.950
+[vpr] 0.00233 0.98230   164.2802 1.4435e-07 4.3479e-07 2.7156e-10  7.2774  0.7312  0.0128 13.0000  1.000     32976  0.950
+[vpr] 0.00221 0.97984   162.6236 1.4975e-07 4.3054e-07 2.7105e-10  6.7988  0.7404  0.0102 13.0000  1.000     35037  0.950
+[vpr] 0.00210 0.99725   163.2079 1.4579e-07 4.2792e-07 2.6849e-10  7.0039  0.7210  0.0113 13.0000  1.000     37098  0.950
+[vpr] 0.00199 1.00120   158.9217 1.4413e-07 4.2694e-07 2.6653e-10  6.9356  0.7089  0.0086 13.0000  1.000     39159  0.950
+[vpr] 0.00189 0.98780   162.3661 1.4576e-07 4.2997e-07 2.6781e-10  7.0039  0.7069  0.0100 13.0000  1.000     41220  0.950
+[vpr] 0.00180 0.99816   161.0604 1.4472e-07 4.287e-07  2.6756e-10  6.9356  0.6914  0.0084 13.0000  1.000     43281  0.950
+[vpr] 0.00171 0.95862   154.4033 1.4243e-07 4.2047e-07 2.6909e-10  6.8672  0.6749  0.0151 13.0000  1.000     45342  0.950
+[vpr] 0.00162 1.00366   155.3147 1.4567e-07 4.23e-07   2.6018e-10  6.7304  0.6701  0.0079 13.0000  1.000     47403  0.950
+[vpr] 0.00154 0.99643   152.7839 1.3947e-07 4.1566e-07 2.6201e-10  6.8672  0.6477  0.0131 13.0000  1.000     49464  0.950
+[vpr] 0.00147 0.96119   148.8130 1.4023e-07 4.1267e-07 2.6308e-10  6.7304  0.6041  0.0156 13.0000  1.000     51525  0.950
+[vpr] 0.00139 0.99309   146.6151 1.4325e-07 4.0951e-07 2.5642e-10  6.5253  0.5871  0.0099 13.0000  1.000     53586  0.950
+[vpr] 0.00132 0.99578   144.3200 1.3296e-07 4.036e-07  2.5173e-10  7.0039  0.5779  0.0051 13.0000  1.000     55647  0.950
+[vpr] 0.00126 0.99731   144.7269 1.3888e-07 4.0501e-07 2.5182e-10  6.6621  0.5973  0.0050 13.0000  1.000     57708  0.950
+[vpr] 0.00119 0.99346   143.0081 1.3918e-07 4.0141e-07 2.5186e-10  6.5253  0.5740  0.0112 13.0000  1.000     59769  0.950
+[vpr] 0.00113 0.99020   138.0125 1.3621e-07 3.98e-07   2.4883e-10  6.6621  0.5284  0.0054 13.0000  1.000     61830  0.950
+[vpr] 0.00108 0.99345   138.3656 1.3387e-07 3.9521e-07 2.4794e-10  6.6621  0.5090  0.0060 13.0000  1.000     63891  0.950
+[vpr] 0.00102 0.99866   136.3069 1.3304e-07 3.9247e-07 2.4299e-10  6.5937  0.4871  0.0054 13.0000  1.000     65952  0.950
+[vpr] 0.00097 0.99922   136.0647 1.3688e-07 3.9621e-07 2.4708e-10  6.5253  0.4862  0.0052 13.0000  1.000     68013  0.950
+[vpr] 0.00092 1.01047   138.5267 1.3535e-07 4.0005e-07 2.493e-10   6.6621  0.5056  0.0067 13.0000  1.000     70074  0.950
+[vpr] 0.00088 0.98468   138.0909 1.3453e-07 3.9915e-07 2.4977e-10  6.6621  0.4944  0.0081 13.0000  1.000     72135  0.950
+[vpr] 0.00083 0.98982   135.0417 1.3589e-07 3.9641e-07 2.499e-10   6.5253  0.4808  0.0044 13.0000  1.000     74196  0.950
+[vpr] 0.00079 0.98636   134.1139 1.3291e-07 3.9324e-07 2.4772e-10  6.6621  0.4711  0.0045 13.0000  1.000     76257  0.950
+[vpr] 0.00075 0.99418   131.1443 1.3561e-07 3.8969e-07 2.4256e-10  6.4570  0.4275  0.0047 13.0000  1.000     78318  0.950
+[vpr] 0.00071 0.99214   129.0132 1.2247e-07 3.8576e-07 2.4239e-10  6.5253  0.4338  0.0040 12.8370  1.095     80379  0.950
+[vpr] 0.00068 0.98995   127.8339 1.1452e-07 3.8365e-07 2.403e-10   6.5937  0.4386  0.0054 12.7570  1.142     82440  0.950
+[vpr] 0.00065 0.99113   124.6463 1.1224e-07 3.8156e-07 2.3817e-10  6.5937  0.3998  0.0064 12.7395  1.152     84501  0.950
+[vpr] 0.00061 0.99542   123.8657 8.9075e-08 3.8176e-07 2.3911e-10  6.5253  0.3828  0.0043 12.2274  1.451     86562  0.950
+[vpr] 0.00058 0.99904   123.7949 6.5915e-08 3.8543e-07 2.3907e-10  6.6621  0.4071  0.0040 11.5283  1.858     88623  0.950
+[vpr] 0.00055 0.99151   120.4578 6.121e-08  3.8052e-07 2.3843e-10  6.4570  0.3896  0.0051 11.1488  2.080     90684  0.950
+[vpr] 0.00053 0.99406   119.2287 5.2132e-08 3.8166e-07 2.374e-10   6.4570  0.4071  0.0032 10.5871  2.408     92745  0.950
+[vpr] 0.00050 1.00059   119.4016 4.898e-08  3.8021e-07 2.3651e-10  6.3886  0.3862  0.0037 10.2386  2.611     94806  0.950
+[vpr] 0.00047 1.00209   118.0105 4.3466e-08 3.8057e-07 2.3591e-10  6.3886  0.3882  0.0027  9.6880  2.932     96867  0.950
+[vpr] 0.00045 0.99424   118.5318 3.7871e-08 3.8147e-07 2.3732e-10  6.4570  0.4022  0.0026  9.1858  3.225     98928  0.950
+[vpr] 0.00043 1.00247   118.4561 3.5929e-08 3.8483e-07 2.3889e-10  6.4570  0.4090  0.0024  8.8389  3.427    100989  0.950
+[vpr] 0.00041 0.98794   117.4061 3.3713e-08 3.8646e-07 2.4154e-10  6.4570  0.4051  0.0049  8.5651  3.587    103050  0.950
+[vpr] 0.00039 0.98735   113.0955 3.1095e-08 3.8243e-07 2.3868e-10  6.5253  0.3692  0.0061  8.2665  3.761    105111  0.950
+[vpr] 0.00037 1.00038   111.6079 3.0655e-08 3.8194e-07 2.3902e-10  6.3886  0.3755  0.0016  7.6816  4.102    107172  0.950
+[vpr] 0.00035 0.99560   111.7001 2.8721e-08 3.7976e-07 2.3907e-10  6.3886  0.3789  0.0018  7.1865  4.391    109233  0.950
+[vpr] 0.00033 0.99798   112.3505 2.7246e-08 3.7964e-07 2.3544e-10  6.3886  0.3882  0.0036  6.7477  4.647    111294  0.950
+[vpr] 0.00031 0.99494   110.8261 2.5979e-08 3.7939e-07 2.3668e-10  6.3886  0.3717  0.0024  6.3979  4.851    113355  0.950
+[vpr] 0.00030 0.99594   109.4065 2.4622e-08 3.786e-07  2.3646e-10  6.3886  0.3780  0.0022  5.9607  5.106    115416  0.950
+[vpr] 0.00028 0.99364   107.9129 2.3797e-08 3.7788e-07 2.3817e-10  6.3886  0.4085  0.0035  5.5909  5.322    117477  0.950
+[vpr] 0.00027 0.99554   107.3977 2.3441e-08 3.7717e-07 2.3514e-10  6.3886  0.3862  0.0029  5.4150  5.425    119538  0.950
+[vpr] 0.00026 0.99466   105.9742 2.285e-08  3.7726e-07 2.3685e-10  6.3886  0.3751  0.0027  5.1238  5.594    121599  0.950
+[vpr] 0.00024 0.99455   104.1092 2.2088e-08 3.7273e-07 2.3305e-10  6.3886  0.3833  0.0028  4.7911  5.789    123660  0.950
+[vpr] 0.00023 0.99872   103.7114 2.1467e-08 3.7416e-07 2.3199e-10  6.3886  0.3663  0.0022  4.5195  5.947    125721  0.950
+[vpr] 0.00022 0.99820   104.2667 2.1389e-08 3.741e-07  2.3267e-10  6.3202  0.3493  0.0027  4.1865  6.141    127782  0.950
+[vpr] 0.00021 0.99540   103.2409 2.0772e-08 3.7325e-07 2.3258e-10  6.3202  0.4095  0.0032  3.8070  6.363    129843  0.950
+[vpr] 0.00020 0.99844   101.9260 2.0342e-08 3.7504e-07 2.3233e-10  6.3202  0.3828  0.0012  3.6909  6.430    131904  0.950
+[vpr] 0.00019 0.99884   101.3545 2.0255e-08 3.7411e-07 2.3297e-10  6.3202  0.3736  0.0017  3.4799  6.553    133965  0.950
+[vpr] 0.00018 0.99567   101.0290 1.986e-08  3.7074e-07 2.3194e-10  6.3202  0.3508  0.0015  3.2488  6.688    136026  0.950
+[vpr] 0.00017 0.99681   100.9933 1.9242e-08 3.7116e-07 2.3233e-10  6.3202  0.4158  0.0016  2.9590  6.857    138087  0.950
+[vpr] 0.00016 0.99662   100.4947 1.877e-08  3.7467e-07 2.3173e-10  6.3202  0.3886  0.0027  2.8875  6.899    140148  0.950
+[vpr] 0.00015 0.99931    99.6313 1.8579e-08 3.7391e-07 2.3224e-10  6.3202  0.3925  0.0017  2.7392  6.985    142209  0.950
+[vpr] 0.00015 0.99817    99.1488 1.8374e-08 3.7409e-07 2.3216e-10  6.3202  0.3595  0.0015  2.6092  7.061    144270  0.950
+[vpr] 0.00014 0.99480    98.1420 1.8036e-08 3.7118e-07 2.3224e-10  6.3202  0.3469  0.0023  2.3992  7.184    146331  0.950
+[vpr] 0.00013 1.00037    97.8144 1.7665e-08 3.6923e-07 2.3028e-10  6.3202  0.3518  0.0008  2.1759  7.314    148392  0.950
+[vpr] 0.00012 0.99767    97.1338 1.7922e-08 3.6855e-07 2.3041e-10  6.3202  0.4110  0.0013  1.9839  7.426    150453  0.950
+[vpr] 0.00012 1.00039    96.5655 1.7843e-08 3.699e-07  2.299e-10   6.3202  0.3891  0.0009  1.9263  7.460    152514  0.950
+[vpr] 0.00011 0.99859    96.0865 1.776e-08  3.6846e-07 2.3011e-10  6.3202  0.3566  0.0017  1.8283  7.517    154575  0.950
+[vpr] 0.00011 0.99931    95.7926 1.7608e-08 3.6787e-07 2.2955e-10  6.3202  0.3629  0.0008  1.6759  7.606    156636  0.950
+[vpr] 0.00010 0.99812    95.5669 1.7463e-08 3.7118e-07 2.2964e-10  6.3202  0.3479  0.0008  1.5467  7.681    158697  0.950
+[vpr] 0.00010 0.99913    95.1637 1.7326e-08 3.6995e-07 2.3139e-10  6.3202  0.3295  0.0007  1.4043  7.764    160758  0.950
+[vpr] 0.00009 0.99984    94.9920 1.718e-08  3.7133e-07 2.316e-10   6.3202  0.3348  0.0007  1.2490  7.855    162819  0.950
+[vpr] 0.00009 0.99763    94.8347 1.7053e-08 3.6776e-07 2.3228e-10  6.3202  0.2945  0.0011  1.1176  7.931    164880  0.950
+[vpr] 0.00008 0.99890    94.4926 1.6945e-08 3.6853e-07 2.2866e-10  6.3202  0.2664  0.0005  1.0000  8.000    166941  0.950
+[vpr] 0.00008 0.99900    94.2252 1.6936e-08 3.6721e-07 2.3041e-10  6.3202  0.2542  0.0005  1.0000  8.000    169002  0.950
+[vpr] 0.00007 0.99955    94.0405 1.694e-08  3.6768e-07 2.2883e-10  6.3202  0.2547  0.0004  1.0000  8.000    171063  0.950
+[vpr] 0.00007 0.99996    93.8342 1.6944e-08 3.6901e-07 2.293e-10   6.3202  0.2334  0.0007  1.0000  8.000    173124  0.950
+[vpr] 0.00007 1.00022    93.6608 1.6936e-08 3.6602e-07 2.2853e-10  6.3202  0.2237  0.0007  1.0000  8.000    175185  0.950
+[vpr] 0.00006 0.99849    93.5498 1.6936e-08 3.6781e-07 2.287e-10   6.3202  0.2154  0.0016  1.0000  8.000    177246  0.950
+[vpr] 0.00006 1.00026    93.3215 1.6934e-08 3.6965e-07 2.3117e-10  6.3202  0.2057  0.0003  1.0000  8.000    179307  0.950
+[vpr] 0.00006 0.99931    93.1916 1.6935e-08 3.6656e-07 2.2866e-10  6.3202  0.1761  0.0003  1.0000  8.000    181368  0.950
+[vpr] 0.00006 0.99993    93.1027 1.6942e-08 3.6486e-07 2.2874e-10  6.3202  0.1684  0.0004  1.0000  8.000    183429  0.950
+[vpr] 0.00005 0.99908    93.1751 1.6942e-08 3.6363e-07 2.2699e-10  6.3202  0.1625  0.0005  1.0000  8.000    185490  0.950
+[vpr] 0.00005 0.99965    93.0663 1.694e-08  3.6344e-07 2.2674e-10  6.3202  0.1669  0.0007  1.0000  8.000    187551  0.950
+[vpr] 0.00005 0.99958    92.7034 1.6943e-08 3.6336e-07 2.2653e-10  6.3202  0.1237  0.0003  1.0000  8.000    189612  0.800
+[vpr] 0.00004 0.99904    92.6818 1.6945e-08 3.6361e-07 2.261e-10   6.3202  0.1087  0.0005  1.0000  8.000    191673  0.800
+[vpr] 0.00003 0.99941    92.3675 1.6944e-08 3.6278e-07 2.2593e-10  6.3202  0.0830  0.0004  1.0000  8.000    193734  0.800
+[vpr] 0.00002 0.99952    92.1262 1.6945e-08 3.6224e-07 2.2712e-10  6.3202  0.0543  0.0003  1.0000  8.000    195795  0.800
+[vpr] 0.00002 0.99973    91.9696 1.6945e-08 3.6194e-07 2.2537e-10  6.3202  0.0611  0.0003  1.0000  8.000    197856  0.800
+[vpr] 0.00002 0.99980    91.8278 1.6943e-08 3.626e-07  2.2572e-10  6.3202  0.0330  0.0001  1.0000  8.000    199917  0.800
+[vpr] 0.00001 0.99992    91.8077 1.6943e-08 3.6166e-07 2.2623e-10  6.3202  0.0325  0.0000  1.0000  8.000    201978  0.800
+[vpr] 0.00001 0.99994    91.7910 1.6943e-08 3.6188e-07 2.2563e-10  6.3202  0.0267  0.0000  1.0000  8.000    204039  0.800
+[vpr] 0.00000 0.99988    91.7811 1.6943e-08 3.6163e-07 2.2572e-10          0.0092  0.0000  1.0000  8.000    206100
 [vpr] 
-[vpr] BB estimate of min-dist (placement) wire length: 4219
-[vpr] bb_cost recomputed from scratch: 95.447
-[vpr] timing_cost recomputed from scratch: 1.73469e-08
-[vpr] delay_cost recomputed from scratch: 3.56626e-07
+[vpr] BB estimate of min-dist (placement) wire length: 4307
+[vpr] bb_cost recomputed from scratch: 91.7808
+[vpr] timing_cost recomputed from scratch: 1.69427e-08
+[vpr] delay_cost recomputed from scratch: 3.61275e-07
 [vpr] 
 [vpr] Completed placement consistency check successfully.
 [vpr] 
-[vpr] Swaps called: 2123754
+[vpr] Swaps called: 206406
 [vpr] 
-[vpr] Placement estimated critical path delay: 6.25185 ns
-[vpr] Placement cost: 0.999996, bb_cost: 95.447, td_cost: 1.73469e-08, delay_cost: 3.56626e-07
-[vpr] Placement total # of swap attempts: 2123754
+[vpr] Placement estimated critical path delay: 6.32022 ns
+[vpr] Placement cost: 0.99988, bb_cost: 91.7811, td_cost: 1.69427e-08, delay_cost: 3.61275e-07
+[vpr] Placement total # of swap attempts: 206406
 [vpr] 	Swap reject rate: 0
 [vpr] 	Swap accept rate: 0
 [vpr] 	Swap abort rate: 0
-[vpr] 
-[vpr] Using low: -1, high: -1, current: 28
 [vpr] Overriding architecture channels based on fabric channel widths...
-[vpr] WARNING(28): Replacing architecture x channel[0] width 28 with fabric channel width 44.
-[vpr] WARNING(29): Replacing architecture x channel[1] width 28 with fabric channel width 34.
-[vpr] WARNING(30): Replacing architecture x channel[2] width 28 with fabric channel width 48.
-[vpr] WARNING(31): Replacing architecture x channel[3] width 28 with fabric channel width 40.
-[vpr] WARNING(32): Replacing architecture x channel[4] width 28 with fabric channel width 50.
-[vpr] WARNING(33): Replacing architecture x channel[5] width 28 with fabric channel width 42.
-[vpr] WARNING(34): Replacing architecture x channel[6] width 28 with fabric channel width 50.
-[vpr] WARNING(35): Replacing architecture x channel[7] width 28 with fabric channel width 42.
-[vpr] WARNING(36): Replacing architecture x channel[8] width 28 with fabric channel width 50.
-[vpr] WARNING(37): Replacing architecture x channel[9] width 28 with fabric channel width 40.
-[vpr] WARNING(38): Replacing architecture x channel[10] width 28 with fabric channel width 48.
-[vpr] WARNING(39): Replacing architecture x channel[11] width 28 with fabric channel width 34.
-[vpr] WARNING(40): Replacing architecture x channel[12] width 28 with fabric channel width 44.
-[vpr] WARNING(41): Replacing architecture y channel[0] width 28 with fabric channel width 44.
-[vpr] WARNING(42): Replacing architecture y channel[1] width 28 with fabric channel width 34.
-[vpr] WARNING(43): Replacing architecture y channel[2] width 28 with fabric channel width 48.
-[vpr] WARNING(44): Replacing architecture y channel[3] width 28 with fabric channel width 40.
-[vpr] WARNING(45): Replacing architecture y channel[4] width 28 with fabric channel width 50.
-[vpr] WARNING(46): Replacing architecture y channel[5] width 28 with fabric channel width 42.
-[vpr] WARNING(47): Replacing architecture y channel[6] width 28 with fabric channel width 50.
-[vpr] WARNING(48): Replacing architecture y channel[7] width 28 with fabric channel width 42.
-[vpr] WARNING(49): Replacing architecture y channel[8] width 28 with fabric channel width 50.
-[vpr] WARNING(50): Replacing architecture y channel[9] width 28 with fabric channel width 40.
-[vpr] WARNING(51): Replacing architecture y channel[10] width 28 with fabric channel width 48.
-[vpr] WARNING(52): Replacing architecture y channel[11] width 28 with fabric channel width 34.
-[vpr] WARNING(53): Replacing architecture y channel[12] width 28 with fabric channel width 44.
+[vpr] WARNING(28): Replacing architecture y channel[0] width 50 with fabric channel width 44.
+[vpr] WARNING(29): Replacing architecture y channel[1] width 50 with fabric channel width 44.
+[vpr] WARNING(30): Replacing architecture y channel[2] width 50 with fabric channel width 44.
+[vpr] WARNING(31): Replacing architecture y channel[3] width 50 with fabric channel width 44.
+[vpr] WARNING(32): Replacing architecture y channel[4] width 50 with fabric channel width 44.
+[vpr] WARNING(33): Replacing architecture y channel[5] width 50 with fabric channel width 44.
+[vpr] WARNING(34): Replacing architecture y channel[6] width 50 with fabric channel width 44.
+[vpr] WARNING(35): Replacing architecture y channel[7] width 50 with fabric channel width 44.
+[vpr] WARNING(36): Replacing architecture y channel[8] width 50 with fabric channel width 44.
+[vpr] WARNING(37): Replacing architecture y channel[9] width 50 with fabric channel width 44.
+[vpr] WARNING(38): Replacing architecture y channel[10] width 50 with fabric channel width 44.
+[vpr] WARNING(39): Replacing architecture y channel[11] width 50 with fabric channel width 44.
+[vpr] WARNING(40): Replacing architecture y channel[12] width 50 with fabric channel width 44.
 [vpr] Confirming router algorithm: TIMING_DRIVEN.
-[vpr] Wire length after first iteration 7473, total available wire length 13584, ratio 0.550133
+[vpr] Wire length after first iteration 7453, total available wire length 14664, ratio 0.508251
 [vpr] --------- ---------- -----------
 [vpr] Iteration       Time   Crit Path
 [vpr] --------- ---------- -----------
-[vpr] Critical path: 6.32022 ns
+[vpr] Critical path: 6.38859 ns
 [vpr] Successfully routed after 20 routing iterations.
 [vpr] Completed net delay value cross check successfully.
-[vpr] 
-[vpr] Using low: -1, high: 28, current: 14
-[vpr] Overriding architecture channels based on fabric channel widths...
-[vpr] WARNING(54): Replacing architecture x channel[0] width 14 with fabric channel width 44.
-[vpr] WARNING(55): Replacing architecture x channel[1] width 14 with fabric channel width 34.
-[vpr] WARNING(56): Replacing architecture x channel[2] width 14 with fabric channel width 48.
-[vpr] WARNING(57): Replacing architecture x channel[3] width 14 with fabric channel width 40.
-[vpr] WARNING(58): Replacing architecture x channel[4] width 14 with fabric channel width 50.
-[vpr] WARNING(59): Replacing architecture x channel[5] width 14 with fabric channel width 42.
-[vpr] WARNING(60): Replacing architecture x channel[6] width 14 with fabric channel width 50.
-[vpr] WARNING(61): Replacing architecture x channel[7] width 14 with fabric channel width 42.
-[vpr] WARNING(62): Replacing architecture x channel[8] width 14 with fabric channel width 50.
-[vpr] WARNING(63): Replacing architecture x channel[9] width 14 with fabric channel width 40.
-[vpr] WARNING(64): Replacing architecture x channel[10] width 14 with fabric channel width 48.
-[vpr] WARNING(65): Replacing architecture x channel[11] width 14 with fabric channel width 34.
-[vpr] WARNING(66): Replacing architecture x channel[12] width 14 with fabric channel width 44.
-[vpr] WARNING(67): Replacing architecture y channel[0] width 14 with fabric channel width 44.
-[vpr] WARNING(68): Replacing architecture y channel[1] width 14 with fabric channel width 34.
-[vpr] WARNING(69): Replacing architecture y channel[2] width 14 with fabric channel width 48.
-[vpr] WARNING(70): Replacing architecture y channel[3] width 14 with fabric channel width 40.
-[vpr] WARNING(71): Replacing architecture y channel[4] width 14 with fabric channel width 50.
-[vpr] WARNING(72): Replacing architecture y channel[5] width 14 with fabric channel width 42.
-[vpr] WARNING(73): Replacing architecture y channel[6] width 14 with fabric channel width 50.
-[vpr] WARNING(74): Replacing architecture y channel[7] width 14 with fabric channel width 42.
-[vpr] WARNING(75): Replacing architecture y channel[8] width 14 with fabric channel width 50.
-[vpr] WARNING(76): Replacing architecture y channel[9] width 14 with fabric channel width 40.
-[vpr] WARNING(77): Replacing architecture y channel[10] width 14 with fabric channel width 48.
-[vpr] WARNING(78): Replacing architecture y channel[11] width 14 with fabric channel width 34.
-[vpr] WARNING(79): Replacing architecture y channel[12] width 14 with fabric channel width 44.
-[vpr] Confirming router algorithm: TIMING_DRIVEN.
-[vpr] Wire length after first iteration 7473, total available wire length 13584, ratio 0.550133
-[vpr] --------- ---------- -----------
-[vpr] Iteration       Time   Crit Path
-[vpr] --------- ---------- -----------
-[vpr] Critical path: 6.32022 ns
-[vpr] Successfully routed after 20 routing iterations.
-[vpr] Completed net delay value cross check successfully.
-[vpr] 
-[vpr] Using low: -1, high: 14, current: 8
-[vpr] Overriding architecture channels based on fabric channel widths...
-[vpr] WARNING(80): Replacing architecture x channel[0] width 8 with fabric channel width 44.
-[vpr] WARNING(81): Replacing architecture x channel[1] width 8 with fabric channel width 34.
-[vpr] WARNING(82): Replacing architecture x channel[2] width 8 with fabric channel width 48.
-[vpr] WARNING(83): Replacing architecture x channel[3] width 8 with fabric channel width 40.
-[vpr] WARNING(84): Replacing architecture x channel[4] width 8 with fabric channel width 50.
-[vpr] WARNING(85): Replacing architecture x channel[5] width 8 with fabric channel width 42.
-[vpr] WARNING(86): Replacing architecture x channel[6] width 8 with fabric channel width 50.
-[vpr] WARNING(87): Replacing architecture x channel[7] width 8 with fabric channel width 42.
-[vpr] WARNING(88): Replacing architecture x channel[8] width 8 with fabric channel width 50.
-[vpr] WARNING(89): Replacing architecture x channel[9] width 8 with fabric channel width 40.
-[vpr] WARNING(90): Replacing architecture x channel[10] width 8 with fabric channel width 48.
-[vpr] WARNING(91): Replacing architecture x channel[11] width 8 with fabric channel width 34.
-[vpr] WARNING(92): Replacing architecture x channel[12] width 8 with fabric channel width 44.
-[vpr] WARNING(93): Replacing architecture y channel[0] width 8 with fabric channel width 44.
-[vpr] WARNING(94): Replacing architecture y channel[1] width 8 with fabric channel width 34.
-[vpr] WARNING(95): Replacing architecture y channel[2] width 8 with fabric channel width 48.
-[vpr] WARNING(96): Replacing architecture y channel[3] width 8 with fabric channel width 40.
-[vpr] WARNING(97): Replacing architecture y channel[4] width 8 with fabric channel width 50.
-[vpr] WARNING(98): Replacing architecture y channel[5] width 8 with fabric channel width 42.
-[vpr] WARNING(99): Replacing architecture y channel[6] width 8 with fabric channel width 50.
-[vpr] WARNING(100): Replacing architecture y channel[7] width 8 with fabric channel width 42.
-[vpr] WARNING(101): Replacing architecture y channel[8] width 8 with fabric channel width 50.
-[vpr] WARNING(102): Replacing architecture y channel[9] width 8 with fabric channel width 40.
-[vpr] WARNING(103): Replacing architecture y channel[10] width 8 with fabric channel width 48.
-[vpr] WARNING(104): Replacing architecture y channel[11] width 8 with fabric channel width 34.
-[vpr] WARNING(105): Replacing architecture y channel[12] width 8 with fabric channel width 44.
-[vpr] Confirming router algorithm: TIMING_DRIVEN.
-[vpr] Wire length after first iteration 7473, total available wire length 13584, ratio 0.550133
-[vpr] --------- ---------- -----------
-[vpr] Iteration       Time   Crit Path
-[vpr] --------- ---------- -----------
-[vpr] Critical path: 6.32022 ns
-[vpr] Successfully routed after 20 routing iterations.
-[vpr] Completed net delay value cross check successfully.
-[vpr] 
-[vpr] Using low: -1, high: 8, current: 4
-[vpr] Overriding architecture channels based on fabric channel widths...
-[vpr] WARNING(106): Replacing architecture x channel[0] width 4 with fabric channel width 44.
-[vpr] WARNING(107): Replacing architecture x channel[1] width 4 with fabric channel width 34.
-[vpr] WARNING(108): Replacing architecture x channel[2] width 4 with fabric channel width 48.
-[vpr] WARNING(109): Replacing architecture x channel[3] width 4 with fabric channel width 40.
-[vpr] WARNING(110): Replacing architecture x channel[4] width 4 with fabric channel width 50.
-[vpr] WARNING(111): Replacing architecture x channel[5] width 4 with fabric channel width 42.
-[vpr] WARNING(112): Replacing architecture x channel[6] width 4 with fabric channel width 50.
-[vpr] WARNING(113): Replacing architecture x channel[7] width 4 with fabric channel width 42.
-[vpr] WARNING(114): Replacing architecture x channel[8] width 4 with fabric channel width 50.
-[vpr] WARNING(115): Replacing architecture x channel[9] width 4 with fabric channel width 40.
-[vpr] WARNING(116): Replacing architecture x channel[10] width 4 with fabric channel width 48.
-[vpr] WARNING(117): Replacing architecture x channel[11] width 4 with fabric channel width 34.
-[vpr] WARNING(118): Replacing architecture x channel[12] width 4 with fabric channel width 44.
-[vpr] WARNING(119): Replacing architecture y channel[0] width 4 with fabric channel width 44.
-[vpr] WARNING(120): Replacing architecture y channel[1] width 4 with fabric channel width 34.
-[vpr] WARNING(121): Replacing architecture y channel[2] width 4 with fabric channel width 48.
-[vpr] WARNING(122): Replacing architecture y channel[3] width 4 with fabric channel width 40.
-[vpr] WARNING(123): Replacing architecture y channel[4] width 4 with fabric channel width 50.
-[vpr] WARNING(124): Replacing architecture y channel[5] width 4 with fabric channel width 42.
-[vpr] WARNING(125): Replacing architecture y channel[6] width 4 with fabric channel width 50.
-[vpr] WARNING(126): Replacing architecture y channel[7] width 4 with fabric channel width 42.
-[vpr] WARNING(127): Replacing architecture y channel[8] width 4 with fabric channel width 50.
-[vpr] WARNING(128): Replacing architecture y channel[9] width 4 with fabric channel width 40.
-[vpr] WARNING(129): Replacing architecture y channel[10] width 4 with fabric channel width 48.
-[vpr] WARNING(130): Replacing architecture y channel[11] width 4 with fabric channel width 34.
-[vpr] WARNING(131): Replacing architecture y channel[12] width 4 with fabric channel width 44.
-[vpr] Confirming router algorithm: TIMING_DRIVEN.
-[vpr] Wire length after first iteration 7473, total available wire length 13584, ratio 0.550133
-[vpr] --------- ---------- -----------
-[vpr] Iteration       Time   Crit Path
-[vpr] --------- ---------- -----------
-[vpr] Critical path: 6.32022 ns
-[vpr] Successfully routed after 20 routing iterations.
-[vpr] Completed net delay value cross check successfully.
-[vpr] 
-[vpr] Using low: -1, high: 4, current: 2
-[vpr] Overriding architecture channels based on fabric channel widths...
-[vpr] WARNING(132): Replacing architecture x channel[0] width 2 with fabric channel width 44.
-[vpr] WARNING(133): Replacing architecture x channel[1] width 2 with fabric channel width 34.
-[vpr] WARNING(134): Replacing architecture x channel[2] width 2 with fabric channel width 48.
-[vpr] WARNING(135): Replacing architecture x channel[3] width 2 with fabric channel width 40.
-[vpr] WARNING(136): Replacing architecture x channel[4] width 2 with fabric channel width 50.
-[vpr] WARNING(137): Replacing architecture x channel[5] width 2 with fabric channel width 42.
-[vpr] WARNING(138): Replacing architecture x channel[6] width 2 with fabric channel width 50.
-[vpr] WARNING(139): Replacing architecture x channel[7] width 2 with fabric channel width 42.
-[vpr] WARNING(140): Replacing architecture x channel[8] width 2 with fabric channel width 50.
-[vpr] WARNING(141): Replacing architecture x channel[9] width 2 with fabric channel width 40.
-[vpr] WARNING(142): Replacing architecture x channel[10] width 2 with fabric channel width 48.
-[vpr] WARNING(143): Replacing architecture x channel[11] width 2 with fabric channel width 34.
-[vpr] WARNING(144): Replacing architecture x channel[12] width 2 with fabric channel width 44.
-[vpr] WARNING(145): Replacing architecture y channel[0] width 2 with fabric channel width 44.
-[vpr] WARNING(146): Replacing architecture y channel[1] width 2 with fabric channel width 34.
-[vpr] WARNING(147): Replacing architecture y channel[2] width 2 with fabric channel width 48.
-[vpr] WARNING(148): Replacing architecture y channel[3] width 2 with fabric channel width 40.
-[vpr] WARNING(149): Replacing architecture y channel[4] width 2 with fabric channel width 50.
-[vpr] WARNING(150): Replacing architecture y channel[5] width 2 with fabric channel width 42.
-[vpr] WARNING(151): Replacing architecture y channel[6] width 2 with fabric channel width 50.
-[vpr] WARNING(152): Replacing architecture y channel[7] width 2 with fabric channel width 42.
-[vpr] WARNING(153): Replacing architecture y channel[8] width 2 with fabric channel width 50.
-[vpr] WARNING(154): Replacing architecture y channel[9] width 2 with fabric channel width 40.
-[vpr] WARNING(155): Replacing architecture y channel[10] width 2 with fabric channel width 48.
-[vpr] WARNING(156): Replacing architecture y channel[11] width 2 with fabric channel width 34.
-[vpr] WARNING(157): Replacing architecture y channel[12] width 2 with fabric channel width 44.
-[vpr] Confirming router algorithm: TIMING_DRIVEN.
-[vpr] Wire length after first iteration 7473, total available wire length 13584, ratio 0.550133
-[vpr] --------- ---------- -----------
-[vpr] Iteration       Time   Crit Path
-[vpr] --------- ---------- -----------
-[vpr] Critical path: 6.32022 ns
-[vpr] Successfully routed after 20 routing iterations.
-[vpr] Completed net delay value cross check successfully.
-[vpr] 
-[vpr] Using low: -1, high: 2, current: 2
-[vpr] Overriding architecture channels based on fabric channel widths...
-[vpr] WARNING(158): Replacing architecture x channel[0] width 2 with fabric channel width 44.
-[vpr] WARNING(159): Replacing architecture x channel[1] width 2 with fabric channel width 34.
-[vpr] WARNING(160): Replacing architecture x channel[2] width 2 with fabric channel width 48.
-[vpr] WARNING(161): Replacing architecture x channel[3] width 2 with fabric channel width 40.
-[vpr] WARNING(162): Replacing architecture x channel[4] width 2 with fabric channel width 50.
-[vpr] WARNING(163): Replacing architecture x channel[5] width 2 with fabric channel width 42.
-[vpr] WARNING(164): Replacing architecture x channel[6] width 2 with fabric channel width 50.
-[vpr] WARNING(165): Replacing architecture x channel[7] width 2 with fabric channel width 42.
-[vpr] WARNING(166): Replacing architecture x channel[8] width 2 with fabric channel width 50.
-[vpr] WARNING(167): Replacing architecture x channel[9] width 2 with fabric channel width 40.
-[vpr] WARNING(168): Replacing architecture x channel[10] width 2 with fabric channel width 48.
-[vpr] WARNING(169): Replacing architecture x channel[11] width 2 with fabric channel width 34.
-[vpr] WARNING(170): Replacing architecture x channel[12] width 2 with fabric channel width 44.
-[vpr] WARNING(171): Replacing architecture y channel[0] width 2 with fabric channel width 44.
-[vpr] WARNING(172): Replacing architecture y channel[1] width 2 with fabric channel width 34.
-[vpr] WARNING(173): Replacing architecture y channel[2] width 2 with fabric channel width 48.
-[vpr] WARNING(174): Replacing architecture y channel[3] width 2 with fabric channel width 40.
-[vpr] WARNING(175): Replacing architecture y channel[4] width 2 with fabric channel width 50.
-[vpr] WARNING(176): Replacing architecture y channel[5] width 2 with fabric channel width 42.
-[vpr] WARNING(177): Replacing architecture y channel[6] width 2 with fabric channel width 50.
-[vpr] WARNING(178): Replacing architecture y channel[7] width 2 with fabric channel width 42.
-[vpr] WARNING(179): Replacing architecture y channel[8] width 2 with fabric channel width 50.
-[vpr] WARNING(180): Replacing architecture y channel[9] width 2 with fabric channel width 40.
-[vpr] WARNING(181): Replacing architecture y channel[10] width 2 with fabric channel width 48.
-[vpr] WARNING(182): Replacing architecture y channel[11] width 2 with fabric channel width 34.
-[vpr] WARNING(183): Replacing architecture y channel[12] width 2 with fabric channel width 44.
-[vpr] Confirming router algorithm: TIMING_DRIVEN.
-[vpr] Wire length after first iteration 7473, total available wire length 13584, ratio 0.550133
-[vpr] --------- ---------- -----------
-[vpr] Iteration       Time   Crit Path
-[vpr] --------- ---------- -----------
-[vpr] Critical path: 6.32022 ns
-[vpr] Successfully routed after 20 routing iterations.
-[vpr] Completed net delay value cross check successfully.
-[vpr] Overriding architecture channels based on fabric channel widths...
-[vpr] WARNING(184): Replacing architecture x channel[0] width 2 with fabric channel width 44.
-[vpr] WARNING(185): Replacing architecture x channel[1] width 2 with fabric channel width 34.
-[vpr] WARNING(186): Replacing architecture x channel[2] width 2 with fabric channel width 48.
-[vpr] WARNING(187): Replacing architecture x channel[3] width 2 with fabric channel width 40.
-[vpr] WARNING(188): Replacing architecture x channel[4] width 2 with fabric channel width 50.
-[vpr] WARNING(189): Replacing architecture x channel[5] width 2 with fabric channel width 42.
-[vpr] WARNING(190): Replacing architecture x channel[6] width 2 with fabric channel width 50.
-[vpr] WARNING(191): Replacing architecture x channel[7] width 2 with fabric channel width 42.
-[vpr] WARNING(192): Replacing architecture x channel[8] width 2 with fabric channel width 50.
-[vpr] WARNING(193): Replacing architecture x channel[9] width 2 with fabric channel width 40.
-[vpr] WARNING(194): Replacing architecture x channel[10] width 2 with fabric channel width 48.
-[vpr] WARNING(195): Replacing architecture x channel[11] width 2 with fabric channel width 34.
-[vpr] WARNING(196): Replacing architecture x channel[12] width 2 with fabric channel width 44.
-[vpr] WARNING(197): Replacing architecture y channel[0] width 2 with fabric channel width 44.
-[vpr] WARNING(198): Replacing architecture y channel[1] width 2 with fabric channel width 34.
-[vpr] WARNING(199): Replacing architecture y channel[2] width 2 with fabric channel width 48.
-[vpr] WARNING(200): Replacing architecture y channel[3] width 2 with fabric channel width 40.
-[vpr] WARNING(201): Replacing architecture y channel[4] width 2 with fabric channel width 50.
-[vpr] WARNING(202): Replacing architecture y channel[5] width 2 with fabric channel width 42.
-[vpr] WARNING(203): Replacing architecture y channel[6] width 2 with fabric channel width 50.
-[vpr] WARNING(204): Replacing architecture y channel[7] width 2 with fabric channel width 42.
-[vpr] WARNING(205): Replacing architecture y channel[8] width 2 with fabric channel width 50.
-[vpr] WARNING(206): Replacing architecture y channel[9] width 2 with fabric channel width 40.
-[vpr] WARNING(207): Replacing architecture y channel[10] width 2 with fabric channel width 48.
-[vpr] WARNING(208): Replacing architecture y channel[11] width 2 with fabric channel width 34.
-[vpr] WARNING(209): Replacing architecture y channel[12] width 2 with fabric channel width 44.
 [vpr] 
 [vpr] Checking to ensure routing is legal...
 [vpr] Completed routing consistency check successfully.
 [vpr] 
-[vpr] Serial number (magic cookie) for the routing is: -595972494
-[vpr] Best routing used a channel width factor of 2.
+[vpr] Serial number (magic cookie) for the routing is: -586108915
+[vpr] Circuit successfully routed with a channel width factor of 50.
 [vpr] 
-[vpr] Average number of bends per net: 2.54785  Maximum # of bends: 60
+[vpr] Average number of bends per net: 2.29373  Maximum # of bends: 54
 [vpr] 
 [vpr] Number of routed nets (nonglobal): 606
 [vpr] Wire length results (in units of 1 clb segments)...
-[vpr] 	Total wirelength: 8934, average net length: 14.7426
-[vpr] 	Maximum net length: 272
+[vpr] 	Total wirelength: 8478, average net length: 13.9901
+[vpr] 	Maximum net length: 246
 [vpr] 
 [vpr] Wire length results in terms of physical segments...
-[vpr] 	Total wiring segments used: 2475, average wire segments per net: 4.08416
-[vpr] 	Maximum segments used by a net: 76
+[vpr] 	Total wiring segments used: 2338, average wire segments per net: 3.85809
+[vpr] 	Maximum segments used by a net: 67
 [vpr] 	Total local nets with reserved CLB opins: 0
 [vpr] 
 [vpr] X - Directed channels: j max occ ave occ capacity
 [vpr]                       -- ------- ------- --------
-[vpr]                        0      29 19.3333       44
-[vpr]                        1      22 14.5833       34
-[vpr]                        2      32 24.5833       48
-[vpr]                        3      35 27.1667       40
-[vpr]                        4      41 33.1667       50
-[vpr]                        5      42 32.6667       42
-[vpr]                        6      44 35.7500       50
-[vpr]                        7      40 31.0833       42
-[vpr]                        8      45 34.7500       50
-[vpr]                        9      38 30.3333       40
-[vpr]                       10      47 34.3333       48
-[vpr]                       11      32 23.4167       34
-[vpr]                       12      36 26.9167       44
+[vpr]                        0      28 20.3333       50
+[vpr]                        1      37 26.0000       50
+[vpr]                        2      37 28.4167       50
+[vpr]                        3      46 32.1667       50
+[vpr]                        4      42 32.0833       50
+[vpr]                        5      43 33.0833       50
+[vpr]                        6      41 33.0000       50
+[vpr]                        7      46 31.8333       50
+[vpr]                        8      44 31.2500       50
+[vpr]                        9      36 25.8333       50
+[vpr]                       10      34 23.7500       50
+[vpr]                       11      28 20.3333       50
+[vpr]                       12      35 21.3333       50
 [vpr] Y - Directed channels: i max occ ave occ capacity
 [vpr]                       -- ------- ------- --------
-[vpr]                        0      36 23.6667       44
-[vpr]                        1      24 19.3333       34
-[vpr]                        2      37 29.4167       48
-[vpr]                        3      36 27.7500       40
-[vpr]                        4      44 34.7500       50
-[vpr]                        5      41 32.3333       42
-[vpr]                        6      44 35.6667       50
-[vpr]                        7      40 30.4167       42
-[vpr]                        8      46 35.6667       50
-[vpr]                        9      36 28.8333       40
-[vpr]                       10      39 30.0000       48
-[vpr]                       11      31 23.8333       34
-[vpr]                       12      35 24.7500       44
+[vpr]                        0      35 22.2500       44
+[vpr]                        1      28 19.5833       44
+[vpr]                        2      33 24.5000       44
+[vpr]                        3      41 27.3333       44
+[vpr]                        4      41 31.3333       44
+[vpr]                        5      36 29.8333       44
+[vpr]                        6      41 29.4167       44
+[vpr]                        7      42 34.3333       44
+[vpr]                        8      40 30.2500       44
+[vpr]                        9      42 31.0833       44
+[vpr]                       10      35 25.8333       44
+[vpr]                       11      33 22.6667       44
+[vpr]                       12      29 18.6667       44
 [vpr] 
-[vpr] Total tracks in x-direction: 566, in y-direction: 566
+[vpr] Total tracks in x-direction: 650, in y-direction: 572
 [vpr] 
 [vpr] Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...
 [vpr] 	Total logic block area (Warning, need to add pitch of routing to blocks with height > 3): 2.13313e+06
 [vpr] 	Total used logic block area: 1.95537e+06
 [vpr] 
 [vpr] Routing area (in minimum width transistor areas)...
-[vpr] 	Total routing area: 674466., per logic tile: 4683.79
+[vpr] 	Total routing area: 752238., per logic tile: 5223.87
 [vpr] 
 [vpr] Segment usage by type (index): type utilization
 [vpr]                                ---- -----------
-[vpr]                                   0       0.584
+[vpr]                                   0        0.51
 [vpr] 
 [vpr] Segment usage by length: length utilization
 [vpr]                          ------ -----------
-[vpr]                               4       0.584
+[vpr]                               4        0.51
 [vpr] 
 [vpr] Nets on critical path: 10 normal, 0 global.
-[vpr] Total logic delay: 4.5016e-09 (s), total net delay: 1.81862e-09 (s)
-[vpr] Final critical path: 6.32022 ns, f_max: 158.222 MHz
+[vpr] Total logic delay: 4.5016e-09 (s), total net delay: 1.88699e-09 (s)
+[vpr] Final critical path: 6.38859 ns, f_max: 156.529 MHz
 [vpr] 
-[vpr] Least slack in design: -6.32022 ns
+[vpr] Least slack in design: -6.38859 ns
 [vpr] 
 Closing VPR interface...
 Importing fabric model from VPR...
