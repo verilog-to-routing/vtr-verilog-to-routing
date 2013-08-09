@@ -498,7 +498,7 @@ bool TVPR_Interface_c::Close(
          TVPR_FabricModel_c vpr_fabricModel;
          vpr_fabricModel.Import( grid, nx, ny,
                                  rr_node, num_rr_nodes,
-                                 chan_width_x, chan_width_y,
+                                 chan_width.x_list, chan_width.y_list,
                                  pfabricModel );
       }
       if( circuitFileEnable && pcircuitDesign )
