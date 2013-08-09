@@ -104,6 +104,7 @@ private:
    void PokeInterconnectList_( const TAS_InterconnectList_t& interconnectList,
                                t_mode* pvpr_mode ) const;
    void PokeInterconnect_( const TAS_Interconnect_c& interconnect,
+                           t_mode* pvpr_mode,
                            t_interconnect* pvpr_interconnect ) const;
 
    bool PokeFc_( const TAS_PhysicalBlock_c& physicalBlock,

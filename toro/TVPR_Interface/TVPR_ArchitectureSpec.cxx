@@ -1328,7 +1328,7 @@ bool TVPR_ArchitectureSpec_c::PokeModeList_(
                                modeList[i]->physicalBlockList,
                                modeList[i]->interconnectList,
                                &( pvpr_pb_type->modes[i] ));
-	 if( !ok )
+         if( !ok )
             break;
       }
    }
@@ -1379,7 +1379,7 @@ bool TVPR_ArchitectureSpec_c::PokeMode_(
          const TAS_PhysicalBlock_c& physicalBlock = *physicalBlockList[i];
          ok = this->PokePbType_( physicalBlock, pvpr_mode, 
                                  &pvpr_mode->pb_type_children[i] );
-	 if( !ok )
+         if( !ok )
             break;
       }
    } 
@@ -1422,6 +1422,7 @@ void TVPR_ArchitectureSpec_c::PokeInterconnectList_(
    
       pvpr_mode->interconnect[index].parent_mode_index = pvpr_mode->index;
       this->PokeInterconnect_( interconnect,
+                               pvpr_mode,
                                &pvpr_mode->interconnect[index] );
       ++index;
    }
@@ -1433,6 +1434,7 @@ void TVPR_ArchitectureSpec_c::PokeInterconnectList_(
    
       pvpr_mode->interconnect[index].parent_mode_index = pvpr_mode->index;
       this->PokeInterconnect_( interconnect,
+                               pvpr_mode,
                                &pvpr_mode->interconnect[index] );
       ++index;
    }
@@ -1444,6 +1446,7 @@ void TVPR_ArchitectureSpec_c::PokeInterconnectList_(
    
       pvpr_mode->interconnect[index].parent_mode_index = pvpr_mode->index;
       this->PokeInterconnect_( interconnect,
+                               pvpr_mode,
                                &pvpr_mode->interconnect[index] );
       ++index;
    }
@@ -1455,9 +1458,11 @@ void TVPR_ArchitectureSpec_c::PokeInterconnectList_(
 //---------------------------------------------------------------------------//
 // Version history
 // 07/10/12 jeffr : Original
+// 08/09/13 jeffr : Added support for inititalizing "parent_mode" fields
 //===========================================================================//
 void TVPR_ArchitectureSpec_c::PokeInterconnect_(
       const TAS_Interconnect_c& interconnect,
+            t_mode*             pvpr_mode,
             t_interconnect*     pvpr_interconnect ) const
 {
    pvpr_interconnect->name = TC_strdup( interconnect.srName );
@@ -1474,6 +1479,9 @@ void TVPR_ArchitectureSpec_c::PokeInterconnect_(
    this->PokeTimingDelayLists_( interconnect.timingDelayLists,
                                 &pvpr_interconnect->annotations,
                                 &pvpr_interconnect->num_annotations );
+ 
+   pvpr_interconnect->parent_mode_index = pvpr_mode->index;
+   pvpr_interconnect->parent_mode = pvpr_mode;
 
    t_interconnect_power* pvpr_interconnect_power = 0;
    pvpr_interconnect_power = static_cast< t_interconnect_power* >( TC_calloc( 1, sizeof( t_interconnect_power )));
@@ -2044,7 +2052,7 @@ void TVPR_ArchitectureSpec_c::PokePortPower_(
       // Process wire capacitance value
       if(( powerMethod == POWER_METHOD_AUTO_SIZES ) ||
          ( powerMethod == POWER_METHOD_SPECIFY_SIZES ))
-      {				
+      {
          pvpr_port_power->wire_type = POWER_WIRE_TYPE_C;
          pvpr_port_power->wire.C = static_cast< float >( wireCap );
       }
@@ -2054,7 +2062,7 @@ void TVPR_ArchitectureSpec_c::PokePortPower_(
       // Process wire relative length value
       if(( powerMethod == POWER_METHOD_AUTO_SIZES ) ||
          ( powerMethod == POWER_METHOD_SPECIFY_SIZES ))
-      {				
+      {
          pvpr_port_power->wire_type = POWER_WIRE_TYPE_RELATIVE_LENGTH;
          pvpr_port_power->wire.relative_length = static_cast< float >( wireRelativeLength );
       }

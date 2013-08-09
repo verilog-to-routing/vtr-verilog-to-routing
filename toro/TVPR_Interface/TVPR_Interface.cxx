@@ -308,6 +308,7 @@ bool TVPR_Interface_c::Open(
       printHandler.SetPrefix( TIO_SZ_VPR_PREFIX );
 
       boolean readArchFile = static_cast< boolean >( !architectureSpec.IsValid( ));
+
       vpr_setup_vpr( &this->vpr_.options, 
                      this->vpr_.setup.TimingEnabled, 
                      readArchFile,
@@ -321,6 +322,7 @@ bool TVPR_Interface_c::Open(
                      &this->vpr_.setup.AnnealSched, 
                      &this->vpr_.setup.RouterOpts, 
                      &this->vpr_.setup.RoutingArch, 
+                     &this->vpr_.setup.PackerRRGraph,
                      &this->vpr_.setup.Segments, 
                      &this->vpr_.setup.Timing,
                      &this->vpr_.setup.ShowGraphics, 
@@ -356,6 +358,7 @@ bool TVPR_Interface_c::Open(
                                      this->vpr_.setup.user_models, 
                                      &vpack_net,
                                      &num_logical_nets,
+                                     &g_atoms_nlist,
                                      &logical_block,
                                      &num_logical_blocks,
                                      &num_p_inputs,

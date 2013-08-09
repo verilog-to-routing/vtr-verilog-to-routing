@@ -21,6 +21,7 @@
 //           - UpdateStructures_
 //           - UpdateLogicalBlocks_
 //           - UpdateVpackNets_
+//           - UpdateGlobalNets_
 //           - UpdateAbsorbLogic_
 //           - UpdateCompressLists_
 //           - UpdatePrimaryCounts_
@@ -119,6 +120,7 @@ TVPR_CircuitDesign_c::~TVPR_CircuitDesign_c(
 //---------------------------------------------------------------------------//
 // Version history
 // 07/25/12 jeffr : Original
+// 08/09/13 jeffr : Added support for new VPR global net list (g_atoms_nlist)
 //===========================================================================//
 bool TVPR_CircuitDesign_c::Export(
       const TCD_CircuitDesign_c& circuitDesign,
@@ -126,6 +128,7 @@ bool TVPR_CircuitDesign_c::Export(
       const t_model*             pvpr_customModels,
             t_net**              pvpr_netArray,
             int*                 pvpr_netCount,
+            t_netlist*           pvpr_globalNetList,
             t_logical_block**    pvpr_logicalBlockArray,
             int*                 pvpr_logicalBlockCount,
             int*                 pvpr_primaryInputCount,
@@ -176,7 +179,8 @@ bool TVPR_CircuitDesign_c::Export(
    }
    if( ok )
    {
-      ok = this->UpdateStructures_( pvpr_netArray, pvpr_netCount,
+      ok = this->UpdateStructures_( pvpr_netArray, pvpr_netCount, 
+                                    pvpr_globalNetList,
                                     pvpr_logicalBlockArray, pvpr_logicalBlockCount,
                                     pvpr_primaryInputCount, pvpr_primaryOutputCount );
    }
@@ -787,10 +791,12 @@ void TVPR_CircuitDesign_c::PokeBlockList_(
 //---------------------------------------------------------------------------//
 // Version history
 // 07/25/12 jeffr : Original
+// 08/09/13 jeffr : Added support for new VPR global net list (g_atoms_nlist)
 //===========================================================================//
 bool TVPR_CircuitDesign_c::UpdateStructures_(
             t_net**           pvpr_netArray,
             int*              pvpr_netCount,
+            t_netlist*        pvpr_globalNetList,
             t_logical_block** pvpr_logicalBlockArray,
             int*              pvpr_logicalBlockCount,
             int*              pvpr_primaryInputCount,
@@ -816,6 +822,12 @@ bool TVPR_CircuitDesign_c::UpdateStructures_(
    {
       ok = this->UpdateCompressLists_( pvpr_netArray, pvpr_netCount,
                                        pvpr_logicalBlockArray, pvpr_logicalBlockCount );
+   }
+
+   if( ok )
+   {
+     this->UpdateGlobalNets_( *pvpr_netArray, *pvpr_netCount, 
+                              pvpr_globalNetList );
    }
 
    if( ok )
@@ -921,6 +933,42 @@ bool TVPR_CircuitDesign_c::UpdateVpackNets_(
          break;
    }
    return( ok );
+}
+
+//===========================================================================//
+// Method         : UpdateGlobalNets_
+// Author         : Jeff Rudolph
+//---------------------------------------------------------------------------//
+// Version history
+// 08/09/13 jeffr : Original
+//===========================================================================//
+void TVPR_CircuitDesign_c::UpdateGlobalNets_(
+      t_net*     vpr_netArray,
+      int        vpr_netCount,
+      t_netlist* pvpr_globalNetList ) const
+{
+   // See VPR's netlist.c::load_global_net_from_array() function...
+   pvpr_globalNetList->net.resize( vpr_netCount );
+
+   for( int i = 0; i < vpr_netCount; ++i )
+   {
+      pvpr_globalNetList->net[i].name = TC_strdup( vpr_netArray[i].name );
+      pvpr_globalNetList->net[i].is_routed = vpr_netArray[i].is_routed;
+      pvpr_globalNetList->net[i].is_fixed = vpr_netArray[i].is_fixed;
+      pvpr_globalNetList->net[i].is_global = vpr_netArray[i].is_global;
+      pvpr_globalNetList->net[i].is_const_gen = vpr_netArray[i].is_const_gen;
+
+      pvpr_globalNetList->net[i].nodes.resize( vpr_netArray[i].num_sinks + 1 );
+      for( int j = 0; j <= vpr_netArray[i].num_sinks; ++j)
+      {
+         pvpr_globalNetList->net[i].nodes[j].block = vpr_netArray[i].node_block[j];
+         pvpr_globalNetList->net[i].nodes[j].block_pin = vpr_netArray[i].node_block_pin[j];
+         if( vpr_netArray[i].node_block_port ) 
+         {
+            pvpr_globalNetList->net[i].nodes[j].block_port = vpr_netArray[i].node_block_port[j];
+         }
+      }
+   }
 }
 
 //===========================================================================//

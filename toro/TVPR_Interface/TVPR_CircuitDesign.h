@@ -49,6 +49,7 @@ public:
                 const t_model* pvpr_customModels,
                 t_net** pvpr_netArray,
                 int* pvpr_netCount,
+                t_netlist* pvpr_globalNetList,
                 t_logical_block** pvpr_logicalBlockArray,
                 int* pvpr_logicalBlockCount,
                 int* pvpr_primaryInputCount,
@@ -153,6 +154,7 @@ private:
    
    bool UpdateStructures_( t_net** pvpr_netArray,
                            int* pvpr_netCount,
+                           t_netlist* pvpr_globalNetList,
                            t_logical_block** pvpr_logicalBlockArray,
                            int* pvpr_logicalBlockCount,
                            int* pvpr_primaryInputCount,
@@ -163,6 +165,9 @@ private:
    bool UpdateVpackNets_( t_net* vpr_netArray,
                           const t_logical_block* vpr_logicalBlockArray,
                           int vpr_logicalBlockCount ) const;
+   void UpdateGlobalNets_( t_net* vpr_netArray,
+                           int vpr_netCount,
+                           t_netlist* pvpr_globalNetList ) const;
    bool UpdateAbsorbLogic_( t_net* vpr_netArray,
                             t_logical_block* vpr_logicalBlockArray,
                             int vpr_logicalBlockCount ) const;
