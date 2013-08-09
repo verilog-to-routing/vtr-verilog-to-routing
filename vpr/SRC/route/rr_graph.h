@@ -25,7 +25,7 @@ void build_rr_graph(
 		INP int L_nx, 
 		INP int L_ny,
 		INP struct s_grid_tile **L_grid, 
-		INP int chan_width,
+		INP struct s_chan_width *nodes_per_chan,
 		INP struct s_chan_width_dist *chan_capacity_inf,
 		INP enum e_switch_block_type sb_type, 
 		INP int Fs, 
