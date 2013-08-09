@@ -125,7 +125,7 @@ int get_simple_switch_block_track(INP enum e_side from_side,
 			if (to_side == RIGHT) { /* CHANX to CHANX */
 				to_track = from_track;
 			} else if (to_side == TOP) { /* from CHANX to CHANY */
-				to_track = (nodes_per_chan - from_track) % nodes_per_chan;
+				to_track = (nodes_per_chan - (from_track % nodes_per_chan)) % nodes_per_chan;
 			} else if (to_side == BOTTOM) {
 				to_track = (nodes_per_chan + from_track - 1) % nodes_per_chan;
 			}
@@ -137,8 +137,7 @@ int get_simple_switch_block_track(INP enum e_side from_side,
 			} else if (to_side == TOP) { /* from CHANX to CHANY */
 				to_track = (nodes_per_chan + from_track - 1) % nodes_per_chan;
 			} else if (to_side == BOTTOM) {
-				to_track = (2 * nodes_per_chan - 2 - from_track)
-						% nodes_per_chan;
+				to_track = (2 * nodes_per_chan - 2 - from_track) % nodes_per_chan;
 			}
 		}
 
@@ -148,8 +147,7 @@ int get_simple_switch_block_track(INP enum e_side from_side,
 			} else if (to_side == LEFT) { /* from CHANY to CHANX */
 				to_track = (from_track + 1) % nodes_per_chan;
 			} else if (to_side == RIGHT) {
-				to_track = (2 * nodes_per_chan - 2 - from_track)
-						% nodes_per_chan;
+				to_track = (2 * nodes_per_chan - 2 - from_track) % nodes_per_chan;
 			}
 		}
 
@@ -157,12 +155,16 @@ int get_simple_switch_block_track(INP enum e_side from_side,
 			if (to_side == BOTTOM) { /* CHANY to CHANY */
 				to_track = from_track;
 			} else if (to_side == LEFT) { /* from CHANY to CHANX */
-				to_track = (nodes_per_chan - from_track) % nodes_per_chan;
+				to_track = (nodes_per_chan - (from_track % nodes_per_chan)) % nodes_per_chan;
 			} else if (to_side == RIGHT) {
 				to_track = (from_track + 1) % nodes_per_chan;
 			}
 		}
 
+		/* Force to_track to UN_SET if it falls outside the min/max channel width range */
+		if (to_track < 0 || to_track >= nodes_per_chan) {
+			to_track = -1;
+		}
 	}
 	/* End switch_block_type == WILTON case. */
 	else if (switch_block_type == UNIVERSAL) {
@@ -216,11 +218,5 @@ int get_simple_switch_block_track(INP enum e_side from_side,
 	}
 	/* UDSD Modification by WMF End */
 
-	if (to_track == SBOX_ERROR) {
-		vpr_printf_error(__FILE__, __LINE__,
-			"in get_simple_switch_block_track.\n"
-			"%sUnexpected connection from_side %d to_side %d, switch_block_type %d.\n",
-			TIO_PREFIX_ERROR_SPACE, from_side, to_side, switch_block_type);
-	}
 	return (to_track);
 }
