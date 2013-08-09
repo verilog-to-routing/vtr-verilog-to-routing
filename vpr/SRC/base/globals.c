@@ -57,9 +57,7 @@ int ny = 0;
  * generator and from creating extra switches that the area model would      *
  * count.                                                                    */
 
-int *chan_width_x = NULL; /* [0..ny] */
-int *chan_width_y = NULL; /* [0..nx] */
-int chan_width_max = 0;
+t_chan_width chan_width;
 
 struct s_grid_tile **grid = NULL; /* [0..(nx+1)][0..(ny+1)] Physical block list */
 
