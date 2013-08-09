@@ -105,10 +105,14 @@ boolean place_and_route(enum e_operation operation,
 
 	fflush(stdout);
 
-	if (!router_opts.doRouting)
-		return(TRUE);
-
 	int width_fac = router_opts.fixed_channel_width;
+
+	if (!router_opts.doRouting) {
+		try_graph(width_fac, router_opts, det_routing_arch, 
+				segment_inf, timing_inf, chan_width_dist,
+				directs, num_directs);
+		return(TRUE);
+	}
 
 	/* If channel width not fixed, use binary search to find min W */
 	if (NO_FIXED_CHANNEL_WIDTH == width_fac) {
@@ -504,7 +508,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	free_rr_graph();
 
 	build_rr_graph(graph_type, num_types, type_descriptors, nx, ny, grid,
-			chan_width_max, NULL, det_routing_arch.switch_block_type,
+			&chan_width, NULL, det_routing_arch.switch_block_type,
 			det_routing_arch.Fs, det_routing_arch.num_segment,
 			det_routing_arch.num_switch, segment_inf,
 			det_routing_arch.global_route_switch,
@@ -588,35 +592,34 @@ void init_chan(int cfactor, int* chan_override_max, t_chan_width_dist chan_width
 	if (nio == 0)
 		nio = 1; /* No zero width channels */
 
-	chan_width_x[0] = chan_width_x[ny] = nio;
-	chan_width_y[0] = chan_width_y[nx] = nio;
+	chan_width.x_list[0] = chan_width.x_list[ny] = nio;
+	chan_width.y_list[0] = chan_width.y_list[nx] = nio;
 
 	if (ny > 1) {
 		float separation = 1.0 / (ny - 2.0); /* Norm. distance between two channels. */
 		float y = 0.0; /* This avoids div by zero if ny = 2.0 */
-		chan_width_x[1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
+		chan_width.x_list[1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
 
 		/* No zero width channels */
-		chan_width_x[1] = max(chan_width_x[1], 1);
+		chan_width.x_list[1] = max(chan_width.x_list[1], 1);
 
 		for (int i = 1; i < ny - 1; ++i) {
 			y = (float) i / ((float) (ny - 2.0));
-			chan_width_x[i + 1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
-			chan_width_x[i + 1] = max(chan_width_x[i + 1], 1);
+			chan_width.x_list[i + 1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
+			chan_width.x_list[i + 1] = max(chan_width.x_list[i + 1], 1);
 		}
 	}
 
 	if (nx > 1) {
 		float separation = 1.0 / (nx - 2.0); /* Norm. distance between two channels. */
 		float x = 0.0; /* Avoids div by zero if nx = 2.0 */
-		chan_width_y[1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
-
-		chan_width_y[1] = max(chan_width_y[1], 1);
+		chan_width.y_list[1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
+		chan_width.y_list[1] = max(chan_width.y_list[1], 1);
 
 		for (int i = 1; i < nx - 1; ++i) {
 			x = (float) i / ((float) (nx - 2.0));
-			chan_width_y[i + 1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
-			chan_width_y[i + 1] = max(chan_width_y[i + 1], 1);
+			chan_width.y_list[i + 1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
+			chan_width.y_list[i + 1] = max(chan_width.y_list[i + 1], 1);
 		}
 	}
 
@@ -626,26 +629,31 @@ void init_chan(int cfactor, int* chan_override_max, t_chan_width_dist chan_width
 	}
 #endif
 
-	chan_width_max = 0;
+	chan_width.max = 0;
+	chan_width.x_max = chan_width.y_max = INT_MIN;
+	chan_width.x_min = chan_width.y_min = INT_MAX;
 	for (int i = 0; i <= ny ; ++i) {
-		chan_width_max = max(chan_width_max,chan_width_x[i]);
+		chan_width.max = max(chan_width.max, chan_width.x_list[i]);
+		chan_width.x_max = max(chan_width.x_max, chan_width.x_list[i]);
+		chan_width.x_min = min(chan_width.x_min, chan_width.x_list[i]);
 	}
 	for (int i = 0; i <= nx ; ++i) {
-		chan_width_max = max(chan_width_max,chan_width_y[i]);
+		chan_width.max = max(chan_width.max, chan_width.y_list[i]);
+		chan_width.y_max = max(chan_width.y_max, chan_width.y_list[i]);
+		chan_width.y_min = min(chan_width.y_min, chan_width.y_list[i]);
 	}
 
 #ifdef VERBOSE
 	vpr_printf_info("\n");
-	vpr_printf_info("chan_width_x:\n");
-	for (int i = 0; i <= ny ; ++i) {
-		vpr_printf_info("%d  ", chan_width_x[i]);
+	vpr_printf_info("chan_width.x_list:\n");
+	for (int i = 0; i <= ny ; ++i)
+		vpr_printf_info("%d  ", chan_width.x_list[i]);
 	vpr_printf_info("\n");
-	vpr_printf_info("chan_width_y:\n");
-	for (int i = 0; i <= nx ; ++i) {
-		vpr_printf_info("%d  ", chan_width_y[i]);
+	vpr_printf_info("chan_width.y_list:\n");
+	for (int i = 0; i <= nx ; ++i)
+		vpr_printf_info("%d  ", chan_width.y_list[i]);
 	vpr_printf_info("\n");
 #endif
-
 }
 
 #ifdef TORO_FABRIC_CHANNEL_OVERRIDE
@@ -663,9 +671,9 @@ static bool init_chan_override(int* chan_override_max) {
 		// Override channel widths by x and y orientations
 		*chan_override_max = 0;
 		if (ok)
-			ok = init_chan_override_widths( TFH_SELECT_CHANNEL_X, ny, chan_width_x, chan_override_max);
+			ok = init_chan_override_widths( TFH_SELECT_CHANNEL_X, ny, chan_width.x_list, chan_override_max);
 		if (ok)
-			ok = init_chan_override_widths( TFH_SELECT_CHANNEL_Y, nx, chan_width_y, chan_override_max);
+			ok = init_chan_override_widths( TFH_SELECT_CHANNEL_Y, nx, chan_width.y_list, chan_override_max);
 	}
 	return (ok);
 }
