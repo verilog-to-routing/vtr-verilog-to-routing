@@ -42,7 +42,7 @@
 //           - UpdateSwitchMapTables_
 //           - BuildConnectionBoxes_
 //           - BuildConnectionRegion_
-//           - UpdateConnectionPoints_
+//           - UpdateConnectionPoi<nts_
 //           - CalcMaxPinCount_
 //           - CalcPinCountArray_
 //           - CalcPinDeltaArray_
@@ -481,7 +481,7 @@ bool TVPR_FabricModel_c::PokeFabricView_(
       this->PokeChannelWidths_( channelList );
    }
 
-   // WIP - Need to poke rest of fabric view data directly into VPR structures...
+   // WIP - Poke rest of fabric view data directly into VPR structures (eg. segments)...
 
    return( ok );
 }
