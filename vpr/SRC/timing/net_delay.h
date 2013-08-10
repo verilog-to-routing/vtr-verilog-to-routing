@@ -2,7 +2,7 @@
 		struct s_net *nets, int n_nets);*/
 
 float **alloc_net_delay(t_chunk *chunk_list_ptr,
-		struct s_net *nets, int n_nets);
+		vector<t_vnet> *nets, unsigned int n_nets);
 
 /*void free_net_delay(float **net_delay,
 		struct s_linked_vptr **chunk_list_head_ptr);*/

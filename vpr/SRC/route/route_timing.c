@@ -977,8 +977,8 @@ static void timing_driven_check_net_delays(float **net_delay) {
 
 	/*struct s_linked_vptr *ch_list_head_net_delay_check;*/
 
-	net_delay_check = alloc_net_delay(&list_head_net_delay_check_ch, clb_net,
-			num_nets);
+	net_delay_check = alloc_net_delay(&list_head_net_delay_check_ch, &g_clbs_nlist.net,
+		g_clbs_nlist.net.size());
 	load_net_delay_from_routing(net_delay_check, clb_net, num_nets);
 
 	for (inet = 0; inet < num_nets; inet++) {

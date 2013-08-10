@@ -54,6 +54,7 @@
 #define TIO_PRINT_HANDLER_H
 
 #include <string>
+#include <stdarg.h>
 using namespace std;
 
 #include "TIO_Typedefs.h"
