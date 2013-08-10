@@ -10,7 +10,7 @@
 //============================================================================================
 //				GLOBALS
 //============================================================================================
-void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types, t_boolean fix_global_nets);
+void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types, t_boolean fix_global_nets, t_boolean split_multiclock_blocks);
 
 //============================================================================================
 //				STRUCTURES & TYPEDEFS
@@ -64,6 +64,15 @@ typedef queue<t_pb_type*> t_pb_type_queue;
 //============================================================================================
 //				PREPROCESS DEFINES
 //============================================================================================
+//Split RAM nodes
+#define SPLIT_A_POSTFIX "__split_A__"
+#define SPLIT_B_POSTFIX "__split_B__"
+#define DUMMY_NET_NAME_FORMAT "__dummy_%d_A_B__"
+#define DUMMY_A_PORT_NAME "__dummy_molecule_A__"
+#define DUMMY_B_PORT_NAME "__dummy_molecule_B__"
+
+
+//Global local prefixes
 #define INOUT_INPUT_PREFIX "__in__"
 #define INOUT_OUTPUT_PREFIX "__out__"
 

@@ -2,11 +2,14 @@
 //				INCLUDES
 //============================================================================================
 #include "../include/preprocess.h"
+#include "../include/libvqm/vqm_common.h"
 
 
 //============================================================================================
 //			INTERNAL FUNCTION DECLARATIONS
 //============================================================================================
+
+//Functions to identify and decompose inout pins
 void decompose_inout_pins(t_module* module, t_arch* arch);
 
 t_model* find_model_in_architecture(t_model* arch_models, t_node* node);
@@ -23,9 +26,22 @@ int fix_netlist_connectivity_for_inout_pins(t_split_inout_pin* new_input_pin,
                                             t_port_vec* pin_node_sources,
                                             t_port_vec* pin_node_sinks           );
 
+//Functions to identify dual-clock RAMs and split them into seperate blocks
+void decompose_multiclock_blocks(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types);
 
+void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& multiclock_blocks);
 
+map<t_node_port_association*, t_node*> map_ports_to_split_blocks(t_node* orig_node, t_node* split_node_a, t_node* split_node_b);
 
+void dump_node_ports(t_node* node);
+
+t_node_parameter* find_node_param(t_node* node, const char* param_name);
+
+t_node* duplicate_node(t_node* orig_node);
+t_node_parameter* duplicate_param(t_node_parameter* orig_param);
+t_node_port_association* duplicate_port(t_node_port_association* orig_port);
+
+//Functions to identify global nets
 void add_global_to_nonglobal_buffers(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types);
 
 t_global_ports identify_primitive_global_pins(t_arch* arch, t_type_descriptor* arch_types, int num_types);
@@ -56,7 +72,7 @@ t_node* add_buffer(t_module* module, t_buffer_type buffer_type, int num_buffers_
 void print_map(t_global_ports global_ports);
 //============================================================================================
 //============================================================================================
-void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types, t_boolean fix_global_nets){
+void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types, t_boolean fix_global_nets, t_boolean split_multiclock_blocks){
     /*
      * Put all netlist pre-processing function calls here
      */
@@ -67,6 +83,11 @@ void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_
     decompose_inout_pins(module, arch);
 
     cout << "\n";
+
+    if(split_multiclock_blocks) {
+        cout << "\t>> Preprocessing Netlist to decompose dual-clock RAMs\n";
+        decompose_multiclock_blocks(module, arch, arch_types, num_types);
+    }
 
     if(fix_global_nets) {
         //Add fake_gbuf cells to allow global signals (e.g. clocks & resets) to be
@@ -573,6 +594,547 @@ int fix_netlist_connectivity_for_inout_pins(t_split_inout_pin* split_inout_pin,
 }
 
 
+//============================================================================================
+//============================================================================================
+void decompose_multiclock_blocks(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types) {
+    //Identify netlist multi-clock primitives
+    vector<t_node*> multiclock_blocks;
+    for(int i = 0; i < module->number_of_nodes; ++i) {
+
+        t_node* node = module->array_of_nodes[i];
+
+        if(strcmp(node->type, "stratixiv_ram_block") == 0) {
+
+            int clock_count = 0;
+            for(int j = 0; j < node->number_of_ports; j++) {
+                t_node_port_association* node_port = node->array_of_ports[j];
+
+                //TODO: don't hard code this, ideally somehow the arch file should describe which
+                //      block types can have multiple clocks
+                if(strstr(node_port->port_name, "clk") != NULL) {
+                    clock_count++;
+                }
+            }
+
+            if(clock_count >= 2) {
+                cout << "\t\t>> Found " << node->type << " with " << clock_count << " clocks." << endl;
+                multiclock_blocks.push_back(node);
+            }
+        }
+    }
+
+    cout << "\t\t>> Found "<< multiclock_blocks.size() << " multiclock blocks in total" << endl;
+    cout << endl;
+
+
+    //Split the netlist primitives into two types
+    duplicate_and_split_multiclock_blocks(module, multiclock_blocks);
+    
+}
+
+void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& multiclock_blocks) {
+    /*
+     *  We must split multi-clock blocks into several primitive blocks since VPR
+     *  currently only supports primitives with a single clock.
+     *
+     *  The key idea is to duplicate the ram node, with one primitive for each clock.
+     *
+     *  We also add an extra 'dummy' connection between them which is later used
+     *  by the VPR packer (using molecules) to ensure that these are always packed
+     *  together.
+     *
+     *  For example:
+     *
+     *     Given a simple dual port, dual clock ram block in the VQM netlist:
+     *
+     *                    --------------------
+     *                    |     orig_ram     |
+     *                    |                  |
+     *           -------->|data_a      data_b|-------->
+     *                    |                  | 
+     *           -------->|addr_a      addr_b|<--------
+     *                    |                  |
+     *           -------->|clk_a        clk_b|<--------
+     *                    |                  |
+     *                    --------------------
+     *
+     *     We will transform it to:
+     *
+     *                    --------------------
+     *                    | split_orig_ram_a |
+     *                    |                  |
+     *           -------->|data_a      data_b|
+     *                    |                  | 
+     *           -------->|addr_a      addr_b|
+     *                    |                  |
+     *           -------->|clk_a        clk_b|
+     *                    |                  |
+     *                    |             dummy|---|
+     *                    |                  |   |
+     *                    --------------------   |
+     *                                           |
+     *               ----------------------------|
+     *               |
+     *               |    --------------------
+     *               |    | split_orig_ram_b |
+     *               |    |                  |
+     *               |    |data_a      data_b|------->
+     *               |    |                  | 
+     *               |    |addr_a      addr_b|<-------
+     *               |    |                  |
+     *               |    |clk_a        clk_b|<-------
+     *               |    |                  |
+     *               |--->|dummy             |
+     *                    |                  |
+     *                    --------------------
+     *
+     *
+     * Breaking things down the following work must be done:
+     *   1) Duplicate orig_ram to create split_orig_ram_b
+     *   2) Rename the block names and types
+     *   3) Disconnect port b related singals on split_orig_ram_a
+     *   4) Disconnect port a related singals on split_orig_ram_b
+     *   5) Add dummy output to split_orig_ram_a
+     *   6) Add dummy input to split_orig_ram_b
+     */
+
+    int dummy_net_count = 0;
+    for(vector<t_node*>::iterator iter = multiclock_blocks.begin(); iter != multiclock_blocks.end(); ++iter) {
+        t_node* orig_node = *iter;
+
+        //cout << "Node " << orig_node->name << " (" << orig_node->type << ")" << endl;
+        //dump_node_ports(orig_node);
+
+        size_t new_len = 0;
+
+        //1) Duplicate the original block and insert the new copy
+        t_node* split_node_b = duplicate_node(orig_node);
+
+        module->number_of_nodes++;
+        module->array_of_nodes = (t_node**) my_realloc(module->array_of_nodes, sizeof(t_node*)*module->number_of_nodes);
+        module->array_of_nodes[module->number_of_nodes-1] = split_node_b;
+
+        //2) Rename the block names and types
+        t_node* split_node_a = orig_node; //Overwrite the original
+
+
+        //Give 'A' a unique type
+        new_len = strlen(split_node_a->type);
+        new_len += strlen(SPLIT_A_POSTFIX);
+        char* old_type = split_node_a->type;
+        split_node_a->type = (char*) my_malloc(sizeof(*split_node_a->type)*(new_len+1));
+        snprintf(split_node_a->type, new_len+1, "%s%s", old_type, SPLIT_A_POSTFIX);
+        free(old_type);
+
+        //Give 'A' a unique name 
+        new_len = strlen(split_node_a->name);
+        new_len += strlen(SPLIT_A_POSTFIX);
+        char* old_name = split_node_a->name;
+        split_node_a->name = (char*) my_malloc(sizeof(*split_node_a->name)*(new_len+1));
+        snprintf(split_node_a->name, new_len+1, "%s%s", old_name, SPLIT_A_POSTFIX);
+        free(old_name);
+
+        //Give 'B' a unique type
+        new_len = strlen(split_node_b->type);
+        new_len += strlen(SPLIT_B_POSTFIX);
+        old_type = split_node_b->type;
+        split_node_b->type = (char*) my_malloc(sizeof(*split_node_b->type)*(new_len+1));
+        snprintf(split_node_b->type, new_len+1, "%s%s", old_type, SPLIT_B_POSTFIX);
+        free(old_type);
+
+        //Give 'B' a unique name 
+        new_len = strlen(split_node_b->name);
+        new_len += strlen(SPLIT_B_POSTFIX);
+        old_name = split_node_b->name;
+        split_node_b->name = (char*) my_malloc(sizeof(*split_node_b->name)*(new_len+1));
+        snprintf(split_node_b->name, new_len+1, "%s%s", old_name, SPLIT_B_POSTFIX);
+        free(old_name);
+
+        //3) Determine on which entity each port should be connected
+        map<t_node_port_association*, t_node*> node_a_port_to_node_map = map_ports_to_split_blocks(split_node_a, split_node_a, split_node_b);
+        map<t_node_port_association*, t_node*> node_b_port_to_node_map = map_ports_to_split_blocks(split_node_b, split_node_a, split_node_b);
+
+        //4) Disconnect port signals on 'A'
+        size_t num_ports_removed = 0;
+        for(int i = 0; i < split_node_a->number_of_ports; i++) {
+            t_node_port_association* node_port = split_node_a->array_of_ports[i];
+
+            assert(node_a_port_to_node_map.count(node_port));
+
+            if(node_a_port_to_node_map[node_port] != split_node_a) {
+                //Disconnect this port
+                num_ports_removed++;
+                free_port_association(split_node_a->array_of_ports[i]);
+                split_node_a->array_of_ports[i] = NULL;
+            }
+        }
+        
+        //Reallocate
+        t_node_port_association** new_port_array = (t_node_port_association**) my_malloc(sizeof(t_node_port_association*)*(split_node_a->number_of_ports - num_ports_removed));
+        size_t index = 0;
+        for(int i = 0; i < split_node_a->number_of_ports; i++) {
+            t_node_port_association* node_port = split_node_a->array_of_ports[i];
+
+            if(node_port != NULL) {
+                assert(index < split_node_a->number_of_ports - num_ports_removed);
+                new_port_array[index] = node_port;
+                index++;
+            }
+        }
+        //Replace the old array
+        free(split_node_a->array_of_ports);
+        split_node_a->array_of_ports = new_port_array;
+        split_node_a->number_of_ports = split_node_a->number_of_ports - num_ports_removed;
+        
+        //cout << "Split node a: " << split_node_a->type << endl;
+        //dump_node_ports(split_node_a);
+
+
+        //4) Disconnect port signals on 'B'
+        num_ports_removed = 0;
+        for(int i = 0; i < split_node_b->number_of_ports; i++) {
+            t_node_port_association* node_port = split_node_b->array_of_ports[i];
+            
+            assert(node_b_port_to_node_map.count(node_port));
+
+            if(node_b_port_to_node_map[node_port] != split_node_b) {
+                //Disconnect this port
+                num_ports_removed++;
+                free_port_association(split_node_b->array_of_ports[i]);
+                split_node_b->array_of_ports[i] = NULL;
+            }
+        }
+        
+        new_port_array = (t_node_port_association**) my_malloc(sizeof(t_node_port_association*)*(split_node_b->number_of_ports - num_ports_removed));
+        index = 0;
+        for(int i = 0; i < split_node_b->number_of_ports; i++) {
+            t_node_port_association* node_port = split_node_b->array_of_ports[i];
+
+            if(node_port != NULL) {
+                assert(index < split_node_b->number_of_ports - num_ports_removed);
+                new_port_array[index] = node_port;
+                index++;
+            }
+        }
+        //Replace the old array
+        free(split_node_b->array_of_ports);
+        split_node_b->array_of_ports = new_port_array;
+        split_node_b->number_of_ports = split_node_b->number_of_ports - num_ports_removed;
+
+        //cout << "Split node b: " << split_node_b->type << endl;
+        //dump_node_ports(split_node_b);
+
+        //5) Create dummy net to connect 'A' to 'B', used by packer molecules to always place these together
+        module->number_of_pins++;
+        module->array_of_pins = (t_pin_def**) my_realloc(module->array_of_pins, sizeof(t_pin_def*)*module->number_of_pins);
+
+        //Create the new net
+        t_pin_def* new_net = (t_pin_def*) my_malloc(sizeof(t_pin_def));
+
+        char buf[50];
+        snprintf(buf, sizeof(char)*50, DUMMY_NET_NAME_FORMAT, dummy_net_count);
+        new_net->name = (char*) my_malloc(strlen(buf)+1);
+        strncpy(new_net->name, buf, strlen(buf)+1);
+        new_net->left = 0;
+        new_net->right = 0;
+        new_net->indexed = T_FALSE;
+        new_net->type = PIN_WIRE;
+
+        //Insert the new net
+        module->array_of_pins[module->number_of_pins-1] = new_net;
+        dummy_net_count++;
+
+        //5) Add dummy signal to 'A'
+        split_node_a->number_of_ports++;
+        split_node_a->array_of_ports = (t_node_port_association**) my_realloc(split_node_a->array_of_ports, split_node_a->number_of_ports*sizeof(t_node_port_association*));
+
+        t_node_port_association* new_port_a = (t_node_port_association*) my_malloc(sizeof(t_node_port_association));
+        new_port_a->port_name = (char*) my_malloc(sizeof(char)*strlen(DUMMY_A_PORT_NAME)+1);
+        snprintf(new_port_a->port_name, strlen(DUMMY_A_PORT_NAME)+1, "%s", DUMMY_A_PORT_NAME);
+        new_port_a->port_index = -1;
+        new_port_a->associated_net = new_net;
+        new_port_a->wire_index = 0;
+
+        split_node_a->array_of_ports[split_node_a->number_of_ports-1] = new_port_a;
+
+        //6) Add dummy signal to 'B'
+        split_node_b->number_of_ports++;
+        split_node_b->array_of_ports = (t_node_port_association**) my_realloc(split_node_b->array_of_ports, split_node_b->number_of_ports*sizeof(t_node_port_association*));
+
+        t_node_port_association* new_port_b = (t_node_port_association*) my_malloc(sizeof(t_node_port_association));
+        new_port_b->port_name = (char*) my_malloc(sizeof(char)*strlen(DUMMY_B_PORT_NAME)+1);
+        snprintf(new_port_b->port_name, strlen(DUMMY_B_PORT_NAME)+1, "%s", DUMMY_B_PORT_NAME);
+        new_port_b->port_index = -1;
+        new_port_b->associated_net = new_net;
+        new_port_b->wire_index = 0;
+
+        split_node_b->array_of_ports[split_node_b->number_of_ports-1] = new_port_b;
+
+    }
+}
+
+void dump_node_ports(t_node* node) {
+    for(int i = 0; i < node->number_of_ports; i++) {
+        t_node_port_association* node_port = node->array_of_ports[i];
+
+        cout << "\t" << node_port->port_name << " (" << node_port->associated_net->name << ")" << endl;
+    }
+}
+
+t_node_parameter* find_node_param(t_node* node, const char* param_name) {
+    for(int i = 0; i < node->number_of_params; i++) {
+        t_node_parameter* param = node->array_of_params[i];
+
+        if(strcmp(param->name, param_name) == 0) {
+            return param;
+        }
+    }
+    return NULL;
+}
+
+t_node* duplicate_node(t_node* orig_node) {
+    t_node* new_node = (t_node*) my_malloc(sizeof(t_node));
+    
+    //Copy each field
+    new_node->type = strdup(orig_node->type);
+    new_node->name = strdup(orig_node->name);
+
+    new_node->number_of_params = orig_node->number_of_params;
+    new_node->array_of_params = (t_node_parameter**) my_malloc(sizeof(t_node_parameter*)*orig_node->number_of_params);
+    for(int i = 0; i < orig_node->number_of_params; i++) {
+        new_node->array_of_params[i] = duplicate_param(orig_node->array_of_params[i]);
+    }
+    
+    new_node->number_of_ports = orig_node->number_of_ports;
+    new_node->array_of_ports = (t_node_port_association**) my_malloc(sizeof(t_node_port_association*)*orig_node->number_of_ports);
+    for(int i = 0; i < orig_node->number_of_ports; i++) {
+        new_node->array_of_ports[i] = duplicate_port(orig_node->array_of_ports[i]);
+    }
+
+    return new_node;
+}
+
+t_node_parameter* duplicate_param(t_node_parameter* orig_param) {
+    t_node_parameter* new_param = (t_node_parameter*) my_malloc(sizeof(t_node_parameter));
+    
+    new_param->name = strdup(orig_param->name);
+    new_param->type = orig_param->type;
+    new_param->value = orig_param->value;
+
+    return new_param;
+}
+
+t_node_port_association* duplicate_port(t_node_port_association* orig_port) {
+    t_node_port_association* new_port = (t_node_port_association*) my_malloc(sizeof(t_node_port_association));
+
+    new_port->port_name = strdup(orig_port->port_name);
+    new_port->port_index = orig_port->port_index;
+    new_port->associated_net = orig_port->associated_net;
+    new_port->wire_index = orig_port->wire_index;
+
+    return new_port;
+}
+
+map<t_node_port_association*, t_node*> map_ports_to_split_blocks(t_node* orig_node, t_node* split_node_a, t_node* split_node_b) {
+    //This map is used to connect/disconnect the appropriate ports
+    // for each of the two split instances.
+    // The key is the pointer to the node port, the value
+    // is a pointer to split node it is associated with
+    map<t_node_port_association*, t_node*> port_to_node_map; 
+    
+    //Initially split_node_a has all ports connected
+    for(int i = 0; i < orig_node->number_of_ports; i++) {
+        t_node_port_association* node_port = orig_node->array_of_ports[i];
+
+        //This section based on the QUIP WYSWIG documentation for Stratix III (same as Stratix IV)
+        // see 'stratixiii_ram_wys_eda.pdf'
+        //
+        // From that document: 
+        //     "An important note here is that although the port B inputs can choose between clk0
+        //      and clk1, the inputs on the same port do not allow the use of different clocks. 
+        //      They must be synchronous to the same clock. So if port B data in uses clk0, port B 
+        //      addresses can’t use clk1."
+        //
+        //
+        // By the above logic we need to check only a subset of parameters.  Specifically we can
+        // conclude:
+        //    1) portadataout clock is determined by the 'port_a_data_out_clock' parameter, and may be
+        //       none if unregistered
+        //    2) portbdataout clock is determined by the 'port_b_data_out_clock' parameter, and may be
+        //       none if unregistered
+        //    3) Any 'porta*' INPUT signal must be clocked by clk0
+        //    4) Any 'portb*' INPUT signal must be clocked by the clock specified by the
+        //       'port_b_address_clock' (or any of the other port_b input clock parameters, since they
+        //       must be the same)
+        //
+        // Additionally the following conclusions can also be drawn (see document for details): 
+        //    5) ena0 and ena2 are associated with clk0
+        //    6) ena1 and ena3 are associated with clk1
+        //    7) eccstatus clock is determined by the 'eccstatus_clock' parameter, and may be none if
+        //       unregistered
+        //    8) The clr0/clr1 signals associated clocks are determined by the parameters: 
+        //          'eccstatus_clear' (and by extension 'eccstatus_clock'),
+        //          'port_a_data_out_clear', and ''port_b_data_out_clear
+        //     
+        if (strcmp(node_port->port_name, "portadataout") == 0) {
+            //Check the port_a_data_out_clock parameter
+            t_node_parameter* node_param = find_node_param(orig_node, "port_a_data_out_clock");
+            if(node_param == NULL) {
+                //Unspecified, assume none and map to node a
+                port_to_node_map[node_port] = split_node_a;
+                
+            } else {
+                assert(node_param->type == NODE_PARAMETER_STRING);
+
+                if(strcmp(node_param->value.string_value, "clock0") == 0) {
+                    port_to_node_map[node_port] = split_node_a;
+                } else if (strcmp(node_param->value.string_value, "clock1") == 0) {
+                    port_to_node_map[node_port] = split_node_b;
+                } else {
+                    port_to_node_map[node_port] = split_node_a;
+                }
+
+            }
+            
+        } else if (strcmp(node_port->port_name, "portbdataout") == 0) {
+            //Check the port_b_data_out_clock parameter
+            t_node_parameter* node_param = find_node_param(orig_node, "port_b_data_out_clock");
+            assert(node_param != NULL);
+            if(node_param == NULL) {
+                //Unspecified, assume none and map to node b
+                port_to_node_map[node_port] = split_node_b;
+                
+            } else {
+                assert(node_param->type == NODE_PARAMETER_STRING);
+
+                if(strcmp(node_param->value.string_value, "clock0") == 0) {
+                    port_to_node_map[node_port] = split_node_a;
+                } else if (strcmp(node_param->value.string_value, "clock1") == 0) {
+                    port_to_node_map[node_port] = split_node_b;
+                } else {
+                    port_to_node_map[node_port] = split_node_b;
+                }
+            }
+
+        } else if (strcmp(node_port->port_name, "clk0") == 0 || strstr(node_port->port_name, "porta") != NULL ||
+                   strcmp(node_port->port_name, "ena0") == 0 || strcmp(node_port->port_name, "ena2") == 0) {
+            //All remaining 'porta*', ena0 and ena2 ports are clocked by clk0
+            port_to_node_map[node_port] = split_node_a;
+            
+        } else if (strcmp(node_port->port_name, "clk1") == 0 || strstr(node_port->port_name, "portb") != NULL ||
+                   strcmp(node_port->port_name, "ena1") == 0 || strcmp(node_port->port_name, "ena3") == 0) {
+            //Check the port_b_address_clock parameter, must be defined if port b is used.
+            // Port B must be used since this block has multiple clocks
+            t_node_parameter* node_param = find_node_param(orig_node, "port_b_address_clock");
+            assert(node_param != NULL);
+            assert(node_param->type == NODE_PARAMETER_STRING);
+
+            if(strcmp(node_param->value.string_value, "clock0") == 0) {
+                port_to_node_map[node_port] = split_node_a;
+            } else if (strcmp(node_param->value.string_value, "clock1") == 0) {
+                port_to_node_map[node_port] = split_node_b;
+            } else {
+                assert(0);
+            }
+            
+        
+        } else if (strcmp(node_port->port_name, "eccstatus") == 0) {
+            //Check the eccstatus_clock parameters
+            t_node_parameter* node_param = find_node_param(orig_node, "eccstatus_clock");
+            assert(node_param != NULL);
+            assert(node_param->type == NODE_PARAMETER_STRING);
+
+            if(strcmp(node_param->value.string_value, "clock0") == 0) {
+                port_to_node_map[node_port] = split_node_a;
+            } else if (strcmp(node_param->value.string_value, "clock1") == 0) {
+                port_to_node_map[node_port] = split_node_b;
+            } else {
+                assert(0);
+            }
+           
+        } else if (strstr(node_port->port_name, "clr0") != NULL) {
+            //Check the port_a_data_out_clear, port_b_data_out_clear, and eccstatus_clear parameters
+            t_node_parameter* node_param = find_node_param(orig_node, "port_a_data_out_clear");
+            if(node_param != NULL) {
+                assert(node_param->type == NODE_PARAMETER_STRING);
+                if(strcmp(node_param->value.string_value, "clear0") == 0) {
+                    port_to_node_map[node_port] = split_node_a;
+                    continue;
+                }
+            }
+            node_param = find_node_param(orig_node, "port_b_data_out_clear");
+            if(node_param != NULL) {
+                assert(node_param->type == NODE_PARAMETER_STRING);
+                if(strcmp(node_param->value.string_value, "clear0") == 0) {
+                    port_to_node_map[node_port] = split_node_b;
+                    continue;
+                }
+            }
+            node_param = find_node_param(orig_node, "eccstatus_clear");
+            if(node_param != NULL) {
+                assert(node_param->type == NODE_PARAMETER_STRING);
+                if(strcmp(node_param->value.string_value, "clear0") == 0) {
+                    t_node_parameter* node_param_clock = find_node_param(orig_node, "eccstatus_clock");
+                    assert(node_param_clock != NULL);
+                    assert(node_param_clock->type == NODE_PARAMETER_STRING);
+
+                    if(strcmp(node_param_clock->value.string_value, "clock0") == 0) {
+                        port_to_node_map[node_port] = split_node_a;
+                    } else if (strcmp(node_param_clock->value.string_value, "clock1") == 0) {
+                        port_to_node_map[node_port] = split_node_b;
+                    } else {
+                        assert(0);
+                    }
+                    continue;
+                }
+            }
+            assert(0);
+        } else if (strstr(node_port->port_name, "clr0") != NULL) {
+            //Check the port_a_data_out_clear, port_b_data_out_clear, and eccstatus_clear parameters
+            t_node_parameter* node_param = find_node_param(orig_node, "port_a_data_out_clear");
+            if(node_param != NULL) {
+                assert(node_param->type == NODE_PARAMETER_STRING);
+                if(strcmp(node_param->value.string_value, "clear1") == 0) {
+                    port_to_node_map[node_port] = split_node_a;
+                    continue;
+                }
+            }
+            node_param = find_node_param(orig_node, "port_b_data_out_clear");
+            if(node_param != NULL) {
+                assert(node_param->type == NODE_PARAMETER_STRING);
+                if(strcmp(node_param->value.string_value, "clear1") == 0) {
+                    port_to_node_map[node_port] = split_node_b;
+                    continue;
+                }
+            }
+            node_param = find_node_param(orig_node, "eccstatus_clear");
+            if(node_param != NULL) {
+                assert(node_param->type == NODE_PARAMETER_STRING);
+                if(strcmp(node_param->value.string_value, "clear1") == 0) {
+                    t_node_parameter* node_param_clock = find_node_param(orig_node, "eccstatus_clock");
+                    assert(node_param_clock != NULL);
+                    assert(node_param_clock->type == NODE_PARAMETER_STRING);
+
+                    if(strcmp(node_param_clock->value.string_value, "clock0") == 0) {
+                        port_to_node_map[node_port] = split_node_a;
+                    } else if (strcmp(node_param_clock->value.string_value, "clock1") == 0) {
+                        port_to_node_map[node_port] = split_node_b;
+                    } else {
+                        assert(0);
+                    }
+                    continue;
+                }
+            }
+            assert(0); //Should never get here
+
+
+        } else {
+            assert(0);
+        }
+    }
+
+    return port_to_node_map;
+}
 
 
 //============================================================================================

@@ -74,12 +74,14 @@ t_hash_table *pin_hash = NULL;
 t_node	*most_recently_used_node = NULL;
 
 int calculate_array_size_using_bounds(int element_count);
-void free_module(void *pointer);
-void free_pin_def(void *pointer);
-void free_assignment(void *pointer);
-void free_node(void *pointer);
-void free_parameter(void *pointer);
-void free_port_association(void *pointer);
+/*  //Moved to vqm_common.h
+ *void free_module(void *pointer);
+ *void free_pin_def(void *pointer);
+ *void free_assignment(void *pointer);
+ *void free_node(void *pointer);
+ *void free_parameter(void *pointer);
+ *void free_port_association(void *pointer);
+ */
 int find_position_for_net_in_array(char *name, t_array_ref *net_list);
 
 char most_recent_error[ERROR_LENGTH];

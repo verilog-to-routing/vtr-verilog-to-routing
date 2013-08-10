@@ -117,6 +117,10 @@ t_boolean fix_global_nets;  //user-set flag which controls whether to insert fak
                             //an attempt to make VPR treat some signals (i.e. clocks) as 
                             //globals
 
+t_boolean split_multiclock_blocks; //user-set flag which controls whether dual clock rams are
+                                       //split into two primitives.  This is needed to work around
+                                       //VPR's limitation of one clock per primitive.
+
 //============================================================================================
 //			FUNCTION DECLARATIONS
 //============================================================================================
@@ -295,7 +299,7 @@ int main(int argc, char* argv[])
     cout << "\n>> Preprocessing Netlist...\n";
     processStart = clock();
 
-    preprocess_netlist(my_module, &arch, types, numTypes, fix_global_nets);
+    preprocess_netlist(my_module, &arch, types, numTypes, fix_global_nets, split_multiclock_blocks);
 
     processEnd = clock();
 	cout << "\n>> Preprocessing Netlist took " << (float)(processEnd - processStart)/CLOCKS_PER_SEC << " seconds.\n" ;
@@ -411,6 +415,7 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 	clean_mode = CL_ALL;
 	buffd_outs = T_FALSE;
     fix_global_nets = T_FALSE;
+    split_multiclock_blocks = T_FALSE;
 
 	//Now read the command line to configure input variables.
 	for (int i = 1; i < argc; i++){
@@ -512,6 +517,9 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
                 case OT_FIXGLOBALS:
                     fix_global_nets = T_TRUE;
                     break;
+                case OT_SPLIT_MULTICLOCK_BLOCKS:
+                    split_multiclock_blocks = T_TRUE;
+                    break;
 				default:
 					//Should never get here; unknown tokens aren't mapped.
 					cout << "\nERROR: Token " << argv[i] << " mishandled.\n" ;
@@ -558,6 +566,7 @@ void setup_tokens (tokmap* tokens){
 	tokens->insert(tokpair("-clean", OT_CLEAN));
 	tokens->insert(tokpair("-buffouts", OT_BUFFOUTS));
 	tokens->insert(tokpair("-fixglobals", OT_FIXGLOBALS));
+	tokens->insert(tokpair("-split_multiclock_blocks", OT_SPLIT_MULTICLOCK_BLOCKS));
 }
 
 //============================================================================================

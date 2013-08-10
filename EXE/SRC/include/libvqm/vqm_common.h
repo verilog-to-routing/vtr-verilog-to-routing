@@ -76,6 +76,13 @@ t_array_ref			*create_wire_port_connections(t_array_ref *concat_array, char *por
 
 void print_hash_stats(t_hash_table* hash_table);
 
+void free_module(void *pointer);
+void free_pin_def(void *pointer);
+void free_assignment(void *pointer);
+void free_node(void *pointer);
+void free_parameter(void *pointer);
+void free_port_association(void *pointer);
+
 extern t_node		*most_recently_used_node;
 extern char			most_recent_error[ERROR_LENGTH];
 extern char*		yytext;

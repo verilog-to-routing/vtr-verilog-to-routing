@@ -78,6 +78,7 @@ enum v_OptionBaseToken
 	OT_CLEAN,
 	OT_BUFFOUTS,
     OT_FIXGLOBALS,
+    OT_SPLIT_MULTICLOCK_BLOCKS,
 	OT_UNKNOWN
 };
 
