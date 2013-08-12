@@ -928,7 +928,7 @@ static t_trace *alloc_and_load_final_routing_trace() {
 		final_routing_trace[i].index = OPEN;
 		final_routing_trace[i].next = NULL;
 
-		pin = get_pb_graph_node_pin_from_vpack_net(i, 0);
+		pin = get_pb_graph_node_pin_from_g_atoms_nlist_net(i, 0);
 		if (!pin)
 			continue;
 		final_routing_trace[i].index = pin->pin_count_in_cluster;
