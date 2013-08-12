@@ -44,7 +44,7 @@ using namespace std;
 				  *nets that do not have such a broad effect.        *
 				  *Note that this multiplier is intentionally very   * 
 				  *small compared to the total criticality because   *
-				  *we want to make sure that vpack_net criticality is      *
+				  *we want to make sure that g_atoms_nlist.net criticality is      *
 				  *primarily determined by slacks, with this acting  *
 				  *only as a tie-breaker between otherwise equal nets*/
 #define SCALE_DISTANCE_VAL 1e-4  /*this value is used as a multiplier to assign a    *
@@ -96,11 +96,11 @@ static struct s_molecule_link *unclustered_list_head;
 int unclustered_list_head_size;
 static struct s_molecule_link *memory_pool; /*Declared here so I can free easily.*/
 
-/* Does the logical_block that drives the output of this vpack_net also appear as a   *
- * receiver (input) pin of the vpack_net?  [0..num_logical_nets-1].  If so, then by how much? This is used     *
+/* Does the logical_block that drives the output of this g_atoms_nlist.net also appear as a   *
+ * receiver (input) pin of the g_atoms_nlist.net?  [0..num_logical_nets-1].  If so, then by how much? This is used     *
  * in the gain routines to avoid double counting the connections from   *
  * the current cluster to other blocks (hence yielding better           *
- * clusterings).  The only time a logical_block should connect to the same vpack_net  *
+ * clusterings).  The only time a logical_block should connect to the same g_atoms_nlist.net  *
  * twice is when one connection is an output and the other is an input, *
  * so this should take care of all multiple connections.                */
 static int *net_output_feeds_driving_block_input;
@@ -380,10 +380,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 #ifdef PATH_COUNTING
 		/* Calculate block criticality from a weighted sum of timing and path criticalities. */
 		for (inet = 0; inet < num_logical_nets; inet++) { 
-			for (ipin = 1; ipin <= vpack_net[inet].num_sinks; ipin++) { 
+			for (ipin = 1; ipin < (int)g_atoms_nlist.net[inet].nodes.size(); ipin++) { 
 			
 				/* Find the logical block iblk which this pin is a sink on. */
-				iblk = vpack_net[inet].node_block[ipin];
+				iblk = g_atoms_nlist.net[inet].nodes[ipin].block;
 					
 				/* The criticality of this pin is a sum of its timing and path criticalities. */
 				crit =		PACK_PATH_WEIGHT  * slacks->path_criticality[inet][ipin] 
@@ -640,7 +640,7 @@ static void check_clocks(boolean *is_clock) {
 									"Error in check_clocks.\n"
 									"Net %d (%s) is a clock, but also connects to a logic block input on logical_block %d (%s).\n"
 									"This would break the current clustering implementation and is electrically questionable, so clustering has been aborted.\n",
-									inet, vpack_net[inet].name, iblk, logical_block[iblk].name);
+									inet, g_atoms_nlist.net[inet].name, iblk, logical_block[iblk].name);
 						}
 					}
 				}
@@ -778,9 +778,9 @@ static void alloc_and_init_clustering(boolean global_clocks, float alpha,
 
 	for (inet = 0; inet < num_logical_nets; inet++) {
 		net_output_feeds_driving_block_input[inet] = 0;
-		driving_blk = vpack_net[inet].node_block[0];
-		for (ipin = 1; ipin <= vpack_net[inet].num_sinks; ipin++) {
-			if (vpack_net[inet].node_block[ipin] == driving_blk) {
+		driving_blk = g_atoms_nlist.net[inet].nodes[0].block;
+		for (ipin = 1; ipin < (int) g_atoms_nlist.net[inet].nodes.size(); ipin++) {
+			if (g_atoms_nlist.net[inet].nodes[ipin].block == driving_blk) {
 				net_output_feeds_driving_block_input[inet]++;
 			}
 		}
@@ -1448,10 +1448,11 @@ static void revert_place_logical_block(INP int iblock, INP int max_models) {
 static void update_connection_gain_values(int inet, int clustered_block,
 		t_pb *cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block) {
-	/*This function is called when the connectiongain values on the vpack_net*
+	/*This function is called when the connectiongain values on the g_atoms_nlist.net*
 	 *inet require updating.   */
 
-	int iblk, ipin;
+	int iblk;
+	unsigned ipin;
 	int clb_index;
 	int num_internal_connections, num_open_connections, num_stuck_connections;
 
@@ -1461,8 +1462,8 @@ static void update_connection_gain_values(int inet, int clustered_block,
 
 	/* may wish to speed things up by ignoring clock nets since they are high fanout */
 
-	for (ipin = 0; ipin <= vpack_net[inet].num_sinks; ipin++) {
-		iblk = vpack_net[inet].node_block[ipin];
+	for (ipin = 0; ipin < g_atoms_nlist.net[inet].nodes.size(); ipin++) {
+		iblk = g_atoms_nlist.net[inet].nodes[ipin].block;
 		if (logical_block[iblk].clb_index == clb_index
 				&& is_logical_blk_in_pb(iblk,
 						logical_block[clustered_block].pb)) {
@@ -1475,8 +1476,8 @@ static void update_connection_gain_values(int inet, int clustered_block,
 	}
 
 	if (net_relation_to_clustered_block == OUTPUT) {
-		for (ipin = 1; ipin <= vpack_net[inet].num_sinks; ipin++) {
-			iblk = vpack_net[inet].node_block[ipin];
+		for (ipin = 1; ipin < g_atoms_nlist.net[inet].nodes.size(); ipin++) {
+			iblk = g_atoms_nlist.net[inet].nodes[ipin].block;
 			if (logical_block[iblk].clb_index == NO_CLUSTER) {
 				/* TODO: Gain function accurate only if net has one connection to block, TODO: Should we handle case where net has multi-connection to block? Gain computation is only off by a bit in this case */
 				if(cur_pb->pb_stats->connectiongain.count(iblk) == 0) {
@@ -1485,12 +1486,12 @@ static void update_connection_gain_values(int inet, int clustered_block,
 				
 				if (num_internal_connections > 1) {
 					cur_pb->pb_stats->connectiongain[iblk] -= 1
-							/ (float) (vpack_net[inet].num_sinks
+							/ (float) (g_atoms_nlist.net[inet].num_sinks()
 									- (num_internal_connections - 1)
 									+ 1 * num_stuck_connections);
 				}
 				cur_pb->pb_stats->connectiongain[iblk] += 1
-						/ (float) (vpack_net[inet].num_sinks
+						/ (float) (g_atoms_nlist.net[inet].num_sinks()
 								- num_internal_connections
 								+ 1 * num_stuck_connections);
 			}
@@ -1499,21 +1500,21 @@ static void update_connection_gain_values(int inet, int clustered_block,
 
 	if (net_relation_to_clustered_block == INPUT) {
 		/*Calculate the connectiongain for the logical_block which is driving *
-		 *the vpack_net that is an input to a logical_block in the cluster */
+		 *the g_atoms_nlist.net that is an input to a logical_block in the cluster */
 
-		iblk = vpack_net[inet].node_block[0];
+		iblk = g_atoms_nlist.net[inet].nodes[0].block;
 		if (logical_block[iblk].clb_index == NO_CLUSTER) {
 			if(cur_pb->pb_stats->connectiongain.count(iblk) == 0) {
 				cur_pb->pb_stats->connectiongain[iblk] = 0;
 			}
 			if (num_internal_connections > 1) {
 				cur_pb->pb_stats->connectiongain[iblk] -= 1
-						/ (float) (vpack_net[inet].num_sinks
+						/ (float) (g_atoms_nlist.net[inet].num_sinks()
 								- (num_internal_connections - 1) + 1
 								+ 1 * num_stuck_connections);
 			}
 			cur_pb->pb_stats->connectiongain[iblk] += 1
-					/ (float) (vpack_net[inet].num_sinks
+					/ (float) (g_atoms_nlist.net[inet].num_sinks()
 							- num_internal_connections + 1
 							+ 1 * num_stuck_connections);
 		}
@@ -1524,13 +1525,14 @@ static void update_timing_gain_values(int inet, int clustered_block,
 		t_pb *cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, t_slack * slacks) {
 
-	/*This function is called when the timing_gain values on the vpack_net*
+	/*This function is called when the timing_gain values on the g_atoms_nlist.net*
 	 *inet requires updating.   */
 	float timinggain;
-	int newblk, ifirst;
-	int iblk, ipin;
+	int newblk;
+	int iblk;
+	unsigned ipin, ifirst;
 
-	/* Check if this vpack_net lists its driving logical_block twice.  If so, avoid  *
+	/* Check if this g_atoms_nlist.net lists its driving logical_block twice.  If so, avoid  *
 	 * double counting this logical_block by skipping the first (driving) pin. */
 	if (net_output_feeds_driving_block_input[inet] == FALSE)
 		ifirst = 0;
@@ -1538,9 +1540,9 @@ static void update_timing_gain_values(int inet, int clustered_block,
 		ifirst = 1;
 
 	if (net_relation_to_clustered_block == OUTPUT
-			&& !vpack_net[inet].is_global) {
-		for (ipin = ifirst; ipin <= vpack_net[inet].num_sinks; ipin++) {
-			iblk = vpack_net[inet].node_block[ipin];
+			&& !g_atoms_nlist.net[inet].is_global) {
+		for (ipin = ifirst; ipin < g_atoms_nlist.net[inet].nodes.size(); ipin++) {
+			iblk = g_atoms_nlist.net[inet].nodes[ipin].block;
 			if (logical_block[iblk].clb_index == NO_CLUSTER) {
 #ifdef PATH_COUNTING
 				/* Timing gain is a weighted sum of timing and path criticalities. */
@@ -1560,12 +1562,12 @@ static void update_timing_gain_values(int inet, int clustered_block,
 	}
 
 	if (net_relation_to_clustered_block == INPUT
-			&& !vpack_net[inet].is_global) {
+			&& !g_atoms_nlist.net[inet].is_global) {
 		/*Calculate the timing gain for the logical_block which is driving *
-		 *the vpack_net that is an input to a logical_block in the cluster */
-		newblk = vpack_net[inet].node_block[0];
+		 *the g_atoms_nlist.net that is an input to a logical_block in the cluster */
+		newblk = g_atoms_nlist.net[inet].nodes[0].block;
 		if (logical_block[newblk].clb_index == NO_CLUSTER) {
-			for (ipin = 1; ipin <= vpack_net[inet].num_sinks; ipin++) {
+			for (ipin = 1; ipin < g_atoms_nlist.net[inet].nodes.size(); ipin++) {
 #ifdef PATH_COUNTING
 				/* Timing gain is a weighted sum of timing and path criticalities. */
 				timinggain =	  TIMING_GAIN_PATH_WEIGHT  * slacks->path_criticality[inet][ipin] 
@@ -1598,23 +1600,24 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 	 * blocks that are already in the cluster. Hillgain is the        *
 	 * reduction in number of pins-required by adding a logical_block to the  *
 	 * cluster. The timinggain is the criticality of the most critical*
-	 * vpack_net between this logical_block and a logical_block in the cluster.             */
+	 * g_atoms_nlist.net between this logical_block and a logical_block in the cluster.             */
 
-	int iblk, ipin, ifirst, stored_net;
+	int iblk, ifirst, stored_net;
+	unsigned int ipin;
 	t_pb *cur_pb;
 
 	cur_pb = logical_block[clustered_block].pb->parent_pb;
 
 	
-	if (vpack_net[inet].num_sinks > AAPACK_MAX_NET_SINKS_IGNORE) {
+	if (g_atoms_nlist.net[inet].num_sinks() > AAPACK_MAX_NET_SINKS_IGNORE) {
 		/* Optimization: It can be too runtime costly for marking all sinks for a high fanout-net that probably has no hope of ever getting packed, thus ignore those high fanout nets */
-		if(vpack_net[inet].is_global != TRUE) {
+		if(g_atoms_nlist.net[inet].is_global != TRUE) {
 			/* If no low/medium fanout nets, we may need to consider high fan-out nets for packing, so select one and store it */ 
 			while(cur_pb->parent_pb != NULL) {
 				cur_pb = cur_pb->parent_pb;
 			}
 			stored_net = cur_pb->pb_stats->tie_break_high_fanout_net;
-			if(stored_net == OPEN || vpack_net[inet].num_sinks < vpack_net[stored_net].num_sinks) {
+			if(stored_net == OPEN || g_atoms_nlist.net[inet].num_sinks() < g_atoms_nlist.net[stored_net].num_sinks()) {
 				cur_pb->pb_stats->tie_break_high_fanout_net = inet;
 			}
 		}
@@ -1622,7 +1625,7 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 	}
 
 	while (cur_pb) {
-		/* Mark vpack_net as being visited, if necessary. */
+		/* Mark g_atoms_nlist.net as being visited, if necessary. */
 
 		if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(inet) == 0) {
 			cur_pb->pb_stats->marked_nets[cur_pb->pb_stats->num_marked_nets] =
@@ -1634,7 +1637,7 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 
 		if (gain_flag == GAIN) {
 
-			/* Check if this vpack_net lists its driving logical_block twice.  If so, avoid  *
+			/* Check if this g_atoms_nlist.net lists its driving logical_block twice.  If so, avoid  *
 			 * double counting this logical_block by skipping the first (driving) pin. */
 
 			if (net_output_feeds_driving_block_input[inet] == 0)
@@ -1643,8 +1646,8 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 				ifirst = 1;
 
 			if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(inet) == 0) {
-				for (ipin = ifirst; ipin <= vpack_net[inet].num_sinks; ipin++) {
-					iblk = vpack_net[inet].node_block[ipin];
+				for (ipin = ifirst; ipin < g_atoms_nlist.net[inet].nodes.size(); ipin++) {
+					iblk = g_atoms_nlist.net[inet].nodes[ipin].block;
 					if (logical_block[iblk].clb_index == NO_CLUSTER) {
 
 						if (cur_pb->pb_stats->sharinggain.count(iblk) == 0) {
@@ -2082,8 +2085,8 @@ static t_pack_molecule *get_highest_gain_molecule(
 		reset_tried_but_unused_cluster_placements(cluster_placement_stats_ptr);
 		inet = cur_pb->pb_stats->tie_break_high_fanout_net;
 		count = 0;
-		for (i = 0; i <= vpack_net[inet].num_sinks && count < AAPACK_MAX_HIGH_FANOUT_EXPLORE; i++) {
-			iblk = vpack_net[inet].node_block[i];
+		for (i = 0; i < (int) g_atoms_nlist.net[inet].nodes.size() && count < AAPACK_MAX_HIGH_FANOUT_EXPLORE; i++) {
+			iblk = g_atoms_nlist.net[inet].nodes[i].block;
 			if (logical_block[iblk].clb_index == NO_CLUSTER) {
 				cur = logical_block[iblk].packed_molecules;
 				while (cur != NULL) {
@@ -2379,7 +2382,7 @@ static float get_molecule_gain(t_pack_molecule *molecule, map<int, float> &blk_g
 								for (iblk = 0; iblk < get_array_size_of_molecule(molecule); iblk++) {
 									if (molecule->logical_block_ptrs[iblk]
 											!= NULL
-											&& vpack_net[inet].node_block[0]
+												&& g_atoms_nlist.net[inet].nodes[0].block
 													== molecule->logical_block_ptrs[iblk]->index) {
 										num_introduced_inputs_of_indirectly_related_block--;
 										break;
@@ -2561,17 +2564,17 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 		if (pb_graph_pin->port->type == IN_PORT) {
 			/* find location of net driver if exist in clb, NULL otherwise */
 			output_pb_graph_pin = NULL;
-			if (logical_block[vpack_net[inet].node_block[0]].clb_index
+			if (logical_block[g_atoms_nlist.net[inet].nodes[0].block].clb_index
 					== logical_block[primitive_pb->logical_block].clb_index) {
 				pb_type =
-						logical_block[vpack_net[inet].node_block[0]].pb->pb_graph_node->pb_type;
+					logical_block[g_atoms_nlist.net[inet].nodes[0].block].pb->pb_graph_node->pb_type;
 				output_port = 0;
 				found = FALSE;
 				for (i = 0; i < pb_type->num_ports && !found; i++) {
 					prim_port = &pb_type->ports[i];
 					if (prim_port->type == OUT_PORT) {
 						if (pb_type->ports[i].model_port->index
-								== vpack_net[inet].node_block_port[0]) {
+							== g_atoms_nlist.net[inet].nodes[0].block_port) {
 							found = TRUE;
 							break;
 						}
@@ -2580,14 +2583,14 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 				}
 				assert(found);
 				output_pb_graph_pin =
-						&(logical_block[vpack_net[inet].node_block[0]].pb->pb_graph_node->output_pins[output_port][vpack_net[inet].node_block_pin[0]]);
+					&(logical_block[g_atoms_nlist.net[inet].nodes[0].block].pb->pb_graph_node->output_pins[output_port][g_atoms_nlist.net[inet].nodes[0].block_pin]);
 			}
 
 			skip = FALSE;
 
 			/* check if driving pin for input is contained within the currently investigated cluster, if yes, do nothing since no input needs to be used */
 			if (output_pb_graph_pin != NULL) {
-				check_pb = logical_block[vpack_net[inet].node_block[0]].pb;
+				check_pb = logical_block[g_atoms_nlist.net[inet].nodes[0].block].pb;
 				while (check_pb != NULL && check_pb != cur_pb) {
 					check_pb = check_pb->parent_pb;
 				}
@@ -2628,7 +2631,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 
 			skip = FALSE;
 			if (pb_graph_pin->num_connectable_primtive_input_pins[depth]
-					>= vpack_net[inet].num_sinks) {
+					>= g_atoms_nlist.net[inet].num_sinks()) {
 				/* Important: This runtime penalty looks a lot scarier than it really is.  For high fan-out nets, I at most look at the number of pins within the cluster which limits runtime.
 				 DO NOT REMOVE THIS INITIAL FILTER WITHOUT CAREFUL ANALYSIS ON RUNTIME!!!
 				 
@@ -2638,13 +2641,13 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 				 is when the number of sinks of a net gets doubled
 				 
 				 */
-				for (i = 1; i <= vpack_net[inet].num_sinks; i++) {
-					if (logical_block[vpack_net[inet].node_block[i]].clb_index
-							!= logical_block[vpack_net[inet].node_block[0]].clb_index) {
+				for (i = 1; i < (int) g_atoms_nlist.net[inet].nodes.size(); i++) {
+					if (logical_block[g_atoms_nlist.net[inet].nodes[i].block].clb_index
+						!= logical_block[g_atoms_nlist.net[inet].nodes[0].block].clb_index) {
 						break;
 					}
 				}
-				if (i == vpack_net[inet].num_sinks + 1) {
+				if (i == (int) g_atoms_nlist.net[inet].nodes.size()) {
 					count = 0;
 					/* TODO: I should cache the absorbed outputs, once net is absorbed, net is forever absorbed, no point in rechecking every time */
 					for (i = 0; i < pb_graph_pin->num_connectable_primtive_input_pins[depth]; i++) {
@@ -2654,7 +2657,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 							count++;
 						}
 					}
-					if (count == vpack_net[inet].num_sinks) {
+					if (count == g_atoms_nlist.net[inet].num_sinks()) {
 						skip = TRUE;
 					}
 				}

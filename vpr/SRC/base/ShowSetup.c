@@ -54,7 +54,7 @@ void printClusteredNetlistStats() {
 	num_blocks_type = (int*) my_calloc(num_types, sizeof(int));
 
 	vpr_printf_info("\n");
-	vpr_printf_info("Netlist num_nets: %d\n", num_nets);
+	vpr_printf_info("Netlist num_nets: %d\n", (int) g_clbs_nlist.net.size());
 	vpr_printf_info("Netlist num_blocks: %d\n", num_blocks);
 
 	for (i = 0; i < num_types; i++) {

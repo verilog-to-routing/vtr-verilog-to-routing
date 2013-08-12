@@ -1138,7 +1138,7 @@ void resync_post_route_netlist() {
 				block[i].nets[j] = OPEN;
 		}
 	}
-	for (int i = 0; i < num_nets; ++i) {
+	for (unsigned int i = 0; i < g_clbs_nlist.net.size(); ++i) {
 		if (g_clbs_nlist.net[i].is_global == TRUE)
 			continue;
 
@@ -1192,7 +1192,7 @@ static boolean clay_logical_equivalence_handling(const t_arch *arch) {
 	t_trace **saved_ext_rr_trace_tail = trace_tail;
 	t_rr_node *saved_ext_rr_node = rr_node;
 	int num_ext_rr_node = num_rr_nodes;
-	int num_ext_nets = num_nets;
+	int num_ext_nets = (int) g_clbs_nlist.net.size();
 
 	num_rr_nodes = 0;
 	rr_node = NULL;
@@ -1242,6 +1242,7 @@ static boolean clay_logical_equivalence_handling(const t_arch *arch) {
 	trace_tail = saved_ext_rr_trace_tail;
 	rr_node = saved_ext_rr_node;
 	num_rr_nodes = num_ext_rr_node;
+	//Daniel to-do: Take out?
 	num_nets = num_ext_nets;
 
 	return(success);

@@ -377,7 +377,7 @@ typedef struct s_timing_stats {
 
 typedef struct s_slack {
 	/* Matrices storing slacks and criticalities of each sink pin on each net
-	 [0..num_nets-1][1..num_pins-1] for both pre- and post-packed netlists. */
+	 [0..net.size()-1][1..num_pins-1] for both pre- and post-packed netlists. */
 	float ** slack;
 	float ** timing_criticality;
 #ifdef PATH_COUNTING
