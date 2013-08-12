@@ -21,7 +21,8 @@ void print_netlist(char *foutput, char *net_file) {
 	/* Prints out the netlist related data structures into the file    *
 	 * fname.                                                          */
 
-	int i, j, max_pin;
+	unsigned int i, j;
+	int max_pin;
 	int num_global_nets;
 	int L_num_p_inputs, L_num_p_outputs;
 	FILE *fp;
@@ -31,16 +32,16 @@ void print_netlist(char *foutput, char *net_file) {
 	L_num_p_outputs = 0;
 
 	/* Count number of global nets */
-	for (i = 0; i < num_nets; i++) {
-		if (clb_net[i].is_global) {
+	for (i = 0; i < g_clbs_nlist.net.size(); i++) {
+		if (g_clbs_nlist.net[i].is_global) {
 			num_global_nets++;
 		}
 	}
 
 	/* Count I/O input and output pads */
-	for (i = 0; i < num_blocks; i++) {
+	for (i = 0; i < (unsigned int) num_blocks; i++) {
 		if (block[i].type == IO_TYPE) {
-			for (j = 0; j < IO_TYPE->num_pins; j++) {
+			for (j = 0; j < (unsigned int) IO_TYPE->num_pins; j++) {
 				if (block[i].nets[j] != OPEN) {
 					if (IO_TYPE->class_inf[IO_TYPE->pin_class[j]].type
 							== DRIVER) {
@@ -61,22 +62,22 @@ void print_netlist(char *foutput, char *net_file) {
 	fprintf(fp, "L_num_p_inputs: %d, L_num_p_outputs: %d, num_clbs: %d\n",
 			L_num_p_inputs, L_num_p_outputs, num_blocks);
 	fprintf(fp, "num_blocks: %d, num_nets: %d, num_globals: %d\n", num_blocks,
-			num_nets, num_global_nets);
+			(int) g_clbs_nlist.net.size(), num_global_nets);
 	fprintf(fp, "\nNet\tName\t\t#Pins\tDriver\t\tRecvs. (block, pin)\n");
 
-	for (i = 0; i < num_nets; i++) {
-		fprintf(fp, "\n%d\t%s\t", i, clb_net[i].name);
-		if (strlen(clb_net[i].name) < 8)
+	for (i = 0; i < g_clbs_nlist.net.size(); i++) {
+		fprintf(fp, "\n%d\t%s\t", i, g_clbs_nlist.net[i].name);
+		if (strlen(g_clbs_nlist.net[i].name) < 8)
 			fprintf(fp, "\t"); /* Name field is 16 chars wide */
-		fprintf(fp, "%d", clb_net[i].num_sinks + 1);
-		for (j = 0; j <= clb_net[i].num_sinks; j++)
-			fprintf(fp, "\t(%4d,%4d)", clb_net[i].node_block[j],
-					clb_net[i].node_block_pin[j]);
+		fprintf(fp, "%d", (int) g_clbs_nlist.net[i].nodes.size());
+		for (j = 0; j < g_clbs_nlist.net[i].nodes.size(); j++)
+			fprintf(fp, "\t(%4d,%4d)", g_clbs_nlist.net[i].nodes[j].block,
+				g_clbs_nlist.net[i].nodes[j].block_pin);
 	}
 
 	fprintf(fp, "\nBlock\tName\t\tType\tPin Connections\n\n");
 
-	for (i = 0; i < num_blocks; i++) {
+	for (i = 0; i < (unsigned int)num_blocks; i++) {
 		fprintf(fp, "\n%d\t%s\t", i, block[i].name);
 		if (strlen(block[i].name) < 8)
 			fprintf(fp, "\t"); /* Name field is 16 chars wide */
@@ -84,7 +85,7 @@ void print_netlist(char *foutput, char *net_file) {
 
 		max_pin = block[i].type->num_pins;
 
-		for (j = 0; j < max_pin; j++)
+		for (j = 0; j < (unsigned int) max_pin; j++)
 			print_pinnum(fp, block[i].nets[j]);
 	}
 

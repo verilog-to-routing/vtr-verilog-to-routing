@@ -51,7 +51,7 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 	vpr_printf_info("\n");
 	vpr_printf_info("After removing unused inputs...\n");
 	vpr_printf_info("\ttotal blocks: %d, total nets: %d, total inputs: %d, total outputs: %d\n",
-			num_logical_blocks, num_logical_nets, num_p_inputs, num_p_outputs);
+		num_logical_blocks, (int) g_atoms_nlist.net.size(), num_p_inputs, num_p_outputs);
 
 	vpr_printf_info("Begin prepacking.\n");
 	list_of_packing_patterns = alloc_and_load_pack_patterns(
@@ -131,7 +131,7 @@ boolean *alloc_and_load_is_clock(boolean global_clocks) {
 
 	num_clocks = 0;
 
-	is_clock = (boolean *) my_calloc(num_logical_nets, sizeof(boolean));
+	is_clock = (boolean *) my_calloc(g_atoms_nlist.net.size(), sizeof(boolean));
 
 	/* Want to identify all the clock nets.  */
 

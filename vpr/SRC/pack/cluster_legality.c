@@ -112,11 +112,11 @@ static void add_net_rr_terminal_cluster(int iblk_net,
 	assert(ipin < prim_port->num_pins);
 	net_pin = OPEN;
 	if (prim_port->is_clock) {
-		for (int i = 1; i <= vpack_net[iblk_net].num_sinks; ++i) {
-			if (vpack_net[iblk_net].node_block[i] == ilogical_block
-					&& vpack_net[iblk_net].node_block_port[i]
+		for (unsigned int i = 1; i < g_atoms_nlist.net[iblk_net].nodes.size(); ++i) {
+			if (g_atoms_nlist.net[iblk_net].nodes[i].block == ilogical_block
+				&& g_atoms_nlist.net[iblk_net].nodes[i].block_port
 							== model_port->index
-					&& vpack_net[iblk_net].node_block_pin[i] == ipin) {
+					&& g_atoms_nlist.net[iblk_net].nodes[i].block_pin == ipin) {
 				net_pin = i;
 				break;
 			}
@@ -125,11 +125,11 @@ static void add_net_rr_terminal_cluster(int iblk_net,
 		assert(rr_node[primitive->clock_pins[clock_port][ipin].pin_count_in_cluster].num_edges == 1);
 		net_rr_terminals[iblk_net][net_pin] = rr_node[primitive->clock_pins[clock_port][ipin].pin_count_in_cluster].edges[0];
 	} else if (prim_port->type == IN_PORT) {
-		for (int i = 1; i <= vpack_net[iblk_net].num_sinks; ++i) {
-			if (vpack_net[iblk_net].node_block[i] == ilogical_block
-					&& vpack_net[iblk_net].node_block_port[i]
+		for (unsigned int i = 1; i < g_atoms_nlist.net[iblk_net].nodes.size(); ++i) {
+			if (g_atoms_nlist.net[iblk_net].nodes[i].block == ilogical_block
+					&& g_atoms_nlist.net[iblk_net].nodes[i].block_port
 							== model_port->index
-					&& vpack_net[iblk_net].node_block_pin[i] == ipin) {
+					&& g_atoms_nlist.net[iblk_net].nodes[i].block_pin == ipin) {
 				net_pin = i;
 				break;
 			}
@@ -139,9 +139,9 @@ static void add_net_rr_terminal_cluster(int iblk_net,
 		net_rr_terminals[iblk_net][net_pin] = rr_node[primitive->input_pins[input_port][ipin].pin_count_in_cluster].edges[0];
 	} else if (prim_port->type == OUT_PORT) {
 		int i = 0;
-		if (vpack_net[iblk_net].node_block[i] == ilogical_block
-				&& vpack_net[iblk_net].node_block_port[i] == model_port->index
-				&& vpack_net[iblk_net].node_block_pin[i] == ipin) {
+		if (g_atoms_nlist.net[iblk_net].nodes[i].block == ilogical_block
+			&& g_atoms_nlist.net[iblk_net].nodes[i].block_port == model_port->index
+			&& g_atoms_nlist.net[iblk_net].nodes[i].block_pin == ipin) {
 			net_pin = i;
 		}
 		assert(net_pin != OPEN);
@@ -165,11 +165,11 @@ void reload_ext_net_rr_terminal_cluster(void) {
 		net_index = nets_in_cluster[i];
 		has_ext_sink = FALSE;
 		has_ext_source = (boolean)
-				(logical_block[vpack_net[net_index].node_block[0]].clb_index
+			(logical_block[g_atoms_nlist.net[net_index].nodes[0].block].clb_index
 						!= curr_cluster_index);
 		if (has_ext_source) {
 			/* Instantiate a source of this net */
-			if (vpack_net[net_index].is_global) {
+			if (g_atoms_nlist.net[net_index].is_global) {
 				net_rr_terminals[net_index][0] = curr_ext_clock;
 				curr_ext_clock++;
 			} else {
@@ -177,8 +177,8 @@ void reload_ext_net_rr_terminal_cluster(void) {
 				curr_ext_input++;
 			}
 		}
-		for (int j = 1; j <= vpack_net[net_index].num_sinks; ++j) {
-			if (logical_block[vpack_net[net_index].node_block[j]].clb_index
+		for (unsigned int j = 1; j < g_atoms_nlist.net[net_index].nodes.size(); ++j) {
+			if (logical_block[g_atoms_nlist.net[net_index].nodes[j].block].clb_index
 					!= curr_cluster_index) {
 				if (has_ext_sink || has_ext_source) {
 					/* Only need one node driving external routing, either this cluster drives external routing or another cluster does it */
@@ -202,11 +202,11 @@ void reload_ext_net_rr_terminal_cluster(void) {
 }
 
 void alloc_and_load_cluster_legality_checker(void) {
-	best_routing = (struct s_trace **) my_calloc(num_logical_nets,
+	best_routing = (struct s_trace **) my_calloc(g_atoms_nlist.net.size(),
 			sizeof(struct s_trace *));
-	nets_in_cluster = (int *) my_malloc(num_logical_nets * sizeof(int));
+	nets_in_cluster = (int *) my_malloc(g_atoms_nlist.net.size() * sizeof(int));
 	num_nets_in_cluster = 0;
-	num_nets = num_logical_nets;
+	num_nets = (int) g_atoms_nlist.net.size();
 
 	/* inside a cluster, I do not consider rr_indexed_data cost, set to 1 since other costs are multiplied by it */
 	num_rr_indexed_data = 1;
@@ -219,7 +219,7 @@ void alloc_and_load_cluster_legality_checker(void) {
 }
 
 void free_cluster_legality_checker(void) {
-	int inet;
+	unsigned int inet;
 	free(best_routing);
 	free(rr_indexed_data);
 	free_rr_node_route_structs();
@@ -228,7 +228,7 @@ void free_cluster_legality_checker(void) {
 
 	free_chunk_memory(&rr_mem_ch);
 
-	for (inet = 0; inet < num_logical_nets; inet++) {
+	for (inet = 0; inet < g_atoms_nlist.net.size(); inet++) {
 		free(saved_net_rr_terminals[inet]);
 	}
 	free(net_rr_terminals);
@@ -649,7 +649,7 @@ boolean try_breadth_first_route_cluster(void) {
 
 			if (!is_routable) {
 				/* TODO: Inelegant, can be more intelligent */
-				vpr_printf_info("Failed routing net %s\n", vpack_net[net_index].name);
+				vpr_printf_info("Failed routing net %s\n", g_atoms_nlist.net[net_index].name);
 				vpr_printf_info("Routing failed. Disconnected rr_graph.\n");
 				return FALSE;
 			}
@@ -701,7 +701,7 @@ static boolean breadth_first_route_net_cluster(int inet) {
 	tptr = NULL;
 	remaining_connections_to_sink = 0;
 
-	for (int i = 1; i <= vpack_net[inet].num_sinks; ++i) { /* Need n-1 wires to connect n pins */
+	for (unsigned int i = 1; i < g_atoms_nlist.net[inet].nodes.size(); ++i) { /* Need n-1 wires to connect n pins */
 
 		/* Do not connect open terminals */
 		if (net_rr_terminals[inet][i] == OPEN)
@@ -891,9 +891,10 @@ static void mark_ends_cluster(int inet) {
 	 * the same net to two inputs of an and-gate (and-gate inputs are logically *
 	 * equivalent, so both will connect to the same SINK).                      */
 
-	int ipin, inode;
+	unsigned int ipin;
+	int inode;
 
-	for (ipin = 1; ipin <= vpack_net[inet].num_sinks; ipin++) {
+	for (ipin = 1; ipin < g_atoms_nlist.net[inet].nodes.size(); ipin++) {
 		inode = net_rr_terminals[inet][ipin];
 		if (inode == OPEN)
 			continue;
@@ -903,20 +904,20 @@ static void mark_ends_cluster(int inet) {
 }
 
 static void alloc_net_rr_terminals_cluster(void) {
-	int inet;
+	unsigned int inet;
 
-	net_rr_terminals = (int **) my_malloc(num_logical_nets * sizeof(int *));
+	net_rr_terminals = (int **) my_malloc(g_atoms_nlist.net.size() * sizeof(int *));
 	saved_net_rr_terminals = (int **) my_malloc(
-			num_logical_nets * sizeof(int *));
+		g_atoms_nlist.net.size() * sizeof(int *));
 	saved_num_nets_in_cluster = 0;
 
-	for (inet = 0; inet < num_logical_nets; inet++) {
+	for (inet = 0; inet < g_atoms_nlist.net.size() ; inet++) {
 		net_rr_terminals[inet] = (int *) my_chunk_malloc(
-				(vpack_net[inet].num_sinks + 1) * sizeof(int),
+			(g_atoms_nlist.net[inet].nodes.size()) * sizeof(int),
 				&rr_mem_ch);
 
 		saved_net_rr_terminals[inet] = (int *) my_malloc(
-				(vpack_net[inet].num_sinks + 1) * sizeof(int));
+			(g_atoms_nlist.net[inet].nodes.size()) * sizeof(int));
 	}
 }
 
@@ -925,7 +926,7 @@ void setup_intracluster_routing_for_molecule(INP t_pack_molecule *molecule,
 
 	/* Allocates and loads the net_rr_terminals data structure.  For each net   *
 	 * it stores the rr_node index of the SOURCE of the net and all the SINKs   *
-	 * of the net.  [0..num_logical_nets-1][0..num_pins-1].   */
+	 * of the net.  [0..g_atoms_nlist.net.size()-1][0..num_pins-1].   */
 
 	for (int i = 0; i < get_array_size_of_molecule(molecule); ++i) {
 		if (molecule->logical_block_ptrs[i] != NULL) {
@@ -942,7 +943,7 @@ void setup_intracluster_routing_for_logical_block(INP int iblock,
 
 	/* Allocates and loads the net_rr_terminals data structure.  For each net   *
 	 * it stores the rr_node index of the SOURCE of the net and all the SINKs   *
-	 * of the net.  [0..num_logical_nets-1][0..num_pins-1].   */
+	 * of the net.  [0..g_atoms_nlist.net.size()-1][0..num_pins-1].   */
 	int ipin, iblk_net;
 	t_model_ports *port;
 
@@ -1017,7 +1018,7 @@ void save_and_reset_routing_cluster(void) {
 
 	for (int i = 0; i < num_nets_in_cluster; ++i) {
 		inet = nets_in_cluster[i];
-		for (int j = 0; j <= vpack_net[inet].num_sinks; ++j) {
+		for (unsigned int j = 0; j < g_atoms_nlist.net[inet].nodes.size(); ++j) {
 			saved_net_rr_terminals[inet][j] = net_rr_terminals[inet][j];
 		}
 
@@ -1062,7 +1063,7 @@ void restore_routing_cluster(void) {
 		best_routing[inet] = NULL; /* No stored routing. */
 
 		/* restore net terminals */
-		for (int j = 0; j <= vpack_net[inet].num_sinks; ++j) {
+		for (unsigned int j = 0; j < g_atoms_nlist.net[inet].nodes.size(); ++j) {
 			net_rr_terminals[inet][j] = saved_net_rr_terminals[inet][j];
 		}
 
@@ -1186,11 +1187,11 @@ boolean force_post_place_route_cb_input_pins(int iblock) {
 	for (int i = 0; i < num_nets_in_cluster; ++i) {
 		int net_index = nets_in_cluster[i];
 		boolean has_ext_source = (boolean)
-			(logical_block[vpack_net[net_index].node_block[0]].clb_index != curr_cluster_index);
+			(logical_block[g_atoms_nlist.net[net_index].nodes[0].block].clb_index != curr_cluster_index);
 		if(has_ext_source) {
 			int ext_net = vpack_to_clb_net_mapping[net_index];
 			assert(ext_net != OPEN);
-			if (vpack_net[net_index].is_global) {
+			if (g_atoms_nlist.net[net_index].is_global) {
 				free(rr_node[curr_ext_clock].edges);
 				rr_node[curr_ext_clock].edges = NULL;
 				rr_node[curr_ext_clock].num_edges = 0;

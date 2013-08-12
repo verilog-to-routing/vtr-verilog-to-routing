@@ -35,7 +35,7 @@ typedef struct s_pb_stats {
 	std::map<int, float> gain; /* Attraction (inverse of cost) function */
 
 	std::map<int, float> timinggain; /* [0..num_logical_blocks-1]. The timing criticality score of this logical_block. 
-	 Determined by the most critical vpack_net between this logical_block and any logical_block in the current pb */
+	 Determined by the most critical g_atoms_nlist.net between this logical_block and any logical_block in the current pb */
 	std::map<int, float> connectiongain; /* [0..num_logical_blocks-1] Weighted sum of connections to attraction function */
 	std::map<int, float> prevconnectiongainincr; /* [0..num_logical_blocks-1] Prev sum to weighted sum of connections to attraction function */
 	std::map<int, float> sharinggain; /* [0..num_logical_blocks-1]. How many nets on this logical_block are already in the pb under consideration */
@@ -57,7 +57,7 @@ typedef struct s_pb_stats {
 
 	int tie_break_high_fanout_net; /* If no marked candidate atoms, use this high fanout net to determine the next candidate atom */
 
-	/* [0..num_logical_nets-1].  How many pins of each vpack_net are contained in the *
+	/* [0..g_atoms_nlist.net.size()-1].  How many pins of each g_atoms_nlist.net are contained in the *
 	 * currently open pb?                                          */
 	std::map<int, int> num_pins_of_net_in_pb;
 

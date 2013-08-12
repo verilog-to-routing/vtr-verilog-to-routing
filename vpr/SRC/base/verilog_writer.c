@@ -1101,7 +1101,8 @@ pb_list *traverse_clb(t_pb *pb , pb_list *prim_list)
 
 conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_list*list)
 {
-  int i,j,k,q,r;
+  int i,j,q,r;
+  unsigned int k;
   int total_output_pins;
   int pin_number , port_number_out=-1 ,  pin_number_out , starting_block , next_block , vpck_net , pin_count;
   float delay , start_delay , end_delay;
@@ -1124,16 +1125,16 @@ conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_li
           pin_number = pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster;  /*pin count of the output pin*/
           starting_block = pb->logical_block;  /*logical block index for the source primitive*/
 
-	  vpck_net = logical_block[starting_block].output_nets[model_port_index][j]; /*The index for the vpack_net struct corresponding to this source to sink(s) connections*/
+	  vpck_net = logical_block[starting_block].output_nets[model_port_index][j]; /*The index for the g_atoms_nlist.net struct corresponding to this source to sink(s) connections*/
 	 
 	  if (pb->rr_graph[pin_number].net_num != OPEN) /* If this output pin is used*/
 	  { /*Then we will use the logical_block netlist method for finding the connectivity and timing information*/
 	      if(vpck_net != OPEN)
 	      {
 
-		  for(k=1 ; k<vpack_net[vpck_net].num_sinks+1 ; k++)/*traversing through all the sink primitives that the source primitive connects to*/
+		for(k=1 ; k<g_atoms_nlist.net[vpck_net].nodes.size() ; k++)/*traversing through all the sink primitives that the source primitive connects to*/
 		  {
-		      next_block = vpack_net[vpck_net].node_block[k];/*next_blk holds the logical block index for the primitive that the source primitive connects to*/
+			  next_block = g_atoms_nlist.net[vpck_net].nodes[k].block;/*next_blk holds the logical block index for the primitive that the source primitive connects to*/
 
 #if 0
 
@@ -1172,7 +1173,7 @@ conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_li
 		      assert(port_number_out != -1);
 		      assert(pin_number_out != -1);
 		      
-		      int unswapped_pin_number =  vpack_net[vpck_net].node_block_pin[k];
+			  int unswapped_pin_number =  g_atoms_nlist.net[vpck_net].nodes[k].block_pin;
 
 		      pin_count = logical_block[next_block].pb->pb_graph_node->input_pins[port_number_out][pin_number_out].pin_count_in_cluster;/*pin count for the sink pin*/
 		      assert(logical_block[next_block].pb->rr_graph[pin_count].tnode);

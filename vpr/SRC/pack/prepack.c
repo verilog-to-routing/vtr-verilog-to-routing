@@ -972,11 +972,11 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 						logical_block[logical_block_index].output_nets[iport][ipin];
 
 				/* Check if net is valid */
-				if (inet == OPEN || vpack_net[inet].num_sinks != 1) { /* One fanout assumption */
+				if (inet == OPEN || g_atoms_nlist.net[inet].num_sinks() != 1) { /* One fanout assumption */
 					success = is_block_optional[cur_pack_pattern_connection->to_block->block_id];
 				} else {
 					success = try_expand_molecule(molecule,
-							vpack_net[inet].node_block[1],
+						g_atoms_nlist.net[inet].nodes[1].block,
 							cur_pack_pattern_connection->to_block);
 				}
 			} else {
@@ -993,11 +993,11 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 							logical_block[logical_block_index].input_nets[iport][ipin];
 				}
 				/* Check if net is valid */
-				if (inet == OPEN || vpack_net[inet].num_sinks != 1) { /* One fanout assumption */
+				if (inet == OPEN || g_atoms_nlist.net[inet].num_sinks() != 1) { /* One fanout assumption */
 					success = is_block_optional[cur_pack_pattern_connection->from_block->block_id];
 				} else {
 					success = try_expand_molecule(molecule,
-							vpack_net[inet].node_block[0],
+						g_atoms_nlist.net[inet].nodes[0].block,
 							cur_pack_pattern_connection->from_block);
 				}
 			}
@@ -1179,7 +1179,7 @@ static int find_new_root_atom_for_chain(INP int block_index, INP t_pack_patterns
 		return block_index;
 	}
 
-	driver_block = vpack_net[driver_net].node_block[0];
+	driver_block = g_atoms_nlist.net[driver_net].nodes[0].block;
 	if(logical_block[driver_block].packed_molecules != NULL) {
 		/* Driver is used/invalid, so current block is the furthest up the chain, return it */
 		return block_index;

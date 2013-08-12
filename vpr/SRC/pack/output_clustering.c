@@ -56,9 +56,9 @@ static void print_string(const char *str_ptr, int *column, int num_tabs, FILE * 
 
 static void print_net_name(int inet, int *column, int num_tabs, FILE * fpout) {
 
-	/* This routine prints out the vpack_net name (or open) and limits the    *
+	/* This routine prints out the g_atoms_nlist.net name (or open) and limits the    *
 	 * length of a line to LINELENGTH characters by using \ to continue *
-	 * lines.  net_num is the index of the vpack_net to be printed, while     *
+	 * lines.  net_num is the index of the g_atoms_nlist.net to be printed, while     *
 	 * column points to the current printing column (column is both     *
 	 * used and updated by this routine).  fpout is the output file     *
 	 * pointer.                                                         */
@@ -68,7 +68,7 @@ static void print_net_name(int inet, int *column, int num_tabs, FILE * fpout) {
 	if (inet == OPEN)
 		str_ptr = "open";
 	else
-		str_ptr = vpack_net[inet].name;
+		str_ptr = g_atoms_nlist.net[inet].name;
 
 	print_string(str_ptr, column, num_tabs, fpout);
 }
@@ -76,9 +76,9 @@ static void print_net_name(int inet, int *column, int num_tabs, FILE * fpout) {
 static void print_interconnect(int inode, int *column, int num_tabs,
 		FILE * fpout) {
 
-	/* This routine prints out the vpack_net name (or open) and limits the    *
+	/* This routine prints out the g_atoms_nlist.net name (or open) and limits the    *
 	 * length of a line to LINELENGTH characters by using \ to continue *
-	 * lines.  net_num is the index of the vpack_net to be printed, while     *
+	 * lines.  net_num is the index of the g_atoms_nlist.net to be printed, while     *
 	 * column points to the current printing column (column is both     *
 	 * used and updated by this routine).  fpout is the output file     *
 	 * pointer.                                                         */
@@ -446,7 +446,8 @@ static void print_stats(t_block *clb, int num_clusters) {
 	/* Prints out one cluster (clb).  Both the external pins and the *
 	 * internal connections are printed out.                         */
 
-	int ipin, icluster, itype, inet;/*, iblk;*/
+	int ipin, icluster, itype;/*, iblk;*/
+	unsigned int inet;
 	/*int unabsorbable_ffs;*/
 	int total_nets_absorbed;
 	boolean * nets_absorbed;
@@ -461,8 +462,8 @@ static void print_stats(t_block *clb, int num_clusters) {
 	num_clb_outputs_used = (int*) my_calloc(num_types, sizeof(int));
 
 
-	nets_absorbed = (boolean *) my_calloc(num_logical_nets, sizeof(boolean));
-	for (inet = 0; inet < num_logical_nets; inet++) {
+	nets_absorbed = (boolean *) my_calloc(g_atoms_nlist.net.size(), sizeof(boolean));
+	for (inet = 0; inet < g_atoms_nlist.net.size(); inet++) {
 		nets_absorbed[inet] = TRUE;
 	}
 
@@ -473,9 +474,9 @@ static void print_stats(t_block *clb, int num_clusters) {
 	unabsorbable_ffs = 0;
 	for (iblk = 0; iblk < num_logical_blocks; iblk++) {
 		if (strcmp(logical_block[iblk].model->name, "latch") == 0) {
-			if (vpack_net[logical_block[iblk].input_nets[0][0]].num_sinks > 1
+			if (g_atoms_nlist.net[logical_block[iblk].input_nets[0][0]].num_sinks() > 1
 					|| strcmp(
-							logical_block[vpack_net[logical_block[iblk].input_nets[0][0]].node_block[0]].model->name,
+							logical_block[g_atoms_nlist.net[logical_block[iblk].input_nets[0][0]].nodes[0].block].model->name,
 							"names") != 0) {
 				unabsorbable_ffs++;
 			}
@@ -516,13 +517,13 @@ static void print_stats(t_block *clb, int num_clusters) {
 	}
 
 	total_nets_absorbed = 0;
-	for (inet = 0; inet < num_logical_nets; inet++) {
+	for (inet = 0; inet < g_atoms_nlist.net.size(); inet++) {
 		if (nets_absorbed[inet] == TRUE) {
 			total_nets_absorbed++;
 		}
 	}
 	vpr_printf_info("Absorbed logical nets %d out of %d nets, %d nets not absorbed.\n",
-			total_nets_absorbed, num_logical_nets, num_logical_nets - total_nets_absorbed);
+			total_nets_absorbed, (int)g_atoms_nlist.net.size(), (int)g_atoms_nlist.net.size() - total_nets_absorbed);
 	free(nets_absorbed);
 	free(num_clb_types);
 	free(num_clb_inputs_used);
@@ -539,7 +540,8 @@ void output_clustering(t_block *clb, int num_clusters, boolean global_clocks,
 	 * the cluster, in essentially a graph based format.                           */
 
 	FILE *fpout;
-	int bnum, netnum, column;
+	int bnum, column;
+	unsigned netnum;
 
 	fpout = fopen(out_fname, "w");
 
@@ -568,9 +570,9 @@ void output_clustering(t_block *clb, int num_clusters, boolean global_clocks,
 	if (global_clocks) {
 		fprintf(fpout, "\n\t<clocks>\n\t\t");
 
-		for (netnum = 0; netnum < num_logical_nets; netnum++) {
+		for (netnum = 0; netnum < g_atoms_nlist.net.size(); netnum++) {
 			if (is_clock[netnum]) {
-				print_string(vpack_net[netnum].name, &column, 2, fpout);
+				print_string(g_atoms_nlist.net[netnum].name, &column, 2, fpout);
 			}
 		}
 		fprintf(fpout, "\n\t</clocks>\n\n");

@@ -97,7 +97,7 @@ int unclustered_list_head_size;
 static struct s_molecule_link *memory_pool; /*Declared here so I can free easily.*/
 
 /* Does the logical_block that drives the output of this g_atoms_nlist.net also appear as a   *
- * receiver (input) pin of the g_atoms_nlist.net?  [0..num_logical_nets-1].  If so, then by how much? This is used     *
+ * receiver (input) pin of the g_atoms_nlist.net?  [0..g_atoms_nlist.net.size()-1].  If so, then by how much? This is used     *
  * in the gain routines to avoid double counting the connections from   *
  * the current cluster to other blocks (hence yielding better           *
  * clusterings).  The only time a logical_block should connect to the same g_atoms_nlist.net  *
@@ -272,7 +272,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	t_pack_molecule *istart, *next_molecule, *prev_molecule, *cur_molecule;
 	
 #ifdef PATH_COUNTING
-	int inet, ipin;
+	unsigned int inet;
+	int ipin;
 #else
 	int inode;
 	float num_paths_scaling, distance_scaling;
@@ -379,7 +380,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 #ifdef PATH_COUNTING
 		/* Calculate block criticality from a weighted sum of timing and path criticalities. */
-		for (inet = 0; inet < num_logical_nets; inet++) { 
+		for (inet = 0; inet < g_atoms_nlist.net.size(); inet++) { 
 			for (ipin = 1; ipin < (int)g_atoms_nlist.net[inet].nodes.size(); ipin++) { 
 			
 				/* Find the logical block iblk which this pin is a sink on. */
@@ -725,7 +726,8 @@ static void alloc_and_init_clustering(boolean global_clocks, float alpha,
 	/* Allocates the main data structures used for clustering and properly *
 	 * initializes them.                                                   */
 
-	int i, ext_inps, ipin, driving_blk, inet;
+	int i, ext_inps, ipin, driving_blk;
+	unsigned int inet;
 	struct s_molecule_link *next_ptr;
 	t_pack_molecule *cur_molecule;
 	t_pack_molecule **molecule_array;
@@ -774,9 +776,9 @@ static void alloc_and_init_clustering(boolean global_clocks, float alpha,
 
 	/* alloc and load net info */
 	net_output_feeds_driving_block_input = (int *) my_malloc(
-			num_logical_nets * sizeof(int));
+		g_atoms_nlist.net.size() * sizeof(int));
 
-	for (inet = 0; inet < num_logical_nets; inet++) {
+	for (inet = 0; inet < g_atoms_nlist.net.size(); inet++) {
 		net_output_feeds_driving_block_input[inet] = 0;
 		driving_blk = g_atoms_nlist.net[inet].nodes[0].block;
 		for (ipin = 1; ipin < (int) g_atoms_nlist.net[inet].nodes.size(); ipin++) {

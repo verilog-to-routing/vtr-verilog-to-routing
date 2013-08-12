@@ -50,9 +50,9 @@ static void print_string(const char *str_ptr, int *column, FILE * fpout) {
 
 static void print_net_name(int inet, int *column, FILE * fpout) {
 
-	/* This routine prints out the vpack_net name (or open) and limits the    *
+	/* This routine prints out the g_atoms_nlist.net name (or open) and limits the    *
 	 * length of a line to LINELENGTH characters by using \ to continue *
-	 * lines.  net_num is the index of the vpack_net to be printed, while     *
+	 * lines.  net_num is the index of the g_atoms_nlist.net to be printed, while     *
 	 * column points to the current printing column (column is both     *
 	 * used and updated by this routine).  fpout is the output file     *
 	 * pointer.                                                         */
@@ -62,7 +62,7 @@ static void print_net_name(int inet, int *column, FILE * fpout) {
 	if (inet == OPEN)
 		str_ptr = "open";
 	else
-		str_ptr = vpack_net[inet].name;
+		str_ptr = g_atoms_nlist.net[inet].name;
 
 	print_string(str_ptr, column, fpout);
 }
@@ -246,7 +246,7 @@ static int find_fanin_rr_node(t_pb *cur_pb, enum PORTS type, int rr_node_index) 
 
 	/* TODO: Once I find a way to output routing in empty blocks then code should never reach here, for now, return OPEN */
 	vpr_printf_info("Use hack in blif dumper (do properly later): connecting net %s #%d for pb %s type %s\n",
-			vpack_net[net_num].name, net_num, cur_pb->name,
+			g_atoms_nlist.net[net_num].name, net_num, cur_pb->name,
 			cur_pb->pb_graph_node->pb_type->name);
 
 	assert(hack_empty_route_through != OPEN);
@@ -339,7 +339,7 @@ static void print_primitive(FILE *fpout, int iblk) {
 								/* Failed to find LUT input, a netlist error has occurred */
 								vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 									"LUT %s missing input %s post packing. This is a VPR internal error, report to vpr@eecg.utoronto.ca\n",
-									logical_block[iblk].name, vpack_net[logical_block[iblk].input_nets[in_port_index][j]].name);
+									logical_block[iblk].name, g_atoms_nlist.net[logical_block[iblk].input_nets[in_port_index][j]].name);
 							}
 						}
 					}
@@ -373,7 +373,8 @@ static void print_primitive(FILE *fpout, int iblk) {
 static void print_pb(FILE *fpout, t_pb * pb, int clb_index) {
 
 	int column;
-	int i, j, k;
+	int i, j;
+	unsigned int k;
 	const t_pb_type *pb_type;
 	t_mode *mode;
 	int in_port_index, out_port_index, node_index;
@@ -411,15 +412,15 @@ static void print_pb(FILE *fpout, t_pb * pb, int clb_index) {
 							if (pb->parent_pb == NULL) {
 								for (k = 1;
 										k
-												<= vpack_net[rr_node[node_index].net_num].num_sinks;
+										< g_atoms_nlist.net[rr_node[node_index].net_num].nodes.size();
 										k++) {
 									/* output pads pre-pended with "out:", must remove */
-									if (logical_block[vpack_net[rr_node[node_index].net_num].node_block[k]].type
+										if (logical_block[g_atoms_nlist.net[rr_node[node_index].net_num].nodes[k].block].type
 											== VPACK_OUTPAD
 											&& strcmp(
-													logical_block[vpack_net[rr_node[node_index].net_num].node_block[k]].name
+											logical_block[g_atoms_nlist.net[rr_node[node_index].net_num].nodes[k].block].name
 															+ 4,
-													vpack_net[rr_node[node_index].net_num].name)
+													g_atoms_nlist.net[rr_node[node_index].net_num].name)
 													!= 0) {
 										fprintf(fpout,
 												".names clb_%d_rr_node_%d %s",
@@ -427,7 +428,7 @@ static void print_pb(FILE *fpout, t_pb * pb, int clb_index) {
 												find_fanin_rr_node(pb,
 														pb_type->ports[i].type,
 														node_index),
-												logical_block[vpack_net[rr_node[node_index].net_num].node_block[k]].name
+													logical_block[g_atoms_nlist.net[rr_node[node_index].net_num].nodes[k].block].name
 														+ 4);
 										fprintf(fpout, "\n1 1\n");
 									}
@@ -502,7 +503,7 @@ void output_blif (t_block *clb, int num_clusters, boolean global_clocks,
 	FILE *fpout;
 	int bnum, column;
 	struct s_linked_vptr *p_io_removed;
-	int i;
+	unsigned int i;
 
 	fpout = my_fopen(out_fname, "w", 0);
 
@@ -543,14 +544,14 @@ void output_blif (t_block *clb, int num_clusters, boolean global_clocks,
 		if (logical_block[bnum].type == VPACK_INPAD) {
 			for (i = 1;
 					i
-							<= vpack_net[logical_block[bnum].output_nets[0][0]].num_sinks;
+					< g_atoms_nlist.net[logical_block[bnum].output_nets[0][0]].nodes.size();
 					i++) {
-				if (logical_block[vpack_net[logical_block[bnum].output_nets[0][0]].node_block[i]].type
+					if (logical_block[g_atoms_nlist.net[logical_block[bnum].output_nets[0][0]].nodes[i].block].type
 						== VPACK_OUTPAD) {
 					fprintf(fpout, ".names ");
 					print_string(logical_block[bnum].name, &column, fpout);
 					print_string(
-							logical_block[vpack_net[logical_block[bnum].output_nets[0][0]].node_block[i]].name
+						logical_block[g_atoms_nlist.net[logical_block[bnum].output_nets[0][0]].nodes[i].block].name
 									+ 4, &column, fpout);
 					fprintf(fpout, "\n1 1\n");
 				}

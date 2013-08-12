@@ -780,8 +780,8 @@ static boolean root_passes_early_filter(INP t_pb_graph_node *root, INP t_pack_mo
 					/* This output pin has a dedicated connection to one output, make sure that molecule works */
 					if(molecule->type == MOLECULE_SINGLE_ATOM) {
 						feasible = FALSE; /* There is only one case where an atom can fit in here, so by default, feasibility is false unless proven otherwise */
-						if(vpack_net[inet].num_sinks == 1) {
-							isink = vpack_net[inet].node_block[1];
+						if(g_atoms_nlist.net[inet].num_sinks() == 1) {
+							isink = g_atoms_nlist.net[inet].nodes[i].block;
 							if(logical_block[isink].clb_index == clb_index) {
 								sink_pb_graph_pin = &root->output_pins[i][j];
 								while(sink_pb_graph_pin->num_output_edges != 0) {
