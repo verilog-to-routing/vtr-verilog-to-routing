@@ -2423,6 +2423,7 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 					(char*) my_calloc(i_inter / 10 + 8, sizeof(char));
 			sprintf(mem_pb_type->modes[0].interconnect[i_inter].name,
 					"direct%d", i_inter);
+			mem_pb_type->modes[0].interconnect[i_inter].infer_annotations = TRUE;
 
 			if (mem_pb_type->ports[i].type == IN_PORT) {
 				/* force data pins to be one bit wide and update stats */
@@ -2480,6 +2481,7 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 								sizeof(char));
 				sprintf(mem_pb_type->modes[0].interconnect[i_inter].name,
 						"direct%d_%d", i_inter, j);
+				mem_pb_type->modes[0].interconnect[i_inter].infer_annotations = TRUE;
 
 				if (mem_pb_type->ports[i].type == IN_PORT) {
 					mem_pb_type->modes[0].interconnect[i_inter].type =
