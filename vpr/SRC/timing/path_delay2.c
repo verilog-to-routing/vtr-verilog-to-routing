@@ -256,12 +256,12 @@ float print_critical_path_node(FILE * fp, t_linked_int * critical_path_node) {
 				block[iblk].pb->rr_graph[pb_graph_pin->pin_count_in_cluster].net_num;
 		inet = vpack_to_clb_net_mapping[inet];
 		fprintf(fp, "External-to-Block Net: #%d (%s).  Pins on net: %d.\n",
-				inet, clb_net[inet].name, (clb_net[inet].num_sinks + 1));
+			inet, g_clbs_nlist.net[inet].name, g_clbs_nlist.net[inet].nodes.size());
 	} else if (pb_graph_pin != NULL) {
 		inet =
 				block[iblk].pb->rr_graph[pb_graph_pin->pin_count_in_cluster].net_num;
 		fprintf(fp, "Internal Net: #%d (%s).  Pins on net: %d.\n", inet,
-				vpack_net[inet].name, (vpack_net[inet].num_sinks + 1));
+			g_atoms_nlist.net[inet].name, g_atoms_nlist.net[inet].nodes.size());
 	}
 
 	fprintf(fp, "\n");

@@ -154,16 +154,14 @@ int num_tnodes = 0; /* Number of nodes (pins) in the timing graph */
 
 static t_chunk tedge_ch = {NULL, 0, NULL};
 
-static struct s_net *timing_nets = NULL;
-
-static vector<t_vnet> *timing_vnets = NULL;
+static vector<t_vnet> *timing_nets = NULL;
 
 static int num_timing_nets = 0;
 
 static t_timing_stats * f_timing_stats = NULL; /* Critical path delay and worst-case slack per constraint. */
 
 static int * f_net_to_driver_tnode; 
-/* [0..num_nets - 1]. Gives the index of the tnode that drives each net. 
+/* [0..net.size() - 1]. Gives the index of the tnode that drives each net. 
 Used for both pre- and post-packed netlists. If you just want the number
 of edges on the driver tnode, use:
 	num_edges = timing_nets[inet].num_sinks;
@@ -246,7 +244,7 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	 * timing node (tnode).  The connectivity between pins is					*
 	 * represented by timing edges (tedges).  All delay is marked on edges, not *
 	 * on nodes.  Returns two arrays that will store slack values:				*
-	 * slack and criticality ([0..num_nets-1][1..num_pins]).           */
+	 * slack and criticality ([0..net.size()-1][1..num_pins]).           */
 
 	/*  For pads, only the first two pin locations are used (input to pad is first,
 	 * output of pad is second).  For CLBs, all OPEN pins on the cb have their 
@@ -262,9 +260,7 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	}
 
 	num_timing_nets = (int) g_clbs_nlist.net.size();
-	//num_timing_nets = num_nets;
-	timing_nets = clb_net;
-	timing_vnets = &g_clbs_nlist.net;
+	timing_nets = &g_clbs_nlist.net;
 
 	alloc_and_load_tnodes(timing_inf);
 
@@ -299,7 +295,7 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 	 * mapped netlist pin is a timing node (tnode).  The connectivity between pins is *
 	 * represented by timing edges (tedges).  All delay is marked on edges, not *
 	 * on nodes.  Returns two arrays that will store slack values:				 *
-	 * slack and criticality ([0..num_nets-1][1..num_pins]).           */
+	 * slack and criticality ([0..net.size()-1][1..num_pins]).           */
 
 	/*  For pads, only the first two pin locations are used (input to pad is first,
 	 * output of pad is second).  For CLBs, all OPEN pins on the cb have their 
@@ -315,9 +311,7 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 	}
 
 	num_timing_nets = (int) g_atoms_nlist.net.size();
-	//num_timing_nets = num_logical_nets;
-	timing_nets = vpack_net;
-	timing_vnets = &g_atoms_nlist.net;
+	timing_nets = &g_atoms_nlist.net;
 
 	alloc_and_load_tnodes_from_prepacked_netlist(block_delay,
 			inter_cluster_net_delay);
@@ -353,10 +347,10 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 static t_slack * alloc_slacks(void) {
 
 	/* Allocates the slack, criticality and path_criticality structures 
-	([0..num_nets-1][1..num_pins-1]). Chunk allocated to save space. */
+	([0..net.size()-1][1..num_pins-1]). Chunk allocated to save space. */
 
 	int inet;
-	vector<t_vnet> & tnets = *timing_vnets; 
+	vector<t_vnet> & tnets = *timing_nets; 
 	t_slack * slacks = (t_slack *) my_malloc(sizeof(t_slack));
 	
 	slacks->slack   = (float **) my_malloc(num_timing_nets * sizeof(float *));
@@ -378,13 +372,13 @@ static t_slack * alloc_slacks(void) {
 void load_timing_graph_net_delays(float **net_delay) {
 
 	/* Sets the delays of the inter-CLB nets to the values specified by          *
-	 * net_delay[0..num_nets-1][1..num_pins-1].  These net delays should have    *
+	 * net_delay[0..net.size()-1][1..num_pins-1].  These net delays should have    *
 	 * been allocated and loaded with the net_delay routines.  This routine      *
 	 * marks the corresponding edges in the timing graph with the proper delay.  */
 
 	int inet, inode;
 	unsigned ipin;
-	vector<t_vnet> & tnets = *timing_vnets; 
+	vector<t_vnet> & tnets = *timing_nets; 
 	t_tedge *tedge;
 
 	for (inet = 0; inet < num_timing_nets; inet++) {
@@ -461,7 +455,7 @@ void print_slack(float ** slack, boolean slack_is_normalized, const char *fname)
 		total_slack = 0, total_negative_slack = 0, bucket_size, slk;
 	int slacks_in_bucket[NUM_BUCKETS]; 
 
-	vector<t_vnet> & tnets = *timing_vnets; 
+	vector<t_vnet> & tnets = *timing_nets; 
 
 	fp = my_fopen(fname, "w", 0);
 
@@ -626,7 +620,7 @@ static void print_global_criticality_stats(FILE * fp, float ** criticality, cons
 	int inet, iedge, num_edges, ibucket, criticalities_in_bucket[NUM_BUCKETS];
 	float crit, max_criticality = HUGE_NEGATIVE_FLOAT, min_criticality = HUGE_POSITIVE_FLOAT, 
 		total_criticality = 0, bucket_size;
-	vector<t_vnet> & tnets = *timing_vnets; 
+	vector<t_vnet> & tnets = *timing_nets; 
 
 	/* Go through criticality once to get the largest and smallest timing criticality, 
 	both for reporting and so that we can delimit the buckets. */
@@ -1019,9 +1013,9 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 	int incr;
 	int count;
 
-	f_net_to_driver_tnode = (int*)my_malloc(num_logical_nets * sizeof(int));
+	f_net_to_driver_tnode = (int*)my_malloc(g_atoms_nlist.net.size() * sizeof(int));
 
-	for (i = 0; i < num_logical_nets; i++) {
+	for (i = 0; i < (int) g_atoms_nlist.net.size(); i++) {
 		f_net_to_driver_tnode[i] = OPEN;
 	}
 	
@@ -1307,7 +1301,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 		}
 	}
 
-	for (i = 0; i < num_logical_nets; i++) {
+	for (i = 0; i < (int) g_atoms_nlist.net.size(); i++) {
 		assert(f_net_to_driver_tnode[i] != OPEN);
 	}
 }
@@ -1472,7 +1466,7 @@ void print_timing_graph(const char *fname) {
 	fprintf(fp, "\n");
 	fprintf(fp, "\n\nNet #\tNet_to_driver_tnode\n");
 
-	for (i = 0; i < num_nets; i++)
+	for (i = 0; i < (int)g_clbs_nlist.net.size(); i++)
 		fprintf(fp, "%4d\t%6d\n", i, f_net_to_driver_tnode[i]);
 
 	if (g_sdc && g_sdc->num_constrained_clocks == 1) {
@@ -1734,7 +1728,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 	long max_critical_output_paths, max_critical_input_paths;
 	t_pb *pb;
 
-	vector<t_vnet> & tnets = *timing_vnets; 
+	vector<t_vnet> & tnets = *timing_nets; 
 
 #if SLACK_DEFINITION == 'S' || SLACK_DEFINITION == 'T' || SLACK_DEFINITION == 'C' || SLACK_DEFINITION == 'D'
 	update_slack = (boolean)true;
@@ -2514,7 +2508,7 @@ void print_critical_path(const char *fname) {
 	e_tnode_type type;
 	float total_net_delay, total_logic_delay, Tdel;
 
-	vector<t_vnet> & tnets = *timing_vnets; 
+	vector<t_vnet> & tnets = *timing_nets; 
 
 	critical_path_head = allocate_and_load_critical_path();
 	critical_path_node = critical_path_head;
@@ -2696,11 +2690,11 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 	float **net_delay = NULL;
 	
 	slacks = alloc_and_load_timing_graph(timing_inf);
-	net_delay = alloc_net_delay(&net_delay_ch, timing_vnets,
-		(*timing_vnets).size());
+	net_delay = alloc_net_delay(&net_delay_ch, *timing_nets,
+		(*timing_nets).size());
 
-	load_constant_net_delay(net_delay, constant_net_delay_value, timing_nets,
-			num_timing_nets);
+	load_constant_net_delay(net_delay, constant_net_delay_value, *timing_nets,
+		(*timing_nets).size());
 	load_timing_graph_net_delays(net_delay);
 	
 	do_timing_analysis(slacks, FALSE, FALSE, TRUE);

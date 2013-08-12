@@ -128,7 +128,7 @@ t_slack * alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 
 	t_slack * slacks = alloc_and_load_timing_graph(timing_inf);
 
-	(*net_delay) = alloc_net_delay(&net_delay_ch, &g_clbs_nlist.net,
+	(*net_delay) = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net,
 			g_clbs_nlist.net.size());
 
 	compute_delay_lookup_tables(router_opts, det_routing_arch, segment_inf,

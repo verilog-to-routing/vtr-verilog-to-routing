@@ -76,7 +76,7 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 		get_segment_usage_stats(num_segment, segment_inf);
 
 		if (timing_analysis_enabled) {
-			load_net_delay_from_routing(net_delay, clb_net, num_nets);
+			load_net_delay_from_routing(net_delay, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
 			load_timing_graph_net_delays(net_delay);
 

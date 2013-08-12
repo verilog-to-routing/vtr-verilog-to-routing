@@ -482,8 +482,8 @@ void try_place(struct s_placer_opts placer_opts,
 			 * in criticality computations in the next call
 			 * to comp_td_costs. */
 			place_delay_value = delay_cost / num_connections; /*used for computing criticalities */
-			load_constant_net_delay(net_delay, place_delay_value, clb_net,
-					num_nets);
+			load_constant_net_delay(net_delay, place_delay_value, g_clbs_nlist.net,
+				g_clbs_nlist.net.size());
 
 		} else
 			place_delay_value = 0;
@@ -838,7 +838,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 
 		if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE)
 			load_constant_net_delay(net_delay, *place_delay_value,
-					clb_net, num_nets);
+				g_clbs_nlist.net, g_clbs_nlist.net.size());
 		/*note, for path_based, the net delay is not updated since it is current,
 		 *because it accesses point_to_point_delay array */
 
@@ -921,7 +921,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 					 */
 					(*place_delay_value) = (*delay_cost) / num_connections;
 					load_constant_net_delay(net_delay, *place_delay_value,
-							clb_net, num_nets);
+							g_clbs_nlist.net, g_clbs_nlist.net.size());
 				}
 
 				/* Using the delays in net_delay, do a timing analysis to update slacks and
