@@ -177,17 +177,21 @@ struct t_lb_router_data {
 	vector<t_lb_type_rr_node> *lb_type_graph;	/* Pointer to physical intra-logic block type rr graph */
 	
 	/* Logical Netlist Info */
-	vector <t_intra_lb_net> *intra_lb_net;		/* Pointer to vector of intra logic block nets and their connections */
+	vector <t_intra_lb_net> *intra_lb_nets;		/* Pointer to vector of intra logic block nets and their connections */
 
 	/* Logical-to-physical mapping info */
 	t_lb_rr_node_stats *lb_rr_node_stats;		/* [0..lb_type_graph->size()-1] Stats for each logic block instance */
 	boolean is_routed;							/* Stores whether or not the current logical-to-physical mapping has a routed solution */
 
+	/* Current type */
+	t_type_ptr lb_type;
+
 	t_lb_router_data() {
 		lb_type_graph = NULL;	
 		lb_rr_node_stats = NULL;	
-		intra_lb_net = NULL;
+		intra_lb_nets = NULL;
 		is_routed = FALSE;
+		lb_type = NULL;
 	}
 };
 
