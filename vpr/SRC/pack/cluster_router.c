@@ -36,6 +36,7 @@ using namespace std;
 static void free_intra_lb_nets(vector <t_intra_lb_net> *intra_lb_nets);
 static void free_lb_trace(t_lb_trace *lb_trace);
 static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, int iport, int ipin, t_model_ports *model_port);
+static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iatom, int iport, int ipin, t_model_ports *model_port);
 
 /*****************************************************************************************
 * Constructor/Destructor functions 
@@ -104,7 +105,7 @@ void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom) {
 		}
 	}
 
-	/* Add inputs to route tree sources/targets */	
+	/* Add outputs to route tree sources/targets */	
 	model_ports = model->outputs;
 	while(model_ports != NULL) {
 		iport = model_ports->index;
@@ -138,12 +139,59 @@ void remove_atom_from_target(INOUTP t_lb_router_data *router_data, INP int iatom
 	t_pb *pb;
 	t_pb_type *pb_type;
 	t_pb_graph_node *pb_graph_node;
+	t_model *model;
+	t_model_ports *model_ports;
+	int iport, inet;
 
 	pb = logical_block[iatom].pb;
 	pb_graph_node = pb->pb_graph_node;
-	pb_type = pb_graph_node->pb_type;		
-
+	pb_type = pb_graph_node->pb_type;	
+	
 	set_reset_pb_modes(router_data, pb, FALSE);
+		
+	model = logical_block[iatom].model;
+	
+	/* Remove inputs from route tree sources/targets */	
+	model_ports = model->inputs;
+	while(model_ports != NULL) {
+		if(model_ports->is_clock == FALSE) {
+			iport = model_ports->index;
+			for (int ipin = 0; ipin > model_ports->size; ipin++) {
+				inet = logical_block[iatom].input_nets[iport][ipin];
+				if(inet != OPEN) {
+					remove_pin_from_rt_terminals(router_data, iatom, iport, ipin, model_ports);
+				}
+			}
+		}
+	}
+
+	/* Remove outputs from route tree sources/targets */	
+	model_ports = model->outputs;
+	while(model_ports != NULL) {
+		iport = model_ports->index;
+		for (int ipin = 0; ipin > model_ports->size; ipin++) {
+			inet = logical_block[iatom].output_nets[iport][ipin];
+			if(inet != OPEN) {
+				remove_pin_from_rt_terminals(router_data, iatom, iport, ipin, model_ports);
+			}
+		}
+	}
+
+	/* Remove clock from route tree sources/targets */	
+	model_ports = model->inputs;
+	while(model_ports != NULL) {
+		if(model_ports->is_clock == TRUE) {
+			iport = model_ports->index;
+			assert(iport == 0);
+			for (int ipin = 0; ipin > model_ports->size; ipin++) {
+				assert(ipin == 0);
+				inet = logical_block[iatom].clock_net;
+				if(inet != OPEN) {
+					remove_pin_from_rt_terminals(router_data, iatom, iport, ipin, model_ports);
+				}
+			}
+		}
+	}
 }
 
 /* Set/Reset mode of rr nodes to the pb used.  If set == TRUE, then set all modes of the rr nodes affected by pb to the mode of the pb.
@@ -340,3 +388,99 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, in
 	}
 }
 
+
+
+/* Given a pin of a net, remove route tree terminals from it 
+*/
+static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iatom, int iport, int ipin, t_model_ports *model_port) {
+	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
+	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
+	t_type_ptr lb_type = router_data->lb_type;
+	boolean found = FALSE;
+	unsigned int ipos;
+	int inet;
+	t_pb *pb;
+	t_pb_graph_pin *pb_graph_pin;
+
+	pb = logical_block[iatom].pb;
+	assert(pb != NULL);
+
+	pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb->pb_graph_node);
+
+	/* Determine net */
+	if(model_port->dir == IN_PORT) {
+		if(model_port->is_clock == TRUE) {
+			inet = logical_block[iatom].clock_net;
+		} else {
+			inet = logical_block[iatom].input_nets[iport][ipin];
+		}
+	} else {
+		assert(model_port->dir == OUT_PORT);
+		inet = logical_block[iatom].output_nets[iport][ipin];
+	}
+
+	if(inet == OPEN) {
+		/* This is not a valid net */
+		return;
+	}
+	
+	/* Find current net in route tree
+	   Code assumes that # of nets in cluster is small so a linear search through vector is faster than using more complex data structures
+	*/
+	for(ipos = 0; ipos < lb_nets.size(); ipos++) {
+		if(lb_nets[ipos].atom_net_index == inet) {
+			found = TRUE;
+			break;
+		}
+	}
+	assert(found == TRUE);
+	assert(lb_nets[ipos].atom_net_index == inet);
+	
+	if(model_port->dir == OUT_PORT) {
+		/* Net driver pin takes 0th position in terminals */
+		assert(lb_nets[ipos].terminals[0] == pb_graph_pin->pin_count_in_cluster);
+		lb_nets[ipos].terminals[0] = get_lb_type_rr_graph_ext_source_index(lb_type);		
+	} else {
+		assert(model_port->dir == IN_PORT);
+
+		/* Remove sink from list of terminals */
+		int pin_index = pb_graph_pin->pin_count_in_cluster;
+		unsigned int iterm;
+
+		assert(get_num_modes_of_lb_type_rr_node(lb_type_graph[pin_index]) == 1);
+		assert(lb_type_graph[pin_index].num_fanout[0] == 1);
+		pin_index = lb_type_graph[pin_index].outedges[0][0].node_index;
+		assert(lb_type_graph[pin_index].type == LB_SINK);
+			
+		found = FALSE;
+		for(iterm = 0; iterm < lb_nets[ipos].terminals.size(); iterm++) {
+			if(lb_nets[ipos].terminals[iterm] == pin_index) {
+				found = TRUE;
+				break;
+			}
+		}
+		assert(found == TRUE);
+		assert(lb_nets[ipos].terminals[iterm] == pin_index);
+		assert(iterm > 0);
+		if(iterm == 1) {
+			/* Index 1 is a special position reserved for net connection going out of cluster */
+			lb_nets[ipos].terminals[iterm] = get_lb_type_rr_graph_ext_sink_index(lb_type);
+		} else if (lb_nets[ipos].terminals[1] != get_lb_type_rr_graph_ext_sink_index(lb_type)) {
+			/* Index 1 is a special position reserved for net connection going out of cluster */
+			lb_nets[ipos].terminals[iterm] = lb_nets[ipos].terminals[1];
+			lb_nets[ipos].terminals[1] = get_lb_type_rr_graph_ext_sink_index(lb_type);
+		} else {
+			/* Must drop vector size */
+			lb_nets[ipos].terminals[iterm] = lb_nets[ipos].terminals.back();
+			lb_nets[ipos].terminals.pop_back();
+		}
+	}
+
+	if(lb_nets[ipos].terminals.size() == 2 && 
+		lb_nets[ipos].terminals[0] == get_lb_type_rr_graph_ext_source_index(lb_type) &&
+		lb_nets[ipos].terminals[1] == get_lb_type_rr_graph_ext_sink_index(lb_type)) {
+		/* This net is not routed, remove from list of nets in lb */
+		lb_nets[ipos] = lb_nets.back();
+		lb_nets.pop_back();
+	}
+}
