@@ -961,10 +961,10 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 			if (vpack_net[ivpack_net].is_global) {
 				inet = vpack_to_clb_net_mapping[ivpack_net];
 				if (inet != OPEN) {
-					for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
+					for (ipin = 1; ipin < (int) g_clbs_nlist.net[inet].nodes.size(); ipin++) {
 						pb_graph_pin = get_pb_graph_node_pin_from_g_clbs_nlist_net(inet, ipin);
 						new_trace = (t_trace*) my_calloc(1, sizeof(t_trace));
-						new_trace->iblock = clb_net[inet].node_block[ipin];
+						new_trace->iblock = g_clbs_nlist.net[inet].nodes[ipin].block;
 						new_trace->index = pb_graph_pin->pin_count_in_cluster;
 						new_trace->iswitch = OPEN;
 						new_trace->num_siblings = 0;
@@ -1134,12 +1134,12 @@ void resync_post_route_netlist() {
 	for (int i = 0; i < num_blocks; ++i) {
 		for (int j = 0; j < block[i].type->num_pins; ++j) {
 			if (block[i].nets[j] != OPEN
-					&& clb_net[block[i].nets[j]].is_global == FALSE)
+					&& g_clbs_nlist.net[block[i].nets[j]].is_global == FALSE)
 				block[i].nets[j] = OPEN;
 		}
 	}
 	for (int i = 0; i < num_nets; ++i) {
-		if (clb_net[i].is_global == TRUE)
+		if (g_clbs_nlist.net[i].is_global == TRUE)
 			continue;
 
 		int j = 0;
@@ -1153,7 +1153,9 @@ void resync_post_route_netlist() {
 				gridy = gridy - grid[gridx][gridy].height_offset;
 
 				int iblock = grid[gridx][gridy].blocks[rr_node[trace->index].z];
-				assert(clb_net[i].node_block[j] == iblock);
+				assert(g_clbs_nlist.net[i].nodes[j].block == iblock);
+				g_clbs_nlist.net[i].nodes[j].block_pin = rr_node[trace->index].ptc_num;
+				//Daniel to-do: take out clb_net
 				clb_net[i].node_block_pin[j] = rr_node[trace->index].ptc_num;
 				block[iblock].nets[rr_node[trace->index].ptc_num] = i;
 				j++;
@@ -1164,6 +1166,9 @@ void resync_post_route_netlist() {
 				gridy = gridy - grid[gridx][gridy].height_offset;
 
 				int iblock = grid[gridx][gridy].blocks[rr_node[trace->index].z];
+				g_clbs_nlist.net[i].nodes[j].block = iblock;
+				g_clbs_nlist.net[i].nodes[j].block_pin = rr_node[trace->index].ptc_num;
+				//Daniel to-do: take out clb_net
 				clb_net[i].node_block[j] = iblock;
 				clb_net[i].node_block_pin[j] = rr_node[trace->index].ptc_num;
 				block[iblock].nets[rr_node[trace->index].ptc_num] = i;
@@ -1454,7 +1459,7 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 
 void vpr_print_error(t_vpr_error* vpr_error){
 
-	/* Determine the type of error */
+	/* Determine the type of VPR error */
 	char* error_type = (char *)my_calloc(1000, sizeof(char));
 	switch(vpr_error->type){
 	case VPR_ERROR_UNKNOWN:

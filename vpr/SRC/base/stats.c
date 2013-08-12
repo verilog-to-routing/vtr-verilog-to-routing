@@ -111,7 +111,8 @@ void get_length_and_bends_stats(void) {
 	/* Figures out maximum, minimum and average number of bends and net length   *
 	 * in the routing.                                                           */
 
-	int inet, bends, total_bends, max_bends;
+	unsigned int inet;
+	int bends, total_bends, max_bends;
 	int length, total_length, max_length;
 	int segments, total_segments, max_segments;
 	float av_bends, av_length, av_segments;
@@ -126,8 +127,8 @@ void get_length_and_bends_stats(void) {
 	num_global_nets = 0;
 	num_clb_opins_reserved = 0;
 
-	for (inet = 0; inet < num_nets; inet++) {
-		if (clb_net[inet].is_global == FALSE && clb_net[inet].num_sinks != 0) { /* Globals don't count. */
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+		if (g_clbs_nlist.net[inet].is_global == FALSE && g_clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
 			get_num_bends_and_length(inet, &bends, &length, &segments);
 
 			total_bends += bends;
@@ -138,26 +139,26 @@ void get_length_and_bends_stats(void) {
 
 			total_segments += segments;
 			max_segments = max(segments, max_segments);
-		} else if (clb_net[inet].is_global) {
+		} else if (g_clbs_nlist.net[inet].is_global) {
 			num_global_nets++;
 		} else {
 			num_clb_opins_reserved++;
 		}
 	}
 
-	av_bends = (float) total_bends / (float) (num_nets - num_global_nets);
+	av_bends = (float) total_bends / (float) ((int) g_clbs_nlist.net.size() - num_global_nets);
 	vpr_printf_info("\n");
 	vpr_printf_info("Average number of bends per net: %#g  Maximum # of bends: %d\n", av_bends, max_bends);
 	vpr_printf_info("\n");
 
-	av_length = (float) total_length / (float) (num_nets - num_global_nets);
-	vpr_printf_info("Number of routed nets (nonglobal): %d\n", num_nets - num_global_nets);
+	av_length = (float) total_length / (float) ((int) g_clbs_nlist.net.size() - num_global_nets);
+	vpr_printf_info("Number of routed nets (nonglobal): %d\n", (int) g_clbs_nlist.net.size() - num_global_nets);
 	vpr_printf_info("Wire length results (in units of 1 clb segments)...\n");
 	vpr_printf_info("\tTotal wirelength: %d, average net length: %#g\n", total_length, av_length);
 	vpr_printf_info("\tMaximum net length: %d\n", max_length);
 	vpr_printf_info("\n");
 
-	av_segments = (float) total_segments / (float) (num_nets - num_global_nets);
+	av_segments = (float) total_segments / (float) ((int) g_clbs_nlist.net.size() - num_global_nets);
 	vpr_printf_info("Wire length results in terms of physical segments...\n");
 	vpr_printf_info("\tTotal wiring segments used: %d, average wire segments per net: %#g\n", total_segments, av_segments);
 	vpr_printf_info("\tMaximum segments used by a net: %d\n", max_segments);
@@ -223,7 +224,8 @@ static void load_channel_occupancies(int **chanx_occ, int **chany_occ) {
 	/* Loads the two arrays passed in with the total occupancy at each of the  *
 	 * channel segments in the FPGA.                                           */
 
-	int i, j, inode, inet;
+	int i, j, inode;
+	unsigned inet;
 	struct s_trace *tptr;
 	t_rr_type rr_type;
 
@@ -239,9 +241,9 @@ static void load_channel_occupancies(int **chanx_occ, int **chany_occ) {
 
 	/* Now go through each net and count the tracks and pins used everywhere */
 
-	for (inet = 0; inet < num_nets; inet++) {
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 
-		if (clb_net[inet].is_global && clb_net[inet].num_sinks != 0) /* Skip global and empty nets. */
+		if (g_clbs_nlist.net[inet].is_global && g_clbs_nlist.net[inet].num_sinks() != 0) /* Skip global and empty nets. */
 			continue;
 
 		tptr = trace_head[inet];
@@ -335,7 +337,8 @@ void print_wirelen_prob_dist(void) {
 
 	float *prob_dist;
 	float norm_fac, two_point_length;
-	int inet, bends, length, segments, index;
+	unsigned int inet; 
+	int bends, length, segments, index;
 	float av_length;
 	int prob_dist_size, i, incr;
 
@@ -343,8 +346,8 @@ void print_wirelen_prob_dist(void) {
 	prob_dist = (float *) my_calloc(prob_dist_size, sizeof(float));
 	norm_fac = 0.;
 
-	for (inet = 0; inet < num_nets; inet++) {
-		if (clb_net[inet].is_global == FALSE && clb_net[inet].num_sinks != 0) {
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+		if (g_clbs_nlist.net[inet].is_global == FALSE && g_clbs_nlist.net[inet].num_sinks() != 0) {
 			get_num_bends_and_length(inet, &bends, &length, &segments);
 
 			/*  Assign probability to two integer lengths proportionately -- i.e.  *
@@ -352,7 +355,7 @@ void print_wirelen_prob_dist(void) {
 			 *  only 0.1 to prob_dist[1].                                          */
 
 			two_point_length = (float) length
-					/ (float) (clb_net[inet].num_sinks);
+					/ (float) (g_clbs_nlist.net[inet].num_sinks());
 			index = (int) two_point_length;
 			if (index >= prob_dist_size) {
 
@@ -367,7 +370,7 @@ void print_wirelen_prob_dist(void) {
 				for (i = prob_dist_size - incr; i < prob_dist_size; i++)
 					prob_dist[i] = 0.0;
 			}
-			prob_dist[index] += (clb_net[inet].num_sinks)
+			prob_dist[index] += (g_clbs_nlist.net[inet].num_sinks())
 					* (1 - two_point_length + index);
 
 			index++;
@@ -384,10 +387,10 @@ void print_wirelen_prob_dist(void) {
 				for (i = prob_dist_size - incr; i < prob_dist_size; i++)
 					prob_dist[i] = 0.0;
 			}
-			prob_dist[index] += (clb_net[inet].num_sinks)
+			prob_dist[index] += (g_clbs_nlist.net[inet].num_sinks())
 					* (1 - index + two_point_length);
 
-			norm_fac += clb_net[inet].num_sinks;
+			norm_fac += g_clbs_nlist.net[inet].num_sinks();
 		}
 	}
 
@@ -435,7 +438,7 @@ void print_lambda(void) {
 				if (type->class_inf[iclass].type == RECEIVER) {
 					inet = block[bnum].nets[ipin];
 					if (inet != OPEN) /* Pin is connected? */
-						if (clb_net[inet].is_global == FALSE) /* Not a global clock */
+						if (g_clbs_nlist.net[inet].is_global == FALSE) /* Not a global clock */
 							num_inputs_used++;
 				}
 			}

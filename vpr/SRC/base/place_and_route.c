@@ -769,7 +769,8 @@ static float comp_width(t_chan * chan, float x, float separation) {
 /* This function should only be called once */
 void post_place_sync(INP int L_num_blocks,
 		INOUTP const struct s_block block_list[]) {
-	int iblk, j, k, inet;
+	int iblk, j, inet;
+	unsigned k;
 	t_type_ptr type;
 	int max_num_block_pins;
 
@@ -788,7 +789,7 @@ void post_place_sync(INP int L_num_blocks,
 				block[iblk].nets[j + block[iblk].z * max_num_block_pins] =
 						block[iblk].nets[j];
 				block[iblk].nets[j] = OPEN;
-				for (k = 0; k < (int) g_clbs_nlist.net[inet].nodes.size(); k++) {
+				for (k = 0; k < g_clbs_nlist.net[inet].nodes.size(); k++) {
 					if (g_clbs_nlist.net[inet].nodes[k].block == iblk && g_clbs_nlist.net[inet].nodes[k].block_pin == j) {
 						g_clbs_nlist.net[inet].nodes[k].block_pin = j
 								+ block[iblk].z * max_num_block_pins;
@@ -798,7 +799,7 @@ void post_place_sync(INP int L_num_blocks,
 						break;
 					}
 				}
-				assert(k <= clb_net[inet].num_sinks);
+				assert(k < g_clbs_nlist.net[inet].nodes.size());
 			}
 		}
 	}
