@@ -78,6 +78,7 @@
 *********************************************************************************************/
 
 #include "../include/vqm2blif.h"
+#include "../include/lut_stats.h"
 
 #include <sys/stat.h>
 
@@ -303,6 +304,17 @@ int main(int argc, char* argv[])
 
     processEnd = clock();
 	cout << "\n>> Preprocessing Netlist took " << (float)(processEnd - processStart)/CLOCKS_PER_SEC << " seconds.\n" ;
+    
+	if (verbose_mode){
+        cout << "\n>> LUT Stats...\n";
+        processStart = clock();
+
+        //Print LUT Stats
+        print_lut_stats(my_module);
+
+        processEnd = clock();
+        cout << "\n>> LUT Stats took " << (float)(processEnd - processStart)/CLOCKS_PER_SEC << " seconds.\n" ;
+    }
 
     //Clean the netlist
 	if (clean_mode != CL_NONE){
@@ -363,6 +375,7 @@ int main(int argc, char* argv[])
 	out_file = file_replace ( out_file, "gnd", "unconn" );
 	out_file = file_replace ( out_file, "vcc", "unconn" );
 #endif
+
 		
 	//Free all allocated memory.
 	cout << "\n>> Cleaning up\n";
