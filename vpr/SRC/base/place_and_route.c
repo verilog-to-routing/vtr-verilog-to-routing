@@ -788,8 +788,11 @@ void post_place_sync(INP int L_num_blocks,
 				block[iblk].nets[j + block[iblk].z * max_num_block_pins] =
 						block[iblk].nets[j];
 				block[iblk].nets[j] = OPEN;
-				for (k = 0; k <= clb_net[inet].num_sinks; k++) {
-					if (clb_net[inet].node_block[k] == iblk && clb_net[inet]. node_block_pin[k] == j) {
+				for (k = 0; k < (int) g_clbs_nlist.net[inet].nodes.size(); k++) {
+					if (g_clbs_nlist.net[inet].nodes[k].block == iblk && g_clbs_nlist.net[inet].nodes[k].block_pin == j) {
+						g_clbs_nlist.net[inet].nodes[k].block_pin = j
+								+ block[iblk].z * max_num_block_pins;
+						//Daniel to-do: take out clb_net later
 						clb_net[inet].node_block_pin[k] = j
 								+ block[iblk].z * max_num_block_pins;
 						break;
