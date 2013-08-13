@@ -234,7 +234,7 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 				&& draw_state.pic_on_screen == NO_PICTURE) {
 			create_button("Window", "Toggle Nets", toggle_nets);
 			create_button("Toggle Nets", "Toggle RR", toggle_rr);
-			create_button("Tog Defects", "Congestion", toggle_congestion);
+			create_button("Toggle RR", "Congestion", toggle_congestion);
 
 			if (crit_path_button_enabled) {
 				create_button("Congestion", "Crit. Path", highlight_crit_path);
@@ -2435,8 +2435,8 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	
 	/* This routine draws an edge from the opin rr node to the ipin rr node */
-	int opin_grid_x, opin_grid_y, opin_pin_num, opin;
-	int ipin_grid_x, ipin_grid_y, ipin_pin_num, ipin;
+	int opin_grid_x, opin_grid_y, opin_pin_num;
+	int ipin_grid_x, ipin_grid_y, ipin_pin_num;
 	int width_offset, height_offset;
 	boolean found;
 	float x1, x2, y1, y2;
@@ -2458,7 +2458,6 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	opin_grid_x = opin_grid_x - grid[opin_grid_x][opin_grid_y].width_offset;
 	opin_grid_y = opin_grid_y - grid[opin_grid_x][opin_grid_y].height_offset;
 
-	opin = rr_node[opin_node].ptc_num;
 	opin_pin_num = rr_node[opin_node].ptc_num;
 	type = grid[opin_grid_x][opin_grid_y].type;
 	
@@ -2467,7 +2466,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 		for (int height = 0; height < type->height && !found; ++height) {
 			for (iside = (enum e_side)0; iside < 4 && !found; iside = (enum e_side)(iside + 1)) {
 				/* Find first location of pin */
-				if (1 == type->pinloc[width][height][iside][opin]) {
+				if (1 == type->pinloc[width][height][iside][opin_pin_num]) {
 					width_offset = width;
 					height_offset = height;
 					pin_side = iside;
@@ -2485,7 +2484,6 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	ipin_grid_x = ipin_grid_x - grid[ipin_grid_x][ipin_grid_y].width_offset;
 	ipin_grid_y = ipin_grid_y - grid[ipin_grid_x][ipin_grid_y].height_offset;
 
-	ipin = rr_node[ipin_node].ptc_num;
 	ipin_pin_num = rr_node[ipin_node].ptc_num;
 	type = grid[ipin_grid_x][ipin_grid_y].type;
 	
@@ -2494,7 +2492,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 		for (int height = 0; height < type->height && !found; ++height) {
 			for (iside = (enum e_side)0; iside < 4 && !found; iside = (enum e_side)(iside + 1)) {
 				/* Find first location of pin */
-				if (1 == type->pinloc[width][height][iside][ipin]) {
+				if (1 == type->pinloc[width][height][iside][ipin_pin_num]) {
 					width_offset = width;
 					height_offset = height;
 					pin_side = iside;
