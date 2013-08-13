@@ -216,7 +216,7 @@ extern "C" void PrintHandlerFilter(
  * Version history
  * 07/02/12 jeffr : Original
  *===========================================================================*/
-extern "C" bool PrintHandlerMessage( 
+extern "C" unsigned char PrintHandlerMessage( 
             TIO_MessageMode_t messageMode,
       const char*             pszMessage,
       ... )
@@ -226,7 +226,7 @@ extern "C" bool PrintHandlerMessage(
 
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
-   bool ok = true;
+   unsigned char ok = true;
    switch( messageMode )
    {
    case TIO_MESSAGE_INFO:
@@ -279,7 +279,7 @@ extern "C" void PrintHandlerInfo(
  * Version history
  * 06/18/13 jeffr : Original
  *===========================================================================*/
-extern "C" bool PrintHandlerWarning(
+extern "C" unsigned char PrintHandlerWarning(
       const char*        pszFileName,
             unsigned int lineNum,
       const char*        pszMessage,
@@ -289,9 +289,9 @@ extern "C" bool PrintHandlerWarning(
    va_start( vaArgs, pszMessage );      /* Initialize variable argument list */
 
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
-   bool ok = printHandler.Warning( TIO_PRINT_WARNING, 
-                                   pszFileName, lineNum, 
-                                   pszMessage, vaArgs );
+   unsigned char ok = printHandler.Warning( TIO_PRINT_WARNING, 
+                                            pszFileName, lineNum, 
+                                            pszMessage, vaArgs );
 
    va_end( vaArgs );                    /* Reset variable argument list */
 
@@ -305,7 +305,7 @@ extern "C" bool PrintHandlerWarning(
  * Version history
  * 06/18/13 jeffr : Original
  *===========================================================================*/
-extern "C" bool PrintHandlerError(
+extern "C" unsigned char PrintHandlerError(
       const char*        pszFileName,
             unsigned int lineNum,
       const char*        pszMessage,
@@ -315,9 +315,9 @@ extern "C" bool PrintHandlerError(
    va_start( vaArgs, pszMessage );      /* Initialize variable argument list */
 
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
-   bool ok = printHandler.Error( TIO_PRINT_ERROR, 
-                                 pszFileName, lineNum, 
-                                 pszMessage, vaArgs );
+   unsigned char ok = printHandler.Error( TIO_PRINT_ERROR, 
+                                            pszFileName, lineNum, 
+                                            pszMessage, vaArgs );
 
    va_end( vaArgs );                    /* Reset variable argument list */
 
