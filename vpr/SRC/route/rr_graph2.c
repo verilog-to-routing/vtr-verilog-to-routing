@@ -2371,7 +2371,6 @@ void load_sblock_pattern_lookup(
 	}
 }
 
-#ifdef TORO_FABRIC_SWITCHBOX_OVERRIDE
 //===========================================================================//
 void override_sblock_pattern_lookup(
 		INP int x, INP int y,
@@ -2492,9 +2491,7 @@ int override_sblock_pattern_map_side_mode(
 	return (side);
 }
 //===========================================================================//
-#endif
 
-#ifdef TORO_FABRIC_CONNECTIONBLOCK_OVERRIDE
 //===========================================================================//
 void override_cblock_edge_lists(
 		int L_num_rr_nodes, 
@@ -2514,7 +2511,6 @@ void override_cblock_edge_lists(
 	}
 }
 //===========================================================================//
-#endif
 
 static int *label_wire_muxes_for_balance(
 		INP int chan_num, INP int seg_num,
