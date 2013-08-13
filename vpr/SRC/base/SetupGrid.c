@@ -21,16 +21,14 @@ using namespace std;
 static void CheckGrid(void);
 static t_type_ptr find_type_col(INP int x);
 
-#ifdef TORO_FABRIC_GRID_OVERRIDE 
+
 //===========================================================================//
 #include "TFH_FabricGridHandler.h"
 
 static void alloc_and_load_block_override_ios(
 		t_grid_tile** vpr_grid, int vpr_nx, int vpr_ny );
 //===========================================================================//
-#endif
 
-#ifdef TORO_FABRIC_BLOCK_OVERRIDE 
 //===========================================================================//
 #include "TFH_FabricBlockHandler.h"
 
@@ -46,7 +44,6 @@ static void alloc_and_load_block_override_blocks_empty(
 		t_grid_tile** vpr_grid, int vpr_nx, int vpr_ny,
 		const TFH_GridBlockList_t& gridBlockList);
 //===========================================================================//
-#endif
 
 static void alloc_and_load_num_instances_type(
 		t_grid_tile** L_grid, int L_nx, int L_ny,
@@ -79,9 +76,7 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 		}
 	}
 
-#ifdef TORO_FABRIC_BLOCK_OVERRIDE 
 	bool showMessage = true;
-#endif
 
 	for (int x = 0; x <= nx + 1; ++x) {
 		for (int y = 0; y <= ny + 1; ++y) {
@@ -96,10 +91,9 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 
 				// Assume edges are IO type (by default)
 				type = IO_TYPE;
-#ifdef TORO_FABRIC_BLOCK_OVERRIDE 
 				type = alloc_and_load_block_override_type(type, x, y, showMessage);
 				showMessage = false;
-#endif
+
 			} else {
 
 				if (grid[x][y].width_offset > 0 || grid[x][y].height_offset > 0)
@@ -107,10 +101,9 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 
 				// Assume core are not empty and not IO types (by default)
 				type = find_type_col(x);
-#ifdef TORO_FABRIC_BLOCK_OVERRIDE 
 				type = alloc_and_load_block_override_type(type, x, y, showMessage);
 				showMessage = false;
-#endif
+
 			}
 
 			if (x + type->width - 1 <= nx && y + type->height - 1 <= ny) {
@@ -140,13 +133,8 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 	}
 
 
-#ifdef TORO_FABRIC_GRID_OVERRIDE 
 	alloc_and_load_block_override_ios(grid, nx, ny);
-#endif
-
-#ifdef TORO_FABRIC_BLOCK_OVERRIDE 
 	alloc_and_load_block_override_blocks(grid, nx, ny);
-#endif
 
 	// And, refresh (ie. reset and update) the "num_instances_type" array
 	// (while also forcing any remaining INVALID blocks to EMPTY_TYPE)
@@ -177,7 +165,6 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 #endif
 }
 
-#ifdef TORO_FABRIC_GRID_OVERRIDE 
 //===========================================================================//
 static void alloc_and_load_block_override_ios(
 		t_grid_tile** vpr_grid, int vpr_nx, int vpr_ny ) {
@@ -219,10 +206,7 @@ static void alloc_and_load_block_override_ios(
 		}
 	}
 }
-//===========================================================================//
-#endif
 
-#ifdef TORO_FABRIC_BLOCK_OVERRIDE 
 //===========================================================================//
 static t_type_ptr alloc_and_load_block_override_type(
 		t_type_ptr type, int x, int y,
@@ -328,8 +312,6 @@ static void alloc_and_load_block_override_blocks_empty(
 		}
 	}
 }
-//===========================================================================//
-#endif
 
 //===========================================================================//
 static void alloc_and_load_num_instances_type(
