@@ -592,9 +592,6 @@ ast_node_t *markAndProcessSymbolListWith(ids id, ast_node_t *symbol_list)
 				break;
 			case INTEGER:
 				symbol_list->children[i]->types.variable.is_integer = TRUE;
-				/* This should be removed when elaboration of integers is added */
-				printf("integer data type is currently NOT supported: %s\n", symbol_list->children[i]->children[0]->types.identifier);
-				oassert(FALSE);
 				break;
 			default:
 				oassert(FALSE);
@@ -774,10 +771,6 @@ ast_node_t *newFor(ast_node_t *initial, ast_node_t *compare_expression, ast_node
 	ast_node_t* new_node = create_node_w_type(FOR, line_number, current_parse_file);
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 4, initial, compare_expression, terminal, statement);
-
-	/* This needs to be removed once elaboration support is added */
-	printf("For statement is NOT supported: line %d\n", line_number);
-	oassert(0);
 
 	return new_node;
 }
@@ -1380,6 +1373,12 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 				break;
 			case NEGEDGE:
 				fprintf(fp, "\t%d [label=\"NEGEDGE\"];\n", my_label);
+				break;
+			case WHILE:
+				fprintf(fp, "\t%d [label=\"WHILE\"];\n", my_label);
+				break;
+			case FOR:
+				fprintf(fp, "\t%d [label=\"FOR\"];\n", my_label);
 				break;
 			case IF:
 				fprintf(fp, "\t%d [label=\"IF\"];\n", my_label);

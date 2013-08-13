@@ -365,6 +365,7 @@ struct ast_node_t_t
 	short shared_node;
 	void *hb_port;
 	void *net_node;
+	short is_read_write;
 
 	void *additional_data; // this is a point where you can add additional data for your optimization or technique
 };

@@ -424,7 +424,7 @@ void instantiate_buffer(nnode_t *node, short mark, netlist_t *netlist)
 	int width = node->num_input_pins;
 	int i;
 
-	/* for now we just pass the signals dierectly through */
+	/* for now we just pass the signals directly through */
 	for (i = 0; i < width; i++)
 	{
 		int idx_2_buffer = node->input_pins[i]->pin_net_idx;

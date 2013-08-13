@@ -33,6 +33,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "read_xml_arch_file.h"
 #include "globals.h"
 #include "errors.h"
+#include "subtractions.h"
 
 t_model *hard_adders = NULL;
 struct s_linked_vptr *add_list = NULL;
@@ -744,7 +745,7 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 		}
 		else
 			init_split_adder(nodeo, node[i], a, sizea, b, sizeb, cin, cout, i, flag, netlist);
-
+			
 		//store the processed hard adder node for optimization
 		processed_adder_list = insert_in_vptr_list(processed_adder_list, node[i]);
 	}
@@ -966,3 +967,303 @@ void clean_adders()
 }
 
 #endif
+
+
+/*-------------------------------------------------------------------------
+ * (function: reduce_operations)
+ *
+ * reduce the operations that are redundant
+ *-----------------------------------------------------------------------*/
+void reduce_operations(netlist_t *netlist, operation_list op)
+{
+	struct s_linked_vptr *place = NULL;
+	operation_list oper;
+	switch (op)
+	{
+		case ADD:
+			place = add_list;
+			oper = ADD;
+		break;
+
+		case MULTIPLY:
+			place = mult_list;
+			oper = MULTIPLY;
+		break;
+
+		case MINUS:
+			place = sub_list;
+			oper = MINUS;
+		break;
+
+		default:
+
+		break;
+
+	}
+
+	traverse_list(oper, place);
+
+}
+
+/*-------------------------------------------------------------------------
+ * (function: traverse_list)
+ *
+ * traverse the operation lists
+ *-----------------------------------------------------------------------*/
+void traverse_list(operation_list oper, struct s_linked_vptr *place)
+{
+		while (place != NULL && place->next != NULL)
+		{
+			match_node(place, oper);
+			place = place->next;
+		}
+}
+
+void match_node(struct s_linked_vptr *place, operation_list oper)
+{
+	int flag, mark;
+	nnode_t *node = NULL;
+	nnode_t *next_node = NULL;
+	node = (nnode_t*)place->data_vptr;
+	struct s_linked_vptr *pre = place;
+	struct s_linked_vptr *next = NULL;
+	if (place->next != NULL)
+		next = place->next;
+	while (next != NULL)
+	{
+		flag = 0;
+		mark = 0;
+		next_node = (nnode_t*)next->data_vptr;
+		if (node->type == next_node->type)
+		{
+			if (node->num_input_pins == next_node->num_input_pins)
+			{
+				flag = match_ports(node, next_node, oper);
+				if (flag == 1)
+				{
+					mark = match_pins(node, next_node);
+					if (mark == 1)
+					{
+						merge_nodes(node, next_node);
+						remove_list_node(pre, next);
+					}
+				}
+			}
+		}
+		if (mark == 1)
+			next = pre->next;
+		else
+		{
+			pre = next;
+			next= next->next;
+		}
+	}
+
+}
+
+int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
+{
+	int flag = 0;
+	int sign = 0;
+	int *mark = &sign;
+	int mark1 = 1;
+	int mark2 = 1;
+	ast_node_t *ast_node, *ast_node_next;
+	char *component_s[2] = {0};
+	char *component_o[2] = {0};
+	ast_node = node->related_ast_node;
+	ast_node_next = next_node->related_ast_node;
+	if (ast_node->types.operation.op == oper)
+	{
+		traverse_operation_node(ast_node, component_s, oper, mark);
+		if (sign != 1)
+		{
+			traverse_operation_node(ast_node_next, component_o, oper, mark);
+			if (sign != 1)
+			{
+				switch (oper)
+				{
+					case ADD:
+					case MULTIPLY:
+					{
+						mark1 = strcmp(component_s[0], component_o[0]);
+						if (mark1 == 0)
+							mark2 = strcmp(component_s[1], component_o[1]);
+						else
+						{
+							mark1 = strcmp(component_s[0], component_o[1]);
+							mark2 = strcmp(component_s[1], component_o[0]);
+						}
+						if (mark1 == 0 && mark2 == 0)
+							flag = 1;
+					}
+					break;
+
+					case MINUS:
+						mark1 = strcmp(component_s[0], component_o[0]);
+						if (mark1 == 0)
+							mark2 = strcmp(component_s[1], component_s[1]);
+						if (mark2 == 0)
+							flag = 1;
+					break;
+
+					default:
+
+					break;
+				}
+			}
+		}
+	}
+
+	return flag;
+}
+
+/*-------------------------------------------------------------------------
+ * (function: traverse_operation_node)
+ *
+ * search the ast find the couple of components
+ *-----------------------------------------------------------------------*/
+void traverse_operation_node(ast_node_t *node, char *component[], operation_list op, int *mark)
+{
+	int i;
+
+	if (node == NULL)
+		return;
+
+	if (node->types.operation.op == op)
+	{
+		for (i = 0; i < node->num_children; i++)
+		{
+			*mark = 0;
+			if (node->children[i]->type != IDENTIFIERS && node->children[i]->type != NUMBERS)
+			{
+				*mark = 1;
+				break;
+			}
+			else
+			{
+				if (node->children[i]->type == IDENTIFIERS)
+					component[i] = node->children[i]->types.identifier;
+				else
+					if (node->children[i]->type == NUMBERS)
+						component[i] = node->children[i]->types.number.number;
+			}
+
+		}
+	}
+
+}
+
+
+void merge_nodes(nnode_t *node, nnode_t *next_node)
+{
+
+	remove_fanout_pins(next_node);
+	reallocate_pins(node, next_node);
+	free_op_nodes(next_node);
+
+}
+
+void remove_list_node(struct s_linked_vptr *pre, struct s_linked_vptr *next)
+{
+	if (next->next != NULL)
+		pre->next = next->next;
+	else
+		pre->next = NULL;
+	free(next);
+
+}
+
+void remove_fanout_pins(nnode_t *node)
+{
+	int i, j, k, idx;
+	for (i = 0; i < node->num_input_pins; i++)
+	{
+		idx = node->input_pins[i]->unique_id;
+		for (j = 0; j < node->input_pins[i]->net->num_fanout_pins; j++)
+		{
+			if (node->input_pins[i]->net->fanout_pins[j]->unique_id == idx)
+				break;
+		}
+		for (k = j; k < node->input_pins[i]->net->num_fanout_pins - 1; k++)
+		{
+			node->input_pins[i]->net->fanout_pins[k] = node->input_pins[i]->net->fanout_pins[k+1];
+			node->input_pins[i]->net->fanout_pins[k]->pin_net_idx = k;
+		}
+		node->input_pins[i]->net->fanout_pins[k] = NULL;
+		node->input_pins[i]->net->num_fanout_pins--;
+
+	}
+}
+
+void reallocate_pins(nnode_t *node, nnode_t *next_node)
+{
+	int i, j;
+	int pin_idx;
+	nnode_t *input_node = NULL;
+	nnet_t *net = NULL;
+	npin_t *pin = NULL;
+	for (i = 0; i < next_node->num_output_pins; i++)
+	{
+		for (j = 0; j < next_node->output_pins[i]->net->num_fanout_pins; j++)
+		{
+			if (next_node->output_pins[i]->net->fanout_pins[j]->node != NULL)
+			{
+				input_node = next_node->output_pins[i]->net->fanout_pins[j]->node;
+				net = node->output_pins[i]->net;
+				pin_idx = next_node->output_pins[i]->net->fanout_pins[j]->pin_node_idx;
+				pin = input_node->input_pins[pin_idx];
+				add_fanout_pin_to_net(net, pin);
+			}
+
+		}
+	}
+}
+
+void free_op_nodes(nnode_t *node)
+{
+	int i;
+	nnet_t *net = NULL;
+	for (i = 0; i < node->num_output_pins; i++)
+	{
+		if (node->output_pins[i]->net != NULL)
+		{
+			net = node->output_pins[i]->net;
+			if (net->fanout_pins != NULL)
+				free(net->fanout_pins);
+			free(net);
+			node->output_pins[i]->net = NULL;
+		}
+	}
+	free_nnode(node);
+
+}
+
+int match_pins(nnode_t *node, nnode_t *next_node)
+{
+	int flag;
+	int i, j;
+	long id;
+	for (i = 0; i < node->num_input_pins; i++)
+	{
+		flag = 0;
+		id = node->input_pins[i]->net->driver_pin->unique_id;
+		for (j = 0; j < next_node->num_input_pins; j++)
+		{
+			if (id == next_node->input_pins[j]->net->driver_pin->unique_id)
+			{
+				flag = 1;
+				break;
+			}
+			if (j == next_node->num_input_pins - 1)
+			{
+				flag = -1;
+				break;
+			}
+		}
+		if (flag == -1)
+			break;
+	}
+
+	return flag;
+}

@@ -41,6 +41,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "implicit_memory.h"
 #include "adders.h"
 #include "subtractions.h"
+#include "ast_elaborate.h"
 
 /* NAMING CONVENTIONS
  {previous_string}.module_name+instance_name
@@ -171,6 +172,7 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 					if ((var_declare->types.variable.is_input) ||
 						(var_declare->types.variable.is_output) ||
 						(var_declare->types.variable.is_reg) ||
+						(var_declare->types.variable.is_integer) ||
 						(var_declare->types.variable.is_wire)) continue;
 
 					oassert(module_items->children[i]->children[j]->type == VAR_DECLARE);
@@ -344,8 +346,13 @@ void create_netlist()
 		oassert(ast_modules[i]->type == MODULE);
 	}
 
+	/* we will reduce the parameters and the assignment expressions*/
+	reduce_parameter();
+	reduce_assignment_expression();
+
 	/* we will find the top module */
 	top_module = find_top_module();
+
 
 	/* Since the modules are in a tree, we will bottom up build the netlist.  Essentially,
 	 * we will go to the leafs of the module tree, build them upwards such that when we search for the nets,
@@ -538,8 +545,8 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 				/* module_items */
 				((ast_node_t*)module_names_to_idx->data[sc_spot])->children[2],
 				temp_instance_name);
-
-			/* recursive call point */
+//*****
+		/* recursive call point */
 			convert_ast_to_netlist_recursing_via_modules(((ast_node_t*)module_names_to_idx->data[sc_spot]), temp_instance_name, level+1);
 
 			/* free the string */
@@ -1384,6 +1391,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char *module_name)
 					oassert(	(var_declare->types.variable.is_input) ||
 						(var_declare->types.variable.is_output) ||
 						(var_declare->types.variable.is_reg) ||
+						(var_declare->types.variable.is_integer) ||
 						(var_declare->types.variable.is_wire));
 
 					/* make the string to add to the string cache */
@@ -1395,7 +1403,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char *module_name)
 						/* ERROR checks here 
 						 * output with reg is fine
 						 * output with wire is fine 
-						 * Then update the stored string chache entry with information */
+						 * Then update the stored string cache entry with information */
 						if ((var_declare->types.variable.is_input)
 								&& (
 									   (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_reg)
@@ -1432,7 +1440,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char *module_name)
 								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
 							}
 						}
-						else
+						else if (!var_declare->types.variable.is_integer)
 						{
 							abort();
 						}
@@ -2920,7 +2928,18 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 		{
 			if (input_lists[0]->count != input_lists[1]->count)
 			{
-				int index_of_smallest = find_smallest_non_numerical(op, input_lists, 2);
+				int index_of_smallest;
+
+				/*if (op->num_children != 0 && op->children[0]->type == NUMBERS && op->children[1]->type == NUMBERS)
+				{
+			 		if (input_lists[0]->count < input_lists[1]->count)
+						index_of_smallest = 0;
+					else
+						index_of_smallest = 1;
+				}
+
+				else*/
+					index_of_smallest = find_smallest_non_numerical(op, input_lists, 2);
 
 				input_port_width = input_lists[index_of_smallest]->count;
 

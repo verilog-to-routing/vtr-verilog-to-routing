@@ -63,6 +63,18 @@ extern void define_add_function(nnode_t *node, short type, FILE *out);
 extern void split_adder(nnode_t *node, int a, int b, int sizea, int sizeb, int cin, int cout, int count, netlist_t *netlist);
 extern void iterate_adders(netlist_t *netlist);
 extern void clean_adders();
+extern void reduce_operations(netlist_t *netlist, operation_list op);
+extern void traverse_list(operation_list oper, struct s_linked_vptr *place);
+extern void match_node(struct s_linked_vptr *place, operation_list oper);
+extern int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper);
+extern void traverse_operation_node(ast_node_t *node, char *component[], operation_list op, int *mark);
+//extern void find_leaf_children(ast_node_t *node, char *component[], operation_list op, int flag, int ids);
+extern void merge_nodes(nnode_t *node, nnode_t *next_node);
+extern void remove_list_node(struct s_linked_vptr *node, struct s_linked_vptr *place);
+extern void remove_fanout_pins(nnode_t *node);
+extern void reallocate_pins(nnode_t *node, nnode_t *next_node);
+extern void free_op_nodes(nnode_t *node);
+extern int match_pins(nnode_t *node, nnode_t *next_node);
 
 #endif // ADDERS_H
 

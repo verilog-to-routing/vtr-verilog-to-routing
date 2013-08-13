@@ -50,6 +50,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "adders.h"
 #include "subtractions.h"
 #include "odin_ii_func.h"
+#include "ast_elaborate.h"
 /*---------------------------------------------------------------------------
  * (function: set_default_options)
  *-------------------------------------------------------------------------*/
@@ -126,11 +127,14 @@ void do_high_level_synthesis()
 	/* Note that the entry point for ast optimzations is done per module with the
 	 * function void next_parsed_verilog_file(ast_node_t *file_items_list) */
 
-	/* after the ast is made potentiatlly do tagging for downstream links to verilog */
+	/* after the ast is made potentially do tagging for downstream links to verilog */
 	if (global_args.high_level_block != NULL)
 	{
 		add_tag_data();
 	}
+
+	/* Simplify the AST by reducing complex statements - for loops */
+	simplify_ast();
 
 	/* Now that we have a parse tree (abstract syntax tree [ast]) of
 	 * the Verilog we want to make into a netlist. */
@@ -150,6 +154,8 @@ void do_high_level_synthesis()
 		/* Path is where we are */
 		graphVizOutputNetlist(configuration.debug_output_path, "optimized", 1, verilog_netlist);
 	}
+
+	//*******
 
 	/* point where we convert netlist to FPGA or other hardware target compatible format */
 	printf("Performing Partial Map to target device\n");

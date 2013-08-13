@@ -252,6 +252,7 @@ ast_node_t *create_tree_node_number(char* number, int line_number, int file_numb
 				break;
 			default:
 				oassert(FALSE);
+				break;
 		}
 
 		/* check if the size matches the design specified size */

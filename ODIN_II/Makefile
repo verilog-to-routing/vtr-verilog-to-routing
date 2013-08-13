@@ -67,6 +67,7 @@ SRCO = $(addprefix $(SRC_DIR)/,$(strip \
 	verilog_preprocessor.c \
 	odin_ii_func.c \
 	odin_ii.c \
+	ast_elaborate.c \
 ))
 
 SRCV = SRC/read_blif.c \
