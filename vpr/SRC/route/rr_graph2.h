@@ -204,7 +204,6 @@ void dump_sblock_pattern(
 void print_rr_node_indices(int L_nx, int L_ny, t_ivec ***L_rr_node_indices);
 void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, t_ivec ***L_rr_node_indices);
 
-#ifdef TORO_FABRIC_SWITCHBOX_OVERRIDE
 //===========================================================================//
 #include "TFH_FabricSwitchBoxHandler.h"
 
@@ -231,9 +230,7 @@ void override_sblock_pattern_reset_side_track(
 int override_sblock_pattern_map_side_mode(
 		INP TC_SideMode_t sideMode);
 //===========================================================================//
-#endif
 
-#ifdef TORO_FABRIC_CONNECTIONBLOCK_OVERRIDE
 //===========================================================================//
 #include "TFH_FabricConnectionBlockHandler.h"
 
@@ -241,6 +238,5 @@ void override_cblock_edge_lists(
 		int num_rr_nodes, 
 		t_rr_node *rr_node );
 //===========================================================================//
-#endif
 
 #endif
