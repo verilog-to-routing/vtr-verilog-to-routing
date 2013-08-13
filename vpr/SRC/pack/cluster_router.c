@@ -18,6 +18,8 @@ using namespace std;
 
 #include <assert.h>
 #include <vector>
+#include <map>
+#include <queue>
 #include <cmath>
 
 #include "util.h"
@@ -29,6 +31,11 @@ using namespace std;
 #include "lb_type_rr_graph.h"
 #include "cluster_router.h"
 
+/*****************************************************************************************
+* Internal data structures
+******************************************************************************************/
+
+enum e_commit_remove {RT_COMMIT, RT_REMOVE};
 
 /*****************************************************************************************
 * Internal functions declarations
@@ -38,6 +45,16 @@ static void free_lb_trace(t_lb_trace *lb_trace);
 static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, int iport, int ipin, t_model_ports *model_port);
 static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iatom, int iport, int ipin, t_model_ports *model_port);
 
+
+static void commit_remove_rt(t_lb_router_data *router_data, int inet, e_commit_remove op);
+static void add_source_to_rt(t_lb_router_data *router_data, int inet);
+static void expand_rt(t_lb_router_data *router_data, int inet, vector<int> &explored_nodes, 
+	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq);
+static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node, 
+	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq);
+static void add_to_rt(t_lb_trace *rt, int node_index, t_explored_node_tb *node_traceback);
+static boolean is_route_success(t_lb_router_data *router_data);
+static t_lb_trace *find_node_in_rt(t_lb_trace *rt, int rt_index);
 /*****************************************************************************************
 * Constructor/Destructor functions 
 ******************************************************************************************/
@@ -260,9 +277,85 @@ void restore_previous_route(INOUTP t_lb_router_data *router_data) {
 }
 
 
-/* Attempt to route routing driver/targets on the current architecture */
+/* Attempt to route routing driver/targets on the current architecture 
+   Follows pathfinder negotiated congestion algorithm
+*/
 boolean try_route(INOUTP t_lb_router_data *router_data) {
-	return FALSE;
+	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
+	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
+	boolean is_routed = FALSE;
+	boolean is_impossible = FALSE;
+	t_expansion_node exp_node;
+
+	/* Stores state info during route */
+	priority_queue <t_expansion_node, vector <t_expansion_node>, compare_expansion_node> pq;	/* Priority queue used to find lowest cost next node to explore */
+	vector<int> explored_nodes;				/* List of already explored nodes to clear incrementally later */
+	t_explored_node_tb *node_traceback = new t_explored_node_tb[lb_type_graph.size()]; /* Store traceback info for explored nodes */
+	
+	/*	Iteratively remove congestion until a successful route is found.  
+		Cap the total number of iterations tried so that if a solution does not exist, then the router won't run indefinately */
+	for(int iter = 0; iter < router_data->params.max_iterations && is_routed == FALSE && is_impossible == FALSE; iter++) {
+
+		/* Iterate across all nets internal to logic block */
+		for(unsigned int inet = 0; inet < lb_nets.size() && is_impossible == FALSE; inet++) {
+			commit_remove_rt(router_data, inet, RT_REMOVE);
+			add_source_to_rt(router_data, inet);
+
+			/* Route each sink of net */
+			for(unsigned int itarget = 1; itarget < lb_nets[inet].terminals.size() && is_impossible == FALSE; itarget++) {
+				/* Get lowest cost next node, repeat until a path is found or if it is impossible to route */
+				expand_rt(router_data, inet, explored_nodes, pq);
+				do {
+					if(pq.empty()) {
+						/* No connection possible */
+						is_impossible = TRUE;
+					} else {
+						exp_node = pq.top();
+						pq.pop();
+						if(exp_node.node_index != lb_nets[inet].terminals[itarget] && 
+							node_traceback[exp_node.node_index].isExplored == FALSE) {
+							/* First time node is popped implies path to this node is the lowest cost.
+							   If the node is popped a second time, then the path to that node is higher than this path so
+							   ignore.
+							*/
+							node_traceback[exp_node.node_index].isExplored = TRUE;
+							node_traceback[exp_node.node_index].prev_index = exp_node.prev_index;
+							explored_nodes.push_back(exp_node.node_index);		
+							expand_node(router_data, exp_node, pq);
+						}
+					}
+				} while(exp_node.node_index == lb_nets[inet].terminals[itarget] && is_impossible == FALSE);
+
+				if(exp_node.node_index == lb_nets[inet].terminals[itarget]) {
+					/* Net terminal is routed, add this to the route tree, clear data structures, and keep going */
+					add_to_rt(lb_nets[inet].rt_tree, exp_node.node_index, node_traceback);
+
+					/* Clear explored nodes, do incrementally */
+					for(unsigned int iexp = 0; iexp < explored_nodes.size(); iexp++) {
+						node_traceback[iexp].isExplored = FALSE;
+						node_traceback[iexp].prev_index = OPEN;
+					}
+
+					/* jedit error checking, delete me later */
+					for(unsigned int iexp = 0; iexp < lb_type_graph.size(); iexp++) {
+						assert(node_traceback[iexp].isExplored == FALSE && node_traceback[iexp].prev_index == OPEN);
+					}
+				}
+				pq = priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node>(); /* Reset priority queue */
+				explored_nodes.clear(); /* Clear list of explored nodes */
+			}
+			commit_remove_rt(router_data, inet, RT_COMMIT);
+		}
+		if(is_impossible == FALSE) {
+			is_routed = is_route_success(router_data);
+		} else {
+			is_routed = FALSE;
+		}
+	}
+
+
+	delete [] node_traceback;
+	return is_routed;
 }
 
 /*****************************************************************************************
@@ -483,4 +576,80 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iato
 		lb_nets[ipos] = lb_nets.back();
 		lb_nets.pop_back();
 	}
+}
+
+/* Commit or remove route tree from currently routed solution */
+static void commit_remove_rt(t_lb_router_data *router_data, int inet, e_commit_remove op) {
+}
+
+/* At source mode as starting point to existing route tree */
+static void add_source_to_rt(t_lb_router_data *router_data, int inet) {
+}
+
+/* Expand all nodes found in route tree into priority queue */
+static void expand_rt(t_lb_router_data *router_data, int inet, vector<int> &explored_nodes, 
+	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq) {
+}
+
+/* Expand all nodes found in route tree into priority queue */
+static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node, 
+	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq) {
+}
+
+/* Add new path from existing route tree to target sink */
+static void add_to_rt(t_lb_trace *rt, int node_index, t_explored_node_tb *node_traceback) {
+	vector <int> trace_forward;	
+	int rt_index, cur_index;
+	t_lb_trace *link_node;
+	t_lb_trace curr_node;
+
+
+	/* Store path all the way back to route tree */
+	rt_index = node_index;
+	while(node_traceback[rt_index].isExplored == TRUE) {
+		trace_forward.push_back(rt_index);
+		rt_index = node_traceback[rt_index].prev_index;
+	}
+
+	/* Find rt_index on the route tree */
+	link_node = find_node_in_rt(rt, rt_index);
+	assert(link_node != NULL);
+
+	/* Add path to root tree */
+	trace_forward.pop_back();
+	while(!trace_forward.empty()) {
+		cur_index = trace_forward.back();
+		curr_node.current_node = cur_index;
+		link_node->next_nodes.push_back(curr_node);
+		trace_forward.pop_back();
+	}
+}
+
+/* Determine if a completed route is valid.  A successful route has no congestion (ie. no routing resource is used by two nets). */
+static boolean is_route_success(t_lb_router_data *router_data) {
+	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
+
+	for(unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
+		if(router_data->lb_rr_node_stats[inode].occ > lb_type_graph[inode].capacity) {
+			return FALSE;
+		}
+	}
+
+	return TRUE;
+}
+
+/* Given a route tree and an index of a node on the route tree, return a pointer to the trace corresponding to that index */
+static t_lb_trace *find_node_in_rt(t_lb_trace *rt, int rt_index) {
+	t_lb_trace *cur;
+	if(rt->current_node == rt_index) {
+		return rt;
+	} else {
+		for(unsigned int i = 0; i < rt->next_nodes.size(); i++) {
+			cur = find_node_in_rt(&rt->next_nodes[i], rt_index);
+			if(cur != NULL) {
+				return cur;
+			}
+		}
+	}
+	return NULL;
 }

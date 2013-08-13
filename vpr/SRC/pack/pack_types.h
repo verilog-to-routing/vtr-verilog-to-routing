@@ -130,8 +130,6 @@ struct t_lb_traceback {
 /* Describes the status of a logic block routing resource node for a given logic block instance */
 struct t_lb_rr_node_stats {
 	int occ;								/* Number of nets currently using this lb_rr_node */
-	vector<t_lb_traceback> tracebacks;		/* Nets that share this node in their routetree */
-	
 	int mode;								/* Mode that this rr_node is set to */
 	
 	float current_cost;		/* Current cost of using this node */
@@ -153,7 +151,6 @@ struct t_lb_rr_node_stats {
 */
 struct t_lb_trace {
 	int	current_node;					/* current t_lb_type_rr_node used by net */
-	int num_fanout;						/* number of other nodes used by net that are directly driven by the current node*/
 	vector<t_lb_trace> next_nodes;		/* index of previous edge that drives current node */	
 };
 
@@ -168,6 +165,42 @@ struct t_intra_lb_net {
 		atom_net_index = OPEN;
 		rt_tree = NULL;
 		saved_rt_tree = NULL;
+	}
+};
+
+/* Stores tuning parameters used by intra-logic block router */
+struct t_lb_router_params {
+	int max_iterations;
+	float pres_fac;
+	float hist_fac;
+};
+
+/* Node expanded by router */
+struct t_expansion_node {
+	int node_index;
+	int prev_index;		
+	float cost;
+};
+
+class compare_expansion_node {
+    public:
+    bool operator()(t_expansion_node& e1, t_expansion_node& e2) // Returns true if t1 is earlier than t2
+    {
+       if (e1.cost < e2.cost) {
+		   return true;
+	   }
+	   return false;
+    }
+};
+
+/* Stores explored nodes by router */
+struct t_explored_node_tb {
+	int prev_index;			/* Prevous node that drives this one */
+	boolean isExplored;		/* Whether or not this node has been explored */
+
+	t_explored_node_tb() {
+		prev_index = OPEN;
+		isExplored = FALSE;
 	}
 };
 
@@ -186,12 +219,19 @@ struct t_lb_router_data {
 	/* Current type */
 	t_type_ptr lb_type;
 
+	/* Parameters used by router */
+	t_lb_router_params params;
+
 	t_lb_router_data() {
 		lb_type_graph = NULL;	
 		lb_rr_node_stats = NULL;	
 		intra_lb_nets = NULL;
 		is_routed = FALSE;
 		lb_type = NULL;
+
+		params.max_iterations = 10;
+		params.pres_fac = 1;
+		params.hist_fac = 0.1;
 	}
 };
 
