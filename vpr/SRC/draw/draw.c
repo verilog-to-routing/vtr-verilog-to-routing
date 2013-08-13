@@ -114,15 +114,6 @@ typedef struct {
 	t_draw_rr_node *draw_rr_node;
 } t_draw_state;
 
-/* Stores the minimum and maximum coordinates for a channel wire. The function
- * draw_get_rr_chan_bbox() to compute the coordinates for a particular node.
- */
-typedef struct {
-	float xleft;
-	float xright;
-	float ybottom;
-	float ytop;
-} t_draw_rr_chan_bbox;
 
 /****************** Variables local to this module. *************************/
 
@@ -154,7 +145,7 @@ static void draw_rr_edges(int from_node);
 static void draw_rr_pin(int inode, enum color_types color);
 static void draw_rr_chanx(int inode, int itrack, enum color_types color);
 static void draw_rr_chany(int inode, int itrack, enum color_types color);
-static t_draw_rr_chan_bbox draw_get_rr_chan_bbox(int inode);
+static t_draw_bbox draw_get_rr_chan_bbox(int inode);
 static void draw_get_rr_pin_coords(int inode, int iside, int width_offset, 
 								   int height_offset, float *xcen, float *ycen);
 static void draw_pin_to_chan_edge(int pin_node, int chan_node);
@@ -475,6 +466,8 @@ void alloc_draw_structs(void) {
 	draw_coords.tile_x = (float *) my_malloc((nx + 2) * sizeof(float));
 	draw_coords.tile_y = (float *) my_malloc((ny + 2) * sizeof(float));
 
+	draw_internal_alloc_blk();
+
 	draw_state.net_color = (enum color_types *) my_malloc(
 								num_nets * sizeof(enum color_types));
 
@@ -607,7 +600,7 @@ static void drawplace(void) {
 					x1 = draw_coords.tile_x[i];
 					y1 = draw_coords.tile_y[j] + (k * sub_tile_step);
 					x2 = x1 + draw_coords.tile_width;
-					y2 = y1 + sub_tile_step;
+					y2 = draw_coords.tile_y[j + height - 1] + ((k + 1) * sub_tile_step);
 				}
 
 				/* Look at the tile at start of large block */
@@ -862,7 +855,7 @@ static void draw_rr_chanx(int inode, int itrack, enum color_types color) {
 	enum {
 		BUFFSIZE = 80
 	};
-	t_draw_rr_chan_bbox bound_box;
+	t_draw_bbox bound_box;
 	float wire_start_y1, wire_start_y2; 
 	int k; 
 	char str[BUFFSIZE];
@@ -944,7 +937,7 @@ static void draw_rr_chany(int inode, int itrack, enum color_types color) {
 	enum {
 		BUFFSIZE = 80
 	};
-	t_draw_rr_chan_bbox bound_box;
+	t_draw_bbox bound_box;
 	float wire_start_x1, wire_start_x2; 
 	int k; 
 	char str[BUFFSIZE];
@@ -1212,7 +1205,7 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 	 * y-directed channel.                                                    */
 
 	float x1, y1, x2, y2;
-	t_draw_rr_chan_bbox chanx_bbox, chany_bbox;
+	t_draw_bbox chanx_bbox, chany_bbox;
 	int chanx_xlow, chany_x, chany_ylow, chanx_y;
 
 	/* Get the coordinates of the CHANX and CHANY segments. */
@@ -1289,7 +1282,7 @@ static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
 	 * drawing.                                                                 */
 
 	float x1, x2, y1, y2;
-	t_draw_rr_chan_bbox from_chan, to_chan;
+	t_draw_bbox from_chan, to_chan;
 	int from_xlow, to_xlow, from_xhigh, to_xhigh;
 	
 	// Get the coordinates of the channel wires.
@@ -1378,7 +1371,7 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 	 * drawing.                                                                 */
 
 	float x1, x2, y1, y2;
-	t_draw_rr_chan_bbox from_chan, to_chan;
+	t_draw_bbox from_chan, to_chan;
 	int from_ylow, to_ylow, from_yhigh, to_yhigh;
 
 	// Get the coordinates of the channel wires.
@@ -1471,8 +1464,8 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
  * wire has been clicked on by the user. 
  * TODO: Fix this for global routing, currently for detailed only. 
  */
-static t_draw_rr_chan_bbox draw_get_rr_chan_bbox (int inode) {
-	t_draw_rr_chan_bbox bound_box;
+static t_draw_bbox draw_get_rr_chan_bbox (int inode) {
+	t_draw_bbox bound_box;
 
 	switch (rr_node[inode].type) {
 		case CHANX:
@@ -1940,7 +1933,7 @@ static void draw_highlight_fan_in_fan_out(int hit_node) {
 static int draw_check_rr_node_hit (float click_x, float click_y) {
 	int inode;
 	int hit_node = OPEN;
-	t_draw_rr_chan_bbox bound_box;
+	t_draw_bbox bound_box;
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
 		switch (rr_node[inode].type) {
@@ -2286,7 +2279,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 	int grid_x, grid_y, pin_num, chan_xlow, chan_ylow;
 	float x1, x2, y1, y2;
 	int start, end, i;
-	t_draw_rr_chan_bbox chan_bbox;
+	t_draw_bbox chan_bbox;
 	float xend, yend;
 	float draw_pin_off;
 	enum e_direction direction;

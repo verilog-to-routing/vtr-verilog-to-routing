@@ -8,6 +8,30 @@
 #ifndef DRAW_GLOBAL_H
 #define DRAW_GLOBAL_H
 
+#include <vector>
+#include <string>
+using namespace std;
+
+/* Stores the minimum and maximum coordinates for a channel wire. The function
+ * draw_get_rr_chan_bbox() to compute the coordinates for a particular node.
+ */
+typedef struct {
+	float xleft;
+	float xright;
+	float ybottom;
+	float ytop;
+} t_draw_bbox;
+
+typedef struct {
+	float blk_width;
+	t_draw_bbox blk_bbox;
+} t_draw_pb_hierarchy;
+
+typedef struct {
+	string blk_type;
+	vector<t_draw_pb_hierarchy> *hierarchy;
+} t_draw_pb_info;
+
 /* Structure used to store coordinates and dimensions for 
  * grid tiles and logic blocks in the FPGA. 
  * tile_x: x-coordinate of the left and bottom corner
@@ -22,6 +46,7 @@
 typedef struct {
 	float *tile_x, *tile_y;
 	float tile_width, pin_size;
+	vector<t_draw_pb_info> *subblk_info;
 } t_draw_coords;
 extern t_draw_coords draw_coords;
 
