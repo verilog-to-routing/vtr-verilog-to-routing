@@ -81,7 +81,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\libarchfpga\include;SRC\libcommon_c\pcre;SRC\util;SRC\timing;SRC\route;SRC\place;SRC\power;SRC\pack;SRC\draw;SRC\base;../libcommon_c++/SRC/TIO_InputOutputHandlers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libarchfpga\include;SRC\libcommon_c\pcre;SRC\util;SRC\timing;SRC\route;SRC\place;SRC\power;SRC\pack;SRC\draw;SRC\base;..\libcommon_c++\SRC\TFH_FabricHandlers;..\libcommon_c++\SRC\TCH_CircuitHandlers;..\libcommon_c++\SRC\TNO_NetObjects;..\libcommon_c++\SRC\TPO_PhysicalObjects;..\libcommon_c++\SRC\TLO_LogicalObjects;..\libcommon_c++\SRC\TGS_GeometricShapes;..\libcommon_c++\SRC\TGO_GeometricObjects;..\libcommon_c++\SRC\TIO_InputOutputHandlers;..\libcommon_c++\SRC\TC_Common;..\libcommon_c\pcre\SRC</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;_CONSOLE;CREATE_ECHO_FILES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <SmallerTypeCheck>true</SmallerTypeCheck>
@@ -327,11 +327,11 @@
     <ProjectReference Include="..\libarchfpga\libarchfpga.vcxproj">
       <Project>{cbba36e0-cd88-4586-afb6-a0e603d16796}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\libcommon_c\pcre\pcre.vcxproj">
-      <Project>{f15a8901-660a-4ffe-890e-74ccc94e862a}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\libcommon_c++\printhandler.vcxproj">
       <Project>{a5092a9c-6dfd-4dec-9951-51606f5eaf3b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\libcommon_c\pcre\libpcre.vcxproj">
+      <Project>{e69f5499-a0d1-d11d-7766-3677d8fa2507}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
