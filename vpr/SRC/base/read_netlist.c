@@ -32,11 +32,9 @@ static const char* netlist_file_name = NULL;
 static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 		INOUTP t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping, INP struct s_hash **vpack_net_hash);
 
-#ifdef TORO_REGION_PLACEMENT_ENABLE
 //===========================================================================//
 static void processRegions(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index);
 //===========================================================================//
-#endif
 
 static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, INOUTP t_pb* pb,
 		INOUTP t_rr_node *rr_graph, INOUTP t_pb **rr_node_to_pb_mapping, INOUTP int *num_primitives, 
@@ -376,13 +374,11 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, 
 	processPorts(Cur, pb, rr_graph, rr_node_to_pb_mapping, vpack_net_hash);
 	FreeNode(Cur);
 
-#ifdef TORO_REGION_PLACEMENT_ENABLE
 	Cur = FindElement(Parent, "regions", FALSE);
 	if(Cur) {
 		processRegions(Cur, cb, index);
 		FreeNode(Cur);
 	}
-#endif
 
 	pb_type = pb->pb_graph_node->pb_type;
 	if (pb_type->num_modes == 0) {
@@ -829,7 +825,6 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 	}
 }
 
-#ifdef TORO_REGION_PLACEMENT_ENABLE
 //===========================================================================//
 static void processRegions(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index) {
 
@@ -857,7 +852,6 @@ static void processRegions(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int in
 	}
 }
 //===========================================================================//
-#endif
 
 /**  
  * This function updates the nets list and the connections between that list and the complex block
