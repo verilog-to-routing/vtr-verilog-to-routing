@@ -387,14 +387,10 @@ void TCH_RegionPlaceHandler_c::UpdatePlacementRegionLists_(
             TPO_HierInstMap_c hierInstMap( pszExpandedName );
             if( hierInstMapList.Find( hierInstMap, &hierInstMap ))
             {
-#ifdef TORO_REGION_PLACEMENT_ENABLE
                t_block* vpr_blockArray = this->vpr_data_.vpr_blockArray;
                int blockIndex = static_cast< int >( hierInstMap.GetInstIndex( ));
                t_block* pvpr_block = &vpr_blockArray[blockIndex];
                pvpr_block->placement_region_list.Add( regionList );
-#else
-               regionList.IsValid( );
-#endif
             }
          }
       }
