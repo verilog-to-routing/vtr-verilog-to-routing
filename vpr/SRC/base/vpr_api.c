@@ -56,7 +56,7 @@ static void free_circuit(void);
 
 static boolean has_printhandler_pre_vpr = FALSE;
 
-/* For resync of clustered netlist to the post-route solution.  This function adds local nets to cluster */
+/* For resync of clustered netlist to the post-route solution. This function adds local nets to cluster */
 static void reload_intra_cluster_nets(t_pb *pb);
 static t_trace *alloc_and_load_final_routing_trace();
 static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net);
@@ -65,8 +65,7 @@ static void resync_post_route_netlist();
 static boolean clay_logical_equivalence_handling(const t_arch *arch);
 static void clay_lut_input_rebalancing(int iblock, t_pb *pb);
 static void clay_reload_ble_locations(int iblock);
-static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
-		t_pb *pb);
+static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,	t_pb *pb);
 
 /* Local subroutines end */
 
@@ -86,6 +85,7 @@ void vpr_print_title(void) {
 
 /* Display help screen */
 void vpr_print_usage(void) {
+
 	vpr_printf_info("Usage:  vpr fpga_architecture.xml circuit_name [Options ...]\n");
 	vpr_printf_info("\n");
 	vpr_printf_info("General Options:  [--nodisp] [--auto <int>] [--pack]\n");
@@ -145,21 +145,22 @@ void vpr_print_usage(void) {
  3. Read Circuit
  4. Sanity check all three
  */
-void vpr_init(INP int argc, INP char **argv, OUTP t_options *options,
-		OUTP t_vpr_setup *vpr_setup, OUTP t_arch *arch) {
-	char* pszLogFileName = "vpr_stdout.log";
-	unsigned char enableTimeStamps = 1;
-	unsigned char enableFileLines = 1;
-
-	unsigned long maxWarningCount = 100000;
-	unsigned long maxErrorCount = 1000;
+void vpr_init(INP int argc, INP char **argv, 
+		OUTP t_options *options,
+		OUTP t_vpr_setup *vpr_setup, 
+		OUTP t_arch *arch) {
 
 	if (PrintHandlerExists() == 1) {
 		has_printhandler_pre_vpr = TRUE;
 	} else {
 		has_printhandler_pre_vpr = FALSE;
-	}
-	if (has_printhandler_pre_vpr == FALSE) {
+
+		char* pszLogFileName = "vpr_stdout.log";
+		unsigned char enableTimeStamps = 1;
+		unsigned char enableFileLines = 1;
+		unsigned long maxWarningCount = 100000;
+		unsigned long maxErrorCount = 1000;
+
 		PrintHandlerNew(pszLogFileName);
 		PrintHandlerInit(enableTimeStamps, enableFileLines, maxWarningCount, maxErrorCount);
 	}
@@ -167,56 +168,62 @@ void vpr_init(INP int argc, INP char **argv, OUTP t_options *options,
 	/* Print title message */
 	vpr_print_title();
 
-	/* Print usage message if no args */
-	if (argc < 3) {
+	if (argc >= 3) {
+
+		memset(options, 0, sizeof(t_options));
+		memset(vpr_setup, 0, sizeof(t_vpr_setup));
+		memset(arch, 0, sizeof(t_arch));
+
+		/* Read in user options */
+		ReadOptions(argc, argv, options);
+
+		/* Timing option priorities */
+		vpr_setup->TimingEnabled = IsTimingEnabled(options);
+
+		/* Determine whether echo is on or off */
+		setEchoEnabled(IsEchoEnabled(options));
+		SetPostSynthesisOption(IsPostSynthesisEnabled(options));
+		vpr_setup->constant_net_delay = options->constant_net_delay;
+
+		/* Read in arch and circuit */
+		SetupVPR(options, vpr_setup->TimingEnabled, TRUE, &vpr_setup->FileNameOpts,
+				arch, &vpr_setup->Operation, &vpr_setup->user_models,
+				&vpr_setup->library_models, &vpr_setup->PackerOpts,
+				&vpr_setup->PlacerOpts, &vpr_setup->AnnealSched,
+				&vpr_setup->RouterOpts, &vpr_setup->RoutingArch, 
+				&vpr_setup->PackerRRGraph, &vpr_setup->Segments, 
+				&vpr_setup->Timing, &vpr_setup->ShowGraphics,
+				&vpr_setup->GraphPause, &vpr_setup->PowerOpts);
+
+		/* Check inputs are reasonable */
+		CheckOptions(*options, vpr_setup->TimingEnabled);
+		CheckArch(*arch, vpr_setup->TimingEnabled);
+
+		/* Verify settings don't conflict or otherwise not make sense */
+		CheckSetup(vpr_setup->Operation, vpr_setup->PlacerOpts,
+				vpr_setup->AnnealSched, vpr_setup->RouterOpts,
+				vpr_setup->RoutingArch, vpr_setup->Segments, vpr_setup->Timing,
+				arch->Chans);
+
+		/* flush any messages to user still in stdout that hasn't gotten displayed */
+		fflush(stdout);
+
+		/* Read blif file and sweep unused components */
+		read_and_process_blif(vpr_setup->PackerOpts.blif_file_name,
+				vpr_setup->PackerOpts.sweep_hanging_nets_and_inputs,
+				vpr_setup->user_models, vpr_setup->library_models,
+				vpr_setup->PowerOpts.do_power, vpr_setup->FileNameOpts.ActFile);
+		fflush(stdout);
+
+		ShowSetup(*options, *vpr_setup);
+
+	} else {
+		/* Print usage message if no args */
 		vpr_print_usage();
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+		vpr_printf_error(__FILE__, __LINE__, 
 			"Missing arguments, see above and try again!\n");
+		exit(1);
 	}
-
-	memset(options, 0, sizeof(t_options));
-	memset(vpr_setup, 0, sizeof(t_vpr_setup));
-	memset(arch, 0, sizeof(t_arch));
-
-	/* Read in user options */
-	ReadOptions(argc, argv, options);
-	/* Timing option priorities */
-	vpr_setup->TimingEnabled = IsTimingEnabled(options);
-	/* Determine whether echo is on or off */
-	setEchoEnabled(IsEchoEnabled(options));
-	SetPostSynthesisOption(IsPostSynthesisEnabled(options));
-	vpr_setup->constant_net_delay = options->constant_net_delay;
-
-	/* Read in arch and circuit */
-	SetupVPR(options, vpr_setup->TimingEnabled, TRUE, &vpr_setup->FileNameOpts,
-			arch, &vpr_setup->Operation, &vpr_setup->user_models,
-			&vpr_setup->library_models, &vpr_setup->PackerOpts,
-			&vpr_setup->PlacerOpts, &vpr_setup->AnnealSched,
-			&vpr_setup->RouterOpts, &vpr_setup->RoutingArch, &vpr_setup->PackerRRGraph,
-			&vpr_setup->Segments, &vpr_setup->Timing, &vpr_setup->ShowGraphics,
-			&vpr_setup->GraphPause, &vpr_setup->PowerOpts);
-
-	/* Check inputs are reasonable */
-	CheckOptions(*options, vpr_setup->TimingEnabled);
-	CheckArch(*arch, vpr_setup->TimingEnabled);
-
-	/* Verify settings don't conflict or otherwise not make sense */
-	CheckSetup(vpr_setup->Operation, vpr_setup->PlacerOpts,
-			vpr_setup->AnnealSched, vpr_setup->RouterOpts,
-			vpr_setup->RoutingArch, vpr_setup->Segments, vpr_setup->Timing,
-			arch->Chans);
-
-	/* flush any messages to user still in stdout that hasn't gotten displayed */
-	fflush(stdout);
-
-	/* Read blif file and sweep unused components */
-	read_and_process_blif(vpr_setup->PackerOpts.blif_file_name,
-			vpr_setup->PackerOpts.sweep_hanging_nets_and_inputs,
-			vpr_setup->user_models, vpr_setup->library_models,
-			vpr_setup->PowerOpts.do_power, vpr_setup->FileNameOpts.ActFile);
-	fflush(stdout);
-
-	ShowSetup(*options, *vpr_setup);
 }
 
 /* 
@@ -224,15 +231,12 @@ void vpr_init(INP int argc, INP char **argv, OUTP t_options *options,
  * Allocs globals: chan_width_x, chan_width_y, grid
  * Depends on num_clbs, pins_per_clb */
 void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
-	int *num_instances_type, *num_blocks_type;
-	int i;
-	int current, high, low;
-	boolean fit;
 
 	/* Read in netlist file for placement and routing */
 	if (vpr_setup.FileNameOpts.NetFile) {
-		read_netlist(vpr_setup.FileNameOpts.NetFile, &Arch, &num_blocks, &block,
-				&num_nets, &clb_net);
+		read_netlist(vpr_setup.FileNameOpts.NetFile, &Arch, 
+				&num_blocks, &block, &num_nets, &clb_net);
+
 		/* This is done so that all blocks have subblocks and can be treated the same */
 		check_netlist();
 	}
@@ -241,23 +245,24 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 	printClusteredNetlistStats();
 
 	if (vpr_setup.Operation == TIMING_ANALYSIS_ONLY) {
-		do_constant_net_delay_timing_analysis(vpr_setup.Timing,
-				vpr_setup.constant_net_delay);
+		do_constant_net_delay_timing_analysis(vpr_setup.Timing,	vpr_setup.constant_net_delay);
 	} else {
-		current = nint((float)sqrt((float)num_blocks)); /* current is the value of the smaller side of the FPGA */
-		low = 1;
-		high = -1;
+		int current = nint((float)sqrt((float)num_blocks)); /* current is the value of the smaller side of the FPGA */
+		int low = 1;
+		int high = -1;
 
-		num_instances_type = (int*) my_calloc(num_types, sizeof(int));
-		num_blocks_type = (int*) my_calloc(num_types, sizeof(int));
+		int *num_instances_type = (int*) my_calloc(num_types, sizeof(int));
+		int *num_blocks_type = (int*) my_calloc(num_types, sizeof(int));
 
-		for (i = 0; i < num_blocks; i++) {
+		for (int i = 0; i < num_blocks; ++i) {
 			num_blocks_type[block[i].type->index]++;
 		}
 
 		if (Arch.clb_grid.IsAuto) {
+
 			/* Auto-size FPGA, perform a binary search */
 			while (high == -1 || low < high) {
+
 				/* Generate grid */
 				if (Arch.clb_grid.Aspect >= 1.0) {
 					ny = current;
@@ -273,8 +278,8 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 				freeGrid();
 
 				/* Test if netlist fits in grid */
-				fit = TRUE;
-				for (i = 0; i < num_types; i++) {
+				boolean fit = TRUE;
+				for (int i = 0; i < num_types; ++i) {
 					if (num_blocks_type[i] > num_instances_type[i]) {
 						fit = FALSE;
 						break;
@@ -302,6 +307,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 					current = low + ((high - low) / 2);
 				}
 			}
+
 			/* Generate grid */
 			if (Arch.clb_grid.Aspect >= 1.0) {
 				ny = current;
@@ -321,24 +327,21 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 		vpr_printf_info("The circuit will be mapped into a %d x %d array of clbs.\n", nx, ny);
 
 		/* Test if netlist fits in grid */
-		fit = TRUE;
-		for (i = 0; i < num_types; i++) {
+		for (int i = 0; i < num_types; ++i) {
 			if (num_blocks_type[i] > num_instances_type[i]) {
-				fit = FALSE;
-				break;
+
+				vpr_printf_error(__FILE__, __LINE__,
+						"Not enough physical locations for type %s, "
+						"number of blocks is %d but number of locations is %d.\n",
+						type_descriptors[i].name, num_blocks_type[i],
+						num_instances_type[i]);
+				exit(1);
 			}
-		}
-		if (!fit) {
-			vpr_printf_error(__FILE__, __LINE__,
-					"Not enough physical locations for type %s, number of blocks is %d but number of locations is %d.\n",
-					type_descriptors[i].name, num_blocks_type[i],
-					num_instances_type[i]);
-			exit(1);
 		}
 
 		vpr_printf_info("\n");
 		vpr_printf_info("Resource usage...\n");
-		for (i = 0; i < num_types; i++) {
+		for (int i = 0; i < num_types; ++i) {
 			vpr_printf_info("\tNetlist      %d\tblocks of type: %s\n",
 					num_blocks_type[i], type_descriptors[i].name);
 			vpr_printf_info("\tArchitecture %d\tblocks of type: %s\n",
@@ -356,39 +359,42 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 }
 
 void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
-	clock_t begin, end;
-	float inter_cluster_delay = UNDEFINED, Tdel_opin_switch, Tdel_wire_switch,
-			Tdel_wtoi_switch, R_opin_switch, R_wire_switch, R_wtoi_switch,
-			Cout_opin_switch, Cout_wire_switch, Cout_wtoi_switch,
-			opin_switch_del, wire_switch_del, wtoi_switch_del, Rmetal, Cmetal,
-			first_wire_seg_delay, second_wire_seg_delay;
-	begin = clock();
+
+	clock_t begin = clock();
 	vpr_printf_info("Initialize packing.\n");
 
 	/* If needed, estimate inter-cluster delay. Assume the average routing hop goes out of 
 	 a block through an opin switch to a length-4 wire, then through a wire switch to another
 	 length-4 wire, then through a wire-to-ipin-switch into another block. */
 
+	float inter_cluster_delay = UNDEFINED;
 	if (vpr_setup.PackerOpts.timing_driven
 			&& vpr_setup.PackerOpts.auto_compute_inter_cluster_net_delay) {
-		opin_switch_del = get_switch_info(arch.Segments[0].opin_switch,
+
+		float Tdel_opin_switch, R_opin_switch, Cout_opin_switch;
+		float opin_switch_del = get_switch_info(arch.Segments[0].opin_switch,
 				Tdel_opin_switch, R_opin_switch, Cout_opin_switch);
-		wire_switch_del = get_switch_info(arch.Segments[0].wire_switch,
+
+		float Tdel_wire_switch, R_wire_switch, Cout_wire_switch;
+		float wire_switch_del = get_switch_info(arch.Segments[0].wire_switch,
 				Tdel_wire_switch, R_wire_switch, Cout_wire_switch);
-		wtoi_switch_del = get_switch_info(
-				vpr_setup.RoutingArch.wire_to_ipin_switch, Tdel_wtoi_switch,
-				R_wtoi_switch, Cout_wtoi_switch); /* wire-to-ipin switch */
-		Rmetal = arch.Segments[0].Rmetal;
-		Cmetal = arch.Segments[0].Cmetal;
+
+		float Tdel_wtoi_switch, R_wtoi_switch, Cout_wtoi_switch;
+		float wtoi_switch_del = get_switch_info(
+				vpr_setup.RoutingArch.wire_to_ipin_switch, 
+				Tdel_wtoi_switch, R_wtoi_switch, Cout_wtoi_switch);
+
+		float Rmetal = arch.Segments[0].Rmetal;
+		float Cmetal = arch.Segments[0].Cmetal;
 
 		/* The delay of a wire with its driving switch is the switch delay plus the 
 		 product of the equivalent resistance and capacitance experienced by the wire. */
 
 #define WIRE_SEGMENT_LENGTH 4
-		first_wire_seg_delay = opin_switch_del
+		float first_wire_seg_delay = opin_switch_del
 				+ (R_opin_switch + Rmetal * WIRE_SEGMENT_LENGTH / 2)
 						* (Cout_opin_switch + Cmetal * WIRE_SEGMENT_LENGTH);
-		second_wire_seg_delay = wire_switch_del
+		float second_wire_seg_delay = wire_switch_del
 				+ (R_wire_switch + Rmetal * WIRE_SEGMENT_LENGTH / 2)
 						* (Cout_wire_switch + Cmetal * WIRE_SEGMENT_LENGTH);
 		inter_cluster_delay = 4
@@ -398,7 +404,8 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 
 	try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models,
 			vpr_setup.library_models, vpr_setup.Timing, inter_cluster_delay);
-	end = clock();
+
+	clock_t end = clock();
 #ifdef CLOCKS_PER_SEC
 	vpr_printf_info("Packing took %g seconds.\n", (float) (end - begin) / CLOCKS_PER_SEC);
 	vpr_printf_info("Packing completed.\n");
@@ -437,25 +444,22 @@ boolean vpr_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 
 /* Free architecture data structures */
 void free_arch(t_arch* Arch) {
-	int i;
-	t_model *model, *prev;
-	t_model_ports *port, *prev_port;
-	struct s_linked_vptr *vptr, *vptr_prev;
 
 	freeGrid();
 	free(chan_width.x_list);
 	free(chan_width.y_list);
+
 	chan_width.x_list = chan_width.y_list = NULL;
 	chan_width.max = chan_width.x_max = chan_width.y_max = chan_width.x_min = chan_width.y_min = 0;
 
-	for (i = 0; i < Arch->num_switches; i++) {
+	for (int i = 0; i < Arch->num_switches; ++i) {
 		if (Arch->Switches->name != NULL) {
 			free(Arch->Switches[i].name);
 		}
 	}
 	free(Arch->Switches);
 	free(switch_inf);
-	for (i = 0; i < Arch->num_segments; i++) {
+	for (int i = 0; i < Arch->num_segments; ++i) {
 		if (Arch->Segments->cb != NULL) {
 			free(Arch->Segments[i].cb);
 		}
@@ -464,47 +468,47 @@ void free_arch(t_arch* Arch) {
 		}
 	}
 	free(Arch->Segments);
-	model = Arch->models;
+	t_model *model = Arch->models;
 	while (model) {
-		port = model->inputs;
-		while (port) {
-			prev_port = port;
-			port = port->next;
+		t_model_ports *input_port = model->inputs;
+		while (input_port) {
+			t_model_ports *prev_port = input_port;
+			input_port = input_port->next;
 			free(prev_port->name);
 			free(prev_port);
 		}
-		port = model->outputs;
-		while (port) {
-			prev_port = port;
-			port = port->next;
+		t_model_ports *output_port = model->outputs;
+		while (output_port) {
+			t_model_ports *prev_port = output_port;
+			output_port = output_port->next;
 			free(prev_port->name);
 			free(prev_port);
 		}
-		vptr = model->pb_types;
+		struct s_linked_vptr *vptr = model->pb_types;
 		while (vptr) {
-			vptr_prev = vptr;
+			struct s_linked_vptr *vptr_prev = vptr;
 			vptr = vptr->next;
 			free(vptr_prev);
 		}
-		prev = model;
+		t_model *prev_model = model;
 
 		model = model->next;
-		if (prev->instances)
-			free(prev->instances);
-		free(prev->name);
-		free(prev);
+		if (prev_model->instances)
+			free(prev_model->instances);
+		free(prev_model->name);
+		free(prev_model);
 	}
 
-	for (i = 0; i < 4; i++) {
-		vptr = Arch->model_library[i].pb_types;
+	for (int i = 0; i < 4; ++i) {
+		struct s_linked_vptr *vptr = Arch->model_library[i].pb_types;
 		while (vptr) {
-			vptr_prev = vptr;
+			struct s_linked_vptr *vptr_prev = vptr;
 			vptr = vptr->next;
 			free(vptr_prev);
 		}
 	}
 
-	for (i = 0; i < Arch->num_directs; i++) {
+	for (int i = 0; i < Arch->num_directs; ++i) {
 		free(Arch->Directs[i].name);
 		free(Arch->Directs[i].from_pin);
 		free(Arch->Directs[i].to_pin);
@@ -539,6 +543,7 @@ void free_arch(t_arch* Arch) {
 }
 
 void free_options(t_options *options) {
+
 	free(options->ArchFile);
 	free(options->CircuitName);
 	if (options->ActFile)
@@ -562,11 +567,10 @@ void free_options(t_options *options) {
 }
 
 static void free_complex_block_types(void) {
-	int i, j;
 
 	free_all_pb_graph_nodes();
 
-	for (i = 0; i < num_types; i++) {
+	for (int i = 0; i < num_types; ++i) {
 		if (&type_descriptors[i] == EMPTY_TYPE) {
 			continue;
 		}
@@ -596,7 +600,7 @@ static void free_complex_block_types(void) {
 		free(type_descriptors[i].pin_width);
 		free(type_descriptors[i].pin_height);
 
-		for (j = 0; j < type_descriptors[i].num_class; j++) {
+		for (int j = 0; j < type_descriptors[i].num_class; ++j) {
 			free(type_descriptors[i].class_inf[j].pinlist);
 		}
 		free(type_descriptors[i].class_inf);
@@ -615,42 +619,33 @@ static void free_complex_block_types(void) {
 }
 
 static void free_pb_type(t_pb_type *pb_type) {
-	int i, j, k, m;
 
 	free(pb_type->name);
 	if (pb_type->blif_model)
 		free(pb_type->blif_model);
 
-	for (i = 0; i < pb_type->num_modes; i++) {
-		for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
+	for (int i = 0; i < pb_type->num_modes; ++i) {
+		for (int j = 0; j < pb_type->modes[i].num_pb_type_children; ++j) {
 			free_pb_type(&pb_type->modes[i].pb_type_children[j]);
 		}
 		free(pb_type->modes[i].pb_type_children);
 		free(pb_type->modes[i].name);
-		for (j = 0; j < pb_type->modes[i].num_interconnect; j++) {
+		for (int j = 0; j < pb_type->modes[i].num_interconnect; ++j) {
 			free(pb_type->modes[i].interconnect[j].input_string);
 			free(pb_type->modes[i].interconnect[j].output_string);
 			free(pb_type->modes[i].interconnect[j].name);
 
-			for (k = 0; k < pb_type->modes[i].interconnect[j].num_annotations;
-					k++) {
+			for (int k = 0; k < pb_type->modes[i].interconnect[j].num_annotations; ++k) {
 				if (pb_type->modes[i].interconnect[j].annotations[k].clock)
-					free(
-							pb_type->modes[i].interconnect[j].annotations[k].clock);
+					free(pb_type->modes[i].interconnect[j].annotations[k].clock);
 				if (pb_type->modes[i].interconnect[j].annotations[k].input_pins) {
-					free(
-							pb_type->modes[i].interconnect[j].annotations[k].input_pins);
+					free(pb_type->modes[i].interconnect[j].annotations[k].input_pins);
 				}
 				if (pb_type->modes[i].interconnect[j].annotations[k].output_pins) {
-					free(
-							pb_type->modes[i].interconnect[j].annotations[k].output_pins);
+					free(pb_type->modes[i].interconnect[j].annotations[k].output_pins);
 				}
-				for (m = 0;
-						m
-								< pb_type->modes[i].interconnect[j].annotations[k].num_value_prop_pairs;
-						m++) {
-					free(
-							pb_type->modes[i].interconnect[j].annotations[k].value[m]);
+				for (int m = 0; m < pb_type->modes[i].interconnect[j].annotations[k].num_value_prop_pairs; ++m) {
+					free(pb_type->modes[i].interconnect[j].annotations[k].value[m]);
 				}
 				free(pb_type->modes[i].interconnect[j].annotations[k].prop);
 				free(pb_type->modes[i].interconnect[j].annotations[k].value);
@@ -667,8 +662,8 @@ static void free_pb_type(t_pb_type *pb_type) {
 	if (pb_type->modes)
 		free(pb_type->modes);
 
-	for (i = 0; i < pb_type->num_annotations; i++) {
-		for (j = 0; j < pb_type->annotations[i].num_value_prop_pairs; j++) {
+	for (int i = 0; i < pb_type->num_annotations; ++i) {
+		for (int j = 0; j < pb_type->annotations[i].num_value_prop_pairs; ++j) {
 			free(pb_type->annotations[i].value[j]);
 		}
 		free(pb_type->annotations[i].value);
@@ -691,7 +686,7 @@ static void free_pb_type(t_pb_type *pb_type) {
 		free(pb_type->pb_type_power);
 	}
 
-	for (i = 0; i < pb_type->num_ports; i++) {
+	for (int i = 0; i < pb_type->num_ports; ++i) {
 		free(pb_type->ports[i].name);
 		if (pb_type->ports[i].port_class) {
 			free(pb_type->ports[i].port_class);
@@ -704,8 +699,6 @@ static void free_pb_type(t_pb_type *pb_type) {
 }
 
 void free_circuit() {
-	int i;
-	struct s_linked_vptr *p_io_removed;
 
 	/* Free netlist reference tables for nets */
 	free(clb_to_vpack_net_mapping);
@@ -720,7 +713,7 @@ void free_circuit() {
 	}
 
 	if (clb_net != NULL) {
-		for (i = 0; i < num_nets; i++) {
+		for (int i = 0; i < num_nets; ++i) {
 			free(clb_net[i].name);
 			free(clb_net[i].node_block);
 			free(clb_net[i].node_block_pin);
@@ -735,7 +728,7 @@ void free_circuit() {
 	clb_net = NULL;
 
 	if (block != NULL) {
-		for (i = 0; i < num_blocks; i++) {
+		for (int i = 0; i < num_blocks; ++i) {
 			if (block[i].pb != NULL) {
 				free_cb(block[i].pb);
 				free(block[i].pb);
@@ -751,7 +744,7 @@ void free_circuit() {
 	free(default_output_name);
 	blif_circuit_name = NULL;
 
-	p_io_removed = circuit_p_io_removed;
+	struct s_linked_vptr *p_io_removed = circuit_p_io_removed;
 	while (p_io_removed != NULL) {
 		circuit_p_io_removed = p_io_removed->next;
 		free(p_io_removed->data_vptr);
@@ -760,7 +753,8 @@ void free_circuit() {
 	}
 }
 
-void vpr_free_vpr_data_structures(INOUTP t_arch Arch, INOUTP t_options options,
+void vpr_free_vpr_data_structures(INOUTP t_arch Arch, 
+		INOUTP t_options options,
 		INOUTP t_vpr_setup vpr_setup) {
 
 	if (vpr_setup.Timing.SDCFile != NULL) {
@@ -778,8 +772,10 @@ void vpr_free_vpr_data_structures(INOUTP t_arch Arch, INOUTP t_options options,
 	free_sdc_related_structs();
 }
 
-void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options,
+void vpr_free_all(INOUTP t_arch Arch, 
+		INOUTP t_options options,
 		INOUTP t_vpr_setup vpr_setup) {
+
 	free_rr_graph();
 	if (vpr_setup.RouterOpts.doRouting) {
 		free_route_structs();
@@ -888,17 +884,14 @@ t_trace* vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture(
 
 /* reload intra cluster nets to complex block */
 static void reload_intra_cluster_nets(t_pb *pb) {
-	int i, j;
-	const t_pb_type* pb_type;
-	pb_type = pb->pb_graph_node->pb_type;
+
+	const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 	if (pb_type->blif_model != NULL) {
-		setup_intracluster_routing_for_logical_block(pb->logical_block,
-				pb->pb_graph_node);
+		setup_intracluster_routing_for_logical_block(pb->logical_block,	pb->pb_graph_node);
 	} else if (pb->child_pbs != NULL) {
 		set_pb_graph_mode(pb->pb_graph_node, pb->mode, 1);
-		for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
-			for (j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb;
-					j++) {
+		for (int i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; ++i) {
+			for (int j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb; ++j) {
 				if (pb->child_pbs[i] != NULL) {
 					if (pb->child_pbs[i][j].name != NULL) {
 						reload_intra_cluster_nets(&pb->child_pbs[i][j]);
@@ -913,29 +906,23 @@ static void reload_intra_cluster_nets(t_pb *pb) {
  Algorithm traverses intra-block routing, goes to inter-block routing, then returns to intra-block routing
  */
 static t_trace *alloc_and_load_final_routing_trace() {
-	int i;
-	int iblock;
-	t_trace* final_routing_trace;
-	t_pb_graph_pin *pin;
 
-	final_routing_trace = (t_trace*) my_calloc(num_logical_nets,
-			sizeof(t_trace));
-	for (i = 0; i < num_logical_nets; i++) {
-		iblock = logical_block[vpack_net[i].node_block[0]].clb_index;
+	t_trace* final_routing_trace = (t_trace*) my_calloc(num_logical_nets, sizeof(t_trace));
+	for (int i = 0; i < num_logical_nets; ++i) {
+		int iblock = logical_block[vpack_net[i].node_block[0]].clb_index;
 
 		final_routing_trace[i].iblock = iblock;
 		final_routing_trace[i].iswitch = OPEN;
 		final_routing_trace[i].index = OPEN;
 		final_routing_trace[i].next = NULL;
 
-		pin = get_pb_graph_node_pin_from_vpack_net(i, 0);
+		t_pb_graph_pin *pin = get_pb_graph_node_pin_from_vpack_net(i, 0);
 		if (!pin)
 			continue;
 		final_routing_trace[i].index = pin->pin_count_in_cluster;
 
 		expand_routing_trace(&final_routing_trace[i], i);
 	}
-
 	return final_routing_trace;
 }
 
@@ -943,27 +930,22 @@ static t_trace *alloc_and_load_final_routing_trace() {
  returns pointer to last terminal trace
  */
 static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
-	int i, iblock, inode, ipin, inet;
-	int gridx, gridy;
-	t_trace *current, *new_trace, *inter_cb_trace;
-	t_rr_node *local_rr_graph;
-	boolean success;
-	t_pb_graph_pin *pb_graph_pin;
 
-	iblock = trace->iblock;
-	inode = trace->index;
-	local_rr_graph = block[iblock].pb->rr_graph;
-	current = trace;
+	t_trace *current = trace;
+
+	int iblock = trace->iblock;
+	int inode = trace->index;
+	t_rr_node *local_rr_graph = block[iblock].pb->rr_graph;
 
 	if (local_rr_graph[inode].pb_graph_pin->num_output_edges == 0) {
 		if (local_rr_graph[inode].pb_graph_pin->port->type == OUT_PORT) {
 			/* connection to outside cb */
 			if (vpack_net[ivpack_net].is_global) {
-				inet = vpack_to_clb_net_mapping[ivpack_net];
+				int inet = vpack_to_clb_net_mapping[ivpack_net];
 				if (inet != OPEN) {
-					for (ipin = 1; ipin < (int) g_clbs_nlist.net[inet].nodes.size(); ipin++) {
-						pb_graph_pin = get_pb_graph_node_pin_from_g_clbs_nlist_net(inet, ipin);
-						new_trace = (t_trace*) my_calloc(1, sizeof(t_trace));
+					for (int ipin = 1; ipin < (int) g_clbs_nlist.net[inet].nodes.size(); ++ipin) {
+						t_pb_graph_pin *pb_graph_pin = get_pb_graph_node_pin_from_g_clbs_nlist_net(inet, ipin);
+						t_trace *new_trace = (t_trace*) my_calloc(1, sizeof(t_trace));
 						new_trace->iblock = g_clbs_nlist.net[inet].nodes[ipin].block;
 						new_trace->index = pb_graph_pin->pin_count_in_cluster;
 						new_trace->iswitch = OPEN;
@@ -974,15 +956,14 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 					}
 				}
 			} else {
-				inter_cb_trace =
-						trace_head[vpack_to_clb_net_mapping[ivpack_net]];
+				t_trace *inter_cb_trace = trace_head[vpack_to_clb_net_mapping[ivpack_net]];
 				if (inter_cb_trace != NULL) {
 					inter_cb_trace = inter_cb_trace->next; /* skip source and go right to opin */
 				}
 				while (inter_cb_trace != NULL) {
 					/* continue traversing inter cb trace */
 					if (rr_node[inter_cb_trace->index].type != SINK) {
-						new_trace = (t_trace*) my_calloc(1, sizeof(t_trace));
+						t_trace *new_trace = (t_trace*) my_calloc(1, sizeof(t_trace));
 						new_trace->iblock = OPEN;
 						new_trace->index = inter_cb_trace->index;
 						new_trace->iswitch = inter_cb_trace->iswitch;
@@ -991,15 +972,13 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 						current->next = new_trace;
 						if (rr_node[inter_cb_trace->index].type == IPIN) {
 							current = current->next;
-							gridx = rr_node[new_trace->index].xlow;
-							gridy = rr_node[new_trace->index].ylow;
+							int gridx = rr_node[new_trace->index].xlow;
+							int gridy = rr_node[new_trace->index].ylow;
 							gridx = gridx - grid[gridx][gridy].width_offset;
 							gridy = gridy - grid[gridx][gridy].height_offset;
 							new_trace = (t_trace*) my_calloc(1, sizeof(t_trace));
-							new_trace->iblock =
-									grid[gridx][gridy].blocks[rr_node[inter_cb_trace->index].z];
-							new_trace->index =
-									rr_node[inter_cb_trace->index].pb_graph_pin->pin_count_in_cluster;
+							new_trace->iblock = grid[gridx][gridy].blocks[rr_node[inter_cb_trace->index].z];
+							new_trace->index = rr_node[inter_cb_trace->index].pb_graph_pin->pin_count_in_cluster;
 							new_trace->iswitch = OPEN;
 							new_trace->num_siblings = 0;
 							new_trace->next = NULL;
@@ -1016,8 +995,8 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 	} else {
 		/* connection to another intra-cluster pin */
 		current = trace;
-		success = FALSE;
-		for (i = 0; i < local_rr_graph[inode].num_edges; i++) {
+		boolean success = FALSE;
+		for (int i = 0; i < local_rr_graph[inode].num_edges; ++i) {
 			if (local_rr_graph[local_rr_graph[inode].edges[i]].prev_node
 					== inode) {
 				if (success == FALSE) {
@@ -1030,7 +1009,7 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 					current->iswitch = trace->iswitch;
 					current->next = NULL;
 				}
-				new_trace = (t_trace*) my_calloc(1, sizeof(t_trace));
+				t_trace *new_trace = (t_trace*) my_calloc(1, sizeof(t_trace));
 				new_trace->iblock = trace->iblock;
 				new_trace->index = local_rr_graph[inode].edges[i];
 				new_trace->iswitch = OPEN;
@@ -1250,22 +1229,15 @@ static boolean clay_logical_equivalence_handling(const t_arch *arch) {
 
 /* Force router to use the LUT inputs designated by the timing engine post the LUT input rebalancing optimization */
 static void clay_lut_input_rebalancing(int iblock, t_pb *pb) {
-	int i, j;
-	t_rr_node *local_rr_graph;
-	t_pb_graph_node *lut_wrapper, *lut;
-	int lut_size;
-	int *lut_pin_remap;
-	int snode, input;
-	t_pb_graph_node *pb_graph_node;
 
 	if (pb->name != NULL) {
-		pb_graph_node = pb->pb_graph_node;
+		t_pb_graph_node *pb_graph_node = pb->pb_graph_node;
 		if (pb_graph_node->pb_type->blif_model != NULL) {
-			lut_pin_remap = pb->lut_pin_remap;
+			int *lut_pin_remap = pb->lut_pin_remap;
 			if (lut_pin_remap != NULL) {
-				local_rr_graph = block[iblock].pb->rr_graph;
-				lut = pb->pb_graph_node;
-				lut_wrapper = lut->parent_pb_graph_node;
+				t_rr_node *local_rr_graph = block[iblock].pb->rr_graph;
+				t_pb_graph_node *lut = pb->pb_graph_node;
+				t_pb_graph_node *lut_wrapper = lut->parent_pb_graph_node;
 
 				/* Ensure that this is actually a LUT */
 				assert(lut->num_input_ports == 1 && lut_wrapper->num_input_ports == 1);
@@ -1273,17 +1245,17 @@ static void clay_lut_input_rebalancing(int iblock, t_pb *pb) {
 				assert(lut->num_output_ports == 1 && lut_wrapper->num_output_ports == 1);
 				assert(lut->num_output_pins[0] == 1 && lut_wrapper->num_output_pins[0] == 1);
 
-				lut_size = lut->num_input_pins[0];
-				for (i = 0; i < lut_size; i++) {
-					snode = lut_wrapper->input_pins[0][i].pin_count_in_cluster;
+				int lut_size = lut->num_input_pins[0];
+				for (int i = 0; i < lut_size; ++i) {
+					int snode = lut_wrapper->input_pins[0][i].pin_count_in_cluster;
 					free(local_rr_graph[snode].edges);
 					local_rr_graph[snode].edges = NULL;
 					local_rr_graph[snode].num_edges = 0;
 				}
-				for (i = 0; i < lut_size; i++) {
-					input = lut_pin_remap[i];
+				for (int i = 0; i < lut_size; ++i) {
+					int input = lut_pin_remap[i];
 					if (input != OPEN) {
-						snode =	lut_wrapper->input_pins[0][i].pin_count_in_cluster;
+						int snode = lut_wrapper->input_pins[0][i].pin_count_in_cluster;
 						assert(local_rr_graph[snode].num_edges == 0);
 						local_rr_graph[snode].num_edges = 1;
 						local_rr_graph[snode].edges = (int*) my_malloc(sizeof(int));
@@ -1292,11 +1264,10 @@ static void clay_lut_input_rebalancing(int iblock, t_pb *pb) {
 				}
 			}
 		} else if (pb->child_pbs != NULL) {
-			for (i = 0; i < pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children; i++) {
+			for (int i = 0; i < pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children; ++i) {
 				if (pb->child_pbs[i] != NULL) {
-					for (j = 0; j < pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
-						clay_lut_input_rebalancing(iblock,
-								&pb->child_pbs[i][j]);
+					for (int j = 0; j < pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i].num_pb; ++j) {
+						clay_lut_input_rebalancing(iblock, &pb->child_pbs[i][j]);
 					}
 				}
 			}
@@ -1322,8 +1293,7 @@ static void clay_reload_ble_locations(int iblock) {
 	assert(pb_type->modes[mode].num_pb_type_children == 1);
 	assert(pb_type->modes[mode].pb_type_children[0].num_output_pins == 1);
 
-	t_pb** temp;
-	temp = (t_pb**) my_calloc(1, sizeof(t_pb*));
+	t_pb** temp = (t_pb**) my_calloc(1, sizeof(t_pb*));
 	temp[0] = (t_pb*) my_calloc(pb_type->modes[mode].pb_type_children[0].num_pb, sizeof(t_pb));
 
 	/* determine new location for BLEs that route out of cluster */
@@ -1396,12 +1366,10 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
 }
 
 /* This function performs power estimation, and must be called
- * after packing, placement AND routing.  Currently, this
+ * after packing, placement AND routing. Currently, this
  * will not work when running a partial flow (ex. only routing).
  */
 void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
-	e_power_ret_code power_ret_code;
-	boolean power_error;
 
 	/* Ensure we are only using 1 clock */
 	assert(count_netlist_clocks() == 1);
@@ -1416,7 +1384,7 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 	vpr_printf_info("Initializing power module\n");
 
 	/* Initialize the power module */
-	power_error = power_init(vpr_setup.FileNameOpts.PowerFile,
+	boolean power_error = power_init(vpr_setup.FileNameOpts.PowerFile,
 			vpr_setup.FileNameOpts.CmosTechFile, &Arch, &vpr_setup.RoutingArch);
 	if (power_error) {
 		vpr_printf_error(__FILE__, __LINE__,
@@ -1429,8 +1397,8 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 		vpr_printf_info("Running power estimation\n");
 
 		/* Run power estimation */
-		power_ret_code = power_total(&power_runtime_s, vpr_setup, &Arch,
-				&vpr_setup.RoutingArch);
+		e_power_ret_code power_ret_code = power_total(&power_runtime_s, vpr_setup,
+				&Arch, &vpr_setup.RoutingArch);
 
 		/* Check for errors/warnings */
 		if (power_ret_code == POWER_RET_CODE_ERRORS) {
@@ -1456,55 +1424,4 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 		}
 	}
 	vpr_printf_info("\n");
-}
-
-void vpr_print_error(t_vpr_error* vpr_error){
-
-	/* Determine the type of VPR error */
-	char* error_type = (char *)my_calloc(1000, sizeof(char));
-	switch(vpr_error->type){
-	case VPR_ERROR_UNKNOWN:
-		strcpy(error_type, "Unknown");
-		break;
-	case VPR_ERROR_ARCH:
-		strcpy(error_type, "Architecture file");
-		break;
-	case VPR_ERROR_PACK:
-		strcpy(error_type, "Packing");
-		break;
-	case VPR_ERROR_PLACE:
-		strcpy(error_type, "Placement");
-		break;
-	case VPR_ERROR_ROUTE:
-		strcpy(error_type, "Routing");
-		break;
-	case VPR_ERROR_TIMING:
-		strcpy(error_type, "Timing");
-		break;
-	case VPR_ERROR_SDC:
-		strcpy(error_type, "SDC file");
-		break;
-	case VPR_ERROR_NET_F:
-		strcpy(error_type, "Netlist file");
-		break;
-	case VPR_ERROR_BLIF_F:
-		strcpy(error_type, "Blif file");
-		break;
-	case VPR_ERROR_PLACE_F:
-		strcpy(error_type, "Placement file");
-		break;
-	case VPR_ERROR_OTHER:
-		strcpy(error_type, "Other");
-		break;
-	default:
-		strcpy(error_type, "");
-		break;
-	}
-			
-	vpr_printf_error(__FILE__, __LINE__,
-		"\nType: %s\nFile: %s\nLine: %d\nMessage: %s\n",
-		error_type, vpr_error->file_name, vpr_error->line_num, 
-		vpr_error->message);
-	
-	free (error_type);
 }
