@@ -1425,3 +1425,54 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 	}
 	vpr_printf_info("\n");
 }
+
+void vpr_print_error(t_vpr_error* vpr_error){
+
+	/* Determine the type of error */
+	char* error_type = (char *)my_calloc(1000, sizeof(char));
+	switch(vpr_error->type){
+	case VPR_ERROR_UNKNOWN:
+		strcpy(error_type, "Unknown");
+		break;
+	case VPR_ERROR_ARCH:
+		strcpy(error_type, "Architecture file");
+		break;
+	case VPR_ERROR_PACK:
+		strcpy(error_type, "Packing");
+		break;
+	case VPR_ERROR_PLACE:
+		strcpy(error_type, "Placement");
+		break;
+	case VPR_ERROR_ROUTE:
+		strcpy(error_type, "Routing");
+		break;
+	case VPR_ERROR_TIMING:
+		strcpy(error_type, "Timing");
+		break;
+	case VPR_ERROR_SDC:
+		strcpy(error_type, "SDC file");
+		break;
+	case VPR_ERROR_NET_F:
+		strcpy(error_type, "Netlist file");
+		break;
+	case VPR_ERROR_BLIF_F:
+		strcpy(error_type, "Blif file");
+		break;
+	case VPR_ERROR_PLACE_F:
+		strcpy(error_type, "Placement file");
+		break;
+	case VPR_ERROR_OTHER:
+		strcpy(error_type, "Other");
+		break;
+	default:
+		strcpy(error_type, "");
+		break;
+	}
+			
+	vpr_printf_error(__FILE__, __LINE__,
+		"\nType: %s\nFile: %s\nLine: %d\nMessage: %s\n",
+		error_type, vpr_error->file_name, vpr_error->line_num, 
+		vpr_error->message);
+	
+	free (error_type);
+}
