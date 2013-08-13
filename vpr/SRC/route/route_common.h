@@ -114,7 +114,6 @@ void reserve_locally_used_opins(float pres_fac, boolean rip_up_local_opins,
 
 void free_chunk_memory_trace(void);
 
-#ifdef TORO_PREROUTED_ROUTING_ENABLE
 //===========================================================================//
 #include "TCH_PreRoutedHandler.h"
 
@@ -124,4 +123,3 @@ bool restrict_prerouted_path(
 		int src_node, int sink_node, 
 		int from_node, int to_node);
 //===========================================================================//
-#endif
