@@ -8,12 +8,6 @@ using namespace std;
 #include "route_common.h"
 #include "route_breadth_first.h"
 
-#ifdef TORO_PREROUTED_ROUTING_ENABLE
-//===========================================================================//
-#include "TCH_PreRoutedHandler.h"
-//===========================================================================//
-#endif
-
 /********************* Subroutines local to this module *********************/
 
 static boolean breadth_first_route_net(int inet, int itry, float bend_cost);
@@ -26,12 +20,12 @@ static void breadth_first_expand_neighbours(int inode, float pcost,
 
 static void breadth_first_add_source_to_heap(int inet);
 
-#ifdef TORO_PREROUTED_ROUTING_ENABLE
 //===========================================================================//
+#include "TCH_PreRoutedHandler.h"
+
 static bool breadth_first_order_prerouted_first(int try_count, 
 		struct s_router_opts router_opts, float pres_fac);
 //===========================================================================//
-#endif
 
 /************************ Subroutine definitions ****************************/
 
@@ -60,9 +54,7 @@ boolean try_breadth_first_route(struct s_router_opts router_opts,
 			clb_net[inet].is_fixed = FALSE;
 		}
 
-#ifdef TORO_PREROUTED_ROUTING_ENABLE
 		breadth_first_order_prerouted_first(itry, router_opts, pres_fac);
-#endif
 
 		for (inet = 0; inet < num_nets; inet++) {
 			is_routable = try_breadth_first_route_net(inet, itry, pres_fac, 
@@ -321,13 +313,11 @@ static void breadth_first_expand_neighbours(int inode, float pcost,
 				|| rr_node[to_node].ylow > route_bb[inet].ymax)
 			continue; /* Node is outside (expanded) bounding box. */
 
-#ifdef TORO_PREROUTED_ROUTING_ENABLE
 		int src_node = net_rr_terminals[inet][0];
 		int sink_node = net_rr_terminals[inet][iconn];
 		int from_node = inode;
 		if (restrict_prerouted_path(inet, itry, src_node, sink_node, from_node, to_node))
 			continue;
-#endif
 
 		tot_cost = pcost + get_rr_cong_cost(to_node);
 
@@ -356,7 +346,6 @@ static void breadth_first_add_source_to_heap(int inet) {
 	node_to_heap(inode, cost, NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
 }
 
-#ifdef TORO_PREROUTED_ROUTING_ENABLE
 //===========================================================================//
 static bool breadth_first_order_prerouted_first(
 		int try_count,
@@ -403,4 +392,3 @@ static bool breadth_first_order_prerouted_first(
 	return (ok);
 }
 //===========================================================================//
-#endif
