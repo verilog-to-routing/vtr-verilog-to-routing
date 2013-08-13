@@ -162,15 +162,15 @@ void my_srandom(int seed);
 int my_irand(int imax);
 float my_frand(void);
 
-typedef bool (*vpr_PrintHandlerMessage)( 
+typedef unsigned char (*vpr_PrintHandlerMessage)( 
 		TIO_MessageMode_t messageMode,
 		const char* pszMessage, ... );
 typedef void (*vpr_PrintHandlerInfo)( 
 		const char* pszMessage, ... );
-typedef bool (*vpr_PrintHandlerWarning)( 
+typedef unsigned char (*vpr_PrintHandlerWarning)( 
 		const char* pszFileName, unsigned int lineNum,
 		const char* pszMessage,	... );
-typedef bool (*vpr_PrintHandlerError)( 
+typedef unsigned char (*vpr_PrintHandlerError)( 
 		const char* pszFileName, unsigned int lineNum,
 		const char* pszMessage,	... );
 typedef void (*vpr_PrintHandlerTrace)( 
