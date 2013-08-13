@@ -37,12 +37,10 @@
 #include <map>
 #include <vector>
 
-#ifdef TORO_REGION_PLACEMENT_ENABLE
 //===========================================================================//
 #include "TGO_Typedefs.h"
 #include "TGO_Region.h"
 //===========================================================================//
-#endif
 
 /*******************************************************************************
  * Global data types and constants
@@ -200,9 +198,7 @@ typedef struct s_logical_block {
 
 	t_pb_graph_node *expected_lowest_cost_primitive; /* predicted ideal primitive to use for this logical block */
 
-#ifdef TORO_REGION_PLACEMENT_ENABLE
-	TGO_RegionList_t placement_region_list; // Optional placement regions
-#endif
+	TGO_RegionList_t placement_region_list; // Optional placement regions (defined by Toro front-end)
 
 } t_logical_block;
 
@@ -591,9 +587,7 @@ struct s_block {
 
 	unsigned int is_fixed : 1;
 
-#ifdef TORO_REGION_PLACEMENT_ENABLE
 	TGO_RegionList_t placement_region_list; // Optional placement regions
-#endif
 };
 typedef struct s_block t_block;
 
