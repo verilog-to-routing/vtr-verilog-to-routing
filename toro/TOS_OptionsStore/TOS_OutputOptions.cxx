@@ -182,8 +182,8 @@ void TOS_OutputOptions_c::Print(
    printHandler.Write( pfile, spaceLen, "OUTPUT_FILE_ARCH           = \"%s\"\n", TIO_SR_STR( this->srArchitectureFileName ));
    printHandler.Write( pfile, spaceLen, "OUTPUT_FILE_FABRIC         = \"%s\"\n", TIO_SR_STR( this->srFabricFileName ));
    printHandler.Write( pfile, spaceLen, "OUTPUT_FILE_CIRCUIT        = \"%s\"\n", TIO_SR_STR( this->srCircuitFileName ));
-   printHandler.Write( pfile, spaceLen, "OUTPUT_FILE_RC_DELAYS      = \"%s\"\n", TIO_SR_STR( this->srRcDelaysFileName ));
    printHandler.Write( pfile, spaceLen, "OUTPUT_FILE_LAFF           = \"%s\"\n", TIO_SR_STR( this->srLaffFileName ));
+   // printHandler.Write( pfile, spaceLen, "OUTPUT_FILE_RC_DELAYS      = \"%s\"\n", TIO_SR_STR( this->srRcDelaysFileName ));
 
    printHandler.Write( pfile, spaceLen, "OUTPUT_EMAIL_METRICS       = \"%s\"\n", TIO_SR_STR( this->srMetricsEmailAddress ));
 
@@ -194,23 +194,23 @@ void TOS_OutputOptions_c::Print(
    printHandler.Write( pfile, spaceLen, "OUTPUT_ENABLE_ARCH         = %s\n", TIO_BOOL_STR( this->architectureFileEnable ));
    printHandler.Write( pfile, spaceLen, "OUTPUT_ENABLE_FABRIC       = %s\n", TIO_BOOL_STR( this->fabricFileEnable ));
    printHandler.Write( pfile, spaceLen, "OUTPUT_ENABLE_CIRCUIT      = %s\n", TIO_BOOL_STR( this->circuitFileEnable ));
-   printHandler.Write( pfile, spaceLen, "OUTPUT_ENABLE_RC_DELAYS    = %s\n", TIO_BOOL_STR( this->rcDelaysFileEnable ));
    printHandler.Write( pfile, spaceLen, "OUTPUT_ENABLE_LAFF         = %s\n", TIO_BOOL_STR( this->laffFileEnable ));
+   // printHandler.Write( pfile, spaceLen, "OUTPUT_ENABLE_RC_DELAYS    = %s\n", TIO_BOOL_STR( this->rcDelaysFileEnable ));
 
    printHandler.Write( pfile, spaceLen, "OUTPUT_LAFF_MODE           = %s\n", TIO_SR_STR( srLaffMask ));
 
-   printHandler.Write( pfile, spaceLen, "OUTPUT_RC_DELAY_MODE       = %s\n", TIO_SR_STR( srRcDelaysExtractMode ));
-   printHandler.Write( pfile, spaceLen, "OUTPUT_RC_DELAY_SORT       = %s\n", TIO_SR_STR( srRcDelaysSortMode ));
-   printHandler.Write( pfile, spaceLen, "OUTPUT_RC_DELAY_NETS       = { %s%s}\n", TIO_SR_STR( srRcDelaysNetNameList ),
-                                                                                  srRcDelaysNetNameList.length( ) ? " " : "" );
-   printHandler.Write( pfile, spaceLen, "OUTPUT_RC_DELAY_BLOCKS     = { %s%s}\n", TIO_SR_STR( srRcDelaysBlockNameList ),
-                                                                                  srRcDelaysBlockNameList.length( ) ? " " : "" );
-   if( TCTF_IsLT( this->rcDelaysMaxWireLength, TC_FLT_MAX ))
-   {
-      printHandler.Write( pfile, spaceLen, "OUTPUT_RC_DELAY_MAX_LEN    = %0.*f\n", precision, this->rcDelaysMaxWireLength );
-   }
-   else
-   {
-      printHandler.Write( pfile, spaceLen, "// OUTPUT_RC_DELAY_MAX_LEN = *\n" );
-   }
+   // printHandler.Write( pfile, spaceLen, "OUTPUT_RC_DELAY_MODE       = %s\n", TIO_SR_STR( srRcDelaysExtractMode ));
+   // printHandler.Write( pfile, spaceLen, "OUTPUT_RC_DELAY_SORT       = %s\n", TIO_SR_STR( srRcDelaysSortMode ));
+   // printHandler.Write( pfile, spaceLen, "OUTPUT_RC_DELAY_NETS       = { %s%s}\n", TIO_SR_STR( srRcDelaysNetNameList ),
+   //                                                                                srRcDelaysNetNameList.length( ) ? " " : "" );
+   // printHandler.Write( pfile, spaceLen, "OUTPUT_RC_DELAY_BLOCKS     = { %s%s}\n", TIO_SR_STR( srRcDelaysBlockNameList ),
+   //                                                                                srRcDelaysBlockNameList.length( ) ? " " : "" );
+   // if( TCTF_IsLT( this->rcDelaysMaxWireLength, TC_FLT_MAX ))
+   // {
+   //    printHandler.Write( pfile, spaceLen, "OUTPUT_RC_DELAY_MAX_LEN    = %0.*f\n", precision, this->rcDelaysMaxWireLength );
+   // }
+   // else
+   // {
+   //    printHandler.Write( pfile, spaceLen, "// OUTPUT_RC_DELAY_MAX_LEN = *\n" );
+   // }
 }
