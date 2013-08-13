@@ -21,24 +21,6 @@ using namespace std;
 #include "vpr_utils.h"
 #include "place_macro.h"
 
-#ifdef TORO_REGION_PLACEMENT_ENABLE
-//===========================================================================//
-#include "TCH_RegionPlaceHandler.h"
-//===========================================================================//
-#endif
-
-#ifdef TORO_RELATIVE_PLACEMENT_ENABLE
-//===========================================================================//
-#include "TCH_RelativePlaceHandler.h"
-//===========================================================================//
-#endif
-
-#ifdef TORO_PREPLACED_PLACEMENT_ENABLE
-//===========================================================================//
-#include "TCH_PrePlacedHandler.h"
-//===========================================================================//
-#endif
-
 /************** Types and defines local to place.c ***************************/
 
 /* Cut off for incremental bounding box updates.                          *
@@ -94,15 +76,6 @@ typedef struct s_placer_statistics t_placer_statistics;
 which avoids multiplying by a gigantic inverse_prev_timing_cost when auto-normalizing. 
 The exact value of this cost has relatively little impact, but should not be
 large enough to be on the order of timing costs for normal constraints. */
-
-#ifdef TORO_REGION_PLACEMENT_ENABLE
-//===========================================================================//
-// Define maximum number of attempts while trying to find a valid random
-// placement position. This limit is applied during the initial placement
-// step and again when swapping placements during annealing steps.
-#define TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS 500
-//===========================================================================//
-#endif
 
 /********************** Variables local to place.c ***************************/
 
@@ -321,8 +294,9 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 	float ** old_region_occ_x, float ** old_region_occ_y, float * delay_cost,
 	float * place_delay_value, float ** net_delay);
 
-#ifdef TORO_REGION_PLACEMENT_ENABLE
 //===========================================================================//
+#include "TCH_RegionPlaceHandler.h"
+
 static void alloc_and_load_placement_region_lists(
 	t_block* pblock_array, int block_count,
 	const t_logical_block* plogical_block_array, int logical_block_count);
@@ -330,10 +304,10 @@ static boolean placement_region_pos_is_valid(
 		const t_block* pblock_array, int block_index, 
 		int x, int y);
 //===========================================================================//
-#endif
 
-#ifdef TORO_RELATIVE_PLACEMENT_ENABLE
 //===========================================================================//
+#include "TCH_RelativePlaceHandler.h"
+
 static bool alloc_and_load_carry_chain_relative_macros(
 		const t_pl_macro* vpr_placeMacroArray, int vpr_placeMacroCount);
 static bool initial_placement_relative_macros(
@@ -346,15 +320,20 @@ static bool iterate_placement_relative_macros(
 		int x_to, int y_to, int z_to,
 		t_pl_blocks_to_be_moved& vpr_blocksAffected);
 //===========================================================================//
-#endif
 
-#ifdef TORO_PREPLACED_PLACEMENT_ENABLE
 //===========================================================================//
 #include "TCH_PrePlacedHandler.h"
+
 static bool initial_placement_preplaced_blocks(
 		int* free_locations);
 //===========================================================================//
-#endif
+
+//===========================================================================//
+// Define maximum number of attempts while trying to find a valid random
+// placement position. This limit is applied during the initial placement
+// step and again when swapping placements during annealing steps.
+#define TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS 500
+//===========================================================================//
 
 /*****************************************************************************/
 /* RESEARCH TODO: Bounding Box and rlim need to be redone for heterogeneous to prevent a QoR penalty */
@@ -1257,14 +1236,12 @@ static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {
 
 		} // Finish going through all the blocks in the macro
 
-#ifdef TORO_RELATIVE_PLACEMENT_ENABLE
 	} else if (apply_placement_relative_macros(x_from,y_from,z_from,x_to,y_to,z_to)) {
 
 		// Iterate based on relative placement macro constraints, if any
 		bool ok = iterate_placement_relative_macros(x_from,y_from,z_from,x_to,y_to,z_to,
 				blocks_affected);
 		abort_swap = (!ok ? TRUE : FALSE);
-#endif
 
 	} else { 
 		
@@ -1644,8 +1621,6 @@ static void find_to_location(t_type_ptr type, float rlim,
 	int min_y = max(0, y_from - rly);
 	int max_y = min(ny + 1, y_from + rly);
 
-#ifdef TORO_REGION_PLACEMENT_ENABLE
-
 	for (size_t i = 0; i < TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS; ++i) {
 
 		*pz_to = 0;
@@ -1689,21 +1664,6 @@ static void find_to_location(t_type_ptr type, float rlim,
 				to_name, (iblk_to >= 0 ? " " : ""), *px_to, *py_to);
 		}
 	}
-#else
-	*pz_to = 0;
-	if (nx / 4 < rlx || ny / 4 < rly || num_legal_pos[itype] < active_area) {
-		int ipos = my_irand(num_legal_pos[itype] - 1);
-		*px_to = legal_pos[itype][ipos].x;
-		*py_to = legal_pos[itype][ipos].y;
-	} else {
-		int x_rel = my_irand(max(0, max_x - min_x));
-		int y_rel = my_irand(max(0, max_y - min_y));
-		*px_to = min_x + x_rel;
-		*py_to = min_y + y_rel;
-		*px_to = (*px_to) - grid[*px_to][*py_to].width_offset; /* align it */
-		*py_to = (*py_to) - grid[*px_to][*py_to].height_offset; /* align it */
-	}
-#endif
 }
 
 static enum swap_result assess_swap(float delta_c, float t) {
@@ -2171,12 +2131,9 @@ static void alloc_and_load_placement_structs(
 
 	num_pl_macros = alloc_and_load_placement_macros(directs, num_directs, &pl_macros);
 
-#ifdef TORO_REGION_PLACEMENT_ENABLE
 	alloc_and_load_placement_region_lists(block, num_blocks,
 			logical_block, num_logical_blocks);
-#endif
 
-#ifdef TORO_RELATIVE_PLACEMENT_ENABLE
 	if( alloc_and_load_carry_chain_relative_macros(pl_macros, num_pl_macros)) {
 
 		/* Free the global list of carry chain macros */
@@ -2189,7 +2146,6 @@ static void alloc_and_load_placement_structs(
 		pl_macros = 0;
 		num_pl_macros = 0;
 	}
-#endif
 }
 
 static void alloc_and_load_try_swap_structs() {
@@ -2862,11 +2818,9 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			continue;
 		}
 
-#ifdef TORO_REGION_PLACEMENT_ENABLE
 		if (apply_placement_regions && !block[iblk].placement_region_list.IsValid()) {
 			continue;
 		}
-#endif
 
 		/* Don't do IOs if the user specifies IOs; we'll read those locations later. */
 		if (!(block[iblk].type == IO_TYPE && pad_loc_type == USER)) {
@@ -2913,8 +2867,6 @@ static void initial_placement_location(int * free_locations, int iblk,
 		int *pipos, int *px_to, int *py_to, int *pz_to) {
 
 	int itype = block[iblk].type->index;
-
-#ifdef TORO_REGION_PLACEMENT_ENABLE
 
 	for (size_t i = 0; i < TORO_REGION_PLACEMENT_MAX_NUM_RANDOM_PLACE_ATTEMPTS; ++i) {
 
@@ -2965,12 +2917,6 @@ static void initial_placement_location(int * free_locations, int iblk,
 			}
 		}
 	}
-#else
-	*pipos = my_irand(free_locations[itype] - 1);
-	*px_to = legal_pos[itype][*pipos].x;
-	*py_to = legal_pos[itype][*pipos].y;
-	*pz_to = legal_pos[itype][*pipos].z;
-#endif
 }
 
 static void initial_placement(enum e_pad_loc_type pad_loc_type,
@@ -3016,14 +2962,8 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	}
 
 	initial_placement_pl_macros(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, free_locations);
-	
-#ifdef TORO_RELATIVE_PLACEMENT_ENABLE
 	initial_placement_relative_macros(free_locations);
-#endif
-
-#ifdef TORO_PREPLACED_PLACEMENT_ENABLE
 	initial_placement_preplaced_blocks(free_locations);
-#endif
 
 	// All the macros are placed, update the legal_pos[][] array
 	for (itype = 0; itype < num_types; itype++) {
@@ -3045,10 +2985,8 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 		}
 	} // Finish updating the legal_pos[][] and free_locations[] array
 
-#ifdef TORO_REGION_PLACEMENT_ENABLE
 	boolean apply_placement_regions = TRUE;
 	initial_placement_blocks(free_locations, pad_loc_type, apply_placement_regions );
-#endif
 	initial_placement_blocks(free_locations, pad_loc_type);
 
 	if (pad_loc_type == USER) {
@@ -3350,7 +3288,6 @@ static void free_try_swap_arrays(void) {
 	}
 }
 
-#ifdef TORO_REGION_PLACEMENT_ENABLE
 //===========================================================================//
 static void alloc_and_load_placement_region_lists(
 		      t_block*         pblock_array,
@@ -3401,10 +3338,7 @@ static boolean placement_region_pos_is_valid(
 	}
 	return(is_valid);
 }
-//===========================================================================//
-#endif
 
-#ifdef TORO_RELATIVE_PLACEMENT_ENABLE
 //===========================================================================//
 static bool alloc_and_load_carry_chain_relative_macros(
 		const t_pl_macro* vpr_placeMacroArray, /* See place.c's global pl_macros */
@@ -3480,10 +3414,7 @@ static bool iterate_placement_relative_macros(
 	}
 	return(ok);
 }
-//===========================================================================//
-#endif
 
-#ifdef TORO_PREPLACED_PLACEMENT_ENABLE
 //===========================================================================//
 static bool initial_placement_preplaced_blocks(
 		int* free_locations) {
@@ -3503,4 +3434,3 @@ static bool initial_placement_preplaced_blocks(
 	return (ok);
 }
 //===========================================================================//
-#endif
