@@ -317,32 +317,27 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 
 	boolean success = TRUE;
 
-#ifdef TORO_PREROUTED_ROUTING_ENABLE
 	bool valid = validate_prerouted_nets();
 	if (valid) {
-#endif
 
-	/* Allocate and load additional rr_graph information needed only by the router. */
-	alloc_and_load_rr_node_route_structs();
+		/* Allocate and load additional rr_graph information needed only by the router. */
+		alloc_and_load_rr_node_route_structs();
 
-	init_route_structs(router_opts.bb_factor);
+		init_route_structs(router_opts.bb_factor);
 
-	if (router_opts.router_algorithm == BREADTH_FIRST) {
-		vpr_printf_info("Confirming router algorithm: BREADTH_FIRST.\n");
-		success = try_breadth_first_route(router_opts, clb_opins_used_locally,
-				width_fac);
-	} else { /* TIMING_DRIVEN route */
-		vpr_printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
-		assert(router_opts.route_type != GLOBAL);
-		success = try_timing_driven_route(router_opts, net_delay, slacks,
-			clb_opins_used_locally,timing_inf.timing_analysis_enabled);
+		if (router_opts.router_algorithm == BREADTH_FIRST) {
+			vpr_printf_info("Confirming router algorithm: BREADTH_FIRST.\n");
+			success = try_breadth_first_route(router_opts, clb_opins_used_locally,
+					width_fac);
+		} else { /* TIMING_DRIVEN route */
+			vpr_printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
+			assert(router_opts.route_type != GLOBAL);
+			success = try_timing_driven_route(router_opts, net_delay, slacks,
+				clb_opins_used_locally,timing_inf.timing_analysis_enabled);
+		}
+
+		free_rr_node_route_structs();
 	}
-
-	free_rr_node_route_structs();
-
-#ifdef TORO_PREROUTED_ROUTING_ENABLE
-	}
-#endif
 	return (success);
 }
 
@@ -1332,7 +1327,6 @@ void free_chunk_memory_trace(void) {
 	}
 }
 
-#ifdef TORO_PREROUTED_ROUTING_ENABLE
 //===========================================================================//
 bool validate_prerouted_nets(
 		void) {
@@ -1396,6 +1390,4 @@ bool restrict_prerouted_path(
 	return (restrict);
 }
 //===========================================================================//
-#endif
-
 
