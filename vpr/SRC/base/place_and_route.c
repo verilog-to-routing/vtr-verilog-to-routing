@@ -45,7 +45,6 @@ void post_place_sync(INP int L_num_blocks,
 
 void free_pb_data(t_pb *pb);
 
-#ifdef TORO_FABRIC_CHANNEL_OVERRIDE
 //===========================================================================//
 #include "TFH_FabricChannelHandler.h"
 
@@ -53,7 +52,6 @@ static bool init_chan_override(int* chan_override_max);
 static bool init_chan_override_widths(TFH_SelectChannelMode_t selectChannel, 
 		int nxny, int* chan_width_xy, int* chan_override_max);
 //===========================================================================//
-#endif
 
 /************************* Subroutine Definitions ****************************/
 
@@ -624,11 +622,9 @@ void init_chan(int cfactor, int* chan_override_max, t_chan_width_dist chan_width
 		}
 	}
 
-#ifdef TORO_FABRIC_CHANNEL_OVERRIDE
 	if (chan_override_max) {
 		init_chan_override(chan_override_max);
 	}
-#endif
 
 	chan_width.max = 0;
 	chan_width.x_max = chan_width.y_max = INT_MIN;
@@ -657,7 +653,6 @@ void init_chan(int cfactor, int* chan_override_max, t_chan_width_dist chan_width
 #endif
 }
 
-#ifdef TORO_FABRIC_CHANNEL_OVERRIDE
 //===========================================================================//
 static bool init_chan_override(int* chan_override_max) {
 
@@ -712,7 +707,6 @@ static bool init_chan_override_widths(TFH_SelectChannelMode_t selectChannel,
 	return (ok);
 }
 //===========================================================================//
-#endif
 
 static float comp_width(t_chan * chan, float x, float separation) {
 
