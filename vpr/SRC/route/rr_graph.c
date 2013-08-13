@@ -418,14 +418,11 @@ void build_rr_graph(
 				load_sblock_pattern_lookup(i, j, nodes_per_chan,
 						chan_details_x, chan_details_y,
 						Fs, sb_type, unidir_sb_pattern);
-#ifdef TORO_FABRIC_SWITCHBOX_OVERRIDE
+
 				if (!ignore_overrides) {
 					override_sblock_pattern_lookup(i, j, max_chan_width,
 							unidir_sb_pattern);
-}
-#else
-				ignore_overrides = FALSE; // Prevents compiler warning...
-#endif
+				}
 			}
 		}
 
@@ -829,14 +826,9 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 		}
 	}
 
-#ifdef TORO_FABRIC_CONNECTIONBLOCK_OVERRIDE
 	if (!ignore_overrides) {
 		override_cblock_edge_lists(num_rr_nodes, rr_node);
 	}
-#else
-	ignore_overrides = FALSE; // Prevents compiler warning...
-#endif
-
 	free(opin_mux_size);
 }
 
