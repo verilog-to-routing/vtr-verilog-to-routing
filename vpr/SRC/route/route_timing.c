@@ -18,20 +18,14 @@ using namespace std;
 #include "stats.h"
 #include "ReadOptions.h"
 
-#ifdef TORO_PREROUTED_ROUTING_ENABLE
 //===========================================================================//
 #include "TCH_PreRoutedHandler.h"
-//===========================================================================//
-#endif
 
-#ifdef TORO_PREROUTED_ROUTING_ENABLE
-//===========================================================================//
 static bool timing_driven_order_prerouted_first(int try_count, 
 		struct s_router_opts router_opts, float pres_fac, 
 		float* pin_criticality, int* sink_order, 
 		t_rt_node** rt_node_of_sink, float** net_delay, t_slack* slacks);
 //===========================================================================//
-#endif
 
 /******************** Subroutines local to route_timing.c ********************/
 
@@ -129,11 +123,9 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			clb_net[inet].is_fixed = FALSE;
 		}
 
-#ifdef TORO_PREROUTED_ROUTING_ENABLE
 		timing_driven_order_prerouted_first(itry, router_opts, pres_fac, 
 				pin_criticality, sink_order, 
 				rt_node_of_sink, net_delay, slacks);
-#endif
 
 		for (int i = 0; i < num_nets; ++i) {
 			int inet = net_index[i];
@@ -639,13 +631,11 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 				|| rr_node[to_node].ylow > route_bb[inet].ymax)
 			continue; /* Node is outside (expanded) bounding box. */
 
-#ifdef TORO_PREROUTED_ROUTING_ENABLE
 		int src_node = net_rr_terminals[inet][0];
 		int sink_node = target_node;
 		int from_node = inode;
 		if (restrict_prerouted_path(inet, itry, src_node, sink_node, from_node, to_node))
 			continue;
-#endif
 
 		if (clb_net[inet].num_sinks >= HIGH_FANOUT_NET_LIM) {
 			if (rr_node[to_node].xhigh < target_x - highfanout_rlim
@@ -1005,7 +995,6 @@ static void timing_driven_check_net_delays(float **net_delay) {
 	vpr_printf_info("Completed net delay value cross check successfully.\n");
 }
 
-#ifdef TORO_PREROUTED_ROUTING_ENABLE
 //===========================================================================//
 static bool timing_driven_order_prerouted_first(
 		int try_count, 
@@ -1062,4 +1051,3 @@ static bool timing_driven_order_prerouted_first(
 	return (ok);
 }
 //===========================================================================//
-#endif
