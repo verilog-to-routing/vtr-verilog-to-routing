@@ -1,11 +1,6 @@
 ################################   MAKEFILE OPTIONS     ####################################
 # Build the external objects library
 
-export ENABLE_TORO = false
-# for ksh/sh shells, use export ENABLE_TORO=false
-# for csh/tcsh shells, use setenv ENABLE_TORO false
-# valid values are true or false
-
 export BUILD_TYPE = release
 # for ksh/sh shells, use export BUILD_TYPE = release
 # for csh/tcsh shells, use setenv BUILD_TYPE release
@@ -39,19 +34,6 @@ ifneq (,$(findstring release, $(BUILD_TYPE)))
   FLAGS := $(FLAGS) $(OPT_FLAGS)
 else                              # DEBUG build
   FLAGS := $(FLAGS) $(DEBUG_FLAGS)
-endif
-
-ifneq (,$(findstring true, $(ENABLE_TORO)))
-  FLAGS := $(FLAGS) \
-	-D TORO_FABRIC_GRID_OVERRIDE  \
-	-D TORO_FABRIC_BLOCK_OVERRIDE  \
-	-D TORO_FABRIC_SWITCHBOX_OVERRIDE  \
-	-D TORO_FABRIC_CONNECTIONBLOCK_OVERRIDE  \
-	-D TORO_FABRIC_CHANNEL_OVERRIDE  \
-	-D TORO_REGION_PLACEMENT_ENABLE  \
-	-D TORO_RELATIVE_PLACEMENT_ENABLE  \
-	-D TORO_PREPLACED_PLACEMENT_ENABLE  \
-	-D TORO_PREROUTED_ROUTING_ENABLE
 endif
 
 EXE = printhandlerdemo
