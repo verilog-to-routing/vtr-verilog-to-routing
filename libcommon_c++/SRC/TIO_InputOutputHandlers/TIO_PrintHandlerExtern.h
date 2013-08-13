@@ -68,16 +68,16 @@ void PrintHandlerFilter( TIO_MessageMode_t messageMode,
                          TIO_FilterMode_t filterMode,
                          const char* pszFilter );
 
-unsigned char PrintHandlerMessage( TIO_MessageMode_t messageMode,
-                                   const char* pszMessage, ... );
+bool PrintHandlerMessage( TIO_MessageMode_t messageMode,
+                          const char* pszMessage, ... );
 
 void PrintHandlerInfo( const char* pszMessage, ... );
-unsigned char PrintHandlerWarning( const char* pszFileName,
-                                   unsigned int lineNum,
-                                   const char* pszMessage, ... );
-unsigned char PrintHandlerError( const char* pszFileName,
-                                 unsigned int lineNum,
-                                 const char* pszMessage, ... );
+bool PrintHandlerWarning( const char* pszFileName,
+                          unsigned int lineNum,
+                          const char* pszMessage, ... );
+bool PrintHandlerError( const char* pszFileName,
+                        unsigned int lineNum,
+                        const char* pszMessage, ... );
 void PrintHandlerTrace( const char* pszMessage, ... );
 void PrintHandlerDirect( const char* pszMessage, ... );
 
