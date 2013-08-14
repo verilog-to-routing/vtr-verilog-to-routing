@@ -24,6 +24,7 @@ typedef struct {
 
 typedef struct {
 	float blk_width;
+	float blk_height;
 	t_draw_bbox blk_bbox;
 } t_draw_pb_hierarchy;
 
