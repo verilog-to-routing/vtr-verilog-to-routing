@@ -9,9 +9,9 @@ Vbuf Vbuf 0 Vol
 X0 in a Vdrive 0 inv nsize=4 psize='4*pnratio'
 Xref in x Vref 0 inv nsize=4 psize='4*pnratio'
 
-X1 a a mida sram1 0 mux2 size=1
-X2 a a midb sram1 0 mux2 size=1
-X3 mida midb out sram1 0 mux2 size=1
+X1 a a mida sram1 0 mux2 size='nmos_size'
+X2 a a midb sram1 0 mux2 size='nmos_size'
+X3 mida midb out sram1 0 mux2 size='nmos_size'
 
 
 

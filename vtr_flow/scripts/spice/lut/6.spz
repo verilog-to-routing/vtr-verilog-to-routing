@@ -36,55 +36,55 @@ X105 in6 sel6mid Vdd1 0 inv nsize=1 psize='1*pnratio'
 X106 sel6mid sel6 Vdd1 0 inv nsize=2 psize='2*pnratio'
 X107 in6 sel6n Vdd1 0 inv nsize=2 psize='2*pnratio'
 
-X57 sram1 sram0 mid6a sel6 sel6n mux2 size=1
-X58 sram0 sram1 mid6b sel6 sel6n mux2 size=1
-X59 sram0 sram1 mid6c sel6 sel6n mux2 size=1
-X60 sram1 sram0 mid6d sel6 sel6n mux2 size=1
-X61 sram0 sram1 mid6e sel6 sel6n mux2 size=1
-X62 sram1 sram0 mid6f sel6 sel6n mux2 size=1
-X63 sram1 sram0 mid6g sel6 sel6n mux2 size=1
-X64 sram0 sram1 mid6h sel6 sel6n mux2 size=1
-X65 sram0 sram1 mid6i sel6 sel6n mux2 size=1
-X66 sram1 sram0 mid6j sel6 sel6n mux2 size=1
-X67 sram1 sram0 mid6k sel6 sel6n mux2 size=1
-X68 sram0 sram1 mid6l sel6 sel6n mux2 size=1
-X69 sram1 sram0 mid6m sel6 sel6n mux2 size=1
-X70 sram0 sram1 mid6n sel6 sel6n mux2 size=1
-X71 sram0 sram1 mid6o sel6 sel6n mux2 size=1
-X72 sram1 sram0 mid6p sel6 sel6n mux2 size=1
-X73 sram0 sram1 mid6q sel6 sel6n mux2 size=1
-X74 sram1 sram0 mid6r sel6 sel6n mux2 size=1
-X75 sram1 sram0 mid6s sel6 sel6n mux2 size=1
-X76 sram0 sram1 mid6t sel6 sel6n mux2 size=1
-X77 sram1 sram0 mid6u sel6 sel6n mux2 size=1
-X78 sram0 sram1 mid6v sel6 sel6n mux2 size=1
-X79 sram0 sram1 mid6w sel6 sel6n mux2 size=1
-X80 sram1 sram0 mid6x sel6 sel6n mux2 size=1
-X81 sram1 sram0 mid6y sel6 sel6n mux2 size=1
-X82 sram0 sram1 mid6z sel6 sel6n mux2 size=1
-X83 sram0 sram1 mid6za sel6 sel6n mux2 size=1
-X84 sram1 sram0 mid6zb sel6 sel6n mux2 size=1
-X85 sram0 sram1 mid6zc sel6 sel6n mux2 size=1
-X86 sram1 sram0 mid6zd sel6 sel6n mux2 size=1
-X87 sram1 sram0 mid6ze sel6 sel6n mux2 size=1
-X88 sram0 sram1 mid6zf sel6 sel6n mux2 size=1
+X57 sram1 sram0 mid6a sel6 sel6n mux2 size='nmos_size'
+X58 sram0 sram1 mid6b sel6 sel6n mux2 size='nmos_size'
+X59 sram0 sram1 mid6c sel6 sel6n mux2 size='nmos_size'
+X60 sram1 sram0 mid6d sel6 sel6n mux2 size='nmos_size'
+X61 sram0 sram1 mid6e sel6 sel6n mux2 size='nmos_size'
+X62 sram1 sram0 mid6f sel6 sel6n mux2 size='nmos_size'
+X63 sram1 sram0 mid6g sel6 sel6n mux2 size='nmos_size'
+X64 sram0 sram1 mid6h sel6 sel6n mux2 size='nmos_size'
+X65 sram0 sram1 mid6i sel6 sel6n mux2 size='nmos_size'
+X66 sram1 sram0 mid6j sel6 sel6n mux2 size='nmos_size'
+X67 sram1 sram0 mid6k sel6 sel6n mux2 size='nmos_size'
+X68 sram0 sram1 mid6l sel6 sel6n mux2 size='nmos_size'
+X69 sram1 sram0 mid6m sel6 sel6n mux2 size='nmos_size'
+X70 sram0 sram1 mid6n sel6 sel6n mux2 size='nmos_size'
+X71 sram0 sram1 mid6o sel6 sel6n mux2 size='nmos_size'
+X72 sram1 sram0 mid6p sel6 sel6n mux2 size='nmos_size'
+X73 sram0 sram1 mid6q sel6 sel6n mux2 size='nmos_size'
+X74 sram1 sram0 mid6r sel6 sel6n mux2 size='nmos_size'
+X75 sram1 sram0 mid6s sel6 sel6n mux2 size='nmos_size'
+X76 sram0 sram1 mid6t sel6 sel6n mux2 size='nmos_size'
+X77 sram1 sram0 mid6u sel6 sel6n mux2 size='nmos_size'
+X78 sram0 sram1 mid6v sel6 sel6n mux2 size='nmos_size'
+X79 sram0 sram1 mid6w sel6 sel6n mux2 size='nmos_size'
+X80 sram1 sram0 mid6x sel6 sel6n mux2 size='nmos_size'
+X81 sram1 sram0 mid6y sel6 sel6n mux2 size='nmos_size'
+X82 sram0 sram1 mid6z sel6 sel6n mux2 size='nmos_size'
+X83 sram0 sram1 mid6za sel6 sel6n mux2 size='nmos_size'
+X84 sram1 sram0 mid6zb sel6 sel6n mux2 size='nmos_size'
+X85 sram0 sram1 mid6zc sel6 sel6n mux2 size='nmos_size'
+X86 sram1 sram0 mid6zd sel6 sel6n mux2 size='nmos_size'
+X87 sram1 sram0 mid6ze sel6 sel6n mux2 size='nmos_size'
+X88 sram0 sram1 mid6zf sel6 sel6n mux2 size='nmos_size'
 
-X37 mid6a mid6b mid5a sel5 sel5n mux2 size=1
-X38 mid6c mid6d mid5b sel5 sel5n mux2 size=1
-X39 mid6e mid6f mid5c sel5 sel5n mux2 size=1
-X40 mid6g mid6h mid5d sel5 sel5n mux2 size=1
-X41 mid6i mid6j mid5e sel5 sel5n mux2 size=1
-X42 mid6k mid6l mid5f sel5 sel5n mux2 size=1
-X43 mid6m mid6n mid5g sel5 sel5n mux2 size=1
-X44 mid6o mid6p mid5h sel5 sel5n mux2 size=1
-X45 mid6q mid6r mid5i sel5 sel5n mux2 size=1
-X46 mid6s mid6t mid5j sel5 sel5n mux2 size=1
-X47 mid6u mid6v mid5k sel5 sel5n mux2 size=1
-X48 mid6w mid6x mid5l sel5 sel5n mux2 size=1
-X49 mid6y mid6z mid5m sel5 sel5n mux2 size=1
-X50 mid6za mid6zb mid5n sel5 sel5n mux2 size=1
-X51 mid6zc mid6zd mid5o sel5 sel5n mux2 size=1
-X52 mid6ze mid6zf mid5p sel5 sel5n mux2 size=1
+X37 mid6a mid6b mid5a sel5 sel5n mux2 size='nmos_size'
+X38 mid6c mid6d mid5b sel5 sel5n mux2 size='nmos_size'
+X39 mid6e mid6f mid5c sel5 sel5n mux2 size='nmos_size'
+X40 mid6g mid6h mid5d sel5 sel5n mux2 size='nmos_size'
+X41 mid6i mid6j mid5e sel5 sel5n mux2 size='nmos_size'
+X42 mid6k mid6l mid5f sel5 sel5n mux2 size='nmos_size'
+X43 mid6m mid6n mid5g sel5 sel5n mux2 size='nmos_size'
+X44 mid6o mid6p mid5h sel5 sel5n mux2 size='nmos_size'
+X45 mid6q mid6r mid5i sel5 sel5n mux2 size='nmos_size'
+X46 mid6s mid6t mid5j sel5 sel5n mux2 size='nmos_size'
+X47 mid6u mid6v mid5k sel5 sel5n mux2 size='nmos_size'
+X48 mid6w mid6x mid5l sel5 sel5n mux2 size='nmos_size'
+X49 mid6y mid6z mid5m sel5 sel5n mux2 size='nmos_size'
+X50 mid6za mid6zb mid5n sel5 sel5n mux2 size='nmos_size'
+X51 mid6zc mid6zd mid5o sel5 sel5n mux2 size='nmos_size'
+X52 mid6ze mid6zf mid5p sel5 sel5n mux2 size='nmos_size'
 
 X89  mid5a mid5alv Vdd2 0 levr
 X90  mid5b mid5blv Vdd2 0 levr
@@ -103,30 +103,30 @@ X102 mid5n mid5nlv Vdd2 0 levr
 X103 mid5o mid5olv Vdd2 0 levr
 X104 mid5p mid5plv Vdd2 0 levr
 
-X22 mid5alv mid5blv mid4a sel4 sel4n mux2 size=1
-X23 mid5clv mid5dlv mid4b sel4 sel4n mux2 size=1
-X24 mid5elv mid5flv mid4c sel4 sel4n mux2 size=1
-X25 mid5glv mid5hlv mid4d sel4 sel4n mux2 size=1
-X26 mid5ilv mid5jlv mid4e sel4 sel4n mux2 size=1
-X27 mid5klv mid5llv mid4f sel4 sel4n mux2 size=1
-X28 mid5mlv mid5nlv mid4g sel4 sel4n mux2 size=1
-X29 mid5olv mid5plv mid4h sel4 sel4n mux2 size=1
+X22 mid5alv mid5blv mid4a sel4 sel4n mux2 size='nmos_size'
+X23 mid5clv mid5dlv mid4b sel4 sel4n mux2 size='nmos_size'
+X24 mid5elv mid5flv mid4c sel4 sel4n mux2 size='nmos_size'
+X25 mid5glv mid5hlv mid4d sel4 sel4n mux2 size='nmos_size'
+X26 mid5ilv mid5jlv mid4e sel4 sel4n mux2 size='nmos_size'
+X27 mid5klv mid5llv mid4f sel4 sel4n mux2 size='nmos_size'
+X28 mid5mlv mid5nlv mid4g sel4 sel4n mux2 size='nmos_size'
+X29 mid5olv mid5plv mid4h sel4 sel4n mux2 size='nmos_size'
 
 
-X15 mid4a mid4b mid3a sel3 sel3n mux2 size=1
-X16 mid4c mid4d mid3b sel3 sel3n mux2 size=1
-X17 mid4e mid4f mid3c sel3 sel3n mux2 size=1
-X18 mid4g mid4h mid3d sel3 sel3n mux2 size=1
+X15 mid4a mid4b mid3a sel3 sel3n mux2 size='nmos_size'
+X16 mid4c mid4d mid3b sel3 sel3n mux2 size='nmos_size'
+X17 mid4e mid4f mid3c sel3 sel3n mux2 size='nmos_size'
+X18 mid4g mid4h mid3d sel3 sel3n mux2 size='nmos_size'
 
 X30 mid3a mid3alv Vdd2 0 levr
 X31 mid3b mid3blv Vdd2 0 levr
 X32 mid3c mid3clv Vdd2 0 levr
 X33 mid3d mid3dlv Vdd2 0 levr
 
-X7 mid3alv mid3blv mid2a sel2 sel2n mux2 size=1
-X8 mid3clv mid3dlv mid2b sel2 sel2n mux2 size=1
+X7 mid3alv mid3blv mid2a sel2 sel2n mux2 size='nmos_size'
+X8 mid3clv mid3dlv mid2b sel2 sel2n mux2 size='nmos_size'
 
-X9 mid2a mid2b mid1a sel1 sel1n mux2 size=1
+X9 mid2a mid2b mid1a sel1 sel1n mux2 size='nmos_size'
 
 X10 mid1a out Vdd2 0 levr
 

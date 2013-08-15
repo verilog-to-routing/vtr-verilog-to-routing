@@ -10,7 +10,7 @@ from subprocess import Popen, PIPE, STDOUT
 my_dir = ""
 
 if len(sys.argv) < 9:
-    print ("Usage: spice.py <tech_file> <tech_size> <Vdd> <P/N> <temp> <activity [hz]> <component_type> <size>")
+    print ("Usage: spice.py <tech_file> <tech_size> <Vdd> <P/N> <temp> <activity [hz]> <component_type> <size> <nmos_size>")
     sys.exit();
     
 my_dir = os.path.dirname(os.path.realpath(__file__));
@@ -25,6 +25,10 @@ activity = sys.argv[6]
 type = sys.argv[7]
 size = sys.argv[8]
 
+do_nmos_size = False
+if len(sys.argv) > 9:
+    do_nmos_size = True
+    nmos_size = sys.argv[9]
 
 if (activity == "h"):
     na = 0
@@ -60,6 +64,9 @@ f.write(".param simt = 5n\n")
 
 f.write(".param Vol=" + Vdd + "\n")
 f.write(".param pnratio=" + pn + "\n")
+
+if do_nmos_size:
+    f.write(".param nmos_size=" + nmos_size + "\n")
 
 subckt_path = os.path.join(base_dir, "subckt")
 f.write(".include " + subckt_path + "/nmos_pmos.sp\n")
