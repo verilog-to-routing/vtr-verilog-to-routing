@@ -90,6 +90,195 @@
     <ClCompile Include="SRC\TC_Common\TC_NameIndex.cxx">
       <Filter>Source Files\TC_Common</Filter>
     </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_Net.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_PrePlacedBlock.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_PrePlacedHandler.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_PreRoutedHandler.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RegionPlaceHandler.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RelativeBlock.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RelativeMacro.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RelativeMove.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RelativeNode.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RelativePlaceHandler.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RotateMaskKey.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RotateMaskValue.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RouteNode.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RoutePath.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_StringUtils.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_VPR_Data.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_VPR_GraphNode.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_VPR_GraphToRoute.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TC_Common\TC_Index.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_ConnectionBlock.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_ConnectionMap.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_FabricBlockHandler.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_FabricChannelHandler.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_FabricConnectionBlockHandler.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_FabricGridHandler.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_FabricSwitchBoxHandler.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_GridBlock.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_StringUtils.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_SwitchBox.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TGO_GeometricObjects\TGO_Box.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TGO_GeometricObjects\TGO_Line.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TGO_GeometricObjects\TGO_Point.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TGO_GeometricObjects\TGO_Polygon.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TGO_GeometricObjects\TGO_Region.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TGO_GeometricObjects\TGO_StringUtils.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TGO_GeometricObjects\TGO_Transform.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_ArrayGrid.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_ArrayGridIter.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_Box.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_Line.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_Path.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_Point.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_Rect.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_Region.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_StringUtils.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TLO_LogicalObjects\TLO_Cell.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TLO_LogicalObjects\TLO_Port.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TLO_LogicalObjects\TLO_Power.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TLO_LogicalObjects\TLO_StringUtils.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TNO_NetObjects\TNO_InstPin.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TNO_NetObjects\TNO_Net.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TNO_NetObjects\TNO_NetList.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TNO_NetObjects\TNO_Node.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TNO_NetObjects\TNO_Segment.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TNO_NetObjects\TNO_StringUtils.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TNO_NetObjects\TNO_SwitchBox.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TPO_PhysicalObjects\TPO_HierInstMap.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TPO_PhysicalObjects\TPO_Inst.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TPO_PhysicalObjects\TPO_InstHierMap.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TPO_PhysicalObjects\TPO_PinMap.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TPO_PhysicalObjects\TPO_PlaceRegions.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TPO_PhysicalObjects\TPO_PlaceRelative.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\TPO_PhysicalObjects\TPO_StringUtils.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SRC\TC_Common\TC_Bit.h">
@@ -214,6 +403,216 @@
     </ClInclude>
     <ClInclude Include="SRC\TC_Common\TCT_Range.h">
       <Filter>Header Files\TC_Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_Net.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_PrePlacedBlock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_PrePlacedHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_PreRoutedHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RegionPlaceHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RelativeBlock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RelativeMacro.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RelativeMove.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RelativeNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RelativePlaceHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RotateMaskKey.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RotateMaskValue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RouteNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RoutePath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_StringUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_Typedefs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_VPR_Data.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_VPR_GraphNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_VPR_GraphToRoute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TC_Common\TC_Index.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_ConnectionBlock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_ConnectionMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_FabricBlockHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_FabricChannelHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_FabricConnectionBlockHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_FabricGridHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_FabricSwitchBoxHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_GridBlock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_StringUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_SwitchBox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_Typedefs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGO_GeometricObjects\TGO_Box.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGO_GeometricObjects\TGO_Line.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGO_GeometricObjects\TGO_Point.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGO_GeometricObjects\TGO_Polygon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGO_GeometricObjects\TGO_Region.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGO_GeometricObjects\TGO_StringUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGO_GeometricObjects\TGO_Transform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGO_GeometricObjects\TGO_Typedefs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_ArrayGrid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_ArrayGridIter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_Box.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_Line.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_Path.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_Point.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_Rect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_Region.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_StringUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_Typedefs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TLO_LogicalObjects\TLO_Cell.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TLO_LogicalObjects\TLO_Port.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TLO_LogicalObjects\TLO_Power.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TLO_LogicalObjects\TLO_StringUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TLO_LogicalObjects\TLO_Typedefs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TNO_NetObjects\TNO_InstPin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TNO_NetObjects\TNO_Net.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TNO_NetObjects\TNO_NetList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TNO_NetObjects\TNO_Node.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TNO_NetObjects\TNO_Segment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TNO_NetObjects\TNO_StringUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TNO_NetObjects\TNO_SwitchBox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TNO_NetObjects\TNO_Typedefs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TPO_PhysicalObjects\TPO_HierInstMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TPO_PhysicalObjects\TPO_Inst.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TPO_PhysicalObjects\TPO_InstHierMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TPO_PhysicalObjects\TPO_PinMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TPO_PhysicalObjects\TPO_PlaceRegions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TPO_PhysicalObjects\TPO_PlaceRelative.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TPO_PhysicalObjects\TPO_StringUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\TPO_PhysicalObjects\TPO_Typedefs.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
