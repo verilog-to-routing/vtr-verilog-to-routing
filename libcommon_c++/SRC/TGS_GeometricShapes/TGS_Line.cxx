@@ -37,19 +37,25 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
-// This program is free software; you can redistribute it and/or modify it   //
-// under the terms of the GNU General Public License as published by the     //
-// Free Software Foundation; version 3 of the License, or any later version. //
+// Permission is hereby granted, free of charge, to any person obtaining a   //
+// copy of this software and associated documentation files (the "Software"),//
+// to deal in the Software without restriction, including without limitation //
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,  //
+// and/or sell copies of the Software, and to permit persons to whom the     //
+// Software is furnished to do so, subject to the following conditions:      //
 //                                                                           //
-// This program is distributed in the hope that it will be useful, but       //
-// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
-// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
-// for more details.                                                         //
+// The above copyright notice and this permission notice shall be included   //
+// in all copies or substantial portions of the Software.                    //
 //                                                                           //
-// You should have received a copy of the GNU General Public License along   //
-// with this program; if not, see <http://www.gnu.org/licenses>.             //
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS   //
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF                //
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN // 
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,  //
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR     //
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE //
+// USE OR OTHER DEALINGS IN THE SOFTWARE.                                    //
 //---------------------------------------------------------------------------//
 
 #if defined( SUN8 ) || defined( SUN10 )
@@ -238,22 +244,22 @@ void TGS_Line_c::ExtractString(
 
       if( this->IsValid( ))
       {
-	 if( this->z != INT_MIN )
+         if( this->z != INT_MIN )
          {
             sprintf( szLine, "%0.*f %0.*f %0.*f %0.*f %d",
                              static_cast< int >( precision ), this->x1,
                              static_cast< int >( precision ), this->y1,
                              static_cast< int >( precision ), this->x2,
-	                     static_cast< int >( precision ), this->y2,
+                             static_cast< int >( precision ), this->y2,
                              this->z );
          }
-	 else
+         else
          {
             sprintf( szLine, "%0.*f %0.*f %0.*f %0.*f",
                              static_cast< int >( precision ), this->x1,
                              static_cast< int >( precision ), this->y1,
                              static_cast< int >( precision ), this->x2,
-	                     static_cast< int >( precision ), this->y2 );
+                             static_cast< int >( precision ), this->y2 );
          }
       }
       else
@@ -420,22 +426,22 @@ void TGS_Line_c::ExtendLength(
    {
       if( this->IsLeft( ))
       {
-	 if( TCTF_IsGE( length, 0.0 ))
+         if( TCTF_IsGE( length, 0.0 ))
          {
             this->x2 += length;
          }   
-	 else // if( TCTF_IsLT( length, 0.0 ))
+         else // if( TCTF_IsLT( length, 0.0 ))
          {
             this->x1 += length;
          }   
       }   
       else // if( this->IsRight( ))
       {
-	 if( TCTF_IsGE( length, 0.0 ))
+         if( TCTF_IsGE( length, 0.0 ))
          {
             this->x2 -= length;
          }   
-	 else // if( TCTF_IsLT( length, 0.0 ))
+         else // if( TCTF_IsLT( length, 0.0 ))
          {
             this->x1 -= length;
          }   
@@ -445,22 +451,22 @@ void TGS_Line_c::ExtendLength(
    {
       if( this->IsLower( ))
       {
-	 if( TCTF_IsGE( length, 0.0 ))
+         if( TCTF_IsGE( length, 0.0 ))
          {
             this->y2 += length;
          }   
-	 else // if( TCTF_IsLT( length, 0.0 ))
+         else // if( TCTF_IsLT( length, 0.0 ))
          {
             this->y1 += length;
          }   
       }   
       else // if( this->IsUpper( ))
       {
-	 if( TCTF_IsGE( length, 0.0 ))
+         if( TCTF_IsGE( length, 0.0 ))
          {
             this->y2 -= length;
          }   
-	 else // if( TCTF_IsLT( length, 0.0 ))
+         else // if( TCTF_IsLT( length, 0.0 ))
          {
             this->y1 -= length;
          }   
@@ -888,7 +894,7 @@ void TGS_Line_c::FindIntersect(
          }
          else
          {
- 	    // Find and return intersect point for collinear lines
+            // Find and return intersect point for collinear lines
             this->FindNearest( pointD, pthisIntersectPoint );
          }
       }
@@ -982,12 +988,12 @@ void TGS_Line_c::ApplyUnion(
       if( this->IsLeft( ))
       {
          this->x1 = TCT_Min( this->x1, xMin ); 
-	 this->x2 = TCT_Max( this->x2, xMax ); 
+         this->x2 = TCT_Max( this->x2, xMax ); 
       }   
       else if( this->IsRight( ))
       {
          this->x1 = TCT_Max( this->x1, xMax ); 
-	 this->x2 = TCT_Min( this->x2, xMin ); 
+         this->x2 = TCT_Min( this->x2, xMin ); 
       }   
    }   
    else if( this->IsVertical( ))
@@ -998,12 +1004,12 @@ void TGS_Line_c::ApplyUnion(
       if( this->IsLower( ))
       {
          this->y1 = TCT_Min( this->y1, yMin ); 
-	 this->y2 = TCT_Max( this->y2, yMax ); 
+         this->y2 = TCT_Max( this->y2, yMax ); 
       }   
       else if( this->IsUpper( ))
       {
          this->y1 = TCT_Max( this->y1, yMax ); 
-	 this->y2 = TCT_Min( this->y2, yMin ); 
+         this->y2 = TCT_Min( this->y2, yMin ); 
       }   
    }
 }
@@ -1047,12 +1053,12 @@ void TGS_Line_c::ApplyIntersect(
       if( this->IsLeft( ))
       {
          this->x1 = TCT_Max( this->x1, xMin ); 
-	 this->x2 = TCT_Min( this->x2, xMax ); 
+         this->x2 = TCT_Min( this->x2, xMax ); 
       }   
       else if( this->IsRight( ))
       {
          this->x1 = TCT_Min( this->x1, xMax ); 
-	 this->x2 = TCT_Max( this->x2, xMin ); 
+         this->x2 = TCT_Max( this->x2, xMin ); 
       }   
    }   
    else if( this->IsVertical( ))
@@ -1063,12 +1069,12 @@ void TGS_Line_c::ApplyIntersect(
       if( this->IsLower( ))
       {
          this->y1 = TCT_Max( this->y1, yMin ); 
-	 this->y2 = TCT_Min( this->y2, yMax ); 
+         this->y2 = TCT_Min( this->y2, yMax ); 
       }   
       else if( this->IsUpper( ))
       {
          this->y1 = TCT_Min( this->y1, yMax ); 
-	 this->y2 = TCT_Max( this->y2, yMin ); 
+         this->y2 = TCT_Max( this->y2, yMin ); 
       }   
    }
 }
@@ -1281,11 +1287,11 @@ bool TGS_Line_c::IsParallel(
 {
    bool isParallel = false;
 
-   double thisDx = this->x1 - this->x2;
-   double thisDy = this->y1 - this->y2;
+   double thisDx = fabs( this->x1 - this->x2 );
+   double thisDy = fabs( this->y1 - this->y2 );
 
-   double lineDx = line.x1 - line.x2;
-   double lineDy = line.y1 - line.y2;
+   double lineDx = fabs( line.x1 - line.x2 );
+   double lineDy = fabs( line.y1 - line.y2 );
 
    if( TCTF_IsNZE( thisDy ) && TCTF_IsNZE( lineDy ))
    {
