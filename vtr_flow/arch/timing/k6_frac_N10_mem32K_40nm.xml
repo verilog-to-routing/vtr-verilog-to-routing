@@ -1210,6 +1210,9 @@
   </complexblocklist>
   <power>
     <local_interconnect C_wire="2.5e-10"/>
+	<mux_transistor_size mux_transistor_size="3"/>
+	<FF_size FF_size="4"/>
+	<LUT_transistor_size LUT_transistor_size="4"/> 
   </power>
   <clocks>
     <clock buffer_size="auto" C_wire="2.5e-10"/>
