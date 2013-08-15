@@ -48,7 +48,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iato
 
 static void commit_remove_rt(t_lb_router_data *router_data, int inet, e_commit_remove op);
 static void add_source_to_rt(t_lb_router_data *router_data, int inet);
-static void expand_rt(t_lb_router_data *router_data, int inet, vector<int> &explored_nodes, 
+static void expand_rt(t_lb_router_data *router_data, int inet, map<int, boolean> &explored_nodes, 
 	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq);
 static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node, 
 	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq);
@@ -287,9 +287,10 @@ boolean try_route(INOUTP t_lb_router_data *router_data) {
 	boolean is_impossible = FALSE;
 	t_expansion_node exp_node;
 
+	
 	/* Stores state info during route */
 	priority_queue <t_expansion_node, vector <t_expansion_node>, compare_expansion_node> pq;	/* Priority queue used to find lowest cost next node to explore */
-	vector<int> explored_nodes;				/* List of already explored nodes to clear incrementally later */
+	map<int, boolean> explored_nodes;				/* List of already explored nodes to clear incrementally later */
 	t_explored_node_tb *node_traceback = new t_explored_node_tb[lb_type_graph.size()]; /* Store traceback info for explored nodes */
 	
 	/*	Iteratively remove congestion until a successful route is found.  
@@ -320,7 +321,7 @@ boolean try_route(INOUTP t_lb_router_data *router_data) {
 							*/
 							node_traceback[exp_node.node_index].isExplored = TRUE;
 							node_traceback[exp_node.node_index].prev_index = exp_node.prev_index;
-							explored_nodes.push_back(exp_node.node_index);		
+							explored_nodes[exp_node.node_index] = TRUE;		
 							expand_node(router_data, exp_node, pq);
 						}
 					}
@@ -330,15 +331,10 @@ boolean try_route(INOUTP t_lb_router_data *router_data) {
 					/* Net terminal is routed, add this to the route tree, clear data structures, and keep going */
 					add_to_rt(lb_nets[inet].rt_tree, exp_node.node_index, node_traceback);
 
-					/* Clear explored nodes, do incrementally */
-					for(unsigned int iexp = 0; iexp < explored_nodes.size(); iexp++) {
+					/* Clear all explored nodes */
+					for(unsigned int iexp = 0; iexp < lb_type_graph.size(); iexp++) {
 						node_traceback[iexp].isExplored = FALSE;
 						node_traceback[iexp].prev_index = OPEN;
-					}
-
-					/* jedit error checking, delete me later */
-					for(unsigned int iexp = 0; iexp < lb_type_graph.size(); iexp++) {
-						assert(node_traceback[iexp].isExplored == FALSE && node_traceback[iexp].prev_index == OPEN);
 					}
 				}
 				pq = priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node>(); /* Reset priority queue */
@@ -578,23 +574,51 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iato
 	}
 }
 
+
+
+
+
+
+
+
+
 /* Commit or remove route tree from currently routed solution */
 static void commit_remove_rt(t_lb_router_data *router_data, int inet, e_commit_remove op) {
 }
 
 /* At source mode as starting point to existing route tree */
 static void add_source_to_rt(t_lb_router_data *router_data, int inet) {
+	(*router_data->intra_lb_nets)[inet].rt_tree = new t_lb_trace;
+	(*router_data->intra_lb_nets)[inet].rt_tree->current_node = (*router_data->intra_lb_nets)[inet].terminals[0];
 }
 
 /* Expand all nodes found in route tree into priority queue */
-static void expand_rt(t_lb_router_data *router_data, int inet, vector<int> &explored_nodes, 
+static void expand_rt(t_lb_router_data *router_data, int inet, map<int, boolean> &explored_nodes, 
 	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq) {
+	
+
+	assert(explored_nodes.empty());
+	
+
 }
 
 /* Expand all nodes found in route tree into priority queue */
 static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node, 
 	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq) {
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* Add new path from existing route tree to target sink */
 static void add_to_rt(t_lb_trace *rt, int node_index, t_explored_node_tb *node_traceback) {

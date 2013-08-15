@@ -180,6 +180,12 @@ struct t_expansion_node {
 	int node_index;
 	int prev_index;		
 	float cost;
+
+	t_expansion_node() {
+		node_index = OPEN;
+		prev_index = OPEN;
+		cost = 0;
+	}
 };
 
 class compare_expansion_node {

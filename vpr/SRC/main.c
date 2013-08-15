@@ -62,11 +62,9 @@ int main(int argc, char **argv) {
 		entire_flow_end = clock();
 	
 		#ifdef CLOCKS_PER_SEC
-// ???			vpr_printf(TIO_MESSAGE_INFO, "The entire flow of VPR took %g seconds.\n", (float)(entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 			vpr_printf_info("The entire flow of VPR took %g seconds.\n", 
 					(float)(entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 		#else
-// ???			vpr_printf(TIO_MESSAGE_INFO, "The entire flow of VPR took %g seconds.\n", (float)(entire_flow_end - entire_flow_begin) / CLK_PER_SEC);
 			vpr_printf_info("The entire flow of VPR took %g seconds.\n", 
 					(float)(entire_flow_end - entire_flow_begin) / CLK_PER_SEC);
 		#endif
