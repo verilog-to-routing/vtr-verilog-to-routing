@@ -35,8 +35,9 @@ boolean power_find_transistor_info(t_transistor_size_inf ** lower,
 void power_find_mux_volt_inf(t_power_mux_volt_pair ** lower,
 		t_power_mux_volt_pair ** upper, t_power_mux_volt_inf * volt_inf,
 		float v_in);
-void power_find_nmos_leakage(t_power_nmos_leakage_pair ** lower,
-		t_power_nmos_leakage_pair ** upper, float v_ds);
+void power_find_nmos_leakage(t_power_nmos_leakage_inf * nmos_leakage_info,
+		t_power_nmos_leakage_pair ** lower, t_power_nmos_leakage_pair ** upper,
+		float v_ds);
 void power_find_buffer_strength_inf(t_power_buffer_strength_inf ** lower,
 		t_power_buffer_strength_inf ** upper,
 		t_power_buffer_size_inf * size_inf, float stage_gain);

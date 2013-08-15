@@ -23,6 +23,8 @@
 #define __POWER_H__
 
 /************************* INCLUDES *********************************/
+#include <list>
+
 #include "vpr_types.h"
 #include "PowerSpicedComponent.h"
 
@@ -72,6 +74,9 @@ typedef struct s_power_buffer_strength_inf t_power_buffer_strength_inf;
 typedef struct s_mux_node t_mux_node;
 typedef struct s_mux_arch t_mux_arch;
 typedef struct s_solution_inf t_solution_inf;
+typedef struct s_power_nmos_mux_inf t_power_nmos_mux_inf;
+typedef struct s_power_nmos_leakage_inf t_power_nmos_leakage_inf;
+typedef struct s_power_mux_info t_power_mux_info;
 
 /* Information on the solution obtained by VPR */
 struct s_solution_inf {
@@ -109,6 +114,18 @@ struct s_transistor_inf {
 	t_transistor_size_inf * long_trans_inf; /* Long transistor (W=1,L=2) */
 };
 
+struct s_power_nmos_mux_inf {
+	float nmos_size;
+	int max_mux_sl_size;
+	t_power_mux_volt_inf * mux_voltage_inf;
+};
+
+struct s_power_nmos_leakage_inf {
+	float nmos_size;
+	int num_leakage_pairs;
+	t_power_nmos_leakage_pair * leakage_pairs;
+};
+
 /* CMOS technology properties, populated from data in xml file */
 struct s_power_tech {
 	float PN_ratio; /* Ratio of PMOS to NMOS in inverter */
@@ -121,12 +138,12 @@ struct s_power_tech {
 	t_transistor_inf PMOS_inf;
 
 	/* Pass Multiplexor Voltage Information */
-	int max_mux_sl_size;
-	t_power_mux_volt_inf * mux_voltage_inf;
+	int num_nmos_mux_info;
+	t_power_nmos_mux_inf * nmos_mux_info;
 
 	/* NMOS Leakage by Vds */
-	int num_leakage_pairs;
-	t_power_nmos_leakage_pair * leakage_pairs;
+	int num_nmos_leakage_info;
+	t_power_nmos_leakage_inf * nmos_leakage_info;
 
 	/* Buffer Info */
 	int max_buffer_size;
@@ -191,6 +208,12 @@ struct s_log {
 	int num_messages;
 };
 
+struct s_power_mux_info {
+	/* Mux architecture information for 0..mux_arch_max_size */
+	int mux_arch_max_size;
+	t_mux_arch * mux_arch;
+};
+
 /**
  * Commonly used values that are cached here instead of recalculting each time,
  * also includes statistics.
@@ -219,9 +242,7 @@ struct s_power_commonly_used {
 	float PMOS_1X_st_leakage;
 	float PMOS_2X_st_leakage;
 
-	/* Mux architecture information for 0..mux_arch_max_size */
-	int mux_arch_max_size;
-	t_mux_arch * mux_arch;
+	std::map<float, t_power_mux_info*> mux_info;
 
 	/* Routing stats */
 	int max_routing_mux_size;
@@ -258,7 +279,7 @@ struct s_rr_node_power {
 struct s_mux_arch {
 	int levels;
 	int num_inputs;
-	float * transistor_sizes; /* [0..levels] */
+	float transistor_size;
 	//enum e_encoding_type * encoding_types;
 	t_mux_node * mux_graph_head;
 };

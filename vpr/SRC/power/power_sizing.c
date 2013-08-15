@@ -37,18 +37,19 @@ static double g_MTA_area;
 static double power_count_transistors_connectionbox(void);
 static double power_count_transistors_mux(t_mux_arch * mux_arch);
 static double power_count_transistors_mux_node(t_mux_node * mux_node,
-		float * transistor_sizes);
+		float transistor_size);
 static void power_mux_node_max_inputs(t_mux_node * mux_node,
 		float * max_inputs);
 static double power_count_transistors_interc(t_interconnect * interc);
 static double power_count_transistors_pb_node(t_pb_graph_node * pb_node);
 static double power_count_transistors_switchbox(t_arch * arch);
 static double power_count_transistors_primitive(t_pb_type * pb_type);
-static double power_count_transistors_LUT(int LUT_size);
-static double power_count_transistors_FF(void);
+static double power_count_transistors_LUT(int LUT_inputs,
+		float transistor_size);
+static double power_count_transistors_FF(float size);
 static double power_count_transistor_SRAM_bit(void);
 static double power_count_transistors_inv(float size);
-static double power_count_transistors_trans_gate();
+static double power_count_transistors_trans_gate(float size);
 static double power_count_transistors_levr();
 static double power_MTAs(float size);
 static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
@@ -86,7 +87,8 @@ static double power_count_transistors_connectionbox(void) {
 	/* Muxes to IPINs */
 	transistor_cnt += CLB_inputs
 			* power_count_transistors_mux(
-					power_get_mux_arch(g_power_commonly_used->max_IPIN_fanin));
+					power_get_mux_arch(g_power_commonly_used->max_IPIN_fanin,
+							g_power_arch->mux_transistor_size));
 
 	return transistor_cnt;
 }
@@ -151,7 +153,7 @@ static double power_count_transistors_mux(t_mux_arch * mux_arch) {
 	}
 
 	transistor_cnt += power_count_transistors_mux_node(mux_arch->mux_graph_head,
-			mux_arch->transistor_sizes);
+			mux_arch->transistor_size);
 	free(max_inputs);
 	return transistor_cnt;
 }
@@ -180,19 +182,19 @@ static void power_mux_node_max_inputs(t_mux_node * mux_node,
  * This function is used recursively to count the number of transistors in a multiplexer
  */
 static double power_count_transistors_mux_node(t_mux_node * mux_node,
-		float * transistor_sizes) {
+		float transistor_size) {
 	int input_idx;
 	double transistor_cnt = 0.;
 
 	if (mux_node->num_inputs != 1) {
 		for (input_idx = 0; input_idx < mux_node->num_inputs; input_idx++) {
 			/* Single Pass transistor */
-			transistor_cnt += 1.0;
+			transistor_cnt += power_MTAs(transistor_size);
 
 			/* Child MUX */
 			if (mux_node->level != 0) {
 				transistor_cnt += power_count_transistors_mux_node(
-						&mux_node->children[input_idx], transistor_sizes);
+						&mux_node->children[input_idx], transistor_size);
 			}
 		}
 	}
@@ -221,7 +223,8 @@ static double power_count_transistors_interc(t_interconnect * interc) {
 				* interc->interconnect_power->num_pins_per_port
 				* power_count_transistors_mux(
 						power_get_mux_arch(
-								interc->interconnect_power->num_input_ports));
+								interc->interconnect_power->num_input_ports,
+								g_power_arch->mux_transistor_size));
 		break;
 	default:
 		assert(0);
@@ -358,7 +361,8 @@ static double power_count_transistors_switchbox(t_arch * arch) {
 
 	/* Multiplexor */
 	transistors_per_buf_mux += power_count_transistors_mux(
-			power_get_mux_arch(g_power_commonly_used->max_routing_mux_size));
+			power_get_mux_arch(g_power_commonly_used->max_routing_mux_size,
+					g_power_arch->mux_transistor_size));
 
 	for (seg_idx = 0; seg_idx < arch->num_segments; seg_idx++) {
 		/* In each switchbox, the different types of segments occur with relative freqencies.
@@ -385,10 +389,11 @@ static double power_count_transistors_primitive(t_pb_type * pb_type) {
 
 	if (strcmp(pb_type->blif_model, ".names") == 0) {
 		/* LUT */
-		transistor_cnt = power_count_transistors_LUT(pb_type->num_input_pins);
+		transistor_cnt = power_count_transistors_LUT(pb_type->num_input_pins,
+				g_power_arch->LUT_transistor_size);
 	} else if (strcmp(pb_type->blif_model, ".latch") == 0) {
 		/* Latch */
-		transistor_cnt = power_count_transistors_FF();
+		transistor_cnt = power_count_transistors_FF(g_power_arch->FF_size);
 	} else {
 		/* Other */
 		char msg[BUFSIZE];
@@ -427,30 +432,32 @@ static double power_count_transistors_levr() {
 /**
  * Returns the transistor count for a LUT
  */
-static double power_count_transistors_LUT(int LUT_size) {
+static double power_count_transistors_LUT(int LUT_inputs,
+		float transistor_size) {
 	double transistor_cnt = 0.;
 	int level_idx;
 
 	/* Each input driver has 1-1X and 2-2X inverters */
-	transistor_cnt += (double) LUT_size
+	transistor_cnt += (double) LUT_inputs
 			* (power_count_transistors_inv(1.0)
 					+ 2 * power_count_transistors_inv(2.0));
 
 	/* SRAM bits */
-	transistor_cnt += power_count_transistor_SRAM_bit() * (1 << LUT_size);
+	transistor_cnt += power_count_transistor_SRAM_bit() * (1 << LUT_inputs);
 
-	for (level_idx = 0; level_idx < LUT_size; level_idx++) {
+	for (level_idx = 0; level_idx < LUT_inputs; level_idx++) {
 
 		/* Pass transistors */
-		transistor_cnt += (1 << (LUT_size - level_idx)) * power_MTAs(1.0);
+		transistor_cnt += (1 << (LUT_inputs - level_idx))
+				* power_MTAs(transistor_size);
 
 		/* Add level restorer after every 2 stages (level_idx %2 == 1)
 		 * But if there is an odd # of stages, just put one at the last
 		 * stage (level_idx == LUT_size - 1) and not at the stage just before
 		 * the last stage (level_idx != LUT_size - 2)
 		 */
-		if (((level_idx % 2 == 1) && (level_idx != LUT_size - 2))
-				|| (level_idx == LUT_size - 1)) {
+		if (((level_idx % 2 == 1) && (level_idx != LUT_inputs - 2))
+				|| (level_idx == LUT_inputs - 1)) {
 			transistor_cnt += power_count_transistors_levr();
 		}
 	}
@@ -458,11 +465,11 @@ static double power_count_transistors_LUT(int LUT_size) {
 	return transistor_cnt;
 }
 
-static double power_count_transistors_trans_gate() {
+static double power_count_transistors_trans_gate(float size) {
 	double transistor_cnt = 0.;
 
-	transistor_cnt += power_MTAs(1.0);
-	transistor_cnt += power_MTAs(g_power_tech->PN_ratio);
+	transistor_cnt += power_MTAs(size);
+	transistor_cnt += power_MTAs(size * g_power_tech->PN_ratio);
 
 	return transistor_cnt;
 }
@@ -482,14 +489,14 @@ static double power_count_transistors_inv(float size) {
 /**
  * Returns the transistor count for a flip-flop
  */
-static double power_count_transistors_FF(void) {
+static double power_count_transistors_FF(float size) {
 	double transistor_cnt = 0.;
 
 	/* 4 1X Inverters */
-	transistor_cnt += 4 * power_count_transistors_inv(1);
+	transistor_cnt += 4 * power_count_transistors_inv(size);
 
 	/* 2 Muxes = 4 transmission gates */
-	transistor_cnt += 4 * power_count_transistors_trans_gate();
+	transistor_cnt += 4 * power_count_transistors_trans_gate(size);
 
 	return transistor_cnt;
 }
@@ -744,8 +751,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 		/* Find worst-case between modes*/
 		for (i = 0; i < this_pb_type->num_modes; i++) {
 			fanout = max(fanout, fanout_per_mode[i]);
-			wirelength_out = max(wirelength_out,
-					wirelength_out_per_mode[i]);
+			wirelength_out = max(wirelength_out, wirelength_out_per_mode[i]);
 		}
 		if (wirelength_out != 0) {
 			wirelength_out += g_power_arch->local_interc_factor

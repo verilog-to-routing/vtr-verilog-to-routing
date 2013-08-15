@@ -53,7 +53,7 @@ float power_buffer_size_from_logical_effort(float C_load);
 /* Multiplexers */
 boolean mux_find_selector_values(int * selector_values, t_mux_node * mux_node,
 		int selected_input_pin);
-t_mux_arch * power_get_mux_arch(int num_mux_inputs);
+t_mux_arch * power_get_mux_arch(int num_mux_inputs, float transistor_size);
 void mux_arch_fix_levels(t_mux_arch * mux_arch);
 
 /* Power Methods */

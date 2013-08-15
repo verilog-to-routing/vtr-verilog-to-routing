@@ -1,6 +1,9 @@
 /************************* INCLUDES *********************************/
 #include <cstring>
 #include <cfloat>
+#include <limits>
+#include <algorithm>
+
 using namespace std;
 
 #include <assert.h>
@@ -8,110 +11,217 @@ using namespace std;
 #include "util.h"
 #include "PowerSpicedComponent.h"
 
-PowerSpicedComponent::PowerSpicedComponent(float (*fn)(float size)) {
-	component_usage = fn;
+PowerCallibInputs::PowerCallibInputs(PowerSpicedComponent * parent_,
+		float inputs) :
+		parent(parent_), num_inputs(inputs), sorted(false), done_callibration(
+				false) {
+
+	/* Add min/max bounding entries */
+	add_size(0);
+	add_size(std::numeric_limits<float>::max());
+}
+
+void PowerCallibInputs::add_size(float transistor_size, float power) {
+	PowerCallibSize * entry = new PowerCallibSize(transistor_size, power);
+	entries.push_back(entry);
+	sorted = false;
+}
+
+bool sorter_PowerCallibSize(PowerCallibSize * a, PowerCallibSize * b) {
+	return a->transistor_size < b->transistor_size;
+}
+
+void PowerCallibInputs::sort_me() {
+	sort(entries.begin(), entries.end(), sorter_PowerCallibSize);
+	sorted = true;
+}
+
+void PowerCallibInputs::callibrate() {
+	assert(entries.size() >= 2);
+
+	for (vector<PowerCallibSize*>::iterator it = entries.begin() + 1;
+			it != entries.end() - 1; it++) {
+		float est_power = parent->component_usage(num_inputs,
+				(*it)->transistor_size);
+		(*it)->factor = (*it)->power / est_power;
+	}
+
+	/* Set min-value placeholder */
+	entries[0]->factor = entries[1]->factor;
+
+	/* Set max-value placeholder */
+	entries[entries.size() - 1]->factor = entries[entries.size() - 2]->factor;
+
+	done_callibration = true;
+}
+
+PowerCallibSize * PowerCallibInputs::get_entry_bound(bool lower,
+		float transistor_size) {
+	PowerCallibSize * prev = entries[0];
+
+	assert(sorted);
+	for (vector<PowerCallibSize*>::iterator it = entries.begin() + 1;
+			it != entries.end(); it++) {
+		if ((*it)->transistor_size > transistor_size) {
+			if (lower)
+				return prev;
+			else
+				return *it;
+		}
+		prev = *it;
+	}
+	return NULL;
+}
+
+PowerSpicedComponent::PowerSpicedComponent(
+		float (*usage_fn)(int num_inputs, float transistor_size)) {
+	component_usage = usage_fn;
 
 	/* Always pad with a high and low entry */
-	num_entries = 2;
-	size_factors = (t_power_callib_pair*) my_malloc(
-			num_entries * sizeof(t_power_callib_pair));
-	size_factors[0].size = 0;
-	size_factors[1].size = FLT_MAX;
+	add_entry(0);
+//	add_entry(std::numeric_limits<int>::max());
+	add_entry(1000000000);
 
 	done_callibration = false;
 	sorted = true;
 }
 
-void PowerSpicedComponent::add_entry(float size, float power) {
-	if (done_callibration) {
-		assert(0);
+PowerCallibInputs * PowerSpicedComponent::add_entry(int num_inputs) {
+	PowerCallibInputs * entry = new PowerCallibInputs(this, num_inputs);
+	entries.push_back(entry);
+	return entry;
+}
+
+PowerCallibInputs * PowerSpicedComponent::get_entry(int num_inputs) {
+	vector<PowerCallibInputs*>::iterator it;
+
+	for (it = entries.begin(); it != entries.end(); it++) {
+		if ((*it)->num_inputs == num_inputs) {
+			break;
+		}
 	}
 
-	num_entries++;
+	if (it == entries.end()) {
+		return add_entry(num_inputs);
+	} else {
+		return *it;
+	}
+}
 
-	size_factors = (t_power_callib_pair*) my_realloc(size_factors,
-			(num_entries) * sizeof(t_power_callib_pair));
-	assert(size_factors);
+PowerCallibInputs * PowerSpicedComponent::get_entry_bound(bool lower,
+		int num_inputs) {
+	PowerCallibInputs * prev = entries[0];
 
-	// Thre is always an extra entry at the end for max-value placeholder
-	size_factors[num_entries - 2].size = size;
-	size_factors[num_entries - 2].power = power;
+	assert(sorted);
+	for (vector<PowerCallibInputs*>::iterator it = entries.begin() + 1;
+			it != entries.end(); it++) {
+		if ((*it)->num_inputs > num_inputs) {
+			if (lower) {
+				if (prev == entries[0])
+					return NULL;
+				else
+					return prev;
+			} else {
+				if (*it == entries[entries.size() - 1])
+					return NULL;
+				else
+					return *it;
+			}
+		}
+		prev = *it;
+	}
+	return NULL;
+}
 
+void PowerSpicedComponent::add_data_point(int num_inputs, float transistor_size,
+		float power) {
+	assert(!done_callibration);
+	PowerCallibInputs * inputs_entry = get_entry(num_inputs);
+	inputs_entry->add_size(transistor_size, power);
 	sorted = false;
 }
 
-int search_callib_pair(const void * k, const void * e) {
-	const t_power_callib_pair * key = (const t_power_callib_pair*) k;
-	const t_power_callib_pair * elem = (const t_power_callib_pair*) e;
+float PowerSpicedComponent::scale_factor(int num_inputs,
+		float transistor_size) {
 
-	if (key->size < elem->size)
-		return -1;
-	else if (key->size >= elem->size && key->size < (elem + 1)->size)
-		return 0;
-	else
-		return 1;
-}
+	PowerCallibInputs * inputs_lower;
+	PowerCallibInputs * inputs_upper;
 
-float PowerSpicedComponent::scale_factor(float size) {
-	t_power_callib_pair * result;
-	t_power_callib_pair key;
+	PowerCallibSize * size_lower;
+	PowerCallibSize * size_upper;
+
+	float factor_lower;
+	float factor_upper;
+	float factor;
+
 	float perc_upper;
 
-	if (!done_callibration)
-		assert(0);
+	assert(done_callibration);
 
-	if (num_entries <= 2)
-		return 1.0;
+	inputs_lower = get_entry_bound(true, num_inputs);
+	inputs_upper = get_entry_bound(false, num_inputs);
 
-	key.size = size;
-	result = (t_power_callib_pair*) bsearch(&key, size_factors, num_entries - 1,
-			sizeof(t_power_callib_pair), search_callib_pair);
-	assert(result);
+	if (inputs_lower) {
+		/* Interpolation of factor between sizes for lower # inputs */
+		assert(inputs_lower->done_callibration);
+		size_lower = inputs_lower->get_entry_bound(true, transistor_size);
+		size_upper = inputs_lower->get_entry_bound(false, transistor_size);
 
-	perc_upper = (size - result->size) / ((result + 1)->size - result->size);
+		perc_upper = (transistor_size - size_lower->transistor_size)
+				/ (size_upper->transistor_size - size_lower->transistor_size);
+		factor_lower = perc_upper * size_upper->factor
+				+ (1 - perc_upper) * size_lower->factor;
+	}
 
-	return perc_upper * (result + 1)->factor + (1 - perc_upper) * result->factor;
+	if (inputs_upper) {
+		/* Interpolation of factor between sizes for upper # inputs */
+		assert(inputs_upper->done_callibration);
+		size_lower = inputs_upper->get_entry_bound(true, transistor_size);
+		size_upper = inputs_upper->get_entry_bound(false, transistor_size);
 
-}
+		perc_upper = (transistor_size - size_lower->transistor_size)
+				/ (size_upper->transistor_size - size_lower->transistor_size);
+		factor_upper = perc_upper * size_upper->factor
+				+ (1 - perc_upper) * size_lower->factor;
+	}
 
-int compare_callib_pair(const void * a, const void * b) {
-	const t_power_callib_pair * a_pair = (const t_power_callib_pair*) a;
-	const t_power_callib_pair * b_pair = (const t_power_callib_pair*) b;
-
-	if (a_pair->size < b_pair->size) {
-		return -1;
-	} else if (a_pair->size == b_pair->size) {
-		return 0;
+	if (!inputs_lower) {
+		factor = factor_upper;
+	} else if (!inputs_upper) {
+		factor = factor_lower;
 	} else {
-		return 1;
+		/* Interpolation of factor between inputs */
+		perc_upper =
+				((float) (num_inputs - inputs_lower->num_inputs))
+						/ ((float) (inputs_upper->num_inputs
+								- inputs_lower->num_inputs));
+		factor = perc_upper * factor_upper + (1 - perc_upper) * factor_lower;
 	}
+	return factor;
+
 }
 
-void PowerSpicedComponent::sort_sizes(void) {
-	if (num_entries > 2) {
-		qsort(&size_factors[1], num_entries - 2, sizeof(t_power_callib_pair),
-				compare_callib_pair);
-	}
+bool sorter_PowerCallibInputs(PowerCallibInputs * a, PowerCallibInputs * b) {
+	return a->num_inputs < b->num_inputs;
+}
 
+void PowerSpicedComponent::sort_me(void) {
+	sort(entries.begin(), entries.end(), sorter_PowerCallibInputs);
+
+	for (vector<PowerCallibInputs*>::iterator it = entries.begin();
+			it != entries.end(); it++) {
+		(*it)->sort_me();
+	}
 	sorted = true;
 }
 
 void PowerSpicedComponent::callibrate(void) {
-	sort_sizes();
+	sort_me();
 
-	for (int i = 1; i < num_entries - 1; i++) {
-		float est_power = (*component_usage)(size_factors[i].size);
-		size_factors[i].factor = size_factors[i].power / est_power;
+	for (vector<PowerCallibInputs*>::iterator it = entries.begin();
+			it != entries.end(); it++) {
+		(*it)->callibrate();
 	}
-
-	// Set min-value placeholder
-	size_factors[0].size = 0.;
-	size_factors[0].factor = size_factors[1].factor;
-
-	// Set max-value placeholder
-	size_factors[num_entries - 1].size = FLT_MAX;
-	size_factors[num_entries - 1].factor = size_factors[num_entries - 2].factor;
-
 	done_callibration = true;
 }
 

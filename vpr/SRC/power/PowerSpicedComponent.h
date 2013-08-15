@@ -15,37 +15,66 @@
  *
  ********************************************************************/
 
-#ifndef __POWER_POWERSPICEDCOMPONENT_H__
-#define __POWER_POWERSPICEDCOMPONENT_H__
+#ifndef __POWER_POWERSPICEDCOMPONENT_NMOS_H__
+#define __POWER_POWERSPICEDCOMPONENT_NMOS_H__
+
+#include <vector>
 
 /************************* STRUCTS **********************************/
-typedef struct s_power_callib_pair t_power_callib_pair;
-struct s_power_callib_pair {
-	float size;
+class PowerSpicedComponent;
+
+class PowerCallibSize {
+public:
+	float transistor_size;
 	float power;
 	float factor;
+
+	PowerCallibSize(float size, float power_) :
+			transistor_size(size), power(power_), factor(0.) {
+	}
+	const bool operator<(const PowerCallibSize & rhs) {
+		return transistor_size < rhs.transistor_size;
+	}
+};
+
+class PowerCallibInputs {
+public:
+	PowerSpicedComponent * parent;
+	int num_inputs;
+	std::vector<PowerCallibSize*> entries;
+	bool sorted;
+
+	PowerCallibInputs(PowerSpicedComponent * parent, float num_inputs);
+
+	void add_size(float transistor_size, float power = 0.);
+	PowerCallibSize * get_entry_bound(bool lower, float transistor_size);
+	void sort_me();
+	bool done_callibration;
+	void callibrate();
 };
 
 class PowerSpicedComponent {
-	int num_entries;
-	t_power_callib_pair * size_factors;
+public:
+	std::vector<PowerCallibInputs*> entries;
 
 	/* Estimation function for this component */
-	float (*component_usage)(float size);
+	float (*component_usage)(int num_inputs, float transistor_size);
 
 	bool sorted;
 	bool done_callibration;
 
-	//float slope;
-	//float yint;
+	PowerCallibInputs * add_entry(int num_inputs);
+	PowerCallibInputs* get_entry(int num_inputs);
+	PowerCallibInputs * get_entry_bound(bool lower, int num_inputs);
 
-	void sort_sizes(void);
+	PowerSpicedComponent(
+			float (*usage_fn)(int num_inputs, float transistor_size));
 
-public:
-	PowerSpicedComponent(float (*fn)(float size));
-	void add_entry(float size, float power);
-	void update_scale_factor(float (*fn)(float size));
-	float scale_factor(float size);
+	void add_data_point(int num_inputs, float transistor_size, float power);
+	float scale_factor(int num_inputs, float transistor_size);
+	void sort_me();
+
+//	void update_scale_factor(float (*fn)(float size));
 	void callibrate(void);
 	bool is_done_callibration(void);
 };

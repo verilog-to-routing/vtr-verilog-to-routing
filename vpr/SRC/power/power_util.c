@@ -21,6 +21,7 @@
 
 /************************* INCLUDES *********************************/
 #include <cstring>
+#include <map>
 using namespace std;
 
 #include <assert.h>
@@ -34,7 +35,7 @@ using namespace std;
 static void log_msg(t_log * log_ptr, char * msg);
 static void int_2_binary_str(char * binary_str, int value, int str_length);
 static void init_mux_arch_default(t_mux_arch * mux_arch, int levels,
-		int num_inputs);
+		int num_inputs, float transistor_size);
 static void alloc_and_load_mux_graph_recursive(t_mux_node * node,
 		int num_primary_inputs, int level, int starting_pin_idx);
 static t_mux_node * alloc_and_load_mux_graph(int num_inputs, int levels);
@@ -284,14 +285,12 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
 	int term_idx;
 	int bit_idx;
 	int dont_care_start_pos;
-	boolean used = TRUE;
 
 	num_SRAM_bits = 1 << LUT_size;
 	SRAM_values = (char*) my_calloc(num_SRAM_bits + 1, sizeof(char));
 	SRAM_values[num_SRAM_bits] = '\0';
 
 	if (!truth_table) {
-		used = FALSE;
 		for (i = 0; i < num_SRAM_bits; i++) {
 			SRAM_values[i] = '1';
 		}
@@ -468,7 +467,8 @@ void output_logs(FILE * fp, t_log * logs, int num_logs) {
 }
 
 float power_buffer_size_from_logical_effort(float C_load) {
-	return max(1.0f, C_load / g_power_commonly_used->INV_1X_C_in
+	return max(1.0f,
+			C_load / g_power_commonly_used->INV_1X_C_in
 					/ (2 * g_power_arch->logical_effort_factor));
 }
 
@@ -487,44 +487,51 @@ void power_print_title(FILE * fp, char * title) {
 	fprintf(fp, "\n");
 }
 
-t_mux_arch * power_get_mux_arch(int num_mux_inputs) {
+t_mux_arch * power_get_mux_arch(int num_mux_inputs, float transistor_size) {
 	int i;
 
-	if (num_mux_inputs > g_power_commonly_used->mux_arch_max_size) {
-		g_power_commonly_used->mux_arch = (t_mux_arch*) my_realloc(
-				g_power_commonly_used->mux_arch,
+	t_power_mux_info * mux_info = NULL;
+
+	/* Find the mux archs for the given transistor size */
+	std::map<float, t_power_mux_info*>::iterator it;
+
+	it = g_power_commonly_used->mux_info.find(transistor_size);
+
+	if (it == g_power_commonly_used->mux_info.end()) {
+		mux_info = new t_power_mux_info;
+		mux_info->mux_arch = NULL;
+		mux_info->mux_arch_max_size = 0;
+		g_power_commonly_used->mux_info[transistor_size] = mux_info;
+	} else {
+		mux_info = it->second;
+	}
+
+	if (num_mux_inputs > mux_info->mux_arch_max_size) {
+		mux_info->mux_arch = (t_mux_arch*) my_realloc(mux_info->mux_arch,
 				(num_mux_inputs + 1) * sizeof(t_mux_arch));
 
-		for (i = g_power_commonly_used->mux_arch_max_size + 1;
-				i <= num_mux_inputs; i++) {
-			init_mux_arch_default(&g_power_commonly_used->mux_arch[i], 2, i);
+		for (i = mux_info->mux_arch_max_size + 1; i <= num_mux_inputs; i++) {
+			init_mux_arch_default(&mux_info->mux_arch[i], 2, i,
+					transistor_size);
 		}
-		g_power_commonly_used->mux_arch_max_size = num_mux_inputs;
+		mux_info->mux_arch_max_size = num_mux_inputs;
 	}
-	return &g_power_commonly_used->mux_arch[num_mux_inputs];
+	return &mux_info->mux_arch[num_mux_inputs];
 }
 
 /**
  * Generates a default multiplexer architecture of given size and number of levels
  */
 static void init_mux_arch_default(t_mux_arch * mux_arch, int levels,
-		int num_inputs) {
-	int level_idx;
+		int num_inputs, float transistor_size) {
 
 	mux_arch->levels = levels;
 	mux_arch->num_inputs = num_inputs;
 
 	mux_arch_fix_levels(mux_arch);
 
-	/*mux_arch->encoding_types = my_calloc(mux_arch->levels,
-	 sizeof(enum e_encoding_type));*/
-	mux_arch->transistor_sizes = (float *) my_calloc(mux_arch->levels,
-			sizeof(float));
+	mux_arch->transistor_size = transistor_size;
 
-	for (level_idx = 0; level_idx < mux_arch->levels; level_idx++) {
-		//mux_arch->encoding_types[level_idx] = ENCODING_DECODER;
-		mux_arch->transistor_sizes[level_idx] = 1.0;
-	}
 	mux_arch->mux_graph_head = alloc_and_load_mux_graph(num_inputs,
 			mux_arch->levels);
 }
@@ -593,7 +600,7 @@ boolean power_method_is_recursive(e_power_estimation_method method) {
 		assert(0);
 	}
 
-	// to get rid of warning
+// to get rid of warning
 	return FALSE;
 }
 

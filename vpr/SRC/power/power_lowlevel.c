@@ -351,22 +351,73 @@ static float power_calc_leakage_gate(e_tx_type transistor_type, float size) {
  * - v_ds: Drain-source voltage
  */
 static float power_calc_leakage_st_pass_transistor(float size, float v_ds) {
+	t_power_nmos_leakage_inf * nmos_low;
+	t_power_nmos_leakage_inf * nmos_high;
+
 	t_power_nmos_leakage_pair * lower;
 	t_power_nmos_leakage_pair * upper;
 	float i_ds;
+	float power_low;
+	float power_high;
+	bool over_range = false;
 
-	assert(size == 1.0);
+	assert(size >= 1.0);
 
-	power_find_nmos_leakage(&lower, &upper, v_ds);
+	// Check if nmos size is beyond range
+	if (size
+			>= g_power_tech->nmos_leakage_info[g_power_tech->num_nmos_leakage_info
+					- 1].nmos_size) {
+		nmos_low =
+				&g_power_tech->nmos_leakage_info[g_power_tech->num_nmos_leakage_info
+						- 1];
+		over_range = true;
+	} else {
+		for (int i = 1; i < g_power_tech->num_nmos_leakage_info; i++) {
+			if (size < g_power_tech->nmos_leakage_info[i].nmos_size) {
+				nmos_low = &g_power_tech->nmos_leakage_info[i - 1];
+				nmos_high = &g_power_tech->nmos_leakage_info[i];
+				break;
+			}
+		}
+	}
 
+	if (size
+			> g_power_tech->nmos_leakage_info[g_power_tech->num_nmos_leakage_info
+					- 1].nmos_size) {
+		power_log_msg(POWER_LOG_ERROR,
+				"The architectures uses multiplexers with \
+				transistors sizes larger than what is defined in the <nmos_leakages> \
+				section of the technology file.");
+	}
+
+	power_find_nmos_leakage(nmos_low, &lower, &upper, v_ds);
 	if (lower->v_ds == v_ds || !upper) {
 		i_ds = lower->i_ds;
 	} else {
 		float perc_upper = (v_ds - lower->v_ds) / (upper->v_ds - lower->v_ds);
 		i_ds = (1 - perc_upper) * lower->i_ds + perc_upper * upper->i_ds;
 	}
+	power_low = i_ds * g_power_tech->Vdd;
 
-	return i_ds * g_power_tech->Vdd;
+	if (!over_range) {
+		power_find_nmos_leakage(nmos_high, &lower, &upper, v_ds);
+		if (lower->v_ds == v_ds || !upper) {
+			i_ds = lower->i_ds;
+		} else {
+			float perc_upper = (v_ds - lower->v_ds)
+					/ (upper->v_ds - lower->v_ds);
+			i_ds = (1 - perc_upper) * lower->i_ds + perc_upper * upper->i_ds;
+		}
+		power_high = i_ds * g_power_tech->Vdd;
+	}
+
+	if (over_range) {
+		return power_low;
+	} else {
+		float perc_upper = (size - nmos_low->nmos_size)
+				/ (nmos_high->nmos_size - nmos_low->nmos_size);
+		return power_high * perc_upper + power_low * (1 - perc_upper);
+	}
 }
 
 /**
@@ -391,38 +442,40 @@ void power_usage_wire(t_power_usage * power_usage, float capacitance,
  * - sel_prob: Signal probability of select line
  * - out_dens: Transition density of the output
  */
-void power_usage_MUX2_transmission(t_power_usage * power_usage, float * in_dens,
-		float * in_prob, float sel_dens, float out_dens, float period) {
+void power_usage_MUX2_transmission(t_power_usage * power_usage, float size,
+		float * in_dens, float * in_prob, float sel_dens, float out_dens,
+		float period) {
 
 	power_zero_usage(power_usage);
 
+	float leakage_n, leakage_p;
+	leakage_n = power_calc_leakage_st(NMOS, size);
+	leakage_p = power_calc_leakage_st(PMOS, size * g_power_tech->PN_ratio);
+
+	float C_g_n, C_d_n, C_s_n;
+	power_calc_transistor_capacitance(&C_d_n, &C_s_n, &C_g_n, NMOS, size);
+
+	float C_g_p, C_d_p, C_s_p;
+	power_calc_transistor_capacitance(&C_d_p, &C_s_p, &C_g_p, PMOS,
+			size * g_power_tech->PN_ratio);
+
 	/* A transmission gate leaks if the selected input != other input  */
 	power_usage->leakage += (in_prob[0] * (1 - in_prob[1])
-			+ (1 - in_prob[0]) * in_prob[1])
-			* (g_power_commonly_used->NMOS_1X_st_leakage
-					+ g_power_commonly_used->PMOS_1X_st_leakage);
+			+ (1 - in_prob[0]) * in_prob[1]) * (leakage_n + leakage_p);
 
 	/* Gate switching */
 	power_usage->dynamic += 2
-			* power_calc_node_switching(
-					g_power_commonly_used->NMOS_1X_C_g
-							+ g_power_commonly_used->PMOS_1X_C_g, sel_dens,
-					period);
+			* power_calc_node_switching(C_g_n + C_g_p, sel_dens, period);
 
 	/* Input switching */
-	power_usage->dynamic += power_calc_node_switching(
-			g_power_commonly_used->NMOS_1X_C_d
-					+ g_power_commonly_used->PMOS_1X_C_s, in_dens[0], period);
-	power_usage->dynamic += power_calc_node_switching(
-			g_power_commonly_used->NMOS_1X_C_d
-					+ g_power_commonly_used->PMOS_1X_C_s, in_dens[1], period);
+	power_usage->dynamic += power_calc_node_switching(C_d_n + C_s_p, in_dens[0],
+			period);
+	power_usage->dynamic += power_calc_node_switching(C_d_n + C_s_p, in_dens[1],
+			period);
 
 	/* Output switching */
-	power_usage->dynamic += power_calc_node_switching(
-			2
-					* (g_power_commonly_used->NMOS_1X_C_s
-							+ g_power_commonly_used->PMOS_1X_C_d), out_dens,
-			period);
+	power_usage->dynamic += power_calc_node_switching(2 * (C_s_n + C_d_p),
+			out_dens, period);
 }
 
 /**
@@ -448,7 +501,7 @@ void power_usage_mux_singlelevel_static(t_power_usage * power_usage,
 
 	power_zero_usage(power_usage);
 
-	assert(transistor_size == 1.0);
+	assert(transistor_size >= 1.0);
 
 	if (selected_idx < num_inputs) {
 		*out_prob = in_prob[selected_idx];
@@ -474,11 +527,14 @@ void power_usage_mux_singlelevel_static(t_power_usage * power_usage,
 	}
 
 	in_prob_avg = 0.;
+
+	float C_d, C_g, C_s;
+	power_calc_transistor_capacitance(&C_d, &C_s, &C_g, NMOS, transistor_size);
+
 	for (input_idx = 0; input_idx < num_inputs; input_idx++) {
 		/* Dynamic Power at Inputs */
-		power_usage->dynamic += power_calc_node_switching_v(
-				g_power_commonly_used->NMOS_1X_C_d, in_dens[input_idx], period,
-				v_in[input_idx]);
+		power_usage->dynamic += power_calc_node_switching_v(C_d,
+				in_dens[input_idx], period, v_in[input_idx]);
 
 		if (input_idx != selected_idx) {
 			in_prob_avg += in_prob[input_idx];
@@ -512,9 +568,8 @@ void power_usage_mux_singlelevel_static(t_power_usage * power_usage,
 	}
 
 	/* Dynamic Power at Output */
-	power_usage->dynamic += power_calc_node_switching_v(
-			g_power_commonly_used->NMOS_1X_C_s * num_inputs, *out_dens, period,
-			*v_out);
+	power_usage->dynamic += power_calc_node_switching_v(C_s * num_inputs,
+			*out_dens, period, *v_out);
 
 }
 
@@ -527,24 +582,55 @@ void power_usage_mux_singlelevel_static(t_power_usage * power_usage,
  */
 float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
 		float in_prob_avg) {
-	t_power_mux_volt_inf * mux_volt_inf;
+	t_power_mux_volt_inf * mux_volt_inf_low;
+	t_power_mux_volt_inf * mux_volt_inf_high;
 	t_power_mux_volt_pair * lower;
 	t_power_mux_volt_pair * upper;
 	float v_out_min, v_out_max;
+	float v_out_low;
+	float v_out_high;
+	bool over_range = false;
 
-	assert(transistor_size = 1.0);
+	assert(transistor_size >= 1.0);
 
-	if (num_inputs > g_power_tech->max_mux_sl_size) {
+	t_power_nmos_mux_inf * mux_nmos_inf_lower;
+	t_power_nmos_mux_inf * mux_nmos_inf_upper;
+
+// Check if nmos size is beyond range
+	if (transistor_size
+			>= g_power_tech->nmos_mux_info[g_power_tech->num_nmos_mux_info - 1].nmos_size) {
+		mux_nmos_inf_lower =
+				&g_power_tech->nmos_mux_info[g_power_tech->num_nmos_mux_info - 1];
+		over_range = true;
+	} else {
+		for (int i = 1; i < g_power_tech->num_nmos_mux_info; i++) {
+			if (transistor_size < g_power_tech->nmos_mux_info[i].nmos_size) {
+				mux_nmos_inf_lower = &g_power_tech->nmos_mux_info[i - 1];
+				mux_nmos_inf_upper = &g_power_tech->nmos_mux_info[i];
+				break;
+			}
+		}
+	}
+
+	if (transistor_size
+			> g_power_tech->nmos_mux_info[g_power_tech->num_nmos_mux_info - 1].nmos_size) {
+		power_log_msg(POWER_LOG_ERROR,
+				"The architectures uses multiplexers with \
+				transistors sizes larger than what is defined in the <multiplexers> \
+				section of the technology file.");
+	}
+
+	if (num_inputs > mux_nmos_inf_lower->max_mux_sl_size
+			|| (!over_range && num_inputs > mux_nmos_inf_upper->max_mux_sl_size)) {
 		power_log_msg(POWER_LOG_ERROR,
 				"The circuit contains a single-level mux larger than \
 				what is defined in the <multiplexers> section of the \
 				technology file.");
 	}
 
-	mux_volt_inf = &g_power_tech->mux_voltage_inf[num_inputs];
+	mux_volt_inf_low = &mux_nmos_inf_lower->mux_voltage_inf[num_inputs];
 
-	power_find_mux_volt_inf(&lower, &upper, mux_volt_inf, v_in);
-
+	power_find_mux_volt_inf(&lower, &upper, mux_volt_inf_low, v_in);
 	if (lower->v_in == v_in || !upper) {
 		v_out_min = lower->v_out_min;
 		v_out_max = lower->v_out_max;
@@ -555,8 +641,34 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
 		v_out_max = (1 - perc_upper) * lower->v_out_max
 				+ perc_upper * upper->v_out_max;
 	}
+	v_out_low = in_prob_avg * v_out_max + (1 - in_prob_avg) * v_out_min;
 
-	return in_prob_avg * v_out_max + (1 - in_prob_avg) * v_out_min;
+	if (!over_range) {
+		mux_volt_inf_high = &mux_nmos_inf_upper->mux_voltage_inf[num_inputs];
+		power_find_mux_volt_inf(&lower, &upper, mux_volt_inf_high, v_in);
+		if (lower->v_in == v_in || !upper) {
+			v_out_min = lower->v_out_min;
+			v_out_max = lower->v_out_max;
+		} else {
+			float perc_upper = (v_in - lower->v_in)
+					/ (upper->v_in - lower->v_in);
+			v_out_min = (1 - perc_upper) * lower->v_out_min
+					+ perc_upper * upper->v_out_min;
+			v_out_max = (1 - perc_upper) * lower->v_out_max
+					+ perc_upper * upper->v_out_max;
+		}
+		v_out_high = in_prob_avg * v_out_max + (1 - in_prob_avg) * v_out_min;
+	}
+
+	if (over_range) {
+		return v_out_low;
+	} else {
+		float perc_upper =
+				(transistor_size - mux_nmos_inf_lower->nmos_size)
+						/ (mux_nmos_inf_upper->nmos_size
+								- mux_nmos_inf_lower->nmos_size);
+		return v_out_high * perc_upper + (1 - perc_upper) * v_out_low;
+	}
 }
 
 /** This function calculates the power of a single-level multiplexer, where the
@@ -579,7 +691,6 @@ void power_usage_mux_singlelevel_dynamic(t_power_usage * power_usage,
 		float transistor_size, float period) {
 
 	assert(num_inputs == 2);
-	assert(transistor_size = 1.0);
 
 	power_zero_usage(power_usage);
 
@@ -589,32 +700,33 @@ void power_usage_mux_singlelevel_dynamic(t_power_usage * power_usage,
 
 	/* 1st selected, 1st Low, 2nd High - Leakage from 2nd in->out */
 	power_usage->leakage += (1 - sel_prob) * (1 - in_prob[0]) * in_prob[1]
-			* power_calc_leakage_st_pass_transistor(1.0, v_in[1]);
+			* power_calc_leakage_st_pass_transistor(transistor_size, v_in[1]);
 
 	/* 1st selected, 1st High, 2nd Low - Leakage from 2nd out->in */
 	/* 2nd selected, 1st Low, 2nd High - Leakage from 1st out->in */
 	power_usage->leakage += ((1 - sel_prob) * in_prob[0] * (1 - in_prob[1])
 			+ sel_prob * (1 - in_prob[0]) * in_prob[1])
-			* power_calc_leakage_st_pass_transistor(1.0, v_out);
+			* power_calc_leakage_st_pass_transistor(transistor_size, v_out);
 
 	/* 2nd selected, 1st High, 2nd Low - Leakage from 1st in->out */
 	power_usage->leakage += sel_prob * in_prob[0] * (1 - in_prob[1])
-			* power_calc_leakage_st_pass_transistor(1.0, v_in[0]);
+			* power_calc_leakage_st_pass_transistor(transistor_size, v_in[0]);
 
 	/* Gate switching */
+	float C_d, C_s, C_g;
+	power_calc_transistor_capacitance(&C_d, &C_s, &C_g, NMOS, transistor_size);
 	power_usage->dynamic += 2
-			* power_calc_node_switching(g_power_commonly_used->NMOS_1X_C_g,
-					sel_dens, period);
+			* power_calc_node_switching(C_g, sel_dens, period);
 
 	/* Input switching */
-	power_usage->dynamic += power_calc_node_switching_v(
-			g_power_commonly_used->NMOS_1X_C_d, in_dens[0], period, v_in[0]);
-	power_usage->dynamic += power_calc_node_switching_v(
-			g_power_commonly_used->NMOS_1X_C_d, in_dens[1], period, v_in[1]);
+	power_usage->dynamic += power_calc_node_switching_v(C_d, in_dens[0], period,
+			v_in[0]);
+	power_usage->dynamic += power_calc_node_switching_v(C_d, in_dens[1], period,
+			v_in[1]);
 
 	/* Output switching */
-	power_usage->dynamic += power_calc_node_switching_v(
-			2 * g_power_commonly_used->NMOS_1X_C_s, out_density, period, v_out);
+	power_usage->dynamic += power_calc_node_switching_v(2 * C_s, out_density,
+			period, v_out);
 }
 
 /**
