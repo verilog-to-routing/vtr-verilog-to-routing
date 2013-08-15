@@ -110,9 +110,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TCH_CircuitHandlers", "..\T
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libpcre", "..\..\libcommon_c\pcre\libpcre.vcxproj", "{E69F5499-A0D1-D11D-7766-3677D8FA2507}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libpccts_h", "..\..\libpccts\h\libpccts_h.vcxproj", "{4821D1B3-2783-4C9A-B6AC-DA5427339246}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libpccts_h", "..\..\libpccts_133MR33\h\libpccts_h.vcxproj", "{4821D1B3-2783-4C9A-B6AC-DA5427339246}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libpccts_generic", "..\..\libpccts\pcctsGeneric\libpccts_generic.vcxproj", "{B7AC8B8F-D56B-4712-AE8C-0BED26F4B595}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libpccts_generic", "..\..\libpccts_133MR33\pcctsGeneric\libpccts_generic.vcxproj", "{B7AC8B8F-D56B-4712-AE8C-0BED26F4B595}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
