@@ -98,14 +98,13 @@ enum e_pin_to_pin_pack_pattern_annotations {
 
 /* Power Estimation type for a PB */
 enum e_power_estimation_method_ {
-	POWER_METHOD_UNDEFINED = 0,
-	POWER_METHOD_IGNORE,			/* Ignore power of this PB, and all children PB */
-	POWER_METHOD_SUM_OF_CHILDREN,	/* Ignore power of this PB, but consider children */
-	POWER_METHOD_AUTO_SIZES,		/* Transistor-level, auto-sized buffers/wires */
-	POWER_METHOD_SPECIFY_SIZES,		/* Transistor-level, user-specified buffers/wires */
-	POWER_METHOD_TOGGLE_PINS,		/* Dynamic: Energy per pin toggle, Static: Absolute */
-	POWER_METHOD_C_INTERNAL,		/* Dynamic: Equiv. Internal capacitance, Static: Absolute */
-	POWER_METHOD_ABSOLUTE			/* Dynamic: Aboslute, Static: Absolute */
+	POWER_METHOD_UNDEFINED = 0, POWER_METHOD_IGNORE, /* Ignore power of this PB, and all children PB */
+	POWER_METHOD_SUM_OF_CHILDREN, /* Ignore power of this PB, but consider children */
+	POWER_METHOD_AUTO_SIZES, /* Transistor-level, auto-sized buffers/wires */
+	POWER_METHOD_SPECIFY_SIZES, /* Transistor-level, user-specified buffers/wires */
+	POWER_METHOD_TOGGLE_PINS, /* Dynamic: Energy per pin toggle, Static: Absolute */
+	POWER_METHOD_C_INTERNAL, /* Dynamic: Equiv. Internal capacitance, Static: Absolute */
+	POWER_METHOD_ABSOLUTE /* Dynamic: Aboslute, Static: Absolute */
 };
 typedef enum e_power_estimation_method_ e_power_estimation_method;
 typedef enum e_power_estimation_method_ t_power_estimation_method;
@@ -168,6 +167,9 @@ struct s_power_arch {
 	float logical_effort_factor;
 	float local_interc_factor;
 	float transistors_per_SRAM_bit;
+	float mux_transistor_size;
+	float FF_size;
+	float LUT_transistor_size;
 };
 
 /* Power usage for an entity */
@@ -446,7 +448,7 @@ struct s_port_power {
 	float energy_per_toggle;
 	t_port * scaled_by_port;
 	int scaled_by_port_pin_idx;
-	boolean reverse_scaled;  /* Scale by (1-prob) */
+	boolean reverse_scaled; /* Scale by (1-prob) */
 };
 
 struct s_pb_graph_node;
@@ -528,7 +530,6 @@ struct s_pb_graph_node {
 	t_pb_graph_node_power * pb_node_power;
 	t_interconnect_pins ** interconnect_pins; /* [0..num_modes-1][0..num_interconnect_in_mode] */
 };
-
 
 struct s_pb_graph_node_power {
 	float transistor_cnt_pb_children; /* Total transistor size of this pb */
