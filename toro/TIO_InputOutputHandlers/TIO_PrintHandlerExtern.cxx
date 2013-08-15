@@ -362,4 +362,4 @@ extern "C" void PrintHandlerDirect(
    printHandler.Direct( TIO_PRINT_DIRECT, pszMessage, vaArgs );
 
    va_end( vaArgs );                    /* Reset variable argument list */
-}
+} 
