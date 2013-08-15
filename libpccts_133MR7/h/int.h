@@ -24,7 +24,7 @@
  * Terence Parr
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1989-2000
+ * 1989-1995
  */
 
 #ifndef ZZINT_H

@@ -26,109 +26,55 @@
  * Terence Parr
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1989-2000
+ * 1989-1995
  */
 
-/* Completely rewritten by Chris Uzdavinis (chris@atdesk.com) for MR23 */
-
-#include "pcctscfg.h"
-
-#include "pccts_iostream.h"
-
-PCCTS_NAMESPACE_STD
-
-//  MR20 Added #include for "DLexerBase.h"
-
-#include "DLexerBase.h"
-
-//
-//  The default buffer size of the lexer is given by the
-//   second argument of the lexer's ctor.  It is optional
-//   and defaults to 2000
-//
+#include <iostream.h>
 
 template<class Lexer, class Parser, class Token>
-class DllExportPCCTS ParserBlackBox {
-private:
-  // no copy construction allowed
-  ParserBlackBox(ParserBlackBox const &);
-
-  // no copy assignment allowed
-  ParserBlackBox & operator=(ParserBlackBox const &);
-  
+class ParserBlackBox {
 protected:
-  DLGFileInput *in;
-  Lexer *scan;
-  _ANTLRTokenPtr tok;
-  ANTLRTokenBuffer *pipe;
-  Parser *_parser;
-  FILE *file;
-  int openByBlackBox;    /* MR21 Don't close what we haven't opened */
+	DLGFileInput *in;
+	Lexer *scan;
+	_ANTLRTokenPtr tok;
+	ANTLRTokenBuffer *pipe;
+	Parser *_parser;
+	FILE *file;
 public:
 	
-  ParserBlackBox(FILE *f)
-    : in(0)
-    , scan(0)
-    , tok(0)
-    , pipe(0)
-    , _parser(0)
-    , file(0)
-    , openByBlackBox(0)
-  {
-    if (f == NULL)
-    {
-      cerr << "invalid file pointer\n"; 
-    }
-    else
-    {
-      openByBlackBox = 0;     /* MR21a */
-      file = f;
-      in = new DLGFileInput(f);
-      scan = new Lexer(in);
-      pipe = new ANTLRTokenBuffer(scan);
-      tok = new Token;
-      scan->setToken(tok);
-      _parser = new Parser(pipe);
-      _parser->init();
-    }
-  }
-  ParserBlackBox(char *fname)
-    : in(0)
-    , scan(0)
-    , tok(0)
-    , pipe(0)
-    , _parser(0)
-    , file(0)
-    , openByBlackBox(0)
-  {
-    FILE *f = fopen(fname, "r");
-    if ( f==NULL ) {
-      openByBlackBox = 0;
-      cerr << "cannot open " << fname << "\n"; return;
-    }
-    else {
-      openByBlackBox = 1;
-      file = f;
-      in = new DLGFileInput(f);
-      scan = new Lexer(in);
-      pipe = new ANTLRTokenBuffer(scan);
-      tok = new Token;
-      scan->setToken(tok);
-      _parser = new Parser(pipe);
-      _parser->init();
-    }
-  }
-	
-  ~ParserBlackBox()
-  {
-    delete in; delete scan; delete pipe; delete _parser; delete tok;
-    if (1 == openByBlackBox) {
-      fclose(file);
-    }
-  }
+	ParserBlackBox(FILE *f)
+		{
+			file = f;
+			in = new DLGFileInput(f);
+			scan = new Lexer(in);
+			pipe = new ANTLRTokenBuffer(scan);
+			tok = new Token;
+			scan->setToken(tok);
+			_parser = new Parser(pipe);
+			_parser->init();
+		}
+	ParserBlackBox(char *fname)
+		{
+			FILE *f = fopen(fname, "r");
+			if ( f==NULL ) {cerr << "cannot open " << fname << "\n"; return;}
+			else {
+				file = f;
+				in = new DLGFileInput(f);
+				scan = new Lexer(in);
+				pipe = new ANTLRTokenBuffer(scan);
+				tok = new Token;
+				scan->setToken(tok);
+				_parser = new Parser(pipe);
+				_parser->init();
+			}
+		}
+	~ParserBlackBox()
+		{
+			delete in; delete scan; delete pipe; delete _parser; delete tok;
+			fclose(file);
+		}
 
-  Parser *parser()	   { return _parser; }
-  Lexer  *getLexer()     { return scan; }
+	Parser *parser()	{ return _parser; }
 };
 
 #endif

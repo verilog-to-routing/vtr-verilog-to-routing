@@ -54,12 +54,10 @@ struct NoLeakToken : public SimpleToken {
       static void          destroyList();
       virtual void         dumpNode( const char* s = 0);
       static void          dumpList(); 
-// ???      virtual ANTLRChar*   getText()=0;
-      virtual ANTLRChar*   getText() const =0;
+      virtual ANTLRChar*   getText()=0;
       virtual void         insertNode();  
       virtual void         removeNode();   
-// ???      virtual void         setText( ANTLRChar * ) = 0;
-      virtual void         setText( const ANTLRChar * ) = 0;
+      virtual void         setText( ANTLRChar * ) = 0;
       
    private:
       void init();

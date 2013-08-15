@@ -29,26 +29,28 @@
  * Terence Parr
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1989-2000
+ * 1989-1995
  */
 
 #ifndef ERR_H
 #define ERR_H
 
-#include "pcctscfg.h"
-#include <stdlib.h>
-#include <assert.h>
-
+#include "config.h"
 /*									      */
 /*  7-Apr-97  133MR1							      */
 /*		Proper choice of STDC and cplusplus pre-processor symbols (?) */
 /*									      */
-#include "pccts_string.h"
-
-#ifdef PCCTS_USE_STDARG
-#include "pccts_stdarg.h"
-#else
+#include <string.h>
+#ifdef __STDC__
+#include <stdarg.h>
+#endif
+#ifdef __cplusplus
+#include <stdarg.h>
+#endif
+#ifndef __STDC__
+#ifndef __cplusplus
 #include <varargs.h>
+#endif
 #endif
 
 #ifdef DUM
@@ -77,18 +79,6 @@ static SetWordType bitmask[] = {
 	0x00000010, 0x00000020, 0x00000040, 0x00000080
 };
 
-#ifdef zzTRACE_RULES
-int  zzTraceOptionValueDefault=1;
-int  zzTraceOptionValue=1;
-int  zzTraceGuessOptionValue=1;
-char *zzTraceCurrentRuleName=NULL;
-int  zzTraceDepth=0;
-#endif
-
-int  zzGuessSeq=0;          /* MR10 */
-int  zzSyntaxErrCount=0;    /* MR11 */
-int  zzLexErrCount=0;       /* MR11 */
-
 void
 #ifdef __USE_PROTOS
 zzresynch(SetWordType *wd,SetWordType mask)
@@ -102,7 +92,7 @@ SetWordType *wd, mask;
 	/* if you enter here without having consumed a token from last resynch
 	 * force a token consumption.
 	 */
-	if ( !consumed ) {zzCONSUME; consumed=1; return;}   /* MR10 */
+	if ( !consumed ) {zzCONSUME; return;}
 
 	/* if current token is in resynch set, we've got what we wanted */
 	if ( wd[LA(1)]&mask || LA(1) == zzEOF_TOKEN ) {consumed=0; return;}
@@ -152,11 +142,11 @@ int t;
  * where the zzMiss stuff is set here to the token that did not match
  * (and which set wasn't it a member of).
  */
-
-#ifdef PCCTS_USE_STDARG
-void zzFAIL(int k, ...)
+void
+#ifdef __USE_PROTOS
+zzFAIL(int k, ...)
 #else
-void zzFAIL(va_alist)
+zzFAIL(va_alist)
 va_dcl
 #endif
 {
@@ -174,16 +164,15 @@ va_dcl
 	int *err_k;
 	int i;
 	va_list ap;
-#ifndef PCCTS_USE_STDARG			/* MR20 */
+#ifndef __USE_PROTOS
 	int k;
 #endif
-#ifdef PCCTS_USE_STDARG         /* MR20 */
+#ifdef __USE_PROTOS
 	va_start(ap, k);
 #else
 	va_start(ap);
 	k = va_arg(ap, int);	/* how many lookahead sets? */
 #endif
-    assert(k <= sizeof(f)/sizeof(f[0]));    /* MR20 G. Hobbelt */
 	text[0] = '\0';
 	for (i=1; i<=k; i++)	/* collect all lookahead sets */
 	{
@@ -222,44 +211,6 @@ va_dcl
 	else *err_k = k;
 }
 
-#ifdef __USE_PROTOS
-void zzTraceGuessDone(zzantlr_state *state)
-#else
-void zzTraceGuessDone(state)
-  zzantlr_state     *state;
-#endif
-{
-#ifdef zzTRACE_RULES
-#ifdef ZZCAN_GUESS
-
-  int   doIt=0;
-
-  if (zzTraceCurrentRuleName == NULL) return;
-
-  if (zzTraceOptionValue <= 0) {
-    doIt=0;
-  } else if (zzTraceGuessOptionValue <= 0) {
-    doIt=0;
-  } else {
-    doIt=1;
-  };
-
-  if (doIt) {
-    fprintf(stderr,"guess done - returning to rule %s {\"%s\"} at depth %d",
-        state->traceCurrentRuleName,
-        LATEXT(1),
-        state->traceDepth);
-    if (state->guessing != 0) {
-      fprintf(stderr," (guess mode continues - an enclosing guess is still active)");
-    } else {
-      fprintf(stderr," (guess mode ends)");
-    };
-    fprintf(stderr,"\n");
-  };
-#endif
-#endif
-}
-
 void
 #ifdef __USE_PROTOS
 zzsave_antlr_state(zzantlr_state *buf)
@@ -269,7 +220,7 @@ zzantlr_state *buf;
 #endif
 {
 #ifdef LL_K
-	int     i;
+	int i;
 #endif
 
 #ifdef ZZCAN_GUESS
@@ -305,15 +256,6 @@ zzantlr_state *buf;
 	buf->token = zztoken;
 	strcpy(buf->text, zzlextext);
 #endif
-#ifdef zzTRACE_RULES
-
-    /* MR10 */
-
-    buf->traceOptionValue=zzTraceOptionValue;
-    buf->traceGuessOptionValue=zzTraceGuessOptionValue;
-    buf->traceCurrentRuleName=zzTraceCurrentRuleName;
-    buf->traceDepth=zzTraceDepth;
-#endif
 }
 
 void
@@ -324,13 +266,8 @@ zzrestore_antlr_state(buf)
 zzantlr_state *buf;
 #endif
 {
-
-#ifdef zzTRACE_RULES
-    int     prevTraceOptionValue;
-#endif
-
 #ifdef LL_K
-	int     i;
+	int i;
 #endif
 
 #ifdef ZZCAN_GUESS
@@ -364,28 +301,6 @@ zzantlr_state *buf;
 #else
 	zztoken = buf->token;
 	strcpy(zzlextext, buf->text);
-#endif
-#ifdef zzTRACE_RULES
-
-    prevTraceOptionValue=zzTraceOptionValue;
-    zzTraceOptionValue=buf->traceOptionValue;
-    if ( (prevTraceOptionValue > 0) !=
-             (zzTraceOptionValue > 0)) {
-      if (zzTraceOptionValue > 0) {
-        fprintf(stderr,"trace enable restored in rule %s depth %d\n",
-                        zzTraceCurrentRuleName,zzTraceDepth);
-      };
-      if (zzTraceOptionValue <= 0) {
-        fprintf(stderr,"trace disable restored in rule %s depth %d\n",
-                        zzTraceCurrentRuleName,zzTraceDepth);
-      };
-    };
-
-    zzTraceOptionValue=buf->traceOptionValue;            /* MR10 */
-    zzTraceGuessOptionValue=buf->traceGuessOptionValue;  /* MR10 */
-    zzTraceCurrentRuleName=buf->traceCurrentRuleName;    /* MR10 */
-    zzTraceDepth=buf->traceDepth;                        /* MR10 */
-    zzTraceGuessDone(buf);                               /* MR10 */
 #endif
 }
 
@@ -428,7 +343,6 @@ SetWordType *eset;
 #endif
 {
 	
-    zzSyntaxErrCount++;                             /* MR11 */
 	fprintf(stderr, "line %d: syntax error at \"%s\"", zzline, (tok==zzEOF_TOKEN)?"EOF":bad_text);
 	if ( !etok && !eset ) {fprintf(stderr, "\n"); return;}
 	if ( k==1 ) fprintf(stderr, " missing");
@@ -758,16 +672,14 @@ int
 #ifdef __USE_PROTOS
 _zzsetmatch(SetWordType *e, char **zzBadText, char **zzMissText,
 			int *zzMissTok, int *zzBadTok,
-			SetWordType **zzMissSet,
-			SetWordType *zzTokclassErrset /* MR23 */)
+			SetWordType **zzMissSet)
 #else
-_zzsetmatch(e, zzBadText, zzMissText, zzMissTok, zzBadTok, zzMissSet, zzTokclassErrset /* MR23 */)
+_zzsetmatch(e, zzBadText, zzMissText, zzMissTok, zzBadTok, zzMissSet)
 SetWordType *e;
 char **zzBadText;
 char **zzMissText;
 int *zzMissTok, *zzBadTok;
 SetWordType **zzMissSet;
-SetWordType *zzTokclassErrset;
 #endif
 {
 #ifdef DEMAND_LOOK
@@ -780,18 +692,17 @@ SetWordType *zzTokclassErrset;
 	if ( !zzset_el((unsigned)LA(1), e) ) {
 		*zzBadText = LATEXT(1); *zzMissText=NULL;
 		*zzMissTok= 0; *zzBadTok=LA(1);
-		*zzMissSet=zzTokclassErrset; /* MR23 */
+		*zzMissSet=e;
 		return 0;
 	}
-	zzMakeAttr           /* MR14 Ger Hobbelt (hobbelt@axa.nl) */
 #ifdef DEMAND_LOOK
 #ifdef LL_K
 	zzdirty++;
-    zzlabase++;          /* MR14 Ger Hobbelt (hobbelt@axa.nl) */
 #else
 	zzdirty = 1;
 #endif
 #endif
+	zzMakeAttr
 	return 1;
 }
 
@@ -816,11 +727,10 @@ SetWordType *whatFollows;
 
 	if ( LA(1)!=tokenWanted )
 	{
-        zzSyntaxErrCount++;     /* MR11 */
 		fprintf(stderr,
 				"line %d: syntax error at \"%s\" missing %s\n",
 				zzline,
-				(LA(1)==zzEOF_TOKEN)?"<eof>":(char *)LATEXT(1),
+				(LA(1)==zzEOF_TOKEN)?"<eof>":LATEXT(1),
 				zztokens[tokenWanted]);
 		zzconsumeUntil( whatFollows );
 		return 0;
@@ -862,11 +772,10 @@ SetWordType *whatFollows;
 #endif
 	if ( !zzset_el((unsigned)LA(1), tokensWanted) )
 	{
-        zzSyntaxErrCount++;     /* MR11 */
 		fprintf(stderr,
 				"line %d: syntax error at \"%s\" missing %s\n",
 				zzline,
-				(LA(1)==zzEOF_TOKEN)?"<eof>":(char *)LATEXT(1),
+				(LA(1)==zzEOF_TOKEN)?"<eof>":LATEXT(1),
 				zztokens[tokenTypeOfSet]);
 		zzconsumeUntil( whatFollows );
 		return 0;
@@ -903,15 +812,14 @@ SetWordType *e;
 #endif
 #endif
 	if ( !zzset_el((unsigned)LA(1), e) ) return 0;
-	zzMakeAttr           /* MR14 Ger Hobbelt (hobbelt@axa.nl) */
 #ifdef DEMAND_LOOK
 #ifdef LL_K
 	zzdirty++;
-    zzlabase++;          /* MR14 Ger Hobbelt (hobbelt@axa.nl) */
 #else
 	zzdirty = 1;
 #endif
 #endif
+	zzMakeAttr
 	return 1;
 }
 
@@ -988,183 +896,5 @@ int *modeLevel;
   return;
 }
 #endif /* USER_ZZMODE_STACK */
-
-#ifdef __USE_PROTOS
-void zzTraceReset(void)
-#else
-void zzTraceReset()
-#endif
-{
-#ifdef zzTRACE_RULES
-  zzTraceOptionValue=zzTraceOptionValueDefault;
-  zzTraceGuessOptionValue=1;
-  zzTraceCurrentRuleName=NULL;
-  zzTraceDepth=0;
-#endif
-}
-
-#ifdef __USE_PROTOS
-void zzTraceGuessFail(void)
-#else
-void zzTraceGuessFail()
-#endif
-{
-
-#ifdef zzTRACE_RULES
-#ifdef ZZCAN_GUESS
-
-  int   doIt=0;
-
-  if (zzTraceOptionValue <= 0) {
-    doIt=0;
-  } else if (zzguessing && zzTraceGuessOptionValue <= 0) {
-    doIt=0;
-  } else {
-    doIt=1;
-  };
-
-  if (doIt) {
-    fprintf(stderr,"guess failed\n");
-  };
-#endif
-#endif
-}
-
-/* zzTraceOption:
-     zero value turns off trace
-*/
-
-#ifdef __USE_PROTOS
-void zzTraceIn(char * rule)
-#else
-void zzTraceIn(rule)
-  char  *rule;
-#endif
-{
-#ifdef zzTRACE_RULES
-
-  int           doIt=0;
-
-  zzTraceDepth++;
-  zzTraceCurrentRuleName=rule;
-
-  if (zzTraceOptionValue <= 0) {
-    doIt=0;
-#ifdef ZZCAN_GUESS
-  } else if (zzguessing && zzTraceGuessOptionValue <= 0) {
-    doIt=0;
-#endif
-  } else {
-    doIt=1;
-  };
-
-  if (doIt) {
-    fprintf(stderr,"enter rule %s {\"%s\"} depth %d",
-            rule,
-            LA(1)==1 ? "@" : (char *) LATEXT(1),    /* MR19 */
-            zzTraceDepth);
-#ifdef ZZCAN_GUESS
-    if (zzguessing) fprintf(stderr," guessing");
-#endif
-    fprintf(stderr,"\n");
-  };
-#endif
-  return;
-}
-
-#ifdef __USE_PROTOS
-void zzTraceOut(char * rule)
-#else
-void zzTraceOut(rule)
-  char  *rule;
-#endif
-{
-#ifdef zzTRACE_RULES
-  int       doIt=0;
-
-  zzTraceDepth--;
-
-  if (zzTraceOptionValue <= 0) {
-    doIt=0;
-#ifdef ZZCAN_GUESS
-  } else if (zzguessing && zzTraceGuessOptionValue <= 0) {
-    doIt=0;
-#endif
-  } else {
-    doIt=1;
-  };
-
-  if (doIt) {
-    fprintf(stderr,"exit rule %s {\"%s\"} depth %d",
-            rule,
-            LA(1)==1 ? "@" : (char *) LATEXT(1), /* MR19 */
-            zzTraceDepth+1);
-#ifdef ZZCAN_GUESS
-    if (zzguessing) fprintf(stderr," guessing");
-#endif
-    fprintf(stderr,"\n");
-  };
-#endif
-}
-
-#ifdef __USE_PROTOS
-int zzTraceOption(int delta)
-#else
-int zzTraceOption(delta)
-  int   delta;
-#endif
-{
-#ifdef zzTRACE_RULES
-    int     prevValue=zzTraceOptionValue;
-
-    zzTraceOptionValue=zzTraceOptionValue+delta;
-
-    if (zzTraceCurrentRuleName != NULL) {
-      if (prevValue <= 0 && zzTraceOptionValue > 0) {
-        fprintf(stderr,"trace enabled in rule %s depth %d\n",
-                                            zzTraceCurrentRuleName,zzTraceDepth);
-      };
-      if (prevValue > 0 && zzTraceOptionValue <= 0) {
-        fprintf(stderr,"trace disabled in rule %s depth %d\n",
-                                            zzTraceCurrentRuleName,zzTraceDepth);
-      };
-    };
-    return  prevValue;
-#else
-    return 0;
-#endif
-}
-
-#ifdef __USE_PROTOS
-int zzTraceGuessOption(int delta)
-#else
-int zzTraceGuessOption(delta)
-  int   delta;
-#endif
-{
-#ifdef zzTRACE_RULES
-#ifdef ZZCAN_GUESS
-    int     prevValue=zzTraceGuessOptionValue;
-
-    zzTraceGuessOptionValue=zzTraceGuessOptionValue+delta;
-
-    if (zzTraceCurrentRuleName != NULL) {
-      if (prevValue <= 0 && zzTraceGuessOptionValue > 0) {
-        fprintf(stderr,"guess trace enabled in rule %s depth %d\n",
-                                                zzTraceCurrentRuleName,zzTraceDepth);
-      };
-      if (prevValue > 0 && zzTraceGuessOptionValue <= 0) {
-        fprintf(stderr,"guess trace disabled in rule %s depth %d\n",
-                                                zzTraceCurrentRuleName,zzTraceDepth);
-      };
-    };
-    return prevValue;
-#else
-    return 0;
-#endif
-#else
-    return 0;
-#endif
-}
 
 #endif /* ERR_H */

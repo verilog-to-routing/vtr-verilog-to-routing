@@ -24,15 +24,10 @@
  * Terence Parr
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1989-2000
+ * 1989-1995
  */
-
-#include "pcctscfg.h"
-
-#include "pccts_stdio.h"
-#include "pccts_stdarg.h"
-
-PCCTS_NAMESPACE_STD
+#include <stdio.h>
+#include <stdarg.h>
 
 #define ANTLR_SUPPORT_CODE
 
@@ -83,20 +78,20 @@ ASTBase::subroot(ASTBase **_root, ASTBase **_sibling, ASTBase **_tail)
 //	Fix suggested by Ron House (house@helios.usq.edu.au)
 //
 void
-ASTBase::preorder(void* pData /*= NULL*/ /* MR23 */)
+ASTBase::preorder()
 {
 	ASTBase *tree = this;
 
 	while ( tree!= NULL )
 	{
 		if ( tree->_down != NULL ) {
-			tree->preorder_before_action(pData); 		// MR1	
+			tree->preorder_before_action(); 		// MR1	
 		};
-		tree->preorder_action(pData);
+		tree->preorder_action();
 		if ( tree->_down!=NULL )
 		{
-			tree->_down->preorder(pData);
-			tree->preorder_after_action(pData);			// MR1
+			tree->_down->preorder();
+			tree->preorder_after_action();			// MR1
 		}
 		tree = tree->_right;
 	}
@@ -131,15 +126,12 @@ ASTBase *
 ASTBase::tmake(ASTBase *root, ...)
 {
 	va_list ap;
-	register ASTBase *child, *sibling=NULL, *tail=NULL /*MR23*/, *w;
+	register ASTBase *child, *sibling=NULL, *tail, *w;
 
 	va_start(ap, root);
 
 	if ( root != NULL )
-		if ( root->_down != NULL ) {  
-            root->reportOverwriteOfDownPointer();  /* MR21 Report problem which almost always an error */
-            return NULL;
-        }
+		if ( root->_down != NULL ) return NULL;
 	child = va_arg(ap, ASTBase *);
 	while ( child != NULL )
 	{
@@ -153,8 +145,6 @@ ASTBase::tmake(ASTBase *root, ...)
 	va_end(ap);
 	return root;
 }
-
-#ifndef PCCTS_NOT_USING_SOR
 
 /* tree duplicate */
 // forgot to check for NULL this (TJP July 23,1995)
@@ -175,16 +165,11 @@ ASTBase::dup()
 	else u->_down = NULL;
 	return u;
 }
-#endif
-
 //
 //  7-Apr-97 133MR1
 //  	     Fix suggested by Asgeir Olafsson (olafsson@cstar.ac.com)
 //
 /* tree duplicate */
-
-#ifndef PCCTS_NOT_USING_SOR
-
 ASTBase *
 ASTDoublyLinkedBase::dup()
 {
@@ -209,8 +194,6 @@ ASTDoublyLinkedBase::dup()
 	return u;
 }
 
-#endif
-
 /*
  * Set the 'up', and 'left' pointers of all nodes in 't'.
  * Initial call is double_link(your_tree, NULL, NULL).
@@ -228,29 +211,3 @@ ASTDoublyLinkedBase::double_link(ASTBase *left, ASTBase *up)
 		((ASTDoublyLinkedBase *)t->_right)->double_link(t, up);
 }
 
-// MR21 ASTBase::reportOverwriteOfDownPointer
-
-void ASTBase::reportOverwriteOfDownPointer()
-{
-    panic("Attempt to overwrite down pointer in ASTBase::tmake");
-}
-
-// MR21 ASTBase::panic
-
-void ASTBase::panic(const char *msg)
-{
-	/* MR23 */ printMessage(stderr,"ASTBase panic: %s\n", msg);
-	exit(PCCTS_EXIT_FAILURE);
-}
-
-#ifdef PCCTS_NOT_USING_SOR
-//MR23
-int ASTBase::printMessage(FILE* pFile, const char* pFormat, ...)
-{
-	va_list marker;
-	va_start( marker, pFormat );
-  	int iRet = vfprintf(pFile, pFormat, marker);
-	va_end( marker );
-	return iRet;
-}
-#endif

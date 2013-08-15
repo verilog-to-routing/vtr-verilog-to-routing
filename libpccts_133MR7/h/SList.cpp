@@ -25,13 +25,12 @@
  * Terence Parr
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1992-2000
+ * 1992-1995
  */
 
 #define ANTLR_SUPPORT_CODE
 
 #include "SList.h"
-#include "pccts_stdarg.h" // MR23
 
 /* Iterate over a list of elements; returns ptr to a new element
  * in list upon every call and NULL when no more are left.
@@ -60,7 +59,7 @@ iterate(SListNode **cursor)
 void SList::
 add(void *e)
 {
-	SListNode *p, *tail=NULL;
+	SListNode *p, *tail;
 	require(e!=NULL, "slist_add: attempting to add NULL list element");
 
 	p = new SListNode;
@@ -103,14 +102,4 @@ to_ast(SList list)
 		else { last->setRight(u); last = u; }
 	}
 	return t;
-}
-
-// MR23
-int SList::printMessage(FILE* pFile, const char* pFormat, ...)
-{
-	va_list marker;
-	va_start( marker, pFormat );
-  	int iRet = vfprintf(pFile, pFormat, marker);
-	va_end( marker );
-	return iRet;
 }

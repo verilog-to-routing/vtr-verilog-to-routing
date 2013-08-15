@@ -25,24 +25,18 @@
  * Adapted by Terence Parr to ANTLR stuff
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1989-2000
+ * 1989-1995
  */
 
 #ifndef ATokPtr_h
 #define ATokPtr_h
-
-#include "pcctscfg.h"
-
-#include "pccts_stdio.h"
-
-PCCTS_NAMESPACE_STD
 
 // pointer to a reference counted object
 // robust in that an unused ANTLRTokenPtr can point to NULL.
 
 class ANTLRAbstractToken;
 
-class DllExportPCCTS ANTLRTokenPtr {
+class ANTLRTokenPtr {
 public:
     ANTLRTokenPtr(ANTLRAbstractToken *addr=NULL){ptr_ = addr; ref();}
     ANTLRTokenPtr(const ANTLRTokenPtr &lhs)	{ptr_ = lhs.ptr_; lhs.ref();}
@@ -58,17 +52,12 @@ public:
 //  7-Apr-97 133MR1
 //	     Fix suggested by Andreas Magnusson
 //			(Andreas.Magnusson@mailbox.swipnet.se)
-    void operator = (const ANTLRTokenPtr & lhs);		    	// MR1
+    void operator = (const ANTLRTokenPtr & lhs);			// MR1
     void operator = (ANTLRAbstractToken *addr);
-    int operator != (const ANTLRTokenPtr &q) const	    		// MR1 // MR11 unsigned -> int
+    unsigned operator != (const ANTLRTokenPtr &q) const			// MR1
 	{ return this->ptr_ != q.ptr_; }
-    int operator == (const ANTLRTokenPtr &q) const  			// MR1 // MR11 unsigned -> int
+    unsigned operator == (const ANTLRTokenPtr &q) const			// MR1
 	{ return this->ptr_ == q.ptr_; }
-    int operator == (const ANTLRAbstractToken *addr) const      // MR11
-    { return this->ptr_ == addr; }
-    int operator != (const ANTLRAbstractToken *addr) const      // MR11
-    { return this->ptr_ != addr; }
-
     void ref() const;
     void deref();
 

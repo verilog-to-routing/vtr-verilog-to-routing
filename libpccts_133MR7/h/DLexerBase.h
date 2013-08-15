@@ -1,5 +1,5 @@
 /* DLGLexerBase.h
- *
+l *
  * SOFTWARE RIGHTS
  *
  * We reserve no LEGAL rights to the Purdue Compiler Construction Tool
@@ -24,17 +24,14 @@
  * Terence Parr
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1989-2000
+ * 1989-1995
  */
 
 #ifndef DLGX_H
 #define DLGX_H
 
-#include "pcctscfg.h"
-#include "pccts_stdio.h"
-
-PCCTS_NAMESPACE_STD
-
+#include <stdio.h>
+#include "config.h"
 #include ATOKEN_H
 #include ATOKENSTREAM_H
 
@@ -44,7 +41,7 @@ class ANTLRParser;							// MR1
 typedef char DLGChar;
 
 /*  Can have it as a class too: (ack this looks weird; is it right?)
-class DllExportPCCTS DLGChar {
+class DLGChar {
 private:
 	int c;
 public:
@@ -54,13 +51,13 @@ public:
 */
 
 /* user must subclass this */
-class DllExportPCCTS DLGInputStream {
+class DLGInputStream {
 public:
 	virtual int nextChar() = 0;
 };
 
 /* Predefined char stream: Input from FILE */
-class DllExportPCCTS DLGFileInput : public DLGInputStream {
+class DLGFileInput : public DLGInputStream {
 private:
 	int found_eof;
 	FILE *input;
@@ -74,30 +71,24 @@ public:
 				if ( c==EOF ) found_eof = 1;
 				return c;
 			}
-	}
-    void DLGFileReset(FILE *f) {input=f; found_eof = 0; };              // MR11
+		}
 };
-
-// MR9  Suggested by Bruce Guenter (bruceg@qcc.sk.ca)
-// MR9  Make DLGStringInput const correct
 
 /* Predefined char stream: Input from string */
-class DllExportPCCTS DLGStringInput : public DLGInputStream {
+class DLGStringInput : public DLGInputStream {
 private:
-	const DLGChar *input;                                           // MR9
-	const DLGChar *p;                                               // MR9
+	DLGChar *input;
+	DLGChar *p;
 public:
-	DLGStringInput(const DLGChar *s) { input = s; p = &input[0];}   // MR9
+	DLGStringInput(DLGChar *s) { input = s; p = &input[0];}
 	int nextChar()
 		{
-			if (*p) return (int) (unsigned char) *p++;              // MR14
+			if (*p) return (int) *p++;
 			else return EOF;
 		}
-
-    void DLGStringReset(const DLGChar *s) {input=s; p= &input[0]; }; // MR11 // MR16
 };
 
-class DllExportPCCTS DLGState {
+class DLGState {
 public:
 	DLGInputStream *input;
 	int interactive;
@@ -118,7 +109,7 @@ public:
 };
 
 /* user must subclass this */
-class DllExportPCCTS DLGLexerBase : public ANTLRTokenStream {
+class DLGLexerBase : public ANTLRTokenStream {
 public:
 	virtual ANTLRTokenType erraction();
 
@@ -143,10 +134,10 @@ protected:
 	DLGChar ebuf[70];
 	_ANTLRTokenPtr token_to_fill;
 
+	virtual _ANTLRTokenPtr getToken();
 	int	debugLexerFlag;						// MR1
 	ANTLRParser	*parser;					// MR1
 public:
-	virtual _ANTLRTokenPtr getToken();      // MR12 public
 	virtual void advance(void) = 0;
 	void	skip(void);		/* erase lextext, look for antoher token */
 	void	more(void);		/* keep lextext, look for another token */
@@ -156,10 +147,10 @@ public:
 	virtual ANTLRTokenType nextTokenType(void)=0;/* get next token */
 	void	replchar(DLGChar c);	/* replace last recognized reg. expr. with
 									 a character */
-	void	replstr(const DLGChar *s);	/* replace last recognized reg. expr. with
-    									 a string */ /* MR20 const */
+	void	replstr(DLGChar *s);	/* replace last recognized reg. expr. with
+									 a string */
         virtual int err_in();						// MR1
-	virtual void errstd(const char *);				// MR1  MR20 const
+	virtual void errstd(char *);					// MR1
 	int		line()		{ return _line; }
 	void	set_line(int newValue)	{ _line=newValue; };		// MR1
 	virtual void newline()	{ _line++; }
@@ -180,9 +171,8 @@ public:
 				 unsigned bufsize=2000,
 				 int interactive=0,
 				 int track_columns=0);
-	void reset();									// MR19
 	virtual ~DLGLexerBase() { delete [] _lextext; }
-	virtual void panic(const char *msg);			// MR1  MR20 const
+	virtual void panic(char *msg);					// MR1
 	void	trackColumns() {
 				track_columns = 1;
 				this->_begcol = 0;
@@ -191,8 +181,6 @@ public:
 	virtual ANTLRParser *setParser(ANTLRParser *p);			// MR1
 	virtual ANTLRParser *getParser();				// MR1
 	virtual int debugLexer(int value);				// MR1
-    int     lexErrCount;                            // MR12
-	virtual int printMessage(FILE* pFile, const char* pFormat, ...); // MR23
 };
 
 #endif

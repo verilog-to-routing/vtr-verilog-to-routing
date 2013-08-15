@@ -29,19 +29,15 @@
  * Terence Parr
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1989-2000
+ * 1989-1995
  */
 
 #ifndef APARSER_H_GATE
 #define APARSER_H_GATE
 
-#include "pcctscfg.h"
-
-#include "pccts_stdio.h"
-#include "pccts_setjmp.h"
-
-PCCTS_NAMESPACE_STD
-
+#include <stdio.h>
+#include <setjmp.h>
+#include "config.h"
 #include ATOKEN_H
 #include ATOKENBUFFER_H
 
@@ -62,50 +58,20 @@ typedef unsigned char SetWordType;
 
            /* s y n t a c t i c  p r e d i c a t e  s t u f f */
 
-#ifndef zzUSER_GUESS_HOOK
-#define zzUSER_GUESS_HOOK(seqFrozen,zzrv)
-#endif
-
-#ifndef zzUSER_GUESS_DONE_HOOK
-#define zzUSER_GUESS_DONE_HOOK(seqFrozen)
-#endif
-
-/* MR14 Add zzUSER_GUESS_FAIL_HOOK and related code */
-
-#define zzUSER_GUESS_FAIL_HOOK_INTERNAL zzUSER_GUESS_FAIL_HOOK(SeqFrozen)
-#ifndef zzUSER_GUESS_FAIL_HOOK
-#define zzUSER_GUESS_FAIL_HOOK(zzGuessSeq)
-#endif
-
-
 typedef struct _zzjmp_buf {
 			jmp_buf state;
 		} zzjmp_buf;
 
 /* these need to be macros not member functions */
-#define zzGUESS_BLOCK		ANTLRParserState zzst; int zzrv; int _marker; int zzGuessSeqFrozen;
+#define zzGUESS_BLOCK		ANTLRParserState zzst; int zzrv; int _marker;
 #define zzNON_GUESS_MODE	if ( !guessing )
 #define zzGUESS_FAIL		guess_fail();
-
-/*  Note:  zzGUESS_DONE does not execute longjmp() */
-
-#define zzGUESS_DONE		{zzrv=1; inputTokens->rewind(_marker); guess_done(&zzst);zzUSER_GUESS_DONE_HOOK(zzGuessSeqFrozen) }
+#define zzGUESS_DONE		{zzrv=1; inputTokens->rewind(_marker); guess_done(&zzst);}
 #define zzGUESS				saveState(&zzst); \
 							guessing = 1; \
-                            zzGuessSeqFrozen = ++zzGuessSeq; \
 							_marker = inputTokens->mark(); \
 							zzrv = setjmp(guess_start.state); \
-                            zzUSER_GUESS_HOOK(zzGuessSeqFrozen,zzrv) \
 						    if ( zzrv ) zzGUESS_DONE
-
-#define zzTRACEdata     const ANTLRChar *zzTracePrevRuleName = NULL;
-
-#ifndef zzTRACEIN
-#define zzTRACEIN(r)	zzTracePrevRuleName=traceCurrentRuleName;tracein(r);
-#endif
-#ifndef zzTRACEOUT
-#define zzTRACEOUT(r)	traceout(r);traceCurrentRuleName=zzTracePrevRuleName;
-#endif
 
                   /* a n t l r  p a r s e r  d e f */
 
@@ -118,12 +84,6 @@ struct ANTLRParserState {
 	int inf_last;
 
 	int dirty;
-
-    int             traceOptionValue;       // MR10
-    int             traceGuessOptionValue;  // MR10
-    const ANTLRChar *traceCurrentRuleName;  // MR10
-    int             traceDepth;             // MR10
-
 };
 
 /* notes:
@@ -154,8 +114,8 @@ protected:
 	int LLk;					// number of lookahead symbols (old LL_K)
 	int demand_look;
 	ANTLRTokenType eofToken;			// when do I stop during resynch()s
-	int bsetsize;           			// size of bitsets created by ANTLR in
-        								// units of SetWordType
+	int bsetsize;				// size of bitsets created by ANTLR in
+								// units of SetWordType
 
 	ANTLRTokenBuffer *inputTokens;	//place to get input tokens
 
@@ -169,7 +129,7 @@ protected:
 	int inf_last;
 	int *_inf_line;
 
-	const ANTLRChar **token_tbl; // pointer to table of token type strings MR20 const
+	ANTLRChar **token_tbl;		// pointer to table of token type strings
 
 	int dirty;					// used during demand lookahead
 
@@ -177,47 +137,38 @@ protected:
 //	ANTLRLightweightToken **token;	// the token with all its attributes
 	int lap;
 	int labase;
-#ifdef ZZDEFER_FETCH
-	int stillToFetch;                               // MR19 V.H. Simonis
-#endif
 
 private:
 	void fill_inf_look();
 
 protected:
-	virtual void guess_fail() {                         // MR9 27-Sep-97 make virtual
-        traceGuessFail();                               // MR10
-        longjmp(guess_start.state, 1); }                // MR9
-	virtual void guess_done(ANTLRParserState *st) {     // MR9 27-Sep-97 make virtual
-         restoreState(st); }                            // MR9
-	virtual int guess(ANTLRParserState *);              // MR9 27-Sep-97 make virtual
+	void guess_fail()				{ longjmp(guess_start.state, 1); }
+	void guess_done(ANTLRParserState *st){ restoreState(st); }
+	int guess(ANTLRParserState *);
 	void look(int);
     int _match(ANTLRTokenType, ANTLRChar **, ANTLRTokenType *,
 			   _ANTLRTokenPtr *, SetWordType **);
     int _setmatch(SetWordType *, ANTLRChar **, ANTLRTokenType *,
-			   _ANTLRTokenPtr *, SetWordType **,
-			   SetWordType * tokclassErrset /* MR23 */);
+			   _ANTLRTokenPtr *, SetWordType **);
     int _match_wsig(ANTLRTokenType);
     int _setmatch_wsig(SetWordType *);
     virtual void consume();
-    virtual void resynch(SetWordType *wd,SetWordType mask); // MR21
+    void resynch(SetWordType *wd,SetWordType mask);
 	void prime_lookahead();
-	virtual void tracein(const ANTLRChar *r);              // MR10
-	virtual void traceout(const ANTLRChar *r);             // MR10
-	static unsigned MODWORD(unsigned x) {return x & (EXT_WORDSIZE-1);}	// x % EXT_WORDSIZE // MR9
-	static unsigned DIVWORD(unsigned x) {return x >> EXT_LOGWORDSIZE;}	// x / EXT_WORDSIZE // MR9
+	virtual void tracein(char *r)
+			{
+				fprintf(stderr, "enter rule \"%s\"\n", r);
+			}
+	virtual void traceout(char *r)
+			{
+				fprintf(stderr, "exit rule \"%s\"\n", r);
+			}
+	unsigned MODWORD(unsigned x) {return x & (EXT_WORDSIZE-1);}	// x % EXT_WORDSIZE
+	unsigned DIVWORD(unsigned x) {return x >> EXT_LOGWORDSIZE;}	// x / EXT_WORDSIZE
 	int set_deg(SetWordType *);
 	int set_el(ANTLRTokenType, SetWordType *);
 	virtual void edecode(SetWordType *);				// MR1
-	virtual void FAIL(int k, ...);					    // MR1
-    int                 traceOptionValue;                           // MR10
-    int                 traceGuessOptionValue;                      // MR10
-    const ANTLRChar     *traceCurrentRuleName;                      // MR10
-    int                 traceDepth;                                 // MR10
-    void                traceReset();                               // MR10
-    virtual void        traceGuessFail();                           // MR10
-    virtual void        traceGuessDone(const ANTLRParserState *);   // MR10
-    int                 zzGuessSeq;                                 // MR10
+	virtual void FAIL(int k, ...);					// MR1
 
 public:
 	ANTLRParser(ANTLRTokenBuffer *,
@@ -231,40 +182,25 @@ public:
 	
 	ANTLRTokenType LA(int i)
 	{
-//
-//  MR14 demand look will always be 0 for C++ mode
-//
-////	return demand_look ? token_type[(labase+(i)-1)&(LLk-1)] :
-////						token_type[(lap+(i)-1)&(LLk-1)];
-
-// MR19 V.H. Simonis Defer fetch feature
-
-#ifdef ZZDEFER_FETCH
-      undeferFetch();
-#endif
-	  return token_type[(lap+(i)-1)&(LLk-1)];
+		return demand_look ? token_type[(labase+(i)-1)&(LLk-1)] :
+							token_type[(lap+(i)-1)&(LLk-1)];
 	}
 	_ANTLRTokenPtr LT(int i);
 
 	void setEofToken(ANTLRTokenType t)	{ eofToken = t; }
-	ANTLRTokenType getEofToken() const  { return eofToken; }    // MR14
 
 	void noGarbageCollectTokens()	{ inputTokens->noGarbageCollectTokens(); }
 	void garbageCollectTokens()		{ inputTokens->garbageCollectTokens(); }
 
-    virtual void syn(_ANTLRTokenPtr tok, ANTLRChar *egroup,
+        virtual void syn(_ANTLRTokenPtr tok, ANTLRChar *egroup,
 					 SetWordType *eset, ANTLRTokenType etok, int k);
-	virtual void saveState(ANTLRParserState *);     // MR9 27-Sep-97 make virtual
-	virtual void restoreState(ANTLRParserState *);  // MR9 27-Sep-97 make virtual
+	void saveState(ANTLRParserState *);
+	void restoreState(ANTLRParserState *);
 
-	virtual void panic(const char *msg); // MR20 const
-
+	virtual void panic(char *msg);
 	static char *eMsgd(char *,int);
 	static char *eMsg(char *,char *);
 	static char *eMsg2(char *,char *,char *);
-
-	virtual int printMessage(FILE* pFile, const char* pFormat, ...); // MR23
-	virtual int printMessageV(FILE* pFile, const char* pFormat, va_list arglist); // MR23
 
 	void consumeUntil(SetWordType *st);
 	void consumeUntilToken(int t);
@@ -276,39 +212,22 @@ public:
 					 SetWordType *whatFollows);
 	
 	const ANTLRChar * parserTokenName(int tok);			// MR1
-
-    int                 traceOptionValueDefault;        // MR11
-    int                 traceOption(int delta);         // MR11
-    int                 traceGuessOption(int delta);    // MR11
-
-//  MR8  5-Aug-97   S.Bochnak@microtool.com.pl
-//  MR8             Move resynch static local variable
-//  MR8               to class instance
-
-    int                 syntaxErrCount;                      // MR12
-    ANTLRTokenStream   *getLexer() const {                   // MR12
-      return inputTokens ? inputTokens->getLexer() : 0; }    // MR12
-protected:                                              // MR8
-    int     resynchConsumed;                            // MR8
-    char    *zzFAILtext; // workarea required by zzFAIL // MR9
-    void    undeferFetch();                             // MR19 V.H. Simonis
-    int     isDeferFetchEnabled();                      // MR19 V.H. Simonis
-    virtual void failedSemanticPredicate(const char* predicate); /* MR23 */
 };
+
 
 #define zzmatch(_t)							\
 	if ( !_match((ANTLRTokenType)_t, &zzMissText, &zzMissTok, \
 				 (_ANTLRTokenPtr *) &zzBadTok, &zzMissSet) ) goto fail;
 
 #define zzmatch_wsig(_t,handler)						\
-	if ( !_match_wsig((ANTLRTokenType)_t) ) if ( guessing ) zzGUESS_FAIL else {_signal=MismatchedToken; goto handler;}
+	if ( !_match_wsig((ANTLRTokenType)_t) ) if ( guessing ) goto fail; else {_signal=MismatchedToken; goto handler;}
 
-#define zzsetmatch(_ts,_tokclassErrset)							\
+#define zzsetmatch(_ts)							\
 	if ( !_setmatch(_ts, &zzMissText, &zzMissTok, \
-				 (_ANTLRTokenPtr *) &zzBadTok, &zzMissSet, _tokclassErrset) ) goto fail;
+				 (_ANTLRTokenPtr *) &zzBadTok, &zzMissSet) ) goto fail;
 
 #define zzsetmatch_wsig(_ts, handler)				\
-	if ( !_setmatch_wsig(_ts) ) if ( guessing ) zzGUESS_FAIL else {_signal=MismatchedToken; goto handler;}
+	if ( !_setmatch_wsig(_ts) ) if ( guessing ) goto fail; else {_signal=MismatchedToken; goto handler;}
 
 /* For the dflt signal matchers, a FALSE indicates that an error occurred
  * just like the other matchers, but in this case, the routine has already
@@ -325,37 +244,24 @@ protected:                                              // MR8
 	if ( !_match_wdfltsig(tokenWanted, whatFollows) ) _signal = MismatchedToken;
 
 
-//  MR1  10-Apr-97 	zzfailed_pred() macro does not backtrack in guess mode.
-//  MR1	   		    Identification and correction due to J. Lilley
-//
-//  MR23            Call virtual method to report error.
-//  MR23            Provide more control over failed predicate action
-//                  without any need for user to worry about guessing internals.
+//  MR1  10-Apr-97 	zzfailed_pred() macro does not backtrack
+//  MR1			  in guess mode.
+//  MR1			Identification and correction due to J. Lilley
 
 #ifndef zzfailed_pred
-#define zzfailed_pred(_p,_hasuseraction,_useraction) \
+#define zzfailed_pred(_p) \
   if (guessing) { \
     zzGUESS_FAIL; \
   } else { \
-    zzfailed_pred_action(_p,_hasuseraction,_useraction) \
+    fprintf(stdout,"line %d: semantic error; failed predicate: '%s'\n", \
+	LT(1)->getLine(), _p); \
   }
-#endif
-
-//  MR23            Provide more control over failed predicate action
-//                  without any need for user to worry about guessing internals.
-//                  _hasuseraction == 0 => no user specified error action
-//                  _hasuseraction == 1 => user specified error action
-
-#ifndef zzfailed_pred_action
-#define zzfailed_pred_action(_p,_hasuseraction,_useraction) \
-    if (_hasuseraction) { _useraction } else { failedSemanticPredicate(_p); }
 #endif
 
 #define zzRULE \
 		SetWordType *zzMissSet=NULL; ANTLRTokenType zzMissTok=(ANTLRTokenType)0;	\
-		_ANTLRTokenPtr zzBadTok=NULL; ANTLRChar *zzBadText=(ANTLRChar *)"";	\
-		int zzErrk=1,zzpf=0; \
-        zzTRACEdata \
+		_ANTLRTokenPtr zzBadTok; ANTLRChar *zzBadText=(ANTLRChar *)"";	\
+		int zzErrk=1;									\
 		ANTLRChar *zzMissText=(ANTLRChar *)"";
 
 #endif

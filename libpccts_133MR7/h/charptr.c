@@ -23,27 +23,24 @@
  * Terence Parr
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1989-2000
+ * 1989-1995
  */
-
-#include "pcctscfg.h"
-
 #ifdef __STDC__
-#include "pccts_stdlib.h"
+#include <stdlib.h>
 #else
 #include <malloc.h>
 #endif
-#include "pccts_string.h"
+#include <string.h>
 
 /* 133MR1 include stdio.h for fprintf in charptr.c */
 
-#include "pccts_stdio.h"
+#include <stdio.h>
 
 /* 133MR1 include charptr.h for Attrib in charptr.c */
 
 #include "charptr.h"
 
-#ifdef __USE_PROTOS
+#ifdef __STDC__
 zzcr_attr(Attrib *a,int token,char *text)
 #else
 zzcr_attr(a,token,text)

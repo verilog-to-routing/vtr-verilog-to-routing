@@ -24,15 +24,10 @@
  * Terence Parr
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1989-2000
+ * 1989-1995
  */
-
-#include "pcctscfg.h"
-
-#include "pccts_stdio.h"
-#include "pccts_stdlib.h"
-
-PCCTS_NAMESPACE_STD
+#include <stdio.h>
+#include <stdlib.h>
 
 /* I have to put this here due to C++ limitation
  * that you can't have a 'forward' decl for enums.
@@ -49,9 +44,8 @@ enum ANTLRTokenType { TER_HATES_CPP=0, ITS_UTTER_GARBAGE,		// MR1
 
 #define ANTLR_SUPPORT_CODE
 
-#include "pcctscfg.h"
+#include "config.h"
 #include DLEXERBASE_H
-#include APARSER_H		// MR23
 
 DLGLexerBase::
 DLGLexerBase(DLGInputStream *in,
@@ -80,19 +74,6 @@ DLGLexerBase(DLGInputStream *in,
 	this->track_columns = _track_columns;
 	this->debugLexerFlag = 0;					// MR1
 	this->parser = NULL;						// MR1
-    this->lexErrCount=0;                        // MR11
-}
-
-// MR19  THM 
-
-void DLGLexerBase::reset()
-{
-	this->charfull = 0;
-	this->_begcol = 0;
-	this->_endcol = 0;
-	this->automaton = 0;
-	this->_line=1;
-	this->lexErrCount=0;
 }
 
 void DLGLexerBase::
@@ -176,28 +157,18 @@ replchar(DLGChar c)
 		*(_begexpr+1) = '\0';
 	}
 	_endexpr = _begexpr;
-	if (c != '\0') {
-		nextpos = _begexpr + 1;
-	}
-	else {
-		nextpos = _begexpr;	/* MR30 Zero terminates string. */
-	}
+	nextpos = _begexpr + 1;
 }
 
 /* replace the string s for the reg. expr last matched and in the buffer */
-
-#ifdef _MSC_VER  // MR23
-//Turn off "assignment within conditional expression" warning
-#pragma warning(disable : 4706)
-#endif
 void DLGLexerBase::
-replstr(const DLGChar *s) /* MR20 const */
+replstr(register DLGChar *s)
 {
 	register DLGChar *l= &_lextext[_bufsize -1];
 
 	nextpos = _begexpr;
 	if (s){
-		while ((nextpos <= l) && (*(nextpos++) = *(s++))){
+	 	while ((nextpos <= l) && (*(nextpos++) = *(s++))){
 			/* empty */
 		}
 		/* correct for NULL at end of string */
@@ -211,15 +182,11 @@ replstr(const DLGChar *s) /* MR20 const */
 	*(nextpos) = '\0';
 	_endexpr = nextpos - 1;
 }
-#ifdef _MSC_VER  // MR23
-#pragma warning(default: 4706)
-#endif
 
 void DLGLexerBase::
-errstd(const char *s)                               /* MR20 const */
+errstd(char *s)
 {
-        lexErrCount++;                              /* MR11 */
-        /* MR23 */ printMessage(stderr,
+        fprintf(stderr,
                 "%s near line %d (text was '%s')\n",
                 ((s == NULL) ? "Lexical error" : s),
                 _line,_lextext);
@@ -228,7 +195,7 @@ errstd(const char *s)                               /* MR20 const */
 int DLGLexerBase::
 err_in()
 {
-	/* MR23 */ printMessage(stderr,"No input stream, function, or string\n");
+	fprintf(stderr,"No input stream, function, or string\n");
 	/* return eof to get out gracefully */
 	return EOF;
 }
@@ -252,18 +219,13 @@ getToken()
 }
 
 void DLGLexerBase::
-panic(const char *msg)      /* MR20 const */
+panic(char *msg)
 {
-	if (parser)				//MR23
-		parser->panic(msg);	//MR23
-	else					//MR23
-	{
-		/* MR23 */ printMessage(stderr, "DLG panic: %s\n", msg);
-	//
-	//  7-Apr-97 133MR1
-	//
-		exit(PCCTS_EXIT_FAILURE);					// MR1
-	}
+	fprintf(stderr, "DLG panic: %s\n", msg);
+//
+//  7-Apr-97 133MR1
+//
+	exit(PCCTS_EXIT_FAILURE);					// MR1
 }
 
 ANTLRParser * DLGLexerBase::						// MR1
@@ -271,32 +233,16 @@ setParser(ANTLRParser *p) {						// MR1
   ANTLRParser	*oldValue=parser;					// MR1
   parser=p;								// MR1
   return oldValue;							// MR1
-}									// MR1
+};									// MR1
 									// MR1
 ANTLRParser * DLGLexerBase::						// MR1
 getParser() {								// MR1
   return parser;							// MR1
-}									// MR1
+};									// MR1
 									// MR1
 int DLGLexerBase::							// MR1
 debugLexer(int newValue) {						// MR1
   int	oldValue=debugLexerFlag;					// MR1
   debugLexerFlag=newValue;						// MR1
   return oldValue;							// MR1
-}									// MR1
-
-//MR23
-int DLGLexerBase::printMessage(FILE* pFile, const char* pFormat, ...)
-{
-	va_list marker;
-	va_start( marker, pFormat );
-
-	int iRet = 0;
-	if (parser)
-		parser->printMessageV(pFile, pFormat, marker);
-	else
-  		iRet = vfprintf(pFile, pFormat, marker);
-
-	va_end( marker );
-	return iRet;
-}
+};									// MR1

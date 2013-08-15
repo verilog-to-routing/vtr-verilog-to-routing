@@ -48,13 +48,11 @@ struct GenericToken : public NoLeakToken {
 
        GenericToken&                operator = ( const GenericToken & );
        virtual void                 dumpNode( const char* s = 0 );
-// ???       virtual ANTLRChar*           getText() { return pText; }
-       ANTLRChar*           getText() const { return pText; }
+       virtual ANTLRChar*           getText() { return pText; }
        virtual ANTLRAbstractToken*  makeToken( ANTLRTokenType ANTLRTokenType, 
                                                ANTLRChar* text, 
                                                int line );
-// ???       virtual void                 setText( ANTLRChar* s );
-       virtual void                 setText( const ANTLRChar* s );
+       virtual void                 setText( ANTLRChar* s );
 
    private:
 

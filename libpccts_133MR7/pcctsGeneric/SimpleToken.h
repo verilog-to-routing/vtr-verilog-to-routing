@@ -59,11 +59,9 @@ class SimpleToken : public ANTLRRefCountToken {
         _line = 0;
       }
 
-      // ??? ANTLRTokenType    getType() { return _type; }
-	  ANTLRTokenType    getType() const { return _type; }
+      ANTLRTokenType    getType() { return _type; }
       void              setType( ANTLRTokenType t )   { _type = t; }
-// ???      virtual int       getLine() { return _line; }
-      int       getLine() const { return _line; }
+      virtual int       getLine() { return _line; }
       void              setLine( int line ) { _line = line; }
 
    protected:

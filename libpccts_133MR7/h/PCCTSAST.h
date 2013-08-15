@@ -24,19 +24,15 @@
  * Terence Parr
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1989-2000
+ * 1989-1995
  */
 
 #ifndef PCCTSAST_H
 #define PCCTSAST_H
 
-#include "pcctscfg.h"
-
-#include "pccts_stdio.h"
-#include "pccts_stdlib.h"
-
-PCCTS_NAMESPACE_STD
-
+#include <stdio.h>
+#include <stdlib.h>
+#include "config.h"
 //class SList;
 
 #define StringScanMaxText	50
@@ -70,9 +66,9 @@ typedef struct _scanast {
 
 #define VALID_SCAN_TOKEN(t)		(t>=__LPAREN && t<=__PERIOD)
 
-class DllExportPCCTS PCCTS_AST {
+class PCCTS_AST {
 protected:
-	static const char *scan_token_tbl[];    /* MR20 const */
+	static char *scan_token_tbl[];
 	enum {
 	__LPAREN=1,
 	__RPAREN=2,
@@ -84,7 +80,7 @@ protected:
 	__StringScanEOF=-1};
 
 protected:
-	const char *scan_token_str(int t);  /* MR20 const */
+	char *scan_token_str(int t);
 	void stringlexer_init(StringLexer *scanner, char *input);
 	void stringparser_init(StringParser *, StringLexer *);
 	ScanAST *stringparser_parse_scanast(char *templ, int *n);
@@ -112,13 +108,13 @@ public:
 	virtual void setDown(PCCTS_AST *t) = 0;
 // we define these so ANTLR doesn't have to
 	virtual int type() { return 0; }
-	virtual void setType(int /*t MR23 */) {;}
+	virtual void setType(int) {;}
 	virtual PCCTS_AST *shallowCopy() {panic("no shallowCopy() defined"); return NULL;}
 
 	/* These are not needed by ANTLR, but are support functions */
 	virtual PCCTS_AST *deepCopy();	// used by SORCERER in transform mode
 	virtual void addChild(PCCTS_AST *t);
-	virtual void lisp_action(FILE * /*f MR23 */) {;}
+	virtual void lisp_action(FILE *) {;}
 	virtual void lisp(FILE *f);
 	static PCCTS_AST *make(PCCTS_AST *rt, ...);
 	virtual PCCTS_AST *ast_find_all(PCCTS_AST *u, PCCTS_AST **cursor);
@@ -134,10 +130,9 @@ public:
 	virtual int nsiblings();
 	virtual PCCTS_AST *sibling_index(int i);
 
-	void require(int e,const char *err){ if ( !e ) panic(err); } /* MR20 const */
-	virtual void panic(const char *err)     // MR20 const
-		{ /* MR23 */ printMessage(stderr, "PCCTS_AST: %s\n", err); exit(PCCTS_EXIT_FAILURE); }
-	virtual int printMessage(FILE* pFile, const char* pFormat, ...); // MR23
+	void require(int e,char *err){ if ( !e ) panic(err); }
+	virtual void panic(char *err)
+		{ fprintf(stderr, "PCCTS_AST: %s\n", err); exit(PCCTS_EXIT_FAILURE); }
 };
 
 #endif /* PCCTSAST_H */

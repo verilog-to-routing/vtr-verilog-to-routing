@@ -24,20 +24,16 @@
  * Terence Parr
  * Parr Research Corporation
  * with Purdue University and AHPCRC, University of Minnesota
- * 1989-2000
+ * 1989-1995
  */
 
 #ifndef ATOKENBUFFER_H_GATE
 #define ATOKENBUFFER_H_GATE
 
-#include "pcctscfg.h"
-
-#include "pccts_stdlib.h"
-
-PCCTS_NAMESPACE_STD
-
+#include "config.h"
 #include ATOKEN_H
 #include ATOKENSTREAM_H
+#include <stdlib.h>
 
 /*
  * The parser is "attached" to an ANTLRTokenBuffer via interface
@@ -52,7 +48,7 @@ PCCTS_NAMESPACE_STD
 
 class ANTLRParser;					// MR1
 
-class DllExportPCCTS ANTLRTokenBuffer {
+class ANTLRTokenBuffer {
 protected:
 	ANTLRTokenStream *input;        // where do I get tokens
 	int buffer_size;
@@ -87,23 +83,19 @@ public:
 	virtual _ANTLRTokenPtr bufferedToken(int i);
 
 	void noGarbageCollectTokens()	{ _deleteTokens=0; }
-	void garbageCollectTokens()		{ _deleteTokens=1; }
+	void garbageCollectTokens()	{ _deleteTokens=1; }
 
+        // 06/20/03 kira : TR45604 - Added return type to avoid warnings
 	virtual int bufferSize() { return buffer_size; }
 	virtual int minTokens() { return k; }
 	virtual void setMinTokens(int k_new) { k = k_new; }
 
-	virtual void panic(const char *msg); /* MR20 const */
-
-	virtual int printMessage(FILE* pFile, const char* pFormat, ...); // MR23
-
+	virtual void panic(char *) { exit(PCCTS_EXIT_FAILURE); }
 protected:						// MR1
 	ANTLRParser	*parser;			// MR1
 public:							// MR1
 	ANTLRParser	*setParser(ANTLRParser *p);	// MR1
-	ANTLRParser	*getParser();			    // MR1
-    ANTLRTokenStream *getLexer() const {    // MR12
-      return input;}                        // MR12
+	ANTLRParser	*getParser();			// MR1
 };
 
 #endif
