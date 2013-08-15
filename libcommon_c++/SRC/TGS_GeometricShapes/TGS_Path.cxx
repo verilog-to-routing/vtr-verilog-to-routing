@@ -20,19 +20,25 @@
 //===========================================================================//
 
 //---------------------------------------------------------------------------//
-// Copyright (C) 2012 Jeff Rudolph, Texas Instruments (jrudolph@ti.com)      //
+// Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
-// This program is free software; you can redistribute it and/or modify it   //
-// under the terms of the GNU General Public License as published by the     //
-// Free Software Foundation; version 3 of the License, or any later version. //
+// Permission is hereby granted, free of charge, to any person obtaining a   //
+// copy of this software and associated documentation files (the "Software"),//
+// to deal in the Software without restriction, including without limitation //
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,  //
+// and/or sell copies of the Software, and to permit persons to whom the     //
+// Software is furnished to do so, subject to the following conditions:      //
 //                                                                           //
-// This program is distributed in the hope that it will be useful, but       //
-// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
-// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
-// for more details.                                                         //
+// The above copyright notice and this permission notice shall be included   //
+// in all copies or substantial portions of the Software.                    //
 //                                                                           //
-// You should have received a copy of the GNU General Public License along   //
-// with this program; if not, see <http://www.gnu.org/licenses>.             //
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS   //
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF                //
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN // 
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,  //
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR     //
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE //
+// USE OR OTHER DEALINGS IN THE SOFTWARE.                                    //
 //---------------------------------------------------------------------------//
 
 #if defined( SUN8 ) || defined( SUN10 )
@@ -220,24 +226,24 @@ void TGS_Path_c::ExtractString(
 
       if( this->IsValid( ))
       {
-	 if( this->line.z != INT_MIN )
+         if( this->line.z != INT_MIN )
          {
             sprintf( szPath, "%0.*f %0.*f %0.*f %0.*f %d %0.*f",
                              static_cast< int >( precision ), this->line.x1,
                              static_cast< int >( precision ), this->line.y1,
                              static_cast< int >( precision ), this->line.x2,
-	                     static_cast< int >( precision ), this->line.y2,
+                             static_cast< int >( precision ), this->line.y2,
                              this->line.z,
-	   	             static_cast< int >( precision ), this->width );
+                             static_cast< int >( precision ), this->width );
          }
-	 else
+         else
          {
             sprintf( szPath, "%0.*f %0.*f %0.*f %0.*f %0.*f",
                              static_cast< int >( precision ), this->line.x1,
                              static_cast< int >( precision ), this->line.y1,
                              static_cast< int >( precision ), this->line.x2,
-	                     static_cast< int >( precision ), this->line.y2,
-	   	             static_cast< int >( precision ), this->width );
+                             static_cast< int >( precision ), this->line.y2,
+                             static_cast< int >( precision ), this->width );
          }
       }
       else
@@ -304,13 +310,13 @@ void TGS_Path_c::Set(
    {
       this->width = region.GetDy( );
       this->line.Set( region.x1, region.y1 + this->width / 2.0,
-	 	      region.x2, region.y2 - this->width / 2.0 );
+                      region.x2, region.y2 - this->width / 2.0 );
    }
    else // if( region.IsTall( ))
    {
       this->width = region.GetDx( );
       this->line.Set( region.x1 + this->width / 2.0, region.y1,
-	 	      region.x2 - this->width / 2.0, region.y2 );
+                      region.x2 - this->width / 2.0, region.y2 );
    }
    this->ApplySnap( snap );
 }
