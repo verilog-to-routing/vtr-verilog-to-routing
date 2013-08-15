@@ -16,6 +16,7 @@ using namespace std;
 #include "rr_graph.h"
 #include "timing_place_lookup.h"
 #include "read_xml_arch_file.h"
+#include "netlist.h"
 
 /*this file contains routines that generate the array containing*/
 /*the delays between blocks, this is used in the timing driven  */
@@ -99,6 +100,8 @@ static FILE *lookup_dump; /* If debugging mode is on, print out to
 
 static void alloc_net(void);
 
+static void alloc_vnet(void);
+
 static void alloc_block(void);
 
 static void load_simplified_device(void);
@@ -106,11 +109,11 @@ static void restore_original_device(void);
 
 static void alloc_and_assign_internal_structures(struct s_net **original_net,
 		struct s_block **original_block, int *original_num_nets,
-		int *original_num_blocks);
+		int *original_num_blocks, vector<t_vnet> & original_vnet);
 
 static void free_and_reset_internal_structures(struct s_net *original_net,
 		struct s_block *original_block, int original_num_nets,
-		int original_num_blocks);
+		int original_num_blocks, vector<t_vnet> & original_vnet);
 
 static void setup_chan_width(struct s_router_opts router_opts,
 		t_chan_width_dist chan_width_dist);
@@ -232,9 +235,31 @@ static void alloc_net(void) {
 
 		clb_net[i].node_block_pin = (int *) my_malloc(
 				BLOCK_COUNT * sizeof(int));
-		/*the values for this are allocated in assign_blocks_and_route_net */
+		/*the values for this are assigned in assign_blocks_and_route_net */
 
 	}
+}
+
+static void alloc_vnet(){
+
+	int i, len;
+
+	g_clbs_nlist.net.resize(NET_COUNT);
+	for(i = 0; i < NET_COUNT; i++){
+		len = strlen("TEMP_NET");
+		g_clbs_nlist.net[i].name = (char *) my_malloc((len + 1) * sizeof(char));
+		g_clbs_nlist.net[i].is_routed = FALSE;
+		g_clbs_nlist.net[i].is_fixed = FALSE;
+		g_clbs_nlist.net[i].is_global = FALSE;
+		strcpy(g_clbs_nlist.net[NET_USED].name, "TEMP_NET");
+	
+		g_clbs_nlist.net[i].nodes.resize(BLOCK_COUNT);
+		g_clbs_nlist.net[i].nodes[NET_USED_SOURCE_BLOCK].block = NET_USED_SOURCE_BLOCK;
+		g_clbs_nlist.net[i].nodes[NET_USED_SINK_BLOCK].block = NET_USED_SINK_BLOCK;
+
+		/*the values for nodes[].block_pin are assigned in assign_blocks_and_route_net */
+	}
+
 }
 
 /**************************************/
@@ -353,13 +378,16 @@ static void reset_placement(void) {
 /**************************************/
 static void alloc_and_assign_internal_structures(struct s_net **original_net,
 		struct s_block **original_block, int *original_num_nets,
-		int *original_num_blocks) {
+		int *original_num_blocks, vector<t_vnet> & original_vnet) {
 	/*allocate new data structures to hold net, and block info */
 
 	*original_net = clb_net;
 	*original_num_nets = num_nets;
 	num_nets = NET_COUNT;
 	alloc_net();
+
+	original_vnet.swap(g_clbs_nlist.net);
+	alloc_vnet();
 
 	*original_block = block;
 	*original_num_blocks = num_blocks;
@@ -376,7 +404,7 @@ static void alloc_and_assign_internal_structures(struct s_net **original_net,
 /**************************************/
 static void free_and_reset_internal_structures(struct s_net *original_net,
 		struct s_block *original_block, int original_num_nets,
-		int original_num_blocks) {
+		int original_num_blocks, vector<t_vnet> & original_vnet) {
 	/*reset gloabal data structures to the state that they were in before these */
 	/*lookup computation routines were called */
 
@@ -390,6 +418,12 @@ static void free_and_reset_internal_structures(struct s_net *original_net,
 	}
 	free(clb_net);
 	clb_net = original_net;
+
+	//Free new netlist data structure
+	for (i = 0; i < NET_COUNT; i++) {
+		free(g_clbs_nlist.net[i].name);
+	}
+	g_clbs_nlist.net.swap(original_vnet);
 
 	for (i = 0; i < BLOCK_COUNT; i++) {
 		free(block[i].name);
@@ -525,6 +559,11 @@ static void assign_locations(t_type_ptr source_type, int source_x_loc,
 			DRIVER, block[SOURCE_BLOCK].type);
 	clb_net[NET_USED].node_block_pin[NET_USED_SINK_BLOCK] = get_first_pin(
 			RECEIVER, block[SINK_BLOCK].type);
+
+	g_clbs_nlist.net[NET_USED].nodes[NET_USED_SOURCE_BLOCK].block_pin = get_first_pin(
+			DRIVER, block[SOURCE_BLOCK].type);
+	g_clbs_nlist.net[NET_USED].nodes[NET_USED_SINK_BLOCK].block_pin = get_first_pin(
+			RECEIVER, block[SOURCE_BLOCK].type);
 
 	grid[source_x_loc][source_y_loc].usage += 1;
 	grid[sink_x_loc][sink_y_loc].usage += 1;
@@ -1003,10 +1042,15 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 	static int original_num_blocks;
 	static int longest_length;
 
+	vector<t_vnet> original_vnet;
+
+	//original_vnet.swap(g_clbs_nlist.net);
+	//g_clbs_nlist.net.swap(original_vnet);
+
 	load_simplified_device();
 
 	alloc_and_assign_internal_structures(&original_net, &original_block,
-			&original_num_nets, &original_num_blocks);
+			&original_num_nets, &original_num_blocks, original_vnet);
 	setup_chan_width(router_opts, chan_width_dist);
 
 	alloc_routing_structs(router_opts, det_routing_arch, segment_inf,
@@ -1026,7 +1070,7 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 	restore_original_device();
 
 	free_and_reset_internal_structures(original_net, original_block,
-			original_num_nets, original_num_blocks);
+			original_num_nets, original_num_blocks, original_vnet);
 }
 
 /**************************************/
