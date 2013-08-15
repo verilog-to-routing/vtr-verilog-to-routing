@@ -150,8 +150,8 @@ float PowerSpicedComponent::scale_factor(int num_inputs,
 	PowerCallibSize * size_lower;
 	PowerCallibSize * size_upper;
 
-	float factor_lower;
-	float factor_upper;
+	float factor_lower = 0.;
+	float factor_upper = 0.;
 	float factor;
 
 	float perc_upper;

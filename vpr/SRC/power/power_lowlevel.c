@@ -351,8 +351,8 @@ static float power_calc_leakage_gate(e_tx_type transistor_type, float size) {
  * - v_ds: Drain-source voltage
  */
 static float power_calc_leakage_st_pass_transistor(float size, float v_ds) {
-	t_power_nmos_leakage_inf * nmos_low;
-	t_power_nmos_leakage_inf * nmos_high;
+	t_power_nmos_leakage_inf * nmos_low = NULL;
+	t_power_nmos_leakage_inf * nmos_high = NULL;
 
 	t_power_nmos_leakage_pair * lower;
 	t_power_nmos_leakage_pair * upper;
@@ -593,8 +593,8 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
 
 	assert(transistor_size >= 1.0);
 
-	t_power_nmos_mux_inf * mux_nmos_inf_lower;
-	t_power_nmos_mux_inf * mux_nmos_inf_upper;
+	t_power_nmos_mux_inf * mux_nmos_inf_lower = NULL;
+	t_power_nmos_mux_inf * mux_nmos_inf_upper = NULL;
 
 // Check if nmos size is beyond range
 	if (transistor_size
