@@ -13,12 +13,14 @@
   <ItemGroup>
     <ClInclude Include="TLO_Cell.h" />
     <ClInclude Include="TLO_Port.h" />
+    <ClInclude Include="TLO_Power.h" />
     <ClInclude Include="TLO_StringUtils.h" />
     <ClInclude Include="TLO_Typedefs.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TLO_Cell.cxx" />
     <ClCompile Include="TLO_Port.cxx" />
+    <ClCompile Include="TLO_Power.cxx" />
     <ClCompile Include="TLO_StringUtils.cxx" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -56,8 +58,8 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
