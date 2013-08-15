@@ -63,8 +63,8 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;TORO_FABRIC_GRID_VALID_ENABLE;TORO_FABRIC_CHANNEL_WIDTHS_ENABLE;TORO_REGION_PLACEMENT_ENABLE;TORO_RELATIVE_PLACEMENT_ENABLE;TORO_PREPLACED_PLACEMENT_ENABLE;TORO_PREROUTED_ROUTE_ENABLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
