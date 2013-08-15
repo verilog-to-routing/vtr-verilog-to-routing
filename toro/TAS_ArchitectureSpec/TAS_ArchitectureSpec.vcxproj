@@ -15,6 +15,7 @@
     <ClInclude Include="TAS_CarryChain.h" />
     <ClInclude Include="TAS_Cell.h" />
     <ClInclude Include="TAS_ChannelWidth.h" />
+    <ClInclude Include="TAS_Clock.h" />
     <ClInclude Include="TAS_Config.h" />
     <ClInclude Include="TAS_ConnectionFc.h" />
     <ClInclude Include="TAS_GridAssign.h" />
@@ -22,6 +23,7 @@
     <ClInclude Include="TAS_Mode.h" />
     <ClInclude Include="TAS_PhysicalBlock.h" />
     <ClInclude Include="TAS_PinAssign.h" />
+    <ClInclude Include="TAS_Power.h" />
     <ClInclude Include="TAS_Segment.h" />
     <ClInclude Include="TAS_StringUtils.h" />
     <ClInclude Include="TAS_SwitchBox.h" />
@@ -34,6 +36,7 @@
     <ClCompile Include="TAS_CarryChain.cxx" />
     <ClCompile Include="TAS_Cell.cxx" />
     <ClCompile Include="TAS_ChannelWidth.cxx" />
+    <ClCompile Include="TAS_Clock.cxx" />
     <ClCompile Include="TAS_Config.cxx" />
     <ClCompile Include="TAS_ConnectionFc.cxx" />
     <ClCompile Include="TAS_GridAssign.cxx" />
@@ -41,6 +44,7 @@
     <ClCompile Include="TAS_Mode.cxx" />
     <ClCompile Include="TAS_PhysicalBlock.cxx" />
     <ClCompile Include="TAS_PinAssign.cxx" />
+    <ClCompile Include="TAS_Power.cxx" />
     <ClCompile Include="TAS_Segment.cxx" />
     <ClCompile Include="TAS_StringUtils.cxx" />
     <ClCompile Include="TAS_SwitchBox.cxx" />
@@ -82,8 +86,8 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
