@@ -15,17 +15,23 @@
 //---------------------------------------------------------------------------//
 // Copyright (C) 2012-2013 Jeff Rudolph, Texas Instruments (jrudolph@ti.com) //
 //                                                                           //
-// This program is free software; you can redistribute it and/or modify it   //
-// under the terms of the GNU General Public License as published by the     //
-// Free Software Foundation; version 3 of the License, or any later version. //
+// Permission is hereby granted, free of charge, to any person obtaining a   //
+// copy of this software and associated documentation files (the "Software"),//
+// to deal in the Software without restriction, including without limitation //
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,  //
+// and/or sell copies of the Software, and to permit persons to whom the     //
+// Software is furnished to do so, subject to the following conditions:      //
 //                                                                           //
-// This program is distributed in the hope that it will be useful, but       //
-// WITHOUT ANY WARRANTY; without even an implied warranty of MERCHANTABILITY //
-// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License   //
-// for more details.                                                         //
+// The above copyright notice and this permission notice shall be included   //
+// in all copies or substantial portions of the Software.                    //
 //                                                                           //
-// You should have received a copy of the GNU General Public License along   //
-// with this program; if not, see <http://www.gnu.org/licenses>.             //
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS   //
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF                //
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN // 
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,  //
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR     //
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE //
+// USE OR OTHER DEALINGS IN THE SOFTWARE.                                    //
 //---------------------------------------------------------------------------//
 
 #include "TC_StringUtils.h"
@@ -33,7 +39,6 @@
 #include "TIO_PrintHandler.h"
 
 #include "TNO_Typedefs.h"
-#include "TNO_StringUtils.h"
 #include "TNO_InstPin.h"
 
 //===========================================================================//
@@ -273,8 +278,8 @@ void TNO_InstPin_c::ExtractString(
          if( this->srPortName_.length( ))
          {
             string srPortNameIndex;
-            TNO_FormatNameIndex( this->srPortName_, this->portIndex_, 
-                                 &srPortNameIndex );
+            TC_FormatStringNameIndex( this->srPortName_, this->portIndex_, 
+                                      &srPortNameIndex );
 
             *psrInstPin += psrInstPin->length( ) ? " " : "";
             *psrInstPin += "port=\"";
@@ -284,8 +289,8 @@ void TNO_InstPin_c::ExtractString(
          if( this->srPinName_.length( ))
          {
             string srPinNameIndex;
-            TNO_FormatNameIndex( this->srPinName_, this->pinIndex_, 
-                                 &srPinNameIndex );
+            TC_FormatStringNameIndex( this->srPinName_, this->pinIndex_, 
+                                      &srPinNameIndex );
 
             *psrInstPin += psrInstPin->length( ) ? " " : "";
             *psrInstPin += "pin=\"";
@@ -355,16 +360,16 @@ void TNO_InstPin_c::Set(
    if( pszPortName ) 
    {
       string srPortNameIndex;
-      TNO_FormatNameIndex( this->srPortName_, this->portIndex_, 
-                           &srPortNameIndex );
+      TC_FormatStringNameIndex( this->srPortName_, this->portIndex_, 
+                                &srPortNameIndex );
       this->srName_ += "|";
       this->srName_ += srPortNameIndex;
    }
    if( pszPinName ) 
    {
       string srPinNameIndex;
-      TNO_FormatNameIndex( this->srPinName_, this->pinIndex_, 
-                           &srPinNameIndex );
+      TC_FormatStringNameIndex( this->srPinName_, this->pinIndex_, 
+                                &srPinNameIndex );
       this->srName_ += "|";
       this->srName_ += srPinNameIndex;
    }
@@ -396,8 +401,8 @@ void TNO_InstPin_c::Set(
    size_t portIndex = TNO_PORT_INDEX_INVALID;
    size_t pinIndex = TNO_PIN_INDEX_INVALID;
 
-   TNO_ParseNameIndex( pszPortName, &srPortName, &portIndex );
-   TNO_ParseNameIndex( pszPinName, &srPinName, &pinIndex );
+   TC_ParseStringNameIndex( pszPortName, &srPortName, &portIndex );
+   TC_ParseStringNameIndex( pszPinName, &srPinName, &pinIndex );
 
    pszPortName = ( srPortName.length( ) ? srPortName.data( ) : 0 );
    pszPinName = ( srPinName.length( ) ? srPinName.data( ) : 0 );
