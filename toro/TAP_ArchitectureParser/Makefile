@@ -22,7 +22,7 @@
 # PCCTS options
 ######################################################################
 
-PCCTS = ../../libpccts
+PCCTS = ../../libpccts_133MR7
 PCCTSINC = -I$(PCCTS)/h -I$(ISM) -I.
 PCCTSBIN = $(PCCTS)/bin.$(ISM)
 PCCTSLIB = -L$(PCCTS)/$(ISM) -lh
@@ -69,7 +69,7 @@ CFLAGS = $(CFLAGS$(ISM)) $(PCCTSINC)\
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
 	-I../../libcommon_c/pcre/SRC \
-	-I../../libpccts/pcctsGeneric -I../../pccts/h
+	-I$(PCCTS)/pcctsGeneric -I$(PCCTS)/h
 
 ######################################################################
 # Linker options
