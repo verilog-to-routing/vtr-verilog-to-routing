@@ -56,22 +56,23 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VCInstallDir)include;..\TAS_ArchitectureSpec;..\TLO_LogicalObjects;..\TPO_PhysicalObjects;..\TGO_GeometricObjects;..\TGS_GeometricShapes;..\TIO_InputOutputHandlers;..\TC_Common;..\..\libcommon_c\pcre\SRC;..\..\libpccts\pcctsGeneric;..\..\libpccts\h</IncludePath>
+    <IncludePath>$(VCInstallDir)include;..\TAS_ArchitectureSpec;..\TLO_LogicalObjects;..\TPO_PhysicalObjects;..\TGO_GeometricObjects;..\TGS_GeometricShapes;..\TIO_InputOutputHandlers;..\TC_Common;..\..\libcommon_c\pcre\SRC;..\..\libpccts_133MR33\pcctsGeneric;..\..\libpccts_133MR33\h</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <DisableSpecificWarnings>4102;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>..\..\libpccts\bin.win32\Antlr.exe -CC -gh TAXP_ArchitectureXmlGrammar.g &amp;&amp; ..\..\libpccts\bin.win32\Dlg.exe -CC -cl TAXP_ArchitectureXmlScanner_c parser.dlg</Command>
+      <Command>..\..\libpccts_133MR33\bin.win32\Antlr.exe -CC -gh TAXP_ArchitectureXmlGrammar.g &amp;&amp; ..\..\libpccts_133MR33\bin.win32\Dlg.exe -CC -cl TAXP_ArchitectureXmlScanner_c parser.dlg</Command>
     </PreBuildEvent>
     <Lib>
       <OutputFile>$(OutDir)\$(TargetName)$(TargetExt)</OutputFile>
