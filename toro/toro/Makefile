@@ -65,7 +65,7 @@ CFLAGS = $(CFLAGS$(ISM)) \
 	-I../TGS_GeometricShapes \
 	-I../TIO_InputOutputHandlers \
 	-I../TC_Common \
-	-I../../libpccts/pcctsGeneric -I../../libpccts/h \
+	-I../../libpccts_133MR7/pcctsGeneric -I../../libpccts_133MR7/h \
 	-I../../libcommon_c/pcre/SRC \
 	-I../../vpr/SRC/base -I../../vpr/SRC/util -I../../vpr/SRC/place \
 	-I../../libarchfpga/include
@@ -87,7 +87,7 @@ OBJECTS = $(OBJS$(ISM))
 ######################################################################
 
 LINKLIBS = -L../$(ISM) \
-        -L../../libpccts/$(ISM) -L../../vpr/$(ISM) \
+        -L../../libpccts_133MR7/$(ISM) -L../../vpr/$(ISM) \
 	-lTM_Master \
 	-lTI_Input \
 	-lTP_Process \
@@ -152,8 +152,8 @@ LIBDEFS = ../$(ISM)/libTM_Master.a \
 	../$(ISM)/libTGS_GeometricShapes.a \
 	../$(ISM)/libTIO_InputOutputHandlers.a \
 	../$(ISM)/libTC_Common.a \
-	../../libpccts/$(ISM)/libpcctsGeneric.a \
-	../../libpccts/$(ISM)/libh.a \
+	../../libpccts_133MR7/$(ISM)/libpcctsGeneric.a \
+	../../libpccts_133MR7/$(ISM)/libh.a \
 	../../vpr/$(ISM)/libvpr.a
 
 .PHONY: $(LIBDEFS)
