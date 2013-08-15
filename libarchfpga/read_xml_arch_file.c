@@ -2134,6 +2134,7 @@ static void alloc_and_load_default_child_for_pb_type( INOUTP t_pb_type *pb_type,
 		copy->ports[i].parent_pb_type = copy;
 		copy->ports[i].name = my_strdup(pb_type->ports[i].name);
 		copy->ports[i].port_class = my_strdup(pb_type->ports[i].port_class);
+		copy->ports[i].port_index_by_type = pb_type->ports[i].port_index_by_type;
 
 		copy->ports[i].port_power = (t_port_power*) my_calloc(1,
 				sizeof(t_port_power));
