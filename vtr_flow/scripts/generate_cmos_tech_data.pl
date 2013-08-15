@@ -14,6 +14,10 @@ sub add_subckts;
 sub get_leakage;
 sub get_gate_leakage;
 sub get_buffer_sc;
+sub transistors;
+sub components;
+sub muxes;
+sub nmos_leakages;
 
 my $hspice      = "hspice";
 my $script_path = ( fileparse( abs_path($0) ) )[1];
@@ -33,6 +37,11 @@ my $pn_search_upper_bound = 4.0;
 my $max_size      = 500;
 my $size_interval = 1.05;
 
+# NMOS Pass transistor sizes
+my @nmos_pass_sizes;
+my $nmos_pass_interval = 1.25;
+my $nmos_pass_max_size = 25;
+
 # Multiplexer Voltages
 my $max_mux_size  = 30;
 my $vin_intervals = 10;
@@ -49,6 +58,7 @@ if ($quick_test) {
 	$max_mux_size          = 4;
 	$vin_intervals         = 3;
 	$vds_intervals         = 5;
+	$nmos_pass_interval    = 2.0;
 }
 
 #my $max_buffer_size = 100;
@@ -88,81 +98,105 @@ while ( $size < $max_size ) {
 	$size = $size * $size_interval;
 }
 
+$size = 1.0;
+while ( $size < $nmos_pass_max_size ) {
+	my $size_rounded = ( sprintf "%.2f", $size );
+	push( @nmos_pass_sizes, $size_rounded );
+	$size = $size * $nmos_pass_interval;
+}
+
+#print join(", ", @nmos_pass_sizes);
+
 print "<technology file=\"$tech_file_name\" size=\"$tech_size\">\n";
 
 print "\t<operating_point temperature=\"$temp\" Vdd=\"$Vdd\"/>\n";
 print "\t<p_to_n ratio=\"" . $optimal_p_to_n . "\"/>\n";
 
-foreach my $type (@transistor_types) {
-
-	#my $Vth = get_Vth();
-
-	print "\t<transistor type=\"$type\">\n";
-
-	( $C_g, $C_s, $C_d ) =
-	  get_capacitances( $type, $long_size[0], $long_size[1] );
-	print "\t\t<long_size W=\""
-	  . $long_size[0]
-	  . "\" L=\""
-	  . $long_size[1] . "\">\n";
-	print "\t\t\t<leakage_current subthreshold=\""
-	  . get_leakage_long( $type, $long_size[0], $long_size[1] )
-	  . "\"/>\n";
-	print "\t\t\t<capacitance C_g=\"$C_g\" C_s=\"$C_s\" C_d=\"$C_d\"/>\n";
-	print "\t\t</long_size>\n";
-
-	foreach my $size_ref (@sizes) {
-		my @size = @$size_ref;
-		( $C_g, $C_s, $C_d ) = get_capacitances( $type, $size[0], $size[1] );
-		print "\t\t<size W=\"" . $size[0] . "\" L=\"" . $size[1] . "\">\n";
-		print "\t\t\t<leakage_current subthreshold=\""
-		  . get_leakage( $type, $size[0], $optimal_p_to_n )
-		  . "\" gate=\""
-		  . get_gate_leakage( $type, $size[0], $optimal_p_to_n )
-		  . "\"/>\n";
-		print "\t\t\t<capacitance C_g=\"$C_g\" C_s=\"$C_s\" C_d=\"$C_d\"/>\n";
-		print "\t\t</size>\n";
-	}
-	print "\t</transistor>\n";
-}
-
-print "\t<multiplexers>\n";
-for ( my $i = 1 ; $i <= $max_mux_size ; $i++ ) {
-	print "\t\t<multiplexer size=\"" . $i . "\">\n";
-	for ( my $j = 0 ; $j <= $vin_intervals ; $j++ ) {
-		my $Vin = $Vdd * ( 0.5 + 0.5 * ( $j / $vin_intervals ) );
-		my ( $min, $max ) = get_mux_out_voltage( $i, $Vin );
-		print "\t\t\t<voltages in=\"" . $Vin
-		  . "\" out_min=\""
-		  . $min
-		  . "\" out_max=\""
-		  . $max
-		  . "\"/>\n";
-	}
-	print "\t\t</multiplexer>\n";
-}
-print "\t</multiplexers>\n";
-
-print "\t<nmos_leakages>\n";
-
-for ( my $i = 0 ; $i <= $vds_intervals ; $i++ ) {
-	my $Vds = $Vdd * ( 0.5 + 0.5 * ( $i / $vds_intervals ) );
-	my $leakage_current = get_nmos_leakage_for_Vds($Vds);
-	print "\t\t<nmos_leakage Vds=\"" . $Vds
-	  . "\" Ids=\""
-	  . $leakage_current
-	  . "\"/>\n";
-}
-
-print "\t </nmos_leakages>\n";
-
-#print_buffer_sc($optimal_p_to_n);
-
-print_components();
+transistors();
+muxes();
+nmos_leakages();
+components();
 
 print "</technology>\n";
 
-sub print_components() {
+sub transistors() {
+	foreach my $type (@transistor_types) {
+
+		#my $Vth = get_Vth();
+
+		print "\t<transistor type=\"$type\">\n";
+
+		( $C_g, $C_s, $C_d ) =
+		  get_capacitances( $type, $long_size[0], $long_size[1] );
+		print "\t\t<long_size W=\""
+		  . $long_size[0]
+		  . "\" L=\""
+		  . $long_size[1] . "\">\n";
+		print "\t\t\t<leakage_current subthreshold=\""
+		  . get_leakage_long( $type, $long_size[0], $long_size[1] )
+		  . "\"/>\n";
+		print "\t\t\t<capacitance C_g=\"$C_g\" C_s=\"$C_s\" C_d=\"$C_d\"/>\n";
+		print "\t\t</long_size>\n";
+
+		foreach my $size_ref (@sizes) {
+			my @size = @$size_ref;
+			( $C_g, $C_s, $C_d ) =
+			  get_capacitances( $type, $size[0], $size[1] );
+			print "\t\t<size W=\"" . $size[0] . "\" L=\"" . $size[1] . "\">\n";
+			print "\t\t\t<leakage_current subthreshold=\""
+			  . get_leakage( $type, $size[0], $optimal_p_to_n )
+			  . "\" gate=\""
+			  . get_gate_leakage( $type, $size[0], $optimal_p_to_n )
+			  . "\"/>\n";
+			print
+			  "\t\t\t<capacitance C_g=\"$C_g\" C_s=\"$C_s\" C_d=\"$C_d\"/>\n";
+			print "\t\t</size>\n";
+		}
+		print "\t</transistor>\n";
+	}
+}
+
+sub muxes() {
+	print "\t<multiplexers>\n";
+	foreach my $size (@nmos_pass_sizes) {
+		print "\t\t<nmos size=\"" . $size . "\">\n";
+		for ( my $i = 1 ; $i <= $max_mux_size ; $i++ ) {
+			print "\t\t\t<multiplexer size=\"" . $i . "\">\n";
+			for ( my $j = 0 ; $j <= $vin_intervals ; $j++ ) {
+				my $Vin = $Vdd * ( 0.5 + 0.5 * ( $j / $vin_intervals ) );
+				my ( $min, $max ) = get_mux_out_voltage( $size, $i, $Vin );
+				print "\t\t\t\t<voltages in=\"" . $Vin
+				  . "\" out_min=\""
+				  . $min
+				  . "\" out_max=\""
+				  . $max
+				  . "\"/>\n";
+			}
+			print "\t\t\t</multiplexer>\n";
+		}
+		print "\t\t</nmos>\n";
+	}
+	print "\t</multiplexers>\n";
+}
+
+sub nmos_leakages() {
+	print "\t<nmos_leakages>\n";
+	foreach my $size (@nmos_pass_sizes) {
+		print "\t\t<nmos size=\"" . $size . "\">\n";
+		for ( my $i = 0 ; $i <= $vds_intervals ; $i++ ) {
+			my $Vds = $Vdd * ( 0.5 + 0.5 * ( $i / $vds_intervals ) );
+			my $leakage_current = get_nmos_leakage_for_Vds( $size, $Vds );
+			print "\t\t\t<nmos_leakage Vds=\"" . $Vds
+			  . "\" Ids=\""
+			  . $leakage_current
+			  . "\"/>\n";
+		}
+		print "\t\t</nmos>\n";
+	}
+	print "\t </nmos_leakages>\n";
+}
+
+sub components() {
 	my $spice_script =
 	  File::Spec->join( $script_path, "spice", "run_spice.py" );
 	my $temp_file =
@@ -170,12 +204,13 @@ sub print_components() {
 
 	my $tech_size_nm = $tech_size * 1e9;
 
+	# 	Component_name,	@Inputs, @Sizes, type
 	my @components = (
-		[ "buf_levr", [ 1, 4, 16, 64 ] ],
-		[ "buf",      [ 1, 4, 16, 64 ] ],
-		[ "mux",      [ 4, 9, 16, 25 ] ],
-		[ "lut", [ 2, 4, 6 ] ],
-		[ "dff", [1] ]
+		[ "buf",      [1], [ 1, 4, 16, 64 ], 0 ],
+		[ "buf_levr", [1], [ 1, 4, 16, 64 ], 0 ],
+		[ "mux", [ 4, 9, 16, 25 ], \@nmos_pass_sizes, 1 ],
+		[ "lut", [ 2, 4, 6 ], \@nmos_pass_sizes, 1 ],
+		[ "dff", [1], [ 1, 2, 4, 8 ], 0 ]
 	);
 
 	print "\t<components>\n";
@@ -184,20 +219,35 @@ sub print_components() {
 		my @component = @$component_ref;
 
 		my $component_name = @component[0];
+		my $inputs         = @component[1];
+		my $sizes          = @component[2];
+		my $type           = @component[3];
+
 		print "\t\t<$component_name>\n";
 
-		my $sizes_ref = @component[1];
-		foreach my $size (@$sizes_ref) {
-			my $cmd =
-			  "$spice_script $tech_file $tech_size_nm $Vdd $optimal_p_to_n $temp h $component_name $size";
-			my $result = `$cmd`;
-			chomp($result);
-			print "\t\t\t<instance size=\"" . $size
-			  . "\" power=\""
-			  . $result
-			  . "\"/>\n";
-		}
+		foreach my $num_inputs (@$inputs) {
+			print "\t\t\t<inputs num_inputs=\"" . $num_inputs . "\">\n";
+			foreach my $size (@$sizes) {
+				my $cmd;
+				if ( $type == 0 ) {
+					$cmd =
+					  "$spice_script $tech_file $tech_size_nm $Vdd $optimal_p_to_n $temp h $component_name $size";
+				}
+				else {
+					$cmd =
+					  "$spice_script $tech_file $tech_size_nm $Vdd $optimal_p_to_n $temp h $component_name $num_inputs $size";
+				}
 
+				#				print $cmd;
+				my $result = `$cmd`;
+				chomp($result);
+				print "\t\t\t\t<size transistor_size=\"" . $size
+				  . "\" power=\""
+				  . $result
+				  . "\"/>\n";
+			}
+			print "\t\t\t</inputs>\n";
+		}
 		print "\t\t</$component_name>\n";
 	}
 
@@ -233,11 +283,12 @@ sub get_pn_ratio {
 }
 
 sub get_nmos_leakage_for_Vds {
-	my $Vds = shift(@_);
+	my $size = shift(@_);
+	my $Vds  = shift(@_);
 
 	my $s = spice_header();
 	$s = $s . "Vin in 0 " . $Vds . "\n";
-	$s = $s . "X0 in 0 0 0 nfet size='1'\n";
+	$s = $s . "X0 in 0 0 0 nfet size='" . $size . "'\n";
 	$s = $s . spice_sim(10);
 	$s = $s . ".measure tran leakage avg I(Vin)\n";
 	$s = $s . spice_end();
@@ -267,18 +318,19 @@ sub get_mux_out_voltage_min {
 }
 
 sub get_mux_out_voltage {
+	my $size     = shift(@_);
 	my $mux_size = shift(@_);
 	my $Vin      = shift(@_);
 
 	my $s = spice_header();
 	$s = $s . "Vin in 0 " . $Vin . "\n";
-	$s = $s . "X0a in Vdd outa 0 nfet size='1'\n";
+	$s = $s . "X0a in Vdd outa 0 nfet size='" . $size . "'\n";
 	for ( my $i = 1 ; $i < $mux_size ; $i++ ) {
-		$s = $s . "X" . $i . "a in 0 outa 0 nfet size='1'\n";
+		$s = $s . "X" . $i . "a in 0 outa 0 nfet size='" . $size . "'\n";
 	}
-	$s = $s . "X0b in Vdd outb 0 nfet size='1'\n";
+	$s = $s . "X0b in Vdd outb 0 nfet size='" . $size . "'\n";
 	for ( my $i = 1 ; $i < $mux_size ; $i++ ) {
-		$s = $s . "X" . $i . "b 0 0 outb 0 nfet size='1'\n";
+		$s = $s . "X" . $i . "b 0 0 outb 0 nfet size='" . $size . "'\n";
 	}
 	$s = $s . spice_sim(10);
 	$s = $s . ".measure tran vout_min avg V(outb)\n";
@@ -821,8 +873,8 @@ sub get_capacitances {
 	$s = $s . ".param tick = 'simt/6'\n";
 
 	# Gate, Drain, Source Inputs
-	# Time	NMOS			PMOS		
-	# 		G 	D 	S		G 	D 	S	
+	# Time	NMOS			PMOS
+	# 		G 	D 	S		G 	D 	S
 	# 0		0 	0 	0		0 	0 	0
 	# 1		0 	0 	1     	0 	1 	1
 	# 2		0 	1 	0     	1 	0 	0
