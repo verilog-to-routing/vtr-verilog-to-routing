@@ -161,8 +161,8 @@ void TOS_OutputOptions_c::Print(
       FILE*  pfile,
       size_t spaceLen ) const
 {
-   TC_MinGrid_c& MinGrid = TC_MinGrid_c::GetInstance( );
-   unsigned int precision = MinGrid.GetPrecision( );
+   // TC_MinGrid_c& MinGrid = TC_MinGrid_c::GetInstance( );
+   // unsigned int precision = MinGrid.GetPrecision( );
 
    TIO_PrintHandler_c& printHandler = TIO_PrintHandler_c::GetInstance( );
 
