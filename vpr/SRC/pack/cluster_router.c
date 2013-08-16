@@ -46,9 +46,11 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, in
 static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iatom, int iport, int ipin, t_model_ports *model_port);
 
 
-static void commit_remove_rt(t_lb_router_data *router_data, int inet, e_commit_remove op);
+static void commit_remove_rt(t_lb_trace *rt, t_lb_rr_node_stats *lb_rr_node_stats, e_commit_remove op);
 static void add_source_to_rt(t_lb_router_data *router_data, int inet);
-static void expand_rt(t_lb_router_data *router_data, int inet, map<int, boolean> &explored_nodes, 
+static void expand_rt(t_lb_router_data *router_data, int inet, t_explored_node_tb *node_traceback, map<int, boolean> &explored_nodes, 
+	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq);
+static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *node_traceback, map<int, boolean> &explored_nodes, 
 	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq);
 static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node, 
 	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq);
@@ -299,13 +301,13 @@ boolean try_route(INOUTP t_lb_router_data *router_data) {
 
 		/* Iterate across all nets internal to logic block */
 		for(unsigned int inet = 0; inet < lb_nets.size() && is_impossible == FALSE; inet++) {
-			commit_remove_rt(router_data, inet, RT_REMOVE);
+			commit_remove_rt(lb_nets[inet].rt_tree, router_data->lb_rr_node_stats, RT_REMOVE);
 			add_source_to_rt(router_data, inet);
 
 			/* Route each sink of net */
 			for(unsigned int itarget = 1; itarget < lb_nets[inet].terminals.size() && is_impossible == FALSE; itarget++) {
 				/* Get lowest cost next node, repeat until a path is found or if it is impossible to route */
-				expand_rt(router_data, inet, explored_nodes, pq);
+				expand_rt(router_data, inet, node_traceback, explored_nodes, pq);
 				do {
 					if(pq.empty()) {
 						/* No connection possible */
@@ -340,7 +342,7 @@ boolean try_route(INOUTP t_lb_router_data *router_data) {
 				pq = priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node>(); /* Reset priority queue */
 				explored_nodes.clear(); /* Clear list of explored nodes */
 			}
-			commit_remove_rt(router_data, inet, RT_COMMIT);
+			commit_remove_rt(lb_nets[inet].rt_tree, router_data->lb_rr_node_stats, RT_COMMIT);
 		}
 		if(is_impossible == FALSE) {
 			is_routed = is_route_success(router_data);
@@ -574,16 +576,28 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iato
 	}
 }
 
-
-
-
-
-
-
-
-
 /* Commit or remove route tree from currently routed solution */
-static void commit_remove_rt(t_lb_router_data *router_data, int inet, e_commit_remove op) {
+static void commit_remove_rt(t_lb_trace *rt, t_lb_rr_node_stats *lb_rr_node_stats, e_commit_remove op) {
+	int inode;
+	int incr;
+
+	inode = rt->current_node;
+
+	/* Determine if node is being used or removed */
+	if (op == RT_COMMIT) {
+		incr = 1;
+		lb_rr_node_stats[inode].historical_usage++;
+	} else {
+		incr = -1;
+	}
+
+	lb_rr_node_stats[inode].occ += incr;
+	assert(lb_rr_node_stats[inode].occ >= 0);
+
+	/* Recursively update route tree */
+	for(unsigned int i = 0; i < rt->next_nodes.size(); i++) {
+		commit_remove_rt(&rt->next_nodes[i], lb_rr_node_stats, op);
+	}
 }
 
 /* At source mode as starting point to existing route tree */
@@ -593,30 +607,72 @@ static void add_source_to_rt(t_lb_router_data *router_data, int inet) {
 }
 
 /* Expand all nodes found in route tree into priority queue */
-static void expand_rt(t_lb_router_data *router_data, int inet, map<int, boolean> &explored_nodes, 
+static void expand_rt(t_lb_router_data *router_data, int inet, t_explored_node_tb *node_traceback, map<int, boolean> &explored_nodes, 
+	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq) {
+
+	vector<t_intra_lb_net> &lb_nets = *router_data->intra_lb_nets;
+	
+	assert(explored_nodes.empty());
+	assert(pq.empty());
+
+	expand_rt_rec(lb_nets[inet].rt_tree, lb_nets[inet].rt_tree->current_node, node_traceback, explored_nodes, pq);
+}
+
+
+/* Expand all nodes found in route tree into priority queue recursively */
+static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *node_traceback, map<int, boolean> &explored_nodes, 
 	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq) {
 	
+	t_expansion_node enode;
 
-	assert(explored_nodes.empty());
+	assert(explored_nodes.count(rt->current_node) == 0); /* Any rr node should only be in route tree once */
+	/* Perhaps should use a cost other than zero */
+	enode.cost = 0;
+	enode.node_index = rt->current_node;
+	enode.prev_index = prev_index;
+	pq.push(enode);
+	explored_nodes[rt->current_node] = TRUE;
+	node_traceback[enode.node_index].isInRT = TRUE;
+	node_traceback[enode.node_index].isExplored = TRUE;
+	node_traceback[enode.node_index].prev_index = prev_index;
 	
 
+	for(unsigned int i = 0; i < rt->next_nodes.size(); i++) {
+		expand_rt_rec(&rt->next_nodes[i], rt->current_node, node_traceback, explored_nodes, pq);
+	}
 }
+
 
 /* Expand all nodes found in route tree into priority queue */
 static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node, 
 	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq) {
+
+	int cur_node;
+	float cur_cost, incr_cost;
+	int mode, usage;
+	t_expansion_node enode;
+	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
+	t_lb_rr_node_stats *lb_rr_node_stats = router_data->lb_rr_node_stats;
+
+	cur_node = exp_node.node_index;
+	cur_cost = exp_node.cost;
+	mode = lb_rr_node_stats[cur_node].mode;
+	t_lb_router_params params = router_data->params;
+	
+
+	for(int iedge = 0; iedge < lb_type_graph[cur_node].num_fanout[mode]; iedge++) {
+		enode.prev_index = cur_node;
+		enode.node_index = lb_type_graph[cur_node].outedges[mode][iedge].node_index;
+		usage = lb_rr_node_stats[enode.node_index].occ + 1 - lb_type_graph[enode.node_index].capacity;
+		incr_cost = lb_type_graph[enode.node_index].intrinsic_cost;
+		if(usage > 0) {
+			incr_cost += lb_type_graph[enode.node_index].intrinsic_cost * usage;
+		}
+		incr_cost *= params.pres_fac;
+		incr_cost += params.hist_fac * lb_rr_node_stats[enode.node_index].historical_usage;		
+	}
+	
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -630,9 +686,10 @@ static void add_to_rt(t_lb_trace *rt, int node_index, t_explored_node_tb *node_t
 
 	/* Store path all the way back to route tree */
 	rt_index = node_index;
-	while(node_traceback[rt_index].isExplored == TRUE) {
+	while(node_traceback[rt_index].isInRT == FALSE) {
 		trace_forward.push_back(rt_index);
 		rt_index = node_traceback[rt_index].prev_index;
+		assert(rt_index != OPEN);
 	}
 
 	/* Find rt_index on the route tree */

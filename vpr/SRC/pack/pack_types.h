@@ -132,14 +132,12 @@ struct t_lb_rr_node_stats {
 	int occ;								/* Number of nets currently using this lb_rr_node */
 	int mode;								/* Mode that this rr_node is set to */
 	
-	float current_cost;		/* Current cost of using this node */
-	float historical_cost;	/* Historical cost of using this node */
+	int historical_usage;					/* Historical usage of using this node */
 
 	t_lb_rr_node_stats() {
 		occ = 0;
 		mode = 0;
-		current_cost = 0;
-		historical_cost = 0;
+		historical_usage = 0;
 	}
 };
 
@@ -177,8 +175,8 @@ struct t_lb_router_params {
 
 /* Node expanded by router */
 struct t_expansion_node {
-	int node_index;
-	int prev_index;		
+	int node_index;		/* Index of logic block rr node this expansion node represents */
+	int prev_index;		/* Index of logic block rr node that drives this expansion node */
 	float cost;
 
 	t_expansion_node() {
@@ -202,11 +200,13 @@ class compare_expansion_node {
 /* Stores explored nodes by router */
 struct t_explored_node_tb {
 	int prev_index;			/* Prevous node that drives this one */
-	boolean isExplored;		/* Whether or not this node has been explored */
+	boolean isExplored:1;		/* Whether or not this node has been explored */
+	boolean isInRT:1;			/* Whether or not this node is in the route tree */
 
 	t_explored_node_tb() {
 		prev_index = OPEN;
 		isExplored = FALSE;
+		isInRT = FALSE;
 	}
 };
 
