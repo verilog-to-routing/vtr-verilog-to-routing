@@ -91,7 +91,7 @@ void load_criticalities(t_slack * slacks, float crit_exponent) {
 #endif
 
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-		if (inet == OPEN)
+		if ((int) inet == OPEN)
 			continue;
 		if (g_clbs_nlist.net[inet].is_global)
 			continue;
