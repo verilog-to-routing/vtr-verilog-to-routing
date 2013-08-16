@@ -36,7 +36,8 @@ void check_route(enum e_route_type route_type, int num_switch,
 	 * oversubscribed (the occupancy of everything is recomputed from        *
 	 * scratch).                                                             */
 
-	int inet, ipin, max_pins, inode, prev_node;
+	int max_pins, inode, prev_node;
+	unsigned int inet, ipin;
 	boolean valid, connects;
 	boolean * connected_to_route; /* [0 .. num_rr_nodes-1] */
 	struct s_trace *tptr;
@@ -61,19 +62,19 @@ void check_route(enum e_route_type route_type, int num_switch,
 	connected_to_route = (boolean *) my_calloc(num_rr_nodes, sizeof(boolean));
 
 	max_pins = 0;
-	for (inet = 0; inet < num_nets; inet++)
-		max_pins = max(max_pins, (clb_net[inet].num_sinks + 1));
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++)
+		max_pins = max(max_pins, (int) g_clbs_nlist.net[inet].nodes.size());
 
 	pin_done = (boolean *) my_malloc(max_pins * sizeof(boolean));
 
 	/* Now check that all nets are indeed connected. */
 
-	for (inet = 0; inet < num_nets; inet++) {
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 
-		if (clb_net[inet].is_global || clb_net[inet].num_sinks == 0) /* Skip global nets. */
+		if (g_clbs_nlist.net[inet].is_global || g_clbs_nlist.net[inet].num_sinks() == 0) /* Skip global nets. */
 			continue;
 
-		for (ipin = 0; ipin < (clb_net[inet].num_sinks + 1); ipin++)
+		for (ipin = 0; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++)
 			pin_done[ipin] = FALSE;
 
 		/* Check the SOURCE of the net. */
@@ -140,7 +141,7 @@ void check_route(enum e_route_type route_type, int num_switch,
 				"in check_route: net %d does not end with a SINK.\n", inet);
 		}
 
-		for (ipin = 0; ipin < (clb_net[inet].num_sinks + 1); ipin++) {
+		for (ipin = 0; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) {
 			if (pin_done[ipin] == FALSE) {
 				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 				
 					"in check_route: net %d does not connect to pin %d.\n", inet, ipin);
@@ -162,7 +163,8 @@ static void check_sink(int inode, int inet, boolean * pin_done) {
 	/* Checks that this SINK node is one of the terminals of inet, and marks   *
 	 * the appropriate pin as being reached.                                   */
 
-	int i, j, ipin, ifound, ptc_num, bnum, iclass, node_block_pin, iblk;
+	int i, j, ifound, ptc_num, bnum, iclass, node_block_pin, iblk;
+	unsigned int ipin;
 	t_type_ptr type;
 
 	assert(rr_node[inode].type == SINK);
@@ -174,9 +176,9 @@ static void check_sink(int inode, int inet, boolean * pin_done) {
 
 	for (iblk = 0; iblk < type->capacity; iblk++) {
 		bnum = grid[i][j].blocks[iblk]; /* Hardcoded to one block */
-		for (ipin = 1; ipin < (clb_net[inet].num_sinks + 1); ipin++) { /* All net SINKs */
-			if (clb_net[inet].node_block[ipin] == bnum) {
-				node_block_pin = clb_net[inet].node_block_pin[ipin];
+		for (ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) { /* All net SINKs */
+			if (g_clbs_nlist.net[inet].nodes[ipin].block == bnum) {
+				node_block_pin = g_clbs_nlist.net[inet].nodes[ipin].block_pin;
 				iclass = type->pin_class[node_block_pin];
 				if (iclass == ptc_num) {
 					/* Could connect to same pin class on the same clb more than once.  Only   *
@@ -200,7 +202,7 @@ static void check_sink(int inode, int inet, boolean * pin_done) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 		
 				 "in check_sink: node %d does not connect to any terminal of net %s #%d.\n"
 				 "This error is usually caused by incorrectly specified logical equivalence in your architecture file.\n"
-				 "You should try to respecify what pins are equivalent or turn logical equivalence off.\n", inode, clb_net[inet].name, inet);
+				 "You should try to respecify what pins are equivalent or turn logical equivalence off.\n", inode, g_clbs_nlist.net[inet].name, inet);
 	}
 }
 
@@ -221,7 +223,7 @@ static void check_source(int inode, int inet) {
 	i = rr_node[inode].xlow;
 	j = rr_node[inode].ylow;
 	ptc_num = rr_node[inode].ptc_num; /* for sinks and sources, ptc_num is class */
-	bnum = clb_net[inet].node_block[0]; /* First node_block for net is the source */
+	bnum = g_clbs_nlist.net[inet].nodes[0].block; /* First node_block for net is the source */
 	type = grid[i][j].type;
 
 	if (block[bnum].x != i || block[bnum].y != j) {		
@@ -229,7 +231,7 @@ static void check_source(int inode, int inet) {
 				"in check_source: net SOURCE is in wrong location (%d,%d).\n", i, j);
 	}
 
-	node_block_pin = clb_net[inet].node_block_pin[0];
+	node_block_pin = g_clbs_nlist.net[inet].nodes[0].block_pin;
 	iclass = type->pin_class[node_block_pin];
 
 	if (ptc_num != iclass) {		
@@ -539,7 +541,8 @@ static void recompute_occupancy_from_scratch(t_ivec ** clb_opins_used_locally) {
 	 * the resource usage of the current routing.  It does a brute force        *
 	 * recompute from scratch that is useful for sanity checking.               */
 
-	int inode, inet, iblk, iclass, ipin, num_local_opins;
+	int inode, iblk, iclass, ipin, num_local_opins;
+	unsigned inet;
 	struct s_trace *tptr;
 
 	/* First set the occupancy of everything to zero. */
@@ -549,9 +552,9 @@ static void recompute_occupancy_from_scratch(t_ivec ** clb_opins_used_locally) {
 
 	/* Now go through each net and count the tracks and pins used everywhere */
 
-	for (inet = 0; inet < num_nets; inet++) {
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 
-		if (clb_net[inet].is_global) /* Skip global nets. */
+		if (g_clbs_nlist.net[inet].is_global) /* Skip global nets. */
 			continue;
 
 		tptr = trace_head[inet];

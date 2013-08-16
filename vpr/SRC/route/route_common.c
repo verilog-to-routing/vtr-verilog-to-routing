@@ -23,7 +23,7 @@ using namespace std;
 
 t_rr_node_route_inf *rr_node_route_inf = NULL; /* [0..num_rr_nodes-1] */
 
-struct s_bb *route_bb = NULL; /* [0..num_nets-1]. Limits area in which each  */
+struct s_bb *route_bb = NULL; /* [0..g_clbs_nlist.net.size()-1]. Limits area in which each  */
 
 /* net must be routed.                         */
 
@@ -111,11 +111,12 @@ void save_routing(struct s_trace **best_routing,
 	 * routing elements.  Also saves any data about locally used clb_opins, *
 	 * since this is also part of the routing.                              */
 
-	int inet, iblk, iclass, ipin, num_local_opins;
+	unsigned int inet;
+	int iblk, iclass, ipin, num_local_opins;
 	struct s_trace *tptr, *tempptr;
 	t_type_ptr type;
 
-	for (inet = 0; inet < num_nets; inet++) {
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 
 		/* Free any previously saved routing.  It is no longer best. */
 		tptr = best_routing[inet];
@@ -160,10 +161,11 @@ void restore_routing(struct s_trace **best_routing,
 	 * update_traceback.  If you need trace_tail restored, modify this        *
 	 * routine.  Also restores the locally used opin data.                    */
 
-	int inet, iblk, ipin, iclass, num_local_opins;
+	unsigned int inet;
+	int iblk, ipin, iclass, num_local_opins;
 	t_type_ptr type;
 
-	for (inet = 0; inet < num_nets; inet++) {
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 
 		/* Free any current routing. */
 		free_traceback(inet);
@@ -194,12 +196,13 @@ void get_serial_num(void) {
 	 * Use this number as a routing serial number to ensure that programming *
 	 * changes do not break the router.                                      */
 
-	int inet, serial_num, inode;
+	unsigned int inet;
+	int serial_num, inode;
 	struct s_trace *tptr;
 
 	serial_num = 0;
 
-	for (inet = 0; inet < num_nets; inet++) {
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 
 		/* Global nets will have null trace_heads (never routed) so they *
 		 * are not included in the serial number calculation.            */
@@ -442,9 +445,9 @@ void init_route_structs(int bb_factor) {
 	/* Call this before you route any nets.  It frees any old traceback and   *
 	 * sets the list of rr_nodes touched to empty.                            */
 
-	int i;
+	unsigned int i;
 
-	for (i = 0; i < num_nets; i++)
+	for (i = 0; i < g_clbs_nlist.net.size(); i++)
 		free_traceback(i);
 
 	load_route_bb(bb_factor);
@@ -597,9 +600,10 @@ void mark_ends(int inet) {
 	 * the same net to two inputs of an and-gate (and-gate inputs are logically *
 	 * equivalent, so both will connect to the same SINK).                      */
 
-	int ipin, inode;
+	unsigned int ipin;
+	int inode;
 
-	for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
+	for (ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) {
 		inode = net_rr_terminals[inet][ipin];
 		rr_node_route_inf[inode].target_flag++;
 	}
@@ -693,7 +697,7 @@ alloc_saved_routing(t_ivec ** clb_opins_used_locally,
 	int iblk, iclass, num_local_opins;
 	t_type_ptr type;
 
-	best_routing = (struct s_trace **) my_calloc(num_nets,
+	best_routing = (struct s_trace **) my_calloc(g_clbs_nlist.net.size(),
 			sizeof(struct s_trace *));
 
 	saved_clb_opins_used_locally = (t_ivec **) my_malloc(
@@ -748,7 +752,7 @@ alloc_and_load_clb_opins_used_locally(void) {
 		for (clb_pin = 0; clb_pin < type->num_pins; clb_pin++) {
 			/* Subblock output used only locally, but must connect to a CLB OPIN?  */
 			if (block[iblk].nets[clb_pin] != OPEN
-					&& clb_net[block[iblk].nets[clb_pin]].num_sinks == 0) {
+					&& g_clbs_nlist.net[block[iblk].nets[clb_pin]].num_sinks() == 0) {
 				iclass = type->pin_class[clb_pin];
 				/* Check to make sure class is in same range as that assigned to block */
 				assert(iclass >= class_low && iclass <= class_high);
@@ -774,9 +778,9 @@ void free_trace_structs(void) {
 	/*the trace lists are only freed after use by the timing-driven placer */
 	/*Do not  free them after use by the router, since stats, and draw  */
 	/*routines use the trace values */
-	int i;
+	unsigned int i;
 
-	for (i = 0; i < num_nets; i++)
+	for (i = 0; i < g_clbs_nlist.net.size(); i++)
 		free_traceback(i);
 
 	if(trace_head) {
@@ -888,24 +892,25 @@ static void load_route_bb(int bb_factor) {
 	 * clipped to lie within (0,0) and (nx+1,ny+1) rather than (1,1) and   *
 	 * (nx,ny).                                                            */
 
-	int k, xmax, ymax, xmin, ymin, x, y, inet;
+	unsigned int k, inet;
+	int xmax, ymax, xmin, ymin, x, y;
 
-	for (inet = 0; inet < num_nets; inet++) {
-		x = block[clb_net[inet].node_block[0]].x
-			+ block[clb_net[inet].node_block[0]].type->pin_width[clb_net[inet].node_block_pin[0]];
-		y = block[clb_net[inet].node_block[0]].y
-			+ block[clb_net[inet].node_block[0]].type->pin_height[clb_net[inet].node_block_pin[0]];
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+		x = block[g_clbs_nlist.net[inet].nodes[0].block].x
+			+ block[g_clbs_nlist.net[inet].nodes[0].block].type->pin_width[g_clbs_nlist.net[inet].nodes[0].block_pin];
+		y = block[g_clbs_nlist.net[inet].nodes[0].block].y
+			+ block[g_clbs_nlist.net[inet].nodes[0].block].type->pin_height[g_clbs_nlist.net[inet].nodes[0].block_pin];
 
 		xmin = x;
 		ymin = y;
 		xmax = x;
 		ymax = y;
 
-		for (k = 1; k <= clb_net[inet].num_sinks; k++) {
-			x = block[clb_net[inet].node_block[k]].x
-				+ block[clb_net[inet].node_block[k]].type->pin_width[clb_net[inet].node_block_pin[k]];
-			y = block[clb_net[inet].node_block[k]].y
-				+ block[clb_net[inet].node_block[k]].type->pin_height[clb_net[inet].node_block_pin[k]];
+		for (k = 1; k < g_clbs_nlist.net[inet].nodes.size(); k++) {
+			x = block[g_clbs_nlist.net[inet].nodes[k].block].x
+				+ block[g_clbs_nlist.net[inet].nodes[k].block].type->pin_width[g_clbs_nlist.net[inet].nodes[k].block_pin];
+			y = block[g_clbs_nlist.net[inet].nodes[k].block].y
+				+ block[g_clbs_nlist.net[inet].nodes[k].block].type->pin_height[g_clbs_nlist.net[inet].nodes[k].block_pin];
 
 			if (x < xmin) {
 				xmin = x;
@@ -1136,7 +1141,9 @@ void print_route(char *route_file) {
 
 	/* Prints out the routing to file route_file.  */
 
-	int inet, inode, ipin, bnum, ilow, jlow, node_block_pin, iclass;
+	unsigned int inet;
+	int inode, bnum, ilow, jlow, node_block_pin, iclass;
+	unsigned int ipin;
 	t_rr_type rr_type;
 	struct s_trace *tptr;
 	FILE *fp;
@@ -1145,13 +1152,13 @@ void print_route(char *route_file) {
 
 	fprintf(fp, "Array size: %d x %d logic blocks.\n", nx, ny);
 	fprintf(fp, "\nRouting:");
-	for (inet = 0; inet < num_nets; inet++) {
-		if (clb_net[inet].is_global == FALSE) {
-			if (clb_net[inet].num_sinks == FALSE) {
-				fprintf(fp, "\n\nNet %d (%s)\n\n", inet, clb_net[inet].name);
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+		if (g_clbs_nlist.net[inet].is_global == FALSE) {
+			if (g_clbs_nlist.net[inet].num_sinks() == FALSE) {
+				fprintf(fp, "\n\nNet %d (%s)\n\n", inet, g_clbs_nlist.net[inet].name);
 				fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
 			} else {
-				fprintf(fp, "\n\nNet %d (%s)\n\n", inet, clb_net[inet].name);
+				fprintf(fp, "\n\nNet %d (%s)\n\n", inet, g_clbs_nlist.net[inet].name);
 				tptr = trace_head[inet];
 
 				while (tptr != NULL) {
@@ -1215,12 +1222,12 @@ void print_route(char *route_file) {
 
 		else { /* Global net.  Never routed. */
 			fprintf(fp, "\n\nNet %d (%s): global net connecting:\n\n", inet,
-					clb_net[inet].name);
+					g_clbs_nlist.net[inet].name);
 
-			for (ipin = 0; ipin <= clb_net[inet].num_sinks; ipin++) {
-				bnum = clb_net[inet].node_block[ipin];
+			for (ipin = 0; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) {
+				bnum = g_clbs_nlist.net[inet].nodes[ipin].block;
 
-				node_block_pin = clb_net[inet].node_block_pin[ipin];
+				node_block_pin = g_clbs_nlist.net[inet].nodes[ipin].block_pin;
 				iclass = block[bnum].type->pin_class[node_block_pin];
 
 				fprintf(fp, "Block %s (#%d) at (%d, %d), Pin class %d.\n",

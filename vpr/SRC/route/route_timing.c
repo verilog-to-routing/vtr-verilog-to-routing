@@ -64,13 +64,13 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	 * must have already been allocated, and net_delay must have been allocated. *
 	 * Returns TRUE if the routing succeeds, FALSE otherwise.                    */
 
-	float *sinks = (float*)my_malloc(sizeof(float) * num_nets);
-	int *net_index = (int*)my_malloc(sizeof(int) * num_nets);
-	for (int i = 0; i < num_nets; ++i) {
-		sinks[i] = clb_net[i].num_sinks;
+	float *sinks = (float*)my_malloc(sizeof(float) * g_clbs_nlist.net.size());
+	int *net_index = (int*)my_malloc(sizeof(int) * g_clbs_nlist.net.size());
+	for (unsigned int i = 0; i < g_clbs_nlist.net.size(); ++i) {
+		sinks[i] = g_clbs_nlist.net[i].num_sinks();
 		net_index[i] = i;
 	}
-	heapsort(net_index, sinks, num_nets, 1);
+	heapsort(net_index, sinks, (int) g_clbs_nlist.net.size(), 1);
 
 	float *pin_criticality; /* [1..max_pins_per_net-1] */
 	int *sink_order; /* [1..max_pins_per_net-1] */;
@@ -95,9 +95,9 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 
 	int times_exceeded_threshold = 0;
 
-	for (int inet = 0; inet < num_nets; ++inet) {
-		if (clb_net[inet].is_global == FALSE) {
-			for (int ipin = 1; ipin <= clb_net[inet].num_sinks; ++ipin)
+	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
+		if (g_clbs_nlist.net[inet].is_global == FALSE) {
+			for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ++ipin)
 				slacks->timing_criticality[inet][ipin] = init_timing_criticality_val;
 #ifdef PATH_COUNTING
 				slacks->path_criticality[inet][ipin] = init_timing_criticality_val;
@@ -106,7 +106,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			/* Set delay of global signals to zero. Non-global net delays are set by
 			   update_net_delays_from_route_tree() inside timing_driven_route_net(), 
 			   which is only called for non-global nets. */
-			for (int ipin = 1; ipin <= clb_net[inet].num_sinks; ++ipin) {
+			for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ++ipin) {
 				net_delay[inet][ipin] = 0.;
 			}
 		}
@@ -118,16 +118,16 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		clock_t begin = clock();
 
 		/* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
-		for (int inet = 0; inet < num_nets; ++inet) {
-			clb_net[inet].is_routed = FALSE;
-			clb_net[inet].is_fixed = FALSE;
+		for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
+			g_clbs_nlist.net[inet].is_routed = FALSE;
+			g_clbs_nlist.net[inet].is_fixed = FALSE;
 		}
 
 		timing_driven_order_prerouted_first(itry, router_opts, pres_fac, 
 				pin_criticality, sink_order, 
 				rt_node_of_sink, net_delay, slacks);
 
-		for (int i = 0; i < num_nets; ++i) {
+		for (unsigned int i = 0; i < g_clbs_nlist.net.size(); ++i) {
 			int inet = net_index[i];
 			boolean is_routable = try_timing_driven_route_net(inet, itry, pres_fac,
 					router_opts, pin_criticality, sink_order, 
@@ -160,9 +160,9 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 				}
 			}
 
-			for (int inet = 0; inet < num_nets; ++inet) {
-				if (clb_net[inet].is_global == FALSE
-						&& clb_net[inet].num_sinks != 0) { /* Globals don't count. */
+			for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
+				if (g_clbs_nlist.net[inet].is_global == FALSE
+						&& g_clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
 					int bends, wirelength, segments;
 					get_num_bends_and_length(inet, &bends, &wirelength, &segments);
 
@@ -274,8 +274,8 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			/* If timing analysis is not enabled, make sure that the criticalities and the
 			   net_delays stay as 0 so that wirelength can be optimized. */
 			
-			for (int inet = 0; inet < num_nets; ++inet) {
-				for (int ipin = 1; ipin <= clb_net[inet].num_sinks; ++ipin) {
+			for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
+				for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ++ipin) {
 					slacks->timing_criticality[inet][ipin] = 0.;
 #ifdef PATH_COUNTING 		
 					slacks->path_criticality[inet][ipin] = 0.; 		
@@ -308,11 +308,11 @@ boolean try_timing_driven_route_net(int inet, int itry, float pres_fac,
 
 	boolean is_routed = FALSE;
 
-	if (clb_net[inet].is_fixed) { /* Skip pre-routed nets. */
+	if (g_clbs_nlist.net[inet].is_fixed) { /* Skip pre-routed nets. */
 
 		is_routed = TRUE;
 
-	} else if (clb_net[inet].is_global) { /* Skip global nets. */
+	} else if (g_clbs_nlist.net[inet].is_global) { /* Skip global nets. */
 
 		is_routed = TRUE;
 
@@ -326,7 +326,7 @@ boolean try_timing_driven_route_net(int inet, int itry, float pres_fac,
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
-			clb_net[inet].is_routed = TRUE;
+			g_clbs_nlist.net[inet].is_routed = TRUE;
 			vpack_net[clb_to_vpack_net_mapping[inet]].is_routed = TRUE;
 		} else {
 			vpr_printf_info("Routing failed.\n");
@@ -383,13 +383,14 @@ static int get_max_pins_per_net(void) {
 
 	/* Returns the largest number of pins on any non-global net.    */
 
-	int inet, max_pins_per_net;
+	unsigned int inet;
+	int max_pins_per_net;
 
 	max_pins_per_net = 0;
-	for (inet = 0; inet < num_nets; inet++) {
-		if (clb_net[inet].is_global == FALSE) {
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+		if (g_clbs_nlist.net[inet].is_global == FALSE) {
 			max_pins_per_net = max(max_pins_per_net,
-					(clb_net[inet].num_sinks + 1));
+					(int) g_clbs_nlist.net[inet].nodes.size());
 		}
 	}
 
@@ -407,7 +408,8 @@ boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_cr
 	 * case the rr_graph is disconnected and you can give up. If slacks = NULL, *
 	 * give each net a dummy criticality of 0.									*/
 
-	int ipin, num_sinks, itarget, target_pin, target_node, inode;
+	unsigned int ipin;
+	int num_sinks, itarget, target_pin, target_node, inode;
 	float target_criticality, old_tcost, new_tcost, largest_criticality,
 		old_back_cost, new_back_cost;
 	t_rt_node *rt_root;
@@ -420,7 +422,7 @@ boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_cr
 	pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
 	free_traceback(inet);
 	
-	for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) { 
+	for (ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) { 
 		if (!slacks) {
 			/* Use dummy criticality of 0. (Doesn't matter what number goes here.) */
 			pin_criticality[ipin] = 0.;
@@ -450,7 +452,7 @@ boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_cr
 		}
 	}
 
-	num_sinks = clb_net[inet].num_sinks;
+	num_sinks = g_clbs_nlist.net[inet].num_sinks();
 	heapsort(sink_order, pin_criticality, num_sinks, 0);
 
 	/* Update base costs according to fanout and criticality rules */
@@ -484,7 +486,7 @@ boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_cr
 
 		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
 			vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
-					   inet, clb_net[inet].name, itarget);
+					   inet, g_clbs_nlist.net[inet].name, itarget);
 			reset_path_costs();
 			free_route_tree(rt_root);
 			return (FALSE);
@@ -530,7 +532,7 @@ boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_cr
 
 			if (current == NULL) { /* Impossible routing.  No path for net. */
 				vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
-						 inet, clb_net[inet].name, itarget);
+						 inet, g_clbs_nlist.net[inet].name, itarget);
 				reset_path_costs();
 				free_route_tree(rt_root);
 				return (FALSE);
@@ -637,7 +639,7 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 		if (restrict_prerouted_path(inet, itry, src_node, sink_node, from_node, to_node))
 			continue;
 
-		if (clb_net[inet].num_sinks >= HIGH_FANOUT_NET_LIM) {
+		if (g_clbs_nlist.net[inet].num_sinks() >= HIGH_FANOUT_NET_LIM) {
 			if (rr_node[to_node].xhigh < target_x - highfanout_rlim
 					|| rr_node[to_node].xlow > target_x + highfanout_rlim
 					|| rr_node[to_node].yhigh < target_y - highfanout_rlim
@@ -851,7 +853,7 @@ static void update_rr_base_costs(int inet, float largest_criticality) {
 	float fanout, factor;
 	int index;
 
-	fanout = clb_net[inet].num_sinks;
+	fanout = g_clbs_nlist.net[inet].num_sinks();
 
 	/* Other reasonable values for factor include fanout and 1 */
 	factor = sqrt(fanout);
@@ -881,7 +883,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	target_x = rr_node[target_node].xlow;
 	target_y = rr_node[target_node].ylow;
 
-	if (clb_net[inet].num_sinks < HIGH_FANOUT_NET_LIM) {
+	if (g_clbs_nlist.net[inet].num_sinks() < HIGH_FANOUT_NET_LIM) {
 		/* This algorithm only applies to high fanout nets */
 		return 1;
 	}
@@ -892,7 +894,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		area = 1;
 	}
 
-	rlim = (int)(ceil(sqrt((float) area / (float) clb_net[inet].num_sinks)));
+	rlim = (int)(ceil(sqrt((float) area / (float) g_clbs_nlist.net[inet].num_sinks())));
 	if (rt_node == NULL || rt_node->u.child_list == NULL) {
 		/* If unknown traceback, set radius of bin to be size of chip */
 		rlim = max(nx + 2, ny + 2);
@@ -922,7 +924,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		if (success == FALSE) {
 			if (rlim > max(nx + 2, ny + 2)) {
 				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
-					 "VPR internal error, net %s has paths that are not found in traceback.\n", clb_net[inet].name);
+					 "VPR internal error, net %s has paths that are not found in traceback.\n", g_clbs_nlist.net[inet].name);
 			}
 			/* if sink not in bin, increase bin size until fit */
 			rlim *= 2;
@@ -960,7 +962,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
 	/* Checks that the net delays computed incrementally during timing driven    *
 	 * routing match those computed from scratch by the net_delay.c module.      */
 
-	int inet, ipin;
+	unsigned int inet, ipin;
 	float **net_delay_check;
 
 	t_chunk list_head_net_delay_check_ch = {NULL, 0, NULL};
@@ -971,8 +973,8 @@ static void timing_driven_check_net_delays(float **net_delay) {
 		g_clbs_nlist.net.size());
 	load_net_delay_from_routing(net_delay_check, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
-	for (inet = 0; inet < num_nets; inet++) {
-		for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+		for (ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) {
 			if (net_delay_check[inet][ipin] == 0.) { /* Should be only GLOBAL nets */
 				if (fabs(net_delay[inet][ipin]) > ERROR_TOL) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
@@ -1023,7 +1025,7 @@ static bool timing_driven_order_prerouted_first(
 				continue;
 
 			int inet = tch_net.GetVPR_NetIndex();
-			vpr_printf_info("  Prerouting net %s...\n", clb_net[inet].name);
+			vpr_printf_info("  Prerouting net %s...\n", g_clbs_nlist.net[inet].name);
 
 			// Call existing VPR route code based on the given VPR net index
 			// (Note: this code will auto pre-route based on Toro callback handler)
@@ -1040,10 +1042,10 @@ static bool timing_driven_order_prerouted_first(
 			// Force net's "is_routed" or "is_fixed" state to TRUE 
 			// (ie. indicate that net has been pre-routed)
 			if (tch_net.GetStatus() == TCH_ROUTE_STATUS_ROUTED) {
-				clb_net[inet].is_routed = TRUE;
+				g_clbs_nlist.net[inet].is_routed = TRUE;
 				vpack_net[clb_to_vpack_net_mapping[inet]].is_routed = TRUE;
 			} else if (tch_net.GetStatus() == TCH_ROUTE_STATUS_FIXED) {
-				clb_net[inet].is_fixed = TRUE;
+				g_clbs_nlist.net[inet].is_fixed = TRUE;
 				vpack_net[clb_to_vpack_net_mapping[inet]].is_fixed = TRUE;
 			}
 		}

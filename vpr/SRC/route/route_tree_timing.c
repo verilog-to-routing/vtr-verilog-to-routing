@@ -484,10 +484,10 @@ void update_net_delays_from_route_tree(float *net_delay,
 	/* Goes through all the sinks of this net and copies their delay values from *
 	 * the route_tree to the net_delay array.                                    */
 
-	int isink;
+	unsigned int isink;
 	t_rt_node *sink_rt_node;
 
-	for (isink = 1; isink <= clb_net[inet].num_sinks; isink++) {
+	for (isink = 1; isink < g_clbs_nlist.net[inet].nodes.size(); isink++) {
 		sink_rt_node = rt_node_of_sink[isink];
 		net_delay[isink] = sink_rt_node->Tdel;
 	}

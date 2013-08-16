@@ -673,7 +673,7 @@ int ** alloc_and_load_net_pin_index() {
 	 * find what pin on the net a block pin corresponds to. Returns the pointer   *
 	 * to the 2D net_pin_index array.                                             */
 
-	int netpin, inet;
+	unsigned int netpin, inet;
 	int blk, iblk, ipin, itype, **temp_net_pin_index, max_pins_per_clb = 0;
 	t_type_ptr type;
 
@@ -694,12 +694,12 @@ int ** alloc_and_load_net_pin_index() {
 	}
 
 	/* Load the values */
-	for (inet = 0; inet < num_nets; inet++) {
-		if (clb_net[inet].is_global)
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+		if (g_clbs_nlist.net[inet].is_global)
 			continue;
-		for (netpin = 0; netpin <= clb_net[inet].num_sinks; netpin++) {
-			blk =clb_net[inet].node_block[netpin];
-			temp_net_pin_index[blk][clb_net[inet].node_block_pin[netpin]] = netpin;
+		for (netpin = 0; netpin < g_clbs_nlist.net[inet].nodes.size(); netpin++) {
+			blk =g_clbs_nlist.net[inet].nodes[netpin].block;
+			temp_net_pin_index[blk][g_clbs_nlist.net[inet].nodes[netpin].block_pin] = netpin;
 		}
 	}
 

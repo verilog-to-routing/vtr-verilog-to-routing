@@ -927,13 +927,13 @@ void free_rr_graph(void) {
 }
 
 static void alloc_net_rr_terminals(void) {
-	int inet;
+	unsigned int inet;
 
-	net_rr_terminals = (int **) my_malloc(num_nets * sizeof(int *));
+	net_rr_terminals = (int **) my_malloc(g_clbs_nlist.net.size() * sizeof(int *));
 
-	for (inet = 0; inet < num_nets; inet++) {
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 		net_rr_terminals[inet] = (int *) my_chunk_malloc(
-				(clb_net[inet].num_sinks + 1) * sizeof(int),
+				g_clbs_nlist.net[inet].nodes.size() * sizeof(int),
 				&rr_mem_ch);
 	}
 }
@@ -942,15 +942,16 @@ void load_net_rr_terminals(t_ivec *** L_rr_node_indices) {
 
 	/* Allocates and loads the net_rr_terminals data structure.  For each net   *
 	 * it stores the rr_node index of the SOURCE of the net and all the SINKs   *
-	 * of the net.  [0..num_nets-1][0..num_pins-1].  Entry [inet][pnum] stores  *
+	 * of the net.  [0..g_clbs_nlist.net.size()-1][0..num_pins-1].  Entry [inet][pnum] stores  *
 	 * the rr index corresponding to the SOURCE (opin) or SINK (ipin) of pnum.  */
 
-	int inet, ipin, inode, iblk, i, j, node_block_pin, iclass;
+	int inode, iblk, i, j, node_block_pin, iclass;
+	unsigned int ipin, inet;
 	t_type_ptr type;
 
-	for (inet = 0; inet < num_nets; inet++) {
-		for (ipin = 0; ipin <= clb_net[inet].num_sinks; ipin++) {
-			iblk = clb_net[inet].node_block[ipin];
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+		for (ipin = 0; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) {
+			iblk = g_clbs_nlist.net[inet].nodes[ipin].block;
 			i = block[iblk].x;
 			j = block[iblk].y;
 			type = block[iblk].type;
@@ -958,7 +959,7 @@ void load_net_rr_terminals(t_ivec *** L_rr_node_indices) {
 			/* In the routing graph, each (x, y) location has unique pins on it
 			 * so when there is capacity, blocks are packed and their pin numbers
 			 * are offset to get their actual rr_node */
-			node_block_pin = clb_net[inet].node_block_pin[ipin];
+			node_block_pin = g_clbs_nlist.net[inet].nodes[ipin].block_pin;
 
 			iclass = type->pin_class[node_block_pin];
 

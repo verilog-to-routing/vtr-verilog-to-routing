@@ -38,7 +38,8 @@ boolean try_breadth_first_route(struct s_router_opts router_opts,
 
 	float pres_fac;
 	boolean success, is_routable, rip_up_local_opins;
-	int itry, inet;
+	int itry;
+	unsigned int inet;
 
 	/* Usually the first iteration uses a very small (or 0) pres_fac to find  *
 	 * the shortest path and get a congestion map.  For fast compiles, I set  *
@@ -49,14 +50,14 @@ boolean try_breadth_first_route(struct s_router_opts router_opts,
 	for (itry = 1; itry <= router_opts.max_router_iterations; itry++) {
 
 		/* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
-		for (inet = 0; inet < num_nets; inet++) {
-			clb_net[inet].is_routed = FALSE;
-			clb_net[inet].is_fixed = FALSE;
+		for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+			g_clbs_nlist.net[inet].is_routed = FALSE;
+			g_clbs_nlist.net[inet].is_fixed = FALSE;
 		}
 
 		breadth_first_order_prerouted_first(itry, router_opts, pres_fac);
 
-		for (inet = 0; inet < num_nets; inet++) {
+		for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 			is_routable = try_breadth_first_route_net(inet, itry, pres_fac, 
 					router_opts);
 			if (!is_routable) {
@@ -100,11 +101,11 @@ boolean try_breadth_first_route_net(int inet, int itry, float pres_fac,
 
 	boolean is_routed = FALSE;
 
-	if (clb_net[inet].is_fixed) { /* Skip pre-routed nets. */
+	if (g_clbs_nlist.net[inet].is_fixed) { /* Skip pre-routed nets. */
 
 		is_routed = TRUE;
 
-	} else if (clb_net[inet].is_global) { /* Skip global nets. */
+	} else if (g_clbs_nlist.net[inet].is_global) { /* Skip global nets. */
 
 		is_routed = TRUE;
 
@@ -115,7 +116,7 @@ boolean try_breadth_first_route_net(int inet, int itry, float pres_fac,
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
-			clb_net[inet].is_routed = TRUE;
+			g_clbs_nlist.net[inet].is_routed = TRUE;
 			vpack_net[clb_to_vpack_net_mapping[inet]].is_routed = TRUE;
 		} else {
 			vpr_printf_info("Routing failed.\n");
@@ -141,7 +142,8 @@ static boolean breadth_first_route_net(int inet, int itry, float bend_cost) {
 	 * lack of potential paths, rather than congestion), it returns FALSE, as    *
 	 * routing is impossible on this architecture.  Otherwise it returns TRUE.   */
 
-	int i, inode, prev_node, remaining_connections_to_sink;
+	int inode, prev_node, remaining_connections_to_sink;
+	unsigned int i;
 	float pcost, new_pcost;
 	struct s_heap *current;
 	struct s_trace *tptr;
@@ -153,13 +155,13 @@ static boolean breadth_first_route_net(int inet, int itry, float bend_cost) {
 	tptr = NULL;
 	remaining_connections_to_sink = 0;
 
-	for (i = 1; i <= clb_net[inet].num_sinks; i++) { /* Need n-1 wires to connect n pins */
+	for (i = 1; i < g_clbs_nlist.net[inet].nodes.size(); i++) { /* Need n-1 wires to connect n pins */
 		breadth_first_expand_trace_segment(tptr, remaining_connections_to_sink);
 		current = get_heap_head();
 
 		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
 			vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
-					inet, clb_net[inet].name, i);
+					inet, g_clbs_nlist.net[inet].name, i);
 			reset_path_costs(); /* Clean up before leaving. */
 			return (FALSE);
 		}
@@ -187,7 +189,7 @@ static boolean breadth_first_route_net(int inet, int itry, float bend_cost) {
 
 			if (current == NULL) { /* Impossible routing. No path for net. */
 				vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
-						inet, clb_net[inet].name, i);
+						inet, g_clbs_nlist.net[inet].name, i);
 				reset_path_costs();
 				return (FALSE);
 			}
@@ -367,7 +369,7 @@ static bool breadth_first_order_prerouted_first(
 				continue;
 
 			int inet = tch_net.GetVPR_NetIndex();
-			vpr_printf_info("  Prerouting net %s...\n", clb_net[inet].name);
+			vpr_printf_info("  Prerouting net %s...\n", g_clbs_nlist.net[inet].name);
 
 			// Call existing VPR route code based on the given VPR net index
 			// (Note: this code will auto pre-route based on Toro callback handler)
@@ -381,10 +383,10 @@ static bool breadth_first_order_prerouted_first(
 			// Force net's "is_routed" or "is_fixed" state to TRUE 
 			// (ie. indicate that net has been pre-routed)
 			if (tch_net.GetStatus() == TCH_ROUTE_STATUS_ROUTED) {
-				clb_net[inet].is_routed = TRUE;
+				g_clbs_nlist.net[inet].is_routed = TRUE;
 				vpack_net[clb_to_vpack_net_mapping[inet]].is_routed = TRUE;
 			} else if (tch_net.GetStatus() == TCH_ROUTE_STATUS_FIXED) {
-				clb_net[inet].is_fixed = TRUE;
+				g_clbs_nlist.net[inet].is_fixed = TRUE;
 				vpack_net[clb_to_vpack_net_mapping[inet]].is_fixed = TRUE;
 			}
 		}

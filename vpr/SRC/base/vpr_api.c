@@ -858,7 +858,7 @@ char *vpr_get_output_file_name(enum e_output_files ename) {
 }
 
 /* logical equivalence scrambles the packed netlist indices with the actual indices, need to resync then re-output clustered netlist, this code assumes I'm dealing with a TI CLAY v1 architecture */
-/* Returns a trace array [0..num_logical_nets-1] with the final routing of the circuit from the logical_block netlist, index of the trace array corresponds to the index of a vpack_net */
+/* Returns a trace array [0..g_atoms_nlist.net.size()-1] with the final routing of the circuit from the logical_block netlist, index of the trace array corresponds to the index of a g_atoms_nlist.net */
 t_trace* vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture(
 		INP boolean apply_logical_equivalence_handling,
 		INP const t_arch *arch) {
@@ -907,9 +907,9 @@ static void reload_intra_cluster_nets(t_pb *pb) {
  */
 static t_trace *alloc_and_load_final_routing_trace() {
 
-	t_trace* final_routing_trace = (t_trace*) my_calloc(num_logical_nets, sizeof(t_trace));
-	for (int i = 0; i < num_logical_nets; ++i) {
-		int iblock = logical_block[vpack_net[i].node_block[0]].clb_index;
+	t_trace* final_routing_trace = (t_trace*) my_calloc(g_atoms_nlist.net.size(), sizeof(t_trace));
+	for (unsigned int i = 0; i < g_atoms_nlist.net.size(); ++i) {
+		int iblock = logical_block[g_atoms_nlist.net[i].nodes[0].block].clb_index;
 
 		final_routing_trace[i].iblock = iblock;
 		final_routing_trace[i].iswitch = OPEN;
@@ -940,7 +940,7 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 	if (local_rr_graph[inode].pb_graph_pin->num_output_edges == 0) {
 		if (local_rr_graph[inode].pb_graph_pin->port->type == OUT_PORT) {
 			/* connection to outside cb */
-			if (vpack_net[ivpack_net].is_global) {
+			if (g_atoms_nlist.net[ivpack_net].is_global) {
 				int inet = vpack_to_clb_net_mapping[ivpack_net];
 				if (inet != OPEN) {
 					for (int ipin = 1; ipin < (int) g_clbs_nlist.net[inet].nodes.size(); ++ipin) {
@@ -1027,8 +1027,8 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 
 	FILE *fp = my_fopen(file_name, "w", 0);
 
-	for (int i = 0; i < num_logical_nets; ++i) {
-		fprintf(fp, "Net %s (%d)\n\n", vpack_net[i].name, i);
+	for (unsigned int i = 0; i < g_atoms_nlist.net.size(); ++i) {
+		fprintf(fp, "Net %s (%d)\n\n", g_atoms_nlist.net[i].name, i);
 
 		int iprev_block = OPEN;
 
