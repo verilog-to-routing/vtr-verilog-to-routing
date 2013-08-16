@@ -1,15 +1,38 @@
-Printhandler is a generic message logging system for CAD tools.
++-----------------+
+|  libcommon_c++  |
++-----------------+
 
-Developed by: Jeff Rudolph
+This directory contains C++ library code that is common to VPR and Toro.
 
-VTR build environment port by: Jason Luu
+The library source code enables a number of Toro-specific features
+within VPR. These features include:
 
-Main features:
+   - Fabric descriptions (blocks, switchboxes, connection blocks)
+   - Relative placement macros
+   - Region-based placement
+   - Pre-placed blocks
+   - Pre-routed nets
 
-	1. Prefix message type ("INFO", "WARNING", "ERROR", "TRACE") Using an interface that looks a lot like "printf".
+Although VPR needs to link this common C++ library when building, the
+various features enabled by this library are currently only accessible
+when using Toro.
 
-	2. Count messages of each type with configurable limits on how many messages and what type of messages to display
+To build on Linux RedHat...
 
-	3. Enable regular-expression-based filtering of messages
+   1. "setenv BUILD_TYPE release"
+      -or-
+      "setenv BUILD_TYPE debug"
+   2. "make"
 
+To build on Linux ubuntu...
 
+   1. "export BUILD_TYPE=release"
+      -or-
+      "export BUILD_TYPE=debug"
+   2. "make"
+
+To build on Windows VisualC++...
+
+   1. run VisualC++ (2010 or 2012)
+   2. open "libcommon_c++.vcxproj"
+   3. build
