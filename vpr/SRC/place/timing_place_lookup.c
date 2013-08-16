@@ -1041,11 +1041,7 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 	static int original_num_nets;
 	static int original_num_blocks;
 	static int longest_length;
-
 	vector<t_vnet> original_vnet;
-
-	//original_vnet.swap(g_clbs_nlist.net);
-	//g_clbs_nlist.net.swap(original_vnet);
 
 	load_simplified_device();
 

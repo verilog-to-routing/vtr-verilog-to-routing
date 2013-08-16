@@ -33,16 +33,16 @@ static void free_crit(t_chunk *chunk_list_ptr);
 static float ** alloc_crit(t_chunk *chunk_list_ptr) {
 
 	/* Allocates space for the timing_place_crit data structure *
-	 * [0..num_nets-1][1..num_pins-1].  I chunk the data to save space on large    *
+	 * [0..g_clbs_nlist.net.size()-1][1..num_pins-1].  I chunk the data to save space on large    *
 	 * problems.                                                                   */
 
-	float **local_crit; /* [0..num_nets-1][1..num_pins-1] */
+	float **local_crit; /* [0..g_clbs_nlist.net.size()-1][1..num_pins-1] */
 	float *tmp_ptr;
-	int inet;
+	unsigned int inet;
 
-	local_crit = (float **) my_malloc(num_nets * sizeof(float *));
+	local_crit = (float **) my_malloc(g_clbs_nlist.net.size() * sizeof(float *));
 
-	for (inet = 0; inet < num_nets; inet++) {
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 		tmp_ptr = (float *) my_chunk_malloc(
 				(g_clbs_nlist.net[inet].num_sinks()) * sizeof(float), chunk_list_ptr);
 		local_crit[inet] = tmp_ptr - 1; /* [1..num_sinks] */
@@ -85,13 +85,12 @@ void load_criticalities(t_slack * slacks, float crit_exponent) {
 	  For every pin on every net (or, equivalently, for every tedge ending 
 	  in that pin), timing_place_crit = criticality^(criticality exponent) */
 
-	int inet;
-	unsigned int ipin;
+	unsigned int ipin, inet;
 #ifdef PATH_COUNTING
 	float timing_criticality, path_criticality; 
 #endif
 
-	for (inet = 0; inet < num_nets; inet++) {
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 		if (inet == OPEN)
 			continue;
 		if (g_clbs_nlist.net[inet].is_global)

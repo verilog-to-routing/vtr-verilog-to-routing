@@ -44,7 +44,7 @@ print_relative_pos_distr(void)
 		(double *)my_calloc((len / 2 + 1), sizeof(double));
 	}
 
-	for (inet = 0; inet < num_nets; inet++)
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++)
 	{
 		if (g_clbs_nlist.net[inet].is_global == FALSE)
 		{
