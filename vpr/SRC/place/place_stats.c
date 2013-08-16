@@ -28,9 +28,10 @@ print_relative_pos_distr(void)
 #endif /* PRINT_REL_POS_DISTR */
 
 	int inet, len, rp, src_x, src_y, dst_x, dst_y, del_x, del_y, min_del,
-	sink_pin, sum;
+		sum;
 	int *total_conn;
 	int **relapos;
+	unsigned int sink_pin
 	double **relapos_distr;
 
 	total_conn = (int *)my_malloc((nx + ny + 1) * sizeof(int));
@@ -45,17 +46,17 @@ print_relative_pos_distr(void)
 
 	for (inet = 0; inet < num_nets; inet++)
 	{
-		if (clb_net[inet].is_global == FALSE)
+		if (g_clbs_nlist.net[inet].is_global == FALSE)
 		{
 
-			src_x = block[clb_net[inet].node_block[0]].x;
-			src_y = block[clb_net[inet].node_block[0]].y;
+			src_x = block[g_clbs_nlist.net[inet].nodes[0].block].x;
+			src_y = block[g_clbs_nlist.net[inet].nodes[0].block].y;
 
-			for (sink_pin = 1; sink_pin <= clb_net[inet].num_sinks;
+			for (sink_pin = 1; sink_pin < g_clbs_nlist.net[inet].nodes.size();
 					sink_pin++)
 			{
-				dst_x = block[clb_net[inet].node_block[sink_pin]].x;
-				dst_y = block[clb_net[inet].node_block[sink_pin]].y;
+				dst_x = block[g_clbs_nlist.net[inet].nodes[sink_pin].block].x;
+				dst_y = block[g_clbs_nlist.net[inet].nodes[sink_pin].block].y;
 
 				del_x = ABS_DIFF(dst_x, src_x);
 				del_y = ABS_DIFF(dst_y, src_y);

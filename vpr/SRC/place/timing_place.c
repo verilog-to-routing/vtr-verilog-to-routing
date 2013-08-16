@@ -44,7 +44,7 @@ static float ** alloc_crit(t_chunk *chunk_list_ptr) {
 
 	for (inet = 0; inet < num_nets; inet++) {
 		tmp_ptr = (float *) my_chunk_malloc(
-				(clb_net[inet].num_sinks) * sizeof(float), chunk_list_ptr);
+				(g_clbs_nlist.net[inet].num_sinks()) * sizeof(float), chunk_list_ptr);
 		local_crit[inet] = tmp_ptr - 1; /* [1..num_sinks] */
 	}
 
@@ -85,7 +85,8 @@ void load_criticalities(t_slack * slacks, float crit_exponent) {
 	  For every pin on every net (or, equivalently, for every tedge ending 
 	  in that pin), timing_place_crit = criticality^(criticality exponent) */
 
-	int inet, ipin;
+	int inet;
+	unsigned int ipin;
 #ifdef PATH_COUNTING
 	float timing_criticality, path_criticality; 
 #endif
@@ -93,9 +94,9 @@ void load_criticalities(t_slack * slacks, float crit_exponent) {
 	for (inet = 0; inet < num_nets; inet++) {
 		if (inet == OPEN)
 			continue;
-		if (clb_net[inet].is_global)
+		if (g_clbs_nlist.net[inet].is_global)
 			continue;
-        for (ipin = 1; ipin <= clb_net[inet].num_sinks; ipin++) {
+		for (ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) {
 			if (slacks->timing_criticality[inet][ipin] < HUGE_NEGATIVE_FLOAT + 1) {
 				/* We didn't analyze this connection, so give it a timing_place_crit of 0. */
 				timing_place_crit[inet][ipin] = 0.;

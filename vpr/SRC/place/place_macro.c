@@ -241,8 +241,8 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 							curr_inet = next_inet;
 							
 							// Assume that carry chains only has 1 sink - direct connection
-							assert(clb_net[curr_inet].num_sinks == 1);
-							next_iblk = clb_net[curr_inet].node_block[1];
+							assert(g_clbs_nlist.net[curr_inet].num_sinks() == 1);
+							next_iblk = g_clbs_nlist.net[curr_inet].nodes[1].block;
 							
 							// Assume that the from_iblk_pin index is the same for the next block
 							assert (f_idirect_from_blk_pin[block[next_iblk].type->index][from_iblk_pin] == from_idirect
