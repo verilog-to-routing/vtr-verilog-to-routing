@@ -31,8 +31,8 @@ struct s_net *clb_net = NULL;
 int num_blocks = 0;
 struct s_block *block = NULL;
 
-t_netlist g_atoms_nlist;
-t_netlist g_clbs_nlist;
+g_netlist g_atoms_nlist;
+g_netlist g_clbs_nlist;
 
 int *clb_to_vpack_net_mapping = NULL; /* [0..num_clb_nets - 1] */
 int *vpack_to_clb_net_mapping = NULL; /* [0..num_vpack_nets - 1] */

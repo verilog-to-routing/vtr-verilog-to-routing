@@ -1,10 +1,12 @@
 /* 
- * This file contains subroutines used to populate data structures
- * that are used to store netlists information.
+ * Date:	Aug 19th, 2013
+ * Author:	Daniel Chen
  *
- *
- *
+ * This file contains subroutines used to populate the global netlist 
+ * data structures. See netlist.h for more info about data structure. 
  */
+
+
 #include <cstdio>
 #include <cstring>
 #include <assert.h>
@@ -16,10 +18,10 @@ using namespace std;
 
 
 static bool check_global_net_with_array(INP t_net* net_arr,
-	INP int num_net_arr, OUTP t_netlist* g_nlist);
+	INP int num_net_arr, OUTP g_netlist* g_nlist);
 
 void load_global_net_from_array(INP t_net* net_arr,
-	INP int num_net_arr, OUTP t_netlist* g_nlist){
+	INP int num_net_arr, OUTP g_netlist* g_nlist){
 
 	int i, j;
 		
@@ -69,7 +71,7 @@ void load_global_net_from_array(INP t_net* net_arr,
 	return;
 }
 
-void echo_global_nlist_net(INP t_netlist* g_nlist, t_net* net_arr){
+void echo_global_nlist_net(INP g_netlist* g_nlist, t_net* net_arr){
 
 	unsigned int i, j;
 
@@ -97,7 +99,7 @@ void echo_global_nlist_net(INP t_netlist* g_nlist, t_net* net_arr){
 }
 
 static bool check_global_net_with_array(INP t_net* net_arr,
-	INP int num_net_arr, OUTP t_netlist* g_nlist){
+	INP int num_net_arr, OUTP g_netlist* g_nlist){
 
 	int i, j;
 

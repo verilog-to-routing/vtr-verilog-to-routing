@@ -154,7 +154,7 @@ int num_tnodes = 0; /* Number of nodes (pins) in the timing graph */
 
 static t_chunk tedge_ch = {NULL, 0, NULL};
 
-static vector<t_vnet> *timing_nets = NULL;
+static vector<g_net> *timing_nets = NULL;
 
 static int num_timing_nets = 0;
 
@@ -350,7 +350,7 @@ static t_slack * alloc_slacks(void) {
 	([0..net.size()-1][1..num_pins-1]). Chunk allocated to save space. */
 
 	int inet;
-	vector<t_vnet> & tnets = *timing_nets; 
+	vector<g_net> & tnets = *timing_nets; 
 	t_slack * slacks = (t_slack *) my_malloc(sizeof(t_slack));
 	
 	slacks->slack   = (float **) my_malloc(num_timing_nets * sizeof(float *));
@@ -378,7 +378,7 @@ void load_timing_graph_net_delays(float **net_delay) {
 
 	int inet, inode;
 	unsigned ipin;
-	vector<t_vnet> & tnets = *timing_nets; 
+	vector<g_net> & tnets = *timing_nets; 
 	t_tedge *tedge;
 
 	for (inet = 0; inet < num_timing_nets; inet++) {
@@ -455,7 +455,7 @@ void print_slack(float ** slack, boolean slack_is_normalized, const char *fname)
 		total_slack = 0, total_negative_slack = 0, bucket_size, slk;
 	int slacks_in_bucket[NUM_BUCKETS]; 
 
-	vector<t_vnet> & tnets = *timing_nets; 
+	vector<g_net> & tnets = *timing_nets; 
 
 	fp = my_fopen(fname, "w", 0);
 
@@ -620,7 +620,7 @@ static void print_global_criticality_stats(FILE * fp, float ** criticality, cons
 	int inet, iedge, num_edges, ibucket, criticalities_in_bucket[NUM_BUCKETS];
 	float crit, max_criticality = HUGE_NEGATIVE_FLOAT, min_criticality = HUGE_POSITIVE_FLOAT, 
 		total_criticality = 0, bucket_size;
-	vector<t_vnet> & tnets = *timing_nets; 
+	vector<g_net> & tnets = *timing_nets; 
 
 	/* Go through criticality once to get the largest and smallest timing criticality, 
 	both for reporting and so that we can delimit the buckets. */
@@ -1728,7 +1728,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 	long max_critical_output_paths, max_critical_input_paths;
 	t_pb *pb;
 
-	vector<t_vnet> & tnets = *timing_nets; 
+	vector<g_net> & tnets = *timing_nets; 
 
 #if SLACK_DEFINITION == 'S' || SLACK_DEFINITION == 'T' || SLACK_DEFINITION == 'C' || SLACK_DEFINITION == 'D'
 	update_slack = (boolean)true;
@@ -2513,7 +2513,7 @@ void print_critical_path(const char *fname) {
 	e_tnode_type type;
 	float total_net_delay, total_logic_delay, Tdel;
 
-	vector<t_vnet> & tnets = *timing_nets; 
+	vector<g_net> & tnets = *timing_nets; 
 
 	critical_path_head = allocate_and_load_critical_path();
 	critical_path_node = critical_path_head;

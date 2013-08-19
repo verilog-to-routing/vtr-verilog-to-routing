@@ -109,11 +109,11 @@ static void restore_original_device(void);
 
 static void alloc_and_assign_internal_structures(struct s_net **original_net,
 		struct s_block **original_block, int *original_num_nets,
-		int *original_num_blocks, vector<t_vnet> & original_vnet);
+		int *original_num_blocks, vector<g_net> & original_vnet);
 
 static void free_and_reset_internal_structures(struct s_net *original_net,
 		struct s_block *original_block, int original_num_nets,
-		int original_num_blocks, vector<t_vnet> & original_vnet);
+		int original_num_blocks, vector<g_net> & original_vnet);
 
 static void setup_chan_width(struct s_router_opts router_opts,
 		t_chan_width_dist chan_width_dist);
@@ -378,7 +378,7 @@ static void reset_placement(void) {
 /**************************************/
 static void alloc_and_assign_internal_structures(struct s_net **original_net,
 		struct s_block **original_block, int *original_num_nets,
-		int *original_num_blocks, vector<t_vnet> & original_vnet) {
+		int *original_num_blocks, vector<g_net> & original_vnet) {
 	/*allocate new data structures to hold net, and block info */
 
 	*original_net = clb_net;
@@ -404,7 +404,7 @@ static void alloc_and_assign_internal_structures(struct s_net **original_net,
 /**************************************/
 static void free_and_reset_internal_structures(struct s_net *original_net,
 		struct s_block *original_block, int original_num_nets,
-		int original_num_blocks, vector<t_vnet> & original_vnet) {
+		int original_num_blocks, vector<g_net> & original_vnet) {
 	/*reset gloabal data structures to the state that they were in before these */
 	/*lookup computation routines were called */
 
@@ -1041,7 +1041,7 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 	static int original_num_nets;
 	static int original_num_blocks;
 	static int longest_length;
-	vector<t_vnet> original_vnet;
+	vector<g_net> original_vnet;
 
 	load_simplified_device();
 
