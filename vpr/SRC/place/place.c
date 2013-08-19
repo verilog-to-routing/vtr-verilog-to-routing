@@ -492,6 +492,11 @@ void try_place(struct s_placer_opts placer_opts,
 		/*now we can properly compute costs  */
 		comp_td_costs(&timing_cost, &delay_cost); /*also vpr_printf proper values into point_to_point_delay_cost */
 
+		/* Timing cost appears to be 0 for small circuits without any critical paths, this will cause costs to be
+		indefinite values later, so set timing_cost to a small number to prevent it						*/
+		if (timing_cost == 0)
+			timing_cost = 1e-9;
+
 		inverse_prev_timing_cost = 1 / timing_cost;
 		inverse_prev_bb_cost = 1 / bb_cost;
 		cost = 1; /*our new cost function uses normalized values of           */
