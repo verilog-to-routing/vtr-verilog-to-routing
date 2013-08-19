@@ -1732,7 +1732,8 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 
 #if SLACK_DEFINITION == 'S' || SLACK_DEFINITION == 'T' || SLACK_DEFINITION == 'C' || SLACK_DEFINITION == 'D'
 	update_slack = (boolean)true;
-	/* Update slack values because we need these values to compute criticalities */
+	/* Update slack values because we need the updated slack values to compute timing criticalities
+	for these slack definitions*/
 
 	float smallest_slack_in_design = HUGE_POSITIVE_FLOAT;
 	/* Shift all slacks upwards by this number if it is negative. */
@@ -1885,6 +1886,9 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 				}
 			}
 		criticality_denom_global -= smallest_slack_in_design;
+		/* Also need to increase the criticality denominator. In some cases, slack > criticality_denom_global, causing 
+		timing_criticality < 0 when calculated later. Do this shift to keep timing_criticality non-negative
+		*/
 		}
 	}
 
@@ -1894,6 +1898,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 		for (iedge = 0; iedge < num_edges; iedge++) {
 			if (slacks->slack[inet][iedge + 1] < HUGE_POSITIVE_FLOAT - 1) { /* if the slack is valid */
 				slacks->timing_criticality[inet][iedge + 1] = 1 - slacks->slack[inet][iedge + 1]/criticality_denom_global; 
+
 #if SLACK_DEFINITION == 'T' || SLACK_DEFINITION == 'D'	
 				/* We need to clip criticalities to 0 if negative because the criticality_denom_global is 
 				essentially max(Tarr), and slacks can get as high as the timing constraint specified in SDC 
