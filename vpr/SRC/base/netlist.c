@@ -18,10 +18,10 @@ using namespace std;
 
 
 static bool check_global_net_with_array(INP t_net* net_arr,
-	INP int num_net_arr, OUTP g_netlist* g_nlist);
+	INP int num_net_arr, OUTP t_netlist* g_nlist);
 
 void load_global_net_from_array(INP t_net* net_arr,
-	INP int num_net_arr, OUTP g_netlist* g_nlist){
+	INP int num_net_arr, OUTP t_netlist* g_nlist){
 
 	int i, j;
 		
@@ -49,18 +49,18 @@ void load_global_net_from_array(INP t_net* net_arr,
 		// Power info may be removed from net ?
 		//g_nlist->nets[i].net_power = new t_net_power(*net_arr[i].net_power);
 
-		assert(g_nlist->net[i].nodes.empty());
-		g_nlist->net[i].nodes.resize(net_arr[i].num_sinks + 1);
+		assert(g_nlist->net[i].pins.empty());
+		g_nlist->net[i].pins.resize(net_arr[i].num_sinks + 1);
 		for(j = 0; j <= net_arr[i].num_sinks; j++){
 
-			g_nlist->net[i].nodes[j].block = net_arr[i].node_block[j];
+			g_nlist->net[i].pins[j].block = net_arr[i].node_block[j];
 
 			// Usage exception: post-packed netlist of CLB's do not make
 			//			use of node_block_port array (not allocated).
 			if(net_arr[i].node_block_port) 
-				g_nlist->net[i].nodes[j].block_port = net_arr[i].node_block_port[j];
+				g_nlist->net[i].pins[j].block_port = net_arr[i].node_block_port[j];
 
-			g_nlist->net[i].nodes[j].block_pin = net_arr[i].node_block_pin[j];
+			g_nlist->net[i].pins[j].block_pin = net_arr[i].node_block_pin[j];
 		}
 	}
 
@@ -71,7 +71,7 @@ void load_global_net_from_array(INP t_net* net_arr,
 	return;
 }
 
-void echo_global_nlist_net(INP g_netlist* g_nlist, t_net* net_arr){
+void echo_global_nlist_net(INP t_netlist* g_nlist, t_net* net_arr){
 
 	unsigned int i, j;
 
@@ -84,11 +84,11 @@ void echo_global_nlist_net(INP g_netlist* g_nlist, t_net* net_arr){
 			g_nlist->net[i].is_fixed , net_arr[i].is_fixed,
 			g_nlist->net[i].is_global, net_arr[i].is_global,  
 			g_nlist->net[i].is_const_gen, net_arr[i].is_const_gen);
-		for(j = 0; j < g_nlist->net[i].nodes.size(); j++){
+		for(j = 0; j < g_nlist->net[i].pins.size(); j++){
 			vpr_printf_info("Block index %d %d port %d %d pin %d %d \n", 
-				g_nlist->net[i].nodes[j].block, net_arr[i].node_block[j],
-				g_nlist->net[i].nodes[j].block_port, (net_arr[i].node_block_port ? net_arr[i].node_block_port[j] : 0), 
-				g_nlist->net[i].nodes[j].block_pin, net_arr[i].node_block_pin[j]);
+				g_nlist->net[i].pins[j].block, net_arr[i].node_block[j],
+				g_nlist->net[i].pins[j].block_port, (net_arr[i].node_block_port ? net_arr[i].node_block_port[j] : 0), 
+				g_nlist->net[i].pins[j].block_pin, net_arr[i].node_block_pin[j]);
 		
 		}
 		vpr_printf_info("\n");
@@ -99,7 +99,7 @@ void echo_global_nlist_net(INP g_netlist* g_nlist, t_net* net_arr){
 }
 
 static bool check_global_net_with_array(INP t_net* net_arr,
-	INP int num_net_arr, OUTP g_netlist* g_nlist){
+	INP int num_net_arr, OUTP t_netlist* g_nlist){
 
 	int i, j;
 
@@ -116,14 +116,14 @@ static bool check_global_net_with_array(INP t_net* net_arr,
 			return false;
 
 		for(j = 0; j <= net_arr[i].num_sinks; j++){
-			if(net_arr[i].node_block[j] != g_nlist->net[i].nodes[j].block)
+			if(net_arr[i].node_block[j] != g_nlist->net[i].pins[j].block)
 				return false;
 
 			if(net_arr[i].node_block_port)
-				if(net_arr[i].node_block_port[j] != g_nlist->net[i].nodes[j].block_port)
+				if(net_arr[i].node_block_port[j] != g_nlist->net[i].pins[j].block_port)
 					return false;
 
-			if(net_arr[i].node_block_pin[j] != g_nlist->net[i].nodes[j].block_pin)
+			if(net_arr[i].node_block_pin[j] != g_nlist->net[i].pins[j].block_pin)
 				return false;
 		}
 	

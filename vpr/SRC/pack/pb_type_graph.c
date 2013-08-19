@@ -1705,21 +1705,21 @@ static void check_pb_node_rec(INP const t_pb_graph_node* pb_graph_node){
  */
 static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin){
 
-	int m, n;
+	int i_edge, i_pin;
 	t_pb_graph_edge * cur_edge;
 	t_pb_graph_edge_comparator edges_info;
 	map<t_pb_graph_edge_comparator, int> edges_map;
 	pair<map<t_pb_graph_edge_comparator,int>::iterator,bool> ret_edges_map;
 
 	// First check the incoming edges into cur_pin
-	for(m = 0; m < cur_pin->num_input_edges; m++){
-		cur_edge = cur_pin->input_edges[m];
-		for(n = 0; n < cur_edge->num_input_pins; n++){
+	for(i_edge = 0; i_edge < cur_pin->num_input_edges; i_edge++){
+		cur_edge = cur_pin->input_edges[i_edge];
+		for(i_pin = 0; i_pin < cur_edge->num_input_pins; i_pin++){
 			// Populate the edge_comparator struct and attempt to insert it into STL map
 			edges_info.parent_edge = cur_edge;
-			edges_info.input_pin = cur_edge->input_pins[n];
+			edges_info.input_pin = cur_edge->input_pins[i_pin];
 			edges_info.output_pin = cur_pin;
-			edges_info.input_pin_id_in_cluster = cur_edge->input_pins[n]->pin_count_in_cluster;
+			edges_info.input_pin_id_in_cluster = cur_edge->input_pins[i_pin]->pin_count_in_cluster;
 			edges_info.output_pin_id_in_cluster = cur_pin->pin_count_in_cluster;
 			ret_edges_map = edges_map.insert(pair<t_pb_graph_edge_comparator, int>(edges_info,0));
 			if(!ret_edges_map.second){

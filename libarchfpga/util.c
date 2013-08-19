@@ -785,7 +785,7 @@ t_vpr_error* alloc_and_load_vpr_error(enum e_vpr_error type, unsigned int line, 
 	t_vpr_error* vpr_error;
 
 	vpr_error = (t_vpr_error*)my_calloc(1, sizeof(t_vpr_error));
-	vpr_error->file_name = (char*)my_calloc(1000, sizeof(char));
+	vpr_error->file_name = (char*)my_calloc(strlen(file_name) + 1, sizeof(char));
 	vpr_error->message = (char*)my_calloc(1000, sizeof(char));
 
 	sprintf(vpr_error->file_name, file_name);

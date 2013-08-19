@@ -783,17 +783,16 @@ void post_place_sync(INP int L_num_blocks,
 				block[iblk].nets[j + block[iblk].z * max_num_block_pins] =
 						block[iblk].nets[j];
 				block[iblk].nets[j] = OPEN;
-				for (k = 0; k < g_clbs_nlist.net[inet].nodes.size(); k++) {
-					if (g_clbs_nlist.net[inet].nodes[k].block == iblk && g_clbs_nlist.net[inet].nodes[k].block_pin == j) {
-						g_clbs_nlist.net[inet].nodes[k].block_pin = j
+				for (k = 0; k < g_clbs_nlist.net[inet].pins.size(); k++) {
+					if (g_clbs_nlist.net[inet].pins[k].block == iblk && g_clbs_nlist.net[inet].pins[k].block_pin == j) {
+						g_clbs_nlist.net[inet].pins[k].block_pin = j
 								+ block[iblk].z * max_num_block_pins;
-						//Daniel to-do: take out clb_net later
-						clb_net[inet].node_block_pin[k] = j
-								+ block[iblk].z * max_num_block_pins;
+						clb_net[inet].node_block_pin[k] = j 
+								+ block[iblk].z * max_num_block_pins; //Daniel to-do: take out clb_net later
 						break;
 					}
 				}
-				assert(k < g_clbs_nlist.net[inet].nodes.size());
+				assert(k < g_clbs_nlist.net[inet].pins.size());
 			}
 		}
 	}

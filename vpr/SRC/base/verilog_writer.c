@@ -1132,9 +1132,9 @@ conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_li
 	      if(vpck_net != OPEN)
 	      {
 
-		for(k=1 ; k<g_atoms_nlist.net[vpck_net].nodes.size() ; k++)/*traversing through all the sink primitives that the source primitive connects to*/
+		for(k=1 ; k<g_atoms_nlist.net[vpck_net].pins.size() ; k++)/*traversing through all the sink primitives that the source primitive connects to*/
 		  {
-			  next_block = g_atoms_nlist.net[vpck_net].nodes[k].block;/*next_blk holds the logical block index for the primitive that the source primitive connects to*/
+			  next_block = g_atoms_nlist.net[vpck_net].pins[k].block;/*next_blk holds the logical block index for the primitive that the source primitive connects to*/
 
 #if 0
 
@@ -1173,7 +1173,7 @@ conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_li
 		      assert(port_number_out != -1);
 		      assert(pin_number_out != -1);
 		      
-			  int unswapped_pin_number =  g_atoms_nlist.net[vpck_net].nodes[k].block_pin;
+			  int unswapped_pin_number =  g_atoms_nlist.net[vpck_net].pins[k].block_pin;
 
 		      pin_count = logical_block[next_block].pb->pb_graph_node->input_pins[port_number_out][pin_number_out].pin_count_in_cluster;/*pin count for the sink pin*/
 		      assert(logical_block[next_block].pb->rr_graph[pin_count].tnode);

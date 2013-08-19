@@ -364,7 +364,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_net(int inet, int ipin)
 	int ilogical_block;
 	t_model_ports *port;
 
-	ilogical_block = g_atoms_nlist.net[inet].nodes[ipin].block;
+	ilogical_block = g_atoms_nlist.net[inet].pins[ipin].block;
 
 	assert(ilogical_block != OPEN);
 	if(logical_block[ilogical_block].pb == NULL) {
@@ -377,7 +377,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_net(int inet, int ipin)
 		if(g_atoms_nlist.net[inet].is_global) {
 			while(port != NULL) {
 				if(port->is_clock) {
-					if(port->index == g_atoms_nlist.net[inet].nodes[ipin].block_port) {
+					if(port->index == g_atoms_nlist.net[inet].pins[ipin].block_port) {
 						break;
 					}
 				}
@@ -386,7 +386,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_net(int inet, int ipin)
 		} else {
 			while(port != NULL) {
 				if(!port->is_clock) {
-					if(port->index == g_atoms_nlist.net[inet].nodes[ipin].block_port) {
+					if(port->index == g_atoms_nlist.net[inet].pins[ipin].block_port) {
 						break;
 					}
 				}
@@ -397,7 +397,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_net(int inet, int ipin)
 		/* This is an output pin */
 		port = logical_block[ilogical_block].model->outputs;
 		while(port != NULL) {
-			if(port->index == g_atoms_nlist.net[inet].nodes[ipin].block_pin) {
+			if(port->index == g_atoms_nlist.net[inet].pins[ipin].block_pin) {
 				break;
 			}
 			port = port->next;
@@ -405,15 +405,15 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_net(int inet, int ipin)
 	}
 
 	assert(port != NULL);
-	return get_pb_graph_node_pin_from_model_port_pin(port, g_atoms_nlist.net[inet].nodes[ipin].block_pin, logical_block[ilogical_block].pb->pb_graph_node);
+	return get_pb_graph_node_pin_from_model_port_pin(port, g_atoms_nlist.net[inet].pins[ipin].block_pin, logical_block[ilogical_block].pb->pb_graph_node);
 }
 
 t_pb_graph_pin* get_pb_graph_node_pin_from_g_clbs_nlist_net(int inet, int ipin) {
 
 	int iblock, target_pin;
 
-	iblock = g_clbs_nlist.net[inet].nodes[ipin].block;
-	target_pin =  g_clbs_nlist.net[inet].nodes[ipin].block_pin;
+	iblock = g_clbs_nlist.net[inet].pins[ipin].block;
+	target_pin =  g_clbs_nlist.net[inet].pins[ipin].block_pin;
 	
 	return get_pb_graph_node_pin_from_block_pin(iblock, target_pin);
 }
@@ -697,9 +697,9 @@ int ** alloc_and_load_net_pin_index() {
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 		if (g_clbs_nlist.net[inet].is_global)
 			continue;
-		for (netpin = 0; netpin < g_clbs_nlist.net[inet].nodes.size(); netpin++) {
-			blk =g_clbs_nlist.net[inet].nodes[netpin].block;
-			temp_net_pin_index[blk][g_clbs_nlist.net[inet].nodes[netpin].block_pin] = netpin;
+		for (netpin = 0; netpin < g_clbs_nlist.net[inet].pins.size(); netpin++) {
+			blk =g_clbs_nlist.net[inet].pins[netpin].block;
+			temp_net_pin_index[blk][g_clbs_nlist.net[inet].pins[netpin].block_pin] = netpin;
 		}
 	}
 

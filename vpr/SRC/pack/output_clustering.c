@@ -476,7 +476,7 @@ static void print_stats(t_block *clb, int num_clusters) {
 		if (strcmp(logical_block[iblk].model->name, "latch") == 0) {
 			if (g_atoms_nlist.net[logical_block[iblk].input_nets[0][0]].num_sinks() > 1
 					|| strcmp(
-							logical_block[g_atoms_nlist.net[logical_block[iblk].input_nets[0][0]].nodes[0].block].model->name,
+							logical_block[g_atoms_nlist.net[logical_block[iblk].input_nets[0][0]].pins[0].block].model->name,
 							"names") != 0) {
 				unabsorbable_ffs++;
 			}

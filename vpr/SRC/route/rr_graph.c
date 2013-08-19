@@ -933,7 +933,7 @@ static void alloc_net_rr_terminals(void) {
 
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 		net_rr_terminals[inet] = (int *) my_chunk_malloc(
-				g_clbs_nlist.net[inet].nodes.size() * sizeof(int),
+				g_clbs_nlist.net[inet].pins.size() * sizeof(int),
 				&rr_mem_ch);
 	}
 }
@@ -950,8 +950,8 @@ void load_net_rr_terminals(t_ivec *** L_rr_node_indices) {
 	t_type_ptr type;
 
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-		for (ipin = 0; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) {
-			iblk = g_clbs_nlist.net[inet].nodes[ipin].block;
+		for (ipin = 0; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
+			iblk = g_clbs_nlist.net[inet].pins[ipin].block;
 			i = block[iblk].x;
 			j = block[iblk].y;
 			type = block[iblk].type;
@@ -959,7 +959,7 @@ void load_net_rr_terminals(t_ivec *** L_rr_node_indices) {
 			/* In the routing graph, each (x, y) location has unique pins on it
 			 * so when there is capacity, blocks are packed and their pin numbers
 			 * are offset to get their actual rr_node */
-			node_block_pin = g_clbs_nlist.net[inet].nodes[ipin].block_pin;
+			node_block_pin = g_clbs_nlist.net[inet].pins[ipin].block_pin;
 
 			iclass = type->pin_class[node_block_pin];
 

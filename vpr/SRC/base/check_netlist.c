@@ -111,7 +111,7 @@ static int check_connections_to_global_clb_pins(unsigned int inet) {
 
 	unsigned int ipin, num_pins, iblk, node_block_pin, error;
 
-	num_pins = (g_clbs_nlist.net[inet].nodes.size());
+	num_pins = (g_clbs_nlist.net[inet].pins.size());
 	error = 0;
 
 	/* For now global signals can be driven by an I/O pad or any CLB output       *
@@ -120,9 +120,9 @@ static int check_connections_to_global_clb_pins(unsigned int inet) {
 	 * this warning.                                                              */
 
 	for (ipin = 0; ipin < num_pins; ipin++) {
-		iblk = g_clbs_nlist.net[inet].nodes[ipin].block;
+		iblk = g_clbs_nlist.net[inet].pins[ipin].block;
 
-		node_block_pin = g_clbs_nlist.net[inet].nodes[ipin].block_pin;
+		node_block_pin = g_clbs_nlist.net[inet].pins[ipin].block_pin;
 
 		boolean is_global_net = static_cast<boolean>(g_clbs_nlist.net[inet].is_global);
 		if (block[iblk].type->is_global_pin[node_block_pin]

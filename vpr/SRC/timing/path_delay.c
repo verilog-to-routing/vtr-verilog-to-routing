@@ -154,7 +154,7 @@ int num_tnodes = 0; /* Number of nodes (pins) in the timing graph */
 
 static t_chunk tedge_ch = {NULL, 0, NULL};
 
-static vector<g_net> *timing_nets = NULL;
+static vector<t_vnet> *timing_nets = NULL;
 
 static int num_timing_nets = 0;
 
@@ -350,7 +350,7 @@ static t_slack * alloc_slacks(void) {
 	([0..net.size()-1][1..num_pins-1]). Chunk allocated to save space. */
 
 	int inet;
-	vector<g_net> & tnets = *timing_nets; 
+	vector<t_vnet> & tnets = *timing_nets; 
 	t_slack * slacks = (t_slack *) my_malloc(sizeof(t_slack));
 	
 	slacks->slack   = (float **) my_malloc(num_timing_nets * sizeof(float *));
@@ -359,10 +359,10 @@ static t_slack * alloc_slacks(void) {
 	slacks->path_criticality = (float **) my_malloc(num_timing_nets * sizeof(float *));
 #endif
 	for (inet = 0; inet < num_timing_nets; inet++) {
-		slacks->slack[inet]	  = (float *) my_chunk_malloc(tnets[inet].nodes.size() * sizeof(float), &tedge_ch);
-		slacks->timing_criticality[inet] = (float *) my_chunk_malloc(tnets[inet].nodes.size() * sizeof(float), &tedge_ch);
+		slacks->slack[inet]	  = (float *) my_chunk_malloc(tnets[inet].pins.size() * sizeof(float), &tedge_ch);
+		slacks->timing_criticality[inet] = (float *) my_chunk_malloc(tnets[inet].pins.size() * sizeof(float), &tedge_ch);
 #ifdef PATH_COUNTING
-		slacks->path_criticality[inet] = (float *) my_chunk_malloc(tnets[inet].nodes.size() * sizeof(float), &tedge_ch);
+		slacks->path_criticality[inet] = (float *) my_chunk_malloc(tnets[inet].pins.size() * sizeof(float), &tedge_ch);
 #endif
 	}
 
@@ -378,7 +378,7 @@ void load_timing_graph_net_delays(float **net_delay) {
 
 	int inet, inode;
 	unsigned ipin;
-	vector<g_net> & tnets = *timing_nets; 
+	vector<t_vnet> & tnets = *timing_nets; 
 	t_tedge *tedge;
 
 	for (inet = 0; inet < num_timing_nets; inet++) {
@@ -388,7 +388,7 @@ void load_timing_graph_net_delays(float **net_delay) {
 		/* Note that the edges of a tnode corresponding to a CLB or INPAD opin must  *
 		 * be in the same order as the pins of the net driven by the tnode.          */
 
-		for (ipin = 1; ipin < tnets[inet].nodes.size(); ipin++)
+		for (ipin = 1; ipin < tnets[inet].pins.size(); ipin++)
 			tedge[ipin - 1].Tdel = net_delay[inet][ipin];
 	}
 }
@@ -455,7 +455,7 @@ void print_slack(float ** slack, boolean slack_is_normalized, const char *fname)
 		total_slack = 0, total_negative_slack = 0, bucket_size, slk;
 	int slacks_in_bucket[NUM_BUCKETS]; 
 
-	vector<g_net> & tnets = *timing_nets; 
+	vector<t_vnet> & tnets = *timing_nets; 
 
 	fp = my_fopen(fname, "w", 0);
 
@@ -620,7 +620,7 @@ static void print_global_criticality_stats(FILE * fp, float ** criticality, cons
 	int inet, iedge, num_edges, ibucket, criticalities_in_bucket[NUM_BUCKETS];
 	float crit, max_criticality = HUGE_NEGATIVE_FLOAT, min_criticality = HUGE_POSITIVE_FLOAT, 
 		total_criticality = 0, bucket_size;
-	vector<g_net> & tnets = *timing_nets; 
+	vector<t_vnet> & tnets = *timing_nets; 
 
 	/* Go through criticality once to get the largest and smallest timing criticality, 
 	both for reporting and so that we can delimit the buckets. */
@@ -916,11 +916,11 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 			tnode[i].out_edges = (t_tedge *) my_chunk_malloc(
 					g_clbs_nlist.net[inet].num_sinks()* sizeof(t_tedge),
 					&tedge_ch);
-			for (j = 1; j < (int) g_clbs_nlist.net[inet].nodes.size(); j++) {
-				dblock = g_clbs_nlist.net[inet].nodes[j].block;
+			for (j = 1; j < (int) g_clbs_nlist.net[inet].pins.size(); j++) {
+				dblock = g_clbs_nlist.net[inet].pins[j].block;
 				normalization = block[dblock].type->num_pins
 						/ block[dblock].type->capacity;
-				normalized_pin = g_clbs_nlist.net[inet].nodes[j].block_pin
+				normalized_pin = g_clbs_nlist.net[inet].pins[j].block_pin
 						% normalization;
 				d_rr_graph = block[dblock].pb->rr_graph;
 				dpin = OPEN;
@@ -1263,7 +1263,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 					logical_block[tnode[i].block].output_nets[tnode[i].prepacked_data->model_port][tnode[i].prepacked_data->model_pin];
 			assert(inet != OPEN);
 
-			for (j = 1; j < (int) g_atoms_nlist.net[inet].nodes.size(); j++) {
+			for (j = 1; j < (int) g_atoms_nlist.net[inet].pins.size(); j++) {
 				if (g_atoms_nlist.net[inet].is_const_gen) {
 					tnode[i].out_edges[j - 1].Tdel = HUGE_NEGATIVE_FLOAT;
 					tnode[i].type = TN_CONSTANT_GEN_SOURCE;
@@ -1272,14 +1272,14 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 				}
 				if (g_atoms_nlist.net[inet].is_global) {
 					assert(
-						logical_block[g_atoms_nlist.net[inet].nodes[j].block].clock_net == inet);
+						logical_block[g_atoms_nlist.net[inet].pins[j].block].clock_net == inet);
 					tnode[i].out_edges[j - 1].to_node =
-						get_tnode_index(logical_block[g_atoms_nlist.net[inet].nodes[j].block].clock_net_tnode);
+						get_tnode_index(logical_block[g_atoms_nlist.net[inet].pins[j].block].clock_net_tnode);
 				} else {
 					assert(
-						logical_block[g_atoms_nlist.net[inet].nodes[j].block].input_net_tnodes[g_atoms_nlist.net[inet].nodes[j].block_port][g_atoms_nlist.net[inet].nodes[j].block_pin] != NULL);
+						logical_block[g_atoms_nlist.net[inet].pins[j].block].input_net_tnodes[g_atoms_nlist.net[inet].pins[j].block_port][g_atoms_nlist.net[inet].pins[j].block_pin] != NULL);
 					tnode[i].out_edges[j - 1].to_node =
-						get_tnode_index(logical_block[g_atoms_nlist.net[inet].nodes[j].block].input_net_tnodes[g_atoms_nlist.net[inet].nodes[j].block_port][g_atoms_nlist.net[inet].nodes[j].block_pin]);
+						get_tnode_index(logical_block[g_atoms_nlist.net[inet].pins[j].block].input_net_tnodes[g_atoms_nlist.net[inet].pins[j].block_port][g_atoms_nlist.net[inet].pins[j].block_pin]);
 				}
 			}
 			assert(tnode[i].num_edges == g_atoms_nlist.net[inet].num_sinks());
@@ -1728,7 +1728,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 	long max_critical_output_paths, max_critical_input_paths;
 	t_pb *pb;
 
-	vector<g_net> & tnets = *timing_nets; 
+	vector<t_vnet> & tnets = *timing_nets; 
 
 #if SLACK_DEFINITION == 'S' || SLACK_DEFINITION == 'T' || SLACK_DEFINITION == 'C' || SLACK_DEFINITION == 'D'
 	update_slack = (boolean)true;
@@ -1763,7 +1763,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 
 	/* Reset slack and criticality */
 	for (inet = 0; inet < num_timing_nets; inet++) {
-		for (ipin = 1; ipin < (int) tnets[inet].nodes.size(); ipin++) {
+		for (ipin = 1; ipin < (int) tnets[inet].pins.size(); ipin++) {
 			slacks->slack[inet][ipin]			   = HUGE_POSITIVE_FLOAT; 
 			slacks->timing_criticality[inet][ipin] = 0.; 
 #ifdef PATH_COUNTING
@@ -2513,7 +2513,7 @@ void print_critical_path(const char *fname) {
 	e_tnode_type type;
 	float total_net_delay, total_logic_delay, Tdel;
 
-	vector<g_net> & tnets = *timing_nets; 
+	vector<t_vnet> & tnets = *timing_nets; 
 
 	critical_path_head = allocate_and_load_critical_path();
 	critical_path_node = critical_path_head;

@@ -976,7 +976,7 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 					success = is_block_optional[cur_pack_pattern_connection->to_block->block_id];
 				} else {
 					success = try_expand_molecule(molecule,
-						g_atoms_nlist.net[inet].nodes[1].block,
+						g_atoms_nlist.net[inet].pins[1].block,
 							cur_pack_pattern_connection->to_block);
 				}
 			} else {
@@ -997,7 +997,7 @@ static boolean try_expand_molecule(INOUTP t_pack_molecule *molecule,
 					success = is_block_optional[cur_pack_pattern_connection->from_block->block_id];
 				} else {
 					success = try_expand_molecule(molecule,
-						g_atoms_nlist.net[inet].nodes[0].block,
+						g_atoms_nlist.net[inet].pins[0].block,
 							cur_pack_pattern_connection->from_block);
 				}
 			}
@@ -1179,7 +1179,7 @@ static int find_new_root_atom_for_chain(INP int block_index, INP t_pack_patterns
 		return block_index;
 	}
 
-	driver_block = g_atoms_nlist.net[driver_net].nodes[0].block;
+	driver_block = g_atoms_nlist.net[driver_net].pins[0].block;
 	if(logical_block[driver_block].packed_molecules != NULL) {
 		/* Driver is used/invalid, so current block is the furthest up the chain, return it */
 		return block_index;

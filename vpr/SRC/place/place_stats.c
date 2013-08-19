@@ -49,14 +49,14 @@ print_relative_pos_distr(void)
 		if (g_clbs_nlist.net[inet].is_global == FALSE)
 		{
 
-			src_x = block[g_clbs_nlist.net[inet].nodes[0].block].x;
-			src_y = block[g_clbs_nlist.net[inet].nodes[0].block].y;
+			src_x = block[g_clbs_nlist.net[inet].pins[0].block].x;
+			src_y = block[g_clbs_nlist.net[inet].pins[0].block].y;
 
-			for (sink_pin = 1; sink_pin < g_clbs_nlist.net[inet].nodes.size();
+			for (sink_pin = 1; sink_pin < g_clbs_nlist.net[inet].pins.size();
 					sink_pin++)
 			{
-				dst_x = block[g_clbs_nlist.net[inet].nodes[sink_pin].block].x;
-				dst_y = block[g_clbs_nlist.net[inet].nodes[sink_pin].block].y;
+				dst_x = block[g_clbs_nlist.net[inet].pins[sink_pin].block].x;
+				dst_y = block[g_clbs_nlist.net[inet].pins[sink_pin].block].y;
 
 				del_x = ABS_DIFF(dst_x, src_x);
 				del_y = ABS_DIFF(dst_y, src_y);

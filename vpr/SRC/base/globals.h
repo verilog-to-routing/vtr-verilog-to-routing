@@ -40,6 +40,9 @@ extern struct s_net *clb_net;
 extern int num_blocks;
 extern struct s_block *block;
 
+/* New external-to-complex block, post-packed netlist*/
+extern t_netlist g_clbs_nlist;
+
 /********************************************************************
  Physical FPGA architecture globals 
  *********************************************************************/
@@ -84,8 +87,10 @@ extern struct s_net *vpack_net;
 extern struct s_logical_block *logical_block;
 extern struct s_subckt *subckt;
 
-extern g_netlist g_atoms_nlist;
-extern g_netlist g_clbs_nlist;
+/* New user netlist information */
+extern t_netlist g_atoms_nlist;
+
+
 
 /* primiary inputs removed from circuit */
 extern struct s_linked_vptr *circuit_p_io_removed;

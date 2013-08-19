@@ -95,7 +95,7 @@ void load_criticalities(t_slack * slacks, float crit_exponent) {
 			continue;
 		if (g_clbs_nlist.net[inet].is_global)
 			continue;
-		for (ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) {
+		for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
 			if (slacks->timing_criticality[inet][ipin] < HUGE_NEGATIVE_FLOAT + 1) {
 				/* We didn't analyze this connection, so give it a timing_place_crit of 0. */
 				timing_place_crit[inet][ipin] = 0.;

@@ -412,13 +412,13 @@ static void print_pb(FILE *fpout, t_pb * pb, int clb_index) {
 							if (pb->parent_pb == NULL) {
 								for (k = 1;
 										k
-										< g_atoms_nlist.net[rr_node[node_index].net_num].nodes.size();
+										< g_atoms_nlist.net[rr_node[node_index].net_num].pins.size();
 										k++) {
 									/* output pads pre-pended with "out:", must remove */
-										if (logical_block[g_atoms_nlist.net[rr_node[node_index].net_num].nodes[k].block].type
+										if (logical_block[g_atoms_nlist.net[rr_node[node_index].net_num].pins[k].block].type
 											== VPACK_OUTPAD
 											&& strcmp(
-											logical_block[g_atoms_nlist.net[rr_node[node_index].net_num].nodes[k].block].name
+											logical_block[g_atoms_nlist.net[rr_node[node_index].net_num].pins[k].block].name
 															+ 4,
 													g_atoms_nlist.net[rr_node[node_index].net_num].name)
 													!= 0) {
@@ -428,7 +428,7 @@ static void print_pb(FILE *fpout, t_pb * pb, int clb_index) {
 												find_fanin_rr_node(pb,
 														pb_type->ports[i].type,
 														node_index),
-													logical_block[g_atoms_nlist.net[rr_node[node_index].net_num].nodes[k].block].name
+													logical_block[g_atoms_nlist.net[rr_node[node_index].net_num].pins[k].block].name
 														+ 4);
 										fprintf(fpout, "\n1 1\n");
 									}
@@ -544,14 +544,14 @@ void output_blif (t_block *clb, int num_clusters, boolean global_clocks,
 		if (logical_block[bnum].type == VPACK_INPAD) {
 			for (i = 1;
 					i
-					< g_atoms_nlist.net[logical_block[bnum].output_nets[0][0]].nodes.size();
+					< g_atoms_nlist.net[logical_block[bnum].output_nets[0][0]].pins.size();
 					i++) {
-					if (logical_block[g_atoms_nlist.net[logical_block[bnum].output_nets[0][0]].nodes[i].block].type
+					if (logical_block[g_atoms_nlist.net[logical_block[bnum].output_nets[0][0]].pins[i].block].type
 						== VPACK_OUTPAD) {
 					fprintf(fpout, ".names ");
 					print_string(logical_block[bnum].name, &column, fpout);
 					print_string(
-						logical_block[g_atoms_nlist.net[logical_block[bnum].output_nets[0][0]].nodes[i].block].name
+						logical_block[g_atoms_nlist.net[logical_block[bnum].output_nets[0][0]].pins[i].block].name
 									+ 4, &column, fpout);
 					fprintf(fpout, "\n1 1\n");
 				}

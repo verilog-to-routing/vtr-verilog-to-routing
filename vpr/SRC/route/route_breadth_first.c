@@ -155,7 +155,7 @@ static boolean breadth_first_route_net(int inet, int itry, float bend_cost) {
 	tptr = NULL;
 	remaining_connections_to_sink = 0;
 
-	for (i = 1; i < g_clbs_nlist.net[inet].nodes.size(); i++) { /* Need n-1 wires to connect n pins */
+	for (i = 1; i < g_clbs_nlist.net[inet].pins.size(); i++) { /* Need n-1 wires to connect n pins */
 		breadth_first_expand_trace_segment(tptr, remaining_connections_to_sink);
 		current = get_heap_head();
 

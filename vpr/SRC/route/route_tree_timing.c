@@ -487,7 +487,7 @@ void update_net_delays_from_route_tree(float *net_delay,
 	unsigned int isink;
 	t_rt_node *sink_rt_node;
 
-	for (isink = 1; isink < g_clbs_nlist.net[inet].nodes.size(); isink++) {
+	for (isink = 1; isink < g_clbs_nlist.net[inet].pins.size(); isink++) {
 		sink_rt_node = rt_node_of_sink[isink];
 		net_delay[isink] = sink_rt_node->Tdel;
 	}

@@ -4161,14 +4161,14 @@ e_power_estimation_method power_method_inherited(
  * Purpose: Checks for correctly grouped XML tag	
  *	       ordering, vpr_throws if incorrect		
  * Note: Used this because there is a				
- *			bug in ezxml_cut in the ezxml library	
+ *			limitation in ezxml_cut in the ezxml library	
  *			which seg faults with incorrectly	
  *			grouped tags		
  */
 static void CheckXMLTagOrder(ezxml_t Parent) {
 
 	int i, num_tags;
-	ezxml_t Cur, Temp;
+	ezxml_t Cur, Trace;
 	char* tag_name;
 	i = num_tags = 0;
 
@@ -4178,15 +4178,15 @@ static void CheckXMLTagOrder(ezxml_t Parent) {
 	while (Cur) {
 		tag_name = my_strdup(Cur->name);
 		num_tags = CountChildren(Parent, tag_name, 0);
-		Temp = Cur->ordered;
+		Trace = Cur->ordered;
 		for (i = 1; i < num_tags; i++) { //Check the next num_tags-1 tags see if grouped
-			if (Temp) {
-				if (strcmp(Temp->name, tag_name)) {
-					vpr_throw(VPR_ERROR_ARCH, arch_file_name, Temp->line,
+			if (Trace) {
+				if (strcmp(Trace->name, tag_name)) {
+					vpr_throw(VPR_ERROR_ARCH, arch_file_name, Trace->line,
 							"XML tags of type '%s' must be specified right after/before each other\n",
 							tag_name);
 				}
-				Temp = Temp->ordered;
+				Trace = Trace->ordered;
 			}
 		}
 		Cur = Cur->sibling; // Go to next tag with a different name on the same level 
@@ -4197,7 +4197,7 @@ static void CheckXMLTagOrder(ezxml_t Parent) {
 /* Date:July 10th, 2013								
  * Author: Daniel Chen								
  * Purpose: Attempts to match a clock_name specified in an 
- *			annotation (Tsetup, Thold, Tc_to_q) with the
+ *			timing annotation (Tsetup, Thold, Tc_to_q) with the
  *			clock_name specified in a flipflop.	Only applies
  *			to flipflop primitives.
  */

@@ -97,7 +97,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 
 	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
 		if (g_clbs_nlist.net[inet].is_global == FALSE) {
-			for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ++ipin)
+			for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin)
 				slacks->timing_criticality[inet][ipin] = init_timing_criticality_val;
 #ifdef PATH_COUNTING
 				slacks->path_criticality[inet][ipin] = init_timing_criticality_val;
@@ -106,7 +106,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			/* Set delay of global signals to zero. Non-global net delays are set by
 			   update_net_delays_from_route_tree() inside timing_driven_route_net(), 
 			   which is only called for non-global nets. */
-			for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ++ipin) {
+			for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
 				net_delay[inet][ipin] = 0.;
 			}
 		}
@@ -275,7 +275,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			   net_delays stay as 0 so that wirelength can be optimized. */
 			
 			for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
-				for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ++ipin) {
+				for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
 					slacks->timing_criticality[inet][ipin] = 0.;
 #ifdef PATH_COUNTING 		
 					slacks->path_criticality[inet][ipin] = 0.; 		
@@ -390,7 +390,7 @@ static int get_max_pins_per_net(void) {
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 		if (g_clbs_nlist.net[inet].is_global == FALSE) {
 			max_pins_per_net = max(max_pins_per_net,
-					(int) g_clbs_nlist.net[inet].nodes.size());
+					(int) g_clbs_nlist.net[inet].pins.size());
 		}
 	}
 
@@ -422,7 +422,7 @@ boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_cr
 	pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
 	free_traceback(inet);
 	
-	for (ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) { 
+	for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) { 
 		if (!slacks) {
 			/* Use dummy criticality of 0. (Doesn't matter what number goes here.) */
 			pin_criticality[ipin] = 0.;
@@ -974,7 +974,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
 	load_net_delay_from_routing(net_delay_check, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-		for (ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) {
+		for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
 			if (net_delay_check[inet][ipin] == 0.) { /* Should be only GLOBAL nets */
 				if (fabs(net_delay[inet][ipin]) > ERROR_TOL) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 

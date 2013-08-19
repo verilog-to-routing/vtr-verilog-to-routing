@@ -63,7 +63,7 @@ void check_route(enum e_route_type route_type, int num_switch,
 
 	max_pins = 0;
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++)
-		max_pins = max(max_pins, (int) g_clbs_nlist.net[inet].nodes.size());
+		max_pins = max(max_pins, (int) g_clbs_nlist.net[inet].pins.size());
 
 	pin_done = (boolean *) my_malloc(max_pins * sizeof(boolean));
 
@@ -74,7 +74,7 @@ void check_route(enum e_route_type route_type, int num_switch,
 		if (g_clbs_nlist.net[inet].is_global || g_clbs_nlist.net[inet].num_sinks() == 0) /* Skip global nets. */
 			continue;
 
-		for (ipin = 0; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++)
+		for (ipin = 0; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++)
 			pin_done[ipin] = FALSE;
 
 		/* Check the SOURCE of the net. */
@@ -141,7 +141,7 @@ void check_route(enum e_route_type route_type, int num_switch,
 				"in check_route: net %d does not end with a SINK.\n", inet);
 		}
 
-		for (ipin = 0; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) {
+		for (ipin = 0; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
 			if (pin_done[ipin] == FALSE) {
 				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 				
 					"in check_route: net %d does not connect to pin %d.\n", inet, ipin);
@@ -176,9 +176,9 @@ static void check_sink(int inode, int inet, boolean * pin_done) {
 
 	for (iblk = 0; iblk < type->capacity; iblk++) {
 		bnum = grid[i][j].blocks[iblk]; /* Hardcoded to one block */
-		for (ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) { /* All net SINKs */
-			if (g_clbs_nlist.net[inet].nodes[ipin].block == bnum) {
-				node_block_pin = g_clbs_nlist.net[inet].nodes[ipin].block_pin;
+		for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) { /* All net SINKs */
+			if (g_clbs_nlist.net[inet].pins[ipin].block == bnum) {
+				node_block_pin = g_clbs_nlist.net[inet].pins[ipin].block_pin;
 				iclass = type->pin_class[node_block_pin];
 				if (iclass == ptc_num) {
 					/* Could connect to same pin class on the same clb more than once.  Only   *
@@ -223,7 +223,7 @@ static void check_source(int inode, int inet) {
 	i = rr_node[inode].xlow;
 	j = rr_node[inode].ylow;
 	ptc_num = rr_node[inode].ptc_num; /* for sinks and sources, ptc_num is class */
-	bnum = g_clbs_nlist.net[inet].nodes[0].block; /* First node_block for net is the source */
+	bnum = g_clbs_nlist.net[inet].pins[0].block; /* First node_block for net is the source */
 	type = grid[i][j].type;
 
 	if (block[bnum].x != i || block[bnum].y != j) {		
@@ -231,7 +231,7 @@ static void check_source(int inode, int inet) {
 				"in check_source: net SOURCE is in wrong location (%d,%d).\n", i, j);
 	}
 
-	node_block_pin = g_clbs_nlist.net[inet].nodes[0].block_pin;
+	node_block_pin = g_clbs_nlist.net[inet].pins[0].block_pin;
 	iclass = type->pin_class[node_block_pin];
 
 	if (ptc_num != iclass) {		

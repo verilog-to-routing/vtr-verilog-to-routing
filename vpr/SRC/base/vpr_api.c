@@ -909,7 +909,7 @@ static t_trace *alloc_and_load_final_routing_trace() {
 
 	t_trace* final_routing_trace = (t_trace*) my_calloc(g_atoms_nlist.net.size(), sizeof(t_trace));
 	for (unsigned int i = 0; i < g_atoms_nlist.net.size(); ++i) {
-		int iblock = logical_block[g_atoms_nlist.net[i].nodes[0].block].clb_index;
+		int iblock = logical_block[g_atoms_nlist.net[i].pins[0].block].clb_index;
 
 		final_routing_trace[i].iblock = iblock;
 		final_routing_trace[i].iswitch = OPEN;
@@ -943,10 +943,10 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 			if (g_atoms_nlist.net[ivpack_net].is_global) {
 				int inet = vpack_to_clb_net_mapping[ivpack_net];
 				if (inet != OPEN) {
-					for (int ipin = 1; ipin < (int) g_clbs_nlist.net[inet].nodes.size(); ++ipin) {
+					for (int ipin = 1; ipin < (int) g_clbs_nlist.net[inet].pins.size(); ++ipin) {
 						t_pb_graph_pin *pb_graph_pin = get_pb_graph_node_pin_from_g_clbs_nlist_net(inet, ipin);
 						t_trace *new_trace = (t_trace*) my_calloc(1, sizeof(t_trace));
-						new_trace->iblock = g_clbs_nlist.net[inet].nodes[ipin].block;
+						new_trace->iblock = g_clbs_nlist.net[inet].pins[ipin].block;
 						new_trace->index = pb_graph_pin->pin_count_in_cluster;
 						new_trace->iswitch = OPEN;
 						new_trace->num_siblings = 0;
@@ -1132,10 +1132,9 @@ void resync_post_route_netlist() {
 				gridy = gridy - grid[gridx][gridy].height_offset;
 
 				int iblock = grid[gridx][gridy].blocks[rr_node[trace->index].z];
-				assert(g_clbs_nlist.net[i].nodes[j].block == iblock);
-				g_clbs_nlist.net[i].nodes[j].block_pin = rr_node[trace->index].ptc_num;
-				//Daniel to-do: take out clb_net
-				clb_net[i].node_block_pin[j] = rr_node[trace->index].ptc_num;
+				assert(g_clbs_nlist.net[i].pins[j].block == iblock);
+				g_clbs_nlist.net[i].pins[j].block_pin = rr_node[trace->index].ptc_num;
+				clb_net[i].node_block_pin[j] = rr_node[trace->index].ptc_num; //Daniel to-do: take out clb_net
 				block[iblock].nets[rr_node[trace->index].ptc_num] = i;
 				j++;
 			} else if (rr_node[trace->index].type == IPIN) {
@@ -1145,11 +1144,10 @@ void resync_post_route_netlist() {
 				gridy = gridy - grid[gridx][gridy].height_offset;
 
 				int iblock = grid[gridx][gridy].blocks[rr_node[trace->index].z];
-				g_clbs_nlist.net[i].nodes[j].block = iblock;
-				g_clbs_nlist.net[i].nodes[j].block_pin = rr_node[trace->index].ptc_num;
-				//Daniel to-do: take out clb_net
-				clb_net[i].node_block[j] = iblock;
-				clb_net[i].node_block_pin[j] = rr_node[trace->index].ptc_num;
+				g_clbs_nlist.net[i].pins[j].block = iblock;
+				g_clbs_nlist.net[i].pins[j].block_pin = rr_node[trace->index].ptc_num;
+				clb_net[i].node_block[j] = iblock; //Daniel to-do: take out clb_net
+				clb_net[i].node_block_pin[j] = rr_node[trace->index].ptc_num; //Daniel to-do: take out clb_net
 				block[iblock].nets[rr_node[trace->index].ptc_num] = i;
 				j++;
 			}
@@ -1221,8 +1219,7 @@ static boolean clay_logical_equivalence_handling(const t_arch *arch) {
 	trace_tail = saved_ext_rr_trace_tail;
 	rr_node = saved_ext_rr_node;
 	num_rr_nodes = num_ext_rr_node;
-	//Daniel to-do: Take out?
-	num_nets = num_ext_nets;
+	num_nets = num_ext_nets; //Daniel to-do: Take out?
 
 	return(success);
 }
@@ -1428,7 +1425,7 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 
 void vpr_print_error(t_vpr_error* vpr_error){
 
-	/* Determine the type of error */
+	/* Determine the type of VPR error, To-do: can use some enum-to-string mechanism */
 	char* error_type = (char *)my_calloc(1000, sizeof(char));
 	switch(vpr_error->type){
 	case VPR_ERROR_UNKNOWN:

@@ -603,7 +603,7 @@ void mark_ends(int inet) {
 	unsigned int ipin;
 	int inode;
 
-	for (ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) {
+	for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
 		inode = net_rr_terminals[inet][ipin];
 		rr_node_route_inf[inode].target_flag++;
 	}
@@ -896,21 +896,21 @@ static void load_route_bb(int bb_factor) {
 	int xmax, ymax, xmin, ymin, x, y;
 
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-		x = block[g_clbs_nlist.net[inet].nodes[0].block].x
-			+ block[g_clbs_nlist.net[inet].nodes[0].block].type->pin_width[g_clbs_nlist.net[inet].nodes[0].block_pin];
-		y = block[g_clbs_nlist.net[inet].nodes[0].block].y
-			+ block[g_clbs_nlist.net[inet].nodes[0].block].type->pin_height[g_clbs_nlist.net[inet].nodes[0].block_pin];
+		x = block[g_clbs_nlist.net[inet].pins[0].block].x
+			+ block[g_clbs_nlist.net[inet].pins[0].block].type->pin_width[g_clbs_nlist.net[inet].pins[0].block_pin];
+		y = block[g_clbs_nlist.net[inet].pins[0].block].y
+			+ block[g_clbs_nlist.net[inet].pins[0].block].type->pin_height[g_clbs_nlist.net[inet].pins[0].block_pin];
 
 		xmin = x;
 		ymin = y;
 		xmax = x;
 		ymax = y;
 
-		for (k = 1; k < g_clbs_nlist.net[inet].nodes.size(); k++) {
-			x = block[g_clbs_nlist.net[inet].nodes[k].block].x
-				+ block[g_clbs_nlist.net[inet].nodes[k].block].type->pin_width[g_clbs_nlist.net[inet].nodes[k].block_pin];
-			y = block[g_clbs_nlist.net[inet].nodes[k].block].y
-				+ block[g_clbs_nlist.net[inet].nodes[k].block].type->pin_height[g_clbs_nlist.net[inet].nodes[k].block_pin];
+		for (k = 1; k < g_clbs_nlist.net[inet].pins.size(); k++) {
+			x = block[g_clbs_nlist.net[inet].pins[k].block].x
+				+ block[g_clbs_nlist.net[inet].pins[k].block].type->pin_width[g_clbs_nlist.net[inet].pins[k].block_pin];
+			y = block[g_clbs_nlist.net[inet].pins[k].block].y
+				+ block[g_clbs_nlist.net[inet].pins[k].block].type->pin_height[g_clbs_nlist.net[inet].pins[k].block_pin];
 
 			if (x < xmin) {
 				xmin = x;
@@ -1224,10 +1224,10 @@ void print_route(char *route_file) {
 			fprintf(fp, "\n\nNet %d (%s): global net connecting:\n\n", inet,
 					g_clbs_nlist.net[inet].name);
 
-			for (ipin = 0; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) {
-				bnum = g_clbs_nlist.net[inet].nodes[ipin].block;
+			for (ipin = 0; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
+				bnum = g_clbs_nlist.net[inet].pins[ipin].block;
 
-				node_block_pin = g_clbs_nlist.net[inet].nodes[ipin].block_pin;
+				node_block_pin = g_clbs_nlist.net[inet].pins[ipin].block_pin;
 				iclass = block[bnum].type->pin_class[node_block_pin];
 
 				fprintf(fp, "Block %s (#%d) at (%d, %d), Pin class %d.\n",

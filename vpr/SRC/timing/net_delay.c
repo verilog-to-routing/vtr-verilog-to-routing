@@ -82,11 +82,11 @@ static float load_rc_tree_C(t_rc_node * rc_node);
 
 static void load_rc_tree_T(t_rc_node * rc_node, float T_arrival);
 
-static void load_one_net_delay(float **net_delay, unsigned int inet, vector<g_net> & nets,
+static void load_one_net_delay(float **net_delay, unsigned int inet, vector<t_vnet> & nets,
 		t_linked_rc_ptr * rr_node_to_rc_node);
 
 static void load_one_constant_net_delay(float **net_delay, unsigned int inet,
-		vector<g_net> & nets, float delay_value);
+		vector<t_vnet> & nets, float delay_value);
 
 static void free_rc_tree(t_rc_node * rc_root,
 		t_rc_node ** rc_node_free_list_ptr,
@@ -102,7 +102,7 @@ static void free_rc_edge_free_list(t_linked_rc_edge * rc_edge_free_list);
 /*************************** Subroutine definitions **************************/
 
 float **
-alloc_net_delay(t_chunk *chunk_list_ptr, vector<g_net> & nets,
+alloc_net_delay(t_chunk *chunk_list_ptr, vector<t_vnet> & nets,
 		unsigned int n_nets){
 
 	/* Allocates space for the net_delay data structure                          *
@@ -135,7 +135,7 @@ void free_net_delay(float **net_delay,
 	free_chunk_memory(chunk_list_ptr);
 }
 
-void load_net_delay_from_routing(float **net_delay, vector<g_net> & nets,
+void load_net_delay_from_routing(float **net_delay, vector<t_vnet> & nets,
 		unsigned int n_nets) {
 
 	/* This routine loads net_delay[0..nets.size()-1][1..num_pins-1].  Each entry   *
@@ -175,7 +175,7 @@ void load_net_delay_from_routing(float **net_delay, vector<g_net> & nets,
 }
 
 void load_constant_net_delay(float **net_delay, float delay_value,
-		vector<g_net> & nets, unsigned int n_nets) {
+		vector<t_vnet> & nets, unsigned int n_nets) {
 
 	/* Loads the net_delay array with delay_value for every source - sink        *
 	 * connection that is not on a global resource, and with 0. for every source *
@@ -436,7 +436,7 @@ static void load_rc_tree_T(t_rc_node * rc_node, float T_arrival) {
 	}
 }
 
-static void load_one_net_delay(float **net_delay, unsigned int inet, vector<g_net> & nets,
+static void load_one_net_delay(float **net_delay, unsigned int inet, vector<t_vnet> & nets,
 		t_linked_rc_ptr * rr_node_to_rc_node) {
 
 	/* Loads the net delay array for net inet.  The rc tree for that net must  *
@@ -447,7 +447,7 @@ static void load_one_net_delay(float **net_delay, unsigned int inet, vector<g_ne
 	t_rc_node *rc_node;
 	t_linked_rc_ptr *linked_rc_ptr, *next_ptr;
 
-	for (ipin = 1; ipin < nets[inet].nodes.size(); ipin++) {
+	for (ipin = 1; ipin < nets[inet].pins.size(); ipin++) {
 
 		inode = net_rr_terminals[inet][ipin];
 
@@ -489,13 +489,13 @@ static void load_one_net_delay(float **net_delay, unsigned int inet, vector<g_ne
 }
 
 static void load_one_constant_net_delay(float **net_delay, unsigned int inet,
-		vector<g_net> & nets, float delay_value) {
+		vector<t_vnet> & nets, float delay_value) {
 
 	/* Sets each entry of the net_delay array for net inet to delay_value.     */
 
 	unsigned int ipin;
 
-	for (ipin = 1; ipin < nets[inet].nodes.size(); ipin++)
+	for (ipin = 1; ipin < nets[inet].pins.size(); ipin++)
 		net_delay[inet][ipin] = delay_value;
 }
 

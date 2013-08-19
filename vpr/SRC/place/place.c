@@ -455,7 +455,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 		if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE) {
 			for (inet = 0; inet < g_clbs_nlist.net.size(); inet++)
-				for (ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++)
+				for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++)
 					timing_place_crit[inet][ipin] = 0; /*dummy crit values */
 
 			comp_td_costs(&timing_cost, &delay_cost); /*first pass gets delay_cost, which is used 
@@ -733,7 +733,7 @@ void try_place(struct s_placer_opts placer_opts,
 		/*need this done since the timing data has not been kept up to date*
 		 *in bounding_box mode */
 		for (inet = 0; inet < g_clbs_nlist.net.size(); inet++)
-			for (ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++)
+			for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++)
 				timing_place_crit[inet][ipin] = 0; /*dummy crit values */
 		comp_td_costs(&timing_cost, &delay_cost); /*computes point_to_point_delay_cost */
 	}
@@ -1736,10 +1736,10 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 
 	delay_source_to_sink = 0.;
 
-	source_block = g_clbs_nlist.net[inet].nodes[0].block;
+	source_block = g_clbs_nlist.net[inet].pins[0].block;
 	source_type = block[source_block].type;
 
-	sink_block = g_clbs_nlist.net[inet].nodes[ipin].block;
+	sink_block = g_clbs_nlist.net[inet].pins[ipin].block;
 	sink_type = block[sink_block].type;
 
 	assert(source_type != NULL);
@@ -1801,7 +1801,7 @@ static void update_td_cost(void) {
 
 				driven_by_moved_block = FALSE;
 				for (iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++)
-				{	if (g_clbs_nlist.net[inet].nodes[0].block == blocks_affected.moved_blocks[iblk2].block_num)
+				{	if (g_clbs_nlist.net[inet].pins[0].block == blocks_affected.moved_blocks[iblk2].block_num)
 						driven_by_moved_block = TRUE;
 				}
 				
@@ -1816,7 +1816,7 @@ static void update_td_cost(void) {
 				}
 			} else { /* This net is being driven by a moved block, recompute */
 				/* All point to point connections on this net. */
-				for (ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) {
+				for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
 					point_to_point_delay_cost[inet][ipin] =
 							temp_point_to_point_delay_cost[inet][ipin];
 					temp_point_to_point_delay_cost[inet][ipin] = -1;
@@ -1868,7 +1868,7 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 				 * delta_timing_cost value.                                            */
 				driven_by_moved_block = FALSE;
 				for (iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++)
-				{	if (g_clbs_nlist.net[inet].nodes[0].block == blocks_affected.moved_blocks[iblk2].block_num)
+				{	if (g_clbs_nlist.net[inet].pins[0].block == blocks_affected.moved_blocks[iblk2].block_num)
 						driven_by_moved_block = TRUE;
 				}
 				
@@ -1885,7 +1885,7 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 				}
 			} else { /* This net is being driven by a moved block, recompute */
 				/* All point to point connections on this net. */
-				for (ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) {
+				for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
 					temp_delay = comp_td_point_to_point_delay(inet, ipin);
 					temp_point_to_point_delay_cost[inet][ipin] = temp_delay;
 
@@ -1920,7 +1920,7 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) { /* For each net ... */
 		if (g_clbs_nlist.net[inet].is_global == FALSE) { /* Do only if not global. */
 
-			for (ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) {
+			for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
 
 				temp_delay_cost = comp_td_point_to_point_delay(inet, ipin);
 				temp_timing_cost = temp_delay_cost * timing_place_crit[inet][ipin];
@@ -2107,7 +2107,7 @@ static void alloc_and_load_placement_structs(
 			temp_point_to_point_timing_cost[inet]--;
 		}
 		for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-			for (ipin = 1; ipin < g_clbs_nlist.net[inet].nodes.size(); ipin++) {
+			for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
 				point_to_point_delay_cost[inet][ipin] = 0;
 				temp_point_to_point_delay_cost[inet][ipin] = 0;
 			}
@@ -2187,10 +2187,10 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 	int xmin_edge, xmax_edge, ymin_edge, ymax_edge;
 	unsigned int ipin, n_pins;
 
-	n_pins = g_clbs_nlist.net[inet].nodes.size();
+	n_pins = g_clbs_nlist.net[inet].pins.size();
 	
-	bnum = g_clbs_nlist.net[inet].nodes[0].block;
-	pnum = g_clbs_nlist.net[inet].nodes[0].block_pin;
+	bnum = g_clbs_nlist.net[inet].pins[0].block;
+	pnum = g_clbs_nlist.net[inet].pins[0].block_pin;
 
 	x = block[bnum].x + block[bnum].type->pin_width[pnum];
 	y = block[bnum].y + block[bnum].type->pin_height[pnum];
@@ -2208,8 +2208,8 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 	ymax_edge = 1;
 
 	for (ipin = 1; ipin < n_pins; ipin++) {
-		bnum = g_clbs_nlist.net[inet].nodes[ipin].block;
-		pnum = g_clbs_nlist.net[inet].nodes[ipin].block_pin;
+		bnum = g_clbs_nlist.net[inet].pins[ipin].block;
+		pnum = g_clbs_nlist.net[inet].pins[ipin].block_pin;
 		x = block[bnum].x + block[bnum].type->pin_width[pnum];
 		y = block[bnum].y + block[bnum].type->pin_height[pnum];
 
@@ -2273,15 +2273,15 @@ static double get_net_wirelength_estimate(int inet, struct s_bb *bbptr) {
 	/* Get the expected "crossing count" of a net, based on its number *
 	 * of pins.  Extrapolate for very large nets.                      */
 
-	if (((g_clbs_nlist.net[inet].nodes.size()) > 50)
-			&& ((g_clbs_nlist.net[inet].nodes.size()) < 85)) {
-		crossing = 2.7933 + 0.02616 * ((g_clbs_nlist.net[inet].nodes.size()) - 50);
-	} else if ((g_clbs_nlist.net[inet].nodes.size()) >= 85) {
-		crossing = 2.7933 + 0.011 * (g_clbs_nlist.net[inet].nodes.size())
-				- 0.0000018 * (g_clbs_nlist.net[inet].nodes.size())
-					* (g_clbs_nlist.net[inet].nodes.size());
+	if (((g_clbs_nlist.net[inet].pins.size()) > 50)
+			&& ((g_clbs_nlist.net[inet].pins.size()) < 85)) {
+		crossing = 2.7933 + 0.02616 * ((g_clbs_nlist.net[inet].pins.size()) - 50);
+	} else if ((g_clbs_nlist.net[inet].pins.size()) >= 85) {
+		crossing = 2.7933 + 0.011 * (g_clbs_nlist.net[inet].pins.size())
+				- 0.0000018 * (g_clbs_nlist.net[inet].pins.size())
+					* (g_clbs_nlist.net[inet].pins.size());
 	} else {
-		crossing = cross_count[g_clbs_nlist.net[inet].nodes.size() - 1];
+		crossing = cross_count[g_clbs_nlist.net[inet].pins.size() - 1];
 	}
 
 	/* Could insert a check for xmin == xmax.  In that case, assume  *
@@ -2308,11 +2308,11 @@ static float get_net_cost(int inet, struct s_bb *bbptr) {
 	/* Get the expected "crossing count" of a net, based on its number *
 	 * of pins.  Extrapolate for very large nets.                      */
 
-	if ((g_clbs_nlist.net[inet].nodes.size()) > 50) {
-		crossing = 2.7933 + 0.02616 * ((g_clbs_nlist.net[inet].nodes.size()) - 50);
+	if ((g_clbs_nlist.net[inet].pins.size()) > 50) {
+		crossing = 2.7933 + 0.02616 * ((g_clbs_nlist.net[inet].pins.size()) - 50);
 		/*    crossing = 3.0;    Old value  */
 	} else {
-		crossing = cross_count[(g_clbs_nlist.net[inet].nodes.size()) - 1];
+		crossing = cross_count[(g_clbs_nlist.net[inet].pins.size()) - 1];
 	}
 
 	/* Could insert a check for xmin == xmax.  In that case, assume  *
@@ -2345,8 +2345,8 @@ static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new) {
 	int bnum, pnum;
 	unsigned int k;
 
-	bnum = g_clbs_nlist.net[inet].nodes[0].block;
-	pnum = g_clbs_nlist.net[inet].nodes[0].block_pin;
+	bnum = g_clbs_nlist.net[inet].pins[0].block;
+	pnum = g_clbs_nlist.net[inet].pins[0].block_pin;
 	x = block[bnum].x + block[bnum].type->pin_width[pnum];
 	y = block[bnum].y + block[bnum].type->pin_height[pnum];
 	
@@ -2355,9 +2355,9 @@ static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new) {
 	xmax = x;
 	ymax = y;
 
-	for (k = 1; k < g_clbs_nlist.net[inet].nodes.size(); k++) {
-		bnum = g_clbs_nlist.net[inet].nodes[k].block;
-		pnum = g_clbs_nlist.net[inet].nodes[k].block_pin;
+	for (k = 1; k < g_clbs_nlist.net[inet].pins.size(); k++) {
+		bnum = g_clbs_nlist.net[inet].pins[k].block;
+		pnum = g_clbs_nlist.net[inet].pins[k].block_pin;
 		x = block[bnum].x + block[bnum].type->pin_width[pnum];
 		y = block[bnum].y + block[bnum].type->pin_height[pnum];
 

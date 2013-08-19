@@ -109,11 +109,11 @@ static void restore_original_device(void);
 
 static void alloc_and_assign_internal_structures(struct s_net **original_net,
 		struct s_block **original_block, int *original_num_nets,
-		int *original_num_blocks, vector<g_net> & original_vnet);
+		int *original_num_blocks, vector<t_vnet> & original_vnet);
 
 static void free_and_reset_internal_structures(struct s_net *original_net,
 		struct s_block *original_block, int original_num_nets,
-		int original_num_blocks, vector<g_net> & original_vnet);
+		int original_num_blocks, vector<t_vnet> & original_vnet);
 
 static void setup_chan_width(struct s_router_opts router_opts,
 		t_chan_width_dist chan_width_dist);
@@ -253,9 +253,9 @@ static void alloc_vnet(){
 		g_clbs_nlist.net[i].is_global = FALSE;
 		strcpy(g_clbs_nlist.net[NET_USED].name, "TEMP_NET");
 	
-		g_clbs_nlist.net[i].nodes.resize(BLOCK_COUNT);
-		g_clbs_nlist.net[i].nodes[NET_USED_SOURCE_BLOCK].block = NET_USED_SOURCE_BLOCK;
-		g_clbs_nlist.net[i].nodes[NET_USED_SINK_BLOCK].block = NET_USED_SINK_BLOCK;
+		g_clbs_nlist.net[i].pins.resize(BLOCK_COUNT);
+		g_clbs_nlist.net[i].pins[NET_USED_SOURCE_BLOCK].block = NET_USED_SOURCE_BLOCK;
+		g_clbs_nlist.net[i].pins[NET_USED_SINK_BLOCK].block = NET_USED_SINK_BLOCK;
 
 		/*the values for nodes[].block_pin are assigned in assign_blocks_and_route_net */
 	}
@@ -378,7 +378,7 @@ static void reset_placement(void) {
 /**************************************/
 static void alloc_and_assign_internal_structures(struct s_net **original_net,
 		struct s_block **original_block, int *original_num_nets,
-		int *original_num_blocks, vector<g_net> & original_vnet) {
+		int *original_num_blocks, vector<t_vnet> & original_vnet) {
 	/*allocate new data structures to hold net, and block info */
 
 	*original_net = clb_net;
@@ -404,7 +404,7 @@ static void alloc_and_assign_internal_structures(struct s_net **original_net,
 /**************************************/
 static void free_and_reset_internal_structures(struct s_net *original_net,
 		struct s_block *original_block, int original_num_nets,
-		int original_num_blocks, vector<g_net> & original_vnet) {
+		int original_num_blocks, vector<t_vnet> & original_vnet) {
 	/*reset gloabal data structures to the state that they were in before these */
 	/*lookup computation routines were called */
 
@@ -560,9 +560,9 @@ static void assign_locations(t_type_ptr source_type, int source_x_loc,
 	clb_net[NET_USED].node_block_pin[NET_USED_SINK_BLOCK] = get_first_pin(
 			RECEIVER, block[SINK_BLOCK].type);
 
-	g_clbs_nlist.net[NET_USED].nodes[NET_USED_SOURCE_BLOCK].block_pin = get_first_pin(
+	g_clbs_nlist.net[NET_USED].pins[NET_USED_SOURCE_BLOCK].block_pin = get_first_pin(
 			DRIVER, block[SOURCE_BLOCK].type);
-	g_clbs_nlist.net[NET_USED].nodes[NET_USED_SINK_BLOCK].block_pin = get_first_pin(
+	g_clbs_nlist.net[NET_USED].pins[NET_USED_SINK_BLOCK].block_pin = get_first_pin(
 			RECEIVER, block[SOURCE_BLOCK].type);
 
 	grid[source_x_loc][source_y_loc].usage += 1;
@@ -1041,7 +1041,7 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 	static int original_num_nets;
 	static int original_num_blocks;
 	static int longest_length;
-	vector<g_net> original_vnet;
+	vector<t_vnet> original_vnet;
 
 	load_simplified_device();
 

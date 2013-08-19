@@ -464,7 +464,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, in
 		/* Determine if the sinks of the net are all contained in the logic block, if yes, then the net does not need to route out of the logic block
 		so the external sink can be removed
 		*/
-		if(lb_nets[ipos].terminals.size() == g_atoms_nlist.net[inet].nodes.size()) {
+		if(lb_nets[ipos].terminals.size() == g_atoms_nlist.net[inet].pins.size()) {
 			assert(lb_nets[ipos].terminals[1] == get_lb_type_rr_graph_ext_source_index(lb_type));		
 			lb_nets[ipos].terminals[1] = pb_graph_pin->pin_count_in_cluster;
 		} else {

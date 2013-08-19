@@ -69,10 +69,10 @@ void print_netlist(char *foutput, char *net_file) {
 		fprintf(fp, "\n%d\t%s\t", i, g_clbs_nlist.net[i].name);
 		if (strlen(g_clbs_nlist.net[i].name) < 8)
 			fprintf(fp, "\t"); /* Name field is 16 chars wide */
-		fprintf(fp, "%d", (int) g_clbs_nlist.net[i].nodes.size());
-		for (j = 0; j < g_clbs_nlist.net[i].nodes.size(); j++)
-			fprintf(fp, "\t(%4d,%4d)", g_clbs_nlist.net[i].nodes[j].block,
-				g_clbs_nlist.net[i].nodes[j].block_pin);
+		fprintf(fp, "%d", (int) g_clbs_nlist.net[i].pins.size());
+		for (j = 0; j < g_clbs_nlist.net[i].pins.size(); j++)
+			fprintf(fp, "\t(%4d,%4d)", g_clbs_nlist.net[i].pins[j].block,
+				g_clbs_nlist.net[i].pins[j].block_pin);
 	}
 
 	fprintf(fp, "\nBlock\tName\t\tType\tPin Connections\n\n");
