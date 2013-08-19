@@ -2043,7 +2043,7 @@ register_1bit sync_pcs_up( reg_d, clk, resetn,reg_en, out_of_sync);
 
 wire wren1;
 assign wren1 = 1'b0;
-wire [13:0] next_pc_wire;
+wire [31:0] next_pc_wire;
 assign next_pc_wire = next_pc [13:0];
 
 dual_port_ram imem_replace(
@@ -2236,7 +2236,7 @@ assign will_be_wren1 = d_write&(dnot_address);
 wire [31:0] dont_care;
 
 
-wire [`DM_ADDRESSWIDTH-2:0] memaddr_wrd;
+wire [31:0] memaddr_wrd;
 
 
 assign memaddr_wrd = d_address[`DM_ADDRESSWIDTH:2];
