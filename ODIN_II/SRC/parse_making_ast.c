@@ -876,7 +876,6 @@ ast_node_t *newModuleParameter(char* id, ast_node_t *expression, int line_number
 	ast_node_t* new_node = create_node_w_type(MODULE_PARAMETER, line_number, current_parse_file);
 	if (id != NULL)
 	{
-		error_message(PARSE_ERROR, line_number, current_parse_file, "Specifying parameters by name not currently supported!\n");
 		symbol_node = newSymbolNode(id, line_number);
 	}
 	else
@@ -962,7 +961,7 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 	{
 		// which doesn't exist in ast_modules yet
 		long sc_spot;
-		if ((sc_spot = sc_lookup_string(module_names_to_idx, module_ref_name)) == -1)
+		if ((sc_spot = sc_lookup_string(module_names_to_idx, module_param_name)) == -1)
 		{
 			// then add it, but set it to the symbol_node, because the 
 			// module in question may not have been parsed yet

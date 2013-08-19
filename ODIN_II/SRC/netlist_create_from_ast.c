@@ -2056,7 +2056,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 				nnet_t *output_net = (nnet_t*)output_nets_sc->data[sc_spot_output];
 				nnet_t *input_new_net = (nnet_t*)output_nets_sc->data[sc_spot_input_new];
 				if(output_net->driver_pin && output_net->driver_pin->node){
-					if(output_net->driver_pin->node->type == FF_NODE && input_new_net->has_initial_value){
+					if(output_net->driver_pin->node->type == FF_NODE && input_new_net && input_new_net->has_initial_value){
 						output_net->driver_pin->node->has_initial_value = input_new_net->has_initial_value;
 						output_net->driver_pin->node->initial_value = input_new_net->initial_value;
 					}
