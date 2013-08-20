@@ -157,12 +157,10 @@ struct t_intra_lb_net {
 	int atom_net_index;					/* index of atomic net this intra_lb_net represents */
 	vector<int> terminals;				/* endpoints of the intra_lb_net, 0th position is the source, all others are sinks */
 	t_lb_trace *rt_tree;				/* Route tree head */
-	t_lb_trace *saved_rt_tree;			/* Saved route tree head */
 	
 	t_intra_lb_net() {
 		atom_net_index = OPEN;
 		rt_tree = NULL;
-		saved_rt_tree = NULL;
 	}
 };
 

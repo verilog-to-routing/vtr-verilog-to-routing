@@ -28,6 +28,7 @@ using namespace std;
 #include "cluster_placement.h"
 #include "ReadOptions.h"
 #include "pack_types.h"
+#include "cluster_router.h"
 
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*/
 
@@ -160,16 +161,16 @@ static enum e_block_pack_status try_pack_molecule(
 		INOUTP t_cluster_placement_stats *cluster_placement_stats_ptr,
 		INP t_pack_molecule *molecule, INOUTP t_pb_graph_node **primitives_list,
 		INOUTP t_pb * pb, INP int max_models, INP int max_cluster_size,
-		INP int clb_index, INP int max_nets_in_pb_type, INP int detailed_routing_stage);
+		INP int clb_index, INP int max_nets_in_pb_type, INP int detailed_routing_stage, INOUTP t_lb_router_data *router_data);
 static enum e_block_pack_status try_place_logical_block_rec(
 		INP t_pb_graph_node *pb_graph_node, INP int ilogical_block,
 		INP t_pb *cb, OUTP t_pb **parent, INP int max_models,
 		INP int max_cluster_size, INP int clb_index,
 		INP int max_nets_in_pb_type,
 		INP t_cluster_placement_stats *cluster_placement_stats_ptr,
-		INP boolean is_root_of_chain, INP t_pb_graph_pin *chain_root_pin);
+		INP boolean is_root_of_chain, INP t_pb_graph_pin *chain_root_pin, INOUTP t_lb_router_data *router_data);
 static void revert_place_logical_block(INP int ilogical_block,
-		INP int max_models);
+		INP int max_models, INOUTP t_lb_router_data *router_data);
 
 static void update_connection_gain_values(int inet, int clustered_block,
 		t_pb * cur_pb,
@@ -202,7 +203,7 @@ static void start_new_cluster(
 		INP t_pack_molecule *molecule, INP float aspect,
 		INOUTP int *num_used_instances_type, INOUTP int *num_instances_type,
 		INP int num_models, INP int max_cluster_size,
-		INP int max_nets_in_pb_type, INP int detailed_routing_stage);
+		INP int max_nets_in_pb_type, INP vector<t_lb_type_rr_node> *lb_type_rr_graphs, OUTP t_lb_router_data **router_data, INP int detailed_routing_stage);
 
 static t_pack_molecule* get_highest_gain_molecule(
 		INP enum e_packer_algorithm packer_algorithm, INOUTP t_pb *cur_pb,
@@ -240,7 +241,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		float intra_cluster_net_delay, float inter_cluster_net_delay,
 		float aspect, boolean allow_unrelated_clustering,
 		boolean allow_early_exit, boolean connection_driven,
-		enum e_packer_algorithm packer_algorithm, t_timing_inf timing_inf) {
+		enum e_packer_algorithm packer_algorithm, t_timing_inf timing_inf, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
 
 	/* Does the actual work of clustering multiple netlist blocks *
 	 * into clusters.                                                  */
@@ -269,6 +270,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	t_pb_graph_node **primitives_list;
 	t_block *clb;
 	t_slack * slacks = NULL;
+	t_lb_router_data *router_data = NULL;
 	t_pack_molecule *istart, *next_molecule, *prev_molecule, *cur_molecule;
 	
 #ifdef PATH_COUNTING
@@ -448,7 +450,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			start_new_cluster(cluster_placement_stats, primitives_list, arch,
 					&clb[num_clb], num_clb, istart, aspect, num_used_instances_type,
 					num_instances_type, num_models, max_cluster_size,
-					max_nets_in_pb_type, detailed_routing_stage);
+					max_nets_in_pb_type, lb_type_rr_graphs, &router_data, detailed_routing_stage);
 			vpr_printf_info("Complex block %d: %s, type: %s\n", 
 					num_clb, clb[num_clb].name, clb[num_clb].type->name);
 			vpr_printf_info("\t");
@@ -474,7 +476,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				block_pack_status = try_pack_molecule(
 						cur_cluster_placement_stats_ptr, next_molecule,
 						primitives_list, clb[num_clb - 1].pb, num_models,
-						max_cluster_size, num_clb - 1, max_nets_in_pb_type, detailed_routing_stage);
+						max_cluster_size, num_clb - 1, max_nets_in_pb_type, detailed_routing_stage, router_data);
 				prev_molecule = next_molecule;
 				if (block_pack_status != BLK_PASSED) {
 					if (next_molecule != NULL) {
@@ -532,6 +534,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			vpr_printf_direct("\n");
 			if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
 				is_cluster_legal = try_breadth_first_route_cluster();
+#if 0
+				try_intra_lb_route(router_data);
+#endif
 				if (is_cluster_legal == TRUE) {
 					vpr_printf_info("Passed route at end.\n");
 				} else {
@@ -572,6 +577,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		}
 	}
 
+	free_router_data(router_data);
+	router_data = NULL;
 	free_cluster_legality_checker();
 
 	alloc_and_load_cluster_info(num_clb, clb);
@@ -1180,7 +1187,7 @@ static enum e_block_pack_status try_pack_molecule(
 		INOUTP t_cluster_placement_stats *cluster_placement_stats_ptr,
 		INP t_pack_molecule *molecule, INOUTP t_pb_graph_node **primitives_list,
 		INOUTP t_pb * pb, INP int max_models, INP int max_cluster_size,
-		INP int clb_index, INP int max_nets_in_pb_type, INP int detailed_routing_stage) {
+		INP int clb_index, INP int max_nets_in_pb_type, INP int detailed_routing_stage, INOUTP t_lb_router_data *router_data) {
 	int molecule_size, failed_location;
 	int i;
 	enum e_block_pack_status block_pack_status;
@@ -1221,7 +1228,7 @@ static enum e_block_pack_status try_pack_molecule(
 							primitives_list[i],
 							molecule->logical_block_ptrs[i]->index, pb, &parent,
 							max_models, max_cluster_size, clb_index,
-							max_nets_in_pb_type, cluster_placement_stats_ptr, is_root_of_chain, chain_root_pin);
+							max_nets_in_pb_type, cluster_placement_stats_ptr, is_root_of_chain, chain_root_pin, router_data);
 				}
 			}
 			if (block_pack_status == BLK_PASSED) {
@@ -1237,6 +1244,11 @@ static enum e_block_pack_status try_pack_molecule(
 					Skip routing if heuristic is to route at the end of packing complex block
 				*/
 				setup_intracluster_routing_for_molecule(molecule, primitives_list);
+#if 0
+				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM) {
+					try_intra_lb_route(router_data);
+				}
+#endif
 				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && try_breadth_first_route_cluster() == FALSE) {
 					/* Cannot pack */
 					block_pack_status = BLK_FAILED_ROUTE;
@@ -1276,7 +1288,7 @@ static enum e_block_pack_status try_pack_molecule(
 					if (molecule->logical_block_ptrs[i] != NULL) {
 						revert_place_logical_block(
 								molecule->logical_block_ptrs[i]->index,
-								max_models);
+								max_models, router_data);
 					}
 				}
 				restore_routing_cluster();
@@ -1300,7 +1312,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		INP int max_cluster_size, INP int clb_index,
 		INP int max_nets_in_pb_type,
 		INP t_cluster_placement_stats *cluster_placement_stats_ptr,
-		INP boolean is_root_of_chain, INP t_pb_graph_pin *chain_root_pin) {
+		INP boolean is_root_of_chain, INP t_pb_graph_pin *chain_root_pin, INOUTP t_lb_router_data *router_data) {
 	int i, j;
 	boolean is_primitive;
 	enum e_block_pack_status block_pack_status;
@@ -1320,7 +1332,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		block_pack_status = try_place_logical_block_rec(
 				pb_graph_node->parent_pb_graph_node, ilogical_block, cb,
 				&my_parent, max_models, max_cluster_size, clb_index,
-				max_nets_in_pb_type, cluster_placement_stats_ptr, is_root_of_chain, chain_root_pin);
+				max_nets_in_pb_type, cluster_placement_stats_ptr, is_root_of_chain, chain_root_pin, router_data);
 		parent_pb = my_parent;
 	} else {
 		parent_pb = cb;
@@ -1332,6 +1344,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		parent_pb->logical_block = OPEN;
 		parent_pb->name = my_strdup(logical_block[ilogical_block].name);
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
+		set_reset_pb_modes(router_data, parent_pb, TRUE);
 		set_pb_graph_mode(parent_pb->pb_graph_node, 0, 0); /* TODO: default mode is to use mode 0, document this! */
 		set_pb_graph_mode(parent_pb->pb_graph_node, parent_pb->mode, 1);
 		parent_pb->child_pbs =
@@ -1387,6 +1400,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		pb->logical_block = ilogical_block;
 		logical_block[ilogical_block].clb_index = clb_index;
 		logical_block[ilogical_block].pb = pb;
+		add_atom_as_target(router_data, ilogical_block);
 
 		if (!primitive_feasible(ilogical_block, pb)) {
 			/* failed location feasibility check, revert pack */
@@ -1411,7 +1425,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 
 /* Revert trial logical block iblock and free up memory space accordingly 
  */
-static void revert_place_logical_block(INP int iblock, INP int max_models) {
+static void revert_place_logical_block(INP int iblock, INP int max_models, INOUTP t_lb_router_data *router_data) {
 	t_pb *pb, *next;
 
 	pb = logical_block[iblock].pb;
@@ -1435,6 +1449,7 @@ static void revert_place_logical_block(INP int iblock, INP int max_models) {
 			
 			if (pb->child_pbs != NULL && pb->pb_stats != NULL
 					&& pb->pb_stats->num_child_blocks_in_pb == 0) {
+				set_reset_pb_modes(router_data, pb, FALSE);
 				set_pb_graph_mode(pb->pb_graph_node, pb->mode, 0); /* default mode is to use mode 1 */
 				set_pb_graph_mode(pb->pb_graph_node, 0, 1);
 				if (next != NULL) {
@@ -1887,7 +1902,7 @@ static void start_new_cluster(
 		INP t_pack_molecule *molecule, INP float aspect,
 		INOUTP int *num_used_instances_type, INOUTP int *num_instances_type,
 		INP int num_models, INP int max_cluster_size,
-		INP int max_nets_in_pb_type, INP int detailed_routing_stage) {
+		INP int max_nets_in_pb_type, INP vector<t_lb_type_rr_node> *lb_type_rr_graphs, OUTP t_lb_router_data **router_data, INP int detailed_routing_stage) {
 	/* Given a starting seed block, start_new_cluster determines the next cluster type to use 
 	 It expands the FPGA if it cannot find a legal cluster for the logical block
 	 */
@@ -1922,6 +1937,7 @@ static void start_new_cluster(
 		for (i = 0; i < num_types; i++) {
 			if (num_used_instances_type[i] < num_instances_type[i]) {
 				new_cluster->type = &type_descriptors[i];
+				*router_data = alloc_and_load_router_data(&lb_type_rr_graphs[i]);
 				if (new_cluster->type == EMPTY_TYPE) {
 					continue;
 				}
@@ -1939,15 +1955,17 @@ static void start_new_cluster(
 							== try_pack_molecule(&cluster_placement_stats[i],
 									molecule, primitives_list, new_cluster->pb,
 									num_models, max_cluster_size, clb_index,
-									max_nets_in_pb_type, detailed_routing_stage));
+									max_nets_in_pb_type, detailed_routing_stage, *router_data));
 				}
 				if (success) {
 					/* TODO: For now, just grab any working cluster, in the future, heuristic needed to grab best complex block based on supply and demand */
 					break;
 				} else {
+					free_router_data(*router_data);
 					free_legalizer_for_cluster(new_cluster, TRUE);
 					free_pb_stats(new_cluster->pb);
 					free(new_cluster->pb);
+					*router_data = NULL;
 				}
 				count++;
 			}

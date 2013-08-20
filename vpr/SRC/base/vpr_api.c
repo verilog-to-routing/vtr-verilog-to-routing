@@ -403,7 +403,7 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 	}
 
 	try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models,
-			vpr_setup.library_models, vpr_setup.Timing, inter_cluster_delay);
+			vpr_setup.library_models, vpr_setup.Timing, inter_cluster_delay, vpr_setup.PackerRRGraph);
 
 	clock_t end = clock();
 #ifdef CLOCKS_PER_SEC

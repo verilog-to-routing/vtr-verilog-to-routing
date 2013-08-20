@@ -9,6 +9,7 @@ using namespace std;
 #include "vpr_types.h"
 #include "globals.h"
 #include "prepack.h"
+#include "pack_types.h"
 #include "pack.h"
 #include "read_blif.h"
 #include "cluster.h"
@@ -21,7 +22,7 @@ using namespace std;
 static boolean *alloc_and_load_is_clock(boolean global_clocks);
 
 void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
-		INP t_model *user_models, INP t_model *library_models, t_timing_inf timing_inf, float interc_delay) {
+		INP t_model *user_models, INP t_model *library_models, t_timing_inf timing_inf, float interc_delay, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
 	boolean *is_clock;
 	int num_models;
 	t_model *cur_model;
@@ -82,7 +83,8 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 				packer_opts->inter_cluster_net_delay, packer_opts->aspect,
 				packer_opts->allow_unrelated_clustering,
 				packer_opts->allow_early_exit, packer_opts->connection_driven,
-				packer_opts->packer_algorithm, timing_inf);
+				packer_opts->packer_algorithm, timing_inf,
+				lb_type_rr_graphs);
 	} else {
 		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, 
 				"Skip clustering no longer supported.\n");

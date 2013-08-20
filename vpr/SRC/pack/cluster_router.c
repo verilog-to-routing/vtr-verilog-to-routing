@@ -122,6 +122,7 @@ void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom) {
 				}
 			}
 		}
+		model_ports = model_ports->next;
 	}
 
 	/* Add outputs to route tree sources/targets */	
@@ -134,6 +135,7 @@ void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom) {
 				add_pin_to_rt_terminals(router_data, iatom, iport, ipin, model_ports);
 			}
 		}
+		model_ports = model_ports->next;
 	}
 
 	/* Add clock to route tree sources/targets */	
@@ -150,6 +152,7 @@ void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom) {
 				}
 			}
 		}
+		model_ports = model_ports->next;
 	}
 }
 
@@ -238,51 +241,28 @@ void set_reset_pb_modes(INOUTP t_lb_router_data *router_data, INP t_pb *pb, INP 
 		}
 	}
 
-	/* Output pin modes are based on parent pb, so set children to use new mode */
-	for(int ichild_type = 0; ichild_type < pb_type->modes[mode].num_pb_type_children; ichild_type++) {
-		for(int ichild = 0; ichild < pb_type->modes[mode].pb_type_children[ichild_type].num_pb; ichild++) {
-			t_pb_graph_node *child_pb_graph_node = &pb_graph_node->child_pb_graph_nodes[mode][ichild_type][ichild];
-			for(int iport = 0; iport < child_pb_graph_node->num_output_ports; iport++) {
-				for(int ipin = 0; ipin < child_pb_graph_node->num_output_pins[iport]; ipin++) {
-					inode = child_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
-					router_data->lb_rr_node_stats[inode].mode = (set == TRUE) ? mode : 0;
+	/* Output pin modes are based on parent pb, so set children to use new mode 
+	   Output pin of top-level logic block is also set to mode 0
+	*/
+	if(pb_type->num_modes != 0) {
+		for(int ichild_type = 0; ichild_type < pb_type->modes[mode].num_pb_type_children; ichild_type++) {
+			for(int ichild = 0; ichild < pb_type->modes[mode].pb_type_children[ichild_type].num_pb; ichild++) {
+				t_pb_graph_node *child_pb_graph_node = &pb_graph_node->child_pb_graph_nodes[mode][ichild_type][ichild];
+				for(int iport = 0; iport < child_pb_graph_node->num_output_ports; iport++) {
+					for(int ipin = 0; ipin < child_pb_graph_node->num_output_pins[iport]; ipin++) {
+						inode = child_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
+						router_data->lb_rr_node_stats[inode].mode = (set == TRUE) ? mode : 0;
+					}
 				}
 			}
 		}
 	}
 }
 
-/* Save current route solution 
-   Requires that current route solution is correct
-*/
-void save_current_route(INOUTP t_lb_router_data *router_data) {
-	assert(router_data->is_routed == TRUE);
-	vector<t_intra_lb_net> &lb_nets = *router_data->intra_lb_nets;
-	for(unsigned int inet = 0; inet < lb_nets.size(); inet++) {
-		free_lb_trace(lb_nets[inet].saved_rt_tree);
-		lb_nets[inet].saved_rt_tree = (*router_data->intra_lb_nets)[inet].rt_tree;
-		lb_nets[inet].rt_tree = NULL;
-	}	
-}
-
-/* Restore previous route solution 
-   Assumes previous route solution is correct
-*/
-void restore_previous_route(INOUTP t_lb_router_data *router_data) {
-	vector<t_intra_lb_net> &lb_nets = *router_data->intra_lb_nets;
-	router_data->is_routed = TRUE;
-	for(unsigned int inet = 0; inet < lb_nets.size(); inet++) {
-		free_lb_trace(lb_nets[inet].rt_tree);
-		lb_nets[inet].rt_tree = (*router_data->intra_lb_nets)[inet].saved_rt_tree;
-		lb_nets[inet].saved_rt_tree = NULL;
-	}	
-}
-
-
 /* Attempt to route routing driver/targets on the current architecture 
    Follows pathfinder negotiated congestion algorithm
 */
-boolean try_route(INOUTP t_lb_router_data *router_data) {
+boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 	boolean is_routed = FALSE;
@@ -353,6 +333,7 @@ boolean try_route(INOUTP t_lb_router_data *router_data) {
 
 
 	delete [] node_traceback;
+	printf("jedit is_routed %d\n", (int)is_routed);
 	return is_routed;
 }
 
