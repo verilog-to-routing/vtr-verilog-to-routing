@@ -80,8 +80,8 @@ t_lb_router_data *alloc_and_load_router_data(INP vector<t_lb_type_rr_node> *lb_t
 void free_router_data(INOUTP t_lb_router_data *router_data) {
 	if(router_data != NULL && router_data->lb_type_graph != NULL) {
 		delete [] router_data->lb_rr_node_stats;
-		router_data->lb_type_graph = NULL;
 		router_data->lb_rr_node_stats = NULL;
+		router_data->lb_type_graph = NULL;
 		free_intra_lb_nets(router_data->intra_lb_nets);
 		router_data->intra_lb_nets = NULL;
 		delete router_data;
@@ -361,13 +361,22 @@ Internal Functions
 
 
 static void free_intra_lb_nets(vector <t_intra_lb_net> *intra_lb_nets) {
-	/* jedit free later */
+	vector <t_intra_lb_net> &lb_nets = *intra_lb_nets;
+	for(unsigned int i = 0; i < lb_nets.size(); i++) {
+		lb_nets[i].terminals.clear();
+		free_lb_trace(lb_nets[i].rt_tree);
+		lb_nets[i].rt_tree = NULL;
+	}		
 	delete intra_lb_nets;
 }
 
 /* Free trace for intra-logic block routing */
 static void free_lb_trace(t_lb_trace *lb_trace) {
 	if(lb_trace != NULL) {
+		for(unsigned int i = 0; i < lb_trace->next_nodes.size(); i++) {
+			free_lb_trace(&lb_trace->next_nodes[i]);
+		}
+		lb_trace->next_nodes.clear();
 		delete (lb_trace);
 	}
 }

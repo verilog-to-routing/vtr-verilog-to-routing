@@ -253,6 +253,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	 
 	 */
 
+	/****************************************************************
+	* Initialization 
+	*****************************************************************/
+
 	int i, iblk, num_molecules, blocks_since_last_analysis, num_clb, max_nets_in_pb_type,  
 		cur_nets_in_pb_type, num_blocks_hill_added, max_cluster_size, cur_cluster_size, 
 		max_molecule_inputs, max_pb_depth, cur_pb_depth, num_unrelated_clustering_attempts,
@@ -440,6 +444,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				max_molecule_inputs);
 	}
 
+	/****************************************************************
+	* Clustering
+	*****************************************************************/
+
 	while (istart != NULL) {
 		is_cluster_legal = FALSE;
 		savedindexofcrit = indexofcrit;
@@ -574,11 +582,15 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				num_clb--;
 				indexofcrit = savedindexofcrit;
 			}
+			free_router_data(router_data);
+			router_data = NULL;
 		}
 	}
 
-	free_router_data(router_data);
-	router_data = NULL;
+	/****************************************************************
+	* Free Data Structures 
+	*****************************************************************/
+
 	free_cluster_legality_checker();
 
 	alloc_and_load_cluster_info(num_clb, clb);
@@ -1937,7 +1949,6 @@ static void start_new_cluster(
 		for (i = 0; i < num_types; i++) {
 			if (num_used_instances_type[i] < num_instances_type[i]) {
 				new_cluster->type = &type_descriptors[i];
-				*router_data = alloc_and_load_router_data(&lb_type_rr_graphs[i]);
 				if (new_cluster->type == EMPTY_TYPE) {
 					continue;
 				}
@@ -1947,6 +1958,8 @@ static void start_new_cluster(
 				new_cluster->pb->parent_pb = NULL;
 
 				alloc_and_load_legalizer_for_cluster(new_cluster, clb_index, arch);
+				*router_data = alloc_and_load_router_data(&lb_type_rr_graphs[i]);
+				
 				for (j = 0; j < new_cluster->type->pb_graph_head->pb_type->num_modes && !success; j++) {
 					new_cluster->pb->mode = j;
 					reset_cluster_placement_stats(&cluster_placement_stats[i]);
