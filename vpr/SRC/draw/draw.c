@@ -92,7 +92,7 @@ typedef struct {
  * draw_route_type: GLOBAL or DETAILED
  * default_message: default screen message on screen
  * net_color: color in which each net should be drawn. 
- *			  [0..num_nets-1]
+ *			  [0..g_clbs_nlist.net.size()-1]
  * block_color: color in which each block should be drawn.
  *			    [0..num_blocks-1]
  * draw_rr_node: stores the state information of each routing resource.  
@@ -469,7 +469,7 @@ void alloc_draw_structs(void) {
 	draw_internal_alloc_blk();
 
 	draw_state.net_color = (enum color_types *) my_malloc(
-								num_nets * sizeof(enum color_types));
+								g_clbs_nlist.net.size() * sizeof(enum color_types));
 
 	draw_state.block_color = (enum color_types *) my_malloc(
 								 num_blocks * sizeof(enum color_types));
@@ -651,7 +651,8 @@ static void drawnets(void) {
 	 * yet been routed, so we just draw a chain showing a possible path *
 	 * for each net.  This gives some idea of future congestion.        */
 
-	int inet, ipin, b1, b2;
+	unsigned ipin, inet;
+	int b1, b2;
 	float x1, y1, x2, y2;
 
 	setlinestyle(SOLID);
@@ -660,16 +661,16 @@ static void drawnets(void) {
 	/* Draw the net as a star from the source to each sink. Draw from centers of *
 	 * blocks (or sub blocks in the case of IOs).                                */
 
-	for (inet = 0; inet < num_nets; inet++) {
-		if (clb_net[inet].is_global)
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+		if (g_clbs_nlist.net[inet].is_global)
 			continue; /* Don't draw global nets. */
 
 		setcolor(draw_state.net_color[inet]);
-		b1 = clb_net[inet].node_block[0]; /* The DRIVER */
+		b1 = g_clbs_nlist.net[inet].pins[0].block; /* The DRIVER */
 		get_block_center(b1, &x1, &y1);
 
-		for (ipin = 1; ipin < (clb_net[inet].num_sinks + 1); ipin++) {
-			b2 = clb_net[inet].node_block[ipin];
+		for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
+			b2 = g_clbs_nlist.net[inet].pins[ipin].block;
 			get_block_center(b2, &x2, &y2);
 			drawline(x1, y1, x2, y2);
 
@@ -1642,7 +1643,8 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 	static int **chanx_track = NULL; /* [1..nx][0..ny] */
 	static int **chany_track = NULL; /* [0..nx][1..ny] */
 
-	int inet, i, j, inode, prev_node, prev_track, itrack;
+	unsigned int inet;
+	int i, j, inode, prev_node, prev_track, itrack;
 	short switch_type;
 	struct s_trace *tptr;
 	t_rr_type rr_type, prev_type;
@@ -1670,8 +1672,8 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 
 	/* Now draw each net, one by one.      */
 
-	for (inet = 0; inet < num_nets; inet++) {
-		if (clb_net[inet].is_global) /* Don't draw global nets. */
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+		if (g_clbs_nlist.net[inet].is_global) /* Don't draw global nets. */
 			continue;
 
 		if (trace_head[inet] == NULL) /* No routing.  Skip.  (Allows me to draw */
@@ -1858,16 +1860,16 @@ static bool draw_if_net_highlighted (int inet) {
  * If so, and toggle nets is selected, highlight the whole net in that colour.
  */
 static void highlight_nets(char *message, int hit_node) {
-	int inet;
+	unsigned int inet;
 	struct s_trace *tptr;
 
-	for (inet = 0; inet < num_nets; inet++) {
+	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 		for (tptr = trace_head[inet]; tptr != NULL; tptr = tptr->next) {
 			if (draw_state.draw_rr_node[tptr->index].color == MAGENTA) {
 				draw_state.net_color[inet] = draw_state.draw_rr_node[tptr->index].color;
 				if (tptr->index == hit_node) {
 					sprintf(message, "%s  ||  Net: %d (%s)", message, inet,
-							clb_net[inet].name);
+							g_clbs_nlist.net[inet].name);
 				}
 			}
 			else if (draw_state.draw_rr_node[tptr->index].color == WHITE) {
@@ -2148,7 +2150,8 @@ static void highlight_blocks(float x, float y, t_event_buttonPressed button_info
 
 
 static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
-	int k, ipin, netnum, fanblk, iclass;
+	int k, netnum, fanblk, iclass;
+	unsigned ipin;
 
 	if (draw_state.block_color[bnum] == GREEN) {
 		/* If block already highlighted, de-highlight the block and
@@ -2164,13 +2167,13 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 
 			if (type->class_inf[iclass].type == DRIVER) { /* Fanout */
 				draw_state.net_color[netnum] = BLACK;
-				for (ipin = 1; ipin <= clb_net[netnum].num_sinks; ipin++) {
-					fanblk = clb_net[netnum].node_block[ipin];
+				for (ipin = 1; ipin < g_clbs_nlist.net[netnum].pins.size(); ipin++) {
+					fanblk = g_clbs_nlist.net[netnum].pins[ipin].block;
 					draw_reset_blk_color(fanblk);
 				}
 			} else { /* This net is fanin to the block. */
 				draw_state.net_color[netnum] = BLACK;
-				fanblk = clb_net[netnum].node_block[0]; /* DRIVER to net */
+				fanblk = g_clbs_nlist.net[netnum].pins[0].block; /* DRIVER to net */
 				draw_reset_blk_color(fanblk);
 			}
 		}
@@ -2189,13 +2192,13 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 
 			if (type->class_inf[iclass].type == DRIVER) { /* Fanout */
 				draw_state.net_color[netnum] = RED;
-				for (ipin = 1; ipin <= clb_net[netnum].num_sinks; ipin++) {
-					fanblk = clb_net[netnum].node_block[ipin];
+				for (ipin = 1; ipin < g_clbs_nlist.net[netnum].pins.size(); ipin++) {
+					fanblk = g_clbs_nlist.net[netnum].pins[ipin].block;
 					draw_state.block_color[fanblk] = RED;
 				}
 			} else { /* This net is fanin to the block. */
 				draw_state.net_color[netnum] = BLUE;
-				fanblk = clb_net[netnum].node_block[0]; /* DRIVER to net */
+				fanblk = g_clbs_nlist.net[netnum].pins[0].block; /* DRIVER to net */
 				draw_state.block_color[fanblk] = BLUE;
 			}
 		}
@@ -2215,7 +2218,7 @@ static void deselect_all(void) {
 		draw_reset_blk_color(i);
 	}
 
-	for (i = 0; i < num_nets; i++)
+	for (i = 0; i < (int) g_clbs_nlist.net.size(); i++)
 		draw_state.net_color[i] = BLACK;
 
 	for (i = 0; i < num_rr_nodes; i++) {

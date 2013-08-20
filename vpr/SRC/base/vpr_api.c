@@ -59,7 +59,7 @@ static boolean has_printhandler_pre_vpr = FALSE;
 /* For resync of clustered netlist to the post-route solution. This function adds local nets to cluster */
 static void reload_intra_cluster_nets(t_pb *pb);
 static t_trace *alloc_and_load_final_routing_trace();
-static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net);
+static t_trace *expand_routing_trace(t_trace *trace, int i_g_atoms_net);
 static void print_complete_net_trace(t_trace* trace, const char *file_name);
 static void resync_post_route_netlist();
 static boolean clay_logical_equivalence_handling(const t_arch *arch);
@@ -727,6 +727,10 @@ void free_circuit() {
 	free(clb_net);
 	clb_net = NULL;
 
+	//Free new net structures
+	free_global_nlist_net(&g_clbs_nlist);
+	free_global_nlist_net(&g_atoms_nlist);
+
 	if (block != NULL) {
 		for (int i = 0; i < num_blocks; ++i) {
 			if (block[i].pb != NULL) {
@@ -929,7 +933,7 @@ static t_trace *alloc_and_load_final_routing_trace() {
 /* Given a routing trace, expand until full trace is complete 
  returns pointer to last terminal trace
  */
-static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
+static t_trace *expand_routing_trace(t_trace *trace, int i_g_atoms_net) {
 
 	t_trace *current = trace;
 
@@ -940,8 +944,8 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 	if (local_rr_graph[inode].pb_graph_pin->num_output_edges == 0) {
 		if (local_rr_graph[inode].pb_graph_pin->port->type == OUT_PORT) {
 			/* connection to outside cb */
-			if (g_atoms_nlist.net[ivpack_net].is_global) {
-				int inet = vpack_to_clb_net_mapping[ivpack_net];
+			if (g_atoms_nlist.net[i_g_atoms_net].is_global) {
+				int inet = vpack_to_clb_net_mapping[i_g_atoms_net];
 				if (inet != OPEN) {
 					for (int ipin = 1; ipin < (int) g_clbs_nlist.net[inet].pins.size(); ++ipin) {
 						t_pb_graph_pin *pb_graph_pin = get_pb_graph_node_pin_from_g_clbs_nlist_net(inet, ipin);
@@ -952,11 +956,11 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 						new_trace->num_siblings = 0;
 						new_trace->next = NULL;
 						current->next = new_trace;
-						current = expand_routing_trace(new_trace, ivpack_net);
+						current = expand_routing_trace(new_trace, i_g_atoms_net);
 					}
 				}
 			} else {
-				t_trace *inter_cb_trace = trace_head[vpack_to_clb_net_mapping[ivpack_net]];
+				t_trace *inter_cb_trace = trace_head[vpack_to_clb_net_mapping[i_g_atoms_net]];
 				if (inter_cb_trace != NULL) {
 					inter_cb_trace = inter_cb_trace->next; /* skip source and go right to opin */
 				}
@@ -983,7 +987,7 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 							new_trace->num_siblings = 0;
 							new_trace->next = NULL;
 							current->next = new_trace;
-							current = expand_routing_trace(new_trace, ivpack_net);
+							current = expand_routing_trace(new_trace, i_g_atoms_net);
 						} else {
 							current = current->next;
 						}
@@ -1016,7 +1020,7 @@ static t_trace *expand_routing_trace(t_trace *trace, int ivpack_net) {
 				new_trace->num_siblings = 0;
 				new_trace->next = NULL;
 				current->next = new_trace;
-				current = expand_routing_trace(new_trace, ivpack_net);
+				current = expand_routing_trace(new_trace, i_g_atoms_net);
 			}
 		}
 	}
@@ -1296,8 +1300,8 @@ static void clay_reload_ble_locations(int iblock) {
 	/* determine new location for BLEs that route out of cluster */
 	for (int i = 0; i < pb_type->modes[mode].pb_type_children[0].num_pb; ++i) {
 		if (block[iblock].pb->child_pbs[0][i].name != NULL) {
-			int ivpack_net = local_rr_graph[pb_graph_node->child_pb_graph_nodes[mode][0][i].output_pins[0][0].pin_count_in_cluster].net_num;
-			int inet = vpack_to_clb_net_mapping[ivpack_net];
+			int i_g_atoms_net = local_rr_graph[pb_graph_node->child_pb_graph_nodes[mode][0][i].output_pins[0][0].pin_count_in_cluster].net_num;
+			int inet = vpack_to_clb_net_mapping[i_g_atoms_net];
 			if (inet != OPEN) {
 				int ipin = OPEN;
 				t_trace *trace = (trace_head ? trace_head[inet] : 0);
@@ -1323,8 +1327,8 @@ static void clay_reload_ble_locations(int iblock) {
 	int new_loc = 0;
 	for (int i = 0; i < pb_type->modes[mode].pb_type_children[0].num_pb; ++i) {
 		if (block[iblock].pb->child_pbs[0][i].name != NULL) {
-			int ivpack_net = local_rr_graph[pb_graph_node->child_pb_graph_nodes[mode][0][i].output_pins[0][0].pin_count_in_cluster].net_num;
-			int inet = vpack_to_clb_net_mapping[ivpack_net];
+			int i_g_atoms_net = local_rr_graph[pb_graph_node->child_pb_graph_nodes[mode][0][i].output_pins[0][0].pin_count_in_cluster].net_num;
+			int inet = vpack_to_clb_net_mapping[i_g_atoms_net];
 			if (inet == OPEN) {
 				while (temp[0][new_loc].name != NULL) {
 					new_loc++;

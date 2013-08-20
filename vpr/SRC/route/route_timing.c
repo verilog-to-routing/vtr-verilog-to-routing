@@ -327,7 +327,7 @@ boolean try_timing_driven_route_net(int inet, int itry, float pres_fac,
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
 			g_clbs_nlist.net[inet].is_routed = TRUE;
-			vpack_net[clb_to_vpack_net_mapping[inet]].is_routed = TRUE;
+			g_atoms_nlist.net[clb_to_vpack_net_mapping[inet]].is_routed = TRUE;
 		} else {
 			vpr_printf_info("Routing failed.\n");
 			free_timing_driven_route_structs(pin_criticality,
@@ -1043,10 +1043,10 @@ static bool timing_driven_order_prerouted_first(
 			// (ie. indicate that net has been pre-routed)
 			if (tch_net.GetStatus() == TCH_ROUTE_STATUS_ROUTED) {
 				g_clbs_nlist.net[inet].is_routed = TRUE;
-				vpack_net[clb_to_vpack_net_mapping[inet]].is_routed = TRUE;
+				g_atoms_nlist.net[clb_to_vpack_net_mapping[inet]].is_routed = TRUE;
 			} else if (tch_net.GetStatus() == TCH_ROUTE_STATUS_FIXED) {
 				g_clbs_nlist.net[inet].is_fixed = TRUE;
-				vpack_net[clb_to_vpack_net_mapping[inet]].is_fixed = TRUE;
+				g_atoms_nlist.net[clb_to_vpack_net_mapping[inet]].is_fixed = TRUE;
 			}
 		}
 	}

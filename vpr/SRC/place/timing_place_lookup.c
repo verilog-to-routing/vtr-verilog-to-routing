@@ -420,9 +420,7 @@ static void free_and_reset_internal_structures(struct s_net *original_net,
 	clb_net = original_net;
 
 	//Free new netlist data structure
-	for (i = 0; i < NET_COUNT; i++) {
-		free(g_clbs_nlist.net[i].name);
-	}
+	free_global_nlist_net(&g_clbs_nlist);
 	g_clbs_nlist.net.swap(original_vnet);
 
 	for (i = 0; i < BLOCK_COUNT; i++) {

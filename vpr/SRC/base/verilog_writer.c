@@ -1139,7 +1139,7 @@ conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_li
 #if 0
 
 		      // we now need to map between the port on the logical block to the port on the physical block
-		      t_pb_graph_pin* iPin = get_pb_graph_node_pin_from_vpack_net(vpck_net, k);
+		      t_pb_graph_pin* iPin = get_pb_graph_node_pin_from_g_atoms_nlist_net(vpck_net, k);
 		      port_number_out = iPin->port->index;
 
 		      // because of possible pin swaps, we need to find the physical on load block that

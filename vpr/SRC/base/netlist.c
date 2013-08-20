@@ -71,30 +71,33 @@ void load_global_net_from_array(INP t_net* net_arr,
 	return;
 }
 
-void echo_global_nlist_net(INP t_netlist* g_nlist, t_net* net_arr){
+void echo_global_nlist_net(INP t_netlist* g_nlist){
 
 	unsigned int i, j;
+
+	if(g_nlist == NULL){
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+			"Global netlist variable has not been allocated!");
+	}
 
 	vpr_printf_info("********Dumping clb netlist info contained in vectors*******\n");
 
 	for(i = 0; i < g_nlist->net.size(); i++){
-		vpr_printf_info("Net name %s %s\n", g_nlist->net[i].name, net_arr[i].name);
-		vpr_printf_info("Routed %d %d \nfixed %d %d \nglobal %d %d const_gen %d %d\n", 
-			g_nlist->net[i].is_routed, net_arr[i].is_routed,
-			g_nlist->net[i].is_fixed , net_arr[i].is_fixed,
-			g_nlist->net[i].is_global, net_arr[i].is_global,  
-			g_nlist->net[i].is_const_gen, net_arr[i].is_const_gen);
+		vpr_printf_info("Net name %s\n", g_nlist->net[i].name);
+		vpr_printf_info("Routed %d fixed %d global %d const_gen %d\n", 
+			g_nlist->net[i].is_routed,
+			g_nlist->net[i].is_fixed ,
+			g_nlist->net[i].is_global, 
+			g_nlist->net[i].is_const_gen);
 		for(j = 0; j < g_nlist->net[i].pins.size(); j++){
-			vpr_printf_info("Block index %d %d port %d %d pin %d %d \n", 
-				g_nlist->net[i].pins[j].block, net_arr[i].node_block[j],
-				g_nlist->net[i].pins[j].block_port, (net_arr[i].node_block_port ? net_arr[i].node_block_port[j] : 0), 
-				g_nlist->net[i].pins[j].block_pin, net_arr[i].node_block_pin[j]);
+			vpr_printf_info("Block index %d port %d pin %d \n", 
+				g_nlist->net[i].pins[j].block, 
+				g_nlist->net[i].pins[j].block_port,  
+				g_nlist->net[i].pins[j].block_pin);
 		
 		}
 		vpr_printf_info("\n");
 	}
-
-
 	vpr_printf_info("********Finished dumping clb netlist info contained in vectors*******\n");
 }
 
@@ -132,4 +135,22 @@ static bool check_global_net_with_array(INP t_net* net_arr,
 	assert(num_net_arr == (int)g_nlist->net.size());
 
 	return true;
+}
+
+void free_global_nlist_net(INP t_netlist* g_nlist){
+	
+	if(g_nlist == NULL){
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+			"Global netlist variable has not been allocated!");
+	}
+
+	if(!g_nlist->net.empty()){
+		for(unsigned int i = 0; i < g_nlist->net.size(); i++){
+			free(g_nlist->net[i].name);
+			g_nlist->net[i].name = NULL;
+			g_nlist->net[i].pins.clear();
+		}
+		g_nlist->net.clear();
+	}
+
 }

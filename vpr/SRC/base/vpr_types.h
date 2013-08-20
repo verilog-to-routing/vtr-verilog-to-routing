@@ -173,7 +173,7 @@ struct s_tnode;
 
 /* Technology-mapped user netlist block */
 typedef struct s_logical_block {
-	char *name; /* Taken from the first vpack_net which it drives. */
+	char *name; /* Taken from the first g_atoms_nlist.net which it drives. */
 	enum logical_block_types type; /* I/O, combinational logic, or latch */
 	t_model* model; /* Technology-mapped type (eg. LUT, Flip-flop, memory slice, inpad, etc) */
 
