@@ -68,8 +68,7 @@ public:
                    int vpr_ny,
                    const t_block* vpr_blockArray,
                    int vpr_blockCount,
-                   const t_net* vpr_netArray,
-                   int vpr_netCount,
+                   const t_netlist* vpr_netList,
                    const t_rr_node* vpr_rrNodeArray,
                    int vpr_rrNodeCount );
    TCH_VPR_Data_c( const TCH_VPR_Data_c& vpr_data );
@@ -97,8 +96,7 @@ public:
               int vpr_ny,
               const t_block* vpr_blockArray,
               int vpr_blockCount,
-              const t_net* vpr_netArray,
-              int vpr_netCount,
+              const t_netlist* vpr_netList,
               const t_rr_node* vpr_rrNodeArray,
               int vpr_rrNodeCount );
    void Init( t_grid_tile** vpr_gridArray,
@@ -108,8 +106,7 @@ public:
               int vpr_blockCount,
               const t_type_descriptor* vpr_typeArray,
               int vpr_typeCount,
-              const t_net* vpr_netArray,
-              int vpr_netCount,
+              const t_netlist* vpr_netList,
               const t_rr_node* vpr_rrNodeArray,
               int vpr_rrNodeCount,
               int* vpr_freeLocationArray,
@@ -124,7 +121,7 @@ public:
 
    const t_pb_graph_pin* FindGraphPin( int netIndex,
                                        int pinIndex ) const;
-   const t_pb_graph_pin* FindGraphPin( const t_net& vpr_net,
+   const t_pb_graph_pin* FindGraphPin( const t_vnet& vpr_net,
                                        int pinIndex ) const;
    const t_pb_graph_pin* FindGraphPin( const t_block& vpr_block,
                                        int pinIndex ) const;
@@ -151,8 +148,7 @@ public:
    t_type_descriptor* vpr_typeArray;        // "
    int                vpr_typeCount;        // "
 
-   t_net*        vpr_netArray;              // Local pointer to VPR's net array structure
-   int           vpr_netCount;              // "
+   t_netlist*    vpr_netList;               // Local pointer to VPR's "g_clbs_nlist" structure
 
    t_rr_node*    vpr_rrNodeArray;           // Local pointer to VPR's "rr_graph" structure
    int           vpr_rrNodeCount;           // "
