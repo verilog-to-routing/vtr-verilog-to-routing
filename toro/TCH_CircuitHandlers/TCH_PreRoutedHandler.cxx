@@ -202,22 +202,23 @@ bool TCH_PreRoutedHandler_c::Configure(
 //---------------------------------------------------------------------------//
 // Version history
 // 02/21/13 jeffr : Original
+// 08/21/13 jeffr : Updated to handle the new "const t_netlist*" parameter,
+//                  instead of the obsolete "const t_net*" and asso. count
 //===========================================================================//
 void TCH_PreRoutedHandler_c::Set(
-            t_grid_tile**    vpr_gridArray,
-            int              vpr_nx,
-            int              vpr_ny,
-      const t_block*         vpr_blockArray,
-            int              vpr_blockCount,
-      const t_net*           vpr_netArray,
-            int              vpr_netCount,
-      const t_rr_node*       vpr_rrNodeArray,
-            int              vpr_rrNodeCount )
+            t_grid_tile** vpr_gridArray,
+            int           vpr_nx,
+            int           vpr_ny,
+      const t_block*      vpr_blockArray,
+            int           vpr_blockCount,
+      const t_netlist*    vpr_netList,
+      const t_rr_node*    vpr_rrNodeArray,
+            int           vpr_rrNodeCount )
 {
    // Set local reference to VPR's net list and asso. global data structures
    this->vpr_data_.Init( vpr_gridArray, vpr_nx, vpr_ny,
                          vpr_blockArray, vpr_blockCount,
-                         vpr_netArray, vpr_netCount,
+                         vpr_netList,
                          vpr_rrNodeArray, vpr_rrNodeCount );
 }
 
@@ -266,6 +267,8 @@ const TCH_NetList_t& TCH_PreRoutedHandler_c::GetNetList(
 //---------------------------------------------------------------------------//
 // Version history
 // 02/21/13 jeffr : Original
+// 08/21/13 jeffr : Updated to handle the new "const t_netlist*" parameter,
+//                  instead of the obsolete "const t_net*" and asso. count
 //===========================================================================//
 bool TCH_PreRoutedHandler_c::ValidatePreRoutes(
       void )
@@ -275,8 +278,7 @@ bool TCH_PreRoutedHandler_c::ValidatePreRoutes(
    // Validate that given net name list is consistent with VPR's net list
    if( ok )
    {
-      ok = this->ValidateNetList_( this->vpr_data_.vpr_netArray, 
-                                   this->vpr_data_.vpr_netCount, 
+      ok = this->ValidateNetList_( this->vpr_data_.vpr_netList,
                                    this->netNameList_, &this->netList_ );
    }
 
@@ -284,8 +286,7 @@ bool TCH_PreRoutedHandler_c::ValidatePreRoutes(
    if( ok )
    {
       ok = this->ValidateNetListInstPins_( this->vpr_data_.vpr_blockArray, 
-                                           this->vpr_data_.vpr_netArray, 
-                                           this->vpr_data_.vpr_netCount,
+                                           this->vpr_data_.vpr_netList,
                                            &this->netList_ );
    }
 
@@ -599,10 +600,11 @@ bool TCH_PreRoutedHandler_c::AddNetRoutePath_(
 //---------------------------------------------------------------------------//
 // Version history
 // 02/21/13 jeffr : Original
+// 08/21/13 jeffr : Updated to handle the new "const t_netlist*" parameter,
+//                  instead of the obsolete "const t_net*" and asso. count
 //===========================================================================//
 bool TCH_PreRoutedHandler_c::ValidateNetList_(
-      const t_net*             vpr_netArray,
-            int                vpr_netCount,
+      const t_netlist*         vpr_netList,
       const TCH_NetNameList_t& netNameList,
             TCH_NetList_t*     pnetList ) const
 {
@@ -616,9 +618,9 @@ bool TCH_PreRoutedHandler_c::ValidateNetList_(
    }
 
    // Next, iterate VPR's net list and set local net's "isLegal", as possible
-   for( int vpr_netIndex = 0; vpr_netIndex < vpr_netCount; ++vpr_netIndex )
+   for( unsigned int vpr_netIndex = 0; vpr_netIndex < vpr_netList->net.size( ); ++vpr_netIndex )
    {
-      const t_net& vpr_net = vpr_netArray[vpr_netIndex];
+      const t_vnet& vpr_net = vpr_netList->net[vpr_netIndex];
       const char* pszNetName = vpr_net.name;
 
       TCH_NetName_t netName( pszNetName );
@@ -652,11 +654,12 @@ bool TCH_PreRoutedHandler_c::ValidateNetList_(
 //---------------------------------------------------------------------------//
 // Version history
 // 02/21/13 jeffr : Original
+// 08/21/13 jeffr : Updated to handle the new "const t_netlist*" parameter,
+//                  instead of the obsolete "const t_net*" and asso. count
 //===========================================================================//
 bool TCH_PreRoutedHandler_c::ValidateNetListInstPins_(
       const t_block*       vpr_blockArray,
-      const t_net*         vpr_netArray,
-            int            vpr_netCount,
+      const t_netlist*     vpr_netList,
             TCH_NetList_t* pnetList ) const
 {
    bool ok = true;
@@ -676,7 +679,7 @@ bool TCH_PreRoutedHandler_c::ValidateNetListInstPins_(
          continue;
 
       ok = this->ValidateNetInstPins_( vpr_blockArray,
-                                       vpr_netArray, vpr_netCount, pnet );
+                                       vpr_netList, pnet );
       if( !ok )
          break;
    }
@@ -735,11 +738,12 @@ bool TCH_PreRoutedHandler_c::ValidateNetListRoutePaths_(
 //---------------------------------------------------------------------------//
 // Version history
 // 02/21/13 jeffr : Original
+// 08/21/13 jeffr : Updated to handle the new "const t_netlist*" parameter,
+//                  instead of the obsolete "const t_net*" and asso. count
 //===========================================================================//
 bool TCH_PreRoutedHandler_c::ValidateNetInstPins_(
       const t_block*   vpr_blockArray,
-      const t_net*     vpr_netArray,
-            int        vpr_netCount,
+      const t_netlist* vpr_netList,
             TCH_Net_c* pnet ) const
 {
    bool ok = true;
@@ -755,8 +759,7 @@ bool TCH_PreRoutedHandler_c::ValidateNetInstPins_(
          continue;
 
       ok = this->ValidateNetRoutePathInstPins_( vpr_blockArray,
-                                                vpr_netArray,
-                                                vpr_netCount,
+                                                vpr_netList,
                                                 vpr_netIndex,
                                                 pszNetName,
                                                 proutePath );
@@ -772,11 +775,12 @@ bool TCH_PreRoutedHandler_c::ValidateNetInstPins_(
 //---------------------------------------------------------------------------//
 // Version history
 // 02/21/13 jeffr : Original
+// 08/21/13 jeffr : Updated to handle the new "const t_netlist*" parameter,
+//                  instead of the obsolete "const t_net*" and asso. count
 //===========================================================================//
 bool TCH_PreRoutedHandler_c::ValidateNetRoutePathInstPins_(
       const t_block*         vpr_blockArray,
-      const t_net*           vpr_netArray,
-            int              vpr_netCount,
+      const t_netlist*       vpr_netList,
             int              vpr_netIndex,
       const char*            pszNetName,
             TCH_RoutePath_c* proutePath ) const
@@ -790,10 +794,10 @@ bool TCH_PreRoutedHandler_c::ValidateNetRoutePathInstPins_(
    const char* pszSinkPinName = proutePath->FindSinkPinName( );
 
    if( this->ExistsRoutePathInstPin_( vpr_blockArray, 
-                                      vpr_netArray, vpr_netCount, vpr_netIndex, 
+                                      vpr_netList, vpr_netIndex, 
                                       pszSrcInstName, pszSrcPinName ) &&
        this->ExistsRoutePathInstPin_( vpr_blockArray, 
-                                      vpr_netArray, vpr_netCount, vpr_netIndex, 
+                                      vpr_netList, vpr_netIndex, 
                                       pszSinkInstName, pszSinkPinName ))
    {
       // Update route path's "isLegal" flag based on valid source/sink inst-pins
@@ -803,7 +807,7 @@ bool TCH_PreRoutedHandler_c::ValidateNetRoutePathInstPins_(
    {
       if( ok && 
           !this->ExistsRoutePathInstPin_( vpr_blockArray, 
-                                          vpr_netArray, vpr_netCount, vpr_netIndex, 
+                                          vpr_netList, vpr_netIndex, 
                                           pszSrcInstName, pszSrcPinName ))
       {
          const char* pszSrcInstPin = proutePath->FindSourceName( );
@@ -811,7 +815,7 @@ bool TCH_PreRoutedHandler_c::ValidateNetRoutePathInstPins_(
       }
       if( ok && 
           !this->ExistsRoutePathInstPin_( vpr_blockArray, 
-                                          vpr_netArray, vpr_netCount, vpr_netIndex, 
+                                          vpr_netList, vpr_netIndex, 
                                           pszSinkInstName, pszSinkPinName ))
       {
          const char* pszSinkInstPin = proutePath->FindSinkName( );
@@ -955,27 +959,28 @@ void TCH_PreRoutedHandler_c::UpdateNetListRoutePaths_(
 //---------------------------------------------------------------------------//
 // Version history
 // 02/21/13 jeffr : Original
+// 08/21/13 jeffr : Updated to handle the new "const t_netlist*" parameter,
+//                  instead of the obsolete "const t_net*" and asso. count
 //===========================================================================//
 bool TCH_PreRoutedHandler_c::ExistsRoutePathInstPin_(
-      const t_block* vpr_blockArray,
-      const t_net*   vpr_netArray,
-            int      vpr_netCount,
-            int      vpr_netIndex,
-      const char*    pszInstName,
-      const char*    pszPinName ) const
+      const t_block*   vpr_blockArray,
+      const t_netlist* vpr_netList,
+            int        vpr_netIndex,
+      const char*      pszInstName,
+      const char*      pszPinName ) const
 {
    bool exists = false;
 
-   if( vpr_netIndex < vpr_netCount )
+   if( vpr_netIndex < static_cast< int >( vpr_netList->net.size( )))
    {
-      const t_net& vpr_net = vpr_netArray[vpr_netIndex];
+      const t_vnet& vpr_net = vpr_netList->net[vpr_netIndex];
 
       // Iterate for every pin in the given VPR net...
-      int nodeCount = 1 + vpr_net.num_sinks; // [VPR] Assume [0] for output pin
+      int nodeCount = 1 + const_cast< t_vnet& >( vpr_net ).num_sinks( ); // [VPR] Assume [0] for output pin
       for( int nodeIndex = 0; nodeIndex < nodeCount; ++nodeIndex )
       {
          // Extract pin's instance (ie. block) name and port/pin name
-         int blockIndex = vpr_net.node_block[nodeIndex];
+         int blockIndex = vpr_net.pins[nodeIndex].block;
          const char* pszBlockName = vpr_blockArray[blockIndex].name;
          if( strcmp( pszBlockName, pszInstName ) != 0 )
             continue;
