@@ -76,7 +76,6 @@ int main(int argc, char **argv) {
 		vpr_print_error(vpr_error);
 	}
 	
-
 	/* Return 0 to single success to scripts */
 	return 0;
 }
