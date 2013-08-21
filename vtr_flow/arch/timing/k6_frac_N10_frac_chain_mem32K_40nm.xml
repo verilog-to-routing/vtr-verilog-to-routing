@@ -40,17 +40,17 @@
   take the R and C data from the ITRS roadmap.  
 
   For the general purpose logic block, we assume that the area and delays of the Stratix IV 
-  crossbar is close enough to the crossbar modelled here.  We use 33 inputs and 20 feedback lines in 
+  crossbar is close enough to the crossbar modelled here.  We use 40 inputs and 20 feedback lines in 
   the cluster and a full crossbar, leading to 53:1 multiplexers in front of each BLE input.
   Stratix IV uses 52 inputs and 20 feedback lines, but only a half-populated crossbar, leading to 
   36:1 multiplexers.  We require 60 such multiplexers, while Stratix IV requires 88 for its more
   complex fracturable BLEs + the extra control signals. We justify this rough approximation as follows: 
-  The Stratix IV crossbar has more inputs (72 vs. 53) and 
+  The Stratix IV crossbar has more inputs (72 vs. 60) and 
   outputs (88 vs. 60) than our full crossbar which should increase its area and delay, but the 
   Stratix IV crossbar is also 50% sparse (each mux is 36:1 instead of 53:1) which should reduce its 
-  area and delay.  The total number of crossbar switch points is very similar between the two 
-  architectures (3160 for SIV and 3180 for the academic architecture below), so we can use the area 
-  & delay of the Stratix IV crossbar as a good approximation of our crossbar.
+  area and delay.  The total number of crossbar switch points is roughly similar between the two 
+  architectures (3160 for SIV and 3600 for the academic architecture below), so we use the area 
+  & delay of the Stratix IV crossbar as a rough approximation of our crossbar.
 
   For LUTs, we include LUT 
   delays measured from Stratix IV which is dependant on the input used (ie. some 
@@ -155,7 +155,7 @@
   <layout auto="1.0"/>
 
   		<device>
-			<!-- VB & JL: Using Ian Kuon's transistor sizing and drive strength data for routing, at 40 nm. Ian used BPTM 
+			  <!-- VB & JL: Using Ian Kuon's transistor sizing and drive strength data for routing, at 40 nm. Ian used BPTM 
 			     models. We are modifying the delay values however, to include metal C and R, which allows more architecture
 			     experimentation. We are also modifying the relative resistance of PMOS to be 1.8x that of NMOS
 			     (vs. Ian's 3x) as 1.8x lines up with Jeff G's data from a 45 nm process (and is more typical of 
@@ -171,11 +171,11 @@
 			     C_ipin_cblock: input capacitance of a track buffer, which VPR assumes is a single-stage
 			     4x minimum drive strength buffer. -->
    
-    <sizing R_minW_nmos="8926" R_minW_pmos="16067" ipin_mux_trans_size="1.222260"/>
-    <timing C_ipin_cblock="1.47e-15" T_ipin_cblock="7.247000e-11"/>
+      <sizing R_minW_nmos="8926" R_minW_pmos="16067" ipin_mux_trans_size="1.222260"/>
+      <timing C_ipin_cblock="1.47e-15" T_ipin_cblock="7.247000e-11"/>
       <!-- The grid_logic_tile_area below will be used for all blocks that do not explicitly set their own (non-routing)
      	  area; set to 0 since we explicitly set the area of all blocks currently in this architecture file.
-	   -->
+	    -->
 			<area grid_logic_tile_area="0"/>
 			<chan_width_distr>
 				<io width="1.000000"/>
@@ -219,7 +219,7 @@
       
       <!-- Define I/O pads begin -->
       <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
-	  <!-- Not sure of the area of an I/O (varies widely), and it's not relevant to the design of the FPGA core, so we're setting it to 0. -->
+	    <!-- Not sure of the area of an I/O (varies widely), and it's not relevant to the design of the FPGA core, so we're setting it to 0. -->
       <pb_type name="io" capacity="8" area="0">
         <input name="outpad" num_pins="1"/>
         <output name="inpad" num_pins="1"/>
@@ -291,7 +291,10 @@
         <output name="cout" num_pins="1"/>
         <clock name="clk" num_pins="1"/>
 
-        <!-- Describe basic logic element with ifar delay numbers -->
+        <!-- Describe fracturable logic element.  
+             Each fracturable logic element has a 6-LUT that can alternatively operate as two 5-LUTs with shared inputs. 
+             The outputs of the fracturable logic element can be optionally registered
+        -->
         <pb_type name="fle" num_pb="10">
           <input name="in" num_pins="6"/>
           <input name="cin" num_pins="1"/>
@@ -1381,6 +1384,9 @@
   </complexblocklist>
   <power>
     <local_interconnect C_wire="2.5e-10"/>
+    <mux_transistor_size mux_transistor_size="3"/>
+    <FF_size FF_size="4"/>
+    <LUT_transistor_size LUT_transistor_size="4"/> 
   </power>
   <clocks>
     <clock buffer_size="auto" C_wire="2.5e-10"/>
