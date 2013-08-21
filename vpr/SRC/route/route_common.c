@@ -1350,7 +1350,7 @@ bool validate_prerouted_nets(
 		// Initialize pre-routing handler based on local data structures
 		preRoutedHandler.Set( grid, nx, ny,
 					block, num_blocks,
-					clb_net, num_nets,
+					&g_clbs_nlist, 
 					rr_node, num_rr_nodes);
 
 		// And, validate local data strucures using pre-routing handler
@@ -1372,7 +1372,7 @@ bool restrict_prerouted_path(
 	TCH_PreRoutedHandler_c& preRoutedHandler = TCH_PreRoutedHandler_c::GetInstance();
 	if (preRoutedHandler.IsValid()) {
 
-		const char* pszNetName = clb_net[inet].name;
+		const char* pszNetName = g_clbs_nlist.net[inet].name;
 
 		// Test if net is legal based on either ROUTED or FIXED status
 		if (preRoutedHandler.IsLegalPreRouteNet(pszNetName, itry)) {
@@ -1397,4 +1397,3 @@ bool restrict_prerouted_path(
 	return (restrict);
 }
 //===========================================================================//
-
