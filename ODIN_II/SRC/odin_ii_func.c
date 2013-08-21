@@ -51,6 +51,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "subtractions.h"
 #include "odin_ii_func.h"
 #include "ast_elaborate.h"
+#include "netlist_cleanup.h"
 /*---------------------------------------------------------------------------
  * (function: set_default_options)
  *-------------------------------------------------------------------------*/
@@ -160,6 +161,8 @@ void do_high_level_synthesis()
 	/* point where we convert netlist to FPGA or other hardware target compatible format */
 	printf("Performing Partial Map to target device\n");
 	partial_map_top(verilog_netlist);
+
+	remove_unused_logic(verilog_netlist);
 
 	#ifdef VPR5
 	/* check for problems in the partial mapped netlist */

@@ -68,6 +68,7 @@ SRCO = $(addprefix $(SRC_DIR)/,$(strip \
 	odin_ii_func.c \
 	odin_ii.c \
 	ast_elaborate.c \
+	netlist_cleanup.c \
 ))
 
 SRCV = SRC/read_blif.c \
