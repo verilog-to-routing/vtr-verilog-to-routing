@@ -66,8 +66,7 @@ TCH_VPR_Data_c::TCH_VPR_Data_c(
       vpr_logicalBlockCount( 0 ),
       vpr_typeArray( 0 ),
       vpr_typeCount( 0 ),
-      vpr_netArray( 0 ),
-      vpr_netCount( 0 ),
+      vpr_netList( 0 ),
       vpr_rrNodeArray( 0 ),
       vpr_rrNodeCount( 0 ),
       vpr_freeLocationArray( 0 ),
@@ -93,8 +92,7 @@ TCH_VPR_Data_c::TCH_VPR_Data_c(
       vpr_logicalBlockCount( 0 ),
       vpr_typeArray( 0 ),
       vpr_typeCount( 0 ),
-      vpr_netArray( 0 ),
-      vpr_netCount( 0 ),
+      vpr_netList( 0 ),
       vpr_rrNodeArray( 0 ),
       vpr_rrNodeCount( 0 ),
       vpr_freeLocationArray( 0 ),
@@ -127,8 +125,7 @@ TCH_VPR_Data_c::TCH_VPR_Data_c(
       vpr_logicalBlockCount( 0 ),
       vpr_typeArray( 0 ),
       vpr_typeCount( 0 ),
-      vpr_netArray( 0 ),
-      vpr_netCount( 0 ),
+      vpr_netList( 0 ),
       vpr_rrNodeArray( 0 ),
       vpr_rrNodeCount( 0 ),
       vpr_freeLocationArray( 0 ),
@@ -149,14 +146,13 @@ TCH_VPR_Data_c::TCH_VPR_Data_c(
             int              vpr_ny_,
       const t_block*         vpr_blockArray_,
             int              vpr_blockCount_,
-      const t_net*           vpr_netArray_,
-            int              vpr_netCount_,
+      const t_netlist*       vpr_netList_,
       const t_rr_node*       vpr_rrNodeArray_,
             int              vpr_rrNodeCount_ )
 {
    this->Init( vpr_gridArray_, vpr_nx_, vpr_ny_,
                vpr_blockArray_, vpr_blockCount_,
-               vpr_netArray_, vpr_netCount_,
+               vpr_netList_,
                vpr_rrNodeArray_, vpr_rrNodeCount_ );
 }
 
@@ -173,8 +169,7 @@ TCH_VPR_Data_c::TCH_VPR_Data_c(
       vpr_logicalBlockCount( 0 ),
       vpr_typeArray( 0 ),
       vpr_typeCount( 0 ),
-      vpr_netArray( 0 ),
-      vpr_netCount( 0 ),
+      vpr_netList( 0 ),
       vpr_rrNodeArray( 0 ),
       vpr_rrNodeCount( 0 ),
       vpr_freeLocationArray( 0 ),
@@ -185,7 +180,7 @@ TCH_VPR_Data_c::TCH_VPR_Data_c(
    this->Init( vpr_data.vpr_gridArray, vpr_data.vpr_nx, vpr_data.vpr_ny,
                vpr_data.vpr_blockArray, vpr_data.vpr_blockCount,
                vpr_data.vpr_typeArray, vpr_data.vpr_typeCount,
-               vpr_data.vpr_netArray, vpr_data.vpr_netCount,
+               vpr_data.vpr_netList,
                vpr_data.vpr_rrNodeArray, vpr_data.vpr_rrNodeCount,
                vpr_data.vpr_freeLocationArray, vpr_data.vpr_legalPosArray );
 }
@@ -219,7 +214,7 @@ TCH_VPR_Data_c& TCH_VPR_Data_c::operator=(
       this->Init( vpr_data.vpr_gridArray, vpr_data.vpr_nx, vpr_data.vpr_ny,
                   vpr_data.vpr_blockArray, vpr_data.vpr_blockCount,
                   vpr_data.vpr_typeArray, vpr_data.vpr_typeCount,
-                  vpr_data.vpr_netArray, vpr_data.vpr_netCount,
+                  vpr_data.vpr_netList,
                   vpr_data.vpr_rrNodeArray, vpr_data.vpr_rrNodeCount,
                   vpr_data.vpr_freeLocationArray, vpr_data.vpr_legalPosArray );
    }
@@ -245,8 +240,7 @@ bool TCH_VPR_Data_c::operator==(
           ( this->vpr_logicalBlockCount == vpr_data.vpr_logicalBlockCount ) &&
           ( this->vpr_typeArray == vpr_data.vpr_typeArray ) &&
           ( this->vpr_typeCount == vpr_data.vpr_typeCount ) &&
-          ( this->vpr_netArray == vpr_data.vpr_netArray ) &&
-          ( this->vpr_netCount == vpr_data.vpr_netCount ) &&
+          ( this->vpr_netList == vpr_data.vpr_netList ) &&
           ( this->vpr_rrNodeArray == vpr_data.vpr_rrNodeArray ) &&
           ( this->vpr_rrNodeCount == vpr_data.vpr_rrNodeCount ) &&
           ( this->vpr_freeLocationArray == vpr_data.vpr_freeLocationArray ) &&
@@ -273,6 +267,8 @@ bool TCH_VPR_Data_c::operator!=(
 //---------------------------------------------------------------------------//
 // Version history
 // 01/15/13 jeffr : Original
+// 08/21/13 jeffr : Updated to handle "const t_netlist* parameter instead of 
+//                  the obsolete "t_net*" and associated count parameters
 //===========================================================================//
 void TCH_VPR_Data_c::Init( 
             t_block*         vpr_blockArray_,
@@ -337,15 +333,14 @@ void TCH_VPR_Data_c::Init(
 
 //===========================================================================//
 void TCH_VPR_Data_c::Init(
-            t_grid_tile**    vpr_gridArray_,
-            int              vpr_nx_,
-            int              vpr_ny_,
-      const t_block*         vpr_blockArray_,
-            int              vpr_blockCount_,
-      const t_net*           vpr_netArray_,
-            int              vpr_netCount_,
-      const t_rr_node*       vpr_rrNodeArray_,
-            int              vpr_rrNodeCount_ )
+            t_grid_tile** vpr_gridArray_,
+            int           vpr_nx_,
+            int           vpr_ny_,
+      const t_block*      vpr_blockArray_,
+            int           vpr_blockCount_,
+      const t_netlist*    vpr_netList_,
+      const t_rr_node*    vpr_rrNodeArray_,
+            int           vpr_rrNodeCount_ )
 {
    this->vpr_gridArray = const_cast< t_grid_tile** >( vpr_gridArray_ );
    this->vpr_nx = vpr_nx_;
@@ -354,8 +349,7 @@ void TCH_VPR_Data_c::Init(
    this->vpr_blockArray = const_cast< t_block* >( vpr_blockArray_ );
    this->vpr_blockCount = vpr_blockCount_;
 
-   this->vpr_netArray = const_cast< t_net* >( vpr_netArray_ );
-   this->vpr_netCount = vpr_netCount_;
+   this->vpr_netList = const_cast< t_netlist* >( vpr_netList_ );
 
    this->vpr_rrNodeArray = const_cast< t_rr_node* >( vpr_rrNodeArray_ );
    this->vpr_rrNodeCount = vpr_rrNodeCount_;
@@ -370,8 +364,7 @@ void TCH_VPR_Data_c::Init(
             int                vpr_blockCount_,
       const t_type_descriptor* vpr_typeArray_,
             int                vpr_typeCount_,
-      const t_net*             vpr_netArray_,
-            int                vpr_netCount_,
+      const t_netlist*         vpr_netList_,
       const t_rr_node*         vpr_rrNodeArray_,
             int                vpr_rrNodeCount_,
             int*               vpr_freeLocationArray_,
@@ -383,7 +376,7 @@ void TCH_VPR_Data_c::Init(
                vpr_freeLocationArray_, vpr_legalPosArray_ );
    this->Init( vpr_gridArray_, vpr_nx_, vpr_ny_,
                vpr_blockArray_, vpr_blockCount_,
-               vpr_netArray_, vpr_netCount_,
+               vpr_netList_,
                vpr_rrNodeArray_, vpr_rrNodeCount_ );
 }
 
@@ -414,8 +407,7 @@ void TCH_VPR_Data_c::Clear(
    this->vpr_rrNodeCount = 0;
    this->vpr_rrNodeArray = 0;
 
-   this->vpr_netCount = 0;
-   this->vpr_netArray = 0;
+   this->vpr_netList = 0;
 
    this->vpr_typeCount = 0;
    this->vpr_typeArray = 0;
@@ -520,18 +512,18 @@ const t_pb_graph_pin* TCH_VPR_Data_c::FindGraphPin(
       int netIndex,
       int pinIndex ) const
 {
-   const t_net& vpr_net = this->vpr_netArray[netIndex];
+   const t_vnet& vpr_net = this->vpr_netList->net[netIndex];
 
    return( this->FindGraphPin( vpr_net, pinIndex ));
 }
 
 //===========================================================================//
 const t_pb_graph_pin* TCH_VPR_Data_c::FindGraphPin(
-      const t_net& vpr_net,
-            int    nodeIndex ) const
+      const t_vnet& vpr_net,
+            int     nodeIndex ) const
 {
-   int pinIndex = vpr_net.node_block_pin[nodeIndex];
-   int blockIndex = vpr_net.node_block[nodeIndex];
+   int pinIndex = vpr_net.pins[nodeIndex].block_pin;
+   int blockIndex = vpr_net.pins[nodeIndex].block;
    const t_block& vpr_block = this->vpr_blockArray[blockIndex];
 
    return( this->FindGraphPin( vpr_block, pinIndex ));
