@@ -22,6 +22,22 @@
  * Because of how the XML tree traversal works, we free everything when we're       *
  * done reading an architecture file to make sure that there isn't some part        *
  * of the architecture file that got missed. 
+ * 
+ * 
+ * Architecture file checks already implemented (Daniel Chen):
+ *		- Duplicate pb_types, pb_type ports, models, model ports,
+ *			interconnects, interconnect annotations.
+ *		- Port and pin range checking (port with 4 pins can only be
+ *			accessed within [0:3].
+ *		- LUT delay matrix size matches # of LUT inputs
+ *		- Ensures XML tags are ordered.
+ *		- Clocked primitives that have timing annotations must have a clock 
+ *			name matching the primitive.
+ *		- Enforced VPR definition of LUT and FF must have one input port (n pins) 
+ *			and one output port(1 pin).
+ *		- Checks file extension for blif and architecture xml file, avoid crashes if
+ *			the two files are swapped on command line.
+ *			
  */
 
 #include <string.h>
@@ -128,7 +144,7 @@ static void ProcessPb_TypePort_Power(ezxml_t Parent, t_port * port,
 e_power_estimation_method power_method_inherited(
 		e_power_estimation_method parent_power_method);
 static void CheckXMLTagOrder(ezxml_t Parent);
-static void ff_primtives_annotation_clock_match(
+static void primitives_annotation_clock_match(
 		t_pin_to_pin_annotation *annotation, t_pb_type * parent_pb_type);
 
 /* Sets up the pinloc map and pin classes for the type. Unlinks the loc nodes
@@ -537,7 +553,7 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		annotation->clock = my_strdup(Prop);
 		ezxml_set_attr(Parent, "clock", NULL);
 
-		ff_primtives_annotation_clock_match(annotation, parent_pb_type);
+		primitives_annotation_clock_match(annotation, parent_pb_type);
 
 	} else if (0 == strcmp(Parent->name, "T_clock_to_Q")) {
 		annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
@@ -564,7 +580,7 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		annotation->clock = my_strdup(Prop);
 		ezxml_set_attr(Parent, "clock", NULL);
 
-		ff_primtives_annotation_clock_match(annotation, parent_pb_type);
+		primitives_annotation_clock_match(annotation, parent_pb_type);
 
 	} else if (0 == strcmp(Parent->name, "T_hold")) {
 		annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
@@ -582,7 +598,7 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		annotation->clock = my_strdup(Prop);
 		ezxml_set_attr(Parent, "clock", NULL);
 
-		ff_primtives_annotation_clock_match(annotation, parent_pb_type);
+		primitives_annotation_clock_match(annotation, parent_pb_type);
 
 	} else if (0 == strcmp(Parent->name, "pack_pattern")) {
 		annotation->type = E_ANNOT_PIN_TO_PIN_PACK_PATTERN;
@@ -4198,10 +4214,10 @@ static void CheckXMLTagOrder(ezxml_t Parent) {
  * Author: Daniel Chen								
  * Purpose: Attempts to match a clock_name specified in an 
  *			timing annotation (Tsetup, Thold, Tc_to_q) with the
- *			clock_name specified in a flipflop.	Only applies
- *			to flipflop primitives.
+ *			clock_name specified in the primitive. Applies
+ *			to flipflop/memory right now.
  */
-static void ff_primtives_annotation_clock_match(
+static void primitives_annotation_clock_match(
 		t_pin_to_pin_annotation *annotation, t_pb_type * parent_pb_type) {
 
 	int i_port;

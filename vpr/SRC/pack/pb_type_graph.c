@@ -3,6 +3,12 @@
  * July 17, 2009
  * pb_graph creates the internal routing edges that join together the different
  * pb_types modes within a pb_type
+ * 
+ * Daniel Chen
+ * July, 2013
+ * Pb_graph checks implemented:
+ *		- Double edges between two pins
+ *		- Input pin equivalence mismatch with architecture file (warning)
  */
 
 #include <cstdio>
@@ -179,10 +185,9 @@ static int check_pb_graph(void) {
 	int i, num_errors;
 	/* TODO: Error checks to do 
 	 1.  All pin and edge connections are bidirectional and match each other
-	 2.  All pb_type names are unique in a namespace
 	 3.  All ports are unique in a pb_type
 	 4.  Number of pb of a pb_type in graph is the same as requested number
-	 5.  All pins are connected to edges
+	 5.  All pins are connected to edges (warning)
 	 */
 	num_errors = 0;
 	for (i = 0; i < num_types; i++) {
