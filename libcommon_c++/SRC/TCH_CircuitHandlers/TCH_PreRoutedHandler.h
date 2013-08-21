@@ -73,8 +73,7 @@ public:
              int vpr_ny,
              const t_block* vpr_blockArray,
              int vpr_blockCount,
-             const t_net* vpr_netArray,
-             int vpr_netCount,
+             const t_netlist* vpr_netList,
              const t_rr_node* vpr_rrNodeArray,
              int vpr_rrNodeCount );
 
@@ -116,23 +115,19 @@ private:
    bool AddNetRoutePath_( const TNO_RouteList_t& routeList,
                           TCH_Net_c* pnet ) const;
 
-   bool ValidateNetList_( const t_net* vpr_netArray,
-                          int vpr_netCount,
+   bool ValidateNetList_( const t_netlist* vpr_netList,
                           const TCH_NetNameList_t& netNameList,
                           TCH_NetList_t* pnetList ) const;
    bool ValidateNetListInstPins_( const t_block* vpr_blockArray,
-                                  const t_net* vpr_netArray,
-                                  int vpr_netCount,
+                                  const t_netlist* vpr_netList,
                                   TCH_NetList_t* pnetList ) const;
    bool ValidateNetListRoutePaths_( const t_rr_node* vpr_rrNodeArray,
                                     TCH_NetList_t* pnetList ) const;
    bool ValidateNetInstPins_( const t_block* vpr_blockArray,
-                              const t_net* vpr_netArray,
-                              int vpr_netCount,
+                              const t_netlist* vpr_netList,
                               TCH_Net_c* pnet ) const;
    bool ValidateNetRoutePathInstPins_( const t_block* vpr_blockArray,
-                                       const t_net* vpr_netArray,
-                                       int vpr_netCount,
+                                       const t_netlist* vpr_netList,
                                        int vpr_netIndex,
                                        const char* pszNetName,
                                        TCH_RoutePath_c* proutePath ) const;
@@ -148,8 +143,7 @@ private:
                                   TCH_NetList_t* pnetList ) const;
 
    bool ExistsRoutePathInstPin_( const t_block* vpr_blockArray,
-                                 const t_net* vpr_netArray,
-                                 int vpr_netCount,
+                                 const t_netlist* vpr_netList,
                                  int vpr_netIndex,
                                  const char* pszInstName,
                                  const char* pszPinName ) const;
