@@ -162,7 +162,8 @@ void do_high_level_synthesis()
 	printf("Performing Partial Map to target device\n");
 	partial_map_top(verilog_netlist);
 
-	remove_unused_logic(verilog_netlist);
+	/* Disabled due to the QoR being affected */
+	//remove_unused_logic(verilog_netlist);
 
 	#ifdef VPR5
 	/* check for problems in the partial mapped netlist */
