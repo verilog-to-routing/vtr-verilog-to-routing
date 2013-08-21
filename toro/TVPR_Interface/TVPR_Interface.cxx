@@ -479,6 +479,8 @@ bool TVPR_Interface_c::Execute(
 // Version history
 // 07/10/12 jeffr : Original
 // 07/23/13 jeffr : Added support for "tiClayResyncNets" & "tiClayFreeNets"
+// 08/21/13 jeffr : Updated to pass "g_atoms_nlist" to TCH_CircuitDesign_c, 
+//                  instead of obsolete "vpack_net" and "num_logical_nets"
 //===========================================================================//
 bool TVPR_Interface_c::Close( 
       const TOS_OptionsStore_c&  optionsStore,
@@ -518,7 +520,7 @@ bool TVPR_Interface_c::Close(
          // (based on VPR's global "block" and "num_blocks")
          TVPR_CircuitDesign_c vpr_circuitDesign;
          vpr_circuitDesign.Import( &this->vpr_.arch,
-                                   vpack_net, num_logical_nets,
+                                   g_atoms_nlist,
                                    block, num_blocks,
                                    logical_block, 
                                    rr_node,
