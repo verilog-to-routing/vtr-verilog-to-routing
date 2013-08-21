@@ -134,7 +134,7 @@ bool TVPR_CircuitDesign_c::Export(
       const t_model*             pvpr_customModels,
             t_net**              pvpr_netArray,
             int*                 pvpr_netCount,
-            t_netlist*           pvpr_globalNetList,
+            t_netlist*           pvpr_netList,
             t_logical_block**    pvpr_logicalBlockArray,
             int*                 pvpr_logicalBlockCount,
             int*                 pvpr_primaryInputCount,
@@ -186,7 +186,7 @@ bool TVPR_CircuitDesign_c::Export(
    if( ok )
    {
       ok = this->UpdateStructures_( pvpr_netArray, pvpr_netCount, 
-                                    pvpr_globalNetList,
+                                    pvpr_netList,
                                     pvpr_logicalBlockArray, pvpr_logicalBlockCount,
                                     pvpr_primaryInputCount, pvpr_primaryOutputCount );
    }
@@ -200,11 +200,12 @@ bool TVPR_CircuitDesign_c::Export(
 // Version history
 // 07/25/12 jeffr : Original
 // 07/23/13 jeffr : Added support for optional "tiClayResyncNets" parameter
+// 08/21/13 jeffr : Updated to handle "const t_netlist&" parameter instead of 
+//                  the obsolete "t_net*" and associated count parameters
 //===========================================================================//
 void TVPR_CircuitDesign_c::Import(
       const t_arch*              vpr_architecture,
-            t_net*               vpr_netArray,
-            int                  vpr_netCount,
+      const t_netlist&           vpr_netList,
       const t_block*             vpr_blockArray,
             int                  vpr_blockCount,
       const t_logical_block*     vpr_logicalBlockArray,
@@ -218,7 +219,7 @@ void TVPR_CircuitDesign_c::Import(
 
    pblockList->Clear( );
    this->PeekNetList_( vpr_architecture, 
-                       vpr_netArray, vpr_netCount,
+                       vpr_netList,
                        vpr_blockArray, vpr_blockCount,
                        vpr_logicalBlockArray,
                        vpr_rrNodeArray,
@@ -798,11 +799,13 @@ void TVPR_CircuitDesign_c::PokeBlockList_(
 // Version history
 // 07/25/12 jeffr : Original
 // 08/09/13 jeffr : Added support for new VPR global net list (g_atoms_nlist)
+// 08/21/13 jeffr : Updated to handle "const t_netlist&" parameter instead of 
+//                  the obsolete "t_net*" and associated count parameters
 //===========================================================================//
 bool TVPR_CircuitDesign_c::UpdateStructures_(
             t_net**           pvpr_netArray,
             int*              pvpr_netCount,
-            t_netlist*        pvpr_globalNetList,
+            t_netlist*        pvpr_netList,
             t_logical_block** pvpr_logicalBlockArray,
             int*              pvpr_logicalBlockCount,
             int*              pvpr_primaryInputCount,
@@ -833,7 +836,7 @@ bool TVPR_CircuitDesign_c::UpdateStructures_(
    if( ok )
    {
      this->UpdateGlobalNets_( *pvpr_netArray, *pvpr_netCount, 
-                              pvpr_globalNetList );
+                              pvpr_netList );
    }
 
    if( ok )
@@ -951,27 +954,27 @@ bool TVPR_CircuitDesign_c::UpdateVpackNets_(
 void TVPR_CircuitDesign_c::UpdateGlobalNets_(
       t_net*     vpr_netArray,
       int        vpr_netCount,
-      t_netlist* pvpr_globalNetList ) const
+      t_netlist* pvpr_netList ) const
 {
    // See VPR's netlist.c::load_global_net_from_array() function...
-   pvpr_globalNetList->net.resize( vpr_netCount );
+   pvpr_netList->net.resize( vpr_netCount );
 
    for( int i = 0; i < vpr_netCount; ++i )
    {
-      pvpr_globalNetList->net[i].name = TC_strdup( vpr_netArray[i].name );
-      pvpr_globalNetList->net[i].is_routed = vpr_netArray[i].is_routed;
-      pvpr_globalNetList->net[i].is_fixed = vpr_netArray[i].is_fixed;
-      pvpr_globalNetList->net[i].is_global = vpr_netArray[i].is_global;
-      pvpr_globalNetList->net[i].is_const_gen = vpr_netArray[i].is_const_gen;
+      pvpr_netList->net[i].name = TC_strdup( vpr_netArray[i].name );
+      pvpr_netList->net[i].is_routed = vpr_netArray[i].is_routed;
+      pvpr_netList->net[i].is_fixed = vpr_netArray[i].is_fixed;
+      pvpr_netList->net[i].is_global = vpr_netArray[i].is_global;
+      pvpr_netList->net[i].is_const_gen = vpr_netArray[i].is_const_gen;
 
-      pvpr_globalNetList->net[i].nodes.resize( vpr_netArray[i].num_sinks + 1 );
+      pvpr_netList->net[i].pins.resize( vpr_netArray[i].num_sinks + 1 );
       for( int j = 0; j <= vpr_netArray[i].num_sinks; ++j)
       {
-         pvpr_globalNetList->net[i].nodes[j].block = vpr_netArray[i].node_block[j];
-         pvpr_globalNetList->net[i].nodes[j].block_pin = vpr_netArray[i].node_block_pin[j];
+         pvpr_netList->net[i].pins[j].block = vpr_netArray[i].node_block[j];
+         pvpr_netList->net[i].pins[j].block_pin = vpr_netArray[i].node_block_pin[j];
          if( vpr_netArray[i].node_block_port ) 
          {
-            pvpr_globalNetList->net[i].nodes[j].block_port = vpr_netArray[i].node_block_port[j];
+            pvpr_netList->net[i].pins[j].block_port = vpr_netArray[i].node_block_port[j];
          }
       }
    }
@@ -1618,11 +1621,12 @@ void TVPR_CircuitDesign_c::PeekPackHierMapList_(
 //---------------------------------------------------------------------------//
 // Version history
 // 10/05/12 jeffr : Original
+// 08/21/13 jeffr : Updated to handle "const t_netlist&" parameter instead of 
+//                  the obsolete "t_net*" and associated count parameters
 //===========================================================================//
 void TVPR_CircuitDesign_c::PeekNetList_(
       const t_arch*          vpr_architecture,
-      const t_net*           vpr_netArray,
-            int              vpr_netCount,
+      const t_netlist&       vpr_netList,
       const t_block*         vpr_blockArray,
             int              vpr_blockCount,
       const t_logical_block* vpr_logicalBlockArray,
@@ -1631,11 +1635,11 @@ void TVPR_CircuitDesign_c::PeekNetList_(
             bool             tiClayResyncNets ) const
 {
    // Initialize net list based on all nets defined in given VPR net list
-   this->ExtractNetList_( vpr_netArray, vpr_netCount,
+   this->ExtractNetList_( vpr_netList,
                           pnetList );
 
    // Update net list based on all net instance ports asso. with VPR nets
-   this->ExtractNetListInstPins_( vpr_netArray, vpr_netCount,
+   this->ExtractNetListInstPins_( vpr_netList,
                                   vpr_logicalBlockArray,
                                   pnetList );
 
@@ -1644,7 +1648,7 @@ void TVPR_CircuitDesign_c::PeekNetList_(
 
    // Update net list based on any available net routes
    this->ExtractNetListRoutes_( vpr_architecture,
-                                vpr_netArray, vpr_netCount,
+                                vpr_netList,
                                 vpr_blockArray, vpr_blockCount,
                                 vpr_rrNodeArray,
                                 pnetList,
@@ -2103,16 +2107,17 @@ void TVPR_CircuitDesign_c::FreeLogicalBlock_(
 //---------------------------------------------------------------------------//
 // Version history
 // 10/05/12 jeffr : Original
+// 08/21/13 jeffr : Updated to handle "const t_netlist&" parameter instead of 
+//                  the obsolete "t_net*" and associated count parameters
 //===========================================================================//
 void TVPR_CircuitDesign_c::ExtractNetList_(
-      const t_net*         vpr_netArray,
-            int            vpr_netCount,
+      const t_netlist&     vpr_netList,
             TNO_NetList_c* pnetList ) const
 {
    // Iterate for every net in the existing VPR net list...
-   for( int netIndex = 0; netIndex < vpr_netCount; ++netIndex )
+   for( unsigned int netIndex = 0; netIndex < vpr_netList.net.size( ); ++netIndex )
    {
-      const t_net& vpr_net = vpr_netArray[netIndex];
+      const t_vnet& vpr_net = vpr_netList.net[netIndex];
 
       const char* pszNetName = vpr_net.name;
       if( pnetList->IsMember( pszNetName ))
@@ -2132,17 +2137,18 @@ void TVPR_CircuitDesign_c::ExtractNetList_(
 //---------------------------------------------------------------------------//
 // Version history
 // 10/05/12 jeffr : Original
+// 08/21/13 jeffr : Updated to handle "const t_netlist&" parameter instead of 
+//                  the obsolete "t_net*" and associated count parameters
 //===========================================================================//
 void TVPR_CircuitDesign_c::ExtractNetListInstPins_(
-      const t_net*           vpr_netArray,
-            int              vpr_netCount,
+      const t_netlist&       vpr_netList,
       const t_logical_block* vpr_logicalBlockArray,
             TNO_NetList_c*   pnetList ) const
 {
    // Iterate for every net in the existing VPR net list...
-   for( int netIndex = 0; netIndex < vpr_netCount; ++netIndex )
+   for( unsigned int netIndex = 0; netIndex < vpr_netList.net.size( ); ++netIndex )
    {
-      const t_net& vpr_net = vpr_netArray[netIndex];
+      const t_vnet& vpr_net = vpr_netList.net[netIndex];
 
       const char* pszNetName = vpr_net.name;
       TNO_Net_c* pnet = pnetList->Find( pszNetName );
@@ -2150,11 +2156,11 @@ void TVPR_CircuitDesign_c::ExtractNetListInstPins_(
       pnet->ClearInstPinList( );
 
       // Iterate for every pin in the existing VPR net...
-      int pinCount = 1 + vpr_net.num_sinks; // [VPR] Assume [0] for output pin
+      int pinCount = 1 + const_cast< t_vnet& >( vpr_net ).num_sinks( ); // [VPR] Assume [0] for output pin
       for( int nodeIndex = 0; nodeIndex < pinCount; ++nodeIndex )
       {
          // Extract pin's instance (ie. block) name and port/pin name
-         int blockIndex = vpr_net.node_block[nodeIndex];
+         int blockIndex = vpr_net.pins[nodeIndex].block;
          const char* pszBlockName = vpr_logicalBlockArray[blockIndex].name;
 
          const t_pb_graph_pin* pvpr_graphPin = 0;
@@ -2198,18 +2204,19 @@ void TVPR_CircuitDesign_c::ExtractNetListInstPins_(
 // Version history
 // 10/05/12 jeffr : Original
 // 07/23/13 jeffr : Added support for optional "tiClayResyncNets" parameter
+// 08/21/13 jeffr : Updated to handle "const t_netlist&" parameter instead of 
+//                  the obsolete "t_net*" and associated count parameters
 //===========================================================================//
 void TVPR_CircuitDesign_c::ExtractNetListRoutes_(
-      const t_arch*          vpr_architecture,
-      const t_net*           vpr_netArray,
-            int              vpr_netCount,
-      const t_block*         vpr_blockArray,
-            int              vpr_blockCount,
-      const t_rr_node*       vpr_rrNodeArray,
-            TNO_NetList_c*   pnetList,
-            bool             tiClayResyncNets ) const
+      const t_arch*        vpr_architecture,
+      const t_netlist&     vpr_netList,
+      const t_block*       vpr_blockArray,
+            int            vpr_blockCount,
+      const t_rr_node*     vpr_rrNodeArray,
+            TNO_NetList_c* pnetList,
+            bool           tiClayResyncNets ) const
 {
-   if( vpr_netCount && vpr_blockCount )
+   if( vpr_netList.net.size( ) && vpr_blockCount )
    {
       // Call VPR API's special TI-specific function to find all net trace lists
       boolean applyLogicalEquivalence = static_cast< boolean >( tiClayResyncNets );
@@ -2219,10 +2226,10 @@ void TVPR_CircuitDesign_c::ExtractNetListRoutes_(
       if( pvpr_traceArray )
       {
          // Iterate for every net in the existing VPR net list...
-         for( int netIndex = 0; netIndex < vpr_netCount; ++netIndex )
+         for( unsigned int netIndex = 0; netIndex < vpr_netList.net.size( ); ++netIndex )
          {
-            const t_net& vpr_net = vpr_netArray[netIndex];
-
+            const t_vnet& vpr_net = vpr_netList.net[netIndex];
+ 
             const char* pszNetName = vpr_net.name;
             TNO_Net_c* pnet = pnetList->Find( pszNetName );
 
@@ -2703,16 +2710,16 @@ int TVPR_CircuitDesign_c::FindModelPortCount_(
 //===========================================================================//
 const t_pb_graph_pin* TVPR_CircuitDesign_c::FindGraphPin_(
       const t_logical_block* vpr_logicalBlockArray,
-      const t_net&           vpr_net,
+      const t_vnet&          vpr_net,
             int              nodeIndex ) const
 {
    const t_pb_graph_pin* pvpr_graphPin = 0;
    const t_model_ports* pvpr_port = 0;
 
-   int blockIndex = vpr_net.node_block[nodeIndex];
+   int blockIndex = vpr_net.pins[nodeIndex].block;
    if( vpr_logicalBlockArray[blockIndex].pb ) 
    {
-      int portIndex = vpr_net.node_block_port[nodeIndex];
+      int portIndex = vpr_net.pins[nodeIndex].block_port;
 
       // [VPR] This net has been packed, hence pb_graph_pin does exist
       if( nodeIndex > 0 ) 
@@ -2757,7 +2764,7 @@ const t_pb_graph_pin* TVPR_CircuitDesign_c::FindGraphPin_(
 
    if( pvpr_port )
    {
-      int pinIndex = vpr_net.node_block_pin[nodeIndex];
+      int pinIndex = vpr_net.pins[nodeIndex].block_pin;
       const t_pb_graph_node* pvpr_graphNode = 0;
       pvpr_graphNode = vpr_logicalBlockArray[blockIndex].pb->pb_graph_node;
       pvpr_graphPin = this->FindGraphPin_( *pvpr_graphNode, pvpr_port, pinIndex ); 
