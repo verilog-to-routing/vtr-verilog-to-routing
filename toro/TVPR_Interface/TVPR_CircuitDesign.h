@@ -55,7 +55,7 @@ public:
                 const t_model* pvpr_customModels,
                 t_net** pvpr_netArray,
                 int* pvpr_netCount,
-                t_netlist* pvpr_globalNetList,
+                t_netlist* pvpr_netList,
                 t_logical_block** pvpr_logicalBlockArray,
                 int* pvpr_logicalBlockCount,
                 int* pvpr_primaryInputCount,
@@ -63,8 +63,7 @@ public:
                 bool deleteInvalidData = true ) const;
    
    void Import( const t_arch* vpr_architecture,
-                t_net* vpr_netArray,
-                int vpr_netCount,
+                const t_netlist& vpr_netList,
                 const t_block* vpr_blockArray,
                 int vpr_blockCount,
                 const t_logical_block* vpr_logicalBlockArray,
@@ -160,7 +159,7 @@ private:
    
    bool UpdateStructures_( t_net** pvpr_netArray,
                            int* pvpr_netCount,
-                           t_netlist* pvpr_globalNetList,
+                           t_netlist* pvpr_netList,
                            t_logical_block** pvpr_logicalBlockArray,
                            int* pvpr_logicalBlockCount,
                            int* pvpr_primaryInputCount,
@@ -173,7 +172,7 @@ private:
                           int vpr_logicalBlockCount ) const;
    void UpdateGlobalNets_( t_net* vpr_netArray,
                            int vpr_netCount,
-                           t_netlist* pvpr_globalNetList ) const;
+                           t_netlist* pvpr_netList ) const;
    bool UpdateAbsorbLogic_( t_net* vpr_netArray,
                             t_logical_block* vpr_logicalBlockArray,
                             int vpr_logicalBlockCount ) const;
@@ -219,8 +218,7 @@ private:
                               TPO_NameList_t* phierNameList,
                               TPO_InstHierMapList_t* ppackHierMapList ) const;
    void PeekNetList_( const t_arch* vpr_architecture,
-                      const t_net* vpr_netArray,
-                      int vpr_netCount,
+                      const t_netlist& vpr_netList,
                       const t_block* vpr_blockArray,
                       int vpr_blockCount,
                       const t_logical_block* vpr_logicalBlockArray,
@@ -272,16 +270,13 @@ private:
    void FreeLogicalBlock_( t_logical_block* vpr_logicalBlockArray,
                            int blockIndex ) const;
    
-   void ExtractNetList_( const t_net* vpr_netArray,
-                         int vpr_netCount,
+   void ExtractNetList_( const t_netlist& vpr_netList,
                          TNO_NetList_c* pnetList ) const;
-   void ExtractNetListInstPins_( const t_net* vpr_netArray,
-                                 int vpr_netCount,
+   void ExtractNetListInstPins_( const t_netlist& vpr_netList,
                                  const t_logical_block* vpr_logicalBlockArray,
                                  TNO_NetList_c* pnetList ) const;
    void ExtractNetListRoutes_( const t_arch* vpr_architecture,
-                               const t_net* vpr_netArray,
-                               int vpr_netCount,
+                               const t_netlist& vpr_netList,
                                const t_block* vpr_blockArray,
                                int vpr_blockCount,
                                const t_rr_node* vpr_rrNodeArray,
@@ -319,7 +314,7 @@ private:
                             TC_TypeMode_t portType ) const;
 
    const t_pb_graph_pin* FindGraphPin_( const t_logical_block* vpr_logicalBlockArray,
-                                        const t_net& vpr_net,
+                                        const t_vnet& vpr_net,
                                         int nodeIndex ) const;
    const t_pb_graph_pin* FindGraphPin_( const t_pb_graph_node& vpr_graphNode,
                                         const t_model_ports* pvpr_port, 
