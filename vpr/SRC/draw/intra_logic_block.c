@@ -1,72 +1,117 @@
+/* This file holds subroutines responsible for drawing inside clustered logic blocks.
+ * 
+ * Author: Long Yu (Mike) Wang 
+ * Date: August 2013
+ */
+
 #include <cstdio>
 #include <algorithm>
-
 #include <assert.h>
+#include <string.h>
 
 #include "intra_logic_block.h"
 #include "globals.h"
+#include "vpr_utils.h"
 #include "draw_global.h"
-
-/* Subroutines local to this file. */
-static int draw_internal_find_max_lvl(t_pb_type pb_type);
-static void draw_internal_load_coords(t_pb_type pb_type, float parent_width, float parent_height);
-static void draw_internal_calc_coords(t_pb_type pb_type, int parent_num_modes, int mode_index, 
-									   int num_sibling, int pb_index, float parent_width, 
-									   float parent_height, float *blk_width, float *blk_height);
-static void draw_internal_alloc_pb_type(t_pb_type pb_type);
+#include "graphics.h"
 
 
-/* Subroutine definitions begin. */
+/************************* Subroutines local to this file. *******************************/
+
+static int draw_internal_alloc_pb_array(t_pb_graph_node *pb_graph_head);
+static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node, 
+									  float parent_width, float parent_height);
+static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node, 
+									  int num_pb_types, int type_index, int num_pb, int pb_index, 
+									  float parent_width, float parent_height, 
+									  OUTP float *blk_width, OUTP float *blk_height);
+static void draw_internal_pb(int type_index, t_pb *pb, float start_x, float start_y,
+							 float end_x, float end_y);
+
+
+/************************* Subroutine definitions begin. *********************************/
+
+/* This function pre-allocates space to store bounding boxes for all sub-blocks. Each 
+ * sub-block is identified by its descriptor_type and a unique pin ID in the type.
+ */
 void draw_internal_alloc_blk() {
-	int i, max_subblk_level;
-	size_t v_index; 
+	t_draw_coords *draw_coords;
+	int i;
+	t_pb_graph_node *pb_graph_head;
 	
-	draw_coords.subblk_info = new vector<t_draw_pb_info>;
+	/* Call accessor function to retrieve global variables. */
+	draw_coords = get_draw_coords_vars();
+	
+	/* Create a vector holding coordinate information for each type of physical logic
+	 * block.
+	 */
+	draw_coords->blk_info.resize(num_types);
 
-	max_subblk_level = 0;
 	for (i = 0; i < num_types; ++i) {
 		/* Empty block has no sub_blocks */
-		if (strcmp(type_descriptors[i].name, "<EMPTY>") == 0)
+		if (&type_descriptors[i] == EMPTY_TYPE)
 			continue;
 		
-		/* Determine the max number of sub_block levels in the FPGA */
-		max_subblk_level = max(draw_internal_find_max_lvl(*type_descriptors[i].pb_type),
-							   max_subblk_level);
-	}
-
-	/* size() member function in std::vector returns unsigned integral type */
-	for (v_index = 0; v_index < draw_coords.subblk_info->size(); ++v_index) {
-		/* Subblk_levels start counting at level 0. Therefore, need to add 1 to 
-		 * max_subblk_level.
+		pb_graph_head = type_descriptors[i].pb_graph_head;
+		
+		/* Create an vector with size equal to the total number of pins for each type 
+		 * of physical logic block, in order to uniquely identify each sub-block in 
+		 * the pb_graph of that type.
 		 */
-		draw_coords.subblk_info->at(v_index).hierarchy = new vector<t_draw_pb_hierarchy>(max_subblk_level);
+		draw_coords->blk_info.at(i).subblk_array.resize(pb_graph_head->total_pb_pins);
 	}
 }
 
 
+/* This function initializes bounding box values for all sub-blocks. It calls helper functions 
+ * to traverse through the pb_graph for each descriptor_type and compute bounding box values.
+ */
 void draw_internal_init_blk() {
-	int i;
-	t_pb_type pb_type;
+	t_draw_coords *draw_coords;
+	int i, type_descriptor_index;
+	t_pb_graph_node *pb_graph_head_node;
 	float blk_width, blk_height;
+	int num_sub_tiles;
+
+	/* Call accessor function to retrieve global variables. */
+	draw_coords = get_draw_coords_vars();
 
 	for (i = 0; i < num_types; ++i) {
-		pb_type = *type_descriptors[i].pb_type;
+		/* Empty block has no sub_blocks */
+		if (&type_descriptors[i] == EMPTY_TYPE)
+			continue;
 
-		/* Calculate width and height of each physical logic block type. */
-		blk_width = type_descriptors[i].width * draw_coords.tile_width;
-		blk_height = type_descriptors[i].height * draw_coords.tile_width;
+		pb_graph_head_node = type_descriptors[i].pb_graph_head;
+		type_descriptor_index = type_descriptors[i].index;
 
-		draw_internal_load_coords(pb_type, blk_width, blk_height);
+		num_sub_tiles = type_descriptors[i].capacity;
+		/* Calculate width and height of each top-level physical logic 
+		 * block type. 
+		 */
+		blk_width = type_descriptors[i].width * draw_coords->tile_width
+					/num_sub_tiles;
+		blk_height = type_descriptors[i].height * draw_coords->tile_width
+					/num_sub_tiles;
+
+		draw_internal_load_coords(type_descriptor_index, pb_graph_head_node, 
+								  blk_width, blk_height);
 	}
 }
 
 
+/* Top-level drawing routine for internal sub-blocks. The function traverses through all 
+ * grid tiles and calls helper function to draw inside each block.
+ */
 void draw_internal_draw_subblk() {
+	t_draw_coords *draw_coords;
 	int i, j, k;
-	int num_sub_tiles;
-	float sub_tile_step;
-	int height;
-	float x1, y1, x2, y2;
+	int num_sub_tiles, blk_height, bnum;
+	int type_index = 0;
+	float sub_tile_offset;
+	float start_x, start_y, end_x, end_y;
+
+	/* Call accessor function to retrieve global variables. */
+	draw_coords = get_draw_coords_vars();
 
 	for (i = 0; i <= (nx + 1); i++) {
 		for (j = 0; j <= (ny + 1); j++) {
@@ -74,136 +119,118 @@ void draw_internal_draw_subblk() {
 			if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0) 
 				continue;
 
-			num_sub_tiles = grid[i][j].type->capacity;
-			sub_tile_step = draw_coords.tile_width / num_sub_tiles;
-			height = grid[i][j].type->height;
-
-			/* Don't draw if tile capacity is zero. This includes corners. */
-			if (num_sub_tiles == 0)
+			/* Don't draw if tile is empty. This includes corners. */
+			if (grid[i][j].type == EMPTY_TYPE)
 				continue;
+			
+			num_sub_tiles = grid[i][j].type->capacity;
+			sub_tile_offset = draw_coords->tile_width / num_sub_tiles;
+			blk_height = grid[i][j].type->height;
 
 			for (k = 0; k < num_sub_tiles; ++k) {
-				/* Get coords of current sub_tile */
-				if ((j < 1) || (j > ny)) { /* top and bottom fringes */
-					/* Only for the top and bottom fringes (ie. io blocks place on top 
-					 * and bottom edges of the chip), sub_tiles are placed next to each 
-					 * other horizontally, because it is easier to visualize the 
-					 * connection from each individual io block to other parts of the 
-					 * chip when toggle_nets is selected.
-					 */
-					x1 = draw_coords.tile_x[i] + (k * sub_tile_step);
-					y1 = draw_coords.tile_y[j];
-					x2 = x1 + sub_tile_step;
-					y2 = y1 + draw_coords.tile_width;
+				/* Don't draw if block is empty. */
+				if (grid[i][j].blocks[k] == EMPTY || grid[i][j].blocks[k] == INVALID)
+					continue;
 
+				/* Get block ID */
+				bnum = grid[i][j].blocks[k];
+				/* Safety check, that physical blocks exists in the CLB */
+				if (block[bnum].pb == NULL)
+					continue;
+
+				/* type_index keeps track of what type the block is. */
+				type_index = block[bnum].type->index;
+
+				if ((j < 1) || (j > ny)) {	
+					start_x = draw_coords->tile_x[i] + (k * sub_tile_offset);
+					start_y = draw_coords->tile_y[j];
+					end_x = start_x + sub_tile_offset;
+					end_y = start_y + draw_coords->tile_width;
+
+					draw_internal_pb(type_index, block[bnum].pb, start_x, start_y, 
+									 end_x, end_y);
 				}
 				else {
-					/* Sub_tiles are stacked on top of each other vertically. */
-					x1 = draw_coords.tile_x[i];
-					y1 = draw_coords.tile_y[j] + (k * sub_tile_step);
-					x2 = x1 + draw_coords.tile_width;
-					y2 = y1 + sub_tile_step;
+					start_x = draw_coords->tile_x[i];
+					start_y = draw_coords->tile_y[j] + (k * sub_tile_offset);
+					end_x = start_x + draw_coords->tile_width;
+					end_y = draw_coords->tile_y[j + blk_height - 1] + ((k + 1) * sub_tile_offset);
+					
+					draw_internal_pb(type_index, block[bnum].pb, start_x, start_y,
+									 end_x, end_y);
 				}
 			}
 		}
 	}
 }
 
-			
-static int draw_internal_find_max_lvl(t_pb_type pb_type) {
-	int i, j;
+
+/* Helper function for initializing bounding box values for each sub-block. This function
+ * traverses through the pb_graph for a descriptor_type (given by type_descrip_index), and
+ * calls helper function to compute bounding box values.
+ */
+static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node, 
+									  float parent_width, float parent_height) {
+	int i, j, k;
+	t_pb_type *pb_type;
+	int num_modes, num_children, num_pb;
 	t_mode mode;
-	int max_levels = 0;
-
-	/* Add new pb_type into draw_coords.blk_info if pb_type
-	 * is not a root-level pb
-	 */
-	if (pb_type.depth != 0)
-		draw_internal_alloc_pb_type(pb_type);
-
-	/* If no modes, we have reached the end of pb_graph */
-	if (pb_type.num_modes == 0)
-		return (pb_type.depth);
-
-	for (i = 0; i < pb_type.num_modes; ++i) {
-		mode = pb_type.modes[i];
-
-		if (mode.num_pb_type_children == 0)
-			continue;
-
-		for (j = 0; j < mode.num_pb_type_children; ++j) {
-			max_levels = max(draw_internal_find_max_lvl(mode.pb_type_children[j]), max_levels);
-		}
-	}
-
-	return max_levels;
-}
-
-
-static void draw_internal_alloc_pb_type(t_pb_type pb_type) {
-	size_t i;
-	t_draw_pb_info new_pb_type;
-
-	for (i = 0; i < draw_coords.subblk_info->size(); ++i) {
-		/* Check if the pb_type already exists in blk_info */
-		if (pb_type.name == draw_coords.subblk_info->at(i).blk_type)
-			return;
-	}
-
-	new_pb_type.blk_type = pb_type.name;
-	new_pb_type.hierarchy = NULL;
-	draw_coords.subblk_info->push_back(new_pb_type);
-}
-
-
-static void draw_internal_load_coords(t_pb_type pb_type, float parent_width, float parent_height) {
-	int i, j;
-	int num_modes;
-	t_mode mode;
-	int num_children;
-	t_pb_type pb_type_child;
 	float blk_width = 0.;
 	float blk_height = 0.;
 
-	num_modes = pb_type.num_modes;
+	/* Get information about the pb_type */
+	pb_type = pb_graph_node->pb_type;
+	num_modes = pb_type->num_modes;
 
 	/* If no modes, we have reached the end of pb_graph */
 	if (num_modes == 0)
 		return;
 
 	for (i = 0; i < num_modes; ++i) {
-		mode = pb_type.modes[i];
+		mode = pb_type->modes[i];
 		num_children = mode.num_pb_type_children;
 
-		if (mode.num_pb_type_children == 0)
-			continue;
-
 		for (j = 0; j < num_children; ++j) {
-			pb_type_child = mode.pb_type_children[j];
-
-			/* Compute bound box for sub_block. Don't call if pb_type is root-level pb. */
-			if (pb_type.depth != 0)
-				draw_internal_calc_coords(pb_type, num_modes, i, num_children, j, parent_width,
-										  parent_height, &blk_width, &blk_height);
+			/* Find the number of instances for each child pb_type. */
+			num_pb = mode.pb_type_children[j].num_pb;
 			
-			/* Traverse to next level in the pb_graph */
-			draw_internal_load_coords(pb_type_child, blk_width, blk_height);
+			for (k = 0; k < num_pb; ++k) { 
+				/* Compute bound box for block. Don't call if pb_type is root-level pb. */
+				draw_internal_calc_coords(type_descrip_index, 
+										  &pb_graph_node->child_pb_graph_nodes[i][j][k], 
+										  num_children, j, num_pb, k,
+										  parent_width, parent_height, 
+										  &blk_width, &blk_height);		
+
+				/* Traverse to next level in the pb_graph */
+				draw_internal_load_coords(type_descrip_index, 
+										  &pb_graph_node->child_pb_graph_nodes[i][j][k], 
+										  blk_width, blk_height);
+			}
 		}
 	}
+	return;
 }
 
 
+/* Helper function which computes bounding box values for a sub-block. The coordinates 
+ * are relative to the left and bottom corner of the parent block.
+ */
 static void 
-draw_internal_calc_coords(t_pb_type pb_type, int parent_num_modes, int mode_index, 
-						  int num_sibling, int pb_index, float parent_width, float parent_height, 
-						  float *blk_width, float *blk_height) 
+draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node, 
+						  int num_pb_types, int type_index, int num_pb, int pb_index, 
+						  float parent_width, float parent_height, 
+						  OUTP float *blk_width, OUTP float *blk_height) 
 {
-	size_t i;
-	int hierarchy;
+	t_draw_coords *draw_coords;
+	int node_id;
 	float drawing_width, drawing_height;
 	float sub_tile_x, sub_tile_y;
-	float width_offset, height_offset;
+	float width, height;
 	float start_x, start_y, end_x, end_y;
+
+	/* Call accessor function to retrieve global variables. */
+	draw_coords = get_draw_coords_vars();
 
 	/* Draw all child-level blocks in 90% of the space inside their parent block. */
 	drawing_width = parent_width * 0.9;
@@ -216,40 +243,138 @@ draw_internal_calc_coords(t_pb_type pb_type, int parent_num_modes, int mode_inde
 	sub_tile_y = parent_height * 0.05;
 
 	/* Divide drawing_width by the number of child types. */
-	width_offset = drawing_width/num_sibling;
-	/* Divide drawing_height by the number of modes that the parent contains. */
-	height_offset = drawing_height/parent_num_modes;
+	width = drawing_width/num_pb_types;
+	/* Divide drawing_height by the number of instances of the pb_type. */
+	height = drawing_height/num_pb;
 
-	/* The starting point to draw the pb_type */
-	start_x = width_offset * mode_index + sub_tile_x;
-	start_y = height_offset * pb_index + sub_tile_y;
+	/* The starting point to draw the physical block. */
+	start_x = width * type_index + sub_tile_x;
+	start_y = height * pb_index + sub_tile_y;
 
 	/* Leave some space between different pb_types. */
-	width_offset *= 0.95;
-	/* Leave some space between different modes. */
-	height_offset *= 0.95;
+	width *= 0.9;
+	/* Leave some space between different instances of the same type. */
+	height *= 0.95;
 
 	/* Endpoint for drawing the pb_type */
-	end_x = start_x + width_offset;
-	end_y = start_y + height_offset;
+	end_x = start_x + width;
+	end_y = start_y + height;
 
-	for (i = 0; i < draw_coords.subblk_info->size(); ++i) {
-		/* Check if the pb_type already exists in blk_info */
-		if (pb_type.name == draw_coords.subblk_info->at(i).blk_type) {
-			hierarchy = pb_type.depth;
-			draw_coords.subblk_info->at(i).hierarchy->at(hierarchy).blk_bbox.xleft = start_x;
-			draw_coords.subblk_info->at(i).hierarchy->at(hierarchy).blk_bbox.xright = end_x;
-			draw_coords.subblk_info->at(i).hierarchy->at(hierarchy).blk_bbox.ybottom = start_y;
-			draw_coords.subblk_info->at(i).hierarchy->at(hierarchy).blk_bbox.ytop = end_y;
-			draw_coords.subblk_info->at(i).hierarchy->at(hierarchy).blk_width = width_offset;
-			draw_coords.subblk_info->at(i).hierarchy->at(hierarchy).blk_height = height_offset;
-		}
-	}
+	/* Get unique id for the pb_node */
+	node_id = get_unique_pb_graph_node_id(pb_graph_node);
 
-	*blk_width = width_offset;
-	*blk_height = height_offset/pb_type.num_pb;
+	/* Load coordinates into globally declared structure */
+	draw_coords->blk_info.at(type_descrip_index).subblk_array.at(node_id).xleft = start_x;
+	draw_coords->blk_info.at(type_descrip_index).subblk_array.at(node_id).xright = end_x;
+	draw_coords->blk_info.at(type_descrip_index).subblk_array.at(node_id).ybottom = start_y;
+	draw_coords->blk_info.at(type_descrip_index).subblk_array.at(node_id).ytop = end_y;
+	
+	*blk_width = width;
+	*blk_height = height;
 
 	return;
 }
 
+/* Helper subroutine to draw all sub-blocks. This function traverses through the pb_graph 
+ * which a netlist block can map to, and draws each sub-block inside its parent block. With
+ * each click on the "Blk Internal" button, a new level is shown. 
+ */
+static void draw_internal_pb(int type_index, t_pb *pb, float start_x, float start_y, 
+							 float end_x, float end_y) 
+{
+	t_draw_coords *draw_coords;
+	t_pb_graph_node *pb_graph_node, *pb_child_node;
+	t_pb_type *pb_type, *pb_child_type;
+	t_mode mode;
+	int i, j, num_children, num_pb;
+	int node_id;
+	float x1, x2, y1, y2;
 
+	/* Call accessor function to retrieve global variables. */
+	draw_coords = get_draw_coords_vars();
+
+	pb_graph_node = pb->pb_graph_node;
+	pb_type = pb_graph_node->pb_type;
+
+	/* Reset the background in the block to white, so the child blocks can be drawn
+	 * in grey.
+	 */
+	setcolor(WHITE);
+	fillrect(start_x, start_y, end_x, end_y); 
+	setcolor(BLACK);
+	setlinestyle(SOLID);
+	drawrect(start_x, start_y, end_x, end_y);
+
+	/* Draw text for block pb_type */
+	drawtext((start_x + end_x) / 2.0, end_y - (end_y - start_y) / 20.0,
+			 pb_type->name, min((end_x - start_x), (end_y - start_y)));
+
+	/* Get the mode of operation */
+	mode = pb_type->modes[pb->mode];
+	num_children = mode.num_pb_type_children;
+
+	for (i = 0; i < num_children; ++i) {
+		num_pb = mode.pb_type_children[i].num_pb;
+			
+		for (j = 0; j < num_pb; ++j) {	
+			/* Iterate through each child_pb. */
+
+			/* Point to child block */
+			pb_child_node = pb->child_pbs[i][j].pb_graph_node;
+			pb_child_type = pb_child_node->pb_type;
+
+			/* Set coordinates to draw sub_block */
+			node_id = get_unique_pb_graph_node_id(pb_child_node);
+			x1 = start_x + draw_coords->blk_info.at(type_index).subblk_array.at(node_id).xleft;
+			x2 = start_x + draw_coords->blk_info.at(type_index).subblk_array.at(node_id).xright;
+			y1 = start_y + draw_coords->blk_info.at(type_index).subblk_array.at(node_id).ybottom;
+			y2 = start_y + draw_coords->blk_info.at(type_index).subblk_array.at(node_id).ytop;
+			
+			if (pb->child_pbs[i][j].name != NULL) {
+				/* If child block is used, draw it in grey background and
+				 * solid border.
+				 */
+				setlinestyle(SOLID);
+				setcolor(LIGHTGREY);
+			}
+			else {
+				/* If child block is not used, draw empty block (ie. white 
+				 * background with dashed border). 
+				 */
+				setlinestyle(DASHED);
+				setcolor(WHITE);
+			}
+			
+			fillrect(x1, y1, x2, y2); 
+			setcolor(BLACK);
+			drawrect(x1, y1, x2, y2);
+
+			/* Display names for sub_blocks */
+			if (pb->child_pbs[i][j].name != NULL) {
+				/* If child block is used, label it by its pb_type, followed
+				 * by its name in brackets.
+				 */
+				char blk_tag[25];
+				sprintf (blk_tag, "%s(%s)", pb_child_type->name, pb->child_pbs[i][j].name);
+
+				drawtext((x1 + x2) / 2.0, (y1 + y2) / 2.0,
+					 blk_tag, min((x2 - x1)/2, (y2 - y1)));
+			}
+			else {
+				/* If child block is not used, label it only by its pb_type
+				 */
+				drawtext((x1 + x2) / 2.0, (y1 + y2) / 2.0,
+					 pb_child_type->name, min((x2 - x1)/2, (y2 - y1)));
+			}
+
+			/* If no more child physical blocks to draw, return */
+			if (pb_child_type->num_modes == 0 || pb->child_pbs == NULL 
+				|| pb->child_pbs[i] == NULL || pb->child_pbs[i][j].name == NULL)
+				continue;
+
+			/* Traverse to next-level in pb_graph */
+			draw_internal_pb(type_index, &pb->child_pbs[i][j], x1, y1, x2, y2);
+		}
+	}
+	
+}

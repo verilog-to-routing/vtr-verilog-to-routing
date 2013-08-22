@@ -434,7 +434,7 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 boolean vpr_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 
 	/* Startup X graphics */
-	set_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
+	init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
 			vpr_setup.RouterOpts.route_type);
 	if (vpr_setup.ShowGraphics) {
 		init_graphics("VPR:  Versatile Place and Route for FPGAs", WHITE);

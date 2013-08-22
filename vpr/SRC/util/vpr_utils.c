@@ -174,6 +174,38 @@ boolean is_opin(int ipin, t_type_ptr type) {
 		return (FALSE);
 }
 
+
+/* Each node in the pb_graph for a top-level pb_type can be uniquely identified 
+ * by its pins. Since the pins in a cluster of a certain type are densely indexed,
+ * this function will find the pin index (int pin_count_in_cluster) of the first 
+ * pin for a given pb_graph_node, and use this index value as unique identifier 
+ * for the node.
+ */
+int get_unique_pb_graph_node_id(t_pb_graph_node *pb_graph_node) {
+	t_pb_graph_pin first_input_pin;
+	t_pb_graph_pin first_output_pin;
+	int node_id;
+	
+	if (pb_graph_node->num_input_pins != 0) {
+		/* If input port exists on this node, return the index of the first
+		 * input pin as node_id.
+		 */
+		first_input_pin = pb_graph_node->input_pins[0][0];
+		node_id = first_input_pin.pin_count_in_cluster;
+		return node_id;
+	}
+	else {
+		/* If no input port exists on node, then return the index of the first
+		 * output pin. Every pb_node is guaranteed to have at least an input or
+		 * output pin.
+		 */
+		first_output_pin = pb_graph_node->output_pins[0][0];
+		node_id = first_output_pin.pin_count_in_cluster;
+		return node_id;
+	}
+}
+
+
 void get_class_range_for_block(INP int iblk, 
 		OUTP int *class_low,
 		OUTP int *class_high) {

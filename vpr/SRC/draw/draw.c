@@ -1,3 +1,16 @@
+/*********************************** Top-level Summary *************************************
+ This is VPR's main graphics application program. The program interacts with graphics.c, 
+ which provides an API for displaying graphics on both X11 and Win32. The most important
+ subroutine in this file is drawscreen(), which is a callback function that X11 or Win32
+ will call whenever the screen needs to be updated. Then, drawscreen() will decide what 
+ drawing subroutines to call depending on whether PLACEMENT or ROUTING is shown on screen 
+ and whether any of the menu buttons has been triggered. As a note, looks into draw_global.c
+ for understanding the data structures associated with drawing.
+ 
+ Authors: Vaughn Betz, Long Yu (Mike) Wang
+ Last updated: August 2013
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <cmath>
@@ -14,6 +27,7 @@ using namespace std;
 #include "draw.h"
 #include "read_xml_arch_file.h"
 #include "util.h"
+#include "draw_types.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
 
@@ -26,100 +40,28 @@ using namespace std;
 	   * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
 #include <sys/time.h>
 #endif
-#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
 #ifdef DEBUG
 #include "rr_graph.h"
 #endif
 
+/****************************** Define Macros *******************************/
 
-/*************** Types local to this module *********************************/
 #define MAX_BLOCK_COLOURS 5
 #define DEFAULT_RR_NODE_COLOR BLACK
+//#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
-/* Draw rr_graph from less detailed to more detailed
- * in order to speed up drawing when toggle_rr is clicked
- * on for the first time.
+/************************** File Scope Variables ****************************/
+
+/* Draw_state is globally accessible through global accesssor function 
+ * get_draw_state_vars().
  */
-enum e_draw_rr_toggle {
-	DRAW_NO_RR = 0,
-	DRAW_NODES_RR,
-	DRAW_NODES_AND_SBOX_RR,
-	DRAW_ALL_BUT_BUFFERS_RR,
-	DRAW_ALL_RR,
-	DRAW_RR_TOGGLE_MAX
-};
+t_draw_state *draw_state;
 
-enum e_draw_congestion {
-	DRAW_NO_CONGEST = 0,
-	DRAW_CONGESTED,
-	DRAW_CONGESTED_AND_USED,
-	DRAW_CONGEST_MAX
-};
-
-enum e_draw_net_type {
-	ALL_NETS, HIGHLIGHTED
-};
-
-enum e_edge_dir {
-	FROM_X_TO_Y, FROM_Y_TO_X
-};
-/* Chanx to chany or vice versa? */
-
-/* Structure which stores state information of a rr_node. Used
- * for controling the drawing each rr_node when ROUTING is on screen.
- * color: Color of the rr_node
- * node_highlighted: Whether the node is highlighted. Useful for 
- *					 highlighting routing resources on rr_graph
+/* Call global accessor function get_draw_coords_vars() to retrieve 
+ * global variables for coordinates information. 
  */
-typedef struct {
-	color_types color;
-	bool node_highlighted;
-} t_draw_rr_node;
-
-/* Structure used to store state variables that control drawing and 
- * highlighting.
- * pic_on_screen: What to draw on the screen (PLACEMENT, ROUTING, or 
- *				  NO_PICTURE).
- * show_nets: Whether to show nets at placement and routing.
- * show_congestion: Controls if congestion is shown, when ROUTING is
- *					on screen.
- * draw_rr_toggle: Controls drawing of routing resources on screen,
- *				   if pic_on_screen is ROUTING.
- * show_graphics: Whether graphics is enabled.
- * gr_automode: How often is user input required. (0: each t, 
- *				1: each place, 2: never)
- * draw_route_type: GLOBAL or DETAILED
- * default_message: default screen message on screen
- * net_color: color in which each net should be drawn. 
- *			  [0..g_clbs_nlist.net.size()-1]
- * block_color: color in which each block should be drawn.
- *			    [0..num_blocks-1]
- * draw_rr_node: stores the state information of each routing resource.  
- *				 Used to control drawing each routing resource when 
- *				 ROUTING is on screen.
- *				 [0..num_rr_nodes-1]
- */
-typedef struct {
-	pic_type pic_on_screen;
-	boolean show_nets;
-	e_draw_congestion show_congestion;
-	e_draw_rr_toggle draw_rr_toggle;
-	boolean show_blk_internal;
-	boolean show_graphics;
-	int gr_automode;
-	e_route_type draw_route_type;
-	char default_message[BUFSIZE];
-	color_types *net_color, *block_color;
-	t_draw_rr_node *draw_rr_node;
-} t_draw_state;
-
-
-/****************** Variables local to this module. *************************/
-
-/* Initializing some state variables for safety. */
-static t_draw_state draw_state = {NO_PICTURE, FALSE, DRAW_NO_CONGEST, DRAW_NO_RR,
-								  FALSE};
+t_draw_coords *draw_coords;
 
 /********************** Subroutines local to this module ********************/
 
@@ -173,16 +115,19 @@ static void draw_reset_blk_color(int i);
 
 /********************** Subroutine definitions ******************************/
 
-void set_graphics_state(boolean show_graphics_val, int gr_automode_val,
-		enum e_route_type route_type) {
+void init_graphics_state(boolean show_graphics_val, int gr_automode_val,
+		enum e_route_type route_type) 
+{	
+	/* Call accessor functions to retrieve global variables. */
+	draw_state = get_draw_state_vars();
 
 	/* Sets the static show_graphics and gr_automode variables to the    *
 	 * desired values.  They control if graphics are enabled and, if so, *
 	 * how often the user is prompted for input.                         */
 
-	draw_state.show_graphics = show_graphics_val;
-	draw_state.gr_automode = gr_automode_val;
-	draw_state.draw_route_type = route_type;
+	draw_state->show_graphics = show_graphics_val;
+	draw_state->gr_automode = gr_automode_val;
+	draw_state->draw_route_type = route_type;
 }
 
 void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
@@ -192,57 +137,52 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 	 * value controls whether or not the Proceed button must be clicked to   *
 	 * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
 
-	if (!draw_state.show_graphics) /* Graphics turned off */
+	if (!draw_state->show_graphics) /* Graphics turned off */
 		return;
 
 	/* If it's the type of picture displayed has changed, set up the proper  *
 	 * buttons.                                                              */
-	if (draw_state.pic_on_screen != pic_on_screen_val) {
-		if (pic_on_screen_val == PLACEMENT && draw_state.pic_on_screen == NO_PICTURE) {
+	if (draw_state->pic_on_screen != pic_on_screen_val) {
+		if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
 			create_button("Window", "Toggle Nets", toggle_nets);
+			create_button("Toggle Nets", "Blk Internal", toggle_blk_internal);
 		} 
-		else if (pic_on_screen_val == ROUTING && draw_state.pic_on_screen == PLACEMENT) {
-			create_button("Toggle Nets", "Toggle RR", toggle_rr);
+		else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
+			create_button("Blk Internal", "Toggle RR", toggle_rr);
 			create_button("Toggle RR", "Congestion", toggle_congestion);
 
 			if (crit_path_button_enabled) {
 				create_button("Congestion", "Crit. Path", highlight_crit_path);
-				create_button("Crit. Path", "Blk Internal", toggle_blk_internal);
 			}
-			else
-				create_button("Congestion", "Blk Internal", toggle_blk_internal);
 		} 
-		else if (pic_on_screen_val == PLACEMENT && draw_state.pic_on_screen == ROUTING) {
+		else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
 			destroy_button("Toggle RR");
 			destroy_button("Congestion");
 
 			if (crit_path_button_enabled) {
 				destroy_button("Crit. Path");
 			}
-			destroy_button("Blk Internal");
 		} 
 		else if (pic_on_screen_val == ROUTING
-				&& draw_state.pic_on_screen == NO_PICTURE) {
+				&& draw_state->pic_on_screen == NO_PICTURE) {
 			create_button("Window", "Toggle Nets", toggle_nets);
-			create_button("Toggle Nets", "Toggle RR", toggle_rr);
+			create_button("Toggle Nets", "Blk Internal", toggle_blk_internal);
+			create_button("Blk Internal", "Toggle RR", toggle_rr);
 			create_button("Toggle RR", "Congestion", toggle_congestion);
 
 			if (crit_path_button_enabled) {
 				create_button("Congestion", "Crit. Path", highlight_crit_path);
-				create_button("Crit. Path", "Blk Internal", toggle_blk_internal);
 			}
-			else
-				create_button("Congestion", "Blk Internal", toggle_blk_internal);
 		}
 	}
 	/* Save the main message. */
 
-	my_strncpy(draw_state.default_message, msg, BUFSIZE);
+	my_strncpy(draw_state->default_message, msg, BUFSIZE);
 
-	draw_state.pic_on_screen = pic_on_screen_val;
+	draw_state->pic_on_screen = pic_on_screen_val;
 	update_message(msg);
 	drawscreen();
-	if (priority >= draw_state.gr_automode) {
+	if (priority >= draw_state->gr_automode) {
 		event_loop(highlight_blocks, NULL, NULL, drawscreen);
 	} else {
 		flushinput();
@@ -310,21 +250,29 @@ static void redraw_screen() {
 	 * to avoid a screen "flash".                                      */
 
 	setfontsize(14); 
-	if (draw_state.pic_on_screen == PLACEMENT) {
+	if (draw_state->pic_on_screen == PLACEMENT) {
 		drawplace();
-		if (draw_state.show_nets) {
+		if (draw_state->show_nets) {
 			drawnets();
+		}
+		
+		if (draw_state->show_blk_internal) {
+			draw_internal_draw_subblk();
 		}
 	} else { /* ROUTING on screen */
 		drawplace();
 
-		if (draw_state.show_nets) {
+		if (draw_state->show_nets) {
 			drawroute(ALL_NETS);
 		} else {
 			draw_rr();
 		}
 
-		if (draw_state.show_congestion != DRAW_NO_CONGEST) {
+		if (draw_state->show_blk_internal) {
+			draw_internal_draw_subblk();
+		}
+
+		if (draw_state->show_congestion != DRAW_NO_CONGEST) {
 			draw_congestion();
 		}
 	}
@@ -336,11 +284,11 @@ static void toggle_nets(void (*drawscreen_ptr)(void)) {
 	 * Also disables drawing of routing resources.  See graphics.c for details *
 	 * of how buttons work.                                                    */
 
-	draw_state.show_nets = (draw_state.show_nets == FALSE) ? TRUE : FALSE;
-	draw_state.draw_rr_toggle = DRAW_NO_RR;
-	draw_state.show_congestion = DRAW_NO_CONGEST;
+	draw_state->show_nets = (draw_state->show_nets == FALSE) ? TRUE : FALSE;
+	draw_state->draw_rr_toggle = DRAW_NO_RR;
+	draw_state->show_congestion = DRAW_NO_CONGEST;
 
-	update_message(draw_state.default_message);
+	update_message(draw_state->default_message);
 	drawscreen_ptr();
 }
 
@@ -353,12 +301,12 @@ static void toggle_rr(void (*drawscreen_ptr)(void)) {
 	 * through the options:  DRAW_NO_RR, DRAW_ALL_RR, DRAW_ALL_BUT_BUFFERS_RR,  *
 	 * DRAW_NODES_AND_SBOX_RR, and DRAW_NODES_RR.                               */
 
-	draw_state.draw_rr_toggle = (enum e_draw_rr_toggle) (((int)draw_state.draw_rr_toggle + 1) 
+	draw_state->draw_rr_toggle = (enum e_draw_rr_toggle) (((int)draw_state->draw_rr_toggle + 1) 
 														  % ((int)DRAW_RR_TOGGLE_MAX));
-	draw_state.show_nets = FALSE;
-	draw_state.show_congestion = DRAW_NO_CONGEST;
+	draw_state->show_nets = FALSE;
+	draw_state->show_congestion = DRAW_NO_CONGEST;
 
-	update_message(draw_state.default_message);
+	update_message(draw_state->default_message);
 	drawscreen_ptr();
 }
 
@@ -368,13 +316,13 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 	char msg[BUFSIZE];
 	int inode, num_congested;
 
-	draw_state.show_nets = FALSE;
-	draw_state.draw_rr_toggle = DRAW_NO_RR;
-	draw_state.show_congestion = (enum e_draw_congestion) (((int)draw_state.show_congestion + 1) 
+	draw_state->show_nets = FALSE;
+	draw_state->draw_rr_toggle = DRAW_NO_RR;
+	draw_state->show_congestion = (enum e_draw_congestion) (((int)draw_state->show_congestion + 1) 
 														  % ((int)DRAW_CONGEST_MAX));
 
-	if (draw_state.show_congestion == DRAW_NO_CONGEST) {
-		update_message(draw_state.default_message);
+	if (draw_state->show_congestion == DRAW_NO_CONGEST) {
+		update_message(draw_state->default_message);
 	} else {
 		num_congested = 0;
 		for (inode = 0; inode < num_rr_nodes; inode++) {
@@ -402,7 +350,7 @@ static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
 	if (nets_to_highlight == 0) { /* Clear the display of all highlighting. */
 		nets_to_highlight = 1;
 		deselect_all();
-		update_message(draw_state.default_message);
+		update_message(draw_state->default_message);
 		drawscreen_ptr();
 		return;
 	}
@@ -416,20 +364,20 @@ static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
 		get_tnode_block_and_output_net(inode, &iblk, &inet);
 
 		if (num_nets_seen == nets_to_highlight) { /* Last block */
-			draw_state.block_color[iblk] = MAGENTA;
+			draw_state->block_color[iblk] = MAGENTA;
 		} else if (num_nets_seen == nets_to_highlight - 1) { /* 2nd last block */
-			draw_state.block_color[iblk] = YELLOW;
+			draw_state->block_color[iblk] = YELLOW;
 		} else if (num_nets_seen < nets_to_highlight) { /* Earlier block */
-			draw_state.block_color[iblk] = DARKGREEN;
+			draw_state->block_color[iblk] = DARKGREEN;
 		}
 
 		if (inet != OPEN) {
 			num_nets_seen++;
 
 			if (num_nets_seen < nets_to_highlight) { /* First nets. */
-				draw_state.net_color[inet] = DARKGREEN;
+				draw_state->net_color[inet] = DARKGREEN;
 			} else if (num_nets_seen == nets_to_highlight) {
-				draw_state.net_color[inet] = CYAN; /* Last (new) net. */
+				draw_state->net_color[inet] = CYAN; /* Last (new) net. */
 			}
 		}
 
@@ -454,29 +402,32 @@ static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
 
 
 static void toggle_blk_internal(void (*drawscreen_ptr)(void)) {
-	draw_state.show_blk_internal = (draw_state.show_blk_internal == FALSE) ? TRUE : FALSE;
+	draw_state->show_blk_internal = (draw_state->show_blk_internal == FALSE) ? TRUE : FALSE;
 	drawscreen_ptr();
 }
 
 void alloc_draw_structs(void) {
+	/* Call accessor functions to retrieve global variables. */
+	draw_coords = get_draw_coords_vars();
 
 	/* Allocate the structures needed to draw the placement and routing.  Set *
 	 * up the default colors for blocks and nets.                             */
 
-	draw_coords.tile_x = (float *) my_malloc((nx + 2) * sizeof(float));
-	draw_coords.tile_y = (float *) my_malloc((ny + 2) * sizeof(float));
+	draw_coords->tile_x = (float *) my_malloc((nx + 2) * sizeof(float));
+	draw_coords->tile_y = (float *) my_malloc((ny + 2) * sizeof(float));
 
+	/* For sub-block drawings inside clbs */
 	draw_internal_alloc_blk();
 
-	draw_state.net_color = (enum color_types *) my_malloc(
+	draw_state->net_color = (enum color_types *) my_malloc(
 								g_clbs_nlist.net.size() * sizeof(enum color_types));
 
-	draw_state.block_color = (enum color_types *) my_malloc(
+	draw_state->block_color = (enum color_types *) my_malloc(
 								 num_blocks * sizeof(enum color_types));
 
 	/* Space is allocated for draw_rr_node but not initialized because we do *
 	 * not yet know information about the routing resources.				  */
-	draw_state.draw_rr_node = (t_draw_rr_node *) my_malloc(
+	draw_state->draw_rr_node = (t_draw_rr_node *) my_malloc(
 									num_rr_nodes * sizeof(t_draw_rr_node));
 
 	deselect_all(); /* Set initial colors */
@@ -490,18 +441,18 @@ void free_draw_structs(void) {
 	 * For safety, set all the array pointers to NULL in case any data
 	 * structure gets freed twice.													 */
 
-	free(draw_coords.tile_x);  
-	draw_coords.tile_x = NULL;
-	free(draw_coords.tile_y);  
-	draw_coords.tile_y = NULL;
+	free(draw_coords->tile_x);  
+	draw_coords->tile_x = NULL;
+	free(draw_coords->tile_y);  
+	draw_coords->tile_y = NULL;
 
-	free(draw_state.net_color);  	
-	draw_state.net_color = NULL;
-	free(draw_state.block_color);  
-	draw_state.block_color = NULL;
+	free(draw_state->net_color);  	
+	draw_state->net_color = NULL;
+	free(draw_state->block_color);  
+	draw_state->block_color = NULL;
 
-	free(draw_state.draw_rr_node);	
-	draw_state.draw_rr_node = NULL;
+	free(draw_state->draw_rr_node);	
+	draw_state->draw_rr_node = NULL;
 }
 
 void init_draw_coords(float width_val) {
@@ -513,43 +464,46 @@ void init_draw_coords(float width_val) {
 	int i;
 	int j;
 
-	if (!draw_state.show_graphics)
+	if (!draw_state->show_graphics)
 		return; /* -nodisp was selected. */
 
 	/* Each time routing is on screen, need to reallocate the color of each *
 	 * rr_node, as the number of rr_nodes may change.						*/
 	if (num_rr_nodes != 0) {
-		draw_state.draw_rr_node = (t_draw_rr_node *) my_realloc(draw_state.draw_rr_node,
+		draw_state->draw_rr_node = (t_draw_rr_node *) my_realloc(draw_state->draw_rr_node,
 										(num_rr_nodes) * sizeof(t_draw_rr_node));
 		for (i = 0; i < num_rr_nodes; i++) {
-			draw_state.draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;
-			draw_state.draw_rr_node[i].node_highlighted = false;
+			draw_state->draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;
+			draw_state->draw_rr_node[i].node_highlighted = false;
 		}
 	}
 
-	draw_coords.tile_width = width_val;
-	draw_coords.pin_size = 0.3;
+	draw_coords->tile_width = width_val;
+	draw_coords->pin_size = 0.3;
 	for (i = 0; i < num_types; ++i) {
-		draw_coords.pin_size = min(draw_coords.pin_size,
-				(draw_coords.tile_width / (4.0F * type_descriptors[i].num_pins)));
+		draw_coords->pin_size = min(draw_coords->pin_size,
+				(draw_coords->tile_width / (4.0F * type_descriptors[i].num_pins)));
 	}
 
 	j = 0;
 	for (i = 0; i < (nx + 1); i++) {
-		draw_coords.tile_x[i] = (i * draw_coords.tile_width) + j;
+		draw_coords->tile_x[i] = (i * draw_coords->tile_width) + j;
 		j += chan_width.y_list[i] + 1; /* N wires need N+1 units of space */
 	}
-	draw_coords.tile_x[nx + 1] = ((nx + 1) * draw_coords.tile_width) + j;
+	draw_coords->tile_x[nx + 1] = ((nx + 1) * draw_coords->tile_width) + j;
 
 	j = 0;
 	for (i = 0; i < (ny + 1); ++i) {
-		draw_coords.tile_y[i] = (i * draw_coords.tile_width) + j;
+		draw_coords->tile_y[i] = (i * draw_coords->tile_width) + j;
 		j += chan_width.x_list[i] + 1;
 	}
-	draw_coords.tile_y[ny + 1] = ((ny + 1) * draw_coords.tile_width) + j;
+	draw_coords->tile_y[ny + 1] = ((ny + 1) * draw_coords->tile_width) + j;
 
-	init_world(0.0, draw_coords.tile_y[ny + 1] + draw_coords.tile_width, 
-			   draw_coords.tile_x[nx + 1] + draw_coords.tile_width, 0.0);
+	/* Load coordinates of sub-blocks inside the clbs */
+	draw_internal_init_blk();
+
+	init_world(0.0, draw_coords->tile_y[ny + 1] + draw_coords->tile_width, 
+			   draw_coords->tile_x[nx + 1] + draw_coords->tile_width, 0.0);
 }
 
 static void drawplace(void) {
@@ -572,7 +526,7 @@ static void drawplace(void) {
 				continue;
 
 			num_sub_tiles = grid[i][j].type->capacity;
-			sub_tile_step = draw_coords.tile_width / num_sub_tiles;
+			sub_tile_step = draw_coords->tile_width / num_sub_tiles;
 			height = grid[i][j].type->height;
 
 			/* Don't draw if tile capacity is zero. This includes corners. */
@@ -590,25 +544,27 @@ static void drawplace(void) {
 					 * connection from each individual io block to other parts of the 
 					 * chip when toggle_nets is selected.
 					 */
-					x1 = draw_coords.tile_x[i] + (k * sub_tile_step);
-					y1 = draw_coords.tile_y[j];
+					x1 = draw_coords->tile_x[i] + (k * sub_tile_step);
+					y1 = draw_coords->tile_y[j];
 					x2 = x1 + sub_tile_step;
-					y2 = y1 + draw_coords.tile_width;
+					y2 = y1 + draw_coords->tile_width;
 				}
 				else {
 					/* Sub_tiles are stacked on top of each other vertically. */
-					x1 = draw_coords.tile_x[i];
-					y1 = draw_coords.tile_y[j] + (k * sub_tile_step);
-					x2 = x1 + draw_coords.tile_width;
-					y2 = draw_coords.tile_y[j + height - 1] + ((k + 1) * sub_tile_step);
+					x1 = draw_coords->tile_x[i];
+					y1 = draw_coords->tile_y[j] + (k * sub_tile_step);
+					x2 = x1 + draw_coords->tile_width;
+					y2 = draw_coords->tile_y[j + height - 1] + ((k + 1) * sub_tile_step);
 				}
 
 				/* Look at the tile at start of large block */
 				bnum = grid[i][j].blocks[k];
 
-				/* Draw background */
-				if (bnum != EMPTY && bnum != INVALID) {
-					setcolor(draw_state.block_color[bnum]);
+				/* Fill background for the clb. Do not fill if "show_blk_internal" 
+				 * is toggled. 
+				 */
+				if (bnum != EMPTY && bnum != INVALID && !draw_state->show_blk_internal) {
+					setcolor(draw_state->block_color[bnum]);
 					fillrect(x1, y1, x2, y2);
 				} else {
 					/* colour empty blocks a particular colour depending on type  */
@@ -630,14 +586,14 @@ static void drawplace(void) {
 				/* Draw text if the space has parts of the netlist */
 				if (bnum != EMPTY && bnum != INVALID) {
 					drawtext((x1 + x2) / 2.0, (y1 + y2) / 2.0, block[bnum].name,
-							draw_coords.tile_width);
+							sub_tile_step);
 				}
 
 				/* Draw text for block type so that user knows what block */
 				if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
 					if (i > 0 && i <= nx && j > 0 && j <= ny) {
-						drawtext((x1 + x2) / 2.0, y1 + (draw_coords.tile_width / 4.0),
-								grid[i][j].type->name, draw_coords.tile_width);
+						drawtext((x1 + x2) / 2.0, y1 + (draw_coords->tile_width / 4.0),
+								grid[i][j].type->name, sub_tile_step);
 					}
 				}
 			}
@@ -665,7 +621,7 @@ static void drawnets(void) {
 		if (g_clbs_nlist.net[inet].is_global)
 			continue; /* Don't draw global nets. */
 
-		setcolor(draw_state.net_color[inet]);
+		setcolor(draw_state->net_color[inet]);
 		b1 = g_clbs_nlist.net[inet].pins[0].block; /* The DRIVER */
 		get_block_center(b1, &x1, &y1);
 
@@ -693,7 +649,7 @@ static void get_block_center(int bnum, float *x, float *y) {
 	j = block[bnum].y;
 	k = block[bnum].z;
 
-	sub_tile_step = draw_coords.tile_width / block[bnum].type->capacity;
+	sub_tile_step = draw_coords->tile_width / block[bnum].type->capacity;
 
 	if ((j < 1) || (j > ny)) { /* Top and bottom fringe */
 		/* For the top and bottom fringes (ie. io blocks place on top 
@@ -702,16 +658,16 @@ static void get_block_center(int bnum, float *x, float *y) {
 		 * sub_block, the x-coordinate varies but the y-coordinate is half
 		 * tile_width above the bottom of the tile.
 		 */
-		*x = draw_coords.tile_x[i] + (sub_tile_step * (k + 0.5));
-		*y = draw_coords.tile_y[j] + (draw_coords.tile_width / 2.0);
+		*x = draw_coords->tile_x[i] + (sub_tile_step * (k + 0.5));
+		*y = draw_coords->tile_y[j] + (draw_coords->tile_width / 2.0);
 	} else {
 		/* For everything other than the top and bottom io blocks, sub_tiles
 		 * (if any) are stacked vertically. Therefore, y-coordinate changes
 		 * for each io sub_block but x-coordinate is half way across the 
 		 * block.
 		 */
-		*x = draw_coords.tile_x[i] + (draw_coords.tile_width / 2.0);
-		*y = draw_coords.tile_y[j] + (sub_tile_step * (k + 0.5));
+		*x = draw_coords->tile_x[i] + (draw_coords->tile_width / 2.0);
+		*y = draw_coords->tile_y[j] + (sub_tile_step * (k + 0.5));
 	}
 }
 
@@ -728,11 +684,11 @@ static void draw_congestion(void) {
 			switch (rr_node[inode].type) {
 			case CHANX:
 				itrack = rr_node[inode].ptc_num;
-				if (draw_state.show_congestion == DRAW_CONGESTED &&
+				if (draw_state->show_congestion == DRAW_CONGESTED &&
 					rr_node[inode].occ > rr_node[inode].capacity) {
 					draw_rr_chanx(inode, itrack, RED);
 				}
-				else if (draw_state.show_congestion == DRAW_CONGESTED_AND_USED) {
+				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
 					if (rr_node[inode].occ > rr_node[inode].capacity)
 						draw_rr_chanx(inode, itrack, RED);
 					else
@@ -742,11 +698,11 @@ static void draw_congestion(void) {
 
 			case CHANY:
 				itrack = rr_node[inode].ptc_num;
-				if (draw_state.show_congestion == DRAW_CONGESTED &&
+				if (draw_state->show_congestion == DRAW_CONGESTED &&
 					rr_node[inode].occ > rr_node[inode].capacity) {
 					draw_rr_chany(inode, itrack, RED);
 				}
-				else if (draw_state.show_congestion == DRAW_CONGESTED_AND_USED) {
+				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
 					if (rr_node[inode].occ > rr_node[inode].capacity)
 						draw_rr_chany(inode, itrack, RED);
 					else
@@ -756,11 +712,11 @@ static void draw_congestion(void) {
 
 			case IPIN:
 			case OPIN:
-				if (draw_state.show_congestion == DRAW_CONGESTED &&
+				if (draw_state->show_congestion == DRAW_CONGESTED &&
 					rr_node[inode].occ > rr_node[inode].capacity) {
 					draw_rr_pin(inode, RED);
 				}
-				else if (draw_state.show_congestion == DRAW_CONGESTED_AND_USED) {
+				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
 					if (rr_node[inode].occ > rr_node[inode].capacity)
 						draw_rr_pin(inode, RED);
 					else
@@ -782,7 +738,7 @@ void draw_rr(void) {
 
 	int inode, itrack;
 
-	if (draw_state.draw_rr_toggle == DRAW_NO_RR) {
+	if (draw_state->draw_rr_toggle == DRAW_NO_RR) {
 		setlinewidth(3);
 		drawroute(HIGHLIGHTED);
 		setlinewidth(0);
@@ -792,19 +748,19 @@ void draw_rr(void) {
 	setlinestyle(SOLID);
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		if (!draw_state.draw_rr_node[inode].node_highlighted) 
+		if (!draw_state->draw_rr_node[inode].node_highlighted) 
 		{
 			/* If not highlighted node, assign color based on type. */
 			switch (rr_node[inode].type) {
 			case CHANX:
 			case CHANY:
-				draw_state.draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
+				draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
 				break;
 			case OPIN:
-				draw_state.draw_rr_node[inode].color = PINK;
+				draw_state->draw_rr_node[inode].color = PINK;
 				break;
 			case IPIN:
-				draw_state.draw_rr_node[inode].color = LIGHTSKYBLUE;
+				draw_state->draw_rr_node[inode].color = LIGHTSKYBLUE;
 				break;
 			default:
 				break;
@@ -820,22 +776,22 @@ void draw_rr(void) {
 
 		case CHANX:
 			itrack = rr_node[inode].ptc_num;
-			draw_rr_chanx(inode, itrack, draw_state.draw_rr_node[inode].color);
+			draw_rr_chanx(inode, itrack, draw_state->draw_rr_node[inode].color);
 			draw_rr_edges(inode);
 			break;
 
 		case CHANY:
 			itrack = rr_node[inode].ptc_num;
-			draw_rr_chany(inode, itrack, draw_state.draw_rr_node[inode].color);
+			draw_rr_chany(inode, itrack, draw_state->draw_rr_node[inode].color);
 			draw_rr_edges(inode);
 			break;
 
 		case IPIN:
-			draw_rr_pin(inode, draw_state.draw_rr_node[inode].color);
+			draw_rr_pin(inode, draw_state->draw_rr_node[inode].color);
 			break;
 
 		case OPIN:
-			draw_rr_pin(inode, draw_state.draw_rr_node[inode].color);
+			draw_rr_pin(inode, draw_state->draw_rr_node[inode].color);
 			draw_rr_edges(inode);
 			break;
 
@@ -898,10 +854,10 @@ static void draw_rr_chanx(int inode, int itrack, enum color_types color) {
 		 * appears with L=1 ? 
 		 */
 		for (k = rr_node[inode].xlow; k < rr_node[inode].xhigh; k++) {
-			bound_box.xright = draw_coords.tile_x[k] + draw_coords.tile_width;
+			bound_box.xright = draw_coords->tile_x[k] + draw_coords->tile_width;
 			draw_triangle_along_line(bound_box.xright - 0.15, bound_box.ytop, bound_box.xleft, 
 									 bound_box.xright, bound_box.ybottom, bound_box.ytop);
-			bound_box.xright = draw_coords.tile_x[k + 1];
+			bound_box.xright = draw_coords->tile_x[k + 1];
 			draw_triangle_along_line(bound_box.xright + 0.15, bound_box.ytop, bound_box.xleft, 
 									 bound_box.xright, bound_box.ybottom, bound_box.ytop);
 		}
@@ -921,10 +877,10 @@ static void draw_rr_chanx(int inode, int itrack, enum color_types color) {
 								 bound_box.xleft, bound_box.ytop, bound_box.ybottom);
 		setcolor(LIGHTGREY);
 		for (k = rr_node[inode].xhigh; k > rr_node[inode].xlow; k--) {
-			bound_box.xleft = draw_coords.tile_x[k];
+			bound_box.xleft = draw_coords->tile_x[k];
 			draw_triangle_along_line(bound_box.xleft + 0.15, bound_box.ybottom, bound_box.xright, 
 									 bound_box.xleft, bound_box.ytop, bound_box.ybottom);
-			bound_box.xleft = draw_coords.tile_x[k - 1] + draw_coords.tile_width;
+			bound_box.xleft = draw_coords->tile_x[k - 1] + draw_coords->tile_width;
 			draw_triangle_along_line(bound_box.xleft - 0.15, bound_box.ybottom, bound_box.xright, 
 									 bound_box.xleft, bound_box.ytop, bound_box.ybottom);
 		}
@@ -975,10 +931,10 @@ static void draw_rr_chany(int inode, int itrack, enum color_types color) {
 								 bound_box.xright, bound_box.ybottom, bound_box.ytop);
 		setcolor(LIGHTGREY);
 		for (k = rr_node[inode].ylow; k < rr_node[inode].yhigh; k++) {
-			bound_box.ytop = draw_coords.tile_y[k] + draw_coords.tile_width;
+			bound_box.ytop = draw_coords->tile_y[k] + draw_coords->tile_width;
 			draw_triangle_along_line(bound_box.xright, bound_box.ytop - 0.15, bound_box.xleft, 
 									 bound_box.xright, bound_box.ybottom, bound_box.ytop);
-			bound_box.ytop = draw_coords.tile_y[k + 1];
+			bound_box.ytop = draw_coords->tile_y[k + 1];
 			draw_triangle_along_line(bound_box.xright, bound_box.ytop + 0.15, bound_box.xleft, 
 									 bound_box.xright, bound_box.ybottom, bound_box.ytop);
 		}
@@ -998,10 +954,10 @@ static void draw_rr_chany(int inode, int itrack, enum color_types color) {
 								 bound_box.xleft, bound_box.ytop, bound_box.ybottom);
 		setcolor(LIGHTGREY);
 		for (k = rr_node[inode].yhigh; k > rr_node[inode].ylow; k--) {
-			bound_box.ybottom = draw_coords.tile_y[k];
+			bound_box.ybottom = draw_coords->tile_y[k];
 			draw_triangle_along_line(bound_box.xleft, bound_box.ybottom + 0.15, bound_box.xright, 
 									 bound_box.xleft, bound_box.ytop, bound_box.ybottom);
-			bound_box.ybottom = draw_coords.tile_y[k - 1] + draw_coords.tile_width;
+			bound_box.ybottom = draw_coords->tile_y[k - 1] + draw_coords->tile_width;
 			draw_triangle_along_line(bound_box.xleft, bound_box.ybottom - 0.15, bound_box.xright, 
 									 bound_box.xleft, bound_box.ytop, bound_box.ybottom);
 		}
@@ -1020,8 +976,8 @@ static void draw_rr_edges(int inode) {
 
 	from_type = rr_node[inode].type;
 
-	if ((draw_state.draw_rr_toggle == DRAW_NODES_RR)
-			|| (draw_state.draw_rr_toggle == DRAW_NODES_AND_SBOX_RR && from_type == OPIN)) {
+	if ((draw_state->draw_rr_toggle == DRAW_NODES_RR)
+			|| (draw_state->draw_rr_toggle == DRAW_NODES_AND_SBOX_RR && from_type == OPIN)) {
 		return; /* Nothing to draw. */
 	}
 
@@ -1038,21 +994,21 @@ static void draw_rr_edges(int inode) {
 			switch (to_type) {
 			case CHANX:
 			case CHANY:
-				if (draw_state.draw_rr_node[inode].color == MAGENTA) {
+				if (draw_state->draw_rr_node[inode].color == MAGENTA) {
 					// If OPIN was clicked on, set color to fan-out
-					setcolor(draw_state.draw_rr_node[to_node].color);
-				} else if (draw_state.draw_rr_node[to_node].color == MAGENTA) {
+					setcolor(draw_state->draw_rr_node[to_node].color);
+				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					// If CHANX or CHANY got clicked, set color to fan-in
-					setcolor(draw_state.draw_rr_node[inode].color);
+					setcolor(draw_state->draw_rr_node[inode].color);
 				} else
 					setcolor(PINK);
 				draw_pin_to_chan_edge(inode, to_node);
 				break;
 			case IPIN:
-				if (draw_state.draw_rr_node[inode].color == MAGENTA) {
-					setcolor(draw_state.draw_rr_node[to_node].color);
-				} else if (draw_state.draw_rr_node[to_node].color == MAGENTA) {
-					setcolor(draw_state.draw_rr_node[inode].color);
+				if (draw_state->draw_rr_node[inode].color == MAGENTA) {
+					setcolor(draw_state->draw_rr_node[to_node].color);
+				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
+					setcolor(draw_state->draw_rr_node[inode].color);
 				} else
 					setcolor(PINK);
 				draw_pin_to_pin(inode, to_node);
@@ -1068,12 +1024,12 @@ static void draw_rr_edges(int inode) {
 		case CHANX: /* from_type */
 			switch (to_type) {
 			case IPIN:
-				if (draw_state.draw_rr_toggle == DRAW_NODES_AND_SBOX_RR) {
+				if (draw_state->draw_rr_toggle == DRAW_NODES_AND_SBOX_RR) {
 					break;
 				}
 
-				if (draw_state.draw_rr_node[to_node].node_highlighted &&
-					draw_state.draw_rr_node[inode].color == DEFAULT_RR_NODE_COLOR) {
+				if (draw_state->draw_rr_node[to_node].node_highlighted &&
+					draw_state->draw_rr_node[inode].color == DEFAULT_RR_NODE_COLOR) {
 					// If the IPIN is clicked on, draw connection to all the CHANX
 					// wire segments fanning into the pin. If a CHANX wire is clicked
 					// on, draw only the connection between that wire and the IPIN, with
@@ -1081,20 +1037,20 @@ static void draw_rr_edges(int inode) {
 					break;
 				}
 
-				if (draw_state.draw_rr_node[inode].color == MAGENTA) {
-					setcolor(draw_state.draw_rr_node[to_node].color);
-				} else if (draw_state.draw_rr_node[to_node].color == MAGENTA) {
-					setcolor(draw_state.draw_rr_node[inode].color);
+				if (draw_state->draw_rr_node[inode].color == MAGENTA) {
+					setcolor(draw_state->draw_rr_node[to_node].color);
+				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
+					setcolor(draw_state->draw_rr_node[inode].color);
 				} else
 					setcolor(LIGHTSKYBLUE);
 				draw_pin_to_chan_edge(to_node, inode);
 				break;
 
 			case CHANX:
-				if (draw_state.draw_rr_node[inode].color == MAGENTA) {
-					setcolor(draw_state.draw_rr_node[to_node].color);
-				} else if (draw_state.draw_rr_node[to_node].color == MAGENTA) {
-					setcolor(draw_state.draw_rr_node[inode].color);
+				if (draw_state->draw_rr_node[inode].color == MAGENTA) {
+					setcolor(draw_state->draw_rr_node[to_node].color);
+				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
+					setcolor(draw_state->draw_rr_node[inode].color);
 				} else
 					setcolor(DARKGREEN);
 				switch_type = rr_node[inode].switches[iedge];
@@ -1103,10 +1059,10 @@ static void draw_rr_edges(int inode) {
 				break;
 
 			case CHANY:
-				if (draw_state.draw_rr_node[inode].color == MAGENTA) {
-					setcolor(draw_state.draw_rr_node[to_node].color);
-				} else if (draw_state.draw_rr_node[to_node].color == MAGENTA) {
-					setcolor(draw_state.draw_rr_node[inode].color);
+				if (draw_state->draw_rr_node[inode].color == MAGENTA) {
+					setcolor(draw_state->draw_rr_node[to_node].color);
+				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
+					setcolor(draw_state->draw_rr_node[inode].color);
 				} else
 					setcolor(DARKGREEN);
 				switch_type = rr_node[inode].switches[iedge];
@@ -1125,12 +1081,12 @@ static void draw_rr_edges(int inode) {
 		case CHANY: /* from_type */
 			switch (to_type) {
 			case IPIN:
-				if (draw_state.draw_rr_toggle == DRAW_NODES_AND_SBOX_RR) {
+				if (draw_state->draw_rr_toggle == DRAW_NODES_AND_SBOX_RR) {
 					break;
 				}
 
-				if (draw_state.draw_rr_node[to_node].node_highlighted &&
-					draw_state.draw_rr_node[inode].color == DEFAULT_RR_NODE_COLOR) {
+				if (draw_state->draw_rr_node[to_node].node_highlighted &&
+					draw_state->draw_rr_node[inode].color == DEFAULT_RR_NODE_COLOR) {
 					// If the IPIN is clicked on, draw connection to all the CHANY
 					// wire segments fanning into the pin. If a CHANY wire is clicked
 					// on, draw only the connection between that wire and the IPIN, with
@@ -1138,20 +1094,20 @@ static void draw_rr_edges(int inode) {
 					break;
 				}
 
-				if (draw_state.draw_rr_node[inode].color == MAGENTA) {
-					setcolor(draw_state.draw_rr_node[to_node].color);
-				} else if (draw_state.draw_rr_node[to_node].color == MAGENTA) {
-					setcolor(draw_state.draw_rr_node[inode].color);
+				if (draw_state->draw_rr_node[inode].color == MAGENTA) {
+					setcolor(draw_state->draw_rr_node[to_node].color);
+				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
+					setcolor(draw_state->draw_rr_node[inode].color);
 				} else
 					setcolor(LIGHTSKYBLUE);
 				draw_pin_to_chan_edge(to_node, inode);
 				break;
 
 			case CHANX:
-				if (draw_state.draw_rr_node[inode].color == MAGENTA) {
-					setcolor(draw_state.draw_rr_node[to_node].color);
-				} else if (draw_state.draw_rr_node[to_node].color == MAGENTA) {
-					setcolor(draw_state.draw_rr_node[inode].color);
+				if (draw_state->draw_rr_node[inode].color == MAGENTA) {
+					setcolor(draw_state->draw_rr_node[to_node].color);
+				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
+					setcolor(draw_state->draw_rr_node[inode].color);
 				} else
 					setcolor(DARKGREEN);
 				switch_type = rr_node[inode].switches[iedge];
@@ -1160,10 +1116,10 @@ static void draw_rr_edges(int inode) {
 				break;
 
 			case CHANY:
-				if (draw_state.draw_rr_node[inode].color == MAGENTA) {
-					setcolor(draw_state.draw_rr_node[to_node].color);
-				} else if (draw_state.draw_rr_node[to_node].color == MAGENTA) {
-					setcolor(draw_state.draw_rr_node[inode].color);
+				if (draw_state->draw_rr_node[inode].color == MAGENTA) {
+					setcolor(draw_state->draw_rr_node[to_node].color);
+				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
+					setcolor(draw_state->draw_rr_node[inode].color);
 				} else
 					setcolor(DARKGREEN);
 				switch_type = rr_node[inode].switches[iedge];
@@ -1225,12 +1181,12 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 
 	if (chanx_xlow <= chany_x) { /* Can draw connection going right */
 		/* Connection not at end of the CHANX segment. */
-		x1 = draw_coords.tile_x[chany_x] + draw_coords.tile_width;
+		x1 = draw_coords->tile_x[chany_x] + draw_coords->tile_width;
 		
 		if (rr_node[chanx_node].direction != BI_DIRECTION) {
 			if (edge_dir == FROM_X_TO_Y) {
 				if ((chanx_track % 2) == 1) { /* If dec wire, then going left */
-					x1 = draw_coords.tile_x[chany_x + 1];
+					x1 = draw_coords->tile_x[chany_x + 1];
 				}
 			}
 		}
@@ -1241,12 +1197,12 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 
 	if (chany_ylow <= chanx_y) { /* Can draw connection going up. */
 		/* Connection not at end of the CHANY segment. */
-		y2 = draw_coords.tile_y[chanx_y] + draw_coords.tile_width;
+		y2 = draw_coords->tile_y[chanx_y] + draw_coords->tile_width;
 		
 		if (rr_node[chany_node].direction != BI_DIRECTION) {
 			if (edge_dir == FROM_Y_TO_X) {
 				if ((chany_track % 2) == 1) { /* If dec wire, then going down */
-					y2 = draw_coords.tile_y[chanx_y + 1];
+					y2 = draw_coords->tile_y[chanx_y + 1];
 				}
 			}
 		}
@@ -1257,8 +1213,8 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 
 	drawline(x1, y1, x2, y2);
 
-	if (draw_state.draw_rr_toggle != DRAW_ALL_RR) {
-		if (draw_state.draw_rr_node[chanx_node].node_highlighted) {
+	if (draw_state->draw_rr_toggle != DRAW_ALL_RR) {
+		if (draw_state->draw_rr_node[chanx_node].node_highlighted) {
 			float xend, yend;
 			xend = x2 + (x1 - x2) / 10.;
 			yend = y2 + (y1 - y2) / 10.;
@@ -1323,38 +1279,38 @@ static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
 				assert(from_xlow < to_xlow);
 				x2 = to_chan.xleft;
 				/* since no U-turns from_track must be INC as well */
-				x1 = draw_coords.tile_x[to_xlow - 1] + draw_coords.tile_width;
+				x1 = draw_coords->tile_x[to_xlow - 1] + draw_coords->tile_width;
 			} else { /* DEC wire starts at rightmost edge */
 				assert(from_xhigh > to_xhigh);
 				x2 = to_chan.xright;
-				x1 = draw_coords.tile_x[to_xhigh + 1];
+				x1 = draw_coords->tile_x[to_xhigh + 1];
 			}
 		} else {
 			if (to_xlow < from_xlow) { /* Draw from left edge of one to other */
 				x1 = from_chan.xleft;
-				x2 = draw_coords.tile_x[from_xlow - 1] + draw_coords.tile_width;
+				x2 = draw_coords->tile_x[from_xlow - 1] + draw_coords->tile_width;
 			} else if (from_xlow < to_xlow) {
-				x1 = draw_coords.tile_x[to_xlow - 1] + draw_coords.tile_width;
+				x1 = draw_coords->tile_x[to_xlow - 1] + draw_coords->tile_width;
 				x2 = to_chan.xleft;
 			} /* The following then is executed when from_xlow == to_xlow */
 			else if (to_xhigh > from_xhigh) { /* Draw from right edge of one to other */
 				x1 = from_chan.xright;
-				x2 = draw_coords.tile_x[from_xhigh + 1];
+				x2 = draw_coords->tile_x[from_xhigh + 1];
 			} else if (from_xhigh > to_xhigh) {
-				x1 = draw_coords.tile_x[to_xhigh + 1];
+				x1 = draw_coords->tile_x[to_xhigh + 1];
 				x2 = to_chan.xright;
 			} else { /* Complete overlap: start and end both align. Draw outside the sbox */
 				x1 = from_chan.xleft;
-				x2 = from_chan.xleft + draw_coords.tile_width;
+				x2 = from_chan.xleft + draw_coords->tile_width;
 			}
 		}
 	}
 	
 	drawline(x1, y1, x2, y2);
 
-	if (draw_state.draw_rr_toggle == DRAW_ALL_RR)
+	if (draw_state->draw_rr_toggle == DRAW_ALL_RR)
 		draw_rr_switch(x1, y1, x2, y2, switch_inf[switch_type].buffered);
-	else if (draw_state.draw_rr_node[from_node].node_highlighted) {
+	else if (draw_state->draw_rr_node[from_node].node_highlighted) {
 		float xend, yend;
 		xend = x2 + (x1 - x2) / 10.;
 		yend = y2 + (y1 - y2) / 10.;
@@ -1408,7 +1364,7 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 				assert(from_ylow < to_ylow);
 				y2 = to_chan.ybottom;
 				/* since no U-turns from_track must be INC as well */
-				y1 = draw_coords.tile_y[to_ylow - 1] + draw_coords.tile_width;
+				y1 = draw_coords->tile_y[to_ylow - 1] + draw_coords->tile_width;
 			} else { /* DEC wire starts at top edge */
 				if (!(from_yhigh > to_yhigh)) {
 					vpr_printf_info("from_yhigh (%d) !> to_yhigh (%d).\n", 
@@ -1424,33 +1380,33 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 					exit(1);
 				}
 				y2 = to_chan.ytop;
-				y1 = draw_coords.tile_y[to_yhigh + 1];
+				y1 = draw_coords->tile_y[to_yhigh + 1];
 			}
 		} else {
 			if (to_ylow < from_ylow) { /* Draw from bottom edge of one to other. */
 				y1 = from_chan.ybottom;
-				y2 = draw_coords.tile_y[from_ylow - 1] + draw_coords.tile_width;
+				y2 = draw_coords->tile_y[from_ylow - 1] + draw_coords->tile_width;
 			} else if (from_ylow < to_ylow) {
-				y1 = draw_coords.tile_y[to_ylow - 1] + draw_coords.tile_width;
+				y1 = draw_coords->tile_y[to_ylow - 1] + draw_coords->tile_width;
 				y2 = to_chan.ybottom;
 			} else if (to_yhigh > from_yhigh) { /* Draw from top edge of one to other. */
 				y1 = from_chan.ytop;
-				y2 = draw_coords.tile_y[from_yhigh + 1];
+				y2 = draw_coords->tile_y[from_yhigh + 1];
 			} else if (from_yhigh > to_yhigh) {
-				y1 = draw_coords.tile_y[to_yhigh + 1];
+				y1 = draw_coords->tile_y[to_yhigh + 1];
 				y2 = to_chan.ytop;
 			} else { /* Complete overlap: start and end both align. Draw outside the sbox */
 				y1 = from_chan.ybottom;
-				y2 = from_chan.ybottom + draw_coords.tile_width;
+				y2 = from_chan.ybottom + draw_coords->tile_width;
 			}
 		}
 	}
 	/* UDSD Modification by WMF End */
 	drawline(x1, y1, x2, y2);
 
-	if (draw_state.draw_rr_toggle == DRAW_ALL_RR)
+	if (draw_state->draw_rr_toggle == DRAW_ALL_RR)
 		draw_rr_switch(x1, y1, x2, y2, switch_inf[switch_type].buffered);
-	else if (draw_state.draw_rr_node[from_node].node_highlighted) {
+	else if (draw_state->draw_rr_node[from_node].node_highlighted) {
 		float xend, yend;
 		xend = x2 + (x1 - x2) / 10.;
 		yend = y2 + (y1 - y2) / 10.;
@@ -1470,22 +1426,22 @@ static t_draw_bbox draw_get_rr_chan_bbox (int inode) {
 
 	switch (rr_node[inode].type) {
 		case CHANX:
-			bound_box.xleft = draw_coords.tile_x[rr_node[inode].xlow];
-	        bound_box.xright = draw_coords.tile_x[rr_node[inode].xhigh] 
-						        + draw_coords.tile_width;
-			bound_box.ybottom = draw_coords.tile_y[rr_node[inode].ylow] 
-								+ draw_coords.tile_width + (1. + rr_node[inode].ptc_num);
-			bound_box.ytop = draw_coords.tile_y[rr_node[inode].ylow] 
-								+ draw_coords.tile_width + (1. + rr_node[inode].ptc_num);
+			bound_box.xleft = draw_coords->tile_x[rr_node[inode].xlow];
+	        bound_box.xright = draw_coords->tile_x[rr_node[inode].xhigh] 
+						        + draw_coords->tile_width;
+			bound_box.ybottom = draw_coords->tile_y[rr_node[inode].ylow] 
+								+ draw_coords->tile_width + (1. + rr_node[inode].ptc_num);
+			bound_box.ytop = draw_coords->tile_y[rr_node[inode].ylow] 
+								+ draw_coords->tile_width + (1. + rr_node[inode].ptc_num);
 			break;
 		case CHANY:
-			bound_box.xleft = draw_coords.tile_x[rr_node[inode].xlow] 
-								+ draw_coords.tile_width + (1. + rr_node[inode].ptc_num);
-			bound_box.xright = draw_coords.tile_x[rr_node[inode].xlow] 
-								+ draw_coords.tile_width + (1. + rr_node[inode].ptc_num);
-			bound_box.ybottom = draw_coords.tile_y[rr_node[inode].ylow];
-			bound_box.ytop = draw_coords.tile_y[rr_node[inode].yhigh] 
-								+ draw_coords.tile_width;
+			bound_box.xleft = draw_coords->tile_x[rr_node[inode].xlow] 
+								+ draw_coords->tile_width + (1. + rr_node[inode].ptc_num);
+			bound_box.xright = draw_coords->tile_x[rr_node[inode].xlow] 
+								+ draw_coords->tile_width + (1. + rr_node[inode].ptc_num);
+			bound_box.ybottom = draw_coords->tile_y[rr_node[inode].ylow];
+			bound_box.ytop = draw_coords->tile_y[rr_node[inode].yhigh] 
+								+ draw_coords->tile_width;
 			break;
 		default:
 			bound_box.xleft = -1;
@@ -1562,11 +1518,11 @@ static void draw_rr_pin(int inode, enum color_types color) {
 	for (iside = 0; iside < 4; iside++) {
 		if (type->pinloc[grid[i][j].width_offset][grid[i][j].height_offset][iside][ipin]) { /* Pin exists on this side. */
 			draw_get_rr_pin_coords(inode, iside, width_offset, height_offset, &xcen, &ycen);
-			fillrect(xcen - draw_coords.pin_size, ycen - draw_coords.pin_size, 
-					 xcen + draw_coords.pin_size, ycen + draw_coords.pin_size);
+			fillrect(xcen - draw_coords->pin_size, ycen - draw_coords->pin_size, 
+					 xcen + draw_coords->pin_size, ycen + draw_coords->pin_size);
 			sprintf(str, "%d", ipin);
 			setcolor(BLACK);
-			drawtext(xcen, ycen, str, 2 * draw_coords.pin_size);
+			drawtext(xcen, ycen, str, 2 * draw_coords->pin_size);
 			setcolor(color);
 		}
 	}
@@ -1587,8 +1543,8 @@ static void draw_get_rr_pin_coords(int inode, int iside,
 	i = rr_node[inode].xlow + width_offset;
 	j = rr_node[inode].ylow + height_offset;
 
-	xc = draw_coords.tile_x[i];
-	yc = draw_coords.tile_y[j];
+	xc = draw_coords->tile_x[i];
+	yc = draw_coords->tile_y[j];
 
 	ipin = rr_node[inode].ptc_num;
 	type = grid[i][j].type;
@@ -1599,7 +1555,7 @@ static void draw_get_rr_pin_coords(int inode, int iside,
 	 * we can treat as a block box for this step */
 
 	/* For each sub_tile we need and extra padding space */
-	step = (float) (draw_coords.tile_width) / (float) (type->num_pins + type->capacity);
+	step = (float) (draw_coords->tile_width) / (float) (type->num_pins + type->capacity);
 	offset = (ipin + k + 1) * step;
 
 	switch (iside) {
@@ -1608,7 +1564,7 @@ static void draw_get_rr_pin_coords(int inode, int iside,
 		break;
 
 	case RIGHT:
-		xc += draw_coords.tile_width;
+		xc += draw_coords->tile_width;
 		yc += offset;
 		break;
 
@@ -1618,7 +1574,7 @@ static void draw_get_rr_pin_coords(int inode, int iside,
 
 	case TOP:
 		xc += offset;
-		yc += draw_coords.tile_width;
+		yc += draw_coords->tile_width;
 		break;
 
 	default:
@@ -1649,7 +1605,7 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 	struct s_trace *tptr;
 	t_rr_type rr_type, prev_type;
 
-	if (draw_state.draw_route_type == GLOBAL) {
+	if (draw_state->draw_route_type == GLOBAL) {
 		/* Allocate some temporary storage if it's not already available. */
 		if (chanx_track == NULL) {
 			chanx_track = (int **) alloc_matrix(1, nx, 0, ny, sizeof(int));
@@ -1679,7 +1635,7 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 		if (trace_head[inet] == NULL) /* No routing.  Skip.  (Allows me to draw */
 			continue; /* partially complete routes).            */
 
-		if (draw_net_type == HIGHLIGHTED && draw_state.net_color[inet] == BLACK)
+		if (draw_net_type == HIGHLIGHTED && draw_state->net_color[inet] == BLACK)
 			continue;
 
 		tptr = trace_head[inet]; /* SOURCE to start */
@@ -1697,22 +1653,22 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 			if (draw_if_net_highlighted(inet)) {
 				/* If a net has been highlighted, highlight the whole net in *
 				 * the same color.											 */
-				draw_state.draw_rr_node[inode].color = draw_state.net_color[inet];
-				draw_state.draw_rr_node[inode].node_highlighted = true;
+				draw_state->draw_rr_node[inode].color = draw_state->net_color[inet];
+				draw_state->draw_rr_node[inode].node_highlighted = true;
 			}
 			else {
 				/* If not highlighted, draw the node in default color. */
-				draw_state.draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
+				draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
 			}
 
 			switch (rr_type) {
 
 			case OPIN:
-				draw_rr_pin(inode, draw_state.draw_rr_node[inode].color);
+				draw_rr_pin(inode, draw_state->draw_rr_node[inode].color);
 				break;
 
 			case IPIN:
-				draw_rr_pin(inode, draw_state.draw_rr_node[inode].color);
+				draw_rr_pin(inode, draw_state->draw_rr_node[inode].color);
 				if(rr_node[prev_node].type == OPIN) {
 					draw_pin_to_pin(prev_node, inode);
 				} else {
@@ -1722,11 +1678,11 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 				break;
 
 			case CHANX:
-				if (draw_state.draw_route_type == GLOBAL)
+				if (draw_state->draw_route_type == GLOBAL)
 					chanx_track[rr_node[inode].xlow][rr_node[inode].ylow]++;
 
 				itrack = get_track_num(inode, chanx_track, chany_track);
-				draw_rr_chanx(inode, itrack, draw_state.draw_rr_node[inode].color);
+				draw_rr_chanx(inode, itrack, draw_state->draw_rr_node[inode].color);
 
 				switch (prev_type) {
 
@@ -1757,11 +1713,11 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 				break;
 
 			case CHANY:
-				if (draw_state.draw_route_type == GLOBAL)
+				if (draw_state->draw_route_type == GLOBAL)
 					chany_track[rr_node[inode].xlow][rr_node[inode].ylow]++;
 
 				itrack = get_track_num(inode, chanx_track, chany_track);
-				draw_rr_chany(inode, itrack, draw_state.draw_rr_node[inode].color);
+				draw_rr_chany(inode, itrack, draw_state->draw_rr_node[inode].color);
 
 				switch (prev_type) {
 
@@ -1817,7 +1773,7 @@ static int get_track_num(int inode, int **chanx_track, int **chany_track) {
 	int i, j;
 	t_rr_type rr_type;
 
-	if (draw_state.draw_route_type == DETAILED)
+	if (draw_state->draw_route_type == DETAILED)
 		return (rr_node[inode].ptc_num);
 
 	/* GLOBAL route stuff below. */
@@ -1847,9 +1803,9 @@ static int get_track_num(int inode, int **chanx_track, int **chany_track) {
 static bool draw_if_net_highlighted (int inet) {
 	bool highlighted = false;
 
-	if (draw_state.net_color[inet] == MAGENTA || draw_state.net_color[inet] == RED 
-		|| draw_state.net_color[inet] == BLUE || draw_state.net_color[inet] == DARKGREEN 
-		|| draw_state.net_color[inet] == CYAN)
+	if (draw_state->net_color[inet] == MAGENTA || draw_state->net_color[inet] == RED 
+		|| draw_state->net_color[inet] == BLUE || draw_state->net_color[inet] == DARKGREEN 
+		|| draw_state->net_color[inet] == CYAN)
 		highlighted = true;
 
 	return highlighted;
@@ -1865,16 +1821,16 @@ static void highlight_nets(char *message, int hit_node) {
 
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 		for (tptr = trace_head[inet]; tptr != NULL; tptr = tptr->next) {
-			if (draw_state.draw_rr_node[tptr->index].color == MAGENTA) {
-				draw_state.net_color[inet] = draw_state.draw_rr_node[tptr->index].color;
+			if (draw_state->draw_rr_node[tptr->index].color == MAGENTA) {
+				draw_state->net_color[inet] = draw_state->draw_rr_node[tptr->index].color;
 				if (tptr->index == hit_node) {
 					sprintf(message, "%s  ||  Net: %d (%s)", message, inet,
 							g_clbs_nlist.net[inet].name);
 				}
 			}
-			else if (draw_state.draw_rr_node[tptr->index].color == WHITE) {
+			else if (draw_state->draw_rr_node[tptr->index].color == WHITE) {
 				// If node is de-selected.
-				draw_state.net_color[inet] = BLACK;
+				draw_state->net_color[inet] = BLACK;
 				break;
 			}
 		}
@@ -1895,15 +1851,15 @@ static void draw_highlight_fan_in_fan_out(int hit_node) {
 	for (iedge = 0; iedge < rr_node[hit_node].num_edges; iedge++) {
 		int fanout_node = rr_node[hit_node].edges[iedge];
 
-		if (draw_state.draw_rr_node[hit_node].color == MAGENTA) {
+		if (draw_state->draw_rr_node[hit_node].color == MAGENTA) {
 			// If node is highlighted, highlight its fanout
-			draw_state.draw_rr_node[fanout_node].color = RED;
-			draw_state.draw_rr_node[fanout_node].node_highlighted = true;
+			draw_state->draw_rr_node[fanout_node].color = RED;
+			draw_state->draw_rr_node[fanout_node].node_highlighted = true;
 		}
-		else if (draw_state.draw_rr_node[hit_node].color == WHITE) {
+		else if (draw_state->draw_rr_node[hit_node].color == WHITE) {
 			// If node is de-highlighted, de-highlight its fanout
-			draw_state.draw_rr_node[fanout_node].color = DEFAULT_RR_NODE_COLOR;
-			draw_state.draw_rr_node[fanout_node].node_highlighted = false;
+			draw_state->draw_rr_node[fanout_node].color = DEFAULT_RR_NODE_COLOR;
+			draw_state->draw_rr_node[fanout_node].node_highlighted = false;
 		}
 	}
 
@@ -1912,15 +1868,15 @@ static void draw_highlight_fan_in_fan_out(int hit_node) {
 		for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
 			int fanout_node = rr_node[inode].edges[iedge];
 			if (fanout_node == hit_node) { 
-				if (draw_state.draw_rr_node[hit_node].color == MAGENTA) {
+				if (draw_state->draw_rr_node[hit_node].color == MAGENTA) {
 					// If hit_node is highlighted, highlight its fanin
-					draw_state.draw_rr_node[inode].color = BLUE;  
-					draw_state.draw_rr_node[inode].node_highlighted = true;
+					draw_state->draw_rr_node[inode].color = BLUE;  
+					draw_state->draw_rr_node[inode].node_highlighted = true;
 				}
-				else if (draw_state.draw_rr_node[hit_node].color == WHITE) {
+				else if (draw_state->draw_rr_node[hit_node].color == WHITE) {
 					// If hit_node is de-highlighted, de-highlight its fanin
-					draw_state.draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
-					draw_state.draw_rr_node[inode].node_highlighted = false;
+					draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
+					draw_state->draw_rr_node[inode].node_highlighted = false;
 				}
 			}
 		}
@@ -1958,10 +1914,10 @@ static int draw_check_rr_node_hit (float click_x, float click_y) {
 											   &xcen, &ycen);
 
 						// Now check if we clicked on this pin
-						if (click_x >= xcen - draw_coords.pin_size &&
-							click_x <= xcen + draw_coords.pin_size &&
-							click_y >= ycen - draw_coords.pin_size && 
-							click_y <= ycen + draw_coords.pin_size) {
+						if (click_x >= xcen - draw_coords->pin_size &&
+							click_x <= xcen + draw_coords->pin_size &&
+							click_y >= ycen - draw_coords->pin_size && 
+							click_y <= ycen + draw_coords->pin_size) {
 							hit_node = inode;
 							return hit_node;
 						}
@@ -2004,8 +1960,8 @@ static void highlight_rr_nodes(float x, float y) {
 	int hit_node = OPEN;  // i.e. -1, no node selected.
 	char message[250] = "";
 
-	if (draw_state.draw_rr_toggle == DRAW_NO_RR && !draw_state.show_nets) {
-		update_message(draw_state.default_message);
+	if (draw_state->draw_rr_toggle == DRAW_NO_RR && !draw_state->show_nets) {
+		update_message(draw_state->default_message);
 		drawscreen();
 		return;
 	}
@@ -2020,12 +1976,12 @@ static void highlight_rr_nodes(float x, float y) {
 		int yhigh = rr_node[hit_node].yhigh;
 		int ptc_num = rr_node[hit_node].ptc_num;
 
-		if (draw_state.draw_rr_node[hit_node].color != MAGENTA) {
+		if (draw_state->draw_rr_node[hit_node].color != MAGENTA) {
 			/* If the node hasn't been clicked on before, highlight it
 			 * in magenta.
 			 */
-			draw_state.draw_rr_node[hit_node].color = MAGENTA;
-			draw_state.draw_rr_node[hit_node].node_highlighted = true;
+			draw_state->draw_rr_node[hit_node].color = MAGENTA;
+			draw_state->draw_rr_node[hit_node].node_highlighted = true;
 
 			sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) track: %d, %d edges, occ: %d, capacity: %d",
 				    hit_node, rr_node[hit_node].rr_get_type_string(),
@@ -2037,26 +1993,26 @@ static void highlight_rr_nodes(float x, float y) {
 			/* Using white color to represent de-highlighting (or 
 			 * de-selecting) of node.
 			 */
-			draw_state.draw_rr_node[hit_node].color = WHITE;
-			draw_state.draw_rr_node[hit_node].node_highlighted = false;
+			draw_state->draw_rr_node[hit_node].color = WHITE;
+			draw_state->draw_rr_node[hit_node].node_highlighted = false;
 		}
 
 #ifdef DEBUG
 		print_rr_node(stdout, rr_node, hit_node);
 #endif
-		if (draw_state.draw_rr_toggle != DRAW_NO_RR) 
+		if (draw_state->draw_rr_toggle != DRAW_NO_RR) 
 			// If rr_graph is shown, highlight the fan-in/fan-outs for
 			// this node.
 			draw_highlight_fan_in_fan_out(hit_node);
    }
 
 	if (hit_node == OPEN) {
-		update_message(draw_state.default_message);
+		update_message(draw_state->default_message);
 		drawscreen();
 		return;
 	}
 
-	if (draw_state.show_nets) {
+	if (draw_state->show_nets) {
 		highlight_nets(message, hit_node);
 	} else
 		update_message(message);
@@ -2088,16 +2044,16 @@ static void highlight_blocks(float x, float y, t_event_buttonPressed button_info
 	hit = i = j = k = 0;
 
 	for (i = 0; i <= (nx + 1) && !hit; i++) {
-		if (x <= draw_coords.tile_x[i] + draw_coords.tile_width) {
-			if (x >= draw_coords.tile_x[i]) {
+		if (x <= draw_coords->tile_x[i] + draw_coords->tile_width) {
+			if (x >= draw_coords->tile_x[i]) {
 				for (j = 0; j <= (ny + 1) && !hit; j++) {
 					if (grid[i][j].width_offset != 0 || grid[i][j].height_offset != 0)
 						continue;
 					type = grid[i][j].type;
-					if (y <= draw_coords.tile_y[j + type->height - 1] 
-						+ draw_coords.tile_width) 
+					if (y <= draw_coords->tile_y[j + type->height - 1] 
+						+ draw_coords->tile_width) 
 					{
-						if (y >= draw_coords.tile_y[j])
+						if (y >= draw_coords->tile_y[j])
 							hit = 1;
 					}
 				}
@@ -2110,7 +2066,7 @@ static void highlight_blocks(float x, float y, t_event_buttonPressed button_info
 
 	if (!hit) {
 		highlight_rr_nodes(x, y);
-		/* update_message(draw_state.default_message);
+		/* update_message(draw_state->default_message);
 		 drawscreen(); */
 		return;
 	}
@@ -2118,22 +2074,22 @@ static void highlight_blocks(float x, float y, t_event_buttonPressed button_info
 	hit = 0;
 
 	if (EMPTY_TYPE == type) {
-		update_message(draw_state.default_message);
+		update_message(draw_state->default_message);
 		drawscreen();
 		return;
 	}
 
 	/* The user selected the clb at location (i,j). */
-	io_step = draw_coords.tile_width / type->capacity;
+	io_step = draw_coords->tile_width / type->capacity;
 
 	if ((i < 1) || (i > nx)) /* Vertical columns of IOs */
-		k = (int) ((y - draw_coords.tile_y[j]) / io_step);
+		k = (int) ((y - draw_coords->tile_y[j]) / io_step);
 	else
-		k = (int) ((x - draw_coords.tile_x[i]) / io_step);
+		k = (int) ((x - draw_coords->tile_x[i]) / io_step);
 
 	assert(k < type->capacity);
 	if (grid[i][j].blocks[k] == EMPTY) {
-		update_message(draw_state.default_message);
+		update_message(draw_state->default_message);
 		drawscreen();
 		return;
 	}
@@ -2153,9 +2109,9 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 	int k, netnum, fanblk, iclass;
 	unsigned ipin;
 
-	if (draw_state.block_color[bnum] == GREEN) {
+	if (draw_state->block_color[bnum] == GREEN) {
 		/* If block already highlighted, de-highlight the block and
-		 * fanin and fanout.
+		 * fanin and fanout. (This only applies to ctrl+click)
 		 */
 		for (k = 0; k < type->num_pins; k++) { /* Each pin on a CLB */
 			netnum = block[bnum].nets[k];
@@ -2166,13 +2122,13 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 			iclass = type->pin_class[k];
 
 			if (type->class_inf[iclass].type == DRIVER) { /* Fanout */
-				draw_state.net_color[netnum] = BLACK;
+				draw_state->net_color[netnum] = BLACK;
 				for (ipin = 1; ipin < g_clbs_nlist.net[netnum].pins.size(); ipin++) {
 					fanblk = g_clbs_nlist.net[netnum].pins[ipin].block;
 					draw_reset_blk_color(fanblk);
 				}
 			} else { /* This net is fanin to the block. */
-				draw_state.net_color[netnum] = BLACK;
+				draw_state->net_color[netnum] = BLACK;
 				fanblk = g_clbs_nlist.net[netnum].pins[0].block; /* DRIVER to net */
 				draw_reset_blk_color(fanblk);
 			}
@@ -2191,19 +2147,19 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 			iclass = type->pin_class[k];
 
 			if (type->class_inf[iclass].type == DRIVER) { /* Fanout */
-				draw_state.net_color[netnum] = RED;
+				draw_state->net_color[netnum] = RED;
 				for (ipin = 1; ipin < g_clbs_nlist.net[netnum].pins.size(); ipin++) {
 					fanblk = g_clbs_nlist.net[netnum].pins[ipin].block;
-					draw_state.block_color[fanblk] = RED;
+					draw_state->block_color[fanblk] = RED;
 				}
 			} else { /* This net is fanin to the block. */
-				draw_state.net_color[netnum] = BLUE;
+				draw_state->net_color[netnum] = BLUE;
 				fanblk = g_clbs_nlist.net[netnum].pins[0].block; /* DRIVER to net */
-				draw_state.block_color[fanblk] = BLUE;
+				draw_state->block_color[fanblk] = BLUE;
 			}
 		}
 
-		draw_state.block_color[bnum] = GREEN; /* Selected block. */
+		draw_state->block_color[bnum] = GREEN; /* Selected block. */
 	}
 }
 
@@ -2219,23 +2175,23 @@ static void deselect_all(void) {
 	}
 
 	for (i = 0; i < (int) g_clbs_nlist.net.size(); i++)
-		draw_state.net_color[i] = BLACK;
+		draw_state->net_color[i] = BLACK;
 
 	for (i = 0; i < num_rr_nodes; i++) {
-		draw_state.draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;
-		draw_state.draw_rr_node[i].node_highlighted = false;
+		draw_state->draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;
+		draw_state->draw_rr_node[i].node_highlighted = false;
 	}
 }
 
 
 static void draw_reset_blk_color(int i) {
 	if (block[i].type->index < 3) {
-			draw_state.block_color[i] = LIGHTGREY;
+			draw_state->block_color[i] = LIGHTGREY;
 	} else if (block[i].type->index < 3 + MAX_BLOCK_COLOURS) {
-			draw_state.block_color[i] = (enum color_types) (BISQUE + MAX_BLOCK_COLOURS 
+			draw_state->block_color[i] = (enum color_types) (BISQUE + MAX_BLOCK_COLOURS 
 															+ block[i].type->index - 3);
 	} else {
-			draw_state.block_color[i] = (enum color_types) (BISQUE + 2 * MAX_BLOCK_COLOURS 
+			draw_state->block_color[i] = (enum color_types) (BISQUE + 2 * MAX_BLOCK_COLOURS 
 															- 1);
 	}
 }
@@ -2332,14 +2288,14 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 			iside = TOP;
 			width_offset = width - 1;
 			height_offset = height - 1;
-			draw_pin_off = draw_coords.pin_size;
+			draw_pin_off = draw_coords->pin_size;
 		} else {
 			assert((grid_y - 1) == chan_ylow);
 
 			iside = BOTTOM;
 			width_offset = 0;
 			height_offset = 0;
-			draw_pin_off = -draw_coords.pin_size;
+			draw_pin_off = -draw_coords->pin_size;
 		}
 		assert(grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
 
@@ -2376,11 +2332,11 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 
 		if ((grid_x) == chan_xlow) {
 			iside = RIGHT;
-			draw_pin_off = draw_coords.pin_size;
+			draw_pin_off = draw_coords->pin_size;
 		} else {
 			assert((grid_x - 1) == chan_xlow);
 			iside = LEFT;
-			draw_pin_off = -draw_coords.pin_size;
+			draw_pin_off = -draw_coords->pin_size;
 		}
 		for (i = start; i <= end; i++) {
 			height_offset = i - grid_y;
@@ -2419,7 +2375,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 
 	drawline(x1, y1, x2, y2);
 	if (direction == BI_DIRECTION || !is_opin(pin_num, type)) {
-		draw_x(x2, y2, 0.7 * draw_coords.pin_size);
+		draw_x(x2, y2, 0.7 * draw_coords->pin_size);
 	} else {
 		xend = x2 + (x1 - x2) / 10.;
 		yend = y2 + (y1 - y2) / 10.;
