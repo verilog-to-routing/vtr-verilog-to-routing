@@ -42,6 +42,7 @@
 #include "TIO_PrintHandler.h"
 
 #include "TFH_FabricGridHandler.h"
+#include "TFH_FabricBlockHandler.h"
 #include "TFH_FabricChannelHandler.h"
 #include "TFH_FabricSwitchBoxHandler.h"
 #include "TFH_FabricConnectionBlockHandler.h"
@@ -67,6 +68,7 @@ TVPR_Interface_c* TVPR_Interface_c::pinstance_ = 0;
 //---------------------------------------------------------------------------//
 // Version history
 // 07/10/12 jeffr : Original
+// 08/22/13 jeffr : Added support for TFH_FabricBlockHandler_c::NewInstance
 //===========================================================================//
 TVPR_Interface_c::TVPR_Interface_c( 
       void )
@@ -80,6 +82,10 @@ TVPR_Interface_c::TVPR_Interface_c(
    // Initialize grid handler 'singleton' prior to placement
    // (in order to handle fabric grid overrides, if any)
    TFH_FabricGridHandler_c::NewInstance( );
+
+   // Initialize block handler 'singleton' prior to placement
+   // (in order to handle fabric block overrides, if any)
+   TFH_FabricBlockHandler_c::NewInstance( );
 
    // Initialize channel widths handler 'singleton' prior to placement
    // (in order to handle fabric channel width overrides, if any)
@@ -116,24 +122,20 @@ TVPR_Interface_c::TVPR_Interface_c(
 //---------------------------------------------------------------------------//
 // Version history
 // 07/10/12 jeffr : Original
+// 08/22/13 jeffr : Added TFH_FabricBlockHandler_c::DeleteInstance support
 //===========================================================================//
 TVPR_Interface_c::~TVPR_Interface_c( 
       void )
 {
    TCH_PreRoutedHandler_c::DeleteInstance( );
-
    TCH_PrePlacedHandler_c::DeleteInstance( );
-
    TCH_RelativePlaceHandler_c::DeleteInstance( );
-
    TCH_RegionPlaceHandler_c::DeleteInstance( );
 
    TFH_FabricConnectionBlockHandler_c::DeleteInstance( );
-
    TFH_FabricSwitchBoxHandler_c::DeleteInstance( );
-
    TFH_FabricChannelHandler_c::DeleteInstance( );
-
+   TFH_FabricBlockHandler_c::DeleteInstance( );
    TFH_FabricGridHandler_c::DeleteInstance( );
 
    this->Close( );
