@@ -46,6 +46,16 @@ using namespace std;
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
 
+#include "TFH_FabricGridHandler.h"
+#include "TFH_FabricBlockHandler.h"
+#include "TFH_FabricChannelHandler.h"
+#include "TFH_FabricSwitchBoxHandler.h"
+#include "TFH_FabricConnectionBlockHandler.h"
+#include "TCH_RegionPlaceHandler.h"
+#include "TCH_RelativePlaceHandler.h"
+#include "TCH_PrePlacedHandler.h"
+#include "TCH_PreRoutedHandler.h"
+
 /* Local subroutines */
 static void free_pb_type(t_pb_type *pb_type);
 static void free_complex_block_types(void);
@@ -53,6 +63,9 @@ static void free_complex_block_types(void);
 static void free_arch(t_arch* Arch);
 static void free_options(t_options *options);
 static void free_circuit(void);
+
+static void toro_new_handlers(void);
+static void toro_delete_handlers(void);
 
 static boolean has_printhandler_pre_vpr = FALSE;
 
@@ -65,7 +78,7 @@ static void resync_post_route_netlist();
 static boolean clay_logical_equivalence_handling(const t_arch *arch);
 static void clay_lut_input_rebalancing(int iblock, t_pb *pb);
 static void clay_reload_ble_locations(int iblock);
-static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,	t_pb *pb);
+static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node, t_pb *pb);
 
 /* Local subroutines end */
 
@@ -216,6 +229,9 @@ void vpr_init(INP int argc, INP char **argv,
 		fflush(stdout);
 
 		ShowSetup(*options, *vpr_setup);
+
+		/* Finally, initialize Toro-specific handler 'singleton' objects */
+		toro_new_handlers();
 
 	} else {
 		/* Print usage message if no args */
@@ -789,6 +805,43 @@ void vpr_free_all(INOUTP t_arch Arch,
 	if (has_printhandler_pre_vpr == FALSE) {
 		PrintHandlerDelete();
 	}
+
+	/* Finally, destroy Toro-specific handler 'singleton' objects */
+	toro_delete_handlers();
+}
+
+//===========================================================================//
+static void toro_new_handlers(void) {
+
+	// Initialize various fabric handler 'singleton' objects
+	TFH_FabricGridHandler_c::NewInstance();
+	TFH_FabricBlockHandler_c::NewInstance();
+	TFH_FabricChannelHandler_c::NewInstance();
+	TFH_FabricSwitchBoxHandler_c::NewInstance();
+	TFH_FabricConnectionBlockHandler_c::NewInstance();
+
+	// Initialize various circuit handler 'singleton' objects
+	TCH_RegionPlaceHandler_c::NewInstance();
+	TCH_RelativePlaceHandler_c::NewInstance();
+	TCH_PrePlacedHandler_c::NewInstance();
+	TCH_PreRoutedHandler_c::NewInstance();
+}
+
+//===========================================================================//
+static void toro_delete_handlers(void) {
+
+	// Destroy various fabric handler 'singleton' objects
+	TFH_FabricGridHandler_c::DeleteInstance();
+	TFH_FabricBlockHandler_c::DeleteInstance();
+	TFH_FabricChannelHandler_c::DeleteInstance();
+	TFH_FabricSwitchBoxHandler_c::DeleteInstance();
+	TFH_FabricConnectionBlockHandler_c::DeleteInstance();
+
+	// Destroy various circuit handler 'singleton' objects
+	TCH_RegionPlaceHandler_c::DeleteInstance();
+	TCH_RelativePlaceHandler_c::DeleteInstance();
+	TCH_PrePlacedHandler_c::DeleteInstance();
+	TCH_PreRoutedHandler_c::DeleteInstance();
 }
 
 /****************************************************************************************************
