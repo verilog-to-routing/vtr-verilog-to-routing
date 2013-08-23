@@ -18,7 +18,6 @@
 
 /************************* Subroutines local to this file. *******************************/
 
-static int draw_internal_alloc_pb_array(t_pb_graph_node *pb_graph_head);
 static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node, 
 									  float parent_width, float parent_height);
 static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node, 
@@ -354,11 +353,20 @@ static void draw_internal_pb(int type_index, t_pb *pb, float start_x, float star
 				/* If child block is used, label it by its pb_type, followed
 				 * by its name in brackets.
 				 */
-				char blk_tag[25];
+				int type_len, name_len, tot_len;
+				char *blk_tag;
+
+				type_len = strlen(pb_child_type->name);
+				name_len = strlen(pb->child_pbs[i][j].name);
+				tot_len = type_len + name_len;
+				blk_tag = (char *)my_malloc((tot_len + 5) * sizeof(char));
+
 				sprintf (blk_tag, "%s(%s)", pb_child_type->name, pb->child_pbs[i][j].name);
 
 				drawtext((x1 + x2) / 2.0, (y1 + y2) / 2.0,
 					 blk_tag, min((x2 - x1)/2, (y2 - y1)));
+
+				free(blk_tag);
 			}
 			else {
 				/* If child block is not used, label it only by its pb_type
