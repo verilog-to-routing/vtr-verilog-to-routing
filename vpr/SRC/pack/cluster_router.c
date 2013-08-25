@@ -64,7 +64,7 @@ static t_lb_trace *find_node_in_rt(t_lb_trace *rt, int rt_index);
 /**
  Build data structures used by intra-logic block router
  */
-t_lb_router_data *alloc_and_load_router_data(INP vector<t_lb_type_rr_node> *lb_type_graph) {
+t_lb_router_data *alloc_and_load_router_data(INP vector<t_lb_type_rr_node> *lb_type_graph, t_type_ptr type) {
 	t_lb_router_data *router_data = new t_lb_router_data;
 	int size;
 
@@ -72,6 +72,8 @@ t_lb_router_data *alloc_and_load_router_data(INP vector<t_lb_type_rr_node> *lb_t
 	size = router_data->lb_type_graph->size();
 	router_data->lb_rr_node_stats = new t_lb_rr_node_stats[size];
 	router_data->intra_lb_nets = new vector<t_intra_lb_net>;
+	router_data->atoms_added = new map<int, boolean>;
+	router_data->lb_type = type;
 
 	return router_data;
 }
@@ -82,6 +84,8 @@ void free_router_data(INOUTP t_lb_router_data *router_data) {
 		delete [] router_data->lb_rr_node_stats;
 		router_data->lb_rr_node_stats = NULL;
 		router_data->lb_type_graph = NULL;
+		delete router_data->atoms_added;
+		router_data->atoms_added = NULL;
 		free_intra_lb_nets(router_data->intra_lb_nets);
 		router_data->intra_lb_nets = NULL;
 		delete router_data;
@@ -101,10 +105,17 @@ void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom) {
 	t_model *model;
 	t_model_ports *model_ports;
 	int iport, inet;
+	map <int, boolean> & atoms_added = *router_data->atoms_added;
 
 	pb = logical_block[iatom].pb;
 	pb_graph_node = pb->pb_graph_node;
 	pb_type = pb_graph_node->pb_type;	
+
+	
+	if(atoms_added.count(iatom) > 0) {
+		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, "Atom %s [%d] added twice to router\n", logical_block[iatom].name, iatom);
+	}
+	atoms_added[iatom] = TRUE;
 
 	set_reset_pb_modes(router_data, pb, TRUE);
 
@@ -115,7 +126,7 @@ void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom) {
 	while(model_ports != NULL) {
 		if(model_ports->is_clock == FALSE) {
 			iport = model_ports->index;
-			for (int ipin = 0; ipin > model_ports->size; ipin++) {
+			for (int ipin = 0; ipin < model_ports->size; ipin++) {
 				inet = logical_block[iatom].input_nets[iport][ipin];
 				if(inet != OPEN) {
 					add_pin_to_rt_terminals(router_data, iatom, iport, ipin, model_ports);
@@ -129,7 +140,7 @@ void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom) {
 	model_ports = model->outputs;
 	while(model_ports != NULL) {
 		iport = model_ports->index;
-		for (int ipin = 0; ipin > model_ports->size; ipin++) {
+		for (int ipin = 0; ipin < model_ports->size; ipin++) {
 			inet = logical_block[iatom].output_nets[iport][ipin];
 			if(inet != OPEN) {
 				add_pin_to_rt_terminals(router_data, iatom, iport, ipin, model_ports);
@@ -144,7 +155,7 @@ void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom) {
 		if(model_ports->is_clock == TRUE) {
 			iport = model_ports->index;
 			assert(iport == 0);
-			for (int ipin = 0; ipin > model_ports->size; ipin++) {
+			for (int ipin = 0; ipin < model_ports->size; ipin++) {
 				assert(ipin == 0);
 				inet = logical_block[iatom].clock_net;
 				if(inet != OPEN) {
@@ -164,6 +175,12 @@ void remove_atom_from_target(INOUTP t_lb_router_data *router_data, INP int iatom
 	t_model *model;
 	t_model_ports *model_ports;
 	int iport, inet;
+	map <int, boolean> & atoms_added = *router_data->atoms_added;
+
+	
+	if(atoms_added.count(iatom) == 0) {
+		return;
+	}
 
 	pb = logical_block[iatom].pb;
 	pb_graph_node = pb->pb_graph_node;
@@ -178,25 +195,27 @@ void remove_atom_from_target(INOUTP t_lb_router_data *router_data, INP int iatom
 	while(model_ports != NULL) {
 		if(model_ports->is_clock == FALSE) {
 			iport = model_ports->index;
-			for (int ipin = 0; ipin > model_ports->size; ipin++) {
+			for (int ipin = 0; ipin < model_ports->size; ipin++) {
 				inet = logical_block[iatom].input_nets[iport][ipin];
 				if(inet != OPEN) {
 					remove_pin_from_rt_terminals(router_data, iatom, iport, ipin, model_ports);
 				}
 			}
 		}
+		model_ports = model_ports->next;
 	}
 
 	/* Remove outputs from route tree sources/targets */	
 	model_ports = model->outputs;
 	while(model_ports != NULL) {
 		iport = model_ports->index;
-		for (int ipin = 0; ipin > model_ports->size; ipin++) {
+		for (int ipin = 0; ipin < model_ports->size; ipin++) {
 			inet = logical_block[iatom].output_nets[iport][ipin];
 			if(inet != OPEN) {
 				remove_pin_from_rt_terminals(router_data, iatom, iport, ipin, model_ports);
 			}
 		}
+		model_ports = model_ports->next;
 	}
 
 	/* Remove clock from route tree sources/targets */	
@@ -205,7 +224,7 @@ void remove_atom_from_target(INOUTP t_lb_router_data *router_data, INP int iatom
 		if(model_ports->is_clock == TRUE) {
 			iport = model_ports->index;
 			assert(iport == 0);
-			for (int ipin = 0; ipin > model_ports->size; ipin++) {
+			for (int ipin = 0; ipin < model_ports->size; ipin++) {
 				assert(ipin == 0);
 				inet = logical_block[iatom].clock_net;
 				if(inet != OPEN) {
@@ -213,7 +232,10 @@ void remove_atom_from_target(INOUTP t_lb_router_data *router_data, INP int iatom
 				}
 			}
 		}
+		model_ports = model_ports->next;
 	}
+
+	atoms_added.erase(iatom);
 }
 
 /* Set/Reset mode of rr nodes to the pb used.  If set == TRUE, then set all modes of the rr nodes affected by pb to the mode of the pb.
@@ -274,6 +296,17 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 	priority_queue <t_expansion_node, vector <t_expansion_node>, compare_expansion_node> pq;	/* Priority queue used to find lowest cost next node to explore */
 	map<int, boolean> explored_nodes;				/* List of already explored nodes to clear incrementally later */
 	t_explored_node_tb *node_traceback = new t_explored_node_tb[lb_type_graph.size()]; /* Store traceback info for explored nodes */
+
+	/* Reset current routing */
+	for(unsigned int inet = 0; inet < lb_nets.size(); inet++) {
+		free_lb_trace(lb_nets[inet].rt_tree);
+		lb_nets[inet].rt_tree = NULL;
+	}
+	for(unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
+		router_data->lb_rr_node_stats[inode].historical_usage = 0;
+		router_data->lb_rr_node_stats[inode].occ = 0;
+	}
+
 	
 	/*	Iteratively remove congestion until a successful route is found.  
 		Cap the total number of iterations tried so that if a solution does not exist, then the router won't run indefinately */
@@ -282,6 +315,8 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 		/* Iterate across all nets internal to logic block */
 		for(unsigned int inet = 0; inet < lb_nets.size() && is_impossible == FALSE; inet++) {
 			commit_remove_rt(lb_nets[inet].rt_tree, router_data->lb_rr_node_stats, RT_REMOVE);
+			free_lb_trace(lb_nets[inet].rt_tree);
+			lb_nets[inet].rt_tree = NULL;
 			add_source_to_rt(router_data, inet);
 
 			/* Route each sink of net */
@@ -295,19 +330,21 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 					} else {
 						exp_node = pq.top();
 						pq.pop();
-						if(exp_node.node_index != lb_nets[inet].terminals[itarget] && 
-							node_traceback[exp_node.node_index].isExplored == FALSE) {
+						
+						if(node_traceback[exp_node.node_index].isExplored == FALSE) {
 							/* First time node is popped implies path to this node is the lowest cost.
-							   If the node is popped a second time, then the path to that node is higher than this path so
-							   ignore.
+								If the node is popped a second time, then the path to that node is higher than this path so
+								ignore.
 							*/
 							node_traceback[exp_node.node_index].isExplored = TRUE;
 							node_traceback[exp_node.node_index].prev_index = exp_node.prev_index;
 							explored_nodes[exp_node.node_index] = TRUE;		
-							expand_node(router_data, exp_node, pq);
+							if(exp_node.node_index != lb_nets[inet].terminals[itarget]) {								
+								expand_node(router_data, exp_node, pq);
+							}
 						}
 					}
-				} while(exp_node.node_index == lb_nets[inet].terminals[itarget] && is_impossible == FALSE);
+				} while(exp_node.node_index != lb_nets[inet].terminals[itarget] && is_impossible == FALSE);
 
 				if(exp_node.node_index == lb_nets[inet].terminals[itarget]) {
 					/* Net terminal is routed, add this to the route tree, clear data structures, and keep going */
@@ -331,9 +368,21 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 		}
 	}
 
+	/* jedit */
+	int count = 0;
+	for(unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
+		if(router_data->lb_rr_node_stats[inode].occ > 0) {
+			count++;
+		}		
+	}
+	printf("jedit count %d\n", count);
 
 	delete [] node_traceback;
-	printf("jedit is_routed %d\n", (int)is_routed);
+	if(is_routed) {
+		printf("jedit route success\n");
+	} else {
+		printf("jedit route FAIL\n");
+	}
 	return is_routed;
 }
 
@@ -451,19 +500,22 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, in
 		lb_nets[ipos].terminals[0] = pb_graph_pin->pin_count_in_cluster;
 		assert(lb_type_graph[lb_nets[ipos].terminals[0]].type == LB_SOURCE);
 	} else {
+		/* Sink for input pins is one past the primitive input pin
+		*/
+		int pin_index = pb_graph_pin->pin_count_in_cluster;
+		assert(get_num_modes_of_lb_type_rr_node(lb_type_graph[pin_index]) == 1);
+		assert(lb_type_graph[pin_index].num_fanout[0] == 1);
+		pin_index = lb_type_graph[pin_index].outedges[0][0].node_index;
+		assert(lb_type_graph[pin_index].type == LB_SINK);
+
 		/* Determine if the sinks of the net are all contained in the logic block, if yes, then the net does not need to route out of the logic block
 		so the external sink can be removed
 		*/
 		if(lb_nets[ipos].terminals.size() == g_atoms_nlist.net[inet].pins.size()) {
-			assert(lb_nets[ipos].terminals[1] == get_lb_type_rr_graph_ext_source_index(lb_type));		
-			lb_nets[ipos].terminals[1] = pb_graph_pin->pin_count_in_cluster;
+			assert(lb_nets[ipos].terminals[1] == get_lb_type_rr_graph_ext_sink_index(lb_type));		
+			lb_nets[ipos].terminals[1] = pin_index;
 		} else {
 			/* append sink to end of list of terminals */
-			int pin_index = pb_graph_pin->pin_count_in_cluster;
-			assert(get_num_modes_of_lb_type_rr_node(lb_type_graph[pin_index]) == 1);
-			assert(lb_type_graph[pin_index].num_fanout[0] == 1);
-			pin_index = lb_type_graph[pin_index].outedges[0][0].node_index;
-			assert(lb_type_graph[pin_index].type == LB_SINK);
 			lb_nets[ipos].terminals.push_back(pin_index);
 		}
 	}
@@ -571,6 +623,10 @@ static void commit_remove_rt(t_lb_trace *rt, t_lb_rr_node_stats *lb_rr_node_stat
 	int inode;
 	int incr;
 
+	if(rt == NULL) {
+		return;
+	}
+
 	inode = rt->current_node;
 
 	/* Determine if node is being used or removed */
@@ -592,6 +648,7 @@ static void commit_remove_rt(t_lb_trace *rt, t_lb_rr_node_stats *lb_rr_node_stat
 
 /* At source mode as starting point to existing route tree */
 static void add_source_to_rt(t_lb_router_data *router_data, int inet) {
+	assert((*router_data->intra_lb_nets)[inet].rt_tree == NULL);
 	(*router_data->intra_lb_nets)[inet].rt_tree = new t_lb_trace;
 	(*router_data->intra_lb_nets)[inet].rt_tree->current_node = (*router_data->intra_lb_nets)[inet].terminals[0];
 }
@@ -605,7 +662,7 @@ static void expand_rt(t_lb_router_data *router_data, int inet, t_explored_node_t
 	assert(explored_nodes.empty());
 	assert(pq.empty());
 
-	expand_rt_rec(lb_nets[inet].rt_tree, lb_nets[inet].rt_tree->current_node, node_traceback, explored_nodes, pq);
+	expand_rt_rec(lb_nets[inet].rt_tree, OPEN, node_traceback, explored_nodes, pq);
 }
 
 
@@ -621,9 +678,9 @@ static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *no
 	enode.node_index = rt->current_node;
 	enode.prev_index = prev_index;
 	pq.push(enode);
-	explored_nodes[rt->current_node] = TRUE;
+	explored_nodes[rt->current_node] = FALSE;
 	node_traceback[enode.node_index].isInRT = TRUE;
-	node_traceback[enode.node_index].isExplored = TRUE;
+	node_traceback[enode.node_index].isExplored = FALSE;
 	node_traceback[enode.node_index].prev_index = prev_index;
 	
 
@@ -651,8 +708,12 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 	
 
 	for(int iedge = 0; iedge < lb_type_graph[cur_node].num_fanout[mode]; iedge++) {
+		/* Init new expansion node */
 		enode.prev_index = cur_node;
 		enode.node_index = lb_type_graph[cur_node].outedges[mode][iedge].node_index;
+		enode.cost = cur_cost;
+
+		/* Determine incremental cost of using expansion node */
 		usage = lb_rr_node_stats[enode.node_index].occ + 1 - lb_type_graph[enode.node_index].capacity;
 		incr_cost = lb_type_graph[enode.node_index].intrinsic_cost;
 		if(usage > 0) {
@@ -660,6 +721,10 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 		}
 		incr_cost *= params.pres_fac;
 		incr_cost += params.hist_fac * lb_rr_node_stats[enode.node_index].historical_usage;		
+		enode.cost = cur_cost + incr_cost;
+
+		/* Add to queue */
+		pq.push(enode);
 	}
 	
 }

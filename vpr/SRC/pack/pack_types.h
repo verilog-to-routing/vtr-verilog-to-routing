@@ -216,6 +216,8 @@ struct t_lb_router_data {
 	/* Logical Netlist Info */
 	vector <t_intra_lb_net> *intra_lb_nets;		/* Pointer to vector of intra logic block nets and their connections */
 
+	map <int, boolean> *atoms_added;		/* map that records which atoms are added to cluster router */
+
 	/* Logical-to-physical mapping info */
 	t_lb_rr_node_stats *lb_rr_node_stats;		/* [0..lb_type_graph->size()-1] Stats for each logic block instance */
 	boolean is_routed;							/* Stores whether or not the current logical-to-physical mapping has a routed solution */
@@ -232,6 +234,7 @@ struct t_lb_router_data {
 		intra_lb_nets = NULL;
 		is_routed = FALSE;
 		lb_type = NULL;
+		atoms_added = NULL;
 
 		params.max_iterations = 10;
 		params.pres_fac = 1;

@@ -6,7 +6,7 @@
  */
 
 /* Constructors/Destructors */
-t_lb_router_data *alloc_and_load_router_data(INP vector<t_lb_type_rr_node> *lb_type_graph);
+t_lb_router_data *alloc_and_load_router_data(INP vector<t_lb_type_rr_node> *lb_type_graph, t_type_ptr type);
 void free_router_data(INOUTP t_lb_router_data *router_data);
 
 

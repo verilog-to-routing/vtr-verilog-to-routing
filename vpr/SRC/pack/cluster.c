@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <map>
 using namespace std;
 
@@ -31,6 +32,7 @@ using namespace std;
 #include "cluster_router.h"
 
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*/
+//#define JEDIT_INTRA_LB_ROUTE
 
 #define AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC 2 /* Maximum relative number of pins that can exceed input pins before giving up */
 #define AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST 5 /* Maximum constant number of pins that can exceed input pins before giving up */
@@ -110,6 +112,11 @@ static int *net_output_feeds_driving_block_input;
 
 static float *block_criticality = NULL;
 static int *critindexarray = NULL;
+
+/* Runtime accounting */
+static clock_t new_route_t = 0;
+static clock_t old_route_t = 0;
+	
 
 /*****************************************/
 /*local functions*/
@@ -276,6 +283,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	t_slack * slacks = NULL;
 	t_lb_router_data *router_data = NULL;
 	t_pack_molecule *istart, *next_molecule, *prev_molecule, *cur_molecule;
+
+	new_route_t = old_route_t = 0;
 	
 #ifdef PATH_COUNTING
 	unsigned int inet;
@@ -541,9 +550,16 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			}
 			vpr_printf_direct("\n");
 			if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
+				clock_t begin_t, end_t; 
+				begin_t = clock();
 				is_cluster_legal = try_breadth_first_route_cluster();
-#if 0
+				end_t = clock();
+				old_route_t += (end_t - begin_t);
+#ifdef JEDIT_INTRA_LB_ROUTE
+				begin_t = clock();
 				try_intra_lb_route(router_data);
+				end_t = clock();
+				new_route_t += (end_t - begin_t);
 #endif
 				if (is_cluster_legal == TRUE) {
 					vpr_printf_info("Passed route at end.\n");
@@ -635,6 +651,19 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	}
 
  free (primitives_list);
+
+ 	#ifdef CLOCKS_PER_SEC
+		vpr_printf_info("Old intra lb router took %g seconds.\n", 
+				(float)(old_route_t) / CLOCKS_PER_SEC);
+		vpr_printf_info("New intra lb router took %g seconds.\n", 
+				(float)(new_route_t) / CLOCKS_PER_SEC);
+	#else
+		vpr_printf_info("Old intra lb router took %g seconds.\n", 
+				(float)(old_route_t) / CLK_PER_SEC);
+		vpr_printf_info("New intra lb router took %g seconds.\n", 
+				(float)(new_route_t) / CLK_PER_SEC);		
+	#endif
+	
 
 }
 
@@ -1255,10 +1284,17 @@ static enum e_block_pack_status try_pack_molecule(
 				/* Try to route if heuristic is to route for every atom
 					Skip routing if heuristic is to route at the end of packing complex block
 				*/
+				clock_t begin_t, end_t;
+				begin_t = clock();
 				setup_intracluster_routing_for_molecule(molecule, primitives_list);
-#if 0
+				end_t = clock();
+				old_route_t += (end_t - begin_t);
+#ifdef JEDIT_INTRA_LB_ROUTE
 				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM) {
+					begin_t = clock();
 					try_intra_lb_route(router_data);
+					end_t = clock();
+					new_route_t += (end_t - begin_t);
 				}
 #endif
 				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && try_breadth_first_route_cluster() == FALSE) {
@@ -1412,7 +1448,10 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		pb->logical_block = ilogical_block;
 		logical_block[ilogical_block].clb_index = clb_index;
 		logical_block[ilogical_block].pb = pb;
+
+#ifdef JEDIT_INTRA_LB_ROUTE
 		add_atom_as_target(router_data, ilogical_block);
+#endif
 
 		if (!primitive_feasible(ilogical_block, pb)) {
 			/* failed location feasibility check, revert pack */
@@ -1439,6 +1478,9 @@ static enum e_block_pack_status try_place_logical_block_rec(
  */
 static void revert_place_logical_block(INP int iblock, INP int max_models, INOUTP t_lb_router_data *router_data) {
 	t_pb *pb, *next;
+#ifdef JEDIT_INTRA_LB_ROUTE
+	remove_atom_from_target(router_data, iblock);
+#endif
 
 	pb = logical_block[iblock].pb;
 	logical_block[iblock].clb_index = NO_CLUSTER;
@@ -1958,7 +2000,7 @@ static void start_new_cluster(
 				new_cluster->pb->parent_pb = NULL;
 
 				alloc_and_load_legalizer_for_cluster(new_cluster, clb_index, arch);
-				*router_data = alloc_and_load_router_data(&lb_type_rr_graphs[i]);
+				*router_data = alloc_and_load_router_data(&lb_type_rr_graphs[i], &type_descriptors[i]);
 				
 				for (j = 0; j < new_cluster->type->pb_graph_head->pb_type->num_modes && !success; j++) {
 					new_cluster->pb->mode = j;
