@@ -441,18 +441,22 @@ void free_draw_structs(void) {
 	 * For safety, set all the array pointers to NULL in case any data
 	 * structure gets freed twice.													 */
 
-	free(draw_coords->tile_x);  
-	draw_coords->tile_x = NULL;
-	free(draw_coords->tile_y);  
-	draw_coords->tile_y = NULL;
+	if(draw_coords != NULL) {
+		free(draw_coords->tile_x);  
+		draw_coords->tile_x = NULL;
+		free(draw_coords->tile_y);  
+		draw_coords->tile_y = NULL;		
+	}
 
-	free(draw_state->net_color);  	
-	draw_state->net_color = NULL;
-	free(draw_state->block_color);  
-	draw_state->block_color = NULL;
+	if(draw_state != NULL) {
+		free(draw_state->net_color);  	
+		draw_state->net_color = NULL;
+		free(draw_state->block_color);  
+		draw_state->block_color = NULL;
 
-	free(draw_state->draw_rr_node);	
-	draw_state->draw_rr_node = NULL;
+		free(draw_state->draw_rr_node);	
+		draw_state->draw_rr_node = NULL;
+	}
 }
 
 void init_draw_coords(float width_val) {
