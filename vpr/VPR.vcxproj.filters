@@ -509,5 +509,8 @@
     <ClInclude Include="SRC\draw\intra_logic_block.h">
       <Filter>Header Files\draw</Filter>
     </ClInclude>
+    <ClInclude Include="SRC\draw\draw_types.h">
+      <Filter>Header Files\draw</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

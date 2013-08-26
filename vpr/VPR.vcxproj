@@ -267,6 +267,7 @@
     <ClInclude Include="SRC\base\vpr_types.h" />
     <ClInclude Include="SRC\draw\draw.h" />
     <ClInclude Include="SRC\draw\draw_global.h" />
+    <ClInclude Include="SRC\draw\draw_types.h" />
     <ClInclude Include="SRC\draw\easygl_constants.h" />
     <ClInclude Include="SRC\draw\graphics.h" />
     <ClInclude Include="SRC\draw\intra_logic_block.h" />
