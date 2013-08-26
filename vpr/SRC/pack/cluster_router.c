@@ -300,6 +300,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 	/* Reset current routing */
 	for(unsigned int inet = 0; inet < lb_nets.size(); inet++) {
 		free_lb_trace(lb_nets[inet].rt_tree);
+		delete(lb_nets[inet].rt_tree);
 		lb_nets[inet].rt_tree = NULL;
 	}
 	for(unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
@@ -330,7 +331,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 					} else {
 						exp_node = pq.top();
 						pq.pop();
-						
+					
 						if(node_traceback[exp_node.node_index].isExplored == FALSE) {
 							/* First time node is popped implies path to this node is the lowest cost.
 								If the node is popped a second time, then the path to that node is higher than this path so
@@ -353,6 +354,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 					/* Clear all explored nodes */
 					for(unsigned int iexp = 0; iexp < lb_type_graph.size(); iexp++) {
 						node_traceback[iexp].isExplored = FALSE;
+						node_traceback[iexp].isInRT = FALSE;
 						node_traceback[iexp].prev_index = OPEN;
 					}
 				}
@@ -426,7 +428,6 @@ static void free_lb_trace(t_lb_trace *lb_trace) {
 			free_lb_trace(&lb_trace->next_nodes[i]);
 		}
 		lb_trace->next_nodes.clear();
-		delete (lb_trace);
 	}
 }
 
@@ -487,35 +488,47 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, in
 	*/	
 	if(lb_nets[ipos].terminals.empty()) {
 		/* Add terminals */
-		lb_nets[ipos].terminals.resize(2);
-		lb_nets[ipos].terminals[0] = get_lb_type_rr_graph_ext_source_index(lb_type);
-		lb_nets[ipos].terminals[1] = get_lb_type_rr_graph_ext_sink_index(lb_type);
+		int source_terminal;
+		source_terminal = get_lb_type_rr_graph_ext_source_index(lb_type);
+		lb_nets[ipos].terminals.push_back(source_terminal);
 		assert(lb_type_graph[lb_nets[ipos].terminals[0]].type == LB_SOURCE);
-		assert(lb_type_graph[lb_nets[ipos].terminals[1]].type == LB_SINK);
 	}
 
 	if(model_port->dir == OUT_PORT) {
 		/* Net driver pin takes 0th position in terminals */
+		int sink_terminal;
 		assert(lb_nets[ipos].terminals[0] == get_lb_type_rr_graph_ext_source_index(lb_type));
 		lb_nets[ipos].terminals[0] = pb_graph_pin->pin_count_in_cluster;
+
 		assert(lb_type_graph[lb_nets[ipos].terminals[0]].type == LB_SOURCE);
+		assert(lb_nets[ipos].terminals.size() <= g_atoms_nlist.net[inet].pins.size());
+
+		if(lb_nets[ipos].terminals.size() < g_atoms_nlist.net[inet].pins.size()) {
+			/* Must route out of cluster, put out of cluster sink terminal as first terminal */
+			sink_terminal = lb_nets[ipos].terminals[1];
+			lb_nets[ipos].terminals.push_back(sink_terminal);
+			sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type);
+			lb_nets[ipos].terminals[1] = sink_terminal;
+			assert(lb_type_graph[lb_nets[ipos].terminals[1]].type == LB_SINK);
+		}
 	} else {
 		/* Sink for input pins is one past the primitive input pin
 		*/
 		int pin_index = pb_graph_pin->pin_count_in_cluster;
 		assert(get_num_modes_of_lb_type_rr_node(lb_type_graph[pin_index]) == 1);
 		assert(lb_type_graph[pin_index].num_fanout[0] == 1);
+		
 		pin_index = lb_type_graph[pin_index].outedges[0][0].node_index;
 		assert(lb_type_graph[pin_index].type == LB_SINK);
 
-		/* Determine if the sinks of the net are all contained in the logic block, if yes, then the net does not need to route out of the logic block
-		so the external sink can be removed
-		*/
-		if(lb_nets[ipos].terminals.size() == g_atoms_nlist.net[inet].pins.size()) {
-			assert(lb_nets[ipos].terminals[1] == get_lb_type_rr_graph_ext_sink_index(lb_type));		
+		if(lb_nets[ipos].terminals.size() == g_atoms_nlist.net[inet].pins.size() &&
+			lb_nets[ipos].terminals[1] == get_lb_type_rr_graph_ext_sink_index(lb_type)) {
+
+		    /* If all sinks of net are all contained in the logic block, then the net does not need to route out of the logic block,
+			so the external sink can be removed
+			*/
 			lb_nets[ipos].terminals[1] = pin_index;
 		} else {
-			/* append sink to end of list of terminals */
 			lb_nets[ipos].terminals.push_back(pin_index);
 		}
 	}
@@ -757,6 +770,7 @@ static void add_to_rt(t_lb_trace *rt, int node_index, t_explored_node_tb *node_t
 		cur_index = trace_forward.back();
 		curr_node.current_node = cur_index;
 		link_node->next_nodes.push_back(curr_node);
+		link_node = &link_node->next_nodes.back();
 		trace_forward.pop_back();
 	}
 }

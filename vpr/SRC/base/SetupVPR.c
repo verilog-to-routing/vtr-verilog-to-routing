@@ -225,7 +225,7 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	alloc_and_load_all_pb_graphs(PowerOpts->do_power);
 	*PackerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_LB_TYPE_RR_GRAPH)) {
-		echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_PB_GRAPH),*PackerRRGraphs);
+		echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH),*PackerRRGraphs);
 	}
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PB_GRAPH)) {
