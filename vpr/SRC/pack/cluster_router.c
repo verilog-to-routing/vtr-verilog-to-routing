@@ -311,9 +311,9 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 	/*	Iteratively remove congestion until a successful route is found.  
 		Cap the total number of iterations tried so that if a solution does not exist, then the router won't run indefinately */
 	for(int iter = 0; iter < router_data->params.max_iterations && is_routed == FALSE && is_impossible == FALSE; iter++) {
-
+		unsigned int inet;
 		/* Iterate across all nets internal to logic block */
-		for(unsigned int inet = 0; inet < lb_nets.size() && is_impossible == FALSE; inet++) {
+		for(inet = 0; inet < lb_nets.size() && is_impossible == FALSE; inet++) {
 			commit_remove_rt(lb_nets[inet].rt_tree, router_data->lb_rr_node_stats, node_traceback, RT_REMOVE);
 			free_lb_trace(lb_nets[inet].rt_tree);
 			lb_nets[inet].rt_tree = NULL;
@@ -330,7 +330,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 					} else {
 						exp_node = pq.top();
 						pq.pop();
-					
+
 						if(node_traceback[exp_node.node_index].explored_id != cur_index) {
 							/* First time node is popped implies path to this node is the lowest cost.
 								If the node is popped a second time, then the path to that node is higher than this path so
@@ -368,6 +368,8 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 		if(is_impossible == FALSE) {
 			is_routed = is_route_success(router_data);
 		} else {
+			--inet;
+			printf("jedit net %s %d is impossible\n", vpack_net[lb_nets[inet].atom_net_index].name, inet);
 			is_routed = FALSE;
 		}
 	}
@@ -507,10 +509,15 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, in
 
 		if(lb_nets[ipos].terminals.size() < g_atoms_nlist.net[inet].pins.size()) {
 			/* Must route out of cluster, put out of cluster sink terminal as first terminal */
-			sink_terminal = lb_nets[ipos].terminals[1];
-			lb_nets[ipos].terminals.push_back(sink_terminal);
-			sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type);
-			lb_nets[ipos].terminals[1] = sink_terminal;
+			if(lb_nets[ipos].terminals.size() == 1) {
+				sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type);
+				lb_nets[ipos].terminals.push_back(sink_terminal);
+			} else {
+				sink_terminal = lb_nets[ipos].terminals[1];
+				lb_nets[ipos].terminals.push_back(sink_terminal);
+				sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type);
+				lb_nets[ipos].terminals[1] = sink_terminal;
+			}
 			assert(lb_type_graph[lb_nets[ipos].terminals[1]].type == LB_SINK);
 		}
 	} else {
@@ -627,7 +634,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iato
 
 		if(lb_nets[ipos].terminals.size() > 1 &&
 			lb_nets[ipos].terminals[1] != get_lb_type_rr_graph_ext_sink_index(lb_type) && 
-			lb_nets[ipos].terminals[1] != get_lb_type_rr_graph_ext_source_index(lb_type)) {
+			lb_nets[ipos].terminals[0] != get_lb_type_rr_graph_ext_source_index(lb_type)) {
 			
 			/* The removed sink must be driven by an atom found in the cluster, add in special sink outside of cluster to represent this */
 			int terminal = lb_nets[ipos].terminals[1];
