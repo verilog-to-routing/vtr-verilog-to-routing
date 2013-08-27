@@ -198,13 +198,13 @@ class compare_expansion_node {
 /* Stores explored nodes by router */
 struct t_explored_node_tb {
 	int prev_index;			/* Prevous node that drives this one */
-	boolean isExplored:1;		/* Whether or not this node has been explored */
-	boolean isInRT:1;			/* Whether or not this node is in the route tree */
+	int explored_id;		/* ID used to determine if this node has been explored */
+	int inet;				/* net index of route tree */
 
 	t_explored_node_tb() {
 		prev_index = OPEN;
-		isExplored = FALSE;
-		isInRT = FALSE;
+		explored_id = OPEN;
+		inet = OPEN;
 	}
 };
 

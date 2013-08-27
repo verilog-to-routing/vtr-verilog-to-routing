@@ -1333,6 +1333,13 @@ static enum e_block_pack_status try_pack_molecule(
 			}
 			if (block_pack_status != BLK_PASSED) {
 				for (i = 0; i < failed_location; i++) {
+					#ifdef JEDIT_INTRA_LB_ROUTE
+					if (molecule->logical_block_ptrs[i] != NULL) {
+						remove_atom_from_target(router_data, molecule->logical_block_ptrs[i]->index);
+					}
+					#endif
+				}
+				for (i = 0; i < failed_location; i++) {					
 					if (molecule->logical_block_ptrs[i] != NULL) {
 						revert_place_logical_block(
 								molecule->logical_block_ptrs[i]->index,
@@ -1478,9 +1485,6 @@ static enum e_block_pack_status try_place_logical_block_rec(
  */
 static void revert_place_logical_block(INP int iblock, INP int max_models, INOUTP t_lb_router_data *router_data) {
 	t_pb *pb, *next;
-#ifdef JEDIT_INTRA_LB_ROUTE
-	remove_atom_from_target(router_data, iblock);
-#endif
 
 	pb = logical_block[iblock].pb;
 	logical_block[iblock].clb_index = NO_CLUSTER;
