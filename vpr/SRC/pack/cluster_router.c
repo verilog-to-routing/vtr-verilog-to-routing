@@ -535,8 +535,6 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, in
 		}
 	}
 
-	int jedit_t_size = lb_nets[ipos].terminals.size();
-	int jedit_pin_size = g_atoms_nlist.net[inet].pins.size();
 	assert(lb_nets[ipos].terminals.size() <= g_atoms_nlist.net[inet].pins.size());
 }
 
