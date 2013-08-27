@@ -41,6 +41,7 @@ enum e_commit_remove {RT_COMMIT, RT_REMOVE};
 * Internal functions declarations
 ******************************************************************************************/
 static void free_intra_lb_nets(vector <t_intra_lb_net> *intra_lb_nets);
+static void free_lb_net_rt(t_lb_trace *lb_trace);
 static void free_lb_trace(t_lb_trace *lb_trace);
 static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, int iport, int ipin, t_model_ports *model_port);
 static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iatom, int iport, int ipin, t_model_ports *model_port);
@@ -298,8 +299,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 
 	/* Reset current routing */
 	for(unsigned int inet = 0; inet < lb_nets.size(); inet++) {
-		free_lb_trace(lb_nets[inet].rt_tree);
-		delete(lb_nets[inet].rt_tree);
+		free_lb_net_rt(lb_nets[inet].rt_tree);
 		lb_nets[inet].rt_tree = NULL;
 	}
 	for(unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
@@ -315,7 +315,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 		/* Iterate across all nets internal to logic block */
 		for(inet = 0; inet < lb_nets.size() && is_impossible == FALSE; inet++) {
 			commit_remove_rt(lb_nets[inet].rt_tree, router_data->lb_rr_node_stats, node_traceback, RT_REMOVE);
-			free_lb_trace(lb_nets[inet].rt_tree);
+			free_lb_net_rt(lb_nets[inet].rt_tree);
 			lb_nets[inet].rt_tree = NULL;
 			add_source_to_rt(router_data, inet);
 
@@ -419,10 +419,21 @@ static void free_intra_lb_nets(vector <t_intra_lb_net> *intra_lb_nets) {
 	vector <t_intra_lb_net> &lb_nets = *intra_lb_nets;
 	for(unsigned int i = 0; i < lb_nets.size(); i++) {
 		lb_nets[i].terminals.clear();
-		free_lb_trace(lb_nets[i].rt_tree);
+		free_lb_net_rt(lb_nets[i].rt_tree);
 		lb_nets[i].rt_tree = NULL;
 	}		
 	delete intra_lb_nets;
+}
+
+/* Free route tree for intra-logic block routing */
+static void free_lb_net_rt(t_lb_trace *lb_trace) {
+	if(lb_trace != NULL) {
+		for(unsigned int i = 0; i < lb_trace->next_nodes.size(); i++) {
+			free_lb_trace(&lb_trace->next_nodes[i]);
+		}
+		lb_trace->next_nodes.clear();
+		delete lb_trace;
+	}
 }
 
 /* Free trace for intra-logic block routing */
@@ -434,6 +445,7 @@ static void free_lb_trace(t_lb_trace *lb_trace) {
 		lb_trace->next_nodes.clear();
 	}
 }
+
 
 /* Given a pin of a net, assign route tree terminals for it 
    Assumes that pin is not already assigned

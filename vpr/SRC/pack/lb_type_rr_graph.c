@@ -246,7 +246,6 @@ static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type,
 	/* External rr node that drives all existing logic block input pins and is driven by all outputs exiting logic block type */
 	lb_type_rr_node_graph[ext_rr_index].capacity = pb_type->num_output_pins;
 	lb_type_rr_node_graph[ext_rr_index].num_fanout = (short*)my_malloc(sizeof (short));
-	lb_type_rr_node_graph[ext_rr_index].num_fanout = (short*)my_malloc(sizeof (short));
 	lb_type_rr_node_graph[ext_rr_index].num_fanout[0] = pb_type->num_input_pins + pb_type->num_clock_pins + 1;
 	lb_type_rr_node_graph[ext_rr_index].outedges = (t_lb_type_rr_node_edge**)my_calloc(1, sizeof(t_lb_type_rr_node_edge*));
 	if(lb_type_rr_node_graph[ext_rr_index].num_fanout[0] > 0) {
