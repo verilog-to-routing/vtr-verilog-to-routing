@@ -503,7 +503,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, in
 		lb_nets[ipos].terminals[0] = pb_graph_pin->pin_count_in_cluster;
 
 		assert(lb_type_graph[lb_nets[ipos].terminals[0]].type == LB_SOURCE);
-		assert(lb_nets[ipos].terminals.size() <= g_atoms_nlist.net[inet].pins.size());
+		
 
 		if(lb_nets[ipos].terminals.size() < g_atoms_nlist.net[inet].pins.size()) {
 			/* Must route out of cluster, put out of cluster sink terminal as first terminal */
@@ -534,6 +534,10 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, in
 			lb_nets[ipos].terminals.push_back(pin_index);
 		}
 	}
+
+	int jedit_t_size = lb_nets[ipos].terminals.size();
+	int jedit_pin_size = g_atoms_nlist.net[inet].pins.size();
+	assert(lb_nets[ipos].terminals.size() <= g_atoms_nlist.net[inet].pins.size());
 }
 
 
@@ -586,8 +590,16 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iato
 	
 	if(model_port->dir == OUT_PORT) {
 		/* Net driver pin takes 0th position in terminals */
+		int sink_terminal;
 		assert(lb_nets[ipos].terminals[0] == pb_graph_pin->pin_count_in_cluster);
 		lb_nets[ipos].terminals[0] = get_lb_type_rr_graph_ext_source_index(lb_type);		
+
+		/* source terminal is now coming from outside logic block, do not need to route signal out of logic block */
+		sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type);
+		if(lb_nets[ipos].terminals[1] == sink_terminal) {
+			lb_nets[ipos].terminals[1] = lb_nets[ipos].terminals.back();
+			lb_nets[ipos].terminals.pop_back();
+		}
 	} else {
 		assert(model_port->dir == IN_PORT);
 
@@ -610,23 +622,26 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iato
 		assert(found == TRUE);
 		assert(lb_nets[ipos].terminals[iterm] == pin_index);
 		assert(iterm > 0);
-		if(iterm == 1) {
-			/* Index 1 is a special position reserved for net connection going out of cluster */
-			lb_nets[ipos].terminals[iterm] = get_lb_type_rr_graph_ext_sink_index(lb_type);
-		} else if (lb_nets[ipos].terminals[1] != get_lb_type_rr_graph_ext_sink_index(lb_type)) {
-			/* Index 1 is a special position reserved for net connection going out of cluster */
-			lb_nets[ipos].terminals[iterm] = lb_nets[ipos].terminals[1];
+		
+		/* Drop terminal from list */
+		lb_nets[ipos].terminals[iterm] = lb_nets[ipos].terminals.back();
+		lb_nets[ipos].terminals.pop_back();
+
+		if(lb_nets[ipos].terminals.size() > 1 &&
+			lb_nets[ipos].terminals[1] != get_lb_type_rr_graph_ext_sink_index(lb_type) && 
+			lb_nets[ipos].terminals[1] != get_lb_type_rr_graph_ext_source_index(lb_type)) {
+			
+			/* The removed sink must be driven by an atom found in the cluster, add in special sink outside of cluster to represent this */
+			int terminal = lb_nets[ipos].terminals[1];
+			lb_nets[ipos].terminals.push_back(terminal);
 			lb_nets[ipos].terminals[1] = get_lb_type_rr_graph_ext_sink_index(lb_type);
-		} else {
-			/* Must drop vector size */
-			lb_nets[ipos].terminals[iterm] = lb_nets[ipos].terminals.back();
-			lb_nets[ipos].terminals.pop_back();
+
 		}
+		
 	}
 
-	if(lb_nets[ipos].terminals.size() == 2 && 
-		lb_nets[ipos].terminals[0] == get_lb_type_rr_graph_ext_source_index(lb_type) &&
-		lb_nets[ipos].terminals[1] == get_lb_type_rr_graph_ext_sink_index(lb_type)) {
+	if(lb_nets[ipos].terminals.size() == 1 && 
+		lb_nets[ipos].terminals[0] == get_lb_type_rr_graph_ext_source_index(lb_type)) {
 		/* This net is not routed, remove from list of nets in lb */
 		lb_nets[ipos] = lb_nets.back();
 		lb_nets.pop_back();
