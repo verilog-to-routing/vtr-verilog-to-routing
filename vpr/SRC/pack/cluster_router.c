@@ -37,6 +37,30 @@ using namespace std;
 
 enum e_commit_remove {RT_COMMIT, RT_REMOVE};
 
+/* Packing uses a priority queue that requires a large number of elements.  This backdoor
+allows me to use a priority queue where I can pre-allocate the # of elements in the underlying container 
+for efficiency reasons.  Note: Must use vector with this */
+template <class T, class U, class V>
+class reservable_pq: public priority_queue<T, U, V>
+{
+	public:
+		typedef typename priority_queue<T>::size_type size_type;    
+		reservable_pq(size_type capacity = 0) { 
+			reserve(capacity); 
+			cur_cap = capacity;
+		};
+		void reserve(size_type capacity) { 
+			this->c.reserve(capacity); 
+			cur_cap = capacity;
+		}
+		void clear() {
+			this->c.clear();
+			this->c.reserve(cur_cap); 			
+		}
+	private:
+		size_type cur_cap;
+};
+
 /*****************************************************************************************
 * Internal functions declarations
 ******************************************************************************************/
@@ -49,12 +73,12 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iato
 
 static void commit_remove_rt(t_lb_trace *rt, t_lb_rr_node_stats *lb_rr_node_stats, t_explored_node_tb *node_traceback, e_commit_remove op);
 static void add_source_to_rt(t_lb_router_data *router_data, int inet);
-static void expand_rt(t_lb_router_data *router_data, int inet, t_explored_node_tb *node_traceback, map<int, boolean> &explored_nodes, 
-	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net);
-static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *node_traceback, map<int, boolean> &explored_nodes, 
-	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net);
+static void expand_rt(t_lb_router_data *router_data, int inet, t_explored_node_tb *node_traceback, 
+	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net);
+static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *node_traceback, 
+	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net);
 static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node, 
-	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq);
+	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq);
 static void add_to_rt(t_lb_trace *rt, int node_index, t_explored_node_tb *node_traceback, int irt_net);
 static boolean is_route_success(t_lb_router_data *router_data);
 static t_lb_trace *find_node_in_rt(t_lb_trace *rt, int rt_index);
@@ -300,9 +324,8 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 	int cur_index = 1; /* used to determine whether or not a location has been explored, by using a unique identifier every route, I don't have to clear the previous route exploration */
 	
 	/* Stores state info during route */
-	priority_queue <t_expansion_node, vector <t_expansion_node>, compare_expansion_node> pq;	/* Priority queue used to find lowest cost next node to explore */
-	map<int, boolean> explored_nodes;				/* List of already explored nodes to clear incrementally later */
 	t_explored_node_tb *node_traceback = new t_explored_node_tb[lb_type_graph.size()]; /* Store traceback info for explored nodes */
+	reservable_pq <t_expansion_node, vector <t_expansion_node>, compare_expansion_node> pq;
 
 	/* Reset current routing */
 	for(unsigned int inet = 0; inet < lb_nets.size(); inet++) {
@@ -329,8 +352,11 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 
 			/* Route each sink of net */
 			for(unsigned int itarget = 1; itarget < lb_nets[inet].terminals.size() && is_impossible == FALSE; itarget++) {
+				int predicted_pq_size = lb_nets.size() * 10;
+				pq.clear();
+				pq.reserve(predicted_pq_size);
 				/* Get lowest cost next node, repeat until a path is found or if it is impossible to route */
-				expand_rt(router_data, inet, node_traceback, explored_nodes, pq, inet);
+				expand_rt(router_data, inet, node_traceback, pq, inet);
 				do {
 					if(pq.empty()) {
 						/* No connection possible */
@@ -346,7 +372,6 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 							*/
 							node_traceback[exp_node.node_index].explored_id = cur_index;
 							node_traceback[exp_node.node_index].prev_index = exp_node.prev_index;
-							explored_nodes[exp_node.node_index] = TRUE;		
 							if(exp_node.node_index != lb_nets[inet].terminals[itarget]) {								
 								expand_node(router_data, exp_node, pq);
 							}
@@ -366,9 +391,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 						node_traceback[id].explored_id = OPEN;
 						cur_index = 1;
 					}
-				}
-				pq = priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node>(); /* Reset priority queue */
-				explored_nodes.clear(); /* Clear list of explored nodes */
+				}								
 			}
 			
 			commit_remove_rt(lb_nets[inet].rt_tree, router_data->lb_rr_node_stats, node_traceback, RT_COMMIT);
@@ -390,12 +413,9 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 			count++;
 		}		
 	}
-	printf("jedit count %d\n", count);
 
 	delete [] node_traceback;
-	if(is_routed) {
-		printf("jedit route success\n");
-	} else {
+	if(!is_routed) {
 		print_route("jedit_failed_route.echo", router_data);
 		printf("jedit route FAIL\n");
 	}
@@ -712,45 +732,42 @@ static void add_source_to_rt(t_lb_router_data *router_data, int inet) {
 }
 
 /* Expand all nodes found in route tree into priority queue */
-static void expand_rt(t_lb_router_data *router_data, int inet, t_explored_node_tb *node_traceback, map<int, boolean> &explored_nodes, 
-	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net) {
+static void expand_rt(t_lb_router_data *router_data, int inet, t_explored_node_tb *node_traceback, 
+	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net) {
 
 	vector<t_intra_lb_net> &lb_nets = *router_data->intra_lb_nets;
 	
-	assert(explored_nodes.empty());
 	assert(pq.empty());
 
-	expand_rt_rec(lb_nets[inet].rt_tree, OPEN, node_traceback, explored_nodes, pq, irt_net);
+	expand_rt_rec(lb_nets[inet].rt_tree, OPEN, node_traceback, pq, irt_net);
 }
 
 
 /* Expand all nodes found in route tree into priority queue recursively */
-static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *node_traceback, map<int, boolean> &explored_nodes, 
-	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net) {
+static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *node_traceback, 
+	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net) {
 	
 	t_expansion_node enode;
 
-	assert(explored_nodes.count(rt->current_node) == 0); /* Any rr node should only be in route tree once */
 	/* Perhaps should use a cost other than zero */
 	enode.cost = 0;
 	enode.node_index = rt->current_node;
 	enode.prev_index = prev_index;
 	pq.push(enode);
-	explored_nodes[rt->current_node] = FALSE;
 	node_traceback[enode.node_index].inet = irt_net;
 	node_traceback[enode.node_index].explored_id = OPEN;
 	node_traceback[enode.node_index].prev_index = prev_index;
 	
 
 	for(unsigned int i = 0; i < rt->next_nodes.size(); i++) {
-		expand_rt_rec(&rt->next_nodes[i], rt->current_node, node_traceback, explored_nodes, pq, irt_net);
+		expand_rt_rec(&rt->next_nodes[i], rt->current_node, node_traceback, pq, irt_net);
 	}
 }
 
 
 /* Expand all nodes found in route tree into priority queue */
 static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node, 
-	priority_queue<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq) {
+	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq) {
 
 	int cur_node;
 	float cur_cost, incr_cost;
