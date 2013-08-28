@@ -168,6 +168,7 @@ struct t_intra_lb_net {
 struct t_lb_router_params {
 	int max_iterations;
 	float pres_fac;
+	float pres_fac_mult;
 	float hist_fac;
 };
 
@@ -228,6 +229,9 @@ struct t_lb_router_data {
 	/* Parameters used by router */
 	t_lb_router_params params;
 
+	/* current congestion factor */
+	float pres_con_fac;
+
 	t_lb_router_data() {
 		lb_type_graph = NULL;	
 		lb_rr_node_stats = NULL;	
@@ -238,7 +242,10 @@ struct t_lb_router_data {
 
 		params.max_iterations = 10;
 		params.pres_fac = 1;
+		params.pres_fac_mult = 1.2;
 		params.hist_fac = 0.1;
+
+		pres_con_fac = 1;
 	}
 };
 

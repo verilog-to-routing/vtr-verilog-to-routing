@@ -58,6 +58,13 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 static void add_to_rt(t_lb_trace *rt, int node_index, t_explored_node_tb *node_traceback, int irt_net);
 static boolean is_route_success(t_lb_router_data *router_data);
 static t_lb_trace *find_node_in_rt(t_lb_trace *rt, int rt_index);
+
+/*****************************************************************************************
+* Internal debug functions declarations
+******************************************************************************************/
+static void print_route(char *filename, t_lb_router_data *router_data);
+static void print_trace(FILE *fp, t_lb_trace *trace);
+
 /*****************************************************************************************
 * Constructor/Destructor functions 
 ******************************************************************************************/
@@ -310,6 +317,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 	
 	/*	Iteratively remove congestion until a successful route is found.  
 		Cap the total number of iterations tried so that if a solution does not exist, then the router won't run indefinately */
+	router_data->pres_con_fac = router_data->params.pres_fac;
 	for(int iter = 0; iter < router_data->params.max_iterations && is_routed == FALSE && is_impossible == FALSE; iter++) {
 		unsigned int inet;
 		/* Iterate across all nets internal to logic block */
@@ -372,6 +380,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 			printf("jedit net %s %d is impossible\n", vpack_net[lb_nets[inet].atom_net_index].name, inet);
 			is_routed = FALSE;
 		}
+		router_data->pres_con_fac *= router_data->params.pres_fac_mult;
 	}
 
 	/* jedit */
@@ -387,6 +396,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 	if(is_routed) {
 		printf("jedit route success\n");
 	} else {
+		print_route("jedit_failed_route.echo", router_data);
 		printf("jedit route FAIL\n");
 	}
 	return is_routed;
@@ -764,10 +774,11 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 		/* Determine incremental cost of using expansion node */
 		usage = lb_rr_node_stats[enode.node_index].occ + 1 - lb_type_graph[enode.node_index].capacity;
 		incr_cost = lb_type_graph[enode.node_index].intrinsic_cost;
+		incr_cost += lb_type_graph[cur_node].outedges[mode][iedge].intrinsic_cost;
 		if(usage > 0) {
-			incr_cost += lb_type_graph[enode.node_index].intrinsic_cost * usage;
-		}
-		incr_cost *= params.pres_fac;
+			incr_cost *= (usage + 1);
+			incr_cost *= router_data->pres_con_fac;
+		}		
 		incr_cost += params.hist_fac * lb_rr_node_stats[enode.node_index].historical_usage;		
 		enode.cost = cur_cost + incr_cost;
 
@@ -838,3 +849,40 @@ static t_lb_trace *find_node_in_rt(t_lb_trace *rt, int rt_index) {
 	}
 	return NULL;
 }
+
+/* Debug routine, print out current intra logic block route */
+static void print_route(char *filename, t_lb_router_data *router_data) {
+	FILE *fp;
+	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
+	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
+
+	fp = my_fopen(filename, "w", 0);
+	
+	for(unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
+		fprintf(fp, "node %d occ %d cap %d\n", inode, router_data->lb_rr_node_stats[inode].occ, lb_type_graph[inode].capacity);
+	}
+
+	fprintf(fp, "\n\n----------------------------------------------------\n\n");
+
+	for(unsigned int inet = 0; inet < lb_nets.size(); inet++) {
+		int atom_net;
+		atom_net = lb_nets[inet].atom_net_index;
+		fprintf(fp, "net %s %d\n", g_atoms_nlist.net[atom_net].name, atom_net);
+		print_trace(fp, lb_nets[inet].rt_tree);
+		fprintf(fp, "\n\n");
+	}
+	fclose(fp);
+}
+
+/* Debug routine, print out trace of net */
+static void print_trace(FILE *fp, t_lb_trace *trace) {
+	for(unsigned int ibranch = 0; ibranch < trace->next_nodes.size(); ibranch++) {
+		if(trace->next_nodes.size() > 1) {
+			fprintf(fp, "B(%d-->%d) ", trace->current_node, trace->next_nodes[ibranch].current_node);
+		} else {
+			fprintf(fp, "(%d-->%d) ", trace->current_node, trace->next_nodes[ibranch].current_node);
+		}
+		print_trace(fp, &trace->next_nodes[ibranch]);
+	}
+}
+

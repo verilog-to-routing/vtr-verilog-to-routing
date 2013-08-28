@@ -256,7 +256,7 @@ static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type,
 	
 	/* Connect opin of logic block to sink */
 	lb_type_rr_node_graph[ext_rr_index].outedges[0][0].node_index = ext_sink_index;
-	lb_type_rr_node_graph[ext_rr_index].outedges[0][0].intrinsic_cost = 0;			
+	lb_type_rr_node_graph[ext_rr_index].outedges[0][0].intrinsic_cost = 1;			
 
 	/* Connect opin of logic block to all input and clock pins of logic block type */
 	ioutedges = 1;	
