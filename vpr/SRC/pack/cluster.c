@@ -32,7 +32,7 @@ using namespace std;
 #include "cluster_router.h"
 
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*/
-#define JEDIT_INTRA_LB_ROUTE
+//#define JEDIT_INTRA_LB_ROUTE
 
 #define AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_FAC 2 /* Maximum relative number of pins that can exceed input pins before giving up */
 #define AAPACK_MAX_OVERUSE_LOOKAHEAD_PINS_CONST 5 /* Maximum constant number of pins that can exceed input pins before giving up */

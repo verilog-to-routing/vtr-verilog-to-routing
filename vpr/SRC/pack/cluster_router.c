@@ -37,6 +37,7 @@ using namespace std;
 
 enum e_commit_remove {RT_COMMIT, RT_REMOVE};
 
+// jedit check if this hacky class memory reserve thing is still necessary, if not, then delete
 /* Packing uses a priority queue that requires a large number of elements.  This backdoor
 allows me to use a priority queue where I can pre-allocate the # of elements in the underlying container 
 for efficiency reasons.  Note: Must use vector with this */
