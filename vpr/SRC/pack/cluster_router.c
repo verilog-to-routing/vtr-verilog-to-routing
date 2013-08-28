@@ -74,11 +74,11 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iato
 static void commit_remove_rt(t_lb_trace *rt, t_lb_rr_node_stats *lb_rr_node_stats, t_explored_node_tb *node_traceback, e_commit_remove op);
 static void add_source_to_rt(t_lb_router_data *router_data, int inet);
 static void expand_rt(t_lb_router_data *router_data, int inet, t_explored_node_tb *node_traceback, 
-	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net);
+	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net, int cur_explore_index);
 static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *node_traceback, 
-	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net);
+	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net, int cur_explore_index);
 static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node, 
-	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq);
+	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, t_explored_node_tb *node_traceback, int cur_explore_index);
 static void add_to_rt(t_lb_trace *rt, int node_index, t_explored_node_tb *node_traceback, int irt_net);
 static boolean is_route_success(t_lb_router_data *router_data);
 static t_lb_trace *find_node_in_rt(t_lb_trace *rt, int rt_index);
@@ -356,7 +356,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 				pq.clear();
 				pq.reserve(predicted_pq_size);
 				/* Get lowest cost next node, repeat until a path is found or if it is impossible to route */
-				expand_rt(router_data, inet, node_traceback, pq, inet);
+				expand_rt(router_data, inet, node_traceback, pq, inet, cur_index);
 				do {
 					if(pq.empty()) {
 						/* No connection possible */
@@ -373,7 +373,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 							node_traceback[exp_node.node_index].explored_id = cur_index;
 							node_traceback[exp_node.node_index].prev_index = exp_node.prev_index;
 							if(exp_node.node_index != lb_nets[inet].terminals[itarget]) {								
-								expand_node(router_data, exp_node, pq);
+								expand_node(router_data, exp_node, pq, node_traceback, cur_index);
 							}
 						}
 					}
@@ -389,6 +389,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 					/* overflow protection */
 					for(unsigned int id = 0; id < lb_type_graph.size(); id++) {
 						node_traceback[id].explored_id = OPEN;
+						node_traceback[id].enqueue_id = OPEN;
 						cur_index = 1;
 					}
 				}								
@@ -733,19 +734,19 @@ static void add_source_to_rt(t_lb_router_data *router_data, int inet) {
 
 /* Expand all nodes found in route tree into priority queue */
 static void expand_rt(t_lb_router_data *router_data, int inet, t_explored_node_tb *node_traceback, 
-	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net) {
+	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net, int cur_explore_index) {
 
 	vector<t_intra_lb_net> &lb_nets = *router_data->intra_lb_nets;
 	
 	assert(pq.empty());
 
-	expand_rt_rec(lb_nets[inet].rt_tree, OPEN, node_traceback, pq, irt_net);
+	expand_rt_rec(lb_nets[inet].rt_tree, OPEN, node_traceback, pq, irt_net, cur_explore_index);
 }
 
 
 /* Expand all nodes found in route tree into priority queue recursively */
 static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *node_traceback, 
-	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net) {
+	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net, int cur_explore_index) {
 	
 	t_expansion_node enode;
 
@@ -756,18 +757,20 @@ static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *no
 	pq.push(enode);
 	node_traceback[enode.node_index].inet = irt_net;
 	node_traceback[enode.node_index].explored_id = OPEN;
+	node_traceback[enode.node_index].enqueue_id = cur_explore_index;
+	node_traceback[enode.node_index].enqueue_cost = 0;
 	node_traceback[enode.node_index].prev_index = prev_index;
 	
 
 	for(unsigned int i = 0; i < rt->next_nodes.size(); i++) {
-		expand_rt_rec(&rt->next_nodes[i], rt->current_node, node_traceback, pq, irt_net);
+		expand_rt_rec(&rt->next_nodes[i], rt->current_node, node_traceback, pq, irt_net, cur_explore_index);
 	}
 }
 
 
 /* Expand all nodes found in route tree into priority queue */
 static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node, 
-	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq) {
+	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, t_explored_node_tb *node_traceback, int cur_explore_index) {
 
 	int cur_node;
 	float cur_cost, incr_cost;
@@ -799,8 +802,16 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 		incr_cost += params.hist_fac * lb_rr_node_stats[enode.node_index].historical_usage;		
 		enode.cost = cur_cost + incr_cost;
 
-		/* Add to queue */
-		pq.push(enode);
+		/* Add to queue if cost is lower than lowest cost path to this enode */
+		if(node_traceback[enode.node_index].enqueue_id == cur_explore_index) {
+			if(enode.cost < node_traceback[enode.node_index].enqueue_cost) {
+				pq.push(enode);
+			}
+		} else {
+			node_traceback[enode.node_index].enqueue_id = cur_explore_index;
+			node_traceback[enode.node_index].enqueue_cost = enode.cost;
+			pq.push(enode);
+		}
 	}
 	
 }

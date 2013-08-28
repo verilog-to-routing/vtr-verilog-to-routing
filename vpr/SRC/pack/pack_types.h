@@ -201,11 +201,15 @@ struct t_explored_node_tb {
 	int prev_index;			/* Prevous node that drives this one */
 	int explored_id;		/* ID used to determine if this node has been explored */
 	int inet;				/* net index of route tree */
+	int enqueue_id;			/* ID used ot determine if this node has been pushed on exploration priority queue */
+	float enqueue_cost;		/* cost of node pused on exploration priority queue */	
 
 	t_explored_node_tb() {
 		prev_index = OPEN;
 		explored_id = OPEN;
+		enqueue_id = OPEN;
 		inet = OPEN;
+		enqueue_cost = 0;
 	}
 };
 
