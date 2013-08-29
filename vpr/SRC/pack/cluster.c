@@ -34,11 +34,6 @@ using namespace std;
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*/
 //#define JEDIT_INTRA_LB_ROUTE
 
-static int count1 = 0;
-static int count2 = 0;
-static int count3 = 0;
-static int count4 = 0;
-
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
 #define AAPACK_MAX_NET_SINKS_IGNORE 256				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
 #define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10			/* For high-fanout nets that are ignored, consider a maximum of this many nets */
@@ -665,9 +660,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		vpr_printf_info("New intra lb router took %g seconds.\n", 
 				(float)(new_route_t) / CLK_PER_SEC);		
 	#endif
-		printf("jedit %d %d %d %d\n", count1, count2, count3, count4);
-	
-
 }
 
 /*****************************************/
@@ -2657,7 +2649,6 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 				/* Check if already in pin class, if yes, skip */
 				skip = FALSE;
 				for (i = 0; i < (int)cur_pb->pb_stats->lookahead_input_pins_used[pin_class].size(); i++) {
-					count1++;
 					if (cur_pb->pb_stats->lookahead_input_pins_used[pin_class][i]
 							== inet) {
 						skip = TRUE;
@@ -2684,7 +2675,6 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 				 
 				 */
 				for (i = 1; i < (int) g_atoms_nlist.net[inet].pins.size(); i++) {
-					count4++;
 					if (logical_block[g_atoms_nlist.net[inet].pins[i].block].clb_index
 						!= logical_block[g_atoms_nlist.net[inet].pins[0].block].clb_index) {
 						break;
@@ -2693,7 +2683,6 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 				if (i == (int) g_atoms_nlist.net[inet].pins.size()) {
 					count = 0;
 					/* TODO: I should cache the absorbed outputs, once net is absorbed, net is forever absorbed, no point in rechecking every time */
-					count3++;
 					for (i = 0; i < pb_graph_pin->num_connectable_primtive_input_pins[depth]; i++) {
 						if (get_net_corresponding_to_pb_graph_pin(cur_pb,
 								pb_graph_pin->list_of_connectable_input_pin_ptrs[depth][i])
