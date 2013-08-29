@@ -680,16 +680,14 @@ void free_pb_stats(t_pb *pb) {
 	if(pb->pb_stats->marked_blocks != NULL) {
 		for (i = 0; i < pb_graph_node->num_input_pin_class; i++) {
 			free(pb->pb_stats->input_pins_used[i]);
-			free(pb->pb_stats->lookahead_input_pins_used[i]);
 		}
 		free(pb->pb_stats->input_pins_used);
-		free(pb->pb_stats->lookahead_input_pins_used);
+		delete [] pb->pb_stats->lookahead_input_pins_used;
 		for (i = 0; i < pb_graph_node->num_output_pin_class; i++) {
 			free(pb->pb_stats->output_pins_used[i]);
-			free(pb->pb_stats->lookahead_output_pins_used[i]);
 		}
 		free(pb->pb_stats->output_pins_used);
-		free(pb->pb_stats->lookahead_output_pins_used);
+		delete [] pb->pb_stats->lookahead_output_pins_used;
 		free(pb->pb_stats->feasible_blocks);
 		free(pb->pb_stats->marked_nets);
 		free(pb->pb_stats->marked_blocks);
