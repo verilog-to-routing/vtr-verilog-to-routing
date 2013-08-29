@@ -1,4 +1,5 @@
 /* 
+ jedit this may be deprecated, delete
   The logic block rr graph manages the intra-logic block routing for every logic block instance used in the FPGA.
   Each lb_rr_node_stats represents info on an instance of a lb_type_rr_node and shares same indices as the lb_type_rr_node.
 
@@ -44,7 +45,8 @@ t_lb_rr_node_stats* alloc_and_load_lb_rr_node_stats(const vector <t_lb_type_rr_n
    Free array of t_lb_rr_node_stats
 */
 void free_lb_rr_node_stats(t_lb_rr_node_stats* lb_rr_node_stats) {
-	if(lb_rr_node_stats != NULL)
+	if(lb_rr_node_stats != NULL) {
 		delete [] lb_rr_node_stats;
+	}
 }
 

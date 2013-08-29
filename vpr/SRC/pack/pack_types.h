@@ -224,9 +224,13 @@ struct t_lb_router_data {
 	map <int, boolean> *atoms_added;		/* map that records which atoms are added to cluster router */
 
 	/* Logical-to-physical mapping info */
-	t_lb_rr_node_stats *lb_rr_node_stats;		/* [0..lb_type_graph->size()-1] Stats for each logic block instance */
+	t_lb_rr_node_stats *lb_rr_node_stats;		/* [0..lb_type_graph->size()-1] Stats for each logic block rr node instance */
 	boolean is_routed;							/* Stores whether or not the current logical-to-physical mapping has a routed solution */
-
+	
+	/* Stores state info during Pathfinder iterative routing */
+	t_explored_node_tb *explored_node_tb; /* [0..lb_type_graph->size()-1] Stores mode exploration and traceback info for nodes */
+	int explore_id_index; /* used in conjunction with node_traceback to determine whether or not a location has been explored.  By using a unique identifier every route, I don't have to clear the previous route exploration */
+	
 	/* Current type */
 	t_type_ptr lb_type;
 
@@ -243,6 +247,8 @@ struct t_lb_router_data {
 		is_routed = FALSE;
 		lb_type = NULL;
 		atoms_added = NULL;
+		explored_node_tb = NULL;
+		explore_id_index = 1;
 
 		params.max_iterations = 10;
 		params.pres_fac = 1;
