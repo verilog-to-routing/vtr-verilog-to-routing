@@ -270,9 +270,6 @@
     <ClCompile Include="SRC\pack\cluster_router.c">
       <Filter>Source Files\pack</Filter>
     </ClCompile>
-    <ClCompile Include="SRC\pack\lb_rr_graph.c">
-      <Filter>Source Files\pack</Filter>
-    </ClCompile>
     <ClCompile Include="SRC\pack\pack_types.c">
       <Filter>Source Files\pack</Filter>
     </ClCompile>
@@ -489,9 +486,6 @@
       <Filter>Header Files\draw</Filter>
     </ClInclude>
     <ClInclude Include="SRC\pack\pack_types.h">
-      <Filter>Header Files\pack</Filter>
-    </ClInclude>
-    <ClInclude Include="SRC\pack\lb_rr_graph.h">
       <Filter>Header Files\pack</Filter>
     </ClInclude>
     <ClInclude Include="SRC\pack\cluster_router.h">
