@@ -2195,7 +2195,7 @@ void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long dept
 						char *binary_data = convert_string_of_radix_to_bit_string(data_string, data_radix, width);
 						long long address = convert_string_of_radix_to_long_long(address_string, addr_radix);
 
-						if (address >= depth)
+						if (address >= pow(2,depth))
 							error_message(SIMULATION_ERROR, line_number, -1, "%s: address %s is out of range.", filename, address_string);
 
 						// Calculate the offset of this memory location in bits.
