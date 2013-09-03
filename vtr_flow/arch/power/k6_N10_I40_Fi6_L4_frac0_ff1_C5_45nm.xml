@@ -573,8 +573,6 @@
           <direct name="direct1" input="ble.clk" output="ff[0:0].clk"/>
           <mux name="mux2" input="soft_logic.out[0:0]" output="ff[0:0].D">
             <pack_pattern name="bleF0" in_port="soft_logic.out[0:0]" out_port="ff[0:0].D"/>
-            <pack_pattern name="bleF1A" in_port="soft_logic.out[0:0]" out_port="ff[0:0].D"/>
-            <pack_pattern name="bleF1B" in_port="soft_logic.out[1:1]" out_port="ff[0:0].D"/>
           </mux>
           <mux name="mux3" input="soft_logic.out[0:0] ff[0:0].Q" output="ble.out[0:0]">
             <delay_constant max="2.5e-11" in_port="soft_logic.out[0:0]" out_port="ble.out[0:0]"/>
