@@ -2648,7 +2648,8 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 			if (!skip) {
 				/* Check if already in pin class, if yes, skip */
 				skip = FALSE;
-				for (i = 0; i < (int)cur_pb->pb_stats->lookahead_input_pins_used[pin_class].size(); i++) {
+				int la_inpins_size = (int)cur_pb->pb_stats->lookahead_input_pins_used[pin_class].size();
+				for (i = 0; i < la_inpins_size; i++) {
 					if (cur_pb->pb_stats->lookahead_input_pins_used[pin_class][i]
 							== inet) {
 						skip = TRUE;
@@ -2674,13 +2675,14 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 				 is when the number of sinks of a net gets doubled
 				 
 				 */
-				for (i = 1; i < (int) g_atoms_nlist.net[inet].pins.size(); i++) {
+				int anet_size = (int) g_atoms_nlist.net[inet].pins.size();
+				for (i = 1; i < anet_size; i++) {
 					if (logical_block[g_atoms_nlist.net[inet].pins[i].block].clb_index
 						!= logical_block[g_atoms_nlist.net[inet].pins[0].block].clb_index) {
 						break;
 					}
 				}
-				if (i == (int) g_atoms_nlist.net[inet].pins.size()) {
+				if (i == anet_size) {
 					count = 0;
 					/* TODO: I should cache the absorbed outputs, once net is absorbed, net is forever absorbed, no point in rechecking every time */
 					for (i = 0; i < pb_graph_pin->num_connectable_primtive_input_pins[depth]; i++) {
