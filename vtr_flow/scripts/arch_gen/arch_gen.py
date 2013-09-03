@@ -11,6 +11,7 @@ Fc_in = 0.15
 Fc_out = 0.1
 
 power_short_circuit_percentage = 0.0
+clb_area = 53894
 
 R_minW_nmos = 8926
 R_minW_pmos = 16067
@@ -19,7 +20,7 @@ ipin_mux_trans_size = 1.222260
 C_ipin_cblock = 1.47e-15
 T_ipin_cblock = 7.247e-11
 
-grid_logic_tile_area = 53894
+grid_logic_tile_area = 0
 
 switch_R = 551
 switch_Cin = 0.77e-15
@@ -159,6 +160,7 @@ def xCLB(k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, crossbar_str):
     
     xbegin("pb_type")
     xprop("name", "clb")
+    xprop("area", clb_area)
     xclose()
     
     if crossbar_str == "c":        
@@ -328,7 +330,7 @@ def xCLB(k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, crossbar_str):
             xprop("out_port", "ff[0:0].D")
             xcloseend()
         
-        if (frac_stages > 1):  
+        if (frac_stages):  
             if (num_FF == 1):
                 xbegin("pack_pattern");                
                 xprop("name", "bleF1A")
@@ -712,6 +714,18 @@ def gen_arch(dir, k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, seg_length
         xprop("C_wire", wire_C_per_m * wire_C_scaling(tech_nm))
         xcloseend()
         
+        xbegin("mux_transistor_size")
+        xprop("mux_transistor_size", 3)
+        xcloseend()
+        
+        xbegin("FF_size")
+        xprop("FF_size", 4)
+        xcloseend()
+        
+        xbegin("LUT_transistor_size")
+        xprop("LUT_transistor_size", 4)
+        xcloseend()
+        
         xend()  # Power
         
         xbegin("clocks")
@@ -755,59 +769,61 @@ else:
     # K - N - I - Fi - Frac -  FF - L - 45
     
     # Non-Fractured
-    arches.append([6, 10, 33, 6, 0, 1, 4, 45, "c"])
-    arches.append([6, 10, 33, 6, 0, 1, 4, 130, "c"])    
-    arches.append([6, 10, 33, 6, 0, 1, 4, 22, "c"])
+    arches.append([6, 10, 40, 6, 0, 1, 4, 45, "c"])
+    arches.append([6, 10, 40, 6, 0, 1, 4, 130, "c"])    
+    arches.append([6, 10, 40, 6, 0, 1, 4, 22, "c"])
     
     # Fractured LUT
-    arches.append([6, 10, 33, 6, 1, 1, 4, 45, "c"])
-    arches.append([6, 10, 33, 6, 1, 2, 4, 45, "c"])
+    arches.append([6, 10, 40, 6, 1, 1, 4, 45, "c"])
+    arches.append([6, 10, 40, 6, 1, 2, 4, 45, "c"])
     
     # Fi Variation
     arches_fi = []
-    arches_fi.append([6, 10, 33, 7, 1, 1, 4, 45, "c"])
-    arches_fi.append([6, 10, 33, 7, 1, 2, 4, 45, "c"])
-    arches_fi.append([6, 10, 33, 8, 1, 1, 4, 45, "c"])
-    arches_fi.append([6, 10, 33, 8, 1, 2, 4, 45, "c"])
+    arches_fi.append([6, 10, 40, 7, 1, 1, 4, 45, "c"])
+    arches_fi.append([6, 10, 40, 7, 1, 2, 4, 45, "c"])
+    arches_fi.append([6, 10, 40, 8, 1, 1, 4, 45, "c"])
+    arches_fi.append([6, 10, 40, 8, 1, 2, 4, 45, "c"])
     
     # I Variation
     arches_i = []
-    arches_i.append([6, 10, 39, 7, 1, 1, 4, 45, "c"])
-    arches_i.append([6, 10, 39, 7, 1, 2, 4, 45, "c"])
-    arches_i.append([6, 10, 44, 8, 1, 1, 4, 45, "c"])
-    arches_i.append([6, 10, 44, 8, 1, 2, 4, 45, "c"])
+    arches_i.append([6, 10, 47, 7, 1, 1, 4, 45, "c"])
+    arches_i.append([6, 10, 47, 7, 1, 2, 4, 45, "c"])
+    arches_i.append([6, 10, 53, 8, 1, 1, 4, 45, "c"])
+    arches_i.append([6, 10, 53, 8, 1, 2, 4, 45, "c"])
     
     # L Variation
     arches_l = []
-    arches_l.append([6, 10, 33, 6, 0, 1, 1, 45, "c"])
-    arches_l.append([6, 10, 33, 6, 0, 1, 2, 45, "c"])
-    arches_l.append([6, 10, 33, 6, 0, 1, 3, 45, "c"])
-    arches_l.append([6, 10, 33, 6, 0, 1, 5, 45, "c"])
-    arches_l.append([6, 10, 33, 6, 0, 1, 6, 45, "c"])
+    arches_l.append([6, 10, 40, 6, 0, 1, 1, 45, "c"])
+    arches_l.append([6, 10, 40, 6, 0, 1, 2, 45, "c"])
+    arches_l.append([6, 10, 40, 6, 0, 1, 3, 45, "c"])
+    arches_l.append([6, 10, 40, 6, 0, 1, 5, 45, "c"])
+    arches_l.append([6, 10, 40, 6, 0, 1, 6, 45, "c"])
     
     # Crossbar Variation
     arches_c = []
-    arches_c.append([6, 10, 33, 6, 1, 2, 4, 45, "9"])
-    arches_c.append([6, 10, 33, 6, 1, 2, 4, 45, "10"])
-    arches_c.append([6, 10, 33, 6, 1, 2, 4, 45, "15"])
-    arches_c.append([6, 10, 33, 6, 1, 2, 4, 45, "20"])
-    arches_c.append([6, 10, 33, 6, 1, 2, 4, 45, "25"])
-    arches_c.append([6, 10, 33, 6, 1, 2, 4, 45, "30"])
-    arches_c.append([6, 10, 33, 6, 1, 2, 4, 45, "35"])
-    arches_c.append([6, 10, 33, 6, 1, 2, 4, 45, "40"])
-    arches_c.append([6, 10, 33, 6, 1, 2, 4, 45, "45"])
-    arches_c.append([6, 10, 33, 6, 1, 2, 4, 45, "50"])
-    arches_c.append([6, 10, 33, 6, 1, 2, 4, 45, "53"])
+    arches_c.append([6, 10, 40, 6, 1, 2, 4, 45, "5"])
+    arches_c.append([6, 10, 40, 6, 1, 2, 4, 45, "10"])
+    arches_c.append([6, 10, 40, 6, 1, 2, 4, 45, "15"])
+    arches_c.append([6, 10, 40, 6, 1, 2, 4, 45, "20"])
+    arches_c.append([6, 10, 40, 6, 1, 2, 4, 45, "25"])
+    arches_c.append([6, 10, 40, 6, 1, 2, 4, 45, "30"])
+    arches_c.append([6, 10, 40, 6, 1, 2, 4, 45, "35"])
+    arches_c.append([6, 10, 40, 6, 1, 2, 4, 45, "40"])
+    arches_c.append([6, 10, 40, 6, 1, 2, 4, 45, "45"])
+    arches_c.append([6, 10, 40, 6, 1, 2, 4, 45, "50"])
+    arches_c.append([6, 10, 40, 6, 1, 2, 4, 45, "55"])
+    arches_c.append([6, 10, 40, 6, 1, 2, 4, 45, "60"])
     
-    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "8"])
-    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "10"])
-    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "15"])
-    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "20"])
-    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "25"])
-    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "30"])
-    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "35"])
-    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "40"])
-    arches_c.append([6, 10, 33, 6, 0, 1, 4, 45, "43"])
+    arches_c.append([6, 10, 40, 6, 0, 1, 4, 45, "5"])
+    arches_c.append([6, 10, 40, 6, 0, 1, 4, 45, "10"])
+    arches_c.append([6, 10, 40, 6, 0, 1, 4, 45, "15"])
+    arches_c.append([6, 10, 40, 6, 0, 1, 4, 45, "20"])
+    arches_c.append([6, 10, 40, 6, 0, 1, 4, 45, "25"])
+    arches_c.append([6, 10, 40, 6, 0, 1, 4, 45, "30"])
+    arches_c.append([6, 10, 40, 6, 0, 1, 4, 45, "35"])
+    arches_c.append([6, 10, 40, 6, 0, 1, 4, 45, "40"])
+    arches_c.append([6, 10, 40, 6, 0, 1, 4, 45, "45"])
+    arches_c.append([6, 10, 40, 6, 0, 1, 4, 45, "50"])
     
     
     dir = "C:/Users/Jeff/Dropbox/linux_home/vtr/vtr_flow/arch/power/"

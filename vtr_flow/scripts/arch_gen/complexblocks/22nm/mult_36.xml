@@ -1,4 +1,4 @@
-<pb_type name="mult_36" height="4">
+<pb_type name="mult_36" height="4" area="396000">
   <input name="a" num_pins="36"/>
   <input name="b" num_pins="36"/>
   <output name="out" num_pins="72"/>

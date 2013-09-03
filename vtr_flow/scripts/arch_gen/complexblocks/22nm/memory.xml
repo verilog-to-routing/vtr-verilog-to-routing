@@ -1,4 +1,4 @@
-<pb_type name="memory" height="6">
+<pb_type name="memory" height="6" area="548000">
   <input name="addr1" num_pins="15"/>
   <input name="addr2" num_pins="15"/>
   <input name="data" num_pins="64"/>

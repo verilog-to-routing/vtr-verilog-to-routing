@@ -1,4 +1,4 @@
-<pb_type name="io" capacity="8">
+<pb_type name="io" capacity="8" area="0">
   <input name="outpad" num_pins="1"/>
   <output name="inpad" num_pins="1"/>
   <clock name="clock" num_pins="1"/>
