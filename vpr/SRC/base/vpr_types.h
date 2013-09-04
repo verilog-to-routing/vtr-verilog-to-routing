@@ -169,6 +169,12 @@ typedef struct s_pb {
 	 */
 } t_pb;
 
+/* Representation of intra-logic block routing */
+struct t_pb_pin_route_stats {
+	int atom_net_idx;	/* which net in the atomic netlist uses this pin */
+	int prev_pb_pin_id; /* The pb_graph_pin id of the pb_pin that drives this pin */
+};
+
 struct s_tnode;
 
 /* Technology-mapped user netlist block */

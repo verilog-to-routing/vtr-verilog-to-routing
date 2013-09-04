@@ -65,7 +65,6 @@ class reservable_pq: public priority_queue<T, U, V>
 /*****************************************************************************************
 * Internal functions declarations
 ******************************************************************************************/
-static void free_intra_lb_nets(vector <t_intra_lb_net> *intra_lb_nets);
 static void free_lb_net_rt(t_lb_trace *lb_trace);
 static void free_lb_trace(t_lb_trace *lb_trace);
 static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, int iport, int ipin, t_model_ports *model_port);
@@ -83,6 +82,9 @@ static void add_to_rt(t_lb_trace *rt, int node_index, t_explored_node_tb *explor
 static boolean is_route_success(t_lb_router_data *router_data);
 static t_lb_trace *find_node_in_rt(t_lb_trace *rt, int rt_index);
 static void reset_explored_node_tb(t_lb_router_data *router_data);
+static void save_and_reset_lb_route(INOUTP t_lb_router_data *router_data);
+static void load_trace_to_pb_pin_route_stats(INOUTP t_pb_pin_route_stats *pb_pin_route_stats, INP int total_pins, INP int atom_net, INP int prev_pin_id, INP const t_lb_trace *trace);
+
 
 /*****************************************************************************************
 * Internal debug functions declarations
@@ -123,6 +125,7 @@ void free_router_data(INOUTP t_lb_router_data *router_data) {
 		delete router_data->atoms_added;
 		router_data->atoms_added = NULL;
 		free_intra_lb_nets(router_data->intra_lb_nets);
+		free_intra_lb_nets(router_data->saved_lb_nets);
 		router_data->intra_lb_nets = NULL;
 		delete router_data;
 	}
@@ -415,39 +418,52 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 	for(unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
 		if(router_data->lb_rr_node_stats[inode].occ > 0) {
 			count++;
-		}		
+		}
 	}
 	if(!is_routed) {
 		print_route("jedit_failed_route.echo", router_data);
 		printf("jedit route FAIL\n");
+	} else {
+		save_and_reset_lb_route(router_data);
 	}
 	return is_routed;
 }
+
 
 /*****************************************************************************************
 * Accessor Functions
 ******************************************************************************************/
 
-/* Returns an array representing the final route.  This array is sized [0..num_lb_type_rr_nodes=1].
-   The index of the array stores the net (or OPEN if no net is used) that occupies the rr node for the logic
-   block instance
+/* Creates an array [0..num_pb_graph_pins-1] lookup for intra-logic block routing.  Given pb_graph_pin id for clb, lookup atom net that uses that pin.
+   If pin is not used, stores OPEN at that pin location */
+t_pb_pin_route_stats *alloc_and_load_pb_pin_route_stats(const vector <t_intra_lb_net> *intra_lb_nets, t_pb_graph_node *pb_graph_head) {
+	const vector <t_intra_lb_net> &lb_nets = *intra_lb_nets;
+	int total_pins = pb_graph_head->total_pb_pins;
+	t_pb_pin_route_stats * pb_pin_route_stats = new t_pb_pin_route_stats[pb_graph_head->total_pb_pins];
 
-   Note: This function assumes that the atoms packed inside the cluster has already been successfully routed
-*/
-t_lb_traceback *get_final_route(INOUTP t_lb_router_data *router_data) {
-	return NULL;
+	for(int ipin = 0; ipin < total_pins; ipin++) {
+		pb_pin_route_stats[ipin].atom_net_idx = OPEN;
+		pb_pin_route_stats[ipin].prev_pb_pin_id = OPEN;
+	}
+
+	for(int inet = 0; inet < (int)lb_nets.size(); inet++) {
+		load_trace_to_pb_pin_route_stats(pb_pin_route_stats, total_pins, lb_nets[inet].atom_net_index, OPEN, lb_nets[inet].rt_tree);
+	}
+
+	return pb_pin_route_stats;
 }
 
+/* Free pin-to-atomic_net array lookup */
+void free_pb_pin_route_stats(t_pb_pin_route_stats *pb_pin_route_stats) {
+	if(pb_pin_route_stats != NULL) {
+		delete []pb_pin_route_stats;
+	}
+}
 
-
-
-
-/***************************************************************************
-Internal Functions
-****************************************************************************/
-
-
-static void free_intra_lb_nets(vector <t_intra_lb_net> *intra_lb_nets) {
+void free_intra_lb_nets(vector <t_intra_lb_net> *intra_lb_nets) {
+	if(intra_lb_nets == NULL) {
+		return;
+	}
 	vector <t_intra_lb_net> &lb_nets = *intra_lb_nets;
 	for(unsigned int i = 0; i < lb_nets.size(); i++) {
 		lb_nets[i].terminals.clear();
@@ -456,6 +472,32 @@ static void free_intra_lb_nets(vector <t_intra_lb_net> *intra_lb_nets) {
 	}		
 	delete intra_lb_nets;
 }
+
+
+/***************************************************************************
+Internal Functions
+****************************************************************************/
+
+/* Recurse through route tree trace to populate pb pin to atom net lookup array */
+static void load_trace_to_pb_pin_route_stats(INOUTP t_pb_pin_route_stats *pb_pin_route_stats, INP int total_pins, INP int atom_net, INP int prev_pin_id, INP const t_lb_trace *trace) {
+	int ipin = trace->current_node;
+	int prev_pb_pin_id = prev_pin_id;
+	int cur_pin_id = OPEN;
+	if(ipin < total_pins) {
+		/* This routing node corresponds with a pin.  This node is virtual (ie. sink or source node) */
+		cur_pin_id = ipin;
+		if(pb_pin_route_stats[ipin].atom_net_idx == OPEN) {
+			pb_pin_route_stats[ipin].atom_net_idx = atom_net;
+			pb_pin_route_stats[ipin].prev_pb_pin_id = prev_pb_pin_id;
+		} else {
+			assert(pb_pin_route_stats[ipin].atom_net_idx == atom_net);
+		}		
+	}
+	for(int itrace = 0; itrace< (int)trace->next_nodes.size(); itrace++) {
+		load_trace_to_pb_pin_route_stats(pb_pin_route_stats, total_pins, atom_net, cur_pin_id, &trace->next_nodes[itrace]);
+	}
+}
+
 
 /* Free route tree for intra-logic block routing */
 static void free_lb_net_rt(t_lb_trace *lb_trace) {
@@ -924,3 +966,35 @@ static void reset_explored_node_tb(t_lb_router_data *router_data) {
 		router_data->explored_node_tb[inode].enqueue_cost = 0;
 	}
 }
+
+
+
+/* Save last successful intra-logic block route and reset current traceback */
+static void save_and_reset_lb_route(INOUTP t_lb_router_data *router_data) {
+	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
+
+	/* Free old saved lb nets if exist */
+	if(router_data->saved_lb_nets != NULL) {		
+		free_intra_lb_nets(router_data->saved_lb_nets);
+	}
+
+	/* Save current routed solution */
+	router_data->saved_lb_nets = new vector<t_intra_lb_net> (lb_nets.size());
+	vector <t_intra_lb_net> & saved_lb_nets = *router_data->saved_lb_nets;
+
+	for(int inet = 0; inet < (int)saved_lb_nets.size(); inet++) {
+		/* 
+		  Save and reset route tree data
+		*/
+		saved_lb_nets[inet].atom_net_index = lb_nets[inet].atom_net_index;
+		saved_lb_nets[inet].terminals.resize(lb_nets[inet].terminals.size());
+		for(int iterm = 0; iterm < (int) lb_nets[inet].terminals.size(); iterm++) {
+			saved_lb_nets[inet].terminals[iterm] = lb_nets[inet].terminals[iterm];
+		}
+		saved_lb_nets[inet].rt_tree = lb_nets[inet].rt_tree;
+		lb_nets[inet].rt_tree = NULL;
+	}
+}
+
+
+

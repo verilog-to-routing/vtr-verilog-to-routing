@@ -16,6 +16,7 @@ using namespace std;
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
+#include "pack_types.h"
 #include "cluster.h"
 #include "heapsort.h"
 #include "output_clustering.h"
@@ -28,7 +29,6 @@ using namespace std;
 #include "vpr_utils.h"
 #include "cluster_placement.h"
 #include "ReadOptions.h"
-#include "pack_types.h"
 #include "cluster_router.h"
 
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*/
@@ -280,6 +280,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	t_slack * slacks = NULL;
 	t_lb_router_data *router_data = NULL;
 	t_pack_molecule *istart, *next_molecule, *prev_molecule, *cur_molecule;
+
+	vector < vector <t_intra_lb_net> * > intra_lb_routing;
 
 	new_route_t = old_route_t = 0;
 	
@@ -568,6 +570,11 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			}
 			if (is_cluster_legal == TRUE) {
 				save_cluster_solution();
+				#ifdef JEDIT_INTRA_LB_ROUTE
+					intra_lb_routing.push_back(router_data->saved_lb_nets);
+					assert((int)intra_lb_routing.size() == num_clb);
+					router_data->saved_lb_nets = NULL;
+				#endif
 				if (timing_driven) {
 					if (num_blocks_hill_added > 0 && !early_exit) {
 						blocks_since_last_analysis += num_blocks_hill_added;
@@ -610,7 +617,13 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	check_clustering(num_clb, clb, is_clock);
 
-	output_clustering(clb, num_clb, global_clocks, is_clock, out_fname, FALSE);
+	output_clustering(clb, num_clb, intra_lb_routing, global_clocks, is_clock, out_fname, FALSE);
+	#ifdef JEDIT_INTRA_LB_ROUTE
+		for(int irt = 0; irt < (int) intra_lb_routing.size(); irt++){
+			free_intra_lb_nets(intra_lb_routing[irt]);
+		}
+		intra_lb_routing.clear();
+	#endif
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_PACK_NETLIST)) {
 		output_blif (clb, num_clb, global_clocks, is_clock,
 			getEchoFileName(E_ECHO_POST_PACK_NETLIST), FALSE);

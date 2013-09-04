@@ -7,12 +7,15 @@
 #include <cstdlib>
 #include <cstring>
 using namespace std;
+#include <vector>
 
 #include <assert.h>
 
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
+#include "pack_types.h"
+#include "cluster_router.h"
 #include "output_clustering.h"
 #include "read_xml_arch_file.h"
 
@@ -531,7 +534,7 @@ static void print_stats(t_block *clb, int num_clusters) {
 	/* TODO: print more stats */
 }
 
-void output_clustering(t_block *clb, int num_clusters, boolean global_clocks,
+void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_intra_lb_net> * > &intra_lb_routing, boolean global_clocks,
 		boolean * is_clock, char *out_fname, boolean skip_clustering) {
 
 	/* 
@@ -543,6 +546,17 @@ void output_clustering(t_block *clb, int num_clusters, boolean global_clocks,
 	int bnum, column;
 	unsigned netnum;
 
+	t_pb_pin_route_stats **pb_pin_route_stats = NULL; /* [0..num_clb][0..num_pb_graph_pins-1] lookup for intra-logic block routing, find atom net given pb_graph_pin id for clb */
+	
+	if(!intra_lb_routing.empty()) {
+		assert((int)intra_lb_routing.size() == num_clusters);
+		pb_pin_route_stats = new t_pb_pin_route_stats* [num_clusters];
+		for(int istats = 0; istats < num_clusters; istats++) {
+			pb_pin_route_stats[istats] = alloc_and_load_pb_pin_route_stats(intra_lb_routing[istats], clb[istats].pb->pb_graph_node);
+		}
+	}
+
+	
 	fpout = fopen(out_fname, "w");
 
 	fprintf(fpout, "<block name=\"%s\" instance=\"FPGA_packed_netlist[0]\">\n",
@@ -610,6 +624,14 @@ void output_clustering(t_block *clb, int num_clusters, boolean global_clocks,
 	fprintf(fpout, "</block>\n\n");
 
 	fclose(fpout);
+
+	if(!intra_lb_routing.empty()) {
+		for(int istats = 0; istats < num_clusters; istats++) {
+			free_pb_pin_route_stats(pb_pin_route_stats[istats]);
+		}
+		delete []pb_pin_route_stats;
+	}
+
 
 	print_stats(clb, num_clusters);
 }
