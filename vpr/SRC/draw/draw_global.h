@@ -13,6 +13,8 @@
 
 #include "draw_types.h"
 
+#define MAX_BLOCK_COLOURS 5
+
 t_draw_coords *get_draw_coords_vars();
 t_draw_state *get_draw_state_vars();
 

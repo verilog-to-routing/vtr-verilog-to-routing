@@ -71,6 +71,8 @@ typedef struct {
  *					on screen.
  * draw_rr_toggle: Controls drawing of routing resources on screen,
  *				   if pic_on_screen is ROUTING.
+ * show_blk_internal: If 0, no internal drawing is shown. Otherwise,
+ *					  indicates how many levels of sub-pbs to be drawn
  * show_graphics: Whether graphics is enabled.
  * gr_automode: How often is user input required. (0: each t, 
  *				1: each place, 2: never)
@@ -90,7 +92,7 @@ struct t_draw_state {
 	boolean show_nets;
 	e_draw_congestion show_congestion;
 	e_draw_rr_toggle draw_rr_toggle;
-	boolean show_blk_internal;
+	int show_blk_internal;
 	boolean show_graphics;
 	int gr_automode;
 	e_route_type draw_route_type;

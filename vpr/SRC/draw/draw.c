@@ -47,7 +47,6 @@ using namespace std;
 
 /****************************** Define Macros *******************************/
 
-#define MAX_BLOCK_COLOURS 5
 #define DEFAULT_RR_NODE_COLOR BLACK
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
@@ -69,7 +68,6 @@ static void toggle_nets(void (*drawscreen)(void));
 static void toggle_rr(void (*drawscreen)(void));
 static void toggle_congestion(void (*drawscreen)(void));
 static void highlight_crit_path(void (*drawscreen_ptr)(void));
-static void toggle_blk_internal(void (*drawscreen_ptr)(void));
 
 static void drawscreen(void);
 static void redraw_screen(void);
@@ -401,11 +399,6 @@ static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
 }
 
 
-static void toggle_blk_internal(void (*drawscreen_ptr)(void)) {
-	draw_state->show_blk_internal = (draw_state->show_blk_internal == FALSE) ? TRUE : FALSE;
-	drawscreen_ptr();
-}
-
 void alloc_draw_structs(void) {
 	/* Call accessor functions to retrieve global variables. */
 	draw_coords = get_draw_coords_vars();
@@ -567,7 +560,7 @@ static void drawplace(void) {
 				/* Fill background for the clb. Do not fill if "show_blk_internal" 
 				 * is toggled. 
 				 */
-				if (bnum != EMPTY && bnum != INVALID && !draw_state->show_blk_internal) {
+				if (bnum != EMPTY && bnum != INVALID) {
 					setcolor(draw_state->block_color[bnum]);
 					fillrect(x1, y1, x2, y2);
 				} else {
@@ -2113,57 +2106,55 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 	int k, netnum, fanblk, iclass;
 	unsigned ipin;
 
-	if (draw_state->block_color[bnum] == GREEN) {
-		/* If block already highlighted, de-highlight the block and
-		 * fanin and fanout. (This only applies to ctrl+click)
-		 */
-		for (k = 0; k < type->num_pins; k++) { /* Each pin on a CLB */
-			netnum = block[bnum].nets[k];
+	for (k = 0; k < type->num_pins; k++) { /* Each pin on a CLB */
+		netnum = block[bnum].nets[k];
 
-			if (netnum == OPEN)
-				continue;
+		if (netnum == OPEN)
+			continue;
 
-			iclass = type->pin_class[k];
+		iclass = type->pin_class[k];
 
-			if (type->class_inf[iclass].type == DRIVER) { /* Fanout */
+		if (type->class_inf[iclass].type == DRIVER) { /* Fanout */
+			if (draw_state->block_color[bnum] == GREEN) {
+				/* If block already highlighted, de-highlight the fanout. */
 				draw_state->net_color[netnum] = BLACK;
 				for (ipin = 1; ipin < g_clbs_nlist.net[netnum].pins.size(); ipin++) {
 					fanblk = g_clbs_nlist.net[netnum].pins[ipin].block;
 					draw_reset_blk_color(fanblk);
 				}
-			} else { /* This net is fanin to the block. */
-				draw_state->net_color[netnum] = BLACK;
-				fanblk = g_clbs_nlist.net[netnum].pins[0].block; /* DRIVER to net */
-				draw_reset_blk_color(fanblk);
 			}
-		}
-
-		draw_reset_blk_color(bnum); /* Selected block */
-	}
-	else {
-		/* Highlight fanin and fanout. */
-		for (k = 0; k < type->num_pins; k++) { /* Each pin on a CLB */
-			netnum = block[bnum].nets[k];
-
-			if (netnum == OPEN)
-				continue;
-
-			iclass = type->pin_class[k];
-
-			if (type->class_inf[iclass].type == DRIVER) { /* Fanout */
+			else {
+				/* Highlight the fanout */
 				draw_state->net_color[netnum] = RED;
 				for (ipin = 1; ipin < g_clbs_nlist.net[netnum].pins.size(); ipin++) {
 					fanblk = g_clbs_nlist.net[netnum].pins[ipin].block;
 					draw_state->block_color[fanblk] = RED;
 				}
-			} else { /* This net is fanin to the block. */
+			}
+		} 
+		else { /* This net is fanin to the block. */
+			if (draw_state->block_color[bnum] == GREEN) {
+				/* If block already highlighted, de-highlight the fanin. */
+				draw_state->net_color[netnum] = BLACK;
+				fanblk = g_clbs_nlist.net[netnum].pins[0].block; /* DRIVER to net */
+				draw_reset_blk_color(fanblk);
+			}
+			else {
+				/* Highlight the fanin */
 				draw_state->net_color[netnum] = BLUE;
 				fanblk = g_clbs_nlist.net[netnum].pins[0].block; /* DRIVER to net */
 				draw_state->block_color[fanblk] = BLUE;
 			}
 		}
+	}
 
-		draw_state->block_color[bnum] = GREEN; /* Selected block. */
+	if (draw_state->block_color[bnum] == GREEN) { 
+		/* If block already highlighted, de-highlight the selected block. */
+		draw_reset_blk_color(bnum);
+	}
+	else { 
+		/* Highlight the selected block. */
+		draw_state->block_color[bnum] = GREEN; 
 	}
 }
 
