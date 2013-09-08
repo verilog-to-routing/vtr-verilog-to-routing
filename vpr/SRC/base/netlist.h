@@ -64,6 +64,12 @@ struct t_vnet{
 	}
 };
 
+/* 
+ * Note: Indices for t_netlist.net[] are also used as ID's/indices in 
+ * 		  several other parallel(global) data structures, e.g.   
+ * 		  net_rr_terminals[]. 
+ */
+
 struct t_netlist{
 	//vector<t_blocks> blocks; To-do: Need to implement later
 	vector<t_vnet>  net;
