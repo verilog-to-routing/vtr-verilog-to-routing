@@ -59,7 +59,7 @@ using namespace std;
 #define DEBUG_TIMING_PLACE_LOOKUP	/*initialize arrays to known state */
 
 #define DUMPFILE "lookup_dump.echo"
-#define PRINT_ARRAYS /*only used during debugging, calls routine to  */
+/*#define PRINT_ARRAYS *//*only used during debugging, calls routine to  */
 /*print out the various lookup arrays           */
 
 /***variables that are exported to other modules***/
