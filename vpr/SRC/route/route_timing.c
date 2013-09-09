@@ -424,8 +424,10 @@ boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_cr
 	
 	for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) { 
 		if (!slacks) {
-			/* Use dummy criticality of 0. (Doesn't matter what number goes here.) */
-			pin_criticality[ipin] = 0.;
+			/* Use criticality of 1. This makes all nets critical.  Note: There is a big difference between setting pin criticality to 0
+			compared to 1.  If pin criticality is set to 0, then the current path delay is completely ignored during routing.  By setting
+			pin criticality to 1, the current path delay to the pin will always be considered and optimized for */
+			pin_criticality[ipin] = 1.0;
 		} else { 
 #ifdef PATH_COUNTING
 			/* Pin criticality is based on a weighted sum of timing and path criticalities. */	
@@ -521,7 +523,6 @@ boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_cr
 
 				if (old_tcost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
 					add_to_mod_list(&rr_node_route_inf[inode].path_cost);
-
 				timing_driven_expand_neighbours(current, inet, itry, bend_cost,
 						target_criticality, target_node, astar_fac,
 						highfanout_rlim);
