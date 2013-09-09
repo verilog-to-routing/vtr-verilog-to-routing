@@ -59,7 +59,7 @@ using namespace std;
 #define DEBUG_TIMING_PLACE_LOOKUP	/*initialize arrays to known state */
 
 #define DUMPFILE "lookup_dump.echo"
-/* #define PRINT_ARRAYS *//*only used during debugging, calls routine to  */
+#define PRINT_ARRAYS /*only used during debugging, calls routine to  */
 /*print out the various lookup arrays           */
 
 /***variables that are exported to other modules***/
@@ -767,7 +767,6 @@ static void compute_delta_clb_to_clb(struct s_router_opts router_opts,
 	for (source_y = 1; source_y <= end_y; source_y++) {
 		delta_x = abs(sink_x - source_x);
 		delta_y = abs(sink_y - source_y);
-
 		delta_clb_to_clb[delta_x][delta_y] = assign_blocks_and_route_net(
 				source_type, source_x, source_y, sink_type, sink_x, sink_y,
 				router_opts, det_routing_arch, segment_inf, timing_inf);
