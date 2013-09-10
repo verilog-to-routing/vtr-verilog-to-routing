@@ -156,7 +156,8 @@ static void power_tech_xml_load_component(ezxml_t parent,
 		float (*usage_fn)(int num_inputs, float transistor_size)) {
 	ezxml_t cur, child, gc, prev;
 
-	*component = new PowerSpicedComponent(usage_fn);
+	string component_name(name);
+	*component = new PowerSpicedComponent(component_name, usage_fn);
 
 	cur = FindElement(parent, name, TRUE);
 

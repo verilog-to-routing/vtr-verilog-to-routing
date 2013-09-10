@@ -302,6 +302,7 @@ extern t_power_output * g_power_output;
 extern t_power_commonly_used * g_power_commonly_used;
 extern t_power_tech * g_power_tech;
 extern t_power_arch * g_power_arch;
+extern t_net_power * clb_net_power;
 
 /************************* FUNCTION DECLARATIONS ********************/
 

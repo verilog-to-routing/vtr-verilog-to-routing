@@ -19,6 +19,7 @@
 #define __POWER_POWERSPICEDCOMPONENT_NMOS_H__
 
 #include <vector>
+#include <string>
 
 /************************* STRUCTS **********************************/
 class PowerSpicedComponent;
@@ -55,6 +56,7 @@ public:
 
 class PowerSpicedComponent {
 public:
+	string name;
 	std::vector<PowerCallibInputs*> entries;
 
 	/* Estimation function for this component */
@@ -67,7 +69,7 @@ public:
 	PowerCallibInputs* get_entry(int num_inputs);
 	PowerCallibInputs * get_entry_bound(bool lower, int num_inputs);
 
-	PowerSpicedComponent(
+	PowerSpicedComponent(string component_name,
 			float (*usage_fn)(int num_inputs, float transistor_size));
 
 	void add_data_point(int num_inputs, float transistor_size, float power);
@@ -77,6 +79,7 @@ public:
 //	void update_scale_factor(float (*fn)(float size));
 	void callibrate(void);
 	bool is_done_callibration(void);
+	void print(FILE * fp);
 };
 
 #endif

@@ -17,7 +17,10 @@ float ipin_mux_trans_size = 0;
 /* User netlist information begin  */
 int num_logical_nets = 0, num_logical_blocks = 0;
 int num_p_inputs = 0, num_p_outputs = 0;
+
 struct s_net *vpack_net = NULL;
+t_net_power * vpack_net_power = NULL;
+
 struct s_logical_block *logical_block = NULL;
 char *blif_circuit_name = NULL;
 char *default_output_name = NULL;

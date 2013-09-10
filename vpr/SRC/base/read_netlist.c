@@ -26,22 +26,27 @@ using namespace std;
 #include "rr_graph.h"
 #include "netlist.h"
 
-
 static const char* netlist_file_name = NULL;
 
 static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
-		INOUTP t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping, INP struct s_hash **vpack_net_hash);
+		INOUTP t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping,
+		INP struct s_hash **vpack_net_hash);
 
 //===========================================================================//
-static void processRegions(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index);
+static void processRegions(INOUTP ezxml_t Parent, INOUTP t_block *cb,
+		INP int index);
 //===========================================================================//
 
-static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, INOUTP t_pb* pb,
-		INOUTP t_rr_node *rr_graph, INOUTP t_pb **rr_node_to_pb_mapping, INOUTP int *num_primitives, 
-		INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash);
+static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
+		INOUTP t_pb* pb, INOUTP t_rr_node *rr_graph,
+		INOUTP t_pb **rr_node_to_pb_mapping, INOUTP int *num_primitives,
+		INP struct s_hash **vpack_net_hash,
+		INP struct s_hash **logical_block_hash);
 
 static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
-		INP int index, INOUTP int *num_primitives, INP const t_arch *arch, INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash);
+		INP int index, INOUTP int *num_primitives, INP const t_arch *arch,
+		INP struct s_hash **vpack_net_hash,
+		INP struct s_hash **logical_block_hash);
 static struct s_net *alloc_and_init_netlist_from_hash(INP int ncount,
 		INOUTP struct s_hash **nhash);
 
@@ -100,11 +105,11 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	vpr_printf_info("Begin parsing packed FPGA netlist file.\n");
 	Top = ezxml_parse_file(net_file);
 	if (NULL == Top) {
-		vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
 				"Unable to load netlist file '%s'.\n", net_file);
 	}
 	vpr_printf_info("Finished parsing packed FPGA netlist file.\n");
-	
+
 	/* Save netlist file's name in file-scoped variable */
 	netlist_file_name = net_file;
 
@@ -118,7 +123,7 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 
 	Prop = FindProperty(Top, "instance", TRUE);
 	if (strcmp(Prop, "FPGA_packed_netlist[0]") != 0) {
-		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Top->line, 
+		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Top->line,
 				"Expected instance to be \"FPGA_packed_netlist[0]\", found %s.",
 				Prop);
 	}
@@ -146,8 +151,8 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	blist = (struct s_block *) my_calloc(bcount, sizeof(t_block));
 
 	/* create quick hash look up for vpack_net and logical_block 
-		Also reset logical block data structure for pb
-	*/
+	 Also reset logical block data structure for pb
+	 */
 	vpack_net_hash = alloc_hash_table();
 	logical_block_hash = alloc_hash_table();
 	for (i = 0; i < num_logical_nets; i++) {
@@ -155,11 +160,12 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 		assert(temp_hash->count == 1);
 	}
 	for (i = 0; i < num_logical_blocks; i++) {
-		temp_hash = insert_in_hash_table(logical_block_hash, logical_block[i].name, i);
+		temp_hash = insert_in_hash_table(logical_block_hash,
+				logical_block[i].name, i);
 		logical_block[i].pb = NULL;
 		assert(temp_hash->count == 1);
 	}
-	
+
 	/* Prcoess netlist */
 
 	Cur = Top->child;
@@ -167,7 +173,8 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	while (Cur) {
 		if (0 == strcmp(Cur->name, "block")) {
 			CheckElement(Cur, "block");
-			processComplexBlock(Cur, blist, i, &num_primitives,	arch, vpack_net_hash, logical_block_hash);
+			processComplexBlock(Cur, blist, i, &num_primitives, arch,
+					vpack_net_hash, logical_block_hash);
 			Prev = Cur;
 			Cur = Cur->next;
 			FreeNode(Prev);
@@ -182,17 +189,16 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	/* Error check */
 	for (i = 0; i < num_logical_blocks; i++) {
 		if (logical_block[i].pb == NULL) {
-			vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__, 
-				".blif file and .net file do not match, .net file missing atom %s.\n", 
-				logical_block[i].name);
+			vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
+					".blif file and .net file do not match, .net file missing atom %s.\n",
+					logical_block[i].name);
 		}
 	}
 	/* TODO: Add additional check to make sure net connections match */
 
-	
 	mark_constant_generators(bcount, blist, num_logical_nets, vpack_net);
-	load_external_nets_and_cb(bcount, blist, num_logical_nets, vpack_net, &ext_ncount,
-			&ext_nlist, circuit_clocks);
+	load_external_nets_and_cb(bcount, blist, num_logical_nets, vpack_net,
+			&ext_ncount, &ext_nlist, circuit_clocks);
 
 	/* TODO: create this function later
 	 check_top_IO_matches_IO_blocks(circuit_inputs, circuit_outputs, circuit_clocks, blist, bcount);
@@ -207,7 +213,8 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	/* load mapping between external nets and all nets */
 	/* jluu TODO: Should use local variables here then assign to globals later, clean up later */
 	clb_to_vpack_net_mapping = (int *) my_malloc(ext_ncount * sizeof(int));
-	vpack_to_clb_net_mapping = (int *) my_malloc(num_logical_nets * sizeof(int));
+	vpack_to_clb_net_mapping = (int *) my_malloc(
+			num_logical_nets * sizeof(int));
 	for (i = 0; i < num_logical_nets; i++) {
 		vpack_to_clb_net_mapping[i] = OPEN;
 	}
@@ -242,8 +249,9 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
  * logical_block_hash - hashtable of all atoms in blif netlist
  */
 static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
-		INP int index, INOUTP int *num_primitives, INP const t_arch *arch, INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash)
- {
+		INP int index, INOUTP int *num_primitives, INP const t_arch *arch,
+		INP struct s_hash **vpack_net_hash,
+		INP struct s_hash **logical_block_hash) {
 
 	const char *Prop;
 	boolean found;
@@ -253,7 +261,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 	const t_pb_type * pb_type = NULL;
 
 	/* parse cb attributes */
-	cb[index].pb = (t_pb*)my_calloc(1, sizeof(t_pb));
+	cb[index].pb = (t_pb*) my_calloc(1, sizeof(t_pb));
 
 	Prop = FindProperty(Parent, "name", TRUE);
 	cb[index].name = my_strdup(Prop);
@@ -267,7 +275,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 			|| tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
 			|| tokens[2].type != TOKEN_INT
 			|| tokens[3].type != TOKEN_CLOSE_SQUARE_BRACKET) {
-		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Parent->line, 
+		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Parent->line,
 				"Unknown syntax for instance %s in %s. Expected pb_type[instance_number].\n",
 				Prop, Parent->name);
 	}
@@ -282,23 +290,26 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 		}
 	}
 	if (!found) {
-		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Parent->line, 
-				"Unknown cb type %s for cb %s #%d.\n",
-				Prop, cb[index].name, index);
+		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Parent->line,
+				"Unknown cb type %s for cb %s #%d.\n", Prop, cb[index].name,
+				index);
 	}
 
 	/* Parse all pbs and CB internal nets*/
 	cb[index].pb->logical_block = OPEN;
 	cb[index].pb->pb_graph_node = cb[index].type->pb_graph_head;
 	num_rr_nodes = cb[index].pb->pb_graph_node->total_pb_pins;
-	rr_node = (t_rr_node*)my_calloc((num_rr_nodes * 2) + cb[index].type->pb_type->num_input_pins
-			+ cb[index].type->pb_type->num_output_pins + cb[index].type->pb_type->num_clock_pins,
+	rr_node = (t_rr_node*) my_calloc(
+			(num_rr_nodes * 2) + cb[index].type->pb_type->num_input_pins
+					+ cb[index].type->pb_type->num_output_pins
+					+ cb[index].type->pb_type->num_clock_pins,
 			sizeof(t_rr_node));
 	alloc_and_load_rr_graph_for_pb_graph_node(cb[index].pb->pb_graph_node, arch,
 			0);
-	cb[index].pb->rr_node_to_pb_mapping = (t_pb **)my_calloc(cb[index].type->pb_graph_head->total_pb_pins, sizeof(t_pb *));
+	cb[index].pb->rr_node_to_pb_mapping = (t_pb **) my_calloc(
+			cb[index].type->pb_graph_head->total_pb_pins, sizeof(t_pb *));
 	cb[index].pb->rr_graph = rr_node;
-	
+
 	Prop = FindProperty(Parent, "mode", TRUE);
 	ezxml_set_attr(Parent, "mode", NULL);
 
@@ -310,17 +321,16 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 		}
 	}
 	if (!found) {
-		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Parent->line, 
-				"Unknown mode %s for cb %s #%d.\n", 
-				Prop, cb[index].name, index);
+		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Parent->line,
+				"Unknown mode %s for cb %s #%d.\n", Prop, cb[index].name,
+				index);
 	}
 
-	processPb(Parent, cb, index, 
-			cb[index].pb, cb[index].pb->rr_graph, 
-			cb[index].pb->rr_node_to_pb_mapping, num_primitives, 
-			vpack_net_hash, logical_block_hash);
+	processPb(Parent, cb, index, cb[index].pb, cb[index].pb->rr_graph,
+			cb[index].pb->rr_node_to_pb_mapping, num_primitives, vpack_net_hash,
+			logical_block_hash);
 
-	cb[index].nets = (int *)my_malloc(cb[index].type->num_pins * sizeof(int));
+	cb[index].nets = (int *) my_malloc(cb[index].type->num_pins * sizeof(int));
 	for (i = 0; i < cb[index].type->num_pins; i++) {
 		cb[index].nets[i] = OPEN;
 	}
@@ -351,9 +361,11 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
  * vpack_net_hash - hashtable of original blif net names and indices
  * logical_block_hash - hashtable of original blif atom names and indices
  */
-static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, INOUTP t_pb* pb,
-		INOUTP t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping, INOUTP int *num_primitives, 
-		INP struct s_hash **vpack_net_hash, INP struct s_hash **logical_block_hash) {
+static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
+		INOUTP t_pb* pb, INOUTP t_rr_node *rr_graph,
+		INOUTP t_pb** rr_node_to_pb_mapping, INOUTP int *num_primitives,
+		INP struct s_hash **vpack_net_hash,
+		INP struct s_hash **logical_block_hash) {
 	ezxml_t Cur, Prev, lookahead;
 	const char *Prop;
 	const char *instance_type;
@@ -375,7 +387,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, 
 	FreeNode(Cur);
 
 	Cur = FindElement(Parent, "regions", FALSE);
-	if(Cur) {
+	if (Cur) {
 		processRegions(Cur, cb, index);
 		FreeNode(Cur);
 	}
@@ -384,7 +396,8 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, 
 	if (pb_type->num_modes == 0) {
 		/* LUT specific optimizations */
 		if (strcmp(pb_type->blif_model, ".names") == 0) {
-			pb->lut_pin_remap = (int*)my_malloc(pb_type->num_input_pins * sizeof(int));
+			pb->lut_pin_remap = (int*) my_malloc(
+					pb_type->num_input_pins * sizeof(int));
 			for (i = 0; i < pb_type->num_input_pins; i++) {
 				pb->lut_pin_remap[i] = OPEN;
 			}
@@ -393,8 +406,8 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, 
 		}
 		temp_hash = get_hash_entry(logical_block_hash, pb->name);
 		if (temp_hash == NULL) {
-			vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__, 
-					".net file and .blif file do not match, encountered unknown primitive %s in .net file.\n", 
+			vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
+					".net file and .blif file do not match, encountered unknown primitive %s in .net file.\n",
 					pb->name);
 		}
 		pb->logical_block = temp_hash->index;
@@ -405,13 +418,14 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, 
 	} else {
 		/* process children of child if exists */
 
-		pb->child_pbs = (t_pb **)my_calloc(pb_type->modes[pb->mode].num_pb_type_children,
-				sizeof(t_pb*));
+		pb->child_pbs = (t_pb **) my_calloc(
+				pb_type->modes[pb->mode].num_pb_type_children, sizeof(t_pb*));
 		for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
-			pb->child_pbs[i] = (t_pb *)my_calloc(
+			pb->child_pbs[i] = (t_pb *) my_calloc(
 					pb_type->modes[pb->mode].pb_type_children[i].num_pb,
 					sizeof(t_pb));
-			for (j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
+			for (j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb;
+					j++) {
 				pb->child_pbs[i][j].logical_block = OPEN;
 			}
 		}
@@ -429,24 +443,29 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, 
 						|| tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
 						|| tokens[2].type != TOKEN_INT
 						|| tokens[3].type != TOKEN_CLOSE_SQUARE_BRACKET) {
-					vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line, 
+					vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line,
 							"Unknown syntax for instance %s in %s. Expected pb_type[instance_number].\n",
 							instance_type, Cur->name);
 				}
 
 				found = FALSE;
 				pb_index = OPEN;
-				for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
-					if (strcmp(pb_type->modes[pb->mode].pb_type_children[i].name, tokens[0].data) == 0) {
+				for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children;
+						i++) {
+					if (strcmp(
+							pb_type->modes[pb->mode].pb_type_children[i].name,
+							tokens[0].data) == 0) {
 						if (my_atoi(tokens[2].data)
 								>= pb_type->modes[pb->mode].pb_type_children[i].num_pb) {
-							vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line, 
+							vpr_throw(VPR_ERROR_NET_F, netlist_file_name,
+									Cur->line,
 									"Instance number exceeds # of pb available for instance %s in %s.\n",
 									instance_type, Cur->name);
 						}
 						pb_index = my_atoi(tokens[2].data);
 						if (pb->child_pbs[i][pb_index].pb_graph_node != NULL) {
-							vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line, 
+							vpr_throw(VPR_ERROR_NET_F, netlist_file_name,
+									Cur->line,
 									"node is used by two different blocks %s and %s.\n",
 									instance_type,
 									pb->child_pbs[i][pb_index].name);
@@ -458,9 +477,8 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, 
 					}
 				}
 				if (!found) {
-					vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line, 
-							"Unknown pb type %s.\n", 
-							instance_type);
+					vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line,
+							"Unknown pb type %s.\n", instance_type);
 				}
 
 				Prop = FindProperty(Cur, "name", TRUE);
@@ -477,24 +495,29 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, 
 					}
 					pb->child_pbs[i][pb_index].mode = 0;
 					found = FALSE;
-					for (j = 0; j < pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes; j++) {
-						if (strcmp(Prop, pb->child_pbs[i][pb_index].pb_graph_node->pb_type->modes[j].name)
+					for (j = 0;
+							j
+									< pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes;
+							j++) {
+						if (strcmp(Prop,
+								pb->child_pbs[i][pb_index].pb_graph_node->pb_type->modes[j].name)
 								== 0) {
 							pb->child_pbs[i][pb_index].mode = j;
 							found = TRUE;
 						}
 					}
-					if (!found && pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes != 0) {
-						vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line, 
-								"Unknown mode %s for cb %s #%d.\n",
-								Prop, pb->child_pbs[i][pb_index].name, pb_index);
+					if (!found
+							&& pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes
+									!= 0) {
+						vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line,
+								"Unknown mode %s for cb %s #%d.\n", Prop,
+								pb->child_pbs[i][pb_index].name, pb_index);
 					}
 					pb->child_pbs[i][pb_index].parent_pb = pb;
 					pb->child_pbs[i][pb_index].rr_graph = pb->rr_graph;
 
-					processPb(Cur, cb, index,
-							&pb->child_pbs[i][pb_index], rr_graph, 
-							rr_node_to_pb_mapping, num_primitives, 
+					processPb(Cur, cb, index, &pb->child_pbs[i][pb_index],
+							rr_graph, rr_node_to_pb_mapping, num_primitives,
 							vpack_net_hash, logical_block_hash);
 				} else {
 					/* physical block has no used primitives but it may have used routing */
@@ -509,22 +532,29 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index, 
 						}
 						pb->child_pbs[i][pb_index].mode = 0;
 						found = FALSE;
-						for (j = 0; j < pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes; j++) {
-							if (strcmp(Prop, pb->child_pbs[i][pb_index].pb_graph_node->pb_type->modes[j].name) == 0) {
+						for (j = 0;
+								j
+										< pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes;
+								j++) {
+							if (strcmp(Prop,
+									pb->child_pbs[i][pb_index].pb_graph_node->pb_type->modes[j].name)
+									== 0) {
 								pb->child_pbs[i][pb_index].mode = j;
 								found = TRUE;
 							}
 						}
-						if (!found && pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes != 0) {
-							vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line, 
-									"Unknown mode %s for cb %s #%d.\n",
-									Prop, pb->child_pbs[i][pb_index].name, pb_index);
+						if (!found
+								&& pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes
+										!= 0) {
+							vpr_throw(VPR_ERROR_NET_F, netlist_file_name,
+									Cur->line,
+									"Unknown mode %s for cb %s #%d.\n", Prop,
+									pb->child_pbs[i][pb_index].name, pb_index);
 						}
 						pb->child_pbs[i][pb_index].parent_pb = pb;
 						pb->child_pbs[i][pb_index].rr_graph = pb->rr_graph;
-						processPb(Cur, cb, index, 
-								&pb->child_pbs[i][pb_index], rr_graph, 
-								rr_node_to_pb_mapping, num_primitives, 
+						processPb(Cur, cb, index, &pb->child_pbs[i][pb_index],
+								rr_graph, rr_node_to_pb_mapping, num_primitives,
 								vpack_net_hash, logical_block_hash);
 					}
 				}
@@ -553,7 +583,7 @@ static struct s_net *alloc_and_init_netlist_from_hash(INP int ncount,
 	struct s_hash *curr_net;
 	int i;
 
-	nlist = (struct s_net *)my_calloc(ncount, sizeof(struct s_net));
+	nlist = (struct s_net *) my_calloc(ncount, sizeof(struct s_net));
 
 	hash_iter = start_hash_table_iterator();
 	curr_net = get_next_hash(nhash, &hash_iter);
@@ -562,9 +592,9 @@ static struct s_net *alloc_and_init_netlist_from_hash(INP int ncount,
 		nlist[curr_net->index].name = my_strdup(curr_net->name);
 		nlist[curr_net->index].num_sinks = curr_net->count - 1;
 
-		nlist[curr_net->index].node_block = (int *)my_malloc(
+		nlist[curr_net->index].node_block = (int *) my_malloc(
 				curr_net->count * sizeof(int));
-		nlist[curr_net->index].node_block_pin = (int *)my_malloc(
+		nlist[curr_net->index].node_block_pin = (int *) my_malloc(
 				curr_net->count * sizeof(int));
 		nlist[curr_net->index].is_routed = FALSE;
 		nlist[curr_net->index].is_fixed = FALSE;
@@ -599,7 +629,8 @@ static int add_net_to_hash(INOUTP struct s_hash **nhash, INP char *net_name,
 }
 
 static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
-		t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping, INP struct s_hash **vpack_net_hash) {
+		t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping,
+		INP struct s_hash **vpack_net_hash) {
 
 	int i, j, in_port, out_port, clock_port, num_tokens;
 	ezxml_t Cur, Prev;
@@ -639,14 +670,15 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 					in_port++;
 				} else {
 					assert(
-							pb->pb_graph_node->pb_type->ports[i].type == OUT_PORT);
+							pb->pb_graph_node->pb_type->ports[i].type
+									== OUT_PORT);
 					out_port++;
 				}
 			}
 			if (!found) {
-				vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line, 
-						"Unknown port %s for pb %s[%d].\n",
-						Prop, pb->pb_graph_node->pb_type->name,
+				vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line,
+						"Unknown port %s for pb %s[%d].\n", Prop,
+						pb->pb_graph_node->pb_type->name,
 						pb->pb_graph_node->placement_index);
 			}
 
@@ -654,28 +686,25 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 			num_tokens = CountTokens(pins);
 			if (0 == strcmp(Parent->name, "inputs")) {
 				if (num_tokens != pb->pb_graph_node->num_input_pins[in_port]) {
-					vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line, 
+					vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line,
 							"Incorrect # pins %d found for port %s for pb %s[%d].\n",
-							num_tokens, Prop,
-							pb->pb_graph_node->pb_type->name,
+							num_tokens, Prop, pb->pb_graph_node->pb_type->name,
 							pb->pb_graph_node->placement_index);
 				}
 			} else if (0 == strcmp(Parent->name, "outputs")) {
 				if (num_tokens
 						!= pb->pb_graph_node->num_output_pins[out_port]) {
-					vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line, 
+					vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line,
 							"Incorrect # pins %d found for port %s for pb %s[%d].\n",
-							num_tokens, Prop,
-							pb->pb_graph_node->pb_type->name,
+							num_tokens, Prop, pb->pb_graph_node->pb_type->name,
 							pb->pb_graph_node->placement_index);
 				}
 			} else {
 				if (num_tokens
 						!= pb->pb_graph_node->num_clock_pins[clock_port]) {
-					vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line, 
+					vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line,
 							"Incorrect # pins %d found for port %s for pb %s[%d].\n",
-							num_tokens, Prop,
-							pb->pb_graph_node->pb_type->name,
+							num_tokens, Prop, pb->pb_graph_node->pb_type->name,
 							pb->pb_graph_node->placement_index);
 				}
 			}
@@ -693,12 +722,12 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 						if (strcmp(pins[i], "open") != 0) {
 							temp_hash = get_hash_entry(vpack_net_hash, pins[i]);
 							if (temp_hash == NULL) {
-								vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__, 
-										".blif and .net do not match, unknown net %s found in .net file.\n.", 
+								vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
+										".blif and .net do not match, unknown net %s found in .net file.\n.",
 										pins[i]);
 							}
-							rr_graph[rr_node_index].net_num = temp_hash->index;							
-						}						
+							rr_graph[rr_node_index].net_num = temp_hash->index;
+						}
 						rr_node_to_pb_mapping[rr_node_index] = pb;
 					}
 				} else {
@@ -742,7 +771,8 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 						free(pin_node);
 						free(num_ptrs);
 						if (!found) {
-							vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line, 
+							vpr_throw(VPR_ERROR_NET_F, netlist_file_name,
+									Cur->line,
 									"Unknown interconnect %s connecting to pin %s.\n",
 									interconnect_name, port_name);
 						}
@@ -759,11 +789,11 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 						if (strcmp(pins[i], "open") != 0) {
 							temp_hash = get_hash_entry(vpack_net_hash, pins[i]);
 							if (temp_hash == NULL) {
-								vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__, 
-										".blif and .net do not match, unknown net %s found in .net file.\n", 
+								vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
+										".blif and .net do not match, unknown net %s found in .net file.\n",
 										pins[i]);
 							}
-							rr_graph[rr_node_index].net_num = temp_hash->index;							
+							rr_graph[rr_node_index].net_num = temp_hash->index;
 						}
 						rr_node_to_pb_mapping[rr_node_index] = pb;
 					}
@@ -804,7 +834,8 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 						free(pin_node);
 						free(num_ptrs);
 						if (!found) {
-							vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line, 
+							vpr_throw(VPR_ERROR_NET_F, netlist_file_name,
+									Cur->line,
 									"Unknown interconnect %s connecting to pin %s.\n",
 									interconnect_name, port_name);
 						}
@@ -826,7 +857,8 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 }
 
 //===========================================================================//
-static void processRegions(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index) {
+static void processRegions(INOUTP ezxml_t Parent, INOUTP t_block *cb,
+		INP int index) {
 
 	ezxml_t Cur = Parent->child;
 	while (Cur) {
@@ -839,11 +871,11 @@ static void processRegions(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int in
 			placement_region.x2 = GetIntProperty(Cur, "x2", TRUE, 0);
 			placement_region.y2 = GetIntProperty(Cur, "y2", TRUE, 0);
 
-			ezxml_set_attr(Cur, "x1", NULL );
-			ezxml_set_attr(Cur, "y1", NULL );
-			ezxml_set_attr(Cur, "x2", NULL );
-			ezxml_set_attr(Cur, "y2", NULL );
-	
+			ezxml_set_attr(Cur, "x1", NULL);
+			ezxml_set_attr(Cur, "y1", NULL);
+			ezxml_set_attr(Cur, "x2", NULL);
+			ezxml_set_attr(Cur, "y2", NULL);
+
 			cb[index].placement_region_list.Add(placement_region);
 		}
 		ezxml_t Prev = Cur;
@@ -886,7 +918,11 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 
 		/* First determine nets external to complex blocks */
 		assert(
-				block_list[i].type->pb_type->num_input_pins + block_list[i].type->pb_type->num_output_pins + block_list[i].type->pb_type->num_clock_pins == block_list[i].type->num_pins / block_list[i].type->capacity);
+				block_list[i].type->pb_type->num_input_pins
+						+ block_list[i].type->pb_type->num_output_pins
+						+ block_list[i].type->pb_type->num_clock_pins
+						== block_list[i].type->num_pins
+								/ block_list[i].type->capacity);
 
 		rr_graph = block_list[i].pb->rr_graph;
 		for (j = 0; j < block_list[i].pb->pb_graph_node->num_input_ports; j++) {
@@ -954,7 +990,7 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 	/* Load global nets */
 	num_tokens = CountTokens(circuit_clocks);
 
-	count = (int *)my_calloc(*ext_ncount, sizeof(int));
+	count = (int *) my_calloc(*ext_ncount, sizeof(int));
 
 	/* complete load of external nets so that each net points back to the blocks */
 	for (i = 0; i < L_num_blocks; i++) {
@@ -966,19 +1002,22 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 				if (RECEIVER
 						== block_list[i].type->class_inf[block_list[i].type->pin_class[j]].type) {
 					count[netnum]++;
-					if(count[netnum] > (*ext_nets)[netnum].num_sinks) {
-						vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__, 
-								"net %s #%d inconsistency, expected %d terminals but encountered %d terminals, it is likely net terminal is disconnected in netlist file.\n", 
-								(*ext_nets)[netnum].name, netnum, count[netnum], (*ext_nets)[netnum].num_sinks);
+					if (count[netnum] > (*ext_nets)[netnum].num_sinks) {
+						vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
+								"net %s #%d inconsistency, expected %d terminals but encountered %d terminals, it is likely net terminal is disconnected in netlist file.\n",
+								(*ext_nets)[netnum].name, netnum, count[netnum],
+								(*ext_nets)[netnum].num_sinks);
 					}
-					
+
 					(*ext_nets)[netnum].node_block[count[netnum]] = i;
 					(*ext_nets)[netnum].node_block_pin[count[netnum]] = j;
 
-					(*ext_nets)[netnum].is_global = block_list[i].type->is_global_pin[j]; /* Error check performed later to ensure no mixing of global and non-global signals */
+					(*ext_nets)[netnum].is_global =
+							block_list[i].type->is_global_pin[j]; /* Error check performed later to ensure no mixing of global and non-global signals */
 				} else {
 					assert(
-							DRIVER == block_list[i].type->class_inf[block_list[i].type->pin_class[j]].type);
+							DRIVER
+									== block_list[i].type->class_inf[block_list[i].type->pin_class[j]].type);
 					assert((*ext_nets)[netnum].node_block[0] == OPEN);
 					(*ext_nets)[netnum].node_block[0] = i;
 					(*ext_nets)[netnum].node_block_pin[0] = j;
@@ -989,10 +1028,12 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 	/* Error check global and non global signals */
 	for (i = 0; i < *ext_ncount; i++) {
 		for (j = 1; j <= (*ext_nets)[i].num_sinks; j++) {
-			boolean is_global_net = static_cast<boolean>((*ext_nets)[i].is_global);
-			if (block_list[(*ext_nets)[i].node_block[j]].type->is_global_pin[(*ext_nets)[i].node_block_pin[j]] != is_global_net) {
-				vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__, 
-						"Netlist attempts to connect net %s to both global and non-global pins.\n", 
+			boolean is_global_net =
+					static_cast<boolean>((*ext_nets)[i].is_global);
+			if (block_list[(*ext_nets)[i].node_block[j]].type->is_global_pin[(*ext_nets)[i].node_block_pin[j]]
+					!= is_global_net) {
+				vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
+						"Netlist attempts to connect net %s to both global and non-global pins.\n",
 						(*ext_nets)[i].name);
 			}
 		}
@@ -1016,7 +1057,9 @@ static int count_sinks_internal_cb_rr_graph_net_nums(
 		if (&rr_graph[rr_graph[cur_rr_node->edges[i]].prev_node]
 				== cur_rr_node) {
 			assert(
-					rr_graph[cur_rr_node->edges[i]].net_num == OPEN || rr_graph[cur_rr_node->edges[i]].net_num == cur_rr_node->net_num);
+					rr_graph[cur_rr_node->edges[i]].net_num == OPEN
+							|| rr_graph[cur_rr_node->edges[i]].net_num
+									== cur_rr_node->net_num);
 			count += count_sinks_internal_cb_rr_graph_net_nums(
 					&rr_graph[cur_rr_node->edges[i]], rr_graph);
 		}
@@ -1043,7 +1086,9 @@ static void load_internal_cb_rr_graph_net_nums(INP t_rr_node * cur_rr_node,
 			/* TODO: If multiple edges to same node (should not happen in reasonable design) this always
 			 selects the last edge, need to be smart about it in future (ie. select fastest edge */
 			assert(
-					rr_graph[cur_rr_node->edges[i]].net_num == OPEN || rr_graph[cur_rr_node->edges[i]].net_num == cur_rr_node->net_num);
+					rr_graph[cur_rr_node->edges[i]].net_num == OPEN
+							|| rr_graph[cur_rr_node->edges[i]].net_num
+									== cur_rr_node->net_num);
 			rr_graph[cur_rr_node->edges[i]].net_num = cur_rr_node->net_num;
 			rr_graph[cur_rr_node->edges[i]].prev_edge = i;
 			load_internal_cb_rr_graph_net_nums(&rr_graph[cur_rr_node->edges[i]],
@@ -1093,7 +1138,8 @@ static void load_internal_cb_nets(INOUTP t_pb *top_level,
 									+ i / 10 + j / 10
 									+ pb_graph_node->input_pins[i][j].pin_count_in_cluster
 											/ 10 + 26;
-					nets[*curr_net].name = (char *)my_calloc(size, sizeof(char));
+					nets[*curr_net].name = (char *) my_calloc(size,
+							sizeof(char));
 					sprintf(nets[*curr_net].name,
 							"%s[%d].input[%d][%d].pin[%d]",
 							pb_graph_node->pb_type->name,
@@ -1119,7 +1165,8 @@ static void load_internal_cb_nets(INOUTP t_pb *top_level,
 									+ i / 10 + j / 10
 									+ pb_graph_node->clock_pins[i][j].pin_count_in_cluster
 											/ 10 + 26;
-					nets[*curr_net].name = (char *)my_calloc(size, sizeof(char));
+					nets[*curr_net].name = (char *) my_calloc(size,
+							sizeof(char));
 					sprintf(nets[*curr_net].name,
 							"%s[%d].clock[%d][%d].pin[%d]",
 							pb_graph_node->pb_type->name,
@@ -1148,7 +1195,8 @@ static void load_internal_cb_nets(INOUTP t_pb *top_level,
 									+ i / 10 + j / 10
 									+ pb_graph_node->output_pins[i][j].pin_count_in_cluster
 											/ 10 + 26;
-					nets[*curr_net].name = (char *)my_calloc(size, sizeof(char));
+					nets[*curr_net].name = (char *) my_calloc(size,
+							sizeof(char));
 					sprintf(nets[*curr_net].name,
 							"%s[%d].output[%d][%d].pin[%d]",
 							pb_graph_node->pb_type->name,
@@ -1204,12 +1252,12 @@ static void alloc_internal_cb_nets(INOUTP t_pb *top_level,
 										rr_graph);
 						top_level->local_nets[top_level->num_local_nets].num_sinks =
 								num_sinks;
-						top_level->local_nets[top_level->num_local_nets].node_block = (int *)
-								my_calloc(num_sinks, sizeof(int));
-						top_level->local_nets[top_level->num_local_nets].node_block_port = (int *)
-								my_calloc(num_sinks, sizeof(int));
-						top_level->local_nets[top_level->num_local_nets].node_block_pin = (int *)
-								my_calloc(num_sinks, sizeof(int));
+						top_level->local_nets[top_level->num_local_nets].node_block =
+								(int *) my_calloc(num_sinks, sizeof(int));
+						top_level->local_nets[top_level->num_local_nets].node_block_port =
+								(int *) my_calloc(num_sinks, sizeof(int));
+						top_level->local_nets[top_level->num_local_nets].node_block_pin =
+								(int *) my_calloc(num_sinks, sizeof(int));
 					}
 					top_level->num_local_nets++;
 				}
@@ -1226,12 +1274,12 @@ static void alloc_internal_cb_nets(INOUTP t_pb *top_level,
 										rr_graph);
 						top_level->local_nets[top_level->num_local_nets].num_sinks =
 								num_sinks;
-						top_level->local_nets[top_level->num_local_nets].node_block = (int *)
-								my_calloc(num_sinks, sizeof(int));
-						top_level->local_nets[top_level->num_local_nets].node_block_port = (int *)
-								my_calloc(num_sinks, sizeof(int));
-						top_level->local_nets[top_level->num_local_nets].node_block_pin = (int *)
-								my_calloc(num_sinks, sizeof(int));
+						top_level->local_nets[top_level->num_local_nets].node_block =
+								(int *) my_calloc(num_sinks, sizeof(int));
+						top_level->local_nets[top_level->num_local_nets].node_block_port =
+								(int *) my_calloc(num_sinks, sizeof(int));
+						top_level->local_nets[top_level->num_local_nets].node_block_pin =
+								(int *) my_calloc(num_sinks, sizeof(int));
 					}
 					top_level->num_local_nets++;
 				}
@@ -1252,12 +1300,12 @@ static void alloc_internal_cb_nets(INOUTP t_pb *top_level,
 										rr_graph);
 						top_level->local_nets[top_level->num_local_nets].num_sinks =
 								num_sinks;
-						top_level->local_nets[top_level->num_local_nets].node_block = (int *)
-								my_calloc(num_sinks, sizeof(int));
-						top_level->local_nets[top_level->num_local_nets].node_block_port = (int *)
-								my_calloc(num_sinks, sizeof(int));
-						top_level->local_nets[top_level->num_local_nets].node_block_pin = (int *)
-								my_calloc(num_sinks, sizeof(int));
+						top_level->local_nets[top_level->num_local_nets].node_block =
+								(int *) my_calloc(num_sinks, sizeof(int));
+						top_level->local_nets[top_level->num_local_nets].node_block_port =
+								(int *) my_calloc(num_sinks, sizeof(int));
+						top_level->local_nets[top_level->num_local_nets].node_block_pin =
+								(int *) my_calloc(num_sinks, sizeof(int));
 					}
 					top_level->num_local_nets++;
 				}
@@ -1279,8 +1327,8 @@ static void alloc_internal_cb_nets(INOUTP t_pb *top_level,
 
 	if (pb_graph_node->parent_pb_graph_node == NULL) { /* at top level */
 		if (pass == 1) {
-			top_level->local_nets = (struct s_net *)my_calloc(top_level->num_local_nets,
-					sizeof(struct s_net));
+			top_level->local_nets = (struct s_net *) my_calloc(
+					top_level->num_local_nets, sizeof(struct s_net));
 		}
 	}
 }
@@ -1353,7 +1401,6 @@ static void mark_constant_generators_rec(INP t_pb *pb, INP t_rr_node *rr_graph,
 	}
 }
 
-
 /* Free logical blocks of netlist */
 void free_logical_blocks(void) {
 	int iblk, i;
@@ -1374,9 +1421,9 @@ void free_logical_blocks(void) {
 			}
 			port = port->next;
 		}
-		if (logical_block[iblk].input_net_tnodes) 
+		if (logical_block[iblk].input_net_tnodes)
 			free(logical_block[iblk].input_net_tnodes);
-		
+
 		tvptr = logical_block[iblk].packed_molecules;
 		while (tvptr != NULL) {
 			next = tvptr->next;
@@ -1423,12 +1470,12 @@ void free_logical_nets(void) {
 		free(vpack_net[inet].node_block);
 		free(vpack_net[inet].node_block_port);
 		free(vpack_net[inet].node_block_pin);
-		if (vpack_net[inet].net_power) {
-			delete vpack_net[inet].net_power;
-		}
 	}
 	free(vpack_net);
 	vpack_net = NULL;
+	if (vpack_net_power) {
+		free(vpack_net_power);
+		vpack_net_power = NULL;
+	}
 }
-
 

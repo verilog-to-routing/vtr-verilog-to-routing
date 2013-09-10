@@ -21,6 +21,7 @@
 
 /************************* INCLUDES *********************************/
 #include <assert.h>
+#include <iostream>
 
 #include "power_callibrate.h"
 #include "power_components.h"
@@ -399,4 +400,11 @@ void power_callibrate(void) {
 	g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_MUX]->callibrate();
 	g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_LUT]->callibrate();
 	g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_FF]->callibrate();
+}
+
+void power_print_callibration(void) {
+	power_print_title(g_power_output->out, "Callibration Data");
+	for (int i = 0; i < POWER_CALLIB_COMPONENT_MAX; i++) {
+		g_power_commonly_used->component_callibration[i]->print(g_power_output->out);
+	}
 }

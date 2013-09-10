@@ -48,5 +48,5 @@ float power_usage_buf_levr_for_callibration(int num_inputs,
 float power_usage_mux_for_callibration(int num_inputs, float transistor_size);
 float power_usage_lut_for_callibration(int num_inputs, float transistor_size);
 float power_usage_ff_for_callibration(int num_inputs, float transistor_size);
-
+void power_print_callibration(void);
 #endif

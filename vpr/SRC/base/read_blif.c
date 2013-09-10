@@ -54,7 +54,7 @@ static void get_blif_tok(char *buffer, int doall, boolean *done,
 		boolean *add_truth_table, INP t_model* inpad_model,
 		INP t_model* outpad_model, INP t_model* logic_model,
 		INP t_model* latch_model, INP t_model* user_models);
-static void init_parse(int doall);
+static void init_parse(int doall, boolean init_vpack_net_power);
 static void check_net(boolean sweep_hanging_nets_and_inputs);
 static void free_parse(void);
 static void io_line(int in_or_out, int doall, t_model *io_model);
@@ -89,8 +89,8 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 
 	blif = fopen(blif_file, "r");
 	if (blif == NULL) {
-		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__, "Failed to open blif file '%s'.\n",
-				blif_file);
+		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
+				"Failed to open blif file '%s'.\n", blif_file);
 	}
 	load_default_models(library_models, &inpad_model, &outpad_model,
 			&logic_model, &latch_model);
@@ -99,7 +99,7 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 	for (doall = 0; doall <= 1; doall++) {
 		begin = clock();
 
-		init_parse(doall);
+		init_parse(doall, read_activity_file);
 
 		end = clock();
 #ifdef CLOCKS_PER_SEC
@@ -147,7 +147,7 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 	free_parse();
 }
 
-static void init_parse(int doall) {
+static void init_parse(int doall, boolean init_vpack_net_power) {
 
 	/* Allocates and initializes the data structures needed for the parse. */
 
@@ -157,12 +157,16 @@ static void init_parse(int doall) {
 	if (!doall) { /* Initialization before first (counting) pass */
 		num_logical_nets = 0;
 		blif_hash = (struct s_hash **) my_calloc(sizeof(struct s_hash *),
-				HASHSIZE);
+		HASHSIZE);
 	}
 	/* Allocate memory for second (load) pass */
 	else {
 		vpack_net = (struct s_net *) my_calloc(num_logical_nets,
 				sizeof(struct s_net));
+		if (init_vpack_net_power) {
+			vpack_net_power = (t_net_power *) my_calloc(num_logical_nets,
+					sizeof(t_net_power));
+		}
 		logical_block = (struct s_logical_block *) my_calloc(num_logical_blocks,
 				sizeof(struct s_logical_block));
 		num_driver = (int *) my_malloc(num_logical_nets * sizeof(int));
@@ -378,7 +382,7 @@ static boolean add_lut(int doall, t_model *logic_model) {
 	int i, j, output_net_index;
 
 	saved_names = (char**) alloc_matrix(0, logic_model->inputs->size, 0,
-			BUFSIZE - 1, sizeof(char));
+	BUFSIZE - 1, sizeof(char));
 
 	num_logical_blocks++;
 
@@ -388,7 +392,8 @@ static boolean add_lut(int doall, t_model *logic_model) {
 		if (i > logic_model->inputs->size) {
 			vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 					"[LINE %d] .names %s ... %s has a LUT size that exceeds the maximum LUT size (%d) of the architecture.\n",
-					file_line_number, saved_names[0], ptr, logic_model->inputs->size);
+					file_line_number, saved_names[0], ptr,
+					logic_model->inputs->size);
 		}
 		strcpy(saved_names[i], ptr);
 		i++;
@@ -480,8 +485,7 @@ static void add_latch(int doall, INP t_model *latch_model) {
 	if (i != 5) {
 		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 				".latch does not have 5 parameters.\n"
-				"Check netlist, line %d.\n",
-				file_line_number);
+						"Check netlist, line %d.\n", file_line_number);
 	}
 
 	if (!doall) { /* If only a counting pass ... */
@@ -1004,7 +1008,7 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 			sizeof(int));
 	num_absorbable_latch = 0;
 	for (i = 0; i < num_logical_blocks; i++) {
-		if (!logical_block) 
+		if (!logical_block)
 			continue;
 
 		if (logical_block[i].model == logic_model) {
@@ -1075,7 +1079,7 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 	fprintf(fp, "\t\tEMPTY = %d\n", VPACK_EMPTY);
 
 	for (i = 0; i < num_logical_blocks; i++) {
-		if (!logical_block) 
+		if (!logical_block)
 			continue;
 
 		fprintf(fp, "\nblock %d %s ", i, logical_block[i].name);
@@ -1281,7 +1285,7 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 					if (L_check_net != i) {
 						vpr_printf_error(__FILE__, __LINE__,
 								"You have a signal that enters both clock ports and normal input ports.\n"
-								"Input net for block %s #%d is net %s #%d but connecting net is %s #%d.\n",
+										"Input net for block %s #%d is net %s #%d but connecting net is %s #%d.\n",
 								logical_block[iblk].name, iblk,
 								vpack_net[L_check_net].name, L_check_net,
 								vpack_net[i].name, i);
@@ -1637,6 +1641,7 @@ static void compress_netlist(void) {
 			if (vpack_net[inet].node_block[0] != OPEN) {
 				index = net_remap[inet];
 				vpack_net[index] = vpack_net[inet];
+				vpack_net_power[index] = vpack_net_power[inet];
 				for (ipin = 0; ipin <= vpack_net[index].num_sinks; ipin++) {
 					vpack_net[index].node_block[ipin] =
 							block_remap[vpack_net[index].node_block[ipin]];
@@ -1652,6 +1657,8 @@ static void compress_netlist(void) {
 		num_logical_nets = new_num_nets;
 		vpack_net = (struct s_net *) my_realloc(vpack_net,
 				num_logical_nets * sizeof(struct s_net));
+		vpack_net_power = (t_net_power *) my_realloc(vpack_net_power,
+				num_logical_nets * sizeof(t_net_power));
 
 		for (iblk = 0; iblk < num_logical_blocks; iblk++) {
 			if (logical_block[iblk].type != VPACK_EMPTY) {
@@ -1924,21 +1931,18 @@ static void read_activity(char * activity_file) {
 
 	if (num_logical_nets == 0) {
 		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
-			"Error reading activity file.  Must read netlist first\n");
+				"Error reading activity file.  Must read netlist first\n");
 	}
 
 	for (net_idx = 0; net_idx < num_logical_nets; net_idx++) {
-		if (!vpack_net[net_idx].net_power) {
-			vpack_net[net_idx].net_power = new t_net_power;
-		}
-		vpack_net[net_idx].net_power->probability = -1.0;
-		vpack_net[net_idx].net_power->density = -1.0;
+		vpack_net_power[net_idx].probability = -1.0;
+		vpack_net_power[net_idx].density = -1.0;
 	}
 
 	act_file_hdl = my_fopen(activity_file, "r", FALSE);
 	if (act_file_hdl == NULL) {
 		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
-			"Error: could not open activity file: %s\n", activity_file);
+				"Error: could not open activity file: %s\n", activity_file);
 	}
 
 	fail = FALSE;
@@ -1956,9 +1960,8 @@ static void read_activity(char * activity_file) {
 
 	/* Make sure all nets have an activity value */
 	for (net_idx = 0; net_idx < num_logical_nets; net_idx++) {
-		if (!vpack_net[net_idx].net_power
-				|| vpack_net[net_idx].net_power->probability < 0.0
-				|| vpack_net[net_idx].net_power->density < 0.0) {
+		if (vpack_net_power[net_idx].probability < 0.0
+				|| vpack_net_power[net_idx].density < 0.0) {
 			vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 					"Error: Activity file does not contain signal %s\n",
 					vpack_net[net_idx].name);
@@ -1977,8 +1980,8 @@ bool add_activity_to_net(char * net_name, float probability, float density) {
 	while (h_ptr != NULL) {
 		if (strcmp(h_ptr->name, net_name) == 0) {
 			net_idx = h_ptr->index;
-			vpack_net[net_idx].net_power->probability = probability;
-			vpack_net[net_idx].net_power->density = density;
+			vpack_net_power[net_idx].probability = probability;
+			vpack_net_power[net_idx].density = density;
 			return false;
 		}
 		h_ptr = h_ptr->next;

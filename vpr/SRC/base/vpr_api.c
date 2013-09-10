@@ -734,10 +734,6 @@ void free_circuit() {
 			free(clb_net[i].node_block);
 			free(clb_net[i].node_block_pin);
 			free(clb_net[i].node_block_port);
-			if (clb_net[i].net_power) {
-				delete clb_net[i].net_power;
-				clb_net[i].net_power = NULL;
-			}
 		}
 	}
 	free(clb_net);

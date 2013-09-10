@@ -67,6 +67,7 @@ t_power_commonly_used * g_power_commonly_used;
 t_power_tech * g_power_tech;
 t_power_arch * g_power_arch;
 static t_rr_node_power * rr_node_power;
+t_net_power * clb_net_power;
 
 /************************* Function Declarations ********************/
 /* Routing */
@@ -1150,14 +1151,14 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 	int max_seg_fanout;
 
 	/* Copy probability/density values to new netlist */
+	if (!clb_net_power) {
+		clb_net_power = (t_net_power*) my_calloc(num_nets, sizeof(t_net_power));
+	}
 	for (net_idx = 0; net_idx < num_nets; net_idx++) {
-		if (!clb_net[net_idx].net_power) {
-			clb_net[net_idx].net_power = new t_net_power;
-		}
-		clb_net[net_idx].net_power->probability =
-				vpack_net[clb_to_vpack_net_mapping[net_idx]].net_power->probability;
-		clb_net[net_idx].net_power->density =
-				vpack_net[clb_to_vpack_net_mapping[net_idx]].net_power->density;
+		clb_net_power[net_idx].probability =
+				vpack_net_power[clb_to_vpack_net_mapping[net_idx]].probability;
+		clb_net_power[net_idx].density =
+				vpack_net_power[clb_to_vpack_net_mapping[net_idx]].density;
 	}
 
 	/* Initialize RR Graph Structures */
@@ -1319,6 +1320,7 @@ boolean power_init(char * power_out_filepath,
 	power_sizing_init(arch);
 
 	//power_print_spice_comparison();
+//	power_print_callibration();
 
 	return error;
 }

@@ -491,8 +491,6 @@ typedef struct s_net {
 	unsigned int is_fixed : 1;
 	unsigned int is_global : 1;
 	unsigned int is_const_gen : 1;
-
-	t_net_power * net_power;
 } t_net;
 
 /* s_grid_tile is the minimum tile of the fpga                         

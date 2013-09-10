@@ -330,7 +330,7 @@ def xCLB(k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, crossbar_str):
             xprop("out_port", "ff[0:0].D")
             xcloseend()
         
-        if (frac_stages):  
+        if (frac_stages > 1):  
             if (num_FF == 1):
                 xbegin("pack_pattern");                
                 xprop("name", "bleF1A")

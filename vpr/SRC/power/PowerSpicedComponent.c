@@ -3,6 +3,7 @@
 #include <cfloat>
 #include <limits>
 #include <algorithm>
+#include <string>
 
 using namespace std;
 
@@ -73,8 +74,9 @@ PowerCallibSize * PowerCallibInputs::get_entry_bound(bool lower,
 	return NULL;
 }
 
-PowerSpicedComponent::PowerSpicedComponent(
+PowerSpicedComponent::PowerSpicedComponent(string component_name,
 		float (*usage_fn)(int num_inputs, float transistor_size)) {
+	name = component_name;
 	component_usage = usage_fn;
 
 	/* Always pad with a high and low entry */
@@ -227,4 +229,17 @@ void PowerSpicedComponent::callibrate(void) {
 
 bool PowerSpicedComponent::is_done_callibration(void) {
 	return done_callibration;
+}
+
+void PowerSpicedComponent::print(FILE * fp) {
+	fprintf(fp, "%s\n", name.c_str());
+	for (vector<PowerCallibInputs*>::iterator it = entries.begin() + 1;
+			it != entries.end() - 1; it++) {
+		fprintf(fp, "Num Inputs: %d\n", (*it)->num_inputs);
+		for (vector<PowerCallibSize*>::iterator it2 = (*it)->entries.begin()
+				+ 1; it2 != (*it)->entries.end() - 1; it2++) {
+			fprintf(fp, "  Transistor Size: %6f Factor: %3f\n",
+					(*it2)->transistor_size, (*it2)->factor);
+		}
+	}
 }

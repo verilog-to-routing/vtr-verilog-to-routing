@@ -86,7 +86,7 @@ float pin_dens(t_pb * pb, t_pb_graph_pin * pin) {
 		net_num = pb->rr_graph[pin->pin_count_in_cluster].net_num;
 
 		if (net_num != OPEN) {
-			density = vpack_net[net_num].net_power->density;
+			density = vpack_net_power[net_num].density;
 		}
 	}
 
@@ -102,7 +102,7 @@ float pin_prob(t_pb * pb, t_pb_graph_pin * pin) {
 		net_num = pb->rr_graph[pin->pin_count_in_cluster].net_num;
 
 		if (net_num != OPEN) {
-			prob = vpack_net[net_num].net_power->probability;
+			prob = vpack_net_power[net_num].probability;
 		}
 	}
 
@@ -421,7 +421,7 @@ float clb_net_density(int net_idx) {
 	if (net_idx == OPEN) {
 		return 0.;
 	} else {
-		return clb_net[net_idx].net_power->density;
+		return clb_net_power[net_idx].density;
 	}
 }
 
@@ -429,7 +429,7 @@ float clb_net_prob(int net_idx) {
 	if (net_idx == OPEN) {
 		return 0.;
 	} else {
-		return clb_net[net_idx].net_power->probability;
+		return clb_net_power[net_idx].probability;
 	}
 }
 

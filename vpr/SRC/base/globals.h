@@ -84,6 +84,7 @@ extern float ipin_mux_trans_size;
 extern int num_logical_nets, num_logical_blocks;
 extern int num_p_inputs, num_p_outputs;
 extern struct s_net *vpack_net;
+extern t_net_power * vpack_net_power;
 extern struct s_logical_block *logical_block;
 extern struct s_subckt *subckt;
 
