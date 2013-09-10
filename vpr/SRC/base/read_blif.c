@@ -1641,7 +1641,9 @@ static void compress_netlist(void) {
 			if (vpack_net[inet].node_block[0] != OPEN) {
 				index = net_remap[inet];
 				vpack_net[index] = vpack_net[inet];
-				vpack_net_power[index] = vpack_net_power[inet];
+				if (vpack_net_power) {
+					vpack_net_power[index] = vpack_net_power[inet];
+				}
 				for (ipin = 0; ipin <= vpack_net[index].num_sinks; ipin++) {
 					vpack_net[index].node_block[ipin] =
 							block_remap[vpack_net[index].node_block[ipin]];
