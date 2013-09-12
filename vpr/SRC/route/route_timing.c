@@ -229,6 +229,8 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		if (success) {
 
 			if (timing_analysis_enabled) {
+				load_timing_graph_net_delays(net_delay);
+				do_timing_analysis(slacks, FALSE, FALSE, FALSE);
 				float critical_path_delay = get_critical_path_delay();
 				vpr_printf_info("%9d %6.2f sec %8.5f ns\n", itry, time, critical_path_delay);
 				vpr_printf_info("Critical path: %g ns\n", critical_path_delay);
@@ -287,7 +289,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		
 		if (timing_analysis_enabled) {
 			float critical_path_delay = get_critical_path_delay();
-			vpr_printf_info("%9d %6.2f sec %8.5f ns\n", itry, time, critical_path_delay);
+			vpr_printf_info("%9d %6.2f sec %8.5f ns\n", itry, time, critical_path_delay);			
 		} else {
 			vpr_printf_info("%9d %6.2f sec\n", itry, time);
 		}
