@@ -456,8 +456,8 @@ struct s_pb_graph_node;
 /** Describes a pb graph edge, this is a "fat" edge which means it supports bused based connections
  * input_pins: array of pb_type graph input pins ptrs entering this edge
  * num_input_pins: Number of input pins entering this edge
- * output_pins: array of pb_type graph output pins ptrs entering this edge
- * num_output_pins: Number of output pins entering this edge
+ * output_pins: array of pb_type graph output pins ptrs exiting this edge
+ * num_output_pins: Number of output pins exiting this edge
  */
 struct s_pb_graph_edge {
 	t_pb_graph_pin **input_pins;
