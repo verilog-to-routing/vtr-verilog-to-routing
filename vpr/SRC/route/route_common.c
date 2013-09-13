@@ -1250,7 +1250,7 @@ void print_route(char *route_file) {
 
 }
 
-/* TODO: check if this is still necessary for speed */
+/* TODO: check if this is still working */
 void reserve_locally_used_opins(float pres_fac, boolean rip_up_local_opins,
 		t_ivec ** clb_opins_used_locally) {
 

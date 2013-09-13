@@ -97,8 +97,9 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 
 	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
 		if (g_clbs_nlist.net[inet].is_global == FALSE) {
-			for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin)
+			for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
 				slacks->timing_criticality[inet][ipin] = init_timing_criticality_val;
+			}
 #ifdef PATH_COUNTING
 				slacks->path_criticality[inet][ipin] = init_timing_criticality_val;
 #endif		
@@ -477,12 +478,6 @@ boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_cr
 		highfanout_rlim = mark_node_expansion_by_bin(inet, target_node,
 				rt_root);
 
-		if(itarget > 1) {
-			/* opin already determined, do not use another opin */
-			assert(rr_node[rt_root->inode].type == SOURCE);
-			rt_root->re_expand = FALSE;
-		}
-
 		add_route_tree_to_heap(rt_root, target_node, target_criticality,
 				astar_fac);
 
@@ -668,7 +663,7 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 
 		new_back_pcost = old_back_pcost
 				+ (1. - criticality_fac) * get_rr_cong_cost(to_node);
-
+		
 		iswitch = rr_node[inode].switches[iconn];
 		if (switch_inf[iswitch].buffered) {
 			new_R_upstream = switch_inf[iswitch].R;
