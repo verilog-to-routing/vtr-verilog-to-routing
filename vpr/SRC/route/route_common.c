@@ -724,8 +724,7 @@ alloc_saved_routing(t_ivec ** clb_opins_used_locally,
 	return (best_routing);
 }
 
-/* TODO: probably now this whole function can be removed, must check correctness of routing so I will leave everything as is
- until I can golden check the routing before I do this massive code rewrite and performance optimizations */
+/* TODO: super hacky, jluu comment, I need to rethink this whole function, without it, logically equivalent output pins incorrectly use more pins than needed.  I force that CLB output pin uses at most one output pin  */
 static t_ivec **
 alloc_and_load_clb_opins_used_locally(void) {
 
@@ -750,13 +749,20 @@ alloc_and_load_clb_opins_used_locally(void) {
 			clb_opins_used_locally[iblk][iclass].nelem = 0;
 
 		for (clb_pin = 0; clb_pin < type->num_pins; clb_pin++) {
-			/* Subblock output used only locally, but must connect to a CLB OPIN?  */
-			if (block[iblk].nets[clb_pin] != OPEN
-					&& g_clbs_nlist.net[block[iblk].nets[clb_pin]].num_sinks() == 0) {
+			// another hack to avoid I/Os, whole function needs a rethink
+			if(type == IO_TYPE) {
+				continue;
+			}
+		
+			if ((block[iblk].nets[clb_pin] != OPEN
+					&& g_clbs_nlist.net[block[iblk].nets[clb_pin]].num_sinks() == 0) || block[iblk].nets[clb_pin] == OPEN
+				) {
 				iclass = type->pin_class[clb_pin];
-				/* Check to make sure class is in same range as that assigned to block */
-				assert(iclass >= class_low && iclass <= class_high);
-				clb_opins_used_locally[iblk][iclass].nelem++;
+				if(type->class_inf[iclass].type == DRIVER) {
+					/* Check to make sure class is in same range as that assigned to block */
+					assert(iclass >= class_low && iclass <= class_high);
+					clb_opins_used_locally[iblk][iclass].nelem++;
+				}
 			}
 		}
 
@@ -1250,7 +1256,7 @@ void print_route(char *route_file) {
 
 }
 
-/* TODO: check if this is still working */
+/* TODO: jluu: I now always enforce logically equivalent outputs to use at most one output pin, should rethink how to do this */
 void reserve_locally_used_opins(float pres_fac, boolean rip_up_local_opins,
 		t_ivec ** clb_opins_used_locally) {
 
