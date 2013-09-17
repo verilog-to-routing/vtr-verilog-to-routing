@@ -197,6 +197,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 	    <mux name="mux2" input="lut6.out ble6.in_C" output="ff.D">
 			  <delay_constant max="1.33594e-11" in_port="lut6.out" out_port="ff.D" />
 			  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff.D" />
+        <pack_pattern name="ble6" in_port="lut6.out" out_port="ff.D"/>
 			</mux>
 	        <!-- BLE output (local) -->                  
 			<mux name="mux3" input="ff.Q lut6.out" output="ble6.out_local">

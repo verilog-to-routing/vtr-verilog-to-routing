@@ -81,6 +81,9 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 			<cb type="pattern">1 1 1 1</cb>
 			</segment>
 		</segmentlist>
+    <directlist>
+      <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+    </directlist>
 
 	  <complexblocklist>
        <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
@@ -197,6 +200,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 	    <mux name="mux2" input="lut6.out ble6.in_C" output="ff.D">
 			  <delay_constant max="1.33594e-11" in_port="lut6.out" out_port="ff.D" />
 			  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff.D" />
+        <pack_pattern name="ble6" in_port="lut6.out" out_port="ff.D"/>
 			</mux>
 	        <!-- BLE output (local) -->                  
 			<mux name="mux3" input="ff.Q lut6.out" output="ble6.out_local">
@@ -245,7 +249,10 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
           <direct name="clbouts1" input="ble6[9:0].out_routing" output="clb.O"/>
         </interconnect>
 
-        <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.05"/>
+        <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.05">
+          <pin name="cin" fc_type="frac" fc_val="0"/>
+          <pin name="cout" fc_type="frac" fc_val="0"/>
+        </fc>
 
         <!-- Two sided connectivity CLB architecture--> 
         <pinlocations pattern="custom">
