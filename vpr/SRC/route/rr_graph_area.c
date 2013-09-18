@@ -9,13 +9,20 @@ using namespace std;
 #include "rr_graph_util.h"
 #include "rr_graph_area.h"
 
+/* Select which area equation to use */
+enum e_trans_area_eq {AREA_ORIGINAL, AREA_IMPROVED};
+static const e_trans_area_eq trans_area_eq = AREA_IMPROVED;
+
+/* Include track buffers or not */
+static const boolean include_track_buffers = FALSE;
+
 /************************ Subroutines local to this module *******************/
 
 static void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
-		float R_minW_pmos);
+		float R_minW_pmos, const float trans_sram_bit);
 
 static void count_unidir_routing_transistors(t_segment_inf * segment_inf,
-		float R_minW_nmos, float R_minW_pmos);
+		float R_minW_nmos, float R_minW_pmos, const float trans_sram_bit);
 
 static float get_cblock_trans(int *num_inputs_to_cblock,
 		int max_inputs_to_cblock, float trans_cblock_to_lblock_buf,
@@ -51,16 +58,20 @@ void count_routing_transistors(enum e_directionality directionality,
 	 * I assume a minimum width transistor takes 1 unit of area.  A double-width *
 	 * transistor takes the twice the diffusion width, but the same spacing, so  *
 	 * I assume it takes 1.5x the area of a minimum-width transitor.             */
+	
+	/* Area per SRAM cell (in minimum-width transistor areas) */
+	const float trans_sram_bit = 4.; 
+	 
 	if (directionality == BI_DIRECTIONAL) {
-		count_bidir_routing_transistors(num_switch, R_minW_nmos, R_minW_pmos);
+		count_bidir_routing_transistors(num_switch, R_minW_nmos, R_minW_pmos, trans_sram_bit);
 	} else {
 		assert(directionality == UNI_DIRECTIONAL);
-		count_unidir_routing_transistors(segment_inf, R_minW_nmos, R_minW_pmos);
+		count_unidir_routing_transistors(segment_inf, R_minW_nmos, R_minW_pmos, trans_sram_bit);
 	}
 }
 
 void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
-		float R_minW_pmos) {
+		float R_minW_pmos, const float trans_sram_bit) {
 
 	/* Tri-state buffers are designed as a buffer followed by a pass transistor. *
 	 * I make Rbuffer = Rpass_transitor = 1/2 Rtri-state_buffer.                 *
@@ -95,7 +106,6 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 	int from_node, to_node, iedge, num_edges, maxlen;
 	int iswitch, i, j, iseg, max_inputs_to_cblock;
 	float input_cblock_trans, shared_opin_buffer_trans;
-	const float trans_sram_bit = 6.;
 
 	/* Two variables below are the accumulator variables that add up all the    *
 	 * transistors in the routing.  Make doubles so that they don't stop        *
@@ -122,8 +132,12 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 	 * drive a fanout of up to 16 pretty nicely -- should cover a reasonable * 
 	 * wiring C plus the fanout.                                             */
 
-	trans_track_to_cblock_buf = trans_per_buf(R_minW_nmos / 4., R_minW_nmos,
-			R_minW_pmos);
+	if (include_track_buffers) {
+		trans_track_to_cblock_buf = trans_per_buf(R_minW_nmos / 4., R_minW_nmos,
+				R_minW_pmos);
+	} else {
+		trans_track_to_cblock_buf = 0;
+	}
 
 	trans_cblock_to_lblock_buf = trans_per_buf(R_minW_nmos / 4., R_minW_nmos,
 			R_minW_pmos);
@@ -286,7 +300,7 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 }
 
 void count_unidir_routing_transistors(t_segment_inf * segment_inf,
-		float R_minW_nmos, float R_minW_pmos) {
+		float R_minW_nmos, float R_minW_pmos, const float trans_sram_bit) {
 	boolean * cblock_counted; /* [0..max(nx,ny)] -- 0th element unused. */
 	int *num_inputs_to_cblock; /* [0..num_rr_nodes-1], but all entries not    */
 
@@ -296,7 +310,6 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 	int i, j, iseg, from_node, to_node, iedge, num_edges, maxlen;
 	int max_inputs_to_cblock, cost_index, seg_type, switch_type;
 	float input_cblock_trans;
-	const float trans_sram_bit = 6.;
 
 	/* Two variables below are the accumulator variables that add up all the    *
 	 * transistors in the routing.  Make doubles so that they don't stop        *
@@ -307,6 +320,7 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 	 * the partial sums together.                                               */
 
 	double ntrans;
+
 
 	/* Buffers from the routing to the ipin cblock inputs, and from the ipin    *
 	 * cblock outputs to the logic block, respectively.  Assume minimum size n  *
@@ -321,8 +335,12 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 	 * drive a fanout of up to 16 pretty nicely -- should cover a reasonable * 
 	 * wiring C plus the fanout.                                             */
 
-	trans_track_to_cblock_buf = trans_per_buf(R_minW_nmos / 4., R_minW_nmos,
-			R_minW_pmos);
+	if (include_track_buffers) {
+		trans_track_to_cblock_buf = trans_per_buf(R_minW_nmos / 4., R_minW_nmos,
+				R_minW_pmos);
+	} else {
+		trans_track_to_cblock_buf = 0;
+	}
 
 	trans_cblock_to_lblock_buf = trans_per_buf(R_minW_nmos / 4., R_minW_nmos,
 			R_minW_pmos);
@@ -346,6 +364,7 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 			switch_type = segment_inf[seg_type].wire_switch;
 			assert(
 					segment_inf[seg_type].wire_switch == segment_inf[seg_type].opin_switch);
+			/* With unidir, routing wires and opins both connect through routing mux */
 			assert(switch_inf[switch_type].mux_trans_size >= 1);
 			/* can't be smaller than min sized transistor */
 
@@ -358,9 +377,10 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 			/* Each multiplexer contains all the fan-in to that routing node */
 			/* Add up area of multiplexer */
 			ntrans += trans_per_mux(rr_node[from_node].fan_in, trans_sram_bit,
-					switch_inf[switch_type].mux_trans_size);
+					switch_inf[switch_type].mux_trans_size);			
 
 			/* Add up area of buffer */
+			/* If buffer size not specified, compute using R otherwise just add to ntrans */
 			if (switch_inf[switch_type].buf_size == 0) {
 				ntrans += trans_per_buf(switch_inf[switch_type].R, R_minW_nmos,
 						R_minW_pmos);
@@ -368,6 +388,7 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 				ntrans += switch_inf[switch_type].buf_size;
 			}
 
+			/* Increment number of inputs per cblock if IPIN */
 			for (iedge = 0; iedge < num_edges; iedge++) {
 
 				to_node = rr_node[from_node].edges[iedge];
@@ -458,7 +479,6 @@ static float get_cblock_trans(int *num_inputs_to_cblock,
 	float *trans_per_cblock; /* [0..max_inputs_to_cblock] */
 	float trans_count;
 	int i, num_inputs;
-
 	trans_per_cblock = (float *) my_malloc(
 			(max_inputs_to_cblock + 1) * sizeof(float));
 
@@ -473,12 +493,12 @@ static float get_cblock_trans(int *num_inputs_to_cblock,
 				ipin_mux_trans_size) + trans_cblock_to_lblock_buf;
 
 	trans_count = 0.;
-
+	
 	for (i = 0; i < num_rr_nodes; i++) {
 		num_inputs = num_inputs_to_cblock[i];
 		trans_count += trans_per_cblock[num_inputs];
 	}
-
+	
 	free(trans_per_cblock);
 	return (trans_count);
 }
@@ -585,7 +605,7 @@ static float trans_per_mux(int num_inputs, float trans_sram_bit,
 	 * levels.                                                                  */
 	float ntrans, sram_trans, pass_trans;
 	int num_second_stage_trans;
-
+	
 	if (num_inputs <= 1) {
 		return (0);
 	} else if (num_inputs == 2) {
@@ -612,6 +632,7 @@ static float trans_per_mux(int num_inputs, float trans_sram_bit,
 	}
 
 	ntrans = pass_trans + sram_trans;
+
 	return (ntrans);
 }
 
@@ -629,12 +650,26 @@ static float trans_per_R(float Rtrans, float R_minW_trans) {
 	if (Rtrans >= R_minW_trans)
 		return (1.);
 
+	/* Old area model (developed with 0.35um process rules) */
 	/* Area = minimum width area (1) + 0.5 for each additional unit of width.  *
 	 * The 50% factor takes into account the "overlapping" that occurs in      *
 	 * horizontally-paralleled transistors, and the need for only one spacing, *
 	 * not two (i.e. two min W transistors need two spaces; a 2W transistor    *
 	 * needs only 1).                                                          */
 
-	trans_area = 0.5 * R_minW_trans / Rtrans + 0.5;
+	/* New area model (developed with 65nm process rules) */
+	/* These more advanced process rules change how much area we need to add   *
+	 * for each additional unit of width vs. the old area model.               */
+
+	if (trans_area_eq == AREA_ORIGINAL) {
+		/* Old transistor area estimation equation */
+		trans_area = 0.5 * R_minW_trans / Rtrans + 0.5;
+	} else {
+		/* New transistor area estimation equation */
+		float drive_strength;
+		drive_strength = R_minW_trans / Rtrans;
+		trans_area = 0.447 + 0.128*drive_strength + 0.391*sqrt(drive_strength);
+	}
+
 	return (trans_area);
 }
