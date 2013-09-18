@@ -3088,10 +3088,18 @@
 
                 <interconnect>
                   <!-- data inputs -->
-                  <direct name="dataa_in" input="mac_output.data_in[35:0]" output="mac_out.dataa"/>
-                  <direct name="datab_in" input="mac_output.data_in[71:36]" output="mac_out.datab"/>
-                  <direct name="datac_in" input="mac_output.data_in[107:72]" output="mac_out.datac"/>
-                  <direct name="datad_in" input="mac_output.data_in[143:108]" output="mac_out.datad"/>
+                  <direct name="dataa_in" input="mac_output.data_in[35:0]" output="mac_out.dataa">
+                    <pack_pattern name="mac_mult_to_mac_output1" in_port="mac_output.data_in[0:0]" out_port="mac_out.dataa[0:0]"/>
+                  </direct>
+                  <direct name="datab_in" input="mac_output.data_in[71:36]" output="mac_out.datab">
+                    <pack_pattern name="mac_mult_to_mac_output2" in_port="mac_output.data_in[36:36]" out_port="mac_out.datab[0:0]"/>
+                  </direct>
+                  <direct name="datac_in" input="mac_output.data_in[107:72]" output="mac_out.datac">
+                    <pack_pattern name="mac_mult_to_mac_output3" in_port="mac_output.data_in[72:72]" out_port="mac_out.datac[0:0]"/>
+                  </direct>
+                  <direct name="datad_in" input="mac_output.data_in[143:108]" output="mac_out.datad">
+                    <pack_pattern name="mac_mult_to_mac_output4" in_port="mac_output.data_in[108:108]" out_port="mac_out.datad[0:0]"/>
+                  </direct>
 
                   <!-- arithmetic chain input -->
                   <direct name="data_c5" input="mac_output.chain_in" output="mac_out.chainin"/>
@@ -3148,7 +3156,9 @@
 
                 <interconnect>
                   <!-- Data inputs -->
-                  <direct name="dataa_in" input="mac_output.data_in[35:0]" output="mac_out_output_only.dataa"/>
+                  <direct name="dataa_in" input="mac_output.data_in[35:0]" output="mac_out_output_only.dataa">
+                    <pack_pattern name="mac_mult_to_mac_output_only" in_port="mac_output.data_in[0:0]" out_port="mac_out_output_only.dataa[0:0]"/>
+                  </direct>
 
                   <!-- Clock -->
                   <direct name="clock_c1" input="mac_output.clk" output="mac_out_output_only.clk"/>
@@ -3836,10 +3846,19 @@
 
               <!-- MAC_OUTPUT Data In -->
               <!--<complete name="data_mac_mult_out_to_mac_output_in" input="mac_mult[3:0].dataout" output="mac_output.data_in"/>-->
-              <direct name="data_mac_mult0_out_to_mac_output_in" input="mac_mult[0].dataout" output="mac_output.data_in[35:0]"/>
-              <direct name="data_mac_mult1_out_to_mac_output_in" input="mac_mult[1].dataout" output="mac_output.data_in[71:36]"/>
-              <direct name="data_mac_mult2_out_to_mac_output_in" input="mac_mult[2].dataout" output="mac_output.data_in[107:72]"/>
-              <direct name="data_mac_mult3_out_to_mac_output_in" input="mac_mult[3].dataout" output="mac_output.data_in[143:108]"/>
+              <direct name="data_mac_mult0_out_to_mac_output_in" input="mac_mult[0].dataout[0:0]" output="mac_output.data_in[0:0]">
+                <pack_pattern name="mac_mult_to_mac_output1" in_port="mac_mult[0].dataout[0:0]" out_port="mac_output.data_in[0:0]"/>
+                <pack_pattern name="mac_mult_to_mac_output_only" in_port="mac_mult[0].dataout[0:0]" out_port="mac_output.data_in[0:0]"/>
+              </direct>
+              <direct name="data_mac_mult1_out_to_mac_output_in" input="mac_mult[1].dataout" output="mac_output.data_in[71:36]">
+                <pack_pattern name="mac_mult_to_mac_output2" in_port="mac_mult[1].dataout[0:0]" out_port="mac_output.data_in[36:36]"/>
+              </direct>
+              <direct name="data_mac_mult2_out_to_mac_output_in" input="mac_mult[2].dataout" output="mac_output.data_in[107:72]">
+                <pack_pattern name="mac_mult_to_mac_output3" in_port="mac_mult[2].dataout[0:0]" out_port="mac_output.data_in[72:72]"/>
+              </direct>
+              <direct name="data_mac_mult3_out_to_mac_output_in" input="mac_mult[3].dataout" output="mac_output.data_in[143:108]">
+                <pack_pattern name="mac_mult_to_mac_output4" in_port="mac_mult[3].dataout[0:0]" out_port="mac_output.data_in[108:108]"/>
+              </direct>
 
 
               <!-- mac_mult control in -->
