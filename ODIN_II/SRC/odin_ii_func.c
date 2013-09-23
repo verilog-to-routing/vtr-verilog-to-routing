@@ -163,7 +163,7 @@ void do_high_level_synthesis()
 	partial_map_top(verilog_netlist);
 
 	/* Disabled due to the QoR being affected */
-	//remove_unused_logic(verilog_netlist);
+	remove_unused_logic(verilog_netlist);
 
 	#ifdef VPR5
 	/* check for problems in the partial mapped netlist */

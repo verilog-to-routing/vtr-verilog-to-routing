@@ -3,6 +3,19 @@
 TEST_DIR="REGRESSION_TESTS/BENCHMARKS/MICROBENCHMARKS"
 ARCH="../libarchfpga/arch/sample_arch.xml"
 
+
+while getopts a: flag; do
+  case $flag in
+    a)
+      ARCH=$OPTARG;
+      ;;
+    ?)
+      echo "Invalid option: $flag";
+      ;;
+  esac
+done
+
+
 for benchmark in $TEST_DIR/*.v
 do 
 	basename=${benchmark%.v}
