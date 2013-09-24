@@ -10,6 +10,8 @@ Soft logic blocks use 50% depopulated crossbars
 
 Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but since VPR is in min W transistor areas, no area scaling is needed
 
+carry chain from Safeen's CMOS ripple carry adder not gate boosted
+
 -->
   
   <architecture>
@@ -128,7 +130,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
           </interconnect>
         </mode>
 
-        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
+        <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.10"/>
 
         <!-- IOs go on the periphery of the FPGA, for consistency, 
           make it physically equivalent on all sides so that only one definition of I/Os is needed.
@@ -214,7 +216,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
               1.51e-10
             </delay_matrix>      
           </pb_type>
-          <pb_type name="adder" blif_model=".adder" num_pb="1">
+          <pb_type name="adder" blif_model=".subckt adder" num_pb="1">
             <input name="a" num_pins="1"/>
             <input name="b" num_pins="1"/>
             <input name="cin" num_pins="1"/>
@@ -226,7 +228,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
             <delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout"/>
             <delay_constant max="56e-12" in_port="adder.a" out_port="adder.cout"/>
             <delay_constant max="56e-12" in_port="adder.b" out_port="adder.cout"/>
-            <delay_constant max="11-12" in_port="adder.cin" out_port="adder.cout"/>
+            <delay_constant max="11e-12" in_port="adder.cin" out_port="adder.cout"/>
           </pb_type>
           <interconnect>
             <direct name="direct1" input="arithlut.in[5:0]" output="lut6[0:0].in"/>
@@ -537,7 +539,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 
       </mode>
 
-      <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
+      <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.10"/>
       <pinlocations pattern="spread"/>
 
       <!-- Place this multiplier block every 8 columns from (and including) the sixth column -->
@@ -1140,7 +1142,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
       </mode>
 
       <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
-      <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
+      <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.10"/>
       <pinlocations pattern="spread"/>
 
       <!-- Place this memory block every 8 columns from (and including) the second column -->

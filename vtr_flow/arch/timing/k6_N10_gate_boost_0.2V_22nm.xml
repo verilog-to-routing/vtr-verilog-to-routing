@@ -112,7 +112,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
           </interconnect>
         </mode>
 
-        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
+        <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.10"/>
 
         <!-- IOs go on the periphery of the FPGA, for consistency, 
           make it physically equivalent on all sides so that only one definition of I/Os is needed.
@@ -437,7 +437,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 
       </mode>
 
-      <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
+      <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.10"/>
       <pinlocations pattern="spread"/>
 
       <!-- Place this multiplier block every 8 columns from (and including) the sixth column -->
@@ -1040,7 +1040,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
       </mode>
 
       <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
-      <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
+      <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.10"/>
       <pinlocations pattern="spread"/>
 
       <!-- Place this memory block every 8 columns from (and including) the second column -->
