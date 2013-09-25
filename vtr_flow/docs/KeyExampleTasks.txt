@@ -1,0 +1,26 @@
+**************************************************************************************************
+* Example VTR experiments complete with scripts, benchmarks, architectures, and expected results
+**************************************************************************************************
+
+Starting out: 
+
+	basic_flow - Run the whole VTR flow to map a simple Verilog circuit to an FPGA architecture
+
+Advanced (Flagshp experiment):
+	
+	timing - Run the flagship VTR benchmarks on our comprehensive, realistic architecture file
+
+	timing_chain - Same as above but this time with carry chains
+
+Legacy:
+
+	regression_mcnc - Run VTR on the historical MCNC benchmarks on a legacy architecture file 
+			(Note: This is only useful for comparing to the past, it is not realistic in the modern world)
+
+
+Custom, unique logic blocks:
+
+	regression_titan\titan_small - Simplified Altera Stratix IV (commercial FPGA) architecture capture
+
+	regression_fpu_hard_block_arch - Custom hard FPU logic block architecture
+
