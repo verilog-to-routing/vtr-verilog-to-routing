@@ -15,6 +15,9 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 		INP const struct s_block block_list[], INP int L_nx, INP int L_ny,
 		INOUTP struct s_grid_tile **L_grid);
 
+/**************************************************************
+* Intra-Logic Block Utility Functions
+**************************************************************/
 int get_max_primitives_in_pb_type(t_pb_type *pb_type);
 int get_max_depth_of_pb_type(t_pb_type *pb_type);
 int get_max_nets_in_pb_type(const t_pb_type *pb_type);
@@ -23,6 +26,10 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(t_model_ports *model_p
 t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_net(int inet, int ipin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_g_clbs_nlist_net(int inet, int ipin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(int iblock, int ipin);
+t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_type_ptr type);
+void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
+
+
 float compute_primitive_base_cost(INP t_pb_graph_node *primitive);
 int num_ext_inputs_logical_block(int iblk);
 

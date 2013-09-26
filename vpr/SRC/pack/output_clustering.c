@@ -18,20 +18,17 @@ using namespace std;
 #include "cluster_router.h"
 #include "output_clustering.h"
 #include "read_xml_arch_file.h"
+#include "vpr_utils.h"
 
 #define LINELENGTH 1024
 #define TAB_LENGTH 4
 
-/****************** Subroutines local to this module ************************/
+/****************** Static variables local to this module ************************/
+
+static t_pb_graph_pin ***pb_graph_pin_lookup_from_index_by_type = NULL; /* [0..num_types-1][0..num_pb_graph_pins-1] lookup pointer to pb_graph_pin from pb_graph_pin index */
+
 
 /**************** Subroutine definitions ************************************/
-
-static void print_tabs(FILE *fpout, int num_tabs) {
-	int i;
-	for (i = 0; i < num_tabs; i++) {
-		fprintf(fpout, "\t");
-	}
-}
 
 static void print_string(const char *str_ptr, int *column, int num_tabs, FILE * fpout) {
 
@@ -76,7 +73,7 @@ static void print_net_name(int inet, int *column, int num_tabs, FILE * fpout) {
 	print_string(str_ptr, column, num_tabs, fpout);
 }
 
-static void print_interconnect(int inode, int *column, int num_tabs,
+static void print_interconnect(t_type_ptr type, int inode, int *column, int num_tabs, t_pb_pin_route_stats *pb_pin_route_stats, 
 		FILE * fpout) {
 
 	/* This routine prints out the g_atoms_nlist.net name (or open) and limits the    *
@@ -90,68 +87,134 @@ static void print_interconnect(int inode, int *column, int num_tabs,
 	int prev_node, prev_edge;
 	int len;
 
-	if (rr_node[inode].net_num == OPEN) {
-		print_string("open", column, num_tabs, fpout);
-	} else {
-		str_ptr = NULL;
-		prev_node = rr_node[inode].prev_node;
-		prev_edge = rr_node[inode].prev_edge;
-
-		if (prev_node == OPEN
-				&& rr_node[inode].pb_graph_pin->port->parent_pb_type->num_modes
-						== 0
-				&& rr_node[inode].pb_graph_pin->port->type == OUT_PORT) { /* This is a primitive output */
-			print_net_name(rr_node[inode].net_num, column, num_tabs, fpout);
+	if(pb_pin_route_stats == NULL) { // jedit delete this branch later when intra-logic block refactoring is done
+		if (rr_node[inode].net_num == OPEN) {
+			print_string("open", column, num_tabs, fpout);
 		} else {
-			name =
-					rr_node[prev_node].pb_graph_pin->output_edges[prev_edge]->interconnect->name;
-			if (rr_node[prev_node].pb_graph_pin->port->parent_pb_type->depth
-					>= rr_node[inode].pb_graph_pin->port->parent_pb_type->depth) {
-				/* Connections from siblings or children should have an explicit index, connections from parent does not need an explicit index */
-				len =
-						strlen(
-								rr_node[prev_node].pb_graph_pin->parent_node->pb_type->name)
-								+ rr_node[prev_node].pb_graph_pin->parent_node->placement_index
-										/ 10
-								+ strlen(
-										rr_node[prev_node].pb_graph_pin->port->name)
-								+ rr_node[prev_node].pb_graph_pin->pin_number
-										/ 10 + strlen(name) + 11;
-				str_ptr = (char*)my_malloc(len * sizeof(char));
-				sprintf(str_ptr, "%s[%d].%s[%d]->%s ",
-						rr_node[prev_node].pb_graph_pin->parent_node->pb_type->name,
-						rr_node[prev_node].pb_graph_pin->parent_node->placement_index,
-						rr_node[prev_node].pb_graph_pin->port->name,
-						rr_node[prev_node].pb_graph_pin->pin_number, name);
+			str_ptr = NULL;
+			prev_node = rr_node[inode].prev_node;
+			prev_edge = rr_node[inode].prev_edge;
+
+			if (prev_node == OPEN
+					&& rr_node[inode].pb_graph_pin->port->parent_pb_type->num_modes
+							== 0
+					&& rr_node[inode].pb_graph_pin->port->type == OUT_PORT) { /* This is a primitive output */
+				print_net_name(rr_node[inode].net_num, column, num_tabs, fpout);
 			} else {
-				len =
-						strlen(
-								rr_node[prev_node].pb_graph_pin->parent_node->pb_type->name)
-								+ strlen(
-										rr_node[prev_node].pb_graph_pin->port->name)
-								+ rr_node[prev_node].pb_graph_pin->pin_number
-										/ 10 + strlen(name) + 8;
-				str_ptr = (char*)my_malloc(len * sizeof(char));
-				sprintf(str_ptr, "%s.%s[%d]->%s ",
-						rr_node[prev_node].pb_graph_pin->parent_node->pb_type->name,
-						rr_node[prev_node].pb_graph_pin->port->name,
-						rr_node[prev_node].pb_graph_pin->pin_number, name);
+				name =
+						rr_node[prev_node].pb_graph_pin->output_edges[prev_edge]->interconnect->name;
+				if (rr_node[prev_node].pb_graph_pin->port->parent_pb_type->depth
+						>= rr_node[inode].pb_graph_pin->port->parent_pb_type->depth) {
+					/* Connections from siblings or children should have an explicit index, connections from parent does not need an explicit index */
+					len =
+							strlen(
+									rr_node[prev_node].pb_graph_pin->parent_node->pb_type->name)
+									+ rr_node[prev_node].pb_graph_pin->parent_node->placement_index
+											/ 10
+									+ strlen(
+											rr_node[prev_node].pb_graph_pin->port->name)
+									+ rr_node[prev_node].pb_graph_pin->pin_number
+											/ 10 + strlen(name) + 11;
+					str_ptr = (char*)my_malloc(len * sizeof(char));
+					sprintf(str_ptr, "%s[%d].%s[%d]->%s ",
+							rr_node[prev_node].pb_graph_pin->parent_node->pb_type->name,
+							rr_node[prev_node].pb_graph_pin->parent_node->placement_index,
+							rr_node[prev_node].pb_graph_pin->port->name,
+							rr_node[prev_node].pb_graph_pin->pin_number, name);
+				} else {
+					len =
+							strlen(
+									rr_node[prev_node].pb_graph_pin->parent_node->pb_type->name)
+									+ strlen(
+											rr_node[prev_node].pb_graph_pin->port->name)
+									+ rr_node[prev_node].pb_graph_pin->pin_number
+											/ 10 + strlen(name) + 8;
+					str_ptr = (char*)my_malloc(len * sizeof(char));
+					sprintf(str_ptr, "%s.%s[%d]->%s ",
+							rr_node[prev_node].pb_graph_pin->parent_node->pb_type->name,
+							rr_node[prev_node].pb_graph_pin->port->name,
+							rr_node[prev_node].pb_graph_pin->pin_number, name);
+				}
+				print_string(str_ptr, column, num_tabs, fpout);
 			}
-			print_string(str_ptr, column, num_tabs, fpout);
+			if (str_ptr)
+				free(str_ptr);
 		}
-		if (str_ptr)
-			free(str_ptr);
+	} else {
+		if (pb_pin_route_stats[inode].atom_net_idx == OPEN) {
+			print_string("open", column, num_tabs, fpout);
+		} else {
+			str_ptr = NULL;
+			prev_node = pb_pin_route_stats[inode].prev_pb_pin_id;
+
+			if (prev_node == OPEN) {
+				/* No previous driver implies that this is either a top-level input pin or a primitive output pin */
+				t_pb_graph_pin *cur_pin = pb_graph_pin_lookup_from_index_by_type[type->index][inode];
+				assert(cur_pin->parent_node->pb_type->parent_mode == NULL || 
+					   (cur_pin->parent_node->pb_type->num_modes == 0 && cur_pin->port->type == OUT_PORT)
+					  );
+				print_net_name(pb_pin_route_stats[inode].atom_net_idx, column, num_tabs, fpout);
+			} else {
+				t_pb_graph_pin *cur_pin = pb_graph_pin_lookup_from_index_by_type[type->index][inode];
+				t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
+			
+				for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
+					assert(prev_pin->output_edges[prev_edge]->num_output_pins == 1);
+					if(prev_pin->output_edges[prev_edge]->output_pins[0]->pin_count_in_cluster == inode) {
+						break;
+					}
+				}
+				assert(prev_edge < prev_pin->num_output_edges);
+
+				name =	prev_pin->output_edges[prev_edge]->interconnect->name;
+				if (prev_pin->port->parent_pb_type->depth
+						>= cur_pin->port->parent_pb_type->depth) {
+					/* Connections from siblings or children should have an explicit index, connections from parent does not need an explicit index */
+					len =
+							strlen(
+									prev_pin->parent_node->pb_type->name)
+									+ prev_pin->parent_node->placement_index
+											/ 10
+									+ strlen(
+											prev_pin->port->name)
+									+ prev_pin->pin_number
+											/ 10 + strlen(name) + 11;
+					str_ptr = (char*)my_malloc(len * sizeof(char));
+					sprintf(str_ptr, "%s[%d].%s[%d]->%s ",
+							prev_pin->parent_node->pb_type->name,
+							prev_pin->parent_node->placement_index,
+							prev_pin->port->name,
+							prev_pin->pin_number, name);
+				} else {
+					len =
+							strlen(
+									prev_pin->parent_node->pb_type->name)
+									+ strlen(
+											prev_pin->port->name)
+									+ prev_pin->pin_number
+											/ 10 + strlen(name) + 8;
+					str_ptr = (char*)my_malloc(len * sizeof(char));
+					sprintf(str_ptr, "%s.%s[%d]->%s ",
+							prev_pin->parent_node->pb_type->name,
+							prev_pin->port->name,
+							prev_pin->pin_number, name);
+				}
+				print_string(str_ptr, column, num_tabs, fpout);
+			}
+			if (str_ptr)
+				free(str_ptr);
+		}
 	}
 }
 
-static void print_open_pb_graph_node(t_pb_graph_node * pb_graph_node,
-		int pb_index, boolean is_used, int tab_depth, FILE * fpout) {
+static void print_open_pb_graph_node(t_type_ptr type, t_pb_graph_node * pb_graph_node,
+		int pb_index, boolean is_used, t_pb_pin_route_stats *pb_pin_route_stats, int tab_depth, FILE * fpout) {
 	int column = 0;
 	int i, j, k, m;
 	const t_pb_type * pb_type, *child_pb_type;
 	t_mode * mode = NULL;
 	int prev_edge, prev_node;
-	t_pb_graph_pin *pb_graph_pin;
+	t_pb_graph_pin *pb_graph_pin = NULL;
 	int mode_of_edge, port_index, node_index;
 
 	mode_of_edge = UNDEFINED;
@@ -161,49 +224,316 @@ static void print_open_pb_graph_node(t_pb_graph_node * pb_graph_node,
 	print_tabs(fpout, tab_depth);
 
 	if (is_used) {
-		/* Determine mode if applicable */
-		port_index = 0;
-		for (i = 0; i < pb_type->num_ports; i++) {
-			if (pb_type->ports[i].type == OUT_PORT) {
-				assert(!pb_type->ports[i].is_clock);
-				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-					node_index =
-							pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
-					if (pb_type->num_modes > 0
-							&& rr_node[node_index].net_num != OPEN) {
-						prev_edge = rr_node[node_index].prev_edge;
-						prev_node = rr_node[node_index].prev_node;
-						pb_graph_pin = rr_node[prev_node].pb_graph_pin;
-						mode_of_edge =
-								pb_graph_pin->output_edges[prev_edge]->interconnect->parent_mode_index;
-						assert(
-								mode == NULL || &pb_type->modes[mode_of_edge] == mode);
-						mode = &pb_type->modes[mode_of_edge];
+		if(pb_pin_route_stats == NULL) { // jedit delete this branch later when intra-logic block routing refactoring is complete
+			/* Determine mode if applicable */
+			port_index = 0;
+			for (i = 0; i < pb_type->num_ports; i++) {
+				if (pb_type->ports[i].type == OUT_PORT) {
+					assert(!pb_type->ports[i].is_clock);
+					for (j = 0; j < pb_type->ports[i].num_pins; j++) {
+						node_index =
+								pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
+						if (pb_type->num_modes > 0
+								&& rr_node[node_index].net_num != OPEN) {
+							prev_edge = rr_node[node_index].prev_edge;
+							prev_node = rr_node[node_index].prev_node;
+							pb_graph_pin = rr_node[prev_node].pb_graph_pin;
+							mode_of_edge =
+									pb_graph_pin->output_edges[prev_edge]->interconnect->parent_mode_index;
+							assert(
+									mode == NULL || &pb_type->modes[mode_of_edge] == mode);
+							mode = &pb_type->modes[mode_of_edge];
+						}
+					}
+					port_index++;
+				}
+			}
+
+			assert(mode != NULL && mode_of_edge != UNDEFINED);
+			fprintf(fpout,
+					"<block name=\"open\" instance=\"%s[%d]\" mode=\"%s\">\n",
+					pb_graph_node->pb_type->name, pb_index, mode->name);
+
+			print_tabs(fpout, tab_depth);
+			fprintf(fpout, "\t<inputs>\n");
+			port_index = 0;
+			for (i = 0; i < pb_type->num_ports; i++) {
+				if (!pb_type->ports[i].is_clock
+						&& pb_type->ports[i].type == IN_PORT) {
+					print_tabs(fpout, tab_depth);
+					fprintf(fpout, "\t\t<port name=\"%s\">",
+							pb_graph_node->pb_type->ports[i].name);
+					for (j = 0; j < pb_type->ports[i].num_pins; j++) {
+						node_index =
+								pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
+						print_interconnect(type, node_index, &column, tab_depth + 2, pb_pin_route_stats,
+								fpout);
+					}
+					fprintf(fpout, "</port>\n");
+					port_index++;
+				}
+			}
+			print_tabs(fpout, tab_depth);
+			fprintf(fpout, "\t</inputs>\n");
+
+			column = tab_depth * TAB_LENGTH + 8; /* Next column I will write to. */
+			print_tabs(fpout, tab_depth);
+			fprintf(fpout, "\t<outputs>\n");
+			port_index = 0;
+			for (i = 0; i < pb_type->num_ports; i++) {
+				if (pb_type->ports[i].type == OUT_PORT) {
+					print_tabs(fpout, tab_depth);
+					fprintf(fpout, "\t\t<port name=\"%s\">",
+							pb_graph_node->pb_type->ports[i].name);
+					assert(!pb_type->ports[i].is_clock);
+					for (j = 0; j < pb_type->ports[i].num_pins; j++) {
+						node_index =
+								pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
+						print_interconnect(type, node_index, &column, tab_depth + 2, pb_pin_route_stats,
+								fpout);
+					}
+					fprintf(fpout, "</port>\n");
+					port_index++;
+				}
+			}
+			print_tabs(fpout, tab_depth);
+			fprintf(fpout, "\t</outputs>\n");
+
+			column = tab_depth * TAB_LENGTH + 8; /* Next column I will write to. */
+			print_tabs(fpout, tab_depth);
+			fprintf(fpout, "\t<clocks>\n");
+			port_index = 0;
+			for (i = 0; i < pb_type->num_ports; i++) {
+				if (pb_type->ports[i].is_clock
+						&& pb_type->ports[i].type == IN_PORT) {
+					print_tabs(fpout, tab_depth);
+					fprintf(fpout, "\t\t<port name=\"%s\">",
+							pb_graph_node->pb_type->ports[i].name);
+					for (j = 0; j < pb_type->ports[i].num_pins; j++) {
+						node_index =
+								pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
+						print_interconnect(type, node_index, &column, tab_depth + 2, pb_pin_route_stats,
+								fpout);
+					}
+					fprintf(fpout, "</port>\n");
+					port_index++;
+				}
+			}
+			print_tabs(fpout, tab_depth);
+			fprintf(fpout, "\t</clocks>\n");
+
+			if (pb_type->num_modes > 0) {
+				for (i = 0; i < mode->num_pb_type_children; i++) {
+					child_pb_type = &mode->pb_type_children[i];
+					for (j = 0; j < mode->pb_type_children[i].num_pb; j++) {
+						port_index = 0;
+						is_used = FALSE;
+						for (k = 0; k < child_pb_type->num_ports && !is_used; k++) {
+							if (child_pb_type->ports[k].type == OUT_PORT) {
+								for (m = 0; m < child_pb_type->ports[k].num_pins;
+										m++) {
+									node_index =
+											pb_graph_node->child_pb_graph_nodes[mode_of_edge][i][j].output_pins[port_index][m].pin_count_in_cluster;
+									if (rr_node[node_index].net_num != OPEN) {
+										is_used = TRUE;
+										break;
+									}
+								}
+								port_index++;
+							}
+						}
+						print_open_pb_graph_node(type, 
+								&pb_graph_node->child_pb_graph_nodes[mode_of_edge][i][j],
+								j, is_used, pb_pin_route_stats, tab_depth + 1, fpout);
 					}
 				}
-				port_index++;
 			}
-		}
 
-		assert(mode != NULL && mode_of_edge != UNDEFINED);
-		fprintf(fpout,
-				"<block name=\"open\" instance=\"%s[%d]\" mode=\"%s\">\n",
-				pb_graph_node->pb_type->name, pb_index, mode->name);
+			print_tabs(fpout, tab_depth);
+			fprintf(fpout, "</block>\n");
+		} else {
+			/* Determine mode if applicable */
+			port_index = 0;
+			for (i = 0; i < pb_type->num_ports; i++) {
+				if (pb_type->ports[i].type == OUT_PORT) {
+					assert(!pb_type->ports[i].is_clock);
+					for (j = 0; j < pb_type->ports[i].num_pins; j++) {
+						node_index =
+								pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
+						if (pb_type->num_modes > 0
+							&& pb_pin_route_stats[node_index].atom_net_idx != OPEN) {
+							prev_node = pb_pin_route_stats[node_index].prev_pb_pin_id;
+							t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
+							for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
+								assert(prev_pin->output_edges[prev_edge]->num_output_pins == 1);
+								if(prev_pin->output_edges[prev_edge]->output_pins[0]->pin_count_in_cluster == node_index) {
+									break;
+								}
+							}
+							assert(prev_edge < prev_pin->num_output_edges);
+							mode_of_edge =
+									prev_pin->output_edges[prev_edge]->interconnect->parent_mode_index;
+							assert(
+									mode == NULL || &pb_type->modes[mode_of_edge] == mode);
+							assert(mode_of_edge == 0); /* for now, unused blocks must always default to use mode 0 */
+							mode = &pb_type->modes[mode_of_edge];
+						}
+					}
+					port_index++;
+				}
+			}
+
+			assert(mode != NULL && mode_of_edge != UNDEFINED);
+			fprintf(fpout,
+					"<block name=\"open\" instance=\"%s[%d]\" mode=\"%s\">\n",
+					pb_graph_node->pb_type->name, pb_index, mode->name);
+
+			print_tabs(fpout, tab_depth);
+			fprintf(fpout, "\t<inputs>\n");
+			port_index = 0;
+			for (i = 0; i < pb_type->num_ports; i++) {
+				if (!pb_type->ports[i].is_clock
+						&& pb_type->ports[i].type == IN_PORT) {
+					print_tabs(fpout, tab_depth);
+					fprintf(fpout, "\t\t<port name=\"%s\">",
+							pb_graph_node->pb_type->ports[i].name);
+					for (j = 0; j < pb_type->ports[i].num_pins; j++) {
+						node_index =
+								pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
+						print_interconnect(type, node_index, &column, tab_depth + 2, pb_pin_route_stats,
+								fpout);
+					}
+					fprintf(fpout, "</port>\n");
+					port_index++;
+				}
+			}
+			print_tabs(fpout, tab_depth);
+			fprintf(fpout, "\t</inputs>\n");
+
+			column = tab_depth * TAB_LENGTH + 8; /* Next column I will write to. */
+			print_tabs(fpout, tab_depth);
+			fprintf(fpout, "\t<outputs>\n");
+			port_index = 0;
+			for (i = 0; i < pb_type->num_ports; i++) {
+				if (pb_type->ports[i].type == OUT_PORT) {
+					print_tabs(fpout, tab_depth);
+					fprintf(fpout, "\t\t<port name=\"%s\">",
+							pb_graph_node->pb_type->ports[i].name);
+					assert(!pb_type->ports[i].is_clock);
+					for (j = 0; j < pb_type->ports[i].num_pins; j++) {
+						node_index =
+								pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
+						print_interconnect(type, node_index, &column, tab_depth + 2, pb_pin_route_stats,
+								fpout);
+					}
+					fprintf(fpout, "</port>\n");
+					port_index++;
+				}
+			}
+			print_tabs(fpout, tab_depth);
+			fprintf(fpout, "\t</outputs>\n");
+
+			column = tab_depth * TAB_LENGTH + 8; /* Next column I will write to. */
+			print_tabs(fpout, tab_depth);
+			fprintf(fpout, "\t<clocks>\n");
+			port_index = 0;
+			for (i = 0; i < pb_type->num_ports; i++) {
+				if (pb_type->ports[i].is_clock
+						&& pb_type->ports[i].type == IN_PORT) {
+					print_tabs(fpout, tab_depth);
+					fprintf(fpout, "\t\t<port name=\"%s\">",
+							pb_graph_node->pb_type->ports[i].name);
+					for (j = 0; j < pb_type->ports[i].num_pins; j++) {
+						node_index =
+								pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
+						print_interconnect(type, node_index, &column, tab_depth + 2, pb_pin_route_stats,
+								fpout);
+					}
+					fprintf(fpout, "</port>\n");
+					port_index++;
+				}
+			}
+			print_tabs(fpout, tab_depth);
+			fprintf(fpout, "\t</clocks>\n");
+
+			if (pb_type->num_modes > 0) {
+				for (i = 0; i < mode->num_pb_type_children; i++) {
+					child_pb_type = &mode->pb_type_children[i];
+					for (j = 0; j < mode->pb_type_children[i].num_pb; j++) {
+						port_index = 0;
+						is_used = FALSE;
+						for (k = 0; k < child_pb_type->num_ports && !is_used; k++) {
+							if (child_pb_type->ports[k].type == OUT_PORT) {
+								for (m = 0; m < child_pb_type->ports[k].num_pins;
+										m++) {
+									node_index =
+											pb_graph_node->child_pb_graph_nodes[mode_of_edge][i][j].output_pins[port_index][m].pin_count_in_cluster;
+									if (pb_pin_route_stats[node_index].atom_net_idx != OPEN) {
+										is_used = TRUE;
+										break;
+									}
+								}
+								port_index++;
+							}
+						}
+						print_open_pb_graph_node(type, 
+								&pb_graph_node->child_pb_graph_nodes[mode_of_edge][i][j],
+								j, is_used, pb_pin_route_stats, tab_depth + 1, fpout);
+					}
+				}
+			}
+
+			print_tabs(fpout, tab_depth);
+			fprintf(fpout, "</block>\n");
+		}
+	} else {
+		fprintf(fpout, "<block name=\"open\" instance=\"%s[%d]\"/>\n",
+				pb_graph_node->pb_type->name, pb_index);
+	}
+}
+
+static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb_pin_route_stats *pb_pin_route_stats, int tab_depth) {
+
+	int column;
+	int i, j, k, m;
+	const t_pb_type *pb_type, *child_pb_type;
+	t_pb_graph_node *pb_graph_node;
+	t_mode *mode;
+	int port_index, node_index;
+	boolean is_used;
+
+	if(pb_pin_route_stats == NULL) {  // jedit delete this branch later when intra-logic block routing refactoring is complete
+		pb_type = pb->pb_graph_node->pb_type;
+		pb_graph_node = pb->pb_graph_node;
+		mode = &pb_type->modes[pb->mode];
+		column = tab_depth * TAB_LENGTH + 8; /* Next column I will write to. */
+		print_tabs(fpout, tab_depth);
+		if (pb_type->num_modes == 0) {
+			fprintf(fpout, "<block name=\"%s\" instance=\"%s[%d]\">\n", pb->name,
+					pb_type->name, pb_index);
+		} else {
+			fprintf(fpout, "<block name=\"%s\" instance=\"%s[%d]\" mode=\"%s\">\n",
+					pb->name, pb_type->name, pb_index, mode->name);
+		}
 
 		print_tabs(fpout, tab_depth);
 		fprintf(fpout, "\t<inputs>\n");
 		port_index = 0;
 		for (i = 0; i < pb_type->num_ports; i++) {
-			if (!pb_type->ports[i].is_clock
-					&& pb_type->ports[i].type == IN_PORT) {
+			if (!pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT) {
 				print_tabs(fpout, tab_depth);
 				fprintf(fpout, "\t\t<port name=\"%s\">",
 						pb_graph_node->pb_type->ports[i].name);
 				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
 					node_index =
-							pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
-					print_interconnect(node_index, &column, tab_depth + 2,
-							fpout);
+							pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
+					if (pb_type->parent_mode == NULL) {
+						print_net_name(rr_node[node_index].net_num, &column,
+								tab_depth, fpout);
+					} else {
+						print_interconnect(type, node_index, &column, tab_depth + 2, pb_pin_route_stats,
+								fpout);
+					}
 				}
 				fprintf(fpout, "</port>\n");
 				port_index++;
@@ -218,15 +548,14 @@ static void print_open_pb_graph_node(t_pb_graph_node * pb_graph_node,
 		port_index = 0;
 		for (i = 0; i < pb_type->num_ports; i++) {
 			if (pb_type->ports[i].type == OUT_PORT) {
+				assert(!pb_type->ports[i].is_clock);
 				print_tabs(fpout, tab_depth);
 				fprintf(fpout, "\t\t<port name=\"%s\">",
 						pb_graph_node->pb_type->ports[i].name);
-				assert(!pb_type->ports[i].is_clock);
 				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
 					node_index =
-							pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
-					print_interconnect(node_index, &column, tab_depth + 2,
-							fpout);
+							pb->pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
+					print_interconnect(type, node_index, &column, tab_depth + 2, pb_pin_route_stats, fpout);
 				}
 				fprintf(fpout, "</port>\n");
 				port_index++;
@@ -240,16 +569,20 @@ static void print_open_pb_graph_node(t_pb_graph_node * pb_graph_node,
 		fprintf(fpout, "\t<clocks>\n");
 		port_index = 0;
 		for (i = 0; i < pb_type->num_ports; i++) {
-			if (pb_type->ports[i].is_clock
-					&& pb_type->ports[i].type == IN_PORT) {
+			if (pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT) {
 				print_tabs(fpout, tab_depth);
 				fprintf(fpout, "\t\t<port name=\"%s\">",
 						pb_graph_node->pb_type->ports[i].name);
 				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
 					node_index =
-							pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
-					print_interconnect(node_index, &column, tab_depth + 2,
-							fpout);
+							pb->pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
+					if (pb_type->parent_mode == NULL) {
+						print_net_name(rr_node[node_index].net_num, &column,
+								tab_depth, fpout);
+					} else {
+						print_interconnect(type, node_index, &column, tab_depth + 2, pb_pin_route_stats,
+								fpout);
+					}
 				}
 				fprintf(fpout, "</port>\n");
 				port_index++;
@@ -260,175 +593,167 @@ static void print_open_pb_graph_node(t_pb_graph_node * pb_graph_node,
 
 		if (pb_type->num_modes > 0) {
 			for (i = 0; i < mode->num_pb_type_children; i++) {
-				child_pb_type = &mode->pb_type_children[i];
 				for (j = 0; j < mode->pb_type_children[i].num_pb; j++) {
-					port_index = 0;
-					is_used = FALSE;
-					for (k = 0; k < child_pb_type->num_ports && !is_used; k++) {
-						if (child_pb_type->ports[k].type == OUT_PORT) {
-							for (m = 0; m < child_pb_type->ports[k].num_pins;
-									m++) {
-								node_index =
-										pb_graph_node->child_pb_graph_nodes[mode_of_edge][i][j].output_pins[port_index][m].pin_count_in_cluster;
-								if (rr_node[node_index].net_num != OPEN) {
-									is_used = TRUE;
-									break;
+					/* If child pb is not used but routing is used, I must print things differently */
+					if ((pb->child_pbs[i] != NULL)
+							&& (pb->child_pbs[i][j].name != NULL)) {
+						print_pb(fpout, type, &pb->child_pbs[i][j], j, pb_pin_route_stats, tab_depth + 1);
+					} else {
+						is_used = FALSE;
+						child_pb_type = &mode->pb_type_children[i];
+						port_index = 0;
+
+						for (k = 0; k < child_pb_type->num_ports && !is_used; k++) {
+							if (child_pb_type->ports[k].type == OUT_PORT) {
+								for (m = 0; m < child_pb_type->ports[k].num_pins;
+										m++) {
+									node_index =
+											pb_graph_node->child_pb_graph_nodes[pb->mode][i][j].output_pins[port_index][m].pin_count_in_cluster;
+									if (rr_node[node_index].net_num != OPEN) {
+										is_used = TRUE;
+										break;
+									}
 								}
+								port_index++;
 							}
-							port_index++;
 						}
+						print_open_pb_graph_node(type, 
+								&pb_graph_node->child_pb_graph_nodes[pb->mode][i][j],
+								j, is_used, pb_pin_route_stats, tab_depth + 1, fpout);
 					}
-					print_open_pb_graph_node(
-							&pb_graph_node->child_pb_graph_nodes[mode_of_edge][i][j],
-							j, is_used, tab_depth + 1, fpout);
 				}
 			}
 		}
-
 		print_tabs(fpout, tab_depth);
 		fprintf(fpout, "</block>\n");
 	} else {
-		fprintf(fpout, "<block name=\"open\" instance=\"%s[%d]\"/>\n",
-				pb_graph_node->pb_type->name, pb_index);
-	}
-}
-
-static void print_pb(FILE *fpout, t_pb * pb, int pb_index, int tab_depth) {
-
-	int column;
-	int i, j, k, m;
-	const t_pb_type *pb_type, *child_pb_type;
-	t_pb_graph_node *pb_graph_node;
-	t_mode *mode;
-	int port_index, node_index;
-	boolean is_used;
-
-	pb_type = pb->pb_graph_node->pb_type;
-	pb_graph_node = pb->pb_graph_node;
-	mode = &pb_type->modes[pb->mode];
-	column = tab_depth * TAB_LENGTH + 8; /* Next column I will write to. */
-	print_tabs(fpout, tab_depth);
-	if (pb_type->num_modes == 0) {
-		fprintf(fpout, "<block name=\"%s\" instance=\"%s[%d]\">\n", pb->name,
-				pb_type->name, pb_index);
-	} else {
-		fprintf(fpout, "<block name=\"%s\" instance=\"%s[%d]\" mode=\"%s\">\n",
-				pb->name, pb_type->name, pb_index, mode->name);
-	}
-
-	print_tabs(fpout, tab_depth);
-	fprintf(fpout, "\t<inputs>\n");
-	port_index = 0;
-	for (i = 0; i < pb_type->num_ports; i++) {
-		if (!pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT) {
-			print_tabs(fpout, tab_depth);
-			fprintf(fpout, "\t\t<port name=\"%s\">",
-					pb_graph_node->pb_type->ports[i].name);
-			for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-				node_index =
-						pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
-				if (pb_type->parent_mode == NULL) {
-					print_net_name(rr_node[node_index].net_num, &column,
-							tab_depth, fpout);
-				} else {
-					print_interconnect(node_index, &column, tab_depth + 2,
-							fpout);
-				}
-			}
-			fprintf(fpout, "</port>\n");
-			port_index++;
+		pb_type = pb->pb_graph_node->pb_type;
+		pb_graph_node = pb->pb_graph_node;
+		mode = &pb_type->modes[pb->mode];
+		column = tab_depth * TAB_LENGTH + 8; /* Next column I will write to. */
+		print_tabs(fpout, tab_depth);
+		if (pb_type->num_modes == 0) {
+			fprintf(fpout, "<block name=\"%s\" instance=\"%s[%d]\">\n", pb->name,
+					pb_type->name, pb_index);
+		} else {
+			fprintf(fpout, "<block name=\"%s\" instance=\"%s[%d]\" mode=\"%s\">\n",
+					pb->name, pb_type->name, pb_index, mode->name);
 		}
-	}
-	print_tabs(fpout, tab_depth);
-	fprintf(fpout, "\t</inputs>\n");
 
-	column = tab_depth * TAB_LENGTH + 8; /* Next column I will write to. */
-	print_tabs(fpout, tab_depth);
-	fprintf(fpout, "\t<outputs>\n");
-	port_index = 0;
-	for (i = 0; i < pb_type->num_ports; i++) {
-		if (pb_type->ports[i].type == OUT_PORT) {
-			assert(!pb_type->ports[i].is_clock);
-			print_tabs(fpout, tab_depth);
-			fprintf(fpout, "\t\t<port name=\"%s\">",
-					pb_graph_node->pb_type->ports[i].name);
-			for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-				node_index =
-						pb->pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
-				print_interconnect(node_index, &column, tab_depth + 2, fpout);
-			}
-			fprintf(fpout, "</port>\n");
-			port_index++;
-		}
-	}
-	print_tabs(fpout, tab_depth);
-	fprintf(fpout, "\t</outputs>\n");
-
-	column = tab_depth * TAB_LENGTH + 8; /* Next column I will write to. */
-	print_tabs(fpout, tab_depth);
-	fprintf(fpout, "\t<clocks>\n");
-	port_index = 0;
-	for (i = 0; i < pb_type->num_ports; i++) {
-		if (pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT) {
-			print_tabs(fpout, tab_depth);
-			fprintf(fpout, "\t\t<port name=\"%s\">",
-					pb_graph_node->pb_type->ports[i].name);
-			for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-				node_index =
-						pb->pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
-				if (pb_type->parent_mode == NULL) {
-					print_net_name(rr_node[node_index].net_num, &column,
-							tab_depth, fpout);
-				} else {
-					print_interconnect(node_index, &column, tab_depth + 2,
-							fpout);
-				}
-			}
-			fprintf(fpout, "</port>\n");
-			port_index++;
-		}
-	}
-	print_tabs(fpout, tab_depth);
-	fprintf(fpout, "\t</clocks>\n");
-
-	if (pb_type->num_modes > 0) {
-		for (i = 0; i < mode->num_pb_type_children; i++) {
-			for (j = 0; j < mode->pb_type_children[i].num_pb; j++) {
-				/* If child pb is not used but routing is used, I must print things differently */
-				if ((pb->child_pbs[i] != NULL)
-						&& (pb->child_pbs[i][j].name != NULL)) {
-					print_pb(fpout, &pb->child_pbs[i][j], j, tab_depth + 1);
-				} else {
-					is_used = FALSE;
-					child_pb_type = &mode->pb_type_children[i];
-					port_index = 0;
-
-					for (k = 0; k < child_pb_type->num_ports && !is_used; k++) {
-						if (child_pb_type->ports[k].type == OUT_PORT) {
-							for (m = 0; m < child_pb_type->ports[k].num_pins;
-									m++) {
-								node_index =
-										pb_graph_node->child_pb_graph_nodes[pb->mode][i][j].output_pins[port_index][m].pin_count_in_cluster;
-								if (rr_node[node_index].net_num != OPEN) {
-									is_used = TRUE;
-									break;
-								}
-							}
-							port_index++;
-						}
+		print_tabs(fpout, tab_depth);
+		fprintf(fpout, "\t<inputs>\n");
+		port_index = 0;
+		for (i = 0; i < pb_type->num_ports; i++) {
+			if (!pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT) {
+				print_tabs(fpout, tab_depth);
+				fprintf(fpout, "\t\t<port name=\"%s\">",
+						pb_graph_node->pb_type->ports[i].name);
+				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
+					node_index =
+							pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
+					if (pb_type->parent_mode == NULL) {
+						print_net_name(pb_pin_route_stats[node_index].atom_net_idx, &column,
+								tab_depth, fpout);
+					} else {
+						print_interconnect(type, node_index, &column, tab_depth + 2, pb_pin_route_stats,
+								fpout);
 					}
-					print_open_pb_graph_node(
-							&pb_graph_node->child_pb_graph_nodes[pb->mode][i][j],
-							j, is_used, tab_depth + 1, fpout);
+				}
+				fprintf(fpout, "</port>\n");
+				port_index++;
+			}
+		}
+		print_tabs(fpout, tab_depth);
+		fprintf(fpout, "\t</inputs>\n");
+
+		column = tab_depth * TAB_LENGTH + 8; /* Next column I will write to. */
+		print_tabs(fpout, tab_depth);
+		fprintf(fpout, "\t<outputs>\n");
+		port_index = 0;
+		for (i = 0; i < pb_type->num_ports; i++) {
+			if (pb_type->ports[i].type == OUT_PORT) {
+				assert(!pb_type->ports[i].is_clock);
+				print_tabs(fpout, tab_depth);
+				fprintf(fpout, "\t\t<port name=\"%s\">",
+						pb_graph_node->pb_type->ports[i].name);
+				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
+					node_index =
+							pb->pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
+					print_interconnect(type, node_index, &column, tab_depth + 2, pb_pin_route_stats, fpout);
+				}
+				fprintf(fpout, "</port>\n");
+				port_index++;
+			}
+		}
+		print_tabs(fpout, tab_depth);
+		fprintf(fpout, "\t</outputs>\n");
+
+		column = tab_depth * TAB_LENGTH + 8; /* Next column I will write to. */
+		print_tabs(fpout, tab_depth);
+		fprintf(fpout, "\t<clocks>\n");
+		port_index = 0;
+		for (i = 0; i < pb_type->num_ports; i++) {
+			if (pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT) {
+				print_tabs(fpout, tab_depth);
+				fprintf(fpout, "\t\t<port name=\"%s\">",
+						pb_graph_node->pb_type->ports[i].name);
+				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
+					node_index =
+							pb->pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
+					if (pb_type->parent_mode == NULL) {
+						print_net_name(pb_pin_route_stats[node_index].atom_net_idx, &column,
+								tab_depth, fpout);
+					} else {
+						print_interconnect(type, node_index, &column, tab_depth + 2, pb_pin_route_stats,
+								fpout);
+					}
+				}
+				fprintf(fpout, "</port>\n");
+				port_index++;
+			}
+		}
+		print_tabs(fpout, tab_depth);
+		fprintf(fpout, "\t</clocks>\n");
+
+		if (pb_type->num_modes > 0) {
+			for (i = 0; i < mode->num_pb_type_children; i++) {
+				for (j = 0; j < mode->pb_type_children[i].num_pb; j++) {
+					/* If child pb is not used but routing is used, I must print things differently */
+					if ((pb->child_pbs[i] != NULL)
+							&& (pb->child_pbs[i][j].name != NULL)) {
+						print_pb(fpout, type, &pb->child_pbs[i][j], j, pb_pin_route_stats, tab_depth + 1);
+					} else {
+						is_used = FALSE;
+						child_pb_type = &mode->pb_type_children[i];
+						port_index = 0;
+
+						for (k = 0; k < child_pb_type->num_ports && !is_used; k++) {
+							if (child_pb_type->ports[k].type == OUT_PORT) {
+								for (m = 0; m < child_pb_type->ports[k].num_pins;
+										m++) {
+									node_index =
+											pb_graph_node->child_pb_graph_nodes[pb->mode][i][j].output_pins[port_index][m].pin_count_in_cluster;
+									if (pb_pin_route_stats[node_index].atom_net_idx != OPEN) {
+										is_used = TRUE;
+										break;
+									}
+								}
+								port_index++;
+							}
+						}
+						print_open_pb_graph_node(type, 
+								&pb_graph_node->child_pb_graph_nodes[pb->mode][i][j],
+								j, is_used, pb_pin_route_stats, tab_depth + 1, fpout);
+					}
 				}
 			}
 		}
+		print_tabs(fpout, tab_depth);
+		fprintf(fpout, "</block>\n");
 	}
-	print_tabs(fpout, tab_depth);
-	fprintf(fpout, "</block>\n");
 }
 
-static void print_clusters(t_block *clb, int num_clusters, FILE * fpout) {
+static void print_clusters(t_block *clb, int num_clusters, t_pb_pin_route_stats **pb_pin_route_stats, FILE * fpout) {
 
 	/* Prints out one cluster (clb).  Both the external pins and the *
 	 * internal connections are printed out.                         */
@@ -439,8 +764,11 @@ static void print_clusters(t_block *clb, int num_clusters, FILE * fpout) {
 		rr_node = clb[icluster].pb->rr_graph;
 
 		/* TODO: Must do check that total CLB pins match top-level pb pins, perhaps check this earlier? */
-
-		print_pb(fpout, clb[icluster].pb, icluster, 1);
+		if(pb_pin_route_stats != NULL) {
+			print_pb(fpout, clb[icluster].type, clb[icluster].pb, icluster, pb_pin_route_stats[icluster], 1);
+		} else {
+			print_pb(fpout, clb[icluster].type, clb[icluster].pb, icluster, NULL, 1);
+		}
 	}
 }
 
@@ -546,7 +874,7 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	int bnum, column;
 	unsigned netnum;
 
-	t_pb_pin_route_stats **pb_pin_route_stats = NULL; /* [0..num_clb][0..num_pb_graph_pins-1] lookup for intra-logic block routing, find atom net given pb_graph_pin id for clb */
+	t_pb_pin_route_stats **pb_pin_route_stats = NULL; /* [0..num_clb-1][0..num_pb_graph_pins-1] lookup for intra-logic block routing, find atom net given pb_graph_pin id for clb */
 	
 	if(!intra_lb_routing.empty()) {
 		assert((int)intra_lb_routing.size() == num_clusters);
@@ -554,6 +882,11 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 		for(int istats = 0; istats < num_clusters; istats++) {
 			pb_pin_route_stats[istats] = alloc_and_load_pb_pin_route_stats(intra_lb_routing[istats], clb[istats].pb->pb_graph_node);
 		}
+	}
+
+	pb_graph_pin_lookup_from_index_by_type = new t_pb_graph_pin **[num_types];
+	for(int itype = 0; itype < num_types; itype++) {
+		pb_graph_pin_lookup_from_index_by_type[itype] = alloc_and_load_pb_graph_pin_lookup_from_index(&type_descriptors[itype]);
 	}
 
 	
@@ -619,7 +952,7 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	}
 
 	if (skip_clustering == FALSE)
-		print_clusters(clb, num_clusters, fpout);
+		print_clusters(clb, num_clusters, pb_pin_route_stats, fpout);
 
 	fprintf(fpout, "</block>\n\n");
 
@@ -634,4 +967,9 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 
 
 	print_stats(clb, num_clusters);
+
+	for(int itype = 0; itype < num_types; itype++) {
+		free_pb_graph_pin_lookup_from_index (pb_graph_pin_lookup_from_index_by_type[itype]);
+	}
+	delete[] pb_graph_pin_lookup_from_index_by_type;
 }

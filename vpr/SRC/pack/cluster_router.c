@@ -486,11 +486,11 @@ static void load_trace_to_pb_pin_route_stats(INOUTP t_pb_pin_route_stats *pb_pin
 	if(ipin < total_pins) {
 		/* This routing node corresponds with a pin.  This node is virtual (ie. sink or source node) */
 		cur_pin_id = ipin;
-		if(pb_pin_route_stats[ipin].atom_net_idx == OPEN) {
-			pb_pin_route_stats[ipin].atom_net_idx = atom_net;
-			pb_pin_route_stats[ipin].prev_pb_pin_id = prev_pb_pin_id;
+		if(pb_pin_route_stats[cur_pin_id].atom_net_idx == OPEN) {
+			pb_pin_route_stats[cur_pin_id].atom_net_idx = atom_net;
+			pb_pin_route_stats[cur_pin_id].prev_pb_pin_id = prev_pb_pin_id;
 		} else {
-			assert(pb_pin_route_stats[ipin].atom_net_idx == atom_net);
+			assert(pb_pin_route_stats[cur_pin_id].atom_net_idx == atom_net);
 		}		
 	}
 	for(int itrace = 0; itrace< (int)trace->next_nodes.size(); itrace++) {
@@ -881,7 +881,6 @@ static void add_to_rt(t_lb_trace *rt, int node_index, t_explored_node_tb *explor
 	assert(link_node != NULL);
 
 	/* Add path to root tree */
-	trace_forward.pop_back();
 	while(!trace_forward.empty()) {
 		trace_index = trace_forward.back();
 		curr_node.current_node = trace_index;

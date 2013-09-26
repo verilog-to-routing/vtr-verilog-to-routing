@@ -72,6 +72,8 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
 		int iport, int ** idirect_from_blk_pin, int idirect, 
 		int ** direct_type_from_blk_pin, int direct_type, int line, char * src_string);
 
+static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin ** pb_graph_pin_lookup_from_index, t_pb_graph_node *pb_graph_node);
+
 /******************** Subroutine definitions *********************************/
 
 /**
@@ -495,6 +497,70 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(int iblock, int ipin) {
 	return NULL;
 }
 
+/* Recusively visit through all pb_graph_nodes to populate pb_graph_pin_lookup_from_index */
+static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin ** pb_graph_pin_lookup_from_index, t_pb_graph_node *pb_graph_node) {
+	for(int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
+		for(int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
+			t_pb_graph_pin * pb_pin = &pb_graph_node->input_pins[iport][ipin];
+			assert(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
+			pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
+		}
+	}
+	for(int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
+		for(int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
+			t_pb_graph_pin * pb_pin = &pb_graph_node->output_pins[iport][ipin];
+			assert(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
+			pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
+		}
+	}
+	for(int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
+		for(int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
+			t_pb_graph_pin * pb_pin = &pb_graph_node->clock_pins[iport][ipin];
+			assert(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
+			pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
+		}
+	}
+
+	for(int imode = 0; imode < pb_graph_node->pb_type->num_modes; imode++) {
+		for(int ipb_type = 0; ipb_type < pb_graph_node->pb_type->modes[imode].num_pb_type_children; ipb_type++) {
+			for(int ipb = 0; ipb < pb_graph_node->pb_type->modes[imode].pb_type_children[ipb_type].num_pb; ipb++) {
+				load_pb_graph_pin_lookup_from_index_rec(pb_graph_pin_lookup_from_index, &pb_graph_node->child_pb_graph_nodes[imode][ipb_type][ipb]);
+			}
+		}
+	}
+}
+
+/* Create a lookup that returns a pb_graph_pin pointer given the pb_graph_pin index */
+t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_type_ptr type) {
+	t_pb_graph_pin** pb_graph_pin_lookup_from_type;
+
+	t_pb_graph_node *pb_graph_head = type->pb_graph_head;
+	if(pb_graph_head == NULL) {
+		return NULL;
+	}
+	int num_pins = pb_graph_head->total_pb_pins;
+
+	pb_graph_pin_lookup_from_type = new t_pb_graph_pin* [num_pins];
+	for(int id = 0; id < num_pins; id++) {
+		pb_graph_pin_lookup_from_type[id] = NULL;
+	}
+
+	load_pb_graph_pin_lookup_from_index_rec(pb_graph_pin_lookup_from_type, pb_graph_head);
+
+	for(int id = 0; id < num_pins; id++) {
+		assert(pb_graph_pin_lookup_from_type[id] != NULL);
+	}
+
+	return pb_graph_pin_lookup_from_type;
+}
+
+/* Free pb_graph_pin lookup array */
+void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
+	if(pb_graph_pin_lookup_from_type == NULL) {
+		return;
+	}
+	delete [] pb_graph_pin_lookup_from_type;
+}
 
 /**
  * Determine cost for using primitive within a complex block, should use primitives of low cost before selecting primitives of high cost
