@@ -1,4 +1,4 @@
 arch	circuit	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	num_luts	num_add_blocks	max_add_chain_length	num_sub_blocks	max_sub_chain_length	error
-k6_frac_N10_frac_chain_mem32K_40nm.xml	diffeq1.v	success	70	16.8736	1.4	1.4	16.37	1.15	1309	1020	798	35	162	96	0	5	362	68	34	134	67	
-k6_frac_N10_frac_chain_mem32K_40nm.xml	LU8PEEng.v	success	90	79.6117	130.97	181	1908.48	70.84	36526	33417	16912	2258	114	102	45	8	21703	1508	27	1938	47	
-k6_frac_N10_frac_chain_mem32K_40nm.xml	sha.v	success	52	9.97464	5.45	4.44	42.62	1.44	3565	3308	1198	202	38	36	0	0	1994	321	37	8	8	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	diffeq1.v	success	52	17.0973	1.35	1.08	13.68	1.04	1069	882	665	30	162	96	0	5	294	68	34	134	67	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	LU8PEEng.v	success	94	79.3016	110.57	93.11	1097.79	46.76	36233	33182	16683	2236	114	102	45	8	21668	1508	27	1938	47	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	sha.v	success	56	10.0491	5.03	3.6	20.11	0.86	3539	3288	1199	201	38	36	0	0	1994	321	37	8	8	
