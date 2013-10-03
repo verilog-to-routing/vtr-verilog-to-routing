@@ -239,7 +239,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
             <delay_constant max="3.29097e-11" in_port="clb.I4" out_port="ble6.in_F" />
             <delay_constant max="3.29097e-11" in_port="clb.I1" out_port="ble6.in_F" />
             </complete>
-          <complete name="clks" input="clb.clk" output="ble6[9:0].clk">
+          <complete name="clks" input="clb.clk" output="ble6[7:0].clk">
           </complete>
           
           <!-- Direct connections to CLB outputs -->
