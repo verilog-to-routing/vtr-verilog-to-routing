@@ -301,6 +301,14 @@ int main(int argc, char* argv[])
     processStart = clock();
 
     preprocess_netlist(my_module, &arch, types, numTypes, fix_global_nets, split_multiclock_blocks);
+	
+    if (debug_mode){
+		//Print debug info to "<project_path>_module.echo"
+		construct_filename ( temp_name, project_path.c_str(), "_module_preprocess.echo" );
+		cout << "\n>> Dumping to output file " << temp_name << endl ;
+		echo_module ( temp_name, source_file.c_str(), my_module );
+		//file contains data read from the .vqm structures.
+	}
 
     processEnd = clock();
 	cout << "\n>> Preprocessing Netlist took " << (float)(processEnd - processStart)/CLOCKS_PER_SEC << " seconds.\n" ;
