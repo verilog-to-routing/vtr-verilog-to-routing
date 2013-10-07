@@ -171,7 +171,7 @@ if ( !( $temp_dir =~ /.*\/$/ ) ) {
 	$temp_dir = $temp_dir . "/";
 }
 
-my $timeout      = 10 * 24 * 60 * 60;         # 10 day execution timeout
+my $timeout      = 14 * 24 * 60 * 60;         # 14 day execution timeout
 my $results_path = "${temp_dir}output.txt";
 
 my $error;
