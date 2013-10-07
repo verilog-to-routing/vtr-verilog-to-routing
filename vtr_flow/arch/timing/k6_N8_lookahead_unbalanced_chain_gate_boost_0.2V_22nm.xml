@@ -159,24 +159,30 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
         <clock name="clk" num_pins="1"/>
 
         <!-- Basic logic element definition -->
-		<pb_type name="ble6" num_pb="8">
-		  <input name="in_A" num_pins="1"/>
-		  <input name="in_B" num_pins="1"/>
-		  <input name="in_C" num_pins="1"/>
-		  <input name="in_D" num_pins="1"/>
-		  <input name="in_E" num_pins="1"/>
-		  <input name="in_F" num_pins="1"/>
+		<pb_type name="4wayble" num_pb="2">
+		  <input name="in_A" num_pins="4"/>
+		  <input name="in_B" num_pins="4"/>
+		  <input name="in_C" num_pins="4"/>
+		  <input name="in_D" num_pins="4"/>
+		  <input name="in_E" num_pins="4"/>
+		  <input name="in_F" num_pins="4"/>
       <input name="cin" num_pins="1"/>
-		  <output name="out_local" num_pins="1"/>
-		  <output name="out_routing" num_pins="1"/>
+		  <output name="out_local" num_pins="4"/>
+		  <output name="out_routing" num_pins="4"/>
       <output name="cout" num_pins="1"/>
 		  <clock name="clk" num_pins="1"/> 
       <pb_type name="arithlut" num_pb="1">
-        <input name="in" num_pins="6"/>
+        <input name="in1" num_pins="6"/>
+        <input name="in2" num_pins="6"/>
+        <input name="in3" num_pins="6"/>
+        <input name="in4" num_pins="6"/>
         <input name="cin" num_pins="1"/>
-        <output name="out" num_pins="1"/>
+        <output name="out1" num_pins="1"/>
+        <output name="out2" num_pins="1"/>
+        <output name="out3" num_pins="1"/>
+        <output name="out4" num_pins="1"/>
         <output name="cout" num_pins="1"/>
-        <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut">
+        <pb_type name="lut6" blif_model=".names" num_pb="4" class="lut">
           <input name="in" num_pins="6" port_class="lut_in"/>
           <!-- I average out the delays because VPR does not to LUT balancing
           -->
@@ -191,26 +197,56 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
           </delay_matrix>      
         </pb_type>
         <pb_type name="adder" blif_model=".subckt adder" num_pb="1">
-          <input name="a" num_pins="1"/>
-          <input name="b" num_pins="1"/>
+          <input name="a" num_pins="4"/>
+          <input name="b" num_pins="4"/>
           <input name="cin" num_pins="1"/>
-          <output name="sumout" num_pins="1"/>
+          <output name="sumout" num_pins="4"/>
           <output name="cout" num_pins="1"/>
           <!-- Carry link delays included in cin->cout delay -->
-          <delay_constant max="83e-12" in_port="adder.a" out_port="adder.sumout"/>
-          <delay_constant max="83e-12" in_port="adder.b" out_port="adder.sumout"/>
-          <delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout"/>
-          <delay_constant max="56e-12" in_port="adder.a" out_port="adder.cout"/>
-          <delay_constant max="56e-12" in_port="adder.b" out_port="adder.cout"/>
-          <delay_constant max="11e-12" in_port="adder.cin" out_port="adder.cout"/>
+          <delay_constant max="65e-12" in_port="adder.a[0]" out_port="adder.sumout[0]"/>
+          <delay_constant max="65e-12" in_port="adder.b[0]" out_port="adder.sumout[0]"/>
+          <delay_constant max="72e-12" in_port="adder.a[1]" out_port="adder.sumout[1]"/>
+          <delay_constant max="72e-12" in_port="adder.b[1]" out_port="adder.sumout[1]"/>
+          <delay_constant max="72e-12" in_port="adder.a[2]" out_port="adder.sumout[2]"/>
+          <delay_constant max="72e-12" in_port="adder.b[2]" out_port="adder.sumout[2]"/>
+          <delay_constant max="82e-12" in_port="adder.a[3]" out_port="adder.sumout[3]"/>
+          <delay_constant max="82e-12" in_port="adder.b[3]" out_port="adder.sumout[3]"/>
+          <delay_constant max="25e-12" in_port="adder.cin" out_port="adder.sumout[0]"/>
+          <delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout[1]"/>
+          <delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout[2]"/>
+          <delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout[3]"/>
+          <delay_constant max="80e-12" in_port="adder.a" out_port="adder.cout"/>
+          <delay_constant max="80e-12" in_port="adder.b" out_port="adder.cout"/>
+          <delay_constant max="20e-12" in_port="adder.cin" out_port="adder.cout"/>
         </pb_type>
         <interconnect>
-          <direct name="direct1" input="arithlut.in[5:0]" output="lut6[0:0].in"/>
-          <direct name="direct2" input="lut6.out" output="arithlut.out">
-            <pack_pattern name="ble6" in_port="lut6.out" out_port="arithlut.out"/>
+          <direct name="direct1_1" input="arithlut.in1[5:0]" output="lut6[0].in"/>
+          <direct name="direct1_2" input="arithlut.in2[5:0]" output="lut6[1].in"/>
+          <direct name="direct1_3" input="arithlut.in3[5:0]" output="lut6[2].in"/>
+          <direct name="direct1_4" input="arithlut.in4[5:0]" output="lut6[3].in"/>
+          <direct name="direct2_1" input="lut6[0].out" output="arithlut.out1">
+            <pack_pattern name="ble6" in_port="lut6[0].out" out_port="arithlut.out1"/>
           </direct>
-          <direct name="direct3" input="adder.sumout" output="arithlut.out">
-            <pack_pattern name="chain" in_port="adder.sumout" out_port="arithlut.out"/>
+          <direct name="direct2_2" input="lut6[1].out" output="arithlut.out2">
+            <pack_pattern name="ble6" in_port="lut6[1].out" out_port="arithlut.out2"/>
+          </direct>
+          <direct name="direct2_3" input="lut6[2].out" output="arithlut.out3">
+            <pack_pattern name="ble6" in_port="lut6[2].out" out_port="arithlut.out3"/>
+          </direct>
+          <direct name="direct2_4" input="lut6[3].out" output="arithlut.out4">
+            <pack_pattern name="ble6" in_port="lut6[3].out" out_port="arithlut.out4"/>
+          </direct>
+          <direct name="direct3_1" input="adder.sumout[0]" output="arithlut.out1">
+            <pack_pattern name="chain" in_port="adder.sumout[0]" out_port="arithlut.out1"/>
+          </direct>
+          <direct name="direct3_2" input="adder.sumout[1]" output="arithlut.out2">
+            <pack_pattern name="chain" in_port="adder.sumout[1]" out_port="arithlut.out2"/>
+          </direct>
+          <direct name="direct3_3" input="adder.sumout[2]" output="arithlut.out3">
+            <pack_pattern name="chain" in_port="adder.sumout[2]" out_port="arithlut.out3"/>
+          </direct>
+          <direct name="direct3_4" input="adder.sumout[3]" output="arithlut.out4">
+            <pack_pattern name="chain" in_port="adder.sumout[3]" out_port="arithlut.out4"/>
           </direct>
           <direct name="direct4" input="arithlut.cin" output="adder.cin">
             <pack_pattern name="chain" in_port="arithlut.cin" out_port="adder.cin"/>
@@ -220,7 +256,10 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
           </direct>
 
           <!-- LUT outputs are logically equilvalent, model using full xbar -->
-          <complete name="complete1" input="arithlut.in[5:0] lut6.out" output="adder.a adder.b"/>
+          <complete name="complete1_1" input="arithlut.in1[5:0] lut6[0].out" output="adder.a[0] adder.b[0]"/>
+          <complete name="complete1_2" input="arithlut.in2[5:0] lut6[1].out" output="adder.a[1] adder.b[1]"/>
+          <complete name="complete1_3" input="arithlut.in3[5:0] lut6[2].out" output="adder.a[2] adder.b[2]"/>
+          <complete name="complete1_4" input="arithlut.in4[5:0] lut6[3].out" output="adder.a[3] adder.b[3]"/>
         </interconnect>
       </pb_type>
 
