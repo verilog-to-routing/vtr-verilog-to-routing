@@ -313,16 +313,14 @@ int main(int argc, char* argv[])
     processEnd = clock();
 	cout << "\n>> Preprocessing Netlist took " << (float)(processEnd - processStart)/CLOCKS_PER_SEC << " seconds.\n" ;
     
-	if (verbose_mode){
-        cout << "\n>> LUT Stats...\n";
-        processStart = clock();
+    cout << "\n>> LUT Stats...\n";
+    processStart = clock();
 
-        //Print LUT Stats
-        print_lut_stats(my_module);
+    //Print LUT Stats
+    print_lut_stats(my_module);
 
-        processEnd = clock();
-        cout << "\n>> LUT Stats took " << (float)(processEnd - processStart)/CLOCKS_PER_SEC << " seconds.\n" ;
-    }
+    processEnd = clock();
+    cout << "\n>> LUT Stats took " << (float)(processEnd - processStart)/CLOCKS_PER_SEC << " seconds.\n" ;
 
     //Clean the netlist
 	if (clean_mode != CL_NONE){

@@ -55,31 +55,37 @@ void print_lut_carry_stats(t_module* module) {
     double mean = 0.0;
     int min_len = -1;
     int max_len = -1;
-    for(map<t_node*, size_t>::iterator iter = chain_lengths.begin(); iter != chain_lengths.end(); iter++) {
-        pair<t_node*, size_t> chain_size = *iter;
 
-        //cout << "Chain " << chain_size.first->type << " " << chain_size.first->name << " Length: " << chain_size.second << " bits" << endl;
+    if(chain_lengths.size() > 0) {
+        for(map<t_node*, size_t>::iterator iter = chain_lengths.begin(); iter != chain_lengths.end(); iter++) {
+            pair<t_node*, size_t> chain_size = *iter;
 
-        geomean *= chain_size.second;
-        mean += chain_size.second;
+            //cout << "Chain " << chain_size.first->type << " " << chain_size.first->name << " Length: " << chain_size.second << " bits" << endl;
 
-        if(min_len == -1) {
-            min_len = (int) chain_size.second;
-        } else if((int) chain_size.second < min_len) {
-            min_len = (int) chain_size.second;
+            geomean *= chain_size.second;
+            mean += chain_size.second;
+
+            if(min_len == -1) {
+                min_len = (int) chain_size.second;
+            } else if((int) chain_size.second < min_len) {
+                min_len = (int) chain_size.second;
+            }
+
+            if(max_len == -1) {
+                max_len = (int) chain_size.second;
+            } else if ((int) chain_size.second > max_len) {
+                max_len = (int) chain_size.second;
+            }
         }
 
-        if(max_len == -1) {
-            max_len = (int) chain_size.second;
-        } else if ((int) chain_size.second > max_len) {
-            max_len = (int) chain_size.second;
-        }
+        geomean = pow(geomean, 1.0/chain_lengths.size());
+        mean /= (double) chain_lengths.size();
+    } else {
+        mean = 0.0;
+        min_len = 0.0;
+        max_len = 0.0;
     }
-
-    geomean = pow(geomean, 1.0/chain_lengths.size());
-    mean /= (double) chain_lengths.size();
     
-
     cout << "\tLUTs: " << num_luts << ", Carry_LUTs: " << num_carry_luts << endl;
     cout << "\tCarry Chains: " << chain_lengths.size() << ", Mean Length (bits): " << mean << ", Min Length (bits): " << min_len << ", Max Length (bits): " << max_len << endl;
 }
@@ -92,13 +98,21 @@ void print_lut_carry_stats(t_module* module) {
 pair<bool,bool> is_carry_chain_lut(t_node* node) {
     bool is_carry_chain_lut = false;
     bool is_carry_chain_start = false;
+
+    bool found_cout = false;
+    bool found_cin_or_sharein = false;
+
     for(int i = 0; i < node->number_of_ports; i++) {
         t_node_port_association* node_port = node->array_of_ports[i];
         //A port only appears in the VQM netlist if it is connected
+        
+        if(strcmp(node_port->port_name, "cout") == 0) {
+            found_cout = true;
+        }
 
         //Hardcoded for Stratix IV
         if(strcmp(node_port->port_name, "cin") == 0 ||
-           strcmp(node_port->port_name, "cout") == 0 ||
+           found_cout ||
            strcmp(node_port->port_name, "sumout") == 0) {
             is_carry_chain_lut = true;
         }
@@ -107,20 +121,32 @@ pair<bool,bool> is_carry_chain_lut(t_node* node) {
            strcmp(node_port->port_name, "sharein") == 0) {
             //According to stratixii_eda_fd.pdf, carry chains
             // always start with a constant input to one of these ports
+            found_cin_or_sharein = true;
             
             //Constants are called 'gnd' or 'vcc'
             if(strcmp(node_port->associated_net->name, "gnd") == 0 ||
                strcmp(node_port->associated_net->name, "vcc") == 0 ) {
                 is_carry_chain_start = true;
             }
-
         }
     }
+
+    //We may have cleaned the netlist to remove gnd and vcc constants...
+    //In that case we may have a start of chain if there is a cout, but no
+    //cin.  I.E. found_cout && !found_cin_or_sharein
+    if(!is_carry_chain_start && found_cout && !found_cin_or_sharein) {
+        is_carry_chain_start = true;
+    }
+
+    //Must be a chain lut if we are the chain start
+    if(is_carry_chain_start) 
+        assert(is_carry_chain_lut);
 
     return pair<bool,bool>(is_carry_chain_lut, is_carry_chain_start);
 }
 
 bool node_is_lut(t_node* node) {
+    //Hardcoded for Stratix IV
     if(strcmp(node->type, "stratixiv_lcell_comb") == 0) {
         return true;
     }
