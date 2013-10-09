@@ -96,6 +96,10 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
 			</segment>
 		</segmentlist>
 
+    <directlist>
+      <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+    </directlist>
+
 	  <complexblocklist>
        <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
       <pb_type name="io" capacity="8">
@@ -499,7 +503,7 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
         <!-- Two sided connectivity CLB architecture--> 
         <pinlocations pattern="custom">
           <loc side="right">clb.O clb.I1 clb.I3 clb.I2 clb.I4 clb.clk</loc> 
-          <loc side="bottom">clb.O clb.cout clb.I1 clb.I3 clb.I2 clb.I4 clb.clk</loc>    
+          <loc side="bottom">clb.O clb.I1 clb.I3 clb.I2 clb.I4 clb.clk clb.cout</loc>    
           <loc side="top">clb.cin</loc> 
         </pinlocations>
         <gridlocations>
