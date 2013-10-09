@@ -444,11 +444,11 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
 	      <delay_constant max="4.1088e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[1]" />
 			  <delay_constant max="4.1088e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[1]" />
 			</mux>
-	    <mux name="mux4_3" input="ff[2].Q arithlut.out2" output="fourBLE.out_routing[2]">
+	    <mux name="mux4_3" input="ff[2].Q arithlut.out3" output="fourBLE.out_routing[2]">
 	      <delay_constant max="4.1088e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[2]" />
 			  <delay_constant max="4.1088e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[2]" />
 			</mux>
-	    <mux name="mux4_4" input="ff[3].Q arithlut.out2" output="fourBLE.out_routing[3]">
+	    <mux name="mux4_4" input="ff[3].Q arithlut.out4" output="fourBLE.out_routing[3]">
 	      <delay_constant max="4.1088e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[3]" />
 			  <delay_constant max="4.1088e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[3]" />
 			</mux>
