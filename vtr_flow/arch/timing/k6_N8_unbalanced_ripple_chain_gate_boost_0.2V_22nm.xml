@@ -266,6 +266,7 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
 			  <delay_constant max="1.33594e-11" in_port="arithlut.out" out_port="ff.D" />
 			  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff.D" />
         <pack_pattern name="ble6" in_port="arithlut.out" out_port="ff.D"/>
+        <pack_pattern name="chain" in_port="arithlut.out" out_port="ff.D"/>
 			</mux>
 	        <!-- BLE output (local) -->                  
 			<mux name="mux3" input="ff.Q arithlut.out" output="ble6.out_local">

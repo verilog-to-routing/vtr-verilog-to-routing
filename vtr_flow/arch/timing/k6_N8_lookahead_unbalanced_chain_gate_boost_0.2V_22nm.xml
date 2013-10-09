@@ -352,24 +352,28 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
 			  <delay_constant max="1.33594e-11" in_port="arithlut.out1" out_port="ff[0].D" />
 			  <delay_constant max="1.57355e-11" in_port="fourBLE.in_C[0]" out_port="ff[0].D" />
         <pack_pattern name="ble6" in_port="arithlut.out1" out_port="ff[0].D"/>
+        <pack_pattern name="chain" in_port="arithlut.out1" out_port="ff[0].D"/>
 			</mux>
 	        <!-- FF input selection mux -->
 	    <mux name="mux2_2" input="arithlut.out2 fourBLE.in_C[1]" output="ff[1].D">
 			  <delay_constant max="1.33594e-11" in_port="arithlut.out2" out_port="ff[1].D" />
 			  <delay_constant max="1.57355e-11" in_port="fourBLE.in_C[1]" out_port="ff[1].D" />
         <pack_pattern name="ble6" in_port="arithlut.out2" out_port="ff[1].D"/>
+        <pack_pattern name="chain" in_port="arithlut.out2" out_port="ff[1].D"/>
 			</mux>
 	        <!-- FF input selection mux -->
 	    <mux name="mux2_3" input="arithlut.out3 fourBLE.in_C[2]" output="ff[2].D">
 			  <delay_constant max="1.33594e-11" in_port="arithlut.out3" out_port="ff[2].D" />
 			  <delay_constant max="1.57355e-11" in_port="fourBLE.in_C[2]" out_port="ff[2].D" />
         <pack_pattern name="ble6" in_port="arithlut.out3" out_port="ff[2].D"/>
+        <pack_pattern name="chain" in_port="arithlut.out3" out_port="ff[2].D"/>
 			</mux>
 	        <!-- FF input selection mux -->
 	    <mux name="mux2_4" input="arithlut.out4 fourBLE.in_C[3]" output="ff[3].D">
 			  <delay_constant max="1.33594e-11" in_port="arithlut.out4" out_port="ff[3].D" />
 			  <delay_constant max="1.57355e-11" in_port="fourBLE.in_C[3]" out_port="ff[3].D" />
         <pack_pattern name="ble6" in_port="arithlut.out4" out_port="ff[3].D"/>
+        <pack_pattern name="chain" in_port="arithlut.out4" out_port="ff[3].D"/>
 			</mux>
 
 	        <!-- BLE output (local) -->                  
