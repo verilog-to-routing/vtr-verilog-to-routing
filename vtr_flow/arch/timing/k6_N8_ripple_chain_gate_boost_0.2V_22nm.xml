@@ -1,4 +1,4 @@
-p <!-- 
+<!-- 
 
 Area-delay optimized for K06 N08 L4 W320 22nm pass-transistor based FPGA with 0.2V of gate-boosting
 Fcin = 0.2, Fcout = 0.05
@@ -62,8 +62,8 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
       <port name="cin"/>
       </input_ports>
       <output_ports>
-      <port name="sumout"/>
       <port name="cout"/>
+      <port name="sumout"/>
       </output_ports>
     </model>
 
