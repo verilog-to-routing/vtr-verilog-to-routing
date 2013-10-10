@@ -461,7 +461,7 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
           </direct>
         </interconnect>
 
-        <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.05">
+        <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.025">
           <pin name="cin" fc_type="frac" fc_val="0"/>
           <pin name="cout" fc_type="frac" fc_val="0"/>
         </fc>

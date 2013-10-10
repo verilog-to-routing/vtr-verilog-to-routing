@@ -343,7 +343,7 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
           </direct>
         </interconnect>
 
-        <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.05">
+        <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.025">
           <pin name="cin" fc_type="frac" fc_val="0"/>
           <pin name="cout" fc_type="frac" fc_val="0"/>
         </fc>
