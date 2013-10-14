@@ -13,6 +13,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "fix_pins", OT_FIX_PINS },
 		{ "full_stats", OT_FULL_STATS }, 
 		{ "fast", OT_FAST }, 
+		{ "gen_netlist_as_blif", OT_GEN_NELIST_AS_BLIF}, 
 		{ "echo_file", OT_CREATE_ECHO_FILE }, 
 		{ "gen_postsynthesis_netlist", OT_GENERATE_POST_SYNTHESIS_NETLIST }, 
 		{ "timing_analysis", OT_TIMING_ANALYSIS }, 

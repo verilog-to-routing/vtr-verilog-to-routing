@@ -45,6 +45,7 @@ using namespace std;
 #include "power.h"
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
+#include "print_netlist_as_blif.h"
 
 #include "TFH_FabricGridHandler.h"
 #include "TFH_FabricBlockHandler.h"
@@ -197,6 +198,7 @@ void vpr_init(INP int argc, INP char **argv,
 		setEchoEnabled(IsEchoEnabled(options));
 		SetPostSynthesisOption(IsPostSynthesisEnabled(options));
 		vpr_setup->constant_net_delay = options->constant_net_delay;
+		vpr_setup->gen_netlist_as_blif = (boolean) (options->Count[OT_GEN_NELIST_AS_BLIF] > 0);
 
 		/* Read in arch and circuit */
 		SetupVPR(options, vpr_setup->TimingEnabled, TRUE, &vpr_setup->FileNameOpts,
@@ -255,6 +257,13 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 
 		/* This is done so that all blocks have subblocks and can be treated the same */
 		check_netlist();
+
+		if(vpr_setup.gen_netlist_as_blif) {
+			char *name = (char*)my_malloc((strlen(vpr_setup.FileNameOpts.CircuitName) + 16) * sizeof(char));
+			sprintf(name, "%s.preplace.blif", vpr_setup.FileNameOpts.CircuitName);
+			print_preplace_netlist(name);
+			free(name);
+		}
 	}
 
 	/* Output the current settings to console. */

@@ -363,8 +363,9 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadString(Args, &Options->out_file_prefix);
 	case OT_CREATE_ECHO_FILE:
 		return ReadOnOff(Args, &Options->CreateEchoFile);
-	case OT_GENERATE_POST_SYNTHESIS_NETLIST:
-          
+	case OT_GEN_NELIST_AS_BLIF:
+		return Args;
+	case OT_GENERATE_POST_SYNTHESIS_NETLIST:          
 	  return ReadOnOff(Args, &Options->Generate_Post_Synthesis_Netlist);
 		/* Clustering Options */
 	case OT_GLOBAL_CLOCKS:
@@ -546,6 +547,8 @@ static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id)
 			break;
 		case OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY:
 			dest->constant_net_delay = src->constant_net_delay;
+			break;
+		case OT_GEN_NELIST_AS_BLIF:
 			break;
 		case OT_FAST:
 		case OT_FULL_STATS:

@@ -1100,6 +1100,7 @@ typedef struct s_vpr_setup {
 	t_timing_inf Timing; /* timing information */
 	float constant_net_delay; /* timing information when place and route not run */
 	boolean ShowGraphics; /* option to show graphics */
+	boolean gen_netlist_as_blif; /* option to print out post-pack/pre-place netlist as blif */
 	int GraphPause; /* user interactiveness graphics option */
 	t_power_opts PowerOpts;
 } t_vpr_setup;
