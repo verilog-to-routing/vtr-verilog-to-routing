@@ -285,6 +285,9 @@
     <ClCompile Include="SRC\draw\draw_global.c">
       <Filter>Source Files\draw</Filter>
     </ClCompile>
+    <ClCompile Include="SRC\base\print_netlist_as_blif.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SRC\base\check_netlist.h">
@@ -505,6 +508,9 @@
     </ClInclude>
     <ClInclude Include="SRC\draw\draw_types.h">
       <Filter>Header Files\draw</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\print_netlist_as_blif.h">
+      <Filter>Header Files\base</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
