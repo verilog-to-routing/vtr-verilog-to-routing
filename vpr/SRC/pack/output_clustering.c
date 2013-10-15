@@ -753,7 +753,7 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 	}
 }
 
-static void print_clusters(t_block *clb, int num_clusters, t_pb_pin_route_stats **pb_pin_route_stats, FILE * fpout) {
+static void print_clusters(t_block *clb, int num_clusters, FILE * fpout) {
 
 	/* Prints out one cluster (clb).  Both the external pins and the *
 	 * internal connections are printed out.                         */
@@ -764,8 +764,8 @@ static void print_clusters(t_block *clb, int num_clusters, t_pb_pin_route_stats 
 		rr_node = clb[icluster].pb->rr_graph;
 
 		/* TODO: Must do check that total CLB pins match top-level pb pins, perhaps check this earlier? */
-		if(pb_pin_route_stats != NULL) {
-			print_pb(fpout, clb[icluster].type, clb[icluster].pb, icluster, pb_pin_route_stats[icluster], 1);
+		if(clb[icluster].pb_pin_route_stats != NULL) {
+			print_pb(fpout, clb[icluster].type, clb[icluster].pb, icluster, clb[icluster].pb_pin_route_stats, 1);
 		} else {
 			print_pb(fpout, clb[icluster].type, clb[icluster].pb, icluster, NULL, 1);
 		}
@@ -874,13 +874,10 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	int bnum, column;
 	unsigned netnum;
 
-	t_pb_pin_route_stats **pb_pin_route_stats = NULL; /* [0..num_clb-1][0..num_pb_graph_pins-1] lookup for intra-logic block routing, find atom net given pb_graph_pin id for clb */
-	
 	if(!intra_lb_routing.empty()) {
 		assert((int)intra_lb_routing.size() == num_clusters);
-		pb_pin_route_stats = new t_pb_pin_route_stats* [num_clusters];
-		for(int istats = 0; istats < num_clusters; istats++) {
-			pb_pin_route_stats[istats] = alloc_and_load_pb_pin_route_stats(intra_lb_routing[istats], clb[istats].pb->pb_graph_node);
+		for(int icluster = 0; icluster < num_clusters; icluster++) {
+			clb[icluster].pb_pin_route_stats = alloc_and_load_pb_pin_route_stats(intra_lb_routing[icluster], clb[icluster].pb->pb_graph_node);
 		}
 	}
 
@@ -952,17 +949,17 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	}
 
 	if (skip_clustering == FALSE)
-		print_clusters(clb, num_clusters, pb_pin_route_stats, fpout);
+		print_clusters(clb, num_clusters, fpout);
 
 	fprintf(fpout, "</block>\n\n");
 
 	fclose(fpout);
 
 	if(!intra_lb_routing.empty()) {
-		for(int istats = 0; istats < num_clusters; istats++) {
-			free_pb_pin_route_stats(pb_pin_route_stats[istats]);
+		for(int icluster = 0; icluster < num_clusters; icluster++) {
+			free_pb_pin_route_stats(clb[icluster].pb_pin_route_stats);
+			clb[icluster].pb_pin_route_stats = NULL;
 		}
-		delete []pb_pin_route_stats;
 	}
 
 

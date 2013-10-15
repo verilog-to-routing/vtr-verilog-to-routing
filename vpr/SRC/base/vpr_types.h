@@ -577,6 +577,7 @@ typedef struct s_legal_pos {
  y: y-coordinate
  z: occupancy coordinate
  pb: Physical block representing the clustering of this CLB
+ pb_pin_route_stats: [0..num_pb_graph_pins-1] Representation of intra logic block routing within CLB
  is_fixed: TRUE if this block's position is fixed by the user and shouldn't be moved during annealing
  */
 struct s_block {
@@ -588,6 +589,7 @@ struct s_block {
 	int z;
 
 	t_pb *pb;
+	t_pb_pin_route_stats *pb_pin_route_stats;
 
 	unsigned int is_fixed : 1;
 
