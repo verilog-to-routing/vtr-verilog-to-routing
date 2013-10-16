@@ -11,8 +11,8 @@ void free_router_data(INOUTP t_lb_router_data *router_data);
 void free_intra_lb_nets(vector <t_intra_lb_net> *intra_lb_nets);
 
 /* Routing Functions */
-void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom_block);
-void remove_atom_from_target(INOUTP t_lb_router_data *router_data, INP int iatom_block);
+void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom);
+void remove_atom_from_target(INOUTP t_lb_router_data *router_data, INP int iatom);
 void set_reset_pb_modes(INOUTP t_lb_router_data *router_data, INP t_pb *pb, INP boolean set);
 boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data);
 
