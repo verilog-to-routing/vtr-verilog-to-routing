@@ -115,6 +115,8 @@ string generate_opname (t_node* vqm_node, t_model* arch_models){
     t_node_parameter* port_a_addr_width = NULL;
     t_node_parameter* port_b_data_width = NULL;
     t_node_parameter* port_b_addr_width = NULL;
+    t_node_parameter* port_a_data_out_clock = NULL;
+    t_node_parameter* port_b_data_out_clock = NULL;
 
     char buffer[128]; //For integer to string conversion, use with snprintf which checks for overflow
 
@@ -150,7 +152,63 @@ string generate_opname (t_node* vqm_node, t_model* arch_models){
             port_b_addr_width = temp_param;
             continue;
         }
+        if (strcmp (temp_param->name, "port_a_data_out_clock") == 0){
+            assert( temp_param->type == NODE_PARAMETER_STRING );
+            port_a_data_out_clock = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "port_b_data_out_clock") == 0){
+            assert( temp_param->type == NODE_PARAMETER_STRING );
+            port_b_data_out_clock = temp_param;
+            continue;
+        }
     }
+    
+    // 1) Simple opmode name appended
+    //    NOTE: this applies to all blocks, not just memories
+    if (operation_mode != NULL) {
+        //Copy the string
+        char* temp_string_value = my_strdup(operation_mode->value.string_value);
+
+        //Remove characters that are invalid in blif
+        clean_name(temp_string_value);
+
+        //Add the opmode
+        mode_hash.append(".opmode{" + (string)temp_string_value + "}");
+
+        free(temp_string_value);
+    }
+    
+    /*
+     *  The following code attempts to identify RAM bocks which do and do not use
+     *  output registers.
+     */
+    if(port_a_data_width != NULL) {
+        //Only memory blocks have port_a_data_width, and all memory blocks must have port_a_data_width defined
+        bool found_port_a_output_clock = false;
+        bool found_port_b_output_clock = false;
+        if(port_a_data_out_clock != NULL && strcmp(port_a_data_out_clock->value.string_value, "none") != 0) {
+            found_port_a_output_clock = true;
+        }
+        if(port_b_data_out_clock != NULL && strcmp(port_b_data_out_clock->value.string_value, "none") != 0) {
+
+            found_port_b_output_clock = true;
+        }
+
+        //Provided both ports are used, they should have the same type (either comb or reg)
+        if(port_a_data_out_clock != NULL && port_b_data_out_clock != NULL) {
+            assert(found_port_a_output_clock == found_port_b_output_clock);
+        }
+
+        //Mark whether the outputs are registered or not
+        if (found_port_a_output_clock || found_port_b_output_clock) {
+            mode_hash.append(".output_type{reg}");
+        } else {
+            mode_hash.append(".output_type{comb}");
+        }
+    }
+
+
 
     /*
      *  Which parameters to append to the vqm primitive name depends on what
@@ -172,20 +230,6 @@ string generate_opname (t_node* vqm_node, t_model* arch_models){
      *
      */
 
-    // 1) Simple opmode name appended
-    //    NOTE: this applies to all blocks, not just memories
-    if (operation_mode != NULL) {
-        //Copy the string
-        char* temp_string_value = my_strdup(operation_mode->value.string_value);
-
-        //Remove characters that are invalid in blif
-        clean_name(temp_string_value);
-
-        //Add the opmode
-        mode_hash.append(".opmode{" + (string)temp_string_value + "}");
-
-        free(temp_string_value);
-    }
 
     // NOTE: the following only applies to memory blocks
 
@@ -255,6 +299,7 @@ string generate_opname (t_node* vqm_node, t_model* arch_models){
 	} else {
         ; //Not a memory, do nothing
     }
+
 
     //Final sanity check
     if (NULL == find_arch_model_by_name(mode_hash, arch_models)){
