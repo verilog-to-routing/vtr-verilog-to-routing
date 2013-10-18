@@ -26,6 +26,10 @@ int fix_netlist_connectivity_for_inout_pins(t_split_inout_pin* new_input_pin,
                                             t_port_vec* pin_node_sources,
                                             t_port_vec* pin_node_sinks           );
 
+//Functions to remove global constants
+void remove_constant_nets(t_module *module);
+
+
 //Functions to identify dual-clock RAMs and split them into seperate blocks
 void decompose_multiclock_blocks(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types);
 
@@ -84,8 +88,11 @@ void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_
 
     cout << "\n";
 
+    cout << "\t>> Preprocessing Netlist to remove constant nets" << endl;
+    remove_constant_nets(module);
+
     if(split_multiclock_blocks) {
-        cout << "\t>> Preprocessing Netlist to decompose dual-clock RAMs\n";
+        cout << "\t>> Preprocessing Netlist to decompose dual-clock Blocks\n";
         decompose_multiclock_blocks(module, arch, arch_types, num_types);
     }
 
@@ -593,6 +600,71 @@ int fix_netlist_connectivity_for_inout_pins(t_split_inout_pin* split_inout_pin,
     return number_of_nets_moved;
 }
 
+
+//============================================================================================
+//============================================================================================
+void remove_constant_nets(t_module *module) {
+    size_t num_const_port_connections_removed = 0;
+
+    //Identify and save the constant nets by looking at
+    //assignment statements
+    vector<t_pin_def*> constant_nets;
+    for(int i = 0; i < module->number_of_assignments; i++) {
+        t_assign* assignment = module->array_of_assignments[i];
+
+        t_pin_def* source_net = assignment->source;
+        t_pin_def* target_net = assignment->target;
+
+        //Constant assignments have no source_net
+        if(!source_net) {
+            if(verbose_mode) {
+                cout << "\t\tConst Assignment: source '";
+                cout << assignment->value << "' (const)";
+                cout << " target '" << target_net->name << "'" << endl;
+            }
+
+            constant_nets.push_back(target_net);
+        }
+    }
+
+    //Look at all the nodes and remove connections to the constant nets
+    for(int i = 0; i < module->number_of_nodes; i++) {
+        t_node* node = module->array_of_nodes[i];
+
+        for(int j = 0; j < node->number_of_ports; j++) {
+            t_node_port_association* node_port = node->array_of_ports[j];
+            
+            for(vector<t_pin_def*>::iterator pin_def_iter = constant_nets.begin(); 
+                pin_def_iter != constant_nets.end(); pin_def_iter++) {
+                t_pin_def* const_net = *pin_def_iter;
+
+                if(node_port->associated_net == const_net) {
+                    //cout << "Constant port connection: " << node->name << " (" << node->type << ") " << node_port->port_name << endl;
+                    //Delete the connection, by removing the port (unconnected ports are non-existant in VQM)
+                    
+                    //Copy the last element over the element to be deleted
+                    //
+                    // Note that we don't reallocate the array size (with realloc), since
+                    // it is unneccessary. It would be reallocated if expanded, and we do
+                    // not suffer from a memory leak since we always keep the array pointer,
+                    // which points to the originally allocated block.
+                    if(node->number_of_ports > 1) {
+                        node->array_of_ports[j] = node->array_of_ports[node->number_of_ports-1];
+                    }
+
+                    //Change the array bounds
+                    node->number_of_ports--;
+
+                    //Keep track of how many ports were removed
+                    num_const_port_connections_removed++;
+                }
+            }
+        }
+    }
+
+    cout << "\t>> Removed " << num_const_port_connections_removed << " connections to constant nets" << endl;
+    
+}
 
 //============================================================================================
 //============================================================================================
