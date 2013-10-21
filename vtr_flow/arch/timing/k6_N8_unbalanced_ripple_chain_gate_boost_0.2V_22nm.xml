@@ -223,8 +223,8 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
             <pack_pattern name="chain" in_port="adder.cout" out_port="arithlut.cout"/>
           </direct>
 
-          <!-- LUT outputs are logically equilvalent, model using full xbar -->
-          <complete name="complete1" input="arithlut.in[5:0] lut6.out" output="adder.a adder.b"/>
+          <!-- adder inputs are logically equilvalent, model using full xbar -->
+          <complete name="complete1" input="arithlut.in[2:2] lut6.out" output="adder.a adder.b"/>
         </interconnect>
       </pb_type>
 

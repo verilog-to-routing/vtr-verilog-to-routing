@@ -258,11 +258,11 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
             <pack_pattern name="chain" in_port="adder.cout" out_port="arithlut.cout"/>
           </direct>
 
-          <!-- LUT outputs are logically equilvalent, model using full xbar -->
-          <complete name="complete1_1" input="arithlut.in1[5:0] lut6[0].out" output="adder.a[0] adder.b[0]"/>
-          <complete name="complete1_2" input="arithlut.in2[5:0] lut6[1].out" output="adder.a[1] adder.b[1]"/>
-          <complete name="complete1_3" input="arithlut.in3[5:0] lut6[2].out" output="adder.a[2] adder.b[2]"/>
-          <complete name="complete1_4" input="arithlut.in4[5:0] lut6[3].out" output="adder.a[3] adder.b[3]"/>
+          <!-- Adder inputs are logically equilvalent, model using full xbar -->
+          <complete name="complete1_1" input="arithlut.in1[2:2] lut6[0].out" output="adder.a[0] adder.b[0]"/>
+          <complete name="complete1_2" input="arithlut.in2[2:2] lut6[1].out" output="adder.a[1] adder.b[1]"/>
+          <complete name="complete1_3" input="arithlut.in3[2:2] lut6[2].out" output="adder.a[2] adder.b[2]"/>
+          <complete name="complete1_4" input="arithlut.in4[2:2] lut6[3].out" output="adder.a[3] adder.b[3]"/>
         </interconnect>
       </pb_type>
 
