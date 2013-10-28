@@ -552,8 +552,17 @@ static void forward_expand_pack_pattern_from_edge(
 							k++) {
 						if (expansion_edge->output_pins[i]->output_edges[j]->pack_pattern_indices[k]
 								== curr_pattern_index) {
-							assert(found == FALSE);
-							/* Check assumption that each forced net has only one fan-out */
+							if (found == TRUE) {
+								/* Check assumption that each forced net has only one fan-out */
+								vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, 
+										"Invalid packing pattern defined.  Multi-fanout nets not supported when specifying pack patterns.\n"
+										"Problem on %s[%d].%s[%d]\n",
+										expansion_edge->output_pins[i]->parent_node->pb_type->name,
+										expansion_edge->output_pins[i]->parent_node->placement_index,
+										expansion_edge->output_pins[i]->port->name,
+										expansion_edge->output_pins[i]->pin_number
+										);
+							}
 							found = TRUE;
 							forward_expand_pack_pattern_from_edge(
 									expansion_edge->output_pins[i]->output_edges[j],
