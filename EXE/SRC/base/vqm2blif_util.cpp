@@ -10,16 +10,16 @@ void print_usage (t_boolean terminate){
 	cout << "\tvqm2blif -vqm <VQM file>.vqm -arch <ARCH file>.xml\n" ;
 	cout << "OPTIONAL FLAGS:\n" ;
 	cout << "\t-out <OUT file>.blif\n" ;
-	cout << "\t-elab [none | modes]\n" ;
-	cout << "\t-clean [none | buffers | all]\n" ;
+	cout << "\t-elab [none | modes | modes_timing*]\n" ;
+	cout << "\t-clean [none | buffers | all*]\n" ;
 	cout << "\t-buffouts\n" ;
-	cout << "\t-luts [vqm | blif]\n" ;
+	cout << "\t-luts [vqm* | blif]\n" ;
     cout << "\t-fixglobals\n";
     cout << "\t-split_multiclock_blocks\n";
     cout << "\t-single_clock_primitives\n";
 	cout << "\t-debug\n" ;
 	cout << "\t-verbose\n" ;
-	cout << "\nNote: All flags are order-independant. For more information, see README.txt\n\n";
+	cout << "\nNote: Default values indicated with * . All flags are order-independant. For more information, see README.txt\n\n";
 	
 	if (terminate)
 		exit(1);
@@ -206,79 +206,84 @@ void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, t_model* arch_models,
     
     assert(strcmp(vqm_node->type, "stratixiv_mac_mult") == 0);
 
-    //Assume all possibly registered inputs/outputs are registered
-    bool dataa_input_reg = true;
-    bool datab_input_reg = true;
-    bool signa_input_reg = true;
-    bool signb_input_reg = true;
-    bool scanouta_output_reg = true;
+    if(elab_mode == MODES_TIMING) {
+        //Only elaborate registered/combinational behaviour if in timing accurate
+        // mode elaboration
 
-	for (int i = 0; i < vqm_node->number_of_params; i++){
-		//Each parameter specifies a configuration of the node in the circuit.
-		t_node_parameter* temp_param = vqm_node->array_of_params[i];
+        //Assume all possibly registered inputs/outputs are registered
+        bool dataa_input_reg = true;
+        bool datab_input_reg = true;
+        bool signa_input_reg = true;
+        bool signb_input_reg = true;
+        bool scanouta_output_reg = true;
 
-        //Check the clocking related parameters
-        if (strcmp (temp_param->name, "dataa_clock") == 0){
-            assert( temp_param->type == NODE_PARAMETER_STRING );
-            if(strcmp(temp_param->value.string_value, "none") == 0) {
-                dataa_input_reg = false;
+        for (int i = 0; i < vqm_node->number_of_params; i++){
+            //Each parameter specifies a configuration of the node in the circuit.
+            t_node_parameter* temp_param = vqm_node->array_of_params[i];
+
+            //Check the clocking related parameters
+            if (strcmp (temp_param->name, "dataa_clock") == 0){
+                assert( temp_param->type == NODE_PARAMETER_STRING );
+                if(strcmp(temp_param->value.string_value, "none") == 0) {
+                    dataa_input_reg = false;
+                }
+                continue;
             }
-            continue;
-        }
 
-        if (strcmp (temp_param->name, "datab_clock") == 0){
-            assert( temp_param->type == NODE_PARAMETER_STRING );
-            if(strcmp(temp_param->value.string_value, "none") == 0) {
-                datab_input_reg = false;
+            if (strcmp (temp_param->name, "datab_clock") == 0){
+                assert( temp_param->type == NODE_PARAMETER_STRING );
+                if(strcmp(temp_param->value.string_value, "none") == 0) {
+                    datab_input_reg = false;
+                }
+                continue;
             }
-            continue;
-        }
-        if (strcmp (temp_param->name, "signa_clock") == 0){
-            assert( temp_param->type == NODE_PARAMETER_STRING );
-            if(strcmp(temp_param->value.string_value, "none") == 0) {
-                signa_input_reg = false;
+            if (strcmp (temp_param->name, "signa_clock") == 0){
+                assert( temp_param->type == NODE_PARAMETER_STRING );
+                if(strcmp(temp_param->value.string_value, "none") == 0) {
+                    signa_input_reg = false;
+                }
+                continue;
             }
-            continue;
-        }
-        if (strcmp (temp_param->name, "signb_clock") == 0){
-            assert( temp_param->type == NODE_PARAMETER_STRING );
-            if(strcmp(temp_param->value.string_value, "none") == 0) {
-                signb_input_reg = false;
+            if (strcmp (temp_param->name, "signb_clock") == 0){
+                assert( temp_param->type == NODE_PARAMETER_STRING );
+                if(strcmp(temp_param->value.string_value, "none") == 0) {
+                    signb_input_reg = false;
+                }
+                continue;
             }
-            continue;
-        }
-        if (strcmp (temp_param->name, "scanouta_clock") == 0){
-            assert( temp_param->type == NODE_PARAMETER_STRING );
-            if(strcmp(temp_param->value.string_value, "none") == 0) {
-                scanouta_output_reg = false;
+            if (strcmp (temp_param->name, "scanouta_clock") == 0){
+                assert( temp_param->type == NODE_PARAMETER_STRING );
+                if(strcmp(temp_param->value.string_value, "none") == 0) {
+                    scanouta_output_reg = false;
+                }
+                continue;
             }
-            continue;
-        }
-    }
-
-    //If ANY of the input ports are registered, we model all input ports as registered
-    if(dataa_input_reg || datab_input_reg || signa_input_reg || signb_input_reg) {
-
-        //In the unsual case of only some inputs being registered, print a warning to the user
-        if(!dataa_input_reg || !datab_input_reg || !signa_input_reg || !signb_input_reg) {
-            cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has only some inputs registered.";
-            cout << " Approximating as all inputs registered.  May change circuit critical path." << endl; 
         }
 
-        //Mark this pimitive instance as having registered inputs
-        //cout << "DSP mac_mult '" << vqm_node->name << "' with REG inputs" << endl;
-        mode_hash.append(".input_type{reg}");
+        //If ANY of the input ports are registered, we model all input ports as registered
+        if(dataa_input_reg || datab_input_reg || signa_input_reg || signb_input_reg) {
 
-    } else {
-        //Mark this primitive instance as having unregistered inputs
-        //cout << "DSP mac_mult '" << vqm_node->name << "' with COMB inputs" << endl;
-        mode_hash.append(".input_type{comb}");
-    }
+            //In the unsual case of only some inputs being registered, print a warning to the user
+            if(!dataa_input_reg || !datab_input_reg || !signa_input_reg || !signb_input_reg) {
+                cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has only some inputs registered.";
+                cout << " Approximating as all inputs registered.  May change circuit critical path." << endl; 
+            }
 
-    //Check if we are approximating the registered scanouta port
-    if(scanouta_output_reg) {
-        cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has registered 'scanouta' port.";
-        cout << " Approximating as combinational.  May change circuit critical path." << endl; 
+            //Mark this pimitive instance as having registered inputs
+            //cout << "DSP mac_mult '" << vqm_node->name << "' with REG inputs" << endl;
+            mode_hash.append(".input_type{reg}");
+
+        } else {
+            //Mark this primitive instance as having unregistered inputs
+            //cout << "DSP mac_mult '" << vqm_node->name << "' with COMB inputs" << endl;
+            mode_hash.append(".input_type{comb}");
+        }
+
+        //Check if we are approximating the registered scanouta port
+        if(scanouta_output_reg) {
+            cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has registered 'scanouta' port.";
+            cout << " Approximating as combinational.  May change circuit critical path." << endl; 
+        }
     }
 }
 
@@ -302,86 +307,90 @@ void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* arch_models, 
     // See QUIP stratixiii_dsp_wys.pdf for DSP output architecture details and port/parameter
     // meanings.
     assert(strcmp(vqm_node->type, "stratixiv_mac_out") == 0);
+    if(elab_mode == MODES_TIMING) {
+        //Only elaborate registered/combinational behaviour if in timing accurate
+        // mode elaboration
     
-    //Assume all registered inputs/outputs are registered
-    //  Note that the mac_out has many possibly clocked inputs and outputs.
-    //  Most would never be on the critical path, so we do not check those.
-    bool first_adder0_reg = true;
-    bool first_adder1_reg = true;
-    bool second_adder_reg = true; //Note to give a warning
-    bool output_reg = true;
+        //Assume all registered inputs/outputs are registered
+        //  Note that the mac_out has many possibly clocked inputs and outputs.
+        //  Most would never be on the critical path, so we do not check those.
+        bool first_adder0_reg = true;
+        bool first_adder1_reg = true;
+        bool second_adder_reg = true; //Note to give a warning
+        bool output_reg = true;
 
 
-	for (int i = 0; i < vqm_node->number_of_params; i++){
-		//Each parameter specifies a configuration of the node in the circuit.
-		t_node_parameter* temp_param = vqm_node->array_of_params[i];
+        for (int i = 0; i < vqm_node->number_of_params; i++){
+            //Each parameter specifies a configuration of the node in the circuit.
+            t_node_parameter* temp_param = vqm_node->array_of_params[i];
 
-        //Check the clocking related parameters
-        if (strcmp (temp_param->name, "first_adder0_clock") == 0){
-            assert( temp_param->type == NODE_PARAMETER_STRING );
-            if(strcmp(temp_param->value.string_value, "none") == 0) {
-                first_adder0_reg = false;
+            //Check the clocking related parameters
+            if (strcmp (temp_param->name, "first_adder0_clock") == 0){
+                assert( temp_param->type == NODE_PARAMETER_STRING );
+                if(strcmp(temp_param->value.string_value, "none") == 0) {
+                    first_adder0_reg = false;
+                }
+                continue;
             }
-            continue;
-        }
-        if (strcmp (temp_param->name, "first_adder1_clock") == 0){
-            assert( temp_param->type == NODE_PARAMETER_STRING );
-            if(strcmp(temp_param->value.string_value, "none") == 0) {
-                first_adder1_reg = false;
+            if (strcmp (temp_param->name, "first_adder1_clock") == 0){
+                assert( temp_param->type == NODE_PARAMETER_STRING );
+                if(strcmp(temp_param->value.string_value, "none") == 0) {
+                    first_adder1_reg = false;
+                }
+                continue;
             }
-            continue;
-        }
-        if (strcmp (temp_param->name, "second_adder_clock") == 0){
-            assert( temp_param->type == NODE_PARAMETER_STRING );
-            if(strcmp(temp_param->value.string_value, "none") == 0) {
-                second_adder_reg = false;
+            if (strcmp (temp_param->name, "second_adder_clock") == 0){
+                assert( temp_param->type == NODE_PARAMETER_STRING );
+                if(strcmp(temp_param->value.string_value, "none") == 0) {
+                    second_adder_reg = false;
+                }
+                continue;
             }
-            continue;
-        }
-        if (strcmp (temp_param->name, "output_clock") == 0){
-            assert( temp_param->type == NODE_PARAMETER_STRING );
-            if(strcmp(temp_param->value.string_value, "none") == 0) {
-                output_reg = false;
+            if (strcmp (temp_param->name, "output_clock") == 0){
+                assert( temp_param->type == NODE_PARAMETER_STRING );
+                if(strcmp(temp_param->value.string_value, "none") == 0) {
+                    output_reg = false;
+                }
+                continue;
             }
-            continue;
         }
-    }
 
-    //Check for input registers
-    if(first_adder0_reg || first_adder1_reg) {
+        //Check for input registers
+        if(first_adder0_reg || first_adder1_reg) {
 
-        //In nearly all reasonable usage modes, both adders should be using the same clock,
-        // Print a warning if they are not
-        if(!first_adder0_reg || !first_adder1_reg) {
-            cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has only some inputs registered.";
-            cout << " Approximating as all inputs registered.  May change circuit critical path." << endl; 
+            //In nearly all reasonable usage modes, both adders should be using the same clock,
+            // Print a warning if they are not
+            if(!first_adder0_reg || !first_adder1_reg) {
+                cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has only some inputs registered.";
+                cout << " Approximating as all inputs registered.  May change circuit critical path." << endl; 
+            }
+            //Mark this pimitive instance as having registered inputs
+            //cout << "DSP mac_out '" << vqm_node->name << "' with REG inputs" << endl;
+            mode_hash.append(".input_type{reg}");
+
+        } else {
+            //Mark this primitive instance as having unregistered inputs
+            //cout << "DSP mac_out '" << vqm_node->name << "' with COMB inputs" << endl;
+            mode_hash.append(".input_type{comb}");
         }
-        //Mark this pimitive instance as having registered inputs
-        //cout << "DSP mac_out '" << vqm_node->name << "' with REG inputs" << endl;
-        mode_hash.append(".input_type{reg}");
 
-    } else {
-        //Mark this primitive instance as having unregistered inputs
-        //cout << "DSP mac_out '" << vqm_node->name << "' with COMB inputs" << endl;
-        mode_hash.append(".input_type{comb}");
-    }
+        //Check for output registers
+        if(output_reg) {
+            //Mark this pimitive instance as having registered outputs
+            //cout << "DSP mac_out '" << vqm_node->name << "' with REG outputs" << endl;
+            mode_hash.append(".output_type{reg}");
 
-    //Check for output registers
-    if(output_reg) {
-        //Mark this pimitive instance as having registered outputs
-        //cout << "DSP mac_out '" << vqm_node->name << "' with REG outputs" << endl;
-        mode_hash.append(".output_type{reg}");
+        } else {
+            //Mark this primitive instance as having unregistered outputs
+            //cout << "DSP mac_out '" << vqm_node->name << "' with COMB outputs" << endl;
+            mode_hash.append(".output_type{comb}");
+        }
 
-    } else {
-        //Mark this primitive instance as having unregistered outputs
-        //cout << "DSP mac_out '" << vqm_node->name << "' with COMB outputs" << endl;
-        mode_hash.append(".output_type{comb}");
-    }
-
-    //Print a warning if second stage adder reg was not used
-    if(!second_adder_reg) {
-        cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' does not use second stage register.";
-        cout << " Please check architecture carefully to verify any timing approximations made about the block." << endl; 
+        //Print a warning if second stage adder reg was not used
+        if(!second_adder_reg) {
+            cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' does not use second stage register.";
+            cout << " Please check architecture carefully to verify any timing approximations made about the block." << endl; 
+        }
     }
 
 }
@@ -444,7 +453,10 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
      *  The following code attempts to identify RAM bocks which do and do not use
      *  output registers.
      */
-    if(port_a_data_width != NULL) {
+    if(elab_mode == MODES_TIMING) {
+        //Only elaborate registered/combinational behaviour if in timing accurate
+        // mode elaboration
+        
         bool found_port_a_output_clock = false;
         bool found_port_b_output_clock = false;
         if(port_a_data_out_clock != NULL && strcmp(port_a_data_out_clock->value.string_value, "none") != 0) {
@@ -459,9 +471,8 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
         if(port_a_data_out_clock != NULL && port_b_data_out_clock != NULL) {
             //assert(found_port_a_output_clock == found_port_b_output_clock);
             cout << "Warning: RAM " << vqm_node->type << " '" << vqm_node->name << "' does not use output registers for";
-            cout << "ports A and B.  The block will be approximated as having registered output ports.";
+            cout << " ports A and B.  The block will be approximated as having registered output ports.";
             cout << " Please check architecture carefully to verify any timing approximations made about the block." << endl; 
-
         }
 
         //Mark whether the outputs are registered or not

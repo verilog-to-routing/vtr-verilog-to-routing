@@ -143,7 +143,7 @@ void init_blif_models(t_blif_model* my_model, t_module* my_module, t_arch* arch)
 
 	//1-to-1 Subcircuit Function
 	//Translates one VQM Node into one BLIF Subcircuit, appends a mode-hash based on 
-	//parameters if elab_mode == MODES.
+	//parameters if elab_mode is MODES or MODES_TIMING.
 	void push_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_subckts);
 
 	//Atomize Subcircuit Function
@@ -432,9 +432,10 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 	setup_tokens (&CmdTokens);
 
 	//Initialize non-mandatory variables to default values
+    // Be sure to update print_usage() if this is changed
 	debug_mode = T_FALSE;
 	verbose_mode = T_FALSE;
-	elab_mode = MODES;
+	elab_mode = MODES_TIMING;
 	lut_mode = VQM;
 	clean_mode = CL_ALL;
 	buffd_outs = T_FALSE;
@@ -498,6 +499,8 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 						elab_mode = NONE;
 					} else if ((strcmp(argv[i+1], "modes")) == 0){
 						elab_mode = MODES;
+					} else if ((strcmp(argv[i+1], "modes_timing")) == 0){
+						elab_mode = MODES_TIMING;
 					} else if ((strcmp(argv[i+1], "atoms")) == 0){
 						elab_mode = ATOMS;	//NOTE: ATOMIZING ALGORITHM INCOMPLETE.
 					} else {
@@ -721,14 +724,14 @@ void 	init_blif_subckts (	t_node **vqm_nodes,
 
 		if(verbose_mode){
 			assert(temp_node->name != NULL);
-			cout << "\n\t\tProcessing VQM Node " << temp_node->name ;
+			cout << "\n\t\tProcessing VQM Node " << temp_node->name  << endl;
 		}
 
 		//Based on the specified LUT and elaboration mode, translate the current node
 		//into a blif subckt or LUT(or group of subckts)
 		if ((lut_mode == BLIF)&&(is_lut(temp_node))){
 			push_lut ( temp_node, &(my_model->luts) );
-		} else if ((elab_mode == NONE)||(elab_mode == MODES)){
+		} else if ((elab_mode == NONE)||(elab_mode == MODES)||(elab_mode == MODES_TIMING)){
 			push_node_1_to_1 (temp_node, arch_models, &(my_model->subckts));
 		} else if (elab_mode == ATOMS){
 			push_node_atomize (temp_node, arch_models, &(my_model->subckts));
@@ -824,7 +827,7 @@ void push_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_sub
 		assert (vqm_node->type != NULL);
 		search = vqm_node->type;	
 
-	} else if (elab_mode == MODES){
+	} else if (elab_mode == MODES || elab_mode == MODES_TIMING){
 		//search for an Architecture model based on the block name and the parameters
 		search = generate_opname(vqm_node, arch_models);  //generate the simple mode-hashed name based on parameters.
 

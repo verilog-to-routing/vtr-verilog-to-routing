@@ -135,7 +135,7 @@ extern t_boolean debug_mode;	//user-set flag causing the creation of intermediat
 
 extern t_boolean verbose_mode;	//user-set flag that indicates more verbose runtime output
 
-typedef enum v_Elab_Mode { NONE, MODES, ATOMS, UNKNOWN } e_elab;
+typedef enum v_Elab_Mode { NONE, MODES, MODES_TIMING, ATOMS, UNKNOWN } e_elab;
 extern e_elab elab_mode;		//user-set flag dictating how to elaborate a VQM Primitive
 
 typedef enum v_LUT_Mode { VQM, BLIF, OTHER } e_lut;
