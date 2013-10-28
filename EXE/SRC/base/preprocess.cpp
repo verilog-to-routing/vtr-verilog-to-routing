@@ -644,16 +644,21 @@ void remove_constant_nets(t_module *module) {
                         cout << node_port->port_name << " to " << const_net->name <<  endl;
                     }
 
-                    //Just over-write the current element to save CPU time, since we don't care about order
-                    if (j > 1 && j < node->number_of_ports-1) {
+                    //Delete the connection, by removing the port (unconnected ports are non-existant in VQM)
+                    
+                    //Copy the last element over the element to be deleted to save CPU time,
+                    // since we don't care about ordering
+                    if(node->number_of_ports > 1 && j < node->number_of_ports - 1) {
                         node->array_of_ports[j] = node->array_of_ports[node->number_of_ports-1];
                     }
-                    node->number_of_ports--; //We now have one less element
+
+                    //Change the array bounds
+                    node->number_of_ports--;
 
                     //In-case the element copied over was also connected to a constant
-                    //net, we need to re-check the current index
+                    //net, we need to re-check the current index on the next loop iteration
                     j--;
-                    
+
                     //Keep track of how many ports were removed
                     num_const_port_connections_removed++;
 
