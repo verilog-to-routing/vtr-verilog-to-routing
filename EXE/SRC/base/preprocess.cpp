@@ -639,24 +639,24 @@ void remove_constant_nets(t_module *module) {
                 t_pin_def* const_net = *pin_def_iter;
 
                 if(node_port->associated_net == const_net) {
-                    //cout << "Constant port connection: " << node->name << " (" << node->type << ") " << node_port->port_name << endl;
-                    //Delete the connection, by removing the port (unconnected ports are non-existant in VQM)
-                    
-                    //Copy the last element over the element to be deleted
-                    //
-                    // Note that we don't reallocate the array size (with realloc), since
-                    // it is unneccessary. It would be reallocated if expanded, and we do
-                    // not suffer from a memory leak since we always keep the array pointer,
-                    // which points to the originally allocated block.
-                    if(node->number_of_ports > 1) {
-                        node->array_of_ports[j] = node->array_of_ports[node->number_of_ports-1];
+                    if(verbose_mode) {
+                        cout << "Constant port connection: " << node->name << " (" << node->type << ") ";
+                        cout << node_port->port_name << " to " << const_net->name <<  endl;
                     }
 
-                    //Change the array bounds
-                    node->number_of_ports--;
+                    //Just over-write the current element to save CPU time, since we don't care about order
+                    if (j > 1 && j < node->number_of_ports-1) {
+                        node->array_of_ports[j] = node->array_of_ports[node->number_of_ports-1];
+                    }
+                    node->number_of_ports--; //We now have one less element
 
+                    //In-case the element copied over was also connected to a constant
+                    //net, we need to re-check the current index
+                    j--;
+                    
                     //Keep track of how many ports were removed
                     num_const_port_connections_removed++;
+
                 }
             }
         }
