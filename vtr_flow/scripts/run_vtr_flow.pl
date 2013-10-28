@@ -80,6 +80,7 @@ my $do_power                = 0;
 my $check_equivalent		= "off";
 my $gen_postsynthesis_netlist 	= "off";
 my $seed					= 1;
+my $min_hard_mult_size		= 3;
 my $min_hard_adder_size		= 1;
 
 while ( $token = shift(@ARGV) ) {
@@ -127,6 +128,9 @@ while ( $token = shift(@ARGV) ) {
 	}
 	elsif ( $token eq "-seed" ) {
 		$seed = shift(@ARGV);
+	}
+	elsif ( $token eq "-min_hard_mult_size" ) {
+		$min_hard_mult_size = shift(@ARGV);
 	}
 	elsif ( $token eq "-min_hard_adder_size" ) {
 		$min_hard_adder_size = shift(@ARGV);
@@ -333,6 +337,7 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 	file_find_and_replace( $odin_config_file_path, "ZZZ",
 		$odin_output_file_name );
 	file_find_and_replace( $odin_config_file_path, "PPP", $mem_size );
+	file_find_and_replace( $odin_config_file_path, "MMM", $min_hard_mult_size );
 	file_find_and_replace( $odin_config_file_path, "AAA", $min_hard_adder_size );
 
 	if ( !$error_code ) {
