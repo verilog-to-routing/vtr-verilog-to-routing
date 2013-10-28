@@ -106,9 +106,12 @@ static struct s_molecule_link *memory_pool; /*Declared here so I can free easily
 static int *net_output_feeds_driving_block_input;
 
 /* Timing information for blocks */
-
 static float *block_criticality = NULL;
 static int *critindexarray = NULL;
+
+/* Score different seeds for blocks */
+static float *seed_blend_gain = NULL;
+static int *seed_blend_index_array = NULL;
 
 /* Runtime accounting */
 static clock_t new_route_t = 0;
@@ -226,7 +229,7 @@ static void check_clustering(int num_clb, t_block *clb, boolean *is_clock);
 
 static void check_cluster_logical_blocks(t_pb *pb, boolean *blocks_checked);
 
-static t_pack_molecule* get_most_critical_seed_molecule(int * indexofcrit);
+static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, boolean getblend);
 
 static float get_molecule_gain(t_pack_molecule *molecule, map<int, float> &blk_gain);
 static int compare_molecule_gain(const void *a, const void *b);
@@ -264,7 +267,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	int i, iblk, num_molecules, blocks_since_last_analysis, num_clb, max_nets_in_pb_type,  
 		cur_nets_in_pb_type, num_blocks_hill_added, max_cluster_size, cur_cluster_size, 
 		max_molecule_inputs, max_pb_depth, cur_pb_depth, num_unrelated_clustering_attempts,
-		indexofcrit, savedindexofcrit /* index of next most timing critical block */,
+		seedindex, savedseedindex /* index of next most timing critical block */,
 		detailed_routing_stage, *hill_climbing_inputs_avail;
 
 	int *num_used_instances_type, *num_instances_type; 
@@ -304,7 +307,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	max_pb_depth = 0;
 	max_nets_in_pb_type = 0;
 
-	indexofcrit = 0;
+	seedindex = 0;
 
 	cur_molecule = molecule_head;
 	num_molecules = 0;
@@ -387,9 +390,13 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 		critindexarray = (int*) my_malloc(num_logical_blocks * sizeof(int));
 
+		seed_blend_gain = (float*) my_calloc(num_logical_blocks, sizeof(float));
+		seed_blend_index_array = (int*) my_malloc(num_logical_blocks * sizeof(int));
+
 		for (i = 0; i < num_logical_blocks; i++) {
 			assert(logical_block[i].index == i);
 			critindexarray[i] = i;
+			seed_blend_index_array[i] = i;
 		}
 
 #ifdef PATH_COUNTING
@@ -407,6 +414,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				/* The criticality of each block is the maximum of the criticalities of all its pins. */
 				if (block_criticality[iblk] < crit) {
 					block_criticality[iblk] = crit;
+					seed_blend_gain[iblk] = crit;
 				}
 			}
 		}
@@ -429,19 +437,22 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						+ distance_scaling;
 				if (block_criticality[iblk] < crit) {
 					block_criticality[iblk] = crit;
+					seed_blend_gain[iblk] = crit;
 				}
 			}
 		}
 #endif
 		heapsort(critindexarray, block_criticality, num_logical_blocks, 1);
+		heapsort(seed_blend_index_array, seed_blend_gain, num_logical_blocks, 1);
 		
 		if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES)) {
 			print_block_criticalities(getEchoFileName(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES));
 		}
 
-
-		if (cluster_seed_type == VPACK_TIMING) {
-			istart = get_most_critical_seed_molecule(&indexofcrit);
+		if (cluster_seed_type == VPACK_BLEND) {
+			istart = get_highest_gain_seed_molecule(&seedindex, TRUE);
+		} else if (cluster_seed_type == VPACK_TIMING) {
+			istart = get_highest_gain_seed_molecule(&seedindex, FALSE);
 		} else {/*max input seed*/
 			istart = get_seed_logical_molecule_with_most_ext_inputs(
 					max_molecule_inputs);
@@ -458,7 +469,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	while (istart != NULL) {
 		is_cluster_legal = FALSE;
-		savedindexofcrit = indexofcrit;
+		savedseedindex = seedindex;
 		for (detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_END; detailed_routing_stage++) {
 			reset_legalizer_for_cluster(&clb[num_clb]);
 
@@ -579,8 +590,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					if (num_blocks_hill_added > 0 && !early_exit) {
 						blocks_since_last_analysis += num_blocks_hill_added;
 					}
-					if (cluster_seed_type == VPACK_TIMING) {
-						istart = get_most_critical_seed_molecule(&indexofcrit);
+					if (cluster_seed_type == VPACK_BLEND) {
+						istart = get_highest_gain_seed_molecule(&seedindex, TRUE);
+					} else if (cluster_seed_type == VPACK_TIMING) {
+						istart = get_highest_gain_seed_molecule(&seedindex, FALSE);
 					} else { /*max input seed*/
 						istart = get_seed_logical_molecule_with_most_ext_inputs(
 								max_molecule_inputs);
@@ -600,7 +613,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				clb[num_clb - 1].name = NULL;
 				clb[num_clb - 1].pb = NULL;
 				num_clb--;
-				indexofcrit = savedindexofcrit;
+				seedindex = savedseedindex;
 			}
 			free_router_data(router_data);
 			router_data = NULL;
@@ -651,9 +664,13 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	if (timing_driven) {
 		free(block_criticality);
 		free(critindexarray);
+		free(seed_blend_gain);
+		free(seed_blend_index_array);
 
 		block_criticality = NULL;
 		critindexarray = NULL;
+		seed_blend_gain = NULL;
+		seed_blend_index_array = NULL;
 	}
 
 	if (timing_driven) {
@@ -2374,7 +2391,7 @@ static void check_cluster_logical_blocks(t_pb *pb, boolean *blocks_checked) {
 	}
 }
 
-static t_pack_molecule* get_most_critical_seed_molecule(int * indexofcrit) {
+static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, boolean getblend) {
 	/* Do_timing_analysis must be called before this, or this function 
 	 * will return garbage. Returns molecule with most critical block;
 	 * if block belongs to multiple molecules, return the biggest molecule. */
@@ -2383,9 +2400,13 @@ static t_pack_molecule* get_most_critical_seed_molecule(int * indexofcrit) {
 	t_pack_molecule *molecule, *best;
 	struct s_linked_vptr *cur;
 
-	while (*indexofcrit < num_logical_blocks) {
+	while (*seedindex < num_logical_blocks) {
 
-		blkidx = critindexarray[(*indexofcrit)++];
+		if(getblend == TRUE) {
+			blkidx = seed_blend_index_array[(*seedindex)++];
+		} else {
+			blkidx = critindexarray[(*seedindex)++];
+		}
 
 		if (logical_block[blkidx].clb_index == NO_CLUSTER) {
 			cur = logical_block[blkidx].packed_molecules;

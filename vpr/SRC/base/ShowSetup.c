@@ -393,6 +393,9 @@ static void ShowPackerOpts(INP struct s_packer_opts PackerOpts) {
 	case VPACK_MAX_INPUTS:
 		vpr_printf_info("MAX_INPUTS\n");
 		break;
+	case VPACK_BLEND:
+		vpr_printf_info("BLEND\n");
+		break;
 	default:
 		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "Unknown packer cluster_seed_type\n");
 	}

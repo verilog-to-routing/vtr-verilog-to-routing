@@ -98,6 +98,7 @@ enum e_OptionArgToken {
 	OT_DETAILED,
 	OT_TIMING,
 	OT_MAX_INPUTS,
+	OT_BLEND,
 	OT_GREEDY,
 	OT_LP,
 	OT_BRUTE_FORCE,

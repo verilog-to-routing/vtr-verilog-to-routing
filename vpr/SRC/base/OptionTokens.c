@@ -98,6 +98,7 @@ struct s_TokenPair OptionArgTokenList[] = {
 		{ "detailed", OT_DETAILED }, 
 		{ "timing", OT_TIMING }, 
 		{ "max_inputs", OT_MAX_INPUTS }, 
+		{ "blend", OT_BLEND }, 
 		{ "greedy", OT_GREEDY }, 
 		{ "lp", OT_LP }, 
 		{ "brute_force", OT_BRUTE_FORCE },

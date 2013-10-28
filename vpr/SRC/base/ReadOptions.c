@@ -792,6 +792,9 @@ ReadClusterSeed(INP char **Args, OUTP enum e_cluster_seed *Type) {
 	case OT_MAX_INPUTS:
 		*Type = VPACK_MAX_INPUTS;
 		break;
+	case OT_BLEND:
+		*Type = VPACK_BLEND;
+		break;
 	default:
 		Error(*PrevArgs);
 	}

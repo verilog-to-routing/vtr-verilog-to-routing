@@ -113,7 +113,7 @@ void vpr_print_usage(void) {
 	/* vpr_printf_info("\t[-hill_climbing on | off]\n"); */
 	/* vpr_printf_info("\t[-sweep_hanging_nets_and_inputs on | off]\n"); */
 	vpr_printf_info("\t[--timing_driven_clustering on | off]\n");
-	vpr_printf_info("\t[--cluster_seed_type timing|max_inputs] [--alpha_clustering <float>] [--beta_clustering <float>]\n");
+	vpr_printf_info("\t[--cluster_seed_type blend|timing|max_inputs] [--alpha_clustering <float>] [--beta_clustering <float>]\n");
 	/* vpr_printf_info("\t[-recompute_timing_after <int>] [-cluster_block_delay <float>]\n"); */
 	vpr_printf_info("\t[--allow_unrelated_clustering on | off]\n");
 	/* vpr_printf_info("\t[-allow_early_exit on | off]\n"); */

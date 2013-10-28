@@ -123,7 +123,7 @@ enum logical_block_types {
 
 /* Selection algorithm for selecting next seed  */
 enum e_cluster_seed {
-	VPACK_TIMING, VPACK_MAX_INPUTS
+	VPACK_TIMING, VPACK_MAX_INPUTS, VPACK_BLEND
 };
 
 enum e_block_pack_status {
