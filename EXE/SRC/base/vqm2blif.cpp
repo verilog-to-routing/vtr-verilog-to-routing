@@ -122,6 +122,10 @@ t_boolean split_multiclock_blocks; //user-set flag which controls whether dual c
                                        //split into two primitives.  This is needed to work around
                                        //VPR's limitation of one clock per primitive.
 
+t_boolean single_clock_primitives; //user-set flag which controls whether multiclock blocks have
+                                   // their extra clocks dropped.  This is a work around for
+                                   // VPR's limitaiton of one clock per primitive.
+
 //============================================================================================
 //			FUNCTION DECLARATIONS
 //============================================================================================
@@ -300,7 +304,8 @@ int main(int argc, char* argv[])
     cout << "\n>> Preprocessing Netlist...\n";
     processStart = clock();
 
-    preprocess_netlist(my_module, &arch, types, numTypes, fix_global_nets, split_multiclock_blocks);
+    preprocess_netlist(my_module, &arch, types, numTypes, fix_global_nets, split_multiclock_blocks,
+                       single_clock_primitives);
 	
     if (debug_mode){
 		//Print debug info to "<project_path>_module.echo"
@@ -435,6 +440,7 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 	buffd_outs = T_FALSE;
     fix_global_nets = T_FALSE;
     split_multiclock_blocks = T_FALSE;
+    single_clock_primitives = T_FALSE;
 
 	//Now read the command line to configure input variables.
 	for (int i = 1; i < argc; i++){
@@ -539,6 +545,9 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
                 case OT_SPLIT_MULTICLOCK_BLOCKS:
                     split_multiclock_blocks = T_TRUE;
                     break;
+                case OT_SINGLE_CLOCK_PRIMITIVES:
+                    single_clock_primitives = T_TRUE;
+                    break;
 				default:
 					//Should never get here; unknown tokens aren't mapped.
 					cout << "\nERROR: Token " << argv[i] << " mishandled.\n" ;
@@ -586,6 +595,7 @@ void setup_tokens (tokmap* tokens){
 	tokens->insert(tokpair("-buffouts", OT_BUFFOUTS));
 	tokens->insert(tokpair("-fixglobals", OT_FIXGLOBALS));
 	tokens->insert(tokpair("-split_multiclock_blocks", OT_SPLIT_MULTICLOCK_BLOCKS));
+	tokens->insert(tokpair("-single_clock_primitives", OT_SINGLE_CLOCK_PRIMITIVES));
 }
 
 //============================================================================================

@@ -79,6 +79,7 @@ enum v_OptionBaseToken
 	OT_BUFFOUTS,
     OT_FIXGLOBALS,
     OT_SPLIT_MULTICLOCK_BLOCKS,
+    OT_SINGLE_CLOCK_PRIMITIVES,
 	OT_UNKNOWN
 };
 
@@ -103,6 +104,11 @@ void construct_filename (char* filename, const char* path, const char* ext);	//c
 //Naming Conventions
 
 string generate_opname (t_node* vqm_node, t_model* arch_models);	//generates a mode-hashed name for a subcircuit instance
+
+string generate_opname_stratixiv (t_node* vqm_node, t_model* arch_models); //mode-hash for Stratix IV
+void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, string& mode_hash); //mode-hash for Stratix IV RAM blocks
+void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, t_model* arch_models, string& mode_hash); //mode-hash for Stratix IV DSP Multiplers
+void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* arch_models, string& mode_hash); //mode-hash for Stratix IV DSP Output (MAC)
 
 t_model* find_arch_model_by_name(string model_name, t_model* arch_models); //returns the pointer to a module from the arch file, searches by name
 

@@ -28,6 +28,10 @@ int fix_netlist_connectivity_for_inout_pins(t_split_inout_pin* new_input_pin,
 
 //Functions to remove global constants
 void remove_constant_nets(t_module *module);
+void remove_node_port(t_node* node, int port_index);
+
+//Functions to remove additional clocks
+void remove_extra_primitive_clocks(t_module *module);
 
 
 //Functions to identify dual-clock RAMs and split them into seperate blocks
@@ -76,33 +80,48 @@ t_node* add_buffer(t_module* module, t_buffer_type buffer_type, int num_buffers_
 void print_map(t_global_ports global_ports);
 //============================================================================================
 //============================================================================================
-void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types, t_boolean fix_global_nets, t_boolean split_multiclock_blocks){
+void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types, 
+                        t_boolean fix_global_nets, t_boolean split_multiclock_blocks, t_boolean single_clock_primitives){
     /*
      * Put all netlist pre-processing function calls here
      */
 
     //Clean up 'inout' pins by replacing them with
     // seperate 'input' and 'output' pins
-    cout << "\t>> Preprocessing Netlist to decompose inout pins\n";
+    cout << "\t>> Preprocessing Netlist to decompose inout pins" << endl;
     decompose_inout_pins(module, arch);
 
-    cout << "\n";
+    cout << endl;
 
     cout << "\t>> Preprocessing Netlist to remove constant nets" << endl;
     remove_constant_nets(module);
 
-    if(split_multiclock_blocks) {
-        cout << "\t>> Preprocessing Netlist to decompose dual-clock Blocks\n";
-        decompose_multiclock_blocks(module, arch, arch_types, num_types);
+    cout << endl;
+
+    if(single_clock_primitives && split_multiclock_blocks) {
+        cout << "ERROR: Can not force single clocks while splitting multiclock blocks!" << endl;
+    } else {
+
+        if(single_clock_primitives) {
+            cout << "\t>> Preprocessing Netlist to remove extra clocks from blocks" << endl;
+            remove_extra_primitive_clocks(module);
+        }
+
+        if(split_multiclock_blocks) {
+            cout << "\t>> Preprocessing Netlist to decompose dual-clock Blocks" << endl;
+            decompose_multiclock_blocks(module, arch, arch_types, num_types);
+        }
     }
+    cout << endl;
 
     if(fix_global_nets) {
         //Add fake_gbuf cells to allow global signals (e.g. clocks & resets) to be
         // routed on 'global' networks, but still drive non-global signals (e.g. LUT
         // inputs, output pins etc.).
-        cout << "\t>> Preprocessing Netlist to insert global to non-global buffers\n";
+        cout << "\t>> Preprocessing Netlist to insert global to non-global buffers" << endl;
         add_global_to_nonglobal_buffers(module, arch, arch_types, num_types);
     }
+    cout << endl;
 }
 
 //============================================================================================
@@ -303,7 +322,7 @@ void decompose_inout_pins(t_module* module, t_arch* arch){
     } //module pins
 
     //Stats
-    cout << "\t>> Decomposed " << number_of_inout_pins_found << " 'inout' pin(s), moving " << number_of_nets_moved << " net(s)\n";
+    cout << "\t>> Decomposed " << number_of_inout_pins_found << " 'inout' pin(s), moving " << number_of_nets_moved << " net(s)" << endl;
 }
 
 t_model* find_model_in_architecture(t_model* arch_models, t_node* node) {
@@ -645,15 +664,7 @@ void remove_constant_nets(t_module *module) {
                     }
 
                     //Delete the connection, by removing the port (unconnected ports are non-existant in VQM)
-                    
-                    //Copy the last element over the element to be deleted to save CPU time,
-                    // since we don't care about ordering
-                    if(node->number_of_ports > 1 && j < node->number_of_ports - 1) {
-                        node->array_of_ports[j] = node->array_of_ports[node->number_of_ports-1];
-                    }
-
-                    //Change the array bounds
-                    node->number_of_ports--;
+                    remove_node_port(node, j);
 
                     //In-case the element copied over was also connected to a constant
                     //net, we need to re-check the current index on the next loop iteration
@@ -667,8 +678,83 @@ void remove_constant_nets(t_module *module) {
         }
     }
 
-    cout << "\t>> Removed " << num_const_port_connections_removed << " connections to constant nets" << endl;
+    cout << "\t>> Removed " << num_const_port_connections_removed << " connection(s) to " << constant_nets.size() << " constant net(s)" << endl;
     
+}
+
+void remove_node_port(t_node* node, int port_index) {
+    //Copy the last element over the element to be deleted to save CPU time,
+    // since we don't care about ordering
+    if(node->number_of_ports > 1 && port_index < node->number_of_ports - 1) {
+        node->array_of_ports[port_index] = node->array_of_ports[node->number_of_ports-1];
+    }
+
+    //Change the array bounds
+    node->number_of_ports--;
+}
+
+//============================================================================================
+//============================================================================================
+void remove_extra_primitive_clocks(t_module *module) {
+    int num_multiclock_nodes = 0;
+    int num_clock_ports_removed = 0;
+
+
+    for(int i = 0; i < module->number_of_nodes; ++i) {
+        vector<char*> clock_ports_to_remove;
+
+        t_node* node = module->array_of_nodes[i];
+
+        for(int j = 0; j < node->number_of_ports; j++) {
+            t_node_port_association* node_port = node->array_of_ports[j];
+
+            //Check if the port name starts with clock
+            // strstr() returns a pointer the the place in port_name
+            // which contains 'clk', and NULL if it isn't found
+            char* find_ptr = strstr(node_port->port_name, "clk");
+
+            if(find_ptr != NULL && find_ptr == node_port->port_name) {
+                //The port_name starts with 'clk' 
+
+                if(strcmp(node_port->port_name, "clk0") != 0) {
+                    //The port name is not 'clk0' and hence it is added 
+                    //to the list to be removed
+                    clock_ports_to_remove.push_back(node_port->port_name);
+                }
+            }
+
+        }
+
+        //Remove the extra clock ports if we have multiple
+        if(clock_ports_to_remove.size() > 0) {
+            //We have mulitple clock ports
+            num_multiclock_nodes++;
+
+            if(verbose_mode)
+                cout << "\t\tMulti clock port netlist primitive: " << node->name << " (" << node->type << ")" << endl;
+
+            for(vector<char*>::iterator port_name_iter = clock_ports_to_remove.begin(); 
+                port_name_iter != clock_ports_to_remove.end(); port_name_iter++) {
+                char* target_port_name = *port_name_iter;
+
+                for(int j = 0; j < node->number_of_ports; j++) {
+                    t_node_port_association* node_port = node->array_of_ports[j];
+
+                    if(strcmp(node_port->port_name, target_port_name) == 0) {
+                        //It is a clock port to remove
+                        if(verbose_mode)
+                            cout << "\t\t  Removed port: " << node_port->port_name << endl;
+
+                        remove_node_port(node, j);
+                        num_clock_ports_removed++;
+                    }
+                }
+            }
+        }
+    }
+
+    cout << "\t>> Removed " << num_clock_ports_removed << " clock port(s) from " << num_multiclock_nodes << " netlist primitives(s)." << endl;
+
 }
 
 //============================================================================================

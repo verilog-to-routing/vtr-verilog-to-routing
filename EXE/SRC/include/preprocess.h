@@ -10,7 +10,8 @@
 //============================================================================================
 //				GLOBALS
 //============================================================================================
-void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types, t_boolean fix_global_nets, t_boolean split_multiclock_blocks);
+void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types,
+                        t_boolean fix_global_nets, t_boolean split_multiclock_blocks, t_boolean single_clock_primitives);
 
 //============================================================================================
 //				STRUCTURES & TYPEDEFS

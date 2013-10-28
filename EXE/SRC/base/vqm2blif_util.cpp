@@ -16,6 +16,7 @@ void print_usage (t_boolean terminate){
 	cout << "\t-luts [vqm | blif]\n" ;
     cout << "\t-fixglobals\n";
     cout << "\t-split_multiclock_blocks\n";
+    cout << "\t-single_clock_primitives\n";
 	cout << "\t-debug\n" ;
 	cout << "\t-verbose\n" ;
 	cout << "\nNote: All flags are order-independant. For more information, see README.txt\n\n";
@@ -97,6 +98,21 @@ string get_wire_name(t_pin_def* net, int index){
 //============================================================================================
 
 string generate_opname (t_node* vqm_node, t_model* arch_models){
+    //Add support for different architectures here.
+    // Currently only support Stratix IV
+    string mode_hash = generate_opname_stratixiv(vqm_node, arch_models);
+    
+    //Final sanity check
+    if (NULL == find_arch_model_by_name(mode_hash, arch_models)){
+        cout << "Error: could not find primitive '" << mode_hash << "' in architecture file" << endl;
+        exit(1);
+    }
+
+    return mode_hash;
+
+}
+
+string generate_opname_stratixiv (t_node* vqm_node, t_model* arch_models){
 /*  Generates a mode-hash string based on a node's name and parameter set
  *
  *	ARGUMENTS
@@ -109,17 +125,9 @@ string generate_opname (t_node* vqm_node, t_model* arch_models){
 
 	t_node_parameter* temp_param;	//temporary container for the node's parameters
    
-    //We need to save the ram data and address widths, we can only make decision based on all the parameters
+    //The blocks operation mode
     t_node_parameter* operation_mode = NULL;
-    t_node_parameter* port_a_data_width = NULL;
-    t_node_parameter* port_a_addr_width = NULL;
-    t_node_parameter* port_b_data_width = NULL;
-    t_node_parameter* port_b_addr_width = NULL;
-    t_node_parameter* port_a_data_out_clock = NULL;
-    t_node_parameter* port_b_data_out_clock = NULL;
-
-    char buffer[128]; //For integer to string conversion, use with snprintf which checks for overflow
-
+    
 	for (int i = 0; i < vqm_node->number_of_params; i++){
 		//Each parameter specifies a configuration of the node in the circuit.
 		temp_param = vqm_node->array_of_params[i];
@@ -128,8 +136,276 @@ string generate_opname (t_node* vqm_node, t_model* arch_models){
 		if (strcmp (temp_param->name, "operation_mode") == 0){
 			assert( temp_param->type == NODE_PARAMETER_STRING );
             operation_mode = temp_param;
-            continue;
+            break;
 		} 
+    }
+    
+    //Simple opmode name appended
+    //    NOTE: this applies to all blocks
+    if (operation_mode != NULL) {
+        //Copy the string
+        char* temp_string_value = my_strdup(operation_mode->value.string_value);
+
+        //Remove characters that are invalid in blif
+        clean_name(temp_string_value);
+
+        //Add the opmode
+        mode_hash.append(".opmode{" + (string)temp_string_value + "}");
+
+        free(temp_string_value);
+    }
+
+    /*
+     * DSP Block Multipliers
+     */
+    if(strcmp(vqm_node->type, "stratixiv_mac_mult") == 0) {
+        generate_opname_stratixiv_dsp_mult(vqm_node, arch_models, mode_hash);
+        
+    }
+
+    /*
+     * DSP Block Output (MAC)
+     */
+    if(strcmp(vqm_node->type, "stratixiv_mac_out") == 0) {
+        generate_opname_stratixiv_dsp_out(vqm_node, arch_models, mode_hash);
+
+    }
+
+    /*
+     * RAM Blocks
+     */
+    if(strcmp(vqm_node->type, "stratixiv_ram_block") == 0) {
+        generate_opname_stratixiv_ram(vqm_node, arch_models, mode_hash);
+    }
+
+    return mode_hash;
+}
+
+void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, t_model* arch_models, string& mode_hash) {
+    //We check for all mac_mult's input ports to see if any use a clock
+    // if so, we set ALL input ports to be registered.  While this is an approximation,
+    // it would be very unusually to have only some of the ports registered.
+    //
+    // E.g. data input registered, but associated sign bit not registered.
+    //
+    // The only exception to this might be if one data input was regisetered, while
+    // the other was not - however more detailed modeling like this would bloat the
+    // architecture description significantly, so we make the above assumption.
+    //
+    // The main output of the mac_mult can not be registered, but the scanouta port can be.
+    // We assume that this never occurs. Since the scanouta port is internal to the hardened DSP
+    // block, it should never end up on the critical path, so this should not impact the accuracy
+    // of system timing.
+    //
+    // We attempt to inform the users of any approximations being made during the conversion
+    // process.
+    //
+    // Provided that an input/outputs clock parameter value is 'none', then it is combinational (doesn't use the register)
+    //
+    // See QUIP stratixiii_dsp_wys.pdf for details on the mac_mult block and meaning of parameters
+    
+    assert(strcmp(vqm_node->type, "stratixiv_mac_mult") == 0);
+
+    //Assume all possibly registered inputs/outputs are registered
+    bool dataa_input_reg = true;
+    bool datab_input_reg = true;
+    bool signa_input_reg = true;
+    bool signb_input_reg = true;
+    bool scanouta_output_reg = true;
+
+	for (int i = 0; i < vqm_node->number_of_params; i++){
+		//Each parameter specifies a configuration of the node in the circuit.
+		t_node_parameter* temp_param = vqm_node->array_of_params[i];
+
+        //Check the clocking related parameters
+        if (strcmp (temp_param->name, "dataa_clock") == 0){
+            assert( temp_param->type == NODE_PARAMETER_STRING );
+            if(strcmp(temp_param->value.string_value, "none") == 0) {
+                dataa_input_reg = false;
+            }
+            continue;
+        }
+
+        if (strcmp (temp_param->name, "datab_clock") == 0){
+            assert( temp_param->type == NODE_PARAMETER_STRING );
+            if(strcmp(temp_param->value.string_value, "none") == 0) {
+                datab_input_reg = false;
+            }
+            continue;
+        }
+        if (strcmp (temp_param->name, "signa_clock") == 0){
+            assert( temp_param->type == NODE_PARAMETER_STRING );
+            if(strcmp(temp_param->value.string_value, "none") == 0) {
+                signa_input_reg = false;
+            }
+            continue;
+        }
+        if (strcmp (temp_param->name, "signb_clock") == 0){
+            assert( temp_param->type == NODE_PARAMETER_STRING );
+            if(strcmp(temp_param->value.string_value, "none") == 0) {
+                signb_input_reg = false;
+            }
+            continue;
+        }
+        if (strcmp (temp_param->name, "scanouta_clock") == 0){
+            assert( temp_param->type == NODE_PARAMETER_STRING );
+            if(strcmp(temp_param->value.string_value, "none") == 0) {
+                scanouta_output_reg = false;
+            }
+            continue;
+        }
+    }
+
+    //If ANY of the input ports are registered, we model all input ports as registered
+    if(dataa_input_reg || datab_input_reg || signa_input_reg || signb_input_reg) {
+
+        //In the unsual case of only some inputs being registered, print a warning to the user
+        if(!dataa_input_reg || !datab_input_reg || !signa_input_reg || !signb_input_reg) {
+            cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has only some inputs registered.";
+            cout << " Approximating as all inputs registered.  May change circuit critical path." << endl; 
+        }
+
+        //Mark this pimitive instance as having registered inputs
+        //cout << "DSP mac_mult '" << vqm_node->name << "' with REG inputs" << endl;
+        mode_hash.append(".input_type{reg}");
+
+    } else {
+        //Mark this primitive instance as having unregistered inputs
+        //cout << "DSP mac_mult '" << vqm_node->name << "' with COMB inputs" << endl;
+        mode_hash.append(".input_type{comb}");
+    }
+
+    //Check if we are approximating the registered scanouta port
+    if(scanouta_output_reg) {
+        cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has registered 'scanouta' port.";
+        cout << " Approximating as combinational.  May change circuit critical path." << endl; 
+    }
+}
+
+void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* arch_models, string& mode_hash) {
+    //It is not practical to model all of the internal registers of the mac_out block, as this
+    // would significantly increase the size of the architecture description.  As a result, we
+    // only identify whether the input or output registers are used.
+    //
+    // For the input registers, we check only for the register after the first adder stage.
+    // This means we don't check the initial input registers for control signals like:
+    //   zerroloopback, zerochainout, zeroacc, signa, signb, rotate, shiftright, round, saturate,
+    //   roundchainout, saturatechainout
+    // However these (except for signa and signb) directly feed the register after the first stage
+    // adder. While this may not be correct from a cycle accurate perspective, from a timing
+    // perspective it should make no difference, as they wouldn't be on the critical path anyway.
+    //
+    // For the output register, we check only for the final register.
+    //
+    // Provided that an input/outputs clock parameter value is 'none', then it is combinational (doesn't use the register)
+    //
+    // See QUIP stratixiii_dsp_wys.pdf for DSP output architecture details and port/parameter
+    // meanings.
+    assert(strcmp(vqm_node->type, "stratixiv_mac_out") == 0);
+    
+    //Assume all registered inputs/outputs are registered
+    //  Note that the mac_out has many possibly clocked inputs and outputs.
+    //  Most would never be on the critical path, so we do not check those.
+    bool first_adder0_reg = true;
+    bool first_adder1_reg = true;
+    bool second_adder_reg = true; //Note to give a warning
+    bool output_reg = true;
+
+
+	for (int i = 0; i < vqm_node->number_of_params; i++){
+		//Each parameter specifies a configuration of the node in the circuit.
+		t_node_parameter* temp_param = vqm_node->array_of_params[i];
+
+        //Check the clocking related parameters
+        if (strcmp (temp_param->name, "first_adder0_clock") == 0){
+            assert( temp_param->type == NODE_PARAMETER_STRING );
+            if(strcmp(temp_param->value.string_value, "none") == 0) {
+                first_adder0_reg = false;
+            }
+            continue;
+        }
+        if (strcmp (temp_param->name, "first_adder1_clock") == 0){
+            assert( temp_param->type == NODE_PARAMETER_STRING );
+            if(strcmp(temp_param->value.string_value, "none") == 0) {
+                first_adder1_reg = false;
+            }
+            continue;
+        }
+        if (strcmp (temp_param->name, "second_adder_clock") == 0){
+            assert( temp_param->type == NODE_PARAMETER_STRING );
+            if(strcmp(temp_param->value.string_value, "none") == 0) {
+                second_adder_reg = false;
+            }
+            continue;
+        }
+        if (strcmp (temp_param->name, "output_clock") == 0){
+            assert( temp_param->type == NODE_PARAMETER_STRING );
+            if(strcmp(temp_param->value.string_value, "none") == 0) {
+                output_reg = false;
+            }
+            continue;
+        }
+    }
+
+    //Check for input registers
+    if(first_adder0_reg || first_adder1_reg) {
+
+        //In nearly all reasonable usage modes, both adders should be using the same clock,
+        // Print a warning if they are not
+        if(!first_adder0_reg || !first_adder1_reg) {
+            cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has only some inputs registered.";
+            cout << " Approximating as all inputs registered.  May change circuit critical path." << endl; 
+        }
+        //Mark this pimitive instance as having registered inputs
+        //cout << "DSP mac_out '" << vqm_node->name << "' with REG inputs" << endl;
+        mode_hash.append(".input_type{reg}");
+
+    } else {
+        //Mark this primitive instance as having unregistered inputs
+        //cout << "DSP mac_out '" << vqm_node->name << "' with COMB inputs" << endl;
+        mode_hash.append(".input_type{comb}");
+    }
+
+    //Check for output registers
+    if(output_reg) {
+        //Mark this pimitive instance as having registered outputs
+        //cout << "DSP mac_out '" << vqm_node->name << "' with REG outputs" << endl;
+        mode_hash.append(".output_type{reg}");
+
+    } else {
+        //Mark this primitive instance as having unregistered outputs
+        //cout << "DSP mac_out '" << vqm_node->name << "' with COMB outputs" << endl;
+        mode_hash.append(".output_type{comb}");
+    }
+
+    //Print a warning if second stage adder reg was not used
+    if(!second_adder_reg) {
+        cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' does not use second stage register.";
+        cout << " Please check architecture carefully to verify any timing approximations made about the block." << endl; 
+    }
+
+}
+        
+void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, string& mode_hash) {
+    assert(strcmp(vqm_node->type, "stratixiv_ram_block") == 0);
+    
+    //We need to save clock information about the RAM to determine whether output registers are used
+    t_node_parameter* port_a_data_out_clock = NULL;
+    t_node_parameter* port_b_data_out_clock = NULL;
+    
+    //We need to save the ram data and address widths, to identfy the RAM type (singel port, rom, simple dual port, true dual port)
+    t_node_parameter* port_a_data_width = NULL;
+    t_node_parameter* port_a_addr_width = NULL;
+    t_node_parameter* port_b_data_width = NULL;
+    t_node_parameter* port_b_addr_width = NULL;
+    
+
+
+    char buffer[128]; //For integer to string conversion, use with snprintf which checks for overflow
+
+	for (int i = 0; i < vqm_node->number_of_params; i++){
+		//Each parameter specifies a configuration of the node in the circuit.
+		t_node_parameter* temp_param = vqm_node->array_of_params[i];
 
         //Save the ram width/depth related parameters
         if (strcmp (temp_param->name, "port_a_data_width") == 0){
@@ -163,28 +439,12 @@ string generate_opname (t_node* vqm_node, t_model* arch_models){
             continue;
         }
     }
-    
-    // 1) Simple opmode name appended
-    //    NOTE: this applies to all blocks, not just memories
-    if (operation_mode != NULL) {
-        //Copy the string
-        char* temp_string_value = my_strdup(operation_mode->value.string_value);
 
-        //Remove characters that are invalid in blif
-        clean_name(temp_string_value);
-
-        //Add the opmode
-        mode_hash.append(".opmode{" + (string)temp_string_value + "}");
-
-        free(temp_string_value);
-    }
-    
     /*
      *  The following code attempts to identify RAM bocks which do and do not use
      *  output registers.
      */
     if(port_a_data_width != NULL) {
-        //Only memory blocks have port_a_data_width, and all memory blocks must have port_a_data_width defined
         bool found_port_a_output_clock = false;
         bool found_port_b_output_clock = false;
         if(port_a_data_out_clock != NULL && strcmp(port_a_data_out_clock->value.string_value, "none") != 0) {
@@ -195,9 +455,13 @@ string generate_opname (t_node* vqm_node, t_model* arch_models){
             found_port_b_output_clock = true;
         }
 
-        //Provided both ports are used, they should have the same type (either comb or reg)
+        //Provided both ports are used, they should have the same output type (comb or reg)
         if(port_a_data_out_clock != NULL && port_b_data_out_clock != NULL) {
-            assert(found_port_a_output_clock == found_port_b_output_clock);
+            //assert(found_port_a_output_clock == found_port_b_output_clock);
+            cout << "Warning: RAM " << vqm_node->type << " '" << vqm_node->name << "' does not use output registers for";
+            cout << "ports A and B.  The block will be approximated as having registered output ports.";
+            cout << " Please check architecture carefully to verify any timing approximations made about the block." << endl; 
+
         }
 
         //Mark whether the outputs are registered or not
@@ -208,8 +472,6 @@ string generate_opname (t_node* vqm_node, t_model* arch_models){
         }
     }
 
-
-
     /*
      *  Which parameters to append to the vqm primitive name depends on what
      *  primitives are included in the Architecture file.
@@ -218,39 +480,35 @@ string generate_opname (t_node* vqm_node, t_model* arch_models){
      *  a RAM primitive possible, PROVIDED it exists in the architecture file.
      *
      *  This is done in several steps:
-     *      1) Create the simplest name (just the opmode)
-     *          e.g. stratixiv_ram_block.opmode{dual_port}
-     *      2) If it is a single port memory, just append both the opmode and address_width
+     *      1) If it is a single port memory, just append both the opmode and address_width
      *          e.g. stratixiv_ram_block.opmode{single_port}.port_a_address_width{7}
-     *      3) If it is a dual_port memory, with two ports of the same width, append the opmode and address_widths
+     *
+     *      2) If it is a dual_port memory, with two ports of the same width, append the opmode and address_widths
      *          e.g. stratixiv_ram_block.opmode{dual_port}.port_a_address_width{5}.port_b_address_width{5}
-     *      4) If it is a dual_port memory, with two ports of different width:
-     *          a) Use the simplest name (1)
+     *
+     *      3) If it is a dual_port memory, with two ports of different width:
+     *          a) Use the simplest name (no extra width or address info appended)
      *          b) Unless the most detailed name (opmode + address_widths + data_widths) exists in the arch file
      *
      */
-
-
-    // NOTE: the following only applies to memory blocks
-
-    // 2) A single port memory, only port A params are found
+    // 1) A single port memory, only port A params are found
     if (   (port_a_data_width != NULL) && (port_a_addr_width != NULL)
         && (port_b_data_width == NULL) && (port_b_addr_width == NULL)) {
 
-            //Only print the address width, the data widths are handled by the VPR memory class
-            snprintf(buffer, sizeof(buffer), "%d", port_a_addr_width->value.integer_value);
-            mode_hash.append(".port_a_address_width{" + (string)buffer + "}");
+        //Only print the address width, the data widths are handled by the VPR memory class
+        snprintf(buffer, sizeof(buffer), "%d", port_a_addr_width->value.integer_value);
+        mode_hash.append(".port_a_address_width{" + (string)buffer + "}");
 
-            if (find_arch_model_by_name(mode_hash, arch_models) == NULL){
-                cout << "Error: could not find single port memory primitive '" << mode_hash << "' in architecture file";
-                exit(1);
-            }
+        if (find_arch_model_by_name(mode_hash, arch_models) == NULL){
+            cout << "Error: could not find single port memory primitive '" << mode_hash << "' in architecture file" << endl;
+            exit(1);
+        }
 
     //A dual port memory, both port A and B params have been found
     } else if (   (port_a_data_width != NULL) && (port_a_addr_width != NULL) 
                && (port_b_data_width != NULL) && (port_b_addr_width != NULL)) {
       
-        //3) Both ports are the same size, so only append the address widths, the data widths are handled by the VPR memory class
+        //2) Both ports are the same size, so only append the address widths, the data widths are handled by the VPR memory class
         if (   (port_a_data_width->value.integer_value == port_b_data_width->value.integer_value)
             && (port_a_addr_width->value.integer_value == port_b_addr_width->value.integer_value)) {
 
@@ -264,7 +522,7 @@ string generate_opname (t_node* vqm_node, t_model* arch_models){
                 cout << "Error: could not find dual port (non-mixed_width) memory primitive '" << mode_hash << "' in architecture file";
                 exit(1);
             }
-        //4) Mixed width dual port ram
+        //3) Mixed width dual port ram
         } else {
             //Make a temporary copy of the mode hash
             string tmp_mode_hash = mode_hash;
@@ -289,25 +547,14 @@ string generate_opname (t_node* vqm_node, t_model* arch_models){
 
 
             if (find_arch_model_by_name(tmp_mode_hash, arch_models) == NULL){
-                //4a) Use the default name (operation mode only) 
+                //3a) Use the default name
                 ; // do nothing
             } else {
-                //4b) Use the more detailed name, since it was found in the architecture
+                //3b) Use the more detailed name, since it was found in the architecture
                 mode_hash = tmp_mode_hash;
             }
         }
-	} else {
-        ; //Not a memory, do nothing
     }
-
-
-    //Final sanity check
-    if (NULL == find_arch_model_by_name(mode_hash, arch_models)){
-        cout << "Error: could not find primitive '" << mode_hash << "' in architecture file";
-        exit(1);
-    }
-
-	return mode_hash;
 }
 
 //============================================================================================
