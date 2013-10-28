@@ -414,7 +414,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				/* The criticality of each block is the maximum of the criticalities of all its pins. */
 				if (block_criticality[iblk] < crit) {
 					block_criticality[iblk] = crit;
-					seed_blend_gain[iblk] = crit;
 				}
 			}
 		}
@@ -437,11 +436,30 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						+ distance_scaling;
 				if (block_criticality[iblk] < crit) {
 					block_criticality[iblk] = crit;
-					seed_blend_gain[iblk] = crit;
 				}
 			}
 		}
 #endif
+
+		for (iblk = 0; iblk < num_logical_blocks; iblk++) {
+			/* Score seed gain of each block as a weighted sum of timing criticality, number of tightly coupled blocks connected to it, and number of external inputs */
+			float seed_blend_fac = 0.5;
+			int max_blocks_of_molecule = 0;
+			struct s_linked_vptr *blk_molecules;
+			blk_molecules = logical_block[iblk].packed_molecules;
+			while(blk_molecules != NULL) {
+				t_pack_molecule *blk_mol = (t_pack_molecule*) blk_molecules->data_vptr;
+				if(blk_mol->num_blocks > max_blocks_of_molecule) {
+					max_blocks_of_molecule = blk_mol->num_blocks;
+				}
+				blk_molecules = blk_molecules->next;
+			}
+			seed_blend_gain[iblk] = (
+				              seed_blend_fac * block_criticality[iblk] + 
+							  (1-seed_blend_fac) * (logical_block[iblk].used_input_pins / max_molecule_inputs)
+							  ) * (1 + 0.2 * (max_blocks_of_molecule - 1));
+			
+		}
 		heapsort(critindexarray, block_criticality, num_logical_blocks, 1);
 		heapsort(seed_blend_index_array, seed_blend_gain, num_logical_blocks, 1);
 		
