@@ -75,6 +75,7 @@ my $timing_driven           = "on";
 my $min_chan_width          = -1; 
 my $lut_size                = -1;
 my $vpr_cluster_seed_type   = "";
+my $routing_failure_predictor = "safe";
 my $tech_file               = "";
 my $do_power                = 0;
 my $check_equivalent		= "off";
@@ -107,6 +108,9 @@ while ( $token = shift(@ARGV) ) {
 	}
 	elsif ( $token eq "-lut_size" ) {
 		$lut_size = shift(@ARGV);
+	}
+	elsif ( $token eq "-routing_failure_predictor" ) {
+		$routing_failure_predictor = shift(@ARGV);
 	}
 	elsif ( $token eq "-vpr_cluster_seed_type" ) {
 		$vpr_cluster_seed_type = shift(@ARGV);
@@ -163,7 +167,7 @@ if ( $vpr_cluster_seed_type eq "" ) {
 		$vpr_cluster_seed_type = "max_inputs";
 	}
 	else {
-		$vpr_cluster_seed_type = "timing";
+		$vpr_cluster_seed_type = "blend";
 	}
 }
 
@@ -459,6 +463,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"--timing_analysis",          "$timing_driven",
 			"--timing_driven_clustering", "$timing_driven",
 			"--cluster_seed_type",        "$vpr_cluster_seed_type",
+			"--routing_failure_predictor", "$routing_failure_predictor",
 			"--sdc_file", 				  "$sdc_file_path",
 			"--seed",			 		  "$seed",
 			"--nodisp"
