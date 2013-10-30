@@ -37,6 +37,7 @@ using namespace std;
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
 #define AAPACK_MAX_NET_SINKS_IGNORE 256				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
 #define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10			/* For high-fanout nets that are ignored, consider a maximum of this many nets */
+#define AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE 4		/* When investigating transitive fanout connections in packing, this is the highest fanout net that will be explored */
 
 #define SCALE_NUM_PATHS 1e-2     /*this value is used as a multiplier to assign a    *
 				  *slightly higher criticality value to nets that    *
@@ -79,6 +80,13 @@ enum e_detailed_routing_stages {
 struct s_molecule_link {
 	t_pack_molecule *moleculeptr;
 	struct s_molecule_link *next;
+};
+
+/* Store stats on nets used by packed block, useful for determining transitively connected blocks 
+(eg. [A1, A2, ..]->[B1, B2, ..]->C implies cluster [A1, A2, ...] and C have a weak link) */
+struct t_lb_net_stats {
+	int num_nets_in_lb;
+	int *nets_in_lb;
 };
 
 /* 1/MARKED_FRAC is the fraction of nets or blocks that must be *
@@ -218,7 +226,7 @@ static t_pack_molecule* get_highest_gain_molecule(
 		INP t_cluster_placement_stats *cluster_placement_stats_ptr);
 
 static t_pack_molecule* get_molecule_for_cluster(
-		INP enum e_packer_algorithm packer_algorithm, INP t_pb *cur_pb,
+		INP enum e_packer_algorithm packer_algorithm, INOUTP t_pb *cur_pb,
 		INP boolean allow_unrelated_clustering,
 		INOUTP int *num_unrelated_clustering_attempts,
 		INP t_cluster_placement_stats *cluster_placement_stats_ptr);
@@ -279,10 +287,11 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	t_cluster_placement_stats *cluster_placement_stats, *cur_cluster_placement_stats_ptr;
 	t_pb_graph_node **primitives_list;
-	t_block *clb;
+	t_block *clb; /* [0..num_clusters-1] */
 	t_slack * slacks = NULL;
 	t_lb_router_data *router_data = NULL;
 	t_pack_molecule *istart, *next_molecule, *prev_molecule, *cur_molecule;
+	t_lb_net_stats *clb_inter_blk_nets = NULL; /* [0..num_clusters-1] */
 
 	vector < vector <t_intra_lb_net> * > intra_lb_routing;
 
@@ -299,6 +308,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	/* TODO: This is memory inefficient, fix if causes problems */
 	clb = (t_block*)my_calloc(num_logical_blocks, sizeof(t_block));
 	num_clb = 0;
+	clb_inter_blk_nets = (t_lb_net_stats*) my_calloc(num_logical_blocks, sizeof(t_lb_net_stats));
+
 	istart = NULL;
 
 	/* determine bound on cluster size and primitive input size */
@@ -621,6 +632,18 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					istart = get_seed_logical_molecule_with_most_ext_inputs(
 							max_molecule_inputs);
 				
+				/* store info that will be used later in packing from pb_stats and free the rest */
+				t_pb_stats *pb_stats = clb[num_clb - 1].pb->pb_stats;
+				clb_inter_blk_nets[num_clb - 1].nets_in_lb = (int*)my_malloc(sizeof(int) * pb_stats->num_marked_nets);
+				for(int inet = 0; inet < pb_stats->num_marked_nets; inet++) {
+					int mnet = pb_stats->marked_nets[inet];
+					int external_terminals = g_atoms_nlist.net[mnet].pins.size() - pb_stats->num_pins_of_net_in_pb[inet];
+					/* Check if external terminals of net is within the fanout limit and that there exists external terminals */
+					if(external_terminals < AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE && external_terminals > 0) {
+						clb_inter_blk_nets[num_clb - 1].nets_in_lb[clb_inter_blk_nets[num_clb - 1].num_nets_in_lb] = mnet;
+						clb_inter_blk_nets[num_clb - 1].num_nets_in_lb++;
+					}
+				}
 				free_pb_stats_recursive(clb[num_clb - 1].pb);
 			} else {
 				/* Free up data structures and requeue used molecules */
@@ -695,8 +718,14 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		free_timing_graph(slacks);
 	}
 
- free (primitives_list);
-
+	free (primitives_list);
+	if(clb_inter_blk_nets != NULL) {
+		for(i = 0; i < num_clb; i++) {
+			free(clb_inter_blk_nets[i].nets_in_lb);
+		}
+	   free(clb_inter_blk_nets);
+	   clb_inter_blk_nets = NULL;
+	}
  	#ifdef CLOCKS_PER_SEC
 		vpr_printf_info("Old intra lb router took %g seconds.\n", 
 				(float)(old_route_t) / CLOCKS_PER_SEC);
