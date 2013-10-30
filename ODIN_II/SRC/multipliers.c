@@ -1131,6 +1131,14 @@ void iterate_multipliers(netlist_t *netlist)
 			/* Check to ensure IF mult needs to be exact size */
 			if(configuration.fixed_hard_multiplier != 0)
 				pad_multiplier(node, netlist); 
+				
+			/* Otherwise, we still want to record the multiplier node for
+			reporting later on (the pad_multiplier function does this for the
+			other case */
+			else
+			{
+				record_mult_distribution(node);
+			}
 		}
 	}
 	return;
