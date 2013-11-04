@@ -218,14 +218,16 @@ static t_pack_molecule* get_highest_gain_molecule(
 		INP enum e_packer_algorithm packer_algorithm, INOUTP t_pb *cur_pb,
 		INP enum e_gain_type gain_mode,
 		INP t_cluster_placement_stats *cluster_placement_stats_ptr,
-		t_lb_net_stats *clb_inter_blk_nets);
+		t_lb_net_stats *clb_inter_blk_nets,
+		int cluster_index);
 
 static t_pack_molecule* get_molecule_for_cluster(
 		INP enum e_packer_algorithm packer_algorithm, INOUTP t_pb *cur_pb,
 		INP boolean allow_unrelated_clustering,
 		INOUTP int *num_unrelated_clustering_attempts,
 		INP t_cluster_placement_stats *cluster_placement_stats_ptr,
-		INP t_lb_net_stats *clb_inter_blk_nets);
+		INP t_lb_net_stats *clb_inter_blk_nets,
+		INP int cluster_index);
 
 static void alloc_and_load_cluster_info(INP int num_clb, INOUTP t_block *clb);
 
@@ -242,9 +244,8 @@ static int get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 
 static void print_block_criticalities(const char * fname);
 
-static void load_transitive_fanout_candidates(vector<t_pack_molecule*> *transitive_fanout_candidates,
-											  map<int, int> *transitive_fanout_candidate_index,
-											  map<int, float> &gain,
+static void load_transitive_fanout_candidates(int cluster_index,
+											  t_pb_stats *pb_stats,
 											  t_lb_net_stats *clb_inter_blk_nets);
 
 /*****************************************/
@@ -535,7 +536,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					clb[num_clb - 1].pb, allow_unrelated_clustering,
 					&num_unrelated_clustering_attempts,
 					cur_cluster_placement_stats_ptr,
-					clb_inter_blk_nets);
+					clb_inter_blk_nets,
+					num_clb - 1);
 			prev_molecule = istart;
 			while (next_molecule != NULL && prev_molecule != next_molecule) {
 				block_pack_status = try_pack_molecule(
@@ -571,7 +573,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 							clb[num_clb - 1].pb, allow_unrelated_clustering,
 							&num_unrelated_clustering_attempts,
 							cur_cluster_placement_stats_ptr,
-							clb_inter_blk_nets);
+							clb_inter_blk_nets,
+							num_clb - 1);
 					continue;
 				} else {
 					/* Continue packing by filling smallest cluster */
@@ -596,7 +599,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						clb[num_clb - 1].pb, allow_unrelated_clustering,
 						&num_unrelated_clustering_attempts,
 						cur_cluster_placement_stats_ptr,
-						clb_inter_blk_nets);
+						clb_inter_blk_nets,
+						num_clb - 1);
 			}
 			vpr_printf_direct("\n");
 			if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
@@ -1277,7 +1281,6 @@ static void alloc_and_load_pb_stats(t_pb *pb, int max_models,
 
 	pb->pb_stats->explore_transitive_fanout = TRUE;
 	pb->pb_stats->transitive_fanout_candidates = NULL;
-	pb->pb_stats->transitive_fanout_candidate_index = NULL;
 }
 /*****************************************/
 
@@ -2138,7 +2141,8 @@ static t_pack_molecule *get_highest_gain_molecule(
 		INP enum e_packer_algorithm packer_algorithm, INOUTP t_pb *cur_pb,
 		INP enum e_gain_type gain_mode,
 		INP t_cluster_placement_stats *cluster_placement_stats_ptr,
-		INP t_lb_net_stats *clb_inter_blk_nets) {
+		INP t_lb_net_stats *clb_inter_blk_nets,
+		INP int cluster_index) {
 
 	/* This routine populates a list of feasible blocks outside the cluster then returns the best one for the list    *
 	 * not currently in a cluster and satisfies the feasibility     *
@@ -2238,10 +2242,8 @@ static t_pack_molecule *get_highest_gain_molecule(
 		if(cur_pb->pb_stats->transitive_fanout_candidates == NULL) {
 			/* First time finding transitive fanout candidates therefore alloc and load them */
 			cur_pb->pb_stats->transitive_fanout_candidates = new vector<t_pack_molecule *>;
-			cur_pb->pb_stats->transitive_fanout_candidate_index = new map<int, int>;
-			load_transitive_fanout_candidates(cur_pb->pb_stats->transitive_fanout_candidates,
-											  cur_pb->pb_stats->transitive_fanout_candidate_index,
-											  cur_pb->pb_stats->gain,
+			load_transitive_fanout_candidates(cluster_index,
+											  cur_pb->pb_stats,
 											  clb_inter_blk_nets);
 
 			/* Only consider candidates that pass a very simple legality check */
@@ -2270,9 +2272,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 		} else {
 			/* Clean up, no more candidates in transitive fanout to consider */
 			delete cur_pb->pb_stats->transitive_fanout_candidates;
-			delete cur_pb->pb_stats->transitive_fanout_candidate_index;
 			cur_pb->pb_stats->transitive_fanout_candidates = NULL;
-			cur_pb->pb_stats->transitive_fanout_candidate_index = NULL;
 			cur_pb->pb_stats->explore_transitive_fanout = FALSE;
 		}
 	}
@@ -2298,7 +2298,8 @@ static t_pack_molecule *get_molecule_for_cluster(
 		INP boolean allow_unrelated_clustering,
 		INOUTP int *num_unrelated_clustering_attempts,
 		INP t_cluster_placement_stats *cluster_placement_stats_ptr,
-		INP t_lb_net_stats *clb_inter_blk_nets) {
+		INP t_lb_net_stats *clb_inter_blk_nets,
+		int cluster_index) {
 
 	/* Finds the vpack block with the the greatest gain that satisifies the      *
 	 * input, clock and capacity constraints of a cluster that are       *
@@ -2310,7 +2311,7 @@ static t_pack_molecule *get_molecule_for_cluster(
 	/* If cannot pack into primitive, try packing into cluster */
 
 	best_molecule = get_highest_gain_molecule(packer_algorithm, cur_pb,
-			NOT_HILL_CLIMBING, cluster_placement_stats_ptr, clb_inter_blk_nets);
+			NOT_HILL_CLIMBING, cluster_placement_stats_ptr, clb_inter_blk_nets, cluster_index);
 
 	/* If no blocks have any gain to the current cluster, the code above *
 	 * will not find anything.  However, another logical_block with no inputs in *
@@ -2962,13 +2963,59 @@ static int get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 	}
 }
 
-
-static void load_transitive_fanout_candidates(vector<t_pack_molecule*> *transitive_fanout_candidates,
-											  map<int, int> *transitive_fanout_candidate_index,
-											  map<int, float> &gain,
+/* Score unclustered atoms that are two hops away from current cluster */
+static void load_transitive_fanout_candidates(int cluster_index,
+											  t_pb_stats *pb_stats,
 											  t_lb_net_stats *clb_inter_blk_nets) {
-//	printf("jedit loaded\n");
+	for(int mnet = 0; mnet < pb_stats->num_marked_nets; mnet++) {
+		int inet = pb_stats->marked_nets[mnet];
+		if(g_atoms_nlist.net[inet].pins.size() < AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE + 1) {
+			for(unsigned int ipin = 0; ipin < g_atoms_nlist.net[inet].pins.size(); ipin++) {
+				int iatom = g_atoms_nlist.net[inet].pins[ipin].block;
+				int tclb = logical_block[iatom].clb_index;
+				if(tclb != cluster_index && tclb != NO_CLUSTER) {
+					/* Explore transitive connections from already packed cluster */
+					for(int itnet = 0; itnet < clb_inter_blk_nets->num_nets_in_lb; itnet++) {
+						int tnet = clb_inter_blk_nets->nets_in_lb[itnet];
+						for(unsigned int tpin = 0; tpin < g_atoms_nlist.net[tnet].pins.size(); tpin++) {
+							int tatom = g_atoms_nlist.net[tnet].pins[tpin].block;
+							if(logical_block[tatom].clb_index == NO_CLUSTER) {
+								/* This transitive atom is not packed, score and add */
+								std::vector<t_pack_molecule *> &transitive_fanout_candidates = *(pb_stats->transitive_fanout_candidates);
 
+								if(pb_stats->gain.count(tatom) == 0) {
+									pb_stats->gain[tatom] = 0.001;									
+								} else {
+									pb_stats->gain[tatom] += 0.001;									
+								}
+
+								struct s_linked_vptr *cur;
+								cur = logical_block[tatom].packed_molecules;
+								while (cur != NULL) {
+									t_pack_molecule *molecule = (t_pack_molecule *) cur->data_vptr;
+									if (molecule->valid) {
+										unsigned int imol = 0;
+
+										/* The number of potential molecules is heavily bounded so this O(N) operation should be safe since N is small */
+										for(imol = 0; imol < transitive_fanout_candidates.size(); imol++) {
+											if(molecule == transitive_fanout_candidates[imol]) {
+												break;
+											}
+										}
+										if(imol == transitive_fanout_candidates.size()) {
+											/* not in candidate list, add to list */
+											transitive_fanout_candidates.push_back(molecule);
+										}
+									}
+									cur = cur->next;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 static void print_block_criticalities(const char * fname) {

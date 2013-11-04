@@ -58,7 +58,6 @@ typedef struct s_pb_stats {
 	int tie_break_high_fanout_net; /* If no marked candidate molecules, use this high fanout net to determine the next candidate atom */
 	boolean explore_transitive_fanout; /* If no marked candidate molecules and no high fanout nets to determine next candidate molecule then explore molecules on transitive fanout */
 	std::vector<t_pack_molecule *> *transitive_fanout_candidates;
-	std::map<int, int> *transitive_fanout_candidate_index;
 
 	/* [0..g_atoms_nlist.net.size()-1].  How many pins of each g_atoms_nlist.net are contained in the *
 	 * currently open pb?                                          */
