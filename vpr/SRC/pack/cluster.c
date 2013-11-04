@@ -2171,6 +2171,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 						for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 							if (molecule->logical_block_ptrs[j] != NULL) {
 								assert(molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
+								iblk = molecule->logical_block_ptrs[j]->index;
 								if (!exists_free_primitive_for_logical_block(
 										cluster_placement_stats_ptr,
 										iblk)) { /* TODO: debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
@@ -2207,6 +2208,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 						for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 							if (molecule->logical_block_ptrs[j] != NULL) {
 								assert(molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
+								iblk = molecule->logical_block_ptrs[j]->index;
 								if (!exists_free_primitive_for_logical_block(
 										cluster_placement_stats_ptr,
 										iblk)) { /* TODO: debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
@@ -2250,6 +2252,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 					for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 						if (molecule->logical_block_ptrs[j] != NULL) {
 							assert(molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
+							iblk = molecule->logical_block_ptrs[j]->index;
 							if (!exists_free_primitive_for_logical_block(
 									cluster_placement_stats_ptr,
 									iblk)) { /* TODO: debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
