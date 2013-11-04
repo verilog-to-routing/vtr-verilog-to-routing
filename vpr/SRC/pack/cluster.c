@@ -2975,8 +2975,8 @@ static void load_transitive_fanout_candidates(int cluster_index,
 				int tclb = logical_block[iatom].clb_index;
 				if(tclb != cluster_index && tclb != NO_CLUSTER) {
 					/* Explore transitive connections from already packed cluster */
-					for(int itnet = 0; itnet < clb_inter_blk_nets->num_nets_in_lb; itnet++) {
-						int tnet = clb_inter_blk_nets->nets_in_lb[itnet];
+					for(int itnet = 0; itnet < clb_inter_blk_nets[tclb].num_nets_in_lb; itnet++) {
+						int tnet = clb_inter_blk_nets[tclb].nets_in_lb[itnet];
 						for(unsigned int tpin = 0; tpin < g_atoms_nlist.net[tnet].pins.size(); tpin++) {
 							int tatom = g_atoms_nlist.net[tnet].pins[tpin].block;
 							if(logical_block[tatom].clb_index == NO_CLUSTER) {
