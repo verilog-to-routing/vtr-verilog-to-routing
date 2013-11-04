@@ -36,8 +36,9 @@ using namespace std;
 
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
 #define AAPACK_MAX_NET_SINKS_IGNORE 256				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
-#define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10			/* For high-fanout nets that are ignored, consider a maximum of this many nets */
+#define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10			/* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
 #define AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE 4		/* When investigating transitive fanout connections in packing, this is the highest fanout net that will be explored */
+#define AAPACK_MAX_TRANSITIVE_EXPLORE 4				/* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less tahn AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
 
 #define SCALE_NUM_PATHS 1e-2     /*this value is used as a multiplier to assign a    *
 				  *slightly higher criticality value to nets that    *
@@ -89,13 +90,6 @@ struct t_lb_net_stats {
 	int *nets_in_lb;
 };
 
-/* 1/MARKED_FRAC is the fraction of nets or blocks that must be *
- * marked in order for the brute force (go through the whole    *
- * data structure linearly) gain update etc. code to be used.   *
- * This is done for speed only; make MARKED_FRAC whatever       *
- * number speeds the code up most.                              */
-#define MARKED_FRAC 2   
-
 /* Keeps a linked list of the unclustered blocks to speed up looking for *
  * unclustered blocks with a certain number of *external* inputs.        *
  * [0..lut_size].  Unclustered_list_head[i] points to the head of the    *
@@ -139,7 +133,7 @@ static void check_for_duplicate_inputs ();
 static boolean is_logical_blk_in_pb(int iblk, t_pb *pb);
 
 static void add_molecule_to_pb_stats_candidates(t_pack_molecule *molecule,
-		map<int, float> &gain, t_pb *pb);
+		map<int, float> &gain, t_pb *pb, int max_queue_size);
 
 static void alloc_and_init_clustering(boolean global_clocks, float alpha,
 		float beta, int max_cluster_size, int max_molecule_inputs,
@@ -223,13 +217,15 @@ static void start_new_cluster(
 static t_pack_molecule* get_highest_gain_molecule(
 		INP enum e_packer_algorithm packer_algorithm, INOUTP t_pb *cur_pb,
 		INP enum e_gain_type gain_mode,
-		INP t_cluster_placement_stats *cluster_placement_stats_ptr);
+		INP t_cluster_placement_stats *cluster_placement_stats_ptr,
+		t_lb_net_stats *clb_inter_blk_nets);
 
 static t_pack_molecule* get_molecule_for_cluster(
 		INP enum e_packer_algorithm packer_algorithm, INOUTP t_pb *cur_pb,
 		INP boolean allow_unrelated_clustering,
 		INOUTP int *num_unrelated_clustering_attempts,
-		INP t_cluster_placement_stats *cluster_placement_stats_ptr);
+		INP t_cluster_placement_stats *cluster_placement_stats_ptr,
+		INP t_lb_net_stats *clb_inter_blk_nets);
 
 static void alloc_and_load_cluster_info(INP int num_clb, INOUTP t_block *clb);
 
@@ -245,6 +241,11 @@ static int get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 		t_pb_graph_pin *pb_graph_pin);
 
 static void print_block_criticalities(const char * fname);
+
+static void load_transitive_fanout_candidates(vector<t_pack_molecule*> *transitive_fanout_candidates,
+											  map<int, int> *transitive_fanout_candidate_index,
+											  map<int, float> &gain,
+											  t_lb_net_stats *clb_inter_blk_nets);
 
 /*****************************************/
 /*globally accessable function*/
@@ -533,7 +534,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			next_molecule = get_molecule_for_cluster(PACK_BRUTE_FORCE,
 					clb[num_clb - 1].pb, allow_unrelated_clustering,
 					&num_unrelated_clustering_attempts,
-					cur_cluster_placement_stats_ptr);
+					cur_cluster_placement_stats_ptr,
+					clb_inter_blk_nets);
 			prev_molecule = istart;
 			while (next_molecule != NULL && prev_molecule != next_molecule) {
 				block_pack_status = try_pack_molecule(
@@ -568,7 +570,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					next_molecule = get_molecule_for_cluster(PACK_BRUTE_FORCE,
 							clb[num_clb - 1].pb, allow_unrelated_clustering,
 							&num_unrelated_clustering_attempts,
-							cur_cluster_placement_stats_ptr);
+							cur_cluster_placement_stats_ptr,
+							clb_inter_blk_nets);
 					continue;
 				} else {
 					/* Continue packing by filling smallest cluster */
@@ -592,7 +595,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				next_molecule = get_molecule_for_cluster(PACK_BRUTE_FORCE,
 						clb[num_clb - 1].pb, allow_unrelated_clustering,
 						&num_unrelated_clustering_attempts,
-						cur_cluster_placement_stats_ptr);
+						cur_cluster_placement_stats_ptr,
+						clb_inter_blk_nets);
 			}
 			vpr_printf_direct("\n");
 			if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
@@ -793,7 +797,7 @@ static boolean is_logical_blk_in_pb(int iblk, t_pb *pb) {
 
 /* Add blk to list of feasible blocks sorted according to gain */
 static void add_molecule_to_pb_stats_candidates(t_pack_molecule *molecule,
-		map<int, float> &gain, t_pb *pb) {
+		map<int, float> &gain, t_pb *pb, int max_queue_size) {
 	int i, j;
 
 	for (i = 0; i < pb->pb_stats->num_feasible_blocks; i++) {
@@ -803,7 +807,7 @@ static void add_molecule_to_pb_stats_candidates(t_pack_molecule *molecule,
 	}
 
 	if (pb->pb_stats->num_feasible_blocks
-			>= AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE - 1) {
+			>= max_queue_size - 1) {
 		/* maximum size for array, remove smallest gain element and sort */
 		if (get_molecule_gain(molecule, gain)
 				> get_molecule_gain(pb->pb_stats->feasible_blocks[0], gain)) {
@@ -1270,6 +1274,10 @@ static void alloc_and_load_pb_stats(t_pb *pb, int max_models,
 	pb->pb_stats->num_marked_blocks = 0;
 
 	pb->pb_stats->num_child_blocks_in_pb = 0;
+
+	pb->pb_stats->explore_transitive_fanout = TRUE;
+	pb->pb_stats->transitive_fanout_candidates = NULL;
+	pb->pb_stats->transitive_fanout_candidate_index = NULL;
 }
 /*****************************************/
 
@@ -2119,11 +2127,18 @@ static void start_new_cluster(
 	num_used_instances_type[new_cluster->type->index]++;
 }
 
-/*****************************************/
+/*
+Get candidate molecule to pack into currently open cluster
+Molecule selection priority:
+	1. Find unpacked molecule based on criticality and strong connectedness (connected by low fanout nets) with current cluster
+	2. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
+	3. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
+*/
 static t_pack_molecule *get_highest_gain_molecule(
 		INP enum e_packer_algorithm packer_algorithm, INOUTP t_pb *cur_pb,
 		INP enum e_gain_type gain_mode,
-		INP t_cluster_placement_stats *cluster_placement_stats_ptr) {
+		INP t_cluster_placement_stats *cluster_placement_stats_ptr,
+		INP t_lb_net_stats *clb_inter_blk_nets) {
 
 	/* This routine populates a list of feasible blocks outside the cluster then returns the best one for the list    *
 	 * not currently in a cluster and satisfies the feasibility     *
@@ -2142,72 +2157,40 @@ static t_pack_molecule *get_highest_gain_molecule(
 				"Hill climbing not supported yet, error out.\n");
 	}
 
+	// 1. Find unpacked molecule based on criticality and strong connectedness (connected by low fanout nets) with current cluster
 	if (cur_pb->pb_stats->num_feasible_blocks == NOT_VALID) {
-		/* Divide into two cases for speed only. */
-		/* Typical case:  not too many blocks have been marked. */
-
 		cur_pb->pb_stats->num_feasible_blocks = 0;
-
-		if (cur_pb->pb_stats->num_marked_blocks
-				< num_logical_blocks / MARKED_FRAC) {
-			for (i = 0; i < cur_pb->pb_stats->num_marked_blocks; i++) {
-				iblk = cur_pb->pb_stats->marked_blocks[i];
-				if (logical_block[iblk].clb_index == NO_CLUSTER) {
-					cur = logical_block[iblk].packed_molecules;
-					while (cur != NULL) {
-						molecule = (t_pack_molecule *) cur->data_vptr;
-						if (molecule->valid) {
-							success = TRUE;
-							for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
-								if (molecule->logical_block_ptrs[j] != NULL) {
-									assert(molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
-									if (!exists_free_primitive_for_logical_block(
-											cluster_placement_stats_ptr,
-											iblk)) { /* TODO: debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
-										success = FALSE;
-										break;
-									}
+		for (i = 0; i < cur_pb->pb_stats->num_marked_blocks; i++) {
+			iblk = cur_pb->pb_stats->marked_blocks[i];
+			if (logical_block[iblk].clb_index == NO_CLUSTER) {
+				cur = logical_block[iblk].packed_molecules;
+				while (cur != NULL) {
+					molecule = (t_pack_molecule *) cur->data_vptr;
+					if (molecule->valid) {
+						success = TRUE;
+						for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
+							if (molecule->logical_block_ptrs[j] != NULL) {
+								assert(molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
+								if (!exists_free_primitive_for_logical_block(
+										cluster_placement_stats_ptr,
+										iblk)) { /* TODO: debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
+									success = FALSE;
+									break;
 								}
 							}
-							if (success) {
-								add_molecule_to_pb_stats_candidates(molecule,
-										cur_pb->pb_stats->gain, cur_pb);
-							}
 						}
-						cur = cur->next;
-					}
-				}
-			}
-		} else { /* Some high fanout nets marked lots of blocks. */
-			for (iblk = 0; iblk < num_logical_blocks; iblk++) {
-				if (logical_block[iblk].clb_index == NO_CLUSTER) {
-					cur = logical_block[iblk].packed_molecules;
-					while (cur != NULL) {
-						molecule = (t_pack_molecule *) cur->data_vptr;
-						if (molecule->valid) {
-							success = TRUE;
-							for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
-								if (molecule->logical_block_ptrs[j] != NULL) {
-									assert(molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
-									if (!exists_free_primitive_for_logical_block(
-											cluster_placement_stats_ptr,
-											iblk)) {
-										success = FALSE;
-										break;
-									}
-								}
-							}
-							if (success) {
-								add_molecule_to_pb_stats_candidates(molecule,
-										cur_pb->pb_stats->gain, cur_pb);
-							}
+						if (success) {
+							add_molecule_to_pb_stats_candidates(molecule,
+									cur_pb->pb_stats->gain, cur_pb, AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE);
 						}
-						cur = cur->next;
 					}
+					cur = cur->next;
 				}
 			}
 		}
 	}
+
+	// 2. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
 	if(cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net != OPEN) {
 		/* Because the packer ignores high fanout nets when marking what blocks to consider, use one of the ignored high fanout net to fill up lightly related blocks */
 		reset_tried_but_unused_cluster_placements(cluster_placement_stats_ptr);
@@ -2234,16 +2217,64 @@ static t_pack_molecule *get_highest_gain_molecule(
 						}
 						if (success) {
 							add_molecule_to_pb_stats_candidates(molecule,
-									cur_pb->pb_stats->gain, cur_pb);
+									cur_pb->pb_stats->gain, cur_pb, AAPACK_MAX_HIGH_FANOUT_EXPLORE);
 							count++;
 						}
 					}
 					cur = cur->next;
 				}
 			}
-		}
+		} 
 		cur_pb->pb_stats->tie_break_high_fanout_net = OPEN; /* Mark off that this high fanout net has been considered */
 	}
+
+	// 3. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
+	if(cur_pb->pb_stats->num_feasible_blocks == 0 && 
+	   cur_pb->pb_stats->tie_break_high_fanout_net == OPEN &&
+	   cur_pb->pb_stats->explore_transitive_fanout == TRUE
+	   ) {
+		if(cur_pb->pb_stats->transitive_fanout_candidates == NULL) {
+			/* First time finding transitive fanout candidates therefore alloc and load them */
+			cur_pb->pb_stats->transitive_fanout_candidates = new vector<t_pack_molecule *>;
+			cur_pb->pb_stats->transitive_fanout_candidate_index = new map<int, int>;
+			load_transitive_fanout_candidates(cur_pb->pb_stats->transitive_fanout_candidates,
+											  cur_pb->pb_stats->transitive_fanout_candidate_index,
+											  cur_pb->pb_stats->gain,
+											  clb_inter_blk_nets);
+
+			/* Only consider candidates that pass a very simple legality check */
+			for(i = 0; i < (int) cur_pb->pb_stats->transitive_fanout_candidates->size(); i++) {
+				molecule = (*cur_pb->pb_stats->transitive_fanout_candidates)[i];
+				if (molecule->valid) {
+					success = TRUE;
+					for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
+						if (molecule->logical_block_ptrs[j] != NULL) {
+							assert(molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
+							if (!exists_free_primitive_for_logical_block(
+									cluster_placement_stats_ptr,
+									iblk)) { /* TODO: debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
+								success = FALSE;
+								break;
+							}
+						}
+					}
+					if (success) {
+						add_molecule_to_pb_stats_candidates(molecule,
+								cur_pb->pb_stats->gain, cur_pb, AAPACK_MAX_TRANSITIVE_EXPLORE);
+					}
+				}
+			}
+		} else {
+			/* Clean up, no more candidates in transitive fanout to consider */
+			delete cur_pb->pb_stats->transitive_fanout_candidates;
+			delete cur_pb->pb_stats->transitive_fanout_candidate_index;
+			cur_pb->pb_stats->transitive_fanout_candidates = NULL;
+			cur_pb->pb_stats->transitive_fanout_candidate_index = NULL;
+			cur_pb->pb_stats->explore_transitive_fanout = FALSE;
+		}
+	}
+
+	/* Grab highest gain molecule */
 	molecule = NULL;
 	for (j = 0; j < cur_pb->pb_stats->num_feasible_blocks; j++) {
 		if (cur_pb->pb_stats->num_feasible_blocks != 0) {
@@ -2263,7 +2294,8 @@ static t_pack_molecule *get_molecule_for_cluster(
 		INP enum e_packer_algorithm packer_algorithm, INOUTP t_pb *cur_pb,
 		INP boolean allow_unrelated_clustering,
 		INOUTP int *num_unrelated_clustering_attempts,
-		INP t_cluster_placement_stats *cluster_placement_stats_ptr) {
+		INP t_cluster_placement_stats *cluster_placement_stats_ptr,
+		INP t_lb_net_stats *clb_inter_blk_nets) {
 
 	/* Finds the vpack block with the the greatest gain that satisifies the      *
 	 * input, clock and capacity constraints of a cluster that are       *
@@ -2275,7 +2307,7 @@ static t_pack_molecule *get_molecule_for_cluster(
 	/* If cannot pack into primitive, try packing into cluster */
 
 	best_molecule = get_highest_gain_molecule(packer_algorithm, cur_pb,
-			NOT_HILL_CLIMBING, cluster_placement_stats_ptr);
+			NOT_HILL_CLIMBING, cluster_placement_stats_ptr, clb_inter_blk_nets);
 
 	/* If no blocks have any gain to the current cluster, the code above *
 	 * will not find anything.  However, another logical_block with no inputs in *
@@ -2927,6 +2959,15 @@ static int get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 	}
 }
 
+
+static void load_transitive_fanout_candidates(vector<t_pack_molecule*> *transitive_fanout_candidates,
+											  map<int, int> *transitive_fanout_candidate_index,
+											  map<int, float> &gain,
+											  t_lb_net_stats *clb_inter_blk_nets) {
+//	printf("jedit loaded\n");
+
+}
+
 static void print_block_criticalities(const char * fname) {
 	/* Prints criticality and critindexarray for each logical block to a file. */
 	
@@ -2949,3 +2990,6 @@ static void print_block_criticalities(const char * fname) {
 	}
 	fclose(fp);
 }
+
+
+

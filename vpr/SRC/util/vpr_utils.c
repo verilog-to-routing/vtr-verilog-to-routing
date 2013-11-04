@@ -759,6 +759,10 @@ void free_pb_stats(t_pb *pb) {
 		free(pb->pb_stats->marked_blocks);
 	}
 	pb->pb_stats->marked_blocks = NULL;
+	if(pb->pb_stats->transitive_fanout_candidates != NULL) {
+		delete pb->pb_stats->transitive_fanout_candidates;
+		delete pb->pb_stats->transitive_fanout_candidate_index;
+	};
 	delete pb->pb_stats;
 	pb->pb_stats = NULL;
 }
