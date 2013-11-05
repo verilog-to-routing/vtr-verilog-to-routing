@@ -251,7 +251,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
         <!-- Two sided connectivity CLB architecture--> 
         <pinlocations pattern="custom">
           <loc side="right">clb.O clb.I1[4:0] clb.I2[4:0] clb.I3[4:0] clb.I4[4:0] clb.clk</loc> 
-          <loc side="bottom">clb.O clb.I1[9:5] clb.I2[9:5] clb.I3[9:5] clb.I4[9:5] clb.cout</loc>     
+          <loc side="bottom">clb.O clb.I1[9:5] clb.I2[9:5] clb.I3[9:5] clb.I4[9:5]</loc>     
         </pinlocations>
         <gridlocations>
           <loc type="fill" priority="1"/>

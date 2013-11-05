@@ -420,31 +420,32 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
         
         <interconnect>
           <!-- 50% sparsely populated local routing -->
-          <complete name="lutA" input="clb.I4 clb.I3 ble6[1:0].out_local ble6[3:2].out_local" output="ble6[7:0].in_A">
-            <delay_constant max="6.24207e-11" in_port="clb.I4" out_port="ble6.in_A" />
-            <delay_constant max="6.24207e-11" in_port="clb.I3" out_port="ble6.in_A" />
+
+          <complete name="lutA" input="clb.I4 clb.I3 fourBLE[0].out_local[1:0] fourBLE[0].out_local[3:2]" output="fourBLE.in_A">
+            <delay_constant max="6.24207e-11" in_port="clb.I4" out_port="fourBLE.in_A" />
+            <delay_constant max="6.24207e-11" in_port="clb.I3" out_port="fourBLE.in_A" />
           </complete>
-          <complete name="lutB" input="clb.I3 clb.I2 ble6[3:2].out_local ble6[5:4].out_local" output="ble6[7:0].in_B">
-            <delay_constant max="6.24207e-11" in_port="clb.I3" out_port="ble6.in_B" />
-            <delay_constant max="6.24207e-11" in_port="clb.I2" out_port="ble6.in_B" />
-            </complete>
-          <complete name="lutC" input="clb.I2 clb.I1 ble6[5:4].out_local ble6[7:6].out_local" output="ble6[7:0].in_C">
-            <delay_constant max="6.24207e-11" in_port="clb.I2" out_port="ble6.in_C" />
-            <delay_constant max="6.24207e-11" in_port="clb.I1" out_port="ble6.in_C" />
-            </complete>
-          <complete name="lutD" input="clb.I4 clb.I2 ble6[1:0].out_local ble6[5:4].out_local" output="ble6[7:0].in_D">
-            <delay_constant max="6.24207e-11" in_port="clb.I4" out_port="ble6.in_D" />
-            <delay_constant max="6.24207e-11" in_port="clb.I2" out_port="ble6.in_D" />
-            </complete>
-          <complete name="lutE" input="clb.I3 clb.I1 ble6[3:2].out_local ble6[7:6].out_local" output="ble6[7:0].in_E">
-            <delay_constant max="6.24207e-11" in_port="clb.I3" out_port="ble6.in_E" />
-            <delay_constant max="6.24207e-11" in_port="clb.I1" out_port="ble6.in_E" />
-            </complete>
-          <complete name="lutF" input="clb.I4 clb.I1 ble6[1:0].out_local ble6[7:6].out_local" output="ble6[7:0].in_F">
-            <delay_constant max="6.24207e-11" in_port="clb.I4" out_port="ble6.in_F" />
-            <delay_constant max="6.24207e-11" in_port="clb.I1" out_port="ble6.in_F" />
-            </complete>
-          <complete name="clks" input="clb.clk" output="ble6[7:0].clk">
+          <complete name="lutB" input="clb.I3 clb.I2 fourBLE[0].out_local[3:2] fourBLE[1].out_local[1:0]" output="fourBLE.in_B">
+            <delay_constant max="6.24207e-11" in_port="clb.I3" out_port="fourBLE.in_B" />
+            <delay_constant max="6.24207e-11" in_port="clb.I2" out_port="fourBLE.in_B" />
+          </complete>
+          <complete name="lutC" input="clb.I2 clb.I1 fourBLE[1].out_local[1:0] fourBLE[1].out_local[3:2]" output="fourBLE.in_C">
+            <delay_constant max="6.24207e-11" in_port="clb.I2" out_port="fourBLE.in_C" />
+            <delay_constant max="6.24207e-11" in_port="clb.I1" out_port="fourBLE.in_C" />
+          </complete>
+          <complete name="lutD" input="clb.I4 clb.I2 fourBLE[0].out_local[1:0] fourBLE[1].out_local[1:0]" output="fourBLE.in_D">
+            <delay_constant max="6.24207e-11" in_port="clb.I4" out_port="fourBLE.in_D" />
+            <delay_constant max="6.24207e-11" in_port="clb.I2" out_port="fourBLE.in_D" />
+          </complete>
+          <complete name="lutE" input="clb.I3 clb.I1 fourBLE[0].out_local[3:2] fourBLE[1].out_local[3:2]" output="fourBLE.in_E">
+            <delay_constant max="6.24207e-11" in_port="clb.I3" out_port="fourBLE.in_E" />
+            <delay_constant max="6.24207e-11" in_port="clb.I1" out_port="fourBLE.in_E" />
+          </complete>
+          <complete name="lutF" input="clb.I4 clb.I1 fourBLE[0].out_local[1:0] fourBLE[1].out_local[3:2]" output="fourBLE.in_F">
+            <delay_constant max="6.24207e-11" in_port="clb.I4" out_port="fourBLE.in_F" />
+            <delay_constant max="6.24207e-11" in_port="clb.I1" out_port="fourBLE.in_F" />
+          </complete>
+          <complete name="clks" input="clb.clk" output="fourBLE[1:0].clk">
           </complete>
           
           <!-- Direct connections to CLB outputs -->
