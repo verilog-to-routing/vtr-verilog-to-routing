@@ -482,7 +482,7 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
             <delay_constant max="6.24207e-11" in_port="clb.I4" out_port="fourBLE.in_F" />
             <delay_constant max="6.24207e-11" in_port="clb.I1" out_port="fourBLE.in_F" />
           </complete>
-          <complete name="clks" input="clb.clk" output="ble6[7:0].clk">
+          <complete name="clks" input="clb.clk" output="fourBLE[1:0].clk">
           </complete>
           
           <!-- Direct connections to CLB outputs -->
