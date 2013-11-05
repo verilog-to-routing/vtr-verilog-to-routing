@@ -2164,6 +2164,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 	// 1. Find unpacked molecule based on criticality and strong connectedness (connected by low fanout nets) with current cluster
 	if (cur_pb->pb_stats->num_feasible_blocks == NOT_VALID) {
 		cur_pb->pb_stats->num_feasible_blocks = 0;
+		cur_pb->pb_stats->explore_transitive_fanout = TRUE; /* If no legal molecules found, enable exploration of molecules two hops away */
 		for (i = 0; i < cur_pb->pb_stats->num_marked_blocks; i++) {
 			iblk = cur_pb->pb_stats->marked_blocks[i];
 			if (logical_block[iblk].clb_index == NO_CLUSTER) {
@@ -2988,7 +2989,6 @@ static void load_transitive_fanout_candidates(int cluster_index,
 								} else {
 									pb_stats->gain[tatom] += 0.001;									
 								}
-
 								struct s_linked_vptr *cur;
 								cur = logical_block[tatom].packed_molecules;
 								while (cur != NULL) {
