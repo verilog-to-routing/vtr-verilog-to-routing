@@ -1,7 +1,7 @@
 <!-- 
 
 Area-delay optimized for K06 N08 L4 W320 22nm pass-transistor based FPGA with 0.2V of gate-boosting
-Fcin = 0.2, Fcout = 0.05
+Fcin = 0.2, Fcout = 0.10 right, 0.10 bottom
 
 All CLB delays and routing delays obtained from HSPICE as part of this work.
 All I/O delays, multiplier delays and memory delays based on architecture k6_N10_memDepth16384_memData64_40nm_timing_smart_moledule.xml
@@ -77,9 +77,9 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
   <layout auto="1.0"/>
 
 		<device>
-			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111" ipin_mux_trans_size="1.255958"/>
-			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="9.10762e-11"/>
-			<area grid_logic_tile_area="11200.4714"/>
+			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111" ipin_mux_trans_size="1.508232"/>
+			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="9.55363e-11"/>
+			<area grid_logic_tile_area="12038.8728908"/>
 			<chan_width_distr>
 				<io width="1.000000"/>
 				<x distr="uniform" peak="1.000000"/>
@@ -88,7 +88,7 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
 			<switch_block type="wilton" fs="3"/>
 		</device>
 		<switchlist>
-			<switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="1.468341e-10" mux_trans_size="1.255958" buf_size="14.60718"/>
+			<switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="1.305857e-10" mux_trans_size="1.255958" buf_size="20.40368"/>
 		</switchlist>
 		<segmentlist>
 			<segment freq="1.000000" length="4" type="unidir" Rmetal="0.000000" Cmetal="0.000000e+00">
@@ -191,12 +191,12 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
           -->
           <output name="out" num_pins="1" port_class="lut_out"/>
           <delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
-            1.422e-10
-            1.422e-10
-            1.422e-10
-            1.422e-10
-            1.422e-10
-            1.422e-10
+            1.51e-10
+            1.51e-10
+            1.51e-10
+            1.51e-10
+            1.51e-10
+            1.51e-10
           </delay_matrix>      
         </pb_type>
         <pb_type name="adder" blif_model=".subckt adder" num_pb="1">
@@ -329,20 +329,20 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
 			<direct name="direct8_4" input="fourBLE.clk" output="ff[3].clk"/>
 	        <!-- Register feedback mux -->   
 	    <mux name="mux1_1" input="fourBLE.in_C[0] ff[0].Q" output="arithlut.in1[2:2]">
-			  <delay_constant max="0.352947e-10" in_port="fourBLE.in_C[0]" out_port="arithlut.in1[2:2]" />
-			  <delay_constant max="0.352947e-10" in_port="ff[0].Q" out_port="arithlut.in1[2:2]" />  
+			  <delay_constant max="0.392e-10" in_port="fourBLE.in_C[0]" out_port="arithlut.in1[2:2]" />
+			  <delay_constant max="0.392e-10" in_port="ff[0].Q" out_port="arithlut.in1[2:2]" />  
 			</mux>
 	    <mux name="mux1_2" input="fourBLE.in_C[1] ff[1].Q" output="arithlut.in2[2:2]">
-			  <delay_constant max="0.352947e-10" in_port="fourBLE.in_C[1]" out_port="arithlut.in2[2:2]" />
-			  <delay_constant max="0.352947e-10" in_port="ff[1].Q" out_port="arithlut.in2[2:2]" />  
+			  <delay_constant max="0.392e-10" in_port="fourBLE.in_C[1]" out_port="arithlut.in2[2:2]" />
+			  <delay_constant max="0.392e-10" in_port="ff[1].Q" out_port="arithlut.in2[2:2]" />  
 			</mux>
 	    <mux name="mux1_3" input="fourBLE.in_C[2] ff[2].Q" output="arithlut.in3[2:2]">
-			  <delay_constant max="0.352947e-10" in_port="fourBLE.in_C[2]" out_port="arithlut.in3[2:2]" />
-			  <delay_constant max="0.352947e-10" in_port="ff[2].Q" out_port="arithlut.in3[2:2]" />  
+			  <delay_constant max="0.392e-10" in_port="fourBLE.in_C[2]" out_port="arithlut.in3[2:2]" />
+			  <delay_constant max="0.392e-10" in_port="ff[2].Q" out_port="arithlut.in3[2:2]" />  
 			</mux>
 	    <mux name="mux1_4" input="fourBLE.in_C[3] ff[3].Q" output="arithlut.in4[2:2]">
-			  <delay_constant max="0.352947e-10" in_port="fourBLE.in_C[3]" out_port="arithlut.in4[2:2]" />
-			  <delay_constant max="0.352947e-10" in_port="ff[3].Q" out_port="arithlut.in4[2:2]" />  
+			  <delay_constant max="0.392e-10" in_port="fourBLE.in_C[3]" out_port="arithlut.in4[2:2]" />
+			  <delay_constant max="0.392e-10" in_port="ff[3].Q" out_port="arithlut.in4[2:2]" />  
 			</mux>
 
 
@@ -378,41 +378,41 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
 
 	        <!-- BLE output (local) -->                  
 			<mux name="mux3_1" input="ff[0].Q arithlut.out1" output="fourBLE.out_local[0]">
-			  <delay_constant max="1.086142e-10" in_port="ff[0].Q" out_port="fourBLE.out_local[0]" />
-	      <delay_constant max="1.086142e-10" in_port="arithlut.out1" out_port="fourBLE.out_local[0]" />
+			  <delay_constant max="9.60856e-11" in_port="ff[0].Q" out_port="fourBLE.out_local[0]" />
+	      <delay_constant max="9.60856e-11" in_port="arithlut.out1" out_port="fourBLE.out_local[0]" />
 			</mux>
 	        <!-- BLE output (local) -->                  
 			<mux name="mux3_2" input="ff[1].Q arithlut.out2" output="fourBLE.out_local[1]">
-			  <delay_constant max="1.086142e-10" in_port="ff[1].Q" out_port="fourBLE.out_local[1]" />
-	      <delay_constant max="1.086142e-10" in_port="arithlut.out2" out_port="fourBLE.out_local[1]" />
+			  <delay_constant max="9.60856e-11" in_port="ff[1].Q" out_port="fourBLE.out_local[1]" />
+	      <delay_constant max="9.60856e-11" in_port="arithlut.out2" out_port="fourBLE.out_local[1]" />
 			</mux>
 	        <!-- BLE output (local) -->                  
 			<mux name="mux3_3" input="ff[2].Q arithlut.out3" output="fourBLE.out_local[2]">
-			  <delay_constant max="1.086142e-10" in_port="ff[2].Q" out_port="fourBLE.out_local[2]" />
-	      <delay_constant max="1.086142e-10" in_port="arithlut.out3" out_port="fourBLE.out_local[2]" />
+			  <delay_constant max="9.60856e-11" in_port="ff[2].Q" out_port="fourBLE.out_local[2]" />
+	      <delay_constant max="9.60856e-11" in_port="arithlut.out3" out_port="fourBLE.out_local[2]" />
 			</mux>
 	        <!-- BLE output (local) -->                  
 			<mux name="mux3_4" input="ff[3].Q arithlut.out4" output="fourBLE.out_local[3]">
-			  <delay_constant max="1.086142e-10" in_port="ff[3].Q" out_port="fourBLE.out_local[3]" />
-	      <delay_constant max="1.086142e-10" in_port="arithlut.out4" out_port="fourBLE.out_local[3]" />
+			  <delay_constant max="9.60856e-11" in_port="ff[3].Q" out_port="fourBLE.out_local[3]" />
+	      <delay_constant max="9.60856e-11" in_port="arithlut.out4" out_port="fourBLE.out_local[3]" />
 			</mux>
 
 	        <!-- BLE output (routing 1) --> 
 	    <mux name="mux4_1" input="ff[0].Q arithlut.out1" output="fourBLE.out_routing[0]">
-	      <delay_constant max="4.1088e-11" in_port="ff[0].Q" out_port="fourBLE.out_routing[0]" />
-			  <delay_constant max="4.1088e-11" in_port="arithlut.out1" out_port="fourBLE.out_routing[0]" />
+	      <delay_constant max="3.47683e-11" in_port="ff[0].Q" out_port="fourBLE.out_routing[0]" />
+			  <delay_constant max="3.47683e-11" in_port="arithlut.out1" out_port="fourBLE.out_routing[0]" />
 			</mux>
 	    <mux name="mux4_2" input="ff[1].Q arithlut.out2" output="fourBLE.out_routing[1]">
-	      <delay_constant max="4.1088e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[1]" />
-			  <delay_constant max="4.1088e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[1]" />
+	      <delay_constant max="3.47683e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[1]" />
+			  <delay_constant max="3.47683e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[1]" />
 			</mux>
 	    <mux name="mux4_3" input="ff[2].Q arithlut.out3" output="fourBLE.out_routing[2]">
-	      <delay_constant max="4.1088e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[2]" />
-			  <delay_constant max="4.1088e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[2]" />
+	      <delay_constant max="3.47683e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[2]" />
+			  <delay_constant max="3.47683e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[2]" />
 			</mux>
 	    <mux name="mux4_4" input="ff[3].Q arithlut.out4" output="fourBLE.out_routing[3]">
-	      <delay_constant max="4.1088e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[3]" />
-			  <delay_constant max="4.1088e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[3]" />
+	      <delay_constant max="3.47683e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[3]" />
+			  <delay_constant max="3.47683e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[3]" />
 			</mux>
 		  </interconnect>
 		</pb_type>
@@ -420,31 +420,31 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
         
         <interconnect>
           <!-- 50% sparsely populated local routing -->
-          <complete name="lutA" input="clb.I4 clb.I3 fourBLE[0].out_local[1:0] fourBLE[0].out_local[3:2]" output="fourBLE.in_A">
-            <delay_constant max="3.29097e-11" in_port="clb.I4" out_port="fourBLE.in_A" />
-            <delay_constant max="3.29097e-11" in_port="clb.I3" out_port="fourBLE.in_A" />
+          <complete name="lutA" input="clb.I4 clb.I3 ble6[1:0].out_local ble6[3:2].out_local" output="ble6[7:0].in_A">
+            <delay_constant max="6.24207e-11" in_port="clb.I4" out_port="ble6.in_A" />
+            <delay_constant max="6.24207e-11" in_port="clb.I3" out_port="ble6.in_A" />
           </complete>
-	      <complete name="lutB" input="clb.I3 clb.I2 fourBLE[0].out_local[3:2] fourBLE[1].out_local[1:0]" output="fourBLE.in_B">
-	        <delay_constant max="3.29097e-11" in_port="clb.I3" out_port="fourBLE.in_B" />
-	        <delay_constant max="3.29097e-11" in_port="clb.I2" out_port="fourBLE.in_B" />
-          </complete>
-	      <complete name="lutC" input="clb.I2 clb.I1 fourBLE[1].out_local[1:0] fourBLE[1].out_local[3:2]" output="fourBLE.in_C">
-	      	<delay_constant max="3.29097e-11" in_port="clb.I2" out_port="fourBLE.in_C" />
-	      	<delay_constant max="3.29097e-11" in_port="clb.I1" out_port="fourBLE.in_C" />
-          </complete>
-	      <complete name="lutD" input="clb.I4 clb.I2 fourBLE[0].out_local[1:0] fourBLE[1].out_local[1:0]" output="fourBLE.in_D">
-	      	<delay_constant max="3.29097e-11" in_port="clb.I4" out_port="fourBLE.in_D" />
-	      	<delay_constant max="3.29097e-11" in_port="clb.I2" out_port="fourBLE.in_D" />
-          </complete>
-	      <complete name="lutE" input="clb.I3 clb.I1 fourBLE[0].out_local[3:2] fourBLE[1].out_local[3:2]" output="fourBLE.in_E">
-	      	<delay_constant max="3.29097e-11" in_port="clb.I3" out_port="fourBLE.in_E" />
-	      	<delay_constant max="3.29097e-11" in_port="clb.I1" out_port="fourBLE.in_E" />
-          </complete>
-	      <complete name="lutF" input="clb.I4 clb.I1 fourBLE[0].out_local[1:0] fourBLE[1].out_local[3:2]" output="fourBLE.in_F">
-	      	<delay_constant max="3.29097e-11" in_port="clb.I4" out_port="fourBLE.in_F" />
-	      	<delay_constant max="3.29097e-11" in_port="clb.I1" out_port="fourBLE.in_F" />
-          </complete>
-          <complete name="clks" input="clb.clk" output="fourBLE[1:0].clk">
+          <complete name="lutB" input="clb.I3 clb.I2 ble6[3:2].out_local ble6[5:4].out_local" output="ble6[7:0].in_B">
+            <delay_constant max="6.24207e-11" in_port="clb.I3" out_port="ble6.in_B" />
+            <delay_constant max="6.24207e-11" in_port="clb.I2" out_port="ble6.in_B" />
+            </complete>
+          <complete name="lutC" input="clb.I2 clb.I1 ble6[5:4].out_local ble6[7:6].out_local" output="ble6[7:0].in_C">
+            <delay_constant max="6.24207e-11" in_port="clb.I2" out_port="ble6.in_C" />
+            <delay_constant max="6.24207e-11" in_port="clb.I1" out_port="ble6.in_C" />
+            </complete>
+          <complete name="lutD" input="clb.I4 clb.I2 ble6[1:0].out_local ble6[5:4].out_local" output="ble6[7:0].in_D">
+            <delay_constant max="6.24207e-11" in_port="clb.I4" out_port="ble6.in_D" />
+            <delay_constant max="6.24207e-11" in_port="clb.I2" out_port="ble6.in_D" />
+            </complete>
+          <complete name="lutE" input="clb.I3 clb.I1 ble6[3:2].out_local ble6[7:6].out_local" output="ble6[7:0].in_E">
+            <delay_constant max="6.24207e-11" in_port="clb.I3" out_port="ble6.in_E" />
+            <delay_constant max="6.24207e-11" in_port="clb.I1" out_port="ble6.in_E" />
+            </complete>
+          <complete name="lutF" input="clb.I4 clb.I1 ble6[1:0].out_local ble6[7:6].out_local" output="ble6[7:0].in_F">
+            <delay_constant max="6.24207e-11" in_port="clb.I4" out_port="ble6.in_F" />
+            <delay_constant max="6.24207e-11" in_port="clb.I1" out_port="ble6.in_F" />
+            </complete>
+          <complete name="clks" input="clb.clk" output="ble6[7:0].clk">
           </complete>
           
           <!-- Direct connections to CLB outputs -->
@@ -461,15 +461,15 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
           </direct>
         </interconnect>
 
-        <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.025">
+        <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.10">
           <pin name="cin" fc_type="frac" fc_val="0"/>
           <pin name="cout" fc_type="frac" fc_val="0"/>
         </fc>
 
         <!-- Two sided connectivity CLB architecture--> 
         <pinlocations pattern="custom">
-          <loc side="right">clb.O clb.I1 clb.I3 clb.I2 clb.I4 clb.clk</loc> 
-          <loc side="bottom">clb.O clb.I1 clb.I3 clb.I2 clb.I4 clb.clk clb.cout</loc>    
+          <loc side="right">clb.O clb.I1[4:0] clb.I2[4:0] clb.I3[4:0] clb.I4[4:0] clb.clk</loc> 
+          <loc side="bottom">clb.O clb.I1[9:5] clb.I2[9:5] clb.I3[9:5] clb.I4[9:5] clb.cout</loc>    
           <loc side="top">clb.cin</loc> 
         </pinlocations>
         <gridlocations>

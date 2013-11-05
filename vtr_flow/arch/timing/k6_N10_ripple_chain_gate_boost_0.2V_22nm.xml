@@ -11,6 +11,9 @@ Soft logic blocks use 50% depopulated crossbars
 Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but since VPR is in min W transistor areas, no area scaling is needed
 
 carry chain from Safeen's CMOS ripple carry adder not gate boosted
+
+Assumes that first bit of all adders must be burned to create cin because there is no programmability at all in the c-chain so that 1 bit must be used
+to isolate one chain from the next
 -->
   
   <architecture>
