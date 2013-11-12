@@ -132,6 +132,8 @@ void read_sdc(t_timing_inf timing_inf) {
 	/* Reset file line number. */
 	file_line_number = 0;
 
+	
+
 	/* If no SDC file is included or specified, or timing analysis is off,
 	use default behaviour of cutting paths between domains and optimizing each clock separately */
 
@@ -150,6 +152,9 @@ void read_sdc(t_timing_inf timing_inf) {
 	}
 	
 	/* Now we have an SDC file. */
+
+	/* Save name of SDC file for error outputs */
+	sdc_file_name = timing_inf.SDCFile;
 
 	/* Count how many clocks and I/Os are in the netlist. 
 	Store the names of each clock and each I/O in netlist_clocks and netlist_ios. 
@@ -172,9 +177,6 @@ void read_sdc(t_timing_inf timing_inf) {
 		free(netlist_ios);
 		return;
 	}
-	
-	/* Save name of SDC file for error outputs */
-	sdc_file_name = timing_inf.SDCFile;
 	
 	fclose(sdc);
 
