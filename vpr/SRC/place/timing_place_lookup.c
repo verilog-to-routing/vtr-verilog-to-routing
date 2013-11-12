@@ -167,7 +167,6 @@ static void compute_delta_arrays(struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, int longest_length);
 
-static int get_first_pin(enum e_pin_type pintype, t_type_ptr type);
 static int get_best_pin(enum e_pin_type pintype, t_type_ptr type);
 
 static int get_longest_segment_length(
@@ -182,23 +181,6 @@ static void print_array(float **array_to_print,
 		int y2);
 #endif
 /**************************************/
-static int get_first_pin(enum e_pin_type pintype, t_type_ptr type) {
-
-	/*this code assumes logical equivilance between all driving pins */
-	/*global pins are not hooked up to the temporary net */
-
-	int i, currpin;
-
-	currpin = 0;
-	for (i = 0; i < type->num_class; i++) {
-		if (type->class_inf[i].type == pintype && !type->is_global_pin[currpin])
-			return (type->class_inf[i].pinlist[0]);
-		else
-			currpin += type->class_inf[i].num_pins;
-	}
-	assert(0);
-	exit(0); /*should never hit this line */
-}
 
 static int get_best_pin(enum e_pin_type pintype, t_type_ptr type) {
 
