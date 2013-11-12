@@ -1007,7 +1007,7 @@ static void draw_rr_edges(int inode) {
 				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					setcolor(draw_state->draw_rr_node[inode].color);
 				} else
-					setcolor(PINK);
+					setcolor(MEDIUMPURPLE);
 				draw_pin_to_pin(inode, to_node);
 				break;
 			default:
