@@ -43,6 +43,7 @@ typedef struct s_clb_to_clb_directs {
 	t_type_descriptor *to_clb_type;
 	int to_clb_pin_start_index;
 	int to_clb_pin_end_index;
+	int switch_index; //The switch type used by this direct connection
 } t_clb_to_clb_directs;
 
 /* UDSD Modifications by WMF End */
@@ -104,7 +105,7 @@ static void build_unidir_rr_opins(
 static int get_opin_direct_connecions(
 		int x, int y, int opin, 
 		INOUTP t_linked_edge ** edge_list_ptr, INP t_ivec *** L_rr_node_indices, 
-		INP int delayless_switch, INP t_direct_inf *directs, INP int num_directs, 
+		INP t_direct_inf *directs, INP int num_directs, 
 		INP t_clb_to_clb_directs *clb_to_clb_directs);
 
 static void alloc_and_load_rr_graph(
@@ -197,7 +198,8 @@ static void alloc_net_rr_terminals(void);
 
 static void alloc_and_load_rr_clb_source(t_ivec *** L_rr_node_indices);
 
-static t_clb_to_clb_directs *alloc_and_load_clb_to_clb_directs(INP t_direct_inf *directs, INP int num_directs);
+static t_clb_to_clb_directs *alloc_and_load_clb_to_clb_directs(INP t_direct_inf *directs, INP int num_directs,
+        INP int delayless_switch);
 
 #if 0
 static void load_uniform_opin_switch_pattern_paired(
@@ -281,7 +283,7 @@ void build_rr_graph(
 
 	t_clb_to_clb_directs *clb_to_clb_directs = NULL;
 	if(num_directs > 0) {
-		clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, num_directs);
+		clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, num_directs, delayless_switch);
 	}
 
 	/* START SEG_DETAILS */
@@ -868,7 +870,7 @@ static void build_bidir_rr_opins(INP int i, INP int j,
 
 		/* Add in direct connections */
 		num_edges += get_opin_direct_connecions(i, j, pin_index, &edge_list, L_rr_node_indices, 
-				delayless_switch, directs, num_directs, clb_to_clb_directs);
+				directs, num_directs, clb_to_clb_directs);
 
 		int node_index = get_rr_node_index(i, j, OPIN, pin_index, L_rr_node_indices);
 		alloc_and_load_edges_and_switches(L_rr_node, node_index, num_edges,
@@ -2117,7 +2119,7 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 
 		/* Add in direct connections */
 		num_edges += get_opin_direct_connecions(i, j, pin_index, &edge_list, L_rr_node_indices, 
-				delayless_switch, directs, num_directs, clb_to_clb_directs);
+				directs, num_directs, clb_to_clb_directs);
 
 		/* Add the edges */
 		int node = get_rr_node_index(i, j, OPIN, pin_index, L_rr_node_indices);
@@ -2665,7 +2667,7 @@ static void print_distribution(FILE * fptr,
  * This data structure supplements the the info in the "directs" data structure
  * TODO: The function that does this parsing in placement is poorly done because it lacks generality on heterogeniety, should replace with this one
  */
-static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(INP t_direct_inf *directs, INP int num_directs) {
+static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(INP t_direct_inf *directs, INP int num_directs, int delayless_switch) {
 	int i, j;
 	t_clb_to_clb_directs *clb_to_clb_directs;
 	char *pb_type_name, *port_name;
@@ -2745,6 +2747,15 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(INP t_direct_inf
 				"Range mismatch from %s to %s.\n", directs[i].from_pin, directs[i].to_pin);
 		}
 
+        //Set the switch index
+        if(directs[i].switch_type > 0) {
+            //Use the specified switch
+            clb_to_clb_directs[i].switch_index = directs[i].switch_type;
+        } else {
+            //Use the delayless switch by default
+            clb_to_clb_directs[i].switch_index = delayless_switch;
+            
+        }
 		free(pb_type_name);
 		free(port_name);
 	}
@@ -2754,7 +2765,7 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(INP t_direct_inf
 /* Add all direct clb-pin-to-clb-pin edges to given opin */ 
 static int get_opin_direct_connecions(int x, int y, int opin, 
 		INOUTP t_linked_edge ** edge_list_ptr, INP t_ivec *** L_rr_node_indices, 
-		INP int delayless_switch, INP t_direct_inf *directs, INP int num_directs, 
+		INP t_direct_inf *directs, INP int num_directs, 
 		INP t_clb_to_clb_directs *clb_to_clb_directs) {
 
 	t_type_ptr type;
@@ -2810,7 +2821,7 @@ static int get_opin_direct_connecions(int x, int y, int opin,
 					height_offset = grid[x + directs[i].x_offset][y + directs[i].y_offset].height_offset;
 					inode = get_rr_node_index(x + directs[i].x_offset - width_offset, y + directs[i].y_offset - height_offset, 
 							IPIN, ipin, L_rr_node_indices);
-					edge_list_head = insert_in_edge_list(edge_list_head, inode, delayless_switch);
+					edge_list_head = insert_in_edge_list(edge_list_head, inode, clb_to_clb_directs[i].switch_index);
 					new_edges++;
 				}
 			}

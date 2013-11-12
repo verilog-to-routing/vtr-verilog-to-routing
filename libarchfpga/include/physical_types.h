@@ -766,6 +766,9 @@ typedef struct s_switch_inf {
  In the format of <block_name>.<pin_name>                        *
  * x_offset:  The x offset from the source to the sink of this connection   *
  * y_offset:  The y offset from the source to the sink of this connection   *
+ * z_offset:  The z offset from the source to the sink of this connection   *
+ * switch_type: The index into the switch list for the switch used by this  *
+ *              direct                                                      *
  * line: The line number in the .arch file that specifies this              *
  *       particular placement macro.                                        *
  */
@@ -776,6 +779,7 @@ typedef struct s_direct_inf {
 	int x_offset;
 	int y_offset;
 	int z_offset;
+	int switch_type;
 	int line;
 } t_direct_inf;
 

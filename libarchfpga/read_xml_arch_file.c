@@ -113,7 +113,8 @@ static void ProcessSwitches(INOUTP ezxml_t Node,
 		OUTP struct s_switch_inf **Switches, OUTP int *NumSwitches,
 		INP boolean timing_enabled);
 static void ProcessDirects(INOUTP ezxml_t Parent, OUTP t_direct_inf **Directs,
-		OUTP int *NumDirects, INP boolean timing_enabled);
+		 OUTP int *NumDirects, INP struct s_switch_inf *Switches, INP int NumSwitches,
+		 INP boolean timing_enabled);
 static void ProcessSegments(INOUTP ezxml_t Parent,
 		OUTP struct s_segment_inf **Segs, OUTP int *NumSegs,
 		INP struct s_switch_inf *Switches, INP int NumSwitches,
@@ -2781,6 +2782,7 @@ void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 	Next = FindElement(Cur, "directlist", FALSE);
 	if (Next) {
 		ProcessDirects(Next, &(arch->Directs), &(arch->num_directs),
+                arch->Switches, arch->num_switches,
 				timing_enabled);
 		FreeNode(Next);
 	}
@@ -3142,11 +3144,13 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 }
 
 static void ProcessDirects(INOUTP ezxml_t Parent, OUTP t_direct_inf **Directs,
-		OUTP int *NumDirects, INP boolean timing_enabled) {
+		 OUTP int *NumDirects, INP struct s_switch_inf *Switches, INP int NumSwitches,
+		 INP boolean timing_enabled) {
 	int i, j;
 	const char *direct_name;
 	const char *from_pin_name;
 	const char *to_pin_name;
+	const char *switch_name;
 
 	ezxml_t Node;
 
@@ -3198,6 +3202,30 @@ static void ProcessDirects(INOUTP ezxml_t Parent, OUTP t_direct_inf **Directs,
 		ezxml_set_attr(Node, "x_offset", NULL);
 		ezxml_set_attr(Node, "y_offset", NULL);
 		ezxml_set_attr(Node, "z_offset", NULL);
+
+        //Set the optional switch type
+        switch_name = FindProperty(Node, "switch_name", FALSE);
+        if(switch_name != NULL) {
+            //Look-up the user defined switch
+            for(j = 0; j < NumSwitches; j++) {
+                if(0 == strcmp(switch_name, Switches[j].name)) {
+                    break; //Found the switch
+                }
+            }
+            if(j >= NumSwitches) {
+                vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line,
+                        "Could not find switch named '%s' in switch list.\n", switch_name);
+
+            }
+            (*Directs)[i].switch_type = j; //Save the correct switch index
+            ezxml_set_attr(Node, "switch_name", NULL);
+        } else {
+            //If not defined, use the delayless switch by default
+            //TODO: find a better way of indicating this.  Ideally, we would
+            //specify the delayless switch index here, but it does not appear
+            //to be defined at this point.
+            (*Directs)[i].switch_type = -1; 
+        }
 
 		/* Check that the direct chain connection is not zero in both direction */
 		if ((*Directs)[i].x_offset == 0 && (*Directs)[i].y_offset == 0) {
