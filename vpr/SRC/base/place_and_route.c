@@ -107,9 +107,12 @@ boolean place_and_route(enum e_operation operation,
 	int width_fac = router_opts.fixed_channel_width;
 
 	if (!router_opts.doRouting) {
-		try_graph(width_fac, router_opts, det_routing_arch, 
-				segment_inf, timing_inf, chan_width_dist,
-				directs, num_directs);
+        if(width_fac != NO_FIXED_CHANNEL_WIDTH) {
+            //Only try if a fixed channel width is specified
+            try_graph(width_fac, router_opts, det_routing_arch, 
+                    segment_inf, timing_inf, chan_width_dist,
+                    directs, num_directs);
+        }
 		return(TRUE);
 	}
 
