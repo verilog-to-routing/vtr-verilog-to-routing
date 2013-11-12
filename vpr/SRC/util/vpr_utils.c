@@ -1068,26 +1068,30 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 		if (match_count != 2){
 			vpr_printf_error(__FILE__, __LINE__,
 					"[LINE %d] Invalid pin - %s, name should be in the format "
-					"\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name [end_pin_index:start_pin_index]\". "
+					"\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
 					"The end_pin_index and start_pin_index can be the same.\n", 
 					line, src_string);
 			exit(1);
 		}
 	} else {
-		/* Format "pb_type_name.port_name [end_pin_index:start_pin_index]" */
+		/* Format "pb_type_name.port_name[end_pin_index:start_pin_index]" */
 		strcpy (source_string, src_string);
 		for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
+            //Need white space between the components when using %s with
+            //sscanf
 			if (source_string[ichar] == '.')
+				source_string[ichar] = ' ';
+			if (source_string[ichar] == '[') 
 				source_string[ichar] = ' ';
 		}
 
-		match_count = sscanf(source_string, "%s %s [%d:%d]", 
+		match_count = sscanf(source_string, "%s %s %d:%d]", 
 								pb_type_name, port_name, 
 								end_pin_index, start_pin_index);
 		if (match_count != 4){
 			vpr_printf_error(__FILE__, __LINE__,
 					"[LINE %d] Invalid pin - %s, name should be in the format "
-					"\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name [end_pin_index:start_pin_index]\". "
+					"\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
 					"The end_pin_index and start_pin_index can be the same.\n", 
 					line, src_string);
 			exit(1);
