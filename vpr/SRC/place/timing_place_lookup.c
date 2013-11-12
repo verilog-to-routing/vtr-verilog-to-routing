@@ -59,7 +59,7 @@ using namespace std;
 #define DEBUG_TIMING_PLACE_LOOKUP	/*initialize arrays to known state */
 
 #define DUMPFILE "lookup_dump.echo"
-/*#define PRINT_ARRAYS *//*only used during debugging, calls routine to  */
+/*#define PRINT_ARRAYS*//*only used during debugging, calls routine to  */
 /*print out the various lookup arrays           */
 
 /***variables that are exported to other modules***/
@@ -168,6 +168,7 @@ static void compute_delta_arrays(struct s_router_opts router_opts,
 		t_timing_inf timing_inf, int longest_length);
 
 static int get_first_pin(enum e_pin_type pintype, t_type_ptr type);
+static int get_best_pin(enum e_pin_type pintype, t_type_ptr type);
 
 static int get_longest_segment_length(
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf);
@@ -197,6 +198,39 @@ static int get_first_pin(enum e_pin_type pintype, t_type_ptr type) {
 	}
 	assert(0);
 	exit(0); /*should never hit this line */
+}
+
+static int get_best_pin(enum e_pin_type pintype, t_type_ptr type) {
+
+	/*This function tries to identify the best pin class to hook up
+     * for delay calculation.  The assumption is that we should pick
+     * the pin class with the largest number of pins. This makes
+     * sense, since it ensures we pick commonly used pins, and 
+     * removes order dependance on how the pins are specified 
+     * in the architecture (except in the case were the two largest pin classes
+     * of a particular pintype have the same number of pins, in which case the 
+     * first pin class is used).
+     * 
+     * Also, global pins are not hooked up to the temporary net */
+
+	int i, currpin, best_class_num_pins, best_class;
+    
+    best_class = -1;
+    best_class_num_pins = 0;
+	currpin = 0;
+	for (i = 0; i < type->num_class; i++) {
+		if (type->class_inf[i].type == pintype && !type->is_global_pin[currpin] &&
+                type->class_inf[i].num_pins > best_class_num_pins) {
+            //Save the best class
+            best_class_num_pins = type->class_inf[i].num_pins;
+            best_class = i;
+        }
+		else
+			currpin += type->class_inf[i].num_pins;
+	}
+
+    assert(best_class >= 0 && best_class < type->num_class);
+    return (type->class_inf[best_class].pinlist[0]);
 }
 
 /**************************************/
@@ -497,8 +531,12 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
-			NULL, 0, 
-			TRUE, /* do not send in direct connections because we care about general placement timing instead of special pin placement timing */
+			directs, num_directs, /* Do send in direct connections because we care about some direct 
+                        connections, such as directlinks between adjacent blocks. We don't need
+                        to worry about special cases such as carry chains, since we do
+                        delay estimation between the most numerous pins on the block,
+                        which should not be carry chain pins. */
+			TRUE, 
 			TRUE, /* do not process any (optional) switchbox overrides */
 			&warnings);
 
@@ -553,14 +591,14 @@ static void assign_locations(t_type_ptr source_type, int source_x_loc,
 	grid[source_x_loc][source_y_loc].blocks[source_z_loc] = SOURCE_BLOCK;
 	grid[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = SINK_BLOCK;
 
-	clb_net[NET_USED].node_block_pin[NET_USED_SOURCE_BLOCK] = get_first_pin(
+	clb_net[NET_USED].node_block_pin[NET_USED_SOURCE_BLOCK] = get_best_pin(
 			DRIVER, block[SOURCE_BLOCK].type);
-	clb_net[NET_USED].node_block_pin[NET_USED_SINK_BLOCK] = get_first_pin(
+	clb_net[NET_USED].node_block_pin[NET_USED_SINK_BLOCK] = get_best_pin(
 			RECEIVER, block[SINK_BLOCK].type);
 
-	g_clbs_nlist.net[NET_USED].pins[NET_USED_SOURCE_BLOCK].block_pin = get_first_pin(
+	g_clbs_nlist.net[NET_USED].pins[NET_USED_SOURCE_BLOCK].block_pin = get_best_pin(
 			DRIVER, block[SOURCE_BLOCK].type);
-	g_clbs_nlist.net[NET_USED].pins[NET_USED_SINK_BLOCK].block_pin = get_first_pin(
+	g_clbs_nlist.net[NET_USED].pins[NET_USED_SINK_BLOCK].block_pin = get_best_pin(
 			RECEIVER, block[SOURCE_BLOCK].type);
 
 	grid[source_x_loc][source_y_loc].usage += 1;
@@ -1028,6 +1066,9 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist, INP t_direct_inf *directs, 
 		INP int num_directs) {
 
+	vpr_printf_info("\nStarting placement delay look-up...\n");
+    clock_t begin = clock();
+
 	static struct s_net *original_net; /*this will be used as a pointer to remember what */
 
 	/*the "real" nets in the circuit are. This is    */
@@ -1064,6 +1105,14 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 
 	free_and_reset_internal_structures(original_net, original_block,
 			original_num_nets, original_num_blocks, original_vnet);
+
+    clock_t end = clock();
+#ifdef CLOCKS_PER_SEC
+    float time = (float) (end - begin) / CLOCKS_PER_SEC;
+#else
+    float time = (float) (end - begin) / CLK_PER_SEC;
+#endif
+	vpr_printf_info("Placement delay look-up took %g seconds\n", time);
 }
 
 /**************************************/

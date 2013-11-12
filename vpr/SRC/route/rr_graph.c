@@ -2758,6 +2758,15 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(INP t_direct_inf
         }
 		free(pb_type_name);
 		free(port_name);
+
+        //We must be careful to clean-up anything that we may have incidentally allocated.
+        //Specifically, we can be called while generating the dummy architecture
+        //for placer delay estimation.  Since the delay estimation occurs on a 
+        //'different' architecture it is almost certain that the f_blk_pin_from_port_pin allocated 
+        //by calling get_blk_pin_from_port_pin() will later be invalid.
+        //We therefore must free it now.
+        free_blk_pin_from_port_pin();
+
 	}
 	return clb_to_clb_directs;
 }
@@ -2768,63 +2777,70 @@ static int get_opin_direct_connecions(int x, int y, int opin,
 		INP t_direct_inf *directs, INP int num_directs, 
 		INP t_clb_to_clb_directs *clb_to_clb_directs) {
 
-	t_type_ptr type;
+	t_type_ptr curr_type, target_type;
 	int width_offset, height_offset;
 	int i, ipin, inode;
 	t_linked_edge *edge_list_head;
 	int max_index, min_index, offset, swap;
 	int new_edges;
 
-	type = grid[x][y].type;
+	curr_type = grid[x][y].type;
 	edge_list_head = *edge_list_ptr;
 	new_edges = 0;
 
 	/* Iterate through all direct connections */
 	for (i = 0; i < num_directs; i++) {
 		/* Find matching direct clb-to-clb connections with the same type as current grid location */
-		if(clb_to_clb_directs[i].from_clb_type == type) {
-			/* Compute index of opin with regards to given pins */ 
-			if(clb_to_clb_directs[i].from_clb_pin_start_index > clb_to_clb_directs[i].from_clb_pin_end_index) {
-				swap = TRUE;
-				max_index = clb_to_clb_directs[i].from_clb_pin_start_index;
-				min_index = clb_to_clb_directs[i].from_clb_pin_end_index;
-			} else {
-				swap = FALSE;
-				min_index = clb_to_clb_directs[i].from_clb_pin_start_index;
-				max_index = clb_to_clb_directs[i].from_clb_pin_end_index;
-			}
-			if(max_index >= opin && min_index <= opin) {
-				offset = opin - min_index;
-				/* This opin is specified to connect directly to an ipin, now compute which ipin to connect to */
-				if(x + directs[i].x_offset < nx + 1 &&
-				   x + directs[i].x_offset > 0 &&
-				   y + directs[i].y_offset < ny + 1 &&
-				   y + directs[i].y_offset > 0) {
+		if(clb_to_clb_directs[i].from_clb_type == curr_type) { //We are at a valid starting point
 
-					ipin = OPEN;
-					if(clb_to_clb_directs[i].to_clb_pin_start_index > clb_to_clb_directs[i].to_clb_pin_end_index) {
-						if(swap == TRUE) {
-							ipin = clb_to_clb_directs[i].to_clb_pin_end_index + offset;
-						} else {
-							ipin = clb_to_clb_directs[i].to_clb_pin_start_index - offset;
-						}
-					} else {
-						if(swap == TRUE) {
-							ipin = clb_to_clb_directs[i].to_clb_pin_end_index - offset;
-						} else {
-							ipin = clb_to_clb_directs[i].to_clb_pin_start_index + offset;
-						}
-					}
+            //Offset must be in range
+            if(x + directs[i].x_offset < nx + 1 &&
+               x + directs[i].x_offset > 0 &&
+               y + directs[i].y_offset < ny + 1 &&
+               y + directs[i].y_offset > 0) {
+            
+                //Only add connections if the target clb type matches the type in the direct specification
+                target_type = grid[x + directs[i].x_offset][y + directs[i].y_offset].type;
+                if(clb_to_clb_directs[i].to_clb_type == target_type) {
 
-					/* Add new ipin edge to list of edges */
-					width_offset = grid[x + directs[i].x_offset][y + directs[i].y_offset].width_offset;
-					height_offset = grid[x + directs[i].x_offset][y + directs[i].y_offset].height_offset;
-					inode = get_rr_node_index(x + directs[i].x_offset - width_offset, y + directs[i].y_offset - height_offset, 
-							IPIN, ipin, L_rr_node_indices);
-					edge_list_head = insert_in_edge_list(edge_list_head, inode, clb_to_clb_directs[i].switch_index);
-					new_edges++;
-				}
-			}
+                    /* Compute index of opin with regards to given pins */ 
+                    if(clb_to_clb_directs[i].from_clb_pin_start_index > clb_to_clb_directs[i].from_clb_pin_end_index) {
+                        swap = TRUE;
+                        max_index = clb_to_clb_directs[i].from_clb_pin_start_index;
+                        min_index = clb_to_clb_directs[i].from_clb_pin_end_index;
+                    } else {
+                        swap = FALSE;
+                        min_index = clb_to_clb_directs[i].from_clb_pin_start_index;
+                        max_index = clb_to_clb_directs[i].from_clb_pin_end_index;
+                    }
+                    if(max_index >= opin && min_index <= opin) {
+                        offset = opin - min_index;
+                        /* This opin is specified to connect directly to an ipin, now compute which ipin to connect to */
+                        ipin = OPEN;
+                        if(clb_to_clb_directs[i].to_clb_pin_start_index > clb_to_clb_directs[i].to_clb_pin_end_index) {
+                            if(swap == TRUE) {
+                                ipin = clb_to_clb_directs[i].to_clb_pin_end_index + offset;
+                            } else {
+                                ipin = clb_to_clb_directs[i].to_clb_pin_start_index - offset;
+                            }
+                        } else {
+                            if(swap == TRUE) {
+                                ipin = clb_to_clb_directs[i].to_clb_pin_end_index - offset;
+                            } else {
+                                ipin = clb_to_clb_directs[i].to_clb_pin_start_index + offset;
+                            }
+                        }
+
+                        /* Add new ipin edge to list of edges */
+                        width_offset = grid[x + directs[i].x_offset][y + directs[i].y_offset].width_offset;
+                        height_offset = grid[x + directs[i].x_offset][y + directs[i].y_offset].height_offset;
+                        inode = get_rr_node_index(x + directs[i].x_offset - width_offset, y + directs[i].y_offset - height_offset, 
+                                IPIN, ipin, L_rr_node_indices);
+                        edge_list_head = insert_in_edge_list(edge_list_head, inode, clb_to_clb_directs[i].switch_index);
+                        new_edges++;
+                    }
+                }
+            }
 		}
 	}
 	*edge_list_ptr = edge_list_head;
