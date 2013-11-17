@@ -481,6 +481,13 @@ static float try_place_molecule(INP t_pack_molecule *molecule,
 				for (i = 0; i < list_size; i++) {
 					assert(
 							(primitives_list[i] == NULL) == (molecule->logical_block_ptrs[i] == NULL));
+					for (int j = 0; j < list_size; j++) {
+						if(i != j) {
+							if(primitives_list[i] != NULL && primitives_list[i] == primitives_list[j]) {
+								return HUGE_POSITIVE_FLOAT;
+							}
+						}
+					}
 				}
 			}
 		}
@@ -500,7 +507,6 @@ static boolean expand_forced_pack_molecule_placement(
 			primitives_list[pack_pattern_block->block_id];
 	t_pb_graph_node *next_primitive;
 	t_pack_pattern_connections *cur;
-	int from_pin, from_port;
 	t_pb_graph_pin *cur_pin, *next_pin;
 	t_pack_pattern_block *next_block;
 
@@ -515,20 +521,25 @@ static boolean expand_forced_pack_molecule_placement(
 			/* first time visiting location */
 
 			/* find next primitive based on pattern connections, expand next primitive if not visited */
-			from_pin = cur->from_pin->pin_number;
-			from_port = cur->from_pin->port->port_index_by_type;
 			if (cur->from_block == pack_pattern_block) {
 				/* forward expand to find next block */
+				int from_pin, from_port;
+				from_pin = cur->from_pin->pin_number;
+				from_port = cur->from_pin->port->port_index_by_type;
 				cur_pin = &pb_graph_node->output_pins[from_port][from_pin];
 				next_pin = expand_pack_molecule_pin_edge(
 						pack_pattern_block->pattern_index, cur_pin, TRUE);
 			} else {
 				/* backward expand to find next block */
 				assert(cur->to_block == pack_pattern_block);
+				int to_pin, to_port;
+				to_pin = cur->to_pin->pin_number;
+				to_port = cur->to_pin->port->port_index_by_type;
+				
 				if (cur->from_pin->port->is_clock) {
-					cur_pin = &pb_graph_node->clock_pins[from_port][from_pin];
+					cur_pin = &pb_graph_node->clock_pins[to_port][to_pin];
 				} else {
-					cur_pin = &pb_graph_node->input_pins[from_port][from_pin];
+					cur_pin = &pb_graph_node->input_pins[to_port][to_pin];
 				}
 				next_pin = expand_pack_molecule_pin_edge(
 						pack_pattern_block->pattern_index, cur_pin, FALSE);

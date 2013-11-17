@@ -4,6 +4,7 @@
 using namespace std;
 
 #include <assert.h>
+#include <time.h>
 
 #include "util.h"
 #include "vpr_types.h"
