@@ -101,6 +101,7 @@ typedef size_t bitfield;
 #define ROUTING_PREDICTOR_SAFE 0.015
 #define ROUTING_PREDICTOR_AGGRESSIVE 0.010
 #define ROUTING_PREDICTOR_OFF 1.100 /* Values can never get past 1.0, so 1.1 is unachievable */
+#define ROUTING_PREDICTOR_RUNNING_AVERAGE_BASE 4 /* Base number of previous iterations used to compute reduction in congestion */
 
 /*******************************************************************************
  * Packing specific data types and constants

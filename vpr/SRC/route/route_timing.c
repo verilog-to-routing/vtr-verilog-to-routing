@@ -86,6 +86,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	/* Variables used to do the optimization of the routing, aborting visibly
 	 * impossible Ws */
 	double overused_ratio;
+	double *historical_overuse_ratio = (double*)my_calloc(router_opts.max_router_iterations + 1, sizeof(double));
 	/* Threshold defined according to command line argument --routing_failure_predictor */
 	double overused_threshold = ROUTING_PREDICTOR_SAFE; /* Default */
 	if(router_opts.routing_failure_predictor == AGGRESSIVE)
@@ -136,6 +137,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			if (!is_routable) {
 				free(net_index);
 				free(sinks);
+				free(historical_overuse_ratio);
 				return (FALSE);
 			}
 		}
@@ -179,6 +181,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 				free_timing_driven_route_structs(pin_criticality, sink_order, rt_node_of_sink);
 				free(net_index);
 				free(sinks);
+				free(historical_overuse_ratio);
 				return FALSE;
 			}
 			vpr_printf_info("--------- ---------- -----------\n");
@@ -200,6 +203,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		/* Verification to check the ratio of overused nodes, depending on the configuration
 		 * may abort the routing if the ratio is too high. */
 		overused_ratio = get_overused_ratio();
+		historical_overuse_ratio[itry] = overused_ratio;
 
 		/* Andre Pereira: The check splits the inverval in 3 intervals ([6,10), [10,20), [20,40)
 		 * The values before 6 are not considered, as the behaviour is not interesting
@@ -209,6 +213,12 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		 * times in order to abort the routing */
 		/* TODO: Add different configurations for the threshold: disabled, moderate, agressive */
 		if (itry > 5){
+			
+			int routing_predictor_running_average = MAX_SHORT;
+			if(historical_overuse_ratio[1] > 0 && historical_overuse_ratio[itry] > 0) {
+				routing_predictor_running_average = ROUTING_PREDICTOR_RUNNING_AVERAGE_BASE + (historical_overuse_ratio[1] / historical_overuse_ratio[itry]) / 4;
+			}
+
 			/* Using double comparisons here, but just for inequality and they are coarse,
 			 * I don't think tolerance needs to be used */
 			if (itry < 10 && overused_ratio >= 4.0*overused_threshold)
@@ -217,12 +227,35 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 				times_exceeded_threshold++;
 			if (itry >= 20 && overused_ratio > overused_threshold)
 				times_exceeded_threshold++;
-			if (times_exceeded_threshold >= EXCEEDED_OVERUSED_COUNT_LIMIT){
+
+			//printf("jedit overused_ratio %g\n", overused_ratio);
+			if (times_exceeded_threshold >= EXCEEDED_OVERUSED_COUNT_LIMIT) {
 				vpr_printf_info("Routing aborted, the ratio of overused nodes is above the threshold.\n");
 				free_timing_driven_route_structs(pin_criticality, sink_order, rt_node_of_sink);
 				free(net_index);
 				free(sinks);
+				free(historical_overuse_ratio);
 				return (FALSE);
+			}
+			if(itry > routing_predictor_running_average && router_opts.routing_failure_predictor == AGGRESSIVE) {
+				/* linear extrapolation to predict what routing iteration will succeed */
+				int expected_successful_route_iter;
+				double removal_average = 0;
+				for(int iavg = 0; iavg < routing_predictor_running_average; iavg++) {
+					double first = historical_overuse_ratio[itry - routing_predictor_running_average + iavg];
+					double second = historical_overuse_ratio[itry - routing_predictor_running_average + iavg + 1];
+					removal_average += ((first - second) / routing_predictor_running_average);
+				}
+				expected_successful_route_iter = itry + historical_overuse_ratio[itry] / removal_average;
+				//printf("jedit expected_successful_route_iter %d\n", expected_successful_route_iter);
+				if (expected_successful_route_iter > 1.25 * router_opts.max_router_iterations || removal_average <= 0) {
+					vpr_printf_info("Routing aborted, the predicted iteration for a successful route is too high.\n");
+					free_timing_driven_route_structs(pin_criticality, sink_order, rt_node_of_sink);
+					free(net_index);
+					free(sinks);
+					free(historical_overuse_ratio);
+					return (FALSE);
+				}
 			}
 		}
 
@@ -246,6 +279,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 #endif
 			free(net_index);
 			free(sinks);
+			free(historical_overuse_ratio);
 			return (TRUE);
 		}
 
@@ -301,6 +335,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	free_timing_driven_route_structs(pin_criticality, sink_order, rt_node_of_sink);
 	free(net_index);
 	free(sinks);
+	free(historical_overuse_ratio);
 	return (FALSE);
 }
 
@@ -365,7 +400,7 @@ static double get_overused_ratio(){
 	int inode;
 	for(inode = 0; inode < num_rr_nodes; inode++){
 		if(rr_node[inode].occ > rr_node[inode].capacity)
-			overused_nodes += 1.0;
+			overused_nodes += (rr_node[inode].occ - rr_node[inode].capacity);
 	}
 	overused_nodes /= (double)num_rr_nodes;
 	return overused_nodes;
