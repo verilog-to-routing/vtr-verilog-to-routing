@@ -44,6 +44,8 @@ int *adder = NULL;
 int min_add = 0;
 int min_threshold_adder = 0;
 
+netlist_t *the_netlist;
+
 #ifdef VPR6
 
 /*---------------------------------------------------------------------------
@@ -76,37 +78,29 @@ void record_add_distribution(nnode_t *node)
  * (function: report_add_distribution)
  *-------------------------------------------------------------------------*/
 
+/* These values are collected during the unused logic removal sweep */
+extern int adder_chain_count;
+extern int longest_adder_chain;
+extern int total_adders;
+
 void report_add_distribution()
 {
-	int totaladders = 0;
-	int max = 0;
-	chain_information_t *adder_chain;
-
 	if(hard_adders == NULL)
 		return;
 
 	printf("\nHard adder Distribution\n");
 	printf("============================\n");
 	printf("\n");
-	printf("\nTotal # of chains = %d\n", total);
+	printf("\nTotal # of chains = %d\n", adder_chain_count);
 
 	printf("\nHard adder chain Details\n");
 	printf("============================\n");
 
-	while(chain_list != NULL)
-	{
-		adder_chain = (chain_information_t *)chain_list->data_vptr;
-		chain_list = delete_in_vptr_list(chain_list);
-		totaladders = totaladders + adder_chain->count;
-		if(max < adder_chain->count)
-			max = adder_chain->count;
-	}
+	printf("\n");
+	printf("\nThe Number of Hard Block adders in the Longest Chain: %d\n", longest_adder_chain);
 
 	printf("\n");
-	printf("\nThe Number of Hard Block adders in the Longest Chain: %d\n", max);
-
-	printf("\n");
-	printf("\nThe Total Number of Hard Block adders: %d\n", totaladders);
+	printf("\nThe Total Number of Hard Block adders: %d\n", total_adders);
 
 	return;
 }

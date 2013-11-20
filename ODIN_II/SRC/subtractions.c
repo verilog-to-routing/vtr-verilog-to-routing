@@ -43,40 +43,32 @@ int *sub = NULL;
 #ifdef VPR6
 
 /*---------------------------------------------------------------------------
- * (function: report_add_distribution)
+ * (function: report_sub_distribution)
  *-------------------------------------------------------------------------*/
+
+/* These values are collected during the unused logic removal sweep */
+extern int subtractor_chain_count;
+extern int longest_subtractor_chain;
+extern int total_subtractors;
 
 void report_sub_distribution()
 {
-	int max = 0;
-	int totalsub = 0;
-	chain_information_t *sub_chain;
-
 	if(hard_adders == NULL)
 		return;
 
 	printf("\nHard MINUS Distribution\n");
 	printf("============================\n");
 	printf("\n");
-	printf("\nTotal # of chains = %d\n", subchaintotal);
+	printf("\nTotal # of chains = %d\n", subtractor_chain_count);
 
 	printf("\nHard sub chain Details\n");
 	printf("============================\n");
 
-	while(sub_chain_list != NULL)
-	{
-		sub_chain = (chain_information_t *)sub_chain_list->data_vptr;
-		sub_chain_list = delete_in_vptr_list(sub_chain_list);
-		totalsub = totalsub + sub_chain->count;
-		if(max < sub_chain->count)
-			max = sub_chain->count;
-	}
 	printf("\n");
-	printf("\nThe Number of Hard Block subs in the Longest Chain: %d\n", max);
+	printf("\nThe Number of Hard Block subs in the Longest Chain: %d\n", longest_subtractor_chain);
 
 	printf("\n");
-	printf("\nThe Total Number of Hard Block subs: %d\n", totalsub);
-
+	printf("\nThe Total Number of Hard Block subs: %d\n", total_subtractors);
 
 	return;
 }
