@@ -36,8 +36,12 @@ void remove_pin(t_module* module, int pin_index);
 //Functions to remove additional clocks
 void remove_extra_primitive_clocks(t_module *module);
 
+//Functions to handle mlabs acting as ROM
+void identify_mlab_acting_as_rom(t_module* module);
+
 //Functions to fix connections between clock nets and non-clock ports
 void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types);
+t_pin_def* find_associated_clock_net(t_node* node, t_pin_def* clock_net, t_global_nets clock_nets);
 
 //Functions to identify dual-clock RAMs and split them into seperate blocks
 void decompose_multiclock_blocks(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types);
@@ -95,13 +99,16 @@ void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_
     // seperate 'input' and 'output' pins
     cout << "\t>> Preprocessing Netlist to decompose inout pins" << endl;
     decompose_inout_pins(module, arch);
-
+    cout << endl;
+    
+    cout << "\t>> Preprocessing Netlist to identify LUTRAM/MLAB acting as ROM" << endl;
+    identify_mlab_acting_as_rom(module);
     cout << endl;
 
     cout << "\t>> Preprocessing Netlist to remove constant nets" << endl;
     remove_constant_nets(module);
-
     cout << endl;
+
 
     if(single_clock_primitives && split_multiclock_blocks) {
         cout << "ERROR: Can not force single clocks while splitting multiclock blocks!" << endl;
@@ -630,6 +637,71 @@ int fix_netlist_connectivity_for_inout_pins(t_split_inout_pin* split_inout_pin,
     return number_of_nets_moved;
 }
 
+//============================================================================================
+//============================================================================================
+void identify_mlab_acting_as_rom(t_module* module) {
+    //For some reason the MLAB does not have an operating mode like the other
+    //ram like primitives.  In the case it is acting as a ROM the clock port
+    //is just connected to a constant net (e.g. gnd)
+    //
+    //This causes us problems later in VPR, since we expect the MLAB to have
+    //a clock port (used in non-ROM modes) but it is connected to a constant
+    //net when in ROM mode.  Specifically, VPR does not allow clock ports on
+    //primitives to be disconnected or attached to constant nets.
+    //
+    //The solution implemented here is to identify ROM mode MLABs, and
+    //manually add an 'operation_mode' parameter which will allow us to
+    //diferentiate these two cases later in VPR.  Note that this operation_mode
+    //does not exist in the actual VQM, but is manually added by us here.
+    int converted_mlab_count = 0;
+    for(int i = 0; i < module->number_of_nodes; i++) {
+        t_node* node = module->array_of_nodes[i];
+
+        if(strcmp(node->type, "stratixiv_mlab_cell") == 0) {
+            //It is an MLAB
+
+            for(int j = 0; j < node->number_of_ports; j++) {
+                t_node_port_association* node_port = node->array_of_ports[j];
+
+                if(strcmp(node_port->port_name, "clk0") == 0) {
+                    //This is the clock port
+                    t_pin_def* clock_net = node_port->associated_net;
+
+                    //The MLAB acts as a ROM when it's clock port is 
+                    //attached to a constant.  Here we check for vcc and gnd
+                    if(strcmp(clock_net->name, "vcc") == 0 || strcmp(clock_net->name, "gnd") == 0) {
+                        //It is a ROM, create an operation mode
+                        t_node_parameter* new_op_mode = (t_node_parameter*) my_malloc(sizeof(t_node_parameter));
+
+                        const char* param_name = "operation_mode";
+                        const char* param_value = "ROM";
+
+                        //Param name
+                        new_op_mode->name = (char*) my_malloc(sizeof(char)*(strlen(param_name) + 1));
+                        strncpy(new_op_mode->name, param_name, strlen(param_name) + 1);
+
+                        //Param value type
+                        new_op_mode->type = NODE_PARAMETER_STRING;
+
+                        //Param value
+                        new_op_mode->value.string_value = (char*) my_malloc(sizeof(char)*(strlen(param_value) + 1));
+                        strncpy(new_op_mode->value.string_value, param_value, strlen(param_value) + 1);
+
+                        //Add the operation mode to the list of parameters
+                        node->array_of_params = (t_node_parameter**) my_realloc(node->array_of_params, sizeof(t_node_parameter*) * ++node->number_of_params);
+                        node->array_of_params[node->number_of_params-1] = new_op_mode;
+
+                        converted_mlab_count++;
+                    }
+                    break; //Don't need to keep searching, only one clock port
+                }
+            }
+
+        }
+    }
+
+    cout << "\t>> Converted " << converted_mlab_count << " MLAB(s) to have operation mode 'ROM'" << endl;
+}
 
 //============================================================================================
 //============================================================================================
@@ -750,9 +822,13 @@ void remove_extra_primitive_clocks(t_module *module) {
             if(find_ptr != NULL && find_ptr == node_port->port_name) {
                 //The port_name starts with 'clk' 
 
-                if(strcmp(node_port->port_name, "clk0") != 0 && strcmp(node_port->port_name, "clk") != 0) {
+                if(strcmp(node_port->port_name, "clk0") != 0 && strcmp(node_port->port_name, "clk") != 0 &&
+                   strcmp(node_port->port_name, "clkhi") != 0) {
                     //The port name is not 'clk0' and hence it is added 
                     //to the list to be removed
+                    //
+                    //'clk' is what most blocks name thier clocks
+                    //'clkhi' is the single clock we care about on DDIO primitives
                     clock_ports_to_remove.push_back(node_port->port_name);
                 }
             }
@@ -836,6 +912,7 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
     //Identify the clock nets that are not really clock nets (they are driven
     // by a non-clock port)
     t_global_nets false_clock_nets;
+    map<t_pin_def*, t_pin_def*> associated_clock;
     for(int i = 0; i < module->number_of_nodes; ++i) {
         t_node* node = module->array_of_nodes[i];
 
@@ -871,6 +948,10 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
                                     cout << "\t\tIdentified false clock net " << clock_net->name << " driven by " << node->type << "." << node_port->port_name << endl;
                                 }
                                 false_clock_nets.insert(clock_net);
+
+                                t_pin_def* associated_clock_net = find_associated_clock_net(node, clock_net, clock_nets);
+
+                                associated_clock[clock_net] = associated_clock_net;
                             }
                         }
                     }
@@ -882,7 +963,7 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
     //Identify a valid clock to replace false clock connections with
     //We must do this, since VPR does not allow primitives with clock ports
     //to not have any clock connections
-    assert(false_clock_nets.size() < clock_nets.size());
+    assert(false_clock_nets.size() <= clock_nets.size());
 
     t_pin_def* valid_clock_net = NULL;
     for(t_global_nets::iterator clock_net_iter = clock_nets.begin(); clock_net_iter != clock_nets.end(); clock_net_iter++) {
@@ -894,7 +975,6 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
             break;
         }
     }
-    assert(valid_clock_net != NULL);
     
     //Remove clock port connections to all false clock nets
     for(int i = 0; i < module->number_of_nodes; ++i) {
@@ -910,11 +990,19 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
                     if(is_node_port_global(node, node_port, clock_ports)) {
                         //This is a clock port connecting to a false clock net
                         //  We will change this connection to avoid errors in VPR
-                        if(verbose_mode) {
-                            cout << "\t\tRemoving connection from " << node->type << "." << node_port->port_name << " to net " << false_clock_net->name;
-                            cout << " and replacing it with a connection to net " << valid_clock_net->name << endl;
+
+                        //Reverse look-up of a potential clock associated with the one we are
+                        //disconnecting
+                        t_pin_def* associated_clock_net = associated_clock[false_clock_net];
+                        if(associated_clock_net == NULL) {
+                            //Couldn't find a good match just pick the first one
+                            associated_clock_net = valid_clock_net;
                         }
-                        node->array_of_ports[j]->associated_net = valid_clock_net;
+                        if(verbose_mode) {
+                            cout << "\t\tRemoving connection from " << node->type << "." << node_port->port_name << " '" << node->name << "' to net " << false_clock_net->name;
+                            cout << " and replacing it with a connection to net " << associated_clock_net->name << endl;
+                        }
+                        node->array_of_ports[j]->associated_net = associated_clock_net;
 
                         //Check if the net has any other driver, if it doesn't
                         //then add the pin as a global input
@@ -926,6 +1014,8 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
     }
     cout << "\t>> Removed " << num_clock_pin_connections_removed << " connetions from false clock nets to clock pins" << endl;
 
+    //Re-determine clock nets and remove any remaining data/clock connections
+    clock_nets = identify_global_nets(module, clock_ports);
 
     //Remove connections from (valid) clock nets to data pins
     int num_data_pin_clock_connections_removed = 0;
@@ -942,7 +1032,7 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
             t_model_ports* arch_model_port = find_port_in_architecture_model(arch_model, node_port);
 
             if(!arch_model_port->is_clock && arch_model_port->dir == IN_PORT &&
-               clock_nets.count(node_port->associated_net) && !false_clock_nets.count(node_port->associated_net)) {
+               clock_nets.count(node_port->associated_net)) {
                 //Not a clock port, but an input port connected to a real clock net => must disconnect it!
                 // Note: VPR allows regular ports to drive clock nets, but not be driven by them
                 remove_node_port(node, j);
@@ -960,8 +1050,14 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
     for(int i = 0; i < module->number_of_assignments; i++) {
         t_assign* assign = module->array_of_assignments[i];
 
-        if(clock_nets.count(assign->source) && !false_clock_nets.count(assign->source)) {
+        if(clock_nets.count(assign->source)) {
             //This assignment is driven by a valid clock => must disconnect it
+
+
+            //ALT_INV signals are an exception, they are specially handled latter in the BLIF conversion (they are absorbed into LUTs)
+            //if(strstr(assign->target->name, "__ALT_INV__") != NULL && assign->inversion == T_TRUE) {
+                //continue;
+            //}
 
             if(verbose_mode) {
                 cout << "\t\tRemoving clock to assignment connection from " << assign->source->name << " to " << assign->target->name << endl;
@@ -979,6 +1075,20 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
     cout << "\t>> Removed " << num_data_pin_clock_connections_removed << " connections from clock nets to data pins" << endl;
 
 }
+
+t_pin_def* find_associated_clock_net(t_node* node, t_pin_def* clock_net, t_global_nets clock_nets) {
+    for(int j = 0; j < node->number_of_ports; j++) {
+        t_node_port_association* node_port = node->array_of_ports[j];
+
+        if(clock_nets.count(node_port->associated_net) && node_port->associated_net != clock_net) {
+            return node_port->associated_net;
+        }
+    }
+    return NULL;
+}
+
+
+
 
 //============================================================================================
 //============================================================================================
@@ -1554,7 +1664,7 @@ t_global_ports identify_primitive_global_pins(t_arch* arch, t_type_descriptor* a
     t_global_ports global_ports; 
 
     if(verbose_mode) {
-        printf("\t\tPrimitive Global Pins:\n");
+        cout << "\t\tPrimitive Global Pins:" << endl;
     }
     //Add the top level pb_types
     for(int top_pb_type_index = 0; top_pb_type_index < num_types; top_pb_type_index++) {
@@ -1612,7 +1722,7 @@ t_global_ports identify_primitive_global_pins(t_arch* arch, t_type_descriptor* a
                             }
 
                             if(verbose_mode) {
-                                printf("\t\t\t%s.%s\n", blif_model_prim_name, port.name);
+                                cout << "\t\t\t" << blif_model_prim_name << "." << port.name << endl;
                             }
                         }
                     }
@@ -1632,7 +1742,7 @@ t_global_ports identify_primitive_global_pins(t_arch* arch, t_type_descriptor* a
     }
 
     if(verbose_mode) {
-        printf("\t\t\tFound: %zu global primitive pins in architecture\n", global_ports.size());
+        cout << "\t\t\tFound: " << global_ports.size() << " global primitive pins in architecture" << endl;
     }
     return global_ports;
 }
@@ -1696,7 +1806,7 @@ t_global_nets identify_global_nets(t_module* module, t_global_ports global_ports
     t_global_nets global_nets;
 
     if(verbose_mode) {
-        printf("\t\tNets connected to global pins:\n");
+        cout << "\t\tNets connected to global pins:" << endl;
     }
     for(int node_index = 0; node_index < module->number_of_nodes; node_index++) {
         t_node* node = module->array_of_nodes[node_index];
@@ -1728,7 +1838,7 @@ t_global_nets identify_global_nets(t_module* module, t_global_ports global_ports
                         global_nets.insert(associated_net);
 
                         if(verbose_mode) {
-                            printf("\t\t\t%s (connected to at least %s.%s)\n", associated_net->name, node->type, node_port->port_name);
+                            cout << "\t\t\t" << associated_net->name << " (connected to at least " << node->type << "." << node_port->port_name << ")" << endl;
                         }
                     }
 
@@ -1748,14 +1858,14 @@ t_global_nets identify_global_nets(t_module* module, t_global_ports global_ports
             global_nets.insert(assign->target);
 
             if(verbose_mode) {
-                printf("\t\t\t%s (connected to %s by assignment)\n", assign->target->name, assign->source->name);
+                cout << "\t\t\t" << assign->target->name <<" (connected to " << assign->source->name <<" by assignment)" << endl;
             }
         }
     }
 
 
     if(verbose_mode) {
-        printf("\t\t\tFound: %zu nets connected to at least one global primitive pin\n", global_nets.size());
+        cout << "\t\t\tFound: " << global_nets.size() << " nets connected to at least one global primitive pin" << endl;
     }
     return global_nets;
 }
