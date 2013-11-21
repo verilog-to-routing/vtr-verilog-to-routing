@@ -67,6 +67,7 @@ static void print_net_name(int inet, int *column, FILE * fpout) {
 	print_string(str_ptr, column, fpout);
 }
 
+#if 0
 static int find_fanin_rr_node(t_pb *cur_pb, enum PORTS type, int rr_node_index) {
 	/* finds first fanin rr_node */
 	t_pb *parent, *sibling, *child;
@@ -487,12 +488,129 @@ static void print_clusters(t_block *clb, int num_clusters, FILE * fpout) {
 
 	for (icluster = 0; icluster < num_clusters; icluster++) {
 		rr_node = clb[icluster].pb->rr_graph;
-		if (clb[icluster].type != IO_TYPE)
-			print_pb(fpout, clb[icluster].pb, icluster);
+		if(clb[icluster].pb_pin_route_stats == NULL) {
+			if (clb[icluster].type != IO_TYPE)
+				print_pb(fpout, clb[icluster].pb, icluster);
+		} else {
+			
+		}
+	}
+}
+#endif
+
+/* Print netlist atom in blif format */
+void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
+	t_pb_pin_route_stats * pb_pin_route_stats;
+	int clb_index;
+	int in_port_index = 0;
+	int out_port_index = 0;
+	int clock_port_index = 0;
+	t_pb_graph_node *pb_graph_node;
+	t_pb_type *pb_type;
+
+	clb_index = logical_block[ilogical_block].clb_index;
+	assert (clb_index != OPEN);
+	pb_pin_route_stats = clb[clb_index].pb_pin_route_stats;
+	assert(pb_pin_route_stats != NULL);
+	pb_graph_node = logical_block[ilogical_block].pb->pb_graph_node;
+	pb_type = pb_graph_node->pb_type;
+
+
+	if(strcmp(logical_block[ilogical_block].model->name, "names") == 0) {
+		/* Print a LUT, a LUT has K input pins and one output pin */
+		fprintf(fpout, ".names ");
+		for (int i = 0; i < pb_type->num_ports; i++) {
+			if (pb_type->ports[i].type == IN_PORT
+					&& pb_type->ports[i].is_clock == FALSE) {
+				/* LUTs receive special handling because a LUT has logically equivalent inputs.
+					The intra-logic block router may have taken advantage of logical equivalence so we need to unscramble the inputs when we output the LUT logic.
+				*/
+				for (int j = 0; j < pb_type->ports[i].num_pins; j++) {
+					if (logical_block[ilogical_block].input_nets[in_port_index][j] != OPEN) {
+						int k;
+						for (k = 0; k < pb_type->ports[i].num_pins; k++) {								
+							int node_index = pb_graph_node->input_pins[in_port_index][k].pin_count_in_cluster;
+							int a_net_index = pb_pin_route_stats[node_index].atom_net_idx;
+							if(a_net_index != OPEN) {
+								if(a_net_index == logical_block[ilogical_block].input_nets[in_port_index][j]) {
+									fprintf(fpout, "clb_%d_rr_node_%d ", clb_index, pb_pin_route_stats[node_index].prev_pb_pin_id);
+									break;
+								}
+							}
+						}
+						if(k == pb_type->ports[i].num_pins) {
+							/* Failed to find LUT input, a netlist error has occurred */
+							vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
+								"LUT %s missing input %s post packing. This is a VPR internal error, report to vpr@eecg.utoronto.ca\n",
+								logical_block[ilogical_block].name, g_atoms_nlist.net[logical_block[ilogical_block].input_nets[in_port_index][j]].name);
+						}
+					}
+				}
+				in_port_index++;
+			}
+		}
+		for (int i = 0; i < pb_type->num_ports; i++) {
+			if (pb_type->ports[i].type == OUT_PORT) {
+				for (int j = 0; j < pb_type->ports[i].num_pins; j++) {
+					int node_index =
+							pb_graph_node->output_pins[out_port_index][j].pin_count_in_cluster;
+					fprintf(fpout, "clb_%d_rr_node_%d\n", clb_index,
+							node_index);
+				}
+				out_port_index++;
+			}
+		}
+		struct s_linked_vptr *truth_table = logical_block[ilogical_block].truth_table;
+		while (truth_table) {
+			fprintf(fpout, "%s\n", (char *) truth_table->data_vptr);
+			truth_table = truth_table->next;
+		}
+	} else if (strcmp(logical_block[ilogical_block].model->name, "latch") == 0) {
+		/* Print a flip-flop.  A flip-flop has a D input, a Q output, and a clock input */
+		fprintf(fpout, ".latch ");
+		for (int i = 0; i < pb_type->num_ports; i++) {
+			if (pb_type->ports[i].type == IN_PORT
+					&& pb_type->ports[i].is_clock == FALSE) {
+				assert(pb_type->ports[i].num_pins == 1);
+				assert(logical_block[ilogical_block].input_nets[i][0] != OPEN);
+				int node_index =
+						pb_graph_node->input_pins[in_port_index][0].pin_count_in_cluster;
+				fprintf(fpout, "clb_%d_rr_node_%d ", clb_index,	pb_pin_route_stats[node_index].prev_pb_pin_id);
+				in_port_index++;
+			}
+		}
+		for (int i = 0; i < pb_type->num_ports; i++) {
+			if (pb_type->ports[i].type == OUT_PORT) {
+				assert(pb_type->ports[i].num_pins == 1 && out_port_index == 0);
+				int node_index =
+						pb_graph_node->output_pins[out_port_index][0].pin_count_in_cluster;
+				fprintf(fpout, "clb_%d_rr_node_%d re ", clb_index, node_index);
+				out_port_index++;
+			}
+		}
+		for (int i = 0; i < pb_type->num_ports; i++) {
+			if (pb_type->ports[i].type == IN_PORT
+					&& pb_type->ports[i].is_clock == TRUE) {
+				assert(logical_block[ilogical_block].clock_net != OPEN);
+				int node_index =
+						pb_graph_node->clock_pins[clock_port_index][0].pin_count_in_cluster;
+				fprintf(fpout, "clb_%d_rr_node_%d 2", clb_index, pb_pin_route_stats[node_index].prev_pb_pin_id);
+				clock_port_index++;
+			}
+		}
+		fprintf(fpout, "\n");
+	} else {
+		/* This is a user defined custom block, print based on model */
 	}
 }
 
-void output_blif (t_block *clb, int num_clusters, boolean global_clocks,
+void print_routing_in_clusters(FILE *fpout, t_block *clb, int num_clusters) {
+}
+	
+void print_models(FILE *fpout, t_model *user_models) {
+}
+
+void output_blif (const t_arch *arch, t_block *clb, int num_clusters, boolean global_clocks,
 		boolean * is_clock, const char *out_fname, boolean skip_clustering) {
 
 	/* 
@@ -504,6 +622,10 @@ void output_blif (t_block *clb, int num_clusters, boolean global_clocks,
 	int bnum, column;
 	struct s_linked_vptr *p_io_removed;
 	unsigned int i;
+
+	if(clb[0].pb_pin_route_stats == NULL) {
+		return;
+	}
 
 	fpout = my_fopen(out_fname, "w", 0);
 
@@ -536,12 +658,10 @@ void output_blif (t_block *clb, int num_clusters, boolean global_clocks,
 
 	fprintf(fpout, "\n\n");
 
-	/* print logic of clusters */
-	print_clusters(clb, num_clusters, fpout);
-
-	/* handle special case: input goes straight to output without going through any logic */
+	/* print out all non I/O circuit elements */
 	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
 		if (logical_block[bnum].type == VPACK_INPAD) {
+			/* handle special case: input goes straight to output without going through any logic */
 			for (i = 1;
 					i
 					< g_atoms_nlist.net[logical_block[bnum].output_nets[0][0]].pins.size();
@@ -556,10 +676,18 @@ void output_blif (t_block *clb, int num_clusters, boolean global_clocks,
 					fprintf(fpout, "\n1 1\n");
 				}
 			}
+		} else if (logical_block[bnum].type != VPACK_OUTPAD) {
+			/* normal logic */
+			print_logical_block(fpout, bnum, clb);
 		}
 	}
 
+	/* print logic of clusters */
+	print_routing_in_clusters(fpout, clb, num_clusters);
+	
 	fprintf(fpout, "\n.end\n");
+
+	print_models(fpout, arch->models);
 
 	fclose(fpout);
 }

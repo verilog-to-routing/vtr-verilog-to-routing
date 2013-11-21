@@ -20,7 +20,6 @@ using namespace std;
 #include "cluster.h"
 #include "heapsort.h"
 #include "output_clustering.h"
-#include "output_blif.h"
 #include "SetupGrid.h"
 #include "read_xml_arch_file.h"
 #include "cluster_legality.h"
@@ -32,7 +31,7 @@ using namespace std;
 #include "cluster_router.h"
 
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*/
-//#define JEDIT_INTRA_LB_ROUTE
+/*#define JEDIT_INTRA_LB_ROUTE */
 
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
 #define AAPACK_MAX_NET_SINKS_IGNORE 256				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
@@ -686,17 +685,13 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	check_clustering(num_clb, clb, is_clock);
 
-	output_clustering(clb, num_clb, intra_lb_routing, global_clocks, is_clock, out_fname, FALSE);
+	output_clustering(arch, clb, num_clb, intra_lb_routing, global_clocks, is_clock, out_fname, FALSE);
 	#ifdef JEDIT_INTRA_LB_ROUTE
 		for(int irt = 0; irt < (int) intra_lb_routing.size(); irt++){
 			free_intra_lb_nets(intra_lb_routing[irt]);
 		}
 		intra_lb_routing.clear();
 	#endif
-	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_PACK_NETLIST)) {
-		output_blif (clb, num_clb, global_clocks, is_clock,
-			getEchoFileName(E_ECHO_POST_PACK_NETLIST), FALSE);
-	}
 
 	if (hill_climbing_flag) {
 		free(hill_climbing_inputs_avail);

@@ -18,7 +18,9 @@ using namespace std;
 #include "cluster_router.h"
 #include "output_clustering.h"
 #include "read_xml_arch_file.h"
+#include "ReadOptions.h"
 #include "vpr_utils.h"
+#include "output_blif.h"
 
 #define LINELENGTH 1024
 #define TAB_LENGTH 4
@@ -862,7 +864,7 @@ static void print_stats(t_block *clb, int num_clusters) {
 	/* TODO: print more stats */
 }
 
-void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_intra_lb_net> * > &intra_lb_routing, boolean global_clocks,
+void output_clustering(const t_arch *arch, t_block *clb, int num_clusters, const vector < vector <t_intra_lb_net> * > &intra_lb_routing, boolean global_clocks,
 		boolean * is_clock, char *out_fname, boolean skip_clustering) {
 
 	/* 
@@ -954,6 +956,11 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	fprintf(fpout, "</block>\n\n");
 
 	fclose(fpout);
+
+	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_PACK_NETLIST)) {
+		output_blif (arch, clb, num_clusters, global_clocks, is_clock,
+			getEchoFileName(E_ECHO_POST_PACK_NETLIST), FALSE);
+	}
 
 	if(!intra_lb_routing.empty()) {
 		for(int icluster = 0; icluster < num_clusters; icluster++) {
