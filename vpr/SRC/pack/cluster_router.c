@@ -87,7 +87,7 @@ static void load_trace_to_pb_pin_route_stats(INOUTP t_pb_pin_route_stats *pb_pin
 
 
 /*****************************************************************************************
-* Internal debug functions declarations
+* Debug functions declarations
 ******************************************************************************************/
 static void print_route(char *filename, t_lb_router_data *router_data);
 static void print_trace(FILE *fp, t_lb_trace *trace);
@@ -945,6 +945,10 @@ static void print_route(char *filename, t_lb_router_data *router_data) {
 
 /* Debug routine, print out trace of net */
 static void print_trace(FILE *fp, t_lb_trace *trace) {
+	if(trace == NULL) {
+		fprintf(fp, "NULL");
+		return;
+	}
 	for(unsigned int ibranch = 0; ibranch < trace->next_nodes.size(); ibranch++) {
 		if(trace->next_nodes.size() > 1) {
 			fprintf(fp, "B(%d-->%d) ", trace->current_node, trace->next_nodes[ibranch].current_node);
