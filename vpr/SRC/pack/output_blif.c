@@ -17,6 +17,7 @@ using namespace std;
 #include "globals.h"
 #include "output_blif.h"
 #include "ReadOptions.h"
+#include "vpr_utils.h"
 
 #define LINELENGTH 1024
 #define TABLENGTH 1
@@ -499,12 +500,9 @@ static void print_clusters(t_block *clb, int num_clusters, FILE * fpout) {
 #endif
 
 /* Print netlist atom in blif format */
-void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
+void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb, t_pb_graph_pin **pb_graph_pin_lookup, int max_pb_graph_pin) {
 	t_pb_pin_route_stats * pb_pin_route_stats;
 	int clb_index;
-	int in_port_index = 0;
-	int out_port_index = 0;
-	int clock_port_index = 0;
 	t_pb_graph_node *pb_graph_node;
 	t_pb_type *pb_type;
 
@@ -520,19 +518,20 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 		/* Print a LUT, a LUT has K input pins and one output pin */
 		fprintf(fpout, ".names ");
 		for (int i = 0; i < pb_type->num_ports; i++) {
-			if (pb_type->ports[i].type == IN_PORT
-					&& pb_type->ports[i].is_clock == FALSE) {
+			assert(pb_type->num_ports == 2);
+			if (pb_type->ports[i].type == IN_PORT) {
 				/* LUTs receive special handling because a LUT has logically equivalent inputs.
 					The intra-logic block router may have taken advantage of logical equivalence so we need to unscramble the inputs when we output the LUT logic.
 				*/
+				assert(pb_type->ports[i].is_clock == FALSE);
 				for (int j = 0; j < pb_type->ports[i].num_pins; j++) {
-					if (logical_block[ilogical_block].input_nets[in_port_index][j] != OPEN) {
+					if (logical_block[ilogical_block].input_nets[0][j] != OPEN) {
 						int k;
 						for (k = 0; k < pb_type->ports[i].num_pins; k++) {								
-							int node_index = pb_graph_node->input_pins[in_port_index][k].pin_count_in_cluster;
+							int node_index = pb_graph_node->input_pins[0][k].pin_count_in_cluster;
 							int a_net_index = pb_pin_route_stats[node_index].atom_net_idx;
 							if(a_net_index != OPEN) {
-								if(a_net_index == logical_block[ilogical_block].input_nets[in_port_index][j]) {
+								if(a_net_index == logical_block[ilogical_block].input_nets[0][j]) {
 									fprintf(fpout, "clb_%d_rr_node_%d ", clb_index, pb_pin_route_stats[node_index].prev_pb_pin_id);
 									break;
 								}
@@ -542,22 +541,18 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 							/* Failed to find LUT input, a netlist error has occurred */
 							vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 								"LUT %s missing input %s post packing. This is a VPR internal error, report to vpr@eecg.utoronto.ca\n",
-								logical_block[ilogical_block].name, g_atoms_nlist.net[logical_block[ilogical_block].input_nets[in_port_index][j]].name);
+								logical_block[ilogical_block].name, g_atoms_nlist.net[logical_block[ilogical_block].input_nets[0][j]].name);
 						}
 					}
 				}
-				in_port_index++;
 			}
 		}
 		for (int i = 0; i < pb_type->num_ports; i++) {
 			if (pb_type->ports[i].type == OUT_PORT) {
-				for (int j = 0; j < pb_type->ports[i].num_pins; j++) {
-					int node_index =
-							pb_graph_node->output_pins[out_port_index][j].pin_count_in_cluster;
-					fprintf(fpout, "clb_%d_rr_node_%d\n", clb_index,
-							node_index);
-				}
-				out_port_index++;
+				int node_index = pb_graph_node->output_pins[0][0].pin_count_in_cluster;
+				assert(pb_type->ports[i].num_pins == 1);
+				assert(logical_block[ilogical_block].output_nets[0][0] == pb_pin_route_stats[node_index].atom_net_idx);
+				fprintf(fpout, "clb_%d_rr_node_%d\n", clb_index, node_index);
 			}
 		}
 		struct s_linked_vptr *truth_table = logical_block[ilogical_block].truth_table;
@@ -568,34 +563,27 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 	} else if (strcmp(logical_block[ilogical_block].model->name, "latch") == 0) {
 		/* Print a flip-flop.  A flip-flop has a D input, a Q output, and a clock input */
 		fprintf(fpout, ".latch ");
+		assert(pb_type->num_ports == 3);
 		for (int i = 0; i < pb_type->num_ports; i++) {
 			if (pb_type->ports[i].type == IN_PORT
 					&& pb_type->ports[i].is_clock == FALSE) {
 				assert(pb_type->ports[i].num_pins == 1);
-				assert(logical_block[ilogical_block].input_nets[i][0] != OPEN);
+				assert(logical_block[ilogical_block].input_nets[0][0] != OPEN);
 				int node_index =
-						pb_graph_node->input_pins[in_port_index][0].pin_count_in_cluster;
+						pb_graph_node->input_pins[0][0].pin_count_in_cluster;
 				fprintf(fpout, "clb_%d_rr_node_%d ", clb_index,	pb_pin_route_stats[node_index].prev_pb_pin_id);
-				in_port_index++;
-			}
-		}
-		for (int i = 0; i < pb_type->num_ports; i++) {
-			if (pb_type->ports[i].type == OUT_PORT) {
-				assert(pb_type->ports[i].num_pins == 1 && out_port_index == 0);
-				int node_index =
-						pb_graph_node->output_pins[out_port_index][0].pin_count_in_cluster;
+			} else if (pb_type->ports[i].type == OUT_PORT) {
+				assert(pb_type->ports[i].num_pins == 1);
+				int node_index = pb_graph_node->output_pins[0][0].pin_count_in_cluster;
 				fprintf(fpout, "clb_%d_rr_node_%d re ", clb_index, node_index);
-				out_port_index++;
-			}
-		}
-		for (int i = 0; i < pb_type->num_ports; i++) {
-			if (pb_type->ports[i].type == IN_PORT
+			} else if (pb_type->ports[i].type == IN_PORT
 					&& pb_type->ports[i].is_clock == TRUE) {
+				assert(pb_type->ports[i].num_pins == 1);
 				assert(logical_block[ilogical_block].clock_net != OPEN);
-				int node_index =
-						pb_graph_node->clock_pins[clock_port_index][0].pin_count_in_cluster;
+				int node_index = pb_graph_node->clock_pins[0][0].pin_count_in_cluster;
 				fprintf(fpout, "clb_%d_rr_node_%d 2", clb_index, pb_pin_route_stats[node_index].prev_pb_pin_id);
-				clock_port_index++;
+			} else {
+				assert(0);
 			}
 		}
 		fprintf(fpout, "\n");
@@ -605,6 +593,9 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 }
 
 void print_routing_in_clusters(FILE *fpout, t_block *clb, int num_clusters) {
+
+	int column = 0;
+	print_net_name(0, &column, NULL);
 }
 	
 void print_models(FILE *fpout, t_model *user_models) {
@@ -678,7 +669,9 @@ void output_blif (const t_arch *arch, t_block *clb, int num_clusters, boolean gl
 			}
 		} else if (logical_block[bnum].type != VPACK_OUTPAD) {
 			/* normal logic */
-			print_logical_block(fpout, bnum, clb);
+			t_pb_graph_pin** pb_graph_pin_lookup;
+			pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(clb[logical_block[bnum].clb_index].type);
+			print_logical_block(fpout, bnum, clb, pb_graph_pin_lookup, clb[logical_block[bnum].clb_index].pb->pb_graph_node->total_pb_pins);
 		}
 	}
 
