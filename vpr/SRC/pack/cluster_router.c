@@ -407,22 +407,15 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 			is_routed = is_route_success(router_data);
 		} else {
 			--inet;
-			printf("jedit net %s %d is impossible\n", vpack_net[lb_nets[inet].atom_net_index].name, inet);
+			printf(WARNTAG, "jedit net %s %d is impossible\n", vpack_net[lb_nets[inet].atom_net_index].name, inet);
 			is_routed = FALSE;
 		}
 		router_data->pres_con_fac *= router_data->params.pres_fac_mult;
 	}
 
-	/* jedit */
-	int count = 0;
-	for(unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
-		if(router_data->lb_rr_node_stats[inode].occ > 0) {
-			count++;
-		}
-	}
 	if(!is_routed) {
 		print_route("jedit_failed_route.echo", router_data);
-		printf("jedit route FAIL\n");
+		printf(WARNTAG, "jedit route FAIL\n");
 	} else {
 		save_and_reset_lb_route(router_data);
 	}
@@ -628,7 +621,9 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, in
 		}
 	}
 
-	assert(lb_nets[ipos].terminals.size() <= g_atoms_nlist.net[inet].pins.size());
+	int num_lb_terminals = lb_nets[ipos].terminals.size();
+	assert(num_lb_terminals <= (int) g_atoms_nlist.net[inet].pins.size());
+	assert(num_lb_terminals > 1);
 }
 
 
@@ -717,6 +712,11 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iato
 		/* Drop terminal from list */
 		lb_nets[ipos].terminals[iterm] = lb_nets[ipos].terminals.back();
 		lb_nets[ipos].terminals.pop_back();
+		
+		if(lb_nets[ipos].terminals.size() == 1 && lb_nets[ipos].terminals[0] != get_lb_type_rr_graph_ext_source_index(lb_type)) {
+			/* The removed sink must be driven by an atom found in the cluster, add in special sink outside of cluster to represent this */
+			lb_nets[ipos].terminals.push_back(get_lb_type_rr_graph_ext_sink_index(lb_type));
+		}
 
 		if(lb_nets[ipos].terminals.size() > 1 &&
 			lb_nets[ipos].terminals[1] != get_lb_type_rr_graph_ext_sink_index(lb_type) && 
@@ -728,7 +728,6 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iato
 			lb_nets[ipos].terminals[1] = get_lb_type_rr_graph_ext_sink_index(lb_type);
 
 		}
-		
 	}
 
 	if(lb_nets[ipos].terminals.size() == 1 && 
@@ -936,7 +935,7 @@ static void print_route(char *filename, t_lb_router_data *router_data) {
 	for(unsigned int inet = 0; inet < lb_nets.size(); inet++) {
 		int atom_net;
 		atom_net = lb_nets[inet].atom_net_index;
-		fprintf(fp, "net %s %d\n", g_atoms_nlist.net[atom_net].name, atom_net);
+		fprintf(fp, "net %s (%d) num targets %d \n", g_atoms_nlist.net[atom_net].name, atom_net, lb_nets[inet].terminals.size());
 		print_trace(fp, lb_nets[inet].rt_tree);
 		fprintf(fp, "\n\n");
 	}
