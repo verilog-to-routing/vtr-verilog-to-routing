@@ -189,29 +189,30 @@ void print_routing_in_clusters(FILE *fpout, t_block *clb, int iclb) {
 	max_pb_graph_pin = pb_graph_node->total_pb_pins;
 	pb_pin_route_stats = clb[iclb].pb_pin_route_stats;
 
+
 	for(int i = 0; i < max_pb_graph_pin; i++) {
 		if(pb_pin_route_stats[i].atom_net_idx != OPEN) {
 			int column = 0;
 			pb_graph_node_of_pin = pb_graph_pin_lookup[i]->parent_node;
 
-			if(pb_graph_node_of_pin->pb_type->num_modes != 0) {
-				/* Print interconnect of non-primitive pins */	
-				if(pb_pin_route_stats[i].prev_pb_pin_id == OPEN) {
-					/* Logic block input pin */
-					assert(pb_graph_node_of_pin->parent_pb_graph_node == NULL);
-					int column = 0;
-					fprintf(fpout, ".names ");
-					print_net_name(pb_pin_route_stats[i].atom_net_idx, &column, fpout);
-					fprintf(fpout, " clb_%d_rr_node_%d\n", iclb, i);
-				} else if (pb_graph_node_of_pin->parent_pb_graph_node == NULL) {
-					/* Logic block output pin */
-					fprintf(fpout, ".names clb_%d_rr_node_%d ", iclb, pb_pin_route_stats[i].prev_pb_pin_id);
-					print_net_name(pb_pin_route_stats[i].atom_net_idx, &column, fpout);
-					fprintf(fpout, "\n");
-				} else {
-					/* Logic block internal pin */
-					fprintf(fpout, ".names clb_%d_rr_node_%d clb_%d_rr_node_%d\n", iclb, pb_pin_route_stats[i].prev_pb_pin_id, iclb, i);
-				}
+			/* Print interconnect */	
+			if(pb_graph_node_of_pin->pb_type->num_modes != 0 && pb_pin_route_stats[i].prev_pb_pin_id == OPEN) {
+				/* Logic block input pin */
+				assert(pb_graph_node_of_pin->parent_pb_graph_node == NULL);
+				int column = 0;
+				fprintf(fpout, ".names ");
+				print_net_name(pb_pin_route_stats[i].atom_net_idx, &column, fpout);
+				fprintf(fpout, " clb_%d_rr_node_%d\n", iclb, i);
+				fprintf(fpout, "1 1\n\n");
+			} else if (pb_graph_node_of_pin->pb_type->num_modes != 0 && pb_graph_node_of_pin->parent_pb_graph_node == NULL) {
+				/* Logic block output pin */
+				fprintf(fpout, ".names clb_%d_rr_node_%d ", iclb, pb_pin_route_stats[i].prev_pb_pin_id);
+				print_net_name(pb_pin_route_stats[i].atom_net_idx, &column, fpout);
+				fprintf(fpout, "\n");
+				fprintf(fpout, "1 1\n\n");
+			} else if (pb_graph_node_of_pin->pb_type->num_modes != 0 || pb_graph_pin_lookup[i]->port->type != OUT_PORT) {
+				/* Logic block internal pin */
+				fprintf(fpout, ".names clb_%d_rr_node_%d clb_%d_rr_node_%d\n", iclb, pb_pin_route_stats[i].prev_pb_pin_id, iclb, i);
 				fprintf(fpout, "1 1\n\n");
 			}
 		}
