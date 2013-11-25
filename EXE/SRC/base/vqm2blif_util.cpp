@@ -264,12 +264,12 @@ void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, t_model* arch_models,
         if(dataa_input_reg || datab_input_reg || signa_input_reg || signb_input_reg) {
 
             //In the unsual case of only some inputs being registered, print a warning to the user
-            if(verbose_mode) {
-                if(!dataa_input_reg || !datab_input_reg || !signa_input_reg || !signb_input_reg) {
-                    cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has only some inputs registered.";
-                    cout << " Approximating as all inputs registered." << endl; 
-                }
-            }
+            //if(verbose_mode) {
+                //if(!dataa_input_reg || !datab_input_reg || !signa_input_reg || !signb_input_reg) {
+                    //cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has only some inputs registered.";
+                    //cout << " Approximating as all inputs registered." << endl; 
+                //}
+            //}
 
             //Mark this pimitive instance as having registered inputs
             //cout << "DSP mac_mult '" << vqm_node->name << "' with REG inputs" << endl;
@@ -282,12 +282,12 @@ void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, t_model* arch_models,
         }
 
         //Check if we are approximating the registered scanouta port
-        if(verbose_mode) {
-            if(scanouta_output_reg) {
-                cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has registered 'scanouta' port.";
-                cout << " Approximating as combinational." << endl; 
-            }
-        }
+        //if(verbose_mode) {
+            //if(scanouta_output_reg) {
+                //cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has registered 'scanouta' port.";
+                //cout << " Approximating as combinational." << endl; 
+            //}
+        //}
     }
 }
 
@@ -364,12 +364,12 @@ void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* arch_models, 
 
             //In nearly all reasonable usage modes, both adders should be using the same clock,
             // Print a warning if they are not
-            if(verbose_mode) {
-                if(!first_adder0_reg || !first_adder1_reg) {
-                    cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has only some inputs registered.";
-                    cout << " Approximating as all inputs registered." << endl; 
-                }
-            }
+            //if(verbose_mode) {
+                //if(!first_adder0_reg || !first_adder1_reg) {
+                    //cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has only some inputs registered.";
+                    //cout << " Approximating as all inputs registered." << endl; 
+                //}
+            //}
             //Mark this pimitive instance as having registered inputs
             //cout << "DSP mac_out '" << vqm_node->name << "' with REG inputs" << endl;
             mode_hash.append(".input_type{reg}");
@@ -393,12 +393,12 @@ void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* arch_models, 
         }
 
         //Print a warning if second stage adder reg was not used
-        if(verbose_mode) {
-            if(!second_adder_reg) {
-                cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' does not use second stage register.";
-                cout << " Please check architecture carefully to verify any timing approximations made about the block." << endl; 
-            }
-        }
+        //if(verbose_mode) {
+            //if(!second_adder_reg) {
+                //cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' does not use second stage register.";
+                //cout << " Please check architecture carefully to verify any timing approximations made about the block." << endl; 
+            //}
+        //}
     }
 
 }
@@ -477,11 +477,11 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
 
         //Provided both ports are used, they should have the same output type (comb or reg)
         if(verbose_mode) {
-            if(port_a_data_out_clock != NULL && port_b_data_out_clock != NULL) {
-                cout << "Warning: RAM " << vqm_node->type << " '" << vqm_node->name << "' does not use output registers for";
-                cout << " ports A and B.  The block will be approximated as having registered output ports.";
-                cout << " Please check architecture carefully to verify any timing approximations made about the block." << endl; 
-            }
+            //if(port_a_data_out_clock != NULL && port_b_data_out_clock != NULL) {
+                //cout << "Warning: RAM " << vqm_node->type << " '" << vqm_node->name << "' does not use output registers for";
+                //cout << " ports A and B.  The block will be approximated as having registered output ports.";
+                //cout << " Please check architecture carefully to verify any timing approximations made about the block." << endl; 
+            //}
         }
 
         //Mark whether the outputs are registered or not
