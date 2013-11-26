@@ -199,7 +199,6 @@ void print_routing_in_clusters(FILE *fpout, t_block *clb, int iclb) {
 			if(pb_graph_node_of_pin->pb_type->num_modes != 0 && pb_pin_route_stats[i].prev_pb_pin_id == OPEN) {
 				/* Logic block input pin */
 				assert(pb_graph_node_of_pin->parent_pb_graph_node == NULL);
-				int column = 0;
 				fprintf(fpout, ".names ");
 				print_net_name(pb_pin_route_stats[i].atom_net_idx, &column, fpout);
 				fprintf(fpout, " clb_%d_rr_node_%d\n", iclb, i);

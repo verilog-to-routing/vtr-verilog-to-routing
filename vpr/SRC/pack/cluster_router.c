@@ -407,7 +407,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 			is_routed = is_route_success(router_data);
 		} else {
 			--inet;
-			printf(WARNTAG, "jedit net %s %d is impossible\n", vpack_net[lb_nets[inet].atom_net_index].name, inet);
+			printf(WARNTAG "jedit net %s %d is impossible\n", vpack_net[lb_nets[inet].atom_net_index].name, inet);
 			is_routed = FALSE;
 		}
 		router_data->pres_con_fac *= router_data->params.pres_fac_mult;
@@ -415,7 +415,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 
 	if(!is_routed) {
 		print_route("jedit_failed_route.echo", router_data);
-		printf(WARNTAG, "jedit route FAIL\n");
+		printf(WARNTAG "jedit route FAIL\n");
 	} else {
 		save_and_reset_lb_route(router_data);
 	}
@@ -935,7 +935,7 @@ static void print_route(char *filename, t_lb_router_data *router_data) {
 	for(unsigned int inet = 0; inet < lb_nets.size(); inet++) {
 		int atom_net;
 		atom_net = lb_nets[inet].atom_net_index;
-		fprintf(fp, "net %s (%d) num targets %d \n", g_atoms_nlist.net[atom_net].name, atom_net, lb_nets[inet].terminals.size());
+		fprintf(fp, "net %s (%d) num targets %d \n", g_atoms_nlist.net[atom_net].name, atom_net, (int)lb_nets[inet].terminals.size());
 		print_trace(fp, lb_nets[inet].rt_tree);
 		fprintf(fp, "\n\n");
 	}
