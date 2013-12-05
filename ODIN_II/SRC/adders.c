@@ -404,6 +404,7 @@ void init_split_adder(nnode_t *node, nnode_t *ptr, int a, int sizea, int b, int 
 
 	/* Copy properties from original node */
 	ptr->type = node->type;
+	ptr->bit_width = node->bit_width;
 	ptr->related_ast_node = node->related_ast_node;
 	ptr->traverse_visited = node->traverse_visited;
 	ptr->node_data = NULL;
@@ -924,8 +925,8 @@ void iterate_adders(netlist_t *netlist)
 		a = node->input_port_sizes[0];
 		b = node->input_port_sizes[1];
 		num = (a >= b)? a : b;
-
-		if(num >= min_threshold_adder)
+		node->bit_width = num;
+		if(num >= min_threshold_adder && num >= min_add)
 		{
 			// how many adders a can split
 			counta = (a + 1) / sizea + 1;
@@ -937,7 +938,6 @@ void iterate_adders(netlist_t *netlist)
 			else
 				count = countb;
 			total++;
-
 			split_adder(node, a, b, sizea, sizeb, 1, 1, count, netlist);
 		}
 		// Store the node into processed_adder_list if the threshold is bigger than num

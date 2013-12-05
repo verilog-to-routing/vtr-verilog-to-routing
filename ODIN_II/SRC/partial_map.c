@@ -192,8 +192,8 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 			#ifdef VPR6
 			if (hard_adders != NULL)
 			{
-				int max_num = (node->input_port_sizes[0] >= node->input_port_sizes[1])? node->input_port_sizes[0] : node->input_port_sizes[1];
-				if (max_num >= min_add && max_num >= min_threshold_adder)
+				// Check if the size of this adder is greater than the hard vs soft logic threshold
+				if (node->bit_width >= min_threshold_adder)
 					instantiate_hard_adder(node, traverse_number, netlist);
 				else
 					instantiate_add_w_carry(node, traverse_number, netlist);

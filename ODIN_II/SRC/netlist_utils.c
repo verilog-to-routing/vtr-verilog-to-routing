@@ -44,6 +44,7 @@ nnode_t* allocate_nnode() {
 	
 	new_node->name = NULL;
 	new_node->type = NO_OP;
+	new_node->bit_width = 0;
 	new_node->related_ast_node = NULL;
 	new_node->traverse_visited = -1;
 

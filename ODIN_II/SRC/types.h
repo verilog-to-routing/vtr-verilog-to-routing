@@ -401,6 +401,8 @@ struct nnode_t_t
 	long unique_id;
 	char *name; // unique name of a node
 	operation_list type; // the type of node
+	int bit_width; // Size of the operation (e.g. for adders/subtractors)
+	
 	ast_node_t *related_ast_node; // the abstract syntax node that made this node
 
 	short traverse_visited; // a way to mark if we've visited yet
