@@ -14,6 +14,8 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
 
 Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypassed for free.
 
+64.34 min width transistors for each bit of 4-bit CLA (257.35 for 4 bits)
+
 -->
   
   <architecture>
@@ -79,7 +81,7 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
 		<device>
 			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111" ipin_mux_trans_size="1.508232"/>
 			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="9.55363e-11"/>
-			<area grid_logic_tile_area="12038.8728908"/>
+			<area grid_logic_tile_area="12553.5728908"/>
 			<chan_width_distr>
 				<io width="1.000000"/>
 				<x distr="uniform" peak="1.000000"/>
@@ -103,7 +105,7 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
 
 	  <complexblocklist>
        <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
-      <pb_type name="io" capacity="8">
+      <pb_type name="io" capacity="8" area="0">
         <input name="outpad" num_pins="1"/>
         <output name="inpad" num_pins="1"/>
         <clock name="clock" num_pins="1"/>
@@ -199,28 +201,62 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
             1.51e-10
           </delay_matrix>      
         </pb_type>
-        <pb_type name="adder" blif_model=".subckt adder" num_pb="1">
+        <pb_type name="wrapadd" num_pb="1">
           <input name="a" num_pins="4"/>
           <input name="b" num_pins="4"/>
           <input name="cin" num_pins="1"/>
           <output name="sumout" num_pins="4"/>
           <output name="cout" num_pins="1"/>
-          <!-- Carry link delays included in cin->cout delay -->
-          <delay_constant max="65e-12" in_port="adder.a[0]" out_port="adder.sumout[0]"/>
-          <delay_constant max="65e-12" in_port="adder.b[0]" out_port="adder.sumout[0]"/>
-          <delay_constant max="72e-12" in_port="adder.a[1]" out_port="adder.sumout[1]"/>
-          <delay_constant max="72e-12" in_port="adder.b[1]" out_port="adder.sumout[1]"/>
-          <delay_constant max="72e-12" in_port="adder.a[2]" out_port="adder.sumout[2]"/>
-          <delay_constant max="72e-12" in_port="adder.b[2]" out_port="adder.sumout[2]"/>
-          <delay_constant max="82e-12" in_port="adder.a[3]" out_port="adder.sumout[3]"/>
-          <delay_constant max="82e-12" in_port="adder.b[3]" out_port="adder.sumout[3]"/>
-          <delay_constant max="25e-12" in_port="adder.cin" out_port="adder.sumout[0]"/>
-          <delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout[1]"/>
-          <delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout[2]"/>
-          <delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout[3]"/>
-          <delay_constant max="80e-12" in_port="adder.a" out_port="adder.cout"/>
-          <delay_constant max="80e-12" in_port="adder.b" out_port="adder.cout"/>
-          <delay_constant max="20e-12" in_port="adder.cin" out_port="adder.cout"/>
+          
+          <pb_type name="adder" blif_model=".subckt adder" num_pb="1">
+            <input name="a" num_pins="4"/>
+            <input name="b" num_pins="4"/>
+            <input name="cin" num_pins="1"/>
+            <output name="sumout" num_pins="4"/>
+            <output name="cout" num_pins="1"/>
+            <!-- Carry link delays included in cin->cout delay -->
+            <delay_constant max="65e-12" in_port="adder.a[0]" out_port="adder.sumout[0]"/>
+            <delay_constant max="65e-12" in_port="adder.b[0]" out_port="adder.sumout[0]"/>
+            <delay_constant max="72e-12" in_port="adder.a[1]" out_port="adder.sumout[1]"/>
+            <delay_constant max="72e-12" in_port="adder.b[1]" out_port="adder.sumout[1]"/>
+            <delay_constant max="72e-12" in_port="adder.a[2]" out_port="adder.sumout[2]"/>
+            <delay_constant max="72e-12" in_port="adder.b[2]" out_port="adder.sumout[2]"/>
+            <delay_constant max="82e-12" in_port="adder.a[3]" out_port="adder.sumout[3]"/>
+            <delay_constant max="82e-12" in_port="adder.b[3]" out_port="adder.sumout[3]"/>
+            <delay_constant max="25e-12" in_port="adder.cin" out_port="adder.sumout[0]"/>
+            <delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout[1]"/>
+            <delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout[2]"/>
+            <delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout[3]"/>
+            <delay_constant max="80e-12" in_port="adder.a" out_port="adder.cout"/>
+            <delay_constant max="80e-12" in_port="adder.b" out_port="adder.cout"/>
+            <delay_constant max="20e-12" in_port="adder.cin" out_port="adder.cout"/>
+          </pb_type>
+          <interconnect>
+            <direct name="direct3_1" input="adder.sumout[0]" output="wrapadd.sumout[0]">
+              <pack_pattern name="chain" in_port="adder.sumout[0]" out_port="wrapadd.sumout[0]"/>
+            </direct>
+            <direct name="direct3_2" input="adder.sumout[1]" output="wrapadd.sumout[1]">
+              <pack_pattern name="chain" in_port="adder.sumout[1]" out_port="wrapadd.sumout[1]"/>
+            </direct>
+            <direct name="direct3_3" input="adder.sumout[2]" output="wrapadd.sumout[2]">
+              <pack_pattern name="chain" in_port="adder.sumout[2]" out_port="wrapadd.sumout[2]"/>
+            </direct>
+            <direct name="direct3_4" input="adder.sumout[3]" output="wrapadd.sumout[3]">
+              <pack_pattern name="chain" in_port="adder.sumout[3]" out_port="wrapadd.sumout[3]"/>
+            </direct>
+            <direct name="direct4" input="wrapadd.cin" output="adder.cin">
+              <pack_pattern name="chain" in_port="wrapadd.cin" out_port="adder.cin"/>
+            </direct>
+            <direct name="direct5" input="adder.cout" output="wrapadd.cout">
+              <pack_pattern name="chain" in_port="adder.cout" out_port="wrapadd.cout"/>
+            </direct>
+            <!-- Adder inputs are logically equilvalent, model using full xbar -->
+            <complete name="complete1_1" input="wrapadd.a[0] wrapadd.b[0]" output="adder.a[0] adder.b[0]"/>
+            <complete name="complete1_2" input="wrapadd.a[1] wrapadd.b[1]" output="adder.a[1] adder.b[1]"/>
+            <complete name="complete1_3" input="wrapadd.a[2] wrapadd.b[2]" output="adder.a[2] adder.b[2]"/>
+            <complete name="complete1_4" input="wrapadd.a[3] wrapadd.b[3]" output="adder.a[3] adder.b[3]"/>
+          </interconnect>
+
         </pb_type>
         <interconnect>
           <direct name="direct1_1" input="arithlut.in1[5:0]" output="lut6[0].in"/>
@@ -239,30 +275,33 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
           <direct name="direct2_4" input="lut6[3].out" output="arithlut.out4">
             <pack_pattern name="ble6" in_port="lut6[3].out" out_port="arithlut.out4"/>
           </direct>
-          <direct name="direct3_1" input="adder.sumout[0]" output="arithlut.out1">
-            <pack_pattern name="chain" in_port="adder.sumout[0]" out_port="arithlut.out1"/>
+          <direct name="direct3_1" input="wrapadd.sumout[0]" output="arithlut.out1">
+            <pack_pattern name="chain" in_port="wrapadd.sumout[0]" out_port="arithlut.out1"/>
           </direct>
-          <direct name="direct3_2" input="adder.sumout[1]" output="arithlut.out2">
-            <pack_pattern name="chain" in_port="adder.sumout[1]" out_port="arithlut.out2"/>
+          <direct name="direct3_2" input="wrapadd.sumout[1]" output="arithlut.out2">
+            <pack_pattern name="chain" in_port="wrapadd.sumout[1]" out_port="arithlut.out2"/>
           </direct>
-          <direct name="direct3_3" input="adder.sumout[2]" output="arithlut.out3">
-            <pack_pattern name="chain" in_port="adder.sumout[2]" out_port="arithlut.out3"/>
+          <direct name="direct3_3" input="wrapadd.sumout[2]" output="arithlut.out3">
+            <pack_pattern name="chain" in_port="wrapadd.sumout[2]" out_port="arithlut.out3"/>
           </direct>
-          <direct name="direct3_4" input="adder.sumout[3]" output="arithlut.out4">
-            <pack_pattern name="chain" in_port="adder.sumout[3]" out_port="arithlut.out4"/>
+          <direct name="direct3_4" input="wrapadd.sumout[3]" output="arithlut.out4">
+            <pack_pattern name="chain" in_port="wrapadd.sumout[3]" out_port="arithlut.out4"/>
           </direct>
-          <direct name="direct4" input="arithlut.cin" output="adder.cin">
-            <pack_pattern name="chain" in_port="arithlut.cin" out_port="adder.cin"/>
+          <direct name="direct4" input="arithlut.cin" output="wrapadd.cin">
+            <pack_pattern name="chain" in_port="arithlut.cin" out_port="wrapadd.cin"/>
           </direct>
-          <direct name="direct5" input="adder.cout" output="arithlut.cout">
-            <pack_pattern name="chain" in_port="adder.cout" out_port="arithlut.cout"/>
+          <direct name="direct5" input="wrapadd.cout" output="arithlut.cout">
+            <pack_pattern name="chain" in_port="wrapadd.cout" out_port="arithlut.cout"/>
           </direct>
 
-          <!-- Adder inputs are logically equilvalent, model using full xbar -->
-          <complete name="complete1_1" input="arithlut.in1[2:2] lut6[0].out" output="adder.a[0] adder.b[0]"/>
-          <complete name="complete1_2" input="arithlut.in2[2:2] lut6[1].out" output="adder.a[1] adder.b[1]"/>
-          <complete name="complete1_3" input="arithlut.in3[2:2] lut6[2].out" output="adder.a[2] adder.b[2]"/>
-          <complete name="complete1_4" input="arithlut.in4[2:2] lut6[3].out" output="adder.a[3] adder.b[3]"/>
+          <complete name="dlut_1" input="lut6[0].out" output="wrapadd.a[0]"/>
+          <complete name="dlut_2" input="lut6[1].out" output="wrapadd.a[1]"/>
+          <complete name="dlut_3" input="lut6[2].out" output="wrapadd.a[2]"/>
+          <complete name="dlut_4" input="lut6[3].out" output="wrapadd.a[3]"/>
+          <complete name="mux1_1" input="arithlut.in1[2:2] arithlut.in1[0:0]" output="wrapadd.b[0]"/>
+          <complete name="mux1_2" input="arithlut.in2[2:2] arithlut.in2[0:0]" output="wrapadd.b[1]"/>
+          <complete name="mux1_3" input="arithlut.in3[2:2] arithlut.in3[0:0]" output="wrapadd.b[2]"/>
+          <complete name="mux1_4" input="arithlut.in4[2:2] arithlut.in4[0:0]" output="wrapadd.b[3]"/>
         </interconnect>
       </pb_type>
 

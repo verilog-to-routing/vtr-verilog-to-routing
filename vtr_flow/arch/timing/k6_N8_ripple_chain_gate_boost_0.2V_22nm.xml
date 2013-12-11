@@ -11,6 +11,8 @@ Soft logic blocks use 50% depopulated crossbars
 Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but since VPR is in min W transistor areas, no area scaling is needed
 
 carry chain from Safeen's CMOS ripple carry adder not gate boosted
+
+# min width transistors 47.73 per ripple bit
 -->
   
   <architecture>
@@ -76,7 +78,7 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
 		<device>
 			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111" ipin_mux_trans_size="1.508232"/>
 			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="9.55363e-11"/>
-			<area grid_logic_tile_area="12038.8728908"/>
+			<area grid_logic_tile_area="12420.7128908"/>
 			<chan_width_distr>
 				<io width="1.000000"/>
 				<x distr="uniform" peak="1.000000"/>
@@ -102,7 +104,7 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
 
 	  <complexblocklist>
        <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
-      <pb_type name="io" capacity="8">
+      <pb_type name="io" capacity="8" area="0">
         <input name="outpad" num_pins="1"/>
         <output name="inpad" num_pins="1"/>
         <clock name="clock" num_pins="1"/>
