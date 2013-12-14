@@ -15,6 +15,7 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
 Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypassed for free.
 
 # min width transistors 47.73 per ripple bit
+Each 2-to-1 mux for adder adds 22ps delay and 9 MWTAs.  2 2-to-1 muxes per adder.
 -->
   
   <architecture>
@@ -80,7 +81,7 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
 		<device>
 			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111" ipin_mux_trans_size="1.508232"/>
 			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="9.55363e-11"/>
-			<area grid_logic_tile_area="12420.7128908"/>
+			<area grid_logic_tile_area="12564.7128908"/>
 			<chan_width_distr>
 				<io width="1.000000"/>
 				<x distr="uniform" peak="1.000000"/>
@@ -219,6 +220,7 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
           <interconnect>
             <direct name="direct1" input="adder.sumout" output="wrapadd.sumout">
               <pack_pattern name="chain" in_port="adder.sumout" out_port="wrapadd.sumout"/>
+              <delay_constant max="2.2e-11" in_port="adder.sumout" out_port="wrapadd.sumout" />
             </direct>
             <direct name="direct2" input="wrapadd.cin" output="adder.cin">
               <pack_pattern name="chain" in_port="wrapadd.cin" out_port="adder.cin"/>
@@ -237,6 +239,7 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
           <direct name="direct1" input="arithlut.in[5:0]" output="lut6[0:0].in"/>
           <direct name="direct2" input="lut6.out" output="arithlut.out">
             <pack_pattern name="ble6" in_port="lut6.out" out_port="arithlut.out"/>
+            <delay_constant max="2.2e-11" in_port="lut6.out" out_port="arithlut.out" />
           </direct>
           <direct name="direct3" input="wrapadd.sumout" output="arithlut.out">
             <pack_pattern name="chain" in_port="wrapadd.sumout" out_port="arithlut.out"/>
@@ -251,7 +254,10 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
 
           
           <!-- Need full feedback flexibility for adder, LUT input pins 0 and 2 satisfy this requirement -->
-          <mux name="mux1" input="arithlut.in[2:2] arithlut.in[0:0]" output="wrapadd.b"/>
+          <mux name="mux1" input="arithlut.in[2:2] arithlut.in[0:0]" output="wrapadd.b">
+            <delay_constant max="2.2e-11" in_port="arithlut.in[2:2]" out_port="wrapadd.b" />
+            <delay_constant max="2.2e-11" in_port="arithlut.in[0:0]" out_port="wrapadd.b" />
+          </mux>
         </interconnect>
       </pb_type>
 

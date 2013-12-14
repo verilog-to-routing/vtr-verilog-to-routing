@@ -79,7 +79,7 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
 		<device>
 			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111" ipin_mux_trans_size="1.508232"/>
 			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="9.55363e-11"/>
-			<area grid_logic_tile_area="12553.5728908"/>
+			<area grid_logic_tile_area="12625.5728908"/>
 			<chan_width_distr>
 				<io width="1.000000"/>
 				<x distr="uniform" peak="1.000000"/>
@@ -209,15 +209,19 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
             <direct name="direct1_4" input="arithlut.in4[5:0]" output="lut6[3].in"/>
             <direct name="direct2_1" input="lut6[0].out" output="arithlut.out1">
               <pack_pattern name="ble6" in_port="lut6[0].out" out_port="arithlut.out1"/>
+              <delay_constant max="22e-12" in_port="lut6[0].out" out_port="arithlut.out1"/>
             </direct>
             <direct name="direct2_2" input="lut6[1].out" output="arithlut.out2">
               <pack_pattern name="ble6" in_port="lut6[1].out" out_port="arithlut.out2"/>
+              <delay_constant max="22e-12" in_port="lut6[1].out" out_port="arithlut.out2"/>
             </direct>
             <direct name="direct2_3" input="lut6[2].out" output="arithlut.out3">
               <pack_pattern name="ble6" in_port="lut6[2].out" out_port="arithlut.out3"/>
+              <delay_constant max="22e-12" in_port="lut6[2].out" out_port="arithlut.out3"/>
             </direct>
             <direct name="direct2_4" input="lut6[3].out" output="arithlut.out4">
               <pack_pattern name="ble6" in_port="lut6[3].out" out_port="arithlut.out4"/>
+              <delay_constant max="22e-12" in_port="lut6[3].out" out_port="arithlut.out4"/>
             </direct>
           </interconnect>
 
@@ -286,15 +290,19 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
 
             <direct name="direct3_1" input="adder.sumout[0]" output="arithlut.out1">
               <pack_pattern name="chain" in_port="adder.sumout[0]" out_port="arithlut.out1"/>
+              <delay_constant max="22e-12" in_port="adder.sumout[0]" out_port="arithlut.out1" />
             </direct>
             <direct name="direct3_2" input="adder.sumout[1]" output="arithlut.out2">
               <pack_pattern name="chain" in_port="adder.sumout[1]" out_port="arithlut.out2"/>
+              <delay_constant max="22e-12" in_port="adder.sumout[1]" out_port="arithlut.out2" />
             </direct>
             <direct name="direct3_3" input="adder.sumout[2]" output="arithlut.out3">
               <pack_pattern name="chain" in_port="adder.sumout[2]" out_port="arithlut.out3"/>
+              <delay_constant max="22e-12" in_port="adder.sumout[2]" out_port="arithlut.out3" />
             </direct>
             <direct name="direct3_4" input="adder.sumout[3]" output="arithlut.out4">
               <pack_pattern name="chain" in_port="adder.sumout[3]" out_port="arithlut.out4"/>
+              <delay_constant max="22e-12" in_port="adder.sumout[3]" out_port="arithlut.out4" />
             </direct>
             <direct name="direct4" input="arithlut.cin" output="adder.cin">
               <pack_pattern name="chain" in_port="arithlut.cin" out_port="adder.cin"/>
