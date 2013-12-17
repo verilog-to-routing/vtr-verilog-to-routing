@@ -126,11 +126,13 @@ void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_
     }
     cout << endl;
 
-    cout << "\t>> Preprocessing Netlist to remove false clock nets" << endl;
-    //VPR may falsely identify nets connected to clock pins, but not driven by clock
-    //ports as clock nets, and then error out if they connected to non-clock pins.
-    //This works around the issue by removing connections to clock pins for such nets.
-    check_and_fix_clock_to_normal_port_connections(module, arch, arch_types, num_types);
+    if(single_clock_primitives || split_multiclock_blocks) {
+        cout << "\t>> Preprocessing Netlist to remove false clock nets" << endl;
+        //VPR may falsely identify nets connected to clock pins, but not driven by clock
+        //ports as clock nets, and then error out if they connected to non-clock pins.
+        //This works around the issue by removing connections to clock pins for such nets.
+        check_and_fix_clock_to_normal_port_connections(module, arch, arch_types, num_types);
+    }
 
     if(fix_global_nets) {
         //Add fake_gbuf cells to allow global signals (e.g. clocks & resets) to be
