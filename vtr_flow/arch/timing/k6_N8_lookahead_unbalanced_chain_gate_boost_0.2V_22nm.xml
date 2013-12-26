@@ -15,6 +15,10 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
 Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypassed for free.
 
 64.34 min width transistors for each bit of 4-bit CLA (257.35 for 4 bits)
+# min width transistors 47.73 per ripple bit
+Each 2-to-1 mux for adder adds 22ps delay and 9 MWTAs.  2 2-to-1 muxes per adder.
+
+Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
 
 -->
   
@@ -81,7 +85,7 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
 		<device>
 			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111" ipin_mux_trans_size="1.508232"/>
 			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="9.55363e-11"/>
-			<area grid_logic_tile_area="12697.5728908"/>
+			<area grid_logic_tile_area="12793.5728908"/>
 			<chan_width_distr>
 				<io width="1.000000"/>
 				<x distr="uniform" peak="1.000000"/>
