@@ -95,7 +95,6 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 			}
 
 			print_slack(slacks->slack, TRUE, getOutputFileName(E_SLACK_FILE));
-			print_criticality(slacks, TRUE, getOutputFileName(E_CRITICALITY_FILE));
 			print_critical_path(getOutputFileName(E_CRIT_PATH_FILE));
 
 			print_timing_stats();

@@ -395,7 +395,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_SLACK))
 				print_slack(slacks->slack, FALSE, getEchoFileName(E_ECHO_PRE_PACKING_SLACK));
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_CRITICALITY))
-				print_criticality(slacks, FALSE, getEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY));
+				print_criticality(slacks, getEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY));
 		}
 
 		block_criticality = (float*) my_calloc(num_logical_blocks, sizeof(float));

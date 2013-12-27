@@ -260,9 +260,10 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>../libcommon_c/pcre/SRC;SRC/TC_Common;SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libarchfpga\include;..\vpr\SRC\util;..\vpr\SRC\place;..\vpr\SRC\base;SRC\TFH_FabricHandlers;SRC\TCH_CircuitHandlers;SRC\TNO_NetObjects;SRC\TPO_PhysicalObjects;SRC\TLO_LogicalObjects;SRC\TGS_GeometricShapes;SRC\TGO_GeometricObjects;SRC\TIO_InputOutputHandlers;SRC\TC_Common;..\libcommon_c\pcre\SRC</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

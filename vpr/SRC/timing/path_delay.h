@@ -12,11 +12,14 @@
 	   to the max arrival time for tight constraints which would otherwise give negative slack.
 	   Criticalities are computed once per constraint, using a criticality denominator unique to that constraint
 	   (maximum of the constraint and the max arrival time).
+   'C' (Clipped): All negative slacks are clipped to 0.  Criticalities are computed once per constraint.  (Bad!)
    'S' (Shifted): After all slacks are computed, increase the value of all slacks by the largest negative slack, 
        if it exists. Equivalent to 'R' for single-clock cases. 
 	   Criticalities are computed once per timing analysis, using a single criticality denominator for all constraints
-	   (maximum of all constraints and all required times).
+	   (maximum of all constraints and all required times, then also shifted upwards by the largest negative slack).
 	   This can give unusual results with multiple, very dissimilar constraints.
+   'I' (Improved Shifted): Same as shifted, but criticalities are computed once per constraint.  
+	   More computationally demanding.
 */
 
 #ifdef PATH_COUNTING /* Path counting options: */
@@ -63,7 +66,7 @@ void print_lut_remapping(const char *fname);
 
 void print_slack(float ** slack, boolean slack_is_normalized, const char *fname);
 
-void print_criticality(t_slack * slacks, boolean criticality_is_normalized, const char *fname);
+void print_criticality(t_slack * slacks, const char *fname);
 
 void print_net_delay(float **net_delay, const char *fname);
 

@@ -485,7 +485,7 @@ void try_place(struct s_placer_opts placer_opts,
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_SLACK))
 				print_slack(slacks->slack, FALSE, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_SLACK));
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_CRITICALITY))
-				print_criticality(slacks, FALSE, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY));
+				print_criticality(slacks, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY));
 		}
 		outer_crit_iter_count = 1;
 
@@ -753,7 +753,7 @@ void try_place(struct s_placer_opts placer_opts,
 			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_SLACK))
 				print_slack(slacks->slack, FALSE, getEchoFileName(E_ECHO_FINAL_PLACEMENT_SLACK));
 			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_CRITICALITY))
-				print_criticality(slacks, FALSE, getEchoFileName(E_ECHO_FINAL_PLACEMENT_CRITICALITY));
+				print_criticality(slacks, getEchoFileName(E_ECHO_FINAL_PLACEMENT_CRITICALITY));
 			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH))
 				print_timing_graph(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH));
 			if(isEchoFileEnabled(E_ECHO_PLACEMENT_CRIT_PATH))

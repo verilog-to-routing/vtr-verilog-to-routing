@@ -167,7 +167,6 @@ void alloc_and_load_echo_file_info() {
 	setEchoFileName(E_ECHO_TIMING_CONSTRAINTS, "timing_constraints.echo");	
 	setEchoFileName(E_ECHO_CRITICAL_PATH, "critical_path.echo");	
 	setEchoFileName(E_ECHO_SLACK, "slack.echo");	
-	setEchoFileName(E_ECHO_CRITICALITY, "criticality.echo");
 	setEchoFileName(E_ECHO_COMPLETE_NET_TRACE, "complete_net_trace.echo");
 	setEchoFileName(E_ECHO_SEG_DETAILS, "seg_details.txt");
 	setEchoFileName(E_ECHO_CHAN_DETAILS, "chan_details.txt");
