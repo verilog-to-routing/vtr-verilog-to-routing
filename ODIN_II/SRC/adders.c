@@ -83,6 +83,10 @@ extern int adder_chain_count;
 extern int longest_adder_chain;
 extern int total_adders;
 
+extern double geomean_addsub_length;
+extern double sum_of_addsub_logs;
+extern int total_addsub_chain_count;
+
 void report_add_distribution()
 {
 	if(hard_adders == NULL)
@@ -101,6 +105,9 @@ void report_add_distribution()
 
 	printf("\n");
 	printf("\nThe Total Number of Hard Block adders: %d\n", total_adders);
+
+	printf("\n");
+	printf("\nGeometric mean adder/subtractor chain length: %.2f\n", geomean_addsub_length);
 
 	return;
 }

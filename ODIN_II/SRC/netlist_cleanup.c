@@ -22,6 +22,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 */ 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "types.h"
 #include "globals.h"
 #include "errors.h"
@@ -172,6 +173,10 @@ int subtractor_chain_count = 0;
 int longest_subtractor_chain = 0;
 int total_subtractors = 0;
 
+double geomean_addsub_length = 0.0; // Geometric mean of add/sub chain length
+double sum_of_addsub_logs = 0.0; // Sum of the logarithms of the add/sub chain lengths; used for geomean
+int total_addsub_chain_count = 0;
+
 void calculate_addsub_statistics(node_list_t *addsub){
 	while(addsub != NULL && addsub->node != NULL){
 		int found_tail = FALSE;
@@ -200,9 +205,15 @@ void calculate_addsub_statistics(node_list_t *addsub){
 				total_subtractors += chain_depth;
 				if(chain_depth > longest_subtractor_chain) longest_subtractor_chain = chain_depth;
 			}
+			
+			sum_of_addsub_logs += log(chain_depth);
+			total_addsub_chain_count++;
 		}
+		
 		addsub = addsub->next;
 	}
+	/* Calculate the geometric mean carry chain length */
+	geomean_addsub_length = exp(sum_of_addsub_logs / total_addsub_chain_count);
 }
 
 /* Perform the backwards and forward sweeps and remove the unused nodes */
