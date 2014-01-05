@@ -1,4 +1,4 @@
-crit_path_delay_(mcw);vpr.out;Critical path: (.*) ns
+crit_path_delay_(mcw);vpr.out;Final critical path: (.*) ns
 
 clk_to_clk;vpr.out;\t?clk to clk: (.*) ns .*
 clk_to_clk2;vpr.out;\t?clk to clk2: (.*) ns .*

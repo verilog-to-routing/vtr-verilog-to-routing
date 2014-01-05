@@ -1,7 +1,7 @@
 vpr_status;output.txt;vpr_status=(.*)
 total_wirelength;vpr.out;Total wirelength:\s*(\d+)
-#crit_path_delay_(mcw);vpr.out;Critical path: (.*) ns
-#crit_path_delay_(1.3mcw);vpr.crit_path.out;Critical path: (.*) ns
+#crit_path_delay_(mcw);vpr.out;Final critical path: (.*) ns
+#crit_path_delay_(1.3mcw);vpr.crit_path.out;Final critical path: (.*) ns
 #total_wirelength_(mcw);vpr.out;Total wirelength:\s*(\d+)
 #total_wirelength_(1.3mcw);vpr.crit_path.out;Total wirelength:\s*(\d+)
 total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
@@ -17,5 +17,5 @@ num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
 #num_memories;vpr.out;Netlist memory blocks:\s*(\d+)
 #num_mult;vpr.out;Netlist mult_36 blocks:\s*(\d+)
 min_chan_width;vpr.out;Best routing used a channel width factor of (\d+)
-crit_path_delay;vpr.crit_path.out;Critical path: (.*) ns
+crit_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
 
