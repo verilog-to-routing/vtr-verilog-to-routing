@@ -55,7 +55,9 @@ static void get_blif_tok(char *buffer, int doall, boolean *done,
 		INP t_model* outpad_model, INP t_model* logic_model,
 		INP t_model* latch_model, INP t_model* user_models);
 static void init_parse(int doall, boolean init_vpack_net_power);
-static void check_net(boolean sweep_hanging_nets_and_inputs);
+static t_model_ports* find_clock_port(t_model* model);
+static int check_blocks();
+static int check_net(boolean sweep_hanging_nets_and_inputs);
 static void free_parse(void);
 static void io_line(int in_or_out, int doall, t_model *io_model);
 static boolean add_lut(int doall, t_model *logic_model);
@@ -86,6 +88,7 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 	boolean add_truth_table;
 	t_model *inpad_model, *outpad_model, *logic_model, *latch_model;
 	clock_t begin, end;
+    int error_count = 0;
 
 	blif = fopen(blif_file, "r");
 	if (blif == NULL) {
@@ -138,7 +141,15 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 #endif
 
 	fclose(blif);
-	check_net(sweep_hanging_nets_and_inputs);
+
+    /* Check the netlist data structures for errors */
+    error_count += check_blocks();
+	error_count += check_net(sweep_hanging_nets_and_inputs);
+	if (error_count != 0) {
+		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
+				"Found %d fatal errors in the input netlist.\n", error_count);
+	}
+
 
 	/* Read activity file */
 	if (read_activity_file) {
@@ -1155,7 +1166,41 @@ static void load_default_models(INP t_model *library_models,
 	}
 }
 
-static void check_net(boolean sweep_hanging_nets_and_inputs) {
+static t_model_ports* find_clock_port(t_model* block_model) {
+    t_model_ports* port = block_model->inputs;
+    while(port != NULL && !port->is_clock) {
+        port = port->next;
+    }
+    return port;
+}
+
+static int check_blocks() {
+
+    int error_count = 0;
+    for(int iblk = 0; iblk < num_logical_blocks; iblk++) {
+        t_model* block_model = logical_block[iblk].model;
+
+        //Check if this type has a clock port
+        t_model_ports* clk_port = find_clock_port(block_model);
+
+        if(clk_port) {
+            //This block type/model has a clock port
+            
+            // It must have a valid clock net, or else the delay
+            // calculator asserts on an obscure condition. Better
+            // to warn the user now
+            if(logical_block[iblk].clock_net == OPEN) {
+                vpr_printf_error(__FILE__, __LINE__, "Block '%s' (%s) at index %d has an invalid clock net.\n", logical_block[iblk].name, block_model->name, iblk);
+                error_count++;
+            }
+        }
+
+    }
+
+    return error_count;
+}
+
+static int check_net(boolean sweep_hanging_nets_and_inputs) {
 
 	/* Checks the input netlist for obvious errors. */
 
@@ -1484,10 +1529,7 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 				count_unconn_blocks);
 	}
 
-	if (error != 0) {
-		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
-				"Found %d fatal errors in the input netlist.\n", error);
-	}
+    return error;
 }
 
 static void free_parse(void) {
