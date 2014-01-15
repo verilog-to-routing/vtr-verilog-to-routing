@@ -10,16 +10,29 @@
    'R' (T_req-relaxed): For each constraint, set the required time at sink nodes to the max of the true required time 
 	   (constraint + tnode[inode].clock_skew) and the max arrival time. This means that the required time is "relaxed" 
 	   to the max arrival time for tight constraints which would otherwise give negative slack.
-	   Criticalities are computed once per constraint, using a criticality denominator unique to that constraint
-	   (maximum of the constraint and the max arrival time).
-   'C' (Clipped): All negative slacks are clipped to 0.  Criticalities are computed once per constraint.  (Bad!)
-   'S' (Shifted): After all slacks are computed, increase the value of all slacks by the largest negative slack, 
-       if it exists. Equivalent to 'R' for single-clock cases. 
-	   Criticalities are computed once per timing analysis, using a single criticality denominator for all constraints
-	   (maximum of all constraints and all required times, then also shifted upwards by the largest negative slack).
-	   This can give unusual results with multiple, very dissimilar constraints.
-   'I' (Improved Shifted): Same as shifted, but criticalities are computed once per constraint.  
-	   More computationally demanding.
+   'I' (Improved Shifted): After all slacks are computed, increase the value of all slacks by the magnitude of the 
+	   largest negative slack, if it exists. More computationally demanding. Equivalent to 'R' for a single clock. 
+   'S' (Shifted): Same as improved shifted, but criticalities are only computed after all traversals.  Equivalent to 'R'
+	   for a single clock.
+   'C' (Clipped): All negative slacks are clipped to 0. 
+   'N' (None): Negative slacks are not normalized. 
+
+   This definition also affects how criticality is computed.  For all methods except 'S', the criticality denominator 
+   is the maximum required time for each constraint, and criticality is updated after each constraint.  'S' only updates
+   criticalities once after all traversals, and the criticality denominator is the maximum required time over all 
+   traversals.  
+
+   Because the criticality denominator must be >= the largest slack it is used on, and slack normalization affects the
+   size of the largest slack, the denominator must also be normalized.  We choose the following normalization methods:
+
+   'R': Denominator is already taken care of because the maximum required time now depends on the constraint. No further
+		normalization is necessary.
+   'I': Denominator is also increased by the magnitude of the largest negative slack.
+   'S': Denominator is the maximum of the 'I' denominator over all constraints.
+   'C': Denominator is unchanged.  However, if Treq_max is 0, there is division by 0.  To avoid this, note that in this
+		case, all of the slacks will be clipped to zero anyways, so we can just set the criticality to 1. 
+   'N': Denominator is set to max(max_Treq, max_Tarr), so that the magnitude of criticality will at least be bounded to 
+		2.  This is the same value as 'R's denominator but it is formulated differently.
 */
 
 #ifdef PATH_COUNTING /* Path counting options: */
