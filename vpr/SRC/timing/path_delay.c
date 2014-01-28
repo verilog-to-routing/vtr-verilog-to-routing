@@ -273,6 +273,8 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 
 	alloc_and_load_tnodes(timing_inf);
 
+    detect_and_fix_timing_graph_combinational_loops();
+
 	num_sinks = alloc_and_load_timing_graph_levels();
 
 	check_timing_graph(num_sinks);
@@ -324,6 +326,8 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 
 	alloc_and_load_tnodes_from_prepacked_netlist(block_delay,
 			inter_cluster_net_delay);
+
+    detect_and_fix_timing_graph_combinational_loops();
 
 	num_sinks = alloc_and_load_timing_graph_levels();
 
@@ -4056,3 +4060,4 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 		}
 	}
 }
+
