@@ -539,11 +539,6 @@
            Since all our outputs LUT outputs go to a BLE output, and have a delay of 
            25 ps to do so, we subtract 25 ps from the 100 ps delay of a feedback
            to get the part that should be marked on the crossbar.	 -->
-          <complete name="crossbar" input="clb.I fle[9:0].out" output="fle[9:0].in">
-            <delay_constant max="95e-12" in_port="clb.I" out_port="fle[9:0].in" />
-            <delay_constant max="75e-12" in_port="fle[9:0].out" out_port="fle[9:0].in" />
-          </complete>
-
 
           <!-- 50% sparsely populated local routing -->
           <complete name="lutA" input="clb.I4 clb.I3 fle[1:0].out fle[3:2].out fle[8:8].out" output="fle[9:0].in[0:0]">
