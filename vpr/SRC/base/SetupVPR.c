@@ -202,6 +202,15 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	*Segments = Arch->Segments;
 	RoutingArch->num_segment = Arch->num_segments;
 
+#ifdef INTERPOSER_BASED_ARCHITECTURE
+	/* getting the data from the options struct  for interposer-based architectures*/
+	percent_wires_cut = Options->percent_wires_cut;
+	num_cuts = Options->num_cuts;
+	delay_increase = Options->delay_increase;
+	placer_cost_constant = Options->placer_cost_constant;
+	constant_type = Options->constant_type;
+#endif
+
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
 	SetupRoutingArch(*Arch, RoutingArch);
 	SetupTiming(*Options, *Arch, TimingEnabled, *Operation, *PlacerOpts,
@@ -284,6 +293,97 @@ static void SetupSwitches(INP t_arch Arch,
 		INOUTP struct s_det_routing_arch *RoutingArch,
 		INP struct s_switch_inf *ArchSwitches, INP int NumArchSwitches) {
 
+#ifdef INTERPOSER_BASED_ARCHITECTURE
+	int i;
+	double d_delay_increase;
+
+	/* Convert the delay to seconds, as it is given as int in ps */
+	d_delay_increase = (double)delay_increase * 1e-12;
+	vpr_printf_info("delay_increase:%d d_delay_increase: %g\n", delay_increase, d_delay_increase);
+	
+
+	RoutingArch->num_switch = NumArchSwitches;
+
+	/* ANDRE: Adds the extra switch types with increased delay */
+	RoutingArch->num_switch *= 2;
+
+	/* Depends on RoutingArch->num_switch */
+	RoutingArch->wire_to_ipin_switch = RoutingArch->num_switch;
+	++RoutingArch->num_switch;
+
+	/* Adds the extra switch type with increased delay for the wire_to_ipin case */
+	++RoutingArch->num_switch;
+
+	/* Depends on RoutingArch->num_switch */
+	RoutingArch->delayless_switch = RoutingArch->num_switch;
+	RoutingArch->global_route_switch = RoutingArch->delayless_switch;
+	++RoutingArch->num_switch;
+
+	/* TODO I don't think I need to create new version of delayless, need to check that */
+
+	/* Alloc the list now that we know the final num_switch value */
+	switch_inf = (struct s_switch_inf *) my_malloc(
+			sizeof(struct s_switch_inf) * RoutingArch->num_switch);
+
+	/* Mapping of the switches to their respective increased delay versions */
+	increased_delay_edge_map = (int *) my_malloc(sizeof(int) * RoutingArch->num_switch);
+
+	/* Order of the switches:
+	 * 0...NumArchSwitches-1: Original switches from arch file
+	 * NumArchSwitches...2*NumArchSwitches-1: switches with increased delay
+	 * 2*NumArchSwitches: Original wire_to_ipin_switch
+	 * 2*NumArchSwitches+1: wire_to_ipin_switch with increased delay
+	 * 2*NumArchSwitches+2: delayless_switch */
+	for(i = 0; i < NumArchSwitches; i++){
+		increased_delay_edge_map[i] = i + NumArchSwitches;
+		increased_delay_edge_map[i+NumArchSwitches] = i + NumArchSwitches;
+	}
+	increased_delay_edge_map[RoutingArch->wire_to_ipin_switch] = 
+		RoutingArch->wire_to_ipin_switch + 1;
+	increased_delay_edge_map[RoutingArch->wire_to_ipin_switch+1] = 
+		RoutingArch->wire_to_ipin_switch + 1;
+	increased_delay_edge_map[RoutingArch->delayless_switch] = RoutingArch->delayless_switch;
+
+	/* Copy the switch data from architecture file */
+	memcpy(switch_inf, ArchSwitches,
+			sizeof(struct s_switch_inf) * NumArchSwitches);
+
+	/* Actually create the new switch types for the switch boxes */
+	for(i = NumArchSwitches; i < 2*NumArchSwitches; i++){
+		memcpy(&switch_inf[i], &switch_inf[i-NumArchSwitches],
+			sizeof(struct s_switch_inf));
+		switch_inf[i].Tdel += d_delay_increase;
+	}
+
+
+	/* The wire to ipin switch for all types. Curently all types
+	 * must share ipin switch. Some of the timing code would
+	 * need to be changed otherwise. */
+	switch_inf[RoutingArch->wire_to_ipin_switch].buffered = TRUE;
+	switch_inf[RoutingArch->wire_to_ipin_switch].R = 0.;
+	switch_inf[RoutingArch->wire_to_ipin_switch].Cin = Arch.C_ipin_cblock;
+	switch_inf[RoutingArch->wire_to_ipin_switch].Cout = 0.;
+	switch_inf[RoutingArch->wire_to_ipin_switch].Tdel = Arch.T_ipin_cblock;
+	switch_inf[RoutingArch->wire_to_ipin_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
+	switch_inf[RoutingArch->wire_to_ipin_switch].mux_trans_size = 0.;
+
+	/* Copy and increase the delay of wire_to_ipin_switch */
+	memcpy(&switch_inf[RoutingArch->wire_to_ipin_switch+1],
+		&switch_inf[RoutingArch->wire_to_ipin_switch],
+		sizeof(struct s_switch_inf));
+	switch_inf[RoutingArch->wire_to_ipin_switch+1].Tdel += d_delay_increase;
+
+	/* Delayless switch for connecting sinks and sources with their pins. */
+	switch_inf[RoutingArch->delayless_switch].buffered = TRUE;
+	switch_inf[RoutingArch->delayless_switch].R = 0.;
+	switch_inf[RoutingArch->delayless_switch].Cin = 0.;
+	switch_inf[RoutingArch->delayless_switch].Cout = 0.;
+	switch_inf[RoutingArch->delayless_switch].Tdel = 0.;
+	switch_inf[RoutingArch->delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
+	switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
+
+#else
+
 	RoutingArch->num_switch = NumArchSwitches;
 
 	/* Depends on RoutingArch->num_switch */
@@ -322,6 +422,9 @@ static void SetupSwitches(INP t_arch Arch,
 	switch_inf[RoutingArch->wire_to_ipin_switch].Tdel = Arch.T_ipin_cblock;
 	switch_inf[RoutingArch->wire_to_ipin_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
 	switch_inf[RoutingArch->wire_to_ipin_switch].mux_trans_size = 0.;
+
+#endif
+
 }
 
 /* Sets up routing structures. Since checks are already done, this

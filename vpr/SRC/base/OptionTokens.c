@@ -78,6 +78,15 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "power", OT_POWER }, /* Run power estimation? */
 		{ "tech_properties", OT_CMOS_TECH_BEHAVIOR_FILE }, /* Technology properties */
 		{ "routing_failure_predictor", OT_ROUTING_FAILURE_PREDICTOR }, /* Routing failure predictor */
+
+#ifdef INTERPOSER_BASED_ARCHITECTURE
+		{ "percent_wires_cut", OT_PERCENT_WIRES_CUT },
+		{ "num_cuts", OT_NUM_CUTS },
+		{ "delay_increase", OT_DELAY_INCREASE },
+		{ "placer_cost_constant", OT_PLACER_COST_CONSTANT },
+		{ "constant_type", OT_CONSTANT_TYPE },
+#endif
+
 		{ NULL, OT_BASE_UNKNOWN } /* End of list marker */
 };
 

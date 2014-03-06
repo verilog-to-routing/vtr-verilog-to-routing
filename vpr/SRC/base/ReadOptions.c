@@ -476,6 +476,19 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 	case OT_ROUTING_FAILURE_PREDICTOR:
 		return ReadRoutingPredictor(Args, &Options->routing_failure_predictor);
 
+#ifdef INTERPOSER_BASED_ARCHITECTURE
+	case OT_PERCENT_WIRES_CUT:
+		return ReadInt(Args, &Options->percent_wires_cut);
+	case OT_NUM_CUTS:
+		return ReadInt(Args, &Options->num_cuts);
+	case OT_DELAY_INCREASE:
+		return ReadInt(Args, &Options->delay_increase);
+	case OT_PLACER_COST_CONSTANT:
+		return ReadFloat(Args, &Options->placer_cost_constant);
+	case OT_CONSTANT_TYPE:
+		return ReadInt(Args, &Options->constant_type);
+#endif
+
 		/* Power options */
 	case OT_POWER:
 		return Args;

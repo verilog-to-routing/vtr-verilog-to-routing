@@ -101,3 +101,15 @@ const t_pb_type *pbtype_max_internal_delay = NULL; /* physical block type with h
 
 /********** Structures representing the global clock network */
 t_clock_arch * g_clock_arch;
+
+#ifdef INTERPOSER_BASED_ARCHITECTURE
+/********** Interposer-based architecture parameters **************************/
+int percent_wires_cut = 0;
+int num_cuts = 0;
+int delay_increase = 0;
+float placer_cost_constant = 0.0;
+int constant_type = 0;
+
+/* Mapping from edges to edges with increased delay */
+int *increased_delay_edge_map = NULL;
+#endif

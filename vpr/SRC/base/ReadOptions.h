@@ -81,6 +81,14 @@ struct s_options {
 	enum e_router_algorithm RouterAlgorithm;
 	enum e_base_cost_type base_cost_type;
 
+#ifdef INTERPOSER_BASED_ARCHITECTURE
+	int percent_wires_cut;
+	int num_cuts;
+	int delay_increase;
+	float placer_cost_constant;
+	int constant_type;
+#endif
+
 	/* Timing-driven router options only */
 	float astar_fac;
 	float criticality_exp;

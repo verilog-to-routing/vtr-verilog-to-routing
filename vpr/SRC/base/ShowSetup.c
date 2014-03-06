@@ -33,6 +33,14 @@ void ShowSetup(INP t_options options, INP t_vpr_setup vpr_setup) {
 	vpr_printf_info("Placer: %s\n", (vpr_setup.PlacerOpts.doPlacement ? "ENABLED" : "DISABLED"));
 	vpr_printf_info("Router: %s\n", (vpr_setup.RouterOpts.doRouting ? "ENABLED" : "DISABLED"));
 
+#ifdef INTERPOSER_BASED_ARCHITECTURE
+	vpr_printf_info("Percent wires cut: %d\n", percent_wires_cut);
+	vpr_printf_info("Number of cuts: %d\n", num_cuts);
+	vpr_printf_info("Delay increase: %d\n", delay_increase);
+	vpr_printf_info("Placer cost constant: %f\n", placer_cost_constant);
+	vpr_printf_info("Constant type: %d\n", constant_type);
+#endif
+
 	if (vpr_setup.PackerOpts.doPacking) {
 		ShowPackerOpts(vpr_setup.PackerOpts);
 	}

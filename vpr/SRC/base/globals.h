@@ -138,5 +138,17 @@ extern const t_pb_type *pbtype_max_internal_delay; /* block type with highest in
  ********************************************************************/
 extern t_clock_arch * g_clock_arch;
 
+#ifdef INTERPOSER_BASED_ARCHITECTURE
+/******************************************************************
+ * Interposer related stuff
+ * ****************************************************************/
+extern int percent_wires_cut;
+extern int num_cuts;
+extern int delay_increase; 
+extern float placer_cost_constant;
+extern int constant_type;
+extern int *increased_delay_edge_map;
+#endif
+
 #endif
 
