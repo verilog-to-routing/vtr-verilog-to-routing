@@ -863,14 +863,28 @@ static int get_num_expected_interposer_hops_to_target(int inode, int target_node
 	for(cut_i=1 ; cut_i<=num_cuts; ++cut_i) 
 	{
 		y_cut_location = cut_i*cut_step;
-		if( (y_start <= y_cut_location &&  y_cut_location < y_end) ||
-			(y_end   <= y_cut_location &&  y_cut_location < y_start)) 
+		if( (y_start < y_cut_location &&  y_cut_location < y_end) ||
+			(y_end   < y_cut_location &&  y_cut_location < y_start)) 
 		{
 			++num_expected_hops;
 		}
 	}
 
-	
+	/* Make there is no off-by-1 error.For current node i: 
+	   if it's a vertical wire, node 'i' itself may be crossing the interposer.
+	*/
+	if(rr_type == CHANY)
+	{	
+		/* for every cut, does it cut wire 'i'? */
+		for(cut_i=1 ; cut_i<=num_cuts; ++cut_i) 
+		{
+			y_cut_location = cut_i*cut_step;
+			if(rr_node[inode].ylow < y_cut_location && y_cut_location < rr_node[inode].yhigh)
+			{
+				++num_expected_hops;
+			}
+		}
+	}
 
 	return num_expected_hops;
 }
@@ -893,6 +907,10 @@ static int get_expected_segs_to_target(int inode, int target_node,
 	int no_need_to_pass_by_clb;
 	float inv_length, ortho_inv_length, ylow, yhigh, xlow, xhigh;
 
+	#ifdef INTERPOSER_BASED_ARCHITECTURE
+	int num_expected_hops = get_num_expected_interposer_hops_to_target(inode, target_node);
+	#endif
+	
 	target_x = rr_node[target_node].xlow;
 	target_y = rr_node[target_node].ylow;
 	cost_index = rr_node[inode].cost_index;
@@ -921,6 +939,10 @@ static int get_expected_segs_to_target(int inode, int target_node,
 			no_need_to_pass_by_clb = 0;
 		}
 
+#ifdef INTERPOSER_BASED_ARCHITECTURE		
+		(*num_segs_ortho_dir_ptr) = (*num_segs_ortho_dir_ptr) + 2*num_expected_hops;
+#endif
+		
 		/* Now count horizontal (same dir. as inode) segs. */
 
 		if (xlow > target_x + no_need_to_pass_by_clb) {
@@ -965,6 +987,10 @@ static int get_expected_segs_to_target(int inode, int target_node,
 		} else {
 			num_segs_same_dir = 0;
 		}
+		
+#ifdef INTERPOSER_BASED_ARCHITECTURE		
+		num_segs_same_dir = num_segs_same_dir + 2*num_expected_hops;
+#endif
 	}
 
 	return (num_segs_same_dir);

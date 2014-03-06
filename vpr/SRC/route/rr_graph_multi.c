@@ -1259,9 +1259,9 @@ void expand_rr_graph(int* rr_nodes_that_cross, int num_rr_nodes_that_cross, int 
 				// fanin_node should be removed from original_node fanin set
 				// and should now feed the new_node instead of the original_node
 				// use the same switch for the new connection
-				int i;
-				for(i=0; i<fanin_node->num_edges && fanin_node->edges[i]!=original_node_index; ++i);
-				create_rr_connection(fanin_node_index,new_node_index, fanin_node->switches[i]);
+				int ifan;
+				for(ifan=0; ifan<fanin_node->num_edges && fanin_node->edges[ifan]!=original_node_index; ++ifan);
+				create_rr_connection(fanin_node_index,new_node_index, fanin_node->switches[ifan]);
 				delete_rr_connection(fanin_node_index,original_node_index);
 				cnt--;
 			}
@@ -1314,8 +1314,8 @@ void expand_rr_graph(int* rr_nodes_that_cross, int num_rr_nodes_that_cross, int 
 						rr_node[dnode].type==IPIN   || 
 						rr_node[dnode].type==OPIN)
 					{
-						if( (rr_node[inode].type==INC_DIRECTION && rr_node[inode].yhigh <= cut_pos && rr_node[dnode].ylow > cut_pos) ||
-							(rr_node[inode].type==DEC_DIRECTION && rr_node[inode].ylow > cut_pos && rr_node[dnode].yhigh <= cut_pos))
+						if( (rr_node[inode].direction==INC_DIRECTION && rr_node[inode].yhigh <= cut_pos && rr_node[dnode].ylow > cut_pos) ||
+							(rr_node[inode].direction==DEC_DIRECTION && rr_node[inode].ylow > cut_pos && rr_node[dnode].yhigh <= cut_pos))
 						{
 							vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 								"in expand_rr_graph: rr_node %d tries to connect to a pin on the other side of the cut at y=%d\n", inode, cut_pos);
@@ -1417,12 +1417,10 @@ void expand_rr_graph(int* rr_nodes_that_cross, int num_rr_nodes_that_cross, int 
 					for(i=0; i<node->num_edges; ++i)
 					{
 						int ifanout = node->edges[i];
-						int iswitch = node->switches[i];
 
 						if(rr_node[ifanout].ylow > cut_pos)
 						{
 							// transfer the fanout
-							//create_rr_connection(interposer_node_id,ifanout, iswitch);
 							create_rr_connection(interposer_node_id,ifanout, zero_delay_switch_index);
 							delete_rr_connection(inode, ifanout);
 							--i;

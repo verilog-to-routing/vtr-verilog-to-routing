@@ -151,6 +151,14 @@ void vpr_print_usage(void) {
 	vpr_printf_info("\t[--criticality_exp <float>]\n");
 	vpr_printf_info("\t[--routing_failure_predictor safe | aggressive | off]\n");
 	vpr_printf_info("\n");
+#ifdef INTERPOSER_BASED_ARCHITECTURE
+	vpr_printf_info("Options for controlling the interposer-based architectures:\n");
+	vpr_printf_info("\t[--percent_wires_cut <int>]\n");
+	vpr_printf_info("\t[--num_cuts <int>]\n");
+	vpr_printf_info("\t[--delay_increase <int>]\n");
+	vpr_printf_info("\t[--placer_cost_constant <float>]\n");
+	vpr_printf_info("\n");
+#endif
 }
 
 /* Initialize VPR 
