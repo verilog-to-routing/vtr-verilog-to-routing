@@ -19,6 +19,10 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
 
+#ifdef INTERPOSER_BASED_ARCHITECTURE
+#include "rr_graph_multi.h"
+#endif
+
 /* #define ENABLE_DUMP */
 /* #define MUX_SIZE_DIST_DISPLAY */
 
@@ -504,6 +508,14 @@ void build_rr_graph(
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH)) {
 		dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
 	}
+
+#ifdef INTERPOSER_BASED_ARCHITECTURE
+	/* Main Entry Point to rr_graph modifications for interposer-based architectures */
+	if(num_cuts > 0)
+	{
+		modify_rr_graph_for_interposer_based_arch(max_chan_width, directionality);
+	}
+#endif
 
 	check_rr_graph(graph_type, L_nx, L_ny, num_switches, Fc_in);
 

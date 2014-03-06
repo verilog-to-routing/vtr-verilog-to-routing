@@ -42,6 +42,10 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 static float get_timing_driven_expected_cost(int inode, int target_node,
 		float criticality_fac, float R_upstream);
 
+#ifdef INTERPOSER_BASED_ARCHITECTURE
+static int get_num_expected_interposer_hops_to_target(int inode, int target_node);
+#endif
+
 static int get_expected_segs_to_target(int inode, int target_node,
 		int *num_segs_ortho_dir_ptr);
 
@@ -53,6 +57,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		t_rt_node * rt_node);
 
 static double get_overused_ratio();
+
 
 /************************ Subroutine definitions *****************************/
 
@@ -744,6 +749,11 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 	rr_type = rr_node[inode].type;
 
 	if (rr_type == CHANX || rr_type == CHANY) {
+
+#ifdef INTERPOSER_BASED_ARCHITECTURE		
+		int num_interposer_hops = get_num_expected_interposer_hops_to_target(inode, target_node);
+#endif
+
 		num_segs_same_dir = get_expected_segs_to_target(inode, target_node,
 				&num_segs_ortho_dir);
 		cost_index = rr_node[inode].cost_index;
@@ -771,6 +781,11 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 
 		Tdel += rr_indexed_data[IPIN_COST_INDEX].T_linear;
 
+#ifdef INTERPOSER_BASED_ARCHITECTURE
+		float interposer_hop_delay = (float)delay_increase * 1e-12;
+		Tdel += num_interposer_hops * interposer_hop_delay;
+#endif
+
 		expected_cost = criticality_fac * Tdel
 				+ (1. - criticality_fac) * cong_cost;
 		return (expected_cost);
@@ -784,6 +799,82 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 		return (0.);
 	}
 }
+
+#ifdef INTERPOSER_BASED_ARCHITECTURE
+static int get_num_expected_interposer_hops_to_target(int inode, int target_node) 
+{
+	/* 
+	Description:
+		returns the expected number of times you have to cross the 
+		interposer in order to go from inode to target_node.
+		This does not include inode itself.
+	
+	Assumptions: 
+		1- Cuts are horizontal
+		2- target_node is a terminal pin (hence its ylow==yhigh)
+		3- wires that go through the interposer are uni-directional
+
+		---------	y=150
+		|		|
+		---------	y=100
+		|		|
+		---------	y=50
+		|		|
+		---------	y=0
+
+		num_cuts = 2, cut_step = 50, cut_locations = {50, 100}
+	*/
+	int y_start; /* start point y-coordinate. (y-coordinate at the *end* of wire 'i') */
+	int y_end;   /* destination (target) y-coordinate */
+	int cut_i, cut_step, y_cut_location, num_expected_hops;
+	t_rr_type rr_type;
+
+	num_expected_hops = 0;
+	cut_step = ny / (num_cuts + 1);
+
+	y_end   = rr_node[target_node].ylow; 
+	rr_type = rr_node[inode].type;
+
+	if(rr_type == CHANX) 
+	{	/* inode is a horizontal wire */
+		/* the ylow and yhigh are the same */
+		assert(rr_node[inode].ylow == rr_node[inode].yhigh);
+		y_start = rr_node[inode].ylow;
+	}
+	else
+	{	/* inode is a CHANY */
+		if(rr_node[inode].direction == INC_DIRECTION)
+		{
+			y_start = rr_node[inode].yhigh;
+		}
+		else if(rr_node[inode].direction == DEC_DIRECTION)
+		{
+			y_start = rr_node[inode].ylow;
+		}
+		else
+		{
+			/*	this means direction is BIDIRECTIONAL! Error out. */
+			y_start = -1;
+			assert(rr_node[inode].direction!=BI_DIRECTION);
+		}
+	}
+
+	/* for every cut, is it between 'i' and 'target'? */
+	for(cut_i=1 ; cut_i<=num_cuts; ++cut_i) 
+	{
+		y_cut_location = cut_i*cut_step;
+		if( (y_start <= y_cut_location &&  y_cut_location < y_end) ||
+			(y_end   <= y_cut_location &&  y_cut_location < y_start)) 
+		{
+			++num_expected_hops;
+		}
+	}
+
+	
+
+	return num_expected_hops;
+}
+#endif
 
 /* Macro used below to ensure that fractions are rounded up, but floating   *
  * point values very close to an integer are rounded to that integer.       */
