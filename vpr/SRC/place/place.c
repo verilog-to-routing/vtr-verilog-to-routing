@@ -2393,10 +2393,7 @@ static float get_net_cost(int inet, struct s_bb *bbptr) {
 		}
 		if(const_type == 1)
 		{
-			// hack: changed times_crossed  to times_crossed^2
 			ncost += C1 * chany_place_cost_fac[nx][1] * times_crossed * (bbptr->ymax - bbptr->ymin + 1) * C2;
-			//ncost += C1 * chany_place_cost_fac[nx][1] * times_crossed * times_crossed * 2 * (bbptr->ymax - bbptr->ymin + 1) * C2;
-			//ncost += C1 * chany_place_cost_fac[nx][1] * times_crossed * times_crossed * (bbptr->ymax - bbptr->ymin + 1) * C2;
 		}
 		if(const_type == 2)
 		{
