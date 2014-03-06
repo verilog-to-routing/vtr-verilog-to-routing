@@ -1070,8 +1070,21 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 			&original_num_nets, &original_num_blocks, original_vnet);
 	setup_chan_width(router_opts, chan_width_dist);
 
+#ifdef INTERPOSER_BASED_ARCHITECTURE
+	/* Change the number of cuts to zero to avoid running the cut routine
+	 * at build_rr_graph. This is because placement uses only deltas to estimate
+	 * the delay between two points, and having a non-homogeneous chip only
+	 * generates noise */
+	int temp_num_cuts = num_cuts;
+	num_cuts = 0;
+#endif
+
 	alloc_routing_structs(router_opts, det_routing_arch, segment_inf,
 			timing_inf, directs, num_directs);
+
+#ifdef INTERPOSER_BASED_ARCHITECTURE
+	num_cuts = temp_num_cuts;
+#endif
 
 	longest_length = get_longest_segment_length(det_routing_arch, segment_inf);
 
